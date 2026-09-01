@@ -231,6 +231,24 @@
   .top h2 .ic-link{font-size:13px;text-decoration:none;margin-left:5px;vertical-align:middle;}
   @media print{ .top h2 .ic-link{display:none;} }
   .chkcnt{font-size:11.5px;font-weight:700;color:var(--mid);}
+  .pendcnt{font-size:11.5px;font-weight:800;color:var(--brass);white-space:nowrap;}
+  /* ★카드 접기 (GM 지시 2026-09-01 가독성) — .item 이 <details> 가 되고 머리줄이 <summary> 다.
+     접힌 화면 = 번호·제목·분류·상태·진척·남은 개수·기한 한 줄. 펼치면 종전 내용 그대로. */
+  details.item > summary.cardhead{list-style:none;cursor:pointer;position:relative;padding-right:18px;}
+  details.item > summary.cardhead::-webkit-details-marker{display:none;}
+  details.item > summary.cardhead:after{content:"▾";position:absolute;right:0;top:2px;color:var(--grey);font-size:12px;}
+  details.item[open] > summary.cardhead:after{content:"▴";}
+  details.item > summary.cardhead:hover h2{color:var(--brass);}
+  details.item[open]{background:var(--pick);padding-left:10px;padding-right:10px;margin-left:-10px;margin-right:-10px;}
+  /* 끝난 할 일 접기 — 취소선만 그은 줄이 화면을 채우던 것을 안쪽으로 넣는다 */
+  details.donechk{margin-top:5px;}
+  details.donechk > summary{list-style:none;cursor:pointer;font-size:11px;font-weight:800;color:var(--grey);letter-spacing:.02em;}
+  details.donechk > summary::-webkit-details-marker{display:none;}
+  details.donechk > summary:after{content:" ▾";}
+  details.donechk[open] > summary:after{content:" ▴";}
+  /* 인쇄는 전부 펼친다(아래 beforeprint 가 open 을 켠다) — 접힌 details 는 내용이 아예 안 그려진다 */
+  @media print{ details.item[open]{background:none;padding-left:0;padding-right:0;margin-left:0;margin-right:0;}
+                details.item > summary.cardhead:after{display:none;} }
   details.fold{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;}
   details.fold > summary{list-style:none;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--mid);letter-spacing:.02em;}
   details.fold > summary::-webkit-details-marker{display:none;}
@@ -755,7 +773,13 @@
       var pct = hasChecks ? Math.round(doneCount / todos.length * 100)
                           : ((typeof it.progress === 'number') ? it.progress : null);
       var stCls = it.status === '진행' ? 'on' : (it.status === '이월' ? 'carry' : 'plan');
-      return '<div class="item" id="gm-' + esc(it.id) + '">' +
+      // ★카드는 접힌 채로 연다 (GM 지시 2026-09-01 — "무분별하게 정리가 안되니까 가독성이 너무 떨어지네").
+      // 실측: 카드 22장 · 본문 합계 10만 자 · 할 일 180줄이 한 화면에 전부 펼쳐져 700줄 스크롤이었다.
+      // 접힌 상태에서 보이는 것 = 번호·제목·분류·상태·진척·남은 할 일 개수·기한. 누르면 그 카드만 펼친다.
+      // 새 UI 를 만든 게 아니라 있던 카드를 <details> 로 감쌌다 — 안쪽 내용·체크·링크는 그대로다.
+      var pend = hasChecks ? (todos.length - doneCount) : 0;
+      return '<details class="item" id="gm-' + esc(it.id) + '">' +
+        '<summary class="cardhead">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
         // 전사 배지 — gm_top3_rank 로만 편입된 건(제목에 "(GM 직접)" 없음)은 회사 전체가 보는 과제라는 걸
@@ -772,17 +796,29 @@
         // 2026-08-16 — 새 배지 추가 아님, 있던 것 하나로 줄임). 진행바(.pbar)는 그대로 남긴다.
         (pct === null || hasChecks ? '' : '<span class="pct">' + pct + '%</span>') +
         (hasChecks ? '<span class="chkcnt">' + doneCount + '/' + todos.length + ' 완료</span>' : '') +
+        // 접힌 채로도 「아직 몇 개 남았나」가 보여야 한다 — 이게 GM 이 카드를 열지 말지 정하는 기준이다.
+        (pend > 0 ? '<span class="pendcnt">남은 ' + pend + '</span>' : '') +
         '<span class="due' + (isOverdue(it.due) ? ' overdue' : '') + '">기한 ' + esc(fmtDue(it.due)) + '</span>' +
         '</span></div>' +
         (pct === null ? '' : '<div class="pbar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>') +
+        '</summary>' +
         '<p class="body">' + esc(it.target || '내용 없음') + '</p>' +
         (sp.lead ? '<p class="lead-p">' + esc(sp.lead.length > 170 ? sp.lead.slice(0, 170) + '…' : sp.lead) + '</p>' : '') +
         // ① 할 일 체크박스 — □/☑ 줄을 그대로 클릭 체크로(GM 2026-08-06 지시). 체크는 gmNoteLines[id]에 즉시 반영.
-        (hasChecks ? '<div class="chk-box"><div class="nh">할 일 <span class="gm-check-cnt">' + doneCount + '/' + todos.length + ' 완료</span></div><ul>' +
-            todos.map(function (t, ti) {
+        // 끝난 줄은 안쪽으로 접는다 (GM 지시 2026-09-01 가독성). 전체 60줄이 취소선만 그은 채 깔려 있었다.
+        // 번호는 원래 자리를 그대로 쓴다 — 접었다고 번호가 밀리면 GM 이 부르는 번호가 달라진다.
+        (hasChecks ? (function () {
+            function liOf(t, ti) {
               return '<li><label><input type="checkbox" class="gm-chk" data-obj-id="' + esc(it.id) + '" data-idx="' + t.idx + '"' +
                 (t.checked ? ' checked' : '') + '><span class="cno">' + (ti + 1) + '</span><span class="ctx">' + esc(t.text) + '</span></label></li>';
-            }).join('') + '</ul></div>' : '') +
+            }
+            var pendLi = [], doneLi = [];
+            todos.forEach(function (t, ti) { (t.checked ? doneLi : pendLi).push(liOf(t, ti)); });
+            return '<div class="chk-box"><div class="nh">할 일 <span class="gm-check-cnt">' + doneCount + '/' + todos.length + ' 완료</span></div>' +
+              (pendLi.length ? '<ul>' + pendLi.join('') + '</ul>' : '') +
+              (doneLi.length ? '<details class="donechk"><summary>끝난 ' + doneLi.length + '개</summary><ul>' + doneLi.join('') + '</ul></details>' : '') +
+              '</div>';
+          })() : '') +
         (sp.body.length ? '<details class="fold"><summary>내용 전체</summary><div class="nb">' + renderLines(sp.body) + '</div></details>' : '') +
         docLink(it.doc) +
         ohnuttiLink(it.id) +
@@ -790,7 +826,7 @@
         reportLineLink(it.id) +
         armoniumLink(it.id) +
         docLinks(it.docs, it.doc) +
-        '</div>';
+        '</details>';
   }
   // 진척률 정본 하나 — 체크리스트가 있으면 체크 개수로, 없으면 it.progress.
   // GM 지적 2026-08-16("정본 80% vs 실제 체크 60% 어긋남") 때 카드(cardHtml)만 고치고
@@ -956,6 +992,7 @@
     if (h.indexOf('#gm-') !== 0) return;
     var el = document.getElementById(h.slice(1));
     if (!el) return;
+    if (el.tagName === 'DETAILS') el.open = true;   // 카드 자체가 접힘이 됐다(2026-09-01) — 먼저 펴야 스크롤 위치가 맞는다
     var f = el.querySelector('details.fold'); if (f) f.open = true;
     try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { el.scrollIntoView(); }
     el.style.transition = 'background .3s';
@@ -968,6 +1005,25 @@
 
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
+
+  /* 카드 머리(summary) 안의 📌 링크를 누르면 브라우저가 링크 이동과 접기·펴기를 같이 한다 — 링크만 듣는다. */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('summary.cardhead a') : null;
+    if (a) e.stopPropagation();
+  }, true);
+  /* 인쇄 — 접힌 <details> 는 내용이 아예 안 그려진다. 인쇄 직전에 전부 펴고, 끝나면 원래대로 되돌린다. */
+  (function () {
+    var reopened = [];
+    window.addEventListener('beforeprint', function () {
+      reopened = [];
+      document.querySelectorAll('details.item:not([open]), details.donechk:not([open]), details.fold:not([open])')
+        .forEach(function (d) { reopened.push(d); d.open = true; });
+    });
+    window.addEventListener('afterprint', function () {
+      reopened.forEach(function (d) { d.open = false; });
+      reopened = [];
+    });
+  })();
 
   // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
   OwnerDirective.mount({
