@@ -1945,8 +1945,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
       <!-- 기초재고 = 시작 시점 실사값. 표 안에 섞으면 안 보인다고 해 따로 뺐다(GM 요청 2026-08-07) -->
       <div class="wp-ldy__card" style="flex:1 1 100%;margin-bottom:14px">
-        <div class="wp-ldy__k">📦 기초재고 — 시작 시점에 실제로 가지고 있는 수량 (한 번만 입력)</div>
-        <div class="wp-ldy__hint" style="margin:4px 0 10px">이 값이 없으면 사용량·로스가 계산되지 않습니다. 세는 대로 채워 넣으면 그 품목부터 계산이 시작됩니다. 다음 달부터는 자동으로 이월되므로 다시 넣지 않아도 됩니다.</div>
+        <!-- 문구 정정(GM 2026-09-01 "지금? 무슨 의미가 있나? 정해진 일정 새벽부터 세면 되는거 아냐?").
+             종전 「한 번만 입력」이 지금 당장 따로 실사하라는 말로 읽혔다. 실제로는 기록을 시작하는 첫날
+             오픈 때 세는 그 숫자가 곧 기초재고다 — 별도 실사가 아니라 첫날 업무의 일부다. -->
+        <div class="wp-ldy__k">📦 기초재고 — 기록을 시작하는 첫날 오픈 때 세는 수량</div>
+        <div class="wp-ldy__hint" style="margin:4px 0 10px">따로 날을 잡아 셀 필요 없습니다. 기록을 시작하는 날 오픈 때 품목별로 세어 여기 넣으면, 그날부터 사용량과 로스가 계산됩니다. 다음 달부터는 마감재고가 자동으로 이월되므로 다시 넣지 않습니다.</div>
         <div id="wpLdyOpeningGrid" class="wp-ldy__opengrid"></div>
       </div>
       <div class="wp-ldy__k" style="margin-bottom:4px">품목 마스터 · 총 재고 현황</div>
