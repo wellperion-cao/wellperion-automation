@@ -453,7 +453,10 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function openModal(){
     var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
     $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
-    $('m_receiver').value=''; $('m_staff').value=''; $('m_staff_other').value=''; $('m_staff_other').style.display='none'; if(_cur.loc){ $('m_loc').value=_cur.loc; }
+    $('m_receiver').value=''; $('m_staff').value=''; $('m_staff_other').value=''; $('m_staff_other').style.display='none';
+    /* 수령 장소 기본값 = 리셉션 (실무진 피드백 2026-09-01 · 종합접수처_현황.html 과 같은 규칙).
+       종전에는 습득 장소를 그대로 넣어 수령 장소가 매번 틀렸다 — 습득 장소와 수령 장소는 다른 값이다. */
+    $('m_loc').value='리셉션';
     clearPad();
     $('modalBack').classList.add('show');
     setTimeout(resizePad,30);

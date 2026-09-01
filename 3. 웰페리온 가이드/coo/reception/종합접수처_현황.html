@@ -1397,7 +1397,11 @@ function openModal(){
   $('m_pw').value = ''; $('m_receiver').value = ''; $('m_staff').value = ''; $('m_staff_other').value = ''; $('m_staff_other').style.display = 'none';
   $('m_ownerName').value=''; $('m_ownerPhone').value=''; $('m_receiverPhone').value=''; $('m_storageLoc').value=''; $('m_memo').value='';
   try{ $('m_providedDate').value = new Date().toISOString().slice(0,10); }catch(e){ $('m_providedDate').value=''; }
-  if(_cur.loc){ $('m_loc').value = _cur.loc; }
+  /* 수령 장소 기본값 = 리셉션 (실무진 피드백 2026-09-01). 종전에는 '습득' 장소를 그대로
+     넣어서 수영장에서 주운 물건이면 수령 장소도 수영장으로 떴다 — 물건은 리셉션에서 건네는데
+     기록은 매번 손으로 고쳐야 했다. 둘은 다른 값이다. 드롭다운은 남긴다(사우나에서 바로
+     건네는 예외가 있으므로 — 고정해 버리면 그때 기록이 틀린다). */
+  $('m_loc').value = '리셉션';
   clearPad();
   $('modalBack').classList.add('show');
   setTimeout(resizePad, 30);
