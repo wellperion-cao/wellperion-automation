@@ -51,7 +51,9 @@ ok('4) 8/2(첫째 일요일) 휴관 아님', wpLdyIsClosed('2026-08-02') === fal
 ok('4) 8/16(셋째 일요일) 휴관 아님', wpLdyIsClosed('2026-08-16') === false);
 ok('4) 8/30(다섯째 일요일) 휴관 아님', wpLdyIsClosed('2026-08-30') === false);
 ok('4) 평일 휴관 아님', wpLdyIsClosed('2026-08-05') === false);
-ok('4) 9월도 자동 산출(9/13·9/27)', wpLdyIsClosed('2026-09-13') && wpLdyIsClosed('2026-09-27') && !wpLdyIsClosed('2026-09-06'));
+// 2026-09-01 GM 정정: 9월(추석 달) 휴관은 9/13 하루뿐 — 9/27(넷째 일요일)은 영업. 정본 = status/close_days.json + scripts/close_days.py
+ok('4) 9월은 명절 달 예외 — 9/13 휴관·9/27 영업', wpLdyIsClosed('2026-09-13') && !wpLdyIsClosed('2026-09-27') && !wpLdyIsClosed('2026-09-06'));
+ok('4) 수동 등록 휴관(설날 2/17)·신정 1/1 휴관', wpLdyIsClosed('2026-02-17') && wpLdyIsClosed('2026-01-01'));
 
 // 5. 신품 투입 20장 → 당일 사용량 +20, 총 투입 누계 반영
 const useBefore = wpLdyUsage('bath', '2026-08-02');

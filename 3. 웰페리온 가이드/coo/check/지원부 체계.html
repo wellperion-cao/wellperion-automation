@@ -503,7 +503,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-supply-print{display:none}
 /* ── A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (배64) ── */
 #a3-onboarding-print{display:none}
-/* ── 🧺 세탁물 출하표 A3 인쇄 (GM 2026-08-11 — 현장은 종이에 손으로 적고, 점검할 때 화면에 옮긴다) ── */
+/* ── 🧺 세탁물 출하표 A4 세로 인쇄 (GM 2026-08-11 발주 · 2026-09-01 A3→A4 세로 전환 — 현장은 종이에 손으로 적고, 점검할 때 화면에 옮긴다)
+   클래스 접두사 a3l- 은 그대로 둔다 — 이름까지 갈면 diff 만 커지고 얻는 게 없다(정체는 '출하표 인쇄' 스타일). ── */
 @media print{
   body.a3-ldy-mode{font-size:11px;line-height:1.4;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.a3-ldy-mode .header,
@@ -531,15 +532,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
   table.a3l-grid td.a3l-shade{background:#faf7f3!important}
   table.a3l-grid tr.a3l-sum td{height:44px;background:#f3ede7!important;font-weight:800}
-  /* 주간판(A3 세로 1장 = 7일) — 행이 많아 높이를 항목별로 나눠 준다. 보충만 두 배(여러 번 적는다). */
-  table.a3l-week td{height:26px}
-  table.a3l-week td.a3l-tall{height:52px}
-  table.a3l-week td.a3l-name{font-size:17px;text-align:center;padding:0;vertical-align:middle}
+  /* 주간판(A4 세로 1장 = 7일) — 품목마다 「입고」·「마감재고」 두 줄. 손글씨 들어갈 높이로 잡는다. */
+  table.a3l-week td{height:32px}
+  table.a3l-week td.a3l-name{font-size:15px;text-align:center;padding:0;vertical-align:middle}
   table.a3l-week td.a3l-rowkey{background:#faf7f3!important;font-size:13px;font-weight:700;color:#4a3a2e;text-align:left;padding-left:7px}
   table.a3l-week tr.a3l-itemtop td{border-top:2px solid #4a3a2e}
   table.a3l-week thead th{font-size:16px;padding:6px 2px}
   table.a3l-week .a3l-datebox{margin:5px auto 2px;width:78%;height:20px;border-bottom:1px solid rgba(255,255,255,0.75)}
-  table.a3l-week td.a3l-stockline{height:46px;text-align:left;padding:6px 10px;font-size:14px;font-weight:600;letter-spacing:0.02em}
   #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
   #a3-laundry-print .a3l-guide b{font-weight:800}
 }
@@ -985,12 +984,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="saving" id="saveIndicator">저장 중...</div>
 <div class="save-fail-banner" id="saveFailBanner">⚠️ 저장 실패 — 서버에 반영되지 않았습니다<div class="sfb-sub" id="saveFailBannerSub">잠시 후 자동 재시도합니다. 계속되면 새로고침 후 다시 체크해주세요.</div></div>
 
-<!-- ══ 🧺 세탁물 출하표 A3 인쇄 전용 컨테이너 (GM 2026-08-11) ══
+<!-- ══ 🧺 세탁물 출하표 A4 세로 인쇄 전용 컨테이너 (GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) ══
      현장은 이 종이에 손으로 적는다 → 점검할 때 화면(🧺 린넨 관리)에 그 숫자를 옮긴다.
      칸을 미리 채우지 않는다 — 종이가 원본이고 화면이 옮겨 적는 쪽이다. ══ -->
 <div id="a3-laundry-print" style="display:none">
   <div class="a3l-head">
-    <div class="a3l-title">세탁물 출하표</div>
+    <div>
+      <div class="a3l-title">세탁물 출하표 (주간)</div>
+      <div style="font-size:13px;color:#4a3a2e;margin-top:3px">담당 <b>김훈 주임</b> — 세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다</div>
+    </div>
     <div class="a3l-meta">
       <span>기간 <b class="a3l-blank"></b> ~ <b class="a3l-blank"></b></span>
       <span>작성 <b class="a3l-blank"></b></span>
@@ -1000,11 +1002,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="a3l-table-host"></div>
   <div class="a3l-guide">
     <b>①</b> 맨 위 요일 칸에 <b>그 주의 날짜</b>를 먼저 적는다(월요일부터 일요일까지 한 장).<br>
-    <b>②</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서에 적힌 수량</b>을 그날 「입고」 칸에 적는다.<br>
-    <b>③</b> 오픈 때 깔아 놓은 수량을 「오픈 셋팅」 칸에 적는다.<br>
-    <b>④</b> 중간에 채울 때마다 「보충」 칸에 <b>이어서</b> 적는다(예: 20 · 15 · 10 — 횟수도 같이 남는다).<br>
-    <b>⑤</b> 마감 때 쓰지 않고 남은 수량을 「남은 것」 칸에 적는다. 창고 재고는 주 1회 맨 아래 줄에 적는다.<br>
-    <b>⑥</b> 이 종이는 다음 점검 때 화면 「🧺 린넨 관리」에 그대로 옮겨 적는다.
+    <b>②</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서와 실제 수량을 맞춰 본 뒤</b>, 받은 개수를 그날 「입고」 칸에 적는다.<br>
+    <b>③</b> 마감 때 품목별로 <b>남아 있는 개수를 전부 세서</b> 「마감재고」 칸에 적는다.<br>
+    <b>④</b> 적은 숫자(입고·마감재고)는 그날 카카오톡 보고에도 <b>그대로</b> 올린다 — 종이와 보고 숫자가 같아야 한다.<br>
+    <b>⑤</b> 이 종이는 다음 점검 때 화면 「🧺 린넨 관리 → 오늘 점검」에 그대로 옮겨 적는다.
   </div>
 </div>
 
@@ -1877,25 +1878,25 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
        board-fullwidth = 이 저장소 표준 좌측정렬·풀폭 탈출 클래스(채용현황 탭 등과 동일 패턴, 새 CSS 발명 안 함) —
        컨테이너 한 곳에서만 잡아 서브탭 3개가 자동으로 같이 넓어진다(GM 지시 2026-08-08). -->
   <div class="wp-ldy__wrap board-fullwidth" style="padding:0 20px 40px">
-    <!-- ⓪ 출하 체크리스트 — 종이(SAUNA(LINEN) SHIPPING CHECKLISTS)와 같은 표.
-         GM 지시 2026-08-31 "지원부 체계에 린넨 관리를 위 작성 페이지 참고해서 체계를 만들어줘".
-         현장이 실제로 쓰는 종이는 사우나 린넨 3종(타월·샤워타월·가운)을 날짜 1~31 행에
-         입고(W)/출고(D) 두 칸으로 적고, 맨 아래 합계와 월 요약(입고·출고·차이·보관수량)을 낸다.
-         종이와 화면의 칸이 다르면 옮겨 적다 틀린다 — 그래서 칸을 종이 그대로 맞췄다.
-         저장은 기존 저장소를 그대로 쓴다(daily[날짜][품목].in / .out / .end · 새 저장소 없음). -->
+    <!-- ⓪ 월간 출하 기록 — 종이(세탁물 출하표 A4)에 적은 숫자를 달력 한 장으로 옮겨 적는 표.
+         2026-08-31 첫판은 남의 양식(사우나 린넨 체크리스트 사진)을 그대로 베껴 3종(타월·샤워타월·가운)에
+         입고/출고 칸이었다 → 2026-09-01 GM "우리 기준으로 셋팅" — 품목은 품목 마스터(원장)와 같은 목록을
+         쓰고, 칸은 계산식이 쓰는 「입고」·「마감재고」로 맞췄다(종이·화면·계산이 같은 두 칸을 본다).
+         저장은 기존 저장소 그대로(daily[날짜][품목].in / .end · 새 저장소 없음). 옛 .out 데이터는 지우지
+         않는다 — 출고 계산(wpLdyIssueQty)이 계속 읽는다. -->
     <div id="wpLdyView-sheet">
-      <div class="wp-ldy__h" style="margin-top:4px">📄 사우나 린넨 출하 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 종이와 같은 표</span></div>
-      <div class="wp-ldy__hint">종이에 적은 숫자를 그대로 옮겨 적습니다. <b>W</b>=입고(받은 것) · <b>D</b>=출고(내보낸 것). 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
+      <div class="wp-ldy__h" style="margin-top:4px">📄 월간 출하 기록 <span class="wp-ldy__k" style="font-weight:600">— 담당 김훈 주임 · 종이(출하표)를 옮겨 적는 곳</span></div>
+      <div class="wp-ldy__hint">종이에 적은 숫자를 그대로 옮겨 적습니다. <b>입고</b>=받은 개수 · <b>마감재고</b>=마감 때 세어 남은 개수. 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
       <div class="wp-ldy__bar">
         <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdySheetRender()">
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
         <span id="wpLdySheetState" class="wp-ldy__k"></span>
-        <button class="wp-ldy__btn" onclick="printA3Laundry()" title="A3 가로 한 장 — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A3)</button>
+        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 한 장(1주일) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
       </div>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
       <div class="wp-ldy__h">📦 월 합계</div>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetSum"></table></div>
-      <div class="wp-ldy__hint">차이 = 입고 합계 − 출고 합계. 보관 수량 = 그 달 마지막으로 적은 마감재고(아래 「오늘 점검」의 마감재고 칸).</div>
+      <div class="wp-ldy__hint">사용량 = 전일마감 + 입고 + 신품 − 마감재고(자동 계산). 보관 수량 = 그 달 마지막으로 적은 마감재고.</div>
     </div>
     <!-- ① 오늘 점검 — 매일 쓰는 곳(맨 위) -->
     <div id="wpLdyView-today">
@@ -1908,7 +1909,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <b>② 오픈 때</b> — 깔아 놓은 수량을 아래 칸에 쳐 넣고 <b>오픈 셋팅</b>을 누릅니다(하루 1번).<br>
         <b>③ 보충할 때마다</b> — 채운 수량을 쳐 넣고 <b>보충</b>을 누릅니다(하루 여러 번). 오픈과 보충을 나누는 이유는, 보충량이 그날 실제 이용량을 말해 주기 때문입니다.<br>
         <b>④ 마감할 때</b> — 남은 개수를 세서 <b>마감재고</b> 칸에 적습니다(하루 1번). <b>차이</b> 칸이 빨간 글씨면 이론재고와 실제가 다르다는 뜻 — 분실·미기록 신호입니다.<br>
-        <b>⑤ 종이로 적을 때</b> — 위 <b>🖨 출하표 인쇄 (A3)</b> 로 뽑아 현장에서 손으로 적고, 점검할 때 그 숫자를 이 화면에 옮겨 넣습니다.<br>
+        <b>⑤ 종이로 적을 때</b> — 위 <b>🖨 출하표 인쇄 (A4)</b> 로 뽑아 현장에서 손으로 적고, 점검할 때 그 숫자를 이 화면에 옮겨 넣습니다.<br>
         <b>⑥ 잘못 눌렀다면</b> — <b>↩ 직전 출고 취소</b> 버튼으로 바로 되돌립니다.
       </div>
       <div class="wp-ldy__bar">
@@ -1917,7 +1918,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="wpLdyClosed"></span>
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveToday()">저장</button>
         <span id="wpLdySaveState" class="wp-ldy__k"></span>
-        <button class="wp-ldy__btn" onclick="printA3Laundry()" title="A3 가로 한 장 — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A3)</button>
+        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 한 장(1주일) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
       </div>
       <!-- 출고 기록 — 배치할 때마다 누르는 곳(하루 여러 번, 모바일 우선 · GM 정정 2026-08-08) -->
       <div class="wp-ldy__bar" style="margin-bottom:8px">
@@ -6765,10 +6766,21 @@ var WP_LDY_SESSION_ISSUES = [];
 var WP_LDY_UNDONE_TS = {};
 
 /* ── 계산 규칙(지시서 §6) — 화면과 검산이 같은 함수를 쓴다 ────────────────── */
-/* 휴관일 = 매월 둘째·넷째 일요일. 날짜에서 매번 계산한다(하드코딩 금지 · 지시서 §8). */
+/* 휴관일 — 정본 = status/close_days.json + scripts/close_days.py(is_closed). 브라우저는 파이썬을
+   못 부르니 같은 규칙·데이터를 여기 옮겨 둔다(2026-09-01 GM 정정 반영 — 9월 휴관은 9/13 하루,
+   9/27 은 영업). close_days.json 이 바뀌면 아래 두 목록도 같이 고친다.
+   ① 신정(1/1) ② 매월 2·4째 일요일 — 단 그 달에 명절이 있으면(major_holiday_dates) 건너뛴다
+   ③ 수동 등록 휴관일(dates) */
+var WP_LDY_CLOSE_DATES = ['2026-02-17', '2026-09-13'];          /* = close_days.json dates */
+var WP_LDY_MAJOR_HOLIDAY_MONTHS = ['2026-02', '2026-09'];       /* = major_holiday_dates 의 달 */
 function wpLdyIsClosed(dateStr){
-  var d = new Date(String(dateStr) + 'T00:00:00');
-  if (isNaN(d.getTime()) || d.getDay() !== 0) return false;
+  var s = String(dateStr);
+  if (WP_LDY_CLOSE_DATES.indexOf(s) >= 0) return true;
+  var d = new Date(s + 'T00:00:00');
+  if (isNaN(d.getTime())) return false;
+  if (d.getMonth() === 0 && d.getDate() === 1) return true;     /* 신정 */
+  if (d.getDay() !== 0) return false;
+  if (WP_LDY_MAJOR_HOLIDAY_MONTHS.indexOf(s.slice(0, 7)) >= 0) return false; /* 명절 달은 자동 휴관 없음 */
   var nth = Math.floor((d.getDate() - 1) / 7) + 1;
   return nth === 2 || nth === 4;
 }
@@ -6814,10 +6826,9 @@ function wpLdyIssueQty(itemId, dateStr){
     return s + ((x && x.date === dateStr && x.itemId === itemId) ? (wpLdyNum(x.qty) || 0) : 0);
   }, 0);
   if (log > 0) return log;
-  /* 종이(SAUNA(LINEN) SHIPPING CHECKLISTS)를 그대로 옮겨 적는 경우 — 현장은 배치할 때마다
-     버튼을 누르는 게 아니라 하루치 출고 합계를 한 번에 적는다. 그 값은 daily[날짜][품목].out
-     에 들어간다. 버튼 기록(issues)이 하나라도 있으면 그쪽이 우선 — 두 벌로 세지 않는다.
-     (2026-08-31 GM 지시 "위 작성 페이지 참고해서 체계를 만들어줘") */
+  /* daily[날짜][품목].out = 하루치 출고 합계를 한 번에 적던 값(구 출하 체크리스트 2026-08-31 한시 운용
+     + 수동 입력 호환). 2026-09-01 화면 개편으로 새로 쓰이는 칸은 아니지만, 이미 적힌 값은 계속 읽는다.
+     버튼 기록(issues)이 하나라도 있으면 그쪽이 우선 — 두 벌로 세지 않는다. */
   var rec = LAUNDRY_DATA.daily[dateStr];
   var out = rec && rec[itemId] ? wpLdyNum(rec[itemId].out) : null;
   return out === null ? 0 : out;
@@ -6926,12 +6937,11 @@ function wpLdyTotals(itemId){
 function wpLdyApplyStored(stored){
   var s = (stored && typeof stored === 'object') ? stored : {};
   var master = Array.isArray(s.master) && s.master.length ? s.master : WP_LDY_SEED.map(function(m){ return Object.assign({}, m); });
-  /* 종이 「SAUNA(LINEN) SHIPPING CHECKLISTS」 3종 중 '가운' 이 품목표에 없었다(2026-08-31 실측).
-     종이에 칸이 있는데 화면에 품목이 없으면 옮겨 적을 자리가 없다 — 없을 때만 뒤에 붙인다.
-     이미 있으면 아무것도 안 한다(멱등). 단가·하한은 모르므로 0 으로 두고 원장에서 채운다. */
-  if (!master.some(function(m){ return String(m && m.id) === 'gown'; })){
-    master = master.concat([{id:'gown', name:'가운', unitPrice:0, lowLimit:0, active:true}]);
-  }
+  /* '가운' 은 남의 양식(사우나 린넨 체크리스트 사진)에서 딸려 온 품목 — 웰페리온은 가운을 제공하지
+     않는다(하반기 서비스 강화 검토 항목 "비교 7개사 중 6개사 제공, 당사 미제공" · GM 2026-09-01
+     "우리 기준으로 셋팅"). 어제(08-31) 주입돼 저장본에 남았을 수 있어 걸러낸다.
+     daily 기록은 지우지 않는다 — 품목표·화면·계산에서만 빠진다. */
+  master = master.filter(function(m){ return String(m && m.id) !== 'gown'; });
   LAUNDRY_DATA = {
     master: master.map(function(m){
       return {id:String(m.id), name:String(m.name || ''), unitPrice:(wpLdyNum(m.unitPrice) || 0),
@@ -7118,20 +7128,18 @@ function wpLdyIssue(itemId, qty, kind){
   if (st) st.textContent = (m ? m.name : itemId) + ' ' + qty + '개 출고 기록함';
   wpLdyMarkTodo();
 }
-/* 🧺 세탁물 출하표 A3 인쇄(GM 2026-08-11) — 기존 A3 인쇄 방식 그대로 재사용(새 방식 안 만듦).
+/* 🧺 세탁물 출하표 A4 세로 인쇄(GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) — 기존 인쇄 방식 재사용.
    품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
-function printA3Laundry(){
-  /* ★A3 한 장 = 일주일(GM 2026-08-11 "매일 한장씩 줄 순없어 A3 한장으로 1주일정도").
-     그래서 세로로 세운다 — 열은 7일이면 되고, 행(품목 × 항목)이 많아 높이가 더 급하다.
-     품목마다 4줄: 입고 / 오픈 셋팅 / 보충(여러 번 적으니 두 배 높이) / 남은 것.
-     재고 실사는 매일 하는 일이 아니라 표 맨 아래 주 1회 줄로 뺐다. */
+function printA4Laundry(){
+  /* ★한 장 = 일주일(GM 2026-08-11 "매일 한장씩 줄 순없어 한장으로 1주일정도").
+     품목마다 2줄: 입고 / 마감재고 — 계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는
+     두 값이다(GM 2026-09-01 "입고 수량 보고 + 마감 때 재고 수량 보고"). 8품목 × 2줄 = 16행이라
+     A4 세로 한 장에 들어간다(검증 2026-09-01 — 표+안내 약 770px < A4 내용높이 1,062px). */
   var items = wpLdyItems();
   var DOW = ['월', '화', '수', '목', '금', '토', '일'];
   var ROWS = [
-    { key: '입고',      cls: 'a3l-shade' },
-    { key: '오픈 셋팅', cls: '' },
-    { key: '보충',      cls: 'a3l-tall' },
-    { key: '남은 것',   cls: 'a3l-shade' }
+    { key: '입고',     cls: 'a3l-shade' },
+    { key: '마감재고', cls: '' }
   ];
   var h = '<table class="a3l-grid a3l-week"><colgroup><col style="width:96px"><col style="width:78px">'
         + new Array(DOW.length + 1).join('<col>') + '</colgroup><thead>'
@@ -7147,10 +7155,7 @@ function printA3Laundry(){
       h += '</tr>';
     });
   });
-  h += '<tr class="a3l-sum"><td class="a3l-name" colspan="2">주간 재고 실사 (주 1회)</td>'
-     + '<td colspan="' + DOW.length + '" class="a3l-stockline">'
-     + items.map(function(m){ return wpLdyEsc(m.name) + ' ______'; }).join('&nbsp;&nbsp;&nbsp;')
-     + '</td></tr></tbody></table>';
+  h += '</tbody></table>';
   var host = document.getElementById('a3l-table-host');
   if (host) host.innerHTML = h;
   document.body.classList.add('a3-ldy-mode');
@@ -7160,7 +7165,7 @@ function printA3Laundry(){
     styleTag.id = 'a3-ldy-page-style';
     document.head.appendChild(styleTag);
   }
-  styleTag.textContent = '@media print{ @page{ size:A3 portrait; margin:8mm; } }';
+  styleTag.textContent = '@media print{ @page{ size:A4 portrait; margin:8mm; } }';
   window.print();
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
@@ -7243,14 +7248,14 @@ function wpLdyEdit(el){
   wpLdyPersist();
   wpLdyMarkTodo();
 }
-/* ── 출하 체크리스트(종이와 같은 표) ─────────────────────────────────────────
-   GM 지시 2026-08-31. 종이 3종만 싣는다 — 종이에 없는 품목을 끼워 넣으면 옮겨 적을 때
-   줄이 밀린다. 값은 기존 저장소에 그대로 들어간다(새 저장소·새 동기화 없음 · 약속 L21). */
-var WP_LDY_SHEET_COLS = [
-  {id:'bath',   label:'타월'},        /* TOWEL */
-  {id:'shower', label:'샤워타월'},    /* S/TOWEL */
-  {id:'gown',   label:'가운'}         /* GOWN */
-];
+/* ── 월간 출하 기록(달력 한 장) ─────────────────────────────────────────────
+   GM 지시 2026-08-31 발주 · 2026-09-01 "우리 기준으로 셋팅" — 품목을 따로 적으면 품목 마스터와
+   어긋난다(첫판이 그랬다: 남의 양식 3종 하드코딩). 마스터에서 그때그때 꺼낸다 — 목록은 한 곳뿐.
+   칸도 계산식이 쓰는 입고(.in)·마감재고(.end)로 맞췄다 — 종이·이 표·오늘 점검이 같은 값을 본다.
+   값은 기존 저장소에 그대로 들어간다(새 저장소·새 동기화 없음 · 약속 L21). */
+function wpLdySheetCols(){
+  return wpLdyItems().map(function(m){ return {id: m.id, label: m.name}; });
+}
 function wpLdySheetYm(){
   var el = document.getElementById('wpLdySheetMonth');
   if (el && !el.value) el.value = wpLdyToday().slice(0, 7);
@@ -7289,19 +7294,19 @@ function wpLdySheetCell(dateStr, itemId, field){
 function wpLdySheetRender(){
   var tbl = document.getElementById('wpLdySheetTbl');
   if (!tbl) return;
-  var ym = wpLdySheetYm(), n = wpLdySheetDays(ym);
+  var ym = wpLdySheetYm(), n = wpLdySheetDays(ym), cols = wpLdySheetCols();
   var head = '<thead><tr><th rowspan="2">날짜</th>';
-  WP_LDY_SHEET_COLS.forEach(function(c){ head += '<th colspan="2">' + wpLdyEsc(c.label) + '</th>'; });
+  cols.forEach(function(c){ head += '<th colspan="2">' + wpLdyEsc(c.label) + '</th>'; });
   head += '<th rowspan="2" style="min-width:150px">비고</th></tr><tr>';
-  WP_LDY_SHEET_COLS.forEach(function(){ head += '<th>입고</th><th>출고</th>'; });
+  cols.forEach(function(){ head += '<th>입고</th><th>마감재고</th>'; });
   head += '</tr></thead>';
   var body = '<tbody>';
   for (var d = 1; d <= n; d++){
     var ds = ym + '-' + (d < 10 ? '0' + d : d);
     var rem = (LAUNDRY_DATA.daily[ds] || {}).remark || '';
     body += '<tr><td class="wp-ldy__name">' + d + '</td>';
-    WP_LDY_SHEET_COLS.forEach(function(c){
-      body += '<td>' + wpLdySheetCell(ds, c.id, 'in') + '</td><td>' + wpLdySheetCell(ds, c.id, 'out') + '</td>';
+    cols.forEach(function(c){
+      body += '<td>' + wpLdySheetCell(ds, c.id, 'in') + '</td><td>' + wpLdySheetCell(ds, c.id, 'end') + '</td>';
     });
     body += '<td><input type="text" class="wp-ldy__in" style="width:100%;text-align:left" value="' + wpLdyEsc(rem)
           + '" onchange="wpLdySheetSetRemark(\'' + ds + '\',this.value)"></td></tr>';
@@ -7309,29 +7314,29 @@ function wpLdySheetRender(){
   tbl.innerHTML = head + body + '</tbody>';
   wpLdySheetRenderSum();
 }
-/* 월 요약 — 종이 첫 장(WARE HOUSING / DELVERY OF GOODS / QUANTITY DIFFERENCE / STORAGE QUANTITY). */
+/* 월 요약 — 입고 합계 · 사용량 합계(정본 계산식 wpLdyUsage 그대로) · 보관 수량(마지막 마감재고).
+   구 '출고 합계·차이' 칸(입고−출고)은 베낀 양식의 계산 — 사용량 정본 수식과 다른 셈이라 뺐다(2026-09-01). */
 function wpLdySheetRenderSum(){
   var tbl = document.getElementById('wpLdySheetSum');
   if (!tbl) return;
   var ym = wpLdySheetYm(), n = wpLdySheetDays(ym);
-  var rows = WP_LDY_SHEET_COLS.map(function(c){
-    var inn = 0, out = 0, stock = null, any = false;
+  var rows = wpLdySheetCols().map(function(c){
+    var inn = 0, use = 0, stock = null, any = false;
     for (var d = 1; d <= n; d++){
       var ds = ym + '-' + (d < 10 ? '0' + d : d);
       var rec = (LAUNDRY_DATA.daily[ds] || {})[c.id] || {};
       if (rec.in  !== undefined && rec.in  !== null){ inn += wpLdyNum(rec.in)  || 0; any = true; }
-      if (rec.out !== undefined && rec.out !== null){ out += wpLdyNum(rec.out) || 0; any = true; }
-      if (rec.end !== undefined && rec.end !== null){ stock = wpLdyNum(rec.end); }   /* 마지막으로 적은 마감재고 */
+      if (rec.end !== undefined && rec.end !== null){ stock = wpLdyNum(rec.end); any = true; }  /* 마지막으로 적은 마감재고 */
+      var u = wpLdyUsage(c.id, ds); if (u !== null) use += u;
     }
-    return {name:c.label, inn:inn, out:out, diff:inn - out, stock:stock, any:any};
+    return {name:c.label, inn:inn, use:use, stock:stock, any:any};
   });
-  var html = '<thead><tr><th style="text-align:left">품목</th><th>입고 합계</th><th>출고 합계</th>'
-           + '<th>차이</th><th>보관 수량</th></tr></thead><tbody>';
+  var html = '<thead><tr><th style="text-align:left">품목</th><th>입고 합계</th><th>사용량 합계</th>'
+           + '<th>보관 수량</th></tr></thead><tbody>';
   rows.forEach(function(r){
     html += '<tr><td class="wp-ldy__name">' + wpLdyEsc(r.name) + '</td>'
           + '<td class="wp-ldy__use">' + (r.any ? r.inn : '–') + '</td>'
-          + '<td class="wp-ldy__use">' + (r.any ? r.out : '–') + '</td>'
-          + '<td class="wp-ldy__use">' + (r.any ? r.diff : '–') + '</td>'
+          + '<td class="wp-ldy__use">' + (r.any ? Math.round(r.use) : '–') + '</td>'
           + '<td class="wp-ldy__use">' + (r.stock === null ? '–' : r.stock) + '</td></tr>';
   });
   tbl.innerHTML = html + '</tbody>';
