@@ -34,11 +34,23 @@
 
   /* ① 헤더 */
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
-  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
-    letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:13px; color:var(--navy);
+    letter-spacing:5px; margin-bottom:3px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:25px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.6px; line-height:1.5; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 방향 — 표준 골격(요금 장)과 동일 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:21px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:12px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.3; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.4px; line-height:1.45; opacity:.9; margin-top:4px; word-break:keep-all; overflow-wrap:anywhere; }
 
   /* 표 공통 */
   .tblwrap{ margin-top:12px; }
@@ -62,7 +74,7 @@
   tr.sum td.k{ background:#E7ECF2; }
 
   /* 각주 */
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+  .foot{ margin-top:auto; border-top:1px solid var(--line); padding-top:7px;
     display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
@@ -109,6 +121,23 @@
   .box.gm p{ font-family:'Noto Serif KR',serif; font-size:17.5px; font-weight:700;
     line-height:1.62; letter-spacing:-.5px; word-break:keep-all; margin-top:4px; }
   .box.gm .who{ margin-top:8px; font-size:10.8px; color:#5C666F; }
+
+  /* 글을 줄인 만큼 글자를 키운다 — GM 소견은 방향 블록으로 흡수(같은 문서 기준 재조정) */
+  th,td{ font-size:14.4px; }
+  thead th{ height:38px; font-size:14.5px; }
+  tbody td{ height:46px; }
+  td.k{ font-size:14px; }
+  .est{ font-size:11.6px; }
+  .sumtbl td{ height:36px; }
+  .sumtbl tr.grp td{ height:26px; font-size:12.8px; }
+  .rmwrap{ margin-top:16px; }
+  .rm .st{ padding:11px 13px 12px; }
+  .rm .st .t{ font-size:14.5px; }
+  .rm .st .g{ font-size:12px; }
+  .rm .st .b{ height:12px; margin-top:9px; }
+  .rm .st .p{ font-size:16px; }
+  .rmnote{ font-size:13px; padding:8px 12px; }
+  .tblwrap{ margin-top:14px; }
 </style>
 </head>
 <body>
@@ -127,16 +156,35 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title" style="font-size:26px">3분기 전략 로드맵 진척 현황</div>
+      <div class="title">3분기 전략 로드맵 진척 현황</div>
     </div>
     <div class="meta">
-      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님 · 경영진</b><br>
-      보고일 <b>2026. 09. 01.</b> · 기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 문서번호 <b>WP-GM-260901-03</b><br>
-      대상 <b>전사 로드맵 + 3라인(실장·소장·나우열M)</b> · 수치 기준 <b>로드맵·인재분 2026-08-27 · 8월분 2026-08-26~28 조회</b>
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-03</b><br>
+      1·2분기 <b>완료 100%</b> · 3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> · 전사 업무·결재 <b>83/131건 (63%)</b>
     </div>
   </div>
 
-  <!-- ② 전략 로드맵 진척 스트립 -->
+  <!-- ② 방향 -->
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="q">1. 중간관리자 소통 체계부터 세운다</div>
+        <div class="d">도전에 맞는 중간관리자 세팅이 관건 — 핵심은 <b>소통</b>이다. 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b> — 실장·소장·나우열M 3개 라인 (GM 전결).</div>
+      </div>
+      <div class="it">
+        <div class="q">2. 목표 수는 늘리지 않고 잔여부터 끝낸다</div>
+        <div class="d">목표 <b>4.0배</b>에 진척 72% → <b>39%</b> — 4분기 목표 수는 동결하고, 3분기 잔여(주차부 점검 정착 · 보고 무인화)를 9월 안에 끝낸다 — <b>웰리</b>.</div>
+      </div>
+      <div class="it">
+        <div class="q">3. 진척률은 원장에서 자동으로 뽑는다</div>
+        <div class="d">사람이 세어 올리는 진척 집계를 없애고 9월 안에 <b>원장 자동 산출</b>로 바꾼다 — <b>웰리</b>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 전략 로드맵 진척 스트립 -->
   <div class="rmwrap">
     <div class="rmhd">3 분 기 전 략 로 드 맵 진 척 <span class="est">— 월간운영계획 직독(2026-08-27) · 진척 = 각 목표 값의 평균</span></div>
     <div class="rm">
@@ -149,7 +197,7 @@
     <div class="rmnote">월별 목표 한 만큼 — 6월 <b>7건</b> <b class="good">72%</b> · 7월 <b>21건</b> <b class="warn">44%</b> · 8월 <b>28건</b> <b class="warn">39%</b> · 3분기 총 <b>56건</b>(목표 수 <b>4.0배</b>). &nbsp;/&nbsp; 전사 업무·결재 <b>131건 중 83건 완료 (63%)</b> · 진행 45 · 보류 3.</div>
   </div>
 
-  <!-- ③ 한눈 요약 · 네 갈래 -->
+  <!-- ④ 한눈 요약 · 네 갈래 -->
   <div class="tblwrap">
   <table class="sumtbl">
     <colgroup><col style="width:392px"><col style="width:368px"><col style="width:392px"><col></colgroup>
@@ -185,7 +233,7 @@
   </table>
   </div>
 
-  <!-- ④ 3라인 + 브랜딩 3박자 -->
+  <!-- ⑤ 3라인 + 브랜딩 3박자 -->
   <div class="tblwrap">
   <table>
     <colgroup><col style="width:104px"><col style="width:364px"><col><col style="width:292px"></colgroup>
@@ -201,7 +249,7 @@
       <tr>
         <td class="k strong">1라인 운영부<br><span class="est">이경연 실장</span></td>
         <td>① 멤버십 매출 ② 서비스 관리 ③ 운영부 직원 관리</td>
-        <td>회원권 <b>2억 4,429만원</b> = 목표 2억 7,500만 대비 <b>88.8%</b> · 접수처 <b class="warn">63.0%</b>(목표 70%) · 업무 SSOT <b class="warn">74.1%</b>(목표 80%)</td>
+        <td>회원권 <b>2억 4,429만원</b> = 목표 2억 7,500만 대비 <b>88.8%</b> · 종합접수처 <b class="warn">63.0%</b>(목표 70%) · 업무 시트 <b class="warn">74.1%</b>(목표 80%)</td>
         <td>컴플레인 미완 10건 계획 회신 · 점검 집계 시작</td>
       </tr>
       <tr>
@@ -228,20 +276,11 @@
   </table>
   </div>
 
-  <!-- ⑤ GM 소견 -->
-  <div class="cols">
-    <div class="box gm">
-      <h3>GM 소견 — 중간관리자</h3>
-      <p>웰페리온의 도전은 쉽지 않다. 이 도전을 극복하려면 그에 맞는 중간관리자 세팅이 반드시 필요하다 — 핵심은 <b>소통</b>이다.</p>
-      <div class="who">2026-09-01 · 김남욱 GM</div>
-    </div>
-  </div>
-
   <!-- ⑥ 각주 -->
   <div class="foot">
     <div><b>기준일</b> — 로드맵·인재분 <b>2026-08-27</b> · 3라인 8월 숫자 <b>08-26~28 조회</b>(마감 전) · <b>8/31 마감 수치로 갱신</b>(같은 문서번호). 6월은 3분기 몫으로 한 번만 셌다.</div>
-    <div><b>오차</b> — 1단계 60% = <b>ERP 연동값</b> · 2단계 40% = <b>경과 기준(추정)</b> · ★강습 매출 2억 8,083만원 <b>원천 미확인</b>.</div>
-    <div><b>출처</b> — 월간운영계획 직독(08-27) · 업무 SSOT todo_list · 점검 보드. 6~8월 4개 부서 개선 현황 상세 = <b>4번 문서 (WP-GM-260901-04)</b>.</div>
+    <div><b>오차</b> — 1단계 60% = <b>ERP 연동값</b> · 2단계 40% = <b>경과 기준(추정)</b> · ★강습 매출 2억 8,083만원 <b>원천 미확인</b>. <b>GM 소견(09-01)</b> 「도전에 맞는 중간관리자 세팅, 핵심은 소통」 = 방향 1에 반영.</div>
+    <div><b>출처</b> — 월간운영계획 직독(08-27) · 업무 시트 · 점검 화면. 6~8월 4개 부서 개선 현황 상세 = <b>4번 문서 (WP-GM-260901-04)</b>.</div>
   </div>
 
 </div>
