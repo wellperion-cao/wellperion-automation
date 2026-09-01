@@ -143,6 +143,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 /* ── 수령 서명 모달 + 직원 PIN 게이트 (2026-08-31 복구 · a9fcfe705 원본, 종합접수처_현황.html과 톤 통일) ── */
 .wlp-lfg .modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
 .wlp-lfg .modal-back.show{display:flex}
+/* ★2026-09-01 GM 신고 "수령 완료 누르면 뒷 화면에 직원 비밀번호 입력칸이 떠서 진행이 안 됨".
+   원인 = PIN 창과 수령 창의 z-index 가 9998 로 같은데, PIN 창이 HTML 에서 먼저 나와 뒤에 깔린다.
+   수령 완료를 누르면 PIN 을 묻는 흐름(2026-08-31 GM 지시로 직원 코드를 맨 끝으로 옮김)인데,
+   수령 창이 그대로 열려 있어 PIN 창을 덮어 버렸다 — 눌러도 아무 반응이 없는 것으로 보인다.
+   PIN 창만 한 단 위로 올린다(수령 창은 그대로 둔다 — PIN 을 취소하면 입력하던 내용으로 돌아가야 한다). */
+.wlp-lfg #pinBack{z-index:9999}
 .wlp-lfg .modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
 .wlp-lfg .modal h2{font-size:18px;font-weight:800;margin-bottom:4px}
 .wlp-lfg .modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px}
@@ -194,6 +200,14 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
    화면에 없어서, 고쳤는데도 GM 눈에는 아무것도 안 바뀐 것으로 보인다.
    조건을 화면 크기가 아니라 실제로 넘칠 때로 바꾼다 — 아래 JS 가 'on' 클래스로 켠다. */
 .wlp-lfg .page-nav.on{display:flex}
+/* ★2026-09-01 GM 신고 "키오스크에서 터치패드로 스크롤이 안 됨".
+   원인 = 워드프레스 테마가 본문을 안쪽 상자(#ajax-content-wrap)에 담는데, 그 상자가 넘쳐도
+   넘침 처리가 안 걸려 있어 손으로는 스크롤할 곳이 없었다. 어제 넣은 페이지 버튼은 그 상자를
+   찾아 스크롤해서 눌렀을 때만 됐고, 손가락·터치패드로는 안 됐다 — 같은 뿌리다.
+   넘칠 때만 스크롤되게 열어 준다(안 넘치면 스크롤바가 안 생기므로 화면은 종전 그대로). */
+body.wlp-lfg-page,
+body.wlp-lfg-page #ajax-content-wrap,
+body.wlp-lfg-page .container-wrap{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
