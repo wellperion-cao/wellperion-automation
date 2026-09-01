@@ -163,6 +163,29 @@
     font-size:11.4px; line-height:1.45; color:#48525B; word-break:keep-all; }
   .cols .box li{ font-size:12.4px; line-height:1.5; margin-bottom:4px; }
   .cols .box h3{ font-size:13.4px; }
+
+  /* 「네 부서 한눈에」 스트립 — 부서당 한 줄 · 굵은 숫자 (2026-09-01 재구성) */
+  .glance thead th{ height:34px; font-size:14.5px; }
+  .glance thead th.k{ font-size:12.5px; line-height:1.2; }
+  .glance tbody td{ height:52px; font-size:15.5px; }
+  .glance b.good, .glance b.bad{ font-size:18px; }
+  /* 방향 블록 — 항목 3개 */
+  .ask .lb strong{ font-size:21px; }
+  .ask .it{ padding:14px 18px; }
+  .ask .q{ font-size:16.5px; }
+  .ask .d{ font-size:12.8px; margin-top:5px; }
+  /* 글을 줄인 만큼 키운다 — 본문 표 2장 */
+  thead th{ height:36px; font-size:14.5px; }
+  tbody td{ height:46px; font-size:14.4px; }
+  td.k{ font-size:14px; }
+  .est{ font-size:11.6px; }
+  /* 측정 불가 블록 — 내용만큼만 · 남는 여백은 각주 위로 */
+  .cols{ flex:0 0 auto; }
+  .cols .box{ padding:12px 16px 11px; }
+  .cols .box h3{ font-size:15px; margin-bottom:7px; }
+  .cols .box li{ font-size:13.6px; line-height:1.55; margin-bottom:5px; }
+  .box .note2{ font-size:12.8px; padding-top:7px; margin-top:8px; }
+  .foot{ margin-top:auto; font-size:10.6px; }
 </style>
 </head>
 <body>
@@ -186,143 +209,154 @@
     <div class="meta">
       작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님 · 경영진</b><br>
       보고일 <b>2026. 09. 01.</b> · 기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 문서번호 <b>WP-GM-260901-04</b><br>
-      대상 <b>운영부 · 시설부 · 지원부 · 주차관리부</b> · 수치 기준 <b>8월분 2026-08-26~28 조회 · 점검 원장 2026-08-25까지</b>
+      대상 <b>운영부 · 시설부 · 지원부 · 주차관리부</b> · 수치 기준 <b>8월 확정치 — 2026-09-01 원장 직접 카운트</b>
     </div>
     
   </div>
 
-  <!-- ② 결정 요청 -->
-  <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
-    <div class="items">
-      <div class="it">
-        <div class="n">01</div>
-        <div class="q">운영부 · 주차관리부 점검을 셀 수 있게 고치는 것을 승인해 주십시오.</div>
-        <div class="d">지금 0건은 실적 0이 아니라 <b>셀 방법이 없다</b>는 뜻입니다.</div>
-      </div>
-      <div class="it">
-        <div class="n">02</div>
-        <div class="q">지출 · 비품/소모품 · 인사 A~Z · 능동성, 셀 원장을 정하는 것을 승인해 주십시오.</div>
-        <div class="d">이 4곳은 <b>적어 두는 곳 자체가 없어</b> 아직 못 셉니다.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ③-0 한눈 요약 · 네 갈래 -->
-  <div class="tblwrap">
-  <table class="sumtbl">
-    <colgroup><col style="width:392px"><col style="width:368px"><col style="width:392px"><col></colgroup>
-    <tbody>
-      <tr class="grp">
-        <td colspan="2" class="gg">좋 아 진 것</td>
-        <td colspan="2" class="gb">안 좋 아 진 것</td>
-      </tr>
-      <tr>
-        <td>결재가 늘었다</td><td>6월 5건 → 8월 <b class="good">21건</b></td>
-        <td>컴플레인 고치는 데 걸린 날</td><td>중앙 <b class="bad">14.5일</b> <span class="est">· 기준 48시간</span></td>
-      </tr>
-      <tr>
-        <td>접수처를 열었다 <span class="est">(7월)</span></td><td>127건 중 <b class="good">91건 완료 72%</b><span class="bar2 g"><i style="width:72%"></i></span></td>
-        <td>분실물</td><td>6건 중 <b class="bad">5건 미완</b> <span class="est">· 최장 17일</span></td>
-      </tr>
-      <tr>
-        <td>지원부 — 점검 낸 날</td><td>7월 12% → 8월 <b class="good">53%</b><span class="bar2 g"><i style="width:53%"></i></span></td>
-        <td>지원부 점검 이슈</td><td><b class="bad">83건</b> <span class="est">· 처리할 사람 미정</span></td>
-      </tr>
-      <tr>
-        <td>시설부 — 점검 항목 채운 만큼</td><td>7월 60% → 8월 <b class="good">74%</b><span class="bar2 g"><i style="width:74%"></i></span></td>
-        <td>시설부 — 안 채운 항목</td><td><b class="bad">195항목</b> <span class="est">· 574/779 채움</span></td>
-      </tr>
-      <tr>
-        <td>고장 고치는 데 걸린 날</td><td>중앙 <b class="good">3일</b> <span class="est">· 기준 72시간 안</span></td>
-        <td>주차관리부 점검</td><td>첫 집계 <b class="bad">아직 시작 못 함</b> <span class="est">· 낸 날 1일</span></td>
-      </tr>
-      <tr class="grp">
-        <td colspan="2" class="gw">G M 이 전 결 로 정 한 것</td>
-        <td colspan="2" class="gn">G M 권 고 (웰 리)</td>
-      </tr>
-      <tr>
-        <td>점검 안 내면 부서장이 확인</td><td>4개 조직 <span class="est">· 지원부 12% → 53%로 증명</span></td>
-        <td>9월 = 숫자를 셀 수 있게 만드는 달</td><td>못 세는 곳 <b>2개 부서 · 4곳</b></td>
-      </tr>
-      <tr>
-        <td>주차관리부 매일 제출</td><td><b>2026-09-18</b>부터</td>
-        <td>좋다 / 나쁘다 단정 없음</td><td>문서는 <b>숫자까지</b> · 판단은 결재선</td>
-      </tr>
-      <tr>
-        <td>운영부 기한 관리</td><td>칸 비면 화면에서 <b>등록 차단</b></td>
-        <td>10월 보고</td><td>셀 원장 갖추면 <b>전 칸이 숫자로</b> 찬다</td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-
-  <!-- ③-1 덩어리 1 · 4개 부서 -->
-  <div class="tblwrap">
-  <table>
-    <colgroup><col style="width:104px"><col style="width:512px"><col style="width:326px"><col style="width:298px"><col></colgroup>
+  <!-- ② 네 부서 한눈에 -->
+  <div class="tblwrap" style="margin-top:12px">
+  <table class="glance">
+    <colgroup><col style="width:118px"><col style="width:730px"><col></colgroup>
     <thead>
       <tr>
-        <th class="k" style="width:104px">부서</th>
-        <th>8월 숫자<span class="sub">센 것만 — 못 센 것은 아래 별도 블록</span></th>
-        <th>좋아진 것</th>
-        <th>남은 것</th>
-        <th>9월 할 일</th>
+        <th class="k">네 부서<br>한눈에</th>
+        <th style="background:var(--good);border-color:var(--good)">① 가장 크게 좋아진 것</th>
+        <th style="background:var(--bad);border-color:var(--bad)">② 가장 크게 걸린 것</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td class="k strong">시설부</td>
-        <td>낸 날 <b>28/31일</b> · 항목 채움 <b>574/779 (74%)</b> · 고장 <b>16/18 완료</b> · 중앙 <b class="good">3일</b></td>
-        <td>항목 채움 60% → <b class="good">74%</b> · 고장 3일 = 기준 72시간 안</td>
-        <td>안 채운 <b>195항목</b> · 고장 <b>2건</b></td>
-        <td>채움률 올리기 · 고장 2건 끝내기</td>
+        <td>점검 항목 채움 7월 60% → 8월 <b class="good">74%</b> <span class="est">· 574/779 · 낸 날 28/31일</span><span class="bar2 g"><i style="width:74%"></i></span></td>
+        <td>안 채운 항목 <b class="bad">205개</b> <span class="est">· 779개 중 574개 채움</span></td>
       </tr>
       <tr>
         <td class="k strong">지원부</td>
-        <td>낸 날 <b>29/31일</b> · 세션 <b>82회</b> · 항목 채움 <b>1,435/3,029 (47%)</b> · 이슈 <b class="warn">83건</b></td>
-        <td>낸 날 12% → <b class="good">53%</b> · 4개 중 유일한 개근</td>
-        <td>이슈 <b>83건</b> 갈 곳 없음 · 남측 빠진 날 <b>15일 19회차</b></td>
-        <td>이슈 처리 라인 정하기 · 남측 결측 없애기</td>
+        <td>점검 낸 날 7월 12% → 8월 <b class="good">53%</b> <span class="est">· 4개 부서 중 유일한 개근(29/31일)</span><span class="bar2 g"><i style="width:53%"></i></span></td>
+        <td>점검 이슈 <b class="bad">83건</b> — 처리 라인 미정</td>
       </tr>
       <tr>
         <td class="k strong">운영부</td>
-        <td>컴플레인 <b>21건</b> → 완료 11 · 미완 10 · 중앙 <b class="bad">9일</b> / 분실물 <b>8건</b> → 완료 1 · 미완 7 · 최장 <b>21일</b></td>
-        <td>처리 날수를 처음으로 셀 수 있게 됨 <span class="est">(과거분 복원)</span></td>
-        <td>9일 vs 기준 <b>48시간</b> · 분실물 <b>7건</b> 적체</td>
-        <td>컴플레인 미완 <b>10건</b> 끝내기</td>
+        <td>컴플레인 처리 날수를 처음으로 셈 — 21건 중 <b class="good">완료 11건</b> <span class="est">· 중앙 9일</span></td>
+        <td>점검 <b class="bad">측정 불가</b> — 집계 경로 없음 <span class="est">· 0%가 아니다</span></td>
       </tr>
       <tr>
         <td class="k strong">주차관리부</td>
-        <td>점검 낸 날 <b>1일</b> · 바닥보수 <b>10/11~13</b></td>
-        <td>제출 화면 <b>8/18 개통</b> · 집계 배선 <b>8/25 수리</b> · 조희제 관리인 온보딩 완료</td>
-        <td>첫 집계 아직 시작 못 함</td>
-        <td>9월 첫 데이터 확보 · 바닥보수 준비</td>
+        <td>제출 화면 <b class="good">8/18 개통</b> · 집계 배선 8/25 수리 · 관리인 온보딩 완료</td>
+        <td>점검 <b class="bad">측정 불가</b> — 집계 통로 없음 <span class="est">· 제출 시작 9/18 확정</span></td>
       </tr>
     </tbody>
   </table>
   </div>
 
-  <!-- ④ 하단 — 못 센 것 -->
-  <div class="cols">
-    <div class="box fix">
-      <h3>9월에 셀 수 있게 만들 것 <span class="est">— 지금은 잴 원장이 없어 「개선 결과」에서 뺐다</span></h3>
-      <ul class="two">
-        <li>운영부 점검 — <b>점검 화면이 없다</b> <span class="est">(결정 01)</span></li>
-        <li>주차관리부 점검 — <b>원장에 항목표가 없다</b> <span class="est">· 화면 8/18 개통 · 배선 8/25 수리 (결정 01)</span></li>
-        <li>지출 관리 — <b>적어 두는 곳 없음</b> <span class="est">(결정 02)</span></li>
-        <li>비품 · 소모품 — <b>적어 두는 곳 없음</b> <span class="est">(결정 02)</span></li>
-        <li>인사 A~Z — <b>적어 두는 곳 없음</b> <span class="est">(결정 02)</span></li>
-        <li>능동성 — 스스로 낸 건을 구분하는 칸 없음 · <b>9월부터 셈</b> <span class="est">(결정 02)</span></li>
-      </ul>
-      <div class="note2">여기의 <b>0</b>은 실적 0이 아니다 — <b>셀 방법이 없다</b>는 뜻이다. 고치면 10월 보고부터 4부서 전 칸이 숫자로 찬다.</div>
+  <!-- ③ 방향 -->
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="q">운영부·주차관리부 점검은 집계 경로부터 만든다.</div>
+        <div class="d">9월 안에 운영부 점검 화면 개설 · 주차 항목표 등록 — <b>웰리</b>. 주차 제출 시작 <b>9/18 확정</b>(사전 요청 9/11 · 그 전 0건은 정상).</div>
+      </div>
+      <div class="it">
+        <div class="q">지출 · 비품/소모품 · 인사 A~Z · 능동성은 셀 원장부터 만든다.</div>
+        <div class="d">9월 안에 원장 4곳 개설 — <b>웰리</b>. 갖추면 <b>10월 보고부터 전 칸이 숫자</b>로 찬다.</div>
+      </div>
+      <div class="it">
+        <div class="q">밀린 건은 9월 안에 끝낸다.</div>
+        <div class="d">컴플레인 미완 <b>10건</b> · 분실물 미완 <b>7건</b> — <b>운영부</b>. 점검 이슈 <b>83건</b>은 처리 라인을 정해 소화 시작 — <b>지원부</b>.</div>
+      </div>
     </div>
   </div>
 
-  <!-- ⑤ 각주 -->
+  <!-- ④ 부서별 8월 숫자 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:118px"><col style="width:640px"><col style="width:330px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">부서</th>
+        <th>8월 숫자<span class="sub">센 것만 — 못 센 것은 아래 별도 블록</span></th>
+        <th>좋아진 것</th>
+        <th>남은 것 → 9월</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설부</td>
+        <td>낸 날 <b>28/31일</b> · 항목 채움 <b>574/779 (74%)</b> · 고장 <b>18건 전부 완료</b> · 중앙 <b class="good">1일</b><span class="est"> · 최장 12일</span></td>
+        <td>항목 채움 60% → <b class="good">74%</b> · 고장 전건 종결</td>
+        <td>안 채운 <b>205항목</b> → 채움률 올리기</td>
+      </tr>
+      <tr>
+        <td class="k strong">지원부</td>
+        <td>낸 날 <b>29/31일</b> · 항목 채움 <b>1,435/3,029 (47%)</b> · 이슈 <b class="warn">83건</b></td>
+        <td>낸 날 12% → <b class="good">53%</b> · 유일한 개근</td>
+        <td>이슈 <b>83건</b> → 처리 라인 정해 소화</td>
+      </tr>
+      <tr>
+        <td class="k strong">운영부</td>
+        <td>컴플레인 <b>21건</b> — 완료 11 · 중앙 <b class="bad">9일</b><span class="est"> · 최장 13일</span> / 분실물 <b>8건</b> — 완료 1</td>
+        <td>처리 날수를 처음으로 셀 수 있게 됨</td>
+        <td>컴플레인 미완 <b>10건</b><span class="est">(최장 21일)</span> · 분실물 <b>7건</b> → 종결</td>
+      </tr>
+      <tr>
+        <td class="k strong">주차관리부</td>
+        <td>점검 <b>측정 불가</b> — 집계 통로 없음 <span class="est">· 바닥보수 10/11~13</span></td>
+        <td>화면 <b>8/18 개통</b> · 배선 8/25 수리 · 조희제 관리인 온보딩 완료</td>
+        <td><b>9/18</b> 제출 시작 → 첫 데이터 확보</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑤ 전사 창구 · 8월 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:118px"><col style="width:300px"><col style="width:310px"><col style="width:250px"><col style="width:270px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">전사 창구</th>
+        <th>종합접수처 계</th>
+        <th>컴플레인</th>
+        <th>시설물 고장</th>
+        <th>분실물 · 청결</th>
+        <th>업무 SSOT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">8월</td>
+        <td>접수 <b>58건</b> · 완료 <b>38 (65.5%)</b> · 미완 20</td>
+        <td><b>21건</b> — 완료 11 · 중앙 <b class="bad">9일</b> · 미완 10</td>
+        <td><b>18건 전부 완료</b> · 중앙 <b class="good">1일</b></td>
+        <td>분실물 8 — 완료 1 / 청결 7 — 완료 5</td>
+        <td>157행 — 완료 <b>107</b> · 진행 47 · 보류 3</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑥ 측정 불가 -->
+  <div class="cols">
+    <div class="box fix">
+      <h3>측정 불가 — 집계 경로 없음 <span class="est">· 숨기지 않고 그대로 둔다 (0%가 아니다)</span></h3>
+      <ul class="two">
+        <li>운영부 점검 — <b>점검 화면 자체가 없다</b> <span class="est">(방향 1)</span></li>
+        <li>주차관리부 점검 — <b>월간 집계 통로가 없다</b> · 제출 시작 <b>9/18 확정</b> <span class="est">(방향 1)</span></li>
+        <li>지출 관리 — <b>적어 두는 곳 없음</b> <span class="est">(방향 2)</span></li>
+        <li>비품 · 소모품 — <b>적어 두는 곳 없음</b> <span class="est">(방향 2)</span></li>
+        <li>인사 A~Z — <b>적어 두는 곳 없음</b> <span class="est">(방향 2)</span></li>
+        <li>능동성 — 스스로 낸 건을 구분하는 칸 없음 · <b>9월부터 셈</b> <span class="est">(방향 2)</span></li>
+      </ul>
+      <div class="note2">여기의 빈칸은 실적 0이 아니다 — <b>셀 방법이 없다</b>는 뜻이다. 방향 1·2대로 만들면 <b>10월 보고부터 4부서 전 칸이 숫자</b>로 찬다.</div>
+    </div>
+  </div>
+
+  <!-- ⑦ 각주 -->
   <div class="foot">
-    <div><b>기준일</b> — 8월 숫자 <b>08-26~28 조회</b>(마감 전) · 점검 원장 <b>8/1~25 전수</b>. <b>8/31 마감 수치로 갱신</b>(같은 문서번호). 6월은 3분기 몫으로 한 번만 셌다.</div>
-    <div><b>오차</b> — 접수처 날수 중 <b>구간 추정 31건</b> · 지원부 반장별 이슈(30+15)와 57건 차이 = 반장 미기재분.</div>
+    <div><b>기준일</b> — 8월 수치 = <b>2026-09-01 원장 직접 카운트</b>(8월 마감분 전수). 6월은 3분기 몫으로 한 번만 셌다. 중앙 = 접수~완료 일수의 중앙값.</div>
+    <div><b>단서</b> — 지원부 '낸 날'은 일수 <b>29/31</b>과 비율 <b>7월 12% → 8월 53%</b>를 원장 값 그대로 병기(집계 기준이 다르다). 접수 배분 = 시설부 22 · 운영부 21 · 지원부(여) 4 · 지원부 3 · 수영팀 3 · 주차 2 · P.T 2 · 지원부(남) 1.</div>
     <div><b>출처</b> — 점검 보드 · 접수처 reg_list · 업무 SSOT todo_list. <b>3분기 전략 로드맵 진척은 3번 문서(WP-GM-260901-03)로 분리</b>.</div>
   </div>
 
