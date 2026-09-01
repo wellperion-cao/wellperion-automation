@@ -431,9 +431,16 @@ def _parse_tag(output: str, tag: str) -> "str | None":
     return None
 
 
-def generate_image() -> "tuple[bool, str]":
-    """generate_sales_report_image.py 실행. 반환: (성공여부, IMAGE경로 또는 실패사유)."""
-    cmd = [sys.executable, str(GEN_SCRIPT)]
+def generate_image(target_date: datetime) -> "tuple[bool, str]":
+    """generate_sales_report_image.py 실행. 반환: (성공여부, IMAGE경로 또는 실패사유).
+
+    ★보고 대상일을 넘긴다(2026-09-01 시토 · GM 지적). 안 넘기면 생성기가 제 나름대로
+    '오늘'을 기준일로 잡아 그 달 시트를 찾는다 — 같은 달 안에서는 어제·오늘이 같은 달이라
+    티가 안 나지만 **매월 1일에는 아직 없는 그 달 시트를 찾다 실패**한다(2026-09-01 09:30
+    실측: monthly_sales_file_not_found: 2026-9 로 매출보고가 안 나갔다). 대상일은 오케스트
+    레이터가 이미 알고 있으므로 그대로 넘겨 기준을 한 곳으로 모은다.
+    """
+    cmd = [sys.executable, str(GEN_SCRIPT), "--date", target_date.strftime("%Y%m%d")]
     log(f"이미지 생성 실행: {' '.join(cmd)}")
     rc, output = _run(cmd)
     print(output, end="" if output.endswith("\n") else "\n")
@@ -606,7 +613,7 @@ def main() -> int:
             print(f"FAILED: 카톡 휴관 안내문 전송 실패 — {detail}")
             return 1
 
-    ok, image_or_reason = generate_image()
+    ok, image_or_reason = generate_image(target)
     if not ok:
         msg = f"⚠️ 카톡 매출보고 자동 파이프라인 실패 — 이미지 생성 단계: {image_or_reason}"
         log(msg)
