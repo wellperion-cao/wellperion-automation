@@ -27,8 +27,8 @@
    방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
 html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 /* ★2026-09-01 GM 신고 "종합접수처는 터치로 밀면 스크롤되는데 습득물 현황은 안 된다" —
-   여기 있던 `.wlp-lfg{overscroll-behavior-y:contain}` 를 지웠다. 그 한 줄이 범인이었다.
-   contain 은 이 상자 안에서 시작한 스크롤이 바깥(문서)으로 넘어가지 않게 막는다. 그런데
+   여기 있던 .wlp-lfg 의 넘침연쇄 차단 규칙(overscroll 계열, 값 contain)을 지웠다. 그 한 줄이
+   범인이었다. 그 값은 이 상자 안에서 시작한 스크롤이 바깥(문서)으로 넘어가지 않게 막는다. 그런데
    .wlp-lfg 자체는 스크롤되는 상자가 아니라서, 손가락으로 밀면 문서로 넘어가야 하는데
    그 길이 막혀 아무 일도 안 일어났다. 종합접수처·조회 화면엔 이 줄이 없어서 잘 됐다. */
 .wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
