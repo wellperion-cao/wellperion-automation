@@ -4068,7 +4068,47 @@ function handleMonthlyReport(params) {
 
   var result = _aggregateMonthly(snapRows, issueRows, month, scheduleTotals);
   result.dept = dept;
+
+  // [배875, 2026-09-01 시토] ops·parking 월간 제출률 분기 — 제출 회차수/예정 회차수.
+  // 두 부서는 support 스케줄 기대치(_scheduleExpectedTotal·지원_매뉴얼 기반)가 없어 회차 상수로 분모를 만든다.
+  // 원자료(submitted_rounds/expected_rounds)를 함께 실어 화면이 '0/60 진짜 미제출'과 'null 못 읽음'을 가른다.
+  if (dept === 'ops' || dept === 'parking') {
+    var er = _expectedRoundsForMonth_(dept, month);
+    result.expected_rounds = er;
+    result.submitted_rounds = (result.monthTotals && result.monthTotals.sessionCount) || 0;
+    result.submit_pct = er > 0 ? Math.round(result.submitted_rounds / er * 100) : null;
+  }
   return jsonRes(result);
+}
+
+// [배875, 2026-09-01 시토] 휴관일 = 2·4주 일요일 — 제출률 분모에서 제외.
+// 일요일이면 그 달 몇 번째 일요일인지 = Math.ceil(일/7) (1~7일=첫째, 8~14일=둘째 …).
+function _isClosedDay_(y, mo, d) {
+  var dt = new Date(y, mo - 1, d);
+  if (dt.getDay() !== 0) return false;
+  var nth = Math.ceil(d / 7);
+  return nth === 2 || nth === 4;
+}
+
+// [배875, 2026-09-01 시토] ops·parking 월간 예정 회차수.
+// ops = 1일 1회 · parking = 1일 2조(평일·주말 모두 2조 — 화면 parkRoundsFor의
+// PARK_ROUNDS_WEEKDAY/WEEKEND 각 2개 정의와 반드시 같아야 한다. 조 수가 바뀌면 여기도 같이).
+// 진행 중인 달은 오늘까지만 분모(미래일 제외) · 휴관일(2·4주 일요일) 제외.
+function _expectedRoundsForMonth_(dept, month) {
+  var p = month.split('-');
+  var y = Number(p[0]), mo = Number(p[1]);
+  if (!y || !mo) return 0;
+  var daysInMonth = new Date(y, mo, 0).getDate();
+  var todayStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+  var perDay = (dept === 'ops') ? 1 : 2;
+  var total = 0;
+  for (var d = 1; d <= daysInMonth; d++) {
+    var ymd = y + '-' + _pad2_(mo) + '-' + _pad2_(d);
+    if (ymd > todayStr) break;              // 진행 중인 달: 미래일은 분모에 안 넣는다
+    if (_isClosedDay_(y, mo, d)) continue;  // 휴관일(2·4주 일요일) 분모 제외
+    total += perDay;
+  }
+  return total;
 }
 
 // ════════════════════════════════════════════
