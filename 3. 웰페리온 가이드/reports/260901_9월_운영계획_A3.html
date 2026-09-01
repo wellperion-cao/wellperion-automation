@@ -94,16 +94,19 @@
       <div>
         <div class="sec-h">Ⅱ. 9월에 꼭 할 세 가지 <span class="hint">2026-08-27 확정 · 전부 9/30 기한</span></div>
         <table>
-          <colgroup><col style="width:22px"><col><col style="width:150px"></colgroup>
+          <!-- 번호 칸이 깨져 보였다(GM 지적 2026-09-01). 원인 두 가지 — ①폭 22px 에 글자와 여백이 안 맞았고
+               ②본문 칸만 네이비로 칠해 놓아 그 위 머리 칸(빈 칸·회색)과 색이 어긋나 한 칸이 잘린 것처럼 보였다.
+               칠을 걷고 폭을 넓혀 숫자만 굵게 둔다. -->
+          <colgroup><col style="width:30px"><col><col style="width:150px"></colgroup>
           <thead><tr><th class="k ctr"></th><th>과제</th><th>9월에 정해질 것</th></tr></thead>
           <tbody>
-            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">①</td>
+            <tr><td class="k ctr strong" style="color:var(--navy);font-size:13px;">①</td>
                 <td><b>회원권 요금정책 초안·준비</b> <span class="est">인상 폭 · 갱신가 · 고지 문구 · 근거 = Ⅴ 서비스 정착</span></td>
                 <td class="ctr bad">인상 폭 <b>재가</b></td></tr>
-            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">②</td>
+            <tr><td class="k ctr strong" style="color:var(--navy);font-size:13px;">②</td>
                 <td><b>부서별 최종 정리 및 안정화</b> <span class="est">4개 부서 + 3라인 정리 · 담당 확정</span></td>
                 <td class="ctr">부서 평가 기준</td></tr>
-            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">③</td>
+            <tr><td class="k ctr strong" style="color:var(--navy);font-size:13px;">③</td>
                 <td><b>웰페리온 ERP + 브로제이 개선·안정화</b> <span class="est">ERP·CRM 이 같은 숫자를 내게 · 브로제이 이관 마무리</span></td>
                 <td class="ctr">숫자를 믿을 기준</td></tr>
           </tbody>
@@ -132,7 +135,7 @@
     <div class="right" style="width:48%;">
 
       <div>
-        <div class="sec-h">Ⅳ. 9월 달력에 잡힌 일 <span class="hint">전사 일정 25건 중 상위 건 · 회장님 일정 포함</span></div>
+        <div class="sec-h">Ⅳ. 9월 전사 일정표 <span class="hint">전사 일정 25건 중 상위 건 · 회장님 일정 포함</span></div>
         <table>
           <colgroup><col style="width:66px"><col><col style="width:104px"></colgroup>
           <thead><tr><th class="k">일자</th><th>일정</th><th>담당</th></tr></thead>
@@ -150,16 +153,19 @@
                  하루 닫는 게 아니라 연휴 사흘을 내리 여는 것이라 근무 편성이 최우선이다.
                  9월 영업일 29일로 8월과 같다. 그래서 영업일 감소가 아니라 '상담 창이 9/23 까지'가 위험이다. -->
             <!-- 근무 편성·상담 창 대책은 바로 아래 축별 대책 블록으로 옮겼다(2026-09-01) — 이 줄은 날짜 사실만. -->
-            <tr><td class="k ctr">9/24~26</td><td class="strong">추석 연휴 — 사흘 모두 영업(08~20) <span class="est" style="font-weight:400;">· 9월 휴관은 9/13 하루 · 영업일 29일(8월과 같음)</span></td><td class="ctr est">전 부서 · GM</td></tr>
+            <tr style="background:#FDF4F3;"><td class="k ctr" style="color:var(--bad);font-weight:700;">9/24~26</td><td class="strong"><span style="color:var(--bad);font-weight:700;">추석 연휴 — 사흘 모두 영업(08~20)</span> <span class="est" style="font-weight:400;">· 9월 휴관은 9/13 하루 · 영업일 29일(8월과 같음)</span></td><td class="ctr est">전 부서 · GM</td></tr>
             <tr><td class="k ctr">9/30</td><td>3대 과제·이월 7건 기한 <span class="est">· 손소독제 예산 확정 · 방제 효과 판정</span></td><td class="ctr est">전 부서</td></tr>
           </tbody>
         </table>
 
         <!-- 추석 대책 축별 블록(GM 지시 2026-09-01 "추석이라 이 부분에 대한 대책도 있어야해").
              전부 2026-09-01 연휴 실측에서 나눠 담았고 새 사실 없음. 자리 = Ⅵ 6칸을 두 줄로 접어 마련(순증 0). -->
-        <div style="margin-top:5px;border:1px solid var(--line);border-left:4px solid var(--navy);background:#FAFBFC;padding:4px 11px 3px;">
-          <div style="font-size:11.6px;font-weight:700;color:var(--navy);">추석 대책 — 연휴가 세 축에 다 닿습니다. 막는 날짜는 전부 연휴 앞에 있습니다.</div>
-          <div style="font-size:10.5px;line-height:1.36;color:var(--ink);margin-top:2px;">
+        <!-- GM 지시 2026-09-01 "추석 대책 관련해서 중요한거야 더 돋보이게" — 회원 풀 블록과 같은 회색·네이비라
+             한 장 안에서 묻혔다. 경고색 테두리·옅은 경고 배경으로 갈라 세운다(새 스타일 체계는 만들지 않고
+             기존 --bad 색만 쓴다). -->
+        <div style="margin-top:6px;border:1.5px solid var(--bad);border-left:5px solid var(--bad);background:#FDF4F3;padding:5px 11px 4px;">
+          <div style="font-size:12.4px;font-weight:700;color:var(--bad);">추석 대책 — 연휴가 세 축에 다 닿습니다. 막는 날짜는 전부 연휴 앞에 있습니다.</div>
+          <div style="font-size:10.5px;line-height:1.38;color:var(--ink);margin-top:3px;">
             <span style="font-weight:700;">매출</span> — 만기 상담 창이 9/23까지라 1차 접촉 기한(9/12)을 지키고, 연휴 주간 P.T·강습 예약을 9/15까지 미리 봅니다.<br>
             <span style="font-weight:700;">시스템</span> — 연휴 사흘을 내리 열므로 근무 편성이 최우선입니다 — 9/12까지 확정. 접수 미완료 20건은 9/23까지 소진합니다(무인경비 9/4 대비됨).<br>
             <span style="font-weight:700;">서비스</span> — 연휴 사흘 강습을 진행할지·휴강할지 기준이 아직 없습니다 — 9/15까지 정해 미리 안내하고, 묵은 회원 목소리 4건도 연휴 전 회신합니다.
