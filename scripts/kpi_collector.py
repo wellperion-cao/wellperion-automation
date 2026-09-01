@@ -196,10 +196,12 @@ def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT, retries: int = 2) -> 
     raise last_exc
 
 
-# 점검 제출 시작일 — 이 날 전의 0건은 미제출이 아니라 아직 시작 전이다.
-# 주차관리부: GM 확정 2026-09-01. 조희제 주차관리인 첫 출근(2026-08-18)에서 한 달 뒤로 잡았고,
-# 시작 1주일 전(9/11)에 양상규 고문님께 미리 안내한다(전사일정 park-check-start-20260918).
-_CHECK_START = {"parking": date(2026, 9, 18)}
+# 점검 제출 시작일 — 이 날 전의 0건은 미제출이 아니라 아직 시작 전이다. 둘 다 GM 확정 2026-09-01.
+# 주차관리부: 조희제 주차관리인 첫 출근(2026-08-18)에서 한 달 뒤. 시작 1주일 전(9/11)에
+#   양상규 고문님께 미리 안내한다(전사일정 park-check-start-20260918).
+# 운영부: 웰페리온 ERP + 브로제이 안정화가 끝난 뒤 시작한다 — 지금 수치를 받아도 두 시스템이
+#   같은 숫자를 못 내는 상태라 집계가 흔들린다(전사일정 ops-check-start-20261001).
+_CHECK_START = {"parking": date(2026, 9, 18), "ops": date(2026, 10, 1)}
 
 
 def _coo_check_rate_monthly(month_str: str) -> dict | None:
