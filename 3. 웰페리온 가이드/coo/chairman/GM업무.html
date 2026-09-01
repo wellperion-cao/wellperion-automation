@@ -119,7 +119,9 @@
   /* 담당 칸 (GM 결정 2026-08-29 · 배843 "GM업무 관련 전체 담당칸이 있어야해") — 회장님·대표님·GM 직접
      세 표 공통. 값은 셋 다 원본에 없어 공용 보드(GM_TASK_OWNERS)에 GM이 직접 입력한 값만 쌓인다 —
      안 채우면 계속 빈칸(지어내지 않음). 저장은 체크박스와 같은 즉시저장(_owner_directive.js 참조). */
-  .sum td.mgr{width:96px;}
+  /* 담당 칸 — 96px 였을 때 「이경연 실장 + 윤병현AM」이 「이경연 실장 + 윤」에서 잘렸다(2026-09-01 웰리가
+     20건 담당을 채우고 나서 실측). 두 사람이 붙는 건이 많아 폭을 넓힌다. */
+  .sum td.mgr{width:168px;}
   .sum td.mgr input.mgr-inp{width:100%;font-family:var(--font);font-size:12px;padding:3px 5px;
     border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink);}
   .sum td.mgr input.mgr-inp:disabled{background:var(--steam);color:var(--grey);}
