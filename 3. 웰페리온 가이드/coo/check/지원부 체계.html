@@ -1842,9 +1842,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__k{font-size:11.5px;color:var(--dim);font-weight:650}
   .wp-ldy__btn{padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer;font-family:inherit}
   .wp-ldy__btn--go{background:var(--accent,#4ec4c4);color:#141312;border-color:var(--accent,#4ec4c4)}
-  .wp-ldy__bars{display:flex;gap:8px;align-items:flex-end;height:76px;margin-top:6px}
-  .wp-ldy__bars>div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
-  .wp-ldy__bar-fill{width:100%;background:var(--accent,#4ec4c4);border-radius:3px 3px 0 0;min-height:2px}
   .wp-ldy__hint{font-size:12px;color:var(--dim);margin:6px 0 10px;line-height:1.6}
   .wp-ldy__opengrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
   .wp-ldy__openitem{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:7px 9px}
@@ -1893,16 +1890,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="wp-ldy__h" style="margin-top:4px">📄 월간 출하 기록 <span class="wp-ldy__k" style="font-weight:600">— 종이(출하표)를 옮겨 적는 곳</span></div>
       <div class="wp-ldy__hint">종이에 적은 숫자를 그대로 옮겨 적습니다. <b>입고</b>=받은 개수 · <b>마감재고</b>=마감 때 세어 남은 개수. 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
       <div class="wp-ldy__bar">
-        <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdySheetRender()">
+        <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdySheetRender();wpLdyRenderMonth()">
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
         <span id="wpLdySheetState" class="wp-ldy__k"></span>
         <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 · 한 달치(4품목씩 2장) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
         <button class="wp-ldy__btn" onclick="printA4Laundry('en')" title="같은 표의 영문판 — 제목·머리글·날짜·안내문만 영문">🖨 출하표 인쇄 (A4-En)</button>
       </div>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
-      <div class="wp-ldy__h">📦 월 합계</div>
-      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetSum"></table></div>
-      <div class="wp-ldy__hint">사용량 = 전일마감 + 입고 + 신품 − 마감재고(자동 계산). 보관 수량 = 그 달 마지막으로 적은 마감재고.</div>
+      <!-- 월 합계 표는 「📊 월간 현황」으로 합침 — 월간 뷰 두 곳·월 선택기 두 개는 과잉(GM 감사 2026-09-01) -->
     </div>
     <!-- ① 오늘 점검 — 매일 쓰는 곳(맨 위) -->
     <div id="wpLdyView-today">
@@ -1959,22 +1954,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="wp-ldy__hint">이론재고 = 전일마감 + 입고 + 신품 − 출고(기록 누계). 차이 = (전일마감+입고+신품−마감재고) − 출고. 마감재고를 아직 안 적었으면 차이는 “–”로 둡니다.</div>
     </div>
 
-    <!-- ② 월간 현황 -->
+    <!-- ② 월간 현황 — 월 선택은 맨 위 「월간 출하 기록」의 선택기 하나를 같이 쓴다(월간 뷰 단일화 · GM 감사 2026-09-01).
+         요일별 평균 입고 바는 삭제 — 「화·수 입고 평균」 카드가 같은 질문(요일 배분)에 이미 답한다. -->
     <div id="wpLdyView-month">
-      <div class="wp-ldy__h">📊 월간 현황</div>
-      <div class="wp-ldy__bar">
-        <input type="month" id="wpLdyMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderMonth()">
-      </div>
+      <div class="wp-ldy__h">📊 월간 현황 <span class="wp-ldy__k" style="font-weight:600">— 위에서 고른 달 기준</span></div>
       <div class="wp-ldy__cards" id="wpLdyCards"></div>
+      <div class="wp-ldy__k" style="margin-bottom:4px">📦 월 합계</div>
+      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetSum"></table></div>
+      <div class="wp-ldy__hint">사용량 = 전일마감 + 입고 + 신품 − 마감재고(자동 계산). 보관 수량 = 그 달 마지막으로 적은 마감재고.</div>
       <!-- 일별 상세는 접는다(GM "스크롤이 너무 길다" 2026-09-01) — 카드 4장이 핵심 지표, 표는 파고들 때만 -->
       <details>
-        <summary style="cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent,#4ec4c4)">📋 일별 상세 — 입고/사용 · 일평균 · 요일별 평균</summary>
+        <summary style="cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent,#4ec4c4)">📋 일별 상세 — 입고/사용 · 일평균 · 연간 예상</summary>
         <div style="overflow-x:auto;margin-top:8px"><table class="wp-ldy__tbl" id="wpLdyMonthTbl"></table></div>
         <div class="wp-ldy__hint" id="wpLdyMonthNote"></div>
-        <div style="margin-top:14px">
-          <div class="wp-ldy__k">요일별 평균 입고 — 바스타월 · 세면타월</div>
-          <div class="wp-ldy__bars" id="wpLdyDowBars"></div>
-        </div>
       </details>
     </div>
 
@@ -7432,9 +7424,8 @@ function wpLdyAddNewInput(){
   wpLdyPersist(); wpLdyRenderToday(); wpLdyMarkTodo();
 }
 function wpLdyRenderMonth(){
-  var mEl = document.getElementById('wpLdyMonth'); if (!mEl) return;
-  if (!mEl.value) mEl.value = wpLdyToday().slice(0,7);
-  var ym = mEl.value, st = wpLdyMonthStats(ym);
+  /* 월 = 맨 위 「월간 출하 기록」 선택기 하나를 같이 쓴다(자체 선택기 제거 · GM 감사 2026-09-01) */
+  var ym = wpLdySheetYm(), st = wpLdyMonthStats(ym);
   var tw = wpLdyTueWedAvg(ym, 'bath');
   var lossAll = 0, newAll = 0;
   Object.keys(st.per).forEach(function(k){ lossAll += st.per[k].loss; newAll += st.per[k].newq; });
@@ -7481,18 +7472,7 @@ function wpLdyRenderMonth(){
       ? ('일평균·연간은 이 달 ' + dcnt + '일치 기록으로 낸 값입니다(연간 = 일평균 × 영업일 341일). 기록이 쌓일수록 정확해집니다.')
       : '사용량이 계산된 날이 아직 없어 일평균·연간을 낼 수 없습니다. 기초재고와 마감재고를 채워 주세요.';
   }
-  var bars = '';
-  [['bath','바스타월'], ['face','세면타월']].forEach(function(p){
-    for (var wd = 1; wd <= 6; wd++){
-      var vals = st.days.filter(function(d){ return new Date(d+'T00:00:00').getDay() === wd; })
-        .map(function(d){ return wpLdyIn(p[0], d); }).filter(function(v){ return v !== null; });
-      var avg = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
-      var maxv = (p[0] === 'face') ? 1800 : 400;
-      bars += '<div><div class="wp-ldy__bar-fill" style="height:' + Math.min(100, Math.round(avg/maxv*100)) + '%"></div>'
-        + '<span class="wp-ldy__k">' + ['','월','화','수','목','금','토'][wd] + ' ' + avg + '</span></div>';
-    }
-  });
-  document.getElementById('wpLdyDowBars').innerHTML = bars;
+  /* 요일별 평균 입고 바는 삭제(GM 감사 2026-09-01) — 「화·수 입고 평균」 카드가 같은 질문에 답한다. */
 }
 function wpLdyRenderLedger(){
   wpLdyRenderOpening();
