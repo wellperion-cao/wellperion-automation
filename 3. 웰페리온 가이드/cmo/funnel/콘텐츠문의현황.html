@@ -797,14 +797,20 @@ function loadYtdTrend() {
       }, 30000);
 
       fetchFunnelConversion(f, t).then(function(d) {
-        if (settled) return;
-        settled = true; clearTimeout(tid); done++;
+        // [배835 2026-09-01 시토 실측] GAS funnel_conversion 은 월당 32~45초 걸린다(9개월 직접 측정).
+        //   30초 타임아웃보다 늦게 도착한 응답을 버리면(구 if(settled)return) 데이터가 있는 달이
+        //   영원히 '미측정(응답지연)'으로 남는다 — 4·5·6·7월이 그랬다. 늦게 와도 줄을 되살린다.
+        var late = settled; // 타임아웃이 먼저 울린 뒤 도착
+        if (late && (!d || !d.total)) return; // 이미 미측정 처리됨 — 그대로 둔다
+        settled = true; clearTimeout(tid);
+        if (!late) done++;
         got = got.filter(function(r) { return r.m !== m; }); // 캐시 렌더 교체
         if (!d || !d.total) {
           failed++;
           var tr = document.getElementById('ytd-r' + m);
           if (tr) tr.innerHTML = '<td>' + m + '월</td><td colspan="4" style="color:var(--dim)">미측정(수집 실패)</td>';
         } else {
+          if (late) failed--; // 응답지연으로 셌던 것 정정 — 실측값이 도착했다
           got.push({ m: m, inq: d.total.inquiries || 0, conv: d.total.converted || 0, rate: d.total.rate });
         }
         repaint();
