@@ -301,7 +301,7 @@ document.getElementById('png').onclick = function () {
   if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
   var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
   html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(function (c) { var a = document.createElement('a'); a.download = '260831_3분기_파트너팀_결과보고_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260831_중간관리자평가_나우열M_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
     .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
