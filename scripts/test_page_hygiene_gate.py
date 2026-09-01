@@ -21,7 +21,9 @@ assert live["zero"] is False, f"살아있는 함수를 죽은 코드로 판정�
 assert live["match_count"] > 1, live
 
 # ② 아예 없는 이름 — 선언조차 안 잡히면 '없다'가 아니라 '못 찾았다'로 본다(안전측).
-ghost = verify_zero_consumers("이름이없는함수_zzz_20260813", LEAVE)
+#    ★이름을 실행 시점에 조립한다(2026-09-01 배871) — 리터럴로 적으면 이 테스트 파일
+#    자체가 git grep 에 잡혀(추적 파일) match_count=1 이 되어 ②분기를 영영 못 탄다.
+ghost = verify_zero_consumers("이름이없는함수_zzz_" + "존재하지않음", LEAVE)
 assert ghost["zero"] is False, f"못 찾은 것을 자동삭제 가능으로 판정했다: {ghost}"
 assert ghost["match_count"] == 0, ghost
 

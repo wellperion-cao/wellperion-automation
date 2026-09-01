@@ -296,7 +296,12 @@ def run_audit_claude(prompt: str, timeout: int = 900, model: str = "claude-sonne
 
     parsed = _extract_json(raw)
     if parsed is None:
-        return {"ok": False, "candidates": [], "raw": raw, "error": "JSON 파싱 실패"}
+        # ★배871(2026-09-01 시토): 전에는 "JSON 파싱 실패" 넉 자만 남아 원인을 볼 수 없었다
+        #   (실측 08-30: 2KB 리다이렉트 스텁조차 실패로 기록됐는데 재현하면 정상 — 일시 오류).
+        #   응답 꼬리를 로그에 실어 다음 실패는 원인이 보이게 한다.
+        tail = (raw.strip() or (proc.stderr or "").strip())[-160:]
+        return {"ok": False, "candidates": [], "raw": raw,
+                "error": f"JSON 파싱 실패(응답 꼬리: {tail!r})"}
     candidates = parsed.get("candidates", []) if isinstance(parsed, dict) else []
     if not isinstance(candidates, list):
         candidates = []
@@ -349,6 +354,25 @@ def verify_zero_consumers(symbol: str, declaring_path: str, repo_root: str | Non
         f"소비자 {len(lines)}건 확인(선언 외 참조 존재) — 자동삭제 스킵·제안으로 강등"
     )
     return {"zero": zero, "match_count": len(lines), "reason": reason}
+
+
+def _evidence_line(declaring_path: str, cand: dict) -> str:
+    """제안 후보 1건에 실측 근거 한 줄을 만든다 — 배871(웰리 판정 2026-09-01):
+    근거 표기 없는 후보 211건은 사람이 '지워도 되는가'를 고를 수 없어 3주간 반영 커밋이
+    0건이었다. symbol 의 리포 전체 참조 수(git grep -F 실측 · 기존 verify_zero_consumers
+    재사용)로 '삭제 안전 / 확인 필요'를 가른다. 측정 못 하면 못 한다고 적는다(추정 금지)."""
+    sym = (cand.get("symbol") or "").strip()
+    if not sym:
+        return "근거: 실측 불가(symbol 없음) — 확인 필요"
+    check = verify_zero_consumers(sym, declaring_path)
+    n = check.get("match_count", -1)
+    if check.get("zero"):
+        return "근거: 리포 참조 0건(선언뿐 · git grep 실측) — 삭제 안전"
+    if n == 0:
+        return "근거: 이름이 리포 검색에 안 잡힘(서술형 이름·미추적 파일 가능) — 확인 필요"
+    if n > 0:
+        return f"근거: 리포 참조 {n}건(git grep 실측) — 확인 필요"
+    return f"근거: 실측 실패({(check.get('reason') or '')[:80]}) — 확인 필요"
 
 
 def check_parse_integrity(html_text: str) -> dict:
@@ -606,10 +630,32 @@ def _run_audit_chunked(target: dict, content: str, claude_timeout: int, model: s
     for i, chunk in enumerate(chunks):
         prompt = build_audit_prompt(target, chunk, chunk_index=i, chunk_total=len(chunks))
         audit = run_audit_claude(prompt, timeout=claude_timeout, model=model)
+        if not audit["ok"]:
+            # ★배871(2026-09-01 시토) — 실패 2종 다 비결정적임이 실측됐다:
+            #   · JSON 파싱 실패 — 08-30 실패한 2KB 스텁(운영부 체계)을 그대로 재현하니 정상 응답.
+            #   · 타임아웃 — 처리 시간이 콘텐츠 크기에 비례(배662 실측)하고 동시 부하에 흔들린다.
+            #     08-30 실측: 92~199KB 한 조각 페이지 3곳(주차관리부·파트너팀·매출지출현황)만
+            #     900초를 넘겼고, 더 큰 페이지도 다른 시각엔 통과했다.
+            #   그래서 조각당 1회 재시도한다. 타임아웃이면 같은 크기로 다시 재도 또 걸리므로
+            #   반쪽 2회로 나눠 재시도한다(호출당 크기 절반 = 시간 절반).
+            if "타임아웃" in (audit.get("error") or "") and len(chunk) > 60_000:
+                sub_errors: list[str] = []
+                for sub in _split_content_chunks(chunk, max_chars=len(chunk) // 2 + 1):
+                    p2 = build_audit_prompt(target, sub, chunk_index=i, chunk_total=len(chunks))
+                    a2 = run_audit_claude(p2, timeout=claude_timeout, model=model)
+                    if a2["ok"]:
+                        all_candidates.extend(a2["candidates"])
+                    else:
+                        sub_errors.append(a2["error"])
+                if sub_errors:
+                    chunk_errors.append(
+                        f"조각 {i + 1}/{len(chunks)}(반쪽 재시도 후에도): {'; '.join(sub_errors)}")
+                continue
+            audit = run_audit_claude(prompt, timeout=claude_timeout, model=model)
         if audit["ok"]:
             all_candidates.extend(audit["candidates"])
         else:
-            chunk_errors.append(f"조각 {i + 1}/{len(chunks)}: {audit['error']}")
+            chunk_errors.append(f"조각 {i + 1}/{len(chunks)}(재시도 후에도): {audit['error']}")
 
     if chunk_errors and not all_candidates:
         return {"ok": False, "candidates": [], "error": "; ".join(chunk_errors)}
@@ -649,7 +695,9 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
             continue
         cat = (cand.get("category") or "").strip().upper()
         if cat != "A":
-            proposed.append({**cand, "gate_reason": "", "would_auto_apply": False})
+            # ★배871 — B/C/D 도 실측 근거 한 줄을 반드시 단다(없으면 사람이 못 고른다).
+            proposed.append({**cand, "gate_reason": _evidence_line(target["path"], cand),
+                             "would_auto_apply": False})
             continue
 
         if live_apply:
@@ -660,7 +708,8 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
             else:
                 proposed.append({**cand, "gate_reason": result["reason"], "would_auto_apply": False})
         elif domain_locked:
-            reason = f"자동적용 잠김(소유={target.get('clevel')} 도메인 · 사람이 판단)"
+            reason = (f"자동적용 잠김(소유={target.get('clevel')} 도메인 · 사람이 판단) · "
+                      f"{_evidence_line(target['path'], cand)}")
             print(f"[weekly_page_hygiene] {reason} — {target.get('label')} / {cand.get('symbol')}", file=sys.stderr)
             proposed.append({**cand, "gate_reason": reason, "would_auto_apply": False})
         else:
