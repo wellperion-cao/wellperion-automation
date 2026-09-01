@@ -521,9 +521,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-ldy-mode #a3-laundry-print{display:block!important}
   #a3-laundry-print .a3l-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #4a3a2e;padding-bottom:6px;margin-bottom:8px}
   #a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
-  #a3-laundry-print .a3l-meta{font-size:15px;color:#2a2018}
-  #a3-laundry-print .a3l-meta span{display:inline-block;margin-left:22px}
-  #a3-laundry-print .a3l-blank{display:inline-block;min-width:120px;border-bottom:1px solid #8a7a6c}
+  /* 서명란 3칸(GM 2026-09-01 — 오픈·마감 두 조가 한 장을 나눠 쓰니 작성 서명도 둘, 확인=김훈 주임).
+     줄 2개(작성 한 줄·확인 한 줄)로 세워 머리 높이를 안 키운다. 빈칸은 3개가 들어가게 70px. */
+  #a3-laundry-print .a3l-meta{font-size:13px;color:#2a2018}
+  #a3-laundry-print .a3l-meta span{display:block;margin:0 0 4px;text-align:right}
+  #a3-laundry-print .a3l-blank{display:inline-block;min-width:70px;border-bottom:1px solid #8a7a6c}
   table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
   table.a3l-grid th,table.a3l-grid td{border:0.8px solid #8a7a6c;text-align:center}
   table.a3l-grid thead th{background:#4a3a2e!important;color:#fff!important;font-size:14px;font-weight:800;padding:8px 2px;line-height:1.25}
@@ -7162,9 +7164,14 @@ function printA4Laundry(lang){
   if (subEl) subEl.textContent = en
     ? 'Write "In" on arrival, "Closing Stock" at closing — same day'
     : '세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다';
+  /* 서명 3칸 — 작성은 오픈·마감 두 조가 각각(입고=오픈조·마감재고=마감조), 확인은 김훈 주임(GM 2026-09-01).
+     머리 담당 표기 제거와 별개 — 이름은 확인자 서명 자리에만 쓴다. */
   var metaEl = document.querySelector('#a3-laundry-print .a3l-meta');
-  if (metaEl) metaEl.innerHTML = (en ? ['Written', 'Checked'] : ['작성', '확인'])
-    .map(function(k){ return '<span>' + k + ' <b class="a3l-blank"></b></span>'; }).join('');
+  var BLK = ' <b class="a3l-blank"></b>';
+  if (metaEl) metaEl.innerHTML = (en
+    ? ['Written — Opening' + BLK, 'Written — Closing' + BLK, 'Checked — Kim Hun' + BLK]
+    : ['작성 — 오픈 주임' + BLK, '작성 — 마감 주임' + BLK, '확인 — 김훈 주임' + BLK])
+    .map(function(r){ return '<span>' + r + '</span>'; }).join('');
   var guideEl = document.getElementById('a3lGuide');
   if (guideEl) guideEl.innerHTML = en
     ? '<b>①</b> Check the delivery slip against the <b>actual count</b>; write it in that day\'s "In" box.<br>'
