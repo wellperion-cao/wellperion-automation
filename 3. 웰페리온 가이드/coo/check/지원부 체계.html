@@ -541,6 +541,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-month td{height:29px;font-size:12px}
   table.a3l-month td.a3l-date{background:#f3ede7!important;font-size:12px;font-weight:700;color:#2a2018;text-align:left;padding-left:8px;white-space:nowrap}
   table.a3l-month tr.a3l-closed td{background:#e7ddd2!important}
+  /* 「휴관」은 날짜보다 작게 붙인다 — 같은 크기면 「9월 13일 (일) 휴관」이 칸을 넘친다(GM 지적 2026-09-01). */
+  table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:800}
   #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
   #a3-laundry-print .a3l-guide b{font-weight:800}
 }
@@ -7151,7 +7153,10 @@ function printA4Laundry(){
     h += '<div class="a3l-page">';
     /* 2장짜리 실물 종이 — 첫 장엔 큰 머리가 있고, 둘째 장부터는 표만 있으면 어느 달 것인지 모른다. */
     if (pi > 0) h += '<div class="a3l-page-cap">' + title + ' · 담당 김훈 주임 (' + (pi + 1) + '/' + pages.length + ')</div>';
-    h += '<table class="a3l-grid a3l-month"><colgroup><col style="width:104px"></colgroup><thead>'
+    /* 날짜 칸 폭 104→116px (GM 지적 2026-09-01 "9월 13일 휴관 칸 넘어갔는데?").
+       「9월 13일 (일) 휴관」이 가장 긴 문자열인데 nowrap 이라 칸을 넘쳤다. 폭을 조금 넓히고
+       「휴관」은 작은 글씨로 붙인다. 숫자칸은 78→77px 로 1px 줄 뿐이라 손글씨에 영향 없다. */
+    h += '<table class="a3l-grid a3l-month"><colgroup><col style="width:116px"></colgroup><thead>'
        + '<tr><th class="a3l-item" rowspan="2">날짜</th>'
        + pg.map(function(m){ return '<th colspan="2">' + wpLdyEsc(m.name) + '</th>'; }).join('')
        + '</tr><tr>'
@@ -7162,7 +7167,8 @@ function printA4Laundry(){
       var dowCh = '일월화수목금토'.charAt(new Date(ds + 'T00:00:00').getDay());
       var closed = wpLdyIsClosed(ds);
       h += '<tr' + (closed ? ' class="a3l-closed"' : '') + '>'
-         + '<td class="a3l-date">' + mo + '월 ' + d + '일 (' + dowCh + ')' + (closed ? ' 휴관' : '') + '</td>';
+         + '<td class="a3l-date">' + mo + '월 ' + d + '일 (' + dowCh + ')'
+         + (closed ? '<span class="a3l-off">휴관</span>' : '') + '</td>';
       for (var i = 0; i < pg.length; i++) h += '<td class="a3l-shade"></td><td></td>';
       h += '</tr>';
     }
