@@ -117,6 +117,7 @@
      확정값, 나란히 표시). ③10세트 이상 할인율(30%)을 GUIDES.ohnutti.note에 명시.
      2026-08-10 GM 확정 — 단체가 = 소비자가 기준 30% (GM 확정 2026-08-10 · 지난 설 18,060원과 동일 산식).
      2026-08-31 윤병현 매니저 지시 — 10세트 이상 단체가를 절사값으로 확정: 2구 18,000원 / 3구 17,900원(bulk·GUIDES.ohnutti.note 동시 수정).
+     2026-09-01 윤병현 매니저 지시 — 모바일(카톡·문자 유입)에서 "10세트 이상 가격"이 카드 오른쪽 밖으로 넘침 → g-price-row flex-wrap + 단체가 span을 g-price-bulk로 분리(480px 이하 줄바꿈·들여쓰기). WP 8460·8831 동시 반영.
      ★이 파일의 HTML 주석·인라인 스크립트는 view-source로 그대로 노출되므로
      비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시, ★주의: 이 파일 주석 텍스트 안에 꺾쇠괄호+
      script 글자를 그대로 적지 말 것 — Autoptimize가 진짜 스크립트로 오인해 본문 전체를 날려버림,
@@ -212,11 +213,13 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 /* 오넛티 세트별 가격(소비자가→판매가, 2026-08-07 GM 확정값) — 세트 2종 나란히 표시 */
 .wlp-inq .g-price-group{margin-top:14px}
-.wlp-inq .g-price-row{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:12.5px}
+.wlp-inq .g-price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:8px;font-size:12.5px}
 .wlp-inq .g-price-row:first-child{margin-top:0}
 .wlp-inq .g-price-name{font-weight:700;color:var(--ink);min-width:96px}
 .wlp-inq .g-price-list{color:var(--dim);text-decoration:line-through}
 .wlp-inq .g-price-sale{font-size:16px;font-weight:800;color:var(--coral)}
+.wlp-inq .g-price-bulk{font-weight:700;color:var(--ink);white-space:nowrap}
+@media (max-width:480px){.wlp-inq .g-price-bulk{flex-basis:100%;padding-left:104px;font-size:12px;margin-top:-2px}}
 /* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
 .wlp-inq .g-brand{margin-top:12px}
 /* 로고(150px 워드마크, 클릭 시 홈페이지 새탭) — 텍스트 링크와 중복이라 링크는 로고 하나로 통합(2026-08-07 GM 지시) */
@@ -651,7 +654,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
           return '<div class="g-price-row"><span class="g-price-name">' + p.label + '</span>'
             + '<span class="g-price-list">' + p.list.toLocaleString() + '원</span>'
             + '<span class="g-price-sale">' + p.sale.toLocaleString() + '원</span>'
-            + (p.bulk ? '<span class="g-price-name">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
+            + (p.bulk ? '<span class="g-price-bulk">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
         }).join('') + '</div>';
       }
     }
