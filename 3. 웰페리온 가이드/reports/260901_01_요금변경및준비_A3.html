@@ -160,6 +160,8 @@
   #sheet3 .box li{ font-size:11.8px; line-height:1.42; margin-bottom:5px; }
   #sheet3 table.mini td{ font-size:11.5px; line-height:1.32; padding:3px 7px; }
   #sheet3 table.mini td.k{ width:66px; }
+  #sheet3 .duo .box{ flex:1; }
+  #sheet3 .duo .box.w{ flex:1.34; }
   #sheet3 .foot{ font-size:9.4px; line-height:1.34; }
   #sheet3 .tblwrap{ display:flex; gap:10px; }
   #sheet3 .tblwrap > table{ flex:1.62; height:auto; }
@@ -519,8 +521,8 @@
         <div class="d">공급가 · 부가세 · 청구액이 전부 정수로 떨어진다. <b>체험 · 1회권 같은 관문 상품은 동결</b>해 새로 들어오는 문을 좁히지 않는다.</div>
       </div>
       <div class="it">
-        <div class="q">방향 3. 비회원은 회원 우대 격차를 오히려 벌린다</div>
-        <div class="d">회원권이 25% 오르는데 일일권이 제자리면 <b>회원권의 값어치가 희석된다</b>. 일일권은 20% 안팎으로 올리고, 강습 준회원가는 정회원과의 격차를 그대로 유지한다.</div>
+        <div class="q">방향 3. 올린 값은 SVIP 전용 콘텐츠로 되돌린다</div>
+        <div class="d">비회원 일일권은 20% 안팎으로 올려 <b>회원 우대 격차를 벌리고</b>, 그렇게 올린 값은 <b>최상위 회원 전용 콘텐츠</b>로 되돌린다. 「할인하지 않고 가치로 갚는다」는 <b>무할인 원칙(2026 전환)</b>의 실행이다.</div>
       </div>
     </div>
   </div>
@@ -604,11 +606,10 @@
         <tr><th class="k" style="width:230px;">인상률</th><th style="width:210px;">연 증가액 <span class="sub">총액 · 추정</span></th><th>비고</th></tr>
       </thead>
       <tbody>
-        <tr><td class="k">+5%</td><td class="num">+2.06억</td><td>1장 전략 4의 최소 시나리오</td></tr>
+        <tr><td class="k">+5% <span class="est">/ +15%</span></td><td class="num">+2.06억 <span class="est">/ +6.18억</span></td><td>최소 시나리오 / 참고 상한 — 둘 다 채택하지 않는다</td></tr>
         <tr class="sum"><td class="k strong">+10% <span class="est">본안 명목률</span></td><td class="num strong">+4.12억</td><td class="strong">기준 상품 일괄 적용 시</td></tr>
         <tr class="sum"><td class="k good strong">본안 실효 약 +9% <span class="est">가정</span></td><td class="num good strong">+3.7억 안팎</td><td class="good">관문 동결 · 저가 완만 · 파트너 종목 보류를 반영한 값</td></tr>
-        <tr><td class="k est">+15%</td><td class="num est">+6.18억</td><td class="est">참고 상한 — 채택하지 않는다</td></tr>
-        <tr class="sum"><td class="k bad strong">회원권과 합하면</td><td class="bad strong" colspan="2">회원권 <b>+8.58억</b> + 강습 <b>+3.7억 안팎</b> = <b>연 12억 안팎</b>의 증수 골격이 선다 <span class="est">(총액 · 추정 — 품목별 매출 구성이 미확인이라 실효율 9%는 가정이다)</span></td></tr>
+                <tr class="sum"><td class="k bad strong">회원권과 합하면</td><td class="bad strong" colspan="2">회원권 <b>+8.58억</b> + 강습 <b>+3.7억 안팎</b> = <b>연 12억 안팎</b>의 증수 골격이 선다 <span class="est">(총액 · 추정 — 품목별 매출 구성이 미확인이라 실효율 9%는 가정이다)</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -620,28 +621,44 @@
       <ul class="ord">
         <li class="n"><b>많이 다닐수록 덜 오른다</b> — 노블레스 회원이 P.T를 연 120회 수강하면 회원권 +91만 + 강습 +132만 = 연 +223만, <b>합산 인상률 +13.4%</b>로 회원권 단독 25%보다 낮다 <span class="est">(추정)</span></li>
         <li class="n"><b>이미 결제한 회차권은 소진 시까지 현행가</b> — 요금 정책의 「계약 중 기존 요금 보장」에 따라 시행일 일괄 재청구가 없다</li>
-        <li class="n"><b>12월 사전 안내는 한 장으로 통합</b> — 회원권과 강습을 따로 알리면 저항이 두 번 생긴다. 서비스 강화(1장 본론)가 두 인상의 공동 명분이다</li>
+        <li class="n"><b>12월 사전 안내는 한 장으로 통합</b> — 따로 알리면 저항이 두 번 생긴다</li>
       </ul>
+    </div>
+    <div class="box key w">
+      <h3>SVIP 전용 콘텐츠 확보 — 인상의 명분</h3>
+      <div class="lead">요금 정책은 이미 <b>무할인 원칙(2026 전환)</b>으로 정해져 있다 — <b>할인 대신 정가와 비가격 혜택</b>이다. 최상위 <b>노블레스+골프 116명</b>이 인상 후 연매출의 <b>13.5%(5.74억)</b>를 낸다. <b>있는 자원부터 묶는다.</b></div>
+      <table class="mini">
+        <thead>
+          <tr><th class="k" style="width:104px;">콘텐츠</th><th>무엇을 하나</th><th style="width:78px;">비용</th><th style="width:56px;">시점</th></tr>
+        </thead>
+        <tbody>
+          <tr class="sum"><td class="k strong">1:1 컨시어지</td><td>예약 우선 배정 · 개인 라커 셋업 · 방문 전 준비 <span class="est">(리셉션·운영부 기존 인력)</span></td><td class="good strong">0원</td><td class="ctr good strong">10월</td></tr>
+          <tr class="sum"><td class="k strong">전용 시간대</td><td>골프 타석(GDR·QED) · 웰니스 스튜디오 <b>우선 예약 창</b> <span class="est">(기존 공간 · 신설 없음)</span></td><td class="good strong">0원</td><td class="ctr good strong">10월</td></tr>
+          <tr><td class="k">시그니처 세션</td><td>강습 6팀 팀 리더가 직접 진행하는 <b>SVIP 전용 클래스</b> — 연 2회 체력 점검(1장 본론 2)의 상위판</td><td><b>소</b> <span class="est">인력 재편</span></td><td class="ctr">11월</td></tr>
+          <tr><td class="k">회복 케어</td><td>사우나 + <b>생크몽드 바디케어</b>를 묶은 회복 프로그램 <span class="est">(파트너 협의 필요)</span></td><td><b>중</b> <span class="est">미산정</span></td><td class="ctr">12월</td></tr>
+          <tr class="sum"><td class="k bad strong">쓰는 곳</td><td class="bad" colspan="3">정원 마감·대기자 보유 상태라 <b>모집 재료가 아니라 갱신 방어 재료</b>다 — 최상위 116명이 빠지면 한 명당 495만이 사라진다</td></tr>
+        </tbody>
+      </table>
     </div>
     <div class="box rec">
       <h3>다음 단계 — 무엇이 정해지면 실행으로 넘어가는가</h3>
       <table class="mini">
         <tbody>
           <tr class="sum"><td class="k bad strong">9/3</td><td class="strong">회장님 오찬 — <b>강습 동반 인상 여부와 폭(10% 안팎) 재가</b>. 본 3장이 그 판단 자료다</td></tr>
-          <tr><td class="k">9월</td><td>강사 배분율·회사 귀속분 실측 · 품목별 매출 구성 집계 · 파트너 종목(발레·바레) 협의 · 게스트 동반권 신설 여부 판단</td></tr>
-          <tr><td class="k">10월</td><td>확정 요금표를 상품기획 화면·문의폼에 반영 <span class="est">(성인 체조·G.X 신설 건과 한 번에)</span></td></tr>
+          <tr><td class="k">9월</td><td>강사 배분율·귀속분 실측 · 품목별 매출 구성 · 파트너 협의(발레·바레 · <b>생크몽드</b>) · 게스트 동반권 판단</td></tr>
+          <tr><td class="k">10월</td><td>확정 요금표 반영 <span class="est">(체조·G.X 신설과 한 번에)</span> · <b>SVIP 컨시어지·전용 시간대 가동</b></td></tr>
           <tr><td class="k">12월</td><td>사전 안내 발송 — <b>회원권 + 강습 통합 한 장</b></td></tr>
           <tr class="sum"><td class="k bad strong">2027<br>02</td><td class="bad strong">동시 시행 — 기등록 회차권은 소진 시까지 현행가</td></tr>
         </tbody>
       </table>
-      <div class="lead" style="margin-top:5px;">재가가 서면 <b>이 문서의 표가 그대로 실행 요금표가 된다</b> — 별도 재설계는 없다.</div>
+      
     </div>
   </div>
 
   <div class="foot">
     <div><b>본 문서의 성격</b> — <b>제안이며 확정안이 아닙니다.</b> 결정은 <b>회장님·대표님</b>, 결정 후 수정·공표는 <b>김남욱 GM</b>입니다.<br><b>① 수치 근거</b> — 현행 강습·일일권 요금은 상품기획 화면(2026-08-28 갱신분) 전량 실측입니다. 강습 매출 월 3억 4,310만은 매출 원장(08-28 보고) 기준, 문의 건수(성인 681·유소년 1,092)는 2026년 1~8월 누적 실측입니다. 연 증가액·합산 인상률 13.4%는 <b>(추정)</b>, 실효 인상률 9%는 <b>(가정)</b>입니다.</div>
     <div><b>② 부가세 표기</b> — 인상 후 금액은 전부 <b>부가세 포함 청구액</b>이며 공급가는 만원 단위입니다. 다만 <b>골프 강습·원포인트·수영 단체반 남·입주민 1회권은 현행가의 공급가가 정수로 떨어지지 않아</b> 회계 확인이 필요합니다. 현행 요금표에 「부가세 포함」이 명시된 항목은 발레·바레뿐입니다.</div>
-    <div><b>③ 아직 못 채운 칸</b> — 강사 배분율·회사 귀속분, 품목별 매출 구성, 파트너 종목 배분 계약, 게스트 동반권 존재 여부, 수강 정회원 수(이중 부담 대상 규모)는 <b>모두 미확인</b>입니다. 요금 정책 화면의 「2년 주기 인상(2026년 10월)」 문구는 1장 확정(2027년 2월)과 어긋나 정비가 필요합니다.</div>
+    <div><b>③ SVIP·못 채운 칸</b> — SVIP 대상은 <b>등급 최상위 노블레스+골프 116명</b>을 기준으로 잡았습니다(회원 유형의 「FAN VIP」 7명과 중복 여부는 미확인). 무할인 원칙·차별화 레버(컨시어지·회복 케어)는 상품기획 화면의 확정·초안 기록에서 가져왔습니다. 강사 배분율·회사 귀속분, 품목별 매출 구성, 파트너 종목 배분 계약, 게스트 동반권 존재 여부, 수강 정회원 수(이중 부담 대상 규모)는 <b>모두 미확인</b>입니다. 요금 정책 화면의 「2년 주기 인상(2026년 10월)」 문구는 1장 확정(2027년 2월)과 어긋나 정비가 필요합니다.</div>
   </div>
 
 </div>
