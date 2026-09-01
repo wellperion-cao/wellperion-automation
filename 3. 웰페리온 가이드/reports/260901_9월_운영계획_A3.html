@@ -63,15 +63,23 @@
           <thead><tr><th class="k">부문</th><th>8월 실적</th><th>9월 목표</th><th>재등록 60% 예상</th><th>비고</th></tr></thead>
           <tbody>
             <tr><td class="k">회원권</td><td class="num">2억 6,532만</td><td class="num strong">2억 5,000만</td><td class="num strong bad">1억 6,948만</td><td>재등록 60% 1억 1,508만 + 신규 16건 5,440만 · <b class="bad">−8,052만</b></td></tr>
-            <tr><td class="k">P.T</td><td class="num">1억 2,460만</td><td class="num">1억 2,460만</td><td class="num">1억 2,460만</td><td>8월 수준 유지 가정</td></tr>
-            <tr><td class="k">수영</td><td class="num">1억 1,218만</td><td class="num">1억 1,218만</td><td class="num">1억 1,218만</td><td>유소년 문의 −38%가 다음 달부터 반영될 위험</td></tr>
-            <tr><td class="k">기타</td><td class="num">1억 2,594만</td><td class="num">1억 2,594만</td><td class="num">1억 2,594만</td><td>스쿼시·체조·필라테스·뮤지컬·골프·옵션·주차 266만</td></tr>
+            <!-- P.T·수영·기타 세 줄이 전부 '8월 수준 유지'라 한 줄로 합쳤다 — Ⅰ 역산 블록 공간 확보(2026-09-01) -->
+            <tr><td class="k">회원권 외</td><td class="num">3억 6,272만</td><td class="num">3억 6,272만</td><td class="num">3억 6,272만</td><td>P.T 1억 2,460 · 수영 1억 1,218 · 기타 1억 2,594 — 8월 수준 유지 가정 · 유소년 문의 −38%는 다음 달부터 위험</td></tr>
             <tr class="sum"><td class="k strong">합계</td><td class="num strong">6억 2,805만<br><span class="est">목표 대비 98.7%</span></td><td class="num strong">6억 1,273만<br><span class="est">목표 대비 96.3%</span></td><td class="num strong bad">5억 3,221만<br><span class="est">목표 대비 83.7%</span></td><td class="strong">부족분 <b class="bad">8,052만</b> — 전부 회원권 한 곳에서 발생합니다</td></tr>
           </tbody>
         </table>
 
-        <div style="font-size:10.6px;color:var(--dim);margin-top:5px;line-height:1.5;">
-          재등록 60% 예상 = 만기 57명 <b>1억 9,180만</b> × 60%(1억 1,508만) + 신규 16건 5,440만입니다. 9월 목표를 달성하기에 재등록 60%는 부족합니다 — 만기 <b>57명</b> 중 재등록 상담 기록이 남아 있는 회원은 <b style="color:#9E2A2A">0명</b>이며, 부족분 <b style="color:#9E2A2A">8,052만원</b>은 1인 평균 340만원 기준 <b style="color:var(--navy)">신규 등록 약 24명</b>에 해당합니다.
+        <!-- 각주(산식 한 줄)는 뺐다 — 산식은 비고 칸에, 24명 환산은 아래 블록에 이미 있어 중복이고 왼쪽 칸이 21px 넘쳤다(2026-09-01) -->
+        <!-- 신규 24명 역산 — 원장 실측(문의 91→컨택 68→방문 46→등록 19 · inquiry_snapshot_member 2026-08 직접 집계) 2026-09-01 -->
+        <div style="margin-top:5px;border:1px solid var(--line);border-left:4px solid var(--navy);background:#FAFBFC;padding:4px 11px 4px;">
+          <div style="font-size:12.2px;font-weight:700;color:var(--navy);">그 24명은 받을 수 없습니다 — 문의도, 자리도 모자랍니다. 답은 재등록입니다.</div>
+          <div style="font-size:11px;line-height:1.45;color:var(--ink);margin-top:2px;">
+            역산 — 8월 문의 <b>91건</b> → 등록 <b>19건</b>(20.9%) 기준, 신규 24명에는 <b>문의 115건이 추가로</b> 필요합니다. 8월 한 달 전체보다 많고, 자리도 재등록 60%면 빈자리 25석 — 신규 예상 16명을 빼면 <b>9석</b>, 다 채워도 +3,060만원(부족분의 4할 미만)입니다.<br>
+            ① <b>만기 57명 전원 상담</b> — 이경연 실장 라인 · 둘째 주까지 1차 접촉(현재 0명) · 재등록 1명(336만원)=신규 1명(340만원)의 값입니다.<br>
+            ② <b>8월 문의 진행분 60건 재접촉</b> — 컨택 중 51·가망 9 · 전환율 20.9% 기준 약 12명이 새 유입 없이 나옵니다.<br>
+            ③ <b>대기 등록·소개 경로 유지</b> — 8월 대기 등록 5건 · 등록 경로는 소개 8 · 기존 회원 6 · 네이버 3입니다.<br>
+            <span style="color:var(--dim);">재등록률별 부족분 — 60% <b class="bad">−8,052만</b>(빈자리 25석) · 70% −6,134만(19석) · 80% −4,216만(13석). 상담률이 곧 9월 매출입니다.</span>
+          </div>
         </div>
       </div>
 
@@ -101,7 +109,8 @@
           <thead><tr><th class="k">기한</th><th>과제</th><th>8/28 진척</th></tr></thead>
           <tbody>
             <tr><td class="k ctr">9/5</td><td>위생·감염 예방 체계 — 해충 집중구역 3곳 방제</td><td class="ctr good">75%</td></tr>
-            <tr><td class="k ctr">9/19</td><td>추석 선물세트 팝업 <span class="est">500세트 목표</span></td><td class="ctr">45%</td></tr>
+            <!-- 추석 팝업 줄은 뺐다 — Ⅳ 일정표에 두 번(9/5~19 진행 · 9/19 판정) 있어 중복이고,
+                 Ⅰ 역산 블록이 들어가며 왼쪽 칸이 넘쳤다(2026-09-01). 진척 45%는 Ⅳ 9/5~19 줄로 옮김. -->
             <tr><td class="k ctr">9/30</td><td>매출·운영 보고 자동화 <span class="est">손으로 입력하던 항목을 단계적으로 축소</span></td><td class="ctr">60%</td></tr>
             <!-- 9/30 저진척 건은 한 줄로 묶는다 — 왼쪽 칸이 한 줄만 길어도 아래 Ⅵ 제목과 글자가 겹친다(2026-09-01). -->
             <tr><td class="k ctr">9/30</td><td>헬스장 장비 <b>바이크만</b> 확정 · 지원부 약품·비품 20% <span class="est">· 세탁물 배분·회원 서비스 개선은 착수 전</span></td><td class="ctr">진행</td></tr>
@@ -123,7 +132,7 @@
             <tr><td class="k ctr">9/1</td><td>지원부 7인 재계약 · <b>주 5일제 시행</b></td><td class="ctr est">나우열M · GM</td></tr>
             <tr><td class="k ctr">9/3</td><td class="strong">회장님 오찬 — P.T팀 <span class="est" style="font-weight:400;">· 같은 날 부서장 회의</span></td><td class="ctr est">회장님 · GM</td></tr>
             <tr><td class="k ctr">9/4</td><td>ADT캡스 설치 공사 <span class="est">무인경비 2 · 출입통제 3</span></td><td class="ctr est">이정헌 소장</td></tr>
-            <tr><td class="k ctr">9/5~19</td><td class="strong">추석 선물세트 팝업 <span class="est" style="font-weight:400;">· 500세트 목표</span></td><td class="ctr est">윤병현AM</td></tr>
+            <tr><td class="k ctr">9/5~19</td><td class="strong">추석 선물세트 팝업 <span class="est" style="font-weight:400;">· 500세트 목표 · 8/28 진척 45%</span></td><td class="ctr est">윤병현AM</td></tr>
             <tr><td class="k ctr">9/9</td><td>승강기 자체점검 <span class="est">법정</span></td><td class="ctr est">시설부</td></tr>
             <tr><td class="k ctr">9/10</td><td class="strong">회장님 오찬 — 스쿼시·체조팀</td><td class="ctr est">회장님 · GM</td></tr>
             <tr><td class="k ctr">9/19</td><td>팝업 종료 · <b>500세트 목표 판정</b></td><td class="ctr est">윤병현AM</td></tr>
