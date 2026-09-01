@@ -60,14 +60,9 @@
 
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
   .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
-  /* 달 묶음 머리 (GM 지시 2026-09-01 "병렬로 정리") — 두 칸을 가로질러 그 달 묶음의 시작을 알린다.
-     새 화면·새 토글을 만들지 않고 기존 격자 안에 줄만 하나 끼운 것이다. */
-  .grid .grp-card{grid-column:1/-1;margin:16px 0 2px;padding:5px 10px;background:var(--deep);color:#fff;
-    font-size:13px;font-weight:800;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center;}
-  .grid .grp-card:first-child{margin-top:2px;}
-  .grid .grp-card span{font-weight:600;opacity:.85;}
-  .sum tr.grp-row td{background:var(--steam);font-weight:800;font-size:12px;letter-spacing:.02em;
-    color:var(--deep);padding:4px 6px;border-bottom:1px solid var(--line);}
+  /* 달 묶음 머리는 뺐다 (GM 지시 2026-09-01 "월별로 나누지말고 계속 확대·업데이트되게"). 일은 달에
+     속하지 않고 끝날 때까지 이어지므로 한 줄기·급한 순으로만 세운다. 시작한 달은 카드의 「8월부터」
+     조각으로만 남는다 — 스타일은 기존 .dept-badge 를 그대로 쓴다(새 클래스 만들지 않음). */
   .top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:3px;}
   .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
@@ -722,9 +717,20 @@
         var seen = {}, out = [];
         if (already) seen[String(already).trim()] = 1;
         list.forEach(function (d) {
+          // docs 칸에는 {label, href} 도 있고 주소 문자열만 있는 것도 있다. 문자열이면 조용히
+          // 빠져 링크가 아예 안 뜨던 것을 고쳤다(2026-09-01 실측 — 브로제이 자료 5개가 그렇게 사라져
+          // 있었다). 이름표가 없으면 파일명에서 만들어 쓴다.
+          if (typeof d === 'string') d = { href: d, label: '' };
           if (!d || !d.href || seen[d.href]) return;
           seen[d.href] = 1;
-          out.push('<a class="doc-link" href="' + esc(d.href) + '" target="_blank" rel="noopener">📄 ' + esc(d.label || '자료 열기') + '</a>');
+          var label = d.label;
+          if (!label) {
+            label = decodeURIComponent(String(d.href).split('#')[0].split('?')[0].split('/').pop() || '')
+                      .replace(/\.(html?|pdf|png|jpg)$/i, '').replace(/_/g, ' ');
+            if (/docs\.google\.com/.test(d.href)) label = '구글 시트 열기';
+            if (!label) label = '자료 열기';
+          }
+          out.push('<a class="doc-link" href="' + esc(d.href) + '" target="_blank" rel="noopener">📄 ' + esc(label) + '</a>');
         });
         return out.join(' ');
       }
@@ -757,7 +763,7 @@
         (!it.direct ? ' <span class="dept-badge">전사</span>' : '') +
         // 이월 배지 — 지난 달에 안 끝나 이어서 보이는 건(GM 지시 2026-09-01 "다 그대로 나오게").
         // 어느 달 것인지 함께 적는다. 판정은 _gm_direct_tasks.js 가 한다(여기서 다시 계산하지 않는다).
-        (it.carried ? ' <span class="dept-badge">' + esc(String(it.fromMonth || '').replace(/^\d{4}-0?/, '')) + '월에서 이어짐</span>' : '') +
+        (it.carried ? ' <span class="dept-badge">' + esc(String(it.fromMonth || '').replace(/^\d{4}-0?/, '')) + '월부터</span>' : '') +
         // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
         ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
         '</h2>' +
@@ -819,26 +825,18 @@
       '<td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
   }
 
-  // 달이 바뀌는 자리에 묶음 머리를 끼워 넣는다. 카드 격자용(grp-card)과 요약표용(grp-row) 두 모양.
-  // 건수는 그 달 묶음 안의 개수다 — 전체 건수(위 배지)와 헷갈리지 않게 「n건」으로만 적는다.
-  function withMonthHeads(list, rowFn, cls) {
-    var out = [], prev = null;
-    list.forEach(function (it, i) {
-      var mk = String(it.fromMonth || '');
-      if (mk !== prev) {
-        prev = mk;
-        var n = 0;
-        list.forEach(function (x) { if (String(x.fromMonth || '') === mk) n++; });
-        var mo = mk.replace(/^\d{4}-0?/, '');
-        var label = mo ? (mo + '월') : '달 미상';
-        var tail = (mk === _monthKey) ? ' 진행' : '에서 이어짐';
-        out.push(cls === 'grp-row'
-          ? '<tr class="grp-row"><td colspan="5">' + esc(label + tail) + ' · ' + n + '건</td></tr>'
-          : '<div class="grp-card">' + esc(label + tail) + ' <span>' + n + '건</span></div>');
-      }
-      out.push(rowFn(it, i));
+  // 한 줄기로 세운다 — 달로 가르지 않는다 (GM 지시 2026-09-01 "7월 8월 9월 이렇게 월별로 나누지말고,
+  // 계속 확대되거나 업데이트(병합+수정보완)가 되게끔"). 일은 달에 속하지 않고 끝날 때까지 이어진다.
+  // 그래서 묶음 머리를 없애고, 급한 순(기한 이른 것 먼저 · 기한 없는 것은 뒤)으로만 세운다.
+  // 어느 달에 시작했는지는 카드에 「8월부터」 한 조각으로만 남긴다 — 가르는 선이 아니라 이력 표시다.
+  function byUrgency(list) {
+    return list.slice().sort(function (a, b) {
+      var da = String(a.due || ''), db = String(b.due || '');
+      if (!da && !db) return a._ord - b._ord;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da < db ? -1 : (da > db ? 1 : a._ord - b._ord);
     });
-    return out.join('');
   }
 
   function renderGm(items) {
@@ -881,11 +879,10 @@
       elGmGrid.innerHTML = '<div class="rep-empty">진행 중인 GM 직접 관장 건이 없습니다.</div>';
       elGmSum.innerHTML = '';
     } else {
-      // 달별로 묶어서 낸다 (GM 지시 2026-09-01 "월 단위로 나눴다가 다시 살리니 혼잡 · 병렬로 정리").
-      // 이번 달 → 지난달 → 그 전달 순. 순서·판정은 _gm_direct_tasks.js 가 이미 정해 놓았고
-      // 여기서는 줄 사이에 묶음 머리만 끼운다(정렬 다시 하지 않는다 · 번호는 전체 통번호 유지).
-      elGmGrid.innerHTML = withMonthHeads(activeItems, cardHtml, 'grp-card');
-      elGmSum.innerHTML = withMonthHeads(activeItems, sumRowHtml, 'grp-row');
+      // 한 줄기 · 급한 순 (GM 지시 2026-09-01). 요약표와 카드가 같은 순서로 보이게 한 번만 세운다.
+      var ordered = byUrgency(activeItems);
+      elGmGrid.innerHTML = ordered.map(cardHtml).join('');
+      elGmSum.innerHTML = ordered.map(sumRowHtml).join('');
     }
 
     elGmDoneCnt.textContent = doneItems.length + '건';
