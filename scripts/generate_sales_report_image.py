@@ -227,6 +227,17 @@ def _parse_basis_date(text: str, year: int) -> "datetime | None":
         return None
 
 
+def basis_send_date(target_date: datetime, date_arg_given: bool) -> datetime:
+    """기준일 대조에 쓸 '발송일'.
+
+    --date 는 보고 대상일(=발송일-1)이다 — 오케스트레이터가 2026-09-01부터 시트 해석용으로
+    넘긴다(월초 1일 수리). 대상일을 그대로 발송일로 쓰면 대조 기준이 하루 밀려, 시트가
+    맞게 적혀 있어도 경고가 나간다(2026-09-01 오탐 2건 실사고 — I16=9/1·I18=8/31 로 규칙과
+    정확히 일치했는데 「맞는 값 8/31·8/30」 경보가 나갔다). --date 없이 돌면 옛 의미
+    그대로 오늘=발송일이다."""
+    return target_date + timedelta(days=1) if date_arg_given else target_date
+
+
 def check_basis_dates(context, sheet_id: str, gid: str, send_date: datetime) -> list[str]:
     """보고 탭 두 칸의 기준일이 GM 확정 규칙과 맞는지 본다. 이상 없으면 빈 목록.
 
@@ -377,6 +388,13 @@ def _selfcheck_basis_dates() -> None:
     assert len(bad_new) == 1 and "신규" in bad_new[0], bad_new
     bad_loss = check_basis_dates(_Ctx(_sheet("8/30 기준", "8/30 기준")), "x", "y", send)
     assert len(bad_loss) == 1 and "LOSS" in bad_loss[0], bad_loss
+
+    # --date(보고 대상일)로 돌 때 발송일=대상일+1 — 2026-09-01 오탐 재발 방지
+    assert basis_send_date(datetime(2026, 8, 31), True) == datetime(2026, 9, 1)
+    assert basis_send_date(datetime(2026, 8, 31), False) == datetime(2026, 8, 31)
+    # 오탐 사례 재현: 대상일 8/31 로 돌아도 시트(I16=9/1·I18=8/31)는 경고 없이 통과해야 한다
+    send2 = basis_send_date(datetime(2026, 8, 31), True)
+    assert check_basis_dates(_Ctx(_sheet("9/1 기준", "8/31 기준")), "x", "y", send2) == []
     print("[selfcheck] 기준일 대조 OK")
 
 
@@ -384,7 +402,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description="매출보고 이미지 자체 생성(구글시트→PDF→PNG, 텔레그램 사진 불필요)")
     ap.add_argument("--out", default=None, help="지정 시 archive 저장과 별개로 이 경로에도 추가 저장")
-    ap.add_argument("--date", default=None, help="보고 날짜 YYYYMMDD(기본 오늘) — archive 파일명에 사용")
+    ap.add_argument("--date", default=None,
+                    help="보고 대상일 YYYYMMDD(=발송일-1, 기본 오늘) — 시트 해석·archive 파일명에 사용")
     ap.add_argument("--selfcheck", action="store_true", help="기준일 대조 로직만 점검(발송·시트 접근 없음)")
     args = ap.parse_args()
 
@@ -418,7 +437,8 @@ def main() -> int:
     png_path = month_dir / target_date.strftime(ARCHIVE_FILENAME_FMT)
     pdf_tmp = month_dir / (target_date.strftime("웰페리온_일일보고_%Y%m%d") + "_tmp.pdf")
 
-    ok, reason = export_pdf(pdf_tmp, sheet_id, gid, send_date=target_date)
+    ok, reason = export_pdf(pdf_tmp, sheet_id, gid,
+                            send_date=basis_send_date(target_date, bool(args.date)))
     if not ok:
         msg = f"⚠️ 매출보고 자동생성 실패 — {reason}"
         log(msg)
