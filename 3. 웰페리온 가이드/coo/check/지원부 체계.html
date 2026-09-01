@@ -532,15 +532,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
   table.a3l-grid td.a3l-shade{background:#faf7f3!important}
   table.a3l-grid tr.a3l-sum td{height:44px;background:#f3ede7!important;font-weight:800}
-  /* 주간판(A4 세로 1장 = 7일) — 품목마다 「입고」·「마감재고」 두 줄. 손글씨 들어갈 높이로 잡는다. */
-  table.a3l-week td{height:32px}
-  table.a3l-week td.a3l-name{font-size:15px;text-align:center;padding:0;vertical-align:middle}
-  table.a3l-week td.a3l-rowkey{background:#faf7f3!important;font-size:13px;font-weight:700;color:#4a3a2e;text-align:left;padding-left:7px}
-  table.a3l-week tr.a3l-itemtop td{border-top:2px solid #4a3a2e}
-  table.a3l-week thead th{font-size:13px;padding:6px 2px}
-  /* 날짜를 종이에 미리 찍으면서(2026-09-01) 요일은 날짜 아래 작게 붙인다 — 손으로 적던 빈칸은 없앴다. */
-  table.a3l-week thead th .a3l-dow{margin-top:2px;font-size:11px;font-weight:600;opacity:0.88}
-  table.a3l-week .a3l-dow{font-size:11px;font-weight:700;margin-top:2px;color:rgba(255,255,255,0.85)}
+  /* 월간판(GM 2026-09-01 "1개월치·위=품목·왼쪽=날짜·2~3장 되어도 됨") — 한 장 = 품목 4종 × 그 달 전체.
+     8종을 한 장에 옆으로 다 세우면 칸 폭이 39px(10mm)라 세 자리 손글씨가 안 들어간다 → 4종씩 2장. */
+  .a3l-page{page-break-after:always}
+  .a3l-page:last-child{page-break-after:auto}
+  .a3l-page-cap{font-size:13px;font-weight:800;color:#2a2018;margin:0 0 5px}
+  table.a3l-month thead th{font-size:13px;padding:5px 2px}
+  table.a3l-month td{height:29px;font-size:12px}
+  table.a3l-month td.a3l-date{background:#f3ede7!important;font-size:12px;font-weight:700;color:#2a2018;text-align:left;padding-left:8px;white-space:nowrap}
+  table.a3l-month tr.a3l-closed td{background:#e7ddd2!important}
   #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
   #a3-laundry-print .a3l-guide b{font-weight:800}
 }
@@ -992,7 +992,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="a3-laundry-print" style="display:none">
   <div class="a3l-head">
     <div>
-      <div class="a3l-title">세탁물 출하표 (주간)</div>
+      <div class="a3l-title" id="a3lTitle">세탁물 출하표</div>
       <div style="font-size:13px;color:#4a3a2e;margin-top:3px">담당 <b>김훈 주임</b> — 세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다</div>
     </div>
     <div class="a3l-meta">
@@ -1002,11 +1002,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <div id="a3l-table-host"></div>
   <div class="a3l-guide">
-    <b>①</b> 맨 위 요일 칸에 <b>그 주의 날짜</b>를 먼저 적는다(월요일부터 일요일까지 한 장).<br>
-    <b>②</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서와 실제 수량을 맞춰 본 뒤</b>, 받은 개수를 그날 「입고」 칸에 적는다.<br>
-    <b>③</b> 마감 때 품목별로 <b>남아 있는 개수를 전부 세서</b> 「마감재고」 칸에 적는다.<br>
-    <b>④</b> 적은 숫자(입고·마감재고)는 그날 카카오톡 보고에도 <b>그대로</b> 올린다 — 종이와 보고 숫자가 같아야 한다.<br>
-    <b>⑤</b> 이 종이는 다음 점검 때 화면 「🧺 린넨 관리 → 오늘 점검」에 그대로 옮겨 적는다.
+    <b>①</b> 세탁물이 들어오면 <b>거래명세서와 실제 수량을 맞춰 본 뒤</b>, 받은 개수를 그날 줄 「입고」 칸에 적는다.<br>
+    <b>②</b> 마감 때 품목별로 <b>남아 있는 개수를 전부 세서</b> 그날 줄 「마감재고」 칸에 적는다.<br>
+    <b>③</b> 적은 숫자는 그날 카카오톡 보고에도 <b>그대로</b> 올리고, 점검 때 화면 「🧺 린넨 관리」에 옮겨 적는다.
   </div>
 </div>
 
@@ -1892,7 +1890,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdySheetRender()">
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
         <span id="wpLdySheetState" class="wp-ldy__k"></span>
-        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 한 장(1주일) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
+        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 · 한 달치(4품목씩 2장) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
       </div>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
       <div class="wp-ldy__h">📦 월 합계</div>
@@ -1919,7 +1917,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="wpLdyClosed"></span>
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveToday()">저장</button>
         <span id="wpLdySaveState" class="wp-ldy__k"></span>
-        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 한 장(1주일) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
+        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 세로 · 한 달치(4품목씩 2장) — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A4)</button>
       </div>
       <!-- 출고 기록 — 배치할 때마다 누르는 곳(하루 여러 번, 모바일 우선 · GM 정정 2026-08-08) -->
       <div class="wp-ldy__bar" style="margin-bottom:8px">
@@ -7132,46 +7130,44 @@ function wpLdyIssue(itemId, qty, kind){
 /* 🧺 세탁물 출하표 A4 세로 인쇄(GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) — 기존 인쇄 방식 재사용.
    품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
 function printA4Laundry(){
-  /* ★한 장 = 일주일(GM 2026-08-11 "매일 한장씩 줄 순없어 한장으로 1주일정도").
-     품목마다 2줄: 입고 / 마감재고 — 계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는
-     두 값이다(GM 2026-09-01 "입고 수량 보고 + 마감 때 재고 수량 보고"). 8품목 × 2줄 = 16행이라
-     A4 세로 한 장에 들어간다(검증 2026-09-01 — 표+안내 약 770px < A4 내용높이 1,062px). */
+  /* ★한 벌 = 한 달치(GM 2026-09-01 "1개월치 다 나왔으면 좋겠어 위에 종목, 왼쪽에 날짜, 2~3장 되어도 돼").
+     위(가로) = 품목, 왼쪽(세로) = 그 달 1일~말일. 품목마다 「입고」·「마감재고」 두 칸 —
+     계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는 두 값이다.
+     8종을 한 장에 옆으로 다 세우면 칸 폭 39px(10mm)라 세 자리 손글씨가 안 들어간다 → 4종씩 2장,
+     각 장에 날짜 전체(검증 2026-09-01 — 31일 달 기준 장당 표 약 955px < A4 내용높이 1,062px).
+     달 = 화면 「월간 출하 기록」의 월 선택(wpLdySheetYm)을 따른다. 요일은 날짜에서 계산(손기입 금지).
+     휴관일(정본 close_days 규칙과 같은 wpLdyIsClosed)은 줄 전체 음영 + 「휴관」 표기. */
   var items = wpLdyItems();
-  var DOW = ['월', '화', '수', '목', '금', '토', '일'];
-  /* ★날짜를 종이에 미리 찍는다(GM 지시 2026-09-01 "날짜를 월까진 넣어줘 9월 1일 이런식으로 그리고 요일도").
-     종전엔 요일만 있고 날짜는 손으로 적는 빈칸이었다 — 매주 사람이 일곱 칸을 적어야 했고 틀리기도 쉬웠다.
-     인쇄한 날이 속한 주의 월~일 실제 날짜를 계산해 넣는다. 요일은 날짜에서 나오므로 달이 바뀌어도 안 틀린다.
-     휴관일(정본 close_days 규칙과 같은 wpLdyIsClosed)은 날짜 옆에 표시해 그날 칸을 비우게 안내한다. */
-  var _base = new Date();
-  var _mon = new Date(_base);
-  _mon.setDate(_base.getDate() - ((_base.getDay() + 6) % 7));   // 그 주 월요일
-  var DAYS = DOW.map(function(d, i){
-    var x = new Date(_mon);
-    x.setDate(_mon.getDate() + i);
-    var ymd = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
-    return { label: (x.getMonth() + 1) + '월 ' + x.getDate() + '일', dow: d, closed: wpLdyIsClosed(ymd) };
-  });
-  var ROWS = [
-    { key: '입고',     cls: 'a3l-shade' },
-    { key: '마감재고', cls: '' }
-  ];
-  var h = '<table class="a3l-grid a3l-week"><colgroup><col style="width:96px"><col style="width:78px">'
-        + new Array(DOW.length + 1).join('<col>') + '</colgroup><thead>'
-        + '<tr><th class="a3l-item" colspan="2">품목 / 기록</th>'
-        + DAYS.map(function(d){
-            return '<th>' + d.label + '<div class="a3l-dow">(' + d.dow + ')' + (d.closed ? ' 휴관' : '') + '</div></th>';
-          }).join('')
-        + '</tr></thead><tbody>';
-  items.forEach(function(m){
-    ROWS.forEach(function(r, ri){
-      h += '<tr class="' + (ri === 0 ? 'a3l-itemtop' : '') + '">';
-      if (ri === 0) h += '<td class="a3l-name" rowspan="' + ROWS.length + '">' + wpLdyEsc(m.name) + '</td>';
-      h += '<td class="a3l-rowkey">' + r.key + '</td>';
-      for (var i = 0; i < DOW.length; i++) h += '<td class="' + r.cls + '"></td>';
+  var ym = wpLdySheetYm();
+  var y = +ym.slice(0, 4), mo = +ym.slice(5, 7);
+  var nDays = new Date(y, mo, 0).getDate();
+  var half = Math.ceil(items.length / 2);
+  var pages = [items.slice(0, half), items.slice(half)].filter(function(p){ return p.length; });
+  var title = '세탁물 출하표 — ' + y + '년 ' + mo + '월';
+  var tEl = document.getElementById('a3lTitle');
+  if (tEl) tEl.textContent = title;
+  var h = '';
+  pages.forEach(function(pg, pi){
+    h += '<div class="a3l-page">';
+    /* 2장짜리 실물 종이 — 첫 장엔 큰 머리가 있고, 둘째 장부터는 표만 있으면 어느 달 것인지 모른다. */
+    if (pi > 0) h += '<div class="a3l-page-cap">' + title + ' · 담당 김훈 주임 (' + (pi + 1) + '/' + pages.length + ')</div>';
+    h += '<table class="a3l-grid a3l-month"><colgroup><col style="width:104px"></colgroup><thead>'
+       + '<tr><th class="a3l-item" rowspan="2">날짜</th>'
+       + pg.map(function(m){ return '<th colspan="2">' + wpLdyEsc(m.name) + '</th>'; }).join('')
+       + '</tr><tr>'
+       + pg.map(function(){ return '<th>입고</th><th>마감재고</th>'; }).join('')
+       + '</tr></thead><tbody>';
+    for (var d = 1; d <= nDays; d++){
+      var ds = ym + '-' + (d < 10 ? '0' + d : d);
+      var dowCh = '일월화수목금토'.charAt(new Date(ds + 'T00:00:00').getDay());
+      var closed = wpLdyIsClosed(ds);
+      h += '<tr' + (closed ? ' class="a3l-closed"' : '') + '>'
+         + '<td class="a3l-date">' + mo + '월 ' + d + '일 (' + dowCh + ')' + (closed ? ' 휴관' : '') + '</td>';
+      for (var i = 0; i < pg.length; i++) h += '<td class="a3l-shade"></td><td></td>';
       h += '</tr>';
-    });
+    }
+    h += '</tbody></table></div>';
   });
-  h += '</tbody></table>';
   var host = document.getElementById('a3l-table-host');
   if (host) host.innerHTML = h;
   document.body.classList.add('a3-ldy-mode');
