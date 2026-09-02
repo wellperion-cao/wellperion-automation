@@ -927,17 +927,23 @@ function resetToDefault(){
   if (RAW.cells) renderSheet(RAW.cells);   // renderSheet 가 헤드라인·표·회원안내문구까지 전부 되돌린다
 }
 
-/* 주소에 남은 보기를 다시 적용한다. load() 가 기본(어제)으로 그린 뒤 마지막에 한 번 부른다. */
+/* 주소에 남은 보기를 다시 적용한다. load() 가 시트 기본(어제)으로 그린 뒤 마지막에 부른다.
+   ★주소에 아무것도 없으면 오늘 일자탭으로 연다(GM 지시 2026-09-02 "새로고침하면 오늘 일자
+   기준으로 전환되어야"). 시트 「보고」탭은 어제 하루로 고정돼 있어 그대로 두면 항상 하루 늦다 —
+   일자탭은 실무진이 계약을 적는 즉시 채워지므로 오늘 탭이 지금 가장 최신이다.
+   ▸자체 점검(09:30 발송 판정)은 계속 RAW.cells = 어제 기준으로만 돌아 흔들리지 않는다. */
 function applyUrlView(){
   var m = /[?&]d=(\d{4}-\d{2}-\d{2})/.exec(location.search);
   if (m) { document.getElementById('dpick').value = m[1]; onDatePick(); return; }
-  if (/[?&]m=1/.test(location.search)) { toggleMonth(); }
+  if (/[?&]m=1/.test(location.search)) { toggleMonth(); return; }
+  document.getElementById('dpick').value = ymd(new Date());
+  onDatePick(true);   // 기본 진입 — 주소에 날짜를 남기지 않는다(남기면 내일 열 때 오늘 날짜에 묶인다)
 }
 
-function onDatePick(){
+function onDatePick(silent){
   var val = document.getElementById('dpick').value; if (!val) return;
   VIEW_MODE = 'date';
-  _setUrlView('date', val);
+  if (silent !== true) _setUrlView('date', val);
   document.getElementById('dmonth').textContent = '📅 이번 달 전체';
   var day = parseInt(val.split('-')[2], 10);
   var picked = new Date(val + 'T00:00:00');
