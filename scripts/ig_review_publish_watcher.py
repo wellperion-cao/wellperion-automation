@@ -306,24 +306,31 @@ def _safe_print(text: str) -> None:
 
 
 # ----------------------------------------------------------------------
-def telegram(message: str, chat_id: str | None = None) -> None:
+def telegram(message: str, chat_id: str | None = None) -> bool:
     """텔레그램 1줄 보고 — 토큰 stdout 노출 금지 (메모리 feedback_no_token_in_stdout).
 
     chat_id 미지정 시 TELEGRAM_CHAT_ID(GM) 사용.
     성공 요약·IG 검증 알림은 TELEGRAM_WELLY_CHAT_ID(웰리/종합 접수처)를 명시해 호출.
     실패·결정 필요 알림은 기본값(GM) 유지.
+
+    ★실제로 보냈는지를 돌려준다(2026-09-02 시모). 종전에는 아무것도 안 돌려줘서,
+    호출부가 '보냈다'고 이력에 기록해 버리고 그 건은 영영 다시 발송되지 않았다.
     """
     target_chat_id = chat_id or TELEGRAM_CHAT_ID
-    token = os.environ.get(TELEGRAM_TOKEN_ENV_KEY, "").strip()
+    # 환경변수 → telegram_bot/.env 순서. 종전에는 환경변수만 봐서, 예약작업처럼 환경변수가
+    # 안 실린 채로 도는 자리에서는 토큰을 못 찾고 조용히 건너뛰었다(2026-09-02 실사고).
+    # CHAT_ID 는 이미 같은 로더를 쓰고 있었다 — 토큰만 빠져 있던 것을 맞춘다.
+    token = _load_env_val(TELEGRAM_TOKEN_ENV_KEY)
     if not token:
         _safe_print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
-        return
+        return False
     ok = _tg_send(token, target_chat_id, message, source="ig_review_publish_watcher.telegram",
                   extra={"disable_web_page_preview": "true"}, timeout=10)
     if ok:
         _safe_print(f"[INFO] 텔레그램 보고 성공 chat_id={target_chat_id}")
     else:
         _safe_print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
+    return bool(ok)
 
 
 def _notify_published(folder: str) -> None:
@@ -426,7 +433,11 @@ def notify_pending_review(items: list) -> None:
             f"{title} ({channel}) — 웰페리온 ERP M1에서 미리보기·승인\n"
             f"https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M1"
         )
-        telegram(msg)
+        if not telegram(msg):
+            # 못 보냈으면 이력에 남기지 않는다 — 남기면 다음 회차에 건너뛰어 GM 은 승인 카드를
+            # 영영 못 받는다(2026-09-02 실사고: 토큰 미설정으로 생략됐는데 '발송'으로 기록됨).
+            _safe_print(f"[WARN] 검수대기 알림 실패 — 다음 회차 재시도: {item_id}")
+            continue
         newly_notified.append(item_id)
         _safe_print(f"[INFO] 검수대기 알림 발송: {item_id}")
     if newly_notified:
