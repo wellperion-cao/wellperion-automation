@@ -31,12 +31,12 @@ KPI_FILE = BASE_DIR / "status" / "kpi_values.json"
 OUT_FILE = BASE_DIR / "status" / "voyage_map.json"
 
 # ── 대상 역할 (gm 제외 전체 7 C-Level) ──
-TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo", "cfo", "chro"]
+TARGET_ROLES = ["ceo", "cmo", "coo", "cto", "cpo", "cbo", "cfo", "chro"]
 
 # ── 역할 닉네임 ──
 ROLE_NICK = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
-    "coo": "시우", "cpo": "시포", "cto": "시토",
+    "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보",
 }
 
 ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")

@@ -51,7 +51,7 @@ STATE = _REPO / "tmp" / "auto_next_ship_state.json"
 OFF_SWITCH = _REPO / "status" / "auto_continue.OFF"
 ROLE_CACHE = _REPO / "tmp" / "hud_role_cache.json"   # 상태줄이 이미 적어둔 역할 기억함(재사용)
 TAIL_BYTES = 400_000
-NICK = {"ceo": "웰리", "cmo": "시모", "coo": "시우", "cpo": "시포", "cto": "시토"}
+NICK = {"ceo": "웰리", "cmo": "시모", "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
 # 마지막 턴이 GM 답을 기다리는 도구로 끝났는지 — 이때는 이어붙이면 안 된다.
 # 공백 유무에 흔들리지 않게 정규식으로 본다("name":"X" / "name": "X" 둘 다).
 ASK_TOOLS = re.compile(r'"name"\s*:\s*"(AskUserQuestion|ExitPlanMode)"')

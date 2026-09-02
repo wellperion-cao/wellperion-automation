@@ -107,6 +107,7 @@ CLEVEL_NICKS = {
     "coo": "시우",
     "cpo": "시포",
     "cto": "시토",
+    "cbo": "시보",
 }
 # 사이클(1회 run_cycle 호출)당 실제 라이브 성공 실행 총 상한. clevel별 1척은 이미
 # select_one_low_risk_ship 구조가 보장하므로, 이 상수는 "여러 clevel에 후보가 동시에

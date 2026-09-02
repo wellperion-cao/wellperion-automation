@@ -119,7 +119,7 @@ WORKTREES_DIR = ROOT / ".claude" / "worktrees"
 
 ROLE_NICK = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
-    "coo": "시우", "cpo": "시포", "cto": "시토",
+    "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보",
 }
 
 TODAY = datetime.now().date()

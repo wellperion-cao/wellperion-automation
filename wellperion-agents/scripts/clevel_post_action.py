@@ -80,7 +80,7 @@ try:
                                 excluded_role_notice as _excluded_notice)
 except Exception:
     _ROLE_NICK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
-                  "coo": "시우", "cpo": "시포", "cto": "시토"}
+                  "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
 
     def _norm_title(s: str) -> str:
         return re.sub(r"\s+", "", s or "").lower()

@@ -70,6 +70,7 @@ NICK = {
     "coo": "시우",
     "cpo": "시포",
     "cto": "시토",
+    "cbo": "시보",
 }
 # 닉네임 → clevel (귀속 ① 닉네임 토큰 검색용).
 NICK_TO_ROLE = {v: k for k, v in NICK.items()}

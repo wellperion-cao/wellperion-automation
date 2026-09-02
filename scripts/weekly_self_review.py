@@ -96,7 +96,7 @@ S3_STALE_DAYS = 45
 
 CLEVEL_ROLES = ["ceo", "cfo", "chro", "cmo", "coo", "cpo", "cto"]
 ROLE_NICK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
-             "coo": "시우", "cpo": "시포", "cto": "시토"}
+             "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
 
 # S1 폐기어휘 — 짧은 토큰+변형 사전(v1의 긴 정확문자열 매칭 폐지, §2-2). 새 폐기건=여기 1줄 추가.
 RETIRED_TOKENS = [

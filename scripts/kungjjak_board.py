@@ -33,7 +33,7 @@ SHA_RE = re.compile(r'\b([0-9a-f]{7,40})\b')
 _SHIP_IN_TEXT_RE = re.compile(r'배\s*(\d{2,6})')
 
 NICK = {'ceo': '웰리', 'cto': '시토', 'cmo': '시모', 'cpo': '시포',
-        'coo': '시우', 'chro': '시로', 'cfo': '시뽀'}
+        'coo': '시우', 'chro': '시로', 'cfo': '시뽀', 'cbo': '시보'}
 
 # 정본 5칸(wellperion-gm-report 스킬 §4-3) — 표 렌더는 _render_table 단 하나뿐이고
 # 헤더는 여기서만 만든다. 칸 수·이름이 바뀌면 아래 _selfcheck()가 바로 깨진다

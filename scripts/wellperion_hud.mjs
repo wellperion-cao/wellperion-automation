@@ -68,12 +68,14 @@ const ROLE_CACHE = 'tmp/hud_role_cache.json';   // .gitignore 대상(tmp/) — �
 // 창을 띄운 Start-AI *.bat 이 알려준 역할. 대화기록이 아직 비어 있는 **부팅 직후**와
 // 기록 저장이 꺼진 창에서 역할이 null 로 떨어져 상태줄이 회색 한 줄로 죽던 것을 받친다
 // (GM 2026-08-04 "statusline에 색상이 다 없어진 것 같네"). 대화기록이 읽히면 그쪽이 이긴다.
-const ENV_ROLE = /^(ceo|cfo|chro|cmo|coo|cpo|cto)$/.test(String(process.env.WELLPERION_ROLE || '').toLowerCase())
+const ENV_ROLE = /^(ceo|cfo|chro|cmo|coo|cpo|cto|cbo)$/.test(String(process.env.WELLPERION_ROLE || '').toLowerCase())
   ? String(process.env.WELLPERION_ROLE).toLowerCase()
   : null;
 const ROLE_CACHE_MAX = 50;                       // 오래된 세션부터 버린다(무한 증식 방지)
 
-const NICK = { ceo: '웰리', cfo: '시뽀', chro: '시로', cmo: '시모', coo: '시우', cpo: '시포', cto: '시토' };
+// cbo=시보 는 2026-09-02 GM 지시로 신설한 역할이다(비즈니스 확대·업체간 진행). 닉네임은
+// 나머지와 같은 규칙(직책 가운데 글자 → 시O)으로 지었다 — GM 이 다른 이름을 주시면 여기만 고친다.
+const NICK = { ceo: '웰리', cfo: '시뽀', chro: '시로', cmo: '시모', coo: '시우', cpo: '시포', cto: '시토', cbo: '시보' };
 
 const D = '\x1b[2m', C = '\x1b[36m', G = '\x1b[32m', Y = '\x1b[33m', R = '\x1b[31m';
 const B = '\x1b[1m', X = '\x1b[0m';
@@ -463,7 +465,7 @@ function mySubagents(cwd, sessionId) {
 const SUBAGENT_LIVE_MS = 600_000;
 const NAME_ROLE = [
   [/welly|웰리/i, 'ceo'], [/sito|시토/i, 'cto'], [/simo|시모/i, 'cmo'],
-  [/siwoo|시우/i, 'coo'], [/sipo|시포/i, 'cpo'],
+  [/siwoo|시우/i, 'coo'], [/sipo|시포/i, 'cpo'], [/sibo|시보/i, 'cbo'],
 ];
 function delegatedAgents(cwd) {
   const out = {};

@@ -31,6 +31,8 @@ from assign_short_no import next_short_no  # noqa: E402  (배10012 — 표시용
 ROLES = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
     "coo": "시우", "cpo": "시포", "cto": "시토",
+    # cbo=시보 — 2026-09-02 GM 신설(비즈니스 확대·업체간 진행 C레벨 권한).
+    "cbo": "시보",
 }
 OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 
