@@ -3878,12 +3878,20 @@ function printResultReport(taskId, override) {
     + '</div>'
     + '</div>';
 
-  /* ── 인쇄 ── */
+  /* ── 인쇄 ──
+     업무·결과 보고서도 항상 세로 A4로 고정한다. printDocViewer()와 같은 원인(print_options.js가
+     localStorage에 저장한 마지막 용지/방향이 전역 @page 스타일#po-page-style로 이 인쇄까지
+     새어 들어옴, 2026-09-02 매니저 지적)이라 같은 해법을 쓴다 — 인쇄 시작 시 그보다 나중(=더
+     우선)인 @page 오버라이드를 주입해 세로로 고정하고, 인쇄가 끝나면 되돌린다. */
+  var _rrOv = document.getElementById('rrPrintPageOverride');
+  if (!_rrOv) { _rrOv = document.createElement('style'); _rrOv.id = 'rrPrintPageOverride'; document.head.appendChild(_rrOv); }
+  _rrOv.textContent = '@page{size:A4 portrait;margin:8mm}';
   document.body.dataset.printMode = 'result';
   window.print();
   window.addEventListener('afterprint', function _cleanup(){
     delete document.body.dataset.printMode;
     container.innerHTML = '';
+    _rrOv.textContent = '';
     window.removeEventListener('afterprint', _cleanup);
   });
   // afterprint 미지원 브라우저 fallback
@@ -3891,6 +3899,7 @@ function printResultReport(taskId, override) {
     if (document.body.dataset.printMode === 'result') {
       delete document.body.dataset.printMode;
       container.innerHTML = '';
+      _rrOv.textContent = '';
     }
   }, 3000);
 }
@@ -4162,7 +4171,7 @@ window.ssotShowTasks=ssotShowTasks;
 
   /* 회원 상담(임정은M) — 업무 SSOT 밖에서 도는 일이라 프로젝트 단위로 안 잡힌다(2026-08-10 GM).
      문의 1건씩 업무로 올리면 보드가 수백 장이 되고, '회원 상담' 업무 1건만 두면 영원히 진행중·완료율 0% 가 된다.
-     그래서 문의 원장 집계를 업무판 마지막 줄로 얹는다.
+     그래서 문의 원장 집계를 업무 SSOT 마지막 줄로 얹는다.
      ★member_inquiry_list(이름·전화 포함 694행) 대신 집계 전용 member_inquiry_summary 를 쓴다 — PII 미노출.
      순위는 매기지 않는다: 이 원장은 담당이 사실상 한 명(91%)이라 등수가 의미 없다. */
   var CPO_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
@@ -4192,7 +4201,7 @@ window.ssotShowTasks=ssotShowTasks;
           '</div>';
         renderTodoTable();
       })
-      .catch(function () { /* 상담 줄은 보조 정보 — 실패해도 업무판은 그대로 뜬다 */ });
+      .catch(function () { /* 상담 줄은 보조 정보 — 실패해도 업무 SSOT는 그대로 뜬다 */ });
   }
   function todoFallback() {
     if (renderTodoTable()) return;
