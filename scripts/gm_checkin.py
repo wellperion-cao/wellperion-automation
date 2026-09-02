@@ -1504,9 +1504,15 @@ def note_slot_sent(slot_id: str, day: str | None = None) -> None:
 
 
 def slot_followups(now: "datetime.datetime | None" = None) -> list:
-    """v2 체크인 후속 판정 — 5분 주기 폴러가 부른다. 반환 [(slot_id, 'remind'|'miss'), …].
-    규약(GM 확정): 30분 무응답 → 딱 한 번 재알림 · 그 뒤에도 무응답이면 미응답('M') 기록 후 종료.
-    사유를 캐묻지 않는다 — 상태 전이와 기록뿐."""
+    """v2 체크인 후속 판정 — 5분 주기 폴러가 부른다. 반환 [(slot_id, 'miss'), …].
+
+    ★2026-09-02 GM 지적으로 재알림을 없앴다. GM 원문: "아침에 하루 텔레그램에 아침 9:00에
+    오고, 9:31에도 중복해서 왔네." 종전 규약은 30분 무응답이면 같은 통을 한 번 더 보냈는데,
+    받는 쪽에서는 답을 안 한 것이지 못 본 것이 아니라 그냥 같은 통이 두 번 온 것으로 보인다.
+    지금은 한 번만 보내고, 1시간이 지나도 답이 없으면 미응답('M')으로 기록하고 끝낸다 —
+    기록은 그대로 남으므로 잃는 정보는 없다. 사유는 캐묻지 않는다.
+    ▸슬롯 자체는 그대로 둔다(GM 개인 루틴 슬롯은 정리 대상이 아니다).
+    ▸재알림을 되살리려면 아래 remind 분기를 다시 넣는다 — 그 전에 GM 확인부터 받는다."""
     now = now or datetime.datetime.now()
     day = now.strftime('%Y-%m-%d')
     data = load()
@@ -1526,15 +1532,11 @@ def slot_followups(now: "datetime.datetime | None" = None) -> list:
         pending = [a for a, _l in _v2_slot_items(sid) if axes.get(a) not in ('O', 'X', 'M')]
         if not pending:
             continue
-        if elapsed >= 60 and reminded.get(sid):
+        if elapsed >= 60:
             for a in pending:
                 axes[a] = 'M'
             dirty = True
             actions.append((sid, 'miss'))
-        elif elapsed >= 30 and not reminded.get(sid):
-            reminded[sid] = True
-            dirty = True
-            actions.append((sid, 'remind'))
     if dirty:
         _write(data)
     return actions
