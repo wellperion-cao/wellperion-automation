@@ -212,7 +212,7 @@
   .flegend .ls{background:var(--accent);} .flegend .le{background:var(--gold);}
   .flegend .fnote{color:var(--dim); font-size:10.5px;}
 
-  /* ── 📈 2026 매출 연간 히스토리(1~7월 · sales_monthly 정본 재사용, .fchart/.fcol 공통 클래스 확장) ── */
+  /* ── 📈 2026 매출 연간 히스토리(1월~선택월 · sales_monthly 정본 재사용, .fchart/.fcol 공통 클래스 확장) ── */
   .fchart.hist{gap:7px; padding:9px 12px 6px;}
   .fchart.hist .fcol{min-width:48px; gap:3px;}
   .fchart.hist .fval{font-size:10.5px; font-weight:700; color:var(--text-soft); white-space:nowrap; letter-spacing:-0.01em;}
@@ -2173,10 +2173,15 @@
     if(deptHost) deptHost.innerHTML = combinedTbl;
   }
 
-  // ── 📈 2026 매출 연간 히스토리(1~7월) — _cfoSales(sales_monthly 정본, 부팅 시 이미 조회) 재사용, 신규 배관 없음(GM 승인 2026-07-03) ──
+  // ── 📈 2026 매출 연간 히스토리(1월~선택월) — _cfoSales(sales_monthly 정본, 부팅 시 이미 조회) 재사용, 신규 배관 없음(GM 승인 2026-07-03) ──
   // 레포·ERP 체계 2026-05-25 시작이라 운영보고·개발 데이터는 1~4월 소급 불가 — 매출만 실측 있어 연간 히스토리로 채택.
   // 미도래/조회 실패 월은 지어내지 않고 '미도래'로 정직 표기(가짜값 금지).
-  var HIST_MONTHS = ['1월','2월','3월','4월','5월','6월','7월'];
+  /* ★2026-09-02 GM 지적 "8월 매출이 정확하지 않네" — 여기 월 이름이 1~7월로 손으로 박혀 있었다.
+     그래서 8월 매출(5.99억)이 원천에 채워져 있는데도 화면은 7월까지만 세고 있었다:
+     「연간 매출(1~7월) 40.69억 · 연 72억 대비 56.5% · 월평균(측정 7개월)」.
+     달이 바뀔 때마다 사람이 이 줄을 늘려야 하는 구조라 반드시 늦는다 — 12개월을 만들어 두고
+     선택한 달까지만 잘라 쓴다(자르는 로직은 아래 upto 그대로). 이제 손댈 일이 없다. */
+  var HIST_MONTHS = (function(){ var a=[]; for(var i=1;i<=12;i++) a.push(i+'월'); return a; })();
   function renderSalesHistory(){
     var host = document.getElementById('sales-history-board');
     if(!host) return;
