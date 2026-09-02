@@ -556,7 +556,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     //   주문 후 수령)은 아직 운영부 회신 전이라 여기에 쓰지 않는다 — 지어내지 않는다(약속 L05·L25).
     steamiron: {
       lead:'남자·여자 파우더룸 탈의실에 진공 스팀다리미를 각 1대씩 두었습니다. 사우나에 들어가시기 전이나 나오신 뒤, 그 자리에서 바로 옷을 정리하실 수 있습니다. 써 보시고 마음에 드시면 같은 제품을 댁에서도 쓰실 수 있게 준비해 드립니다.',
-      tags:['남자 파우더룸 1대','여자 파우더룸 1대','에이스전자 스팀다리미','회원 판매가 108,000원'],
+      // 값은 바로 아래 가격 블록이 보여 준다 — 여기 또 적으면 같은 말이 두 번이다(중복 금지).
+      tags:['남자 파우더룸 1대','여자 파우더룸 1대','사우나 전후 바로 사용'],
       note:'접수해 주시면 담당자가 연락드려 수령 시기와 결제를 안내해 드립니다. 사용 중 궁금하신 점은 리셉션에 말씀해 주시면 도와드립니다.'
     },
     ohnutti: {
@@ -664,6 +665,17 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         + '<a class="g-brand-logo" href="https://ohnutty.co.kr/" target="_blank" rel="noopener"><img src="http://wellperion.com/wp/wp-content/uploads/2026/08/ohnutty-logo-transparent.png" alt="OHNUTTY"></a>'
         + '<div class="g-brand-video"><iframe src="https://www.youtube.com/embed/wcBJOmI6gKw" title="OHNUTTY 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
         + '</div>';
+    }
+    // 진공 스팀다리미 — 값을 눈에 띄게 (GM 지시 2026-09-02 "오넛티처럼 브랜드가이드로 조금 디자인").
+    //   오넛티가 쓰는 가격 블록 클래스(g-price-group·g-price-row)를 그대로 재사용한다 — 새 CSS 없음(약속 L21).
+    //   매매가 128,000원 → 회원가 108,000원. 두 값 모두 스팀다리미_검토.html(2026-08-04 업체 통화) 확정분이다.
+    if (cat === 'steamiron') {
+      html += '<div class="g-price-group">'
+        + '<div class="g-price-row">'
+        + '<span class="g-price-name">에이스전자 스팀다리미</span>'
+        + '<span class="g-price-list">128,000원</span>'
+        + '<span class="g-price-sale">108,000원</span>'
+        + '</div></div>';
     }
     // 오넛티 세트별 가격(소비자가→판매가) — list·sale 둘 다 채워진 세트만 표시(2026-08-07 GM 확정값)
     if (cat === 'ohnutti') {
