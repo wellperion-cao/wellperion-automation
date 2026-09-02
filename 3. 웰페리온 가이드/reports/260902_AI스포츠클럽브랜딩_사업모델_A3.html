@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>신규사업 ① AI 스포츠클럽 브랜딩·KPI 성장 서비스 — 사업 모델 정의(초안) A3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>신규사업 ① AI 스포츠클럽 브랜딩·KPI 성장 서비스 — 사업 모델 정의(초안) (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">신규사업 ① AI 브랜딩·KPI 성장 서비스 — 첫 고객 다이어트캠프 사업 모델</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시보</b> · 배 892<br>
+      작성일 <b>2026. 09. 02.</b> · 문서번호 <b>WP-CBO-260902-01</b><br>
+      지시 <b>GM 09-02 · 시보 첫 프로젝트</b> · 리드 <b>GM</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">다이어트캠프 건의 고유 KPI 를 「월 상담 예약(문의) 건수」로 확정해 주십시오 — 기준선은 대표님께 받은 최근 3개월 수치.</div>
+        <div class="d">CBO KPI 2층: 상위 = 확장 건수(다이어트캠프 = 1건) · 하위 = 이 건 고유 KPI 1개. 대표님 설문에서 첫 가입 계기 = 「프로그램 다양성을 보고 선택」, 즉 문의가 늘면 등록이 는다. 우리가 셀 수 있으려면 문의 접수 경로가 우리 손에 있어야 합니다(결정 02).</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">첫 소통 = 「Before &amp; After 페이지 1장」 카톡 발송을 승인해 주십시오 — 받는 분 이승기 대표님.</div>
+        <div class="d">GM 지시(09-02): 매 소통은 실제 페이지로, Before &amp; After 를 확실히. 페이지에 「지금(대표님 자료 그대로) ↔ AI 초안」과 받을 것 4개(3개월 문의·등록 수 · 문의 경로 · 채널 계정 · 검수 담당)를 담았습니다. 금액은 0줄.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    콘텐츠 발행 자동화 8월 실측 — 인스타그램(개인) 14건 외 블로그·카페·당근 발행완료 0건.
+    <span>&nbsp;/ 이 상태로 「5채널 자동 발행」을 팔면 과장이 됩니다(약속: 실제로 한 일만). <b>파일럿 전에 3채널 재가동을 각 1건 이상 실측으로 증명한 뒤 상품에 넣습니다.</b></span>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">판단 항목</th>
+        <th>① 브랜드 기준<span class="sub">톤·금지어·컬러·두 계정 규칙</span></th>
+        <th>② 콘텐츠 발행<span class="sub">소재 → AI 초안 → 검수 → 채널 발행 → 대조</span></th>
+        <th>③ 문의 → 전환 KPI<span class="sub">접수·전환·LOSS 추적 화면</span></th>
+        <th>④ 경영 화면·실무진 접점<span class="sub">매출 목표 대비 · 회원 구성 · 카톡 요약</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">벤 치 마 크 — 웰 페 리 온 실 측 (2026-09-02 · 원천에서 직접 셈)</td></tr>
+      <tr><td class="k">갖고 있는 것</td><td>브랜드가이드 화면 1개(항목 10개) · 기반 문서 14,056자(브리프 5절) · 금지어 규칙</td><td>발행 스크립트 16개 · 발행완료 <b>177건</b>(6~8월 · 5채널) · 발행 대조·무결성 게이트</td><td>8월 문의 <b>87건 → 전환 19건 (21.8%)</b> · 신규 20 · LOSS 24 · 문의 스냅샷 매일 자동</td><td>ERP 화면 <b>176개</b> · 자동화 모듈 29 · 예약작업 39 · 8월 카톡 발신 577줄 · AI C-Level 8역할</td></tr>
+      <tr><td class="k">8월 실제 가동</td><td class="good">상시 — 발행물마다 두 계정 규칙·금지어 적용</td><td class="bad">인스타 14건 · 블로그·카페·당근 0건</td><td class="good">매일 갱신(9/2 02:16 스냅샷)</td><td class="good">연 목표 72억 대비 64.8% 실시간(9/2)</td></tr>
+      <tr class="grp"><td colspan="5">상 품 모 듈 — 고 객 클 럽 에 주 는 것</td></tr>
+      <tr><td class="k">주는 것</td><td>클럽 전용 브랜드 기준 1장 + 브랜드가이드 화면(톤·금지어·컬러·계정 규칙)</td><td>월 발행 묶음 — 클럽 소재 입력 → AI 초안 → 클럽 검수 → 채널 발행 → 발행 대조표</td><td>문의 접수→전환 추적 화면 + 월 전환율 보고 1장</td><td>경영 화면(목표 대비 매출·회원 구성) + 실무진 카톡 요약</td></tr>
+      <tr><td class="k">고객이 넣는 것</td><td>클럽 소개·사진·기존 게시물</td><td>월 소재(행사·시설·강습) · 검수 담당 1명</td><td>문의 접수 경로(폼·전화 기록)</td><td>매출·회원 시트 접근</td></tr>
+      <tr class="grp"><td colspan="5">고 객 K P I — 세 는 숫 자 (지 어 내 지 않 음 · 우 리 가 실 제 로 셀 수 있 는 것 만)</td></tr>
+      <tr class="sum"><td class="k">핵심 지표</td><td class="ctr">발행물 중 브랜드 기준 위반 0건</td><td class="ctr">월 채널별 발행 건수</td><td class="ctr strong good">월 상담 예약(문의) 건수 — 다이어트캠프 건 KPI</td><td class="ctr">파일럿 뒤</td></tr>
+      <tr class="grp"><td colspan="5">첫 고 객 — 다 이 어 트 캠 프 실 측 (자료 3개 · 2. 브랜드_자료/10_다이어트캠프_브랜드가이드)</td></tr>
+      <tr><td class="k">받은 것</td><td>설문 9문항 — 고객층 30~50대 그룹PT · 한 줄 소개 「30가지 소도구 · 300가지 프로그램」 · 철학 Can/Need/Fun · <b>어투 = 강한 어조·확신</b>(웰페리온 톤과 다름)</td><td>레퍼런스 = 재활 솔루션 5부위(목·어깨·허리·무릎·발목 4단계) · 그룹수업 릴스 1개 · 블로그 필수 문구 1줄</td><td class="bad">문의·등록 기준선 <b>미수령</b> · 접수 경로 미수령</td><td>가격표 — PT 1·12·24·36·50회 / 캠프 1·3·6개월 / 쿠폰 30·50·100회 · 대표 2인(이승기·이대우)</td></tr>
+      <tr><td class="k">첫 30일에 만드는 것</td><td>다이어트캠프 브랜드 기준 1장(어투·금지어·컬러·계정 규칙)</td><td>블로그 4편 + 인스타 4건 초안 → 대표님 검수 → 발행 · 발행 대조표</td><td>문의 접수 링크 1개(우리가 세는 경로) + 월 문의 건수 보고</td><td class="ctr">파일럿 뒤</td></tr>
+      <tr class="grp"><td colspan="5">상 품 화 준 비 도</td></tr>
+      <tr><td class="k">지금 상태</td><td class="warn">있음 — 웰페리온 값이 화면에 박혀 있어 클럽별 변수로 분리 필요</td><td class="bad">보완 — 3채널 재가동 실측 뒤 판매</td><td class="warn">있음 — 유입 채널별 비중은 측정 안 됨</td><td class="warn">있음 — 고객 데이터 분리(🔒 GM 결재)</td></tr>
+      <tr><td class="k">요금</td><td colspan="4" class="warn">미산정 — 공급가(AI 토큰 · 검수 인력시간 · 서버)부터 산출한 뒤 요금 초안 → GM 결재. 청구액부터 잡지 않는다(GM 09-01).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">기준선 없이 시작하면 「성장」을 증명 못 한다 — 최근 3개월 문의·등록 수를 먼저 받는다(결정 02 ①).</li>
+        <li class="r1">문의가 전화·DM 으로 흩어지면 우리가 못 센다 — 우리가 세는 접수 링크 1개를 먼저 세운다.</li>
+        <li class="r1">발행 파이프라인 8월 3채널 0건 — 블로그 재가동을 증명한 뒤 다이어트캠프 발행에 쓴다.</li>
+        <li class="r2">어투가 웰페리온과 정반대(강한 확신 어조) — 웰페리온 톤·금지어를 복사하면 브랜드가 깨진다.</li>
+        <li class="r2">고객 자료에 계좌번호가 들어 있다 — 발행물·공유물에 절대 옮기지 않는다(🔒). 요금은 미산정.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">결정 01·02 → KPI 기재 · Before&amp;After 페이지 카톡 발송(GM 승인 뒤)</li>
+        <li class="n">다이어트캠프 브랜드 기준 1장 초안(어투·금지어·컬러·계정) — 자료 3개 기준 · 9/5</li>
+        <li class="n">블로그 재가동 실측 1건(시모 배) + 다이어트캠프 접수 링크 1개 · 9/9</li>
+        <li class="n">첫 달 발행 계획 — 블로그 4편·인스타 4건 초안 → 대표님 검수 · 9/12</li>
+        <li class="n">공급가 산출표(토큰·인력시간) → 요금 초안 GM 결재 · 9/16</li>
+        <li class="n">90일 파일럿 조건서 초안 — 상대 제시·계약 = GM</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>29개 모듈이 아니라 <b>KPI 하나(월 문의 건수)를 올리는 3모듈</b>(브랜드 기준·발행·문의 접수)만 1차. 경영 화면은 파일럿 뒤.</li>
+        <li><b>기준선 → 접수 링크 → 발행</b> 순서를 지킨다. 발행부터 하면 늘었는지 아무도 모른다.</li>
+        <li>다이어트캠프의 강점(300가지 프로그램·재활 5부위·강한 어조)을 <b>그대로 브랜드 기준</b>으로 — 웰페리온화하지 않는다.</li>
+        <li>파일럿 <b>1곳 · 90일 · KPI 1개</b>. 확장 건수는 다이어트캠프 계약 시 +1.</li>
+        <li>다음 보고 = 결정 뒤 브랜드 기준 1장(9/5). 본 문서는 같은 파일을 갱신한다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>숫자 출처</b> — 브랜드: cmo/brand/브랜드가이드.html · 2. 브랜드_자료/웰페리온_기반_FOUNDATION.md / 발행: cmo/review/review_queue.json(발행완료 177건 · 8월 published_at 필터) · scripts/ 발행 스크립트 16개 / 문의: status/cpo_status_onepager.json 월별.지난달 / 매출: status/home_kpi_snapshot.json(9/2) · ssot/canon_values.json 연 목표 72억 / 규모: status/module_registry.json 29 · schtasks 39 · ERP html 176 · logs/kakao_sent-2026-08-* 577줄.</div>
+    <div><b>정직 표기</b> — 웰페리온 직접 셈 22건 · <b>측정 안 됨 2건</b>(유입 채널 비중 · 퍼널 세부). 다이어트캠프 = 폴더 자료 3개(설문 txt · 가격표 pptx 6장 · 재활 솔루션 pptx 10장)에서 읽은 것만 — <b>문의·등록 기준선 미수령</b>. 일정(9/5·9/9·9/12·9/16)은 시보 제안·GM 확정 전. 요금·공급가 = 미산정(추정치 없음).</div>
+    <div><b>결재선</b> — 업체·클럽 발굴·조건 수집·비교표·초안 = 시보 자율 / 상대에게 숫자 제시·요금 확정·계약·고객 데이터 분리(🔒)·전략 = GM. <b>차기 보고</b> — 결정 01·02 뒤 다이어트캠프 브랜드 기준 1장 9/5 (본 파일 갱신).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260902_AI스포츠클럽브랜딩_사업모델_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
