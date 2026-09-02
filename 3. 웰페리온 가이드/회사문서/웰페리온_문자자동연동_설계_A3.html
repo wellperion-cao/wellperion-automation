@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문자 자동 연동 설계 (딜라이브) · WELLPERION</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  /* 9/4 딜라이브 미팅 준비용 A3 가로 1장. 스팀다리미_검토.html 와 같은 뼈대·색을 쓴다(새 양식 안 만듦). */
+  @page { size: A3 landscape; margin: 12mm; }
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
+    --steam:#EDF1EE; --brass:#8F7029; --alert:#9A4A20; --alert-bg:#FAF0E5;
+    --ink:#111A16; --pick:#E4EDE7;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
+
+  .bar{width:396mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+    cursor:pointer;border-radius:2px;}
+  .bar button:hover{background:#fff;color:var(--deep);}
+
+  .sheet{width:396mm;min-height:269mm;margin:14px auto;background:#fff;
+    padding:10mm 12mm 8mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
+
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+  .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;}
+
+  .lead{background:var(--steam);border-left:5px solid var(--mid);padding:11px 14px;margin-bottom:14px;
+    font-size:14.5px;line-height:1.62;}
+  .lead b{color:var(--deep);}
+
+  .cols{display:grid;grid-template-columns:1.35fr 1fr;gap:12mm;}
+  h2{font-size:12px;font-weight:800;letter-spacing:.18em;color:var(--brass);
+    border-bottom:1.5px solid var(--line);padding-bottom:5px;margin:0 0 9px;}
+  h2+h2{margin-top:16px;}
+  section{margin-bottom:15px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.6px;line-height:1.5;}
+  th,td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left;}
+  th{background:var(--steam);font-weight:700;color:var(--deep);white-space:nowrap;}
+  td.n{white-space:nowrap;font-weight:700;color:var(--mid);}
+  .flow td:first-child{width:26mm;}
+  .msg{font-size:12px;color:var(--mid);background:#F7F9F8;border:1px dashed var(--line);
+    padding:5px 7px;margin-top:4px;line-height:1.5;}
+
+  .need{background:var(--alert-bg);border:1px solid var(--alert);padding:10px 12px;}
+  .need h3{font-size:13.5px;font-weight:800;color:var(--alert);margin:0 0 7px;}
+  .need ol{margin:0;padding-left:18px;font-size:12.8px;line-height:1.72;}
+  .need ol b{color:var(--ink);}
+
+  ul.op{margin:0;padding-left:16px;font-size:12.8px;line-height:1.66;}
+  ul.op li{margin-bottom:6px;}
+  ul.op b{color:var(--deep);}
+
+  .ft{margin-top:12px;border-top:1px solid var(--line);padding-top:7px;
+    display:flex;justify-content:space-between;font-size:11.5px;color:var(--grey);}
+  @media print{ html,body{background:#fff;} .bar{display:none;} .sheet{margin:0;box-shadow:none;} }
+</style>
+</head>
+<body>
+
+<div class="bar"><button onclick="window.print()">인쇄 / PDF 저장</button></div>
+
+<div class="sheet">
+  <p class="ref">2026년 9월 · 회원 응대 자동화 — 문자(SMS) 자동 연동 · 9/4 딜라이브 미팅 준비</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>문자 자동 연동 설계 — 딜라이브 메시징 서버</h1>
+    </div>
+    <div class="rt">
+      <b>작성일</b> 2026. 09. 02.<br>
+      <b>작성</b> AI 시토 &nbsp;·&nbsp; <b>근거</b> D-Live Messaging Server API Reference v1.2
+    </div>
+  </div>
+
+  <div class="lead">
+    <b>지금은 회원께 알려드리는 일을 사람이 손으로 한다.</b> 접수를 받아도, 문의를 남기셔도, 휴회가 반영돼도
+    회원은 직접 물어보셔야 안다. 문자를 붙이면 <b>그 세 순간에 자동으로 한 통</b>이 나간다.
+    딜라이브 API 는 표준 REST 방식이라 지금 쓰는 구조에 그대로 얹을 수 있다 — 다만
+    <b>계정·발신번호가 나와야 한 줄도 못 보낸다.</b> 9/4 미팅에서 받아야 할 것을 오른쪽에 정리했다.
+  </div>
+
+  <div class="cols">
+    <div>
+      <section>
+        <h2>붙일 세 자리 (GM 지시 2026-09-02)</h2>
+        <table class="flow">
+          <tr><th style="width:20mm">구분</th><th>언제 나가나</th><th>보내는 방식</th></tr>
+          <tr>
+            <td class="n">① 종합접수처</td>
+            <td>회원이 접수하신 <b>그 순간</b> 접수 확인 1통.<br>
+                이후 <b>진행 상황이 바뀔 때</b> 현황 화면의 버튼을 눌러 안내 1통.
+              <div class="msg">[웰페리온] ○○○님, 접수 잘 받았습니다. 접수번호 R-145. 진행되면 다시 알려드리겠습니다.</div>
+              <div class="msg">[웰페리온] ○○○님께서 알려주신 건, 처리 완료되었습니다. 이용에 불편을 드려 죄송합니다.</div>
+            </td>
+            <td>접수 = 자동<br>진행 변동 = <b>버튼</b></td>
+          </tr>
+          <tr>
+            <td class="n">② 문의 폼</td>
+            <td>문의를 남기시면 <b>바로</b> 접수 확인 1통. 연락처는 이미 받고 있어 새로 물을 것이 없다.
+              <div class="msg">[웰페리온] 문의 주셔서 감사합니다. 담당자가 확인 후 순차적으로 연락드리겠습니다. 문의 02-6261-1200</div>
+            </td>
+            <td>자동</td>
+          </tr>
+          <tr>
+            <td class="n">③ 휴회</td>
+            <td>휴회 접수가 <b>회원 원장에 반영된 뒤</b>, 담당자가 버튼을 눌러 확정 안내 1통.
+              <div class="msg">[웰페리온] ○○○님 휴회가 처리되었습니다. 기간 0000.00.00 ~ 0000.00.00. 자세한 사항은 리셉션으로 문의 주세요.</div>
+            </td>
+            <td><b>버튼</b></td>
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>어떻게 붙이나 — 발신 창구는 하나만</h2>
+        <table>
+          <tr><th style="width:34mm">항목</th><th>내용</th></tr>
+          <tr><td class="n">발신 창구</td><td><b>구글 앱스스크립트(GAS) 한 곳</b>에만 문자 발신 함수를 둔다. 접수·문의·휴회 세 곳이 이미 전부 GAS 위에서 돌기 때문이다. 화면·파이썬에서 직접 문자를 쏘지 않는다 — 창구가 둘이 되면 같은 문자가 두 번 나간다.</td></tr>
+          <tr><td class="n">접속</td><td>HTTPS 전용 · <code>58.143.1.130:7443</code> · 요청·응답 모두 JSON(UTF-8)</td></tr>
+          <tr><td class="n">인증</td><td>아이디·비밀번호로 토큰을 받아 1시간 쓰고, <b>만료 5분 전에 갱신</b>한다. 토큰은 코드에 적지 않고 앱스스크립트 속성에 보관한다.</td></tr>
+          <tr><td class="n">한 번에 한 통</td><td>API 규격상 <b>한 요청에 한 통</b>이고, 결과를 받기 전 다음 통을 보내면 안 된다. 여러 명에게 보낼 일이 생기면 줄 세워 보낸다.</td></tr>
+          <tr><td class="n">길이</td><td>한글 45자까지 SMS, 넘으면 LMS(제목 필요·한글 1,000자). 위 문구는 전부 SMS 안에 들어가게 썼다.</td></tr>
+          <tr><td class="n">중복 차단</td><td>문자마다 고유 키를 <b>접수번호로</b> 만든다(예: <code>RCP-145-DONE</code>). 같은 키는 서버가 거른다 — 버튼을 두 번 눌러도 두 번 안 나간다.</td></tr>
+          <tr><td class="n">보냈는지 확인</td><td>딜라이브가 발송 결과를 따로 보관한다. 10분마다 결과를 받아 <b>실패한 건만</b> 업무보고방에 알린다. 성공은 조용히 지나간다.</td></tr>
+        </table>
+      </section>
+    </div>
+
+    <div>
+      <section>
+        <div class="need">
+          <h3>9/4 미팅에서 받아야 할 것 — 이게 없으면 못 켠다</h3>
+          <ol>
+            <li><b>API 아이디·비밀번호</b> (테스트용·운영용 구분되는지)</li>
+            <li><b>발신번호</b> — 대표번호 02-6261-1200 을 쓸 수 있는지, 사전 등록 절차가 따로 있는지</li>
+            <li><b>테스트 환경</b> — 실제 회원께 안 나가고 시험해 볼 방법이 있는지</li>
+            <li><b>요금</b> — 건당 단가, 월 최소 사용료, 실패한 건도 과금되는지</li>
+            <li><b>속도 제한</b> — 1초/1분당 몇 통까지인지 (문서에 "정책에 따라 제한"이라고만 적혀 있다)</li>
+            <li><b>발신 서버 IP 등록</b>이 필요한지 (필요하면 우리 쪽 고정 IP 확인이 선행)</li>
+            <li><b>광고성 여부 판정</b> — 위 세 문구는 안내성으로 보는지, 「(광고)」 표기·수신거부번호가 필요한지</li>
+            <li><b>알림톡</b>도 같은 계정으로 되는지 — 문자보다 싸고 읽힘이 좋아 나중에 갈아탈 수 있다</li>
+          </ol>
+        </div>
+      </section>
+
+      <section>
+        <h2>시토 의견 — 이렇게 하시길</h2>
+        <ul class="op">
+          <li><b>세 개를 한꺼번에 켜지 않는다.</b> ②문의 폼부터 켠다 — 하루 5~10건이라 양이 적고, 실패해도 회원 불편이 가장 작다. 2주 무사고면 ①접수처, 그 다음 ③휴회.</li>
+          <li><b>진행 변동 안내는 버튼으로만.</b> 자동으로 걸면 담당자가 상태를 고칠 때마다 회원 휴대폰이 울린다. 사람이 "지금 알려도 된다"고 판단할 때만 나가야 한다.</li>
+          <li><b>문구는 시트에 두고 화면에서 고친다.</b> 코드에 문장을 박으면 문구 한 줄 바꾸는 데 배포가 필요하다. 실무진이 직접 고칠 수 있어야 오래 간다.</li>
+          <li><b>회원 번호가 없는 접수는 그냥 넘긴다.</b> 익명 접수·번호 오기입이 있다. 못 보내는 건 조용히 건너뛰고 화면에만 「번호 없음」으로 표시한다.</li>
+          <li><b>보낸 기록을 접수 옆에 남긴다.</b> 언제 무슨 문자가 나갔는지 화면에서 보여야 "안 받았다"는 말에 답할 수 있다.</li>
+          <li><b>야간에는 안 보낸다.</b> 21시~08시 발송은 다음 날 아침으로 미룬다(예약 발송 기능이 API 에 있다).</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>실무진께 여쭐 것</h2>
+        <table>
+          <tr><th style="width:26mm">누구</th><th>무엇</th></tr>
+          <tr><td class="n">이경연 실장</td><td>접수 진행 상황이 바뀔 때 <b>어느 단계에서</b> 회원께 알리는 게 맞는지(접수 즉시 / 처리 시작 / 완료). 지금 손으로 안내하시는 문구가 있으면 그대로 쓰는 것이 낫다.</td></tr>
+          <tr><td class="n">임정은M</td><td>휴회 확정 안내에 <b>기간을 넣어도 되는지</b>, 회원마다 다른 조건이 있어 문구가 하나로 안 되는 경우가 있는지.</td></tr>
+          <tr><td class="n">리셉션</td><td>문자를 받은 회원이 <b>전화로 되물으실 때</b> 무엇을 물으실지 — 그 답이 문구에 미리 들어가야 전화가 줄어든다.</td></tr>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <div class="ft">
+    <span>웰페리온 · 회원 응대 자동화 — 문자 연동 설계 (A3 가로 1매)</span>
+    <span>근거 = 딜라이브 API v1.2 · 계정 발급 전이라 미구현 · 문구는 초안</span>
+  </div>
+</div>
+
+</body>
+</html>
