@@ -391,6 +391,40 @@ def _snapshot_ledger(mode: str, now: datetime) -> None:
         log_event("ledger_snapshot_failed", mode=mode, month=target, error=str(exc))
 
 
+def _roll_month_status(now: datetime) -> None:
+    """달이 바뀌면 월간운영계획의 달 상태를 오늘 기준으로 넘긴다(지난달=완료 / 이번달=진행 / 이후=계획).
+
+    왜 여기냐: 이 값은 지금까지 아무 코드도 안 건드려 사람이 손으로 넘겨야 했고, 그래서
+    2026-09-02 에 GM 이 "9월이 계획으로 되어 있다"고 직접 잡아 주셨다(8월이 진행중으로 남아
+    있었다). 새 예약작업·새 파일을 만들지 않고(약속 L21) 이미 매월 1일 09:00 에 도는
+    이 진입점에 흡수시킨다.
+
+    라이브(--send)에서만 부른다 — 드라이런은 부작용 0 을 유지한다.
+    """
+    try:
+        plan = json.loads(PLAN_FILE.read_text(encoding="utf-8"))
+    except Exception as e:  # 원장을 못 읽으면 손대지 않는다
+        print(f"[달상태] 원장을 못 읽어 건너뜀 — {e}")
+        return
+    cur = f"{now.year:04d}-{now.month:02d}"
+    months = plan.get("months") or {}
+    changed = []
+    for key, body in months.items():
+        if not isinstance(body, dict):
+            continue
+        want = "완료" if key < cur else ("진행" if key == cur else "계획")
+        if body.get("month_status") != want:
+            changed.append((key, body.get("month_status"), want))
+            body["month_status"] = want
+    if not changed:
+        print("[달상태] 이미 최신 — 바꿀 것 없음")
+        return
+    PLAN_FILE.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    for key, old, new in changed:
+        print(f"[달상태] {key} {old} → {new}")
+    log_event("month_status_rolled", month=cur, changed=len(changed))
+
+
 def run(mode: str, send: bool = False) -> str:
     now = datetime.now()
     label = "라이브 발송(--send)" if send else "드라이런"
@@ -411,6 +445,8 @@ def run(mode: str, send: bool = False) -> str:
     # 라이브(--send)에서만 쓴다 — 드라이런은 부작용 0 을 유지한다.
     if send:
         _snapshot_ledger(mode, now)
+        if mode == "start":
+            _roll_month_status(now)
 
     plan = load_plan()
 
