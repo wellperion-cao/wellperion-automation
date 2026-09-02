@@ -561,7 +561,8 @@ function paintAudit(out){
 }
 
 function renderSheet(c){
-  // 날짜·월 보기에서 새로고침하면 항상 기본(어제) 상태로 돌아온다 — 회귀 없는 기본값(GM 지시 09-02).
+  // 날짜·월 보기에서 새로고침하면 기본(어제) 상태로 돌아온다 — 단 주소에 날짜가 적혀 있으면
+  // 그 날짜를 유지한다(GM 지적 2026-09-02 "새로고침하면 다시 8월 1일 기준으로 전환되네").
   VIEW_MODE = 'default';
   var mdn = document.getElementById('memberDateNote'); if (mdn) mdn.style.display = 'none';
   var hl0 = document.getElementById('headline').children;
@@ -569,7 +570,21 @@ function renderSheet(c){
   document.getElementById('dmonth').textContent = '📅 이번 달 전체';
   document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
 
-  document.getElementById('asof').textContent = String(c.H2 || '').replace(/^📅\s*/, '').replace(' 매출 및 운영사항 보고','');
+  // 기준일 — 시트 제목 문자열을 그대로 믿지 않는다. 「보고」탭 H2 는 수식 안에 월이 글자로
+  // 박혀 있어(="📅 26년 8월 "&I1&"일 …") 달이 바뀌어도 안 따라온다. 실측 2026-09-02:
+  // 숫자는 9/1 것인데 제목만 「26년 8월 1일」이었고 그대로 회장님 방 사진에 실렸다.
+  // 그래서 어제와 어긋나면 어제 날짜를 앞에 세우고, 시트 표기는 그 뒤에 그대로 밝힌다.
+  var _sheetLabel = String(c.H2 || '').replace(/^📅\s*/, '').replace(' 매출 및 운영사항 보고','');
+  var _yst = new Date(Date.now() - 86400000);
+  var _md = _mdOf(c.H2);
+  var _asof = document.getElementById('asof');
+  if (_md && !_sameMD(_md, _yst)) {
+    _asof.innerHTML = esc((_yst.getMonth() + 1) + '월 ' + _yst.getDate() + '일') +
+      ' <span style="color:var(--bad);font-weight:700">— 시트 제목은 「' + esc(_sheetLabel) +
+      '」로 되어 있습니다(시트 H2 수식에 월이 고정)</span>';
+  } else {
+    _asof.textContent = _sheetLabel;
+  }
 
   document.getElementById('sales').innerHTML = SALES_ROWS.map(function(r){
     var name = c['H' + r]; if (!name) return '';
@@ -826,7 +841,10 @@ function load(){
     .catch(function(){ /* 지출 칸만 '–' 로 남는다 */ });
 
   // 네 조회가 모두 끝난 뒤에 스스로 점검한다 — 하나라도 늦으면 그건 '못 읽음'으로 잡힌다.
-  Promise.all([p1, p2, p3, p4]).then(runAudit, runAudit);
+  // 네 조회가 끝나면 스스로 점검하고, 주소에 남은 보기(?d=·?m=1)가 있으면 그 상태로 되돌린다.
+  // 점검은 항상 어제 기준 값(RAW.cells)으로 하므로 09:30 발송 판정은 흔들리지 않는다.
+  Promise.all([p1, p2, p3, p4]).then(function(){ runAudit(); applyUrlView(); },
+                                     function(){ runAudit(); applyUrlView(); });
 }
 
 /* ══ 날짜별 · 월별 보기 (GM 지시 2026-09-02) ══
@@ -895,14 +913,31 @@ function renderMonthSales(monthsData, todayCells){
   document.getElementById('sales').innerHTML = html || '<tr><td colspan="5">값 없음</td></tr>';
 }
 
+/* 고른 날짜를 주소에 남긴다 — 새로고침해도 그 날짜로 다시 그린다(GM 지적 2026-09-02).
+   주소만 바꾸고 페이지는 다시 안 부른다(replaceState). 기본 상태면 파라미터를 지운다. */
+function _setUrlView(kind, val){
+  if (!window.history || !history.replaceState) return;
+  var q = kind === 'date' ? ('?d=' + val) : (kind === 'month' ? '?m=1' : location.pathname);
+  history.replaceState(null, '', kind === 'default' ? location.pathname : q);
+}
+
 function resetToDefault(){
   VIEW_MODE = 'default';
+  _setUrlView('default');
   if (RAW.cells) renderSheet(RAW.cells);   // renderSheet 가 헤드라인·표·회원안내문구까지 전부 되돌린다
+}
+
+/* 주소에 남은 보기를 다시 적용한다. load() 가 기본(어제)으로 그린 뒤 마지막에 한 번 부른다. */
+function applyUrlView(){
+  var m = /[?&]d=(\d{4}-\d{2}-\d{2})/.exec(location.search);
+  if (m) { document.getElementById('dpick').value = m[1]; onDatePick(); return; }
+  if (/[?&]m=1/.test(location.search)) { toggleMonth(); }
 }
 
 function onDatePick(){
   var val = document.getElementById('dpick').value; if (!val) return;
   VIEW_MODE = 'date';
+  _setUrlView('date', val);
   document.getElementById('dmonth').textContent = '📅 이번 달 전체';
   var day = parseInt(val.split('-')[2], 10);
   var picked = new Date(val + 'T00:00:00');
@@ -937,6 +972,7 @@ function onDatePick(){
 function toggleMonth(){
   if (VIEW_MODE === 'month') { resetToDefault(); return; }
   VIEW_MODE = 'month';
+  _setUrlView('month');
   document.getElementById('dmonth').textContent = '↩ 날짜별로 보기';
   document.getElementById('asof').textContent = '이번 달 전체';
   document.getElementById('memberDateNote').style.display = '';
