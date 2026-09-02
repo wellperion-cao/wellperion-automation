@@ -258,6 +258,15 @@
 
 
 
+  <!-- ══ 🎯 3라인 12/31 완료 기준 — 상시 패널 (배879 · 시토 설계분 · 2026-09-02 신설)
+       손 관리 5행 지표. 정본 = status/three_line_criteria.json — 재측정은 이 파일을 직접 고친다.
+       조회 실패 시 패널을 통째로 숨긴다(비파괴 · display:none). ══ -->
+  <div id="three-line-panel" class="autopanel" style="border-left-color:var(--accent);margin-top:14px;display:none;">
+    <h2 class="sec" id="three-line-title" style="margin-top:0;">🎯 3라인 12/31 완료 기준</h2>
+    <div id="three-line-body"></div>
+  </div>
+  <!-- ══ /3라인 12/31 완료 기준 ══ -->
+
   <!-- ══ 이 항로가 「🚢 지금 도는 것」·「🔍 GM 결정 대기」·「🥁 쿵짝표」 3섹션을 흡수했다 (GM 승인
        자율현황 5섹션 정리 · 2026-08-15). 셋 다 이 항로가 이미 보여주던 것(진행중·대기·입항)과
        같은 데이터를 다른 각도로 세 번 더 보여주고 있었다. 컨테이너·렌더 함수까지 통째로
@@ -345,6 +354,37 @@
   })();
   </script>
   <!-- ══ /📊 ERP 화면 완성도·열람 ══ -->
+
+  <script>
+  (function(){
+    var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+    function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    function get(path){return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;});}
+    get('status/three_line_criteria.json').then(function(data){
+      var panel = document.getElementById('three-line-panel');
+      if(!data || !Array.isArray(data.rows) || !data.rows.length){ return; }
+      var target = new Date((data.target_date || '2026-12-31') + 'T00:00:00');
+      var dday = Math.ceil((target - new Date()) / 86400000);
+      var title = document.getElementById('three-line-title');
+      if(title) title.innerHTML = '🎯 3라인 12/31 완료 기준 <span style="font-size:12px;font-weight:400;color:var(--dim);">— D-' + dday + '</span>';
+      var vColor = { '진행중':'#d97706', '미측정':'var(--dim)', '완료':'var(--green)', '미달':'#dc2626' };
+      var rows = data.rows.map(function(r){
+        return '<tr><td style="padding:4px 8px;">' + esc(r.indicator) + '</td>'
+          + '<td style="padding:4px 8px;">' + esc(r.criteria) + '</td>'
+          + '<td style="padding:4px 8px;">' + esc(r.current) + '</td>'
+          + '<td style="padding:4px 8px;font-weight:700;color:' + (vColor[r.verdict] || 'var(--dim)') + ';">' + esc(r.verdict) + '</td></tr>';
+      }).join('');
+      var body = document.getElementById('three-line-body');
+      if(body){
+        body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'
+          + '<th style="text-align:left;padding:4px 8px;">지표</th><th style="text-align:left;padding:4px 8px;">기준</th>'
+          + '<th style="text-align:left;padding:4px 8px;">현재</th><th style="text-align:left;padding:4px 8px;">판정</th></tr></thead><tbody>'
+          + rows + '</tbody></table>';
+      }
+      if(panel) panel.style.display = '';
+    }).catch(function(){});
+  })();
+  </script>
 
   <!-- ════ 🗂 배 정리·보관함 (접힘) — 위 「🧭 항로」와 **같은 데이터**의 관리 도구 면이다. ════
        ★2026-08-03 시토(GM 지시 "중복 정리") — ①위치: 항로에서 멀리 떨어져 있어 같은 자료인 줄
