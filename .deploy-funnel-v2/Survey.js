@@ -12753,6 +12753,21 @@ function warmLessonRosterCache() {
       done.push(types[i]);
     } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
   }
+  // ★멤버십 회원관리 화면이 여는 세 가지도 함께 데운다 (GM 지적 2026-09-02 "페이지 속도").
+  //   실측(2026-09-02 · 라이브 왕복): 회원 명단 member_active_list 는 캐시가 비면 11.2초,
+  //   데워져 있으면 3.5초다. 그런데 이 워머는 강습 명단만 데우고 있어서 회원 명단은 5분마다
+  //   식은 채로 실무진이 첫 화면을 열 때 그 11초를 그대로 맞았다. 워머가 이미 5분마다 도니
+  //   같은 자리에 세 줄만 얹는다 — 새 트리거·새 함수는 만들지 않는다(약속 L21).
+  //   nocache:'1' 로 부른다 — 캐시가 살아 있으면 그냥 반환되고 수명(TTL 330초)은 안 늘어난다.
+  //   강제로 다시 계산해 넣어야 5분 주기 안에서 캐시가 끊기지 않는다.
+  var warmActions = [
+    { action: 'member_active_list', scope: 'valid', nocache: '1' },
+    { action: 'member_active_summary', nocache: '1' },
+    { action: 'member_inquiry_list', nocache: '1' }
+  ];
+  for (var wi = 0; wi < warmActions.length; wi++) {
+    try { _processAction(warmActions[wi]); } catch (eWarmMember) { /* 하나가 죽어도 나머지는 데운다 */ }
+  }
 
   // ★대기→멤버십 자동해제 + LOSS일자 자동기록(2026-08-05 시토·배302) — warmDashboardCache에서 이관.
   //   두 기능 모두 원래 memberMatchAutostamp(02:00 일일) 또는 warmDashboardCache(5분) 에 얹혀 있었는데,
