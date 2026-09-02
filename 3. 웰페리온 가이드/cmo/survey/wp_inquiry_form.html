@@ -116,6 +116,7 @@
      기준임을 qty 힌트로 안내). ②OHNUTTI_PRICE를 세트 2종 배열 구조로 교체(소비자가→판매가 20% 할인
      확정값, 나란히 표시). ③10세트 이상 할인율(30%)을 GUIDES.ohnutti.note에 명시.
      2026-08-10 GM 확정 — 단체가 = 소비자가 기준 30% (GM 확정 2026-08-10 · 지난 설 18,060원과 동일 산식).
+     2026-09-02 재적용(윤병현 매니저) — 09-02 시토 커밋들이 08-31 이전 베이스로 파일을 덮어써 아래 3건이 소실 → 최신본 위에 병합 복구: ①단체가 절사 2구 18,000/3구 17,900(08-31) ②g-price-row flex-wrap+g-price-bulk 모바일 줄바꿈(09-01) ③배송지 10세트 미만 잠금+계좌이체 시 계좌·입금자명 안내(09-01). ★이 파일 커밋 전 반드시 최신본 pull — WP 8460과 8831(오넛티 전용 /ko/ohnutti-form/) 두 페이지에 함께 재주입할 것.
      ★이 파일의 HTML 주석·인라인 스크립트는 view-source로 그대로 노출되므로
      비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시, ★주의: 이 파일 주석 텍스트 안에 꺾쇠괄호+
      script 글자를 그대로 적지 말 것 — Autoptimize가 진짜 스크립트로 오인해 본문 전체를 날려버림,
@@ -211,11 +212,13 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 /* 오넛티 세트별 가격(소비자가→판매가, 2026-08-07 GM 확정값) — 세트 2종 나란히 표시 */
 .wlp-inq .g-price-group{margin-top:14px}
-.wlp-inq .g-price-row{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:12.5px}
+.wlp-inq .g-price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:8px;font-size:12.5px}
 .wlp-inq .g-price-row:first-child{margin-top:0}
 .wlp-inq .g-price-name{font-weight:700;color:var(--ink);min-width:96px}
 .wlp-inq .g-price-list{color:var(--dim);text-decoration:line-through}
 .wlp-inq .g-price-sale{font-size:16px;font-weight:800;color:var(--coral)}
+.wlp-inq .g-price-bulk{font-weight:700;color:var(--ink);white-space:nowrap}
+@media (max-width:480px){.wlp-inq .g-price-bulk{flex-basis:100%;padding-left:104px;font-size:12px;margin-top:-2px}}
 /* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
 .wlp-inq .g-brand{margin-top:12px}
 /* 로고(150px 워드마크, 클릭 시 홈페이지 새탭) — 텍스트 링크와 중복이라 링크는 로고 하나로 통합(2026-08-07 GM 지시) */
@@ -240,6 +243,14 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
 .wlp-inq .field-info{font-size:13.5px;color:var(--ink);line-height:1.6}
+.wlp-inq .field.is-locked input{background:var(--bg);color:var(--dim);cursor:not-allowed}
+.wlp-inq .field-lock{font-size:12px;color:var(--dim);margin:6px 0 0}
+.wlp-inq .bank-box{margin-top:12px;padding:14px 16px;border:1px solid var(--line);background:var(--bg)}
+.wlp-inq .bank-row{display:flex;gap:12px;font-size:13.5px;line-height:1.7}
+.wlp-inq .bank-row span{flex:0 0 68px;color:var(--dim)}
+.wlp-inq .bank-row b{font-weight:700;color:var(--ink);letter-spacing:.2px}
+.wlp-inq .bank-note{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted);line-height:1.6}
+.wlp-inq .bank-note b{color:var(--coral)}
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
   width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
 .wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
@@ -386,8 +397,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   //   ★이 스크립트는 브라우저 view-source로 그대로 노출된다 — 비공개 원가 관련 항목은 어떤 형태로도
   //   이 파일(주석 포함)에 적지 않는다(GM 지시). 공개해도 되는 값은 소비자가·판매가뿐이다.
   var OHNUTTI_PRICE = [
-    { label: '230g 2구 세트', list: 25800, sale: 20640, bulk: 18060 },
-    { label: '80g 3구 세트',  list: 25600, sale: 20480, bulk: 17920 }
+    { label: '230g 2구 세트', list: 25800, sale: 20640, bulk: 18000 },
+    { label: '80g 3구 세트',  list: 25600, sale: 20480, bulk: 17900 }
   ];
 
   // ── 백엔드 GAS ──
@@ -524,7 +535,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         { key:'qty',      label:'수량(세트)', type:'text', ph:'숫자만 입력해 주세요 (예: 2)', req:true, hint:'선택하신 세트 기준 수량입니다' },
         { key:'methodInfo', label:'수령 방법', type:'info', text:'현장 수령이 기본입니다. 10세트 이상 주문 시 택배도 가능합니다.' },
         { key:'wantDate', label:'희망 수령일', type:'date', req:true },
-        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문으로 택배를 원하시면 배송지를 남겨주세요', ph:'10세트 미만은 입력하지 않으셔도 됩니다' },
+        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문 시에만 입력할 수 있습니다', ph:'10세트 이상 주문 시 입력 가능' },
         { key:'pay',      label:'결제 방법', type:'select', ph:'선택해 주세요', opts:['현장 결제','계좌이체'], req:true },
         { key:'note',     label:'요청 사항', type:'textarea', opt:true, ph:'요청하실 내용을 자유롭게 적어주세요.' }
       ]
@@ -575,7 +586,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     },
     ohnutti: {
       lead:'웰페리온과 오넛티가 함께 준비한 추석 선물세트입니다. 지난 설에는 준비한 물량이 일찍 소진돼 뒤늦게 찾아주신 분들이 구매하지 못했습니다. 이번에는 미리 접수를 받아 순서대로 확보해 드립니다. 500세트 한정이며, 접수 순서대로 안내드립니다. 접수 후 결제를 마치셔야 확정됩니다.',
-      note:'10세트 이상 구매 시 정상가 대비 30% 할인됩니다 (2구 25,800원 → 18,060원 / 3구 25,600원 → 17,920원). 택배는 10세트 이상 주문 시에만 가능하며, 그 외에는 웰페리온 현장에서 수령하실 수 있습니다. 선물 준비를 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
+      note:'10세트 이상 구매 시 정상가 대비 30% 할인됩니다 (2구 25,800원 → 18,000원 / 3구 25,600원 → 17,900원). 택배는 10세트 이상 주문 시에만 가능하며, 그 외에는 웰페리온 현장에서 수령하실 수 있습니다. 선물 준비를 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
     }
   };
 
@@ -703,7 +714,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
           return '<div class="g-price-row"><span class="g-price-name">' + p.label + '</span>'
             + '<span class="g-price-list">' + p.list.toLocaleString() + '원</span>'
             + '<span class="g-price-sale">' + p.sale.toLocaleString() + '원</span>'
-            + (p.bulk ? '<span class="g-price-name">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
+            + (p.bulk ? '<span class="g-price-bulk">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
         }).join('') + '</div>';
       }
     }
@@ -804,6 +815,37 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       }
       box.appendChild(field);
     });
+
+    // ── 오넛티 전용 상호작용(2026-09-01 윤병현 매니저 지시 · 09-02 재적용) ──
+    if (cat === 'ohnutti') {
+      var qtyEl = $('f_qty'), addrEl = $('f_address');
+      if (qtyEl && addrEl) {
+        var addrField = addrEl.parentNode;
+        var addrNote = document.createElement('p'); addrNote.className = 'field-lock';
+        addrField.appendChild(addrNote);
+        var syncAddr = function(){
+          var n = parseInt(String(qtyEl.value).replace(/[^0-9]/g,''), 10) || 0;
+          var ok = n >= 10;
+          addrEl.disabled = !ok;
+          if (!ok) addrEl.value = '';
+          addrEl.placeholder = ok ? '택배 받으실 주소를 입력해 주세요' : '10세트 이상 주문 시 입력 가능';
+          addrField.classList.toggle('is-locked', !ok);
+          addrNote.textContent = ok ? '택배 배송이 가능합니다. 받으실 주소를 정확히 입력해 주세요.' : '10세트 미만은 현장 수령만 가능해 배송지를 입력하지 않습니다.';
+        };
+        qtyEl.addEventListener('input', syncAddr); syncAddr();
+      }
+      var payEl = $('f_pay');
+      if (payEl) {
+        var bank = document.createElement('div'); bank.className = 'bank-box'; bank.style.display = 'none';
+        bank.innerHTML = '<div class="bank-row"><span>은행명</span><b>국민은행</b></div>'
+          + '<div class="bank-row"><span>입금 계좌</span><b>344901-04-093932</b></div>'
+          + '<div class="bank-row"><span>예금주</span><b>(주)웰페리온</b></div>'
+          + '<p class="bank-note">입금자명은 신청하신 <b>수령인 성함과 동일하게</b> 입력해 주세요. 입금 확인 후 접수가 확정됩니다.</p>';
+        payEl.parentNode.appendChild(bank);
+        var syncBank = function(){ bank.style.display = (payEl.value === '계좌이체') ? 'block' : 'none'; };
+        payEl.addEventListener('change', syncBank); syncBank();
+      }
+    }
 
     // 개인정보 동의(필수) — PIPA 문안 승계
     var cField = document.createElement('div'); cField.className='field';
