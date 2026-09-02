@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AWS 전환 시 마케팅 요청사항 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="_a3_report.css" rel="stylesheet">
+<style>
+  /* 요청 표가 이 장의 본문이다 — 행마다 '지금 상태'가 길어 줄바꿈이 나므로 높이를 풀어 준다. */
+  .req td{ height:auto; padding:7px 9px; vertical-align:top; line-height:1.42; }
+  .req thead th{ height:30px; font-size:12.4px; }
+  .req td.n{ text-align:center; font-weight:700; color:var(--navy); background:#F6F8FA; }
+  .req td.what{ font-weight:600; }
+  .req .now{ color:var(--dim); font-size:12px; }
+  .req .why{ color:var(--bad); font-size:12px; }
+  .ph{ display:inline-block; padding:1px 7px; border-radius:2px; font-size:10.6px; font-weight:700; color:#fff; }
+  .ph0{ background:var(--bad); } .ph1{ background:var(--warn); } .ph2{ background:var(--gray); }
+  .cols{ display:flex; gap:12px; margin-top:9px; }
+  .cols > div{ flex:1; }
+  .box{ border:1px solid var(--line); border-left:5px solid var(--navy); padding:8px 13px 9px; background:#FAFBFC; }
+  .box.no{ border-left-color:var(--gray); }
+  .box .lb{ font-size:10px; font-weight:700; letter-spacing:2.5px; color:var(--navy); }
+  .box.no .lb{ color:var(--gray); }
+  .box ul{ margin:5px 0 0 15px; }
+  .box li{ font-size:12.2px; line-height:1.55; color:var(--ink); margin-bottom:2px; }
+  .box li span{ color:var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>AWS 전환 시 마케팅 요청사항 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+</div>
+
+<div class="page">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">AWS 전환 시 마케팅이 요청할 것</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시모</b> · 보고 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 09. 02.</b> · 문서번호 <b>WP-CMO-260902-01</b><br>
+      근거 <b>2026-09-02 마케팅 자산·화면 실측</b>
+    </div>
+  </div>
+
+  <div class="top">
+    <div class="core">
+      <div class="c" style="flex:1.7;">
+        <div class="lb">한 문 장</div>
+        <div class="tx">마케팅이 AWS에 바라는 건 새 화면이 아니라 <u>칸 두 개</u>입니다.</div>
+        <div class="sub">문의가 <b>어디서 왔는지</b> 적히는 칸, 콘텐츠가 <b>무엇을 낳았는지</b> 적히는 칸. 이 둘이 없어서 마케팅 1순위 지표인 「노출 → 문의 전환율」을 지금까지 한 번도 재지 못했습니다. 화면은 이미 있습니다 — 채워질 데이터가 없을 뿐입니다.</div>
+      </div>
+      <div class="c sep">
+        <div class="lb">왜 지 금 인 가</div>
+        <div class="sub" style="margin-top:3px;">
+          이 두 칸은 <b>나중에 붙이기가 가장 비싼 종류</b>입니다. 문의가 들어오는 그 순간에만 알 수 있는 값(어느 채널·어느 게시물)이라, 설계 때 빠지면 <b>지나간 것은 영원히 복구되지 않습니다.</b><br>
+          지금 쌓이는 문의는 매달 그대로 소실되고 있습니다.
+        </div>
+      </div>
+    </div>
+    <div class="decide">
+      <div class="lb">G M 결 정</div>
+      <div class="q">지금 필요한 결정은 없습니다.</div>
+      <div class="d">이 장은 <b>설계에 넣어 달라는 요청 목록</b>입니다. AWS 구축이 시작될 때 시토에게 그대로 넘기면 됩니다. 다만 아래 <b>1·2번은 착수 전에 확정</b>돼야 합니다 — 나머지는 나중에 붙여도 됩니다.</div>
+    </div>
+  </div>
+
+  <div class="sec-h" style="margin-top:11px;">요청 7건 <span class="hint">「지금 상태」는 2026-09-02 실측값입니다 · <span class="ph ph0">착수 전</span> 설계에 반드시 포함 &nbsp;<span class="ph ph1">1차</span> 핵심 3모듈과 함께 &nbsp;<span class="ph ph2">이후</span> 전체 통합 때</span></div>
+
+  <table class="req">
+    <colgroup>
+      <col style="width:34px"><col style="width:255px"><col style="width:430px"><col style="width:420px"><col style="width:110px">
+    </colgroup>
+    <thead>
+      <tr><th>#</th><th>무엇을 요청하나</th><th>지금은 어떤 상태인가 (실측)</th><th>없으면 무슨 일이 생기나</th><th>언제</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="n">1</td>
+        <td class="what">문의 한 건마다 <b>유입 경로</b>가 저장될 것<br><span class="now" style="font-weight:400;">어느 채널·어느 게시물·언제 본 것인지</span></td>
+        <td class="now">문의 표에 그 칸이 없습니다. 인스타·블로그·카페·당근 어디서 온 문의인지 구분할 방법이 현재 없습니다. 마케팅 담당 지표 3개 중 1순위가 「노출 → 문의 전환율」인데 <b>미측정</b>으로 남아 있는 이유가 이것입니다.</td>
+        <td class="why">채널별로 돈과 시간을 얼마나 쓸지 정할 근거가 계속 없습니다. 콘텐츠를 늘려도 늘린 만큼 효과가 있었는지 말할 수 없습니다.</td>
+        <td><span class="ph ph0">착수 전</span></td>
+      </tr>
+      <tr>
+        <td class="n">2</td>
+        <td class="what">콘텐츠 <b>발행 원장</b>이 데이터로 있을 것<br><span class="now" style="font-weight:400;">편 · 채널 · 발행시각 · 성과</span></td>
+        <td class="now">지금은 파일 하나로 돕니다 — 검수 큐 178건이 JSON 파일에 쌓여 있고, 발행 뒤 반응은 또 다른 파일에 따로 적힙니다. 둘이 서로 연결돼 있지 않습니다.</td>
+        <td class="why">어떤 편이 문의를 만들었는지 이어 볼 수 없습니다. 1번 칸이 생겨도 <b>연결할 상대가 없으면 반쪽</b>입니다.</td>
+        <td><span class="ph ph0">착수 전</span></td>
+      </tr>
+      <tr>
+        <td class="n">3</td>
+        <td class="what"><b>사진·영상 자산 저장소</b><br><span class="now" style="font-weight:400;">올리면 무엇이 찍혔는지 함께 남는 곳</span></td>
+        <td class="now">사진은 구글 드라이브에 있고, 무엇이 찍힌 건지는 사람이 손으로 적습니다. 2025년 8월 전문촬영 11장이 <b>1년 넘게 한 번도 안 쓰였는데</b>, 원인이 아이디어가 아니라 「무엇이 찍힌 건지 적힌 곳이 없어서」였습니다(2026-09-02 색인 작성).</td>
+        <td class="why">공식 계정이 또 멈춥니다. 실제로 7월 14일부터 50일간 멈춰 있었고 원인이 이것이었습니다.</td>
+        <td><span class="ph ph1">1차</span></td>
+      </tr>
+      <tr>
+        <td class="n">4</td>
+        <td class="what"><b>접수 화면을 코드 없이</b> 만들 수 있을 것<br><span class="now" style="font-weight:400;">상품·설문·이벤트 폼</span></td>
+        <td class="now">상품 하나 붙일 때마다 화면 파일을 직접 고칩니다. 2026-09-02 스팀다리미 건에서 주소 칸·결제 방법·안내 문구를 네 곳에서 각각 손으로 고쳤습니다.</td>
+        <td class="why">상품이 늘수록 개발이 병목이 됩니다. 급한 판매 건이 화면 수정 대기로 며칠씩 밀립니다.</td>
+        <td><span class="ph ph1">1차</span></td>
+      </tr>
+      <tr>
+        <td class="n">5</td>
+        <td class="what">문의 <b>유형이 데이터로</b> 관리될 것<br><span class="now" style="font-weight:400;">국문·영문 같은 목록을 볼 것</span></td>
+        <td class="now">영문 문의 화면이 <b>3종만</b> 지원합니다 — 국문 7종 중 4종이 빠져 있습니다(화면 완성도 66%). 유형이 화면마다 따로 적혀 있어 한쪽만 고치면 어긋납니다.</td>
+        <td class="why">외국인 회원 문의가 유형 없이 들어와 담당 배정이 늦어집니다.</td>
+        <td><span class="ph ph2">이후</span></td>
+      </tr>
+      <tr>
+        <td class="n">6</td>
+        <td class="what"><b>발신 기록이 같은 곳에</b> 남을 것<br><span class="now" style="font-weight:400;">카카오톡·문자·알림</span></td>
+        <td class="now">지금은 이 PC의 로그 파일에만 남습니다. PC가 꺼져 있으면 아무도 무엇이 나갔는지 볼 수 없습니다.</td>
+        <td class="why">같은 안내가 두 번 나가는 것을 사람이 기억으로 막고 있습니다. 실제로 중복 발송 직전에 잡힌 적이 있습니다.</td>
+        <td><span class="ph ph2">이후</span></td>
+      </tr>
+      <tr>
+        <td class="n">7</td>
+        <td class="what"><b>공개 홈페이지 값이 한 곳</b>에서 나올 것<br><span class="now" style="font-weight:400;">연혁 · 시설 · 연락처</span></td>
+        <td class="now">홈페이지 완성도 62%. <b>설립 연도 표기가 공식 연혁과 어긋나</b> 있고 로고 링크가 아무 데도 가지 않습니다. 같은 값이 홈페이지·안내물·콘텐츠에 각각 적혀 있습니다.</td>
+        <td class="why">대외 첫 화면에 틀린 연도가 계속 노출됩니다. 고쳐도 다른 곳이 남습니다.</td>
+        <td><span class="ph ph2">이후</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols">
+    <div class="box">
+      <div class="lb">먼 저 정 해 야 할 것 &nbsp;— &nbsp;1 · 2 번</div>
+      <ul>
+        <li><b>유입 경로를 무엇으로 나눌지</b> <span>— 채널 단위(인스타·블로그·카페·당근)까지인지, 게시물 단위까지인지. 게시물 단위여야 「어떤 편이 통했나」를 답할 수 있습니다.</span></li>
+        <li><b>기존 문의는 어떻게 할지</b> <span>— 지난 문의에는 경로가 없습니다. 비워 두고 새것부터 쌓을지, 아는 범위만 채울지.</span></li>
+        <li><b>발행 원장을 어디에 둘지</b> <span>— ERP 안에 둘지, 지금처럼 밖에 두고 연결만 할지.</span></li>
+      </ul>
+    </div>
+    <div class="box no">
+      <div class="lb">요 청 하 지 않 는 것</div>
+      <ul>
+        <li><b>회원 개인정보 직접 조회</b> <span>— 회원 담당(시포) 소관입니다. 마케팅은 집계된 숫자만 봅니다.</span></li>
+        <li><b>결제 기능</b> <span>— 비용이 드는 결정이라 GM 결재 영역입니다. 여기서 요청하지 않습니다.</span></li>
+        <li><b>새 대시보드 화면</b> <span>— 콘텐츠·문의 현황 화면은 이미 있습니다. 데이터만 들어오면 그 화면이 살아납니다. 화면을 또 만들지 않습니다.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot" style="margin-top:auto;">
+    작성 AI 시모 · 이 장의 「지금 상태」는 2026-09-02 마케팅 자산·화면 실측값입니다 · 관련 GM 업무 = 웰페리온 ERP 고도화 + 브로제이 시스템 업무분장
+  </div>
+
+</div>
+</body>
+</html>
