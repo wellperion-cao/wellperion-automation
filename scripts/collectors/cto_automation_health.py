@@ -290,11 +290,81 @@ def _regression_row(log_path=None, now=None):
             "value": f"⚠️ 하락 {len(regressed)}건 (비교 {compared}건){hold_tail} — {top}{more}"}
 
 
+# ── §공인 IP 감시 (2026-09-02 · 딜라이브 문자 연동) ───────────────────────────
+# 딜라이브는 등록된 IP 에서만 문자 API 를 열어 준다. 우리 회선이 유동 IP 면 어느 날 IP 가
+# 바뀌면서 문자가 조용히 끊긴다 — 실패 알림도 안 오고, 회원만 안내를 못 받는다.
+# 그래서 매일 도는 이 다이제스트에 한 줄을 얹어 IP 가 바뀌면 그날 바로 보이게 한다.
+# 새 모듈·새 예약작업·새 알림을 만들지 않는다(약속 L21) — 기존 09:10 통에 한 줄 추가일 뿐이다.
+def _public_ip_row(state_path=None, fetch=None):
+    """공인 IP 를 재서 지난번 값과 비교한 한 줄. 조회 실패는 조용히 건너뛴다(없는 값을 지어내지 않는다)."""
+    import json as _json
+    from pathlib import Path as _Path
+    from datetime import datetime as _dt
+
+    path = _Path(state_path) if state_path else (
+        _Path(__file__).resolve().parents[2] / "status" / "public_ip_watch.json")
+
+    def _fetch():
+        import urllib.request
+        return urllib.request.urlopen("https://api.ipify.org", timeout=8).read().decode().strip()
+
+    try:
+        now_ip = (fetch or _fetch)()
+    except Exception:
+        return None                      # 못 쟀으면 줄을 만들지 않는다
+    if not now_ip or len(now_ip) > 45:
+        return None
+
+    try:
+        st = _json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        st = {}
+    prev, since = st.get("ip"), st.get("since")
+    today = _dt.now().strftime("%Y-%m-%d")
+
+    if prev == now_ip:
+        value = f"{now_ip} · {since or today} 부터 그대로"
+    elif prev:
+        value = f"⚠️ 바뀜 {prev} → {now_ip} (딜라이브에 등록 IP 변경 요청 필요)"
+        st["prev"] = prev
+        st["changed_at"] = today
+        since = today
+    else:
+        value = f"{now_ip} · 관찰 시작"
+        since = today
+
+    st.update({"ip": now_ip, "since": since, "checked_at": today})
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    except Exception:
+        pass
+    return {"label": "공인 IP(문자 발송용)", "value": value}
+
+
+def _selfcheck_public_ip_row():
+    """네트워크 없이 도는 검사 — 처음/그대로/바뀜 세 경우."""
+    import json, tempfile, os as _os
+    p = _os.path.join(tempfile.gettempdir(), "ipwatch_selftest.json")
+    if _os.path.exists(p):
+        _os.remove(p)
+    r1 = _public_ip_row(p, lambda: "1.2.3.4")
+    assert "관찰 시작" in r1["value"], r1
+    r2 = _public_ip_row(p, lambda: "1.2.3.4")
+    assert "그대로" in r2["value"], r2
+    r3 = _public_ip_row(p, lambda: "5.6.7.8")
+    assert "바뀜" in r3["value"] and "1.2.3.4" in r3["value"], r3
+    assert json.loads(open(p, encoding="utf-8").read())["ip"] == "5.6.7.8"
+    assert _public_ip_row(p, lambda: (_ for _ in ()).throw(OSError("net"))) is None
+    _os.remove(p)
+    print("[selfcheck] public_ip_row OK")
+
+
 def _enrich_with_live_signals(payload, erp):
     """payload 를 in-place 로 병합(라이브+스케줄+자가건강) — 실제 운영 erp_status.json
     일 때만 호출된다(테스트/가짜 경로는 원본 payload 그대로 반환하는 기존 계약 보존)."""
     payload["title"] = "전체 자동화 현황"
-    for row in (_live_row(erp), _schedule_row(erp), _regression_row()):
+    for row in (_live_row(erp), _schedule_row(erp), _regression_row(), _public_ip_row()):
         if row:
             payload["metrics"].append(row)
     self_health_rows = _self_health_rows()
