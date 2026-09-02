@@ -2047,6 +2047,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_registered_remove:   true,  // 2026-08-06 시토(배295) — "+직접등록" 되돌리기. 비밀번호 게이트 +
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
+  member_person_view:         true,  // 2026-09-02 시포(배11123) — 사람 찾기(이름·전화·회원번호→원장+문의 한 화면). 읽기전용.
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 삭제+유효회원 신규행, 2026-08-26 개정)
   member_registry_build:      true,  // 2026-08-26 시포(GM 승인·배801) — 회원등기부 구축·회원번호 부여(멱등·dryRun 지원)
@@ -9975,6 +9976,117 @@ function _hasRealReply_(memo) {
                   'LOSS보관 행 ' + arRow, '유효회원 행 ' + arNewRow + '(등록분류:' + arRegClass + ')', '멤버십']]);
     _memberCacheBump_(); _aaCacheClear_(['valid', 'archive']);
     return _json({ ok: true, restored: true, name: arName, phone: body.phone, archiveRow: arRow, newRow: arNewRow, regClass: arRegClass, seq: arNewSeq });
+  }
+
+  /* ─── 사람 찾기(member_person_view) — 2026-09-02 시포 · 배11123(배801 2단계 첫 조각) ──────────
+     설계 정본 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md §질문8
+
+     이름·전화·회원번호 중 아무거나 하나(q)를 넣으면 → 원장 3탭(유효회원·법인현황·LOSS보관)에서
+     그 사람을 찾고, 회원번호(없으면 전화+이름)로 흩어진 원장 행 전부를 한 사람으로 묶은 뒤,
+     그 사람 전화로 문의 3벌(멤버십문의·강습문의 성인·강습문의 유소년)을 함께 붙여 반환한다.
+     문의 탭은 아직 회원번호가 안 꿰여 있어(질문4 3·4단계 전) 전화로 매칭한다.
+
+     읽기 전용 — 시트에 아무것도 쓰지 않는다. 강습 문의는 (타임스탬프) 단위로 묶어, 한 번
+     접수에 종목이 여러 줄로 쪼개진 것(질문3 · 서승규 14줄 사례)을 '문의 1건 · 종목 N개'로 접는다. */
+  if (action === 'member_person_view') {
+    var pvQ = String(body.q || '').trim();
+    if (!pvQ) return _json({ ok: false, error: 'q 필요(이름·전화·회원번호)' });
+    var pvPhoneQ = _normPhone_(pvQ);
+    var pvNoQ = pvQ.replace(/\s/g, '').toUpperCase();
+
+    // ① 원장 3탭에서 사람 검색 — member_registry_build 와 같은 탭·같은 칸 탐색 방식(약속 L01).
+    var pvSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var pvCorpSh = null, pvAllSh = pvSs.getSheets();
+    for (var pcs = 0; pcs < pvAllSh.length; pcs++) {
+      if (pvAllSh[pcs].getSheetId() === MEMBER_CORP_SHEET_GID) { pvCorpSh = pvAllSh[pcs]; break; }
+    }
+    var pvTabs = [MEMBER_SHEET, (pvCorpSh ? pvCorpSh.getName() : MEMBER_CORP_SHEET_NAME), MEMBER_ARCHIVE_SHEET];
+    function _pvIdx(hdr, want) {
+      var w = String(want).replace(/\s/g, '');
+      for (var i = 0; i < hdr.length; i++) { if (hdr[i] && hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+      return -1;
+    }
+    var pvLedger = [];
+    for (var pt = 0; pt < pvTabs.length; pt++) {
+      var pvSh = pvSs.getSheetByName(pvTabs[pt]);
+      if (!pvSh) continue;
+      var pvLast = pvSh.getLastRow(), pvCols = pvSh.getLastColumn();
+      if (pvLast < 2) continue;
+      var pvHdr = pvSh.getRange(1, 1, 1, pvCols).getValues()[0].map(function(v){ return String(v).trim(); });
+      var pvNmI = _pvIdx(pvHdr, '회원명'), pvPhI = _pvIdx(pvHdr, '휴대폰'), pvNoI = pvHdr.indexOf(MEMBER_REGISTRY_KEY_COL);
+      if (pvNmI < 0 && pvPhI < 0) continue;
+      var pvBody = pvSh.getRange(2, 1, pvLast - 1, pvCols).getValues();
+      for (var pb = 0; pb < pvBody.length; pb++) {
+        var pvNm = pvNmI >= 0 ? String(pvBody[pb][pvNmI] || '').trim() : '';
+        var pvPh = pvPhI >= 0 ? pvBody[pb][pvPhI] : '';
+        var pvNo = pvNoI >= 0 ? String(pvBody[pb][pvNoI] || '').trim() : '';
+        if (!pvNm && !pvPh) continue;
+        var pvHit = (pvNo && pvNoQ && pvNo.toUpperCase() === pvNoQ) ||
+                    (pvPhoneQ && _normPhone_(pvPh) === pvPhoneQ) ||
+                    (pvNm && pvNm.indexOf(pvQ) >= 0);
+        if (!pvHit) continue;
+        var pvRec = { tab: pvTabs[pt], rowIndex: pb + 2, _no: pvNo, _name: pvNm, _phone: String(pvPh || '') };
+        for (var pc = 0; pc < pvHdr.length; pc++) {
+          if (!pvHdr[pc]) continue;
+          var pvV = pvBody[pb][pc];
+          if (pvV instanceof Date && !isNaN(pvV.getTime())) pvV = Utilities.formatDate(pvV, 'Asia/Seoul', 'yyyy-MM-dd');
+          pvRec[pvHdr[pc]] = (pvV === null || pvV === undefined) ? '' : String(pvV);
+        }
+        pvLedger.push(pvRec);
+      }
+    }
+    if (!pvLedger.length) return _json({ ok: true, found: false, query: pvQ, count: 0, people: [] });
+
+    // ② 같은 사람으로 묶기 — 회원번호가 있으면 번호로, 없으면 (전화+이름)으로 묶는다.
+    var pvGroups = {}, pvOrder = [];
+    pvLedger.forEach(function(r) {
+      var key = r._no || (_normPhone_(r._phone) + '|' + r._name);
+      if (!pvGroups[key]) { pvGroups[key] = { 회원번호: r._no, 이름: r._name, 전화: r._phone, 원장: [] }; pvOrder.push(key); }
+      pvGroups[key].원장.push(r);
+    });
+
+    // ③ 문의 3벌을 전화로 매칭해 붙인다 — 강습 2벌은 타임스탬프로 묶어 종목 분할을 접는다.
+    function _pvGroupLesson(rows) {
+      var g = {}, order = [];
+      rows.forEach(function(r) {
+        var key = r.timestamp || r.rowKey || String(r.rowIndex);
+        if (!g[key]) { g[key] = { timestamp: r.timestamp, 종목: [], 담당: [], 상태: [], 원본: [] }; order.push(key); }
+        if (r.sport && g[key].종목.indexOf(r.sport) < 0) g[key].종목.push(r.sport);
+        if (r.owner && g[key].담당.indexOf(r.owner) < 0) g[key].담당.push(r.owner);
+        if (r.status && g[key].상태.indexOf(r.status) < 0) g[key].상태.push(r.status);
+        g[key].원본.push(r);
+      });
+      return order.map(function(k){ return g[k]; });
+    }
+    var pvMiAll = _miReadRows_(_miSheet_());
+    try { pvMiAll = pvMiAll.concat(_miReadRows_(_miSheetEn_())); } catch (ePvEn) {}
+    var pvAdultAll = _lessonReadRowsMerged_({ type: '성인강습' });
+    var pvYouthAll = _lessonReadRowsMerged_({ type: '유소년강습' });
+
+    // 중복 의심(§질문8 검증4) — 같은 전화가 다른 회원번호(=아직 안 합쳐진 다른 원장 사람)로도 잡히면
+    // 새 판정을 만들지 않고, 그 사실 자체를 표시만 한다(병합은 사람이 확인한 뒤 · INC-020 원칙).
+    var pvPhoneCount = {};
+    pvOrder.forEach(function(key) {
+      var ph = _normPhone_(pvGroups[key].전화);
+      if (ph) pvPhoneCount[ph] = (pvPhoneCount[ph] || 0) + 1;
+    });
+
+    var pvPeople = pvOrder.map(function(key) {
+      var g = pvGroups[key];
+      var gPhone = _normPhone_(g.전화);
+      var mi    = gPhone ? pvMiAll.filter(function(r){ return _normPhone_(r.phone) === gPhone; }) : [];
+      var adult = gPhone ? _pvGroupLesson(pvAdultAll.filter(function(r){ return _normPhone_(r.phone) === gPhone; })) : [];
+      var youth = gPhone ? _pvGroupLesson(pvYouthAll.filter(function(r){ return _normPhone_(r.phone) === gPhone; })) : [];
+      return {
+        회원번호: g.회원번호 || '', 이름: g.이름, 전화: _fmtPhone_(g.전화),
+        원장: g.원장,
+        중복의심: !!(gPhone && pvPhoneCount[gPhone] > 1),
+        문의: { 멤버십: mi, 강습성인: adult, 강습유소년: youth },
+        문의건수: mi.length + adult.length + youth.length
+      };
+    });
+
+    return _json({ ok: true, found: true, query: pvQ, count: pvPeople.length, people: pvPeople });
   }
 
   /* ─── 회원등기부 구축(member_registry_build) — 2026-08-26 시포 · GM 승인 ────────────────────

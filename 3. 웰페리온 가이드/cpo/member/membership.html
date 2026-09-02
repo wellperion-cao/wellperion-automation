@@ -1715,6 +1715,14 @@ table.op-t td b{font-size:15px}
          진입 후 요약카드의 '회원 구분 선택칸'(대기/LOSS 포함)으로 진입점 이관. 데이터 배선(dMemWait·
          dMemLossToday/Month 기록 로직)은 다른 화면(오늘 할 일 등)이 재사용할 수 있어 JS는 그대로 둔다 —
          해당 id의 DOM만 없어 _setTxt가 조용히 no-op(회귀 없음). -->
+    <!-- 카드: 사람 찾기(2026-09-02 시포, 배11123 · 배801 2단계 첫 조각) — 이름/전화/회원번호 하나로
+         원장+문의 이력을 한 화면에. 새 페이지 아님(약속 L21) — 기존 멤버십 회원관리 탭 안 신규 탭. -->
+    <a class="dash-card" data-tab="person" href="javascript:void(0)" onclick="switchTab('person');_memHighlight(this)">
+      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">🔎 사람 찾기</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">이름·전화·회원번호</span><span class="dash-v">한 화면</span></div>
+      </div>
+    </a>
   </div>
   <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 히어로가
        '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
@@ -2059,6 +2067,23 @@ table.op-t td b{font-size:15px}
       </div>
     </div>
 
+  </div>
+
+  <!-- ══════════════════════════════ 사람 찾기(person view) — 배11123 · 배801 2단계 첫 조각 ══════════════════════════════
+       설계 정본 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md §질문8. 읽기 전용 — 쓰기 액션 0개.
+       이름·전화·회원번호 하나로 원장(유효회원·법인현황·LOSS보관) + 문의 3벌(멤버십·강습성인·강습유소년)을 붙여 보여준다. -->
+  <div id="pane-person" class="pane">
+    <div class="card">
+      <div style="margin-bottom:8px">
+        <span style="font-size:11px;font-weight:400;color:var(--dim)">이름·전화·회원번호 중 하나 → 원장·문의 이력 전부를 시간순으로. 읽기 전용(저장 없음)</span>
+      </div>
+      <div class="active-search-wrap">
+        <input type="text" id="personSearchQ" class="active-search" placeholder="이름·전화·회원번호(M00001)…"
+          autocomplete="off" onkeydown="if(event.key==='Enter')personSearchGo()">
+        <button class="btn-refresh" onclick="personSearchGo()">검색</button>
+      </div>
+      <div id="personSearchResult" style="margin-top:14px;font-size:12px;color:var(--dim)">검색어를 입력하세요.</div>
+    </div>
   </div>
 
   </div><!-- /type-membership -->
@@ -5008,6 +5033,64 @@ function switchTab(id, btn) {
   if (id === 'registered' && !_tabLoaded.registered) { _tabLoaded.registered = true; setRegRange(_regRangeMode || 'day'); }
   if (id === 'active'     && !_tabLoaded.active)     { _tabLoaded.active = true;     loadActiveMembers(); }
   // ownerAssign 훅 제거(2026-07-18): 담당자 배정이 강습 family로 이동 → lessonOwnerAssignOpen 전용 opener가 로드 관리.
+}
+
+/* ── 사람 찾기(person view) — 2026-09-02 시포, 배11123. 읽기전용 액션 member_person_view 1개만 쓴다(약속 L21).
+   버튼 클릭으로만 조회한다(탭 진입 자동로드 없음 — 검색어 없이는 부를 게 없다). ── */
+function personSearchGo() {
+  var q = (document.getElementById('personSearchQ').value || '').trim();
+  var box = document.getElementById('personSearchResult');
+  if (!q) { box.innerHTML = '이름·전화·회원번호를 입력하세요.'; return; }
+  box.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">검색 중…</div></div>';
+  fetch(GAS_URL + '?action=member_person_view&q=' + encodeURIComponent(q))
+    .then(function(r){ return r.json(); })
+    .then(_renderPersonSearch)
+    .catch(function(){ box.innerHTML = '<span style="color:#c0392b">조회 실패 — 다시 시도해 주세요.</span>'; });
+}
+// rec 원본 칼럼 중 값 있는 것만 "키 값" 나열 — 탭마다 칼럼이 달라도(유효회원/법인현황/LOSS보관) 그대로 나온다.
+function _pvKV(rec) {
+  var skip = { tab: 1, rowIndex: 1, _no: 1, _name: 1, _phone: 1 };
+  return Object.keys(rec).filter(function(k){ return !skip[k] && String(rec[k] || '').trim(); })
+    .map(function(k){ return '<span style="margin-right:10px"><b style="color:var(--dim);font-weight:600">' + k + '</b> ' + rec[k] + '</span>'; })
+    .join('');
+}
+function _renderPersonSearch(res) {
+  var box = document.getElementById('personSearchResult');
+  if (!res || !res.ok) { box.innerHTML = '<span style="color:#c0392b">조회 실패 — ' + ((res && res.error) || '') + '</span>'; return; }
+  if (!res.found || !res.people.length) { box.innerHTML = '일치하는 사람이 없습니다.'; return; }
+  box.innerHTML = res.people.map(function(p) {
+    var badge = p.중복의심
+      ? '<span style="margin-left:8px;padding:2px 8px;border-radius:6px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:700">⚠️ 중복 의심 — 같은 전화의 다른 회원번호 존재</span>'
+      : '';
+    var ledger = p.원장.map(function(r) {
+      return '<div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px">' +
+        '<span style="font-weight:700">' + r.tab + '</span> · 행 ' + r.rowIndex + '<br>' + _pvKV(r) + '</div>';
+    }).join('') || '<div style="color:var(--dim);font-size:12px">원장 행 없음</div>';
+    function _pvInq(rows, label) {
+      if (!rows.length) return '';
+      var items = rows.map(function(r) {
+        return '<div style="padding:6px 10px;border-left:2px solid var(--accent);margin-bottom:4px;font-size:12px">' +
+          (r.timestamp || '(시각 미기재)') + (r.program ? ' · ' + r.program : '') + (r.status ? ' · ' + r.status : '') + (r.channel ? ' · ' + r.channel : '') + '</div>';
+      }).join('');
+      return '<div style="margin-top:8px"><b style="font-size:12px">' + label + ' ' + rows.length + '건</b>' + items + '</div>';
+    }
+    function _pvLesson(groups, label) {
+      if (!groups.length) return '';
+      var items = groups.map(function(g) {
+        return '<div style="padding:6px 10px;border-left:2px solid var(--accent);margin-bottom:4px;font-size:12px">' +
+          (g.timestamp || '(시각 미기재)') + ' · 종목 ' + g.종목.length + '개(' + g.종목.join(', ') + ')' +
+          (g.담당.length ? ' · 담당 ' + g.담당.join(', ') : '') + (g.상태.length ? ' · ' + g.상태.join(', ') : '') +
+          (g.원본.length > 1 ? ' <span style="color:var(--dim)">— 원본 ' + g.원본.length + '줄 접음</span>' : '') + '</div>';
+      }).join('');
+      return '<div style="margin-top:8px"><b style="font-size:12px">' + label + ' ' + groups.length + '건</b>' + items + '</div>';
+    }
+    return '<div class="card" style="margin-bottom:14px;padding:14px 18px">' +
+      '<div style="font-size:15px;font-weight:800">' + p.이름 + (p.회원번호 ? ' <span style="color:var(--dim);font-weight:600;font-size:12px">(' + p.회원번호 + ')</span>' : '') + badge + '</div>' +
+      '<div style="color:var(--dim);font-size:12.5px;margin:2px 0 10px">' + p.전화 + '</div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--dim);margin-bottom:4px">원장 ' + p.원장.length + '건</div>' + ledger +
+      _pvInq(p.문의.멤버십, '멤버십 문의') + _pvLesson(p.문의.강습성인, '강습(성인) 문의') + _pvLesson(p.문의.강습유소년, '강습(유소년) 문의') +
+      '</div>';
+  }).join('');
 }
 
 /* ─────────────────────────────────────────────
