@@ -23,8 +23,15 @@
   var me = document.currentScript;
   var owner = (me && me.getAttribute('data-owner')) || 'AI 시우';
 
+  /* 이미 담당이 적혀 있는 화면에는 붙이지 않는다 — 이름이 두 개 나란히 서면 누구 것인지 더 헷갈린다.
+     실측 2026-09-02: 매출회원현황보고는 「AI 시포」, GM업무는 「AI 웰리」가 이미 제목 줄에 있었다. */
+  var ALREADY = /AI\s*(웰리|시토|시모|시포|시뽀|시로|시우)/;
+
   function put() {
     if (document.querySelector('.wlp-owner-badge')) return;
+    var head = document.querySelector('.head, header, .letterhead, .hd') || document.body;
+    var headText = String((head && head.textContent) || '').slice(0, 600);
+    if (ALREADY.test(headText)) return;
 
     var st = document.createElement('style');
     st.textContent =
