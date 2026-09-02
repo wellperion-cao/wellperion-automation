@@ -174,29 +174,42 @@ def build_contact_text(send_day: str) -> str:
     md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731 — '8/22' 표기
 
     # ── 예약 ──
-    events: list[tuple[str, str]] = []
-    resp = gas_get(FUNNEL_EXEC_URL, {"action": "member_inquiry_list"}, timeout=40,
-                   label="I16 예약")
+    # ★원천 = 멤버십 회원관리 화면의 예약 달력과 **같은 액션**(member_calendar).
+    #   GM 이 보시는 달력이 그 화면이고, 보고 숫자가 그 화면과 달라선 안 된다(2026-09-02 GM 지적).
+    #   ▸종전엔 문의 원장(member_inquiry_list)만 읽어 **재등록상담이 통째로 빠졌다** —
+    #     재등록 예약은 유효회원 원장의 「재등록예약목록」에 있어 문의 원장에는 아예 없다.
+    #     그래서 재등록 칸이 「0명」으로 박혀 있었다(원천에 연결된 적 없음).
+    new_events: list[tuple[str, str]] = []   # (시각, 이름) — 투어·체험 등 신규
+    recon_names: list[str] = []              # 재등록상담
+    resp = gas_get(FUNNEL_EXEC_URL, {"action": "member_calendar", "month": target_day[:7]},
+                   timeout=40, label="I16 예약")
     if resp is None:
         return ""      # 못 읽으면 아무것도 쓰지 않는다 — 빈 값으로 사람 글을 지우지 않는다
     try:
         data = resp.json()
         if not data.get("ok"):
             return ""
-        for r in data.get("data", []) or []:
-            for res in (r.get("reservations") or []):
-                if res.get("date") == target_day:
-                    events.append((res.get("time") or "", r.get("name") or ""))
+        for ev in data.get("events", []) or []:
+            if str(ev.get("date")) != target_day:
+                continue
+            name = (ev.get("name") or "").strip()
+            if not name:
+                continue
+            if ev.get("kind") == "재등록상담":
+                recon_names.append(name)
+            else:
+                new_events.append((ev.get("time") or "", name))
     except Exception:
         return ""
-    events.sort(key=lambda x: x[0])
-    names = " / ".join(n for _, n in events if n)
+    new_events.sort(key=lambda x: x[0])
+    names = " / ".join(n for _, n in new_events)
+    total = len(new_events) + len(recon_names)
 
-    lines = [f"{md(target_day)} 기준 [총 예약자  {len(events)}명]", ""]
-    lines.append(f"[신   규  :  {len(events)} 명]")
+    lines = [f"{md(target_day)} 기준 [총 예약자  {total}명]", ""]
+    lines.append(f"[신   규  :  {len(new_events)} 명]")
     lines.append(f" - 투어 및 체험 : {names}" if names else " - 투어 및 체험 : ")
-    lines.append("[재등록 : 0명]")
-    lines.append("- 멤버십 : ")
+    lines.append(f"[재등록 : {len(recon_names)}명]")
+    lines.append(f"- 멤버십 : {' / '.join(recon_names)}" if recon_names else "- 멤버십 : ")
     return "\n".join(lines)
 
 
