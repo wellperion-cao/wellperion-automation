@@ -57,6 +57,14 @@
         padding:11px 14px;background:var(--steam);border-left:3px solid var(--mid);}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start;}
+  /* 큰 묶음 머리 — GM 지시 2026-09-02 "지금 있는 업무 20개를 더 큰항목으로 묶고".
+     묶음 이름은 업무 시트와 같은 9종 체계를 그대로 쓴다(_gm_direct_tasks.js CATEGORY_BY_ID) —
+     새 분류를 만들지 않아야 부서 전달 때 같은 말로 오간다. */
+  .grp{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;
+    margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink,#1b1b1b);}
+  .grp:first-child{margin-top:0;}
+  .grp b{font-size:15px;font-weight:800;letter-spacing:-.01em;}
+  .grp span{font-size:12px;font-weight:700;color:var(--grey);letter-spacing:.04em;}
 
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
   .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
@@ -942,8 +950,34 @@
     } else {
       // 한 줄기 · 급한 순 (GM 지시 2026-09-01). 요약표와 카드가 같은 순서로 보이게 한 번만 세운다.
       var ordered = byUrgency(activeItems);
-      elGmGrid.innerHTML = ordered.map(cardHtml).join('');
-      elGmSum.innerHTML = ordered.map(sumRowHtml).join('');
+      // 큰 묶음으로 갈라 보여 준다 (GM 지시 2026-09-02 "지금 있는 업무 20개를 더 큰항목으로 묶고,
+      //   그 묶은 항목을 기준으로 업무들이 정리 정돈이 되면 부서별 전달도 편하고, 나도 체크하기가 편할 것").
+      //   ▸2026-09-01 에 없앤 「월별 묶음」과 다르다 — 그때 없앤 것은 7월·8월·9월로 가르던 선이고,
+      //     이건 일의 성격으로 가르는 선이다. 달은 여전히 안 가른다(한 줄기 그대로).
+      //   ▸묶음 안 순서는 급한 순 그대로다.
+      // 묶음 차례는 고정이다: 매일 순서가 바뀌면 GM 이 어제 본 자리에서 못 찾는다.
+      var GRP_ORDER = ['시설 및 환경','운영 정책','매출 및 영업','회원·CS',
+                       'IT·시스템·자동화','인사','파트너팀','교육·조직문화','회의','분류 미정'];
+      var buckets = {};
+      ordered.forEach(function (o) {
+        var c = o.category || '분류 미정';
+        (buckets[c] = buckets[c] || []).push(o);
+      });
+      var names = GRP_ORDER.filter(function (c) { return buckets[c] && buckets[c].length; })
+        .concat(Object.keys(buckets).filter(function (c) { return GRP_ORDER.indexOf(c) < 0; }));
+      var cardOut = [], sumOut = [], seq = 0;
+      names.forEach(function (c) {
+        cardOut.push('<div class="grp"><b>' + esc(c) + '</b><span>' + buckets[c].length + '건</span></div>');
+        sumOut.push('<tr class="grp-row"><td colspan="5" style="padding-top:14px;font-weight:800;">'
+                    + esc(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
+        buckets[c].forEach(function (o) {
+          cardOut.push(cardHtml(o, seq));
+          sumOut.push(sumRowHtml(o, seq));
+          seq++;
+        });
+      });
+      elGmGrid.innerHTML = cardOut.join('');
+      elGmSum.innerHTML = sumOut.join('');
     }
 
     elGmDoneCnt.textContent = doneItems.length + '건';
