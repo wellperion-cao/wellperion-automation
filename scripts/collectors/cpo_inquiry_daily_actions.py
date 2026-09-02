@@ -57,6 +57,10 @@ def collect(module=None) -> dict:
     # 이 칸이 없어서 강습 166건(2026-03~)이 아무 화면에도 안 잡히고 방치됐다.
     lesson_un = cpo_report.lesson_unassigned_summary(days=30)
 
+    # 강습 진행상태 빈칸 — GM 지시 2026-09-02. 담당이 붙어 있어도 상태 칸이 비면 컨택했는지
+    # 안 했는지 아무도 모르고, 위 미응대 집계에도 안 잡힌다(실측 324건 = 강습 문의의 18%).
+    lesson_blank = cpo_report.lesson_status_blank_summary(days=60)
+
     # 등록(SUC)됐는데 회원 명단에 안 들어간 건 — 2026-08-10 GM 지적으로 여기로 옮겨 왔다.
     # 종전엔 GAS가 등록 전환 순간 즉시 알렸는데, 등록 저장이 두 단계라 정상 흐름마다 울렸다.
     # 하루 지나도 안 들어간 것만 여기서 한 줄로 모아 본다(건별 알림 없음).
@@ -75,6 +79,10 @@ def collect(module=None) -> dict:
          "value": lesson_un.get("total_all", "미측정") if lesson_un else "미측정"},
         {"label": "등록됐는데 회원 명단에 없음(하루 지난 것)",
          "value": suc_missing["total"] if suc_missing else "미측정"},
+        # 컨택 여부를 아무도 모르는 자리. 최근분(60일)을 앞에 두는 이유 = 실무진이 기억하는
+        # 건이라야 답이 온다. 전체는 숨지 않게 아래 요약 줄에 함께 적는다.
+        {"label": "강습 진행상태 빈칸(최근 60일)",
+         "value": lesson_blank["recent"] if lesson_blank else "미측정"},
     ]
     summary = (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
@@ -111,6 +119,18 @@ def collect(module=None) -> dict:
             summary += f"\n  ▸ 오래된 순: {_head}"
     else:
         summary += " · 강습 미응대 미측정(조회 실패)"
+
+    if lesson_blank is None:
+        summary += " · 강습 진행상태 빈칸 미측정(조회 실패)"
+    elif lesson_blank["total"]:
+        # 최근분을 앞에 둔다 — 오늘 손이 갈 수 있는 건은 그것뿐이다. 누적은 숨기지 않되
+        # 뒤로 보낸다(2021년부터 쌓인 값이라 앞에 두면 숫자에 무감각해진다).
+        summary += (f" · 강습 진행상태 빈칸 최근 60일 {lesson_blank['recent']}명"
+                    f"(누적 {lesson_blank['total']}명 · 그중 컨택 기록도 없음 {lesson_blank['no_trace']}명)")
+        _rc = lesson_blank.get("recent_list") or []
+        if _rc:
+            _head = " / ".join(f"{o['date']} {o['name'] or '이름미상'}" for o in _rc[:3])
+            summary += f"\n  ▸ 최근 순: {_head} → {_LINK_LESSON}"
 
     if suc_missing is None:
         summary += " · 등록·명단 대조 미측정(조회 실패)"

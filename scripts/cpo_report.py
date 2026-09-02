@@ -241,6 +241,57 @@ def lesson_unassigned_summary(days: int = 30) -> dict | None:
             "total_ours": total_all - total_external, "oldest": oldest[:5]}
 
 
+def lesson_status_blank_summary(days: int = 60) -> dict | None:
+    """강습 문의 중 진행상태 칸이 비어 있는 건 — 컨택했는지 안 했는지 아무도 모르는 자리다.
+
+    GM 지시 2026-09-02("멤버십·강습 컨택 놓치지 않게, 실무진이 기록 잘하도록 서포트")로 넣었다.
+    미응대(lesson_unassigned_summary)는 '담당자가 안 붙은 건'을 보는데, 담당이 붙어 있어도
+    진행상태가 비면 그 건은 어느 집계에도 안 잡힌다 — 실측 2026-09-02: 성인 138건·유소년 186건
+    (합 324건, 강습 문의의 18%). 대부분 1~7월 옛 건이고 8월 이후는 8건뿐이라, 최근 입력은
+    되고 있고 옛 건이 밀린 상태다. 그래서 전체와 최근 N일을 갈라 낸다 — 실무진에게는 최근분만
+    좁혀 부탁하고(옛 324건을 통째로 요구하지 않는다), 전체는 숨지 않게 숫자로만 밝힌다.
+    실패 시 None(미측정 — 0으로 날조하지 않는다).
+
+    ★사람 기준으로 센다(행 기준 아님). 통합 문의 폼이 종목마다 행을 쪼개서, 한 사람이
+    한 번 문의해도 행은 7개까지 늘어난다 — 행으로 세면 실측 3,486행이 나오는데 실제로
+    연락할 사람은 그보다 훨씬 적다. 전화번호로 묶고, 전화가 없으면 이름+접수일로 묶는다."""
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    by_type, ok_any = {}, False
+    seen, seen_no_trace, recent_seen = set(), set(), set()
+    recent = []
+    for t in _LESSON_TYPES:
+        rows = fetch_lesson_inquiries(t)
+        if rows is None:
+            by_type[t] = None
+            continue
+        ok_any = True
+        keys_t = set()
+        for r in rows:
+            if str(r.get("status") or "").strip():
+                continue
+            d = _lesson_date_str(r.get("timestamp"))
+            phone = re.sub(r"[^0-9]", "", str(r.get("phone") or ""))
+            key = phone or (str(r.get("name") or "").strip() + "|" + d)
+            if not key.strip("|"):
+                continue
+            keys_t.add(key)
+            if key in seen:
+                continue
+            seen.add(key)
+            if not str(r.get("contacts") or r.get("memo") or "").strip():
+                seen_no_trace.add(key)
+            if d and d >= cutoff:
+                recent_seen.add(key)
+                recent.append({"date": d, "type": t, "name": str(r.get("name") or "").strip(),
+                               "sport": str(r.get("sport") or "").strip()})
+        by_type[t] = len(keys_t)
+    if not ok_any:
+        return None
+    recent.sort(key=lambda x: x["date"], reverse=True)   # 최근 것부터 — 기억이 남아 있는 건이 답이 빨리 온다
+    return {"days": days, "total": len(seen), "recent": len(recent_seen),
+            "no_trace": len(seen_no_trace), "by_type": by_type, "recent_list": recent[:5]}
+
+
 _MONTH_ABBR = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
                "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
 
