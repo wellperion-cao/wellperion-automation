@@ -232,6 +232,48 @@ def _window_end(ts: str, all_ts: list) -> str:
         return nxt
 
 
+def _gm_ref_pairs(role: str) -> tuple[dict[str, str], set[str]]:
+    """그 역할의 GM 접수(warn: ref→최초 ts)와 완료(ok: ref) 를 한 번에 읽는다.
+
+    ★area 는 보지 않는다 — 짝은 ref 로만 맞춘다. 완료 기록의 area 는 그때그때 다르게
+    적혀 왔다(실측 2026-09-03 ceo: GM지시 412 · GM요청 98 · 검수 1 · 판정 2 · 큐정리 1).
+    area 까지 같아야 닫힌 것으로 세면 실제로 끝난 지시가 미완으로 쌓인다.
+    """
+    warn: dict[str, str] = {}
+    ok: set[str] = set()
+    role_v = (role or "").strip().lower()
+    if not role_v or not WORKLOG_PATH.exists():
+        return warn, ok
+    with open(WORKLOG_PATH, encoding="utf-8") as f:
+        for line in f:
+            if "GM-" not in line:
+                continue
+            try:
+                d = json.loads(line)
+            except Exception:  # noqa: BLE001
+                continue
+            if (d.get("role") or "").strip().lower() != role_v:
+                continue
+            ref = str(d.get("ref") or "")
+            if not ref.startswith("GM-"):
+                continue
+            if d.get("result") == "warn":
+                warn.setdefault(ref, str(d.get("ts") or ""))
+            elif d.get("result") == "ok":
+                ok.add(ref)
+    return warn, ok
+
+
+def open_gm_refs(role: str) -> list[tuple[str, str]]:
+    """아직 완료 짝이 없는 GM 접수 [(ref, 접수시각)] — 오래된 순. 읽기전용.
+
+    미완 건수를 세는 곳은 여기 하나다(약속 L01). 부팅·자가점검이 각자 세면 판정이
+    갈린다 — 2026-09-03 아침 실측에서 손으로 센 미완 86건이 정본 기준 0건이었다.
+    """
+    warn, ok = _gm_ref_pairs(role)
+    return [(r, t) for r, t in sorted(warn.items(), key=lambda kv: kv[1]) if r not in ok]
+
+
 def close_gm_refs(role: str, detail: str = "") -> int:
     """그 역할의 열린 GM 요청 접수(warn 만 있고 ok 짝 없는 것)를 닫는다. 닫은 건수를 돌려준다.
 
@@ -250,27 +292,9 @@ def close_gm_refs(role: str, detail: str = "") -> int:
         role_v = (role or "").strip().lower()
         if not role_v:
             return 0
-        warn: dict[str, str] = {}
-        ok: set[str] = set()
-        with open(WORKLOG_PATH, encoding="utf-8") as f:
-            for line in f:
-                if "GM-" not in line:
-                    continue
-                try:
-                    d = json.loads(line)
-                except Exception:  # noqa: BLE001
-                    continue
-                if (d.get("role") or "").strip().lower() != role_v:
-                    continue
-                ref = str(d.get("ref") or "")
-                if not ref.startswith("GM-"):
-                    continue
-                if d.get("result") == "warn":
-                    warn.setdefault(ref, str(d.get("ts") or ""))
-                elif d.get("result") == "ok":
-                    ok.add(ref)
+        warn, _ok_unused = _gm_ref_pairs(role_v)
         n = 0
-        pending = [(r, t) for r, t in sorted(warn.items(), key=lambda kv: kv[1]) if r not in ok]
+        pending = open_gm_refs(role_v)
         # ★창 끝을 열어 둔다(2026-08-13 수리). 전에는 '다음 접수 시각'을 창 끝으로 썼는데,
         #   GM 이 짧게 연달아 말씀하시면 창이 1분짜리가 되고 **내 작업 커밋은 그 창이 닫힌
         #   뒤에 나온다** — 접수 훅은 GM 이 말한 순간 찍히고, 커밋은 내가 일을 마친 뒤라
@@ -518,6 +542,12 @@ if __name__ == "__main__":
         record_gm_prompt_hook()
     elif len(sys.argv) >= 2 and sys.argv[1] == "--hook-stop":
         close_gm_refs_hook()
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--open-gm":
+        _role = sys.argv[2] if len(sys.argv) >= 3 else (os.environ.get("WELLPERION_ROLE") or "")
+        _open = open_gm_refs(_role)
+        print(f"미완 GM 접수({_role or '역할 미지정'}) — {len(_open)}건")
+        for _r, _t in _open:
+            print(f"  {_r}  {_t}")
     elif len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
         _selfcheck()
     elif len(sys.argv) >= 4:
