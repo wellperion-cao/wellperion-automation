@@ -13,10 +13,17 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
-   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
-html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
-.wlp-recept{overscroll-behavior-y:contain}
+/* ★2026-09-02 — 여기 있던 스크롤 관련 두 줄을 지웠다. 실무진 신고 "손으로 터치해도 아래로
+   안 내려짐"의 원인이다. 2026-08-14 에 스크롤 보장용으로 넣은 줄인데 정반대로 작동한다.
+   ▸하나는 문서 전체(html·body)에 넘침 처리를 지정한 줄이었다. body 에 그 값을 주면 body 가 자기
+     스크롤 상자가 되면서, 페이지 전체 스크롤을 body 가 대신 맡는 브라우저 기본 동작이 끊긴다.
+     body 는 내용만큼 늘어나 스스로는 넘치지 않으므로 스크롤할 것이 없어지고 화면이 굳는다.
+   ▸다른 하나는 이 래퍼에 준 넘침연쇄 차단이었다. 이 상자 안에서 시작한 스크롤이 바깥 문서로
+     넘어가지 못하게 막는 값인데, 래퍼 자체는 스크롤 상자가 아니라서 밀어도 아무 일이 안 난다.
+   ▸같은 두 줄을 2026-09-01 에 습득물 갤러리 블록에서 지워 스크롤이 살아났다. 이 파일에만 남아
+     있었다 — 규칙을 아예 두지 않는 것이 정답이다. 브라우저 기본이 이미 스크롤한다.
+   ▸주석에 코드를 그대로 인용하지 않는다(찾기에서 살아 있는 규칙처럼 잡힌다 · 2026-09-01 같은 함정).
+   탭 지연 제거만 아래 한 줄로 남긴다. */
 .wlp-recept button,.wlp-recept a,.wlp-recept input,.wlp-recept select,.wlp-recept textarea{touch-action:manipulation}
 
 /* ── 종합접수처 페이지(8434) 한정 테마 보정 ── */
@@ -219,7 +226,11 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   color:var(--text);
   padding:13px 14px;
   border-radius:12px;
-  font-size:15px;
+  /* ★16px 아래로 내리지 마라 (2026-09-02 실무진 신고 "자동확대"). 모바일 브라우저는 글자가
+     16px 보다 작은 입력칸을 누르면 화면을 자동으로 확대한다 — 확대된 뒤에는 손가락으로 밀어도
+     제자리로 안 돌아와 키오스크가 쓰기 어려워진다. 종전 15px 이 그 조건에 걸렸다.
+     키오스크(세로 큰 화면)는 아래 미디어쿼리에서 24px 로 다시 키운다. */
+  font-size:16px;
   font-family:inherit;
   line-height:1.5;
   transition:border-color .15s,box-shadow .15s;
