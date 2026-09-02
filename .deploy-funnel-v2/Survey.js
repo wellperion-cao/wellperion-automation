@@ -10035,17 +10035,7 @@ function _hasRealReply_(memo) {
         pvLedger.push(pvRec);
       }
     }
-    if (!pvLedger.length) return _json({ ok: true, found: false, query: pvQ, count: 0, people: [] });
-
-    // ② 같은 사람으로 묶기 — 회원번호가 있으면 번호로, 없으면 (전화+이름)으로 묶는다.
-    var pvGroups = {}, pvOrder = [];
-    pvLedger.forEach(function(r) {
-      var key = r._no || (_normPhone_(r._phone) + '|' + r._name);
-      if (!pvGroups[key]) { pvGroups[key] = { 회원번호: r._no, 이름: r._name, 전화: r._phone, 원장: [] }; pvOrder.push(key); }
-      pvGroups[key].원장.push(r);
-    });
-
-    // ③ 문의 3벌을 전화로 매칭해 붙인다 — 강습 2벌은 타임스탬프로 묶어 종목 분할을 접는다.
+    // 강습 2벌은 타임스탬프로 묶어 종목 분할(예: 14줄)을 접는다 — 원장 경로·문의단독 경로 공용.
     function _pvGroupLesson(rows) {
       var g = {}, order = [];
       rows.forEach(function(r) {
@@ -10062,6 +10052,64 @@ function _hasRealReply_(memo) {
     try { pvMiAll = pvMiAll.concat(_miReadRows_(_miSheetEn_())); } catch (ePvEn) {}
     var pvAdultAll = _lessonReadRowsMerged_({ type: '성인강습' });
     var pvYouthAll = _lessonReadRowsMerged_({ type: '유소년강습' });
+
+    // ② 원장에 없으면 문의 3벌(멤버십·강습성인·강습유소년)을 이름·전화로 직접 찾는다 — "이름 하나로
+    //    문의부터" 원칙대로, 아직 회원이 아닌 문의 단계 사람도 찾아야 한다(2026-09-02 검증2 수정 · 서승규).
+    if (!pvLedger.length) {
+      function _pvInqHit(r) { return (pvPhoneQ && _normPhone_(r.phone) === pvPhoneQ) || (r.name && String(r.name).indexOf(pvQ) >= 0); }
+      var pvMiHits = pvMiAll.filter(_pvInqHit), pvAdultHits = pvAdultAll.filter(_pvInqHit), pvYouthHits = pvYouthAll.filter(_pvInqHit);
+      if (!pvMiHits.length && !pvAdultHits.length && !pvYouthHits.length) {
+        return _json({ ok: true, found: false, query: pvQ, count: 0, people: [] });
+      }
+      // 전화 있으면 전화로 사람을 묶는다. 전화 없는 행은 (이름+타임스탬프)로만 묶는다 — 서로 다른 시점의
+      // 문의를 전화 없이 같은 사람으로 함부로 합치지 않는다(동명이인 위험). 이름이 여러 건에 겹치면 표시만.
+      var pvIGroups = {}, pvIOrder = [];
+      function _pvIAdd(list, tag) {
+        list.forEach(function(r) {
+          var ph = _normPhone_(r.phone);
+          var key = ph ? ph : ('n|' + (r.name || '') + '|' + (r.timestamp || r.rowIndex));
+          if (!pvIGroups[key]) { pvIGroups[key] = { 이름: r.name || '', 전화: r.phone || '', noPhone: !ph, mi: [], adult: [], youth: [] }; pvIOrder.push(key); }
+          pvIGroups[key][tag].push(r);
+        });
+      }
+      _pvIAdd(pvMiHits, 'mi'); _pvIAdd(pvAdultHits, 'adult'); _pvIAdd(pvYouthHits, 'youth');
+      var pvNameCount = {};
+      pvIOrder.forEach(function(key) { var g = pvIGroups[key]; if (g.noPhone) pvNameCount[g.이름] = (pvNameCount[g.이름] || 0) + 1; });
+      // 문의 원본 행 하나를 '원장' 자리에 채우는 합성 레코드 — 회원 아님이 한눈에 보이게 tab명에 표시.
+      function _pvSynth(tab, r, isLesson) {
+        var rec = { tab: tab, rowIndex: r.rowIndex, _no: '', _name: r.name || '', _phone: String(r.phone || '') };
+        rec['문의일시'] = r.timestamp || '';
+        rec[isLesson ? '종목' : '프로그램'] = isLesson ? r.sport : r.program;
+        rec['상태'] = r.status || '';
+        if (r.channel) rec['채널'] = r.channel;
+        if (r.owner) rec['담당'] = r.owner;
+        return rec;
+      }
+      var pvIPeople = pvIOrder.map(function(key) {
+        var g = pvIGroups[key];
+        var adult = _pvGroupLesson(g.adult), youth = _pvGroupLesson(g.youth);
+        var 원장 = [];
+        g.mi.forEach(function(r){ 원장.push(_pvSynth('멤버십문의', r, false)); });
+        g.adult.forEach(function(r){ 원장.push(_pvSynth('강습문의(성인)', r, true)); });
+        g.youth.forEach(function(r){ 원장.push(_pvSynth('강습문의(유소년)', r, true)); });
+        return {
+          회원번호: '', 상태: '문의 단계', 이름: g.이름, 전화: _fmtPhone_(g.전화),
+          동명이인주의: !!(g.noPhone && pvNameCount[g.이름] > 1),
+          원장: 원장,
+          문의: { 멤버십: g.mi, 강습성인: adult, 강습유소년: youth },
+          문의건수: g.mi.length + adult.length + youth.length
+        };
+      });
+      return _json({ ok: true, found: true, query: pvQ, count: pvIPeople.length, people: pvIPeople });
+    }
+
+    // ③ 원장에서 찾은 사람 — 회원번호가 있으면 번호로, 없으면 (전화+이름)으로 묶는다.
+    var pvGroups = {}, pvOrder = [];
+    pvLedger.forEach(function(r) {
+      var key = r._no || (_normPhone_(r._phone) + '|' + r._name);
+      if (!pvGroups[key]) { pvGroups[key] = { 회원번호: r._no, 이름: r._name, 전화: r._phone, 원장: [] }; pvOrder.push(key); }
+      pvGroups[key].원장.push(r);
+    });
 
     // 중복 의심(§질문8 검증4) — 같은 전화가 다른 회원번호(=아직 안 합쳐진 다른 원장 사람)로도 잡히면
     // 새 판정을 만들지 않고, 그 사실 자체를 표시만 한다(병합은 사람이 확인한 뒤 · INC-020 원칙).
