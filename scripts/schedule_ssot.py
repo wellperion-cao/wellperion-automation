@@ -185,7 +185,7 @@ def pull_from_live(path=CAL_PATH) -> dict:
     return {"ok": True, "added": added, "changed": changed, "total": len(by_id)}
 
 
-def push_to_live(cal: dict) -> dict:
+def push_to_live(cal: dict, force: bool = False) -> dict:
     """이 파일 내용을 전사일정 화면(GAS)에 밀어 넣는다 — 파일 → GAS 방향 (2026-08-21 시토 · 배743).
 
     왜 필요한가: 화면(전사_일정.html)은 GAS 를 원천으로 읽고, 이 JSON 은 폴백 씨앗일 뿐이다.
@@ -204,7 +204,14 @@ def push_to_live(cal: dict) -> dict:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
     try:
-        body = json.dumps({"action": "save_schedule", "data": cal}).encode("utf-8")
+        # force — 항목이 줄어드는 저장은 GAS 가 기본으로 막는다(silent-drop 가드, 실수로 남의
+        #   항목을 덮는 사고 방지). 일정을 **일부러 지우는** 호출만 force=True 로 그 가드를 넘는다.
+        #   기본값은 False 라 종전 호출부 동작은 그대로다(회귀 0). 지워진 항목은 GAS 쪽
+        #   삭제 로그(action=schedule_dropped)에 남으므로 되짚을 수 있다.
+        payload = {"action": "save_schedule", "data": cal}
+        if force:
+            payload["force"] = True
+        body = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(SCHEDULE_GAS_URL, data=body,
                                      headers={"Content-Type": "text/plain"}, method="POST")
         with urllib.request.urlopen(req, timeout=25) as r:
