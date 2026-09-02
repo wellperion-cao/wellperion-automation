@@ -1280,7 +1280,20 @@ table.op-t td b{font-size:15px}
    GM 재지시(2026-07-24). */
 /* 2026-07-27 GM: 작업 현황 로그 버튼을 이 슬롯으로 — "피드백 옆에서 그래서 뭐가 됐나를 바로 본다".
    종합접수처_현황.html 도 같은 배치(💬 피드백 · 📋 작업 현황 로그 나란히)라 두 화면이 같아진다. */
-.header-feedback-slot{ flex:1 1 180px; display:flex; justify-content:center; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
+/* ★2026-09-02 GM 지적 — "실무진 피드백·회원 변경 이력이 자꾸 칸을 넘나든다". 원인은 이 슬롯이
+   flex:1 1 180px 로 늘었다 줄었다 하면서 두 버튼이 화면 폭에 따라 윗줄·아랫줄을 오간 것이다.
+   늘어나는 성질(flex-grow)과 줄바꿈을 빼서 두 버튼이 항상 한 덩어리로 같은 줄에 붙어 있게 한다. */
+.header-feedback-slot{ flex:0 0 auto; display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:nowrap; }
+
+/* 예전 현황 접기 — 헤더 버튼이 여덟 개라 폭이 줄면 배치가 요동쳤다. 겹치는 현황 셋을 접어 두되
+   없애지는 않는다. 펼칠 때 아래로 떠서 헤더 배치를 밀지 않게 절대 위치로 띄운다. */
+.hz-more{ position:relative; }
+.hz-more>summary{ list-style:none; cursor:pointer; }
+.hz-more>summary::-webkit-details-marker{ display:none; }
+.hz-more-list{ position:absolute; top:calc(100% + 4px); right:0; z-index:60;
+  display:flex; flex-direction:column; gap:4px; padding:6px;
+  background:var(--card,#fff); border:1px solid var(--border,#e3e7eb); border-radius:6px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12); white-space:nowrap; }
 .feedback-cta-btn{
   display:inline-flex;align-items:center;gap:6px;
   font-size:12.5px;font-weight:800;
@@ -1437,12 +1450,20 @@ table.op-t td b{font-size:15px}
                  흩어져 있던 회원 구성·이번달/지난달 신규·재등록·LOSS·문의 전환·갱신임박을 한 화면에 모아
                  A3 한 장으로 인쇄된다. 데이터는 이미 서버가 만들어 둔 status/cpo_status_onepager.json 을
                  그대로 그린다(여기서 다시 집계하지 않음). 조회는 모달을 열 때만(페이지 로딩 지연 0). -->
+            <!-- ★현황 정리 (GM 지시 2026-09-02 — "실무진 피드백·회원 변경 이력이 자꾸 칸을 넘나든다,
+                 현황(라이브)을 매출 및 회원 현황보고로 정리할 수 있을 것 같은데"). 헤더 버튼이 여덟 개라
+                 화면 폭이 줄면 줄바꿈이 요동쳤다. 겹치는 현황은 보고서 한 곳으로 모으고, 나머지 셋은
+                 없애지 않고 접어 둔다(실무진이 쓰던 것을 흔적 없다고 끄지 않는다). -->
+            <a class="action-btn" id="btnSalesMemberReport" href="../../coo/report/매출회원현황보고.html" target="_blank" rel="noopener">📄 매출·회원 현황 보고 →</a>
+            <details class="hz-more"><summary class="action-btn">▾ 예전 현황</summary>
+            <div class="hz-more-list">
             <button class="action-btn" id="btnStatusOnepager" onclick="openStatusOnepager()">📄 회원 현황 한 장</button>
             <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">🆕 신규 문의 & 등록 현황</button>
             <!-- 재등록 현황 버튼 — 원본 대시보드(renewal.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
                  어긋남 방지, 2026-07-16 시설부 기준값 사고 재발방지). openInquiryDash 패턴 벤치마킹, 기존 코드 미변경. 2026-07-20 GM 지시 -->
             <button class="action-btn" id="btnRenewDash" onclick="openRenewDash()">🔄 재등록 현황</button>
             <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">강습 문의 현황</button>
+            </div></details>
             <button class="action-btn" onclick="openChurnManage()">🚪 LOSS 관리</button>
             <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
                  카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
