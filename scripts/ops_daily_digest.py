@@ -1364,7 +1364,43 @@ _SCHEDULE_DUP_RATIO = 0.6      # 같은 날짜에 이 이상 닮은 이름이 �
 
 
 def _schedule_norm(name: str) -> str:
-    return re.sub(r"[\s·\-—()\[\]]+", "", str(name or ""))
+    """이름 비교용 정규화. 공백·괄호류를 없애고, **이름 안에 적힌 날짜·기간 표기도 뗀다.**
+
+    ★2026-09-02 — 날짜를 안 떼서 같은 일이 두 줄로 살아 있었다(GM 지적). 실측:
+      「오넛티 팝업 시작 (9/5~9/19)」 vs 「오넛티 추석 팝업 운영 시작」 = 닮음 0.538 로 기준(0.6) 미달.
+      이름 뒤에 붙은 기간 표기가 닮음을 끌어내린 것이 원인이었다. 떼고 재면 0.778 로 걸린다.
+    """
+    s = str(name or "")
+    s = re.sub(r"\d{1,2}\s*/\s*\d{1,2}", "", s)          # 9/5, 9 / 19
+    s = re.sub(r"\d{1,2}\s*월\s*\d{1,2}\s*일?", "", s)    # 9월 5일
+    s = re.sub(r"[~∼–]", "", s)                           # 기간 물결표
+    return re.sub(r"[\s·\-—()\[\]]+", "", s)
+
+
+def _within_a_day(a: str, b: str) -> bool:
+    """두 날짜(YYYY-MM-DD)가 같거나 하루 차이면 True. 형식이 아니면 문자열 일치로만 본다."""
+    from datetime import date as _d
+    try:
+        pa = _d(*(int(x) for x in a.split("-")))
+        pb = _d(*(int(x) for x in b.split("-")))
+    except Exception:
+        return a == b
+    return abs((pa - pb).days) <= 1
+
+
+def _selfcheck_schedule_dup() -> None:
+    """GM 이 2026-09-02 에 잡아 준 실제 중복 두 건이 이제 걸리는지 — 네트워크 없이 돈다."""
+    items = [
+        {"name": "오넛티 팝업 시작 (9/5~9/19)", "next_due": "2026-09-05"},
+        {"name": "회장님 요가 1:1 수업 미팅 — 나우열M · 김상식 팀장", "next_due": "2026-09-04"},
+        {"name": "ADT캡스 공사 — 무인경비 2개소", "next_due": "2026-09-04"},
+    ]
+    assert _schedule_is_dup("오넛티 추석 팝업 운영 시작", "2026-09-05", items), "이름 속 기간 표기 때문에 못 잡던 건"
+    assert _schedule_is_dup("회장님 요가 1:1 수업 미팅", "2026-09-05", items), "하루 어긋나 못 잡던 건"
+    # 다른 일까지 같은 일로 묶으면 안 된다
+    assert not _schedule_is_dup("세스코 방역 점검", "2026-09-05", items)
+    assert not _schedule_is_dup("오넛티 추석 팝업 운영 시작", "2026-09-20", items), "사흘 넘게 떨어지면 남남"
+    print("[selfcheck] schedule_dup OK")
 
 
 def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
@@ -1374,8 +1410,11 @@ def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
     a = _schedule_norm(title)
     if not a:
         return ""
+    # ★2026-09-02 — 같은 날짜만 보던 것을 하루 앞뒤까지 넓혔다(GM 지적). 실측: 「회장님 요가 1:1 수업
+    #   미팅」이 9/4(사람이 등록)와 9/5(카톡 자동 등록) 두 줄로 살아 있었다. 카톡 대화에서 날짜를
+    #   읽을 때 하루 어긋나는 일이 흔해, 날짜가 같을 때만 보면 이 부류를 영영 못 잡는다.
     for it in items:
-        if str(it.get("next_due") or "").strip() != due:
+        if not _within_a_day(str(it.get("next_due") or "").strip(), due):
             continue
         b = _schedule_norm(it.get("name"))
         if not b:
