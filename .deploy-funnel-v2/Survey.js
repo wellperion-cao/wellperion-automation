@@ -3282,7 +3282,8 @@ function _rentalIntakeSheet_(createIfMissing) {
 // ★이 분기가 없으면 steamiron 접수가 if 사슬의 마지막 else(오넛티)로 떨어져 오넛티 선물세트
 //   시트에 쌓이고 500세트 재고·순번 계산까지 흔든다 — 그래서 탭을 따로 둔다.
 var STEAMIRON_INTAKE_SHEET_NAME = '진공스팀다리미 접수';
-var STEAMIRON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','수량','남기실 말씀','개인정보 수집·이용 동의','접수ID','진행 상황','유입언어','비고'];
+// ★2026-09-02 GM 추가(배896) — 택배로 보내는 상품이라 '받으실 주소', 결제는 리셉션 확인이라 '결제 방법'.
+var STEAMIRON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','수량','받으실 주소','결제 방법','남기실 말씀','개인정보 수집·이용 동의','접수ID','진행 상황','유입언어','비고'];
 function _steamironIntakeSheet_(createIfMissing) {
   var ss = SpreadsheetApp.openById(_MI_SS_ID);
   var sh = ss.getSheetByName(STEAMIRON_INTAKE_SHEET_NAME);
@@ -4508,6 +4509,8 @@ function _processAction(body) {
         _siSet('성함', _iName);
         _siSet('연락처', _fmtPhone_(_iPhone));
         _siSet('수량', _iOhQty);            // 프론트 필드키가 qty 로 같아 그대로 쓴다(새 변수 안 만든다)
+        _siSet('받으실 주소', _iOhAddress);  // 필드키 address — 오넛티와 같아 기존 변수 재사용
+        _siSet('결제 방법', _iOhPay);        // 필드키 pay — 현장 결제(리셉션) / 계좌이체
         _siSet('남기실 말씀', _iMessage);
         _siSet('개인정보 수집·이용 동의', '동의');
         _siSet('접수ID', _iId);
