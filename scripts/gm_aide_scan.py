@@ -83,7 +83,14 @@ CHAIRMAN_REPORTED_JSON = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman"
 #   원장의 체크 줄 561개 중 그 형식은 0개였다 — 사람은 「□ 내용」·「□ 1️⃣ 내용」으로 쓴다.
 #   그래서 9월 GM업무 체크 항목이 기한 경보에서 통째로 빠져 있었다(GM 지시로 5단 루프 착수 중 발견).
 #   사람에게 형식을 맞추라고 하는 대신 기계가 사람 글을 읽게 한다(안내문 아니라 코드로 · 약속 L02).
-CHECKLIST_ITEM = re.compile(r"^[□✅⬜]\s+\S")
+# ★★2026-09-02 두 번째 수정 — 완료 표시 ☑(U+2611)를 빠뜨리고 있었다.
+#   GM업무 화면은 □(U+25A1)/☑(U+2611) 두 글자만 체크 줄로 읽고, GM 이 화면에서 체크하면
+#   원장에도 ☑ 로 남는다. 그런데 이 정규식에 ☑ 가 없어서 **이미 끝낸 줄을 아예 못 세고 있었다**
+#   — "체크 178줄 중 닫힌 게 0개"라는 오판이 여기서 나왔다(GM 지적 2026-09-02).
+#   ✅ 는 사람이 손으로 적을 수 있어 함께 읽되, 원장에 새로 쓸 때는 ☑ 를 쓴다(화면이 못 읽는다).
+CHECKLIST_ITEM = re.compile(r"^[□☑✅⬜]\s*\S")
+# 끝난 줄 판정 — 이 글자로 시작하면 완료다(정본 = GM업무 화면 extractTodos 의 U+2611).
+CHECK_DONE_MARKS = ("☑", "✅")
 # 체크 줄 끝의 담당 태그 — 「[담당: 이경연 실장 (회신 9/5)]」. 없으면 담당 미정이다(빈 태그를 미리 붙이지 않는다).
 OWNER_MARK = re.compile(r"\[담당:\s*([^\]]+?)\s*\]")
 DUE_MARK = re.compile(r"\(~\s*(\d{1,2})/(\d{1,2})\s*\)")  # 체크 항목 완료예정일 표기(GM 확정 2026-08-24) — "(~9/5)" "(~09/05)"
@@ -380,11 +387,11 @@ def scan_due_hygiene() -> list:
         # 수백 줄로 불어 아무도 안 읽는다(GM: 줄이 아니라 건수를 줄여라).
         if o.get("id") not in cur_ids:
             continue
-        if len(items) >= 2 and all(l.startswith("✅") for l in items):
+        if len(items) >= 2 and all(l.startswith(CHECK_DONE_MARKS) for l in items):
             rows.append(("③체크리스트100%", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
                          o.get("owner") or "", "전항 완료·완료건 정리로 이관 안 됨"))
         for l in items:
-            if l.startswith("✅"):
+            if l.startswith(CHECK_DONE_MARKS):
                 continue  # 끝난 항목엔 예정일을 요구 안 함
             m = DUE_MARK.search(l)
             if not m:
@@ -403,7 +410,7 @@ def scan_due_hygiene() -> list:
         #    웰리가 담당을 지어 배정하지 않는다 — 실장·소장·나우열M 이 나눈다.
         if "(GM 직접)" in (o.get("title") or ""):
             for l in items:
-                if l.startswith("✅") or OWNER_MARK.search(l):
+                if l.startswith(CHECK_DONE_MARKS) or OWNER_MARK.search(l):
                     continue
                 rows.append(("⑧담당없음", f"[{o.get('id')}] {l[:40]}",
                              o.get("owner") or "", "체크 항목에 [담당: …] 표기 없음"))
