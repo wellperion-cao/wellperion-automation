@@ -3308,12 +3308,20 @@
     var pY = (m === 1) ? y - 1 : y,  pM = (m === 1) ? 12 : m - 1;
     /* 회장님 보고는 「지난달 현황 + 이번달 계획」 두 장이 한 벌이다.
        선택한 달이 어느 벌에 속하든 그 벌이 다 나오게 네 후보를 낸다(있는 것만 걸린다). */
-    return [
-      { file:'reports/' + stamp(y, m)  + '_' + pM + '월_운영현황_A3.html', label:pM + '월 운영 현황' },
-      { file:'reports/' + stamp(y, m)  + '_' + m  + '월_운영계획_A3.html', label:m  + '월 운영 계획' },
-      { file:'reports/' + stamp(nY,nM) + '_' + m  + '월_운영현황_A3.html', label:m  + '월 운영 현황' },
-      { file:'reports/' + stamp(nY,nM) + '_' + nM + '월_운영계획_A3.html', label:nM + '월 운영 계획' }
-    ];
+    /* ★2026-09-02 GM 지적 — 「8월 운영 현황 + 9월 운영 계획」은 8월이 진행 중이던 시점의 한 벌이다.
+       9월이 진행으로 넘어왔으면 지난달 현황은 더 이상 이 화면의 주인공이 아니다.
+       그래서 보고 있는 달이 진행 중이면 지난달 현황을 후보에서 뺀다 — 그 달 계획이 앞에 서고,
+       그 달이 끝나 완료로 넘어가면 그때 「그 달 현황 + 다음 달 계획」이 자동으로 걸린다.
+       (달 상태는 매월 1일 09:00 에 스스로 넘어간다 — monthly_ops_report 의 start 진입점) */
+    var running = ((_data && _data.months && _data.months[ym] && _data.months[ym].month_status) || '') === '진행';
+    var out = [];
+    if (!running) {
+      out.push({ file:'reports/' + stamp(y, m) + '_' + pM + '월_운영현황_A3.html', label:pM + '월 운영 현황' });
+    }
+    out.push({ file:'reports/' + stamp(y, m)  + '_' + m  + '월_운영계획_A3.html', label:m  + '월 운영 계획' });
+    out.push({ file:'reports/' + stamp(nY,nM) + '_' + m  + '월_운영현황_A3.html', label:m  + '월 운영 현황' });
+    out.push({ file:'reports/' + stamp(nY,nM) + '_' + nM + '월_운영계획_A3.html', label:nM + '월 운영 계획' });
+    return out;
   }
   function renderA3Links(){
     var host = document.getElementById('a3-print-links');
