@@ -42,7 +42,8 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 ROOM = "다이어트캠프 이승기 대표님"
 GM_NAME = "김남욱"                      # 이 방 구성원은 대표님과 GM 둘뿐이다
-STATE_PATH = REPO_ROOT / "status" / "diet_camp_agent.json"
+STATE_PATH = REPO_ROOT / "status" / "diet_camp_agent.json"   # 기본 방(다캠) 상태 — 종전 그대로
+ROOMS_PATH = REPO_ROOT / "status" / "kakao_agent" / "rooms.json"
 SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
 EXPORTER = REPO_ROOT / "scripts" / "kakao_export_chat.py"
 
@@ -86,25 +87,72 @@ SYSTEM_BRIEF = """너는 웰페리온의 AI 비서다. 지금 카카오톡에서
   흐름이면, 본문 대신 정확히 SKIP 한 단어만 출력한다."""
 
 
-def _load_state() -> dict:
+def _slug(name: str) -> str:
+    return re.sub(r"[^0-9A-Za-z가-힣]+", "_", name).strip("_") or "room"
+
+
+def rooms() -> list[dict]:
+    """돌 방 목록. 파일이 없으면 다캠 한 방만 — 종전 동작 그대로다(회귀 0).
+
+    status/kakao_agent/rooms.json 형식:
+        [{"room": "방 이름",
+          "brief": "2. 브랜드_자료/1N_<클럽>/_agent_brief.md",
+          "state": "status/kakao_agent/<방>.json",   # 생략하면 방 이름으로 만든다
+          "enabled": true}]
+    새 방 추가 = 브리프 파일 1개 + 이 목록에 한 줄. 예약작업은 그대로 둔다.
+    """
     try:
-        return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        raw = json.loads(ROOMS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        raw = [{"room": ROOM}]
+    out = []
+    for r in raw:
+        if isinstance(r, str):
+            r = {"room": r}
+        name = (r.get("room") or "").strip()
+        if not name or r.get("enabled") is False:
+            continue
+        state = r.get("state") or (STATE_PATH if name == ROOM
+                                   else ROOMS_PATH.parent / f"{_slug(name)}.json")
+        out.append({"room": name, "brief": r.get("brief"), "state": Path(state)})
+    return out
+
+
+def brief_of(conf: dict) -> str | None:
+    """그 방의 브리프. 못 읽으면 None — 다른 방 브리프로 대신 보내지 않는다.
+
+    기본 방(다캠)만 파일 없이 코드 안 SYSTEM_BRIEF 로 돈다. 새 방이 브리프 파일을
+    안 갖고 있으면 그 방은 건너뛴다 — 남의 방 이야기가 섞여 나가는 것이 최악이다.
+    """
+    path = conf.get("brief")
+    if path:
+        try:
+            return (REPO_ROOT / path).read_text(encoding="utf-8").strip()
+        except Exception as exc:
+            print(f"[agent] {conf['room']} — 브리프 못 읽음({path}): {exc}", file=sys.stderr)
+            return None
+    return SYSTEM_BRIEF if conf["room"] == ROOM else None
+
+
+def _load_state(path: Path = STATE_PATH) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         # 처음 도는 날 — 켜져 있고, 아직 아무것도 처리 안 한 상태
         return {"enabled": True, "last_handled": "", "sent_today": 0, "sent_date": "",
                 "history": []}
 
 
-def _save_state(st: dict) -> None:
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+def _save_state(st: dict, path: Path = STATE_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def _export_chat() -> str | None:
-    """방 대화를 내보내 텍스트로 돌려준다. 실패하면 None(그날은 조용히 넘어간다)."""
+def _export_chat(room: str = ROOM) -> str | None:
+    """그 방 대화만 내보내 텍스트로 돌려준다. 실패하면 None(그날은 조용히 넘어간다)."""
     try:
         r = subprocess.run(
-            [sys.executable, str(EXPORTER), "--room", ROOM],
+            [sys.executable, str(EXPORTER), "--room", room],
             cwd=str(REPO_ROOT), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=180,
             env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
@@ -151,11 +199,11 @@ def new_from_partner(lines: list[dict], last_handled: str) -> list[dict]:
     return mine[-1:]
 
 
-def build_prompt(lines: list[dict], fresh: list[dict]) -> str:
+def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF) -> str:
     recent = lines[-CONTEXT_LINES:]
     convo = "\n".join(f"[{ln['who']}] {ln['text']}" for ln in recent if ln["text"])
     newest = "\n".join(ln["text"] for ln in fresh if ln["text"])
-    return (f"{SYSTEM_BRIEF}\n\n"
+    return (f"{brief}\n\n"
             f"── 최근 대화 (오래된 것 위) ──\n{convo}\n\n"
             f"── 대표님이 방금 하신 말 ──\n{newest}\n\n"
             f"위 말에 대한 답장 한 통을 써라. 본문만 출력한다.")
@@ -176,9 +224,9 @@ def guard(draft: str) -> str | None:
     return None
 
 
-def _send(body: str) -> bool:
+def _send(body: str, room: str = ROOM) -> bool:
     p = subprocess.run(
-        [sys.executable, str(SENDER), "--message", body, "--only-room", ROOM, "--sender", "웰리"],
+        [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
         cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
     out = (p.stdout or "").strip()
     print(f"[agent] 발신 rc={p.returncode} · {out.splitlines()[-1] if out else '(출력없음)'}")
@@ -194,56 +242,63 @@ def _tell_gm(msg: str) -> None:
         print(f"[agent] GM 통보 건너뜀: {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
-def init_marker() -> int:
+def init_marker(conf: dict | None = None) -> int:
     """켜는 시점의 마지막 대표님 발화를 '이미 처리함'으로 찍는다.
 
     이걸 안 하면 첫 실행이 며칠 전 말씀에 뒤늦게 답장한다 — 대표님 입장에서는
     갑자기 지난 대화에 답이 오는 셈이라 이상하다. 켤 때 한 번만 돈다."""
-    text = _export_chat()
+    conf = conf or {"room": ROOM, "state": STATE_PATH}
+    text = _export_chat(conf["room"])
     if text is None:
         print("[agent] 대화를 못 읽어 초기화하지 못했다 — 카톡 창을 확인하고 다시 실행")
         return 1
     lines = parse_lines(text)
     mine = [ln for ln in lines if ln["who"] != GM_NAME]
-    st = _load_state()
+    st = _load_state(conf["state"])
     st["enabled"] = True
     st["last_handled"] = (f"{mine[-1]['day']} {mine[-1]['when']} {mine[-1]['text']}"
                           if mine else "")
-    _save_state(st)
-    print(f"[agent] 초기화 완료 — 이 시점 이후 대표님 말씀부터 답한다\n  기준: {st['last_handled'][:80]}")
+    _save_state(st, conf["state"])
+    print(f"[agent] {conf['room']} 초기화 완료 — 이 시점 이후 대표님 말씀부터 답한다\n  기준: {st['last_handled'][:80]}")
     return 0
 
 
-def run(dry_run: bool = False) -> int:
-    st = _load_state()
-    if not st.get("enabled", False):
-        print("[agent] enabled=false — 아무것도 하지 않는다")
+def run(conf: dict | None = None, dry_run: bool = False) -> int:
+    conf = conf or {"room": ROOM, "state": STATE_PATH}
+    room = conf["room"]
+    brief = brief_of(conf)
+    if brief is None:
+        print(f"[agent] {room} — 브리프 파일이 없어 건너뛴다", file=sys.stderr)
+        return 0
+    st = _load_state(conf["state"])
+    if not st.get("enabled", True):
+        print(f"[agent] {room} enabled=false — 아무것도 하지 않는다")
         return 0
 
     today = datetime.now().strftime("%Y-%m-%d")
     if st.get("sent_date") != today:
         st["sent_date"], st["sent_today"] = today, 0
 
-    text = _export_chat()
+    text = _export_chat(room)
     if text is None:
         return 0                                   # 못 읽은 날은 조용히 — 지어내지 않는다
     lines = parse_lines(text)
     fresh = new_from_partner(lines, st.get("last_handled", ""))
     if not fresh:
-        print("[agent] 대표님 새 말씀 없음 — 먼저 말 걸지 않는다")
+        print(f"[agent] {room} — 새 말씀 없음, 먼저 말 걸지 않는다")
         return 0
 
     marker = f"{fresh[-1]['day']} {fresh[-1]['when']} {fresh[-1]['text']}"
 
     if st["sent_today"] >= DAILY_SEND_CAP:
-        _tell_gm(f"🤖 다이어트캠프 에이전트 — 오늘 상한 {DAILY_SEND_CAP}통을 채워 답장을 멈췄습니다. "
+        _tell_gm(f"🤖 카톡 에이전트({room}) — 오늘 상한 {DAILY_SEND_CAP}통을 채워 답장을 멈췄습니다. "
                  f"대표님 새 말씀: {fresh[-1]['text'][:60]}")
         st["last_handled"] = marker
-        _save_state(st)
+        _save_state(st, conf["state"])
         return 0
 
     from model_router import run_claude  # noqa: PLC0415
-    draft, used = run_claude(build_prompt(lines, fresh), label="diet-camp-agent")
+    draft, used = run_claude(build_prompt(lines, fresh, brief), label="diet-camp-agent")
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
         return 0
@@ -253,13 +308,13 @@ def run(dry_run: bool = False) -> int:
     if why == "SKIP":
         print("[agent] 답장이 필요 없는 말씀 — 넘어간다")
         st["last_handled"] = marker
-        _save_state(st)
+        _save_state(st, conf["state"])
         return 0
     if why:
-        _tell_gm(f"🤖 다이어트캠프 에이전트 — 초안을 보내지 않고 올립니다({why}).\n"
+        _tell_gm(f"🤖 카톡 에이전트({room}) — 초안을 보내지 않고 올립니다({why}).\n"
                  f"대표님: {fresh[-1]['text'][:80]}\n초안: {draft[:400]}")
         st["last_handled"] = marker
-        _save_state(st)
+        _save_state(st, conf["state"])
         return 0
 
     if dry_run:
@@ -267,18 +322,18 @@ def run(dry_run: bool = False) -> int:
         print(draft)
         return 0
 
-    if _send(draft):
+    if _send(draft, room):
         st["sent_today"] += 1
         st["last_handled"] = marker
         st.setdefault("history", []).append(
             {"at": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": used,
              "partner": fresh[-1]["text"][:120], "reply": draft})
         st["history"] = st["history"][-30:]
-        _save_state(st)
-        _tell_gm(f"🤖 다이어트캠프 에이전트 답장 1통\n대표님: {fresh[-1]['text'][:60]}\n"
+        _save_state(st, conf["state"])
+        _tell_gm(f"🤖 카톡 에이전트({room}) 답장 1통\n대표님: {fresh[-1]['text'][:60]}\n"
                  f"보낸 말: {draft.splitlines()[0][:60]}")
         return 0
-    _tell_gm("🤖 다이어트캠프 에이전트 — 답장 발신에 실패했습니다. 카톡 창을 확인해 주세요.")
+    _tell_gm(f"🤖 카톡 에이전트({room}) — 답장 발신에 실패했습니다. 카톡 창을 확인해 주세요.")
     return 1
 
 
@@ -307,6 +362,14 @@ def _selfcheck() -> None:
     assert guard("\n".join(f"{i}줄" for i in range(MAX_LINES + 1))) is not None
     assert guard("1️⃣ 감사합니다\n👉 한 줄만 주세요") is None
     assert guard("계약서 보내드리겠습니다") is not None, "돈·계약 표현은 막아야 한다"
+    # 방 목록 — 파일이 없으면 다캠 한 방(회귀 0)
+    rs = rooms()
+    assert rs and rs[0]["room"] == ROOM, rs
+    assert rs[0]["state"] == STATE_PATH, rs[0]
+    assert brief_of(rs[0]) == SYSTEM_BRIEF
+    # 브리프 없는 새 방은 건너뛴다 — 남의 방 브리프로 대신 보내지 않는다
+    assert brief_of({"room": "다른 클럽", "brief": None}) is None
+    assert _slug("★중간관리자 방") == "중간관리자_방", _slug("★중간관리자 방")
     print("[selfcheck] diet_camp_agent OK")
 
 
@@ -316,13 +379,28 @@ def main() -> int:
     ap.add_argument("--selftest", action="store_true", help="네트워크 없이 규칙만 검사")
     ap.add_argument("--init", action="store_true",
                     help="켜는 시점 기준선 잡기 — 지난 대화에 뒤늦게 답하지 않게 한다")
+    ap.add_argument("--room", help="이 방만 처리(생략하면 방 목록 전체를 순서대로)")
+    ap.add_argument("--list-rooms", action="store_true", help="도는 방 목록만 찍는다")
     args = ap.parse_args()
     if args.selftest:
         _selfcheck()
         return 0
-    if args.init:
-        return init_marker()
-    return run(dry_run=args.dry_run)
+
+    todo = rooms()
+    if args.room:
+        picked = [c for c in todo if c["room"] == args.room]
+        todo = picked or [{"room": args.room, "brief": None,
+                           "state": ROOMS_PATH.parent / f"{_slug(args.room)}.json"}]
+    if args.list_rooms:
+        for c in todo:
+            print(f"{c['room']} · 브리프={c['brief'] or '(코드 기본)'} · 상태={c['state']}")
+        return 0
+
+    rc = 0
+    for conf in todo:
+        one = init_marker(conf) if args.init else run(conf, dry_run=args.dry_run)
+        rc = one or rc
+    return rc
 
 
 if __name__ == "__main__":
