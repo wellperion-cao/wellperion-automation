@@ -12289,6 +12289,13 @@ function saveContactModal() {
       row = ((_rst && _rst.roster) || []).find(function (x) { return x.rowIndex === rowIndex; }) || null;
     }
     if (!row || !String(row.phone || '').trim()) { showToast('대조키(연락처)를 찾을 수 없어 저장하지 않았습니다', 'err'); saveBtn.disabled = false; return; }
+    // ★진행상태 필수(GM 지시 2026-09-02) — 컨택 기록을 저장해도 상태가 없으면 빈칸 집계에서 빠지지 않아
+    //   컨택한 건인지 아무도 모른다. 미정·신규·미컨택은 모두 '미기록'으로 간주해 차단한다.
+    var _rowStat = String(row.status || '').trim();
+    if (!_rowStat || _rowStat === '미정' || _rowStat === '신규' || _rowStat === '미컨택') {
+      showToast('진행상태를 먼저 선택해주세요(컨택중·가망 등) — 상태가 없으면 빈칸 집계에 계속 잡힙니다', 'err');
+      saveBtn.disabled = false; return;
+    }
     var _ctSport = ctx.sport || '';   // 종목별 컨택 분리(GM 2026-07-22): 클릭한 종목 줄 sportKey → 백엔드 종목별관리 경로. 미기재행은 ''(flat 유지)
     var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: _ctSport, contacts: JSON.stringify(contacts), contactsPrev: (_ctModal && _ctModal.prevCount) || 0, gid: (row && row.gid) || undefined };
     // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset=종목별 독립 → 종목 간·상태·담당과 독립 큐).
