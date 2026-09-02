@@ -11,7 +11,14 @@
 }
 /* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 세로 스크롤 없이 F11 전체화면 한 장에 딱 맞춤. 이 CSS는 이 페이지에만 로드됨 */
 html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden}
-#ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important}
+/* ★2026-09-02 GM 신고 "화면 자체가 잘려 보인다" — 테마 본문 상자의 폭 제한을 함께 풀었다.
+   워드프레스 테마(Salient)는 본문을 1425px 상자 안에 넣는다. 여기서는 여백만 0으로 만들고
+   폭 제한은 그대로 뒀던 탓에, 1920px 화면에서 우리 화면은 왼쪽 1425px 만 차지하고 오른쪽
+   약 500px 은 테마 바탕만 남았다 — 배경 그라데이션이 중간에 끊겨 화면이 잘린 것처럼 보인다.
+   가운데 정렬도 창 기준이 아니라 그 상자 기준이라 내용이 왼쪽으로 치우친다.
+   폭을 100% 로 풀면 창 전체를 우리 화면이 채우고 내용도 창 한가운데로 온다. */
+#ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important;max-width:none!important;width:100%!important}
+#wlp-lk{width:100%}
 #footer-outer,#footer-widgets,.footer-outer,#footer-outer .row{display:none!important}
 .wpb_row,.vc_row,.wpb_column,.vc_column_container,.wpb_wrapper,.wpb_text_column,.wpb_raw_html,.vc_column-inner{margin:0!important;padding:0!important}
 #wlp-lk .kiosk{width:100%;max-width:820px;padding:28px 22px 40px;display:flex;flex-direction:column}
