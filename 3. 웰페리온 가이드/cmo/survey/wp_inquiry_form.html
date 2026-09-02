@@ -451,9 +451,9 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     youth: {
       purpose: '유소년 강습 문의 응대 및 상담 안내',
       fields: [
-        { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
+        { key:'name',    label:'자녀 이름', type:'text', ph:'아이 이름을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
+        { key:'age',     label:'출생연도', type:'text', opt:true, ph:'예: 2018' },
         { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['WSC수영','WSC골프','WSC스쿼시','WSC체조&트램폴린','WSC P.T','WSC필라테스','모자수영','영어 뮤지컬','기타'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'daytime', opt:true, days:['월','화','수','목','금','토','일'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
@@ -466,9 +466,9 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       //   요일/시간 위젯(daytime)·문의 경로 동일. 강습 종목만 방학특강 고유 5종 유지(수영·체조·스쿼시·골프·유소년 성장PT).
       //   기존 '희망 월'(wishMonth·select) → '희망 레슨 시간'(wishTime·daytime, youth와 동일 위젯)으로 교체.
       fields: [
-        { key:'name',    label:'성함(보호자)', type:'text', ph:'보호자 성함을 입력해 주세요', req:true },
+        { key:'name',    label:'자녀 이름', type:'text', ph:'아이 이름을 입력해 주세요', req:true },
         { key:'phone',   label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'age',     label:'자녀 나이', type:'text', opt:true, ph:'예: 8세 / 초2' },
+        { key:'age',     label:'출생연도', type:'text', opt:true, ph:'예: 2018' },
         { key:'program', label:'강습 종목', type:'radio', hint:'1개만 선택 · 여러 종목은 개별 신청해 주세요', opts:['수영','체조','스쿼시','골프','유소년 성장PT'] },
         { key:'wishTime',label:'희망 레슨 시간', type:'daytime', opt:true, days:['월','화','수','목','금','토','일'], weekdayTimes:['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'], weekendTimes:['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'] },
         { key:'channel', label:'문의 경로', type:'select', ph:'선택해 주세요', opts:CHANNELS },
