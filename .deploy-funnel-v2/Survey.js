@@ -10035,18 +10035,26 @@ function _hasRealReply_(memo) {
         pvLedger.push(pvRec);
       }
     }
-    // 강습 2벌은 타임스탬프로 묶어 종목 분할(예: 14줄)을 접는다 — 원장 경로·문의단독 경로 공용.
+    // 강습 2벌은 5분 이내 연쇄를 종목 분할(예: 14줄)로 묶는다 — 원장 경로·문의단독 경로 공용.
+    //   ★타임스탬프 완전일치로는 안 묶인다(2026-09-02 실측 · 서승규) — 통합 폼이 종목마다 행을 쪼개며
+    //   초를 1씩 올린다(17:30:37→38→…→43). 그래서 "같은 전화 + 앞 행과 5분 이내면 이어붙인다"로 묶는다.
     function _pvGroupLesson(rows) {
-      var g = {}, order = [];
-      rows.forEach(function(r) {
-        var key = r.timestamp || r.rowKey || String(r.rowIndex);
-        if (!g[key]) { g[key] = { timestamp: r.timestamp, 종목: [], 담당: [], 상태: [], 원본: [] }; order.push(key); }
-        if (r.sport && g[key].종목.indexOf(r.sport) < 0) g[key].종목.push(r.sport);
-        if (r.owner && g[key].담당.indexOf(r.owner) < 0) g[key].담당.push(r.owner);
-        if (r.status && g[key].상태.indexOf(r.status) < 0) g[key].상태.push(r.status);
-        g[key].원본.push(r);
+      var PV_GAP_MS = 5 * 60 * 1000;
+      var sorted = rows.slice().sort(function(a, b){ return (a.timestamp || '') < (b.timestamp || '') ? -1 : ((a.timestamp || '') > (b.timestamp || '') ? 1 : 0); });
+      var groups = [], cur = null, curMs = NaN;
+      sorted.forEach(function(r) {
+        var ms = r.timestamp ? new Date(r.timestamp.replace(' ', 'T')).getTime() : NaN;
+        var chain = cur && !isNaN(ms) && !isNaN(curMs) && (ms - curMs) <= PV_GAP_MS;
+        if (!chain) { cur = { timestamp: r.timestamp, 종목: [], 담당: [], 상태: [], 원본: [] }; groups.push(cur); }
+        if (!isNaN(ms)) curMs = ms;
+        if (r.sport && cur.종목.indexOf(r.sport) < 0) cur.종목.push(r.sport);
+        if (r.owner && cur.담당.indexOf(r.owner) < 0) cur.담당.push(r.owner);
+        if (r.status && cur.상태.indexOf(r.status) < 0) cur.상태.push(r.status);
+        cur.원본.push(r);
       });
-      return order.map(function(k){ return g[k]; });
+      // 대표 상태 — 그룹 안에 SUC(등록완료)가 하나라도 있으면 그것을 먼저 보여준다.
+      groups.forEach(function(g) { g.대표상태 = g.상태.indexOf('SUC') >= 0 ? 'SUC' : (g.상태[g.상태.length - 1] || ''); });
+      return groups;
     }
     var pvMiAll = _miReadRows_(_miSheet_());
     try { pvMiAll = pvMiAll.concat(_miReadRows_(_miSheetEn_())); } catch (ePvEn) {}

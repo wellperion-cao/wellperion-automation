@@ -5086,7 +5086,7 @@ function _renderPersonSearch(res) {
       var items = groups.map(function(g) {
         return '<div style="padding:6px 10px;border-left:2px solid var(--accent);margin-bottom:4px;font-size:12px">' +
           (g.timestamp || '(시각 미기재)') + ' · 종목 ' + g.종목.length + '개(' + g.종목.join(', ') + ')' +
-          (g.담당.length ? ' · 담당 ' + g.담당.join(', ') : '') + (g.상태.length ? ' · ' + g.상태.join(', ') : '') +
+          (g.담당.length ? ' · 담당 ' + g.담당.join(', ') : '') + (g.대표상태 ? ' · 상태 ' + g.대표상태 : '') +
           (g.원본.length > 1 ? ' <span style="color:var(--dim)">— 원본 ' + g.원본.length + '줄 접음</span>' : '') + '</div>';
       }).join('');
       return '<div style="margin-top:8px"><b style="font-size:12px">' + label + ' ' + groups.length + '건</b>' + items + '</div>';
