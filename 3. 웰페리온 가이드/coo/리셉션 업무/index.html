@@ -2,7 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- maximum-scale·user-scalable=no = 입력칸을 눌러도 화면이 자동으로 확대되지 않게 한다.
+     리셉션 태블릿에서 한 번 확대되면 손을 떼도 그대로 남아 다음 사람이 그 상태로 쓴다.
+     표 안 편집칸은 좁아야 해서 글자를 16px 로 못 키운다 — 그래서 칸 크기 대신 확대 자체를 막는다.
+     (화면 자동점검이 잡음 · 2026-09-02) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>웰페리온 리셉션 업무</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>

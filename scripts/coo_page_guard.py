@@ -37,11 +37,14 @@ PAGES_BASE = "https://wellperion-cao.github.io/wellperion-automation/"
 
 # 워드프레스에 본문이 심어져 돌아가는 조각 — 저장소 파일이 아니라 라이브 주소로 봐야 한다.
 WP_PAGES = [
-    ("종합접수처", "http://wellperion.com/ko/reception/"),
-    ("접수 조회", "http://wellperion.com/ko/lookup/"),
-    ("습득물 보기", "http://wellperion.com/ko/lost-found/"),
-    ("습득물 등록", "http://wellperion.com/ko/lost-found-register/"),
+    ("종합접수처", "http://wellperion.com/ko/reception/", True),
+    ("접수 조회", "http://wellperion.com/ko/lookup/", True),
+    ("습득물 보기", "http://wellperion.com/ko/lost-found/", True),
+    ("습득물 등록", "http://wellperion.com/ko/lost-found-register/", True),
 ]
+
+# 손가락으로 쓰는 화면(키오스크·리셉션 태블릿) — 경로에 이 글자가 들어가면 터치 화면으로 본다.
+TOUCH_HINTS = ("리셉션 업무",)
 
 # 키오스크(세로 큰 화면)와 데스크톱(가로) 둘 다 본다 — 오늘 잘림은 가로에서만 났다.
 VIEWPORTS = [("키오스크 세로", 1080, 1920), ("데스크톱 가로", 1920, 1080)]
@@ -60,7 +63,9 @@ PROBE = """() => {
     scrollW: de.scrollWidth, clientW: de.clientWidth,
     scrollH: de.scrollHeight, clientH: de.clientHeight,
     contentW: Math.round(widest),
-    small: small.slice(0, 5)
+    small: small.slice(0, 5),
+    zoomLocked: /maximum-scale\\s*=\\s*1|user-scalable\\s*=\\s*no/.test(
+      (document.querySelector('meta[name=viewport]') || {}).content || '')
   };
 }"""
 
@@ -77,41 +82,51 @@ SCROLL_TEST = """() => {
 }"""
 
 
-def _findings(m: dict, w: int) -> list[str]:
+def _findings(m: dict, w: int, touch: bool) -> list[str]:
+    """오탐이 하나라도 섞이면 다음 날부터 아무도 안 본다 — 판정은 셋만 남긴다.
+
+    뺀 것: '본문 폭이 창보다 좁다'(2026-09-02 첫 판). 문서형 화면은 읽기 편하라고 일부러
+    폭을 좁게 잡는다 — 그걸 흠으로 세면 멀쩡한 화면 절반이 걸린다. 접수 조회 화면이 잘려
+    보였던 건 폭이 아니라 배경이 중간에 끊겨서였고, 그건 사람 눈이 볼 몫이다.
+    """
     out = []
     if m["scrollW"] > m["clientW"] + 2:
         out.append(f"가로 잘림 — 문서 폭 {m['scrollW']} > 창 {m['clientW']}")
-    if m["contentW"] and m["contentW"] < w * 0.9:
-        out.append(f"폭 미달 — 본문 {m['contentW']} / 창 {w} (오른쪽 빈 띠)")
-    if m["small"]:
+    # 자동확대는 손가락으로 쓰는 화면에서만 문제다. 관리자 PC 화면의 작은 필터 칸까지 세면
+    # 고칠 수 없는 경고만 쌓인다(그 칸들은 좁아야 표가 한 줄에 들어간다).
+    # 화면 배율을 못 바꾸게 잠가 뒀으면 글자가 작아도 확대가 안 일어난다 — 표 안 편집칸처럼
+    # 좁아야 하는 자리는 칸을 키우는 대신 이 잠금으로 막는다(2026-09-02).
+    if touch and m["small"] and not m.get("zoomLocked"):
         out.append("자동확대 위험 — 16px 미만 입력칸 " + ", ".join(m["small"]))
     if m.get("scrollBlocked"):
         out.append("스크롤 막힘 — 내용이 창보다 긴데 실제로 밀어도 안 내려간다")
     return out
 
 
-def local_pages() -> list[tuple[str, str]]:
+def local_pages() -> list[tuple[str, str, bool]]:
     """coo/ 아래 화면 + 월간운영계획. 워드프레스 조각(_block)과 템플릿은 뺀다."""
-    items: list[tuple[str, str]] = []
+    items: list[tuple[str, str, bool]] = []
     for p in sorted((GUIDE / "coo").rglob("*.html")):
         n = p.name
         if "_block" in n or "_template" in n or n.startswith("_"):
             continue
         rel = p.relative_to(GUIDE).as_posix()
-        items.append((p.stem, PAGES_BASE + urllib.parse.quote(rel)))
+        touch = any(h in rel for h in TOUCH_HINTS)
+        name = p.stem if p.stem != "index" else p.parent.name
+        items.append((name, PAGES_BASE + urllib.parse.quote(rel), touch))
     mop = GUIDE / "월간운영계획.html"
     if mop.exists():
-        items.append(("월간운영계획", PAGES_BASE + urllib.parse.quote("월간운영계획.html")))
+        items.append(("월간운영계획", PAGES_BASE + urllib.parse.quote("월간운영계획.html"), False))
     return items
 
 
-async def check(targets: list[tuple[str, str]]) -> list[dict]:
+async def check(targets: list[tuple[str, str, bool]]) -> list[dict]:
     from playwright.async_api import async_playwright  # noqa: PLC0415
 
     rows: list[dict] = []
     async with async_playwright() as pw:
         b = await pw.chromium.launch()
-        for name, url in targets:
+        for name, url, touch in targets:
             hits: list[str] = []
             for vp_name, w, h in VIEWPORTS:
                 pg = await b.new_page(viewport={"width": w, "height": h})
@@ -121,12 +136,12 @@ async def check(targets: list[tuple[str, str]]) -> list[dict]:
                     m = await pg.evaluate(PROBE)
                     sc = await pg.evaluate(SCROLL_TEST)
                     m["scrollBlocked"] = sc["needed"] and not sc["moved"]
-                    hits += [f"[{vp_name}] {f}" for f in _findings(m, w)]
+                    hits += [f"[{vp_name}] {f}" for f in _findings(m, w, touch)]
                 except Exception as e:
                     hits.append(f"[{vp_name}] 못 열었다 — {str(e)[:60]}")
                 finally:
                     await pg.close()
-            rows.append({"name": name, "url": url, "findings": hits})
+            rows.append({"name": name, "url": url, "touch": touch, "findings": hits})
             print(("  OK  " if not hits else "  걸림 ") + name + (" — " + hits[0] if hits else ""))
         await b.close()
     return rows
