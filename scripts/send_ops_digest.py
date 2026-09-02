@@ -1075,6 +1075,12 @@ def _selfcheck_schedule_block() -> None:
 ASKS_TOTAL_CAP = 0  # 0 = 전부 보여줌(GM 지시 2026-08-30). 종전 3건
 ASKS_TITLE_CAP = 0  # 0 = 안 자름. 종전 50자
 ASKS_HOW_CAP = 0    # 0 = 안 자름. 종전 60자
+# ★2026-09-02 시포 — 위 세 상한은 8/30 에 풀었는데 상세 줄 수 상한(2줄)만 코드에 남아
+#   있었다. 그래서 전달문 9줄짜리가 4줄로 잘려 나갔다 — 실측(배11007 강습 등록 확인):
+#   「2️⃣ 8월 신규 수강생이 팀시트에 안 올라오고 있습니다」와 마지막 「👉 …하시면 됩니다」가
+#   통째로 빠져, 받는 분은 할 일 절반과 마무리 안내를 못 봤다. 같은 지시(끝까지 보내라)를
+#   여기에도 적용한다.
+ASKS_DETAIL_CAP = 0  # 0 = 상세 줄 안 자름. 종전 2줄
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
 _GREETING_RE = re.compile(r"^(답변\s*)?(감사|고맙|안녕|수고)")  # 인사·감사만 있는 줄
 _ADDRESS_ONLY_RE = re.compile(r"(님|께)\s*[,，]?$")            # 「이경연 실장님,」 같은 호칭 줄
@@ -1109,7 +1115,9 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str, str]":
     if not how:
         how = f"{who}님께 말씀해 주시거나 톡으로 한 마디만 답해 주시면 됩니다."
     # 상세 = ask 다음 줄부터 최대 2줄. 링크 줄(how 로 이미 나감)과 인사·호칭 줄은 뺀다.
-    detail = [l for l in body_lines[idx + 1:] if not l.startswith("📎") and not _is_lead_in(l)][:2]
+    detail = [l for l in body_lines[idx + 1:] if not l.startswith("📎") and not _is_lead_in(l)]
+    if ASKS_DETAIL_CAP > 0:
+        detail = detail[:ASKS_DETAIL_CAP]
     # 줄바꿈으로 잇는다 — 「한 줄 = 한 가지」(GM 2026-08-25). 쉼표·가운뎃점으로 이어 붙이면
     # 카톡에서 한 덩어리로 보여 아무도 안 읽는다.
     return (_cap_line(ask, ASKS_TITLE_CAP), _cap_line(how, ASKS_HOW_CAP),
