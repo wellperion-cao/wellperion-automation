@@ -79,7 +79,13 @@ MONTHLY_PLAN_FILE = STATUS_DIR / "monthly_ops_plan.json"
 SCHEDULE_SSOT_FILE = STATUS_DIR / "schedule_ssot.json"
 CHAIRMAN_ITEMS_JS = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "_chairman_items.js"
 CHAIRMAN_REPORTED_JSON = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "chairman_reported.json"
-CHECKLIST_ITEM = re.compile(r"^[□✅]\s*\d+\)")
+# ★2026-09-02 실측으로 넓혔다. 종전 r"^[□✅]\s*\d+\)" 는 「□ 1) 내용」만 잡았는데,
+#   원장의 체크 줄 561개 중 그 형식은 0개였다 — 사람은 「□ 내용」·「□ 1️⃣ 내용」으로 쓴다.
+#   그래서 9월 GM업무 체크 항목이 기한 경보에서 통째로 빠져 있었다(GM 지시로 5단 루프 착수 중 발견).
+#   사람에게 형식을 맞추라고 하는 대신 기계가 사람 글을 읽게 한다(안내문 아니라 코드로 · 약속 L02).
+CHECKLIST_ITEM = re.compile(r"^[□✅⬜]\s+\S")
+# 체크 줄 끝의 담당 태그 — 「[담당: 이경연 실장 (회신 9/5)]」. 없으면 담당 미정이다(빈 태그를 미리 붙이지 않는다).
+OWNER_MARK = re.compile(r"\[담당:\s*([^\]]+?)\s*\]")
 DUE_MARK = re.compile(r"\(~\s*(\d{1,2})/(\d{1,2})\s*\)")  # 체크 항목 완료예정일 표기(GM 확정 2026-08-24) — "(~9/5)" "(~09/05)"
 
 LONG_PENDING_DAYS = 30
@@ -361,6 +367,7 @@ def scan_due_hygiene() -> list:
                          o.get("owner") or "", "월간운영계획 due 미기재"))
 
     all_objs = [o for m in months.values() for o in m.get("objectives", [])]
+    cur_ids = {o.get("id") for o in cur.get("objectives", [])}
     for o in all_objs:
         due = _parse_date_loose(o.get("due"))
         if due and due < TODAY and o.get("status") != "완료":
@@ -369,6 +376,10 @@ def scan_due_hygiene() -> list:
         if o.get("status") == "완료":
             continue
         items = [l.strip() for l in (o.get("progress_note") or "").splitlines() if CHECKLIST_ITEM.match(l.strip())]
+        # 체크 줄 판정(⑥⑦⑧)은 **이번 달 목표만** 본다. 지난달 카드까지 훑으면 아침 표가
+        # 수백 줄로 불어 아무도 안 읽는다(GM: 줄이 아니라 건수를 줄여라).
+        if o.get("id") not in cur_ids:
+            continue
         if len(items) >= 2 and all(l.startswith("✅") for l in items):
             rows.append(("③체크리스트100%", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
                          o.get("owner") or "", "전항 완료·완료건 정리로 이관 안 됨"))
@@ -387,6 +398,15 @@ def scan_due_hygiene() -> list:
             if due_date < TODAY:
                 rows.append(("⑦완료예정일지남", f"[{o.get('id')}] {l[:40]}",
                              o.get("owner") or "", f"due=~{m.group(1)}/{m.group(2)} 경과"))
+        # ⑧ 담당 없음 — GM 이 직접 관장하는 건의 체크 항목에 담당이 안 붙어 있으면,
+        #    중간관리자 방으로 "누가 맡을지"를 물어야 한다(GM 확정 2026-09-02 · 5단 루프 1단계).
+        #    웰리가 담당을 지어 배정하지 않는다 — 실장·소장·나우열M 이 나눈다.
+        if "(GM 직접)" in (o.get("title") or ""):
+            for l in items:
+                if l.startswith("✅") or OWNER_MARK.search(l):
+                    continue
+                rows.append(("⑧담당없음", f"[{o.get('id')}] {l[:40]}",
+                             o.get("owner") or "", "체크 항목에 [담당: …] 표기 없음"))
 
     sched = read_json(SCHEDULE_SSOT_FILE, {})
     for it in (sched.get("items") or []):
