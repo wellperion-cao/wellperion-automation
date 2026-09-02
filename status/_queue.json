@@ -510,7 +510,9 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-02"
+    "updated_at": "2026-09-02",
+    "aide_interview_needed": true,
+    "aide_interview_reason": "접근법이 여러 개(어느 방향인지 결정 필요)"
   },
   {
     "task_id": "CEO-2026-09-02-지원부-사우나-정비-체크-7건-담당-기한-받기",
@@ -721,34 +723,34 @@
   {
     "task_id": "CEO-2026-09-03-ADHOC-DAILY",
     "clevel": "ceo",
-    "title": "[웰리] 자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+    "title": "[웰리] 빠진 것 스캔 결과 갱신 (worklog_gaps) 외 1건 (CLI ad-hoc)",
     "status": "DONE",
     "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-09-03",
     "processed_at": "2026-09-03",
     "ship_no": 11169,
-    "artifact": "원격이 건드리지 않는 산출물은 '통합을 막는' 경우에만 커밋되던 구조라, 로컬에서만\n갱신되고 며칠씩 안 올라갔다. 그동안 라이브 화면은 옛 값을 사실처럼 보여준다.\n2시간 이상 묵은 자동 산출물만 올린다. (CLI ad-hoc · 커밋 10d509120)",
+    "artifact": "빠진 것 스캔 결과 갱신 (worklog_gaps) (CLI ad-hoc · 커밋 240f59da9 · 누적 2건)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "10d50912044473aef47b0902541d62cde98f21e1",
-    "note": "- [2026-09-03] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 10d509120)",
-    "adhoc_count": 1
+    "adhoc_commit": "240f59da96600c2d279abcc107f9f6069101a0b1",
+    "note": "- [2026-09-03] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 10d509120)\n- [2026-09-03] 빠진 것 스캔 결과 갱신 (worklog_gaps) (커밋 240f59da9)",
+    "adhoc_count": 2
   },
   {
     "task_id": "CTO-2026-09-03-ADHOC-DAILY",
     "clevel": "cto",
-    "title": "[시토] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리",
+    "title": "[시토] 배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) 외 1건 (CLI ad-hoc)",
     "status": "DONE",
     "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-09-03",
     "processed_at": "2026-09-03",
     "ship_no": 11170,
-    "artifact": "다캠 한 방에 하드코딩돼 있던 ROOM·SYSTEM_BRIEF·STATE_PATH 를 방 단위로 뗐다.\n- status/kakao_agent/rooms.json 이 방 목록(없으면 다캠 한 방 = 종전 동작 그대로)\n- 방별 브리프 파일(brief)·상태 파일(state) 지정, 생략하면 방 이름으로 만든다\n- --room 으로 한 방만, 생략하면 목록 순회. --list-rooms 로 확인\n- 브리프를 못 읽은 새 방은 건너뛴다(다른 방 브리프로 대신 보내지 않는다)\n- 발신 관문·상한 6통·금지어 검사·예약작업 인자는 그대로 (CLI ad-hoc · 커밋 d8c697806)",
+    "artifact": "배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) (CLI ad-hoc · 커밋 7dce84d00 · 누적 2건)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "d8c697806875488750b46b7bf267e996fca8b850",
-    "note": "- [2026-09-03] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리 (커밋 d8c697806)",
-    "adhoc_count": 1
+    "adhoc_commit": "7dce84d00826b21fdee0ea697175b94c20114762",
+    "note": "- [2026-09-03] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리 (커밋 d8c697806)\n- [2026-09-03] 배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) (커밋 7dce84d00)",
+    "adhoc_count": 2
   },
   {
     "task_id": "CBO-2026-09-03-카톡-에이전트-방-추가-절차-브리프-1개-목록-한-",
