@@ -126,6 +126,11 @@
   .sum tr:last-child td{border-bottom:none;}
   .sum td:first-child{width:22px;font-weight:800;color:var(--brass);}
   .sum td:last-child{width:118px;text-align:right;color:var(--mid);font-weight:600;white-space:nowrap;}
+  /* ★묶음 이름 줄은 왼쪽에 붙인다 (GM 지시 2026-09-02 "좌측정렬로 해줘 우측정렬은 눈이 잘안가네").
+     원인 = 이 줄은 td 가 하나뿐이라 위 :first-child(22px·황동색)와 :last-child(118px·우측정렬)
+     규칙에 동시에 걸려 이름이 오른쪽 끝에 붙어 있었다. 그 둘을 여기서 되돌린다. */
+  .sum tr.grp-row td{width:auto;text-align:left;white-space:normal;color:var(--ink);
+    border-bottom:2px solid var(--ink);}
   /* 부서 칸 (GM 지시 2026-08-27 "업무명 상태만 나오는데 중간에 부서도 붙여줘").
      값은 목표 자체의 dept 를 그대로 쓴다 — 화면에 부서 표를 새로 만들지 않는다(약속 L01).
      기록에 부서가 없으면 '미정' 으로 두고 지어 채우지 않는다. */
@@ -978,7 +983,7 @@
       names.forEach(function (c) {
         // 묶음은 토글이되 펴 둔 채로 연다 — 접고 싶을 때만 GM 이 접는다(GM 지시 2026-09-02).
         var inner = [];
-        sumOut.push('<tr class="grp-row"><td colspan="5" style="padding:16px 0 6px;font-weight:800;font-size:15px;">'
+        sumOut.push('<tr class="grp-row"><td colspan="5" style="padding:16px 0 5px;font-weight:800;font-size:15px;">'
                     + esc(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
         buckets[c].forEach(function (o) {
           inner.push(cardHtml(o, seq));
