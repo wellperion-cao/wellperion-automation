@@ -940,7 +940,7 @@ AUTO_PIPELINE_SENDERS = {
     "다이어트캠프정기발신", # daily_scheduler.run_diet_camp_morning — 07:00 「다이어트캠프 이승기
                           # 대표님」 방(배 11022 · GM 승인 2026-08-29). 대외 방이라 HUMAN_APPROVAL_ROOMS
                           # 밖이지만 정기 자동 발송은 전부 --sender 로 밝히는 관례를 그대로 따른다.
-    # "업무판채움보드" 제거(GM 지시 2026-08-29 폐기) — ops_fill_board 전체 폐기.
+    # "업무 SSOT채움보드" 제거(GM 지시 2026-08-29 폐기) — ops_fill_board 전체 폐기.
     # ── 아래 4개(2026-08-29 · ★부서장·★운영+시설+지원+주차를 HUMAN_APPROVAL_ROOMS 에
     #    추가하며 신규) — status/kakao_auto_send_inventory.json 전수 등록부 대조로 이 두
     #    방에 실제로 자동 발신하는 호출부를 찾아 배선했다(회귀 위험 전수 폐쇄, eae230dc6 와

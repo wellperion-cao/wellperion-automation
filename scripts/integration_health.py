@@ -291,12 +291,12 @@ def check_kpi_freshness() -> tuple[str, bool, str]:
 
 
 def check_page_score_stale_ship_refs() -> tuple[str, bool, str]:
-    """⑦ 업무판 배번호 신선도: page_score.json 각 항목 note 가 인용한 '배NNN'이 이미 끝난
+    """⑦ 업무 SSOT 배번호 신선도: page_score.json 각 항목 note 가 인용한 '배NNN'이 이미 끝난
     배(_queue_archive.json 등재 또는 _queue.json 에서 status=DONE)인데 정정 신호
     (종결/해소/사실 아님/정상 가동/확인 완료) 없이 남아 있으면 걸린다.
-    (2026-08-18, '업무판 채움 보드'가 종결된 배617을 4일간 미해결로 인용 방치한 사고 후속.)
+    (2026-08-18, '업무 SSOT 채움 보드'가 종결된 배617을 4일간 미해결로 인용 방치한 사고 후속.)
     """
-    name = "업무판 배번호 신선도"
+    name = "업무 SSOT 배번호 신선도"
     try:
         score = json.loads(PAGE_SCORE.read_text(encoding="utf-8"))
         pages = score.get("pages") if isinstance(score, dict) else None

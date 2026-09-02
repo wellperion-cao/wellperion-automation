@@ -6755,7 +6755,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         });
 
         /* 운영부 — 실무진(최준용M·윤병현AM·이경연 실장) 담당 업무 중 완료 아닌 것.
-           ★종합접수처와 겹치지 않게 '업무판' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
+           ★종합접수처와 겹치지 않게 '업무 SSOT' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
         withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, null).then(function(todo){
           var trows = todo && todo.data;
           if(Array.isArray(trows)){
