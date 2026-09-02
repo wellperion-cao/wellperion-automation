@@ -170,6 +170,10 @@ def main(write_json=None):
         'queue_archive_sweep',      # 큐 보관함 이동
         'git_lock_janitor_10min',   # 죽은 .git/index.lock 청소
         'test_hourly',              # 스케줄러 생존 표시용 로그 한 줄
+        # 2026-09-02 — 이 잡은 원래 30분 무응답 시 체크인을 한 번 더 보냈는데, GM 지적("9:00 에 오고
+        # 9:31 에도 중복해서 왔네")으로 재알림을 없앴다. 지금은 1시간 뒤 미응답('M')만 기록하고
+        # 아무 방으로도 보내지 않는다 — 그래서 발신 등록부 대상이 아니다.
+        'checkin_followup_5min',
         # 아래 3개는 2026-08-12 코드 전수 확인 — 사람 방으로 가는 발신이 0건이다.
         'bot_health_check',         # 실패 시 이 PC 데스크톱 알림창만(local_fallback_alert) · API 발신 없음
         'sales_session_guard_0810', # sales_session_guard.py 에 발신 호출 0건 · 만료 시 로그인 창만 띄움
@@ -211,7 +215,14 @@ def main(write_json=None):
     #   새 감시기를 만들지 않고 이미 도는 이 대조기에 얹는다(약속 L21 — 관문에만).
     kakao_rooms = load_json(ROOT / 'scripts' / 'kakao_rooms.json') or {}
     troom = load_json(ROOT / 'status' / 'telegram_rooms.json') or {}
-    known_kakao = {r.get('name') for r in (kakao_rooms.get('all_rooms') or []) if r.get('name')}
+    # all_rooms 는 방 이름 문자열이 들어 있기도 하고 {name: ...} 꼴이기도 하다.
+    # ★2026-09-02 — 문자열만 들어 있는 지금 형태에서 이 줄이 터져 대조기 전체가 죽어 있었다
+    #   (자율현황 화면엔 「드리프트 9건 · 확인 필요」 경고만 뜬 채 아무도 확인 못 하는 상태).
+    #   두 꼴을 다 받는다 — 등록부 형식이 어느 쪽으로 바뀌어도 감시가 멈추지 않는다.
+    def _room_name(r):
+        return (r.get('name') if isinstance(r, dict) else str(r or '')).strip()
+
+    known_kakao = {n for n in (_room_name(r) for r in (kakao_rooms.get('all_rooms') or [])) if n}
     known_tg = {k for k in troom if not k.startswith('_')}
     for item in reg_items:
         # dead=죽었다고 확정한 것, unknown=방이 어디인지 저장소에서 확인 불가라고 정직 표기한 것.
