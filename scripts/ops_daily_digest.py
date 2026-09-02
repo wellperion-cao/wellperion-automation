@@ -1377,6 +1377,21 @@ def _schedule_norm(name: str) -> str:
     return re.sub(r"[\s·\-—()\[\]]+", "", s)
 
 
+# 아직 정해지지 않았다고 글쓴이가 스스로 적은 표현들 — 이게 보이면 자동 등록하지 않는다.
+# 좁게 고른 이유: '예정'·'미정' 같은 흔한 말까지 넣으면 확정된 일정("9/4 공사 예정", "시간 미정")까지
+# 막혀 오히려 일정이 안 올라간다. 사람이 "아직 아니다"라고 말한 표현만 담는다.
+_UNCONFIRMED_MARKS = (
+    "희망", "미확정", "확답", "확정 전", "확정전",
+    "검토 중", "검토중", "가능할까", "가능하실까", "여쭤", "여쭙", "물어보고",
+)
+
+
+def _looks_unconfirmed(title: str, note: str) -> bool:
+    """제목이나 메모에 '아직 확정 아님' 표현이 있으면 True (GM 지적 2026-09-02)."""
+    blob = f"{title} {note}"
+    return any(m in blob for m in _UNCONFIRMED_MARKS)
+
+
 def _within_a_day(a: str, b: str) -> bool:
     """두 날짜(YYYY-MM-DD)가 같거나 하루 차이면 True. 형식이 아니면 문자열 일치로만 본다."""
     from datetime import date as _d
@@ -1400,7 +1415,16 @@ def _selfcheck_schedule_dup() -> None:
     # 다른 일까지 같은 일로 묶으면 안 된다
     assert not _schedule_is_dup("세스코 방역 점검", "2026-09-05", items)
     assert not _schedule_is_dup("오넛티 추석 팝업 운영 시작", "2026-09-20", items), "사흘 넘게 떨어지면 남남"
-    print("[selfcheck] schedule_dup OK")
+
+    # 확정 아닌 건이 자동 등록되던 실사고(2026-09-02 GM 지적) — 그 원문으로 검사한다.
+    assert _looks_unconfirmed("회장님 오찬 — 필라+골프팀",
+                              "나우열M 19:02 강습부서 마지막 오찬으로 17일 14시 희망(회장님 보고 예정·희망 단계)")
+    assert _looks_unconfirmed("스쿼시&체조 오찬", "회장님 확답 대기")
+    # 확정된 일정까지 막으면 안 된다 — 흔한 말('예정'·'미정')은 통과해야 한다
+    assert not _looks_unconfirmed("ADT캡스 공사 — 무인경비 설치", "9/4 10:00 공사 예정")
+    assert not _looks_unconfirmed("파트너팀 오찬 — P.T팀 (회장님)", "13:00 확정. 참석=P.T팀 전원")
+    assert not _looks_unconfirmed("오넛티 팝업 시작", "시간 미정")
+    print("[selfcheck] schedule_dup·unconfirmed OK")
 
 
 def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
@@ -1460,7 +1484,16 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
         tm = str(s.get("time") or "").strip()
         if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", tm):
             tm = ""
-        cands.append((due, title, str(s.get("dept") or "").strip(), str(s.get("note") or "").strip(), tm))
+        note = str(s.get("note") or "").strip()
+        # ★2026-09-02 GM 지적 — 아직 확정 안 된 일이 자동으로 전사일정에 올라갔다.
+        #   실사고: 「회장님 오찬 — 필라+골프팀」(9/17). 카톡 원문은 나우열M 이 "17일 14시 희망,
+        #   회장님 보고 예정" 이라 한 것인데, 다리가 그대로 일정으로 등록했다. 전사일정은 GM 이
+        #   '그 일이 실제로 잡혔나'를 보는 곳이라(약속 L23), 희망·제안 단계가 섞이면 화면이 거짓말을 한다.
+        #   → 확정이 아니라고 스스로 적고 있는 후보는 등록하지 않는다. 사람이 확정한 뒤 넣는다.
+        if _looks_unconfirmed(title, note):
+            print(f"  [일정] 건너뜀 — '{title}' ({due}) 아직 확정 아님(희망·예정·검토 단계)")
+            continue
+        cands.append((due, title, str(s.get("dept") or "").strip(), note, tm))
     if not cands:
         return []
     if len(cands) > _SCHEDULE_MAX_PER_RUN:
