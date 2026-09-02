@@ -681,10 +681,17 @@
     el.innerHTML = secs.map(function(sec){
       var rows = sec.list
         .sort(function(a,b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); })
-        .map(function(s){
+        .map(function(s, idx, arr){
           var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+          /* 담당이 바뀌는 첫 줄에 굵은 윗줄 하나(2026-09-02 · GM "개선·보완할 건 더 없었어?").
+             ⚓대기·정박이 30척까지 늘어 한 덩어리로 쏟아졌다. 줄은 이미 담당→배번호 순으로
+             정렬돼 있는데 경계가 안 보여 누구 몫이 몇 척인지 세어야 알 수 있었다.
+             접지 않는다 — GM 이 2026-08-31 에 "분리해서 보여주는데 더 보기 불편해"라고 하셨다.
+             선만 그으면 읽는 흐름은 그대로 두고 덩어리만 갈린다(알림 표의 시각 경계선과 같은 기법). */
+          var ownerEdge = idx > 0 && String(arr[idx-1].clevel || '') !== String(s.clevel || '');
+          var rowStyle = ownerEdge ? ' style="border-top:2px solid var(--border-strong);"' : '';
           // 🤖 = AI 내부 살림(2026-08-26 병합) · 맨 오른쪽 칸 = 보관함으로 옮기기(구 「전체 배」 표의 기능을 흡수)
-          return '<tr><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
+          return '<tr' + rowStyle + '><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
             + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
             + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
             + (isAiShip(s) ? ' <span title="AI 내부 살림" style="font-size:11px;">🤖</span>' : '')
