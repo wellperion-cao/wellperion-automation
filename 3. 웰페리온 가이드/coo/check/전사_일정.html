@@ -99,7 +99,7 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .row .rvendor a{color:inherit;text-decoration:none}
 .row .rvendor a:hover{text-decoration:underline}
 .pill{justify-self:end;font-size:12px;font-weight:750;padding:5px 11px;border-radius:999px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
-.pill.over{background:var(--red-bg);color:var(--red)}.pill.soon{background:var(--yellow-bg);color:var(--yellow)}.pill.ok{background:var(--green-bg);color:var(--green)}.pill.tbd{background:var(--accent-bg);color:var(--dim)}
+.pill.over{background:var(--red-bg);color:var(--red)}.pill.soon{background:var(--yellow-bg);color:var(--yellow)}.pill.ok{background:var(--green-bg);color:var(--green)}.pill.done{background:var(--green-bg);color:var(--green);opacity:.7}.pill.tbd{background:var(--accent-bg);color:var(--dim)}
 .loading{text-align:center;color:var(--dim);padding:40px;font-size:14px}
 footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--dim)}
 .inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
@@ -313,8 +313,16 @@ function computeDue(it){
    (자정 - 지금시각)이 오후에는 -0.5 아래로 내려가고 Math.round 가 -1 로 만들었다.
    실측: 저녁에 오늘 일정 3건이 '지남' 타일에 들어가 있었다(지남 73 vs 날짜 기준 70).
    비교 기준을 오늘 자정으로 내린다 — 아래 nextOccurrence(:272)가 이미 쓰는 방식과 같게. */
-function statusOf(it){var c=nextOccurrence(it);var d=c.date;if(!d)return{k:"tbd",dd:null,auto:false};var _t=kstToday();var today0=new Date(_t.getFullYear(),_t.getMonth(),_t.getDate());var dd=Math.round((d-today0)/86400000);if(dd<0)return{k:"over",dd:dd,auto:c.auto};if(dd<=LEAD)return{k:"soon",dd:dd,auto:c.auto};return{k:"ok",dd:dd,auto:c.auto};}
-function ddText(s){if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
+/* ★2026-09-02 GM 지적 "손소독제 구매도 설치도 다 끝났는데 지난 건으로 계속 남아 있다".
+   원인 = 끝난 일을 끝났다고 표시할 길이 없었다. 한 번만 하는 일은 실시일(last_done)을 채워도
+   이 함수가 그걸 안 보고 마감일만 봐서 영원히 '지남'으로 남았다. status_enum 에 done 이
+   정의돼 있었는데 화면이 그 값을 쓰지 않던 것도 같은 뿌리다.
+   판정 = 반복이 없고(주기·반복 없음) 실시일이 채워졌으면 끝난 일이다. 반복·주기가 있는
+   정기점검은 실시일이 있어도 다음 회차가 다시 계산되므로 여기 안 걸린다. */
+function statusOf(it){
+  if(!it.repeat && !it.period_months && String(it.last_done||"").trim()) return{k:"done",dd:null,auto:false};
+  var c=nextOccurrence(it);var d=c.date;if(!d)return{k:"tbd",dd:null,auto:false};var _t=kstToday();var today0=new Date(_t.getFullYear(),_t.getMonth(),_t.getDate());var dd=Math.round((d-today0)/86400000);if(dd<0)return{k:"over",dd:dd,auto:c.auto};if(dd<=LEAD)return{k:"soon",dd:dd,auto:c.auto};return{k:"ok",dd:dd,auto:c.auto};}
+function ddText(s){if(s.k==="done")return"";if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
 function items(){return DATA.items.filter(function(it){return (cur==="전체"||it.dept===cur)&&(curCat==="전체"||it.category===curCat)&&it.applies!=="해당없음";});}
 // 실제 항목에 쓰인 분류만(부서 무관) — 범례·필터 칩 소스. 등장 순서 유지.
 function usedCats(){var seen={},order=[];(DATA.items||[]).forEach(function(it){if(it.applies!=="해당없음"&&!seen[it.category]&&CATS[it.category]){seen[it.category]=1;order.push(it.category);}});return order;}
@@ -363,7 +371,11 @@ function syncScope(){document.getElementById("scopeLabel").textContent=(cur==="�
 // 그게 바로 놓치면 안 되는 것이다. 반복 이벤트도 다음 회차가 계산되므로 그대로 둔다.
 var _pastOpen=false;
 function isPastOneOff(it){
-  return it.type==="이벤트" && !it.repeat && statusOf(it).k==="over";
+  var k=statusOf(it).k;
+  /* 끝난 일은 종류를 가리지 않고 접는다 — 한 번만 하는 일이면 정기점검으로 등록돼 있어도
+     끝난 것은 끝난 것이다(2026-09-02 손소독제 2건이 정확히 이 경우였다). */
+  if(k==="done") return true;
+  return it.type==="이벤트" && !it.repeat && k==="over";
 }
 function renderList(){
   var all=items().slice().sort(function(a,b){var da=statusOf(a).dd,db=statusOf(b).dd;da=(da===null?99999:da);db=(db===null?99999:db);return da-db;});
@@ -377,8 +389,8 @@ function renderList(){
     t.className="row editable";
     t.style.cssText="cursor:pointer;opacity:.75;";
     t.innerHTML='<div class="catbar" style="background:#666"></div>'+
-      '<div><div class="name">'+(_pastOpen?"▾":"▸")+' 지난 일정 '+past.length+'건</div>'+
-      '<div class="rsub">날짜가 지난 1회성 일정입니다 — 기록은 그대로 남아 있습니다</div></div>'+
+      '<div><div class="name">'+(_pastOpen?"▾":"▸")+' 지난·끝난 일정 '+past.length+'건</div>'+
+      '<div class="rsub">날짜가 지났거나 실시가 끝난 1회성 일정입니다 — 기록은 그대로 남아 있습니다</div></div>'+
       '<div class="rdept"></div><div class="rd"></div><div class="pill ok"><span>접힘</span><span></span></div>';
     t.onclick=function(){ _pastOpen=!_pastOpen; renderList(); fitFrame(); };
     el.appendChild(t);
@@ -419,7 +431,7 @@ function appendRow(it, el){
       '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+evTxt+'</div>'+
       '<div class="rdept">'+esc(it.dept)+'</div>'+
       '<div class="rd">'+(isEvent?"":"다음 ")+'<b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">'+tailTxt+'</span></div>'+
-      '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
+      '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정",done:"완료"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
     el.appendChild(r);
     if(editing){
       var idx=DATA.items.indexOf(it);
@@ -588,7 +600,7 @@ function openUrgentPopup(){
     return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid rgba(127,127,127,0.18);cursor:pointer;" onclick="closeUrgentPopup();openInline(\''+esc(it.id)+'\')">'+
       '<span style="flex:0 0 3px;align-self:stretch;background:'+cat.color+';border-radius:2px;"></span>'+
       '<span style="flex:1 1 auto;font-size:13px;">'+esc(it.name||"(이름 없음)")+' <span style="font-size:11px;opacity:.6;">· '+esc(it.dept)+'</span></span>'+
-      '<span class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유"}[st.k]||"")+'</span><span>'+ddText(st)+'</span></span>'+
+      '<span class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",done:"완료"}[st.k]||"")+'</span><span>'+ddText(st)+'</span></span>'+
     '</div>';
   }).join(""):'<div style="padding:12px 0;font-size:13px;opacity:.65;">표시할 일정이 없습니다.</div>';
   document.getElementById("urgentModal").classList.add("show");
