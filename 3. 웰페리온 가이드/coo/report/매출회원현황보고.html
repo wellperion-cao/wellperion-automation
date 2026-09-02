@@ -173,6 +173,25 @@
   .foot b{color:var(--ink);}
   .err{background:#FBEDED;border:1.5px solid var(--bad);color:var(--bad);padding:7px 13px;
     font-size:12.5px;font-weight:700;margin-top:10px;}
+
+  /* ══ 2페이지 — 회원·문의 상세. 기존 스타일(.stack·.chips·.flow·.yr·.vrow·.bigrow)을
+     그대로 재사용하고, 여기 쓰는 것만 덧붙인다. ══ */
+  @media print{ #sheet2{ page-break-before:always; } }
+  .mv6{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .vrow2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+  .vrow2 .vcol-h{font-size:10.4px;font-weight:800;color:var(--navy);margin-bottom:3px;}
+  .fndom{margin-bottom:9px;}
+  .fndom:last-child{margin-bottom:0;}
+  .fndom .fnt{font-size:11px;font-weight:800;color:var(--navy);margin-bottom:2px;}
+  .fndom .fnt small{font-weight:400;color:#7A838B;font-size:9.5px;}
+  .fnrow{display:flex;align-items:center;gap:2px;font-size:11px;padding:2px 0;}
+  .fnrow .fnlbl{width:38px;color:#7A838B;font-size:10px;flex:none;}
+  .fnstep{display:flex;flex-direction:column;align-items:center;min-width:32px;}
+  .fnstep b{font-size:13px;font-variant-numeric:tabular-nums;}
+  .fnstep i{font-size:9px;color:#7A838B;font-style:normal;}
+  .fnarr{font-size:9px;color:#8FA6BC;padding:0 1px;white-space:nowrap;}
+  td.rem-bad{color:var(--bad);font-weight:800;}
+  td.rem-warn{color:var(--warn);font-weight:800;}
 </style>
 </head>
 <body>
@@ -292,6 +311,54 @@
     <div><b>부서별 진행 사항</b> — 팀별 운영 현황·시설·지원·주차·인사&amp;파트너팀·핵심 보고는 <b>월간운영계획</b>의 「전 부서 보고 사항」에서 봅니다(같은 시트를 읽습니다).</div>
     <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
   </div>
+
+</div>
+
+<div class="page" id="sheet2">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">회원 · 문의 상세</div>
+    </div>
+    <div class="meta">
+      매출 및 회원 현황 보고 <b>2 / 2</b><br>
+      작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>회원관리 ERP</b><br>
+      읽은 시각 <b id="readat2">—</b>
+    </div>
+  </div>
+
+  <div id="err2"></div>
+
+  <div class="body">
+    <div class="col">
+      <div class="sec">
+        <h2>오늘 · 이번 달 움직임</h2>
+        <div class="bd" id="p2today"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>회원 구성 상세</h2>
+        <div class="bd" id="p2mix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>이탈 · 갱신 임박</h2>
+        <div class="bd" id="p2churn"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="sec">
+        <h2>문의에서 가입까지</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>강습 종목별 · 유입 경로 (누적)</h2>
+        <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="audit wait" id="audit2">자체 점검 중…</div>
 
 </div>
 
@@ -725,6 +792,139 @@ function load(){
   Promise.all([p1, p2, p3, p4]).then(runAudit, runAudit);
 }
 load();
+</script>
+
+<script>
+/* ══ 2페이지 — 회원·문의 상세. 1페이지 GAS(보고 시트)와 원천이 다른 회원관리 ERP를
+   따로 조회한다. 1페이지 변수·함수(esc·num·MIX_COLORS)는 읽기만 하고 건드리지 않는다. ══ */
+var GAS2 = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+var P2_ACTIONS = ['member_active_summary', 'cpo_today_stats', 'cpo_churn_stats', 'stage_funnel', 'lesson_stats'];
+var RAW2 = {};
+
+function p2num(n){ return (n == null || isNaN(n)) ? '–' : n.toLocaleString('ko-KR'); }
+
+function renderP2Today(t){
+  var el = document.getElementById('p2today'); if (!el) return;
+  var items = [
+    ['오늘 문의', t.todayInquiry], ['오늘 등록', t.todayReg], ['오늘 이탈', t.todayLoss],
+    ['이달 문의', t.monthInquiry], ['이달 등록', t.monthReg], ['이달 이탈', t.monthLoss]
+  ];
+  el.innerHTML = '<div class="mv6">' + items.map(function(x){
+    return '<div class="yb"><div class="yl">' + x[0] + '</div><div class="yv">' + p2num(x[1]) + '명</div></div>';
+  }).join('') + '</div>';
+}
+
+function renderP2Mix(a, corp){
+  var el = document.getElementById('p2mix'); if (!el) return;
+  var tc = a.typeCounts || {};
+  var items = [['멤버십', tc['멤버십']], ['입주민', tc['입주민']], ['중단기', tc['중단기']],
+    ['보증금', tc['보증금']], ['FAN VIP', tc['FAN VIP']]].filter(function(x){ return x[1]; });
+  var colors = MIX_COLORS.concat(['#8FA6BC', '#C2CEDA']);
+  var sum = items.reduce(function(s, x){ return s + x[1]; }, 0) || 1;
+  el.innerHTML =
+    '<div class="bigrow"><span class="bl">유효 회원 총계</span><span class="bv">' + p2num(a.validTotal) + '명</span></div>' +
+    '<div class="stack">' + items.map(function(x, i){
+      return '<i style="width:' + (x[1] / sum * 100) + '%;background:' + colors[i] + '" title="' + x[0] + '"></i>'; }).join('') + '</div>' +
+    '<div class="chips">' + items.map(function(x, i){
+      return '<span class="chip"><i style="background:' + colors[i] + '"></i>' + x[0] + ' <b>' + p2num(x[1]) + '명</b></span>'; }).join('') +
+      '<span class="chip"><i style="background:#48525B"></i>법인(별도 시트) <b>' + p2num(corp) + '명</b></span></div>' +
+    '<div class="fnote">종료 회원 ' + p2num(a.endedTotal) + '명 · 대기 ' + p2num(a.waitingCount) + '명</div>';
+}
+
+function renderP2Churn(c){
+  var el = document.getElementById('p2churn'); if (!el) return;
+  var top = (c.renewSoon || []).slice(0, 12);
+  var restN = (c.renewSoon || []).length - top.length;
+  el.innerHTML =
+    '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' +
+      '누적 이탈 <b>' + p2num(c.lossCount) + '명 (' + c.lossRate + '%)</b> · 이번 달 이탈 <b>' + p2num(c.monthLossCount) +
+      '명 (' + c.monthLossRate + '%)</b> · 갱신 누적 <b>' + p2num(c.renewCount) + '건</b></div>' +
+    '<table style="margin-top:5px;"><colgroup><col><col style="width:56px"><col></colgroup>' +
+    '<thead><tr><th>이름</th><th>남은 일수</th><th>프로그램</th></tr></thead><tbody>' +
+    top.map(function(x){
+      var cls = x.rem <= 3 ? 'rem-bad' : (x.rem <= 7 ? 'rem-warn' : '');
+      return '<tr><td>' + esc(x.name) + '</td><td class="' + cls + '">' + x.rem + '일</td><td>' + esc(x.program || '–') + '</td></tr>';
+    }).join('') + '</tbody></table>' +
+    (restN > 0 ? '<div class="fnote">외 ' + restN + '명</div>' : '');
+}
+
+function fnStepsHTML(stage, retain){
+  var keys = ['문의', '응대', '예약', '방문', '가입'];
+  return keys.map(function(k, i){
+    var step = '<span class="fnstep"><b>' + p2num(stage[k]) + '</b><i>' + k + '</i></span>';
+    if (i === keys.length - 1) return step;
+    var pct = retain && retain[keys[i + 1]] != null ? retain[keys[i + 1]] + '%' : '';
+    return step + '<span class="fnarr">→' + pct + '</span>';
+  }).join('');
+}
+
+function renderP2Funnel(f){
+  var el = document.getElementById('p2funnel'); if (!el) return;
+  function dom(name, d){
+    if (!d) return '';
+    return '<div class="fndom"><div class="fnt">' + name + ' <small>(비율=누적 전환율)</small></div>' +
+      '<div class="fnrow"><span class="fnlbl">이번 달</span>' + fnStepsHTML(d.month || {}, null) + '</div>' +
+      '<div class="fnrow"><span class="fnlbl">누적</span>' + fnStepsHTML(d.total || {}, d.retain) + '</div></div>';
+  }
+  el.innerHTML = dom('멤버십', f.membership) + dom('강습', f.lesson);
+}
+
+function renderP2Lesson(l){
+  var el = document.getElementById('p2lesson'); if (!el) return;
+  function bars(list){
+    var top = (list || []).slice(0, 6);
+    var max = Math.max.apply(null, top.map(function(x){ return x.v; }).concat([1]));
+    return top.map(function(x){
+      return '<div class="vrow"><span class="vl2">' + esc(x.k) + '</span>' +
+        '<span class="vbar"><i style="width:' + (x.v / max * 100) + '%"></i></span>' +
+        '<span class="vn">' + p2num(x.v) + '</span></div>';
+    }).join('');
+  }
+  el.innerHTML = '<div class="vrow2">' +
+    '<div><div class="vcol-h">종목별</div>' + bars(l.bySport) + '</div>' +
+    '<div><div class="vcol-h">유입 경로</div>' + bars(l.byChannel) + '</div>' +
+    '</div>';
+}
+
+function runAudit2(){
+  var got = P2_ACTIONS.filter(function(a){ return RAW2[a] && RAW2[a].ok; });
+  var missed = P2_ACTIONS.filter(function(a){ return !(RAW2[a] && RAW2[a].ok); });
+  var el = document.getElementById('audit2'); if (!el) return;
+  var at = new Date().toTimeString().substring(0, 5);
+  if (missed.length) {
+    el.className = 'audit bad';
+    el.innerHTML = '<b>⛔ 조회 실패 ' + missed.length + '/' + P2_ACTIONS.length + '건</b> · 못 읽음: ' + missed.join(' · ');
+  } else {
+    el.className = 'audit ok';
+    el.innerHTML = '<b>✅ 자체 점검 ' + got.length + '/' + P2_ACTIONS.length + ' 통과</b> — 회원관리 ERP 5개 액션을 ' + at + ' 에 확인했습니다';
+  }
+}
+
+function load2(){
+  var e = document.getElementById('err2'); if (e) e.innerHTML = '';
+  var jobs = P2_ACTIONS.map(function(action){
+    return fetch(GAS2 + '?action=' + action + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ RAW2[action] = d; })
+      .catch(function(){ RAW2[action] = null; });
+  });
+  Promise.all(jobs).then(function(){
+    var a = RAW2.member_active_summary, t = RAW2.cpo_today_stats, c = RAW2.cpo_churn_stats,
+        f = RAW2.stage_funnel, l = RAW2.lesson_stats;
+    try {
+      if (t && t.ok) renderP2Today(t);
+      if (a && a.ok) renderP2Mix(a, t && t.ok ? t.memberCorp : null);
+      if (c && c.ok) renderP2Churn(c);
+      if (f && f.ok) renderP2Funnel(f);
+      if (l && l.ok) renderP2Lesson(l);
+    } catch (ex) {
+      document.getElementById('err2').innerHTML = '<div class="err">2페이지 그리기 실패 — ' + esc(ex.message) + '</div>';
+    }
+    document.getElementById('readat2').textContent = new Date().toTimeString().substring(0, 5);
+    runAudit2();
+  });
+}
+load2();
 </script>
 </body>
 </html>
