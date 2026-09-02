@@ -320,7 +320,9 @@ function computeDue(it){
    판정 = 반복이 없고(주기·반복 없음) 실시일이 채워졌으면 끝난 일이다. 반복·주기가 있는
    정기점검은 실시일이 있어도 다음 회차가 다시 계산되므로 여기 안 걸린다. */
 function statusOf(it){
-  if(!it.repeat && !it.period_months && String(it.last_done||"").trim()) return{k:"done",dd:null,auto:false};
+  var _cyc=String(it.cycle||"").trim();
+  if(!it.repeat && !it.period_months && (_cyc===""||_cyc==="1회") && String(it.last_done||"").trim())
+    return{k:"done",dd:null,auto:false};
   var c=nextOccurrence(it);var d=c.date;if(!d)return{k:"tbd",dd:null,auto:false};var _t=kstToday();var today0=new Date(_t.getFullYear(),_t.getMonth(),_t.getDate());var dd=Math.round((d-today0)/86400000);if(dd<0)return{k:"over",dd:dd,auto:c.auto};if(dd<=LEAD)return{k:"soon",dd:dd,auto:c.auto};return{k:"ok",dd:dd,auto:c.auto};}
 function ddText(s){if(s.k==="done")return"";if(s.dd===null)return"D-?";return s.dd<0?("D+"+Math.abs(s.dd)):("D-"+s.dd);}
 function items(){return DATA.items.filter(function(it){return (cur==="전체"||it.dept===cur)&&(curCat==="전체"||it.category===curCat)&&it.applies!=="해당없음";});}
