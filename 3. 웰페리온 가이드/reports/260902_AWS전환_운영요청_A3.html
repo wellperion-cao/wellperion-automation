@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AWS ERP 전환 — 운영이 미리 걸어야 할 요청 (2026-09-02)</title>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+:root{--ink:#1d1b18;--dim:#6d675e;--line:#ddd6ca;--bg:#faf9f7;--paper:#fff;--accent:#b08d57;--bad:#c0553f;--ok:#3f7d52}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif;font-size:13px;line-height:1.55}
+.wrap{max-width:1600px;margin:0 auto;padding:22px 26px 40px}
+h1{font-size:26px;font-weight:800;margin:0 0 4px}
+.sub{color:var(--dim);font-size:13.5px;margin-bottom:6px}
+.meta{color:var(--dim);font-size:12.5px;border-bottom:2px solid var(--accent);padding-bottom:10px;margin-bottom:18px}
+h2{font-size:16px;font-weight:800;margin:22px 0 8px;padding-left:9px;border-left:4px solid var(--accent)}
+p.lead{margin:0 0 12px}
+table{width:100%;border-collapse:collapse;background:var(--paper);margin-bottom:6px}
+th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+th{background:#f3efe8;font-weight:700;white-space:nowrap}
+td.n{white-space:nowrap;font-weight:700;color:var(--accent);width:34px;text-align:center}
+td.k{white-space:nowrap;font-weight:700;width:190px}
+.why{color:var(--dim);display:block;margin-top:3px}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);background:#f3efe8;white-space:nowrap}
+.tag.must{color:var(--bad);border-color:#e6c3ba;background:#fbeeea}
+.note{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:11px 14px;margin:14px 0}
+.foot{color:var(--dim);font-size:12px;margin-top:22px;border-top:1px solid var(--line);padding-top:10px}
+@page{size:A3 portrait;margin:10mm}
+@media print{body{background:#fff}.wrap{max-width:none;padding:0}h2{break-after:avoid}table{break-inside:auto}tr{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AWS ERP 전환 — 운영이 미리 걸어야 할 요청</h1>
+<div class="sub">지금 운영이 돌아가는 방식을 그대로 옮기면 안 되는 것과, 옮길 때 반드시 따라와야 하는 것</div>
+<div class="meta">작성 <b>AI 시우</b> · 2026-09-02 · 요청 대상 <b>AWS ERP 구축(시토)</b> · 결정 <b>김남욱 GM</b></div>
+
+<div class="note">
+<b>왜 지금 적어 두나.</b> 운영이 쓰는 화면·원장은 지금 구글 시트와 워드프레스에 흩어져 있다.
+전환이 시작된 뒤에 "그 기능도 있었네"가 나오면 현장이 며칠씩 손으로 버틴다.
+아래는 <b>운영 쪽에서 빠지면 안 되는 것</b>과 <b>지금 아픈 것을 반복하지 않기 위한 조건</b>이다.
+표의 <span class="tag must">필수</span> 는 없으면 전환 당일 현장이 멈추는 것이다.
+</div>
+
+<h2>1. 지금 운영이 얹혀 있는 것 — 옮겨야 할 대상</h2>
+<table>
+<tr><th style="width:170px">무엇</th><th style="width:250px">지금 어디에</th><th>옮길 때 딸려와야 하는 것</th></tr>
+<tr><td>종합접수처</td><td>워드프레스 화면 + 구글 시트 원장</td><td>접수 6종 분류 · 부서 자동 배정(11개 부서) · 경과일 계산 · 회원 안내 칸 · 사진 첨부</td></tr>
+<tr><td>접수 조회</td><td>워드프레스 화면</td><td>회원이 이름·연락처만으로 본인 건만 조회 · 담당자·내부 메모는 안 보임</td></tr>
+<tr><td>습득물</td><td>워드프레스 3화면 + 시트</td><td>등록 · 공개 갤러리 · 수령 신청(서명) · 보관 기간·처분 주기 자동 · 사진</td></tr>
+<tr><td>점검 체계</td><td>구글 시트 + 스크립트</td><td>4부서(시설·지원·주차·운영) 일자별 제출 · 남/여 구역 구분 · 제출률 집계</td></tr>
+<tr><td>전사일정</td><td>구글 시트 + 스크립트</td><td>반복 주기 자동 계산 · 법정점검 근거 · 완료 표시 · 담당·기한</td></tr>
+<tr><td>업무·결재</td><td>구글 시트 + 스크립트</td><td>업무 등록 · 결재선(중간관리자→GM) · 첨부 · 반려 사유 · 의견 · 이력</td></tr>
+<tr><td>리셉션 업무·라커</td><td>태블릿용 화면 + 시트</td><td>표 안에서 바로 고치기 · 자동 저장 · 비밀번호 잠금</td></tr>
+<tr><td>공지 · 거래업체</td><td>구글 시트 + 스크립트</td><td>공지 게시·삭제 · 업체 목록(전사일정과 연결)</td></tr>
+</table>
+
+<h2>2. 반드시 걸어야 할 요청</h2>
+<table>
+<tr><th class="n">#</th><th class="k">요청</th><th>내용과 이유</th><th style="width:70px">등급</th></tr>
+
+<tr><td class="n">1</td><td class="k">접수는 끝까지 한 화면</td>
+<td>접수 → 부서 배정 → 처리 → <b>회원 안내 발송</b>까지 한 곳에서 끝나야 한다.
+<span class="why">지금은 안내 문구를 사람이 다른 화면에서 따로 적어 넣어, 처리는 됐는데 회원은 결과를 모르는 건이 계속 쌓인다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">2</td><td class="k">키오스크를 1급으로</td>
+<td>터치 스크롤 · 입력칸 눌러도 확대 안 됨 · 일정 시간 뒤 자동 초기화 · QR로 장소 자동 입력.
+<span class="why">이 넷은 지금 화면마다 손으로 맞추고 있어 한 화면 고치면 옆 화면이 어긋난다. 실제로 2026-09-01~02 이틀간 같은 증상으로 네 화면을 따로 고쳤다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">3</td><td class="k">사진·첨부 저장</td>
+<td>접수·습득물 사진, 결재 첨부를 시스템 안에 저장하고 <b>보관 기간이 지나면 자동 정리</b>.
+<span class="why">지금은 구글 드라이브에 쌓이기만 하고 지우는 사람이 따로 있다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">4</td><td class="k">점검은 휴대폰 우선</td>
+<td>현장에서 폰으로 제출 · 항목은 <b>중간관리자가 직접 추가·수정</b> · 미제출은 자동으로 알림.
+<span class="why">항목을 바꾸려면 지금은 AI에게 부탁해야 한다. 그래서 항목이 현실과 어긋난 채 오래 간다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">5</td><td class="k">일정은 스스로 넘어가야</td>
+<td>반복 주기로 다음 회차 자동 계산 · 끝낸 것은 <b>실시일만 넣으면 완료</b> · 법정점검은 근거와 증빙을 함께 보관.
+<span class="why">달·상태를 사람이 손으로 넘기는 값이 남아 있으면 반드시 늦는다(2026-09-02 실제로 GM이 잡아 주셨다).</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">6</td><td class="k">결재는 사람 순서대로</td>
+<td>중간관리자 → GM 순서 · 반려 사유 · 첨부 · 누가 언제 눌렀는지 이력.
+<span class="why">담당자 후보에 GM을 못 넣는 것 같은 제약을 새 시스템에 그대로 옮기지 않는다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">7</td><td class="k">권한을 사람 단위로</td>
+<td>실무진은 <b>본인·본인 부서 것만</b> · 회원 개인정보는 따로 가려지고, 본 사람이 기록에 남아야 한다.
+<span class="why">지금은 주소만 알면 열리는 화면이 있어 개인정보가 공개로 새는 자리가 있다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">8</td><td class="k">옛 기록 통째로 이관</td>
+<td>접수·점검·일정·업무 원장을 <b>한 건도 빠뜨리지 않고</b> 옮기고, 접수 번호는 그대로 유지.
+<span class="why">번호가 바뀌면 회원에게 이미 안내한 접수번호가 무효가 된다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">9</td><td class="k">끊겨도 접수는 받는다</td>
+<td>키오스크가 잠깐 인터넷이 끊겨도 접수 내용을 품고 있다가 연결되면 올린다.
+<span class="why">지금은 그 순간 회원이 쓴 내용이 사라진다.</span></td>
+<td>권장</td></tr>
+
+<tr><td class="n">10</td><td class="k">누가 무엇을 바꿨나</td>
+<td>기록을 고치거나 지운 사람·시각을 남긴다.
+<span class="why">지금은 원장 한 줄이 사라져도 되돌릴 근거가 없다(실제로 실고객 행이 지워진 적이 있다).</span></td>
+<td><span class="tag must">필수</span></td></tr>
+
+<tr><td class="n">11</td><td class="k">알림은 쓰던 길로</td>
+<td>실무진 카카오톡 · AI 텔레그램. 새 알림 통로를 만들지 않는다.
+<span class="why">알림이 늘면 실무진이 어느 방을 봐야 하는지 헷갈린다.</span></td>
+<td>권장</td></tr>
+
+<tr><td class="n">12</td><td class="k">두 시스템 병행은 짧게</td>
+<td>전환 기간에 <b>같은 내용을 두 번 적는 일은 만들지 않는다.</b> 병행이 필요하면 한쪽을 읽기 전용으로.
+<span class="why">두 곳에 적으면 반드시 한쪽이 옛것이 되고, 그 상태를 아무도 모른다.</span></td>
+<td><span class="tag must">필수</span></td></tr>
+</table>
+
+<h2>3. 전환 전에 답이 나와야 하는 것</h2>
+<table>
+<tr><th class="k">물음</th><th>왜 먼저 정해야 하나</th></tr>
+<tr><td class="k">실무진 계정은 누가 만드나</td><td>사람이 늘고 줄 때마다 계정을 여닫는 사람이 정해져 있어야 한다. 지금은 계정 개념이 없어 주소만 알면 들어간다.</td></tr>
+<tr><td class="k">회원 개인정보 범위</td><td>연락처를 누가 볼 수 있는지 먼저 정해야 화면을 그린다. 나중에 바꾸면 화면을 다시 만든다.</td></tr>
+<tr><td class="k">브로제이와 겹치는 부분</td><td>회원·출입은 브로제이, 접수·점검은 우리 것 — 경계를 먼저 그어야 두 번 만들지 않는다.</td></tr>
+<tr><td class="k">전환 시점</td><td>월말·연휴·정기점검 몰리는 주는 피한다. 운영이 가장 한가한 구간을 골라야 한다.</td></tr>
+<tr><td class="k">되돌리는 길</td><td>새 시스템이 하루 멈췄을 때 무엇으로 버틸지 정해 둔다. 종이·시트 중 하나는 살려 둔다.</td></tr>
+</table>
+
+<div class="foot">
+정본 = 이 문서(요청 목록) · 실행 = AWS ERP 구축(시토) · 이 문서는 새 사실이 생기면 같은 자리에 갱신한다.
+</div>
+
+</div>
+</body>
+</html>
