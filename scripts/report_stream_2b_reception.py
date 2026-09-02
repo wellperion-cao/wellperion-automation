@@ -75,13 +75,20 @@ def _looks_urgent(text: str) -> bool:
 # 카테고리(reg_list의 category=한글 라벨) → SLA 시간. SSOT=coo/reception/apps_script_reception.js
 # REG_CATEGORIES(:38-43). 보드·다른 소비자에 하드코딩 복사 금지 원칙과 동일하게 이 표는
 # GAS 응답 라벨 그대로를 키로 쓴다(코드 재구현 없이 라벨 정확일치). None=SLA 없음(집계 제외).
+# ★2026-09-02 GM 확정 — 기준을 24시간 하나로 모았다. GM 원문: "24시간 내를 기준으로 해줘."
+#   종전엔 종류마다 12·24·48·72시간으로 갈려 있었다. 회원 입장에서는 무엇을 적었든 하루 안에
+#   답이 오느냐 마느냐뿐이고, 기준이 네 벌이면 늦은 건을 한 줄로 세울 수도 없다(약속 L01).
+#   ▸바뀐 것: 컴플레인 48→24 · 쓴소리 72→24 (빨라진다) · 청결 12→24 (느슨해진다 — 12시간은
+#     기준이 하나가 아니게 되는 유일한 예외라 24로 맞췄다. 더 빨리 가야 한다고 보시면 되돌린다).
+#   ▸안 바꾼 것: 분실물 720시간(보관 성격이라 회신 대상이 아니다 · GM 확정 2026-07-28) ·
+#     칭찬 None(처리할 것이 없다).
 _SLA_HOURS: dict[str, int | None] = {
     "분실물 접수": 720,  # 30일 — GM 확정 2026-07-28(구 168h/7일). 사유=apps_script_reception.js 주석
     "시설물 고장 접수": 24,
-    "청결 이슈 접수": 12,
+    "청결 이슈 접수": 24,
     "직원·강사 칭찬합니다": None,
-    "직원·강사 쓴소리합니다": 72,
-    "컴플레인 접수": 48,
+    "직원·강사 쓴소리합니다": 24,
+    "컴플레인 접수": 24,
 }
 
 
@@ -366,6 +373,11 @@ def _write_reception_watch(rows: list[dict]) -> None:
         first_done_at, first_done_src, processing_days = _first_done_at_and_stats(rows, now)
         by_dept: dict[str, dict] = {}
         member_reply_open = 0
+        # ★2026-09-02 GM 확정 — 24시간이 기준이다. 재지 않으면 느려도 아무도 모른다.
+        #   over_24h      = 접수 후 24시간 넘도록 안 닫힌 건(회신 대상 종류만)
+        #   reply_over_24h= 그중 회원께 안내가 아직 안 나간 건 — GM 이 말한 "회신까지 가는 것"의 지표
+        over_24h = 0
+        reply_over_24h: list[dict] = []
         overdue_3d = 0
         overdue_7d = 0
         overdue_14d: list[dict] = []
@@ -384,8 +396,22 @@ def _write_reception_watch(rows: list[dict]) -> None:
             if days >= slot["max_age_days"]:
                 slot["max_age_days"] = days
                 slot["max_age_reg_id"] = str(r.get("regId") or "")
-            if not str(r.get("memberReply") or "").strip():
+            no_reply = not str(r.get("memberReply") or "").strip()
+            if no_reply:
                 member_reply_open += 1
+            # 24시간 판정 — 날짜가 아니라 실제 경과 시간으로 센다(오전 접수·오후 접수가 갈린다).
+            # 회신 대상이 아닌 종류(분실물 보관·칭찬)는 제외해 기준을 흐리지 않는다.
+            if _SLA_HOURS.get(cat) not in (None, 720):
+                created_at = _parse_created(r.get("createdAt"))
+                if created_at and (now - created_at).total_seconds() / 3600.0 > 24:
+                    over_24h += 1
+                    if no_reply:
+                        reply_over_24h.append({
+                            "regId": str(r.get("regId") or ""), "dept": dept,
+                            "hours": round((now - created_at).total_seconds() / 3600.0),
+                            "category": cat,
+                            "title": " ".join(
+                                str(r.get("content") or r.get("title") or "").split())[:40]})
             if days >= 3:
                 overdue_3d += 1
             if days >= 7:
@@ -403,6 +429,10 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
             "by_dept": by_dept,
             "member_reply_open": member_reply_open,
+            # 24시간 기준(GM 확정 2026-09-02) — 이 두 값이 GM 이 보는 속도 지표다
+            "over_24h": over_24h,
+            "reply_over_24h": len(reply_over_24h),
+            "reply_over_24h_items": sorted(reply_over_24h, key=lambda x: -x["hours"])[:10],
             "overdue_3d": overdue_3d,
             "overdue_7d": overdue_7d,
             # 14일 넘게 안 닫힌 건 = 부서에 두 번 말해도 안 된 것 → GM 몫(GM 확정 2026-08-31)
