@@ -29,6 +29,8 @@
     background:#fff;border:0;border-radius:3px;padding:7px 15px;cursor:pointer;text-decoration:none;}
   .bar a:hover,.bar button:hover{background:#DCE4EE;}
   .bar .note{font-size:11.5px;opacity:.85;font-weight:400;}
+  .bar input[type=date]{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--navy);
+    background:#fff;border:0;border-radius:3px;padding:6px 10px;}
   @media print{ .bar{display:none!important;} html,body{background:#fff;}
                 .page{margin:0!important;box-shadow:none!important;} }
 
@@ -218,6 +220,9 @@
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <a href="../../월간운영계획.html">📋 전 부서 보고 사항 (월간운영계획) ↗</a>
+  <!-- 날짜별·월별 보기 (GM 지시 2026-09-02). 인쇄 시 .bar 통째로 숨어 인쇄에는 안 나온다. -->
+  <input type="date" id="dpick" onchange="onDatePick()">
+  <button id="dmonth" onclick="toggleMonth()">📅 이번 달 전체</button>
   <button onclick="load()">↻ 새로고침</button>
   <button onclick="window.print()">🖨 A3 인쇄</button>
 </div>
@@ -269,6 +274,8 @@
     </div>
 
     <div class="col">
+      <!-- 날짜·월 보기에서만 보인다 — 회원 쪽은 일자탭에 값이 없어 기준이 섞인다는 사실을 숨기지 않는다. -->
+      <div class="fnote" id="memberDateNote" style="display:none;margin:0 0 2px;">⚠ 회원 수치(구성·드나듦·입장객·컨택·로스자)는 선택한 날짜와 무관하게 <b>어제 기준</b>입니다.</div>
       <div class="sec">
         <h2>회원 구성 — 오늘 몇 분이 회원인가</h2>
         <div class="bd" id="memberMix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -554,6 +561,14 @@ function paintAudit(out){
 }
 
 function renderSheet(c){
+  // 날짜·월 보기에서 새로고침하면 항상 기본(어제) 상태로 돌아온다 — 회귀 없는 기본값(GM 지시 09-02).
+  VIEW_MODE = 'default';
+  var mdn = document.getElementById('memberDateNote'); if (mdn) mdn.style.display = 'none';
+  var hl0 = document.getElementById('headline').children;
+  hl0[0].style.opacity = hl0[1].style.opacity = '';
+  document.getElementById('dmonth').textContent = '📅 이번 달 전체';
+  document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
+
   document.getElementById('asof').textContent = String(c.H2 || '').replace(/^📅\s*/, '').replace(' 매출 및 운영사항 보고','');
 
   document.getElementById('sales').innerHTML = SALES_ROWS.map(function(r){
@@ -813,6 +828,132 @@ function load(){
   // 네 조회가 모두 끝난 뒤에 스스로 점검한다 — 하나라도 늦으면 그건 '못 읽음'으로 잡힌다.
   Promise.all([p1, p2, p3, p4]).then(runAudit, runAudit);
 }
+
+/* ══ 날짜별 · 월별 보기 (GM 지시 2026-09-02) ══
+   일자탭(시트 이름 1~31)을 그대로 읽는다 — 매달 덮어써지므로 조회 가능한 건 "이번 달 1일~오늘"뿐이고,
+   그 뒤 번호는 지난달 기록이 남은 것이다(아래서 밝힌다). RAW.cells(자체 점검이 보는 값)는 절대
+   건드리지 않는다 — 날짜를 바꿔도 09:30 발송 판정(window.__REPORT_READY)은 항상 어제 기준이다. */
+var VIEW_MODE = 'default';   // default | date | month
+function ymd(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
+document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
+
+// 일자탭 계약 명단 — 회원권(A~G) · 강습(H~N) 두 블록 모두 열 순서가 같다(담당·회원·종목·금액·방법·분류·경로).
+function readContracts(c, cols){
+  var rows = [];
+  for (var r = 8; r <= 20; r++) {
+    var staff = c[cols[0]+r], member = c[cols[1]+r];
+    if (!staff && !member) continue;
+    rows.push({ staff: staff || '–', member: member || '–', sport: c[cols[2]+r] || '–',
+                amount: num(c[cols[3]+r]), amountRaw: String(c[cols[3]+r] || '–').trim(),
+                type: c[cols[5]+r] || '–' });
+  }
+  rows.sort(function(a, b){ return b.amount - a.amount; });
+  return rows;
+}
+function contractListHTML(title, rows){
+  var top = rows.slice(0, 12), restN = rows.length - top.length;
+  return '<div style="flex:1;min-width:0"><b style="font-size:10.6px;color:var(--navy)">' + title + '</b>' +
+    (rows.length ? top.map(function(x){
+      return '<div style="font-size:10.8px;padding:1.5px 0;border-bottom:1px dotted var(--line);' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(x.staff) + ' · ' + esc(x.member) +
+        ' · ' + esc(x.sport) + ' · <b>' + esc(x.amountRaw) + '</b> · ' + esc(x.type) + '</div>'; }).join('')
+      : '<div class="fnote">그날 계약 건이 없습니다.</div>') +
+    (restN > 0 ? '<div class="fnote">외 ' + restN + '건</div>' : '') + '</div>';
+}
+
+// 일자탭 매출 표 — 항목별 표가 없어 회원권/강습권/총매출 3줄 + 그날 계약 명단으로 바꿔 그린다.
+function renderDaySales(c, dayLabel){
+  var rows = [['회원권', c.C3, c.C4], ['강습권', c.F3, c.F4], ['총 매출', c.J3, c.J4]];
+  document.getElementById('sales').innerHTML = rows.map(function(r, i){
+    return '<tr' + (i === 2 ? ' class="sum"' : '') + '><td>' + r[0] + '</td><td>' + esc(r[1] || '–') +
+      '</td><td>' + esc(r[2] || '–') + '</td><td>–</td><td>–</td></tr>';
+  }).join('') +
+  '<tr><td colspan="5" style="text-align:left;height:auto;padding:8px 8px 4px;white-space:normal">' +
+    '<div style="display:flex;gap:18px">' +
+      contractListHTML('회원권 계약 (' + dayLabel + ')', readContracts(c, ['A','B','C','D','E','F','G'])) +
+      contractListHTML('강습 계약 (' + dayLabel + ')', readContracts(c, ['H','I','J','K','L','M','N'])) +
+    '</div></td></tr>';
+}
+
+// 월별 표 — sales_monthly(months[])를 그대로 옮긴다. 이번 달만 오늘 일자탭 J4(월 누적)로 정확한 값을 쓴다.
+function renderMonthSales(monthsData, todayCells){
+  var months = (monthsData && monthsData.months) || [];
+  var yearTarget = (monthsData && monthsData.yearTarget) || 0;
+  var curM = new Date().getMonth() + 1, acc = 0, html = '';
+  for (var m = 1; m <= curM; m++) {
+    var raw = (m === curM) ? (todayCells ? num(todayCells.J4) : null) : (months[m-1] ? months[m-1].value : null);
+    var label = m + '월' + (m === curM ? ' (오늘까지)' : '');
+    if (raw == null) { html += '<tr><td>' + label + '</td><td colspan="4" style="text-align:center;color:#7A838B">집계 전</td></tr>'; continue; }
+    acc += raw;
+    var pct = yearTarget ? (acc / yearTarget * 100) : null;
+    var pctStr = pct == null ? '–' : pct.toFixed(1) + '%';
+    var bar = pct == null ? '' : '<span class="rb" style="width:' + Math.min(100, pct) + '%"></span>';
+    html += '<tr><td>' + label + '</td><td>' + eok(raw) + '</td><td>' + eok(acc) + '</td>' +
+      '<td>' + (yearTarget ? eok(yearTarget) : '–') + '</td>' +
+      '<td class="rate ' + (pct == null ? '' : rateClass(pctStr)) + '">' + pctStr + bar + '</td></tr>';
+  }
+  document.getElementById('sales').innerHTML = html || '<tr><td colspan="5">값 없음</td></tr>';
+}
+
+function resetToDefault(){
+  VIEW_MODE = 'default';
+  if (RAW.cells) renderSheet(RAW.cells);   // renderSheet 가 헤드라인·표·회원안내문구까지 전부 되돌린다
+}
+
+function onDatePick(){
+  var val = document.getElementById('dpick').value; if (!val) return;
+  VIEW_MODE = 'date';
+  document.getElementById('dmonth').textContent = '📅 이번 달 전체';
+  var day = parseInt(val.split('-')[2], 10);
+  var picked = new Date(val + 'T00:00:00');
+  var today = new Date();
+  var isToday = val === ymd(today);
+  var stale = day > today.getDate();       // 일 번호 기준(GM 지시) — 아직 지나지 않은 날짜면 지난달 탭
+  document.getElementById('memberDateNote').style.display = '';
+  var e = document.getElementById('err'); e.innerHTML = '';
+  fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + day + '&range=A1:S20&cb=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
+      var c = d.cells || {};
+      var dayLabel = (picked.getMonth()+1) + '월 ' + day + '일';
+      document.getElementById('asof').textContent = dayLabel + (isToday ? ' (집계 중 · 오늘)' : '') +
+        (stale ? ' — 지난달 탭' : '');
+      renderDaySales(c, dayLabel);
+      var hl = document.getElementById('headline').children;
+      hl[0].querySelector('.v').textContent = c.J3 || '—';
+      hl[1].querySelector('.v').textContent = c.J4 || '—';
+      var s0 = hl[0].querySelector('.s'); if (s0) s0.textContent = dayLabel + ' 매출';
+      var s1 = hl[1].querySelector('.s'); if (s1) s1.textContent = dayLabel + '까지 누적';
+      hl[0].style.opacity = hl[1].style.opacity = stale ? '.45' : '';
+      if (stale) e.innerHTML = '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn);">' +
+        '이 날짜 탭은 아직 지난달 기록입니다(' + (picked.getMonth()+1) + '월 ' + day + '일은 아직 지나지 않았습니다).</div>';
+    })
+    .catch(function(err){
+      e.innerHTML = '<div class="err">' + (day) + '일 탭을 못 읽었습니다 — ' + esc(err.message) + '</div>';
+    });
+}
+
+function toggleMonth(){
+  if (VIEW_MODE === 'month') { resetToDefault(); return; }
+  VIEW_MODE = 'month';
+  document.getElementById('dmonth').textContent = '↩ 날짜별로 보기';
+  document.getElementById('asof').textContent = '이번 달 전체';
+  document.getElementById('memberDateNote').style.display = '';
+  var today = new Date();
+  fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + today.getDate() + '&range=A1:S20&cb=' + Date.now())
+    .then(function(r){ return r.json(); }).then(function(d){ return (d && d.ok) ? d.cells : null; })
+    .catch(function(){ return null; })
+    .then(function(todayCells){
+      renderMonthSales(RAW.chart, todayCells);
+      if (todayCells) {
+        var hl = document.getElementById('headline').children;
+        hl[0].querySelector('.v').textContent = todayCells.J3 || '—';
+        hl[1].querySelector('.v').textContent = todayCells.J4 || '—';
+      }
+    });
+}
+
 load();
 </script>
 
