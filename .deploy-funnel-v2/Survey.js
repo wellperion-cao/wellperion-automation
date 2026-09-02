@@ -12341,6 +12341,20 @@ function _memberLossDateShouldStamp_(remCell, lossCell) {
  * dry:true면 쓰기 없이 대상만 반환(검증용). 멱등 — 찍을 게 없으면 쓰기 0회.
  * 회원명 없는 행(시트 하단 집계 블록 등, 배964 교훈)은 건드리지 않는다.
  */
+/** LOSS일자로 찍을 날짜 = 종료일의 다음 날 (GM 확정 2026-09-02).
+ *  ▸사유가 무엇이든(양도·강습전환 포함) 같은 규칙이다 — 사유는 사람이 채우는 칸이고,
+ *    날짜는 계약이 끝난 날에서 하루 뒤로 고정한다. 그래야 종료일과 항상 하루 차이가 난다.
+ *  ▸종전에는 '도장을 찍은 날'을 넣어서, 자동 실행이 하루라도 밀리면 그만큼 어긋났다.
+ *  ▸종료일을 읽지 못하면 오늘 날짜로 되돌아간다(빈칸으로 두지 않는다). */
+function _memberLossStampDate_(endRaw, todayStr, tz) {
+  if (!endRaw) return todayStr;
+  var d = (endRaw instanceof Date) ? new Date(endRaw.getTime())
+                                   : new Date(String(endRaw).replace(/\./g, '-').trim());
+  if (isNaN(d.getTime())) return todayStr;
+  d.setDate(d.getDate() + 1);
+  return Utilities.formatDate(d, tz || 'Asia/Seoul', 'yyyy-MM-dd');
+}
+
 function member_loss_date_auto_stamp_(opts) {
   var dry = !!(opts && opts.dry);
   var tz = 'Asia/Seoul';
@@ -12365,6 +12379,7 @@ function member_loss_date_auto_stamp_(opts) {
   var nmI   = _idx('회원명');
   var remI  = _idx('잔여일');
   var lossI = _idx('LOSS일자');   // ssot/sheet_columns.json member_active 계약에 실헤더 'LOSS\n일자'로 확인됨(2026-08-05)
+  var endI  = _idx('종료');       // 종료일자 — LOSS일자는 이 날의 '다음 날'로 찍는다(GM 확정 2026-09-02)
   if (remI < 0 || lossI < 0) { out.error = '칸 없음(잔여일=' + remI + ' LOSS일자=' + lossI + ')'; return out; }
 
   var data = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
@@ -12373,12 +12388,14 @@ function member_loss_date_auto_stamp_(opts) {
     if (nmI >= 0 && !String(data[r][nmI] || '').trim()) continue;   // 회원명 없는 행(집계 블록 등) 제외
     if (!_memberLossDateShouldStamp_(data[r][remI], data[r][lossI])) continue;
     out.checked++;
-    writes.push({ row: r + 2, col: lossI + 1, name: String(data[r][nmI] || ''), rem: String(data[r][remI] || ''), lossBefore: String(data[r][lossI] || '') });
+    writes.push({ row: r + 2, col: lossI + 1, name: String(data[r][nmI] || ''), rem: String(data[r][remI] || ''),
+                  lossBefore: String(data[r][lossI] || ''),
+                  stampAt: _memberLossStampDate_(endI >= 0 ? data[r][endI] : '', today, tz) });
   }
   out.stamped = writes.length;
   out.targets = writes.map(function(w) { return { row: w.row, col: w.col, name: w.name, rem: w.rem, lossBefore: w.lossBefore }; });
   if (!dry) {
-    writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(today); });
+    writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(w.stampAt || today); });
     // 이 자동 도장은 시트에 직접 써 왔는데 쓰기 관문을 안 거쳐, 찍은 뒤에도 회원 목록 캐시가 옛 값을
     // 그대로 내주고 잔여일 정렬 표시도 안 켜졌다(2026-08-12 시포). 쓴 게 있을 때만 관문을 부른다.
     if (writes.length) _memberCacheBump_();
@@ -12713,13 +12730,16 @@ function warmLessonRosterCache() {
       _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
       Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
     }
-    // ★LOSS일자는 오전 10시 이후에만 찍는다 (GM 지시 2026-08-28).
+    // ★LOSS일자는 밤 23시 이후에만 찍는다 (GM 지시 2026-09-02 · 종전 오전 10시에서 옮김).
     //   매일 09:30 에 회장님·부서장 방으로 매출보고가 나간다. 그 전에 LOSS 도장이 찍히면
     //   보고서에 실린 회원수와 시트 회원수가 갈린다 — GM 실측: 8/28 12:05 에 찍혀 보고 인원이
     //   계속 어긋났다. 보고가 나간 뒤에 찍히게 시각 게이트를 건다(날짜 도장은 그대로).
+    //   ▸10시에서 23시로 옮긴 이유(2026-09-02): 10시에 찍으면 그날 영업 중에 회원수가 바뀌어,
+    //     GM 이 낮에 화면을 보실 때와 아침 보고서 숫자가 어긋난다. 하루가 끝난 뒤 정리한다.
+    //     LOSS일자 값 자체는 달라지지 않는다 — 어느 쪽이든 '종료일 다음 날'로 찍힌다.
     //   ▸양도·양수건은 실무자가 직접 넣는다 — 이 자동 도장의 대상이 아니다(빈칸만 채운다).
     var _wrHour = Number(Utilities.formatDate(new Date(), _wrTz, 'H'));
-    if (_wrHour >= 10 && _wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
+    if (_wrHour >= 23 && _wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
       var _ld = member_loss_date_auto_stamp_();
       _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
       Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
