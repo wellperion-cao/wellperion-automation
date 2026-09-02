@@ -53,7 +53,9 @@
 
   .body{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);gap:13px;margin-top:12px;flex:1;min-height:0;}
   .col{display:flex;flex-direction:column;gap:11px;min-height:0;}
-  .sec{border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;}
+  /* overflow:hidden — 내용이 넘치면 칸 안에서 잘리게 한다. 이게 없으면 넘친 명단이 아래 칸 위로
+     겹쳐 그려진다(GM 지적 2026-09-02 "회원권 계약건도 칸 넘어가고"). */
+  .sec{border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden;}
   .sec > h2{font-size:12px;font-weight:800;color:var(--navy);background:var(--navy-bg);
     padding:5px 11px;border-bottom:1px solid var(--line);letter-spacing:1px;}
   .sec .bd{padding:8px 11px;overflow:hidden;}
@@ -423,21 +425,21 @@ function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
 
 /* 연 단위 4칸 — 두 조회(월별 매출 · ERP 지출)가 따로 도착하므로 도착하는 대로 다시 그린다. */
-var YEAR_STATE = { acc:0, filled:0, left:0, need:0, target:0, expense:null, expenseAt:'' };
+var YEAR_STATE = { acc:0, accFull:0, filled:0, partial:false, left:0, need:0, target:0, expense:null, expenseAt:'' };
 function paintYearly(){
   var el = document.getElementById('yearly'); if (!el) return;
   var s = YEAR_STATE;
   if (!s.filled) { el.innerHTML = ''; return; }
-  var avg = s.acc / s.filled;
+  var avg = (s.accFull || s.acc) / s.filled;
   function box(l, v, sub){
     return '<div class="yb"><div class="yl">' + l + '</div><div class="yv">' + v + '</div>' +
            (sub ? '<div class="ys">' + sub + '</div>' : '') + '</div>';
   }
   el.innerHTML =
-    box('연 매출 (누적)', eok(s.acc), s.filled + '개월치') +
+    box('연 매출 (누적)', eok(s.acc), s.filled + '개월치' + (s.partial ? ' + 이번 달 집계분' : '')) +
     box('연 지출 (누적)', s.expense == null ? '–' : eok(s.expense),
         s.expense == null ? 'ERP 집계 조회 실패' : 'ERP 집계 ' + (s.expenseAt || '')) +
-    box('월 평균 매출', eok(avg), '누적 ÷ ' + s.filled + '개월') +
+    box('월 평균 매출', eok(avg), '집계 끝난 ' + s.filled + '개월 평균') +
     box('남은 달 월 필요액', s.left > 0 ? eok(s.need) : '—',
         s.left > 0 ? '목표까지 ' + eok(Math.max(0, s.target - s.acc)) + ' ÷ 남은 ' + s.left + '개월'
                    : '올해 12개월 모두 집계됨');
@@ -489,10 +491,16 @@ function runAudit(){
   add('fail', '시트 칸 자리 확인', slipped.length === 0,
       slipped.length ? slipped.map(function(g){ return g[2]; }).join(' · ') + ' 가 제자리에 없습니다' : '');
 
-  // ③ 기준일이 어제인가 — 시트가 안 넘어가면 옛 숫자가 오늘 보고인 척한다
+  // ③ 기준일이 어제인가 — 시트가 안 넘어가면 옛 숫자가 오늘 보고인 척한다.
+  //    단 「보고」탭 H2 는 수식에 월이 글자로 박혀 있어(="📅 26년 8월 "&I1&"일 …") 달이 바뀌면
+  //    월만 항상 틀린다(실측 2026-09-02: 숫자는 9/1인데 제목은 8/1). 일이 맞고 월만 다르면
+  //    시트가 멈춘 게 아니므로 주의로 낮춘다 — 이걸 치명으로 두면 매월 1일부터 발송이 통째로 막힌다.
   var base = _mdOf(c.H2);
-  add('fail', '기준일 = 어제', _sameMD(base, yst),
+  add('fail', '기준일 = 어제', !!base && base.d === yst.getDate(),
       base ? ('시트 기준일 ' + base.m + '/' + base.d + ' · 어제는 ' + (yst.getMonth()+1) + '/' + yst.getDate()) : '기준일을 못 읽었습니다');
+  if (base && base.d === yst.getDate() && base.m !== yst.getMonth() + 1)
+    add('warn', '시트 제목 월 표기', false,
+        '제목이 ' + base.m + '월로 고정(H2 수식) — 일자 ' + base.d + '일은 어제와 일치, 화면은 어제 날짜를 앞세워 표시');
 
   // ④ 합이 맞는가 — 부분 갱신·수식 파손을 잡는다
   var rows = SALES_ROWS.filter(function(r){ return r !== 4; });
@@ -569,6 +577,8 @@ function renderSheet(c){
   var mdn = document.getElementById('memberDateNote'); if (mdn) mdn.style.display = 'none';
   var hl0 = document.getElementById('headline').children;
   hl0[0].style.opacity = hl0[1].style.opacity = '';
+  hl0[0].querySelector('.t').textContent = '어제 매출';    // 날짜 보기가 바꿔 둔 칸 제목 원복
+  hl0[1].querySelector('.t').textContent = '이번 달 누적';
   document.getElementById('dmonth').textContent = '📅 이번 달 전체';
   document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
 
@@ -747,14 +757,14 @@ function renderChart(d){
     s.push('<text x="' + (W-R+6) + '" y="' + (y2+4) + '" font-size="12" fill="#146B4F">' +
            eok(maxC * g2 / 3) + '</text>');
   }
-  // 월 막대
+  // 월 막대 — 이번 달(집계 중)은 옅은 색으로 갈라 그린다. 지난달 값과 같은 무게로 보이면 안 된다.
   months.forEach(function(m, i){
     if (m.value == null) return;
     var h = ih * (m.value / maxV), x = L + bw * i + bw * 0.22, y = T + ih - h;
     s.push('<rect x="' + x + '" y="' + y + '" width="' + (bw*0.56) + '" height="' + h +
-           '" fill="#14304E" rx="2"/>');
-    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#14304E">' +
-           eok(m.value) + '</text>');
+           '" fill="' + (m.partial ? '#8FA6BC' : '#14304E') + '" rx="2"/>');
+    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="' +
+           (m.partial ? '#48525B' : '#14304E') + '">' + eok(m.value) + (m.partial ? ' 집계중' : '') + '</text>');
   });
   // 누적 선
   var pts = [];
@@ -774,10 +784,15 @@ function renderChart(d){
   document.getElementById('chart').innerHTML = s.join('');
 
   // 연 단위 4칸 — 올해 지금까지의 그림. 월 평균·남은 달 필요액은 여기서 셈한 값이라 산식을 함께 적는다.
-  var filled = months.filter(function(m){ return m.value != null; }).length;
+  // 이번 달 집계 중 값은 누적(acc)에는 넣되, 월 평균·개월수 셈에는 넣지 않는다(하루치로 평균이 무너진다).
+  var realMs = months.filter(function(m){ return m.value != null && !m.partial; });
+  var filled = realMs.length;
+  var accFull = realMs.reduce(function(a, m){ return a + m.value; }, 0);
   var left = 12 - filled;
   var need = left > 0 ? Math.max(0, ((d && d.yearTarget) || 0) - acc) / left : 0;
-  YEAR_STATE.acc = acc; YEAR_STATE.filled = filled; YEAR_STATE.left = left; YEAR_STATE.need = need;
+  YEAR_STATE.acc = acc; YEAR_STATE.accFull = accFull; YEAR_STATE.filled = filled;
+  YEAR_STATE.partial = months.some(function(m){ return m.partial && m.value != null; });
+  YEAR_STATE.left = left; YEAR_STATE.need = need;
   YEAR_STATE.target = (d && d.yearTarget) || 0;
   paintYearly();
 
@@ -845,8 +860,20 @@ function load(){
   // 네 조회가 모두 끝난 뒤에 스스로 점검한다 — 하나라도 늦으면 그건 '못 읽음'으로 잡힌다.
   // 네 조회가 끝나면 스스로 점검하고, 주소에 남은 보기(?d=·?m=1)가 있으면 그 상태로 되돌린다.
   // 점검은 항상 어제 기준 값(RAW.cells)으로 하므로 09:30 발송 판정은 흔들리지 않는다.
-  Promise.all([p1, p2, p3, p4]).then(function(){ runAudit(); applyUrlView(); },
-                                     function(){ runAudit(); applyUrlView(); });
+  function afterAll(){
+    // 이번 달 막대 — sales_monthly 는 월이 끝나야 값이 오므로(이번 달 null) 그래프가 지난달에서 멈춰
+    // 보였다(GM 지적 2026-09-02 "8월 그래프도 문제"). 이번 달은 「보고」탭 J4(어제까지 월 누적)로
+    // '집계 중' 막대를 세운다 — 값을 다시 계산하지 않고 시트 칸을 그대로 옮긴다.
+    if (RAW.chart && RAW.chart.months && RAW.cells) {
+      var cm = RAW.chart.months[new Date().getMonth()];
+      if (cm && cm.value == null && num(RAW.cells.J4) > 0) {
+        cm.value = num(RAW.cells.J4); cm.partial = true;
+        renderChart(RAW.chart);
+      }
+    }
+    runAudit(); applyUrlView();
+  }
+  Promise.all([p1, p2, p3, p4]).then(afterAll, afterAll);
 }
 
 /* ══ 날짜별 · 월별 보기 (GM 지시 2026-09-02) ══
@@ -864,7 +891,10 @@ function readContracts(c, cols){
   // 21행부터를 빠뜨려 명단이 합계와 안 맞았다(GM 지적 2026-09-02).
   for (var r = 8; r <= 60; r++) {
     var staff = c[cols[0]+r], member = c[cols[1]+r];
-    if (!staff && !member) continue;
+    // 담당·계약회원 둘 다 있어야 계약 줄이다. 일자탭 아래쪽(48행~)의 「종목별 유효 정회원 현황」·
+    // 「금일집계」·「대기자 현황」 요약 블록은 계약회원 칸이 비어 있다 — 이 줄들이 명단에 섞여
+    // 합계와 어긋나고 칸을 넘치게 했다(GM 지적 2026-09-02).
+    if (!staff || !member) continue;
     rows.push({ staff: staff || '–', member: member || '–', sport: c[cols[2]+r] || '–',
                 amount: num(c[cols[3]+r]), amountRaw: String(c[cols[3]+r] || '–').trim(),
                 type: c[cols[5]+r] || '–' });
@@ -874,11 +904,13 @@ function readContracts(c, cols){
 }
 function contractListHTML(title, rows){
   var top = rows.slice(0, 20), restN = rows.length - top.length;   // 12→20 (GM: 접지 말고 다 보여라)
+  // 두 단으로 흘린다 — 한 줄 세로 나열은 20건이면 칸 높이를 넘겼다(GM 지적 2026-09-02 "칸 넘어가고").
+  // 단이 좁아져 줄 끝이 잘리므로 금액·분류를 앞으로 당기고 긴 종목명을 꼬리에 둔다(잘려도 되는 것만 잘리게).
   return '<div style="flex:1;min-width:0"><b style="font-size:10.6px;color:var(--navy)">' + title + '</b>' +
-    (rows.length ? top.map(function(x){
+    (rows.length ? '<div style="columns:2;column-gap:14px">' + top.map(function(x){
       return '<div style="font-size:10.8px;padding:1.5px 0;border-bottom:1px dotted var(--line);' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(x.staff) + ' · ' + esc(x.member) +
-        ' · ' + esc(x.sport) + ' · <b>' + esc(x.amountRaw) + '</b> · ' + esc(x.type) + '</div>'; }).join('')
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;break-inside:avoid">' + esc(x.staff) + ' · ' + esc(x.member) +
+        ' · <b>' + esc(x.amountRaw) + '</b> · ' + esc(x.type) + ' · ' + esc(x.sport) + '</div>'; }).join('') + '</div>'
       : '<div class="fnote">그날 계약 건이 없습니다.</div>') +
     (restN > 0 ? '<div class="fnote">외 ' + restN + '건</div>' : '') + '</div>';
 }
@@ -979,6 +1011,9 @@ function onDatePick(silent){
       var hl = document.getElementById('headline').children;
       hl[0].querySelector('.v').textContent = c.J3 || '—';
       hl[1].querySelector('.v').textContent = c.J4 || '—';
+      // 칸 제목도 같이 바꾼다 — 「어제 매출」이라 적힌 칸에 오늘 값이 들어가면 제목이 거짓말이 된다.
+      hl[0].querySelector('.t').textContent = isToday ? '오늘 매출 (집계 중)' : dayLabel + ' 매출';
+      hl[1].querySelector('.t').textContent = '이번 달 누적';
       var s0 = hl[0].querySelector('.s'); if (s0) s0.textContent = dayLabel + ' 매출';
       var s1 = hl[1].querySelector('.s'); if (s1) s1.textContent = dayLabel + '까지 누적';
       hl[0].style.opacity = hl[1].style.opacity = stale ? '.45' : '';
@@ -1007,6 +1042,7 @@ function toggleMonth(){
         var hl = document.getElementById('headline').children;
         hl[0].querySelector('.v').textContent = todayCells.J3 || '—';
         hl[1].querySelector('.v').textContent = todayCells.J4 || '—';
+        hl[0].querySelector('.t').textContent = '오늘 매출 (집계 중)';   // 오늘 값이므로 칸 제목도 맞춘다
       }
     });
 }
