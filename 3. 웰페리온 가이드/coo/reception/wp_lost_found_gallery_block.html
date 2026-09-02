@@ -23,28 +23,25 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
-   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
-html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+/* ★2026-09-01 — 여기 있던 `html,body{overflow-y:auto!important}` 를 **지웠다. 그것이 범인이었다.**
+   2026-08-14 에 "스크롤 보장"으로 넣은 줄인데 정반대로 작동했다.
+   ▸무엇을 재서 알았나 = 잘 되는 종합접수처 페이지와 이 페이지의 라이브 HTML 을 받아 스크롤 관련
+     규칙을 통째로 비교했다. 두 페이지의 스크롤 차이는 **이 한 줄뿐**이었다(종합접수처엔 없다).
+   ▸왜 막았나 = body 에 overflow 를 지정하면 body 가 자기 스크롤 상자가 되면서, 페이지 전체
+     스크롤을 body 가 대신 맡는 브라우저 기본 동작이 끊긴다. body 는 내용만큼 늘어나 스스로는
+     넘치지 않으므로 스크롤할 것이 없어지고, 화면은 그대로 굳는다(GM 실측 "완전히 굳어있어").
+   ▸종합접수처처럼 아무 규칙도 두지 않는 것이 정답이다 — 브라우저 기본이 이미 스크롤한다.
+   ▸스와이프 관성(-webkit-overflow-scrolling)도 함께 뺐다. 그 값은 스크롤 상자에만 의미가 있다. */
 /* ★2026-09-01 GM 신고 "종합접수처는 터치로 밀면 스크롤되는데 습득물 현황은 안 된다" —
    여기 있던 .wlp-lfg 의 넘침연쇄 차단 규칙(overscroll 계열, 값 contain)을 지웠다. 그 한 줄이
    범인이었다. 그 값은 이 상자 안에서 시작한 스크롤이 바깥(문서)으로 넘어가지 않게 막는다. 그런데
    .wlp-lfg 자체는 스크롤되는 상자가 아니라서, 손가락으로 밀면 문서로 넘어가야 하는데
    그 길이 막혀 아무 일도 안 일어났다. 종합접수처·조회 화면엔 이 줄이 없어서 잘 됐다. */
 .wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
-/* ★2026-09-01 GM 3차 신고 "스크롤은 버튼만 있고 절대 안 되네".
-   앞선 두 번은 '무엇이 막고 있나'를 찾아 지우는 방식이었는데 둘 다 빗나갔다. 이번엔 원인을
-   더 찾지 않고 **스크롤되는 상자를 직접 만든다** — 이 블록 자체에 높이 상한과 넘침 처리를 줘서
-   손가락이 닿는 그 자리가 곧 스크롤 상자가 되게 한다. 워드프레스 테마가 바깥을 어떻게 감싸든
-   상관없어진다. 버튼이 찾는 상자도 이제 이것이다(같은 조건: 넘침 auto + 실제로 넘침).
-   ★세로 조건을 뺀다 (GM 4차 "완전히 굳어있어"). 처음엔 (폭 700px 이상 + 세로)로 걸었는데,
-   어제 페이지 버튼도 똑같은 조건 때문에 안 보였다가 조건을 없애고서야 보였다(2026-08-31 커밋).
-   즉 이 키오스크는 그 조건 밖이다 — 버튼은 보이는데 스크롤 규칙만 안 걸린 이유가 이것이다.
-   같은 함정을 두 번 밟지 않게 폭 조건만 남긴다(휴대폰은 제외 — 거기선 문서 스크롤이 정상이다).
-   넘치지 않으면 상한에 안 걸려 화면도 종전과 같다. */
-@media (min-width:700px){
-  .wlp-lfg{max-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-}
+/* ★2026-09-01 되돌림 — 여기 있던 「블록 자체를 스크롤 상자로 만들기」(max-height + overflow-y)를
+   뺐다. GM 실측: "지금 스크롤 아예 창이 생겼네?" — 화면 안에 또 하나의 스크롤 창이 생겨 더 나빠졌다.
+   스크롤은 페이지 전체(문서)가 하는 것이지 이 블록이 하는 게 아니다. 규칙을 아예 두지 않는 것이
+   맞다 — 그 뒤 실측에서 위쪽 overflow 규칙이 오히려 범인으로 드러나 함께 지웠다(위 주석 참조). */
 
 /* ── 습득 분실물 갤러리 페이지 한정 테마 보정 (body.wlp-lfg-page) ── */
 body.wlp-lfg-page h1.entry-title,
@@ -59,15 +56,25 @@ body.wlp-lfg-page [class*="buttonizer"]{display:none!important}
    Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
    페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
    페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+/* ★2026-09-01 — 헤더를 투명 처리에서 **완전 숨김**으로 바꿨다. 이것이 스크롤이 안 되던 원인이다.
+   ▸무엇을 재서 알았나 = 스크롤이 잘 되는 종합접수처 페이지와 이 페이지의 라이브 CSS 를 헤더
+     규칙까지 통째로 비교했다. 종합접수처는 `#top{display:none}` 으로 헤더를 아예 없앴고,
+     이 페이지만 `background:transparent` 로 **안 보이게만** 했다 — 헤더는 그대로 살아 화면 위에
+     고정(fixed)돼 있었다. 눈에는 안 보이는데 손가락은 헤더를 만지고 있었으니 아무리 밀어도
+     페이지가 안 움직였다(GM 실측 "완전히 굳어있어").
+   ▸GM 지시 2026-09-01 "맨 위에 웰페리온 로고도 삭제해줘, 클릭하면 홈페이지 들어가지고" 와도
+     같은 처방이다 — 로고를 눌러 홈페이지로 빠지던 것도 이 헤더 때문이었다. 한 번에 없앤다.
+   ▸헤더 자리표시자(#header-space)도 함께 없앤다. 남겨 두면 맨 위에 126px 빈 칸이 생긴다. */
 body.wlp-lfg-page #header-space,
 body.wlp-lfg-page #header-outer,
-body.wlp-lfg-page #header-outer .container,
-body.wlp-lfg-page #top{background:transparent!important;border:none!important;box-shadow:none!important}
+body.wlp-lfg-page #top{display:none!important}
 body.wlp-lfg-page a.lang-header{display:none!important}
-body.wlp-lfg-page #header-outer #logo{margin-top:32px!important}
-@media (max-width:1000px){
-  body.wlp-lfg-page #header-outer #logo{margin-top:22px!important}
-}
+/* ★2026-09-01 GM 지시 "맨 위에 웰페리온 로고도 삭제해줘, 클릭하면 홈페이지 들어가지고" —
+   키오스크에서 로고를 누르면 회사 홈페이지로 나가 버려 회원이 키오스크 밖으로 빠진다.
+   되돌아올 길이 없어 직원이 다시 잡아 줘야 했다. 로고 자리를 통째로 감춘다(뒤로가기 버튼이
+   이미 조회 첫 화면으로 돌아가는 길을 갖고 있다). 종전 여백 규칙은 감추면 쓸모가 없어 함께 뺐다. */
+body.wlp-lfg-page #header-outer #logo,
+body.wlp-lfg-page #header-outer .logo-spacing{display:none!important}
 /* ── 배경 단일화(full-bleed 페이퍼톤 · 이중색·경계 제거) + 짜투리 여백 축소 ── */
 body.wlp-lfg-page,
 body.wlp-lfg-page #ajax-content-wrap,
@@ -100,8 +107,11 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
    소스순서로 이김. 모바일(≤1000px)은 로고와 충분히 이격돼 무영향. (register 블록과 동일 방식)
    ★실측(1280/1440/1920 동일): 로고 bottom=130, .wrap top=29 → eyebrow.top=29+padTop.
    90px면 eyebrow.top=119<130 로 11px 겹침 → 130px 로 상향(eyebrow.top=159, 갭≈29px·겹침0). */
+/* ★2026-09-01 — 위 130px 여백은 헤더 로고와 겹치지 않으려고 비워 둔 자리였다. 헤더를 통째로
+   숨긴 지금은 그만큼이 빈 칸으로 남는다. 종합접수처(문의 접수 화면)의 본문 상단 여백 70px 와
+   같은 값으로 맞춘다 — GM "문의하기처럼 일관성 있게". 뒤로가기(top:16px)와도 겹치지 않는다. */
 @media (min-width:1001px){
-  .wlp-lfg .wrap{padding-top:130px}
+  .wlp-lfg .wrap{padding-top:70px}
 }
 
 .wlp-lfg .brand{text-align:center;margin-bottom:8px}
@@ -123,7 +133,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
 .wlp-lfg .gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column;position:relative;cursor:pointer}
 .wlp-lfg .gcard:active{opacity:.92}
-.wlp-lfg .gcard .ph{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
+/* ★2026-09-02 실무진 신고 "보여지는 이미지 크기가 달라진다" — 사진칸 높이를 비율 지정에 맡기던 것을
+   높이 못 박기로 바꿨다. 비율 지정(가로세로 비율로 높이를 계산하는 방식)은 브라우저가 그 기능을
+   모르면 통째로 무시되고, 그러면 높이가 사진 원본 크기대로 제각각이 된다 — 키오스크 브라우저가
+   구버전이면 여기서 갈린다. 높이를 픽셀로 박으면 어느 브라우저에서든 같은 크기로 잘린다.
+   ▸잘리는 방식(object-fit:cover)은 그대로라 사진이 찌그러지지 않는다. */
+.wlp-lfg .gcard .ph{width:100%;height:200px;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
 .wlp-lfg .gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
 .wlp-lfg .gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
 .wlp-lfg .gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
@@ -197,7 +212,10 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:44px;
   border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
   letter-spacing:.02em;background:transparent;text-decoration:none}
-@media (min-width:1001px){ .wlp-lfg .back-kiosk{top:auto} }
+/* ★2026-09-01 GM "뒤로가기가 너무 천정이랑 딱 달라붙어서" — 여기 있던 (1001px 이상 top:auto)
+   규칙을 뺐다. top:auto 는 헤더가 있던 시절 로고 아래로 자연스럽게 흐르게 하려던 것인데,
+   헤더를 없앤 지금은 화면 맨 위에 그대로 붙는다. 기본 top:16px 를 그대로 쓰고, 아래에서 본문
+   여백을 종합접수처와 같은 값으로 맞춘다(일관성). */
 @media (max-width:520px){ .wlp-lfg .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px} }
 
 /* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
@@ -206,24 +224,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 @media (max-width:699px){ .wlp-lfg .back-kiosk{display:none} }
 @media (orientation:landscape){ .wlp-lfg .back-kiosk{display:none} }
 
-/* 화면 터치 한 화면씩 이동 (2026-08-31 GM 지시) — 목록이 길어 아래를 보기 어려운 키오스크 전용.
-   카드·링크 위가 아니라 오른쪽 아래 고정 자리에만 버튼을 둬 클릭 겹침이 없다.
-   키오스크 판정은 뒤로가기·확대잠금과 같은 조건(폭 700px 이상 + 세로 화면) — 새 판정 만들지 않는다. */
-.wlp-lfg .page-nav{position:fixed;right:16px;bottom:16px;z-index:50;display:none;flex-direction:column;gap:10px}
-.wlp-lfg .page-nav button{width:52px;height:52px;border-radius:50%;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:18px;box-shadow:0 4px 16px rgba(0,0,0,.14);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.wlp-lfg .page-nav button.dim{opacity:.35;pointer-events:none}
-/* ★2026-08-31 GM 재지적 "습득물 보기는 스크롤이 안 되네" — 종전엔 이 버튼을
-   (폭 700px 이상 + 세로 화면) 일 때만 띄웠다. 키오스크가 그 조건을 안 타면 버튼 자체가
-   화면에 없어서, 고쳤는데도 GM 눈에는 아무것도 안 바뀐 것으로 보인다.
-   조건을 화면 크기가 아니라 실제로 넘칠 때로 바꾼다 — 아래 JS 가 'on' 클래스로 켠다. */
-.wlp-lfg .page-nav.on{display:flex}
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
 <div class="wlp-lfg">
 <a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
 <div class="toast" id="toast"></div>
-<div class="page-nav" id="pageNav"><button type="button" id="pageUp" aria-label="위로">▲</button><button type="button" id="pageDown" aria-label="아래로">▼</button></div>
 <div class="wrap">
 
   <div class="brand">
@@ -564,53 +570,6 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 })();
 </script>
 
-<!-- 화면 터치 한 화면씩 이동 (2026-08-31 GM 지시) — 목록이 길어 아래를 보기 어려운 키오스크 전용.
-     오른쪽 아래 고정 버튼(▲▼)으로 약 80vh 씩 부드럽게 이동. 맨 위/맨 아래에서는 해당 버튼을 흐리게 한다.
-     키오스크 판정은 뒤로가기·확대잠금·자동복귀와 같은 조건(폭 700px 이상 + 세로 화면) — 새 판정 안 만든다. -->
-<script>
-(function(){
-  var nav = document.getElementById('pageNav');
-  var up = document.getElementById('pageUp'), down = document.getElementById('pageDown');
-  if(!up || !down || !nav) return;
-  /* 진짜로 스크롤되는 상자를 찾는다. 워드프레스 테마가 본문을 안쪽 상자에 담고 그 상자를
-     스크롤하면 window.scrollBy 는 아무 일도 안 한다 — 종합접수처는 되는데 여기는 안 되던
-     이유로 보인다(GM 2026-08-31 재지적). 문서가 넘치면 문서를, 아니면 이 블록의 조상 중
-     넘치는 상자를 쓴다. */
-  function scroller(){
-    var doc = document.scrollingElement || document.documentElement;
-    if (doc.scrollHeight > doc.clientHeight + 2) return doc;
-    var n = document.querySelector('.wlp-lfg');
-    while (n && n !== document.body){
-      var ov = getComputedStyle(n).overflowY;
-      if ((ov === 'auto' || ov === 'scroll') && n.scrollHeight > n.clientHeight + 2) return n;
-      n = n.parentElement;
-    }
-    return doc;
-  }
-  function _isDoc(el){ return el === (document.scrollingElement || document.documentElement); }
-  function _view(el){ return _isDoc(el) ? window.innerHeight : el.clientHeight; }
-  function page(dir){
-    var el = scroller(), step = dir * Math.round(_view(el) * 0.8);
-    if (el.scrollBy) el.scrollBy({ top: step, behavior: 'smooth' }); else el.scrollTop += step;
-  }
-  up.addEventListener('click', function(){ page(-1); });
-  down.addEventListener('click', function(){ page(1); });
-  function refresh(){
-    var el = scroller(), view = _view(el);
-    var can = el.scrollHeight > view + 2;
-    nav.classList.toggle('on', can);   /* 넘칠 때만 버튼을 띄운다 */
-    if (!can) return;
-    var atTop = el.scrollTop <= 2;
-    var atBottom = el.scrollTop + view >= el.scrollHeight - 2;
-    up.classList.toggle('dim', atTop);
-    down.classList.toggle('dim', atBottom);
-  }
-  document.addEventListener('scroll', refresh, { passive: true });
-  window.addEventListener('resize', refresh);
-  setInterval(refresh, 800); // 그리드가 fetch 후 늘어나 스크롤 가능 영역이 바뀌는 경우 대비
-  refresh();
-})();
-</script>
 
 <!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
      남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작 — 휴대폰·PC 방문 회원은 안 튄다. -->
