@@ -3277,6 +3277,24 @@ function _rentalIntakeSheet_(createIfMissing) {
   return sh || null;
 }
 
+// ── 진공 스팀다리미 구매 신청 (GM 지시 2026-09-02) ──────────────────────────
+// 파우더룸 비치 제품을 회원께 판매하는 건이라 강습·멤버십 문의와 성격이 다르다. 자기 탭으로 받는다.
+// ★이 분기가 없으면 steamiron 접수가 if 사슬의 마지막 else(오넛티)로 떨어져 오넛티 선물세트
+//   시트에 쌓이고 500세트 재고·순번 계산까지 흔든다 — 그래서 탭을 따로 둔다.
+var STEAMIRON_INTAKE_SHEET_NAME = '진공스팀다리미 접수';
+var STEAMIRON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','수량','남기실 말씀','개인정보 수집·이용 동의','접수ID','진행 상황','유입언어','비고'];
+function _steamironIntakeSheet_(createIfMissing) {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(STEAMIRON_INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) {
+    sh = ss.insertSheet(STEAMIRON_INTAKE_SHEET_NAME);
+    sh.getRange(1, 1, 1, STEAMIRON_INTAKE_HEADERS.length).setValues([STEAMIRON_INTAKE_HEADERS]);
+    sh.setFrozenRows(1);
+    try { sh.getRange(1, 1, 1, STEAMIRON_INTAKE_HEADERS.length).setFontWeight('bold'); } catch (e) {}
+  }
+  return sh || null;
+}
+
 var BUSINESS_INTAKE_SHEET_NAME = '비즈니스 문의';
 // ⚠️ business는 프론트에 name 키가 없음(company·contactName만) → '성함' 칼럼 = company + ' / ' + contactName 로 합성 저장(다른 문의 탭과 스키마 정합 유지).
 var BUSINESS_INTAKE_HEADERS = ['타임스탬프','성함','회사명','담당자','연락처','제휴 유형','소개자료 링크','제안 내용','개인정보 수집·이용 동의','접수ID','진행 상황','비고'];
@@ -4478,6 +4496,25 @@ function _processAction(body) {
         _bzSet('유입언어', _iLang);   // KO/EN — 영문 자체폼 6종 통합(배9674 시모). 칸 있을 때만 기록(no-op safe).
         if (_iReviewFlag) _bzSet('비고', _iReviewFlag + ' 자동검토');
         _bzSh.appendRow(_bzRow);
+      } else if (_iCat === 'steamiron') {
+        // 진공 스팀다리미 → '진공스팀다리미 접수' 탭 (GM 지시 2026-09-02)
+        // 오넛티처럼 재고·순번을 다투지 않는다. 접수를 받아 담당자가 연락드리는 단순 신청이다.
+        var _siSh = _steamironIntakeSheet_(true);
+        if (!_siSh) return _json({ ok: false, error: '스팀다리미 접수 시트 생성 실패' });
+        var _siHdr = _siSh.getRange(1, 1, 1, _siSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+        var _siRow = new Array(_siHdr.length).fill('');
+        function _siSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_siHdr, [name]); if (ci >= 0) _siRow[ci] = val; }
+        _siSet('타임스탬프', new Date());   // ★실제 Date — 문자열이면 정렬이 깨진다(공간렌트와 같은 규칙)
+        _siSet('성함', _iName);
+        _siSet('연락처', _fmtPhone_(_iPhone));
+        _siSet('수량', _iOhQty);            // 프론트 필드키가 qty 로 같아 그대로 쓴다(새 변수 안 만든다)
+        _siSet('남기실 말씀', _iMessage);
+        _siSet('개인정보 수집·이용 동의', '동의');
+        _siSet('접수ID', _iId);
+        _siSet('진행 상황', '신규');
+        _siSet('유입언어', _iLang);
+        if (_iReviewFlag) _siSet('비고', _iReviewFlag + ' 자동검토');
+        _siSh.appendRow(_siRow);
       } else {
         // 오넛티(_iCat === 'ohnutti') → '오넛티 선물세트 접수' 신규 탭(_MI_SS_ID 하위, 2026-08-07 GM 지시)
         //   선착순 500세트 — 수량 부족해도 접수는 막지 않고 '대기' 상태로 받는다(GM 확정). 순번·재고 계산은
