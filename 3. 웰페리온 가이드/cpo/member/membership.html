@@ -2866,7 +2866,7 @@ table.op-t td b{font-size:15px}
     <select id="regCountSel" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regValidityUpdate()"></select>
 
     <div class="consult-field-label" id="regStartLabel" style="display:none">시작일</div>
-    <input id="regStartInput" type="date" class="rp-in" style="display:none;width:100%">
+    <input id="regStartInput" type="date" class="rp-in" style="display:none;width:100%" oninput="_regValidityUpdate()">
 
     <!-- 유효기간 — 규칙이 있으면 자동으로 채우고, 없거나 다르면 그 자리에서 고친다. GM 지시 2026-08-03
          ("강습 유효기간도 SUC 누르면 필요 항목값 기입할 수 있도록"). 전에는 읽기 전용 글자라
@@ -11420,7 +11420,8 @@ function _regValidityUpdate() {
     //   사람이 이미 손으로 넣은 값이 있으면 지우지 않는다(회수만 바꿔도 입력이 날아가면 안 된다).
     txt.textContent = '이 종목·회수는 자동 규칙이 없습니다 — 만료일을 직접 넣어 주세요';
   } else {
-    var exp = lessonExpireDate(_mdashYmd(new Date()), rule);
+    var _startV = document.getElementById('regStartInput').value;
+    var exp = lessonExpireDate(_startV || _mdashYmd(new Date()), rule);
     var _ruleText = (rule === '1일') ? '자동: 당일'
                   : (rule === '월말') ? '자동: 이번 달 말일까지'
                   : ('자동: ' + rule + '개월');
