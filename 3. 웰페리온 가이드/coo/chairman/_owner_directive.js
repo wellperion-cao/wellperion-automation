@@ -86,6 +86,19 @@
     return m ? fmtNoYear(m[1]) : '';
   }
 
+  // ── 결재 SSOT 대조(GM 지시 2026-09-02 "대표님께 보고·결재 완료된 건을 대표님 보고 목록에") ──
+  // 대표싸인 칸의 실서명 판정 — 실서명은 서명이미지 URL 또는 날짜로 찍힌다. 'PENDING'은 "아직 안
+  // 받음" 자리표시라 서명이 아니다(2026-09-02 실측 190행: 실서명 16 · PENDING 14 · 빈칸 160).
+  function ownerSigned(r) {
+    var v = String(r['대표싸인'] || '').trim();
+    return !!v && v !== 'PENDING';
+  }
+  // 서명 건의 완료 배지 날짜 — 결재완료시각(항상 있음)에서, 없으면 대표싸인 문구에서 날짜를 뽑는다.
+  function ownerSignDate(r) {
+    var m = /\d{4}-\d{2}-\d{2}/.exec(String(r['결재완료시각'] || '') + ' ' + String(r['대표싸인'] || ''));
+    return m ? m[0] : '';
+  }
+
   // 업무&결재 SSOT(action=todo_list) — 월간운영계획.html readWorkApproval() 과 동일 조회 + AI배 제외.
   function readWorkApproval() {
     return fetch(GAS_URL + '?action=todo_list&include_gm=1&gmkey=' + encodeURIComponent(GM_KEY), { method: 'GET', redirect: 'follow' })
@@ -107,6 +120,8 @@
   //   보고 여부 확인 없이 완료로 내려간 것 아니냐"는 의문이 나왔다. GM 확인 결과 두 건 모두
   //   실제로 보고를 마친 건이다("보고완료"). 즉 지금의 0건은 정상이고 필터도 그대로 둔다.
   //   같은 의문이 또 나오지 않게 여기에 적어 둔다.
+  // ▸2026-09-02 GM 지시로, 그렇게 완료로 내려간 건 중 대표싸인에 실서명이 찍힌 행은 load()의
+  //   결재 SSOT 대조 합류가 '보고 완료' 행으로 표에 다시 싣는다(이 필터 자체는 여전히 그대로).
   function filterRows(rows, wantCeoRows) {
     if (!rows) return null;
     return rows.filter(function (r) {
@@ -392,6 +407,30 @@
       readWorkApproval().then(function (rows) {
         var filtered = filterRows(rows, cfg.wantCeoRows);
         _items = filtered ? filtered.map(toItem) : null;
+        // 결재 SSOT 대조 합류(GM 지시 2026-09-02 "보고·결재 완료건을 대표님 보고 목록에") —
+        // ① 대표싸인에 실서명이 찍힌 행은 담당자·상태와 무관하게 '보고 완료' 건으로 함께 싣는다
+        //    (서명 = 대표님이 실제로 보고받고 승인한 증거).
+        // ② 「대표님 보고건」 표식 행이 보고완료 표식까지 달고 상태=완료로 내려가 filterRows 에서
+        //    빠져도, 완료 행으로 계속 보인다(지우지 않고 완료 표시로 남긴다 — 약속 L26).
+        // 목록에 이미 있는 행이 서명까지 받았으면 대기로 남기지 않고 완료로 맞춘다.
+        // filterRows 판정 자체는 그대로다 — 월간운영계획.html 과의 판정 공유를 깨지 않는다.
+        if (_items && cfg.wantCeoRows) {
+          rows.forEach(function (r) {
+            var id = String(r['id'] || '').trim();
+            var hit = _items.filter(function (x) { return x.id === id; })[0];
+            if (hit) {
+              if (ownerSigned(r) && !hit.reported) { hit.reported = true; hit.reportedAt = fmtNoYear(ownerSignDate(r)); }
+              return;
+            }
+            var content = String(r['내용'] || '');
+            var ceoDone = content.indexOf(CEO_MARK) !== -1 && isReported(content, cfg.markPrefix);
+            if (!ownerSigned(r) && !ceoDone) return;
+            var it = toItem(r);
+            it.reported = true;
+            it.reportedAt = it.reportedAt || fmtNoYear(ownerSignDate(r));
+            _items.push(it);
+          });
+        }
         render();
       });
     }
