@@ -116,9 +116,6 @@
      기준임을 qty 힌트로 안내). ②OHNUTTI_PRICE를 세트 2종 배열 구조로 교체(소비자가→판매가 20% 할인
      확정값, 나란히 표시). ③10세트 이상 할인율(30%)을 GUIDES.ohnutti.note에 명시.
      2026-08-10 GM 확정 — 단체가 = 소비자가 기준 30% (GM 확정 2026-08-10 · 지난 설 18,060원과 동일 산식).
-     2026-08-31 윤병현 매니저 지시 — 10세트 이상 단체가를 절사값으로 확정: 2구 18,000원 / 3구 17,900원(bulk·GUIDES.ohnutti.note 동시 수정).
-     2026-09-01 윤병현 매니저 지시 — 모바일(카톡·문자 유입)에서 "10세트 이상 가격"이 카드 오른쪽 밖으로 넘침 → g-price-row flex-wrap + 단체가 span을 g-price-bulk로 분리(480px 이하 줄바꿈·들여쓰기). WP 8460·8831 동시 반영.
-     2026-09-01 윤병현 매니저 지시(2차) — ①배송지(f_address)는 수량(f_qty) 10 이상일 때만 입력 가능(미만이면 disabled+값 비움+안내문, .is-locked) ②결제방법(f_pay) '계좌이체' 선택 시 .bank-box(국민은행 344901-04-093932 (주)웰페리온) + 입금자명=수령인 동일 안내 노출. buildForm 끝의 cat==='ohnutti' 블록, 다른 6종 무변화. 뒷단 GAS 계약 무변경(address는 빈값 허용).
      ★이 파일의 HTML 주석·인라인 스크립트는 view-source로 그대로 노출되므로
      비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시, ★주의: 이 파일 주석 텍스트 안에 꺾쇠괄호+
      script 글자를 그대로 적지 말 것 — Autoptimize가 진짜 스크립트로 오인해 본문 전체를 날려버림,
@@ -214,13 +211,11 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 /* 오넛티 세트별 가격(소비자가→판매가, 2026-08-07 GM 확정값) — 세트 2종 나란히 표시 */
 .wlp-inq .g-price-group{margin-top:14px}
-.wlp-inq .g-price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:8px;font-size:12.5px}
+.wlp-inq .g-price-row{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:12.5px}
 .wlp-inq .g-price-row:first-child{margin-top:0}
 .wlp-inq .g-price-name{font-weight:700;color:var(--ink);min-width:96px}
 .wlp-inq .g-price-list{color:var(--dim);text-decoration:line-through}
 .wlp-inq .g-price-sale{font-size:16px;font-weight:800;color:var(--coral)}
-.wlp-inq .g-price-bulk{font-weight:700;color:var(--ink);white-space:nowrap}
-@media (max-width:480px){.wlp-inq .g-price-bulk{flex-basis:100%;padding-left:104px;font-size:12px;margin-top:-2px}}
 /* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
 .wlp-inq .g-brand{margin-top:12px}
 /* 로고(150px 워드마크, 클릭 시 홈페이지 새탭) — 텍스트 링크와 중복이라 링크는 로고 하나로 통합(2026-08-07 GM 지시) */
@@ -245,14 +240,6 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
 .wlp-inq .field-info{font-size:13.5px;color:var(--ink);line-height:1.6}
-.wlp-inq .field.is-locked input{background:var(--bg);color:var(--dim);cursor:not-allowed}
-.wlp-inq .field-lock{font-size:12px;color:var(--dim);margin:6px 0 0}
-.wlp-inq .bank-box{margin-top:12px;padding:14px 16px;border:1px solid var(--line);background:var(--bg)}
-.wlp-inq .bank-row{display:flex;gap:12px;font-size:13.5px;line-height:1.7}
-.wlp-inq .bank-row span{flex:0 0 68px;color:var(--dim)}
-.wlp-inq .bank-row b{font-weight:700;color:var(--ink);letter-spacing:.2px}
-.wlp-inq .bank-note{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted);line-height:1.6}
-.wlp-inq .bank-note b{color:var(--coral)}
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
   width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
 .wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
@@ -399,8 +386,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   //   ★이 스크립트는 브라우저 view-source로 그대로 노출된다 — 비공개 원가 관련 항목은 어떤 형태로도
   //   이 파일(주석 포함)에 적지 않는다(GM 지시). 공개해도 되는 값은 소비자가·판매가뿐이다.
   var OHNUTTI_PRICE = [
-    { label: '230g 2구 세트', list: 25800, sale: 20640, bulk: 18000 },
-    { label: '80g 3구 세트',  list: 25600, sale: 20480, bulk: 17900 }
+    { label: '230g 2구 세트', list: 25800, sale: 20640, bulk: 18060 },
+    { label: '80g 3구 세트',  list: 25600, sale: 20480, bulk: 17920 }
   ];
 
   // ── 백엔드 GAS ──
@@ -505,6 +492,19 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         { key:'proposal',    label:'제안 내용', type:'textarea', ph:'제휴 제안 내용을 자유롭게 적어주세요.' }
       ]
     },
+    // ── 진공 스팀다리미 구매 신청 (GM 지시 2026-09-02 · 오넛티와 같은 뼈대) ──
+    //   근거 = coo/chairman/스팀다리미_검토.html (2026-08-04 에이스전기 주영종 대표 통화 확정분).
+    //   남·여 파우더룸·탈의실에 각 1대를 비치해 회원이 그 자리에서 쓰시고, 같은 제품을 원하시는
+    //   회원께 판매한다. 수량은 여러 대를 사시는 경우가 드물어 숫자 입력 대신 자유 메모로 받는다.
+    steamiron: {
+      purpose: '진공 스팀다리미 구매 신청 접수 및 수령·결제 안내',
+      fields: [
+        { key:'name',    label:'성함',   type:'text', ph:'실명을 입력해 주세요', req:true },
+        { key:'phone',   label:'연락처', type:'tel',  ph:'010-1234-5678', req:true },
+        { key:'qty',     label:'수량',   type:'select', ph:'선택해 주세요', req:true, opts:['1대','2대','3대 이상'] },
+        { key:'message', label:'남기실 말씀', type:'textarea', opt:true, ph:'수령 희망 시기 등 편하게 적어 주세요.' }
+      ]
+    },
     ohnutti: {
       purpose: '추석 선물세트 신청 접수 및 배송·결제 안내',
       fields: [
@@ -514,7 +514,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         { key:'qty',      label:'수량(세트)', type:'text', ph:'숫자만 입력해 주세요 (예: 2)', req:true, hint:'선택하신 세트 기준 수량입니다' },
         { key:'methodInfo', label:'수령 방법', type:'info', text:'현장 수령이 기본입니다. 10세트 이상 주문 시 택배도 가능합니다.' },
         { key:'wantDate', label:'희망 수령일', type:'date', req:true },
-        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문 시에만 입력할 수 있습니다', ph:'10세트 이상 주문 시 입력 가능' },
+        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문으로 택배를 원하시면 배송지를 남겨주세요', ph:'10세트 미만은 입력하지 않으셔도 됩니다' },
         { key:'pay',      label:'결제 방법', type:'select', ph:'선택해 주세요', opts:['현장 결제','계좌이체'], req:true },
         { key:'note',     label:'요청 사항', type:'textarea', opt:true, ph:'요청하실 내용을 자유롭게 적어주세요.' }
       ]
@@ -551,17 +551,25 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       lead:'웰페리온과 함께 성장할 파트너를 찾습니다. 콜라보레이션부터 입점·B2B 복지·콘텐츠 협업까지 다양한 제휴를 환영합니다.',
       note:'담당 부서 검토 후 회신드립니다.'
     },
+    // 진공 스팀다리미 — 가이드(써 보시는 법)와 구매 안내를 한 자리에 둔다(GM 지시 2026-09-02).
+    //   숫자·조건은 스팀다리미_검토.html 확정분만 적는다. 부가세 포함 여부와 수령 방식(재고 보유 /
+    //   주문 후 수령)은 아직 운영부 회신 전이라 여기에 쓰지 않는다 — 지어내지 않는다(약속 L05·L25).
+    steamiron: {
+      lead:'남자·여자 파우더룸 탈의실에 진공 스팀다리미를 각 1대씩 두었습니다. 사우나에 들어가시기 전이나 나오신 뒤, 그 자리에서 바로 옷을 정리하실 수 있습니다. 써 보시고 마음에 드시면 같은 제품을 댁에서도 쓰실 수 있게 준비해 드립니다.',
+      tags:['남자 파우더룸 1대','여자 파우더룸 1대','에이스전자 스팀다리미','회원 판매가 108,000원'],
+      note:'접수해 주시면 담당자가 연락드려 수령 시기와 결제를 안내해 드립니다. 사용 중 궁금하신 점은 리셉션에 말씀해 주시면 도와드립니다.'
+    },
     ohnutti: {
       lead:'웰페리온과 오넛티가 함께 준비한 추석 선물세트입니다. 지난 설에는 준비한 물량이 일찍 소진돼 뒤늦게 찾아주신 분들이 구매하지 못했습니다. 이번에는 미리 접수를 받아 순서대로 확보해 드립니다. 500세트 한정이며, 접수 순서대로 안내드립니다. 접수 후 결제를 마치셔야 확정됩니다.',
-      note:'10세트 이상 구매 시 정상가 대비 30% 할인됩니다 (2구 25,800원 → 18,000원 / 3구 25,600원 → 17,900원). 택배는 10세트 이상 주문 시에만 가능하며, 그 외에는 웰페리온 현장에서 수령하실 수 있습니다. 선물 준비를 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
+      note:'10세트 이상 구매 시 정상가 대비 30% 할인됩니다 (2구 25,800원 → 18,060원 / 3구 25,600원 → 17,920원). 택배는 10세트 이상 주문 시에만 가능하며, 그 외에는 웰페리온 현장에서 수령하실 수 있습니다. 선물 준비를 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
     }
   };
 
-  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnutti:'추석 선물세트 신청' };
+  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnutti:'추석 선물세트 신청', steamiron:'진공 스팀다리미 구매 신청' };
 
   // 제출 버튼 문구 — 기본 "문의 접수하기", 오넛티만 "선물세트 구매 대기 신청"(2026-08-07 GM 지시, 오넛티 한정)
   var SUBMIT_LABEL_DEFAULT = '문의 접수하기';
-  var SUBMIT_LABEL = { ohnutti: '선물세트 구매 대기 신청' };
+  var SUBMIT_LABEL = { ohnutti: '선물세트 구매 대기 신청', steamiron: '구매 신청하기' };
 
   // ── 입회 나이 안내(접이식, 멤버십·성인강습 한정) — 2026-07-21 시포·GM ──
   var AGE_POLICY_HTML =
@@ -582,7 +590,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     summer: '여름방학 단기 집중 특강을 안내해 드립니다.',
     rental: '행사·촬영·모임을 위한 공간 대관을 안내해 드립니다.',
     business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.',
-    ohnutti: '추석 선물세트 신청을 도와드립니다.'
+    ohnutti: '추석 선물세트 신청을 도와드립니다.',
+    steamiron: '파우더룸에 비치된 진공 스팀다리미 구매를 도와드립니다.'
   };
   // 2번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 아래 hero-note("접수 순서대로 현장에서 결제 후
   //   제공해 드립니다")가 같은 뜻이라 중복이 돼(2026-08-07 GM 재지적) — 오넛티는 이 줄 자체를 숨긴다.
@@ -590,7 +599,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   // hero-note("상담 및 투어는 사전 예약제로 운영됩니다") — 상담·투어 전용 문구라 오넛티(선물세트 판매)와
   // 무관함(2026-08-07 GM 지적). 오넛티만 판매 방식 문구로 교체, 나머지 6종은 기존 문구 유지.
   var HERO_NOTE_DEFAULT = '상담 및 투어는 사전 예약제로 운영됩니다.';
-  var HERO_NOTE = { ohnutti: '접수 순서대로 현장에서 결제 후 제공해 드립니다.' };
+  var HERO_NOTE = { ohnutti: '접수 순서대로 현장에서 결제 후 제공해 드립니다.',
+                    steamiron: '접수해 주시면 담당자가 연락드려 안내해 드립니다.' };
   // 제출버튼 아래 안내 1번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 담당자가 전화하는 구조가
   //   아니므로 접수 후 무엇이 일어나는지로 교체(2026-08-07 GM 재지적, 사람 손 최소화).
   var NOTE_LINE1_DEFAULT = '남겨주신 연락처로 담당자가 안내드립니다.';
@@ -663,7 +673,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
           return '<div class="g-price-row"><span class="g-price-name">' + p.label + '</span>'
             + '<span class="g-price-list">' + p.list.toLocaleString() + '원</span>'
             + '<span class="g-price-sale">' + p.sale.toLocaleString() + '원</span>'
-            + (p.bulk ? '<span class="g-price-bulk">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
+            + (p.bulk ? '<span class="g-price-name">10세트 이상 ' + p.bulk.toLocaleString() + '원</span>' : '') + '</div>';
         }).join('') + '</div>';
       }
     }
@@ -764,39 +774,6 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       }
       box.appendChild(field);
     });
-
-    // ── 오넛티 전용 상호작용(2026-09-01 윤병현 매니저 지시) ──
-    if (cat === 'ohnutti') {
-      // ① 배송지: 수량이 10세트 이상일 때만 입력 가능(미만이면 잠금 + 값 비움)
-      var qtyEl = $('f_qty'), addrEl = $('f_address');
-      if (qtyEl && addrEl) {
-        var addrField = addrEl.parentNode;
-        var addrNote = document.createElement('p'); addrNote.className = 'field-lock';
-        addrField.appendChild(addrNote);
-        var syncAddr = function(){
-          var n = parseInt(String(qtyEl.value).replace(/[^0-9]/g,''), 10) || 0;
-          var ok = n >= 10;
-          addrEl.disabled = !ok;
-          if (!ok) addrEl.value = '';
-          addrEl.placeholder = ok ? '택배 받으실 주소를 입력해 주세요' : '10세트 이상 주문 시 입력 가능';
-          addrField.classList.toggle('is-locked', !ok);
-          addrNote.textContent = ok ? '택배 배송이 가능합니다. 받으실 주소를 정확히 입력해 주세요.' : '10세트 미만은 현장 수령만 가능해 배송지를 입력하지 않습니다.';
-        };
-        qtyEl.addEventListener('input', syncAddr); syncAddr();
-      }
-      // ② 결제 방법: 계좌이체 선택 시 입금 계좌 + 입금자명 안내 노출
-      var payEl = $('f_pay');
-      if (payEl) {
-        var bank = document.createElement('div'); bank.className = 'bank-box'; bank.style.display = 'none';
-        bank.innerHTML = '<div class="bank-row"><span>은행명</span><b>국민은행</b></div>'
-          + '<div class="bank-row"><span>입금 계좌</span><b>344901-04-093932</b></div>'
-          + '<div class="bank-row"><span>예금주</span><b>(주)웰페리온</b></div>'
-          + '<p class="bank-note">입금자명은 신청하신 <b>수령인 성함과 동일하게</b> 입력해 주세요. 입금 확인 후 접수가 확정됩니다.</p>';
-        payEl.parentNode.appendChild(bank);
-        var syncBank = function(){ bank.style.display = (payEl.value === '계좌이체') ? 'block' : 'none'; };
-        payEl.addEventListener('change', syncBank); syncBank();
-      }
-    }
 
     // 개인정보 동의(필수) — PIPA 문안 승계
     var cField = document.createElement('div'); cField.className='field';
@@ -1018,7 +995,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 
   // ── 유형 딥링크(?type=) — 유일한 유형 결정 경로. 유형 선택은 허브(/ko/inquiry/)에서 이미 끝났으므로
   //   이 폼은 로드 시 ?type= 을 즉시 해석해 해당 유형의 히어로·가이드·폼을 바로 그린다(폼 내 재선택 UI 없음).
-  //   허용값: membership|adult|youth|summer|rental|business|ohnutti (한글 별칭 병행). 미지정·미매칭 = 폴백(허브로 안내).
+  //   허용값: membership|adult|youth|summer|rental|business|ohnutti|steamiron (한글 별칭 병행). 미지정·미매칭 = 폴백(허브로 안내).
   (function(){
     try {
       var t = (qp('type') || '').toLowerCase();
@@ -1029,7 +1006,9 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
                     rental:'rental', '렌트':'rental', '대관':'rental', '공간렌트':'rental',
                     business:'business', '비즈니스':'business', '제휴':'business',
                     ohnutti:'ohnutti', ohnuti:'ohnutti',   // ohnuti = 구 철자 back-compat 별칭(2026-08-07 GM 지시로 ohnutti 개명, 옛 링크 대비)
-                    '오넛티':'ohnutti', '추석':'ohnutti', '선물세트':'ohnutti' };
+                    '오넛티':'ohnutti', '추석':'ohnutti', '선물세트':'ohnutti',
+                    steamiron:'steamiron', steam:'steamiron', iron:'steamiron',
+                    '스팀다리미':'steamiron', '진공스팀다리미':'steamiron', '다리미':'steamiron' };
       var cat = alias[t];
       if (cat) { selectedCat = cat; buildForm(cat); } else { showFallback(); }
     } catch (e) { showFallback(); }
