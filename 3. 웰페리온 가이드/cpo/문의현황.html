@@ -41,6 +41,9 @@ body{
 .header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
   background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 20px;margin-bottom:18px}
 .header h1{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.ai-owner{display:inline-block;margin-left:10px;padding:3px 11px;border-radius:999px;
+  background:#14304E;color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px;
+  vertical-align:middle;white-space:nowrap;}
 .header .sub{font-size:11px;color:var(--dim);margin-top:3px}
 .month-nav{display:flex;align-items:center;gap:8px}
 .month-nav-btn{background:var(--paper2);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:700;
@@ -150,7 +153,7 @@ body{
 
   <div class="header">
     <div>
-      <h1>📋 문의 현황 — 시포(AI CPO)</h1>
+      <h1>📋 문의 현황 — 시포(AI CPO) <span class="ai-owner">AI 시포</span></h1>
       <div class="sub">멤버십 + 강습 문의 → 등록 전환 · 실무진: 김남욱 GM</div>
     </div>
     <button class="print-btn" id="print-btn">🖨 인쇄(가로 A3)</button>
