@@ -19,10 +19,11 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
-   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
-html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
-.wlp-lfr{overscroll-behavior-y:contain}
+/* ★2026-09-02 — 스크롤 관련 두 줄을 지웠다(습득물 보기·종합접수처와 같은 처방).
+   문서 전체에 넘침 처리를 주면 본문이 자기 스크롤 상자가 되면서 페이지 전체 스크롤이 끊기고,
+   래퍼에 넘침연쇄 차단을 주면 손가락으로 민 힘이 문서로 넘어가지 못한다. 둘 다 2026-08-14 에
+   스크롤 보장용으로 넣었지만 정반대로 작동한다. 규칙을 두지 않는 것이 정답이다.
+   탭 지연 제거만 남긴다. 주석에 코드를 그대로 인용하지 않는다(찾기 오탐 방지). */
 .wlp-lfr button,.wlp-lfr a,.wlp-lfr input,.wlp-lfr select,.wlp-lfr textarea{touch-action:manipulation}
 
 /* ── 습득물 접수(직원 전용) 페이지 한정 테마 보정 (body.wlp-lfr-page) ── */

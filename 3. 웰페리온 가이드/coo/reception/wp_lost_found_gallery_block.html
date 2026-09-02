@@ -127,7 +127,8 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .wlp-lfg .month-filter{display:flex;align-items:center;gap:8px}
 .wlp-lfg .month-filter label{font-size:12.5px;font-weight:700;color:var(--dim);white-space:nowrap}
-.wlp-lfg .month-select{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+/* 월 고르는 칸도 16px — 선택칸도 누르면 확대 대상이다(위 입력칸과 같은 이유 · 2026-09-02) */
+.wlp-lfg .month-select{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
 .wlp-lfg .month-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
 
 .wlp-lfg .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
@@ -190,7 +191,10 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .modal .mitem .mm{font-size:11.5px;color:var(--dim)}
 .wlp-lfg .mfield{margin-bottom:13px}
 .wlp-lfg .mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
-.wlp-lfg .mfield input,.wlp-lfg .mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none}
+/* 글자 16px 고정 — 15px 이하로 내리지 말 것. 모바일·태블릿은 입력칸 글자가 16px 보다 작으면
+   칸을 누르는 순간 화면을 자동으로 확대하고, 그 확대가 남아 화면이 커진 채로 있는다.
+   (2026-08-24 습득물 접수 페이지에서 같은 신고로 이미 고친 값인데 이 수령신청 칸만 빠져 있었다 · 2026-09-02) */
+.wlp-lfg .mfield input,.wlp-lfg .mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
 .wlp-lfg .mfield input:focus,.wlp-lfg .mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
 .wlp-lfg .sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden}
 .wlp-lfg .sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
