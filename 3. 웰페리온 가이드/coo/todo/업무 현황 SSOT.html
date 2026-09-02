@@ -2384,12 +2384,26 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
 }
-/* 뷰어 인쇄 = 보고 있는 A4 문서를 그대로 출력 (보고서 틀 미사용 — 2026-07-15 나우열M 지시) */
+/* 뷰어 인쇄 = 보고 있는 A4 문서를 그대로 출력 (보고서 틀 미사용 — 2026-07-15 나우열M 지시)
+   기획안·결과보고 문서는 항상 세로 A4로 고정한다. print_options.js(캘린더 인쇄 버튼에 붙는
+   용지/방향 선택기)가 localStorage에 저장한 마지막 선택(A3·가로 등)은 페이지 전체에 걸리는
+   전역 @page 스타일(#po-page-style)이라 문서 인쇄까지 새어 들어와 가로로 나오던 원인이었다
+   (2026-09-02 매니저 지적). 인쇄 시작 시 그보다 나중(=더 우선)인 @page 오버라이드를 주입해
+   문서 인쇄만 세로로 고정하고, 인쇄가 끝나면 원래대로 되돌린다. */
 function printDocViewer() {
   if (!document.getElementById('docViewerOverlay').classList.contains('show')) return;
   document.body.dataset.printMode = 'doc';
+  var ov = document.getElementById('docPrintPageOverride');
+  if (!ov) { ov = document.createElement('style'); ov.id = 'docPrintPageOverride'; document.head.appendChild(ov); }
+  ov.textContent = '@page{size:A4 portrait;margin:8mm}';
+  function _cleanup() {
+    delete document.body.dataset.printMode;
+    ov.textContent = '';
+    window.removeEventListener('afterprint', _cleanup);
+  }
+  window.addEventListener('afterprint', _cleanup);
   window.print();
-  delete document.body.dataset.printMode;
+  setTimeout(_cleanup, 2000); // afterprint 미지원 브라우저 폴백
 }
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.getElementById('docViewerOverlay').classList.contains('show')) closeDocViewer();
