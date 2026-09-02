@@ -732,5 +732,21 @@
     "adhoc_commit": "10d50912044473aef47b0902541d62cde98f21e1",
     "note": "- [2026-09-03] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 10d509120)",
     "adhoc_count": 1
+  },
+  {
+    "task_id": "CTO-2026-09-03-ADHOC-DAILY",
+    "clevel": "cto",
+    "title": "[시토] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-09-03",
+    "processed_at": "2026-09-03",
+    "ship_no": 11170,
+    "artifact": "다캠 한 방에 하드코딩돼 있던 ROOM·SYSTEM_BRIEF·STATE_PATH 를 방 단위로 뗐다.\n- status/kakao_agent/rooms.json 이 방 목록(없으면 다캠 한 방 = 종전 동작 그대로)\n- 방별 브리프 파일(brief)·상태 파일(state) 지정, 생략하면 방 이름으로 만든다\n- --room 으로 한 방만, 생략하면 목록 순회. --list-rooms 로 확인\n- 브리프를 못 읽은 새 방은 건너뛴다(다른 방 브리프로 대신 보내지 않는다)\n- 발신 관문·상한 6통·금지어 검사·예약작업 인자는 그대로 (CLI ad-hoc · 커밋 d8c697806)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "d8c697806875488750b46b7bf267e996fca8b850",
+    "note": "- [2026-09-03] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리 (커밋 d8c697806)",
+    "adhoc_count": 1
   }
 ]
