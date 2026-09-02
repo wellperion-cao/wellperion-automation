@@ -27,6 +27,18 @@
 
 - 07:00 카톡 7회차 문답 시리즈: `telegram_bot/daily_scheduler.py` `run_diet_camp_morning()` · 원고 `status/drafts/다이어트캠프_0700/` · 상태 `status/diet_camp_relay.json`(현재 enabled=false · 3회차까지 발송).
 - 2026-09-02 09:57 블로그 설문 8문항 발송 → 대표님 답변 = `00_대표님_원자료/다이어트캠프 브랜드가이드(소통).txt`.
+- 대표님 방 저장·답장 에이전트: `scripts/diet_camp_agent.py` · 예약작업 `Wellperion-DietCamp-Agent`(매일 07:00 1회 · GM 지시 2026-09-02). 대표님 새 말씀이 있을 때만 답장 1통(먼저 말 걸지 않음) · 하루 6통 상한.
+
+## 새 클럽(2·3호) 방을 붙이는 절차 (시토 회신 2026-09-03 · 배 912 종결 기록)
+
+새 예약작업·새 스크립트를 만들지 않는다. 두 가지만 한다.
+1. 그 클럽 폴더에 브리프 파일을 만든다 — 예: `2. 브랜드_자료/1N_<클럽>/_agent_brief.md`. 내용은 다캠 브리프 형식 그대로(상대가 누구인지 · 지금 하는 일 · 답장 쓰는 법).
+2. `status/kakao_agent/rooms.json` 에 한 줄 넣는다:
+   `[{"room":"다이어트캠프 이승기 대표님"},{"room":"<새 방 이름>","brief":"<브리프 경로>"}]`
+   - 이 파일이 없으면 다캠 한 방만 돈다(지금 상태). 상태 파일은 `status/kakao_agent/<방이름>.json` 으로 자동 생성.
+   - 브리프 파일이 없는 방은 자동으로 건너뛴다(다른 방 브리프가 섞여 나가지 않게).
+- 확인: `C:/Python314/python.exe scripts/diet_camp_agent.py --list-rooms` · 한 방만 시험 = `--room "<방 이름>" --dry-run`.
+- 새 방을 붙이는 것 자체는 대외 접점 확대 = GM 결재 뒤에 한다.
 
 ## 지키는 것
 
