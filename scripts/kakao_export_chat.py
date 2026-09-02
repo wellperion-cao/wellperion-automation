@@ -94,6 +94,40 @@ def _find_dialog(keyword: str, timeout: float, exclude: int | None = None) -> in
     return None
 
 
+def close_stray_save_dialog() -> int:
+    """열린 채 남아 있는 '다른 이름으로 저장' 대화상자를 닫는다. 닫은 개수를 돌려준다.
+
+    왜 필요한가(2026-09-03 실사고): 저장 대화상자 조작이 중간에 실패하면 대화상자가 뜬 채로
+    남는다. 그 순간부터 카카오톡 창이 통째로 비활성(ElementNotEnabled)이라 **내보내기뿐 아니라
+    카톡 발신까지 전부** 실패한다 — 07:00 다캠 에이전트가 그렇게 죽었고, 사람이 취소를 눌러야
+    풀렸다. 상태값은 exit=0 이라 어떤 감시기도 안 잡는다.
+    그래서 내보내기를 시작할 때와 실패로 빠져나갈 때 이 함수가 앞을 쓸고 간다.
+    """
+    import win32con
+    import win32gui
+
+    closed = 0
+    stray: list[int] = []
+
+    def cb(h, _):
+        if (win32gui.IsWindowVisible(h) and win32gui.GetClassName(h) == "#32770"
+                and "저장" in win32gui.GetWindowText(h)):
+            stray.append(h)
+        return True
+
+    win32gui.EnumWindows(cb, None)
+    for h in stray:
+        try:
+            win32gui.PostMessage(h, win32con.WM_CLOSE, 0, 0)
+            closed += 1
+        except Exception as e:
+            log(f"[export] 남은 저장창 닫기 실패: {type(e).__name__}: {e}")
+    if closed:
+        time.sleep(0.8)
+        log(f"[export] 남아 있던 저장 대화상자 {closed}개를 닫았다(카톡 창이 잠겨 있었다)")
+    return closed
+
+
 def _resolve_out_path(room_name: str, out: str | None, date: str | None) -> Path:
     if out:
         return Path(out)
@@ -111,6 +145,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     import kakao_report_sender as s
     from pywinauto import Application
 
+    close_stray_save_dialog()          # 지난 회차가 남긴 저장창이 카톡을 잠가 둔다
     ensure_kakao_foreground()
 
     # 방 열기 + 포커스(창 겹침 극복 핵심)
@@ -157,6 +192,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
         dlg.child_window(title_re="저장.*", class_name="Button").click_input()
     except Exception as e:
         log(f"[export] 저장 대화상자 조작 실패: {type(e).__name__}: {e}")
+        close_stray_save_dialog()      # 남기면 다음 카톡 발신까지 같이 죽는다
         return False
 
     # 같은 이름 존재 시 '덮어쓰기 확인' 팝업 → 예(&Y)
