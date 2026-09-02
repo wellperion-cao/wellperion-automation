@@ -972,12 +972,25 @@ function buildApprovalPrint(list) {
 }
 // 카드 1건만 인쇄 (2026-06-03 GM) — 같은 카드 인쇄 포맷(서명칸 포함)으로 해당 건만.
 // (전체 카드 일괄 인쇄 printApprovalCards는 삭제 — 트렐로 툴바 인쇄 버튼 제거, GM 확정 2026-07-18)
+/* 결재 보고서는 항상 세로 A4로 고정한다. print_options.js(캘린더 인쇄 버튼에 붙는 용지/방향
+   선택기)가 localStorage에 저장한 마지막 선택(가로 등)은 페이지 전체에 걸리는 전역 @page
+   스타일(#po-page-style)이라 문서 인쇄까지 새어 들어와, 캘린더에서 가로를 골랐던 PC에서는
+   결재 보고서도 가로로 나오던 원인이었다(2026-09-02 매니저 지적 — 업무 현황 SSOT의
+   printDocViewer와 동일 원인·동일 해법). 인쇄 시작 시 그보다 나중(=더 우선)인 @page
+   오버라이드를 주입해 결재 보고서만 세로로 고정하고, 인쇄가 끝나면 원래대로 되돌린다. */
 function printApprovalCard(id) {
   var t = (ALL_TASKS || []).filter(function(x){ return String(x.id) === String(id); })[0];
   if (!t) { alert('해당 건을 찾을 수 없습니다.'); return; }
   document.getElementById('approvalPrintArea').innerHTML = buildApprovalPrint([t]);
   document.body.setAttribute('data-print-mode', 'cards');
-  function _reset(){ document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', _reset); }
+  var ov = document.getElementById('rrPrintPageOverride');
+  if (!ov) { ov = document.createElement('style'); ov.id = 'rrPrintPageOverride'; document.head.appendChild(ov); }
+  ov.textContent = '@page{size:A4 portrait;margin:10mm}';
+  function _reset(){
+    document.body.removeAttribute('data-print-mode');
+    ov.textContent = '';
+    window.removeEventListener('afterprint', _reset);
+  }
   window.addEventListener('afterprint', _reset);
   window.print();
   setTimeout(_reset, 2000);
