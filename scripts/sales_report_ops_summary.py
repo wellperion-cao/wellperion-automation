@@ -302,12 +302,32 @@ def _human_edited(prev: dict, current: str | None, today: str) -> bool:
     return current.strip() != str(prev.get("text") or "").strip()
 
 
+def target_file_id() -> str:
+    """이번 달 매출 보고 시트의 파일 id. 못 찾으면 빈 문자열(웹앱이 붙어 있는 시트로 폴백).
+
+    ★왜 필요한가(2026-09-02 GM 지적): 쓰기 웹앱은 **8월 시트에 붙어 있다**. 매달 시트를
+      복사해 새로 만들면 코드는 따라오지만 웹앱 주소는 안 따라와, 9월 값이 8월 시트로 계속
+      들어갔다 — 09:30 보고는 9월 시트를 읽으니 하루 밀린 옛 값이 회장님께 나갔다.
+      읽는 쪽은 이미 매달 시트를 이름으로 찾는다(resolve_sheet). 같은 해석을 쓰기에도 쓴다.
+    """
+    try:
+        from scripts.generate_sales_report_image import resolve_sheet  # noqa: PLC0415
+        fid, _gid, err = resolve_sheet(datetime.now())
+        if err:
+            print(f"[경고] 이번 달 시트 해석 실패({err}) — 웹앱이 붙은 시트에 씁니다")
+        return fid or ""
+    except Exception as exc:
+        print(f"[경고] 이번 달 시트 해석 건너뜀({type(exc).__name__}) — 웹앱이 붙은 시트에 씁니다")
+        return ""
+
+
 def post_to_sheet(text: str, cell: str = "P20") -> dict:
     url = _env("SALES_OPS_GAS_URL")
     if not url:
         return {"ok": False, "error": "SALES_OPS_GAS_URL 이 없습니다 — 웹앱 배포 후 .env 에 넣어 주세요"}
     token = _env("SALES_OPS_GAS_TOKEN", "wellperion-2026")
     today = date.today().isoformat()
+    file_id = target_file_id()
 
     try:
         seen = json.loads(LAST_WRITE.read_text(encoding="utf-8"))
@@ -317,7 +337,8 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
     # ★사람이 고친 칸은 같은 날 다시 덮어쓰지 않는다(GM 지시 2026-08-23 · 배749).
     # 실장이 손으로 넣은 LOSS 사유가 재실행 때 지워지던 경로가 여기다.
     if (seen.get(cell) or {}).get("day") == today:
-        resp = gas_get(url, {"token": token, "cell": cell}, timeout=30, label=f"{cell} 현재값")
+        resp = gas_get(url, {"token": token, "cell": cell, "file": file_id}, timeout=30,
+                       label=f"{cell} 현재값")
         current = None
         if resp is not None:
             try:
@@ -329,7 +350,7 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
             return {"ok": True, "skipped": "human-edit", "cell": cell,
                     "note": f"{cell} 은 사람이 고쳐 두었습니다 — 덮어쓰지 않았습니다"}
 
-    body = json.dumps({"token": token, "cell": cell, "text": text}).encode("utf-8")
+    body = json.dumps({"token": token, "cell": cell, "text": text, "file": file_id}).encode("utf-8")
     req = urllib.request.Request(url, data=body,
                                  headers={"Content-Type": "text/plain"}, method="POST")
     with urllib.request.urlopen(req, timeout=30) as resp:
