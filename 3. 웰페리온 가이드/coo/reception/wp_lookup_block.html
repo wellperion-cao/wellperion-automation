@@ -366,19 +366,23 @@ html,body{margin:0!important;padding:0!important;background:#0d0d12!important;ov
   setInterval(tick, 1000);
 })();
 </script>
-<style id="wlp-lk-kiosk-fit">/* ── lookup 키오스크 스크롤 제거·한 화면 맞춤 (2026-08-06) ──
-   세로 키오스크(1080×1920, 배율 100%·150% 모두)만 겨냥: min-width 700px + 세로(portrait).
-   가로 데스크톱/폰엔 적용 안 됨(그쪽은 기존대로 스크롤). 화면을 뷰포트 높이에 딱 맞추고
-   넘침을 숨겨(overflow:hidden) 오른쪽 스크롤바 제거. 여백을 조금 줄여 배율 축소 시에도 안 잘리게. */
-/* ★2026-09-01 GM 지시 "모니터 스크롤도 되게해줘" — 위 2026-08-06 판을 고친다.
-   종전엔 스크롤바를 없애려고 overflow:hidden 으로 넘침을 아예 잘랐다. 화면에 다 들어갈 때는
-   맞았지만, 화면·배율이 조금만 달라져 내용이 넘치면 **잘린 채로 스크롤도 안 됐다**(어제 GM
-   "습득물 보기는 스크롤이 안 되네"와 같은 뿌리). overflow-y:auto 로 바꾸면 안 넘칠 땐 종전처럼
-   스크롤바가 안 생기고, 넘칠 때만 스크롤된다 — 원래 목적은 지키면서 잘림만 없앤다. */
+<style id="wlp-lk-kiosk-fit">/* ── lookup 세로 키오스크 여백 조정 ──
+   세로 키오스크(1080×1920, 배율 100%·150%)만 겨냥한다: min-width 700px + 세로(portrait).
+   가로 데스크톱·폰에는 적용되지 않는다.
+
+   경위 — 이 블록은 원래 스크롤을 다루던 자리였고, 두 번 실패했다.
+   ① 2026-08-06: 오른쪽 스크롤바를 없애려고 html·body·#wlp-lk·.kiosk 를 뷰포트 높이에 고정하고
+      overflow:hidden 을 걸었다. 화면에 다 들어갈 때는 맞았지만, 배율이 조금만 달라져 내용이
+      넘치면 잘린 채로 스크롤도 안 됐다.
+   ② 2026-09-01: overflow:hidden 을 overflow-y:auto 로만 바꿨다. 잘림은 없어졌지만 높이 고정을
+      그대로 둔 탓에 바깥(html·body)과 안쪽(#wlp-lk·.kiosk)이 동시에 스크롤 컨테이너가 되어
+      스크롤바가 두 겹으로 생기고 본문 폭이 밀렸다(2026-09-02 720×1280 실측 캡처).
+
+   그래서 2026-09-02 에 높이 고정과 overflow 지정을 전부 걷어냈다. 스크롤러는 페이지 하나뿐이고,
+   내용이 넘치면 페이지가 그냥 스크롤된다 — 브라우저 기본 동작이라 배율이 바뀌어도 깨지지 않는다.
+   여기 남긴 것은 여백 조정 세 줄뿐이다. 스크롤 관련 규칙을 이 자리에 다시 넣지 않는다. */
 @media (min-width:700px) and (orientation:portrait){
-  html, body { height:100% !important; overflow-y:auto !important; }
-  #wlp-lk { height:100vh !important; height:100dvh !important; min-height:0 !important; overflow-y:auto !important; }
-  #wlp-lk .kiosk { height:100vh !important; height:100dvh !important; overflow-y:auto !important; padding-bottom:30px !important; }
+  #wlp-lk .kiosk { padding-bottom:30px !important; }
   #wlp-lk .bigbtns { margin-top:30px !important; }
   #wlp-lk .privacy { margin-top:30px !important; }
 }</style>
