@@ -190,8 +190,14 @@
   .fnstep b{font-size:13px;font-variant-numeric:tabular-nums;}
   .fnstep i{font-size:9px;color:#7A838B;font-style:normal;}
   .fnarr{font-size:9px;color:#8FA6BC;padding:0 1px;white-space:nowrap;}
-  td.rem-bad{color:var(--bad);font-weight:800;}
-  td.rem-warn{color:var(--warn);font-weight:800;}
+  .rem-bad{color:var(--bad);font-weight:800;}
+  .rem-warn{color:var(--warn);font-weight:800;}
+  /* 갱신 임박 전원 명단 — 표가 아니라 여러 단으로 흘려서(59명) 세로를 아낀다(GM 지시 09-02). */
+  .remlist{columns:4;column-gap:16px;margin-top:5px;}
+  .remrow{display:flex;justify-content:space-between;gap:8px;font-size:11px;
+    padding:1.5px 0;break-inside:avoid;white-space:nowrap;}
+  .remrow .rn{overflow:hidden;text-overflow:clip;}
+  .remrow b{font-variant-numeric:tabular-nums;flex:none;}
 </style>
 </head>
 <body>
@@ -833,19 +839,15 @@ function renderP2Mix(a, corp){
 
 function renderP2Churn(c){
   var el = document.getElementById('p2churn'); if (!el) return;
-  var top = (c.renewSoon || []).slice(0, 12);
-  var restN = (c.renewSoon || []).length - top.length;
+  var all = c.renewSoon || [];   // rem 오름차순 전원 게재(GM 지시 09-02 — 12명 접기 폐지)
   el.innerHTML =
     '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' +
       '누적 이탈 <b>' + p2num(c.lossCount) + '명 (' + c.lossRate + '%)</b> · 이번 달 이탈 <b>' + p2num(c.monthLossCount) +
-      '명 (' + c.monthLossRate + '%)</b> · 갱신 누적 <b>' + p2num(c.renewCount) + '건</b></div>' +
-    '<table style="margin-top:5px;"><colgroup><col><col style="width:56px"><col></colgroup>' +
-    '<thead><tr><th>이름</th><th>남은 일수</th><th>프로그램</th></tr></thead><tbody>' +
-    top.map(function(x){
+      '명 (' + c.monthLossRate + '%)</b> · 갱신 누적 <b>' + p2num(c.renewCount) + '건</b> · 갱신 임박(30일 내) <b>' + all.length + '명</b></div>' +
+    '<div class="remlist">' + all.map(function(x){
       var cls = x.rem <= 3 ? 'rem-bad' : (x.rem <= 7 ? 'rem-warn' : '');
-      return '<tr><td>' + esc(x.name) + '</td><td class="' + cls + '">' + x.rem + '일</td><td>' + esc(x.program || '–') + '</td></tr>';
-    }).join('') + '</tbody></table>' +
-    (restN > 0 ? '<div class="fnote">외 ' + restN + '명</div>' : '');
+      return '<div class="remrow"><span class="rn">' + esc(x.name) + '</span><b class="' + cls + '">' + x.rem + '일</b></div>';
+    }).join('') + '</div>';
 }
 
 function fnStepsHTML(stage, retain){
@@ -872,7 +874,7 @@ function renderP2Funnel(f){
 function renderP2Lesson(l){
   var el = document.getElementById('p2lesson'); if (!el) return;
   function bars(list){
-    var top = (list || []).slice(0, 6);
+    var top = (list || []).slice(0, 5);   // 명단이 늘어난 만큼 6→5로 줄여 자리를 만든다(GM 지시 09-02)
     var max = Math.max.apply(null, top.map(function(x){ return x.v; }).concat([1]));
     return top.map(function(x){
       return '<div class="vrow"><span class="vl2">' + esc(x.k) + '</span>' +
