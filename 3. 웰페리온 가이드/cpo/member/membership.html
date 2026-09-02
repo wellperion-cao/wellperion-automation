@@ -1454,17 +1454,14 @@ table.op-t td b{font-size:15px}
                  현황(라이브)을 매출 및 회원 현황보고로 정리할 수 있을 것 같은데"). 헤더 버튼이 여덟 개라
                  화면 폭이 줄면 줄바꿈이 요동쳤다. 겹치는 현황은 보고서 한 곳으로 모으고, 나머지 셋은
                  없애지 않고 접어 둔다(실무진이 쓰던 것을 흔적 없다고 끄지 않는다). -->
+            <!-- ★현황 통합 완료 (GM 지시 2026-09-02 — "예전현황 + LOSS관리까지 매출 회원 현황보고로
+                 통합시켜보자"). 보는 것은 보고서 한 곳으로 모았다. 화면 안 함수(openStatusOnepager·
+                 openInquiryDash·openRenewDash·openChurnManage)는 지우지 않고 남겨 둔다 — 다른 자리에서
+                 부르고 있고, 되돌릴 때 이 버튼 줄만 되살리면 된다.
+                 ▸LOSS '관리'(처리 작업)는 보고서에서 못 한다. 보고서 이탈·갱신 칸에서 이 화면으로
+                   돌아오는 링크(?open=churn)를 두고, 아래 스크립트가 그 파라미터를 받아 모달을 연다. -->
             <a class="action-btn" id="btnSalesMemberReport" href="../../coo/report/매출회원현황보고.html" target="_blank" rel="noopener">📄 매출·회원 현황 보고 →</a>
-            <details class="hz-more"><summary class="action-btn">▾ 예전 현황</summary>
-            <div class="hz-more-list">
-            <button class="action-btn" id="btnStatusOnepager" onclick="openStatusOnepager()">📄 회원 현황 한 장</button>
-            <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">🆕 신규 문의 & 등록 현황</button>
-            <!-- 재등록 현황 버튼 — 원본 대시보드(renewal.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
-                 어긋남 방지, 2026-07-16 시설부 기준값 사고 재발방지). openInquiryDash 패턴 벤치마킹, 기존 코드 미변경. 2026-07-20 GM 지시 -->
-            <button class="action-btn" id="btnRenewDash" onclick="openRenewDash()">🔄 재등록 현황</button>
-            <button class="action-btn" id="btnLessonDash" onclick="openLessonDash()" style="display:none">강습 문의 현황</button>
-            </div></details>
-            <button class="action-btn" onclick="openChurnManage()">🚪 LOSS 관리</button>
+            <button class="action-btn" id="btnPersonSearch" onclick="focusPersonSearch()">🔎 사람 찾기</button>
             <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
                  카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
             <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
@@ -1481,9 +1478,9 @@ table.op-t td b{font-size:15px}
         <div class="hz-zone z-tool">
           <div class="hz-zone-label">🔧 도구</div>
           <div class="hz-btns">
-            <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의 페이지 →</a>
+            <!-- 이름 「문의 페이지」→「문의폼」(GM 지시 2026-09-02). ERP 홈 버튼은 같은 지시로 뺐다. -->
+            <a class="action-btn" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">🔗 문의폼 →</a>
             <a id="miSheetLink" class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
-            <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
             <button class="action-btn" onclick="window.print()">인쇄</button>
           </div>
         </div>
@@ -5055,6 +5052,23 @@ function switchTab(id, btn) {
   if (id === 'active'     && !_tabLoaded.active)     { _tabLoaded.active = true;     loadActiveMembers(); }
   // ownerAssign 훅 제거(2026-07-18): 담당자 배정이 강습 family로 이동 → lessonOwnerAssignOpen 전용 opener가 로드 관리.
 }
+
+/* 상단 「🔎 사람 찾기」 버튼 — 탭으로 옮기고 검색칸에 커서까지 둔다(GM 지시 2026-09-02 "사람찾기를
+   상단에 올려볼까"). 새 화면·새 로직 없이 이미 있는 탭 전환을 부른다. */
+function focusPersonSearch(){
+  try { switchTab('person'); } catch (e) {}
+  var q = document.getElementById('personSearchQ');
+  if (q) { q.focus(); q.select(); }
+}
+
+/* 보고서(매출·회원 현황 보고)에서 「LOSS 관리 열기」로 돌아올 때 — ?open=churn 이면 그 모달을 연다.
+   헤더에서 버튼을 뺐어도 처리 작업 경로는 살아 있어야 한다(GM 지시 2026-09-02 통합). */
+(function(){
+  if (!/[?&]open=churn/.test(location.search)) return;
+  window.addEventListener('load', function(){
+    setTimeout(function(){ try { openChurnManage(); } catch (e) {} }, 400);
+  });
+})();
 
 /* ── 사람 찾기(person view) — 2026-09-02 시포, 배11123. 읽기전용 액션 member_person_view 1개만 쓴다(약속 L21).
    버튼 클릭으로만 조회한다(탭 진입 자동로드 없음 — 검색어 없이는 부를 게 없다). ── */
