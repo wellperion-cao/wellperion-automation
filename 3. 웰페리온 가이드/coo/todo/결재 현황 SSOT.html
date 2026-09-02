@@ -1583,7 +1583,8 @@ function renderApprovalCard(t, idx) {
          파일명이 한글로 인코딩돼 있으면 풀어서 보여 준다. */
       var label = '첨부';
       try {
-        var last = decodeURIComponent(u.split('?')[0].split('#')[0].split('/').pop() || '');
+        var segs = u.split('?')[0].split('#')[0].split('/').filter(function (s) { return s; });
+        var last = decodeURIComponent(segs.pop() || '');   /* 주소가 /로 끝나면 그 앞 조각을 쓴다 */
         label = last.replace(/\.(html?|pdf|png|jpe?g|gif|webp)$/i, '').replace(/[_-]+/g, ' ').trim() || '첨부';
       } catch (e) { label = '첨부'; }
       if (label.length > 26) label = label.slice(0, 26) + '…';
