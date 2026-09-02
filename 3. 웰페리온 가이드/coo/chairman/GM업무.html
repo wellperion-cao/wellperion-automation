@@ -60,11 +60,16 @@
   /* 큰 묶음 머리 — GM 지시 2026-09-02 "지금 있는 업무 20개를 더 큰항목으로 묶고".
      묶음 이름은 업무 시트와 같은 9종 체계를 그대로 쓴다(_gm_direct_tasks.js CATEGORY_BY_ID) —
      새 분류를 만들지 않아야 부서 전달 때 같은 말로 오간다. */
-  .grp{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;
-    margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink,#1b1b1b);}
-  .grp:first-child{margin-top:0;}
-  .grp b{font-size:15px;font-weight:800;letter-spacing:-.01em;}
-  .grp span{font-size:12px;font-weight:700;color:var(--grey);letter-spacing:.04em;}
+  .grpbox{grid-column:1/-1;margin:18px 0 0;}
+  .grpbox:first-child{margin-top:0;}
+  .grpbox>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;
+    padding-bottom:6px;margin-bottom:12px;border-bottom:2px solid var(--ink,#1b1b1b);}
+  .grpbox>summary::-webkit-details-marker{display:none;}
+  .grpbox>summary::before{content:'▾';font-size:12px;color:var(--grey);transform:translateY(-1px);}
+  .grpbox:not([open])>summary::before{content:'▸';}
+  .grpbox>summary b{font-size:15px;font-weight:800;letter-spacing:-.01em;}
+  .grpbox>summary span{font-size:12px;font-weight:700;color:var(--grey);letter-spacing:.04em;}
+  .grpin{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start;}
 
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
   .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
@@ -802,7 +807,9 @@
       // 접힌 상태에서 보이는 것 = 번호·제목·분류·상태·진척·남은 할 일 개수·기한. 누르면 그 카드만 펼친다.
       // 새 UI 를 만든 게 아니라 있던 카드를 <details> 로 감쌌다 — 안쪽 내용·체크·링크는 그대로다.
       var pend = hasChecks ? (todos.length - doneCount) : 0;
-      return '<details class="item" id="gm-' + esc(it.id) + '">' +
+      // ★카드는 항상 펴 둔다 (GM 지시 2026-09-02 "각 업무시리즈는 닫기가 아니라 항상 열어놔줘").
+      //   2026-09-01 에 접었던 이유는 목록이 길어서였는데, 오늘 큰 묶음이 생겨 그 이유가 없어졌다.
+      return '<details class="item" open id="gm-' + esc(it.id) + '">' +
         '<summary class="cardhead">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
@@ -956,8 +963,18 @@
       //     이건 일의 성격으로 가르는 선이다. 달은 여전히 안 가른다(한 줄기 그대로).
       //   ▸묶음 안 순서는 급한 순 그대로다.
       // 묶음 차례는 고정이다: 매일 순서가 바뀌면 GM 이 어제 본 자리에서 못 찾는다.
-      var GRP_ORDER = ['시설 및 환경','운영 정책','매출 및 영업','회원·CS',
-                       'IT·시스템·자동화','인사','파트너팀','교육·조직문화','회의','분류 미정'];
+      // 차례 = 중요도 (GM 지시 2026-09-02 "웰리가 생각했을 때 … 중요도를 기준으로 위치를 조정").
+      //   판단 근거를 한 줄씩 남긴다 — 다음 사람이 왜 이 순서인지 알아야 고칠 수 있다.
+      //   1 매출 및 영업   돈이 들어오는 축. 요금 인상·법인 멤버십이 여기 있고 연 목표에 직결된다
+      //   2 운영 정책      3라인 직책체계·보고 라인. 이게 서야 나머지가 GM 손을 떠난다
+      //   3 시설 및 환경   회원이 매일 몸으로 닿는 것 + 안전. 사고 나면 다른 축이 다 멈춘다
+      //   4 회원·CS        들어온 회원을 지키는 축. 인상기에는 이탈 방어가 매출과 같은 무게다
+      //   5 인사           사람 배치. 급하지만 위 넷이 정해져야 정해진다
+      //   6 IT·시스템·자동화  위 다섯을 돌게 하는 받침. 중요하나 그 자체가 목적은 아니다
+      //   7 교육·조직문화   축적형. 미루면 티가 안 나지만 오래 미루면 위 전부가 느려진다
+      //   8 회의           일이 아니라 자리. 맨 아래가 맞다
+      var GRP_ORDER = ['매출 및 영업','운영 정책','시설 및 환경','회원·CS',
+                       '인사','IT·시스템·자동화','파트너팀','교육·조직문화','회의','분류 미정'];
       var buckets = {};
       ordered.forEach(function (o) {
         var c = o.category || '분류 미정';
@@ -967,14 +984,18 @@
         .concat(Object.keys(buckets).filter(function (c) { return GRP_ORDER.indexOf(c) < 0; }));
       var cardOut = [], sumOut = [], seq = 0;
       names.forEach(function (c) {
-        cardOut.push('<div class="grp"><b>' + esc(c) + '</b><span>' + buckets[c].length + '건</span></div>');
+        // 묶음은 토글이되 펴 둔 채로 연다 — 접고 싶을 때만 GM 이 접는다(GM 지시 2026-09-02).
+        var inner = [];
         sumOut.push('<tr class="grp-row"><td colspan="5" style="padding-top:14px;font-weight:800;">'
                     + esc(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
         buckets[c].forEach(function (o) {
-          cardOut.push(cardHtml(o, seq));
+          inner.push(cardHtml(o, seq));
           sumOut.push(sumRowHtml(o, seq));
           seq++;
         });
+        cardOut.push('<details class="grpbox" open><summary><b>' + esc(c) + '</b><span>'
+                     + buckets[c].length + '건</span></summary><div class="grpin">'
+                     + inner.join('') + '</div></details>');
       });
       elGmGrid.innerHTML = cardOut.join('');
       elGmSum.innerHTML = sumOut.join('');
@@ -1107,7 +1128,7 @@
     var reopened = [];
     window.addEventListener('beforeprint', function () {
       reopened = [];
-      document.querySelectorAll('details.item:not([open]), details.donechk:not([open]), details.fold:not([open])')
+      document.querySelectorAll('details.grpbox:not([open]), details.item:not([open]), details.donechk:not([open]), details.fold:not([open])')
         .forEach(function (d) { reopened.push(d); d.open = true; });
     });
     window.addEventListener('afterprint', function () {
