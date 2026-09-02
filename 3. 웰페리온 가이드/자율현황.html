@@ -163,6 +163,15 @@
   }
   td.cellclamp-open{ -webkit-line-clamp:unset; overflow:visible; }
   td.cellclamp-open::after{ content:'⌃ 접기'; }
+
+/* 관리 주체 표시 — 이 화면을 누가 돌보는지 제목 옆에 밝힌다 (GM 지시 2026-09-02
+   "웰리가 관리하는 페이지는 항상 제목옆에 AI 웰리 라고 표시해줘").
+   실무진·GM 이 화면을 열었을 때 물어볼 상대가 바로 보이게 하는 것이 목적이다. */
+.ai-owner{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
+  margin-left:10px;padding:3px 9px;border-radius:100px;
+  font-size:11.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  background:rgba(143,112,41,.12);color:#8F7029;border:1px solid rgba(143,112,41,.35);}
+@media print{ .ai-owner{border-color:#999;color:#555;background:none;} }
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
 </head>
@@ -170,7 +179,7 @@
 <div class="wrap">
 
   <header class="page-head">
-    <h1>자율 작업 현황</h1>
+    <h1>자율 작업 현황<span class="ai-owner">AI 웰리</span></h1>
     <span class="sub"><b>시토 · T2 자동화</b> — 웰리·C-Level이 스스로 돌린 일(로그 실재분만).</span>
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="wellperion_guide(main).html#S2">📋 AI C-Level 운영 가이드(S2)</a>

@@ -139,6 +139,15 @@
     .grp{break-inside:avoid;break-after:avoid;page-break-after:avoid;
          -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   }
+
+/* 관리 주체 표시 — 이 화면을 누가 돌보는지 제목 옆에 밝힌다 (GM 지시 2026-09-02
+   "웰리가 관리하는 페이지는 항상 제목옆에 AI 웰리 라고 표시해줘").
+   실무진·GM 이 화면을 열었을 때 물어볼 상대가 바로 보이게 하는 것이 목적이다. */
+.ai-owner{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
+  margin-left:10px;padding:3px 9px;border-radius:100px;
+  font-size:11.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  background:rgba(143,112,41,.12);color:#8F7029;border:1px solid rgba(143,112,41,.35);}
+@media print{ .ai-owner{border-color:#999;color:#555;background:none;} }
 </style>
 </head>
 <body>
@@ -152,7 +161,7 @@
 
   <div class="hd">
     <p class="brand">WELLPERION · 월간계획보고</p>
-    <h1>대표님 보고건</h1>
+    <h1>대표님 보고건<span class="ai-owner">AI 웰리</span></h1>
     <p class="sub">업무&amp;결재 SSOT 실시간 조회 · 담당 김남욱GM · 상태 진행중·보류만</p>
     <div class="meta">
       <div><b>보고</b>김남욱 GM</div>
@@ -224,5 +233,6 @@
   });
 </script>
 <script defer src="../../_assets/page_ping.js"></script>
+<script src="../../_assets/ai_owner_badge.js" defer></script>
 </body>
 </html>
