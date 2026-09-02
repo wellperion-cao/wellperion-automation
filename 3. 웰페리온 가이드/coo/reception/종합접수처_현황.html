@@ -249,8 +249,14 @@ a { color:var(--accent); text-decoration:none; }
 .summary-bar .search-input { margin-left:auto; flex:0 1 340px; min-width:200px; }
 
 /* ── 🔍 검색칸 ── */
-.search-input { width:100%; max-width:520px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--paper); color:var(--text); font-size:14px; font-family:inherit; outline:none; }
+/* 입력칸 글자는 16px 아래로 내리지 않는다 — 태블릿·모바일에서 누르면 화면이 자동으로 확대되고
+   그대로 남는다(2026-09-02 화면 자동점검이 잡음). */
+.search-input { width:100%; max-width:520px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; background:var(--paper); color:var(--text); font-size:16px; font-family:inherit; outline:none; }
 .search-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(183,159,138,.15); }
+/* 수령 처리 창의 입력칸들은 글자 크기가 지정돼 있지 않아 브라우저 기본값(13.3px)으로 떨어졌다.
+   16px 미만이면 태블릿에서 누를 때 화면이 자동 확대된다 — 위 검색칸과 같은 이유로 못 박는다.
+   (칸 폭이 좁아야 하는 곳(.sla-edit 등)은 일부러 제외한다 · 2026-09-02) */
+input[id^="m_"] { font-size:16px; }
 .search-input::placeholder { color:var(--dim); }
 
 /* ── 컬럼 내부 스크롤(페이지 세로 폭주 방지) ── */
