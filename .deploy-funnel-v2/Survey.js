@@ -12775,10 +12775,13 @@ function warmLessonRosterCache() {
     //     GM 이 낮에 화면을 보실 때와 아침 보고서 숫자가 어긋난다. 하루가 끝난 뒤 정리한다.
     //     LOSS일자 값 자체는 달라지지 않는다 — 어느 쪽이든 '종료일 다음 날'로 찍힌다.
     //   ▸양도·양수건은 실무자가 직접 넣는다 — 이 자동 도장의 대상이 아니다(빈칸만 채운다).
+    //   ▸키 이름을 LOSS_DATE_STAMP_LAST23 으로 새로 뗀 이유(2026-09-02): 옛 키에는 오늘 날짜가
+    //     이미 '오전 10시판'으로 찍혀 있어, 23시로 옮긴 첫날 밤은 건너뛰게 된다. 새 키는 값이
+    //     비어 있어 오늘 밤부터 정상으로 돈다. 옛 키는 다시 쓰지 않는다(속성에 남아도 무해).
     var _wrHour = Number(Utilities.formatDate(new Date(), _wrTz, 'H'));
-    if (_wrHour >= 23 && _wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
+    if (_wrHour >= 23 && _wrProps.getProperty('LOSS_DATE_STAMP_LAST23') !== _wrToday) {
       var _ld = member_loss_date_auto_stamp_();
-      _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
+      _wrProps.setProperty('LOSS_DATE_STAMP_LAST23', _wrToday);
       Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
     }
     // ★유효회원 잔여일순 정렬(2026-08-08 시포, GM 지시) — 같은 날짜 도장 가드로 하루 1회, 자정 직후
