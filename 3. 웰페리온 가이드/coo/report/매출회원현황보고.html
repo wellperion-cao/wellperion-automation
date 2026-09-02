@@ -858,7 +858,9 @@ document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
 // 일자탭 계약 명단 — 회원권(A~G) · 강습(H~N) 두 블록 모두 열 순서가 같다(담당·회원·종목·금액·방법·분류·경로).
 function readContracts(c, cols){
   var rows = [];
-  for (var r = 8; r <= 20; r++) {
+  // 8~60행 — 일자탭의 계약 줄이 실제로 내려가는 끝까지 본다. 20 까지만 보던 종전 코드는
+  // 21행부터를 빠뜨려 명단이 합계와 안 맞았다(GM 지적 2026-09-02).
+  for (var r = 8; r <= 60; r++) {
     var staff = c[cols[0]+r], member = c[cols[1]+r];
     if (!staff && !member) continue;
     rows.push({ staff: staff || '–', member: member || '–', sport: c[cols[2]+r] || '–',
@@ -869,7 +871,7 @@ function readContracts(c, cols){
   return rows;
 }
 function contractListHTML(title, rows){
-  var top = rows.slice(0, 12), restN = rows.length - top.length;
+  var top = rows.slice(0, 20), restN = rows.length - top.length;   // 12→20 (GM: 접지 말고 다 보여라)
   return '<div style="flex:1;min-width:0"><b style="font-size:10.6px;color:var(--navy)">' + title + '</b>' +
     (rows.length ? top.map(function(x){
       return '<div style="font-size:10.8px;padding:1.5px 0;border-bottom:1px dotted var(--line);' +
@@ -952,11 +954,22 @@ function onDatePick(silent){
   var stale = day > today.getDate();       // 일 번호 기준(GM 지시) — 아직 지나지 않은 날짜면 지난달 탭
   document.getElementById('memberDateNote').style.display = '';
   var e = document.getElementById('err'); e.innerHTML = '';
-  fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + day + '&range=A1:S20&cb=' + Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
-      var c = d.cells || {};
+  // 계약 명단은 한 번에 못 읽는다 — 이 조회는 한 번에 400칸까지고, 일자탭의 계약 줄은
+  // 회원권·강습 모두 60행까지 내려간다. A1:S20 만 읽던 종전 코드는 21행부터를 통째로 빠뜨려
+  // 명단이 합계와 안 맞았다(GM 지적 2026-09-02 · 실측 9/1 회원권 계약이 27행까지 있었다).
+  // 그래서 세 조각으로 나눠 받아 합친다.
+  var _day = day;
+  function _seg(range){
+    return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + _day +
+                 '&range=' + range + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ return (d && d.ok) ? (d.cells || {}) : null; });
+  }
+  Promise.all([_seg('A1:S20'), _seg('A21:N45'), _seg('A46:N60')])
+    .then(function(parts){
+      if (!parts[0]) throw new Error('일자탭을 못 읽었습니다');
+      var c = {};
+      parts.forEach(function(p){ if (p) { for (var k in p) c[k] = p[k]; } });
       var dayLabel = (picked.getMonth()+1) + '월 ' + day + '일';
       document.getElementById('asof').textContent = dayLabel + (isToday ? ' (집계 중 · 오늘)' : '') +
         (stale ? ' — 지난달 탭' : '');
