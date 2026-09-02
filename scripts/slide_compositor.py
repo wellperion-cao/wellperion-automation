@@ -497,6 +497,9 @@ def compose_unified_slide(
     aspect: str = "1080x1350",
     brand_key: str = "main",
     footer_meta: str | None = None,
+    duotone: bool = True,
+    show_chip: bool = True,
+    logo_box: bool = True,
 ) -> dict:
     """통일 양식 스토리 슬라이드. 사진과 텍스트 영역 완전 분리.
 
@@ -504,6 +507,13 @@ def compose_unified_slide(
         label_eng: 영문 라벨 (정보 영역 상단, 대문자, 작게)
         body_text: 한글 본문 (줄바꿈 \\n 구분 다중 줄)
         footer_meta: 풋터 라인 (예: "http://wellperion.com/ko/inquiry/") — 옵션
+        duotone: 사진을 브랜드 듀오톤으로 물들일지. False 면 원본 색 그대로 —
+            공간 자체를 보여주는 편(수영장 물빛·창밖 초록)에서는 듀오톤이 전부
+            같은 세피아로 뭉개 여섯 장이 구분되지 않는다.
+        show_chip: 우상단 사업부 칩. 좌상단 로고와 겹쳐 로고가 두 번 보이므로
+            공식 시리즈에서는 끈다.
+        logo_box: 좌상단 로고 뒤 반투명 검은 박스. 밝은 사진에서는 판때기처럼 뜬다.
+    ※ 세 인자 모두 기본값이 종전 동작 — 기존 호출부는 영향 없다.
     """
     if aspect not in ASPECT_PRESETS:
         raise ValueError(f"Unknown aspect: {aspect}")
@@ -519,12 +529,13 @@ def compose_unified_slide(
     # 1) 사진 영역 — 상단 65% (BLACK + BEIGE 듀오톤)
     photo_h = int(target_h * 0.65)
     photo = load_and_fit(base_image, target_w, photo_h)
-    photo = to_duotone(photo)
+    if duotone:
+        photo = to_duotone(photo)
     canvas.paste(photo, (0, 0))
 
     margin = int(target_w * 0.05)
 
-    # 2) 상단 좌측 공식 로고 PNG (사진 위 — 반투명 박스 포함)
+    # 2) 상단 좌측 공식 로고 PNG (사진 위 — 반투명 박스 옵션)
     canvas = paste_logo_png(
         canvas=canvas,
         logo_path=LOGO_WHITE_ALPHA,
@@ -532,32 +543,33 @@ def compose_unified_slide(
         target_h=target_h,
         margin=margin,
         logo_target_w=int(target_w * 0.28),
-        with_dark_box=True,
+        with_dark_box=logo_box,
     )
 
     draw = ImageDraw.Draw(canvas)
 
     # 3) 상단 우측 사업부 칩
-    chip_w = int(target_w * 0.20)
-    chip_h = int(target_h * 0.030)
-    chip_x0 = target_w - margin - chip_w
-    chip_y0 = margin
-    draw.rectangle(
-        [(chip_x0, chip_y0), (chip_x0 + chip_w, chip_y0 + chip_h)],
-        fill=brand["primary"],
-    )
-    chip_label_size = int(target_h * 0.018)
-    chip_font = load_font("medium", chip_label_size)
-    chip_label = brand["wordmark"].split("  ", 1)[-1] if "  " in brand["wordmark"] else brand["wordmark"]
-    cb = chip_font.getbbox(chip_label)
-    cw = cb[2] - cb[0]
-    ch_h = cb[3] - cb[1]
-    draw.text(
-        (chip_x0 + (chip_w - cw) // 2, chip_y0 + (chip_h - ch_h) // 2 - 2),
-        chip_label,
-        font=chip_font,
-        fill=(255, 255, 255),
-    )
+    if show_chip:
+        chip_w = int(target_w * 0.20)
+        chip_h = int(target_h * 0.030)
+        chip_x0 = target_w - margin - chip_w
+        chip_y0 = margin
+        draw.rectangle(
+            [(chip_x0, chip_y0), (chip_x0 + chip_w, chip_y0 + chip_h)],
+            fill=brand["primary"],
+        )
+        chip_label_size = int(target_h * 0.018)
+        chip_font = load_font("medium", chip_label_size)
+        chip_label = brand["wordmark"].split("  ", 1)[-1] if "  " in brand["wordmark"] else brand["wordmark"]
+        cb = chip_font.getbbox(chip_label)
+        cw = cb[2] - cb[0]
+        ch_h = cb[3] - cb[1]
+        draw.text(
+            (chip_x0 + (chip_w - cw) // 2, chip_y0 + (chip_h - ch_h) // 2 - 2),
+            chip_label,
+            font=chip_font,
+            fill=(255, 255, 255),
+        )
 
     # 4) 하단 정보 영역
     info_y0 = photo_h
