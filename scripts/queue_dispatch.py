@@ -62,6 +62,46 @@ EXCLUDED_ROLES = {"chro", "cfo"}  # 정본 — 복사 금지·import 해서 쓴�
 EXCLUDED_OWNER = "나우열M"
 
 
+# ── 담당 라우팅 판정 (GM 지적 2026-09-02 · 배가 엉뚱한 역할로 가는 것을 막는다) ──
+# 정본 = ssot/ownership_map.json 의 roles[].domain. 이 함수는 그 파일의 routing_keywords 를
+# 읽어 제목·설명을 훑을 뿐, 판정 기준을 여기 복제하지 않는다(약속 L01).
+# 애매하면 막지 않는다 — 잘못 막는 것이 잘못 보내는 것보다 성가시다.
+_NICK_TO_ROLE = {"웰리": "ceo", "시뽀": "cfo", "시로": "chro", "시모": "cmo",
+                 "시우": "coo", "시포": "cpo", "시토": "cto"}
+
+
+def _route_guess(title: str, note: str) -> tuple[str, str]:
+    """제목+설명에서 담당을 추정한다. 반환 (role 또는 "", 근거 낱말 문자열).
+
+    판정이 서지 않으면 ("", "") — 호출부는 그때 아무 말도 하지 않는다.
+    1등과 2등의 낱말 수가 같으면 겹치는 건이라 보고 넘긴다(오탐 방지).
+    """
+    import json as _json
+    import os as _os
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                         "ssot", "ownership_map.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = _json.load(fh)
+    except Exception:
+        return "", ""          # 지도를 못 읽으면 판정하지 않는다(막지 않는다)
+    text = "%s %s" % (title or "", note or "")
+    scores: dict[str, list[str]] = {}
+    for r in data.get("roles", []):
+        role = _NICK_TO_ROLE.get(r.get("nick", ""))
+        if not role:
+            continue
+        hits = [k for k in (r.get("routing_keywords") or []) if k and k in text]
+        if hits:
+            scores[role] = hits
+    if not scores:
+        return "", ""
+    ranked = sorted(scores.items(), key=lambda kv: -len(kv[1]))
+    if len(ranked) > 1 and len(ranked[0][1]) == len(ranked[1][1]):
+        return "", ""          # 동점 = 여러 도메인이 걸친 건. 사람이 정한다
+    return ranked[0][0], " · ".join(ranked[0][1][:5])
+
+
 def excluded_role_notice(role: str) -> str:
     """배제 역할로 배를 띄우려 할 때 사람에게 보이는 한 줄. 문구 정본(복사 금지)."""
     return (
@@ -221,6 +261,8 @@ def main() -> int:
                      help="오늘 반드시 끝낼 배로 지목. 값 생략=오늘 날짜, 날짜를 직접 주면 그 날짜로 "
                           "지목(예: 못 지킨 걸 소급 기록). hangro_board 맨 위·자율현황·08시 보고에 뜬다 — "
                           "다음날까지 안 끝나면 status=DONE 될 때까지 조용히 안 사라진다.")
+    ap.add_argument("--force-route", dest="force_route", action="store_true",
+                     help="담당 어긋남 경고를 무시하고 그대로 보낸다 — 그럴 만한 이유가 있을 때만")
     args = ap.parse_args()
     args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
     if args.must_finish == "TODAY":
@@ -245,6 +287,20 @@ def main() -> int:
         print("  아침 점검 표에 한 줄로 적고, GM 이 보시고 전달해 주시면 그때 배로 만드세요.")
         print('  사람이 답을 기다리는 건이면 누가 기다리는지 적으세요: --waiting "임정은M 회신 대기"')
         return 2
+
+    # ★엉뚱한 담당에게 보내는 것을 여기서 잡는다 (GM 지적 2026-09-02).
+    #   GM 원문: "에이스전자건 관련해서는 시모한테 시키면되는데, 이것을 시토한테 보냈다가,
+    #   시토가 또 시모한테 보내는 등 정신이없네". 배가 한 번 잘못 가면 왕복이 생기고,
+    #   그 사이 GM 은 누가 하는지 모른다. 판정은 이 관문 하나에만 둔다(약속 L21).
+    guess, why = _route_guess(args.title, args.note)
+    if guess and guess != args.to.lower():
+        print("! 담당이 어긋나 보입니다 — %s 로 보내려 하는데 내용은 %s 쪽입니다."
+              % (ROLES.get(args.to.lower(), args.to), ROLES.get(guess, guess)))
+        print("  근거(제목·설명에서 찾은 낱말): %s" % why)
+        print("  정본 = ssot/ownership_map.json 의 roles[].domain")
+        print("  그대로 보내려면 --force-route 를 붙이세요(그럴 만한 이유가 있을 때만).")
+        if not args.force_route:
+            return 2
 
     made = {}
 
