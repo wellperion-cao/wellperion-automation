@@ -404,14 +404,20 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   var CONTACT_EMAIL = 'info@wellperion.com';
 
   // ── 개인정보 수집·이용 동의문(기존 구글폼 PIPA 문안 승계 · create_inquiry_forms_kr.gs _pipa_) ──
-  function pipa(purpose, thirdParty){
+  // items — 그 유형에서 실제로 받는 항목이 기본과 다를 때만 넘긴다(예: 택배 주소).
+  //   ★2026-09-02 배896 — 스팀다리미는 택배 발송이라 주소를 받는데, 동의문에 주소가 빠져 있으면
+  //   적힌 것과 실제로 받는 것이 어긋난다(개인정보 고지 의무). 받는 대로 적는다.
+  function pipa(purpose, thirdParty, items){
     return '개인정보 보호법에 따라 주식회사 웰페리온은 아래와 같이 개인정보를 수집·이용합니다.\n\n'
       + '수집 목적: ' + purpose + '\n'
-      + '수집 항목: 성함(또는 담당자), 연락처, 문의 내용\n'
+      + '수집 항목: ' + (items || '성함(또는 담당자), 연락처, 문의 내용') + '\n'
       + '보유 기간: 수집일로부터 1년 또는 목적 달성 시까지(둘 중 빠른 시점)\n'
       + '제3자 제공: ' + (thirdParty || '별도 동의 없이 제공하지 않음(법령상 요구 시 예외)') + '\n\n'
       + '동의를 거부하실 수 있으나, 거부 시 문의 응대가 제한될 수 있습니다.';
   }
+
+  // 유형별 수집 항목 — 기본과 다른 유형만 적는다(없으면 위 기본 문구가 쓰인다).
+  var PIPA_ITEMS = { steamiron: '성함, 연락처, 받으실 주소, 결제 방법, 남기신 말씀' };
 
   // ── 유입경로(문의 경로) 표준 옵션 ──
   var CHANNELS = ['네이버 검색·플레이스','네이버 블로그','인스타그램','당근마켓','동부이촌동 커뮤니티','카카오톡','소개·지인','기존·과거 회원','오프라인(간판·방문)','기타'];
@@ -803,7 +809,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     var cField = document.createElement('div'); cField.className='field';
     var cLab = document.createElement('label'); cLab.className='fl'; cLab.textContent='개인정보 수집·이용 동의'; cField.appendChild(cLab);
     var thirdParty = (cat === 'ohnutti') ? '선물 준비·배송을 위해 협력사(오넛티)에 제공될 수 있음' : '';
-    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose, thirdParty); cField.appendChild(cBox);
+    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose, thirdParty, PIPA_ITEMS[cat]); cField.appendChild(cBox);
     var cRow = document.createElement('div'); cRow.className='chk-row';
     cRow.innerHTML = '<input type="checkbox" id="f_consent"><span>위 개인정보 수집·이용에 동의합니다.</span>';
     cField.appendChild(cRow);
