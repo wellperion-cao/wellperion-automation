@@ -18,6 +18,10 @@ REM -- git 부팅 관문 자가복구 (GM 2026-07-30, 7개 부팅 배치 멈춤 
 REM    왜: 자동화가 detached HEAD 로 커밋을 쌓아왔고, 그 상태의 pull --rebase 가
 REM    미커밋 대용량 바이너리까지 autostash 로 삼키다 부팅이 멈췄다(stash 35개·287MB).
 REM    1) detached 면 master 로 되돌린다 2) autostash 를 끈다 3) 실패해도 부팅은 계속한다.
+REM ★2026-09-02 뿌리 차단 — .git/config 의 rebase.autoStash 가 true 면 배치에서 --autostash 를
+REM    빼도 git 이 알아서 스태시한다. 실제로 그 탓에 디스크 파일이 이미 커밋된 내용보다 옛것으로
+REM    되돌아가는 「자체 표류」가 났다(2026-09-02 chro/hub·업무 현황 SSOT 2건). 매 부팅 끈다(멱등).
+git config --local rebase.autoStash false
 git symbolic-ref -q HEAD >nul 2>&1
 if errorlevel 1 (
   echo   [self-heal] detached HEAD 감지 - master 로 복귀합니다

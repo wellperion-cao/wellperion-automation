@@ -11,6 +11,10 @@ REM    transcript, so it drops to a grey "role unknown" line.
 set "CLAUDE_CODE_CHILD_SESSION="
 if defined WP_BOOT_SKIP_GIT goto :wp_after_git
 REM -- git 부팅 관문 자가복구 (GM 2026-07-30, 7개 부팅 배치 멈춤 사고) --
+REM ★2026-09-02 뿌리 차단 — .git/config 의 rebase.autoStash 가 true 면 배치에서 --autostash 를
+REM    빼도 git 이 알아서 스태시한다. 실제로 그 탓에 디스크 파일이 이미 커밋된 내용보다 옛것으로
+REM    되돌아가는 「자체 표류」가 났다(2026-09-02 chro/hub·업무 현황 SSOT 2건). 매 부팅 끈다(멱등).
+git config --local rebase.autoStash false
 git symbolic-ref -q HEAD >nul 2>&1
 if errorlevel 1 (
   echo   [self-heal] detached HEAD 감지 - master 로 복귀합니다
