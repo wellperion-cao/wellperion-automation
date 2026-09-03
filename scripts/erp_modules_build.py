@@ -140,6 +140,13 @@ def is_screen(rel):
     return not (base.endswith("_block.html") or base.endswith("_template.html"))
 
 
+def hand_desc():
+    """사람이 적어 둔 화면 설명. 경로 키가 파일명 키보다 우선한다
+    (index.html 처럼 이름이 겹치는 화면이 6개 있다)."""
+    d = read_json("status/erp_module_desc.json")
+    return d.get("by_path", {}), d.get("by_file", {})
+
+
 def registry_desc():
     """자동화 등록부에서 화면 파일을 가리키는 항목의 설명 한 줄. {파일명: 설명}"""
     out = {}
@@ -172,6 +179,7 @@ def build():
             nick_of[key] = r["nick"]
 
     descs = registry_desc()
+    hand_path, hand_file = hand_desc()
     items = []
     seen = set()
 
@@ -191,7 +199,12 @@ def build():
             "group": nick_of.get(role, role),
             "role": role,
             "name": core["name"] if core else title,
-            "desc": (core["desc"] if core else descs.get(os.path.basename(rel), "")),
+            # 사람이 적어 둔 설명(경로 → 파일명)이 먼저다. 자동화 등록부의 feature 첫 조각은
+            # "종합접수처"·"전사 일정 SSOT" 처럼 화면 이름을 되풀이할 뿐일 때가 있어 뒤로 뺀다.
+            "desc": (core["desc"] if core else (
+                hand_path.get(rel)
+                or hand_file.get(os.path.basename(rel))
+                or descs.get(os.path.basename(rel), ""))),
             "path": "../" + rel,
             "staff": (core["staff"] if core else staff_of.get(role, "")),
             "roles": core["roles"] if core else ["admin", "staff"],
