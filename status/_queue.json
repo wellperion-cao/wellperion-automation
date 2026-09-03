@@ -746,18 +746,18 @@
   {
     "task_id": "CTO-2026-09-03-ADHOC-DAILY",
     "clevel": "cto",
-    "title": "[시토] 배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) 외 1건 (CLI ad-hoc)",
+    "title": "[시토] 09:30 카톡 매출보고 일시중지(GM 지시) — 재개 대기 배 등록 외 2건 (CLI ad-hoc)",
     "status": "DONE",
     "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-09-03",
     "processed_at": "2026-09-03",
     "ship_no": 11170,
-    "artifact": "배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) (CLI ad-hoc · 커밋 7dce84d00 · 누적 2건)",
+    "artifact": "09:30 카톡 매출보고 일시중지(GM 지시) — 재개 대기 배 등록 (CLI ad-hoc · 커밋 997af27e9 · 누적 3건)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "7dce84d00826b21fdee0ea697175b94c20114762",
-    "note": "- [2026-09-03] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리 (커밋 d8c697806)\n- [2026-09-03] 배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) (커밋 7dce84d00)",
-    "adhoc_count": 2
+    "adhoc_commit": "997af27e9deb3b76e6c8858c289f02f6e6547c01",
+    "note": "- [2026-09-03] 카톡 대화 에이전트 방별 인자화 — 방 목록·브리프·상태 파일 분리 (커밋 d8c697806)\n- [2026-09-03] 배911 입항 — 카톡 에이전트 방별 인자화 완료(증거 note) (커밋 7dce84d00)\n- [2026-09-03] 09:30 카톡 매출보고 일시중지(GM 지시) — 재개 대기 배 등록 (커밋 997af27e9)",
+    "adhoc_count": 3
   },
   {
     "task_id": "CBO-2026-09-03-카톡-에이전트-방-추가-절차-브리프-1개-목록-한-",
@@ -858,5 +858,26 @@
     "adhoc_commit": "728946b1aa5a4314a241eccc41470678f228ff2e",
     "note": "- [2026-09-03] 전사일정 담당·상태 확정 6건 (GM 지시 2026-09-03) (커밋 728946b1a)",
     "adhoc_count": 1
+  },
+  {
+    "task_id": "CTO-2026-09-03-09-30-카톡-매출보고-일시중지-GM-재개-지시-",
+    "clevel": "cto",
+    "title": "[시토] 09:30 카톡 매출보고 일시중지 — GM 재개 지시 대기 (2026-09-03)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-03",
+    "from": "ceo",
+    "note": "[시토 2026-09-03 · 기다리는 쪽: GM 재개 지시 대기] GM 지시 2026-09-03 07:3x: '9:30 매출보고 잠시만 멈춰줘'. 예약작업 Wellperion-Kakao-Sales-Report-0930 을 사용 안 함(Disabled)으로 바꿨다. 되돌리기 = PowerShell 'Enable-ScheduledTask -TaskName Wellperion-Kakao-Sales-Report-0930' 한 줄. 대상 = 회장님 방·★운영부 방 카톡 매출보고. ※텔레그램 업무보고방 09:30 매출+운영+인사 현황(daily_scheduler stream_3_mgmt_0930)은 내부 보고라 그대로 뒀다. 아침 자가점검이 '꺼둔 채 방치'로 오판하지 않게 이 배가 사유를 들고 있는다.",
+    "next": "GM 재개 지시 오면 예약작업 다시 켜고 첫 회 발송 본문까지 눈으로 확인",
+    "depends_on": "",
+    "ship_no": 11176,
+    "short_no": 916,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-03"
   }
 ]
