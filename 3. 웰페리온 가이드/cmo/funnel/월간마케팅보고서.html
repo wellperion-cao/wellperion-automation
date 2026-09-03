@@ -496,7 +496,7 @@ async function loadPrevMonthChannels() {
     const py = _selM === 1 ? _selY - 1 : _selY;
     const pm = _selM === 1 ? 12 : _selM - 1;   // 1~12 (선택월 이전달)
     const { from, to } = monthRange(py, pm);
-    const resp = await fetch(GAS_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
+    const resp = await wpCmoFetch(GAS_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     _prevByCh = (data && data.custom && data.custom.byChannel) ? data.custom.byChannel : {};
@@ -540,7 +540,7 @@ async function loadPeriodBreakdown() {
   let mapped = null;
   try {
     const { from, to } = monthRange(_selY, _selM);
-    const resp = await fetch(GAS_URL + "?action=period_breakdown&from=" + from + "&to=" + to);
+    const resp = await wpCmoFetch(GAS_URL + "?action=period_breakdown&from=" + from + "&to=" + to);
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     const c = data && data.custom;
@@ -566,7 +566,7 @@ async function loadPeriodBreakdown() {
 async function loadFunnelConversion() {
   let data = null;
   try {
-    const resp = await fetch(GAS_URL + "?action=funnel_conversion");
+    const resp = await wpCmoFetch(GAS_URL + "?action=funnel_conversion");
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     data = await resp.json();
   } catch (e) {

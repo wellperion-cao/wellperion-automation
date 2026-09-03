@@ -564,7 +564,7 @@ function fetchFunnelConversion(from, to) {
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
   if (from && to) url += '&from=' + from + '&to=' + to;
   var cacheKey = _cacheKey('funnel_conversion', from, to);
-  return fetch(url, { redirect: 'follow' })
+  return wpCmoFetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(cacheKey, data); return data; })
     .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
@@ -574,7 +574,7 @@ function fetchLessonBreakdown(from, to) {
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown';
   if (from && to) url += '&from=' + from + '&to=' + to;
   var cacheKey = _cacheKey('lesson_breakdown', from, to);
-  return fetch(url, { redirect: 'follow' })
+  return wpCmoFetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(cacheKey, data); return data; })
     .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
@@ -608,7 +608,7 @@ function fetchFunnelConversionDetail(from, to) {
   var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion_detail';
   if (from && to) url += '&from=' + from + '&to=' + to;
   var lsKey = _cacheKey('funnel_conversion_detail', from, to);
-  var p = fetch(url, { redirect: 'follow' })
+  var p = wpCmoFetch(url, { redirect: 'follow' })
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); _cacheSet(lsKey, data); return data; })
     .catch(function(e) { console.warn('[funnel_conversion_detail] 실패:', e && e.message); delete _convDetailCache[key]; return null; });
