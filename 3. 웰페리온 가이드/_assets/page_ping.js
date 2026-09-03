@@ -37,3 +37,50 @@
     }).catch(function () { /* 실패해도 화면 동작에 영향 없음 — 계측일 뿐이다 */ });
   } catch (e) { /* 같은 이유 */ }
 })();
+
+/* ── 새 주소 안내 띠 (웰리 2026-09-03 · GM 지시 "기존에 있던 페이지에 이동 페이지 링크까지 걸어주던가") ──
+
+   왜 여기인가
+     ERP 가 AWS(erp.wellperion.com)로 옮겨 가는 중인데, 실무진 북마크·지난 카톡 링크는 여전히
+     GitHub Pages 를 가리킨다. 화면 95개에 각각 안내를 넣으면 파일 95개를 건드려 시토의 이전
+     작업과 부딪힌다. 이 파일 하나가 이미 35개 화면에 실려 있어, 여기 한 곳만 고치면 그 화면들에
+     한꺼번에 뜬다(약속 L21 — 새 파일·새 배선 만들지 않는다).
+
+   안 뜨는 경우
+     ① 이미 새 주소(erp.wellperion.com)에서 열었을 때 ② 오늘 닫기를 눌렀을 때 ③ file:// 로 열었을 때.
+
+   ponytail: 띠 하나. 자동 이동(리다이렉트)은 하지 않는다 — 쓰던 화면이 갑자기 로그인으로 튀면
+   실무진이 하던 일을 잃는다. 옮길지는 사람이 고른다.
+*/
+(function () {
+  try {
+    if (location.protocol === 'file:') return;
+    if (location.hostname === 'erp.wellperion.com') return;      // 이미 새 집
+    var KEY = 'wp_erp_move_hide_' + new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(KEY)) return;                        // 오늘은 닫음
+
+    // 새 주소 = 같은 경로. GitHub Pages 의 저장소 접두어(/wellperion-automation)는 뗀다.
+    var path = location.pathname.replace(/^\/wellperion-automation/, '');
+    var to = 'https://erp.wellperion.com' + path + location.search + location.hash;
+
+    var bar = document.createElement('div');
+    bar.setAttribute('data-wp-move', '1');
+    bar.style.cssText = 'position:sticky;top:0;z-index:99999;display:flex;align-items:center;gap:10px;' +
+      'flex-wrap:wrap;padding:8px 14px;background:#14304E;color:#fff;font-size:13px;line-height:1.45;' +
+      "font-family:'Noto Sans KR',sans-serif;box-shadow:0 1px 6px rgba(0,0,0,.25)";
+    bar.innerHTML =
+      '<b style="font-weight:700">업무 화면이 새 주소로 옮겨집니다</b>' +
+      '<span style="opacity:.9">회사 구글 계정(@wellperion.com)으로 로그인하면 됩니다 · 이 주소도 당분간 그대로 열립니다</span>' +
+      '<a href="' + to + '" style="margin-left:auto;background:#fff;color:#14304E;font-weight:700;' +
+      'padding:5px 13px;border-radius:4px;text-decoration:none">새 주소로 열기</a>' +
+      '<button type="button" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);' +
+      'border-radius:4px;padding:4px 10px;font:inherit;cursor:pointer">오늘 그만 보기</button>';
+    bar.querySelector('button').onclick = function () {
+      try { localStorage.setItem(KEY, '1'); } catch (e) {}
+      bar.remove();
+    };
+    var put = function () { if (document.body) document.body.insertBefore(bar, document.body.firstChild); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', put);
+    else put();
+  } catch (e) { /* 안내 띠 실패가 화면을 막지 않는다 */ }
+})();
