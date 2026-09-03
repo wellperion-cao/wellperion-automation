@@ -407,6 +407,10 @@
 
     <div class="col">
       <div class="sec">
+        <h2>계약 명단 — 회원권 · 강습</h2>
+        <div class="bd" id="p2contract"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec">
         <h2>문의에서 가입까지</h2>
         <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
@@ -973,12 +977,19 @@ function renderDaySales(c, dayLabel){
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
     return '<tr' + (i === 2 ? ' class="sum"' : '') + '><td>' + r[0] + '</td><td>' + esc(r[1] || '–') +
       '</td><td>' + esc(r[2] || '–') + '</td><td>–</td><td>–</td></tr>';
-  }).join('') +
-  '<tr><td colspan="5" style="text-align:left;height:auto;padding:8px 8px 4px;white-space:normal">' +
-    '<div style="display:flex;gap:18px">' +
-      contractListHTML('회원권 계약 (' + dayLabel + ')', readContracts(c, ['A','B','C','D','E','F','G'])) +
-      contractListHTML('강습 계약 (' + dayLabel + ')', readContracts(c, ['H','I','J','K','L','M','N'])) +
-    '</div></td></tr>';
+  }).join('');
+  // 계약 명단은 2페이지 「문의 · 등록 상세」로 옮겼다(GM 지시 2026-09-03 — 1페이지 매출 표 안에
+  // 두면 등록 상세와 같은 내용이 두 장에 겹쳐 보인다). 여기서는 그리지 않고 넘기기만 한다.
+  renderP2Contract(c, dayLabel);
+}
+
+/* 계약 명단 — 회원권 · 강습. 원천은 보고 시트 일자탭이고, 1페이지 매출 표에서 옮겨 왔다. */
+function renderP2Contract(c, dayLabel){
+  var el = document.getElementById('p2contract'); if (!el) return;
+  el.innerHTML = '<div style="display:flex;gap:18px">' +
+    contractListHTML('회원권 계약 (' + dayLabel + ')', readContracts(c, ['A','B','C','D','E','F','G'])) +
+    contractListHTML('강습 계약 (' + dayLabel + ')', readContracts(c, ['H','I','J','K','L','M','N'])) +
+  '</div>';
 }
 
 // 월별 표 — sales_monthly(months[])를 그대로 옮긴다. 이번 달만 오늘 일자탭 J4(월 누적)로 정확한 값을 쓴다.

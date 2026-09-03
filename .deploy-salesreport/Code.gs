@@ -74,8 +74,72 @@ function _lessonTeam(item) {
   return '기타';
 }
 
+/**
+ * 이번 달 매출 보고 파일을 연다 (2026-09-03 · GM 승인).
+ *
+ * 왜 바꿨나
+ *   이 스크립트는 8월 파일에 붙어 있고 getActiveSpreadsheet() 로 자기 파일만 봤다. 9월이 되자
+ *   09:00 자동 기입이 계속 8월 파일에 쓰고, 보고 화면도 8월 값을 읽었다(GM 지적 2026-09-03).
+ *   달이 바뀔 때마다 사람이 붙여 주는 구조를 없앤다 — 같은 폴더에서 「2026년 9월 매출 보고」를
+ *   이름으로 찾아 연다. 다음 달에는 아무도 손대지 않아도 10월 파일로 옮겨 간다.
+ *
+ * 못 찾으면
+ *   붙어 있는 파일(8월)로 되돌아가되, 응답에 어느 파일을 열었는지(ssName)와 경고(warn)를 담는다.
+ *   조용히 엉뚱한 곳에 쓰는 것이 가장 나쁘다.
+ */
+var REPORT_FOLDER_ID = '1Yw-i6L9tWm-t7_sf2qEEih0nbC3fsjKC';   // 매출 보고 파일들이 모여 있는 폴더
+var _SS_CACHE = null;
+var _SS_ERR = null;          // 못 찾았을 때 이유 — 응답의 warn 에 실어 사람이 바로 보게 한다
+
+/**
+ * ★한 번만 눌러 주시면 됩니다 — 이 스크립트가 「이번 달 매출 보고」 파일을 열 수 있게 하는 승인.
+ *   에디터 위쪽 함수 목록에서 이 함수(권한승인)를 고르고 ▶ 실행 → 권한 허용 을 누르면 끝입니다.
+ *   그 뒤부터는 달이 바뀌어도 자동으로 그 달 파일을 찾아 씁니다(다시 누를 일 없습니다).
+ */
+function 권한승인() {
+  var it = DriveApp.getFolderById(REPORT_FOLDER_ID).getFilesByName(_ssName_());
+  var name = it.hasNext() ? SpreadsheetApp.openById(it.next().getId()).getName() : '(폴더에 없음)';
+  Logger.log('열 수 있게 된 파일: ' + name);
+  return name;
+}
+
+function _ssName_(d) {
+  var t = d || new Date();
+  return Utilities.formatDate(t, 'Asia/Seoul', 'yyyy년 M월') + ' 매출 보고';
+}
+
+function _ss() {
+  if (_SS_CACHE) return _SS_CACHE;
+  var want = _ssName_();
+  var active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active && active.getName() === want) { _SS_CACHE = active; return _SS_CACHE; }
+  // 파일 id 는 하루 동안 캐시한다 — 요청마다 Drive 를 뒤지면 09:30 이미지 생성이 느려진다.
+  var cache = CacheService.getScriptCache();
+  var key = 'ssid_' + want;
+  var id = cache.get(key);
+  if (!id) {
+    try {
+      var it = DriveApp.getFolderById(REPORT_FOLDER_ID).getFilesByName(want);
+      if (it.hasNext()) { id = it.next().getId(); cache.put(key, id, 21600); }
+      else _SS_ERR = '폴더에 「' + want + '」 이름의 파일이 없습니다';
+    } catch (eF) { id = null; _SS_ERR = 'Drive 접근 실패 — ' + eF.message; }
+  }
+  if (id) {
+    try { _SS_CACHE = SpreadsheetApp.openById(id); return _SS_CACHE; } catch (eO) {}
+  }
+  _SS_CACHE = active;          // 못 찾으면 붙어 있는 파일 — 응답의 warn 으로 드러난다
+  return _SS_CACHE;
+}
+
+/** 지금 열려 있는 파일이 이번 달 것인지. 아니면 사람이 볼 수 있게 응답에 실어 보낸다. */
+function _ssWarn_() {
+  var want = _ssName_(), got = _ss().getName();
+  if (got === want) return null;
+  return '이번 달 파일(' + want + ')을 못 찾아 ' + got + ' 을 열었습니다' + (_SS_ERR ? ' — ' + _SS_ERR : '');
+}
+
 function _sheet() {
-  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var sh = _ss().getSheetByName(SHEET_NAME);
   if (!sh) throw new Error('시트를 찾지 못했습니다: ' + SHEET_NAME);
   return sh;
 }
@@ -107,7 +171,7 @@ function doGet(e) {
   if (p.dump) {
     // sheet·range 를 주면 같은 파일의 다른 탭(일자탭 등)도 읽는다 — 읽기 전용이고 400칸으로 막는다.
     // 어느 칸이 어디서 오는지 사람이 시트를 열어 확인해 주던 것을 없애려고 열었다(2026-08-28).
-    var dsh = p.sheet ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(p.sheet) : _sheet();
+    var dsh = p.sheet ? _ss().getSheetByName(p.sheet) : _sheet();
     if (!dsh) return _json({ ok: false, error: 'sheet not found: ' + p.sheet });
     var dr = dsh.getRange(p.sheet ? (p.range || 'A1:H20') : DUMP_RANGE);
     if (dr.getNumRows() * dr.getNumColumns() > 400) return _json({ ok: false, error: 'range too large' });
@@ -132,14 +196,16 @@ function doGet(e) {
         }
       }
     }
-    return _json({ ok: true, range: dr.getA1Notation(), sheet: dsh.getName(), cells: cells, fx: fx, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
+    return _json({ ok: true, range: dr.getA1Notation(), sheet: dsh.getName(), cells: cells, fx: fx,
+      ssName: _ss().getName(), warn: _ssWarn_(),
+      at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
   }
   // 강습 신규·재등록 — 일자탭 「강습 계약 현황」 블록(H8:N60)을 종목 × 등록분류로 센다.
   //   시트는 이 블록을 팀별 매출 합계로만 접어서 오른쪽 표에 올린다. 그래서 신규인지 재등록인지는
   //   사람이 매일 M열에 적고 있는데도 어디에도 안 보였다(GM 2026-08-28: "강습도 신규/재등록 구분이
   //   가능한지"). 여기서는 이미 적힌 칸을 읽기만 한다 — 실무진이 새로 채울 칸을 만들지 않는다.
   if (p.lesson) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = _ss();
     var dayName = String(_sheet().getRange('I1').getDisplayValue() || '').trim();
     var dsh2 = ss.getSheetByName(dayName);
     if (!dsh2) return _json({ ok: false, error: 'day tab not found: ' + dayName });
@@ -196,6 +262,8 @@ function doPost(e) {
   return _json({
     ok: true,
     cell: cell,
+    ssName: sh.getParent().getName(),   // 어느 파일에 썼는지 — 달이 바뀌면 여기가 먼저 드러난다
+    warn: _ssWarn_(),
     before_length: before.length,
     after_length: after.length,
     wrote_at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
