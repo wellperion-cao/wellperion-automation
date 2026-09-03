@@ -63,3 +63,88 @@ CREATE TABLE IF NOT EXISTS sync_meta (
   v         TEXT,
   PRIMARY KEY (tenant_id, k)
 );
+
+-- 업무·결재 SSOT 미러 (sync_todo.py · 배 922 레인 T). 열쇠 = 항목 id(TODO-…) — 행번호가 아니다.
+CREATE TABLE IF NOT EXISTS todo_items (
+  tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
+  id          TEXT NOT NULL,
+  title       TEXT,
+  category    TEXT,
+  dept        TEXT,
+  owner       TEXT,
+  status      TEXT,
+  creator     TEXT,
+  created     TEXT,
+  modified    TEXT,
+  start_date  TEXT,
+  end_date    TEXT,
+  done_date   TEXT,
+  data        TEXT NOT NULL,
+  synced_at   TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, id)
+);
+CREATE INDEX IF NOT EXISTS ix_todo_status ON todo_items (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_todo_created ON todo_items (tenant_id, created);
+
+CREATE TABLE IF NOT EXISTS approvals (
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  id            TEXT NOT NULL,
+  title         TEXT,
+  owner         TEXT,
+  approvers     TEXT,
+  appr_status   TEXT,
+  sign_head     TEXT,
+  sign_gm       TEXT,
+  sign_ceo      TEXT,
+  completed_at  TEXT,
+  created       TEXT,
+  data          TEXT NOT NULL,
+  synced_at     TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, id)
+);
+CREATE INDEX IF NOT EXISTS ix_appr_status ON approvals (tenant_id, appr_status);
+
+-- 점검 미러 (배 922 레인 S · 2026-09-03) — sync_check.py 가 점검 GAS 응답을 부서·종류·열쇠로 그대로 싣는다.
+-- kind = board(시설 날짜) · ledger(날짜|성별) · today_live(날짜) · monthly(월) · weekly('-'). 화면은 GAS 응답 모양 그대로 읽는다.
+CREATE TABLE IF NOT EXISTS check_records (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  dept      TEXT NOT NULL,
+  kind      TEXT NOT NULL,
+  key       TEXT NOT NULL,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, dept, kind, key)
+);
+
+-- 종합접수처 미러 (sync_reception.py · 배 922 · 2026-09-03). 열쇠 = 접수ID / 습득ID / 휴회접수 행번호(intakeRow).
+-- 점수판(all·week·month)·담당자 목록은 GAS 응답 그대로 sync_meta reception_scoreboard_* / reception_staff_names 에 둔다.
+CREATE TABLE IF NOT EXISTS reception_items (
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  reg_id     TEXT NOT NULL,
+  category   TEXT,
+  dept       TEXT,
+  status     TEXT,
+  created_at TEXT,
+  data       TEXT NOT NULL,
+  synced_at  TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, reg_id)
+);
+CREATE TABLE IF NOT EXISTS lost_found (
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  found_id   TEXT NOT NULL,
+  status     TEXT,
+  created_at TEXT,
+  data       TEXT NOT NULL,
+  synced_at  TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, found_id)
+);
+CREATE TABLE IF NOT EXISTS hold_items (
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  intake_row TEXT NOT NULL,
+  status     TEXT,
+  done       BOOLEAN NOT NULL DEFAULT FALSE,   -- 접수 GAS hold_done_keys(처리메모 '휴회완료') 조인 결과
+  applied_at TEXT,
+  data       TEXT NOT NULL,
+  synced_at  TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, intake_row)
+);
