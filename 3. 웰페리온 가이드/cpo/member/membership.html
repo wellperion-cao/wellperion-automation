@@ -3365,6 +3365,8 @@ function _apiInquiryList(type) {
   }
   return page(0).then(function(rows){ return { ok: true, data: rows, count: rows.length, _source: 'sheet-mirror' }; });
 }
+// 이 브라우저에서 6분 안에 시트에 쓴 게 있으면 미러(5분 동기화)가 그 한 건을 아직 모른다 — 그동안만 GAS.
+function _wroteRecently() { try { return Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000; } catch (e) { return false; } }
 function _inquiryListFetch() {
   var gas = function(){ return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); }); };
   if (!ERP_API_ON) return gas();
@@ -4897,8 +4899,8 @@ function loadLessonDash(t){
   }
   fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType))
     .then(function(r){ return r.json(); }).then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
-  fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  ((ERP_API_ON && !_wroteRecently()) ? _apiInquiryList(lsType).catch(function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }); })
+    : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }))
     .then(function(d){
       var rows = (d && d.ok && Array.isArray(d.data)) ? d.data : [];
       res.regAll = rows.filter(function(r){ return r.status === 'SUC' || r.status === '단기SUC'; });
@@ -5461,7 +5463,10 @@ function lessonLoad(t) {
   //   intake 행을 통째로 누락 → 텔레그램 알림은 갔는데 강습 문의 현황엔 안 보이는 실고객 유실 버그(임하윤 010-7331-3903 등).
   //   GAS lesson_inquiry_list 는 _lessonReadRowsMerged_ 로 '강습 신규문의' intake 탭을 병합(소스오브트루스) → GAS로 읽으면 intake 포함.
   //   (멤버십 member_inquiry_list gviz 경로는 무변경 — 그쪽은 intake 별도탭 이슈 없음). 역롤백=이 블록을 구 하이브리드 삼항으로 복원.
-  var _lessonPromise = fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); });
+  // ★ERP 도메인은 강습 문의도 서버 미러(/api/inquiries?type=성인강습·유소년강습)에서 읽는다(2026-09-03 시포 · GM "강습도 시트 읽는 것 같다").
+  //   미러는 연도 범위(scope 기본)만 떠 오므로 '전체보기'(scope=all)는 GAS 그대로. 실패·6분 내 쓰기면 GAS 폴백. 쓰기는 GAS.
+  var _lessonGas = function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
+  var _lessonPromise = (ERP_API_ON && st.scope !== 'all' && !_wroteRecently()) ? _apiInquiryList(st.type).catch(function(e){ console.warn('[강습문의] API 실패 → GAS 폴백:', e && e.message); return _lessonGas(); }) : _lessonGas();
   _lessonPromise
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
@@ -13980,7 +13985,7 @@ function apiPost(payload) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
   // 회원 시트에 쓴 직후 5분은 미러가 옛 값이다 — 도장을 찍어 두고 _memberListFetch 가 그동안 GAS 를 읽게 한다(배 942 ②).
-  try { if (/^member_/.test(String(payload && payload.action))) localStorage.setItem('cpo_ma_wrote_at', String(Date.now())); } catch (e) {}
+  try { if (/^(member|lesson)_/.test(String(payload && payload.action))) localStorage.setItem('cpo_ma_wrote_at', String(Date.now())); } catch (e) {}
   /* 쓰기 액션에만 직원 이름을 붙인다 — 호출부 9곳을 고치지 않고 이 관문 한 곳에서(배327). */
   try {
     var _a = payload && payload.action;
