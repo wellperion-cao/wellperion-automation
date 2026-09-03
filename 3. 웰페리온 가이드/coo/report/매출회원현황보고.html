@@ -1400,5 +1400,6 @@ load2();
 (function(){ function fit(){ var w=innerWidth-24, z=Math.min(1, w/1587); document.querySelectorAll('.page').forEach(function(el){ el.style.zoom=z; }); }
   addEventListener('resize', fit); addEventListener('beforeprint', function(){ document.querySelectorAll('.page').forEach(function(el){ el.style.zoom=1; }); }); addEventListener('afterprint', fit); fit(); })();
 </script>
+  <script src="../../_assets/page_ping.js" defer></script>
 </body>
 </html>
