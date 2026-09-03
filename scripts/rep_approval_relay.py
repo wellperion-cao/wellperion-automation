@@ -56,7 +56,7 @@ HEARTBEAT_ID = "rep-approval-relay"
 ROOM = "★중간관리자"
 SENDER = "대표결재전달"          # kakao_report_sender.AUTO_PIPELINE_SENDERS 에 넣어야 사람 방 통과
 SENDER_NEW = "업무등록묶음"      # ③ 신규 업무 묶음 — 같은 집합에 주석(OFF) 상태
-SCOREBOARD_ON = False           # ④ 점수판 — 17:05 live 합본에 얹히므로 GM 승인 전엔 False
+SCOREBOARD_ON = True            # ④ 점수판 — GM 승인 2026-09-03 "추천 진행" 으로 켬(17:05 합본 꼬리)
 DAILY_DONE_TARGET = 3           # ④ 하루 완료 목표(GM 기획 3단계)
 SIGNOFF = "AI 웰리 드림"        # send_ops_digest.RELAY_SIGNOFF 와 동일(ops_daily_digest 자동글 필터가 이 문구를 안다)
 MAX_ITEMS_PER_MSG = 3           # 제목+상세 2줄씩(3건=6줄)+제목1+마감2 = 9줄 → 한 통 10줄 안쪽. 넘으면 1줄 항목으로
