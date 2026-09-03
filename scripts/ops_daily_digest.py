@@ -282,6 +282,16 @@ def build_reception_block(target_date: str) -> str:
         lines.append(f" • {_NO_SOURCE}")
         return "\n".join(lines)
 
+    # 아침 07:30 에 방금 읽은 rows 로 status/reception_watch.json 을 갱신한다(2026-09-03 시우).
+    # 종전엔 22:30 발송기(report_stream_2b_reception)만 이 파일을 써서, 아침 항로·GM 화면의
+    # 「접수 정체」 숫자가 어젯밤 값이었다. 쓰는 함수는 그 발송기의 것을 그대로 부른다 — 새 파일·새 산식 없음(약속 L21).
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from report_stream_2b_reception import _write_reception_watch
+        _write_reception_watch(rows)
+    except Exception as _e:
+        print(f"  [접수감시] reception_watch 갱신 실패 — 무시하고 계속: {_e}")
+
     _RESOLVED_STATUSES = {"완료"}
 
     def _short_cat(cat: str) -> str:

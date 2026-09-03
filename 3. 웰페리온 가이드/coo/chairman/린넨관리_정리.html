@@ -71,6 +71,9 @@
   .ft{border-top:1px solid var(--line);margin-top:10px;padding-top:7px;
     display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:var(--grey);word-break:keep-all;}
 
+  /* 키오스크 세로(1080)·좁은 창 — 용지 폭(396mm)보다 창이 좁으면 창 폭에 맞춘다.
+     인쇄(@page)는 그대로. 2026-09-03 시우 · coo_page_guard 가로 잘림 6장 수리 */
+  @media screen and (max-width: 1520px){ .sheet,.bar{width:100%;} }
   @media print{
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}

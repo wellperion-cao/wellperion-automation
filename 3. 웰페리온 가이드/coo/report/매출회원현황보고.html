@@ -35,6 +35,8 @@
                 .page{margin:0!important;box-shadow:none!important;} }
 
   /* A3 가로 1장 */
+  /* 키오스크 세로(1080) — A3 가로 고정 판형(1587px)을 창 폭에 맞춰 통째로 축소한다.
+     레이아웃은 그대로 두고 배율만 줄인다(글자 재배치 없음). 인쇄는 @page 그대로. 2026-09-03 시우 */
   .page{width:1587px;height:1123px;background:#fff;margin:66px auto 30px;padding:26px 30px 20px;
     display:flex;flex-direction:column;box-shadow:0 4px 20px rgba(0,0,0,.35);overflow:hidden;}
 
@@ -1379,5 +1381,10 @@ function load2(){
 load2();
 </script>
 <script src="../../_assets/ai_owner_badge.js" defer></script>
+<script>
+/* 키오스크 세로(1080) — A3 가로 고정 판형(1587px)을 창 폭에 맞춰 통째로 축소. 레이아웃 재배치 없음, 인쇄 무영향. 2026-09-03 시우 */
+(function(){ function fit(){ var w=innerWidth-24, z=Math.min(1, w/1587); document.querySelectorAll('.page').forEach(function(el){ el.style.zoom=z; }); }
+  addEventListener('resize', fit); addEventListener('beforeprint', function(){ document.querySelectorAll('.page').forEach(function(el){ el.style.zoom=1; }); }); addEventListener('afterprint', fit); fit(); })();
+</script>
 </body>
 </html>
