@@ -1,9 +1,27 @@
 {
-  "generated_at": "2026-09-03 11:28:20",
-  "registry_items": 52,
+  "generated_at": "2026-09-03 12:57:15",
+  "registry_items": 58,
   "automation_health_items": 34,
-  "mismatch_count": 8,
+  "mismatch_count": 12,
   "mismatches": [
+    {
+      "kind": "MISSING_IN_REALITY",
+      "registry_id": "kakao-0740-overdue-reception",
+      "task_name": "scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)",
+      "detail": "등록부 항목 'kakao-0740-overdue-reception'가 참조하는 예약작업 'scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)'이 automation_health.items에 없음(작업명 변경·삭제 가능성)"
+    },
+    {
+      "kind": "MISSING_IN_REALITY",
+      "registry_id": "kakao-0755-overdue-lesson",
+      "task_name": "scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_LESSON)",
+      "detail": "등록부 항목 'kakao-0755-overdue-lesson'가 참조하는 예약작업 'scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_LESSON)'이 automation_health.items에 없음(작업명 변경·삭제 가능성)"
+    },
+    {
+      "kind": "MISSING_IN_REALITY",
+      "registry_id": "kakao-0758-upcoming-schedule",
+      "task_name": "scripts/send_ops_digest.py MORNING_SEND_TIMES['일정']",
+      "detail": "등록부 항목 'kakao-0758-upcoming-schedule'가 참조하는 예약작업 'scripts/send_ops_digest.py MORNING_SEND_TIMES['일정']'이 automation_health.items에 없음(작업명 변경·삭제 가능성)"
+    },
     {
       "kind": "MISSING_IN_REALITY",
       "registry_id": "win-0800-ceo-ai",
@@ -14,7 +32,7 @@
       "kind": "CODE_MARKER_GONE",
       "registry_id": null,
       "task_name": "\"21\": (21, 0)",
-      "detail": "daily_scheduler.py에서 코드 마커 '\"21\": (21, 0)' 소실 — apscheduler 트리거 등록부 항목(25건) 재검증 필요"
+      "detail": "daily_scheduler.py에서 코드 마커 '\"21\": (21, 0)' 소실 — apscheduler 트리거 등록부 항목(26건) 재검증 필요"
     },
     {
       "kind": "UNREGISTERED_TASK",
@@ -51,6 +69,12 @@
       "registry_id": null,
       "task_name": "haru_notice_1800",
       "detail": "daily_scheduler 잡 'haru_notice_1800'이 notify_registry.json 어느 항목의 job_id 에도 없음 — 사람 방으로 보내는 발신이면 등록부에 추가하고, 내부 전용이면 NON_NOTIFY_JOBS 에 근거와 함께 넣는다"
+    },
+    {
+      "kind": "UNREGISTERED_JOB",
+      "registry_id": null,
+      "task_name": "rep_approval_relay_immediate",
+      "detail": "daily_scheduler 잡 'rep_approval_relay_immediate'이 notify_registry.json 어느 항목의 job_id 에도 없음 — 사람 방으로 보내는 발신이면 등록부에 추가하고, 내부 전용이면 NON_NOTIFY_JOBS 에 근거와 함께 넣는다"
     }
   ]
 }
