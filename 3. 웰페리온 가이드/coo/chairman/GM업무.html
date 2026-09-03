@@ -17,24 +17,32 @@
 <!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<!-- 가독성 정리(GM 지시 2026-09-03) — 본문 Noto Sans KR / 제목 Noto Serif KR -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@700;800&display=swap" rel="stylesheet">
 <style>
   /* ── CSS = 회장님_지시사항.html 을 본으로 그대로 따른다(GM 지시 2026-08-05 "일관성있게") — 대표님_지시사항.html과 동일 CSS ── */
   @page { size: A3 portrait; margin: 12mm; }
 
   :root{
-    --deep:#22322D; --mid:#3D5A4F; --grey:#727B76; --line:#CBD2CD;
-    --steam:#EDF1EE; --brass:#96762F;
-    --alert:#A04E24; --alert-bg:#FBF1E7; --ink:#131B18; --pick:#E7EEE9;
-    --font:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    /* 브랜드 토큰 정리(GM 지시 2026-09-03 "UI/UX 및 디자인 꽝") — 변수 이름은 그대로 두고 값만
+       웰페리온 라이트 팔레트로 교체한다(호출부 1,300줄을 전부 고치지 않아도 되게). */
+    --ink:#221F20; --ink-2:#5A524C; --ink-3:#8C8079; --line:#D9CFC4;
+    --paper:#FAF8F5; --paper-2:#F1ECE5; --beige:#B79F8A; --accent:#ED5B3F; --accent-bg:#FDEEE9;
+    --deep:var(--ink); --mid:var(--ink-2); --grey:var(--ink-3); --steam:var(--paper-2);
+    --brass:#96762F; /* 라벨용 — beige(#B79F8A)는 밝은 배경에서 글자 대비가 낮아 라벨 텍스트엔 그대로 둔다 */
+    --alert:var(--accent); --alert-bg:var(--accent-bg); --pick:#F5EFE7;
+    --font:'Noto Sans KR', 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
            'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+    --font-serif:'Noto Serif KR', 'Noto Sans KR', serif;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:#8B948F;}
+  html,body{margin:0;padding:0;background:var(--paper-2);}
   body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word;}
 
   .sheet{
-    width:297mm; min-height:420mm; margin:16px auto; background:#fff;
-    padding:14mm 16mm 12mm; box-shadow:0 3px 22px rgba(0,0,0,.3);
+    width:297mm; min-height:420mm; margin:16px auto; background:var(--paper);
+    padding:14mm 16mm 12mm; box-shadow:0 3px 22px rgba(0,0,0,.16);
   }
 
   .bar{width:297mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
@@ -48,7 +56,7 @@
 
   .hd{border-bottom:3px solid var(--deep);padding-bottom:10px;margin-bottom:8px;}
   .brand{font-size:10px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
-  .hd h1{font-size:27px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
+  .hd h1{font-family:var(--font-serif);font-size:27px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
   .hd .sub{font-size:14px;color:var(--grey);margin:0 0 12px;}
   .meta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:12.5px;}
   .meta b{color:var(--grey);font-weight:600;font-size:11px;letter-spacing:.08em;margin-right:6px;}
@@ -67,12 +75,23 @@
   .grpbox>summary::-webkit-details-marker{display:none;}
   .grpbox>summary::before{content:'▾';font-size:12px;color:var(--grey);transform:translateY(-1px);}
   .grpbox:not([open])>summary::before{content:'▸';}
-  .grpbox>summary b{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-right:auto;}
-  .grpbox>summary span{font-size:12px;font-weight:700;color:var(--grey);letter-spacing:.04em;}
-  .grpin{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start;}
+  .grpbox>summary b{font-family:var(--font-serif);font-size:17px;font-weight:800;letter-spacing:-.02em;margin-right:auto;}
+  .grpbox>summary span{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.02em;
+    background:var(--paper-2);border-radius:99px;padding:2px 10px;}
+  .grpin{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;align-items:start;}
 
-  .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
-  .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
+  /* ★카드를 낱장 리스트(윗줄 구분선)에서 낱개 오브젝트(테두리 상자)로 — 카드 간 간격·여백을 통일해
+     "한 객체"처럼 보이게 한다(GM 지시 2026-09-03). 상태색 왼쪽 띠는 아래 :has() 규칙이 얹는다. */
+  .item{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;
+    padding:14px 16px 16px;break-inside:avoid;background:var(--paper);}
+  .grid .item:nth-child(-n+2){border-top:1px solid var(--line);}
+  .grid{gap:14px 22px;}
+  /* 상태가 왼쪽 띠 색으로 먼저 읽히게(:has 지원 브라우저 — Chrome/Edge/Safari 전부 지원) */
+  .item:has(> summary.cardhead .st.on){border-left-color:var(--mid);}
+  .item:has(> summary.cardhead .st.carry){border-left-color:var(--beige);}
+  .item:has(> summary.cardhead .done-badge){border-left-color:#5B8C6B;}
+  .item:has(> summary.cardhead .due.overdue){border-left-color:var(--accent);}
+  details.item[open]{border-color:var(--beige);}
   /* 달 묶음 머리는 뺐다 (GM 지시 2026-09-01 "월별로 나누지말고 계속 확대·업데이트되게"). 일은 달에
      속하지 않고 끝날 때까지 이어지므로 한 줄기·급한 순으로만 세운다. 시작한 달은 카드의 「8월부터」
      조각으로만 남는다 — 스타일은 기존 .dept-badge 를 그대로 쓴다(새 클래스 만들지 않음). */
@@ -80,7 +99,7 @@
      "각 제목을 길게 보여주고, 우측 아래에 진행 /기한 등이 있어야해 // 제목이 띄어쓰기로 내려가니까 불편해").
      종전은 제목과 배지를 한 줄에 좌우로 놓아, 2열 카드 폭에서 제목이 배지에 밀려 두세 줄로 꺾였다. */
   .top{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin-bottom:3px;}
-  .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
+  .top h2{font-family:var(--font-serif);font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
   .top h2 .cat{font-size:12.5px;font-weight:600;color:var(--grey);letter-spacing:.01em;}
   .top .when{font-size:12px;font-weight:600;color:var(--mid);white-space:nowrap;}
@@ -155,22 +174,25 @@
   .tgl-nav{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap;}
   .tgl-nav a{font-size:12.5px;font-weight:700;text-decoration:none;color:var(--mid);
              border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
-  .sec{border:1.5px solid var(--deep);margin-bottom:12px;}
-  .sec > summary{list-style:none;cursor:pointer;padding:9px 14px;background:var(--deep);color:#fff;
-                 font-size:15.5px;font-weight:800;letter-spacing:.02em;display:flex;align-items:baseline;gap:9px;
-                 flex-wrap:wrap;
+  .sec{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden;}
+  /* 이 3개 섹션(경영 보고건·GM 진행건·완료건)이 맨 위에 이어 붙어 요약 띠 역할도 겸한다 —
+     각자 접고 펼 수 있는 실제 섹션이면서, 접힌 채로도 건수가 큼직하게 보인다(GM 지시 2026-09-03). */
+  .sec > summary{list-style:none;cursor:pointer;padding:11px 16px;background:var(--ink);color:#fff;
+                 font-family:var(--font-serif);font-size:15.5px;font-weight:800;letter-spacing:.02em;
+                 display:flex;align-items:center;gap:9px;flex-wrap:wrap;
                  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .sec > summary::-webkit-details-marker{display:none;}
-  .sec > summary .ic{font-size:16px;}
-  .sec > summary .cnt{margin-left:auto;font-size:11.5px;font-weight:600;color:#C9D2CC;white-space:nowrap;}
+  .sec > summary .ic{font-family:var(--font);font-size:17px;}
+  .sec > summary .cnt{font-family:var(--font);margin-left:auto;font-size:14px;font-weight:800;color:#fff;
+    white-space:nowrap;background:rgba(255,255,255,.14);border-radius:99px;padding:3px 12px;}
   /* 섹션 액션 — 세 섹션 같은 자리(헤더 우측)에 같은 모양으로 (GM 2026-08-06 일관성 지시) */
-  .sec > summary .sec-act{font-size:11.5px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
+  .sec > summary .sec-act{font-family:var(--font);font-size:11.5px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
     border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:3px 11px;margin-left:10px;}
-  .sec > summary .sec-act:hover{background:#fff;color:var(--deep);}
+  .sec > summary .sec-act:hover{background:#fff;color:var(--ink);}
   .sec > summary .sec-act:disabled{opacity:.45;cursor:default;}
   .sec > summary .sec-act:disabled:hover{background:transparent;color:#fff;}
   /* 헤더로 옮겨온 「보고 문안 복사」 안내문 — 흰 배경 대신 옅은 색으로(GM 2026-08-06, 대표님구획→헤더 이동) */
-  .sec > summary .rnote{color:#C9D2CC;font-weight:600;}
+  .sec > summary .rnote{font-family:var(--font);color:#D9CFC4;font-weight:600;}
   @media print{ .sec > summary .sec-act{display:none;} }
   /* 🗺 전체 지도 보기 막대 (GM 지시 2026-08-27 — "들어가서 보고, A3 인쇄(가로&세로) / .png 다운로드").
      화면 위에 고정으로 뜨고 인쇄·PNG 캡처에는 안 나온다. 오버레이·복제본을 만들지 않는다 —
@@ -224,15 +246,18 @@
   /* ── 카드 위계·진행바·접힘 (2026-08-06 재정리) ── */
   .top h2{font-size:16px;}
   .badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
-  .st{font-size:11.5px;font-weight:800;letter-spacing:.02em;}
-  .st.on{color:var(--deep);} .st.plan{color:var(--grey);} .st.carry{color:var(--brass);}
+  /* 상태 = 작은 pill(GM 지시 2026-09-03 "상태가 왼쪽 색 스트라이프+pill 로 먼저 읽히게") */
+  .st{font-size:11px;font-weight:800;letter-spacing:.02em;border-radius:99px;padding:2px 9px;background:var(--paper-2);}
+  .st.on{color:var(--mid);background:rgba(90,82,76,.10);}
+  .st.plan{color:var(--ink-3);}
+  .st.carry{color:#8A6F52;background:rgba(183,159,138,.18);}
   .pct{font-size:12.5px;font-weight:800;color:var(--brass);}
   /* 기한 배지 — 목록에 만료일이 안 보인다는 GM 지적(2026-08-24) 대응. 새 색 안 씀 — 지난 기한만
      기존 주의색(--alert)으로, 나머지는 --mid. */
   .badges .due{font-size:11.5px;font-weight:700;color:var(--mid);}
   .badges .due.overdue{color:var(--alert);}
-  .pbar{height:4px;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .pbar > i{display:block;height:100%;background:var(--mid);}
+  .pbar{height:5px;border-radius:99px;overflow:hidden;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pbar > i{display:block;height:100%;background:var(--mid);border-radius:inherit;}
   .lead-p{font-size:13px;line-height:1.6;margin:0 0 8px;}
   /* 할 일 체크박스(舊 next-box 자리 재사용, 2026-08-06 GM 지시 "체크할 수 있게") — □→☑ 클릭 체크 */
   .chk-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
@@ -312,10 +337,10 @@
     .sheet,.bar{max-width:100%;}
     .sum{overflow-x:auto;}
   }
-  @media screen and (max-width:720px){
+  @media screen and (max-width:760px){
     .sheet{padding:14mm 4vw 12mm;}
     .bar{padding:0 4vw;}
-    .grid{grid-template-columns:1fr;}
+    .grid,.grpin{grid-template-columns:1fr;}
   }
 
 /* 관리 주체 표시 — 이 화면을 누가 돌보는지 제목 옆에 밝힌다 (GM 지시 2026-09-02
