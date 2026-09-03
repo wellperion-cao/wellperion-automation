@@ -3052,11 +3052,26 @@ def run_mgmt_notice_digest() -> None:
     today = datetime.now().strftime("%Y-%m-%d")
     # 대표 결재 전달은 여기서 하지 않는다 — GM 지시 2026-09-03 "즉시 전달" 로 10분 주기
     # 잡(rep_approval_relay_immediate)이 맡았다. 여기 남겨 두면 같은 건이 두 번 나갈 자리가 된다.
+    # ③ 오늘 올라온 업무(12:00 과 같은 함수 · 지문으로 중복 없음 · 게이트 "업무등록묶음" OFF 면 미리보기만)
+    try:
+        import rep_approval_relay as _rar
+        _rar.run_new_rows(send=True)
+    except Exception as e:
+        logger.error(f"{label} 오늘 올라온 업무 예외: {e}")
     try:
         import mgmt_notice_queue as _mnq
         import send_ops_digest as _od3
         notice_items = _mnq.pop_today(today)
         notice_text = _mnq.build_digest_text(notice_items, today)
+        # ④ 저녁 점수판 — 합본 맨 아래 한 절(GM 승인 2026-09-03). 합본 발신은 live 라
+        #   rep_approval_relay.SCOREBOARD_ON(기본 False)이 True 일 때만 붙는다. 큐가 0건이어도 점수판만 나간다.
+        try:
+            if _rar.SCOREBOARD_ON:
+                _rows = _rar.fetch_rows()
+                if _rows is not None:
+                    notice_text = "\n".join(t for t in (notice_text, _rar.scoreboard_section(_rows)) if t)
+        except Exception as e:
+            logger.error(f"{label} 점수판 예외: {e}")
         if notice_text:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             # --sender 중간관리자알림합본 — 사람 방 발신 가드(배 11070 ⑤) 통과용.
@@ -3075,6 +3090,15 @@ def run_mgmt_notice_digest() -> None:
             logger.info(f"{label} 오늘 큐 0건, 발송 없음")
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
+
+
+def run_work_intake_noon() -> None:
+    """③ 오늘 올라온 업무 — 12:00 ★중간관리자(GM 승인 2026-09-03). 0건이면 발신 없음."""
+    try:
+        import rep_approval_relay as _rar
+        _rar.run_new_rows(send=True)
+    except Exception as e:
+        logger.error(f"[오늘 올라온 업무 12:00] 예외: {e}")
 
 
 # (완료 즉시 알림 10분 주기 삭제 2026-08-18 GM 결정 · 배670 재설계안) ──────────────
@@ -4597,6 +4621,20 @@ def main():
             logger.info("mgmt_notice_digest 등록 완료 — 매일 17:05 ★중간관리자 알림성 합본")
         except Exception as e:
             logger.warning(f"mgmt_notice_digest 등록 실패: {e}")
+        # ③ 오늘 올라온 업무 12:00 — 12시 슬롯이 없어 예외적으로 잡 하나 추가(GM 승인 2026-09-03).
+        #   17:05 는 위 run_mgmt_notice_digest 가 같은 함수를 부른다. 게이트(AUTO_PIPELINE_SENDERS
+        #   "업무등록묶음")가 꺼져 있으면 미리보기 로그만 남는다.
+        try:
+            scheduler.add_job(
+                run_work_intake_noon,
+                trigger=CronTrigger(hour=12, minute=0, timezone="Asia/Seoul"),
+                id="work_intake_1200",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info("work_intake_1200 등록 완료 — 매일 12:00 ★중간관리자 오늘 올라온 업무")
+        except Exception as e:
+            logger.warning(f"work_intake_1200 등록 실패: {e}")
 
     # ── git 죽은 잠금 청소 (배9889 · 2026-07-23 시토) ──────────────────────
     #   `git commit -- <경로>` 가 쓰는 임시 인덱스(next-index-<PID>.lock)는 그 프로세스가

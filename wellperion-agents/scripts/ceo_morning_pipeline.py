@@ -1859,6 +1859,30 @@ def _build_upward_reminder() -> str:
     return "📤 위로 올릴 것\n" + "\n".join(blocks)
 
 
+def _build_overdue_assign() -> str:
+    """⏳ 배정 마감 넘김 — 실무진에게 전달했는데 1영업일이 지나도록 진행 흔적이 없는 것
+    (GM 승인 2026-09-03 · 4단계 모듈 2단계 "중간관리자가 담당 배정"). 판정·데이터는
+    send_ops_digest.waiting_assign_items 하나(07:50 ★중간관리자 통 맨 위 한 줄과 같은 함수) —
+    여기서는 GM 화면이라 건별·N일째까지 적는다(실무진 방에는 안 쓰는 표기)."""
+    try:
+        import send_ops_digest as _od   # _SCRIPTS_ROOT 가 이미 sys.path 에 있다
+        today = datetime.now().date().isoformat()
+        state = _od._relay_state().get(_od.RELAY_ROOM, {})
+        over = [i for i in _od.waiting_assign_items(state, today) if i["overdue"]]
+    except Exception as exc:  # noqa: BLE001
+        print(f"[overdue-assign] 생략: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return ""
+    if not over:
+        return ""
+    over.sort(key=lambda i: -i["days"])
+    lines = [f"⏳ 배정 마감 넘김 {len(over)}건"]
+    for i in over[:_UPWARD_MAX_LINES]:
+        lines.append(f"▪ {_tg_trim(i['title'], 36)} — {i['who'] or '받는이 미기재'} · {i['days']}일째")
+    if len(over) > _UPWARD_MAX_LINES:
+        lines.append(f"▪ 외 {len(over) - _UPWARD_MAX_LINES}건")
+    return "\n".join(lines)
+
+
 def _run_gm_autocheck(dry_run: bool) -> str:
     """gm_task_autocheck 를 돌려 푸시 문안만 받아 온다 — 단독 발송 없음.
 
@@ -1956,6 +1980,8 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
     # 📤 위로 올릴 것 — 회장님·대표님께 아직 못 올린 건 (GM 지시 2026-09-03).
     # 점검 카드와 같은 자리에 붙인다. 같은 방 한 통을 유지한다(2026-08-29 GM 승인 그대로).
     upward_body = _build_upward_reminder()
+    # ⏳ 배정 마감 넘김 — 같은 꼬리 자리(GM 승인 2026-09-03). 0건이면 빈 문자열이라 안 붙는다.
+    overdue_body = _build_overdue_assign()
 
     # [2026-07-26 웰리 지시 배10244] 업무보고방/AI 진행현황방 분리 발신 시도.
     # 방 해소·분리 조립 중 무엇이든 실패하면 즉시 폴백 — 기존 단일 발신(통째 1회,
@@ -1974,7 +2000,7 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
     plan_path = save_plan(s1, assigned, orch, dry_run)
     if split_ok:
         # 점검 카드·위로 올릴 것을 업무보고방 본문 꼬리에 — 분리/폴백 어느 경로든 같은 방 한 통이다.
-        for _tail in (upward_body, autocheck_body):
+        for _tail in (upward_body, overdue_body, autocheck_body):
             if _tail:
                 office_report = f"{office_report}\n\n{_tail}"
     if split_ok:
@@ -1983,7 +2009,7 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
               f"{'OK' if sent else 'FAIL'}")
     else:
         report = build_telegram_report(s1, assigned, orch)
-        for _tail in (upward_body, autocheck_body):
+        for _tail in (upward_body, overdue_body, autocheck_body):
             if _tail:
                 report = f"{report}\n\n{_tail}"
         sent = send_reports(report, question_card, dry_run)

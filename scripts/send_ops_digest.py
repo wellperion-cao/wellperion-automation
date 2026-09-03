@@ -584,6 +584,12 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     if asks:
         parts.append(asks)
 
+    # ⏳ 배정 기다리는 것 — 통 맨 위 한 줄(GM 승인 2026-09-03 · 배정 마감 1영업일). 0건이면 줄 없음.
+    today = date.today().isoformat()
+    wline = waiting_assign_line(waiting_assign_items(relay_current, today), waiting_prev_count(today))
+    if wline:
+        parts.insert(0, wline)
+
     # [2026-08-29 GM 결정] 25줄 상한으로 본문을 자르던 것 삭제 — "줄을 접는 게 아니라
     # 안 끝난 건수를 줄여야 한다". 넘쳐도 자르지 않는다(밀린 일이 안 보이게 되는 게 더 나쁘다).
     message = "\n\n".join(parts)
@@ -1266,6 +1272,16 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     prev_lines = {k: _unpack_snapshot(v, today)[0] for k, v in prev_items.items()}
     prev_sent = {k: _unpack_snapshot(v, today)[1] for k, v in prev_items.items()}
 
+    # 스냅샷에 처음 전달한 날(first_sent)·받는이·제목을 같이 둔다(GM 승인 2026-09-03 · 배정 마감
+    # 1영업일). last_sent 는 재알림마다 리셋돼 "언제부터 기다렸나"를 못 잰다 — first_sent 는 지난
+    # 스냅샷 값을 그대로 물려받고, 옛 스냅샷(없음)은 last_sent 로 시작한다. 새 원장 없음(약속 L21).
+    def _snap(s, k, line, last_sent):
+        pv = prev_items.get(k) if isinstance(prev_items.get(k), dict) else {}
+        return {"line": line, "last_sent": last_sent,
+                "first_sent": pv.get("first_sent") or pv.get("last_sent") or today,
+                "who": str(s.get("staff_to") or "").strip() or contacts[s["clevel"]],
+                "title": str(s.get("title") or "").strip()}
+
     new_ships = []    # 처음 보거나(키 없음) 내용이 바뀐 것(★2026-08-13 — 예전엔 키만 보고 놓쳤다)
     stale_ships = []  # 내용은 그대로인데 RELAY_STALE_DAYS 이상 묵어 다시 알리는 것
     current = {}
@@ -1274,12 +1290,12 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         line = _uncapped_line(_resolve_staff_message(s).strip().splitlines()[0])
         if k not in prev_lines or prev_lines[k] != line:
             new_ships.append(s)
-            current[k] = {"line": line, "last_sent": today}
+            current[k] = _snap(s, k, line, today)
         elif _is_stale(prev_sent[k], today):
             stale_ships.append(s)
-            current[k] = {"line": line, "last_sent": today}  # 재알림 보냈으니 시계 리셋
+            current[k] = _snap(s, k, line, today)  # 재알림 보냈으니 시계 리셋
         else:
-            current[k] = {"line": line, "last_sent": prev_sent[k]}  # 변화 없음 — 시계 유지
+            current[k] = _snap(s, k, line, prev_sent[k])  # 변화 없음 — 시계 유지
 
     # ★2026-08-26 웰리 실측(배 11039 ①) — 옛 로그는 후보 수를 "실을 배 N척"이라 적어
     #   실제 발신 건수처럼 읽혔다. 이번 회차에 정말 나가는 수(신규+재알림)와 오늘 이미
@@ -1318,11 +1334,56 @@ def _relay_state() -> dict:
     return {k: dict(v) for k, v in state.items()} if isinstance(state, dict) else {}
 
 
-def _save_relay_state(state: dict) -> None:
-    from module_heartbeat import record_heartbeat
+def _save_relay_state(state: dict, waiting_today: int | None = None) -> None:
+    """상설 하트비트 1파일 — state(방별 스냅샷) + waiting_log{날짜: 배정 기다리는 건수}.
+    record_heartbeat 는 파일을 통째로 다시 쓰므로 waiting_log 를 매번 같이 실어야 안 지워진다."""
+    from module_heartbeat import last_heartbeat, record_heartbeat
+    log_ = (last_heartbeat(RELAY_HEARTBEAT_ID) or {}).get("waiting_log")
+    log_ = dict(log_) if isinstance(log_, dict) else {}
+    if waiting_today is not None:
+        log_[date.today().isoformat()] = waiting_today
+        log_ = dict(sorted(log_.items())[-7:])   # 어제 값 비교용 — 일주일치만
     record_heartbeat(RELAY_HEARTBEAT_ID,
                      detail=f"사람 처리 배 전달 — 방 {len(state)}곳 스냅샷 갱신",
-                     extra={"state": state})
+                     extra={"state": state, "waiting_log": log_})
+
+
+# ── ② 배정 기다리는 것(GM 승인 2026-09-03 · 4단계 모듈 2단계 "중간관리자가 담당 배정" · 마감 1영업일) ──
+# 전달했는데 아직 진행 흔적이 없는 배 = relay 스냅샷에 남아 있는 키 전부(relay_until_replied 포함 —
+# build_relay_message 가 그 조건으로 이미 거른 것). "1영업일 넘김" = 처음 전달한 날(first_sent) 뒤로
+# 휴관일(close_days.is_closed) 아닌 날이 2일째부터. 07:50 ★중간관리자 통 맨 위 한 줄(실무진 표현) +
+# 08:00 GM 항로 꼬리(건별·N일째 — GM 화면에만)가 같은 이 함수를 읽는다.
+def waiting_assign_items(state_room: dict, today: str) -> list:
+    from close_days import is_closed
+    d1 = date.fromisoformat(today)
+    items = []
+    for k, v in (state_room or {}).items():
+        if not isinstance(v, dict):
+            continue
+        try:
+            d0 = date.fromisoformat(str(v.get("first_sent") or v.get("last_sent") or today))
+        except ValueError:
+            continue
+        biz = sum(1 for i in range(1, (d1 - d0).days + 1) if not is_closed(d0 + timedelta(days=i)))
+        items.append({"key": k, "title": str(v.get("title") or v.get("line") or ""),
+                      "who": str(v.get("who") or ""), "days": (d1 - d0).days, "overdue": biz >= 2})
+    return items
+
+
+def waiting_prev_count(today: str) -> "int | None":
+    """어제(정확히는 오늘 전 마지막 기록일) 배정 기다리던 건수 — 없으면 None."""
+    from module_heartbeat import last_heartbeat
+    log_ = (last_heartbeat(RELAY_HEARTBEAT_ID) or {}).get("waiting_log") or {}
+    prev = [d for d in log_ if d < today]
+    return int(log_[max(prev)]) if prev else None
+
+
+def waiting_assign_line(items: list, prev_count: "int | None") -> str:
+    if not items:
+        return ""
+    over = sum(1 for i in items if i["overdue"])
+    prev = f" (어제 {prev_count}건)" if prev_count is not None else ""
+    return f"⏳ 배정 기다리는 것 {len(items)}건{prev} · 1영업일 넘긴 것 {over}건"
 
 
 def _migrate_relay_state(state: dict) -> None:
@@ -1428,7 +1489,7 @@ def send_mgr_brief() -> None:
         relay_state = _relay_state()
         _migrate_relay_state(relay_state)
         relay_state[WEEKLY_ROOM] = relay_current
-        _save_relay_state(relay_state)
+        _save_relay_state(relay_state, waiting_today=len(relay_current))   # 내일 "어제 N건" 비교값
         log("[mgr] 발송 완료")
     else:
         log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
