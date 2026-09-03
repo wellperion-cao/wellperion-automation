@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>분리수거장 현수막 시안 (2026-09-03)</title>
+<!--
+  분리수거장 현수막 시안 — 「THE SHOPS AT HYPERION」 공통 디자인
+  · 원고 정본 = reports/상가_쓰레기배출가이드_A3.png(2026-08-28 제작). 현수막은 그 중 멀리서 읽혀야 하는 것만 남겼다.
+  · 수거 요일은 양상규 고문님 현장 확인(2026-08-31)에서 나온 값이다 — 재활용 매주 화·금 / 일반쓰레기 수시.
+  · 크기는 아직 실측 전이다. 아래 :root 의 --w-mm / --h-mm 두 값만 바꾸면 비율이 그대로 따라간다(기본 3000×1000mm).
+-->
+<style>
+  :root{
+    /* ★실측 후 이 두 값만 바꾼다 (단위 mm) */
+    --w-mm: 3000;
+    --h-mm: 1000;
+
+    --ink:#14161a; --paper:#FBF7F0; --gold:#C8A96A; --red:#A6301F; --dim:#6E6A63;
+    --scale: calc(1px * 0.32); /* 화면 미리보기 축소 배율 — 인쇄 데이터에는 영향 없음 */
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#e9ecef; font-family:"Malgun Gothic","맑은 고딕",sans-serif; color:var(--ink);}
+
+  .bar{position:fixed; top:0; left:0; right:0; height:44px; background:#14161a; color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 16px; font-size:13px; z-index:10;}
+  .bar b{font-size:14px;}
+  .bar .sp{flex:1;}
+  .bar button{font-size:12.5px; font-weight:700; padding:6px 12px; border:0; border-radius:4px; cursor:pointer;}
+  .bar .note{color:#c9cdd3;}
+  .wrap{padding:64px 20px 40px;}
+
+  /* 현수막 실물 비율 그대로 — 폭 기준으로 축소해 화면에 보여준다 */
+  .banner{
+    width: calc(var(--w-mm) * var(--scale));
+    height: calc(var(--h-mm) * var(--scale));
+    background:var(--paper); color:var(--ink);
+    display:flex; align-items:stretch; overflow:hidden;
+    box-shadow:0 6px 24px rgba(0,0,0,.18); margin:0 auto;
+    container-type:inline-size;
+  }
+  /* 글자 크기는 전부 현수막 폭(cqw) 기준 — 크기를 바꿔도 비율이 유지된다 */
+  .left{background:#14161a; color:#fff; width:26%; padding:3.2cqw 2.6cqw;
+    display:flex; flex-direction:column; justify-content:center; gap:1cqw;}
+  .left .kick{font-size:1.05cqw; letter-spacing:.5em; color:var(--gold);}
+  .left h1{margin:0; font-size:3.5cqw; line-height:1.15; font-weight:800;}
+  .left .sub{font-size:1.15cqw; color:#c9c3b7; letter-spacing:.02em;}
+  .left .brand{margin-top:auto; font-size:1cqw; letter-spacing:.34em; color:var(--gold);}
+
+  .right{flex:1; padding:2.2cqw 2.6cqw; display:flex; flex-direction:column; gap:1.1cqw; min-height:0;}
+  .lead{background:var(--red); color:#fff; padding:1.5cqw 2cqw; border-radius:.6cqw;}
+  .lead .big{font-size:2.35cqw; font-weight:800; line-height:1.15;}
+  .lead .small{font-size:1.25cqw; margin-top:.5cqw; color:#f6ded9;}
+
+  .cols{display:flex; gap:1.3cqw; flex:1; min-height:0;}
+  .card{flex:1; border:.13cqw solid #d8cfbe; background:#fff; padding:1.4cqw 1.6cqw;}
+  .card h2{margin:0 0 .8cqw; font-size:1.5cqw; color:var(--red); font-weight:800;}
+  .card .row{display:flex; gap:.7cqw; font-size:1.3cqw; line-height:1.45; white-space:nowrap;}
+  .card .row b{min-width:6.4cqw; white-space:nowrap;}
+  .four{display:flex; gap:1cqw; margin-top:.4cqw;}
+  .four div{flex:1; text-align:center; border:.13cqw solid #d8cfbe; padding:.7cqw .2cqw; font-size:1.25cqw; font-weight:800; white-space:nowrap;}
+  .four div span{display:block; font-size:.85cqw; white-space:nowrap; font-weight:500; color:var(--dim); margin-top:.25cqw;}
+
+  .foot{display:flex; align-items:center; gap:1.2cqw; background:#14161a; color:#fff; padding:1cqw 1.4cqw; flex:0 0 auto;}
+  .foot .cctv{border:.18cqw solid var(--gold); color:var(--gold); border-radius:50%;
+    width:4.2cqw; height:4.2cqw; display:flex; align-items:center; justify-content:center;
+    font-size:1.15cqw; font-weight:800; flex:0 0 auto;}
+  .foot .t{font-size:1.3cqw; line-height:1.4;}
+  .foot .t b{color:#F2C879;}
+  .foot .tel{margin-left:auto; text-align:right; font-size:1.1cqw; color:#c9cdd3; white-space:nowrap;}
+
+  .spec{max-width:calc(var(--w-mm) * var(--scale)); margin:14px auto 0; font-size:13px; color:#41464c; line-height:1.7;}
+  .spec b{color:#14161a;}
+  @media print{ .bar,.wrap>.spec{display:none;} .wrap{padding:0;} body{background:#fff;} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>분리수거장 현수막 시안</b>
+  <span class="note">크기 미확정 — 실측 후 --w-mm / --h-mm 두 값만 바꾸면 그대로 맞습니다</span>
+  <span class="sp"></span>
+  <button onclick="savePng()">.png로 저장</button>
+</div>
+
+<div class="wrap">
+  <div class="banner" id="banner">
+    <div class="left">
+      <div class="kick">INFORMATION</div>
+      <h1>분리수거장<br>이용 안내</h1>
+      <div class="sub">Waste Disposal Guide</div>
+      <div class="brand">THE SHOPS AT HYPERION</div>
+    </div>
+
+    <div class="right">
+      <div class="lead">
+        <div class="big">일반쓰레기는 반드시 <u>종량제 봉투</u>로 배출해 주세요</div>
+        <div class="small">파란색·검정색 등 일반 비닐봉투는 수거되지 않습니다</div>
+      </div>
+
+      <div class="cols">
+        <div class="card">
+          <h2>수거 요일</h2>
+          <div class="row"><b>재활용</b><span>매주 <b>화요일 · 금요일</b></span></div>
+          <div class="row"><b>일반쓰레기</b><span>구청 하청업체 수시 수거</span></div>
+          <div class="row"><b>대형·폐가전</b><span>분리수거장 배출 불가 · 관리실 문의</span></div>
+        </div>
+        <div class="card">
+          <h2>재활용 배출 4대 원칙</h2>
+          <div class="four">
+            <div>비운다<span>내용물 완전히</span></div>
+            <div>헹군다<span>이물질 씻어내기</span></div>
+            <div>분리한다<span>라벨·뚜껑 제거</span></div>
+            <div>섞지 않는다<span>품목별로 따로</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div class="cctv">CCTV</div>
+        <div class="t">이곳은 <b>CCTV 촬영 구역</b>입니다.<br>종량제 미사용·무단 배출은 촬영 확인을 통해 배출 매장에 <b>처리 비용이 청구</b>될 수 있습니다.</div>
+        <div class="tel">문의 · 웰페리온 경영지원부<br>T. 02-6261-1200</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec">
+    <b>제작 메모</b> — 크기 <b>미확정</b>입니다. 현장 실측(가로·세로)을 받은 뒤 이 파일 맨 위 <b>--w-mm · --h-mm</b> 두 값만 바꾸면 글자 크기·여백이 비율대로 따라갑니다(현재 값 = 3000×1000mm 가정).
+    발주 시 함께 정할 것 — 재질(외부 노출이면 방수 원단), 마감(사방 로프 또는 아일렛), 설치 방식(벽면 고정 / 프레임).
+    원고 정본은 <b>상가_쓰레기배출가이드_A3</b>(2026-08-28)이고, 수거 요일은 2026-08-31 현장 확인 값입니다.
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  if (typeof html2canvas !== 'function'){ alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('banner'), {scale:3, backgroundColor:'#FBF7F0', useCORS:true, logging:false})
+    .then(function(c){ var a=document.createElement('a'); a.download='상가_분리수거장_현수막.png'; a.href=c.toDataURL('image/png'); a.click(); });
+}
+</script>
+</body>
+</html>
