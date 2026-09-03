@@ -2915,6 +2915,11 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
   if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
   _memberCacheBump_(); _aaCacheClear_(['valid']);   // 유효회원 시트만 바뀌었다 — 그 명단 캐시만 지운다(FB260806-150441 근본수리)
+  // 회원번호 자동 부여(2026-09-03 시토·배941) — 새 행이 생기는 곳은 여기뿐이라 여기서 한 번만 부른다(약속 L21).
+  //   8-26 일괄 부여 뒤에 등록된 사람이 전부 번호 없이 남았고(실측 6명), 회원 미러는 번호 없는 행을 넣지 않아
+  //   새 회원이 서버에서 빠지는 구멍이었다. 기존 액션(멱등)을 그대로 재호출하므로 새 장치 없음.
+  //   토큰 게이트가 켜져도 자기 호출이 막히지 않게 스크립트 속성의 토큰을 같이 넘긴다.
+  try { _processAction({ action: 'member_registry_build', key: _accessProp_('ACCESS_TOKEN') }); } catch (e) {}
 }
 
 // ═══════════════════════════════════════════

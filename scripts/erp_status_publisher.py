@@ -925,6 +925,19 @@ def _kpi_crosscheck_rules():
     except Exception as e:
         out.append({"card": "매출", "what": "스냅샷 대조 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
 
+    # ⑦ 회원 미러 — 회원번호 없는 행 = 0 (2026-09-03 배941)
+    #    미러(sync_members)는 회원번호 없는 행을 넣지 않아, 번호가 안 붙은 새 회원은 서버에서 조용히 빠진다.
+    #    등록 경로(_memberActiveUpsert_)가 번호를 자동 부여하므로 평소엔 0 — 0 이 아니면 부여 경로가 끊긴 것.
+    #    API 가 아직 없거나 로그인 관문(auth_request) 뒤라 못 읽으면 ok=None(못 잼)으로 조용히 지나간다.
+    try:
+        d = _get("https://erp.wellperion.com/api/members/summary")
+        un = int(d.get("unnumbered") or 0)
+        out.append({"card": "회원", "what": "회원 미러 회원번호 없는 행 = 0",
+                    "left": un, "right": 0, "ok": un == 0,
+                    "detail": ("" if un == 0 else f"번호 없는 회원 {un}명 — 미러에서 빠져 있습니다(등록 경로 자동 부여 확인)")})
+    except Exception as e:
+        out.append({"card": "회원", "what": "회원 미러 조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
     return out
 
 
