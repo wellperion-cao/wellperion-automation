@@ -3329,6 +3329,63 @@ table.op-t td b{font-size:15px}
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 /* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
 var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
+/* ★회원 목록·사람 찾기 읽기 원천 전환(배 942 · 2026-09-03 시토). ERP 도메인(erp.wellperion.com)에서만 서버 미러
+   /api/members 를 먼저 부르고, 실패하면 종전 GAS 로 조용히 돌아간다(console 한 줄). GitHub Pages 에선 ERP_API_ON 이
+   false 라 아래 경로가 전부 종전 그대로다 — 한 파일이 두 곳에서 산다. 쓰기(등록·상태변경·LOSS)는 계속 GAS.
+   미러 = sync_members.py 가 5분마다 member_active_list 를 떠온 것이라 행 모양(칸 이름·rowIndex·rowKey)이 GAS 와 같다. */
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function _apiJson(url) {
+  return fetch(url).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); });
+}
+function _apiMemberList(scope) {
+  // /api/members 를 cursor 로 끝까지 받아 member_active_list(객체형) 응답 모양 {ok, headers, data, count} 로 돌려준다.
+  var rows = [];
+  function page(cursor) {
+    return _apiJson('/api/members?scope=' + scope + '&limit=1000' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''))
+      .then(function(d){ rows = rows.concat(d.rows || []); return d.next_cursor ? page(d.next_cursor) : rows; });
+  }
+  return page(null).then(function(all){
+    var headers = [];
+    all.forEach(function(r){ Object.keys(r).forEach(function(k){ if (k !== 'rowIndex' && k !== 'rowKey' && k.charAt(0) !== '_' && headers.indexOf(k) < 0) headers.push(k); }); });
+    // GAS 와 같은 기본 정렬 — 종료일자 최근순(2026-06-25 GM)
+    var ek = headers.filter(function(h){ return h.replace(/\s/g, '').indexOf('종료일') >= 0; })[0];
+    if (ek) all.sort(function(a, b){ var av = String(a[ek] || ''), bv = String(b[ek] || ''); return av < bv ? 1 : (av > bv ? -1 : 0); });
+    return { ok: true, scope: scope, headers: headers, data: all, count: all.length, _source: 'sheet-mirror' };
+  });
+}
+function _memberListFetch(scope) {
+  // 회원 목록 읽기 관문 하나 — API 실패(미로그인·서버 다운)면 GAS 폴백. GAS 응답은 format=rows 라 디코더를 태운다.
+  var gas = function(){
+    return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
+      .then(function(r){ return r.json(); }).then(_maDecodeRowsFormat);
+  };
+  if (!ERP_API_ON) return gas();
+  return _apiMemberList(scope).catch(function(e){ console.warn('[회원목록] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
+function _apiPersonView(q) {
+  // 사람 찾기 — /api/members?q= 로 사람을 찾고 /api/members/{번호} 로 문의를 붙여 GAS member_person_view 와 같은 모양으로 만든다.
+  // 미러에 없는 사람(문의 단계·번호 미부여)은 GAS 가 문의 3벌에서 찾으므로 0명이면 일부러 실패시켜 폴백한다.
+  var TAB = { valid: '유효회원', ended: '유효회원', corp: '법인 현황', archive: 'LOSS보관' };
+  var list = /^M\d{5}$/i.test(q) ? Promise.resolve({ rows: [{ _member_no: q.toUpperCase() }] })
+                                  : _apiJson('/api/members?q=' + encodeURIComponent(q) + '&limit=50');
+  return list.then(function(d){
+    if (!(d.rows || []).length) throw new Error('미러에 없음');
+    return Promise.all(d.rows.map(function(r){ return _apiJson('/api/members/' + r._member_no); }));
+  }).then(function(people){
+    var phones = {};
+    people.forEach(function(p){ if (p._phone) phones[p._phone] = (phones[p._phone] || 0) + 1; });
+    return { ok: true, found: true, query: q, count: people.length, _source: 'sheet-mirror', people: people.map(function(p){
+      var rec = { tab: TAB[p._scope] || p._scope, rowIndex: p.rowIndex };
+      Object.keys(p).forEach(function(k){ if (k.charAt(0) !== '_' && k !== 'rowIndex' && k !== 'rowKey' && k !== 'inquiries' && k !== 'inquiry_count' && k !== 'candidates') rec[k] = p[k]; });
+      var inq = { 멤버십: [], 강습성인: [], 강습유소년: [] };
+      (p.inquiries || []).forEach(function(r){
+        if (r._type === '멤버십') inq.멤버십.push(r);
+        else (r._type === '성인강습' ? inq.강습성인 : inq.강습유소년).push({ timestamp: r.timestamp, 종목: [r.sport || ''], 담당: r.owner ? [r.owner] : [], 대표상태: r.status || '', 원본: [r] });
+      });
+      return { 회원번호: p._member_no, 이름: p['회원명'] || '', 전화: p['휴대폰 번호'] || p._phone || '', 원장: [rec], 문의: inq, 중복의심: !!(p._phone && phones[p._phone] > 1) };
+    }) };
+  });
+}
 /* ★GAS 예열 + scope=valid 선입수 (배754·배845 · 2026-08-24·2026-08-31).
    실측(2026-08-24): 같은 목록이 첫 호출 6.7~25.6초 / 두 번째부터 3.1~3.4초.
    차이는 데이터 양이 아니라 잠든 서버가 깨는 시간이라, corp(경량)로 먼저 깨우고
@@ -3347,12 +3404,9 @@ var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
           { cache: 'no-store' }).catch(function(){});
     // scope=valid 선입수 — 인증된 경우만
     var kp = _wpKeyParam();
-    if (!kp) return;
-    fetch(GAS_URL + '?action=member_active_list&scope=valid&format=rows' + kp,
-          { cache: 'no-store' })
-      .then(function(r){ return r.json(); })
+    if (!kp && !ERP_API_ON) return;
+    _memberListFetch('valid')   // ERP 도메인=미러 API(1초 안팎) · 그 외=종전 GAS 선입수
       .then(function(data){
-        data = _maDecodeRowsFormat(data);
         if (!data.ok || !data.data || !data.data.length) return;
         if (_activeCache['valid']) return;   // 이미 로드 완료됐으면 덮지 않는다
         _activeCache['valid'] = { headers: data.headers || [], rows: data.data };
@@ -5077,8 +5131,9 @@ function personSearchGo() {
   var box = document.getElementById('personSearchResult');
   if (!q) { box.innerHTML = '이름·전화·회원번호를 입력하세요.'; return; }
   box.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">검색 중…</div></div>';
-  fetch(GAS_URL + '?action=member_person_view&q=' + encodeURIComponent(q))
-    .then(function(r){ return r.json(); })
+  var gas = function(){ return fetch(GAS_URL + '?action=member_person_view&q=' + encodeURIComponent(q)).then(function(r){ return r.json(); }); };
+  // ERP 도메인=미러 API 먼저(배 942) · 미러에 없거나 실패하면 GAS(문의 단계 사람까지 찾는다)
+  (ERP_API_ON ? _apiPersonView(q).catch(function(e){ console.warn('[사람찾기] API 실패 → GAS 폴백:', e && e.message); return gas(); }) : gas())
     .then(_renderPersonSearch)
     .catch(function(){ box.innerHTML = '<span style="color:#c0392b">조회 실패 — 다시 시도해 주세요.</span>'; });
 }
@@ -7883,10 +7938,8 @@ function loadActiveMembers() {
     });
   }
   var _seq = ++_activeReqSeq;
-  return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  return _memberListFetch(scope)   // 읽기 관문 하나(배 942) — ERP 도메인=미러 API, 그 외=GAS(format=rows 디코드 포함)
     .then(function(data){
-      data = _maDecodeRowsFormat(data);   // format='rows' 배열응답 → 기존 {headers, data:[{...}]} 모양으로 복원
       // ★잠금 해제는 어떤 갈래로 빠져나가도 반드시 지난다(2026-08-13). 아래 경쟁 가드나 오류로 먼저
       //   빠져나가면 잠금이 영영 안 풀려 화면 전체가 수정 불가가 된다 — 실무진에겐 원인 없는 먹통이다.
       if (_activeSnapOnly === scope) _activeSnapOnly = '';
@@ -8027,10 +8080,8 @@ function _oaFetch(){
   // 이미 그려둔 명단(스냅샷)이 있으면 스피너로 덮지 않는다 — 보고 있던 표가 사라졌다 다시 나타나면 안 된다.
   if (body && !(_ownerAssignRows && _ownerAssignRows.length)) body.innerHTML = '<tr><td><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
   if (GAS_URL === GAS_PLACEHOLDER){ _oaFetching = false; _oaRenderState('GAS 미연동 — URL 교체 후 사용 가능'); return; }
-  fetch(GAS_URL + '?action=member_active_list&scope=valid&format=rows' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  _memberListFetch('valid')   // 읽기 관문 하나(배 942) — ERP 도메인=미러 API, 그 외=GAS(format=rows 디코드 포함)
     .then(function(data){
-      data = _maDecodeRowsFormat(data);   // format='rows' 배열응답 → 기존 {headers, data:[{...}]} 모양으로 복원
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _ownerAssignRows = data.data || [];   // 서버 계약 {ok, data:[...]} — data.data가 회원 배열
       _oaFromSnap = false;                  // 이제 실데이터 — 스냅샷 재검증 의무 해제

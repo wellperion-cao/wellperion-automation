@@ -1148,6 +1148,19 @@ load();
 var GAS2 = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 var P2_ACTIONS = ['member_active_summary', 'cpo_today_stats', 'cpo_churn_stats', 'stage_funnel', 'lesson_stats'];
 var RAW2 = {};
+/* 2페이지 읽기 원천 전환(배 943 · 2026-09-03 시토) — ERP 도메인에서만 서버 미러 집계 /api/report/{action}(server/erp_api/
+   members_report.py · 신규/재등록 판정은 GAS _isNewRegistration_ 을 그대로 옮긴 한 곳)을 먼저 부르고, 실패하면 GAS 로
+   조용히 돌아간다(console 한 줄). GitHub Pages 에선 ERP_API_ON 이 false 라 종전 GAS 그대로.
+   stage_funnel·lesson_stats 는 강습·폼 시트가 미러에 없어 어디서든 GAS 다. */
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+var API_ACTIONS = { member_active_summary: 1, cpo_today_stats: 1, cpo_churn_stats: 1, member_registered_list: 1 };
+function p2fetch(action, qs){
+  var gas = function(){ return fetch(GAS2 + '?action=' + action + (qs || '') + '&cb=' + Date.now()).then(function(r){ return r.json(); }); };
+  if (!ERP_API_ON || !API_ACTIONS[action]) return gas();
+  return fetch('/api/report/' + action + '?cb=' + Date.now() + (qs || ''))
+    .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+    .catch(function(e){ console.warn('[2페이지] ' + action + ' API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
 
 /* 오늘 챙길 것 — 문의 쪽 세 숫자는 회원관리 ERP 가 아니라 매일 아침 도는 시포 집계에 있다.
    그 집계 결과 파일을 원격에서 그대로 읽는다(값을 여기서 다시 세지 않는다 · 약속 L01). */
@@ -1340,8 +1353,7 @@ function runAudit2(){
 function load2(){
   var e = document.getElementById('err2'); if (e) e.innerHTML = '';
   var jobs = P2_ACTIONS.map(function(action){
-    return fetch(GAS2 + '?action=' + action + '&cb=' + Date.now())
-      .then(function(r){ return r.json(); })
+    return p2fetch(action)
       .then(function(d){ RAW2[action] = d; })
       .catch(function(){ RAW2[action] = null; });
   });
@@ -1352,8 +1364,7 @@ function load2(){
     var pad = function(n){ return (n < 10 ? '0' : '') + n; };
     var last = new Date(y, m, 0).getDate();
     var from = y + '-' + pad(m) + '-01', to = y + '-' + pad(m) + '-' + pad(last);
-    return fetch(GAS2 + '?action=member_registered_list&from=' + from + '&to=' + to + '&cb=' + Date.now())
-      .then(function(r){ return r.json(); })
+    return p2fetch('member_registered_list', '&from=' + from + '&to=' + to)
       .then(function(d2){ RAW2.__reg = d2; })
       .catch(function(){ RAW2.__reg = null; });
   })());

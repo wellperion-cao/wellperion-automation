@@ -11,7 +11,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/api'
-$SCP server/erp_api/app.py server/erp_api/sync_inquiries.py server/erp_api/sync_members.py $HOST:/srv/erp/api/
+$SCP server/erp_api/app.py server/erp_api/members_report.py server/erp_api/sync_inquiries.py server/erp_api/sync_members.py $HOST:/srv/erp/api/
 $SCP server/erp_api/erp-api.service $HOST:/tmp/erp-api.service
 $SCP server/erp_api/api.nginx.conf $HOST:/tmp/api.conf
 

@@ -201,3 +201,7 @@ def member(member_no: str):
     d["inquiry_count"] = len(inq)
     d["candidates"] = cand
     return d
+
+
+# 매출회원현황보고 2페이지 집계 라우트(/api/report/…) — 배 943 · 본문은 members_report.py
+from members_report import router as _mr; app.include_router(_mr)  # noqa: E402,E702
