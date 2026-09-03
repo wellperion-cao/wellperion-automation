@@ -1,39 +1,1307 @@
 {
-  "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 여기가 카드의 단일 출처다. status/module_registry.json(자동화 등록부)과는 별개 — 저건 자동화 스크립트 등록부고, 이건 사람이 눌러 들어가는 화면 목록이다. 담당 실무진 이름의 정본은 ssot/kpi.json _부서반장 이며, 사람이 바뀌면 그쪽을 먼저 고치고 여기를 맞춘다.",
+  "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 손으로 고치지 마라 — scripts/erp_modules_build.py 가 화면 파일·ssot/ownership_map.json·ssot/kpi.json·status/module_registry.json 에서 만든다. 카드를 늘리려면 화면을 만들면 되고, 담당자 이름을 바꾸려면 ssot/kpi.json 을 고친다.",
+  "_generator": "scripts/erp_modules_build.py",
   "modules": [
     {
       "id": "member",
+      "core": true,
+      "group": "시포",
+      "role": "cpo",
       "name": "회원",
       "desc": "멤버십·강습 회원 등록과 상태를 한 곳에서 관리한다.",
       "path": "../cpo/member/membership.html",
-      "owner": "이경연 실장",
-      "roles": ["admin"]
+      "staff": "이경연 실장",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "id": "inquiry",
+      "core": true,
+      "group": "시포",
+      "role": "cpo",
       "name": "문의",
       "desc": "홈페이지·전화·현장으로 들어온 문의를 접수부터 등록까지 따라간다.",
       "path": "../cpo/문의현황.html",
-      "owner": "이경연 실장",
-      "roles": ["admin", "staff"]
+      "staff": "이경연 실장",
+      "roles": [
+        "admin",
+        "staff"
+      ]
     },
     {
       "id": "check",
+      "core": true,
+      "group": "시우",
+      "role": "coo",
       "name": "점검",
       "desc": "시설 일일 점검과 고장 접수 현황을 본다.",
       "path": "../coo/check/시설부 체계.html",
-      "owner": "이정헌 소장",
-      "roles": ["admin", "staff"]
+      "staff": "이정헌 소장",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "ceo-wellperion-guide-main",
+      "core": false,
+      "group": "웰리",
+      "role": "ceo",
+      "name": "웰페리온 ERP v2.7",
+      "desc": "",
+      "path": "../wellperion_guide(main).html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-member-오넛티-접수현황",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "OHNUTTY X WELLPERION — 추석 선물세트 접수현황",
+      "desc": "",
+      "path": "../cpo/member/오넛티_접수현황.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-member-lesson",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "강습 회원관리",
+      "desc": "",
+      "path": "../cpo/member/lesson.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-member-lesson-guide",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "강습 회원관리 사용 가이드 — 웰페리온",
+      "desc": "",
+      "path": "../cpo/member/lesson-guide.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-member-실무진피드백",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "웰페리온 · 실무진 피드백",
+      "desc": "",
+      "path": "../cpo/member/실무진피드백.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-member-renewal",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "웰페리온 · 재등록 대시보드",
+      "desc": "",
+      "path": "../cpo/member/renewal.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cpo-product-상품기획",
+      "core": false,
+      "group": "시포",
+      "role": "cpo",
+      "name": "🏷️ 스포츠클럽 상품 기획 — AI CPO",
+      "desc": "",
+      "path": "../cpo/product/상품기획.html",
+      "staff": "임정은M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-home-360촬영가이드",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "360° 촬영 가이드 — 웰페리온 둘러보기",
+      "desc": "",
+      "path": "../cmo/home/360촬영가이드.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-series-ai시리즈보드",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "AI 시리즈 보드 — 웰페리온",
+      "desc": "",
+      "path": "../cmo/series/AI시리즈보드.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-home-홈페이지",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "WELLPERION - 프라이빗 멤버십 스포츠클럽",
+      "desc": "",
+      "path": "../cmo/home/홈페이지.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-home-홈페이지-파생초안",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "WELLPERION · 하루의 완성",
+      "desc": "",
+      "path": "../cmo/home/홈페이지_파생초안.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-sunday-gm의일요일",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "어떤 하루 — 개인계정 기록",
+      "desc": "",
+      "path": "../cmo/sunday/GM의일요일.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-home-시설둘러보기",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "웰페리온 둘러보기",
+      "desc": "",
+      "path": "../cmo/home/시설둘러보기.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-home-시설둘러보기360",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "웰페리온 둘러보기 — 360°",
+      "desc": "",
+      "path": "../cmo/home/시설둘러보기360.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-funnel-월간마케팅보고서",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "웰페리온 마케팅 월간 보고서",
+      "desc": "",
+      "path": "../cmo/funnel/월간마케팅보고서.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-brand-브랜드가이드",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "웰페리온 브랜드 가이드 — Brand Guidelines",
+      "desc": "",
+      "path": "../cmo/brand/브랜드가이드.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-intake-instructor-intake",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "웰페리온 콘텐츠 접수",
+      "desc": "",
+      "path": "../cmo/intake/instructor_intake.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cmo-funnel-콘텐츠문의현황",
+      "core": false,
+      "group": "시모",
+      "role": "cmo",
+      "name": "콘텐츠 문의 현황",
+      "desc": "",
+      "path": "../cmo/funnel/콘텐츠문의현황.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-pt팀-오찬-안내-20260903",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "P.T팀 — 여기까지 해오신 것 (2026-09-03)",
+      "desc": "",
+      "path": "../coo/chairman/PT팀_오찬_안내_20260903.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-gm업무",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "경영 보고·GM 업무 현황 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/GM업무.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-todo-doc-guide",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "기획안·결과보고 작성 가이드 — 웰페리온 ERP",
+      "desc": "",
+      "path": "../coo/todo/doc_guide.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-notice-게시물-프로필월",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "내부게시물 — 프로필월 생성",
+      "desc": "",
+      "path": "../coo/notice/게시물_프로필월.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-대표님-지시사항",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "대표님 보고건 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/대표님_지시사항.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-리셉션-업무-라커관리-index",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "라커 운영 | AI COO",
+      "desc": "",
+      "path": "../coo/리셉션 업무/라커관리/index.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-report-매출회원현황보고",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "매출 및 회원 현황 보고 · 웰페리온",
+      "desc": "",
+      "path": "../coo/report/매출회원현황보고.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-린넨관리-정리",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "사우나 린넨(세탁물) 관리 정리 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/린넨관리_정리.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-세탁물-공급부족-20260806",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "세탁물 공급 부족 분석 — 요일 배분 문제 (2026-08-06)",
+      "desc": "",
+      "path": "../coo/chairman/세탁물_공급부족_20260806.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-수영팀-오찬-안내-20260806",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "수영팀 오찬 안내 — 팀장·강사용 (2026-08-06)",
+      "desc": "",
+      "path": "../coo/chairman/수영팀_오찬_안내_20260806.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-실무진-업무점수체계-초안",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "실무진 업무 점수 체계 초안 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/실무진_업무점수체계_초안.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-todo-업무-올리는-법",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "업무 올리는 법 — 30초면 끝납니다",
+      "desc": "",
+      "path": "../coo/todo/업무 올리는 법.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-todo-업무-결재-운영-기준",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "업무·결재 운영 기준 — 웰페리온 ERP",
+      "desc": "",
+      "path": "../coo/todo/업무·결재 운영 기준.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-운영부-조직운영체계-20260806",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "운영부 조직 운영 체계 — 단일 보고 라인 (2026-08-06 GM 확정)",
+      "desc": "",
+      "path": "../coo/chairman/운영부_조직운영체계_20260806.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-운영부-주간보고-초안-20260806",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "운영부 주간 보고 초안 — 8월 1주차 (2026-08-06)",
+      "desc": "",
+      "path": "../coo/chairman/운영부_주간보고_초안_20260806.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-전사회의",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 2026 상반기 전사회의",
+      "desc": "월간운영계획·전사회의",
+      "path": "../전사회의.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-brojay-브로제이-업무분장",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 · 브로제이 시스템 업무분장",
+      "desc": "",
+      "path": "../coo/brojay/브로제이_업무분장.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-brojay-브로제이-확인목록",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 · 브로제이 확인 목록",
+      "desc": "",
+      "path": "../coo/brojay/브로제이_확인목록.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-todo-결재-현황-ssot",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 결재 현황 SSOT",
+      "desc": "",
+      "path": "../coo/todo/결재 현황 SSOT.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-리셉션-업무-index",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 리셉션 업무",
+      "desc": "",
+      "path": "../coo/리셉션 업무/index.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-reception-lost-found-disposal",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 습득 분실물 처분 공지",
+      "desc": "",
+      "path": "../coo/reception/lost_found_disposal.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-reception-lost-found-gallery",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 습득 분실물 현황",
+      "desc": "",
+      "path": "../coo/reception/lost_found_gallery.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-reception-lost-found-guide",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 습득물 운영 가이드 (회원·직원)",
+      "desc": "",
+      "path": "../coo/reception/lost_found_guide.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-reception-lost-found-register",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 습득물 접수 (직원 전용)",
+      "desc": "",
+      "path": "../coo/reception/lost_found_register.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-todo-업무-현황-ssot",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 업무 현황 SSOT",
+      "desc": "",
+      "path": "../coo/todo/업무 현황 SSOT.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-운영부-체계",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 운영부 체계",
+      "desc": "",
+      "path": "../coo/check/운영부 체계.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-reception-종합접수처-현황",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 종합접수처 현황",
+      "desc": "종합접수처",
+      "path": "../coo/reception/종합접수처_현황.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-주차관리부-체계",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 주차관리부 체계",
+      "desc": "",
+      "path": "../coo/check/주차관리부 체계.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-지원부-체계",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 지원부 체계",
+      "desc": "",
+      "path": "../coo/check/지원부 체계.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-파트너팀-체계",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "웰페리온 파트너팀 체계",
+      "desc": "",
+      "path": "../coo/check/파트너팀 체계.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-전사-거래업체",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "전사 거래업체 — 부서별 협력업체 명부",
+      "desc": "",
+      "path": "../coo/check/전사_거래업체.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-전사-일정",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "전사 일정 — 정기 안전·법정 점검",
+      "desc": "전사 일정 SSOT",
+      "path": "../coo/check/전사_일정.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-check-주차장-이용안내-공지문",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "주차장 이용 안내 — 웰페리온",
+      "desc": "",
+      "path": "../coo/check/주차장_이용안내_공지문.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-청소장비-검토",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "지하 1층 청소 장비 검토",
+      "desc": "",
+      "path": "../coo/chairman/청소장비_검토.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-소독기-검토",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "파우더룸 소독기 증설 검토",
+      "desc": "",
+      "path": "../coo/chairman/소독기_검토.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-헤어드라이기-검토",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "파우더룸 헤어드라이기 도입 검토 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/헤어드라이기_검토.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-스팀다리미-검토",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "파우더룸·탈의실 스팀다리미 검토 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/스팀다리미_검토.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-회장님-미팅록-20260804",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "회장님 미팅록 — 2026년 8월 4일",
+      "desc": "",
+      "path": "../coo/chairman/회장님_미팅록_20260804.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-회장님-지시사항",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "회장님 보고건 이행 계획 · 2026년 8월 · WELLPERION",
+      "desc": "",
+      "path": "../coo/chairman/회장님_지시사항.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-회장님-오찬-수영팀-20260806",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "회장님 팀별 오찬 1차 — 수영팀 (2026-08-06)",
+      "desc": "",
+      "path": "../coo/chairman/회장님_오찬_수영팀_20260806.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "coo-chairman-회장님-오찬-pt팀-20260903",
+      "core": false,
+      "group": "시우",
+      "role": "coo",
+      "name": "회장님 팀별 오찬 2차 — P.T팀 (2026-09-03)",
+      "desc": "",
+      "path": "../coo/chairman/회장님_오찬_PT팀_20260903.html",
+      "staff": "최준용M · 윤병현AM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cto-facility-수영장-출입게이트-사양서",
+      "core": false,
+      "group": "시토",
+      "role": "cto",
+      "name": "수영장 출입 게이트 도입 검토 — 사양서 · 3사 동일조건 견적",
+      "desc": "",
+      "path": "../cto/facility/수영장_출입게이트_사양서.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cto-자율현황",
+      "core": false,
+      "group": "시토",
+      "role": "cto",
+      "name": "자율 작업 현황 — 웰페리온",
+      "desc": "",
+      "path": "../자율현황.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cto-automation-카톡전송관리",
+      "core": false,
+      "group": "시토",
+      "role": "cto",
+      "name": "📤 카톡 매출보고 전송 관리 — AI CTO",
+      "desc": "",
+      "path": "../cto/automation/카톡전송관리.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cbo-dietcamp-before-after-01",
+      "core": false,
+      "group": "시보",
+      "role": "cbo",
+      "name": "다이어트캠프 × 웰페리온 AI 브랜딩 — 1차 제안 (Before &amp; After)",
+      "desc": "",
+      "path": "../cbo/dietcamp/before_after_01.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cbo-dietcamp-setup-v0-1",
+      "core": false,
+      "group": "시보",
+      "role": "cbo",
+      "name": "다캠 셋업 v0.1 — 브랜드가이드 · 회사소개서 · 전략 구상안",
+      "desc": "",
+      "path": "../cbo/dietcamp/setup_v0.1.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cbo-model-kakao-ai-partner-v0-1",
+      "core": false,
+      "group": "시보",
+      "role": "cbo",
+      "name": "카톡 AI 브랜딩 파트너 — 비즈니스 모델 구상 v0.1",
+      "desc": "",
+      "path": "../cbo/model/kakao_ai_partner_v0.1.html",
+      "staff": "김남욱 GM",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-onboarding-self",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "WELLPERION · 온보딩 자가성찰",
+      "desc": "",
+      "path": "../chro/hub/onboarding-self.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-onboarding",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "WELLPERION · 온보딩 체크인",
+      "desc": "",
+      "path": "../chro/hub/onboarding.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-leave",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "WELLPERION · 휴무 · 근무 스케줄 관리",
+      "desc": "",
+      "path": "../chro/hub/leave.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-eval-guide",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "업무 평가 안내 — 직원용 가이드",
+      "desc": "",
+      "path": "../chro/hub/eval-guide.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-structure",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 CHRO 기능 구조도",
+      "desc": "",
+      "path": "../chro/hub/structure.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-office-8bit",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 · CHRO 8비트 오피스 (시안)",
+      "desc": "",
+      "path": "../chro/hub/office-8bit.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-office",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 · CHRO 숲속 오피스 (토토로 에디션)",
+      "desc": "",
+      "path": "../chro/hub/office.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-golfpartner",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 골프 레슨 운영팀을 찾습니다 — 개인사업자 레슨 위탁운영",
+      "desc": "",
+      "path": "../chro/recruiting/golfpartner.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-schedule",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 스케줄보드",
+      "desc": "",
+      "path": "../chro/hub/schedule.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-schedule-guide",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 스케줄보드 사용 가이드",
+      "desc": "",
+      "path": "../chro/hub/schedule-guide.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-schedule-writing-guide",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 스케줄보드 작성 가이드라인",
+      "desc": "",
+      "path": "../chro/hub/schedule-writing-guide.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-onboarding-guide",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 온보딩 제도 안내 — 12주 3단계 교육",
+      "desc": "",
+      "path": "../chro/onboarding-guide.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-sauna",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 채용공고 — 남자사우나 주임 모집",
+      "desc": "",
+      "path": "../chro/recruiting/sauna.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-operations",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "웰페리온 채용공고 — 운영부 직원 모집",
+      "desc": "",
+      "path": "../chro/recruiting/operations.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-golfpro",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "채용 · 웰페리온 — 오전 골프 프로",
+      "desc": "",
+      "path": "../chro/recruiting/golfpro.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-index",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "🔵 채용 · 웰페리온 (Recruiting)",
+      "desc": "",
+      "path": "../chro/recruiting/index.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-chauffeur",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "🔵 채용 · 웰페리온 — 사내이사 수행기사",
+      "desc": "",
+      "path": "../chro/recruiting/chauffeur.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-recruiting-parking",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "🔵 채용 · 웰페리온 — 주차관리자·발렛파킹",
+      "desc": "",
+      "path": "../chro/recruiting/parking.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-calendar",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "🗓️ 개인 캘린더 · 웰페리온",
+      "desc": "",
+      "path": "../chro/hub/calendar.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "chro-hub-index",
+      "core": false,
+      "group": "시로",
+      "role": "chro",
+      "name": "🟡 HR CONCIERGE · 웰페리온",
+      "desc": "",
+      "path": "../chro/hub/index.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cfo-finance-매출현황",
+      "core": false,
+      "group": "시뽀",
+      "role": "cfo",
+      "name": "웰페리온 운영 매출현황",
+      "desc": "",
+      "path": "../cfo/finance/매출현황.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cfo-finance-지출현황",
+      "core": false,
+      "group": "시뽀",
+      "role": "cfo",
+      "name": "웰페리온 운영 지출현황",
+      "desc": "",
+      "path": "../cfo/finance/지출현황.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "cfo-finance-매출지출현황",
+      "core": false,
+      "group": "시뽀",
+      "role": "cfo",
+      "name": "💰 운영매출&지출 현황 · 웰페리온",
+      "desc": "",
+      "path": "../cfo/finance/매출지출현황.html",
+      "staff": "나우열M",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "gm-gm-교육",
+      "core": false,
+      "group": "GM",
+      "role": "gm",
+      "name": "GM 교육 — 웰리가 GM께 전해 드리는 것",
+      "desc": "",
+      "path": "../gm/GM_교육.html",
+      "staff": "",
+      "roles": [
+        "admin",
+        "staff"
+      ]
+    },
+    {
+      "id": "gm-월간운영계획",
+      "core": false,
+      "group": "GM",
+      "role": "gm",
+      "name": "웰페리온 월간 운영 계획·보고",
+      "desc": "월간운영계획·전사회의",
+      "path": "../월간운영계획.html",
+      "staff": "",
+      "roles": [
+        "admin",
+        "staff"
+      ]
     }
-  ],
-  "pages": [
-    { "name": "웰페리온 ERP 본문", "desc": "운영 원칙·부서 체계·교육자료 전체", "path": "../wellperion_guide(main).html" },
-    { "name": "자율현황", "desc": "AI C-Level 자율 구동 현황", "path": "../자율현황.html" },
-    { "name": "월간운영계획", "desc": "이달의 운영 계획과 진척", "path": "../월간운영계획.html" },
-    { "name": "업무 현황 SSOT", "desc": "부서 업무 단일 출처", "path": "../coo/todo/업무 현황 SSOT.html" },
-    { "name": "결재 현황 SSOT", "desc": "결재 대기·완료 단일 출처", "path": "../coo/todo/결재 현황 SSOT.html" },
-    { "name": "종합접수처", "desc": "6종 접수 창구 현황", "path": "../coo/reception/종합접수처_현황.html" },
-    { "name": "전사 일정", "desc": "전사 일정과 소방·법정 점검", "path": "../coo/check/전사_일정.html" },
-    { "name": "헌법 한 장", "desc": "웰페리온 운영 헌법", "path": "../헌법한장.html" }
   ]
 }

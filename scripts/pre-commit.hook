@@ -115,6 +115,16 @@ if [ -f "$QUEUE_MIRROR" ] && [ -n "$PYBIN" ]; then
   # 항상 exit 0 (fail-open) — 반환값 무시, 커밋 절대 막지 않음.
 fi
 
+# ── ①-4 ERP 모듈 목록 재생성 (손 목록 폐지 · 2026-09-03 시토) ───────────────
+# 이번 커밋에 가이드 폴더 .html 이나 정본(ownership_map·kpi·module_registry)이 staged 면
+# 3. 웰페리온 가이드/erp/modules.json 을 다시 만들고 git add. C레벨이 화면을 하나 만들면
+# ERP 홈 카드가 저절로 생긴다 — 목록을 손으로 또 적지 않는다(약속 L01).
+# 멱등(같으면 no-op)·항상 exit 0(fail-open).
+ERP_MODULES="$REPO_ROOT/scripts/erp_modules_build.py"
+if [ -f "$ERP_MODULES" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$ERP_MODULES" --pre-commit || true
+fi
+
 # ── ② incident 교훈 가드 (사고 재발 방지 경고 · fail-open) ──────────────────
 # 스테이징 파일이 watch_globs 와 매칭되면 해당 사건 요약을 경고 출력.
 # gate=warn → 출력만(exit 0). gate=block → exit 1. 가드 오류 → fail-open(통과).
