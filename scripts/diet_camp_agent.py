@@ -3,7 +3,10 @@
 
 무엇을 하나
     대표님이 카톡으로 무언가 말씀하시면, 그 말을 읽고 답장 한 통을 써서 보낸다.
-    먼저 말을 걸지는 않는다 — 대표님이 말씀하셨을 때만 답한다.
+    말씀이 없는 아침에도 한 통은 나간다 — 아직 안 여쭌 주제 하나로 대표님 생각을 끌어낸다
+    (GM 지시 2026-09-03: "다른 내용도 좋으니 계속 질문을 해서 이승기 대표님의 생각들을
+    끌어내줘야 해, 중요한 거야"). 하루 한 번만, --reply-only 면 종전대로 답장만 한다.
+    순서 = 06:50 대화 저장 → 초안 → 07:00 발신(--send-at 07:00, GM 지시 같은 날).
 
 왜 만들었나
     종전에는 매일 07시에 미리 써 둔 원고를 순서대로 보내기만 했다(daily_scheduler
@@ -19,7 +22,7 @@
     이 파일은 넷을 잇는 얇은 층이고, 자기 상태 파일 하나만 새로 갖는다.
 
 안전장치
-    · 대표님 새 발화가 없으면 아무것도 안 한다(먼저 말 걸지 않음).
+    · 대표님 새 발화가 없으면 아침 질문 1통만(하루 1회 · asked_date 로 막는다). --reply-only 면 0통.
     · 하루 발신 상한 6통. 넘으면 GM 께만 알리고 멈춘다.
     · 돈·계약·가격을 약속하는 말이 초안에 들어가면 보내지 않고 GM 께 넘긴다.
     · 10줄을 넘는 초안은 보내지 않는다(카톡에서 안 읽힌다).
@@ -66,10 +69,15 @@ SYSTEM_BRIEF = """너는 웰페리온의 AI 비서다. 지금 카카오톡에서
 - 웰페리온 GM(김남욱)과 가까운 사이다. 딱딱한 공문 말투가 아니라 정중하고 편한 존댓말을 쓴다.
 
 지금 하는 일
-- 블로그 만드는 업체가 다이어트캠프에 대해 여덟 가지를 물어 왔고, 그 답을 대표님께 받아 정리해 넘기는 중이다.
-  ①오시는 분들(나이대·이유) ②다이어트캠프만의 장점 ③운영하며 지키는 것 ④블로그에 꼭 넣을 것
-  ⑤한 줄 소개 ⑥블로그 말투 ⑦참고 블로그·주제 ⑧운영 중인 상품 전부
-- 대표님이 답해 주신 항목은 다시 묻지 않는다. 남은 항목만 이어서 여쭙는다.
+- 다이어트캠프의 브랜드 기준(브랜드가이드·회사소개서·성장 전략)을 대표님 생각으로 채우는 중이다.
+  그래서 이 대화의 목적은 대표님의 생각을 계속 끌어내는 것이다. 하루에 하나씩, 꾸준히.
+- 블로그 업체 설문 여덟 가지는 2026-09-02 에 다 받았다 — 다시 묻지 않는다.
+- 아직 못 받은 것(이것부터, 하루 하나만): ①한 달에 상담 문의가 몇 건쯤 오나 ②문의가 어디로 오나(전화·인스타·소개·검색)
+  ③인스타·블로그 계정 ④블로그 글 검수는 누가 하시나 ⑤로고 파일 ⑥즐겨 쓰는 색
+- 그 다음은 생각을 끌어내는 질문(이미 나온 주제는 고르지 않는다): 왜 다이어트캠프를 시작하셨나 · 3년 뒤 어떤 모습이면 좋겠나 ·
+  회원이 그만두는 이유는 뭐라고 보시나 · 제일 기억에 남는 회원 · 다른 센터와 제일 다른 점 · 하루 중 제일 힘든 순간 ·
+  어떤 손님이 오면 제일 기쁜가 · 소개로 오는 분이 얼마나 되나 · 재활 프로그램을 시작한 계기 · 이대우 대표님과 역할을 어떻게 나누시나 ·
+  요즘 제일 큰 고민 · 손님이 제일 자주 하는 질문 · 가격을 정할 때 무엇을 보시나 · 그룹수업과 1:1 중 어느 쪽을 키우고 싶은가
 
 답장 쓰는 법
 - 카카오톡 한 통. 10줄 안쪽. 빈 줄은 쓰지 않는다(카톡에서 화면이 세 배로 늘어난다).
@@ -78,6 +86,8 @@ SYSTEM_BRIEF = """너는 웰페리온의 AI 비서다. 지금 카카오톡에서
 - 그 다음 남은 질문을 한 번에 하나나 둘만 여쭙는다. 몰아서 묻지 않는다.
 - 마지막 줄은 👉 로 시작해, 대표님이 무엇을 주시면 되는지 한 줄로 적는다.
 - 재촉하지 않는다. "며칠째"·"아직"·"빨리" 같은 말을 쓰지 않는다.
+- 대표님 말씀이 없는 아침에도 한 통 보낸다: 되짚기 없이 인사 한 줄 → 질문 하나(번호 예시 둘) → 👉 한 줄. 6줄 안쪽.
+  전에 여쭌 것에 답이 없어도 그 얘기는 꺼내지 않고 새 주제로 간다(답은 대표님 편할 때 오면 된다).
 - 돈·가격·계약·결제에 대해서는 어떤 약속도 하지 않는다. 그 이야기가 나오면 "GM님께 여쭤보고 말씀드리겠습니다"라고만 한다.
 - 모르는 것은 지어내지 않는다. 모르면 모른다고 하고 확인해서 알려드린다고 쓴다.
 
@@ -202,6 +212,13 @@ def new_from_partner(lines: list[dict], last_handled: str) -> list[dict]:
 def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF) -> str:
     recent = lines[-CONTEXT_LINES:]
     convo = "\n".join(f"[{ln['who']}] {ln['text']}" for ln in recent if ln["text"])
+    if not fresh:
+        # 말씀 없는 아침 — 먼저 보내는 질문 1통(GM 지시 2026-09-03)
+        return (f"{brief}\n\n"
+                f"── 최근 대화 (오래된 것 위) ──\n{convo}\n\n"
+                f"── 대표님 새 말씀 없음 ──\n"
+                f"오늘 아침 먼저 보낼 한 통을 써라. 최근 대화에 아직 안 나온 주제 하나만 골라 여쭙는다. "
+                f"'못 받은 것' 중 남은 것이 있으면 그것부터. 본문만 출력한다.")
     newest = "\n".join(ln["text"] for ln in fresh if ln["text"])
     return (f"{brief}\n\n"
             f"── 최근 대화 (오래된 것 위) ──\n{convo}\n\n"
@@ -263,7 +280,22 @@ def init_marker(conf: dict | None = None) -> int:
     return 0
 
 
-def run(conf: dict | None = None, dry_run: bool = False) -> int:
+def _wait_until(hhmm: str) -> None:
+    """발신 시각까지 기다린다(GM 지시 2026-09-03: 저장은 07시 전, 발신은 07시). 이미 지났으면 바로."""
+    import time  # noqa: PLC0415
+    try:
+        h, m = (int(x) for x in hhmm.split(":"))
+    except ValueError:
+        return
+    target = datetime.now().replace(hour=h, minute=m, second=0, microsecond=0)
+    left = (target - datetime.now()).total_seconds()
+    if left > 0:
+        print(f"[agent] {hhmm} 까지 {int(left)}초 대기 후 발신")
+        time.sleep(left)
+
+
+def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = False,
+        send_at: str = "") -> int:
     conf = conf or {"room": ROOM, "state": STATE_PATH}
     room = conf["room"]
     brief = brief_of(conf)
@@ -284,15 +316,19 @@ def run(conf: dict | None = None, dry_run: bool = False) -> int:
         return 0                                   # 못 읽은 날은 조용히 — 지어내지 않는다
     lines = parse_lines(text)
     fresh = new_from_partner(lines, st.get("last_handled", ""))
-    if not fresh:
-        print(f"[agent] {room} — 새 말씀 없음, 먼저 말 걸지 않는다")
+    asking = not fresh                                 # 말씀 없는 아침 = 먼저 질문 1통
+    if asking and (reply_only or st.get("asked_date") == today):
+        print(f"[agent] {room} — 새 말씀 없음, 오늘 아침 질문은 "
+              f"{'안 보낸다(--reply-only)' if reply_only else '이미 나갔다'}")
         return 0
 
-    marker = f"{fresh[-1]['day']} {fresh[-1]['when']} {fresh[-1]['text']}"
+    marker = (st.get("last_handled", "") if asking
+              else f"{fresh[-1]['day']} {fresh[-1]['when']} {fresh[-1]['text']}")
+    partner_text = "(아침 질문 — 대표님 말씀 없음)" if asking else fresh[-1]["text"]
 
     if st["sent_today"] >= DAILY_SEND_CAP:
         _tell_gm(f"🤖 카톡 에이전트({room}) — 오늘 상한 {DAILY_SEND_CAP}통을 채워 답장을 멈췄습니다. "
-                 f"대표님 새 말씀: {fresh[-1]['text'][:60]}")
+                 f"대표님 새 말씀: {partner_text[:60]}")
         st["last_handled"] = marker
         _save_state(st, conf["state"])
         return 0
@@ -305,6 +341,9 @@ def run(conf: dict | None = None, dry_run: bool = False) -> int:
     draft = draft.strip()
 
     why = guard(draft)
+    if why == "SKIP" and asking:
+        print("[agent] 모델이 아침 질문을 안 냈다(SKIP) — 오늘은 건너뜀", file=sys.stderr)
+        return 0
     if why == "SKIP":
         print("[agent] 답장이 필요 없는 말씀 — 넘어간다")
         st["last_handled"] = marker
@@ -312,26 +351,30 @@ def run(conf: dict | None = None, dry_run: bool = False) -> int:
         return 0
     if why:
         _tell_gm(f"🤖 카톡 에이전트({room}) — 초안을 보내지 않고 올립니다({why}).\n"
-                 f"대표님: {fresh[-1]['text'][:80]}\n초안: {draft[:400]}")
+                 f"대표님: {partner_text[:80]}\n초안: {draft[:400]}")
         st["last_handled"] = marker
         _save_state(st, conf["state"])
         return 0
 
     if dry_run:
-        print("── 보낼 초안 (dry-run · 발신 안 함) ──")
+        print(f"── 보낼 초안 (dry-run · 발신 안 함 · {'아침 질문' if asking else '답장'}) ──")
         print(draft)
         return 0
 
+    if send_at:
+        _wait_until(send_at)
     if _send(draft, room):
         st["sent_today"] += 1
         st["last_handled"] = marker
+        if asking:
+            st["asked_date"] = today
         st.setdefault("history", []).append(
             {"at": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": used,
-             "partner": fresh[-1]["text"][:120], "reply": draft})
+             "partner": partner_text[:120], "reply": draft})
         st["history"] = st["history"][-30:]
         _save_state(st, conf["state"])
-        _tell_gm(f"🤖 카톡 에이전트({room}) 답장 1통\n대표님: {fresh[-1]['text'][:60]}\n"
-                 f"보낸 말: {draft.splitlines()[0][:60]}")
+        _tell_gm(f"🤖 카톡 에이전트({room}) {'아침 질문' if asking else '답장'} 1통\n"
+                 f"대표님: {partner_text[:60]}\n보낸 말: {draft.splitlines()[0][:60]}")
         return 0
     _tell_gm(f"🤖 카톡 에이전트({room}) — 답장 발신에 실패했습니다. 카톡 창을 확인해 주세요.")
     return 1
@@ -362,6 +405,10 @@ def _selfcheck() -> None:
     assert guard("\n".join(f"{i}줄" for i in range(MAX_LINES + 1))) is not None
     assert guard("1️⃣ 감사합니다\n👉 한 줄만 주세요") is None
     assert guard("계약서 보내드리겠습니다") is not None, "돈·계약 표현은 막아야 한다"
+    # 말씀 없는 아침 = 질문 프롬프트로 갈라진다(GM 지시 2026-09-03)
+    assert "── 대표님 새 말씀 없음 ──" in build_prompt(lines, [])
+    assert "── 대표님이 방금 하신 말 ──" not in build_prompt(lines, [])
+    assert "── 대표님이 방금 하신 말 ──" in build_prompt(lines, lines[-1:])
     # 방 목록 — 파일이 없으면 다캠 한 방(회귀 0)
     rs = rooms()
     assert rs and rs[0]["room"] == ROOM, rs
@@ -381,6 +428,10 @@ def main() -> int:
                     help="켜는 시점 기준선 잡기 — 지난 대화에 뒤늦게 답하지 않게 한다")
     ap.add_argument("--room", help="이 방만 처리(생략하면 방 목록 전체를 순서대로)")
     ap.add_argument("--list-rooms", action="store_true", help="도는 방 목록만 찍는다")
+    ap.add_argument("--reply-only", action="store_true",
+                    help="말씀 없는 아침에도 질문을 보내지 않는다(종전 동작)")
+    ap.add_argument("--send-at", default="", metavar="HH:MM",
+                    help="초안을 만든 뒤 이 시각까지 기다렸다 보낸다(예 07:00 — 저장은 그 전에)")
     args = ap.parse_args()
     if args.selftest:
         _selfcheck()
@@ -398,7 +449,8 @@ def main() -> int:
 
     rc = 0
     for conf in todo:
-        one = init_marker(conf) if args.init else run(conf, dry_run=args.dry_run)
+        one = (init_marker(conf) if args.init
+               else run(conf, dry_run=args.dry_run, reply_only=args.reply_only, send_at=args.send_at))
         rc = one or rc
     return rc
 
