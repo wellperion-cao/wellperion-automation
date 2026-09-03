@@ -130,7 +130,7 @@ def login_page(next: str = "/", err: str = ""):
 
 
 @app.post("/auth/login")
-def login(email: str = Form(...), password: str = Form(...), next: str = Form("/")):
+def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("/")):
     email = email.strip().lower()
     count, locked_until = FAILS.get(email, (0, 0.0))
     if locked_until > time.time():
@@ -146,7 +146,8 @@ def login(email: str = Form(...), password: str = Form(...), next: str = Form("/
     if u["status"] != "active":
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
     r = RedirectResponse(next if next.startswith("/") else "/", status_code=303)
-    r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/")
+    https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
+    r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
     return r
 
 

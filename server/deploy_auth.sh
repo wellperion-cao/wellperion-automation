@@ -11,8 +11,12 @@ cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/auth'
 $SCP server/erp_auth/app.py $HOST:/srv/erp/auth/app.py
-$SCP server/erp_auth/erp.nginx.conf $HOST:/tmp/erp.conf
 $SCP server/erp_auth/erp-auth.service $HOST:/tmp/erp-auth.service
+if $S 'test -d /etc/letsencrypt/live/erp.wellperion.com'; then
+  echo "certbot 이 이미 손댄 erp.conf — 덮지 않음(HTTPS 443 블록 보존)"
+else
+  $SCP server/erp_auth/erp.nginx.conf $HOST:/tmp/erp.conf
+fi
 
 if ! $S 'test -f /srv/erp/auth.env'; then
   TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' telegram_bot/.env | cut -d= -f2- | tr -d '"'"'"' ')
@@ -27,7 +31,7 @@ EOF"
   echo "ADMIN_PW=$ADMIN_PW"      # 첫 관리자 비밀번호 — 이 줄만 GM 께 따로 전한다
 fi
 
-$S 'sudo mv /tmp/erp.conf /etc/nginx/conf.d/erp.conf && sudo mv /tmp/erp-auth.service /etc/systemd/system/erp-auth.service \
+$S 'test -f /tmp/erp.conf && sudo mv -f /tmp/erp.conf /etc/nginx/conf.d/erp.conf; sudo mv /tmp/erp-auth.service /etc/systemd/system/erp-auth.service \
     && sudo systemctl daemon-reload && sudo systemctl enable --now erp-auth >/dev/null && sudo systemctl restart erp-auth \
     && sleep 2 && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx \
     && systemctl is-active erp-auth && curl -s -o /dev/null -w "check 무쿠키 = %{http_code}\n" http://127.0.0.1:8000/auth/check'
