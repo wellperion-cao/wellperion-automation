@@ -33,6 +33,7 @@ erp_modules_build.py — ERP 앱 셸 모듈 목록 자동 생성 (2026-09-03 시
 종료코드: 0 정상 / 1 --check 에서 없는 경로 발견. --pre-commit 은 항상 0(fail-open).
 """
 
+import html
 import io
 import json
 import os
@@ -67,6 +68,13 @@ ROOT_PAGES = {
     "자율현황.html": "cto",
     "전사회의.html": "coo",
     "월간운영계획.html": "gm",
+    # ★2026-09-03 GM 지시 "일단 다 AWS ERP에 넣어두고 하나씩 정리해야할듯" — 역할 폴더 밖에 있어
+    #   자동 수집에 안 걸리던 화면들. 웰리 전수조사(저장소 HTML 198 · 등록 95)에서 나온 것들이다.
+    "onboarding/직원교육_30분.html": "coo",    # 운영부 신입 교육 — 인사 기밀이 아니라 실무 교육이다
+    "onboarding/game.html": "coo",             # 위와 짝(신입 퀴즈)
+    "coo/notice/notice_template.html": "coo",  # 공지 서식 — 실무진이 공지 만들 때 연다
+    "home/index.html": "cmo",                  # 대외 홈(한국어)
+    "home/en/index.html": "cmo",               # 대외 홈(영문)
 }
 # 루트에서 뺀 것: index.html(= erp 셸과 같은 입구·중복), northstar_today.html·헌법한장.html
 # (둘 다 meta refresh 로 다른 화면에 넘기는 안내 껍데기 — 아래 page_title 이 걸러낸다).
@@ -118,6 +126,8 @@ def page_title(path):
     if not m:
         return None
     t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", m.group(1))).strip()
+    # &middot; 같은 엔티티가 카드 이름에 글자 그대로 찍히는 것을 막는다(2026-09-03 실측).
+    t = html.unescape(t)
     return t or None
 
 
@@ -166,7 +176,9 @@ def build():
     seen = set()
 
     def add(role, rel):
-        if rel in seen or not is_screen(rel):
+        # ROOT_PAGES 는 사람이 골라 적은 목록이라 is_screen 판정을 건너뛴다.
+        # (공지 서식은 파일명이 _template 이라 조각으로 걸러지는데, 실제로는 실무진이 여는 화면이다.)
+        if rel in seen or (rel not in ROOT_PAGES and not is_screen(rel)):
             return
         title = page_title(os.path.join(GUIDE, rel))
         if not title:
