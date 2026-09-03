@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>브로제이 턴게이트+출입구 키오스크 견적 요약 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<!--
+  브로제이 견적 요약 A3 — 2026-09-03 시우 (welly-gm-a3-report 규격 · 레퍼런스 260828_상가관리_현황_A3 CSS 승계)
+  원본 = G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&미션 진행(경영지원부)/26.9.3 브로제이 턴게이트+출입구 키오스크/ (견적서 PDF 3부 · 2026.09.03 · 담당 조성재)
+  숫자는 견적서 그대로 옮겼고 합산만 시우가 했다. 추정치는 (추정) 표기.
+-->
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar .note{ font-size:11.5px; opacity:.8; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 22px; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy); letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); } .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0; border-bottom:1px solid var(--line); }
+  .sign .b{ height:44px; }
+  .ask{ margin-top:12px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); display:flex; gap:12px; }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:22px; font-weight:900; opacity:.55; line-height:1; }
+  .ask .q{ font-size:14.5px; font-weight:700; line-height:1.45; letter-spacing:-.2px; }
+  .ask .d{ font-size:12px; line-height:1.5; margin-top:4px; opacity:.9; }
+  .alert{ margin-top:8px; background:#FBEDEA; border:1px solid #E2B5AE; color:var(--bad); font-size:12.5px; font-weight:700; padding:7px 14px; line-height:1.5; }
+  .alert span{ font-weight:500; color:#6B2020; }
+  .main{ margin-top:10px; flex:1; min-height:0; display:flex; gap:14px; }
+  table{ border-collapse:collapse; table-layout:fixed; width:100%; align-self:flex-start; }
+  th,td{ border:1px solid var(--line); padding:6px 10px; font-size:12.6px; line-height:1.35; vertical-align:middle; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:13.5px; border-color:#2A4763; text-align:center; }
+  thead th.k{ text-align:left; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:12.6px; color:var(--navy); }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.c{ text-align:center; }
+  tr.grp td{ background:var(--navy-bg); color:var(--navy); font-weight:700; font-size:12.2px; padding:4px 10px; letter-spacing:-.2px; }
+  tr.sum td{ background:#F1F4F8; font-weight:700; }
+  tr.total td{ background:var(--navy); color:#fff; font-weight:700; font-size:13.5px; border-color:#2A4763; }
+  .good{ color:var(--good); font-weight:700; } .warn{ color:var(--warn); font-weight:700; } .bad{ color:var(--bad); font-weight:700; }
+  .dim{ color:#6B7580; font-weight:400; font-size:11.5px; }
+  .side{ width:430px; flex:none; display:flex; flex-direction:column; gap:10px; }
+  .box{ border:1px solid var(--line); padding:10px 13px; }
+  .box h3{ font-size:12.5px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--line); }
+  .box li{ font-size:12.2px; line-height:1.45; margin:0 0 5px 14px; }
+  .box li b{ font-weight:700; }
+  .box.rec{ background:var(--navy-bg); border-color:#C9D5E3; flex:1; }
+  .kpi{ display:flex; gap:8px; }
+  .kpi div{ flex:1; border:1px solid var(--line); padding:8px 10px; }
+  .kpi .l{ font-size:10.5px; color:#5C666F; letter-spacing:.5px; }
+  .kpi .v{ font-size:19px; font-weight:900; color:var(--navy); margin-top:2px; letter-spacing:-.4px; font-variant-numeric:tabular-nums; }
+  .kpi .s{ font-size:10.5px; color:#5C666F; margin-top:1px; }
+  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px; display:flex; gap:26px; font-size:10.6px; line-height:1.5; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>브로제이 턴게이트+출입구 키오스크 견적 요약 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">브로제이 견적 요약 — 턴게이트 2개소 + 출입 키오스크 3개소 (정문 · 남자사우나 · 수영장)</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시우</b> · 담당 <b>김남욱 GM</b> · 업체 <b>(주)브로제이 조성재 (대표 조민규)</b><br>
+      견적일 <b>2026. 09. 03.</b> · 작성일 <b>2026. 09. 03.</b> · 문서번호 <b>WP-GM-260903-01</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it"><div class="n">01</div><div><div class="q">발주 범위와 순서를 정해 주십시오 — 3개소 전체 <b>19,437,000원</b>(VAT 포함) · 정문 키오스크만이면 2,189,000원, 사우나·수영장 게이트 세트는 각 8,624,000원.</div><div class="d">전체를 한 번에 할지, 어느 지점부터 할지에 따라 결제 시점과 공사 일정이 갈립니다. 결제는 우리은행 1005-704-322242 (주)브로제이.</div></div></div>
+      <div class="it"><div class="n">02</div><div><div class="q">회원관리 프로그램 <b>월 79,000원</b> — 지금 내는 브로제이 구독료와 별도인지, 그 안에 들어가는지 확인 후 결정해 주십시오.</div><div class="d">저장소에 현행 브로제이 구독료 기록이 없어 중복 여부를 우리 쪽에서 판단할 수 없습니다. 견적서 적요에만 한 줄로 적혀 있습니다.</div></div></div>
+    </div>
+  </div>
+  <div class="alert">⚠ 검증 한계 — <span>①견적 유효기간 <b>미기재</b> ②단일 업체 견적이라 <b>단가 검증 불가</b>(비교 견적 없음) ③턴게이트·키오스크 제조사·원산지·A/S 조건 <b>미기재</b> ④사우나·수영장 견적이 글자 하나까지 동일 — 현장 차이(문 폭·전원 위치)가 반영된 건지 확인 필요</span></div>
+
+  <div class="main">
+    <div class="tblcol" style="flex:1; min-width:0;">
+      <table>
+        <thead><tr><th class="k" style="width:230px">항목 <span class="dim" style="color:#cfd8e3">단위 원 · VAT 포함 기준</span></th><th style="width:150px">정문</th><th style="width:150px">남자사우나</th><th style="width:150px">수영장</th><th style="width:170px">3개소 합계</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="6">비용 — 출입제어 키오스크</td></tr>
+          <tr><td class="k">Pass Lite (벽걸이형) 1대</td><td class="n">2,189,000</td><td class="n">2,189,000</td><td class="n">2,189,000</td><td class="n">6,567,000</td><td>공급가 1,990,000 + VAT 199,000 / 대</td></tr>
+          <tr class="grp"><td colspan="6">비용 — 턴게이트 세트 (정문은 해당 없음)</td></tr>
+          <tr><td class="k">신형 턴게이트 (270×900×1000) 1대</td><td class="c">—</td><td class="n">3,300,000</td><td class="n">3,300,000</td><td class="n">6,600,000</td><td>본체. 모델명·제조사 미기재</td></tr>
+          <tr><td class="k">게이트 더미 1</td><td class="c">—</td><td class="n">1,100,000</td><td class="n">1,100,000</td><td class="n">2,200,000</td><td>반대편 마감 기둥</td></tr>
+          <tr><td class="k">글라스폴 2</td><td class="c">—</td><td class="n">440,000</td><td class="n">440,000</td><td class="n">880,000</td><td>200,000 × 2 + VAT</td></tr>
+          <tr><td class="k">알루미늄 몰딩 1</td><td class="c">—</td><td class="n">605,000</td><td class="n">605,000</td><td class="n">1,210,000</td><td></td></tr>
+          <tr><td class="k">키오스크 거치대 1</td><td class="c">—</td><td class="n">110,000</td><td class="n">110,000</td><td class="n">220,000</td><td>정문은 벽걸이라 거치대 없음</td></tr>
+          <tr><td class="k">전기 및 통신 공사 1</td><td class="c">—</td><td class="n">550,000</td><td class="n">550,000</td><td class="n">1,100,000</td><td>범위(배선 거리·분전반) 미기재</td></tr>
+          <tr><td class="k">설치비 (서울·경기) 1</td><td class="c">—</td><td class="n">330,000</td><td class="n">330,000</td><td class="n">660,000</td><td></td></tr>
+          <tr class="sum"><td class="k">공급가 소계</td><td class="n">1,990,000</td><td class="n">7,840,000</td><td class="n">7,840,000</td><td class="n">17,670,000</td><td class="dim">VAT 별도</td></tr>
+          <tr class="sum"><td class="k">부가세</td><td class="n">199,000</td><td class="n">784,000</td><td class="n">784,000</td><td class="n">1,767,000</td><td class="dim">10%</td></tr>
+          <tr class="total"><td class="k" style="background:var(--navy);color:#fff">합계 (VAT 포함)</td><td class="n">2,189,000</td><td class="n">8,624,000</td><td class="n">8,624,000</td><td class="n">19,437,000</td><td>견적서 3부 합산 (시우 계산)</td></tr>
+          <tr class="grp"><td colspan="6">자산·서비스</td></tr>
+          <tr><td class="k">계약 형태</td><td colspan="3" class="c">일시 구매 <span class="dim">(추정 — 견적서에 렌탈·할부 표기 없음)</span></td><td class="c">—</td><td>구매면 소유권은 설치 즉시 우리 것</td></tr>
+          <tr><td class="k">월 비용</td><td colspan="3" class="c"><b>회원관리 프로그램 79,000원/월</b></td><td class="n">연 948,000</td><td class="warn">현행 구독료와 중복 여부 미확인 (결정 02)</td></tr>
+          <tr><td class="k">A/S · 보증</td><td colspan="3" class="c bad">미기재</td><td class="c">—</td><td>보증 기간·출동 조건을 발주 전에 문서로 받아야 함</td></tr>
+          <tr class="grp"><td colspan="6">검증 상태</td></tr>
+          <tr><td class="k">견적 유효기간</td><td colspan="3" class="c bad">미기재</td><td class="c">—</td><td>단가 변동 가능 — 발주 전 재확인</td></tr>
+          <tr><td class="k">단가 검증</td><td colspan="3" class="c warn">단일 견적 · 비교 불가</td><td class="c">—</td><td>턴게이트 1대 3,000,000(공급가)이 시세 안인지 판단 근거 없음</td></tr>
+          <tr><td class="k">종합 위험도</td><td colspan="3" class="c warn">중 — 금액보다 사양·A/S 공백이 문제</td><td class="c">—</td><td>기존 브로제이 시스템(얼굴인증·락커)과 같은 회사라 연동 위험은 낮음</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="side">
+      <div class="kpi">
+        <div><div class="l">3개소 합계</div><div class="v">19,437,000</div><div class="s">VAT 포함 · 일시 구매(추정)</div></div>
+        <div><div class="l">게이트 1개소당</div><div class="v">8,624,000</div><div class="s">키오스크 포함</div></div>
+        <div><div class="l">월 구독</div><div class="v">79,000</div><div class="s">회원관리 프로그램</div></div>
+      </div>
+      <div class="box">
+        <h3>핵심 리스크</h3>
+        <ul>
+          <li><b class="bad">⚠ 상</b> 사우나·수영장 견적이 <b>완전히 같은 문서</b>다 — 두 곳의 문 폭·바닥·전원 위치가 같을 리 없다. 현장 실측 없이 낸 견적이면 공사비(전기·통신 550,000)가 늘 수 있다.</li>
+          <li><b class="bad">⚠ 상</b> A/S·보증·유효기간이 <b>한 줄도 없다.</b> 게이트는 고장 나면 출입 자체가 막히는 장비다.</li>
+          <li><b class="warn">△ 중</b> 월 79,000원이 기존 구독과 <b>중복 청구</b>될 수 있다 — 지금 내는 금액을 모른다.</li>
+          <li><b class="warn">△ 중</b> 수영장 게이트는 <b>습기·염소</b> 환경 — 일반 사양이면 부식. 사양 확인 필요.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>실행 액션</h3>
+        <ul>
+          <li>브로제이에 <b>4가지 문서 요청</b> — 견적 유효기간 · 턴게이트 모델명/제조사 · A/S 보증 조건 · 수영장 방습 사양</li>
+          <li>사우나·수영장 <b>현장 실측 동행</b> 요청(전기·통신 공사 범위 확정) — 이정헌 소장</li>
+          <li>현행 브로제이 <b>월 구독료 확인</b> — 결제 내역에서 (나우열M)</li>
+          <li>발주 확정 시 결재 SSOT에 💰 결재 기안 · 전사일정에 설치일 등록</li>
+        </ul>
+      </div>
+      <div class="box rec">
+        <h3>GM 권고</h3>
+        <ul>
+          <li>금액은 <b>19,437,000원</b>이 전부다 — 숨은 항목은 없다. 다만 <b>사양·A/S 네 가지가 문서로 오기 전에는 발주하지 않는 편</b>이 안전하다.</li>
+          <li>정문 키오스크(2,189,000)는 <b>기존 장비 교체 성격</b>이라 별도 판단이 쉽다. 게이트 두 곳은 공사가 붙는 신규 설치라 실측이 먼저다.</li>
+          <li>월 79,000원은 <b>연 948,000원</b> — 작아 보여도 5년이면 474만 원. 기존 구독에 포함되는지 한 줄만 확인하면 끝난다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>출처</b> — (주)브로제이 견적서 3부(2026.09.03 · 담당 조성재 010-5828-2814) · G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&amp;미션 진행(경영지원부)/26.9.3 브로제이 턴게이트+출입구 키오스크/. 숫자는 견적서 그대로, <b>합계 19,437,000·연 948,000 만 시우 합산</b>.</div>
+    <div><b>정직 표기</b> — 「일시 구매」는 견적서에 렌탈·할부 표기가 없어 <b>(추정)</b>. 유효기간·제조사·A/S·현장 실측 여부는 견적서에 없어 「미기재」로 둠. 배경 = 9/2 브로제이 대표 미팅에서 GM 요청(게이트 + 입구 키패스라이트 1개 추가) → 9/3 회신분.</div>
+    <div><b>차기 보고</b> — 요청 문서 4종 회신 + 현장 실측 결과가 오면 같은 문서번호로 갱신. 정본 = GM업무 02번 「웰페리온 ERP 고도화 + 브로제이 시스템 업무분장」(월간운영계획 2026-08-08).</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('sheet'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+    var a = document.createElement('a'); a.download = '260903_브로제이_턴게이트키오스크_견적요약_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+  });
+};
+</script>
+</body>
+</html>
