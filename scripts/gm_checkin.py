@@ -779,7 +779,7 @@ CHAIRMAN_ITEMS_JS = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / '_
 CHAIRMAN_REPORTED = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / 'chairman_reported.json'
 GM_WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html'
 G1_URL = 'https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#G1'
-_CHAIRMAN_ITEM_RE = re.compile(r"\{\s*id:\s*'([^']+)',\s*title:\s*'([^']+)'")
+_CHAIRMAN_ITEM_RE = re.compile(r"""\{\s*id:\s*["']([^"']+)["'],\s*title:\s*["']([^"']+)["']""")
 
 
 def _fetch_gm_direct_objectives(day: str) -> list | None:
@@ -1580,7 +1580,12 @@ def _morning_brief_v2(day: str) -> str:
     due_pairs, ssot_rest = _split_by_due(ssot, day) if ssot is not None else ([], [])
     chairman = _fetch_chairman_open()
     report = [f"{x.get('업무명', '')} ({_due_label(due, day)})" for x, due in due_pairs[:2]]
-    receive = [f"{it['title']} — 회장님 보고 대기" for it in (chairman or [])[:1]]
+    # ★2026-09-03 웰리 검수 — 회장님 목록을 한 건도 못 읽어 매일 「받을 것: 없음」이었다(실제 6건).
+    #   원인 = _CHAIRMAN_ITEM_RE 가 작은따옴표만 찾는데 목록 파일은 큰따옴표. 아래 정규식을 고쳤고,
+    #   여기서는 첫 건 + 남은 건수를 같이 적어 '한 건뿐'으로 읽히지 않게 한다.
+    _ch = chairman or []
+    receive = ([f"{_ch[0]['title']} — 회장님 보고 대기" + (f" (외 {len(_ch) - 1}건)" if len(_ch) > 1 else "")]
+               if _ch else [])
     receive += [f"{x.get('업무명', '')} — {x.get('상태', '')}" for x in ssot_rest[:1]]
     lines.append("② 보고할 것 / 받을 것")
     lines.append("· 보고: " + (" · ".join(report) if report else "없음"))

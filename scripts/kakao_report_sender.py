@@ -1489,6 +1489,10 @@ _FAIL_ALERT_BODY_CAP = 900
 def _failure_reason(failures: list) -> str:
     """실패 메시지에서 사람이 읽는 사유 한 줄. 못 가르면 '원인 불명'이라 적는다(지어내지 않음)."""
     blob = " ".join(str(x) for pair in failures for x in pair).lower()
+    # ★2026-09-03 웰리 검수 — 승인 게이트 보류("보류: 웰리_승인_필요")가 「발신 실패 · 원인 불명」으로
+    #   업무보고방에 실렸다(12:27 실측). 실패가 아니라 정해진 대기다 — 그렇게 적는다.
+    if "승인_필요" in blob or "보류:" in blob:
+        return "발신 게이트에서 승인 대기로 보류됐습니다 — 실패가 아니라 승인 뒤 나갑니다"
     if "no active desktop" in blob or "fail-safe" in blob or "failsafe" in blob:
         return "PC 화면이 잠겨 있어 카톡 창을 조작하지 못했습니다(세션 잠금·화면보호기)"
     if "elementnotenabled" in blob:
