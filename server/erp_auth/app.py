@@ -205,7 +205,7 @@ STYLE = (
     "button.sec{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}"
     ".g{display:block;margin:12px 0 0;padding:11px;text-align:center;font-weight:700;color:var(--ink);text-decoration:none;"
     "border:1px solid var(--line-strong);border-radius:8px}.g:hover{background:var(--accent-soft);border-color:var(--accent)}"
-    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}"
+    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
     ".err,.ok{margin:0 0 16px;padding:8px 12px;font-size:13.5px;color:var(--ink);border-left:3px solid var(--accent);background:var(--accent-soft)}"
     ".err{border-left-color:#ED5B3F}"
     ".tw{overflow-x:auto}table{width:100%;min-width:640px;font-size:14px;border-collapse:collapse}"
