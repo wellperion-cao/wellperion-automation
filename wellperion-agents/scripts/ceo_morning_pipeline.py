@@ -1416,16 +1416,33 @@ def _board_summary_lines(secs: dict) -> list[str]:
         _HANGRO_URL,
     ]
     # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 "놓치지 않게") — 한 줄만. 길게 안 쓴다.
+    # ★2026-09-03 웰리 검수 — 숫자만 있고 이름이 없었다(실측 그날 통: "못 지킴 1건 · 마감 임박
+    #   4건 · 결재 진행 중 1건"). GM 은 번호·건수만으로는 무엇인지 모르고 자율현황을 열어야 했다.
+    #   각 묶음에 제목·담당을 최대 4줄 붙인다. 5건 이상이면 「외 N건」.
+    def _names(items: list, cap: int = 4) -> list[str]:
+        rows = []
+        for it in items[:cap]:
+            title = _ROLE_TAG.sub("", str(it.get("title") or "")).strip()
+            who = str(it.get("owner") or it.get("clevel") or "").strip()
+            rows.append(f"   ▪ {_tg_trim(title, 40)}" + (f" — {who}" if who else ""))
+        if len(items) > cap:
+            rows.append(f"   ▪ 외 {len(items) - cap}건")
+        return rows
+
     _mf_n, _mf_od = len(secs.get("must_finish_today", [])), len(secs.get("must_finish_overdue", []))
     if _mf_n or _mf_od:
         out.append(
             f"🎯 오늘 반드시 끝낼 것 {_mf_n}건" + (f" · 🔴 못 지킴 {_mf_od}건" if _mf_od else ""))
+        out.extend(_names(secs.get("must_finish_overdue", []) + secs.get("must_finish_today", [])))
     if secs.get("urgent"):
-        out.append(f"🔴 마감 임박 {len(secs['urgent'])}건 — 자율현황에서 확인")
+        out.append(f"🔴 마감 임박 {len(secs['urgent'])}건")
+        out.extend(_names(secs["urgent"]))
     if secs.get("appr"):
         out.append(f"🔴 GM 결재 {len(secs['appr'])}건 — 결재 현황 SSOT에서 확인·결재")
+        out.extend(_names(secs["appr"]))
     if secs.get("appr_inflight"):
         out.append(f"⏳ 결재 진행 중 {len(secs['appr_inflight'])}건 (타 결재자 대기)")
+        out.extend(_names(secs["appr_inflight"]))
     out.append("")
     return out
 
