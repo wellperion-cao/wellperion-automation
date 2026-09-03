@@ -392,6 +392,14 @@ html,body{margin:0!important;padding:0!important;background:#0d0d12!important;ov
   #wlp-lk .kiosk { padding-bottom:30px !important; }
   #wlp-lk .bigbtns { margin-top:30px !important; }
   #wlp-lk .privacy { margin-top:30px !important; }
+
+  /* 오른쪽 스크롤바를 눈에서만 감춘다 (2026-09-03 GM 지시).
+     ★위 ①② 실패와 다른 종류다 — overflow 도, 높이도 건드리지 않는다. 스크롤 동작은 그대로고
+     막대의 '모양'만 지운다. 터치 키오스크라 손가락으로 밀면 그대로 넘어간다.
+     막대가 자리를 차지하지 않게 되어 본문 폭도 그만큼(약 15px) 넓어진다. */
+  html { scrollbar-width:none !important; }
+  body { scrollbar-width:none !important; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { width:0 !important; height:0 !important; }
 }</style>
 
 <!-- 키오스크 화면 확대 고정 (kiosk-zoom-lock · 2026-08-24 시우 · 실무진 신고 FB260820-144009)
