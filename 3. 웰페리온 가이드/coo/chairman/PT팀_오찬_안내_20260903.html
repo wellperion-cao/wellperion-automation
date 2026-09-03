@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P.T팀 오찬 안내 (2026-09-03)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.55; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  /* 머리말 */
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:11px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:14px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:16px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:20px; font-weight:800;}
+
+  h2{font-size:18px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:12px 16px; font-size:19px; font-weight:600; line-height:1.55;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:8px;}
+  .kpi{border:1.5px solid var(--line); padding:7px 12px;}
+  .kpi .k{font-size:13px; color:var(--dim);}
+  .kpi .v{font-size:25px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .kpi .s{font-size:13px; color:var(--dim);}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; align-items:start; margin-top:13px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+
+  table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  th,td{border:1px solid var(--line); padding:6px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+
+  .quote{border-left:5px solid var(--ok); background:var(--ok-soft); padding:12px 16px;
+         font-size:17px; line-height:1.6;}
+  .quote .tail{margin-top:7px; font-size:17px; font-weight:800; color:var(--ok);}
+  .quote .src{margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .topics{list-style:none; padding:0; margin:0;}
+  .topics li{border-left:5px solid var(--accent); background:#f7f9fb;
+             padding:7px 13px; margin-bottom:4px; break-inside:avoid; font-size:17px;
+             font-weight:600; line-height:1.45;}
+  .topics .w{display:block; margin-top:2px; font-size:13.5px; font-weight:400; color:var(--dim); line-height:1.38;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .note ul,.good ul{margin:5px 0 0; padding-left:20px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk,.topics li{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar button[disabled]{opacity:.5; cursor:default;}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">회장님 팀별 오찬 · 2차</div>
+      <div class="ttl">P.T팀 오찬 안내</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">9월 3일(목) 12:00</div>
+      <div>회장님 &middot; 대표님 &middot; 김남욱 GM &middot; 나우열M &middot; P.T팀 전원</div>
+      <div>센터 내부 &mdash; <b>배달음식</b> (준비 나우열M)</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    오늘 자리는 평가나 점검이 아니라 <em>격려와 소통</em>을 위한 자리입니다.
+    P.T팀은 8월 목표를 <em>123.7% 달성</em>했고 <em>두 달 연속 초과</em>했습니다. 안전사고는 <em>한 건도 없었습니다.</em> 편하게 오시면 됩니다.
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">8월 매출</div><div class="v">1억 2,250만</div><div class="s">8/31 매출보고 실측</div></div>
+    <div class="kpi"><div class="k">목표 달성</div><div class="v">123.7%</div><div class="s">목표 9,900만 &middot; 7월 102.3%에 이어 두 달 연속</div></div>
+    <div class="kpi"><div class="k">안전사고</div><div class="v">0건</div><div class="s">접수 132건 중 한 건도 없음</div></div>
+    <div class="kpi"><div class="k">강습 문의</div><div class="v">8월 13건</div><div class="s">성인 11 &middot; 유소년 2 (7월 7건에서 늘었습니다)</div></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 왼쪽 -->
+    <div>
+      <div class="blk">
+        <h2>회장님께서 물으실 만한 것</h2>
+        <div class="quote">
+          &ldquo;1:1 수업만으로 목표를 123% 넘게 달성하시더군요. <b>하루에 몇 분을 보십니까?</b>&rdquo;
+          <div class="tail">하루 몇 타임을 어떻게 돌리고 계신지 그대로 말씀하시면 됩니다. <b>힘든 점을 말씀하셔도 괜찮은 자리</b>입니다.</div>
+        </div>
+        <div class="quote">
+          &ldquo;기구를 오래 잡고 계신 회원 때문에 다음 분이 못 쓴다는 이야기가 있었는데, <b>현장에서 직접 안내해 푸셨다고 들었습니다. 해 보시니 어떻습니까?</b>&rdquo;
+          <div class="tail">8월에 접수된 회원 불편을 팀이 현장 안내로 처리한 건입니다. 실제로 어떻게 중재하셨는지 사례로 말씀하시면 가장 잘 전달됩니다.</div>
+        </div>
+        <div class="quote">
+          &ldquo;<b>P.T 회원이 오래 다니시게 만드는 데 가장 중요한 게 뭐라고 보십니까?</b>&rdquo;
+          <div class="tail">재등록이 P.T 매출의 핵심인데 회사 시스템에 아직 그 숫자가 없습니다. <b>현장 감각이 지금은 가장 정확한 정보</b>입니다.</div>
+        </div>
+        <div class="quote">
+          &ldquo;<b>있으면 훨씬 수월해질 것 같은 게 하나 있다면요?</b>&rdquo;
+          <div class="tail">건의를 여는 마무리 질문입니다. 장비 &middot; 시간표 &middot; 공간 무엇이든 편하게 말씀하시면 됩니다.</div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>이 자리에서 말씀드리면 좋은 것</h2>
+        <table>
+          <tr><th style="width:104px">현장 불편</th>
+              <td>기구 점유 &middot; 피크타임 동선 &middot; 필요한 장비. <span style="color:var(--dim)">케이블 머신 앵클 스트랩 구매 요청은 8월 22일 접수돼 처리 대기 중입니다 &mdash; 이 자리에서 한 번 더 말씀하셔도 좋습니다.</span></td></tr>
+          <tr><th>회원이 자주<br>하시는 요청</th>
+              <td>반복해서 들으시는 이야기가 가장 정확한 정보입니다. <span style="color:var(--dim)">한 번 들은 이야기보다 <b>여러 번 들은 이야기</b>를 말씀해 주시면 회사가 바로 움직입니다.</span></td></tr>
+          <tr><th>시간·인력</th>
+              <td>한 분씩 붙는 수업이라 하루에 낼 수 있는 타임에 한계가 있습니다. <span style="color:var(--dim)">몇 타임이 적정인지, 지금은 어느 정도인지 실제 감각으로 말씀해 주십시오.</span></td></tr>
+        </table>
+        <div class="note" style="margin-top:9px">
+          말씀하신 건의는 <b>김남욱 GM이 기록</b>해 이후 진행 여부를 확인합니다. 그 자리에서 결론이 나지 않아도 괜찮습니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 -->
+    <div>
+      <div class="blk">
+        <h2>여쭤보시면 좋은 것</h2>
+        <div class="lede" style="font-size:16px; padding:10px 14px;">
+          아래 넷은 <em>지금 회사가 실제로 정하고 있는 것</em>들입니다. 팀에 직접 영향이 가는 사안이라, 이 자리에서 여쭈면 답을 들으실 수 있습니다.
+        </div>
+        <table style="margin-top:8px">
+          <tr><th style="width:104px">강습 요금</th>
+              <td>&ldquo;회원권 요금이 <b>2027년 2월</b>에 오른다고 들었는데, <b>강습 요금도 함께 오르는지</b> 궁금합니다.&rdquo;
+                  <span style="color:var(--dim)"> &mdash; 회장님&middot;대표님께서 정하실 사안입니다.</span></td></tr>
+          <tr><th>비공개<br>프리미엄 1:1</th>
+              <td>&ldquo;남의 눈에 띄지 않게 운동하고 싶어 하시는 회원이 있는데, <b>시간대나 공간을 따로 두는 방식</b>도 검토해 볼 수 있을까요?&rdquo;
+                  <span style="color:var(--dim)"> &mdash; 자리를 늘리지 않고 단가를 올리는 길이라 회사도 검토 중입니다.</span></td></tr>
+          <tr><th>개인별 실적을<br>어떻게 볼지</th>
+              <td>&ldquo;9월에 새 시스템으로 바뀌면 <b>강사별 매출&middot;재등록이 숫자로 보이게</b> 된다고 들었습니다. <b>어떤 기준으로 보실지</b> 미리 알고 싶습니다.&rdquo;
+                  <span style="color:var(--dim)"> &mdash; 기준을 먼저 아는 편이 서로 편합니다.</span></td></tr>
+          <tr><th>유소년<br>키성장 P.T</th>
+              <td>&ldquo;유소년 <b>키성장 P.T</b>도 P.T팀 실적으로 보는 것인지 정해 주시면 좋겠습니다.&rdquo;
+                  <span style="color:var(--dim)"> &mdash; 지금 집계는 이 축을 따로 떼어 보여주지 못합니다.</span></td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>회사가 보고 있는 방향 (참고)</h2>
+        <div style="font-size:16px; margin-bottom:7px;">
+          P.T의 한계는 자리가 아니라 <b>강사의 시간</b>이라고 회사도 보고 있습니다. 그래서 길을 셋으로 놓고 있습니다.
+        </div>
+        <table>
+          <tr><th style="width:104px">단가를 올린다</th><td>회원권 요금 인상은 <b>2027년 2월 시행 확정</b>(12월 사전 안내 &middot; 1월 공지). 강습 요금을 함께 올릴지는 아직 정해지지 않았습니다.</td></tr>
+          <tr><th>프리미엄 1:1을<br>만든다</th><td>시간대&middot;공간을 따로 두는 비공개 P.T &mdash; 같은 한 타임에 더 받는 방법입니다. (검토 착수 여부 결정 필요)</td></tr>
+          <tr><th>재등록을<br>보이게 한다</th><td>다시 오시게 하는 것이 P.T 매출입니다. 지금은 그 숫자가 없어 9월 새 시스템 전환 때 넣습니다.</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>여러분께 드리는 말씀</h2>
+        <div class="note" style="border-left-color:var(--ok); background:var(--ok-soft);">
+          1:1 수업은 <b>한 분 한 분에게 강사의 시간이 그대로 들어가는</b> 구조입니다.
+          두 달 연속 목표를 넘긴 것도, 안전사고가 한 건도 없었던 것도 그 시간에서 나왔습니다.
+          오늘은 <b>그 시간을 알아봐 드리는 자리</b>입니다 &mdash; 편하게 오시면 됩니다.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    수치는 2026-09-02 기준 실측입니다 &mdash; 8월 매출&middot;목표는 8/31 매출보고서, 문의 13건은 강습 문의 원장, 접수&middot;안전사고는 종합접수처 원장에서 직접 확인했습니다. 확인되지 않은 항목은 넣지 않았습니다. &middot; 작성 웰페리온 AI 웰리 &middot; 문의 김남욱 GM
+  </div>
+
+</div>
+
+<!-- PNG 저장 — 저장소 표준(공지 템플릿·모집 페이지와 동일한 html2canvas 방식) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = 'PT팀_오찬_안내_20260903.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>
