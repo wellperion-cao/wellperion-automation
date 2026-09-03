@@ -54,6 +54,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 INTAKE_HTML = ROOT / "3. 웰페리온 가이드" / "cmo" / "intake" / "instructor_intake.html"
+API_JS = ROOT / "3. 웰페리온 가이드" / "cmo" / "_api.js"   # 시모 화면 GAS 주소 단일 출처(2026-09-03)
 ENV_FILE = ROOT / "telegram_bot" / ".env"
 SENT_STATE_PATH = ROOT / "scripts" / ".intake_card_sent.json"
 QUEUE_DISPATCH_PATH = ROOT / "scripts" / "queue_dispatch.py"
@@ -85,6 +86,7 @@ INTAKE_HEADER = ["접수일시", "성함", "분류", "한줄소개", "회원이�
 _TEST_MARKERS = ("__TEST__", "__배포검증__", "__폼검증__")
 _ID_SAFE_RE = re.compile(r"[^0-9A-Za-z가-힣]+")
 _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
+_API_JS_INTAKE_GAS_RE = re.compile(r'intakeGas\s*:\s*"([^"]+)"')
 
 # 시리즈 정의 — 정본은 코드가 아니라 아래 JSON 한 파일이다(약속 L01).
 #   접수 화면(cmo/sunday/GM의일요일.html)이 같은 파일을 읽어 고를 목록을 만들고,
@@ -165,7 +167,16 @@ def _load_env_val(key: str) -> str:
 
 
 def _extract_gas_url() -> str:
-    """접수 폼 HTML에서 GAS_PROD exec URL을 뽑는다(단일 출처 — 하드코딩 금지)."""
+    """접수 GAS exec URL 을 뽑는다(단일 출처 — 하드코딩 금지).
+
+    2026-09-03 시모 화면 GAS 주소가 cmo/_api.js 한 곳(intakeGas)으로 단일화됐다(커밋 d34c32cdf).
+    접수 쓰기는 서버 이중기록 통로(/api/intake)로 가지만 시트 조회(action=rows)는 여전히 GAS 라
+    intakeGas 값을 읽는다. 옛 위치(instructor_intake.html 의 GAS_PROD)는 폴백으로만 남긴다.
+    """
+    if API_JS.exists():
+        m = _API_JS_INTAKE_GAS_RE.search(API_JS.read_text(encoding="utf-8"))
+        if m:
+            return m.group(1).strip()
     if not INTAKE_HTML.exists():
         return ""
     text = INTAKE_HTML.read_text(encoding="utf-8")
@@ -1195,7 +1206,7 @@ def main() -> int:
 
     gas_url = _extract_gas_url()
     if not gas_url:
-        print(f"[ERROR] GAS_PROD URL을 {INTAKE_HTML} 에서 찾지 못함")
+        print(f"[ERROR] 접수 GAS URL 을 {API_JS}(intakeGas) · {INTAKE_HTML}(GAS_PROD) 어디서도 찾지 못함")
         return 1
 
     token = _load_env_val("INTAKE_READ_TOKEN")
