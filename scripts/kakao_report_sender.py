@@ -910,6 +910,8 @@ def _fix_avg_for_chairman(text: str) -> str:
 _HONORIFIC_RES = [
     re.compile(r"(?<=[가-힣])\s?(실장|소장|팀장|반장|원장|프로|부장|과장|주임|사원|대리|점장)(?![가-힣님])"),
     re.compile(r"(?<=[가-힣])(AM|GM|M)(?![A-Za-z가-힣님])"),
+    # 「김남욱 GM」처럼 띄어 쓴 직함 — 전사일정 정본 표기(2026-09-03 통일)라 님이 빠지면 안 된다.
+    re.compile(r"(?<=[가-힣] )GM(?![A-Za-z가-힣님])"),
 ]
 
 

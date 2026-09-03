@@ -4163,7 +4163,7 @@ def main():
             miss = [g for g in fresh if g["likely"] in ("제출누락", "제출만 빠짐")]
             only_fac = all(g["zone"] == "시설부" for g in fresh)
             head = ("🔔 시설부 점검 입력이 아직 없습니다" if only_fac else
-                    "🔔 점검은 도신 것 같은데 제출이 안 들어왔습니다" if miss else
+                    "🔔 점검은 하신 것 같은데 제출이 안 들어왔습니다" if miss else
                     "🔔 아직 시작 전인 회차가 있습니다")
             body = [head, "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
             for g in fresh:

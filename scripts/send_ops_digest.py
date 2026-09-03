@@ -1809,20 +1809,22 @@ def send_schedule_pings() -> None:
         ask = (f"👉 오늘 건 {_who} — 본인 부서 건은 담당자에게 전달 부탁드립니다"
                if _who else
                "👉 본인 부서 건은 담당자에게 전달 부탁드립니다")
-        msg = "\n".join([
-            block,
-            ask,
-            f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
-            "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다",
-        ])
+        tail_lines = [f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
+                      "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다"]
         # ★2026-09-01 GM 지시 — "중간관리자방 + 운영부방까지 공유하자."
-        #   ★운영부는 답을 요구하지 않는 공유 전용 방이다(약속 L24) — 같은 통을 그대로 보내되
-        #   묻는 자리는 ★중간관리자 한 곳으로 둔다. 같은 사람이 두 방에서 같은 걸 두 번 받는
-        #   중복이지만, 일정은 놓치면 되돌릴 수 없어 GM 이 중복을 감수하기로 정했다.
+        #   ★운영부는 답을 요구하지 않는 공유 전용 방이다(약속 L24) — 같은 통을 보내되
+        #   묻는 자리(👉 전달 부탁)는 ★중간관리자 한 곳에만 둔다. 2026-09-03 실측: 두 방에 같은
+        #   👉 줄이 나가고 있었다 — 주석은 "한 곳"이라 적고 코드는 두 곳에 보냈다.
+        #   같은 사람이 두 방에서 같은 걸 두 번 받는 중복이지만, 일정은 놓치면 되돌릴 수 없어
+        #   GM 이 중복을 감수하기로 정했다.
+        msg_by_room = {
+            RELAY_ROOM: "\n".join([block, ask] + tail_lines),
+            TARGET_ROOM: "\n".join([block] + tail_lines),
+        }
         for _i, _room in enumerate((RELAY_ROOM, TARGET_ROOM)):
             if _i:
                 time.sleep(SEND_STAGGER_SECONDS)   # 알림 두 개가 같은 초에 겹치지 않게
-            cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", _room,
+            cmd = [sys.executable, str(SENDER), "--message", msg_by_room[_room], "--only-room", _room,
                    "--sender", "아침정리다이제스트"]
             log(f"[sched] 발송 → {_room}")
             proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
