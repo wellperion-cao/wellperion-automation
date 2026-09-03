@@ -1465,6 +1465,9 @@ table.op-t td b{font-size:15px}
                    돌아오는 링크(?open=churn)를 두고, 아래 스크립트가 그 파라미터를 받아 모달을 연다. -->
             <a class="action-btn" id="btnSalesMemberReport" href="../../coo/report/매출회원현황보고.html" target="_blank" rel="noopener">📄 매출·회원 현황 보고 →</a>
             <button class="action-btn" id="btnPersonSearch" onclick="focusPersonSearch()">🔎 사람 찾기</button>
+            <!-- LOSS 관리 버튼 되살림 (GM 2026-09-03 "LOSS보관이 있었는데 없어졌네") — 09-02 통합 때 보고서 링크로만
+                 남겼더니 처리 작업 입구가 안 보였다. 보는 것은 보고서, 처리(LOSS 처리·보관 복귀)는 여기. -->
+            <button class="action-btn" id="btnChurnManage" onclick="openChurnManage()">🚪 LOSS 관리</button>
             <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
                  카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
             <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
