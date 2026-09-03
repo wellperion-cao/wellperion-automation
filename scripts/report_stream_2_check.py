@@ -314,29 +314,22 @@ def build_kakao_digest(today: str | None = None) -> str:
             for b in bits:
                 _sub(b)
 
-    # 🛠 지원부 — 제목 줄에 종일 완료율, 구역·짚을 점은 아랫줄로 하나씩.
+    # 🛠 지원부 — 제목 줄에 종일 완료율, 그 아래는 ✅ 제출한 조 / ⛔ 미제출 조 두 묶음.
+    #   ★2026-09-03 GM("하루의 마무리에서는 오늘 점검 현황들 가독성 + 직관적으로 전달하는거
+    #   아녔어?"). 종전 판은 '짚을 점' 문장을 쪼개 조마다 ❗ 를 붙여, 94% 채운 조와 0% 조가
+    #   같은 기호로 다섯 줄 나열됐다(실측 9/2 통) — 어디가 됐고 어디가 안 됐는지 한 번에 안 보였다.
+    #   숫자는 support 절 원본 줄(_groups)에서 그대로 읽는다 — 다시 계산하지 않는다.
     if sup_lines:
         out.append(sup_lines[0])
-        for ln in sup_lines[1:3]:
-            if ln.strip().startswith(("남성구역", "여성구역")):
-                _sub(ln.strip().split(" — ")[0])
-        issue = _pick(sup_lines, "❗ 짚을 점:")
-        if issue:
-            body = issue.split(":", 1)[-1].strip()
-            # 짚을 점도 여러 건이면 한 줄에 하나씩 — 뒤에 붙는 '— 독려 필요' 꼬리는 마지막에만 남긴다.
-            tail = ""
-            m = re.search(r"\s+—\s+([^·]+)$", body)
-            if m:
-                tail = m.group(1).strip()
-                body = body[: m.start()].strip()
-            for piece in [p.strip() for p in re.split(r"[·,]", body) if p.strip()]:
-                _sub("❗ " + piece)
-            if tail:
-                _sub("👉 " + tail)
-        # ★2026-08-20(배670 후속) — 짚을 점이 있을 때만 링크를 붙인다. 이상 없는 날 매번
-        #   붙이면 클릭할 것도 없는 링크가 800자 예산만 깎아먹는다. 미체크 화면(점검 남/여)은
-        #   PIN 게이트라 해시 딥링크 대상에서 제외돼 있어(약속 — PIN 우회 방지) 탭 이름만 안내한다.
-        if issue:
+        done_g, miss_g = [], []
+        for zone in ("남성구역", "여성구역"):
+            for g, dn, t in _groups(sup_lines, zone):
+                (done_g if dn > 0 else miss_g).append(f"{zone[:2]} {g} {dn}/{t}")
+        if done_g:
+            _sub("✅ 제출 — " + " · ".join(done_g))
+        if miss_g:
+            _sub("⛔ 미제출 — " + " · ".join(miss_g))
+            _sub("👉 미제출 조는 [제출]만 눌러 주시면 됩니다")
             _sub(f"📎 지원부 체계 {_page_url('지원부 체계')}")
             _sub("「점검(남)/(여)」 탭 · 비밀번호 필요")
 
@@ -372,6 +365,15 @@ def build_kakao_digest(today: str | None = None) -> str:
     return "\n".join(out)
 
 
+def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:
+    """support 절 원본 줄에서 그 구역의 (조 이름, 완료, 예정) 을 그대로 읽는다 — 아침·저녁 공용."""
+    for ln in lines:
+        if ln.strip().startswith(zone):
+            return [(g, int(a), int(b))
+                    for g, a, b in re.findall(r"(\S+조)\s*(\d+)/(\d+)", ln)]
+    return []
+
+
 def build_morning_kakao(today: str | None = None) -> str:
     """🌅 하루의 시작 — 4부서 합본방 아침 통 (GM 확정 2026-09-03).
 
@@ -401,14 +403,6 @@ def build_morning_kakao(today: str | None = None) -> str:
     sup_today, _ = _scs.build_support_section(today)
     sup_yest, _ = _scs.build_support_section(yest)
     fac_yest, _ = _scs.build_facility_section(yest)
-
-    def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:
-        """그 구역의 (조 이름, 완료, 예정) — 원본 줄에서 그대로 읽는다."""
-        for ln in lines:
-            if ln.strip().startswith(zone):
-                return [(g, int(a), int(b))
-                        for g, a, b in re.findall(r"(\S+조)\s*(\d+)/(\d+)", ln)]
-        return []
 
     # ── 🎯 오늘 채울 것 — 조별 '예정' 건수(분모)만. 07:40 엔 실적이 아직 없다.
     out.append("🎯 오늘 채울 것")
