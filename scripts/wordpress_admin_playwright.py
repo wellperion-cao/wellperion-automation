@@ -1016,10 +1016,12 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     )
     await page.wait_for_timeout(500)
     verify = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
-    if verify.count(repl) != repl_before + 1 or find in verify:
-        print(f"[ABORT] textarea 반영 검증 실패(repl {verify.count(repl)}건/기대 {repl_before+1}, find잔존 {find in verify}) — 저장 안 함.")
+    # repl 이 find 를 품으면(뒤에 덧붙이는 삽입) find 는 repl 안에 든 수만큼 남는 게 정상
+    find_after = repl.count(find)
+    if verify.count(repl) != repl_before + 1 or verify.count(find) != find_after:
+        print(f"[ABORT] textarea 반영 검증 실패(repl {verify.count(repl)}건/기대 {repl_before+1}, find {verify.count(find)}건/기대 {find_after}) — 저장 안 함.")
         await ctx.close(); await p.stop(); return 14
-    print(f"[INFO] textarea 치환 반영 확인 (repl {verify.count(repl)}건, find 0건)")
+    print(f"[INFO] textarea 치환 반영 확인 (repl {verify.count(repl)}건, find {find_after}건)")
 
     # 발행 상태 유지 → #publish(업데이트)로 저장
     pre_status = await page.evaluate(
@@ -1038,9 +1040,9 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     saved = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
     await page.screenshot(path=str(INSPECT_DIR / f"wp_swap_saved_{ts}.png"))
     print(f"[INFO] 저장 후 상태: {status or '(미검출)'}")
-    print(f"[INFO] 저장 후 본문 내 find 잔존: {saved.count(find)}건 / repl: {saved.count(repl)}건(기대 {repl_before+1})")
+    print(f"[INFO] 저장 후 본문 내 find 잔존: {saved.count(find)}건(기대 {find_after}) / repl: {saved.count(repl)}건(기대 {repl_before+1})")
     await ctx.close(); await p.stop()
-    ok = saved.count(find) == 0 and saved.count(repl) == repl_before + 1
+    ok = saved.count(find) == find_after and saved.count(repl) == repl_before + 1
     print(f"[INFO] === 외과적 치환 {'완료' if ok else '확인 필요'} === (백업: {backup_path})")
     return 0 if ok else 15
 
