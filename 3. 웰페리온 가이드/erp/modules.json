@@ -1,0 +1,39 @@
+{
+  "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 여기가 카드의 단일 출처다. status/module_registry.json(자동화 등록부)과는 별개 — 저건 자동화 스크립트 등록부고, 이건 사람이 눌러 들어가는 화면 목록이다. 담당 실무진 이름의 정본은 ssot/kpi.json _부서반장 이며, 사람이 바뀌면 그쪽을 먼저 고치고 여기를 맞춘다.",
+  "modules": [
+    {
+      "id": "member",
+      "name": "회원",
+      "desc": "멤버십·강습 회원 등록과 상태를 한 곳에서 관리한다.",
+      "path": "../cpo/member/membership.html",
+      "owner": "이경연 실장",
+      "roles": ["admin"]
+    },
+    {
+      "id": "inquiry",
+      "name": "문의",
+      "desc": "홈페이지·전화·현장으로 들어온 문의를 접수부터 등록까지 따라간다.",
+      "path": "../cpo/문의현황.html",
+      "owner": "이경연 실장",
+      "roles": ["admin", "staff"]
+    },
+    {
+      "id": "check",
+      "name": "점검",
+      "desc": "시설 일일 점검과 고장 접수 현황을 본다.",
+      "path": "../coo/check/시설부 체계.html",
+      "owner": "이정헌 소장",
+      "roles": ["admin", "staff"]
+    }
+  ],
+  "pages": [
+    { "name": "웰페리온 ERP 본문", "desc": "운영 원칙·부서 체계·교육자료 전체", "path": "../wellperion_guide(main).html" },
+    { "name": "자율현황", "desc": "AI C-Level 자율 구동 현황", "path": "../자율현황.html" },
+    { "name": "월간운영계획", "desc": "이달의 운영 계획과 진척", "path": "../월간운영계획.html" },
+    { "name": "업무 현황 SSOT", "desc": "부서 업무 단일 출처", "path": "../coo/todo/업무 현황 SSOT.html" },
+    { "name": "결재 현황 SSOT", "desc": "결재 대기·완료 단일 출처", "path": "../coo/todo/결재 현황 SSOT.html" },
+    { "name": "종합접수처", "desc": "6종 접수 창구 현황", "path": "../coo/reception/종합접수처_현황.html" },
+    { "name": "전사 일정", "desc": "전사 일정과 소방·법정 점검", "path": "../coo/check/전사_일정.html" },
+    { "name": "헌법 한 장", "desc": "웰페리온 운영 헌법", "path": "../헌법한장.html" }
+  ]
+}

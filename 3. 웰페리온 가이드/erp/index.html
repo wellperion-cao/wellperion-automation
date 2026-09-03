@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 ERP</title>
+<link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
+<style>
+  /* 색·폰트는 wellperion_guide(main).html 의 :root 를 그대로 쓴다 (2026-09-03) */
+  :root{
+    --bg:#221F20; --paper:#2a2725; --text:#f5f2ef; --text-soft:#d4d0cc;
+    --dim:#8c8b83; --dim-soft:#6b6a64;
+    --accent:#B79F8A; --accent-hover:#d4b89e; --accent-bg:rgba(183,159,138,0.12);
+    --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+       -webkit-font-smoothing:antialiased;}
+
+  .topbar{display:flex; align-items:center; gap:14px; padding:16px 40px;
+          background:var(--paper); border-bottom:1px solid var(--border);}
+  .topbar .brand{font-size:17px; font-weight:700; letter-spacing:-0.01em;}
+  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
+  .topbar .who{margin-left:auto; font-size:13.5px; color:var(--text-soft);}
+  .topbar .who .role{display:inline-block; font-size:11.5px; font-weight:600;
+                     padding:2px 9px; border-radius:20px; background:var(--accent);
+                     color:#221F20; margin-left:7px;}
+  .topbar a.logout{font-size:13px; color:var(--dim); text-decoration:none; margin-left:16px;}
+  .topbar a.logout:hover{color:var(--accent-hover);}
+
+  .main{max-width:1100px; padding:40px 40px 80px;}
+  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
+  .meta{font-size:13px; color:var(--dim); margin-bottom:30px;}
+  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
+     border-bottom:2px solid var(--gray-bg);}
+
+  .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
+  .mod{display:block; background:var(--paper); border:1px solid var(--border);
+       border-radius:12px; padding:20px 22px; text-decoration:none; color:inherit;
+       transition:border-color 0.12s, background 0.12s;}
+  .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
+  .mod .name{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .mod .desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
+  .mod .owner{font-size:12.5px; color:var(--dim); margin-top:12px;
+              border-top:1px dashed var(--border-strong); padding-top:9px;}
+  /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
+  .mod.locked{opacity:0.4;}
+  .mod.locked:hover{border-color:var(--border); background:var(--paper);}
+  .mod.locked .owner::after{content:" · 권한 없음"; color:var(--dim-soft);}
+
+  .pages{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px;}
+  .pages a{display:block; padding:11px 14px; background:var(--paper);
+           border:1px solid var(--border); border-radius:8px;
+           text-decoration:none; color:var(--text-soft); font-size:14px;}
+  .pages a:hover{border-color:var(--accent); color:var(--accent-hover);}
+  .pages a .d{display:block; font-size:12px; color:var(--dim); margin-top:1px;}
+
+  .msg{color:var(--dim); font-size:14px;}
+  @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">웰페리온 ERP<span class="sub">모듈 홈</span></div>
+  <div class="who" id="who">확인 중…</div>
+  <a class="logout" id="logout" href="/auth/logout" hidden>로그아웃</a>
+</div>
+
+<div class="main">
+  <h2>모듈</h2>
+  <div class="meta">회원 · 문의 · 점검 — 매일 쓰는 세 가지부터 여기서 연다.</div>
+  <div class="modules" id="modules"><div class="msg">불러오는 중…</div></div>
+
+  <h3>전체 화면</h3>
+  <div class="pages" id="pages"></div>
+</div>
+
+<script>
+// 1) 로그인 확인 — 401 이면 관문으로 보낸다. 서버(nginx 앞단 FastAPI)가 쿠키를 판정한다.
+fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
+  if (r.status === 401) { location.href = '/auth/login?next=/erp/'; return null; }
+  if (!r.ok) throw new Error('auth ' + r.status);
+  return r.json();
+}).then(function(me){
+  if (!me) return;
+  document.getElementById('who').innerHTML =
+    esc(me.name || me.email || '') + '<span class="role">' + esc(me.role || '') + '</span>';
+  document.getElementById('logout').hidden = false;
+  return loadModules(me.role);
+}).catch(function(e){
+  // 로컬에서 파일로 열면 /auth/me 가 없다 — 튕기지 않고 권한 없는 상태로 그려 둔다.
+  document.getElementById('who').textContent = '로그인 확인 불가';
+  loadModules(null);
+});
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function loadModules(role){
+  return fetch('modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+    var mods = document.getElementById('modules');
+    mods.innerHTML = '';
+    d.modules.forEach(function(m){
+      var allowed = !role || (m.roles || []).indexOf(role) >= 0;
+      var a = document.createElement('a');
+      a.className = 'mod' + (allowed ? '' : ' locked');
+      a.href = m.path;
+      a.innerHTML = '<div class="name">' + esc(m.name) + '</div>' +
+                    '<div class="desc">' + esc(m.desc) + '</div>' +
+                    '<div class="owner">담당 ' + esc(m.owner) + '</div>';
+      mods.appendChild(a);
+    });
+    var pages = document.getElementById('pages');
+    (d.pages || []).forEach(function(p){
+      var a = document.createElement('a');
+      a.href = p.path;
+      a.innerHTML = esc(p.name) + '<span class="d">' + esc(p.desc) + '</span>';
+      pages.appendChild(a);
+    });
+  }).catch(function(){
+    document.getElementById('modules').innerHTML =
+      '<div class="msg">모듈 목록(modules.json)을 불러오지 못했다.</div>';
+  });
+}
+</script>
+</body>
+</html>
