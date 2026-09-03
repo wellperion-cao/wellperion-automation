@@ -953,6 +953,9 @@ AUTO_PIPELINE_SENDERS = {
                           # 강습·업장 접수 기한초과분(★부서장)
     "접수전달",            # report_stream_2b_reception.py run_intake_relay — 신규 접수 부서별
                           # 실시간 전달(대상 방이 매번 달라 항상 이 이름으로 통과)
+    # "대표결재전달",      # rep_approval_relay.py — 대표님 결재 촬영본 업로드 건 목록(★중간관리자,
+                          # 17:05 알림성 합본 슬롯). GM 지시 2026-09-03 · 실발신 GM 승인 대기라
+                          # 주석 상태 = 게이트 OFF. 켜려면 이 줄 주석만 푼다.
 }
 SENDER_WELLY = "웰리"
 

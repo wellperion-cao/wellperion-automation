@@ -168,6 +168,15 @@
   // 배포(GitHub Pages) 반영이 늦으면 같은 파일을 저장소 raw 에서 한 번 더 찾는다 — 못 읽은 채로 그리면
   // 이미 보고한 건이 다시 '보고 대기'로 올라가 문안에 섞인다(GM 2026-08-06 가 막으라고 한 바로 그 상태).
   var RAW_STATE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/' + encodeURI(CH_STATE_PATH);
+  // 대표님 결재 완료 건을 ★중간관리자 방에 전달한 기록(scripts/rep_approval_relay.py 지문 · GM 지시
+  // 2026-09-03 "GM업무에도 반영"). notified{id: 'YYYY-MM-DD'} 만 읽어 「📨 중간관리자 전달 M/D」 배지를
+  // 단다 — 'seed-…' 같은 기준선 표식은 날짜가 아니라 배지가 안 붙는다. 못 읽으면 배지만 없다.
+  var RAW_RELAY = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/heartbeats/rep-approval-relay.json';
+  var relayed = {};
+  function relayBadge(it) {
+    var d = fmtNoYear(relayed[it.id]);
+    return d ? ' <span class="done-badge">📨 중간관리자 전달 ' + esc(d) + '</span>' : '';
+  }
   // ★2026-08-12 실측 — 표가 「불러오는 중…」에서 멈춰 있었다. 공용 저장소(Apps Script)가 느린 날
   // 응답이 수십 초 걸리는데, 그걸 기다렸다 그리게 해 두어 화면 전체가 붙들렸다. 그래서:
   //   ① 저장소에 시간 제한(8초)을 건다 — 늦으면 그냥 없는 셈 친다.
@@ -352,7 +361,7 @@
       elGrid.innerHTML = _items.map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var actionHtml = it.reported
-          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
+          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>' + relayBadge(it)
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return (
           '<div class="item">' +
@@ -384,7 +393,7 @@
           (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '') +
           pctBadge(stagePct(it.status));
         var actionHtml = it.reported
-          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
+          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>' + relayBadge(it)
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td>' +
@@ -404,7 +413,9 @@
 
     function load() {
       elGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
-      readWorkApproval().then(function (rows) {
+      Promise.all([readWorkApproval(), _chGet(RAW_RELAY, 6000)]).then(function (pair) {
+        var rows = pair[0];
+        relayed = (pair[1] && pair[1].notified) || {};
         var filtered = filterRows(rows, cfg.wantCeoRows);
         _items = filtered ? filtered.map(toItem) : null;
         // 결재 SSOT 대조 합류(GM 지시 2026-09-02 "보고·결재 완료건을 대표님 보고 목록에") —

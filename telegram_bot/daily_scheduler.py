@@ -3034,6 +3034,14 @@ def run_mgmt_notice_digest() -> None:
     그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지."""
     label = "[★중간관리자 알림성 합본]"
     today = datetime.now().strftime("%Y-%m-%d")
+    # 대표님 결재 촬영본 업로드 건 → 같은 방·같은 슬롯에 「결재 완료 목록」 한 통(GM 지시 2026-09-03).
+    # 발신은 관문(kakao_report_sender)이 하고, 게이트(AUTO_PIPELINE_SENDERS "대표결재전달")가
+    # 꺼져 있으면 미리보기 로그만 남기고 아무것도 안 나간다 — 실발신 GM 승인 대기.
+    try:
+        import rep_approval_relay as _rar
+        _rar.run(send=True)
+    except Exception as e:
+        logger.error(f"{label} 대표 결재 전달 예외: {e}")
     try:
         import mgmt_notice_queue as _mnq
         import send_ops_digest as _od3
