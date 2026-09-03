@@ -27,10 +27,6 @@
   window.WELP_GATE_PW = GATE_PW; // 기존 GAS 호출(password 동봉) 호환용
   var SKEY = "welp_gate_ok";     // 같은 탭 세션에서 한 번 통과하면 다른 보호 페이지도 통과
 
-  // AWS ERP(erp.wellperion.com)는 서버 로그인 관문이 이미 막고 있다 — 커튼을 한 번 더 띄우면 비밀번호를 두 번 치게 된다
-  // (2026-09-03 라이브 검수 · 커튼 페이지 18개). WELP_GATE_PW 는 GAS 호출 호환용이라 위에서 그대로 둔다.
-  if (/^erp\.wellperion\.com$/.test(window.location.hostname)) return;
-
   // [2026-09-04 시우 · 배956] AWS ERP(erp.wellperion.com · 서버 IP)는 서버 로그인 관문(JWT 쿠키)이 이미 막는다 —
   //   여기서 비밀번호 커튼을 한 번 더 띄우면 이중 관문이라 실무진이 두 번 막힌다. '이미 통과' 경로와 똑같이 지나간다.
   //   깃허브 페이지스(wellperion-cao.github.io)·로컬 파일은 종전 그대로 커튼을 띄운다.
