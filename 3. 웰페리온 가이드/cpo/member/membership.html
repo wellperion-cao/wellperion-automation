@@ -14002,21 +14002,34 @@ function apiPost(payload) {
   //   ★상한 60초(2026-07-30 재조정) — 30초로 뒀더니 실측 단일 요청이 31.7초까지 걸린 사례가 있어
   //   정상 응답을 끊을 위험이 있었다. 무한 대기만 막으면 되므로 넉넉히 잡는다.
   var _to = _ac ? setTimeout(function(){ try { _ac.abort(); } catch (e) {} }, 60000) : null;
-  return fetch(GAS_URL, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
-    signal: _ac ? _ac.signal : undefined
-  }).then(function(r){
-    if (_to) clearTimeout(_to);
-    return r.text().then(function(txt){
-      var data;
-      try { data = JSON.parse(txt); }
-      catch (e) { data = { ok: false, error: '응답 파싱 실패' }; }   // 판독 불가 = 성공 단정 금지(INC-013)
-      return data;   // 실제 {ok,error}
+  var _body = JSON.stringify(payload);
+  function _send(url, strict) {
+    return fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: _body,
+      signal: _ac ? _ac.signal : undefined
+    }).then(function(r){
+      if (strict && !r.ok) throw new Error('api ' + r.status);   // 미로그인(401)·서버 장애(5xx)
+      return r.text().then(function(txt){
+        var data;
+        try { data = JSON.parse(txt); }
+        catch (e) { data = { ok: false, error: '응답 파싱 실패' }; }   // 판독 불가 = 성공 단정 금지(INC-013)
+        return data;   // 실제 {ok,error}
+      });
     });
-  }).catch(function(e){ if (_to) clearTimeout(_to); throw e; });
+  }
+  // ★쓰기 관문(배 961 · 2026-09-03 시토) — ERP 도메인이면 서버 /api/write 가 먼저 받아 write_log 에 남기고 같은 payload 를
+  //   GAS 에 그대로 전달한 응답을 돌려준다. 서버에 못 닿거나(네트워크·401·5xx) 서버가 GAS 에 못 닿으면(server-forward-failed)
+  //   종전 GAS 직접 경로로 폴백 — 읽기 관문(_memberListFetch)과 같은 규칙. 되돌리기 = 아래 ERP_API_ON 을 false 로.
+  var _gas = function(){ return _send(GAS_URL, false); };
+  var _p = !ERP_API_ON ? _gas()
+    : _send('/api/write', true)
+        .then(function(d){ return (d && d.error === 'server-forward-failed') ? _gas() : d; })
+        .catch(function(e){ if (_ac && _ac.signal.aborted) throw e; console.warn('[쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message); return _gas(); });
+  return _p.then(function(d){ if (_to) clearTimeout(_to); return d; })
+           .catch(function(e){ if (_to) clearTimeout(_to); throw e; });
 }
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -148,3 +148,17 @@ CREATE TABLE IF NOT EXISTS hold_items (
   synced_at  TEXT NOT NULL,
   PRIMARY KEY (tenant_id, intake_row)
 );
+
+-- 쓰기 관문 원장 (api_write.py · 배 961 · 2026-09-03). 화면이 시트에 쓰는 모든 payload 가 GAS 로 가기 전에 여기 먼저 남는다.
+-- gas_status = pending(전달 전) · ok · gas-error(GAS 가 ok:false) · forward-failed(GAS 에 못 닿음 → 화면이 GAS 직접 폴백).
+CREATE TABLE IF NOT EXISTS write_log (
+  id           BIGSERIAL PRIMARY KEY,
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  at           TEXT NOT NULL,
+  action       TEXT NOT NULL,
+  payload      JSONB NOT NULL,
+  user_email   TEXT,
+  gas_status   TEXT NOT NULL,
+  gas_response JSONB
+);
+CREATE INDEX IF NOT EXISTS ix_write_log_action ON write_log (tenant_id, action, at);
