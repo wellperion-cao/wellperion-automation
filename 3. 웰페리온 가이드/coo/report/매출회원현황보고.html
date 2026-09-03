@@ -867,7 +867,10 @@ function load(){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
       RAW.cells = d.cells || {};
       renderSheet(RAW.cells);
-      document.getElementById('readat').textContent = d.at || '—';
+      document.getElementById('readat').textContent = (d.at || '—') + (d.ssName ? ' · ' + d.ssName : '');
+      // 웹앱이 이번 달 파일을 못 찾고 옛 파일을 열었으면 그 사실을 맨 위에 띄운다(2026-09-03).
+      // 숫자는 멀쩡해 보여도 지난달 파일 값이다 — 조용히 넘어가면 GM 이 잡는다.
+      if (d.warn) e.innerHTML += '<div class="err">⚠ 보고 시트 — ' + esc(d.warn) + '</div>';
     })
     .catch(function(err){
       e.innerHTML = '<div class="err">보고 시트를 못 읽었습니다 — ' + esc(err.message) +
