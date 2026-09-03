@@ -101,6 +101,8 @@ def inquiry(item_id: str):
 # ── 회원 미러 (sync_members.py · 배 931) ─────────────────────────────────────
 # members 표도 읽기 전용. 열쇠 = 회원번호(M00001…). 개인정보가 들어 있으므로 nginx auth_request 뒤에서만.
 MEMBER_SCOPES = ("valid", "ended", "corp", "archive")
+# 한 회원번호가 여러 scope 에 있을 때(같은 사람의 이력) 대표는 valid — 이 순서로 고른다.
+_SCOPE_ORDER = "CASE scope WHEN 'valid' THEN 0 WHEN 'ended' THEN 1 WHEN 'corp' THEN 2 ELSE 3 END"
 # 문의 표의 전화는 시트 원문("010-1234-5678")이라 조인 때 숫자만 남겨 비교한다.
 _INQ_PHONE = "REPLACE(REPLACE(REPLACE(phone,'-',''),' ',''),'.','')"
 
@@ -137,7 +139,8 @@ def members_summary():
         "last_sync_kst": meta.get("members_last_sync"),
         "last_failed": meta.get("members_last_failed") or "",
         "unnumbered": int(meta.get("members_unnumbered") or 0),
-        "collisions": int(meta.get("members_collisions") or 0),  # 같은 회원번호가 두 scope 에 — 등기부 충돌
+        "collisions": int(meta.get("members_collisions") or 0),    # 같은 번호·다른 사람 — 등기부 충돌
+        "multi_scope": int(meta.get("members_multi_scope") or 0),  # 같은 번호·같은 사람이 여러 scope 에 — 이력(정상)
         "_source": SOURCE,
     }
 
@@ -147,7 +150,7 @@ def members(
     scope: Optional[str] = None,          # valid · ended · corp · archive
     q: Optional[str] = None,              # 이름 부분일치 또는 전화 숫자 부분일치(뒷자리)
     limit: int = Query(100, ge=1, le=1000),
-    cursor: Optional[str] = None,         # 직전 응답의 next_cursor(회원번호) — 그 다음부터
+    cursor: Optional[str] = None,         # 직전 응답의 next_cursor("회원번호|scope") — 그 다음부터
 ):
     where, args = [], []
     if scope:
@@ -166,28 +169,32 @@ def members(
     cnt_sql = "SELECT COUNT(*) FROM members" + (" WHERE " + " AND ".join(where) if where else "")
     cnt_args = list(args)
     if cursor:
-        where.append("member_no > ?")
-        args.append(cursor)
+        no, _, sc = cursor.partition("|")
+        where.append("(member_no, scope) > (?, ?)")
+        args += [no, sc]
     sql = "SELECT * FROM members" + (" WHERE " + " AND ".join(where) if where else "")
-    sql += " ORDER BY member_no LIMIT ?"
+    sql += " ORDER BY member_no, scope LIMIT ?"
     conn = _open()
     with conn:
         total = conn.execute(cnt_sql, cnt_args).fetchone()[0]
         rows = conn.execute(sql, args + [limit]).fetchall()
     return {"total": total, "count": len(rows), "limit": limit,
-            "next_cursor": rows[-1]["member_no"] if len(rows) == limit else None,
+            "next_cursor": "%s|%s" % (rows[-1]["member_no"], rows[-1]["scope"]) if len(rows) == limit else None,
             "rows": [_member_row(r) for r in rows], "_source": SOURCE}
 
 
 @app.get("/api/members/{member_no}")
 def member(member_no: str):
     """회원 한 사람 + 같은 전화·이름의 문의(정의서 2장 규칙: 전화(정규화)+이름 정확 일치만 '확정').
-    전화만 같고 이름이 다른 문의는 합치지 않고 candidates 건수로만 알린다(가족 공유번호·양도 실재)."""
+    전화만 같고 이름이 다른 문의는 합치지 않고 candidates 건수로만 알린다(가족 공유번호·양도 실재).
+    같은 번호가 여러 scope 에 있으면 valid 가 대표, 나머지는 scopes 배열(이력)."""
     conn = _open()
     with conn:
-        r = conn.execute("SELECT * FROM members WHERE member_no = ?", (member_no.upper(),)).fetchone()
-        if r is None:
+        rs = conn.execute("SELECT * FROM members WHERE member_no = ? ORDER BY %s" % _SCOPE_ORDER,
+                          (member_no.upper(),)).fetchall()
+        if not rs:
             raise HTTPException(404, "없는 회원번호")
+        r = rs[0]
         inq, cand = [], 0
         if r["phone"]:
             inq = conn.execute(
@@ -197,6 +204,7 @@ def member(member_no: str):
                 "SELECT COUNT(*) FROM inquiries WHERE %s = ? AND name <> ?" % _INQ_PHONE,
                 (r["phone"], r["name"])).fetchone()[0]
     d = _member_row(r)
+    d["scopes"] = [_member_row(x) for x in rs[1:]]
     d["inquiries"] = [_row(x) for x in inq]
     d["inquiry_count"] = len(inq)
     d["candidates"] = cand
