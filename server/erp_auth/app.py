@@ -53,6 +53,15 @@ PRESETS = {
     "마케팅":   ["핵심", "시모", "시보"],
     "전체":     list(GROUPS),
 }
+# 회사 계정 → 처음 들어올 때 붙는 부서 프리셋(GM 2026-09-03 "회사계정 안에서만 권한 분류"). 없으면 핵심만.
+ACCOUNT_PRESET = {
+    "info@wellperion.com": "운영부",       # 리셉션·운영부 공용 계정
+}
+
+
+def default_perms(email: str) -> Optional[str]:
+    name = ACCOUNT_PRESET.get(email.lower())
+    return json.dumps({"groups": PRESETS[name], "modules": [], "deny": []}, ensure_ascii=False) if name else None
 SECRET = os.environ["ERP_JWT_SECRET"]
 COOKIE = "erp_session"
 SESSION_DAYS = 30
@@ -272,7 +281,7 @@ def signup_page(msg: str = ""):
     return page("웰페리온 ERP 가입 신청", f"""<form method=post action=/auth/signup>
 <h1>가입 신청</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
-<label>회사 이메일<input name=email type=email autocomplete=email required></label>
+<label>회사 이메일 (@wellperion.com)<input name=email type=email autocomplete=email placeholder="이름@wellperion.com" required></label>
 <label>비밀번호<input name=password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
 <button>신청</button><p>GM 이 승인하면 로그인할 수 있습니다. <a href=/auth/login>로그인으로</a></p></form>""")
 
@@ -280,10 +289,13 @@ def signup_page(msg: str = ""):
 @app.post("/auth/signup")
 def signup(name: str = Form(...), email: str = Form(...), password: str = Form(...)):
     email = email.strip().lower()
+    if not email.endswith("@" + GOOGLE_HD):
+        return RedirectResponse("/auth/signup?msg=회사 계정(@wellperion.com)만 신청할 수 있습니다", status_code=303)
     salt, h = hash_pw(password)
     try:
         with db() as c:
-            c.execute("INSERT INTO users(email,name,salt,pw,created_at) VALUES(?,?,?,?,?)", (email, name.strip(), salt, h, now()))
+            c.execute("INSERT INTO users(email,name,salt,pw,created_at,perms) VALUES(?,?,?,?,?,?)",
+                      (email, name.strip(), salt, h, now(), default_perms(email)))
     except sqlite3.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 신청된 이메일입니다", status_code=303)
     tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: http://15.164.151.105/auth/admin")
@@ -418,8 +430,9 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
             return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
         if not u:
             salt, h = hash_pw(secrets.token_urlsafe(32))    # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
-            c.execute("INSERT INTO users(email,name,salt,pw,role,status,created_at,approved_at) VALUES(?,?,?,?,?,?,?,?)",
-                      (email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now()))
+            c.execute("INSERT INTO users(email,name,salt,pw,role,status,created_at,approved_at,perms) VALUES(?,?,?,?,?,?,?,?,?)",
+                      (email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now(),
+                       default_perms(email)))
         elif u["status"] != "active":
             c.execute("UPDATE users SET status='active', approved_at=? WHERE id=?", (now(), u["id"]))
         u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
