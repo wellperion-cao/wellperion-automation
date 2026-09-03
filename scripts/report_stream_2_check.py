@@ -328,8 +328,10 @@ def build_kakao_digest(today: str | None = None) -> str:
         if done_g:
             _sub("✅ 제출 — " + " · ".join(done_g))
         if miss_g:
-            _sub("⛔ 미제출 — " + " · ".join(miss_g))
-            _sub("👉 미제출 조는 [제출]만 눌러 주시면 됩니다")
+            _sub("⛔ 미점검 — " + " · ".join(miss_g))
+            # ★GM 2026-09-03 "미제출 조는 점검해달라고 해야겠지?" — 0/N 은 제출만 빠진 게 아니라
+            #   점검 기록 자체가 없는 것이다. '제출만 누르라'고 쓰면 안 한 점검을 한 것으로 만든다.
+            _sub("👉 미점검 조는 점검하시고 [제출]까지 눌러 주세요")
             _sub(f"📎 지원부 체계 {_page_url('지원부 체계')}")
             _sub("「점검(남)/(여)」 탭 · 비밀번호 필요")
 
@@ -454,7 +456,7 @@ def build_morning_kakao(today: str | None = None) -> str:
 
     out.append(f"📎 지원부 체계 {_page_url('지원부 체계')}")
     out.append(f"📎 종합접수처 {_RECEPTION_BOARD_URL}")
-    out.append("👉 조 끝나면 [제출] 한 번 · 접수는 처리 메모까지")
+    out.append("👉 조마다 점검하시고 [제출]까지 · 접수는 처리 메모까지")
     return "\n".join(out)
 
 
