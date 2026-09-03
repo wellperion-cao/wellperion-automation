@@ -1,0 +1,10 @@
+{
+  "_doc": "360° 둘러보기 지점(노드) 정본. 촬영본이 오면 file 을 실제 파일명으로 바꾸고 hotspots 로 지점을 잇는다. yaw = 정면 기준 각도(도), pitch = 위아래. 뷰어 = cmo/home/시설둘러보기360.html (파일명 = 촬영 가이드 동선표와 동일).",
+  "start": "01-reception-01",
+  "nodes": [
+    {"id": "01-reception-01", "title": "리셉션 — 입구에서", "file": "_placeholder.jpg", "yaw": 0,
+     "hotspots": [{"to": "01-reception-02", "yaw": 10, "pitch": -8, "text": "라운지로"}]},
+    {"id": "01-reception-02", "title": "라운지", "file": "_placeholder.jpg", "yaw": 0,
+     "hotspots": [{"to": "01-reception-01", "yaw": 180, "pitch": -8, "text": "입구로"}]}
+  ]
+}
