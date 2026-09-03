@@ -37,6 +37,9 @@ SECRET = os.environ["ERP_JWT_SECRET"]
 COOKIE = "erp_session"
 SESSION_DAYS = 30
 KST = timezone(timedelta(hours=9))
+LOCK_AFTER = 5                                 # 연속 실패 허용 횟수
+LOCK_SECS = 600                                # 잠금 시간(10분)
+FAILS: dict[str, tuple[int, float]] = {}       # email -> (연속실패수, 잠금해제시각) · ponytail: 서버 1대 메모리 락, 다중서버면 DB/redis로
 
 app = FastAPI(docs_url=None, redoc_url=None)
 
@@ -128,10 +131,18 @@ def login_page(next: str = "/", err: str = ""):
 
 @app.post("/auth/login")
 def login(email: str = Form(...), password: str = Form(...), next: str = Form("/")):
+    email = email.strip().lower()
+    count, locked_until = FAILS.get(email, (0, 0.0))
+    if locked_until > time.time():
+        wait_min = max(1, int((locked_until - time.time()) // 60) + 1)
+        return RedirectResponse(f"/auth/login?err=로그인 5회 실패로 잠겼습니다. {wait_min}분 후 다시 시도하세요&next={next}", status_code=303)
     with db() as c:
-        u = c.execute("SELECT * FROM users WHERE email=?", (email.strip().lower(),)).fetchone()
+        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
     if not u or hash_pw(password, u["salt"])[1] != u["pw"]:
+        count += 1
+        FAILS[email] = (0, time.time() + LOCK_SECS) if count >= LOCK_AFTER else (count, 0.0)
         return RedirectResponse(f"/auth/login?err=이메일 또는 비밀번호가 맞지 않습니다&next={next}", status_code=303)
+    FAILS.pop(email, None)
     if u["status"] != "active":
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
     r = RedirectResponse(next if next.startswith("/") else "/", status_code=303)
@@ -186,6 +197,33 @@ def me(erp_session: Optional[str] = Cookie(default=None)):
     return JSONResponse({"email": u["email"], "name": u["name"], "role": u["role"]})
 
 
+@app.get("/auth/password")
+def password_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "", err: str = ""):
+    if not current(erp_session):
+        return RedirectResponse("/auth/login?next=/auth/password", status_code=303)
+    return page("비밀번호 변경", f"""<form method=post action=/auth/password>
+<h1>비밀번호 변경</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p>' + escape(msg) + '</p>' if msg else ''}
+<input name=current_password type=password placeholder=현재 비밀번호 required>
+<input name=new_password type=password placeholder="새 비밀번호(8자 이상)" minlength=8 required>
+<button>변경</button><p><a href=/>ERP 로</a></p></form>""")
+
+
+@app.post("/auth/password")
+def password_change(current_password: str = Form(...), new_password: str = Form(...),
+                     erp_session: Optional[str] = Cookie(default=None)):
+    u = current(erp_session)
+    if not u:
+        return RedirectResponse("/auth/login?next=/auth/password", status_code=303)
+    if hash_pw(current_password, u["salt"])[1] != u["pw"]:
+        return RedirectResponse("/auth/password?err=현재 비밀번호가 맞지 않습니다", status_code=303)
+    if len(new_password) < 8:
+        return RedirectResponse("/auth/password?err=새 비밀번호는 8자 이상이어야 합니다", status_code=303)
+    salt, h = hash_pw(new_password)
+    with db() as c:
+        c.execute("UPDATE users SET salt=?, pw=? WHERE id=?", (salt, h, u["id"]))
+    return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
+
+
 # ── 관리자 ──────────────────────────────────────────────────────────────
 def admin_only(token: Optional[str]) -> sqlite3.Row:
     u = current(token)
@@ -194,23 +232,46 @@ def admin_only(token: Optional[str]) -> sqlite3.Row:
     return u
 
 
+def _admin_row(r: sqlite3.Row, me_id: int) -> str:
+    approve_or_block = ""
+    if r["role"] != "admin":
+        if r["status"] != "active":
+            approve_or_block = f"<form method=post action=/auth/admin/{r['id']}/approve><button>승인</button></form>"
+        else:
+            approve_or_block = f"<form method=post action=/auth/admin/{r['id']}/block><button style=background:#9ca3af>차단</button></form>"
+    role_btn = "" if r["id"] == me_id else (
+        f"<form method=post action=/auth/admin/{r['id']}/toggle_role>"
+        f"<button style=background:#6b7280>{'관리자로' if r['role'] != 'admin' else '일반으로'}</button></form>")
+    return (f"<tr><td>{escape(r['name'])}<br><small>{escape(r['email'])}</small></td>"
+            f"<td>{escape(r['role'])}</td><td>{escape(r['status'])}</td>"
+            f"<td>{escape(r['created_at'])}</td><td>{escape(r['approved_at'] or '')}</td>"
+            f"<td>{approve_or_block}{role_btn}</td></tr>")
+
+
 @app.get("/auth/admin")
 def admin(erp_session: Optional[str] = Cookie(default=None)):
-    admin_only(erp_session)
+    me = admin_only(erp_session)
     with db() as c:
         rows = c.execute("SELECT * FROM users ORDER BY status='pending' DESC, created_at DESC").fetchall()
-    tr = "".join(
-        f"<tr><td>{escape(r['name'])}<br><small>{escape(r['email'])}</small></td><td>{escape(r['status'])}</td>"
-        f"<td>{'' if r['role'] == 'admin' else ('<form method=post action=/auth/admin/' + str(r['id']) + '/approve><button>승인</button></form>' if r['status'] != 'active' else '<form method=post action=/auth/admin/' + str(r['id']) + '/block><button style=background:#9ca3af>차단</button></form>')}</td></tr>"
-        for r in rows)
-    return page("ERP 계정 관리", f"<div class=box><h1>계정 관리</h1><table>{tr}</table><p><a href=/>ERP 로</a> · <a href=/auth/logout>로그아웃</a></p></div>")
+    tr = "".join(_admin_row(r, me["id"]) for r in rows)
+    return page("ERP 계정 관리", f"<div class=box style=width:680px><h1>계정 관리</h1><table>{tr}</table>"
+                                 f"<p><a href=/>ERP 로</a> · <a href=/auth/password>비밀번호 변경</a> · <a href=/auth/logout>로그아웃</a></p></div>")
 
 
 @app.post("/auth/admin/{uid}/{action}")
 def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(default=None)):
-    admin_only(erp_session)
-    if action not in ("approve", "block"):
+    me = admin_only(erp_session)
+    if action not in ("approve", "block", "toggle_role"):
         raise HTTPException(400)
+    if action == "toggle_role":
+        if uid == me["id"]:
+            raise HTTPException(400, "본인 역할은 바꿀 수 없습니다")
+        with db() as c:
+            row = c.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
+            if row:
+                c.execute("UPDATE users SET role=? WHERE id=?",
+                          ("staff" if row["role"] == "admin" else "admin", uid))
+        return RedirectResponse("/auth/admin", status_code=303)
     with db() as c:
         c.execute("UPDATE users SET status=?, approved_at=? WHERE id=? AND role!='admin'",
                   ("active" if action == "approve" else "blocked", now() if action == "approve" else None, uid))
