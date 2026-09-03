@@ -2,7 +2,12 @@
 // 정본 = 시토 API 규격(배960). 값은 지금 쓰는 GAS 배포 URL 그대로(동작 불변).
 window.WP_CMO_API = {
   funnel: "https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec",
-  intake: "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec"
+  // ★접수 쓰기는 2026-09-03 23:2x 부터 서버 이중기록 통로(시토 배960 · api_intake.py)로 간다 — 서버가 intake_log 에 먼저 적고
+  //   같은 본문을 종전 GAS 로 넘겨 시트는 지금처럼 쌓인다. GAS 가 죽어도 {ok:true,queued:true} 로 손님은 성공을 본다.
+  //   되돌리기 = 아래 두 줄을 intakeGas 값으로. 본문·헤더(text/plain JSON)는 종전 그대로.
+  intake: "https://erp.wellperion.com/api/intake/instructor",
+  intakeSunday: "https://erp.wellperion.com/api/intake/sunday",
+  intakeGas: "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec"
 };
 
 // ★API 먼저·GAS 폴백 (시토 배922 _chkRead 와 같은 모양 · 배960). ERP 도메인에서만 서버 거울 /api/funnel?<같은 쿼리> 를
