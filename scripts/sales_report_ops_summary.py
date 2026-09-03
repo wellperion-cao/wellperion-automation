@@ -3,7 +3,7 @@
 
 왜 있나
     09:30 매출보고 이미지는 사람이 만든 시트 한 조각(H2:S21)을 그대로 찍어 보낸다.
-    그 안 P20 칸에 3부서 현황을 매일 아침 09:00 에 채워 두면, 회장님·관리부·부서장·
+    그 안 P20 칸에 3부서 현황을 매일 아침 08:00 에 채워 두면(GM 확정 2026-09-04 · 종전 09:00), 회장님·관리부·부서장·
     운영부가 매출과 같은 화면에서 운영 현황을 함께 본다(GM 지시 2026-08-18).
 
 무엇을 새로 만들지 않았나
@@ -387,7 +387,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="매출 보고 시트 P20 운영 현황 채우기")
     # ★ 기본은 **어제**다. 09:30 매출보고는 전날 실적을 보고하므로(캡션 "8.16(일) 매출 및
     # 운영사항"), 운영 현황도 같은 날이어야 한 화면에서 앞뒤가 맞는다. 오늘로 잡으면
-    # 매출은 전날인데 현황만 당일이 되고, 게다가 09:00 시점의 당일 점검은 아침 회차뿐이라 거의 비어 있다.
+    # 매출은 전날인데 현황만 당일이 되고, 게다가 08:00 시점의 당일 점검은 아침 회차뿐이라 거의 비어 있다.
     ap.add_argument("--date", default=(date.today() - timedelta(days=1)).isoformat(),
                     help="기준일(기본=어제 · 매출보고와 같은 날)")
     ap.add_argument("--cell", default="P20")
@@ -395,7 +395,7 @@ def main() -> int:
     ap.add_argument("--value-up", action="append", default=[],
                     help="내부 환경 개선 줄(여러 번 지정 가능). 없으면 '집계 중'")
     ap.add_argument("--contact", action="store_true",
-                    help="I16(금일 예상 컨택 및 매출 현황)도 함께 채운다 — 09:00 예약이 쓰는 길")
+                    help="I16(금일 예상 컨택 및 매출 현황)도 함께 채운다 — 08:00 예약이 쓰는 길")
     ap.add_argument("--send-day", default=date.today().isoformat(),
                     help="09:30 보고가 나가는 날(기본 오늘). I16 의 '기준' 날짜가 된다")
     ap.add_argument("--only-contact", action="store_true", help="I16 만 채운다(P20 건너뜀)")
