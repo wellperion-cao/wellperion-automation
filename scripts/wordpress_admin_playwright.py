@@ -1524,6 +1524,9 @@ LOOKUP_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "
 RECEPTION_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_reception_block_en.html"
 LF_GALLERY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_gallery_block_en.html"
 
+# 2026-09-03 GM 지시 — 시설 둘러보기 1단계 시험 페이지(/ko/test). 본체는 Pages, 여기서는 iframe 블록만 주입.
+TOUR_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_tour_block.html"
+
 # key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
 _NEW_PAGE_SPECS = {
     "survey":          (SURVEY_BLOCK_FILE,          "문의하기",             "inquiry-form"),
@@ -1534,6 +1537,7 @@ _NEW_PAGE_SPECS = {
     "lookup-en":       (LOOKUP_BLOCK_FILE_EN,       "Reception Desk",       "lookup"),
     "reception-en":    (RECEPTION_BLOCK_FILE_EN,    "Submit a Request",     "reception"),
     "lf-gallery-en":   (LF_GALLERY_BLOCK_FILE_EN,   "Lost & Found",         "lost-found"),
+    "tour":            (TOUR_BLOCK_FILE,            "시설 둘러보기",         "test"),
 }
 
 
@@ -1835,7 +1839,7 @@ def main() -> int:
         "swap-additional-css",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup"],
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")

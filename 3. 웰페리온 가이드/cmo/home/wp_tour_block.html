@@ -1,0 +1,13 @@
+<!-- 시설 둘러보기 — 워드프레스 /ko/test 시험 페이지 주입 블록 (vc_raw_html).
+     본체는 GitHub Pages 의 cmo/home/시설둘러보기.html 이고, 여기서는 전체 화면 iframe 으로 부른다.
+     무거운 사진·2단계 360° 파일은 워드프레스가 아니라 Pages/AWS 저장소에서 온다. -->
+<style>
+body.page-template-default.page #header-outer, body.page #footer-outer, body.page #header-space{display:none!important}
+body.page #page-header-bg{display:none!important}
+body.page .container-wrap, body.page .main-content, body.page .row, body.page .col{padding:0!important;margin:0!important;max-width:none!important}
+#wp-tour-wrap{position:fixed;inset:0;background:#0F0E0E;z-index:9999}
+#wp-tour-wrap iframe{width:100%;height:100%;border:0;display:block}
+</style>
+<div id="wp-tour-wrap">
+  <iframe src="https://wellperion-cao.github.io/wellperion-automation/cmo/home/%EC%8B%9C%EC%84%A4%EB%91%98%EB%9F%AC%EB%B3%B4%EA%B8%B0.html" title="웰페리온 둘러보기" allow="fullscreen" loading="eager"></iframe>
+</div>
