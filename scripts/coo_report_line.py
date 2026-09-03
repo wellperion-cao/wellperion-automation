@@ -105,7 +105,12 @@ def build_coo_daily_lines(reg=None, fetch_fn=None, heartbeat=False) -> list:
             continue
         name = R.DISPLAY_NAME.get(m["id"], m["feature"])
         try:
-            st = f(fetch)
+            if m["id"] == "coo-check-status":
+                # 08:00 통은 지원부 종일 실적을 어제 것으로 읽는다(오늘 값은 아침엔 늘 0) — coo_registry 참고.
+                from datetime import timedelta as _td  # noqa: PLC0415
+                st = f(fetch, support_date=(datetime.now() - _td(days=1)).strftime("%Y-%m-%d"))
+            else:
+                st = f(fetch)
         except Exception:
             lines.append(f"• {name}: (측정 실패 — 정직 표기)")
             continue

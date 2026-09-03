@@ -107,7 +107,7 @@ def _issue_text(iss) -> str:
     return str(iss)
 
 
-def fetch_check_status(fetch_fn=_http_get_json) -> dict:
+def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
     """공통 status 계약 반환: {display, anomaly, reasons, tag, metrics} + 기존 depts(하위호환).
     depts[dept]["date"] = 그 값이 실제로 어느 날짜 행인지(2026-08-10 추가 — 집계 범위·판정은
     그대로, 이미 응답에 있던 date 필드를 그대로 통과만 시킨다 — 소비자가 "몇일자 값인지"
@@ -115,6 +115,12 @@ def fetch_check_status(fetch_fn=_http_get_json) -> dict:
     오늘과 다를 수 있다 — 그것도 그대로 드러난다)."""
     depts, reasons = {}, []
     for dept, query in CHECK_QUERIES.items():
+        # ★2026-09-03 웰리 검수 — 08:00 GM 통이 지원부를 today_live 로 읽어 매일 「✅ 지원 0%(0/112건)」
+        #   이 실렸다. 아침엔 오전조가 시작 전이라 0 이 당연한데 ✅ 로 나가 '정상'처럼 읽혔다.
+        #   support_date 를 주면 그 날짜(=어제)의 종일 실적을 읽는다. 09:30 카톡 등 다른 호출부는
+        #   인자 없이 종전 그대로(오늘 값).
+        if dept == "support" and support_date:
+            query = f"{query}&date={support_date}"
         row = _pick_today(fetch_fn(f"{CHECK_API}?{query}&_pv=0"))
         total = int(row.get("total") or 0)
         done = int(row.get("done") or 0)
@@ -132,8 +138,10 @@ def fetch_check_status(fetch_fn=_http_get_json) -> dict:
     def _frac(d):
         t, done = d.get("total") or 0, d.get("done") or 0
         return f"({done}/{t}건)" if t else "(대상 0건)"
+    _s_label = ("지원(어제 " + "/".join(p.lstrip("0") or "0" for p in support_date[5:].split("-")) + ")"
+                if support_date else "지원")   # "9/2" — "09/02" 로 안 남긴다
     display = (f"시설 {f_pct if f_pct is not None else '-'}%{_frac(depts.get('facility', {}))}"
-               f" · 지원 {s_pct if s_pct is not None else '-'}%{_frac(depts.get('support', {}))}")
+               f" · {_s_label} {s_pct if s_pct is not None else '-'}%{_frac(depts.get('support', {}))}")
     metrics = {f"{dept}_pct": d["pct"] for dept, d in depts.items()}
     return {"depts": depts, "anomaly": bool(reasons), "reasons": reasons, "tag": "measured",
             "display": display, "metrics": metrics}
