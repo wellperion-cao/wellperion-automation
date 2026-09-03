@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>비즈니스 확대 5개 모델 검토 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 7px; font-size:11.6px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:150px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:27px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:11.8px; line-height:1.45; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>웰페리온 비즈니스 확대 — 5개 모델 검토 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">비즈니스 확대 — 5개 모델 같은 축 검토</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시보</b><br>
+      작성일 <b>2026. 09. 03.</b> · 문서번호 <b>WP-CBO-260903-01</b><br>
+      기준 <b>2026년 8월 누계 실적 · 저장소 자산 실측</b> · 금액 <b>전부 미산정(견적 0건)</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">확장 순서를 「모듈 → ERP 판매 → 위탁 → 2호점」으로 확정해 주십시오. 퍼포먼스 마케팅은 독립 사업이 아니라 모듈 상품의 한 행으로 넣습니다.</div>
+        <div class="d">정하시면 시보가 디지털 2건(모듈·ERP 판매)에 건별 KPI를 붙여 배로 열고, 현장 2건(위탁·2호점)은 숫자 수집만 합니다. 돈이 나가는 시점마다 다시 결재 올립니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">위탁·2호점은 숫자 3개(대기자 수 · 평균 대기 기간 · 수탁 수요 1건) 확보 뒤 별도 A3로 재상정 — 이 순서를 승인해 주십시오.</div>
+        <div class="d">셋 중 「수탁 수요」는 GM 인맥에서만 나옵니다(모집 광고 없음). 대기자·대기 기간은 시포 회원 원장에서 시보가 셉니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert">
+    직접 비교 주의 — 5개 모델은 성격이 다릅니다(디지털 상품 3 · 현장 확장 2).
+    <span>&nbsp;/ 같은 축(자본 · 사람 · 우리 자산 재사용 · 첫 매출까지 · 증거 · 결재 트리거)으로만 잰다. 금액은 견적 0건이라 <b>전부 미산정</b> — 이 표는 "무엇이 싸다"가 아니라 <b>"무엇부터 할 수 있나"</b>를 정하는 표다.</span>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:150px"><col><col><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">판단 항목</th>
+        <th>① 위탁 운영<span class="sub">타 시설을 웰페리온이 수탁 운영</span></th>
+        <th>② 2호점<span class="sub">직영 확장</span></th>
+        <th>③ 홈페이지+로그인+ERP 판매<span class="sub">멀티테넌트 SaaS · 웰페리온=1호 테넌트</span></th>
+        <th>④ 퍼포먼스 마케팅<span class="sub">타 클럽 대상 마케팅 서비스</span></th>
+        <th>⑤ 모듈(앱) · 카톡 AI 파트너<span class="sub">모듈 단위 판매 · 다캠 파일럿 진행 중</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="6">비용</td></tr>
+      <tr><td class="k">계약 형태</td><td>수탁 계약 · 수수료</td><td>직영 투자</td><td>월 구독</td><td>월정액 대행 (광고비는 고객 부담)</td><td>월 구독 · 모듈 단위</td></tr>
+      <tr><td class="k">초기비용 (우리)</td><td class="warn">사람 (현장 관리자)</td><td class="bad">💰 최대 — 임차·인테리어·설비 (미산정)</td><td class="warn">AWS 서버 — 월 150만 한도 안 80만 여유 · 9월 1주 개설(시토)</td><td class="good">낮음</td><td class="good">0 — 기존 자동화 재사용</td></tr>
+      <tr><td class="k">월 고정비 추가</td><td>인건비</td><td>인건비 + 임차</td><td>AWS + 개발(시토 직접 · 외주 0)</td><td>마케터 1명 또는 AI 반무인</td><td>0 ~ AWS 일부</td></tr>
+      <tr><td class="k">첫 매출까지</td><td>6개월+ <span class="est">(추정)</span></td><td>12개월+ <span class="est">(추정)</span></td><td>3~6개월 <span class="est">(추정 · 보안 수리 뒤)</span></td><td>2~3개월 <span class="est">(추정)</span></td><td class="good">진행 중 — 요금 미산정</td></tr>
+      <tr class="grp"><td colspan="6">자산 · 사람</td></tr>
+      <tr><td class="k">재사용하는 우리 자산</td><td>운영 노하우 · 점검 체계 · ERP</td><td>브랜드 · 정원 마감 대기</td><td class="strong">ERP 185페이지 · GAS 15 · 스크립트 255 · 자동화 모듈 29(전부 가동)</td><td>콘텐츠 엔진(제작→검수→5채널 발행)</td><td class="strong">카톡 에이전트 · 문의 접수처 · 자동화 29</td></tr>
+      <tr><td class="k">사람 추가</td><td class="bad">현장 관리자 필요 — 실장 라인 5명 이미 과부하</td><td class="bad">전 직군 신규 채용</td><td class="good">0 (개발=시토) · 영업=GM</td><td class="warn">마케터 1명 또는 AI</td><td class="good">0</td></tr>
+      <tr><td class="k">외부 의존</td><td>위탁처 시설 · 의사결정</td><td>부동산 · 인허가</td><td class="warn">브로제이(회원관리 구독) 흡수 필요</td><td>광고 플랫폼</td><td class="warn">카카오톡 PC 자동화</td></tr>
+      <tr class="grp"><td colspan="6">우리 강점 · 증거 (원천에서 센 값)</td></tr>
+      <tr><td class="k">실적 근거</td><td>회원 995명 정원 마감 · 재등록 635명(64%)</td><td>대기 5명(분류칸 실측) · 연 46.7억(8월 누계 · 72억의 64.8%)</td><td class="warn">사내 사용 중 · 판매 실적 0</td><td class="warn">2026 문의 752건 · 등록 208(28%) · 온라인 전환 약(19% · 4월 실측)</td><td class="good">파일럿 1곳 진행 (다이어트캠프)</td></tr>
+      <tr><td class="k">첫 고객 후보</td><td class="bad">미수령</td><td>해당 없음</td><td>다이어트캠프 (파일럿 뒤 2호 테넌트)</td><td>다이어트캠프</td><td class="good">다이어트캠프 (진행)</td></tr>
+      <tr><td class="k">건별 KPI 후보</td><td>수탁 계약 1건</td><td>개관 여부 · 손익분기 월</td><td>유료 테넌트 수</td><td>고객 월 문의 건수 증가</td><td>유료 파일럿 1곳 · 고객 월 문의 건수</td></tr>
+      <tr class="grp"><td colspan="6">검증 상태 · 결재 트리거</td></tr>
+      <tr><td class="k">3-트리거 해당</td><td>💰 인건비 · 계약</td><td>💰 최대 · 📐 전략</td><td>💰 AWS · 🔒 보안(업무 GAS 무인증 결함 = 판매 전 필수 수리)</td><td>💰 광고비 취급</td><td>계약 시 💰</td></tr>
+      <tr><td class="k">아직 못 잰 것</td><td>수탁 수요 · 수수료율</td><td>대기자 수 · 대기 기간 · 상권</td><td>브로제이 대체 범위 · 요금</td><td>고객 광고비 규모 · 우리 대행 실적</td><td>요금 (공급가부터 설계 예정)</td></tr>
+      <tr><td class="k">종합 위험도</td><td class="bad">상 — 사람</td><td class="bad">상 — 자본</td><td class="warn">중 — 보안 · 하드코딩 제거</td><td class="warn">중 — 팔 실적이 아직 없다</td><td class="good">하</td></tr>
+      <tr class="sum"><td class="k">권고 순위</td><td class="ctr warn strong">4 — 수요 1건 뒤</td><td class="ctr bad strong">5 — 숫자 뒤 별도 A3</td><td class="ctr good strong">2</td><td class="ctr strong">3 — 독립 아님 · ⑤에 얹음</td><td class="ctr good strong">1</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1"><b>사람이 먼저 막힌다.</b> 실장 라인 5명·준용M 과부하 상태 — 위탁·2호점은 사람 없이는 착수 자체가 안 된다.</li>
+        <li class="r1"><b>ERP 판매 전 보안 결함.</b> 업무·결재 GAS가 인증 없이 쓰기·삭제를 받는다(2026-06 인지). 팔기 전 반드시 수리.</li>
+        <li class="r1"><b>플랫폼 실패 경험.</b> 이번엔 실 고객(다캠)이 먼저 있고 개발비 0 — 그래도 <b>유료 전환 0건이 6개월 지속되면 중단</b>선을 미리 둔다.</li>
+        <li class="r2">카톡 PC 자동화 의존 — 상한 6통·창 잠김 사고(09-03) 있었음. 방 30개 넘으면 다른 통로 필요.</li>
+        <li class="r2">온라인 문의 전환이 약해(19%) 「퍼포먼스 마케팅」을 팔 실적 근거가 아직 없다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션 (승인 시)</h3>
+      <ul class="ord">
+        <li class="n"><b>모듈:</b> 다캠 파일럿 → 요금은 공급가부터 설계 → GM 결재 → 2·3호는 소개로만.</li>
+        <li class="n"><b>ERP 판매:</b> AWS 서버(시토 배 909) + 보안 수리 + 하드코딩 제거 → 판매 단위 = 핵심 3모듈(회원·문의·점검) → 다캠을 2호 테넌트 후보로.</li>
+        <li class="n"><b>퍼포먼스 마케팅:</b> 별도 사업으로 열지 않는다 — 모듈 상품의 「콘텐츠·문의」 행으로 흡수, 고객 월 문의 수로만 잰다.</li>
+        <li class="n"><b>위탁:</b> 수탁 수요 1건(GM 인맥)이 나올 때까지 착수 안 함.</li>
+        <li class="n"><b>2호점:</b> 대기자 수·대기 기간을 회원 원장에서 세어 별도 A3.</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li><b>순서 = 모듈 → ERP 판매 → 위탁 → 2호점.</b> 마케팅은 모듈 안에.</li>
+        <li><b>왜 모듈이 1번인가:</b> 돈·사람이 안 들고 첫 고객이 이미 있다. 여기서 나온 요금·회신이 나머지 전부의 근거가 된다.</li>
+        <li><b>왜 디지털 둘을 묶나:</b> 같은 자산(AWS·ERP·에이전트)을 쓴다 — 모듈이 ERP 판매의 진입로다.</li>
+        <li><b>왜 현장 둘은 뒤인가:</b> 사람·돈이 먼저인데 지금 둘 다 없다. 숫자가 나오면 그때 별도로.</li>
+        <li><b>올해 상위 KPI 목표 = 유료 확장 1건</b>(다캠). 건별 KPI는 각 배에 붙인다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>수치 출처:</b> 매출 46.7억·72억 = 홈 KPI 스냅샷(8월 누계) / 회원 995·재등록 635·대기 5 = 통합회원 스냅샷 / 문의 752·등록 208 = 26년 신규문의 시트 스냅샷(1~9월) / 온라인 전환 19% = 2026-04 실측 412건 / 자산 수 = 저장소 실측(페이지 185·스크립트 255·GAS 15·모듈 29).</div>
+    <div><b>추정 표기:</b> 「첫 매출까지」 기간은 전부 (추정). 금액은 견적이 없어 미산정 — 이 문서로 비용을 단정하지 않는다. 브로제이 = 외부 구독 회원관리(연동→자체 대체 2단계 · GM 2026-07-16). AWS 예산 = 월 150만 한도(GM 2026-09-02).</div>
+    <div><b>차기 보고:</b> 다캠 대표님 회신 뒤 「모듈 요금 설계(공급가 기준)」 A3 · 2호점은 대기자·대기 기간 실측 뒤 · ERP 판매는 보안 수리 완료 시. 작성 AI 시보 · 결재 = GM(전략·📐).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260903_비즈니스확대_5모델검토_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
