@@ -1,0 +1,36 @@
+{
+  "_doc": "힉스필드(Higgsfield) 생성 레시피 정본. GM 은 이 파일을 보지 않는다 — 한 줄(장소·무엇)만 주면 시모가 여기 문장을 붙여 2~3편 뽑아 고른다. 승인된 편의 문장은 여기에 '채택' 으로 쌓이고, 반려 사유는 '금지' 에 쌓인다(노하우 = 파일 한 곳). 정본 모델·규격도 여기. 갱신 = 시모.",
+  "정본_규격": {
+    "모델": "seedance_2_5",
+    "mode": "omni_reference",
+    "resolution": "1080p",
+    "duration": 5,
+    "generate_audio": false,
+    "참조": "시설 실사 1~3장(회사문서/assets/profile 또는 photo_library.json)",
+    "편당_크레딧_실측": 49,
+    "탐색용": {"모델": "kling3_0", "mode": "std", "duration": 5, "sound": "off", "편당_크레딧_실측": 10, "쓰임": "구도·동선 빨리 보기(품질용 아님)"},
+    "채택_근거": "2026-09-03 시험 3회 — 시네마틱 문장(Seedance 2.0 45크레딧)보다 다큐 문장 + 2.5 참조모드가 사실감 큼(GM 「AI 티」 지적 후 채택)"
+  },
+  "공통_꼬리_문장": "Neutral indoor lighting exactly as in the reference photo, no added glow, no lens flare, subtle film grain, muted true-to-life colors, imperfect and ordinary, no slow motion, no text, no logo, no watermark. Keep the architecture, tiles, columns, ceiling, signage and fixtures exactly as in the reference photo.",
+  "금지": [
+    "cinematic / epic / dramatic / glowing / golden hour — 광택·후광·슬로모션을 부른다(2026-09-03 1차 시험 'AI 티' 원인)",
+    "시설·공간을 새로 그리는 문장(브랜드 규칙 = 실제 시설만) — 항상 참조 사진을 붙인다",
+    "실무진·회원 실명, 얼굴 합성",
+    "텍스트·로고·워터마크 생성"
+  ],
+  "장면_레시피": {
+    "사람_활동": {
+      "쓰임": "특정 공간에서 사람이 운동·이용하는 장면(수영·트레이닝·골프 등)",
+      "문장": "Documentary realism, not cinematic: {사람} {동작} in this exact {공간}. Camera: handheld 35mm at eye/deck level with tiny natural micro-shake, shallow depth of field on the person, background slightly soft. Real physics: {질감}. " ,
+      "채택_예": {
+        "2026-09-03_수영장_외국인": "Documentary realism, not cinematic: a 30s Western male swimmer, natural athletic body, slight goggle marks on face, swims freestyle down the center lane of this exact indoor 25m pool toward the camera. Camera: handheld 35mm at pool deck level with tiny natural micro-shake, shallow depth of field on the swimmer, background slightly soft. Real water physics: small irregular splashes, wet skin with droplets, lane rope bobbing, ceiling reflections wobbling on the surface."
+      }
+    },
+    "걷는_영상": {
+      "쓰임": "빈 공간을 걸어 들어가는 느낌(홈페이지 첫 화면·둘러보기 보조)",
+      "문장": "Documentary realism: slow steady walk forward through this exact {공간}, eye level handheld camera with tiny natural micro-shake, no people, natural pace, nothing added to the room. ",
+      "채택_예": {}
+    }
+  },
+  "반려_기록": []
+}
