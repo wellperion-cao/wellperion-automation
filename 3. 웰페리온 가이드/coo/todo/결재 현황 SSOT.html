@@ -541,7 +541,10 @@ async function loadTasks() {
   const el = document.getElementById('mainContent');
   el.innerHTML = '<div class="loading">불러오는 중...</div>';
   try {
-    const qs = 'action=todo_list';
+    // [2026-09-03 시우] GM 기안(담당자=김남욱GM)이 결재 SSOT에서 안 보이던 원인 — 서버(todo_list)가 GM 담당 행을
+    //   기본 제외하는데(실무진용 업무 현황 규칙 2026-06-01) 이 화면도 같은 조회를 써서 GM 본인 결재 건이 통째로 빠졌다.
+    //   결재 SSOT는 GM 이 결재하는 자리라 GM 행을 포함해 받는다(사내 게이트 뒤 · GM업무 담당 보드와 같은 키).
+    const qs = 'action=todo_list&include_gm=1&gmkey=1531';
     const r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
     const res = await r.json();
     if (res.ok) {
