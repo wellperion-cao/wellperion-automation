@@ -818,23 +818,45 @@ function _vApplyStatusColor(sh, row, status) {
   sh.getRange(row, colIdx).setBackground(color).setFontColor('#ffffff');
 }
 
-// ─── 접수 사진 Drive 폴더 확보 (없으면 생성 · 폴더명 VOC_Photos = 기존 자원명) ───
-function _vGetPhotoFolder() {
-  var folderId = _vpropCompat('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER');
+// ─── [2026-09-03 수정] Drive 폴더 확보 공통 — DriveApp.getRootFolder() 제거 ───
+//   증상: "DriveApp.getRootFolder을(를) 호출할 수 있는 권한이 없습니다" (drive.file 스코프에서는 루트 접근 불가).
+//   원칙: 폴더 ID 는 스크립트 속성에서만 읽는다. 없으면 상위 폴더(RECEPTION_DRIVE_PARENT 속성) 아래에 만들고
+//         그 ID 를 속성에 적어 둔다. 상위 폴더 속성이 없으면 DriveApp.createFolder(내 드라이브 루트) — 이것은
+//         drive.file 스코프로도 허용된다(앱이 만든 파일/폴더). 루트를 '읽는' 호출(getRootFolder)만 금지.
+function _drvFolder_(propKey, legacyPropKey, folderName) {
+  var props = PropertiesService.getScriptProperties();
+  var folderId = props.getProperty(propKey) || (legacyPropKey ? props.getProperty(legacyPropKey) : '') || '';
   var folder = null;
   if (folderId) {
-    try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; }
+    try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; }   // 속성값이 죽은 ID면 새로 만든다
   }
   if (!folder) {
-    var existing = DriveApp.getRootFolder().getFoldersByName(RECEPTION_PHOTO_FOLDER_NAME);
-    if (!existing.hasNext()) {   // 아직 개명 전이면 옛 이름으로 한 번 더 — 새 폴더를 만들어 갈라지지 않게
-      existing = DriveApp.getRootFolder().getFoldersByName(RECEPTION_PHOTO_FOLDER_NAME_OLD);
+    var parentId = props.getProperty('RECEPTION_DRIVE_PARENT') || '';               // 저장 전용 상위 폴더(선택)
+    var parent = null;
+    if (parentId) { try { parent = DriveApp.getFolderById(parentId); } catch (e) { parent = null; } }
+    if (parent) {
+      var ex = parent.getFoldersByName(folderName);
+      folder = ex.hasNext() ? ex.next() : parent.createFolder(folderName);
+    } else {
+      folder = DriveApp.createFolder(folderName);                                      // getRootFolder() 대신
     }
-    folder = existing.hasNext() ? existing.next()
-      : DriveApp.getRootFolder().createFolder(RECEPTION_PHOTO_FOLDER_NAME);
-    PropertiesService.getScriptProperties().setProperty('RECEPTION_PHOTO_FOLDER', folder.getId());
+    props.setProperty(propKey, folder.getId());
   }
   return folder;
+}
+
+// ─── [2026-09-03 추가] 저장 실패 문구를 원인별로 나눈다 (사용자에게 그대로 노출됨) ───
+function _drvErrMsg_(e) {
+  var m = String(e && e.message || e || '');
+  if (/권한|permission|authoriz|scope|insufficient/i.test(m)) return '사진 저장 실패 — 관리자에게 권한 재승인 요청 필요';
+  if (/size|용량|quota|too large|invalid|형식|mime|decode|base64/i.test(m)) return '사진 저장 실패 — 파일 형식 또는 용량을 확인해주세요';
+  return '사진 저장 실패 — 잠시 후 다시 시도해주세요 (' + m.slice(0, 80) + ')';
+}
+
+// ─── 접수 사진 Drive 폴더 확보 (없으면 생성 · 폴더명 RECEPTION_Photos, 옛 이름 VOC_Photos 는 속성 호환만) ───
+//   [2026-09-03 수정] 본문을 _drvFolder_ 로 위임 — 루트 폴더 탐색(getRootFolder) 제거.
+function _vGetPhotoFolder() {
+  return _drvFolder_('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER', RECEPTION_PHOTO_FOLDER_NAME);
 }
 
 // ─── 사진 업로드 (Base64 → Drive, 공개 링크) — todo_upload 패턴 복제 ───
@@ -920,13 +942,13 @@ function _vSubmit(body) {
     return _vJson({ ok: false, error: '유형 또는 내용 중 하나는 필수입니다.' });
   }
 
-  var photoUrl = '';
+  var photoUrl = '', photoWarning = '';
   if (photo) {
     try {
       photoUrl = _vUploadPhoto(photo, fileName, mimeType);
     } catch (e) {
-      // 사진 실패해도 접수는 진행 (내용 유실 방지)
-      photoUrl = '';
+      // 사진 실패해도 접수는 진행 (내용 유실 방지) — [2026-09-03] 실패 이유는 응답에 실어 화면이 알린다
+      photoUrl = ''; photoWarning = _drvErrMsg_(e);
     }
   }
 
@@ -957,7 +979,7 @@ function _vSubmit(body) {
     photoUrl
   );
 
-  return _vJson({ ok: true, id: id, photoUrl: photoUrl, message: '접수되었습니다.' });
+  return _vJson({ ok: true, id: id, photoUrl: photoUrl, photoWarning: photoWarning, message: photoWarning ? ('접수되었습니다. (' + photoWarning + ')') : '접수되었습니다.' });
 }
 
 // ─── voc_list — 현황 조회 ───
@@ -1288,9 +1310,9 @@ function _regSubmit(body) {
   var mimeType = body.mimeType || 'image/jpeg';
 
   // 사진 업로드 (실패해도 접수 진행)
-  var photoUrl = '';
+  var photoUrl = '', photoWarning = '';
   if (photo) {
-    try { photoUrl = _vUploadPhoto(photo, fileName, mimeType); } catch (e) { photoUrl = ''; }
+    try { photoUrl = _vUploadPhoto(photo, fileName, mimeType); } catch (e) { photoUrl = ''; photoWarning = _drvErrMsg_(e); }   // [2026-09-03] 실패 이유 응답 동봉
   }
 
   var headers = _regHeadersFor(cat.key); // [{key,label}]
@@ -1393,7 +1415,7 @@ function _regSubmit(body) {
 
   _regBoardCacheClear_();
   _regLookupCacheClearFor_(contact, name);   // 방금 접수한 사람이 곧바로 조회해도 새 건이 보이게
-  return _vJson({ ok: true, id: id, dept: _regDeptFor(cat, loc) });
+  return _vJson({ ok: true, id: id, dept: _regDeptFor(cat, loc), photoWarning: photoWarning });
 }
 
 // ─── 접수일시(createdAt) 내림차순 정렬 — 최신이 상단 (헤더 1행 고정) ───
@@ -2436,17 +2458,9 @@ function _lfGetSheet_() {
   return sh;
 }
 
-// LF 전용 Drive 폴더 확보 (사진=공개 / 서명=비공개) — _vGetPhotoFolder 패턴
+// LF 전용 Drive 폴더 확보 (사진=공개 / 서명=비공개) — [2026-09-03 수정] _drvFolder_ 위임(getRootFolder 제거)
 function _lfGetFolder_(propKey, folderName) {
-  var folderId = _vprop(propKey);
-  var folder = null;
-  if (folderId) { try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; } }
-  if (!folder) {
-    var existing = DriveApp.getRootFolder().getFoldersByName(folderName);
-    folder = existing.hasNext() ? existing.next() : DriveApp.getRootFolder().createFolder(folderName);
-    PropertiesService.getScriptProperties().setProperty(propKey, folder.getId());
-  }
-  return folder;
+  return _drvFolder_(propKey, '', folderName);
 }
 
 // Base64 업로드 (사진=ANYONE_WITH_LINK VIEW / 서명=비공개 유지) — _vUploadPhoto 파이프 재사용
@@ -2531,7 +2545,7 @@ function _lfSubmit(body) {
 
   var photoUrl = '';
   try { photoUrl = _lfUpload_(photo, fileName, mimeType, false); }
-  catch (e) { return _vJson({ ok: false, error: '사진 저장 실패: ' + e.message }); }
+  catch (e) { return _vJson({ ok: false, error: _drvErrMsg_(e) }); }   // [2026-09-03] 원인별 문구
 
   var sh = _lfGetSheet_();
   var id = _lfNextSeqId_();
