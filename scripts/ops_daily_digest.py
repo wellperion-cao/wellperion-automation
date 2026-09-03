@@ -330,7 +330,7 @@ def build_reception_block(target_date: str) -> str:
     )
     # ★2026-09-03 — 밀린 접수 목록이 4부서 합본방에서 이 방(★운영부)으로 옮겨졌다
     #   (send_ops_digest._OVD_ROOM_OPS). 같은 방 아침 통을 가리키게 문구를 맞춘다.
-    lines.append("   (상세 목록은 같은 아침에 오는 접수 통과 종합접수처 화면에 있습니다)")
+    lines.append("   (상세 목록은 중간관리자 방 아침 접수 통과 종합접수처 화면에 있습니다)")
 
     return "\n".join(lines)
 

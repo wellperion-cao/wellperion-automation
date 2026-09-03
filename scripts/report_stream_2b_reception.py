@@ -1026,7 +1026,15 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
             # 잘라 「수영장 내 샤워부스 총2개 남자쪽 1개 여자쪽 1개」처럼 무엇을 고쳐야 하는지
             # 모른 채 화면에 들어가야 했다. 이제 자르지 않는다.
             content = " ".join(str(r.get("content") or "").split())
-            lines.append(f"  ▪ [{cat}] ({r.get('regId')})")
+            # ★2026-09-03 GM — "이 부분에서 내용들 다 나오게". 내용 원문에 더해 접수 화면의
+            #   장소·긴급도·접수자 구분(회원/직원)·사진 유무를 제목 줄에 싣는다. 이름·연락처는
+            #   회원 개인정보라 방에 올리지 않는다(화면에서 본다).
+            loc = str(r.get("loc") or "").strip()
+            urg = str(r.get("urgency") or "").strip()
+            rep = str(r.get("reporter") or "").strip()
+            tags = [t for t in (loc, f"긴급도 {urg}" if urg else "", f"{rep} 접수" if rep else "",
+                                "📷 사진 있음" if str(r.get("photoUrl") or "").strip() else "") if t]
+            lines.append(f"  ▪ [{cat}] {' · '.join(tags)} ({r.get('regId')})".replace("  (", " ("))
             if content:
                 # 제목 줄만 훑어도 뜻이 통하게 — 상세는 다음 줄 들여쓰기(GM 2026-08-25 가독 규칙).
                 lines.append(f"     {content}")

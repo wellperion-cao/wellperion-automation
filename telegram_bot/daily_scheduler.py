@@ -4463,14 +4463,15 @@ def main():
         try:
             from report_stream_2b_reception import run_intake_relay  # noqa: PLC0415
 
+            # ★2026-09-03 GM — "종합접수처 1개씩 접수되면 즉시발송". 15분 → 5분으로 줄였다.
             scheduler.add_job(
                 lambda: run_intake_relay(dry_run=False),
-                trigger=IntervalTrigger(minutes=15),
+                trigger=IntervalTrigger(minutes=5),
                 id="reception_intake_relay_15min",
                 misfire_grace_time=300,
                 coalesce=True,
             )
-            logger.info("reception_intake_relay 등록 완료 — 15분 간격, 새 접수를 부서별로 종합접수처방 전달")
+            logger.info("reception_intake_relay 등록 완료 — 5분 간격, 새 접수를 부서별로 종합접수처방 전달")
         except Exception as e:  # noqa: BLE001
             logger.error(f"reception_intake_relay 등록 실패: {e}")
 

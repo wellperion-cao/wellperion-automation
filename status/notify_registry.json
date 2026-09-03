@@ -72,13 +72,13 @@
       "when_sort": "0741",
       "freq": "daily",
       "channel": "kakao",
-      "room": "★운영부",
+      "room": "★중간관리자",
       "chat_id": null,
       "what": "🌅 밀린 접수 목록 — 3일 넘게 안 닫힌 회원 접수를 묵은 순으로(14일+ 🔴 · 7일+ 🟠). 분실물 제외",
       "owner": "웰리",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-09-03 수신처 변경 — ★운영+시설+지원+주차(4부서 합본)에서 ★운영부로 좁혔다. 여럿에게 같이 보이면 아무도 자기 것으로 안 잡는다(실측 그날 8건 중 20일 넘은 것 3건·최장 24일, 전날엔 44일짜리). 처리 책임이 모이는 실장 방 한 곳으로(약속 L24). 부서별 인지는 15분 주기 「📮 새 접수」 통지가 종전대로 4부서방에 계속 나가 유지된다. 킬스위치 status/ops_digest_send.json overdue_alert_enabled.",
+      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-09-03 수신처 변경 — ★운영+시설+지원+주차(4부서 합본)에서 ★운영부로 좁혔다. 여럿에게 같이 보이면 아무도 자기 것으로 안 잡는다(실측 그날 8건 중 20일 넘은 것 3건·최장 24일, 전날엔 44일짜리). 처리 책임이 모이는 실장 방 한 곳으로(약속 L24). 부서별 인지는 15분 주기 「📮 새 접수」 통지가 종전대로 4부서방에 계속 나가 유지된다. 킬스위치 status/ops_digest_send.json overdue_alert_enabled. ▸[같은 날 GM 정정 2026-09-03] \"종합접수처 전체는 중간관리자방에만\" — ★운영부 → ★중간관리자 로 옮김. 실장·소장·나우열M 이 같이 있어 부서를 가로지르는 배정이 한 번에 끝난다.",
       "source": "scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)"
     },
     {
@@ -919,7 +919,7 @@
     },
     {
       "id": "kakao-intake-relay-15min",
-      "when": "15분마다",
+      "when": "5분마다",
       "when_sort": null,
       "freq": "event",
       "channel": "kakao",
@@ -929,7 +929,7 @@
       "owner": "시토",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "2026-08-15 GM 승인(배627 \"각 부서에 전달되어 그 부서에서 조치·회신까지 챙기게 하라\")으로 신설했는데 등록부에 안 넣어 notify_registry_check.py 가 UNREGISTERED_JOB 드리프트로 잡음 — 2026-08-18 시토가 등록. 게이트=status/dept_completion_notify.json intake_relay_enabled(꺼두면 잡이 돌아도 발송 0). 새 접수가 없는 방은 발신 없음(조건부) · 실측 2026-08-17 15:41 ★운영+시설+지원+주차 발송 확인(logs/kakao_sent-2026-08-17.log).",
+      "state_note": "2026-08-15 GM 승인(배627 \"각 부서에 전달되어 그 부서에서 조치·회신까지 챙기게 하라\")으로 신설했는데 등록부에 안 넣어 notify_registry_check.py 가 UNREGISTERED_JOB 드리프트로 잡음 — 2026-08-18 시토가 등록. 게이트=status/dept_completion_notify.json intake_relay_enabled(꺼두면 잡이 돌아도 발송 0). 새 접수가 없는 방은 발신 없음(조건부) · 실측 2026-08-17 15:41 ★운영+시설+지원+주차 발송 확인(logs/kakao_sent-2026-08-17.log). | [2026-09-03 GM] \"종합접수처 1개씩 접수되면 즉시발송 · 내용들 다 나오게\" — 15분 → 5분, 항목 줄에 장소·긴급도·접수자 구분(회원/직원)·사진 유무 추가. 내용 원문은 종전부터 안 자른다(8/27). 이름·연락처는 개인정보라 방에 안 올린다.",
       "source": "scripts/report_stream_2b_reception.py run_intake_relay() + telegram_bot/daily_scheduler.py:4033-4039",
       "job_id": "reception_intake_relay_15min"
     },
