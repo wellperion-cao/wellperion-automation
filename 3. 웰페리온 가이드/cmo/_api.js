@@ -16,3 +16,11 @@ window.wpCmoFetch = function(gasUrl, opts){
   return fetch('/api/funnel' + q).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r; })
     .catch(function(e){ console.warn('[퍼널] API 실패 → GAS 폴백:', e && e.message); return gas(); });
 };
+
+// wpCmoRead — 같은 규칙, JSON 을 돌려준다(월간마케팅보고서.html 이 쓴다). apiPath 도 /api/funnel?action=… 한 형태로 통일.
+window.wpCmoRead = function(apiPath, gasQuery, tag){
+  var gas = function(){ return fetch(window.WP_CMO_API.funnel + gasQuery, { redirect: 'follow' }).then(function(r){ return r.json(); }); };
+  if (!window.WP_CMO_API.apiOn) return gas();
+  return fetch(apiPath).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+    .catch(function(e){ console.warn('[' + (tag||'퍼널') + '] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+};

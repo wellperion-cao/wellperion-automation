@@ -497,7 +497,7 @@ async function loadPrevMonthChannels() {
     const pm = _selM === 1 ? 12 : _selM - 1;   // 1~12 (선택월 이전달)
     const { from, to } = monthRange(py, pm);
     const q = 'from=' + from + '&to=' + to;
-    const data = await wpCmoRead('/api/funnel/period_breakdown?' + q, '?action=period_breakdown&' + q, '퍼널');
+    const data = await wpCmoRead('/api/funnel?action=period_breakdown&' + q, '?action=period_breakdown&' + q, '퍼널');
     _prevByCh = (data && data.custom && data.custom.byChannel) ? data.custom.byChannel : {};
   } catch (e) {
     _prevByCh = null;   // null = 이전달 비교 불가('—' 표시)
@@ -540,7 +540,7 @@ async function loadPeriodBreakdown() {
   try {
     const { from, to } = monthRange(_selY, _selM);
     const q = "from=" + from + "&to=" + to;
-    const data = await wpCmoRead('/api/funnel/period_breakdown?' + q, '?action=period_breakdown&' + q, '퍼널');
+    const data = await wpCmoRead('/api/funnel?action=period_breakdown&' + q, '?action=period_breakdown&' + q, '퍼널');
     const c = data && data.custom;
     if (!c) throw new Error("GAS custom 응답 없음");
     mapped = {
@@ -564,7 +564,7 @@ async function loadPeriodBreakdown() {
 async function loadFunnelConversion() {
   let data = null;
   try {
-    data = await wpCmoRead('/api/funnel/funnel_conversion', '?action=funnel_conversion', '퍼널');
+    data = await wpCmoRead('/api/funnel?action=funnel_conversion', '?action=funnel_conversion', '퍼널');
   } catch (e) {
     showError("funnel_conversion 로드 실패 — 채널 데이터가 표시되지 않을 수 있습니다. (" + e.message + ")");
     data = null;
