@@ -1844,6 +1844,17 @@ def main() -> int:
     # 그대로 건너뛴다(종전과 같음 · 미리보기는 --mgr-preview/--relay-preview 로 따로 본다).
     if not args.dry_run:
         _sleep_until(*MORNING_SEND_TIMES["4부서방"])
+        # 🌅 하루의 시작 — 4부서 합본방 (GM 확정 2026-09-03).
+        #   밀린 접수 목록이 ★운영부로 옮겨가며 이 방 아침이 비었다. 그 자리를 '오늘 무엇을
+        #   하고 무엇이 잘하는 것인가'로 채운다 — 점검(했다)과 접수(회원이 어떻게 느꼈나)
+        #   두 축. 저녁 통(build_kakao_digest)의 짝이라 같은 파일에 둔다(약속 L21).
+        try:
+            import report_stream_2_check as _r2
+            _r2._send_kakao(_r2.build_morning_kakao())
+            log("[morning] 4부서방 하루의 시작 발송")
+        except Exception as exc:
+            log(f"[morning] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+
         if ovd_ready:
             try:
                 sent_ovd_ops = _send_ovd_room(_OVD_ROOM_OPS)

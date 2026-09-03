@@ -22,7 +22,7 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -370,6 +370,152 @@ def build_kakao_digest(today: str | None = None) -> str:
             _sub(f"📎 주차관리부 체계 {_page_url('주차관리부 체계')}#manual")
 
     return "\n".join(out)
+
+
+def build_morning_kakao(today: str | None = None) -> str:
+    """🌅 하루의 시작 — 4부서 합본방 아침 통 (GM 확정 2026-09-03).
+
+    저녁 통(build_kakao_digest)이 '어제 어땠나'라면, 이건 '오늘 무엇을 하고 무엇이
+    잘하는 것인가'다. GM 원문: "하루의 시작은 어떤 일을 해야하고, 어떤게 잘하는거고
+    이런내용들이 셋업되면 좋을 것 같은데" → 이어서 "단순히 점검 집중으로만 되어있는데,
+    종합접수 받은 청결 및 이런 부분까지도 추가해주면 잘한다는 것이 더 본질에 집중할 수
+    있을듯".
+
+    그래서 축이 둘이다 — 점검은 **했다**를 세고, 접수는 **회원이 어떻게 느꼈나**를 센다.
+    잘한다는 기준을 제출률에만 두면 회원 목소리가 빠진다.
+
+    데이터는 전부 이미 있는 수집기에서 가져온다(약속 L21 — 새 수집기 만들지 않는다):
+      · 조별 예정·어제 실적·반복 미완료 = support_check_summary
+      · 접수 = report_stream_2b_reception._fetch_rows
+    ▸분실물은 접수 축에서 뺀다(별도 주기로 도는 것이고, 실측 2026-09-03 미처리 27건 중
+      23건이 분실물이라 섞으면 실질 4건이 묻힌다).
+    """
+    import support_check_summary as _scs
+    today = today or datetime.now().strftime("%Y-%m-%d")
+    _d = datetime.strptime(today, "%Y-%m-%d")
+    yest = (_d - timedelta(days=1)).strftime("%Y-%m-%d")
+    disp = f"{_d.month}/{_d.day}(" + "월화수목금토일"[_d.weekday()] + ")"
+    IND = "   "
+    out = [f"🌅 하루의 시작 — 점검·접수 {disp}"]
+
+    sup_today, _ = _scs.build_support_section(today)
+    sup_yest, _ = _scs.build_support_section(yest)
+    fac_yest, _ = _scs.build_facility_section(yest)
+
+    def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:
+        """그 구역의 (조 이름, 완료, 예정) — 원본 줄에서 그대로 읽는다."""
+        for ln in lines:
+            if ln.strip().startswith(zone):
+                return [(g, int(a), int(b))
+                        for g, a, b in re.findall(r"(\S+조)\s*(\d+)/(\d+)", ln)]
+        return []
+
+    # ── 🎯 오늘 채울 것 — 조별 '예정' 건수(분모)만. 07:40 엔 실적이 아직 없다.
+    out.append("🎯 오늘 채울 것")
+    for zone in ("남성구역", "여성구역"):
+        gs = _groups(sup_today, zone)
+        if gs:
+            out.append(IND + f"지원부 {zone} — " + " · ".join(
+                f"{g.replace('조', '')} {t}" for g, _dn, t in gs))
+    out.append(IND + "시설부 — 정기 회차대로")
+    out.append(IND + "주차부 — 일일점검 1건")
+    open_recv = _open_reception()
+    if open_recv:
+        out.append(IND + f"회원 접수 — 아직 안 닫힌 {len(open_recv)}건 (분실물 제외)")
+
+    # ── 🏅 잘한다는 건 이런 것 — 회원 목소리가 먼저, 제출은 그 다음.
+    good: list[str] = []
+    praises = _recent_praise()
+    if praises:
+        good.append(f"👏 회원이 먼저 칭찬해 주신 것 — 최근 7일 {len(praises)}번")
+        for when, content in praises[:2]:
+            good.append(f'"{content}" ({when})')
+    dirty, complaint = _recent_voice_counts()
+    if dirty or complaint:
+        good.append("🧹 같은 지적이 다시 안 올라오는 것")
+        good.append(f"최근 7일 청결 {dirty}건 · 불편 {complaint}건 — 이번 주 0으로")
+    done_groups = [(z, g, t) for z in ("남성구역", "여성구역")
+                   for g, dn, t in _groups(sup_yest, z) if t and dn == t]
+    if done_groups:
+        good.append("✅ 조가 끝나기 전에 [제출]까지 누른 것")
+        good.append("어제 " + " · ".join(f"{z[:2]} {g} {t}/{t}" for z, g, t in done_groups[:2]))
+    if good:
+        # 제목 줄(이모지로 시작)은 3칸, 그 상세는 6칸 — 제목만 훑어도 뜻이 통하게
+        # (실무진 전달문 표준 · wellperion-gm-report 스킬 §4-2-2).
+        out.append("🏅 잘한다는 건 이런 것")
+        out.extend((IND if g[:1] in "👏🧹✅" else IND * 2) + g for g in good)
+
+    # ── ⚠️ 어제 못 채운 것 — 오늘 먼저 손대라는 뜻이라 어제 값만 쓴다.
+    miss = [(z, g, t) for z in ("남성구역", "여성구역")
+            for g, dn, t in _groups(sup_yest, z) if t and dn == 0]
+    if miss:
+        out.append("⚠️ 어제 못 채운 것 — 오늘 먼저")
+        out.extend(IND + f"{z} {g} 0/{t}" for z, g, t in miss)
+
+    # ── 🔁 계속 빠지는 항목 — 오늘 조회분(최근 7일 누적)을 그대로 옮긴다.
+    rep = [ln.strip() for ln in sup_today if ln.strip().startswith("·")][:3]
+    if rep:
+        out.append("🔁 계속 빠지는 항목 — 이번엔 챙겨 주세요")
+        out.extend(IND + r.lstrip("· ") for r in rep)
+
+    out.append(f"📎 지원부 체계 {_page_url('지원부 체계')}")
+    out.append(f"📎 종합접수처 {_RECEPTION_BOARD_URL}")
+    out.append("👉 조 끝나면 [제출] 한 번 · 접수는 처리 메모까지")
+    return "\n".join(out)
+
+
+_RECEPTION_BOARD_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
+                        "coo/reception/종합접수처_현황.html")
+_RECEPTION_OPEN_STATUS = ("접수", "처리중", "진행", "보류", "")
+
+
+def _reception_rows() -> list:
+    """접수 원장 — 조회 실패는 빈 목록으로 삼킨다(아침 통 전체를 막지 않는다)."""
+    try:
+        import report_stream_2b_reception as _rr
+        return _rr._fetch_rows() or []
+    except Exception as exc:  # noqa: BLE001
+        print(f"[stream2/morning] 접수 조회 실패 — 접수 축 생략: {exc}", flush=True)
+        return []
+
+
+def _open_reception() -> list:
+    """아직 안 닫힌 접수 — 분실물 제외."""
+    return [r for r in _reception_rows()
+            if str(r.get("status") or "").strip() in _RECEPTION_OPEN_STATUS
+            and "분실물" not in str(r.get("category") or "")]
+
+
+def _recent_praise() -> list:
+    """최근 7일 칭찬 접수 [(날짜, 내용)] — 최신 순."""
+    from collectors.ops_shared import reception_elapsed_days
+    now = datetime.now()
+    out = []
+    for r in _reception_rows():
+        if "칭찬" not in str(r.get("category") or ""):
+            continue
+        if reception_elapsed_days(r, now) > 7:
+            continue
+        when = str(r.get("createdAt") or "")[5:10].replace("-", "/")
+        content = " ".join(str(r.get("content") or "").split())[:60]
+        out.append((when.lstrip("0"), content))
+    return sorted(out, reverse=True)
+
+
+def _recent_voice_counts() -> tuple[int, int]:
+    """최근 7일 (청결, 불편) 접수 건수."""
+    from collectors.ops_shared import reception_elapsed_days
+    now = datetime.now()
+    dirty = complaint = 0
+    for r in _reception_rows():
+        if reception_elapsed_days(r, now) > 7:
+            continue
+        cat = str(r.get("category") or "")
+        if "청결" in cat:
+            dirty += 1
+        elif "컴플" in cat:
+            complaint += 1
+    return dirty, complaint
 
 
 def _send_telegram(text: str) -> bool:
