@@ -171,7 +171,10 @@ def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, toda
                 last_sec = sec
             lines += _line_item(r, compact)
         if ci == len(chunks) - 1:
-            lines.append("각 담당자께서는 결재된 내용대로 진행해 주시고, 진행 상황은 업무 화면에 남겨 주세요.")
+            # 담당이 빈 건이 섞여 있으면 "각 담당자께서는" 이 그 건에는 닿지 않는다 — 지정 부탁을 먼저 둔다.
+            if any("담당 미지정" in ln for ln in lines):
+                lines.append("담당이 비어 있는 건은 중간관리자께서 담당자를 정해 업무 화면에 적어 주세요.")
+            lines.append("담당자께서는 결재된 내용대로 진행해 주시고, 진행 상황은 업무 화면에 남겨 주세요.")
             lines.append(SIGNOFF)
         msgs.append("\n".join(lines))
     return msgs

@@ -415,9 +415,8 @@ def build_morning_kakao(today: str | None = None) -> str:
                 f"{g.replace('조', '')} {t}" for g, _dn, t in gs))
     out.append(IND + "시설부 — 정기 회차대로")
     out.append(IND + "주차부 — 일일점검 1건")
-    open_recv = _open_reception()
-    if open_recv:
-        out.append(IND + f"회원 접수 — 아직 안 닫힌 {len(open_recv)}건 (분실물 제외)")
+    # 안 닫힌 접수 건수는 여기 싣지 않는다 — GM 2026-09-03 "종합접수처 전체는 중간관리자방에만,
+    # 4부서방은 점검 + 새 접수 즉시만". 잔량은 07:40 ★중간관리자 통이 전문으로 갖는다.
 
     # ── 🏅 잘한다는 건 이런 것 — 회원 목소리가 먼저, 제출은 그 다음.
     good: list[str] = []
@@ -492,9 +491,10 @@ def _recent_praise() -> list:
             continue
         if reception_elapsed_days(r, now) > 7:
             continue
-        when = str(r.get("createdAt") or "")[5:10].replace("-", "/")
+        raw = str(r.get("createdAt") or "")[5:10]          # "09-01"
+        when = "/".join(p.lstrip("0") or "0" for p in raw.split("-"))   # "9/1" — "9/01" 로 안 남긴다
         content = " ".join(str(r.get("content") or "").split())[:60]
-        out.append((when.lstrip("0"), content))
+        out.append((when, content))
     return sorted(out, reverse=True)
 
 
