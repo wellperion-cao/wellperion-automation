@@ -3360,6 +3360,8 @@ function _memberListFetch(scope) {
       .then(function(r){ return r.json(); }).then(_maDecodeRowsFormat);
   };
   if (!ERP_API_ON) return gas();
+  // 이 브라우저에서 회원 시트에 쓴 지 6분 안이면 미러(5분 동기화)가 그 한 명을 아직 모른다 — 그동안만 GAS(apiPost 가 도장).
+  try { if (Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000) return gas(); } catch (e) {}
   return _apiMemberList(scope).catch(function(e){ console.warn('[회원목록] API 실패 → GAS 폴백:', e && e.message); return gas(); });
 }
 function _apiPersonView(q) {
@@ -13955,6 +13957,8 @@ function apiPost(payload) {
   if (GAS_URL === GAS_PLACEHOLDER) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
+  // 회원 시트에 쓴 직후 5분은 미러가 옛 값이다 — 도장을 찍어 두고 _memberListFetch 가 그동안 GAS 를 읽게 한다(배 942 ②).
+  try { if (/^member_/.test(String(payload && payload.action))) localStorage.setItem('cpo_ma_wrote_at', String(Date.now())); } catch (e) {}
   /* 쓰기 액션에만 직원 이름을 붙인다 — 호출부 9곳을 고치지 않고 이 관문 한 곳에서(배327). */
   try {
     var _a = payload && payload.action;
