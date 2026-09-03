@@ -162,3 +162,37 @@ CREATE TABLE IF NOT EXISTS write_log (
   gas_response JSONB
 );
 CREATE INDEX IF NOT EXISTS ix_write_log_action ON write_log (tenant_id, action, at);
+
+-- 공개 접수 폼 이중기록 (api_intake.py · 배 960 · 2026-09-03). 폼 본문을 GAS 보다 먼저 적는다 — GAS 가 죽어도 여기 남는다.
+-- gas_status = pending · HTTP 코드('200' 정상) · skipped(selftest) · error:<사유>. form=selftest 는 tenant 'selftest'.
+CREATE TABLE IF NOT EXISTS intake_log (
+  id           BIGSERIAL PRIMARY KEY,
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  form         TEXT NOT NULL,
+  received_at  TEXT NOT NULL,
+  payload      JSONB NOT NULL,
+  gas_status   TEXT NOT NULL DEFAULT 'pending',
+  gas_response TEXT
+);
+CREATE INDEX IF NOT EXISTS intake_log_tenant_form_idx ON intake_log (tenant_id, form, received_at);
+
+-- 강습 회원관리 미러 (sync_lesson.py · 배 922 레인 W · 2026-09-03). GAS 읽기 응답을 통째로 싣는다.
+-- kind = stats(key=type|scope) · roster(type) · registry(type · 전 구간, 날짜는 API 가 등록일로 자른다).
+CREATE TABLE IF NOT EXISTS lesson_records (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  kind      TEXT NOT NULL,
+  key       TEXT NOT NULL,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, kind, key)
+);
+
+-- 카톡전송관리 방 목록 미러 (sync_kakao.py · 배 922 레인 W · 2026-09-03). 열쇠 = 방 이름 · ord = 시트 순.
+CREATE TABLE IF NOT EXISTS kakao_rooms (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  name      TEXT NOT NULL,
+  prefix    TEXT,
+  ord       INTEGER NOT NULL DEFAULT 0,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, name)
+);
