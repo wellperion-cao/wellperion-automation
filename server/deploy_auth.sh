@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 $S 'mkdir -p /srv/erp/auth'
 $SCP server/erp_auth/app.py $HOST:/srv/erp/auth/app.py
 $SCP server/erp_auth/erp-auth.service $HOST:/tmp/erp-auth.service
-if $S 'test -d /etc/letsencrypt/live/erp.wellperion.com'; then
+if $S 'sudo test -d /etc/letsencrypt/live/erp.wellperion.com'; then   # /etc/letsencrypt/live 는 root 만 읽는다 — sudo 없이는 늘 거짓이라 443 블록을 덮어버린다
   echo "certbot 이 이미 손댄 erp.conf — 덮지 않음(HTTPS 443 블록 보존)"
 else
   $SCP server/erp_auth/erp.nginx.conf $HOST:/tmp/erp.conf
