@@ -382,7 +382,27 @@
 
       // 회장님 표(chRows)와 같은 4열(번호·제목+카테고리·상태/일정·액션)로 통일(GM 지적 2026-08-10).
       // 대기 건이 위, 완료 건이 아래로 오도록 정렬한다(GM 지시 2026-08-10 — 대기·완료 한 표 통합).
-      elSum.innerHTML = need.concat(done).map(function (it, i) {
+      // ★2026-09-03 GM 지시 "대표님 보고 및 결재 완료건은 따로 결재완료 토글 걸어주고" —
+      //   완료 건을 대기 표에서 빼 별도 토글(owner-done-sum-body)로 옮긴다. 그 자리가 없는
+      //   페이지(대표님_지시사항.html 등)에서는 종전대로 한 표에 이어 그린다(회귀 0).
+      var elDoneSum = document.getElementById('owner-done-sum-body');
+      var elDoneSec = document.getElementById('owner-done-sec');
+      var elDoneCnt = document.getElementById('owner-done-cnt');
+      var sumList = elDoneSum ? need : need.concat(done);
+      if (elDoneSum) {
+        if (elDoneCnt) elDoneCnt.textContent = done.length + '건';
+        if (elDoneSec) elDoneSec.style.display = done.length ? '' : 'none';
+        elDoneSum.innerHTML = done.map(function (it, i) {
+          var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+          return '<tr><td>' + no + '</td><td>' + esc(it.title) +
+            (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td>' +
+            '<td class="mgr">' + ownerCellHtml(it.id) + '</td>' +
+            '<td>' + esc(it.status || '—') + ' · ' + esc(it.schedule) + '</td>' +
+            '<td class="rpt-actions"><span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>' +
+            relayBadge(it) + '</td></tr>';
+        }).join('');
+      }
+      elSum.innerHTML = sumList.map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var noteFull = it.note || '';
         var noteShort = noteFull.length > 12 ? (noteFull.slice(0, 12) + '…') : noteFull;
@@ -394,7 +414,11 @@
           pctBadge(stagePct(it.status));
         var actionHtml = it.reported
           ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>' + relayBadge(it)
-          : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
+          : (it.ownerPending
+            // 대표싸인 PENDING = 결재를 올려 두고 기다리는 중이다. 「보고 완료로 표시」 버튼을 주면
+            // 아직 안 받은 결재를 받은 것으로 만들 수 있어, 대기 표시만 둔다(2026-09-03).
+            ? '<span class="cat">⏳ 대표님 결재 대기</span>'
+            : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>');
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td>' +
           '<td class="mgr">' + ownerCellHtml(it.id) + '</td>' +
@@ -435,10 +459,22 @@
             }
             var content = String(r['내용'] || '');
             var ceoDone = content.indexOf(CEO_MARK) !== -1 && isReported(content, cfg.markPrefix);
-            if (!ownerSigned(r) && !ceoDone) return;
+            // ★2026-09-03 GM 지적 "지원부 근무조건 변경안은 없네? 놓치는게 있으면 안되는데?"
+            //   대표싸인 = 'PENDING' 은 「대표님 결재를 기다리는 중」이라는 뜻인데, 그 행이 이 표
+            //   어디에도 안 떴다. filterRows 는 담당자=김남욱 + 상태 진행중/보류 + 표식 세 조건을
+            //   모두 만족해야 싣는데, 실측된 그 건은 담당 나우열M · 상태 완료(GM 결재까지 끝남)라
+            //   세 조건을 다 비껴갔다. 대표님을 기다리는 건이 GM 화면에서 사라지면 놓친다.
+            //   → 대표싸인 PENDING 행은 담당·상태와 무관하게 '결재 대기'로 함께 싣는다.
+            var ownerPending = String(r['대표싸인'] || '').trim().toUpperCase() === 'PENDING'
+              && String(r['업무명'] || '').indexOf('[테스트]') === -1;   // 서식 검증용 행은 대표님께 올릴 건이 아니다
+            if (!ownerSigned(r) && !ceoDone && !ownerPending) return;
             var it = toItem(r);
-            it.reported = true;
-            it.reportedAt = it.reportedAt || fmtNoYear(ownerSignDate(r));
+            if (ownerSigned(r) || ceoDone) {
+              it.reported = true;
+              it.reportedAt = it.reportedAt || fmtNoYear(ownerSignDate(r));
+            } else {
+              it.ownerPending = true;   // 결재 대기 — 완료로 세지 않는다
+            }
             _items.push(it);
           });
         }
