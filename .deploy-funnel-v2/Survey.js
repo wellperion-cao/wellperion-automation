@@ -10248,7 +10248,9 @@ function _hasRealReply_(memo) {
       for (var kb = 0; kb < kBody.length; kb++) {
         var _no = String(kBody[kb][kNoI] || '').trim();
         if (!_no) continue;
-        if (kNmI >= 0 && kPhI >= 0) rgKnown[_rgKey(kBody[kb][kPhI], kBody[kb][kNmI])] = _no;
+        // 같은 사람(전화+이름)이 두 탭에 다른 번호로 있으면 먼저 읽은 탭(유효회원)의 번호가 그 사람의 번호다
+        //   — 실측 2026-09-03: LOSS보관 행 2건이 옛 번호를 들고 남아 유효회원의 다른 사람과 번호가 겹쳤다(배941).
+        if (kNmI >= 0 && kPhI >= 0) { var _kk = _rgKey(kBody[kb][kPhI], kBody[kb][kNmI]); if (!rgKnown[_kk]) rgKnown[_kk] = _no; }
         var _n = parseInt(_no.replace(/[^0-9]/g, ''), 10);
         if (_n > rgMaxNo) rgMaxNo = _n;
       }
@@ -10275,13 +10277,17 @@ function _hasRealReply_(memo) {
       var _rgCached = rgBodies[rgTabs[rt]];
       var body2 = (_rgCached && !addCol) ? _rgCached.body
                 : sh.getRange(2, 1, last - 1, Math.max(cols, hdr.length)).getValues();
-      var colOut = [], filled = 0, kept = 0;
+      var colOut = [], filled = 0, kept = 0, fixed = 0;
       for (var br = 0; br < body2.length; br++) {
         var nm = String(body2[br][nmI] || '').trim();
         var ph = body2[br][phI];
         var cur = (noI >= 0 && noI < body2[br].length) ? String(body2[br][noI] || '').trim() : '';
         if (!nm) { colOut.push([cur]); continue; }     // 이름 없는 줄은 사람이 아니다 — 건드리지 않는다
-        if (cur) { colOut.push([cur]); kept++; continue; }   // 이미 있으면 그대로(멱등)
+        if (cur) {
+          var _own = rgKnown[_rgKey(ph, nm)];
+          if (_own && _own !== cur) { colOut.push([_own]); fixed++; continue; }   // 같은 사람이 다른 번호 — 유효회원 쪽 번호로 맞춘다
+          colOut.push([cur]); kept++; continue;                                    // 이미 있으면 그대로(멱등)
+        }
         var key = _rgKey(ph, nm);
         var no = rgKnown[key] || rgSeen[key];
         if (!no) {
@@ -10295,7 +10301,7 @@ function _hasRealReply_(memo) {
         filled++;
       }
       rgPlan.push({ tab: rgTabs[rt], sheet: sh, colIndex: noI, values: colOut, addCol: addCol });
-      rgReport.push({ tab: rgTabs[rt], rows: body2.length, 칸신설: addCol, 번호부여: filled, 기존유지: kept });
+      rgReport.push({ tab: rgTabs[rt], rows: body2.length, 칸신설: addCol, 번호부여: filled, 기존유지: kept, 충돌수정: fixed });
     }
 
     if (rgDry) {
