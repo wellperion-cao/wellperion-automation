@@ -27,6 +27,10 @@
   window.WELP_GATE_PW = GATE_PW; // 기존 GAS 호출(password 동봉) 호환용
   var SKEY = "welp_gate_ok";     // 같은 탭 세션에서 한 번 통과하면 다른 보호 페이지도 통과
 
+  // AWS ERP(erp.wellperion.com)는 서버 로그인 관문이 이미 막고 있다 — 커튼을 한 번 더 띄우면 비밀번호를 두 번 치게 된다
+  // (2026-09-03 라이브 검수 · 커튼 페이지 18개). WELP_GATE_PW 는 GAS 호출 호환용이라 위에서 그대로 둔다.
+  if (/^erp\.wellperion\.com$/.test(window.location.hostname)) return;
+
   try {
     if (sessionStorage.getItem(SKEY) === "1") return; // 이미 통과 → 게이트 표시 안 함
   } catch (e) {}
