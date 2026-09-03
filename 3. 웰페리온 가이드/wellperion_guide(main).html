@@ -5016,6 +5016,18 @@
     <div class="doc-header"><h2><span class="g-id">T1</span>기술 & AI 학습 상세</h2><div class="meta">기술 인프라(설정·경로·프롬프트) + AI 학습(기본기·토큰절약·자기학습) 통합 · 기술 담당용</div></div>
     <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
     <p class="lead"><a href="cto/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">☁️ 웰페리온 ERP 운영 가이드 — AWS ↗</a> — 주소·계정·층별 구조·개발 언어·운영 규칙·단계·교훈 한 장(2026-09-03)</p>
+    <div class="callout" style="margin:10px 0 16px;">
+      <h3 style="margin:0 0 8px;">☁️ 서버·DB 정의 (2026-09-03 · 정본 = <a href="cto/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">운영 가이드</a>)</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #333;">층</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #333;">무엇</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #333;">어디</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #333;">담당</th></tr>
+        <tr><td style="padding:4px 6px;">서버</td><td style="padding:4px 6px;">AWS EC2 t3.small(서울) · 고정 IP 15.164.151.105 · nginx · 자물쇠(HTTPS)</td><td style="padding:4px 6px;"><a href="https://erp.wellperion.com/" target="_blank" rel="noopener">erp.wellperion.com</a> · 설정 = <code>server/</code> · <code>scripts/aws_bootstrap.py</code></td><td style="padding:4px 6px;">시토</td></tr>
+        <tr><td style="padding:4px 6px;">로그인 관문</td><td style="padding:4px 6px;">파이썬 FastAPI · 회사 계정(@wellperion.com)만 · 구글 로그인 · 가입 승인 · 계정별 권한(부서 프리셋)</td><td style="padding:4px 6px;"><a href="https://erp.wellperion.com/auth/admin" target="_blank" rel="noopener">/auth/admin</a> · <code>server/erp_auth/</code></td><td style="padding:4px 6px;">시토</td></tr>
+        <tr><td style="padding:4px 6px;">DB</td><td style="padding:4px 6px;"><strong>PostgreSQL 17</strong>(서버 안 · 모든 표에 회사 칸 tenant_id) · 매일 03:00 S3 백업 30일 보관</td><td style="padding:4px 6px;"><code>server/common/db.py</code>(접속 유일) · <code>schema.sql</code></td><td style="padding:4px 6px;">시토</td></tr>
+        <tr><td style="padding:4px 6px;">데이터 API</td><td style="padding:4px 6px;">구글 시트 → 서버 5분 거울(읽기) · 회원·문의 완료 · 접수·점검·업무 SSOT 이전 중</td><td style="padding:4px 6px;"><code>/api/members</code> · <code>/api/inquiries</code> · <code>server/erp_api/</code></td><td style="padding:4px 6px;">시토(배선) · 각 담당(정의)</td></tr>
+        <tr><td style="padding:4px 6px;">화면</td><td style="padding:4px 6px;">이 저장소 HTML 그대로 — 커밋·푸시 = 5분 내 서버 반영 · 로그인 뒤 첫 화면 <a href="https://erp.wellperion.com/erp/" target="_blank" rel="noopener">/erp/</a>(모듈 자동 등록)</td><td style="padding:4px 6px;"><code>3. 웰페리온 가이드/</code></td><td style="padding:4px 6px;">각 화면 주인</td></tr>
+        <tr><td style="padding:4px 6px;">시트·GAS</td><td style="padding:4px 6px;">과도기 쓰기 창구(등록·접수 제출) — 서버 API 로 쓰기 이전 전까지</td><td style="padding:4px 6px;">GAS 프로젝트(cao@ · info@)</td><td style="padding:4px 6px;">각 담당</td></tr>
+      </table>
+    </div>
     <div class="callout"><strong>🧭 GM 한 줄.</strong> 이 페이지는 <strong>기술 담당(AI·개발자)용 참고서</strong>예요 — 설정이 어디 있고 파일 경로가 뭔지. <strong>GM은 평소 볼 필요 없습니다.</strong> "시스템이 잘 도는지"는 <strong>T2 ▸ 🖥️ 시스템 현황</strong>에서 한눈에 보세요.</div>
 
     <!-- ══ 🍯 쉽게 읽는 학습 노트 (GM·C레벨 공용 · 2026-06-15 GM 지시 B) ══ -->
