@@ -6,157 +6,269 @@
 <title>웰페리온 ERP</title>
 <link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
 <style>
-  /* 색·폰트는 wellperion_guide(main).html 의 :root 를 그대로 쓴다 (2026-09-03) */
+  /* 색 = 브랜드가이드.html 정본(paper/ink/beige). 베이지는 4.5:1 미달이라 라이트에서는 글자에 안 쓴다.
+     다크는 prefers-color-scheme 로 색만 뒤집는다(토글 없음). 2026-09-03 */
   :root{
-    --bg:#221F20; --paper:#2a2725; --text:#f5f2ef; --text-soft:#d4d0cc;
-    --dim:#8c8b83; --dim-soft:#6b6a64;
-    --accent:#B79F8A; --accent-hover:#d4b89e; --accent-bg:rgba(183,159,138,0.12);
-    --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+    --bg:#F4F0EB; --paper:#FFFFFF; --ink:#221F20; --ink-soft:#6E655C;
+    --line:rgba(34,31,32,.12); --line-strong:rgba(34,31,32,.28);
+    --accent:#B79F8A; --accent-soft:rgba(183,159,138,.18); --accent-text:#221F20;
+    --focus:#221F20;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#221F20; --paper:#2a2725; --ink:#F4F0EB; --ink-soft:#AAA098;
+      --line:rgba(255,255,255,.10); --line-strong:rgba(255,255,255,.24);
+      --accent:#B79F8A; --accent-soft:rgba(183,159,138,.14); --accent-text:#B79F8A;
+      --focus:#B79F8A;
+    }
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+  [hidden]{display:none !important;}
+  html{color-scheme:light dark;}
+  body{font-family:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,system-ui,sans-serif;
+       color:var(--ink); background:var(--bg); line-height:1.6; font-size:15px;
        -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:8px;}
 
-  .topbar{display:flex; align-items:center; gap:14px; padding:16px 40px;
-          background:var(--paper); border-bottom:1px solid var(--border);}
-  .topbar .brand{font-size:17px; font-weight:700; letter-spacing:-0.01em;}
-  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
-  .topbar .who{margin-left:auto; font-size:13.5px; color:var(--text-soft);}
-  .topbar .who .role{display:inline-block; font-size:11.5px; font-weight:600;
-                     padding:2px 9px; border-radius:20px; background:var(--accent);
-                     color:#221F20; margin-left:7px;}
-  .topbar a.logout{font-size:13px; color:var(--dim); text-decoration:none; margin-left:16px;}
-  .topbar a.logout:hover{color:var(--accent-hover);}
+  /* 상단 바 */
+  .top{display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; min-height:56px;
+       padding:10px 32px; background:var(--paper); border-bottom:1px solid var(--line);}
+  .brand{display:inline-flex; align-items:baseline; gap:8px; white-space:nowrap;}
+  .brand .mark{font-weight:700; font-size:15px; letter-spacing:.18em;}
+  .brand .erp{font-size:13px; font-weight:600; color:var(--ink-soft); letter-spacing:.06em;}
+  .me{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:13.5px;}
+  .me .role{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:8px;
+            background:var(--accent); color:#221F20; letter-spacing:.02em;}
+  .acts{display:inline-flex; gap:14px; font-size:13px; color:var(--ink-soft);}
+  .acts a:hover{color:var(--ink); text-decoration:underline; text-underline-offset:3px;}
 
-  .main{max-width:1100px; padding:40px 40px 80px;}
-  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
-  .meta{font-size:13px; color:var(--dim); margin-bottom:30px;}
-  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
-     border-bottom:2px solid var(--gray-bg);}
+  main{padding:24px 32px 72px;}
 
-  .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
-  .mod{display:block; background:var(--paper); border:1px solid var(--border);
-       border-radius:12px; padding:20px 22px; text-decoration:none; color:inherit;
-       transition:border-color 0.12s, background 0.12s;}
-  .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
-  .mod .name{font-size:17px; font-weight:700; margin-bottom:6px;}
-  .mod .desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
-  .mod .owner{font-size:12.5px; color:var(--dim); margin-top:12px;
-              border-top:1px dashed var(--border-strong); padding-top:9px;}
-  /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
-  .mod.locked{opacity:0.4;}
-  .mod.locked:hover{border-color:var(--border); background:var(--paper);}
-  .mod.locked .owner::after{content:" · 권한 없음"; color:var(--dim-soft);}
+  /* 찾기 */
+  .search{position:relative; max-width:520px; margin-bottom:22px;}
+  .search input{width:100%; padding:11px 44px 11px 14px; font:inherit; font-size:15px; color:var(--ink);
+                background:var(--paper); border:1px solid var(--line-strong); border-radius:8px;}
+  .search input::placeholder{color:var(--ink-soft);}
+  .search input:focus{outline:2px solid var(--focus); outline-offset:0; border-color:transparent;}
+  .search kbd{position:absolute; right:10px; top:50%; transform:translateY(-50%);
+              font:600 12px/1 ui-monospace,Menlo,Consolas,monospace; color:var(--ink-soft);
+              padding:4px 7px; border:1px solid var(--line-strong); border-radius:8px;}
+  .search input:focus + kbd{display:none;}
 
-  .find{width:100%; max-width:420px; padding:10px 14px; margin-bottom:6px;
-        background:var(--paper); border:1px solid var(--border-strong); border-radius:8px;
-        color:var(--text); font-size:14px; font-family:inherit;}
-  .find:focus{outline:none; border-color:var(--accent);}
-  .find::placeholder{color:var(--dim-soft);}
-  h3 .n{font-size:13px; font-weight:400; color:var(--dim); margin-left:8px;}
+  /* 최근 연 화면 */
+  .recent{margin-bottom:26px;}
+  .recent h2, .core h2{font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:8px;}
+  .recent .row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin;}
+  .recent .row a{flex:0 0 auto; max-width:260px; padding:7px 12px; font-size:13.5px; font-weight:600;
+                 white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+                 background:var(--paper); border:1px solid var(--line); border-radius:8px;}
+  .recent .row a:hover{border-color:var(--accent); background:var(--accent-soft);}
 
-  .msg{color:var(--dim); font-size:14px;}
-  @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
+  /* 핵심 3개 */
+  .core{margin-bottom:30px;}
+  .core .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px;}
+  .core .mod{padding:18px 20px;}
+  .core .mod .name{font-size:19px; -webkit-line-clamp:1;}
+  .core .mod .desc{font-size:14px; color:var(--ink-soft); margin-top:4px; line-height:1.55;}
+
+  /* 그룹 = 네이티브 details (접기/펼치기) */
+  details.grp{border-top:1px solid var(--line); padding:6px 0 14px;}
+  details.grp summary{display:flex; align-items:center; gap:10px; cursor:pointer; list-style:none;
+                      padding:10px 0; font-size:16px; font-weight:700; user-select:none;}
+  details.grp summary::-webkit-details-marker{display:none;}
+  details.grp summary::before{content:""; width:7px; height:7px; border-right:2px solid var(--ink-soft);
+                              border-bottom:2px solid var(--ink-soft); transform:rotate(-45deg);
+                              transition:transform .15s; margin-left:2px;}
+  details.grp[open] summary::before{transform:rotate(45deg);}
+  details.grp summary .n{font-size:13px; font-weight:500; color:var(--ink-soft);}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(224px,1fr)); gap:8px;}
+
+  /* 모듈 타일 */
+  .mod{display:block; padding:12px 14px; background:var(--paper); border:1px solid var(--line);
+       border-radius:8px; transition:border-color .12s, background .12s;}
+  .mod:hover{border-color:var(--accent); background:var(--accent-soft);}
+  .mod:active{transform:translateY(1px);}
+  .mod .name{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+             font-size:15px; font-weight:600; line-height:1.4;}
+  .mod .staff{display:block; margin-top:6px; font-size:12.5px; color:var(--ink-soft);}
+  /* roles 에 내 역할이 없으면 흐리게만, 숨기지 않는다 */
+  .mod.locked{opacity:.45;}
+  .mod.locked:hover{border-color:var(--line); background:var(--paper);}
+  .mod.locked .staff::after{content:" · 권한 없음";}
+
+  .empty{color:var(--ink-soft); font-size:14px; padding:18px 0;}
+
+  @media (max-width:640px){
+    .top{padding:10px 16px;}
+    .me .name{display:none;}
+    main{padding:18px 16px 56px;}
+    .search{margin-bottom:18px;}
+    .grid, .core .grid{grid-template-columns:1fr 1fr;}
+    .core .mod .name{font-size:17px;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brand">웰페리온 ERP<span class="sub">모듈 홈</span></div>
-  <div class="who" id="who">확인 중…</div>
-  <a class="logout" id="logout" href="/auth/logout" hidden>로그아웃</a>
-</div>
+<header class="top">
+  <a class="brand" href="/erp/" aria-label="웰페리온 ERP 홈"><span class="mark">WELLPERION</span><span class="erp">ERP</span></a>
+  <div class="me" id="me" hidden><span class="name" id="meName"></span><span class="role" id="meRole"></span></div>
+  <nav class="acts" id="acts" hidden aria-label="계정">
+    <a href="/auth/password">비밀번호 변경</a>
+    <a href="/auth/logout">로그아웃</a>
+  </nav>
+</header>
 
-<div class="main">
-  <h2>모듈</h2>
-  <div class="meta">회원 · 문의 · 점검 — 매일 쓰는 세 가지가 맨 위다. 그 아래는 C레벨별 화면 전부.</div>
-  <input class="find" id="find" type="search" placeholder="화면 이름으로 찾기" autocomplete="off">
-  <div id="sections"><div class="msg">불러오는 중…</div></div>
-</div>
+<main>
+  <div class="search">
+    <input id="q" type="search" placeholder="화면 이름·설명·담당으로 찾기" aria-label="화면 찾기" autocomplete="off" spellcheck="false">
+    <kbd aria-hidden="true">/</kbd>
+  </div>
+  <section class="recent" id="recent" hidden aria-label="최근 연 화면">
+    <h2>최근</h2>
+    <div class="row" id="recentRow"></div>
+  </section>
+  <div id="groups"><div class="empty">불러오는 중…</div></div>
+</main>
 
 <script>
-// 1) 로그인 확인 — 401 이면 관문으로 보낸다. 서버(nginx 앞단 FastAPI)가 쿠키를 판정한다.
-fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
-  if (r.status === 401) { location.href = '/auth/login?next=/erp/'; return null; }
-  if (!r.ok) throw new Error('auth ' + r.status);
-  return r.json();
-}).then(function(me){
-  if (!me) return;
-  document.getElementById('who').innerHTML =
-    esc(me.name || me.email || '') + '<span class="role">' + esc(me.role || '') + '</span>';
-  document.getElementById('logout').hidden = false;
-  return loadModules(me.role);
-}).catch(function(e){
-  // 로컬에서 파일로 열면 /auth/me 가 없다 — 튕기지 않고 권한 없는 상태로 그려 둔다.
-  document.getElementById('who').textContent = '로그인 확인 불가';
-  loadModules(null);
-});
+(function(){
+  var RECENT = 'erp.recent', CLOSED = 'erp.closed';
+  var byId = {}, detailsEls = [];
 
-function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
-  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function load(k){ try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e){ return []; } }
+  function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 
-// 2) 모듈 카드 — modules.json 은 scripts/erp_modules_build.py 가 화면 파일에서 자동 생성한다.
-//    여기서는 group(핵심 → 닉네임) 순서대로 섹션을 나눠 그리기만 한다.
-function loadModules(role){
-  return fetch('modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
-    var root = document.getElementById('sections');
-    root.innerHTML = '';
-    var group = null, grid = null;
+  // 1) 로그인 확인 — 401 이면 관문으로. 로컬 파일로 열면 /auth/me 가 없으니 권한 없는 상태로 그린다.
+  fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
+    if (r.status === 401) { location.href = '/auth/login?next=/erp/'; return null; }
+    if (!r.ok) throw new Error('auth ' + r.status);
+    return r.json();
+  }).then(function(me){
+    if (!me) return;
+    document.getElementById('meName').textContent = me.name || me.email || '';
+    document.getElementById('meRole').textContent = me.role || '';
+    document.getElementById('me').hidden = false;
+    document.getElementById('acts').hidden = false;
+    return loadModules(me.role);
+  }).catch(function(){ loadModules(null); });
 
-    (d.modules || []).forEach(function(m){
-      var g = m.core ? '핵심' : (m.group || '기타');
-      if (g !== group) {
-        group = g;
-        var h = document.createElement('h3');
-        h.innerHTML = esc(g) + '<span class="n"></span>';
-        root.appendChild(h);
-        grid = document.createElement('div');
-        grid.className = 'modules';
-        root.appendChild(grid);
+  // 2) modules.json (scripts/erp_modules_build.py 자동 생성) → 핵심 3개 + 그룹별 details
+  function loadModules(role){
+    return fetch('modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+      var mods = d.modules || [], root = document.getElementById('groups');
+      var closed = load(CLOSED), groups = [], byGroup = {};
+      root.innerHTML = '';
+      mods.forEach(function(m){ m.name = String(m.name || '').replace(/&amp;/g, '&'); byId[m.id] = m; });  // 생성기가 제목을 HTML 그대로 담는다
+
+      var core = mods.filter(function(m){ return m.core; });
+      if (core.length) {
+        var sec = document.createElement('section');
+        sec.className = 'core';
+        sec.innerHTML = '<h2>매일 쓰는 화면</h2><div class="grid"></div>';
+        core.forEach(function(m){ sec.lastChild.appendChild(tile(m, role, true)); });
+        root.appendChild(sec);
       }
-      var allowed = !role || (m.roles || []).indexOf(role) >= 0;
-      var a = document.createElement('a');
-      a.className = 'mod' + (allowed ? '' : ' locked');
-      a.href = m.path;
-      a.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
-      a.innerHTML = '<div class="name">' + esc(m.name) + '</div>' +
-                    (m.desc ? '<div class="desc">' + esc(m.desc) + '</div>' : '') +
-                    (m.staff ? '<div class="owner">담당 ' + esc(m.staff) + '</div>' : '');
-      grid.appendChild(a);
+      mods.forEach(function(m){
+        if (m.core) return;
+        var g = m.group || '기타';
+        if (!byGroup[g]) { byGroup[g] = []; groups.push(g); }
+        byGroup[g].push(m);
+      });
+      groups.forEach(function(g){
+        var det = document.createElement('details');
+        det.className = 'grp'; det.dataset.g = g;
+        det.open = closed.indexOf(g) < 0;
+        det.innerHTML = '<summary>' + esc(g) + '<span class="n"></span></summary><div class="grid"></div>';
+        byGroup[g].forEach(function(m){ det.lastChild.appendChild(tile(m, role, false)); });
+        det.addEventListener('toggle', function(){
+          if (searching()) return;                       // 검색 중 강제 펼침은 저장하지 않는다
+          var c = load(CLOSED).filter(function(x){ return x !== g; });
+          if (!det.open) c.push(g);
+          save(CLOSED, c);
+        });
+        root.appendChild(det);
+        detailsEls.push(det);
+      });
+      var empty = document.createElement('div');
+      empty.className = 'empty'; empty.id = 'empty'; empty.hidden = true;
+      root.appendChild(empty);
+      renderRecent();
+      filter();
+    }).catch(function(){
+      document.getElementById('groups').innerHTML = '<div class="empty">모듈 목록(modules.json)을 불러오지 못했다.</div>';
     });
-    if (!root.children.length) root.innerHTML = '<div class="msg">모듈이 없다.</div>';
-    filter();
-  }).catch(function(){
-    document.getElementById('sections').innerHTML =
-      '<div class="msg">모듈 목록(modules.json)을 불러오지 못했다.</div>';
-  });
-}
-
-// 3) 제목 필터 — 안 남은 섹션은 제목째 감춘다.
-function filter(){
-  var q = document.getElementById('find').value.trim().toLowerCase();
-  var root = document.getElementById('sections');
-  var kids = root.children, head = null, shown = 0;
-  for (var i = 0; i < kids.length; i++) {
-    var el = kids[i];
-    if (el.tagName === 'H3') {
-      if (head) { head.hidden = !shown; head.querySelector('.n').textContent = shown ? shown + '개' : ''; }
-      head = el; shown = 0;
-      continue;
-    }
-    for (var j = 0; j < el.children.length; j++) {
-      var card = el.children[j];
-      var hit = !q || card.dataset.find.indexOf(q) >= 0;
-      card.hidden = !hit;
-      if (hit) shown++;
-    }
-    el.hidden = !shown;
   }
-  if (head) { head.hidden = !shown; head.querySelector('.n').textContent = shown ? shown + '개' : ''; }
-}
-document.getElementById('find').addEventListener('input', filter);
+
+  function tile(m, role, withDesc){
+    var allowed = !role || (m.roles || []).indexOf(role) >= 0;
+    var a = document.createElement('a');
+    a.className = 'mod' + (allowed ? '' : ' locked');
+    a.href = m.path; a.dataset.id = m.id;
+    if (!allowed) a.setAttribute('aria-disabled', 'true');
+    a.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
+    a.innerHTML = '<span class="name">' + esc(m.name) + '</span>' +
+                  (withDesc && m.desc ? '<span class="desc">' + esc(m.desc) + '</span>' : '') +
+                  (m.staff ? '<span class="staff">' + esc(m.staff) + '</span>' : '');
+    return a;
+  }
+
+  // 3) 최근 연 화면 5개 — 클릭 시 저장, 없으면 줄 자체를 숨긴다
+  function renderRecent(){
+    var ids = load(RECENT).filter(function(id){ return byId[id]; }).slice(0, 5);
+    var row = document.getElementById('recentRow');
+    row.innerHTML = '';
+    ids.forEach(function(id){
+      var m = byId[id], a = document.createElement('a');
+      a.href = m.path; a.dataset.id = id; a.textContent = m.name; a.title = m.name;
+      row.appendChild(a);
+    });
+    document.getElementById('recent').hidden = !ids.length;
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('a[data-id]');
+    if (!a) return;
+    var ids = load(RECENT).filter(function(x){ return x !== a.dataset.id; });
+    ids.unshift(a.dataset.id);
+    save(RECENT, ids.slice(0, 5));
+  });
+
+  // 4) 찾기 — 이름·설명·담당. 검색 중엔 모든 그룹을 펼치고, 비면 저장된 접힘 상태로 돌아간다.
+  var q = document.getElementById('q');
+  function searching(){ return q.value.trim() !== ''; }
+  function filter(){
+    var s = q.value.trim().toLowerCase(), closed = load(CLOSED), total = 0;
+    var core = document.querySelector('.core');
+    if (core) {
+      var n = 0;
+      core.querySelectorAll('.mod').forEach(function(t){ var hit = !s || t.dataset.find.indexOf(s) >= 0; t.hidden = !hit; if (hit) n++; });
+      core.hidden = !n; total += n;
+    }
+    detailsEls.forEach(function(det){
+      var n = 0, all = det.querySelectorAll('.mod');
+      all.forEach(function(t){ var hit = !s || t.dataset.find.indexOf(s) >= 0; t.hidden = !hit; if (hit) n++; });
+      det.querySelector('.n').textContent = s ? n + ' / ' + all.length : all.length;
+      det.hidden = !n;
+      det.open = s ? true : closed.indexOf(det.dataset.g) < 0;
+      total += n;
+    });
+    document.getElementById('recent').hidden = s ? true : !load(RECENT).filter(function(id){ return byId[id]; }).length;
+    var empty = document.getElementById('empty');
+    if (empty) { empty.hidden = !!total; empty.textContent = '“' + q.value.trim() + '” 에 맞는 화면이 없다.'; }
+  }
+  q.addEventListener('input', filter);
+  q.addEventListener('keydown', function(e){ if (e.key === 'Escape') { q.value = ''; filter(); q.blur(); } });
+  document.addEventListener('keydown', function(e){
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tag = (t.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || t.isContentEditable) return;
+    e.preventDefault(); q.focus(); q.select();
+  });
+})();
 </script>
 </body>
 </html>
