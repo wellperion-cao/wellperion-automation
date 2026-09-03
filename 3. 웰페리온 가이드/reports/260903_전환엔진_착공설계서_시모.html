@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>전환 엔진 착공 설계서 — AWS 전환 · 디자인 툴 (시모)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FAF8F5; --paper-2:#F1ECE5; --ink:#221F20; --ink-2:#5A524C; --ink-3:#8C8079;
+  --beige:#B79F8A; --beige-soft:#E4D8CC; --line:#D9CFC4;
+  --accent:#ED5B3F; --accent-ink:#B8391F; --accent-soft:#FBE6E0;
+  --ok:#3F7D5B; --ok-soft:#E1EFE6; --wait:#A8791E; --wait-soft:#F6EBD2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1B1919; --paper-2:#242121; --ink:#F1ECE5; --ink-2:#C9BFB5; --ink-3:#8F857C;
+    --beige:#B79F8A; --beige-soft:#3A322C; --line:#3B3532;
+    --accent:#F26F55; --accent-ink:#FF9A86; --accent-soft:#3A2521;
+    --ok:#7DBA97; --ok-soft:#22332A; --wait:#D9A94A; --wait-soft:#3A3121;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1B1919; --paper-2:#242121; --ink:#F1ECE5; --ink-2:#C9BFB5; --ink-3:#8F857C;
+  --beige:#B79F8A; --beige-soft:#3A322C; --line:#3B3532;
+  --accent:#F26F55; --accent-ink:#FF9A86; --accent-soft:#3A2521;
+  --ok:#7DBA97; --ok-soft:#22332A; --wait:#D9A94A; --wait-soft:#3A3121;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans KR",-apple-system,"Malgun Gothic",sans-serif;font-size:14.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.page{max-width:1480px;margin:0 auto;padding:28px 36px 56px}
+h1,h2,h3{font-family:"Noto Serif KR","Noto Sans KR",serif;text-wrap:balance;margin:0}
+.mono{font-family:"IBM Plex Mono","Noto Sans KR",monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--beige);font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:16px;border-bottom:2px solid var(--ink)}
+.masthead h1{font-size:30px;font-weight:700;line-height:1.25}
+.masthead .sub{color:var(--ink-2);margin-top:6px;font-size:14px}
+.meta{display:grid;grid-template-columns:auto auto;gap:2px 14px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+.meta b{color:var(--ink);font-weight:500}
+
+/* direction band */
+.band{margin-top:20px;display:grid;grid-template-columns:150px 1fr;gap:0;border:1px solid var(--line);border-left:6px solid var(--ink);background:var(--paper-2)}
+.band .k{padding:18px 20px;border-right:1px solid var(--line)}
+.band .k .eyebrow{color:var(--ink-2)}
+.band .k .t{font-family:"Noto Serif KR",serif;font-size:20px;font-weight:700;margin-top:4px}
+.band .v{padding:18px 24px}
+.band .v .lead{font-family:"Noto Serif KR",serif;font-size:21px;font-weight:600;line-height:1.5}
+.band .v .lead em{font-style:normal;color:var(--accent-ink);border-bottom:2px solid var(--accent)}
+.band .v p{margin:8px 0 0;color:var(--ink-2);max-width:78ch}
+.band.decide{border-left-color:var(--accent)}
+.band.decide .k .t{color:var(--accent-ink)}
+
+section{margin-top:34px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.sec-head h2{font-size:19px;font-weight:700}
+.sec-head .hint{color:var(--ink-3);font-size:12.5px}
+
+/* two openings */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.open{border:1px solid var(--line);background:var(--paper);display:grid;grid-template-rows:auto 1fr auto}
+.open .head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.open .head h3{font-size:17px;font-weight:700}
+.open .head .state{font-size:12px;padding:3px 9px;border-radius:2px;background:var(--ok-soft);color:var(--ok);font-weight:700;white-space:nowrap}
+.open .body{padding:14px 18px;display:grid;grid-template-columns:96px 1fr;gap:9px 14px;align-content:start}
+.open .body .l{color:var(--ink-3);font-size:12.5px;padding-top:3px}
+.open .body .d{color:var(--ink);max-width:62ch}
+.open .body .d.mute{color:var(--ink-2)}
+.open .foot{padding:12px 18px;border-top:1px dashed var(--line);background:var(--paper-2);display:flex;gap:26px}
+.kpi{display:flex;flex-direction:column}
+.kpi .kv{font-family:"Noto Serif KR",serif;font-size:22px;font-weight:700;line-height:1.1}
+.kpi .kv small{font-family:"Noto Sans KR",sans-serif;font-size:12px;font-weight:500;color:var(--ink-3);margin-left:4px}
+.kpi .kl{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.kpi .kv .arrow{color:var(--beige);margin:0 6px;font-weight:400}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:11.5px;letter-spacing:.06em;color:var(--ink-3);font-weight:700;text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--ink);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.when{white-space:nowrap;font-weight:700}
+td.when .d{display:block;font-size:11.5px;color:var(--ink-3);font-weight:400}
+td .who{display:inline-block;font-size:11.5px;padding:1px 7px;border:1px solid var(--line);border-radius:2px;color:var(--ink-2);margin-right:4px;white-space:nowrap}
+td .who.me{border-color:var(--ink);color:var(--ink);font-weight:700}
+td .who.gm{border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+td .chk{color:var(--ink-2)}
+td .chk::before{content:"보면 되는 것 · ";color:var(--ink-3);font-size:11.5px}
+tr.phase-gap td{padding-top:16px}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:2px;font-weight:700;margin-right:6px;vertical-align:1px}
+.tag.pre{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.p1{background:var(--beige-soft);color:var(--ink)}
+.tag.p2{background:var(--paper-2);color:var(--ink-2);border:1px solid var(--line)}
+.tag.now{background:var(--ok-soft);color:var(--ok)}
+
+/* decisions */
+.decs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.dec{border:1px solid var(--line);border-top:4px solid var(--accent);padding:16px 18px;background:var(--paper);display:flex;flex-direction:column;gap:9px}
+.dec .q{font-family:"Noto Serif KR",serif;font-size:16.5px;font-weight:700;line-height:1.4}
+.dec .prop{background:var(--paper-2);padding:10px 12px;border-left:3px solid var(--ink)}
+.dec .prop .l{font-size:11.5px;color:var(--ink-3);letter-spacing:.06em;font-weight:700}
+.dec .prop .t{font-weight:700;margin-top:2px}
+.dec .why{color:var(--ink-2);font-size:13.5px}
+.dec .then{font-size:13.5px}
+.dec .then b{color:var(--accent-ink)}
+
+/* tool block */
+.tools{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
+.budget{border:1px solid var(--line);padding:16px 18px;background:var(--paper)}
+.budget .row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);align-items:baseline}
+.budget .row:last-child{border-bottom:0}
+.budget .row .n{font-family:"Noto Serif KR",serif;font-weight:700;font-size:16px}
+.budget .row.total{border-top:1.5px solid var(--ink);border-bottom:0;margin-top:6px;padding-top:12px}
+.budget .row.total .n{font-size:20px;color:var(--accent-ink)}
+.budget .row .sub{color:var(--ink-3);font-size:12.5px}
+.rule{margin-top:12px;padding:10px 12px;background:var(--accent-soft);color:var(--accent-ink);font-size:13px;border-radius:2px}
+.rule b{font-weight:700}
+
+/* watch list */
+.watch{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.w{border:1px solid var(--line);padding:14px 16px;background:var(--paper)}
+.w .t{font-weight:700}
+.w .n{font-family:"Noto Serif KR",serif;font-size:24px;font-weight:700;margin:6px 0 2px;line-height:1.1}
+.w .n small{font-family:"Noto Sans KR",sans-serif;font-size:12px;font-weight:500;color:var(--ink-3)}
+.w .m{font-size:12.5px;color:var(--ink-2)}
+.w .m b{color:var(--ink)}
+
+.nots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.not{padding:12px 14px;border:1px solid var(--line);background:var(--paper-2);font-size:13.5px}
+.not b{display:block;margin-bottom:3px}
+.not span{color:var(--ink-2)}
+
+footer{margin-top:40px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+@media (max-width:1000px){
+  .two,.decs,.tools,.watch,.nots{grid-template-columns:1fr}
+  .band{grid-template-columns:1fr}
+  .band .k{border-right:0;border-bottom:1px solid var(--line)}
+  .masthead{flex-direction:column;align-items:flex-start}
+  .page{padding:20px 18px 40px}
+}
+@media print{
+  @page{size:A3 landscape;margin:12mm}
+  body{background:#fff;color:#221F20;font-size:12px}
+  .page{max-width:none;padding:0}
+  section{break-inside:avoid;margin-top:18px}
+  .band,.open,.dec,.w,.budget{break-inside:avoid}
+  a{color:inherit;text-decoration:none}
+}
+a{color:var(--accent-ink)}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Wellperion · 마케팅 착공 설계서</div>
+      <h1>전환 엔진 착공 설계서 — AWS 전환 · 디자인 툴</h1>
+      <div class="sub">두 승인이 났으니 시모가 무엇을, 언제까지, 어떻게 확인받으며 하는지 한 장으로 고정합니다.</div>
+    </div>
+    <div class="meta">
+      <span>작성</span><b>AI 시모</b>
+      <span>보고</span><b>김남욱 GM</b>
+      <span>작성일</span><b class="mono">2026. 09. 03.</b>
+      <span>문서번호</span><b class="mono">WP-CMO-260903-01</b>
+      <span>근거</span><b>09-02 마케팅 요청 7건 A3 · 08-29 도구 검토 A3 · 09-03 AWS 개통 실측</b>
+    </div>
+  </header>
+
+  <div class="band">
+    <div class="k"><div class="eyebrow">방향 (GM 확정 09-02 · 09-03)</div><div class="t">한 줄</div></div>
+    <div class="v">
+      <div class="lead">AWS엔 <em>문의가 어디서 왔는지 · 콘텐츠가 무엇을 낳았는지</em> 적히는 칸 두 개를 처음부터 넣고, 디자인 툴은 <em>멈춘 발행을 다시 돌리는 데</em>만 씁니다.</div>
+      <p>마케팅 1순위 지표 「노출 → 문의 전환율」은 지금까지 한 번도 잰 적이 없습니다. 칸이 없어서입니다. 서버가 선 지금이 그 칸을 가장 싸게 넣는 때이고, 도구는 그 칸에 들어갈 콘텐츠를 다시 만들기 위해 삽니다. 새 화면은 만들지 않습니다.</p>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2>두 승인이 시모에게 여는 것</h2><span class="hint">「지금」 칸은 2026-09-03 실측</span></div>
+    <div class="two">
+      <div class="open">
+        <div class="head"><h3>① AWS 전환</h3><span class="state">서버 개통 09-03</span></div>
+        <div class="body">
+          <div class="l">열린 것</div><div class="d">계정·서울 리전 서버 1대·고정 IP 확보(시토). 신규 크레딧 200 USD ≈ 서버 첫 두 달치. 예약작업 32개가 9월 중 GM PC에서 서버로 옮겨갑니다.</div>
+          <div class="l">시모가 하는 일</div><div class="d"><b>착수 전</b> — 유입 경로 칸·발행 원장 칸의 정의서(무슨 값이 어떤 이름으로 들어가는지)를 써서 시토에게 넘깁니다. <b>9월</b> — 시모 소관 자동화 4종(발행 워처·문의 접수 폴러·발행 요약·주간 반응표)의 서버 이전 통과 기준을 정하고 3일 무결을 확인합니다. <b>1차(ERP 핵심 3모듈과 함께)</b> — 사진·영상 저장소 색인, 접수 화면의 폼 데이터화.</div>
+          <div class="l">지금</div><div class="d mute">문의 표에 유입 경로 칸 없음 · 검수 큐 179건이 파일 하나에, 반응은 다른 파일에 · 전문촬영 11장 색인은 09-02 완료(<span class="mono">photo_library.json</span>) · 접수 화면은 상품마다 코드 수정(스팀다리미 건 4곳 손수정)</div>
+        </div>
+        <div class="foot">
+          <div class="kpi"><div class="kv">미측정<span class="arrow">→</span>측정 시작<small>11월 1차 가동일</small></div><div class="kl">노출 → 문의 전환율 (KPI 1순위)</div></div>
+          <div class="kpi"><div class="kv">4<small>종</small></div><div class="kl">시모 자동화 서버 이전 · 9월</div></div>
+        </div>
+      </div>
+      <div class="open">
+        <div class="head"><h3>② 디자인 툴 예산</h3><span class="state">예산 승인 09-03</span></div>
+        <div class="body">
+          <div class="l">열린 것</div><div class="d">AI 예산 한도 월 150만 중 Claude 70만·AWS 추정 15만을 뺀 <b class="num">65만</b>이 도구 자리입니다. 힉스필드 플러스 연간(월 환산 6.6만)을 09-03 결제했고 CLI 연동·시험 영상까지 끝났습니다.</div>
+          <div class="l">시모가 하는 일</div><div class="d">도구는 <b>발행을 다시 돌리는 데만</b> 씁니다. 개인 계정은 실전사례 다음 편부터 주 2회 발행 복귀, 릴스는 10월부터 주 1회 실발행. 공식 계정은 GM과 각(角)을 정한 뒤 재개합니다(각 확정 전 발행 없음). 브랜드 규칙대로 <b>시설은 그리지 않습니다</b> — 실사 촬영본을 편집·보정하는 데 씁니다.</div>
+          <div class="l">지금</div><div class="d mute">발행 대기 0건 · 마지막 발행 개인 08-23 · 공식 07-14 · 영상 발행 누적 0건 · 무료 릴스 파이프라인은 6월 시험 제작(v1~v3)까지만</div>
+        </div>
+        <div class="foot">
+          <div class="kpi"><div class="kv">0<span class="arrow">→</span>4<small>건 / 10월</small></div><div class="kl">릴스 실발행 (주 1회)</div></div>
+          <div class="kpi"><div class="kv">11<small>일 멈춤</small><span class="arrow">→</span>주 2<small>회</small></div><div class="kl">개인 계정 발행 복귀 · 9월 2주</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>실행 — 날짜·담당·끝나는 조건·점검</h2><span class="hint">순서에 뜻이 있습니다. 위 줄이 끝나야 아래 줄이 값을 합니다.</span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>언제</th><th>무엇을</th><th>담당</th><th>끝나는 조건</th><th>점검</th></tr></thead>
+      <tbody>
+        <tr><td class="when">9/5 (금)<span class="d">착수 전</span></td><td><span class="tag pre">착수 전</span>아래 「먼저 정할 것 3건」 확정</td><td><span class="who gm">GM</span></td><td>3건에 답이 적힘 — 시모 제안 그대로여도 됩니다</td><td><span class="chk">이 장의 결정 밴드 3칸이 채워졌는가</span></td></tr>
+        <tr><td class="when">9/12 (금)<span class="d">착수 전</span></td><td><span class="tag pre">착수 전</span>유입 경로 칸 · 발행 원장 칸 <b>정의서</b> 작성 → 시토 인계 (배로)</td><td><span class="who me">시모</span><span class="who">시토 수신</span></td><td>칸 이름·값 목록·채워지는 시점이 한 장에 적히고 시토가 「설계에 넣었다」고 답함</td><td><span class="chk">시토 배 note에 정의서 링크와 수신 표기</span></td></tr>
+        <tr><td class="when">9/12 (금)<span class="d">발행 복귀</span></td><td><span class="tag now">지금</span>개인 계정 실전사례 다음 편 제작·검수 등록 — 주 2회 리듬 복귀</td><td><span class="who me">시모</span><span class="who gm">GM 승인</span></td><td>검수 큐에 「검수대기」가 다시 생기고 텔레그램 승인 카드가 감</td><td><span class="chk">콘텐츠·문의 현황 화면(M1) 발행 대기 건수 &gt; 0</span></td></tr>
+        <tr><td class="when">9/19 (금)<span class="d">도구</span></td><td><span class="tag now">지금</span>힉스필드 플러스 연간 결제·CLI 로그인 <b>완료(09-03)</b> → 시험 영상 1건 성공</td><td><span class="who gm">GM 결제</span><span class="who me">시모 셋업</span></td><td>첫 릴스 편집본 1건이 검수 큐에 올라감</td><td><span class="chk">AI 예산표(월간운영계획 2026-08-08) 도구 칸이 실값으로 바뀜</span></td></tr>
+        <tr><td class="when">9/30 (수)<span class="d">서버 이전</span></td><td><span class="tag now">지금</span>시모 자동화 4종 서버 이전 통과 기준 작성 → 시토 이전 → <b>3일 무결</b> 확인</td><td><span class="who me">시모 기준·검증</span><span class="who">시토 이전</span></td><td>발행 워처·접수 폴러·발행 요약·주간 반응표가 GM PC 꺼진 밤에도 돌아 로그가 남음</td><td><span class="chk">서버 로그 3일치 + 검수 큐 갱신 시각이 22:30 이후에도 찍힘</span></td></tr>
+        <tr class="phase-gap"><td class="when">10월<span class="d">4주</span></td><td><span class="tag now">지금</span>릴스 주 1회 실발행 4건 (실사 촬영본 → 도구 편집 → 승인 → 발행)</td><td><span class="who me">시모</span><span class="who gm">GM 승인</span></td><td>IG 발행 기록에 영상 4건</td><td><span class="chk">M1 발행 원장에서 채널=IG · 형식=영상 4행</span></td></tr>
+        <tr><td class="when">10월<span class="d">공식 계정</span></td><td>공식 계정 각(角) 확정 → 1편 재제작 → 재개</td><td><span class="who gm">GM 각 확정</span><span class="who me">시모 제작</span></td><td>GM이 「이 결」이라고 한 1편이 발행됨</td><td><span class="chk">공식 계정 최신 게시일이 07-14에서 바뀜</span></td></tr>
+        <tr class="phase-gap"><td class="when">11월~<span class="d">ERP 1차</span></td><td><span class="tag p1">1차</span>핵심 3모듈(회원·문의·점검)과 함께 — 문의 표에 유입 경로 칸 가동 · 발행 원장 데이터화 · 사진·영상 저장소(색인 포함) · 접수 화면 폼 데이터화</td><td><span class="who">시토 구축</span><span class="who me">시모 정의·검수</span></td><td>새 문의 1건이 들어오면 채널·게시물이 함께 저장되고, 발행 원장에서 그 게시물을 클릭하면 문의가 보임</td><td><span class="chk">첫 실문의로 전환율 1건이 계산되는 날짜 — 그날이 「측정 시작일」</span></td></tr>
+        <tr><td class="when">2027 1분기<span class="d">이후</span></td><td><span class="tag p2">이후</span>문의 유형 데이터화(영문 3종 → 국문과 같은 7종) · 발신 기록 한 곳 · 공개 홈페이지 값 한 곳(연혁·시설·연락처)</td><td><span class="who">시토</span><span class="who me">시모 값 정리</span></td><td>영문 폼 완성도 66% → 국문과 동일 · 홈페이지 62% 감점 사유 0</td><td><span class="chk">status/page_score.json 두 줄</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="band decide">
+      <div class="k"><div class="eyebrow">GM 결정 요청</div><div class="t">먼저 정할 것 3건</div></div>
+      <div class="v">
+        <div class="lead">착수 전에 이 셋만 정해지면 나머지는 시모가 굴립니다. 각 칸에 시모 제안을 하나씩 적었습니다 — 그대로 가셔도 되고 한 줄로 바꿔 주셔도 됩니다.</div>
+        <p>이 세 값은 나중에 바꾸면 이미 쌓인 문의·발행 기록을 다시 못 채우는 종류라 착수 전에 묶습니다.</p>
+      </div>
+    </div>
+    <div class="decs" style="margin-top:16px">
+      <div class="dec">
+        <div class="q">1. 유입 경로를 어디까지 나누나</div>
+        <div class="prop"><div class="l">시모 제안</div><div class="t">게시물 단위까지</div></div>
+        <div class="why">채널(인스타·블로그·카페·당근)까지만 나누면 「어느 채널이 통했나」는 알아도 「어떤 편이 통했나」는 영영 모릅니다. 발행 원장과 잇는 열쇠가 게시물 번호입니다.</div>
+        <div class="then">정하면 → 문의 표에 <b>채널 + 게시물 번호 + 본 날짜</b> 세 칸이 생기고, 문의 화면 첫 줄에 「어디서 오셨나요」가 선택형으로 붙습니다.</div>
+      </div>
+      <div class="dec">
+        <div class="q">2. 지난 문의는 어떻게 하나</div>
+        <div class="prop"><div class="l">시모 제안</div><div class="t">비워 두고 새것부터 쌓는다</div></div>
+        <div class="why">지난 문의엔 경로가 없습니다. 기억으로 채우면 숫자가 거짓이 됩니다(재기 전에 말하지 않는다). 측정 시작일을 명시하고 그날부터의 비율만 봅니다.</div>
+        <div class="then">정하면 → 전환율 화면에 <b>「측정 시작 2026-11-○○」</b>이 붙고, 그 이전 문의는 경로 「기록 없음」으로 남습니다.</div>
+      </div>
+      <div class="dec">
+        <div class="q">3. 발행 원장을 어디에 두나</div>
+        <div class="prop"><div class="l">시모 제안</div><div class="t">ERP 안에 둔다 (문의와 같은 집)</div></div>
+        <div class="why">지금처럼 밖(파일)에 두고 연결만 하면 연결이 끊기는 순간 아무도 모릅니다. 문의와 같은 데이터베이스에 있어야 「이 편 → 이 문의」가 클릭 한 번입니다.</div>
+        <div class="then">정하면 → 검수 큐 179건이 <b>1차 때 원장으로 이사</b>하고, 발행 워처는 파일 대신 원장에 씁니다. 화면(M1)은 그대로입니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>디자인 툴 — 힉스필드 플러스 연간 (GM 결제 09-03)</h2><span class="hint">공식 요금 페이지 09-03 실측 · 환율 1,400원 · 부가세 별도</span></div>
+    <div class="tools">
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>도구</th><th>무엇에 쓰나 (이것만)</th><th>쓰지 않는 것</th><th>월</th><th>효과를 재는 숫자</th></tr></thead>
+        <tbody>
+          <tr><td><b>힉스필드 (Higgsfield) 플러스</b><br><span style="color:var(--ink-3);font-size:12px">영상·이미지 AI 묶음 · Claude Code 전용 CLI</span></td><td>실사 촬영본 → 「걸어 들어가는」 영상·릴스. 시모가 CLI로 자동 생성(생성 전 비용 미리보기 → 검수 큐 → 승인 → 발행). 09-03 시험 1건 성공(수영장·10크레딧)</td><td>시설·사람을 새로 생성하지 않음 · 사진 밖은 지어내므로 편당 2~3회 뽑아 고른다</td><td class="num"><b>6.6만</b><br><span style="color:var(--ink-3);font-size:11px">연 $564 선결제 ≈ 79만</span></td><td>릴스 실발행 <b>0 → 4건/10월</b> · 월 크레딧 사용(1,000 넘으면 울트라 검토)</td></tr>
+          
+        </tbody>
+      </table>
+      <div class="rule"><b>한도는 올리지 않습니다.</b> 힉스필드 플러스 연간 = 월 환산 6.6만, 도구 자리 65만의 10%(GM 결제 09-03 · 선결제 79만은 결제 달 1회 한도 초과 수용). AWS 첫 청구가 추정 15만을 넘으면 도구를 줄이지 한도를 건드리지 않습니다. 소계+AWS가 월 110만을 넘으면 시토 알람이 GM께 먼저 갑니다(09-03 배선 완료).</div>
+      </div>
+      <div class="budget">
+        <div class="eyebrow" style="margin-bottom:8px">AI 예산표 · 월 (정본 = 월간운영계획 2026-08-08)</div>
+        <div class="row"><span>한도 (GM 승인 09-02)</span><span class="n num">150만</span></div>
+        <div class="row"><span>Claude 회사 2계정 + 강사 <span class="sub">$500</span></span><span class="n num">70만</span></div>
+        <div class="row"><span>AWS 서버 <span class="sub">추정 · 첫 청구 시 실값</span></span><span class="n num">15만</span></div>
+        <div class="row"><span>도구 자리 <span class="sub">150 − 70 − 15</span></span><span class="n num">65만</span></div>
+        <div class="row"><span>힉스필드 플러스 연간 <span class="sub">월 환산 · GM 결제 09-03</span></span><span class="n num">6.6만</span></div>
+        <div class="row total"><span>도구 계약 후 남는 자리</span><span class="n num">58.4만</span></div>
+        <div class="row"><span class="sub">첫 두 달은 AWS 크레딧 200 USD가 서버비를 대신합니다 — 그 기간 실청구는 힉스필드뿐입니다.</span><span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>매주 금요일 보면 되는 숫자 4개</h2><span class="hint">시모가 금요일 오전에 이 4칸을 채워 콘텐츠·문의 현황 화면(M1)에 올립니다</span></div>
+    <div class="watch">
+      <div class="w"><div class="t">발행 대기 · 발행 완료</div><div class="n">0 <small>대기</small></div><div class="m">지금 <b>0건</b> · 목표 = 대기가 항상 1건 이상 (다음 편이 항상 큐에 있다)</div></div>
+      <div class="w"><div class="t">영상 발행 누적</div><div class="n">0 <small>건</small></div><div class="m">10월 말 <b>4건</b> · 11월부터 주 1회 유지</div></div>
+      <div class="w"><div class="t">시모 자동화 서버 가동</div><div class="n">0<small>/4</small></div><div class="m">9/30 <b>4/4</b> · 3일 무결 통과 표기</div></div>
+      <div class="w"><div class="t">전환율 측정 시작일</div><div class="n">— <small>미정</small></div><div class="m">11월 1차 가동 후 <b>첫 실문의 날짜</b>가 이 칸에 들어오면 KPI 1순위가 살아납니다</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>시모가 하지 않는 것</h2></div>
+    <div class="nots">
+      <div class="not"><b>서버·데이터베이스를 직접 만들지 않습니다</b><span>구축은 시토. 시모는 「무슨 칸에 무슨 값」 정의와 검수까지입니다. 새 저장소·새 파이프라인은 시토 승인 경로로.</span></div>
+      <div class="not"><b>회원 개인정보를 보지 않습니다</b><span>회원 담당(시포) 소관. 마케팅은 집계된 숫자(전환율·건수)만 봅니다.</span></div>
+      <div class="not"><b>GM 결재 없이 발행·결제하지 않습니다</b><span>콘텐츠 실제 발행은 텔레그램 승인이 유일한 관문이고, 도구 결제·공식 계정의 각(角)은 GM이 정합니다.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>작성 AI 시모 · 배 921 · 「지금」 칸은 2026-09-03 실측 · 정본 = 이 장 + 09-02 요청 7건 A3</span>
+    <span>기록 = status/_queue.json 배 921 · GM업무 카드 「웰페리온 ERP 고도화 + 브로제이 시스템 업무분장」 자료 링크</span>
+  </footer>
+</div>
+
+</body>
+</html>
