@@ -1164,6 +1164,31 @@ def _selfcheck_honorifics() -> None:
     print("[selfcheck] add_honorifics OK")
 
 
+# ── 업무 화면 링크는 ERP 새 주소로 (GM 지시 2026-09-03 "점검 페이지도 다 변경").
+# 옛 주소(GitHub Pages)는 로그인 관문 밖이라 계정별 권한이 걸리지 않는다. 발신 관문 한 곳에서
+# 바꾸므로 링크를 만드는 스크립트 30개(53곳)를 각각 고칠 필요가 없다.
+# ★.html 만 바꾼다 — 이미지·PDF 는 회원·외부에게도 나가는 것이라 로그인 뒤로 넣으면 안 열린다.
+_OLD_PAGES_BASE = "https://wellperion-cao.github.io/wellperion-automation/"
+_ERP_BASE = "https://erp.wellperion.com/"
+_ERP_LINK_RE = re.compile(re.escape(_OLD_PAGES_BASE) + r"(\S*?\.html(?:[?#][^\s)]*)?)")
+
+
+def to_erp_links(text: str) -> str:
+    """옛 주소의 업무 화면(.html) 링크만 ERP 새 주소로 바꾼다."""
+    return _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), text)
+
+
+def _selfcheck_erp_links() -> None:
+    old = _OLD_PAGES_BASE
+    assert to_erp_links(f"점검 {old}coo/check/전사_일정.html 보세요") == \
+        "점검 https://erp.wellperion.com/coo/check/전사_일정.html 보세요", "업무 화면은 새 주소로"
+    assert to_erp_links(f"{old}cpo/member/membership.html?manage=lesson").endswith(
+        "membership.html?manage=lesson"), "쿼리는 그대로 붙어 간다"
+    assert to_erp_links(f"시안 {old}reports/현수막.png") == f"시안 {old}reports/현수막.png", \
+        "이미지는 옛 주소 그대로 — 로그인 뒤로 넣으면 회원·외부가 못 연다"
+    print("[selfcheck] to_erp_links OK")
+
+
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
     _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
@@ -1174,7 +1199,9 @@ def build_caption(room: dict, base_caption: str) -> str:
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
         text = _fix_avg_for_chairman(text)
-    return encode_url_spaces(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}")))
+    out = encode_url_spaces(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}")))
+    # 회장님 방은 회사 구글 계정 로그인이 없으니 옛 주소 그대로 둔다.
+    return out if room.get("name") == CHAIRMAN_ROOM_NAME else to_erp_links(out)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -2000,6 +2027,7 @@ def _selftest() -> None:
         _selfcheck_mask_pii()
         _selfcheck_honorifics()
         _selfcheck_sender_gate()
+        _selfcheck_erp_links()
         try:
             _selfcheck_broken_links()
         except AssertionError:
