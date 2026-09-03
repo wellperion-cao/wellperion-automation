@@ -58,7 +58,15 @@ def hold_key(r):
 
 
 def _replace(conn, table, cols, recs):
-    """한 표를 통째로 갈아끼운다(시트가 정본). 호출부가 조회 성공을 확인한 뒤에만 부른다."""
+    """한 표를 통째로 갈아끼운다(시트가 정본). 호출부가 조회 성공을 확인한 뒤에만 부른다.
+    [2026-09-04 시우] 0건 보호 — GAS 가 권한 오류를 삼키고 ok:true·빈 목록을 돌려주는 날(2026-09-03 실사고:
+    스프레드시트 스코프 누락으로 reg_list 137건 → 0건)에는 거울까지 비어 버렸다. 새 목록이 비었는데 거울에
+    행이 남아 있으면 지난 값을 그대로 둔다 — 원천이 진짜로 0건이 되는 경우는 없다(접수 원장은 지우지 않는다)."""
+    if not recs:
+        cur = conn.execute("SELECT COUNT(*) FROM %s WHERE tenant_id=%%s" % table, (db.TENANT,)).fetchone()[0]
+        if cur > 0:
+            print("[keep] %s — 원천 0건 응답, 거울 %d행 유지(원천 조회 이상 의심)" % (table, cur))
+            return cur
     with conn:
         conn.execute("DELETE FROM %s WHERE tenant_id=%%s" % table, (db.TENANT,))
         conn.executemany("INSERT INTO %s (%s) VALUES (%s)" % (table, ",".join(cols), ",".join(["%s"] * len(cols))), recs)
