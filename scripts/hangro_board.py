@@ -85,9 +85,9 @@ def _is_g1_owner(owner: str) -> bool:
     o = str(owner)
     if "김남욱GM" in o:
         return True
-    if any(x in o for x in ["웰리", "시모", "시토", "시우", "시뽀", "시포", "시로"]):
+    if any(x in o for x in ["웰리", "시모", "시토", "시우", "시뽀", "시포", "시로", "시보"]):
         return True
-    if any(x in o for x in ["AI CEO", "AI CMO", "AI CTO", "AI COO", "AI CFO", "AI CPO", "AI CHRO"]):
+    if any(x in o for x in ["AI CEO", "AI CMO", "AI CTO", "AI COO", "AI CFO", "AI CPO", "AI CHRO", "AI CBO"]):
         return True
     return False
 

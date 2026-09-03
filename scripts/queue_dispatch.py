@@ -67,7 +67,7 @@ EXCLUDED_OWNER = "나우열M"
 # 읽어 제목·설명을 훑을 뿐, 판정 기준을 여기 복제하지 않는다(약속 L01).
 # 애매하면 막지 않는다 — 잘못 막는 것이 잘못 보내는 것보다 성가시다.
 _NICK_TO_ROLE = {"웰리": "ceo", "시뽀": "cfo", "시로": "chro", "시모": "cmo",
-                 "시우": "coo", "시포": "cpo", "시토": "cto"}
+                 "시우": "coo", "시포": "cpo", "시토": "cto", "시보": "cbo"}
 
 
 def _route_guess(title: str, note: str) -> tuple[str, str]:

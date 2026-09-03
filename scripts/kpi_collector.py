@@ -740,7 +740,7 @@ def collect() -> dict:
     coo_check = _coo_check_rate()
 
     roles_data: dict[str, dict] = {}
-    for role in ("ceo", "coo", "cfo", "cmo", "cto", "chro", "cpo"):
+    for role in ("ceo", "coo", "cfo", "cmo", "cto", "chro", "cpo", "cbo"):  # cbo=시보 2026-09-02 신설
         stats = _role_stats(ships, role)
         stats.update(_role_stalled_ships(ships, role))  # 멈춘 배(전 역할 공통) — GM 지적 2026-08-04
         if role == "ceo":
