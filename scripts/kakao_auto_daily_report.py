@@ -590,6 +590,17 @@ def main() -> int:
             log(f"킬스위치 OFF({KILL_SWITCH_FILE} 없음 또는 enabled=false) — 무인 실행 생략(아무 작업 안 함)")
             print("SKIPPED: 킬스위치 비활성 — 아무 작업도 하지 않음")
             return 0
+        # 발송 시간창 09:00~12:59 밖이면 보내지 않는다 (2026-09-04 실사고: 전날 09:30 을 놓친 예약작업이
+        # PC 켜진 06:05 에 '놓친 실행 따라잡기'로 떠서 실무진이 아직 안 채운 시트(금일 매출 전부 빈칸)를
+        # 회장님·3방에 보냈다. 시트는 아침에 사람이 채우므로 이른 시각의 보고는 값이 비어 있다.)
+        # ponytail: 고정 시간창 — 시트 채움 시각이 바뀌면 이 두 숫자만 손본다.
+        hour_now = datetime.now().hour
+        if not (9 <= hour_now <= 12):
+            msg = (f"⏭ 매출보고 카톡 발송 생략 — 지금 {datetime.now().strftime('%H:%M')} 은 발송 시간창(09:00~12:59) 밖입니다. "
+                   "예약작업 '놓친 실행 따라잡기'로 이른 시각에 뜬 것으로 보입니다. 09:30 정규 실행이 보냅니다.")
+            log(msg); send_owner_alert(msg)
+            print("SKIPPED: 발송 시간창 밖")
+            return 0
         log("킬스위치 ON — 무인 3방 발송 진행")
     else:
         log(f"--rooms 지정({rooms}) — 킬스위치와 무관하게 즉시 실행(수동 검증 모드)")
