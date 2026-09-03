@@ -1659,5 +1659,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-03"
+  },
+  {
+    "task_id": "CTO-2026-09-03-종합접수처-GAS-재승인-후-라이브-실측-사진-저장",
+    "clevel": "cto",
+    "title": "[시토] 종합접수처 GAS — 재승인 후 라이브 실측 (사진 저장 수리 @120 배포됨 · lf_*/voc_* 가 spreadsheets 권한 오류)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-09-03",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-09-03] GM 2026-09-03 23:25: '이것도 시토한테 진행시키는 게 나을 것 같아' — 시우가 여기까지 했고 나머지는 시토.\n\n[상태 — 실측 23:24]\n· 배포: clasp 로 기존 배포 ID(AKfycbwk2X…VcF3gQ) 에 @120 새 버전 올림(가드 --force · 원격 HEAD=옛 소스 확인 후). 코드 = coo/reception/apps_script_reception.js (커밋 e54097858 · _drvFolder_/_drvErrMsg_ · getRootFolder 호출 0) · 매니페스트 = .deploy-reception/appsscript.json (oauthScopes 명시: spreadsheets · drive · script.external_request · script.scriptapp).\n· 읽기 실측: diag/reg_dashboard/reg_list = OK. lf_list · lf_gallery · voc_list = FAIL 「SpreadsheetApp.openById 권한 없음 — spreadsheets 스코프 필요」. 배포 전에도 같은 오류(GM 이 편집기에서 뭔가 재승인/매니페스트를 건드린 뒤 생긴 것으로 추정 — 원격 HEAD 매니페스트에는 스코프가 없었음).\n· 증상: 종합접수처_현황.html 분실물 칸 「못 불러옴」 · 습득물 등록 사진 저장 실패.\n\n[시토가 할 것]\n1) cao@ 로 GAS 편집기(scriptId 1_jF5yhXZfBgw7KX9adW17ER0t_lQ8xrVaGsZBraUJ5AZZPzfIGuFKw9Y) 열어 아무 함수 ▶실행 → 권한 검토 → 허용(스코프 4개 전부). 이게 안 되면 프로젝트 OAuth 동의 화면/계정 권한 상태 확인.\n2) 읽기 실측: ?action=lf_list · lf_gallery · voc_list 가 ok:true 인지.\n3) 쓰기 실측(가드 규칙대로 20초 뒤): lf_submit 더미(8px PNG · '[테스트]' 표기 · t=폼 토큰) → 사진 URL 나오면 lf_delete 로 즉시 삭제.\n4) 종합접수처_현황.html 시크릿 크롬 — 분실물 칸 정상.\n5) 안 되면 배포 관리에서 @119 로 되돌리고 GM 께 1줄.\n정본·체크리스트 = coo/reception/접수GAS_사진저장_재배포_체크리스트_20260903.md",
+    "next": "재승인 → 읽기 실측 → 더미 쓰기 실측·삭제 → 현황 페이지 확인 → GM 1줄",
+    "depends_on": "",
+    "ship_no": 11213,
+    "short_no": 953,
+    "module": "home",
+    "audience": "office",
+    "reversible": false,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-03"
   }
 ]
