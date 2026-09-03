@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 """웰페리온 문의 미러 API (읽기 전용).
 
-/srv/erp/erp.db 의 inquiries 테이블만 읽는다. 쓰기 경로 없음 — 정본은 여전히 구글 시트이고
+PostgreSQL(common/db.py · ERP_DB_URL) 의 inquiries·members 미러를 읽는다. 쓰기 경로 없음 — 정본은 여전히 구글 시트이고
 이 API 는 sync_inquiries.py 가 5분마다 떠온 미러다. 그래서 모든 응답에 _source=sheet-mirror 를 박는다.
 nginx 가 앞에서 auth_request 로 로그인 쿠키를 검사하므로 여기서 인증을 다시 하지 않는다.
 """
 import json
 import os
-import sqlite3
+import sys
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 
-DB_PATH = os.environ.get("ERP_DB", "/srv/erp/erp.db")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
+from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
+
 SOURCE = "sheet-mirror"
 
 app = FastAPI(title="Wellperion inquiry mirror API", docs_url=None, redoc_url=None)
@@ -20,9 +22,7 @@ app = FastAPI(title="Wellperion inquiry mirror API", docs_url=None, redoc_url=No
 
 def _conn():
     # 읽기 전용으로 연다 — 이 프로세스가 미러를 건드릴 수 없게 못을 박는다.
-    conn = sqlite3.connect("file:%s?mode=ro" % DB_PATH, uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return db.connect(readonly=True)
 
 
 def _row(r):
@@ -38,11 +38,11 @@ def _row(r):
 def health():
     try:
         conn = _conn()
-    except sqlite3.Error as e:
+    except db.Error as e:
         return {"ok": False, "detail": "DB 열기 실패: %s" % e, "_source": SOURCE}
     with conn:
-        rows = conn.execute("SELECT type, COUNT(*) c FROM inquiries GROUP BY type").fetchall()
-        meta = dict(conn.execute("SELECT k, v FROM sync_meta").fetchall())
+        rows = conn.execute("SELECT type, COUNT(*) c FROM inquiries WHERE tenant_id=%s GROUP BY type", (db.TENANT,)).fetchall()
+        meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE tenant_id=%s", (db.TENANT,)).fetchall())
     by_type = {r["type"]: r["c"] for r in rows}
     return {
         "ok": True,
@@ -61,22 +61,19 @@ def inquiries(
     since: Optional[str] = None,   # timestamp 하한 (예 2026-08-01) — 문자열 비교(ISO 라 순서 보존)
     type: Optional[str] = None,    # 멤버십 · 성인강습 · 유소년강습
 ):
-    where, args = [], []
+    where, args = ["tenant_id = %s"], [db.TENANT]
     if type:
-        where.append("type = ?")
+        where.append("type = %s")
         args.append(type)
     if since:
-        where.append("timestamp >= ?")
+        where.append("timestamp >= %s")
         args.append(since)
-    sql = "SELECT * FROM inquiries"
-    cnt = "SELECT COUNT(*) FROM inquiries"
-    if where:
-        sql += " WHERE " + " AND ".join(where)
-        cnt += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY timestamp DESC, id LIMIT ? OFFSET ?"
+    sql = "SELECT * FROM inquiries WHERE " + " AND ".join(where)
+    cnt = "SELECT COUNT(*) FROM inquiries WHERE " + " AND ".join(where)
+    sql += " ORDER BY timestamp DESC, id LIMIT %s OFFSET %s"
     try:
         conn = _conn()
-    except sqlite3.Error as e:
+    except db.Error as e:
         raise HTTPException(503, "DB 열기 실패: %s" % e)
     with conn:
         total = conn.execute(cnt, args).fetchone()[0]
@@ -89,10 +86,10 @@ def inquiries(
 def inquiry(item_id: str):
     try:
         conn = _conn()
-    except sqlite3.Error as e:
+    except db.Error as e:
         raise HTTPException(503, "DB 열기 실패: %s" % e)
     with conn:
-        r = conn.execute("SELECT * FROM inquiries WHERE id = ?", (item_id,)).fetchone()
+        r = conn.execute("SELECT * FROM inquiries WHERE tenant_id = %s AND id = %s", (db.TENANT, item_id)).fetchone()
     if r is None:
         raise HTTPException(404, "없는 문의 id")
     return _row(r)
@@ -120,7 +117,7 @@ def _member_row(r):
 def _open():
     try:
         return _conn()
-    except sqlite3.Error as e:
+    except db.Error as e:
         raise HTTPException(503, "DB 열기 실패: %s" % e)
 
 
@@ -128,8 +125,8 @@ def _open():
 def members_summary():
     conn = _open()
     with conn:
-        rows = conn.execute("SELECT scope, COUNT(*) c FROM members GROUP BY scope").fetchall()
-        meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE k LIKE 'members_%'").fetchall())
+        rows = conn.execute("SELECT scope, COUNT(*) c FROM members WHERE tenant_id=%s GROUP BY scope", (db.TENANT,)).fetchall()
+        meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE tenant_id=%s AND k LIKE 'members_%%'", (db.TENANT,)).fetchall())
     by_scope = {s: 0 for s in MEMBER_SCOPES}
     by_scope.update({r["scope"]: r["c"] for r in rows})
     return {
@@ -152,28 +149,28 @@ def members(
     limit: int = Query(100, ge=1, le=1000),
     cursor: Optional[str] = None,         # 직전 응답의 next_cursor("회원번호|scope") — 그 다음부터
 ):
-    where, args = [], []
+    where, args = ["tenant_id = %s"], [db.TENANT]
     if scope:
         if scope not in MEMBER_SCOPES:
             raise HTTPException(400, "scope 는 %s 중 하나" % "/".join(MEMBER_SCOPES))
-        where.append("scope = ?")
+        where.append("scope = %s")
         args.append(scope)
     if q:
         digits = "".join(ch for ch in q if ch.isdigit())
         if digits and digits == q.strip():
-            where.append("phone LIKE ?")
+            where.append("phone LIKE %s")
             args.append("%" + digits)
         else:
-            where.append("name LIKE ?")
+            where.append("name LIKE %s")
             args.append("%" + q.strip() + "%")
-    cnt_sql = "SELECT COUNT(*) FROM members" + (" WHERE " + " AND ".join(where) if where else "")
+    cnt_sql = "SELECT COUNT(*) FROM members WHERE " + " AND ".join(where)
     cnt_args = list(args)
     if cursor:
         no, _, sc = cursor.partition("|")
-        where.append("(member_no, scope) > (?, ?)")
+        where.append("(member_no, scope) > (%s, %s)")
         args += [no, sc]
-    sql = "SELECT * FROM members" + (" WHERE " + " AND ".join(where) if where else "")
-    sql += " ORDER BY member_no, scope LIMIT ?"
+    sql = "SELECT * FROM members WHERE " + " AND ".join(where)
+    sql += " ORDER BY member_no, scope LIMIT %s"
     conn = _open()
     with conn:
         total = conn.execute(cnt_sql, cnt_args).fetchone()[0]
@@ -190,19 +187,19 @@ def member(member_no: str):
     같은 번호가 여러 scope 에 있으면 valid 가 대표, 나머지는 scopes 배열(이력)."""
     conn = _open()
     with conn:
-        rs = conn.execute("SELECT * FROM members WHERE member_no = ? ORDER BY %s" % _SCOPE_ORDER,
-                          (member_no.upper(),)).fetchall()
+        rs = conn.execute("SELECT * FROM members WHERE tenant_id = %s AND member_no = %s ORDER BY " + _SCOPE_ORDER,
+                          (db.TENANT, member_no.upper())).fetchall()
         if not rs:
             raise HTTPException(404, "없는 회원번호")
         r = rs[0]
         inq, cand = [], 0
         if r["phone"]:
             inq = conn.execute(
-                "SELECT * FROM inquiries WHERE %s = ? AND name = ? ORDER BY timestamp DESC" % _INQ_PHONE,
-                (r["phone"], r["name"])).fetchall()
+                "SELECT * FROM inquiries WHERE tenant_id = %s AND " + _INQ_PHONE + " = %s AND name = %s ORDER BY timestamp DESC",
+                (db.TENANT, r["phone"], r["name"])).fetchall()
             cand = conn.execute(
-                "SELECT COUNT(*) FROM inquiries WHERE %s = ? AND name <> ?" % _INQ_PHONE,
-                (r["phone"], r["name"])).fetchone()[0]
+                "SELECT COUNT(*) FROM inquiries WHERE tenant_id = %s AND " + _INQ_PHONE + " = %s AND name <> %s",
+                (db.TENANT, r["phone"], r["name"])).fetchone()[0]
     d = _member_row(r)
     d["scopes"] = [_member_row(x) for x in rs[1:]]
     d["inquiries"] = [_row(x) for x in inq]

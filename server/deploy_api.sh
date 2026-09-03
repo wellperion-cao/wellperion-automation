@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 웰페리온 문의 미러 API 배포 — 이 PC(git-bash)에서 실행. 서버 = AWS 15.164.151.105.
 #   bash server/deploy_api.sh
-# 하는 일: app.py·sync_inquiries.py·sync_members.py·systemd 유닛·nginx location·cron 을 올리고 기동한다.
+# 하는 일: app.py·sync_inquiries.py·sync_members.py·common/db.py·systemd 유닛·nginx location·cron 을 올리고 기동한다. DB 는 deploy_db.sh 먼저.
 # api.env(원천 URL)는 처음 한 번만 만들고 다시 덮지 않는다. erp-auth·erp.conf 는 건드리지 않는다.
 set -euo pipefail
 HOST=ec2-user@15.164.151.105
@@ -10,8 +10,9 @@ S="ssh -i $KEY -o StrictHostKeyChecking=accept-new $HOST"
 SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
-$S 'mkdir -p /srv/erp/api'
+$S 'mkdir -p /srv/erp/api /srv/erp/common'
 $SCP server/erp_api/app.py server/erp_api/members_report.py server/erp_api/sync_inquiries.py server/erp_api/sync_members.py $HOST:/srv/erp/api/
+$SCP server/common/db.py server/common/schema.sql $HOST:/srv/erp/common/      # DB 접속은 common/db.py 하나 (db.env 는 deploy_db.sh 가 만든다)
 $SCP server/erp_api/erp-api.service $HOST:/tmp/erp-api.service
 $SCP server/erp_api/api.nginx.conf $HOST:/tmp/api.conf
 

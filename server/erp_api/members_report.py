@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """매출회원현황보고 2페이지용 집계 라우트 (읽기 전용 · 배 943).
 
-members·inquiries 미러(sqlite)에서 GAS 액션 4개와 같은 모양으로 센다:
+members·inquiries 미러(PostgreSQL · common/db.py)에서 GAS 액션 4개와 같은 모양으로 센다:
   /api/report/member_active_summary · cpo_today_stats · cpo_churn_stats · member_registered_list
 판정 규칙은 GAS 원본(.deploy-funnel-v2/Survey.js)을 그대로 옮겼고, 함수마다 원본 위치를 적어 둔다.
 stage_funnel · lesson_stats 는 강습 시트·폼 시트가 미러에 없어 화면이 GAS 를 그대로 부른다.
 app.py 가 맨 끝에서 include_router 로 붙인다 — app.py 본문은 건드리지 않는다.
 
-자체점검: python3 members_report.py --selftest (임시 DB · 네트워크 없음)
+자체점검: python3 members_report.py --selftest (같은 DB 의 tenant 'selftest' · 네트워크 없음)
 """
 import json
 import os
 import re
-import sqlite3
 import sys
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
@@ -20,7 +19,9 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-DB_PATH = os.environ.get("ERP_DB", "/srv/erp/erp.db")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
+from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
+
 SOURCE = "sheet-mirror"
 KST = timezone(timedelta(hours=9))
 LOSS_TAGS = {"LOSS", "환불", "양도LOSS"}          # Survey.js:136 MEMBER_LOSS_TAGS_
@@ -89,18 +90,17 @@ def _get(row, *wants):
 
 def _conn():
     try:
-        conn = sqlite3.connect("file:%s?mode=ro" % DB_PATH, uri=True)
-    except sqlite3.Error as e:
+        return db.connect(readonly=True)
+    except db.Error as e:
         raise HTTPException(503, "DB 열기 실패: %s" % e)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def _rows(conn, scopes):
     """scope 별 미러 행을 시트 행 순서로. 머리글은 공백을 지워 GAS 의 부분일치 규칙과 맞춘다."""
     out = []
     for scope in scopes:
-        for r in conn.execute("SELECT data FROM members WHERE scope=? ORDER BY json_extract(data,'$.rowIndex')", (scope,)):
+        for r in conn.execute("SELECT data FROM members WHERE tenant_id=%s AND scope=%s"
+                              " ORDER BY (data::json->>'rowIndex')::int", (db.TENANT, scope)):
             d = json.loads(r["data"])
             out.append((scope, {re.sub(r"\s+", "", str(k)): v for k, v in d.items()}))
     return out
@@ -108,7 +108,7 @@ def _rows(conn, scopes):
 
 def _archive_count(conn):
     """Survey.js:139 _lossArchiveCount_ — LOSS보관 탭 행수. 미러에선 scope=archive 건수."""
-    return conn.execute("SELECT COUNT(*) FROM members WHERE scope='archive'").fetchone()[0]
+    return conn.execute("SELECT COUNT(*) FROM members WHERE tenant_id=%s AND scope='archive'", (db.TENANT,)).fetchone()[0]
 
 
 def _loss_date(row):
@@ -176,7 +176,7 @@ def cpo_today_stats():
     conn = _conn()
     with closing(conn):
         # 문의: 26년 신규문의 — 멤버십(플래티넘·노블레스·미기재)만, 소프트 삭제 제외
-        for q in conn.execute("SELECT data FROM inquiries WHERE type='멤버십'"):
+        for q in conn.execute("SELECT data FROM inquiries WHERE tenant_id=%s AND type='멤버십'", (db.TENANT,)):
             d = json.loads(q["data"])
             if _s(d.get("status")) == DUP_DELETED_STATUS:
                 continue
@@ -278,17 +278,15 @@ def member_registered_list(
 # ── 자체점검 ──────────────────────────────────────────────────────────────
 
 def selftest():
-    global DB_PATH
     assert is_new_registration("신규", "", "1") and not is_new_registration("신규", "", "2")
     assert not is_new_registration("", "재등록", "") and not is_new_registration("재등록", "", "1")
     assert is_new_registration("", "", "") and not is_new_registration("", "", "3")
     assert _iso("2026. 9. 3") == "2026-09-03" and _rem("-3일") == -3 and _rem("") is None
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_selftest_report.db")
-    if os.path.exists(path):
-        os.remove(path)
-    c = sqlite3.connect(path)
-    c.executescript("CREATE TABLE members(member_no TEXT PRIMARY KEY, scope TEXT, data TEXT);"
-                    "CREATE TABLE inquiries(id TEXT PRIMARY KEY, type TEXT, data TEXT);")
+    db.TENANT = "selftest"                      # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
+    c = db.connect()
+    with c:
+        c.execute("DELETE FROM members WHERE tenant_id=%s", (db.TENANT,))
+        c.execute("DELETE FROM inquiries WHERE tenant_id=%s", (db.TENANT,))
     today = _today()
     rows = [
         ("M00001", "valid", {"rowIndex": 2, "회원명": "홍길동", "회원\n구분": "멤버십", "등록 분류": "신규", "등록\n회차": "1",
@@ -301,15 +299,15 @@ def selftest():
         ("M00005", "corp", {"rowIndex": 3, "회원명": "법인B", "종료\n일자": "2020-01-01", "LOSS\n일자": ""}),
         ("M00006", "archive", {"rowIndex": 2, "회원명": "옛회원"}),
     ]
-    c.executemany("INSERT INTO members VALUES (?,?,?)", [(n, s, json.dumps(d, ensure_ascii=False)) for n, s, d in rows])
-    c.executemany("INSERT INTO inquiries VALUES (?,?,?)", [
-        ("a", "멤버십", json.dumps({"timestamp": today + " 10:00:00", "program": "플래티넘", "status": "컨택중"})),
-        ("b", "멤버십", json.dumps({"timestamp": today + " 11:00:00", "program": "골프", "status": "컨택중"})),
-        ("c", "멤버십", json.dumps({"timestamp": today + " 12:00:00", "program": "", "status": DUP_DELETED_STATUS})),
-        ("d", "성인강습", json.dumps({"timestamp": today + " 12:00:00", "program": "플래티넘", "status": ""})),
-    ])
-    c.commit(); c.close()
-    DB_PATH = path
+    with c:
+        c.executemany("INSERT INTO members (tenant_id,member_no,scope,data,synced_at) VALUES (%s,%s,%s,%s,'t')",
+                      [(db.TENANT, n, s, json.dumps(d, ensure_ascii=False)) for n, s, d in rows])
+        c.executemany("INSERT INTO inquiries (tenant_id,id,type,data,synced_at) VALUES (%s,%s,%s,%s,'t')", [
+            (db.TENANT, "a", "멤버십", json.dumps({"timestamp": today + " 10:00:00", "program": "플래티넘", "status": "컨택중"})),
+            (db.TENANT, "b", "멤버십", json.dumps({"timestamp": today + " 11:00:00", "program": "골프", "status": "컨택중"})),
+            (db.TENANT, "c", "멤버십", json.dumps({"timestamp": today + " 12:00:00", "program": "", "status": DUP_DELETED_STATUS})),
+            (db.TENANT, "d", "성인강습", json.dumps({"timestamp": today + " 12:00:00", "program": "플래티넘", "status": ""})),
+        ])
     try:
         a = member_active_summary()
         assert (a["validTotal"], a["endedTotal"], a["waitingCount"]) == (2, 2, 1), a
@@ -322,7 +320,10 @@ def selftest():
         assert [x["name"] for x in rl["data"]] == ["홍길동"], rl
         assert member_registered_list(from_=today[:8] + "01", to=today)["count"] == 2
     finally:
-        os.remove(path)
+        with c:
+            c.execute("DELETE FROM members WHERE tenant_id=%s", (db.TENANT,))
+            c.execute("DELETE FROM inquiries WHERE tenant_id=%s", (db.TENANT,))
+        c.close()
     print("selftest ok")
     return 0
 

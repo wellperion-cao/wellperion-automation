@@ -1,4 +1,4 @@
-"""웰페리온 ERP 로그인 관문 (AWS 서버 · FastAPI · SQLite).
+"""웰페리온 ERP 로그인 관문 (AWS 서버 · FastAPI · PostgreSQL).
 
 역할
     가입 신청 → GM(관리자) 승인 → 로그인 → 쿠키(JWT) → nginx 가 쿠키 없는 요청에 페이지를 주지 않는다.
@@ -18,7 +18,7 @@
     {"groups":["시포","핵심"], "modules":["check"], "deny":["member"]}
     admin 역할은 전부 허용. 판정은 allowed() 한 곳 — /auth/check · /auth/me · 관리자 화면이 같이 쓴다.
 
-환경변수(/srv/erp/auth.env · 서버 밖으로 안 나감)
+환경변수(/srv/erp/auth.env · 서버 밖으로 안 나감 · DB 접속은 /srv/erp/db.env 의 ERP_DB_URL — common/db.py 가 읽는다)
     ERP_JWT_SECRET  서명 키        TG_BOT_TOKEN / TG_CHAT_ID  가입 신청 알림(업무보고방)
     ERP_ADMIN_EMAIL 첫 관리자     ERP_ADMIN_PW 첫 관리자 비밀번호(첫 기동 때만 씀)
 """
@@ -29,7 +29,7 @@ import json
 import os
 import posixpath
 import secrets
-import sqlite3
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -42,7 +42,10 @@ import jwt
 from fastapi import Cookie, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-DB = os.environ.get("ERP_AUTH_DB", "/srv/erp/auth.db")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
+from common import db as _db   # noqa: E402  — DB 를 여는 유일한 자리 · 모든 표는 tenant_id 로 거른다
+
+T = _db.TENANT
 MODULES = os.environ.get("ERP_MODULES", "/srv/erp/www/erp/modules.json")   # 자동 생성본(GitHub 동기화) · 여기서 수정 안 함
 GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", "시로", "시뽀", "GM")   # 핵심 = core:true 모듈 묶음
 # 부서 프리셋 — 관리자가 한 번 누르면 그 부서 사람이 보는 그룹 묶음이 들어간다. 정본은 kpi.json 실무진 배치(2026-09-03).
@@ -77,25 +80,18 @@ app = FastAPI(docs_url=None, redoc_url=None)
 
 
 # ── 저장 ────────────────────────────────────────────────────────────────
-def db() -> sqlite3.Connection:
-    c = sqlite3.connect(DB)
-    c.row_factory = sqlite3.Row
-    return c
+def db() -> _db.Conn:
+    return _db.connect()
 
 
 def init() -> None:
+    """표는 common/schema.sql(deploy_db.sh) 이 만든다 — 여기선 첫 관리자만 심는다."""
     with db() as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS users(
-            id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL,
-            salt TEXT NOT NULL, pw TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'staff',
-            status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, approved_at TEXT)""")
-        if "perms" not in [r[1] for r in c.execute("PRAGMA table_info(users)")]:
-            c.execute("ALTER TABLE users ADD COLUMN perms TEXT")
         admin_email = os.environ.get("ERP_ADMIN_EMAIL")
-        if admin_email and not c.execute("SELECT 1 FROM users WHERE email=?", (admin_email,)).fetchone():
+        if admin_email and not c.execute("SELECT 1 FROM users WHERE tenant_id=%s AND email=%s", (T, admin_email)).fetchone():
             salt, h = hash_pw(os.environ["ERP_ADMIN_PW"])
-            c.execute("INSERT INTO users(email,name,salt,pw,role,status,created_at,approved_at) VALUES(?,?,?,?,?,?,?,?)",
-                      (admin_email, "GM", salt, h, "admin", "active", now(), now()))
+            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (T, admin_email, "GM", salt, h, "admin", "active", now(), now()))
 
 
 def now() -> str:
@@ -109,7 +105,7 @@ def hash_pw(pw: str, salt: Optional[str] = None) -> tuple[str, str]:
 
 
 # ── 세션 ────────────────────────────────────────────────────────────────
-def issue(user: sqlite3.Row) -> str:
+def issue(user) -> str:
     exp = int(time.time()) + SESSION_DAYS * 86400
     return jwt.encode({"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp}, SECRET, algorithm="HS256")
 
@@ -122,7 +118,7 @@ def current(token: Optional[str]):
     except jwt.PyJWTError:
         return None
     with db() as c:
-        u = c.execute("SELECT * FROM users WHERE id=? AND status='active'", (claims["uid"],)).fetchone()
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s AND status='active'", (T, claims["uid"])).fetchone()
     return u
 
 
@@ -262,7 +258,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
         wait_min = max(1, int((locked_until - time.time()) // 60) + 1)
         return RedirectResponse(f"/auth/login?err=로그인 5회 실패로 잠겼습니다. {wait_min}분 후 다시 시도하세요&next={next}", status_code=303)
     with db() as c:
-        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
     if not u or hash_pw(password, u["salt"])[1] != u["pw"]:
         count += 1
         FAILS[email] = (0, time.time() + LOCK_SECS) if count >= LOCK_AFTER else (count, 0.0)
@@ -294,9 +290,9 @@ def signup(name: str = Form(...), email: str = Form(...), password: str = Form(.
     salt, h = hash_pw(password)
     try:
         with db() as c:
-            c.execute("INSERT INTO users(email,name,salt,pw,created_at,perms) VALUES(?,?,?,?,?,?)",
-                      (email, name.strip(), salt, h, now(), default_perms(email)))
-    except sqlite3.IntegrityError:
+            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                      (T, email, name.strip(), salt, h, now(), default_perms(email)))
+    except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 신청된 이메일입니다", status_code=303)
     tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: http://15.164.151.105/auth/admin")
     return RedirectResponse("/auth/signup?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
@@ -359,7 +355,7 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
         return RedirectResponse("/auth/password?err=새 비밀번호는 8자 이상이어야 합니다", status_code=303)
     salt, h = hash_pw(new_password)
     with db() as c:
-        c.execute("UPDATE users SET salt=?, pw=? WHERE id=?", (salt, h, u["id"]))
+        c.execute("UPDATE users SET salt=%s, pw=%s WHERE tenant_id=%s AND id=%s", (salt, h, T, u["id"]))
     return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
 
 
@@ -425,17 +421,17 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         return RedirectResponse("/auth/login?err=회사 구글 계정(@wellperion.com)만 로그인할 수 있습니다", status_code=303)
     email = claims["email"].strip().lower()
     with db() as c:
-        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
         if u and u["status"] == "blocked":
             return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
         if not u:
             salt, h = hash_pw(secrets.token_urlsafe(32))    # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
-            c.execute("INSERT INTO users(email,name,salt,pw,role,status,created_at,approved_at,perms) VALUES(?,?,?,?,?,?,?,?,?)",
-                      (email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now(),
+            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (T, email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now(),
                        default_perms(email)))
         elif u["status"] != "active":
-            c.execute("UPDATE users SET status='active', approved_at=? WHERE id=?", (now(), u["id"]))
-        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+            c.execute("UPDATE users SET status='active', approved_at=%s WHERE tenant_id=%s AND id=%s", (now(), T, u["id"]))
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
     r = RedirectResponse(nxt, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
@@ -443,14 +439,14 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
 
 
 # ── 관리자 ──────────────────────────────────────────────────────────────
-def admin_only(token: Optional[str]) -> sqlite3.Row:
+def admin_only(token: Optional[str]):
     u = current(token)
     if not u or u["role"] != "admin":
         raise HTTPException(403, "관리자만")
     return u
 
 
-def _admin_row(r: sqlite3.Row, me_id: int) -> str:
+def _admin_row(r, me_id: int) -> str:
     approve_or_block = ""
     if r["role"] != "admin":
         if r["status"] != "active":
@@ -474,7 +470,7 @@ def _admin_row(r: sqlite3.Row, me_id: int) -> str:
 def admin(erp_session: Optional[str] = Cookie(default=None)):
     me = admin_only(erp_session)
     with db() as c:
-        rows = c.execute("SELECT * FROM users ORDER BY status='pending' DESC, created_at DESC").fetchall()
+        rows = c.execute("SELECT * FROM users WHERE tenant_id=%s ORDER BY status='pending' DESC, created_at DESC", (T,)).fetchall()
     tr = "".join(_admin_row(r, me["id"]) for r in rows)
     head = "<tr><th>이름</th><th>역할</th><th>상태</th><th>신청</th><th>승인</th><th></th></tr>"
     return page("ERP 계정 관리", f"<div class='box wide'><h1>계정 관리</h1><div class=tw><table>{head}{tr}</table></div>"
@@ -503,7 +499,7 @@ def _perms_row(group: str, ms: list, u, p: Optional[dict]) -> str:
 def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg: str = ""):
     admin_only(erp_session)
     with db() as c:
-        u = c.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
     if not u:
         raise HTTPException(404)
     p = perms_of(u)
@@ -528,15 +524,15 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
     ids = {m["id"] for m in modules()}
     if form.get("preset") in PRESETS:
         with db() as c:
-            c.execute("UPDATE users SET perms=? WHERE id=?",
-                      (json.dumps({"groups": PRESETS[form["preset"]], "modules": [], "deny": []}, ensure_ascii=False), uid))
+            c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s",
+                      (json.dumps({"groups": PRESETS[form["preset"]], "modules": [], "deny": []}, ensure_ascii=False), T, uid))
         return RedirectResponse(f"/auth/admin/{uid}/perms?msg={form['preset']} 프리셋을 넣었습니다", status_code=303)
     perms = None if form.get("reset") else json.dumps({
         "groups": [g for g in form.getlist("g") if g in GROUPS],
         "modules": [m for m in form.getlist("m") if m in ids],
         "deny": [m for m in form.getlist("d") if m in ids]}, ensure_ascii=False)
     with db() as c:
-        c.execute("UPDATE users SET perms=? WHERE id=?", (perms, uid))
+        c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s", (perms, T, uid))
     return RedirectResponse(f"/auth/admin/{uid}/perms?msg=저장됐습니다", status_code=303)
 
 
@@ -549,14 +545,14 @@ def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(defa
         if uid == me["id"]:
             raise HTTPException(400, "본인 역할은 바꿀 수 없습니다")
         with db() as c:
-            row = c.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
+            row = c.execute("SELECT role FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
             if row:
-                c.execute("UPDATE users SET role=? WHERE id=?",
-                          ("staff" if row["role"] == "admin" else "admin", uid))
+                c.execute("UPDATE users SET role=%s WHERE tenant_id=%s AND id=%s",
+                          ("staff" if row["role"] == "admin" else "admin", T, uid))
         return RedirectResponse("/auth/admin", status_code=303)
     with db() as c:
-        c.execute("UPDATE users SET status=?, approved_at=? WHERE id=? AND role!='admin'",
-                  ("active" if action == "approve" else "blocked", now() if action == "approve" else None, uid))
+        c.execute("UPDATE users SET status=%s, approved_at=%s WHERE tenant_id=%s AND id=%s AND role!='admin'",
+                  ("active" if action == "approve" else "blocked", now() if action == "approve" else None, T, uid))
     return RedirectResponse("/auth/admin", status_code=303)
 
 
@@ -569,7 +565,7 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not is_company_account({**ok, "hd": None})                        # 개인 gmail
     assert not is_company_account({**ok, "email": "x@gmail.com"})            # hd 만 위조된 경우
     assert not is_company_account({**ok, "email_verified": False})
-    # 권한 판정 자가점검 — dict 가 sqlite3.Row 흉내(keys()·[] 둘 다 된다)
+    # 권한 판정 자가점검 — dict 가 DictRow 흉내(keys()·[] 둘 다 된다)
     core = {"id": "member", "group": "시포", "core": True, "roles": ["admin"]}
     plain = {"id": "check", "group": "시우", "roles": ["admin", "staff"]}
     assert allowed({"role": "admin", "perms": None}, core)

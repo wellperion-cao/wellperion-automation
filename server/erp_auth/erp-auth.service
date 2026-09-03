@@ -1,11 +1,12 @@
 [Unit]
 Description=Wellperion ERP auth gateway (FastAPI)
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 User=ec2-user
 WorkingDirectory=/srv/erp/auth
 EnvironmentFile=/srv/erp/auth.env
+EnvironmentFile=/srv/erp/db.env
 ExecStart=/usr/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3

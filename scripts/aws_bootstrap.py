@@ -8,6 +8,7 @@
     day1  SNS 토픽 → Lambda(텔레그램 발신) → AWS Budgets(월 상한 초과 시 SNS)
     day2  키페어 → 보안그룹(사무실 IP 에서 SSH만) → EC2 t3.small → 탄력적 IP 연결
     test  SNS 토픽에 시험 메시지 1건 → GM 업무보고방에 알람이 실제로 오는지
+    backup  S3 버킷(wellperion-erp-backup · 30일 수명주기) + EC2 인스턴스 역할(그 버킷 PutObject 만) → 서버 pg_dump 가 올린다(장기 결정 9)
 
 자격 증명은 저장소 밖 ~/.aws/credentials 만 읽는다(IAM 사용자 sito). 키를 이 파일에 적지 않는다.
 텔레그램 봇 토큰은 telegram_bot/.env 를 읽어 Lambda 환경변수로만 올린다.
@@ -16,6 +17,7 @@
     C:/Python314/python.exe scripts/aws_bootstrap.py day1
     C:/Python314/python.exe scripts/aws_bootstrap.py test
     C:/Python314/python.exe scripts/aws_bootstrap.py day2
+    C:/Python314/python.exe scripts/aws_bootstrap.py backup
     C:/Python314/python.exe scripts/aws_bootstrap.py status
 """
 from __future__ import annotations
@@ -42,6 +44,9 @@ SG_NAME = "wellperion-auto-ssh"
 INSTANCE_NAME = "wellperion-auto-01"
 OFFICE_IP = "114.207.50.85/32"   # 사무실 공인 IP (배901 실측 2026-09-02)
 GM_CHAT_ID = "8254867551"
+BACKUP_BUCKET = "wellperion-erp-backup"
+BACKUP_ROLE = "wellperion-erp-backup-role"     # 인스턴스 프로파일 이름도 같다
+BACKUP_DAYS = 30
 PEM_PATH = Path.home() / ".aws" / f"{KEY_NAME}.pem"
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -250,6 +255,67 @@ def day2() -> None:
     print(f"DAY2 완료 — 서버 {iid} · 고정 IP {ip} · 접속: ssh -i {PEM_PATH} ec2-user@{ip}")
 
 
+# ── 백업(장기 결정 9) ────────────────────────────────────────────────────
+def ensure_backup_bucket() -> None:
+    s3 = boto3.client("s3", region_name=REGION)
+    try:
+        s3.head_bucket(Bucket=BACKUP_BUCKET)
+    except ClientError:
+        s3.create_bucket(Bucket=BACKUP_BUCKET, CreateBucketConfiguration={"LocationConstraint": REGION})
+    s3.put_public_access_block(Bucket=BACKUP_BUCKET, PublicAccessBlockConfiguration={
+        "BlockPublicAcls": True, "IgnorePublicAcls": True, "BlockPublicPolicy": True, "RestrictPublicBuckets": True})
+    s3.put_bucket_lifecycle_configuration(Bucket=BACKUP_BUCKET, LifecycleConfiguration={"Rules": [{
+        "ID": f"expire-{BACKUP_DAYS}d", "Status": "Enabled", "Filter": {"Prefix": ""},
+        "Expiration": {"Days": BACKUP_DAYS}}]})
+    print("S3 버킷", BACKUP_BUCKET, f"| 비공개 · {BACKUP_DAYS}일 뒤 삭제")
+
+
+def ensure_backup_role() -> None:
+    iam = boto3.client("iam")
+    trust = {"Version": "2012-10-17", "Statement": [{
+        "Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"}, "Action": "sts:AssumeRole"}]}
+    try:
+        iam.get_role(RoleName=BACKUP_ROLE)
+    except ClientError:
+        iam.create_role(RoleName=BACKUP_ROLE, AssumeRolePolicyDocument=json.dumps(trust),
+                        Description="EC2 role: pg_dump upload to S3 backup bucket only")
+    iam.put_role_policy(RoleName=BACKUP_ROLE, PolicyName="put-backup-only", PolicyDocument=json.dumps({
+        "Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "s3:PutObject",
+                                                "Resource": f"arn:aws:s3:::{BACKUP_BUCKET}/*"}]}))
+    try:
+        iam.get_instance_profile(InstanceProfileName=BACKUP_ROLE)
+    except ClientError:
+        iam.create_instance_profile(InstanceProfileName=BACKUP_ROLE)
+        iam.add_role_to_instance_profile(InstanceProfileName=BACKUP_ROLE, RoleName=BACKUP_ROLE)
+        time.sleep(10)                                          # 프로파일 전파 대기
+    print("IAM 역할·인스턴스 프로파일", BACKUP_ROLE, "| s3:PutObject", BACKUP_BUCKET, "만")
+
+
+def attach_backup_role(iid: str) -> None:
+    ec2 = boto3.client("ec2", region_name=REGION)
+    assoc = ec2.describe_iam_instance_profile_associations(
+        Filters=[{"Name": "instance-id", "Values": [iid]}, {"Name": "state", "Values": ["associating", "associated"]}]
+    )["IamInstanceProfileAssociations"]
+    if any(a["IamInstanceProfile"]["Arn"].endswith("/" + BACKUP_ROLE) for a in assoc):
+        print("인스턴스 역할 연결됨", iid)
+        return
+    if assoc:                                                   # 다른 프로파일이 붙어 있으면 바꿔 끼운다
+        ec2.replace_iam_instance_profile_association(AssociationId=assoc[0]["AssociationId"],
+                                                     IamInstanceProfile={"Name": BACKUP_ROLE})
+    else:
+        ec2.associate_iam_instance_profile(IamInstanceProfile={"Name": BACKUP_ROLE}, InstanceId=iid)
+    print("인스턴스 역할 연결", iid, "←", BACKUP_ROLE)
+
+
+def backup() -> None:
+    ec2 = boto3.client("ec2", region_name=REGION)
+    ensure_backup_bucket()
+    ensure_backup_role()
+    attach_backup_role(ensure_instance(ec2, ensure_sg(ec2, ec2.describe_vpcs(
+        Filters=[{"Name": "isDefault", "Values": ["true"]}])["Vpcs"][0]["VpcId"])))
+    print("BACKUP 완료 — 서버 cron(KST 03:00) erp-pg-backup.sh 가 s3://%s/erp/ 로 올린다" % BACKUP_BUCKET)
+
+
 def status() -> None:
     ec2 = boto3.client("ec2", region_name=REGION)
     for res in ec2.describe_instances()["Reservations"]:
@@ -265,4 +331,4 @@ def status() -> None:
 
 if __name__ == "__main__":
     step = sys.argv[1] if len(sys.argv) > 1 else "status"
-    {"day1": day1, "test": test, "day2": day2, "status": status}[step]()
+    {"day1": day1, "test": test, "day2": day2, "backup": backup, "status": status}[step]()
