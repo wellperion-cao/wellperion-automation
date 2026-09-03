@@ -1868,8 +1868,8 @@ table.op-t td b{font-size:15px}
               <td colspan="9">
                 <div class="empty-state" style="padding:24px 0">
                   <div class="empty-state-icon">📭</div>
-                  <div class="empty-state-title" id="dbEmptyTitle">GAS 연동 전</div>
-                  <div class="empty-state-desc" id="dbEmptyDesc">GM이 GAS를 배포하고 URL을 교체하면 자동 표시됩니다.</div>
+                  <div class="empty-state-title" id="dbEmptyTitle">불러오는 중…</div>
+                  <div class="empty-state-desc" id="dbEmptyDesc">문의 목록을 읽고 있습니다. 잠시 뒤 표시됩니다.</div>
                 </div>
               </td>
             </tr>
@@ -3352,6 +3352,25 @@ function _apiMemberList(scope) {
     if (ek) all.sort(function(a, b){ var av = String(a[ek] || ''), bv = String(b[ek] || ''); return av < bv ? 1 : (av > bv ? -1 : 0); });
     return { ok: true, scope: scope, headers: headers, data: all, count: all.length, _source: 'sheet-mirror' };
   });
+}
+// 문의 DB(멤버십) 읽기 — /api/inquiries?type=멤버십 을 offset 으로 끝까지 받아 member_inquiry_list 응답 모양으로.
+// 행 안 칸(timestamp·name·status·rowIndex·rowKey…)은 미러가 GAS 응답을 그대로 저장한 것이라 화면 코드 무변경.
+function _apiInquiryList(type) {
+  var all = [];
+  function page(off) {
+    return _apiJson('/api/inquiries?type=' + encodeURIComponent(type) + '&limit=1000&offset=' + off).then(function(d){
+      all = all.concat(d.rows || []);
+      return (d.count && off + d.count < (d.total || 0)) ? page(off + d.count) : all;
+    });
+  }
+  return page(0).then(function(rows){ return { ok: true, data: rows, count: rows.length, _source: 'sheet-mirror' }; });
+}
+function _inquiryListFetch() {
+  var gas = function(){ return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  if (!ERP_API_ON) return gas();
+  // 쓰기 도장은 회원 목록과 같은 키 — apiPost 가 member_* 액션(member_inquiry_update 포함) 전부에 찍는다.
+  try { if (Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000) return gas(); } catch (e) {}
+  return _apiInquiryList('멤버십').catch(function(e){ console.warn('[문의DB] API 실패 → GAS 폴백:', e && e.message); return gas(); });
 }
 function _memberListFetch(scope) {
   // 회원 목록 읽기 관문 하나 — API 실패(미로그인·서버 다운)면 GAS 폴백. GAS 응답은 format=rows 라 디코더를 태운다.
@@ -12509,7 +12528,10 @@ function loadDbData() {
   //   이미 강습 scope=all에 대해 문서화해둔 바로 그 위험("시트 필터/숨김행으로 gviz 누락 위험", L3792 인근)이 멤버십
   //   탭에도 실제로 발생 중이었던 것. USE_GVIZ=true(2026-07-13) 이후 CS 상담사 화면에서 실제 문의 426건이 계속
   //   보이지 않고 있었을 가능성 — ★유실 0 최우선 원칙에 따라 즉시 보수적 소스(GAS)로 전환. GM 보고 필수.
-  var _dbPromise = fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
+  // ★ERP 도메인에선 서버 미러(/api/inquiries)를 먼저 읽는다(2026-09-03 시포 · GM "ERP 는 GAS 연동 전 뜬다").
+  //   942 는 회원 목록만 옮기고 문의 DB 는 GAS(7~15초) 그대로라 첫 화면이 그동안 빈 채였다. 회원 목록과 같은 관문 규칙 —
+  //   실패하면 GAS 폴백, 이 브라우저에서 6분 안에 쓴 게 있으면 GAS(미러 5분 지연). 쓰기는 계속 GAS.
+  var _dbPromise = _inquiryListFetch();
   return _dbPromise
     .then(function(data){
       if (!data.ok) {
