@@ -1204,91 +1204,59 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div style="background:var(--red-bg);border:2px solid rgba(237,91,63,0.5);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
     <p style="font-size:16px;font-weight:800;color:var(--red);margin:0 0 6px;">⚠ 업장을 절대 비우지 않는다</p>
     <p style="font-size:14px;font-weight:600;color:var(--text);margin:0;line-height:1.7;">담당 구역(업장)에는 항상 최소 1명이 자리를 지킵니다.<br>
-    2인 이상 근무 시 <strong>휴게를 반드시 엇갈려</strong> 진행하고, 한 명이 쉬는 동안 나머지 한 명은 업장을 지킵니다.</p>
+    각 조의 휴게시간은 서로 겹치지 않도록 근무조 시간표에 이미 배정되어 있습니다(아래 표 참고).</p>
   </div>
 
-  <!-- 2인 동시 근무 소제목 -->
-  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">2인 동시 근무 — 교대 휴게 규칙</p>
+  <!-- 근무조 시간표 (2026-09-03 매니저 확정 갱신) -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:0 0 8px;">근무조 시간표 (남/여 공통 · 전 조 실근로 8시간)</p>
 
-  <!-- 표 (A·B 휴게가 겹치지 않아 업장이 항상 1명 이상 커버) -->
+  <p style="font-size:12.5px;font-weight:700;color:var(--dim);margin:0 0 4px;">평일(교대근무)</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
+    <tr style="background:var(--paper);">
+      <th style="padding:10px;border:1px solid var(--border);width:110px;">조 / 역할</th>
+      <th style="padding:10px;border:1px solid var(--border);width:150px;">시업 ~ 종업</th>
+      <th style="padding:10px;border:1px solid var(--border);width:130px;">휴게</th>
+    </tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">A · 오전</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:40 ~ 14:40</td><td style="padding:8px;border:1px solid var(--border);">11:00 ~ 12:00</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">B · 중간</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 20:00</td><td style="padding:8px;border:1px solid var(--border);">12:00 ~ 13:00</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">C · 중간2</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">13:00 ~ 22:00</td><td style="padding:8px;border:1px solid var(--border);">16:00 ~ 17:00</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--blue);">D · 마감</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">13:40 ~ 22:40</td><td style="padding:8px;border:1px solid var(--border);">17:00 ~ 18:00</td></tr>
+  </table>
+
+  <p style="font-size:12.5px;font-weight:700;color:var(--dim);margin:0 0 4px;">토 · 일 · 공휴일</p>
   <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:13px;">
     <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:90px;">구분</th>
-      <th style="padding:10px;border:1px solid var(--border);">근무</th>
-      <th style="padding:10px;border:1px solid var(--border);">휴게</th>
+      <th style="padding:10px;border:1px solid var(--border);width:110px;">조 / 역할</th>
+      <th style="padding:10px;border:1px solid var(--border);width:150px;">시업 ~ 종업</th>
+      <th style="padding:10px;border:1px solid var(--border);width:130px;">휴게</th>
     </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">근무자 A</td>
-      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 50분</td>
-      <td style="padding:8px;border:1px solid var(--border);">50분 ~ 정시 <span style="font-size:11px;color:var(--dim);">(매시 끝 10분)</span></td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">근무자 B</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 ~ 정시</td>
-      <td style="padding:8px;border:1px solid var(--border);">정시 ~ 10분 <span style="font-size:11px;color:var(--dim);">(매시 처음 10분)</span></td>
-    </tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">A · 오전</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">07:40 ~ 16:40</td><td style="padding:8px;border:1px solid var(--border);">11:00 ~ 12:00</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">B · 중간</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">09:00 ~ 18:00</td><td style="padding:8px;border:1px solid var(--border);">12:00 ~ 13:00</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--blue);">C · 마감</td><td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:10 ~ 20:10</td><td style="padding:8px;border:1px solid var(--border);">17:00 ~ 18:00</td></tr>
   </table>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 주5일제 — 주 최소 2일 휴무 · 평일은 D조, 토·일·공휴일은 C조가 마감(종업이 가장 늦은 조) · 조 배정은 날짜마다 스케줄보드(휴무 화면)에서 확인 — 이 표는 시간 정의만 다룸</p>
 
-  <p style="font-size:12px;color:var(--dim);margin:0 0 4px;">※ 위 규칙은 2인 동시 근무(마감조 포함) 시 그대로 적용하는 <strong>원칙</strong>입니다 · 1인 근무 불가피 시 휴게는 회원 한산시간에 분할하고 비상연락 상시 유지 · 3인 이상은 반장(조장)이 시차 배치</p>
-
-  <!-- ── 실제 운영(평일·여) 근무조 ── -->
-  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">지원부(여) — 실제 운영 (평일 · 여직원 근무조 · 반장 이연희)</p>
-  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">아래 <strong>근무시간 안에서 매뉴얼대로 업무를 수행</strong>하며, 각자 <strong>10분 휴게를 고정</strong>으로 가집니다. 마감조 2명은 휴게를 <strong>엇갈려</strong> 운영해 업장을 비우지 않습니다.</p>
+  <!-- ── 지원부(여) 현재 인원 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--accent);margin:18px 0 8px;">지원부(여) — 현재 인원 (여직원 근무조 · 반장 이연희)</p>
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
     <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">직급</th>
       <th style="padding:10px;border:1px solid var(--border);">근무자</th>
-      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
-      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
     </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);">우춘화 주임</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:20 ~ 14:00</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">중간</td>
-      <td style="padding:8px;border:1px solid var(--border);">이연희 반장</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 19:40</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">마감</td>
-      <td style="padding:8px;border:1px solid var(--border);">김미영 주임 · 이경미 주임</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">14:00 ~ 22:40</td>
-      <td style="padding:8px;border:1px solid var(--border);"><strong style="color:var(--orange);">2명 엇갈림</strong> — 1명 50분~정시 / 1명 정시~10분</td>
-    </tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">반장</td><td style="padding:8px;border:1px solid var(--border);">이연희</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">주임</td><td style="padding:8px;border:1px solid var(--border);">우춘화 · 김미영 · 이경미</td></tr>
   </table>
 
-  <!-- ── 실제 운영(평일·남) 근무조 ── -->
-  <p style="font-size:14px;font-weight:700;color:var(--blue);margin:18px 0 8px;">지원부(남) — 실제 운영 (평일 · 남직원 근무조 · 반장 박남일)</p>
-  <p style="font-size:13px;color:var(--text);margin:0 0 10px;line-height:1.7;">여직원 근무조와 동일한 시간 구조로 운영합니다. 마감조 근무자는 엇갈림 휴게 원칙을 동일 적용합니다.</p>
+  <!-- ── 지원부(남) 현재 인원 ── -->
+  <p style="font-size:14px;font-weight:700;color:var(--blue);margin:18px 0 8px;">지원부(남) — 현재 인원 (남직원 근무조 · 반장 박남일)</p>
   <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px;">
     <tr style="background:var(--paper);">
-      <th style="padding:10px;border:1px solid var(--border);width:64px;">근무조</th>
+      <th style="padding:10px;border:1px solid var(--border);width:90px;">직급</th>
       <th style="padding:10px;border:1px solid var(--border);">근무자</th>
-      <th style="padding:10px;border:1px solid var(--border);width:120px;">근무시간</th>
-      <th style="padding:10px;border:1px solid var(--border);">고정 휴게(10분)</th>
     </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--accent);">오전</td>
-      <td style="padding:8px;border:1px solid var(--border);">천진석 주임 · (외곽 신규 주임·충원 진행 중)</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">05:20 ~ 14:00</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">중간</td>
-      <td style="padding:8px;border:1px solid var(--border);">김유정 주임</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">11:00 ~ 19:40</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--orange);">마감</td>
-      <td style="padding:8px;border:1px solid var(--border);">박남일 반장</td>
-      <td style="padding:8px;border:1px solid var(--border);white-space:nowrap;">14:00 ~ 22:40</td>
-      <td style="padding:8px;border:1px solid var(--border);">10분 고정</td>
-    </tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--blue);">반장</td><td style="padding:8px;border:1px solid var(--border);">박남일</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--green);">주임</td><td style="padding:8px;border:1px solid var(--border);">천진석</td></tr>
+    <tr><td style="padding:8px;border:1px solid var(--border);font-weight:700;color:var(--dim);">사원</td><td style="padding:8px;border:1px solid var(--border);">김훈</td></tr>
   </table>
 
       </div><!-- /board-col-body -->
@@ -2376,10 +2344,10 @@ function populateOneDropdown(selId,gender){
 }
 
 /* 담당자 명단 = 지원부 규정 '실제 운영 근무조'(tab-policy 표)와 일치 유지. GM 2026-06-12.
-   ※ 규정 근무조 변경 시 본 배열도 함께 갱신(단일 출처는 규정 표, 여기는 미러). */
+   ※ 규정 근무조 변경 시 본 배열도 함께 갱신(단일 출처는 규정 표, 여기는 미러) — 2026-09-03 인원 갱신(황용석·김유정 퇴사, 김훈 입사). */
 const DUTY_ROSTER={
-  f:[{shift:'오전',name:'우춘화 주임'},{shift:'중간',name:'이연희 반장'},{shift:'마감',name:'김미영 주임'},{shift:'마감',name:'이경미 주임'}],
-  m:[{shift:'오전',name:'천진석 주임'},{shift:'중간',name:'김유정 주임'},{shift:'마감',name:'박남일 반장'}]
+  f:[{shift:'반장',name:'이연희 반장'},{shift:'주임',name:'우춘화 주임'},{shift:'주임',name:'김미영 주임'},{shift:'주임',name:'이경미 주임'}],
+  m:[{shift:'반장',name:'박남일 반장'},{shift:'주임',name:'천진석 주임'},{shift:'사원',name:'김훈 사원'}]
 };
 /* 담당자(날짜 우측) = 규정 근무조 드롭다운, 선택값 localStorage 기억. GM 2026-06-12.
    submit 게이트와 무관(점검자 입력만 제출 활성). 선택값=담당자명 → 제출 시 시트 담당자 칸에 기록. */
@@ -5489,8 +5457,9 @@ const A3_GUIDELINE = {
       '평일 06:00~22:30 / 주말·공휴일 08:00~20:00.',
       '휴관: 신정·명절·매월 2·4번째 일요일.'
     ]},
-    { h:'근무조 편성(남/여 공통·평일 기준)', lines:[
-      '오전조 05:20~14:00 / 중간조 11:00~19:40 / 오후조 14:00~22:40.',
+    { h:'근무조 편성(남/여 공통·2026-09 갱신)', lines:[
+      '평일: A 오전 05:40~14:40 / B 중간 11:00~20:00 / C 중간2 13:00~22:00 / D 마감 13:40~22:40.',
+      '토·일·공휴일: A 오전 07:40~16:40 / B 중간 09:00~18:00 / C 마감 11:10~20:10.',
       '업장(담당 구역) 항상 최소 1명 상주 — 절대 비우지 않는다.'
     ]},
     { h:'담당 구역', lines:[
@@ -5537,10 +5506,9 @@ const A3_GUIDELINE = {
       'F-4 파우더: 소모품 즉시 보충 / 드라이기 관리.',
       'F-5 휴게공간: 소파·테이블 관리 / 혼잡·소음 민원 양해 요청.'
     ]},
-    { h:'2인 교대 휴게', lines:[
-      '마감조 2명은 휴게를 반드시 엇갈려 운영.',
-      '근무자 A: 정시~50분 근무 / 50분~정시 휴게.',
-      '근무자 B: 정시~10분 휴게 / 10분~정시 근무.'
+    { h:'휴게시간', lines:[
+      '조별 시간표에 휴게가 고정 배정되어 있어(운영시간 카드 참고) 별도 협의 없이 그 시간에 휴게.',
+      '업장이 비지 않도록 같은 시간대 근무자와 자리 인수인계 후 휴게.'
     ]},
     { h:'신규회원 사우나 투어 안내(8단계)', lines:[
       '① 환영·소개 — 밝게 인사·본인 소개.',
@@ -6498,7 +6466,7 @@ const POLICY_COLS = [
 const POLICY_SEED = {
   ops:[
     {id:'op_hours', title:'운영시간', body:'평일 06:00~22:30 / 주말·공휴일 08:00~20:00\n휴관: 신정·명절·매월 2·4번째 일요일'},
-    {id:'op_shift', title:'근무조 편성(남/여 공통·평일 기준)', body:'오전조 05:20~14:00 / 중간조 11:00~19:40 / 오후조 14:00~22:40'},
+    {id:'op_shift', title:'근무조 편성(남/여 공통·2026-09 갱신)', body:'평일: A오전 05:40~14:40 / B중간 11:00~20:00 / C중간2 13:00~22:00 / D마감 13:40~22:40\n토·일·공휴일: A오전 07:40~16:40 / B중간 09:00~18:00 / C마감 11:10~20:10'},
     {id:'op_zone',  title:'담당 구역', body:'A(사우나) B(락커룸) C(세탁물) D(사우나 외부) E(외곽+헬스장+골프장)'},
     {id:'op_clean', title:'위생·청결', body:'대리석·코팅면 산성세제 금지 / 전기설비 비닐 포장 후 청소'},
     {id:'op_safe',  title:'안전 보고', body:'즉시 조치 불가 시 팀장·소장 즉시 보고 의무'},
@@ -7637,13 +7605,15 @@ var staffIdSeq = 0;
 
 function staffNewId(){ return 'stf_'+Date.now().toString(36)+'_'+(staffIdSeq++).toString(36); }
 
+/* 2026-09-03 갱신: 황용석·김유정 퇴사 반영, 김훈(신규)·김미영·이경미(기존 누락분) 추가 — db:emp 현재근무자 대조 */
 const STAFF_SEED = [
-  {role:'팀장',name:'황용석',gender:'남',note:'6월말 퇴직 예정'},
   {role:'주임',name:'천진석',gender:'남',note:'—'},
   {role:'반장',name:'박남일',gender:'남',note:'—'},
-  {role:'주임',name:'김유정',gender:'남',note:'—'},
+  {role:'사원',name:'김훈',gender:'남',note:'—'},
   {role:'반장',name:'이연희',gender:'여',note:'—'},
-  {role:'주임',name:'우춘화',gender:'여',note:'—'}
+  {role:'주임',name:'우춘화',gender:'여',note:'—'},
+  {role:'주임',name:'김미영',gender:'여',note:'—'},
+  {role:'주임',name:'이경미',gender:'여',note:'—'}
 ];
 
 function applyStaffStored(stored){

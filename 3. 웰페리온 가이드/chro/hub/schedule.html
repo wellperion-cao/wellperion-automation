@@ -507,15 +507,17 @@
     <div class="quickgrid" id="ed_quick_work"></div>
     <label>휴무 배정</label>
     <div class="quickgrid" id="ed_quick_off"></div>
-    <label>직접 입력 (출근 ~ 퇴근)</label>
-    <div class="row2">
-      <div><input type="time" id="ed_s"></div>
-      <div><input type="time" id="ed_e"></div>
+    <div id="ed_customwrap">
+      <label>직접 입력 (출근 ~ 퇴근)</label>
+      <div class="row2">
+        <div><input type="time" id="ed_s"></div>
+        <div><input type="time" id="ed_e"></div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="ghost" onclick="closeOv('ovEdit')">취소</button>
       <button class="danger" onclick="edClear()">지우기</button>
-      <button class="primary" onclick="edSaveCustom()">직접입력 저장</button>
+      <button class="primary" id="ed_customsave" onclick="edSaveCustom()">직접입력 저장</button>
     </div>
   </div>
 </div>
@@ -560,11 +562,33 @@ function loadRoster(){
 }
 function saveRoster(){localStorage.setItem(LS_R,JSON.stringify({depts:DEPTS,ann:ANN}));}
 loadRoster();
+/* [2026-09-03 매니저 확정] 지원(남)/지원(여) 근무조 — 남/여 공통, 단일 정의(SSOT).
+   coo/check/지원부 체계.html·이 파일의 covStatus(오픈/마감 커버리지 판정)·지원부 전용 출근시간
+   화이트리스트가 전부 이 표 하나에서 파생된다 — 시간이 또 바뀌면 이 표만 고치면 된다(하드코딩 금지). */
+const SUPPORT_SHIFTS={
+  wd:[{code:"A",role:"오전",s:"05:40",e:"14:40",brk:"11:00~12:00"},
+      {code:"B",role:"중간",s:"11:00",e:"20:00",brk:"12:00~13:00"},
+      {code:"C",role:"중간2",s:"13:00",e:"22:00",brk:"16:00~17:00"},
+      {code:"D",role:"마감",s:"13:40",e:"22:40",brk:"17:00~18:00"}],
+  we:[{code:"A",role:"오전",s:"07:40",e:"16:40",brk:"11:00~12:00"},
+      {code:"B",role:"중간",s:"09:00",e:"18:00",brk:"12:00~13:00"},
+      {code:"C",role:"마감",s:"11:10",e:"20:10",brk:"17:00~18:00"}]
+};
+const SUPPORT_DEPTS=new Set(["지원(남)","지원(여)"]);
+/* SHIFTS[dept].{wd,we}의 open/close/closeEnd(오픈·마감 커버리지 판정용)를 SUPPORT_SHIFTS에서 파생.
+   open=제일 이른 시업, close=제일 늦은 시업("마감조"가 출근했는지 판정 기준), closeEnd=제일 늦은 종업.
+   mins()는 이 시점에 아직 미정의라 로컬 파서(_m)를 둔다(순서 의존 없이 자기완결). */
+function supportCfgFromShifts(list){
+  const _m=t=>(+t.slice(0,2))*60+(+t.slice(3,5));
+  let open=list[0].s, close=list[0].s, closeEnd=list[0].e;
+  list.forEach(x=>{ if(_m(x.s)<_m(open))open=x.s; if(_m(x.s)>_m(close))close=x.s; if(_m(x.e)>_m(closeEnd))closeEnd=x.e; });
+  return {open,close,closeEnd};
+}
 const SHIFTS = {
   "운영":     {wd:{open:"05:40",close:"13:30",closeEnd:"22:30"}, we:{open:"07:40",close:"13:00",closeEnd:"20:00"}},
   "시설":     {wd:{open:"05:00",close:"13:00",closeEnd:"22:00"}, we:{open:"07:00",close:"13:00",closeEnd:"20:30"}},
-  "지원(남)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
-  "지원(여)": {wd:{open:"06:00",close:"14:00",closeEnd:"22:40"}, we:{open:"08:00",close:"14:00",closeEnd:"22:40"}, sun2:true},
+  "지원(남)": {wd:supportCfgFromShifts(SUPPORT_SHIFTS.wd), we:supportCfgFromShifts(SUPPORT_SHIFTS.we), sun2:true},
+  "지원(여)": {wd:supportCfgFromShifts(SUPPORT_SHIFTS.wd), we:supportCfgFromShifts(SUPPORT_SHIFTS.we), sun2:true},
 };
 const HOLIDAYS = {
   "2026-01-01":"신정","2026-02-16":"설날","2026-02-17":"설날","2026-02-18":"설날",
@@ -1499,8 +1523,18 @@ function inlineEdit(el,nm,dt){
     if(done)return;
     const val=parseInput(inp.value);
     if(val===null){inp.style.borderColor="var(--red)";inp.focus();return;}
-    /* R3 — 연차·반차 직접 기입 차단(동의어 포함) → 신청 폼 유도. 관리자 PIN 세션 중엔 정정 허용 */
     const base=val?String(val).split(" ")[0]:"";
+    /* [2026-09-03] 지원(남)/지원(여) 출근시간 화이트리스트 — 인라인 입력(주간 보드)도 모달과 동일 기준 적용.
+       휴무코드(연차·휴 등)는 base가 LEAVE_LABEL에 있으므로 아래 시간 검사 대상이 아니다. */
+    if(base&&!LEAVE_LABEL[base]&&SUPPORT_DEPTS.has(EMP_DEPT[nm])){
+      const allowed=supportShiftListFor(dt).map(x=>x.s);
+      if(!allowed.includes(base)){
+        inp.style.borderColor="var(--red)";inp.focus();
+        toast("⚠ 지원부는 "+allowed.join("·")+" 중에서만 출근시간 선택 가능");
+        return;
+      }
+    }
+    /* R3 — 연차·반차 직접 기입 차단(동의어 포함) → 신청 폼 유도. 관리자 PIN 세션 중엔 정정 허용 */
     if(base&&POLICY_PIN_TYPES[base]&&!(POLICY_ADMIN_OVERRIDE&&pinOk("admin"))){
       done=true;renderMonth();renderWeek();
       if(confirm("연차·반차는 신청 → 결재 승인으로만 기록됩니다.\n신청 화면으로 이동할까요?"))goRequest(nm,dt,base);
@@ -1518,11 +1552,20 @@ function inlineEdit(el,nm,dt){
 
 /* ===== 배정/수정 모달 ===== */
 let edEmp=null, edDate=null, edDept=null, edPick=false;
+/* [2026-09-03 매니저 확정] 지원(남)/지원(여)는 출근시간 자유입력을 막고 SUPPORT_SHIFTS의 날짜별 세트만
+   허용한다(휴무코드는 그대로 자유 선택). 평일/주말·공휴 판정은 기존 isWE()(서버 공휴일 데이터 HOL 반영)를
+   그대로 재사용 — 날짜를 새로 하드코딩하지 않는다. */
+function supportShiftListFor(dt){
+  const[y,m,d]=dt.split("-").map(Number);
+  return isWE(y,m-1,d)?SUPPORT_SHIFTS.we:SUPPORT_SHIFTS.wd;
+}
 function quickBtnsFor(dept,dt){
   const[y,m,d]=dt.split("-").map(Number);
   const we=isWE(y,m-1,d), c=cfgOf(dept,we);
   const work=[];
-  if(c){
+  if(SUPPORT_DEPTS.has(dept)){
+    supportShiftListFor(dt).forEach(sh=>work.push({k:`${sh.role} ${sh.code}조`,t:sh.s+"–"+sh.e,v:sh.s}));
+  } else if(c){
     work.push({k:"오픈조",t:fmtT(c.open)+"–"+fmtT(mm2t(mins(c.open)+540)),v:c.open+" "+mm2t(mins(c.open)+540)});
     work.push({k:"마감조",t:fmtT(c.close)+"–"+fmtT(c.closeEnd),v:c.close+" "+c.closeEnd});
   } else {
@@ -1542,6 +1585,12 @@ function fillModal(dt){
     const lock=POLICY_PIN_TYPES[b.v]&&!(POLICY_ADMIN_OVERRIDE&&pinOk("admin"));
     return `<button class="${b.cls}" style="${lock?'opacity:.55':''}" title="${lock?'신청 → 결재 승인으로만 기록(관리자 PIN 시 정정 가능)':''}" onclick="edApplyOff(${i})">${lock?'🔒 ':''}${b.k}</button>`;
   }).join("");
+  /* [2026-09-03] 지원(남)/지원(여)는 출근시간 직접입력(자유 시간) 칸을 숨긴다 — 위 근무 배정 버튼(날짜별
+     허용 세트)만 사용 가능. 기존 값이 화이트리스트 밖이어도 값 자체는 그대로 표시(자동 정정 없음). */
+  const custom=document.getElementById("ed_customwrap"), csave=document.getElementById("ed_customsave");
+  const hideCustom=SUPPORT_DEPTS.has(edDept);
+  if(custom)custom.style.display=hideCustom?"none":"";
+  if(csave)csave.style.display=hideCustom?"none":"";
 }
 function openEdit(nm,dt){
   edEmp=nm; edDate=dt; edDept=EMP_DEPT[nm]; edPick=false;
@@ -1583,6 +1632,8 @@ function edSet(val){
 function edApplyWork(i){edSet(quickBtnsFor(edDept,edDate).work[i].v);}
 function edApplyOff(i){edSet(quickBtnsFor(edDept,edDate).off[i].v);}
 function edSaveCustom(){
+  /* 방어선(2026-09-03) — 지원부는 UI상 이 칸이 숨겨지지만, 혹시 남은 값으로 저장 시도해도 서버 전송 전 차단 */
+  if(SUPPORT_DEPTS.has(edDept)){alert("지원(남)/지원(여)는 정해진 근무조 시간만 선택할 수 있습니다 — 위 근무 배정 버튼을 이용하세요.");return;}
   const s=document.getElementById("ed_s").value, e=document.getElementById("ed_e").value;
   if(!s){alert("출근 시각을 입력하세요");return;}
   edSet(e?s+" "+e:s);
