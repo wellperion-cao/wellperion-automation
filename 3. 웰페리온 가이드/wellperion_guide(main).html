@@ -419,8 +419,8 @@
       <a data-id="H2">🧑‍💼 인사 운영 허브</a>
       <a data-id="H3">🗓️ 웰페리온 스케줄보드</a>
       <a data-id="H4">🗺 구조도</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/chro/recruiting/" target="_blank">📢 Recruiting</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank">📊 파트너팀 체계</a>
+      <a href="chro/recruiting/" target="_blank">📢 Recruiting</a>
+      <a href="coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank">📊 파트너팀 체계</a>
     </div>
 
     <a data-toggle="cfo-nav2" data-has-sub="true"><span class="num">💰</span><span class="label">AI CFO 재무<span class="tag">나우열M</span></span></a>
@@ -639,7 +639,7 @@
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
           <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">6유형 접수 관리 · AI COO(시우)</div></div>
-          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
+          <a href="coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
         </div>
         <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
              [2026-08-25 GM 지시] ①큰숫자=이번달 / 작은 서브=누적 으로 스왑(id 는 그대로 두고 표시 위치만 교체 —
@@ -6574,14 +6574,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     (function(){
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
       // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
-      var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
+      var BASE = "";  // 상대경로 — Pages·erp.wellperion.com 어디서 열려도 같은 폴더 기준(2026-09-04 웰리 · AWS 라인)
       var CACHE_KEY = "o1_dept_cards_v2";   // v1 = 3카드 시절 캐시 — 스키마가 달라 키를 올린다(옛 캐시 오독 방지)
       var FACILITY_HREF = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var SUPPORT_HREF  = BASE + "coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var PARKING_HREF  = BASE + "coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var SCHEDULE_HREF = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
       var NOTICE_HREF   = BASE + "coo/notice/notice_template.html";
-      var RECEPTION_HREF      = "/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html";
+      var RECEPTION_HREF      = "coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html";
       var OPS_HREF            = BASE + "coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var RECEPTION_WORK_HREF = BASE + "coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html";
       // 종합접수처 웹앱 — 점검·업무 GAS 와 또 다른 프로젝트다(섞으면 action 오류).
@@ -8297,12 +8297,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:15px 16px;">
         <div style="font-size:13px;font-weight:700;margin-bottom:5px;">② 업무 추가</div>
         <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">업무 현황 SSOT에서 새 업무를 등록·배분·추적합니다.</div>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📝 업무 현황 SSOT 열기 →</a>
+        <a href="coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">📝 업무 현황 SSOT 열기 →</a>
       </div>
       <div style="flex:1;min-width:220px;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:15px 16px;">
         <div style="font-size:13px;font-weight:700;margin-bottom:5px;">③ 결재 확인</div>
         <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1;">결재 진행·완료·반려를 확인하고, GM·대표님 비밀번호로 승인/반려합니다.</div>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">✅ 결재 현황 SSOT 열기 →</a>
+        <a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:8px;text-decoration:none;">✅ 결재 현황 SSOT 열기 →</a>
       </div>
     </div>
     <p style="font-size:11px;color:var(--dim);margin:0 0 6px;">※ 결재 요청·승인 체계(결재선·부서장 매핑·종착 분기) 정책 원본 = <strong>S2 AI COO 탭</strong>. 페이지엔 중복 기재하지 않습니다.</p>
@@ -8349,8 +8349,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   // 집계 기준은 각 SSOT 대시보드와 1:1 (업무=업무 현황 SSOT renderDashboard / 결재=결재 현황 SSOT renderApprovalDashboard).
   // SSOT가 바뀌면 카드가 자동으로 따라가므로 수동 수치 불일치 사고가 사라진다 (2026-06-03 GM 지시).
   (function loadKpiStrip(){
-    var WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html';
-    var APPR_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
+    var WORK_URL = 'coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html';
+    var APPR_URL = 'coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
     var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
     function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){ return STAFF.indexOf(x) >= 0; }); }
     function st(r){ return r.status || r['상태'] || '진행중'; }
@@ -8609,7 +8609,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <p class="lead">㈜웰페리온 스포츠클럽 전 직원의 근로조건·운영방침·근무수칙을 정한 사내 규정입니다.</p>
 
     <div style="margin:16px 0;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/chro/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%99%20%EA%B0%9C%EC%A0%95_%EC%B4%88%EC%95%88.txt" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 취업규칙 원본 열기</a>
+      <a href="chro/%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EC%B7%A8%EC%97%85%EA%B7%9C%EC%B9%99%20%EA%B0%9C%EC%A0%95_%EC%B4%88%EC%95%88.txt" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.3);">📄 취업규칙 원본 열기</a>
     </div>
 
     <div class="tab-nav" style="display:flex;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:2px solid var(--border);padding-bottom:0;">
@@ -8842,7 +8842,7 @@ function crTab(btn, panelId) {
     <p class="lead">웰페리온 인사 운영 현황 요약입니다. 채용·온보딩·인사평가 상세와 지원자 PII는 보안상 <strong>HR 허브(사내 전용)</strong>에서만 열람합니다. <strong>「🔒 HR 허브 입장」</strong> 버튼으로 들어가시고, 아래에서 공개 요약 현황을 확인하세요.</p>
 
     <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px;max-width:720px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/" target="_blank" title="비밀번호 입력 후 입장 — 사내 전용" style="font-size:14px;font-weight:800;padding:11px 22px;background:var(--accent);color:#1a1817;border-radius:99px;text-decoration:none;border:1px solid var(--accent);box-shadow:0 4px 14px rgba(0,0,0,0.18);">🔒 HR 허브 입장 ↗</a>
+      <a href="chro/hub/" target="_blank" title="비밀번호 입력 후 입장 — 사내 전용" style="font-size:14px;font-weight:800;padding:11px 22px;background:var(--accent);color:#1a1817;border-radius:99px;text-decoration:none;border:1px solid var(--accent);box-shadow:0 4px 14px rgba(0,0,0,0.18);">🔒 HR 허브 입장 ↗</a>
     </div>
     <div style="font-size:11.5px;color:var(--dim);margin-top:10px;">🔒 HR 허브는 비밀번호 입력 후 입장하는 사내 전용 페이지입니다 (지원자 PII·인사평가 포함).</div>
 
@@ -11048,7 +11048,7 @@ function crTab(btn, panelId) {
         tb += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
         tb += '<button type="button" id="gm1-share-list" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
         tb += '<button type="button" id="gm1-cal-toggle" onclick="var w=document.getElementById(\'gm1-cal-wrap\');var l=document.getElementById(\'gm1-list\');if(w){var s=w.style.display===\'none\';w.style.display=s?\'block\':\'none\';if(l)l.style.display=s?\'none\':\'\';this.style.background=s?\'var(--accent)\':\'var(--bg)\';this.style.color=s?\'#fff\':\'var(--text)\';this.textContent=s?\'📋 목록 보기\':\'🗓️ 캘린더\';if(s){var t=document.getElementById(\'gm1-todo-section\');if(t)t.open=true;}}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">🗓️ 캘린더</button>';
-        tb += '<a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
+        tb += '<a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#e8a33d;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
         tb += '</div>';
         tb += '</div>'; // 도구바 박스 끝
         toolbarEl.innerHTML = tb;
@@ -12544,9 +12544,9 @@ function crTab(btn, panelId) {
   // ── home KPI (라이브) ───────────────────
   (function(){
     var CHECK_API = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';   // 현재 배포(@56) — 옛 @9는 스냅샷 집계 없어 오늘 0/0 반환→home '안뜸' 원인. GM 2026-06-16 시우.
-    var FACILITY_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
-    var SUPPORT_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
-    var PARKING_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
+    var FACILITY_URL = 'coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
+    var SUPPORT_URL  = 'coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
+    var PARKING_URL  = 'coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
 
     function todayStr(){var d=new Date();return d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');}
 
