@@ -17,50 +17,54 @@
   .sheet{width:210mm; height:297mm; margin:56px auto 24px; background:var(--white); overflow:hidden; display:flex; flex-direction:column; box-shadow:0 8px 28px rgba(0,0,0,.18);}
   @media print{ .bar{display:none;} body{background:#fff;} .sheet{margin:0; box-shadow:none;} }
 
-  .top{background:var(--black); color:#fff; padding:9mm 12mm 8mm; display:flex; align-items:flex-end; justify-content:space-between;}
-  .top img{height:9mm; display:block;}
-  .top .kick{font-size:10.5px; letter-spacing:.32em; color:var(--beige); text-transform:uppercase; text-align:right; line-height:1.6;}
+  .top{background:var(--black); color:#fff; padding:7mm 12mm 6mm; display:flex; align-items:flex-end; justify-content:space-between;}
+  .top img{height:14mm; display:block;}
+  .top .kick{font-size:12.5px; letter-spacing:.32em; color:var(--beige); text-transform:uppercase; text-align:right; line-height:1.6;}
 
-  .hero{padding:9mm 12mm 0; display:flex; gap:8mm; align-items:stretch;}
+  .hero{padding:6mm 12mm 0; display:flex; gap:7mm; align-items:stretch;}
   .hero .txt{flex:1; display:flex; flex-direction:column; justify-content:center;}
-  .hero h1{margin:0; font-size:30px; letter-spacing:-.6px; line-height:1.15; font-weight:800;}
-  .hero .sub{font-size:14.5px; color:var(--dim); margin-top:5mm; line-height:1.6;}
-  .hero .rule{height:3px; width:44px; background:var(--beige); margin:6mm 0 5mm;}
-  .hero .place{display:flex; flex-wrap:wrap; gap:5px; margin-top:5mm;}
-  .hero .place span{font-size:11px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--dim); background:var(--cream);}
-  .hero .photo{width:76mm; height:76mm; border-radius:6mm; overflow:hidden; background:#0B1F4A; flex:0 0 auto;}
+  .hero h1{margin:0; font-family:'Noto Serif KR',Georgia,serif; font-size:31px; letter-spacing:-.8px; line-height:1.22; font-weight:700;}
+  .hero .sub{font-size:15.5px; color:var(--dim); margin-top:3.5mm; line-height:1.6;}
+  .hero .rule{height:3px; width:44px; background:var(--beige); margin:4mm 0 3.5mm;}
+  .hero .place{display:flex; flex-wrap:wrap; gap:5px; margin-top:3.5mm;}
+  .hero .place span{font-size:13px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--dim); background:var(--cream);}
+  .hero .photo{width:60mm; height:60mm; border-radius:6mm; overflow:hidden; background:#0B1F4A; flex:0 0 auto;}
   .hero .photo img{width:100%; height:100%; object-fit:cover; display:block;}
 
-  .prod{margin:7mm 12mm 0; padding:5mm 6mm; background:var(--cream); border:1px solid var(--line); border-radius:4mm; display:flex; align-items:center; gap:6mm;}
-  .prod .halogo{height:7mm; display:block;}
-  .prod .nm{font-size:15px; font-weight:800; letter-spacing:-.3px; margin-top:2.5mm;}
-  .prod .md{font-size:11px; color:var(--dim); margin-top:2px; letter-spacing:.04em;}
+  .prod{margin:5mm 12mm 0; padding:4mm 6mm; background:var(--cream); border:1px solid var(--line); border-radius:4mm; display:flex; align-items:center; gap:6mm;}
+  .prod .halogo{height:11mm; display:block;}
+  .prod .nm{font-size:19px; font-weight:800; letter-spacing:-.3px; margin-top:2.5mm;}
+  .prod .md{font-size:13px; color:var(--dim); margin-top:2px; letter-spacing:.04em;}
   .prod .thumbs{margin-left:auto; display:flex; gap:3mm;}
   .prod .thumbs img{width:22mm; height:22mm; object-fit:cover; border-radius:3mm; border:1px solid var(--line); background:#fff; display:block;}
 
-  .cols{display:grid; grid-template-columns:1fr 1fr; gap:8mm; padding:7mm 12mm 0;}
-  h2.sec{margin:0 0 3.5mm; font-size:12px; letter-spacing:.14em; color:var(--gold); font-weight:800; text-transform:uppercase;}
+  .cols{display:grid; grid-template-columns:1.05fr 1fr; gap:5mm; padding:5mm 12mm 0;}
+  .box{background:var(--cream); border:1px solid var(--line); border-radius:4mm; padding:4mm 5mm;}
+  h2.sec{margin:0 0 3mm; font-family:'Noto Serif KR',Georgia,serif; font-size:16px; letter-spacing:-.2px; color:var(--black); font-weight:700; padding-bottom:2.5mm; border-bottom:2px solid var(--beige);}
   ol.steps{margin:0; padding:0; list-style:none; counter-reset:s;}
-  ol.steps li{position:relative; padding:0 0 3.2mm 9mm; font-size:12.8px; line-height:1.5; counter-increment:s;}
-  ol.steps li::before{content:counter(s); position:absolute; left:0; top:1px; width:6mm; height:6mm; border-radius:50%; background:var(--black); color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center;}
-  ol.steps li b{display:block; font-size:13.2px;}
+  ol.steps li{position:relative; padding:0 0 2.8mm 10mm; font-size:14px; line-height:1.45; counter-increment:s;}
+  ol.steps li::before{content:counter(s); position:absolute; left:0; top:2px; width:7mm; height:7mm; border-radius:50%; background:var(--black); color:#fff; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center;}
+  ol.steps li b{display:block; font-size:15px;}
   ul.care{margin:0; padding:0; list-style:none;}
-  ul.care li{position:relative; padding:0 0 3mm 5.5mm; font-size:12.3px; line-height:1.5; color:#3a3532;}
-  ul.care li::before{content:''; position:absolute; left:0; top:7px; width:2.6mm; height:2.6mm; background:var(--beige); border-radius:50%;}
+  ul.care li{position:relative; padding:0 0 2.8mm 6.5mm; font-size:14px; line-height:1.45; color:#3a3532;}
+  ul.care li::before{content:''; position:absolute; left:0; top:9px; width:2.8mm; height:2.8mm; background:var(--beige); border-radius:50%;}
 
-  .buy{margin:auto 12mm 0; background:var(--black); color:#fff; border-radius:4mm; padding:6mm 7mm; display:flex; align-items:center; gap:7mm;}
+  .buy{margin:auto 12mm 0; background:var(--black); color:#fff; border-radius:4mm; padding:5mm 7mm; display:flex; align-items:center; gap:7mm;}
   .buy .l{flex:1;}
-  .buy .k{font-size:10.5px; letter-spacing:.2em; color:var(--beige); text-transform:uppercase;}
-  .buy .t{font-size:16.5px; font-weight:800; margin:2mm 0 2.5mm; line-height:1.3;}
-  .buy .price{font-size:24px; font-weight:800; letter-spacing:-.5px;}
-  .buy .price small{font-size:11px; font-weight:500; color:#cfc6bb; margin-left:6px;}
-  .buy .how{font-size:11.6px; color:#d9d2c9; line-height:1.65; margin-top:2.5mm;}
+  .buy .k{font-size:12px; letter-spacing:.2em; color:var(--beige); text-transform:uppercase;}
+  .buy .t{font-family:'Noto Serif KR',Georgia,serif; font-size:19px; font-weight:700; margin:2mm 0 3mm; line-height:1.35;}
+  .buy .price{font-size:27px; font-weight:800; letter-spacing:-.5px;}
+  .buy .price small{font-size:13px; font-weight:500; color:#cfc6bb; margin-left:6px;}
+  .buy .how{font-size:14px; color:#d9d2c9; line-height:1.6; margin-top:2.5mm;}
   .buy .how b{color:#fff;}
-  .buy .qr{width:30mm; height:30mm; background:#fff; border-radius:2.5mm; padding:1.5mm; flex:0 0 auto;}
+  .buy .tel{text-align:right; flex:0 0 auto; border-left:1px solid #4a4542; padding-left:7mm;}
+  .buy .tel .l{font-size:12px; letter-spacing:.2em; color:var(--beige); text-transform:uppercase;}
+  .buy .tel .n{font-size:24px; font-weight:800; margin-top:1.5mm; letter-spacing:-.3px; white-space:nowrap;}
+  .buy .tel .r{font-size:14px; color:#d9d2c9; margin-top:1mm;}
   .buy .qr img{width:100%; height:100%; display:block;}
   .buy .qrl{font-size:9.5px; color:#cfc6bb; text-align:center; margin-top:1.5mm; letter-spacing:.04em;}
 
-  .foot{padding:5mm 12mm 8mm; display:flex; justify-content:space-between; align-items:center; font-size:10.5px; color:var(--dim); letter-spacing:.06em;}
+  .foot{padding:4mm 12mm 6mm; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--dim); letter-spacing:.06em;}
   .foot b{color:var(--beige); letter-spacing:.2em;}
 </style>
 </head>
@@ -93,7 +97,7 @@
   </div>
 
   <div class="cols">
-    <div>
+    <div class="box">
       <h2 class="sec">쓰시는 법</h2>
       <ol class="steps">
         <li><b>전원을 켜 주세요.</b>예열이 끝나면 표시등이 바뀝니다.</li>
@@ -102,7 +106,7 @@
         <li><b>다 쓰신 뒤 전원을 꺼 주세요.</b>다음 분을 위해 제자리에 놓아 주시면 감사하겠습니다.</li>
       </ol>
     </div>
-    <div>
+    <div class="box">
       <h2 class="sec">주의해 주실 것</h2>
       <ul class="care">
         <li>사용 중과 직후에는 <b>노즐이 매우 뜨겁습니다.</b> 손이 닿지 않게 주의해 주세요.</li>
@@ -116,19 +120,19 @@
   <div class="buy">
     <div class="l">
       <div class="k">Take it home</div>
-      <div class="t">써 보시고 마음에 드시면, 같은 제품을 집까지 보내드립니다.</div>
+      <div class="t">써 보시고 마음에 드시면,<br>같은 제품을 집까지 보내드립니다.</div>
       <div class="price">108,000원<small>회원가 · 부가세 포함</small></div>
-      <div class="how">신청은 <b>리셉션</b>에 말씀해 주시거나 오른쪽 QR로 · 결제는 <b>현장 결제 또는 계좌이체</b> · 결제 확인 후 <b>남겨주신 주소로 택배</b>(12시 전 확인 시 당일 발송, 보통 1~2일)</div>
+      <div class="how">결제 확인 후 남겨주신 주소로 <b>택배</b>로 보내드립니다.</div>
     </div>
-    <div>
-      <div class="qr"><img src="data:image/png;base64,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" alt="구매 신청 QR"></div>
-      <div class="qrl">구매 신청</div>
+    <div class="tel">
+      <div class="l">문의</div>
+      <div class="n">리셉션 02-6261-1200</div>
     </div>
   </div>
 
   <div class="foot">
     <span><b>WELLPERION</b> · 하루의 완성</span>
-    <span>문의 · 리셉션 &nbsp;T. 02-6261-1200</span>
+    <span>HOME &amp; ART × WELLPERION</span>
   </div>
 </div>
 
