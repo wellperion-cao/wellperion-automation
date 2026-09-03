@@ -23,7 +23,9 @@ import os
 import secrets
 import sqlite3
 import time
+import urllib.parse
 import urllib.request
+from base64 import urlsafe_b64decode
 from datetime import datetime, timedelta, timezone
 from html import escape
 from typing import Optional
@@ -39,6 +41,9 @@ SESSION_DAYS = 30
 KST = timezone(timedelta(hours=9))
 LOCK_AFTER = 5                                 # 연속 실패 허용 횟수
 LOCK_SECS = 600                                # 잠금 시간(10분)
+GOOGLE_ID = os.environ.get("GOOGLE_CLIENT_ID", "")      # 없으면 구글 로그인 라우트가 안내만 낸다
+GOOGLE_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_HD = "wellperion.com"                   # 회사 워크스페이스 도메인 — 개인 gmail 차단
 FAILS: dict[str, tuple[int, float]] = {}       # email -> (연속실패수, 잠금해제시각) · ponytail: 서버 1대 메모리 락, 다중서버면 DB/redis로
 
 app = FastAPI(docs_url=None, redoc_url=None)
@@ -112,7 +117,9 @@ STYLE = ("<style>body{font-family:system-ui,'Malgun Gothic',sans-serif;backgroun
          "input{width:100%;box-sizing:border-box;padding:10px;margin:6px 0 14px;border:1px solid #d5d8de;border-radius:8px}"
          "button{width:100%;padding:11px;border:0;border-radius:8px;background:#1f2937;color:#fff;font-weight:600}"
          "p{font-size:13px;color:#6b7280}a{color:#1f2937}.err{color:#b91c1c}table{width:100%;font-size:14px}"
-         "td{padding:6px 4px;border-bottom:1px solid #eee}</style>")
+         "td{padding:6px 4px;border-bottom:1px solid #eee}"
+         ".g{display:block;text-align:center;padding:11px;margin:10px 0 0;border:1px solid #d5d8de;"
+         "border-radius:8px;background:#fff;color:#1f2937;text-decoration:none;font-weight:600}</style>")
 
 
 def page(title: str, body: str) -> HTMLResponse:
@@ -126,6 +133,7 @@ def login_page(next: str = "/", err: str = ""):
 <input name=email type=email placeholder=이메일 required autofocus>
 <input name=password type=password placeholder=비밀번호 required>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
+{'<a class=g href="/auth/google?next=' + escape(next) + '">회사 구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
 <p>계정이 없으면 <a href=/auth/signup>가입 신청</a> — GM 승인 후 사용할 수 있습니다.</p></form>""")
 
 
@@ -225,6 +233,84 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
     return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
 
 
+# ── 회사 구글 계정 로그인 ────────────────────────────────────────────────
+# 회사 워크스페이스(@wellperion.com) 계정은 GM 승인 없이 바로 통과한다(GM 지시 2026-09-03).
+# id_token 은 우리 클라이언트 시크릿으로 구글에서 직접(TLS) 받아오므로 서명 재검증 없이 payload 를 읽는다.
+def _redirect_uri(request: Request) -> str:
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host}/auth/google/callback"
+
+
+def _google_token(code: str, redirect_uri: str) -> dict:
+    body = urllib.parse.urlencode({"code": code, "client_id": GOOGLE_ID, "client_secret": GOOGLE_SECRET,
+                                   "redirect_uri": redirect_uri, "grant_type": "authorization_code"}).encode()
+    req = urllib.request.Request("https://oauth2.googleapis.com/token", data=body,
+                                 headers={"Content-Type": "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read())
+
+
+def _id_claims(id_token: str) -> dict:
+    payload = id_token.split(".")[1]
+    return json.loads(urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+
+
+def is_company_account(claims: dict) -> bool:
+    email = (claims.get("email") or "").strip().lower()
+    return bool(claims.get("hd") == GOOGLE_HD and claims.get("email_verified")
+                and email.endswith("@" + GOOGLE_HD))
+
+
+@app.get("/auth/google")
+def google_start(request: Request, next: str = "/"):
+    if not GOOGLE_ID or not GOOGLE_SECRET:
+        return page("회사 구글 로그인", "<div class=box><h1>아직 설정 전입니다</h1>"
+                    "<p>구글 OAuth 클라이언트를 등록하고 서버 /srv/erp/auth.env 에 "
+                    "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET 을 넣으면 켜집니다.</p>"
+                    "<p><a href=/auth/login>로그인 화면으로</a></p></div>")
+    state = jwt.encode({"n": next if next.startswith("/") else "/", "exp": int(time.time()) + 600},
+                       SECRET, algorithm="HS256")
+    q = urllib.parse.urlencode({"client_id": GOOGLE_ID, "redirect_uri": _redirect_uri(request),
+                                "response_type": "code", "scope": "openid email profile",
+                                "hd": GOOGLE_HD, "state": state, "prompt": "select_account"})
+    return RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + q, status_code=302)
+
+
+@app.get("/auth/google/callback")
+def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    if not GOOGLE_ID or not GOOGLE_SECRET:
+        return RedirectResponse("/auth/login?err=구글 로그인이 아직 설정되지 않았습니다", status_code=303)
+    if error or not code:
+        return RedirectResponse("/auth/login?err=구글 로그인이 취소됐습니다", status_code=303)
+    try:
+        nxt = jwt.decode(state, SECRET, algorithms=["HS256"])["n"]
+    except jwt.PyJWTError:
+        return RedirectResponse("/auth/login?err=로그인 요청이 만료됐습니다. 다시 시도하세요", status_code=303)
+    try:
+        claims = _id_claims(_google_token(code, _redirect_uri(request))["id_token"])
+    except Exception:
+        return RedirectResponse("/auth/login?err=구글 인증에 실패했습니다", status_code=303)
+    if not is_company_account(claims):
+        return RedirectResponse("/auth/login?err=회사 구글 계정(@wellperion.com)만 로그인할 수 있습니다", status_code=303)
+    email = claims["email"].strip().lower()
+    with db() as c:
+        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        if u and u["status"] == "blocked":
+            return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
+        if not u:
+            salt, h = hash_pw(secrets.token_urlsafe(32))    # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
+            c.execute("INSERT INTO users(email,name,salt,pw,role,status,created_at,approved_at) VALUES(?,?,?,?,?,?,?,?)",
+                      (email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now()))
+        elif u["status"] != "active":
+            c.execute("UPDATE users SET status='active', approved_at=? WHERE id=?", (now(), u["id"]))
+        u = c.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+    r = RedirectResponse(nxt, status_code=303)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+    return r
+
+
 # ── 관리자 ──────────────────────────────────────────────────────────────
 def admin_only(token: Optional[str]) -> sqlite3.Row:
     u = current(token)
@@ -280,3 +366,12 @@ def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(defa
 
 
 init()
+
+
+if __name__ == "__main__":                     # 회사 계정 판별 자가점검: python app.py
+    ok = {"email": "cao@wellperion.com", "email_verified": True, "hd": "wellperion.com"}
+    assert is_company_account(ok)
+    assert not is_company_account({**ok, "hd": None})                        # 개인 gmail
+    assert not is_company_account({**ok, "email": "x@gmail.com"})            # hd 만 위조된 경우
+    assert not is_company_account({**ok, "email_verified": False})
+    print("self-check ok")
