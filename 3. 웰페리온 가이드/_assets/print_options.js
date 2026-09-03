@@ -234,7 +234,12 @@
     });
 
     function persist(){ saveState({ paper: paper, orientation: orientation, sections: checked }); }
-    function apply(){ applyPageStyle(paper, orientation); applySections(sections, checked); }
+    // 섹션 숨김만 즉시 반영한다. 용지·방향(@page)은 이 위젯의 인쇄 버튼을 누르는 순간에만 넣고
+    // 인쇄가 끝나면 지운다 — 저장된 선택(A3·가로)이 전역 @page로 남아 Ctrl+P·다른 인쇄 버튼
+    // (문서 뷰어·결재·보고서)까지 가로로 나오던 원인(2026-09-02 매니저 · 2026-09-03 GM 지적:
+    // 내 PC만 가로, 시크릿 창은 세로 = localStorage 유무 차이)을 관문 한 곳에서 막는다.
+    function apply(){ applySections(sections, checked); }
+    function clearPageStyle(){ var el = document.getElementById('po-page-style'); if(el) el.textContent = ''; }
 
     // ── DOM 구성 ──
     var wrap = document.createElement('span');
@@ -357,8 +362,11 @@
     printBtn.textContent = '🖨️ 인쇄'; // 🖨️ 인쇄
     printBtn.addEventListener('click', function(){
       apply();
+      applyPageStyle(paper, orientation);           // 이 인쇄에만 적용
       closePanel();
+      window.addEventListener('afterprint', clearPageStyle, { once: true });
       setTimeout(function(){ window.print(); }, 20);
+      setTimeout(clearPageStyle, 3000);              // afterprint 미발생 브라우저 폴백
     });
     panel.appendChild(printBtn);
 
@@ -405,7 +413,7 @@
       trigger.parentNode.replaceChild(wrap, trigger); // 트리거 있는 페이지 — 기존대로 그 자리에 승격
     }
 
-    apply(); // 저장된 선택 즉시 반영(초기 @page·섹션 숨김)
+    apply(); clearPageStyle(); // 섹션 숨김만 복원 — @page 는 인쇄 버튼 순간에만(위 주석)
   }
 
   // 재부착 훅 공개 — [data-po-trigger]를 쓰면서 자체 재렌더로 트리거를 통째로 교체하는 페이지가
