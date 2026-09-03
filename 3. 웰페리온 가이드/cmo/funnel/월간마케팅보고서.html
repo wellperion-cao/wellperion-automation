@@ -410,7 +410,7 @@ b,strong{font-weight:700}
       </div>
       <div class="comment-row">
         <div class="comment-lbl">GM 메모</div>
-        <div class="comment-val"><input class="manual-input" type="text" placeholder="GM 코멘트를 입력하세요…" style="width:100%" /></div>
+        <div class="comment-val"><input id="gmMemo" class="manual-input" type="text" placeholder="GM 코멘트를 입력하세요…" style="width:100%" /><span id="gmMemoState" style="font-size:11px;color:var(--dim);margin-left:6px"></span></div>
       </div>
     </div>
   </div>
@@ -422,6 +422,25 @@ b,strong{font-weight:700}
 </div>
 
 <script>
+/* ── GM 메모 저장 (2026-09-03 웰리) ──
+   여태 입력칸만 있고 저장이 없어 적어 두면 새로고침에 사라졌다(죽은 칸 · page_score 82% 감점 사유).
+   이 화면은 GM 이 혼자 보는 월간 보고서라 서버 저장이 필요 없다 — 이 브라우저에만 남긴다.
+   달마다 따로 남게 키에 연·월을 넣는다. */
+(function(){
+  var el=document.getElementById('gmMemo'), st=document.getElementById('gmMemoState');
+  if(!el) return;
+  var d=new Date(), KEY='wp_mkt_gm_memo_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2);
+  try{ el.value=localStorage.getItem(KEY)||''; }catch(e){}
+  var t;
+  el.addEventListener('input',function(){
+    clearTimeout(t);
+    t=setTimeout(function(){
+      try{ localStorage.setItem(KEY, el.value); if(st){ st.textContent='저장됨'; setTimeout(function(){ st.textContent=''; },1500); } }
+      catch(e){ if(st) st.textContent='저장 실패'; }
+    },400);
+  });
+})();
+
 /* ── 테마 토글 (화면 전용, JS 데이터 로직과 독립) ── */
 function toggleTheme(){
   var root=document.documentElement;
