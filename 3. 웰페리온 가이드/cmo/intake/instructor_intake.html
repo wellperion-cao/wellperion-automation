@@ -164,10 +164,11 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   <p class="note" id="msgEl">접수하시면 담당 마케팅 팀(시모)이 확인 후 공식 톤으로 제작해 발행합니다.</p>
 </div>
 
+<script src="../_api.js"></script>
 <script>
 (function(){
-  // ── 백엔드 GAS ── Task 1(.deploy-instructor/instructor_intake.js) 배포 후 실제 exec URL로 교체.
-  var GAS_PROD = "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec";
+  // ── 백엔드 GAS ── 주소 정본 = ../_api.js (window.WP_CMO_API.intake)
+  var GAS_PROD = window.WP_CMO_API.intake;
 
   function $(id){ return document.getElementById(id); }
   function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }

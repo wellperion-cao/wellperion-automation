@@ -342,6 +342,7 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
 
 </div>
 </div>
+    <script src="../_api.js"></script>
     <script>
 (function(){
 // ─── 마케팅 현황 대시보드 — 콘텐츠 → 문의 성과 전용 재설계 (2026-07-18 GM 확정) ───────
@@ -350,7 +351,7 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
 // (모수 불명확·종목별 미분리 문제 해소 — 서버 기존 필드/액션 재사용, 신규 집계 로직 없음).
 // 값 지어내기 금지: 실측 안 되는 지표는 '측정 준비중'/'미상'으로 정직 표기.
 
-var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+var FUNNEL_APPS_SCRIPT_URL = window.WP_CMO_API.funnel;
 function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

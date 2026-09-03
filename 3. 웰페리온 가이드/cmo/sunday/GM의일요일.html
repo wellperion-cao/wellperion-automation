@@ -16,8 +16,7 @@
   그대로 재사용한다 — 분류(team)만 "어떤 하루"로 보낸다.
     접수 → GAS(드라이브 저장 + '마케팅 접수' 시트 append + 텔레그램 알림)
          → cmo_intake_to_review.py(15분 폴러) → 검수큐 "접수검토" + GM 카드 + 시모 배
-  GAS 배포 URL은 여기에 복사하지 않는다(약속 L01) — 정본인 instructor_intake.html에서
-  런타임에 읽어 온다. 그 파일이 URL의 단일 출처이고, 폴러도 같은 곳을 읽는다.
+  GAS 배포 URL은 여기에 복사하지 않는다(약속 L01) — 정본 = ../_api.js(window.WP_CMO_API.intake).
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -277,6 +276,7 @@
   </div>
 </div>
 
+<script src="../_api.js"></script>
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -509,16 +509,9 @@
       });
   })();
 
-  // ── 접수 GAS URL — 정본(instructor_intake.html)에서 읽는다 (약속 L01) ──
-  // 보낼 때 한 번만 읽는다 — 페이지 열자마자 받아 두면 실패해도 다시 시도할 길이 없다.
+  // ── 접수 GAS URL — 정본 = ../_api.js (약속 L01) ──
   function gasUrl(){
-    return fetch('../intake/instructor_intake.html')
-      .then(function(r){ return r.text(); })
-      .then(function(t){
-        var m = t.match(/GAS_PROD\s*=\s*"([^"]+)"/);
-        if (!m) throw new Error('접수 주소를 찾지 못했습니다');
-        return m[1];
-      });
+    return Promise.resolve(window.WP_CMO_API.intake);
   }
 
   // ── 파일 → base64 · 사진 축소 (instructor_intake.html 검증된 패턴) ──
