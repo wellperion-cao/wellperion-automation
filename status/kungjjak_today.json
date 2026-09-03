@@ -1566,7 +1566,7 @@
           "start": "20:39",
           "end": "20:40",
           "minutes": 0,
-          "upload": "✅ 올림 (f60731387)",
+          "upload": "✅ 올림 (c6ec402fa)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1578,24 +1578,36 @@
           "start": "20:43",
           "end": "20:43",
           "minutes": 0,
-          "upload": "✅ 올림 (f60731387)",
+          "upload": "✅ 올림 (c6ec402fa)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260903-2045",
+          "no": "45",
+          "got": "https://erp.wellperion.com/erp/ 이거 들어왔는데 로그인해서 디자인이 다 니 맘대로 변경했네?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "20:47",
+          "end": "20:48",
+          "minutes": 1,
+          "upload": "✅ 올림 (c6ec402fa)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260903-2046",
+          "no": "46",
+          "got": "개발언어는 뭐로할꺼야?",
+          "did": "",
+          "start": "20:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "14:51",
-          "area": "작업",
-          "event": "배909·852 입항 — AWS 예산알람·서버·고정 IP 완료, 배901 다음 = IP 등록 요청",
-          "detail": "커밋 3f006f3bb · 배 11170"
-        },
-        {
-          "time": "15:10",
-          "area": "작업",
-          "event": "ERP AWS 이전 ⓪① — 정적 미러 + 로그인 관문(가입 신청→GM 승인→로그인, nginx auth_request)",
-          "detail": "커밋 e14d0c4ef · 배 11170"
-        },
         {
           "time": "15:11",
           "area": "작업",
@@ -1763,16 +1775,43 @@
           "area": "작업",
           "event": "ERP·AWS 장기 구조 결정 10항 — PostgreSQL 지금·db.py 단일 접속·tenant_id 선반영·워드프레스 미이전 (GM 지시 2026-09-03)",
           "detail": "커밋 f60731387 · 배 11191"
+        },
+        {
+          "time": "20:45",
+          "area": "작업",
+          "event": "회원 미러 키=(회원번호,scope) · 충돌/이력 구분 · 배931 DONE",
+          "detail": "커밋 d3a8cb263 · 배 11182"
+        },
+        {
+          "time": "20:49",
+          "area": "작업",
+          "event": "앱 셸 디자인을 기존 ERP 톤으로 되돌림(GM 2026-09-03) + 권한 밖 화면은 카드 자체 비표시",
+          "detail": "커밋 27da1d57e · 배 11182"
         }
       ],
-      "count": 35,
-      "done": 35,
-      "open": 0,
+      "count": 37,
+      "done": 36,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260903-2046",
+          "no": "46",
+          "got": "개발언어는 뭐로할꺼야?",
+          "did": "",
+          "start": "20:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -2130,13 +2169,13 @@
           "ref": "GM-20260903-3034",
           "no": "34",
           "got": "GM업무 보면 UI/UX 및 디자인 관련해서 꽝인데, 이것좀 잘 정리해줄 수 있어?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "20:42",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "20:47",
+          "minutes": 4,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2268,28 +2307,13 @@
         }
       ],
       "count": 30,
-      "done": 29,
-      "open": 1,
+      "done": 30,
+      "open": 0,
       "avg_minutes": 1,
       "work_count": 21,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260903-3034",
-          "no": "34",
-          "got": "GM업무 보면 UI/UX 및 디자인 관련해서 꽝인데, 이것좀 잘 정리해줄 수 있어?",
-          "did": "",
-          "start": "20:42",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
