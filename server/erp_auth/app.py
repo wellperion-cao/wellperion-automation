@@ -45,6 +45,14 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 DB = os.environ.get("ERP_AUTH_DB", "/srv/erp/auth.db")
 MODULES = os.environ.get("ERP_MODULES", "/srv/erp/www/erp/modules.json")   # 자동 생성본(GitHub 동기화) · 여기서 수정 안 함
 GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", "시로", "시뽀", "GM")   # 핵심 = core:true 모듈 묶음
+# 부서 프리셋 — 관리자가 한 번 누르면 그 부서 사람이 보는 그룹 묶음이 들어간다. 정본은 kpi.json 실무진 배치(2026-09-03).
+PRESETS = {
+    "운영부":   ["핵심", "시포", "시우"],            # 이경연 실장·임정은M·최준용M·윤병현AM
+    "시설부":   ["핵심", "시토"],                    # 이정헌 소장·시설 3인 (점검이 핵심에 포함)
+    "경영지원": ["핵심", "시로", "시뽀", "시우"],     # 나우열M (인사·재무·운영)
+    "마케팅":   ["핵심", "시모", "시보"],
+    "전체":     list(GROUPS),
+}
 SECRET = os.environ["ERP_JWT_SECRET"]
 COOKIE = "erp_session"
 SESSION_DAYS = 30
@@ -150,8 +158,8 @@ def allowed(user, module: dict) -> bool:
     if user["role"] == "admin":
         return True
     p = perms_of(user)
-    if p is None:
-        return "staff" in module.get("roles", [])
+    if p is None:                                  # 권한을 아직 안 준 계정 = 매일 쓰는 화면(핵심)만
+        return bool(module.get("core")) and "staff" in module.get("roles", [])
     if module["id"] in p.get("deny", []):
         return False
     groups = p.get("groups", [])
@@ -489,13 +497,14 @@ def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg:
     ms = modules()
     rows = "".join(_perms_row(g, [m for m in ms if (m.get("core") if g == "핵심" else m.get("group") == g)], u, p)
                    for g in GROUPS)
-    mode = "관리자 — 전부 허용" if u["role"] == "admin" else ("개별 설정" if p else "기본 규칙(modules.json roles)")
+    mode = "관리자 — 전부 허용" if u["role"] == "admin" else ("개별 설정" if p else "기본 = 핵심 화면만")
     return page("계정 권한", f"""<div class='box wide'><h1>권한 — {escape(u['name'])} <small>{escape(u['email'])}</small></h1>
 {'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <p>현재: <span class=tag>{mode}</span> · 허용 {len(allowed_ids(u))}/{len(ms)}개. 저장하면 개별 설정으로 바뀝니다(거부가 허용보다 우선).</p>
 <form method=post action=/auth/admin/{uid}/perms style='max-width:none;padding:0;border:0;background:none'>
+<p>부서로 한 번에: {' '.join(f"<button class=sec name=preset value='{escape(k)}'>{escape(k)}</button>" for k in PRESETS)}</p>
 <div class=tw><table><tr><th>그룹</th><th>전체</th><th>모듈</th></tr>{rows}</table></div>
-<button>저장</button><button class=sec name=reset value=1>기본 규칙으로 되돌리기</button></form>
+<button>저장</button><button class=sec name=reset value=1>기본(핵심만)으로 되돌리기</button></form>
 <p class=nav><a href=/auth/admin>계정 관리로</a></p></div>""")
 
 
@@ -504,6 +513,11 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
     admin_only(erp_session)
     form = await request.form()
     ids = {m["id"] for m in modules()}
+    if form.get("preset") in PRESETS:
+        with db() as c:
+            c.execute("UPDATE users SET perms=? WHERE id=?",
+                      (json.dumps({"groups": PRESETS[form["preset"]], "modules": [], "deny": []}, ensure_ascii=False), uid))
+        return RedirectResponse(f"/auth/admin/{uid}/perms?msg={form['preset']} 프리셋을 넣었습니다", status_code=303)
     perms = None if form.get("reset") else json.dumps({
         "groups": [g for g in form.getlist("g") if g in GROUPS],
         "modules": [m for m in form.getlist("m") if m in ids],
