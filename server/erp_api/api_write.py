@@ -27,11 +27,14 @@ router = APIRouter()
 FORWARD_TIMEOUT = 55   # 화면 apiPost 상한 60초보다 짧게 — 화면이 끊기 전에 server-forward-failed 를 받게
 
 # 어떤 쓰기가 어느 거울을 더럽히나 — ok 응답 뒤 해당 동기화 스크립트를 1회 돌린다.
-MIRROR_SYNC = {
-    "member_active_update": "sync_members.py",
-    "member_inquiry_update": "sync_inquiries.py",
-    "lesson_inquiry_update": "sync_inquiries.py",
-}
+#   정본 = 시포 화면 쓰기 액션 전수(배 961 note · 2026-09-03). 빠진 액션이 ok 여도 거울은 5분 옛값이라 전부 적는다.
+#   거울 없는 쓰기(staff_feedback_*·ohnutti_*·client_write_fail)는 GAS 전달만 — 여기 없으면 동기화를 안 돌린다.
+_MEMBER_WRITES = ("member_active_update", "member_owner_save", "member_registered_add", "member_registered_remove",
+                  "member_archive_restore", "member_hold_transition", "member_hold_approve")
+_INQUIRY_WRITES = ("member_inquiry_update", "member_inquiry_add", "member_inquiry_delete",
+                   "lesson_inquiry_update", "lesson_inquiry_add")
+MIRROR_SYNC = {a: "sync_members.py" for a in _MEMBER_WRITES}
+MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
 _sync_timers = {}
 
 
