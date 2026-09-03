@@ -361,6 +361,28 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
     return res
 
 
+def _alert_if_bad(cell: str, res: dict) -> None:
+    """기입이 실패했거나 웹앱이 옛 파일을 열었으면 업무보고방에 즉시 한 줄 (GM 지시 2026-09-03).
+
+    ★왜: 09-02 사고 — 9월 값이 8월 파일로 들어갔는데 발송은 '성공'이라 아무 경보도 없었다.
+      웹앱이 이제 어느 파일에 썼는지(ssName)와 못 찾은 사유(warn)를 응답에 싣는다. 그걸 여기서 읽어
+      사람에게 알린다. 발신 관문은 tg_outbound_log.send 하나(약속 L21) · 하루 1회 실행이라 중복 없음.
+    """
+    bad = (not res.get("ok")) or bool(res.get("warn"))
+    if not bad or res.get("skipped"):
+        return
+    why = res.get("warn") or res.get("error") or "응답 ok 아님"
+    msg = (f"⚠ 매출보고 자동기입 {cell} — {why}"
+           + (f"\n   쓴 파일: {res['ssName']}" if res.get("ssName") else "")
+           + "\n   👉 시포 확인 필요")
+    try:
+        from scripts.tg_outbound_log import send as _tg_send  # noqa: PLC0415
+        _tg_send(_env("TELEGRAM_BOT_TOKEN"), 8254867551, msg,
+                 source="sales_report_ops_summary.alert", timeout=10)
+    except Exception as exc:  # 알림 실패가 기입을 막지 않는다
+        print(f"[경고] 알림 발송 실패({type(exc).__name__})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="매출 보고 시트 P20 운영 현황 채우기")
     # ★ 기본은 **어제**다. 09:30 매출보고는 전날 실적을 보고하므로(캡션 "8.16(일) 매출 및
@@ -390,6 +412,7 @@ def main() -> int:
         else:
             res = post_to_sheet(text, args.cell)
             print("[결과 P20]", json.dumps(res, ensure_ascii=False))
+            _alert_if_bad(args.cell, res)
             rc = rc or (0 if res.get("ok") else 1)
 
     if args.contact or args.only_contact:
@@ -406,6 +429,7 @@ def main() -> int:
             else:
                 cres = post_to_sheet(ctext, "I16")
                 print("[결과 I16]", json.dumps(cres, ensure_ascii=False))
+                _alert_if_bad("I16", cres)
                 rc = rc or (0 if cres.get("ok") else 1)
 
         # I18 로스자 — 전날 LOSS. I16 을 못 써도 이 칸은 따로 시도한다(두 칸은 원천이 다르다).
@@ -421,6 +445,7 @@ def main() -> int:
             else:
                 lres = post_to_sheet(ltext, "I18")
                 print("[결과 I18]", json.dumps(lres, ensure_ascii=False))
+                _alert_if_bad("I18", lres)
                 rc = rc or (0 if lres.get("ok") else 1)
     return rc
 

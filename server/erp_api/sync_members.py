@@ -100,6 +100,47 @@ def replace_scope(conn, scope, rows, now):
     return len(recs) - collided, unnumbered, collided
 
 
+def _tell_gm(text):
+    """문제가 생기면 업무보고방에 즉시 (GM 지시 2026-09-03). 키는 erp_auth.tell_gm 과 같은
+    TG_BOT_TOKEN·TG_CHAT_ID — api.env 에 같은 두 줄을 넣어야 산다(시토 배치 항목)."""
+    import urllib.request
+    token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
+    if not token or not chat:
+        return False
+    try:
+        req = urllib.request.Request("https://api.telegram.org/bot%s/sendMessage" % token,
+                                     data=json.dumps({"chat_id": chat, "text": text}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=8)
+        return True
+    except Exception:
+        return False   # 알림 실패가 동기화를 막지 않는다
+
+
+def alert_on_change(conn, failed, unnumbered, collided):
+    """상태가 '나쁨'으로 바뀌거나 나쁨의 내용이 달라질 때만 보낸다. 5분마다 같은 말을 반복하지 않고,
+    나쁨 → 정상으로 돌아오면 복구 한 줄. 지문은 sync_meta 에 남긴다. 반환 = 보낸 문구(없으면 None)."""
+    fp = "f=%s|u=%d|c=%d" % (",".join(failed), unnumbered, collided)
+    bad = bool(failed) or unnumbered > 0 or collided > 0
+    prev = conn.execute("SELECT v FROM sync_meta WHERE k='members_alert_fp'").fetchone()
+    prev = prev[0] if prev else ""
+    if fp == prev:
+        return None
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_alert_fp',?)", (fp,))
+    if bad:
+        lines = ["⚠ 회원 미러(AWS) 이상"]
+        if failed:
+            lines.append("   시트 조회 실패: %s — 옛 미러 유지 중" % ", ".join(failed))
+        if unnumbered:
+            lines.append("   회원번호 없는 회원 %d명 — 서버에서 빠짐(배941)" % unnumbered)
+        if collided:
+            lines.append("   회원번호 충돌 %d건 — 등기부 확인 필요" % collided)
+        lines.append("   👉 시포 확인")
+        return "\n".join(lines)
+    return "✅ 회원 미러(AWS) 정상 복귀" if prev else None
+
+
 def main():
     load_env()
     conn = sqlite3.connect(DB_PATH)
@@ -124,6 +165,9 @@ def main():
         conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_collisions',?)", (str(collided),))
     print("[done] %s · 갱신 %d건 · 번호 없음 %d · 번호 충돌 %d · 실패 %s"
           % (now, total, unnumbered, collided, failed or "없음"))
+    msg = alert_on_change(conn, failed, unnumbered, collided)
+    if msg:
+        print("[alert]", "보냄" if _tell_gm(msg) else "못 보냄(TG 키 없음)", "—", msg.splitlines()[0])
     return 1 if failed else 0
 
 
@@ -148,6 +192,12 @@ def selftest():
     replace_scope(conn, "archive", [dict(rows[0], 회원명="다른사람")], "t3")
     assert replace_scope(conn, "valid", rows[:1], "t4") == (1, 0, 0), "다음 동기화에서 valid 가 뒤 scope 의 남은 행을 되찾는다"
     assert conn.execute("SELECT name, scope FROM members WHERE member_no='M00001'").fetchone() == ("홍길동", "valid")
+    # 경보 — 같은 상태는 한 번만, 바뀌면 다시, 정상 복귀는 한 줄
+    assert alert_on_change(conn, [], 0, 0) is None, "처음부터 정상이면 조용"
+    m1 = alert_on_change(conn, ["valid"], 2, 0); assert m1 and "조회 실패" in m1 and "2명" in m1
+    assert alert_on_change(conn, ["valid"], 2, 0) is None, "같은 이상은 반복하지 않는다"
+    assert "충돌 1건" in alert_on_change(conn, ["valid"], 2, 1), "이상 내용이 바뀌면 다시 보낸다"
+    assert "복귀" in alert_on_change(conn, [], 0, 0)
     print("selftest ok")
     return 0
 
