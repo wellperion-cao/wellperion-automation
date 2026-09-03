@@ -11,7 +11,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/api /srv/erp/common'
-$SCP server/erp_api/app.py server/erp_api/members_report.py server/erp_api/sync_inquiries.py server/erp_api/sync_members.py $HOST:/srv/erp/api/
+$SCP server/erp_api/*.py $HOST:/srv/erp/api/     # 도메인 파일(api_*.py · sync_*.py)이 늘어도 목록을 안 고친다
 $SCP server/common/db.py server/common/schema.sql $HOST:/srv/erp/common/      # DB 접속은 common/db.py 하나 (db.env 는 deploy_db.sh 가 만든다)
 $SCP server/erp_api/erp-api.service $HOST:/tmp/erp-api.service
 $SCP server/erp_api/api.nginx.conf $HOST:/tmp/api.conf

@@ -210,3 +210,11 @@ def member(member_no: str):
 
 # 매출회원현황보고 2페이지 집계 라우트(/api/report/…) — 배 943 · 본문은 members_report.py
 from members_report import router as _mr; app.include_router(_mr)  # noqa: E402,E702
+
+# 모듈별 라우터 자동 등록 — 같은 폴더의 api_*.py 에 `router` 가 있으면 붙인다(2026-09-03 시토).
+#   접수·점검·업무 SSOT 처럼 도메인마다 파일 하나씩 두고, 이 파일(app.py)은 손대지 않는다(레인 충돌 방지).
+import glob as _glob, importlib as _il, os as _os  # noqa: E402
+for _f in sorted(_glob.glob(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "api_*.py"))):
+    _m = _il.import_module(_os.path.basename(_f)[:-3])
+    if hasattr(_m, "router"):
+        app.include_router(_m.router)
