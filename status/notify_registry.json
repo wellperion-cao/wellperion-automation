@@ -191,6 +191,21 @@
       "source": "wellperion-agents/scripts/ceo_morning_pipeline.py send_split_reports · 예약작업 Wellperion-CEO-Morning-Brief-0800-Live"
     },
     {
+      "id": "win-0800-upward-reminder",
+      "when": "08:00",
+      "when_sort": "0800b",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": null,
+      "what": "📤 위로 올릴 것 — 회장님께 아직 못 드린 건 + 대표님 결재 대기 건(오래 묵은 순·묵은 날수 표기). 「오늘의 항로」 본문 꼬리에 실린다(별도 통 아님)",
+      "owner": "웰리",
+      "trigger": "schtasks",
+      "state": "live",
+      "state_note": "[신설 2026-09-03 · GM 지시] GM 원문: '업무보고방에 좀 더 회장님 / 경영진분들에게 리마인드할 수 있도록 만들어줄 수 있어?' 실측 — 그 전까지 업무보고방 발신 20종 어디에도 위로 올릴 건을 짚는 것이 없었다(회장님 미보고 6건·대표님 결재 대기 10건). 원장은 그대로 읽는다: coo/chairman/_chairman_items.js ↔ chairman_reported.json / 업무·결재 SSOT 대표싸인 PENDING(rep_approval_relay.fetch_rows 재사용). 서식 검증용 [테스트] 행은 뺀다. 조회가 실패하면 그 축만 빠지고 아침 보고는 그대로 나간다.",
+      "source": "Wellperion-CEO-Morning-Brief-0800-Live · wellperion-agents/scripts/ceo_morning_pipeline.py _build_upward_reminder()"
+    },
+    {
       "id": "win-0845-lseries",
       "when": "08:45",
       "when_sort": "0845",

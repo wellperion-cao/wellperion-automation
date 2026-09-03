@@ -1783,6 +1783,82 @@ def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
 
 # ── 메인 ─────────────────────────────────────────────────────────────────────
 
+_CHAIRMAN_DIR = REPO / "3. 웰페리온 가이드" / "coo" / "chairman"
+_UPWARD_MAX_LINES = 5   # 한 사람당 다섯 줄까지 — 넘치면 「외 N건」
+
+
+def _build_upward_reminder() -> str:
+    """👑 회장님 · 🤵 대표님 — GM 이 아직 올리지 못한 것 (GM 지시 2026-09-03).
+
+    GM 원문: "업무보고방에 좀 더 회장님 / 경영진분들에게 리마인드할 수 있도록 만들어줄 수 있어?"
+
+    무엇이 문제였나: 회장님 말씀 목록도, 대표님 결재 대기도 화면에는 있는데 **아침 통에는
+    한 줄도 안 실렸다**(실측 2026-09-03 — 업무보고방으로 가는 발신 20종에 위로 올릴 건을
+    짚는 것이 없었다). GM 이 회장님·대표님을 뵙는 자리에서 무엇을 올려야 하는지는 GM 이
+    매번 화면을 열어 직접 추려야 했다.
+
+    두 원장을 그대로 읽는다(약속 L01·L21 — 새 원장·새 발신 만들지 않는다):
+      · 회장님 = coo/chairman/_chairman_items.js (목록) ↔ chairman_reported.json (보고한 날)
+      · 대표님 = 업무·결재 SSOT 의 대표싸인 == PENDING (scripts/rep_approval_relay.fetch_rows 재사용)
+    오래 묵은 것부터 세운다 — 그 순서가 곧 GM 이 올릴 순서다. 조회가 실패하면 그 축만
+    빠지고 아침 보고는 그대로 나간다(빈 문자열).
+    """
+    blocks: list[str] = []
+
+    # ── 👑 회장님 — 목록에 있는데 아직 보고 기록이 없는 건
+    try:
+        src = (_CHAIRMAN_DIR / "_chairman_items.js").read_text(encoding="utf-8")
+        ids = re.findall(r'\bid\s*:\s*"([^"]+)"', src)
+        titles = re.findall(r'\btitle\s*:\s*"([^"]+)"', src)
+        reported = json.loads((_CHAIRMAN_DIR / "chairman_reported.json").read_text(encoding="utf-8"))
+        pend = [t for i, t in zip(ids, titles) if i not in reported]
+        if pend:
+            lines = [f"👑 회장님 — 아직 안 드린 것 {len(pend)}건"]
+            for t in pend[:_UPWARD_MAX_LINES]:
+                lines.append(f"▪ {_tg_trim(t, 46)}")
+            if len(pend) > _UPWARD_MAX_LINES:
+                lines.append(f"▪ 외 {len(pend) - _UPWARD_MAX_LINES}건")
+            blocks.append("\n".join(lines))
+    except Exception as exc:  # noqa: BLE001
+        print(f"[upward] 회장님 축 생략: {type(exc).__name__}: {exc}", file=sys.stderr)
+
+    # ── 🤵 대표님 — 결재를 기다리는 건(대표싸인 PENDING). 오래된 순.
+    try:
+        import rep_approval_relay as _rr   # _SCRIPTS_ROOT 가 이미 sys.path 에 있다
+        rows = _rr.fetch_rows() or []
+        pending = [r for r in rows
+                   if str(r.get("대표싸인") or "").strip().upper() == "PENDING"
+                   # 서식 검증용 테스트 행은 GM 이 올릴 건이 아니다(실측 2026-09-03 · 1건 섞여 있었다).
+                   and "[테스트]" not in str(r.get("업무명") or "")]
+        # 오래 묵은 순. 생성일이 빈 행은 언제 올라왔는지 모르므로 맨 뒤로 보낸다
+        # (빈 문자열이 가장 작아 맨 앞을 차지하던 것을 바로잡는다).
+        pending.sort(key=lambda r: (not str(r.get("생성일") or "").strip(),
+                                    str(r.get("생성일") or "")))
+        if pending:
+            lines = [f"🤵 대표님 — 결재 기다리는 것 {len(pending)}건"]
+            today_d = datetime.now().date()
+            for r in pending[:_UPWARD_MAX_LINES]:
+                who = str(r.get("담당자") or "담당 미지정").strip()
+                # 묵은 날수 — GM 화면이라 넣는다(실무진 전달문에는 쓰지 않는 표기다).
+                aged = ""
+                born = str(r.get("생성일") or "")[:10]
+                try:
+                    aged = f" · {(today_d - datetime.strptime(born, '%Y-%m-%d').date()).days}일째"
+                except Exception:  # noqa: BLE001 — 날짜가 없거나 형식이 다르면 날수 없이 낸다
+                    aged = ""
+                lines.append(f"▪ {_tg_trim(str(r.get('업무명') or ''), 36)} — {who}{aged}")
+            if len(pending) > _UPWARD_MAX_LINES:
+                lines.append(f"▪ 외 {len(pending) - _UPWARD_MAX_LINES}건")
+            blocks.append("\n".join(lines))
+    except Exception as exc:  # noqa: BLE001
+        print(f"[upward] 대표님 축 생략: {type(exc).__name__}: {exc}", file=sys.stderr)
+
+    if not blocks:
+        return ""
+    blocks.append("👉 뵙는 자리에서 위에서부터 올리시면 됩니다 — 오래 묵은 순")
+    return "📤 위로 올릴 것\n" + "\n".join(blocks)
+
+
 def _run_gm_autocheck(dry_run: bool) -> str:
     """gm_task_autocheck 를 돌려 푸시 문안만 받아 온다 — 단독 발송 없음.
 
@@ -1877,6 +1953,10 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
     # 실패해도 아침 보고를 막지 않는다. 킬스위치 = status/gm_autocheck.json (false면 스스로 스킵).
     autocheck_body = _run_gm_autocheck(dry_run)
 
+    # 📤 위로 올릴 것 — 회장님·대표님께 아직 못 올린 건 (GM 지시 2026-09-03).
+    # 점검 카드와 같은 자리에 붙인다. 같은 방 한 통을 유지한다(2026-08-29 GM 승인 그대로).
+    upward_body = _build_upward_reminder()
+
     # [2026-07-26 웰리 지시 배10244] 업무보고방/AI 진행현황방 분리 발신 시도.
     # 방 해소·분리 조립 중 무엇이든 실패하면 즉시 폴백 — 기존 단일 발신(통째 1회,
     # 업무보고방)으로 되돌아간다(정보 손실 0). 실무진 방으로는 절대 보내지 않는다.
@@ -1892,18 +1972,20 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
             split_ok = False
 
     plan_path = save_plan(s1, assigned, orch, dry_run)
-    if autocheck_body:
-        # 점검 카드를 업무보고방 본문 꼬리에 — 분리/폴백 어느 경로든 같은 방 한 통이다.
-        if split_ok:
-            office_report = f"{office_report}\n\n{autocheck_body}"
+    if split_ok:
+        # 점검 카드·위로 올릴 것을 업무보고방 본문 꼬리에 — 분리/폴백 어느 경로든 같은 방 한 통이다.
+        for _tail in (upward_body, autocheck_body):
+            if _tail:
+                office_report = f"{office_report}\n\n{_tail}"
     if split_ok:
         sent = send_split_reports(office_report, ai_report, ai_chat_id, dry_run)
         print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 분리(업무보고방+AI진행현황방) "
               f"{'OK' if sent else 'FAIL'}")
     else:
         report = build_telegram_report(s1, assigned, orch)
-        if autocheck_body:
-            report = f"{report}\n\n{autocheck_body}"
+        for _tail in (upward_body, autocheck_body):
+            if _tail:
+                report = f"{report}\n\n{_tail}"
         sent = send_reports(report, question_card, dry_run)
         print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 단일 폴백 "
               f"{'OK' if sent else 'FAIL'}")
