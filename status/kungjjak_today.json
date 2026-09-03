@@ -1161,12 +1161,6 @@
       "work": [
         {
           "time": "18:59",
-          "area": "작업",
-          "event": "GM업무 자료링크 — 저장소 .md 2개를 raw 주소로 (GitHub Pages 밖이라 안 열리던 것)",
-          "detail": "커밋 8cb8f2829 · 배 11169"
-        },
-        {
-          "time": "18:59",
           "area": "큐정리",
           "event": "배913 종결 — 나우열M 호출 건 정리",
           "detail": "디테일 검수 5회차"
@@ -1338,6 +1332,12 @@
           "area": "작업",
           "event": "실무진 카톡 링크를 ERP 새 주소로 — 발신 관문 한 곳에서 치환 (GM 지시 2026-09-03)",
           "detail": "커밋 702db5d11 · 배 11197"
+        },
+        {
+          "time": "22:14",
+          "area": "작업",
+          "event": "모듈 카드 설명 100건 전부 채움 — 사람 설명 사전 신설(경로 우선) + 자동화 등록부는 뒤로",
+          "detail": "커밋 4325bf281 · 배 11197"
         }
       ],
       "count": 96,
@@ -2010,7 +2010,7 @@
           "start": "22:07",
           "end": "22:09",
           "minutes": 2,
-          "upload": "✅ 올림 (6312a8ff2)",
+          "upload": "✅ 올림 (920c15efd)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2022,7 +2022,7 @@
           "start": "22:09",
           "end": "22:09",
           "minutes": 0,
-          "upload": "✅ 올림 (6312a8ff2)",
+          "upload": "✅ 올림 (920c15efd)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2034,30 +2034,12 @@
           "start": "22:09",
           "end": "22:10",
           "minutes": 0,
-          "upload": "✅ 올림 (6312a8ff2)",
+          "upload": "✅ 올림 (920c15efd)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "19:13",
-          "area": "작업",
-          "event": "배922 — 권한 admin·UI/UX·홈페이지 직원 로그인 3레인 입항 기록",
-          "detail": "커밋 0c2366cc2 · 배 11182"
-        },
-        {
-          "time": "19:28",
-          "area": "작업",
-          "event": "권한 기본값 = 핵심 화면만 + 부서 프리셋(운영부·시설부·경영지원·마케팅·전체)",
-          "detail": "커밋 00338701a · 배 11182"
-        },
-        {
-          "time": "20:17",
-          "area": "작업",
-          "event": "계정 = 회사 계정(@wellperion.com)만 — 가입 신청 도메인 제한 + 계정별 기본 부서 프리셋(info@=운영부)",
-          "detail": "커밋 ea1ab83e0 · 배 11182"
-        },
         {
           "time": "20:25",
           "area": "작업",
@@ -2219,6 +2201,24 @@
           "area": "작업",
           "event": "지원부·주차관리부 체계.html 점검 읽기 — ERP 도메인에서 /api/check/{dept}/today·monthly 먼저·실패 시 GAS 폴백·쓰기 뒤 6분은 GAS (배922 레인 S)",
           "detail": "커밋 e34a62851 · 배 11221"
+        },
+        {
+          "time": "22:14",
+          "area": "작업",
+          "event": "쓰기 관문 POST /api/write — write_log 선기록 후 GAS 전달·응답 그대로 반환, membership.html apiPost ERP 도메인 /api/write 우선·GAS 폴백 (배 961)",
+          "detail": "커밋 a06ad9a98 · 배 11221"
+        },
+        {
+          "time": "22:17",
+          "area": "작업",
+          "event": "배 922 종합접수처 서버 이전 결과표 + 시우 회신 배(휴회 done 플래그)",
+          "detail": "커밋 58bc9a446 · 배 11221"
+        },
+        {
+          "time": "22:18",
+          "area": "작업",
+          "event": "공개 접수 폼 쓰기 이중기록 통로 /api/intake/{form} + 전사 GAS·시트 이전 계획 1장 (배 960 레인 U)",
+          "detail": "커밋 124efdaab · 배 11221"
         }
       ],
       "count": 55,
@@ -2707,7 +2707,7 @@
           "start": "22:10",
           "end": "22:11",
           "minutes": 1,
-          "upload": "✅ 올림 (d34c32cdf)",
+          "upload": "✅ 올림 (66336f83c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2719,7 +2719,7 @@
           "start": "22:12",
           "end": "22:12",
           "minutes": 0,
-          "upload": "✅ 올림 (d34c32cdf)",
+          "upload": "✅ 올림 (66336f83c)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -2892,13 +2892,25 @@
           "area": "작업",
           "event": "시모 화면 GAS 주소 단일화 — cmo/_api.js 한 곳 (서버 API 전환 준비 · 배960)",
           "detail": "커밋 d34c32cdf · 배 11199"
+        },
+        {
+          "time": "22:16",
+          "area": "작업",
+          "event": "퍼널 읽기 API 먼저·GAS 폴백 래퍼(wpCmoFetch) — ERP 도메인에서 /api/funnel 우선, 실패 시 종전 GAS (배960 준비 · 시토 _chkRead 동형)",
+          "detail": "커밋 378afd532 · 배 11199"
+        },
+        {
+          "time": "22:17",
+          "area": "작업",
+          "event": "GitHub Pages 루트 절대경로 9곳 → 상대경로 (AWS 도메인에서 404 나던 인쇄옵션·파비콘 · 배935)",
+          "detail": "커밋 66336f83c · 배 11199"
         }
       ],
       "count": 40,
       "done": 40,
       "open": 0,
       "avg_minutes": 0,
-      "work_count": 28,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -3260,7 +3272,7 @@
           "start": "22:04",
           "end": "22:04",
           "minutes": 0,
-          "upload": "✅ 올림 (8bf496cf1)",
+          "upload": "✅ 올림 (82613e41e)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -3272,7 +3284,7 @@
           "start": "22:07",
           "end": "22:08",
           "minutes": 0,
-          "upload": "✅ 올림 (8bf496cf1)",
+          "upload": "✅ 올림 (a621789a5)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -3280,13 +3292,13 @@
           "ref": "GM-20260903-4035",
           "no": "35",
           "got": "지금 시토 961 작업하고 있는데, 확인해서 너도 이어서해줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "22:10",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "22:14",
+          "minutes": 3,
+          "upload": "✅ 올림 (a621789a5)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -3424,28 +3436,13 @@
         }
       ],
       "count": 31,
-      "done": 30,
-      "open": 1,
+      "done": 31,
+      "open": 0,
       "avg_minutes": 1,
       "work_count": 22,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260903-4035",
-          "no": "35",
-          "got": "지금 시토 961 작업하고 있는데, 확인해서 너도 이어서해줘",
-          "did": "",
-          "start": "22:10",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "coo": {
