@@ -41,7 +41,7 @@ except Exception:
 QUEUE_REL   = "status/_queue.json"
 ARCHIVE_REL = "status/_queue_archive.json"
 
-TERMINAL_STATUSES = ("DONE", "완료", "폐기")
+TERMINAL_STATUSES = ("DONE", "MERGED", "완료", "폐기")
 
 
 def _root():
