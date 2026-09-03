@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 ERP 운영 가이드 — AWS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E☁️%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#221F20;--paper:#272422;--paper-raised:#2e2b28;
+  --text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;
+  --accent:#B79F8A;--accent-bright:#c9b49e;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;--border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--green-border:rgba(106,191,123,0.3);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--red-border:rgba(237,91,63,0.3);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--yellow-border:rgba(230,200,78,0.3);
+  --teal:#4ec4c4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;-webkit-font-smoothing:antialiased;}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.header h1{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
+.header .sub{font-size:12px;color:var(--dim-mid);}
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);}
+.content{padding:20px 24px;margin:0;}   /* 좌측 정렬 풀폭 표준 */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;break-inside:avoid;}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:8px;display:flex;align-items:baseline;gap:8px;}
+.card-title .stag{font-size:11.5px;font-weight:400;color:var(--dim-mid);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td:first-child{white-space:nowrap;font-weight:700;}
+code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12px;font-family:"D2Coding",Consolas,monospace;color:var(--accent-bright);white-space:nowrap;}
+a{color:var(--teal);text-decoration:none;}
+a:hover{text-decoration:underline;}
+.st{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;border:1px solid;white-space:nowrap;}
+.done{color:var(--green);background:var(--green-bg);border-color:var(--green-border);}
+.prog{color:var(--yellow);background:var(--yellow-bg);border-color:var(--yellow-border);}
+.todo{color:var(--dim-mid);background:var(--paper-raised);border-color:var(--border);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.foot{font-size:12px;color:var(--dim-mid);padding:6px 0 20px;}
+@media (max-width:900px){.grid2{grid-template-columns:1fr;}}
+@page{size:A3 landscape;margin:10mm;}
+@media print{
+  body{background:#fff;color:#111;font-size:11.5px;}
+  .header{background:#fff;border-bottom:2px solid #333;}
+  .card{background:#fff;border-color:#bbb;page-break-inside:avoid;}
+  .card-title{color:#333;}
+  th{background:#eee;color:#333;} td{border-color:#ddd;}
+  code{background:#f3f3f3;color:#222;border-color:#ccc;}
+  a{color:#036;} .badge{color:#333;border-color:#999;background:#fff;}
+  .done{color:#1a6b2c;} .prog{color:#8a6d00;} .todo{color:#555;background:#f3f3f3;border-color:#bbb;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>웰페리온 ERP 운영 가이드 — AWS</h1>
+  <span class="badge">AI 시토</span>
+  <span class="sub">무엇이 어디서 어떻게 도는가 · 규칙 · 단계 · 교훈 한 장</span>
+</div>
+<div class="content">
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">1. 한눈에 <span class="stag">주소 · 계정 · 비용</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:110px">항목</th><th>값</th></tr>
+    <tr><td>로그인</td><td><a href="https://erp.wellperion.com" target="_blank">https://erp.wellperion.com</a> — 회사 구글 계정 또는 비밀번호</td></tr>
+    <tr><td>앱 셸</td><td><a href="https://erp.wellperion.com/erp/" target="_blank">https://erp.wellperion.com/erp/</a> — 로그인 뒤 첫 화면 · 내 권한의 모듈 카드만 보인다</td></tr>
+    <tr><td>관리자</td><td><a href="https://erp.wellperion.com/auth/admin" target="_blank">https://erp.wellperion.com/auth/admin</a> — 가입 승인 · 계정별 권한(부서 프리셋) · 관리자만</td></tr>
+    <tr><td>계정 규칙</td><td><code>@wellperion.com</code> 만 가입 가능 · 구글 로그인은 회사 계정이면 승인 없이 통과 · 비밀번호 가입은 GM 승인 뒤 로그인 · 5회 실패 시 10분 잠금 · 세션 30일</td></tr>
+    <tr><td>서버 비용</td><td>EC2 t3.small(서울) 약 3만원/월 · PostgreSQL 은 같은 서버 안(0원) · 예산 알람 월 20만원 초과 → 업무보고방 텔레그램 · 신규 크레딧 200 USD(첫 두 달치)</td></tr>
+  </table></div>
+</div>
+<div class="card">
+  <div class="card-title">부서 프리셋 <span class="stag">관리자가 한 번 누르면 그 부서가 보는 화면 묶음 · 정본 = kpi.json 실무진 배치</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th>프리셋</th><th>포함 그룹</th><th style="width:70px">화면 수</th><th>누가</th></tr>
+    <tr><td>운영부</td><td>핵심 · 시포 · 시우</td><td>50</td><td>실장 · 운영부 매니저 · 리셉션 공용(info@) 기본값</td></tr>
+    <tr><td>시설부</td><td>핵심 · 시토</td><td>7</td><td>소장 · 시설 3인</td></tr>
+    <tr><td>경영지원</td><td>핵심 · 시로 · 시뽀 · 시우</td><td>68</td><td>경영지원 매니저(인사·재무·운영)</td></tr>
+    <tr><td>마케팅</td><td>핵심 · 시모 · 시보</td><td>17</td><td>마케팅 담당</td></tr>
+    <tr><td>전체</td><td>10개 그룹 전부</td><td>95</td><td>GM · 관리자</td></tr>
+  </table></div>
+  <div class="foot" style="padding-bottom:0">핵심 = 회원·문의·점검 3화면(모든 프리셋 공통) · 프리셋 없는 신규 계정은 핵심만 · 화면 수는 modules.json 자동 생성분(2026-09-03)</div>
+</div>
+</div>
+
+<div class="card">
+  <div class="card-title">2. 무엇이 어디서 도나 <span class="stag">층별 · 담당 · 코드 위치 · 확인 한 줄(서버 명령은 <code>ssh -i ~/.aws/wellperion-sito.pem ec2-user@15.164.151.105</code> 안에서)</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:110px">층</th><th>무엇</th><th style="width:90px">담당</th><th>코드 위치</th><th>확인 명령</th></tr>
+    <tr><td>화면</td><td>HTML·JS 정적 파일. GitHub 저장소를 서버가 5분마다 당겨 <code>/srv/erp/www</code> 로 그대로 서빙 — 커밋·푸시가 곧 배포</td><td>화면 주인 C-Level</td><td><code>3. 웰페리온 가이드/{role}/**.html</code> · 서버 <code>/srv/erp/repo</code></td><td><code>cd /srv/erp/repo &amp;&amp; git log -1 --format=%h</code> = 내 최신 커밋</td></tr>
+    <tr><td>로그인 관문</td><td>파이썬 FastAPI <code>:8000</code>. nginx 가 모든 요청을 <code>/auth/check</code> 에 먼저 물어 쿠키 없으면 페이지를 안 준다(401→로그인, 403→권한 없음). 권한 판정은 <code>allowed()</code> 한 곳</td><td>시토</td><td><code>server/erp_auth/app.py</code> · <code>erp.nginx.conf</code> · <code>erp-auth.service</code></td><td><code>systemctl is-active erp-auth</code> → active</td></tr>
+    <tr><td>데이터 API</td><td>FastAPI <code>:8001</code>. <code>/api/inquiries</code> · <code>/api/members</code> · <code>/api/health</code> — 구글 시트를 5분마다 떠 온 <strong>읽기 전용 거울</strong>(문의 2,540 · 회원 1,746). 응답마다 <code>_source=sheet-mirror</code></td><td>시토(배치) · 시포(정의)</td><td><code>server/erp_api/</code> · cron <code>/etc/cron.d/erp-api-sync</code></td><td><code>curl -s http://127.0.0.1:8001/api/health</code> → ok:true · last_sync 15분 안</td></tr>
+    <tr><td>DB</td><td>PostgreSQL(같은 서버 안). 코드 전체가 <code>common/db.py</code> 하나로만 열고 주소는 <code>ERP_DB_URL</code>(서버 <code>/srv/erp/db.env</code>). 모든 표에 <code>tenant_id</code> 칸(지금 값 wellperion). 매일 03:00 <code>pg_dump</code> → S3 30일 보관</td><td>시토</td><td><code>server/common/db.py</code> · <code>schema.sql</code> · <code>deploy_db.sh</code></td><td><code>cat /srv/erp/db.env</code> 에 URL 한 줄 · <code>ls /srv/erp/*.bak</code> = 옛 SQLite 봉인</td></tr>
+    <tr><td>시트 · GAS</td><td>구글 시트 = 실무진이 보는 사본(보고·인쇄). GAS = <strong>과도기 쓰기 창구</strong> — 서버 API 쓰기 이전(③) 전까지 화면 저장은 GAS 로, 저장 뒤 6분은 거울 대신 GAS 를 읽는다</td><td>화면 주인 C-Level</td><td>GAS 프로젝트(cao@ · info@ 두 계정에 흩어짐)</td><td>화면에서 저장 → 6분 뒤 <code>/api/…</code> 에 보이면 정상</td></tr>
+    <tr><td>예약작업</td><td><strong>아직 GM PC</strong> 작업 스케줄러 32개(22:30 PC 종료에 묶임). 서버 이전은 ④단계</td><td>시토</td><td><code>wellperion-agents/scripts/</code> · <code>scripts/</code></td><td>PC <code>Get-ScheduledTask | ? TaskName -like 'Wellperion*'</code></td></tr>
+    <tr><td>카톡 발신</td><td><strong>GM PC 카카오톡 데스크톱 앱</strong>에만 붙는다 — 서버로 못 옮김(별도 과제). 매출보고·실무진 방 발신 전부 여기</td><td>시토</td><td><code>scripts/kakao_report_sender.py</code> · <code>cto/automation/카톡전송관리.html</code></td><td><a href="automation/카톡전송관리.html" target="_blank">카톡전송관리</a> 최근 발신 로그</td></tr>
+  </table></div>
+</div>
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">3. 개발 언어 · 틀 <span class="stag">왜 그대로 가나</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:130px">무엇</th><th>어디에</th><th>왜 그대로</th></tr>
+    <tr><td>파이썬</td><td>관문 · API · 동기화 · 배포 · 예약작업 · 브라우저 자동화(Playwright) · AWS(boto3)</td><td>저장소 자동화 전부가 이미 파이썬 — 한 언어면 한 사람이 다 본다</td></tr>
+    <tr><td>HTML · JS 바닐라</td><td>화면 95개 전부. 규칙 하나 = "ERP 도메인이면 서버 API, 아니면 GAS"</td><td>프레임워크를 들이면 95개 화면을 다시 짜야 한다</td></tr>
+    <tr><td>PostgreSQL</td><td>계정 · 문의 · 회원 · 앞으로 모든 업무 표</td><td>SQLite 로 더 쌓이면 문법·동시쓰기를 전부 다시 손본다. RDS 이전은 URL 한 줄</td></tr>
+    <tr><td>GAS(과도기)</td><td>시트 쓰기 · 실무진 사본</td><td>③단계에서 서버 API 가 유일한 쓰기 창구가 되면 시트는 서버가 되밀어 주는 사본이 된다</td></tr>
+    <tr><td>nginx · systemd · cron</td><td>서빙 · 서비스 기동 · 5분 동기화 · 03:00 백업</td><td>서버 설정도 전부 저장소 코드(<code>server/</code>·<code>scripts/aws_bootstrap.py</code>) — 다시 세울 때 손으로 안 되짚는다</td></tr>
+  </table></div>
+</div>
+<div class="card">
+  <div class="card-title">4. 운영 규칙 <span class="stag">되돌리기까지</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:130px">규칙</th><th>어떻게</th><th>되돌리기</th></tr>
+    <tr><td>디자인 변경</td><td>시안 → GM 승인 → 적용. 승인 없이 톤·배치를 바꾸지 않는다</td><td>이전 커밋으로 화면 파일만 되돌린다</td></tr>
+    <tr><td>화면 배포</td><td>GitHub 커밋·푸시 = 배포(5분 안 반영). 서버에서 파일을 직접 고치지 않는다</td><td><code>git revert</code> 한 번 → 5분 뒤 서버 반영</td></tr>
+    <tr><td>서버 코드</td><td><code>bash server/deploy_db.sh</code> → <code>deploy_auth.sh</code> → <code>deploy_api.sh</code> 로만 올린다. ssh 로 손 편집 금지</td><td>이전 커밋 checkout 뒤 같은 deploy 스크립트 재실행</td></tr>
+    <tr><td>비밀값</td><td>서버 <code>/srv/erp/*.env</code> 에만(JWT 키 · 구글 시크릿 · DB 주소 · 봇 토큰). 저장소·채팅·로그에 적지 않는다</td><td>키 교체 = env 한 줄 갱신 + 서비스 재기동</td></tr>
+    <tr><td>새 화면</td><td><code>{role}/</code> 아래 <code>&lt;title&gt;</code> 있는 .html 이면 커밋 때 <code>modules.json</code> 에 자동 등록(손 목록 없음). title 없으면 안 보인다</td><td>파일 삭제 → 다음 커밋에서 자동 제거</td></tr>
+    <tr><td>권한</td><td>권한 밖 화면은 카드 자체를 안 보인다. 부서 프리셋 → 계정별 허용/거부 순으로 관리자 화면에서만 바꾼다</td><td>같은 화면에서 프리셋 다시 누름</td></tr>
+    <tr><td>DB</td><td>열쇠 = 회원번호(M번호) · 문의 = 유형|rowKey. 시트 행번호로 지우지 않는다</td><td>S3 의 전날 <code>pg_dump</code> 복원</td></tr>
+    <tr><td>홈페이지</td><td>워드프레스는 AWS 로 옮기지 않는다(자료 회수용) · 시모 새 홈(정적)이 wellperion.com</td><td>cafe24 A 레코드 원래 IP 로(해지 전까지)</td></tr>
+  </table></div>
+</div>
+</div>
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">5. 단계 로드맵 <span class="stag">정본 방향 = 배101 · 멀티테넌트 SaaS ERP</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:150px">단계</th><th style="width:70px">상태</th><th>완료 조건</th></tr>
+    <tr><td>⓪ 미러</td><td><span class="st done">완료</span></td><td>ERP 전 페이지가 서버에서 바이트 일치로 열림 · 5분 동기화 가동</td></tr>
+    <tr><td>① 로그인 관문</td><td><span class="st done">완료</span></td><td>HTTPS 자물쇠 · 회사 구글 로그인 · 비밀번호 가입→승인 · 잠금 · 계정별 권한 · 부서 프리셋 5종</td></tr>
+    <tr><td>② 모듈 앱화</td><td><span class="st done">완료</span></td><td>화면 93건 자동 등록 · 앱 셸 카드 · 권한 밖 비표시 · 홈페이지 직원 로그인 버튼</td></tr>
+    <tr><td>③ 시트→서버 쓰기 이전</td><td><span class="st prog">진행</span></td><td>읽기 거울(문의·회원) 완료 · PostgreSQL 전환 중 · 문의부터 서버 API 가 유일한 쓰기 창구가 되고 시트는 서버가 되밀어 주는 사본이 되면 완료</td></tr>
+    <tr><td>④ 예약작업 이전</td><td><span class="st todo">예정</span></td><td>카톡 발신 제외 32개 → 서버 cron · GM PC 2주 병행 뒤 무인 3일 무결</td></tr>
+    <tr><td>⑤ 멀티테넌트</td><td><span class="st todo">예정</span></td><td>tenant_id 는 이미 전 표에 있음 · 2호 테넌트 계정·화면 분리 확인 · RDS 이전은 트래픽 늘 때 GM 결재</td></tr>
+  </table></div>
+</div>
+<div class="card">
+  <div class="card-title">6. 사고 · 교훈 <span class="stag">2026-09-03</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:150px">사고</th><th>무슨 일</th><th>재발 차단</th></tr>
+    <tr><td>저장창 잠금 <span class="st done">INC-051</span></td><td>카톡 내보내기가 남긴 '다른 이름으로 저장' 창이 카카오톡 전체를 잠가 발신까지 죽었는데 종료코드 0 이라 아무도 몰랐다</td><td>내보내기 시작·실패 두 자리에서 남은 저장 창을 닫는다(<code>kakao_export_chat.py</code>)</td></tr>
+    <tr><td>배포가 자물쇠 끊음</td><td><code>deploy_auth.sh</code> 의 인증서 존재 판정이 권한 문제로 항상 거짓 → nginx 설정을 덮어 443 이 잠시 끊겼다</td><td>판정을 <code>sudo test</code> 로 고침 · 인증서 있으면 nginx 설정을 덮지 않는다</td></tr>
+    <tr><td>시안 없이 디자인 변경</td><td>앱 셸을 새 톤으로 바꿔 올렸다가 GM 지시로 기존 ERP 톤으로 되돌렸다</td><td>규칙 4 첫 줄 — 디자인 변경은 시안 → GM 승인 → 적용</td></tr>
+  </table></div>
+</div>
+</div>
+
+<div class="card">
+  <div class="card-title">7. 정본 <span class="stag">이 장이 틀리면 아래가 맞다</span></div>
+  <div class="tbl-wrap"><table>
+    <tr><th style="width:150px">무엇</th><th>경로</th></tr>
+    <tr><td>장기 구조 결정 10항</td><td><code>docs/superpowers/specs/2026-09-03-erp-aws-long-term-decisions.md</code></td></tr>
+    <tr><td>AWS 착수 설계</td><td><code>docs/superpowers/specs/2026-08-31-aws-infra-kickoff-design.md</code> · 실행 <code>scripts/aws_bootstrap.py</code></td></tr>
+    <tr><td>워드프레스 이전 절차서</td><td><code>docs/superpowers/specs/2026-09-03-wordpress-aws-migration.md</code>(이전 안 함으로 결정 · 절차는 보관)</td></tr>
+    <tr><td>서버 코드 · 배포</td><td><code>server/erp_auth/</code> · <code>server/erp_api/</code> · <code>server/common/</code> · <code>server/deploy_*.sh</code></td></tr>
+    <tr><td>모듈 자동 등록</td><td><code>scripts/erp_modules_build.py</code> → <code>3. 웰페리온 가이드/erp/modules.json</code></td></tr>
+    <tr><td>진행 기록</td><td><code>status/_queue.json</code> 배 909(AWS 계정·서버) · 922(ERP 이전) · 931(회원 거울)</td></tr>
+  </table></div>
+</div>
+<div class="foot">작성 AI 시토 · 갱신 2026-09-03</div>
+</div>
+</body>
+</html>
