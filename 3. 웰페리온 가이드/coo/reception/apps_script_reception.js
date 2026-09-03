@@ -2857,6 +2857,19 @@ function _vProcess(action, body, params) {
 
   // ── 진단 액션 ──
   if (action === 'diag') return _vDiag();
+  // [2026-09-03 시토] 사진 저장 권한 진단(읽기 전용) — 웹앱이 어느 계정으로 도는지 · 폴더 속성 · DriveApp 원문 오류
+  if (action === 'diag_drive') {
+    var _d = { ok: true, effectiveUser: '', folderProp: '', parentProp: '', driveErr: '' };
+    try { _d.effectiveUser = Session.getEffectiveUser().getEmail(); } catch (e) { _d.effectiveUser = 'ERR ' + e; }
+    try {
+      var _pp = PropertiesService.getScriptProperties();
+      _d.folderProp = String(_pp.getProperty('RECEPTION_PHOTO_FOLDER') || _pp.getProperty('VOC_PHOTO_FOLDER') || '');
+      _d.parentProp = String(_pp.getProperty('RECEPTION_DRIVE_PARENT') || '');
+    } catch (e) { _d.driveErr = 'props ' + e; }
+    try { var _f = _drvFolder_('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER', 'RECEPTION_Photos'); _d.folderName = _f.getName(); _d.folderId = _f.getId(); }
+    catch (e) { _d.ok = false; _d.driveErr = String(e && e.message || e); }
+    return _vJson(_d);
+  }
   // 읽기전용: 전 시트 헤더행 덤프(카테고리별 컬럼 정합 점검용·1회성). 2026-07-08 시우.
   if (action === 'dump_headers') {
     var _dss = SpreadsheetApp.openById(_vprop('SPREADSHEET_ID'));
