@@ -66,7 +66,7 @@ def _phone(v):
 
 
 def replace_scope(conn, scope, rows, now):
-    """한 scope 를 통째로 갈아끼운다. 반환 = (넣은 건수, 회원번호 없어 뺀 건수)."""
+    """한 scope 를 통째로 갈아끼운다. 반환 = (넣은 건수, 회원번호 없어 뺀 건수, 번호 충돌로 뺀 건수)."""
     recs, unnumbered = [], 0
     for r in rows:
         n = _norm_row(r)
@@ -81,13 +81,23 @@ def replace_scope(conn, scope, rows, now):
             get("end_date"), get("loss_date"), get("remain_days"), get("owner"),
             json.dumps(r, ensure_ascii=False), now,
         ))
+    # 같은 회원번호가 다른 scope 에도 있으면(등기부 번호 충돌 — 실측 2026-09-03 M01151·M01106 은
+    # 유효회원과 LOSS보관의 서로 다른 사람) SCOPES 앞쪽(valid 우선)이 이기고 뒤쪽은 건수만 센다.
+    # 무조건 OR REPLACE 로 덮으면 유효회원이 조용히 사라진다.
+    prio = {s: i for i, s in enumerate(SCOPES)}
+    collided = 0
     with conn:
         conn.execute("DELETE FROM members WHERE scope=?", (scope,))
-        conn.executemany(
-            "INSERT OR REPLACE INTO members (member_no,scope,name,phone,kind,kind2,program,"
-            "reg_class,reg_seq,reg_date,start_date,end_date,loss_date,remain_days,owner,data,synced_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", recs)
-    return len(recs), unnumbered
+        for rec in recs:
+            ex = conn.execute("SELECT scope FROM members WHERE member_no=?", (rec[0],)).fetchone()
+            if ex and prio.get(ex[0], 99) < prio.get(scope, 99):
+                collided += 1
+                continue
+            conn.execute(
+                "INSERT OR REPLACE INTO members (member_no,scope,name,phone,kind,kind2,program,"
+                "reg_class,reg_seq,reg_date,start_date,end_date,loss_date,remain_days,owner,data,synced_at)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rec)
+    return len(recs) - collided, unnumbered, collided
 
 
 def main():
@@ -95,22 +105,25 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     conn.executescript(SCHEMA)
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600))
-    total, unnumbered, failed = 0, 0, []
+    total, unnumbered, collided, failed = 0, 0, 0, []
     for scope in SCOPES:
         data = gas_get("member_active_list", {"scope": scope}, timeout=90)
         rows = (data or {}).get("data")
         if not isinstance(rows, list) or not rows:
             failed.append(scope)  # 실패 — 기존 미러 유지(빈 값으로 덮지 않음)
             continue
-        n, u = replace_scope(conn, scope, rows, now)
+        n, u, c = replace_scope(conn, scope, rows, now)
         total += n
         unnumbered += u
-        print("[ok] %s %d건 (번호 없음 %d)" % (scope, n, u))
+        collided += c
+        print("[ok] %s %d건 (번호 없음 %d · 번호 충돌 %d)" % (scope, n, u, c))
     with conn:
         conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_last_sync',?)", (now,))
         conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_last_failed',?)", (",".join(failed),))
         conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_unnumbered',?)", (str(unnumbered),))
-    print("[done] %s · 갱신 %d건 · 번호 없음 %d · 실패 %s" % (now, total, unnumbered, failed or "없음"))
+        conn.execute("INSERT OR REPLACE INTO sync_meta VALUES ('members_collisions',?)", (str(collided),))
+    print("[done] %s · 갱신 %d건 · 번호 없음 %d · 번호 충돌 %d · 실패 %s"
+          % (now, total, unnumbered, collided, failed or "없음"))
     return 1 if failed else 0
 
 
@@ -122,13 +135,19 @@ def selftest():
         {"회원번호": "M00002", "회원명": "김철수", "휴대폰 번호": "01098765432"},
         {"회원명": "번호없음", "휴대폰 번호": "010-0000-0000"},
     ]
-    assert replace_scope(conn, "valid", rows, "t0") == (2, 1), "회원번호 없는 행은 빼고 센다"
+    assert replace_scope(conn, "valid", rows, "t0") == (2, 1, 0), "회원번호 없는 행은 빼고 센다"
     assert conn.execute("SELECT phone FROM members WHERE member_no='M00001'").fetchone()[0] == "01012345678"
     assert conn.execute("SELECT reg_date FROM members WHERE member_no='M00001'").fetchone()[0] == "2026-01-01", \
         "줄바꿈 섞인 머리글도 같은 칸으로 읽는다"
-    assert replace_scope(conn, "valid", rows[:1], "t1") == (1, 0), "같은 scope 는 통째로 교체"
+    assert replace_scope(conn, "valid", rows[:1], "t1") == (1, 0, 0), "같은 scope 는 통째로 교체"
     replace_scope(conn, "corp", rows[1:2], "t1")
     assert conn.execute("SELECT COUNT(*) FROM members").fetchone()[0] == 2, "다른 scope 가 남의 scope 를 지우면 안 된다"
+    assert replace_scope(conn, "archive", [dict(rows[0], 회원명="다른사람")], "t2") == (0, 0, 1), "번호 충돌은 valid 가 이긴다"
+    assert conn.execute("SELECT name, scope FROM members WHERE member_no='M00001'").fetchone() == ("홍길동", "valid")
+    conn.execute("DELETE FROM members WHERE scope='valid'")
+    replace_scope(conn, "archive", [dict(rows[0], 회원명="다른사람")], "t3")
+    assert replace_scope(conn, "valid", rows[:1], "t4") == (1, 0, 0), "다음 동기화에서 valid 가 뒤 scope 의 남은 행을 되찾는다"
+    assert conn.execute("SELECT name, scope FROM members WHERE member_no='M00001'").fetchone() == ("홍길동", "valid")
     print("selftest ok")
     return 0
 

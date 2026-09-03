@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 웰페리온 문의 미러 API 배포 — 이 PC(git-bash)에서 실행. 서버 = AWS 15.164.151.105.
 #   bash server/deploy_api.sh
-# 하는 일: app.py·sync_inquiries.py·systemd 유닛·nginx location·cron 을 올리고 기동한다.
+# 하는 일: app.py·sync_inquiries.py·sync_members.py·systemd 유닛·nginx location·cron 을 올리고 기동한다.
 # api.env(원천 URL)는 처음 한 번만 만들고 다시 덮지 않는다. erp-auth·erp.conf 는 건드리지 않는다.
 set -euo pipefail
 HOST=ec2-user@15.164.151.105
@@ -11,7 +11,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/api'
-$SCP server/erp_api/app.py server/erp_api/sync_inquiries.py $HOST:/srv/erp/api/
+$SCP server/erp_api/app.py server/erp_api/sync_inquiries.py server/erp_api/sync_members.py $HOST:/srv/erp/api/
 $SCP server/erp_api/erp-api.service $HOST:/tmp/erp-api.service
 $SCP server/erp_api/api.nginx.conf $HOST:/tmp/api.conf
 
@@ -27,7 +27,9 @@ fi
 $S 'sudo mkdir -p /etc/nginx/conf.d/erp-locations \
     && sudo mv /tmp/api.conf /etc/nginx/conf.d/erp-locations/api.conf \
     && sudo mv /tmp/erp-api.service /etc/systemd/system/erp-api.service \
-    && echo "*/5 * * * * ec2-user /usr/bin/python3 /srv/erp/api/sync_inquiries.py >> /srv/erp/sync_inquiries.log 2>&1" \
+    && printf "%s\n" \
+         "*/5 * * * * ec2-user /usr/bin/python3 /srv/erp/api/sync_inquiries.py >> /srv/erp/sync_inquiries.log 2>&1" \
+         "*/5 * * * * ec2-user /usr/bin/python3 /srv/erp/api/sync_members.py >> /srv/erp/sync_members.log 2>&1" \
        | sudo tee /etc/cron.d/erp-api-sync >/dev/null \
     && sudo systemctl daemon-reload && sudo systemctl enable --now erp-api >/dev/null && sudo systemctl restart erp-api \
     && sleep 2 && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx \
