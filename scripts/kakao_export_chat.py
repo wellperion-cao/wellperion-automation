@@ -24,10 +24,11 @@ import argparse
 import json
 import io
 import os
+import re
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, date as _date
 from pathlib import Path
 
 try:
@@ -53,6 +54,27 @@ ROOM_DIR_NAME = {"★ 운영부": "★운영부", "★ 중간관리자": "★중
 
 def log(msg: str) -> None:
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+
+_KAKAO_DATE_RE = re.compile(r"(\d{4})년 (\d{1,2})월 (\d{1,2})일")
+
+
+def _warn_if_stale(path: Path, stale_days: int = 7) -> None:
+    """내보내기 파일의 마지막 날짜 헤더를 확인 — 7일 이상 오래됐으면 STALE_EXPORT 출력.
+    자가점검 #9가 이 신호로 내보내기 결과를 신뢰할지 판단한다(2026-09-04 배926 ③)."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        hits = _KAKAO_DATE_RE.findall(text)
+        if not hits:
+            return
+        y, m, d = hits[-1]
+        last_dt = _date(int(y), int(m), int(d))
+        age = (_date.today() - last_dt).days
+        if age > stale_days:
+            log(f"[export] STALE: 마지막 메시지 {last_dt}({age}일 전) — 최신 구간 누락 가능")
+            print(f"STALE_EXPORT: last_date={last_dt} age_days={age} file={path.name}")
+    except Exception:
+        pass
 
 
 def ensure_kakao_foreground(wait: float = 5.0) -> None:
@@ -218,6 +240,8 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     ok = out_path.exists() and out_path.stat().st_size > 0
     size = out_path.stat().st_size if out_path.exists() else 0
     log(f"[export] {'성공' if ok else '실패'} — {out_path} ({size:,} bytes)")
+    if ok:
+        _warn_if_stale(out_path)
     return ok
 
 

@@ -92,13 +92,28 @@ _SLA_HOURS: dict[str, int | None] = {
 }
 
 
+_ROWS_CACHE_PATH = SCRIPTS_DIR.parent / "status" / "reception_rows_cache.json"
+
+
 def _fetch_rows() -> list[dict] | None:
-    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="stream2b-reception")
-    if resp is None:
-        return None
+    """reg_list 조회 — 22:45 저녁 통 등에서 GAS가 타임아웃/쿼터로 3회 재시도 뒤에도
+    무응답이면(2026-09-04 배926 ①), '조회 실패'로 비우는 대신 직전 성공값 캐시로
+    폴백한다. 캐시조차 없으면(최초 실행 등) 여전히 None."""
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=30, label="stream2b-reception")
+    if resp is not None:
+        try:
+            data = resp.json()
+            if data.get("ok"):
+                rows = data.get("data", [])
+                try:
+                    _ROWS_CACHE_PATH.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+                except Exception as e:
+                    print(f"[stream2b] rows 캐시 쓰기 실패: {e}", file=sys.stderr)
+                return rows
+        except Exception:
+            pass
     try:
-        data = resp.json()
-        return data.get("data", []) if data.get("ok") else None
+        return json.loads(_ROWS_CACHE_PATH.read_text(encoding="utf-8"))
     except Exception:
         return None
 

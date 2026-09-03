@@ -53,6 +53,9 @@ except Exception:
 # 반복 미완료 누적 원장(지원부 v1) — daily_scheduler가 23시에 적재. status/check_incomplete_ledger.json.
 CHECK_INCOMPLETE_LEDGER = Path(_scr_dir).parent / "status" / "check_incomplete_ledger.json"
 
+# 주차부 마지막 제출일 캐시 — weekly 액션은 이번 주만 반환해 과거 주 제출을 못 찾는다(2026-09-04 배926 ②).
+_PARKING_LAST_DONE_CACHE = Path(_scr_dir).parent / "status" / "parking_last_done_cache.json"
+
 # 점검 GAS(CHECK_API) — daily_scheduler.py·kakao_daily_check_share.py와 동일 배포 URL(단일 소스)
 DEFAULT_GAS_URL = (
     "https://script.google.com/macros/s/"
@@ -715,6 +718,18 @@ def build_parking_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[
             if isinstance(t, (int, float)) and t and str(row.get("date")) < today:
                 last_done = str(row.get("date"))
                 break
+    # weekly는 이번 주만 반환해 과거 제출이 안 보인다 — 찾으면 캐시에 기록, 없으면 캐시 폴백(배926 ②).
+    if last_done:
+        try:
+            _PARKING_LAST_DONE_CACHE.write_text(
+                json.dumps({"last_done": last_done}, ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+    else:
+        try:
+            last_done = json.loads(_PARKING_LAST_DONE_CACHE.read_text(encoding="utf-8")).get("last_done", "")
+        except Exception:
+            pass
     tail = f" (마지막 제출 {last_done[5:].replace('-', '/')})" if last_done else " (최근 제출 기록 없음)"
     return ([f"🅿 주차부: 오늘 일일점검 제출 없음{tail} — "
              "https://wellperion-cao.github.io/wellperion-automation/coo/check/주차관리부 체계.html#check"], filled)
