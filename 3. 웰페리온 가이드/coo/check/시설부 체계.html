@@ -1275,6 +1275,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
 const ONLINE = API_URL.length > 0;
+/* ★점검 읽기 원천 전환(배 922 · 2026-09-03 시토). ERP 도메인(erp.wellperion.com)에서만 서버 미러 /api/check/… 를 먼저 부르고,
+   실패(미로그인·미러에 없는 날짜=404·서버 다운)하면 종전 GAS 로 조용히 돌아간다(console 한 줄). GitHub Pages 에선 ERP_API_ON 이
+   false 라 아래 경로가 전부 종전 그대로다. 쓰기(saveBoard·측정 저장·알림)는 계속 GAS.
+   미러 = sync_check.py 가 5분마다 board 응답을 그대로 떠온 것이라 응답 모양({ok,key,board})이 GAS 와 같다.
+   이 브라우저에서 방금 저장했으면(6분 안) 미러가 아직 모른다 — 그동안만 GAS. */
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function fcStampWrite(){ try{ localStorage.setItem('fc_wrote_at', String(Date.now())); }catch(e){} }
+function _chkRead(apiPath, gasQuery, tag){
+  var gas=function(){ return fetch(API_URL+gasQuery,{redirect:'follow'}).then(function(r){ return r.json(); }); };
+  if(!ERP_API_ON) return gas();
+  try{ if(Date.now()-Number(localStorage.getItem('fc_wrote_at')||0) < 6*60*1000) return gas(); }catch(e){}
+  return fetch(apiPath).then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+    .catch(function(e){ console.warn('['+tag+'] API 실패 → GAS 폴백:', e&&e.message); return gas(); });
+}
 const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/gviz/tq?tqx=out:csv&sheet=%EC%A0%90%EA%B2%80%EC%9E%90';
 
 /* ── 부서 격리 (2026-06-05 GM) ──
@@ -3676,6 +3690,7 @@ function vendorSubmitAddForm(){
     if(!fcStore.roundStart)fcStore.roundStart={};
     if(!fcStore.roundDur)fcStore.roundDur={};
     if(!fcStore.submissions)fcStore.submissions=[];
+    fcStampWrite();
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).catch(function(){});
   }
   // 항목 done/measure 산정 — fields 중 값이 하나라도 있으면 done. measure=입력칸 JSON.
@@ -3891,6 +3906,7 @@ function vendorSubmitAddForm(){
     if(fcViewing!==null) return;                 // 읽기전용 조회 중엔 저장 안 함
     var date=val('fcDate'); if(!date) return;
     captureRound(); captureDaily();               // 기계실 가동값(daily) 포함 최신 DOM 값을 fcStore에 반영
+    fcStampWrite();
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:inspectorName(),store:fcStore}})}).catch(function(){});
     if(!(nowHHMM() >= '12:00')) return;          // 정오 이전엔 점검일지 시트 자동 저장 안 함(수동 제출만·기존 그대로)
@@ -3920,6 +3936,7 @@ function vendorSubmitAddForm(){
     if(!fcStore.roundDur)fcStore.roundDur={};
     var posts=[];
     // 1) 원본 측정값 전량 보존(saveBoard) — store 통째로 raw blob 저장(재로드용)
+    fcStampWrite();
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).then(function(r){return r.json();}));
     // 2) 전 항목(구 시간대별 15 + 1일1회 11 = 26) 한 번에 → save_facility_measure 1건, round는 항상 '1일' 고정(GM 2026-07-08 회차 통합).
     //    durMin/startHHMM/endHHMM = 하루 1개 타이머(⏱점검 시작/종료) 값을 함께 전송(소요시간 파이프 연결).
@@ -3961,8 +3978,8 @@ function vendorSubmitAddForm(){
     if(!document.querySelector('#fc-body [id^=fc_]')) fcRender();
     fcFillRounds();
     var st=document.getElementById('fcStatus'); if(st)st.textContent='불러오는 중...';
-    fetch(API_URL+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date),{redirect:'follow'})
-      .then(function(r){return r.json();}).then(function(j){
+    _chkRead('/api/check/facility/today?date='+encodeURIComponent(date), '?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+date), '시설점검')
+      .then(function(j){
         var b=(j&&j.board)||{};
         // store 구조(신) 우선 — 회차별 복원. roundTimes(B안 자동시각)도 복원. 구 blob(vals 평면)도 graceful 무시(데이터 없음 취급).
         fcStore=(b.store&&typeof b.store==='object')?{rounds:b.store.rounds||{},daily:b.store.daily||{},inspector:b.inspector||b.store.inspector||'',roundTimes:b.store.roundTimes||{},roundStart:b.store.roundStart||{},roundDur:b.store.roundDur||{},submissions:(Array.isArray(b.store.submissions)?b.store.submissions:[]),reasons:b.store.reasons||{}}:{rounds:{},daily:{},inspector:b.inspector||'',roundTimes:{},roundStart:{},roundDur:{},submissions:[],reasons:{}};
@@ -4092,8 +4109,7 @@ function fmEnsureMonthInput(){
   return el;
 }
 async function fetchFacilityMonthlyReport(month){
-  const r=await fetch(API_URL+'?action=monthly_report&dept='+FM_DEPT+'&month='+encodeURIComponent(month),{redirect:'follow'});
-  const j=await r.json();
+  const j=await _chkRead('/api/check/'+FM_DEPT+'/monthly?month='+encodeURIComponent(month), '?action=monthly_report&dept='+FM_DEPT+'&month='+encodeURIComponent(month), '시설월간');
   if(!j || j.ok===false) throw new Error('monthly_report(facility) 응답 오류');
   return j;
 }
