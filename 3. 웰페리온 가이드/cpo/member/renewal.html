@@ -237,6 +237,19 @@ function repaint(){const a=document.querySelector('.tab.active');if(a)select(a.t
 // 그대로 미러링한 것 — 둘 중 하나를 고치면 반드시 다른 쪽도 맞춰야 한다.
 // ══════════════════════════════════════════════════════════════════════════
 const RENEWAL_FUNNEL_URL='https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+// ★ERP 도메인에선 서버 미러(/api/members)를 먼저 읽는다(2026-09-03 시포 · 배942 와 같은 규칙). 실패하면 GAS 폴백.
+//   응답 모양은 member_active_list(객체형)와 같게 맞춘다 — 아래 판정 코드는 그대로.
+const ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function rtMemberList(scope){
+  const gas=()=>fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope='+scope).then(r=>r.json());
+  if(!ERP_API_ON)return gas();
+  let rows=[];
+  const page=cursor=>fetch('/api/members?scope='+scope+'&limit=1000'+(cursor?'&cursor='+encodeURIComponent(cursor):''))
+    .then(r=>{if(!r.ok)throw new Error('api '+r.status);return r.json();})
+    .then(d=>{rows=rows.concat(d.rows||[]);return d.next_cursor?page(d.next_cursor):rows;});
+  return page(null).then(all=>({ok:true,scope,data:all,count:all.length,_source:'sheet-mirror'}))
+    .catch(e=>{console.warn('[재등록] API 실패 → GAS 폴백:',e&&e.message);return gas();});
+}
 const RENEWAL_SUMMARY_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/member_expiry_summary.json';
 const RT_END_KEY='종료\n일자',RT_OWNER_KEY='담당자',RT_NAME_KEY='회원명',RT_CDATE_KEY='재등록상담 날짜',RT_CNOTE_KEY='재등록상담 내용';
 const RT_CONTACT_STATUS_KEY='컨택상태'; // 미컨택·컨택중·컨택완
@@ -279,8 +292,8 @@ function rtGuideFetchCounts(){
   if(RT_GUIDE_LOADING)return;
   RT_GUIDE_LOADING=true;RT_GUIDE_ERR='';rtGuideRepaint();
   Promise.all([
-    fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope=valid').then(r=>r.json()),
-    fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope=ended').then(r=>r.json())
+    rtMemberList('valid'),
+    rtMemberList('ended')
   ]).then(([v,e])=>{
     RT_GUIDE_LOADING=false;
     if(!v||!v.ok||!e||!e.ok){RT_GUIDE_ERR='조회 실패 — 잠시 후 다시 시도해주세요.';rtGuideRepaint();return;}
@@ -340,8 +353,7 @@ function rtFetchRoster(){
   if(RT_LOADING)return;
   RT_LOADING=true;RT_ERR='';rtRepaint();
   const nm=rtMonthStr();
-  fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope=valid')
-    .then(r=>r.json())
+  rtMemberList('valid')
     .then(d=>{
       RT_LOADING=false;
       if(!d||!d.ok){RT_ROWS=[];RT_ERR='명단 조회 실패: '+((d&&d.error)||'응답 오류');rtRepaint();return;}
