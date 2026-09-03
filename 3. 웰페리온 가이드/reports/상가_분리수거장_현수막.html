@@ -5,22 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>분리수거장 현수막 시안 (2026-09-03)</title>
 <!--
-  분리수거장 현수막 시안 — 「THE SHOPS AT HYPERION」 공통 디자인
+  분리수거장 현수막 시안 — 「THE SHOPS AT HYPERION」 공통 디자인 · 시각 마감 v2(2026-09-03 시모, 배938)
   · 원고 정본 = reports/상가_쓰레기배출가이드_A3.png(2026-08-28 제작). 현수막은 그 중 멀리서 읽혀야 하는 것만 남겼다.
   · 수거 요일은 양상규 고문님 현장 확인(2026-08-31)에서 나온 값이다 — 재활용 매주 화·금 / 일반쓰레기 수시.
   · 크기는 아직 실측 전이다. 아래 :root 의 --w-mm / --h-mm 두 값만 바꾸면 비율이 그대로 따라간다(기본 3000×1000mm).
+  · v2 = 내용(수치·사실) 변경 없음. 브랜드 SSOT 색상 적용, 제목 확대, 멀리서도 읽히도록 핵심 4항목(일반쓰레기·음식물·재활용 수거일·CCTV)만 큰 글자+선 아이콘으로 재구성(세부는 A3 가이드가 정본).
 -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
   :root{
     /* ★실측 후 이 두 값만 바꾼다 (단위 mm) */
     --w-mm: 3000;
     --h-mm: 1000;
 
-    --ink:#14161a; --paper:#FBF7F0; --gold:#C8A96A; --red:#A6301F; --dim:#6E6A63;
+    --ink:#221F20; --paper:#FBF7F0; --gold:#B79F8A; --red:#ED5B3F; --dim:#6E6A63;
     --scale: calc(1px * 0.32); /* 화면 미리보기 축소 배율 — 인쇄 데이터에는 영향 없음 */
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:#e9ecef; font-family:"Malgun Gothic","맑은 고딕",sans-serif; color:var(--ink);}
+  body{margin:0; background:#e9ecef; font-family:'Pretendard Variable',Pretendard,-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; color:var(--ink); word-break:keep-all;}
 
   .bar{position:fixed; top:0; left:0; right:0; height:44px; background:#14161a; color:#fff;
     display:flex; align-items:center; gap:10px; padding:0 16px; font-size:13px; z-index:10;}
@@ -42,32 +44,26 @@
   /* 글자 크기는 전부 현수막 폭(cqw) 기준 — 크기를 바꿔도 비율이 유지된다 */
   .left{background:#14161a; color:#fff; width:26%; padding:3.2cqw 2.6cqw;
     display:flex; flex-direction:column; justify-content:center; gap:1cqw;}
-  .left .kick{font-size:1.05cqw; letter-spacing:.5em; color:var(--gold);}
-  .left h1{margin:0; font-size:3.5cqw; line-height:1.15; font-weight:800;}
-  .left .sub{font-size:1.15cqw; color:#c9c3b7; letter-spacing:.02em;}
+  .left .kick{font-size:1.1cqw; letter-spacing:.5em; color:var(--gold);}
+  .left h1{margin:0; font-size:4.3cqw; line-height:1.1; font-weight:800;}
+  .left .sub{font-size:1.2cqw; color:#c9c3b7; letter-spacing:.02em;}
   .left .brand{margin-top:auto; font-size:1cqw; letter-spacing:.34em; color:var(--gold);}
 
-  .right{flex:1; padding:2.2cqw 2.6cqw; display:flex; flex-direction:column; gap:1.1cqw; min-height:0;}
-  .lead{background:var(--red); color:#fff; padding:1.5cqw 2cqw; border-radius:.6cqw;}
-  .lead .big{font-size:2.35cqw; font-weight:800; line-height:1.15;}
-  .lead .small{font-size:1.25cqw; margin-top:.5cqw; color:#f6ded9;}
+  .right{flex:1; padding:2.2cqw 2.6cqw; display:flex; flex-direction:column; gap:1.4cqw; min-height:0;}
+  .lead{background:var(--red); color:#fff; padding:1.6cqw 2cqw; border-radius:.6cqw;}
+  .lead .big{font-size:2.6cqw; font-weight:800; line-height:1.15;}
+  .lead .small{font-size:1.3cqw; margin-top:.5cqw; color:#f9e2dc;}
 
-  .cols{display:flex; gap:1.3cqw; flex:1; min-height:0;}
-  .card{flex:1; border:.13cqw solid #d8cfbe; background:#fff; padding:1.4cqw 1.6cqw;}
-  .card h2{margin:0 0 .8cqw; font-size:1.5cqw; color:var(--red); font-weight:800;}
-  .card .row{display:flex; gap:.7cqw; font-size:1.2cqw; line-height:1.4; white-space:nowrap;}
-  .card .row b{min-width:6.4cqw; white-space:nowrap;}
-  .four{display:flex; gap:1cqw; margin-top:.4cqw;}
-  .four div{flex:1; text-align:center; border:.13cqw solid #d8cfbe; padding:.7cqw .2cqw; font-size:1.25cqw; font-weight:800; white-space:nowrap;}
-  .four div span{display:block; font-size:.85cqw; white-space:nowrap; font-weight:500; color:var(--dim); margin-top:.25cqw;}
+  /* 항목 4개 이내 · 큰 글자 + 선 아이콘 — 멀리서도 한눈에 */
+  .items{display:grid; grid-template-columns:repeat(4,1fr); gap:1.4cqw; flex:1; min-height:0;}
+  .item{background:#fff; border:.14cqw solid #d8cfbe; border-top:.35cqw solid var(--gold);
+    padding:1.6cqw 1cqw 1.4cqw; display:flex; flex-direction:column; align-items:center; text-align:center; justify-content:center; gap:.5cqw;}
+  .item svg{width:3.4cqw; height:3.4cqw; fill:none; stroke:var(--red); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round;}
+  .item .lb{font-size:1.15cqw; letter-spacing:.08em; color:var(--dim); font-weight:700;}
+  .item .val{font-size:1.75cqw; font-weight:800; line-height:1.2;}
 
-  .foot{display:flex; align-items:center; gap:1.2cqw; background:#14161a; color:#fff; padding:1cqw 1.4cqw; flex:0 0 auto;}
-  .foot .cctv{border:.18cqw solid var(--gold); color:var(--gold); border-radius:50%;
-    width:4.2cqw; height:4.2cqw; display:flex; align-items:center; justify-content:center;
-    font-size:1.15cqw; font-weight:800; flex:0 0 auto;}
-  .foot .t{font-size:1.3cqw; line-height:1.4;}
-  .foot .t b{color:#F2C879;}
-  .foot .tel{margin-left:auto; text-align:right; font-size:1.1cqw; color:#c9cdd3; white-space:nowrap;}
+  .tel{display:flex; align-items:center; justify-content:flex-end; gap:1cqw; background:var(--ink); color:#fff; padding:.9cqw 1.4cqw; flex:0 0 auto; font-size:1.1cqw; letter-spacing:.02em;}
+  .tel b{color:var(--gold);}
 
   .spec{max-width:calc(var(--w-mm) * var(--scale)); margin:14px auto 0; font-size:13px; color:#41464c; line-height:1.7;}
   .spec b{color:#14161a;}
@@ -98,30 +94,30 @@
         <div class="small">파란색·검정색 등 일반 비닐봉투는 수거되지 않습니다</div>
       </div>
 
-      <div class="cols">
-        <div class="card">
-          <h2>수거 요일</h2>
-          <div class="row"><b>재활용</b><span>매주 <b>화요일 · 금요일</b></span></div>
-          <div class="row"><b>일반쓰레기</b><span>구청 하청업체 수시 수거</span></div>
-          <div class="row"><b>음식물</b><span>종량기(카드) 투입 · 카드는 관리사무소</span></div>
-          <div class="row"><b>대형·폐가전</b><span>구청 인터넷 신고 → 반출증 부착 후 배출</span></div>
+      <div class="items">
+        <div class="item">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+          <div class="lb">일반쓰레기</div>
+          <div class="val">종량제 봉투 필수</div>
         </div>
-        <div class="card">
-          <h2>재활용 배출 4대 원칙</h2>
-          <div class="four">
-            <div>비운다<span>내용물 완전히</span></div>
-            <div>헹군다<span>이물질 씻어내기</span></div>
-            <div>분리한다<span>라벨·뚜껑 제거</span></div>
-            <div>섞지 않는다<span>품목별로 따로</span></div>
-          </div>
+        <div class="item">
+          <svg viewBox="0 0 24 24"><path d="M6 3v6a2 2 0 002 2 2 2 0 002-2V3M8 11v10M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v9"/></svg>
+          <div class="lb">음식물</div>
+          <div class="val">종량기(카드) 투입</div>
+        </div>
+        <div class="item">
+          <svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11a8 8 0 0114-5.3M7 22l-4-4 4-4M21 13a8 8 0 01-14 5.3"/></svg>
+          <div class="lb">재활용 수거일</div>
+          <div class="val">매주 화·금</div>
+        </div>
+        <div class="item">
+          <svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="10" rx="1.5"/><path d="M17 9.5l4-2v9l-4-2z"/></svg>
+          <div class="lb">CCTV 촬영구역</div>
+          <div class="val">무단배출 적발 시 처리비용 청구</div>
         </div>
       </div>
 
-      <div class="foot">
-        <div class="cctv">CCTV</div>
-        <div class="t">이곳은 <b>CCTV 촬영 구역</b>입니다.<br>종량제 미사용·무단 배출은 촬영 확인을 통해 배출 매장에 <b>처리 비용이 청구</b>될 수 있습니다.</div>
-        <div class="tel">문의 · 웰페리온 경영지원부<br>T. 02-6261-1200</div>
-      </div>
+      <div class="tel">문의 · 웰페리온 경영지원부 <b>T. 02-6261-1200</b></div>
     </div>
   </div>
 

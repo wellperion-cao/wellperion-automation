@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>분리수거장 쓰레기 배출 가이드 (A3 · 최종본)</title>
 <!--
-  상가 분리수거장 쓰레기 배출 가이드 — 최종본 v2 (2026-09-03 시우)
+  상가 분리수거장 쓰레기 배출 가이드 — 최종본 v2 (2026-09-03 시우) · 시각 마감 v3(2026-09-03 시모, 배938)
   · v1 = 2026-08-28 제작 PNG/PDF(원본 HTML 없음). 이 파일이 이후 정본 — PNG/PDF 는 여기서 뽑는다.
   · v2 에서 바뀐 것 = 현장 사진 4장(G:/공유 드라이브/…/26.8.25 102동 아파트 전용 출입구+쓰레기 배출) 실측 반영
       ① 음식물쓰레기 = 용산구 RFID 종량기(카드) — 카드는 관리사무소 배부
@@ -13,12 +13,14 @@
       ③ 박스는 펴서 · 스티로폼은 상표·테이프 제거 · 선물용 부직포가방은 종량제 봉투 (현장 부착물·관리사무소 규정)
       ④ 수거 요일 = 재활용 화·금 / 일반 수시 (양상규 고문님 현장 확인 2026-08-31)
       ⑤ 관리사무소 실사례 — 종량제 봉투 안 액체·유리병 → 수거 거부
+  · v3 = 내용(글자·숫자·항목) 변경 없음. 색상을 브랜드 SSOT(scripts/brand_constants.py)로 교체, Pretendard 적용, 배출 구분별 선 아이콘 추가.
 -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
   @page { size: A3 portrait; margin: 0; }
-  :root{ --ink:#1b1a18; --paper:#F8F4EE; --gold:#C8A96A; --red:#A6301F; --dim:#6b655d; --line:#d9cfc0; --ok:#1f6b45; }
+  :root{ --ink:#221F20; --paper:#F8F4EE; --gold:#B79F8A; --red:#ED5B3F; --dim:#6b655d; --line:#d9cfc0; --ok:#1f6b45; }
   *{box-sizing:border-box;}
-  body{margin:0; background:#e8e3dc; color:var(--ink); font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{margin:0; background:#e8e3dc; color:var(--ink); font-family:'Pretendard Variable',Pretendard,-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; word-break:keep-all; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   .bar{position:fixed; top:0; left:0; right:0; height:42px; background:var(--ink); color:#fff; display:flex; align-items:center; gap:10px; padding:0 14px; font-size:13px; z-index:9;}
   .bar .sp{flex:1;} .bar button{font-weight:700; padding:6px 12px; border:0; border-radius:4px; cursor:pointer;}
   .sheet{width:297mm; height:420mm; margin:56px auto 24px; background:var(--paper); overflow:hidden; display:flex; flex-direction:column; box-shadow:0 8px 28px rgba(0,0,0,.18);}
@@ -43,6 +45,8 @@
   th,td{border:1px solid var(--line); padding:3mm 4mm; vertical-align:middle; line-height:1.45;}
   thead th{background:var(--ink); color:#fff; font-weight:700; font-size:13.5px; text-align:center;}
   td.k{font-weight:800; text-align:center; width:40mm; white-space:nowrap;}
+  td.k .ic{display:block; margin:0 auto 1.5mm; width:7mm; height:7mm; color:var(--gold);}
+  td.k .ic svg{width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
   td.m{text-align:center; width:56mm;}
   .tag{display:inline-block; border:1.5px solid var(--ok); color:var(--ok); font-weight:800; padding:1.3mm 3.5mm; border-radius:999px; font-size:13px; white-space:nowrap;}
   .tag.no{border-color:var(--red); color:var(--red);}
@@ -90,12 +94,12 @@
   <table>
     <thead><tr><th style="width:40mm">구분</th><th style="width:56mm">배출 방법</th><th>주요 품목 및 주의사항</th></tr></thead>
     <tbody>
-      <tr><td class="k">일반쓰레기</td><td class="m"><span class="tag">종량제 봉투</span></td><td>재활용 불가 생활쓰레기 전반 <span class="sub">· 일반 비닐봉투 배출 시 수거 거부</span></td></tr>
-      <tr><td class="k">음식물쓰레기</td><td class="m"><span class="tag">종량기(카드) 투입</span></td><td>분리수거장의 <b>음식물 종량기</b>에 카드로 투입 <span class="sub">· 종량기 카드는 아파트 관리사무소에서 배부 · 물기 제거 후 · 비닐·이쑤시개·뼈·조개껍데기는 일반쓰레기</span></td></tr>
-      <tr><td class="k">재활용품</td><td class="m"><span class="tag">품목별 분리 배출</span></td><td>종이 / 플라스틱 / 캔·고철 / 유리병 / 투명 페트 <span class="sub">· 내용물 비우고 헹궈서 · <b>박스는 펴서</b> 배출</span></td></tr>
-      <tr><td class="k">비닐류</td><td class="m"><span class="tag">투명봉투에 모아 배출</span></td><td>과자봉지·포장 비닐 등 <span class="sub">· 이물질 묻은 비닐은 일반쓰레기</span></td></tr>
-      <tr><td class="k">스티로폼</td><td class="m"><span class="tag">상표·테이프 제거</span></td><td>내용물 완전히 비우고 부착 상표·테이프 제거 <span class="sub">· 이물질이 묻었으면 씻어서 · 선물용 부직포가방은 종량제 봉투</span></td></tr>
-      <tr><td class="k">대형·특수 폐기물</td><td class="m"><span class="tag no">분리수거장 배출 불가</span></td><td>가구·집기·폐가전 등 — <b>용산구청 대형생활폐기물 인터넷 신고(youngsan.go.kr) → 반출증 부착 후 배출</b> <span class="sub">· 품목별 수수료는 관리사무소 안내판 기준 · 배출 전 로비 근무자에게 품목 확인</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>일반쓰레기</td><td class="m"><span class="tag">종량제 봉투</span></td><td>재활용 불가 생활쓰레기 전반 <span class="sub">· 일반 비닐봉투 배출 시 수거 거부</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 3v6a2 2 0 002 2 2 2 0 002-2V3M8 11v10M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v9"/></svg></span>음식물쓰레기</td><td class="m"><span class="tag">종량기(카드) 투입</span></td><td>분리수거장의 <b>음식물 종량기</b>에 카드로 투입 <span class="sub">· 종량기 카드는 아파트 관리사무소에서 배부 · 물기 제거 후 · 비닐·이쑤시개·뼈·조개껍데기는 일반쓰레기</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11a8 8 0 0114-5.3M7 22l-4-4 4-4M21 13a8 8 0 01-14 5.3"/></svg></span>재활용품</td><td class="m"><span class="tag">품목별 분리 배출</span></td><td>종이 / 플라스틱 / 캔·고철 / 유리병 / 투명 페트 <span class="sub">· 내용물 비우고 헹궈서 · <b>박스는 펴서</b> 배출</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5a3 3 0 016 0v2"/></svg></span>비닐류</td><td class="m"><span class="tag">투명봉투에 모아 배출</span></td><td>과자봉지·포장 비닐 등 <span class="sub">· 이물질 묻은 비닐은 일반쓰레기</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>스티로폼</td><td class="m"><span class="tag">상표·테이프 제거</span></td><td>내용물 완전히 비우고 부착 상표·테이프 제거 <span class="sub">· 이물질이 묻었으면 씻어서 · 선물용 부직포가방은 종량제 봉투</span></td></tr>
+      <tr><td class="k"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 7h11v8H3z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg></span>대형·특수 폐기물</td><td class="m"><span class="tag no">분리수거장 배출 불가</span></td><td>가구·집기·폐가전 등 — <b>용산구청 대형생활폐기물 인터넷 신고(youngsan.go.kr) → 반출증 부착 후 배출</b> <span class="sub">· 품목별 수수료는 관리사무소 안내판 기준 · 배출 전 로비 근무자에게 품목 확인</span></td></tr>
     </tbody>
   </table>
 

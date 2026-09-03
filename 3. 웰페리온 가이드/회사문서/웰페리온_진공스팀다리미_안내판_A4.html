@@ -4,14 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>진공 스팀다리미 안내 (A4)</title>
-<!-- 파우더룸 비치 안내판 A4 — 2026-09-03 시우 재작성(GM 지시: 로고·사진 넣어 더 고급스럽게).
+<!-- 파우더룸 비치 안내판 A4 — 2026-09-03 시우 재작성(GM 지시: 로고·사진 넣어 더 고급스럽게). 시각 마감 v2(2026-09-03 시모, 배938).
      사진·로고 = 에이스전자 제공(2026-09-03) base64 내장 — 오프라인 인쇄에서도 깨지지 않게.
-     값 = 에이스전자 회신 확정분(108,000원 부가세 포함 · 12시 전 당일 발송 · 1~2일). 제품 사양 수치는 적지 않는다(미확인). -->
+     값 = 에이스전자 회신 확정분(108,000원 부가세 포함 · 12시 전 당일 발송 · 1~2일). 제품 사양 수치는 적지 않는다(미확인).
+     v2 = 내용 변경 없음. 본문 폰트를 브랜드 SSOT(Pretendard)로 교체, 세리프 제목용 Noto Serif KR 웹폰트 로드(이전엔 미설치 환경에서 Georgia로 대체됨), 미사용 색상 변수(--gold) 정리. -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
 <style>
   @page { size: A4 portrait; margin: 0; }
-  :root{ --beige:#B79F8A; --black:#221F20; --gold:#C19A53; --white:#fff; --cream:#F7F3EE; --dim:#6B625B; --line:#E3DBD1; }
+  :root{ --beige:#B79F8A; --black:#221F20; --white:#fff; --cream:#F7F3EE; --dim:#6B625B; --line:#E3DBD1; }
   *{box-sizing:border-box;}
-  body{margin:0; background:#e9e4dd; color:var(--black); font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body{margin:0; background:#e9e4dd; color:var(--black); font-family:'Pretendard Variable',Pretendard,-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; word-break:keep-all; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   .bar{position:fixed; top:0; left:0; right:0; height:42px; background:var(--black); color:#fff; display:flex; align-items:center; gap:10px; padding:0 14px; font-size:13px; z-index:9;}
   .bar .sp{flex:1;} .bar button{font-weight:700; padding:6px 12px; border:0; border-radius:4px; cursor:pointer;}
   .sheet{width:210mm; height:297mm; margin:56px auto 24px; background:var(--white); overflow:hidden; display:flex; flex-direction:column; box-shadow:0 8px 28px rgba(0,0,0,.18);}
