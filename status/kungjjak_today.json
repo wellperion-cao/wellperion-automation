@@ -1437,15 +1437,21 @@
           "upload": "✅ 올림 (5abb81266)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260903-2039",
+          "no": "39",
+          "got": "회원 DB(현재는 구글시트 -> ?) 뭘로 DB가 되는거야?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "20:24",
+          "end": "20:24",
+          "minutes": 0,
+          "upload": "✅ 올림 (5abb81266)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "09:28",
-          "area": "작업",
-          "event": "09:30 카톡 매출보고 일시중지(GM 지시) — 재개 대기 배 등록",
-          "detail": "커밋 997af27e9 · 배 11170"
-        },
         {
           "time": "09:42",
           "area": "작업",
@@ -1619,10 +1625,16 @@
           "area": "작업",
           "event": "계정 = 회사 계정(@wellperion.com)만 — 가입 신청 도메인 제한 + 계정별 기본 부서 프리셋(info@=운영부)",
           "detail": "커밋 ea1ab83e0 · 배 11182"
+        },
+        {
+          "time": "20:25",
+          "area": "작업",
+          "event": "회원 미러 API 3개 라우트 + sync_members 5분 cron 배치 (배931)",
+          "detail": "커밋 ce8b2dde5 · 배 11191"
         }
       ],
-      "count": 31,
-      "done": 31,
+      "count": 32,
+      "done": 32,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
@@ -1930,7 +1942,7 @@
           "start": "20:15",
           "end": "20:17",
           "minutes": 2,
-          "upload": "✅ 올림 (3f590adb0)",
+          "upload": "✅ 올림 (ea4736561)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1938,13 +1950,13 @@
           "ref": "GM-20260903-3029",
           "no": "29",
           "got": "일단 시모 모듈들을 AWS 이관하는거 시토한테 전달하던가 시모가 해야해",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "20:20",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "20:22",
+          "minutes": 2,
+          "upload": "✅ 올림 (ea4736561)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2061,31 +2073,22 @@
           "area": "작업",
           "event": "힉스필드 레시피 정본 신설 — 정본 규격·다큐 문장·금지·채택 기록 한 곳 (배939)",
           "detail": "커밋 3f590adb0 · 배 11199"
+        },
+        {
+          "time": "20:23",
+          "area": "작업",
+          "event": "시모 자동화 AWS 이관 명세 → 시토 배944 · 설계서 GM go 반영 · Ep3 일회성 예약작업 삭제 (배921·939)",
+          "detail": "커밋 ea4736561 · 배 11199"
         }
       ],
       "count": 26,
-      "done": 25,
-      "open": 1,
+      "done": 26,
+      "open": 0,
       "avg_minutes": 1,
-      "work_count": 19,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260903-3029",
-          "no": "29",
-          "got": "일단 시모 모듈들을 AWS 이관하는거 시토한테 전달하던가 시모가 해야해",
-          "did": "",
-          "start": "20:20",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -2240,7 +2243,7 @@
           "start": "20:13",
           "end": "20:14",
           "minutes": 0,
-          "upload": "✅ 올림 (b2f86f1f6)",
+          "upload": "✅ 올림 (9af424a87)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2252,7 +2255,7 @@
           "start": "20:20",
           "end": "20:20",
           "minutes": 0,
-          "upload": "✅ 올림 (b2f86f1f6)",
+          "upload": "✅ 올림 (f46c89cae)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2264,9 +2267,21 @@
           "start": "20:20",
           "end": "20:21",
           "minutes": 0,
-          "upload": "✅ 올림 (b2f86f1f6)",
+          "upload": "✅ 올림 (f46c89cae)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260903-4018",
+          "no": "18",
+          "got": "문제 생기면 즉각 텔레그램 알림 해줘",
+          "did": "",
+          "start": "20:24",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2329,16 +2344,37 @@
           "area": "공통",
           "event": "AWS 회원 이관 잔여 3건 시토 배로 전달(941·942·943) + 배801 갱신 (GM 지시 2026-09-03)",
           "detail": "커밋 0f227dcdc · 배 11133"
+        },
+        {
+          "time": "20:22",
+          "area": "공통",
+          "event": "배942·943 — 이관 안전 조건 4가지(동기화 시각 표시·저장 직후 5분 공백·번호 부여 선행·1주 병행 대조)",
+          "detail": "커밋 3b959c451 · 배 11133"
         }
       ],
-      "count": 14,
+      "count": 15,
       "done": 14,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
-      "work_count": 10,
+      "work_count": 11,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260903-4018",
+          "no": "18",
+          "got": "문제 생기면 즉각 텔레그램 알림 해줘",
+          "did": "",
+          "start": "20:24",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -2820,7 +2856,7 @@
           "start": "20:13",
           "end": "20:17",
           "minutes": 4,
-          "upload": "✅ 올림 (0cbeaf571)",
+          "upload": "✅ 올림 (e3ccf9648)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2832,9 +2868,33 @@
           "start": "20:17",
           "end": "20:20",
           "minutes": 3,
-          "upload": "✅ 올림 (0cbeaf571)",
+          "upload": "✅ 올림 (e3ccf9648)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260903-5045",
+          "no": "45",
+          "got": "그리고 턴게이트 3개 선택건으로 정리해서 결정해서 결제할 수 있게 만들어줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "20:22",
+          "end": "20:24",
+          "minutes": 2,
+          "upload": "✅ 올림 (e3ccf9648)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260903-5046",
+          "no": "46",
+          "got": "담당자를 김남욱GM 으로해서 김남욱GM 결재SSOT에 올려줘 GM승인하고 대표님 결재 받게",
+          "did": "",
+          "start": "20:25",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         },
         {
           "ref": "GM-20260903-schedule-wellympic",
@@ -2850,18 +2910,6 @@
         }
       ],
       "work": [
-        {
-          "time": "12:37",
-          "area": "작업",
-          "event": "조직문화 A3 — 건별 정리 칸 5개 신설(AI Summit 보고 맨 아래칸 형식)",
-          "detail": "커밋 549b2e080 · 배 11175"
-        },
-        {
-          "time": "12:41",
-          "area": "작업",
-          "event": "P.T팀용 A3를 성과 리마인드 1장으로 교체",
-          "detail": "커밋 c5fa3062a · 배 11175"
-        },
         {
           "time": "12:42",
           "area": "작업",
@@ -3029,16 +3077,43 @@
           "area": "작업",
           "event": "브로제이 턴게이트+키오스크 결재 기안 등록 기록 (TODO-20260903201859100)",
           "detail": "커밋 0cbeaf571 · 배 11180"
+        },
+        {
+          "time": "20:24",
+          "area": "작업",
+          "event": "브로제이 견적 A3 결정 01을 3개 지점 선택형으로 동기화 (결재 SSOT 기안과 동일)",
+          "detail": "커밋 a91c044d2 · 배 11180"
+        },
+        {
+          "time": "20:24",
+          "area": "작업",
+          "event": "박수철 대표 방문 9/4 15:00 확정(담당 전응준 대표) + GM 표기 중복 59건 수리 (GM 지시 2026-09-03)",
+          "detail": "커밋 e3ccf9648 · 배 11180"
         }
       ],
-      "count": 42,
-      "done": 42,
-      "open": 0,
+      "count": 44,
+      "done": 43,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260903-5046",
+          "no": "46",
+          "got": "담당자를 김남욱GM 으로해서 김남욱GM 결재SSOT에 올려줘 GM승인하고 대표님 결재 받게",
+          "did": "",
+          "start": "20:25",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -3237,8 +3312,8 @@
     "items": [
       "10:00 ADT캡스 보안서비스 설치 — 무인경비 2개소·출입통제 3개소 (설치팀장 김태봉)",
       "10:00 매트릭스(서울역) 지점 방문 — 대표님 동행",
-      "16:00 딜라이브 클럽 방문 — 문자 자동발송 미팅 (스마트레터 기업연동)"
+      "15:00 박수철 대표 방문 — 공간 리뉴얼 5건 + 셀럽 프라이빗 존"
     ],
-    "more": 0
+    "more": 1
   }
 }
