@@ -209,6 +209,19 @@
     padding:1.5px 0;break-inside:avoid;white-space:nowrap;}
   .remrow .rn{overflow:hidden;text-overflow:clip;}
   .remrow b{font-variant-numeric:tabular-nums;flex:none;}
+  /* 이달 등록 내역 — 카드의 '이달 등록 N명'이 누구인지 이름·날짜·구분·상품까지 편다(GM 지시 09-03).
+     연락처는 싣지 않는다 — 이 장은 등록 흐름을 보는 자리이지 명부가 아니다. */
+  .reglist{margin-top:5px;}
+  .regrow{display:grid;grid-template-columns:44px 62px 54px 1fr;gap:6px;align-items:center;
+    font-size:11px;padding:2.5px 0;border-bottom:1px solid #EEF1F4;break-inside:avoid;}
+  .regrow:last-child{border-bottom:0;}
+  .regrow .rd{font-variant-numeric:tabular-nums;color:#7A838B;}
+  .regrow .rnm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .regrow .rp{color:#5B646C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rcls{display:inline-block;text-align:center;font-size:9.5px;font-weight:800;
+    padding:1px 0;border-radius:2px;line-height:1.5;}
+  .rcls.new{background:var(--navy);color:#fff;}
+  .rcls.re{background:#E7EDF3;color:#3E5A75;}
   /* 오늘 챙길 것 — 이 보고서를 보고 그날 움직이는 자리(GM 지시 09-02 "운영에 도움").
      숫자만 있으면 보고서고, 그 옆에 할 일이 붙어야 도구다. */
   .todo4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:11px;}
@@ -377,6 +390,10 @@
       <div class="sec">
         <h2>오늘 · 이번 달 움직임</h2>
         <div class="bd" id="p2today"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>이달 등록 내역 — 누가 · 언제 · 무슨 구분</h2>
+        <div class="bd" id="p2reg"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec">
         <h2>회원 구성 상세</h2>
@@ -1212,6 +1229,41 @@ function renderP2Churn(c){
     }).join('') + '</div>';
 }
 
+/* 이달 등록 내역 — 카드의 '이달 등록 N명'을 사람 단위로 편다(GM 지시 2026-09-03).
+   ▸신규 판정은 여기서 다시 하지 않는다. 회원관리 ERP 안의 판정 한 곳(_isNewRegistration_)이 이미
+     세어 둔 값(cpo_today_stats.monthReg)을 그대로 쓰고, 재등록은 전체에서 그것을 뺀다(약속 L01).
+     2026-08-06 에 목록과 카드가 각자 세다가 5명·10명으로 갈렸던 그 자리다 — 다시 갈리지 않게 한다.
+   ▸행의 구분 배지는 시트에 적힌 「등록 분류」 글자를 그대로 보인다(신규/재등록/L재등록). */
+function renderP2Reg(d, t){
+  var el = document.getElementById('p2reg'); if (!el) return;
+  // 못 읽은 것을 '0건'으로 보이면 안 된다 — 진짜 0 과 조회 실패를 가른다.
+  if (!d) { el.innerHTML = '<div class="err">이달 등록 내역을 못 읽었습니다 — 회원관리 ERP 조회 실패</div>'; return; }
+  var rows = d.data || [];
+  var total = rows.length;
+  var newCnt = (t && t.monthReg != null) ? t.monthReg : null;
+  var head = '이달 등록 <b>' + p2num(total) + '건</b>' +
+    (newCnt == null ? '' : ' · 신규 <b>' + p2num(newCnt) + '</b> · 재등록 <b>' + p2num(total - newCnt) + '</b>');
+  if (!total) {
+    el.innerHTML = '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' + head + '</div>' +
+      '<div class="mrow"><span class="lb">이번 달 등록이 아직 없습니다</span></div>';
+    return;
+  }
+  el.innerHTML =
+    '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' + head +
+      ' <a href="../../cpo/member/membership.html" target="_blank" rel="noopener" ' +
+      'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">🧾 멤버십 회원관리 열기</a></div>' +
+    '<div class="reglist">' + rows.map(function(r){
+      var cls = String(r.regClass || '').trim() || '—';
+      var isNew = cls === '신규';
+      return '<div class="regrow">' +
+        '<span class="rd">' + esc(String(r.regDate || '').substring(5)) + '</span>' +
+        '<span class="rnm">' + esc(r.name) + '</span>' +
+        '<span class="rcls ' + (isNew ? 'new' : 're') + '">' + esc(cls) + '</span>' +
+        '<span class="rp" title="' + esc(r.program) + '">' + esc(r.program) + '</span>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
 function fnStepsHTML(stage, retain){
   var keys = ['문의', '응대', '예약', '방문', '가입'];
   return keys.map(function(k, i){
@@ -1251,9 +1303,10 @@ function renderP2Lesson(l){
 }
 
 function runAudit2(){
-  /* 회원관리 ERP 5개 + 아침 문의 집계 파일 1개 = 6개가 다 와야 이 장이 온전하다. */
-  var SRC = P2_ACTIONS.concat(['오늘 챙길 것(문의 집계)']);
+  /* 회원관리 ERP 5개 + 이달 등록 내역 + 아침 문의 집계 파일 1개 = 7개가 다 와야 이 장이 온전하다. */
+  var SRC = P2_ACTIONS.concat(['이달 등록 내역', '오늘 챙길 것(문의 집계)']);
   var missed = P2_ACTIONS.filter(function(a){ return !(RAW2[a] && RAW2[a].ok); });
+  if (!(RAW2.__reg && RAW2.__reg.ok)) missed = missed.concat(['이달 등록 내역']);
   if (!RAW2.__actions) missed = missed.concat(['오늘 챙길 것(문의 집계)']);
   var el = document.getElementById('audit2'); if (!el) return;
   var at = new Date().toTimeString().substring(0, 5);
@@ -1264,7 +1317,7 @@ function runAudit2(){
     var warn = (RAW2.__actions && RAW2.__actions.stale)
       ? ' <span class="w">· 주의 — 문의 집계가 오늘 값이 아닙니다(' + esc(RAW2.__actions.at) + ')</span>' : '';
     el.className = 'audit ok';
-    el.innerHTML = '<b>✅ 자체 점검 ' + (SRC.length - (warn ? 1 : 0)) + '/' + SRC.length + ' 통과</b> — 회원관리 ERP 5개와 아침 문의 집계를 ' + at + ' 에 확인했습니다' + warn;
+    el.innerHTML = '<b>✅ 자체 점검 ' + (SRC.length - (warn ? 1 : 0)) + '/' + SRC.length + ' 통과</b> — 회원관리 ERP 5개와 이달 등록 내역·아침 문의 집계를 ' + at + ' 에 확인했습니다' + warn;
   }
 }
 
@@ -1276,6 +1329,18 @@ function load2(){
       .then(function(d){ RAW2[action] = d; })
       .catch(function(){ RAW2[action] = null; });
   });
+  /* 이달 등록 내역 — 이 액션만 기간(from·to)을 받아야 해서 위 목록 회전과 따로 부른다.
+     기간은 이번 달 1일~말일. 달이 바뀌어도 손이 안 가게 오늘 날짜에서 만든다. */
+  jobs.push((function(){
+    var d = new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
+    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    var last = new Date(y, m, 0).getDate();
+    var from = y + '-' + pad(m) + '-01', to = y + '-' + pad(m) + '-' + pad(last);
+    return fetch(GAS2 + '?action=member_registered_list&from=' + from + '&to=' + to + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d2){ RAW2.__reg = d2; })
+      .catch(function(){ RAW2.__reg = null; });
+  })());
   jobs.push(
     fetch(ACT_URL + '?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -1288,6 +1353,7 @@ function load2(){
     try {
       renderP2Todo(c && c.ok ? c : null, t && t.ok ? t : null, RAW2.__actions);
       if (t && t.ok) renderP2Today(t);
+      renderP2Reg(RAW2.__reg && RAW2.__reg.ok ? RAW2.__reg : null, t && t.ok ? t : null);
       if (a && a.ok) renderP2Mix(a, t && t.ok ? t.memberCorp : null);
       if (c && c.ok) renderP2Churn(c);
       if (f && f.ok) renderP2Funnel(f);
