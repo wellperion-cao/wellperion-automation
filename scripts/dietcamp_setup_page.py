@@ -4,7 +4,8 @@ os.chdir(r'C:\Users\jjky0\welperion-automation')
 BASE = '2. 브랜드_자료/10_다이어트캠프_브랜드가이드/'
 SRC = [('01_브랜드가이드/다캠_브랜드가이드_v0.1.md', '브랜드가이드'),
        ('02_회사소개서/다캠_회사소개서_v0.1.md', '회사소개서'),
-       ('03_전략_구상안/다캠_전략구상안_v0.1.md', '전략 구상안')]
+       ('03_전략_구상안/다캠_전략구상안_v0.1.md', '운영전략'),
+       ('06_현장업무_자동화/자동화_후보.md', '현장업무 자동화')]
 
 def inline(s):
     s = html.escape(s, quote=False)
@@ -83,7 +84,8 @@ p{{margin-bottom:8px}} code{{background:#F3F5F7;padding:1px 5px;border-radius:3p
 @media (max-width:720px){{table{{display:block;overflow-x:auto}}h1{{font-size:20px}}}}
 </style></head><body><div class="wrap">
 <header><div class="brand">WELLPERION · AI CBO 시보</div><h1>다이어트캠프(다캠) 셋업 v0.1 — 브랜드가이드 · 회사소개서 · 전략 구상안</h1>
-<div class="meta">2026-09-02 · 초안(GM 검토 전 · 대표님 회신 6개 수령 전) · 정본은 다캠 폴더의 md, 이 화면은 렌더 · 배 892</div></header>
+<div class="meta">2026-09-02 · 초안(GM 검토 전 · 대표님 회신 6개 수령 전) · 정본은 다캠 폴더의 md, 이 화면은 렌더 · 배 892</div>
+<div class="meta">만들어 드리는 것 4가지 — ①브랜드가이드 ②회사소개서 ③운영전략 ④현장업무 자동화</div></header>
 <nav>{nav}</nav>
 {body}
 </div></body></html>'''
