@@ -1033,7 +1033,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div class="mrp-sub-title">시트 단일기준 전환 &nbsp;·&nbsp; 회차 모델 정립 &nbsp;·&nbsp; 데이터 정합 &nbsp;·&nbsp; 자동 독려/보고 구축</div>
       </div>
       <div class="mrp-title-meta">
-        작성: AI 시우 &nbsp;·&nbsp; 2026-06-30<br>
+        2026-06-30<br>
         논의: 지원부 &nbsp;·&nbsp; 보고: 경영진
       </div>
     </div>
@@ -8951,7 +8951,7 @@ function renderA3MonthlyFromData(month,data){
   const subEl=doc.querySelector('.mrp-sub-title');
   if(subEl) subEl.innerHTML=mrEsc(data.denomNote||'')+' &nbsp;·&nbsp; 세션·구역·교대·점검자별 실적 및 이슈·개선 시사점 자동 집계';
   const metaEl=doc.querySelector('.mrp-title-meta');
-  if(metaEl) metaEl.innerHTML='작성: AI 시우 &nbsp;·&nbsp; '+kstToday()+'<br>대상월: '+month+' &nbsp;·&nbsp; 보고: 경영진';
+  if(metaEl) metaEl.innerHTML=kstToday()+'<br>대상월: '+month+' &nbsp;·&nbsp; 보고: 경영진';
 
   const kpiRow=doc.querySelector('.mrp-kpi-row');
   if(kpiRow){
