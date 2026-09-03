@@ -87,6 +87,7 @@ CLEVEL_NICK = {
     "COO": "시우",
     "CPO": "시포",
     "CTO": "시토",
+    "CBO": "시보",   # 2026-09-02 GM 신설(비즈니스 확대)
     "GM": "GM",
     "GM1": "GM",
 }
@@ -99,6 +100,7 @@ CLEVEL_DOMAIN = {
     "COO": "운영",
     "CPO": "회원·CS",
     "CTO": "시설·기술",
+    "CBO": "비즈니스 확대·제휴",
 }
 # AI C-Level → 실무진(최종 책임자) 사람 매핑
 CLEVEL_OWNER = {
@@ -109,8 +111,9 @@ CLEVEL_OWNER = {
     "CHRO": "나우열M",
     "COO": "최준용M",
     "CPO": "임정은M",
+    "CBO": "김남욱 GM",
 }
-CLEVEL_ORDER = ["CFO", "CHRO", "CMO", "COO", "CPO", "CTO"]
+CLEVEL_ORDER = ["CFO", "CHRO", "CMO", "COO", "CPO", "CTO", "CBO"]
 
 # ── 분류 SSOT (2026-05-30 GM 지시: 3분류) ────────────────────────────────────
 # 한 항목을 아래 3개 중 하나로 라벨한다. 이 함수가 아침·저녁 두 보고의 단일 기준(SSOT).
@@ -185,7 +188,7 @@ _G1_API = (
 
 # 담당자 필드에서 G1 합류 대상 판정용 패턴 (웰페리온 ERP gm1FetchSsot 100% 동일)
 _OWNER_GM_RE = re.compile(r"김남욱\s*GM")
-_OWNER_CLEVEL_RE = re.compile(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)")
+_OWNER_CLEVEL_RE = re.compile(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO|CBO)")
 _OWNER_NICK_RE = re.compile(r"웰리|시모|시토|시우|시뽀|시포|시로")
 
 
@@ -333,7 +336,7 @@ def fetch_g1_ssot() -> dict | None:
 
 def _infer_clevel_from_owner(owner: str, title: str = "") -> str:
     """담당자 문자열에서 AI C레벨 코드 추출 (없으면 키워드 폴백)."""
-    m = re.search(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO)", owner)
+    m = re.search(r"AI\s+(CEO|CMO|CTO|COO|CFO|CPO|CHRO|CBO)", owner)
     if m:
         return m.group(1)
     nick_map = {"웰리": "CEO", "시모": "CMO", "시토": "CTO",

@@ -27,6 +27,7 @@
 | AI COO | 시우 | ai-coo.md | 운영 |
 | AI CPO | 시포 | ai-cpo.md | 회원·CS |
 | AI CTO | 시토 | ai-cto.md | 시설·기술 |
+| AI CBO | 시보 | ai-cbo.md | 비즈니스 확대·제휴·새 확장 모델(신설 2026-09-02 · 모델 Fable 5.1) |
 
 ## 2. R/R SSOT — 웰페리온 ERP
 > **운영 원칙·R/R 단일 출처 = S2 웰페리온 ERP(공통탭 + 본인탭).** CLAUDE.md는 인덱스 — 원칙 상세 하드코딩·S2 외 추가 금지.
