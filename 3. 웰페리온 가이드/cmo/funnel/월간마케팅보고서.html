@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="../../wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>웰페리온 마케팅 월간 보고서</title>
 <style>
@@ -496,9 +496,8 @@ async function loadPrevMonthChannels() {
     const py = _selM === 1 ? _selY - 1 : _selY;
     const pm = _selM === 1 ? 12 : _selM - 1;   // 1~12 (선택월 이전달)
     const { from, to } = monthRange(py, pm);
-    const resp = await wpCmoFetch(GAS_URL + '?action=period_breakdown&from=' + from + '&to=' + to);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
+    const q = 'from=' + from + '&to=' + to;
+    const data = await wpCmoRead('/api/funnel/period_breakdown?' + q, '?action=period_breakdown&' + q, '퍼널');
     _prevByCh = (data && data.custom && data.custom.byChannel) ? data.custom.byChannel : {};
   } catch (e) {
     _prevByCh = null;   // null = 이전달 비교 불가('—' 표시)
@@ -540,9 +539,8 @@ async function loadPeriodBreakdown() {
   let mapped = null;
   try {
     const { from, to } = monthRange(_selY, _selM);
-    const resp = await wpCmoFetch(GAS_URL + "?action=period_breakdown&from=" + from + "&to=" + to);
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const data = await resp.json();
+    const q = "from=" + from + "&to=" + to;
+    const data = await wpCmoRead('/api/funnel/period_breakdown?' + q, '?action=period_breakdown&' + q, '퍼널');
     const c = data && data.custom;
     if (!c) throw new Error("GAS custom 응답 없음");
     mapped = {
@@ -566,9 +564,7 @@ async function loadPeriodBreakdown() {
 async function loadFunnelConversion() {
   let data = null;
   try {
-    const resp = await wpCmoFetch(GAS_URL + "?action=funnel_conversion");
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    data = await resp.json();
+    data = await wpCmoRead('/api/funnel/funnel_conversion', '?action=funnel_conversion', '퍼널');
   } catch (e) {
     showError("funnel_conversion 로드 실패 — 채널 데이터가 표시되지 않을 수 있습니다. (" + e.message + ")");
     data = null;
@@ -787,7 +783,7 @@ async function onMonthChange() {
   ]);
 })();
 </script>
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <script src="../../_assets/print_options.js"></script>
 <script defer src="../../_assets/page_ping.js"></script>
 </body>
 </html>
