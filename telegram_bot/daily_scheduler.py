@@ -3025,6 +3025,22 @@ def run_daily_digest(early: bool = False) -> None:
         _un.record_sla_alert_sent(sla_violations)  # 발송 성공 뒤에만 커서 전진
 
 
+def _run_rep_approval_relay() -> None:
+    """대표님 결재 촬영본이 올라오면 ★중간관리자 방으로 즉시 전달 (GM 지시 2026-09-03).
+
+    10분마다 결재 원장을 보고 새로 서명된 건만 보낸다 — 이미 보낸 건은 지문이 막는다.
+    사람 방이라 밤(22~08시)에는 보내지 않고, 아침 첫 회차에 밀린 건이 한 통으로 나간다.
+    """
+    hour = datetime.now().hour
+    if hour >= 22 or hour < 8:
+        return
+    try:
+        import rep_approval_relay as _rar
+        _rar.run(send=True)
+    except Exception as e:
+        logger.error(f"[대표결재 즉시전달] 예외: {e}")
+
+
 def run_mgmt_notice_digest() -> None:
     """★중간관리자 알림성 합본 — 매일 17:00 낮 시간 단독 발송(배499 큐 그대로 재사용).
     처음엔 run_daily_digest(평일 22:30/휴일 20:00) 안에 얹혀 밤에 나갔으나, GM 지시
@@ -3034,14 +3050,8 @@ def run_mgmt_notice_digest() -> None:
     그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지."""
     label = "[★중간관리자 알림성 합본]"
     today = datetime.now().strftime("%Y-%m-%d")
-    # 대표님 결재 촬영본 업로드 건 → 같은 방·같은 슬롯에 「결재 완료 목록」 한 통(GM 지시 2026-09-03).
-    # 발신은 관문(kakao_report_sender)이 하고, 게이트(AUTO_PIPELINE_SENDERS "대표결재전달")가
-    # 꺼져 있으면 미리보기 로그만 남기고 아무것도 안 나간다 — 실발신 GM 승인 대기.
-    try:
-        import rep_approval_relay as _rar
-        _rar.run(send=True)
-    except Exception as e:
-        logger.error(f"{label} 대표 결재 전달 예외: {e}")
+    # 대표 결재 전달은 여기서 하지 않는다 — GM 지시 2026-09-03 "즉시 전달" 로 10분 주기
+    # 잡(rep_approval_relay_immediate)이 맡았다. 여기 남겨 두면 같은 건이 두 번 나갈 자리가 된다.
     try:
         import mgmt_notice_queue as _mnq
         import send_ops_digest as _od3
@@ -3909,6 +3919,20 @@ def main():
     # status_regression_guard 폐기 (2026-05-22 GM 지시)
     # 사유: 진행중→진행예정→진행중(자동복원) 무의미한 사이클 + GM 의도 덮어쓰기 위험.
     # 동시에 "진행예정" select 옵션 자체 폐기, 휴면 상태는 "보류" 단일로 통합.
+
+    # ── 대표님 결재 촬영본 → ★중간관리자 즉시 전달 (10분 주기) ─────────────
+    # GM 상시 지시 2026-09-03: "이제 항상 결재건은 중간관리자방에 자동 전달해줘 즉시 전달".
+    # 종전에는 17:05 합본 슬롯에서 하루 한 번만 돌아 오전에 결재된 건이 저녁까지 묵었다.
+    # 새로 서명된 건이 없으면 아무것도 안 나간다(지문 status/heartbeats/rep-approval-relay.json).
+    # 22~08시는 사람 방이라 보내지 않는다 — 아침에 밀린 건이 한 통으로 나간다.
+    scheduler.add_job(
+        _run_rep_approval_relay,
+        trigger=IntervalTrigger(minutes=10),
+        id="rep_approval_relay_immediate",
+        misfire_grace_time=300,
+        coalesce=True,
+    )
+    logger.info("rep_approval_relay_immediate 등록 완료 (10분 주기) — GM 지시 2026-09-03")
 
     # ── v1.2: 봇 헬스체크 (15분 주기) ───────────────────────────────────────
     scheduler.add_job(

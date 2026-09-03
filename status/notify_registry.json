@@ -506,22 +506,6 @@
       "job_id": "mgmt_notice_digest_1705"
     },
     {
-      "id": "kakao-1705-rep-approval-relay",
-      "when": "17:05",
-      "when_sort": "1705",
-      "freq": "conditional",
-      "channel": "kakao",
-      "room": "★중간관리자",
-      "chat_id": null,
-      "what": "대표님 결재 촬영본 업로드 건 — 결재 완료 목록 1통(전달 안 한 건만 · 지문=status/heartbeats/rep-approval-relay.json)",
-      "owner": "웰리",
-      "trigger": "apscheduler",
-      "state": "off",
-      "state_note": "[2026-09-03 GM 지시] 실발신 GM 승인 대기 — kakao_report_sender.AUTO_PIPELINE_SENDERS 의 \"대표결재전달\" 주석을 풀면 켜진다. 그 전엔 17:05 회차에 미리보기 로그만 남는다.",
-      "source": "scripts/rep_approval_relay.py run() ← telegram_bot/daily_scheduler.py run_mgmt_notice_digest()",
-      "job_id": "mgmt_notice_digest_1705"
-    },
-    {
       "id": "tg-2030-gm-recap",
       "when": "월~토 20:30",
       "when_sort": "2030",
@@ -948,6 +932,22 @@
       "state_note": "2026-08-15 GM 승인(배627 \"각 부서에 전달되어 그 부서에서 조치·회신까지 챙기게 하라\")으로 신설했는데 등록부에 안 넣어 notify_registry_check.py 가 UNREGISTERED_JOB 드리프트로 잡음 — 2026-08-18 시토가 등록. 게이트=status/dept_completion_notify.json intake_relay_enabled(꺼두면 잡이 돌아도 발송 0). 새 접수가 없는 방은 발신 없음(조건부) · 실측 2026-08-17 15:41 ★운영+시설+지원+주차 발송 확인(logs/kakao_sent-2026-08-17.log).",
       "source": "scripts/report_stream_2b_reception.py run_intake_relay() + telegram_bot/daily_scheduler.py:4033-4039",
       "job_id": "reception_intake_relay_15min"
+    },
+    {
+      "id": "kakao-rep-approval-immediate",
+      "when": "10분마다 (22:00~08:00 제외)",
+      "when_sort": "zz10",
+      "freq": "conditional",
+      "channel": "kakao",
+      "room": "★중간관리자",
+      "chat_id": null,
+      "what": "대표님 결재 촬영본이 올라오면 그 건을 ★중간관리자 방으로 즉시 전달 — 새로 서명된 건만(지문=status/heartbeats/rep-approval-relay.json)",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "[GM 상시 지시 2026-09-03] \"이제 항상 결재건은 중간관리자방에 자동 전달해줘 즉시 전달\". 종전 17:05 합본 슬롯에서 하루 한 번 돌던 것을 10분 주기로 바꿨다 — 오전 결재가 저녁까지 묵던 자리다. 같은 날 GM 승인으로 발신 게이트(AUTO_PIPELINE_SENDERS \"대표결재전달\")를 열었고, 오늘 3건 + 과거 서명 16건(정리 2통)을 실제로 발송했다. 밤 22~08시는 사람 방이라 보내지 않고 아침 첫 회차에 밀린 건이 나간다.",
+      "source": "telegram_bot/daily_scheduler.py _run_rep_approval_relay (IntervalTrigger 10분) → scripts/rep_approval_relay.py",
+      "job_id": "mgmt_notice_digest_1705"
     }
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",
