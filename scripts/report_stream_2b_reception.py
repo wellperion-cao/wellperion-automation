@@ -1008,6 +1008,41 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
 # ══════════════════════════════════════════════════════════════════════════
 _INTAKE_CAP = 0  # 0 = 부서별 전부 보여줌(GM 지시 2026-08-30). 종전 6건
 
+# 접수 화면 칸 → 전달문 표기. 순서가 곧 출력 순서(내용 먼저). 여기 없는 칸은 칸 이름 그대로 낸다.
+_INTAKE_FIELD_LABELS = [
+    ("content", ""), ("episode", ""),
+    ("itemName", "물품"), ("lostWhen", "분실 일시"),
+    ("equipName", "설비"), ("severity", "심각도"), ("usable", "사용 가능"),
+    ("issueKind", "유형"), ("area", "구역"), ("occurredAt", "발생 일시"),
+    ("targetStaff", "대상"), ("anonymousPref", "익명 희망"),
+    ("name", "접수자"), ("dueDate", "처리 기한"), ("memo", "비고"), ("photoUrl", "사진"),
+]
+_INTAKE_SKIP_FIELDS = {"regId", "category", "createdAt", "status", "dept", "handler", "handlerCanon",
+                       "memberReply", "memberReplyTemplate", "policyFix", "contact", "loc", "urgency", "reporter"}
+
+
+def _intake_detail_fields(r: dict) -> list[tuple[str, str]]:
+    """접수 1건의 채워진 칸을 (표기, 값) 순서로 돌려준다 — 비어 있는 칸은 뺀다."""
+    def _clean(v) -> str:
+        t = " ".join(str(v if v is not None else "").split())
+        return t[:-9] if t.endswith(" 00:00:00") else t   # 날짜만 받은 칸의 자정 시각 꼬리 제거
+    out, done = [], set()
+    for key, label in _INTAKE_FIELD_LABELS:
+        val = _clean(r.get(key))
+        done.add(key)
+        if key == "memo" and val.startswith("[초안]"):
+            continue   # AI 가 미리 써 둔 회원 회신 초안 — 접수 내용이 아니라 뺀다
+        if val:
+            out.append((label, val))
+    for key in r:
+        if key in done or key in _INTAKE_SKIP_FIELDS:
+            continue
+        val = _clean(r.get(key))
+        if val and not isinstance(r.get(key), (list, dict)):
+            out.append((key, val))
+    return out
+
+
 
 def _intake_relay_block(rows: list[dict], state: dict | None = None,
                         persist: bool = True, force: bool = False) -> str:
@@ -1040,19 +1075,22 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
             # ★2026-08-27 GM 지시 — "내용도 같이 넣어줘, 길어도 다 넣어줘". 종전에는 28자에서
             # 잘라 「수영장 내 샤워부스 총2개 남자쪽 1개 여자쪽 1개」처럼 무엇을 고쳐야 하는지
             # 모른 채 화면에 들어가야 했다. 이제 자르지 않는다.
-            content = " ".join(str(r.get("content") or "").split())
-            # ★2026-09-03 GM — "이 부분에서 내용들 다 나오게". 내용 원문에 더해 접수 화면의
-            #   장소·긴급도·접수자 구분(회원/직원)·사진 유무를 제목 줄에 싣는다. 이름·연락처는
-            #   회원 개인정보라 방에 올리지 않는다(화면에서 본다).
+            # ★2026-09-04 GM 재지적("계속 이야기하는데 즉시 전달건은 내용까지 다 담아줘") — 종전에는
+            #   content 칸 하나만 실어, 분실물(물품·분실 일시)·고장(설비·심각도)·칭찬/쓴소리(대상·내용)처럼
+            #   접수 화면이 다른 칸에 받은 내용은 통째로 빠졌다(실측 9/4 18:56 RECEPTION-152: 「분실물 접수 ·
+            #   수영장 · 회원 접수」만 나가고 '파란색 수경 · 8/21 분실'이 없었다). 이제 접수 화면이 받은 칸을
+            #   전부 싣는다 — 새 접수 유형이 생겨도 빠지지 않게 모르는 칸은 칸 이름 그대로 낸다.
+            #   연락처는 싣지 않는다(회원 개인정보 · 화면에서 본다). 이름은 실무진이 누구 건인지 알아야
+            #   돌려드릴 수 있어 싣는다.
             loc = str(r.get("loc") or "").strip()
             urg = str(r.get("urgency") or "").strip()
             rep = str(r.get("reporter") or "").strip()
             tags = [t for t in (loc, f"긴급도 {urg}" if urg else "", f"{rep} 접수" if rep else "",
                                 "📷 사진 있음" if str(r.get("photoUrl") or "").strip() else "") if t]
             lines.append(f"  ▪ [{cat}] {' · '.join(tags)} ({r.get('regId')})".replace("  (", " ("))
-            if content:
+            for label, val in _intake_detail_fields(r):
                 # 제목 줄만 훑어도 뜻이 통하게 — 상세는 다음 줄 들여쓰기(GM 2026-08-25 가독 규칙).
-                lines.append(f"     {content}")
+                lines.append(f"     {label} — {val}" if label else f"     {val}")
         if _INTAKE_CAP > 0 and len(items) > _INTAKE_CAP:
             lines.append(f"  …외 {len(items) - _INTAKE_CAP}건 더")
     lines.append(f"👉 상세·처리: {DASHBOARD_URL}")
