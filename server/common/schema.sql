@@ -218,3 +218,14 @@ CREATE TABLE IF NOT EXISTS brojay_records (
   synced_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, kind, key)
 );
+
+-- 공용 보드(GAS action=board) 미러 (sync_board.py · api_board.py · 배 926 · 2026-09-04).
+-- GM_TASK_OWNERS 등 화면 여러 곳이 쓰는 범용 키-값 저장소를 키별로 통째 미러 — GAS 응답 지연(3.7~24초)이
+-- 화면 타임아웃(8초)에 걸려 담당 칸이 빈 화면이 되던 문제를 없앤다. 목록 = sync_board.py BOARD_KEYS.
+CREATE TABLE IF NOT EXISTS board_cache (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  key       TEXT NOT NULL,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, key)
+);

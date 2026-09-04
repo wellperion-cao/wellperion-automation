@@ -234,8 +234,21 @@
   // 벗어나면 최신 보드를 다시 읽어 내 값 하나만 얹어 저장 — 남의 입력을 덮어쓰지 않는다).
   var OWNER_BOARD_KEY = 'GM_TASK_OWNERS';
   var taskOwners = {};
+  // ★2026-09-04 시토 — 담당 보드가 이 GAS(CH_BOARD_URL) 하나에 얹혀 있어, 응답이 느린 날(실측 3.7~24초)
+  // 위 8초 타임아웃에 걸려 담당 칸 71개가 통째로 빈 화면이 됐다(GM 지적). 시설부 체계.html _chkRead 와
+  // 같은 판정: ERP 도메인(서버 안)에서 열렸을 때만 서버 미러 /api/board/…(sync_board.py 가 5분마다 떠 둔
+  // 것)를 먼저 부르고, 실패(미로그인·미러 없음·서버 다운)하면 종전 GAS 로 그대로 폴백한다. 8초 상한은
+  // 그대로 둔다 — GitHub Pages 에서는 ERP_API_ON 이 false 라 이전과 동일하게 GAS 만 부른다.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function _boardRead(key, ms) {
+    var gas = function () { return _chGet(CH_BOARD_URL + '?action=board&key=' + key, ms); };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + encodeURIComponent(key))
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function (e) { console.warn('[담당] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  }
   function loadTaskOwners() {
-    return _chGet(CH_BOARD_URL + '?action=board&key=' + OWNER_BOARD_KEY, 8000).then(function (j) {
+    return _boardRead(OWNER_BOARD_KEY, 8000).then(function (j) {
       taskOwners = (j && j.ok && j.board) ? j.board : {};
       applyTaskOwnersToDom();
     });
@@ -252,7 +265,7 @@
     return '<input type="text" class="mgr-inp" data-mgr-id="' + esc(id) + '" value="' + esc(taskOwners[id] || '') + '" placeholder="담당">';
   }
   function saveTaskOwner(id, value) {
-    return _chGet(CH_BOARD_URL + '?action=board&key=' + OWNER_BOARD_KEY, 8000).then(function (j) {
+    return _boardRead(OWNER_BOARD_KEY, 8000).then(function (j) {
       var fresh = (j && j.ok && j.board) ? j.board : {};
       fresh[id] = value;
       return fetch(CH_BOARD_URL, {
@@ -260,6 +273,11 @@
         body: JSON.stringify({ action: 'saveBoard', key: OWNER_BOARD_KEY, board: fresh })
       }).then(function (r) { return r.json(); }).then(function (res) {
         taskOwners = fresh;
+        // 저장 성공 시 서버 미러도 그 키만 즉시 다시 떠오게 한다(5분 주기를 안 기다리고 반영) — best-effort,
+        // 실패해도 다음 cron(5분)이 채운다. GitHub Pages(ERP_API_ON=false)는 호출 자체를 안 한다.
+        if (res && res.ok && ERP_API_ON) {
+          fetch('/api/board/' + encodeURIComponent(OWNER_BOARD_KEY) + '/refresh', { method: 'POST' }).catch(function () {});
+        }
         return !!(res && res.ok);
       });
     });
