@@ -95,8 +95,45 @@
     });
   }
 
+  /* ── 구매요청·자산대장 쓰기 관문 (배 960 #H · CFO 매출지출현황) ───────────────────────────
+     운영요약 GAS 로 가던 구매요청·자산 쓰기 8종을 같은 규칙으로 /api/write 에 태운다.
+     erpTodoCall 과 같이 **파싱된 객체**를 돌려준다 — 화면 _rawCall 이 이미 `.then(r=>r.json())` 로 받고 있어
+     호출부는 fetch 한 줄이 함수 한 줄로 바뀔 뿐이다. GAS 갈래는 종전 화면 규약 그대로 POST(본문 JSON) 하나다
+     — 이 GAS 는 GET 쿼리를 안 받는다(화면이 처음부터 POST 만 썼다). erpTodoCall 의 GET/POST 판정을 쓰면 안 된다.
+
+     제외(종전 GAS 직행 그대로):
+       · list · asset_list = 읽기다. 사람이 누르는 즉시 바뀌는 원장이라 거울에 안 얹는다 —
+         TTL 0 거울은 GAS 왕복에 DB 왕복만 더해 느려진다(읽기 거울 = 레인 E 의 무거운 집계 6종뿐).
+       · sales_month·sales_ops·sales_dept·labor_time·proc_summary 등 집계 읽기 = 레인 E 거울(/api/sales/…).
+     서버 목적지 판정(api_write._gas_key · _PROC_GAS_ACTIONS)과 같은 목록이다 — 한쪽만 늘리면 안 된다.
+     ★이름이 짧고 흔하다(add·delete·status·photo) — 다른 화면이 같은 이름을 관문에 보내면 목적지가 샌다.
+       2026-09-04 기준 관문을 타는 화면 전수 확인: 겹치는 액션 없음(api_write.py 자체점검이 회원·접수 쪽을 지킨다). */
+  var PROC_WRITE = /^(add|delete|status|photo|asset_(update|label|issue|del))$/;
+
+  function erpProcCall(gasUrl, params) {
+    var gas = function () {
+      return fetch(gasUrl, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(params)
+      }).then(function (r) { return r.json(); });
+    };
+    if (!ERP_ON || !params || !PROC_WRITE.test(String(params.action || ''))) return gas();
+    return fetch('/api/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(params)
+    }).then(_json)
+      .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
+      .catch(function (e) {
+        console.warn('[구매쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
+        return gas();
+      });
+  }
+
   w.erpTodoCall = erpTodoCall;
   w.erpTodoIsWrite = function (action) { return WRITE.test(String(action || '')); };
   w.erpCheckPost = erpCheckPost;
   w.erpCheckIsWrite = function (action) { return CHECK_WRITE.test(String(action || '')); };
+  w.erpProcCall = erpProcCall;
+  w.erpProcIsWrite = function (action) { return PROC_WRITE.test(String(action || '')); };
 })(window);

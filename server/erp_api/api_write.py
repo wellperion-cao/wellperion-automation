@@ -6,7 +6,8 @@
   ② 같은 payload 를 종전 GAS 에 그대로 POST 해 시트를 유지하고(GAS 판정 로직 재사용)
      — 액션으로 갈라 보낸다: reg_·lf_·voc_·hold_complete = 접수 GAS(RECEPTION_EXEC_URL · 배 960 #4b),
        todo_·approval_rep_ = 업무 GAS(TODO_GAS_URL · #6b), 점검 3부서 = 점검 GAS(CHECK_GAS_URL · #5b),
-       save_schedule = 전사일정 GAS(SCHEDULE_GAS_URL · #5b), 나머지 = FUNNEL_EXEC_URL
+       save_schedule = 전사일정 GAS(SCHEDULE_GAS_URL · #5b), 구매요청·자산 = 운영요약 GAS(PROC_GAS_URL · #H),
+       나머지 = FUNNEL_EXEC_URL
   ③ GAS 응답(ok·error·detail·noRetry)을 그대로 돌려준다 — 화면 재시도·오류 코드 무변경.
 GAS 에 못 닿거나 응답이 JSON 이 아니면 {ok:false, error:'server-forward-failed', noRetry:false} — 화면이 GAS 직접 경로로 폴백한다.
 거울 즉시 반영: 회원·문의 쓰기가 ok 면 sync_members / sync_inquiries 전체 동기화를 뒤에서 1회 돌린다(5분 지연 소멸).
@@ -51,13 +52,24 @@ _CHECK_WRITES = ("save", "saveBoard", "saveItems", "snapshot_append", "unlock_ro
                  "save_facility_measure", "save_facility_notes")
 # 점검 GAS 로 넘길 쓰기 전수(거울 유무와 무관) — _gas_key 목적지 표. 화면 관문(erp_write.js CHECK_WRITE)과 같은 목록.
 _CHECK_GAS_ACTIONS = _CHECK_WRITES + ("save_insp_memo", "fcheck_ranges_save", "vendor_save")
+# 구매요청·자산대장 쓰기(배 960 #H · CFO 매출지출현황) — 운영요약 GAS(PROC_GAS_URL · 레인 E 가 이미 쓰는 같은 열쇠).
+#   화면 관문(erp_write.js PROC_WRITE)과 같은 목록. 읽기(list·asset_list)는 여기 없다 — 거울에 안 얹고 GAS 직행.
+#   ★이름이 짧고 흔하다 — 명시 목록으로만 갈라 회원(member_*)·접수(reg_*) 쪽을 삼키지 않게 한다(자체점검이 지킨다).
+_PROC_GAS_ACTIONS = ("add", "delete", "status", "photo",
+                     "asset_update", "asset_label", "asset_issue", "asset_del")
+# 구매성 지출 집계 거울(proc/proc_summary · 레인 E)은 품의가 늘거나 상태가 바뀌면 바로 옛값이 된다.
+#   자산대장(asset_*)은 거울이 없다 — 헛돌지 않게 뺀다.
+_PROC_MIRROR_WRITES = ("add", "delete", "status", "photo")
 MIRROR_SYNC = {a: "sync_members.py" for a in _MEMBER_WRITES}
 MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
 MIRROR_SYNC.update({a: "sync_reception.py" for a in _RECEPTION_WRITES})
 MIRROR_SYNC.update({a: "sync_todo.py" for a in _TODO_WRITES})
 MIRROR_SYNC.update({a: "sync_check.py" for a in _CHECK_WRITES})
+MIRROR_SYNC.update({a: "sync_sales.py" for a in _PROC_MIRROR_WRITES})
 # 동기화 스크립트에 붙일 인자 — 점검은 오늘치만 다시 뜬다(전량은 GAS 18호출·수 분, 5분 cron 이 따로 돈다).
-_SYNC_ARGS = {"sync_check.py": ["--today"]}
+#   매출은 한 열쇠만(--only) — 전량은 무거운 집계 20여 호출(수십 초짜리 여럿)이고, proc_summary 는 TTL 30분이라
+#   그냥 전량을 돌리면 fresh() 가 건너뛰어 정작 갱신이 안 된다.
+_SYNC_ARGS = {"sync_check.py": ["--today"], "sync_sales.py": ["--only", "proc/proc_summary"]}
 _sync_timers = {}
 
 
@@ -78,6 +90,8 @@ def _gas_key(action):
         return "CHECK_GAS_URL"
     if action == "save_schedule":
         return "SCHEDULE_GAS_URL"
+    if action in _PROC_GAS_ACTIONS:
+        return "PROC_GAS_URL"
     return "FUNNEL_EXEC_URL"
 
 
@@ -162,6 +176,14 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("member_active_update") == "FUNNEL_EXEC_URL"   # 점검 명시 목록이 회원 쪽을 삼키면 안 된다
     assert MIRROR_SYNC["snapshot_append"] == "sync_check.py" and _SYNC_ARGS["sync_check.py"] == ["--today"]
     assert "fcheck_ranges_save" not in MIRROR_SYNC and "save_schedule" not in MIRROR_SYNC   # 거울 없는 쓰기는 헛돌지 않는다
+    # 구매요청·자산(배 960 #H) — 이름이 짧아 목적지가 새기 쉽다. 전수 + 다른 도메인이 안 삼키는지 양쪽 확인.
+    for _a in ("add", "delete", "status", "photo", "asset_update", "asset_label", "asset_issue", "asset_del"):
+        assert _gas_key(_a) == "PROC_GAS_URL", _a
+    assert _gas_key("list") == "FUNNEL_EXEC_URL" and _gas_key("asset_list") == "FUNNEL_EXEC_URL"  # 읽기는 관문에 안 온다
+    assert _gas_key("reg_delete") == "RECEPTION_EXEC_URL" and _gas_key("todo_add") == "TODO_GAS_URL"  # 접두사 표가 먼저다
+    assert _gas_key("save") == "CHECK_GAS_URL" and _gas_key("member_registered_add") == "FUNNEL_EXEC_URL"
+    assert MIRROR_SYNC["status"] == "sync_sales.py" and _SYNC_ARGS["sync_sales.py"] == ["--only", "proc/proc_summary"]
+    assert "asset_issue" not in MIRROR_SYNC and "asset_del" not in MIRROR_SYNC   # 자산대장은 거울이 없다
     r = redact_blobs({"action": "lf_submit", "photo": "d" * 9000, "memo": "짧은 메모"})
     assert r["memo"] == "짧은 메모" and r["action"] == "lf_submit"
     assert r["photo"]["_redacted"] == 9000 and len(r["photo"]["_sha256"]) == 64

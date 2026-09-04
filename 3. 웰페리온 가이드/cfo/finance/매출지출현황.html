@@ -481,6 +481,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   <div style="margin-top:5px">매출=회원권+강습 / 지출=강사 인건비+운영부+구매성 · 정규직 일부·임대료 미포함</div>
 </footer>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 "use strict";
 var GATE_PW="wellperion!@1202";
@@ -1380,7 +1381,10 @@ var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};   // 읽�
 function _rawCall(action,extra){
   var post=function(){
     var body=Object.assign({action:action,password:GATE_PW},extra||{});
-    return fetch(apiFor(action),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+    /* 쓰기(구매요청 add·delete·status·photo · 자산 asset_*)는 관문 하나(_assets/erp_write.js · 배 960 #H)를 탄다 —
+       ERP 도메인이면 서버 /api/write 가 먼저 원장에 적고 같은 본문을 GAS 로 넘긴다(이중 기록).
+       읽기·비ERP 도메인·관문 실패는 종전 GAS POST 그대로. 응답 모양 무변경. */
+    return erpProcCall(apiFor(action),body);
   };
   if(!MIRROR_ACT[action])return post();
   return _salesRead("salesops","?action="+action,post,"매출집계 "+action);

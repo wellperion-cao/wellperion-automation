@@ -14,6 +14,7 @@ sync_funnel.py 와 같은 규칙이다. 화면들이 이미 부르는 읽기 액
 보고시트는 이번 달 파일 id 를 ERP GAS(daily_report_sheet)로 먼저 찾아 붙인다(화면과 같은 해석).
 
 실행: python3 /srv/erp/api/sync_sales.py   (cron 5분 · /etc/cron.d/erp-sales-sync)
+      python3 sync_sales.py --only proc/proc_summary   — 한 열쇠만 TTL 무시하고 즉시(구매요청 쓰기 뒤 관문이 부른다)
 자체점검: python3 sync_sales.py --selftest  (같은 DB 의 tenant 'selftest' · 네트워크 없음)
 """
 import json
@@ -129,7 +130,9 @@ def fresh(conn, now, gas, action, params, ttl):
     return 0 <= age < ttl
 
 
-def main():
+def main(only=""):
+    """only='proc/proc_summary' 면 그 한 열쇠만 TTL 무시하고 다시 떠온다 — 쓰기 관문(api_write)이 저장 직후 부른다.
+    전량은 무거운 집계 20여 호출이라 저장마다 돌릴 수 없고, TTL 때문에 그냥 돌리면 정작 건너뛴다."""
     load_env()
     conn = db.connect()
     db.init_schema(conn)                        # 멱등 — sales_cache 표가 없으면 만든다
@@ -137,7 +140,9 @@ def main():
     fid = None
     n_ok, n_skip, failed = 0, 0, []
     for gas, action, params, ttl in jobs(today):
-        if fresh(conn, now, gas, action, params, ttl):
+        if only and "%s/%s" % (gas, action) != only:
+            continue
+        if not only and fresh(conn, now, gas, action, params, ttl):
             n_skip += 1
             continue
         if gas == "deptrep":
@@ -150,11 +155,12 @@ def main():
             continue                            # 실패 — 기존 거울을 그대로 둔다
         store(conn, gas, action, params, data, now)
         n_ok += 1
-    with conn:
-        db.meta_set(conn, "sales_last_sync", now)
-        db.meta_set(conn, "sales_last_failed", ",".join(failed))
+    if not only:            # 한 열쇠만 돈 판은 health 를 덮지 않는다 — 실제보다 깨끗해 보이면 안 된다
+        with conn:
+            db.meta_set(conn, "sales_last_sync", now)
+            db.meta_set(conn, "sales_last_failed", ",".join(failed))
     conn.close()
-    print("sales sync %s · 갱신 %d · 건너뜀 %d · 실패 %s" % (now, n_ok, n_skip, failed or "없음"))
+    print("sales sync%s %s · 갱신 %d · 건너뜀 %d · 실패 %s" % (" " + only if only else "", now, n_ok, n_skip, failed or "없음"))
     return 1 if failed else 0
 
 
@@ -183,6 +189,8 @@ def selftest():
         assert ("deptrep", "lesson", "") in keys
         assert [t for g, a, p, t in j if a == "sales_instr_pub" and p.get("month") == 8][0] == 1440, "지난달은 하루 1회"
         assert all(a in ACTIONS[g] for g, a, _, _ in j), "모든 일감은 API 허용 액션 안"
+        # 쓰기 관문(api_write)이 구매요청 저장 뒤 --only 로 부르는 열쇠 — 없거나 여럿이면 refresh 가 헛돈다.
+        assert [1 for g, a, p, _ in j if "%s/%s" % (g, a) == "proc/proc_summary"] == [1], j
     finally:
         with conn:
             conn.execute("DELETE FROM sales_cache WHERE tenant_id=%s", (db.TENANT,))
@@ -192,4 +200,7 @@ def selftest():
 
 
 if __name__ == "__main__":
-    sys.exit(selftest() if "--selftest" in sys.argv else main())
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
+    _i = sys.argv.index("--only") if "--only" in sys.argv else -1
+    sys.exit(main(sys.argv[_i + 1] if _i >= 0 and _i + 1 < len(sys.argv) else ""))
