@@ -742,6 +742,7 @@ input.dvin-err{border-color:#b3261e!important;background:rgba(179,38,30,.07)}
 
 <div id="toast"></div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════
    설정: 배포한 Apps Script 웹앱 주소(.../exec)
@@ -822,11 +823,9 @@ async function call(payload){
     if(i) await new Promise(r=>setTimeout(r, RC_RETRY_MS[i-1]));
     let txt;
     try{
-      const res = await fetch(state.url, {
-        method:'POST', redirect:'follow', credentials:'omit', cache:'no-store',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify(payload)
-      });
+      /* ERP 도메인이면 서버 관문(쓰기=이중기록 /api/write · 읽기=/api/reception-ops), 아니면 종전 GAS 직행.
+         판정·폴백은 _assets/erp_write.js 한 곳(배 960 #9i) — 돌려주는 것은 fetch 와 같은 Response 다. */
+      const res = await erpRcPost(state.url, payload);
       txt = await res.text();
     }catch(netErr){
       console.warn('[RC] 네트워크 실패('+(i+1)+'/'+tries+')', netErr && netErr.message);

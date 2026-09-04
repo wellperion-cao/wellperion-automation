@@ -9,6 +9,9 @@
        save_schedule = 전사일정 GAS(SCHEDULE_GAS_URL · #5b), 구매요청·자산 = 운영요약 GAS(PROC_GAS_URL · #H),
        나머지 = FUNNEL_EXEC_URL
   ③ GAS 응답(ok·error·detail·noRetry)을 그대로 돌려준다 — 화면 재시도·오류 코드 무변경.
+영역별 원본 스위치(origin_switch.py · 배 960 레인 J): 그 영역이 server 면 ②③ 을 건너뛰고 원장에만 적은 뒤 즉시
+  {ok:true, queued:true} 를 돌려준다 — 시트는 pushback.py(1분 cron)가 되밀고 거울도 그때 다시 뜬다. 되돌리기 = 스위치를 dual 로.
+  ★ server 모드는 GAS 응답값(새 행 id·검증 거부 문구)을 화면에 못 준다 — 응답값을 쓰는 액션이 있는 영역은 전환 대상이 아니다.
 GAS 에 못 닿거나 응답이 JSON 이 아니면 {ok:false, error:'server-forward-failed', noRetry:false} — 화면이 GAS 직접 경로로 폴백한다.
 거울 즉시 반영: 회원·문의 쓰기가 ok 면 sync_members / sync_inquiries 전체 동기화를 뒤에서 1회 돌린다(5분 지연 소멸).
 nginx 가 앞에서 auth_request 로 로그인 쿠키를 검사하고 X-Erp-User 를 넘긴다(api.nginx.conf).
@@ -24,8 +27,11 @@ import urllib.request
 from fastapi import APIRouter, Request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import origin_switch  # noqa: E402  — 영역별 dual/server 스위치(배 960 레인 J)
 from common import db  # noqa: E402
 from api_intake import redact_blobs  # noqa: E402  — 사진·서명 base64 는 원장에 길이·해시만
+# 리셉션 업무·라커관리(배 960 #9i) — 액션 이름(update·append)이 흔해 접두사로 못 가른다. 목적지 판정 정본은 그 파일.
+from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 router = APIRouter()
@@ -139,12 +145,22 @@ async def write(request: Request):
         conn = db.connect()
     except db.Error as e:
         return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+    # 목적지 판정은 아래 전달과 같은 순서로 — 리셉션 업무·라커(#9i)는 스위치 이름이 없어 늘 dual 이다.
+    area = origin_switch.WRITE_AREA.get(_rc_gas_key(action, payload) or _gas_key(action))
+    server_mode = bool(area) and origin_switch.mode(area) == "server"   # 스위치 한 줄 — 재시작 없이 갈린다
     with conn:
         log_id = conn.execute(
-            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status) VALUES (%s,%s,%s,%s,%s,'pending') RETURNING id",
-            (db.TENANT, _now_kst(), action, json.dumps(redact_blobs(payload), ensure_ascii=False), user)).fetchone()[0]
+            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+            (db.TENANT, _now_kst(), action, json.dumps(redact_blobs(payload), ensure_ascii=False), user,
+             "queued" if server_mode else "pending", body.decode("utf-8") if server_mode else None)).fetchone()[0]
+    if server_mode:
+        # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
+        conn.close()
+        return {"ok": True, "queued": True, "id": log_id, "mode": "server"}
     try:
-        resp = _gas_forward(body, _gas_key(action))
+        # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
+        resp = _gas_forward(body, _rc_gas_key(action, payload) or _gas_key(action))
         status = "ok" if resp.get("ok") else "gas-error"
     except Exception as e:
         resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}
@@ -155,6 +171,8 @@ async def write(request: Request):
     conn.close()
     if status == "ok" and action in MIRROR_SYNC:
         _schedule_sync(MIRROR_SYNC[action])
+    if status == "ok":
+        _rc_forget(payload)   # 리셉션 업무·라커 실패대비 정본은 쓰기 직후 버린다(낡은 값 금지 · 배 960 #9i)
     return resp
 
 
@@ -184,7 +202,20 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("save") == "CHECK_GAS_URL" and _gas_key("member_registered_add") == "FUNNEL_EXEC_URL"
     assert MIRROR_SYNC["status"] == "sync_sales.py" and _SYNC_ARGS["sync_sales.py"] == ["--only", "proc/proc_summary"]
     assert "asset_issue" not in MIRROR_SYNC and "asset_del" not in MIRROR_SYNC   # 자산대장은 거울이 없다
+    # 리셉션 업무·라커(배 960 #9i) — 액션만 보면 전부 FUNNEL 로 샌다. 본문 판정이 먼저 서야 한다.
+    assert _rc_gas_key("update", {"tab": "키관리", "row": 2, "col": 7}) == "RCOPS_GAS_URL"
+    assert _rc_gas_key("append", {"tab": "시재금입출내역", "values": []}) == "RCOPS_GAS_URL"
+    assert _rc_gas_key("update", {"db": "men", "_sheet_row": 3, "fields": {}}) == "LOCKER_GAS_URL"
+    assert _rc_gas_key("read", {"tab": "키관리"}) is None                      # 읽기는 /api/reception-ops
+    assert _rc_gas_key("member_active_update", {"no": "M1"}) is None           # 회원 쓰기를 삼키면 안 된다
+    assert (_rc_gas_key("member_active_update", {"no": "M1"}) or _gas_key("member_active_update")) == "FUNNEL_EXEC_URL"
+    assert (_rc_gas_key("save", {"key": "X"}) or _gas_key("save")) == "CHECK_GAS_URL"
+    assert "update" not in MIRROR_SYNC and "append" not in MIRROR_SYNC         # 두 화면은 5분 거울이 없다
     r = redact_blobs({"action": "lf_submit", "photo": "d" * 9000, "memo": "짧은 메모"})
     assert r["memo"] == "짧은 메모" and r["action"] == "lf_submit"
     assert r["photo"]["_redacted"] == 9000 and len(r["photo"]["_sha256"]) == 64
+    # 스위치(배 960 레인 J) — 모든 목적지에 스위치 이름이 있어야 전환·복귀가 한 줄로 된다.
+    for _a in ("reg_update", "todo_add", "save", "save_schedule", "add", "member_owner_save"):
+        assert _gas_key(_a) in origin_switch.WRITE_AREA, _a
+    assert set(origin_switch.WRITE_AREA.values()) <= set(origin_switch.NAMES)
     print("자체점검 통과")

@@ -130,10 +130,61 @@
       });
   }
 
+  /* ── 리셉션 업무·라커관리 관문 (배 960 #9i) ───────────────────────────────────────────────
+     두 화면(coo/리셉션 업무/index.html · .../라커관리/index.html)은 실시간 셀 편집이라 5분 캐시 거울을
+     앞에 두면 방금 옆자리에서 고친 칸이 되돌아간 것처럼 보인다. 그래서 거울을 앞에 안 둔다.
+       쓰기(update·append) → /api/write : write_log 에 먼저 적고(이중기록) 같은 본문을 GAS 로 넘긴다.
+       읽기(그 밖)         → /api/reception-ops : 매번 GAS 로 그대로 나가고, 서버는 응답을 「마지막 정상본」으로만 쥔다.
+     서버가 GAS 에 못 닿으면(server-forward-failed) 화면이 종전 GAS 직접 경로로 **한 번만** 간다 —
+     쓰기는 그 시점에 GAS 가 아직 안 써졌으므로 안전하고, 중복 발송이 안 되게 두 번 시도하지 않는다.
+     읽기는 그 GAS 직행마저 막히면(구글 안내 HTML) 서버가 실어 준 마지막 정상본(_stale)으로 화면을 살린다 —
+     저장본 없는 PC(처음 들어온 컴퓨터)가 빈 화면에서 막히던 자리다(화면 주석 2026-08-03).
+     erpCheckPost 처럼 fetch 와 같은 Response 를 돌려준다 — 두 화면의 call() 이 res.text()·r.json() 을 그대로 한다.
+     목적지 판정(tab=리셉션 업무 · db=라커)은 서버가 한다 — 화면이 준 주소로는 절대 안 보낸다(api_reception_ops.target).
+     되돌리기 = 두 화면의 erpRcPost(...) 를 종전 fetch 로 되돌리거나 ERP_ON 을 false 로. */
+  var RC_WRITE = /^(update|append)$/;
+
+  function erpRcPost(gasUrl, payload) {
+    var gas = function () {
+      return fetch(gasUrl, {
+        method: 'POST', redirect: 'follow', credentials: 'omit', cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+    };
+    if (!ERP_ON || !payload || !(payload.tab || payload.db)) return gas();
+    var isWrite = RC_WRITE.test(String(payload.action || ''));
+    var fail = function () { return { via: 'gas', stale: null }; };   // 관문을 못 씀 — 종전 경로로
+    return fetch(isWrite ? '/api/write' : '/api/reception-ops', {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      if (!r.ok) return fail();                                       // 401(미로그인)·5xx
+      // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .text()/.json() 할 수 있어야 한다.
+      return r.clone().json().then(function (d) {
+        return (d && d.error === 'server-forward-failed')
+          ? { via: 'gas', stale: d._stale || null }                   // GAS 는 아직 안 써졌다 — 화면이 직접
+          : { via: 'gateway', r: r };                                 // GAS 응답 그대로(unauthorized 포함)
+      }, fail);
+    }, fail).then(function (v) {
+      if (v.via === 'gateway') return v.r;
+      return gas().catch(function (e) {
+        if (!isWrite && v.stale) {
+          console.warn('[리셉션관문] 서버·GAS 둘 다 실패 → 서버 마지막 정상본 표시');
+          return new Response(JSON.stringify(v.stale), { headers: { 'Content-Type': 'application/json' } });
+        }
+        throw e;
+      });
+    });
+  }
+
   w.erpTodoCall = erpTodoCall;
   w.erpTodoIsWrite = function (action) { return WRITE.test(String(action || '')); };
   w.erpCheckPost = erpCheckPost;
   w.erpCheckIsWrite = function (action) { return CHECK_WRITE.test(String(action || '')); };
+  w.erpRcPost = erpRcPost;
+  w.erpRcIsWrite = function (action) { return RC_WRITE.test(String(action || '')); };
   w.erpProcCall = erpProcCall;
   w.erpProcIsWrite = function (action) { return PROC_WRITE.test(String(action || '')); };
 })(window);

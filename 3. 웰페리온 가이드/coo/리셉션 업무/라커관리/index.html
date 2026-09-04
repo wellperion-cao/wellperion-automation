@@ -152,8 +152,9 @@ let kpiFilter = null;  // 현황 필터: null=전체 / 'exp'=만기 / 'vac'=공�
 
 /* ===== 통신 ===== */
 async function call(payload){
-  const r = await fetch(WEBAPP_URL, {method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload)});
+  /* ERP 도메인이면 서버 관문(쓰기=이중기록 /api/write · 읽기=/api/reception-ops), 아니면 종전 GAS 직행.
+     판정·폴백은 _assets/erp_write.js 한 곳(배 960 #9i) — 돌려주는 것은 fetch 와 같은 Response 다. */
+  const r = await erpRcPost(WEBAPP_URL, payload);
   return r.json();
 }
 async function readDb(db){ return call({db, password: PW}); }
