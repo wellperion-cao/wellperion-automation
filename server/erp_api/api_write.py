@@ -246,7 +246,7 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     # 구매요청·자산(배 960 #H) — 이름이 짧아 목적지가 새기 쉽다. 전수 + 다른 도메인이 안 삼키는지 양쪽 확인.
     for _a in ("add", "delete", "status", "photo", "asset_update", "asset_label", "asset_issue", "asset_del"):
         assert _gas_key(_a) == "PROC_GAS_URL", _a
-    assert _gas_key("list") == "FUNNEL_EXEC_URL" and _gas_key("asset_list") == "FUNNEL_EXEC_URL"  # 읽기는 관문에 안 온다
+    assert _gas_key("list") is None and _gas_key("asset_list") is None      # 읽기는 관문에 안 온다 — 표에 없으면 400
     assert _gas_key("reg_delete") == "RECEPTION_EXEC_URL" and _gas_key("todo_add") == "TODO_GAS_URL"  # 접두사 표가 먼저다
     assert _gas_key("save") == "CHECK_GAS_URL" and _gas_key("member_registered_add") == "FUNNEL_EXEC_URL"
     assert MIRROR_SYNC["status"] == "sync_sales.py" and _SYNC_ARGS["sync_sales.py"] == ["--only", "proc/proc_summary"]
@@ -267,4 +267,29 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     for _a in ("reg_update", "todo_add", "save", "save_schedule", "add", "member_owner_save"):
         assert _gas_key(_a) in origin_switch.WRITE_AREA, _a
     assert set(origin_switch.WRITE_AREA.values()) <= set(origin_switch.NAMES)
+    # 표에 없는 액션은 목적지를 지어내지 않는다(배 960 M3) — 시포 화면이 실제로 보내는 회원·문의 액션은 전부 있어야 한다.
+    for _a in ("member_owner_save", "member_inquiry_delete", "lesson_inquiry_update", "product_plan_save",
+               "staff_feedback_submit", "staff_feedback_photo", "ohnutti_team_list", "client_write_fail"):
+        assert _gas_key(_a) == "FUNNEL_EXEC_URL", _a
+    assert _gas_key("member_owner_sav") is None and _gas_key("drop_table") is None   # 오타·남의 액션은 400
+
+    # 중복 쓰기 가림(배 960 M7) — 같은 (사용자, idem) 두 번째 요청은 저장된 응답을 그대로 돌려준다(GAS 재전송 없음).
+    class _C:
+        row = None
+
+        def execute(self, q, p=None):
+            assert "payload->>'idem'" in q and "user_email" in q
+            return self
+
+        def fetchone(self):
+            return _C.row
+
+    assert _idem_hit(_C(), "a@b.c", {"action": "todo_add"}) is None          # 열쇠 없으면 가리지 않는다
+    assert _idem_hit(_C(), "a@b.c", {"action": "todo_add", "idem": "u1"}) is None   # 처음 보는 열쇠
+    _C.row = {"id": 7, "gas_response": {"ok": True, "id": 42}}
+    assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}       # 저장된 응답 그대로
+    _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
+    assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
+    _C.row = {"id": 7, "gas_response": None}
+    assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
     print("자체점검 통과")

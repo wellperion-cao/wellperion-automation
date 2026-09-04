@@ -23,6 +23,10 @@ WRITE_AREA = {"RECEPTION_EXEC_URL": "write_reception", "TODO_GAS_URL": "write_to
               "PROC_GAS_URL": "write_proc", "FUNNEL_EXEC_URL": "write_member"}
 # 스위치 열쇠 전수 = 공개 접수 폼(api_intake.FORMS) + 위 다섯 영역. example.json 과 같아야 한다(자체점검이 지킨다).
 NAMES = ("inquiry", "instructor", "sunday", "reception", "selftest") + tuple(sorted(set(WRITE_AREA.values())))
+# server 로 못 바꾸는 폼·영역 (배 960 M2 · 2026-09-04). 스위치 파일에 'server' 라 적혀 있어도 dual 로 돌린다.
+#   접수(reception): 서버가 매기는 접수번호는 L260904-101010 인데 접수 GAS 는 RECEPTION-<n> 을 매긴다.
+#   손님이 받아 간 번호로 직원이 시트에서 찾지 못한다 — 번호 모양이 같아지기 전에는 전환 대상이 아니다.
+NO_SERVER = {"reception": "server 미지원(접수번호 형식 L… vs RECEPTION-n)"}
 _cache = {"stamp": None, "map": {}}
 
 
@@ -45,6 +49,8 @@ def _load():
 
 def mode(name):
     """'server' 는 파일에 그대로 적혀 있을 때만. 그 밖(파일 없음·오타·깨짐·모르는 이름)은 전부 dual."""
+    if name in NO_SERVER:                 # 전환 자체가 막힌 자리 — 파일에 뭐라 적혀 있든 dual
+        return DEFAULT
     m = _load()
     v = m.get(name) or m.get("default") or DEFAULT
     return "server" if v == "server" else DEFAULT
@@ -67,17 +73,21 @@ if __name__ == "__main__":   # python3 origin_switch.py — 파일 하나 만들
 
         assert mode("inquiry") == "dual"                       # 파일 없음 = 전환 전
         put('{"inquiry": "server"}')
-        assert mode("inquiry") == "server" and mode("reception") == "dual"   # 켠 폼만 갈린다
+        assert mode("inquiry") == "server" and mode("instructor") == "dual"   # 켠 폼만 갈린다
         put('{"inquiry": "dual"}')
         assert mode("inquiry") == "dual"                       # 되돌리기 = 값 한 줄
         put('{"default": "server", "inquiry": "dual"}')
-        assert mode("reception") == "server" and mode("inquiry") == "dual"   # 개별 값이 default 를 이긴다
+        assert mode("instructor") == "server" and mode("inquiry") == "dual"   # 개별 값이 default 를 이긴다
         put('{"inquiry": "SERVER"}')
         assert mode("inquiry") == "dual"                       # 오타·대문자는 전환이 아니다
         put("{망가진 파일")
         assert mode("inquiry") == "dual" and modes()["write_todo"] == "dual"  # 깨져도 저장은 멈추지 않는다
         put('{"_메모": "사람이 읽는 줄", "write_todo": "server"}')
         assert mode("write_todo") == "server" and set(modes()) == set(NAMES)
+        put('{"reception": "server"}')                         # 배 960 M2 — 접수는 켜도 안 켜진다
+        assert mode("reception") == "dual" and set(NO_SERVER) <= set(NAMES)
+        put('{"default": "server"}')
+        assert mode("reception") == "dual" and mode("inquiry") == "server"
 
     with open(EXAMPLE, encoding="utf-8") as f:                 # 저장소 본과 열쇠가 어긋나면 사람이 못 켠다
         ex = json.load(f)

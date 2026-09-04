@@ -73,4 +73,13 @@ if __name__ == "__main__":
     assert json.loads(sign_body(RECEPTION_URL_KEY, body).decode("utf-8"))["key"] == "s3cret"
     assert sign_body("FUNNEL_EXEC_URL", body) == body
     assert sign_body(RECEPTION_URL_KEY, b"not json") == b"not json"
+
+    # 업무 GAS 무인증 쓰기 게이트(배 960 M4) — 서버가 srvkey 를 넣어야 게이트를 켠 날 13종이 안 막힌다.
+    todo = json.dumps({"action": "todo_add", "업무명": "시험"}, ensure_ascii=False).encode("utf-8")
+    os.environ.pop("TODO_WRITE_SECRET", None)
+    assert sign_body("TODO_GAS_URL", todo) == todo                # 값 없으면 본문 무변경(게이트 미배포 상태)
+    os.environ["TODO_WRITE_SECRET"] = "t0d0"
+    assert json.loads(sign_body("TODO_GAS_URL", todo).decode("utf-8"))["srvkey"] == "t0d0"
+    assert "srvkey" not in json.loads(sign_body(RECEPTION_URL_KEY, body).decode("utf-8"))   # 남의 GAS 로 새면 안 된다
+    assert sign_body("CHECK_GAS_URL", todo) == todo               # 표에 없는 GAS 는 그대로
     print("gas_key 자체점검 OK")

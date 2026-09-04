@@ -162,6 +162,9 @@ CREATE TABLE IF NOT EXISTS write_log (
   gas_response JSONB
 );
 CREATE INDEX IF NOT EXISTS ix_write_log_action ON write_log (tenant_id, action, at);
+-- 중복 쓰기 가림 (api_write._idem_hit · 배 960 M7 · 2026-09-04). 응답만 유실돼 같은 요청이 다시 와도 GAS 를 두 번 치지 않게
+-- 화면이 실어 보낸 요청 열쇠(payload.idem)로 최근 10분을 찾는다. 열쇠가 없는 행은 인덱스에 담지 않는다(대부분의 옛 행).
+CREATE INDEX IF NOT EXISTS write_log_idem_idx ON write_log (tenant_id, (payload->>'idem'), at) WHERE payload ? 'idem';
 
 -- 공개 접수 폼 이중기록 (api_intake.py · 배 960 · 2026-09-03). 폼 본문을 GAS 보다 먼저 적는다 — GAS 가 죽어도 여기 남는다.
 -- gas_status = pending · HTTP 코드('200' 정상) · skipped(selftest) · error:<사유>. form=selftest 는 tenant 'selftest'.

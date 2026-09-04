@@ -39,6 +39,17 @@ from sync_inquiries import load_env  # noqa: E402  — /srv/erp/api.env 의 GAS 
 
 FORMS = {"inquiry": "INTAKE_GAS_URL", "instructor": "INSTRUCTOR_GAS_URL", "sunday": "INSTRUCTOR_GAS_URL",
          "reception": "RECEPTION_EXEC_URL", "selftest": None}
+# 폼이 실제로 쓰는 액션만 통과시킨다(배 960 H1 · 2026-09-04). 종전에는 본문을 그대로 넘겨서, 로그인 뒤에만 쓰는
+# 전용 액션(reg_update·reg_delete·lf_delete·hold_complete …)을 이 무인증 통로에 실어 보내면 GAS 에 그대로 닿았다.
+# 값은 폼 화면에서 확인한 액션 전수 — 늘어나면 화면과 여기를 같이 고친다(한쪽만 늘리면 저장이 막힌다).
+#   inquiry    cmo/survey/wp_inquiry_form.html·_en          action='intake_submit'
+#   instructor cmo/intake/instructor_intake.html            본문에 action 칸이 없다 → ''
+#   sunday     cmo/sunday/GM의일요일.html                    본문에 action 칸이 없다 → ''
+#   reception  coo/reception/reception_block.html·_en       action='reg_submit'
+#              (lf_submit·member_hold_apply 는 이 통로로 안 온다 — 각각 /api/write · 휴회 GAS 직행)
+#   selftest   배포 검증용 — GAS 전달 자체가 없어 가리지 않는다(None)
+ALLOWED_ACTIONS = {"inquiry": {"intake_submit"}, "instructor": {""}, "sunday": {""},
+                   "reception": {"reg_submit"}, "selftest": None}
 MAX_BODY = 2 * 1024 * 1024
 BLOB_CHARS = 8192             # 이보다 긴 문자열 = 사진·서명 base64 (사람이 쓰는 칸은 이 길이가 안 나온다)
 FORWARD_TIMEOUT = 55          # 폼 fetch 상한보다 짧게
@@ -99,6 +110,10 @@ async def intake(form: str, request: Request):
             payload = {"_raw": payload}
     except ValueError:
         payload = {"_raw": text}
+    allowed = ALLOWED_ACTIONS.get(form)
+    if allowed is not None and str(payload.get("action") or "") not in allowed:
+        return Response(json.dumps({"ok": False, "error": "action-not-allowed"}, ensure_ascii=False),
+                        status_code=400, media_type="application/json; charset=utf-8", headers=CORS)
     tenant = "selftest" if form == "selftest" else db.TENANT
     server_mode = origin_switch.mode(form) == "server"      # 스위치 파일 한 줄 — 재시작 없이 갈린다
     conn = db.connect()
@@ -168,5 +183,6 @@ def health():
             "forms": {r["form"]: {"count": r["c"], "gas_failed": int(r["bad"] or 0),
                                   "unpushed": r["queued"], "last": r["last"]} for r in rows},
             "origin_mode": origin_switch.modes(),                     # 지금 어느 폼·영역이 서버 원본인가
+            "origin_locked": origin_switch.NO_SERVER,                 # server 로 못 켜는 자리와 그 이유(배 960 M2)
             "pushback": {"unpushed": push["unpushed"], "failed": push["failed"],   # 시트에 아직 못 간 건수
                          "last_pushed_at": push["last_pushed"] or ""}}             # 마지막 되밀기 시각(KST)
