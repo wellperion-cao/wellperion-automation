@@ -6829,8 +6829,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           paint();
         });
 
-        /* 종합접수처 — 미처리(완료 계열이 아닌 것) 건수. 분류까지 한 줄로 붙여 무엇이 밀렸는지 보이게. */
-        withTimeout(jget(RECEPTION_API+"?action=reg_list&_pv="+pv), 8000, null).then(function(reception){
+        /* 종합접수처 — 미처리(완료 계열이 아닌 것) 건수. 분류까지 한 줄로 붙여 무엇이 밀렸는지 보이게.
+           ★2026-09-04 시토: reg_list → reg_board 로 바꿨다. 이 카드는 status·category 만 세는데
+           reg_list 는 접수자 이름·연락처 원문(PII)을 통째로 내려준다 — 이 페이지는 GitHub Pages 에도
+           올라가 있어 주소만 알면 누구나 그 응답을 받는다. reg_board 는 같은 행을 이름·연락처만
+           가려서 주므로(_regMask · 키·필드 동일) 화면 숫자는 그대로다. GAS 접근 게이트(TOKEN_ENFORCE)를
+           켤 때 이 호출이 브라우저에서 나가 열쇠를 못 넣는 문제도 함께 사라진다. */
+        withTimeout(jget(RECEPTION_API+"?action=reg_board&_pv="+pv), 8000, null).then(function(reception){
           var rrows = reception && (reception.data||reception.rows);
           if(Array.isArray(rrows)){
             var DONE = {'완료':1,'처리완료':1,'해결':1};

@@ -20,6 +20,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
+import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 무동작.
 
 
 def gas_get(url_key, action, params=None, timeout=90):
@@ -29,6 +30,7 @@ def gas_get(url_key, action, params=None, timeout=90):
         raise SystemExit("%s 없음 — /srv/erp/api.env 를 확인" % url_key)
     q = {"action": action}
     q.update(params or {})
+    q = gas_key.sign_params(url_key, q)   # lf_list 는 GATED — 스위치가 켜지면 열쇠가 있어야 통과한다
     req = urllib.request.Request(url + "?" + urllib.parse.urlencode(q), headers={"User-Agent": "wellperion-erp-api"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

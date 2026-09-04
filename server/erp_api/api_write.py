@@ -25,6 +25,7 @@ import time
 import urllib.request
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import origin_switch  # noqa: E402  — 영역별 dual/server 스위치(배 960 레인 J)
@@ -32,6 +33,7 @@ from common import db  # noqa: E402
 from api_intake import redact_blobs  # noqa: E402  — 사진·서명 base64 는 원장에 길이·해시만
 # 리셉션 업무·라커관리(배 960 #9i) — 액션 이름(update·append)이 흔해 접두사로 못 가른다. 목적지 판정 정본은 그 파일.
 from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key  # noqa: E402
+import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 router = APIRouter()
@@ -66,6 +68,13 @@ _PROC_GAS_ACTIONS = ("add", "delete", "status", "photo",
 # 구매성 지출 집계 거울(proc/proc_summary · 레인 E)은 품의가 늘거나 상태가 바뀌면 바로 옛값이 된다.
 #   자산대장(asset_*)은 거울이 없다 — 헛돌지 않게 뺀다.
 _PROC_MIRROR_WRITES = ("add", "delete", "status", "photo")
+# 회원·문의 GAS(FUNNEL_EXEC_URL)로 보낼 액션 전수 — 시포 화면(cpo/**/*.html)이 실제로 관문에 보내는 것 그대로.
+#   종전에는 표 어디에도 없는 액션이 조용히 이 GAS 로 흘렀다(오타·남의 도메인 액션까지) — 배 960 M3.
+#   위 네 줄(회원·문의)에 없는 나머지 = 상품기획·직원피드백·오누띠·쓰기실패 보고. 늘어나면 화면과 여기를 같이 고친다.
+_FUNNEL_GAS_ACTIONS = _MEMBER_WRITES + _INQUIRY_WRITES + (
+    "product_plan_save", "product_plan_delete",
+    "staff_feedback_submit", "staff_feedback_list", "staff_feedback_photo",
+    "ohnutti_status_update", "ohnutti_team_list", "client_write_fail")
 MIRROR_SYNC = {a: "sync_members.py" for a in _MEMBER_WRITES}
 MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
 MIRROR_SYNC.update({a: "sync_reception.py" for a in _RECEPTION_WRITES})
@@ -87,7 +96,9 @@ def _gas_key(action):
     """어느 GAS 로 넘길지 — 접수처 액션(reg_·lf_·voc_·hold_complete)은 접수 GAS, 업무·결재 SSOT(todo_·approval_rep_)는
     업무 GAS, 점검 3부서는 점검 GAS, 전사일정 저장은 일정 GAS, 나머지는 종전 회원·문의 GAS.
     같은 관문 하나로 다섯 GAS 를 덮는다(배 960 #4b·#5b·#6b · 새 관문·새 인증 만들지 않음).
-    ponytail: 접두사 표 한 곳 — 액션이 늘어도 여기만 본다. 점검은 접두사가 안 갈려(save·saveBoard…) 명시 목록."""
+    ponytail: 접두사 표 한 곳 — 액션이 늘어도 여기만 본다. 점검은 접두사가 안 갈려(save·saveBoard…) 명시 목록.
+    ★표 어디에도 없으면 None — 목적지를 지어내지 않는다(배 960 M3). 관문은 그때 400 unknown-action 을 돌려주고,
+      화면은 종전대로 GAS 직접 경로로 폴백한다(저장은 되고, 서버 이중기록만 안 남는다)."""
     if action.startswith(("reg_", "lf_", "voc_")) or action == "hold_complete":
         return "RECEPTION_EXEC_URL"
     if action.startswith(("todo_", "approval_rep_")):
@@ -98,7 +109,9 @@ def _gas_key(action):
         return "SCHEDULE_GAS_URL"
     if action in _PROC_GAS_ACTIONS:
         return "PROC_GAS_URL"
-    return "FUNNEL_EXEC_URL"
+    if action in _FUNNEL_GAS_ACTIONS:
+        return "FUNNEL_EXEC_URL"
+    return None
 
 
 def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
@@ -106,6 +119,9 @@ def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
     url = os.environ.get(url_key, "")
     if not url:
         raise RuntimeError("%s 없음 — /srv/erp/api.env" % url_key)
+    # 접수 GAS 의 GATED 쓰기(reg_delete·lf_delete·hold_complete·voc_update)는 열쇠가 있어야 통과한다.
+    #   RECEPTION_TOKEN 이 비어 있으면 본문 그대로 — 스위치 켜기 전 배포해도 회귀 0.
+    body = gas_key.sign_body(url_key, body)
     req = urllib.request.Request(url, data=body, method="POST",
                                  headers={"Content-Type": "text/plain;charset=utf-8", "User-Agent": "wellperion-erp-api"})
     with urllib.request.urlopen(req, timeout=FORWARD_TIMEOUT) as r:
@@ -113,6 +129,30 @@ def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
     if not isinstance(data, dict):
         raise ValueError("GAS 응답이 객체가 아님")
     return data
+
+
+IDEM_WINDOW_MIN = 10      # 같은 열쇠를 이 시간 안에 다시 받으면 중복 요청으로 본다
+
+
+def _idem_hit(conn, user, payload):
+    """같은 (사용자, idem) 로 이미 받은 요청이면 그때 돌려준 응답 그대로, 아니면 None (배 960 M7).
+
+    화면은 요청마다 idem 열쇠(uuid)를 본문에 싣는다(_assets/erp_write.js gwPost). 서버가 GAS 쓰기를 끝냈는데
+    응답만 유실되면(전파 끊김·탭 닫힘) 화면이 같은 열쇠로 한 번 더 묻는다 — 그때 GAS 를 또 치면
+    snapshot_append·todo_add 가 시트에 두 줄이 된다. 여기서 원장을 먼저 보고 저장된 응답을 그대로 돌려준다.
+    아직 응답이 없는 행(진행 중)이면 되받은 것으로 치고 queued 를 돌려준다 — 두 번 쓰는 쪽보다 낫다."""
+    idem = str((payload or {}).get("idem") or "")[:64]
+    if not idem:
+        return None
+    since = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600 - IDEM_WINDOW_MIN * 60))
+    row = conn.execute("SELECT id, gas_response FROM write_log WHERE tenant_id=%s AND user_email=%s"
+                       " AND payload->>'idem'=%s AND at >= %s ORDER BY id DESC LIMIT 1",
+                       (db.TENANT, user, idem, since)).fetchone()
+    if not row:
+        return None
+    if row["gas_response"]:
+        return row["gas_response"] if isinstance(row["gas_response"], dict) else json.loads(row["gas_response"])
+    return {"ok": True, "queued": True, "id": row["id"], "duplicate": True}
 
 
 def _schedule_sync(script):
@@ -141,12 +181,21 @@ async def write(request: Request):
     except Exception:
         return {"ok": False, "error": "bad-payload", "detail": "JSON 객체에 action 이 있어야 합니다", "noRetry": True}
     user = request.headers.get("x-erp-user", "")
+    # 목적지 판정은 아래 전달과 같은 순서로 — 리셉션 업무·라커(#9i)는 스위치 이름이 없어 늘 dual 이다.
+    dest = _rc_gas_key(action, payload) or _gas_key(action)
+    if dest is None:      # 표에 없는 액션 — 엉뚱한 GAS 로 흘려보내지 않는다(배 960 M3)
+        return JSONResponse(status_code=400, content={
+            "ok": False, "error": "unknown-action", "noRetry": True,
+            "detail": "관문 목적지 표에 없는 액션입니다: %s" % action[:60]})
     try:
         conn = db.connect()
     except db.Error as e:
         return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
-    # 목적지 판정은 아래 전달과 같은 순서로 — 리셉션 업무·라커(#9i)는 스위치 이름이 없어 늘 dual 이다.
-    area = origin_switch.WRITE_AREA.get(_rc_gas_key(action, payload) or _gas_key(action))
+    prev = _idem_hit(conn, user, payload)   # 응답만 유실돼 같은 열쇠로 다시 온 요청 — GAS 를 두 번 치지 않는다
+    if prev is not None:
+        conn.close()
+        return prev
+    area = origin_switch.WRITE_AREA.get(dest)
     server_mode = bool(area) and origin_switch.mode(area) == "server"   # 스위치 한 줄 — 재시작 없이 갈린다
     with conn:
         log_id = conn.execute(
@@ -160,7 +209,7 @@ async def write(request: Request):
         return {"ok": True, "queued": True, "id": log_id, "mode": "server"}
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
-        resp = _gas_forward(body, _rc_gas_key(action, payload) or _gas_key(action))
+        resp = _gas_forward(body, dest)
         status = "ok" if resp.get("ok") else "gas-error"
     except Exception as e:
         resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}

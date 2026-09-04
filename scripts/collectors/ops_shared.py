@@ -51,6 +51,28 @@ SCHEDULE_GAS_URL = os.environ.get(
 TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
 
 
+def reception_key() -> str:
+    """접수 GAS 접근 게이트 열쇠(GAS ScriptProperties ACCESS_TOKEN 과 같은 값).
+
+    GAS 쪽 TOKEN_ENFORCE=1 이 켜지면 PII 액션(reg_list·lf_list·reg_delete·lf_delete …)은
+    key 파라미터가 있어야 통과한다. 값은 저장소에 두지 않는다 — 환경변수 RECEPTION_TOKEN
+    우선, 없으면 telegram_bot/.env(저장소 밖) 한 줄(_proc_password 와 같은 관례).
+    ★비어 있으면 아무것도 붙지 않는다 = 스위치 켜기 전 동작 무변경."""
+    k = os.environ.get("RECEPTION_TOKEN", "").strip()
+    if k:
+        return k
+    try:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "telegram_bot", ".env")
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("RECEPTION_TOKEN="):
+                    return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
 def gas_get(
     url: str,
     params: dict | None = None,
@@ -62,6 +84,11 @@ def gas_get(
 ) -> object | None:
     """GAS(script.google.com) GET 재시도 래퍼. 성공(HTTP 200) 시 Response, 전량 실패 시 None.
     log_fn(msg: str)을 넘기면 실패 시도마다 호출(선택 — 기본은 무음)."""
+    if url == RECEPTION_EXEC_URL and not (params or {}).get("key"):
+        _k = reception_key()          # 접수 GAS 의 GATED 액션(reg_list·lf_list …) 통과용. 없으면 무동작.
+        if _k:
+            params = dict(params or {})
+            params["key"] = _k
     for attempt in range(1, attempts + 1):
         try:
             resp = requests.get(url, params=params, timeout=timeout)

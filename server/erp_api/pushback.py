@@ -8,6 +8,8 @@ server 모드(origin_switch.py)에서 화면은 서버 원장에만 적고 즉�
 실무진·기존 GAS 소비자(알림 트리거 등)는 시트가 계속 채워지므로 영향 0.
 
   못 닿으면      push_tries 를 올리며 5회까지 재시도 → 그 뒤엔 손을 뗀다(행은 queued 로 남아 헬스 unpushed 에 잡힌다)
+                 손을 뗄 때 raw_body 도 지운다 — 사진·서명 base64·성함·연락처를 영영 이고 있지 않게(배 960 M1)
+  200 인데 JSON 이 아니면  GAS 가 아니라 구글이 답한 것(로그인 안내 HTML) — 시트엔 없다. 되민 것으로 치지 않고 재시도한다(H3)
   GAS 가 거부하면(ok:false) 되민 것으로 치되 gas-error 로 남긴다 — 재시도해도 같은 답이고, 시트엔 안 들어갔으니 사람이 봐야 한다
   둘 다              /srv/erp/status/pushback_failed.json + GET /api/intake/health 의 pushback.failed 에 뜬다
   거울               되민 쓰기가 거울(sync_*)을 더럽히면 배치 끝에 해당 동기화를 1회 돌린다(api_write 의 MIRROR_SYNC 그대로)
@@ -24,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api_intake import FORMS, PUSH_MAX_TRIES, gas_forward  # noqa: E402  — 전달·상한은 이중기록 때와 같은 것을 쓴다
 from api_reception_ops import write_gas_key as _rc_gas_key  # noqa: E402
+import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
 from api_write import MIRROR_SYNC, _SYNC_ARGS, _gas_key  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,8 +34,8 @@ BATCH = 100                       # 1분에 이만큼씩 — 밀려도 다음 �
 STATUS_DIR = os.environ.get("ERP_STATUS_DIR", "/srv/erp/status")
 FAILED_FILE = os.path.join(STATUS_DIR, "pushback_failed.json")
 # 원장별 다른 것 세 가지: 시각 칸 이름 · 닿았을 때 적을 상태값 · gas_response 칸이 JSONB 인가(write_log 만).
-LEDGERS = {"intake_log": {"ts": "received_at", "ok": "200", "jsonb": False},
-           "write_log": {"ts": "at", "ok": "ok", "jsonb": True}}
+LEDGERS = {"intake_log": {"ts": "received_at", "ok": "200", "jsonb": False, "who": "form"},
+           "write_log": {"ts": "at", "ok": "ok", "jsonb": True, "who": "action"}}
 UNPUSHED = "gas_status='queued' AND pushed_at IS NULL"
 FAILED = ("(pushed_at IS NULL AND push_tries >= %d) OR (pushed_at IS NOT NULL AND gas_status='gas-error')"
           % PUSH_MAX_TRIES)
@@ -51,13 +54,17 @@ def dest_key(table, row):
 
 
 def judge(table, status, resp):
-    """(적을 상태값, 되민 것으로 칠까). GAS 가 200 이어도 ok:false 면 시트엔 안 들어갔다 — 사람이 볼 자리로 보낸다."""
+    """(적을 상태값, 되민 것으로 칠까). GAS 가 200 이어도 ok:false 면 시트엔 안 들어갔다 — 사람이 볼 자리로 보낸다.
+
+    200 인데 본문이 JSON 이 아니면 GAS 가 아니라 구글이 답한 것이다(로그인 안내 HTML·배포 만료 페이지).
+    종전에는 이것을 되민 것으로 쳐서 상태가 '200'·pushed_at 이 찍히고 대조까지 통과했다 — 시트엔 한 줄도 없는데
+    숫자만 맞아 보이는 자리였다(배 960 H3). 재시도 대상으로 돌린다(구글 쪽이 풀리면 다음 분에 들어간다)."""
     if status != "200":
         return "push-error:%s" % status, False
     try:
         data = json.loads(resp)
     except (ValueError, TypeError):
-        data = None
+        return "push-error:not-json", False
     if isinstance(data, dict) and not data.get("ok", True):
         return "gas-error", True
     return LEDGERS[table]["ok"], True
@@ -71,7 +78,8 @@ def push_row(conn, table, row):
     if not url:
         status, resp = "error:no-url", "%s 없음 — /srv/erp/api.env" % (key or "목적지 미상")
     else:
-        status, resp = gas_forward(url, (row["raw_body"] or "").encode("utf-8"))
+        # 접수 GAS 의 GATED 쓰기는 열쇠가 필요하다(RECEPTION_TOKEN 없으면 본문 그대로).
+        status, resp = gas_forward(url, gas_key.sign_body(key, (row["raw_body"] or "").encode("utf-8")))
     new_status, pushed = judge(table, status, resp)
     stored = json.dumps(resp, ensure_ascii=False)[:20000] if spec["jsonb"] else resp[:4000]
     with conn:
@@ -79,6 +87,11 @@ def push_row(conn, table, row):
             conn.execute("UPDATE %s SET gas_status=%%s, gas_response=%%s, pushed_at=%%s, push_tries=push_tries+1,"
                          " raw_body=NULL WHERE id=%%s" % table,
                          (new_status, stored, _now_kst(), row["id"]))
+        elif (row["push_tries"] or 0) + 1 >= PUSH_MAX_TRIES:
+            # 실패 확정 — 더는 두드리지 않으므로 본문 원본도 이고 있을 이유가 없다(배 960 M1).
+            # raw_body 엔 사진·서명 base64 와 성함·연락처가 통째로 들어 있다. 원장에는 payload(길이·해시로 가린 것)만 남긴다.
+            conn.execute("UPDATE %s SET gas_status=%%s, gas_response=%%s, push_tries=push_tries+1,"
+                         " raw_body=NULL WHERE id=%%s" % table, (new_status, stored, row["id"]))
         else:
             conn.execute("UPDATE %s SET gas_status=%%s, gas_response=%%s, push_tries=push_tries+1 WHERE id=%%s" % table,
                          (new_status, stored, row["id"]))
@@ -112,16 +125,19 @@ def run(conn, limit=BATCH):
 
 def write_failed(conn, tenant):
     """사람이 봐야 하는 행만 파일 하나로 — 5회까지 못 닿은 행 + GAS 가 거부한 행. 없으면 count 0 으로 덮어쓴다.
-    헬스(api_intake)와 같은 잣대·같은 tenant 로 센다 — 두 숫자가 어긋나면 사람이 못 믿는다."""
+    헬스(api_intake)와 같은 잣대·같은 tenant 로 센다 — 두 숫자가 어긋나면 사람이 못 믿는다.
+    싣는 것 = 원장·id·무엇(폼/액션)·시각·마지막 오류뿐. 본문(성함·연락처·사진)은 여기 안 싣는다(배 960 M1)."""
     rows = []
     for table, spec in LEDGERS.items():
-        for r in conn.execute("SELECT id, %s AS at, gas_status, push_tries, gas_response FROM %s"
+        for r in conn.execute("SELECT id, %s AS at, %s AS who, gas_status, push_tries, gas_response FROM %s"
                               " WHERE tenant_id=%%s AND (%s) ORDER BY id DESC LIMIT 100"
-                              % (spec["ts"], table, FAILED), (tenant,)).fetchall():
-            rows.append({"ledger": table, "id": r["id"], "at": r["at"], "gas_status": r["gas_status"],
-                         "tries": r["push_tries"], "detail": str(r["gas_response"] or "")[:300]})
+                              % (spec["ts"], spec["who"], table, FAILED), (tenant,)).fetchall():
+            rows.append({"ledger": table, "id": r["id"], "what": r["who"], "at": r["at"],
+                         "gas_status": r["gas_status"], "tries": r["push_tries"],
+                         "detail": str(r["gas_response"] or "")[:300]})
     result = {"generated_at": _now_kst(), "count": len(rows), "max_tries": PUSH_MAX_TRIES,
-              "note": "되밀기 실패 — 시트에 안 들어간 행. 원인을 고친 뒤 push_tries 를 0 으로 되돌리면 다시 되민다.",
+              "note": "되밀기 실패 — 시트에 안 들어간 행. 5회에서 손을 뗄 때 본문(raw_body)을 지우므로 다시 되밀 수는 없다."
+                      " 원장 payload(사진·서명은 길이·해시로 가림)를 보고 사람이 시트에 직접 넣는다.",
               "rows": rows[:100]}
     os.makedirs(STATUS_DIR, exist_ok=True)
     tmp = FAILED_FILE + ".tmp"
@@ -155,7 +171,9 @@ def selftest():
     assert judge("intake_log", "200", '{"ok":true,"id":"L260908-101010"}') == ("200", True)
     assert judge("write_log", "200", '{"ok":true}') == ("ok", True)
     assert judge("write_log", "200", '{"ok":false,"error":"bad-token"}') == ("gas-error", True)
-    assert judge("intake_log", "200", "<html>로그인 화면</html>") == ("200", True)   # JSON 아니면 GAS 판정 없음 → 닿은 것으로
+    # 200 + 비JSON = 구글이 답한 것(로그인 안내 HTML). 시트엔 한 줄도 없으므로 되민 것으로 치면 안 된다(배 960 H3).
+    assert judge("intake_log", "200", "<html>로그인 화면</html>") == ("push-error:not-json", False)
+    assert judge("write_log", "200", "") == ("push-error:not-json", False)
     assert judge("intake_log", "error:URLError", "timed out") == ("push-error:error:URLError", False)
     assert judge("write_log", "500", "boom") == ("push-error:500", False)
 
@@ -163,6 +181,25 @@ def selftest():
     from api_intake import _PUSH_FAILED, _UNPUSHED
     assert UNPUSHED == _UNPUSHED and FAILED == _PUSH_FAILED and PUSH_MAX_TRIES == 5
     assert "push_tries >= 5" in FAILED
+
+    # 손을 떼는 순간 본문도 지운다(배 960 M1) — DB·네트워크 없이 SQL 문장만 받아 본다.
+    class _Conn:
+        sql = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def execute(self, q, p=None):
+            _Conn.sql.append(q)
+
+    os.environ.pop("SELFTEST_PUSH_URL", None)      # 목적지 없음 = 네트워크를 안 탄다(error:no-url)
+    row = {"id": 1, "form": "selftest", "raw_body": "{}", "push_tries": PUSH_MAX_TRIES - 1}
+    assert push_row(_Conn(), "intake_log", row) is False and "raw_body=NULL" in _Conn.sql[-1]
+    row["push_tries"] = 0
+    assert push_row(_Conn(), "intake_log", row) is False and "raw_body" not in _Conn.sql[-1]  # 재시도 남았으면 보관
     print("selftest ok")
     return 0
 

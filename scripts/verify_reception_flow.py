@@ -38,6 +38,7 @@ import io
 import json
 import sys
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -106,7 +107,20 @@ PROBE = """() => {
 }"""
 
 
+def _access_key() -> str:
+    """접수 GAS 접근 게이트 열쇠 — 정본 = collectors/ops_shared.reception_key()(약속 L01).
+    스위치(GAS TOKEN_ENFORCE) 가 꺼져 있으면 빈 값이라 종전과 똑같이 돈다."""
+    try:
+        from collectors.ops_shared import reception_key
+        return reception_key()
+    except Exception:
+        return ""
+
+
 def _post(payload: dict, label: str) -> dict:
+    k = _access_key()
+    if k and not payload.get("key"):
+        payload = dict(payload, key=k)   # lf_delete 는 GATED
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(API, data=body,
                                  headers={"Content-Type": "text/plain;charset=utf-8"})
@@ -117,6 +131,9 @@ def _post(payload: dict, label: str) -> dict:
 
 def _lf_list() -> list:
     url = f"{API}?action=lf_list&_={time.time()}"
+    _k = _access_key()
+    if _k:
+        url += "&key=" + urllib.parse.quote(_k)   # lf_list 는 GATED
     return json.loads(urllib.request.urlopen(url, timeout=90).read().decode("utf-8"))["data"]
 
 
