@@ -32,10 +32,12 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
+
+KST = timezone(timedelta(hours=9))
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
@@ -45,6 +47,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 from tg_outbound_log import send as tg_send  # noqa: E402
+import worklog  # noqa: E402
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)  # 종합접수방
 DASHBOARD_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/reception/종합접수처_현황.html"
@@ -947,6 +950,28 @@ def _save_completion_state(state: dict) -> None:
         pass
 
 
+def _note_intake_relay_fetch_result(ok: bool) -> None:
+    """접수 즉시 전달(run_intake_relay)이 원천(_fetch_rows)을 못 읽으면 여기서만 남긴다.
+    전엔 rows=None → return [] 로 아무 흔적 없이 쉬어 어떤 경보도 안 울렸다(2026-09-04 실측
+    — 09-03 20:17~09-04 16:1x 접수 GAS 승인이 깨진 동안 15분 회차가 통째로 조용히 빠짐).
+    연속 4회(=1시간)째에만 worklog warn 1회 — 아침 항로가 그 warn 을 표면화한다.
+    """
+    state = _load_completion_state()
+    if ok:
+        if state.get("intake_relay_fetch_fail_streak"):
+            state["intake_relay_fetch_fail_streak"] = 0
+            _save_completion_state(state)
+        return
+    streak = int(state.get("intake_relay_fetch_fail_streak") or 0) + 1
+    state["intake_relay_fetch_fail_streak"] = streak
+    state["intake_relay_last_fetch_fail_at"] = datetime.now(tz=KST).isoformat(timespec="seconds")
+    _save_completion_state(state)
+    if streak == 4:
+        worklog.log(role="coo", area="접수",
+                     event="접수 즉시 전달 — 원천 읽기 실패 4회 연속(1시간)",
+                     result="warn", ref="COO-INTAKE-RELAY-FETCH-FAIL")
+
+
 def _completion_block(rows: list[dict], state: dict | None = None, persist: bool = True) -> str:
     """새로 완료된 종합접수 건을 부서별로 묶어 알림 블록으로 렌더. state 미지정 시 파일에서
     읽는다. persist=False면 커서를 갱신하지 않는다(검증·시뮬레이션에서 반복 실행해도 같은
@@ -1225,7 +1250,9 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
         return []
     rows = _fetch_rows()
     if rows is None:
+        _note_intake_relay_fetch_result(ok=False)
         return []
+    _note_intake_relay_fetch_result(ok=True)
     state = _load_completion_state()
     if not state.get("intake_relay_enabled") and not (dry_run or test):
         return []
