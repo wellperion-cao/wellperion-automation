@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3라인 전결 시범 결과 보고 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="_a3_report.css" rel="stylesheet">
+<style>
+  /* 이 문서는 9/30 보고 「틀」이다 — 숫자는 비워 두고(—) 어디서 가져올지(출처)만 미리 박아 둔다.
+     9/30 에 출처 칸을 보고 값만 채우면 보고서가 된다. 지어낸 값은 한 칸도 넣지 않는다. */
+  .blank{ color:#B9C4CE; font-weight:700; }                 /* 아직 안 채운 칸 */
+  .src{ color:var(--dim); font-size:11.2px; line-height:1.42; }
+  .tight td{ height:auto; padding:6px 9px; vertical-align:top; line-height:1.38; }
+  .tight thead th{ height:28px; font-size:12.2px; }
+  .nine td{ height:29px; }
+  .nine td.n{ text-align:center; font-weight:700; color:var(--navy); background:#F6F8FA; }
+  .lineblk{ border:1px solid var(--line); border-left:5px solid var(--navy); padding:8px 12px 9px; margin-bottom:8px; background:#FAFBFC; }
+  .lineblk:last-child{ margin-bottom:0; }
+  .lineblk .rl{ font-size:12.9px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .lineblk .rr{ font-size:11.8px; color:var(--dim); margin-top:2px; line-height:1.5; }
+  .lineblk .rv{ display:flex; gap:8px; margin-top:6px; }
+  .lineblk .rv div{ flex:1; border:1px solid var(--line); background:#fff; padding:4px 7px 5px; }
+  .lineblk .rv .t{ font-size:10.2px; color:var(--dim); font-weight:700; letter-spacing:.4px; }
+  .lineblk .rv .v{ font-size:14px; margin-top:1px; }
+  .todo{ margin-top:8px; border:1px dashed var(--warn); background:#FDF8F0; padding:7px 12px 8px; }
+  .todo b{ color:var(--warn); font-size:11.6px; letter-spacing:.5px; }
+  .todo div{ font-size:11.8px; line-height:1.55; color:#48525B; margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>3라인 전결 시범 결과 보고 (A3 1장 · 틀)</b>
+  <span class="note">숫자는 9/30 에 채운다 — 지금은 출처만 박힌 뼈대</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+</div>
+
+<div class="page">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">3라인 전결 시범 결과 보고 <span style="font-size:15px;font-weight:600;color:var(--dim);">— 9/1 ~ 9/30 한 달</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님</b><br>
+      보고일 <b>2026. 09. 30.</b> · 문서번호 <b>WP-GM-260930-01</b><br>
+      근거 <span class="blank">— (9/30 실측으로 채운다)</span>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표님</div><div class="b"></div></div>
+      <div><div class="t">회장님</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <div class="top">
+    <div class="core">
+      <div class="c" style="flex:1.7;">
+        <div class="lb">한 문 장</div>
+        <div class="tx"><span class="blank">한 달 시범의 결론 한 줄 — 9/30 에 쓴다.</span></div>
+        <div class="sub">쓰는 기준 = 아래 판단 지표 4개가 전부 기준을 넘었으면 「계속·확대」, 하나라도 못 넘었으면 그 지표 이름을 그대로 적는다. 좋게 쓰지 않는다.</div>
+      </div>
+      <div class="c sep">
+        <div class="lb">시 범 범 위</div>
+        <div class="sub" style="margin-top:3px;">
+          <b>시설 긴급 대응</b> · <b>운영 일상 결정</b> 두 영역만 1개월(9/1~9/30).<br>
+          인사 · 예산 · 대외는 시범에서 뺐다 — 현행 사전 보고 그대로다.
+        </div>
+      </div>
+    </div>
+    <div class="decide">
+      <div class="lb">회 장 님 판 단</div>
+      <div class="q">계속할 것인가, 넓힐 것인가, 멈출 것인가</div>
+      <div class="d">한 달 결과를 보시고 정해 주시면 됩니다. 넓히실 경우 인사·예산 중 어디까지인지, 금액 상한을 함께 적어 주십시오.</div>
+    </div>
+  </div>
+
+  <div class="body2">
+
+    <div class="left" style="flex:1.18;">
+
+      <div>
+        <div class="sec-h">① 판단 지표 4개 <span class="hint">시범 시작 때 정한 것 — 사후에 바꾸지 않는다</span></div>
+        <table class="tight">
+          <colgroup><col style="width:25%"><col style="width:16%"><col style="width:16%"><col style="width:11%"><col style="width:32%"></colgroup>
+          <thead><tr><th class="k">지표</th><th>8월 기준</th><th>9월 실측</th><th>판정</th><th>출처 (여기서 가져온다)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">회장님 직접 지적 건수 <span class="est">8월 대비 감소</span></td>
+              <td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td>
+              <td class="src">회장님 지시 목록 <span class="est">(coo/chairman/_chairman_items.js + chairman_reported.json 의 등재일 기준 월별 건수)</span></td>
+            </tr>
+            <tr>
+              <td class="k">처리 소요 시간 <span class="est">지적 → 처리 완료</span></td>
+              <td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td>
+              <td class="src">GM 업무 목표 진척 기록 <span class="est">(status/monthly_ops_plan.json — 등재일과 완료일 차)</span></td>
+            </tr>
+            <tr>
+              <td class="k">안전사고 · 컴플레인 <span class="est">0건</span></td>
+              <td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td>
+              <td class="src">종합접수처 VOC · 점검 이슈 <span class="est">(운영부 종합 운영 다이제스트 9월분)</span></td>
+            </tr>
+            <tr>
+              <td class="k">전결 범위 이탈 <span class="est">0건</span></td>
+              <td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td>
+              <td class="src">주간 리포트 ① 전결 처리 건 <span class="est">(4주치를 범위표와 대조해 센다)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">② 회장님 지시 9건 진척 <span class="hint">9/1 안건 6 자료 1면 표의 9건</span></div>
+        <table class="nine tight">
+          <colgroup><col style="width:5%"><col style="width:41%"><col style="width:12%"><col style="width:16%"><col style="width:12%"><col style="width:14%"></colgroup>
+          <thead><tr><th class="k">＃</th><th>지시 내용</th><th>기한</th><th>담당 직책</th><th>상태</th><th>출처</th></tr></thead>
+          <tbody>
+            <tr><td class="n">1</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">2</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">3</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">4</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">5</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">6</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">7</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">8</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+            <tr><td class="n">9</td><td class="blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td><td class="ctr blank">—</td></tr>
+          </tbody>
+        </table>
+        <div class="todo">
+          <b>이 표가 비어 있는 이유</b>
+          <div>9건의 원문은 9/1 보고 안건 6 자료(1면 표)에 있고, 그 자료는 아직 저장소에 없습니다. 원문을 주시면 지시 트래킹(회장님 말씀 목록)에 그대로 등재하고 이 표가 자동으로 채워집니다. <b>지어내지 않으려고 비워 두었습니다.</b></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="right" style="flex:1;">
+
+      <div>
+        <div class="sec-h">③ 3라인 성과 <span class="hint">사람이 아니라 직책으로 본다</span></div>
+
+        <div class="lineblk">
+          <div class="rl">운영부 리더</div>
+          <div class="rr">회원 · 매출 · 현장 운영 — 전결: 회원 응대, 규정 내 환불·휴회·재등록, 기승인 프로모션 실행, 강사 시간표 조정</div>
+          <div class="rv">
+            <div><div class="t">전결 처리 건</div><div class="v blank">—</div></div>
+            <div><div class="t">컴플레인</div><div class="v blank">—</div></div>
+            <div><div class="t">신규 · 해지 · 재등록</div><div class="v blank">—</div></div>
+          </div>
+          <div class="src" style="margin-top:5px;">출처 — 운영부 주간 리포트 4주치 · 회원 원장(신규/LOSS/재등록) · 종합접수처 컴플레인</div>
+        </div>
+
+        <div class="lineblk">
+          <div class="rl">시설부 소장</div>
+          <div class="rr">설비 · 안전 · 공사 — 전결: 긴급 대응, 정기 점검, 수선(금액 상한은 회장님 기입 칸)</div>
+          <div class="rv">
+            <div><div class="t">전결 처리 건</div><div class="v blank">—</div></div>
+            <div><div class="t">점검 이행</div><div class="v blank">—</div></div>
+            <div><div class="t">고장 대응 시간</div><div class="v blank">—</div></div>
+          </div>
+          <div class="src" style="margin-top:5px;">출처 — 시설부 주간 리포트 4주치 · 점검 원장 9월분 · 고장 접수 → 조치 완료 시각</div>
+        </div>
+
+        <div class="lineblk">
+          <div class="rl">인사 · 재무 리더</div>
+          <div class="rr">인사 · 급여 · 손익 · 예산 — 시범 제외(현행 사전 보고). 9월은 <b>실무 범위 기록만</b> 남긴다</div>
+          <div class="rv">
+            <div><div class="t">인건비율</div><div class="v blank">—</div></div>
+            <div><div class="t">부서별 손익</div><div class="v blank">—</div></div>
+            <div><div class="t">예산 대비 지출</div><div class="v blank">—</div></div>
+          </div>
+          <div class="src" style="margin-top:5px;">출처 — 월간 손익 보고 9월분 · 매출/지출 원장</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-h">④ 다음 단계 <span class="hint">회장님 판단에 따라 갈린다</span></div>
+        <ul class="dir">
+          <li><b>계속 · 확대</b> <span>— 10월: 받은 전결을 세 직책에 1차 위임(시설·운영 먼저), 각 라인 주간 리포트 시작 → GM 취합 → 회장님 1장</span></li>
+          <li class="mid"><b>계속 · 현행 유지</b> <span>— 못 넘긴 지표 하나를 10월 한 달 더 본다. 범위는 그대로</span></li>
+          <li class="no"><b>중단</b> <span>— 시범 전 상태로 되돌린다. 되돌리는 절차와 그때 남는 기록을 이 자리에서 함께 보고한다</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>이 문서는 9/30 보고 「틀」입니다.</b> 숫자 자리는 전부 비워 두고 <b>어디서 가져올지(출처)</b>만 미리 박았습니다. 9/30 에 출처를 따라 값만 채웁니다.</div>
+    <div><b>사람 이름을 적지 않는 이유</b> — 이 문서는 회장님·대표님께 나가는 공유물입니다. 수행자 배치는 정본 문서에 있고, 여기에는 직책만 적습니다.</div>
+    <div><b>정본</b> — 3라인 직책 체계 구축 및 9/1 회장님 보고 (docs/3라인_직책체계_20260831.md · GM 작성 2026-08-31). 월별 마감일은 전사일정이 정본입니다.</div>
+  </div>
+
+</div>
+</body>
+</html>
