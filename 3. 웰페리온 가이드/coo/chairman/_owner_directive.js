@@ -507,9 +507,8 @@
       btn.disabled = true; btn.textContent = '저장 중…';
       var mark = '[' + cfg.markPrefix + ' ' + todayStr() + ']';
       var newContent = (it.rawContent ? it.rawContent + '\n' : '') + mark;
-      var qs = 'action=todo_update&id=' + encodeURIComponent(id) + '&' + encodeURIComponent('내용') + '=' + encodeURIComponent(newContent);
-      fetch(GAS_URL + '?' + qs, { method: 'GET', redirect: 'follow' })
-        .then(function (r) { return r.json(); })
+      // 쓰기 관문 하나(_assets/erp_write.js · 배 960 #6b) — ERP 도메인이면 서버 /api/write, 아니면 종전 GAS.
+      window.erpTodoCall(GAS_URL, { action: 'todo_update', id: id, '내용': newContent })
         .then(function (res) {
           if (res && res.ok) { load(); }
           else { btn.disabled = false; btn.textContent = '보고 완료로 표시'; alert('저장하지 못했습니다' + (res && res.error ? (': ' + res.error) : '.')); }
