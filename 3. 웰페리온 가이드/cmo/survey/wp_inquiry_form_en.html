@@ -346,7 +346,11 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
   // ROLLBACK: https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec
   var GAS_PROD = 'https://script.google.com/macros/s/AKfycbyLc2cnOeyyCpdrluJrgrUNrfhSJS3W-9wte5ndOBNS5S8Dux7KwcV8WAAXs2bwi2yFcw/exec';
   var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
-  var GAS_URL = GAS_PROD;
+  /* ★쓰기 이중기록 서버 고정(배 960 레인L · 2026-09-04 시토 · GM 지시) — 제출을 GAS 직행에서 서버 접수 통로로 바꿈.
+     서버가 intake_log 에 먼저 적고 같은 본문을 위 GAS_PROD 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽어도 {ok:true,queued:true} 라 손님은 성공).
+     GAS_PROD 은 서버 api.env 의 INTAKE_GAS_URL 정본이다 — 지우지 말 것(server/deploy_intake.sh 가 이 줄을 grep 해 서버에 박는다).
+     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  var GAS_URL = GAS_PROD;   그리고 재주입(한: draft-page --page survey --post-id 8394 / 영: cutover-inquiry-en --post-id 8408). */
+  var GAS_URL = 'https://erp.wellperion.com/api/intake/inquiry';
   try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
   var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';
   var QUEUE_KEY = 'wlp_intake_queue_en_v1';
