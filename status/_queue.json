@@ -1568,5 +1568,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-04"
+  },
+  {
+    "task_id": "COO-2026-09-04-습득물-접수-현황-먹통-접수-GAS-승인-깨짐-GM",
+    "clevel": "coo",
+    "title": "[시우] 습득물 접수·현황 먹통 — 접수 GAS 승인 깨짐 (GM 신고 2026-09-04)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-04",
+    "from": "coo",
+    "note": "[시우 2026-09-04 · 기다리는 쪽: GM 재승인(cao@) 대기 · GM 신고건] GM 2026-09-04 15:4x: '종합접수처 습득물 현황 및 습득물접수 자체가 문제'. 실측: 접수 GAS(/exec …VcF3gQ) 의 lf_list·lf_gallery·lf_disposal 전부 'SpreadsheetApp.openById 권한 없음(spreadsheets)' · diag_drive 도 'DriveApp.createFolder 권한 없음(drive)'. 원인 = 09-03 20:17 사진저장 수리(@120)에서 매니페스트에 oauthScopes 를 명시하며 스코프 집합이 바뀌었고, 이후 @121·@122 '재승인 후 재배포' 표기에도 cao@ 승인이 새 집합에 안 붙었다 — 스크립트 전체 승인이 무효 상태. 09-03 20:17 부터 습득물 목록·갤러리·폐기공지·접수(lf_submit 도 시트 열기)가 전부 실패 중. 시도: 매니페스트를 HEAD(스코프 자동감지·수개월 정상이던 상태)로 되돌려 @124 재배포 — 동일 오류 → 코드·매니페스트 문제 아님, 승인 자체가 깨짐. 남은 것 = cao@ 계정으로 편집기에서 함수 1회 실행→권한 허용(사람 손만 가능). 편집기 링크 GM 크롬에 띄움 15:53. 승인 뒤 lf_list 읽기 호출로 재검증 후 종결.",
+    "next": "GM 재승인 → lf_list·lf_gallery·diag_drive 읽기 호출 재검증 → 시토 배953 에 결과 한 줄",
+    "depends_on": "",
+    "ship_no": 11236,
+    "short_no": 976,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-04"
   }
 ]
