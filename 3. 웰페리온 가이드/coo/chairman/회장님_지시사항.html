@@ -813,8 +813,12 @@
   "use strict";
   var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/'
           + encodeURI('3. 웰페리온 가이드/coo/chairman/chairman_reported.json');
+  var BOARD_KEY = 'CHAIRMAN_REPORTED';
   var BOARD = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec'
-            + '?action=board&key=CHAIRMAN_REPORTED';
+            + '?action=board&key=' + BOARD_KEY;
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/board/CHAIRMAN_REPORTED · sync_board.py 가
+  // 5분마다 같은 GAS 를 떠 둔 것)를 먼저 읽는다. 실패·GitHub Pages 에선 종전 GAS(BOARD)로 그대로.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
   var fold = document.getElementById('ch-done');
   var foldGrid = document.getElementById('ch-done-grid');
   var mainGrid = document.querySelector('.grid');
@@ -855,9 +859,16 @@
     return moved;
   }
 
+  function getBoard(ms) {
+    if (!ERP_API_ON) return get(BOARD, ms);
+    return fetch('/api/board/' + BOARD_KEY, { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function (e) { console.warn('[회장님 보고완료] API 실패 → GAS 폴백:', e && e.message); return get(BOARD, ms); });
+  }
+
   get('chairman_reported.json', 6000)
     .then(function (j) { return j || get(RAW, 6000); })
-    .then(function (j) { apply(j); return get(BOARD, 25000); })
+    .then(function (j) { apply(j); return getBoard(25000); })
     .then(function (b) { apply(b && b.ok && b.board ? b.board : null); });
 })();
 </script>

@@ -1279,6 +1279,20 @@
   var LEADERS = ['이경연 실장', '이정헌 소장', '나우열M']; // MEMBERS(업무 현황 SSOT.html)와 정확히 일치
   var box = document.getElementById('leaderBand');
   if (!box) return;
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/todo, 같은 GAS·같은 include_gm=1 을
+  // 5분마다 떠 둔 것)를 먼저 읽는다. 미러는 원본 GAS 행(한글 칸) 그대로라 아래 매핑은 안 바뀐다.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function loadLeaderTodos() {
+    var gas = function () {
+      return fetch(LEADER_TODO_API_URL + '?action=todo_list&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/todo?limit=1000', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .then(function (d) { return { ok: true, data: (d && d.rows) || [] }; })
+      .catch(function (e) { console.warn('[리더현황] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -1301,8 +1315,7 @@
     return Math.max(1, Math.round((today0 - d) / 86400000));
   }
 
-  fetch(LEADER_TODO_API_URL + '?action=todo_list&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  loadLeaderTodos()
     .then(function (res) {
       if (!res || !res.ok || !Array.isArray(res.data)) throw new Error('형식 불일치');
       var tasks = res.data.map(function (raw) {

@@ -100,9 +100,22 @@
   }
 
   // 업무&결재 SSOT(action=todo_list) — 월간운영계획.html readWorkApproval() 과 동일 조회 + AI배 제외.
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/todo · sync_todo.py 가 5분마다 같은 GAS·같은
+  // include_gm=1 로 떠 둔 것)를 먼저 읽는다. 미러는 원본 GAS 행(한글 칸)을 그대로 저장하므로 응답만
+  // {ok:true,data:[...]} 모양으로 맞춰주면 아래 필터·판정 로직은 손대지 않는다. 실패 시 종전 GAS 그대로.
+  function _todoFetch() {
+    var gas = function () {
+      return fetch(GAS_URL + '?action=todo_list&include_gm=1&gmkey=' + encodeURIComponent(GM_KEY), { method: 'GET', redirect: 'follow' })
+        .then(function (r) { return r.json(); });
+    };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/todo?limit=1000', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .then(function (d) { return { ok: true, data: (d && d.rows) || [] }; })
+      .catch(function (e) { console.warn('[업무SSOT] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  }
   function readWorkApproval() {
-    return fetch(GAS_URL + '?action=todo_list&include_gm=1&gmkey=' + encodeURIComponent(GM_KEY), { method: 'GET', redirect: 'follow' })
-      .then(function (r) { return r.json(); })
+    return _todoFetch()
       .then(function (res) {
         if (!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return null;
         var aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
@@ -200,7 +213,9 @@
   function refreshChairmanFromBoard(onDone) {
     // 25초 — 실측 8.6초(2026-08-19)인데 12초로 잡아 두어 콜드스타트 때마다 정본을 놓쳤다.
     // 놓치면 화면이 뒤처진 파일 값으로 남아 「보고 완료」가 되살아난다(GM 2026-08-19 실사고).
-    return _chGet(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY, 25000)
+    // ★2026-09-04 배985 — 담당 칸(GM_TASK_OWNERS)과 같은 서버 미러 관문(_boardRead, 아래 정의)을
+    // 그대로 재사용 — CHAIRMAN_REPORTED 도 sync_board.py BOARD_KEYS 에 이미 있어 새 미러 불필요.
+    return _boardRead(CH_BOARD_KEY, 25000)
       .then(function (j) {
         if (j && j.ok && j.board && Object.keys(j.board).length) {
           chReported = j.board;
@@ -245,7 +260,7 @@
     if (!ERP_API_ON) return gas();
     return fetch('/api/board/' + encodeURIComponent(key))
       .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-      .catch(function (e) { console.warn('[담당] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+      .catch(function (e) { console.warn('[보드] API 실패 → GAS 폴백:', e && e.message); return gas(); });
   }
   function loadTaskOwners() {
     return _boardRead(OWNER_BOARD_KEY, 8000).then(function (j) {
@@ -610,7 +625,11 @@
           method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'saveBoard', key: CH_BOARD_KEY, board: next })
         }).then(function (r) { return r.json(); }).then(function (res) {
-          if (res && res.ok) { chReported = next; renderChairman(); }
+          if (res && res.ok) {
+            chReported = next; renderChairman();
+            // 담당 칸 저장과 같은 규칙(2026-09-04 배985) — 서버 미러도 그 키만 즉시 다시 떠오게 한다.
+            if (ERP_API_ON) fetch('/api/board/' + encodeURIComponent(CH_BOARD_KEY) + '/refresh', { method: 'POST' }).catch(function () {});
+          }
           else {
             btn.disabled = false; btn.textContent = '보고 완료로 표시';
             alert('저장하지 못했습니다' + (res && res.error ? (': ' + res.error) : '.'));
