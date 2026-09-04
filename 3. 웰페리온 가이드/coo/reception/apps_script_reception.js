@@ -2868,6 +2868,11 @@ function _vProcess(action, body, params) {
     } catch (e) { _d.driveErr = 'props ' + e; }
     try { var _f = _drvFolder_('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER', 'RECEPTION_Photos'); _d.folderName = _f.getName(); _d.folderId = _f.getId(); }
     catch (e) { _d.ok = false; _d.driveErr = String(e && e.message || e); }
+    // [2026-09-04 시우] 실제로 승인된 스코프 목록 — 매니페스트가 아니라 구글이 준 토큰 기준(승인 3회에도 drive 가 안 붙던 원인 추적용)
+    try {
+      var _ti = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(ScriptApp.getOAuthToken()), { muteHttpExceptions: true });
+      _d.grantedScopes = String(JSON.parse(_ti.getContentText()).scope || '').split(' ');
+    } catch (e) { _d.grantedScopes = 'ERR ' + e; }
     return _vJson(_d);
   }
   // 읽기전용: 전 시트 헤더행 덤프(카테고리별 컬럼 정합 점검용·1회성). 2026-07-08 시우.
