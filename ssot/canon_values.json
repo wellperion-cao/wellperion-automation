@@ -387,6 +387,24 @@
         "CLAUDE.md"
       ],
       "note": "GM 확정 2026-08-29. 회원 원장의 회원구분 6종(멤버십·입주민·중단기·보증금·FAN VIP·법인) 중 중단기 = 1개월 등록하는 분들이다. ▸매출보고의 「이탈자(단기 N명)」 칸이 세는 대상이 이 값이다 — 칸 이름은 단기인데 원장 값은 중단기라 이름이 어긋나 있으니, 새 화면·보고서를 만들 때 둘을 같은 것으로 읽는다. ▸원장에 단기 라는 값은 존재하지 않는다."
+    },
+    {
+      "key": "aws_server_eip",
+      "이름": "AWS 서버 고정 IP (wellperion-auto-01 · erp.wellperion.com)",
+      "value": "15.164.151.105",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "docs/**",
+        "server/**",
+        "status/briefs/**",
+        "status/drafts/**",
+        "status/_queue.json",
+        "3. 웰페리온 가이드/status/_queue.json",
+        "scripts/**",
+        "CLAUDE.md"
+      ],
+      "note": "GM 확인 2026-09-04(AWS 에 직접 물음) — 탄력적 IP(고정). 서버 wellperion-auto-01 에 붙어 있고 재시작·중지 뒤 시작해도 그대로. 바뀌는 경우 = 서버를 없애고 IP 를 해제할 때뿐(사람이 손대야 함). 외부 IP 등록(딜라이브 문자 API 등)은 이 값으로 한다."
     }
   ]
 }
