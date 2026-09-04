@@ -165,6 +165,16 @@
 
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   var BROJ_STORAGE_KEY = 'BROJ_TASK_BOARD';
+  /* ★읽기 원천 전환(배 985 · 2026-09-04 시우) — 브로제이_업무분장.html 과 같은 규칙·같은 열쇠(BROJ_TASK_BOARD)
+     라 wlp_broj_wrote_at 도 공유한다. 저장 직전 GET(mutate)은 충돌 방지를 위해 항상 GAS 최신본을 쓴다. */
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function _brojFetch(apiPath, gasUrl){
+    var gas = function(){ return fetch(gasUrl, {method:'GET', redirect:'follow'}).then(function(r){ return r.json(); }); };
+    if(!ERP_API_ON) return gas();
+    try{ if(Date.now() - Number(localStorage.getItem('wlp_broj_wrote_at') || 0) < 6 * 60 * 1000) return gas(); }catch(e){}
+    return fetch(apiPath, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function(e){ console.warn('[브로제이 확인목록] API 실패 → GAS 폴백:', apiPath, e && e.message); return gas(); });
+  }
   var STAFF_NAME_KEY   = 'wellperion_staff_name';
 
   // ── 시트에는 없지만 우리끼리 계속 쫓아야 하는 항목(업무분장 원본에서 옮겨 온 것) ──
@@ -377,7 +387,7 @@
           headers:{'Content-Type':'text/plain;charset=utf-8'},
           body: JSON.stringify({action:'saveBoard', key:BROJ_STORAGE_KEY, board:fresh})});
       })
-      .then(function(){ _saving = false; setStatus(''); render(); })
+      .then(function(){ try{ localStorage.setItem('wlp_broj_wrote_at', String(Date.now())); }catch(e){} _saving = false; setStatus(''); render(); })
       .catch(function(){ _saving = false; setStatus('⚠ 저장에 실패했습니다 — 인터넷을 확인하고 다시 시도해 주세요.'); });
   }
 
@@ -628,8 +638,8 @@
   // ── 첫 로드: 시트(원본)와 우리 저장소를 같이 읽는다 ──
   Promise.all([
     fetch(SHEET_CSV, {redirect:'follow'}).then(function(r){ return r.ok ? r.text() : ''; }).catch(function(){ return ''; }),
-    fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY), {method:'GET', redirect:'follow'})
-      .then(function(r){ return r.json(); }).catch(function(){ return null; })
+    _brojFetch('/api/board/' + encodeURIComponent(BROJ_STORAGE_KEY),
+        CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY)).catch(function(){ return null; })
   ]).then(function(a){
     var csv = a[0], boardRes = a[1];
     _board = (boardRes && boardRes.board) || {};
