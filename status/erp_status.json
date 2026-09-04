@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-09-04T05:56:33Z",
-  "generated_at_kst": "2026-09-04 14:56",
-  "summary": "✅ 전체 정상",
+  "generated_at": "2026-09-04T08:26:32Z",
+  "generated_at_kst": "2026-09-04 17:26",
+  "summary": "⚠️ 점검 필요: 업무 SSOT 배번호 신선도",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "13분 전 활동",
+      "detail": "9분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 4분 전(생존) · 최근 발신 71분 전",
+      "detail": "하트비트 4분 전(생존) · 최근 발신 221분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -31,12 +31,12 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "CDN 캐시 지연 — 라이브 64건 ≠ 로컬 63건 (미푸시 0 · Pages 반영 대기 중, 정상)"
+      "detail": "HTTP 200 · active 57건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 63건/267428B"
+      "detail": "일치 · active 57건/309026B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -56,12 +56,12 @@
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "7.0h 전 갱신 — 정상"
+      "detail": "9.5h 전 갱신 — 정상"
     },
     {
       "name": "업무 SSOT 배번호 신선도",
-      "state": "정상",
-      "detail": "43개 화면 note 배번호 정상"
+      "state": "이상",
+      "detail": "끝난 배 인용(정정 신호 없음) — 매출회원현황보고·배910"
     }
   ],
   "automation_health": {
@@ -101,9 +101,9 @@
       {
         "name": "Wellperion-CMO-Content-Intake-15min",
         "state": "정상",
-        "last_run": "2026-09-04 오후 2:45:01",
+        "last_run": "2026-09-04 오후 5:15:01",
         "last_result": 0,
-        "next_run": "2026-09-04 오후 3:00:00"
+        "next_run": "2026-09-04 오후 5:30:00"
       },
       {
         "name": "Wellperion-CMO-Daily-Marketing-2100",
@@ -129,9 +129,9 @@
       {
         "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
         "state": "정상",
-        "last_run": "2026-09-04 오후 2:54:01",
+        "last_run": "2026-09-04 오후 5:24:01",
         "last_result": 0,
-        "next_run": "2026-09-04 오후 2:57:00"
+        "next_run": "2026-09-04 오후 5:27:00"
       },
       {
         "name": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
@@ -353,9 +353,9 @@
   },
   "git_sync": {
     "state": "정상",
-    "detail": "미푸시 0건 · origin 최신 1분 전",
+    "detail": "미푸시 0건 · origin 최신 4분 전",
     "unpushed": 0,
-    "origin_at": "2026-09-04T14:55:22+09:00"
+    "origin_at": "2026-09-04T17:21:56+09:00"
   },
   "archive_summary": {
     "total": 3938,
