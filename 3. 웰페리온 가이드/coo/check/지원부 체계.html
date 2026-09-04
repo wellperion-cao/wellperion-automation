@@ -7121,7 +7121,7 @@ function printA4Laundry(lang){
   var h = page(
     en ? 'Monthly Linen Checklist (' + EN_MON3[mo - 1] + ' 1 \u2013 ' + EN_MON3[mo - 1] + ' ' + nDays + ')'
        : '월간(린넨) 체크리스트 (' + mo + '/1 ~ ' + mo + '/' + nDays + ')',
-    metaM, en ? 'Date' : '날짜', en ? ['In', 'Note'] : ['입고', '비고'], '', 19, b1,
+    metaM, en ? 'Date' : '날짜', en ? ['In', 'Note'] : ['입고', '비고'], '', 21, b1,
     wpLdyGridFoot(TOTAL, items.map(function(m){ var v = wpLdyMonthIn(m.id, ym); return v === null ? '' : v; }), 2));
 
   /* ② 연간(린넨) 체크리스트 — 행=월 · 열=품목별 [입고] · 맨 오른쪽 [비고] */
