@@ -69,10 +69,10 @@
           "ref": "GM-20260904-07",
           "no": "07",
           "got": "딜라이브 문자 연동용 AWS 서버 IP 알려주기",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "did": "완료",
           "start": "16:57",
-          "end": "16:57",
-          "minutes": 0,
+          "end": "17:02",
+          "minutes": 5,
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
@@ -81,13 +81,13 @@
           "ref": "GM-20260904-08",
           "no": "08",
           "got": "딜라이브 API 연동은 선불제 내용 필요(레터는 후불) — 요청문·설계에 반영",
-          "did": "",
+          "did": "완료",
           "start": "16:59",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "17:02",
+          "minutes": 2,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260904-1001",
@@ -153,13 +153,13 @@
           "ref": "GM-20260904-1007",
           "no": "07",
           "got": "그리고 추가적으로 딜라이브 레터는 후불제인데, API연동건은 선불제 내용도 필요해",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:57",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "17:02",
+          "minutes": 5,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -240,45 +240,22 @@
           "area": "작업",
           "event": "9/7 중간관리자 평가 피드백 미팅(소장) 12시 이후로 변경 · 안마의자 4대 설치 완료 기록 (GM 지시 2026-09-04)",
           "detail": "커밋 b5ec47d26 · 배 11197"
+        },
+        {
+          "time": "17:02",
+          "area": "작업",
+          "event": "딜라이브 요청문 — 발신 IP를 AWS 서버(15.164.151.105)로, API 연동 선불(충전) 안내 항목 추가 (GM 지시 2026-09-04)",
+          "detail": "커밋 1761a71f5 · 배 11197"
         }
       ],
       "count": 13,
-      "done": 11,
-      "open": 2,
-      "avg_minutes": 32,
-      "work_count": 13,
+      "done": 13,
+      "open": 0,
+      "avg_minutes": 28,
+      "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260904-08",
-          "no": "08",
-          "got": "딜라이브 API 연동은 선불제 내용 필요(레터는 후불) — 요청문·설계에 반영",
-          "did": "",
-          "start": "16:59",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        },
-        {
-          "ref": "GM-20260904-1007",
-          "no": "07",
-          "got": "그리고 추가적으로 딜라이브 레터는 후불제인데, API연동건은 선불제 내용도 필요해",
-          "did": "",
-          "start": "16:57",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -453,13 +430,25 @@
           "area": "작업",
           "event": "배960 레인 A 입항 기록 — 퍼널 거울 수리·이중기록 대조 장치",
           "detail": "커밋 a7e9ec989 · 배 11221"
+        },
+        {
+          "time": "17:02",
+          "area": "배960",
+          "event": "공용 보드 거울",
+          "detail": "GM업무 담당 칸 공란 수리 · 커밋 5e3b04da8"
+        },
+        {
+          "time": "17:02",
+          "area": "작업",
+          "event": "공용 보드 서버 거울 입항 기록 (GM업무 담당 칸 공란 수리)",
+          "detail": "커밋 6903704e1 · 배 11221"
         }
       ],
       "count": 1,
       "done": 1,
       "open": 0,
       "avg_minutes": 11,
-      "work_count": 26,
+      "work_count": 28,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -627,7 +616,7 @@
           "start": "16:53",
           "end": "16:53",
           "minutes": 0,
-          "upload": "✅ 올림 (6f02b61a8)",
+          "upload": "✅ 올림 (bafbd368d)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -662,13 +651,31 @@
           "area": "작업",
           "event": "시우 화면 절대주소 상대경로화 6곳 + AWS 라인 점검표",
           "detail": "커밋 6d6c0fe21 · 배 11180"
+        },
+        {
+          "time": "17:01",
+          "area": "작업",
+          "event": "매니페스트 스코프 = spreadsheets·drive(전체)·external·scriptapp 명시 — 사진 저장 권한 (@125 · GM 재승인 2026-09-04)",
+          "detail": "커밋 986591c47 · 배 11180"
+        },
+        {
+          "time": "17:02",
+          "area": "작업",
+          "event": "시우 화면 42장 AWS 라인 점검 4가지 — 배936 입항",
+          "detail": "커밋 6d6c0fe21 · 브리프 status/briefs/COO-2026-09-04-AWS라인점검.md"
+        },
+        {
+          "time": "17:02",
+          "area": "작업",
+          "event": "배936 입항(AWS 라인 점검) · 시토 회신 배 발송",
+          "detail": "커밋 bafbd368d · 배 11180"
         }
       ],
       "count": 3,
       "done": 3,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 5,
+      "work_count": 8,
       "missed": [],
       "unclosed": [],
       "just": [],
