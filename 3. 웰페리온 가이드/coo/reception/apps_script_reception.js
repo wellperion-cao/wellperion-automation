@@ -823,6 +823,20 @@ function _vApplyStatusColor(sh, row, status) {
 //   원칙: 폴더 ID 는 스크립트 속성에서만 읽는다. 없으면 상위 폴더(RECEPTION_DRIVE_PARENT 속성) 아래에 만들고
 //         그 ID 를 속성에 적어 둔다. 상위 폴더 속성이 없으면 DriveApp.createFolder(내 드라이브 루트) — 이것은
 //         drive.file 스코프로도 허용된다(앱이 만든 파일/폴더). 루트를 '읽는' 호출(getRootFolder)만 금지.
+// [2026-09-04 시우] 승인 점검 — 편집기에서 이 함수 1회 실행하면 네 권한(시트·드라이브·외부호출·트리거)을 한 창에서 묻는다.
+//   구글 승인 창은 "실행한 함수가 실제로 쓰는 권한"만 묻는다(2026-09-04 실측: 시트 함수 → 시트만, 드라이브 함수 → 드라이브만 승인됨).
+//   읽기 전용 — 시트 이름·폴더 이름·토큰 스코프·트리거 수만 로그로 남긴다. 아무것도 쓰지 않는다.
+function authProbe_전체권한승인() {
+  var out = {};
+  out.sheet   = _vGetSpreadsheet().getName();
+  out.folder  = _drvFolder_('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER', 'RECEPTION_Photos').getName();
+  out.trigger = ScriptApp.getProjectTriggers().length;
+  var ti = UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(ScriptApp.getOAuthToken()), { muteHttpExceptions: true });
+  out.scopes  = String(JSON.parse(ti.getContentText()).scope || '').split(' ');
+  Logger.log(JSON.stringify(out));
+  return out;
+}
+
 function _drvFolder_(propKey, legacyPropKey, folderName) {
   var props = PropertiesService.getScriptProperties();
   var folderId = props.getProperty(propKey) || (legacyPropKey ? props.getProperty(legacyPropKey) : '') || '';
