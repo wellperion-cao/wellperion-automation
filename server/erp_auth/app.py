@@ -12,7 +12,8 @@
     GET  /auth/forbidden              — 403 안내 화면
     GET  /auth/admin                  — 승인 대기 목록 (관리자만)
     GET/POST /auth/admin/{uid}/perms  — 계정별 권한(그룹·모듈 허용/거부)
-    POST /auth/admin/{uid}/{action}   — approve | block | toggle_role
+    POST /auth/admin/{uid}/{action}   — approve | block | toggle_role | delete
+    GET/POST /auth/admin/unlock       — 관리자 전용 비밀번호(ERP_ADMIN_SITE_PW · 30분 쿠키) — 관리자 화면 전부가 이 문을 지난다
 
 권한 — 판정은 allowed() 한 곳(/auth/check · /auth/me · 관리자 화면이 같이 쓴다). 순서:
     ① role=admin            전부 허용
@@ -70,6 +71,11 @@ SESSION_DAYS = 30
 KST = timezone(timedelta(hours=9))
 LOCK_AFTER = 5                                 # 연속 실패 허용 횟수
 LOCK_SECS = 600                                # 잠금 시간(10분)
+# 관리자 화면 별도 비밀번호(GM 2026-09-04 "관리자 사이트 비밀번호는 별도로") — 로그인 계정과 무관하게 한 번 더 묻는다.
+# 값은 서버 /srv/erp/auth.env 에만 있다. 비어 있으면 종전대로(관리자 계정이면 바로 열림).
+ADMIN_PW = os.environ.get("ERP_ADMIN_SITE_PW", "")
+ADMIN_COOKIE = "erp_admin"
+ADMIN_MIN = 30                                 # 관리자 비밀번호 한 번 넣으면 30분 유효
 GOOGLE_ID = os.environ.get("GOOGLE_CLIENT_ID", "")      # 없으면 구글 로그인 라우트가 안내만 낸다
 GOOGLE_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_HD = "wellperion.com"                   # 회사 워크스페이스 도메인 — 개인 gmail 차단
@@ -271,6 +277,8 @@ STYLE = (
     "</style>")
 
 BRAND = "<a class=brand href=/erp/>WELLPERION<small>ERP</small></a>"
+TOGGLE = ('<button type=button onclick="var i=this.previousElementSibling;i.type=i.type==\'password\'?\'text\':\'password\';'
+          'this.textContent=i.type==\'password\'?\'표시\':\'숨김\'">표시</button>')
 
 
 def head(sub: str, wide: bool = False) -> str:
@@ -302,7 +310,7 @@ def login_page(next: str = "/", err: str = ""):
     return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 회사 계정으로 로그인") + f"""<form method=post action=/auth/login>
 <h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{hint}
 <label>회사 이메일<input name=email type=email autocomplete=username placeholder="이름@wellperion.com" required autofocus></label>
-<label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required><button type=button onclick=\"var i=this.previousElementSibling;i.type=i.type=='password'?'text':'password';this.textContent=i.type=='password'?'표시':'숨김'\">표시</button></span></label>
+<label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
 {'<a class=g href="/auth/google?next=' + escape(next) + '">회사 구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
 <div class=foot><p>계정이 없으면 <a href=/auth/signup>가입 신청</a> — 승인은 GM 이 합니다.</p>
@@ -499,11 +507,63 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
 
 
 # ── 관리자 ──────────────────────────────────────────────────────────────
-def admin_only(token: Optional[str]):
+def admin_only(token: Optional[str], admin_token: Optional[str] = None, next: str = "/auth/admin"):
     u = current(token)
     if not u or u["role"] != "admin":
         raise HTTPException(403, "관리자만")
+    if ADMIN_PW and not _admin_unlocked(admin_token, u["id"]):
+        # 관리자 비밀번호를 아직 안 넣었다 — 입력 화면으로(303). 라우트마다 분기하지 않고 여기 한 곳에서.
+        raise HTTPException(303, headers={"Location": "/auth/admin/unlock?next=" + urllib.parse.quote(next, safe="/")})
     return u
+
+
+def _admin_unlocked(admin_token: Optional[str], uid: int) -> bool:
+    if not admin_token:
+        return False
+    try:
+        c = jwt.decode(admin_token, SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return False
+    return c.get("p") == "admin" and c.get("uid") == uid
+
+
+def _admin_issue(uid: int) -> str:
+    return jwt.encode({"p": "admin", "uid": uid, "exp": int(time.time()) + ADMIN_MIN * 60}, SECRET, algorithm="HS256")
+
+
+@app.get("/auth/admin/unlock")
+def admin_unlock_page(next: str = "/auth/admin", err: str = "", erp_session: Optional[str] = Cookie(default=None)):
+    u = current(erp_session)
+    if not u or u["role"] != "admin":
+        return RedirectResponse("/auth/login?next=" + urllib.parse.quote(next, safe="/"), status_code=303)
+    return page("관리자 확인", head("관리자 화면 · 비밀번호 한 번 더") + f"""<form method=post action=/auth/admin/unlock>
+<h1>관리자 비밀번호</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
+<p class=hint>로그인 계정과 별개인 관리자 전용 비밀번호입니다. 넣으면 {ADMIN_MIN}분 동안 다시 묻지 않습니다.</p>
+<label>관리자 비밀번호<span class=pw><input name=password type=password autocomplete=off required autofocus>""" + TOGGLE + f"""</span></label>
+<input type=hidden name=next value="{escape(next if next.startswith('/') else '/auth/admin')}"><button>확인</button>
+<div class=foot><p><a href=/erp/>ERP 로 돌아가기</a></p></div></form>""")
+
+
+@app.post("/auth/admin/unlock")
+def admin_unlock(request: Request, password: str = Form(...), next: str = Form("/auth/admin"),
+                 erp_session: Optional[str] = Cookie(default=None)):
+    u = current(erp_session)
+    if not u or u["role"] != "admin":
+        raise HTTPException(403, "관리자만")
+    key = "admin:" + u["email"]
+    count, locked_until = FAILS.get(key, (0, 0.0))
+    if locked_until > time.time():
+        wait_min = max(1, int((locked_until - time.time()) // 60) + 1)
+        return RedirectResponse(f"/auth/admin/unlock?err=5회 틀려 잠겼습니다. {wait_min}분 후 다시&next={next}", status_code=303)
+    if not ADMIN_PW or not secrets.compare_digest(password, ADMIN_PW):
+        count += 1
+        FAILS[key] = (0, time.time() + LOCK_SECS) if count >= LOCK_AFTER else (count, 0.0)
+        return RedirectResponse(f"/auth/admin/unlock?err=관리자 비밀번호가 맞지 않습니다&next={next}", status_code=303)
+    FAILS.pop(key, None)
+    r = RedirectResponse(next if next.startswith("/") else "/auth/admin", status_code=303)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie(ADMIN_COOKIE, _admin_issue(u["id"]), max_age=ADMIN_MIN * 60, httponly=True, samesite="lax", path="/auth/admin", secure=https)
+    return r
 
 
 def _admin_row(r, me_id: int) -> str:
@@ -535,11 +595,11 @@ def _delete_form(r) -> str:
 
 
 @app.get("/auth/admin")
-def admin(erp_session: Optional[str] = Cookie(default=None)):
+def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
     # 미로그인이면 로그인 화면으로 보낸다 — 새 창·시크릿에서 열면 {"detail":"관리자만"} 만 보였다(GM 2026-09-04).
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
-    me = admin_only(erp_session)
+    me = admin_only(erp_session, erp_admin)
     with db() as c:
         rows = c.execute("SELECT * FROM users WHERE tenant_id=%s ORDER BY status='pending' DESC, created_at DESC", (T,)).fetchall()
     tr = "".join(_admin_row(r, me["id"]) for r in rows)
@@ -580,8 +640,9 @@ def _perms_row(group: str, ms: list, u, p: Optional[dict]) -> str:
 
 
 @app.get("/auth/admin/{uid}/perms")
-def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg: str = ""):
-    admin_only(erp_session)
+def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg: str = "",
+               erp_admin: Optional[str] = Cookie(default=None)):
+    admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
     with db() as c:
         u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
     if not u:
@@ -605,8 +666,9 @@ def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg:
 
 
 @app.post("/auth/admin/{uid}/perms")
-async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None)):
-    admin_only(erp_session)
+async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                     erp_admin: Optional[str] = Cookie(default=None)):
+    admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
     form = await request.form()
     ids = {m["id"] for m in modules()}
     if form.get("preset") in PRESETS:
@@ -624,8 +686,9 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
 
 
 @app.post("/auth/admin/{uid}/{action}")
-def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(default=None)):
-    me = admin_only(erp_session)
+def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(default=None),
+                 erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin)
     if action not in ("approve", "block", "toggle_role", "delete"):
         raise HTTPException(400)
     if action == "delete":
