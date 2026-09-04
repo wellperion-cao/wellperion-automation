@@ -23,7 +23,7 @@
 | 2 | 문의 접수 Intake (`AKfycbyLc2cnOe` · 시험용 head `AKfycbzeGDag3X`) | 쓰기: 문의 폼 POST | wp_inquiry_form.html · _en (WP 8394·8408 주입) | 시모 | 쓰기 이중기록 (`api_intake.py` `/api/intake/inquiry`) | **서버 완료 · 주소 교체 대기(§3)** | 09-04 |
 | 3 | 강사 접수 (`AKfycbz4wWhqIC`) | 쓰기: 접수 POST | instructor_intake.html · GM의일요일.html (`cmo/_api.js`) | 시모 | 쓰기 이중기록 (`/api/intake/instructor` · `/sunday`) | **서버 완료 · 주소 교체 대기(§3)** | 09-04 |
 | 4 | 종합접수처 (`AKfycbwk2XS1FN` · `.deploy-reception`) | 읽기: reg_board · lf_list · hold · scoreboard | 종합접수처_현황 · 월간운영계획 · 15파일 | 시우(실행=시토) | 읽기 거울 (`sync_reception` → `/api/reception/*` · 배 922 레인 R) | **오늘 완료** | 09-03 |
-| 4b | 〃 | 쓰기: 회원 접수 폼(WP 8434) · 습득물 등록·처리 · reg_update | reception_block · lost_found_register 등 | 시우(실행=시토) | 쓰기 이중기록 (`/api/intake/reception` 추가 — 같은 통로) | **완료 09-04** | 09-04 |
+| 4b | 〃 | 쓰기: 회원 접수 폼(WP 8434) · 습득물 등록·처리 · reg_update | reception_block · lost_found_register 등 | 시우(실행=시토) | 쓰기 이중기록 (`/api/intake/reception` · WP 8434·8751 공개 폼 서버행 고정 완료) | **완료 09-04** | 09-04 |
 | 5 | 점검 3부서 (`AKfycbyXw4ZaA6` 전사_일정·체계 · `AKfycbyHY37y5C` 지원팀 일일점검) | 읽기: board · 원장 · today_live · monthly | 시설부·지원부·주차관리부 체계 · 전사_일정 · GM업무 · 21파일 | 시우(실행=시토) | 읽기 거울 (`sync_check` → `/api/check/{dept}` · 배 922 레인 S) | **오늘 완료** | 09-03 |
 | 5b | 〃 | 쓰기: 점검 체크 저장 · 일정 등록 | 〃 | 시우(실행=시토) | 쓰기 이중기록 (`/api/write` 확장 · 11종) | **완료 09-04** | 09-04 |
 | 6 | 업무·결재 현황 (`AKfycbxDwFkrxK` · `.deploy-todo`) | 읽기: todo_list · gm_hangro · home_kpi · CFO 월별 | 업무/결재 SSOT · GM업무 · 자율현황 · 매출현황 · 25파일 | 시우(실행=시토) | 읽기 거울 (`sync_todo` → `/api/todo/*` · 배 922 레인 T) | **오늘 완료** | 09-03 |
