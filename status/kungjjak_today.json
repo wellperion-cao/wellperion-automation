@@ -66,6 +66,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260904-07",
+          "no": "07",
+          "got": "딜라이브 문자 연동용 AWS 서버 IP 알려주기",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:57",
+          "end": "16:57",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260904-1001",
           "no": "01",
           "got": "매출보고가 6시에 정확하지도 않게 나갔네",
@@ -112,6 +124,30 @@
           "upload": "✅ 올림 (4ed74a2a8)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260904-1006",
+          "no": "06",
+          "got": "일단 시토는 AWS 연동하고 있어서 , 딜라이브 문자 자동화 연동관련해서 우리 AWS IP주소 줘야하는데 알려주라",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:57",
+          "end": "16:57",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260904-1007",
+          "no": "07",
+          "got": "그리고 추가적으로 딜라이브 레터는 후불제인데, API연동건은 선불제 내용도 필요해",
+          "did": "",
+          "start": "16:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -194,14 +230,29 @@
           "detail": "커밋 b5ec47d26 · 배 11197"
         }
       ],
-      "count": 9,
-      "done": 9,
-      "open": 0,
-      "avg_minutes": 40,
+      "count": 12,
+      "done": 11,
+      "open": 1,
+      "avg_minutes": 32,
       "work_count": 13,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260904-1007",
+          "no": "07",
+          "got": "그리고 추가적으로 딜라이브 레터는 후불제인데, API연동건은 선불제 내용도 필요해",
+          "did": "",
+          "start": "16:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -352,13 +403,25 @@
           "area": "작업",
           "event": "퍼널 거울이 화면 호출형(?action=) 을 못 받아 404 → 두 화면이 GAS 폴백만 타던 것 수리 (배960 #1c)",
           "detail": "커밋 bc555c8b9 · 배 11221"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "공용 보드(GAS) 서버 미러 — GM 담당 칸 71개 빈칸 결함 해결",
+          "detail": "커밋 5e3b04da8 · 배 11221"
+        },
+        {
+          "time": "16:57",
+          "area": "작업",
+          "event": "이중기록 대조 — 서버 원장 ↔ 시트 미러 날짜별 대조 + 3일 연속 무결 카운터 (배960)",
+          "detail": "커밋 2f48cbf71 · 배 11221"
         }
       ],
       "count": 1,
       "done": 1,
       "open": 0,
       "avg_minutes": 11,
-      "work_count": 22,
+      "work_count": 24,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -366,7 +429,20 @@
     },
     "cmo": {
       "nick": "시모",
-      "items": [],
+      "items": [
+        {
+          "ref": "GM-20260904-3001",
+          "no": "01",
+          "got": "내가 원하는건 https://my.matterport.com/show/?m=Wy1dYgcHUUw 이런건데?",
+          "did": "",
+          "start": "16:59",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
       "work": [
         {
           "time": "07:30",
@@ -393,12 +469,6 @@
           "detail": "커밋 80e727408 · 배 11199"
         },
         {
-          "time": "10:26",
-          "area": "작업",
-          "event": "IG 발행검증 자동 대조 → 발행완료 도장",
-          "detail": "커밋 a8c503a0c · 배 11199"
-        },
-        {
           "time": "15:43",
           "area": "작업",
           "event": "AWS 이관 안내 표 — 문의·콘텐츠 접수 2줄 채움 · 배966 입항 · 웰리 회신 배973",
@@ -415,16 +485,43 @@
           "area": "작업",
           "event": "새 홈 GEO 내용층 — FAQ·공간 9곳·레슨 6팀 (배970)",
           "detail": "커밋 c0cc2ba88 · 배 11199"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "IG 발행검증 자동 대조 → 발행완료 도장",
+          "detail": "커밋 f568e6c87 · 배 11230"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "시모 퍼널 거울 배포 스크립트·동기화 본체 적재 (배960 #1c)",
+          "detail": "커밋 d56ec99e3 · 배 11230"
         }
       ],
-      "count": 0,
+      "count": 1,
       "done": 0,
-      "open": 0,
+      "open": 1,
       "avg_minutes": null,
-      "work_count": 8,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260904-3001",
+          "no": "01",
+          "got": "내가 원하는건 https://my.matterport.com/show/?m=Wy1dYgcHUUw 이런건데?",
+          "did": "",
+          "start": "16:59",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -483,9 +580,9 @@
           "start": "16:49",
           "end": "16:49",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 올림 (6f02b61a8)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260904-5003",
@@ -495,9 +592,9 @@
           "start": "16:53",
           "end": "16:53",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 올림 (6f02b61a8)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -524,13 +621,19 @@
           "area": "작업",
           "event": "대표님 지시사항 화면 가로 잘림 수리 — grid 칸 min-width:auto 기본값이 긴 본문에 밀려 트랙보다 커짐",
           "detail": "커밋 3b559bf00 · 배 11180"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "시우 화면 절대주소 상대경로화 6곳 + AWS 라인 점검표",
+          "detail": "커밋 6d6c0fe21 · 배 11180"
         }
       ],
       "count": 3,
       "done": 3,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 4,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
       "just": [],
