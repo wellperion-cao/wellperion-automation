@@ -229,3 +229,17 @@ CREATE TABLE IF NOT EXISTS board_cache (
   synced_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, key)
 );
+
+-- 매출·지출 집계 거울 (sync_sales.py · api_sales.py · 배 960 레인 E · 2026-09-04).
+-- gas = salesops(매출 배관 .deploy-salesops) · proc(운영요약) · deptrep(보고시트) · action = GAS 액션 ·
+-- params = 정렬한 나머지 쿼리(month=8 · range=A1:S20&sheet=4 · 빈값). 응답을 통째로 싣는다 — 화면이 GAS 모양 그대로 받는다.
+-- 무거운 집계(sales_dept_pub 실측 31초)를 화면이 매번 기다리던 것을 없앤다. 목록·TTL = sync_sales.py jobs().
+CREATE TABLE IF NOT EXISTS sales_cache (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  gas       TEXT NOT NULL,
+  action    TEXT NOT NULL,
+  params    TEXT NOT NULL DEFAULT '',
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, gas, action, params)
+);

@@ -448,6 +448,22 @@ function reportFile(){
 }
 /* 연간 추이 — ERP 업무 SSOT GAS(action=sales_monthly). 매출현황.html 이 이미 쓰는 그 액션이다. */
 var ERP  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+/* ★보고시트 읽기 원천 전환(배 960 레인 E · 2026-09-04 시토). ERP 도메인(erp.wellperion.com)에서만 서버 거울
+   /api/sales/deptrep/… 를 먼저 부르고, 실패(미로그인·서버 다운)하면 종전 GAS 로 조용히 돌아간다(console 한 줄).
+   GitHub Pages 에선 ERP_API_ON 이 false 라 종전 그대로. 거울은 이번 달 파일 id 를 서버가 같은 해석(daily_report_sheet)으로
+   찾아 붙이므로 화면이 reportFile() 을 기다릴 필요가 없다 — 폴백 경로에서만 쓴다. 응답 모양은 GAS 와 같다. */
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function drGet(kind, extra){   // kind='dump'|'lesson' · extra='&sheet=4&range=A1:S20'
+  extra = extra || '';
+  var gas = function(){
+    return reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&' + kind + '=1' + extra + fp + '&cb=' + Date.now()); })
+      .then(function(r){ return r.json(); });
+  };
+  if (!ERP_API_ON) return gas();
+  return fetch('/api/sales/deptrep/' + kind + (extra ? '?' + extra.replace(/^&/, '') : ''))
+    .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+    .catch(function(e){ console.warn('[보고시트] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
 
 var SALES_ROWS  = [4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 /* ★2026-08-28 GM 지적("신규등록·재등록·환불 매출이 다 우측으로 가 있다")로 배치를 뜻으로 다시 갈랐다.
@@ -875,8 +891,7 @@ function load(){
   document.getElementById('audit').className = 'audit wait';
   document.getElementById('audit').innerHTML = '자체 점검 중…';
 
-  var p1 = reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1' + fp + '&cb=' + Date.now()); })
-    .then(function(r){ return r.json(); })
+  var p1 = drGet('dump')
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
       RAW.cells = d.cells || {};
@@ -891,8 +906,7 @@ function load(){
         ' &nbsp;/ 잠시 뒤 [↻ 새로고침]을 눌러 주세요.</div>';
     });
 
-  var p2 = fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&lesson=1&cb=' + Date.now())
-    .then(function(r){ return r.json(); })
+  var p2 = drGet('lesson')
     .then(function(d){ if (d && d.ok) { RAW.lesson = d; renderLesson(d); } })
     .catch(function(){ // 강습 칸이 조용히 빈 채 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
       document.getElementById('lesson').innerHTML =
@@ -1093,9 +1107,7 @@ function onDatePick(silent){
   // 그래서 세 조각으로 나눠 받아 합친다.
   var _day = day;
   function _seg(range){
-    return reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + _day +
-                 '&range=' + range + fp + '&cb=' + Date.now()); })
-      .then(function(r){ return r.json(); })
+    return drGet('dump', '&sheet=' + _day + '&range=' + range)
       .then(function(d){ return (d && d.ok) ? (d.cells || {}) : null; });
   }
   Promise.all([_seg('A1:S20'), _seg('A21:N45'), _seg('A46:N60')])
@@ -1138,8 +1150,8 @@ function toggleMonth(){
   document.getElementById('asof').textContent = '이번 달 전체';
   document.getElementById('memberDateNote').style.display = '';
   var today = new Date();
-  reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + today.getDate() + '&range=A1:S20' + fp + '&cb=' + Date.now()); })
-    .then(function(r){ return r.json(); }).then(function(d){ return (d && d.ok) ? d.cells : null; })
+  drGet('dump', '&sheet=' + today.getDate() + '&range=A1:S20')
+    .then(function(d){ return (d && d.ok) ? d.cells : null; })
     .catch(function(){ return null; })
     .then(function(todayCells){
       renderMonthSales(RAW.chart, todayCells);

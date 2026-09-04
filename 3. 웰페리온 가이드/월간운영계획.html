@@ -1159,18 +1159,31 @@
   var PROC_FALLBACK = {"골프":[262000,0,69300000,0,804960,873200],"운영부":[239600,1118070,242620,13085350,248900,-39060],"시설":[755860,150600,1171878,433280,1019470,11081390],"필라테스":[11880000,0,11230,0,9890,0],"지원":[180470,264110,442630,406300,597600,579460],"스쿼시":[0,0,270340,0,238800,240000],"P.T":[20800,0,0,0,630000,0],"체조&트램":[0,0,0,0,0,478500],"수영":[54350,0,0,0,200100,0],"뮤지컬":[22190,0,0,0,0,0]}; // 라이브 실패 시 최후 폴백(1~6월 스냅샷 · 2026-06-30 동결 — 부정확할 수 있음)
   // 전체 지출 = 인건비(강사+운영부) + 구매성 — CFO 페이지 totalCost와 동일 정의(정규직 일부·임대료 미포함).
   function procMonthArr(deptMap){ var a = new Array(12).fill(0); for(var d in deptMap){ var arr = deptMap[d] || []; for(var m = 0; m < arr.length && m < 12; m++){ a[m] += (Number(arr[m]) || 0); } } return a; }
+  /* ★매출·지출 집계 읽기 원천 전환(배 960 레인 E · 2026-09-04 시토). ERP 도메인(erp.wellperion.com)에서만 서버 거울
+     /api/sales/… 를 먼저 부르고, 실패(미로그인·서버 다운)하면 종전 GAS 호출로 조용히 돌아간다(console 한 줄).
+     GitHub Pages 에선 ERP_API_ON 이 false 라 종전 그대로. 거울 = sync_sales.py 가 GAS 응답을 통째로 떠온 것(모양 동일).
+     실측: proc sales_dept 24.9s · deptrep dump 4.2s — 화면이 기다리던 시간이 없어진다. */
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function salesRead(gas, action, gasFn, tag){
+    if (!ERP_API_ON) return gasFn();
+    return fetch('/api/sales/' + gas + '/' + action)
+      .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+  }
   function readProcLive(){
-    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    return salesRead('proc', 'proc_summary', function(){
+      return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({action:'proc_summary', password:PROC_GATE_PW})})
-      .then(function(r){ return r.json(); })
+      .then(function(r){ return r.json(); }); }, '구매성지출')
       .then(function(res){ return (res && res.ok && res.dept) ? {dept:res.dept, live:true} : {dept:PROC_FALLBACK, live:false}; })
       .catch(function(){ return {dept:PROC_FALLBACK, live:false}; });
   }
   // ── 종목별 매출 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API). CFO 매출지출현황.html loadSalesDept와 동일 소스 — 강사→종목 매핑=인건비마스터(서버측), 집계만 반환(PII 없음). 응답 {ok, dept:{부서:[12]}}. 실패=null → SALES_GVIZ 매출마스터 폴백. ──
   function readSalesDeptLive(){
-    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    return salesRead('proc', 'sales_dept', function(){
+      return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({action:'sales_dept', password:PROC_GATE_PW})})
-      .then(function(r){ return r.json(); })
+      .then(function(r){ return r.json(); }); }, '종목별매출')
       .then(function(res){ return (res && res.ok && res.dept) ? res.dept : null; })
       .catch(function(){ return null; });
   }
@@ -3778,12 +3791,14 @@
     var host = document.getElementById('deptreport-board');
     if (!host) return;
     var _t = new Date();
-    fetch(GAS_URL + '?action=daily_report_sheet&year=' + _t.getFullYear() + '&month=' + (_t.getMonth() + 1) + '&cb=' + Date.now())
+    // 거울은 이번 달 파일 id 를 서버가 같은 해석(daily_report_sheet)으로 찾아 붙인다 — 폴백 경로에서만 화면이 직접 찾는다.
+    salesRead('deptrep', 'dump', function(){
+      return fetch(GAS_URL + '?action=daily_report_sheet&year=' + _t.getFullYear() + '&month=' + (_t.getMonth() + 1) + '&cb=' + Date.now())
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok && d.fileId) ? ('&file=' + encodeURIComponent(d.fileId)) : ''; })
       .catch(function(){ return ''; })   // 못 찾으면 붙은 파일(8월) — ssName 으로 드러난다
       .then(function(fp){ return fetch(DEPTREP_GAS + '?token=' + encodeURIComponent(DEPTREP_TOKEN) + '&dump=1' + fp + '&cb=' + Date.now()); })
-      .then(function(r){ return r.json(); })
+      .then(function(r){ return r.json(); }); }, '부서보고')
       .then(function(d){
         if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
         var c = d.cells || {};

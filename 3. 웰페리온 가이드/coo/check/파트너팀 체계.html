@@ -648,8 +648,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      이 백엔드는 구매요청과 같은 Apps Script 라, 무거운 매출 재계산이 물려 있으면
      간헐적으로 404(HTML)를 돌려준다(2026-07-08 에 기록된 알려진 증상). 한 번 실패로
      화면이 비지 않도록 점증 간격으로 다시 묻는다. 끝까지 실패하면 null 을 준다. */
+  /* ★매출 읽기 원천 전환(배 960 레인 E · 2026-09-04 시토). ERP 도메인에서만 서버 거울 /api/sales/salesops/… 를
+     먼저 부르고, 실패하면 아래 종전 재시도 흐름(GAS)으로 그대로 내려간다. GitHub Pages 에선 ERP_API_ON 이 false 라 종전 그대로.
+     거울 = sync_sales.py 가 GAS 응답을 통째로 떠온 것(모양 동일). sales_dept_pub 실측 31.4s 가 없어진다. */
+  var ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function _salesApi(q){   // '?action=sales_dept_pub&nocache=1' → '/api/sales/salesops/sales_dept_pub?nocache=1'
+    var p=new URLSearchParams(String(q||'').replace(/^\?/,'')),a=p.get('action');
+    if(!a)return null;
+    p.delete('action');var s=p.toString();
+    return '/api/sales/salesops/'+a+(s?'?'+s:'');
+  }
   function pubGet(q){
     var delays=[0,1200,2600,4500];
+    var path=ERP_API_ON&&_salesApi(q);
+    var mirror=path?fetch(path).then(function(r){if(!r.ok)throw new Error('api '+r.status);return r.json();})
+      .catch(function(e){console.warn('[매출공개배관] API 실패 → GAS 폴백:',e&&e.message);return null;}):Promise.resolve(null);
+    return mirror.then(function(mj){ if(mj&&mj.ok)return mj;
     return (function step(i){
       return new Promise(function(rs){setTimeout(rs,delays[i]);})
         .then(function(){return fetch(PUB_API+q).then(function(r){return r.json();}).catch(function(){return null;});})
@@ -658,7 +672,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           if(i+1<delays.length)return step(i+1);
           return j;
         });
-    })(0);
+    })(0); });
   }
 
   /* CSV 재파싱은 강사별을 '시트에 있는 값'으로 되돌린다. 그래서 배관으로 채웠던 달(강습부 미입력월)이

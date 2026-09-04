@@ -485,6 +485,24 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
 "use strict";
 var GATE_PW="wellperion!@1202";
 var PROC_API="https://script.google.com/macros/s/AKfycbxUAQ3DefJt13z5Bsz5KlGw6BwS2lDeLgHDMeTHjifLYGuk1lNyEpARYQ20XcjJXNj5/exec";
+/* ★매출 읽기 원천 전환(배 960 레인 E · 2026-09-04 시토). ERP 도메인(erp.wellperion.com)에서만 서버 거울
+   /api/sales/… 를 먼저 부르고, 실패(미로그인·거울에 없음·서버 다운)하면 종전 GAS 로 조용히 돌아간다(console 한 줄).
+   GitHub Pages 에선 ERP_API_ON 이 false 라 아래 경로가 전부 종전 그대로다. 쓰기(구매요청 add·delete·status)는 계속 GAS.
+   거울 = sync_sales.py 가 GAS 응답을 통째로 떠온 것이라 응답 모양이 GAS 와 같다(_source·_synced_at 만 덧붙는다).
+   집계 실측: sales_dept_pub 31.4s · labor_time 34.0s · sales_ops 26.7s — 기다리던 시간이 통째로 없어진다. */
+var ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function _salesApi(gas,q){   // '?action=sales_instr_pub&month=8' → '/api/sales/proc/sales_instr_pub?month=8'
+  var p=new URLSearchParams(String(q||"").replace(/^\?/,"")),a=p.get("action");
+  if(!a)return null;
+  p.delete("action");var s=p.toString();
+  return "/api/sales/"+gas+"/"+a+(s?"?"+s:"");
+}
+function _salesRead(gas,q,gasFn,tag){   // 거울 먼저 · 실패하면 종전 GAS
+  var path=ERP_API_ON&&_salesApi(gas,q);
+  if(!path)return gasFn();
+  return fetch(path).then(function(r){if(!r.ok)throw new Error("api "+r.status);return r.json();})
+    .catch(function(e){console.warn("["+tag+"] API 실패 → GAS 폴백:",e&&e.message);return gasFn();});
+}
 var SHEET_ID="1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE";
 var GVIZ="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:json";
 /* ★2026-07-16 gviz 숨김행 감사(문의회원 426건 누락 후속) — 인건비 GVIZ 실측 대조 완료.
@@ -788,8 +806,8 @@ function dpNkey(s){return String(s==null?"":s).replace(/\s+/g,"").replace(/프�
 async function loadDeptInstr(){
   if(DP_I_STATE!=="idle")return;DP_I_STATE="loading";
   var cut=dpCut(),reqs=[];
-  var mk=function(m){return fetch(PROC_API+"?action=sales_instr_pub&month="+m)
-    .then(function(r){return r.json();})
+  var mk=function(m){var q="?action=sales_instr_pub&month="+m;
+    return _salesRead("proc",q,function(){return fetch(PROC_API+q).then(function(r){return r.json();});},"강사별매출 "+m)
     .then(function(j){if(j&&j.ok&&j.instr&&j.month){var mp={};
       j.instr.forEach(function(x){mp[dpNkey(x.name)]={name:x.name,team:String(x.team||""),val:Number(x.val)||0};});
       DP_I_SALES[j.month]=mp;}})
@@ -1358,9 +1376,14 @@ function pdNum(s){var m=String(s||"").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);r
 var SALES_API="https://script.google.com/macros/s/AKfycbzXcWyi-PgS9vBX5oW384OhnBZXaRwpZCma-hYnkOmTmh_SQ1b4WIg6esKgZw3ZF7-k-A/exec";
 var SALES_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,sales_probe:1,labor_zero:1};
 function apiFor(action){return SALES_ACT[action]?SALES_API:PROC_API;}
+var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};   // 읽기 전용 집계 = 서버 거울 있음(쓰기·구매요청은 계속 GAS)
 function _rawCall(action,extra){
-  var body=Object.assign({action:action,password:GATE_PW},extra||{});
-  return fetch(apiFor(action),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+  var post=function(){
+    var body=Object.assign({action:action,password:GATE_PW},extra||{});
+    return fetch(apiFor(action),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+  };
+  if(!MIRROR_ACT[action])return post();
+  return _salesRead("salesops","?action="+action,post,"매출집계 "+action);
 }
 // 무거운 매출 집계(같은 Apps Script)는 직렬 실행 + 구매요청 로딩 중엔 양보 → 구매요청(리스트·사진)이 백엔드를 먼저 잡게(2026-07-08 효율화)
 var HEAVY_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};
