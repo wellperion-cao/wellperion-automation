@@ -46,6 +46,12 @@
     }
     return dashPromise;
   }
+  // 관문(/api/write)으로 돌릴 주소인가 — 이 페이지가 실제로 쓰는 두 GAS 만. REG_API·HOLD_API 는 아래 본문
+  // 스크립트가 var 로 선언해 window 에 얹히고, fetch 는 그 뒤에만 불리므로 호출 시점에 읽으면 값이 있다.
+  function _rcGateway(u) {
+    if (u.indexOf(API_MAIN) === 0) return true;                       // 접수 GAS(REG_API 와 같은 주소)
+    return !!(window.HOLD_API && u.indexOf(window.HOLD_API) === 0);   // 휴회 GAS(회원 쪽 · 본문에서 선언)
+  }
   function jsonResp(obj) {
     return new Response(JSON.stringify(obj), { status: 200, headers: { "Content-Type": "application/json" } });
   }
@@ -61,9 +67,17 @@
       //   이 페이지의 쓰기 = reg_update·reg_delete·lf_handover·lf_delete·hold_complete. 액션별 GAS 분기는 서버가 한다.
       //   GitHub Pages·워드프레스에선 아래 판정이 false 라 종전 GAS 직행 그대로다 — 한 파일이 두 곳에서 산다.
       //   ROLLBACK: 이 if 블록 한 덩이를 지우면 전부 GAS 직행으로 돌아간다.
-      if (opts && /^post$/i.test(opts.method || "") && u.indexOf("script.google.com") >= 0 &&
+      //   ★2026-09-04 배960 M5 — ① 이 페이지가 쓰는 두 주소(접수 GAS·휴회 GAS)일 때만 돌린다. 종전엔 주소를 안 보고
+      //   script.google.com 이면 전부 돌려서, 나중에 이 페이지에 다른 GAS 가 하나만 붙어도 엉뚱한 곳으로 갔다.
+      //   ② 서버가 GAS 에 못 닿았으면(server-forward-failed) 원래 주소로 한 번만 직접 보낸다 — 그 시점엔 GAS 가
+      //   아직 안 써졌으므로 안전하다(다른 화면의 관문과 같은 규약 · _assets/erp_write.js). 두 번은 시도하지 않는다.
+      if (opts && /^post$/i.test(opts.method || "") && _rcGateway(u) &&
           /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname)) {
-        return _origFetch("/api/write", opts);
+        return _origFetch("/api/write", opts).then(function (r) {
+          return r.clone().json().then(function (d) {
+            return (d && d.error === "server-forward-failed") ? _origFetch(url, opts) : r;
+          }, function () { return r; });                       // 응답이 JSON 이 아니면 그대로 넘긴다
+        }, function () { return _origFetch(url, opts); });     // 관문에 못 닿음(미로그인·서버 다운) → 종전 경로
       }
 
       if (u.indexOf(API_MAIN) >= 0) {
@@ -654,6 +668,20 @@ var REG_PV = 'wlp_reg_pv_2026';
    미러(5분 동기화)가 그 건을 아직 모르므로 그동안만 GAS 를 읽는다 — 쓰기 도장은 맨 위 shim 이 POST 마다 찍는다.
    미러 = sync_reception.py 가 5분마다 같은 GAS 액션을 떠온 것이라 행 모양이 GAS 응답과 같다. */
 var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+/* ★게이트 발효 뒤 사본 안내(배 960 · 2026-09-04 21:31 시토). 접수 GAS 의 TOKEN_ENFORCE 가 켜져 습득물 목록·주간/월간
+   점수판·삭제·수령·휴회완료는 접근키가 있어야 통과한다. 그 열쇠는 서버에만 있으므로 GitHub Pages·워드프레스 사본에서는
+   이 화면이 조용히 빈 값을 그린다 — 화면이 거짓말하지 않게 위에 한 줄로 알리고 ERP 주소로 보낸다.
+   ERP 도메인에서는 아무것도 뜨지 않는다. 되돌리기 = 이 블록 한 덩이 삭제. */
+if(!ERP_API_ON){
+  document.addEventListener('DOMContentLoaded', function(){
+    var d = document.createElement('div');
+    d.style.cssText = 'padding:10px 14px;background:#5a3a2c;color:#f5f2ef;font-size:14px;line-height:1.5;text-align:center';
+    d.innerHTML = '이 주소에서는 습득물 목록·점수판·처리(삭제·수령·휴회완료)가 열리지 않습니다. ' +
+      '<a href="https://erp.wellperion.com/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html" ' +
+      'style="color:#e6c84e;font-weight:700">웰페리온 ERP에서 열기</a>';
+    document.body.insertBefore(d, document.body.firstChild);
+  });
+}
 function _rcFetch(apiPath, gasUrl){
   var gas = function(){ return fetch(gasUrl, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }); };
   if(!ERP_API_ON) return gas();
