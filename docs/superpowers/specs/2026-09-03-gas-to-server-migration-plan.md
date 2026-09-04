@@ -19,15 +19,15 @@
 |---|---|---|---|---|---|---|---|
 | 1 | 퍼널·문의 Survey (`AKfycbykgMyFc-`) | 읽기: 문의 3종·회원 목록 | 문의현황 · membership · renewal · 오넛티 · 실무진피드백 · 종합접수처_현황 · 업무 SSOT · 26파일 | 시포 | 읽기 거울 (`sync_inquiries`·`sync_members` → `/api/inquiries`·`/api/members`) | **완료** | 09-02~03 |
 | 1b | 〃 | 쓰기: 회원 수정·문의 상태·피드백 | membership.html 등 | 시포·시토 | 쓰기 이중기록 (`api_write.py` `/api/write` · 배 961) | **오늘 완료** | 09-03 |
-| 1c | 〃 | 읽기: `period_breakdown` `funnel_conversion` `funnel_conversion_detail` `lesson_breakdown` | 월간마케팅보고서 · 콘텐츠문의현황 | 시모 | 읽기 거울 (`sync_funnel.py` + `api_funnel.py` · 규격 §4) | 예정 | **09-04** |
+| 1c | 〃 | 읽기: `period_breakdown` `funnel_conversion` `funnel_conversion_detail` `lesson_breakdown` | 월간마케팅보고서 · 콘텐츠문의현황 | 시모 | 읽기 거울 (`sync_funnel.py` + `api_funnel.py` · 규격 §4) | **완료 09-04**(쿼리형 404 수리) | 09-04 |
 | 2 | 문의 접수 Intake (`AKfycbyLc2cnOe` · 시험용 head `AKfycbzeGDag3X`) | 쓰기: 문의 폼 POST | wp_inquiry_form.html · _en (WP 8394·8408 주입) | 시모 | 쓰기 이중기록 (`api_intake.py` `/api/intake/inquiry`) | **서버 완료 · 주소 교체 대기(§3)** | 09-04 |
 | 3 | 강사 접수 (`AKfycbz4wWhqIC`) | 쓰기: 접수 POST | instructor_intake.html · GM의일요일.html (`cmo/_api.js`) | 시모 | 쓰기 이중기록 (`/api/intake/instructor` · `/sunday`) | **서버 완료 · 주소 교체 대기(§3)** | 09-04 |
 | 4 | 종합접수처 (`AKfycbwk2XS1FN` · `.deploy-reception`) | 읽기: reg_board · lf_list · hold · scoreboard | 종합접수처_현황 · 월간운영계획 · 15파일 | 시우(실행=시토) | 읽기 거울 (`sync_reception` → `/api/reception/*` · 배 922 레인 R) | **오늘 완료** | 09-03 |
-| 4b | 〃 | 쓰기: 회원 접수 폼(WP 8434) · 습득물 등록·처리 · reg_update | reception_block · lost_found_register 등 | 시우(실행=시토) | 쓰기 이중기록 (`/api/intake/reception` 추가 — 같은 통로) | 예정 | 09-05 |
+| 4b | 〃 | 쓰기: 회원 접수 폼(WP 8434) · 습득물 등록·처리 · reg_update | reception_block · lost_found_register 등 | 시우(실행=시토) | 쓰기 이중기록 (`/api/intake/reception` 추가 — 같은 통로) | **완료 09-04** | 09-04 |
 | 5 | 점검 3부서 (`AKfycbyXw4ZaA6` 전사_일정·체계 · `AKfycbyHY37y5C` 지원팀 일일점검) | 읽기: board · 원장 · today_live · monthly | 시설부·지원부·주차관리부 체계 · 전사_일정 · GM업무 · 21파일 | 시우(실행=시토) | 읽기 거울 (`sync_check` → `/api/check/{dept}` · 배 922 레인 S) | **오늘 완료** | 09-03 |
-| 5b | 〃 | 쓰기: 점검 체크 저장 · 일정 등록 | 〃 | 시우(실행=시토) | 쓰기 이중기록 (`/api/write` 확장) | 예정 | 09-06 |
+| 5b | 〃 | 쓰기: 점검 체크 저장 · 일정 등록 | 〃 | 시우(실행=시토) | 쓰기 이중기록 (`/api/write` 확장 · 11종) | **완료 09-04** | 09-04 |
 | 6 | 업무·결재 현황 (`AKfycbxDwFkrxK` · `.deploy-todo`) | 읽기: todo_list · gm_hangro · home_kpi · CFO 월별 | 업무/결재 SSOT · GM업무 · 자율현황 · 매출현황 · 25파일 | 시우(실행=시토) | 읽기 거울 (`sync_todo` → `/api/todo/*` · 배 922 레인 T) | **오늘 완료** | 09-03 |
-| 6b | 〃 | 쓰기: 업무·결재 저장 · GM업무 카드 | 업무/결재 SSOT · GM업무 | 시토 | 쓰기 이중기록 (`/api/write` 확장) | 예정 | 09-07 |
+| 6b | 〃 | 쓰기: 업무·결재 저장 · GM업무 카드 | 업무/결재 SSOT · GM업무 | 시토 | 쓰기 이중기록 (`/api/write` 확장 · erp_write.js) | **완료 09-04** | 09-04 |
 | 7 | 인사 허브 (`AKfycbyyXrdM7n` · 저장소 `.deploy-*` 없음 → info@ 또는 시트 내장) | 읽기·쓰기: 조직·일정·휴가·온보딩·채용 | chro/hub 10화면 · recruiting 6화면 · 18파일 | 시토(시로 큐 제외) | 읽기 거울 → 쓰기 이중기록 | 예정 | 09-08 (소스 확보 = info@ 로그인 선행) |
 | 8 | 매출 배관 sales-api (`AKfycbzXcWyi-P` · `.deploy-salesops`) · 운영요약 (`AKfycbxUAQ3Def`) · 보고시트 (`AKfycbwSn7ZyfX`) | 읽기: 매출·지출 집계 | 매출지출현황 · 월간운영계획 · 매출회원현황보고 · 파트너팀 체계 | 시토(시뽀 큐 제외) | 읽기 거울 | 예정 | 09-09 |
 | 9 | 지출현황 (`AKfycbzKIAxYYL`) · 리셉션 업무 (`AKfycbxcPsm-Xt`) · 라커관리 (`AKfycbyyN0I7od`) · renewal 개인 GAS (`AKfycbzY3ZvW_T`) | 각 1화면 | 지출현황 · 리셉션 업무/index · 라커관리 · renewal | 시토 | 화면 소유자 확인 후 읽기 거울 또는 폐기 | 예정 | 09-10 |
