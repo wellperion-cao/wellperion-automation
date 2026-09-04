@@ -16,6 +16,9 @@ lesson_records 와 같은 이유다: 브로제이 칸 이름을 우리가 정규
 실행: python3 /srv/erp/api/sync_brojay.py                       오늘+어제(KST)
       python3 /srv/erp/api/sync_brojay.py 2026-08-01 2026-09-03  소급 구간(첫 실행)
 자체점검: python3 sync_brojay.py --selftest                      (tenant 'selftest' · 네트워크 없음)
+
+예약 실행은 자격증명이 들어온 뒤에 건다 — 부를 곳이 없는데 5분마다 도는 것은 로그만 더럽힌다. 넣을 때 한 줄:
+  sudo tee /etc/cron.d/erp-brojay-sync <<< '*/5 * * * * ec2-user /usr/bin/python3 /srv/erp/api/sync_brojay.py >> /srv/erp/sync_brojay.log 2>&1'
 """
 import json
 import os
