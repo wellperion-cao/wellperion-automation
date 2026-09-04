@@ -73,7 +73,10 @@
   }
 
   /* item */
-  .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
+  /* min-width:0 — 그리드 기본값(min-width:auto)은 칸 내용(긴 본문)이 트랙 폭을 밀어내
+     문서 전체가 가로로 넘치게 만든다(2026-09-04 재현: desktop 2777>1920). 트랙 폭에 맞춰
+     줄바꿈되게 강제(overflow-wrap:break-word 는 이미 body 에 있음). */
+  .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;min-width:0;}
   .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
   .top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:3px;}
   .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
