@@ -273,6 +273,12 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 <script>
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 서버 관문 /api/write, 아니면 종전 GAS 그대로.
+     서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
+     GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
+     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 
@@ -328,7 +334,7 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
       foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
       category:$('f_category').value, staff:staffName, photo:photoData, fileName:photoName, mimeType:photoMime,
       storageLoc:$('f_storageLoc').value.trim(), memo:$('f_memo').value.trim() };
-    fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    fetch(_rcWriteUrl(),{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res&&res.ok){ toast('등록 완료 — '+res.id); resetForm(); }

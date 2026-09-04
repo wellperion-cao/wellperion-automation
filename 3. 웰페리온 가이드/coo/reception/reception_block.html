@@ -562,6 +562,12 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 <script>
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 무인증 접수 통로 /api/intake/reception, 아니면 종전 GAS 그대로.
+     서버가 intake_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽으면 {ok:true,queued:true}).
+     워드프레스 주입본(WP 8434)·GitHub Pages 에선 판정이 false 라 종전 GAS 직행 — 회귀 0. WP 컷오버는 이 줄을 서버 주소로 고정하면 된다.
+     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
+  function _rcSubmitUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/intake/reception' : RECEPTION_API; }
   // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 
@@ -951,7 +957,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     };
     EXTRA_KEYS.forEach(function(k){ payload[k] = vals[k] || ''; });
 
-    fetch(RECEPTION_API, {
+    fetch(_rcSubmitUrl(), {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

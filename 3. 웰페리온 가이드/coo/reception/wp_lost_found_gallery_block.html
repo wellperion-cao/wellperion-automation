@@ -326,6 +326,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 <script>
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 서버 관문 /api/write, 아니면 종전 GAS 그대로.
+     서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
+     GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
+     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
   var CACHE_KEY = 'wlp_lf_gallery_v1';
   var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
 
@@ -538,7 +544,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     if(!_cur){ return; }
     btn.disabled=true; btn.textContent='처리 중…';
     var payload={ action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
-    fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    fetch(_rcWriteUrl(),{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(d){
         btn.disabled=false; btn.textContent='수령 완료';

@@ -10,10 +10,12 @@ wellperion.com 안의 폼(문의 wp_inquiry_form · 강사 접수 instructor_int
   POST /api/intake/inquiry     → INTAKE_GAS_URL      (wp_inquiry_form.html · _en)
   POST /api/intake/instructor  → INSTRUCTOR_GAS_URL  (instructor_intake.html)
   POST /api/intake/sunday      → INSTRUCTOR_GAS_URL  (GM의일요일.html · 강사 접수와 같은 GAS)
+  POST /api/intake/reception   → RECEPTION_EXEC_URL  (reception_block.html · _en 의 reg_submit — 배 960 #4b)
   POST /api/intake/selftest    → 기록만(tenant 'selftest') · GAS 전달 없음 — 배포 검증용
   GET  /api/intake/health      → 폼별 건수 · GAS 실패 건수
   GET  /api/intake/reconcile   → 이중기록 대조 결과(reconcile_dual_write.py 가 06:10 에 적는다 · 3일 연속 무결 카운터)
 """
+import hashlib
 import json
 import os
 import sys
@@ -28,8 +30,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import db  # noqa: E402
 from sync_inquiries import load_env  # noqa: E402  — /srv/erp/api.env 의 GAS URL
 
-FORMS = {"inquiry": "INTAKE_GAS_URL", "instructor": "INSTRUCTOR_GAS_URL", "sunday": "INSTRUCTOR_GAS_URL", "selftest": None}
+FORMS = {"inquiry": "INTAKE_GAS_URL", "instructor": "INSTRUCTOR_GAS_URL", "sunday": "INSTRUCTOR_GAS_URL",
+         "reception": "RECEPTION_EXEC_URL", "selftest": None}
 MAX_BODY = 2 * 1024 * 1024
+BLOB_CHARS = 8192             # 이보다 긴 문자열 = 사진·서명 base64 (사람이 쓰는 칸은 이 길이가 안 나온다)
 FORWARD_TIMEOUT = 55          # 폼 fetch 상한보다 짧게
 CORS = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"}   # 폼은 wellperion.com(다른 origin) 에서 text/plain 으로 보낸다
@@ -39,6 +43,16 @@ load_env()
 
 def _kst_now():
     return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def redact_blobs(payload):
+    """원장에 사진·서명 base64 를 통째로 넣지 않는다 — 길이·sha256 만 남긴다(GAS 로는 원본 본문이 그대로 간다).
+    사진은 GAS 가 Drive 에 올려 URL 을 시트에 적으므로 서버가 원본을 이고 있을 이유가 없다(정의서 A §7 사진)."""
+    if not isinstance(payload, dict):
+        return payload
+    return {k: ({"_redacted": len(v), "_sha256": hashlib.sha256(v.encode("utf-8", "replace")).hexdigest()}
+                if isinstance(v, str) and len(v) > BLOB_CHARS else v)
+            for k, v in payload.items()}
 
 
 def gas_forward(url, body):
@@ -77,7 +91,7 @@ async def intake(form: str, request: Request):
     with conn:
         row_id = conn.execute(
             "INSERT INTO intake_log (tenant_id, form, received_at, payload, gas_status) VALUES (%s,%s,%s,%s::jsonb,'pending') RETURNING id",
-            (tenant, form, _kst_now(), json.dumps(payload, ensure_ascii=False))).fetchone()[0]
+            (tenant, form, _kst_now(), json.dumps(redact_blobs(payload), ensure_ascii=False))).fetchone()[0]
     # 여기까지 오면 DB 엔 남았다 — 아래가 실패해도 접수는 잃지 않는다.
     key = FORMS[form]
     url = os.environ.get(key or "", "")
