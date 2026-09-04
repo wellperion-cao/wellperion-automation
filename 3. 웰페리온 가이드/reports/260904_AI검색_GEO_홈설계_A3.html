@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 AI 검색 홈 설계</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F7F8F5; --ink:#17201B; --muted:#5F6B65; --rule:#D5DCD7; --panel:#FFFFFF;
+  --accent:#1E6B52; --accent-ink:#0F3D2E; --hl:#E4EFE8; --warn:#B4562A; --warn-bg:#F8ECE4;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#121815; --ink:#E8EDE9; --muted:#9AA8A0; --rule:#2A3630; --panel:#1A221E;
+  --accent:#5FB893; --accent-ink:#BFE6D3; --hl:#1E2E27; --warn:#E39A70; --warn-bg:#3A241A; } }
+:root[data-theme="dark"]{
+  --bg:#121815; --ink:#E8EDE9; --muted:#9AA8A0; --rule:#2A3630; --panel:#1A221E;
+  --accent:#5FB893; --accent-ink:#BFE6D3; --hl:#1E2E27; --warn:#E39A70; --warn-bg:#3A241A; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR","Pretendard","Apple SD Gothic Neo",sans-serif;font-size:13px;line-height:1.55;font-variant-numeric:tabular-nums}
+.page{max-width:1500px;margin:0 auto;padding:28px 32px 40px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.head h1{font-family:"Playfair Display",Georgia,serif;font-weight:600;font-size:30px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.head .sub{color:var(--muted);font-size:12px;margin-top:4px}
+.head .by{text-align:right;color:var(--muted);font-size:12px;white-space:nowrap}
+.verdict{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;margin:18px 0 22px}
+.verdict .say{background:var(--hl);border-left:4px solid var(--accent);padding:14px 16px;font-size:15px;font-weight:500;line-height:1.5}
+.verdict .say b{color:var(--accent-ink)}
+.kpi{border:1px solid var(--rule);background:var(--panel);padding:12px 14px}
+.kpi .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:700;margin-top:2px;line-height:1.1}
+.kpi .v.bad{color:var(--warn)}
+.kpi .n{font-size:11px;color:var(--muted);margin-top:4px}
+.cols{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:22px}
+h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;background:var(--panel)}
+th,td{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid var(--rule);font-size:12px}
+th{font-weight:700;color:var(--muted);font-size:11px;letter-spacing:.04em;background:var(--hl)}
+td.k{font-weight:700;white-space:nowrap}
+.tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:11px;font-weight:700;line-height:1.5}
+.tag.ok{background:var(--hl);color:var(--accent-ink)}
+.tag.no{background:var(--warn-bg);color:var(--warn)}
+.tag.gm{background:var(--ink);color:var(--bg)}
+.list{margin:0;padding-left:0;list-style:none;display:grid;gap:8px}
+.list li{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:8px 10px;background:var(--panel);border:1px solid var(--rule)}
+.list li .n{font-family:"Playfair Display",serif;font-weight:600;color:var(--accent);font-size:16px;line-height:1.1}
+.list li b{display:block}
+.list li span{color:var(--muted);font-size:12px}
+.gm{margin-top:14px;border:2px solid var(--ink);padding:12px 14px;background:var(--panel)}
+.gm h2{border:0;padding:0;margin-bottom:8px;color:var(--ink)}
+.gm ol{margin:0;padding-left:18px;display:grid;gap:6px}
+.foot{margin-top:22px;padding-top:10px;border-top:1px solid var(--rule);color:var(--muted);font-size:11px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+code{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:var(--hl);padding:0 4px;border-radius:2px}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}.verdict{grid-template-columns:1fr 1fr}.verdict .say{grid-column:1/-1}}
+@media print{@page{size:A3 landscape;margin:12mm}html,body{background:#fff;color:#111}.page{max-width:none;padding:0}.kpi,table,.list li,.gm{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div>
+      <h1>AI가 찾아 읽는 웰페리온 홈 — GEO 설계</h1>
+      <div class="sub">GM 물음 2026-09-04 「AI들이 검색하는 웹을 만들 수 있을까? GEO 기반이 좋을 듯」 · GEO = 생성형 검색 최적화(챗GPT·퍼플렉시티·구글 AI 개요·네이버 AI가 답할 때 우리를 인용하게 만드는 일)</div>
+    </div>
+    <div class="by">작성 AI 시토 · 2026-09-04 06:40<br>담당 시토(기술 골격) · 시모(내용) · 결정 GM</div>
+  </div>
+
+  <div class="verdict">
+    <div class="say"><b>된다. 그리고 새 홈이 딱 그 자리다.</b> AI 검색은 사람 검색과 다르게 「구조화된 사실」과 「인용하기 좋은 문장」을 본다. 시모가 어제 만든 정적 홈 위에 오늘 기술 골격 4종을 얹었고, 남은 것은 내용(시모)과 도메인 전환(GM) 둘이다.</div>
+    <div class="kpi"><div class="k">현재 wellperion.com</div><div class="v bad">0 / 4</div><div class="n">구조화 데이터·llms.txt·HTTPS·AI 크롤러 정책 전부 없음 (실측 06:20)</div></div>
+    <div class="kpi"><div class="k">새 홈 (오늘 얹음)</div><div class="v">3 / 4</div><div class="n">JSON-LD KO·EN · llms.txt · robots · sitemap — HTTPS 만 도메인 전환 뒤</div></div>
+    <div class="kpi"><div class="k">GM 결정</div><div class="v">2건</div><div class="n">도메인 전환 시점 · AI 크롤러 전면 허용(기본 허용으로 적어 둠)</div></div>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>① AI 검색이 보는 것 — 사람 검색과 다른 4가지</h2>
+      <table>
+        <tr><th style="width:34%">본다</th><th>왜</th><th style="width:22%">현 홈</th></tr>
+        <tr><td class="k">구조화 데이터 (JSON-LD)</td><td>「어디·언제 열고·무엇이 있고·예약제인가」를 기계가 오해 없이 읽는 칸. 사람 눈엔 안 보임</td><td><span class="tag no">없음</span></td></tr>
+        <tr><td class="k">llms.txt</td><td>AI 전용 한 장 요약. 크롤러가 100페이지 대신 이 한 장을 먼저 읽는다</td><td><span class="tag no">없음</span></td></tr>
+        <tr><td class="k">인용하기 좋은 문장</td><td>질문형 제목 + 숫자·규칙이 든 한 문단 답. AI는 그 문단을 그대로 인용한다</td><td><span class="tag no">워드프레스 본문 흩어짐</span></td></tr>
+        <tr><td class="k">HTTPS · 정적 HTML · 크롤러 허용</td><td>AI 크롤러는 HTTPS 만 신뢰하고, 자바스크립트로 그리는 화면은 못 읽는다</td><td><span class="tag no">HTTP 전용</span></td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:12px;margin:8px 0 0">실측(06:20): <code>wellperion.com</code> JSON-LD 0건 · <code>/llms.txt</code> 404 · robots = 워드프레스 기본값 · 사이트맵은 워드프레스 자동본만.</p>
+    </section>
+
+    <section>
+      <h2>② 설계 — 다섯 층, 각자 한 곳에서</h2>
+      <table>
+        <tr><th style="width:18%">층</th><th>무엇</th><th style="width:14%">누가</th><th style="width:16%">상태</th></tr>
+        <tr><td class="k">1 기술 골격</td><td>JSON-LD(회사·스포츠클럽·FAQ) KO·EN 삽입 · <code>llms.txt</code> · <code>robots.txt</code>(AI 크롤러 9종 명시 허용) · <code>sitemap.xml</code>(한/영 hreflang)</td><td>시토</td><td><span class="tag ok">오늘 완료</span></td></tr>
+        <tr><td class="k">2 사실 원장</td><td>주소·전화·운영시간·휴관일·시설·예약제 = <code>ssot/canon_values.json</code> 공식값에서만. 값이 바뀌면 골격도 같이 다시 생성(한 곳 원칙)</td><td>시토</td><td><span class="tag ok">생성기 보관</span></td></tr>
+        <tr><td class="k">3 내용</td><td>홈에 「자주 묻는 질문」 절(질문형 제목 + 한 문단 답 · JSON-LD FAQ 와 같은 문장) · 공간 9곳 각각 한 문단(이름·규모·무엇을 하나) · 레슨 6팀 한 문단씩. 피트니스 표기 금지, 스포츠클럽</td><td>시모</td><td><span class="tag no">배로 전달</span></td></tr>
+        <tr><td class="k">4 배포</td><td>wellperion.com 을 AWS 정적 홈으로 전환 + HTTPS(certbot). 별도 호스트 nginx 초안 <code>server/erp_auth/home.nginx.conf</code> 준비됨 — ERP 관문에 구멍 안 냄</td><td>시토</td><td><span class="tag gm">GM 시점 결정</span></td></tr>
+        <tr><td class="k">5 측정</td><td>주 1회 자동: 챗GPT·퍼플렉시티·구글에 「한남동 스포츠클럽」「용산 프라이빗 멤버십」 등 8문장을 물어 웰페리온 인용 여부·순위를 기록 → 자율현황에 카드 1장</td><td>시토</td><td><span class="tag no">전환 뒤 착수</span></td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>③ 오늘 얹은 것 · 다음 · GM 결정</h2>
+      <ul class="list">
+        <li><div class="n">1</div><div><b>JSON-LD 3종 (KO·EN)</b><span>회사 · 스포츠클럽(주소·전화·운영시간·시설 9종·예약제) · FAQ 4문답 — <code>home/index.html</code>·<code>home/en/index.html</code> head</span></div></li>
+        <li><div class="n">2</div><div><b>llms.txt</b><span>AI 전용 한 장 — 기본 사실·시설·페이지·표기 규칙 — <code>home/llms.txt</code></span></div></li>
+        <li><div class="n">3</div><div><b>robots.txt · sitemap.xml</b><span>GPTBot·ClaudeBot·PerplexityBot·Google-Extended·Bing·네이버 Yeti 명시 허용 · 한/영 hreflang</span></div></li>
+        <li><div class="n">4</div><div><b>공개 호스트 nginx 초안</b><span>wellperion.com 전용 server 블록 — 홈·브랜드 자산·360° 뷰어만 열고 ERP 화면은 404. 도메인 전환 날 복사 한 번</span></div></li>
+      </ul>
+      <div class="gm">
+        <h2>👉 GM 결정 2건</h2>
+        <ol>
+          <li><b>도메인 전환 시점</b> — wellperion.com 을 AWS 새 홈으로 돌리는 날. 돌리면 HTTPS·AI 색인이 그날부터 시작되고, 워드프레스는 별칭 주소로 남겨 자료를 회수한다. 문의 폼 주소(<code>wellperion.com/ko/inquiry</code>)는 전환 전에 새 홈 안으로 옮겨야 끊기지 않는다.</li>
+          <li><b>AI 크롤러 전면 허용</b> — 기본을 「허용」으로 적어 뒀다. 학습용 수집(Google-Extended·anthropic-ai)까지 허용하면 인용 확률이 오르고, 대신 홈 문장이 AI 학습에 쓰인다. 막으려면 두 줄만 지운다.</li>
+        </ol>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span>기록 위치 · 골격 파일 <code>3. 웰페리온 가이드/home/</code> · nginx 초안 <code>server/erp_auth/home.nginx.conf</code> · 이 문서 <code>reports/260904_AI검색_GEO_홈설계_A3.html</code> · 커밋 5e288cd39</span>
+    <span>내용 배(시모) · 측정 배(시토)는 큐에 등록 · 도메인 전환은 GM 한 줄 뒤 시토가 당일 처리</span>
+  </div>
+</div>
+</body>
+</html>
