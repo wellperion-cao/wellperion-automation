@@ -24,17 +24,17 @@
   .top img{height:14mm; display:block;}
   .top .kick{font-size:12.5px; letter-spacing:.32em; color:var(--beige); text-transform:uppercase; text-align:right; line-height:1.6;}
 
-  .hero{padding:6mm 12mm 0; display:flex; gap:7mm; align-items:stretch;}
+  .hero{padding:10mm 12mm 0; display:flex; gap:7mm; align-items:stretch;}
   .hero .txt{flex:1; display:flex; flex-direction:column; justify-content:center;}
-  .hero h1{margin:0; font-family:'Noto Serif KR',Georgia,serif; font-size:31px; letter-spacing:-.8px; line-height:1.22; font-weight:700;}
-  .hero .sub{font-size:15.5px; color:var(--dim); margin-top:3.5mm; line-height:1.6;}
+  .hero h1{margin:0; font-family:'Noto Serif KR',Georgia,serif; font-size:40px; letter-spacing:-.8px; line-height:1.22; font-weight:700;}
+  .hero .sub{font-size:17.5px; color:var(--dim); margin-top:3.5mm; line-height:1.6;}
   .hero .rule{height:3px; width:44px; background:var(--beige); margin:4mm 0 3.5mm;}
   .hero .place{display:flex; flex-wrap:wrap; gap:5px; margin-top:3.5mm;}
   .hero .place span{font-size:13px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--dim); background:var(--cream);}
-  .hero .photo{width:60mm; height:60mm; border-radius:6mm; overflow:hidden; background:#0B1F4A; flex:0 0 auto;}
+  .hero .photo{width:80mm; height:80mm; border-radius:6mm; overflow:hidden; background:#0B1F4A; flex:0 0 auto;}
   .hero .photo img{width:100%; height:100%; object-fit:cover; display:block;}
 
-  .prod{margin:5mm 12mm 0; padding:4mm 6mm; background:var(--cream); border:1px solid var(--line); border-radius:4mm; display:flex; align-items:center; gap:6mm;}
+  .prod{margin:9mm 12mm 0; padding:7mm 7mm; background:var(--cream); border:1px solid var(--line); border-radius:4mm; display:flex; align-items:center; gap:6mm;}
   .prod .halogo{height:11mm; display:block;}
   .prod .nm{font-size:19px; font-weight:800; letter-spacing:-.3px; margin-top:2.5mm;}
   .prod .md{font-size:13px; color:var(--dim); margin-top:2px; letter-spacing:.04em;}
@@ -58,7 +58,7 @@
   ul.care.big li.lead{list-style:none; padding-left:0; font-weight:800; color:var(--black); font-size:18px; margin-bottom:1.5mm;}
   ul.care.big li.lead::before{content:none;}
 
-  .buy{margin:10mm 12mm 0; background:var(--black); color:#fff; border-radius:4mm; padding:5mm 7mm; display:flex; align-items:center; gap:7mm;}
+  .buy{margin:8mm 12mm 0; background:var(--black); color:#fff; border-radius:4mm; padding:9mm 9mm; display:flex; align-items:center; gap:7mm;}
   .buy .l{flex:1;}
   .buy .k{font-size:12px; letter-spacing:.2em; color:var(--beige); text-transform:uppercase;}
   .buy ol.steps{margin-top:3mm;}
@@ -69,13 +69,14 @@
   .buy .tel .l{font-size:12px; letter-spacing:.2em; color:var(--beige); text-transform:uppercase;}
   .buy .tel .n{font-size:24px; font-weight:800; margin-top:1.5mm; letter-spacing:-.3px; white-space:nowrap;}
   .buy .tel .r{font-size:14px; color:#d9d2c9; margin-top:1mm;}
-  .buy .qr{width:20mm; height:20mm; background:#fff; border-radius:2mm; padding:1.5mm; flex:0 0 auto; display:flex; align-items:center; justify-content:center;}
+  .buy .qrbox{flex:0 0 auto; text-align:center;}
+  .buy .qr{width:26mm; height:26mm; margin:0 auto; background:#fff; border-radius:2mm; padding:1.5mm; flex:0 0 auto; display:flex; align-items:center; justify-content:center;}
   .buy .qr img{width:100%; height:100%; display:block;}
   .buy .qrl{font-size:9.5px; color:#cfc6bb; text-align:center; margin-top:1.5mm; letter-spacing:.04em;}
 
   .notice-line{margin:6mm 12mm 0; font-size:12.5px; color:var(--dim); text-align:center;}
 
-  .foot{padding:4mm 12mm 6mm; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--dim); letter-spacing:.06em;}
+  .foot{margin-top:auto; padding:4mm 12mm 7mm; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--dim); letter-spacing:.06em;}
   .foot b{color:var(--beige); letter-spacing:.2em;}
 
   /* ── 쇼케이스 카드(A5 가로) — 2면, 2026-09-04 시모(배896 · GM 지적: 3줄 미니멀·행동 한 길·QR 내장) ── */
@@ -137,11 +138,10 @@
         <li><b>택배로 1~2일 내</b> 보내드립니다</li>
       </ol>
     </div>
-    <div class="qr"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAADLUlEQVR4nO1cS27cMAylaAFZykAOMEexbzBHKnqk3sA+Sg4QwFoOYIMFKfrTWXjGRTuRYr6FEEsPASHmSRRFxREcQY+H6ADG3wc+GL+H8feB5+NHp2gBwLXRg/bVEzcA87jP0/5DwBPyKxJoTxgB+hqA6OONiAYAaGR8yNX+I8BT8l0SZ/RAP1mwLVTkWpiSppOc24ztfx54cr778eGBOhHxZdH019nzCPiQcW6+v+/oLzfHfhbVAvT18FJ70Pj/wb+kX5MDiG/8NXmC+D5qf+Cu+De/H43/5fMzpfBYIi1oBgmi32gTTvcyXr/KniPAQ2w4Hd+rOAURgPqLipb6GhwBjIu6X2EPGv+fn3+9nnDbMHLozIu0NIFIAuv1dGzzX+DfZ7g56gIRdaxabgSujY4Hbg4aYk1L4iND+w8BT8aHlNrgXVfduA4M3JeaikTO1OVmPxp/F15iZQ6tRoBY8147eeqvn55XaaAUNac1m2HzuQ/MjA9EQ0WyPif9ci4y5Sy7uU+UTJ305WY/Gv8Z/67g1FXKX4E4VEjrp83nPjAzPui9AWs1YfmpEekm/aqczb+l+he2StZYKshyzc1yiWT6LdC/Vdpw06fsupvAmni5litEEXFu9qPx90G0ejBJVxfkNJrcLUo2/5Z8/q1Yq4w1nB70/Jvcbetzof4dJEyeV2DaOHn8o3TD4qsy/Uu6+M6hs2pV++acpe2/pfp3kG1WzkLbJLQmNOToO+/JFl+V6N9qFuyyFmvWqkqbsIZgtj6X61/GJo2hO/G4xFc8bv4tl98Ma8EkN+HGBRtVcryUbmimMlP7nwaejA+b1LPsxEujo6LkOQVi+2/R7xcC129wEJ3q20kr3bV0QyKtDO0/BDwZ3+vVr5TExve5dDLo/a9bL4GbX37Mz340/tP552a55r1LYjH09GTzuQ/Mur69Gh2ET0f9VYrc/SjSpb7lAdF5bvaj8Q+9X6D+WpHjfq5vB8fVsw7CMBfJ2nzuA7Pkk8RSKYKKXOmeMpWT01ORvS/7Fu8XogTRkqScnL4vkyJZ3pP5YWGe9h8Bnozv7P8zFOUvNP4ucH/42/F/A7erQ67913cPAAAAAElFTkSuQmCC" alt="집에서 구매 신청 QR"></div>
+    <div class="qrbox"><div class="qr"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAADLUlEQVR4nO1cS27cMAylaAFZykAOMEexbzBHKnqk3sA+Sg4QwFoOYIMFKfrTWXjGRTuRYr6FEEsPASHmSRRFxREcQY+H6ADG3wc+GL+H8feB5+NHp2gBwLXRg/bVEzcA87jP0/5DwBPyKxJoTxgB+hqA6OONiAYAaGR8yNX+I8BT8l0SZ/RAP1mwLVTkWpiSppOc24ztfx54cr778eGBOhHxZdH019nzCPiQcW6+v+/oLzfHfhbVAvT18FJ70Pj/wb+kX5MDiG/8NXmC+D5qf+Cu+De/H43/5fMzpfBYIi1oBgmi32gTTvcyXr/KniPAQ2w4Hd+rOAURgPqLipb6GhwBjIu6X2EPGv+fn3+9nnDbMHLozIu0NIFIAuv1dGzzX+DfZ7g56gIRdaxabgSujY4Hbg4aYk1L4iND+w8BT8aHlNrgXVfduA4M3JeaikTO1OVmPxp/F15iZQ6tRoBY8147eeqvn55XaaAUNac1m2HzuQ/MjA9EQ0WyPif9ci4y5Sy7uU+UTJ305WY/Gv8Z/67g1FXKX4E4VEjrp83nPjAzPui9AWs1YfmpEekm/aqczb+l+he2StZYKshyzc1yiWT6LdC/Vdpw06fsupvAmni5litEEXFu9qPx90G0ejBJVxfkNJrcLUo2/5Z8/q1Yq4w1nB70/Jvcbetzof4dJEyeV2DaOHn8o3TD4qsy/Uu6+M6hs2pV++acpe2/pfp3kG1WzkLbJLQmNOToO+/JFl+V6N9qFuyyFmvWqkqbsIZgtj6X61/GJo2hO/G4xFc8bv4tl98Ma8EkN+HGBRtVcryUbmimMlP7nwaejA+b1LPsxEujo6LkOQVi+2/R7xcC129wEJ3q20kr3bV0QyKtDO0/BDwZ3+vVr5TExve5dDLo/a9bL4GbX37Mz340/tP552a55r1LYjH09GTzuQ/Mur69Gh2ET0f9VYrc/SjSpb7lAdF5bvaj8Q+9X6D+WpHjfq5vB8fVsw7CMBfJ2nzuA7Pkk8RSKYKKXOmeMpWT01ORvS/7Fu8XogTRkqScnL4vkyJZ3pP5YWGe9h8Bnozv7P8zFOUvNP4ucH/42/F/A7erQ67913cPAAAAAElFTkSuQmCC" alt="집에서 구매 신청 QR"></div><div class="qrl">집에서 구매 신청</div></div>
     <div class="tel">
       <div class="l">문의</div>
       <div class="n">리셉션 02-6261-1200</div>
-      <div class="r">집에서 구매 신청</div>
     </div>
   </div>
 
