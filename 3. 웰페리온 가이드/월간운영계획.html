@@ -3763,7 +3763,7 @@
   //   매출·운영 보고 시트 「보고」탭의 팀·부서 칸을 그대로 읽어 온다. 값을 여기서 다시
   //   계산하지 않는다 — 원천은 시트 한 곳뿐이다(약속 L01). 읽기 전용 웹앱(dump)만 부른다.
   //   ★칸 주소를 직접 가리키므로 시트에서 행이 밀리면 아래 DEPT_BLOCKS 도 같이 고친다.
-  var DEPTREP_GAS = 'https://script.google.com/macros/s/AKfycbwSn7ZyfXRzkg50T3YKbayTGKCPv1twbhZXfVca__79FOZAlFF1T9hwfQyMr_CwhF0I/exec';
+  var DEPTREP_GAS = 'https://script.google.com/macros/s/AKfycbznAmvB-2cWfZVVcTud7ZWwKej9JtiUCl7RF8rrID0L0ldAKSO7nI5wHdUEZPIQQwM/exec';   // 08:00 자동기입과 같은 웹앱 — file 파라미터로 이번 달 파일을 연다(2026-09-04 시포: 안 주면 8월 파일을 읽었다)
   var DEPTREP_TOKEN = 'wellperion-2026';
   var DEPT_BLOCKS = [
     {t:'O3', v:'P3'}, {t:'O6', v:'P6'}, {t:'O9', v:'P9'},
@@ -3777,7 +3777,12 @@
   function renderDeptReport(){
     var host = document.getElementById('deptreport-board');
     if (!host) return;
-    fetch(DEPTREP_GAS + '?token=' + encodeURIComponent(DEPTREP_TOKEN) + '&dump=1&cb=' + Date.now())
+    var _t = new Date();
+    fetch(GAS_URL + '?action=daily_report_sheet&year=' + _t.getFullYear() + '&month=' + (_t.getMonth() + 1) + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){ return (d && d.ok && d.fileId) ? ('&file=' + encodeURIComponent(d.fileId)) : ''; })
+      .catch(function(){ return ''; })   // 못 찾으면 붙은 파일(8월) — ssName 으로 드러난다
+      .then(function(fp){ return fetch(DEPTREP_GAS + '?token=' + encodeURIComponent(DEPTREP_TOKEN) + '&dump=1' + fp + '&cb=' + Date.now()); })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');

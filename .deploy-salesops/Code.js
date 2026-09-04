@@ -141,7 +141,9 @@ function doGet(e) {
         }
       }
     }
-    return _json({ ok: true, range: dr.getA1Notation(), sheet: dsh.getName(), cells: cells, fx: fx, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
+    return _json({ ok: true, range: dr.getA1Notation(), sheet: dsh.getName(), cells: cells, fx: fx,
+      ssName: _ss(p.file).getName(),   // 어느 파일을 열었는지 — file 을 안 주면 붙어 있는 파일(8월)이라 화면이 옛 달을 그린다(2026-09-04 시포 실측)
+      at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
   }
   // 강습 신규·재등록 — 일자탭 「강습 계약 현황」 블록(H8:N60)을 종목 × 등록분류로 센다.
   //   시트는 이 블록을 팀별 매출 합계로만 접어서 오른쪽 표에 올린다. 그래서 신규인지 재등록인지는
@@ -205,6 +207,7 @@ function doPost(e) {
   return _json({
     ok: true,
     cell: cell,
+    ssName: sh.getParent().getName(),   // 어느 파일에 썼는지 — 달이 바뀌면 여기가 먼저 드러난다
     before_length: before.length,
     after_length: after.length,
     wrote_at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')

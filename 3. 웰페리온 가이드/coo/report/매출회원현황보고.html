@@ -430,8 +430,22 @@
 <script>
 /* 보고 시트 「보고」탭 H2:S21 을 그대로 받아 그린다. 칸 주소를 직접 가리키므로
    시트에서 행이 밀리면 여기도 같이 고쳐야 한다 — 대신 값이 두 벌로 갈릴 일은 없다(약속 L01). */
-var GAS  = 'https://script.google.com/macros/s/AKfycbwSn7ZyfXRzkg50T3YKbayTGKCPv1twbhZXfVca__79FOZAlFF1T9hwfQyMr_CwhF0I/exec';
+var GAS  = 'https://script.google.com/macros/s/AKfycbznAmvB-2cWfZVVcTud7ZWwKej9JtiUCl7RF8rrID0L0ldAKSO7nI5wHdUEZPIQQwM/exec';   // 08:00 자동기입과 같은 웹앱(file 파라미터로 이번 달 파일을 연다)
 var TOKEN = 'wellperion-2026';
+/* ★이번 달 파일 id (2026-09-04 시포). 웹앱은 8월 파일에 붙어 있어 file 을 안 주면 8월을 연다 —
+   실측: 이 화면이 9월 4일에 '26년 8월 3일' 보고를 그리고 있었다. 09:30 보고 이미지와 같은 해석
+   (ERP GAS daily_report_sheet · 「2026년 N월 매출 보고」 이름 찾기)을 쓴다. 못 찾으면 빈 값 → 붙은 파일이
+   열리고 readat 의 파일명(ssName)으로 드러난다. */
+var _reportFileP = null;
+function reportFile(){
+  if (_reportFileP) return _reportFileP;
+  var t = new Date();
+  _reportFileP = fetch(ERP + '?action=daily_report_sheet&year=' + t.getFullYear() + '&month=' + (t.getMonth() + 1) + '&cb=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ return (d && d.ok && d.fileId) ? ('&file=' + encodeURIComponent(d.fileId)) : ''; })
+    .catch(function(){ return ''; });
+  return _reportFileP;
+}
 /* 연간 추이 — ERP 업무 SSOT GAS(action=sales_monthly). 매출현황.html 이 이미 쓰는 그 액션이다. */
 var ERP  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
@@ -861,7 +875,7 @@ function load(){
   document.getElementById('audit').className = 'audit wait';
   document.getElementById('audit').innerHTML = '자체 점검 중…';
 
-  var p1 = fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&cb=' + Date.now())
+  var p1 = reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1' + fp + '&cb=' + Date.now()); })
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
@@ -1079,8 +1093,8 @@ function onDatePick(silent){
   // 그래서 세 조각으로 나눠 받아 합친다.
   var _day = day;
   function _seg(range){
-    return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + _day +
-                 '&range=' + range + '&cb=' + Date.now())
+    return reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + _day +
+                 '&range=' + range + fp + '&cb=' + Date.now()); })
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok) ? (d.cells || {}) : null; });
   }
@@ -1124,7 +1138,7 @@ function toggleMonth(){
   document.getElementById('asof').textContent = '이번 달 전체';
   document.getElementById('memberDateNote').style.display = '';
   var today = new Date();
-  fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + today.getDate() + '&range=A1:S20&cb=' + Date.now())
+  reportFile().then(function(fp){ return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + today.getDate() + '&range=A1:S20' + fp + '&cb=' + Date.now()); })
     .then(function(r){ return r.json(); }).then(function(d){ return (d && d.ok) ? d.cells : null; })
     .catch(function(){ return null; })
     .then(function(todayCells){
