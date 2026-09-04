@@ -176,6 +176,20 @@ CREATE TABLE IF NOT EXISTS intake_log (
 );
 CREATE INDEX IF NOT EXISTS intake_log_tenant_form_idx ON intake_log (tenant_id, form, received_at);
 
+-- 서버 원본 되밀기 칸 (origin_switch·pushback.py · 배 960 레인 J · 2026-09-04). 두 원장에 같은 세 칸을 덧붙인다.
+--   server 모드 행은 gas_status='queued' 로 남고 raw_body(받은 본문 그대로)를 이고 있다가, pushback.py 가 GAS 로 되민 뒤
+--   pushed_at 을 적고 raw_body 를 지운다(사진·서명 base64 를 계속 들고 있지 않게). push_tries = 되밀기 시도 횟수(5회 상한).
+--   dual 모드 행은 세 칸이 비어 있다 — 종전 동작 그대로.
+ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
+ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
+ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
+ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS raw_body   TEXT;
+-- 1분 cron 이 매번 원장 전체를 훑지 않게 — 되밀 행만 담는 부분 인덱스(대개 0행).
+CREATE INDEX IF NOT EXISTS intake_log_queued_idx ON intake_log (id) WHERE gas_status = 'queued' AND pushed_at IS NULL;
+CREATE INDEX IF NOT EXISTS write_log_queued_idx  ON write_log  (id) WHERE gas_status = 'queued' AND pushed_at IS NULL;
+
 -- 강습 회원관리 미러 (sync_lesson.py · 배 922 레인 W · 2026-09-03). GAS 읽기 응답을 통째로 싣는다.
 -- kind = stats(key=type|scope) · roster(type) · registry(type · 전 구간, 날짜는 API 가 등록일로 자른다).
 CREATE TABLE IF NOT EXISTS lesson_records (

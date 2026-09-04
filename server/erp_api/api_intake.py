@@ -12,7 +12,13 @@ wellperion.com 안의 폼(문의 wp_inquiry_form · 강사 접수 instructor_int
   POST /api/intake/sunday      → INSTRUCTOR_GAS_URL  (GM의일요일.html · 강사 접수와 같은 GAS)
   POST /api/intake/reception   → RECEPTION_EXEC_URL  (reception_block.html · _en 의 reg_submit — 배 960 #4b)
   POST /api/intake/selftest    → 기록만(tenant 'selftest') · GAS 전달 없음 — 배포 검증용
-  GET  /api/intake/health      → 폼별 건수 · GAS 실패 건수
+  GET  /api/intake/health      → 폼별 건수 · GAS 실패 건수 · 폼별 원본 모드 · 미되밀기 건수 · 마지막 되밀기 시각
+
+폼별 원본 모드(origin_switch.py · 배 960 레인 J):
+  dual   위 ①②③ 그대로.
+  server 원장에만 적고 즉시 ok — GAS 왕복을 안 기다리니 화면 응답이 빨라진다. 시트는 pushback.py(1분 cron)가 되민다.
+         행은 gas_status='queued' + raw_body(본문 원본)로 남고, 되민 뒤 '200' + pushed_at 이 되어 대조(reconcile)에 그대로 잡힌다.
+         이 모드에선 GAS 응답값(GAS 가 매기는 접수ID·검증 거부 문구)을 화면에 못 돌려준다 — 접수번호는 서버가 같은 모양으로 매긴다.
   GET  /api/intake/reconcile   → 이중기록 대조 결과(reconcile_dual_write.py 가 06:10 에 적는다 · 3일 연속 무결 카운터)
 """
 import hashlib
@@ -27,6 +33,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import origin_switch  # noqa: E402  — 폼별 dual/server 스위치
 from common import db  # noqa: E402
 from sync_inquiries import load_env  # noqa: E402  — /srv/erp/api.env 의 GAS URL
 
@@ -43,6 +50,12 @@ load_env()
 
 def _kst_now():
     return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _receipt_id():
+    """server 모드에서 손님에게 보일 접수번호 — GAS(.deploy-intake/Intake.js `_iId`)와 같은 모양 'L'+yyMMdd-HHmmss.
+    시트에 적히는 번호는 되밀 때 GAS 가 다시 매긴다(초 단위로 다를 수 있다 · 조회 열쇠는 이름·전화라 지장 없음)."""
+    return datetime.now(timezone(timedelta(hours=9))).strftime("L%y%m%d-%H%M%S")
 
 
 def redact_blobs(payload):
@@ -87,12 +100,19 @@ async def intake(form: str, request: Request):
     except ValueError:
         payload = {"_raw": text}
     tenant = "selftest" if form == "selftest" else db.TENANT
+    server_mode = origin_switch.mode(form) == "server"      # 스위치 파일 한 줄 — 재시작 없이 갈린다
     conn = db.connect()
     with conn:
         row_id = conn.execute(
-            "INSERT INTO intake_log (tenant_id, form, received_at, payload, gas_status) VALUES (%s,%s,%s,%s::jsonb,'pending') RETURNING id",
-            (tenant, form, _kst_now(), json.dumps(redact_blobs(payload), ensure_ascii=False))).fetchone()[0]
+            "INSERT INTO intake_log (tenant_id, form, received_at, payload, gas_status, raw_body)"
+            " VALUES (%s,%s,%s,%s::jsonb,%s,%s) RETURNING id",
+            (tenant, form, _kst_now(), json.dumps(redact_blobs(payload), ensure_ascii=False),
+             "queued" if server_mode else "pending", text if server_mode else None)).fetchone()[0]
     # 여기까지 오면 DB 엔 남았다 — 아래가 실패해도 접수는 잃지 않는다.
+    if server_mode:
+        conn.close()
+        out = {"ok": True, "id": _receipt_id(), "form": form, "queued": True, "mode": "server", "row": row_id}
+        return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
     key = FORMS[form]
     url = os.environ.get(key or "", "")
     if key is None or not url:
@@ -120,11 +140,33 @@ def reconcile():
         raise HTTPException(503, "아직 대조 전 — %s 없음" % path)
 
 
+# 되밀기 시도 상한 — 여기까지 실패하면 그만 두드리고 사람이 본다(pushback.py 가 같은 값을 쓴다).
+PUSH_MAX_TRIES = 5
+# 아직 시트에 못 간 행 / 사람이 봐야 하는 행 — 두 원장을 같은 잣대로 센다.
+_UNPUSHED = "gas_status='queued' AND pushed_at IS NULL"
+_PUSH_FAILED = ("(pushed_at IS NULL AND push_tries >= %d) OR (pushed_at IS NOT NULL AND gas_status='gas-error')"
+                % PUSH_MAX_TRIES)
+
+
 @router.get("/health")
 def health():
     conn = db.connect(readonly=True)
     with conn:
-        rows = conn.execute("SELECT form, COUNT(*) c, SUM(CASE WHEN gas_status='200' OR gas_status='skipped' THEN 0 ELSE 1 END) bad,"
-                            " MAX(received_at) last FROM intake_log WHERE tenant_id=%s GROUP BY form", (db.TENANT,)).fetchall()
+        rows = conn.execute("SELECT form, COUNT(*) c,"
+                            " SUM(CASE WHEN gas_status IN ('200','skipped','queued') THEN 0 ELSE 1 END) bad,"
+                            " COUNT(*) FILTER (WHERE " + _UNPUSHED + ") queued,"
+                            " MAX(received_at) last FROM intake_log WHERE tenant_id=%s GROUP BY form",
+                            (db.TENANT,)).fetchall()
+        push = conn.execute(
+            "SELECT COUNT(*) FILTER (WHERE " + _UNPUSHED + ") unpushed,"
+            " COUNT(*) FILTER (WHERE " + _PUSH_FAILED + ") failed, MAX(pushed_at) last_pushed FROM ("
+            "  SELECT gas_status, pushed_at, push_tries FROM intake_log WHERE tenant_id=%s"
+            "  UNION ALL SELECT gas_status, pushed_at, push_tries FROM write_log WHERE tenant_id=%s) t",
+            (db.TENANT, db.TENANT)).fetchone()
     conn.close()
-    return {"ok": True, "forms": {r["form"]: {"count": r["c"], "gas_failed": int(r["bad"] or 0), "last": r["last"]} for r in rows}}
+    return {"ok": True,
+            "forms": {r["form"]: {"count": r["c"], "gas_failed": int(r["bad"] or 0),
+                                  "unpushed": r["queued"], "last": r["last"]} for r in rows},
+            "origin_mode": origin_switch.modes(),                     # 지금 어느 폼·영역이 서버 원본인가
+            "pushback": {"unpushed": push["unpushed"], "failed": push["failed"],   # 시트에 아직 못 간 건수
+                         "last_pushed_at": push["last_pushed"] or ""}}             # 마지막 되밀기 시각(KST)

@@ -1,0 +1,18 @@
+{
+  "_이 파일은": "서버의 /srv/erp/status/origin_switch.json 본(本). 값을 server 로 고치면 그 폼·영역만 서버 원본이 된다 — 재시작 없음, 되돌리기는 dual 로 되돌리기.",
+  "_전환 절차": "대조 streak_ok_days>=3 확인 → 한 줄 server → 10분 뒤 /api/intake/health 의 pushback.unpushed 가 0 인지 확인 → 다음날 대조 → 이상 있으면 dual 복귀",
+  "_dual": "지금까지 그대로 — 서버 원장에 적고 그 자리에서 GAS 로 넘겨 GAS 응답을 화면에 돌려준다",
+  "_server": "서버 원장에만 적고 즉시 ok — 시트는 pushback.py(1분 cron)가 되민다. GAS 응답값(접수번호·검증 거부)은 화면에 못 돌려준다",
+  "default": "dual",
+  "inquiry": "dual",
+  "instructor": "dual",
+  "sunday": "dual",
+  "reception": "dual",
+  "selftest": "dual",
+  "write_check": "dual",
+  "write_member": "dual",
+  "write_proc": "dual",
+  "write_reception": "dual",
+  "write_schedule": "dual",
+  "write_todo": "dual"
+}

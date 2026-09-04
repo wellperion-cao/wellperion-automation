@@ -55,6 +55,19 @@
 
 **화면의 저장·조회 주소를 GAS `/exec` 로 되돌린다(주소 1줄) — 데이터는 시트에 그대로 있고 서버 행은 남는다.**
 
+### 5-1. 서버 원본 전환 절차 (사람이 한다 · 장치 = 배 960 레인 J · 2026-09-04)
+
+1. `GET /api/intake/reconcile` 의 `streak_ok_days` 가 **3 이상**인지 본다(3일 연속 대조 무결 · 아니면 여기서 멈춘다).
+2. 서버의 `/srv/erp/status/origin_switch.json` 에서 그 폼·영역 한 줄을 `"server"` 로 고친다(재시작 없음 · 본 = `server/erp_api/origin_switch.example.json`).
+3. 10분 뒤 `GET /api/intake/health` 의 `pushback.unpushed` 가 **0**, `pushback.failed` 가 **0**, `last_pushed_at` 이 방금인지 본다.
+4. 다음 날 아침 대조를 다시 본다 — 그 날 `mismatch` 가 0 이면 전환 성공(시트는 되밀기 사본으로 계속 찬다).
+5. 이상이 보이면 그 줄을 `"dual"` 로 되돌린다 — 그 순간부터 종전 이중기록(코드 변경 0). 못 되민 행은 `status/pushback_failed.json`.
+
+**server 모드에서 달라지는 것:** 화면은 GAS 왕복(최대 55초)을 안 기다리고 즉시 `{ok:true}` 를 받는다(응답이 빨라진다).
+시트는 `pushback.py`(1분 cron)가 같은 본문을 그대로 되밀어 채우므로 실무진·기존 GAS 트리거는 영향 0.
+대신 **GAS 응답값을 화면에 못 돌려준다** — 접수번호는 서버가 같은 모양(`L`+yyMMdd-HHmmss)으로 매기고, GAS 가 되밀 때
+거부한 행(입력 검증·토큰)은 `gas-error` 로 남아 헬스·실패 파일에 뜬다. 그래서 **응답값을 쓰는 쓰기 영역은 전환 대상이 아니다**(폼부터 한다).
+
 ## 6. 오늘(09-03) 산출물
 
 - `server/erp_api/api_intake.py` · `intake.nginx.conf` · `intake-zone.nginx.conf` · `server/deploy_intake.sh` · `schema.sql` 의 `intake_log` — 배포·selftest 검증 완료(무쿠키 POST 200 · intake_log 2행 tenant `selftest` · gas_status `skipped` · `/api/health` 는 그대로 401).
