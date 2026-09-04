@@ -29,46 +29,55 @@
   .sheet{width:396mm;min-height:269mm;margin:14px auto;background:#fff;
     padding:10mm 12mm 8mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
 
-  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 5px;}
   .hd{display:flex;justify-content:space-between;align-items:flex-end;
-    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:13px;}
+    border-bottom:3px solid var(--deep);padding-bottom:6px;margin-bottom:8px;}
   .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
-  .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .hd h1{font-size:25px;font-weight:800;letter-spacing:-.025em;margin:0;}
   .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
   .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
 
   /* 부탁드리는 것 — 이 장에서 가장 큰 글씨 한 줄 */
-  .ask{border:2.5px solid var(--deep);padding:15px 22px;margin-bottom:13px;}
-  .ask h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 9px;}
-  .ask p{font-size:21px;font-weight:700;line-height:1.5;margin:0;letter-spacing:-.015em;}
+  .ask{border:2.5px solid var(--deep);padding:10px 20px;margin-bottom:8px;}
+  .ask h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 6px;}
+  .ask p{font-size:18.5px;font-weight:700;line-height:1.45;margin:0;letter-spacing:-.015em;}
   .ask em{font-style:normal;background:var(--pick);padding:1px 6px;}
-  .ask .sub{font-size:13.5px;font-weight:500;color:var(--mid);margin-top:9px;line-height:1.6;}
+  .ask .sub{font-size:13.5px;font-weight:500;color:var(--mid);margin-top:7px;line-height:1.55;}
   .ask .sub b{color:var(--deep);font-weight:800;}
 
   /* 출하표 — 이 장의 주인공 */
-  .paper h3{font-size:16px;font-weight:800;margin:0 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--deep);}
+  .paper h3{font-size:16px;font-weight:800;margin:0 0 6px;padding-bottom:4px;border-bottom:1.5px solid var(--deep);}
   .paper h3 span{font-size:12.5px;font-weight:500;color:var(--grey);margin-left:9px;}
   .paper img{width:100%;display:block;border:1px solid var(--line);}
-  .steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:9px;}
-  .steps div{border:1px solid var(--line);background:var(--steam);padding:9px 13px;font-size:13.5px;line-height:1.55;}
+  .steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:7px;}
+  .steps div{border:1px solid var(--line);background:var(--steam);padding:6px 12px;font-size:12.8px;line-height:1.45;}
   .steps b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);font-weight:800;margin-bottom:3px;}
 
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:13px;}
-  .blk{border:1px solid var(--line);padding:12px 16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:8px;}
+  .blk{border:1px solid var(--line);padding:10px 15px;}
   .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
-  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 9px;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 7px;}
   .blk.warn h4{color:var(--alert);}
-  .blk p{font-size:13.5px;line-height:1.6;margin:0 0 7px;}
+  .blk p{font-size:12.8px;line-height:1.5;margin:0 0 4px;}
   .blk p:last-child{margin-bottom:0;}
   .blk.warn p{color:#573015;}
   .blk strong{font-weight:700;}
   .blk.warn strong{color:var(--alert);}
 
-  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:10px 20px;margin-top:12px;}
-  .hold p{font-size:13.5px;line-height:1.6;margin:0;}
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:6px 18px;margin-top:7px;}
+  .hold p{font-size:12.8px;line-height:1.55;margin:0;}
   .hold b{font-weight:800;color:var(--mid);}
 
-  .ft{border-top:1px solid var(--line);margin-top:10px;padding-top:7px;
+  /* 에필로그 — 김훈 주임 글. 본문보다 한 톤 조용하게, 줄 간격만 넉넉히. */
+  /* A3 1장 안에 넣으려고 2단 조판 — 한 단으로 흘리면 이 글만 250px 를 먹어 쪽이 넘어간다. */
+  .epi{border-left:3px solid var(--mid);background:#F5F8F6;padding:9px 20px;margin-top:8px;
+    column-count:2;column-gap:26px;column-rule:1px solid var(--line);}
+  .epi h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--mid);margin:0 0 6px;
+    column-span:all;}
+  .epi p{font-size:11.5px;line-height:1.6;margin:0 0 4px;break-inside:avoid;}
+  .epi .sign{column-span:all;text-align:right;font-weight:800;font-size:12.5px;color:var(--deep);margin:6px 0 0;}
+
+  .ft{border-top:1px solid var(--line);margin-top:6px;padding-top:4px;
     display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:var(--grey);word-break:keep-all;}
 
   /* 키오스크 세로(1080)·좁은 창 — 용지 폭(396mm)보다 창이 좁으면 창 폭에 맞춘다.
@@ -78,7 +87,10 @@
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
     .bar{display:none;}
-    .ask,.paper,.steps,.grid3,.blk,.hold{break-inside:avoid;}
+    /* grid3 는 통째로 넘기지 않는다 — 통으로 avoid 하면 1쪽이 반쯤 비고 3블록이 다 2쪽으로 간다.
+       블록 하나(.blk)는 쪼개지지 않게 두고, 묶음은 쪽을 넘어도 되게 한다(2026-09-04). */
+    .ask,.paper,.steps,.blk,.hold{break-inside:avoid;}
+
   }
 </style>
 </head>
@@ -90,7 +102,7 @@
 
 <div class="sheet">
   <!-- 이름을 앞세우지 않는다(GM 2026-09-01) — 4부서 방에 공유되는 문서다. 일이 앞에 서고 사람은 뒤에. -->
-  <p class="ref">사우나 린넨(세탁물) 관리 · 9월 1일 시작 · 지원부 현장 안내</p>
+  <p class="ref">사우나 린넨(세탁물) 관리 · 9월 1일 시작 · 9월 4일 지원팀 정리 반영 · 지원부 현장 안내</p>
 
   <div class="hd">
     <div>
@@ -98,26 +110,26 @@
       <h1>사우나 린넨(세탁물) 관리</h1>
     </div>
     <div class="rt">
-      <div><b>보고일</b>2026. 09. 01.</div>
-      <div><b>작성</b>AI 웰리</div>
-      <div><b>시작</b>2026. 09. 01. · 매달 개선</div>
+      <div><b>보고일</b>2026. 09. 04.</div>
+      <div><b>정리</b>지원팀 김훈 주임</div>
+      <div><b>반영</b>AI 웰리 · 2026. 09. 04.</div>
     </div>
   </div>
 
   <div class="ask">
     <h2>부탁드리는 것</h2>
-    <p>하루 두 번, 숫자만 적어 주십시오 — 받을 때 <em>「입고」</em>, 마감할 때 <em>「마감재고」</em>. 품목 여덟 칸씩입니다.</p>
-    <p class="sub">사용량 계산·부족 표시·요일별 평균은 <b>화면이 저절로</b> 합니다.
-      숫자는 <b>배송 배분을 고치는 재료</b>일 뿐이고, <b>개인 평가는 하지 않습니다.</b></p>
+    <p>하루 한 번, 받을 때 <em>「입고」</em>만 적어 주십시오. <em>일별 마감재고는 적지 않습니다.</em></p>
+    <p class="sub">매일 들어오는 양이 남·여 거의 같고 평일·주말 차이도 없어, 날마다 재고를 세는 것은 값이 되지 않았습니다.
+      <b>재고는 매월 30일 한 번</b>으로 잡습니다. 숫자는 <b>배송 배분을 고치는 재료</b>일 뿐, <b>개인 평가는 하지 않습니다.</b></p>
   </div>
 
   <div class="paper">
-    <h3>이 종이에 적으시면 됩니다 <span>세탁물 출하표 · 지원부 체계 페이지 「세탁물 관리」 탭에서 인쇄 · A4 가로</span></h3>
-    <img src="출하표_샘플.png" alt="세탁물 출하표 — 날짜별로 품목 8종의 입고·마감재고 칸과 오픈·마감 서명 칸이 있는 A4 가로 표">
+    <h3>이 종이에 적으시면 됩니다 <span>세탁물 출하표 · 지원부 체계 페이지 「🧺 린넨 관리」 탭에서 인쇄 · A4 가로 · 품목별 「입고｜비고」</span></h3>
+    <img src="출하표_샘플.png" alt="세탁물 출하표 — 날짜별로 품목마다 입고·비고 두 칸과 맨 끝 서명 칸이 있는 A4 가로 표">
     <div class="steps">
-      <div><b>① 받을 때 · 21:00 무렵</b>거래명세서와 실제 개수를 맞춰 보고 「입고」 칸에. 그 줄 「오픈」 서명.</div>
-      <div><b>② 마감할 때 · 영업 종료</b>품목별로 남은 개수를 세어 「마감재고」 칸에. 그 줄 「마감」 서명.</div>
-      <div><b>③ 보름에 한 번 · 지원부 확인</b>장 맨 아래 「지원부 확인」 칸에 서명. 1~15일 한 장, 16일~말일 한 장입니다.</div>
+      <div><b>① 받을 때 · 21:00 무렵</b>거래명세서와 개수를 맞춰 「입고」에. 이상하면 「비고」에. 그 줄 서명.</div>
+      <div><b>② 같은 날 · 카카오톡</b>같은 숫자를 방에 올립니다. 점검자가 화면에 옮겨 적습니다.</div>
+      <div><b>③ 매월 30일 · 재고</b>남·여 사우나(사용 중) + 린넨 창고(박스)를 셉니다. 종이는 보름에 한 장.</div>
     </div>
   </div>
 
@@ -125,31 +137,30 @@
     <div class="blk warn">
       <h4>왜 세나</h4>
       <p>화·수요일에 회원께 드릴 세탁물이 모자라 <strong>창고의 새 제품을 꺼내 쓰고</strong> 있습니다.
-        그런데 <strong>몇 장 나가고 몇 장 돌아오는지 세는 것이 없어</strong> 원인을 못 찾습니다.</p>
+        그런데 <strong>몇 장 들어오는지 세는 것이 없어</strong> 원인을 못 찾습니다.</p>
       <p>숫자가 쌓이면 세탁 업체에 <strong>어느 요일 배송을 늘려 달라</strong>고 말할 근거가 생깁니다.</p>
       <p><strong>목표 — 화·수요일 바스타월 평균 입고 275장 회복.</strong></p>
     </div>
 
-    <!-- 창고 보관분 — GM 지시 2026-09-01 "현재 창고에 세탁물들이 있는데, 그것 재고도 파악해야할텐데".
-         매일 도는 린넨과 창고에 쟁여 둔 새 제품은 다른 숫자다. 창고가 바닥나면 그날로 막힌다. -->
-    <div class="blk warn">
-      <h4>창고의 새 제품도 셉니다</h4>
-      <p>창고에 몇 장 남았는지는 지금 아무도 모릅니다 — <strong>바닥나는 날 그대로 막힙니다.</strong></p>
-      <p>세는 법은 더 쉽습니다. <strong>처음 한 번 세어 두고, 그 뒤로는 꺼낼 때마다 몇 장 꺼냈는지만</strong>
-        화면 <strong>「신품 투입」</strong> 칸에 적으면 됩니다.</p>
-      <p>그러면 <strong>남은 양</strong>과 <strong>한 달에 축낸 양</strong>이 함께 보입니다. 뒤 숫자가 곧 손실액입니다.</p>
+    <!-- 운영 규칙 6줄 — GM 확정 2026-09-04. 화면 「🧺 린넨 관리」 탭 가이드라인 섹션과 같은 문장이다(두 벌 관리 금지). -->
+    <div class="blk">
+      <h4>운영 규칙 — 여섯 줄</h4>
+      <p><strong>①</strong> 월간(일별)은 <strong>입고만</strong> 센다 — 마감재고 없음.</p>
+      <p><strong>②</strong> 매월 30일 <strong>남·여 사우나 인벤토리(사용 중)</strong> + <strong>린넨 창고(박스)</strong> 카운팅.</p>
+      <p><strong>③</strong> 연간은 <strong>월 총계가 자동</strong>으로 올라온다 — 따로 적지 않는다.</p>
+      <p><strong>④</strong> 일별 입고 수량 관리·30일 크로스카운팅·거래명세서 정리 = <strong>김훈 주임 리드로 일원화</strong>(지원부 반장 제외).</p>
+      <p><strong>⑤</strong> 창고 전체 재고·비밀번호 관리 단일화 = <strong>대표님 보고 후 위임</strong>, 첫 재고 정리는 <strong>김남욱GM 동행</strong>.</p>
+      <p><strong>⑥</strong> 세탁단가 = 화면 <strong>품목 원장의 단가 칸이 정본</strong> · 구입단가는 GM이 이사님께 확인 중.</p>
     </div>
 
-    <!-- 주 단위로 촘촘하게 — GM 지시 2026-09-01 "10월 초에 한달 결과를 함께 본다 이러면 부담이야, 디테일하게".
-         한 달을 통째로 맡기지 않는다. 주마다 보는 것이 다르고, 매 주 사람이 붙는 시점이 문서에 있다.
-         (자리 확보 — '개인 평가 안 함'은 위 부탁 칸에, '종이에 적어 두었다가'는 왼쪽 ①~③에 이미 있어 여기서 뺐다) -->
-    <div class="blk">
-      <h4>혼자 하시는 일이 아닙니다 — 주마다 이렇게 같이 갑니다</h4>
-      <p><strong>첫날(9/1)</strong> — 저녁 입고 기록을 웰리가 바로 확인하고 결과를 알려 드립니다. 첫 칸부터 혼자 채우시지 않습니다.</p>
-      <p><strong>1주차</strong> — "적는 게 되는가"만 봅니다. 매일 아침 웰리가 전날 기록을 확인해 이상하면 그날 연락드립니다. 주말에 한 번 같이 봅니다.</p>
-      <p><strong>2주차</strong> — "숫자가 말이 되는가". 사용량·부족 표시를 같이 보고, 표에서 불편한 곳을 바로 고칩니다.</p>
-      <p><strong>3~4주차</strong> — "패턴이 보이는가". 요일별 차이와 창고에서 꺼낸 양을 봅니다.</p>
-      <p><strong>10월 초</strong> — 9월 전체를 같이 봅니다. 그 전에 이미 서너 번 같이 본 뒤라 <strong>결산이 아니라 마무리</strong>입니다. 이후로도 매달 초 같은 리듬입니다.</p>
+    <!-- 세탁업체 + 남은 협조요청 — 김훈 주임 정리 PS 중 C(연락처)는 확보돼 아래 카드로 대체됐다(2026-09-04). -->
+    <div class="blk warn">
+      <h4>세탁업체 · 남은 협조 요청</h4>
+      <p><strong>크린토피아</strong> — 담당 <strong>오형민 팀장</strong> · T. 010-6648-4946 · 입고 매일 <strong>21:00</strong><br>
+        연락 창구 = <strong>오픈톡방</strong>(GM 초대 예정).</p>
+      <p><strong>A 품목별 세탁 단가표</strong> / <strong>B 품목별 구입 단가표</strong> — 손실을 금액으로 말하려면 이 두 표가 있어야 합니다.</p>
+      <p><strong>D 일별 입고 수량 관리 일원화</strong> — 30일 크로스카운팅·거래명세서 정리까지 한 줄로(위 ④).</p>
+      <p><strong>E 창고 전체 재고 관리 단일화</strong> — 재고와 비밀번호를 한 사람이 봅니다(위 ⑤).</p>
     </div>
   </div>
 
@@ -158,9 +169,22 @@
       숫자가 안 맞거나 화면이 안 되면 웰리에게 한 줄만 주십시오. <b>당일 안에 답이 갑니다</b>(저녁 늦게면 다음날 아침까지). 답을 기다리는 동안은 종이에만 적어 두셔도 됩니다.</p>
   </div>
 
+  <!-- 김훈 주임 에필로그 — 원문 그대로(status/briefs/CEO-2026-09-04-김훈주임_린넨관리_정리_원문.md).
+       한 글자도 다듬지 않는다. 다듬으면 그분 글이 아니게 된다. -->
+  <div class="epi">
+    <h4>마지막 업장의 철학</h4>
+    <p>1. 남+여 사우나는 단순히 씻는 장소가 아니라 운동 후에 기분좋게 마무리하고 가는 마지막 업장입니다. 마무리 업장에서 고객 컴플레임건 (마감재촉 불편사항 등)이 발생시, 이미지는 상당한 타격을 받습니다.</p>
+    <p>2. 업장 대인서비스는 회원님과 담당직원간의 기본적인 교감이고 가장 기본적인 케어입니다.</p>
+    <p>3. 각 업장의 시작과 끝은 직원이 마무리하지만, 그 업장에 대한 평가는 결국 회원님이 하십니다.</p>
+    <p>4. 회원님에게 친절한 말한마디. 정중한 인사한마디, 지속적인 관심과 케어가 꾸준하게 진행할 때 그 업장은 입소문이 날수밖에 없고, 하나의 스토리텔링이 완성될 수 있다고 생각합니다.</p>
+    <p>업장이 성공을 하기 위해서는 스토리가 필요하고, 그 스토리가 완성될 때 웰페리온의 헤리티지가 완성될 것입니다.</p>
+    <p>한남동을 넘어 서울의 대표적인 스포츠클럽의 랜드마크가 되는 그날까지 끊임없이 경쟁속에 프로의 자세로 업무에 임해야 합니다.</p>
+    <p class="sign">— 김훈</p>
+  </div>
+
   <div class="ft">
-    <span>화면은 지원부 체계 페이지 → 「세탁물 관리」 탭. 품목·부족 기준선·자동 계산은 이미 갖춰져 있으며, 2026-09-01 시작해 매달 초에 지난달 숫자를 함께 보고 방식을 손본다.</span>
-    <span>웰페리온 · 사우나 린넨(세탁물) 관리 정리 · A3 가로 1매</span>
+    <span>화면은 지원부 체계 페이지 → 「🧺 린넨 관리」 탭. 2026-09-01 시작, 2026-09-04 지원팀 김훈 주임 정리를 반영해 일별 마감재고를 없애고 표 4종(월간·연간·월간 인벤토리·린넨 창고)을 같은 틀로 맞췄다. 매달 초에 지난달 숫자를 함께 보고 방식을 손본다.</span>
+    <span>정리 = 지원팀 김훈 주임 · 반영 AI 웰리 2026-09-04 · A3 가로</span>
   </div>
 
 </div>
