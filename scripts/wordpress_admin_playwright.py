@@ -1543,11 +1543,28 @@ _NEW_PAGE_SPECS = {
 }
 
 
+# 고정 페이지 ID ↔ 주입 스펙 (2026-09-04 실측). 허브(8394 /ko/inquiry/ · 8408 /en/inquiry/)는 draft-inquiry(-en) 전용이라
+# draft-page 스펙 어느 것과도 짝이 아니다 — 여기서 'inquiry-hub' 로 잡아 draft-page 가 덮어쓰지 못하게 한다.
+_KNOWN_POST_IDS = {
+    "8394": "inquiry-hub",      # /ko/inquiry/  허브(유형 선택) — wp_inquiry_block.html
+    "8408": "inquiry-hub-en",   # /en/inquiry/  영문 — cutover-inquiry-en 전용
+    "8460": "survey",           # /ko/inquiry-form/ 자체 폼
+    "8584": "lookup",           # /ko/lookup/ 키오스크 첫 화면
+}
+
+
 async def run_draft_page(spec_key: str, post_id_arg: "str | None" = None) -> int:
     """자체 Survey / 습득분실물 갤러리·등록 페이지를 비공개 초안으로 생성/갱신 (발행 안 함).
     reception 패턴과 동일: Classic 편집기 Text탭에 [vc_raw_html]로 self-contained 블록 주입.
     post_id 미지정=신규 생성(post-new.php), 지정=기존 페이지 갱신(발행 상태면 발행 유지)."""
     block_file, title, _slug = _NEW_PAGE_SPECS[spec_key]
+    # [2026-09-04 시우] 실사고 가드 — 배960 레인이 폼(survey)을 허브 페이지 8394 에 주입해 /ko/inquiry/ 허브가 사라지고
+    # 키오스크 '문의 남기기'가 폴백 카드로 튀었다(GM 신고 21:1x). 알려진 고정 ID 는 스펙과 어긋나면 막는다.
+    _owner = _KNOWN_POST_IDS.get(str(post_id_arg or ""))
+    if _owner and _owner != spec_key:
+        print(f"[ERROR] post-id {post_id_arg} 는 '{_owner}' 페이지다 — '{spec_key}' 를 거기 주입하면 그 페이지가 사라진다. "
+              f"올바른 ID: {[k for k, v in _KNOWN_POST_IDS.items() if v == spec_key] or '(미등록 · 신규면 post-id 없이)'}")
+        return 9
     async_playwright = _import_playwright()
     print(f"[INFO] === WP 페이지({spec_key}) — 비공개 초안 생성/갱신 (발행 안 함) ===")
     if not PROFILE_DIR.exists():

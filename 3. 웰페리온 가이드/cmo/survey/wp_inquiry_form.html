@@ -406,7 +406,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   /* ★쓰기 이중기록 서버 고정(배 960 레인L · 2026-09-04 시토 · GM 지시) — 제출을 GAS 직행에서 서버 접수 통로로 바꿈.
      서버가 intake_log 에 먼저 적고 같은 본문을 위 GAS_PROD 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽어도 {ok:true,queued:true} 라 손님은 성공).
      GAS_PROD 은 서버 api.env 의 INTAKE_GAS_URL 정본이다 — 지우지 말 것(server/deploy_intake.sh 가 이 줄을 grep 해 서버에 박는다).
-     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  var GAS_URL = GAS_PROD;   그리고 재주입(한: draft-page --page survey --post-id 8394 / 영: cutover-inquiry-en --post-id 8408). */
+     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  var GAS_URL = GAS_PROD;   그리고 재주입(한: draft-page --page survey --post-id 8460 → publish-page / 영: cutover-inquiry-en --post-id 8408).
+     ★이 폼의 한글 페이지는 8460(/ko/inquiry-form/)이다. 8394(/ko/inquiry/)는 유형 선택 허브(wp_inquiry_block.html · draft-inquiry)라 여기에 폼을 넣으면 허브가 사라진다 — 2026-09-04 실사고. */
   var GAS_URL = 'https://erp.wellperion.com/api/intake/inquiry';
   try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
   var INTAKE_TOKEN = 'wlp_intake_9f4c1b7e2a63';   // 백엔드 INTAKE_SUBMIT_TOKEN 과 일치(위조방지)
