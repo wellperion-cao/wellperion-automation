@@ -175,7 +175,7 @@ def _is_auto_broadcast(msg: str) -> bool:
 # 바로잡아 두면 대화 원문·프롬프트·LLM 출력 전부 실명으로 나간다(후처리 문자열치환보다 안 깨짐).
 # ★확신 있는 것만: ssot/kpi.json roles.cfo/chro.staff · ssot/ownership_map.json 리더/구성원 ·
 # scripts/kakao_rooms.json members 전부 "나우열M"인데 카톡 표시명만 "라우열"로 어긋난다.
-DISPLAY_NAME_ALIAS = {"라우열": "나우열M"}
+DISPLAY_NAME_ALIAS = {"라우열": "나우열M", "웰페리온 F.C매니저 임정은 선생님": "임정은M"}
 
 
 def now_str() -> str:
@@ -677,6 +677,168 @@ def parse_export(raw: str) -> dict[str, list[dict]]:
 
 
 # ═══════════════════════════════════════════
+#  4-b) 임정은M 「N/N 멤버십 공유」 마감 공유 — 규칙 파서 (GM 2026-09-04 "운영부 방에서 하루의 시작에서 챙길 수 있을까")
+# ═══════════════════════════════════════════
+#   임정은M 이 매일 마감(16:49~19:33)에 ★운영부에 올리는 정형 메시지를 두뇌(LLM) 요약에 맡기지 않고
+#   규칙으로 그대로 읽는다 — 등록 명단·로스·대기 시작·특이사항·다음날 예약자. 숫자와 이름은 원문 그대로,
+#   날짜가 걸린 줄(9/6 로스일자 기재 · 9/7 대기 시작)은 원장(share_dated)에 두었다가 **그 날 아침**에 낸다.
+#   등록 명단은 ERP 회원 DB 스냅샷(status/member_active_snapshot.json · 등록일자 칸)과 이름으로 대조해 ✓/✗ 를 붙인다.
+#   ▸새 발송 경로 없음 — 이 블록은 아침 통(★운영부) 본문에 한 절로 들어간다(약속 L21).
+SHARE_HEAD_RE = re.compile(r"^\s*(\d{2})/(\d{1,2})/(\d{1,2})\s*멤버십\s*공유")
+SHARE_SECTION_RE = re.compile(r"^\s*(\d)\.\s*(.*)$")
+SHARE_ITEM_RE = re.compile(r"^\s*[ㄴ└\-•·]\s*(.*)$")
+SHARE_RESV_RE = re.compile(r"^\s*\*{2,}\s*(\d{1,2})/(\d{1,2})\s*예약자\s*\*{2,}")
+SHARE_DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})")
+SHARE_NAME_RE = re.compile(r"^([가-힣]{2,4})")
+MEMBER_SNAPSHOT = ROOT / "status" / "member_active_snapshot.json"
+MEMBER_ENDED_SNAPSHOT = ROOT / "status" / "member_ended_snapshot.json"
+
+
+def parse_membership_share(messages: list[dict]) -> dict | None:
+    """대상일 대화에서 마감 공유 1통을 찾아 구조로 푼다. 없으면 None(그날은 '공유 없음'으로 낸다 — 날조 금지)."""
+    found = None
+    for m in messages:
+        if SHARE_HEAD_RE.match(m.get("msg", "")):
+            found = m                       # 같은 날 두 번 올리면 마지막(정정본)을 쓴다
+    if not found:
+        return None
+    hm = SHARE_HEAD_RE.match(found["msg"])
+    out = {"time": found["time"], "sender": found["name"], "date_label": f"{int(hm.group(2))}/{int(hm.group(3))}",
+           "등록": [], "로스": [], "대기": [], "특이": [], "예약": None, "raw_sections": {}}
+    section = None
+    for line in found["msg"].splitlines()[1:]:
+        st = line.strip()
+        if not st:
+            continue
+        rm = SHARE_RESV_RE.match(st)
+        if rm:
+            out["예약"] = {"date": f"{int(rm.group(1))}/{int(rm.group(2))}", "lines": []}
+            section = "예약"
+            continue
+        if section == "예약":
+            if st.startswith("이런식으로") or st.startswith("오늘도"):
+                continue
+            out["예약"]["lines"].append(re.sub(r"^\d+\.\s*", "", st))
+            continue
+        sm = SHARE_SECTION_RE.match(st)
+        if sm:
+            n, rest = sm.group(1), sm.group(2).strip()
+            section = {"1": "등록", "2": "로스", "3": "대기", "4": "특이"}.get(n)
+            if section:
+                out["raw_sections"][section] = rest
+            continue
+        im = SHARE_ITEM_RE.match(st)
+        if im and section in ("등록", "로스", "대기", "특이"):
+            item = im.group(1).strip()
+            if item and item != "없음":
+                out[section].append(item)
+            continue
+        # 절 머리 없이 이어지는 줄(예: "등록시트, ERP, 브로제이: 입력완료")은 그 절의 비고로
+        if section in ("등록", "로스", "대기", "특이") and st and not st.startswith("이분들") and not st.startswith("오늘도"):
+            out.setdefault("비고", []).append(st)
+    return out
+
+
+def _share_dated_items(share: dict, target_date: str) -> list[dict]:
+    """특이사항·예약자 중 날짜가 걸린 줄 → [{date:'YYYY-MM-DD', text}] (대상일 기준 연도)."""
+    year = int(target_date[:4])
+    items = []
+    head = str((share.get("raw_sections") or {}).get("특이") or "").strip()
+    head = "" if head in ("", "없음") else re.sub(r"^특이사항\s*", "", head)
+    for line in share.get("특이", []):
+        dates = SHARE_DATE_RE.findall(line)
+        if dates:
+            mo, d = dates[-1]              # 마지막 날짜 = 행동일(앞 날짜는 종료일 같은 배경)
+            items.append({"date": f"{year:04d}-{int(mo):02d}-{int(d):02d}",
+                          "text": line + (f" ← {head}" if head else ""), "kind": "특이"})
+    resv = share.get("예약")
+    if resv and resv.get("lines"):
+        mo, d = resv["date"].split("/")
+        for line in resv["lines"]:
+            items.append({"date": f"{year:04d}-{int(mo):02d}-{int(d):02d}", "text": line, "kind": "예약"})
+    return items
+
+
+def _erp_registered_names(date: str) -> set[str] | None:
+    """ERP 회원 DB 스냅샷에서 등록일자 == date 인 회원명. 스냅샷이 없거나 오래됐으면 None(대조 불가 — 표기)."""
+    names: set[str] = set()
+    fresh = False
+    for path in (MEMBER_SNAPSHOT, MEMBER_ENDED_SNAPSHOT):
+        try:
+            d = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        gen = str(d.get("generated_at_kst") or "")
+        if gen[:10] >= date:
+            fresh = True
+        for r in d.get("rows", []):
+            reg = str(r.get("등록\n일자") or r.get("등록일자") or "").strip()[:10]
+            if reg == date:
+                nm = str(r.get("회원명") or "").strip()
+                if nm:
+                    names.add(nm)
+    return names if fresh else None
+
+
+def build_share_block(target_date: str, messages: list[dict], today_str: str, ledger: list[dict]) -> str:
+    """★운영부 아침 통 한 절 — ① 어제 마감 공유(임정은M) 그대로 + ERP 대조 ② 오늘 날짜 걸린 것(예약자·특이사항)."""
+    share = parse_membership_share(messages)
+    lines: list[str] = []
+    # 원장에 날짜 걸린 줄 보관(그날 아침에 꺼내 쓴다)
+    for e in ledger:
+        if e.get("date") == target_date:
+            entry = e
+            break
+    else:
+        entry = None
+    if share:
+        dated = _share_dated_items(share, target_date)
+        if entry is not None:
+            entry["share_dated"] = dated
+        reg = share["등록"]
+        n_reg = len(reg)
+        erp = _erp_registered_names(target_date)
+        sender = share["sender"] + ("" if share["sender"].endswith("님") else "님")
+        lines.append(f"📋 어제 마감 공유 — {sender} {share['time']}")
+        if n_reg:
+            marks = []
+            for it in reg:
+                nm = SHARE_NAME_RE.match(it)
+                name = nm.group(1) if nm else it
+                mark = "" if erp is None else (" ✓" if name in erp else " ✗")
+                marks.append(it + mark)
+            erp_note = ("ERP 대조 불가(스냅샷 없음)" if erp is None
+                        else f"ERP 등록일자 대조 {sum(1 for x in marks if x.endswith(' ✓'))}/{n_reg}")
+            lines.append(f" • 등록 {n_reg}명 — " + " · ".join(marks) + f"  ({erp_note})")
+        else:
+            lines.append(" • 등록 없음")
+        lines.append(" • 로스 " + (f"{len(share['로스'])}명 — " + " · ".join(share["로스"]) if share["로스"] else "없음"))
+        lines.append(" • 다음 대기 시작 " + (" · ".join(share["대기"]) if share["대기"] else "없음"))
+        if share["특이"]:
+            _h = str(share["raw_sections"].get("특이") or "").strip()
+            _h = "" if _h in ("", "없음") else " — " + re.sub(r"^특이사항\s*", "", _h)
+            lines.append(" • 특이사항" + _h)
+            for it in share["특이"]:
+                lines.append("   ㄴ " + it)
+    else:
+        lines.append("📋 어제 마감 공유 — 올라온 것 없음(임정은M 「멤버십 공유」)")
+
+    # 오늘 날짜가 걸린 것 — 어제 공유분 + 지난 날 원장에 묻어 둔 것
+    today_items: list[str] = []
+    seen = set()
+    for e in ledger:
+        for it in e.get("share_dated", []) or []:
+            if it.get("date") == today_str and it.get("text") not in seen:
+                seen.add(it["text"])
+                today_items.append(("📅 " if it.get("kind") == "예약" else "📌 ") + it["text"])
+    if today_items:
+        lines.append("")
+        lines.append("📌 오늘 챙길 것 — 마감 공유에서")
+        lines += [" • " + t for t in today_items]
+    return "\n".join(lines)
+
+
+# ═══════════════════════════════════════════
 #  3) 대상일 결정 — 어제 우선, 없으면 파일 내 가장 최근 '완결된 하루'
 # ═══════════════════════════════════════════
 # ★2026-08-19 GM 결정(배698) — 못 나간 날은 다음날이 흡수한다. 종전 fallback("파일 내
@@ -828,6 +990,7 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str, r
 {past_issues_digest}
 
 메시지는 '줄글'로 풀어쓰지 말고, 한눈에 들어오게 글머리(•)와 '이름별'로 딱딱 정리합니다.
+임정은M 의 「N/N 멤버십 공유」(등록·로스·대기·특이사항·예약자) 메시지는 별도 절이 원문 그대로 싣는다 — 요약에서는 등록·로스 이름과 숫자를 다시 나열하지 말고, 사람이 답해야 할 요청(멘션·부탁)만 다룬다.
 ★가시성: 대부분 항목은 글머리 '•'를 쓰고, '특히 눈에 띄어야 할 핵심 항목에만' 내용 맞는 이모지 1개를 글머리로 쓴다(강조용 소수만 — 매 줄 금지·남발 금지, 전체의 절반 이하). 특히 종목 단어가 들어가면 그 이모지 사용: 수영🏊·골프⛳·필라테스🧘·스쿼시🎾·라인댄스💃. 그 외 장비(키오스크💳·태블릿📱·복합기🖨️·라커🔑)·중요상황(환불💸·휴강🚫·미팅📅)은 정말 강조할 때만. 한 줄 최대 1개.
 아래 구조를 그대로 따르세요(각 줄은 짧고 명확하게):
 
@@ -1046,7 +1209,14 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
         if _sched_reply:
             parts.append(_sched_reply)
     if room_dir_name == "★운영부":
-        parts += [mid_block, reception_block]
+        # 임정은M 마감 공유(규칙 파서) — 두뇌 요약과 별개로 숫자·이름을 그대로 싣고, 오늘 날짜 걸린 것을 꺼낸다(GM 2026-09-04)
+        try:
+            share_block = build_share_block(target_date, human_messages, today_str, ledger)
+            save_ledger(ledger)
+        except Exception as _se:
+            share_block = ""
+            print(f"  → 마감 공유 블록 실패(무시·본문 영향 0): {type(_se).__name__}: {_se}")
+        parts += [share_block, mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
     if warm:
         final_message += "\n\n" + warm.strip()
