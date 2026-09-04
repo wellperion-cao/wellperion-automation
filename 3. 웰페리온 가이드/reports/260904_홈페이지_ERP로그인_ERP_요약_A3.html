@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>새 홈페이지 → ERP 로그인 → ERP — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; padding-top:4px; padding-bottom:4px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>새 홈페이지 → ERP 로그인 → ERP — 구조·진행 요약 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">새 홈페이지 → ERP 로그인 → ERP — 구조·진행·남은 일 요약</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시모</b><br>
+      작성일 <b>2026. 09. 04.</b> · 문서번호 <b>CMO-A3-260904</b><br>
+      대상 <b>새 홈페이지 · 직원 로그인 · ERP 3층 구조</b> · 결정 <b>2건</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">정식 주소 전환 시점을 정해 주십시오.</div>
+        <div class="d">wellperion.com 첫 화면을 새 홈페이지로 바꾸는 날. 권고 = 둘러보기에 걷는 영상이 반영된 뒤(첫인상이 둘러보기다).</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">직원 로그인 권한표를 확정해 주십시오.</div>
+        <div class="d">누가 어느 모듈까지 보는지(역할별 기본안 = 모듈 카드의 역할값). 종합접수처 1호 전환일과 같은 날 켠다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">판단 항목</th>
+        <th>홈페이지</th>
+        <th>ERP 로그인</th>
+        <th>ERP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">무 엇 인 가</td></tr>
+      <tr><td class="k">한 줄 정의</td>
+        <td>고객용 첫 화면 1장(정적) — 첫 화면·스크롤 둘러보기·공간 9곳·멤버십·레슨 6팀·자주 묻는 질문 7·문의 안내. AI 검색용 데이터 3종(회사·시설·자주 묻는 질문) 내장</td>
+        <td>홈페이지 상단 「직원 로그인」 → 로그인 화면. 회사 이메일+비밀번호 또는 회사 구글 계정(@wellperion.com 만). 한 번 로그인 30일 유지. 관리자 화면에서 사람별 권한</td>
+        <td>로그인 뒤 첫 화면 = 역할별 모듈 카드 100개(시우 45·시로 21·시모 13·시포 8·시토 4·시뽀 3·시보 3·GM 2·웰리 1)</td>
+      </tr>
+      <tr><td class="k">누가 쓰나</td><td class="ctr">고객·검색엔진·AI 검색</td><td class="ctr">직원 전원</td><td class="ctr">직원(역할별 카드만)</td></tr>
+      <tr><td class="k">주소</td>
+        <td>지금: 검수용 임시 주소(검색 노출 차단) · 정식: wellperion.com(전환 전)</td>
+        <td class="ctr">erp.wellperion.com/auth/login</td>
+        <td class="ctr">erp.wellperion.com</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">지 금 상 태</td></tr>
+      <tr><td class="k">완료된 것</td>
+        <td>초안 완성 · 09-04 내용층(자주 묻는 질문·공간·레슨) 채움 · 둘러보기 = 스크롤 걷기 시안(사진 28장)</td>
+        <td>로그인 코드 완성·자가점검 통과 · 서버 접속 시 옛 비밀번호 커튼 자동 생략</td>
+        <td>앱 셸 가동 · 회원 관리: 명단 서버에서 3초(09-03) · 문의: 읽기 서버 완료</td>
+      </tr>
+      <tr><td class="k">남은 것</td>
+        <td>① 공개 경로(로그인 없이) 서버에 열기 ② 걷는 영상 → 프레임 교체 ③ 영문판 내용층 ④ 정식 주소 5단계(DNS·인증서·검색 차단 해제 등) ⑤ 자주 묻는 질문 3건 AI 검색 데이터 동기화</td>
+        <td>① 직원 계정 등록 방식 확정 ② 권한표 확정 ③ 배포</td>
+        <td>모듈 전환 날짜: 종합접수처 1호(시토 확정 대기) · 회원 관리(저장 대조 5종 뒤) · 문의 쓰기·점검·업무결재·콘텐츠 접수 미정 · 스케줄·매출·지출 = 이번 회차 제외</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">담 당</td></tr>
+      <tr><td class="k">만드는 사람</td><td>시모(내용·디자인) · 시토(서버·주소)</td><td class="ctr">시토</td><td>시토(이관) · 각 담당(모듈) · 웰리(실무진 안내 3통)</td></tr>
+      <tr><td class="k">GM 이 주실 것</td>
+        <td>걷는 영상 1편(휴대폰 4K 가로·천천히·10공간 순서) · 정식 전환 시점</td>
+        <td class="ctr">권한표 확정</td>
+        <td class="ctr">모듈 전환 날짜 승인</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">검 증 상 태</td></tr>
+      <tr><td class="k">실물 확인</td><td class="ctr">라이브 열림·문단 22개 확인(09-04)</td><td class="ctr">코드 자가점검만(실사용 전)</td><td class="ctr">카드 100개 자동 생성 확인(09-04)</td></tr>
+      <tr class="sum"><td class="k">위험도</td><td class="ctr warn strong">△ 중</td><td class="ctr bad strong">⚠ 상(권한표 없으면 못 켬)</td><td class="ctr bad strong">⚠ 상(날짜 미정 모듈 5)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">공개 홈이 로그인 관문 뒤 — 열기 전엔 고객이 못 본다.</li>
+        <li class="r1">전환 날짜 미정 모듈 5개 → 실무진 안내 못 나감.</li>
+        <li class="r2">둘러보기 사진 28장 = 슬라이드 수준(영상 필요).</li>
+        <li class="r2">세션 30일 — 공용 PC 로그아웃 규칙 필요.</li>
+        <li class="r2">영문 홈 미반영.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">시토 — 공개 경로 열기</li>
+        <li class="n">GM — 걷는 영상 촬영 → 시모 프레임 교체</li>
+        <li class="n">시토 — 종합접수처 1호 날짜 확정 → 웰리 D-1 안내</li>
+        <li class="n">GM — 권한표 확정 → 시토 로그인 켬</li>
+        <li class="n">시토 — 정식 주소 5단계 → 시모 영문판</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>AI 시모 권고</h3>
+      <ul>
+        <li>순서 = <b>공개 경로 → 영상 교체 → 정식 주소.</b></li>
+        <li>정식 전환은 <b>둘러보기 영상 반영 뒤.</b></li>
+        <li>직원 로그인은 <b>종합접수처 1호와 같은 날.</b></li>
+        <li>홈페이지 문의 폼은 화면 그대로, 「알게 된 경로」 선택지만 11종으로 늘어난다 — <b>방문자가 보는 유일한 변화.</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>출처</b> — 모듈 카드 목록(09-04 자동 생성) · 업무 큐(status/_queue.json) · AWS 이관 실무진 안내 문서(09-03).</div>
+    <div><b>(추정) 표기</b> — 「정식 주소 5단계 소요」는 (추정)이다. DNS 전파·인증서 발급·검색엔진 차단 해제 등 외부 요인에 좌우된다.</div>
+    <div><b>차기 보고</b> — 종합접수처 1호 전환일 확정 시(같은 문서번호 유지).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260904_홈페이지_ERP로그인_ERP_요약_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
