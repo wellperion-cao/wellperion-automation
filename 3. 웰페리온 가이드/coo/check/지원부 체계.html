@@ -505,6 +505,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-onboarding-print{display:none}
 /* ── 🧺 세탁물 출하표 A4 세로 인쇄 (GM 2026-08-11 발주 · 2026-09-01 A3→A4 세로 전환 — 현장은 종이에 손으로 적고, 점검할 때 화면에 옮긴다)
    클래스 접두사 a3l- 은 그대로 둔다 — 이름까지 갈면 diff 만 커지고 얻는 게 없다(정체는 '출하표 인쇄' 스타일). ── */
+/* 인쇄 전환만 @media print 안에 둔다. 표 모양(a3l-*)은 밖으로 뺐다 — PNG 저장이 같은 표를
+   화면 밖에서 캡처해야 하는데, @media print 안에 있으면 화면에서는 민짜로 찍힌다(2026-09-04). */
 @media print{
   body.a3-ldy-mode{font-size:11px;line-height:1.4;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.a3-ldy-mode .header,
@@ -520,40 +522,39 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-ldy-mode #a3-manual-print,
   body.a3-ldy-mode [data-wp-move]{display:none!important}
   body.a3-ldy-mode #a3-laundry-print{display:block!important}
-  #a3-laundry-print .a3l-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #4a3a2e;padding-bottom:6px;margin-bottom:8px}
-  #a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
-  /* 서명란 3칸(GM 2026-09-01 — 오픈·마감 두 조가 한 장을 나눠 쓰니 작성 서명도 둘, 확인=지원부 책임자).
-     줄 2개(작성 한 줄·확인 한 줄)로 세워 머리 높이를 안 키운다. 빈칸은 3개가 들어가게 70px. */
-  #a3-laundry-print .a3l-blank{display:inline-block;min-width:70px;border-bottom:1px solid #8a7a6c}
-  table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
-  table.a3l-grid th,table.a3l-grid td{border:0.8px solid #8a7a6c;text-align:center}
-  table.a3l-grid thead th{background:#4a3a2e!important;color:#fff!important;font-size:14px;font-weight:800;padding:8px 2px;line-height:1.25}
-  table.a3l-grid thead th.a3l-item{background:#2a2018!important}
-  table.a3l-grid td{height:66px;font-size:15px}
-  table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
-  table.a3l-grid td.a3l-shade{background:#faf7f3!important}
-  table.a3l-grid tr.a3l-sum td{height:44px;background:#f3ede7!important;font-weight:800}
-  /* 월간판(GM 2026-09-01 "1개월치·위=품목·왼쪽=날짜·2~3장 되어도 됨") — 한 장 = 품목 4종 × 그 달 전체.
-     8종을 한 장에 옆으로 다 세우면 칸 폭이 39px(10mm)라 세 자리 손글씨가 안 들어간다 → 4종씩 2장. */
-  .a3l-page{page-break-after:always}
-  .a3l-page:last-child{page-break-after:auto}
-  .a3l-page-cap{font-size:13px;font-weight:800;color:#2a2018;margin:0 0 5px}
-  table.a3l-month thead th{font-size:12px;padding:3px 2px}
-  /* 머리글 아랫줄(입고·비고 / In·Note)은 한 줄 고정 — 꺾이면 장 높이가 넘쳐 4장이 된다(실측 2026-09-01). */
-  table.a3l-month thead tr+tr th{font-size:11px;white-space:nowrap}
-  table.a3l-month td{height:var(--rh,34px);font-size:12px} /* --rh = 장마다 행 높이(①은 촘촘, ②③④는 넉넉) */
-  /* 장 머리 한 줄 — 왼쪽 제목 / 오른쪽 「지원부 · 연도(월) · 작성__ 확인__」 (4장 세트 2026-09-04) */
-  .a3l-cap2{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:0 0 5px;color:#2a2018}
-  .a3l-cap2 b{font-size:16px;font-weight:800}
-  .a3l-cap2 span{font-size:11px;font-weight:700;white-space:nowrap}
-  .a3l-check{ text-align:right;font-size:13px;font-weight:700;color:#2a2018;margin:6px 0 2px }
-  table.a3l-month td.a3l-date{background:#f3ede7!important;font-size:12px;font-weight:700;color:#2a2018;text-align:left;padding-left:8px;white-space:nowrap}
-  table.a3l-month tr.a3l-closed td{background:#e7ddd2!important}
-  /* 「휴관」은 날짜보다 작게 붙인다 — 같은 크기면 「9월 13일 (일) 휴관」이 칸을 넘친다(GM 지적 2026-09-01). */
-  table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:800}
-  #a3-laundry-print .a3l-guide{margin-top:8px;font-size:12px;line-height:1.7;color:#2a2018}
-  #a3-laundry-print .a3l-guide b{font-weight:800}
 }
+/* ── 출하 표 모양 — 인쇄와 PNG 가 같은 규칙을 쓴다(#a3-laundry-print 안에서만 나타나는 클래스들) ── */
+#a3-laundry-print{color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#a3-laundry-print .a3l-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #4a3a2e;padding-bottom:6px;margin-bottom:8px}
+#a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
+#a3-laundry-print .a3l-blank{display:inline-block;min-width:80px;border-bottom:1px solid #8a7a6c}
+table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
+table.a3l-grid th,table.a3l-grid td{border:0.8px solid #8a7a6c;text-align:center}
+table.a3l-grid thead th{background:#4a3a2e!important;color:#fff!important;font-size:14px;font-weight:800;padding:8px 2px;line-height:1.25}
+table.a3l-grid thead th.a3l-item{background:#2a2018!important}
+table.a3l-grid td{height:66px;font-size:15px}
+table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
+table.a3l-grid td.a3l-shade{background:#faf7f3!important}
+/* 한 장 = A4 가로 인쇄 영역(210−5×2). 표가 남은 높이를 다 먹어 하단 여백선에 닿는다 —
+   장마다 행 높이를 손으로 맞추지 않는다(브라우저가 행에 균등 배분한다 · GM 2026-09-04). */
+.a3l-page{height:199mm;display:flex;flex-direction:column;page-break-after:always;break-after:page}
+.a3l-page:last-child{page-break-after:auto;break-after:auto}
+.a3l-page>table{flex:1 1 auto}
+.a3l-page-cap{font-size:13px;font-weight:800;color:#2a2018;margin:0 0 5px}
+table.a3l-month thead th{font-size:12px;padding:3px 2px}
+table.a3l-month thead tr+tr th{font-size:11px;white-space:nowrap}
+table.a3l-month td{height:19px;font-size:12px}   /* 최소 높이 — 남는 높이는 .a3l-page 가 늘려 준다 */
+table.a3l-month tfoot td{height:26px;background:#f3ede7!important;font-weight:800}  /* 총계는 띠로 읽히게 */
+/* 장 머리 한 줄 — 왼쪽 제목(18pt) / 오른쪽 「지원부 · 연도(월) · 확인 ___」. 4장 모두 같은 크기·같은 자리. */
+.a3l-cap2{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:0 0 6px;color:#2a2018}
+.a3l-cap2 b{font-size:24px;font-weight:800;line-height:1.2}
+.a3l-cap2 span{font-size:12px;font-weight:700;white-space:nowrap}
+.a3l-check{text-align:right;font-size:13px;font-weight:700;color:#2a2018;margin:6px 0 2px}
+table.a3l-month td.a3l-date{background:#f3ede7!important;font-size:12px;font-weight:700;color:#2a2018;text-align:left;padding-left:8px;white-space:nowrap}
+table.a3l-month tr.a3l-closed td{background:#e7ddd2!important}
+table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:800}
+#a3-laundry-print .a3l-guide{margin-top:8px;font-size:12px;line-height:1.7;color:#2a2018}
+#a3-laundry-print .a3l-guide b{font-weight:800}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -999,6 +1000,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ══ 🧺 세탁물 출하표 A4 세로 인쇄 전용 컨테이너 (GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) ══
      현장은 이 종이에 손으로 적는다 → 점검할 때 화면(🧺 린넨 관리)에 그 숫자를 옮긴다.
      칸을 미리 채우지 않는다 — 종이가 원본이고 화면이 옮겨 적는 쪽이다. ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <div id="a3-laundry-print" style="display:none">
   <div class="a3l-head">
     <div>
@@ -1886,6 +1888,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="wpLdySheetState" class="wp-ldy__k"></span>
         <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 가로 4장 — ①월간(일별) ②연간 ③월간 인벤토리 ④린넨 창고. 현장에서 손으로 적는 종이">🖨 린넨 4장 인쇄 (A4)</button>
         <button class="wp-ldy__btn" onclick="printA4Laundry('en')" title="같은 4장의 영문판 — 제목·머리글·날짜만 영문">🖨 린넨 4장 인쇄 (A4-En)</button>
+        <button class="wp-ldy__btn" onclick="pngA4Laundry('',this)" title="같은 4장을 PNG 파일 4개로 내려받습니다">⬇ PNG 저장</button>
+        <button class="wp-ldy__btn" onclick="pngA4Laundry('en',this)" title="영문판 4장을 PNG 파일 4개로">⬇ PNG 저장 (En)</button>
       </div>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
       <div class="wp-ldy__hint" id="wpLdySheetNote"></div>
@@ -7057,7 +7061,7 @@ function wpLdyRenderToday(){
    두 벌로 복사하면 한쪽만 고쳐지는 일이 반드시 생긴다. 마스터에 없는 품목이 생기면 한글 이름 그대로 나간다. */
 var WP_LDY_EN_ITEM = {bath:'Bath Towel', face:'Face Towel', sweat:'Sweat Towel', shower:'Shower Towel',
                       socks:'Socks', top:'Gym Top', btm:'Gym Bottom', carpet:'Carpet'};
-function printA4Laundry(lang){
+function wpLdyBuildSheets(lang){
   /* ★A4 4장 인쇄 세트(GM 2026-09-04) — 화면 4표를 그대로 종이로. 장마다 제목 + 「지원부 · 연도(월)」
      + 작성/확인 서명 한 줄. 값이 화면에 있으면 같이 인쇄되고, 없으면 빈칸이라 손으로 적는다.
      ① 월간(린넨) 체크리스트 — 월초~월말 한 장(30~31행). 옛 1~15/16~말 2장 분할은 폐지.
@@ -7072,8 +7076,7 @@ function printA4Laundry(lang){
   var ym = wpLdySheetYm(), y = wpLdyYear(), mo = +ym.slice(5, 7);
   var nDays = wpLdySheetDays(ym);
   var org  = en ? 'Support Dept.' : '지원부';
-  var sign = en ? 'Prepared <b class="a3l-blank"></b> Checked <b class="a3l-blank"></b>'
-                : '작성 <b class="a3l-blank"></b> 확인 <b class="a3l-blank"></b>';
+  var sign = en ? 'Checked <b class="a3l-blank"></b>' : '확인 <b class="a3l-blank"></b>';
   var metaM = en ? (EN_MON[mo - 1] + ' ' + y) : (y + '년 ' + mo + '월');
   var metaY = en ? String(y) : (y + '년');
   /* 화면 머리(제목·안내문)는 장마다 제목이 따로 붙으니 접는다 — 같은 말 두 번. */
@@ -7084,10 +7087,10 @@ function printA4Laundry(lang){
 
   function cell(v){ return (v === null || v === undefined || v === '') ? '' : wpLdyEsc(v); }
   function blank(a){ return a.map(function(v){ return v === '\u2013' ? '' : v; }); }
-  function page(title, meta, rowLabel, subs, tail, rowH, body, foot){
+  function page(title, meta, rowLabel, subs, tail, body, foot){
     return '<div class="a3l-page"><div class="a3l-cap2"><b>' + title + '</b>'
       + '<span>' + org + ' · ' + meta + ' · ' + sign + '</span></div>'
-      + '<table class="a3l-grid a3l-month" style="--rh:' + rowH + 'px">'
+      + '<table class="a3l-grid a3l-month">'
       + '<colgroup><col style="width:' + (en ? 104 : 92) + 'px">'
       + new Array(items.length * subs.length + 1).join('<col>')
       + (tail ? '<col style="width:120px">' : '') + '</colgroup>'
@@ -7121,13 +7124,13 @@ function printA4Laundry(lang){
   var h = page(
     en ? 'Monthly Linen Checklist (' + EN_MON3[mo - 1] + ' 1 \u2013 ' + EN_MON3[mo - 1] + ' ' + nDays + ')'
        : '월간(린넨) 체크리스트 (' + mo + '/1 ~ ' + mo + '/' + nDays + ')',
-    metaM, en ? 'Date' : '날짜', en ? ['In', 'Note'] : ['입고', '비고'], '', 21, b1,
+    metaM, en ? 'Date' : '날짜', en ? ['In', 'Note'] : ['입고', '비고'], '', b1,
     wpLdyGridFoot(TOTAL, items.map(function(m){ var v = wpLdyMonthIn(m.id, ym); return v === null ? '' : v; }), 2));
 
   /* ② 연간(린넨) 체크리스트 — 행=월 · 열=품목별 [입고] · 맨 오른쪽 [비고] */
   h += page(
     en ? 'Annual Linen Checklist (Jan \u2013 Dec)' : '연간(린넨) 체크리스트 (1~12월)',
-    metaY, metaY, en ? ['In'] : ['입고'], en ? 'Note' : '비고', 52,
+    metaY, metaY, en ? ['In'] : ['입고'], en ? 'Note' : '비고',
     monthRows(function(k){
       return items.map(function(m){ return '<td class="a3l-shade">' + cell(wpLdyMonthIn(m.id, k)) + '</td>'; }).join('')
         + '<td>' + cell((LAUNDRY_DATA.yearNote || {})[k] || '') + '</td>';
@@ -7137,7 +7140,7 @@ function printA4Laundry(lang){
   /* ③ 월간 인벤토리 리스트 — 행=월 · 열=품목별 [남|여] */
   h += page(
     en ? 'Monthly Inventory (counted on the 30th)' : '월간 인벤토리 리스트 (매월 30일 진행)',
-    metaY, metaY, en ? ['M', 'W'] : ['남', '여'], '', 52,
+    metaY, metaY, en ? ['M', 'W'] : ['남', '여'], '',
     monthRows(function(k){
       return items.map(function(m){
         return '<td class="a3l-shade">' + cell(wpLdyCellVal('inventory', k, m.id, 'm')) + '</td>'
@@ -7152,7 +7155,7 @@ function printA4Laundry(lang){
   /* ④ 린넨 창고 체크리스트 — 행=월 · 열=품목별 [재고|비고] */
   h += page(
     en ? 'Linen Store Room Checklist (counted on the 30th)' : '린넨 창고 체크리스트 (매월 30일 진행)',
-    metaY, metaY, en ? ['Stock', 'Note'] : ['재고', '비고'], '', 52,
+    metaY, metaY, en ? ['Stock', 'Note'] : ['재고', '비고'], '',
     monthRows(function(k){
       return items.map(function(m){
         return '<td class="a3l-shade">' + cell(wpLdyCellVal('warehouse', k, m.id, 'stock')) + '</td>'
@@ -7163,6 +7166,16 @@ function printA4Laundry(lang){
 
   var host = document.getElementById('a3l-table-host');
   if (host) host.innerHTML = h;
+  return [
+    (en ? 'Linen_Monthly_' : '린넨_월간_') + ym,
+    (en ? 'Linen_Annual_'  : '린넨_연간_') + y,
+    (en ? 'Linen_Inventory_' : '린넨_인벤토리_') + y,
+    (en ? 'Linen_StoreRoom_' : '린넨_창고_') + y
+  ];
+}
+/* 🖨 인쇄 — 표는 wpLdyBuildSheets 가 만든다. 여기선 인쇄 모드로 갈아입고 window.print() 만. */
+function printA4Laundry(lang){
+  wpLdyBuildSheets(lang);
   document.body.classList.add('a3-ldy-mode');
   var styleTag = document.getElementById('a3-ldy-page-style');
   if (!styleTag){
@@ -7174,6 +7187,39 @@ function printA4Laundry(lang){
   window.print();
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
+}
+/* ⬇ PNG 저장 — 같은 4장을 장별 PNG 파일로. html2canvas 1.4.1(cdnjs)은 이 저장소 A3 보고서가 쓰는 것 그대로.
+   인쇄 컨테이너를 화면 밖(left:-99999px)에 펼쳐 캡처한다 — display:none 이면 html2canvas 가 못 그린다. */
+async function pngA4Laundry(lang, btn){
+  if (typeof html2canvas !== 'function'){
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 「린넨 4장 인쇄」에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var names = wpLdyBuildSheets(lang);
+  var box = document.getElementById('a3-laundry-print');
+  var keep = box.getAttribute('style') || '';
+  /* A4 가로 인쇄 영역(297−5×2 = 287mm)을 96dpi px 로 — 종이와 같은 비율로 찍힌다. */
+  /* 오른쪽 3px 여유 — 딱 1085px 로 잡으면 마지막 열 테두리가 캡처 경계에 잘린다(실측 2026-09-04). */
+  box.setAttribute('style', 'display:block;position:fixed;left:-99999px;top:0;width:1085px;padding-right:3px;box-sizing:content-box;background:#fff');
+  var label = btn && btn.textContent;
+  if (btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
+  try{
+    var pages = box.querySelectorAll('.a3l-page');
+    for (var i = 0; i < pages.length; i++){
+      /* width +2 — 딱 맞게 잡으면 마지막 열 테두리가 캡처 경계에서 잘린다(실측 2026-09-04). */
+      var canvas = await html2canvas(pages[i], {scale: 2, backgroundColor: '#ffffff', width: pages[i].offsetWidth + 2});
+      var a = document.createElement('a');
+      a.download = (names[i] || ('린넨_' + (i + 1))) + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      await new Promise(function(r){ setTimeout(r, 300); });   /* 브라우저가 4개를 한꺼번에 막지 않게 */
+    }
+  }catch(e){
+    alert('PNG 변환에 실패했습니다. 「린넨 4장 인쇄」 → 「PDF로 저장」을 쓰세요.');
+  }finally{
+    box.setAttribute('style', keep);
+    if (btn){ btn.textContent = label; btn.disabled = false; }
+  }
 }
 /* 입력 즉시 메모리 반영 + 디바운스 저장. 표를 통째로 다시 그리지 않는다(한글 입력 깨짐 방지) —
    결품 경고 칸만 갱신한다. */
