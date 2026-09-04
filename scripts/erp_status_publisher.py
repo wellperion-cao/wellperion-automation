@@ -731,10 +731,128 @@ def publish_home_kpi_snapshot():
         return False
 
 
+MIGRATION_PLAN_PATH = ROOT / "docs" / "superpowers" / "specs" / "2026-09-03-gas-to-server-migration-plan.md"
+
+# 배 960 §2 이전표 영역 정의(정본 = 위 계획서. 영역 구성이 바뀌면 이 표만 고친다 · 약속 L01).
+# kind: full=①읽기30+②쓰기30+③서버40 · write_only=②60+③40 · read_only=①60+③40
+# origin_keys = server/erp_api/origin_switch.py 의 NAMES 중 이 영역의 ③(서버 원본)을 판정하는 열쇠.
+MIGRATION_AREAS = [
+    ("문의·회원",  ["1", "1b", "1c"], "full",       ["write_member"]),
+    ("문의 폼",    ["2"],             "write_only", ["inquiry"]),
+    ("강사 폼",    ["3"],             "write_only", ["instructor", "sunday"]),
+    ("종합접수처", ["4", "4b"],       "full",       ["reception", "write_reception"]),
+    ("점검 3부서", ["5", "5b"],       "full",       ["write_check"]),
+    ("업무·결재",  ["6", "6b"],       "full",       ["write_todo"]),
+    ("인사 허브",  ["7"],             "full",       []),
+    ("매출 3종",   ["8"],             "read_only",  []),
+]
+# 소형 4개(#9) — 한 행에 4화면이 뭉쳐 있어 따로 뗀다(§2 표 9번 각주 그대로 · 지출현황만 보류 고정).
+MIGRATION_SMALL4 = [
+    ("renewal",    "read_only",  []),
+    ("리셉션 업무", "write_only", ["write_proc"]),
+    ("라커관리",    "write_only", ["write_proc"]),
+    ("지출현황",    "paused",     []),
+]
+
+
+def _parse_migration_table(text):
+    """§2 표를 행번호(#) → {action, method, status} 로 파싱. 표 모양이 바뀌면 빈 dict(못 잼)."""
+    rows = {}
+    for line in text.splitlines():
+        m = re.match(r'^\|\s*([0-9]+[a-z]?)\s*\|', line)
+        if not m:
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        # parts: [0]="" [1]=# [2]=GAS프로젝트 [3]=액션 [4]=화면 [5]=담당 [6]=이전방식 [7]=상태 [8]=야간창
+        if len(parts) < 8:
+            continue
+        rows[m.group(1)] = {"action": parts[3], "method": parts[6], "status": parts[7]}
+    return rows
+
+
+def _area_score(kind, done_read, done_write, server_done):
+    if kind == "full":
+        return 30 * done_read + 30 * done_write + 40 * server_done
+    if kind == "write_only":
+        return 60 * done_write + 40 * server_done
+    if kind == "read_only":
+        return 60 * done_read + 40 * server_done
+    return 0  # paused
+
+
+def _score_migration(rows, origin_modes):
+    """영역별 점수(0~100) 리스트 + 서버원본 달성 영역 수. rows/origin_modes 는 순수 입력값
+    — --selftest 가 고정 입력을 그대로 넣어 산식만 따로 검증한다(서버·파일 없이)."""
+    scores, server_hits = [], 0
+    for _name, row_nos, kind, keys in MIGRATION_AREAS:
+        done_read = any("읽기" in rows.get(r, {}).get("action", "") and "완료" in rows.get(r, {}).get("status", "")
+                         for r in row_nos)
+        done_write = any("쓰기" in rows.get(r, {}).get("action", "") and "완료" in rows.get(r, {}).get("status", "")
+                          for r in row_nos)
+        server_done = bool(keys) and all(origin_modes.get(k) == "server" for k in keys)
+        scores.append(_area_score(kind, done_read, done_write, server_done))
+        server_hits += server_done
+
+    row9 = rows.get("9", {})
+    method9, status9 = row9.get("method", ""), row9.get("status", "")
+    sub_scores, sub_any_key, sub_server_ok = [], False, True
+    for label, kind, keys in MIGRATION_SMALL4:
+        if kind == "paused" or re.search(re.escape(label) + r"\s*=\s*보류", method9):
+            sub_scores.append(0)
+            continue
+        done = "완료" in status9
+        server_done = bool(keys) and all(origin_modes.get(k) == "server" for k in keys)
+        sub_scores.append(_area_score(kind, done, done, server_done))
+        if keys:
+            sub_any_key, sub_server_ok = True, sub_server_ok and server_done
+    scores.append(sum(sub_scores) / len(sub_scores) if sub_scores else 0)
+    server_hits += int(sub_any_key and sub_server_ok)
+    return scores, server_hits
+
+
+def collect_migration_status():
+    """배 960 GAS→AWS 이전 진척률 — §2 표(①②)와 서버 origin_switch(③)를 대조해 한 행으로 낸다
+    (레인 M · 2026-09-04). 파싱이 깨지거나 서버에 못 닿으면 값을 지어내지 않고 '못 잼'으로 떨어진다."""
+    note = "영역 9 가중(문의·회원/문의폼/강사폼/종합접수처/점검3부서/업무·결재/인사허브/매출3종/소형4개) · 배 960"
+    try:
+        text = MIGRATION_PLAN_PATH.read_text(encoding="utf-8")
+        rows = _parse_migration_table(text)
+    except Exception:
+        rows = {}
+    if not rows or "9" not in rows:
+        return {"name": "GAS→AWS 이관", "state": "불명",
+                "detail": "못 잼 · 이전표 파싱 실패(migration-plan.md §2 표 모양 확인 필요)", "note": note}
+
+    origin_modes, origin_ok = {}, False
+    try:
+        pem = str(Path.home() / ".aws" / "wellperion-sito.pem")
+        r = subprocess.run(
+            ["ssh", "-i", pem, "ec2-user@15.164.151.105", "curl -s http://127.0.0.1:8001/api/intake/health"],
+            capture_output=True, text=True, timeout=40)
+        origin_modes = json.loads(r.stdout).get("origin_mode") or {}
+        origin_ok = bool(origin_modes)
+    except Exception:
+        origin_modes = {}
+
+    scores, server_hits = _score_migration(rows, origin_modes)
+    pct = round(sum(scores) / len(scores)) if scores else 0
+
+    nxt = "09-08 문의 폼"  # 파싱 실패 시 폴백(계획서 §5 문구 고정값)
+    m = re.search(r'서버 원본 전환 1호 = #\d+\w?\s+([^*]+?)\*\*.*?\*\*(\d{2}-\d{2}) 서버 원본\*\*', text, re.S)
+    if m:
+        nxt = f"{m.group(2)} {m.group(1).strip()}"
+
+    detail = f"약 {pct}% · 서버 원본 {server_hits}/9 · 다음 {nxt}"
+    if not origin_ok:
+        detail += " · 원본전환 확인 못 잼(ssh)"
+    state = "완료" if pct >= 100 else ("불명" if not rows else "진행")
+    return {"name": "GAS→AWS 이관", "state": state, "detail": detail, "note": note}
+
+
 def build():
     # 시스템 현황 = '기계 상태'만(봇·스케줄러·예약작업). 각 AI 업무는 자율현황 🧭 항로가 단일 출처
     # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
-    systems = collect_processes() + collect_tasks()
+    systems = collect_processes() + collect_tasks() + [collect_migration_status()]
     bridges = collect_bridges()
     automation_health = collect_automation_health()
     # 예약작업 옆에 스케줄러 정기작업 수를 같이 실어 보낸다(배39) — 한 화면에서 둘 다 세도록.
@@ -972,7 +1090,40 @@ def publish_kpi_crosscheck():
     return True
 
 
+def _selftest_migration():
+    """산식 고정 입력 검증 — 서버·파일 없이 _score_migration() 만 본다(2026-09-04 실측 상태를 그대로 박음)."""
+    rows = {
+        "1": {"action": "읽기: 문의", "status": "**완료**"},
+        "1b": {"action": "쓰기: 회원", "status": "**오늘 완료**"},
+        "1c": {"action": "읽기: funnel", "status": "**완료 09-04**"},
+        "2": {"action": "쓰기: 문의 폼", "status": "**서버 완료 · 주소 교체 대기(§3)**"},
+        "3": {"action": "쓰기: 접수", "status": "**서버 완료 · 주소 교체 대기(§3)**"},
+        "4": {"action": "읽기: reg_board", "status": "**오늘 완료**"},
+        "4b": {"action": "쓰기: 회원 접수", "status": "**완료 09-04**"},
+        "5": {"action": "읽기: board", "status": "**오늘 완료**"},
+        "5b": {"action": "쓰기: 점검", "status": "**완료 09-04**"},
+        "6": {"action": "읽기: todo", "status": "**오늘 완료**"},
+        "6b": {"action": "쓰기: 업무", "status": "**완료 09-04**"},
+        "7": {"action": "읽기·쓰기: 조직", "status": "예정"},
+        "8": {"action": "읽기: 매출", "status": "**완료 09-04**(쓰기 10액션은 이중기록 단계로)"},
+        "9": {"action": "각 1화면", "status": "**완료 09-04**(지출현황만 보류)",
+              "method": "renewal = 거울 · 리셉션 업무·라커 = 쓰기 이중기록 · 지출현황 = 보류(열람 0)"},
+    }
+    scores, hits = _score_migration(rows, {})  # 전부 dual — 09-04 실측
+    pct = round(sum(scores) / len(scores))
+    assert pct == 52, f"기대 52%, 실제 {pct}% ({scores})"
+    assert hits == 0, f"서버 원본 0/9 기대, 실제 {hits}"
+    # write_todo 를 server 로 켜면 업무·결재 영역만 100 으로 튄다(③ 자동판정 확인)
+    scores2, hits2 = _score_migration(rows, {"write_todo": "server"})
+    assert scores2[MIGRATION_AREAS.index(next(a for a in MIGRATION_AREAS if a[0] == "업무·결재"))] == 100
+    assert hits2 == 1
+    print("[erp_status] --selftest 통과: 09-04 실측 입력 → 52% · 서버 원본 0/9")
+
+
 def main():
+    if "--selftest" in sys.argv:
+        _selftest_migration()
+        return
     STATUS_DIR.mkdir(parents=True, exist_ok=True)
     payload = build()
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

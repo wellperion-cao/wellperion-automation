@@ -242,6 +242,15 @@
   </div>
   <!-- ══ /알림 한 장 ══ -->
 
+  <!-- ══ 🖥️ 시스템 현황 — erp_status.json의 systems[] 정본을 그대로 낸다(erp_status_publisher.py 30분 주기).
+       wellperion_guide(main).html#T2 가 "T2 ▸ 🖥️ 시스템 현황"으로 가리키는 자리인데 이 페이지에 렌더가
+       없었다 — 배 960 레인 M(2026-09-04 시토, GAS→AWS 이관 진척률 행 추가) 작업 중 발견해 최소 복구. ══ -->
+  <div id="erp-systems-panel" class="autopanel" style="border-left-color:var(--accent);margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">🖥️ 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">(기계 상태만 · erp_status.json)</span></h2>
+    <div id="erp-systems-rows">불러오는 중…</div>
+  </div>
+  <!-- ══ /시스템 현황 ══ -->
+
   <!-- ══ 🟢 CLI 라이브 — GM PC 로컬 서버(scripts/live_cli_status_server.py, daily_scheduler.py 가
        데몬 스레드로 띄움 · 포트 8787 · 127.0.0.1 전용)를 3초마다 읽어 지금 이 순간 CLI 대화·도구호출을
        그대로 보여준다(GM 지시 2026-08-15 "정말 CLI로 작업하는 것을 라이브로 즉각 확인"). 커밋·푸시를
@@ -1154,6 +1163,22 @@
   }
 
 
+  // 🖥️ 시스템 현황 — erp_status.json systems[] 그대로(name/state/detail/note). 새 집계 없음, 표시만(배 960 레인 M).
+  function renderSystemsPanel(erp){
+    var wrap = document.getElementById('erp-systems-rows');
+    if(!wrap) return;
+    var rows = (erp && Array.isArray(erp.systems)) ? erp.systems : [];
+    if(!rows.length){ wrap.innerHTML = '<div class="feed-status">불러오지 못했습니다.</div>'; return; }
+    var chip = { '정상':'ok', '완료':'ok', '이상':'bad', '진행':'warn', '불명':'idle' };
+    wrap.innerHTML = '<table class="gtbl"><tr><th>이름</th><th>상태</th><th>상세</th></tr>' +
+      rows.map(function(s){
+        var cls = chip[s.state] || 'idle';
+        return '<tr><td><strong>' + esc(s.name) + '</strong>' + (s.note ? '<div style="font-size:11px;color:var(--dim);">' + esc(s.note) + '</div>' : '') + '</td>' +
+          '<td><span class="statchip ' + cls + '">' + esc(s.state || '?') + '</span></td>' +
+          '<td>' + esc(s.detail || '') + '</td></tr>';
+      }).join('') + '</table>';
+  }
+
   function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
     renderNotifyDriftNote(drift);
     var wrap = reqEl('alert-board-rooms', 'renderAlertBoard');
@@ -1435,6 +1460,10 @@
     try{ renderAlertBoard(parseJson(a[18]), parseJson(a[16]), parseJson(a[17]), erpStatus, parseJson(a[13]), moduleRegistry); }catch(e){
       var abEl = document.getElementById('alert-board-rooms');
       if(abEl) abEl.innerHTML = '<div class="feed-status">알림 한 장 표시 오류.</div>';
+    }
+    try{ renderSystemsPanel(erpStatus); }catch(e){
+      var esEl = document.getElementById('erp-systems-rows');
+      if(esEl) esEl.innerHTML = '<div class="feed-status">시스템 현황 표시 오류.</div>';
     }
     try{ clampLongCells(); }catch(e){ /* 표시용이라 실패해도 본문은 그대로 */ }
     var fl = document.getElementById('foot-loaded');
