@@ -455,8 +455,9 @@ def _write(data: dict) -> None:
 #   GM: "아이디어 생각날 때마다 말해줄 테니까 하루 공지에다가 조금씩 추가해주라."
 #   새 원장을 만들지 않는다(약속 L21) — 이미 GM 개인 것을 담는 이 파일에 ideas 한 칸을 얹는다.
 #   지우지 않고 쌓기만 한다. 만든 뒤에는 GM 이 done 처리한다(mark_idea_done).
-def add_idea(text: str, day: str | None = None) -> int:
-    """아이디어 한 줄을 쌓는다. 같은 글이 이미 열려 있으면 다시 넣지 않는다(중복 금지)."""
+def add_idea(text: str, day: str | None = None, memo: str = '') -> int:
+    """아이디어 한 줄을 쌓는다. 같은 글이 이미 열려 있으면 다시 넣지 않는다(중복 금지).
+    memo = G1 탭이 보여 주는 상세 칸(근거·KPI·첫걸음). 시보 매일 제안(GM 2026-09-04)이 이 길로 들어온다."""
     text = ' '.join(str(text or '').split())
     if not text:
         return 0
@@ -464,7 +465,10 @@ def add_idea(text: str, day: str | None = None) -> int:
     ideas = data.setdefault('ideas', [])
     if any(not i.get('done') and i.get('text') == text for i in ideas):
         return 0
-    ideas.append({'t': day or today(), 'text': text, 'done': False})
+    item = {'t': day or today(), 'text': text, 'done': False}
+    if memo and memo.strip():
+        item['memo'] = memo.strip()
+    ideas.append(item)
     _write(data)
     return len(ideas)
 
@@ -1800,7 +1804,7 @@ if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
 
     # 💡 아이디어 쌓기 (GM 지시 2026-08-30) — 하루 공지에 그날부터 함께 나간다.
-    #   담기 : python scripts/gm_checkin.py --idea "회의 때 쓸 음성 웰리"
+    #   담기 : python scripts/gm_checkin.py --idea "회의 때 쓸 음성 웰리" [--memo "상세"]
     #   보기 : python scripts/gm_checkin.py --ideas
     #   닫기 : python scripts/gm_checkin.py --idea-done 1
     # 📖 오늘의 문장 (GM 지시 2026-08-30) — 체화할 때까지 같은 문장이 매일 아침 뜬다.
@@ -1830,7 +1834,13 @@ if __name__ == '__main__':
             for n, i in enumerate(items, 1):
                 print(f"{n}. {i['text']} ({i['t']})")
         elif cmd == '--idea':
-            print('담았습니다.' if add_idea(' '.join(sys.argv[2:])) else '이미 있거나 내용이 비었습니다.')
+            # --idea "한 줄" [--memo "근거·KPI·첫걸음"]  (memo = G1 탭 상세 칸)
+            args = sys.argv[2:]
+            memo = ''
+            if '--memo' in args:
+                k = args.index('--memo')
+                memo, args = ' '.join(args[k + 1:]), args[:k]
+            print('담았습니다.' if add_idea(' '.join(args), memo=memo) else '이미 있거나 내용이 비었습니다.')
         else:
             print('닫았습니다.' if mark_idea_done(' '.join(sys.argv[2:])) else '못 찾았습니다.')
         raise SystemExit(0)
