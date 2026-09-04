@@ -563,11 +563,11 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
 
-  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 무인증 접수 통로 /api/intake/reception, 아니면 종전 GAS 그대로.
-     서버가 intake_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽으면 {ok:true,queued:true}).
-     워드프레스 주입본(WP 8434)·GitHub Pages 에선 판정이 false 라 종전 GAS 직행 — 회귀 0. WP 컷오버는 이 줄을 서버 주소로 고정하면 된다.
-     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
-  function _rcSubmitUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/intake/reception' : RECEPTION_API; }
+  /* ★쓰기 이중기록 서버 고정(배 960 레인K · 2026-09-04 시토 · GM 지시) — 도메인 판정을 없애고 항상 서버 접수 통로로 보낸다.
+     서버가 intake_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽어도 {ok:true,queued:true} 라 손님은 성공).
+     이 폼은 wellperion.com 에서 뜨므로 종전 도메인 판정은 언제나 false 였다 — 그래서 고정으로 바꿨다. CORS * · 본문 2MB · IP 분당 20회.
+     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  function _rcSubmitUrl(){ return RECEPTION_API; } */
+  function _rcSubmitUrl(){ return 'https://erp.wellperion.com/api/intake/reception'; }
   // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 
@@ -815,17 +815,38 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   function wirePhoto(){
     var photo = $('f_photo');
     if (!photo) return;
+    /* ★사진 축소(배 960 레인K · 2026-09-04 시토) — 제출을 서버 통로로 고정하면서 같이 넣었다.
+       서버 본문 상한이 2MB 인데 폰 원본은 3~10MB 이고 base64 는 1.33배로 늘어난다 → 그대로 보내면 413 으로 접수가 통째로 실패한다.
+       긴 변 1600px·JPEG 0.82 로 줄이면 200KB 안팎이라 상한 아래로 들어오고, GAS 의 Drive 업로드도 같이 빨라진다.
+       축소 실패(HEIC 등 디코딩 불가)면 원본 base64 로 폴백한다. instructor_intake.html 과 같은 규칙. */
+    var MAX_EDGE = 1600, JPEG_Q = 0.82, SKIP_UNDER = 600 * 1024;
+    function setPhoto(b64, mime, fname){
+      photoData = b64; photoMime = mime; photoName = fname;
+      var img = $('f_previewImg'); if (img) img.src = b64;
+      var pv = $('f_preview'); if (pv) pv.style.display = 'block';
+    }
     photo.addEventListener('change', function(ev){
       var f = ev.target.files && ev.target.files[0];
       if (!f) return;
       if (f.size > 12 * 1024 * 1024) { toast('사진이 너무 큽니다 (12MB 이하)', true); this.value = ''; return; }
-      photoMime = f.type || 'image/jpeg';
-      photoName = f.name || 'voc_photo.jpg';
+      var mime = f.type || 'image/jpeg', fname = f.name || 'voc_photo.jpg';
       var reader = new FileReader();
       reader.onload = function(e){
-        photoData = e.target.result;
-        var img = $('f_previewImg'); if (img) img.src = photoData;
-        var pv = $('f_preview'); if (pv) pv.style.display = 'block';
+        var raw = e.target.result;
+        if (!/^image\//.test(mime) || f.size <= SKIP_UNDER) { setPhoto(raw, mime, fname); return; }
+        var im = new Image();
+        im.onload = function(){
+          try {
+            var w = im.naturalWidth, h = im.naturalHeight;
+            var scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+            var cv = document.createElement('canvas');
+            cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+            cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+            setPhoto(cv.toDataURL('image/jpeg', JPEG_Q), 'image/jpeg', fname.replace(/\.[^.]+$/, '') + '.jpg');
+          } catch (err) { setPhoto(raw, mime, fname); }
+        };
+        im.onerror = function(){ setPhoto(raw, mime, fname); };
+        im.src = raw;
       };
       reader.readAsDataURL(f);
     });
