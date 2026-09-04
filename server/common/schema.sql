@@ -243,3 +243,16 @@ CREATE TABLE IF NOT EXISTS sales_cache (
   synced_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, gas, action, params)
 );
+
+-- 소형 GAS 읽기 거울 (sync_misc.py · api_misc.py · 배 960 #9 · 2026-09-04).
+-- sales_cache 와 같은 모양(gas, action, params) — 배 960 §2 #9 표(지출현황·리셉션 업무·라커관리·renewal 개인 GAS)
+-- 중 실제 쓰임 근거(page_ping.json last_open)가 있고 읽기 전용인 것만 담는다. 목록 = sync_misc.py GAS_ENV.
+CREATE TABLE IF NOT EXISTS misc_cache (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  gas       TEXT NOT NULL,
+  action    TEXT NOT NULL,
+  params    TEXT NOT NULL DEFAULT '',
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, gas, action, params)
+);

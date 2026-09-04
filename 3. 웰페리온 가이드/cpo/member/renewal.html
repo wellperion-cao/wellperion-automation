@@ -557,10 +557,21 @@ function load(){
   if(!APPS_URL||APPS_URL.indexOf('http')!==0){if(shown){stx.textContent='미리보기(스냅샷) · Apps Script 연결 시 실시간';}else fail('APPS_URL 미설정 — 상단에 /exec URL을 넣어주세요');return;}
   loadLive(1);
 }
+// ★ERP 도메인에선 서버 미러(/api/misc/renewal/stats)를 먼저 읽는다(2026-09-04 시토 · 배960 #9 · 같은 규칙 = rtMemberList 위).
+//   PIN 뒤 명단(PII)은 이 미러를 거치지 않는다 — reqRoster()는 그대로 APPS_URL 직결.
+function loadLive(attempt){
+  if(ERP_API_ON){
+    fetch('/api/misc/renewal/stats').then(r=>{if(!r.ok)throw new Error('api '+r.status);return r.json();})
+      .then(d=>window.__wp(d))
+      .catch(e=>{console.warn('[재등록] 통계 API 실패 → GAS 폴백:',e&&e.message);loadLiveGas(1);});
+    return;
+  }
+  loadLiveGas(attempt);
+}
 // Apps Script 콜드스타트는 첫 호출이 20초 가까이 걸릴 때가 있다(배515) — 넉넉한 타임아웃 +
 // 실패 시 1회 조용히 재시도. 재시도까지 다 실패해야 화면에 실패 배너를 띄운다(옛 숫자가
 // 조용히 최신인 척하지 않도록 — 재시도 중엔 이미 그려둔 스냅샷/직전 라이브 값을 그대로 둔다).
-function loadLive(attempt){
+function loadLiveGas(attempt){
   const s=document.createElement('script');let fin=false;
   const to=setTimeout(()=>{if(!fin){fin=true;s.remove();retryOrFail('응답 시간 초과',attempt);}},20000);
   s.onerror=()=>{if(!fin){fin=true;clearTimeout(to);s.remove();retryOrFail('네트워크/URL 오류',attempt);}};
@@ -568,7 +579,7 @@ function loadLive(attempt){
   s.src=APPS_URL+(APPS_URL.indexOf('?')<0?'?':'&')+'callback=__wp&_='+Date.now();
   document.body.appendChild(s);
 }
-function retryOrFail(msg,attempt){if(attempt<2){loadLive(attempt+1);return;}fail(msg);}
+function retryOrFail(msg,attempt){if(attempt<2){loadLiveGas(attempt+1);return;}fail(msg);}
 document.getElementById('retry').onclick=load;
 load();
 rtRepaint();rtLoadSummary();  // '이번 재등록 대상' 패널 — 집계 스냅샷·PIN 버튼 상태 즉시 렌더
