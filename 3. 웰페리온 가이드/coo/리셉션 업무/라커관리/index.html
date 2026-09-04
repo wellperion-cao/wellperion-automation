@@ -128,6 +128,7 @@ tr.dirty .saveb{display:inline-block}
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="../../../_assets/erp_write.js"></script>
 <script>
 /* ===== 설정 ===== */
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyyN0I7od8cfXEMHAci1SFesDB-s4TiJi0popexeGR_RF3Cni6qtzFWEV0-dTzfB0E/exec';
@@ -158,6 +159,11 @@ async function call(payload){
   return r.json();
 }
 async function readDb(db){ return call({db, password: PW}); }
+/* 서버·구글 둘 다 막혀 서버가 쥔 마지막 정상본이 온 경우(배 960 #9i) — 최신값이 아니므로 상태줄에 그대로 밝힌다. */
+function lkStaleMsg(res){
+  if(!res || res._source!=='server-last-good') return null;
+  return '서버 저장본 '+String(res._synced_at||'').slice(11,16)+' · <span class="sv">최신화 실패</span>';
+}
 async function writeRow(db, row, fields, adminPw){
   return call({action:'update', db, adminPassword: adminPw, _sheet_row: row, fields});
 }
@@ -206,7 +212,7 @@ async function tryLogin(pw){
   const res = await readDb('men').catch(e=>({ok:false,error:String(e)}));
   if(res && res.ok){
     sessionStorage.setItem('lk_pw', pw);
-    DATA['men'] = lkNormRows(res.results);
+    if(!lkStaleMsg(res)) DATA['men'] = lkNormRows(res.results);   /* 서버 저장본이면 go() 가 다시 읽어 상태줄에 밝힌다(배 960 #9i) */
     loginEl.style.display='none';
     document.getElementById('app').style.display='';
     startApp();
@@ -234,8 +240,9 @@ function buildTabs(){
 async function go(db){
   curDb=db;
   [...document.querySelectorAll('.tab')].forEach(t=>t.classList.toggle('active', t.dataset.db===db));
-  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok) DATA[db]=lkNormRows(res.results); else { toast('읽기 실패: '+res.error,true); return; } }
-  render(); refreshCounts(); lkKpiSync(); setStatus('읽음 · '+nowStr());
+  let stale=null;
+  if(!DATA[db]){ setStatus('불러오는 중…'); const res=await readDb(db); if(res.ok){ DATA[db]=lkNormRows(res.results); stale=lkStaleMsg(res); } else { toast('읽기 실패: '+res.error,true); return; } }
+  render(); refreshCounts(); lkKpiSync(); setStatus(stale || ('읽음 · '+nowStr()));
 }
 function refreshCounts(){ TABS.forEach(([db])=>{ const el=document.getElementById('cnt_'+db); if(el&&DATA[db]) el.textContent=DATA[db].length; }); }
 
@@ -337,7 +344,7 @@ function setAuto(on){
 async function tick(){
   if(Object.keys(dirty).some(k=>k.startsWith(curDb+':'))){ setStatus('수정 중 — 자동 새로고침 보류'); return; }
   const res=await readDb(curDb).catch(()=>null);
-  if(res&&res.ok){ DATA[curDb]=lkNormRows(res.results); render(); refreshCounts(); lkKpiSync(); setStatus('자동 새로고침 · '+nowStr()); }
+  if(res&&res.ok){ DATA[curDb]=lkNormRows(res.results); render(); refreshCounts(); lkKpiSync(); setStatus(lkStaleMsg(res) || ('자동 새로고침 · '+nowStr())); }
 }
 document.getElementById('autoBtn').onclick=()=>setAuto(!autoOn);
 document.getElementById('refreshBtn').onclick=async()=>{ DATA[curDb]=null; await go(curDb); };
