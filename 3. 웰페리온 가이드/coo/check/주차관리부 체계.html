@@ -1644,8 +1644,11 @@ async function parkingLoadBackend(cfg){
   parkingLoadLocal(cfg);
   if(!ONLINE) return;
   try{
-    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(cfg.key),{method:'GET',redirect:'follow'});
-    const data=await res.json();
+    /* 배985 — 직원구성·응대상황표·장비비품 3표(PARKING_STAFF 등)는 이 화면 로컬 함수라 여기서만 서버 우선(/api/board/{key})으로
+       돌린다. 저장(parkingPersist)이 이미 erpCheckPost 로 saveBoard 직후 /api/board/{key}/refresh 를 부르므로(erp_write.js)
+       미러가 바로 갱신 — 6분 GAS 직독 규칙(_chkRead)까지 그대로 얹는다. 규정·가이드·매뉴얼·발렛 4보드는 공용 board_sync.js
+       (BoardSync.load) 경유라 다른 부서 화면과 공유돼 여기서 손대지 않는다 — GAS 그대로 유지. */
+    const data=await _chkRead('/api/board/'+encodeURIComponent(cfg.key), '?action=board&key='+encodeURIComponent(cfg.key), '주차 표');
     if(data && data.ok && data.board && typeof data.board==='object'){
       parkingApplyStored(cfg, data.board);
       localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
@@ -1659,6 +1662,7 @@ function parkingPersist(cfg){
   if(!ONLINE) return;
   const ind=document.getElementById('saveIndicator');
   if(ind){ind.style.display='block';ind.textContent='저장 중...';}
+  chkStampWrite();   // saveBoard 직후 /api/board/{key}/refresh(erp_write.js)가 미러를 갱신하지만, 그 사이 읽으면 구값 — 6분은 GAS 직독
   erpCheckPost(API_URL,{action:'saveBoard',key:cfg.key,board:cfg.data}
   ).then(function(){ if(ind){ind.textContent='저장 완료';setTimeout(function(){ind.style.display='none';},1500);} })
     .catch(function(){ if(ind){ind.textContent='저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none';},1500);} });
