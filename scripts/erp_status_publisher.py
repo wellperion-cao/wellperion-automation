@@ -928,9 +928,15 @@ def _kpi_crosscheck_rules():
     # ⑦ 회원 미러 — 회원번호 없는 행 = 0 (2026-09-03 배941)
     #    미러(sync_members)는 회원번호 없는 행을 넣지 않아, 번호가 안 붙은 새 회원은 서버에서 조용히 빠진다.
     #    등록 경로(_memberActiveUpsert_)가 번호를 자동 부여하므로 평소엔 0 — 0 이 아니면 부여 경로가 끊긴 것.
-    #    API 가 아직 없거나 로그인 관문(auth_request) 뒤라 못 읽으면 ok=None(못 잼)으로 조용히 지나간다.
+    #    /api/members/summary 는 nginx auth_request 뒤라 공개 URL로는 401(2026-09-04 배926) —
+    #    새 인증체계를 만들지 않고(약속 L21) erp_live_audit.py 와 같은 ssh 로 서버 안에서 127.0.0.1 을 부른다.
     try:
-        d = _get("https://erp.wellperion.com/api/members/summary")
+        pem = str(Path.home() / ".aws" / "wellperion-sito.pem")
+        r = subprocess.run(
+            ["ssh", "-i", pem, "ec2-user@15.164.151.105", "curl -s http://127.0.0.1:8001/api/members/summary"],
+            capture_output=True, text=True, timeout=40,
+        )
+        d = json.loads(r.stdout)
         un = int(d.get("unnumbered") or 0)
         out.append({"card": "회원", "what": "회원 미러 회원번호 없는 행 = 0",
                     "left": un, "right": 0, "ok": un == 0,
