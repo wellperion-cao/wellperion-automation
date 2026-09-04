@@ -196,3 +196,25 @@ CREATE TABLE IF NOT EXISTS kakao_rooms (
   synced_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, name)
 );
+
+-- 시모 퍼널 집계 거울 (sync_funnel.py · api_funnel.py · 배 960 · 2026-09-03). 열쇠 = 액션 + 정렬한 쿼리(from=&to=). 응답 통째.
+CREATE TABLE IF NOT EXISTS funnel_cache (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  action    TEXT NOT NULL,
+  params    TEXT NOT NULL DEFAULT '',
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, action, params)
+);
+
+-- 브로제이(외부 CRM) 매출·입장 적재 (sync_brojay.py · api_brojay.py · 배 959 · 2026-09-04).
+-- kind = sales(일 매출·계약 건별) · entries(입장) · key = 날짜 YYYY-MM-DD. 응답 JSON 을 통째로 싣는다 —
+-- 브로제이가 주는 칸 이름을 우리가 정규화하면 그쪽이 바뀔 때마다 깨진다(lesson_records 와 같은 이유).
+CREATE TABLE IF NOT EXISTS brojay_records (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  kind      TEXT NOT NULL,
+  key       TEXT NOT NULL,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, kind, key)
+);
