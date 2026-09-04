@@ -58,6 +58,12 @@ h1,h2,h3{text-wrap:balance;}
 }
 .body-ko + .body-ko{margin-top:1.5em;}
 
+/* ── GEO 내용층 공용(질문·공간·레슨 문단 목록) · 시모 2026-09-04 ── */
+.detail-list{margin-top:clamp(28px,3.2vw,44px); display:flex; flex-direction:column; gap:clamp(20px,2.4vw,28px);}
+.detail-item{padding-top:clamp(20px,2.4vw,28px); border-top:1px solid var(--line);}
+.detail-item:first-child{padding-top:0; border-top:0;}
+.detail-h{font-family:var(--sans); font-weight:600; font-size:clamp(15px,1.15vw,17px); color:var(--black); margin-bottom:.5em;}
+
 /* ── 상단 내비 ── */
 .nav{
   position:fixed; inset:0 0 auto 0; z-index:60;
