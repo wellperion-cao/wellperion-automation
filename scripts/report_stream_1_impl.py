@@ -576,6 +576,18 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     completion = "" if sample else _completion_block(raw_groups, state=completion_state,
                                                       persist=persist_completion)
     tail = f"\n\n{completion}" if completion else ""
+    # ★2026-09-04 시포(GM "시포가 매출·회원 현황보고를 기준으로 공유 — 신뢰 있는 데이터") — 오늘 회원 마감을
+    #   ERP 원장에서 직접 세어 붙인다(등록·LOSS·오늘 종료). 계산은 ops_daily_digest 한 곳(약속 L21) · 실패해도 본문 영향 0.
+    if "membership" in kinds and not sample:
+        try:
+            import ops_daily_digest as _od
+            _cl = _od.erp_member_close(today)
+            _lines = _od.erp_close_lines(_cl, None, "오늘")
+            if _cl.get("종료"):
+                _lines.append(" • 오늘 종료 " + " · ".join(f"{n}({g})" for n, g in _cl["종료"]) + " — 내일 로스일자·미등록사유 기재")
+            tail += "\n\n━━━━━━━━━━\n" + "\n".join(_lines)
+        except Exception as _ce:
+            print(f"[stream1] ERP 마감 절 실패(무시): {type(_ce).__name__}: {_ce}")
     return (
         f"{header}\n\n{section_new}\n\n"
         f"━━━━━━━━━━\n{section_contact}{tail}"

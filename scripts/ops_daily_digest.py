@@ -780,6 +780,94 @@ def _erp_registered_names(date: str) -> set[str] | None:
     return names if fresh else None
 
 
+# ── ERP 기준 회원 마감 (GM 2026-09-04 "시포가 매출·회원 현황보고를 기준으로 공유 — 신뢰 있는 데이터") ──
+#   사람이 적은 마감 공유가 아니라 ERP 회원 DB(회원관리 화면·매출회원현황보고 2페이지와 같은 원장)에서 직접 센다.
+#   원천 = status/member_active_snapshot.json·member_ended_snapshot.json (cpo_inquiry_snapshot.py 가 3분마다 GAS 에서 받아 덮어씀).
+#   등록 = 등록일자 == 날짜 · LOSS = LOSS일자 == 날짜 · 대기 시작 = 등록분류 '대기' 이고 시작일자 == 날짜 · 종료 = 종료일자 == 날짜.
+#   임정은M 공유는 '대조'로만 쓴다 — 이름·구분이 다르면 그 줄에 표시한다(어느 쪽이 맞는지는 사람이 본다 · 날조 금지).
+def _member_rows() -> tuple[list[dict], list[dict], str]:
+    """(유효 rows, 종료 rows, 스냅샷 시각). 못 읽으면 빈 목록 + ''."""
+    out = []
+    gen = ""
+    for path in (MEMBER_SNAPSHOT, MEMBER_ENDED_SNAPSHOT):
+        try:
+            d = json.loads(path.read_text(encoding="utf-8"))
+            out.append(d.get("rows") or [])
+            gen = gen or str(d.get("generated_at_kst") or "")
+        except Exception:
+            out.append([])
+    return out[0], out[1], gen
+
+
+def _col(r: dict, key: str) -> str:
+    """헤더가 줄바꿈을 품는다('등록\\n일자') — 두 표기 모두 받는다."""
+    v = r.get(key)
+    if v is None:
+        v = r.get(key.replace("\n", ""), r.get(key.replace("\n", " ")))
+    return str(v or "").strip()
+
+
+def erp_member_close(date: str) -> dict:
+    """날짜 하루의 회원 마감 숫자·이름 — ERP 원장 기준."""
+    valid, ended, gen = _member_rows()
+    allrows = valid + ended
+    reg = [(_col(r, "회원명"), _col(r, "등록 분류"), _col(r, "회원\n구분")) for r in allrows if _col(r, "등록\n일자")[:10] == date]
+    loss = [(_col(r, "회원명"), _col(r, "미등록사유")) for r in ended if _col(r, "LOSS\n일자")[:10] == date]
+    wait = [(_col(r, "회원명"), _col(r, "시작\n일자")[:10]) for r in valid
+            if _col(r, "등록 분류") == "대기" and _col(r, "시작\n일자")[:10] == date]
+    end = [(_col(r, "회원명"), _col(r, "회원\n구분")) for r in allrows if _col(r, "종료\n일자")[:10] == date]
+    return {"date": date, "snapshot_at": gen, "등록": reg, "LOSS": loss, "대기시작": wait, "종료": end,
+            "ok": bool(allrows)}
+
+
+def _md(date: str) -> str:
+    return f"{int(date[5:7])}/{int(date[8:10])}"
+
+
+def erp_close_lines(close: dict, share: dict | None, label: str) -> list[str]:
+    """'📋 {label} 회원 마감 — ERP 기준' 절. share(임정은M 공유)가 있으면 등록·LOSS 를 대조해 다른 곳만 적는다."""
+    if not close.get("ok"):
+        return [f"📋 {label} 회원 마감 — ERP 스냅샷을 못 읽음(대조 불가)"]
+    at = close.get("snapshot_at") or ""
+    lines = [f"📋 {label} 회원 마감 — ERP 기준" + (f" ({at[5:]} 스냅샷)" if at else "")]
+    reg = close["등록"]
+    lines.append(f" • 등록 {len(reg)}명" + (" — " + " · ".join(f"{n}({c})" for n, c, _ in reg) if reg else ""))
+    if share is not None:
+        s_names = {}
+        for it in share.get("등록", []):
+            nm = SHARE_NAME_RE.match(it)
+            if nm:
+                s_names[nm.group(1)] = it
+        e_names = {n: c for n, c, _ in reg}
+        diff = []
+        for n in e_names.keys() - s_names.keys():
+            diff.append(f"{n} ERP 에만")
+        for n in s_names.keys() - e_names.keys():
+            diff.append(f"{n} 공유에만")
+        for n in e_names.keys() & s_names.keys():
+            c = e_names[n]
+            if c and c not in s_names[n]:
+                diff.append(f"{n} 구분 다름(ERP {c} / 공유 {s_names[n]})")
+        lines.append(f"   ↔ {share.get('sender', '임정은M').rstrip('님')}님 공유 {len(s_names)}명 · "
+                     + ("일치" if not diff else "다른 곳 " + str(len(diff)) + " — " + " · ".join(diff)))
+    loss = close["LOSS"]
+    lines.append(f" • LOSS {len(loss)}명" + (" — " + " · ".join(f"{n}({why})" if why else n for n, why in loss) if loss else ""))
+    if share is not None and len(share.get("로스", [])) != len(loss):
+        lines.append(f"   ↔ 공유 {len(share.get('로스', []))}명 — 수가 다름")
+    return lines
+
+
+def erp_today_lines(today: str) -> list[str]:
+    """오늘 날짜 기준 — 오늘 시작하는 대기자·오늘 종료자(로스일자 기재 대상)."""
+    c = erp_member_close(today)
+    out = []
+    for n, d in c["대기시작"]:
+        out.append(f"📌 {n} 오늘 대기 시작 — 이용 시작 확인")
+    for n, g in c["종료"]:
+        out.append(f"📌 {n} 오늘 종료({g}) — 내일 로스일자·미등록사유 기재 대상")
+    return out
+
+
 def build_share_block(target_date: str, messages: list[dict], today_str: str, ledger: list[dict]) -> str:
     """★운영부 아침 통 한 절 — ① 어제 마감 공유(임정은M) 그대로 + ERP 대조 ② 오늘 날짜 걸린 것(예약자·특이사항)."""
     share = parse_membership_share(messages)
@@ -791,29 +879,12 @@ def build_share_block(target_date: str, messages: list[dict], today_str: str, le
             break
     else:
         entry = None
+    close = erp_member_close(target_date)
+    lines += erp_close_lines(close, share, "어제")
     if share:
         dated = _share_dated_items(share, target_date)
         if entry is not None:
             entry["share_dated"] = dated
-        reg = share["등록"]
-        n_reg = len(reg)
-        erp = _erp_registered_names(target_date)
-        sender = share["sender"] + ("" if share["sender"].endswith("님") else "님")
-        lines.append(f"📋 어제 마감 공유 — {sender} {share['time']}")
-        if n_reg:
-            marks = []
-            for it in reg:
-                nm = SHARE_NAME_RE.match(it)
-                name = nm.group(1) if nm else it
-                mark = "" if erp is None else (" ✓" if name in erp else " ✗")
-                marks.append(it + mark)
-            erp_note = ("ERP 대조 불가(스냅샷 없음)" if erp is None
-                        else f"ERP 등록일자 대조 {sum(1 for x in marks if x.endswith(' ✓'))}/{n_reg}")
-            lines.append(f" • 등록 {n_reg}명 — " + " · ".join(marks) + f"  ({erp_note})")
-        else:
-            lines.append(" • 등록 없음")
-        lines.append(" • 로스 " + (f"{len(share['로스'])}명 — " + " · ".join(share["로스"]) if share["로스"] else "없음"))
-        lines.append(" • 다음 대기 시작 " + (" · ".join(share["대기"]) if share["대기"] else "없음"))
         if share["특이"]:
             _h = str(share["raw_sections"].get("특이") or "").strip()
             _h = "" if _h in ("", "없음") else " — " + re.sub(r"^특이사항\s*", "", _h)
@@ -821,10 +892,10 @@ def build_share_block(target_date: str, messages: list[dict], today_str: str, le
             for it in share["특이"]:
                 lines.append("   ㄴ " + it)
     else:
-        lines.append("📋 어제 마감 공유 — 올라온 것 없음(임정은M 「멤버십 공유」)")
+        lines.append("   ↔ 임정은M님 「멤버십 공유」 올라온 것 없음")
 
-    # 오늘 날짜가 걸린 것 — 어제 공유분 + 지난 날 원장에 묻어 둔 것
-    today_items: list[str] = []
+    # 오늘 날짜가 걸린 것 — ERP(오늘 대기 시작·오늘 종료) + 어제 공유분 + 지난 날 원장에 묻어 둔 것
+    today_items: list[str] = erp_today_lines(today_str)
     seen = set()
     for e in ledger:
         for it in e.get("share_dated", []) or []:
@@ -833,7 +904,7 @@ def build_share_block(target_date: str, messages: list[dict], today_str: str, le
                 today_items.append(("📅 " if it.get("kind") == "예약" else "📌 ") + it["text"])
     if today_items:
         lines.append("")
-        lines.append("📌 오늘 챙길 것 — 마감 공유에서")
+        lines.append("📌 오늘 챙길 것 — 회원(ERP + 마감 공유)")
         lines += [" • " + t for t in today_items]
     return "\n".join(lines)
 
