@@ -234,6 +234,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260904-23",
+          "no": "23",
+          "got": "테크노짐 수리비 — 사진 반영·세금계산서/입금 확인 요청·미진행 시 9/21 집행 요청",
+          "did": "완료",
+          "start": "19:22",
+          "end": "19:23",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260904-1001",
           "no": "01",
           "got": "매출보고가 6시에 정확하지도 않게 나갔네",
@@ -576,13 +588,19 @@
           "area": "작업",
           "event": "접수 즉시 전달문에 접수 화면의 채워진 칸 전부 싣기 — 물품·분실일시·설비·심각도·대상·접수자 (GM 재지적 2026-09-04)",
           "detail": "커밋 447f136a5 · 배 11197"
+        },
+        {
+          "time": "19:23",
+          "area": "작업",
+          "event": "테크노짐 수리비 집행 9/21 전사일정 (GM 지시 2026-09-04)",
+          "detail": "커밋 fdbe08e6e · 배 11197"
         }
       ],
-      "count": 37,
-      "done": 37,
+      "count": 38,
+      "done": 38,
       "open": 0,
-      "avg_minutes": 11,
-      "work_count": 21,
+      "avg_minutes": 10,
+      "work_count": 22,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -689,12 +707,6 @@
         }
       ],
       "work": [
-        {
-          "time": "15:55",
-          "area": "작업",
-          "event": "GM 지시 반영 — 배960 즉시 실행·시모 문의폼 주소 교체 배·959 사양 오늘 수령",
-          "detail": "커밋 601ac249a · 배 11221"
-        },
         {
           "time": "16:16",
           "area": "작업",
@@ -868,6 +880,12 @@
           "area": "작업",
           "event": "배960 레인 G 입항 — 시트 트리거 GAS 서버 이전 대상 0 확정",
           "detail": "커밋 dc6c4ff3e · 배 11221"
+        },
+        {
+          "time": "19:23",
+          "area": "작업",
+          "event": "매출·지출 집계 GAS 3종 읽기 거울 — 화면 4개 ERP 우선·GAS 폴백 (배960 레인E)",
+          "detail": "커밋 d77ff8828 · 배 11221"
         }
       ],
       "count": 8,
@@ -1132,6 +1150,42 @@
           "upload": "✅ 올림 (93fce2364)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260904-4006",
+          "no": "06",
+          "got": "페이지 열어줬는데, 이게 {\"detail\":\"관리자만\"} 다인데?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "19:23",
+          "end": "19:25",
+          "minutes": 1,
+          "upload": "✅ 올림 (93fce2364)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260904-4007",
+          "no": "07",
+          "got": "오 좋네 근데 UI/UX 신경써서 만들어주는건 어때?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:25",
+          "end": "19:26",
+          "minutes": 0,
+          "upload": "✅ 올림 (93fce2364)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260904-4008",
+          "no": "08",
+          "got": "지금 현재 리셉션 info가 아니라 운영부(info) 이거고, 최준용매니저 요청은 삭제, 시토 권한검사+ 테스트 다 삭제",
+          "did": "",
+          "start": "19:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1158,16 +1212,37 @@
           "area": "공통",
           "event": "배963 입항 — 쓰기 관문 5종 라이브 대조(실데이터 변경 0) · 배889 GM 확정(시트 기입 유지) · 시토 앞 회신 배",
           "detail": "커밋 159f55d76 · 배 11165"
+        },
+        {
+          "time": "19:24",
+          "area": "공통",
+          "event": "/auth/admin 미로그인이면 로그인 화면으로 — 새 창에서 {\"detail\":\"관리자만\"} 만 보이던 것 (GM 2026-09-04)",
+          "detail": "커밋 810be683f · 배 11165"
         }
       ],
-      "count": 6,
-      "done": 6,
-      "open": 0,
+      "count": 9,
+      "done": 8,
+      "open": 1,
       "avg_minutes": 0,
-      "work_count": 4,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260904-4008",
+          "no": "08",
+          "got": "지금 현재 리셉션 info가 아니라 운영부(info) 이거고, 최준용매니저 요청은 삭제, 시토 권한검사+ 테스트 다 삭제",
+          "did": "",
+          "start": "19:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -1261,13 +1336,25 @@
           "ref": "GM-20260904-5011",
           "no": "11",
           "got": "그럼 운영부 방에다가 전달해줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:19",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:22",
+          "minutes": 2,
+          "upload": "✅ 올림 (4f43b06a8)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260904-5012",
+          "no": "12",
+          "got": "시우도 테스트는 해본거지?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "19:22",
+          "end": "19:24",
+          "minutes": 1,
+          "upload": "✅ 올림 (4f43b06a8)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1354,31 +1441,22 @@
           "area": "작업",
           "event": "★운영부 습득물 복구 안내 발송 기록",
           "detail": "커밋 81e22872e · 배 11180"
+        },
+        {
+          "time": "19:24",
+          "area": "작업",
+          "event": "습득물 접수 끝단 자체 테스트 기록 (LF-133 등록→삭제)",
+          "detail": "커밋 f575500a5 · 배 11180"
         }
       ],
-      "count": 8,
-      "done": 7,
-      "open": 1,
-      "avg_minutes": 3,
-      "work_count": 14,
+      "count": 9,
+      "done": 9,
+      "open": 0,
+      "avg_minutes": 2,
+      "work_count": 15,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260904-5011",
-          "no": "11",
-          "got": "그럼 운영부 방에다가 전달해줘",
-          "did": "",
-          "start": "19:19",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
