@@ -14,6 +14,178 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <link rel="stylesheet" href="../assets/site.css">
+
+<!-- GEO(생성형 검색 최적화) 구조화 데이터 · 정본=ssot/canon_values.json·운영시간 공식값 · 시토 2026-09-04 (EN) -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://wellperion.com/#org",
+   "name": "웰페리온",
+   "alternateName": [
+    "Wellperion",
+    "주식회사 웰페리온"
+   ],
+   "url": "https://wellperion.com/",
+   "telephone": "+82-2-6261-1200",
+   "slogan": "A Day, Well Completed.",
+   "description": "A private membership sports club in Hannam-dong, Yongsan-gu, Seoul, completing one member's healthy day at a time.",
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "413 Seobinggo-ro, Bldg 101, B1 #101",
+    "addressLocality": "Yongsan-gu",
+    "addressRegion": "Seoul",
+    "addressCountry": "KR"
+   },
+   "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+82-2-6261-1200",
+    "contactType": "customer service",
+    "availableLanguage": [
+     "ko",
+     "en"
+    ],
+    "url": "http://wellperion.com/ko/inquiry/"
+   }
+  },
+  {
+   "@type": "SportsActivityLocation",
+   "@id": "https://wellperion.com/#club",
+   "name": "Wellperion Sports Club",
+   "parentOrganization": {
+    "@id": "https://wellperion.com/#org"
+   },
+   "url": "https://wellperion.com/",
+   "telephone": "+82-2-6261-1200",
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "413 Seobinggo-ro, Bldg 101, B1 #101",
+    "addressLocality": "Yongsan-gu",
+    "addressRegion": "Seoul",
+    "addressCountry": "KR"
+   },
+   "areaServed": [
+    "Hannam-dong",
+    "Yongsan-gu",
+    "Seoul"
+   ],
+   "description": "A private membership sports club of about 3,000 pyeong (9,900 m2). Capacity-limited membership and reservation-only lessons: personal training, Pilates, swimming, golf (GDR and QED bays), squash, gymnastics, group exercise, sauna and spa in one space. Tours and consultations are by appointment only. Closed on New Year's Day, Seollal and Chuseok holidays, and the 2nd and 4th Sunday of every month.",
+   "openingHoursSpecification": [
+    {
+     "@type": "OpeningHoursSpecification",
+     "dayOfWeek": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+     ],
+     "opens": "06:00",
+     "closes": "22:30"
+    },
+    {
+     "@type": "OpeningHoursSpecification",
+     "dayOfWeek": [
+      "Saturday",
+      "Sunday"
+     ],
+     "opens": "08:00",
+     "closes": "20:00"
+    }
+   ],
+   "amenityFeature": [
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Personal training",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Pilates",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Swimming pool",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Golf (GDR, QED)",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Squash",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Gymnastics",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Group exercise",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Sauna",
+     "value": true
+    },
+    {
+     "@type": "LocationFeatureSpecification",
+     "name": "Spa",
+     "value": true
+    }
+   ],
+   "isAccessibleForFree": false,
+   "publicAccess": false
+  },
+  {
+   "@type": "FAQPage",
+   "@id": "https://wellperion.com/#faq",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Can I visit Wellperion without a reservation?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Tours and consultations are by appointment only. Walk-in registration is not available. Inquiries: wellperion.com/ko/inquiry"
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "How does membership work?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Membership is capacity-limited. When full, a waiting membership is offered; details are given during consultation."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "What are the opening hours?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Weekdays 06:00-22:30, weekends and public holidays 08:00-20:00. Closed on New Year's Day, Seollal and Chuseok holidays, and the 2nd and 4th Sunday of each month."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Where is it?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "413 Seobinggo-ro, Building 101, B1 (Hannam-dong), Yongsan-gu, Seoul. Phone +82-2-6261-1200."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
 </head>
 <body>
 
