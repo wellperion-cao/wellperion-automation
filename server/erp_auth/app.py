@@ -249,25 +249,64 @@ STYLE = (
     ".tag{display:inline-block;white-space:nowrap;padding:1px 8px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid var(--line-strong)}"
     ".tag.on{background:var(--accent);color:#221F20;border-color:transparent}"
     ".nav{margin-top:18px;font-size:13.5px;color:var(--ink-soft)}.nav a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-right:14px}"
+    # ── 2026-09-04 시포(GM "UI/UX 신경써서") — 머리글·상태색·대기 카드·비밀번호 표시·모바일 카드형 ──
+    ".hd{max-width:400px;margin:0 auto 18px}.hd.wide{max-width:860px}.hd .brand{margin:0}.hd .sub{margin:4px 0 0;font-size:13px;color:var(--ink-soft)}"
+    ".hint{margin:-6px 0 16px;padding:8px 12px;font-size:13px;color:var(--ink-soft);background:var(--accent-soft);border-radius:6px}"
+    ".pw{position:relative;display:block}.pw button{position:absolute;right:6px;bottom:6px;width:auto;margin:0;padding:5px 9px;font-size:12px;font-weight:600;"
+    "color:var(--ink-soft);background:transparent;border:0}.pw button:hover{color:var(--ink);filter:none}"
+    ".foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.foot p{margin:6px 0 0}"
+    ".tag.ok{color:#2E6B3A;background:rgba(46,107,58,.12);border-color:transparent}.tag.off{color:var(--ink-soft);background:transparent}"
+    "@media(prefers-color-scheme:dark){.tag.ok{color:#9BD3A8;background:rgba(155,211,168,.14)}}"
+    ".card{margin:0 0 20px;padding:14px 16px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft)}"
+    ".card h2{margin:0 0 6px;font-size:15px}.card .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 0 4px;border-top:1px solid var(--line)}"
+    ".card .row b{font-size:14.5px}.card .row small{color:var(--ink-soft)}.card .row .act{margin-left:auto;display:flex;gap:6px}"
+    ".card .row form{display:inline;padding:0;border:0;width:auto;max-width:none;background:none}.card .row button{width:auto;margin:0;padding:7px 14px;font-size:13px}"
+    ".muted{margin:0 0 18px;font-size:13.5px;color:var(--ink-soft)}"
+    ".acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.acts a{font-size:13px;color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-right:4px}"
+    "button.danger{background:transparent;color:#B3402B;border:1px solid rgba(179,64,43,.5)}button.danger:hover{background:rgba(179,64,43,.08)}"
+    "tr.pend td{background:var(--accent-soft)}"
+    "@media(max-width:640px){table{min-width:0}thead{display:none}tr,td{display:block}tr{padding:12px 0;border-bottom:1px solid var(--line)}"
+    "td{padding:3px 0;border:0}td[data-l]::before{content:attr(data-l);display:inline-block;min-width:38px;margin-right:6px;font-size:12px;color:var(--ink-soft)}"
+    ".acts{padding-top:6px}.card .row .act{margin-left:0;width:100%}}"
     "</style>")
 
 BRAND = "<a class=brand href=/erp/>WELLPERION<small>ERP</small></a>"
 
 
+def head(sub: str, wide: bool = False) -> str:
+    """머리글 — 워드마크 + 이 화면이 무엇인지 한 줄. 화면마다 그 한 줄만 바뀐다."""
+    return f"<div class='hd{' wide' if wide else ''}'>{BRAND}<p class=sub>{escape(sub)}</p></div>"
+
+
+def short_dt(v) -> str:
+    """'2026-09-03 21:42:10' → '09-03 21:42' (올해면 연도 생략) — 표에서 날짜가 자리를 다 먹지 않게."""
+    t = str(v or "")
+    if not t:
+        return ""
+    if t[:4] == datetime.now().strftime("%Y"):
+        t = t[5:]
+    return t[:11]
+
+
 def page(title: str, body: str) -> HTMLResponse:
-    brand = BRAND.replace("class=brand", "class='brand wide'") if "box wide" in body else BRAND
-    return HTMLResponse(f"<!doctype html><html lang=ko><meta charset=utf-8><title>{escape(title)}</title>{STYLE}{brand}{body}")
+    # 본문이 머리글(head())을 직접 가지면 그대로, 아니면 워드마크만 얹는다(종전 화면 호환).
+    if "class='hd" not in body:
+        body = (BRAND.replace("class=brand", "class='brand wide'") if "box wide" in body else BRAND) + body
+    return HTMLResponse(f"<!doctype html><html lang=ko><meta charset=utf-8><title>{escape(title)}</title>{STYLE}{body}")
 
 
 @app.get("/auth/login")
 def login_page(next: str = "/", err: str = ""):
-    return page("웰페리온 ERP 로그인", f"""<form method=post action=/auth/login>
-<h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
-<label>이메일<input name=email type=email autocomplete=username required autofocus></label>
-<label>비밀번호<input name=password type=password autocomplete=current-password required></label>
+    dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
+    hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
+    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 회사 계정으로 로그인") + f"""<form method=post action=/auth/login>
+<h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{hint}
+<label>회사 이메일<input name=email type=email autocomplete=username placeholder="이름@wellperion.com" required autofocus></label>
+<label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required><button type=button onclick=\"var i=this.previousElementSibling;i.type=i.type=='password'?'text':'password';this.textContent=i.type=='password'?'표시':'숨김'\">표시</button></span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
 {'<a class=g href="/auth/google?next=' + escape(next) + '">회사 구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
-<p>계정이 없으면 <a href=/auth/signup>가입 신청</a>. GM 승인 후 사용할 수 있습니다.</p></form>""")
+<div class=foot><p>계정이 없으면 <a href=/auth/signup>가입 신청</a> — 승인은 GM 이 합니다.</p>
+<p>비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
 
 
 @app.post("/auth/login")
@@ -294,12 +333,13 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
 
 @app.get("/auth/signup")
 def signup_page(msg: str = ""):
-    return page("웰페리온 ERP 가입 신청", f"""<form method=post action=/auth/signup>
+    return page("웰페리온 ERP 가입 신청", head("직원용 업무 화면 · 가입 신청") + f"""<form method=post action=/auth/signup>
 <h1>가입 신청</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
 <label>회사 이메일 (@wellperion.com)<input name=email type=email autocomplete=email placeholder="이름@wellperion.com" required></label>
 <label>비밀번호<input name=password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
-<button>신청</button><p>GM 이 승인하면 로그인할 수 있습니다. <a href=/auth/login>로그인으로</a></p></form>""")
+<button>신청</button><div class=foot><p>신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
+<p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>""")
 
 
 @app.post("/auth/signup")
@@ -356,7 +396,7 @@ def forbidden_page(next: str = "/"):
 def password_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "", err: str = ""):
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/password", status_code=303)
-    return page("비밀번호 변경", f"""<form method=post action=/auth/password>
+    return page("비밀번호 변경", head("내 계정 · 비밀번호 변경") + f"""<form method=post action=/auth/password>
 <h1>비밀번호 변경</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <label>현재 비밀번호<input name=current_password type=password autocomplete=current-password required></label>
 <label>새 비밀번호<input name=new_password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
@@ -477,13 +517,21 @@ def _admin_row(r, me_id: int) -> str:
         f"<form method=post action=/auth/admin/{r['id']}/toggle_role>"
         f"<button class=sec>{'관리자로' if r['role'] != 'admin' else '일반으로'}</button></form>")
     status_ko = {"active": "사용 중", "pending": "승인 대기", "blocked": "차단"}.get(r["status"], r["status"])
+    status_cls = {"active": " ok", "pending": " on", "blocked": " off"}.get(r["status"], "")
     role_ko = "관리자" if r["role"] == "admin" else "직원"
-    pending = " on" if r["status"] == "pending" else ""
-    perm_link = "" if r["role"] == "admin" else f"<a href=/auth/admin/{r['id']}/perms>권한</a> "
-    return (f"<tr><td>{escape(r['name'])}<br><small>{escape(r['email'])}</small></td>"
-            f"<td><span class=tag>{role_ko}</span></td><td><span class='tag{pending}'>{status_ko}</span></td>"
-            f"<td>{escape(r['created_at'])}</td><td>{escape(r['approved_at'] or '')}</td>"
-            f"<td>{perm_link}{approve_or_block}{role_btn}</td></tr>")
+    perm_link = "" if r["role"] == "admin" else f"<a href=/auth/admin/{r['id']}/perms>권한</a>"
+    # 삭제 = 사용 중이 아닌 직원 계정만(잘못 온 신청·시험 계정 정리 · GM 2026-09-04). 사용 중은 먼저 차단.
+    delete = "" if (r["role"] == "admin" or r["status"] == "active" or r["id"] == me_id) else _delete_form(r)
+    return (f"<tr{' class=pend' if r['status'] == 'pending' else ''}><td data-l=계정><b>{escape(r['name'])}</b><br><small>{escape(r['email'])}</small></td>"
+            f"<td data-l=역할><span class=tag>{role_ko}</span></td><td data-l=상태><span class='tag{status_cls}'>{status_ko}</span></td>"
+            f"<td data-l=신청><small>{short_dt(r['created_at'])}</small></td><td data-l=승인><small>{short_dt(r['approved_at'])}</small></td>"
+            f"<td><div class=acts>{approve_or_block}{delete}{perm_link}{role_btn}</div></td></tr>")
+
+
+def _delete_form(r) -> str:
+    q = escape(r["name"]).replace("'", "")
+    return (f"<form method=post action=/auth/admin/{r['id']}/delete onsubmit=\"return confirm('{q} 계정을 지웁니다. 되돌릴 수 없습니다.')\">"
+            f"<button class=danger>삭제</button></form>")
 
 
 @app.get("/auth/admin")
@@ -495,9 +543,22 @@ def admin(erp_session: Optional[str] = Cookie(default=None)):
     with db() as c:
         rows = c.execute("SELECT * FROM users WHERE tenant_id=%s ORDER BY status='pending' DESC, created_at DESC", (T,)).fetchall()
     tr = "".join(_admin_row(r, me["id"]) for r in rows)
-    head = "<tr><th>이름</th><th>역할</th><th>상태</th><th>신청</th><th>승인</th><th></th></tr>"
-    return page("ERP 계정 관리", f"<div class='box wide'><h1>계정 관리</h1><div class=tw><table>{head}{tr}</table></div>"
-                                 f"<p class=nav><a href=/erp/>ERP 로 돌아가기</a><a href=/auth/password>비밀번호 변경</a><a href=/auth/logout>로그아웃</a></p></div>")
+    th = "<thead><tr><th>계정</th><th>역할</th><th>상태</th><th>신청</th><th>승인</th><th>작업</th></tr></thead>"
+    pend = [r for r in rows if r["status"] == "pending"]
+    n_on = sum(1 for r in rows if r["status"] == "active")
+    n_off = sum(1 for r in rows if r["status"] == "blocked")
+    if pend:
+        items = "".join(
+            f"<div class=row><div><b>{escape(r['name'])}</b> <small>{escape(r['email'])}</small><br><small>신청 {short_dt(r['created_at'])}</small></div>"
+            f"<div class=act><form method=post action=/auth/admin/{r['id']}/approve><button>승인</button></form>{_delete_form(r)}</div></div>"
+            for r in pend)
+        card = f"<div class=card><h2>승인 대기 {len(pend)}건 — 지금 처리할 것</h2>{items}</div>"
+    else:
+        card = "<p class=muted>승인 대기 없음 — 새 가입 신청이 오면 여기 먼저 뜹니다.</p>"
+    summary = f"<p class=muted>전체 {len(rows)} · 사용 중 {n_on} · 차단 {n_off}</p>"
+    return page("ERP 계정 관리", head("관리자 · 누가 ERP 에 들어올 수 있는지 정하는 곳", wide=True) +
+                f"<div class='box wide'><h1>계정 관리</h1>{card}{summary}<div class=tw><table>{th}<tbody>{tr}</tbody></table></div>"
+                f"<p class=nav><a href=/erp/>ERP 로 돌아가기</a><a href=/auth/password>비밀번호 변경</a><a href=/auth/logout>로그아웃</a></p></div>")
 
 
 # 권한 화면 — 아래 범용 POST /auth/admin/{uid}/{action} 보다 먼저 선언해야 perms POST 가 잡힌다
@@ -565,8 +626,14 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
 @app.post("/auth/admin/{uid}/{action}")
 def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(default=None)):
     me = admin_only(erp_session)
-    if action not in ("approve", "block", "toggle_role"):
+    if action not in ("approve", "block", "toggle_role", "delete"):
         raise HTTPException(400)
+    if action == "delete":
+        # 사용 중·관리자·본인은 못 지운다 — 잘못 온 신청·차단 계정 정리 전용(GM 2026-09-04).
+        with db() as c:
+            c.execute("DELETE FROM users WHERE tenant_id=%s AND id=%s AND role!='admin' AND status!='active' AND id!=%s",
+                      (T, uid, me["id"]))
+        return RedirectResponse("/auth/admin", status_code=303)
     if action == "toggle_role":
         if uid == me["id"]:
             raise HTTPException(400, "본인 역할은 바꿀 수 없습니다")
