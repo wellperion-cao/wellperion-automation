@@ -39,8 +39,15 @@ var BoardSync = (function(){
     if(cfg.renderBeforeFetch) cfg.render();
     if(!ONLINE) return;
     try{
-      var res = await fetch(API_URL+'?action='+(cfg.action||'board')+'&key='+encodeURIComponent(cfg.key), {method:'GET', redirect:'follow'});
-      var data = await res.json();
+      /* 배985 — 페이지가 _chkRead(점검 3부서 체계.html 공용 · /api/board/{key} 서버 우선·6분 직독 가드)를
+         정의해 뒀으면 그걸 타고, 없으면(다른 소비 페이지) 종전 GAS 직행 그대로 — 응답 모양은 둘 다 동일. */
+      var data = (typeof _chkRead==='function')
+        ? await _chkRead('/api/board/'+encodeURIComponent(cfg.key),
+            '?action='+(cfg.action||'board')+'&key='+encodeURIComponent(cfg.key), cfg.label+' 보드')
+        : await (async function(){
+            var res = await fetch(API_URL+'?action='+(cfg.action||'board')+'&key='+encodeURIComponent(cfg.key), {method:'GET', redirect:'follow'});
+            return res.json();
+          })();
       if(data && data.ok && data.board && typeof data.board==='object'){
         cfg.apply(data.board);
         localStorage.setItem(cfg.key, JSON.stringify(cfg.getData()));
@@ -52,6 +59,10 @@ var BoardSync = (function(){
   function push(cfg){
     var ind = document.getElementById('saveIndicator');
     if(ind){ind.style.display='block'; ind.textContent=cfg.label+' 저장 중...';}
+    /* 배985 — chkStampWrite(있으면) = 방금 썼다는 6분 직독 도장. 이 엔진은 saveBoard 를 GAS 로 직접
+       보내 서버 미러(board_cache)는 5분 주기 전까지 구값이다 — 도장이 있어야 load()._chkRead 가
+       그 사이엔 미러를 건너뛰고 GAS 로 곧바로 읽어 "방금 저장한 게 새로고침하니 되돌아갔다"를 막는다. */
+    if(typeof chkStampWrite==='function') chkStampWrite();
     fetch(API_URL,{method:'POST',redirect:'follow',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:cfg.saveAction||'saveBoard', key:cfg.key, board:cfg.getData()})
