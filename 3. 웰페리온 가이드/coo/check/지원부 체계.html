@@ -1859,9 +1859,19 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
   /* diff 색 2종은 재고 원장의 '실사 대비' 표시가 쓴다 — 퀵탭 삭제(2026-09-01)와 무관하게 유지 */
   .wp-ldy__diff-ok{color:var(--dim)}
   .wp-ldy__diff-bad{color:#e06b6b;font-weight:750}
-  @media(max-width:430px){
-    .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
-    .wp-ldy__in{width:62px;padding:5px 4px}
+  /* ── 폰(≤768px) — 데스크톱 모양은 건드리지 않는다(GM 2026-09-04 "모바일로 보면 다 깨지는구나") ──
+     ① 페이지가 가로로 뚫리던 원인은 표가 아니라 헤더 링크줄(.sheet-links) 이었다 — 줄바꿈 허용.
+     ② 4표는 이미 overflow-x:auto 안에 있다. 첫 열(날짜/월)만 sticky 로 붙여 무슨 줄인지 안 놓치게.
+     ③ 입력칸 36px·16px — 손가락으로 칠 수 있고, iOS 가 16px 미만에서 하는 자동 확대를 막는다. */
+  @media(max-width:768px){
+    .sheet-links{flex-wrap:wrap}
+    #tab-laundry .wp-ldy__tbl thead tr:first-child th:first-child,
+    #tab-laundry .wp-ldy__tbl tbody td:first-child,
+    #tab-laundry .wp-ldy__tbl tfoot td:first-child{
+      position:sticky;left:0;z-index:2;background:var(--paper,#2a2725);
+      box-shadow:1px 0 0 var(--border);font-size:12px}   /* 붙박이 열이 폭을 덜 먹게 */
+    #tab-laundry .wp-ldy__in{height:36px;min-width:56px;font-size:16px;padding:4px 6px}
+    #tab-laundry .wp-ldy__tbl th,#tab-laundry .wp-ldy__tbl td{padding:4px 5px}
   }
   </style>
 
