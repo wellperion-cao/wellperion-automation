@@ -488,6 +488,9 @@ def _admin_row(r, me_id: int) -> str:
 
 @app.get("/auth/admin")
 def admin(erp_session: Optional[str] = Cookie(default=None)):
+    # 미로그인이면 로그인 화면으로 보낸다 — 새 창·시크릿에서 열면 {"detail":"관리자만"} 만 보였다(GM 2026-09-04).
+    if not current(erp_session):
+        return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
     me = admin_only(erp_session)
     with db() as c:
         rows = c.execute("SELECT * FROM users WHERE tenant_id=%s ORDER BY status='pending' DESC, created_at DESC", (T,)).fetchall()
