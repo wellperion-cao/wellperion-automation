@@ -449,6 +449,8 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 
 <!-- 🎉 팡파레 = 공용 정본 1파일(_fanfare.js). 업무 현황 SSOT와 같은 파일을 본다(약속 L01). -->
 <script src="_fanfare.js"></script>
+<!-- 쓰기 관문(배 960 #6b) — ERP 도메인에서만 결재 쓰기를 서버 /api/write 로 보낸다. 실패하면 종전 GAS. -->
+<script src="../../_assets/erp_write.js"></script>
 <script>
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
@@ -1032,9 +1034,7 @@ function renderRepApprovalRow(t) {
 async function repEscalate(id) {
   if (!confirm('이 건을 대표 보고 라인에 올립니다(선택·오프라인 종이).\n인쇄 → 대표 서명 → 서명본 업로드 시 대표 서명본 수령으로 기록됩니다.\n※ 시스템 결재는 GM 종착. 대표 보고는 선택적 오프라인 종이 절차로, 결재완료와 무관.\n\n계속하시겠습니까?')) return;
   try {
-    var params = new URLSearchParams({ action: 'approval_rep_escalate', id: id });
-    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
-    var res = await r.json();
+    var res = await window.erpTodoCall(TODO_API_URL, { action: 'approval_rep_escalate', id: id });
     if (res.ok) { loadTasks(); }
     else { alert('대표 올리기 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
@@ -1044,9 +1044,7 @@ async function repEscalate(id) {
 async function repCancel(id) {
   if (!confirm('대표 보고 올림을 취소합니다 (대표싸인 비움).\n이미 서명본이 있으면 그 연결도 끊깁니다.\n\n계속하시겠습니까?')) return;
   try {
-    var params = new URLSearchParams({ action: 'approval_rep_cancel', id: id });
-    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
-    var res = await r.json();
+    var res = await window.erpTodoCall(TODO_API_URL, { action: 'approval_rep_cancel', id: id });
     if (res.ok) { loadTasks(); }
     else { alert('취소 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
@@ -1104,14 +1102,8 @@ async function uploadRepSign(id, input) {
       mimeType: file.type || 'application/octet-stream'
     };
     // base64 대용량 → 반드시 POST 본문(text/plain=CORS preflight 회피). 한글 파일명은 JSON+UTF-8로 안전.
-    var r = await fetch(TODO_API_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(params)
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    var res = await r.json();
+    // 관문 하나(_assets/erp_write.js)가 ERP 도메인이면 /api/write, 아니면 종전 GAS 로 보낸다(배 960 #6b).
+    var res = await window.erpTodoCall(TODO_API_URL, params);
     if (!res.ok) throw new Error(res.error || '업로드 실패');
     _status('✅ 대표 서명본 수령');
     input.value = '';
@@ -1252,22 +1244,17 @@ async function resetTask(taskId) {
   const pin = prompt('GM 비밀번호를 입력하세요 (결재 리셋):');
   if (pin === null || pin === '') return;
   try {
-    const params = new URLSearchParams({ action: 'todo_reset', id: taskId, pin: pin });
-    const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
-    const res = await r.json();
+    const res = await window.erpTodoCall(TODO_API_URL, { action: 'todo_reset', id: taskId, pin: pin });
     if (res.ok) { alert('✅ 리셋 완료 — 업무 현황 SSOT에서 수정하세요.'); loadTasks(); }
     else alert('리셋 실패: ' + (res.error || '알 수 없는 오류'));
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
 async function signTask(taskId, role, decision, pin, reason) {
-  const params = new URLSearchParams({
-    action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || ''
-  });
-  if (reason) params.set('reason', reason);   // 반려 사유(2026-06-17 COO B2) — reject 시에만 전달
+  const params = { action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || '' };
+  if (reason) params.reason = reason;   // 반려 사유(2026-06-17 COO B2) — reject 시에만 전달
   try {
-    const r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
-    const res = await r.json();
+    const res = await window.erpTodoCall(TODO_API_URL, params);
     if (res.ok) {
       /* 🎉 팡파레 (2026-07-23 시우 · GM 지시) — 승인일 때만.
          res.next 가 비어 있으면 전 라인 통과 = 결재 완료 → 큰 축하.
@@ -1492,16 +1479,8 @@ async function saveGmEdit(taskId, content, btn) {
     '내용': String(content)
   };
   try {
-    var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
-    var r;
-    // 한글·길이 안전: 길면 POST(text/plain=CORS preflight 회피, 업무현황 apiCall 동일 규약)
-    if ((TODO_API_URL.length + qs.length + 1) > 1800) {
-      r = await fetch(TODO_API_URL, { method:'POST', redirect:'follow', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(params) });
-    } else {
-      r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
-    }
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    var res = await r.json();
+    // 한글·길이 안전(길면 POST)과 ERP 도메인 쓰기 관문은 _assets/erp_write.js 한 곳 — 업무현황 apiCall 과 같은 규약.
+    var res = await window.erpTodoCall(TODO_API_URL, params);
     if (res && res.ok) { loadTasks(); }   // ALL_TASKS 갱신·재렌더 (시트와 동기화 완료)
     else { alert('수정 실패: ' + ((res && res.error) || '알 수 없는 오류')); if (btn) { btn.disabled = false; btn.textContent = '💾 저장 (GM 비밀번호)'; } }
   } catch (e) {
@@ -1728,10 +1707,9 @@ async function addOpinion(taskId, role, name) {
   var text = prompt(name + ' 의견을 입력하세요 (최종 결재권자 GM에게 카드로 함께 전달됩니다):');
   if (text === null) return;
   if (!text.trim()) { alert('의견 내용을 입력하세요.'); return; }
-  var params = new URLSearchParams({ action:'todo_opinion', id:taskId, role:role, name:name, text:text.trim(), pin:pin || '', signer:'페이지' });
+  var params = { action:'todo_opinion', id:taskId, role:role, name:name, text:text.trim(), pin:pin || '', signer:'페이지' };
   try {
-    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
-    var res = await r.json();
+    var res = await window.erpTodoCall(TODO_API_URL, params);
     if (res.ok) { loadTasks(); }
     else { alert('의견 등록 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
@@ -1740,10 +1718,9 @@ async function deleteOpinion(taskId, idx) {
   if (!confirm('이 결재 의견을 삭제할까요?')) return;
   var pin = prompt('GM 비밀번호를 입력하세요 (의견 삭제):');
   if (pin === null || pin === '') return;
-  var params = new URLSearchParams({ action:'todo_opinion_delete', id:taskId, idx:String(idx), pin:pin });
+  var params = { action:'todo_opinion_delete', id:taskId, idx:String(idx), pin:pin };
   try {
-    var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect:'follow' });
-    var res = await r.json();
+    var res = await window.erpTodoCall(TODO_API_URL, params);
     if (res.ok) { loadTasks(); }
     else { alert('의견 삭제 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }

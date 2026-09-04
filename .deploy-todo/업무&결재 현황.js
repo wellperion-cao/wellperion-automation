@@ -2738,6 +2738,29 @@ function _processTodoAction(body) {
   body = _mapFields(body);
   const action = body.action || '';
 
+  // ─── 무인증 쓰기 차단 (배 947 · 2026-09-04 시토 · ★아직 배포·발동 전) ─────────────────────────────
+  // 문제: 이 웹앱의 /exec 주소가 공개 GitHub Pages HTML 에 평문으로 박혀 있고, todo_add·todo_update·
+  //   todo_delete·todo_reset 등이 인증 없이 처리된다. 주소만 알면 누구나 업무·결재 데이터를 고치거나
+  //   지울 수 있다. 사내용일 땐 급하지 않았지만 ERP 를 파는 순간(시보 배) 치명적이다.
+  // 방식: 새 인증 체계를 만들지 않는다. 서버(erp.wellperion.com /api/write)가 이미 로그인 쿠키를 검사하고
+  //   있으므로, 여기서는 "서버에서 온 요청인가"만 공유 비밀 하나로 확인한다(자율화규약 🔒 재사용 조항).
+  //   서버가 GAS 로 넘길 때 본문에 srvkey 를 넣어 보내고(write_log 에는 안 남긴다), 여기서 대조한다.
+  // ★발동 조건: Script Property SERVER_WRITE_SECRET 이 설정돼 있을 때만 검사한다. 속성이 없으면 종전대로
+  //   전부 통과한다 — 그래서 이 코드를 배포해도 그 순간엔 아무것도 달라지지 않는다.
+  // ★선행 조건(반드시): GitHub Pages 화면이 아직 GAS 를 직접 쓴다. 도메인 이전(erp.wellperion.com 에서만
+  //   화면을 열게 하는 것)이 끝나기 전에 속성을 켜면 실무진이 저장을 못 한다. 정의서 #6b 전환 완료가 먼저다.
+  // 켜기   = Script Property SERVER_WRITE_SECRET 에 긴 임의 문자열 저장 + 서버 api.env 에 같은 값(TODO_WRITE_SECRET).
+  // 되돌리기 = Script Property SERVER_WRITE_SECRET 삭제 (코드 수정·재배포 없이 즉시 종전 상태).
+  const _GATED_WRITES = ['todo_add', 'todo_update', 'todo_delete', 'todo_done', 'todo_sign', 'todo_reset',
+                         'todo_opinion', 'todo_opinion_delete', 'todo_upload', 'todo_remove_file',
+                         'approval_rep_escalate', 'approval_rep_sign_upload', 'approval_rep_cancel'];
+  if (_GATED_WRITES.indexOf(action) >= 0) {
+    const _secret = _prop('SERVER_WRITE_SECRET');
+    if (_secret && String(body.srvkey || '') !== _secret) {
+      return _json({ ok: false, error: '서버를 거치지 않은 쓰기 요청입니다(erp.wellperion.com 로그인 후 사용).', noRetry: true });
+    }
+  }
+
     // ─── 배(항로) 휴지통 — GM 자율현황 화면용 (2026-07-27 시토 · GM 지시) ───
     //   queue_trash    : POST {ship_no, reason, pin}  → 폐기 표시(보관함 이동 예약)
     //   queue_restore  : POST {ship_no, pin}          → 원래 상태로 되돌리기

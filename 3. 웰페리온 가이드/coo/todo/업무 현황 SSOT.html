@@ -790,6 +790,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <!-- 🎉 팡파레 = 공용 정본 1파일(_fanfare.js). 결재 현황 SSOT와 같은 파일을 본다(약속 L01). -->
 <script src="_fanfare.js"></script>
+<!-- 쓰기 관문(배 960 #6b) — ERP 도메인에서만 저장을 서버 /api/write 로 보낸다. 실패하면 종전 GAS. -->
+<script src="../../_assets/erp_write.js"></script>
 <script>
 /* ═══════════════════════════════════════════
    Constants
@@ -1152,28 +1154,10 @@ function setCatFilter(v, btn) {
    API
    ═══════════════════════════════════════════ */
 function apiCall(params) {
-  // 첨부 base64 등 대용량 페이로드는 GET 쿼리스트링 URL 길이 한계를 초과해 요청이 실패한다
-  // (→ 파일이 Drive에 안 올라가고 시트 파일URL 칸도 안 써져 '날아감'). POST 본문으로 전송해 회피.
-  // GAS doPost → _processTodoAction 가 동일 action 처리. text/plain = CORS preflight(OPTIONS) 회피.
-  const qs = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
-  // 긴 본문(회의 기획 등)이 GET 주소줄 길이 한계를 넘으면 저장 실패 → 첨부와 동일하게 POST 본문 전송으로 회피 (2026-06-05 GM 회의 기획 저장실패)
-  const mustPost = params.base64 || params.file || (TODO_API_URL.length + qs.length + 1) > 1800;
-  if (mustPost) {
-    return fetch(TODO_API_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(params)
-    }).then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    });
-  }
-  return fetch(TODO_API_URL + '?' + qs, { redirect: 'follow' })
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);  // 오류 응답을 성공으로 오판하지 않도록
-      return r.json();
-    });
+  // 호출 규약은 그대로 — 첨부 base64·긴 본문은 POST 본문, 짧은 건 GET 쿼리(주소줄 길이 한계 회피).
+  // 그 판단과 ERP 도메인 쓰기 관문(/api/write · 배 960 #6b)은 _assets/erp_write.js 한 곳에 있다(복제 없음).
+  // 읽기(todo_list 등)와 GitHub Pages 는 종전 GAS 그대로 — erpTodoCall 이 갈라준다.
+  return window.erpTodoCall(TODO_API_URL, params);
 }
 
 async function loadTasks() {
