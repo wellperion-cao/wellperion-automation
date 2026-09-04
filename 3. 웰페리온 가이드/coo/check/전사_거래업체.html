@@ -275,6 +275,10 @@ body.embed .vendor-actions{margin-top:2px}
    ═══════════════════════════════════════════════ */
 var API_URL="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
 var ONLINE=true;
+// ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/board·/api/misc/ops)를 먼저 읽는다. 시토 배990
+// 배포 전에는 미러에 이 키·액션이 없어 404 → 아래에서 GAS 로 그대로 폴백(지금과 동일 동작),
+// 배포되는 순간부터 서버 우선으로 자동 전환된다(화면 코드는 안 건드림).
+var ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 var EMBED=/[?&]embed=1/.test(location.search);
 var DEPTS=["시설부","운영부","지원부","주차관리부","파트너팀","경영지원부"];
 var CUR_DEPT="전체";
@@ -351,11 +355,17 @@ function loadVendorCategories(){
   try{ stored = JSON.parse(localStorage.getItem(VENDOR_CAT_KEY)); }catch(e){ stored=null; }
   applyVendorCats(stored);
 }
+function _vendorCatRead(){
+  var gas=function(){ return fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_CAT_KEY),{method:'GET',redirect:'follow'}).then(function(r){return r.json();}); };
+  if(!ERP_API_ON) return gas();
+  return fetch('/api/board/'+encodeURIComponent(VENDOR_CAT_KEY))
+    .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+    .catch(function(e){ console.warn('[거래업체분류] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
 function loadVendorCategoriesFromBackend(){
   loadVendorCategories();
   if(!ONLINE){ vendorRenderCategorySelects(); renderVendorBoard(); return Promise.resolve(); }
-  return fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_CAT_KEY),{method:'GET',redirect:'follow'})
-    .then(function(r){return r.json();})
+  return _vendorCatRead()
     .then(function(data){
       if(data && data.ok && data.board && (Array.isArray(data.board) || Array.isArray(data.board.cols))){
         applyVendorCats(data.board);
@@ -473,11 +483,17 @@ function loadVendorData(){
   try{ stored = JSON.parse(localStorage.getItem(VENDOR_STORAGE_KEY)); }catch(e){ stored=null; }
   applyVendorStored(stored);
 }
+function _vendorListRead(){
+  var gas=function(){ return fetch(API_URL+'?action=vendor_list&cb='+Date.now(),{method:'GET',redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}); };
+  if(!ERP_API_ON) return gas();
+  return fetch('/api/misc/ops/vendor_list',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+    .catch(function(e){ console.warn('[거래업체목록] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
 function loadVendorFromBackend(){
   loadVendorData();
   if(!ONLINE){ var w0=document.getElementById('vendor-board'); if(w0 && !w0.querySelector('.dv-cell.editing')) renderVendorBoard(); return Promise.resolve(); }
-  return fetch(API_URL+'?action=vendor_list&cb='+Date.now(),{method:'GET',redirect:'follow',cache:'no-store'})
-    .then(function(r){return r.json();})
+  return _vendorListRead()
     .then(function(data){
       VENDOR_SERVER_READY = true;   /* 응답이 왔다 — 이제 '없다'고 말해도 된다 */
       if(data && data.ok && Array.isArray(data.vendors)){

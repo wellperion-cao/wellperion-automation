@@ -231,6 +231,10 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
 var CAL_URL="https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb="+Date.now();
 var SCHEDULE_GAS_URL="https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec";   // GAS 자동저장 백엔드(GM 배포 2026-07-14). GAS=SSOT·github=seed 폴백. 재배포 시 URL 교체.
 var CHECK_API_URL="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";   // 거래업체 목록(vendor_list) 전용 GAS — SCHEDULE_GAS_URL과 별개.
+// ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/misc/schedule·ops)를 먼저 읽는다(★전사일정
+// 정본은 GAS 그대로 — 읽기만 서버). 시토 배990 배포 전엔 404 → GAS 폴백(지금과 동일), 배포되는
+// 순간 서버 우선으로 자동 전환. 저장(save_schedule 등)은 그대로 GAS 직결.
+var ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 var DATA=null, CATS={}, LEAD=30, cur="전체", curCat="전체", VENDORS=[];
 var CAL_Y=null, CAL_M=null;
 var CAL_MAX_LABELS=4;   // 달력 한 칸에 이름으로 보여줄 일정 수 (GM 지시 2026-08-24 — 2개는 너무 적다)
@@ -333,9 +337,15 @@ function usedCats(){var seen={},order=[];(DATA.items||[]).forEach(function(it){i
 /* ── 거래업체 연동 ── */
 function vendorById(id){if(!id)return null;for(var i=0;i<VENDORS.length;i++){if(VENDORS[i].id===id)return VENDORS[i];}return null;}
 function vendorSorted(){return VENDORS.slice().sort(function(a,b){var la=a.label||"",lb=b.label||"";if(la!==lb)return la<lb?-1:1;return (a.name||"").localeCompare(b.name||"");});}
+function _tsVendorRead(){
+  var gas=function(){ return fetch(CHECK_API_URL+"?action=vendor_list&cb="+Date.now(),{method:"GET",redirect:"follow",cache:"no-store"}).then(function(r){return r.json();}); };
+  if(!ERP_API_ON) return gas();
+  return fetch("/api/misc/ops/vendor_list",{cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("api "+r.status); return r.json(); })
+    .catch(function(e){ console.warn("[전사일정-거래업체] API 실패 → GAS 폴백:", e && e.message); return gas(); });
+}
 function loadVendors(){
-  fetch(CHECK_API_URL+"?action=vendor_list&cb="+Date.now(),{method:"GET",redirect:"follow",cache:"no-store"})
-    .then(function(r){return r.json();})
+  _tsVendorRead()
     .then(function(res){if(res&&res.ok&&Array.isArray(res.vendors)){VENDORS=res.vendors;if(DATA)renderAll();}})
     .catch(function(){/* 조용히 무시 — 거래업체 미표시(기존 기능 무영향) */});
 }
@@ -867,12 +877,20 @@ function loadSeed(){
   fetch(CAL_URL,{cache:"no-store"}).then(function(r){return r.json();}).then(initFromData)
     .catch(function(e){document.getElementById("vList").innerHTML='<div class="loading">달력을 불러오지 못했습니다 — 새로고침. ('+e+')</div>';});
 }
+function _tsScheduleGas(){
+  return fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"}).then(function(r){return r.json();});
+}
+function _tsScheduleRead(){
+  if(!ERP_API_ON) return _tsScheduleGas();
+  return fetch("/api/misc/schedule/load_schedule",{cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("api "+r.status); return r.json(); })
+    .catch(function(e){ console.warn("[전사일정] API 실패 → GAS 폴백:", e && e.message); return _tsScheduleGas(); });
+}
 function boot(){
   if(EMBED)document.body.classList.add("embed");
   loadVendors();
   if(SCHEDULE_GAS_URL){
-    fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"})
-      .then(function(r){return r.json();})
+    _tsScheduleRead()
       .then(function(res){
         // 판번호 기억(배783) — 저장할 때 이 값을 함께 보내 그 사이 남이 저장했는지 서버가 대조한다.
         if(res&&res.rev!=null) SERVER_REV=String(res.rev);

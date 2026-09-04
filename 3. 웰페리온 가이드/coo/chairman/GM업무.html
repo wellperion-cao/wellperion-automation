@@ -517,6 +517,10 @@
   // 체크보드 GAS(CHECK_GAS action=board/saveBoard)를 그대로 재사용 — 새 저장소·새 GAS 신설 금지(약속 L21).
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   var GM_CHECK_KEY = 'GM_TASK_CHECKS';
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/board/GM_TASK_CHECKS)를 먼저 읽는다(초기
+  // 로드만 — 체크 즉시저장의 최신 보드 재조회는 그대로 GAS 직결, 아래 saveCheckImmediate 불변).
+  // 시토 배990 배포 전엔 BOARD_KEYS 에 없어 404 → GAS 폴백, 배포 즉시 서버 우선 전환.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -681,9 +685,18 @@
   function chkKey(id, idx, text) { return id + '::' + hashText(String(text || '').replace(/\s+/g, ' ').trim()); }
 
   var _gmCheckBoard = {};
+  function _checkBoardRead() {
+    var gas = function () {
+      return fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(GM_CHECK_KEY), { method: 'GET', redirect: 'follow' })
+        .then(function (r) { return r.json(); });
+    };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + encodeURIComponent(GM_CHECK_KEY))
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function (e) { console.warn('[GM체크] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  }
   function loadCheckBoard() {
-    return fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(GM_CHECK_KEY), { method: 'GET', redirect: 'follow' })
-      .then(function (r) { return r.json(); })
+    return _checkBoardRead()
       .then(function (data) { _gmCheckBoard = (data && data.ok && data.board && typeof data.board === 'object') ? data.board : {}; })
       .catch(function () { _gmCheckBoard = {}; });
   }
@@ -1214,6 +1227,10 @@
   var SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec';
   var box = document.getElementById('todaySched');
   if (!box) return;
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/misc/schedule/load_schedule)를 먼저 읽는다
+  // (★전사일정 정본은 GAS 그대로 — 읽기만 서버). 시토 배990 배포 전엔 404 → 아래 GAS 재시도 그대로
+  // 유지, 배포 즉시 서버 우선으로 자동 전환.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -1230,14 +1247,20 @@
   // 전사일정 GAS 는 응답이 60KB 라 느릴 때가 있고(실측 1.4~4.5초) 가끔 한 번씩 끊긴다.
   // 그 한 번에 GM 화면이 「불러오지 못했습니다」로 바뀌던 것을 막는다 — 실패하면 2초 뒤 한 번만
   // 다시 부르고, 그래도 안 되면 그때 안내를 띄운다(조용한 실패는 여전히 금지 · GM 지적 2026-08-26).
-  function loadSchedule(retry) {
+  function _scheduleGas(retry) {
     return fetch(SCHEDULE_GAS_URL + '?action=load_schedule&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
       .then(function (r) { return r.json(); })
       .catch(function (e) {
         if (!retry) throw e;
         return new Promise(function (ok) { setTimeout(ok, 2000); })
-          .then(function () { return loadSchedule(false); });
+          .then(function () { return _scheduleGas(false); });
       });
+  }
+  function loadSchedule(retry) {
+    if (!ERP_API_ON) return _scheduleGas(retry);
+    return fetch('/api/misc/schedule/load_schedule', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function (e) { console.warn('[오늘일정] API 실패 → GAS 폴백:', e && e.message); return _scheduleGas(retry); });
   }
   loadSchedule(true)
     .then(function (res) {

@@ -775,6 +775,10 @@
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   var KEY = 'CHAIRMAN_ITEM_CHECKS';
   var board = {};
+  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/board/CHAIRMAN_ITEM_CHECKS)를 먼저 읽는다
+  // (초기 로드만 — 체크 즉시저장의 최신 보드 재조회·POST 는 그대로 GAS 직결, 아래 change 리스너 불변).
+  // 시토 배990 배포 전엔 BOARD_KEYS 에 없어 404 → GAS 폴백, 배포 즉시 서버 우선 전환.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
   function apply(){
     document.querySelectorAll('.chk-list input[type=checkbox]').forEach(function(cb){
       var k = cb.getAttribute('data-key');
@@ -782,8 +786,14 @@
       cb.closest('li').classList.toggle('done', cb.checked);
     });
   }
-  fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(KEY), {method:'GET', redirect:'follow'})
-    .then(function(r){ return r.json(); })
+  function _chkBoardRead(){
+    var gas = function(){ return fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(KEY), {method:'GET', redirect:'follow'}).then(function(r){ return r.json(); }); };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + encodeURIComponent(KEY))
+      .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function(e){ console.warn('[회장님체크] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  }
+  _chkBoardRead()
     .then(function(d){ board = (d && d.ok && d.board && typeof d.board === 'object') ? d.board : {}; apply(); })
     .catch(function(){});
   document.addEventListener('change', function(e){
