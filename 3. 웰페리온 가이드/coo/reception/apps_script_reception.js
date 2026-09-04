@@ -2804,6 +2804,12 @@ var _RECEPTION_PUBLIC_ACTIONS = {
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
   reg_lookup:  true,  // 회원 셀프 조회 — 전화+이름 2차확인·회원안전 필드만·rate-limit, 토큰 면제
   lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
+  lf_handover: true,  // 습득물 수령 처리 — lf_submit 과 같은 제출토큰 게이트 + 속도제한으로 보호(아래 _vProcess 참조).
+                      //   응답은 성공/실패뿐이라 PII 를 내주지 않는다. wellperion.com 습득물 갤러리(WP 사본)와
+                      //   GitHub Pages 사본은 구조상 접근키를 가질 수 없어, GATED 로 두면 게이트를 켜는 순간
+                      //   현장 수령 처리가 멈춘다(배 960 · 2026-09-04 시토).
+  hold_intake_stats: true,  // 휴회접수 건수 집계 — 성함·연락처를 싣지 않는 순수 집계(reg_board·hold_done_keys 와 같은 급).
+                      //   월간운영계획.html(공개 Pages 사본 포함)이 부른다. 2026-09-04.
   lf_gallery:  true,  // 습득물 공개 갤러리 — 민감필드 미반환(게시중만), 토큰 면제
   lf_disposal: true,  // 폐기물 공지 A3(게시예정+폐기완료) — 민감필드 미반환, 토큰 면제
   diag:        true   // read-only 진단 — 비밀값 절대 미노출, 불리언만 반환
@@ -2811,6 +2817,38 @@ var _RECEPTION_PUBLIC_ACTIONS = {
   // ⚠️ lf_list/lf_handover/lf_delete/lf_purge_signatures 는 public 아님(GATED) — 쓰기는 제출토큰 게이트.
   // voc_list / voc_update 도 게이트 적용.
 };
+// ─── 게이트 스위치 설정 함수 (배 960 · 2026-09-04 시토) ───
+// ScriptProperties 를 편집기에서 손으로 넣던 자리를 코드로 옮긴다 — `clasp run` 전용이다
+// (매니페스트 executionApi.access=MYSELF · HEAD 코드를 실행하므로 웹앱 배포 버전과 무관하다).
+// doGet/doPost 라우터에 액션으로 등록하지 않는다 = 웹에서 부를 수 없다.
+// ★인자가 비었거나 값이 규격 밖이면 아무것도 바꾸지 않고 현재 상태만 돌려준다(오호출 방어).
+// ★토큰 값 자체는 절대 반환하지 않는다 — 존재 여부와 길이만.
+function _setAccessToken_(tok) {
+  var p = PropertiesService.getScriptProperties();
+  tok = String(tok == null ? '' : tok).trim();
+  if (!tok) {
+    return { ok: true, changed: false, note: '인자 없음 — 현재 상태만 보고',
+             hasToken: !!p.getProperty('ACCESS_TOKEN'), enforce: p.getProperty('TOKEN_ENFORCE') || '' };
+  }
+  p.setProperty('ACCESS_TOKEN', tok);
+  return { ok: true, changed: true, hasToken: true, len: tok.length,
+           enforce: p.getProperty('TOKEN_ENFORCE') || '' };
+}
+function _setTokenEnforce_(v) {
+  var p = PropertiesService.getScriptProperties();
+  v = String(v == null ? '' : v).trim();
+  if (v !== '0' && v !== '1') {
+    return { ok: true, changed: false, note: "인자는 '0' 또는 '1' — 현재 상태만 보고",
+             enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: !!p.getProperty('ACCESS_TOKEN') };
+  }
+  if (v === '1' && !p.getProperty('ACCESS_TOKEN')) {
+    return { ok: false, changed: false, error: 'ACCESS_TOKEN 이 없다 — 먼저 _setAccessToken_ 로 넣어라',
+             enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: false };
+  }
+  p.setProperty('TOKEN_ENFORCE', v);
+  return { ok: true, changed: true, enforce: v, hasToken: !!p.getProperty('ACCESS_TOKEN') };
+}
+
 function _vAccessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
