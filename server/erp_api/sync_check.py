@@ -10,6 +10,7 @@ monthly_report · weekly)을 그대로 부르고 응답을 통째로 저장한�
 GAS URL 은 /srv/erp/api.env 의 CHECK_GAS_URL 한 줄(저장소에 안 둔다).
 
 실행: python3 /srv/erp/api/sync_check.py   (cron 5분 · /etc/cron.d/erp-check-sync)
+      python3 sync_check.py --today          오늘치 원장·보드만(5호출) — /api/write 점검 쓰기 직후 거울 즉시 반영(배 960 #5b)
 자체점검: python3 sync_check.py --selftest  (같은 DB 의 tenant 'selftest' · 네트워크 없음)
 """
 import json
@@ -95,13 +96,19 @@ def plan(conn, today):
     return jobs + backfill[:BACKFILL_PER_RUN * 5]
 
 
-def main():
+def plan_today(today):
+    """오늘치 원장·보드만 — /api/write 쓰기 직후 거울을 즉시 맞출 때(배 960 #5b). 월간·주간·빈날채움은 5분 cron 몫."""
+    d = today.isoformat()
+    return [(dept, kind, key, params, ok) for dept in DEPTS for kind, key, params, ok in day_sources(dept, d)]
+
+
+def main(only_today=False):
     load_env()
     conn = db.connect()
     today = _kst_today()
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600))
     n_ok, failed = 0, []
-    for dept, kind, key, params, ok in plan(conn, today):
+    for dept, kind, key, params, ok in (plan_today(today) if only_today else plan(conn, today)):
         data = gas_get(params, require_ok=ok)
         if data is None:
             failed.append("%s/%s/%s" % (dept, kind, key))   # 실패 — 기존 미러를 그대로 둔다
@@ -110,7 +117,9 @@ def main():
         n_ok += 1
     with conn:
         db.meta_set(conn, "check_last_sync", now)
-        db.meta_set(conn, "check_last_failed", ",".join(failed))
+        if not only_today:
+            # 오늘치만 돈 판으로 전량 실패 목록을 덮으면 health 가 실제보다 깨끗해 보인다.
+            db.meta_set(conn, "check_last_failed", ",".join(failed))
     conn.close()
     print("[done] %s · 갱신 %d건 · 실패 %s" % (now, n_ok, failed or "없음"))
     return 1 if failed else 0
@@ -135,6 +144,9 @@ def selftest():
         assert ("parking", "monthly", "2026-08") in keys and ("support", "weekly", "-") in keys
         assert len([j for j in jobs if j[1] in ("board", "ledger", "today_live") and j[2] < "2026-09-02"]) <= BACKFILL_PER_RUN * 5, "빈 날 채움은 상한 안"
         assert day_sources("support", "2026-09-03")[0][3] is False, "조별 원장은 ok 없는 응답"
+        tkeys = {(j[0], j[1], j[2]) for j in plan_today(today)}   # --today = 오늘치 원장·보드만(월간·주간·빈날 없음)
+        assert ("support", "today_live", "2026-09-03") in tkeys and ("facility", "board", "2026-09-03") in tkeys
+        assert not [k for k in tkeys if k[1] in ("monthly", "weekly")] and len(tkeys) == 5
     finally:
         with conn:
             conn.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))
@@ -144,4 +156,4 @@ def selftest():
 
 
 if __name__ == "__main__":
-    sys.exit(selftest() if "--selftest" in sys.argv else main())
+    sys.exit(selftest() if "--selftest" in sys.argv else main("--today" in sys.argv))

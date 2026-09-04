@@ -1271,6 +1271,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 
+<script src="../../_assets/erp_write.js"></script>
 <script src="../../_assets/board_sync.js" charset="utf-8"></script>
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -2836,10 +2837,8 @@ function persistVendorCategories(){
   if(!ONLINE) return;
   const ind = document.getElementById('saveIndicator');
   if(ind){ind.style.display='block';ind.textContent='분류 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:VENDOR_CAT_KEY,board:{cols:VENDOR_COLS}})
-  }).then(()=>{if(ind){ind.textContent='분류 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
+  erpCheckPost(API_URL,{action:'saveBoard',key:VENDOR_CAT_KEY,board:{cols:VENDOR_COLS}}
+  ).then(()=>{if(ind){ind.textContent='분류 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
     .catch(()=>{if(ind){ind.textContent='분류 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
 }
 
@@ -3059,10 +3058,8 @@ function persistVendorData(){
   if(!ONLINE) return;
   const ind = document.getElementById('saveIndicator');
   if(ind){ind.style.display='block';ind.textContent='업체 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'vendor_save',vendors:vendorFlatten()})
-  }).then(function(r){return r.json();}).then(function(d){
+  erpCheckPost(API_URL,{action:'vendor_save',vendors:vendorFlatten()}
+  ).then(function(r){return r.json();}).then(function(d){
     if(ind){
       if(d && d.ok){ ind.textContent='업체 저장 완료'; }
       else{ ind.textContent='업체 저장 실패 (로컬 보관됨)'; }
@@ -3691,7 +3688,7 @@ function vendorSubmitAddForm(){
     if(!fcStore.roundDur)fcStore.roundDur={};
     if(!fcStore.submissions)fcStore.submissions=[];
     fcStampWrite();
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).catch(function(){});
+    erpCheckPost(API_URL,{action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}}).catch(function(){});
   }
   // 항목 done/measure 산정 — fields 중 값이 하나라도 있으면 done. measure=입력칸 JSON.
   function measureFromMap(map,item){
@@ -3907,11 +3904,9 @@ function vendorSubmitAddForm(){
     var date=val('fcDate'); if(!date) return;
     captureRound(); captureDaily();               // 기계실 가동값(daily) 포함 최신 DOM 값을 fcStore에 반영
     fcStampWrite();
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:inspectorName(),store:fcStore}})}).catch(function(){});
+    erpCheckPost(API_URL,{action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:inspectorName(),store:fcStore}}).catch(function(){});
     if(!(nowHHMM() >= '12:00')) return;          // 정오 이전엔 점검일지 시트 자동 저장 안 함(수동 제출만·기존 그대로)
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save_facility_notes',date:date,round:ROUND_DAILY,inspector:inspectorName(),work:val('fc_work'),order:val('fc_order'),oocAction:val('fc_ooc_action')})}).catch(function(){});
+    erpCheckPost(API_URL,{action:'save_facility_notes',date:date,round:ROUND_DAILY,inspector:inspectorName(),work:val('fc_work'),order:val('fc_order'),oocAction:val('fc_ooc_action')}).catch(function(){});
     var st=document.getElementById('fcStatus'); if(st) st.textContent='금일 작업사항 자동 저장됨 ('+nowHHMM()+')';
   }
   function fcNotesDebounced(){ if(_fcNotesTimer)clearTimeout(_fcNotesTimer); _fcNotesTimer=setTimeout(fcAutoSaveNotes,2500); }
@@ -3937,14 +3932,14 @@ function vendorSubmitAddForm(){
     var posts=[];
     // 1) 원본 측정값 전량 보존(saveBoard) — store 통째로 raw blob 저장(재로드용)
     fcStampWrite();
-    posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).then(function(r){return r.json();}));
+    posts.push(erpCheckPost(API_URL,{action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}}).then(function(r){return r.json();}));
     // 2) 전 항목(구 시간대별 15 + 1일1회 11 = 26) 한 번에 → save_facility_measure 1건, round는 항상 '1일' 고정(GM 2026-07-08 회차 통합).
     //    durMin/startHHMM/endHHMM = 하루 1개 타이머(⏱점검 시작/종료) 값을 함께 전송(소요시간 파이프 연결).
     var map=fcStore.rounds[curR]||{};
     var dmap=fcStore.daily||{};
     var items=FC_ROUND_ITEMS.map(function(it){ var m=measureFromMap(map,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done,reason:reasonForItem(it)}; })
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
-    posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
+    posts.push(erpCheckPost(API_URL,{action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note}).then(function(r){return r.json();}));
     Promise.all(posts).then(function(results){
       var _r0=(results&&results[0])||{}, _r1=(results&&results[1])||{};
       var _err=(_r0.error||(_r0.ok===false&&'저장 실패'))||(_r1.error||(_r1.ok===false&&'저장 실패'));
@@ -4040,7 +4035,7 @@ function vendorSubmitAddForm(){
     var rows=FC_RANGE_ROWS.map(function(r){
       return {id:r.id,name:r.name,unit:r.unit,legalMin:r.legalMin,legalMax:r.legalMax,targetMin:r.targetMin,targetMax:r.targetMax,cycle:r.cycle,alert:r.alert,note:r.note};
     });
-    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fcheck_ranges_save',rows:rows,pin:getEditAuthPin()})})
+    erpCheckPost(API_URL,{action:'fcheck_ranges_save',rows:rows,pin:getEditAuthPin()})
       .then(function(r){return r.json();})
       .then(function(j){
         if(st)st.textContent=(j&&j.ok)?('저장 완료 · '+(j.count!=null?j.count:rows.length)+'행'):'저장 실패';

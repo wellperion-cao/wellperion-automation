@@ -2057,6 +2057,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
 </div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script src="../../_assets/board_sync.js" charset="utf-8"></script>
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -3466,7 +3467,7 @@ async function _postPayload(payload){
   let ok=false;
   try{
     chkStampWrite();
-    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    const r=await erpCheckPost(API_URL,payload);
     let j=null; try{ j=await r.json(); }catch(_){ j=null; }
     ok=!!(j&&(j.success||j.ok)&&!j.error);
     if(ok){
@@ -4363,8 +4364,7 @@ async function _saveInspMemo(gender,round,memo){
   const ind=document.getElementById('saveIndicator');
   if(ind){ind.style.display='block';ind.textContent='배정 저장 중...';}
   try{
-    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save_insp_memo',dept:DEPT,gender:gender,round:round,memo:memo})});
+    const r=await erpCheckPost(API_URL,{action:'save_insp_memo',dept:DEPT,gender:gender,round:round,memo:memo});
     let ok=false;try{const j=await r.json();ok=!!(j&&(j.ok||j.success)&&!j.error);}catch(_){ok=false;}
     if(ind)ind.textContent=ok?'배정 저장됨':'배정 저장 실패(재시도)';
   }catch(e){ if(ind)ind.textContent='배정 저장 실패(로컬 유지)'; }
@@ -4948,8 +4948,7 @@ async function unlockRound(round,gender){
   if(!ONLINE){alert('오프라인 상태에서는 잠금 해제를 할 수 없습니다.');return;}
   try{
     chkStampWrite();
-    const res=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'unlock_round',dept:'support',date:d,gender,round,pin})});
+    const res=await erpCheckPost(API_URL,{action:'unlock_round',dept:'support',date:d,gender,round,pin});
     const j=await res.json();
     if(!j.ok){
       if(j.reason==='PIN') alert('PIN 불일치. 다시 확인하세요.');
@@ -5049,16 +5048,13 @@ async function appendRoundSnapshot(date,round,submitter,gender){
   const finishedAt=tEnd?new Date(tEnd).toLocaleString('sv-SE').replace('T',' '):'';
   const dur=_timerDuration(tStart,tEnd);
   try{
-    const r=await fetch(API_URL,{method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,
+    const r=await erpCheckPost(API_URL,{action:'snapshot_append',dept:DEPT,date,zone,
         shift:rdef.name+' '+rdef.time,   // 라운드 라벨(예: '오전조[1] 10시') → 시트 '교대' 칸
         submitter,
         submittedAt:new Date().toLocaleString('sv-SE').replace('T',' '),
         total,done,pct,
         issuesCount:issues.length,issues:issues.join(' / '),
-        startedAt,finishedAt,durationMin:(dur!=null?dur:'')})
-    });
+        startedAt,finishedAt,durationMin:(dur!=null?dur:'')});
     let ok=false; try{const j=await r.json(); ok=!!(j&&(j.ok||j.success)&&!j.error);}catch(_){ ok=false; }
     if(!ok)alert('점검일지 기록에 실패했습니다(서버 응답 오류). 다시 제출해 주세요.');   // GM 2026-06-16: 조용한 실패 차단
   }catch(e){ alert('점검일지 기록 실패: '+((e&&e.message)||e)); }
@@ -5081,14 +5077,11 @@ async function appendSubmitSnapshot(date,shift,submitter,gender){
   const finishedAt=tEnd?new Date(tEnd).toLocaleString('sv-SE').replace('T',' '):'';
   const dur=_timerDuration(tStart,tEnd);
   try{
-    await fetch(API_URL,{method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'snapshot_append',dept:DEPT,date,zone,shift,submitter,
+    await erpCheckPost(API_URL,{action:'snapshot_append',dept:DEPT,date,zone,shift,submitter,
         submittedAt:new Date().toLocaleString('sv-SE').replace('T',' '),
         total:stats.total,done:stats.done,pct:stats.pct,
         issuesCount:issues.length,issues:issues.join(' / '),
-        startedAt,finishedAt,durationMin:(dur!=null?dur:'')})
-    });
+        startedAt,finishedAt,durationMin:(dur!=null?dur:'')});
   }catch(e){}
 }
 
@@ -7884,10 +7877,8 @@ function mgmtSaveItems(items){
   const payload = items.map(itemToSheet);
   const ind = document.getElementById('saveIndicator');
   if(ind){ ind.style.display='block'; ind.textContent='항목 저장 중...'; }
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify(withDept({action:'saveItems',items:payload}))
-  }).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
+  erpCheckPost(API_URL,withDept({action:'saveItems',items:payload})
+  ).then(()=>{ if(ind){ind.textContent='항목 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);} })
     .catch(()=>{ if(ind){ind.textContent='항목 저장 실패 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);} });
 }
 
