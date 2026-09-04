@@ -5649,6 +5649,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="rhythm">💪 내 루틴</button>
         <button class="tab-btn" data-tab="compass">📌 방향·기록</button>
+        <button class="tab-btn" data-tab="ideas">💡 아이디어</button>
       </div>
 
       <!-- ░░ 탭1: 내 리듬 = 평일+주말+트래커+영양 ░░ -->
@@ -6381,6 +6382,73 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </div>
     </details>
       </div><!-- /compass -->
+
+      <!-- ░░ 탭3: 아이디어 = GM 개인 아이디어 기록 (GM 지시 2026-09-04 "방향기록탭 옆에 탭 하나 더 —
+           개인 아이디어 기록"). 업무 SSOT·배가 아니다 — 생각을 잃지 않으려고 적는 자리.
+           저장소 = status/gm_ideas.json 한 벌(루틴 트래커와 같은 read_file/commit_file 길 · 새 저장소 안 만듦). ░░ -->
+      <div class="tab-panel" data-panel="ideas">
+        <h3><span class="ico">💡</span>아이디어 기록 <span style="font-size:12px;color:var(--dim);font-weight:400;">업무·배 아님 · 생각 보관함 · 저장하면 1~2분 후 어디서 열어도 보임</span></h3>
+        <div class="card" style="margin-bottom:14px;">
+          <input type="text" id="gmIdeaTitle" placeholder="한 줄 제목" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;margin-bottom:8px;">
+          <textarea id="gmIdeaMemo" rows="3" placeholder="메모 (왜·어디에·떠오른 계기)" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;resize:vertical;"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+            <button id="gmIdeaSaveBtn" class="print-btn" style="position:static;">💾 저장</button>
+            <span id="gmIdeaSaveState" style="font-size:12px;"></span>
+          </div>
+        </div>
+        <div id="gmIdeaList" style="font-size:13px;color:var(--dim);">불러오는 중…</div>
+      </div><!-- /ideas -->
+      <script>
+      (function(){
+        var GAS_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+        var JPATH='status/gm_ideas.json';
+        var RAW='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/'+JPATH;
+        var DATA={ideas:[]};
+        function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+        function esc(t){ return String(t||'').replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+        function read(){
+          return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'read_file',path:JPATH})})
+            .then(function(r){ return r.json(); })
+            .then(function(res){ if(res&&res.ok&&res.content){ return JSON.parse(res.content); } throw new Error('read'); })
+            .catch(function(){ return fetch(RAW+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.json(); }); });
+        }
+        function render(){
+          var box=document.getElementById('gmIdeaList'); if(!box) return;
+          var list=(DATA.ideas||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+          if(!list.length){ box.textContent='아직 적은 아이디어가 없습니다.'; return; }
+          box.innerHTML=list.map(function(it){
+            return '<div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">'
+              +'<strong style="color:var(--text);font-size:14px;">'+esc(it.title)+'</strong>'
+              +'<span style="font-size:11.5px;color:var(--dim);white-space:nowrap;">'+esc(it.date)+' <a href="#" data-del="'+esc(it.id)+'" style="color:var(--dim);margin-left:6px;">지우기</a></span></div>'
+              +(it.memo?'<div style="margin-top:4px;white-space:pre-wrap;color:var(--text);">'+esc(it.memo)+'</div>':'')+'</div>';
+          }).join('');
+          box.querySelectorAll('[data-del]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); if(!confirm('이 아이디어를 지울까요?')) return; write(function(base){ base.ideas=(base.ideas||[]).filter(function(x){ return x.id!==a.getAttribute('data-del'); }); }); }); });
+        }
+        /* 저장 직전에 최신을 다시 받아 그 위에 얹는다 — 루틴 트래커와 같은 이유(다른 창의 기록을 덮지 않게). */
+        function write(mutate){
+          var btn=document.getElementById('gmIdeaSaveBtn'), st=document.getElementById('gmIdeaSaveState');
+          if(btn){ btn.disabled=true; } if(st){ st.style.color='var(--dim)'; st.textContent='저장 중…'; }
+          read().catch(function(){ return DATA; }).then(function(fresh){
+            var base=(fresh&&typeof fresh==='object')?fresh:DATA; base.ideas=base.ideas||[]; mutate(base); base.updated_at=today(); DATA=base;
+            return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
+              body:JSON.stringify({action:'commit_file',path:JPATH,content:JSON.stringify(DATA,null,2),message:'[GM] 아이디어 기록 '+today(),key:''})});
+          }).then(function(r){ return r.json(); })
+          .then(function(res){ if(res&&res.ok){ if(st){ st.style.color='var(--grow)'; st.textContent='저장됨 · 1~2분 후 반영'; } render(); }
+            else { if(st){ st.style.color='var(--warm)'; st.textContent='저장 실패: '+((res&&res.error)||'오류'); } } })
+          .catch(function(e){ if(st){ st.style.color='var(--warm)'; st.textContent='연결 실패: '+e.message; } })
+          .then(function(){ if(btn){ btn.disabled=false; } });
+        }
+        function add(){
+          var t=(document.getElementById('gmIdeaTitle')||{}).value||'', m=(document.getElementById('gmIdeaMemo')||{}).value||'';
+          if(!t.trim()){ var st=document.getElementById('gmIdeaSaveState'); if(st){ st.style.color='var(--warm)'; st.textContent='제목 한 줄은 적어 주세요'; } return; }
+          write(function(base){ base.ideas.push({id:'idea-'+Date.now(),date:today(),title:t.trim(),memo:m.trim(),status:'기록',updated_at:today()}); });
+          document.getElementById('gmIdeaTitle').value=''; document.getElementById('gmIdeaMemo').value='';
+        }
+        function boot(){ if(!document.getElementById('gmIdeaList')) return; read().then(function(j){ DATA=j||{ideas:[]}; DATA.ideas=DATA.ideas||[]; render(); }).catch(function(){ var b=document.getElementById('gmIdeaList'); if(b) b.textContent='불러오기 실패 — 새로고침'; });
+          var sb=document.getElementById('gmIdeaSaveBtn'); if(sb) sb.addEventListener('click',add); }
+        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+      })();
+      </script>
 
     </div><!-- /tabs gm1 -->
     </div><!-- /내 개인 영역 (상시 펼침) -->
