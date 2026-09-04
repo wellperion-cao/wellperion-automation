@@ -7910,6 +7910,28 @@ function _activeCacheSelfTest() {
   return ok;
 }
 
+// FB260904-115742: ended 탭 로드 시 LOSS일자 빈 행에 종료일자+1 자동 기입
+function _autoFillLossDate() {
+  var lossCol = _capCol(_activeHeaders, 'LOSS일자');
+  var endCol  = _capCol(_activeHeaders, '종료일자');
+  if (!lossCol || !endCol) return;
+  (_activeRows || []).forEach(function(row) {
+    if (row[lossCol] || !row[endCol]) return;
+    var m = String(row[endCol]).trim().match(/^(\d{2,4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+    if (!m) return;
+    var yr = m[1].length === 2 ? '20' + m[1] : m[1];
+    var d = new Date(Number(yr), Number(m[2]) - 1, Number(m[3]) + 1);
+    var lv = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    row[lossCol] = lv;
+    var kp = row['휴대폰 번호'] || row['휴대폰'] || '';
+    var ov = {}; ov[lossCol] = lv;
+    WriteBuffer.enqueue(
+      { action: 'member_active_update', rowIndex: row.rowIndex, col: lossCol, value: lv, keyPhone: kp, rowKey: row.rowKey || '' },
+      { scope: 'ended', phoneKey: kp, fieldset: 'cell:' + lossCol, label: 'LOSS일자(자동)', who: 'system', overlay: ov }
+    );
+  });
+}
+
 function _activeApplyData(headers, rows) {
   _activeHeaders = headers || [];
   _activeRows    = rows    || [];
@@ -7923,7 +7945,7 @@ function _activeApplyData(headers, rows) {
   _liMemberPhoneCache_ = null;  // 회원목록 변경 → 강습문의 배지 캐시 무효화(FB260824-202030)
   try { ['adult','youth'].forEach(function(_lt){ var _ls=_lessonState[_lt]; if(_ls&&_ls.loaded&&(_ls.rows||[]).length){lessonRender(_lt);lessonLossRender(_lt);lessonWaitRender(_lt);} }); } catch(_le){}
   if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
-  else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
+  else if (_activeScope === 'ended') { _applyEndedSort(); _autoFillLossDate(); }    // FB260904-115742 LOSS일자 자동기입 추가
   /* ★검색어가 남아 있으면 그 검색을 그대로 다시 건다 (FB260810-093039 이경연 실장 · 2026-08-10 시포).
      증상: "조회할 때 이름을 지우고 똑같은 이름을 다시 쳐야 조회된다."
      원인: 새로고침이 끝나면 여기서 전체 명단을 다시 그려 검색 결과가 풀린다. 검색칸의 글자는 그대로라
@@ -8899,6 +8921,7 @@ function _activeDisplayCols() {
     out.push('__reactivate__');
     return out;
   }
+  out.push('__unregreason__');  // FB260904-115742: 유효회원도 미등록사유 입력 가능(loss일자 전 기재)
   out.push('__lossbtn__');                                      // LOSS 처리 버튼(valid 전용, FB260811-112656 임정은M)
   return out;
 }
@@ -10764,7 +10787,7 @@ function _unregReasonCellHtml(row) {
   return '<td class="churn-reason-cell churn-reason-empty" data-unregreason="' + ri + '" title="미등록사유 입력" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 사유 입력</td>';
 }
 function openUnregReasonModal(rowIndex) {
-  var rows = (_activeScope === 'ended' ? _activeRows : []).concat(_endedRowsBg || []);
+  var rows = _activeRows.slice().concat(_activeScope !== 'ended' ? (_endedRowsBg || []) : []);  // FB260904-115742: 유효·종료 탭 모두 검색
   var member = null;
   for (var i = 0; i < rows.length; i++) { if (rows[i].rowIndex == rowIndex) { member = rows[i]; break; } }
   if (!member) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
