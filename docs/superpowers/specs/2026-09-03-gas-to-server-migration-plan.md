@@ -29,7 +29,7 @@
 | 6 | 업무·결재 현황 (`AKfycbxDwFkrxK` · `.deploy-todo`) | 읽기: todo_list · gm_hangro · home_kpi · CFO 월별 | 업무/결재 SSOT · GM업무 · 자율현황 · 매출현황 · 25파일 | 시우(실행=시토) | 읽기 거울 (`sync_todo` → `/api/todo/*` · 배 922 레인 T) | **오늘 완료** | 09-03 |
 | 6b | 〃 | 쓰기: 업무·결재 저장 · GM업무 카드 | 업무/결재 SSOT · GM업무 | 시토 | 쓰기 이중기록 (`/api/write` 확장 · erp_write.js) | **완료 09-04** | 09-04 |
 | 7 | 인사 허브 (`AKfycbyyXrdM7n` · 저장소 `.deploy-*` 없음 → info@ 또는 시트 내장) | 읽기·쓰기: 조직·일정·휴가·온보딩·채용 | chro/hub 10화면 · recruiting 6화면 · 18파일 | 시토(시로 큐 제외) | 읽기 거울 → 쓰기 이중기록 | 예정 | 09-08 (소스 확보 = info@ 로그인 선행) |
-| 8 | 매출 배관 sales-api (`AKfycbzXcWyi-P` · `.deploy-salesops`) · 운영요약 (`AKfycbxUAQ3Def`) · 보고시트 (`AKfycbwSn7ZyfX`) | 읽기: 매출·지출 집계 | 매출지출현황 · 월간운영계획 · 매출회원현황보고 · 파트너팀 체계 | 시토(시뽀 큐 제외) | 읽기 거울 | 예정 | 09-09 |
+| 8 | 매출 배관 sales-api (`AKfycbzXcWyi-P` · `.deploy-salesops`) · 운영요약 (`AKfycbxUAQ3Def`) · 보고시트 (`AKfycbwSn7ZyfX`) | 읽기: 매출·지출 집계 | 매출지출현황 · 월간운영계획 · 매출회원현황보고 · 파트너팀 체계 | 시토(시뽀 큐 제외) | 읽기 거울 (`sync_sales.py`·`api_sales.py` · 보고시트 실배포 = `AKfycbznAmvB`) | **완료 09-04**(쓰기 10액션은 이중기록 단계로) | 09-04 |
 | 9 | 지출현황 (`AKfycbzKIAxYYL`) · 리셉션 업무 (`AKfycbxcPsm-Xt`) · 라커관리 (`AKfycbyyN0I7od`) · renewal 개인 GAS (`AKfycbzY3ZvW_T`) | 각 1화면 | 지출현황 · 리셉션 업무/index · 라커관리 · renewal | 시토 | 화면 소유자 확인 후 읽기 거울 또는 폐기 | 예정 | 09-10 |
 | 10 | 시트 내장·비화면 GAS: 텔레그램 매출보고 · 카톡방 목록(kakao_rooms) · 폼안내(`.deploy-forms`) · 웰리보이스 | 트리거·알림 | 화면 없음(봇·시트 트리거) | 시토 | **서버 cron 이전 대상 아님 — 4건 중 3건은 이미 대체·트리거 없음(§7 실측)** | **3/4 종료 09-04 · 웰리보이스만 미해결(info@ 로그인 필요)** | — |
 
