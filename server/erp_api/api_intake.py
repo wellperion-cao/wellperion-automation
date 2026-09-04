@@ -12,6 +12,7 @@ wellperion.com 안의 폼(문의 wp_inquiry_form · 강사 접수 instructor_int
   POST /api/intake/sunday      → INSTRUCTOR_GAS_URL  (GM의일요일.html · 강사 접수와 같은 GAS)
   POST /api/intake/selftest    → 기록만(tenant 'selftest') · GAS 전달 없음 — 배포 검증용
   GET  /api/intake/health      → 폼별 건수 · GAS 실패 건수
+  GET  /api/intake/reconcile   → 이중기록 대조 결과(reconcile_dual_write.py 가 06:10 에 적는다 · 3일 연속 무결 카운터)
 """
 import json
 import os
@@ -91,6 +92,18 @@ async def intake(form: str, request: Request):
         return Response(resp, media_type="application/json; charset=utf-8", headers=CORS)   # GAS 응답 그대로
     out = {"ok": True, "queued": True, "id": row_id, "form": form, "gas_status": status}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
+
+
+@router.get("/reconcile")
+def reconcile():
+    """이중기록 대조 결과 — reconcile_dual_write.py 가 매일 06:10(KST) 적어 둔 파일 그대로.
+    3일 연속 무결(streak_ok_days>=3) 이면 사람이 서버 원본 전환을 판단한다(자동 전환 없음)."""
+    path = os.path.join(os.environ.get("ERP_STATUS_DIR", "/srv/erp/status"), "dual_write_reconcile.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except OSError:
+        raise HTTPException(503, "아직 대조 전 — %s 없음" % path)
 
 
 @router.get("/health")
