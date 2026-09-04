@@ -1,0 +1,147 @@
+{
+  "_설명": "ERP 계정별 권한 정본 — GM 확정 2026-09-03(배951). 여기 적힌 계정은 이 파일이 이긴다(DB perms·관리자 화면보다 우선). accounts 를 비우면 종전 동작(계정마다 DB perms · 없으면 핵심 화면만)으로 돌아간다.",
+  "_판정": "all=전체 허용 · deny=그중 빼는 것(거부가 우선) · modules=이 목록만 허용. role=admin 계정은 이 파일과 무관하게 전부 허용.",
+  "_출처": "status/_queue.json 배951 note — 웰리 실측 + GM 확정/정정 2026-09-03.",
+  "accounts": {
+    "ceo@wellperion.com": {
+      "_": "관리자 — 전체",
+      "all": true
+    },
+    "cao@wellperion.com": {
+      "_": "관리자 — 전체",
+      "all": true
+    },
+    "coo@wellperion.com": {
+      "_": "운영 총괄 — 실무진과 같은 범위",
+      "all": true,
+      "deny": [
+        "chro-hub-onboarding-self",
+        "chro-hub-onboarding",
+        "chro-hub-eval-guide",
+        "chro-hub-structure",
+        "chro-hub-office-8bit",
+        "chro-hub-office",
+        "chro-recruiting-golfpartner",
+        "chro-recruiting-sauna",
+        "chro-recruiting-operations",
+        "chro-recruiting-golfpro",
+        "chro-recruiting-index",
+        "chro-recruiting-chauffeur",
+        "chro-recruiting-parking",
+        "chro-hub-calendar",
+        "chro-hub-index",
+        "chro-hub-leave",
+        "chro-hub-schedule",
+        "chro-hub-schedule-guide",
+        "chro-hub-schedule-writing-guide",
+        "chro-hub-schedule-mobile",
+        "chro-onboarding-guide",
+        "cfo-finance-매출현황",
+        "cfo-finance-지출현황",
+        "cfo-finance-매출지출현황",
+        "coo-chairman-gm업무",
+        "coo-chairman-대표님-지시사항",
+        "coo-chairman-실무진-업무점수체계-초안",
+        "coo-chairman-회장님-미팅록-20260804",
+        "coo-chairman-회장님-지시사항",
+        "coo-chairman-운영부-주간보고-초안-20260806",
+        "coo-report-매출회원현황보고",
+        "gm-gm-교육",
+        "gm-월간운영계획",
+        "cbo-dietcamp-before-after-01",
+        "cbo-dietcamp-setup-v0-1",
+        "cbo-model-kakao-ai-partner-v0-1",
+        "cpo-product-상품기획"
+      ]
+    },
+    "info@wellperion.com": {
+      "_": "실무진 공용 — 인사·재무·경영보고·평가 제외",
+      "all": true,
+      "deny": [
+        "chro-hub-onboarding-self",
+        "chro-hub-onboarding",
+        "chro-hub-eval-guide",
+        "chro-hub-structure",
+        "chro-hub-office-8bit",
+        "chro-hub-office",
+        "chro-recruiting-golfpartner",
+        "chro-recruiting-sauna",
+        "chro-recruiting-operations",
+        "chro-recruiting-golfpro",
+        "chro-recruiting-index",
+        "chro-recruiting-chauffeur",
+        "chro-recruiting-parking",
+        "chro-hub-calendar",
+        "chro-hub-index",
+        "chro-hub-leave",
+        "chro-hub-schedule",
+        "chro-hub-schedule-guide",
+        "chro-hub-schedule-writing-guide",
+        "chro-hub-schedule-mobile",
+        "chro-onboarding-guide",
+        "cfo-finance-매출현황",
+        "cfo-finance-지출현황",
+        "cfo-finance-매출지출현황",
+        "coo-chairman-gm업무",
+        "coo-chairman-대표님-지시사항",
+        "coo-chairman-실무진-업무점수체계-초안",
+        "coo-chairman-회장님-미팅록-20260804",
+        "coo-chairman-회장님-지시사항",
+        "coo-chairman-운영부-주간보고-초안-20260806",
+        "coo-report-매출회원현황보고",
+        "gm-gm-교육",
+        "gm-월간운영계획",
+        "cbo-dietcamp-before-after-01",
+        "cbo-dietcamp-setup-v0-1",
+        "cbo-model-kakao-ai-partner-v0-1",
+        "cpo-product-상품기획"
+      ]
+    },
+    "lessons@wellperion.com": {
+      "_": "파트너팀(강습 강사진)",
+      "modules": [
+        "cpo-member-lesson",
+        "cpo-member-lesson-guide",
+        "coo-check-파트너팀-체계",
+        "coo-check-전사-일정",
+        "chro-hub-schedule",
+        "chro-hub-schedule-guide",
+        "chro-hub-schedule-writing-guide",
+        "chro-hub-schedule-mobile",
+        "chro-hub-leave",
+        "coo-reception-종합접수처-현황",
+        "coo-reception-lost-found-register",
+        "coo-reception-lost-found-guide",
+        "coo-todo-업무-현황-ssot",
+        "coo-todo-업무-올리는-법",
+        "coo-todo-doc-guide",
+        "cpo-member-실무진피드백"
+      ]
+    },
+    "support@wellperion.com": {
+      "_": "지원부(사우나)",
+      "modules": [
+        "coo-check-지원부-체계",
+        "check",
+        "coo-reception-종합접수처-현황",
+        "coo-reception-lost-found-register",
+        "coo-reception-lost-found-guide",
+        "coo-check-전사-일정",
+        "coo-todo-업무-현황-ssot",
+        "coo-todo-업무-올리는-법",
+        "cpo-member-실무진피드백"
+      ]
+    },
+    "ask@wellperion.com": {
+      "_": "문의 접수",
+      "modules": [
+        "inquiry",
+        "member",
+        "cpo-member-lesson",
+        "coo-reception-종합접수처-현황",
+        "cpo-member-renewal",
+        "cpo-member-실무진피드백"
+      ]
+    }
+  }
+}

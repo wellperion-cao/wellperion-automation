@@ -14,9 +14,13 @@
     GET/POST /auth/admin/{uid}/perms  — 계정별 권한(그룹·모듈 허용/거부)
     POST /auth/admin/{uid}/{action}   — approve | block | toggle_role
 
-권한(users.perms · JSON · NULL 이면 modules.json 의 roles 규칙 그대로 = 종전 동작)
-    {"groups":["시포","핵심"], "modules":["check"], "deny":["member"]}
-    admin 역할은 전부 허용. 판정은 allowed() 한 곳 — /auth/check · /auth/me · 관리자 화면이 같이 쓴다.
+권한 — 판정은 allowed() 한 곳(/auth/check · /auth/me · 관리자 화면이 같이 쓴다). 순서:
+    ① role=admin            전부 허용
+    ② account_perms.json    회사 계정 7개의 정본(GM 확정 2026-09-03 · 배951). DB perms 보다 우선한다.
+    ③ users.perms (JSON)    관리자 화면에서 계정마다 준 권한
+    ④ 아무것도 없으면       매일 쓰는 화면(core)만
+    권한 JSON = {"all":true, "groups":["시포","핵심"], "modules":["check"], "deny":["member"]}
+    all=전체 허용 · deny 가 언제나 우선. 되돌리기 = account_perms.json 의 accounts 를 비운다(종전 동작).
 
 환경변수(/srv/erp/auth.env · 서버 밖으로 안 나감 · DB 접속은 /srv/erp/db.env 의 ERP_DB_URL — common/db.py 가 읽는다)
     ERP_JWT_SECRET  서명 키        TG_BOT_TOKEN / TG_CHAT_ID  가입 신청 알림(업무보고방)
@@ -56,15 +60,10 @@ PRESETS = {
     "마케팅":   ["핵심", "시모", "시보"],
     "전체":     list(GROUPS),
 }
-# 회사 계정 → 처음 들어올 때 붙는 부서 프리셋(GM 2026-09-03 "회사계정 안에서만 권한 분류"). 없으면 핵심만.
-ACCOUNT_PRESET = {
-    "info@wellperion.com": "운영부",       # 리셉션·운영부 공용 계정
-}
-
-
-def default_perms(email: str) -> Optional[str]:
-    name = ACCOUNT_PRESET.get(email.lower())
-    return json.dumps({"groups": PRESETS[name], "modules": [], "deny": []}, ensure_ascii=False) if name else None
+# 계정별 권한 정본(GM 확정 2026-09-03 · 배951). 여기 적힌 계정은 이 파일이 DB perms 를 이긴다.
+# accounts 를 비우거나 파일을 지우면 종전 동작(DB perms · 없으면 핵심 화면만)으로 그대로 돌아간다.
+ACCOUNTS = os.environ.get("ERP_ACCOUNT_PERMS",
+                          os.path.join(os.path.dirname(os.path.abspath(__file__)), "account_perms.json"))
 SECRET = os.environ["ERP_JWT_SECRET"]
 COOKIE = "erp_session"
 SESSION_DAYS = 30
@@ -141,6 +140,21 @@ def modules() -> list:
     return _MODS[1]
 
 
+_ACCTS: tuple = (None, {})                     # (mtime, 이메일→권한) · 파일이 바뀌면 다시 읽는다(재기동 불필요)
+
+
+def accounts() -> dict:
+    global _ACCTS
+    try:
+        mt = os.stat(ACCOUNTS).st_mtime
+    except OSError:
+        return {}                              # 파일 없음 = 종전 동작
+    if mt != _ACCTS[0]:
+        with open(ACCOUNTS, encoding="utf-8") as f:
+            _ACCTS = (mt, {k.lower(): v for k, v in (json.load(f).get("accounts") or {}).items()})
+    return _ACCTS[1]
+
+
 def module_at(uri: str) -> Optional[dict]:
     """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
     modules()
@@ -149,6 +163,10 @@ def module_at(uri: str) -> Optional[dict]:
 
 
 def perms_of(user) -> Optional[dict]:
+    """계정 권한. account_perms.json 에 적힌 계정은 그 파일이 정본(관리자 화면 저장분보다 우선)."""
+    fixed = accounts().get((user["email"] or "").lower())
+    if fixed is not None:
+        return fixed
     raw = user["perms"] if "perms" in user.keys() else None
     if not raw:
         return None
@@ -167,6 +185,8 @@ def allowed(user, module: dict) -> bool:
         return bool(module.get("core")) and "staff" in module.get("roles", [])
     if module["id"] in p.get("deny", []):
         return False
+    if p.get("all"):                               # 전체 허용 — deny 뺀 나머지 전부
+        return True
     groups = p.get("groups", [])
     return (module["id"] in p.get("modules", []) or module.get("group") in groups
             or ("핵심" in groups and bool(module.get("core"))))
@@ -291,7 +311,7 @@ def signup(name: str = Form(...), email: str = Form(...), password: str = Form(.
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                      (T, email, name.strip(), salt, h, now(), default_perms(email)))
+                      (T, email, name.strip(), salt, h, now(), None))
     except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 신청된 이메일입니다", status_code=303)
     tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: http://15.164.151.105/auth/admin")
@@ -428,7 +448,7 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
             salt, h = hash_pw(secrets.token_urlsafe(32))    # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                       (T, email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now(),
-                       default_perms(email)))
+                       None))
         elif u["status"] != "active":
             c.execute("UPDATE users SET status='active', approved_at=%s WHERE tenant_id=%s AND id=%s", (now(), T, u["id"]))
         u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
@@ -506,10 +526,13 @@ def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg:
     ms = modules()
     rows = "".join(_perms_row(g, [m for m in ms if (m.get("core") if g == "핵심" else m.get("group") == g)], u, p)
                    for g in GROUPS)
-    mode = "관리자 — 전부 허용" if u["role"] == "admin" else ("개별 설정" if p else "기본 = 핵심 화면만")
+    fixed = (u["email"] or "").lower() in accounts()
+    mode = ("관리자 — 전부 허용" if u["role"] == "admin"
+            else "계정 권한 파일(account_perms.json)" if fixed else ("개별 설정" if p else "기본 = 핵심 화면만"))
     return page("계정 권한", f"""<div class='box wide'><h1>권한 — {escape(u['name'])} <small>{escape(u['email'])}</small></h1>
 {'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <p>현재: <span class=tag>{mode}</span> · 허용 {len(allowed_ids(u))}/{len(ms)}개. 저장하면 개별 설정으로 바뀝니다(거부가 허용보다 우선).</p>
+{'<p class=err>이 계정은 <b>account_perms.json</b> 이 정본입니다 — 여기서 저장해도 반영되지 않습니다. 저장소 파일을 고치고 배포하세요.</p>' if fixed else ''}
 <form method=post action=/auth/admin/{uid}/perms style='max-width:none;padding:0;border:0;background:none'>
 <p>부서로 한 번에: {' '.join(f"<button class=sec name=preset value='{escape(k)}'>{escape(k)}</button>" for k in PRESETS)}</p>
 <div class=tw><table><tr><th>그룹</th><th>전체</th><th>모듈</th></tr>{rows}</table></div>

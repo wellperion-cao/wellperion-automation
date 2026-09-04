@@ -10,7 +10,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/auth /srv/erp/common'
-$SCP server/erp_auth/app.py $HOST:/srv/erp/auth/app.py
+$SCP server/erp_auth/app.py server/erp_auth/account_perms.json $HOST:/srv/erp/auth/   # 계정별 권한 정본 — app.py 가 같은 폴더에서 읽는다(배951)
 $SCP server/common/db.py server/common/schema.sql $HOST:/srv/erp/common/      # DB 접속은 common/db.py 하나 (db.env 는 deploy_db.sh 가 만든다)
 $SCP server/erp_auth/erp-auth.service $HOST:/tmp/erp-auth.service
 if $S 'sudo test -d /etc/letsencrypt/live/erp.wellperion.com'; then   # /etc/letsencrypt/live 는 root 만 읽는다 — sudo 없이는 늘 거짓이라 443 블록을 덮어버린다
