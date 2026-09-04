@@ -39,14 +39,8 @@
   .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
   .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
-  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
-  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
-  .sign div:last-child{ border-right:0; }
-  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
-    border-bottom:1px solid var(--line); }
-  .sign .b{ height:38px; }
 
-  /* ② 결정 요청 */
+  /* ② 방향성 */
   .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
   .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-right:1px solid rgba(255,255,255,.28); }
@@ -130,28 +124,22 @@
     <div class="meta">
       작성 <b>AI 시모</b><br>
       작성일 <b>2026. 09. 04.</b> · 문서번호 <b>CMO-A3-260904</b><br>
-      대상 <b>새 홈페이지 · 직원 로그인 · ERP 3층 구조</b> · 결정 <b>2건</b>
-    </div>
-    <div class="sign">
-      <div><div class="t">담당</div><div class="b"></div></div>
-      <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
+      대상 <b>새 홈페이지 · 직원 로그인 · ERP 3층 구조</b> · 방향 <b>2건</b>
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
+  <!-- ② 방향성 -->
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="lb"><span>DIRECTION</span><strong>방향성</strong></div>
     <div class="items">
       <div class="it">
         <div class="n">01</div>
-        <div class="q">정식 주소 전환 시점을 정해 주십시오.</div>
-        <div class="d">wellperion.com 첫 화면을 새 홈페이지로 바꾸는 날. 권고 = 둘러보기에 걷는 영상이 반영된 뒤(첫인상이 둘러보기다).</div>
+        <div class="q">정식 주소 전환은 이번 회차에서 뺀다.</div>
+        <div class="d">새 홈은 초안 수준(글 위주·사진 28장) — wellperion.com 을 대체할 수준이 아니다. 지금 역할 = ①직원 로그인 관문 ②AI 검색용 내용층. 정식 교체는 별도 단계: 걷는 영상 + 전문 사진 반영 → 브랜드 가이드 기준 시안 → GM 눈으로 OK → 그 뒤에 주소 5단계.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
-        <div class="q">직원 로그인 권한표를 확정해 주십시오.</div>
+        <div class="q">직원 로그인 권한표.</div>
         <div class="d">누가 어느 모듈까지 보는지(역할별 기본안 = 모듈 카드의 역할값). 종합접수처 1호 전환일과 같은 날 켠다.</div>
       </div>
     </div>
@@ -190,7 +178,7 @@
         <td>앱 셸 가동 · 회원 관리: 명단 서버에서 3초(09-03) · 문의: 읽기 서버 완료</td>
       </tr>
       <tr><td class="k">남은 것</td>
-        <td>① 공개 경로(로그인 없이) 서버에 열기 ② 걷는 영상 → 프레임 교체 ③ 영문판 내용층 ④ 정식 주소 5단계(DNS·인증서·검색 차단 해제 등) ⑤ 자주 묻는 질문 3건 AI 검색 데이터 동기화</td>
+        <td>① 공개 경로(로그인 없이) 서버에 열기 ② 걷는 영상 → 프레임 교체 ③ 영문판 내용층 ④ 자주 묻는 질문 3건 AI 검색 데이터 동기화 ⑤ 시안 GM OK 뒤 정식 주소 5단계(DNS·인증서·검색 차단 해제 등)</td>
         <td>① 직원 계정 등록 방식 확정 ② 권한표 확정 ③ 배포</td>
         <td>모듈 전환 날짜: 종합접수처 1호(시토 확정 대기) · 회원 관리(저장 대조 5종 뒤) · 문의 쓰기·점검·업무결재·콘텐츠 접수 미정 · 스케줄·매출·지출 = 이번 회차 제외</td>
       </tr>
@@ -198,7 +186,7 @@
       <tr class="grp"><td colspan="4">담 당</td></tr>
       <tr><td class="k">만드는 사람</td><td>시모(내용·디자인) · 시토(서버·주소)</td><td class="ctr">시토</td><td>시토(이관) · 각 담당(모듈) · 웰리(실무진 안내 3통)</td></tr>
       <tr><td class="k">GM 이 주실 것</td>
-        <td>걷는 영상 1편(휴대폰 4K 가로·천천히·10공간 순서) · 정식 전환 시점</td>
+        <td>걷는 영상 1편(휴대폰 4K 가로·천천히·10공간 순서) · 시안 OK 판정</td>
         <td class="ctr">권한표 확정</td>
         <td class="ctr">모듈 전환 날짜 승인</td>
       </tr>
@@ -215,11 +203,11 @@
     <div class="box">
       <h3>핵심 리스크</h3>
       <ul>
+        <li class="r1">새 홈은 초안 수준 — 정식 교체로 착각하면 브랜드가 깎인다.</li>
         <li class="r1">공개 홈이 로그인 관문 뒤 — 열기 전엔 고객이 못 본다.</li>
         <li class="r1">전환 날짜 미정 모듈 5개 → 실무진 안내 못 나감.</li>
         <li class="r2">둘러보기 사진 28장 = 슬라이드 수준(영상 필요).</li>
         <li class="r2">세션 30일 — 공용 PC 로그아웃 규칙 필요.</li>
-        <li class="r2">영문 홈 미반영.</li>
       </ul>
     </div>
     <div class="box">
@@ -229,14 +217,14 @@
         <li class="n">GM — 걷는 영상 촬영 → 시모 프레임 교체</li>
         <li class="n">시토 — 종합접수처 1호 날짜 확정 → 웰리 D-1 안내</li>
         <li class="n">GM — 권한표 확정 → 시토 로그인 켬</li>
-        <li class="n">시토 — 정식 주소 5단계 → 시모 영문판</li>
+        <li class="n">시모 — 영상·사진 반영 시안 → GM OK → 시토 주소 5단계</li>
       </ul>
     </div>
     <div class="box rec">
       <h3>AI 시모 권고</h3>
       <ul>
         <li>순서 = <b>공개 경로 → 영상 교체 → 정식 주소.</b></li>
-        <li>정식 전환은 <b>둘러보기 영상 반영 뒤.</b></li>
+        <li>정식 교체는 <b>시안이 GM 눈에 찰 때</b> — 지금은 직원 관문 + AI 검색층으로만 굴린다.</li>
         <li>직원 로그인은 <b>종합접수처 1호와 같은 날.</b></li>
         <li>홈페이지 문의 폼은 화면 그대로, 「알게 된 경로」 선택지만 11종으로 늘어난다 — <b>방문자가 보는 유일한 변화.</b></li>
       </ul>
