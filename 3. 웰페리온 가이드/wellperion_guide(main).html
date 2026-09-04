@@ -6385,7 +6385,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- ░░ 탭3: 아이디어 = GM 개인 아이디어 기록 (GM 지시 2026-09-04 "방향기록탭 옆에 탭 하나 더 —
            개인 아이디어 기록"). 업무 SSOT·배가 아니다 — 생각을 잃지 않으려고 적는 자리.
-           저장소 = status/gm_ideas.json 한 벌(루틴 트래커와 같은 read_file/commit_file 길 · 새 저장소 안 만듦). ░░ -->
+           저장소 = status/gm_personal_routine.json 의 ideas 키(루틴 트래커와 같은 파일·같은 read_file/commit_file 길 · GAS 허용 경로라 새 파일 안 만듦). ░░ -->
       <div class="tab-panel" data-panel="ideas">
         <h3><span class="ico">💡</span>아이디어 기록 <span style="font-size:12px;color:var(--dim);font-weight:400;">업무·배 아님 · 생각 보관함 · 저장하면 1~2분 후 어디서 열어도 보임</span></h3>
         <div class="card" style="margin-bottom:14px;">
@@ -6401,7 +6401,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <script>
       (function(){
         var GAS_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-        var JPATH='status/gm_ideas.json';
+        var JPATH='status/gm_personal_routine.json';  /* 새 원장 0 — 루틴 파일의 ideas 키만 쓴다(GAS 허용 경로) */
         var RAW='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/'+JPATH;
         var DATA={ideas:[]};
         function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -6414,15 +6414,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         }
         function render(){
           var box=document.getElementById('gmIdeaList'); if(!box) return;
-          var list=(DATA.ideas||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+          var list=(DATA.ideas||[]).filter(function(x){ return !x.done; }).sort(function(a,b){ return String(b.t||'').localeCompare(String(a.t||'')); });
           if(!list.length){ box.textContent='아직 적은 아이디어가 없습니다.'; return; }
           box.innerHTML=list.map(function(it){
             return '<div class="card" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">'
-              +'<strong style="color:var(--text);font-size:14px;">'+esc(it.title)+'</strong>'
-              +'<span style="font-size:11.5px;color:var(--dim);white-space:nowrap;">'+esc(it.date)+' <a href="#" data-del="'+esc(it.id)+'" style="color:var(--dim);margin-left:6px;">지우기</a></span></div>'
+              +'<strong style="color:var(--text);font-size:14px;">'+esc(it.text||it.title)+'</strong>'
+              +'<span style="font-size:11.5px;color:var(--dim);white-space:nowrap;">'+esc(it.t||it.date)+' <a href="#" data-del="'+esc(String(it.t||'')+'|'+String(it.text||''))+'" style="color:var(--dim);margin-left:6px;">지우기</a></span></div>'
               +(it.memo?'<div style="margin-top:4px;white-space:pre-wrap;color:var(--text);">'+esc(it.memo)+'</div>':'')+'</div>';
           }).join('');
-          box.querySelectorAll('[data-del]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); if(!confirm('이 아이디어를 지울까요?')) return; write(function(base){ base.ideas=(base.ideas||[]).filter(function(x){ return x.id!==a.getAttribute('data-del'); }); }); }); });
+          box.querySelectorAll('[data-del]').forEach(function(a){ a.addEventListener('click',function(e){ e.preventDefault(); if(!confirm('이 아이디어를 접을까요? (기록은 남고 목록에서만 빠집니다)')) return; write(function(base){ var k=a.getAttribute('data-del'); (base.ideas||[]).forEach(function(x){ if(String(x.t||'')+'|'+String(x.text||'')===k) x.done=true; }); }); }); });
         }
         /* 저장 직전에 최신을 다시 받아 그 위에 얹는다 — 루틴 트래커와 같은 이유(다른 창의 기록을 덮지 않게). */
         function write(mutate){
@@ -6441,7 +6441,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         function add(){
           var t=(document.getElementById('gmIdeaTitle')||{}).value||'', m=(document.getElementById('gmIdeaMemo')||{}).value||'';
           if(!t.trim()){ var st=document.getElementById('gmIdeaSaveState'); if(st){ st.style.color='var(--warm)'; st.textContent='제목 한 줄은 적어 주세요'; } return; }
-          write(function(base){ base.ideas.push({id:'idea-'+Date.now(),date:today(),title:t.trim(),memo:m.trim(),status:'기록',updated_at:today()}); });
+          write(function(base){ base.ideas.push({t:today(),text:t.trim(),memo:m.trim(),done:false});   /* 텔레그램 캡처(gm_checkin)와 같은 모양 */ });
           document.getElementById('gmIdeaTitle').value=''; document.getElementById('gmIdeaMemo').value='';
         }
         function boot(){ if(!document.getElementById('gmIdeaList')) return; read().then(function(j){ DATA=j||{ideas:[]}; DATA.ideas=DATA.ideas||[]; render(); }).catch(function(){ var b=document.getElementById('gmIdeaList'); if(b) b.textContent='불러오기 실패 — 새로고침'; });
