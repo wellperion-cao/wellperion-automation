@@ -2821,9 +2821,11 @@ var _RECEPTION_PUBLIC_ACTIONS = {
 // ScriptProperties 를 편집기에서 손으로 넣던 자리를 코드로 옮긴다 — `clasp run` 전용이다
 // (매니페스트 executionApi.access=MYSELF · HEAD 코드를 실행하므로 웹앱 배포 버전과 무관하다).
 // doGet/doPost 라우터에 액션으로 등록하지 않는다 = 웹에서 부를 수 없다.
+// ★이름 끝에 밑줄을 붙이지 않는다 — Apps Script 는 끝 밑줄을 private 로 보고 API 실행을 막는다
+//   (2026-09-04 실측: _setAccessToken_ → 'Unable to run script function').
 // ★인자가 비었거나 값이 규격 밖이면 아무것도 바꾸지 않고 현재 상태만 돌려준다(오호출 방어).
 // ★토큰 값 자체는 절대 반환하지 않는다 — 존재 여부와 길이만.
-function _setAccessToken_(tok) {
+function gateSetAccessToken(tok) {
   var p = PropertiesService.getScriptProperties();
   tok = String(tok == null ? '' : tok).trim();
   if (!tok) {
@@ -2834,7 +2836,7 @@ function _setAccessToken_(tok) {
   return { ok: true, changed: true, hasToken: true, len: tok.length,
            enforce: p.getProperty('TOKEN_ENFORCE') || '' };
 }
-function _setTokenEnforce_(v) {
+function gateSetTokenEnforce(v) {
   var p = PropertiesService.getScriptProperties();
   v = String(v == null ? '' : v).trim();
   if (v !== '0' && v !== '1') {
@@ -2842,7 +2844,7 @@ function _setTokenEnforce_(v) {
              enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: !!p.getProperty('ACCESS_TOKEN') };
   }
   if (v === '1' && !p.getProperty('ACCESS_TOKEN')) {
-    return { ok: false, changed: false, error: 'ACCESS_TOKEN 이 없다 — 먼저 _setAccessToken_ 로 넣어라',
+    return { ok: false, changed: false, error: 'ACCESS_TOKEN 이 없다 — 먼저 gateSetAccessToken 로 넣어라',
              enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: false };
   }
   p.setProperty('TOKEN_ENFORCE', v);
