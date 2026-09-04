@@ -31,7 +31,7 @@
 | 7 | 인사 허브 (`AKfycbyyXrdM7n` · 저장소 `.deploy-*` 없음 → info@ 또는 시트 내장) | 읽기·쓰기: 조직·일정·휴가·온보딩·채용 | chro/hub 10화면 · recruiting 6화면 · 18파일 | 시토(시로 큐 제외) | 읽기 거울 → 쓰기 이중기록 | 예정 | 09-08 (소스 확보 = info@ 로그인 선행) |
 | 8 | 매출 배관 sales-api (`AKfycbzXcWyi-P` · `.deploy-salesops`) · 운영요약 (`AKfycbxUAQ3Def`) · 보고시트 (`AKfycbwSn7ZyfX`) | 읽기: 매출·지출 집계 | 매출지출현황 · 월간운영계획 · 매출회원현황보고 · 파트너팀 체계 | 시토(시뽀 큐 제외) | 읽기 거울 | 예정 | 09-09 |
 | 9 | 지출현황 (`AKfycbzKIAxYYL`) · 리셉션 업무 (`AKfycbxcPsm-Xt`) · 라커관리 (`AKfycbyyN0I7od`) · renewal 개인 GAS (`AKfycbzY3ZvW_T`) | 각 1화면 | 지출현황 · 리셉션 업무/index · 라커관리 · renewal | 시토 | 화면 소유자 확인 후 읽기 거울 또는 폐기 | 예정 | 09-10 |
-| 10 | 시트 내장·비화면 GAS: 텔레그램 매출보고(`.deploy-salesreport`) · 카톡방 목록(kakao_rooms) · 폼안내(`.deploy-forms`) · 웰리보이스 | 트리거·알림 | 화면 없음(봇·시트 트리거) | 시토 | 서버 cron 으로 옮김(GAS 트리거 끄기 = 사람이 계정 들어가야 함) | 예정 | 09-11 |
+| 10 | 시트 내장·비화면 GAS: 텔레그램 매출보고 · 카톡방 목록(kakao_rooms) · 폼안내(`.deploy-forms`) · 웰리보이스 | 트리거·알림 | 화면 없음(봇·시트 트리거) | 시토 | **서버 cron 이전 대상 아님 — 4건 중 3건은 이미 대체·트리거 없음(§7 실측)** | **3/4 종료 09-04 · 웰리보이스만 미해결(info@ 로그인 필요)** | — |
 
 **서버 원본 전환 1호 = #2 문의 폼** — 09-04 주소 교체 → 09-05·06·07 대조 3일 → **09-08 서버 원본**(시트는 되밀기). 이후 #3 → #4b → #5b → #6b 순으로 같은 3일 규칙.
 
@@ -59,3 +59,23 @@
 
 - `server/erp_api/api_intake.py` · `intake.nginx.conf` · `intake-zone.nginx.conf` · `server/deploy_intake.sh` · `schema.sql` 의 `intake_log` — 배포·selftest 검증 완료(무쿠키 POST 200 · intake_log 2행 tenant `selftest` · gas_status `skipped` · `/api/health` 는 그대로 401).
 - 함께 오늘 완료: 레인 R·S·T 읽기 거울 3종 · 배 961 `/api/write`.
+
+## 7. #10 시트 내장·비화면 GAS — 실측 결과 (2026-09-04 시토)
+
+GM 「옮길 수 있는 것들은 옮겨야 하지 않아?」 에 대한 답 = **옮길 것이 없다.** 4건을 소스로 열어 확인한 결과 3건은
+이미 대체됐거나 애초에 시간 트리거가 없고, 1건은 소스를 못 찾았다. 없는 일에 서버 cron 을 새로 만들면
+같은 일을 두 장치가 하게 된다(약속 L21 중복 장치 금지).
+
+| 잡 | 발신 대상·시각 | 시간 트리거 | 기존 파이썬 등가물 | 판정 |
+|---|---|---|---|---|
+| 텔레그램 매출보고 (`매출보고_자동발송.js` · GM 개인계정 scriptId `1f7Py-qdO6…`) | 텔레그램 `8254867551` · 매일 09:00 | 있음(`sendDailyReport` 일일) | `scripts/kakao_auto_daily_report.py` + `generate_sales_report_image.py` (예약작업 `Wellperion-Kakao-Sales-Report-0930` 09:30 · 텔레그램+카톡 4방) | **이미 대체 완료.** 트리거는 아직 돌지만 `sendDailyReport` 가 배99(2026-07-25)로 no-op — 발신 0. 라이브 소스 재확인 09-04 |
+| `.deploy-salesreport/Code.gs` (보고시트 P20·I16·I18 쓰기 웹앱) | 발신 없음(시트 칸 쓰기만) | 없음 | 호출자 = `scripts/sales_report_ops_summary.py` (예약작업 08:00) | 트리거·발신 자체가 없는 **수신용 웹앱** — 이전 대상 아님 |
+| 폼안내 (`.deploy-forms` · scriptId `1o8EfB_jMeX…`) | 발신 없음(구글폼 설명·마감 문구) | 없음 — oauthScopes 에 `script.scriptapp` 이 없어 **트리거 생성 자체가 불가**(라이브 clone 으로 확인) | 없음(사람이 에디터에서 손으로 돌리는 정비 함수) | 이전 대상 아님 |
+| 카톡방 목록 (kakao_rooms) | 발신 없음 | 없음 | `server/erp_api/sync_kakao.py` (서버 cron 5분) | **이미 서버에 있음** — 읽기 거울 완료(배 922 레인 W) |
+| 웰리보이스 | 불명 | 불명 | 불명 | **미해결.** 저장소 전체·cao@ GAS 13개 어디에도 없다. info@ 계정 또는 시트 내장 스크립트로 추정 — 소스 확보에 계정 로그인 선행 |
+
+**GAS 트리거 끄는 순서(남은 것 = 매출보고 하나 · 급하지 않음).** 지금도 발신 0 이라 안 꺼도 이중 발신은 없다.
+치우는 김에 지울 때만 이 순서로 한다: ① `status/kakao_auto_send.json` 의 `telegram_photo` 가 `true` 인지 확인
+(09:30 파이썬이 유일 발신자라는 뜻) → ② GM/cao 가 GM 개인 구글계정 Apps Script 에서 `sendDailyReport` 시간
+트리거 삭제 → ③ 다음 날 `logs/telegram_sent-<날짜>.log` 의 `sendPhoto` 가 하루 1건(09:30)인지 확인.
+역롤백 = `telegram_photo` 를 `false` 로 되돌리고 `sendDailyReport` 의 배99 return 한 줄 삭제.
