@@ -391,6 +391,18 @@
        읽기 전용 — 등록·수정 칸 없음, 등록은 담당자 본인이 업무 SSOT에서 한다. -->
   <div id="leaderBand" class="today-sched" hidden></div>
 
+  <!-- ⓪-3 AI C-Level 역할·방향 토글 (GM 지시 2026-09-05 "GM업무 맨 위에 각 AI C레벨들의 역할 및 방향성을
+       기록해두면 보기 편할 것 같아 토글라인으로 — 나는 GM업무만 보니까"). 값은 ssot/kpi.json roles 한 곳
+       (line=편제 · core_role=역할 · direction=방향 · staff=실무진 · gm_work_groups=GM업무 담당 대분류)을
+       직독해 그린다 — 여기에 글자를 적지 않는다(약속 L01). 기본은 접힘 — GM이 볼 때만 편다. -->
+  <details class="sec" id="sec-ai-roles">
+    <summary><span class="ic">🤖</span> AI C-Level 역할 · 방향 <span class="cnt" id="ai-roles-cnt">—</span></summary>
+    <div class="sum" style="padding:8px 14px 12px;">
+      <table><thead><tr><th style="width:92px">AI</th><th style="width:230px">편제</th><th>역할</th><th>방향</th><th style="width:150px">실무진</th><th style="width:150px">GM업무 대분류</th></tr></thead>
+      <tbody id="ai-roles-body"><tr><td colspan="6" class="rep-empty">불러오는 중…</td></tr></tbody></table>
+    </div>
+  </details>
+
   <!-- ① 경영 보고건 — 회장님·대표님을 한 묶음으로(2026-08-06 GM: "둘이 비슷한 맥락이고 업무는 다 내가 본다").
        두 목록의 정본·판정 로직은 그대로다(회장님=_chairman_items.js / 대표님=업무 시트) — 화면에서만 한 블록으로 모은다. -->
   <details class="sec" id="sec-report" open>
@@ -528,6 +540,34 @@
     });
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // ⓪-3 AI C-Level 역할·방향 — ssot/kpi.json roles 직독(정본 한 곳 · 약속 L01). 실패해도 나머지 화면은 그대로.
+  (function renderAiRoles() {
+    var body = document.getElementById('ai-roles-body'), cnt = document.getElementById('ai-roles-cnt');
+    if (!body) return;
+    var ORDER = ['ceo', 'cto', 'cpo', 'cmo', 'coo', 'cbo', 'cfo', 'chro'];
+    var TITLE = { ceo: 'CEO', cto: 'CTO', cpo: 'CPO', cmo: 'CMO', coo: 'COO', cbo: 'CBO', cfo: 'CFO', chro: 'CHRO' };
+    fetch(RAW_BASE + 'ssot/kpi.json?cb=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var roles = (d && d.roles) || {};
+        var rows = ORDER.filter(function (k) { return roles[k]; }).map(function (k) {
+          var r = roles[k];
+          var grp = (r.gm_work_groups || []).join(' · ');
+          return '<tr><td><b>AI ' + esc(r.nickname || k) + '</b><div class="cat">' + TITLE[k] + '</div></td>'
+            + '<td>' + esc(r.line || '—') + '</td>'
+            + '<td>' + esc(r.core_role || '—') + '</td>'
+            + '<td>' + esc(r.direction || '—') + '</td>'
+            + '<td>' + esc(r.staff || '—') + '</td>'
+            + '<td>' + (grp ? '<span class="ai-owner" style="margin-left:0">' + esc(grp) + '</span>' : '—') + '</td></tr>';
+        });
+        body.innerHTML = rows.join('') || '<tr><td colspan="6" class="rep-empty">역할 정보 없음</td></tr>';
+        if (cnt) cnt.textContent = rows.length + '역할';
+      })
+      .catch(function () {
+        body.innerHTML = '<tr><td colspan="6" class="rep-empty">역할 정보를 못 읽었습니다(ssot/kpi.json)</td></tr>';
+      });
+  })();
 
   // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개 「전체 지도」로 축소 2026-08-24) ──
   // 접힌 <details class="sec"> 3개(경영 보고건·GM 진행건·완료건) 강제 오픈은 beforeprint/afterprint 로
