@@ -72,13 +72,34 @@ def close_schedule(event_id: str, dry: bool) -> dict:
 
 
 # ── GM업무 · 결재 SSOT (같은 업무 SSOT 행) ───────────────────────────────────
-def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool) -> dict:
+def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
+             owner: str = GM_OWNER) -> dict:
+    """owner 기본 = 김남욱 GM. ★실무진이 실행하는 건은 --assignee 로 그 사람을 담당에 넣는다 — 담당이 GM 이면
+    GM업무 화면에 GM 이 할 일로 뜬다(GM 지적 2026-09-05 "다 김남욱GM 이라고 해놓으면 내가 해야하는거 아냐?")."""
     import ops_daily_digest as o
-    params = {"action": "todo_add", "title": title, "category": category, "owner": GM_OWNER,
+    params = {"action": "todo_add", "title": title, "category": category, "owner": owner or GM_OWNER,
               "startDate": _today().isoformat(), "endDate": due, "content": content,
               "link": "", "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
     if dry:
         return {"ok": True, "dry": True, "id": "TODO-(미리보기)"}
+    return o._todo_post(params) or {"ok": False, "reason": "응답 없음"}
+
+
+def append_todo(todo_id: str, line: str, dry: bool) -> dict:
+    """GM업무 한 행의 내용 끝에 진척 한 줄을 덧붙인다(GM 2026-09-05 "G1에 계속 업데이트").
+    todo_update 는 전 칸을 다시 보내야 하므로 현재 행을 읽어 내용만 늘린다. 행이 없으면 실패를 그대로 돌려준다."""
+    import ops_daily_digest as o
+    rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1"}, timeout=40,
+                      label="gm_handoff append").json().get("data") or []
+    row = next((r for r in rows if str(r.get("id")) == todo_id), None)
+    if not row:
+        return {"ok": False, "reason": f"행 없음 {todo_id}"}
+    content = (row.get("내용") or "").rstrip() + f"\n[{_today().isoformat()}] {line}"
+    params = {"action": "todo_update", "id": todo_id, "title": row.get("업무명", ""), "category": row.get("카테고리", ""),
+              "owner": row.get("담당자", ""), "startDate": str(row.get("시작일", ""))[:10], "endDate": str(row.get("종료일", ""))[:10],
+              "content": content, "approval": row.get("결재요청", "")}
+    if dry:
+        return {"ok": True, "dry": True, "content": content}
     return o._todo_post(params) or {"ok": False, "reason": "응답 없음"}
 
 
@@ -148,11 +169,19 @@ def main() -> int:
     ap.add_argument("--plan", help="월간운영계획 카드 id (있을 때만)")
     ap.add_argument("--check", default="", help="카드에 얹을 체크 한 줄(등록) / ☑ 로 바꿀 체크 원문(--done)")
     ap.add_argument("--done", action="store_true", help="완료 모드 — 세 면을 같이 닫는다")
+    ap.add_argument("--append", metavar="LINE", help="GM업무 --todo-id 행 내용 끝에 진척 한 줄 덧붙임(날짜 자동)")
     ap.add_argument("--todo-id")
     ap.add_argument("--event-id")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     dry = a.dry_run
+
+    if a.append:
+        if not a.todo_id:
+            ap.error("--append 는 --todo-id 필요")
+        r = append_todo(a.todo_id, a.append, dry)
+        print(f"🧭 GM업무 {_mark(r)} {a.todo_id}" + (f"\n{r.get('content')}" if dry else "") + ("" if r.get("ok") else f" — {r.get('reason')}"))
+        return 0 if r.get("ok") else 1
 
     if a.done:
         r_todo = close_todo(a.todo_id, dry) if a.todo_id else None
@@ -165,7 +194,7 @@ def main() -> int:
         ap.error("--title 필요")
     due = a.due or a.date or (_today() + _dt.timedelta(days=7)).isoformat()
     r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry) if a.date else None
-    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry)
+    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=a.assignee)
     r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
                         a.check, False, dry) if a.plan else None
     print(f"🧭 4면 — 전사일정 {_mark(r_evt)}{(' ' + r_evt.get('id', '')) if r_evt and r_evt.get('ok') else ''}"
