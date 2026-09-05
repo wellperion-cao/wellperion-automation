@@ -222,6 +222,9 @@
   <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
     <h2 class="sec" style="margin-top:0;">📨 알림 한 장 <span style="font-size:12px;font-weight:400;color:var(--dim);">(카톡·텔레그램 발신 전체)</span></h2>
     <div id="alert-board-summary" class="sec-note" style="margin:0 0 6px;font-weight:700;">불러오는 중…</div>
+    <!-- 🌅🌙 하루 양끝(시작/마무리) 카톡↔텔레그램 동기화 소표 — GM 지시 2026-09-05.
+         bookend:'start'|'end' 태그 붙은 등록부 항목만 골라 그린다(renderBookendBoard). -->
+    <div id="alert-bookend" style="margin:0 0 8px;"></div>
     <div id="alert-board-problems"></div>
     <details id="alert-board-details">
       <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">전체 펼치기</summary>
@@ -1014,6 +1017,36 @@
   // 'time' 고정이라(2026-08-31 확정) 이 함수 호출부가 이미 0이었다(약속 L21). 되살리려면
   // git 이력에서 본다. ROOM_META·roomPurpose·roomDisplay·ROOM_ORDER 도 여기서만 쓰여 같이 걷었다.
 
+  // 🌅🌙 하루 양끝(시작/마무리) 소표 — GM 지시 2026-09-05 "카카오톡이랑 텔레그램이랑 동기화".
+  // 등록부 bookend:'start'|'end' 태그가 붙은 4개 핵심 발신(카톡 07:40/22:30 · 텔레그램 08:00/23:00)만
+  // 2×2 로 골라 그린다 — 새 판정 없음, notifySeverity·alertLastSentCell 재사용(중복 로직 금지).
+  var BOOKEND_CELLS = {
+    kStart: 'kakao-0740-morning-foursplit', kEnd: 'kakao-ops-stream2',
+    tStart: 'win-0800-ceo', tEnd: 'win-2300-ceo-evening'
+  };
+  function renderBookendBoard(rowsById){
+    var wrap = document.getElementById('alert-bookend');
+    if(!wrap) return;
+    function cell(id){
+      var r = rowsById[id];
+      if(!r) return '<td style="color:var(--dim);">—</td>';
+      return '<td style="vertical-align:top;padding:4px 8px;">' +
+        '<div style="font-weight:700;font-variant-numeric:tabular-nums;">' + esc(r.item.when || '') + '</div>' +
+        '<span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span>' +
+        '<div style="font-size:11px;color:var(--dim);margin-top:2px;">' + alertLastSentCell(r.item, _alertAhMap) + '</div></td>';
+    }
+    if(!rowsById[BOOKEND_CELLS.kStart] && !rowsById[BOOKEND_CELLS.tStart]){
+      wrap.innerHTML = ''; return; // 등록부 로딩 실패 등 — 조용히 생략(0을 지어내지 않는다)
+    }
+    wrap.innerHTML = '<div style="font-weight:700;font-size:13px;margin:0 0 4px;">🌅🌙 하루 양끝</div>' +
+      '<div class="coo-tbl-wrap"><table style="border-collapse:collapse;">' +
+      '<tr><th style="padding:4px 8px;"></th><th style="padding:4px 8px;">카카오톡 현장</th><th style="padding:4px 8px;">텔레그램 GM</th></tr>' +
+      '<tr><td style="font-weight:700;padding:4px 8px;">하루의 시작</td>' + cell(BOOKEND_CELLS.kStart) + cell(BOOKEND_CELLS.tStart) + '</tr>' +
+      '<tr><td style="font-weight:700;padding:4px 8px;">하루의 마무리</td>' + cell(BOOKEND_CELLS.kEnd) + cell(BOOKEND_CELLS.tEnd) + '</tr>' +
+      '</table></div>' +
+      '<div class="sec-note" style="margin-top:4px;">카톡 실패 → 텔레그램 경보: 발신 실패 ✔ · 미발신 감시 ✔(07:55 · 22:45/20:15)</div>';
+  }
+
   var _alertTroom = {};
   function alertApplyFilters(){
     var wrap = reqEl('alert-board-rooms', 'alertApplyFilters');
@@ -1135,6 +1168,9 @@
       counts[sevInfo.sev]++;
       return { item:item, sevInfo:sevInfo };
     });
+    var _rowsById = {};
+    _alertRowsCache.forEach(function(r){ if(r.item && r.item.id) _rowsById[r.item.id] = r; });
+    renderBookendBoard(_rowsById);
 
     /* ★2026-09-05 GM 지시("알림 한 장이 너무 방대해졌는데 단순화도 같이") — 첫 화면은
        요약 1줄 + 문제만. 드리프트 배너는 별도 자리 없이 문제 칸에 흡수했다. 정상 포함
