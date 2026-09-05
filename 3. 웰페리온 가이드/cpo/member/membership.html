@@ -8361,7 +8361,7 @@ function _oaSaveOwner(sel){
   //   실패 시 되돌리는 대신 대기큐에 남겨 재시도한다 — 드롭다운이 되돌아가면 사용자는 '안 눌렸나' 하고 또 누른다.
   var _ovO = {}; _ovO[cfg.col] = newVal;
   WriteBuffer.enqueue(
-    { action: 'member_owner_save', phone: phone, field: cfg.col, value: newVal },
+    { action: 'member_owner_save', phone: phone, field: cfg.col, value: newVal, member_no: (r && r['회원번호']) || '' },
     { scope: 'active', phoneKey: phone, fieldset: 'owner:' + cfg.col, label: '담당', who: (r && (r['회원명'] || r['성함'])) || '', overlay: _ovO }
   );
   // 여기서 뜨는 건 '보냈다'이지 '저장됐다'가 아니다(배579) — 서버가 받았는지는 아직 모른다.
@@ -8736,7 +8736,7 @@ function _mregSaveOwner(sel){
   // 버퍼 경유(2026-07-23) — 위 _oaSaveOwner 와 동일 이유. 실패는 되돌리지 않고 재시도 대상으로 남긴다.
   var _ovM = {}; _ovM[field] = newVal;
   WriteBuffer.enqueue(
-    { action: 'member_owner_save', phone: phone, field: field, value: newVal },
+    { action: 'member_owner_save', phone: phone, field: field, value: newVal, member_no: (member && member['회원번호']) || '' },
     { scope: 'active', phoneKey: phone, fieldset: 'owner:' + field, label: '담당', who: (member && (member['회원명'] || member['성함'])) || '', overlay: _ovM }
   );
   showToast('담당자 저장 · ' + String(field).replace(' 담당자', '') + ' → ' + (newVal || '미배정'), 'ok');
@@ -14073,8 +14073,13 @@ function apiPost(payload) {
   //   GAS 에 그대로 전달한 응답을 돌려준다. 서버에 못 닿거나(네트워크·401·5xx) 서버가 GAS 에 못 닿으면(server-forward-failed)
   //   종전 GAS 직접 경로로 폴백 — 읽기 관문(_memberListFetch)과 같은 규칙. 되돌리기 = 아래 ERP_API_ON 을 false 로.
   var _gas = function(){ return _send(GAS_URL, false); };
+  // ★회원 쓰기 1단계(배1058 · 2026-09-05 시포) — member_owner_save 만 서버 원장 라우트 /api/members/write 로.
+  //   서버가 members.owner_* 5칸 + member_change_log 에 먼저 적고 같은 body 를 GAS 에 write-through 한다(시토 1050).
+  //   응답 모양은 /api/write 와 같다(ok·phone·field·value·rowIndex=회원번호). 실패(401·5xx)면 아래 catch 가 GAS 로 폴백.
+  //   member_no 는 같은 번호를 쓰는 가족 회원(유효 4쌍 실측) 구분용 — 서버가 받으면 번호 우선, GAS 는 무시한다.
+  var _writeUrl = (payload && payload.action === 'member_owner_save') ? '/api/members/write' : '/api/write';
   var _p = !ERP_API_ON ? _gas()
-    : _send('/api/write', true)
+    : _send(_writeUrl, true)
         .then(function(d){ return (d && d.error === 'server-forward-failed') ? _gas() : d; })
         .catch(function(e){ if (_ac && _ac.signal.aborted) throw e; console.warn('[쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message); return _gas(); });
   return _p.then(function(d){ if (_to) clearTimeout(_to); return d; })
@@ -14758,6 +14763,8 @@ var WriteBuffer = (function(){
     if (rowIndex !== undefined && rowIndex !== null && rowIndex !== '') {
       for (var i = 0; i < rows.length; i++) { if (String(rows[i].rowIndex) === String(rowIndex)) return rows[i]; }
     }
+    var mno = item.payload && item.payload.member_no;
+    if (mno) { for (var m = 0; m < rows.length; m++) { if (String(rows[m]['회원번호'] || '') === String(mno)) return rows[m]; } }
     var ph = String(item.phoneKey || '').replace(/[^0-9]/g, '');
     if (!ph) return null;
     for (var j = 0; j < rows.length; j++) {

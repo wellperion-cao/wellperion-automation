@@ -305,6 +305,8 @@
       <div class="sec">
         <h2>회원 구성 — 오늘 몇 분이 회원인가</h2>
         <div class="bd" id="memberMix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <!-- 서버 판(배1061·1063) — 회원 5칸을 서버 회원 원장으로 다시 세어 시트와 22칸 대조. 업무보고방 09:20 병행 발송과 같은 계산. -->
+        <div class="fnote" id="serverCmp" style="display:none;margin:4px 0 0;"></div>
       </div>
 
       <div class="sec">
@@ -967,9 +969,34 @@ function load(){
         renderChart(RAW.chart);
       }
     }
-    runAudit(); applyUrlView();
+    runAudit(); applyUrlView(); applyServerPanel();
   }
   Promise.all([p1, p2, p3, p4]).then(afterAll, afterAll);
+}
+
+/* ★서버 판 반영(GM 지시 2026-09-05 · 배1063 시포) — 업무보고방 09:20 「서버 판(병행)」과 같은 계산을 이 화면에도 얹는다.
+   회원 5칸(N2~N6)만 서버 회원 원장(member_active_summary · cpo_today_stats)으로 다시 센다 — 공식은 정의서(CPO 22칸)와
+   서버 렌더러(sales_report_render.compute_overrides)와 같다: 총=유효+법인 · 정회원=유효−중단기−대기 · 중단기/법인/대기 그대로.
+   나머지 17칸은 서버 판도 시트 미러 그대로라 항상 일치. RAW.cells(09:30 발송 판정·자체 점검)는 손대지 않고 그리기용 사본만 바꾼다.
+   ERP 도메인(서버 원천)에서만 · 기본 보기에서만(날짜·월 보기는 일자탭 그대로). */
+function applyServerPanel(){
+  if (!ERP_API_ON || VIEW_MODE !== 'default' || !RAW.cells) return;
+  var a = RAW2.member_active_summary, t = RAW2.cpo_today_stats;
+  if (!a || !a.ok || !t || !t.ok || typeof a.validTotal !== 'number') return;
+  var mid = (a.typeCounts && a.typeCounts['중단기']) || 0, wait = a.waitingCount || 0, corp = t.memberCorp || 0;
+  var ov = { N2: a.validTotal + corp, N3: a.validTotal - mid - wait, N4: mid, N5: corp, N6: wait };
+  var c = {}; Object.keys(RAW.cells).forEach(function(k){ c[k] = RAW.cells[k]; });
+  var diff = [];
+  Object.keys(ov).forEach(function(k){
+    var label = String(c['M' + k.substring(1)] || k).replace(/\n/g, ' ');
+    if (num(c[k]) !== ov[k]) diff.push(label + '(시트 ' + num(c[k]).toLocaleString() + '→서버 ' + ov[k].toLocaleString() + ')');
+    c[k] = ov[k].toLocaleString() + '명';
+  });
+  renderSheet(c);
+  var el = document.getElementById('serverCmp');
+  el.style.display = '';
+  el.innerHTML = '🖥 <b>서버 판 반영</b> — 회원 5칸은 서버 회원 원장으로 다시 센 값 · 22칸 대조 <b>' + (22 - diff.length) + '/22</b>' +
+    (diff.length ? ' · 불일치: ' + esc(diff.join(', ')) + ' <span style="color:var(--dim)">(시트=어제 확정본 · 서버=지금 시점)</span>' : ' 일치');
 }
 
 /* ══ 날짜별 · 월별 보기 (GM 지시 2026-09-02) ══
@@ -1435,6 +1462,7 @@ function load2(){
     }
     document.getElementById('readat2').textContent = new Date().toTimeString().substring(0, 5);
     runAudit2();
+    applyServerPanel();   // 1페이지 시트가 먼저 왔으면 여기서, 아니면 afterAll 에서 — 둘 중 늦은 쪽이 그린다
   });
 }
 load2();
