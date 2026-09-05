@@ -13,6 +13,10 @@ member_no 를 무시하고 그대로 write-through). member_no 가 없으면 전
 2026-09-05: 실질 문제 사례 있으면 재검토).
 '컬럼 미발견' 오류는 서버에서 뺐다 — schema.sql 이 5칸을 고정 보장해 발생할 수 없다.
 
+테스트/더미 payload(db.is_test_payload — /api/write·/api/intake 와 같은 판별기)는 tenant 'selftest' 에서만
+행을 찾고 고친다(실 회원 tenant 'wellperion' 은 안 건드림) · GAS 전달도 안 한다(gas_status='skipped-test' ·
+dry-run · 배1054 검증 반영 2026-09-06).
+
 자체점검: python3 api_members_write.py   (DB·네트워크 없음 — 필드매핑·마스킹·직원표기 판정만)
 """
 import json
@@ -86,6 +90,10 @@ async def members_write(request: Request):
     member_no_in = str(payload.get("member_no") or "").strip()
     user = request.headers.get("x-erp-user", "")
     now = api_write._now_kst()
+    # 테스트/더미 페이로드(배포 검증용 · db.is_test_payload 는 /api/write·/api/intake 와 같은 판별기) —
+    # 다른 tenant('selftest')에서만 행을 찾고 고쳐 실 회원 데이터를 절대 안 건드리며, GAS 전달도 안 한다(dry-run).
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
 
     try:
         conn = db.connect()
@@ -98,14 +106,14 @@ async def members_write(request: Request):
             row = conn.execute(
                 ("SELECT member_no, name, phone, {col} AS val FROM members"
                  " WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE").format(col=col),
-                (db.TENANT, member_no_in)).fetchone()
+                (tenant, member_no_in)).fetchone()
             if row and _norm_phone(row["phone"]) != phone:
                 mismatch, row = True, None
         else:
             row = conn.execute(
                 ("SELECT member_no, name, phone, {col} AS val FROM members"
                  " WHERE tenant_id=%s AND scope='valid' AND phone=%s ORDER BY member_no LIMIT 1 FOR UPDATE").format(col=col),
-                (db.TENANT, phone)).fetchone()
+                (tenant, phone)).fetchone()
         if not row:
             if not mismatch:
                 not_found = True
@@ -115,18 +123,19 @@ async def members_write(request: Request):
             if old_value != value:   # 멱등 — 같은 값 재저장은 이력 안 남기고 ok(시포 스펙 "서버 재구현 주의")
                 conn.execute(
                     "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=col),
-                    (value, db.TENANT, member_no))
+                    (value, tenant, member_no))
                 conn.execute(
                     "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
                     " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (db.TENANT, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
+                    (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
                      field, old_value, value, "멤버십"))
             payload_log = dict(payload)
             payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
             log_id = conn.execute(
                 "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
                 " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                (db.TENANT, now, action, json.dumps(payload_log, ensure_ascii=False), user, "pending", None)
+                (tenant, now, action, json.dumps(payload_log, ensure_ascii=False), user,
+                 "test" if is_test else "pending", None)
             ).fetchone()[0]
     if mismatch:
         conn.close()
@@ -136,6 +145,11 @@ async def members_write(request: Request):
     if not_found:
         conn.close()
         return {"ok": False, "error": "no member"}
+
+    if is_test:
+        conn.close()
+        return {"ok": True, "phone": phone, "field": field, "value": value, "rowIndex": member_no,
+                "member_no": member_no, "_source": "server", "gas_status": "skipped-test"}
 
     try:
         resp = api_write._gas_forward(body, "FUNNEL_EXEC_URL")
@@ -162,4 +176,7 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert _log_who({}) == "자동"                                  # staff 키 자체가 없음 = 자동접수
     assert _log_who({"staff": ""}) == "이름미상"                    # 키는 있는데 비어 있음
     assert _log_who({"staff": " 임정은 "}) == "임정은"
+    # 배1054 dry-run 갈래 — 더미 전화(이름 칸 없음)는 테스트로 잡혀 tenant 'selftest' 로만 향해야 한다.
+    assert db.is_test_payload({"field": "PT 담당자", "phone": "010-0000-0000", "value": "x"})
+    assert not db.is_test_payload({"field": "PT 담당자", "phone": "010-2781-7262", "value": "x"})
     print("자체점검 통과")
