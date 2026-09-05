@@ -17,7 +17,7 @@ JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — �
    "url": "https://wellperion.com/",
    "telephone": "+82-2-6261-1200",
    "slogan": "하루의 완성, 웰페리온",
-   "description": "서울 용산구 한남동의 정원제 스포츠클럽. 회원 한 사람의 건강한 하루를 완성합니다.",
+   "description": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.",
    "address": {
     "@type": "PostalAddress",
     "streetAddress": "서빙고로 413, 101동 지1층 101호",
@@ -48,7 +48,7 @@ JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — �
     "addressCountry": "KR"
    },
    "areaServed": ["한남동", "용산구", "서울"],
-   "description": "약 3,000평 규모의 정원제 스포츠클럽. 정원제 멤버십과 예약제 강습으로 운영하며, P.T·필라테스·수영·골프(GDR·QED 2종 타석)·스쿼시·체조·G.X·사우나·스파를 한 공간에서 이용합니다. 투어·상담은 사전 예약제입니다. 휴관일: 신정, 설·추석 연휴, 매월 둘째·넷째 주 일요일.",
+   "description": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.",
    "openingHoursSpecification": [
     { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "06:00", "closes": "22:30" },
     { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday","Sunday"], "opens": "08:00", "closes": "20:00" }
@@ -112,7 +112,7 @@ Allow: /
 Sitemap: http://wellperion.com/sitemap_index.xml
 """
 
-HOME_META_DESC = "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·골프·P.T·체조·스쿼시·G.X 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다."
+HOME_META_DESC = "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다."
 
 
 MARKER = "GEO(생성형 검색 최적화) 구조화 데이터 3종 — 배1000"
@@ -208,6 +208,10 @@ async def main():
         results["header_inject"] = await step1_header_inject(page)
     except Exception as e:
         results["header_inject"] = f"ERROR: {e}"
+    try:
+        results["home_meta"] = await step3_home_meta(page)
+    except Exception as e:
+        results["home_meta"] = f"ERROR: {e}"
 
     print("=== RESULTS ===")
     for k, v in results.items():
