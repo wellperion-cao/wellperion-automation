@@ -19,7 +19,18 @@
   },
   "facts": {
     "address": "서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동)",
-    "hours": "정본 = ssot/canon_values.json(운영시간)",
+    "hours": {
+      "weekday": "06:00~22:30",
+      "weekend": "08:00~20:00",
+      "holiday": "08:00~20:00",
+      "closed_rules": [
+        "매월 둘째·넷째 주 일요일",
+        "신정",
+        "설·추석 명절 연휴"
+      ],
+      "closed_dates_source": "status/close_days.json",
+      "_source": "GM 확정 2026-04-23 · 정본 canon_values"
+    },
     "phone": "정본 = ssot/canon_values.json(대표전화)",
     "parking": null,
     "capacity": null,

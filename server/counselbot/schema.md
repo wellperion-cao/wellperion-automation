@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `tenant` | `id` · `name` · `name_en` · `type`(스포츠클럽·PT센터·필라테스…) | 업체 식별 | 시보 | 대표 확인 |
 | `identity` | `one_liner`(한 줄) · `philosophy` · `tone`(어투 규칙) · `counselor_persona`{name·greeting·handoff·typing_ms·emoji}(★GM 2026-09-05: 고객 화면은 FAQ·봇 느낌이 아니라 **진짜 상담원과 대화하는 느낌** — 사람 말투·이모지·「답변 중…」 표시 · 'FAQ'·'AI'·'초안' 낱말은 고객 화면에 안 보임) | 봇의 말투와 자기소개 — 브랜드가이드 §1·§2 에서 온다 | 시보 초안 → 대표 | 대표 확인 |
-| `facts` | `address` · `hours` · `phone` · `parking` · `capacity` · `founded` | 사실 정보 — 검색·AI 검색(GEO)이 같은 문장으로 읽어야 함 | 대표 | 대표 확인 필수 |
+| `facts` | `address` · `hours`{weekday·weekend·holiday·closed_rules[](예 "매월 둘째·넷째 일요일")·closed_dates[]} · `phone` · `parking` · `capacity` · `founded` | 사실 정보 — 검색·AI 검색(GEO)이 같은 문장으로 읽어야 함 | 대표 | 대표 확인 필수 |
 | `channels` | `reservation_url`(상담 예약 링크 · 봇이 못 답할 때 보내는 곳) · `kakao` · `instagram` · `blog` · `naver_place` | 손님을 넘길 곳 | 대표 | 링크 실제 열림 확인 |
 | `offerings[]` | `name` · `who`(누구에게) · `what`(무엇을) · `how`(진행 방식) · `price_policy`(금액 대신 "상담 시 안내" 등 문장) | 상품·프로그램 | 시보(원자료) → 대표 | 대표 확인 |
 | `policies[]` | `topic`(연기·휴회·환불·양도·예약·노쇼…) · `text`(문장) | 규정 — 금액·법적 판단은 넣지 않는다 | 대표 | 대표 확인 필수 |
