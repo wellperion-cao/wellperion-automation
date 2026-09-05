@@ -17,8 +17,18 @@ bot.py handle_message() 의 그룹 수신 지점(_log_group_message 바로 다�
 발신(승인 카드): staff_to=나우열M · note 에 '업무관리 발송' 마커가 없는 열린 배 →
 CHRO 규격(scripts/notify/telegram_user_send.render_chro_task) 렌더 → GM 개인 봇방에
 인라인 [승인]/[보류] 카드(wrk: 콜백 — sign:·pub:·dig:·kakao_send·ck: 와 접두 안 겹침) →
-[승인] 시 send_chro_task 로 GM 계정 발송 + 배 note 「업무관리 발송 HH:MM」. 카드 대기 상태는
-status/work_room_pending.json 에 최소 저장(봇 재기동 생존).
+[승인] 시 send_chro_task 로 GM 계정 발송 + 배 note 「업무관리 발송 YYYY-MM-DD HH:MM」. 카드
+대기 상태는 status/work_room_pending.json 에 최소 저장(봇 재기동 생존).
+
+추적 루프(§8, GM 확정 2026-09-05 17:4x · status/briefs/CEO-2026-09-05-업무관리방-운영규약.md):
+  ③ 매칭 — 발송된 배(위 마커 있음) 중 SSOT(todo_list)에 업무명이 정확히 같은 행이 생기면
+     배 note 에 「TODO 매칭」 마커로 TODO 번호·담당·상태·종료일 기록. 사람 회신(TODO 번호
+     언급)을 안 기다린다 — _handle_register_confirm 은 사람이 먼저 언급했을 때의 빠른 경로.
+  ④ 추적 — 매칭된 배는 사람에게 안 묻고 SSOT 상태만 재확인한다.
+  ⑤ 보고 — 상태가 '완료'면 즉시 배 종결(mutate_queue) + GM 개인 봇방 1줄. 진행중이면
+     build_tracking_section() 이 한 절로 묶어 GM 07:50 통에 실릴 본문을 만든다(오늘은
+     그 통 자체를 새로 만들지 않았다 — --dry-run 으로 렌더만 확인, §8 아래 한계 참고).
+  ⑥ 미등록 — 발송 뒤 1영업일 지나도 매칭이 안 되면 같은 절에 「등록 확인 부탁」 1줄.
 """
 from __future__ import annotations
 
@@ -51,6 +61,8 @@ log = logging.getLogger("work_room_agent")
 _TODO_ID_RE = re.compile(r"TODO-\d+")
 _DONE_WORDS = ("반영했습니다", "완료", "등록했습니다", "처리했습니다")
 _QUESTION_HINTS = ("확인 부탁",)
+_SENT_MARK_RE = re.compile(r"\[업무관리 발송 (\d{4}-\d{2}-\d{2}) \d{2}:\d{2}\]")
+_TODO_MATCH_RE = re.compile(r"\[TODO 매칭[^\]]*\][^\n]*?→\s*(TODO-\d+)")
 
 
 def classify(text: str) -> str:
@@ -181,7 +193,9 @@ def _append_ship_note(task_id: str, line: str) -> None:
     ql.mutate_queue(_mutator, holder="work_room_agent")
 
 
-def _close_ship(task_id: str, reply_text: str, human_time: str) -> None:
+def _close_ship(task_id: str, note_line: str) -> None:
+    """배를 note_line 붙이고 DONE 으로 닫는다 — 사람 회신 종결(_handle_done)과 SSOT 완료
+    확인 종결(_scan_todo_tracking) 두 경로가 공유한다."""
     ql = _queue_lock()
     if ql is None or not task_id:
         return
@@ -190,8 +204,7 @@ def _close_ship(task_id: str, reply_text: str, human_time: str) -> None:
         for it in items:
             if it.get("task_id") == task_id:
                 prev = str(it.get("note") or "")
-                line = f"[업무관리 회신 {human_time}] {reply_text[:40]}"
-                it["note"] = (prev + ("\n" if prev else "") + line).strip()
+                it["note"] = (prev + ("\n" if prev else "") + note_line).strip()
                 it["status"] = "DONE"
                 it["processed_at"] = date.today().isoformat()
 
@@ -201,24 +214,53 @@ def _close_ship(task_id: str, reply_text: str, human_time: str) -> None:
         if scr not in sys.path:
             sys.path.insert(0, scr)
         from worklog import log as _worklog_log
-        _worklog_log("cto", "업무관리방", "나우열M 반영 확인", result="ok",
-                     detail=reply_text[:80], ref=task_id)
+        _worklog_log("cto", "업무관리방", "배 종결", result="ok", detail=note_line[:80], ref=task_id)
     except Exception:
         pass
 
 
-def _check_todo_registered(todo_id: str) -> "str | None":
-    """/api/todo(todo_list) 에서 todo_id 행을 찾아 업무명을 돌려준다(없으면 None)."""
+def _fetch_todo_rows() -> "list[dict]":
+    """/api/todo(todo_list) 전체 행 — include_gm=1(§8 ③ 정본 파라미터, gm_handoff.py 와 동일
+    엔드포인트·같은 파라미터 재사용)."""
     try:
-        r = requests.get(TODO_API_URL, params={"action": "todo_list"}, timeout=15)
-        data = (r.json() or {}).get("data") or []
+        r = requests.get(TODO_API_URL, params={"action": "todo_list", "include_gm": "1"}, timeout=20)
+        return (r.json() or {}).get("data") or []
     except Exception as exc:
         log.error(f"[work_room] todo_list 조회 실패: {exc}")
-        return None
-    for row in data:
+        return []
+
+
+def _check_todo_registered(todo_id: str) -> "str | None":
+    """todo_id 행을 찾아 업무명을 돌려준다(없으면 None)."""
+    for row in _fetch_todo_rows():
         if isinstance(row, dict) and row.get("id") == todo_id:
             return row.get("업무명")
     return None
+
+
+def _todo_row_by_name(rows: "list[dict]", name: str) -> "dict | None":
+    """업무명 정확 일치(§8 ③) — 느슨한 매치는 안 쓴다(오답 위험, answer_from_canon 과 같은 이유)."""
+    name = (name or "").strip()
+    if not name:
+        return None
+    for row in rows:
+        if isinstance(row, dict) and str(row.get("업무명") or "").strip() == name:
+            return row
+    return None
+
+
+def _business_days_since(date_str: str) -> int:
+    """date_str(YYYY-MM-DD, 당일 미포함)부터 오늘까지 지난 평일 수(토·일 제외)."""
+    try:
+        d = date.fromisoformat(date_str)
+    except Exception:
+        return 0
+    n, cur, today = 0, d, date.today()
+    while cur < today:
+        cur += timedelta(days=1)
+        if cur.weekday() < 5:
+            n += 1
+    return n
 
 
 def answer_from_canon(question: str) -> "str | None":
@@ -322,6 +364,87 @@ async def _scan_pending_cards(ctx) -> None:
             log.error(f"[work_room] 승인 카드 발송 실패: {exc}")
 
 
+async def _scan_todo_tracking(ctx) -> None:
+    """§8 ③매칭 + ⑤완료 자동종결 — 발송된 배를 SSOT 업무명으로 찾아 TODO 번호를 note 에
+    기록하고, 이미 매칭된 배는 SSOT 상태가 '완료' 로 바뀌면 사람 회신을 안 기다리고
+    자동으로 닫는다(§8 ④ — 나우열M 에게 안 묻는다)."""
+    import asyncio
+    sod = _sod()
+    if sod is None:
+        return
+    ships = _open_nawool_ships()
+    unmatched, matched = [], []
+    for ship in ships:
+        note = str(ship.get("note") or "")
+        if _TODO_MATCH_RE.search(note):
+            matched.append(ship)
+        elif _SENT_MARK_RE.search(note):
+            unmatched.append(ship)
+    if not unmatched and not matched:
+        return
+    rows = await asyncio.to_thread(_fetch_todo_rows)
+    if not rows:
+        return
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    for ship in unmatched:
+        name = sod._ROLE_TAG_RE.sub("", str(ship.get("title") or "")).strip()
+        row = _todo_row_by_name(rows, name)
+        if not row:
+            continue
+        line = (f"[TODO 매칭 {now}] {name} → {row.get('id')} · 담당={row.get('담당자', '')} · "
+                f"상태={row.get('상태', '')} · 종료일={str(row.get('종료일') or '')[:10]}")
+        await asyncio.to_thread(_append_ship_note, ship.get("task_id"), line)
+
+    row_by_id = {r.get("id"): r for r in rows if isinstance(r, dict)}
+    for ship in matched:
+        m = _TODO_MATCH_RE.search(str(ship.get("note") or ""))
+        todo_id = m.group(1)
+        row = row_by_id.get(todo_id)
+        if row and str(row.get("상태") or "") == "완료":
+            title = str(ship.get("title") or "")
+            line = f"[SSOT 완료 확인 {now}] {todo_id}"
+            await asyncio.to_thread(_close_ship, ship.get("task_id"), line)
+            await _escalate(ctx, f"✅ 나우열M 반영(SSOT 완료 확인) — {title}")
+
+
+def build_tracking_section(rows: "list[dict] | None" = None) -> str:
+    """§8 ⑤진행 현황 + ⑥미등록 절 — GM 봇방 07:50 통에 실릴 절 하나(렌더만). 오늘은 그 통
+    자체(스케줄)를 새로 안 만들었다 — python work_room_agent.py --dry-run 으로 본문만
+    확인한다(브리프 §5 한계 참고). 미등록은 발송 뒤 1영업일 지난 것만 올린다(§4-1, 당일
+    재촉 금지)."""
+    sod = _sod()
+    if sod is None:
+        return ""
+    ships = _open_nawool_ships()
+    if rows is None:
+        rows = _fetch_todo_rows()
+    row_by_id = {r.get("id"): r for r in rows if isinstance(r, dict)}
+    progress, unregistered = [], []
+    for ship in ships:
+        note = str(ship.get("note") or "")
+        name = sod._ROLE_TAG_RE.sub("", str(ship.get("title") or "")).strip()
+        m = _TODO_MATCH_RE.search(note)
+        if m:
+            row = row_by_id.get(m.group(1)) or {}
+            status = str(row.get("상태") or "?")
+            if status != "완료":
+                due = str(row.get("종료일") or "")[:10]
+                progress.append(f"▪ {name} — {status}" + (f"({due})" if due else ""))
+            continue
+        sm = _SENT_MARK_RE.search(note)
+        if sm and _business_days_since(sm.group(1)) >= 1:
+            unregistered.append(f"▪ {name} — 등록 확인 부탁")
+    lines = []
+    if progress:
+        lines.append("📋 나우열M 업무 진행 현황")
+        lines.extend(progress)
+    if unregistered:
+        lines.append("❓ 등록 확인 부탁")
+        lines.extend(unregistered)
+    return "\n".join(lines)
+
+
 async def _escalate(ctx, text: str) -> None:
     try:
         await ctx.bot.send_message(chat_id=_GM_CHAT_ID, text=text)
@@ -337,7 +460,8 @@ async def _handle_done(text: str, ctx) -> None:
     now = datetime.now().strftime("%H:%M")
     task_id = ship.get("task_id")
     title = str(ship.get("title") or "")
-    await asyncio.to_thread(_close_ship, task_id, text, now)
+    line = f"[업무관리 회신 {now}] {text[:40]}"
+    await asyncio.to_thread(_close_ship, task_id, line)
     await _escalate(ctx, f"✅ 나우열M 반영 — {title}")
 
 
@@ -403,6 +527,11 @@ async def handle_group_message(update, ctx) -> None:
     except Exception as exc:
         log.error(f"[work_room] 승인 카드 스캔 실패: {exc}")
 
+    try:
+        await _scan_todo_tracking(ctx)
+    except Exception as exc:
+        log.error(f"[work_room] TODO 추적 스캔 실패: {exc}")
+
 
 async def handle_card_callback(update, ctx) -> None:
     """승인 카드 [✅ 승인]/[⛔ 보류] 클릭 처리. callback_data = ``wrk:<h8>:<a|h>``."""
@@ -460,7 +589,7 @@ async def handle_card_callback(update, ctx) -> None:
             pass
         return  # pending 유지 — 재시도 가능
 
-    now = datetime.now().strftime("%H:%M")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
     await asyncio.to_thread(_append_ship_note, item["task_id"], f"[업무관리 발송 {now}]")
     try:
         await q.edit_message_text(text=f"✅ 발송 완료 — {item['name']}", reply_markup=None)
@@ -482,4 +611,11 @@ def _selfcheck() -> None:
 
 
 if __name__ == "__main__":
-    _selfcheck()
+    import argparse
+    ap = argparse.ArgumentParser(description="work_room_agent 자기검증·§8 추적 절 미리보기")
+    ap.add_argument("--dry-run", action="store_true", help="§8 ⑤진행·⑥미등록 절 렌더만(발송 없음)")
+    args = ap.parse_args()
+    if args.dry_run:
+        print(build_tracking_section() or "(진행·미등록 항목 없음)")
+    else:
+        _selfcheck()
