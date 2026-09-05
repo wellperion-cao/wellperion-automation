@@ -1582,7 +1582,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cto",
-    "note": "[시토 2026-09-05 · 기다리는 쪽: GM 방향 2026-09-05 — '우회방법 없어? 꼭 API 필요해?' 답으로 엔진 3개 구현] GM 2026-09-05: '2번은 우회방법없어? 꼭 API가 필요해?'. 답 = 필요 없다. 챗GPT(chatgpt.com 검색 포함)·퍼플렉시티(perplexity.ai)·구글 AI 오버뷰(google.com) 셋 다 로그인 없이 웹에서 답을 준다. agent-browser(설치된 브라우저 자동화 CLI)로 질문을 치고 답 본문·출처 링크를 읽어 scripts/geo_watch.py 의 엔진으로 붙인다. 산출 status/geo_watch.json 에 엔진별 결과(engines: {claude, chatgpt, perplexity, google_ai})·cited_count 는 엔진별. UI 바뀌어 못 읽으면 그 엔진 그 주만 '측정 실패'로 정직 기록(경보 없음·다음 주 재시도). 비용 0 · 키 0.",
+    "note": "[시토 2026-09-05 · 기다리는 쪽: GM 방향 2026-09-05 — '우회방법 없어? 꼭 API 필요해?' 답으로 엔진 3개 구현] GM 2026-09-05: '2번은 우회방법없어? 꼭 API가 필요해?'. 답 = 필요 없다. 챗GPT(chatgpt.com 검색 포함)·퍼플렉시티(perplexity.ai)·구글 AI 오버뷰(google.com) 셋 다 로그인 없이 웹에서 답을 준다. agent-browser(설치된 브라우저 자동화 CLI)로 질문을 치고 답 본문·출처 링크를 읽어 scripts/geo_watch.py 의 엔진으로 붙인다. 산출 status/geo_watch.json 에 엔진별 결과(engines: {claude, chatgpt, perplexity, google_ai})·cited_count 는 엔진별. UI 바뀌어 못 읽으면 그 엔진 그 주만 '측정 실패'로 정직 기록(경보 없음·다음 주 재시도). 비용 0 · 키 0.\n[시토 2026-09-05 20:0x 실측] 엔진 3개가 전부 '측정 실패: WinError 2' 였던 원인 = Windows 에서 agent-browser .cmd 를 못 찾음 + .cmd 래퍼가 URL 의 & 를 자름 → 네이티브 exe 직접 호출로 수리(커밋). 수리 후 1문 실측: 퍼플렉시티·구글 = 봇 차단/캡차 페이지(헤드리스 자동화 IP 차단 · 정직 기록) · 챗GPT = 200초 안 무응답. 다음 = 헤드풀 프로필(로그인 쿠키) 재사용 또는 주 1회 사람 브라우저 세션에 붙여 측정 — 봇 차단은 코드로 못 뚫는다(정책). 이번 주 월 07:10 예약은 claude 엔진 1개만 정상 · 나머지 3개는 '측정 실패' 로 기록됨.",
     "next": "엔진 3개 붙여 1회 실측 → geo_watch.json 엔진별 기준선",
     "depends_on": "",
     "ship_no": 11262,
