@@ -3409,6 +3409,17 @@ function _apiPersonView(q) {
     }) };
   });
 }
+// 강습 회원관리 3종(lesson_stats·lesson_registered_roster·lesson_registry_list) — sync_lesson.py 미러(배 922 레인 W)를
+// GAS 와 같은 액션·응답 모양 그대로 낸다(server/erp_api/api_lesson.py). ERP 도메인에서만 우선 호출, 실패 시 GAS 폴백(배960 · 2026-09-05).
+function _apiLessonStats(type) {
+  return _apiJson('/api/lesson/stats?type=' + encodeURIComponent(type) + '&scope=year');
+}
+function _apiLessonRoster(type) {
+  return _apiJson('/api/lesson/roster?type=' + encodeURIComponent(type));
+}
+function _apiLessonRegistry(type, from, to) {
+  return _apiJson('/api/lesson/registry?type=' + encodeURIComponent(type) + '&from=' + from + '&to=' + to);
+}
 /* ★GAS 예열 + scope=valid 선입수 (배754·배845 · 2026-08-24·2026-08-31).
    실측(2026-08-24): 같은 목록이 첫 호출 6.7~25.6초 / 두 번째부터 3.1~3.4초.
    차이는 데이터 양이 아니라 잠든 서버가 깨는 시간이라, corp(경량)로 먼저 깨우고
@@ -4822,8 +4833,8 @@ function closeLessonDash(){
 }
 function _lessonFetchRegistry(lsType, from, to, cb){
   if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(lsType) + '&from=' + from + '&to=' + to + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  var gas = function(){ return fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(lsType) + '&from=' + from + '&to=' + to + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  (ERP_API_ON ? _apiLessonRegistry(lsType, from, to).catch(function(){ return gas(); }) : gas())
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -4897,8 +4908,10 @@ function loadLessonDash(t){
     // §2 채널 — lesson_stats.byChannel(연도 스코프) 재사용, 별도 fetch 없음
     _lessonDashRenderChannel(t, res.stats);
   }
-  fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType))
-    .then(function(r){ return r.json(); }).then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
+  (function(){
+    var gas = function(){ return fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType)).then(function(r){ return r.json(); }); };
+    return ERP_API_ON ? _apiLessonStats(lsType).catch(function(){ return gas(); }) : gas();
+  })().then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
   ((ERP_API_ON && !_wroteRecently()) ? _apiInquiryList(lsType).catch(function(){ return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }); })
     : fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }))
     .then(function(d){
@@ -4932,8 +4945,8 @@ function _lessonDashRenderChannel(t, statsD){
 function _lessonDashRenderMember(t, lsType){
   var el = document.getElementById('lessonDashSecMember_' + t); if (!el) return;
   if (GAS_URL === GAS_PLACEHOLDER) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 없음</div>'; return; }
-  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(lsType) + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  var _rosterGas = function(){ return fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(lsType) + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  (ERP_API_ON ? _apiLessonRoster(lsType).catch(function(){ return _rosterGas(); }) : _rosterGas())
     .then(function(d){
       if (!d || !d.ok) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">구성 데이터 불러오기 실패</div>'; return; }
       var chips = '<span class="mdash-chip teal">수강 중 <b>' + (d.total || 0).toLocaleString() + '</b></span>';
