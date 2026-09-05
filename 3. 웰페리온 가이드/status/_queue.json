@@ -453,12 +453,12 @@
     "task_id": "CTO-2026-09-03-AWS-ERP-1차-문의-유입-경로-칸-발행-원장-",
     "clevel": "cto",
     "title": "[시토] AWS ERP 1차 — 문의 유입 경로 칸·발행 원장 정의서 수신 (시모 → 시토 2026-09-03)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-03",
     "from": "cmo",
     "note": "[시모 → 시토 전달 2026-09-03] 정의서 = status/briefs/CMO-유입경로-발행원장-정의서-20260903.md · 요약: ①유입경로칸(channel_code 11종+post_id)은 게시물 단위까지 신설 ②발행원장은 review_queue.json 179건을 ERP 안 DB로 이관(1:1/변환/버림 매핑 표 있음) ③지난 문의는 소급 안 채우고 unknown 기본값, 반영일부터 신규 문의만 측정. GM 확정 3결정(게시물단위·소급없음·ERP내재화) 반영됨. | [시토 2026-09-05] 설계에 넣었다 — server/common/schema.sql inquiries 표에 channel_code/post_id/channel_captured_at 3칸 + publish_ledger 신규 표(정의서 표B 그대로) 추가. 179건(현재 180건) 적재 스크립트 scripts/publish_ledger_import.py 드라이런 = 전건 channel_code 매핑 성공(0건 unknown 폴백), 정의서 빈도표와 대조해 전부 일치(+1은 09-03 이후 발행 1건 증가분). 서버 DB 접근 불가(로컬엔 psycopg2 없음)로 --apply 미실행 — 서버에서 실행 필요.",
-    "next": "ERP 1차(핵심 3모듈) DB 설계에 표 A·B 반영 · 반영했으면 이 배 note에 「설계에 넣었다」 한 줄",
+    "next": "문의 접수 통로(서버 /api/write · 접수 GAS)에서 UTM 으로 channel_code·post_id 를 채우기 — 반영일부터 신규 문의만 측정",
     "depends_on": "",
     "ship_no": 11185,
     "short_no": 925,
@@ -468,7 +468,10 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "https://github.com/wellperion-cao/wellperion-automation/blob/7c8d9d308/server/common/schema.sql",
+    "saw": "문의 유입경로 칸(channel_code 기본 unknown·post_id·captured_at) + 발행원장 publish_ledger 표를 서버 DB 스키마에 반영·서버 적용 완료. 발행원장 180건 적재(정의서 179건 + 이틀새 신규 1건) · 기존 문의 2,545건 전부 unknown(소급 없음 = 정의서 결정 그대로)"
   },
   {
     "task_id": "CTO-2026-09-03-강습-문의-알림-적체-유소년-320행-성인-87행-",
@@ -1494,7 +1497,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cto",
-    "note": "[시토 → 시모 전달 2026-09-05] GM 2026-09-05: 'AI들이 검색하는 웹은 시모한테 맡기고 있는데 한 에이전트만 집중해서 해야될 것 같아' + '결과리포팅 되는 페이지로 확인할 수 있을 것 같은데'. 시토가 만든 측정기 scripts/geo_watch.py 가 매주 월 07:10 status/geo_watch.json 을 갱신한다(엔진: claude 웹검색 · 시토 배로 챗GPT·퍼플렉시티·구글AI 브라우저 자동화 엔진 추가 중). 시모 몫 = ①결과 카드 1장을 시모 소유 화면(콘텐츠·문의현황 등 기존 페이지)에 얹기 — 새 페이지 금지 · 질문별 인용 여부·순위·인용 문장·주차 추이(history) ②검색 질문 8문장의 소유 — 포지셔닝이 '정원제 스포츠클럽'으로 바뀌었고(canon positioning_kr · '프라이빗 멤버십'·'레슨' 금지) 질문 문장은 사람이 실제 검색하는 말이라 시모가 정한다 · geo_watch.py 의 QUERIES 상수만 고치면 됨 ③미인용 6문장을 인용되게 만드는 내용층 작업(배970 연장). 시토는 측정기 가동·엔진·도메인 전환 5단계만 맡는다. | [시모 2026-09-05 10:3x · 진행] ②검색 질문 8문장 소유 — geo_watch.py QUERIES 2문장 강습 표기(수영 강습·유소년 체조 강습 · 사용자 검색어 「용산 프라이빗 멤버십 스포츠클럽」은 사람이 치는 말이라 유지) · status/geo_watch.json 발행루트 거울 추가(sync_queue_mirror). ①콘텐츠문의현황 GEO 카드 레인 진행 중. ③미인용 6문장 내용층 = 배999 FAQ 9문답·공식 한 문장으로 1차 대응, 다음 월요일 측정으로 확인.",
+    "note": "[시토 → 시모 전달 2026-09-05] GM 2026-09-05: 'AI들이 검색하는 웹은 시모한테 맡기고 있는데 한 에이전트만 집중해서 해야될 것 같아' + '결과리포팅 되는 페이지로 확인할 수 있을 것 같은데'. 시토가 만든 측정기 scripts/geo_watch.py 가 매주 월 07:10 status/geo_watch.json 을 갱신한다(엔진: claude 웹검색 · 시토 배로 챗GPT·퍼플렉시티·구글AI 브라우저 자동화 엔진 추가 중). 시모 몫 = ①결과 카드 1장을 시모 소유 화면(콘텐츠·문의현황 등 기존 페이지)에 얹기 — 새 페이지 금지 · 질문별 인용 여부·순위·인용 문장·주차 추이(history) ②검색 질문 8문장의 소유 — 포지셔닝이 '정원제 스포츠클럽'으로 바뀌었고(canon positioning_kr · '프라이빗 멤버십'·'레슨' 금지) 질문 문장은 사람이 실제 검색하는 말이라 시모가 정한다 · geo_watch.py 의 QUERIES 상수만 고치면 됨 ③미인용 6문장을 인용되게 만드는 내용층 작업(배970 연장). 시토는 측정기 가동·엔진·도메인 전환 5단계만 맡는다. | [시모 2026-09-05 10:3x · 진행] ②검색 질문 8문장 소유 — geo_watch.py QUERIES 2문장 강습 표기(수영 강습·유소년 체조 강습 · 사용자 검색어 「용산 프라이빗 멤버십 스포츠클럽」은 사람이 치는 말이라 유지) · status/geo_watch.json 발행루트 거울 추가(sync_queue_mirror). ①콘텐츠문의현황 GEO 카드 레인 진행 중. ③미인용 6문장 내용층 = 배999 FAQ 9문답·공식 한 문장으로 1차 대응, 다음 월요일 측정으로 확인.\n- [2026-09-05] 배999·1000 진행 note 갱신 — 홈 용어·소개 문장·FAQ 9문답·7채널 표·GEO 질문/거울 (레인 2개 진행 중) (커밋 a144b7f4f)",
     "next": "geo_watch.json 읽는 카드 1장 + QUERIES 정원제 문구로 교체",
     "depends_on": "",
     "ship_no": 11261,
@@ -1590,5 +1593,22 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-05"
+  },
+  {
+    "task_id": "NEXT-20260905-102700",
+    "clevel": "cto",
+    "title": "[시토] 문의 접수 통로(서버 /api/write · 접수 GAS)에서 UTM 으로 channel_code·post_id 를 채우기 — 반영일부터 신규 문의만 측정",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "depends_on": "CTO-2026-09-03-AWS-ERP-1차-문의-유입-경로-칸-발행-원장-",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-09-05T01:27:00Z",
+    "note": "[브릿지 자동 등록 2026-09-05] 배 'AWS ERP 1차 — 문의 유입 경로 칸·발행 원장 정의서 수신 (시모 → 시토 2026-09-03)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시토.\n▶할 일: 문의 접수 통로(서버 /api/write · 접수 GAS)에서 UTM 으로 channel_code·post_id 를 채우기 — 반영일부터 신규 문의만 측정\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: 문의 유입경로 칸(channel_code 기본 unknown·post_id·captured_at) + 발행원장 publish_ledger 표를 서버 DB 스키마에 반영·서버 적용 완료. 발행원장 180건 적재(정의서 179건 + 이틀새 신규 1건) · 기존 문의 2,545건 전부 unknown(소급 없음 = 정의서 결정 그대로)",
+    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "ship_no": 11266,
+    "short_no": 1006,
+    "audience": "ai",
+    "reversible": true
   }
 ]
