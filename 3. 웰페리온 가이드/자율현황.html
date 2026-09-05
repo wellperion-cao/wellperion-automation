@@ -1179,6 +1179,44 @@
       }).join('') + '</table>';
   }
 
+  // 🧠 부팅 로드 한 줄 — status/boot_load.json(boot_load_gauge.py 가 날짜별로 쌓음)을 시스템 현황 카드
+  // 맨 아래에 붙인다(배1024 · GM 지시 2026-09-05). 읽기 실패·파싱 실패는 줄 자체를 안 그린다
+  // (0·빈 값 위장 금지 — 「화면은 소스가 멈추면 거짓말한다」).
+  var BOOT_LOAD_NICK = { ceo:'웰리', cto:'시토', cmo:'시모', cpo:'시포', cbo:'시보', coo:'시우', cfo:'시뽀', chro:'시로' };
+  var BOOT_LOAD_ORDER = ['ceo', 'cto', 'cmo', 'cpo', 'cbo', 'coo', 'cfo', 'chro'];
+  var BOOT_LOAD_GOAL = 51000;
+  function renderBootLoadLine(boot){
+    var wrap = document.getElementById('erp-systems-rows');
+    if(!wrap || !boot || typeof boot !== 'object') return;
+    var parts = [], latestDate = '';
+    BOOT_LOAD_ORDER.forEach(function(role){
+      var r = boot[role];
+      var latest = r && r.latest;
+      if(!latest || typeof latest.total_chars !== 'number') return;
+      var cur = latest.total_chars;
+      if(latest.date && latest.date > latestDate) latestDate = latest.date;
+      var hist = Array.isArray(r.history) ? r.history : [];
+      var arrow = '';
+      if(hist.length >= 2 && hist[hist.length - 2] && typeof hist[hist.length - 2].total_chars === 'number'){
+        var prev = hist[hist.length - 2].total_chars;
+        arrow = cur > prev ? '↑' : (cur < prev ? '↓' : '');
+      }
+      var numStr = cur.toLocaleString('ko-KR');
+      var detail = ['agent_md', 'boot_skill', 'gm_report_skill', 'memory_index', 'boot_pack'].map(function(k){
+        return k + ' ' + (typeof latest[k] === 'number' ? latest[k].toLocaleString('ko-KR') : '?') + '자';
+      }).join(' · ');
+      parts.push('<span title="' + esc(detail) + '">' + esc(BOOT_LOAD_NICK[role] || role) + ' ' +
+        (cur > BOOT_LOAD_GOAL ? '<span style="color:#e2695f;font-weight:700;">' + numStr + '</span>' : numStr) +
+        arrow + '</span>');
+    });
+    if(!parts.length) return;
+    var line = document.createElement('div');
+    line.className = 'sec-note';
+    line.style.cssText = 'margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);';
+    line.innerHTML = '🧠 부팅 로드(자) ' + parts.join(' · ') + (latestDate ? ' — ' + esc(latestDate.slice(5)) : '') + ' · 목표 ≤51,000(≈30K 토큰)';
+    wrap.appendChild(line);
+  }
+
   function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
     renderNotifyDriftNote(drift);
     var wrap = reqEl('alert-board-rooms', 'renderAlertBoard');
@@ -1419,7 +1457,7 @@
     Promise.resolve(''),  // a[6] 자리 유지 — audit_registry fetch 중단(2026-08-26 배798 감사). d.auditReg 소비 0.
     Promise.resolve(''),  // a[7] 자리 유지 — 구 CMO review_queue fetch 제거(마케팅 CMO 이관 2026-07-15)
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
-    Promise.resolve(''),  // a[9] 자리 유지(인덱스 정렬) — cooFetchTodayLive, renderCooLiveMetrics 제거로 소비처 없음(배587 후속·2026-08-13)
+    gasReadText('status/boot_load.json',              'status/boot_load.json').catch(function(){ return ''; }),  // a[9] — 🧠 부팅 로드 한 줄(배1024·2026-09-05, 구 cooFetchTodayLive 자리 재사용)
     Promise.resolve(''),  // a[10] 자리 유지(인덱스 정렬) — cooFetchMonthlyReport, 위와 동일 사유
     Promise.resolve(''),  // a[11] 자리 유지 — cpo_churn_stats fetch 중단(2026-09-02 감사). a[11] 을 읽는 곳이 0이었다.
     gasReadText('status/module_registry.json',        'status/module_registry.json').catch(function(){ return ''; }),
@@ -1465,6 +1503,7 @@
       var esEl = document.getElementById('erp-systems-rows');
       if(esEl) esEl.innerHTML = '<div class="feed-status">시스템 현황 표시 오류.</div>';
     }
+    try{ renderBootLoadLine(parseJson(a[9])); }catch(e){ /* 실패시 줄 자체를 안 그린다 */ }
     try{ clampLongCells(); }catch(e){ /* 표시용이라 실패해도 본문은 그대로 */ }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
