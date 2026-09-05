@@ -1,34 +1,226 @@
-{
-  "_doc": "question_bank.json 중 how=='자료'(60문)를 저장소 정본 근거로 답한 것만 승격. 근거 없는 문항은 넣지 않음(schema.md §'왜 쌓나' 원칙).",
-  "updated": "2026-09-05",
-  "qa": [
-    { "q_id": "A-2", "q": "주소·층·건물 이름·찾아오는 길 한 줄은?", "answer": "서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동).", "source": "server/counselbot/tenants/1_wellperion.json facts.address(정본 CLAUDE.md §0) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.address" },
-    { "q_id": "A-3", "q": "평일·주말·공휴일 운영 시간과 정기 휴무는?", "answer": "평일 06:00~22:30, 주말·공휴일 08:00~20:00. 정기 휴무는 매월 둘째·넷째 주 일요일, 신정, 설·추석 명절 연휴.", "source": "server/counselbot/tenants/1_wellperion.json facts.hours(정본 GM 확정 2026-04-23) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.hours" },
-    { "q_id": "A-4", "q": "올해 임시 휴관·단축 운영 날짜가 있나요?", "answer": "2026년 확정 휴관일: 2/17(설날), 9/13(9월 휴관일), 9/24~26(추석 연휴). 그 외 매월 둘째·넷째 일요일은 자동 휴관.", "source": "status/close_days.json · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.hours.closed_dates_source" },
-    { "q_id": "A-5", "q": "대표 전화·카톡 채널·이메일 중 손님이 연락해도 되는 것은?", "answer": "대표 전화 02-6261-1200으로 연결됩니다. 카카오톡 채널·이메일 안내는 저장소 정본에 없어 미확인입니다.", "source": "ssot/canon_values.json(official_phone) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.phone" },
-    { "q_id": "A-7", "q": "센터 크기(평)와 공간 구성(수업실·PT룸·샤워)은?", "answer": "서울 한남동, 약 3,000평 단일 공간. 수영·트레이닝·골프·스쿼시·체조·필라테스·사우나·스파 시설을 함께 운영합니다.", "source": "ssot/canon_values.json(company_scale) · server/erp_api/seed_faq/1_wellperion.json f06 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.capacity" },
-    { "q_id": "A-8", "q": "개업 연도와 지금까지 운영 기간은?", "answer": "2017년 3월 개관, 2026년 기준 약 9년 운영.", "source": "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §① 회사 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts.founded" },
-    { "q_id": "A-9", "q": "SNS·블로그·플레이스 계정 주소 전부는?", "answer": "블로그 https://m.blog.naver.com/wellperion. 공식 인스타그램 계정은 @wellperion(정식 URL 미확인). 네이버 플레이스 등록 여부는 미확인입니다.", "source": "server/counselbot/tenants/1_wellperion.json channels.blog · 2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §3-4 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "channels" },
-    { "q_id": "A-10", "q": "상담 예약을 받는 정확한 링크 또는 방법은?", "answer": "http://wellperion.com/ko/inquiry/ 에서 투어·상담을 예약합니다.", "source": "CLAUDE.md §0 회사 정보 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "channels.reservation_url" },
-    { "q_id": "D-1", "q": "운영 중인 상품·프로그램 전체 목록은(가격표 그대로)?", "answer": "멤버십(플래티넘/플래티넘+골프/노블레스/노블레스+골프), 가족·단체·법인 멤버십, 일일권·입주민권·바우처, 업그레이드 옵션(골프·수영 추가), 성인 강습(수영·P.T·필라테스·스쿼시·골프·발레·바레), 유소년 WSC 강습(수영·골프·스쿼시·체조). 금액은 상담 시 안내합니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만, 금액 제외) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-2", "q": "각 상품은 누구에게 맞고 무엇이 달라지나요?", "answer": "멤버십 등급은 포함 시설 구성으로 구분됩니다 — 기본(헬스+사우나)에 골프·수영을 더한 상위 등급이 있습니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-3", "q": "수업 시간표(요일·시간·정원)는?", "answer": "발레·바레(외부 파트너 루프메소드) 강습은 매주 금요일(발레)·화요일(바레) 오전 10시대에 진행합니다. 그 외 종목의 요일별 시간표는 저장소 정본에 없어 미확인입니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-4", "q": "한 수업 정원과 강사 대 회원 비율은?", "answer": "종목별로 1:1(개인)·1:2·1:3(필라테스 단체)·1:4(스쿼시 단체)·1:5(수영·WSC 단체)·1:6(WSC 스쿼시 단체) 등 소그룹 비율이 있습니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-5", "q": "체험·첫 방문 상품이 있나요, 어떻게 진행되나요?", "answer": "스쿼시·골프에 원포인트 1회 체험 강습이 있고, 유소년 WSC 골프·체조에는 1회 체험 상품이 있습니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-8", "q": "기간권·횟수권·월회비 중 어떤 방식인가요?", "answer": "멤버십은 연 단위 회원제, 강습은 회차제(4~100회, 종목별 유효기간 1일~12개월)입니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-9", "q": "가격을 봇이 말해도 되나요, 상담에서만 안내하나요?", "answer": "봇은 금액·가격 숫자를 직접 안내하지 않고 상담 예약으로 연결합니다.", "source": "server/counselbot/tenants/1_wellperion.json guards.forbidden_topics(기존 정본) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings.price_policy" },
-    { "q_id": "D-10", "q": "준비물(운동복·수건·양말·물)은 무엇이 필요하고 무엇이 제공되나요?", "answer": "운동복·양말·수건·샤워 어메니티가 구비되어 있고, 수영 이용 시 바스타올을 제공합니다. 실내용 운동화는 직접 준비하며, 수영을 하시는 분은 수영복·수영모·수경을 준비합니다.", "source": "server/erp_api/seed_faq/1_wellperion.json f10 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-11", "q": "락커·샤워·주차·와이파이 같은 부가 편의는?", "answer": "개인 락커, 골프 락커(윗층·아랫층)를 이용할 수 있고 샤워·타월 어메니티가 구비되어 있습니다. 주차·와이파이 여부는 저장소 정본에 없어 미확인입니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · server/erp_api/seed_faq/1_wellperion.json f10 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-13", "q": "연령·질환·임신 등 참여 제한이 있나요?", "answer": "유소년 WSC 강습은 5~16세 대상(모자수영은 12~60개월, 스쿼시는 10~16세)입니다. 성인 강습의 질환·임신 관련 제한은 저장소 정본에 없어 미확인입니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "D-14", "q": "가족·친구 동반·소개 혜택이 있나요?", "answer": "직계가족 한정 가족 멤버십을 운영합니다. 조건별 구체적 혜택은 상담 시 안내합니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만, 금액·할인율 제외) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "offerings" },
-    { "q_id": "E-4", "q": "예약·취소·노쇼 규정과 마감 시각은?", "answer": "투어·상담·강습 모두 사전 예약제이며 워크인 등록은 운영하지 않습니다. 취소·노쇼 처리와 마감 시각 세부 규정은 저장소 정본에 없어 미확인입니다.", "source": "server/erp_api/seed_faq/1_wellperion.json f01·f07 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "policies" },
-    { "q_id": "E-10", "q": "미성년자·청소년 이용 규정은?", "answer": "유소년 WSC 강습은 5~16세를 대상으로 하며(모자수영 12~60개월, 스쿼시 10~16세), 이 연령 기준으로 강습이 구성됩니다.", "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "policies" },
-    { "q_id": "E-12", "q": "위 규정 중 봇이 말하면 안 되는 것은?", "answer": "금액·가격 숫자, 의료 진단·치료 판단, 계약·환불 확정, 개인정보 수집은 봇이 답하지 않고 상담 예약으로 넘깁니다.", "source": "server/counselbot/tenants/1_wellperion.json guards.forbidden_topics(기존 정본) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "guards.forbidden_topics" },
-    { "q_id": "F-1", "q": "상담 예약은 어디서 어떻게 잡나요(링크·전화·방문)?", "answer": "http://wellperion.com/ko/inquiry/ 에서 예약합니다.", "source": "CLAUDE.md §0 회사 정보 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "channels.reservation_url" },
-    { "q_id": "F-5", "q": "당일·워크인 방문이 가능한가요?", "answer": "아니오. 투어·상담·강습 모두 사전 예약제이며 워크인 방문·등록은 운영하지 않습니다.", "source": "server/erp_api/seed_faq/1_wellperion.json f01 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "policies" },
-    { "q_id": "G-1", "q": "주요 기구·소도구 목록은?", "answer": "수영·트레이닝(헬스)·골프·스쿼시·필라테스·체조·사우나·스파 시설을 함께 운영합니다. 개별 기구·소도구 목록은 저장소 정본에 없어 미확인입니다.", "source": "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §① 회사(시설) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts" },
-    { "q_id": "G-2", "q": "샤워·탈의·락커 규모는?", "answer": "샤워·타월 어메니티가 구비되어 있고, 개인 락커·골프 락커(윗층·아랫층)를 이용할 수 있습니다. 정확한 규모(개수)는 미확인입니다.", "source": "server/erp_api/seed_faq/1_wellperion.json f10 · 3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts" },
-    { "q_id": "G-6", "q": "음료·정수기·매점이 있나요?", "answer": "파트너 시설로 CUPS 카페가 함께 있습니다.", "source": "server/erp_api/seed_faq/1_wellperion.json f11 · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "facts" },
-    { "q_id": "K-2", "q": "검색하면 어떤 이름·주소로 나와야 하나요?", "answer": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.", "source": "ssot/canon_values.json(official_one_liner_kr, positioning_kr) · 2026-09-05", "answered_on": "2026-09-05", "promoted_to": "identity.one_liner" }
-  ]
-}
+[
+  {
+    "q_id": "A-2",
+    "q": "주소·층·건물 이름·찾아오는 길 한 줄은?",
+    "answer": "서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동).",
+    "source": "server/counselbot/tenants/1_wellperion.json facts.address(정본 CLAUDE.md §0) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.address"
+  },
+  {
+    "q_id": "A-3",
+    "q": "평일·주말·공휴일 운영 시간과 정기 휴무는?",
+    "answer": "평일 06:00~22:30, 주말·공휴일 08:00~20:00. 정기 휴무는 매월 둘째·넷째 주 일요일, 신정, 설·추석 명절 연휴.",
+    "source": "server/counselbot/tenants/1_wellperion.json facts.hours(정본 GM 확정 2026-04-23) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.hours"
+  },
+  {
+    "q_id": "A-4",
+    "q": "올해 임시 휴관·단축 운영 날짜가 있나요?",
+    "answer": "2026년 확정 휴관일: 2/17(설날), 9/13(9월 휴관일), 9/24~26(추석 연휴). 그 외 매월 둘째·넷째 일요일은 자동 휴관.",
+    "source": "status/close_days.json · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.hours.closed_dates_source"
+  },
+  {
+    "q_id": "A-5",
+    "q": "대표 전화·카톡 채널·이메일 중 손님이 연락해도 되는 것은?",
+    "answer": "대표 전화 02-6261-1200으로 연결됩니다. 카카오톡 채널·이메일 안내는 저장소 정본에 없어 미확인입니다.",
+    "source": "ssot/canon_values.json(official_phone) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.phone"
+  },
+  {
+    "q_id": "A-7",
+    "q": "센터 크기(평)와 공간 구성(수업실·PT룸·샤워)은?",
+    "answer": "서울 한남동, 약 3,000평 단일 공간. 수영·트레이닝·골프·스쿼시·체조·필라테스·사우나·스파 시설을 함께 운영합니다.",
+    "source": "ssot/canon_values.json(company_scale) · server/erp_api/seed_faq/1_wellperion.json f06 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.capacity"
+  },
+  {
+    "q_id": "A-8",
+    "q": "개업 연도와 지금까지 운영 기간은?",
+    "answer": "2017년 3월 개관, 2026년 기준 약 9년 운영.",
+    "source": "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §① 회사 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts.founded"
+  },
+  {
+    "q_id": "A-9",
+    "q": "SNS·블로그·플레이스 계정 주소 전부는?",
+    "answer": "블로그 https://m.blog.naver.com/wellperion. 공식 인스타그램 계정은 @wellperion(정식 URL 미확인). 네이버 플레이스 등록 여부는 미확인입니다.",
+    "source": "server/counselbot/tenants/1_wellperion.json channels.blog · 2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §3-4 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "channels"
+  },
+  {
+    "q_id": "A-10",
+    "q": "상담 예약을 받는 정확한 링크 또는 방법은?",
+    "answer": "http://wellperion.com/ko/inquiry/ 에서 투어·상담을 예약합니다.",
+    "source": "CLAUDE.md §0 회사 정보 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "channels.reservation_url"
+  },
+  {
+    "q_id": "D-1",
+    "q": "운영 중인 상품·프로그램 전체 목록은(가격표 그대로)?",
+    "answer": "멤버십(플래티넘/플래티넘+골프/노블레스/노블레스+골프), 가족·단체·법인 멤버십, 일일권·입주민권·바우처, 업그레이드 옵션(골프·수영 추가), 성인 강습(수영·P.T·필라테스·스쿼시·골프·발레·바레), 유소년 WSC 강습(수영·골프·스쿼시·체조). 금액은 상담 시 안내합니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만, 금액 제외) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-2",
+    "q": "각 상품은 누구에게 맞고 무엇이 달라지나요?",
+    "answer": "멤버십 등급은 포함 시설 구성으로 구분됩니다 — 기본(헬스+사우나)에 골프·수영을 더한 상위 등급이 있습니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-3",
+    "q": "수업 시간표(요일·시간·정원)는?",
+    "answer": "발레·바레(외부 파트너 루프메소드) 강습은 매주 금요일(발레)·화요일(바레) 오전 10시대에 진행합니다. 그 외 종목의 요일별 시간표는 저장소 정본에 없어 미확인입니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-4",
+    "q": "한 수업 정원과 강사 대 회원 비율은?",
+    "answer": "종목별로 1:1(개인)·1:2·1:3(필라테스 단체)·1:4(스쿼시 단체)·1:5(수영·WSC 단체)·1:6(WSC 스쿼시 단체) 등 소그룹 비율이 있습니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-5",
+    "q": "체험·첫 방문 상품이 있나요, 어떻게 진행되나요?",
+    "answer": "스쿼시·골프에 원포인트 1회 체험 강습이 있고, 유소년 WSC 골프·체조에는 1회 체험 상품이 있습니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-8",
+    "q": "기간권·횟수권·월회비 중 어떤 방식인가요?",
+    "answer": "멤버십은 연 단위 회원제, 강습은 회차제(4~100회, 종목별 유효기간 1일~12개월)입니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-9",
+    "q": "가격을 봇이 말해도 되나요, 상담에서만 안내하나요?",
+    "answer": "봇은 금액·가격 숫자를 직접 안내하지 않고 상담 예약으로 연결합니다.",
+    "source": "server/counselbot/tenants/1_wellperion.json guards.forbidden_topics(기존 정본) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings.price_policy"
+  },
+  {
+    "q_id": "D-10",
+    "q": "준비물(운동복·수건·양말·물)은 무엇이 필요하고 무엇이 제공되나요?",
+    "answer": "운동복·양말·수건·샤워 어메니티가 구비되어 있고, 수영 이용 시 바스타올을 제공합니다. 실내용 운동화는 직접 준비하며, 수영을 하시는 분은 수영복·수영모·수경을 준비합니다.",
+    "source": "server/erp_api/seed_faq/1_wellperion.json f10 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-11",
+    "q": "락커·샤워·주차·와이파이 같은 부가 편의는?",
+    "answer": "개인 락커, 골프 락커(윗층·아랫층)를 이용할 수 있고 샤워·타월 어메니티가 구비되어 있습니다. 주차·와이파이 여부는 저장소 정본에 없어 미확인입니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · server/erp_api/seed_faq/1_wellperion.json f10 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-13",
+    "q": "연령·질환·임신 등 참여 제한이 있나요?",
+    "answer": "유소년 WSC 강습은 5~16세 대상(모자수영은 12~60개월, 스쿼시는 10~16세)입니다. 성인 강습의 질환·임신 관련 제한은 저장소 정본에 없어 미확인입니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "D-14",
+    "q": "가족·친구 동반·소개 혜택이 있나요?",
+    "answer": "직계가족 한정 가족 멤버십을 운영합니다. 조건별 구체적 혜택은 상담 시 안내합니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만, 금액·할인율 제외) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "offerings"
+  },
+  {
+    "q_id": "E-4",
+    "q": "예약·취소·노쇼 규정과 마감 시각은?",
+    "answer": "투어·상담·강습 모두 사전 예약제이며 워크인 등록은 운영하지 않습니다. 취소·노쇼 처리와 마감 시각 세부 규정은 저장소 정본에 없어 미확인입니다.",
+    "source": "server/erp_api/seed_faq/1_wellperion.json f01·f07 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "policies"
+  },
+  {
+    "q_id": "E-10",
+    "q": "미성년자·청소년 이용 규정은?",
+    "answer": "유소년 WSC 강습은 5~16세를 대상으로 하며(모자수영 12~60개월, 스쿼시 10~16세), 이 연령 기준으로 강습이 구성됩니다.",
+    "source": "3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "policies"
+  },
+  {
+    "q_id": "E-12",
+    "q": "위 규정 중 봇이 말하면 안 되는 것은?",
+    "answer": "금액·가격 숫자, 의료 진단·치료 판단, 계약·환불 확정, 개인정보 수집은 봇이 답하지 않고 상담 예약으로 넘깁니다.",
+    "source": "server/counselbot/tenants/1_wellperion.json guards.forbidden_topics(기존 정본) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "guards.forbidden_topics"
+  },
+  {
+    "q_id": "F-1",
+    "q": "상담 예약은 어디서 어떻게 잡나요(링크·전화·방문)?",
+    "answer": "http://wellperion.com/ko/inquiry/ 에서 예약합니다.",
+    "source": "CLAUDE.md §0 회사 정보 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "channels.reservation_url"
+  },
+  {
+    "q_id": "F-5",
+    "q": "당일·워크인 방문이 가능한가요?",
+    "answer": "아니오. 투어·상담·강습 모두 사전 예약제이며 워크인 방문·등록은 운영하지 않습니다.",
+    "source": "server/erp_api/seed_faq/1_wellperion.json f01 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "policies"
+  },
+  {
+    "q_id": "G-1",
+    "q": "주요 기구·소도구 목록은?",
+    "answer": "수영·트레이닝(헬스)·골프·스쿼시·필라테스·체조·사우나·스파 시설을 함께 운영합니다. 개별 기구·소도구 목록은 저장소 정본에 없어 미확인입니다.",
+    "source": "2. 브랜드_자료/웰페리온_기반_FOUNDATION.md §① 회사(시설) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts"
+  },
+  {
+    "q_id": "G-2",
+    "q": "샤워·탈의·락커 규모는?",
+    "answer": "샤워·타월 어메니티가 구비되어 있고, 개인 락커·골프 락커(윗층·아랫층)를 이용할 수 있습니다. 정확한 규모(개수)는 미확인입니다.",
+    "source": "server/erp_api/seed_faq/1_wellperion.json f10 · 3. 웰페리온 가이드/cpo/product/상품기획.html(상품명·구조만) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts"
+  },
+  {
+    "q_id": "G-6",
+    "q": "음료·정수기·매점이 있나요?",
+    "answer": "파트너 시설로 CUPS 카페가 함께 있습니다.",
+    "source": "server/erp_api/seed_faq/1_wellperion.json f11 · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "facts"
+  },
+  {
+    "q_id": "K-2",
+    "q": "검색하면 어떤 이름·주소로 나와야 하나요?",
+    "answer": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.",
+    "source": "ssot/canon_values.json(official_one_liner_kr, positioning_kr) · 2026-09-05",
+    "answered_on": "2026-09-05",
+    "promoted_to": "identity.one_liner"
+  }
+]
