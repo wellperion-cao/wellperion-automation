@@ -57,10 +57,15 @@ GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", 
 PRESETS = {
     "운영부":   ["핵심", "시포", "시우"],            # 이경연 실장·임정은M·최준용M·윤병현AM
     "시설부":   ["핵심", "시토"],                    # 이정헌 소장·시설 3인 (점검이 핵심에 포함)
+    "지원부":   ["핵심", "시토"],                    # 이연희 반장·박남일 반장(사우나) — 정본=kpi.json 부서반장
+    "주차관리부": ["핵심", "시토"],                  # 양상규 고문
     "경영지원": ["핵심", "시로", "시뽀", "시우"],     # 나우열M (인사·재무·운영)
+    "파트너팀": ["핵심", "시모", "시보"],             # 강습 강사진(lessons@ 계정과 동일 범위)
     "마케팅":   ["핵심", "시모", "시보"],
     "전체":     list(GROUPS),
 }
+# 가입 폼 부서 선택지(GM 2026-09-05 지정 6부서) — 전체 PRESETS 중 사람이 직접 고르는 항목만.
+DEPTS = ("운영부", "시설부", "지원부", "주차관리부", "경영지원", "파트너팀")
 # 계정별 권한 정본(GM 확정 2026-09-03 · 배951). 여기 적힌 계정은 이 파일이 DB perms 를 이긴다.
 # accounts 를 비우거나 파일을 지우면 종전 동작(DB perms · 없으면 핵심 화면만)으로 그대로 돌아간다.
 ACCOUNTS = os.environ.get("ERP_ACCOUNT_PERMS",
@@ -306,17 +311,17 @@ def page(title: str, body: str) -> HTMLResponse:
 
 
 @app.get("/auth/login")
-def login_page(next: str = "/", err: str = ""):
+def login_page(next: str = "/", err: str = "", msg: str = ""):
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
     hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
-    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 회사 계정으로 로그인") + f"""<form method=post action=/auth/login>
-<h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{hint}
+    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 구글 계정 또는 회사 이메일로 로그인") + f"""<form method=post action=/auth/login>
+<h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}{hint}
 <label>회사 이메일<input name=email type=email autocomplete=username placeholder="이름@wellperion.com" required autofocus></label>
 <label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
-{'<a class=g href="/auth/google?next=' + escape(next) + '">회사 구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
-<div class=foot><p>계정이 없으면 <a href=/auth/signup>가입 신청</a> — 승인은 GM 이 합니다.</p>
-<p>비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
+{'<a class=g href="/auth/google?next=' + escape(next) + '">구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
+<div class=foot><p>구글 로그인이 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
+<p>계정이 없으면 <a href=/auth/signup>가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
 
 
 @app.post("/auth/login")
@@ -429,8 +434,9 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
     return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
 
 
-# ── 회사 구글 계정 로그인 ────────────────────────────────────────────────
-# 회사 워크스페이스(@wellperion.com) 계정은 GM 승인 없이 바로 통과한다(GM 지시 2026-09-03).
+# ── 구글 계정 로그인 ────────────────────────────────────────────────────
+# 회사 워크스페이스(@wellperion.com) 계정 = GM 승인 없이 바로 통과(GM 지시 2026-09-03).
+# 개인 구글 계정 = 이름·부서 선택 후 GM 승인 대기(GM 지시 2026-09-05 · 역할별 회사계정 1개 방식 폐기).
 # id_token 은 우리 클라이언트 시크릿으로 구글에서 직접(TLS) 받아오므로 서명 재검증 없이 payload 를 읽는다.
 def _redirect_uri(request: Request) -> str:
     proto = request.headers.get("x-forwarded-proto") or request.url.scheme
@@ -458,6 +464,11 @@ def is_company_account(claims: dict) -> bool:
                 and email.endswith("@" + GOOGLE_HD))
 
 
+def is_valid_google_account(claims: dict) -> bool:
+    """개인 계정도 통과 — 구글이 이메일을 확인해줬으면 충분하다(가입 승인은 GM 이 뒤에서 한다)."""
+    return bool(claims.get("email_verified") and claims.get("email"))
+
+
 @app.get("/auth/google")
 def google_start(request: Request, next: str = "/"):
     if not GOOGLE_ID or not GOOGLE_SECRET:
@@ -467,9 +478,10 @@ def google_start(request: Request, next: str = "/"):
                     "<p><a href=/auth/login>로그인 화면으로</a></p></div>")
     state = jwt.encode({"n": next if next.startswith("/") else "/", "exp": int(time.time()) + 600},
                        SECRET, algorithm="HS256")
+    # hd 파라미터 없음 = 계정 선택창에 개인 구글 계정도 뜬다(GM 2026-09-05). 회사 계정 여부는 콜백에서 판별.
     q = urllib.parse.urlencode({"client_id": GOOGLE_ID, "redirect_uri": _redirect_uri(request),
                                 "response_type": "code", "scope": "openid email profile",
-                                "hd": GOOGLE_HD, "state": state, "prompt": "select_account"})
+                                "state": state, "prompt": "select_account"})
     return RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + q, status_code=302)
 
 
@@ -487,25 +499,71 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         claims = _id_claims(_google_token(code, _redirect_uri(request))["id_token"])
     except Exception:
         return RedirectResponse("/auth/login?err=구글 인증에 실패했습니다", status_code=303)
-    if not is_company_account(claims):
-        return RedirectResponse("/auth/login?err=회사 구글 계정(@wellperion.com)만 로그인할 수 있습니다", status_code=303)
+    if not is_valid_google_account(claims):
+        return RedirectResponse("/auth/login?err=구글 인증에 실패했습니다", status_code=303)
     email = claims["email"].strip().lower()
+    name = (claims.get("name") or email.split("@")[0]).strip()
     with db() as c:
         u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
-        if u and u["status"] == "blocked":
+    if u:
+        # 이미 있는 계정 — 회사 계정이든 개인 계정이든 상태 그대로 따른다(승인 우회 없음).
+        if u["status"] == "blocked":
             return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
-        if not u:
-            salt, h = hash_pw(secrets.token_urlsafe(32))    # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
+        if u["status"] != "active":
+            return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+    elif is_company_account(claims):
+        # 회사 워크스페이스 계정 — GM 승인 없이 바로 활성(GM 2026-09-03 · 종전 동작 유지).
+        salt, h = hash_pw(secrets.token_urlsafe(32))        # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
+        with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                      (T, email, (claims.get("name") or email.split("@")[0]).strip(), salt, h, "staff", "active", now(), now(),
-                       None))
-        elif u["status"] != "active":
-            c.execute("UPDATE users SET status='active', approved_at=%s WHERE tenant_id=%s AND id=%s", (now(), T, u["id"]))
-        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
+                      (T, email, name, salt, h, "staff", "active", now(), now(), None))
+            u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
+    else:
+        # 개인 구글 계정, 첫 로그인 — 이름·부서 확인 후 승인 대기로 넘긴다(GM 2026-09-05).
+        reg = jwt.encode({"e": email, "n": name, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
+        return RedirectResponse(f"/auth/google/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
     r = RedirectResponse(nxt, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
     return r
+
+
+@app.get("/auth/google/finish")
+def google_finish_page(t: str = "", next: str = "/", err: str = ""):
+    """개인 구글 계정 첫 로그인 — 이름 확인 + 부서 선택. t 는 600초짜리 서명 토큰(이메일·구글이 준 이름)."""
+    try:
+        claims = jwt.decode(t, SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return RedirectResponse("/auth/login?err=인증이 만료됐습니다. 처음부터 다시 로그인하세요", status_code=303)
+    opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
+    return page("가입 완료", head("구글 로그인 확인 · 이름과 부서만 알려주세요") + f"""<form method=post action=/auth/google/finish>
+<h1>가입 완료</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
+<p class=hint>{escape(claims['e'])} 계정으로 계속합니다.</p>
+<label>이름<input name=name value="{escape(claims['n'])}" placeholder="직함 포함, 예: 홍길동 매니저" required></label>
+<label>부서<select name=dept required><option value=''>선택하세요</option>{opts}</select></label>
+<input type=hidden name=t value="{escape(t)}"><input type=hidden name=next value="{escape(next)}">
+<button>신청</button><div class=foot><p>신청하면 GM 께 알림이 가고, 승인되면 부서 화면으로 로그인할 수 있습니다.</p></div></form>""")
+
+
+@app.post("/auth/google/finish")
+def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
+    try:
+        claims = jwt.decode(t, SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return RedirectResponse("/auth/login?err=인증이 만료됐습니다. 처음부터 다시 로그인하세요", status_code=303)
+    if dept not in PRESETS:
+        return RedirectResponse(f"/auth/google/finish?t={t}&next={urllib.parse.quote(next, safe='')}&err=부서를 선택하세요", status_code=303)
+    email, salt_pw = claims["e"], secrets.token_urlsafe(32)     # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
+    salt, h = hash_pw(salt_pw)
+    perms = json.dumps({"dept": dept, "groups": PRESETS[dept], "modules": [], "deny": []}, ensure_ascii=False)
+    try:
+        with db() as c:
+            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                      (T, email, name.strip(), salt, h, now(), perms))
+    except _db.IntegrityError:
+        pass                                    # 중복 제출 — 이미 신청돼 있으니 그대로 대기 안내만
+    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept})\n승인: http://15.164.151.105/auth/admin")
+    return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
 
 
 # ── 관리자 ──────────────────────────────────────────────────────────────
@@ -584,10 +642,20 @@ def _admin_row(r, me_id: int) -> str:
     perm_link = "" if r["role"] == "admin" else f"<a href=/auth/admin/{r['id']}/perms>권한</a>"
     # 삭제 = 사용 중이 아닌 직원 계정만(잘못 온 신청·시험 계정 정리 · GM 2026-09-04). 사용 중은 먼저 차단.
     delete = "" if (r["role"] == "admin" or r["status"] == "active" or r["id"] == me_id) else _delete_form(r)
-    return (f"<tr{' class=pend' if r['status'] == 'pending' else ''}><td data-l=계정><b>{escape(r['name'])}</b><br><small>{escape(r['email'])}</small></td>"
+    return (f"<tr{' class=pend' if r['status'] == 'pending' else ''}><td data-l=계정><b>{escape(r['name'])}</b>{_dept_badge(r)}<br><small>{escape(r['email'])}</small></td>"
             f"<td data-l=역할><span class=tag>{role_ko}</span></td><td data-l=상태><span class='tag{status_cls}'>{status_ko}</span></td>"
             f"<td data-l=신청><small>{short_dt(r['created_at'])}</small></td><td data-l=승인><small>{short_dt(r['approved_at'])}</small></td>"
             f"<td><div class=acts>{approve_or_block}{delete}{perm_link}{role_btn}</div></td></tr>")
+
+
+def _dept_badge(r) -> str:
+    """가입 폼에서 고른 부서(perms JSON 의 dept 키) — account_perms.json/관리자 화면 저장분엔 없어 조용히 빈칸."""
+    try:
+        p = json.loads(r["perms"]) if r["perms"] else None
+    except ValueError:
+        p = None
+    d = (p or {}).get("dept")
+    return f" <span class=tag>{escape(d)}</span>" if d else ""
 
 
 def _delete_form(r) -> str:
@@ -611,7 +679,7 @@ def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional
     n_off = sum(1 for r in rows if r["status"] == "blocked")
     if pend:
         items = "".join(
-            f"<div class=row><div><b>{escape(r['name'])}</b> <small>{escape(r['email'])}</small><br><small>신청 {short_dt(r['created_at'])}</small></div>"
+            f"<div class=row><div><b>{escape(r['name'])}</b>{_dept_badge(r)} <small>{escape(r['email'])}</small><br><small>신청 {short_dt(r['created_at'])}</small></div>"
             f"<div class=act><form method=post action=/auth/admin/{r['id']}/approve><button>승인</button></form>{_delete_form(r)}</div></div>"
             for r in pend)
         card = f"<div class=card><h2>승인 대기 {len(pend)}건 — 지금 처리할 것</h2>{items}</div>"
@@ -723,12 +791,27 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not is_company_account({**ok, "hd": None})                        # 개인 gmail
     assert not is_company_account({**ok, "email": "x@gmail.com"})            # hd 만 위조된 경우
     assert not is_company_account({**ok, "email_verified": False})
-    # 권한 판정 자가점검 — dict 가 DictRow 흉내(keys()·[] 둘 다 된다)
-    core = {"id": "member", "group": "시포", "core": True, "roles": ["admin"]}
-    plain = {"id": "check", "group": "시우", "roles": ["admin", "staff"]}
-    assert allowed({"role": "admin", "perms": None}, core)
-    assert not allowed({"role": "staff", "perms": None}, core) and allowed({"role": "staff", "perms": None}, plain)
-    assert allowed({"role": "staff", "perms": '{"groups":["핵심"]}'}, core)
-    assert not allowed({"role": "staff", "perms": '{"groups":["핵심"]}'}, plain)
-    assert not allowed({"role": "staff", "perms": '{"groups":["시우"],"deny":["check"]}'}, plain)
+    # 개인 구글 계정 — hd 없이도 통과해야 가입 폼으로 넘어간다(GM 2026-09-05)
+    personal = {"email": "someone@gmail.com", "email_verified": True}
+    assert is_valid_google_account(personal) and not is_company_account(personal)
+    assert not is_valid_google_account({"email": "x@gmail.com", "email_verified": False})
+    # 권한 판정 자가점검 — dict 가 DictRow 흉내(keys()·[] 둘 다 된다). user 는 email 이 있어야 perms_of() 가 안 죽는다.
+    admin_u = {"role": "admin", "email": "cao@wellperion.com", "perms": None}
+    staff_u = {"role": "staff", "email": "staff@example.invalid", "perms": None}
+    member_before_978 = {"id": "member", "group": "시포", "core": True, "roles": ["admin"]}           # 배978 이전 값
+    member_after_978 = {"id": "member", "group": "시포", "core": True, "roles": ["admin", "staff"]}   # 배978 수정 후
+    dept_module = {"id": "check", "group": "시우", "core": False, "roles": ["admin", "staff"]}        # 일반 부서 모듈(core 아님)
+    assert allowed(admin_u, member_before_978) and allowed(admin_u, member_after_978)   # admin=항상 전부
+    assert not allowed(staff_u, member_before_978)          # 배978 문제 — 임정은M·이경연 실장이 겪던 것
+    assert allowed(staff_u, member_after_978)               # 배978 수정 — 이제 기본 권한으로도 보인다
+    assert not allowed(staff_u, dept_module)                # 기본(perms 없음) = core 모듈만, 부서 모듈은 안 보임
+    perms_core = {**staff_u, "perms": '{"groups":["핵심"]}'}
+    assert allowed(perms_core, member_after_978)            # 핵심 그룹 = core 모듈 전부 허용(roles 무관)
+    assert not allowed(perms_core, dept_module)             # 부서 전용 모듈은 그룹이 안 맞으면 그대로 막힘
+    perms_deny = {**staff_u, "perms": '{"groups":["시우"],"deny":["check"]}'}
+    assert not allowed(perms_deny, dept_module)             # deny 가 groups 매칭보다 우선
+    # 부서 가입 perms(dept 키 포함) — allowed() 는 groups/modules/deny/all 만 보므로 dept 는 무해해야 한다
+    dept_perms = {**staff_u, "perms": '{"dept":"운영부","groups":["핵심","시포","시우"],"modules":[],"deny":[]}'}
+    assert allowed(dept_perms, member_after_978) and allowed(dept_perms, dept_module)
+    assert all(d in PRESETS for d in DEPTS)                                  # 가입 폼 선택지 = PRESETS 정의됨
     print("self-check ok")

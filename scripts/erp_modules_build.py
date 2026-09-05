@@ -84,7 +84,8 @@ CORE = {
     "cpo/member/membership.html": {
         "id": "member", "name": "회원",
         "desc": "멤버십·강습 회원 등록과 상태를 한 곳에서 관리한다.",
-        "staff": "이경연 실장", "roles": ["admin"],
+        # PII 공개 노출은 GM 이 수용(재지적 대상 아님) — 주 사용자 임정은M·이경연 실장이 staff 라 admin 전용이면 안 보였다(배978).
+        "staff": "이경연 실장", "roles": ["admin", "staff"],
     },
     "cpo/문의현황.html": {
         "id": "inquiry", "name": "문의",
