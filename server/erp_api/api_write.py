@@ -54,7 +54,7 @@ _TODO_WRITES = ("todo_add", "todo_update", "todo_delete", "todo_done", "todo_sig
                 "approval_rep_escalate", "approval_rep_sign_upload", "approval_rep_cancel")
 # 점검 3부서 쓰기(배 960 #5b) — 정의서 §4. 원장·스냅샷·항목 마스터를 건드리는 것만 거울을 다시 떠온다.
 #   빠진 것: fcheck_ranges_save·vendor_save(점검기준·거래업체는 거울에 없다) · notify/notify_round(텔레그램만) ·
-#            save_schedule(전사일정은 거울 없음) · saveBoard 는 화면이 /api/board/{key}/refresh 로 그 열쇠만 즉시 갱신하지만
+#            saveBoard 는 화면이 /api/board/{key}/refresh 로 그 열쇠만 즉시 갱신하지만
 #            FACILITY_CHECK_ 열쇠는 check_records(facility board)도 겸해서 여기에도 넣는다.
 _CHECK_WRITES = ("save", "saveBoard", "saveItems", "snapshot_append", "unlock_round",
                  "save_facility_measure", "save_facility_notes")
@@ -81,6 +81,10 @@ MIRROR_SYNC.update({a: "sync_reception.py" for a in _RECEPTION_WRITES})
 MIRROR_SYNC.update({a: "sync_todo.py" for a in _TODO_WRITES})
 MIRROR_SYNC.update({a: "sync_check.py" for a in _CHECK_WRITES})
 MIRROR_SYNC.update({a: "sync_sales.py" for a in _PROC_MIRROR_WRITES})
+# 전사일정 거울(misc_cache schedule/load_schedule · 배990)은 sync_misc.py 가 5분마다 다시 뜬다 — 저장 직후는
+# 옛값. save_schedule 도 다른 영역처럼 여기 한 줄만 추가(배 1039-B · 2026-09-05) — 인자 없이 3개 소형 GAS를
+# 통째로 다시 뜬다(가벼움 · _SYNC_ARGS 미지정 = main() 전체 실행).
+MIRROR_SYNC["save_schedule"] = "sync_misc.py"
 # 동기화 스크립트에 붙일 인자 — 점검은 오늘치만 다시 뜬다(전량은 GAS 18호출·수 분, 5분 cron 이 따로 돈다).
 #   매출은 한 열쇠만(--only) — 전량은 무거운 집계 20여 호출(수십 초짜리 여럿)이고, proc_summary 는 TTL 30분이라
 #   그냥 전량을 돌리면 fresh() 가 건너뛰어 정작 갱신이 안 된다.
@@ -249,7 +253,8 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("save_schedule") == "SCHEDULE_GAS_URL"   # 전사일정은 별개 GAS — 점검 GAS 로 새면 저장이 사라진다
     assert _gas_key("member_active_update") == "FUNNEL_EXEC_URL"   # 점검 명시 목록이 회원 쪽을 삼키면 안 된다
     assert MIRROR_SYNC["snapshot_append"] == "sync_check.py" and _SYNC_ARGS["sync_check.py"] == ["--today"]
-    assert "fcheck_ranges_save" not in MIRROR_SYNC and "save_schedule" not in MIRROR_SYNC   # 거울 없는 쓰기는 헛돌지 않는다
+    assert "fcheck_ranges_save" not in MIRROR_SYNC   # 거울 없는 쓰기는 헛돌지 않는다
+    assert MIRROR_SYNC["save_schedule"] == "sync_misc.py"   # 전사일정 저장 뒤 misc_cache(schedule) 도 다시 뜬다(배1039-B)
     # 구매요청·자산(배 960 #H) — 이름이 짧아 목적지가 새기 쉽다. 전수 + 다른 도메인이 안 삼키는지 양쪽 확인.
     for _a in ("add", "delete", "status", "photo", "asset_update", "asset_label", "asset_issue", "asset_del"):
         assert _gas_key(_a) == "PROC_GAS_URL", _a
