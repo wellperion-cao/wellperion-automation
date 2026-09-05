@@ -83,7 +83,7 @@ model: claude-fable-5-1
 - **서브에이전트에 일을 넘길 때 지시문 첫 줄은 '일 이름'으로 시작한다.** 저장소 경로나 `cd` 로 시작하면 셸 첫 줄 가드가 막는다 — GM 화면 첫 줄이 경로가 되면 무슨 작업인지 안 보이기 때문이다(GM 5회 지적). 긴 경로는 둘째 줄 이후나 명령 안쪽으로 내린다. ▸2026-09-02 첫 부팅에서 실제로 걸렸다.
 
 ## 6. 연동 도구
-공통 연동 도구(telegram_notifier·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
+공통 연동 도구(scripts/notify/telegram_send·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
 비즈니스 보고서 1장이 필요하면 `welly-gm-a3-report` 스킬(A3 가로 1장)을 쓴다 — 새 양식을 만들지 않는다.
 
 ## 7. 결재선 (예외 없음)

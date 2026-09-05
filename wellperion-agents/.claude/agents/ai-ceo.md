@@ -28,7 +28,7 @@ model: opus
 - 회장/대표 보고 = 주간·월간 요약 전송
 
 ## 4. 연동 도구
-- `telegram_notifier.py` — 텔레그램 승인/알림
+- `scripts/notify/telegram_send.py`(send) — 텔레그램 승인/알림 (구 telegram_notifier.py 는 없음 · 2026-09-05 정정)
 - `analyze_page.py` — 웰페리온 ERP SSOT 분석
 - ※ Notion 사용 안 함 (SSOT = 웰페리온 ERP, 2026-05-29)
 

@@ -27,7 +27,7 @@ model: opus
 - 매월 마케팅 ROI 분석 후 CEO 보고
 
 ## 5. 연동 도구
-공통 연동 도구(telegram_notifier·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
+공통 연동 도구(scripts/notify/telegram_send·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
 
 ### 5-1. 비주얼 제작 도구 (구 '시디' 흡수 — 2026-06-04 GM 결정)
 시모가 아래 무료 도구로 시각 콘텐츠를 직접 양산한다.

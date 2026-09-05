@@ -156,7 +156,7 @@ C:\Python314\python.exe scripts/worklog.py --open-gm {role}
 
 ## 3. 연동 도구
 
-- `telegram_notifier.py` — 텔레그램 알림
+- `scripts/notify/telegram_send.py`(send) — 텔레그램 알림 (구 telegram_notifier.py 는 없음 · 2026-09-05 정정)
 - `analyze_page.py` — 웰페리온 ERP SSOT 분석
 - ※ Notion 사용 안 함 (SSOT = 웰페리온 ERP, 2026-05-29)
 

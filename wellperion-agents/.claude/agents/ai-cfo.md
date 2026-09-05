@@ -28,7 +28,7 @@ model: opus
 - 월간 재무제표 요약 → CEO 주간 보고 포함
 
 ## 5. 연동 도구
-공통 연동 도구(telegram_notifier·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
+공통 연동 도구(scripts/notify/telegram_send·analyze_page·Notion 미사용)·한국어 출력 = `wellperion-boot` 스킬을 따른다.
 
 ## 6. 모든 출력은 한국어로 작성한다.
 
