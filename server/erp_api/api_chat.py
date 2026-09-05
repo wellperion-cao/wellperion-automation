@@ -423,7 +423,6 @@ def _persona_of(tenant: str) -> dict:
 _ANTHROPIC_CLIENT = (None, False)   # (client|None, tried) — 최초 1회만 만들고 재사용(요청마다 새 client 금지)
 _DIGITS_RE = re.compile(r"\d+")
 BEDROCK_REGION = os.environ.get("ERP_BEDROCK_REGION", "ap-northeast-2")
-BEDROCK_ERROR_WORDS = ("AccessDenied", "ResourceNotFound", "UnrecognizedClient")   # 사용 사례 미제출 상태(지금) 예상 오류
 BEDROCK_ALERT_FLAG = os.environ.get("ERP_BEDROCK_ALERT_FLAG", "/srv/erp/bedrock_alert.txt")
 DAILY_QUESTION_LIMIT = 300   # 테넌트당 하루 이 수를 넘으면 백업 매칭으로 자동 전환(가드①)
 _DAILY_COUNTS: dict = {}     # (tenant, "YYYY-MM-DD") -> count · 프로세스 메모리(재시작하면 리셋 — ponytail: 하루살이라 문제없음
@@ -593,9 +592,10 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
         )
         text = "".join(b.text for b in resp.content if b.type == "text").strip()
     except Exception as e:
-        if any(w in str(e) for w in BEDROCK_ERROR_WORDS):
-            _tg_alert_bedrock_once("⚠️ 상담봇 Bedrock 호출 실패(%s) — FAQ 백업으로 자동 전환 중. 모델 액세스·권한 확인 필요."
-                                    % next((w for w in BEDROCK_ERROR_WORDS if w in str(e)), "오류"))
+        # 종류를 미리 안 가린다(권한·DNS·한도 등 원인이 다양 — 실측에서 "AccessDenied 예상"이 실제로는
+        # bedrock-mantle.{region}.api.aws DNS 미응답으로 나왔다) — 뭐가 됐든 주 엔진이 안 됐다는 신호라 알린다.
+        _tg_alert_bedrock_once("⚠️ 상담봇 주 엔진(Bedrock) 호출 실패 — FAQ 백업으로 자동 전환 중. %s: %s"
+                                % (type(e).__name__, str(e)[:200]))
         return None, "error"
     if not text or _forbidden_hit(text) or not _grounded(text, system):
         return None, "invalid"
