@@ -1430,10 +1430,14 @@
   //    (약속 L21 — 새 GAS·새 수집기 미신설, 이미 이 페이지가 쓰는 GAS_URL에 action만 하나 더 붙임). AI배(C레벨) 행 제외 = 실무진 업무·결재만.
   //    열쇠가 있으면 &include_gm=1&gmkey=…를 붙여 GM 행도 함께 받는다(없으면 기존과 동일 — 다른 소비자 회귀 없음).
   //    실패/미측정=null(가짜값 없음).
+  //    ★읽기 원천 전환(배960 · 2026-09-05 시토, GM_TODO_KEY=1531 서버 실측 일치 확인 후) — /api/todo 우선(같은 열쇠 판정), 실패 시 GAS.
   function readWorkApproval(){
     var _k = gm1TodoKey();
-    return fetch(GAS_URL + '?action=todo_list' + (_k ? '&include_gm=1&gmkey=' + encodeURIComponent(_k) : ''), {method:'GET', redirect:'follow'})
-      .then(function(r){ return r.json(); })
+    var gas = function(){
+      return fetch(GAS_URL + '?action=todo_list' + (_k ? '&include_gm=1&gmkey=' + encodeURIComponent(_k) : ''), {method:'GET', redirect:'follow'})
+        .then(function(r){ return r.json(); });
+    };
+    return apiFirst('/api/todo?include_gm=1&gmkey=' + encodeURIComponent(_k) + '&limit=1000', gas, '업무결재')
       .then(function(res){
         if(!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return null;
         var aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
