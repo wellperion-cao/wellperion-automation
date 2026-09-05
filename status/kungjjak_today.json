@@ -996,24 +996,6 @@
       ],
       "work": [
         {
-          "time": "15:27",
-          "area": "작업",
-          "event": "전사일정 저장 후 misc_cache 미러 즉시 재동기화 (배1039-B)",
-          "detail": "커밋 fd7ae0855 · 배 11286"
-        },
-        {
-          "time": "15:29",
-          "area": "작업",
-          "event": "완료 훅의 큐 쓰기를 잠금 관문(queue_lock.mutate_queue) 경유로 — 잠금 없는 통째 덮어쓰기가 같은 시각 다른 세션 갱신을 지워 종결이 되돌아오던 사고(2026-09-05 3회) 수리",
-          "detail": "커밋 be2c40a26 · 배 11286"
-        },
-        {
-          "time": "15:32",
-          "area": "작업",
-          "event": "검수 5건(H2·M1·M2·M3·L2) 실측 기록 + 배1026 브리핑 갱신",
-          "detail": "커밋 e992449a2 · 배 11286"
-        },
-        {
           "time": "15:32",
           "area": "작업",
           "event": "INC-054 — 완료 훅 잠금 없는 큐 덮어쓰기로 종결 되돌림(3회) · 관문 단일화로 GUARDED [지연 재시도]",
@@ -1174,6 +1156,24 @@
           "area": "작업",
           "event": "배1036 브리핑 갱신 — Bedrock 클래스 2차 교체·sonnet-4-6 라이브·5문 실측(5/5·평균 4.29s) 기록",
           "detail": "커밋 b498e7332 · 배 11286"
+        },
+        {
+          "time": "16:30",
+          "area": "작업",
+          "event": "상담봇 모델 비교 — Sonnet 4.6 vs Opus 4.6 5문 실측(속도·원가·품질) · 라이브는 sonnet-4-6 유지 (배1036)",
+          "detail": "커밋 7cfff0c74 · 배 11286"
+        },
+        {
+          "time": "16:30",
+          "area": "작업",
+          "event": "전사일정 GAS 속성창 500KB 총량 천장 — 백업 3벌 Drive 이관으로 211건 저장 복구 (배1056)",
+          "detail": "커밋 ac65fdbe7 · 배 11286"
+        },
+        {
+          "time": "16:30",
+          "area": "작업",
+          "event": "아침 중간관리자 통 확인요청 — 사람별 묶음·≤5건·회신 감지 자동 제외 (배1057)",
+          "detail": "커밋 9d181c3f6 · 배 11286"
         }
       ],
       "count": 21,
@@ -2433,7 +2433,7 @@
           "start": "15:58",
           "end": "16:21",
           "minutes": 22,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2445,7 +2445,19 @@
           "start": "16:26",
           "end": "16:26",
           "minutes": 0,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-15",
+          "no": "15",
+          "got": "테스트는 Max 구독으로 — counselbot_test.py(claude CLI · 0원 · 서버 프롬프트 재사용) 신설·실측 1문 OK",
+          "did": "",
+          "start": "16:30",
+          "end": "16:30",
+          "minutes": 0,
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2781,7 +2793,7 @@
           "start": "16:21",
           "end": "16:23",
           "minutes": 1,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2793,7 +2805,7 @@
           "start": "16:24",
           "end": "16:24",
           "minutes": 0,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2805,7 +2817,7 @@
           "start": "16:26",
           "end": "16:27",
           "minutes": 1,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2817,7 +2829,7 @@
           "start": "16:27",
           "end": "16:27",
           "minutes": 0,
-          "upload": "✅ 올림 (ac8ec02e6)",
+          "upload": "✅ 올림 (1838ee2b0)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2825,13 +2837,13 @@
           "ref": "GM-20260905-9035",
           "no": "35",
           "got": "테스트는 클로드 MAX 토큰나가게 하면안되? 테스트 포함해도 결론은 돈 나가는건데 무슨 소리야?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:29",
+          "minutes": 1,
+          "upload": "✅ 올림 (1838ee2b0)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2978,31 +2990,22 @@
           "area": "작업",
           "event": "상담봇 주 모델 = Bedrock Opus 4.6(GM 확정 2026-09-05 · 성능 우선) · Sonnet 4.6 대체",
           "detail": "커밋 ac8ec02e6 · 배 11305"
+        },
+        {
+          "time": "16:30",
+          "area": "작업",
+          "event": "counselbot_test.py — 상담봇 톤 테스트를 claude CLI(Max 구독 · 0원)로, 서버와 같은 프롬프트 조립기 재사용 (GM 지시 2026-09-05)",
+          "detail": "커밋 1838ee2b0 · 배 11305"
         }
       ],
-      "count": 44,
-      "done": 43,
-      "open": 1,
+      "count": 45,
+      "done": 45,
+      "open": 0,
       "avg_minutes": 2,
-      "work_count": 24,
+      "work_count": 25,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-9035",
-          "no": "35",
-          "got": "테스트는 클로드 MAX 토큰나가게 하면안되? 테스트 포함해도 결론은 돈 나가는건데 무슨 소리야?",
-          "did": "",
-          "start": "16:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
