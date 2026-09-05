@@ -25,6 +25,9 @@ from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
 BOARD_KEYS = (
     "GM_TASK_OWNERS", "CHAIRMAN_REPORTED", "OPS_POLICY_BOARD", "OPS_GUIDE_BOARD",
     "OPS_MANUAL_BOARD", "BROJ_TASK_BOARD", "SUPPORT_LAUNDRY",
+    "ALLDEPT_VENDOR_CATEGORIES",   # 전사_거래업체 (2026-09-04 배985)
+    "GM_TASK_CHECKS",              # GM업무 체크칸
+    "CHAIRMAN_ITEM_CHECKS",        # 회장님 지시사항 체크칸
 )
 
 

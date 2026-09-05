@@ -92,15 +92,26 @@ def health():
     return {"ok": n > 0, "rows": n, "approvals": a, "last_sync_kst": last, "last_failed_kst": failed or "", "_source": SOURCE}
 
 
+def _gm_ok(include_gm, gmkey, key_env=None):
+    """GAS `_gmKeyOk_` 와 같은 판정 — 김남욱GM 행 통로 열쇠(배326). 값은 서버 env GM_TODO_KEY 한 곳에만."""
+    k = (key_env if key_env is not None else os.environ.get("GM_TODO_KEY", "")).strip()
+    return include_gm == 1 and bool(k) and gmkey.strip() == k
+
+
 @router.get("")
 def todo_list(
     status: Optional[str] = None,     # 진행중 · 완료 · 보류 (시트 상태값 그대로)
     dept: Optional[str] = None,       # 운영부 · 시설부 · 파트너팀
     owner: Optional[str] = None,      # 담당자 부분일치
+    include_gm: int = Query(0, ge=0, le=1),   # GAS todo_list 와 같은 이름
+    gmkey: str = Query(""),                   # GAS _gmKeyOk_ 와 같은 열쇠(env GM_TODO_KEY)
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ):
     where, args = ["tenant_id = %s"], [db.TENANT]
+    if not _gm_ok(include_gm, gmkey):
+        # GAS 와 같은 기준 칸(담당자) · 부분일치 — todo_list 필터 e.parameter.owner 와는 별개(배326 보호)
+        where.append("owner NOT LIKE %s"); args.append("%김남욱GM%")
     if status:
         where.append("status = %s"); args.append(status)
     if dept:
@@ -113,7 +124,9 @@ def todo_list(
         total = conn.execute("SELECT COUNT(*) FROM todo_items WHERE " + w, args).fetchone()[0]
         rows = conn.execute("SELECT * FROM todo_items WHERE " + w + " ORDER BY created DESC, id LIMIT %s OFFSET %s",
                             args + [limit, offset]).fetchall()
-    return {"total": total, "count": len(rows), "limit": limit, "offset": offset, "rows": [_row(r) for r in rows], "_source": SOURCE}
+    data = [_row(r) for r in rows]
+    return {"ok": True, "data": data,       # GAS 봉투 그대로 — 화면 어댑터 제거용
+            "total": total, "count": len(rows), "limit": limit, "offset": offset, "rows": data, "_source": SOURCE}
 
 
 @router.get("/{item_id}")
@@ -131,4 +144,9 @@ if __name__ == "__main__" and "--selftest" in sys.argv:
     # 집계 정의 자체점검 — DB 없이 work_stats 만(진행 = 전체 - 완료 - 보류).
     s = work_stats([{"status": "진행중"}, {"status": "완료"}, {"status": "보류"}, {"status": ""}])
     assert (s["total"], s["active"], s["done"], s["hold"], s["rate"]) == (4, 2, 1, 1, 25), s
+    # GM 행 게이트 — include_gm=1 + 맞는 열쇠일 때만 통과(GAS _gmKeyOk_ 와 동치, DB 없이).
+    assert _gm_ok(1, "abc", "abc") and not _gm_ok(1, "abc", "xyz")
+    assert not _gm_ok(0, "abc", "abc"), "include_gm 없으면 항상 false"
+    assert not _gm_ok(1, "abc", ""), "서버 열쇠 비어 있으면 항상 false(안전 기본)"
+    assert _gm_ok(1, " abc ", "abc"), "양쪽 trim 뒤 비교(GAS _gmKeyOk_ 와 동치)"
     print("selftest ok")
