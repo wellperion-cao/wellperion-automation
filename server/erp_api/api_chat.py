@@ -238,15 +238,26 @@ def _match_question_type(q: str):
 
 
 def _fact_present(prof: dict, path: str) -> bool:
-    """needs_facts 표기(facts.hours · offerings[].price_policy · policies[topic=환불] 등)가 대충이라도
-    채워졌는지만 본다 — 완벽한 스키마 검증이 아니라 "이 구역이 아예 비었나" 신호용(배1074③ 최소 구현)."""
-    base = re.split(r"[.\[]", path, maxsplit=1)[0]
-    val = (prof or {}).get(base)
-    if isinstance(val, dict):
-        return any(v not in (None, "", "미수령", []) for v in val.values())
-    if isinstance(val, list):
-        return bool(val)
-    return val not in (None, "", "미수령")
+    """needs_facts 표기(facts.hours · offerings[].price_policy · policies[topic=환불] 등)가 채워졌는지 본다.
+    배열·topic 필터 표기는 대충(그 구역에 하나라도 있으면 있다고 봄) · 단순 점(.) 경로는 그 칸까지 실제로
+    내려가서 본다 — 처음엔 최상위 구역만 봐서 "_note"·"_source" 같은 메타 문구 때문에 옆 칸(예: parking)이
+    비었는데도 '있다'고 오판했다(실측으로 잡음 · 배1074③)."""
+    if "[topic=" in path:
+        base, rest = path.split("[topic=", 1)
+        topic = rest.rstrip("]")
+        items = (prof or {}).get(base) or []
+        return any(topic in (it.get("topic") or "") for it in items)
+    if "[]" in path:
+        items = (prof or {}).get(path.split("[", 1)[0]) or []
+        return bool(items)
+    node = prof or {}
+    for part in path.split("."):
+        if not isinstance(node, dict):
+            return False
+        node = node.get(part)
+    if isinstance(node, dict):
+        return any(v not in (None, "", "미수령", []) for k, v in node.items() if not k.startswith("_"))
+    return node not in (None, "", "미수령")
 
 
 def _needs_facts_missing(prof: dict, type_id: str) -> list:
@@ -960,6 +971,10 @@ def _selfcheck() -> None:
     assert _fact_present({"facts": {"hours": None}}, "facts.hours") is False
     assert _needs_facts_missing({"facts": {}}, "parking") == ["facts.parking"]
     assert _needs_facts_missing({"facts": {"parking": "무료 30대"}}, "parking") == []
+    # 실측으로 잡은 버그 — "_note" 처럼 밑줄로 시작하는 메타 칸이 옆의 진짜 빈 칸(parking)을 가리면 안 된다.
+    assert _fact_present({"facts": {"parking": None, "_note": "미수령 — 안내 문구"}}, "facts.parking") is False
+    real_dc = _load_profile("2_dietcamp")
+    assert _needs_facts_missing(real_dc, "parking") == ["facts.parking"], "다캠 facts.parking 은 null 이어야 함"
     print("api_chat selfcheck ok")
 
 
