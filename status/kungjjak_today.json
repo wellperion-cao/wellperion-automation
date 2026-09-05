@@ -229,7 +229,7 @@
           "start": "15:02",
           "end": "15:12",
           "minutes": 9,
-          "upload": "✅ 올림 (a8732722c)",
+          "upload": "✅ 올림 (37c8abf0c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -237,13 +237,25 @@
           "ref": "GM-20260905-21",
           "no": "21",
           "got": "구글 시트에서 서버로 옮긴 데이터들 보고 싶다",
-          "did": "",
+          "did": "서버 DB 읽기전용 실측 21표 → reports/260905_서버로_옮긴_데이터.html 크롬 띄움",
           "start": "15:12",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:14",
+          "minutes": 2,
+          "upload": "✅ 올림 (37c8abf0c)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-22",
+          "no": "22",
+          "got": "Claude Code 작업 원칙 박제 — 전역 CLAUDE.md·rules/lessons.md·skills/root-cause (병렬)",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "15:14",
+          "end": "15:15",
+          "minutes": 1,
+          "upload": "✅ 올림 (37c8abf0c)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260905-1003",
@@ -409,7 +421,7 @@
           "start": "15:10",
           "end": "15:11",
           "minutes": 1,
-          "upload": "✅ 올림 (a8732722c)",
+          "upload": "✅ 올림 (37c8abf0c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -417,22 +429,16 @@
           "ref": "GM-20260905-1023",
           "no": "23",
           "got": "나는 구글표(시트)에 적던 장부 -> 우리 서버로 옮긴 데이터들 보고싶어",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "15:11",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:13",
+          "minutes": 1,
+          "upload": "✅ 올림 (37c8abf0c)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
-        {
-          "time": "09:32",
-          "area": "작업",
-          "event": "배998 완료 — 키오스크 9페이지 스크롤바 숨김·터치스크롤 통일 + 접수하기 버튼 유형 선택 후 표시(라이브 외과교체)",
-          "detail": "커밋 d3a553cdd · 배 11197"
-        },
         {
           "time": "09:33",
           "area": "작업",
@@ -596,55 +602,32 @@
           "detail": "커밋 85b4ff8fb · 배 11197"
         },
         {
-          "time": "15:08",
-          "area": "작업",
-          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 bfb60ab96 · 배 11197"
-        },
-        {
           "time": "15:12",
           "area": "작업",
           "event": "3건 진척 한눈 1장 — AWS 이관·ERP 권한·검색(SEO+GEO+AEO) (GM 요청 2026-09-05)",
           "detail": "커밋 ed7445831 · 배 11197"
+        },
+        {
+          "time": "15:14",
+          "area": "작업",
+          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+          "detail": "커밋 f0267638e · 배 11197"
+        },
+        {
+          "time": "15:14",
+          "area": "작업",
+          "event": "서버로 옮긴 데이터 한눈 1장 — 서버 DB 21표 실측 (GM 요청 2026-09-05)",
+          "detail": "커밋 37c8abf0c · 배 11197"
         }
       ],
-      "count": 35,
-      "done": 33,
-      "open": 2,
-      "avg_minutes": 5,
+      "count": 36,
+      "done": 36,
+      "open": 0,
+      "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-21",
-          "no": "21",
-          "got": "구글 시트에서 서버로 옮긴 데이터들 보고 싶다",
-          "did": "",
-          "start": "15:12",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        },
-        {
-          "ref": "GM-20260905-1023",
-          "no": "23",
-          "got": "나는 구글표(시트)에 적던 장부 -> 우리 서버로 옮긴 데이터들 보고싶어",
-          "did": "",
-          "start": "15:11",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -858,28 +841,16 @@
           "ref": "GM-20260905-2033",
           "no": "33",
           "got": "병렬로 진행 [CHRO → CTO] 인사 데이터 AWS 이관 — 사전 요청 4건",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "15:12",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:15",
+          "minutes": 2,
+          "upload": "✅ 올림 (11d60444b)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "11:08",
-          "area": "작업",
-          "event": "GM 지시 2026-09-05 반영 — 766 종결(결재 SSOT 완료) · 901 월요일 · 982 개인 구글 계정+부서 방향 · 922 GAS 폐기 방향 · 953 종결 · 1015 시우 이관(배1019)",
-          "detail": "커밋 dd27827e2 · 배 11220"
-        },
-        {
-          "time": "11:18",
-          "area": "작업",
-          "event": "라이브 FAQPage JSON-LD 를 시모 FAQ 14문답과 동기 (배1000 후속)",
-          "detail": "커밋 1abc5d6bc · 배 11220"
-        },
         {
           "time": "11:19",
           "area": "작업",
@@ -1047,31 +1018,28 @@
           "area": "작업",
           "event": "ERP 권한 정리 — 앱 셸 그룹 4 정리·부서 템플릿 정본·권한 관리 페이지 매트릭스·개인 예외 3건 (배1026 · 웰리 설계)",
           "detail": "커밋 9afe9551e · 배 11220"
+        },
+        {
+          "time": "15:14",
+          "area": "작업",
+          "event": "인사 데이터 AWS 이관 서버 준비 회신 — 스택 정정(FastAPI+PostgreSQL)·hr 스키마 생성·경로/인증/사양 (CHRO 요청 2026-09-05)",
+          "detail": "커밋 a16dcb83e · 배 11286"
+        },
+        {
+          "time": "15:15",
+          "area": "작업",
+          "event": "자율현황 알림 한 장 단순화 — 요약 1줄+문제만 기본, 방 묶음 합치기, 필터 1개, 설명 접기 (GM 2026-09-05)",
+          "detail": "커밋 11d60444b · 배 11286"
         }
       ],
       "count": 18,
-      "done": 17,
-      "open": 1,
+      "done": 18,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-2033",
-          "no": "33",
-          "got": "병렬로 진행 [CHRO → CTO] 인사 데이터 AWS 이관 — 사전 요청 4건",
-          "did": "",
-          "start": "15:12",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1645,7 +1613,7 @@
           "start": "15:08",
           "end": "15:10",
           "minutes": 1,
-          "upload": "✅ 올림 (a071108ee)",
+          "upload": "✅ 올림 (2c01d4694)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1728,13 +1696,25 @@
           "area": "작업",
           "event": "종합접수처 현황 옛 주소(깃허브·WP 사본) → 3초 뒤 ERP 주소로 자동 이동 — 안내만 있어 실무진이 '습득물 안 된다'고 신고하던 것 (GM 2026-09-05)",
           "detail": "커밋 5251c9232 · 배 11180"
+        },
+        {
+          "time": "15:16",
+          "area": "작업",
+          "event": "종합접수처·습득물 15분 상시 점검 — telegram_health_check --only reception(접수 GAS 3종·회원 페이지 4장·서버 API · 상태 바뀔 때만 업무관리방 한 줄) + 예약작업 Wel",
+          "detail": "커밋 2c01d4694 · 배 11180"
+        },
+        {
+          "time": "15:16",
+          "area": "작업",
+          "event": "종합접수처 습득물 근본대책 — 옛주소 자동이동 + 15분 상시점검(GM 알림) + 드리프트 관문",
+          "detail": ""
         }
       ],
       "count": 11,
       "done": 10,
       "open": 1,
       "avg_minutes": 6,
-      "work_count": 11,
+      "work_count": 13,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1750,7 +1730,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 6
         }
       ],
       "repeats": []
@@ -1810,13 +1790,13 @@
           "ref": "GM-20260905-07",
           "no": "07",
           "got": "상담봇 비즈니스화 — 3업체(웰페리온·다캠·스포짐) 정보 정형화·정본화 · 전체 기획 설계 · 시모 MVP UI/UX 아티팩트 · G1 비즈니스 업무 기록",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "did": "TODO-20260905151538127",
           "start": "15:07",
-          "end": "15:08",
-          "minutes": 1,
+          "end": "15:16",
+          "minutes": 8,
           "upload": "✅ 올림 (c3b4208e1)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260905-9002",
@@ -1962,7 +1942,7 @@
       "count": 12,
       "done": 11,
       "open": 1,
-      "avg_minutes": 5,
+      "avg_minutes": 6,
       "work_count": 9,
       "missed": [],
       "unclosed": [],
@@ -1979,7 +1959,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
