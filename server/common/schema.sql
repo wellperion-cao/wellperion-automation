@@ -317,3 +317,24 @@ CREATE TABLE IF NOT EXISTS perms_history (
   changed_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_perms_history_at ON perms_history (tenant_id, id DESC);
+
+-- 전환 퍼널 첫 단 측정 (api_track.py · 배1034 · 2026-09-05 시토 · 시모 요청). 홈·문의 페이지 조회·문의버튼 클릭.
+-- 개인정보 저장 0(IP 미저장·User-Agent 원문 미저장 — is_bot 판정 결과만 남는다). sid 는 세션당 난수(쿠키 아님).
+CREATE TABLE IF NOT EXISTS track_events (
+  id            BIGSERIAL PRIMARY KEY,
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  ts            TEXT NOT NULL,
+  event         TEXT NOT NULL,
+  page          TEXT,
+  target        TEXT,
+  channel_code  TEXT NOT NULL DEFAULT 'unknown',
+  post_id       TEXT,
+  utm_source    TEXT,
+  utm_medium    TEXT,
+  utm_campaign  TEXT,
+  utm_content   TEXT,
+  ref_host      TEXT,
+  sid           TEXT,
+  is_bot        BOOLEAN NOT NULL DEFAULT false
+);
+CREATE INDEX IF NOT EXISTS ix_track_events_ts ON track_events (tenant_id, ts);
