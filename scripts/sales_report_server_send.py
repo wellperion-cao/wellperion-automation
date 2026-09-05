@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""매출보고서 서버 판 — 09:20 KST 업무보고방(8254867551) 병행 발송 (배1061 · 시토 · 2026-09-05).
+
+원칙 = 기존 경로(시트 → GAS → 09:00 텔레그램 · 09:30 카톡 3방 · generate_sales_report_image.py)
+무접촉. 이 스크립트 하나만 sales_report_render 가 그린 표를 업무보고방 한 곳에만 sendPhoto +
+22칸 대조 한 줄 캡션으로 보낸다. 킬스위치 status/sales_report_server_switch.json {"mode": ...}
+— "parallel" 일 때만 발송(그 외는 조용히 스킵). "live"(3방 전환)는 3일 무결 확인 뒤 별도 구현.
+
+실행: cd /srv/erp/repo && python3 scripts/sales_report_server_send.py
+cron(서버 · KST): 20 9 * * * cd /srv/erp/repo && python3 scripts/sales_report_server_send.py >> logs/sales_report_server_send.log 2>&1
+"""
+import json
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "server" / "erp_api"))
+sys.path.insert(0, str(ROOT / "scripts"))
+import sales_report_render as render  # noqa: E402
+from tg_outbound_log import send as tg_send  # noqa: E402
+
+SWITCH_PATH = ROOT / "status" / "sales_report_server_switch.json"
+OUT_PNG = ROOT / "qa_screenshots" / "sales_report_server_sample.png"
+
+
+def _switch_mode():
+    try:
+        return json.loads(SWITCH_PATH.read_text(encoding="utf-8")).get("mode", "parallel")
+    except Exception:
+        return "parallel"                        # 파일 없으면 안전 기본값(병행만·3방 절대 아님)
+
+
+def main():
+    mode = _switch_mode()
+    if mode != "parallel":
+        print("[skip] switch mode=%s (parallel 아님 — 발송 안 함)" % mode)
+        return 0
+
+    report = render.build_report()                # 내부에서 load_env() 호출 → TG_BOT_TOKEN 등 os.environ 채워짐
+    if not report:
+        print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
+        return 1
+
+    png = render.render_png(report, OUT_PNG)
+    caption = "서버 판(병행) · 22칸 대조 %d/%d 일치" % (report["matched"], report["total"])
+    if report["mismatches"]:
+        caption += " · 불일치: " + ", ".join(report["mismatches"])
+
+    token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
+    if not token or not chat:
+        print("[fail] TG_BOT_TOKEN/TG_CHAT_ID 없음 (api.env 확인)")
+        return 1
+
+    resp = tg_send(token, chat, caption, source="sales_report_server_send", photo=png, full_response=True)
+    ok = bool(isinstance(resp, dict) and resp.get("ok"))
+    msg_id = (resp.get("result") or {}).get("message_id") if isinstance(resp, dict) else None
+    print("DONE: ok=%s message_id=%s png=%s · %s" % (ok, msg_id, png, caption))
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
