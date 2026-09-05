@@ -916,6 +916,39 @@
       "entrypoint": "scripts/diet_camp_agent.py",
       "created": "2026-09-02",
       "note": "GM 지시 2026-09-02 — 이승기대표님이랑 소통할 수 있는 AI 에이전트를 만들어야할 것 같은데?"
+    },
+    {
+      "id": "cto-geo-watch",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GEO(생성형 검색 최적화) 측정기 — AI 검색 8문장(한남동 스포츠클럽·용산 프라이빗 멤버십 스포츠클럽·한남동 수영 레슨·한남동 골프 연습장·한남동 스쿼시·용산 키즈 체조 수업·한남동 헬스 PT·hannam sports club membership)에 claude 웹검색으로 물어 웰페리온 인용 여부·순위·인용 문장을 주 1회 기록(배971). 전환 전엔 낮은 인용 수가 정상 — 이건 기준선. 챗GPT·퍼플렉시티는 API 키 없어 미구현(engines_pending 표기만). 기준선(2026-09-05) cited_count=2/8.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/geo_watch.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "예약작업(Wellperion-CTO-GEO-Watch-Weekly, 매주 월 07:10)이 사람 세션 없이 무인 실행",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "entrypoint": "scripts/geo_watch.py",
+      "created": "2026-09-05"
     }
   ],
   "_removed": [
