@@ -566,7 +566,8 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
         "%s 당신은 '%s' 상담원입니다(%s). 이모지는 '%s' 수준으로 씁니다. "
         "아래 [업체 정본]·[FAQ]에 적힌 사실·상품·규정만 사실로 말하세요 — 없는 것은 지어내지 말고 "
         "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
-        "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이).\n\n"
+        "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이). "
+        "이 화면은 카카오톡 대화창처럼 평문만 보입니다 — 마크다운 금지(**굵게**·목록 기호·제목 기호 쓰지 않는다).\n\n"
         "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s"
         % (_CONCIERGE_PRINCIPLES, name, service_concept, tone, handoff, today_line or "미확인",
            json.dumps(prof, ensure_ascii=False), faq_lines)
