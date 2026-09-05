@@ -555,13 +555,16 @@ def _mgr_conversation_message(target_date: str) -> str:
     return (data.get("message") or "").strip()
 
 
-def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, list]":
+def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, list, str]":
     """★중간관리자용 '어제 정리'. rows=업무 시트 전체 행(_fetch_todo_rows()).
 
     미해결건은 담지 않는다 — 별도 발신이 담당한다(2026-08-11 GM 지적, 위 주석 참조).
-    반환 (message, relay_current, reply_hits) — relay_current 는 '열린 요청' 절의 이번
-    회차 스냅샷. reply_hits = 회신 감지로 전달에서 뺀 배들(배1057 · _record_reply_hits 참조).
-    빈 값이라도 항상 돌려준다(호출부가 상태 저장 여부를 스스로 결정)."""
+    반환 (message, relay_current, reply_hits, nawool_message) — relay_current 는 '열린 요청'
+    절의 이번 회차 스냅샷(나우열M 몫 포함 — 두 채널이 같은 스냅샷을 공유). reply_hits =
+    회신 감지로 전달에서 뺀 배들(배1057 · _record_reply_hits 참조). nawool_message = 텔레그램
+    「업무관리-나우열M」 방으로 따로 보낼 본문(GM 지시 2026-09-05 · 배1062 — 나우열M 몫은
+    이 카톡 통(message)에서 빠진다). 빈 값이라도 항상 돌려준다(호출부가 상태 저장 여부를
+    스스로 결정)."""
     convo = _mgr_conversation_message(target_date)
     parts = [convo] if convo else []
 
@@ -581,6 +584,10 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 한 통
     # ASKS_TOTAL_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
     nudge_items = build_reply_nudge_items(target_date, rows)
+    # ★GM 지시 2026-09-05(배1062) — 나우열M 몫은 이 카톡 통에서 빼서 텔레그램으로 옮긴다.
+    nawool_relay, relay_items = _split_by_who(relay_items, NAWOOL_WHO)
+    nawool_nudge, nudge_items = _split_by_who(nudge_items, NAWOOL_WHO)
+    nawool_message = build_nawool_telegram_message(nawool_relay + nawool_nudge)
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
@@ -596,7 +603,7 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     message = "\n\n".join(parts)
     # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58)으로
     # 분리했다(GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서").
-    return message, relay_current, reply_hits
+    return message, relay_current, reply_hits, nawool_message
 
 
 def _mgr_already_sent(target_date: str) -> bool:
@@ -622,11 +629,13 @@ def preview_mgr_brief() -> int:
     if not target_date:
         from datetime import timedelta as _td
         target_date = (datetime.now() - _td(days=1)).strftime("%Y-%m-%d")
-    message, _relay_current, reply_hits = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    message, _relay_current, reply_hits, nawool_message = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
     print(f"\n===== {WEEKLY_ROOM} 결정거리 요약 ({target_date}) =====")
     print(message or "(보낼 내용 0건 — 발송 안 함)")
     if reply_hits:
         print(f"(회신 감지로 전달 제외 {len(reply_hits)}건 — 미리보기라 note 기록은 안 함)")
+    print(f"\n===== {NAWOOL_TG_ROOM_KEY} 텔레그램 미리보기 ({target_date}) =====")
+    print(nawool_message or "(보낼 내용 0건 — 발송 안 함)")
     return 0
 
 
@@ -680,6 +689,14 @@ _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
 # ★중간관리자 방 한 곳으로 보낸다. 개인 이름으로 라우팅하지 않는다(방으로 라우팅).
 # ★운영부 방에는 기존 아침 다이제스트(공유 성격)가 그대로 나간다 — 그건 손대지 않았다.
 RELAY_ROOM = "★중간관리자"
+
+# ★2026-09-05 GM 지시(배1062) — 나우열M 몫(CHRO·CFO 도메인, contacts 로 "나우열M")은
+# 위 ★중간관리자 카톡 통에서 빼서 텔레그램 「업무관리-나우열M」 방으로 옮긴다. 같은
+# 07:50 회차 안에서 who=="나우열M" 항목만 갈라 별도 발신 — 새 예약작업·새 스냅샷은
+# 만들지 않는다(약속 L21 · relay_current 스냅샷은 두 채널이 공유).
+NAWOOL_WHO = "나우열M"
+NAWOOL_TG_ROOM_KEY = "업무관리-나우열M"
+TELEGRAM_ROOMS_PATH = ROOT / "status" / "telegram_rooms.json"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -829,6 +846,20 @@ def _selfcheck_reply_match() -> None:
 
 def log(msg: str) -> None:
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+
+def _send_telegram_copy(label: str, body: str) -> None:
+    """카톡 하루 양끝(시작/마무리) 본문을 텔레그램 업무보고방에도 사본 1통(GM 지시 2026-09-05
+    '카카오톡이랑 텔레그램이랑 동기화'). best-effort — 실패해도 카톡 발송 결과는 안 바꾼다."""
+    try:
+        agents_dir = str(ROOT / "wellperion-agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from telegram_notifier import TelegramNotifier
+        TelegramNotifier().send(f"📋 카톡 사본 · {label}\n\n{body}")
+        log(f"[copy] 텔레그램 사본 발송 — {label}")
+    except Exception as exc:
+        log(f"[copy] 텔레그램 사본 실패(무시) — {label}: {exc}")
 
 
 def _title_key(s: str) -> str:
@@ -1314,6 +1345,119 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     return "\n".join(lines)
 
 
+def _split_by_who(items: list, who: str) -> "tuple[list, list]":
+    """items 를 who 일치(matched)·불일치(rest) 로 가른다. build_asks_section 이 쓰는
+    {"who": ...} 항목 리스트(relay_items·nudge_items 공통 모양)에 그대로 쓴다."""
+    matched = [x for x in items if x.get("who") == who]
+    rest = [x for x in items if x.get("who") != who]
+    return matched, rest
+
+
+def build_nawool_telegram_message(items: list) -> str:
+    """나우열M 몫 「확인 부탁드릴 것」— ★중간관리자 카톡 통에서 빼서 텔레그램
+    「업무관리-나우열M」 방으로 보내는 본문(GM 지시 2026-09-05 · 배1062).
+
+    형식 = wellperion-gm-report 스킬 §4-2-1(▪ 제목 · 들여쓰기 없이 한 사람 몫만 담아
+    제목줄 자체가 사람 대신 건수를 알림 · 빈 줄 없음) + 맨 끝 👉 한 줄. 한 사람만
+    담으므로 build_asks_section 처럼 사람별로 다시 묶지 않는다."""
+    items = sorted(items, key=lambda x: x.get("date") or "9999-99-99")
+    if not items:
+        return ""
+    lines = [f"🧾 확인 부탁드릴 것 {len(items)}건 — {NAWOOL_WHO}"]
+    for it in items[:ASKS_PER_PERSON_CAP]:
+        lines.append(f"▪ {it['ask']}")
+    extra = len(items) - ASKS_PER_PERSON_CAP
+    if extra > 0:
+        lines.append(f"외 {extra}건 · 화면")
+    lines.append("👉 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
+    return "\n".join(lines)
+
+
+def _selfcheck_nawool_split() -> None:
+    """나우열M 분리 3가지: ①카톡 통(build_asks_section)엔 나우열M 이 안 남는다
+    ②텔레그램 본문은 ▪ 제목·빈 줄 없음·맨 끝 👉 한 줄 ③6건 넘으면 '외 N건' 로 접힌다.
+    네트워크 없이 돈다."""
+    relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "실장 건", "how": "h"}]
+    nudge = [{"date": f"2026-08-{d:02d}", "who": "나우열M", "ask": f"n{d}건", "how": "h"}
+             for d in range(10, 17)]  # 7건 — 5건 상한을 넘겨 '외 2건'으로 접히는지 확인
+    nawool, rest_nudge = _split_by_who(nudge, NAWOOL_WHO)
+    assert len(nawool) == 7 and rest_nudge == [], "나우열M 항목만 걸러져야 한다"
+    kakao_out = build_asks_section(relay, rest_nudge)
+    assert "나우열M" not in kakao_out, f"카톡 통에 나우열M 이 남으면 안 된다: {kakao_out!r}"
+    assert "실장 건" in kakao_out
+    tg_out = build_nawool_telegram_message(nawool)
+    lines = tg_out.splitlines()
+    assert "" not in lines, f"빈 줄이 있으면 안 된다: {tg_out!r}"
+    assert lines[-1].startswith("👉"), "맨 끝은 👉 한 줄이어야 한다"
+    assert "확인 부탁드릴 것 7건" in tg_out, tg_out
+    for d in range(10, 15):
+        assert f"n{d}건" in tg_out, f"상한 안 5건은 모두 보여야 한다: n{d}"
+    assert "외 2건 · 화면" in tg_out, tg_out
+    assert build_nawool_telegram_message([]) == "", "항목 0건이면 본문 자체가 없어야 한다"
+    print("[selfcheck] _selfcheck_nawool_split OK")
+
+
+def _nawool_chat_id() -> "int | None":
+    """텔레그램 「업무관리-나우열M」 방 chat_id — status/telegram_rooms.json 단일 출처."""
+    try:
+        rooms = json.loads(TELEGRAM_ROOMS_PATH.read_text(encoding="utf-8"))
+        cid = rooms.get(NAWOOL_TG_ROOM_KEY)
+        return int(cid) if isinstance(cid, int) else None
+    except Exception as exc:
+        log(f"[nawool] 방 chat_id 읽기 실패 — 발송 생략: {exc}")
+        return None
+
+
+def send_nawool_telegram(message: str) -> bool:
+    """나우열M 몫 텔레그램 발송 — notify.telegram_send.send 재사용(새 발신기 없음 · 약속 L21)."""
+    chat_id = _nawool_chat_id()
+    if chat_id is None:
+        log("[nawool] chat_id 미확인 — 발송 생략")
+        return False
+    from notify.telegram_send import send as _tg_send  # noqa: PLC0415
+    return _tg_send(chat_id, message)
+
+
+CEO_LOG_PATH = ROOT / "status" / "_ceo_log.jsonl"
+
+
+def _nawool_telegram_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
+    """텔레그램 「업무관리-나우열M」 방 사람 발화(봇·GM 제외) — [{date,time,msg}].
+
+    telegram_bot/bot.py 의 _log_group_message 가 그룹 채팅 수신 원문을 이미
+    status/_ceo_log.jsonl 에 event="GROUP_MSG" 로 적재해 둔다(실측 2026-09-05 16:41 —
+    이 방 chat_id 로 사람 발화 1건 확인됨). 새 로그 파일을 만들지 않고 이 기존 로그를
+    그대로 읽어 _reply_match 코퍼스에 합친다(GM 지시 2026-09-05 · 배1062 · 약속 L21)."""
+    chat_id = _nawool_chat_id()
+    if chat_id is None or not CEO_LOG_PATH.exists():
+        return []
+    try:
+        lo = (date.fromisoformat(today) - timedelta(days=lookback_days)).isoformat()
+    except Exception:
+        return []
+    out = []
+    try:
+        for raw in CEO_LOG_PATH.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(raw)
+            except Exception:
+                continue
+            if rec.get("event") != "GROUP_MSG" or rec.get("chat_id") != chat_id or rec.get("is_owner"):
+                continue
+            logged_at = str(rec.get("logged_at") or "")
+            d = logged_at[:10]
+            if not (lo <= d <= today):
+                continue
+            text = str(rec.get("text") or "")
+            if text:
+                out.append({"date": d, "time": logged_at[11:19], "msg": text})
+    except Exception as exc:
+        log(f"[reply] 나우열M 텔레그램 로그 읽기 실패 — 생략: {exc}")
+        return []
+    return out
+    return _tg_send(chat_id, message)
+
+
 def _selfcheck_asks_section() -> None:
     """사람별 ▪ 제목줄 · 건당 1줄 · 사람당 ASKS_PER_PERSON_CAP건 넘으면 '외 N건 · 화면' ·
     빈 줄 없음 · 맨 끝 바로 앞 줄이 👉. 네트워크 없이 돈다."""
@@ -1368,7 +1512,9 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict, 
     dropped_why = {"닫힌 배": 0, "AI 내부 살림": 0, "전달문 비어 있음": 0, "audience 칸 비어 있음": 0,
                    "공유 전용(답 불필요)": 0, "회신 감지": 0}
     today0 = date.today().isoformat()
-    human_lines = _mgr_room_human_lines(today0)
+    # ★GM 지시 2026-09-05(배1062) — 나우열M 몫 전달문은 텔레그램 「업무관리-나우열M」
+    # 방으로 나가므로, 그 방 회신도 같은 코퍼스에 합쳐야 _reply_match 가 잡는다.
+    human_lines = _mgr_room_human_lines(today0) + _nawool_telegram_human_lines(today0)
     rare_words = _reply_rare_words(human_lines)
     reply_hits = []
     ships = []
@@ -1628,21 +1774,38 @@ def send_mgr_brief() -> None:
     if _mgr_already_sent(target_date):
         log(f"[mgr] 이미 발송된 회차({target_date}) — 생략")
         return
-    mgr_msg, relay_current, reply_hits = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
-    if not mgr_msg:
+    mgr_msg, relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    if not mgr_msg and not nawool_msg:
         log("[mgr] 보낼 내용 0건 — 발송 생략")
         return
-    # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
-    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM,
-            "--sender", "아침정리다이제스트"]
-    log(f"[mgr] 결정거리 요약 발송(대상 {target_date}) → {WEEKLY_ROOM}")
-    mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
-    mout = (mproc.stdout or "").strip()
-    if mproc.returncode == 0 and "DONE" in mout:
+
+    kakao_ok = True
+    if mgr_msg:
+        # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
+        mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM,
+                "--sender", "아침정리다이제스트"]
+        log(f"[mgr] 결정거리 요약 발송(대상 {target_date}) → {WEEKLY_ROOM}")
+        mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
+        mout = (mproc.stdout or "").strip()
+        kakao_ok = mproc.returncode == 0 and "DONE" in mout
+        if not kakao_ok:
+            log(f"[mgr] 카톡 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
+
+    # ★GM 지시 2026-09-05(배1062) — 나우열M 몫은 같은 07:50 회차에서 텔레그램
+    # 「업무관리-나우열M」 방으로 독립 발송(방마다 독립 · 배536 원칙 그대로 적용).
+    nawool_ok = True
+    if nawool_msg:
+        nawool_ok = send_nawool_telegram(nawool_msg)
+        if not nawool_ok:
+            log("[mgr] 나우열M 텔레그램 발송 실패 — 다음 회차 재시도")
+
+    if kakao_ok and nawool_ok:
         _mark_mgr_sent(target_date)
         _record_last_sent(_LAST_SENT_HEARTBEAT_MGR, target_date)  # 배698 — 흡수 판단용(위 참조)
         # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,
         # 기존 relay 하트비트 RELAY_HEARTBEAT_ID 재사용, 새 파일 없음 · 약속 L21).
+        # 스냅샷은 두 채널(카톡·나우열M 텔레그램) 몫을 합쳐 하나로 유지 — relay_current 는
+        # build_relay_message 가 채널 분리 전에 만든 전체 배 목록이라 손대지 않는다.
         relay_state = _relay_state()
         _migrate_relay_state(relay_state)
         relay_state[WEEKLY_ROOM] = relay_current
@@ -1650,8 +1813,6 @@ def send_mgr_brief() -> None:
         if reply_hits:
             _record_reply_hits(reply_hits)  # 회신 감지된 배 note 기록 — 실제 발송 성공 후에만(배1057)
         log("[mgr] 발송 완료")
-    else:
-        log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -2147,8 +2308,10 @@ def main() -> int:
         #   두 축. 저녁 통(build_kakao_digest)의 짝이라 같은 파일에 둔다(약속 L21).
         try:
             import report_stream_2_check as _r2
-            _r2._send_kakao(_r2.build_morning_kakao())
+            _morning_text = _r2.build_morning_kakao()
+            _r2._send_kakao(_morning_text)
             log("[morning] 4부서방 하루의 시작 발송")
+            _send_telegram_copy("하루의 시작", _morning_text)
         except Exception as exc:
             log(f"[morning] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
