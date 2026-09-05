@@ -722,10 +722,10 @@
           "detail": "커밋 4a8a4268b · 배 11197"
         },
         {
-          "time": "16:19",
+          "time": "16:25",
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 974803687 · 배 11197"
+          "detail": "커밋 3e4092302 · 배 11197"
         }
       ],
       "count": 45,
@@ -996,18 +996,6 @@
       ],
       "work": [
         {
-          "time": "15:26",
-          "area": "작업",
-          "event": "module_at 이 urlsplit 로 '//cpo/x' 를 호스트로 먹던 것 정정 — 경로 문자열 직접 정규화 (검수 C4 보강)",
-          "detail": "커밋 11af4504f · 배 11286"
-        },
-        {
-          "time": "15:26",
-          "area": "작업",
-          "event": "서버 캐시 이력·백업 최신+직전만 보존 정리 + 일일 prune cron (배1040)",
-          "detail": "커밋 1b9bd14b7 · 배 11286"
-        },
-        {
           "time": "15:27",
           "area": "작업",
           "event": "전사일정 저장 후 misc_cache 미러 즉시 재동기화 (배1039-B)",
@@ -1174,6 +1162,18 @@
           "area": "작업",
           "event": "상담봇 COUNSEL_MODEL 기본값 sonnet-4-6 — sonnet-5 는 이 계정 AWS 영업승인 필요(실측 확인), 4.6 은 계약 완료",
           "detail": "커밋 b69e0b377 · 배 11286"
+        },
+        {
+          "time": "16:22",
+          "area": "작업",
+          "event": "상담봇 마크다운 금지 지시 추가 — 실측(sonnet-4-6)에서 **굵게** 등이 채팅 말풍선에 별표 그대로 보임 확인",
+          "detail": "커밋 e864fdade · 배 11286"
+        },
+        {
+          "time": "16:25",
+          "area": "작업",
+          "event": "배1036 브리핑 갱신 — Bedrock 클래스 2차 교체·sonnet-4-6 라이브·5문 실측(5/5·평균 4.29s) 기록",
+          "detail": "커밋 b498e7332 · 배 11286"
         }
       ],
       "count": 21,
@@ -1354,6 +1354,54 @@
           "end": "16:08",
           "minutes": 1,
           "upload": "✅ 올림 (7d5c883d4)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-3017",
+          "no": "17",
+          "got": "★라우열 <",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:23",
+          "end": "16:23",
+          "minutes": 0,
+          "upload": "✅ 올림 (c267f4770)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-3019",
+          "no": "19",
+          "got": "지금도 ★나우열 <찾네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:23",
+          "end": "16:23",
+          "minutes": 0,
+          "upload": "✅ 올림 (c267f4770)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-3021",
+          "no": "21",
+          "got": "아 ★나우열로 이름 변경해줄게",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:25",
+          "end": "16:25",
+          "minutes": 0,
+          "upload": "✅ 올림 (c267f4770)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-3022",
+          "no": "22",
+          "got": "★나우열 <다시 해줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:25",
+          "end": "16:25",
+          "minutes": 0,
+          "upload": "✅ 올림 (c267f4770)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -1540,10 +1588,10 @@
           "detail": "커밋 7d5c883d4 · 배 11298"
         }
       ],
-      "count": 14,
-      "done": 14,
+      "count": 18,
+      "done": 18,
       "open": 0,
-      "avg_minutes": 3,
+      "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
@@ -1848,13 +1896,19 @@
           "area": "공통",
           "event": "전사일정 GAS 속성 한도 초과 → 시토 배 1056",
           "detail": "커밋 6c4c5e7ae · 배 11310"
+        },
+        {
+          "time": "16:22",
+          "area": "공통",
+          "event": "GM업무 02번(ERP 고도화+브로제이) 자료 링크에 브로제이 API 요청 명세 A3 추가 · 진척 기록",
+          "detail": "커밋 80564190b · 배 11310"
         }
       ],
       "count": 12,
       "done": 12,
       "open": 0,
       "avg_minutes": 3,
-      "work_count": 25,
+      "work_count": 26,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2367,7 +2421,7 @@
           "start": "15:58",
           "end": "16:21",
           "minutes": 22,
-          "upload": "✅ 올림 (659564496)",
+          "upload": "✅ 올림 (3ab37253c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2655,7 +2709,7 @@
           "start": "16:14",
           "end": "16:15",
           "minutes": 0,
-          "upload": "✅ 올림 (659564496)",
+          "upload": "✅ 올림 (3ab37253c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2667,7 +2721,7 @@
           "start": "16:16",
           "end": "16:16",
           "minutes": 0,
-          "upload": "✅ 올림 (659564496)",
+          "upload": "✅ 올림 (3ab37253c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2679,7 +2733,7 @@
           "start": "16:17",
           "end": "16:17",
           "minutes": 0,
-          "upload": "✅ 올림 (659564496)",
+          "upload": "✅ 올림 (3ab37253c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2691,7 +2745,7 @@
           "start": "16:19",
           "end": "16:19",
           "minutes": 0,
-          "upload": "✅ 올림 (659564496)",
+          "upload": "✅ 올림 (3ab37253c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2699,8 +2753,32 @@
           "ref": "GM-20260905-9031",
           "no": "31",
           "got": "완료했어 다음단계는, 그리고 Sonnet로 하는것보다 상위모델로 하는게 좋지않아?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:21",
+          "end": "16:23",
+          "minutes": 1,
+          "upload": "✅ 올림 (3ab37253c)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9032",
+          "no": "32",
+          "got": "비용이 AWS에 추가되는거야?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:24",
+          "end": "16:24",
+          "minutes": 0,
+          "upload": "✅ 올림 (3ab37253c)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9033",
+          "no": "33",
+          "got": "그래 그럼 모델성능 좋은걸로 추천해주고, 진행",
+          "did": "",
+          "start": "16:26",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2840,29 +2918,35 @@
           "area": "작업",
           "event": "상담봇 모델 = Bedrock Sonnet 4.6 라이브(Sonnet 5 는 계정 등급 제한 · 시토 실측 2026-09-05)",
           "detail": "커밋 659564496 · 배 11305"
+        },
+        {
+          "time": "16:22",
+          "area": "작업",
+          "event": "배 1060 전사일정 GAS 속성 한도 초과 → 시토 · 배 1017 Bedrock 결론 기록",
+          "detail": "커밋 3ab37253c · 배 11305"
         }
       ],
-      "count": 39,
-      "done": 38,
+      "count": 41,
+      "done": 40,
       "open": 1,
       "avg_minutes": 3,
-      "work_count": 22,
+      "work_count": 23,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260905-9031",
-          "no": "31",
-          "got": "완료했어 다음단계는, 그리고 Sonnet로 하는것보다 상위모델로 하는게 좋지않아?",
+          "ref": "GM-20260905-9033",
+          "no": "33",
+          "got": "그래 그럼 모델성능 좋은걸로 추천해주고, 진행",
           "did": "",
-          "start": "16:21",
+          "start": "16:26",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 0
         }
       ],
       "repeats": []
