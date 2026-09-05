@@ -81,7 +81,8 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 확정 2026-09-03 신설 — 밀린 접수 목록이 ★운영부로 옮겨가 빈 07:40 자리를 채운다. GM: '하루의 시작은 어떤 일을 해야하고, 어떤게 잘하는거고' + '종합접수 받은 청결 및 이런 부분까지도 추가해주면 잘한다는 것이 더 본질에 집중할 수 있을듯'. 점검=했다 / 접수=회원이 어떻게 느꼈나. 새 수집기 없음(support_check_summary·report_stream_2b_reception 재사용).",
-      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py → report_stream_2_check.build_morning_kakao()"
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py → report_stream_2_check.build_morning_kakao()",
+      "bookend": "start"
     },
     {
       "id": "kakao-0740-overdue-reception",
@@ -112,6 +113,21 @@
       "state": "live",
       "state_note": "킬스위치 status/ops_digest_send.json enabled=true(GM go 2026-07-14 발효) | [2026-08-04 정정] GM 확인 — 실제 방 이름은 공백 없는 \"★운영부\"(kakao_rooms.json 08-04 갱신과 일치). kakao_report_sender._title_key 가 공백 무시 대조라 표기는 기능에 영향 없음, 문서만 정정. | [2026-08-05 시토 · GM 편제 확정] 같은 07:30 실행에 '사람이 처리할 배 전달' 1통이 붙었다 — AI가 실행하지 않는 시우·시로·시뽀 배(status/_queue.json)를 담당자 이름과 함께 방에 넘긴다. 목록이 지난번과 같으면 발신하지 않는다(지문=status/heartbeats/clevel-queue-human-relay.json). 새 발신기·새 예약작업 없음 — 기존 관문 kakao_report_sender.py 재사용. | [2026-08-08 시토 · 배443 · GM 확정 2026-08-07 채널 역할 분리] 배 전달문의 방 배정을 역할별에서 ★중간관리자 한 곳으로 모았다 — 이 전달문은 \"해주세요\"라 본질이 요청이고 요청은 답을 받아야 한다. 이경연 실장·이정헌 소장·나우열M 이 그 방에 다 있어 부서를 가로지르는 확인이 한 번에 끝난다. ★운영부 방은 공유 전용으로 남아 아침 다이제스트만 받는다(답변 요구 없음). 방이 바뀐 첫 회차에 옛 방 스냅샷을 승계해 이미 전달한 배가 신규로 쏟아지는 것을 막는다.  | [2026-08-08 시토 · 배442] 발신 전 GM 승인 단계 발효 — status/ops_digest_send.json relay_approval_required=true. 켜져 있으면 카톡 대신 업무보고방에 초안만 올리고 대기하고, 승인 후 send_ops_digest.py --relay-approved 로 실발신한다. GM \"초반에만 확인하고 나중에 자율화\" — 오발신 0건이 이어지면 이 키를 지우고 자율 발송으로 되돌린다(꺼둔 채 두지 않는다·약속 L21). 아울러 staff_message 가 JSON null 인 배를 \"None\" 이라는 글자로 읽어 실무진 방에 그대로 실을 뻔한 것을 막았다. | [2026-09-03 웰리] 시각을 실제값으로 정정 — ★운영부 07:45 · ★중간관리자 07:50(예약 실행은 07:30 그대로, 발신 시각은 MORNING_SEND_TIMES 가 정한다). 같은 아침에 나가는 4부서방 07:40·부서장 07:55·일정 07:58 통은 별도 항목으로 등록했다. | [2026-09-03 GM 승인 '추천 진행' · 4단계 모듈 2단계 배정 마감 1영업일] ★중간관리자 07:50 통 맨 위에 「⏳ 배정 기다리는 것 N건 (어제 N건) · 1영업일 넘긴 것 N건」 한 줄 — 전달했는데 진행 흔적 없는 배(relay 스냅샷 전부·relay_until_replied 포함). 어제 값은 같은 하트비트 waiting_log{날짜:건수}, 처음 전달한 날은 스냅샷 first_sent(휴관일=close_days.is_closed 제외). 넘긴 건은 08:00 GM 항로 꼬리 「⏳ 배정 마감 넘김」(ceo_morning_pipeline._build_overdue_assign)에도 건별 N일째로 실린다. 이 줄은 기존 통에 얹혀 나간다(별도 게이트 없음).",
       "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py(다이제스트 + send_relays)"
+    },
+    {
+      "id": "tg-0750-nawool-work-relay",
+      "when": "07:50",
+      "when_sort": "0750",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "업무관리-나우열M",
+      "chat_id": -5492623600,
+      "what": "나우열M 몫(CHRO·CFO 도메인 배 전달·확인 부탁) — ★중간관리자 카톡 통에서 빼서 이 방으로 텔레그램 서식 발송",
+      "owner": "시토",
+      "trigger": "schtasks",
+      "state": "live",
+      "state_note": "[2026-09-05 시토 · GM 지시 · 배1062] GM: '텔레그램 업무관리 방 만들었는데, 나우열M 관련된 업무들은 다 여기서 전달해서 정리해도 좋을 듯'. 같은 07:50 회차에서 send_ops_digest.build_mgr_daily_brief 가 who=='나우열M' 항목만 갈라 카톡 ★중간관리자 통에서 빼고 이 방으로 보낸다 — 카톡 통에는 이경연 실장·이정헌 소장 몫만 남는다.",
+      "source": "scripts/send_ops_digest.py send_mgr_brief() → build_nawool_telegram_message()"
     },
     {
       "id": "tg-0750-cpo-sheet-contract",
@@ -172,7 +188,8 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "",
-      "source": "Wellperion-CEO-Morning-Brief-0800-Live · wellperion-agents/scripts/ceo_morning_pipeline.py"
+      "source": "Wellperion-CEO-Morning-Brief-0800-Live · wellperion-agents/scripts/ceo_morning_pipeline.py",
+      "bookend": "start"
     },
     {
       "id": "tg-0800-gm-brief",
@@ -507,24 +524,6 @@
       "job_id": "mgmt_notice_digest_1705"
     },
     {
-      "id": "tg-2030-gm-recap",
-      "when": "월~토 20:30",
-      "when_sort": "2030",
-      "freq": "daily",
-      "channel": "telegram",
-      "room": "하루",
-      "chat_id": -5074392439,
-      "what": "🌙 오늘 하신 일 — GM 저녁 정리본(끝낸 것·오늘 일정·진행 중 과제) — 구 잡, v2 가동 후 무발신",
-      "owner": "웰리",
-      "trigger": "apscheduler",
-      "state": "dead",
-      "state_note": "08:00 브리핑의 짝. 2026-08-12 부터 퇴근인사·저녁루틴·명언 3줄이 여기 붙는다(21시 업무보고방에서 옮김 · 배541). ★시토(2026-09-05): 하루방 v2(gm_checkin.haru_v2, HARU_V2_START=2026-09-01) 가동 후 run_gm_evening_recap 이 `haru_v2() != v2_slot` 이면 즉시 return — 이 잡(v2_slot=False)은 2026-09-01부터 무발신이다. cron 은 코드에 남아 있으나(재기동 없는 전환용) 실제 발송은 tg-2000-gm-recap-v2 가 대신한다.",
-      "source": "telegram_bot/daily_scheduler.py run_gm_evening_recap()",
-      "job_id": "gm_evening_recap_2030",
-      "surface": "g1",
-      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
-    },
-    {
       "id": "tg-2100-final",
       "when": "21:00",
       "when_sort": "2100",
@@ -568,42 +567,6 @@
       "state": "live",
       "state_note": "",
       "source": "Wellperion-MonthlyOps-End-2100"
-    },
-    {
-      "id": "tg-2200-gm-checkin",
-      "when": "22:00",
-      "when_sort": "2200",
-      "freq": "daily",
-      "channel": "telegram",
-      "room": "하루",
-      "chat_id": -5074392439,
-      "what": "저녁 체크인 설문(하루 돌아보기 1문항씩) — 웰리 결정 1(2026-08-29)로 v2 가동 후 폐지",
-      "owner": "웰리",
-      "trigger": "apscheduler",
-      "state": "dead",
-      "state_note": "★시토(2026-09-05): 하루방 v2 가동(2026-09-01) 후 run_gm_checkin() 이 `if _ck.haru_v2(): return`(\"22:00 저녁 설문 — v2 폐지\")으로 이 잡을 무조건 건너뛴다. 취침 안내 한 줄은 18:00 haru_notice_1800 꼬리로 흡수됐다(웰리 결정 1). cron 은 코드에 남아 있으나 실제 발송 0.",
-      "source": "telegram_bot/daily_scheduler.py run_gm_checkin()",
-      "job_id": "gm_checkin_2200",
-      "surface": "g1",
-      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
-    },
-    {
-      "id": "tg-sun2210-gm-weekcard",
-      "when": "일 22:10",
-      "when_sort": "2210",
-      "freq": "weekly",
-      "channel": "telegram",
-      "room": "하루",
-      "chat_id": -5074392439,
-      "what": "한 주 카드 — 지난 7일 체크인 도달율 — 구 잡, v2 가동 후 무발신",
-      "owner": "웰리",
-      "trigger": "apscheduler",
-      "state": "dead",
-      "state_note": "★시토(2026-09-05): 하루방 v2 가동(2026-09-01) 후 run_gm_checkin(weekly=True, v2_slot=False) 이 `haru_v2() != v2_slot` 로 즉시 return — 이 잡은 무발신이다. 주간 카드는 일 21:10 tg-sun2110-gm-weekcard-v2 로 옮겨졌다(웰리 결정, GM 지시 2026-08-29).",
-      "source": "telegram_bot/daily_scheduler.py run_gm_checkin() week_card",
-      "job_id": "gm_checkin_week_sun2210",
-      "surface": "g1",
-      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
     },
     {
       "id": "tg-1200-haru-notice",
@@ -742,16 +705,17 @@
       "channel": "kakao",
       "room": "★운영+시설+지원+주차",
       "chat_id": null,
-      "what": "점검현황+종합접수현황 합본 1통 「[오늘 하루 정리] M/D(요일)」 + 강습·업장 기한초과분만 ★부서장 방으로 별도 1통(있는 날만)",
+      "what": "점검현황+종합접수현황 압축 합본 1통 「🌙 하루의 마무리 — 점검·접수 M/D(요일)」 + 오늘 들어온 강습·업장 접수만 ★부서장 방으로 별도 1통(있는 날만)",
       "owner": "시토",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "[2026-08-20 시토 실측 · 배691] what 표기를 사실에 맞췄다 — 2026-08-15 GM 지시로 2통이 합본 1통이 됐는데(daily_scheduler.py:2796-2852) 등록부만 '각각 2통'으로 남아 있었다. 로그 대조: kakao_sent 08-16~08-19 4일치 ★운영+시설+지원+주차 방에 '[오늘 하루 정리]' 합본 1통씩만 감. 2026-08-19(배696)부터 강습·업장 기한초과분은 ★부서장 방으로 갈라 나간다(중복 아님 — 합본에서 그 몫을 뺀 나머지만 간다). | 카톡 UI자동화 best-effort(배9423) — 실패해도 텔레그램(위 2건)은 이미 발송 완료. 역롤백 1줄: daily_scheduler.py KAKAO_GO_STREAM2=False",
+      "state_note": "[2026-08-20 시토 실측 · 배691] what 표기를 사실에 맞췄다 — 2026-08-15 GM 지시로 2통이 합본 1통이 됐는데(daily_scheduler.py:2796-2852) 등록부만 '각각 2통'으로 남아 있었다. 로그 대조: kakao_sent 08-16~08-19 4일치 ★운영+시설+지원+주차 방에 '[오늘 하루 정리]' 합본 1통씩만 감. 2026-08-19(배696)부터 강습·업장 기한초과분은 ★부서장 방으로 갈라 나간다(중복 아님 — 합본에서 그 몫을 뺀 나머지만 간다). | 카톡 UI자동화 best-effort(배9423) — 실패해도 텔레그램(위 2건)은 이미 발송 완료. 역롤백 1줄: daily_scheduler.py KAKAO_GO_STREAM2=False | [2026-09-05 정정] what·타이틀 표기를 코드와 맞췄다 — 실제 머리글은 이미 2026-08-18(배670)에 「🌙 하루의 마무리 — 점검·접수 M/D(요일)」로 바뀌어 있었는데(daily_scheduler.py:2885) 등록부만 옛 이름 [오늘 하루 정리]로 남아 있었다. 같은 날 GM 지시로 ★부서장 몫도 '기한초과 적체'에서 '오늘 접수'로 바뀌었다.",
       "source": "telegram_bot/daily_scheduler.py:2796-2878(KAKAO_GO_STREAM2=True · 합본 + 강습 분기)",
       "job_id": [
         "daily_digest_early",
         "daily_digest_late"
-      ]
+      ],
+      "bookend": "end"
     },
     {
       "id": "kakao-depthead-inquiry",
@@ -1069,6 +1033,95 @@
       "state_note": "[2026-09-03 GM 승인 '추천 진행' · 4단계 모듈 3단계 하루 3건] 합본 발신(중간관리자알림합본)이 live 라 별도 플래그로 막아 둠 — scripts/rep_approval_relay.py SCOREBOARD_ON=True 로 바꾸면 켜진다.",
       "source": "telegram_bot/daily_scheduler.py run_mgmt_notice_digest → scripts/rep_approval_relay.py scoreboard_section",
       "job_id": "mgmt_notice_digest_1705"
+    },
+    {
+      "id": "win-2300-ceo-evening",
+      "when": "23:00",
+      "when_sort": "2300",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": 8254867551,
+      "what": "🌙 하루 마감 — GM 판(오늘 한 일·남은 일·GM 결정 한눈 표 + 21시 통 흡수)",
+      "owner": "웰리",
+      "trigger": "schtasks",
+      "state": "live",
+      "state_note": "[신설 2026-09-05 · GM 지시 '하루 양끝 동기화'] 실제로 매일 도는데 등록부에 항목이 없어 '알림 한 장'에 안 보이던 것을 채웠다 — 실측 schtasks Last Result=0(2026-09-04 23:00 정상 발송).",
+      "source": "Wellperion-CEO-Evening-Wrap-2300-Live · wellperion-agents/scripts/ceo_evening_wrap.py",
+      "bookend": "end"
+    },
+    {
+      "id": "tg-copy-morning-start",
+      "when": "07:40 직후",
+      "when_sort": "0740b",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": 8254867551,
+      "what": "📋 카톡 사본 · 하루의 시작 — kakao-0740-morning-foursplit 본문 그대로 업무보고방에 사본 1통",
+      "owner": "시토",
+      "trigger": "schtasks",
+      "state": "live",
+      "state_note": "[신설 2026-09-05 · GM 지시 '카카오톡이랑 텔레그램이랑 동기화'] 카톡 본문을 텔레그램에도 남겨 GM 이 어느 채널에서든 같은 내용을 본다. best-effort — 실패해도 카톡 발송 결과는 안 바꾼다.",
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py _send_telegram_copy()",
+      "bookend": "start"
+    },
+    {
+      "id": "tg-copy-evening-end",
+      "when": "평일 22:30 / 휴일 20:00 직후",
+      "when_sort": "2230b",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": 8254867551,
+      "what": "📋 카톡 사본 · 하루의 마무리 — kakao-ops-stream2 압축 합본 그대로 업무보고방에 사본 1통",
+      "owner": "시토",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "[신설 2026-09-05 · GM 지시 '카카오톡이랑 텔레그램이랑 동기화'] tg-copy-morning-start 의 저녁 짝. best-effort — 실패해도 카톡 발송 결과는 안 바꾼다.",
+      "source": "telegram_bot/daily_scheduler.py _send_telegram_copy()",
+      "job_id": [
+        "daily_digest_early",
+        "daily_digest_late"
+      ],
+      "bookend": "end"
+    },
+    {
+      "id": "tg-0755-morning-watch",
+      "when": "07:55",
+      "when_sort": "0755b",
+      "freq": "conditional",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": 8254867551,
+      "what": "🔴 하루의 시작 카톡 미발신 감시 — 07:40 ★운영+시설+지원+주차 방 로그(ok:true)가 없으면 경보 1통(정상이면 침묵)",
+      "owner": "시토",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "[신설 2026-09-05 · GM 지시] '발신 시도 후 실패'는 kakao_report_sender._notify_send_failure 가 이미 잡지만, 스크립트가 아예 안 돌거나 발신 전에 죽으면 그 관문을 못 지나 경보가 없었다(2026-09-05 07:30 종료코드 1 실사고). 로그 부재를 직접 본다 · 하루 1회 dedup.",
+      "source": "telegram_bot/daily_scheduler.py _bookend_watch()",
+      "job_id": "bookend_watch_morning",
+      "bookend": "start"
+    },
+    {
+      "id": "tg-2245-evening-watch",
+      "when": "평일 22:45 / 휴일 20:15",
+      "when_sort": "2245b",
+      "freq": "conditional",
+      "channel": "telegram",
+      "room": "업무관리",
+      "chat_id": 8254867551,
+      "what": "🔴 하루의 마무리 카톡 미발신 감시 — 저녁 ★운영+시설+지원+주차 방 로그(ok:true)가 없으면 경보 1통(정상이면 침묵)",
+      "owner": "시토",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "[신설 2026-09-05 · GM 지시] tg-0755-morning-watch 의 저녁 짝. 휴일 판정은 close_days 재사용 · 하루 1회 dedup.",
+      "source": "telegram_bot/daily_scheduler.py _bookend_watch() via run_bookend_watch_evening()",
+      "job_id": [
+        "bookend_watch_evening_early",
+        "bookend_watch_evening_late"
+      ],
+      "bookend": "end"
     }
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",

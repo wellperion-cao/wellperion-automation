@@ -189,6 +189,9 @@ def main(write_json=None):
         'sales_session_guard_0810', # sales_session_guard.py 에 발신 호출 0건 · 만료 시 로그인 창만 띄움
         'ig_publish_verify_sweep',  # 발행완료 도장+커밋만 · 결과 요약은 ig-publish-multichannel-summary 담당
         'page_ping_collect',        # 화면 열람 흔적을 status/page_ping.json 으로만 낸다 · 발신 없음
+        # 2026-09-05 — 하루방 v2(2026-09-01)로 대체된 구잡. 코드 게이트로 발신 0건이라 등록부에서 지웠다
+        # (dead 로 남기면 자율현황 「문제」로 센다 · 약속 L21 켜거나 지운다). 구잡 코드 삭제 = 봇 재기동 때 정리.
+        'gm_evening_recap_2030', 'gm_checkin_2200', 'gm_checkin_week_sun2210',
     }
     reg_job_ids: set[str] = set()
     for item in reg_items:
