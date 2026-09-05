@@ -1381,6 +1381,33 @@ def _notify_sweep(swept_files: list[str], recovery: dict) -> None:
 LOG_ROTATE_BYTES = 20 * 1024 * 1024
 
 
+def _skip_live_logged_recently(path: str, clevel: str, session: str, within_sec: int = 3600) -> bool:
+    """로그 꼬리(최근 64KB)에서 같은 역할·세션의 skip_live_session 이 within_sec 안에 있으면 True."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            f.seek(max(0, f.tell() - 65536))
+            tail = f.read().decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return False
+    now = datetime.now(timezone.utc)
+    for line in reversed(tail):
+        if '"skip_live_session"' not in line:
+            continue
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("clevel") != clevel or e.get("session") != session:
+            continue
+        try:
+            at = datetime.strptime(e.get("at", ""), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return False
+        return (now - at).total_seconds() < within_sec
+    return False
+
+
 def _append_log(entry: dict, path: str) -> None:
     entry = dict(entry)
     entry.setdefault("at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -1449,11 +1476,14 @@ def run_once(
     if session["alive"]:
         reason = (f"세션 살아있음({session['session']} · {session['age_min']:.0f}분 전) — 러너 건너뜀")
         print(f"[{clevel.upper()}] {reason}")
-        _append_log(
-            {"event": "skip_live_session", "clevel": clevel,
-             "session": session["session"], "age_min": session["age_min"]},
-            log_path,
-        )
+        # 같은 역할·같은 세션은 1시간에 1줄만 — 3분 피드백 슬롯이 매번 4역할 줄을 남겨
+        # 하루 1,900줄이 쌓였다(웰리 실측 2026-09-05). 판정은 그대로, 기록만 줄인다.
+        if not _skip_live_logged_recently(log_path, clevel, session["session"]):
+            _append_log(
+                {"event": "skip_live_session", "clevel": clevel,
+                 "session": session["session"], "age_min": session["age_min"]},
+                log_path,
+            )
         return {
             "mode": "skip-live-session", "ship": None, "prompt": None,
             "executed": False, "commit": None, "reason": reason,
