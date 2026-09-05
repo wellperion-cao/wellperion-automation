@@ -101,11 +101,29 @@ def _ask_claude(q: str) -> tuple[str, list[str]]:
     return text, _extract_urls(text)
 
 
+import shutil
+
+
+def _resolve_ab() -> str:
+    """agent-browser 실행 파일. Windows 는 npm 이 .cmd 래퍼를 두는데, 그걸 부르면 cmd.exe 를 거쳐
+    URL 의 '&'(chatgpt ?q=…&hints=search) 가 명령 구분자로 잘린다(2026-09-05 실측 "'hints' 은 명령이 아닙니다").
+    래퍼가 가리키는 네이티브 exe(node_modules/agent-browser/bin/agent-browser-win32-x64.exe)를 직접 부른다."""
+    w = shutil.which("agent-browser") or "agent-browser"
+    if w.lower().endswith(".cmd"):
+        exe = Path(w).parent / "node_modules" / "agent-browser" / "bin" / "agent-browser-win32-x64.exe"
+        if exe.exists():
+            return str(exe)
+    return w
+
+
+_AB_EXE = _resolve_ab()
+
+
 def _ensure_browser_session() -> None:
     if os.environ.get(_BROWSER_SESSION_ENV):
         return
     r = subprocess.run(
-        ["agent-browser", "session", "id", "--scope", "worktree", "--prefix", "geo"],
+        [_AB_EXE, "session", "id", "--scope", "worktree", "--prefix", "geo"],
         capture_output=True, text=True, timeout=15,
     )
     sid = r.stdout.strip()
@@ -115,8 +133,10 @@ def _ensure_browser_session() -> None:
 
 def _ab(*args: str, timeout: int = 25) -> str:
     """agent-browser CLI 한 번 호출 → stdout. 실패(exit≠0)면 예외."""
+    # Windows 는 "agent-browser" 만으로 .cmd 를 못 찾는다(WinError 2 · 2026-09-05 실측 — 엔진 3개 전부 측정 실패).
+    # claude CLI 와 같은 함정 — shutil.which 로 풀패스를 푼다.
     r = subprocess.run(
-        ["agent-browser", *args], capture_output=True, text=True,
+        [_AB_EXE, *args], capture_output=True, text=True,
         timeout=timeout, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
@@ -229,7 +249,7 @@ def main() -> None:
 
     if used_browser:
         try:
-            subprocess.run(["agent-browser", "close"], capture_output=True, timeout=15)
+            subprocess.run([_AB_EXE, "close"], capture_output=True, timeout=15)
         except Exception:
             pass
 
