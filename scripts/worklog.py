@@ -91,9 +91,14 @@ def _next_gm_ref(role: str, day: str) -> str:
     return f"{prefix}{max_nn + 1}"
 
 
-def record_gm_prompt_hook() -> None:
+def record_gm_prompt_hook(with_recall: bool = False) -> None:
     """UserPromptSubmit 훅 진입점 — GM 프롬프트를 GM요청 접수로 best-effort 기록하고,
-    항상 리마인더 JSON 을 stdout 에 낸다(예외 나도 세션은 절대 막지 않는다)."""
+    항상 리마인더 JSON 을 stdout 에 낸다(예외 나도 세션은 절대 막지 않는다).
+
+    with_recall=True(--recall 인자) 면 memory_recall.recall() 로 이번 프롬프트와
+    관련된 메모리 상위 3건 본문을 additionalContext 뒤에 이어 붙인다(배1016).
+    """
+    prompt = ""
     try:
         data = json.loads(sys.stdin.read())
         prompt = str(data.get("prompt") or "").strip()
@@ -139,8 +144,17 @@ def record_gm_prompt_hook() -> None:
                     detail="받음 · 자동 접수(UserPromptSubmit)", ref=ref)
     except Exception:
         pass
+    additional_context = _GM_REMINDER
+    if with_recall and prompt:
+        try:
+            import memory_recall
+            recalled = memory_recall.recall(prompt)
+            if recalled:
+                additional_context = additional_context + "\n\n" + recalled
+        except Exception:
+            pass
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit",
-                                              "additionalContext": _GM_REMINDER}},
+                                              "additionalContext": additional_context}},
                       ensure_ascii=False))
 
 
@@ -539,7 +553,7 @@ def close_gm_refs_hook() -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--hook-prompt":
-        record_gm_prompt_hook()
+        record_gm_prompt_hook(with_recall="--recall" in sys.argv)
     elif len(sys.argv) >= 2 and sys.argv[1] == "--hook-stop":
         close_gm_refs_hook()
     elif len(sys.argv) >= 2 and sys.argv[1] == "--open-gm":
