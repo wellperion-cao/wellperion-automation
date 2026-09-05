@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>AEO 채팅봇 — 센터 기준 · FAQ 학습형 · 비즈니스 모델 구상 v0.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#101418;--navy:#14304E;--navy-bg:#EDF1F6;--line:#E3E7EB;--dim:#5C666F;--good:#146B4F;--warn:#96601A;--bad:#9E2A2A}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+header{border-bottom:3px solid var(--navy);padding-bottom:12px;margin-bottom:16px}
+.brand{font-size:12px;letter-spacing:4px;color:var(--navy);font-weight:700}
+h1{font-size:25px;font-weight:900;margin-top:4px}
+.meta{font-size:13px;color:var(--dim);margin-top:4px}
+.lead{background:var(--navy);color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:18px;font-size:16px}
+.lead b{color:#FFD86B}
+h2{font-size:19px;color:var(--navy);margin:26px 0 8px;padding-left:9px;border-left:5px solid var(--navy)}
+table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:14px}
+th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}
+th{background:var(--navy-bg);color:var(--navy);font-size:13px}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 12px}
+.step{border:1px solid var(--line);border-top:4px solid var(--navy);padding:10px 12px;font-size:14px}
+.step b{display:block;font-size:13px;color:var(--navy);margin-bottom:3px}
+.good{color:var(--good);font-weight:700}.warn{color:var(--warn);font-weight:700}.bad{color:var(--bad);font-weight:700}
+ul{padding-left:20px;margin:4px 0 8px} li{margin-bottom:4px}
+.ask{background:#FFF8E6;border:1.5px solid #E2C46B;border-radius:6px;padding:12px 16px;margin-top:18px}
+.ask h3{font-size:16px;margin-bottom:6px}
+.foot{margin-top:26px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px;color:var(--dim)}
+@media (max-width:760px){.flow{grid-template-columns:1fr}table{display:block;overflow-x:auto}h1{font-size:21px}}
+</style>
+</head><body><div class="wrap">
+<header><div class="brand">WELLPERION · AI CBO 시보 · 신규사업 ②</div>
+<h1>AEO 채팅봇 — 센터마다 하나, 명확한 FAQ 에서 시작해 사장님과 문답하며 배우고 고객에게 자연히 답한다</h1>
+<div class="meta">비즈니스 모델 구상 v0.1 · 2026-09-05 · GM 결정 "우리는 AEO 를 활용한 채팅봇을 만들어야겠어, 센터 기준으로" · 첫 고객 = 다이어트캠프 · 요금 미산정</div></header>
+
+<blockquote><b>한 재료, 세 출구.</b> 센터의 FAQ 한 장이 ①사람 검색(SEO) ②AI 검색 인용(GEO·AEO) ③채팅봇 답변, 셋을 동시에 먹인다. 브랜드가이드 §3 에서 시작한 검색·AI 검색 셋업이 그대로 이 제품의 학습 데이터다 — 새 작업이 아니라 같은 일의 출구가 하나 늘어난 것.</blockquote>
+
+<h2>1. 신호 — 왜 지금, 왜 센터 (실측)</h2>
+<table><tr><th>원천에서 센 것</th><th>뜻</th></tr>
+<tr><td>다캠 월 상담 문의 <b>5~8건</b> · 대부분 <b>소개</b> (대표님 회신 09-04·09-05)</td><td>문의가 적고 경로가 하나. 검색·AI 경로가 비어 있다 — 챗봇은 그 경로의 끝(답하는 자리)</td></tr>
+<tr><td>대표님 답은 항상 짧다 — "응" · "3" · "5~8" (카톡 실측 4일)</td><td>긴 문서를 쓰게 하면 안 된다. <b>짧은 문답으로 학습시키는 구조</b>가 이 고객층 습관에 맞는다</td></tr>
+<tr><td>웰페리온 문의 원장 = 회원 문의 <b>754건</b> · 성인 강습 문의 <b>686건</b>(2026 누적 · 스냅샷 직접 셈)</td><td>센터 고객이 실제로 묻는 질문의 패턴이 우리 손에 있다 — FAQ 씨앗과 분류 기준이 여기서 나온다</td></tr>
+<tr><td>다캠 카톡 에이전트 이미 가동 — 06:50 저장 → 07:00 질문 1통, 09-04·09-05 발신 ok · 상한 6통</td><td><b>학습 루프의 절반이 이미 돈다.</b> 아침 질문을 FAQ 채우기로 돌리면 된다</td></tr></table>
+
+<h2>2. 누구에게 · 무엇을</h2>
+<table><tr><th>항목</th><th>내용</th></tr>
+<tr><td>고객(돈 내는 쪽)</td><td>센터 사장님 — 스포츠클럽·PT·필라테스·재활 운동 센터. 웰페리온 밖. 1호 = 다이어트캠프</td></tr>
+<tr><td>파는 것</td><td><b>센터별 채팅봇 1개</b> = FAQ 저장소 + 학습 루프(사장님 답 → FAQ 갱신) + 고객 답변 창 + 못 답한 질문을 사장님께 아침 질문으로 되돌리는 회로</td></tr>
+<tr><td>웰페리온의 자리</td><td>배경·실증. 우리 문의 원장으로 먼저 자체 시험(우리가 먼저 쓴다) → 그 결과가 영업 근거</td></tr>
+<tr><td>확장 3문항</td><td>①돈 내는 고객 밖 ✓ ②새 매출선(센터당 월 요금) ✓ ③웰페리온 실증 ✓</td></tr></table>
+
+<h2>3. 작동 한 바퀴</h2>
+<ol class="steps">
+<li><b>FAQ 씨앗 10문항</b> — 사장님 자료(가격표·프로그램) + "자주 받는 질문 3가지"(아침 질문) + 우리 문의 원장의 상위 질문 유형</li>
+<li><b>학습</b> — AI 가 아침마다 사장님께 질문 1개, 답 한 줄이 FAQ 한 줄이 된다(기존 카톡 에이전트 그대로 · 하루 1문항 · 재촉 없음)</li>
+<li><b>고객 답변</b> — 고객 질문에 <b>FAQ 근거로만</b> 자연스럽게 답한다. FAQ 에 없으면 지어내지 않고 "상담 예약" 으로 이어 준다. 금액·의료 표현은 금지어 관문(기존) 재사용</li>
+<li><b>되돌림</b> — 못 답한 질문 = 다음 아침 사장님께 여쭙는 질문. 답이 오면 FAQ 에 들어가고 다음부터는 봇이 답한다</li>
+<li><b>AEO 자산 동시 발행</b> — 같은 FAQ 가 질문형 제목·즉답 문단의 공개 FAQ 페이지로 나간다(구조화 데이터 FAQPage) → AI 검색이 인용</li></ol>
+
+<h2>4. 구조 — 센터 = 테넌트</h2>
+<table><tr><th>층</th><th>무엇</th><th>담당</th></tr>
+<tr><td>공개 FAQ 페이지</td><td>다캠 라인 <code>erp.wellperion.com/dietcamp/faq.html</code> (센터마다 폴더 하나 · GM 지시 1_웰페리온/2_다이어트캠프 구분 그대로)</td><td>시보(내용) · 배포 스크립트 기존</td></tr>
+<tr><td>답변 API</td><td><code>/api/chat/{센터}</code> — 서버 erp-api 에 라우트 1개 · 센터별 FAQ 파일·대화 로그(고객 이름·번호 저장 안 함)</td><td>시토(백엔드 신규 · 배)</td></tr>
+<tr><td>고객 창</td><td>1단계 = 센터 페이지에 붙는 웹 위젯 1개 · 2단계 = 카카오 채널 API(💰 비용·심사 = GM 결재)</td><td>시토 · 2단계는 GM</td></tr>
+<tr><td>학습 회로</td><td>기존 카톡 에이전트(방별 인자화 · 배 911)의 질문 은행에 "FAQ 빈칸" 을 1순위로</td><td>시보</td></tr></table>
+
+<h2>5. KPI 2층 (CBO 규칙)</h2>
+<table><tr><th>층</th><th>숫자</th><th>1차 목표</th></tr>
+<tr><td>① 상위 — 확장 건수</td><td>유료 도입 센터 수</td><td>1곳(다캠 · 파일럿 뒤 유료 전환)</td></tr>
+<tr><td>② 건별 — 이 제품 고유</td><td><b>봇이 FAQ 근거로 자력 답한 고객 질문 비율 / 월</b></td><td>첫 달 50% · 셋째 달 80% (제안 · 다캠 첫 달 실측 뒤 조정)</td></tr>
+<tr><td>관리 지표</td><td>FAQ 문항 수 ↑ · 못 답한 질문 수 ↓ · 봇 경유 상담 예약 건수</td><td>기준선 = 도입 첫 주</td></tr></table>
+
+<h2>6. 요금 — 미산정</h2>
+<p>공급가부터. 원가 = 답변 모델 호출(질문당) + 서버 몫(테넌트당) + 아침 학습 1통. 다캠 첫 달 실측(질문 수·호출 수)이 나온 뒤 설계 → <b>GM 결재</b>. 그 전엔 대표님께 숫자를 말하지 않는다.</p>
+
+<h2>7. 위험 — 이것 때문에 무너진다</h2>
+<table><tr><th>위험</th><th>막는 법(전부 기존 장치 재사용)</th></tr>
+<tr><td>지어낸 답 한 번이면 신뢰 끝</td><td>FAQ 에 없으면 답하지 않는다 — "상담 예약" 으로. 근거 없는 문장 출력 금지를 프롬프트가 아니라 코드(FAQ 매칭 실패 = 고정 문구)로</td></tr>
+<tr><td>금액·의료 표현</td><td>카톡 에이전트 금지어 관문 그대로. 가격은 "상담 시 안내"</td></tr>
+<tr><td>고객 개인정보</td><td>이름·전화 저장 안 함. 상담 예약은 접수 링크로 넘긴다(폼이 받는다)</td></tr>
+<tr><td>사장님 학습 피로</td><td>하루 1문항 · 답 없으면 넘어감 · "며칠째" 금지 — 기존 브리프 규칙</td></tr>
+<tr><td>웰페리온이 안 써 본 것을 판다</td><td>웰페리온 FAQ 로 <b>우리가 먼저 2주</b> 돌려 본다(자체 시험 없이 넘기지 않는다)</td></tr></table>
+
+<h2>8. 순서 — 하나씩</h2>
+<ol class="steps">
+<li>다캠 FAQ 씨앗 10문항 초안(시보 · 자료 + 아침 질문 "자주 받는 질문 3") → 대표님 확인</li>
+<li>시토: <code>/api/chat/{센터}</code> + 위젯 1개 + 센터별 FAQ 저장 (테넌트 1개로 시작)</li>
+<li>웰페리온 FAQ 로 자체 시험 2주 — 자력 답변 비율 실측</li>
+<li>다캠 라인에 FAQ 페이지 + 위젯 → 대표님 페이지로 소개(Before&After 3차)</li>
+<li>한 달 실측 → 요금 설계(공급가) → GM 결재 → 유료 전환 제안</li></ol>
+
+<div class="foot">정본 = 이 페이지(GM 열람) · 배 = 시보 신규사업 ② · 시토 백엔드 배 · 요금·카카오 채널 API 비용·대외 제시 = GM 결재. — AI 시보 · 2026-09-05</div>
+</div></body></html>
