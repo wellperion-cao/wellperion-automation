@@ -82,8 +82,10 @@ def is_staff(owner):
 
 
 def replace_all(conn, rows, now):
-    """두 표를 통째로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
-    호출부가 '조회 성공 + 행 있음'을 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해)."""
+    """두 표를 diff 삭제(이 배치에 없는 id 만) + upsert 로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
+    호출부가 '조회 성공 + 행 있음'을 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해).
+    [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 였던 것을 upsert 로 바꿨다 — 서버가 이 표에 직접 쓰면
+    그 id 가 이번 배치에도 있는 한 사라지지 않는다."""
     todos, apprs = [], []
     for r in rows:
         key = _s(r.get("id"))
@@ -97,15 +99,32 @@ def replace_all(conn, rows, now):
             apprs.append((db.TENANT, key, _s(r.get("업무명")), _s(r.get("담당자")), _s(r.get("결재요청")),
                           _s(r.get("결재상태")), _s(r.get("부서장싸인")), _s(r.get("GM싸인")), _s(r.get("대표싸인")),
                           _s(r.get("결재완료시각")), created_of(r), data, now))
+    todo_ids = [t[1] for t in todos]
+    appr_ids = [a[1] for a in apprs]
     with conn:
-        conn.execute("DELETE FROM todo_items WHERE tenant_id=%s", (db.TENANT,))
-        conn.execute("DELETE FROM approvals WHERE tenant_id=%s", (db.TENANT,))
+        if todo_ids:
+            conn.execute("DELETE FROM todo_items WHERE tenant_id=%s AND id <> ALL(%s)", (db.TENANT, todo_ids))
+        else:
+            conn.execute("DELETE FROM todo_items WHERE tenant_id=%s", (db.TENANT,))
+        if appr_ids:
+            conn.execute("DELETE FROM approvals WHERE tenant_id=%s AND id <> ALL(%s)", (db.TENANT, appr_ids))
+        else:
+            conn.execute("DELETE FROM approvals WHERE tenant_id=%s", (db.TENANT,))
         conn.executemany(
             "INSERT INTO todo_items (tenant_id,id,title,category,dept,owner,status,creator,created,modified,"
-            "start_date,end_date,done_date,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", todos)
+            "start_date,end_date,done_date,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, category=EXCLUDED.category,"
+            " dept=EXCLUDED.dept, owner=EXCLUDED.owner, status=EXCLUDED.status, creator=EXCLUDED.creator,"
+            " created=EXCLUDED.created, modified=EXCLUDED.modified, start_date=EXCLUDED.start_date,"
+            " end_date=EXCLUDED.end_date, done_date=EXCLUDED.done_date, data=EXCLUDED.data,"
+            " synced_at=EXCLUDED.synced_at", todos)
         conn.executemany(
             "INSERT INTO approvals (tenant_id,id,title,owner,approvers,appr_status,sign_head,sign_gm,sign_ceo,"
-            "completed_at,created,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", apprs)
+            "completed_at,created,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, owner=EXCLUDED.owner,"
+            " approvers=EXCLUDED.approvers, appr_status=EXCLUDED.appr_status, sign_head=EXCLUDED.sign_head,"
+            " sign_gm=EXCLUDED.sign_gm, sign_ceo=EXCLUDED.sign_ceo, completed_at=EXCLUDED.completed_at,"
+            " created=EXCLUDED.created, data=EXCLUDED.data, synced_at=EXCLUDED.synced_at", apprs)
     return len(todos), len(apprs)
 
 

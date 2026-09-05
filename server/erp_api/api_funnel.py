@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """시모 퍼널 거울 API (읽기 · 배 960 레인 U). sync_funnel.py 가 5분마다 떠온 funnel_cache 를 GAS 응답 모양 그대로 돌려준다.
-  GET /api/funnel/{action}?<GAS 와 같은 쿼리>   action = period_breakdown · funnel_conversion · funnel_conversion_detail · lesson_breakdown
+  GET /api/funnel/{action}?<GAS 와 같은 쿼리>   action = period_breakdown · funnel_conversion · funnel_conversion_detail ·
+    lesson_breakdown · stage_funnel · member_calendar(&month=YYYY-MM, 배1039-A)
   GET /api/funnel/health
 캐시에 없는 범위(예: 화면이 고른 옛 달)는 그 자리에서 GAS 1회 호출해 채운다 — 첫 조회만 느리고 이후는 서버.
 화면(월간마케팅보고서·콘텐츠문의현황)은 GAS_URL + '?action=…' 을 이 주소로 바꾸면 된다(응답 키 동일 · _source 만 추가).
@@ -14,7 +15,8 @@ from fastapi import APIRouter, HTTPException, Request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_funnel import _kst_now, db, gas_get, key_of, load_env, store  # noqa: E402
 
-ACTIONS = ("period_breakdown", "funnel_conversion", "funnel_conversion_detail", "lesson_breakdown")
+ACTIONS = ("period_breakdown", "funnel_conversion", "funnel_conversion_detail", "lesson_breakdown",
+           "stage_funnel", "member_calendar")  # +2 배1039-A(시토) — 시포 8건: 퍼널·예약 달력
 SOURCE = "sheet-mirror"
 router = APIRouter(prefix="/api/funnel")
 load_env()

@@ -94,8 +94,10 @@ def gas_get(action, params, timeout=60):
 
 
 def replace_type(conn, kind, rows, now):
-    """한 유형을 통째로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
-    호출부가 '조회 성공 + 행 있음'을 이미 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해)."""
+    """한 유형을 upsert 로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
+    호출부가 '조회 성공 + 행 있음'을 이미 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해).
+    [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 를 diff 삭제(이 배치에 없는 id 만) + upsert 로 바꿨다.
+    서버가 문의 원장에 직접 쓰는 순간 그 행의 id 가 이번 GAS 배치에도 있으면 그대로 살아남는다."""
     recs = []
     for r in rows:
         key = str(r.get("rowKey") or r.get("rowIndex") or "")
@@ -113,8 +115,12 @@ def replace_type(conn, kind, rows, now):
             # unknown 행은 애초에 못 잡았으니 채우지 않는다.
             code, now if code != "unknown" else None,
         ))
+    ids = [r[1] for r in recs]
     with conn:
-        conn.execute("DELETE FROM inquiries WHERE tenant_id=%s AND type=%s", (db.TENANT, kind))
+        if ids:
+            conn.execute("DELETE FROM inquiries WHERE tenant_id=%s AND type=%s AND id <> ALL(%s)", (db.TENANT, kind, ids))
+        else:
+            conn.execute("DELETE FROM inquiries WHERE tenant_id=%s AND type=%s", (db.TENANT, kind))
         conn.executemany(
             "INSERT INTO inquiries"
             " (tenant_id,id,type,row_key,name,phone,status,timestamp,data,synced_at,channel_code,channel_captured_at)"

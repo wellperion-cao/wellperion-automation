@@ -21,10 +21,12 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
 
-GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SCHEDULE_GAS_URL"}
-ACTIONS = {"renewal": ("stats",), "ops": ("vendor_list",), "schedule": ("load_schedule",)}
+GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SCHEDULE_GAS_URL", "todo": "TODO_GAS_URL"}
+ACTIONS = {"renewal": ("stats",), "ops": ("vendor_list",), "schedule": ("load_schedule",),
+           # home_kpi·sales_monthly = 업무&결재 GAS(TODO_GAS_URL)의 매출·지출 KPI 액션 — 배1039-A 시토.
+           "todo": ("home_kpi", "sales_monthly")}
 CALLBACK = "__wp"
-# renewal 만 JSONP(콜백 래핑 · months 로 응답 확인) — ops/schedule 은 board 와 같은 순JSON({ok:true,...},
+# renewal 만 JSONP(콜백 래핑 · months 로 응답 확인) — ops/schedule/todo 는 board 와 같은 순JSON({ok:true,...},
 # action 파라미터로 라우팅되는 다목적 GAS)이라 콜백을 안 씌운다(배990).
 JSONP_GAS = {"renewal"}
 
@@ -73,7 +75,8 @@ def store(conn, gas, action, params, data, now):
 
 def jobs():
     """(gas, action, params) — 표를 늘리려면 여기 한 줄 + GAS_ENV/ACTIONS 만 추가한다(파일은 하나로 유지)."""
-    return [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", "")]
+    return [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
+            ("todo", "home_kpi", ""), ("todo", "sales_monthly", "")]
 
 
 def main():
@@ -116,7 +119,8 @@ def selftest():
         r = conn.execute("SELECT data, synced_at FROM misc_cache WHERE tenant_id=%s AND gas='renewal' AND action='stats'",
                          (db.TENANT,)).fetchall()
         assert len(r) == 1 and r[0]["synced_at"] == "2026-09-04 10:05:00" and json.loads(r[0]["data"])["months"][0]["num"] == 9, r
-        assert jobs() == [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", "")]
+        assert jobs() == [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
+                          ("todo", "home_kpi", ""), ("todo", "sales_monthly", "")]
         assert all(a in ACTIONS[g] for g, a, _ in jobs()), "모든 일감은 API 허용 액션 안"
         assert JSONP_GAS == {"renewal"}, "ops/schedule 은 순JSON(board 와 같은 관례) — GAS_ENV/ACTIONS 만 늘려도 안전"
     finally:

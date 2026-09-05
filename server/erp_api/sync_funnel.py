@@ -19,7 +19,7 @@ from datetime import date, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, gas_get, load_env  # noqa: E402  — 같은 env·같은 GAS·같은 DB
 
-PLAIN = ("funnel_conversion", "funnel_conversion_detail", "lesson_breakdown")
+PLAIN = ("funnel_conversion", "funnel_conversion_detail", "lesson_breakdown", "stage_funnel")
 
 
 def _kst_now():
@@ -55,6 +55,12 @@ def main():
     jobs = [(a, {}) for a in PLAIN]
     today = date.fromtimestamp(time.time() + 9 * 3600)
     jobs += [("period_breakdown", {"from": f.isoformat(), "to": t.isoformat()}) for f, t in month_ranges(today)]
+    # member_calendar — 예약 달력(배1039-A). 화면 기본 노출 범위(이전·이번·다음 달)만 미리 데운다.
+    # 다른 달은 api_funnel.py 의 캐시미스 1회 폴백이 채운다(월별 캐시 키라 안전).
+    cal_first = today.replace(day=1)
+    cal_prev = (cal_first - timedelta(days=1)).replace(day=1)
+    cal_next = (cal_first + timedelta(days=32)).replace(day=1)
+    jobs += [("member_calendar", {"month": m.strftime("%Y-%m")}) for m in (cal_prev, cal_first, cal_next)]
     for action, params in jobs:
         data = gas_get(action, params)
         if data is None:

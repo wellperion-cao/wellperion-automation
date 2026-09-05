@@ -39,8 +39,10 @@ def _phone(v):
 
 
 def replace_scope(conn, scope, rows, now):
-    """한 scope 를 통째로 갈아끼운다. 반환 = (넣은 건수, 회원번호 없어 뺀 건수).
-    열쇠 = (회원번호, scope) — 같은 사람이 유효회원과 LOSS보관에 같은 번호로 함께 있는 것은 이력이라 다 싣는다."""
+    """한 scope 를 diff 삭제(이 배치에 없는 회원번호만) + upsert 로 갈아끼운다. 반환 = (넣은 건수, 회원번호 없어 뺀 건수).
+    열쇠 = (회원번호, scope) — 같은 사람이 유효회원과 LOSS보관에 같은 번호로 함께 있는 것은 이력이라 다 싣는다.
+    [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 였던 것을 upsert 로 바꿨다 — 회원 쓰기가 서버 원장에 먼저
+    적히면(회원 원천 전환) 그 회원번호가 이번 GAS 배치에도 있는 한 사라지지 않는다."""
     recs, unnumbered = [], 0
     for r in rows:
         n = _norm_row(r)
@@ -57,8 +59,13 @@ def replace_scope(conn, scope, rows, now):
         ))
     cols = ("name,phone,kind,kind2,program,reg_class,reg_seq,reg_date,start_date,end_date,"
             "loss_date,remain_days,owner,data,synced_at").split(",")
+    member_nos = [r[1] for r in recs]
     with conn:
-        conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s", (db.TENANT, scope))
+        if member_nos:
+            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s AND member_no <> ALL(%s)",
+                        (db.TENANT, scope, member_nos))
+        else:
+            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s", (db.TENANT, scope))
         conn.executemany(
             "INSERT INTO members (tenant_id,member_no,scope," + ",".join(cols) + ")"
             " VALUES (" + ",".join(["%s"] * (len(cols) + 3)) + ")"
