@@ -10,8 +10,9 @@
     GET  /auth/check                  — nginx auth_request 용 (200 통과 / 401 로그인 필요 / 403 권한 없음)
     GET  /auth/me                     — 로그인 사용자 + allowed_ids(허용 모듈 id · 앱 셸이 카드 표시에 씀)
     GET  /auth/forbidden              — 403 안내 화면
-    GET  /auth/admin                  — 승인 대기 목록 (관리자만)
-    GET/POST /auth/admin/{uid}/perms  — 계정별 권한(그룹·모듈 허용/거부)
+    GET  /auth/admin                  — 관리자 콘솔(admin.html, SPA 하나가 아래 API로 전부 그린다)
+    GET  /auth/admin/api/state        — 콘솔 데이터(관리자 아니거나 비밀번호 미입력=401)
+    POST /auth/admin/{uid}/perms      — 계정별 권한 저장(그룹·모듈 허용/거부)
     POST /auth/admin/{uid}/{action}   — approve | block | toggle_role | delete
     GET/POST /auth/admin/unlock       — 관리자 전용 비밀번호(ERP_ADMIN_SITE_PW · 30분 쿠키) — 관리자 화면 전부가 이 문을 지난다
 
@@ -707,44 +708,6 @@ def admin_unlock(request: Request, password: str = Form(...), next: str = Form("
     return r
 
 
-def _admin_row(r, me_id: int) -> str:
-    approve_or_block = ""
-    if r["role"] != "admin":
-        if r["status"] != "active":
-            approve_or_block = f"<form method=post action=/auth/admin/{r['id']}/approve><button>승인</button></form>"
-        else:
-            approve_or_block = f"<form method=post action=/auth/admin/{r['id']}/block><button class=sec>차단</button></form>"
-    role_btn = "" if r["id"] == me_id else (
-        f"<form method=post action=/auth/admin/{r['id']}/toggle_role>"
-        f"<button class=sec>{'관리자로' if r['role'] != 'admin' else '일반으로'}</button></form>")
-    status_ko = {"active": "사용 중", "pending": "승인 대기", "blocked": "차단"}.get(r["status"], r["status"])
-    status_cls = {"active": " ok", "pending": " on", "blocked": " off"}.get(r["status"], "")
-    role_ko = "관리자" if r["role"] == "admin" else "직원"
-    perm_link = "" if r["role"] == "admin" else f"<a href=/auth/admin/{r['id']}/perms>권한</a>"
-    # 삭제 = 사용 중이 아닌 직원 계정만(잘못 온 신청·시험 계정 정리 · GM 2026-09-04). 사용 중은 먼저 차단.
-    delete = "" if (r["role"] == "admin" or r["status"] == "active" or r["id"] == me_id) else _delete_form(r)
-    return (f"<tr{' class=pend' if r['status'] == 'pending' else ''}><td data-l=계정><b>{escape(r['name'])}</b>{_dept_badge(r)}<br><small>{escape(r['email'])}</small></td>"
-            f"<td data-l=역할><span class=tag>{role_ko}</span></td><td data-l=상태><span class='tag{status_cls}'>{status_ko}</span></td>"
-            f"<td data-l=신청><small>{short_dt(r['created_at'])}</small></td><td data-l=승인><small>{short_dt(r['approved_at'])}</small></td>"
-            f"<td><div class=acts>{approve_or_block}{delete}{perm_link}{role_btn}</div></td></tr>")
-
-
-def _dept_badge(r) -> str:
-    """가입 폼에서 고른 부서(perms JSON 의 dept 키) — account_perms.json/관리자 화면 저장분엔 없어 조용히 빈칸."""
-    try:
-        p = json.loads(r["perms"]) if r["perms"] else None
-    except ValueError:
-        p = None
-    d = (p or {}).get("dept")
-    return f" <span class=tag>{escape(d)}</span>" if d else ""
-
-
-def _delete_form(r) -> str:
-    q = escape(r["name"]).replace("'", "")
-    return (f"<form method=post action=/auth/admin/{r['id']}/delete onsubmit=\"return confirm('{q} 계정을 지웁니다. 되돌릴 수 없습니다.')\">"
-            f"<button class=danger>삭제</button></form>")
-
-
 def _row_perms(r) -> dict:
     try:
         return json.loads(r["perms"]) if r["perms"] else {}
@@ -752,90 +715,56 @@ def _row_perms(r) -> dict:
         return {}
 
 
-# ── 권한 매트릭스 (배1026 §4-2 · 2026-09-05) — 기존 /auth/admin 화면에 얹는다(새 페이지 아님) ──────
-# 칸 = 그룹(회원·운영·점검·경영·문서함) 안에서 지금 열려 있는 화면 수. 세부(모듈 하나하나 허용/거부)는
-# 이미 있는 /auth/admin/{uid}/perms 로 간다 — 사람×그룹 25칸을 전부 인라인 편집 가능하게 만들면
-# (사람 수 × 5그룹 × 모듈수) 폼이라 페이지가 못 쓸 만큼 무거워진다. ponytail: 그룹 단위 요약 + 링크로 세부조정.
-APPGROUPS = ("회원", "운영", "점검", "경영", "문서함")
-
-
-def _matrix_row(r) -> str:
-    p = _row_perms(r)
-    dept = p.get("dept") or "미분류"
-    ms = modules()
-    cells = "".join(
-        f"<td data-l='{escape(g)}'>{sum(1 for m in ms if m.get('appgroup', '문서함') == g and allowed(r, m))}"
-        f"/{sum(1 for m in ms if m.get('appgroup', '문서함') == g)}</td>"
-        for g in APPGROUPS)
-    find = escape((r["name"] + " " + r["email"] + " " + dept).lower())
-    lock_label = "잠금 해제" if p.get("locked") else "잠금"
-    return (f"<tr data-find='{find}'><td data-l=이름><b>{escape(r['name'])}</b> <span class=tag>{escape(dept)}</span>"
-            f"<br><small>{escape(r['email'])}</small></td>{cells}"
-            f"<td data-l=관리><div class=acts><a href=/auth/admin/{r['id']}/perms>세부조정</a>"
-            f"<form method=post action=/auth/admin/{r['id']}/lock><button class=sec>{lock_label}</button></form></div></td></tr>")
-
-
-def _matrix_section() -> str:
-    with db() as c:
-        staff_rows = c.execute(
-            "SELECT * FROM users WHERE tenant_id=%s AND role!='admin' AND status='active' ORDER BY name", (T,)).fetchall()
-        hist = c.execute(
-            "SELECT h.id, h.changed_by, h.changed_at, u.name FROM perms_history h "
-            "LEFT JOIN users u ON u.tenant_id=h.tenant_id AND u.id=h.uid "
-            "WHERE h.tenant_id=%s ORDER BY h.id DESC LIMIT 20", (T,)).fetchall()
-    trs = "".join(_matrix_row(r) for r in staff_rows)
-    th5 = "".join(f"<th>{escape(g)}</th>" for g in APPGROUPS)
-    dept_btns = "".join(
-        f"<form method=post action=/auth/admin/dept_apply/{urllib.parse.quote(d)}>"
-        f"<button class=sec>{escape(d)} 기본 적용</button></form>" for d in DEPT_ONLY_MODULES)
-    last = f"마지막 저장 {short_dt(hist[0]['changed_at'])} · {escape(hist[0]['changed_by'])}" if hist else "저장 이력 없음"
-    hist_rows = "".join(
-        f"<tr><td><small>{short_dt(h['changed_at'])}</small></td><td>{escape(h['name'] or ('#%s' % h['changed_by']))}</td>"
-        f"<td><small>{escape(h['changed_by'])}</small></td>"
-        f"<td><form method=post action=/auth/admin/undo/{h['id']}><button class=sec>되돌리기</button></form></td></tr>"
-        for h in hist)
-    return f"""<div class='box wide' id=matrix><h1>권한 매트릭스</h1>
-<p class=muted>칸 = 그 그룹 안에서 지금 열려 있는 화면 수(허용/전체). 개인 예외 화면(월간운영계획·GM 업무·
-인사·재무·채용·매출회원보고·자율현황·카톡전송관리)은 부서 기본에 없어 경영 칸은 대개 0 — 그 사람만 콕 집어
-열려면 세부조정으로 간다. 읽기전용(보기만) 구분은 화면에 아직 없어 허용/차단 2단계만 있다.</p>
-<input class=find id=mfind type=search placeholder="이름·계정·부서로 찾기" autocomplete=off>
-<p class=acts>부서 기본 일괄 적용(잠금 걸린 사람은 건너뜀): {dept_btns}</p>
-<div class=tw><table id=mtable><thead><tr><th>사람</th>{th5}<th>관리</th></tr></thead><tbody>{trs}</tbody></table></div>
-<h2 style='font-size:15px;margin:24px 0 8px'>변경 이력(최근 20건) · {escape(last)}</h2>
-<div class=tw><table><thead><tr><th>시각</th><th>대상</th><th>누가</th><th></th></tr></thead><tbody>{hist_rows}</tbody></table></div>
-<script>document.getElementById('mfind').addEventListener('input',function(){{
-var q=this.value.trim().toLowerCase();
-document.querySelectorAll('#mtable tbody tr').forEach(function(tr){{tr.hidden=!!q&&tr.dataset.find.indexOf(q)<0;}});}});</script>
-</div>"""
+_ADMIN_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin.html")
 
 
 @app.get("/auth/admin")
-def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None), msg: str = ""):
+def admin(erp_session: Optional[str] = Cookie(default=None)):
     # 미로그인이면 로그인 화면으로 보낸다 — 새 창·시크릿에서 열면 {"detail":"관리자만"} 만 보였다(GM 2026-09-04).
+    # 로그인은 됐지만 관리자가 아니거나 관리자 비밀번호가 없는 경우는 화면을 그대로 내고, 화면이 뜬 뒤
+    # api/state 가 401 을 주면 admin.html 이 안내 화면으로 바꾼다(배1076 · 시모 admin.html 마운트).
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
-    me = admin_only(erp_session, erp_admin)
+    with open(_ADMIN_HTML, encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+
+@app.get("/auth/admin/api/state")
+def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    u = current(erp_session)
+    if not u or u["role"] != "admin" or (ADMIN_PW and not _admin_unlocked(erp_admin, u["id"])):
+        raise HTTPException(401, "관리자 확인 필요")
+    accts = accounts()
     with db() as c:
         rows = c.execute("SELECT * FROM users WHERE tenant_id=%s ORDER BY status='pending' DESC, created_at DESC", (T,)).fetchall()
-    tr = "".join(_admin_row(r, me["id"]) for r in rows)
-    th = "<thead><tr><th>계정</th><th>역할</th><th>상태</th><th>신청</th><th>승인</th><th>작업</th></tr></thead>"
-    pend = [r for r in rows if r["status"] == "pending"]
-    n_on = sum(1 for r in rows if r["status"] == "active")
-    n_off = sum(1 for r in rows if r["status"] == "blocked")
-    if pend:
-        items = "".join(
-            f"<div class=row><div><b>{escape(r['name'])}</b>{_dept_badge(r)} <small>{escape(r['email'])}</small><br><small>신청 {short_dt(r['created_at'])}</small></div>"
-            f"<div class=act><form method=post action=/auth/admin/{r['id']}/approve><button>승인</button></form>{_delete_form(r)}</div></div>"
-            for r in pend)
-        card = f"<div class=card><h2>승인 대기 {len(pend)}건 — 지금 처리할 것</h2>{items}</div>"
-    else:
-        card = "<p class=muted>승인 대기 없음 — 새 가입 신청이 오면 여기 먼저 뜹니다.</p>"
-    summary = f"<p class=muted>전체 {len(rows)} · 사용 중 {n_on} · 차단 {n_off}</p>"
-    return page("ERP 계정 관리", head("관리자 · 누가 ERP 에 들어올 수 있는지 정하는 곳", wide=True) +
-                f"<div class='box wide'><h1>계정 관리</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}"
-                f"{card}{summary}<div class=tw><table>{th}<tbody>{tr}</tbody></table></div>"
-                f"<p class=nav><a href=/erp/>ERP 로 돌아가기</a><a href=/auth/password>비밀번호 변경</a><a href=/auth/logout>로그아웃</a></p></div>"
-                + _matrix_section())
+        hist = c.execute(
+            "SELECT h.id, h.uid, h.before, h.after, h.changed_by, h.changed_at, usr.name FROM perms_history h "
+            "LEFT JOIN users usr ON usr.tenant_id=h.tenant_id AND usr.id=h.uid "
+            "WHERE h.tenant_id=%s ORDER BY h.id DESC LIMIT 20", (T,)).fetchall()
+
+    def _perms(r):
+        try:
+            return json.loads(r["perms"]) if r["perms"] else None
+        except ValueError:
+            return None
+
+    return JSONResponse({
+        "me": {"id": u["id"], "name": u["name"], "email": u["email"]},
+        "users": [{
+            "id": r["id"], "name": r["name"], "email": r["email"], "role": r["role"], "status": r["status"],
+            "created_at": r["created_at"], "approved_at": r["approved_at"],
+            "google": False,   # ponytail: users 표에 구글 전용 여부 열이 없다 — 배지만 안 뜬다, 필요해지면 스키마에 열 추가
+            "perms": _perms(r), "fixed_perms": accts.get((r["email"] or "").lower()),
+        } for r in rows],
+        "modules": modules(),
+        "dept_modules": DEPT_ONLY_MODULES,
+        "common_modules": DEPT_COMMON_MODULES,
+        "exception_ids": list(EXCEPTION_ONLY_IDS),
+        "history": [{
+            "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
+            "changed_at": h["changed_at"], "before": h["before"], "after": h["after"],
+        } for h in hist],
+    })
 
 
 @app.post("/auth/admin/dept_apply/{dept}")
@@ -869,67 +798,23 @@ def undo_perms(hid: int, erp_session: Optional[str] = Cookie(default=None), erp_
     return RedirectResponse("/auth/admin?msg=되돌렸습니다#matrix", status_code=303)
 
 
-# 권한 화면 — 아래 범용 POST /auth/admin/{uid}/{action} 보다 먼저 선언해야 perms POST 가 잡힌다
-def _perms_row(group: str, ms: list, u, p: Optional[dict]) -> str:
-    on = p is not None and group in p.get("groups", [])
-    items = "".join(
-        f"<div><label style='display:inline;margin-right:14px'>"
-        f"<input type=checkbox name=m value='{m['id']}' style='display:inline;width:auto;margin:0 4px 0 0'"
-        f"{' checked' if p is not None and m['id'] in p.get('modules', []) else ''}>허용</label>"
-        f"<label style='display:inline;margin-right:14px'>"
-        f"<input type=checkbox name=d value='{m['id']}' style='display:inline;width:auto;margin:0 4px 0 0'"
-        f"{' checked' if p is not None and m['id'] in p.get('deny', []) else ''}>거부</label>"
-        f"{escape(m['name'])} <small>{'· 지금 ' + ('보임' if allowed(u, m) else '안 보임')}</small></div>"
-        for m in ms)
-    return (f"<tr><td><b>{escape(group)}</b><br><small>{len(ms)}개</small></td>"
-            f"<td><label style='display:inline'><input type=checkbox name=g value='{escape(group)}'"
-            f" style='display:inline;width:auto;margin:0 4px 0 0'{' checked' if on else ''}>그룹 전체 허용</label></td>"
-            f"<td><details><summary>모듈별</summary>{items}</details></td></tr>")
-
-
-@app.get("/auth/admin/{uid}/perms")
-def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg: str = "",
-               erp_admin: Optional[str] = Cookie(default=None)):
-    admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
-    with db() as c:
-        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
-    if not u:
-        raise HTTPException(404)
-    p = perms_of(u)
-    ms = modules()
-    rows = "".join(_perms_row(g, [m for m in ms if (m.get("core") if g == "핵심" else m.get("group") == g)], u, p)
-                   for g in GROUPS)
-    fixed = (u["email"] or "").lower() in accounts()
-    mode = ("관리자 — 전부 허용" if u["role"] == "admin"
-            else "계정 권한 파일(account_perms.json)" if fixed else ("개별 설정" if p else "기본 = 핵심 화면만"))
-    return page("계정 권한", f"""<div class='box wide'><h1>권한 — {escape(u['name'])} <small>{escape(u['email'])}</small></h1>
-{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
-<p>현재: <span class=tag>{mode}</span> · 허용 {len(allowed_ids(u))}/{len(ms)}개. 저장하면 개별 설정으로 바뀝니다(거부가 허용보다 우선).</p>
-{'<p class=err>이 계정은 <b>account_perms.json</b> 이 정본입니다 — 여기서 저장해도 반영되지 않습니다. 저장소 파일을 고치고 배포하세요.</p>' if fixed else ''}
-<form method=post action=/auth/admin/{uid}/perms style='max-width:none;padding:0;border:0;background:none'>
-<p>부서 기본(모듈 정본): {' '.join(f"<button class=sec name=preset value='{escape(k)}'>{escape(k)}</button>" for k in DEPT_ONLY_MODULES)}</p>
-<p class=hint>개인 예외 화면(월간운영계획·GM 업무·인사·재무·채용·매출회원보고·자율현황·카톡전송관리)은 부서 기본에 없다 — 아래 그룹 표에서 그 모듈만 콕 집어 허용에 체크한다.</p>
-<div class=tw><table><tr><th>그룹</th><th>전체</th><th>모듈</th></tr>{rows}</table></div>
-<button>저장</button><button class=sec name=reset value=1>기본(핵심만)으로 되돌리기</button></form>
-<p class=nav><a href=/auth/admin>계정 관리로</a></p></div>""")
-
-
+# 권한 저장 — 화면(admin.html)은 콘솔 안 서랍에서 이 하나만 호출한다. 개별 GET 화면은 배1076 에서 admin.html 로 흡수.
 @app.post("/auth/admin/{uid}/perms")
 async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
                      erp_admin: Optional[str] = Cookie(default=None)):
-    me = admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
+    me = admin_only(erp_session, erp_admin, "/auth/admin")
     form = await request.form()
     ids = {m["id"] for m in modules()}
     if form.get("preset") in DEPT_ONLY_MODULES:
         dept = form["preset"]
         _set_perms(uid, {"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, me["email"])
-        return RedirectResponse(f"/auth/admin/{uid}/perms?msg={dept} 부서 기본을 넣었습니다", status_code=303)
+        return RedirectResponse(f"/auth/admin?msg={dept} 부서 기본을 넣었습니다", status_code=303)
     perms = None if form.get("reset") else {
         "groups": [g for g in form.getlist("g") if g in GROUPS],
         "modules": [m for m in form.getlist("m") if m in ids],
         "deny": [m for m in form.getlist("d") if m in ids]}
     _set_perms(uid, perms, me["email"])
-    return RedirectResponse(f"/auth/admin/{uid}/perms?msg=저장됐습니다", status_code=303)
+    return RedirectResponse("/auth/admin?msg=저장됐습니다", status_code=303)
 
 
 # /auth/admin/{uid}/{action} 범용 라우트보다 먼저 선언해야 "lock" 이 그 400 처리로 안 빠진다.
