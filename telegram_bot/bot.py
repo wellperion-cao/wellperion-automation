@@ -224,12 +224,16 @@ def save_state(state: dict) -> None:
 
 
 async def authorized(update: Update) -> bool:
-    """최초 접근자를 owner 로 자동 등록. 이후엔 owner 만 허용."""
+    """최초 접근자를 owner 로 자동 등록. 이후엔 owner 만 허용.
+    ★2026-09-05 GM 지시: owner 확인을 통과해도 GM 개인 봇방(_may_reply)이 아니면
+    False — 그룹은 종전대로 수신·기록만 하고 봇은 응답·명령 실행 어느 쪽도 하지
+    않는다(나우열M 방에 자동응답이 새 나간 사고 재발방지). 이 함수를 거치는 모든
+    커맨드 핸들러·handle_message 가 자동으로 이 게이트를 통과한다."""
     state = load_state()
     uid = update.effective_user.id
     uname = update.effective_user.username or "(no username)"
     update_id = getattr(update, "update_id", "?")
-    chat_id = update.effective_chat.id if update.effective_chat else "?"
+    chat_id = update.effective_chat.id if update.effective_chat else None
 
     log.info(f"메시지 수신: update_id={update_id} chat_id={chat_id} user_id={uid} @{uname}")
 
@@ -237,18 +241,23 @@ async def authorized(update: Update) -> bool:
         state["owner_id"] = uid
         save_state(state)
         log.info(f"Owner 신규 등록: id={uid} @{uname}")
-        await update.message.reply_text(
-            f"✅ 대표님 등록 완료\nid: `{uid}`\n이제 이 대화로 지시사항을 보내주시면 "
-            f"로컬 Claude 가 실행하여 회신합니다.\n\n"
-            f"• /status - 현재 세션/owner 확인\n"
-            f"• /new - 신규 Claude 세션 개시 (문맥 초기화)\n"
-            f"• /stopbot - 봇 정상 종료",
-            parse_mode="Markdown",
-        )
+        if _may_reply(chat_id):
+            await update.message.reply_text(
+                f"✅ 대표님 등록 완료\nid: `{uid}`\n이제 이 대화로 지시사항을 보내주시면 "
+                f"로컬 Claude 가 실행하여 회신합니다.\n\n"
+                f"• /status - 현재 세션/owner 확인\n"
+                f"• /new - 신규 Claude 세션 개시 (문맥 초기화)\n"
+                f"• /stopbot - 봇 정상 종료",
+                parse_mode="Markdown",
+            )
         return True
 
     if uid != state["owner_id"]:
         log.warning(f"인증 실패 (Unauthorized): id={uid} @{uname} — owner={state['owner_id']}")
+        return False
+
+    if not _may_reply(chat_id):
+        log.info(f"그룹/비GM방 수신 — 응답·명령 실행 생략 (chat_id={chat_id})")
         return False
 
     log.info(f"인증 성공: user_id={uid} owner_id={state['owner_id']}")
@@ -1719,6 +1728,15 @@ async def cmd_digest_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # 라이브 발효 게이트: M1_AUTO_PUBLISH env(.env, 기본 0=OFF). OFF 동안은 신호 수신만
 # 하고 발행하지 않는다(GM go 후 1로 전환 + 봇 재시작 = 라이브 발효).
 _GM_CHAT_ID = 8254867551  # GM 텔레그램 챗 id (ssot/canon_values.json telegram_chat_id 정본과 동일)
+
+
+def _may_reply(chat_id: int | None) -> bool:
+    """자동응답(접수했습니다·분류 안내·되묻기 등 봇이 말하는 모든 것) 허용 판정 —
+    GM 개인 봇방(_GM_CHAT_ID · status/telegram_rooms.json 키 "업무관리")일 때만 True.
+    그 외 모든 방(음수 chat_id 그룹 전부 — 업무관리-나우열M 포함)은 authorized() 를
+    거치는 모든 응답 지점이 여기서 걸려 수신·기록만 하고 봇은 말하지 않는다
+    (GM 지시 2026-09-05 — 나우열M 방향 봇 자동응답 오발신 재발방지)."""
+    return chat_id == _GM_CHAT_ID
 
 # GM 개인 방(「나의하루」) — 개인 체크인 버튼이 이 방에서도 먹어야 한다(GM 2026-08-08).
 # .env 를 읽는다: 이 프로세스는 os.environ 에 .env 를 싣지 않으므로 파일에서 직접 뽑는다.
