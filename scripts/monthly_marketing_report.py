@@ -162,6 +162,25 @@ def fetch_funnel_conversion():
     return _fetch_action("funnel_conversion")
 
 
+def fetch_track_clicks(from_d, to_d):
+    """/api/track/summary 실측(배1038) — 서버 안(cron)에서는 로컬 8001로 로그인 없이 바로 되고,
+    PC 등 서버 밖에서는 로그인 관문(302/401)에 막혀 실패한다. 둘 다 실패하면 None(예외 삼키고 [WARN])."""
+    for base in ("http://127.0.0.1:8001/api/track/summary", "https://erp.wellperion.com/api/track/summary"):
+        try:
+            data = _http_get(f"{base}?from={from_d}&to={to_d}&group=page", timeout=6)
+            if isinstance(data, dict) and data.get("ok"):
+                rows = data.get("rows") or []
+                return {
+                    "views": sum(r.get("views", 0) for r in rows),
+                    "clicks": sum(r.get("clicks", 0) for r in rows),
+                    "sessions": sum(r.get("sessions", 0) for r in rows),
+                    "source": base,
+                }
+        except Exception as e:
+            print(f"[WARN] track summary {base} 실패({e})")
+    return None
+
+
 # ── 숫자 포맷 ────────────────────────────────────────────────────
 def _fmt(n, unit=""):
     if n is None:
@@ -192,16 +211,21 @@ def _month_bounds(month_str):
 
 
 # ── 월간 요약 텍스트 작성 ────────────────────────────────────────
-def build_report_text(pb, tc, fc, month_ko):
+def build_report_text(pb, tc, fc, month_ko, track=None):
     # pb.custom = period_breakdown(from/to) 응답 — 대상월(전월) 기준 실측치
     custom = (pb or {}).get("custom") or {}
 
     # 문의 페이지 클릭 — GAS 어떤 액션에도 클릭 집계 자체가 없음(2026-09 확인).
     # 값이 생기면 그대로 쓰고, 없으면 0으로 위장하지 않고 정직하게 「미측정」 표기.
+    # track(/api/track/summary 실측, 배1038)이 있으면 클릭 수를 채우고 방문·세션도 옆에 병기.
     clicks = None
     if isinstance((pb or {}).get("clicks"), dict):
         clicks = pb["clicks"].get("month")
+    if clicks is None and track:
+        clicks = track["clicks"]
     clicks_str = _fmt(clicks, "회") if clicks is not None else "미측정"
+    if track:
+        clicks_str += f" (방문 {_fmt(track['views'])}회 · 세션 {_fmt(track['sessions'])})"
 
     inq_m    = custom.get("inquiries")
     conv_cnt  = (custom.get("conversion") or {}).get("converted")
@@ -299,11 +323,12 @@ def main():
     pb = fetch_period_breakdown(from_d, to_d)
     tc = fetch_type_channel_breakdown(from_d, to_d)
     fc = fetch_funnel_conversion()
+    tr = fetch_track_clicks(from_d, to_d)
 
     if pb is None and fc is None:
         print("[WARN] 데이터 전체 수집 실패 — 빈 보고서 발송")
 
-    report_text = build_report_text(pb, tc, fc, month_ko)
+    report_text = build_report_text(pb, tc, fc, month_ko, track=tr)
     print("[INFO] 보고서 텍스트 생성 완료")
     print("─" * 60)
     print(report_text)

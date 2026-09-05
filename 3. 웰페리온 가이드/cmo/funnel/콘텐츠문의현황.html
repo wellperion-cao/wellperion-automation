@@ -340,6 +340,16 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
     <div id="reaction-scorecard-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
   </div>
 
+  <!-- ════════════════════════════════════════════
+       문의 페이지 방문·클릭 — /api/track/summary 서버 추적(배1038)
+       추적 시작 2026-09-05. erp.wellperion.com 안(로그인 상태)에서만 조회된다(track/summary 는
+       로그인 관문 뒤 — api_track.py 주석 참고). 개인정보 없음(IP·UA 원문 미저장).
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">문의 페이지 방문·클릭 (서버 추적)</div>
+    <div id="track-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
+  </div>
+
   <div class="section" style="margin-bottom:0">
     <div class="section-title">AI 검색 인용 현황 (GEO)</div>
     <div id="geo-watch-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
@@ -1403,6 +1413,52 @@ if (window.matchMedia) {
 })();
 </script>
 <!-- ══ /편별 반응 성적표 라이브 ══ -->
+<!-- ══ 문의 페이지 방문·클릭 — /api/track/summary (배1038) ══ -->
+<script>
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var wrap=document.getElementById('track-wrap');
+  if(!wrap) return;
+  if(location.hostname!=='erp.wellperion.com'){
+    wrap.innerHTML='<div class="measure-pending">웰페리온 ERP 주소(erp.wellperion.com)에서 열면 보입니다</div>';
+    return;
+  }
+  var today=new Date();
+  var from=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-01';
+  var to=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var note='<div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">이번 달 1일 ~ 오늘 · 페이지뷰·문의 버튼 클릭 · 개인정보 없음 · 추적 시작 2026-09-05</div>';
+  fetch('/api/track/summary?from='+from+'&to='+to+'&group=page',{credentials:'same-origin',cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); })
+    .then(function(d){
+      if(!d||!d.ok) throw new Error('ok-false');
+      var rows=d.rows||[];
+      if(!rows.length){
+        wrap.innerHTML=note+'<div class="measure-pending">이번 달 기록 없음 (추적 시작 2026-09-05)</div>';
+        return;
+      }
+      var tv=0,tc=0,ts=0;
+      rows.forEach(function(r){ tv+=r.views||0; tc+=r.clicks||0; ts+=r.sessions||0; });
+      var kpi='<div class="kpi-row">'
+        +'<div class="kpi-card"><div class="num">'+tv+'</div><div class="label">방문</div></div>'
+        +'<div class="kpi-card"><div class="num">'+tc+'</div><div class="label">문의 클릭</div></div>'
+        +'<div class="kpi-card"><div class="num">'+ts+'</div><div class="label">세션</div></div>'
+        +'</div>';
+      var trs=rows.map(function(r){
+        var page=r.key==='/'?'홈':esc(r.key);
+        return '<tr><td>'+page+'</td><td style="text-align:right">'+(r.views||0)+'</td>'
+          +'<td style="text-align:right">'+(r.clicks||0)+'</td><td style="text-align:right">'+(r.sessions||0)+'</td></tr>';
+      }).join('');
+      var table='<div style="overflow-x:auto;margin-top:10px"><table class="channel-table">'
+        +'<thead><tr><th>페이지</th><th style="text-align:right">방문</th><th style="text-align:right">클릭</th><th style="text-align:right">세션</th></tr></thead>'
+        +'<tbody>'+trs+'</tbody></table></div>';
+      wrap.innerHTML=note+kpi+table;
+    })
+    .catch(function(){
+      wrap.innerHTML=note+'<div class="measure-pending">로그인 뒤 보입니다</div>';
+    });
+})();
+</script>
+<!-- ══ /문의 페이지 방문·클릭 ══ -->
 <!-- ══ AI 검색 인용 현황(GEO) — status/geo_watch.json 직독 · 매주 월 07:10 갱신 (배1000) ══ -->
 <script>
 (function(){
