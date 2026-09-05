@@ -304,3 +304,16 @@ CREATE TABLE IF NOT EXISTS publish_ledger (
   synced_at     TEXT NOT NULL,
   PRIMARY KEY (tenant_id, post_id)
 );
+
+-- ERP 권한 변경 이력 (배1026 · 2026-09-05 시토). 관리자 화면 권한 매트릭스 "부서 기본 적용"·개인 권한 저장·
+-- 되돌리기가 전부 이 표 하나를 거친다(server/erp_auth/app.py _set_perms). 최근 20건 = ORDER BY id DESC LIMIT 20.
+CREATE TABLE IF NOT EXISTS perms_history (
+  id         BIGSERIAL PRIMARY KEY,
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  uid        INTEGER NOT NULL,
+  before     TEXT,
+  after      TEXT,
+  changed_by TEXT NOT NULL,
+  changed_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_perms_history_at ON perms_history (tenant_id, id DESC);

@@ -85,22 +85,61 @@ CORE = {
         "id": "member", "name": "회원",
         "desc": "멤버십·강습 회원 등록과 상태를 한 곳에서 관리한다.",
         # PII 공개 노출은 GM 이 수용(재지적 대상 아님) — 주 사용자 임정은M·이경연 실장이 staff 라 admin 전용이면 안 보였다(배978).
-        "staff": "이경연 실장", "roles": ["admin", "staff"],
+        "staff": "이경연 실장",
     },
     "cpo/문의현황.html": {
         "id": "inquiry", "name": "문의",
         "desc": "홈페이지·전화·현장으로 들어온 문의를 접수부터 등록까지 따라간다.",
-        "staff": "이경연 실장", "roles": ["admin", "staff"],
+        "staff": "이경연 실장",
     },
     "coo/check/시설부 체계.html": {
         "id": "check", "name": "점검",
         "desc": "시설 일일 점검과 고장 접수 현황을 본다.",
-        "staff": "이정헌 소장", "roles": ["admin", "staff"],
+        "staff": "이정헌 소장",
     },
 }
 
 SKIP_DIRS = {"tmp", "_assets", "status", "reports"}
 TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
+
+# ── ERP 권한 정리(배1026 · 2026-09-05 웰리 설계 §2②) ──────────────────────────
+# 앱 셸 첫 화면 그룹 4개 + 문서함. 여기 없는 id 는 전부 문서함(안내·초안·보고서·가이드·공고 37+건).
+APPGROUP_IDS = {
+    "회원": ["member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
+            "cpo-member-오넛티-접수현황", "cpo-product-상품기획"],
+    "운영": ["coo-reception-종합접수처-현황", "coo-reception-lost-found-register",
+            "coo-reception-lost-found-gallery", "coo-reception-lost-found-disposal",
+            "coo-리셉션-업무-라커관리-index", "coo-리셉션-업무-index",
+            "coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot", "cpo-member-실무진피드백",
+            "cmo-intake-instructor-intake", "cmo-funnel-콘텐츠문의현황",
+            "coo-brojay-브로제이-업무분장", "coo-brojay-브로제이-확인목록",
+            "coo-notice-게시물-프로필월", "coo-check-주차장-이용안내-공지문",
+            "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave"],
+    "점검": ["check", "coo-check-운영부-체계", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
+            "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
+    "경영": ["coo-report-매출회원현황보고", "coo-chairman-gm업무", "gm-월간운영계획",
+            "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
+            "chro-hub-index", "chro-recruiting-index", "cto-자율현황", "cto-automation-카톡전송관리"],
+}
+APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함"]
+APPGROUP_OF = {mid: g for g, ids in APPGROUP_IDS.items() for mid in ids}
+
+# 옛 용어 자동 차단(CLAUDE.md §0 브랜드 용어 + ssot/canon_values.json 2026-09-05 확정) — 카드 이름에서만 치환.
+# 원본 화면 파일(<title>)은 손대지 않는다 — 여긴 앱 셸 표시용 사본 한 번 거르는 자리일 뿐이다.
+BANNED_TERMS = [
+    ("프라이빗 멤버십 스포츠클럽", "정원제 스포츠클럽"),
+    ("프라이빗", "정원제"),
+    ("레슨", "강습"),
+    ("피트니스", "스포츠클럽"),
+    ("현대하이페리온", "웰페리온"),
+    ("가이드허브", "웰페리온 ERP"),
+]
+
+
+def clean_name(name: str) -> str:
+    for old, new in BANNED_TERMS:
+        name = name.replace(old, new)
+    return name
 
 
 def read_json(rel):
@@ -148,6 +187,11 @@ def hand_desc():
     return d.get("by_path", {}), d.get("by_file", {})
 
 
+def hand_name():
+    """사람이 적어 둔 카드 짧은 이름(id 키) — 정본 = status/erp_module_desc.json name."""
+    return read_json("status/erp_module_desc.json").get("name", {})
+
+
 def registry_desc():
     """자동화 등록부에서 화면 파일을 가리키는 항목의 설명 한 줄. {파일명: 설명}"""
     out = {}
@@ -181,6 +225,7 @@ def build():
 
     descs = registry_desc()
     hand_path, hand_file = hand_desc()
+    names = hand_name()
     items = []
     seen = set()
 
@@ -194,21 +239,25 @@ def build():
             return
         seen.add(rel)
         core = CORE.get(rel)
+        mid = core["id"] if core else make_id(role, rel)
+        name = core["name"] if core else names.get(mid, title)
         items.append({
-            "id": core["id"] if core else make_id(role, rel),
+            "id": mid,
             "core": bool(core),
             "group": nick_of.get(role, role),
+            "appgroup": APPGROUP_OF.get(mid, "문서함"),   # 앱 셸 표시 그룹(배1026) — 권한 판정(group)과 별개
             "role": role,
-            "name": core["name"] if core else title,
+            "name": clean_name(name),                     # 옛 용어 자동 차단
             # 사람이 적어 둔 설명(경로 → 파일명)이 먼저다. 자동화 등록부의 feature 첫 조각은
             # "종합접수처"·"전사 일정 SSOT" 처럼 화면 이름을 되풀이할 뿐일 때가 있어 뒤로 뺀다.
-            "desc": (core["desc"] if core else (
+            "desc": clean_name(core["desc"] if core else (
                 hand_path.get(rel)
                 or hand_file.get(os.path.basename(rel))
                 or descs.get(os.path.basename(rel), ""))),
             "path": "../" + rel,
             "staff": (core["staff"] if core else staff_of.get(role, "")),
-            "roles": core["roles"] if core else ["admin", "staff"],
+            # roles 칸 삭제(배1026) — 전 카드가 ["admin","staff"] 동일해 정보 0이었다(웰리 실측 2026-09-05).
+            # 권한 판정은 allowed() 가 core·group·modules/deny/appgroups 로 한다.
         })
 
     for role, _ in ROLE_ORDER:
@@ -227,8 +276,9 @@ def build():
 
     order = {r: i for i, (r, _) in enumerate(ROLE_ORDER)}
     core_rank = {v["id"]: i for i, v in enumerate(CORE.values())}  # 회원 → 문의 → 점검
+    appgroup_rank = {g: i for i, g in enumerate(APPGROUP_ORDER)}
     items.sort(key=lambda m: (0, core_rank[m["id"]], "") if m["core"]
-               else (1, order.get(m["role"], 99), m["name"]))
+               else (1, appgroup_rank.get(m["appgroup"], 99), order.get(m["role"], 99), m["name"]))
     return items
 
 

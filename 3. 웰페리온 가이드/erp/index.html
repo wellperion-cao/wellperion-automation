@@ -72,7 +72,7 @@
 
 <div class="main">
   <h2>모듈</h2>
-  <div class="meta">회원 · 문의 · 점검 — 매일 쓰는 세 가지가 맨 위다. 그 아래는 C레벨별 화면 전부.</div>
+  <div class="meta">회원 · 운영 · 점검 · 경영 4그룹 + 문서함(안내·초안·보고서).</div>
   <input class="find" id="find" type="search" placeholder="화면 이름으로 찾기" autocomplete="off">
   <div id="sections"><div class="msg">불러오는 중…</div></div>
 </div>
@@ -107,7 +107,7 @@ function loadModules(role, allowedIds){
     var group = null, grid = null;
 
     (d.modules || []).forEach(function(m){
-      var g = m.core ? '핵심' : (m.group || '기타');
+      var g = m.appgroup || '문서함';   // 회원·운영·점검·경영·문서함 5그룹(배1026 · 2026-09-05)
       if (g !== group) {
         group = g;
         var h = document.createElement('h3');

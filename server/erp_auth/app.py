@@ -52,20 +52,47 @@ from common import db as _db   # noqa: E402  — DB 를 여는 유일한 자리 
 
 T = _db.TENANT
 MODULES = os.environ.get("ERP_MODULES", "/srv/erp/www/erp/modules.json")   # 자동 생성본(GitHub 동기화) · 여기서 수정 안 함
-GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", "시로", "시뽀", "GM")   # 핵심 = core:true 모듈 묶음
-# 부서 프리셋 — 관리자가 한 번 누르면 그 부서 사람이 보는 그룹 묶음이 들어간다. 정본은 kpi.json 실무진 배치(2026-09-03).
-PRESETS = {
-    "운영부":   ["핵심", "시포", "시우"],            # 이경연 실장·임정은M·최준용M·윤병현AM
-    "시설부":   ["핵심", "시토"],                    # 이정헌 소장·시설 3인 (점검이 핵심에 포함)
-    "지원부":   ["핵심", "시토"],                    # 이연희 반장·박남일 반장(사우나) — 정본=kpi.json 부서반장
-    "주차관리부": ["핵심", "시토"],                  # 양상규 고문
-    "경영지원": ["핵심", "시로", "시뽀", "시우"],     # 나우열M (인사·재무·운영)
-    "파트너팀": ["핵심", "시모", "시보"],             # 강습 강사진(lessons@ 계정과 동일 범위)
-    "마케팅":   ["핵심", "시모", "시보"],
-    "전체":     list(GROUPS),
-}
-# 가입 폼 부서 선택지(GM 2026-09-05 지정 6부서) — 전체 PRESETS 중 사람이 직접 고르는 항목만.
+GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", "시로", "시뽀", "GM")   # 핵심 = core:true 모듈 묶음(수동 개별조정용 — 아래 참고)
+# 가입 폼 부서 선택지(GM 2026-09-05 지정 6부서).
 DEPTS = ("운영부", "시설부", "지원부", "주차관리부", "경영지원", "파트너팀")
+
+# ── 부서 기본 모듈(ERP 권한 정리 · 배1026 · GM 확정 2026-09-05 설계 §2③ 매트릭스) ──────────────
+# 사람마다 다시 적지 않도록 이 표 하나가 정본이다(가입 승인·관리자 화면 "부서로 한 번에"·매트릭스
+# "부서 기본 적용" 버튼이 전부 여기서 만든다 — 벌 두 개 금지). 전 부서 공통 + 부서 전용을 합쳐 쓴다.
+DEPT_COMMON_MODULES = [
+    "coo-reception-종합접수처-현황", "coo-reception-lost-found-register", "coo-reception-lost-found-gallery",
+    "coo-reception-lost-found-disposal", "cpo-member-실무진피드백", "coo-todo-업무-현황-ssot",
+    "coo-todo-결재-현황-ssot", "coo-check-전사-일정", "coo-check-전사-거래업체",
+    "coo-check-주차장-이용안내-공지문", "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave",
+]
+# ponytail: 결재현황은 매트릭스가 원래 운영부=○·나머지=△(보기만)로 나눴지만, 화면에 읽기전용 모드가
+# 없어(2-state 관문 구조) 전 부서 ○로 연다 — 진짜 보기전용이 필요해지면 그때 화면별로 넣는다.
+DEPT_ONLY_MODULES = {
+    "운영부":     ["member", "inquiry", "cpo-member-renewal", "cpo-member-오넛티-접수현황", "cpo-member-lesson",
+                 "check", "coo-check-운영부-체계", "coo-리셉션-업무-라커관리-index", "coo-리셉션-업무-index",
+                 "coo-brojay-브로제이-업무분장", "coo-brojay-브로제이-확인목록", "coo-notice-게시물-프로필월",
+                 "cmo-intake-instructor-intake", "cmo-funnel-콘텐츠문의현황"],
+    "시설부":     ["check"],                                        # 부서체계 = check 자기 자신(시설부 체계.html)
+    "지원부":     ["check", "coo-check-지원부-체계"],
+    "주차관리부": ["check", "coo-check-주차관리부-체계"],
+    "파트너팀":   ["cpo-member-lesson", "coo-check-파트너팀-체계"],   # 점검(check)은 파트너팀 몫 아님(매트릭스 §2③)
+    "경영지원":   [],                                                # 나우열M — 인사·재무는 개인 예외로 따로(§3, EXCEPTION_ONLY_IDS)
+}
+
+
+def dept_modules(dept: str) -> list:
+    return DEPT_COMMON_MODULES + DEPT_ONLY_MODULES.get(dept, [])
+
+
+# 개인 예외 3건(GM 확정 2026-09-05 §3) — 부서 템플릿·groups·all 매칭으로는 절대 안 열린다.
+# GM 이 관리자 화면에서 그 사람에게만 modules 로 콕 집어 켜야 보인다(월간운영계획=이경연 실장·GM업무=김남욱 GM·
+# 인사재무/채용=나우열M). 매출회원보고·자율현황·카톡전송관리도 경영진 전용이라 같은 방식으로 묶는다.
+EXCEPTION_ONLY_IDS = frozenset({
+    "gm-월간운영계획", "coo-chairman-gm업무",
+    "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
+    "chro-hub-index", "chro-recruiting-index",
+    "coo-report-매출회원현황보고", "cto-자율현황", "cto-automation-카톡전송관리",
+})
 # 계정별 권한 정본(GM 확정 2026-09-03 · 배951). 여기 적힌 계정은 이 파일이 DB perms 를 이긴다.
 # accounts 를 비우거나 파일을 지우면 종전 동작(DB perms · 없으면 핵심 화면만)으로 그대로 돌아간다.
 ACCOUNTS = os.environ.get("ERP_ACCOUNT_PERMS",
@@ -106,6 +133,24 @@ def init() -> None:
 
 def now() -> str:
     return datetime.now(KST).strftime("%Y-%m-%d %H:%M")
+
+
+# ── 권한 변경 이력(배1026 · 2026-09-05) — 매트릭스 "되돌리기" 20건이 여기서 읽는다. ────────────
+def _perms_log(uid: int, before: Optional[str], after: Optional[str], by: str) -> None:
+    with db() as c:
+        c.execute("INSERT INTO perms_history(tenant_id,uid,before,after,changed_by,changed_at) VALUES(%s,%s,%s,%s,%s,%s)",
+                  (T, uid, before, after, by, now()))
+
+
+def _set_perms(uid: int, perms_dict: Optional[dict], by: str) -> None:
+    """perms 를 갱신하고 이력 한 줄을 남긴다 — 저장 경로는 이 함수 하나로(관리자 화면·매트릭스·부서 일괄 전부)."""
+    after = json.dumps(perms_dict, ensure_ascii=False) if perms_dict is not None else None
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+        before = row["perms"] if row else None
+        c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s", (after, T, uid))
+    if before != after:
+        _perms_log(uid, before, after, by)
 
 
 def hash_pw(pw: str, salt: Optional[str] = None) -> tuple[str, str]:
@@ -169,7 +214,9 @@ def accounts() -> dict:
 def module_at(uri: str) -> Optional[dict]:
     """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
     modules()
-    path = posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(uri).path) or "/")
+    # 선행 슬래시를 1개로 강제 — posixpath.normpath 는 '//x' 를 보존해 '//cpo/…' 요청이 모듈 조회를 빗나가게 했다
+    # (권한 판정 우회 · 2026-09-05 검수 C4). nginx 는 merge_slashes 로 파일은 정상으로 내주므로 여기서 맞춘다.
+    path = "/" + posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(uri).path) or "/").lstrip("/")
     # 깔끔한 주소(.html 생략) 허용 — nginx try_files 가 $uri.html 로 파일을 찾으므로 권한 판정도 같은 파일로(GM 2026-09-05)
     return _MODS[2].get(path) or (_MODS[2].get(path + ".html") if not path.endswith(".html") else None)
 
@@ -189,19 +236,23 @@ def perms_of(user) -> Optional[dict]:
 
 
 def allowed(user, module: dict) -> bool:
-    """계정이 모듈을 볼 수 있나. admin=전부 · perms 없음=modules.json roles 규칙(종전) · 있으면 거부>허용."""
+    """계정이 모듈을 볼 수 있나. admin=전부 · perms 없음=핵심 화면만 · 있으면 거부>개인예외>허용.
+    개인 예외(EXCEPTION_ONLY_IDS)는 groups/all 매칭을 건너뛴다 — modules 로 콕 집어야만 켜진다(배1026 §3)."""
     if user["role"] == "admin":
         return True
     p = perms_of(user)
     if p is None:                                  # 권한을 아직 안 준 계정 = 매일 쓰는 화면(핵심)만
-        return bool(module.get("core")) and "staff" in module.get("roles", [])
+        return bool(module.get("core"))
     if module["id"] in p.get("deny", []):
         return False
+    if module["id"] in p.get("modules", []):
+        return True
+    if module["id"] in EXCEPTION_ONLY_IDS:
+        return False                               # modules 에 없으면 groups·all 이 뭐든 여기서 끝 — 개인 예외 전용
     if p.get("all"):                               # 전체 허용 — deny 뺀 나머지 전부
         return True
     groups = p.get("groups", [])
-    return (module["id"] in p.get("modules", []) or module.get("group") in groups
-            or ("핵심" in groups and bool(module.get("core"))))
+    return module.get("group") in groups or ("핵심" in groups and bool(module.get("core")))
 
 
 def allowed_ids(user) -> list:
@@ -281,6 +332,9 @@ STYLE = (
     "@media(max-width:640px){table{min-width:0}thead{display:none}tr,td{display:block}tr{padding:12px 0;border-bottom:1px solid var(--line)}"
     "td{padding:3px 0;border:0}td[data-l]::before{content:attr(data-l);display:inline-block;min-width:38px;margin-right:6px;font-size:12px;color:var(--ink-soft)}"
     ".acts{padding-top:6px}.card .row .act{margin-left:0;width:100%}}"
+    # 권한 매트릭스 A3 가로 인쇄(배1026 §4-2 · 2026-09-05) — 화면 요소는 숨기고 표만 최대한 넓게.
+    "@media print{@page{size:A3 landscape;margin:10mm}.hd,.nav,.find,#mfind,form button,.acts form"
+    "{display:none!important}table{font-size:11px}#matrix{max-width:none}}"
     "</style>")
 
 # 워드마크 = erp/brand/wellperion-wordmark.svg 원본 벡터(배932·952) · fill=currentColor 라 라이트/다크 --ink 상속
@@ -552,11 +606,11 @@ def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(..
         claims = jwt.decode(t, SECRET, algorithms=["HS256"])
     except jwt.PyJWTError:
         return RedirectResponse("/auth/login?err=인증이 만료됐습니다. 처음부터 다시 로그인하세요", status_code=303)
-    if dept not in PRESETS:
+    if dept not in DEPTS:
         return RedirectResponse(f"/auth/google/finish?t={t}&next={urllib.parse.quote(next, safe='')}&err=부서를 선택하세요", status_code=303)
     email, salt_pw = claims["e"], secrets.token_urlsafe(32)     # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
     salt, h = hash_pw(salt_pw)
-    perms = json.dumps({"dept": dept, "groups": PRESETS[dept], "modules": [], "deny": []}, ensure_ascii=False)
+    perms = json.dumps({"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, ensure_ascii=False)
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
@@ -665,8 +719,72 @@ def _delete_form(r) -> str:
             f"<button class=danger>삭제</button></form>")
 
 
+def _row_perms(r) -> dict:
+    try:
+        return json.loads(r["perms"]) if r["perms"] else {}
+    except ValueError:
+        return {}
+
+
+# ── 권한 매트릭스 (배1026 §4-2 · 2026-09-05) — 기존 /auth/admin 화면에 얹는다(새 페이지 아님) ──────
+# 칸 = 그룹(회원·운영·점검·경영·문서함) 안에서 지금 열려 있는 화면 수. 세부(모듈 하나하나 허용/거부)는
+# 이미 있는 /auth/admin/{uid}/perms 로 간다 — 사람×그룹 25칸을 전부 인라인 편집 가능하게 만들면
+# (사람 수 × 5그룹 × 모듈수) 폼이라 페이지가 못 쓸 만큼 무거워진다. ponytail: 그룹 단위 요약 + 링크로 세부조정.
+APPGROUPS = ("회원", "운영", "점검", "경영", "문서함")
+
+
+def _matrix_row(r) -> str:
+    p = _row_perms(r)
+    dept = p.get("dept") or "미분류"
+    ms = modules()
+    cells = "".join(
+        f"<td data-l='{escape(g)}'>{sum(1 for m in ms if m.get('appgroup', '문서함') == g and allowed(r, m))}"
+        f"/{sum(1 for m in ms if m.get('appgroup', '문서함') == g)}</td>"
+        for g in APPGROUPS)
+    find = escape((r["name"] + " " + r["email"] + " " + dept).lower())
+    lock_label = "잠금 해제" if p.get("locked") else "잠금"
+    return (f"<tr data-find='{find}'><td data-l=이름><b>{escape(r['name'])}</b> <span class=tag>{escape(dept)}</span>"
+            f"<br><small>{escape(r['email'])}</small></td>{cells}"
+            f"<td data-l=관리><div class=acts><a href=/auth/admin/{r['id']}/perms>세부조정</a>"
+            f"<form method=post action=/auth/admin/{r['id']}/lock><button class=sec>{lock_label}</button></form></div></td></tr>")
+
+
+def _matrix_section() -> str:
+    with db() as c:
+        staff_rows = c.execute(
+            "SELECT * FROM users WHERE tenant_id=%s AND role!='admin' AND status='active' ORDER BY name", (T,)).fetchall()
+        hist = c.execute(
+            "SELECT h.id, h.changed_by, h.changed_at, u.name FROM perms_history h "
+            "LEFT JOIN users u ON u.tenant_id=h.tenant_id AND u.id=h.uid "
+            "WHERE h.tenant_id=%s ORDER BY h.id DESC LIMIT 20", (T,)).fetchall()
+    trs = "".join(_matrix_row(r) for r in staff_rows)
+    th5 = "".join(f"<th>{escape(g)}</th>" for g in APPGROUPS)
+    dept_btns = "".join(
+        f"<form method=post action=/auth/admin/dept_apply/{urllib.parse.quote(d)}>"
+        f"<button class=sec>{escape(d)} 기본 적용</button></form>" for d in DEPT_ONLY_MODULES)
+    last = f"마지막 저장 {short_dt(hist[0]['changed_at'])} · {escape(hist[0]['changed_by'])}" if hist else "저장 이력 없음"
+    hist_rows = "".join(
+        f"<tr><td><small>{short_dt(h['changed_at'])}</small></td><td>{escape(h['name'] or ('#%s' % h['changed_by']))}</td>"
+        f"<td><small>{escape(h['changed_by'])}</small></td>"
+        f"<td><form method=post action=/auth/admin/undo/{h['id']}><button class=sec>되돌리기</button></form></td></tr>"
+        for h in hist)
+    return f"""<div class='box wide' id=matrix><h1>권한 매트릭스</h1>
+<p class=muted>칸 = 그 그룹 안에서 지금 열려 있는 화면 수(허용/전체). 개인 예외 화면(월간운영계획·GM 업무·
+인사·재무·채용·매출회원보고·자율현황·카톡전송관리)은 부서 기본에 없어 경영 칸은 대개 0 — 그 사람만 콕 집어
+열려면 세부조정으로 간다. 읽기전용(보기만) 구분은 화면에 아직 없어 허용/차단 2단계만 있다.</p>
+<input class=find id=mfind type=search placeholder="이름·계정·부서로 찾기" autocomplete=off>
+<p class=acts>부서 기본 일괄 적용(잠금 걸린 사람은 건너뜀): {dept_btns}</p>
+<div class=tw><table id=mtable><thead><tr><th>사람</th>{th5}<th>관리</th></tr></thead><tbody>{trs}</tbody></table></div>
+<h2 style='font-size:15px;margin:24px 0 8px'>변경 이력(최근 20건) · {escape(last)}</h2>
+<div class=tw><table><thead><tr><th>시각</th><th>대상</th><th>누가</th><th></th></tr></thead><tbody>{hist_rows}</tbody></table></div>
+<script>document.getElementById('mfind').addEventListener('input',function(){{
+var q=this.value.trim().toLowerCase();
+document.querySelectorAll('#mtable tbody tr').forEach(function(tr){{tr.hidden=!!q&&tr.dataset.find.indexOf(q)<0;}});}});</script>
+</div>"""
+
+
 @app.get("/auth/admin")
-def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None), msg: str = ""):
     # 미로그인이면 로그인 화면으로 보낸다 — 새 창·시크릿에서 열면 {"detail":"관리자만"} 만 보였다(GM 2026-09-04).
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
@@ -688,8 +806,41 @@ def admin(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional
         card = "<p class=muted>승인 대기 없음 — 새 가입 신청이 오면 여기 먼저 뜹니다.</p>"
     summary = f"<p class=muted>전체 {len(rows)} · 사용 중 {n_on} · 차단 {n_off}</p>"
     return page("ERP 계정 관리", head("관리자 · 누가 ERP 에 들어올 수 있는지 정하는 곳", wide=True) +
-                f"<div class='box wide'><h1>계정 관리</h1>{card}{summary}<div class=tw><table>{th}<tbody>{tr}</tbody></table></div>"
-                f"<p class=nav><a href=/erp/>ERP 로 돌아가기</a><a href=/auth/password>비밀번호 변경</a><a href=/auth/logout>로그아웃</a></p></div>")
+                f"<div class='box wide'><h1>계정 관리</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}"
+                f"{card}{summary}<div class=tw><table>{th}<tbody>{tr}</tbody></table></div>"
+                f"<p class=nav><a href=/erp/>ERP 로 돌아가기</a><a href=/auth/password>비밀번호 변경</a><a href=/auth/logout>로그아웃</a></p></div>"
+                + _matrix_section())
+
+
+@app.post("/auth/admin/dept_apply/{dept}")
+def dept_apply(dept: str, erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin)
+    if dept not in DEPT_ONLY_MODULES:
+        raise HTTPException(400, "모르는 부서")
+    mods = dept_modules(dept)
+    with db() as c:
+        targets = c.execute("SELECT id, perms FROM users WHERE tenant_id=%s AND role!='admin' AND status='active'", (T,)).fetchall()
+    n = 0
+    for r in targets:
+        p = _row_perms(r)
+        if p.get("dept") != dept or p.get("locked"):
+            continue
+        _set_perms(r["id"], {"dept": dept, "groups": [], "modules": mods, "deny": p.get("deny", [])}, me["email"])
+        n += 1
+    return RedirectResponse(f"/auth/admin?msg={urllib.parse.quote(dept)} 부서 기본을 {n}명에 적용했습니다#matrix", status_code=303)
+
+
+@app.post("/auth/admin/undo/{hid}")
+def undo_perms(hid: int, erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin)
+    with db() as c:
+        h = c.execute("SELECT * FROM perms_history WHERE tenant_id=%s AND id=%s", (T, hid)).fetchone()
+    if not h:
+        raise HTTPException(404)
+    with db() as c:
+        c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s", (h["before"], T, h["uid"]))
+    _perms_log(h["uid"], h["after"], h["before"], me["email"] + "(되돌리기)")
+    return RedirectResponse("/auth/admin?msg=되돌렸습니다#matrix", status_code=303)
 
 
 # 권한 화면 — 아래 범용 POST /auth/admin/{uid}/{action} 보다 먼저 선언해야 perms POST 가 잡힌다
@@ -730,7 +881,8 @@ def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg:
 <p>현재: <span class=tag>{mode}</span> · 허용 {len(allowed_ids(u))}/{len(ms)}개. 저장하면 개별 설정으로 바뀝니다(거부가 허용보다 우선).</p>
 {'<p class=err>이 계정은 <b>account_perms.json</b> 이 정본입니다 — 여기서 저장해도 반영되지 않습니다. 저장소 파일을 고치고 배포하세요.</p>' if fixed else ''}
 <form method=post action=/auth/admin/{uid}/perms style='max-width:none;padding:0;border:0;background:none'>
-<p>부서로 한 번에: {' '.join(f"<button class=sec name=preset value='{escape(k)}'>{escape(k)}</button>" for k in PRESETS)}</p>
+<p>부서 기본(모듈 정본): {' '.join(f"<button class=sec name=preset value='{escape(k)}'>{escape(k)}</button>" for k in DEPT_ONLY_MODULES)}</p>
+<p class=hint>개인 예외 화면(월간운영계획·GM 업무·인사·재무·채용·매출회원보고·자율현황·카톡전송관리)은 부서 기본에 없다 — 아래 그룹 표에서 그 모듈만 콕 집어 허용에 체크한다.</p>
 <div class=tw><table><tr><th>그룹</th><th>전체</th><th>모듈</th></tr>{rows}</table></div>
 <button>저장</button><button class=sec name=reset value=1>기본(핵심만)으로 되돌리기</button></form>
 <p class=nav><a href=/auth/admin>계정 관리로</a></p></div>""")
@@ -739,21 +891,36 @@ def perms_page(uid: int, erp_session: Optional[str] = Cookie(default=None), msg:
 @app.post("/auth/admin/{uid}/perms")
 async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
                      erp_admin: Optional[str] = Cookie(default=None)):
-    admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
+    me = admin_only(erp_session, erp_admin, f"/auth/admin/{uid}/perms")
     form = await request.form()
     ids = {m["id"] for m in modules()}
-    if form.get("preset") in PRESETS:
-        with db() as c:
-            c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s",
-                      (json.dumps({"groups": PRESETS[form["preset"]], "modules": [], "deny": []}, ensure_ascii=False), T, uid))
-        return RedirectResponse(f"/auth/admin/{uid}/perms?msg={form['preset']} 프리셋을 넣었습니다", status_code=303)
-    perms = None if form.get("reset") else json.dumps({
+    if form.get("preset") in DEPT_ONLY_MODULES:
+        dept = form["preset"]
+        _set_perms(uid, {"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, me["email"])
+        return RedirectResponse(f"/auth/admin/{uid}/perms?msg={dept} 부서 기본을 넣었습니다", status_code=303)
+    perms = None if form.get("reset") else {
         "groups": [g for g in form.getlist("g") if g in GROUPS],
         "modules": [m for m in form.getlist("m") if m in ids],
-        "deny": [m for m in form.getlist("d") if m in ids]}, ensure_ascii=False)
-    with db() as c:
-        c.execute("UPDATE users SET perms=%s WHERE tenant_id=%s AND id=%s", (perms, T, uid))
+        "deny": [m for m in form.getlist("d") if m in ids]}
+    _set_perms(uid, perms, me["email"])
     return RedirectResponse(f"/auth/admin/{uid}/perms?msg=저장됐습니다", status_code=303)
+
+
+# /auth/admin/{uid}/{action} 범용 라우트보다 먼저 선언해야 "lock" 이 그 400 처리로 안 빠진다.
+@app.post("/auth/admin/{uid}/lock")
+def toggle_lock(uid: int, erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin)
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    if not row:
+        raise HTTPException(404)
+    try:
+        p = json.loads(row["perms"]) if row["perms"] else {}
+    except ValueError:
+        p = {}
+    p["locked"] = not p.get("locked")
+    _set_perms(uid, p, me["email"])
+    return RedirectResponse("/auth/admin?msg=잠금 상태를 바꿨습니다#matrix", status_code=303)
 
 
 @app.post("/auth/admin/{uid}/{action}")
@@ -799,20 +966,26 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     # 권한 판정 자가점검 — dict 가 DictRow 흉내(keys()·[] 둘 다 된다). user 는 email 이 있어야 perms_of() 가 안 죽는다.
     admin_u = {"role": "admin", "email": "cao@wellperion.com", "perms": None}
     staff_u = {"role": "staff", "email": "staff@example.invalid", "perms": None}
-    member_before_978 = {"id": "member", "group": "시포", "core": True, "roles": ["admin"]}           # 배978 이전 값
-    member_after_978 = {"id": "member", "group": "시포", "core": True, "roles": ["admin", "staff"]}   # 배978 수정 후
-    dept_module = {"id": "check", "group": "시우", "core": False, "roles": ["admin", "staff"]}        # 일반 부서 모듈(core 아님)
-    assert allowed(admin_u, member_before_978) and allowed(admin_u, member_after_978)   # admin=항상 전부
-    assert not allowed(staff_u, member_before_978)          # 배978 문제 — 임정은M·이경연 실장이 겪던 것
-    assert allowed(staff_u, member_after_978)               # 배978 수정 — 이제 기본 권한으로도 보인다
+    member_mod = {"id": "member", "group": "시포", "core": True}                 # 핵심 모듈(roles 칸 삭제 · 배1026)
+    dept_module = {"id": "check", "group": "시우", "core": False}                # 일반 부서 모듈(core 아님)
+    assert allowed(admin_u, member_mod)                     # admin=항상 전부
+    assert allowed(staff_u, member_mod)                     # 기본(perms 없음)이라도 core 모듈은 전 직원에게 보인다(배978)
     assert not allowed(staff_u, dept_module)                # 기본(perms 없음) = core 모듈만, 부서 모듈은 안 보임
     perms_core = {**staff_u, "perms": '{"groups":["핵심"]}'}
-    assert allowed(perms_core, member_after_978)            # 핵심 그룹 = core 모듈 전부 허용(roles 무관)
+    assert allowed(perms_core, member_mod)                  # 핵심 그룹 = core 모듈 전부 허용
     assert not allowed(perms_core, dept_module)             # 부서 전용 모듈은 그룹이 안 맞으면 그대로 막힘
     perms_deny = {**staff_u, "perms": '{"groups":["시우"],"deny":["check"]}'}
     assert not allowed(perms_deny, dept_module)             # deny 가 groups 매칭보다 우선
     # 부서 가입 perms(dept 키 포함) — allowed() 는 groups/modules/deny/all 만 보므로 dept 는 무해해야 한다
-    dept_perms = {**staff_u, "perms": '{"dept":"운영부","groups":["핵심","시포","시우"],"modules":[],"deny":[]}'}
-    assert allowed(dept_perms, member_after_978) and allowed(dept_perms, dept_module)
-    assert all(d in PRESETS for d in DEPTS)                                  # 가입 폼 선택지 = PRESETS 정의됨
+    dept_perms = {**staff_u, "perms": json.dumps({"dept": "운영부", "groups": [], "modules": dept_modules("운영부"), "deny": []})}
+    assert allowed(dept_perms, member_mod) and allowed(dept_perms, dept_module)
+    assert all(d in DEPT_ONLY_MODULES for d in DEPTS)                            # 가입 폼 선택지 = 부서 템플릿 정의됨
+    # 개인 예외(배1026 §3) — 부서 기본에 들어 있어도 EXCEPTION_ONLY_IDS 는 groups/all 매칭을 건너뛴다.
+    gm_work = {"id": "coo-chairman-gm업무", "group": "시우", "core": False}       # 폴더는 coo 지만 GM 전용
+    assert gm_work["id"] in EXCEPTION_ONLY_IDS
+    assert not allowed(dept_perms, gm_work)                 # 운영부 부서기본(시우 그룹 매칭)로는 GM 업무가 안 열린다
+    exception_granted = {**staff_u, "perms": json.dumps({"groups": [], "modules": [gm_work["id"]], "deny": []})}
+    assert allowed(exception_granted, gm_work)              # modules 로 콕 집으면(개인 예외 부여) 열린다
+    all_true = {**staff_u, "perms": json.dumps({"all": True, "deny": []})}
+    assert not allowed(all_true, gm_work)                   # all:true(부서 메인 계정)로도 개인 예외는 안 열린다
     print("self-check ok")
