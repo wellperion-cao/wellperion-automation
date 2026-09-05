@@ -1535,6 +1535,9 @@ LF_GALLERY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "recepti
 # 2026-09-03 GM 지시 — 시설 둘러보기 1단계 시험 페이지(/ko/test). 본체는 Pages, 여기서는 iframe 블록만 주입.
 TOUR_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_tour_block.html"
 
+# 2026-09-05 — 자주 묻는 질문 페이지. iframe 아닌 본문 텍스트 블록(문답 = home/index.html #faq 원문).
+FAQ_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "home" / "wp_faq_block.html"
+
 # key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
 _NEW_PAGE_SPECS = {
     "survey":          (SURVEY_BLOCK_FILE,          "문의하기",             "inquiry-form"),
@@ -1546,6 +1549,7 @@ _NEW_PAGE_SPECS = {
     "reception-en":    (RECEPTION_BLOCK_FILE_EN,    "Submit a Request",     "reception"),
     "lf-gallery-en":   (LF_GALLERY_BLOCK_FILE_EN,   "Lost & Found",         "lost-found"),
     "tour":            (TOUR_BLOCK_FILE,            "시설 둘러보기",         "test"),
+    "faq":             (FAQ_BLOCK_FILE,             "자주 묻는 질문",       "faq"),
 }
 
 
@@ -1569,6 +1573,10 @@ LIVE_PAGES = {
     "8772": ("lf-gallery-en",  LF_GALLERY_BLOCK_FILE_EN, "http://wellperion.com/en/lost-found/"),
     "8464": ("lf-register",    LF_REGISTER_BLOCK_FILE,   "http://wellperion.com/ko/lost-found-register/"),
 }
+# 2026-09-05 — faq 초안(post 8910)은 아직 미발행이라 LIVE_PAGES 미등록. /ko/faq/ 슬러그는 이미 옛
+# 페이지(page-id 103, 2016년 작성, 무관한 내용)가 쓰고 있어 이대로 발행하면 슬러그 충돌(faq-2 등으로
+# 밀림)이 난다 — 발행 전 슬러그를 GM/시모가 정한 뒤(예: 기존 103 페이지 교체 또는 다른 슬러그) 그 주소로
+# 이 표에 추가한다. 지금 넣으면 drift 대조가 무관한 103 페이지와 비교해 매일 오탐을 낸다.
 _KNOWN_POST_IDS = {k: v[0] for k, v in LIVE_PAGES.items()}   # 고정 ID ↔ 스펙 가드(2026-09-04)는 위 표에서 나온다
 _FORCE = False   # --force: 라이브가 리포보다 앞서 있어도 주입 강행(외과교체를 버리겠다고 사람이 정했을 때만)
 
@@ -1969,7 +1977,7 @@ def main() -> int:
         "drift",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour"],
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour", "faq"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
