@@ -1012,7 +1012,7 @@ function restoreFacilityFromBackup(bakName, date){
     }
   }
   var rows=Object.keys(pick).map(function(k){ return pick[k].row; });
-  if(rows.length){ tgt.getRange(tgt.getLastRow()+1,1,rows.length,HEADERS.length).setValues(rows); _sortByDateDesc(tgt); }
+  if(rows.length){ var tRow=tgt.getLastRow()+1; _ensureSize_(tgt, tRow+rows.length-1, HEADERS.length); tgt.getRange(tRow,1,rows.length,HEADERS.length).setValues(rows); _sortByDateDesc(tgt); }
   return jsonRes({ok:true, restored:rows.length, from:bakName, date:date});
 }
 
@@ -1729,6 +1729,7 @@ function handleSave(body) {
 
   if (newRows.length > 0) {
     var startRow = sheet.getLastRow() + 1;
+    _ensureSize_(sheet, startRow + newRows.length - 1, HEADERS.length);
     sheet.getRange(startRow, 1, newRows.length, HEADERS.length).setValues(newRows);
     for (var k = 0; k < newRows.length; k++) {
       _applyRowStyle(sheet, startRow + k, newRows[k]);
@@ -1911,6 +1912,7 @@ function _handleSaveV2Compat(body) {
     }
     if (newRows.length > 0) {
       var startRow = sheet.getLastRow() + 1;
+      _ensureSize_(sheet, startRow + newRows.length - 1, HEADERS.length);
       sheet.getRange(startRow, 1, newRows.length, HEADERS.length).setValues(newRows);
       for (var k = 0; k < newRows.length; k++) {
         _applyRowStyle(sheet, startRow + k, newRows[k]);
@@ -3213,6 +3215,7 @@ function saveFacilityMeasure(body) {
   });
   if (rows.length) {
     var startRow = sheet.getLastRow() + 1;
+    _ensureSize_(sheet, startRow + rows.length - 1, HEADERS.length);
     sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
     _sortByDateDesc(sheet);   // 날짜 내림차순 정렬(+제출시각). 2026-07-06 시우.
   }

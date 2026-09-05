@@ -113,6 +113,14 @@ function jsonRes(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ─── 시트 최대 행수(getMaxRows) 초과 시 append 실패("범위가 시트 크기를 벗어납니다") 방지 ───
+// getLastRow()+1 로 이어붙이기 전에 항상 호출. 2026-09-05 시토(GM 지시).
+function _ensureRows_(sheet, needRows) {
+  if (sheet.getLastRow() + needRows > sheet.getMaxRows()) {
+    sheet.insertRowsAfter(sheet.getMaxRows(), Math.max(needRows, 200));
+  }
+}
+
 // ════════════════════════════════════════════
 // 초기 세팅 (Apps Script 에디터에서 1회 실행)
 // ════════════════════════════════════════════
@@ -168,6 +176,7 @@ function _seedDate(sheet, date, items, sheetName) {
     ];
   });
   if (rows.length > 0) {
+    _ensureRows_(sheet, rows.length);
     sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   }
 }
@@ -355,6 +364,7 @@ function handleSave(body) {
   });
 
   if (newRows.length > 0) {
+    _ensureRows_(sheet, newRows.length);
     var startRow = sheet.getLastRow() + 1;
     sheet.getRange(startRow, 1, newRows.length, HEADERS.length).setValues(newRows);
     for (var k = 0; k < newRows.length; k++) {
@@ -453,6 +463,7 @@ function _handleSaveV2Compat(body) {
       }
     });
     if (newRows.length > 0) {
+      _ensureRows_(sheet, newRows.length);
       var startRow = sheet.getLastRow() + 1;
       sheet.getRange(startRow, 1, newRows.length, HEADERS.length).setValues(newRows);
       for (var k = 0; k < newRows.length; k++) {
