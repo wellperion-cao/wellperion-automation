@@ -170,7 +170,8 @@ def module_at(uri: str) -> Optional[dict]:
     """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
     modules()
     path = posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(uri).path) or "/")
-    return _MODS[2].get(path)
+    # 깔끔한 주소(.html 생략) 허용 — nginx try_files 가 $uri.html 로 파일을 찾으므로 권한 판정도 같은 파일로(GM 2026-09-05)
+    return _MODS[2].get(path) or (_MODS[2].get(path + ".html") if not path.endswith(".html") else None)
 
 
 def perms_of(user) -> Optional[dict]:
