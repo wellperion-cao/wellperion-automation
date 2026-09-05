@@ -349,6 +349,7 @@
   </div>
 </div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 /* ══ 게시물 카테고리 전환 ══
    새 종류를 늘릴 때는 ①CATS 에 한 줄 추가 ②본문에 <div id="cat-{id}" class="cat-pane"> 추가.
@@ -1105,7 +1106,8 @@
   /* 서버에 1건 저장(no-cors POST, 본문 큰 HTML이라 GET 불가) */
   function ntServerSave(data){
     var payload = {}; Object.keys(data).forEach(function(k){ payload[k]=data[k]; }); payload.action='notice_save';
-    return fetch(NOTICE_API_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload) }).catch(function(){});
+    // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS(text/plain POST · 응답 JSON 읽힘).
+    return window.erpTodoCall(NOTICE_API_URL, payload).catch(function(){});
   }
 
   /* v2.65 — no-cors POST는 응답을 읽을 수 없어 서버 실패해도 항상 성공으로 보임(배 10068).
@@ -1175,7 +1177,7 @@
     /* 로컬에서도 제거 */
     ntSetSaved(ntGetSaved().filter(function(it){ return String(it.id) !== String(id); }));
     if(_noticeSource === 'server'){
-      fetch(NOTICE_API_URL + '?action=notice_delete&id=' + encodeURIComponent(id), { redirect:'follow' })
+      window.erpTodoCall(NOTICE_API_URL, { action:'notice_delete', id:String(id) })
         .then(function(){ setTimeout(function(){ ntRenderSavedList(); }, 700); })
         .catch(function(){ ntRenderSavedList(); });
     } else {
