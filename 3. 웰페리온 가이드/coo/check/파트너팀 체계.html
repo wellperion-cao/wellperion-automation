@@ -793,8 +793,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   // '기본 데이터'(SEED, 최신 2026-06 항목까지)로 조용히 대체되어 있었다 — 실제 업무 SSOT과
   // 무관하게 매번 같은 옛 데이터만 보인 것. 다른 페이지들처럼 GAS 업무 SSOT를 직접 불러온다.
   var WORK_TODO_API='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  // ★2026-09-05 배985 — ERP 도메인에서는 서버 미러(/api/todo, GM업무.html 리더현황과 같은 패턴)를 먼저 읽는다.
+  var ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function fetchWorkTodoList(){
+    var gas=function(){ return fetch(WORK_TODO_API+'?action=todo_list',{redirect:'follow'}).then(function(r){return r.json();}); };
+    if(!ERP_API_ON) return gas();
+    return fetch('/api/todo?limit=1000',{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+      .then(function(d){ return {ok:true, data:(d&&d.rows)||[]}; })
+      .catch(function(e){ console.warn('[파트너팀체계] /api/todo 실패 → GAS 폴백:', e&&e.message); return gas(); });
+  }
   function fetchWorkLive(){
-    fetch(WORK_TODO_API+'?action=todo_list',{redirect:'follow'}).then(function(r){return r.json();}).then(function(d){
+    fetchWorkTodoList().then(function(d){
       if(!(d&&(d.ok||d.success)&&(d.data||d.todos)))return;
       var raw=d.data||d.todos;
       var arr=raw.map(function(r){return{
