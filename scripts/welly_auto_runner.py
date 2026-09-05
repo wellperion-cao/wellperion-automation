@@ -44,9 +44,12 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -127,6 +130,60 @@ MAX_SHIPS_PER_CYCLE = 3
 BACKLOG_RAISE_AT = 30       # 이 척수를 넘으면 상한을 올리기 시작
 BACKLOG_RAISE_STEP = 10     # 이만큼 더 밀릴 때마다 1척
 MAX_SHIPS_PER_CYCLE_CEILING = 8
+
+# ── 사이클당 동시 레인 상한(배1005 · 2026-09-05) ──
+# GM 물음 "병렬을 자동으로 해줄 순 없나?" 대응 — run_cycle()이 역할별 1척씩 순차(직렬)로
+# claude 세션을 띄우던 것을, 서로 다른 파일 범위인 배끼리는 동시에 띄운다(같은 범위는
+# 같은 레인=직렬 · _assign_lanes 참고). 상한을 기존 MAX_SHIPS_PER_CYCLE 기본값(3)과
+# 그대로 맞춘다 — 이미 GM이 승인한 "한 사이클 최대 3개 claude 세션 동시 비용"의 상한을
+# 새로 넘기지 않으면서(토큰·API 동시부담 불변) 지연시간만 줄인다.
+MAX_CONCURRENT_LANES = 3
+
+# 배가 건드릴 파일을 note/title에서 미리 뽑아내는 토큰(경로처럼 보이는 문자열) 패턴.
+_FILE_TOKEN_RE = re.compile(r"[\w가-힣][\w\-./가-힣]{2,80}\.(?:py|html|js|json|jsonl|md|sh|css)")
+
+
+def _estimate_ship_scope(ship: dict) -> set[str]:
+    """PURE — 배 title+note에서 건드릴 가능성이 높은 파일 경로 토큰을 추정한다(실행 전엔
+    세션이 실제로 뭘 건드릴지 알 수 없어 근사치다). 2026-09-05 01:38~01:41 실사고에서
+    스윕된 파일(scripts/monthly_marketing_report.py 등)은 전부 해당 배 note에 그 파일명이
+    그대로 적혀 있었다 — 정규식 추출만으로도 실제 충돌의 상당수를 미리 잡아낸다.
+    토큰이 하나도 없으면 빈 집합(=범위 불명) — _scopes_conflict가 이걸 안전 쪽으로 처리한다."""
+    text = f"{ship.get('title', '') or ''} {ship.get('note', '') or ''}"
+    return set(_FILE_TOKEN_RE.findall(text))
+
+
+def _scopes_conflict(a: set[str], b: set[str]) -> bool:
+    """두 배가 같은 레인(직렬)이어야 하는가. 파일 토큰이 겹치면 확정 충돌. 어느 한쪽이라도
+    범위 불명(토큰 0개)이면 안전 우선으로 충돌 취급 — 뭘 건드릴지 모르는 배는 다른 배와
+    동시에 돌리지 않는다(그 배 혼자 레인 하나 차지 — 병렬 기회를 못 얻을 뿐 안전은 유지)."""
+    if not a or not b:
+        return True
+    return bool(a & b)
+
+
+def _assign_lanes(candidates: list[tuple[str, dict]]) -> list[list[str]]:
+    """candidates = [(clevel, ship), ...] → 레인 목록(list[list[clevel]]). 같은 레인 안은
+    직렬 실행, 서로 다른 레인은 (동시 상한 안에서) 병렬 실행 대상. 그리디 배정: 배마다
+    기존 레인 중 범위가 **겹치는** 첫 레인에 합류(=그 레인과 직렬로 묶임). 어느 레인과도
+    안 겹치면 새 레인(=병렬 기회)을 연다. 범위 불명(빈 집합)은 정의상 모든 레인과 겹치므로
+    항상 첫 레인에 합류한다 — 그 배가 아무 레인과도 동시에 돌지 않도록 안전 쪽으로 묶는다."""
+    lanes: list[list[str]] = []
+    lane_scopes: list[set[str]] = []
+    for clevel, ship in candidates:
+        scope = _estimate_ship_scope(ship)
+        joined = None
+        for i, existing_scope in enumerate(lane_scopes):
+            if _scopes_conflict(scope, existing_scope):
+                joined = i
+                break
+        if joined is not None:
+            lanes[joined].append(clevel)
+            lane_scopes[joined] |= scope
+        else:
+            lanes.append([clevel])
+            lane_scopes.append(scope)
+    return lanes
 
 
 def cycle_cap(queue) -> int:
@@ -376,6 +433,29 @@ def park_ship_for_interview(queue_path: str, task_id: str, reasons: list[str]) -
     with open(queue_path, "w", encoding="utf-8") as f:
         json.dump(queue, f, ensure_ascii=False, indent=2)
     return True
+
+
+CRUISE_PARK_NOTE_MARKER = "[러너] 크루즈(🛳️)라 정박 — 담당 세션이 쪼개서 진행해 주세요."
+
+
+def _append_cruise_park_note(queue_path: str, task_id: str) -> None:
+    """크루즈(🛳️) 배가 park될 때 note 끝에 안내를 한 번만 남긴다(배1005 ③). 이미 마커가
+    있으면 다시 안 붙인다 — 같은 배에 한 번만. 실패해도 실행을 막지 않는다(best-effort)."""
+    from queue_lock import mutate_queue  # noqa: PLC0415
+
+    def mutator(queue):
+        for ship in queue:
+            if ship.get("task_id") == task_id:
+                note = ship.get("note") or ""
+                if CRUISE_PARK_NOTE_MARKER not in note:
+                    ship["note"] = (note + ("\n" if note else "") + CRUISE_PARK_NOTE_MARKER)
+                break
+        return queue
+
+    try:
+        mutate_queue(mutator, holder="welly_auto_runner")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def parked_interview_worklist(queue: list) -> list:
@@ -1418,6 +1498,28 @@ def run_once(
         _append_log({"event": "no_ship", "mode": mode, "clevel": clevel}, log_path)
         return result
 
+    # ── dirty 판정 = 전역 skip 폐지, 배 예상 범위와 겹칠 때만 skip(배1005 ② · 2026-09-05) ──
+    # 예전엔 워킹트리가 더러우면(baseline_foreign_files) 기록만 하고 실행은 그대로 진행해
+    # 사후 스윕 검사(_check_sweep_violation)로만 걸렀다 — 이미 벌어진 뒤라 커밋까지 하고서야
+    # 실패 처리됐다(2026-09-05 01:38·01:41 sweep_violation 2건 실사고). 이제 실행 전에 배의
+    # 예상 범위(_estimate_ship_scope)와 현재 더러운 파일을 먼저 대조해, 겹치면 이번 사이클만
+    # 조용히 skip한다(쿨다운 아님 — 다음 회차에 그 파일이 정리됐으면 바로 재후보).
+    # 범위 불명(note에 파일 토큰 없음)이면 겹침을 판정할 수 없으니 전역 차단 부활 없이 그대로
+    # 진행한다 — 안전망은 여전히 기존 사후 스윕 검사가 맡는다(회귀 0).
+    if live and baseline_foreign_files:
+        ship_scope = _estimate_ship_scope(ship)
+        overlap = sorted(ship_scope & set(baseline_foreign_files)) if ship_scope else []
+        if overlap:
+            reason = f"더러운 파일과 배 예상 범위 겹침 — 이번 사이클 skip(쿨다운 아님): {', '.join(overlap[:5])}"
+            _append_log(
+                {"event": "dirty_scope_skip", "task_id": ship.get("task_id"), "overlap": overlap},
+                log_path,
+            )
+            return {
+                "mode": "dirty-scope-skip", "ship": ship, "prompt": None,
+                "executed": False, "commit": None, "reason": reason,
+            }
+
     prompt = build_orchestration_prompt(ship, clevel=clevel, nick=nick)
 
     # ── 모호성 판정: 실행(라이브)·미리보기(드라이런) 모두 이 게이트를 먼저 통과해야 한다 ──
@@ -1440,6 +1542,10 @@ def run_once(
         # 라이브: 실제 park(큐 플래그 기록) + parked 전체 목록 기준 텔레그램 핑(2단 게이트·dedup·cap).
         parked_ok = park_ship_for_interview(queue_path, ship["task_id"], ambiguity["reasons"])
         result["parked"] = parked_ok
+        if parked_ok and ship.get("priority") == AMBIGUOUS_CRUISE_PRIORITY:
+            # 크루즈는 자동 제외가 맞다(무거움) — 그냥 park만 하고 끝내면 GM 눈에 안 띄니
+            # note에 사유를 한 번만 남겨 담당 세션이 직접 쪼개도록 안내한다(배1005 ③).
+            _append_cruise_park_note(queue_path, ship["task_id"])
         parked_task_ids = _collect_parked_task_ids(queue_path)
         notifier = None
         if _ping_live():
@@ -1658,6 +1764,29 @@ def run_once(
     return result
 
 
+def _plan_cycle_lanes(clevels, queue_path, registry_path, state_path, feedback_only) -> list[list[str]]:
+    """읽기전용 — 사이클 시작 시 각 clevel의 선택 배를 미리 훑어 레인을 짠다(_assign_lanes).
+    여기서 고른 배가 실제 실행 시점(run_once 내부)엔 다른 손을 탔을 수 있다 — 상관없다,
+    run_once()가 큐를 새로 읽어 자기 게이트(모호성·쿨다운·중복집기·dirty범위)를 그대로 다시
+    통과시키므로 이 함수는 순수 스케줄링 힌트일 뿐 안전 판정을 대신하지 않는다(회귀 0)."""
+    queue = _load_queue(queue_path or DEFAULT_QUEUE_PATH)
+    registry = load_registry(registry_path)
+    state = _load_state(state_path or DEFAULT_STATE_PATH)
+    cooldown_ids = _active_cooldown_ids(state)
+    candidates = []
+    for clevel in clevels:
+        ship = select_one_low_risk_ship(clevel, queue, registry=registry,
+                                         cooldown_task_ids=cooldown_ids, feedback_only=feedback_only)
+        if ship is not None:
+            candidates.append((clevel, ship))
+    lanes = _assign_lanes(candidates)
+    planned = {c for c, _ in candidates}
+    for clevel in clevels:
+        if clevel not in planned:
+            lanes.append([clevel])  # 후보 없어도 no_ship/parked 등 결과 보고를 위해 단독 레인
+    return lanes
+
+
 def run_cycle(
     clevels: tuple[str, ...] | None = None,
     nicks: dict | None = None,
@@ -1670,13 +1799,15 @@ def run_cycle(
     ping_state_path: str | None = None,
     max_total_ships: int = MAX_SHIPS_PER_CYCLE,
     feedback_only: bool = False,
+    max_concurrent_lanes: int = MAX_CONCURRENT_LANES,
 ) -> dict:
     """
-    전 C-Level 순회(배237 phase4) — clevels(기본 DEFAULT_CLEVELS 7종) 각각에 대해
-    run_once()를 순서대로 1회씩 호출한다. clevel마다 최대 1척(선별기 구조 보장)이고,
-    사이클 전체 라이브 성공 실행이 max_total_ships에 도달하면 남은 clevel은
-    "cycle-cap-skipped"로 건너뛴다(신규 안전 로직 추가 없음 — run_once의 기존 가드를
-    그대로 clevel별로 재사용하는 얇은 순회 래퍼).
+    전 C-Level 순회(배237 phase4, 배1005 병렬화) — clevels(기본 DEFAULT_CLEVELS 7종)를
+    파일 범위가 겹치지 않는 배끼리 레인으로 묶어(_plan_cycle_lanes·_assign_lanes), 레인
+    최대 max_concurrent_lanes개를 동시에 돌린다. 같은 레인 안(파일 범위 겹침·범위 불명)은
+    여전히 run_once()를 순서대로(직렬) 호출한다 — clevel당 최대 1척은 선별기 구조가
+    그대로 보장(변경 없음). 사이클 전체 라이브 성공 실행이 max_total_ships에 도달하면
+    남은 clevel은 "cycle-cap-skipped"로 건너뛴다(기존 동작 그대로).
 
     feedback_only=True면 각 clevel 호출이 실무진 피드백 배만 후보로 본다(2026-08-05
     GM 지시). max_total_ships는 이 파라미터와 무관하게 기본값(MAX_SHIPS_PER_CYCLE=3)을
@@ -1687,19 +1818,21 @@ def run_cycle(
     ★비협상 원칙(GM 2026-07-14)★ 이 함수는 clevel별 우회 경로를 만들지 않는다 — 각
     clevel 호출이 그대로 run_once()의 is_ambiguous() 게이트를 통과해야 하므로, 배
     note·요구가 조금이라도 불명확하면 해당 clevel은 "parked"만 반환하고 절대 실행되지
-    않는다(추측 진행 금지). 전 C-Level 확장은 실행 대상 clevel 수만 넓힐 뿐, 안전
-    게이트는 clevel마다 100% 동일하게 적용된다.
+    않는다(추측 진행 금지). 병렬화는 "언제 도는가"만 바꿀 뿐, 안전 게이트는 clevel마다
+    100% 동일하게 적용된다.
 
     큐·상태·로그·핑 경로는 모든 clevel 호출에 동일하게 공유한다(task_id가 clevel
-    접두사로 이미 구분되므로 쿨다운·로그 충돌 없음).
+    접두사로 이미 구분되므로 쿨다운·로그 충돌 없음 · 큐 쓰기는 queue_lock.mutate_queue가
+    직렬화·safe_commit.py 락이 커밋을 직렬화 — 동시 레인이 늘어도 이 두 락은 그대로다).
 
     반환: {"results": {clevel: run_once 반환 dict}, "executed_count": int,
-           "cycle_order": list[str]}
+           "cycle_order": list[str], "lanes": list[list[str]]}
     """
     clevels = clevels or DEFAULT_CLEVELS
     nicks = nicks or CLEVEL_NICKS
     results: dict = {}
     executed_count = 0
+    count_lock = threading.Lock()
 
     # ★2026-08-16 GM 지시("30척 이상 되면 계속 처리") — 적체가 크면 이번 사이클 상한을 올린다.
     #   호출자가 상한을 명시했으면(기본값과 다르면) 그 뜻을 존중해 건드리지 않는다.
@@ -1713,26 +1846,41 @@ def run_cycle(
         except Exception as exc:   # 상한 계산 실패가 사이클을 막지 않는다(fail-open)
             print(f"[run_cycle] 상한 자동조정 건너뜀: {type(exc).__name__}: {exc}")
 
-    for clevel in clevels:
-        if executed_count >= max_total_ships:
-            results[clevel] = {
-                "mode": "cycle-cap-skipped", "ship": None, "prompt": None,
-                "executed": False, "commit": None,
-                "reason": f"사이클 총 상한({max_total_ships}척) 도달 — 이번 사이클 스킵",
-            }
-            continue
+    try:
+        lanes = _plan_cycle_lanes(clevels, queue_path, registry_path, state_path, feedback_only)
+    except Exception as exc:  # noqa: BLE001 — 레인 계획 실패는 전체 직렬(레인 1개)로 안전 폴백
+        print(f"[run_cycle] 레인 계획 실패 — 직렬 폴백: {type(exc).__name__}: {exc}")
+        lanes = [list(clevels)]
 
-        nick = nicks.get(clevel, clevel.upper())
-        result = run_once(
-            clevel=clevel, nick=nick, queue_path=queue_path, registry_path=registry_path,
-            state_path=state_path, log_path=log_path, live=live, claude_timeout=claude_timeout,
-            ping_state_path=ping_state_path, feedback_only=feedback_only,
-        )
-        results[clevel] = result
-        if result.get("executed") and result.get("success"):
-            executed_count += 1
+    def _run_lane(lane_clevels: list[str]) -> None:
+        nonlocal executed_count
+        for clevel in lane_clevels:
+            with count_lock:
+                if executed_count >= max_total_ships:
+                    results[clevel] = {
+                        "mode": "cycle-cap-skipped", "ship": None, "prompt": None,
+                        "executed": False, "commit": None,
+                        "reason": f"사이클 총 상한({max_total_ships}척) 도달 — 이번 사이클 스킵",
+                    }
+                    continue
+            nick = nicks.get(clevel, clevel.upper())
+            result = run_once(
+                clevel=clevel, nick=nick, queue_path=queue_path, registry_path=registry_path,
+                state_path=state_path, log_path=log_path, live=live, claude_timeout=claude_timeout,
+                ping_state_path=ping_state_path, feedback_only=feedback_only,
+            )
+            results[clevel] = result
+            if result.get("executed") and result.get("success"):
+                with count_lock:
+                    executed_count += 1
 
-    return {"results": results, "executed_count": executed_count, "cycle_order": list(clevels)}
+    with ThreadPoolExecutor(max_workers=max(1, max_concurrent_lanes)) as pool:
+        list(pool.map(_run_lane, lanes))
+
+    return {
+        "results": results, "executed_count": executed_count,
+        "cycle_order": list(clevels), "lanes": lanes,
+    }
 
 
 def _print_run_once_result(result: dict, label: str | None = None) -> None:
@@ -1767,6 +1915,36 @@ def _print_run_once_result(result: dict, label: str | None = None) -> None:
               f"error={rr.get('error')}")
     if result.get("commit"):
         print(f"{prefix}커밋: {result['commit']} (역롤백: git revert {result['commit']})")
+
+
+def _selftest() -> None:
+    """--selftest(배1005 ⑤) — 가짜 배 5척으로 레인 분배·scope 충돌 판정을 assert한다.
+    claude 미호출·큐 미접촉(순수 함수만 검증) — 실행 없이 즉시 종료."""
+    fake = [
+        ("ceo", {"task_id": "A", "title": "제목1", "note": "scripts/foo.py 수정"}),
+        ("cto", {"task_id": "B", "title": "제목2", "note": "scripts/foo.py 마저 손봄"}),  # A와 파일 겹침
+        ("cmo", {"task_id": "C", "title": "제목3", "note": "scripts/bar.py 신규"}),       # 독립
+        ("cpo", {"task_id": "D", "title": "제목4", "note": "회의록만 정리(파일 언급 없음)"}),  # 범위불명
+        ("cfo", {"task_id": "E", "title": "제목5", "note": "scripts/baz.py 정리"}),       # 독립
+    ]
+    lanes = _assign_lanes(fake)
+    assert len(lanes) == 3, f"기대 레인 3개(A+B+D 병합·C 독립·E 독립), 실제 {len(lanes)}: {lanes}"
+    ab_lane = next(lane for lane in lanes if "ceo" in lane)
+    assert "cto" in ab_lane, f"A·B는 파일이 겹치므로 같은 레인이어야: {lanes}"
+    assert "cpo" in ab_lane, f"D는 범위 불명이라 첫 겹침 레인에 안전하게 합류해야: {lanes}"
+    other_lanes = [lane for lane in lanes if lane is not ab_lane]
+    assert {"cmo"} in [set(lane) for lane in other_lanes], f"C는 독립 레인이어야: {lanes}"
+    assert {"cfo"} in [set(lane) for lane in other_lanes], f"E는 독립 레인이어야: {lanes}"
+
+    scope1 = _estimate_ship_scope({"title": "", "note": "scripts/foo.py 수정"})
+    scope2 = _estimate_ship_scope({"title": "", "note": "scripts/foo.py 마저"})
+    scope3 = _estimate_ship_scope({"title": "", "note": "scripts/bar.py 신규"})
+    assert _scopes_conflict(scope1, scope2), "같은 파일 토큰은 충돌 판정이어야"
+    assert not _scopes_conflict(scope1, scope3), "다른 파일 토큰은 비충돌이어야"
+    assert _scopes_conflict(set(), scope1), "범위 불명(빈 집합)은 항상 충돌(보수적) 처리돼야"
+
+    print(f"SELFTEST OK — 레인 {len(lanes)}개(A+B+D 병합·C 독립·E 독립): {lanes}")
+    print("SELFTEST OK — scope 충돌 판정 정상(겹침/비겹침/범위불명 3종)")
 
 
 def main() -> int:
@@ -1808,7 +1986,15 @@ def main() -> int:
              "3분 주기 cpo_inquiry_snapshot.bat에서 호출해 접수→처리 시작 지연을 줄인다). "
              "다른 게이트(가역·work_type=new 제외·모호park·쿨다운·회차상한)는 전부 그대로.",
     )
+    parser.add_argument(
+        "--selftest", action="store_true",
+        help="가짜 배 5척으로 레인 분배·scope 충돌 판정만 assert(배1005 ⑤). claude 미호출·큐 무접촉.",
+    )
     args = parser.parse_args()
+
+    if args.selftest:
+        _selftest()
+        return 0
 
     if args.interview_worklist:
         print_interview_worklist()
@@ -1843,6 +2029,9 @@ def main() -> int:
         scope = " [feedback-only]" if args.feedback_only else ""
         print(f"[welly_auto_runner] --clevel all{scope} — 사이클 실행 {cycle['executed_count']}척"
               f"(순회 순서: {', '.join(cycle['cycle_order'])})")
+        lanes = cycle.get("lanes") or []
+        lanes_desc = " | ".join(f"L{i + 1}:{'+'.join(lane)}" for i, lane in enumerate(lanes))
+        print(f"[welly_auto_runner] 레인 배정 {len(lanes)}개(동시 상한 {MAX_CONCURRENT_LANES}) — {lanes_desc}")
         for clevel in cycle["cycle_order"]:
             print("-" * 60)
             _print_run_once_result(cycle["results"][clevel], label=clevel.upper())

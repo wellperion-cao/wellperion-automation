@@ -520,6 +520,99 @@ def test_run_once_live_passes_guard_then_proceeds_to_selection(tmp_path, monkeyp
     assert result["reason"] != "테스트 차단"
 
 
+# ── dirty 범위 교집합 skip(배1005 ②) — 전역 skip 폐지, 배 예상 범위와 겹칠 때만 skip ──
+def test_run_once_live_skips_when_dirty_file_overlaps_ship_scope(tmp_path, monkeypatch):
+    # 배 note가 scripts/foo.py를 명시하고, 그 파일이 마침 더러운(미커밋) 상태 → 실행 전에
+    # skip(쿨다운 아님·claude 미호출)해야 한다 — 예전엔 이 겹침을 기록만 하고 그대로 실행해
+    # 커밋 뒤에야 사후 스윕 검사로 걸렸다(2026-09-05 실사고).
+    queue = [_ship(note="scripts/foo.py 정리")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": ["scripts/foo.py"],
+            "real_work_files": ["scripts/foo.py"], "reason": "베이스라인 foreign 파일 있음",
+        },
+    )
+
+    def _boom(*a, **kw):
+        raise AssertionError("dirty scope 겹침인데 subprocess.run(claude 호출)이 실행됨")
+
+    monkeypatch.setattr(war.subprocess, "run", _boom)
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        live=True,
+    )
+    assert result["mode"] == "dirty-scope-skip"
+    assert result["executed"] is False
+    assert result["ship"] is not None  # 배는 선택됐으나 이번엔 skip
+
+
+def test_run_once_live_proceeds_when_dirty_files_dont_overlap_ship_scope(tmp_path, monkeypatch):
+    # 더러운 파일은 있지만 배 예상 범위(scripts/foo.py)와 안 겹침(scripts/other.py) →
+    # 예전과 같이 선택 단계까지는 진행해야 한다(전역 차단 부활 금지).
+    queue = [_ship(note="scripts/foo.py 정리")]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(
+        war, "working_tree_guard",
+        lambda *a, **kw: {
+            "blocked": False, "git_error": False, "dirty_files": ["scripts/other.py"],
+            "real_work_files": ["scripts/other.py"], "reason": "베이스라인 foreign 파일 있음",
+        },
+    )
+
+    calls = []
+    monkeypatch.setattr(war, "build_orchestration_prompt", lambda *a, **kw: calls.append(1) or "p")
+
+    result = war.run_once(
+        clevel="cto", queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        live=False,  # dry-run으로 확인(claude 미호출 전제는 그대로 유지)
+    )
+    assert calls == [1]  # dirty-scope-skip으로 건너뛰지 않고 프롬프트 조립까지 도달
+    assert result["mode"] == "dry-run"
+
+
+# ── run_cycle 병렬 레인(배1005 ①) — 파일 범위 겹치는 배끼리만 같은 레인 ──
+def test_run_cycle_groups_overlapping_scope_ships_into_same_lane(tmp_path, monkeypatch):
+    queue = [
+        _ship(clevel="cmo", task_id="CMO-A", note="scripts/foo.py 수정"),
+        _ship(clevel="cto", task_id="CTO-B", note="scripts/foo.py 마저 손봄"),  # cmo와 파일 겹침
+        _ship(clevel="cpo", task_id="CPO-C", note="scripts/bar.py 신규"),       # 독립
+    ]
+    queue_path = tmp_path / "_queue.json"
+    queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
+
+    calls = []
+
+    def _fake_run_once(clevel, **kwargs):
+        calls.append(clevel)
+        return {"mode": "dry-run", "ship": None, "prompt": None, "executed": False, "commit": None}
+
+    monkeypatch.setattr(war, "run_once", _fake_run_once)
+
+    cycle = war.run_cycle(
+        clevels=("cmo", "cto", "cpo", "ceo"),
+        queue_path=str(queue_path), registry_path=None,
+        state_path=str(tmp_path / "state.json"), log_path=str(tmp_path / "log.jsonl"),
+        ping_state_path=str(tmp_path / "ping_state.json"), live=False,
+    )
+
+    lanes = cycle["lanes"]
+    cmo_lane = next(lane for lane in lanes if "cmo" in lane)
+    assert "cto" in cmo_lane, f"파일이 겹치는 cmo·cto는 같은 레인이어야: {lanes}"
+    assert not any(lane != cmo_lane and "cpo" in lane and "cmo" in lane for lane in lanes)
+    cpo_lane = next(lane for lane in lanes if "cpo" in lane)
+    assert cpo_lane is not cmo_lane, f"cpo는 파일이 안 겹치므로 독립 레인이어야: {lanes}"
+    assert set(calls) == {"cmo", "cto", "cpo", "ceo"}  # 레인 구성과 무관하게 4개 전부 실행됨
+
+
 # ── build_orchestration_prompt: git add 범위 명시 금지 문구 ──
 def test_prompt_contains_explicit_add_scope_prohibition():
     ship = _ship()
@@ -930,11 +1023,15 @@ def test_run_cycle_stops_at_total_cap_marks_remaining_clevels_skipped(tmp_path, 
         live=True, max_total_ships=2,
     )
 
-    assert calls == ["cmo", "coo"]  # 상한 도달 후 run_once 호출 자체가 안 됨
+    # 배1005 병렬화: 서로 다른 레인은 동시에 돌아 어느 2개가 먼저 상한(2척)에 닿는지는
+    # 스레드 스케줄링에 달려 비결정적이다 — 순서 대신 불변식만 검증한다.
+    assert len(calls) == 2  # 상한 도달 후 나머지 run_once 호출 자체가 안 됨
     assert cycle["executed_count"] == 2
-    assert cycle["results"]["cto"]["mode"] == "cycle-cap-skipped"
-    assert cycle["results"]["cpo"]["mode"] == "cycle-cap-skipped"
-    assert cycle["results"]["cto"]["executed"] is False
+    skipped = [c for c in ("cmo", "coo", "cto", "cpo") if cycle["results"][c]["mode"] == "cycle-cap-skipped"]
+    assert len(skipped) == 2
+    assert set(calls) | set(skipped) == {"cmo", "coo", "cto", "cpo"}
+    for c in skipped:
+        assert cycle["results"][c]["executed"] is False
 
 
 # ── run_cycle: 모호배 비협상 원칙(GM 2026-07-14 못박기) — 절대 추측 진행 금지 ──
