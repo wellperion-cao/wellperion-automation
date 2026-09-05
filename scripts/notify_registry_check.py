@@ -45,11 +45,13 @@ DRIFT_OUT = ROOT / "status" / "notify_drift.json"
 #   슬롯은 커밋 f36d56393(2026-07-23, GM 승인)로 코드가 실제 삭제됐고, 이를 전제하던
 #   등록부 항목(tg-1700-nudge-pm·tg-2200-nudge-close)도 이번에 함께 지웠다(끄기가
 #   아니라 삭제 — L21). 마커만 남기면 아무도 안 쓰는데 영구 오탐만 낸다.
+# ★시토(2026-09-05): '"21": (21, 0)' 제거 — daily_scheduler.py 자체 주석(2026-08-29 GM
+#   승인)이 "21시 마감 통 폐지, 23:00 하루 마감이 흡수"라고 적어 뒀는데 이 마커만 안
+#   따라와 영구 오탐이었다. schedule_map 이 실제로 06/12/23 세 슬롯만 등록한다.
 APSCHEDULER_MARKERS = [
     'schedule_map = {',
     '"06": (6, 0)',
     '"12": (12, 0)',
-    '"21": (21, 0)',
     '"23": (23, 0)',
     'id="daily_digest_early"',
     'id="daily_digest_late"',
@@ -71,6 +73,14 @@ KNOWN_NON_NOTIFY = {
     # 배10011(2026-07-24) — "Ops" 문자열이 NOTIFY_SHAPED_HINTS에 우연히 걸린 오탐 확인.
     # monthly_ops_sync.py 코드 직접 확인: 텔레그램/알림 호출 0건(순수 데이터 동기화 작업).
     'Wellperion-MonthlyOps-Sync-Daily',
+    # 시토(2026-09-05) — "Ops" 문자열이 NOTIFY_SHAPED_HINTS에 걸린 오탐. schtasks 코멘트와
+    # scripts/ops_kakao_export_2130.bat → kakao_export_chat.py 코드 직접 확인: 카톡방을
+    # export 만 하고 send_telegram/send_kakao 류 호출 0건(export only, no digest/send).
+    'Wellperion-Ops-Kakao-Export-2130',
+    # 시토(2026-09-05) — "Sales"·"Report" 둘 다 걸린 오탐. scripts/sales_ops_summary.bat →
+    # sales_report_ops_summary.py --contact 코드 직접 확인: 매출보고 시트 셀만 채우고
+    # 발신 호출 0건(시트 자동 채움 전용, 2026-09-04 GM 확정).
+    'Wellperion-SalesReport-OpsSummary-0900',
 }
 
 

@@ -2,6 +2,7 @@
   "_doc": "정기·조건부·이벤트 텔레그램/카카오톡 발신 전체의 단일 SSOT. GM 지시(2026-07-20) — 자율현황 통합 알림 보드가 이 파일을 렌더. 신규 발신 추가 시 여기 먼저 등록(scripts/notify_registry_check.py 가 코드↔등록부 드리프트를 대조).",
   "_schema": "id · when(표시용 시각/주기) · when_sort(정렬용 HHMM, 부정기=null) · freq(daily|weekly|monthly|conditional|event) · channel(telegram|kakao) · room(방 이름) · chat_id(숫자 chat_id, 모르면 null) · what(한 줄 설명) · owner(닉네임) · trigger(apscheduler|schtasks|gas_time|gas_event|manual) · state(live|off|dead) · state_note(꺼진·죽은 이유) · source(파일:줄) · gen(선택·비파괴 — 스케줄 생성기 Phase1 선언, scripts/schedule_generator.py --plan 소비. trigger=schtasks·state=live 항목에만 추가 가능) · job_id(선택 — apscheduler 잡 id. 코드의 add_job(id=…) 와 1:1 로 이어 준다. 한 잡이 여러 발신을 낳으면 각 항목에 같은 id 를, 한 발신이 여러 잡에서 나가면 배열로. notify_registry_check 의 UNREGISTERED_JOB 판정이 이 칸을 본다 — 줄번호(source)는 코드가 움직이면 썩지만 잡 id 는 안 썩는다)",
   "_gen_schema": "gen.task(schtasks 작업명, 생략시 id 사용) · gen.script(레포 루트 기준 .py 상대경로) · gen.args(문자열 배열) · gen.py(인터프리터 절대경로, 생략시 C:\\Python314\\python.exe) · gen.schedule{kind:daily|weekly|monthly|interval, at:'HH:MM', dow:'MON'.. (weekly), day:1..31 (monthly), every:분 (interval)} · gen.log(레포 루트 기준 로그 상대경로) · gen.hidden(true=vbs 숨김런처 경유). Phase1은 --plan(현실 대조 diff)만 — 이 필드에서 vbs/bat/schtasks를 실제로 생성하지 않음(Phase2/3 승인 전까지).",
+  "_bookend_doc": "bookend(선택 — \"start\"|\"end\") · 하루 양끝(시작·마무리) 알림 4묶음(카톡 07:40/22:30·텔레그램 08:00/23:00 + 사본·미발신 감시) 표시용. 자율현황 「알림 한 장」이 이 태그가 붙은 항목만 골라 하루 양끝 소표를 그린다(GM 지시 2026-09-05).",
   "generated_at": "2026-09-03",
   "items": [
     {
@@ -29,12 +30,28 @@
       "channel": "kakao",
       "room": "다이어트캠프 이승기 대표님",
       "chat_id": null,
-      "what": "브랜드 가이드 문답 — 하루 한 가지씩 여쭙고 답을 반영",
+      "what": "대표님 답변을 읽고 정리해 답장(브랜드 가이드 문답 원고 시리즈는 09-02 이 방식으로 대체)",
       "owner": "시토",
-      "trigger": "apscheduler",
+      "trigger": "schtasks",
       "state": "live",
-      "state_note": "GM 지시 2026-08-26 · 배791. 등록부에 이 방 자체가 없었다 — 실측 2026-08-31 07:00:44 발신 확인(배798 감사)",
-      "source": "scripts/kakao_rooms.json all_rooms · 배791"
+      "state_note": "GM 지시 2026-08-26 · 배791 로 시작했다가, 2026-09-02 대표님 설문 답변 도착(status/diet_camp_relay.json)으로 남은 질문이 다른 산출물에 흡수되며 GM 지시(2026-09-02)로 발신 방식을 Wellperion-DietCamp-Agent(scripts/diet_camp_agent.py 매일 07:00 1회)로 바꿨다. 이 항목은 그 갈아탄 뒤 방식을 가리키도록 시토(2026-09-05)가 갱신 — 옛 원고 시리즈 잡은 kk-diet-camp-morning-0700(daily_scheduler.py apscheduler)으로 분리해 별도 등록, state=off.",
+      "source": "Wellperion-DietCamp-Agent · scripts/diet_camp_agent.py"
+    },
+    {
+      "id": "kk-diet-camp-morning-0700",
+      "when": "07:00",
+      "when_sort": "0700",
+      "freq": "daily",
+      "channel": "kakao",
+      "room": "다이어트캠프 이승기 대표님",
+      "chat_id": null,
+      "what": "브랜드 가이드 문답 원고 시리즈(하루 한 가지씩 여쭙고 답 반영) — GM 승인 2026-08-29",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "off",
+      "state_note": "시토(2026-09-05) 신규 등록 — daily_scheduler.py 잡 diet_camp_morning_0700 이 등록부 어디에도 없어 UNREGISTERED_JOB 으로 잡혔다. status/diet_camp_relay.json enabled=false(2026-09-02 시보 정지) — 4~7회차 질문이 다른 페이지 질문에 흡수돼 이 원고 시리즈 자체를 끈 상태. 되살리려면 GM 지시로 enabled=true.",
+      "source": "telegram_bot/daily_scheduler.py run_diet_camp_morning()",
+      "job_id": "diet_camp_morning_0700"
     },
     {
       "id": "win-0730-ig-review",
@@ -79,7 +96,7 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-09-03 수신처 변경 — ★운영+시설+지원+주차(4부서 합본)에서 ★운영부로 좁혔다. 여럿에게 같이 보이면 아무도 자기 것으로 안 잡는다(실측 그날 8건 중 20일 넘은 것 3건·최장 24일, 전날엔 44일짜리). 처리 책임이 모이는 실장 방 한 곳으로(약속 L24). 부서별 인지는 15분 주기 「📮 새 접수」 통지가 종전대로 4부서방에 계속 나가 유지된다. 킬스위치 status/ops_digest_send.json overdue_alert_enabled. ▸[같은 날 GM 정정 2026-09-03] \"종합접수처 전체는 중간관리자방에만\" — ★운영부 → ★중간관리자 로 옮김. 실장·소장·나우열M 이 같이 있어 부서를 가로지르는 배정이 한 번에 끝난다.",
-      "source": "scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)"
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)"
     },
     {
       "id": "win-0730-ops-digest",
@@ -125,7 +142,7 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸2026-08-29 GM 카톡 중복 정리 — 같은 목록이 아침·저녁 두 번 전문으로 나가던 것을 아침은 건수만으로 줄였다.",
-      "source": "scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_LESSON)"
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_LESSON)"
     },
     {
       "id": "kakao-0758-upcoming-schedule",
@@ -140,7 +157,7 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-08-29 '별도로 만들자 전사일정링크를 태워서' — 아침 4통이 다 나간 뒤, 08:00 텔레그램 항로와 겹치기 전 07:58.",
-      "source": "scripts/send_ops_digest.py MORNING_SEND_TIMES['일정']"
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py MORNING_SEND_TIMES['일정']"
     },
     {
       "id": "win-0800-ceo",
@@ -188,7 +205,7 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "업무관리 몫은 win-0800-ceo 가 이미 등록돼 있었는데 AI관리 몫만 빠져 있었다 — 실측 2026-08-31 08:00:35 발신 확인(배798 감사)",
-      "source": "wellperion-agents/scripts/ceo_morning_pipeline.py send_split_reports · 예약작업 Wellperion-CEO-Morning-Brief-0800-Live"
+      "source": "Wellperion-CEO-Morning-Brief-0800-Live · wellperion-agents/scripts/ceo_morning_pipeline.py send_split_reports"
     },
     {
       "id": "win-0800-upward-reminder",
@@ -497,11 +514,11 @@
       "channel": "telegram",
       "room": "하루",
       "chat_id": -5074392439,
-      "what": "🌙 오늘 하신 일 — GM 저녁 정리본(끝낸 것·오늘 일정·진행 중 과제)",
+      "what": "🌙 오늘 하신 일 — GM 저녁 정리본(끝낸 것·오늘 일정·진행 중 과제) — 구 잡, v2 가동 후 무발신",
       "owner": "웰리",
       "trigger": "apscheduler",
-      "state": "live",
-      "state_note": "08:00 브리핑의 짝. 2026-08-12 부터 퇴근인사·저녁루틴·명언 3줄이 여기 붙는다(21시 업무보고방에서 옮김 · 배541).",
+      "state": "dead",
+      "state_note": "08:00 브리핑의 짝. 2026-08-12 부터 퇴근인사·저녁루틴·명언 3줄이 여기 붙는다(21시 업무보고방에서 옮김 · 배541). ★시토(2026-09-05): 하루방 v2(gm_checkin.haru_v2, HARU_V2_START=2026-09-01) 가동 후 run_gm_evening_recap 이 `haru_v2() != v2_slot` 이면 즉시 return — 이 잡(v2_slot=False)은 2026-09-01부터 무발신이다. cron 은 코드에 남아 있으나(재기동 없는 전환용) 실제 발송은 tg-2000-gm-recap-v2 가 대신한다.",
       "source": "telegram_bot/daily_scheduler.py run_gm_evening_recap()",
       "job_id": "gm_evening_recap_2030",
       "surface": "g1",
@@ -560,11 +577,11 @@
       "channel": "telegram",
       "room": "하루",
       "chat_id": -5074392439,
-      "what": "저녁 체크인 설문(하루 돌아보기 1문항씩)",
+      "what": "저녁 체크인 설문(하루 돌아보기 1문항씩) — 웰리 결정 1(2026-08-29)로 v2 가동 후 폐지",
       "owner": "웰리",
       "trigger": "apscheduler",
-      "state": "live",
-      "state_note": "",
+      "state": "dead",
+      "state_note": "★시토(2026-09-05): 하루방 v2 가동(2026-09-01) 후 run_gm_checkin() 이 `if _ck.haru_v2(): return`(\"22:00 저녁 설문 — v2 폐지\")으로 이 잡을 무조건 건너뛴다. 취침 안내 한 줄은 18:00 haru_notice_1800 꼬리로 흡수됐다(웰리 결정 1). cron 은 코드에 남아 있으나 실제 발송 0.",
       "source": "telegram_bot/daily_scheduler.py run_gm_checkin()",
       "job_id": "gm_checkin_2200",
       "surface": "g1",
@@ -578,13 +595,85 @@
       "channel": "telegram",
       "room": "하루",
       "chat_id": -5074392439,
+      "what": "한 주 카드 — 지난 7일 체크인 도달율 — 구 잡, v2 가동 후 무발신",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "dead",
+      "state_note": "★시토(2026-09-05): 하루방 v2 가동(2026-09-01) 후 run_gm_checkin(weekly=True, v2_slot=False) 이 `haru_v2() != v2_slot` 로 즉시 return — 이 잡은 무발신이다. 주간 카드는 일 21:10 tg-sun2110-gm-weekcard-v2 로 옮겨졌다(웰리 결정, GM 지시 2026-08-29).",
+      "source": "telegram_bot/daily_scheduler.py run_gm_checkin() week_card",
+      "job_id": "gm_checkin_week_sun2210",
+      "surface": "g1",
+      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
+    },
+    {
+      "id": "tg-1200-haru-notice",
+      "when": "12:00",
+      "when_sort": "1200",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "하루",
+      "chat_id": -5074392439,
+      "what": "🍚 점심 루틴 안내(식사·간식 가볍게, 체크인 13:30 예고)",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "시토(2026-09-05) 신규 등록 — daily_scheduler.py 잡 haru_notice_1200 이 등록부 어디에도 없어 UNREGISTERED_JOB 으로 잡혔다. 하루방 v2 신설 통(GM 지시 2026-08-29 · 2026-09-01 가동, gm_checkin.haru_v2 게이트).",
+      "source": "telegram_bot/daily_scheduler.py run_haru_notice('lunch')",
+      "job_id": "haru_notice_1200",
+      "surface": "g1",
+      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
+    },
+    {
+      "id": "tg-1800-haru-notice",
+      "when": "18:00",
+      "when_sort": "1800",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "하루",
+      "chat_id": -5074392439,
+      "what": "🌆 저녁 루틴 안내(식사·운동, 체크인 21:00 예고, 취침 23시 전 한 줄)",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "시토(2026-09-05) 신규 등록 — daily_scheduler.py 잡 haru_notice_1800 이 등록부 어디에도 없어 UNREGISTERED_JOB 으로 잡혔다. 하루방 v2 신설 통 — 22:00 저녁 설문 폐지로 빠진 취침 안내 한 줄을 여기 꼬리로 흡수(웰리 결정 1, GM 지시 2026-08-29).",
+      "source": "telegram_bot/daily_scheduler.py run_haru_notice('dinner')",
+      "job_id": "haru_notice_1800",
+      "surface": "g1",
+      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
+    },
+    {
+      "id": "tg-2000-gm-recap-v2",
+      "when": "월~토 20:00",
+      "when_sort": "2000",
+      "freq": "daily",
+      "channel": "telegram",
+      "room": "하루",
+      "chat_id": -5074392439,
+      "what": "🌙 오늘 하신 일 — GM 저녁 정리본, 담백 정리 통(퇴근인사·명언 없이)",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "시토(2026-09-05) 신규 등록 — daily_scheduler.py 잡 gm_evening_recap_2000_v2 이 등록부 어디에도 없어 UNREGISTERED_JOB 으로 잡혔다. tg-2030-gm-recap(20:30 구 잡)을 대체 — 하루방 v2 가동(2026-09-01)으로 20:30→20:00 으로 당겼다(웰리 결정, GM 지시 2026-08-29).",
+      "source": "telegram_bot/daily_scheduler.py run_gm_evening_recap(v2_slot=True)",
+      "job_id": "gm_evening_recap_2000_v2",
+      "surface": "g1",
+      "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
+    },
+    {
+      "id": "tg-sun2110-gm-weekcard-v2",
+      "when": "일 21:10",
+      "when_sort": "2110",
+      "freq": "weekly",
+      "channel": "telegram",
+      "room": "하루",
+      "chat_id": -5074392439,
       "what": "한 주 카드 — 지난 7일 체크인 도달율",
       "owner": "웰리",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "",
-      "source": "telegram_bot/daily_scheduler.py run_gm_checkin() week_card",
-      "job_id": "gm_checkin_week_sun2210",
+      "state_note": "시토(2026-09-05) 신규 등록 — daily_scheduler.py 잡 gm_checkin_week_sun2110_v2 이 등록부 어디에도 없어 UNREGISTERED_JOB 으로 잡혔다. tg-sun2210-gm-weekcard(일 22:10 구 잡)를 대체 — 하루방 v2 가동(2026-09-01)으로 22:10→21:10 으로 당겼다(웰리 결정, GM 지시 2026-08-29).",
+      "source": "telegram_bot/daily_scheduler.py run_gm_checkin(weekly=True, v2_slot=True)",
+      "job_id": "gm_checkin_week_sun2110_v2",
       "surface": "g1",
       "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
     },
@@ -931,7 +1020,7 @@
       "state": "live",
       "state_note": "[GM 상시 지시 2026-09-03] \"이제 항상 결재건은 중간관리자방에 자동 전달해줘 즉시 전달\". 종전 17:05 합본 슬롯에서 하루 한 번 돌던 것을 10분 주기로 바꿨다 — 오전 결재가 저녁까지 묵던 자리다. 같은 날 GM 승인으로 발신 게이트(AUTO_PIPELINE_SENDERS \"대표결재전달\")를 열었고, 오늘 3건 + 과거 서명 16건(정리 2통)을 실제로 발송했다. 밤 22~08시는 사람 방이라 보내지 않고 아침 첫 회차에 밀린 건이 나간다.",
       "source": "telegram_bot/daily_scheduler.py _run_rep_approval_relay (IntervalTrigger 10분) → scripts/rep_approval_relay.py",
-      "job_id": "mgmt_notice_digest_1705"
+      "job_id": "rep_approval_relay_immediate"
     },
     {
       "id": "kakao-1200-work-intake",
