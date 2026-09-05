@@ -330,6 +330,30 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260905-31",
+          "no": "31",
+          "got": "업무관리 방 발신을 GM 본인 텔레그램 계정으로 (🔒 결재)",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:46",
+          "end": "16:47",
+          "minutes": 1,
+          "upload": "✅ 올림 (aafc72218)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-32",
+          "no": "32",
+          "got": "업무지시 규격 — 첫마디 CHRO야 + 업무명/담당자/시작일/종료일/내용 · GM 계정으로 보내면 나우열M 쪽 CHRO 가 바로 등록",
+          "did": "발신기 레인에 --chro-task 템플릿 추가 요구 · 메모리 박제",
+          "start": "16:48",
+          "end": "16:48",
+          "minutes": 0,
+          "upload": "✅ 올림 (aafc72218)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260905-1003",
           "no": "03",
           "got": "키오스크 접수처에 종합접수처 들어가보면 접수하기버튼이 생겼는데 의미없는 버튼이라 삭제",
@@ -597,22 +621,40 @@
           "ref": "GM-20260905-1033",
           "no": "33",
           "got": "텔레그램 업무보고봇 말고 내 계정으로도 가능하지?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:46",
+          "minutes": 1,
+          "upload": "✅ 올림 (aafc72218)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-1034",
+          "no": "34",
+          "got": "GM계정으로",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:46",
+          "end": "16:47",
+          "minutes": 1,
+          "upload": "✅ 올림 (aafc72218)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-1035",
+          "no": "35",
+          "got": "업무지시의 경우    CHRO야   이부분을 꼭 첫마디에 넣고 업무에 대한 내용을",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:47",
+          "end": "16:49",
+          "minutes": 1,
+          "upload": "✅ 올림 (aafc72218)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "11:14",
-          "area": "작업",
-          "event": "GM 결재 4건 반영 — 7채널 확정·fit·라이브 홈(시모 전달) · 배1011 실장 검토 요청 발송 + 요금인상안 GM업무·월간계획 등록",
-          "detail": "커밋 a3cfddee7 · 배 11197"
-        },
         {
           "time": "11:16",
           "area": "작업",
@@ -776,41 +818,32 @@
           "detail": "커밋 4a8a4268b · 배 11197"
         },
         {
-          "time": "16:39",
-          "area": "작업",
-          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 1edf524ed · 배 11197"
-        },
-        {
           "time": "16:43",
           "area": "작업",
           "event": "텔레그램 업무관리 방(나우열M) 첫 통 · 배886 갱신 · 시토 배1062",
           "detail": "커밋 aafc72218 · 배 11197"
+        },
+        {
+          "time": "16:47",
+          "area": "작업",
+          "event": "텔레그램 사용자 세션 파일(*.session) gitignore — GM 계정 발신기 준비",
+          "detail": "커밋 52a9ee35d · 배 11197"
+        },
+        {
+          "time": "16:49",
+          "area": "작업",
+          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+          "detail": "커밋 0a8d84688 · 배 11197"
         }
       ],
-      "count": 50,
-      "done": 49,
-      "open": 1,
+      "count": 54,
+      "done": 54,
+      "open": 0,
       "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-1033",
-          "no": "33",
-          "got": "텔레그램 업무보고봇 말고 내 계정으로도 가능하지?",
-          "did": "",
-          "start": "16:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -1076,36 +1109,12 @@
           "start": "16:39",
           "end": "16:41",
           "minutes": 2,
-          "upload": "✅ 올림 (abddf5860)",
+          "upload": "✅ 올림 (0da80a1ed)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "15:45",
-          "area": "작업",
-          "event": "배1044 5종 액션→서버주소 표 추가 (배1039-A 연장)",
-          "detail": "커밋 922fc6512 · 배 11286"
-        },
-        {
-          "time": "15:48",
-          "area": "작업",
-          "event": "배1044 종결 DONE — 시포 화면 GAS 직독 5종 서버 라우트 확인 완료",
-          "detail": "커밋 e6f6ea8c4 · 배 11286"
-        },
-        {
-          "time": "15:52",
-          "area": "작업",
-          "event": "종합접수처 서버 원장 상태갱신 API 추가 — 배984 이후 시트동결로 GAS reg_update 실패하는 갭 메움 (배1039-C)",
-          "detail": "커밋 22890f67c · 배 11286"
-        },
-        {
-          "time": "15:55",
-          "area": "작업",
-          "event": "/api/reception/update 없는ID 응답이 500으로 새던 버그 수리 (배1039-C)",
-          "detail": "커밋 9c83578da · 배 11286"
-        },
         {
           "time": "15:55",
           "area": "작업",
@@ -1261,6 +1270,30 @@
           "area": "작업",
           "event": "매출보고서 서버 판 1차 — 업무보고방 병행 발송 (배1061)",
           "detail": "커밋 abddf5860 · 배 11286"
+        },
+        {
+          "time": "16:47",
+          "area": "작업",
+          "event": "notify_drift.json 갱신 — 드리프트 13→0 스냅샷 반영",
+          "detail": "커밋 845161ff1 · 배 11286"
+        },
+        {
+          "time": "16:47",
+          "area": "작업",
+          "event": "상담봇 출력검사 오탐 수리 — 답 검사에 질문용 금지어(_forbidden_hit) 재사용하던 게 원인(\"계약\" 낱말만으로 핸드오프) · _output_unsafe 신설 + _grounded 시각표기(앞자리 0)·U",
+          "detail": "커밋 90617de4a · 배 11286"
+        },
+        {
+          "time": "16:48",
+          "area": "작업",
+          "event": "매출보고서 서버 판 — 배포 경로(sparse-checkout) 대응 + 회원수 천단위 콤마",
+          "detail": "커밋 0da80a1ed · 배 11286"
+        },
+        {
+          "time": "16:49",
+          "area": "작업",
+          "event": "배1036 브리핑 갱신 — 출력검사 오탐 원인·수리 기록(실제 원인은 _grounded 아닌 _forbidden_hit 재사용)",
+          "detail": "커밋 e7dfdac61 · 배 11286"
         }
       ],
       "count": 22,
@@ -2592,7 +2625,19 @@
           "start": "16:34",
           "end": "16:38",
           "minutes": 3,
-          "upload": "✅ 올림 (bb6aac109)",
+          "upload": "✅ 올림 (1be798f3b)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260905-17",
+          "no": "17",
+          "got": "정보 축적 0원 원칙 — 학습 4길 Max/사람 · Bedrock 은 손님 라이브만 · 설계 §10",
+          "did": "",
+          "start": "16:48",
+          "end": "16:48",
+          "minutes": 0,
+          "upload": "✅ 올림 (1be798f3b)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2988,9 +3033,33 @@
           "start": "16:34",
           "end": "16:38",
           "minutes": 4,
-          "upload": "✅ 올림 (bb6aac109)",
+          "upload": "✅ 올림 (1be798f3b)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9037",
+          "no": "37",
+          "got": "일단 기본적으로 정보가 많이 쌓여야지 그 정보를 토대로 상담이 가능해지니까 그 정보를 쌓는데 돈이 들면 안되지?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:47",
+          "end": "16:48",
+          "minutes": 0,
+          "upload": "✅ 올림 (1be798f3b)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9038",
+          "no": "38",
+          "got": "카카오톡으로 질문과 답을 받아서 정보를 쌓는건 맞는데, 정말 중요한 어떤 정보를 왜 쌓는지도 계속 쌓아둬야하고, 처음에 기반을 잡는 부분에 대해서는 정말 다양한 질문 세례들이 있어야할 것 같은데?",
+          "did": "",
+          "start": "16:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -3149,16 +3218,37 @@
           "area": "작업",
           "event": "상담봇 테스트=자산 — 시험 세트(웰 30·다캠 22·주제 광맥 120) + 테스트 원장 log.jsonl + 평가(--rate) · 세일즈 원칙 5(§3-3) · 학습 원장 프로그램(§10) · sales_styl",
           "detail": "커밋 bb6aac109 · 배 11305"
+        },
+        {
+          "time": "16:48",
+          "area": "작업",
+          "event": "상담봇 §10 — 정보 축적은 0원 원칙(학습 4길 = 사람 답 + Max 도구 · Bedrock 은 손님 라이브만) (GM 2026-09-05)",
+          "detail": "커밋 1be798f3b · 배 11305"
         }
       ],
-      "count": 47,
-      "done": 47,
-      "open": 0,
+      "count": 50,
+      "done": 49,
+      "open": 1,
       "avg_minutes": 2,
-      "work_count": 26,
+      "work_count": 27,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-9038",
+          "no": "38",
+          "got": "카카오톡으로 질문과 답을 받아서 정보를 쌓는건 맞는데, 정말 중요한 어떤 정보를 왜 쌓는지도 계속 쌓아둬야하고, 처음에 기반을 잡는 부분에 대해서는 정말 다양한 질문 세례들이 있어야할 것 같은데?",
+          "did": "",
+          "start": "16:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     }
   },
