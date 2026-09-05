@@ -149,9 +149,12 @@ function loadFaq(){
       };
       body.appendChild(tr);
     });
+    var persona = p.persona || {};
     document.getElementById("infoBody").innerHTML =
       '<tr><th>이름</th><td>' + esc(p.name) + '</td></tr>' +
-      '<tr><th>봇 이름</th><td>' + esc(p.bot_persona) + '</td></tr>' +
+      '<tr><th>상담원 이름</th><td>' + esc(persona.name) + '</td></tr>' +
+      '<tr><th>인사말</th><td>' + esc(persona.greeting) + '</td></tr>' +
+      '<tr><th>핸드오프 문구</th><td>' + esc(persona.handoff) + '</td></tr>' +
       '<tr><th>상태</th><td>' + esc(p.status) + '</td></tr>' +
       '<tr><th>예약 링크</th><td>' + esc(p.reservation_url) + '</td></tr>' +
       '<tr><th>FAQ 수</th><td>' + p.faq_count + ' (확정 ' + p.verified_count + ')</td></tr>';

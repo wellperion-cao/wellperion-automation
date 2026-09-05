@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>상담봇</title>
+<title>상담</title>
 <style>
 /* 색 토큰 = erp/brand/tokens.css 값 그대로 인라인(이 페이지는 로그인 없이 열려 관문 뒤 자산을 못 불러온다) */
 :root{--paper:#F4F0EB;--ink:#221F20;--accent-text:#8F7659;--beige:#B79F8A;--line:rgba(34,31,32,.14);--good:#2E6B3A;--bad:#B3402B}
@@ -10,11 +10,9 @@ body{margin:0;padding:0;background:var(--paper);color:var(--ink);font:15px/1.6 '
 .wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:#fff}
 header{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 header h1{margin:0;font-size:17px;font-weight:700;flex:1}
-.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;border:1px solid var(--line);color:var(--accent-text)}
-.badge.ok{color:var(--good);border-color:transparent;background:rgba(46,107,58,.12)}
-.badge.draft{color:var(--accent-text);background:rgba(183,159,138,.18)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;margin-right:5px}
+.status{font-size:11.5px;color:var(--accent-text);white-space:nowrap}
 .greet{padding:14px 18px 6px;font-size:14px;color:var(--ink)}
-.greet b{color:var(--accent-text)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding:6px 18px 14px}
 .chip{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;padding:7px 12px;border-radius:16px;cursor:pointer}
 .chip:hover{border-color:var(--beige)}
@@ -34,12 +32,12 @@ footer a{color:var(--accent-text)}
 </style>
 </head><body>
 <div class="wrap">
-<header><h1 id="botName">상담봇</h1><span class="badge" id="badge">불러오는 중</span></header>
-<div class="greet">안녕하세요, <b id="botName2">상담봇</b>입니다. 궁금한 것을 짧게 물어보세요.</div>
+<header><h1 id="botName">상담</h1><span class="status"><span class="dot"></span>응답 가능</span></header>
+<div class="greet" id="greet">궁금한 것을 편하게 물어보세요.</div>
 <div class="chips" id="chips"></div>
 <div id="log"></div>
 <form id="askForm"><input id="q" placeholder="궁금한 것을 입력하세요" autocomplete="off" required><button type="submit">보내기</button></form>
-<footer id="foot">이 봇은 자주 묻는 질문(FAQ) 만 답합니다.</footer>
+<footer id="foot"></footer>
 </div>
 <script>
 (function(){
@@ -109,16 +107,17 @@ document.getElementById("askForm").addEventListener("submit", function(e){
 });
 
 fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
-  var name = p.name || "웰페리온";
-  var persona = p.bot_persona || (name + " AI");
-  document.title = persona + " 상담봇";
-  document.getElementById("botName").textContent = persona;
-  document.getElementById("botName2").textContent = persona;
+  var name = (p.persona && p.persona.name) || p.name || "상담";
+  document.title = name;
+  document.getElementById("botName").textContent = name;
+  if (p.persona && p.persona.greeting) document.getElementById("greet").textContent = p.persona.greeting;
   reservationUrl = p.reservation_url || "";
-  var live = /라이브/.test(p.status || "");
-  var badge = document.getElementById("badge");
-  badge.textContent = live ? "확정" : "초안";
-  badge.className = "badge " + (live ? "ok" : "draft");
+  var c = p.contact || {};
+  var footBits = [];
+  if (c.phone) footBits.push('<a href="tel:' + c.phone.replace(/[^0-9+]/g, "") + '">📞 ' + c.phone + '</a>');
+  if (c.kakao) footBits.push('<a href="' + c.kakao + '" target="_blank" rel="noopener">💬 카카오톡</a>');
+  if (c.naver_place) footBits.push('<a href="' + c.naver_place + '" target="_blank" rel="noopener">📍 위치</a>');
+  document.getElementById("foot").innerHTML = footBits.join(" · ");
   var chips = p.chips || [];
   var wrap = document.getElementById("chips");
   chips.slice(0, 6).forEach(function(c){

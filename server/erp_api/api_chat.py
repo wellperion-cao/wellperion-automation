@@ -132,7 +132,13 @@ def _best_match(q: str, faq: list):
     return best, best_score
 
 
-def _fallback_text(meta: dict) -> str:
+def _fallback_text(tenant: str, meta: dict) -> str:
+    """못 답할 때 문구 — 테넌트 페르소나(identity.counselor_persona.handoff)가 있으면 그걸 쓴다(사람 상담원
+    말투 · 배1036 GM 지시). 없으면 옛 고정 문구 + 예약 링크(스포짐처럼 페르소나 미수령인 테넌트 폴백)."""
+    persona = _persona_of(tenant)
+    handoff = persona.get("handoff")
+    if handoff:
+        return handoff
     url = (meta or {}).get("reservation_url") or ""
     base = "정확한 안내를 위해 상담 예약을 도와드릴게요."
     return f"{base} 예약: {url}" if url else base
@@ -171,7 +177,7 @@ async def chat(tenant: str, request: Request):
         body = {}
     q = str((body or {}).get("q") or "").strip()
     data = _load_faq(tenant)
-    fallback = _fallback_text(data.get("meta"))
+    fallback = _fallback_text(tenant, data.get("meta"))
     if not q or _forbidden_hit(q):
         _log(tenant, q, False, None)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
@@ -179,7 +185,8 @@ async def chat(tenant: str, request: Request):
         item, score = _best_match(q, data.get("faq") or [])
         if item and score >= MATCH_THRESHOLD:
             _log(tenant, q, True, item.get("id"))
-            out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
+            answer = _natural_answer(tenant, q, item)   # ANTHROPIC_API_KEY 없으면 item['a'] 그대로(회귀 0 · 배1036 GM③)
+            out = {"ok": True, "answered": True, "answer": answer, "faq_id": item.get("id"), "tenant": tenant}
         else:
             _log(tenant, q, False, None)
             out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
@@ -368,6 +375,81 @@ def _load_profile(tenant: str) -> dict:
             return {}
 
 
+def _persona_of(tenant: str) -> dict:
+    return (_load_profile(tenant).get("identity") or {}).get("counselor_persona") or {}
+
+
+# ── 배1036 GM 추가 지시(2026-09-05) — 자연문 재작성 계층(L2) ─────────────────────────────
+# ①FAQ 문장 그대로가 아니라 진짜 상담원처럼 말하기 ②질문이 영어면 영어로 ③서버에 ANTHROPIC_API_KEY 가
+# 없으면 이 계층 전체를 건너뛰고 item['a'] 그대로(회귀 0 — 지금 서버엔 키가 없다·GM 결재 뒤 시토가 넣는다).
+_ANTHROPIC_CLIENT = (None, False)   # (client|None, tried) — 최초 1회만 만들고 재사용(요청마다 새 client 금지)
+_DIGITS_RE = re.compile(r"\d+")
+
+
+def _anthropic_client():
+    global _ANTHROPIC_CLIENT
+    client, tried = _ANTHROPIC_CLIENT
+    if tried:
+        return client
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic
+            client = anthropic.Anthropic()
+        except ImportError:
+            client = None   # ponytail: SDK 미설치 — 키가 와도 이 계층은 그냥 스킵(회귀 0 유지)
+    _ANTHROPIC_CLIENT = (client, True)
+    return client
+
+
+def _is_english_q(q: str) -> bool:
+    """한글이 하나도 없고 영문자가 있으면 영어 질문으로 본다(1차 한·영만 · 배1036 GM②)."""
+    return not re.search(r"[가-힣]", q or "") and bool(re.search(r"[A-Za-z]", q or ""))
+
+
+def _grounded(text: str, source: str) -> bool:
+    """모델 출력에 근거(FAQ 원문)에 없는 숫자가 새로 등장하면 False(배1036 GM① 근거 밖 숫자 차단)."""
+    src_nums = set(_DIGITS_RE.findall(source or ""))
+    return all(n in src_nums for n in _DIGITS_RE.findall(text or ""))
+
+
+def _faq_system_block(tenant: str, persona: dict, faq: list) -> str:
+    """system 프롬프트 — 테넌트 FAQ 전체(질문마다 안 바뀌는 내용)를 담아 prompt caching 이 먹게 한다(배1036 GM①).
+    실제로 어느 FAQ 를 근거로 쓸지는 매 요청 user 메시지의 [근거 FAQ id] 로 지정한다(엉뚱한 근거 차단)."""
+    name = persona.get("name") or (tenant + " 상담")
+    tone = persona.get("emoji") or "적당히"
+    lines = ["- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq]
+    return ("당신은 '%s' 상담원입니다. 손님에게 짧고 자연스럽게, 진짜 상담원처럼 답합니다(FAQ 문장을 그대로 읽지 않는다). "
+            "이모지는 '%s' 수준으로 씁니다. 아래 [FAQ 전체]가 유일한 근거입니다 — 여기 없는 숫자·사실은 만들지 않습니다. "
+            "매 요청에서 지정된 FAQ id 하나만 근거로 답하고, 다른 항목은 어투 참고만 합니다.\n\n[FAQ 전체]\n%s"
+            % (name, tone, "\n".join(lines)))
+
+
+def _natural_answer(tenant: str, q: str, item: dict) -> str:
+    """FAQ 원문을 상담원 목소리로 재작성 — client 없으면(키 없음) 즉시 원문 그대로. 실패·금지어·근거 밖
+    숫자는 전부 원문으로 안전하게 떨어진다(모델 호출이 답을 더 나쁘게 만들 수는 있어도 틀리게 만들진 못한다)."""
+    base = item.get("a", "")
+    client = _anthropic_client()
+    if not client:
+        return base
+    persona = _persona_of(tenant)
+    faq = _load_faq(tenant).get("faq") or []
+    system = _faq_system_block(tenant, persona, faq)
+    lang_hint = "질문이 영어이니 영어로 답하세요." if _is_english_q(q) else "한국어로 답하세요."
+    user = "[근거 FAQ id: %s] 손님 질문: %s\n%s 답변 문장만 출력하세요(설명·따옴표 없이)." % (item.get("id"), q, lang_hint)
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-5", max_tokens=400,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user}],
+        )
+        text = "".join(b.text for b in resp.content if b.type == "text").strip()
+    except Exception:
+        return base
+    if not text or _forbidden_hit(text) or not _grounded(text, base):
+        return base
+    return text
+
+
 @router.options("/{tenant}/profile")
 def profile_preflight(tenant: str):
     return Response(status_code=204, headers=CORS)
@@ -386,13 +468,28 @@ def profile(tenant: str, full: bool = False):
     # q·a 를 같이 준다 — 고객 페이지가 칩을 FAQPage JSON-LD(AEO)에 그대로 심는다(질문만으론 근거 없는 답이 된다).
     chips = [{"q": it.get("q", ""), "a": it.get("a", ""), "verified": bool(it.get("verified"))}
              for it in sorted(faq, key=lambda it: not it.get("verified"))[:6] if it.get("q")]
-    tenant_info, identity, channels, meta = (prof.get("tenant") or {}, prof.get("identity") or {},
-                                              prof.get("channels") or {}, prof.get("meta") or {})
+    tenant_info, identity, channels, facts, meta = (prof.get("tenant") or {}, prof.get("identity") or {},
+                                                     prof.get("channels") or {}, prof.get("facts") or {},
+                                                     prof.get("meta") or {})
     name = tenant_info.get("name") or tenant
+    persona = identity.get("counselor_persona") or {}
+
+    def _v(x):
+        # "미수령" 같은 자리표시자·빈 값은 고객 화면에 안 보낸다 — 있는 채널만 조용히 표시(검수 L4 원칙과 같은 방향).
+        s = str(x or "").strip()
+        return s if s and s != "미수령" else ""
+
+    reservation_url = _v(channels.get("reservation_url")) or _v((faq_data.get("meta") or {}).get("reservation_url"))
     out = {
         "ok": True, "tenant": tenant, "name": name,
-        "bot_persona": identity.get("bot_persona") or (name + " AI"),
-        "reservation_url": channels.get("reservation_url") or (faq_data.get("meta") or {}).get("reservation_url") or "",
+        # persona = 진짜 상담원처럼(배1036 GM · 시보 커밋 21bfe89f3) — name·greeting·handoff·typing_ms·emoji.
+        # 미수령(스포짐)이면 이름은 테넌트 이름으로 폴백, 인사말 없음(고객 화면이 정중히 생략).
+        "persona": {"name": persona.get("name") or name, "greeting": _v(persona.get("greeting")),
+                    "handoff": _v(persona.get("handoff")), "typing_ms": persona.get("typing_ms") or 0,
+                    "emoji": persona.get("emoji") or ""},
+        "reservation_url": reservation_url if reservation_url.startswith("http") else "",
+        "contact": {"phone": _v(facts.get("phone")), "kakao": _v(channels.get("kakao")),
+                    "naver_place": _v(channels.get("naver_place"))},
         "status": meta.get("status") or "",
         "chips": chips, "faq_count": len(faq), "verified_count": sum(1 for it in faq if it.get("verified")),
     }
