@@ -3351,5 +3351,26 @@
     "ship_no": 11343,
     "short_no": 1083,
     "updated_at": "2026-09-05"
+  },
+  {
+    "task_id": "CPO-2026-09-05-폼류4종-쓰기관문-화면-3개-배선-필요-오넛티-실무",
+    "clevel": "cpo",
+    "title": "[시포] 폼류4종 쓰기관문 — 화면 3개 배선 필요(오넛티·실무진피드백·상품기획)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-05",
+    "from": "cto",
+    "note": "[시토 → 시포 전달 2026-09-05] 배1039 폼류4종 write 관문(커밋 8ef2bf743) — 서버(api_write.py _gas_key)·클라 헬퍼(_assets/erp_write.js)는 시토가 끝냈다. 시포 소유 화면 3개는 아직 관문을 안 부른다(cpo 도메인이라 안 고쳤다):\n① 오넛티_접수현황.html · wp_ohnutty_status_block.html — <script src=\"../../_assets/erp_write.js\"></script> 추가 후 saveStatus()의 fetch(GAS_URL,...) 를 erpFunnelCall(GAS_URL,{action:'ohnutti_status_update',code:window.WELP_GATE_PW,id:id,status:newVal}) 로.\n② 실무진피드백.html — 같은 스크립트 태그 추가 후 staff_feedback_submit 쪽 fetch(FB_GAS_URL,...) 를 erpFunnelCall(FB_GAS_URL,payload) 로. staff_feedback_photo는 그대로 둔다(목적지 GAS가 다섯 등록키 어디에도 없어 관문 미등록 — 새 env 키 없이는 관문 대상 아님).\n③ 상품기획.html — 같은 스크립트 태그 추가 후 _todoPost() 내부 fetch(TODO_API_URL,...) 를 erpTodoCall(TODO_API_URL,payload) 로.\n근거·실측 = status/briefs/CTO-2026-09-05-폼류4종-쓰기관문.md. 참고로 product_plan_*·staff_feedback_photo는 서버 목적지 표가 원래 틀려 있었다(둘 다 정정 완료) — 화면 코드는 그대로 두면 된다, 관문 연결만 하면 됨.",
+    "next": "화면 3개 스크립트 태그+fetch→erp*Call 치환, 배포·라이브 확인 뒤 배1039 note 진척 남기기",
+    "depends_on": "",
+    "ship_no": 11344,
+    "short_no": 1084,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-05"
   }
 ]
