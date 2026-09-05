@@ -884,14 +884,14 @@
       "when_sort": null,
       "freq": "event",
       "channel": "telegram",
-      "room": "업무관리 / AI관리",
+      "room": "AI관리",
       "chat_id": null,
-      "what": "전 C-Level 정식 L18 완료보고(.bat/큐 흐름) — 그 배의 audience 로 목적지를 가름 — 목적지는 그 배의 audience 로 가름(office·미판정→GM_DM / ai→AI 진행현황방)",
+      "what": "전 C-Level 정식 L18 완료보고(.bat/큐 흐름) — audience 무관 전부 AI 진행현황방(AI관리) 단일 목적지(2026-08-04). notify_gm_progress 의 일일 cap(40건)·게이트 초과 시에도 같은 AI관리로 폴백(2026-09-05 GM 지적 이전엔 업무관리로 새고 있었다 — L18 보고는 alert_router 분류상 gm_action 이 아니라 tech_check).",
       "owner": "전 C-Level",
       "trigger": "manual",
       "state": "live",
-      "state_note": "2026-07-30 배202 ① 신설 등록(그 전엔 등록부에 아예 없이 전량 업무보고방으로 나가고 있었음 — 오늘 실측으로 발견). audience=ai 는 notify_gm_progress.notify() 경유(dedup·daily_cap 그대로 적용) · audience=office/없음은 기존 telegram_notifier 경유. 루틴/자동완료(is_routine)는 여전히 스킵. | [방 표기 정정 2026-08-01 시토] 방 칸에 조건문이 들어가 방으로 세어지지 않았다 → 실제 방 두 개로 적고 조건은 what 으로 옮김.",
-      "source": "wellperion-agents/scripts/clevel_post_action.py:_lookup_audience,send_ai_progress_report,send_telegram"
+      "state_note": "2026-07-30 배202 ① 신설 등록(그 전엔 등록부에 아예 없이 전량 업무보고방으로 나가고 있었음 — 오늘 실측으로 발견). | [방 표기 정정 2026-08-01 시토] 방 칸에 조건문이 들어가 방으로 세어지지 않았다 → 실제 방 두 개로 적고 조건은 what 으로 옮김. | [단일 목적지 정정 2026-09-05 시토] audience 분기는 2026-08-04 부로 이미 폐기됐는데 등록부만 옛 표기(업무관리/AI관리)로 남아 있었다 — cap 폴백까지 AI관리로 고치며 등록부도 실코드에 맞춘다.",
+      "source": "wellperion-agents/scripts/clevel_post_action.py:send_ai_progress_report,send_telegram"
     },
     {
       "id": "ig-publish-multichannel-summary",

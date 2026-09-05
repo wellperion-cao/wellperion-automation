@@ -33,6 +33,20 @@ except Exception:
     def _tg_gateway_send(*a, **k):
         return None
 
+_ROOMS_PATH = _Path(__file__).resolve().parent.parent / "status" / "telegram_rooms.json"
+
+
+def _resolve_room_chat_id(room: str):
+    """방 이름(status/telegram_rooms.json 키, 예 'AI관리') → chat_id. 해소 실패 시 None
+    (호출부는 기존 self.chat_id 로 그대로 보낸다 — 조용히 실패하지 않는다).
+    판정 로직은 module_reporter.resolve_chat_id 하나만 쓴다(약속 L01)."""
+    try:
+        rooms = json.loads(_ROOMS_PATH.read_text(encoding="utf-8"))
+        from module_reporter import resolve_chat_id  # noqa: PLC0415
+        return resolve_chat_id(room, rooms)
+    except Exception:
+        return None
+
 
 class TelegramNotifier:
     def __init__(self):
@@ -40,18 +54,27 @@ class TelegramNotifier:
         self.chat_id = TELEGRAM_CHAT_ID
         self.base_url = f"https://api.telegram.org/bot{self.token}"
 
-    def send(self, message: str, reply_markup: dict = None) -> dict:
+    def send(self, message: str, reply_markup: dict = None, room: str = None) -> dict:
         """메시지 전송. reply_markup 있으면 인라인 버튼 포함.
+        room 을 주면 이 발신 1건만 status/telegram_rooms.json 의 그 방으로 보낸다
+        (기본 self.chat_id 는 업무관리 — AI 내부 발신이 room 없이 부르면 GM 방으로 새는
+        사고를 막으려면 호출부가 room="AI관리" 를 명시해야 한다. GM 지시 2026-09-05).
+        해소 실패 시 기존 self.chat_id 로 폴백(조용한 소멸 방지).
         발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입
         (배255 4차, 2026-08-17)."""
-        if not self.token or not self.chat_id:
+        chat_id = self.chat_id
+        if room:
+            resolved = _resolve_room_chat_id(room)
+            if resolved is not None:
+                chat_id = resolved
+        if not self.token or not chat_id:
             return {}
         extra = {"parse_mode": "HTML"}
         if reply_markup:
             extra["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
         try:
             resp = _tg_gateway_send(
-                self.token, self.chat_id, message,
+                self.token, chat_id, message,
                 source="telegram_notifier.send", kind="sendMessage",
                 extra=extra, timeout=10, full_response=True,
             )

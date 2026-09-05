@@ -486,7 +486,7 @@ def build_telegram_message(
     return "\n".join(lines)
 
 
-# ── 완료보고 목적지 = AI 진행현황방 단일 (2026-08-04 GM "두 방 혼선 정리") ──────
+# ── 완료보고 목적지 = AI 진행현황방(AI관리) 단일 (2026-08-04 GM "두 방 혼선 정리") ──
 # 배 완료·진행·이슈 보고(L18)는 정의상 전부 "AI 가 한 작업의 보고"다 — 규약(ssot/자율화
 # 규약.md §4)·wellperion-gm-report SKILL §4-2-1("작업 완료 및 다음 작업 → AI 진행현황방")
 # 그대로. 종전엔 배의 audience 칸이 방까지 골랐고(미선언 폴백=업무보고방), 그 탓에 8/1~4
@@ -494,7 +494,12 @@ def build_telegram_message(
 # 소문자 비교였는데 .bat 이 CTO 로 넘겨 한 번도 안 걸렸다(사후 실측: 08-03 11:02 등 계속
 # 업무보고방행). 호출측 선택지를 없애고 이 관문 하나가 목적지를 정한다(약속 L21).
 # audience 칸은 이제 G1 항로 표시 여부만 가른다(hangro_board.py) — 방 선택에 안 쓴다.
-# 발송 실패·게이트 시 notify_or_fallback 이 업무보고방으로 폴백(조용한 소멸 없음 — 종전 유지).
+# ★2026-09-05 GM 지적("AI 로 가야할 내용들이 업무보고봇으로 다 오는 것 같은데") — 실측:
+#   AI 진행현황방 일일 cap(40건, notify_gm_progress.DAILY_CAP) 도달 후의 완료 보고 17건이
+#   전부 notify_or_fallback → _fallback_to_gm_dm 을 타고 업무관리(GM 개인 DM)로 샜다.
+#   L18 보고는 alert_router.py 의 분류로도 전부 tech_check(AI 살림)이지 gm_action(GM 손
+#   필요)이 아니다 — cap·게이트 초과는 GM 이 움직여야 할 사유가 아니므로, 폴백도 GM 방이
+#   아니라 같은 AI관리로 보낸다(TelegramNotifier.send room= 인자, 조용한 소멸은 여전히 없음).
 
 
 def _split_head_body(title: str, summary: str) -> tuple[str, str]:
@@ -542,18 +547,22 @@ def send_ai_progress_report(
 
     [2026-07-30 배202 팀리드 지시 — 조용한 소멸 구멍 폐쇄, 폴백 판단은 한 지점(notify_
     gm_progress.notify_or_fallback)에만] gate_off·daily_cap·room_unresolved·send_failed
-    는 조용히 사라지지 않게 업무보고방(send_telegram)으로 폴백. dedup 만 소멸이 아니라
-    폴백하지 않는다 — 이 구분 로직 자체는 여기서 복제하지 않고 notify_gm_progress.py 에
-    한 곳만 둔다(ig_review_publish_watcher.py 도 같은 함수를 쓴다)."""
+    는 조용히 사라지지 않게 폴백한다(dedup 만 소멸이 아니라 폴백하지 않는다 — 이 구분
+    로직 자체는 여기서 복제하지 않고 notify_gm_progress.py 에 한 곳만 둔다·
+    ig_review_publish_watcher.py 도 같은 함수를 쓴다). 폴백 목적지 = AI관리(같은 방) —
+    2026-09-05 GM 지적 이전엔 업무관리(GM 개인 DM)였다: L18 완료 보고는 GM 손이 필요한
+    gm_action 이 아니라 AI 살림 tech_check(alert_router.py 분류)이므로 cap 초과가 GM
+    방으로 샐 이유가 없다."""
     try:
         from notify_gm_progress import notify_or_fallback as _notify_or_fallback  # noqa: PLC0415
     except Exception as e:
-        print("[ERROR] notify_gm_progress import 실패 — 업무보고방으로 폴백: " + str(e),
+        print("[ERROR] notify_gm_progress import 실패 — AI관리로 폴백: " + str(e),
               file=sys.stderr)
         return send_telegram(
             clevel=clevel, task_id=task_id, status=status, summary=summary, dry_run=dry_run,
             bridge_label=bridge_label, title=title, version=version, changelog=changelog,
             artifact_url=artifact_url or "", next_desc=next_desc or "", terminal=terminal,
+            room="AI관리",
         )
 
     nick = _ROLE_NICK.get(clevel.lower(), clevel.upper())
@@ -561,15 +570,16 @@ def send_ai_progress_report(
     nxt = next_desc or ("🌀 여기서 종결" if terminal else None)
 
     def _fallback_to_gm_dm(_text: str) -> bool:
-        print("[폴백] AI진행현황방 미발송(조용한 소멸 방지) → 업무보고방으로 폴백: " + task_id,
-              file=sys.stderr)
+        print("[폴백] AI진행현황방 cap/게이트 미발송(조용한 소멸 방지) → 같은 AI관리로 폴백: "
+              + task_id, file=sys.stderr)
         ok = send_telegram(
             clevel=clevel, task_id=task_id, status=status, summary=summary, dry_run=dry_run,
             bridge_label=bridge_label, title=title, version=version, changelog=changelog,
             artifact_url=artifact_url or "", next_desc=next_desc or "", terminal=terminal,
+            room="AI관리",
         )
         if not ok:
-            print("[ERROR] 폴백(업무보고방)도 실패 — 완료보고가 어디에도 전달되지 않음: " + task_id,
+            print("[ERROR] 폴백(AI관리)도 실패 — 완료보고가 어디에도 전달되지 않음: " + task_id,
                   file=sys.stderr)
         return ok
 
@@ -610,9 +620,11 @@ def send_telegram(
     artifact_url: str = "",
     next_desc: str = "",
     terminal: bool = False,
+    room: str = None,
 ) -> bool:
     """
     @namuki_report_bot 으로 L18 양식 보고 발송 (telegram_notifier.TelegramNotifier 사용).
+    room 을 주면 그 방으로(status/telegram_rooms.json 키) — 미지정 시 기존 기본(업무관리).
     --dry-run 이면 발송하지 않고 [DRY-RUN] would send 만 출력.
     토큰/chat_id 원문은 stdout 에 절대 출력하지 않는다.
     """
@@ -631,7 +643,7 @@ def send_telegram(
     )
 
     if dry_run:
-        print("[DRY-RUN] would send:\n" + msg)
+        print("[DRY-RUN] would send" + (f" (room={room})" if room else "") + ":\n" + msg)
         return True
 
     try:
@@ -642,7 +654,7 @@ def send_telegram(
 
     try:
         tg = TelegramNotifier()
-        result = tg.send(msg)
+        result = tg.send(msg, room=room)
         if result.get("ok"):
             print("[Telegram] 보고 완료: " + task_id)
             return True
@@ -813,7 +825,7 @@ def main() -> int:
     else:
         # 목적지는 이 관문이 정한다 — 배 보고(L18)는 역할·audience 무관 전부 AI 진행현황방
         # (2026-08-04 GM "두 방 혼선 정리" · 근거는 send_ai_progress_report 위 주석).
-        print("[라우팅] L18 배 보고 → AI 진행현황방 (실패 시 업무보고방 폴백)")
+        print("[라우팅] L18 배 보고 → AI 진행현황방(AI관리) (cap/게이트 실패 시도 AI관리로 폴백)")
         ok_telegram = send_ai_progress_report(
             clevel=args.clevel,
             task_id=args.task_id,
