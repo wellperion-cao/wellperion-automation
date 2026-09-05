@@ -2812,10 +2812,13 @@
 
   // ── 🗺️ 전략 로드맵 6단계 진척 스트립(재사용 — 월별 로드맵 섹션 + 연간 A3 공용) ──
   function roadmapStepHtml(it){
-    var isCur = (it.status === '진행');
+    /* 2026-09-05 — 기간이 이미 시작된 단계가 '예정 0%'로 남아 있던 것: 상태는 손으로 안 고쳐도 날짜로 판정한다(값은 그대로 · 측정 전 표기) */
+    var _ps = String(it.period || '').match(/(\d{4}-\d{2})/);
+    var _started = _ps && _sel && _ps[1] <= _sel && it.status === '예정';
+    var isCur = (it.status === '진행') || !!_started;
     var pct = clampPct(it.progress);
     var badge = isCur
-      ? '<span class="rbadge cur">진행</span>'
+      ? '<span class="rbadge cur">' + (_started ? '진행 · 측정 전' : '진행') + '</span>'
       : (it.status === '완료' ? '<span class="rbadge cur" style="color:var(--green);background:rgba(106,191,123,0.12);border-color:rgba(106,191,123,0.38);">완료</span>' : '<span class="rbadge nx">예정</span>');
     return '<div class="rm-step' + (isCur ? ' rm-cur' : ' rm-nx') + '">' +
       '<div class="rtop"><span class="rn">STAGE ' + esc(it.stage) + '</span>' + badge + '</div>' +
@@ -2858,6 +2861,20 @@
 
   // ── 📅 연간 A3 뷰(이니셔티브 5행 × 12개월 타임라인 + 전략 로드맵 6단계 + 월별 신규 과제 요약) ──
   var AN_MONTHS = [1,2,3,4,5,6,7,8,9,10,11,12];
+  // 2026-09-05 시우 — 이어지는 과제 셀 보조: 그달 과제(initiative_id)로 유도한 평균 진척 · 마지막 기록점
+  function initDerived(init, monKey){
+    var m = _data && _data.months && _data.months[monKey];
+    var obs = ((m && m.objectives) || []).filter(function(o){ return o.initiative_id === init.id; });
+    if(!obs.length) return null;
+    var sum = 0; obs.forEach(function(o){ sum += Number(effProgress(o)) || 0; });
+    return Math.round(sum / obs.length);
+  }
+  function initLastRecord(init){
+    var keys = Object.keys(init.monthly || {}).sort();
+    if(!keys.length) return '';
+    var k = keys[keys.length - 1], v = init.monthly[k] || {};
+    return '마지막 기록 ' + monNum(k) + '월 ' + (typeof v.pct === 'number' ? v.pct + '%' : '');
+  }
   function annualGridHtml(curMn){
     // strategy-roadmap(상위 프레임)은 월별 pct가 없어 12개월 전부 빗금(정보 0)이고 바로 아래 6단계 스트립과 중복 → 그리드에서 제외(GM 정정 2026-07-04). 6단계 스트립(roadmapStripHtml)은 별도 유지.
     var inits = initiativeItems().filter(function(it){ return it.source_ref !== 'strategy_roadmap'; });
@@ -2871,23 +2888,37 @@
         return '<div class="an-i-subrow">└ ' + (s.month ? esc(monNum(s.month) + '월 ') : '') + esc(s.title) + ' <span class="an-i-subhint">(하위)</span></div>';
       }).join('');
       var lead = '<td class="an-lead"><div class="an-i-title">' + esc(init.icon || '') + ' ' + esc(init.title) + tag + '</div>' +
-        '<div class="an-i-sub">' + esc(nickOf(init.owner)) + ' · ' + esc(spanLabel(init)) + '</div>' + subCap + '</td>';
+        '<div class="an-i-sub">' + esc(nickOf(init.owner)) + ' · ' + esc(spanLabel(init)) + (initLastRecord(init) ? ' · <span style="color:var(--dim)">' + esc(initLastRecord(init)) + '</span>' : '') + '</div>' + subCap + '</td>';
       var cells = AN_MONTHS.map(function(mnum){
         var monKey = '2026-' + pad2(mnum);
         var curCls = (mnum === curMn) ? ' cur-col' : '';
-        if(!isInitiativeActive(init, monKey)) return '<td class="an-cell' + curCls + '"></td>';
+        var ended = init.until && init.until !== 'None' && monKey > init.until;
+        if(!isInitiativeActive(init, monKey)){
+          /* 2026-09-05 GM "연간 A3 정리가 안 돼 있다" — 스팬이 끝난 과제는 빈칸이 아니라 '종료'로, 앞으로의 달은 빈칸 그대로 */
+          if(ended && mnum <= curMn) return '<td class="an-cell' + curCls + '"><div class="an-dot"><span class="an-spanlab" style="opacity:.55">종료</span></div></td>';
+          return '<td class="an-cell' + curCls + '"></td>';
+        }
         var pct = initTraj(init, monKey);
         var isTgt = initTrajTarget(init, monKey);
         if(typeof pct === 'number'){
           var st = initStatus(init, monKey);
           var cls = isTgt ? 'pt-target' : ('pt-' + (st || '진행'));
           var p = clampPct(pct);
+          var tgtLab = isTgt ? (mnum < curMn ? '목표·확인 전' : '목표') : '';
           return '<td class="an-cell ' + cls + curCls + '"><div class="an-dot"><span class="an-p">' + p + '%</span>' +
             '<div class="an-mini"><i style="width:' + p + '%"></i></div>' +
-            (isTgt ? '<span class="an-tp">목표</span>' : '') + '</div></td>';
+            (tgtLab ? '<span class="an-tp">' + tgtLab + '</span>' : '') + '</div></td>';
         }
-        // 활성 스팬이나 월별 상세 미기록 → 빗금(정직 표기)
-        return '<td class="an-cell span' + curCls + '"><div class="an-dot"><span class="an-spanlab">진행</span></div></td>';
+        /* 월별 기록이 없으면 그달 과제(objectives.initiative_id)에서 평균 진척을 유도한다 — 지어내지 않고 있는 값만 */
+        var dv = initDerived(init, monKey);
+        if(typeof dv === 'number'){
+          var dp = clampPct(dv);
+          return '<td class="an-cell pt-진행' + curCls + '" title="그달 과제 진척 평균(유도값)"><div class="an-dot"><span class="an-p">' + dp + '%</span>' +
+            '<div class="an-mini"><i style="width:' + dp + '%"></i></div><span class="an-tp" style="opacity:.7">유도</span></div></td>';
+        }
+        /* 활성 스팬인데 기록도 과제도 없음 — 지난 달이면 '미기록'(정직), 앞으로의 달이면 빈칸 */
+        if(mnum > curMn) return '<td class="an-cell' + curCls + '"></td>';
+        return '<td class="an-cell span' + curCls + '"><div class="an-dot"><span class="an-spanlab">미기록</span></div></td>';
       }).join('');
       return '<tr>' + lead + cells + '</tr>';
     }).join('');
@@ -2900,15 +2931,28 @@
     var cards = keys.map(function(k){
       var m = months[k], mnum = monNum(k);
       var news = (m.objectives || []).filter(function(o){ return !o.initiative_id; });
-      var lis = news.length ? news.map(function(o){
+      /* 2026-09-05 — 요약은 8건까지만(9월 19건이 한 칸을 5배로 늘려 표가 무너졌다) · 나머지는 아래 월별 상세에 전부 있다 */
+      var CAP = 8, shown = news.slice(0, CAP), rest = news.length - shown.length;
+      var lis = news.length ? shown.map(function(o){
         return '<li>' + esc(o.title) + ' <span style="color:var(--dim)">(' + esc(nickOf(o.owner)) + ' · ' + effProgress(o) + '%)</span></li>';
-      }).join('') : '<li class="none">신규 과제 없음(연속 과제만)</li>';
+      }).join('') + (rest > 0 ? '<li class="none">외 ' + rest + '건 — 아래 월별 상세</li>' : '') : '<li class="none">신규 과제 없음(연속 과제만)</li>';
       return '<div class="an-msum-card' + (mnum === curMn ? ' cur' : '') + '"><div class="an-msum-h">' + esc(k) +
         '<span class="mth-stat">' + esc(m.month_status || '') + '</span></div><ul>' + lis + '</ul></div>';
     }).join('');
     return '<div class="an-months-sum">' + cards + '</div>';
   }
   // ── 🛠️ 실무진 현장 업무(연간 A3 전용) — field_work 정본 렌더만(PII 없는 카테고리·건수·일반 highlights) ──
+  function fieldWorkRange(){
+    var fw = _data && _data.field_work, ks = fw && fw.months ? Object.keys(fw.months).sort() : [];
+    if(!ks.length) return '';
+    var last = monNum(ks[ks.length - 1]), cur = monNum(_sel);
+    return '(' + monNum(ks[0]) + '~' + last + '월 기록분' + (cur > last ? ' — ' + (last + 1) + '월 이후 미기입' : '') + ')';
+  }
+  function fieldWorkTotal(){
+    var fw = _data && _data.field_work, t = 0;
+    Object.keys((fw && fw.months) || {}).forEach(function(k){ t += Number((fw.months[k] || {}).count) || 0; });
+    return '현장 실무진 ' + t + '건';
+  }
   function fieldWorkHtml(curMn){
     var fw = _data && _data.field_work;
     if(!fw || !fw.months) return '<div class="board-status">실무진 현장 업무 정본(field_work)이 없습니다.</div>';
@@ -2960,13 +3004,13 @@
       '<div class="an-sec-h">🧵 이어지는 과제 진척률 <span style="font-size:11px;font-weight:400;color:var(--dim)">진척점 = 그달 완성도% · 빗금 = 스팬(상세 없음) · 골드 = 목표(미달성)</span></div>' +
       annualGridHtml(curMn) +
       '<div class="annual-note">● 빗금 셀 = 과제 활성 스팬이나 월별 상세 미기록(레포·ERP 체계 2026-05-25 착수 — 이전 소급 없음, 정직 표기) · 색 셀 = 그달 완성도%(진행=청 / 완료=녹 / 이월=금 / 목표=골드) · 파란 테두리 = 현재 선택월(' + (curMn || '—') + '월).</div>' +
-      '<div class="an-sec-h">🎯 상반기 전략 활동 (사업·프로그램) <span style="font-size:11px;font-weight:400;color:var(--dim)">실무 주도 · 강습 경쟁력·디지털AI 전환·외부 제휴 3맥락 + 1분기 정책 기반 · 개인정보 제외</span></div>' +
+      '<div class="an-sec-h">🎯 전략 활동 (사업·프로그램 · 상반기 기록분 — 하반기 미기입) <span style="font-size:11px;font-weight:400;color:var(--dim)">실무 주도 · 강습 경쟁력·디지털AI 전환·외부 제휴 3맥락 + 1분기 정책 기반 · 개인정보 제외</span></div>' +
       strategicActivitiesHtml() +
       '<div class="an-sec-h">🗺️ 전략 로드맵 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim)">상위 프레임 — 회사문서 전략 로드맵 v1.5 + S0 기준</span></div>' +
       roadmapStripHtml() +
       '<div class="an-sec-h">🆕 월별 핵심 과제(신규) 요약 <span style="font-size:11px;font-weight:400;color:var(--dim)">그달 시작·완결형 과제(연속 과제 제외)</span></div>' +
       monthlyNewSummaryHtml(curMn) +
-      '<div class="an-sec-h">🛠️ 실무진 현장 업무 (1~7월) <span style="font-size:11px;font-weight:400;color:var(--dim)">현장 실무진 53건 · 월별 카테고리별 건수 + 주요 활동 · 내부 드라이브 정리(개인정보 제외)</span></div>' +
+      '<div class="an-sec-h">🛠️ 실무진 현장 업무 ' + fieldWorkRange() + ' <span style="font-size:11px;font-weight:400;color:var(--dim)">' + fieldWorkTotal() + ' · 월별 카테고리별 건수 + 주요 활동 · 내부 드라이브 정리(개인정보 제외)</span></div>' +
       fieldWorkHtml(curMn);
   }
 
