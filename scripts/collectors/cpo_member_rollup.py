@@ -378,7 +378,30 @@ def collect(module=None) -> dict:
         f"강습 유소년 {f'{youth_pct}%' if youth_pct is not None else '측정 안 됨'}"
     )
 
-    summary = "\n".join([line1, line2, line3, line4, line5])
+    # ── ⑥ 법인·단체 열린 건 (2026-09-05 GM 지시 — 법인 응대는 시포 기획설계대로 실장이 움직이고
+    #    피드백만 준다. 열린 건이 '미정'으로 묵지 않게 주간 보고에 이름·경과일을 싣는다) ─────────
+    #    수영 단체반 프로모션 문의는 법인이 아니라 강습 문의라 제외한다('법인' 낱말이 채널·내용에 있는 것만).
+    if inq_rows is not None:
+        corp_open = []
+        for r in inq_rows:
+            st = str(r.get("status", "") or "")
+            if st in cpo_report._SUCCESS_STATUSES or st == "LOSS":
+                continue
+            if "법인" not in f"{r.get('channel', '')}|{r.get('inquiryContent', '')}":
+                continue
+            ts = str(r.get("timestamp") or "")[:10]
+            try:
+                days = (datetime.strptime(today, "%Y-%m-%d") - datetime.strptime(ts, "%Y-%m-%d")).days
+            except ValueError:
+                days = -1
+            corp_open.append((days, f"{r.get('name', '')}({st}·{days if days >= 0 else '?'}일)"))
+        corp_open.sort(reverse=True)
+        line6 = (f"■ 법인·단체 열린 건 — {len(corp_open)}건 · " + " · ".join(n for _, n in corp_open)
+                 if corp_open else "■ 법인·단체 열린 건 — 0건")
+    else:
+        line6 = "■ 법인·단체 열린 건 — 측정 안 됨(문의 데이터 조회 실패)"
+
+    summary = "\n".join([line1, line2, line3, line4, line5, line6])
     all_failed = comp is None and inq_rows is None and ended_rows is None
     if all_failed:
         honesty_tag = "미측정"

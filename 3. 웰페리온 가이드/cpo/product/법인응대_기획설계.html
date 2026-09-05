@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<title>🏢 법인·단체 응대 기획설계 — AI 시포</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--bg:#221F20;--paper:#272422;--text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);--border:#38322e;
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.10);--red:#ED5B3F;--red-bg:rgba(237,91,63,0.10);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.10);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,0.10);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;}
+.header{background:linear-gradient(180deg,#2f2b28,#272422);padding:16px 24px;border-bottom:1px solid var(--border);}
+.header h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header .sub{font-size:12px;color:var(--dim-mid);margin-top:4px}
+.ai-owner{display:inline-block;padding:3px 11px;border-radius:999px;background:#14304E;color:#fff;font-size:12px;font-weight:800;}
+.wrap{padding:20px 24px;max-width:1400px;}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.35);}
+.card-title{font-size:15px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card-title .n{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);font-size:12px;align-items:center;justify-content:center}
+.callout{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:12px 14px;font-size:14px;margin-top:10px}
+.callout.red{background:var(--red-bg);border-color:rgba(237,91,63,.35)}
+.callout.green{background:var(--green-bg);border-color:rgba(106,191,123,.35)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;color:var(--dim-mid);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid rgba(56,50,46,.6);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid}
+.tag.a{color:var(--green);background:var(--green-bg);border-color:rgba(106,191,123,.28)}
+.tag.b{color:var(--blue);background:var(--blue-bg);border-color:rgba(91,159,213,.28)}
+.tag.c{color:var(--yellow);background:var(--yellow-bg);border-color:rgba(230,200,78,.28)}
+.tag.gm{color:var(--red);background:var(--red-bg);border-color:rgba(237,91,63,.28)}
+.dim{color:var(--dim-mid);font-size:13px}
+strong{color:#fff}
+ol,ul{padding-left:20px}
+li{margin:3px 0}
+a{color:var(--accent)}
+@media print{body{background:#fff;color:#111}.card{background:#fff;border-color:#ccc;box-shadow:none;break-inside:avoid}strong{color:#000}th{color:#444}.header{background:#fff;color:#111}.ai-owner{background:#14304E}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🏢 법인·단체 응대 기획설계 <span class="ai-owner">AI 시포</span></h1>
+  <div class="sub">실행 = 이경연 실장 · 설계 유지 = AI 시포 · 개정 2026-09-05 (1판) · GM 확정 2026-09-05 「실장님은 이 설계대로 움직이고, 안 맞는 것은 피드백으로 준다」</div>
+</div>
+<div class="wrap">
+
+  <div class="card">
+    <div class="card-title"><span class="n">0</span> 한 줄 원칙</div>
+    <div class="callout">
+      법인·단체 문의는 <strong>이 페이지의 유형 A·B·C 표대로 실장님이 바로 응대</strong>합니다. 금액·조건은 아래 표 밖에서 만들지 않습니다.
+      표에 없는 상황이 나오면 그 자리에서 정하지 말고 <strong>피드백(§7)</strong>으로 남겨 주시면 시포가 설계를 고쳐 이 페이지를 다시 냅니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">1</span> 지금 법인·단체 회원 (원장 실측 2026-09-05)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>법인·단체</th><th class="num">인원</th><th>현재 조건</th><th>만기</th></tr></thead>
+      <tbody>
+        <tr><td>삼일회계법인</td><td class="num">18</td><td>30% 할인(과거 계약 조건)</td><td>2026-12-31 통일(1명 09-30 · 1명 07-21 종료)</td></tr>
+        <tr><td>해밀턴호텔 단체</td><td class="num">10</td><td>10인 단체 15% (일부 1개월 서비스 10%)</td><td>2026-12-31 통일</td></tr>
+        <tr><td>순천향</td><td class="num">2</td><td>법인 할인(건별)</td><td>2026-12-31 · 2027-04-10</td></tr>
+        <tr><td>임직원(가족)</td><td class="num">2</td><td>임직원 30%</td><td>2027-01 · 2027-04</td></tr>
+      </tbody>
+    </table></div>
+    <div class="dim" style="margin-top:8px">합계 32명(활성 31) · 올해 법인·단체 문의 13건 = 등록 4 · 놓침(LOSS) 4 · 컨택 중 2 · 미정 2 · 가망 1</div>
+    <div class="callout red" style="margin-top:10px">27명이 <strong>12월 31일에 한꺼번에 만기</strong>입니다. 갱신 조건(§3)을 11월 안에 법인 창구(삼일회계 담당자·해밀턴 김장원님)에 먼저 안내해야 1월에 빈자리가 생기지 않습니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">2</span> 문의가 오면 — 유형 3가지 (실장님이 바로 판단)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>유형</th><th>어떤 문의</th><th>안내할 조건</th><th>실장님이 하실 것</th><th>시포·GM</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag a">A</span> 기존 법인 추가 인원</td>
+          <td>삼일회계·해밀턴 등 <strong>이미 계약된 법인·단체</strong> 소속·소개로 1명씩 오는 경우</td>
+          <td>그 법인의 <strong>현재 계약 조건 그대로</strong>(삼일 30% · 해밀턴 단체 15%) · 만기는 그 법인과 같은 날(12-31)로 맞춤</td>
+          <td>당일 안내 → 등록 처리 → 법인 현황 탭에 세부구분(회사명) 기재</td>
+          <td>없음 (자율)</td>
+        </tr>
+        <tr>
+          <td><span class="tag b">B</span> 새 법인·단체 5인 이상</td>
+          <td>회사·기관 이름으로 <strong>5명 이상</strong>을 한 번에 등록하려는 경우 (기안·견적 요청 포함)</td>
+          <td>상품 기획 정본 표 그대로 — <strong>5인 13,500,000(10%↓) · 10인 25,500,000(15%↓) · 11인 이상 1인당 2,550,000(15% 상한)</strong> · 사업자등록증 · 휴회 불가 · 양도 1회 5만원</td>
+          <td>당일 표 그대로 안내(§4 문구) → 인원·희망 시작일 받기 → 문의 시트 상태 '컨택중' + 컨택 이력 기재</td>
+          <td><span class="tag gm">GM</span> 계약 확정 전 결정권자 미팅·계약서는 GM이 진행(💰 계약). 실장님은 GM께 인원·조건·연락처 한 줄로 넘김</td>
+        </tr>
+        <tr>
+          <td><span class="tag c">C</span> 법인 명의 1~2인</td>
+          <td>대표·임원 개인이 <strong>회사 이름으로 결제</strong>하려는 경우 (법인카드·세금계산서)</td>
+          <td><strong>개인 정가</strong>(단체 할인 없음) · 세금계산서·법인카드 결제 가능 · 조건은 개인 회원과 동일</td>
+          <td>당일 안내 → 등록 처리 → 법인 현황 탭이 아니라 유효회원 탭(회원구분 멤버십·비고에 법인명)</td>
+          <td>없음 (자율)</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="dim" style="margin-top:8px">수영 단체반(비회원 10%) 문의는 법인이 아니라 <strong>강습 문의</strong>입니다 — 이 표를 쓰지 않고 강습 담당(나우열M)께 넘깁니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">3</span> 12월 만기 갱신 조건 (상품 기획 정본 · GM 확정 2026-08-10)</div>
+    <ul>
+      <li>계약 만기(12-31)까지는 <strong>현재 조건 유지</strong> — 중간에 바꾸지 않습니다.</li>
+      <li>갱신부터는 <strong>단체 할인 상한 15%</strong> — 5인 10% · 10인 이상 15% · 30%는 갱신에 적용하지 않습니다.</li>
+      <li>안내 시점 = <strong>11월 첫째 주</strong> · 대상 = 법인 창구 1명(삼일회계 담당자 · 해밀턴 김장원님) · 개인별 문자는 그 다음.</li>
+      <li>이 항목의 문구·시점이 현장과 안 맞으면 §7 피드백으로 — 금액 자체는 GM 결재 사항이라 실장님·시포 모두 바꾸지 않습니다.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">4</span> 안내 문구 (그대로 쓰셔도 됩니다)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>유형</th><th>문자·전화 안내</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag a">A</span></td><td>"○○ 소속(소개)으로 확인됐습니다. ○○ 법인 조건 그대로 등록 도와드리며, 이용 기간은 법인 계약과 같은 12월 31일까지입니다. 방문 예약 날짜만 주시면 준비해 두겠습니다."</td></tr>
+        <tr><td><span class="tag b">B</span></td><td>"웰페리온은 정원제로 운영돼 단체 등록은 인원에 따라 5인 1,350만원 · 10인 2,550만원(1인당 255만원, 11인 이상 동일)으로 안내드립니다. 사업자등록증이 필요하고 휴회는 어렵습니다. 인원과 시작 희망일을 주시면 GM이 직접 연락드려 진행하겠습니다."</td></tr>
+        <tr><td><span class="tag c">C</span></td><td>"회사 명의 결제는 가능하며 세금계산서 발행됩니다. 조건은 개인 회원권과 같고(플래티넘 300만원 ~ 노블레스+골프 400만원), 방문 상담 예약을 도와드리겠습니다."</td></tr>
+      </tbody>
+    </table></div>
+    <div class="dim" style="margin-top:8px">투어·상담은 사전예약만(워크인 불가) · 문의 안내 링크는 wellperion.com/ko/inquiry 한 줄 · '피트니스'·'프로모션'·'할인 행사' 표현은 쓰지 않습니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">5</span> 처리 시계 · 기록 자리</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>언제</th><th>무엇</th><th>어디에 남기나</th></tr></thead>
+      <tbody>
+        <tr><td>접수 당일</td><td>1차 회신(유형 A·C는 조건까지 · B는 표 안내)</td><td>멤버십 문의 시트 — 상태 '컨택중' · 컨택 이력 1줄</td></tr>
+        <tr><td>3일 안</td><td>B 유형: 인원·시작일 확보 → GM께 한 줄</td><td>컨택 이력 + ★중간관리자 방 한 줄</td></tr>
+        <tr><td>14일 안</td><td>결론 — 등록 / 놓침(사유) / 대기</td><td>상태 SUC·LOSS(미등록사유)·대기 — <strong>'미정'으로 두지 않습니다</strong></td></tr>
+        <tr><td>매주 월요일</td><td>시포가 <strong>법인·단체 열린 건(이름·경과일)</strong>을 주간 회원 보고에 실어 드림</td><td>★운영부 방 주간 보고 「■ 법인·단체 열린 건」 줄</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">6</span> 지금 열린 건 — 이번 주 처리</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>접수</th><th>문의</th><th>유형</th><th>실장님이 하실 것</th></tr></thead>
+      <tbody>
+        <tr><td>08-03 (33일)</td><td>해밀턴 단체 김장원님 소개 · 단체 법인권 문의 · 상태 미정</td><td><span class="tag a">A</span></td><td>해밀턴 단체 조건(15% · 12-31 만기)으로 이번 주 안에 연락 → 등록 또는 사유 기재</td></tr>
+        <tr><td>09-01 (4일)</td><td>삼일회계법인 · 16개월치 등록 예정 · 상태 미정</td><td><span class="tag a">A</span></td><td>삼일 조건으로 등록 처리(만기 12-31 통일 · 16개월은 갱신 조건 §3 안내)</td></tr>
+        <tr><td>06-23 (74일)</td><td>법인 1인 등록 문의 · 컨택 중</td><td><span class="tag c">C</span></td><td>개인 정가·세금계산서 안내 → 14일 안 결론</td></tr>
+        <tr><td>06-23 (74일)</td><td>회사 임원 멤버십 · 기안용 정보 요청 · 컨택 중</td><td><span class="tag c">C</span></td><td>§4-C 문구로 견적 정보 송부 → 14일 안 결론</td></tr>
+      </tbody>
+    </table></div>
+    <div class="dim" style="margin-top:8px">사람 이름은 멤버십 문의 시트에서 접수일로 찾으시면 됩니다(이 페이지는 공개 경로라 이름을 적지 않습니다).</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="n">7</span> 피드백 — 실장님이 주시는 것</div>
+    <div class="callout green">
+      설계와 현장이 다르면 <strong>어느 항목(§번호)이 어떻게 다른지 한 줄</strong>만 주시면 됩니다. 두 곳 중 편한 곳:<br>
+      ① 이 화면 위쪽 <strong>실무진 피드백</strong> 창(업무 구분 = 상품 기획) · ② ★중간관리자 방에 「법인 설계 §2 …」 한 줄<br>
+      → 시포가 접수해 설계를 고치고, 이 페이지 개정 날짜를 올린 뒤 실장님께 회신합니다. 금액(§2-B·§3)만은 GM 결재 뒤 반영됩니다.
+    </div>
+    <div class="dim" style="margin-top:8px">개정 이력 — 2026-09-05 1판(원장·문의 실측 기준 작성 · 조건은 상품 기획 정본 표 인용).</div>
+  </div>
+
+  <div class="dim">정본 = 상품 기획 페이지 「가족·단체·법인」 표 · 회원 원장(법인 현황 탭) · 멤버십 문의 시트. 이 페이지는 그 셋을 실장님이 바로 쓰실 순서로 엮은 것입니다. 작성 AI 시포.</div>
+</div>
+</body>
+</html>
