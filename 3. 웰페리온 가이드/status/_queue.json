@@ -1879,12 +1879,12 @@
     "task_id": "CTO-2026-09-05-AEO-채팅봇-백엔드-ERP-API-에-API-CH",
     "clevel": "cto",
     "title": "[시토] AEO 채팅봇 백엔드 — erp-api 에 /api/chat/{센터} 라우트 + 센터별 FAQ 저장 + 웹 위젯 1개 (테넌트 1개 다캠 · GM 결정 2026-09-05)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cbo",
     "note": "[시보 → 시토 전달 2026-09-05] GM 결정 2026-09-05 '우리는 AEO 를 활용한 채팅봇을 만들어야겠어, 센터 기준으로'. 모델 = 3. 웰페리온 가이드/cbo/model/aeo_chatbot_v0.1.html §4. 요청: ①erp-api(server/erp_api/app.py) 에 공개 라우트 /api/chat/{tenant} — 요청 = 고객 질문 1개, 응답 = FAQ 근거 답 또는 고정 문구('상담 예약' 링크). FAQ 에 매칭 근거가 없으면 모델이 지어내지 못하게 코드에서 막는다(고정 문구 반환). ②센터별 FAQ 저장 = /srv/www/{n}_{센터}/faq.json (GM 지시 1_웰페리온/2_다이어트캠프 구분 그대로) · 대화 로그는 질문·답·매칭 여부만(고객 이름·전화 저장 안 함) · 못 답한 질문 목록을 시보가 읽을 수 있게(아침 질문 회로로 되돌림). ③위젯 = html 1개(정적 · 다캠 라인 페이지에 script 한 줄로 붙임). ④금지어(금액·의료) 관문은 diet_camp_agent 의 것을 재사용. ⑤속도 제한은 intake 와 같은 zone 재사용. 1단계 = 웹 위젯만, 카카오 채널 API 는 GM 결재 뒤. 시보는 FAQ 내용·톤·고객·요금만, 코드는 이 배.",
-    "next": "설계 한 장(라우트·저장 형식·위젯 붙이는 법) → 웰페리온 FAQ 테넌트로 자체 시험 2주",
+    "next": "2_다이어트캠프 faq.json 채우기 + 위젯 붙이기(시보 배1027)",
     "depends_on": "",
     "ship_no": 11278,
     "short_no": 1018,
@@ -1894,7 +1894,10 @@
     "work_type": "new",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "https://github.com/wellperion-cao/welperion-automation/commit/cafe4a007",
+    "saw": "AEO 채팅봇 백엔드 라이브 — /api/chat/{tenant} FAQ 근거 답변(모델 없음)·센터별 FAQ·미답 목록·웹 위젯. 실측 4건 전부 OK. 시보에게 배1027 회신(FAQ 채우기·위젯 붙이기)"
   },
   {
     "task_id": "COO-2026-09-05-공개-화면-5장-접수-조회-문의-허브-문의-폼-습득",
@@ -2084,5 +2087,22 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-05"
+  },
+  {
+    "task_id": "NEXT-20260905-144813",
+    "clevel": "cbo",
+    "title": "[시보] 2_다이어트캠프 faq.json 채우기 + 위젯 붙이기(시보 배1027)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "depends_on": "CTO-2026-09-05-AEO-채팅봇-백엔드-ERP-API-에-API-CH",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-09-05T05:48:13Z",
+    "note": "[브릿지 자동 등록 2026-09-05] 배 'AEO 채팅봇 백엔드 — erp-api 에 /api/chat/{센터} 라우트 + 센터별 FAQ 저장 + 웹 위젯 1개 (테넌트 1개 다캠 · GM 결정 2026-09-05)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시보.\n▶할 일: 2_다이어트캠프 faq.json 채우기 + 위젯 붙이기(시보 배1027)\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: AEO 채팅봇 백엔드 라이브 — /api/chat/{tenant} FAQ 근거 답변(모델 없음)·센터별 FAQ·미답 목록·웹 위젯. 실측 4건 전부 OK. 시보에게 배1027 회신(FAQ 채우기·위젯 붙이기)",
+    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "ship_no": 11288,
+    "short_no": 1028,
+    "audience": "ai",
+    "reversible": true
   }
 ]
