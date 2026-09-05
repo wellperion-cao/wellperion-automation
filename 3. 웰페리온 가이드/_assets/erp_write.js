@@ -198,7 +198,7 @@
        · staff_feedback_photo = 화면이 부르는 실제 GAS(FB_PHOTO_URL)가 다섯 목적지 어디에도 없는 별도 프로젝트
          (콘텐츠 접수 재사용) — 서버 표에 없으면 400 이 되므로 새 env 키가 생기기 전까진 관문에 올리지 않는다.
      서버 목적지 판정(api_write._gas_key · _FUNNEL_GAS_ACTIONS)과 같은 목록이다 — 한쪽만 늘리면 안 된다. */
-  var FUNNEL_WRITE = /^(ohnutti_status_update|staff_feedback_submit)$/;
+  var FUNNEL_WRITE = /^(ohnutti_status_update|staff_feedback_submit|staff_feedback_photo)$/;   // 사진은 서버가 INSTRUCTOR_GAS_URL 로 넘긴다(2026-09-05)
 
   function erpFunnelCall(gasUrl, params) {
     var gas = function () {

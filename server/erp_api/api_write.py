@@ -134,6 +134,10 @@ def _gas_key(action):
         return "PROC_GAS_URL"
     if action in _FUNNEL_GAS_ACTIONS:
         return "FUNNEL_EXEC_URL"
+    if action == "staff_feedback_photo":
+        # 실무진 피드백 사진 — 화면의 FB_PHOTO_URL(AKfycbz4wWhqICMQZR…) 은 강사 접수 GAS 와 같은 프로젝트라
+        # 서버가 이미 아는 INSTRUCTOR_GAS_URL 로 넘긴다(2026-09-05 실측 · 새 키 없음). 사진 base64 라 본문이 크다.
+        return "INSTRUCTOR_GAS_URL"
     return None
 
 
@@ -273,8 +277,8 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     # 배 1039 폼류4종 — 상품기획은 화면 실제 목적지(TODO_API_URL)와 같은 업무 GAS. FUNNEL 로 새면 안 된다.
     assert _gas_key("product_plan_save") == "TODO_GAS_URL" and _gas_key("product_plan_delete") == "TODO_GAS_URL"
     assert "product_plan_save" not in MIRROR_SYNC and "product_plan_delete" not in MIRROR_SYNC   # 거울 없음
-    # staff_feedback_photo 는 다섯 GAS 어디에도 없는 별도 프로젝트(FB_PHOTO_URL) — 목적지를 지어내지 않는다.
-    assert _gas_key("staff_feedback_photo") is None
+    # staff_feedback_photo — 화면 FB_PHOTO_URL 과 서버 INSTRUCTOR_GAS_URL 이 같은 배포 ID(실측 2026-09-05).
+    assert _gas_key("staff_feedback_photo") == "INSTRUCTOR_GAS_URL"
     assert _gas_key("todo_list") == "TODO_GAS_URL"          # 읽기가 흘러들어와도 목적지는 맞다(화면은 안 보낸다)
     assert MIRROR_SYNC["todo_delete"] == "sync_todo.py" and MIRROR_SYNC["member_owner_save"] == "sync_members.py"
     assert "ai_add" not in MIRROR_SYNC                      # AI배 탭은 거울이 없다 — 헛돌면 안 된다
