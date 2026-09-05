@@ -263,6 +263,7 @@ function _seedDate(sheet, date, items, sheetName) {
     ];
   });
   if (rows.length > 0) {
+    _ensureSize_(sheet, sheet.getLastRow() + rows.length, HEADERS.length);
     sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, HEADERS.length).setValues(rows);
   }
 }
@@ -1609,6 +1610,7 @@ function _writePerRoundRows(dept, date, body, ledgerRes) {
       });
       if (rows.length) {
         var startRow = sheet.getLastRow() + 1;
+        _ensureSize_(sheet, startRow + rows.length - 1, HEADERS.length);
         sheet.getRange(startRow, 1, rows.length, HEADERS.length).setValues(rows);
         for (var k = 0; k < rows.length; k++) _applyRowStyle(sheet, startRow + k, rows[k]);
         total += rows.length;
@@ -1630,6 +1632,7 @@ function _writePerRoundRows(dept, date, body, ledgerRes) {
       });
       if (add.length) {
         var sr = sheet.getLastRow() + 1;
+        _ensureSize_(sheet, sr + add.length - 1, HEADERS.length);
         sheet.getRange(sr, 1, add.length, HEADERS.length).setValues(add);
         for (var m = 0; m < add.length; m++) _applyRowStyle(sheet, sr + m, add[m]);
         total += add.length;
@@ -2049,6 +2052,15 @@ function purgeCustomItems(dept) {
     }
   });
   return jsonRes({ ok: true, dept: d, removed: removed });
+}
+
+// [시우 2026-09-05] 이어붙이기 전에 시트 크기를 확보한다 — 행이 꽉 찬 시트에 getRange 로 넘어 쓰면
+// "범위 좌표가 시트 크기를 벗어납니다" 로 저장이 통째로 실패했다(09-05 실무진 점검 저장 4건 실패 · write_log 실측).
+function _ensureSize_(sheet, lastRowNeeded, colsNeeded) {
+  var mr = sheet.getMaxRows();
+  if (lastRowNeeded > mr) sheet.insertRowsAfter(mr, lastRowNeeded - mr);
+  var mc = sheet.getMaxColumns();
+  if (colsNeeded > mc) sheet.insertColumnsAfter(mc, colsNeeded - mc);
 }
 
 function _applyRowStyle(sheet, row, values) {
