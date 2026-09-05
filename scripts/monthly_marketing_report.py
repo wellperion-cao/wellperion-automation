@@ -244,6 +244,12 @@ def build_report_text(pb, fc):
 
 # ── 메인 ────────────────────────────────────────────────────────
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true",
+                     help="텔레그램 실제 발송 생략 — 보고서 텍스트만 stdout 출력 (배944 서버 병행검증용)")
+    args = ap.parse_args()
+
     print("[INFO] 웰페리온 CMO 월간 마케팅 보고서 생성 시작")
 
     pb = fetch_period_breakdown()
@@ -257,6 +263,10 @@ def main():
     print("─" * 60)
     print(report_text)
     print("─" * 60)
+
+    if args.dry_run:
+        print("[INFO] --dry-run: 텔레그램 실제 발송 생략")
+        return
 
     ok = send_message(report_text)
     if ok:

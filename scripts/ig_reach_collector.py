@@ -21,6 +21,8 @@
 #
 # 요약 JSON만 재생성(네트워크 호출 0회): python scripts/ig_reach_collector.py --summary-only
 
+from __future__ import annotations  # 서버(Python 3.9)에서 `dict | None` 함수 어노테이션 평가 오류 방지 (배944)
+
 import argparse
 import json
 import os
