@@ -885,7 +885,7 @@ function renderChart(d){
 }
 
 /* 연간 매출 추이·연 지출 남은 직접 GAS 2호출 서버 우선 선배선(배985 · 2026-09-04 시우).
-   서버 미러는 시토 배990(sync_misc.py 두 줄)이 올린 뒤 작동 — 지금은 미러 없어(404) 매번 GAS 로 조용히 폴백.
+   서버 미러 = /api/misc/todo/{sales_monthly,home_kpi} (시토 1039 · 2026-09-05 · 시포가 키 salesmon/homekpi → todo 로 정정). 없으면 GAS 폴백.
    응답은 GAS 그대로 돌려주는 설계라 화면 파싱(.then)은 손대지 않는다. */
 function miscFetch(gasName, action){
   var gas = function(){ return fetch(ERP + '?action=' + action + '&cb=' + Date.now()).then(function(r){ return r.json(); }); };
@@ -924,7 +924,7 @@ function load(){
         '<div class="fnote" style="color:var(--bad)">강습 신규·재등록을 못 읽었습니다 — [↻ 새로고침]을 눌러 주세요.</div>';
     });
 
-  var p3 = miscFetch('salesmon', 'sales_monthly')
+  var p3 = miscFetch('todo', 'sales_monthly')
     .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); } })
     .catch(function(){ // 「불러오는 중…」이 영영 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
       document.getElementById('gauge').innerHTML =
@@ -942,7 +942,7 @@ function load(){
       if (d && d.expense && typeof d.expense.year === 'number') return { ok:true, expense:d.expense, asOf:String(s.generated_at_kst || '') };
       throw new Error('snapshot');
     })
-    .catch(function(){ return miscFetch('homekpi', 'home_kpi'); })
+    .catch(function(){ return miscFetch('todo', 'home_kpi'); })
     .then(function(d){
       if (d && d.ok && d.expense && typeof d.expense.year === 'number') {
         RAW.expenseOk = true;

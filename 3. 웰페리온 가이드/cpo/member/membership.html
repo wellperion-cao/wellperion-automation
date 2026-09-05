@@ -4984,8 +4984,8 @@ function _postInqLoadedRows_(){
 function _postInqFetchFunnel(cb){
   if (_mdashCache.funnel) { cb(_mdashCache.funnel); return; }
   if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  var _sfGas = function(){ return fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/stage_funnel').catch(function(){ return _sfGas(); }) : _sfGas())   // 배1048 서버 우선(시토 1039)
     .then(function(d){ if (d && d.ok) _mdashCache.funnel = d; cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -10163,8 +10163,8 @@ function loadCalendarData() {
   }
 
   var monthStr = calYear + '-' + String(calMonth).padStart(2,'0');
-  fetch(GAS_URL + '?action=member_calendar&month=' + monthStr + '&_=' + Date.now())  // 캐시버스터 — 항상 최신 slot/시간 반영
-    .then(function(r){ return r.json(); })
+  var _mcGas = function(){ return fetch(GAS_URL + '?action=member_calendar&month=' + monthStr + '&_=' + Date.now()).then(function(r){ return r.json(); }); };  // 캐시버스터 — 항상 최신 slot/시간 반영
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/member_calendar?month=' + monthStr + '&_=' + Date.now()).catch(function(){ return _mcGas(); }) : _mcGas())   // 배1048 서버 우선(예약 달력 미러 · 시토 1039)
     .then(function(data){
       if (!data.ok) throw new Error('GAS 응답 오류');
       processCalendarData(data);
