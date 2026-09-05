@@ -419,7 +419,8 @@ def _persona_of(tenant: str) -> dict:
 
 
 # ── L2 클라이언트 — AWS Bedrock 우선(배1036 GM · 계정 cao 통일 · 키 대신 EC2 IAM 역할) ──────
-# 우선순위: Bedrock(AnthropicBedrockMantle · 키 0) → 1P(ANTHROPIC_API_KEY 있으면 대안) → None(백업).
+# 우선순위: Bedrock(AnthropicBedrock 표준 · 키 0) → 1P(ANTHROPIC_API_KEY 있으면 대안) → None(백업).
+# AnthropicBedrockMantle 은 오진(bedrock-mantle.*.api.aws 도메인 자체가 없는 제품) — 시보 지적으로 표준 클래스로 교체.
 _ANTHROPIC_CLIENT = (None, False)   # (client|None, tried) — 최초 1회만 만들고 재사용(요청마다 새 client 금지)
 _DIGITS_RE = re.compile(r"\d+")
 BEDROCK_REGION = os.environ.get("ERP_BEDROCK_REGION", "ap-northeast-2")
@@ -434,8 +435,8 @@ def _anthropic_client():
     if tried:
         return client
     try:
-        from anthropic import AnthropicBedrockMantle
-        client = AnthropicBedrockMantle(aws_region=BEDROCK_REGION)
+        from anthropic import AnthropicBedrock
+        client = AnthropicBedrock(aws_region=BEDROCK_REGION)
     except Exception:
         client = None   # boto3·SDK 없음 등 — 1P 로 대안
     if client is None and os.environ.get("ANTHROPIC_API_KEY"):
