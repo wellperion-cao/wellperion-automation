@@ -306,37 +306,37 @@ async def chat(tenant: str, request: Request):
     data = _load_faq(tenant)
     fallback = _fallback_text(tenant, data.get("meta"))
     type_id = _match_question_type(q) if q else None   # 배1074③ — 공통 질문 유형 태깅(사실 값·개인정보 없음)
-
-    def _missing(prof=None):
-        return _needs_facts_missing(prof if prof is not None else _load_profile(tenant), type_id)
+    # 못 답했든 모델이 둘러 답했든 "이 유형에 필요한 정본 칸이 비었다"는 신호는 똑같이 값지다(돈 버는 층) —
+    # 답변 성공 여부와 상관없이 항상 같이 기록한다(배1074③).
+    missing = _needs_facts_missing(_load_profile(tenant), type_id) if type_id else []
 
     if not q or _forbidden_hit(q, tenant):
-        _log(tenant, q, False, None, type_id, _missing())
+        _log(tenant, q, False, None, type_id, missing)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
     text, status = (None, "error") if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
-        _log(tenant, q, True, None, type_id)
+        _log(tenant, q, True, None, type_id, missing)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
-        _log(tenant, q, False, None, type_id, _missing())   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+        _log(tenant, q, False, None, type_id, missing)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
-            _log(tenant, q, True, "today_hours", type_id)
+            _log(tenant, q, True, "today_hours", type_id, missing)
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
-                _log(tenant, q, True, item.get("id"), type_id)
+                _log(tenant, q, True, item.get("id"), type_id, missing)
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
-                _log(tenant, q, False, None, type_id, _missing())
+                _log(tenant, q, False, None, type_id, missing)
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
