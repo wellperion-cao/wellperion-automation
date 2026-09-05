@@ -925,7 +925,7 @@ async def run_remove_menu(object_ids: "list[str]", menu_id: str = KOREAN_MENU_ID
     return 0 if ok else 42
 
 
-async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
+async def run_swap_href(post_id_arg: str, find: str, repl: str, expect: int = 1) -> int:
     """외과적 치환: 지정 페이지 post_content에서 find→repl 단일 치환(count==1 가드).
     Classic 편집기 Text탭(#content)만 사용. 원본을 타임스탬프 백업 후, 정확히 1건일 때만 저장.
     나머지 본문(레이아웃·전체 버튼)은 일절 손대지 않음. 발행 상태 유지."""
@@ -985,18 +985,18 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     # 단일 치환 가드: count != 1 이면 저장 말고 중단
     count = original.count(find)
     print(f"[INFO] find 출현 횟수: {count}")
-    if count != 1:
-        print(f"[ABORT] 치환 카운트 != 1 ({count}건) — 오인/중복 방지 위해 저장 안 함. 원본 무손상.")
+    if count != expect:
+        print(f"[ABORT] 치환 카운트 != {expect} ({count}건) — 오인/중복 방지 위해 저장 안 함. 원본 무손상.")
         await page.screenshot(path=str(INSPECT_DIR / f"wp_swap_abort_{ts}.png"))
         await ctx.close(); await p.stop(); return 11
     repl_before = original.count(repl)  # 동일 URL이 이미 본문에 있을 수 있음(상대 검증용)
     print(f"[INFO] repl 사전 출현 횟수: {repl_before}")
     new_content = original.replace(find, repl)
-    if new_content == original or new_content.count(repl) != repl_before + 1:
+    if new_content == original or new_content.count(repl) != repl_before + expect:
         print(f"[ABORT] 치환 후 repl 증가 != 1 (전 {repl_before} → 후 {new_content.count(repl)}) — 저장 안 함.")
         await ctx.close(); await p.stop(); return 12
     # 길이 변화는 (repl-find) 길이차 * 1 이어야 함 (그 외 변형 차단)
-    expected_delta = len(repl) - len(find)
+    expected_delta = (len(repl) - len(find)) * expect  # 같은 문구가 데스크톱·모바일 두 벌이면 --expect-count 2
     if len(new_content) - len(original) != expected_delta:
         print(f"[ABORT] 길이 델타 불일치(기대 {expected_delta}, 실제 {len(new_content)-len(original)}) — 저장 안 함.")
         await ctx.close(); await p.stop(); return 13
@@ -1021,9 +1021,9 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     await page.wait_for_timeout(500)
     verify = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
     # repl 이 find 를 품으면(뒤에 덧붙이는 삽입) find 는 repl 안에 든 수만큼 남는 게 정상
-    find_after = repl.count(find)
-    if verify.count(repl) != repl_before + 1 or verify.count(find) != find_after:
-        print(f"[ABORT] textarea 반영 검증 실패(repl {verify.count(repl)}건/기대 {repl_before+1}, find {verify.count(find)}건/기대 {find_after}) — 저장 안 함.")
+    find_after = repl.count(find) * expect
+    if verify.count(repl) != repl_before + expect or verify.count(find) != find_after:
+        print(f"[ABORT] textarea 반영 검증 실패(repl {verify.count(repl)}건/기대 {repl_before+expect}, find {verify.count(find)}건/기대 {find_after}) — 저장 안 함.")
         await ctx.close(); await p.stop(); return 14
     print(f"[INFO] textarea 치환 반영 확인 (repl {verify.count(repl)}건, find {find_after}건)")
 
@@ -1044,7 +1044,7 @@ async def run_swap_href(post_id_arg: str, find: str, repl: str) -> int:
     saved = await page.evaluate("() => (document.querySelector('#content')||{}).value || ''")
     await page.screenshot(path=str(INSPECT_DIR / f"wp_swap_saved_{ts}.png"))
     print(f"[INFO] 저장 후 상태: {status or '(미검출)'}")
-    print(f"[INFO] 저장 후 본문 내 find 잔존: {saved.count(find)}건(기대 {find_after}) / repl: {saved.count(repl)}건(기대 {repl_before+1})")
+    print(f"[INFO] 저장 후 본문 내 find 잔존: {saved.count(find)}건(기대 {find_after}) / repl: {saved.count(repl)}건(기대 {repl_before+expect})")
     await ctx.close(); await p.stop()
     ok = saved.count(find) == find_after and saved.count(repl) == repl_before + 1
     print(f"[INFO] === 외과적 치환 {'완료' if ok else '확인 필요'} === (백업: {backup_path})")
@@ -1984,6 +1984,7 @@ def main() -> int:
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")
     ap.add_argument("--repl", dest="repl", default=None, help="swap-href 바꿀 문자열")
+    ap.add_argument("--expect-count", dest="expect_count", type=int, default=1, help="swap-href 에서 find 가 본문에 정확히 몇 번 있어야 하는지(기본 1 · 데스크톱·모바일 두 벌이면 2)")
     ap.add_argument("--slug", dest="slug", default=None, help="publish-* 슬러그 (미지정 시: inquiry 모드=inquiry, reception 모드=reception)")
     ap.add_argument("--menu-id", dest="menu_id", default=KOREAN_MENU_ID, help="add-menu/remove-menu 대상 메뉴 ID(기본 59=한글메인)")
     ap.add_argument("--object-ids", dest="object_ids", default=None,
@@ -2022,7 +2023,7 @@ def main() -> int:
     if args.mode == "swap-href":
         if not args.post_id or not args.find or not args.repl:
             print("[ERROR] swap-href는 --post-id --find --repl 모두 필요"); return 1
-        return asyncio.run(run_swap_href(args.post_id, args.find, args.repl))
+        return asyncio.run(run_swap_href(args.post_id, args.find, args.repl, args.expect_count))
     if args.mode == "wpml-create-en":
         return asyncio.run(run_wpml_create_en_translation())
     if args.mode == "draft-inquiry-en":
