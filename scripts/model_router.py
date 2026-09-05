@@ -49,10 +49,16 @@ except Exception:
 # ── 폴백 체인 (단일 출처) ───────────────────────────────────────────────
 # 순서 = 우선순위. 1순위(opus)가 "모델 자체 차단" 신호일 때만 다음으로 강등.
 # 업무 연속성 기준: 판단 본업(Opus) → 표준(Sonnet) → 경량(Haiku). 한 모델이 외부 차단돼도 운영 지속.
+# 2026-09-05 GM 지시 "최대한 효율적으로 · Fable 5.1 로": 기본 체인 = 표준(Sonnet).
+# 콘텐츠·집계·송부 호출부는 기본 체인, 판단 호출부만 JUDGMENT_CHAIN 을 명시해 넘긴다(CLAUDE.md 토큰 라우팅 ⑨).
 MODEL_FALLBACK_CHAIN = [
-    "claude-opus-4-8",    # 1순위: 판단·결재 본업 — 일반 오류는 이 모델을 재시도
-    "claude-sonnet-4-6",  # 2순위: opus "모델차단" 감지 시에만 강등
-    "claude-haiku-4-5",   # 3순위: 최후 경량 (sonnet도 "모델차단"일 때만)
+    "claude-sonnet-4-6",  # 1순위: 표준 — 일반 오류는 이 모델을 재시도
+    "claude-haiku-4-5",   # 2순위: sonnet "모델차단" 감지 시에만 강등
+]
+JUDGMENT_CHAIN = [
+    "claude-fable-5-1",   # 1순위: 판단·검토 본업(주간 자기검토 · GM 프로필 · 학습 제안)
+    "claude-sonnet-4-6",  # 2순위: fable "모델차단" 감지 시에만 강등
+    "claude-haiku-4-5",
 ]
 
 _PER_MODEL_TIMEOUT = 140  # 모델당 호출 타임아웃(초) — 아래 벽시계 상한 근거 참조

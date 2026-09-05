@@ -295,13 +295,13 @@ def generate_proposals_claude_cli(summary_text: str, max_proposals: int) -> list
     # 모델 라우팅 폴백 경유(model_router) — 단일 모델 차단·장애 시 대체 모델 자동 강등 + 텔레그램 경보.
     # 정본 = scripts/model_router.py (제안 prop_20260623_185611_d79017, GM 승인 2026-06-23).
     try:
-        from model_router import run_claude  # same scripts/ 디렉터리
+        from model_router import run_claude, JUDGMENT_CHAIN  # same scripts/ 디렉터리
     except ImportError:
         import sys as _sys
         _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from model_router import run_claude
+        from model_router import run_claude, JUDGMENT_CHAIN
 
-    raw, used_model = run_claude(prompt, label="learning-proposer")
+    raw, used_model = run_claude(prompt, models=JUDGMENT_CHAIN, label="learning-proposer")
     if raw is None:
         print("[WARN] 전 모델 폴백 실패 — 규칙기반 폴백")
         return None

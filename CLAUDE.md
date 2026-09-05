@@ -81,7 +81,7 @@
 
 ### 토큰 라우팅 매트릭스
 > 정본 = **S2 공통탭 ▸ 통합원칙 ⑨** (Haiku=read·lookup·송부 / Sonnet=가동·patch·집계·git·콘텐츠·로그 / Opus=판단·결정·검토·결재·이슈진단). 상세·갱신은 S2에만 — 표 중복 금지.
-- 메인 CEO·6 C-Level = Opus 유지(판단·결재 본업).
+- 세션 모델(GM 확정 2026-09-05 · 정본=`Start-AI *.bat` `--model`): 리드·판단 3석(웰리·시토·시보)=**Fable 5.1** / 실행 5석(시모·시우·시포·시뽀·시로)=**Sonnet**. 서브에이전트(`wellperion-agents/.claude/agents/*.md` `model:`)도 같은 배분. API 스크립트 = `scripts/model_router.py` 기본 체인 Sonnet, 판단 3본(주간 자기검토·GM 프로필·학습 제안)만 `JUDGMENT_CHAIN`(Fable). 자동 러너 = Sonnet. 전역 기본(`~/.claude/settings.json`) = Fable 5.1(1M 컨텍스트 해제 — 200K 초과 2배 과금 방지).
 - 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(`executor` 등) 위임. 메인 모델로 처리 시 위반.
 
 상세 교육자료·고도화 프롬프트 → 웰페리온 ERP 참조 (6번)

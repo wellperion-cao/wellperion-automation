@@ -417,10 +417,10 @@ def scan_memory() -> dict:
 # ═══════════════════════════════════════════
 def _run_claude(prompt: str, label: str) -> str | None:
     try:
-        from model_router import run_claude
+        from model_router import run_claude, JUDGMENT_CHAIN
     except ImportError:
         return None
-    text, _model = run_claude(prompt, label=label)
+    text, _model = run_claude(prompt, models=JUDGMENT_CHAIN, label=label)
     return text
 
 

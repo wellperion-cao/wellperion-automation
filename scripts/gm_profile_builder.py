@@ -312,11 +312,11 @@ GM(대표)을 보좌하기 위해, 관찰 원장과 업무 큐 지표를 근거�
 def brain_claude_cli(counters: dict, ledger: list) -> tuple[str | None, str | None]:
     prompt = _build_prompt(counters, ledger)
     try:
-        from model_router import run_claude
+        from model_router import run_claude, JUDGMENT_CHAIN
     except ImportError:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from model_router import run_claude
-    raw, used_model = run_claude(prompt, label="gm-profile-builder")
+        from model_router import run_claude, JUDGMENT_CHAIN
+    raw, used_model = run_claude(prompt, models=JUDGMENT_CHAIN, label="gm-profile-builder")
     if raw is None:
         return None, None
     return raw.strip(), used_model
