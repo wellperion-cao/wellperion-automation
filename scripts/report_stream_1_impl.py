@@ -582,7 +582,18 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         try:
             import ops_daily_digest as _od
             _cl = _od.erp_member_close(today)
-            _lines = _od.erp_close_lines(_cl, None, "오늘")
+            # ★2026-09-05 배1023(시토 988 회신) — 21:30 카톡 수집이 생겨 저녁 통이 오늘자 임정은M 마감 공유를
+            #   읽을 수 있다. 파서·대조는 ops_daily_digest 한 곳 재사용(약속 L21). 공유가 없으면 없다고 적는다(날조 금지).
+            _share = None
+            try:
+                _od.KAKAO_ROOM_DIR = _od.ROOM_DIR_BASE / "★운영부"
+                _ep = _od.find_latest_export()
+                if _ep is not None:
+                    _share = _od.parse_membership_share(_od.parse_export(_od.read_text_robust(_ep)).get(today, []))
+            except Exception as _pe:
+                print(f"[stream1] 마감 공유 파싱 실패(무시): {type(_pe).__name__}: {_pe}")
+            _lines = _od.erp_close_lines(_cl, _share, "오늘")
+            _lines.append(" • 임정은M 마감 공유 — " + (f"{_share.get('time', '')} 확인(등록·LOSS 위와 대조)" if _share else "아직 없음(21:30 수집 기준)"))
             if _cl.get("종료"):
                 _lines.append(" • 오늘 종료 " + " · ".join(f"{n}({g})" for n, g in _cl["종료"]) + " — 내일 로스일자·미등록사유 기재")
             tail += "\n\n━━━━━━━━━━\n" + "\n".join(_lines)

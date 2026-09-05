@@ -10042,8 +10042,11 @@ function loadCpoTodayStats() {
       _applyCpoStats(snap.today_stats);
     });
   }
-  fetch(GAS_URL + '?action=cpo_today_stats')
-    .then(function(r){ return r.json(); })
+  // ★2026-09-05 배1021(시토 946 회신) — ERP 도메인에서는 서버 집계 라우트(/api/report/cpo_today_stats)를
+  //   먼저 읽는다(GAS 7~15초 → 0.2초). 실패하거나 6분 안에 회원 쓰기가 있었으면 종전 GAS(회원 목록과 같은 규칙).
+  //   Pages 에선 ERP_API_ON 이 false 라 종전 그대로. 계산은 여전히 서버 한 곳(members_report.cpo_today_stats)이다.
+  var gas = function(){ return fetch(GAS_URL + '?action=cpo_today_stats').then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/cpo_today_stats').catch(function(e){ console.warn('[오늘 현황] API 실패 → GAS 폴백:', e && e.message); return gas(); }) : gas())
     .then(function(d){
       if (!d || !d.ok) return;
       _applyCpoStats(d);
