@@ -339,7 +339,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
      서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
      GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
      ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
-  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/lost/handover' : RECEPTION_API; } /* 2026-09-05 시우(배1059): 서버 원장 직접 수령 처리 — 관문 경유 GAS 는 배984 이후 새 습득물을 못 찾는다 */
   var CACHE_KEY = 'wlp_lf_gallery_v1';
   var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
 

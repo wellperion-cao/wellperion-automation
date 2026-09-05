@@ -1179,6 +1179,11 @@ function _card(r){
   return h;
 }
 
+/* ★2026-09-05 시우(배1053·1059) — ERP 도메인은 접수처 쓰기 5액션 전부 서버 원장 직접. 시트만 보던 GAS 는 배984 이후
+   새 접수를 못 찾았다. 깃허브 페이지·워드프레스 사본은 종전 GAS 그대로(주소가 REG_API 로 떨어진다). 응답 모양은 GAS 와 같다. */
+var _RC_SERVER_ROUTES = { reg_update:'/api/reception/update', reg_delete:'/api/reception/delete', lf_handover:'/api/reception/lost/handover',
+  lf_delete:'/api/reception/lost/delete', hold_complete:'/api/reception/hold/complete' };
+function _rcUrl(action){ return (/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) && _RC_SERVER_ROUTES[action]) ? _RC_SERVER_ROUTES[action] : REG_API; }
 /* ── 갱신 (reg_update) ── */
 function _update(id, cat, payload, btn, statusEl, statusPrev){
   if(!id) return;
@@ -1202,8 +1207,7 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   /* ★2026-09-05 시우(배1053) — ERP 도메인은 서버 원장에 직접 갱신(/api/reception/update). 배984 이후 새 접수는 서버 원장이
      정본이라 시트만 보는 GAS reg_update 가 '해당 접수ID를 찾을 수 없습니다'로 100% 실패했다(오늘 접수분 상태·담당·메모 저장 무효).
      필드는 reg_update 와 1:1. 깃허브 페이지·워드프레스 사본은 종전 GAS 그대로. */
-  var _updUrl = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/update' : REG_API;
-  fetch(_updUrl, {
+  fetch(_rcUrl('reg_update'), {
     method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
     body:JSON.stringify(body), redirect:'follow'
   }).then(function(r){ return r.json(); }).then(function(d){
@@ -1564,7 +1568,7 @@ $('mConfirm').addEventListener('click', function(){
   var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
   var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign,
     ownerName:$('m_ownerName').value.trim(), ownerPhone:$('m_ownerPhone').value.trim(), receiverPhone:$('m_receiverPhone').value.trim(), storageLoc:$('m_storageLoc').value.trim(), providedDate:$('m_providedDate').value.trim(), memo:$('m_memo').value.trim() };
-  fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
+  fetch(_rcUrl('lf_handover'), { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
     .then(function(r){ return r.json(); })
     .then(function(d){
       btn.disabled = false; btn.textContent = '수령 완료';
@@ -1603,7 +1607,7 @@ function _wireBoard(){
       var hnm = holdDoneBtn.dataset.hName || '', hph = holdDoneBtn.dataset.hPhone || '', hst = holdDoneBtn.dataset.hStart || '';
       if(!confirm('이 휴회 접수를 완료 처리할까요?')) return;
       holdDoneBtn.disabled = true;
-      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'hold_complete', name:hnm, phone:hph, start:hst}), redirect:'follow' })
+      fetch(_rcUrl('hold_complete'), { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'hold_complete', name:hnm, phone:hph, start:hst}), redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
           if(d && d.ok){
@@ -1650,7 +1654,7 @@ function _wireBoard(){
       if(pin === null) return;
       if(String(pin).trim() !== REG_DEL_PIN){ toast('비밀번호가 올바르지 않습니다', true); return; }
       regDelBtn.disabled = true;
-      fetch(REG_API, {
+      fetch(_rcUrl('reg_delete'), {
         method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
         body:JSON.stringify({ action:'reg_delete', id:rId, category:rCat, pin:String(pin).trim() }),
         redirect:'follow'
@@ -1704,7 +1708,7 @@ function _wireBoard(){
       var delId = delBtn.dataset.lfDel;
       if(!confirm('[' + delId + '] 습득물을 삭제할까요?')) return;
       delBtn.disabled = true;
-      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:RECEPTION_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
+      fetch(_rcUrl('lf_delete'), { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:RECEPTION_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
           if(d && d.ok){ toast(delId + ' 삭제 완료'); lfLoad(); }
