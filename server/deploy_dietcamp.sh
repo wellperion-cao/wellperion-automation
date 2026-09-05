@@ -11,7 +11,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 SRC="3. 웰페리온 가이드/cbo/dietcamp"
 TMP="$(mktemp -d)"
-for f in "$SRC"/before_after_*.html; do
+for f in "$SRC"/{before_after_*,drafts_*}.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거(서버엔 없는 경로)
 done
 $S "sudo mkdir -p /srv/www/2_dietcamp && sudo chown ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
@@ -19,7 +19,7 @@ $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
 $SCP server/erp_api/dietcamp.nginx.conf $HOST:/tmp/dietcamp.conf
 $S "sudo mv /tmp/dietcamp.conf /etc/nginx/conf.d/erp-locations/dietcamp.conf && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx && ls -la /srv/www /srv/www/2_dietcamp"
 rm -rf "$TMP"
-for f in "$SRC"/before_after_*.html; do
+for f in "$SRC"/{before_after_*,drafts_*}.html; do
   b=$(basename "$f"); printf '%s = ' "$b"; curl -s -o /dev/null -w '%{http_code}
 ' "https://erp.wellperion.com/dietcamp/$b"
 done

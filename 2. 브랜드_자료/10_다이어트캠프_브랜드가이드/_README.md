@@ -49,3 +49,7 @@
 - 가격표 pptx 안의 대표 개인 계좌번호는 어떤 산출물에도 옮기지 않는다.
 - 대외 발송은 초안 → GM 승인 → `scripts/kakao_report_sender.py`(관문 하나). 매 소통은 페이지로, Before & After 를 확실히.
 - 어투 = 강한 어조·확신(대표님 요청). 웰페리온 톤·금지어를 복사하지 않는다.
+
+## 대표님용 렌더 (GM 지시 2026-09-05)
+- `python scripts/dietcamp_setup_page.py --partner` → `cbo/dietcamp/drafts_v0.1.html` (브랜드가이드·회사소개서·운영전략 3종 · 결재선·웰페리온 벤치마크 절과 내부 이름 제외) → `bash server/deploy_dietcamp.sh` 로 다캠 라인(AWS) `https://erp.wellperion.com/dietcamp/` 에 올린다. github.io 주소는 대표님께 보내지 않는다.
+- 원칙: **초안 = 기준점 · 방향은 대표님 몫 · 대표님 말씀 받아 v0.1 → v0.2 → v1.0 으로 계속 수정·보완.** 판을 올릴 때마다 소통기록에 한 줄.
