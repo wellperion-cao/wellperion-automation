@@ -282,6 +282,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260905-27",
+          "no": "27",
+          "got": "월간운영계획 — 시우에게 불필요한 것 정리 시키기 (리마인드 발송분은 GM 이 수동 삭제)",
+          "did": "시우 배1055 직접 전달 · 898/899 재발송은 정리 뒤 GM 판단",
+          "start": "16:02",
+          "end": "16:02",
+          "minutes": 0,
+          "upload": "✅ 올림 (1a3d02f47)",
+          "open": false,
+          "evidence": "🔁재확인"
+        },
+        {
           "ref": "GM-20260905-1003",
           "no": "03",
           "got": "키오스크 접수처에 종합접수처 들어가보면 접수하기버튼이 생겼는데 의미없는 버튼이라 삭제",
@@ -496,15 +508,21 @@
           "upload": "✅ 올림 (a6a1197de)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-1029",
+          "no": "29",
+          "got": "웰리 배편 리스트업",
+          "did": "",
+          "start": "16:04",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "11:00",
-          "area": "작업",
-          "event": "배1005 — 매시 러너 첫 회차 실측(세션 충돌 2건·손상 0) · 세션 생존 감지·배 클레임 요구 추가",
-          "detail": "커밋 275ee1144 · 배 11197"
-        },
         {
           "time": "11:08",
           "area": "작업",
@@ -678,16 +696,37 @@
           "area": "작업",
           "event": "배898·899 note — 월간운영계획 카드 수리 기록",
           "detail": "커밋 4093abf36 · 배 11197"
+        },
+        {
+          "time": "16:02",
+          "area": "작업",
+          "event": "시우 배1055 월간운영계획 정리(GM 지시) · 배898·899 리마인드 삭제 반영",
+          "detail": "커밋 1a3d02f47 · 배 11197"
         }
       ],
-      "count": 41,
-      "done": 41,
-      "open": 0,
-      "avg_minutes": 5,
+      "count": 43,
+      "done": 42,
+      "open": 1,
+      "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-1029",
+          "no": "29",
+          "got": "웰리 배편 리스트업",
+          "did": "",
+          "start": "16:04",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -936,18 +975,6 @@
       ],
       "work": [
         {
-          "time": "15:09",
-          "area": "작업",
-          "event": "ERP 권한 정리 — 앱 셸 그룹 4 정리·부서 템플릿 정본·권한 관리 페이지 매트릭스·개인 예외 3건 (배1026 · 웰리 설계)",
-          "detail": "커밋 9afe9551e · 배 11220"
-        },
-        {
-          "time": "15:14",
-          "area": "작업",
-          "event": "인사 데이터 AWS 이관 서버 준비 회신 — 스택 정정(FastAPI+PostgreSQL)·hr 스키마 생성·경로/인증/사양 (CHRO 요청 2026-09-05)",
-          "detail": "커밋 a16dcb83e · 배 11286"
-        },
-        {
           "time": "15:15",
           "area": "작업",
           "event": "자율현황 알림 한 장 단순화 — 요약 1줄+문제만 기본, 방 묶음 합치기, 필터 1개, 설명 접기 (GM 2026-09-05)",
@@ -1114,6 +1141,18 @@
           "area": "작업",
           "event": "배1036 브리핑 갱신 — 컨시어지 구조전환·오늘 운영 상태·자체점검 9건 기록",
           "detail": "커밋 ef06143b7 · 배 11286"
+        },
+        {
+          "time": "16:01",
+          "area": "작업",
+          "event": "상담봇 L2 클라이언트 — AWS Bedrock 우선(EC2 IAM 역할·키 0) + 1P 대안 + 3중 가드(일일한도·모델오류 폴백·Bedrock 실패 텔레그램 경고) (배1036 GM)",
+          "detail": "커밋 b7bca5b3a · 배 11286"
+        },
+        {
+          "time": "16:04",
+          "area": "작업",
+          "event": "상담봇 Bedrock 실패 경고 — 오류 종류 미리 안 가리고 전부 알림(실측: 예상한 AccessDenied 아니라 bedrock-mantle DNS 미응답)",
+          "detail": "커밋 1a0ef9d5e · 배 11286"
         }
       ],
       "count": 20,
@@ -1269,7 +1308,7 @@
           "start": "15:55",
           "end": "15:56",
           "minutes": 1,
-          "upload": "✅ 올림 (b716e5751)",
+          "upload": "✅ 올림 (3141ddedb)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1281,7 +1320,7 @@
           "start": "15:57",
           "end": "16:01",
           "minutes": 3,
-          "upload": "✅ 올림 (b716e5751)",
+          "upload": "✅ 올림 (3141ddedb)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -1438,12 +1477,6 @@
           "detail": "커밋 5a3b1738c · 배 11298"
         },
         {
-          "time": "15:35",
-          "area": "작업",
-          "event": "IG 발행검증 자동 대조 → 발행완료 도장",
-          "detail": "커밋 17069f63d · 배 11298"
-        },
-        {
           "time": "15:45",
           "area": "작업",
           "event": "항로 리스트업 양식 — GM 응답엔 입항 완료 섹터 생략(진행중·대기중만) · 약속 L16 + gm-report 스킬 §5-1 (GM 확정 2026-09-05)",
@@ -1466,6 +1499,12 @@
           "area": "작업",
           "event": "배924 — 현장 전문 촬영으로 전환(GM 2026-09-05) · 나우열M 견적·결재 GM업무 등록",
           "detail": "커밋 b716e5751 · 배 11298"
+        },
+        {
+          "time": "16:04",
+          "area": "작업",
+          "event": "IG 발행검증 자동 대조 → 발행완료 도장",
+          "detail": "커밋 3141ddedb · 배 11298"
         }
       ],
       "count": 13,
@@ -1609,7 +1648,7 @@
           "start": "15:53",
           "end": "15:55",
           "minutes": 1,
-          "upload": "✅ 올림 (e982b0e9f)",
+          "upload": "✅ 올림 (557705a7b)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1758,13 +1797,25 @@
           "area": "공통",
           "event": "시토 회원 쓰기 7종 서버 골격 배 등록(force-route · 담당 가드 오판)",
           "detail": "커밋 e982b0e9f · 배 11310"
+        },
+        {
+          "time": "16:03",
+          "area": "공통",
+          "event": "브로제이 API 연동 요청 명세 A3 (WP-CPO-260905-01) — 매출보고서 칸 ↔ 받을 데이터 4갈래·기술 조건 7·대조 기준·일정 (GM 지시 2026-09-05)",
+          "detail": "커밋 b6df12f3a · 배 11310"
+        },
+        {
+          "time": "16:03",
+          "area": "공통",
+          "event": "배908·전사일정 9/7 에 브로제이 API 요청 명세 A3 연결",
+          "detail": "커밋 557705a7b · 배 11310"
         }
       ],
       "count": 12,
       "done": 11,
       "open": 1,
       "avg_minutes": 3,
-      "work_count": 22,
+      "work_count": 24,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1780,7 +1831,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         }
       ],
       "repeats": []
@@ -2510,13 +2561,25 @@
           "ref": "GM-20260905-9021",
           "no": "21",
           "got": "GM 콘솔 5단계 조금 더 친절하게 설명해줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:02",
+          "minutes": 0,
+          "upload": "✅ 올림 (fd5eafc8c)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9022",
+          "no": "22",
+          "got": "루트 자격 증명을 위해 MFA를 35일 이내에 등록해야 합니다.",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:03",
+          "end": "16:04",
+          "minutes": 0,
+          "upload": "✅ 올림 (fd5eafc8c)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2647,29 +2710,14 @@
           "detail": "커밋 fd5eafc8c · 배 11305"
         }
       ],
-      "count": 30,
-      "done": 29,
-      "open": 1,
+      "count": 31,
+      "done": 31,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 21,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-9021",
-          "no": "21",
-          "got": "GM 콘솔 5단계 조금 더 친절하게 설명해줘",
-          "did": "",
-          "start": "16:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
