@@ -448,12 +448,6 @@
         {
           "time": "11:14",
           "area": "작업",
-          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 0a5579c4f · 배 11197"
-        },
-        {
-          "time": "11:14",
-          "area": "작업",
           "event": "GM 결재 4건 반영 — 7채널 확정·fit·라이브 홈(시모 전달) · 배1011 실장 검토 요청 발송 + 요금인상안 GM업무·월간계획 등록",
           "detail": "커밋 a3cfddee7 · 배 11197"
         },
@@ -486,6 +480,12 @@
           "area": "작업",
           "event": "7채널 통일 후속 — 잡코리아 나우열M 발송 · GM 붙여넣기 5곳 GM업무 등록 (배999)",
           "detail": "커밋 3c38ed60c · 배 11197"
+        },
+        {
+          "time": "11:24",
+          "area": "작업",
+          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+          "detail": "커밋 9e0e5f251 · 배 11197"
         }
       ],
       "count": 26,
@@ -636,36 +636,6 @@
       ],
       "work": [
         {
-          "time": "08:35",
-          "area": "작업",
-          "event": "배960 M3·M4·M7 — 쓰기 관문 액션표 엄격화·업무 GAS srvkey 서명·중복 쓰기 가림(idem) + 접수 origin 스위치 보강 (서버엔 09-04 배포됨 · 저장소 뒤따름)",
-          "detail": "커밋 01b675ec3 · 배 11221"
-        },
-        {
-          "time": "08:37",
-          "area": "작업",
-          "event": "배952 — ERP 홈·로그인 화면 워드마크를 원본 벡터 SVG(erp/brand)로 교체 (currentColor · 라이트/다크 상속)",
-          "detail": "커밋 e99ff8f54 · 배 11221"
-        },
-        {
-          "time": "08:38",
-          "area": "작업",
-          "event": "부팅 정리 — 배930·961·981·994 종결(실측 증거 note) · 952 입항",
-          "detail": "커밋 d177ca55b · 배 11220"
-        },
-        {
-          "time": "09:40",
-          "area": "작업",
-          "event": "콘솔 UTF-8 재래핑을 reconfigure 로 통일 — 39파일. 옛 io.TextIOWrapper(sys.stdout.buffer) 재래핑은 모듈이 겹쳐 import 될 때 앞 래퍼가 GC 되며 원래 스트림을",
-          "detail": "커밋 dd8c9fcc0 · 배 11220"
-        },
-        {
-          "time": "09:41",
-          "area": "자가점검",
-          "event": "08:00 CEO 아침 통합 보고 미발송 — stdout 재래핑 GC 사고(39파일 reconfigure 교체·09:39 재발송 복구)",
-          "detail": "wellperion-agents/scripts/ceo_morning_pipeline.py 외 38파일 · dry-run rc=0 · 실발송 업무보고방+AI방 09:39"
-        },
-        {
           "time": "09:49",
           "area": "작업",
           "event": "GEO 측정기 geo_watch.py - AI 검색(claude 웹검색) 인용 주 1회 기준선 (배971)",
@@ -808,13 +778,49 @@
           "area": "작업",
           "event": "문의 유입경로 channel_code UTM 채우기 + 운영부 카톡 21:30/19:30 수집 예약 (배1006·988)",
           "detail": "커밋 1b49906fd · 배 11220"
+        },
+        {
+          "time": "11:22",
+          "area": "작업",
+          "event": "월간운영계획 업무&결재 SSOT 읽기를 서버 /api/todo 로 전환 (배960 · GM_TODO_KEY 일치 확인 후)",
+          "detail": "커밋 c46a75c32 · 배 11220"
+        },
+        {
+          "time": "11:23",
+          "area": "작업",
+          "event": "로드맵 문서 갱신 — 월간운영계획 전환 완료 반영 (배960)",
+          "detail": "커밋 8b0c7298b · 배 11220"
+        },
+        {
+          "time": "11:23",
+          "area": "작업",
+          "event": "메모리 회수 훅 memory_recall.py + MEMORY.md 주제 지도 + 규칙→훅 감사 + 부팅 로드 게이지 (배1016)",
+          "detail": "커밋 96dda1995 · 배 11220"
+        },
+        {
+          "time": "11:24",
+          "area": "작업",
+          "event": "배988 종결 큐 갱신",
+          "detail": "커밋 6d0dfb443 · 배 11220"
+        },
+        {
+          "time": "11:24",
+          "area": "작업",
+          "event": "wp_geo_apply.py 메타 문구를 canon_values.json 직독으로 전환 (배1000 후속3 · 재확인+하드코딩 제거)",
+          "detail": "커밋 8a37f27bb · 배 11220"
+        },
+        {
+          "time": "11:24",
+          "area": "작업",
+          "event": "boot_pack.py 부팅 슬라이스 — SSOT 4종·규약·등록부를 역할별 5,000자 안으로, 부팅 지시문 교체 (배1014)",
+          "detail": "커밋 e8ea6a672 · 배 11220"
         }
       ],
       "count": 11,
       "done": 11,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 29,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [],
