@@ -57,6 +57,7 @@ if _SCRIPTS_DIR not in sys.path:
 from welly_orchestrate import select_autonomous_ships, ACTIVE_STATUSES  # noqa: E402  (기존 선별기 재사용)
 from module_registry import load_registry  # noqa: E402
 from queue_dispatch import EXCLUDED_ROLES as _EXCLUDED_ROLES  # noqa: E402  (배제 역할 단일 정본)
+from session_register import alive as session_alive  # noqa: E402  (살아있는 세션 판정 단일 정본)
 
 # ── 경로 상수 ──
 DEFAULT_QUEUE_PATH = os.path.join(_PROJECT_ROOT, "status", "_queue.json")
@@ -225,6 +226,54 @@ def _sort_key(ship: dict):
     return (_urgency_rank(ship), _priority_rank(ship))
 
 
+# ── 러너 중복 집기 차단(배1005 ④ · 2026-09-05) ──
+# 러너는 회차마다 큐를 새로 보므로, 앞 회차가 방금 집어 아직 돌고 있는 배를 그대로 다시
+# 고른다(2026-09-05 10:30 실측 2척 충돌). 배에 집은 시각을 찍고, 그 시각이 아직 신선하면
+# 다음 회차가 건너뛴다. 오늘 이미 IN_PROGRESS 로 손댄 배도 같은 이유로 뺀다 — 누군가
+# 지금 그 배를 잡고 있다는 뜻이라 러너가 끼어들 자리가 아니다.
+RUNNER_CLAIM_MINUTES = 30
+
+
+def _runner_recently_claimed(ship: dict, now: datetime | None = None) -> bool:
+    """러너가 최근(RUNNER_CLAIM_MINUTES 내) 집었거나, 오늘 이미 진행중으로 손댄 배인가."""
+    now = now or datetime.now(timezone.utc)
+    claimed = ship.get("runner_claimed_at")
+    if claimed:
+        try:
+            stamp = datetime.fromisoformat(str(claimed).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            if (now - stamp).total_seconds() < RUNNER_CLAIM_MINUTES * 60:
+                return True
+        except (ValueError, TypeError):
+            pass  # 시각이 깨졌으면 없는 것으로 본다(fail-open — 배가 영영 안 집히면 더 나쁘다)
+    if (ship.get("status") or "").strip().upper() == "IN_PROGRESS":
+        if str(ship.get("updated_at") or "")[:10] == datetime.now().date().isoformat():
+            return True
+    return False
+
+
+def _mark_runner_claim(task_id: str) -> bool:
+    """러너가 이 배를 집었다고 큐에 찍는다. 실패해도 실행을 막지 않는다(fail-open)."""
+    from queue_lock import mutate_queue  # noqa: PLC0415  (지연 import — 실제 집을 때만 잠금)
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    hit = {"ok": False}
+
+    def mutator(queue):
+        for ship in queue:
+            if isinstance(ship, dict) and ship.get("task_id") == task_id:
+                ship["runner_claimed_at"] = stamp
+                hit["ok"] = True
+                break
+        return queue
+
+    try:
+        mutate_queue(mutator, holder="welly_auto_runner")
+    except Exception:  # noqa: BLE001
+        return False
+    return hit["ok"]
+
+
 def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=None,
                                  feedback_only=False):
     """
@@ -244,6 +293,7 @@ def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=
     candidates = [s for s in candidates if _is_low_risk(s)]
     candidates = [s for s in candidates if _is_concrete_ship(s)]
     candidates = [s for s in candidates if s.get("task_id") not in cooldown_task_ids]
+    candidates = [s for s in candidates if not _runner_recently_claimed(s)]
     # 이미 parked-interview 중인 배(aide_interview_needed=True)는 매 사이클 재선택해
     # 다른 후보를 막지 않도록 제외한다 — GM 답변 기록 시 플래그 해제되면 자연히 재후보군 복귀.
     candidates = [s for s in candidates if not s.get("aide_interview_needed")]
@@ -1309,6 +1359,26 @@ def run_once(
         _append_log({"event": "guard_blocked"}, log_path)
         return result
 
+    # ── 살아있는 세션이 있으면 러너가 비켜 준다 (배1005 ③ · GM 지시 2026-09-05) ──
+    # 사람이 창을 열어 둔 C-Level 세션이 이미 그 역할의 배를 보고 있는데 러너가 새 claude 를
+    # 띄우면 둘이 같은 배를 집는다. 배는 큐에 그대로 남으므로 유실은 없다 — 그 세션이 집는다.
+    # ★--boot-candidate 경로는 boot_candidate() 를 직접 부르므로 이 게이트를 안 탄다★
+    #   부팅 세션 자신은 당연히 살아 있으니, 여기 걸리면 자기 배를 자기가 못 고른다.
+    # 등록부는 '라이브 큐를 보는 세션'을 가리킨다 — 다른 큐(테스트·실험)를 돌 때는 상관없다.
+    session = session_alive(clevel) if queue_path == DEFAULT_QUEUE_PATH else {"alive": False}
+    if session["alive"]:
+        reason = (f"세션 살아있음({session['session']} · {session['age_min']:.0f}분 전) — 러너 건너뜀")
+        print(f"[{clevel.upper()}] {reason}")
+        _append_log(
+            {"event": "skip_live_session", "clevel": clevel,
+             "session": session["session"], "age_min": session["age_min"]},
+            log_path,
+        )
+        return {
+            "mode": "skip-live-session", "ship": None, "prompt": None,
+            "executed": False, "commit": None, "reason": reason,
+        }
+
     # ── 클린트리 베이스라인: LIVE 실행 시에만, 선별·실행 전에 워킹트리를 점검한다.
     # 2026-07-20 재설계 — git status 자체가 실패한 경우(안전 확인 불가)에만 fail-closed
     # 차단한다. allowlist 밖 foreign 파일이 있어도 더 이상 여기서 막지 않고 베이스라인으로만
@@ -1406,6 +1476,11 @@ def run_once(
         }
         _append_log({"event": "live_no_claude_cli", "task_id": ship.get("task_id")}, log_path)
         return result
+
+    # 집었다고 큐에 찍는다 — 다음 회차가 아직 도는 이 배를 또 집지 않게(배1005 ④).
+    # 기본 큐일 때만 찍는다(테스트가 준 임시 큐를 라이브 큐로 착각해 쓰지 않게).
+    if queue_path == DEFAULT_QUEUE_PATH:
+        _mark_runner_claim(ship["task_id"])
 
     before_commit = _git_head(_PROJECT_ROOT)
     child_env = dict(os.environ)

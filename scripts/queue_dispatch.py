@@ -27,6 +27,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from queue_lock import mutate_queue  # noqa: E402
 from assign_short_no import next_short_no  # noqa: E402  (배10012 — 표시용 짧은 번호)
+from session_register import alive as _session_alive  # noqa: E402  (배1005 ③ — 살아있는 세션 판정)
 
 ROLES = {
     "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
@@ -216,6 +217,21 @@ def _warn_missing_staff_message(ship: dict) -> None:
               "되는지' 한 줄을 넣어 다시 띄우거나, 큐에서 이 배의 staff_message 칸을 채우세요.")
 
 
+def _print_session_hint(role: str, ship_label, title: str) -> None:
+    """
+    받는 역할 세션이 지금 살아 있으면 SendMessage 로 바로 알리라고 한 줄 남긴다
+    (배1005 ③ · GM 지시 2026-09-05 "살아있는 세션이랑도 협업이 되어야지").
+    배는 이미 큐에 남았으므로 이 줄이 없어도 유실은 없다 — 부팅까지 기다릴지,
+    지금 알릴지만 갈린다. 판정 정본 = session_register.alive.
+    """
+    state = _session_alive(role)
+    if state["alive"]:
+        print('📨 받는 역할 세션 살아있음 → SendMessage to "%s" 로 지금 알리세요 (배 %s · %s)'
+              % (state["session"], ship_label, title))
+    else:
+        print("⏳ 받는 역할 세션 없음 → 러너/다음 부팅이 집습니다")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="다른 C-Level에게 배를 띄워 일을 넘긴다")
     ap.add_argument("--to", required=True, choices=sorted(ROLES), help="받는 역할")
@@ -354,6 +370,7 @@ def main() -> int:
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
         _warn_missing_staff_message(ship)
+        _print_session_hint(args.to.lower(), ship.get("short_no") or ship.get("ship_no"), args.title)
         return 0
 
     mutate_queue(mutator, holder="queue_dispatch")
@@ -367,6 +384,7 @@ def main() -> int:
             print("  보낸 내용(맥락·다음)은 그 배 설명에 붙였습니다 — 유실 없음.")
         if made.get("must_finish_absorbed"):
             print("  🎯 반드시 끝낼 것으로 지목: %s" % d.get("must_finish_on"))
+        _print_session_hint(args.to.lower(), disp, d.get("title") or args.title)
         return 0
 
     s = made["ship"]
@@ -379,6 +397,7 @@ def main() -> int:
     if s.get("must_finish_on"):
         print("  🎯 반드시 끝낼 것 : %s" % s["must_finish_on"])
     print("  기록    : status/_queue.json  (커밋·푸시하면 받는 쪽 항로에 뜹니다)")
+    _print_session_hint(s["clevel"], disp, s["title"])
     return 0
 
 
