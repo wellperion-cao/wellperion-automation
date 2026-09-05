@@ -1,6 +1,6 @@
 <!-- 웰페리온 워드프레스 '자주 묻는 질문' 페이지 본문 직접 주입 소스 (vc_raw_html, self-contained).
      방식 = 문의/종합접수처와 동일: iframe 아닌 본문 텍스트 블록 직접 인라인.
-     문답 9개 = home/index.html 의 <section class="faq" id="faq"> 문구를 그대로 옮김(1자도 변경 금지,
+     문답 14개 = home/index.html 의 <section class="faq" id="faq"> 문구를 그대로 옮김(1자도 변경 금지,
      검색용 JSON-LD 와 동일해야 함). 수정 시 index.html 쪽도 같이 고쳐 두 소스가 벌어지지 않게 한다. -->
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <style>
@@ -28,6 +28,10 @@
     <p class="faq-a">정원제로 운영합니다. 정원이 찼을 때는 대기 멤버십을 함께 운영하며, 자세한 안내는 상담 시 드립니다.</p>
   </div>
   <div class="faq-item">
+    <p class="faq-q">가입은 어떻게 하나요?</p>
+    <p class="faq-a">문의 페이지(wellperion.com/ko/inquiry)에서 투어 &middot; 상담을 예약하고, 방문 상담 후 가입합니다. 정원이 찼을 때는 대기 멤버십을 안내합니다.</p>
+  </div>
+  <div class="faq-item">
     <p class="faq-q">운영 시간은 어떻게 되나요?</p>
     <p class="faq-a">평일 06:00&sim;22:30, 주말 &middot; 공휴일 08:00&sim;20:00. 휴관일은 신정, 설 &middot; 추석 명절 연휴, 매월 둘째 &middot; 넷째 주 일요일입니다.</p>
   </div>
@@ -37,11 +41,27 @@
   </div>
   <div class="faq-item">
     <p class="faq-q">어떤 시설을 이용할 수 있나요?</p>
-    <p class="faq-a">수영 &middot; 트레이닝 &middot; 골프(GDR &middot; QED 2종 타석) &middot; 스쿼시 &middot; 체조 &middot; 필라테스 &middot; 사우나 &middot; 스파를 한 공간에서 이용합니다. 자세한 소개는 위 공간 안내를 참고하세요.</p>
+    <p class="faq-a">수영 &middot; 트레이닝 &middot; 골프(GDR &middot; QED 2종 타석) &middot; 스쿼시 &middot; 체조 &middot; 필라테스 &middot; 사우나 &middot; 스파를 한 공간에서 이용합니다.</p>
   </div>
   <div class="faq-item">
     <p class="faq-q">강습도 예약제인가요?</p>
-    <p class="faq-a">네, P.T &middot; 수영 &middot; 체조 &middot; 골프 &middot; 스쿼시 &middot; G.X 등 모든 강습은 사전 예약제로 진행하며 워크인 등록은 운영하지 않습니다.</p>
+    <p class="faq-a">네. 성인 강습(수영 &middot; P.T &middot; 필라테스 &middot; 골프 &middot; 스쿼시 &middot; 발레 &middot; 바레)과 유소년 강습 모두 사전 예약제로 진행하며, 워크인 등록은 운영하지 않습니다.</p>
+  </div>
+  <div class="faq-item">
+    <p class="faq-q">유소년 강습은 어떤 종목이 있나요?</p>
+    <p class="faq-a">수영, 스쿼시, KPGA 주니어 골프, 체조, 브래드리틀 뮤지컬 아카데미가 있습니다. 대상 연령과 일정은 종목별로 상담 시 안내합니다.</p>
+  </div>
+  <div class="faq-item">
+    <p class="faq-q">영어로 진행되는 강습이 있나요?</p>
+    <p class="faq-a">강습은 기본적으로 한국어로 진행합니다. 영어 강습은 뮤지컬 &middot; 수영 &middot; 스쿼시만 가능하며, 문의 페이지로 문의해 주세요.</p>
+  </div>
+  <div class="faq-item">
+    <p class="faq-q">운동복이나 수건은 준비되어 있나요?</p>
+    <p class="faq-a">네. 운동복 &middot; 양말 &middot; 수건 &middot; 샤워 어메니티가 구비되어 있고, 수영 이용 시 바스타올을 드립니다. 실내용 운동화만 준비해 주세요. 수영을 하시는 분은 수영복 &middot; 수영모 &middot; 수경을 준비해 주세요.</p>
+  </div>
+  <div class="faq-item">
+    <p class="faq-q">스파 &middot; 살롱 &middot; 카페도 있나요?</p>
+    <p class="faq-a">파트너 시설로 Cinq Mondes(생크몽드) 스파, beaut&eacute;vu 살롱, CUPS 카페가 함께 있습니다. 이용 안내는 대표 전화 02-6261-1200으로 문의해 주세요.</p>
   </div>
   <div class="faq-item">
     <p class="faq-q">규모는 어느 정도인가요?</p>
@@ -53,6 +73,6 @@
   </div>
   <div class="faq-item">
     <p class="faq-q">용산구에 정원제로 운영하는 회원제 스포츠클럽이 있나요?</p>
-    <p class="faq-a">웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·골프·P.T·체조·스쿼시·G.X 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.</p>
+    <p class="faq-a">웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영 &middot; P.T &middot; 필라테스 &middot; 골프 &middot; 스쿼시 &middot; 발레 &middot; 바레 강습과 사우나 &middot; 스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.</p>
   </div>
 </div>
