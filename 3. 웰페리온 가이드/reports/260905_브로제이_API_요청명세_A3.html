@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>브로제이 API 연동 요청 명세 — 웰페리온 A3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:2px 8px; font-size:11.6px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:24px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>브로제이 API 연동 요청 명세 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기 · 브로제이(조민규 대표·손영인 주임) 전달용</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">브로제이 API 연동 요청 명세 — 매출보고서를 사람 손 없이 만들기 위해 받을 것</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시포</b><br>
+      작성일 <b>2026. 09. 05.</b> · 문서번호 <b>WP-CPO-260905-01</b> · 사양·키 수령 예정 <b>2026. 09. 07.(월)</b><br>
+      대상 <b>브로제이(조민규 대표 · 손영인 주임)</b> · 우리 쪽 <b>김남욱 GM</b>(창구) · 시포(대조·화면) · 시토(서버 적재)
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">읽기 전용 API 4갈래(결제·입장·회원·상품)를 하루 단위로 당겨 AWS 서버에 쌓고, 매출보고서 숫자 칸을 자동으로 채운다</div>
+        <div class="d">지금은 실무진이 그날 계약을 보고 시트 일자탭에 손으로 적어야 보고서가 나온다. 손이 비면 보고서가 빈다(9/4 실사고). 원천을 브로제이로 바꾸면 그 손이 사라진다. 쓰기 권한은 받지 않는다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">사양·키가 오면 9/4 하루치를 보고서와 대조해 맞는 갈래부터 교체 — 안 맞으면 교체하지 않는다</div>
+        <div class="d">대조 기준 = 9/4 보고서(총 25,343,000 · 회원권 15,880,000 · 옵션 575,500 · 수영 5,305,500 · 입장 482/12/34). 10/1 결제·매출 보고 브로제이 기준 전환(보고서 H21 기록)에 맞춰 9월 안에 3일 대조를 끝낸다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th class="k">보고서 칸 (매일 09:30 카톡 3방)</th><th style="width:250px">지금 원천</th><th>브로제이에서 받아야 할 것</th><th style="width:260px">계산 규칙(우리 쪽)</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">매 출 (금일 · 월 누적)</td></tr>
+      <tr><td class="k">총 매출 합계 · 회원권 매출 · 옵션 매출</td><td>일자탭 손입력(회원권 A~G열)</td><td class="strong">A. 결제(계약) 건별 조회 — 결제일시·상품구분(회원권/강습권/옵션/일일권)·금액·결제수단·계약구분(신규/재등록/양도/환불/취소)</td><td>결제일(KST) 기준 합계 · 환불·취소는 음수 또는 상태로 구분해 순매출</td></tr>
+      <tr><td class="k">팀별 강습 매출 8줄(수영·P.T·골프·스쿼시·체조·P.L·뮤지컬·GXE)</td><td>일자탭 손입력(강습 H~N열)</td><td class="strong">A 의 종목/팀 칸 + E. 상품 마스터(상품코드 ↔ 구분·종목·팀)</td><td>상품코드로 팀을 가른다 — 이름 문자열로 가르지 않는다</td></tr>
+      <tr><td class="k">신규 등록 매출 · 재등록 매출 · 환불 매출</td><td>일자탭 분류 칸 손입력</td><td class="strong">A 의 계약구분 + 환불 원거래 ID</td><td>구분별 합계 · 환불은 원거래와 짝</td></tr>
+      <tr class="grp"><td colspan="4">인 원 (등록 · 로스 · 회원 구성)</td></tr>
+      <tr><td class="k">신규등록자 · 재등록자(L재등록) · 로스자</td><td>일자탭 손입력 + ERP 원장</td><td class="strong">A 의 계약구분 인원 + D. 회원 상태 변경분(만료·미갱신·휴회)</td><td>사람 수(같은 사람 2건=1명) · 로스 = 종료일 지나 미갱신</td></tr>
+      <tr><td class="k">총 회원수 · 정회원 · 중단기 · 법인 · 대기</td><td>ERP 회원 원장(구글 시트 → 서버 미러)</td><td>D. 회원 마스터(회원ID·이름·전화·구분·상품·시작·종료·상태·수정시각 · updated_since 조회)</td><td>당분간 우리 원장이 정본 — 브로제이 값은 대조용. 회원 매칭키 = 브로제이 회원ID + 전화</td></tr>
+      <tr class="grp"><td colspan="4">입 장</td></tr>
+      <tr><td class="k">일일입장객 — 멤버십 · 준회원 · 유소년</td><td>손입력(8/12부터 보고 중단)</td><td class="strong">C. 입장(출입) 로그 — 입장시각·회원ID·회원구분·출입구·인증수단(얼굴/카드)·퇴장시각</td><td>일별 고유 인원 by 회원구분(같은 사람 재입장=1명) · 일일권은 별도</td></tr>
+      <tr class="grp"><td colspan="4">사 람 이 쓰 는 칸 (API 대상 아님)</td></tr>
+      <tr><td class="k">예상 컨택·LOSS 기록 · 팀별 운영현황 · 인사&amp;파트너 · 핵심 보고 · 목표 매출·달성률</td><td>실무진 서술 · 우리 목표표</td><td>—</td><td>그대로 사람이 적는다(목표는 우리 SSOT)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <h3>브로제이에 요청하는 것 — 기술 조건 7</h3>
+      <ul class="ord">
+        <li class="n">조회 주소(엔드포인트) 4갈래 + 필드 정의서(문서) — A 결제 건별 · C 입장 로그 · D 회원 · E 상품 마스터</li>
+        <li class="n">인증 — API 키 또는 토큰(헤더), 발급·재발급 절차, 읽기 전용 권한</li>
+        <li class="n">조회 조건 — 기간(from·to, 결제일시/입장시각 기준 명시) · 페이징 · 건수 상한 · 시간대 KST</li>
+        <li class="n">수정·취소 반영 — 수정시각(updated_at) 필드 · 환불/취소는 상태 또는 음수, 원거래 ID 연결</li>
+        <li class="n">호출 제한(분당·일당) · 응답 지연 기준 · 장애 시 연락 창구</li>
+        <li class="n">테스트 환경 또는 표본 응답 JSON(각 갈래 하루치) — 대조는 이걸로 먼저</li>
+        <li class="n">개인정보 범위 합의 — 이름·전화 포함 여부, 회원 매칭용 브로제이 회원ID 고정값</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>우리 쪽 준비 — 이미 끝난 것</h3>
+      <ul>
+        <li>AWS 서버 저장소·배치 완료(시토 9/4) — 응답 JSON 통째 저장, 하루 단위·소급 인자, 멱등</li>
+        <li>호출 주소·키는 코드가 아니라 서버 설정 4줄 — <b>사양·키가 오면 코드 수정 없이 그 자리에서 돈다</b></li>
+        <li>매출·회원 현황 보고 화면(1·2페이지)은 서버 우선 읽기로 전환 완료(9/5) — 원천만 바꾸면 화면은 그대로</li>
+        <li>회원 원장 서버 미러 12 라우트 대조 12/12 일치(9/5) — 회원 매칭 준비 끝</li>
+        <li>원칙 — 읽기 전용 · 키는 저장소 밖 · 새 화면 없음 · 대조 안 맞으면 교체 안 함</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>일정 · 검증</h3>
+      <ul>
+        <li><b>9/7(월)</b> 사양·키 수령(GM) → 같은 날 서버 설정 4줄 채움(시토) · 표본 호출(시포)</li>
+        <li><b>9/7~9/8</b> 9/4 하루치 대조 — 총매출·회원권·옵션·팀별 8줄·입장 3줄이 보고서와 원 단위 일치해야 통과</li>
+        <li><b>9/8~</b> 8월 1일부터 소급 적재 + 매일 새벽 자동 호출(cron) · 3일 연속 대조 무결</li>
+        <li><b>10/1</b> 결제·매출 보고 브로제이 기준 전환 — 보고서 매출·인원·입장 칸 자동, 사람은 서술 칸만</li>
+        <li>안 맞는 갈래는 그 갈래만 시트 유지 — 부분 전환 허용, 전체 지연 없음</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>대조 기준값(9/4 보고서 실측)</b> — 총 25,343,000 · 누적 81,209,110 · 회원권 15,880,000 · 옵션 575,500 · 수영 5,305,500 · P.T 1,239,000 · 스쿼시 1,089,000 · 체조 1,254,000 · 재등록 매출 15,880,000 · 재등록자 5명 · 입장 멤버십 482 · 준회원 12 · 유소년 34 · 총 회원 1,027 · 정회원 988 · 법인 31 · 대기 5.</div>
+    <div><b>왜 4갈래인가</b> — 보고서 숫자 칸 22개 중 사람 서술 6개를 뺀 16개가 결제 건별(A)·입장 로그(C)·회원 상태(D)·상품 매핑(E) 넷으로 전부 계산된다. 일 매출 집계 API 는 A 로 계산되므로 필수 아님(있으면 대조용).</div>
+    <div><b>기록</b> — 배908(시포·표본 대조·화면 원천) · 배959(시토·서버 적재) · 전사일정 9/7 「브로제이 API 연동」 · 보고서 H21 「결제·매출 보고 브로제이 전환 10월 1일부터」. 사양이 오면 본 문서를 같은 번호로 갱신(받은 필드 ↔ 요청 필드 대조표 추가).</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260905_브로제이_API_요청명세_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
