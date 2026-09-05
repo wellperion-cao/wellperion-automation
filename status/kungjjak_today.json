@@ -253,7 +253,7 @@
           "start": "15:14",
           "end": "15:21",
           "minutes": 6,
-          "upload": "✅ 올림 (702c70b8b)",
+          "upload": "✅ 올림 (322494131)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -265,7 +265,7 @@
           "start": "15:18",
           "end": "15:20",
           "minutes": 2,
-          "upload": "✅ 올림 (702c70b8b)",
+          "upload": "✅ 올림 (322494131)",
           "open": false,
           "evidence": "🔁재확인"
         },
@@ -457,7 +457,7 @@
           "start": "15:17",
           "end": "15:20",
           "minutes": 3,
-          "upload": "✅ 올림 (702c70b8b)",
+          "upload": "✅ 올림 (322494131)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -888,30 +888,6 @@
       ],
       "work": [
         {
-          "time": "11:24",
-          "area": "작업",
-          "event": "boot_pack.py 부팅 슬라이스 — SSOT 4종·규약·등록부를 역할별 5,000자 안으로, 부팅 지시문 교체 (배1014)",
-          "detail": "커밋 e8ea6a672 · 배 11220"
-        },
-        {
-          "time": "11:25",
-          "area": "작업",
-          "event": "배1022 종결 — 억지 다음 배 정리(훅 후보 3건은 1016 감사표에 있음)",
-          "detail": "커밋 631c8840a · 배 11220"
-        },
-        {
-          "time": "11:26",
-          "area": "작업",
-          "event": "무인 러너 3레인 병렬 + dirty skip 교집합 완화 + 크루즈 정박 사유·중복 집기 차단 (배1005)",
-          "detail": "커밋 f01afb0de · 배 11220"
-        },
-        {
-          "time": "11:32",
-          "area": "작업",
-          "event": "러너 skip_live_session 기록을 역할·세션당 1시간 1줄로 — 3분 피드백 슬롯이 하루 1,900줄 남기던 것 (배1005 꼬리 · 웰리 실측)",
-          "detail": "커밋 6859e9d06 · 배 11220"
-        },
-        {
           "time": "14:36",
           "area": "작업",
           "event": "배1016 재종결 — 큐 병합에서 되돌아온 상태 정정",
@@ -1066,6 +1042,30 @@
           "area": "작업",
           "event": "전사일정 저장 후 misc_cache 미러 즉시 재동기화 (배1039-B)",
           "detail": "커밋 fd7ae0855 · 배 11286"
+        },
+        {
+          "time": "15:29",
+          "area": "작업",
+          "event": "완료 훅의 큐 쓰기를 잠금 관문(queue_lock.mutate_queue) 경유로 — 잠금 없는 통째 덮어쓰기가 같은 시각 다른 세션 갱신을 지워 종결이 되돌아오던 사고(2026-09-05 3회) 수리",
+          "detail": "커밋 be2c40a26 · 배 11286"
+        },
+        {
+          "time": "15:32",
+          "area": "작업",
+          "event": "검수 5건(H2·M1·M2·M3·L2) 실측 기록 + 배1026 브리핑 갱신",
+          "detail": "커밋 e992449a2 · 배 11286"
+        },
+        {
+          "time": "15:32",
+          "area": "작업",
+          "event": "상담봇 2단계 — 관리자 API 4개·고객 상담봇 페이지 템플릿·관리자 페이지·spogym 테넌트 (배1036)",
+          "detail": "커밋 6593bcc78 · 배 11286"
+        },
+        {
+          "time": "15:32",
+          "area": "작업",
+          "event": "INC-054 — 완료 훅 잠금 없는 큐 덮어쓰기로 종결 되돌림(3회) · 관문 단일화로 GUARDED [지연 재시도]",
+          "detail": "커밋 0a597585b · 배 11286"
         }
       ],
       "count": 19,
@@ -1340,13 +1340,25 @@
           "area": "작업",
           "event": "전환 퍼널 첫 단 측정 스니펫 — 새 홈 KO/EN·문의 허브·문의 폼 한/영에 페이지뷰·문의 클릭 기록(/api/track · 개인정보 없음) + 라이브 재주입 (배1038 · 시토 배1034 규격)",
           "detail": "커밋 fdd775901 · 배 11298"
+        },
+        {
+          "time": "15:32",
+          "area": "작업",
+          "event": "INC-054 — 완료 훅 잠금 없는 큐 덮어쓰기로 종결 되돌림(3회) · 관문 단일화로 GUARDED [지연 재시도]",
+          "detail": "커밋 ed19f3f45 · 배 11298"
+        },
+        {
+          "time": "15:32",
+          "area": "작업",
+          "event": "배1035 note — 상담봇 시안 v3(상담원 느낌 · GM 수정) 재발행",
+          "detail": "커밋 066396086 · 배 11298"
         }
       ],
       "count": 8,
       "done": 8,
       "open": 0,
       "avg_minutes": 5,
-      "work_count": 27,
+      "work_count": 29,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1450,6 +1462,18 @@
           "upload": "✅ 올림 (186cf797c)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-4011",
+          "no": "11",
+          "got": "시포가 AWS로 이관 진행할 것들은 진행해줘",
+          "did": "",
+          "start": "15:32",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1532,14 +1556,29 @@
           "detail": "커밋 ec7122468 · 배 11165"
         }
       ],
-      "count": 8,
+      "count": 9,
       "done": 8,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 13,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-4011",
+          "no": "11",
+          "got": "시포가 AWS로 이관 진행할 것들은 진행해줘",
+          "did": "",
+          "start": "15:32",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -1685,7 +1724,7 @@
           "start": "15:24",
           "end": "15:25",
           "minutes": 0,
-          "upload": "✅ 올림 (2c01d4694)",
+          "upload": "✅ 올림 (8d21005fa)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1693,13 +1732,13 @@
           "ref": "GM-20260905-5014",
           "no": "14",
           "got": "테스트 검증하고나서 다 삭제하는거지?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "15:25",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:32",
+          "minutes": 7,
+          "upload": "✅ 올림 (8d21005fa)",
+          "open": false,
+          "evidence": "🔁재확인"
         }
       ],
       "work": [
@@ -1780,31 +1819,28 @@
           "area": "작업",
           "event": "종합접수처 습득물 근본대책 — 옛주소 자동이동 + 15분 상시점검(GM 알림) + 드리프트 관문",
           "detail": ""
+        },
+        {
+          "time": "15:30",
+          "area": "작업",
+          "event": "배1012 실무진 안내 표 운영 3줄 갱신(접수처 서버화 반영)",
+          "detail": ""
+        },
+        {
+          "time": "15:31",
+          "area": "작업",
+          "event": "배1012 — AWS 이관 실무진 안내 표 운영 3줄 갱신(접수처 저장 서버화·옛 주소 자동 이동·15분 점검·시트 되밀기 실측) + 배 종결",
+          "detail": "커밋 8d21005fa · 배 11180"
         }
       ],
       "count": 13,
-      "done": 12,
-      "open": 1,
+      "done": 13,
+      "open": 0,
       "avg_minutes": 6,
-      "work_count": 13,
+      "work_count": 15,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-5014",
-          "no": "14",
-          "got": "테스트 검증하고나서 다 삭제하는거지?",
-          "did": "",
-          "start": "15:25",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
@@ -1982,8 +2018,20 @@
           "ref": "GM-20260905-9010",
           "no": "10",
           "got": "상담봇은 몇개국어까지 번역을 시켜주려나?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "15:26",
+          "end": "15:29",
+          "minutes": 2,
+          "upload": "✅ 올림 (83679f76d)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9011",
+          "no": "11",
+          "got": "영어까지는 번역이 되게 해줘 그리고 FAQ가 아니라, 더 부드럽고 자연스럽게 셋업은 안될까? // 그리고 모델 호출 비용은 뭐야? 왜 비용이 들어?",
+          "did": "",
+          "start": "15:30",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2071,8 +2119,8 @@
           "detail": "커밋 83679f76d · 배 11287"
         }
       ],
-      "count": 15,
-      "done": 14,
+      "count": 16,
+      "done": 15,
       "open": 1,
       "avg_minutes": 5,
       "work_count": 13,
@@ -2080,18 +2128,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260905-9010",
-          "no": "10",
-          "got": "상담봇은 몇개국어까지 번역을 시켜주려나?",
+          "ref": "GM-20260905-9011",
+          "no": "11",
+          "got": "영어까지는 번역이 되게 해줘 그리고 FAQ가 아니라, 더 부드럽고 자연스럽게 셋업은 안될까? // 그리고 모델 호출 비용은 뭐야? 왜 비용이 들어?",
           "did": "",
-          "start": "15:26",
+          "start": "15:30",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 3
         }
       ],
       "repeats": []
