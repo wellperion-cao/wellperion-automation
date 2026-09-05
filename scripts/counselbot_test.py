@@ -77,7 +77,7 @@ def main() -> int:
           % (a.tenant, len(system), len(api_chat._load_faq(a.tenant).get("faq") or [])))
     for q in qs:
         hint = " (질문이 영어이니 영어로 답하세요)" if api_chat._is_english_q(q) else ""
-        prompt = system + "\n\n[손님 질문]\n" + q + hint + "\n\n[상담원 답변]"
+        prompt = system + "\n\n[손님 질문]\n" + q + hint + "\n\n[상담원 답변 — 질문을 되풀이하지 말고 답만 쓴다]"
         t0 = time.time()
         text, used = run_claude(prompt, models=[a.model] if a.model else None, label="counselbot-test")
         dt = time.time() - t0
