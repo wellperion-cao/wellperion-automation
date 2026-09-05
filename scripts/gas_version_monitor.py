@@ -129,14 +129,21 @@ def _get_access_token() -> str | None:
 
 
 # ── Apps Script API 조회 ─────────────────────────────────────────────────────
-def _fetch_version_count(script_id: str, access_token: str) -> int | None:
-    """실제 버전 엔트리 수 조회(전체 페이지네이션 실카운트). 실패 시 None.
+def _fetch_version_count(script_id: str, access_token: str) -> tuple[int, int] | None:
+    """(남아있는 버전 엔트리 수, 최고 버전 번호) 조회(전체 페이지네이션 실카운트). 실패 시 None.
 
     ★ 2026-07-18: 편집기 UI 버전 삭제가 가능해져(버전 일괄 삭제) max(versionNumber)는
        더 이상 총 버전수와 같지 않다(삭제 후에도 최신 번호는 유지). 200 하드리밋은
        '남아있는 버전 엔트리 수' 기준이므로 전체 페이지를 세어 실카운트를 반환한다.
+    ★ 2026-09-05(시토 지적 실측 — check 프로젝트): "버전이 17로 세어지는데 실제 174"라는
+       보고는 버그가 아니라 두 값의 혼동이었다 — API 실측(projects.versions.list)으로 확인:
+       check 스크립트는 남아있는 엔트리 19개, 최고 버전번호(=clasp deployments의 "@175")는
+       175. 번호는 삭제해도 안 줄어드는 단조증가 카운터, 하드리밋(200)이 적용되는 쪽은
+       엔트리 수(entry count)다(위 07-18 결정 그대로 유효 — 재검증만 함). 다만 최고 번호도
+       "얼마나 배포해왔나"의 유용한 신호라 같이 남긴다(혼동 재발 방지).
     """
     total = 0
+    max_version = 0
     page_token = None
     got_any = False
     while True:
@@ -149,16 +156,21 @@ def _fetch_version_count(script_id: str, access_token: str) -> int | None:
                 data = json.loads(resp.read())
         except urllib.error.HTTPError as e:
             print(f"[WARN] {script_id} API 조회 실패: HTTP {e.code} {e.reason}", flush=True)
-            return None if not got_any else total
+            return None if not got_any else (total, max_version)
         except Exception as e:
             print(f"[WARN] {script_id} API 조회 예외: {e}", flush=True)
-            return None if not got_any else total
+            return None if not got_any else (total, max_version)
         got_any = True
-        total += len(data.get('versions', []))
+        versions = data.get('versions', [])
+        total += len(versions)
+        for v in versions:
+            n = v.get('versionNumber')
+            if isinstance(n, int) and n > max_version:
+                max_version = n
         page_token = data.get('nextPageToken')
         if not page_token:
             break
-    return total
+    return total, max_version
 
 
 # ── clasp CLI 폴백 ────────────────────────────────────────────────────────────
@@ -192,17 +204,25 @@ def _status_icon(count: int) -> str:
 
 
 def collect() -> list[dict]:
-    """5개 프로젝트 버전수 조회 결과 리스트. 각 dict: project/script_id/version_count/status/source."""
+    """5개 프로젝트 버전수 조회 결과 리스트. 각 dict: project/script_id/version_count/max_version_number/status/source.
+
+    max_version_number = clasp deployments 의 "@NNN" 라벨과 같은 단조증가 카운터(삭제해도 안 줄어듦) —
+    version_count(남아있는 엔트리 수·200 하드리밋 대상)와 혼동하지 말 것(2026-09-05 실측 재확인).
+    """
     access_token = _get_access_token()
     results: list[dict] = []
     for name, script_id, local_dir in _PROJECTS:
         count = None
+        max_version = None
         source = 'unknown'
         if access_token:
-            count = _fetch_version_count(script_id, access_token)
-            if count is not None:
+            fetched = _fetch_version_count(script_id, access_token)
+            if fetched is not None:
+                count, max_version = fetched
                 source = 'api'
         if count is None:
+            # ponytail: clasp 폴백은 max 버전번호를 돌려준다(엔트리 수 아님) — API 가 살아있으면 안 타는 드문 경로,
+            # 여기서 완전히 바로잡으려면 clasp 폴백도 페이지네이션 조회로 바꿔야 하는데 이번 지적 범위 밖이라 보류.
             count = _clasp_fallback(local_dir)
             if count is not None:
                 source = 'clasp_fallback'
@@ -210,6 +230,7 @@ def collect() -> list[dict]:
             'project': name,
             'script_id': script_id,
             'version_count': count,
+            'max_version_number': max_version,
             'status': _status_icon(count) if count is not None else "⚪",
             'source': source,
         })
