@@ -53,6 +53,8 @@ def md2html(text):
     return '\n'.join(out)
 
 PARTNER_SRC = SRC[:3]
+FAQ_PATH = BASE + '07_FAQ/faq.json'
+WIDGET = '<script src="/dietcamp/chat_widget.html" data-tenant="2_dietcamp" defer></script>'
 PARTNER_DROP = {'03_전략_구상안/다캠_전략구상안_v0.1.md': ('## 6. ',)}   # 리스크·결재선 + 벤치마크(§6 이후 전부)
 PARTNER_WORDS = [('GM 확정 전', '대표님 확정 전'), ('GM 검토 전', '대표님 확인 전'), ('AI 시보', '웰페리온 AI'), ('시보', '웰페리온 AI'), ('GM 지시', '웰페리온 요청'), ('GM 확정', '웰페리온 확정'),
                  ('GM 검토', '웰페리온 검토'), ('GM', '웰페리온'), ('시토', '웰페리온 AI'), ('웰리', '웰페리온 AI'), ('배 892', '')]
@@ -73,6 +75,14 @@ for path, name in (PARTNER_SRC if PARTNER else SRC):
     if PARTNER: raw = partner_text(path, raw)
     secs.append((name, md2html(raw), path))
 
+import json as _json
+_faq = _json.load(open(FAQ_PATH, encoding='utf-8'))
+_rows = ''.join(f"<tr><td><b>{html.escape(f['q'])}</b></td><td>{html.escape(f['a'])}</td></tr>" for f in _faq['faq'])
+_faq_html = ('<h2>자주 묻는 질문 (FAQ) v0.1 — 채팅봇이 이 답으로만 말합니다</h2>'
+             '<blockquote>' + ('대표님 자료(설문·가격표·재활 솔루션)에 있는 내용만으로 적은 초안입니다. 이 페이지 오른쪽 아래 「무엇이든 물어보세요」 창이 바로 이 FAQ 로 답합니다 — 여기에 없는 질문에는 지어내지 않고 "상담 예약" 으로 안내합니다. 틀린 답, 빠진 질문을 짚어 주시면 그 자리에서 고칩니다. 금액은 넣지 않았습니다(상담 시 가격표).' if PARTNER else
+                               f'정본 = {FAQ_PATH} · 서버 /srv/erp/faq/2_dietcamp/faq.json (같은 파일) · 답변 API /api/chat/2_dietcamp · 미답 = /api/chat/2_dietcamp/unanswered · 상담 예약 링크 = 미수령(meta.reservation_url 빈 값)') + '</blockquote>'
+             f'<table><thead><tr><th style="width:32%">질문</th><th>답</th></tr></thead><tbody>{_rows}</tbody></table>')
+secs.append(('FAQ · 채팅봇', _faq_html, '07_FAQ/faq.json'))
 nav = ''.join(f'<a href="#s{n}">{name}</a>' for n, (name, _, _) in enumerate(secs))
 body = ''.join((f'<section id="s{n}">' + ('' if PARTNER else f'<div class="src">정본: 2. 브랜드_자료/10_다이어트캠프_브랜드가이드/{p}</div>') + f'{h}</section>')
                for n, (name, h, p) in enumerate(secs))
@@ -121,6 +131,7 @@ p{{margin-bottom:8px}} code{{background:#F3F5F7;padding:1px 5px;border-radius:3p
 <nav>{nav}</nav>
 {body}
 {'<div class="foot">비용·조건은 이 페이지에 없으며 별도로 말씀드립니다. 이 초안은 대표님 확인 뒤에만 밖으로 나갑니다. — 웰페리온 AI</div>' if PARTNER else ''}
+{WIDGET if PARTNER else ''}
 </div></body></html>"""
 out = '3. 웰페리온 가이드/cbo/dietcamp/' + ('drafts_v0.1.html' if PARTNER else 'setup_v0.1.html')
 open(out, 'w', encoding='utf-8').write(page)
