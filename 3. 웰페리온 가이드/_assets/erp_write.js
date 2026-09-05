@@ -15,7 +15,9 @@
   // 쓰기만 관문을 탄다. todo_list·todo_scoreboard·todo_categories·ai_list 는 읽기라 제외.
   // notice_save·notice_delete(coo/notice 공지서식) = 같은 GAS 프로젝트에 얹혀 있어 여기 포함(배 1082 · 거울 없음).
   // notice_list(읽기)는 화면이 gasCall 을 직접 부른다 — 관문 대상 아님.
-  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete))$/;
+  // product_plan_save·product_plan_delete(cpo/product 상품기획) = 화면 실제 목적지(TODO_API_URL)가 같은 업무
+  //   GAS 라 여기 포함(배 1039 폼류4종 · api_write._gas_key 와 같은 표 · 거울 없음).
+  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete)|product_plan_(save|delete))$/;
 
   function _json(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -187,6 +189,34 @@
     });
   }
 
+  /* ── 오누띠·직원피드백 쓰기 관문 (배 1039 폼류4종) ────────────────────────────────────────
+     회원·문의 GAS(FUNNEL_EXEC_URL)로 가던 오누띠 상태변경·직원피드백 접수 2종을 같은 규칙으로 /api/write 에 태운다.
+     erpProcCall 과 같은 모양 — 화면은 이미 fetch(gasUrl,...).then(r=>r.json()) 이라 파싱된 객체를 돌려준다.
+
+     제외(종전 GAS 직행 그대로):
+       · ohnutti_team_list·staff_feedback_list = 읽기.
+       · staff_feedback_photo = 화면이 부르는 실제 GAS(FB_PHOTO_URL)가 다섯 목적지 어디에도 없는 별도 프로젝트
+         (콘텐츠 접수 재사용) — 서버 표에 없으면 400 이 되므로 새 env 키가 생기기 전까진 관문에 올리지 않는다.
+     서버 목적지 판정(api_write._gas_key · _FUNNEL_GAS_ACTIONS)과 같은 목록이다 — 한쪽만 늘리면 안 된다. */
+  var FUNNEL_WRITE = /^(ohnutti_status_update|staff_feedback_submit)$/;
+
+  function erpFunnelCall(gasUrl, params) {
+    var gas = function () {
+      return fetch(gasUrl, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(params)
+      }).then(function (r) { return r.json(); });
+    };
+    if (!ERP_ON || !params || !FUNNEL_WRITE.test(String(params.action || ''))) return gas();
+    return gwPost('/api/write', params).then(_json)
+      .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
+      .catch(function (e) {
+        console.warn('[오누띠·피드백쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
+        return gas();
+      });
+  }
+
   w.erpTodoCall = erpTodoCall;
   w.erpTodoIsWrite = function (action) { return WRITE.test(String(action || '')); };
   w.erpCheckPost = erpCheckPost;
@@ -195,4 +225,6 @@
   w.erpRcIsWrite = function (action) { return RC_WRITE.test(String(action || '')); };
   w.erpProcCall = erpProcCall;
   w.erpProcIsWrite = function (action) { return PROC_WRITE.test(String(action || '')); };
+  w.erpFunnelCall = erpFunnelCall;
+  w.erpFunnelIsWrite = function (action) { return FUNNEL_WRITE.test(String(action || '')); };
 })(window);

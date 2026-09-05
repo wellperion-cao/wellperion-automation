@@ -84,10 +84,13 @@ _PROC_GAS_ACTIONS = ("add", "delete", "status", "photo",
 _PROC_MIRROR_WRITES = ("add", "delete", "status", "photo")
 # 회원·문의 GAS(FUNNEL_EXEC_URL)로 보낼 액션 전수 — 시포 화면(cpo/**/*.html)이 실제로 관문에 보내는 것 그대로.
 #   종전에는 표 어디에도 없는 액션이 조용히 이 GAS 로 흘렀다(오타·남의 도메인 액션까지) — 배 960 M3.
-#   위 네 줄(회원·문의)에 없는 나머지 = 상품기획·직원피드백·오누띠·쓰기실패 보고. 늘어나면 화면과 여기를 같이 고친다.
+#   위 네 줄(회원·문의)에 없는 나머지 = 직원피드백(사진 제외)·오누띠·쓰기실패 보고. 늘어나면 화면과 여기를 같이 고친다.
+#   product_plan_save/delete 는 여기 없다 — 화면(상품기획.html TODO_API_URL)의 실제 목적지가 업무 GAS 라
+#   TODO_GAS_URL 쪽에 있다(배 1039 폼류4종). staff_feedback_photo 도 여기 없다 — 화면(FB_PHOTO_URL)의
+#   실제 목적지가 이 다섯 GAS 중 어디에도 없는 별도 프로젝트(콘텐츠 접수 재사용)라 표에 없으면 목적지를
+#   지어내지 않는다(배 960 M3 원칙) — 새 env 키가 생기기 전까진 화면이 GAS 직접 경로 그대로.
 _FUNNEL_GAS_ACTIONS = _MEMBER_WRITES + _INQUIRY_WRITES + (
-    "product_plan_save", "product_plan_delete",
-    "staff_feedback_submit", "staff_feedback_list", "staff_feedback_photo",
+    "staff_feedback_submit", "staff_feedback_list",
     "ohnutti_status_update", "ohnutti_team_list", "client_write_fail")
 MIRROR_SYNC = {a: "sync_members.py" for a in _MEMBER_WRITES}
 MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
@@ -119,8 +122,10 @@ def _gas_key(action):
       화면은 종전대로 GAS 직접 경로로 폴백한다(저장은 되고, 서버 이중기록만 안 남는다)."""
     if action.startswith(("reg_", "lf_", "voc_")) or action == "hold_complete":
         return "RECEPTION_EXEC_URL"
-    if action.startswith(("todo_", "approval_rep_")) or action in ("notice_save", "notice_delete"):
-        return "TODO_GAS_URL"   # 공지서식(coo/notice) — 같은 GAS 프로젝트(배 1082). 거울 없음 — MIRROR_SYNC 미등록.
+    if action.startswith(("todo_", "approval_rep_")) or action in (
+            "notice_save", "notice_delete", "product_plan_save", "product_plan_delete"):
+        return "TODO_GAS_URL"   # 공지서식(coo/notice·배 1082)·상품기획(cpo/product·배 1039) — 같은 업무 GAS 프로젝트.
+        # 거울 없음 — MIRROR_SYNC 미등록(상품기획 시트는 원본이 시트 자체).
     if action in _CHECK_GAS_ACTIONS:
         return "CHECK_GAS_URL"
     if action == "save_schedule":
@@ -265,6 +270,11 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("todo_update") == "TODO_GAS_URL" and _gas_key("approval_rep_cancel") == "TODO_GAS_URL"
     assert _gas_key("notice_save") == "TODO_GAS_URL" and _gas_key("notice_delete") == "TODO_GAS_URL"   # 배 1082
     assert "notice_save" not in MIRROR_SYNC and "notice_delete" not in MIRROR_SYNC   # 거울 없음
+    # 배 1039 폼류4종 — 상품기획은 화면 실제 목적지(TODO_API_URL)와 같은 업무 GAS. FUNNEL 로 새면 안 된다.
+    assert _gas_key("product_plan_save") == "TODO_GAS_URL" and _gas_key("product_plan_delete") == "TODO_GAS_URL"
+    assert "product_plan_save" not in MIRROR_SYNC and "product_plan_delete" not in MIRROR_SYNC   # 거울 없음
+    # staff_feedback_photo 는 다섯 GAS 어디에도 없는 별도 프로젝트(FB_PHOTO_URL) — 목적지를 지어내지 않는다.
+    assert _gas_key("staff_feedback_photo") is None
     assert _gas_key("todo_list") == "TODO_GAS_URL"          # 읽기가 흘러들어와도 목적지는 맞다(화면은 안 보낸다)
     assert MIRROR_SYNC["todo_delete"] == "sync_todo.py" and MIRROR_SYNC["member_owner_save"] == "sync_members.py"
     assert "ai_add" not in MIRROR_SYNC                      # AI배 탭은 거울이 없다 — 헛돌면 안 된다
@@ -302,8 +312,8 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
         assert _gas_key(_a) in origin_switch.WRITE_AREA, _a
     assert set(origin_switch.WRITE_AREA.values()) <= set(origin_switch.NAMES)
     # 표에 없는 액션은 목적지를 지어내지 않는다(배 960 M3) — 시포 화면이 실제로 보내는 회원·문의 액션은 전부 있어야 한다.
-    for _a in ("member_owner_save", "member_inquiry_delete", "lesson_inquiry_update", "product_plan_save",
-               "staff_feedback_submit", "staff_feedback_photo", "ohnutti_team_list", "client_write_fail"):
+    for _a in ("member_owner_save", "member_inquiry_delete", "lesson_inquiry_update",
+               "staff_feedback_submit", "ohnutti_team_list", "client_write_fail"):
         assert _gas_key(_a) == "FUNNEL_EXEC_URL", _a
     assert _gas_key("member_owner_sav") is None and _gas_key("drop_table") is None   # 오타·남의 액션은 400
 
