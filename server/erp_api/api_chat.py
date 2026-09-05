@@ -47,7 +47,7 @@ TENANTS = {"1_wellperion", "2_dietcamp", "3_spogym"}   # 배1036 요청④ — �
 FAQ_DIR = os.environ.get("ERP_FAQ_DIR", "/srv/erp/faq")
 SEED_FAQ_DIR = os.path.join(_HERE, "seed_faq")   # /srv/erp/faq 에 없을 때 폴백 — 개발 PC 자체점검용(검수 L4)
 LOG_PATH = os.environ.get("ERP_CHAT_LOG", "/srv/erp/chat_log.jsonl")
-LOG_ROTATE_BYTES = 20 * 1024 * 1024   # 검수 M4 — welly_auto_runner._append_log 와 같은 방식(.1 로 밀고 두 세대만)
+LOG_ROTATE_BYTES = 20 * 1024 * 1024   # 검수 M4 — 크기 넘으면 회전(삭제 아님 · 배1036 GM 추가② "테스트 데이터=자산")
 UNANSWERED_TAIL_BYTES = 300 * 1024    # unanswered 는 전량 스캔 대신 로그 꼬리만 본다(검수 M4)
 _PHONE_RE = re.compile(r"0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}")
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
@@ -178,13 +178,19 @@ def _mask_pii(q: str) -> str:
     return _EMAIL_RE.sub("[이메일]", _PHONE_RE.sub("[전화번호]", q or ""))
 
 
+def _rotate_log_keep(path: str) -> None:
+    """크기 넘으면 타임스탬프 이름으로 옮겨 보관 — 삭제 0(GM "테스트 데이터=자산" · 배1036 GM 추가②).
+    옛 방식(고정 ".1")은 두 번째 회전에서 그 파일을 덮어써 사실상 삭제였다 — 매번 새 이름이라 안 겹친다."""
+    if os.path.exists(path) and os.path.getsize(path) > LOG_ROTATE_BYTES:
+        stamp = _kst_now().replace("-", "").replace(":", "").replace("T", "")
+        os.replace(path, path + "." + stamp)
+
+
 def _log(tenant: str, q: str, answered: bool, faq_id):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
     try:
         os.makedirs(os.path.dirname(LOG_PATH) or ".", exist_ok=True)
-        # 20MB 넘으면 .1 로 밀어 두 세대만 남긴다(검수 M4 — welly_auto_runner._append_log 와 같은 방식).
-        if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > LOG_ROTATE_BYTES:
-            os.replace(LOG_PATH, LOG_PATH + ".1")
+        _rotate_log_keep(LOG_PATH)
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
@@ -401,8 +407,7 @@ async def feedback(tenant: str, request: Request):
     row = {"ts": _kst_now(), "tenant": tenant, "faq_id": (body or {}).get("faq_id"), "vote": vote}
     try:
         os.makedirs(os.path.dirname(FEEDBACK_LOG_PATH) or ".", exist_ok=True)
-        if os.path.exists(FEEDBACK_LOG_PATH) and os.path.getsize(FEEDBACK_LOG_PATH) > LOG_ROTATE_BYTES:
-            os.replace(FEEDBACK_LOG_PATH, FEEDBACK_LOG_PATH + ".1")
+        _rotate_log_keep(FEEDBACK_LOG_PATH)
         with open(FEEDBACK_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
@@ -555,8 +560,14 @@ _CONCIERGE_PRINCIPLES = (
     "1)먼저 맞이한다(인사+오늘 상황을 먼저 건넨다) 2)답 먼저, 이유는 짧게(첫 문장에 결론) "
     "3)'안 됩니다'로 끝내지 않는다(항상 대안 하나) 4)기억한다(같은 대화에서 앞서 말한 걸 다시 안 묻는다) "
     "5)모르면 확인해서 연락(지어내지 않고 '확인해서 알려드릴게요' + 예약 제안) "
-    "6)마무리도 사람처럼(자연스러운 다음 제안) 7)업체 톤 위에 컨시어지를 얹는다."
-)   # 설계 §3-2 원칙 7 그대로
+    "6)마무리도 사람처럼(자연스러운 다음 제안) 7)업체 톤 위에 컨시어지를 얹는다. "
+    "그 위에 세일즈 원칙 5도 지킵니다 — "
+    "1)목적을 한 번 되묻는다(질문 하나로 니즈를 잡는다·설문처럼 여러 개 안 묻는다) "
+    "2)정본 안의 상품 하나를 콕 짚는다(정본에 없는 상품·효과는 지어내지 않는다) "
+    "3)가치 한 줄로 말하되 숫자는 아니다(가격·할인·보장은 절대 말하지 않는다) "
+    "4)부드러운 다음 행동으로 잇는다(체험·예약·방문 제안 · '지금 아니면'·'마감 임박' 같은 압박 문구 금지) "
+    "5)거절·망설임엔 대안을 하나 준다(같은 제안을 반복하거나 재촉하지 않는다)."
+)   # 설계 §3-2 원칙 7 + §3-3 세일즈 5원칙 그대로
 
 
 def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
@@ -568,15 +579,17 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
     tone = persona.get("emoji") or "적당히"
     handoff = persona.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
     service_concept = (prof.get("identity") or {}).get("service_concept") or ""
+    sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null(스포짐)이면 생략(배1036 GM 추가①)
+    sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
     today_line = _today_hours_line(tenant)
     return (
-        "%s 당신은 '%s' 상담원입니다(%s). 이모지는 '%s' 수준으로 씁니다. "
+        "%s 당신은 '%s' 상담원입니다(%s).%s 이모지는 '%s' 수준으로 씁니다. "
         "아래 [업체 정본]·[FAQ]에 적힌 사실·상품·규정만 사실로 말하세요 — 없는 것은 지어내지 말고 "
         "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
         "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이). "
         "이 화면은 카카오톡 대화창처럼 평문만 보입니다 — 마크다운 금지(**굵게**·목록 기호·제목 기호 쓰지 않는다).\n\n"
         "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s"
-        % (_CONCIERGE_PRINCIPLES, name, service_concept, tone, handoff, today_line or "미확인",
+        % (_CONCIERGE_PRINCIPLES, name, service_concept, sales_line, tone, handoff, today_line or "미확인",
            json.dumps(prof, ensure_ascii=False), faq_lines)
     )
 
@@ -743,6 +756,18 @@ def _selfcheck() -> None:
         pass
     assert _warn_words("결제는 상담 시 안내드려요") == ["결제"]
     assert _warn_words("평일 06:00~22:30 운영합니다") == []
+
+    # 배1036 GM 추가② — 로그 회전은 삭제가 아니라 보관(타임스탬프 이름 · 옛 고정 ".1"은 두 번째 회전에서 덮어써 삭제였다).
+    import tempfile
+    tmp_dir = tempfile.mkdtemp()
+    tmp_log = os.path.join(tmp_dir, "t.jsonl")
+    with open(tmp_log, "w", encoding="utf-8") as f:
+        f.write("x" * (LOG_ROTATE_BYTES + 1))
+    _rotate_log_keep(tmp_log)
+    _rotate_log_keep(tmp_log)   # 파일이 사라져 두 번째는 아무 일도 안 함(존재 검사 통과 못 함) — 회전 파일 보존 확인
+    rotated = [f for f in os.listdir(tmp_dir) if f != "t.jsonl"]
+    assert len(rotated) == 1, rotated   # 회전분 1개가 안 지워지고 그대로 있어야 한다
+    assert not os.path.exists(tmp_log)   # 원본은 회전돼 이름이 바뀌었다(새 글은 여기 다시 생김 · _log 가 open("a") 로 새로 만든다)
 
     # 배1036 GM 구조전환 — L2 주 엔진(키 유무와 무관하게 결정적으로 검증).
     assert _is_hours_question("오늘 운영하나요") and _is_hours_question("지금 영업해요?")
