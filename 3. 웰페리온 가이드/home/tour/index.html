@@ -12,7 +12,7 @@
 <style>
 /* 시설 둘러보기 — 스크롤 스크럽 걷기(GM 재정의 2026-09-04).
    실제 촬영 사진 28장을 동선 순서 프레임으로 삼아, 스크롤 위치 = 걷는 위치.
-   프레임 정본 = ../../회사문서/assets/360/walk_frames.json — 영상 오면 이 파일만 교체, 엔진은 그대로. */
+   프레임 정본 = ../assets/360/walk_frames.json (공개 홈 home/ 안에 자족 · 2026-09-05 이동) — 영상 오면 이 파일만 교체, 엔진은 그대로. */
 :root{
   --bg:#0F0E0E; --ink:#F1ECE5; --ink-2:#BFB4A9; --ink-3:#7E746C;
   --beige:#B79F8A; --line:rgba(241,236,229,.16);
@@ -68,7 +68,7 @@ body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased
 
 <script>
 (function(){
-  var BASE = '../../회사문서/assets/360/';
+  var BASE = '../assets/360/';
   var FRAME_PX = 60; // 프레임당 스크롤 길이(px) — 프레임 수 x 이 값 = 페이지 높이
   var track = document.getElementById('track');
   var fA = document.getElementById('fA'), fB = document.getElementById('fB');
@@ -127,6 +127,5 @@ body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased
   });
 })();
 </script>
-  <script src="../../_assets/page_ping.js" defer></script>
 </body>
 </html>

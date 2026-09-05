@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
 /* 2단계 — 360° 촬영본으로 제자리에서 둘러보고, 바닥의 고리를 눌러 다음 지점으로 걸어간다.
-   지점·연결 정본 = 회사문서/assets/360/tour_nodes.json. 이 파일은 뷰어만. */
+   지점·연결 정본 = home/assets/360/tour_nodes.json (2026-09-05 공개 홈 폴더로 이동). 이 파일은 뷰어만. */
 :root{--bg:#0F0E0E;--ink:#F1ECE5;--ink-2:#BFB4A9;--beige:#B79F8A;--label:"Jost","Pretendard",sans-serif;--sans:"Pretendard","Jost",sans-serif}
 *{box-sizing:border-box}html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
@@ -43,7 +43,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);over
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 <script>
 (function(){
-  var BASE="../../회사문서/assets/360/";
+  var BASE="../../home/assets/360/";
   fetch(BASE+"tour_nodes.json?v="+Date.now()).then(function(r){return r.json()}).then(function(cfg){
     var scenes={}, placeholder=false;
     cfg.nodes.forEach(function(n){

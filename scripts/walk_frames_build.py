@@ -6,7 +6,7 @@
   python scripts/walk_frames_build.py <프레임폴더> <출력.json> [--src-prefix ../walk/]
 
 space·caption 은 빈 값으로 나온다 — 동선 구간별로 수기 채운다(공간 경계는 사람이 안다).
-정본 위치 = 3. 웰페리온 가이드/회사문서/assets/360/walk_frames.json
+정본 위치 = 3. 웰페리온 가이드/home/assets/360/walk_frames.json (2026-09-05 공개 홈 폴더로 이동 · 뷰어 = home/tour/index.html)
 """
 import json
 import sys
