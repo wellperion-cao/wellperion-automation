@@ -320,7 +320,9 @@
   (function(){
     var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
     function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-    function get(path){return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;});}
+    function get(path){ // erp 도메인이면 같은 서버 사본(1분 동기) 먼저, 없으면 GitHub raw — 큐 라이브 지연 5분→1분(GM 2026-09-05)
+      var local = (location.hostname === 'erp.wellperion.com') ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }) : Promise.reject(0);
+      return local.catch(function(){ return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;}); });}
     Promise.all([get('status/page_score.json'), get('status/page_ping.json')])
       .then(function(res){
         var score = res[0], ping = res[1];
@@ -377,7 +379,9 @@
   (function(){
     var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
     function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-    function get(path){return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;});}
+    function get(path){ // erp 도메인이면 같은 서버 사본(1분 동기) 먼저, 없으면 GitHub raw — 큐 라이브 지연 5분→1분(GM 2026-09-05)
+      var local = (location.hostname === 'erp.wellperion.com') ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }) : Promise.reject(0);
+      return local.catch(function(){ return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;}); });}
     get('status/three_line_criteria.json').then(function(data){
       var panel = document.getElementById('three-line-panel');
       if(!data || !Array.isArray(data.rows) || !data.rows.length){ return; }
@@ -489,8 +493,12 @@
      ▸파일 읽기는 다른 화면·요청과 줄을 서지 않는다. 이 화면이 구글 스크립트 대기열에서
        빠지면 같은 대기열을 쓰는 다른 화면도 같이 빨라진다(부수 효과가 더 크다). */
   function gasReadText(path, rawPath){
-    return fetch(RAW_BASE + rawPath + '?t=' + Date.now(), {cache:'no-store'})
-      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.text(); })
+    // erp 도메인이면 같은 서버 사본(git pull 1분) 먼저 — 큐가 GitHub raw 캐시(최대 5분) 대신 1분 안에 보인다(GM 2026-09-05)
+    var local = (location.hostname === 'erp.wellperion.com')
+      ? fetch('/' + rawPath + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('local ' + r.status); return r.text(); })
+      : Promise.reject(new Error('not erp'));
+    return local.catch(function(){ return fetch(RAW_BASE + rawPath + '?t=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.text(); }); })
       .catch(function(){
         return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
             body: JSON.stringify({action:'read_file', path:path})})
@@ -1443,6 +1451,7 @@
   }
   renderCliLive();
   setInterval(renderCliLive, 3000);
+  setInterval(function(){ try{ reloadQueueAndRender(); }catch(e){} }, 60000);   // 🧭 항로 60초 자동 갱신(GM 2026-09-05 '자율현황 라이브')
 
   // ═══════════ 로드 ═══════════
   Promise.all([
