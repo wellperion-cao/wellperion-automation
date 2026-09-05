@@ -1563,6 +1563,7 @@ _NEW_PAGE_SPECS = {
 #   post_id: (스펙키, 리포 파일, 라이브 주소)
 LIVE_PAGES = {
     "8394": ("inquiry-hub",    INQUIRY_BLOCK_FILE,       "http://wellperion.com/ko/inquiry/"),
+    "103":  ("faq",            FAQ_BLOCK_FILE,           "http://wellperion.com/ko/faq/"),   # 2016 옛 FAQ 페이지를 2026-09-05 새 14문답으로 덮음(주소 유지 · GM 「올려」)
     "8408": ("inquiry-hub-en", INQUIRY_FORM_FILE_EN,     "http://wellperion.com/en/inquiry/"),   # 컷오버 뒤 라이브 = 자체 폼(구글폼 블록은 되돌리기 자산)
     "8460": ("survey",         SURVEY_BLOCK_FILE,        "http://wellperion.com/ko/inquiry-form/"),
     "8584": ("lookup",         LOOKUP_BLOCK_FILE,        "http://wellperion.com/ko/lookup/"),
@@ -1577,7 +1578,8 @@ LIVE_PAGES = {
 # 페이지(page-id 103, 2016년 작성, 무관한 내용)가 쓰고 있어 이대로 발행하면 슬러그 충돌(faq-2 등으로
 # 밀림)이 난다 — 발행 전 슬러그를 GM/시모가 정한 뒤(예: 기존 103 페이지 교체 또는 다른 슬러그) 그 주소로
 # 이 표에 추가한다. 지금 넣으면 drift 대조가 무관한 103 페이지와 비교해 매일 오탐을 낸다.
-_KNOWN_POST_IDS = {k: v[0] for k, v in LIVE_PAGES.items()}   # 고정 ID ↔ 스펙 가드(2026-09-04)는 위 표에서 나온다
+_KNOWN_POST_IDS = {
+    "103": "faq",k: v[0] for k, v in LIVE_PAGES.items()}   # 고정 ID ↔ 스펙 가드(2026-09-04)는 위 표에서 나온다
 _FORCE = False   # --force: 라이브가 리포보다 앞서 있어도 주입 강행(외과교체를 버리겠다고 사람이 정했을 때만)
 
 
