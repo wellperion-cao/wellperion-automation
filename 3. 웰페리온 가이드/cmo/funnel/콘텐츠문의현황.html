@@ -340,6 +340,11 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
     <div id="reaction-scorecard-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
   </div>
 
+  <div class="section" style="margin-bottom:0">
+    <div class="section-title">AI 검색 인용 현황 (GEO)</div>
+    <div id="geo-watch-wrap"><div class="flow-skeleton sk-pulse" style="height:90px"></div></div>
+  </div>
+
 </div>
 </div>
     <script src="../_api.js"></script>
@@ -1398,6 +1403,49 @@ if (window.matchMedia) {
 })();
 </script>
 <!-- ══ /편별 반응 성적표 라이브 ══ -->
+<!-- ══ AI 검색 인용 현황(GEO) — status/geo_watch.json 직독 · 매주 월 07:10 갱신 (배1000) ══ -->
+<script>
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var wrap=document.getElementById('geo-watch-wrap');
+  if(!wrap) return;
+  fetch('../../status/geo_watch.json?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); })
+    .then(function(d){
+      var qs = d.queries||[];
+      var total = qs.length;
+      var cited = (d.cited_count!=null) ? d.cited_count : qs.filter(function(q){return q.cited;}).length;
+      var pending = (d.engines_pending||[]).join(', ');
+      var kpi = '<div class="kpi-row">'
+        + '<div class="kpi-card"><div class="num">'+cited+'<span class="unit">/'+total+'</span></div><div class="label">인용 문장</div></div>'
+        + '<div class="kpi-card"><div class="num" style="font-size:14px">'+esc(d.generated_at_kst||'—')+'</div><div class="label">최근 측정</div></div>'
+        + '<div class="kpi-card"><div class="num" style="font-size:14px">'+(pending?esc(pending):'없음')+'</div><div class="label">미구현 엔진</div></div>'
+        + '</div>';
+      var rows = qs.map(function(q){
+        return '<tr>'
+          +'<td>'+esc(q.q)+'</td>'
+          +'<td style="text-align:center">'+(q.cited?'✅':'—')+'</td>'
+          +'<td style="text-align:right">'+(q.rank!=null?q.rank:'—')+'</td>'
+          +'<td style="font-size:11px;color:var(--dim)">'+(q.quote?esc(q.quote):'—')+'</td>'
+          +'</tr>';
+      }).join('');
+      var table = '<div style="overflow-x:auto;margin-top:10px"><table class="channel-table">'
+        + '<thead><tr><th>질문</th><th>인용</th><th style="text-align:right">순위</th><th>인용 문장</th></tr></thead>'
+        + '<tbody>'+rows+'</tbody></table></div>';
+      var hist = d.history||[];
+      var trend = '';
+      if(hist.length>=2){
+        trend = '<div style="font-size:10.5px;color:var(--dim);margin-top:8px">주차별 추이: '+hist.map(function(h){return h.cited_count;}).join(' → ')+'</div>';
+      }
+      wrap.innerHTML = '<div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">매주 월 07:10 갱신 · 엔진: '+esc(d.engine||'—')+'</div>'
+        + kpi + table + trend;
+    })
+    .catch(function(){
+      wrap.innerHTML = '<div class="measure-pending">측정 결과 없음</div>';
+    });
+})();
+</script>
+<!-- ══ /AI 검색 인용 현황(GEO) ══ -->
 </div>
 </div>
 <script defer src="../../_assets/page_ping.js"></script>
