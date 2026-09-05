@@ -147,6 +147,27 @@ async def check(targets: list[tuple[str, str, bool]]) -> list[dict]:
     return rows
 
 
+def drift_rows() -> list[dict]:
+    """워드프레스 열 페이지 리포↔라이브 대조 — '옛것' 재발 감시(2026-09-05). 정본 표·판정은 주입 도구 한 곳."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from wordpress_admin_playwright import LIVE_PAGES, drift_check  # noqa: PLC0415
+
+    rows: list[dict] = []
+    for pid in LIVE_PAGES:
+        d = drift_check(pid)
+        hits: list[str] = []
+        if d["error"]:
+            hits.append(f"라이브 못 읽음 — {d['error'][:60]}")
+        else:
+            if d["missing"]:
+                hits.append(f"리포가 앞섬 — 라이브에 없는 줄 {len(d['missing'])}개(주입 안 됨): {d['missing'][0][:60]}")
+            if d["live_only"]:
+                hits.append(f"라이브가 앞섬 — 리포에 없는 줄 {len(d['live_only'])}개(외과교체 미반영): {d['live_only'][0][:60]}")
+        rows.append({"name": f"드리프트 {d['spec']}", "url": d["url"], "touch": False, "findings": hits})
+        print(("  OK  " if not hits else "  걸림 ") + f"드리프트 {d['spec']}" + (" — " + hits[0] if hits else ""))
+    return rows
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="시우 소유 화면 자동 점검")
     ap.add_argument("--only", default="", help="이름에 이 글자가 든 화면만")
@@ -158,6 +179,8 @@ def main() -> int:
     print(f"[점검] 대상 {len(targets)}개 화면 × 화면크기 2종")
 
     rows = asyncio.run(check(targets))
+    if not args.only:
+        rows += drift_rows()
     bad = [r for r in rows if r["findings"]]
     OUT.write_text(json.dumps({
         "generated_at_kst": datetime.now().strftime("%Y-%m-%d %H:%M"),

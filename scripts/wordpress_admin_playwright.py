@@ -269,6 +269,8 @@ async def run_draft_inquiry(post_id_arg: "str | None" = None) -> int:
     if not INQUIRY_BLOCK_FILE.exists():
         print(f"[ERROR] 문의 블록 HTML 부재: {INQUIRY_BLOCK_FILE}")
         return 4
+    if _refuse_if_live_ahead(post_id_arg or KO_INQUIRY_POST_ID):
+        return 8
     raw_html = INQUIRY_BLOCK_FILE.read_text(encoding="utf-8")
     html = _wrap_vc_raw_html(raw_html)  # WPBakery raw_html — sanitize 회피
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
@@ -580,6 +582,8 @@ async def run_draft_inquiry_en(post_id_arg: str, block_file: "Path | None" = Non
     if not block_file.exists():
         print(f"[ERROR] 영어 문의 블록 HTML 부재: {block_file}")
         return 4
+    if _refuse_if_live_ahead(post_id_arg):
+        return 8
     raw_html = block_file.read_text(encoding="utf-8")
     html = _wrap_vc_raw_html(raw_html)
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1066,6 +1070,8 @@ async def run_draft_reception(post_id_arg: "str | None" = None) -> int:
     if not RECEPTION_BLOCK_FILE.exists():
         print(f"[ERROR] 종합접수처 블록 HTML 부재: {RECEPTION_BLOCK_FILE}")
         return 4
+    if _refuse_if_live_ahead(post_id_arg or RECEPTION_POST_ID):
+        return 8
     raw_html = RECEPTION_BLOCK_FILE.read_text(encoding="utf-8")
     html = _wrap_vc_raw_html(raw_html)   # 직접 인라인 주입(iframe 폐기)
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1545,12 +1551,114 @@ _NEW_PAGE_SPECS = {
 
 # 고정 페이지 ID ↔ 주입 스펙 (2026-09-04 실측). 허브(8394 /ko/inquiry/ · 8408 /en/inquiry/)는 draft-inquiry(-en) 전용이라
 # draft-page 스펙 어느 것과도 짝이 아니다 — 여기서 'inquiry-hub' 로 잡아 draft-page 가 덮어쓰지 못하게 한다.
-_KNOWN_POST_IDS = {
-    "8394": "inquiry-hub",      # /ko/inquiry/  허브(유형 선택) — wp_inquiry_block.html
-    "8408": "inquiry-hub-en",   # /en/inquiry/  영문 — cutover-inquiry-en 전용
-    "8460": "survey",           # /ko/inquiry-form/ 자체 폼
-    "8584": "lookup",           # /ko/lookup/ 키오스크 첫 화면
+# ★라이브 페이지 정본 표 (2026-09-05 시우 · GM "왜 매번 옛것을 가지고 오나" 근본 수리).
+#   한 페이지 = 리포 파일 한 벌 + 워드프레스 인라인 사본 한 벌, 두 벌이다. 옛것이 돌아오는 길은 늘 같았다 —
+#   ①라이브만 외과교체하고 리포를 안 올림 ②그 상태에서 누가 리포 파일을 다시 주입 ③주입 뒤 라이브를 안 열어 봄.
+#   그래서 (a) 주소·ID·파일을 여기 한 표에만 두고 (b) 주입 전에 라이브가 리포보다 앞서 있으면 막고(--force 로만 통과)
+#   (c) --mode drift 로 열 페이지를 한 번에 대조한다(아침 coo_page_guard 가 부른다). ID 는 REST 로 실측(2026-09-05).
+#   post_id: (스펙키, 리포 파일, 라이브 주소)
+LIVE_PAGES = {
+    "8394": ("inquiry-hub",    INQUIRY_BLOCK_FILE,       "http://wellperion.com/ko/inquiry/"),
+    "8408": ("inquiry-hub-en", INQUIRY_FORM_FILE_EN,     "http://wellperion.com/en/inquiry/"),   # 컷오버 뒤 라이브 = 자체 폼(구글폼 블록은 되돌리기 자산)
+    "8460": ("survey",         SURVEY_BLOCK_FILE,        "http://wellperion.com/ko/inquiry-form/"),
+    "8584": ("lookup",         LOOKUP_BLOCK_FILE,        "http://wellperion.com/ko/lookup/"),
+    "8741": ("lookup-en",      LOOKUP_BLOCK_FILE_EN,     "http://wellperion.com/en/lookup/"),
+    "8434": ("reception",      RECEPTION_BLOCK_FILE,     "http://wellperion.com/ko/reception/"),
+    "8751": ("reception-en",   RECEPTION_BLOCK_FILE_EN,  "http://wellperion.com/en/reception/"),
+    "8462": ("lf-gallery",     LF_GALLERY_BLOCK_FILE,    "http://wellperion.com/ko/lost-found/"),
+    "8772": ("lf-gallery-en",  LF_GALLERY_BLOCK_FILE_EN, "http://wellperion.com/en/lost-found/"),
+    "8464": ("lf-register",    LF_REGISTER_BLOCK_FILE,   "http://wellperion.com/ko/lost-found-register/"),
 }
+_KNOWN_POST_IDS = {k: v[0] for k, v in LIVE_PAGES.items()}   # 고정 ID ↔ 스펙 가드(2026-09-04)는 위 표에서 나온다
+_FORCE = False   # --force: 라이브가 리포보다 앞서 있어도 주입 강행(외과교체를 버리겠다고 사람이 정했을 때만)
+
+
+def _sig_lines(text: str) -> list:
+    """대조 단위 = 덩어리. 워드프레스가 줄바꿈을 지우고(태그 사이) 주석을 떼므로 줄로 비교하면 오탐이다 —
+    주석(/* */ · <!-- --> · 줄머리 //)을 떼고 공백을 전부 지운 뒤 ; { } > 에서 잘라 20자 이상 덩어리만 남긴다."""
+    import re
+    t = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    t = re.sub(r"<!--.*?-->", "", t, flags=re.S)
+    t = re.sub(r"(?m)^\s*//[^\n]*$", "", t)
+    t = re.sub(r"\s+", "", t)
+    return [c for c in re.split(r"(?<=[;{}>])", t) if len(c) >= 20]
+
+
+def drift_check(post_id: str) -> dict:
+    """리포 파일 ↔ 라이브 페이지 대조(읽기 전용 · http 한 번).
+    missing   = 리포엔 있는데 라이브에 없는 줄(리포가 앞섬 — 주입하면 된다)
+    live_only = 라이브 블록 구간에만 있는 줄(라이브가 앞섬 — 외과교체가 리포에 안 옮겨졌다 · 주입하면 옛것이 된다)"""
+    import urllib.request
+    spec, block_file, url = LIVE_PAGES[post_id]
+    res = {"post_id": post_id, "spec": spec, "url": url, "file": block_file.name, "ok": False,
+           "missing": [], "live_only": [], "error": ""}
+    try:
+        repo_lines = _sig_lines(block_file.read_text(encoding="utf-8"))
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 wellperion-drift"})
+        live_raw = urllib.request.urlopen(req, timeout=40).read().decode("utf-8", "replace")
+    except Exception as e:
+        res["error"] = str(e)[:120]
+        return res
+    live_lines = _sig_lines(live_raw)
+    live_set = set(live_lines)
+    repo_set = set(repo_lines)
+    res["missing"] = [l for l in repo_lines if l not in live_set]
+    # 라이브 블록 구간 = 리포에만 나올 법한 '이름표 덩어리'(40자 이상 · 라이브에 한 번만)의 첫~끝.
+    #   짧은 덩어리(display:none!important; 같은 것)는 테마 CSS 에도 있어 구간을 페이지 전체로 넓혀 버린다.
+    from collections import Counter
+    live_cnt = Counter(live_lines)
+    idx = [i for i, l in enumerate(live_lines) if l in repo_set and len(l) >= 40 and live_cnt[l] == 1]
+    if idx:
+        region = live_lines[idx[0]:idx[-1] + 1]
+        res["live_only"] = [l for l in region if l not in repo_set and len(l) >= 30]
+    else:
+        res["missing"] = repo_lines   # 블록 자체가 없다(페이지가 통째로 딴 것)
+    res["ok"] = not res["missing"] and not res["live_only"]
+    return res
+
+
+def _refuse_if_live_ahead(post_id: "str | None") -> bool:
+    """주입 직전 관문 — 라이브가 리포보다 앞서 있으면(외과교체 흔적) 주입을 막는다. True = 막음.
+    막힌 사람이 할 일: 라이브 줄을 리포 파일로 옮겨 커밋한 뒤 다시 주입. 정말 버릴 거면 --force."""
+    if not post_id or str(post_id) not in LIVE_PAGES:
+        return False
+    d = drift_check(str(post_id))
+    if d["error"]:
+        print(f"[WARN] 드리프트 대조 못 함({d['error']}) — 라이브 확인 없이 진행한다")
+        return False
+    if d["live_only"] and not _FORCE:
+        print(f"[ERROR] 라이브 {d['url']} 가 리포 {d['file']} 보다 앞서 있다 — 라이브에만 있는 줄 {len(d['live_only'])}개. "
+              f"지금 주입하면 그 줄이 옛것으로 되돌아간다.")
+        for l in d["live_only"][:8]:
+            print("   라이브만:", l[:150])
+        print("   → 이 줄을 리포 파일에 옮겨 커밋한 뒤 다시 주입. 버려도 되면 --force.")
+        return True
+    if d["live_only"]:
+        print(f"[WARN] --force — 라이브에만 있던 줄 {len(d['live_only'])}개를 버리고 주입한다")
+    return False
+
+
+def run_drift(post_id: "str | None" = None) -> int:
+    """--mode drift: 열 페이지 리포↔라이브 대조 표. 어긋난 게 하나라도 있으면 exit 1."""
+    ids = [post_id] if post_id else list(LIVE_PAGES)
+    bad = 0
+    print("post  스펙            파일                                판정")
+    for pid in ids:
+        d = drift_check(pid)
+        if d["error"]:
+            tag = "못 읽음 " + d["error"]; bad += 1
+        elif d["ok"]:
+            tag = "OK"
+        else:
+            bad += 1
+            tag = f"어긋남 — 리포만 {len(d['missing'])}줄 · 라이브만 {len(d['live_only'])}줄"
+        print(f"{pid}  {d['spec']:<15} {d['file']:<35} {tag}")
+        for l in d["missing"][:3]:
+            print("      리포만  :", l[:140])
+        for l in d["live_only"][:3]:
+            print("      라이브만:", l[:140])
+    print(f"\n어긋난 페이지 {bad} / {len(ids)}")
+    return 1 if bad else 0
 
 
 async def run_draft_page(spec_key: str, post_id_arg: "str | None" = None) -> int:
@@ -1573,6 +1681,8 @@ async def run_draft_page(spec_key: str, post_id_arg: "str | None" = None) -> int
     if not block_file.exists():
         print(f"[ERROR] 주입 블록 HTML 부재: {block_file}")
         return 4
+    if _refuse_if_live_ahead(post_id_arg):
+        return 8
     raw_html = block_file.read_text(encoding="utf-8")
     html = _wrap_vc_raw_html(raw_html)
     INSPECT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1856,6 +1966,7 @@ def main() -> int:
         "draft-page", "publish-page",
         "media-check", "media-upload",
         "swap-additional-css",
+        "drift",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
                     choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour"],
@@ -1873,7 +1984,13 @@ def main() -> int:
     ap.add_argument("--post-id", dest="post_id", default=None,
                     help="draft/publish 갱신 대상 페이지 ID")
     ap.add_argument("--file", dest="file_path", default=None, help="media-upload 대상 파일 경로")
+    ap.add_argument("--force", dest="force", action="store_true",
+                    help="draft-*: 라이브가 리포보다 앞서 있어도 주입(라이브 외과교체분을 버린다)")
     args = ap.parse_args()
+    global _FORCE
+    _FORCE = bool(args.force)
+    if args.mode == "drift":
+        return run_drift(args.post_id)
     if args.mode == "setup":
         return asyncio.run(run_setup())
     if args.mode == "inspect":
