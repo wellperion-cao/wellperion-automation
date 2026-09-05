@@ -284,12 +284,22 @@ def _rotate_log_keep(path: str) -> None:
         os.replace(path, path + "." + stamp)
 
 
-def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None):
+TEST_SESSION_PREFIXES = ("cbo-test-", "test-", "sito-check-")   # GM 07-18 규칙 — 로그는 남기되 집계 제외
+
+
+def _is_test_session(session_id) -> bool:
+    return bool(session_id) and str(session_id).startswith(TEST_SESSION_PREFIXES)
+
+
+def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
+         session_id: str = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
     if type_id:
         row["type_id"] = type_id   # 배1074③ — 공통 질문 유형 태깅
     if needs_facts:
         row["needs_facts"] = needs_facts   # 배1074③ — 못 답한 이유(어느 정본 칸이 비었나)
+    if session_id:
+        row["session_id"] = session_id   # 시보 요청② — 테스트 세션 필터(집계 제외)에 쓴다·개인정보 아님
     try:
         os.makedirs(os.path.dirname(LOG_PATH) or ".", exist_ok=True)
         _rotate_log_keep(LOG_PATH)
@@ -322,38 +332,40 @@ async def chat(tenant: str, request: Request):
     missing = _needs_facts_missing(_load_profile(tenant), type_id) if type_id else []
 
     if not q or _forbidden_hit(q, tenant):
-        _log(tenant, q, False, None, type_id, missing)
+        _log(tenant, q, False, None, type_id, missing, session_id)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
     text, status = (None, "error") if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
-        _log(tenant, q, True, None, type_id, missing)
+        _log(tenant, q, True, None, type_id, missing, session_id)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
-        _log(tenant, q, False, None, type_id, missing)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+        _log(tenant, q, False, None, type_id, missing, session_id)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
-            _log(tenant, q, True, "today_hours", type_id, missing)
+            _log(tenant, q, True, "today_hours", type_id, missing, session_id)
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
-                _log(tenant, q, True, item.get("id"), type_id, missing)
+                _log(tenant, q, True, item.get("id"), type_id, missing, session_id)
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
-                _log(tenant, q, False, None, type_id, missing)
+                _log(tenant, q, False, None, type_id, missing, session_id)
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
 
 @router.get("/{tenant}/unanswered")
-def unanswered(tenant: str, days: int = 7):
+def unanswered(tenant: str, days: int = 7, gaps: bool = False):
+    """미답 목록 — gaps=1 이면 답은 했지만 needs_facts 가 남은 행도 같이 준다(시보 요청① ·
+    diet_camp_agent.bot_gaps 가 소비 · "이 유형에 필요한 정본 칸이 비었다" 신호는 답 성공 여부와 무관하게 값지다)."""
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
@@ -376,18 +388,19 @@ def unanswered(tenant: str, days: int = 7):
                     row = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if row.get("tenant") != tenant or row.get("answered"):
+                if row.get("tenant") != tenant or _is_test_session(row.get("session_id")):
                     continue
+                if row.get("answered") and not (gaps and row.get("needs_facts")):
+                    continue   # gaps=1 이면 답은 했어도 needs_facts 남은 행은 그대로 내려간다
                 try:
                     ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone(timedelta(hours=9)))
                 except (KeyError, ValueError):
                     continue
                 if ts >= cutoff:
-                    item = {"q": row.get("q", ""), "ts": row.get("ts", "")}
+                    item = {"q": row.get("q", ""), "ts": row.get("ts", ""), "answered": bool(row.get("answered"))}
+                    item["needs_facts"] = row.get("needs_facts") or []   # 항상 싣는다(시보 요청① · 빈 배열도 명시)
                     if row.get("type_id"):
                         item["type_id"] = row["type_id"]   # 배1074③
-                    if row.get("needs_facts"):
-                        item["needs_facts"] = row["needs_facts"]   # 배1074③ — 어느 정본 칸이 비었나
                     out.append(item)
     except OSError:
         pass
@@ -477,7 +490,7 @@ def stats(tenant: str, days: int = 30):
                     row = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if row.get("tenant") != tenant:
+                if row.get("tenant") != tenant or _is_test_session(row.get("session_id")):
                     continue
                 try:
                     ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone(timedelta(hours=9)))
@@ -980,6 +993,13 @@ def _selfcheck() -> None:
     assert _fact_present({"facts": {"parking": None, "_note": "미수령 — 안내 문구"}}, "facts.parking") is False
     real_dc = _load_profile("2_dietcamp")
     assert _needs_facts_missing(real_dc, "parking") == ["facts.parking"], "다캠 facts.parking 은 null 이어야 함"
+
+    # 시보 요청② — 테스트 세션 접두어는 집계 제외 판정용(GM 07-18 규칙).
+    assert _is_test_session("test-abc123") is True
+    assert _is_test_session("cbo-test-xyz") is True
+    assert _is_test_session("sito-check-1") is True
+    assert _is_test_session("live-uuid-1234") is False
+    assert _is_test_session(None) is False
     print("api_chat selfcheck ok")
 
 
