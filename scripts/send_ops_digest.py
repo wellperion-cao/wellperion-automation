@@ -1277,8 +1277,16 @@ def _selfcheck_schedule_block() -> None:
 #   버리고 **사람당** 상한(ASKS_PER_PERSON_CAP)으로 바꾼다. 건당 표시도 1줄(전달문 첫 줄만)로
 #   줄인다 — 상세·링크는 화면(👉 안내)에서 본다. 형식 = wellperion-gm-report 스킬 §4-2-2
 #   「★한눈에 읽히게」(사람 제목줄 ▪ · 빈 줄 금지 · 맨 끝 👉 한 줄).
+# ★2026-09-06 GM 지시(웰리 전달 · 배1085) — 09-05 07:50 실발신 127줄·4,922자 실측(그중
+#   확인 섹션 92줄) — 사람당 상한(9/5 수정)은 살아 있었지만 ①제목 길이(위 8/30 "안 자름"
+#   지시)와 ②섹션 전체 줄수에는 상한이 없어, 사람이 여럿이면 여전히 부풀었다. 8/30 지시를
+#   여기서 좁혀 override — 제목은 60자에서 자르고, 섹션 전체는 10줄(사람줄+건줄) 넘으면
+#   남은 인원·건은 "외 N건 — 링크" 한 줄로 접는다. 전체 통 40줄 안은 build_mgr_daily_brief
+#   dry-run 실측으로 판정(코드로 자르지 않음 — 8/29 GM 결정 "줄을 접지 말고 건수를 줄여라").
+ASKS_SECTION_CAP = 10  # 섹션 전체(사람줄+건줄) 상한 — 넘으면 "외 N건 — 링크" 한 줄로 접는다
+ASKS_SECTION_LINK = "https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html"
 ASKS_PER_PERSON_CAP = 5  # 사람당 이 이상은 "외 N건 · 화면"으로 접는다(총량은 안 자름)
-ASKS_TITLE_CAP = 0  # 0 = 안 자름. 종전 50자
+ASKS_TITLE_CAP = 60  # 건당 제목 1줄 60자 안에서 자른다(종전 0=안 자름 · 09-06 override)
 ASKS_HOW_CAP = 0    # 0 = 안 자름. 종전 60자
 # ★2026-09-02 시포 — 위 세 상한은 8/30 에 풀었는데 상세 줄 수 상한(2줄)만 코드에 남아
 #   있었다. 그래서 전달문 9줄짜리가 4줄로 잘려 나갔다 — 실측(배11007 강습 등록 확인):
@@ -1334,7 +1342,9 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     배1057 "담당자별로 한 번에"). 형식 = wellperion-gm-report 스킬 §4-2-2 「★한눈에 읽히게」
     — 사람 제목줄(▪) · 건당 1줄(전달문 첫 줄만, 상세·링크는 화면에서 확인) · 빈 줄 없음 ·
     맨 끝 👉 한 줄. 사람당 ASKS_PER_PERSON_CAP건까지만 보여주고 나머지는 "외 N건 · 화면"으로
-    접는다(총량은 안 자름 — 사람이 여럿이면 통 전체 건수는 늘어난다, 그게 이 수리의 목적이다)."""
+    접는다. 사람이 여럿이면 섹션 전체가 부풀 수 있어(09-06 실측 127줄) 사람줄+건줄 합계가
+    ASKS_SECTION_CAP을 넘는 시점부터는 남은 사람·건을 통째로 "외 N건 — 링크" 한 줄로 접는다
+    (배1085)."""
     items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
     if not items:
         return ""
@@ -1344,14 +1354,34 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
         by_who.setdefault(it["who"], []).append(it)
 
     shown_total = sum(min(len(g), ASKS_PER_PERSON_CAP) for g in by_who.values())
-    lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"]
+    blocks = []
     for who, group in by_who.items():
-        lines.append(f"▪ {who}")
-        for it in group[:ASKS_PER_PERSON_CAP]:
-            lines.append(f"   {it['ask']}")
+        block = [f"▪ {who}"]
+        block += [f"   {it['ask']}" for it in group[:ASKS_PER_PERSON_CAP]]
         extra = len(group) - ASKS_PER_PERSON_CAP
         if extra > 0:
-            lines.append(f"   외 {extra}건 · 화면")
+            block.append(f"   외 {extra}건 · 화면")
+        blocks.append((block, min(len(group), ASKS_PER_PERSON_CAP)))
+
+    # 사람줄+건줄 전부 합쳐도 상한 안이면 그대로. 넘으면 접힘 안내(1줄) 자리를 미리 비워
+    # 두고(budget = 상한-1), 통째로 안 들어가는 사람 블록은 통째로 뺀다(중간에서 안 자름).
+    if sum(len(b) for b, _ in blocks) <= ASKS_SECTION_CAP:
+        body = [l for b, _ in blocks for l in b]
+        shown_so_far = shown_total
+        folded = False
+    else:
+        budget = ASKS_SECTION_CAP - 1
+        body, shown_so_far = [], 0
+        for block, cnt in blocks:
+            if len(body) + len(block) > budget:
+                break
+            body.extend(block)
+            shown_so_far += cnt
+        folded = True
+
+    lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"] + body
+    if folded:
+        lines.append(f"외 {shown_total - shown_so_far}건 — {ASKS_SECTION_LINK}")
     lines.append("👉 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
@@ -1508,6 +1538,21 @@ def _selfcheck_asks_section() -> None:
     assert "n15건" not in out and "n16건" not in out, "5건 넘는 건은 접혀야 한다"
     assert "외 2건 · 화면" in out, out
     assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
+
+    # ★09-06 배1085 — 사람이 여럿이면 섹션 전체(사람줄+건줄)가 ASKS_SECTION_CAP을 넘는
+    # 시점부터 "외 N건 — 링크" 한 줄로 접힌다(09-05 실측 127줄 재발 방지).
+    many = [{"date": f"2026-09-{p:02d}", "who": f"담당{p}", "ask": f"건{p}", "how": "h"}
+            for p in range(1, 10)]  # 9명 × (제목줄+건줄) = 18줄 > ASKS_SECTION_CAP(10)
+    out2 = build_asks_section(many, [])
+    lines2 = out2.splitlines()
+    body2 = lines2[1:-2]  # 헤더 · 👉 · 서명 제외
+    assert len(body2) <= ASKS_SECTION_CAP, f"섹션 상한 {ASKS_SECTION_CAP}줄을 넘었다: {out2!r}"
+    assert any(l.startswith("외 ") and ASKS_SECTION_LINK in l for l in lines2), \
+        f"넘친 인원은 '외 N건 — 링크' 한 줄로 접혀야 한다: {out2!r}"
+    long_title = "가나다라마바사아자차카타파하" * 10  # 60자 훌쩍 넘는 제목
+    capped = build_asks_section(
+        [{"date": "2026-09-01", "who": "담당", "ask": _cap_line(long_title, ASKS_TITLE_CAP), "how": "h"}], [])
+    assert len(capped.splitlines()[1].strip()) <= ASKS_TITLE_CAP, "제목 1줄은 60자 안에서 잘려야 한다"
     print("[selfcheck] build_asks_section OK")
 
 
