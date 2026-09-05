@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-09-05-시포-화면-남은-GAS-직독-5종-서버-미러-추가-",
-  "last_task_id": "CTO-2026-09-05-시포-화면-남은-GAS-직독-5종-서버-미러-추가-",
+  "task_id": "CTO-2026-09-05-AI-내부-텔레그램-AI관리-방-라우팅-GM-지적-",
+  "last_task_id": "CTO-2026-09-05-AI-내부-텔레그램-AI관리-방-라우팅-GM-지적-",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-05T06:46:38Z",
+  "last_pushed_at": "2026-09-05T08:12:55Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -869,12 +869,60 @@
       "note": "시포 화면 남은 GAS 직독 5종(member_calendar·lesson_stats·stage_funnel·cpo_churn_stats·sales_monthly/home_kpi) 전부 서버 라우트 확인·200 — 3종은 배1039-A 신설, 2종은 기존 라우트 재확인. 화면 배선은 시포 몫.",
       "updated_at": "2026-09-05T06:46:38Z",
       "blocks": []
+    },
+    {
+      "task_id": "1056",
+      "title": "전사일정 GAS 백업 3벌 Drive 이관 — 500KB 총량 천장 해소, 212건 저장·재조회 실측 OK",
+      "status": "DONE",
+      "note": "전사일정 GAS 백업 3벌 Drive 이관 — 500KB 총량 천장 해소, 212건 저장·재조회 실측 OK",
+      "updated_at": "2026-09-05T07:30:49Z",
+      "blocks": []
+    },
+    {
+      "task_id": "1057",
+      "title": "중간관리자 통 127줄→N줄 · 답한 건 제외 · 사람별 묶음",
+      "status": "DONE",
+      "note": "중간관리자 통 127줄→N줄 · 답한 건 제외 · 사람별 묶음",
+      "updated_at": "2026-09-05T07:31:03Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-텔레그램-업무관리-방-5492623600-GM-나우",
+      "title": "텔레그램 「업무관리-나우열M」 방 등록 + 아침 통(07:50) 라우팅 분리 · 회신감지 코퍼스 연결 · 커밋 2d0432b54",
+      "status": "DONE",
+      "note": "텔레그램 「업무관리-나우열M」 방 등록 + 아침 통(07:50) 라우팅 분리 · 회신감지 코퍼스 연결 · 커밋 2d0432b54",
+      "updated_at": "2026-09-05T07:57:24Z",
+      "blocks": []
+    },
+    {
+      "task_id": "1066",
+      "title": "알림 한 장 하루 양끝(시작·마무리) 카톡↔텔레그램 동기화 완료 — 등록부 4항목 신설·bookend 태그·사본 발송·미발신 감시 apscheduler 3건·자율현황 소표. schtasks cp949 인코딩 버그 실측 수정. 테스트 3통 발송·소표 렌더 node 격리 검증 완료.",
+      "status": "DONE",
+      "note": "알림 한 장 하루 양끝(시작·마무리) 카톡↔텔레그램 동기화 완료 — 등록부 4항목 신설·bookend 태그·사본 발송·미발신 감시 apscheduler 3건·자율현황 소표. schtasks cp949 인코딩 버그 실측 수정. 테스트 3통 발송·소표 렌더 node 격리 검증 완료.",
+      "updated_at": "2026-09-05T08:02:30Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-업무보고봇-양방향-자동응답-텔레그램-업무관리-나우열",
+      "title": "업무보고봇 그룹방 자동응답 차단 — authorized() 에 _may_reply(chat_id) 게이트 신설, GM 개인 봇방(8254867551) 외 전 그룹 무응답. 응답 지점 10곳 전수 점검(브리프 표).",
+      "status": "DONE",
+      "note": "업무보고봇 그룹방 자동응답 차단 — authorized() 에 _may_reply(chat_id) 게이트 신설, GM 개인 봇방(8254867551) 외 전 그룹 무응답. 응답 지점 10곳 전수 점검(브리프 표).",
+      "updated_at": "2026-09-05T08:08:42Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-AI-내부-텔레그램-AI관리-방-라우팅-GM-지적-",
+      "title": "[시토] AI 내부 텔레그램 → AI관리 방 라우팅 (GM 지적 2026-09-05)",
+      "status": "DONE",
+      "note": "L18 완료보고 cap 초과 폴백이 업무관리(GM DM)로 새던 것을 AI관리로 고침. TelegramNotifier.send(room=)·send_telegram(room=) 추가, notify_registry.json 정정, cap 시뮬레이션+실측 테스트 발송 확인.",
+      "updated_at": "2026-09-05T08:12:55Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "시포 화면 남은 GAS 직독 5종(member_calendar·lesson_stats·stage_funnel·cpo_churn_stats·sales_monthly/home_kpi) 전부 서버 라우트 확인·200 — 3종은 배1039-A 신설, 2종은 기존 라우트 재확인. 화면 배선은 시포 몫.",
-  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/blob/922fc6512/status/briefs/CTO-2026-09-05-배1039-A-회원원천-동기화upsert.md",
+  "title": "[시토] AI 내부 텔레그램 → AI관리 방 라우팅 (GM 지적 2026-09-05)",
+  "artifact_url": "status/briefs/CTO-2026-09-05-AI발신-AI관리방-라우팅.md",
   "commit": "",
-  "note": "시포 화면 남은 GAS 직독 5종(member_calendar·lesson_stats·stage_funnel·cpo_churn_stats·sales_monthly/home_kpi) 전부 서버 라우트 확인·200 — 3종은 배1039-A 신설, 2종은 기존 라우트 재확인. 화면 배선은 시포 몫.",
-  "updated_at": "2026-09-05T06:46:38Z"
+  "note": "L18 완료보고 cap 초과 폴백이 업무관리(GM DM)로 새던 것을 AI관리로 고침. TelegramNotifier.send(room=)·send_telegram(room=) 추가, notify_registry.json 정정, cap 시뮬레이션+실측 테스트 발송 확인.",
+  "updated_at": "2026-09-05T08:12:55Z"
 }
