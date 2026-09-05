@@ -1096,9 +1096,9 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if bidir_category != "simple_ack":
         _ceo_log_append("GM_INBOX", category=bidir_category, text=prompt[:1000])
 
-    # 자동 회신
-    _inbox_log("out", "CEO", bidir_reply, msg_type=bidir_category)
-    await update.message.reply_text(bidir_reply)
+    # 자동 회신 없음 — GM 2026-09-05 17:3x "내가 어떤 이야기를 하면 '접수했습니다…' 반응하는데 없애줄 수 있어?"
+    #   분류·인박스 기록·배 생성은 그대로, 사람에게 보이는 확인 답만 0. 답이 필요한 것(승인 카드·질문 답)만 따로 낸다.
+    _inbox_log("out", "CEO", "(무응답 · " + bidir_category + ")", msg_type=bidir_category)
     # ── /end 양방향 통신 분류 게이트 ────────────────────────────────────────────
 
 
