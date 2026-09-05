@@ -453,6 +453,9 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 <script src="../../_assets/erp_write.js"></script>
 <script>
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+// ★2026-09-05 배985 — ERP 도메인에서는 서버 미러(/api/todo)를 먼저 읽는다. 이 화면은 GM 담당 결재 건도
+// 봐야 해서(위 include_gm=1&gmkey) 미러 쪽도 같은 쿼리를 그대로 넘긴다 — 서버가 같은 게이트로 판정한다.
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 
 const CAT_COLORS = {
   '[1] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},
@@ -546,9 +549,26 @@ async function loadTasks() {
     // [2026-09-03 시우] GM 기안(담당자=김남욱GM)이 결재 SSOT에서 안 보이던 원인 — 서버(todo_list)가 GM 담당 행을
     //   기본 제외하는데(실무진용 업무 현황 규칙 2026-06-01) 이 화면도 같은 조회를 써서 GM 본인 결재 건이 통째로 빠졌다.
     //   결재 SSOT는 GM 이 결재하는 자리라 GM 행을 포함해 받는다(사내 게이트 뒤 · GM업무 담당 보드와 같은 키).
-    const qs = 'action=todo_list&include_gm=1&gmkey=1531';
-    const r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
-    const res = await r.json();
+    const gas = async function () {
+      const qs = 'action=todo_list&include_gm=1&gmkey=1531';
+      const r = await fetch(TODO_API_URL + '?' + qs, { redirect:'follow' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    };
+    let res;
+    if (!ERP_API_ON) {
+      res = await gas();
+    } else {
+      try {
+        const r = await fetch('/api/todo?include_gm=1&gmkey=1531&limit=1000', { cache: 'no-store' });
+        if (!r.ok) throw new Error('api ' + r.status);
+        const d = await r.json();
+        res = { ok: true, data: (d && d.rows) || [] };
+      } catch (e) {
+        console.warn('[결재SSOT] /api/todo 실패 → GAS 폴백:', e && e.message);
+        res = await gas();
+      }
+    }
     if (res.ok) {
       ALL_TASKS = (res.data || []).map(normalizeTask);
       applyUrlParams();
