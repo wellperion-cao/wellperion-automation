@@ -989,18 +989,12 @@
           "start": "16:12",
           "end": "16:12",
           "minutes": 0,
-          "upload": "✅ 올림 (0bfb6f16d)",
+          "upload": "✅ 올림 (b69e0b377)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "15:26",
-          "area": "작업",
-          "event": "L6 접수 시퀀스 tenant 분리 후속 표기 (2026-09-05 검수 범위 제외 명시)",
-          "detail": "커밋 9af954506 · 배 11286"
-        },
         {
           "time": "15:26",
           "area": "작업",
@@ -1174,6 +1168,12 @@
           "area": "작업",
           "event": "상담봇 Bedrock 클래스 교체 — AnthropicBedrockMantle(오진·없는 도메인) → 표준 AnthropicBedrock (시보 지적)",
           "detail": "커밋 0bfb6f16d · 배 11286"
+        },
+        {
+          "time": "16:20",
+          "area": "작업",
+          "event": "상담봇 COUNSEL_MODEL 기본값 sonnet-4-6 — sonnet-5 는 이 계정 AWS 영업승인 필요(실측 확인), 4.6 은 계약 완료",
+          "detail": "커밋 b69e0b377 · 배 11286"
         }
       ],
       "count": 21,
@@ -2046,12 +2046,6 @@
       ],
       "work": [
         {
-          "time": "10:01",
-          "area": "작업",
-          "event": "워드프레스 키오스크 10페이지 리포↔라이브 드리프트 대조(--mode drift) + 주입 관문(라이브가 앞서면 막음·--force) + 아침 화면점검기에 드리프트 행 — GM 2026-09-05 '왜 매번 옛것을",
-          "detail": "커밋 616ba993b · 배 11180"
-        },
-        {
           "time": "11:05",
           "area": "작업",
           "event": "키오스크 흐름 6페이지 세 화면 통일 — 문의 허브·폼·습득물 보기·등록에 접수처와 같은 키오스크 규칙(푸터·플로팅·소셜 숨김·바탕 채움·막대 숨김·터치스크롤), 모바일 기둥 362px·ENG 37px, 조회 첫 화",
@@ -2224,6 +2218,12 @@
           "area": "작업",
           "event": "월간운영계획 9월 목표 정리 — 할 일·진행 방향·경위 재배치 · 중복 병합 1 · 기한 (미정) 표기 · 이름 표적 제거 (GM 지시 2026-09-05)",
           "detail": "커밋 c9a9bab69 · 배 11279"
+        },
+        {
+          "time": "16:20",
+          "area": "작업",
+          "event": "큐 note 전/후 표·병합 기록 + 브리핑 (커밋 c9a9bab69)",
+          "detail": "커밋 04ea0fe98 · 배 11315"
         }
       ],
       "count": 15,
@@ -2363,11 +2363,11 @@
           "ref": "GM-20260905-13",
           "no": "13",
           "got": "Bedrock 지금 바로 셋업 진행",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "MFA 일정·GM업무 닫음",
           "start": "15:58",
-          "end": "15:59",
-          "minutes": 0,
-          "upload": "✅ 올림 (fd5eafc8c)",
+          "end": "16:21",
+          "minutes": 22,
+          "upload": "✅ 올림 (659564496)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2655,9 +2655,9 @@
           "start": "16:14",
           "end": "16:15",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 올림 (659564496)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260905-9028",
@@ -2667,9 +2667,9 @@
           "start": "16:16",
           "end": "16:16",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 올림 (659564496)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260905-9029",
@@ -2679,16 +2679,28 @@
           "start": "16:17",
           "end": "16:17",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 올림 (659564496)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260905-9030",
           "no": "30",
           "got": "오류가 발생함",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:19",
+          "end": "16:19",
+          "minutes": 0,
+          "upload": "✅ 올림 (659564496)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9031",
+          "no": "31",
+          "got": "완료했어 다음단계는, 그리고 Sonnet로 하는것보다 상위모델로 하는게 좋지않아?",
+          "did": "",
+          "start": "16:21",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2822,29 +2834,35 @@
           "area": "작업",
           "event": "상담봇 §3-1 Bedrock 실측 반영(가용 · GM 콘솔 사용 사례 양식 1회 남음)",
           "detail": "커밋 fd5eafc8c · 배 11305"
+        },
+        {
+          "time": "16:20",
+          "area": "작업",
+          "event": "상담봇 모델 = Bedrock Sonnet 4.6 라이브(Sonnet 5 는 계정 등급 제한 · 시토 실측 2026-09-05)",
+          "detail": "커밋 659564496 · 배 11305"
         }
       ],
-      "count": 38,
-      "done": 37,
+      "count": 39,
+      "done": 38,
       "open": 1,
-      "avg_minutes": 2,
-      "work_count": 21,
+      "avg_minutes": 3,
+      "work_count": 22,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260905-9030",
-          "no": "30",
-          "got": "오류가 발생함",
+          "ref": "GM-20260905-9031",
+          "no": "31",
+          "got": "완료했어 다음단계는, 그리고 Sonnet로 하는것보다 상위모델로 하는게 좋지않아?",
           "did": "",
-          "start": "16:19",
+          "start": "16:21",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 0
+          "waited": 1
         }
       ],
       "repeats": []
