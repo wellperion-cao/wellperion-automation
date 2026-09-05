@@ -1,23 +1,29 @@
 """
-GEO 측정기 — AI 검색 인용 주 1회 자동 점검 (배971, GM 지시 2026-09-05)
+GEO 측정기 — AI 검색 인용 주 1회 자동 점검 (배971→배1002, GM 지시 2026-09-05)
 
-목적: 8개 질의로 AI 검색(claude 웹검색)에 물어 웰페리온이 인용되는지·
-      순위·인용 문장을 status/geo_watch.json 에 기록한다. 전환 전엔
-      cited_count=0 이 정상 — 이건 기준선(baseline)일 뿐이다.
+목적: 8개 질의로 4개 AI 검색 엔진(claude 웹검색·챗GPT·퍼플렉시티·구글 AI 개요)에
+      물어 웰페리온이 인용되는지·순위·인용 문장을 status/geo_watch.json 에 엔진별로
+      기록한다. 전환 전엔 cited_count=0 이 정상 — 이건 기준선(baseline)일 뿐이다.
 
-엔진: model_router.run_claude() 재사용(재시도·타임아웃 정책 그대로) +
-      --allowedTools WebSearch 로 claude CLI 에 실제 웹검색을 시킨다.
-      챗GPT·퍼플렉시티는 API 키가 없어 미구현 — engines_pending 에만 표기.
+엔진:
+  - claude:     model_router.run_claude() 재사용 + --allowedTools WebSearch
+  - chatgpt/perplexity/google_ai: API 키 없이 agent-browser CLI 브라우저 자동화로
+    각 서비스 검색 URL 을 직접 열어 렌더된 답을 읽는다(로그인 불필요).
 
 사용:
-  python scripts/geo_watch.py            # 8문장 실측 → status/geo_watch.json 갱신
-  python scripts/geo_watch.py --dry-run  # 1문장만 · 파일 안 씀(연결 확인용)
+  python scripts/geo_watch.py                       # 8문장 × 4엔진 실측
+  python scripts/geo_watch.py --engines claude,chatgpt
+  python scripts/geo_watch.py --dry-run             # 1문장만 · 파일 안 씀(연결 확인용)
 """
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
 import sys
+import time
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -31,15 +37,17 @@ KST = timezone(timedelta(hours=9))
 QUERIES = [
     "한남동 스포츠클럽",
     "용산 프라이빗 멤버십 스포츠클럽",
-    "한남동 수영 레슨",
+    "한남동 수영 강습",
     "한남동 골프 연습장",
     "한남동 스쿼시",
-    "용산 키즈 체조 수업",
+    "용산 유소년 체조 강습",
     "한남동 헬스 PT",
     "hannam sports club membership",
 ]
 
 CITE_TOKEN = "wellperion"
+QUERY_GAP_SEC = 3  # 질문 사이 대기(봇 차단 방지)
+_BROWSER_SESSION_ENV = "AGENT_BROWSER_SESSION"
 
 
 def _prompt(q: str) -> str:
@@ -79,20 +87,98 @@ def _judge(text: str, urls: list[str]) -> tuple[bool, int | None, str]:
     return cited, rank, quote
 
 
-def measure_one(q: str) -> dict:
-    text, used_model = run_claude(
+# ---------------------------------------------------------------- 엔진 구현
+
+def _ask_claude(q: str) -> tuple[str, list[str]]:
+    text, _used_model = run_claude(
         _prompt(q),
         models=["claude-sonnet-5"],
         label="geo-watch",
         extra_args=["--allowedTools", "WebSearch"],
     )
     if text is None:
+        raise RuntimeError("claude 웹검색 응답 없음(모델 라우팅 전체 실패)")
+    return text, _extract_urls(text)
+
+
+def _ensure_browser_session() -> None:
+    if os.environ.get(_BROWSER_SESSION_ENV):
+        return
+    r = subprocess.run(
+        ["agent-browser", "session", "id", "--scope", "worktree", "--prefix", "geo"],
+        capture_output=True, text=True, timeout=15,
+    )
+    sid = r.stdout.strip()
+    if sid:
+        os.environ[_BROWSER_SESSION_ENV] = sid
+
+
+def _ab(*args: str, timeout: int = 25) -> str:
+    """agent-browser CLI 한 번 호출 → stdout. 실패(exit≠0)면 예외."""
+    r = subprocess.run(
+        ["agent-browser", *args], capture_output=True, text=True,
+        timeout=timeout, encoding="utf-8", errors="replace",
+    )
+    if r.returncode != 0:
+        raise RuntimeError((r.stderr or r.stdout or "agent-browser 실패").strip()[:200])
+    return r.stdout
+
+
+def _wait_rendered_answer(max_wait: int = 60, interval: int = 5, min_len: int = 300) -> str:
+    """읽은 본문이 일정 길이 이상이 되고 두 번 연속 안정될 때까지 재시도(최대 max_wait 초)."""
+    prev = ""
+    deadline = time.time() + max_wait
+    while time.time() < deadline:
+        text = _ab("read", timeout=20)
+        if len(text) >= min_len and text == prev:
+            return text
+        prev = text
+        time.sleep(interval)
+    return prev
+
+
+def _ask_browser(url: str, max_wait: int = 60) -> tuple[str, list[str]]:
+    _ensure_browser_session()
+    _ab("open", url, timeout=30)
+    text = _wait_rendered_answer(max_wait=max_wait)
+    return text, _extract_urls(text)
+
+
+def _ask_chatgpt(q: str) -> tuple[str, list[str]]:
+    url = f"https://chatgpt.com/?q={urllib.parse.quote(q)}&hints=search"
+    return _ask_browser(url)
+
+
+def _ask_perplexity(q: str) -> tuple[str, list[str]]:
+    url = f"https://www.perplexity.ai/search?q={urllib.parse.quote(q)}"
+    return _ask_browser(url)
+
+
+def _ask_google(q: str) -> tuple[str, list[str]]:
+    # ponytail: AI 개요 블록만 따로 파싱하지 않고 렌더된 페이지 전체를 텍스트+URL로 판정
+    #           (AI 개요 없으면 자연히 상위 검색결과 URL 로 대체됨). 필요해지면 블록 스코핑 추가.
+    url = f"https://www.google.com/search?q={urllib.parse.quote(q)}&hl=ko"
+    text, urls = _ask_browser(url, max_wait=20)
+    return text, urls[:10]
+
+
+ENGINES = {
+    "claude": _ask_claude,
+    "chatgpt": _ask_chatgpt,
+    "perplexity": _ask_perplexity,
+    "google_ai": _ask_google,
+}
+
+
+def measure_one(engine: str, q: str) -> dict:
+    try:
+        text, urls = ENGINES[engine](q)
+    except Exception as e:
         return {
             "q": q, "cited": None, "rank": None,
-            "quote": "측정 실패: claude 웹검색 응답 없음(모델 라우팅 전체 실패)",
+            "quote": f"측정 실패: {e}"[:160],
             "urls_top3": [],
         }
-    urls = _extract_urls(text)
     cited, rank, quote = _judge(text, urls)
     return {
         "q": q, "cited": cited, "rank": rank,
@@ -101,17 +187,49 @@ def measure_one(q: str) -> dict:
     }
 
 
+def _parse_engines() -> list[str]:
+    for arg in sys.argv:
+        if arg.startswith("--engines="):
+            raw = arg.split("=", 1)[1]
+            picked = [e.strip() for e in raw.split(",") if e.strip() in ENGINES]
+            return picked or list(ENGINES)
+    if "--engines" in sys.argv:
+        i = sys.argv.index("--engines")
+        if i + 1 < len(sys.argv):
+            picked = [e.strip() for e in sys.argv[i + 1].split(",") if e.strip() in ENGINES]
+            return picked or list(ENGINES)
+    return list(ENGINES)
+
+
 def main() -> None:
     dry = "--dry-run" in sys.argv
+    engines = _parse_engines()
     queries = QUERIES[:1] if dry else QUERIES
-    results = [measure_one(q) for q in queries]
+
+    used_browser = any(e != "claude" for e in engines)
+    results_by_engine: dict[str, list[dict]] = {e: [] for e in engines}
+    for q in queries:
+        for e in engines:
+            results_by_engine[e].append(measure_one(e, q))
+            time.sleep(QUERY_GAP_SEC)
+
+    if used_browser:
+        try:
+            subprocess.run(["agent-browser", "close"], capture_output=True, timeout=15)
+        except Exception:
+            pass
 
     if dry:
-        print(json.dumps(results, ensure_ascii=False, indent=2))
+        print(json.dumps(results_by_engine, ensure_ascii=False, indent=2))
         return
 
-    cited_count = sum(1 for r in results if r["cited"] is True)
     now = datetime.now(KST)
+    engines_out = {}
+    cited_today = {}
+    for e, results in results_by_engine.items():
+        cited_count = sum(1 for r in results if r["cited"] is True)
+        engines_out[e] = {"cited_count": cited_count, "queries": results}
+        cited_today[e] = cited_count
 
     history = []
     if OUT_PATH.exists():
@@ -120,21 +238,19 @@ def main() -> None:
             history = prev.get("history", [])
         except Exception:
             history = []
-    history.append({"date": now.strftime("%Y-%m-%d"), "cited_count": cited_count})
+    history.append({"date": now.strftime("%Y-%m-%d"), "cited": cited_today})
 
     out = {
-        "_doc": "GEO(생성형 검색 최적화) 측정 — AI 검색 8문장에 웰페리온이 인용되는지 주 1회 점검(배971). "
-                "전환 전엔 cited_count=0 이 정상(기준선). engine=claude 웹검색만 구현, "
-                "chatgpt/perplexity 는 API 키 없어 미구현(engines_pending).",
+        "_doc": "GEO(생성형 검색 최적화) 측정 — AI 검색 8문장에 웰페리온이 인용되는지 주 1회 점검(배1002). "
+                "엔진 4개(claude 웹검색·챗GPT·퍼플렉시티·구글 AI 개요) 브라우저 자동화. "
+                "전환 전엔 cited_count=0 이 정상(기준선).",
         "generated_at_kst": now.strftime("%Y-%m-%d %H:%M"),
-        "engine": "claude-websearch",
-        "engines_pending": ["chatgpt", "perplexity"],
-        "queries": results,
-        "cited_count": cited_count,
+        "engines": engines_out,
         "history": history,
     }
     OUT_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[geo_watch] cited_count={cited_count}/{len(results)} → {OUT_PATH}")
+    summary = " ".join(f"{e}={n}/{len(queries)}" for e, n in cited_today.items())
+    print(f"[geo_watch] {summary} → {OUT_PATH}")
 
 
 if __name__ == "__main__":

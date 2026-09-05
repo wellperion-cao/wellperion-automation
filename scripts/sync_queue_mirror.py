@@ -54,6 +54,8 @@ SYNC_PAIRS = [
     # 자율현황에서 빼고 G1(잠금 화면)으로 옮기며 필요해졌다 — 등록부는 한 벌 그대로 두고
     # surface 칸으로 어느 화면이 그릴지만 가른다(약속 L01).
     ("status/notify_registry.json",      "3. 웰페리온 가이드/status/notify_registry.json"),
+    # GEO 인용 현황 (2026-09-05 · 배1000): 콘텐츠문의현황 GEO 카드가 발행루트에서 직독한다.
+    ("status/geo_watch.json",            "3. 웰페리온 가이드/status/geo_watch.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지
