@@ -463,7 +463,8 @@ function submitStaffFeedback(){
   // GAS 웹앱 호출 — Content-Type: text/plain 이라 사전요청(preflight) 없이 통과하고,
   // redirect 를 따라가면 응답 본문({ok,error})을 그대로 읽을 수 있다.
   // ★no-cors 로 보내면 실패를 못 읽어 '저장됐다'고 거짓 표시하게 된다 — 쓰지 않는다(INC-013).
-  fetch(FB_GAS_URL, {
+  // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인이면 서버 /api/write(이중기록) 뒤 GAS, 아니면 종전 GAS 직행. 응답 모양 동일.
+  (window.erpFunnelCall ? erpFunnelCall(FB_GAS_URL, payload) : fetch(FB_GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
@@ -472,7 +473,7 @@ function submitStaffFeedback(){
   .then(function(r){
     if (!r.ok) throw new Error('http ' + r.status);
     return r.json();
-  })
+  }))
   .then(function(res){
     if (!res || res.ok !== true) {
       if (sendBtn) sendBtn.disabled = false;
@@ -715,6 +716,7 @@ function cancelFeedback(){
   if (notice){ notice.textContent = '창을 닫아 주세요.'; notice.classList.add('show'); }
 }
 </script>
+<script src="../../_assets/erp_write.js"></script>
 <script defer src="../../_assets/page_ping.js"></script>
 </body>
 </html>

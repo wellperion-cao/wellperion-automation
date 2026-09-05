@@ -289,12 +289,13 @@ body.wlp-ons-page .vc_row,body.wlp-ons-page .wpb_column,body.wlp-ons-page .vc_co
     var newVal = sel.value;
     var prevVal = sel.getAttribute('data-prev') || newVal;
     sel.disabled = true;
-    fetch(GAS_URL, {
+    var _p = { action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal };
+    // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인이면 서버 /api/write(이중기록) 뒤 GAS, 아니면 종전 GAS 직행. 응답 모양 동일.
+    (window.erpFunnelCall ? erpFunnelCall(GAS_URL, _p) : fetch(GAS_URL, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal })
-    })
-    .then(function(r){ return r.json(); })
+      body: JSON.stringify(_p)
+    }).then(function(r){ return r.json(); }))
     .then(function(d){
       sel.disabled = false;
       if(!d || !d.ok){

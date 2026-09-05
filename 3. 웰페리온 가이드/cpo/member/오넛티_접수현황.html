@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OHNUTTY X WELLPERION — 추석 선물세트 접수현황</title>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
+<script src="../../_assets/erp_write.js"></script>
 <!--
   오넛티 팀(외부 파트너) + 웰페리온팀 공동 열람·상태변경 화면(GM 지시 2026-08-07).
   · 형식 정본 = coo/reception/lost_found_gallery.html — 같은 CSS 변수·레이아웃 패턴을 그대로 재사용한다.
@@ -174,12 +175,13 @@ table.otbl tr:last-child td{border-bottom:none}
     var newVal = sel.value;
     var prevVal = sel.getAttribute('data-prev') || newVal;
     sel.disabled = true;
-    fetch(GAS_URL, {
+    var _p = { action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal };
+    // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인이면 서버 /api/write(이중기록) 뒤 GAS, 아니면 종전 GAS 직행. 응답 모양 동일.
+    (window.erpFunnelCall ? erpFunnelCall(GAS_URL, _p) : fetch(GAS_URL, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal })
-    })
-    .then(function(r){ return r.json(); })
+      body: JSON.stringify(_p)
+    }).then(function(r){ return r.json(); }))
     .then(function(d){
       sel.disabled = false;
       if(!d || !d.ok){

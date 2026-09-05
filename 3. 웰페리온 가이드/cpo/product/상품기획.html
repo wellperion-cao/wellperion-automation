@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏷️ 스포츠클럽 상품 기획 — AI CPO</title>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
+<script src="../../_assets/erp_write.js"></script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
@@ -880,6 +881,12 @@ function savePolicyTable(){
    text/plain 단순요청이라 사전확인(preflight) 없이 통과하고, redirect 를 따라가면 {ok,error} 를 읽는다.
    회원관리(membership.html apiPost)에서 라이브 검증된 방식과 동일 — 새 방식 발명 아님. */
 function _todoPost(payload){
+  // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인에서만 product_plan_save/delete 를 서버 /api/write(이중기록) 뒤 GAS 로. 그 밖은 종전 POST 그대로.
+  if (window.erpTodoCall && /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname) && window.erpTodoIsWrite && erpTodoIsWrite(payload && payload.action)) {
+    // GAS 는 body.item || body 를 항목으로 읽는다 — 관문 폴백(GET 쿼리)에서 중첩 item 이 '[object Object]' 로 깨지지 않게 평탄화해 보낸다.
+    var _flat = (payload && payload.item && typeof payload.item === 'object') ? Object.assign({ action: payload.action }, payload.item) : payload;
+    return erpTodoCall(TODO_API_URL, _flat);
+  }
   return fetch(TODO_API_URL, {
     method:'POST', redirect:'follow',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
