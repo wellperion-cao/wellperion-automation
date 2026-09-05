@@ -13,11 +13,35 @@
 (function (w) {
   var ERP_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
   // 쓰기만 관문을 탄다. todo_list·todo_scoreboard·todo_categories·ai_list 는 읽기라 제외.
-  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel))$/;
+  // notice_save·notice_delete(coo/notice 공지서식) = 같은 GAS 프로젝트에 얹혀 있어 여기 포함(배 1082 · 거울 없음).
+  // notice_list(읽기)는 화면이 gasCall 을 직접 부른다 — 관문 대상 아님.
+  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete))$/;
 
   function _json(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
+  }
+
+  /* 관문 POST 하나 — 요청마다 idem 열쇠(uuid)를 본문에 실어 보낸다 (배 960 M7 · 2026-09-04).
+     서버가 GAS 쓰기를 끝냈는데 응답만 유실되면(전파 끊김) 종전에는 곧바로 GAS 로 다시 보내
+     snapshot_append·todo_add 가 시트에 두 줄이 됐다. 이제 같은 열쇠로 관문에 한 번 더 묻는다 —
+     서버가 write_log 에서 그 열쇠를 찾아 저장해 둔 응답을 그대로 돌려준다(GAS 재전송 없음).
+     그마저 못 닿으면 각 함수가 종전대로 GAS 로 폴백하는데, 그 본문에도 같은 열쇠가 실려 있다
+     (params 를 그대로 쓰므로 — GAS 는 모르는 칸이라 무시한다. 나중에 GAS 가 가릴 수 있는 자리). */
+  function _uuid() {
+    if (w.crypto && w.crypto.randomUUID) { try { return w.crypto.randomUUID(); } catch (e) {} }
+    return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  function gwPost(path, params) {
+    if (path === '/api/write' && params && !params.idem) params.idem = _uuid();
+    var send = function () {
+      return fetch(path, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(params)
+      });
+    };
+    return send().catch(function () { return send(); });   // 응답 유실만 1회 더 — 중복은 서버가 가른다
   }
 
   /* GAS 직접 경로 — 종전 화면 규약 그대로. 첨부(base64)와 긴 본문은 POST(주소줄 길이 한계), 나머지는 GET 쿼리.
@@ -40,11 +64,7 @@
   function erpTodoCall(gasUrl, params) {
     var gas = function () { return gasCall(gasUrl, params); };
     if (!ERP_ON || !params || !WRITE.test(String(params.action || ''))) return gas();
-    return fetch('/api/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(params)
-    }).then(_json)
+    return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
       .catch(function (e) {
         console.warn('[업무쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
@@ -74,11 +94,7 @@
       });
     };
     if (!ERP_ON || !params || !CHECK_WRITE.test(String(params.action || ''))) return gas();
-    return fetch('/api/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(params)
-    }).then(function (r) {
+    return gwPost('/api/write', params).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .json() 할 수 있어야 한다.
       return r.clone().json().then(function (d) {
@@ -118,11 +134,7 @@
       }).then(function (r) { return r.json(); });
     };
     if (!ERP_ON || !params || !PROC_WRITE.test(String(params.action || ''))) return gas();
-    return fetch('/api/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(params)
-    }).then(_json)
+    return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
       .catch(function (e) {
         console.warn('[구매쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
@@ -155,11 +167,7 @@
     if (!ERP_ON || !payload || !(payload.tab || payload.db)) return gas();
     var isWrite = RC_WRITE.test(String(payload.action || ''));
     var fail = function () { return { via: 'gas', stale: null }; };   // 관문을 못 씀 — 종전 경로로
-    return fetch(isWrite ? '/api/write' : '/api/reception-ops', {
-      method: 'POST', cache: 'no-store',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    }).then(function (r) {
+    return gwPost(isWrite ? '/api/write' : '/api/reception-ops', payload).then(function (r) {
       if (!r.ok) return fail();                                       // 401(미로그인)·5xx
       // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .text()/.json() 할 수 있어야 한다.
       return r.clone().json().then(function (d) {

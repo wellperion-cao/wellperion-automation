@@ -119,8 +119,8 @@ def _gas_key(action):
       화면은 종전대로 GAS 직접 경로로 폴백한다(저장은 되고, 서버 이중기록만 안 남는다)."""
     if action.startswith(("reg_", "lf_", "voc_")) or action == "hold_complete":
         return "RECEPTION_EXEC_URL"
-    if action.startswith(("todo_", "approval_rep_")):
-        return "TODO_GAS_URL"
+    if action.startswith(("todo_", "approval_rep_")) or action in ("notice_save", "notice_delete"):
+        return "TODO_GAS_URL"   # 공지서식(coo/notice) — 같은 GAS 프로젝트(배 1082). 거울 없음 — MIRROR_SYNC 미등록.
     if action in _CHECK_GAS_ACTIONS:
         return "CHECK_GAS_URL"
     if action == "save_schedule":
@@ -263,6 +263,8 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("member_hold_approve") == "FUNNEL_EXEC_URL"   # member_* 는 접수 GAS 로 새면 안 된다
     assert _gas_key("lesson_inquiry_add") == "FUNNEL_EXEC_URL"
     assert _gas_key("todo_update") == "TODO_GAS_URL" and _gas_key("approval_rep_cancel") == "TODO_GAS_URL"
+    assert _gas_key("notice_save") == "TODO_GAS_URL" and _gas_key("notice_delete") == "TODO_GAS_URL"   # 배 1082
+    assert "notice_save" not in MIRROR_SYNC and "notice_delete" not in MIRROR_SYNC   # 거울 없음
     assert _gas_key("todo_list") == "TODO_GAS_URL"          # 읽기가 흘러들어와도 목적지는 맞다(화면은 안 보낸다)
     assert MIRROR_SYNC["todo_delete"] == "sync_todo.py" and MIRROR_SYNC["member_owner_save"] == "sync_members.py"
     assert "ai_add" not in MIRROR_SYNC                      # AI배 탭은 거울이 없다 — 헛돌면 안 된다
