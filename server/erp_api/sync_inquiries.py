@@ -9,6 +9,7 @@
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.parse
@@ -16,6 +17,35 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
+
+# 문의 유입 경로 채우기(배1006 · status/briefs/CMO-유입경로-발행원장-정의서-20260903.md 표 A).
+# 측정 시작 규칙(GM 확정) — 이 반영일 이전 문의는 전부 unknown(소급 채움 금지).
+CHANNEL_CUTOVER = "2026-09-05"
+
+# GAS 가 돌려주는 channel 값은 출처(멤버십=canonical 10버킷 / 강습=자유텍스트)가 달라 정규식으로 통일 판정한다.
+# 표 A 11종 중 이 6개만 문의 channel 텍스트에서 신뢰 가능하게 구분된다 — 나머지(ig_personal/ig_official 등)는
+# ponytail: 폼이 아직 UTM만 캡처하고 계정 구분·post_id 는 안 보내 unknown 처리. 폼 개편(정의서 §5, 시모 소유) +
+# GAS 가 raw UTM(source/content/campaign)을 member_inquiry_list·lesson_inquiry_list 에 실어 보내면 그때 세분화.
+_CHANNEL_CODE_PATTERNS = [
+    (re.compile(r"블로그|blog", re.I), "naver_blog"),
+    (re.compile(r"카카오|카톡|kakao", re.I), "kakao"),
+    (re.compile(r"당근|danggn|daangn", re.I), "danggn"),
+    (re.compile(r"동부이촌동|이촌동|카페", re.I), "naver_cafe"),
+    (re.compile(r"소개|지인|추천", re.I), "referral"),
+    (re.compile(r"간판|현수막|오프라인|워크인|지나가|방문", re.I), "direct_visit"),
+    (re.compile(r"네이버|naver|플레이스|검색", re.I), "search"),
+]
+
+
+def channel_code_of(raw_channel, timestamp):
+    """channel 자유텍스트 + 제출시각 → channel_code 11종(표 A). 못 맞추거나 반영일 이전이면 unknown."""
+    if not timestamp or timestamp < CHANNEL_CUTOVER:
+        return "unknown"
+    s = str(raw_channel or "")
+    for pat, code in _CHANNEL_CODE_PATTERNS:
+        if pat.search(s):
+            return code
+    return "unknown"
 
 ENV_FILE = os.environ.get("ERP_API_ENV", "/srv/erp/api.env")
 
@@ -71,20 +101,23 @@ def replace_type(conn, kind, rows, now):
         key = str(r.get("rowKey") or r.get("rowIndex") or "")
         if not key:
             continue
+        ts = r.get("timestamp")
         recs.append((
             db.TENANT, "%s|%s" % (kind, key), kind, key,
-            r.get("name"), r.get("phone"), r.get("status"), r.get("timestamp"),
+            r.get("name"), r.get("phone"), r.get("status"), ts,
             json.dumps(r, ensure_ascii=False), now,
+            channel_code_of(r.get("channel"), ts), ts or None,
         ))
     with conn:
         conn.execute("DELETE FROM inquiries WHERE tenant_id=%s AND type=%s", (db.TENANT, kind))
         conn.executemany(
             "INSERT INTO inquiries"
-            " (tenant_id,id,type,row_key,name,phone,status,timestamp,data,synced_at)"
-            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            " (tenant_id,id,type,row_key,name,phone,status,timestamp,data,synced_at,channel_code,channel_captured_at)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
             " ON CONFLICT (tenant_id,id) DO UPDATE SET type=EXCLUDED.type, row_key=EXCLUDED.row_key, name=EXCLUDED.name,"
             " phone=EXCLUDED.phone, status=EXCLUDED.status, timestamp=EXCLUDED.timestamp, data=EXCLUDED.data,"
-            " synced_at=EXCLUDED.synced_at", recs)
+            " synced_at=EXCLUDED.synced_at, channel_code=EXCLUDED.channel_code,"
+            " channel_captured_at=EXCLUDED.channel_captured_at", recs)
     return len(recs)
 
 
@@ -112,6 +145,12 @@ def main():
 
 
 def selftest():
+    assert channel_code_of("카카오톡 채널", "2026-09-05") == "kakao"
+    assert channel_code_of("네이버 블로그", "2026-09-10 09:00:00") == "naver_blog"
+    assert channel_code_of("카카오톡 채널", "2026-09-04") == "unknown", "반영일 이전은 소급 없이 unknown"
+    assert channel_code_of("아무말", "2026-09-05") == "unknown", "매핑 불가는 unknown"
+    assert channel_code_of("카카오톡", None) == "unknown", "타임스탬프 없으면 unknown"
+
     db.TENANT = "selftest"                      # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
     conn = db.connect()
     rows = [{"rowKey": "a", "name": "홍길동", "timestamp": "2026-01-01"},
