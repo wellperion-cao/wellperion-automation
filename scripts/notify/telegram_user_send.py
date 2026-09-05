@@ -101,10 +101,20 @@ def _prepare(text: str):
     return cfg, 0
 
 
-async def _setup_async(api_id, api_hash, phone):
+async def _setup_async(api_id, api_hash, phone, code=None, password=None):
+    """`!` 셸은 stdin 이 null 이라 input() 이 EOF 로 죽는다(2026-09-05 실측) —
+    코드·2단계 비밀번호를 인자로 받는다. 코드 없이 부르면 텔레그램이 코드를 보내고 종료(exit 5)."""
     from telethon import TelegramClient
     client = TelegramClient(_SESSION_NAME, api_id, api_hash)
-    await client.start(phone=phone)
+    if code is None:
+        await client.connect()
+        if await client.is_user_authorized():
+            me = await client.get_me(); print(f"[OK] 이미 로그인됨: {(me.first_name or '')} (id={me.id})"); await client.disconnect(); return
+        await client.send_code_request(phone)
+        await client.disconnect()
+        print("[코드 발송] 텔레그램 앱에 온 숫자 코드를 받아 다시: --setup --code 12345  (2단계 비밀번호 있으면 --password 도)")
+        sys.exit(5)
+    await client.start(phone=phone, code_callback=lambda: str(code), password=password)
     me = await client.get_me()
     print(f"[OK] 로그인 완료: {(me.first_name or '')} {(me.last_name or '')} (id={me.id})".strip())
     await client.disconnect()
@@ -207,6 +217,8 @@ def _selfcheck():
 def main():
     ap = argparse.ArgumentParser(description="GM 텔레그램 계정으로 직접 발송(Telethon)")
     ap.add_argument("--setup", action="store_true")
+    ap.add_argument("--code", type=str, help="--setup 2단계: 텔레그램 앱에 온 숫자 코드")
+    ap.add_argument("--password", type=str, help="2단계 인증 비밀번호(있을 때만)")
     ap.add_argument("--whoami", action="store_true")
     ap.add_argument("--send", action="store_true")
     ap.add_argument("--chat", type=str)
@@ -245,7 +257,7 @@ def main():
             print(f"[설정 필요] telegram_bot/.env 에 {', '.join(missing)} 값을 넣어주세요.")
             print("my.telegram.org 에서 App 생성 → api_id/api_hash 발급, 전화번호는 국가코드 포함(예: +8210...)")
             sys.exit(2)
-        asyncio.run(_setup_async(int(cfg["TG_USER_API_ID"]), cfg["TG_USER_API_HASH"], cfg["TG_USER_PHONE"]))
+        asyncio.run(_setup_async(int(cfg["TG_USER_API_ID"]), cfg["TG_USER_API_HASH"], cfg["TG_USER_PHONE"], code=args.code, password=args.password))
         return
 
     if args.whoami:
