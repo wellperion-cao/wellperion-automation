@@ -83,7 +83,8 @@ def _forbidden_hit(q: str) -> bool:
 def _best_match(q: str, faq: list):
     """(faq_item|None, score) — 정규화 뒤 overlap coefficient(짧은 쪽 bigram 수 기준).
     교집합 2-gram 2개 이상 AND 비율 0.5 이상만 매칭 후보 — 어미 한두 글자만 겹쳐 확신 있게
-    엉뚱한 FAQ 로 답하는 사고(배1018 후속) 차단. 정규화 길이 2자 이하면 무조건 미매칭."""
+    엉뚱한 FAQ 로 답하는 사고(배1018 후속) 차단. 정규화 길이 2자 이하면 무조건 미매칭.
+    item.alt(선택, 동의어 문구 목록 — 예: "골프 레슨"↔"골프 트레이닝")도 q 와 같은 자격으로 후보에 넣는다."""
     nq = _normalize_q(q)
     if len(nq) <= 2:
         return None, 0.0
@@ -92,15 +93,19 @@ def _best_match(q: str, faq: list):
         return None, 0.0
     best, best_score = None, 0.0
     for item in faq:
-        fb = _bigrams(_normalize_q(item.get("q", "")))
-        if not fb:
-            continue
-        inter = qb & fb
-        if len(inter) < 2:
-            continue
-        score = len(inter) / min(len(qb), len(fb))
-        if score >= 0.5 and score > best_score:
-            best, best_score = item, score
+        item_score = 0.0
+        for cand in [item.get("q", "")] + list(item.get("alt") or []):
+            fb = _bigrams(_normalize_q(cand))
+            if not fb:
+                continue
+            inter = qb & fb
+            if len(inter) < 2:
+                continue
+            score = len(inter) / min(len(qb), len(fb))
+            if score >= 0.5 and score > item_score:
+                item_score = score
+        if item_score > best_score:
+            best, best_score = item, item_score
     return best, best_score
 
 
@@ -202,6 +207,15 @@ def _selfcheck() -> None:
     ]
     for q, expect_id in cases:
         m, s = _best_match(q, faq)
+        got_id = m.get("id") if m else None
+        assert got_id == expect_id, f"{q!r} 기대={expect_id} 실제={got_id}(score={s})"
+
+    # 다캠(2_dietcamp) 실측 — 시보 요청 2건. "골프 레슨"은 FAQ 원문("골프 트레이닝")과 동의어라
+    # item.alt 로 매칭 후보에 넣는다(d08 에 "alt": ["골프 레슨"] 필요 — 없으면 이 assert 로 바로 드러난다).
+    dc_faq = _load_faq("2_dietcamp").get("faq") or []
+    assert dc_faq, "다캠 FAQ 없음 — /srv/erp/faq/2_dietcamp/faq.json 확인"
+    for q, expect_id in [("골프 레슨도 하나요", "d08"), ("처음 가면 뭐 해요", "d09")]:
+        m, s = _best_match(q, dc_faq)
         got_id = m.get("id") if m else None
         assert got_id == expect_id, f"{q!r} 기대={expect_id} 실제={got_id}(score={s})"
     print("api_chat selfcheck ok")
