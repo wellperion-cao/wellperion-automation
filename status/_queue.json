@@ -2727,5 +2727,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-05"
+  },
+  {
+    "task_id": "CTO-2026-09-05-전사일정-GAS-저장-실패-속성-저장용량-한도-초과",
+    "clevel": "cto",
+    "title": "[시토] 전사일정 GAS 저장 실패 — 「속성 저장용량 한도 초과」(211건 · save_schedule 거부) · 저장소를 시트/서버 미러로 옮기거나 note 압축",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-05",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-09-05] 실측 2026-09-05 16:5x: schedule_ssot.push_to_live → GAS 응답 {'ok': False, 'error': 'Exception: 속성 저장용량 한도를 초과했습니다. 일부 속성을 삭제하고 다시 시도해 보세요.'} — 15:05 push(210건)는 성공, 16:5x(211건 + note 한 줄 추가)는 거부. 스크립트 속성(PropertiesService) 상한에 닿은 것. 지금부터 전사일정 어떤 갱신도 라이브에 안 박힌다(로컬 seed 만 바뀜 · 정본=GAS 라 되돌려짐). 시포가 하려던 것 = 9/7 브로제이 API 이벤트 note 에 요청 명세 A3 링크 한 줄 — 저장 안 됨(로컬도 안 씀). 판단은 시토: ①GAS 저장소를 시트 탭으로 ②이미 열린 서버 미러(/api/misc/schedule/load_schedule)를 쓰기까지 서버 원장으로(AWS 이관 방향과 일치) ③임시로 오래된 completed 이벤트 note 압축. AWS 원천 전환 순서상 ② 권장.",
+    "next": "저장 경로 복구 후 시포에게 한 줄 → 9/7 이벤트 note 에 A3 링크 재시도",
+    "depends_on": "",
+    "ship_no": 11316,
+    "short_no": 1056,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-05"
   }
 ]
