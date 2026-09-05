@@ -75,6 +75,8 @@ SYSTEM_BRIEF = """너는 웰페리온의 AI 비서다. 지금 카카오톡에서
 - 블로그 업체 설문 여덟 가지는 2026-09-02 에 다 받았다 — 다시 묻지 않는다.
 - 순서: 못 받은 것부터 → 그다음은 ①②③④ 를 하루씩 돌아가며(이미 나온 주제는 고르지 않는다).
   · 이미 받은 것(다시 묻지 않는다): 문의 경로 = 소개(09-04) · 한 달 상담 문의 5~8건(09-05) · 지금 회원 몇 분은 09-05 에 여쭸다(답 없으면 다시 안 묻고 넘어간다)
+  · 09-05 17:43 에 주차(대수·무료·대안)와 상담 예약 받는 방법(전화·카톡·링크)을 여쭸다 — 답이 오면 정본에 넣고, 답이 없어도 이틀은 다시 묻지 않는다
+  · ★상담 페이지에서 손님이 실제로 물었는데 답을 못 받아 둔 것(아래 ★목록으로 붙는다)은 '못 받은 것'보다 앞에 둔다 — 손님이 이미 기다린 질문이다(GM 2026-09-05)
   · 못 받은 것(이 순서로): 센터 사진 몇 장(간판·수업 공간·그룹 수업·1:1 재활·소도구 — 폰 사진 그대로 카톡으로 보내 주시면 된다고 안내 · 회사소개서·브랜드가이드가 사진에서 시작한다고 한 줄) · 인스타·블로그 계정 · 글 검수는 누가 · 로고 파일 · 즐겨 쓰는 색
   · 사진을 여쭐 때는 '몇 장이면 되나'를 분명히(3~5장) 하고, 잘 나온 것만 골라 보내 주셔도 된다고 적는다. 사진이 오면 '어떤 장면인지 한 줄'만 되짚어 감사한다
   · ①브랜드가이드: 손님이 제일 자주 묻는 질문 세 가지(검색·AI 검색 셋업용) · 네이버 플레이스·구글 지도에 등록돼 있나 · 왜 다이어트캠프를 시작하셨나 · 다른 센터와 제일 다른 점 · 어떤 손님이 오면 제일 기쁜가 · 손님에게 절대 안 하는 말 · 제일 기억에 남는 회원
@@ -214,9 +216,47 @@ def new_from_partner(lines: list[dict], last_handled: str) -> list[dict]:
     return mine[-1:]
 
 
-def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF) -> str:
+GAP_LABEL = {   # 상담봇 needs_facts 경로 → 대표님께 여쭐 말(GM 2026-09-05 "모르는 건 대표님이랑 소통해서 물어봐")
+    "facts.parking": "주차(대수·무료 여부·안 되면 근처 대안)",
+    "facts.hours": "평일·주말·공휴일 운영 시간과 정기 휴무",
+    "facts.address": "주소·층·찾아오는 길 한 줄",
+    "channels.reservation_url": "상담 예약을 받는 방법(전화·카톡·링크 중)",
+    "offerings[trial]": "체험·첫 방문 상품과 진행 순서",
+    "policies[topic=환불]": "환불 규정(기간·비율·절차)",
+    "policies[topic=연기]": "기간 연기·휴회 규정",
+    "policies[topic=양도]": "양도·명의 변경 가능 여부",
+    "facts.provided": "준비물 중 센터가 제공하는 것(수건·운동복·물)",
+    "facts.bring": "손님이 챙겨 와야 하는 것",
+}
+
+
+def bot_gaps(tenant: str = "2_dietcamp", days: int = 7) -> list[str]:
+    """상담 페이지에서 손님이 실제로 물었는데 정본 칸이 비어 못 답한 것(needs_facts)을 서버 미답 목록에서 뽑는다.
+    이게 아침 질문의 최우선이다 — 손님이 이미 물은 것보다 급한 빈칸은 없다. 로그인·서버 실패 = 빈 목록(fail-open)."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        import erp_live_audit as e                  # 로그인 헬퍼 재사용(약속 L21)
+        st, body = e.fetch(e.login(), f"/api/chat/{tenant}/unanswered?days={days}")
+        if st != 200:
+            return []
+        seen: list[str] = []
+        for item in (json.loads(body).get("questions") or []):
+            for p in item.get("needs_facts") or []:
+                label = GAP_LABEL.get(p, p)
+                if label not in seen:
+                    seen.append(label)
+        return seen
+    except Exception as exc:                        # noqa: BLE001 — 아침 한 통이 이것 때문에 안 나가면 안 된다
+        print(f"[agent] 봇 빈칸 조회 실패(건너뜀): {exc}", file=sys.stderr)
+        return []
+
+
+def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF, gaps: list[str] | None = None) -> str:
     recent = lines[-CONTEXT_LINES:]
     convo = "\n".join(f"[{ln['who']}] {ln['text']}" for ln in recent if ln["text"])
+    if gaps:
+        brief += ("\n\n★손님이 상담 페이지에서 실제로 물었는데 우리가 답을 못 받아 둔 것(최우선으로 여쭙는다 · 최근 대화에서 이미 여쭌 것은 빼고):\n"
+                  + "\n".join(f"  · {g}" for g in gaps))
     if not fresh:
         # 말씀 없는 아침 — 먼저 보내는 질문 1통(GM 지시 2026-09-03)
         return (f"{brief}\n\n"
@@ -339,7 +379,8 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
         return 0
 
     from model_router import run_claude  # noqa: PLC0415
-    draft, used = run_claude(build_prompt(lines, fresh, brief), label="diet-camp-agent")
+    gaps = bot_gaps() if brief == SYSTEM_BRIEF else []   # 다캠 방에서만 — 다른 방은 상담봇 테넌트가 없다
+    draft, used = run_claude(build_prompt(lines, fresh, brief, gaps), label="diet-camp-agent")
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
         return 0
