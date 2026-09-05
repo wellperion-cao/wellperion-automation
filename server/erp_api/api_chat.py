@@ -6,9 +6,10 @@ POST /api/chat/{tenant}            공개(로그인 없음) — 질문 1개 → 
 GET  /api/chat/{tenant}/unanswered 관문 뒤(로그인) — 최근 N일 미답 질문 목록(시보가 아침 학습 회로로 읽는다).
 PUT  /api/chat/{tenant}/faq · GET .../stats · POST .../feedback · GET .../profile — 배1036 관리자 API 4개.
 
-주 엔진(ANTHROPIC_API_KEY 있을 때) = 업체 정본 11구역+FAQ+오늘 운영 상태를 시스템 프롬프트로 준 컨시어지 모델
-(claude-sonnet-5 · env COUNSEL_MODEL 로 교체 가능) — 지어내기 차단은 프롬프트가 아니라 출력검사 코드
-(_grounded·_forbidden_hit)가 한다. 키 없으면 백업(문장 겹침 매칭·모델 호출 0)으로 자동 전환(회귀 0).
+주 엔진 = 업체 정본 11구역+FAQ+오늘 운영 상태를 시스템 프롬프트로 준 컨시어지 모델(스트리밍). 3단 전환(GM 확정):
+  주(env COUNSEL_MODEL_PRIMARY 기본 opus-4-6) → 오류·첫 글자 3초 초과·한도(429)면 대체(FALLBACK 기본 sonnet-4-6)
+  → 그래도 실패하면 백업(문장 겹침 매칭·모델 호출 0). 지어내기 차단은 프롬프트가 아니라 출력검사 코드
+(_grounded·_forbidden_hit)가 한다. 클라이언트 자체가 없으면(키·Bedrock 둘 다 없음) 바로 백업(회귀 0).
 FAQ 저장 = /srv/erp/faq/{tenant}/faq.json (tenant = "1_wellperion" | "2_dietcamp" — 서버에 이미 있는 실제
     센터 구분 이름 그대로 재사용. GM 지시는 "1_웰페리온/2_다이어트캠프 구분" 이지만, 서버는 이미 이 ASCII 이름으로
     구분해 뒀다(deploy_dietcamp.sh). 저장 위치는 /srv/www 가 아니라 /srv/erp/faq 다 — /srv/www/1_wellperion 은
@@ -25,6 +26,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -75,7 +77,12 @@ CLOSE_DAYS_PATH = os.environ.get(
     "ERP_CLOSE_DAYS",
     "/srv/erp/www/status/close_days.json" if os.path.isdir("/srv/erp/www") else
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "status", "close_days.json"))
-COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "global.anthropic.claude-sonnet-4-6")   # sonnet-5 는 이 계정 아직 승인 전(실측) — 계약 완료된 4.6 로. 한 줄로 교체(Bedrock 크로스리전 id)
+# 주 모델 = Opus 4.6(GM 확정 "성능 좋은 걸로") · 대체 = Sonnet 4.6(주 모델 오류·첫 글자 3초 초과·한도 시 자동).
+# 옛 COUNSEL_MODEL 은 PRIMARY 별칭(하위호환) — 새 배포는 PRIMARY/FALLBACK 두 이름을 쓴다.
+COUNSEL_MODEL_PRIMARY = os.environ.get("COUNSEL_MODEL_PRIMARY") or os.environ.get("COUNSEL_MODEL") or "global.anthropic.claude-opus-4-6-v1"
+COUNSEL_MODEL_FALLBACK = os.environ.get("COUNSEL_MODEL_FALLBACK", "global.anthropic.claude-sonnet-4-6")
+COUNSEL_MODEL = COUNSEL_MODEL_PRIMARY   # 하위호환 별칭
+FIRST_CHAR_TIMEOUT_S = 3.0   # 주 모델 첫 글자가 이 안에 안 오면 대체로 전환
 _SESSION_TURNS = 6     # 배1036 GM 구조전환② — 대화 문맥(최근 N턴)
 _SESSION_MAX = 2000    # ponytail: 세션 상한 없으면 메모리 누수 — 오래된 세션 정리는 재시작뿐(필요해지면 TTL 추가)
 _SESSIONS: dict = {}   # session_id -> [{"role":..,"content":..}, ...] · 프로세스 메모리(재시작하면 비워짐 · FAILS 패턴과 동일)
@@ -574,32 +581,57 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
     )
 
 
+def _stream_once(client, model: str, system: list, messages: list, read_timeout: float = None):
+    """스트리밍 1회 호출(설계 §3-1② "속시원함" · GM 확정 스트리밍 필수) — 첫 글자까지 걸린 시간을 반환한다.
+    read_timeout 을 주면 청크 사이 대기(사실상 첫 글자 대기 포함)가 그 초를 넘길 때 타임아웃 예외를 던진다
+    (SDK/httpx 표준 기능 재사용 — 직접 스레드·타이머 안 짠다)."""
+    call_client = client
+    if read_timeout:
+        from anthropic import Timeout
+        call_client = client.with_options(timeout=Timeout(60.0, read=read_timeout, write=30.0, connect=5.0))
+    t0 = time.time()
+    first_char_t = None
+    chunks = []
+    with call_client.messages.stream(model=model, max_tokens=500, system=system, messages=messages) as stream:
+        for text in stream.text_stream:
+            if first_char_t is None:
+                first_char_t = time.time()
+            chunks.append(text)
+    return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None)
+
+
 def _concierge_answer(tenant: str, q: str, session_id: str):
     """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status).
     status: 'ok'(그대로 응답) · 'invalid'(출력검사 탈락 → 호출부가 핸드오프) ·
-    'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥)."""
+    'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥).
+    주 모델(Opus 4.6) 오류·첫 글자 3초 초과·한도(429)면 대체(Sonnet 4.6)로 자동 전환한다 — 둘 다
+    실패해야 비로소 백업(문장겹침 매칭)으로 내려간다(GM 확정 3단 — 이 함수가 위 두 단만 맡는다)."""
     client = _anthropic_client()
     if not client:
         return None, "error"
     persona = _persona_of(tenant)
     prof = _load_profile(tenant)
-    system = _concierge_system_block(tenant, prof, persona)
-    history = _session_history(session_id)
+    system_text = _concierge_system_block(tenant, prof, persona)
+    system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
     lang_hint = " (질문이 영어이니 영어로 답하세요)" if _is_english_q(q) else ""
-    try:
-        resp = client.messages.create(
-            model=COUNSEL_MODEL, max_tokens=500,
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=history + [{"role": "user", "content": q + lang_hint}],
-        )
-        text = "".join(b.text for b in resp.content if b.type == "text").strip()
-    except Exception as e:
-        # 종류를 미리 안 가린다(권한·DNS·한도 등 원인이 다양 — 실측에서 "AccessDenied 예상"이 실제로는
-        # bedrock-mantle.{region}.api.aws DNS 미응답으로 나왔다) — 뭐가 됐든 주 엔진이 안 됐다는 신호라 알린다.
-        _tg_alert_bedrock_once("⚠️ 상담봇 주 엔진(Bedrock) 호출 실패 — FAQ 백업으로 자동 전환 중. %s: %s"
-                                % (type(e).__name__, str(e)[:200]))
+    messages = _session_history(session_id) + [{"role": "user", "content": q + lang_hint}]
+
+    text = None
+    for model, timeout in ((COUNSEL_MODEL_PRIMARY, FIRST_CHAR_TIMEOUT_S), (COUNSEL_MODEL_FALLBACK, None)):
+        try:
+            text, first_char_s = _stream_once(client, model, system, messages, read_timeout=timeout)
+            print("[concierge] tenant=%s model=%s first_char_s=%s" % (tenant, model, first_char_s), flush=True)
+            break
+        except Exception as e:
+            print("[concierge] tenant=%s model=%s FAILED %s: %s"
+                  % (tenant, model, type(e).__name__, str(e)[:200]), flush=True)
+            if model == COUNSEL_MODEL_FALLBACK:
+                # 주·대체 둘 다 실패 — Bedrock 쪽 문제일 가능성이 커서 알린다(하루 1회).
+                _tg_alert_bedrock_once("⚠️ 상담봇 주엔진·대체 모두 실패 — FAQ 백업으로 전환 중. %s: %s"
+                                        % (type(e).__name__, str(e)[:200]))
+    if text is None:
         return None, "error"
-    if not text or _forbidden_hit(text) or not _grounded(text, system):
+    if not text or _forbidden_hit(text) or not _grounded(text, system_text):
         return None, "invalid"
     _session_append(session_id, q, text)
     return text, "ok"
