@@ -495,17 +495,19 @@ function submitStaffFeedback(){
     }
     // 텍스트는 이미 저장됐다 — 사진 업로드는 별도 GAS(콘텐츠 접수 재사용) 호출.
     _fbSetNotice(notice, '', '접수됐습니다. (접수번호 ' + feedbackId + ') 사진 올리는 중…');
-    fetch(FB_PHOTO_URL, {
+    var _photoPayload = {
+      action: 'staff_feedback_photo',
+      feedbackId: feedbackId,
+      photos: _fbPhotos.map(function(p){ return { b64: p.b64, mime: p.mime, fname: p.fname }; })
+    };
+    // 쓰기 관문(_assets/erp_write.js · 배1084 후속 · 시토 2026-09-05) — 사진도 ERP 도메인이면 서버 /api/write 경유(서버가 같은 GAS 로 넘김), 실패 시 종전 직행.
+    (window.erpFunnelCall ? erpFunnelCall(FB_PHOTO_URL, _photoPayload) : fetch(FB_PHOTO_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: 'staff_feedback_photo',
-        feedbackId: feedbackId,
-        photos: _fbPhotos.map(function(p){ return { b64: p.b64, mime: p.mime, fname: p.fname }; })
-      }),
+      body: JSON.stringify(_photoPayload),
       redirect: 'follow'
     })
-    .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); }))
     .then(function(pres){
       if (sendBtn) sendBtn.disabled = false;
       if (!pres || pres.ok !== true) {
