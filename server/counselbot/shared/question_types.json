@@ -1,0 +1,36 @@
+{
+  "_about": "공통 질문 유형 원장 — 돈 버는 층(GM 2026-09-05 '질문이 쌓이면 다른 지점 상담봇도 다같이 업그레이드 · 그게 돈 버는 포인트'). 손님 질문은 업체가 달라도 유형이 같다(주차·환불·초보·통증·가격). 여기엔 '유형 + 답 뼈대 + 필요한 사실 칸'만 쌓고, 사실 값(주차 대수·환불 비율)은 각 업체 프로필에서 치환한다. 한 지점에서 새 유형이 나오면 여기 한 줄이 늘고, 다른 지점은 자기 사실 칸만 채우면 그 질문에 즉시 답한다.",
+  "never_here": ["고객 이름·연락처·대화 원문", "업체 고유 사실 값(가격·시간·주소·강사명)", "업체 대표가 비공개로 답한 내용"],
+  "fields": {
+    "type_id": "유형 식별자",
+    "examples": "손님이 실제로 쓴 표현(개인정보 제거) — 여러 업체에서 모임",
+    "answer_skeleton": "답 뼈대 — {facts.*} 자리에 업체 값이 들어간다",
+    "needs_facts": "이 유형에 답하려면 업체 프로필의 어느 칸이 채워져 있어야 하나",
+    "seen_in": "이 유형이 나온 업체 수(값이 아니라 개수)",
+    "count": "누적 질문 수(전 업체 합)",
+    "first_seen": "처음 나온 날"
+  },
+  "types": [
+    {"type_id": "hours_today", "examples": ["오늘 운영하나요", "지금 열었어요?", "일요일도 해요?"], "answer_skeleton": "오늘은 {open_today} 운영해요 — {hours_today}. {closed_rule_note}", "needs_facts": ["facts.hours", "facts.closed_rules"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "location_route", "examples": ["어디에 있어요", "몇 층이에요", "역에서 얼마나 걸려요"], "answer_skeleton": "{facts.address} — {facts.route_line}", "needs_facts": ["facts.address", "facts.route_line"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "parking", "examples": ["주차 되나요", "주차 무료예요?", "차 갖고 가도 돼요"], "answer_skeleton": "{facts.parking}. {parking_alternative}", "needs_facts": ["facts.parking"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "price_ask", "examples": ["얼마예요", "회원권 가격이요", "한 달에 얼마"], "answer_skeleton": "금액은 상담에서 정확히 안내드려요 😊 구조는 {offerings.price_structure}이고, 목표에 따라 맞는 상품이 달라서 첫 상담에서 같이 정해요. {next_action}", "needs_facts": ["offerings[].price_policy"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "refund", "examples": ["환불 되나요", "중간에 그만두면", "환불 규정이요"], "answer_skeleton": "{policies.refund.text} 자세한 계산은 담당자가 직접 안내드려요. {handoff}", "needs_facts": ["policies[topic=환불]"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "pause_transfer", "examples": ["휴회 돼요", "기간 연기", "양도 가능해요"], "answer_skeleton": "{policies.pause.text} {policies.transfer.text}", "needs_facts": ["policies[topic=연기]", "policies[topic=양도]"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "beginner_ok", "examples": ["운동 처음인데 괜찮아요", "초보도 돼요", "체력이 너무 없어요"], "answer_skeleton": "네, 처음 오시는 분이 {beginner_share}예요 😊 {offerings.beginner_fit} — 첫 상담에서 수준을 같이 보고 시작해요. {next_action}", "needs_facts": ["offerings[].who", "identity.one_liner"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "pain_condition", "examples": ["허리가 아픈데 운동해도 되나요", "무릎 수술했어요", "디스크 있어요"], "answer_skeleton": "말씀 주셔서 다행이에요. 통증은 먼저 상태를 보고 운동 범위를 정해요 — {offerings.rehab_scope}. 병원 진단이 있으면 그 범위 안에서 안내드려요. {next_action}", "needs_facts": ["offerings[rehab]", "guards.medical_words"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "trial_flow", "examples": ["체험 있어요", "한 번 해보고 결정할 수 있나요", "첫날 뭐 해요"], "answer_skeleton": "{offerings.trial} 첫 방문은 {first_visit_flow}, {first_visit_minutes} 정도 걸려요. {next_action}", "needs_facts": ["offerings[trial]", "facts.first_visit_flow"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "schedule_class", "examples": ["수업 몇 시에 있어요", "저녁 수업 있나요", "주말 시간표"], "answer_skeleton": "{offerings.schedule_summary} 정원이 있어서 원하시는 시간은 예약으로 잡아 드려요. {next_action}", "needs_facts": ["offerings[].schedule"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "what_to_bring", "examples": ["뭐 가져가야 해요", "운동복 빌려줘요", "수건 있어요"], "answer_skeleton": "{facts.provided} 는 준비돼 있고, {facts.bring} 만 챙겨 오시면 돼요 👍", "needs_facts": ["facts.provided", "facts.bring"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "facility", "examples": ["샤워 되나요", "락커 있어요", "어떤 기구 있어요"], "answer_skeleton": "{facts.facility_summary}", "needs_facts": ["facts.facility"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "trainer_who", "examples": ["누가 가르쳐요", "강사 경력이요", "여자 선생님 있어요"], "answer_skeleton": "{staff.public_summary} 담당은 첫 상담에서 목표에 맞춰 정해 드려요.", "needs_facts": ["staff.public_summary", "staff.disclose_policy"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "age_fit", "examples": ["50대인데 괜찮아요", "아이도 되나요", "부모님 모시고 가도"], "answer_skeleton": "{offerings.age_fit} {policies.minor.text}", "needs_facts": ["offerings[].who", "policies[topic=미성년]"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "walkin_reserve", "examples": ["그냥 가도 돼요", "예약 없이 방문", "당일 상담 가능"], "answer_skeleton": "{policies.walkin.text} {next_action}", "needs_facts": ["policies[topic=방문]", "channels.reservation_url"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "contact_human", "examples": ["전화 통화 되나요", "사람이랑 얘기하고 싶어요", "담당자 연결"], "answer_skeleton": "네, {staff.contact_hours} 에 {channels.phone_or_kakao} 로 연락 가능해요. 지금은 예약 남겨 주시면 먼저 연락드릴게요 🙏 {reservation_url}", "needs_facts": ["channels.*", "staff.contact_hours"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "english", "examples": ["Do you speak English", "Can foreigners join", "Is there an English class"], "answer_skeleton": "(answer in English) {identity.one_liner_en} {offerings.english_support} {next_action_en}", "needs_facts": ["identity.one_liner_en", "offerings.english_support"], "seen_in": 1, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "referral_family", "examples": ["친구랑 같이 하면", "소개 혜택", "부부 등록"], "answer_skeleton": "{policies.referral.text} 자세한 건 상담에서 안내드려요. {next_action}", "needs_facts": ["policies[topic=소개]"], "seen_in": 1, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "complaint", "examples": ["예약했는데 연락이 없어요", "수업이 취소됐어요", "불편한 게 있어요"], "answer_skeleton": "불편 드려 죄송해요 🙏 {policies.complaint_route} — 담당자가 {complaint_sla} 안에 직접 연락드릴게요. {handoff}", "needs_facts": ["policies[topic=불만]", "staff.complaint_owner"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"},
+    {"type_id": "hesitation", "examples": ["좀 고민해 볼게요", "비싼 것 같아요", "시간이 될지 모르겠어요"], "answer_skeleton": "충분히 고민하셔도 돼요 😊 {identity.sales_style.alternative} 부담 없이 체험 한 번 보고 정하셔도 좋아요. {next_action}", "needs_facts": ["identity.sales_style", "offerings[trial]"], "seen_in": 2, "count": 0, "first_seen": "2026-09-05"}
+  ],
+  "flow": "①손님 질문 → 코드가 유형에 붙임(없으면 '새 유형 후보') → ②업체 사실 칸이 비어 있으면 그 업체 미답 목록에 '어느 칸이 비었나'로 올라감(아침 1문) → ③새 유형 후보가 2개 업체 이상에서 나오면 시보가 여기 한 줄 추가 → ④전 업체 프롬프트 공통부가 이 파일을 읽으므로 다음 답부터 전 지점 동시 적용"
+}
