@@ -719,10 +719,15 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
     faq = _load_faq(tenant).get("faq") or []
     faq_lines = "\n".join("- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq)
     preset = _concept_preset(prof)
-    name = persona.get("name") or preset.get("name") or tenant
-    tone = persona.get("emoji") or preset.get("emoji") or "적당히"
-    handoff = persona.get("handoff") or preset.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
-    preset_line = (" 컨셉은 '%s'(%s)." % (preset.get("name"), preset.get("one_liner"))) if preset else ""
+    merged = {**preset, **{k: v for k, v in (persona or {}).items() if v}}   # 프리셋 바닥 + persona 가 있는 키만 덮기(배1074 후속)
+    name = merged.get("name") or tenant
+    tone = merged.get("emoji") or "적당히"
+    handoff = merged.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
+    preset_line = ""
+    if preset:
+        preset_line = " 컨셉은 '%s'(%s)." % (preset.get("name"), preset.get("one_liner"))
+        if preset.get("tone"):
+            preset_line += " 말투 지침 — %s." % preset["tone"]
     service_concept = (prof.get("identity") or {}).get("service_concept") or ""
     sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null(스포짐)이면 생략(배1036 GM 추가①)
     sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
