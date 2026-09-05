@@ -79,6 +79,11 @@ try:  # 발송요약 GM 검토 게이트(dig: 콜백, 2026-08-04) — scripts/ �
 except Exception:
     _digest = None
 
+try:  # 업무관리 방 에이전트(wrk: 콜백, 2026-09-05 GM 물음 · 배1068) — telegram_bot/ 폴더 내 모듈
+    import work_room_agent
+except Exception:
+    work_room_agent = None
+
 
 def _install_outbound_logging() -> None:
     """PTB 발신 메서드(send_message/send_photo/reply_text)에 best-effort 로깅 래핑.
@@ -1050,6 +1055,8 @@ async def handle_media(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     _log_group_message(update)
+    if work_room_agent is not None:
+        await work_room_agent.handle_group_message(update, ctx)  # 업무관리 방 에이전트(배1068) — 그룹만 상대, 그 외 무영향
     if not await authorized(update):
         return
 
@@ -2223,6 +2230,9 @@ def main():
     # GM 개인 하루 체크인 (ck:) — 2026-08-08 GM 승인 A안. 21:30 daily_scheduler 가 보낸
     # 카드의 토막·기분 버튼과 저장/건너뜀 처리. 저장은 gm_personal_routine.json 한 파일만 건드린다.
     app.add_handler(CallbackQueryHandler(cmd_checkin_callback, pattern=r"^ck:"))
+    # 업무관리 방 발송 승인 카드 (wrk:) — 2026-09-05 GM 물음(배1068). sign:·pub:·dig:·kakao_send·ck: 와 접두 안 겹침.
+    if work_room_agent is not None:
+        app.add_handler(CallbackQueryHandler(work_room_agent.handle_card_callback, pattern=r"^wrk:"))
     app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO, handle_media))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
