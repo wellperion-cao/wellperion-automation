@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-09-05T04:34:05Z",
-  "generated_at_kst": "2026-09-05 13:34",
+  "generated_at": "2026-09-05T10:04:06Z",
+  "generated_at_kst": "2026-09-05 19:04",
   "summary": "⚠️ 점검 필요: 업무 SSOT 배번호 신선도",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "3분 전 활동",
+      "detail": "13분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 2분 전(생존) · 최근 발신 202분 전",
+      "detail": "하트비트 2분 전(생존) · 최근 발신 81분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -23,8 +23,8 @@
     },
     {
       "name": "PC 자동 종료",
-      "state": "정상",
-      "detail": "예약됨(준비)"
+      "state": "불명",
+      "detail": "조회 실패"
     },
     {
       "name": "GAS→AWS 이관",
@@ -37,17 +37,17 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · active 54건 라이브=로컬 일치"
+      "detail": "HTTP 200 · active 63건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 54건/378874B"
+      "detail": "일치 · active 63건/574593B"
     },
     {
       "name": "시트 GAS(todo_list)",
       "state": "정상",
-      "detail": "HTTP 200 · data 183건"
+      "detail": "HTTP 200 · data 188건"
     },
     {
       "name": "M5 검수큐 라이브",
@@ -62,7 +62,7 @@
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "4.0h 전 갱신 — 정상"
+      "detail": "9.5h 전 갱신 — 정상"
     },
     {
       "name": "업무 SSOT 배번호 신선도",
@@ -71,273 +71,13 @@
     }
   ],
   "automation_health": {
-    "summary": "자동화 33/37 정상 (89%)",
-    "total": 37,
-    "healthy": 33,
-    "rate": 89,
-    "items": [
-      {
-        "name": "Wellperion-AI-Education-Weekly",
-        "state": "정상",
-        "last_run": "2026-08-30 오전 9:30:00",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:30:00"
-      },
-      {
-        "name": "Wellperion-AI-Learning-Proposer-Weekly",
-        "state": "정상",
-        "last_run": "2026-08-31 오전 9:45:00",
-        "last_result": 0,
-        "next_run": "2026-09-07 오전 9:45:00"
-      },
-      {
-        "name": "Wellperion-CEO-Evening-Wrap-2300-Live",
-        "state": "정상",
-        "last_run": "2026-09-04 오후 11:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 11:00:00"
-      },
-      {
-        "name": "Wellperion-CEO-Morning-Brief-0800-Live",
-        "state": "실패",
-        "last_run": "2026-09-05 오전 8:00:01",
-        "last_result": 1,
-        "next_run": "2026-09-06 오전 8:00:00"
-      },
-      {
-        "name": "Wellperion-CMO-Content-Intake-15min",
-        "state": "정상",
-        "last_run": "2026-09-05 오후 1:30:01",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 1:45:00"
-      },
-      {
-        "name": "Wellperion-CMO-Daily-Marketing-2100",
-        "state": "정상",
-        "last_run": "2026-09-04 오후 9:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 9:00:00"
-      },
-      {
-        "name": "Wellperion-CMO-Monthly-Report",
-        "state": "정상",
-        "last_run": "2026-09-01 오전 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-10-01 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-CMO-Weekly-Marketing-Feedback",
-        "state": "정상",
-        "last_run": "2026-08-31 오전 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-09-07 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
-        "state": "실패",
-        "last_run": "2026-09-05 오후 1:33:01",
-        "last_result": 267009,
-        "next_run": "2026-09-05 오후 1:36:00"
-      },
-      {
-        "name": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
-        "state": "정상",
-        "last_run": "2026-08-24 오전 10:00:00",
-        "last_result": 0,
-        "next_run": "2026-09-28 오전 10:00:00"
-      },
-      {
-        "name": "Wellperion-CTO-GEO-Watch-Weekly",
-        "state": "대기",
-        "last_run": "1999-11-30 오전 12:00:00",
-        "last_result": 267011,
-        "next_run": "2026-09-07 오전 7:10:00"
-      },
-      {
-        "name": "Wellperion-DietCamp-Agent",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 6:50:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 6:50:00"
-      },
-      {
-        "name": "Wellperion-Engagement-Collect-0930",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:30:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:30:00"
-      },
-      {
-        "name": "Wellperion-GM-Aide-Scan-0630",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 6:30:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 6:30:00"
-      },
-      {
-        "name": "Wellperion-IG-Reach-Collect-0945",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:45:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:45:00"
-      },
-      {
-        "name": "Wellperion-IG-Series-Produce-0730",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 7:30:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 7:30:00"
-      },
-      {
-        "name": "Wellperion-IG-Token-Refresh-Weekly",
-        "state": "정상",
-        "last_run": "2026-08-31 오전 6:10:00",
-        "last_result": 0,
-        "next_run": "2026-09-07 오전 6:10:00"
-      },
-      {
-        "name": "Wellperion-Kakao-Pending-0900",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-Kakao-Sales-Report-0930",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:30:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:30:00"
-      },
-      {
-        "name": "Wellperion-LSeries-Daily-Card-0845",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 8:45:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 8:45:00"
-      },
-      {
-        "name": "Wellperion-Module-Report-Daily",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:10:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:10:00"
-      },
-      {
-        "name": "Wellperion-MonthlyCheckReport-0900-D1",
-        "state": "정상",
-        "last_run": "2026-09-01 오전 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-10-01 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-MonthlyOps-End-2100",
-        "state": "정상",
-        "last_run": "2026-08-31 오후 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-09-30 오후 9:00:00"
-      },
-      {
-        "name": "Wellperion-MonthlyOps-Start-0900",
-        "state": "정상",
-        "last_run": "2026-09-01 오전 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-10-01 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-MonthlyOps-Sync-Daily",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 7:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 7:00:00"
-      },
-      {
-        "name": "Wellperion-Morning-Update",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 5:58:19",
-        "last_result": 0,
-        "next_run": "N/A"
-      },
-      {
-        "name": "Wellperion-Ops-Kakao-Export-2130",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 11:21:22",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 7:30:00"
-      },
-      {
-        "name": "Wellperion-Ops-Kakao-Export-2130",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 11:21:22",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 7:30:00"
-      },
-      {
-        "name": "Wellperion-Ops-Morning-Digest-0730",
-        "state": "실패",
-        "last_run": "2026-09-05 오전 7:30:01",
-        "last_result": 1,
-        "next_run": "2026-09-06 오전 7:30:00"
-      },
-      {
-        "name": "Wellperion-PC-Boot-Greeting",
-        "state": "실패",
-        "last_run": "2026-09-05 오전 5:55:16",
-        "last_result": -2147024894,
-        "next_run": "N/A"
-      },
-      {
-        "name": "Wellperion-SalesReport-OpsSummary-0900",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 8:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 8:00:00"
-      },
-      {
-        "name": "Wellperion-Telegram-HealthCheck-1300",
-        "state": "정상",
-        "last_run": "2026-09-05 오후 1:00:01",
-        "last_result": 0,
-        "next_run": "2026-09-06 오후 1:00:00"
-      },
-      {
-        "name": "Wellperion-Weekly-Page-Hygiene-Sun-0900",
-        "state": "정상",
-        "last_run": "2026-08-30 오전 9:00:00",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 9:00:00"
-      },
-      {
-        "name": "Wellperion-Weekly-Self-Review-Sunday",
-        "state": "정상",
-        "last_run": "2026-08-30 오전 10:30:00",
-        "last_result": 0,
-        "next_run": "2026-09-06 오전 10:30:00"
-      },
-      {
-        "name": "Wellperion-Welly-Auto-Runner-0730",
-        "state": "정상",
-        "last_run": "2026-09-05 오후 1:30:00",
-        "last_result": 0,
-        "next_run": "2026-09-05 오후 2:30:00"
-      },
-      {
-        "name": "WellperionDailyScheduler",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 9:33:52",
-        "last_result": 0,
-        "next_run": "N/A"
-      },
-      {
-        "name": "WellperionTelegramBot",
-        "state": "정상",
-        "last_run": "2026-09-05 오전 5:56:19",
-        "last_result": 0,
-        "next_run": "N/A"
-      }
-    ],
+    "summary": "집계 중 (오류: 'NoneType' object has no attribute 'split')",
+    "total": 0,
+    "healthy": 0,
+    "rate": 0,
+    "items": [],
     "scheduler_jobs": {
-      "count": 35,
+      "count": 38,
       "items": [
         "pre_task_notifier",
         "rep_approval_relay_immediate",
@@ -357,6 +97,9 @@
         "test_hourly",
         "daily_digest_early",
         "daily_digest_late",
+        "bookend_watch_morning",
+        "bookend_watch_evening_early",
+        "bookend_watch_evening_late",
         "reception_intake_relay_15min",
         "diet_camp_morning_0700",
         "stream_3_mgmt_0930",
@@ -380,9 +123,9 @@
   },
   "git_sync": {
     "state": "정상",
-    "detail": "미푸시 0건 · origin 최신 2분 전",
+    "detail": "미푸시 0건 · origin 최신 3분 전",
     "unpushed": 0,
-    "origin_at": "2026-09-05T13:31:22+09:00"
+    "origin_at": "2026-09-05T19:00:48+09:00"
   },
   "archive_summary": {
     "total": 3968,
