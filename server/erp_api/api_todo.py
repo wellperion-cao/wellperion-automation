@@ -111,7 +111,10 @@ def todo_list(
     where, args = ["tenant_id = %s"], [db.TENANT]
     if not _gm_ok(include_gm, gmkey):
         # GAS 와 같은 기준 칸(담당자) · 부분일치 — todo_list 필터 e.parameter.owner 와는 별개(배326 보호)
-        where.append("owner NOT LIKE %s"); args.append("%김남욱GM%")
+        # 띄어쓰기 무시 — 전사일정 정본 표기가 「김남욱 GM」(2026-09-03 통일)이라 GAS 의 '김남욱GM' 부분일치는
+        # 그 행들을 못 거른다(2026-09-05 실측: 기본 응답 100건 중 GM 담당 10건 노출). 서버는 공백을 지우고 비교한다.
+        # 직함 없는 '김남욱' 표기도 1건 있어(AI 가 적은 행) 이름만으로 거른다 — 같은 이름의 실무진은 없다.
+        where.append("REPLACE(owner, ' ', '') NOT LIKE %s"); args.append("%김남욱%")
     if status:
         where.append("status = %s"); args.append(status)
     if dept:
