@@ -285,6 +285,15 @@ def main() -> int:
             wait = 5 * i
             log(f"[export] {i}/{attempts} 실패 — {wait}초 뒤 다시 시도")
             time.sleep(wait)
+    # ★오늘 사본이 이미 있으면 실패가 아니다 (2026-09-05 시우). 실측 8/30·9/1·9/5 — 07:30 ★중간관리자 방 창 활성화가
+    #   세 번 다 안 됐는데(화면 잠김) 05:59 다른 작업이 뜬 사본이 있어 아침 정리는 정상으로 나갔다. 그런데 예약작업은
+    #   FAILED 로 찍혀 아침 점검마다 "실패 3/7일"로 올라왔다. 사본이 있으면 그걸 쓰고 0 으로 끝낸다 — 정리기는 이 파일을 읽는다.
+    if out_path.exists() and out_path.stat().st_size > 0:
+        import datetime as _dt
+        mt = _dt.datetime.fromtimestamp(out_path.stat().st_mtime).strftime("%H:%M")
+        log(f"[export] 창 활성화 실패했지만 오늘 사본 있음({mt} · {out_path.stat().st_size:,} bytes) — 이번 회차는 그 사본으로 간다")
+        print(f"DONE: 오늘 사본 사용 — {out_path} (내보내기 재시도 실패 · {mt} 사본)")
+        return 0
     print(f"FAILED: 내보내기 실패({attempts}회 전부) — 화면이 잠겨 있으면 여기서는 못 푼다. 로그 확인")
     return 1
 
