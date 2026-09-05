@@ -242,21 +242,30 @@ function fmtPct(n){ return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1
 function pad2(n){ return String(n).padStart(2, '0'); }
 function fmtYMD(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 
+// ★2026-09-05 시포(배934 AWS 라인) — ERP 도메인에서는 퍼널 미러(/api/funnel/{action} · 같은 쿼리·같은 응답 모양)를
+//   먼저 읽고, 실패하면 종전 퍼널 GAS. Pages 에선 ERP_API_ON 이 false 라 종전 그대로. 세 함수가 이 한 곳을 쓴다.
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function _fetchFunnel(action, from, to) {
+  var q = (from && to) ? ('&from=' + from + '&to=' + to) : '';
+  var gas = function() {
+    return fetch(FUNNEL_APPS_SCRIPT_URL + '?action=' + action + q, { redirect: 'follow' })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; });
+  };
+  var api = function() {
+    return fetch('/api/funnel/' + action + (q ? '?' + q.slice(1) : ''))
+      .then(function(r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .then(function(data) { if (!data || !data.ok) throw new Error('api ok=false'); return data; });
+  };
+  return (ERP_API_ON ? api().catch(function(e){ console.warn('[' + action + '] API 실패 → GAS 폴백:', e && e.message); return gas(); }) : gas());
+}
 function fetchFunnelConversion(from, to) {
-  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
-  if (from && to) url += '&from=' + from + '&to=' + to;
-  return fetch(url, { redirect: 'follow' })
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+  return _fetchFunnel('funnel_conversion', from, to)
     .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
 }
 // 강습 종목별 문의·등록(서버 기존 액션) — 2026-07-20 GM 지시, 콘텐츠문의현황.html 그대로
 function fetchLessonBreakdown(from, to) {
-  var url = FUNNEL_APPS_SCRIPT_URL + '?action=lesson_breakdown';
-  if (from && to) url += '&from=' + from + '&to=' + to;
-  return fetch(url, { redirect: 'follow' })
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+  return _fetchFunnel('lesson_breakdown', from, to)
     .catch(function(e) { console.warn('[lesson_breakdown] 실패:', e && e.message); return null; });
 }
 // 가입전환 상세 명단(서버 기존 액션, funnel_conversion과 동일 매칭 규칙) — 2026-07-20 GM 지시(배834)
@@ -264,11 +273,7 @@ var _convDetailCache = {};  // key: from+'|'+to → Promise
 function fetchFunnelConversionDetail(from, to) {
   var key = (from || '') + '|' + (to || '');
   if (_convDetailCache[key]) return _convDetailCache[key];
-  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion_detail';
-  if (from && to) url += '&from=' + from + '&to=' + to;
-  var p = fetch(url, { redirect: 'follow' })
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+  var p = _fetchFunnel('funnel_conversion_detail', from, to)
     .catch(function(e) { console.warn('[funnel_conversion_detail] 실패:', e && e.message); delete _convDetailCache[key]; return null; });
   _convDetailCache[key] = p;
   return p;

@@ -4220,8 +4220,9 @@ function _fetchChurnStats(cb, force){
   if (_churnStatsCache && !force) { cb(_churnStatsCache); return; }
   if (_churnStatsPending) { _churnStatsPending.push(cb); return; }   // 이미 요청 중이면 큐에만 추가(중복 fetch 방지)
   _churnStatsPending = [cb];
-  fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-05 배934 — ERP 도메인은 서버 집계(/api/report/cpo_churn_stats) 먼저, 실패·6분 내 쓰기면 GAS
+  var _csGas = function(){ return fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/cpo_churn_stats').catch(function(){ return _csGas(); }) : _csGas())
     .then(function(d){
       var ok = d && d.ok;
       if (ok) _churnStatsCache = d;
@@ -4510,8 +4511,8 @@ function _mdashMetric(label, now, prev, ytd, isRate, prevMeasurable){
 // 폐기하고 서버 판정 하나로 통일(약속 L01 — 판정 로직 두 벌 금지).
 function _mdashFetchRegistered(from, to, cb){
   if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  fetch(GAS_URL + '?action=member_registered_list&from=' + from + '&to=' + to + '&newOnly=1' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  var _rlGas = function(){ return fetch(GAS_URL + '?action=member_registered_list&from=' + from + '&to=' + to + '&newOnly=1' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/member_registered_list?from=' + from + '&to=' + to + '&newOnly=1').catch(function(){ return _rlGas(); }) : _rlGas())   // 배934 서버 우선
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -7361,11 +7362,12 @@ function loadRegistered() {
   var url = GAS_URL + '?action=member_registered_list&newOnly=1';
   if (from) url += '&from=' + encodeURIComponent(from);
   if (to)   url += '&to='   + encodeURIComponent(to);
+  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');   // 배934 서버 우선
 
   _regSetLoading(true);
 
-  return fetch(url)
-    .then(function(r){ return r.json(); })
+  var _rpGas = function(){ return fetch(url).then(function(r){ return r.json(); }); };
+  return ((ERP_API_ON && !_wroteRecently()) ? _apiJson(_apiUrl).catch(function(){ return _rpGas(); }) : _rpGas())   // 배934 서버 우선
     .then(function(data){
       _regSetLoading(false);
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
@@ -8587,8 +8589,9 @@ function _mregLoad(){
   var url = GAS_URL + '?action=member_registered_list&newOnly=1';   // 신규만(서버 필터, 배361 — GM 재지시)
   if (from) url += '&from=' + encodeURIComponent(from);
   if (to)   url += '&to='   + encodeURIComponent(to);
-  return fetch(url + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');
+  var _mrGas = function(){ return fetch(url + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  return ((ERP_API_ON && !_wroteRecently()) ? _apiJson(_apiUrl).catch(function(){ return _mrGas(); }) : _mrGas())   // 배934 서버 우선
     .then(function(data){
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _mregRows = data.data || [];
@@ -9991,8 +9994,9 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
 var _amSummary = null;
 function loadMemberActiveSummary() {
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=member_active_summary')
-    .then(function(r){ return r.json(); })
+  var _asGas = function(){ return fetch(GAS_URL + '?action=member_active_summary').then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/member_active_summary').catch(function(){ return _asGas(); }) : _asGas())   // 배934 서버 우선
+
     .then(function(d){
       if (!d || !d.ok) return;
       _amSummary = d;
