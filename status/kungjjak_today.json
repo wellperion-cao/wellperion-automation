@@ -205,7 +205,7 @@
           "start": "14:48",
           "end": "14:50",
           "minutes": 1,
-          "upload": "✅ 올림 (24a5af817)",
+          "upload": "✅ 올림 (3fd4bfa4f)",
           "open": false,
           "evidence": "🔁재확인"
         },
@@ -217,7 +217,7 @@
           "start": "14:51",
           "end": "14:51",
           "minutes": 0,
-          "upload": "✅ 올림 (24a5af817)",
+          "upload": "✅ 올림 (3fd4bfa4f)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -554,10 +554,10 @@
           "detail": "커밋 85b4ff8fb · 배 11197"
         },
         {
-          "time": "14:55",
+          "time": "15:00",
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 036901d61 · 배 11197"
+          "detail": "커밋 b1ed7f779 · 배 11197"
         }
       ],
       "count": 31,
@@ -749,7 +749,7 @@
           "start": "14:49",
           "end": "14:51",
           "minutes": 2,
-          "upload": "✅ 올림 (de4bb33e1)",
+          "upload": "✅ 올림 (eb49dc3f5)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -757,8 +757,20 @@
           "ref": "GM-20260905-2031",
           "no": "31",
           "got": "지금 배편을 자율현황에 라이브로 업데이트할 수 있지? AWS니까?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "14:54",
+          "end": "14:58",
+          "minutes": 4,
+          "upload": "✅ 올림 (eb49dc3f5)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-2032",
+          "no": "32",
+          "got": "자율현황에서 알림 한장이 너무 방대해졌는데, 고도화까진 좋은데, 단순화도 같이 해볼까?",
+          "did": "",
+          "start": "15:00",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -767,18 +779,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:46",
-          "area": "작업",
-          "event": "/api/todo GM 행 게이트 — 담당자 띄어쓰기('김남욱 GM')·직함 없는 표기까지 제외. GAS 부분일치('김남욱GM')는 2026-09-03 표기 통일 뒤 GM 개인 업무 10건을 못 걸렀다(실측 · 배3",
-          "detail": "커밋 ed8a34c30 · 배 11220"
-        },
-        {
-          "time": "10:47",
-          "area": "작업",
-          "event": "배990·980 종결 — 서버 4건 배포·erp 실측·이전 순서 확정",
-          "detail": "커밋 5ab219db1 · 배 11220"
-        },
         {
           "time": "10:47",
           "area": "작업",
@@ -946,10 +946,22 @@
           "area": "작업",
           "event": "자율현황 🧭 항로 라이브 — erp 도메인에서 서버 사본(1분 동기) 우선 읽기 + 60초 자동 갱신 · 서버 git pull 5분→1분 (GM 2026-09-05)",
           "detail": "커밋 de4bb33e1 · 배 11220"
+        },
+        {
+          "time": "15:00",
+          "area": "작업",
+          "event": "배1030 재종결(큐 되돌림 정정) + 시트 테스트 행 정리 배 1032(시포)·1033(시우)",
+          "detail": "커밋 ec1d0db27 · 배 11220"
+        },
+        {
+          "time": "15:00",
+          "area": "작업",
+          "event": "채팅봇 FAQ alt 동의어 매칭 지원 — 다캠 골프레슨/트레이닝 오답(미매칭) 수리 (배1018 후속2)",
+          "detail": "커밋 eb49dc3f5 · 배 11220"
         }
       ],
-      "count": 16,
-      "done": 15,
+      "count": 17,
+      "done": 16,
       "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
@@ -957,18 +969,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260905-2031",
-          "no": "31",
-          "got": "지금 배편을 자율현황에 라이브로 업데이트할 수 있지? AWS니까?",
+          "ref": "GM-20260905-2032",
+          "no": "32",
+          "got": "자율현황에서 알림 한장이 너무 방대해졌는데, 고도화까진 좋은데, 단순화도 같이 해볼까?",
           "did": "",
-          "start": "14:54",
+          "start": "15:00",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 1
         }
       ],
       "repeats": []
@@ -1531,13 +1543,19 @@
           "area": "작업",
           "event": "GM 보고 표 셀은 한 줄 60자 안쪽 — 긴 셀이 원격 화면에서 표를 무너뜨림(GM 지적 2026-09-05 2회)",
           "detail": "커밋 63be0fd74 · 배 11180"
+        },
+        {
+          "time": "15:01",
+          "area": "작업",
+          "event": "배1033 종합접수처 시트 테스트 행 2건 정리 — RECEPTION-73 삭제표기 · LF-63 삭제",
+          "detail": ""
         }
       ],
       "count": 9,
       "done": 9,
       "open": 0,
       "avg_minutes": 7,
-      "work_count": 8,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1590,7 +1608,7 @@
           "start": "14:52",
           "end": "14:55",
           "minutes": 3,
-          "upload": "✅ 올림 (9a6843d4f)",
+          "upload": "✅ 올림 (c3b4208e1)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1650,7 +1668,7 @@
           "start": "14:51",
           "end": "14:56",
           "minutes": 4,
-          "upload": "✅ 올림 (9a6843d4f)",
+          "upload": "✅ 올림 (c3b4208e1)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -1703,13 +1721,19 @@
           "area": "작업",
           "event": "다캠 AEO 채팅봇 1단계 — FAQ v0.1 12문답(07_FAQ/faq.json · 서버 반영) + 위젯 부착 + drafts 페이지 FAQ 절 (배 1027 · 1028 중복 병합)",
           "detail": "커밋 9a6843d4f · 배 11287"
+        },
+        {
+          "time": "15:00",
+          "area": "작업",
+          "event": "다캠 FAQ v0.1.1 — 서버 alt 동기화 + 동의어 alt 6항목 · deploy 스크립트가 faq.json 도 올림(정본=저장소)",
+          "detail": "커밋 c3b4208e1 · 배 11287"
         }
       ],
       "count": 9,
       "done": 9,
       "open": 0,
       "avg_minutes": 6,
-      "work_count": 8,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
       "just": [],
