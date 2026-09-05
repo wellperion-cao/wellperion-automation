@@ -173,7 +173,7 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
   border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
   letter-spacing:.02em;background:transparent;text-decoration:none}
 @media (min-width:1001px){ .wlp-lfr .back-kiosk{top:auto} }
-@media (max-width:520px){ .wlp-lfr .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px} }
+@media (max-width:520px){ /* 2026-09-05 시우 · 키오스크 흐름 통일(접수처와 같은 규칙) */@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#faf9f7!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:600px){body.page-id-8464 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}.wlp-lfr .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px} }
 
 /* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
    휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
@@ -284,7 +284,8 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
      서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
      GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
      ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
-  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
+  // 2026-09-05 배984(시토) — GAS 승인 단계 제거: ERP 도메인이면 서버가 원장(lost_found)에 직접 적는 /api/reception/lost 로.
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/lost' : RECEPTION_API; }
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 

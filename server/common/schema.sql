@@ -185,6 +185,11 @@ CREATE INDEX IF NOT EXISTS intake_log_tenant_form_idx ON intake_log (tenant_id, 
 --   dual 모드 행은 세 칸이 비어 있다 — 종전 동작 그대로.
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;
+
+-- 종합접수처 서버 직접 쓰기 순번 (배 984 · 2026-09-05). GAS ScriptProperties RECEPTION_SEQ·LF_SEQ 를
+-- 이어받아 배포 시 1회 seed(SELECT setval)한다 — 접수ID·습득ID 번호가 끊기지 않는다. 이후 서버가 유일한 발급자.
+CREATE SEQUENCE IF NOT EXISTS reception_seq;
+CREATE SEQUENCE IF NOT EXISTS lost_found_seq;
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;

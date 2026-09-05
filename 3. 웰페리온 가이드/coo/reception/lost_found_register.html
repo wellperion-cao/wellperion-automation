@@ -211,7 +211,10 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
      서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
      GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
      ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
-  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
+  // 2026-09-05 배984(시토) — GAS 승인 단계 제거: ERP 도메인이면 서버가 원장(lost_found)에 직접 적는
+  // /api/reception/lost 로. 종전 /api/write 경유는 GAS 왕복이 성공해야 응답이 왔는데, GAS 텔레그램
+  // 외부호출 승인이 막히자 습득물 등록 자체가 실패로 보였다(실제로는 시트엔 쓰였을 수도 있는 반쪽 실패).
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/lost' : RECEPTION_API; }
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 

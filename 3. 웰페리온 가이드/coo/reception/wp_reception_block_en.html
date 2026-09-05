@@ -13,11 +13,16 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
-   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
-html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-recept{overscroll-behavior-y:contain}
 .wlp-recept button,.wlp-recept a,.wlp-recept input,.wlp-recept select,.wlp-recept textarea{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 문서에 맡긴다 — html·body 에
+   넘침 규칙을 주면 body 가 자기 스크롤 상자가 돼 터치가 죽는다(09-01·09-02 실측). 위에 있던 2026-08-14
+   스크롤 보장 줄을 그래서 지웠다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
 
 /* ── Reception Desk 페이지(8434) 한정 테마 보정 ── */
 /* 영어판 없음 → ENG 누르면 홈으로 튐. QR 한글 전용이므로 언어버튼 숨김 */
@@ -110,7 +115,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 .wlp-recept .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
 .wlp-recept .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
 .wlp-recept .brand h1{
-  font-size:clamp(18px,4vw,22px);font-weight:700;
+  font-size:clamp(26px,5vw,32px);font-weight:700;
   color:var(--text);margin-bottom:8px;letter-spacing:-.4px
 }
 .wlp-recept .brand-desc{font-size:13.5px;color:#777;line-height:1.7}
@@ -353,7 +358,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 }
 .wlp-recept .footer-links a{color:var(--accent);text-decoration:none}
 
-/*[GM 20260720] mobile spacing*/@media (max-width:600px){.wlp-recept .wrap{padding-top:26px;padding-bottom:30px}.wlp-recept .brand{margin-bottom:16px}.wlp-recept .footer-divider{margin:18px auto 14px}.container-wrap{padding-top:18px!important;padding-bottom:18px!important}}
+/*[GM 20260720] mobile spacing*/@media (max-width:600px){.wlp-recept .wrap{padding:26px 14px 30px}body.page-id-8434 .container.main-content,body.page-id-8751 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}.wlp-recept .brand{margin-bottom:16px}.wlp-recept .footer-divider{margin:18px auto 14px}.container-wrap{padding-top:18px!important;padding-bottom:18px!important}}
 /* ── 키오스크(세로 큰 화면) 전용 확대 — 2026-08-13 GM 지시 ──
    "회원님들, 나이 많으신 분들도 접수하고 문의할 수 있게." 세로 큰 화면(키오스크)에서만
    글자·버튼·입력칸을 크게 키운다. 가로 PC·휴대폰은 지금 그대로(조건: 폭 700px 이상 + 세로 화면). */
@@ -411,7 +416,8 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 
   .wlp-recept .wrap .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px;top:6px;left:30px}
   /* 키오스크에서는 회사 정보 푸터를 숨겨 접수 화면만 보이게 한다(접수 조회 화면과 같은 처리) */
-  #footer-outer,#footer-widgets{display:none!important}
+  #footer-widgets,#footer-outer{display:none!important}
+  html,body{background:#f6f6f6!important}   /* 2026-09-05 시우: 키오스크 첫 화면 아래 테마 검은 바탕이 드러나던 것 */
 }
 
 /* Reception Desk 첫 화면으로 돌아가기 — 화면 왼쪽 위, 본문과 겹치지 않게 (2026-08-13 GM 지시) */
@@ -438,7 +444,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
   justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--text);
   border-radius:24px;color:var(--text);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
 @media (max-width:520px){
-  .wlp-recept .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px}
+  .wlp-recept .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px}.wlp-recept .lang-switch{top:10px;right:10px;padding:7px 13px;min-height:34px;font-size:12px}
 }
 </style>
 
@@ -473,7 +479,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 
     <!-- ── Lost &amp; Found(공개 갤러리) — GM 지시 2026-07-23: Membership hold와 같은 풀폭 크기로 통일.
          접수 성격(Membership hold·Found item)은 아래 접수Type 칸으로 내려가고, 여기는 '보기'만 남긴다. ── -->
-    <a class="lf-link" href="http://wellperion.com/ko/lost-found/" rel="noopener">
+    <a class="lf-link" href="http://wellperion.com/en/lost-found/" rel="noopener">
       <span class="lf-ico">🔍</span>
       <span class="lf-txt"><b>Lost &amp; Found</b><span>See items we are keeping · check here first if you lost something</span></span>
       <span class="lf-arrow">›</span>
@@ -515,7 +521,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
             <span class="cat-label">Membership hold</span>
           </button>
           <!-- Found item는 직원용 별도 페이지(gate 커튼)라 폼이 아니라 이동 — 칸 모양만 맞춘다 -->
-          <a class="type-btn staff" href="http://wellperion.com/ko/lost-found-register/" rel="noopener">
+          <a class="type-btn staff" href="http://wellperion.com/en/lost-found-register/" rel="noopener">
             <span class="cat-icon">🧳</span>
             <span class="cat-label">Found item <span class="cat-sub">[staff]</span></span>
           </a>
@@ -525,7 +531,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
       <div id="formFields"></div>
       <div class="hint-empty" id="emptyHint">Please choose a request type above first.</div>
     </div>
-    <button class="submit" id="submitBtn">Submit</button>
+    <button class="submit" id="submitBtn" style="display:none">Submit</button><!-- 2026-09-05 GM 지시: 유형을 고르기 전엔 접수하기 버튼을 감춘다(빈 화면에 고정 버튼만 떠 있어 의미 없음) -->
     <p class="note">Thank you. We will let you know the result through the contact you gave us.<br>Wellperion Private Sports Club</p>
 
     <!-- ── Footer social (골드 구분선 + 소셜 링크) ── -->
@@ -563,10 +569,76 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
   /* ★쓰기 이중기록 서버 고정(배 960 레인K · 2026-09-04 시토 · GM 지시) — 도메인 판정을 없애고 항상 서버 접수 통로로 보낸다.
      서버가 intake_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽어도 {ok:true,queued:true} 라 손님은 성공).
      이 폼은 wellperion.com 에서 뜨므로 종전 도메인 판정은 언제나 false 였다 — 그래서 고정으로 바꿨다. CORS * · 본문 2MB · IP 분당 20회.
-     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  function _rcSubmitUrl(){ return RECEPTION_API; } */
-  function _rcSubmitUrl(){ return 'https://erp.wellperion.com/api/intake/reception'; }
+     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  function _rcSubmitUrl(){ return RECEPTION_API; }
+     2026-09-05 배984(시토) — GAS 승인 단계 제거: 서버가 원장에 직접 적는 /api/reception/submit 으로 전환. */
+  function _rcSubmitUrl(){ return 'https://erp.wellperion.com/api/reception/submit'; }
   // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
   var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+
+  /* ── 접수 재전송 큐 (배 960 M6 · 2026-09-04 시토) ────────────────────────────────────────────
+     한국어 본 reception_block.html 과 같은 규칙(문구만 영어). 통로가 IP 당 분당 20회라 공용 와이파이에서
+     여러 명이 잇달아 접수하면 429 가 오는데, 그 본문은 JSON 이 아니라 종전에는 'Network error' 한 줄만 뜨고
+     손님이 적은 내용이 사라졌다. 429·5xx 면 본문을 localStorage 에 두고 1s·2s·4s… 최대 30초 간격으로 다시 보낸다.
+     ★네트워크 오류처럼 '받았는지 모르는' 경우는 자동 재전송하지 않는다 — 접수엔 중복을 가릴 열쇠가 없다. */
+  var RC_QUEUE_KEY = 'wlp_recept_queue_v1';
+  var rcTimer = null, rcActive = '';
+  function rcqRead(){ try { return JSON.parse(localStorage.getItem(RC_QUEUE_KEY) || '[]'); } catch(e){ return []; } }
+  function rcqWrite(a){ try { localStorage.setItem(RC_QUEUE_KEY, JSON.stringify(a)); } catch(e){} }
+  function rcqUpsert(it){ var a = rcqRead().filter(function(x){ return x.id !== it.id; }); a.push(it); rcqWrite(a); }
+  function rcqRemove(id){ rcqWrite(rcqRead().filter(function(x){ return x.id !== id; })); }
+  function rcqBackoff(n){ return Math.min(30000, 1000 * Math.pow(2, Math.max(0, n - 1))); }
+  function rcqSchedule(ms){ if (rcTimer) clearTimeout(rcTimer); rcTimer = setTimeout(rcqFlush, ms || 1000); }
+  function rcqReset(){ var b = $('submitBtn'); if (b) { b.disabled = false; b.textContent = 'Submit'; } }
+  function rcqDone(){
+    $('formWrap').style.display = 'none';
+    $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.'
+      + '<br><br>You can check the status below.<br>'
+      + '<a href="http://wellperion.com/en/lookup/" style="color:var(--accent);font-weight:700">wellperion.com/en/lookup</a>';
+    $('doneWrap').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+  function rcqRetry(it, status){
+    it.attempts = (it.attempts || 0) + 1;
+    it.nextAt = Date.now() + rcqBackoff(it.attempts);
+    rcqUpsert(it);
+    rcqSchedule(rcqBackoff(it.attempts));
+    if (it.id === rcActive) {
+      rcqReset();
+      toast(status === 429 ? 'We are receiving a lot of requests. Please try again in about a minute — we will also retry automatically.'
+                           : 'Submission is delayed. We are retrying automatically.', true);
+    }
+  }
+  function rcqSend(it){
+    return fetch(_rcSubmitUrl(), {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(it.payload)
+    }).then(function(r){
+      if (r.status === 429 || r.status >= 500) { rcqRetry(it, r.status); return; }
+      return r.json().then(function(res){
+        rcqRemove(it.id);
+        if (res && res.ok) { if (it.id === rcActive) rcqDone(); }
+        else if (it.id === rcActive) { rcqReset(); toast((res && res.error) || 'We could not submit your request. Please try again.', true); }
+      }, function(){
+        rcqRemove(it.id);
+        if (it.id === rcActive) { rcqReset(); toast('We could not submit your request. Please try again.', true); }
+      });
+    }, function(){
+      rcqRemove(it.id);
+      if (it.id === rcActive) { rcqReset(); toast('Network error — please try again.', true); }
+    });
+  }
+  function rcqFlush(){
+    var a = rcqRead(); if (!a.length) return;
+    var now = Date.now();
+    var due = a.filter(function(x){ return !x.nextAt || x.nextAt <= now; });
+    if (!due.length) {
+      rcqSchedule(Math.max(500, Math.min.apply(null, a.map(function(x){ return x.nextAt || now; })) - now));
+      return;
+    }
+    (function next(i){ if (i >= due.length) return; rcqSend(due[i]).then(function(){ next(i + 1); }); })(0);
+  }
+  setTimeout(rcqFlush, 1500);
 
   /* Membership hold 전용 백엔드 (배9910 후속 · 2026-07-23) — 시포(회원) GAS.
      ★위 RECEPTION_API 와 다른 곳으로 보낸다: 휴회는 Reception Desk 시트에 쌓지 않고 회원 쪽에서만 처리한다(배9910 원칙).
@@ -699,8 +771,8 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
     var box = $('formFields');
     box.innerHTML = '';
     var defs = FORMS[cat];
-    if (!defs) { $('emptyHint').style.display = 'block'; return; }
-    $('emptyHint').style.display = 'none';
+    if (!defs) { $('emptyHint').style.display = 'block'; $('submitBtn').style.display = 'none'; return; }
+    $('emptyHint').style.display = 'none'; $('submitBtn').style.display = '';
 
     defs.forEach(function(def){
       var field = document.createElement('div');
@@ -968,30 +1040,11 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
     };
     EXTRA_KEYS.forEach(function(k){ payload[k] = vals[k] || ''; });
 
-    fetch(_rcSubmitUrl(), {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if (res && res.ok) {
-        $('formWrap').style.display = 'none';
-        $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.'
-          + '<br><br>You can check the status below.<br>'
-          + '<a href="http://wellperion.com/en/lookup/" style="color:var(--accent);font-weight:700">wellperion.com/en/lookup</a>';
-        $('doneWrap').style.display = 'block';
-        window.scrollTo(0, 0);
-      } else {
-        toast((res && res.error) || 'We could not submit your request. Please try again.', true);
-        btn.disabled = false; btn.textContent = 'Submit';
-      }
-    })
-    .catch(function(){
-      toast('Network error — please try again.', true);
-      btn.disabled = false; btn.textContent = 'Submit';
-    });
+    // 대기큐를 거쳐 보낸다(배 960 M6 · 한국어 본 reception_block.html 과 같은 규칙).
+    // 사람이 다시 누르면 아까 밀려 있던 건은 버린다 — 같은 접수가 두 줄로 들어가지 않게.
+    if (rcActive) rcqRemove(rcActive);
+    rcActive = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    rcqSend({ id: rcActive, payload: payload, attempts: 0, nextAt: 0 });
   });
 
   $('againBtn').addEventListener('click', function(){
@@ -1000,7 +1053,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
     $('formFields').innerHTML = '';
     $('emptyHint').style.display = 'block';
     var btn = $('submitBtn'); btn.disabled = false; btn.textContent = 'Submit';
-    $('doneWrap').style.display = 'none';
+    $('doneWrap').style.display = 'none'; $('submitBtn').style.display = 'none';
     $('formWrap').style.display = 'block';
     window.scrollTo(0, 0);
   });
