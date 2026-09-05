@@ -95,16 +95,18 @@ def replace_lost(conn, rows, now):
 
 
 def replace_hold(conn, rows, done_keys, now):
-    """done_keys 가 None(완료키 조회 실패)이면 종전 행의 done 을 이어받는다 — 완료분이 갑자기 되살아나지 않게."""
-    prev = {}
-    if done_keys is None:
-        prev = {r["intake_row"]: r["done"] for r in conn.execute("SELECT intake_row, done FROM hold_items WHERE tenant_id=%s", (db.TENANT,))}
+    """done_keys 가 None(완료키 조회 실패)이면 종전 행의 done 을 이어받는다 — 완료분이 갑자기 되살아나지 않게.
+    [2026-09-05 배 1039-D] 서버 hold_complete(api_reception.py)가 done 을 직접 True 로 적으므로, done_keys 가
+    있어도 종전 값이 True 면 그대로 유지한다(sticky — 한 번 완료면 되돌리지 않음). GAS(휴회접수 시트)가 아직
+    모르는 완료를 5분 동기화가 되돌리는 사고를 막는다."""
+    prev = {r["intake_row"]: r["done"] for r in conn.execute("SELECT intake_row, done FROM hold_items WHERE tenant_id=%s", (db.TENANT,))}
     recs = []
     for r in rows:
         key = str(r.get("intakeRow") or "")
         if not key:
             continue
-        done = (hold_key(r) in done_keys) if done_keys is not None else bool(prev.get(key, False))
+        prev_done = bool(prev.get(key, False))
+        done = prev_done if done_keys is None else (prev_done or hold_key(r) in done_keys)
         recs.append((db.TENANT, key, r.get("status"), done, r.get("appliedAt"), json.dumps(r, ensure_ascii=False), now))
     return _replace(conn, "hold_items", ["tenant_id", "intake_row", "status", "done", "applied_at", "data", "synced_at"], recs)
 

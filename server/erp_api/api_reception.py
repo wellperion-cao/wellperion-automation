@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""종합접수처 미러 API (배 922 AWS 전환 1호 · 배 984 쓰기 서버화 · 2026-09-05).
+"""종합접수처 미러 API (배 922 AWS 전환 1호 · 배 984 쓰기 서버화 · 배 1039-D 접수 잔여 4액션 서버화 · 2026-09-05).
 
 읽기: sync_reception.py 가 5분마다 떠온 reception_items·lost_found·hold_items 미러를 종합접수처_현황.html 이
 쓰는 GAS 응답 모양 그대로 돌려준다 — 화면 코드는 주소만 바꾼다.
@@ -21,6 +21,14 @@
     위 ★ID 연속성 메모대로 시트가 동결돼 있어, 배984 이후 새로 접수된 건은 GAS reg_update 가 시트에서 못 찾아
     "해당 접수ID를 찾을 수 없습니다" 로 실패한다(상태·담당·메모 저장이 조용히 안 먹는 실사고) — 이 엔드포인트가 그 갭을 메운다.
     화면 배선(종합접수처_현황.html _update() 가 이 주소를 쓰게 바꾸는 것)은 COO 담당 — 여기서는 API만 연다.
+  POST /api/reception/delete           reg_delete 대체(배 1039-D · 2026-09-05) — 서버 원장 직접 삭제, GAS 는 안 부른다.
+    삭제 비밀번호(PIN)는 서버에서도 재검증(GM 2026-07-31 지정) — REG_DELETE_PIN env, 없으면 GAS 기본값과 같은 1200.
+  POST /api/reception/lost/handover    lf_handover 대체(배 1039-D) — 습득물 수령 처리(서명 필수·멱등) 서버 원장 직접.
+  POST /api/reception/lost/delete      lf_delete 대체(배 1039-D) — 습득물 원장 직접 삭제(배포검증 더미 청소용).
+  POST /api/reception/hold/complete    hold_complete 대체(배 1039-D) — hold_items.done 직접 갱신(휴회접수 시트 미기록).
+    매칭 = phone|start|name 정규화 해시(sync_reception.hold_key 재사용). 한 번 완료되면 되돌리지 않는다(sticky) —
+    5분 동기화(sync_reception.replace_hold)도 같이 고쳐 GAS 쪽 값이 없어도 서버 완료 표시를 지우지 않는다.
+    화면 배선(종합접수처_현황.html 이 이 4주소를 쓰게 바꾸는 것)은 COO 담당 — 여기서는 API만 연다.
   POST /api/reception/photo            사진만 저장하고 URL 반환(단독 호출용 · submit/lost 는 내부에서 직접 저장한다)
 자체점검: python3 api_reception.py --selftest   (DB·네트워크 없음 — 부서 배정·사진 디코딩 판정만)
 """
@@ -37,6 +45,7 @@ from fastapi.responses import JSONResponse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
+from sync_reception import hold_key  # noqa: E402  — hold_complete 매칭 정규화(전화·시작일·성명)를 그대로 재사용, 새 계산 안 만듦
 
 SOURCE = "sheet-mirror"
 PERIODS = ("all", "week", "month")
@@ -70,6 +79,8 @@ UPLOAD_URL_BASE = "/uploads"
 # wp_reception_block_en.html)이 이미 이 이름으로 보내던 상수를 그대로 서버 쪽 기본값에도 둔다 — env 로 바꿀 수 있다.
 RECEPTION_SUBMIT_TOKEN = os.environ.get("RECEPTION_SUBMIT_TOKEN", "wlp_voc_7b3f9a2e6c1d4085")
 DUP_WINDOW_SEC = 90   # 재시도 큐 자동 재전송 창(rcqBackoff 최대 30초×attempts) — 그 안의 같은 내용은 중복 제출로 본다
+# 접수 삭제 비밀번호(GAS REG_DELETE_PIN_DEFAULT 와 같은 기본값 · 배 1039-D) — env 로 바꿀 수 있다.
+REG_DELETE_PIN = os.environ.get("REG_DELETE_PIN", "1200")
 
 
 def _open():
@@ -111,6 +122,34 @@ def dept_for(cat_key, loc):
         d = REG_LOC_DEPT.get(loc)
         return cat["dept"] if d is None else d
     return cat["dept"]
+
+
+def _cat_resolve(cat_raw):
+    """reg_delete 의 category 입력을 REG_CATEGORIES label 로 정규화 — GAS 가 카테고리별 시트를 순회하며
+    지정된 시트에서만 찾던 것을, 단일 테이블에서는 label 비교로 재현한다. 반환: ''=지정 안 함(전체 허용) ·
+    None=알 수 없는 카테고리(GAS 도 그 경우 결국 '찾을 수 없음'으로 끝난다)."""
+    cat_raw = (cat_raw or "").strip()
+    if not cat_raw:
+        return ""
+    cat = REG_CATEGORIES.get(cat_raw)
+    if cat:
+        return cat["label"]
+    for v in REG_CATEGORIES.values():
+        if v["label"] == cat_raw:
+            return v["label"]
+    return None
+
+
+def _add_months(date_str, months):
+    """YYYY-MM-DD(시간 있어도 앞 10자만) + months 개월 — GAS `setMonth` 와 같은 뜻(서명 파기예정일=수령+6개월).
+    말일 보정(예 8/31+6개월→익년 2/28|29) — stdlib 만으로 충분해 dateutil 안 씀."""
+    import datetime as _dtm
+    d = _dtm.datetime.strptime(date_str[:10], "%Y-%m-%d")
+    total = d.month - 1 + months
+    y, m = d.year + total // 12, total % 12 + 1
+    last_day = [31, 29 if (y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)) else 28,
+                31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
+    return "%04d-%02d-%02d" % (y, m, min(d.day, last_day))
 
 
 def save_photo(photo, file_name, mime, subdir):
@@ -415,6 +454,158 @@ async def update(request: Request):
         conn.close()   # ponytail: with 블록 안에서 미리 close() 하면 __exit__ 커밋이 닫힌 연결에 걸려 500 이 난다(배1039-C 실사고) — close 는 항상 with 밖에서
 
 
+@router.post("/delete")
+async def delete(request: Request):
+    """reg_delete 대체 — 서버 원장(reception_items) 직접 삭제, GAS 는 부르지 않는다(배 1039-D).
+    삭제 비밀번호는 서버에서도 재검증(GM 2026-07-31 지정) — 화면만 물으면 액션 이름을 아는 누구나 부를 수 있다."""
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+
+    pin_got = str(payload.get("pin") or payload.get("pw") or "").strip()
+    if pin_got != REG_DELETE_PIN:
+        return JSONResponse({"ok": False, "error": "삭제 비밀번호가 올바르지 않습니다.", "code": "BAD_PIN"}, status_code=400)
+    reg_id = str(payload.get("id") or payload.get("접수ID") or "").strip()
+    if not reg_id:
+        return JSONResponse({"ok": False, "error": "id 필수"}, status_code=400)
+    cat_label = _cat_resolve(payload.get("category"))
+
+    conn = _openw()
+    try:
+        with conn:
+            row = conn.execute("SELECT category FROM reception_items WHERE tenant_id=%s AND reg_id=%s",
+                               (db.TENANT, reg_id)).fetchone()
+            if not row or cat_label is None or (cat_label and row["category"] != cat_label):
+                return JSONResponse({"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}, status_code=404)
+            conn.execute("DELETE FROM reception_items WHERE tenant_id=%s AND reg_id=%s", (db.TENANT, reg_id))
+            return {"ok": True, "id": reg_id, "category": row["category"], "deleted": 1, "message": "접수건이 삭제되었습니다."}
+    finally:
+        conn.close()
+
+
+@router.post("/lost/handover")
+async def lost_handover(request: Request):
+    """lf_handover 대체 — 서버 원장(lost_found) 직접 갱신, GAS 는 부르지 않는다(배 1039-D).
+    현장 디지털 서명 수령 → 자동 수령완료(멱등·이미 처리된 건 재수령 거부)."""
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+
+    found_id = str(payload.get("id") or payload.get("foundId") or "").strip()
+    if not found_id:
+        return JSONResponse({"ok": False, "error": "습득ID 필수"}, status_code=400)
+    receiver = str(payload.get("receiver") or "").strip()
+    if not receiver:
+        return JSONResponse({"ok": False, "error": "수령자 성함은 필수입니다."}, status_code=400)
+    sign = payload.get("signature") or payload.get("sign") or ""
+    if not sign:
+        return JSONResponse({"ok": False, "error": "수령 확인 서명은 필수입니다."}, status_code=400)
+
+    conn = _openw()
+    try:
+        with conn:
+            row = conn.execute("SELECT status, data FROM lost_found WHERE tenant_id=%s AND found_id=%s",
+                               (db.TENANT, found_id)).fetchone()
+            if not row:
+                return JSONResponse({"ok": False, "error": "해당 습득ID를 찾을 수 없습니다: %s" % found_id}, status_code=404)
+            if row["status"] != "게시중":
+                return JSONResponse({"ok": False, "error": "이미 처리된 습득물입니다 (현재 상태: %s)." % row["status"],
+                                     "code": "ALREADY_HANDLED"}, status_code=400)
+
+            sign_url = save_photo(sign, "lf_sign_%s.png" % found_id, "image/png", "lost-found")
+            if not sign_url:
+                return JSONResponse({"ok": False, "error": "서명 저장에 실패했습니다."}, status_code=400)
+
+            now = _kst_now()
+            purge = _add_months(now, 6)   # 서명 파기 예정일 = 수령 6개월 후(개인정보 최소보관)
+            data = json.loads(row["data"])
+            data["status"], data["receiver"], data["handedAt"] = "수령완료", receiver, now
+            data["handoverLoc"] = str(payload.get("handoverLoc") or "").strip()
+            data["handoverStaff"] = str(payload.get("handoverStaff") or "").strip()
+            data["signUrl"], data["signPurgeAt"] = sign_url, purge
+            for k in ("ownerName", "ownerPhone", "receiverPhone", "providedDate", "memo"):
+                v = str(payload.get(k) or "").strip()
+                if v:
+                    data[k] = v
+            keep_loc = str(payload.get("storageLoc") or payload.get("keepLoc") or "").strip()
+            if keep_loc:
+                data["keepLoc"] = keep_loc
+            conn.execute("UPDATE lost_found SET status=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND found_id=%s",
+                         ("수령완료", json.dumps(data, ensure_ascii=False), now, db.TENANT, found_id))
+            notify("✅ <b>[습득물 수령완료]</b> %s\n수령자: %s\n담당자: %s\n수령장소: %s\n🕒 %s"
+                  % (found_id, receiver, data["handoverStaff"] or "-", data["handoverLoc"] or "-", now))
+            return {"ok": True, "id": found_id, "status": "수령완료", "signPurgeAt": purge}
+    finally:
+        conn.close()
+
+
+@router.post("/lost/delete")
+async def lost_delete(request: Request):
+    """lf_delete 대체 — 서버 원장(lost_found) 직접 삭제, GAS 는 부르지 않는다(배 1039-D · 배포검증 더미 청소용)."""
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+    found_id = str(payload.get("id") or payload.get("foundId") or "").strip()
+    if not found_id:
+        return JSONResponse({"ok": False, "error": "id 필수"}, status_code=400)
+
+    conn = _openw()
+    try:
+        with conn:
+            row = conn.execute("SELECT 1 FROM lost_found WHERE tenant_id=%s AND found_id=%s", (db.TENANT, found_id)).fetchone()
+            if not row:
+                return JSONResponse({"ok": False, "error": "해당 습득ID를 찾을 수 없습니다: %s" % found_id}, status_code=404)
+            conn.execute("DELETE FROM lost_found WHERE tenant_id=%s AND found_id=%s", (db.TENANT, found_id))
+            return {"ok": True, "id": found_id, "deleted": 1}
+    finally:
+        conn.close()
+
+
+@router.post("/hold/complete")
+async def hold_complete(request: Request):
+    """hold_complete 대체 — 서버 원장(hold_items) done 직접 갱신, GAS(휴회접수 시트)는 부르지 않는다(배 1039-D).
+    매칭 = phone|start|name 정규화 해시(sync_reception.hold_key 재사용 — 5분 동기화와 같은 열쇠).
+    ★한 번 done=True 면 되돌리지 않는다(sticky) — sync_reception.replace_hold 도 같이 고쳤다."""
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+
+    phone = str(payload.get("phone") or "").strip()
+    name = str(payload.get("name") or "").strip()
+    if not phone and not name:
+        return JSONResponse({"ok": False, "error": "식별정보 부족"}, status_code=400)
+    target = hold_key({"phone": phone, "start": payload.get("start"), "name": name})
+
+    conn = _openw()
+    try:
+        with conn:
+            rows = conn.execute("SELECT intake_row, data FROM hold_items WHERE tenant_id=%s", (db.TENANT,)).fetchall()
+            for r in rows:
+                try:
+                    d = json.loads(r["data"])
+                except (TypeError, ValueError):
+                    continue
+                if hold_key(d) == target:
+                    conn.execute("UPDATE hold_items SET done=TRUE, synced_at=%s WHERE tenant_id=%s AND intake_row=%s",
+                                 (_kst_now(), db.TENANT, r["intake_row"]))
+                    return {"ok": True, "matched": True}
+            return JSONResponse({"ok": False, "error": "일치 행 없음"}, status_code=404)
+    finally:
+        conn.close()
+
+
 @router.post("/photo")
 async def photo_upload(request: Request):
     """사진만 저장 — submit/lost 는 내부에서 직접 save_photo() 를 부르므로 이 경로를 안 거친다.
@@ -448,6 +639,17 @@ def selftest():
     assert dept_for("praise", "아무데나") == "운영부"          # 부서 고정 카테고리
     assert dept_for("nope", "x") == ""
     assert REG_CATEGORIES["lost"]["extra"] == ("itemName", "lostWhen")
+
+    assert _cat_resolve("") == ""                          # 지정 안 함 = 전체 허용
+    assert _cat_resolve("lost") == "분실물 접수"             # 키로 매칭
+    assert _cat_resolve("분실물 접수") == "분실물 접수"        # 라벨로도 매칭
+    assert _cat_resolve("없는거") is None                    # 알 수 없음 = None(호출부가 404 로 접는다)
+
+    assert _add_months("2026-09-05 10:00:00", 6) == "2027-03-05"
+    assert _add_months("2026-08-31 00:00:00", 6) == "2027-02-28"   # 말일 보정(2027 평년)
+    assert _add_months("2024-08-31 00:00:00", 6) == "2025-02-28"
+
+    assert REG_DELETE_PIN == os.environ.get("REG_DELETE_PIN", "1200")  # GAS REG_DELETE_PIN_DEFAULT 와 같은 기본값
 
     import tempfile
     global UPLOAD_DIR
