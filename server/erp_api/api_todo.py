@@ -114,7 +114,10 @@ def todo_list(
         # 띄어쓰기 무시 — 전사일정 정본 표기가 「김남욱 GM」(2026-09-03 통일)이라 GAS 의 '김남욱GM' 부분일치는
         # 그 행들을 못 거른다(2026-09-05 실측: 기본 응답 100건 중 GM 담당 10건 노출). 서버는 공백을 지우고 비교한다.
         # 직함 없는 '김남욱' 표기도 1건 있어(AI 가 적은 행) 이름만으로 거른다 — 같은 이름의 실무진은 없다.
-        where.append("REPLACE(owner, ' ', '') NOT LIKE %s"); args.append("%김남욱%")
+        # COALESCE — NULL NOT LIKE 는 NULL(참 아님)이라 담당자 빈 행이 통째로 빠지던 버그 수리(검수 M6).
+        # creator 도 같은 조건으로 AND — 담당자는 실무진인데 생성자가 GM 인 개인 행까지 같이 가린다.
+        where.append("COALESCE(REPLACE(owner, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
+        where.append("COALESCE(REPLACE(creator, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
     if status:
         where.append("status = %s"); args.append(status)
     if dept:
@@ -133,10 +136,18 @@ def todo_list(
 
 
 @router.get("/{item_id}")
-def todo_item(item_id: str):
+def todo_item(
+    item_id: str,
+    include_gm: int = Query(0, ge=0, le=1),   # 목록(todo_list)과 같은 GM 행 게이트(검수 H5 — 단건 조회는 안 걸렸었다)
+    gmkey: str = Query(""),
+):
+    where, args = ["tenant_id=%s", "id=%s"], [db.TENANT, item_id]
+    if not _gm_ok(include_gm, gmkey):
+        where.append("COALESCE(REPLACE(owner, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
+        where.append("COALESCE(REPLACE(creator, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
     conn = _open()
     with conn:
-        r = conn.execute("SELECT * FROM todo_items WHERE tenant_id=%s AND id=%s", (db.TENANT, item_id)).fetchone()
+        r = conn.execute("SELECT * FROM todo_items WHERE " + " AND ".join(where), args).fetchone()
         if r is None:
             raise HTTPException(404, "없는 업무 id")
         a = conn.execute("SELECT * FROM approvals WHERE tenant_id=%s AND id=%s", (db.TENANT, item_id)).fetchone()

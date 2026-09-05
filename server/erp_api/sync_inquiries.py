@@ -104,11 +104,14 @@ def replace_type(conn, kind, rows, now):
         if db.is_test_payload(r):    # 테스트/더미 문의는 미러에 안 싣는다(AWS DB 더미 전수정리 · 2026-09-05)
             continue
         ts = r.get("timestamp")
+        code = channel_code_of(r.get("channel"), ts)
         recs.append((
             db.TENANT, "%s|%s" % (kind, key), kind, key,
             r.get("name"), r.get("phone"), r.get("status"), ts,
             json.dumps(r, ensure_ascii=False), now,
-            channel_code_of(r.get("channel"), ts), ts or None,
+            # channel_captured_at = 유입경로를 '포착한' 시각(now) — 문의 제출 시각(ts)이 아니다(검수 L5).
+            # unknown 행은 애초에 못 잡았으니 채우지 않는다.
+            code, now if code != "unknown" else None,
         ))
     with conn:
         conn.execute("DELETE FROM inquiries WHERE tenant_id=%s AND type=%s", (db.TENANT, kind))

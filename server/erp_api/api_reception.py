@@ -57,6 +57,10 @@ LF_CATEGORIES = ("consumable", "general", "valuable")
 # 사진 저장 — nginx erp-locations 새 파일이 /uploads/ 를 무인증 정적 서빙한다(배 984). 시트 대신 서버 디스크.
 UPLOAD_DIR = os.environ.get("ERP_UPLOAD_DIR", "/srv/erp/uploads")
 UPLOAD_URL_BASE = "/uploads"
+# 제출 토큰 게이트(2026-09-05 검수 H3) — 구 GAS _vSubmitGateOk_ 가 보던 것과 같은 값. 폼(reception_block.html /
+# wp_reception_block_en.html)이 이미 이 이름으로 보내던 상수를 그대로 서버 쪽 기본값에도 둔다 — env 로 바꿀 수 있다.
+RECEPTION_SUBMIT_TOKEN = os.environ.get("RECEPTION_SUBMIT_TOKEN", "wlp_voc_7b3f9a2e6c1d4085")
+DUP_WINDOW_SEC = 90   # 재시도 큐 자동 재전송 창(rcqBackoff 최대 30초×attempts) — 그 안의 같은 내용은 중복 제출로 본다
 
 
 def _open():
@@ -126,6 +130,34 @@ def save_photo(photo, file_name, mime, subdir):
         return "%s/%s/%s/%s" % (UPLOAD_URL_BASE, subdir, month, name)
     except Exception:
         return ""
+
+
+def _dup_recent(conn, cat_label, contact, content, loc, now_str):
+    """최근 DUP_WINDOW_SEC 안에 같은 내용(카테고리+연락처+내용+장소)이 이미 접수됐으면 그 reg_id 를 돌려준다
+    (2026-09-05 검수 H4) — 재시도 큐가 429·5xx 뒤 같은 본문을 자동 재전송해도 두 줄로 안 남게. 스키마 변경 없이
+    최근 20건만 비교한다(ponytail: 접수가 몰릴 때 정확도 낮아짐 — 늘리려면 idem 키 컬럼+유니크 인덱스로 승격)."""
+    import datetime as _dtm
+    try:
+        now_t = _dtm.datetime.strptime(now_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
+    rows = conn.execute(
+        "SELECT reg_id, created_at, data FROM reception_items WHERE tenant_id=%s AND category=%s"
+        " ORDER BY created_at DESC LIMIT 20", (db.TENANT, cat_label)).fetchall()
+    for r in rows:
+        try:
+            created_t = _dtm.datetime.strptime(r["created_at"], "%Y-%m-%d %H:%M:%S")
+        except (TypeError, ValueError):
+            continue
+        if (now_t - created_t).total_seconds() > DUP_WINDOW_SEC:
+            break   # created_at DESC 순 — 창 밖이면 이후 행도 전부 밖
+        try:
+            d = json.loads(r["data"])
+        except (TypeError, ValueError):
+            continue
+        if d.get("contact") == contact and d.get("content") == content and d.get("loc") == loc:
+            return r["reg_id"]
+    return None
 
 
 def notify(text):
@@ -225,6 +257,10 @@ async def submit(request: Request):
     except Exception:
         return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
 
+    if str(payload.get("t") or "") != RECEPTION_SUBMIT_TOKEN:   # 제출 토큰 게이트(검수 H3)
+        return JSONResponse({"ok": False, "error": "접수 권한 확인에 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.",
+                             "code": "BAD_TOKEN"}, status_code=400)
+
     cat_key = str(payload.get("category") or "").strip()
     cat = REG_CATEGORIES.get(cat_key)
     if not cat:
@@ -243,34 +279,45 @@ async def submit(request: Request):
 
     loc = str(payload.get("loc") or payload.get("location") or "").strip()
     content = str(payload.get("content") or "").strip()
+    photo_input = payload.get("photo") or payload.get("file") or payload.get("base64") or ""
     photo_url = ""
+    photo_warning = ""
     if cat["photo"]:
-        photo_url = save_photo(payload.get("photo") or payload.get("file") or payload.get("base64") or "",
-                               payload.get("fileName") or "", payload.get("mimeType") or "image/jpeg", "reception")
+        photo_url = save_photo(photo_input, payload.get("fileName") or "", payload.get("mimeType") or "image/jpeg", "reception")
+        if photo_input and not photo_url:   # 사진은 보냈는데 저장 실패 — 접수자에게 알린다(검수 M7)
+            photo_warning = "사진 저장에 실패했습니다. 접수는 정상 처리되었습니다."
 
     dept = dept_for(cat_key, loc)
     now = _kst_now()
     conn = _openw()
     with conn:
-        reg_id = _next_id(conn, "reception_seq", "RECEPTION-")
-        data = {"regId": reg_id, "category": cat["label"], "createdAt": now, "name": name, "contact": contact,
-                "loc": loc, "content": content, "photoUrl": photo_url, "status": "접수", "memo": "", "dept": dept,
-                "handler": "", "reporter": str(payload.get("reporter") or "").strip() or ("자동(점검)" if is_check else "회원"),
-                "memberReply": ""}
-        for k in cat["extra"]:
-            v = payload.get(k)
-            if v not in (None, ""):
-                data[k] = str(v)
-        conn.execute("INSERT INTO reception_items (tenant_id, reg_id, category, dept, status, created_at, data, synced_at)"
-                     " VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-                     (db.TENANT, reg_id, cat["label"], dept, "접수", now, json.dumps(data, ensure_ascii=False), now))
+        dup_id = _dup_recent(conn, cat["label"], contact, content, loc, now)   # 재시도 큐 중복 접수 방지(검수 H4)
+        data = None
+        if dup_id:
+            reg_id = dup_id
+        else:
+            reg_id = _next_id(conn, "reception_seq", "RECEPTION-")
+            data = {"regId": reg_id, "category": cat["label"], "createdAt": now, "name": name, "contact": contact,
+                    "loc": loc, "content": content, "photoUrl": photo_url, "status": "접수", "memo": "", "dept": dept,
+                    "handler": "", "reporter": str(payload.get("reporter") or "").strip() or ("자동(점검)" if is_check else "회원"),
+                    "memberReply": ""}
+            for k in cat["extra"]:
+                v = payload.get(k)
+                if v not in (None, ""):
+                    data[k] = str(v)
+            conn.execute("INSERT INTO reception_items (tenant_id, reg_id, category, dept, status, created_at, data, synced_at)"
+                         " VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                         (db.TENANT, reg_id, cat["label"], dept, "접수", now, json.dumps(data, ensure_ascii=False), now))
     conn.close()
+
+    if dup_id:   # 중복 접수 — 이미 알림도 나갔으니 다시 적지도, 다시 알리지도 않는다(검수 H4)
+        return {"ok": True, "id": reg_id, "dept": dept, "photoWarning": photo_warning}
 
     extra_line = "\n".join("%s: %s" % (k, data[k]) for k in cat["extra"] if data.get(k))
     notify("📋 <b>[종합 접수처]</b> %s\n부서: %s\n이름: %s\n위치: %s\n%s내용: %s\n🕒 %s"
           % (cat["label"], dept or "-", ("익명" if is_anon else name), loc or "-",
              (extra_line + "\n") if extra_line else "", content[:100] if content else "-", now))
-    return {"ok": True, "id": reg_id, "dept": dept, "photoWarning": ""}
+    return {"ok": True, "id": reg_id, "dept": dept, "photoWarning": photo_warning}
 
 
 @router.post("/lost")
@@ -338,6 +385,7 @@ async def photo_upload(request: Request):
 
 
 def selftest():
+    assert RECEPTION_SUBMIT_TOKEN == "wlp_voc_7b3f9a2e6c1d4085", "폼(reception_block.html) 상수와 어긋남"  # 검수 H3
     assert dept_for("facility", "헬스장") == "시설부"          # 부서 고정 카테고리는 장소 무관
     assert dept_for("clean", "여자사우나") == "지원부(여)"      # 성별 표기 우선
     assert dept_for("clean", "남자") == "지원부(남)"
@@ -353,11 +401,14 @@ def selftest():
     global UPLOAD_DIR
     with tempfile.TemporaryDirectory() as d:
         UPLOAD_DIR = d
-        b64 = base64.b64encode(b"fake-jpeg-bytes").decode()
+        fake_jpeg = b"\xff\xd8\xff" + b"fake-jpeg-bytes"   # 매직바이트 필요(검수 C3 이후 · 확장자만으론 저장 안 됨)
+        b64 = base64.b64encode(fake_jpeg).decode()
         url = save_photo("data:image/jpeg;base64," + b64, "x.jpg", "image/jpeg", "reception")
         assert url.startswith("/uploads/reception/") and url.endswith(".jpg"), url
         path = os.path.join(d, *url[len(UPLOAD_URL_BASE) + 1:].split("/"))
-        assert os.path.exists(path) and open(path, "rb").read() == b"fake-jpeg-bytes"
+        assert os.path.exists(path) and open(path, "rb").read() == fake_jpeg
+        assert save_photo(b64, "x.html", "application/octet-stream", "../../evil") == "", \
+            "mime 표에 없으면 저장 안 함(C3) + subdir 화이트리스트(C2)"
         assert save_photo("", "", "image/jpeg", "reception") == ""          # 사진 없음 = 조용히 빈 문자열
         assert save_photo("not-base64-!!!", "", "image/jpeg", "reception") == ""  # 깨진 값도 예외 없이 빈 문자열
     print("selftest ok")
