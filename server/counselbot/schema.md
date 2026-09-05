@@ -1,13 +1,14 @@
 # 상담봇 업체 정본(테넌트 프로필) — 정형화 스키마 v1.0 (GM 지시 2026-09-05)
 
 > 상담봇(옛 이름 AEO 채팅봇)이 업체 하나를 맡을 때 갖고 있어야 하는 정보의 **단일 형식**. 업체가 달라도 칸은 같다.
-> 파일 = `server/counselbot/tenants/{n}_{업체}.json` (정본 · 저장소) → 배포 시 서버 `/srv/erp/faq/{tenant}/` 로 복사.
+> 파일 = `server/counselbot/tenants/{n}_{업체}.json` (프로필 정본 · 저장소 · 배포마다 서버 `profile.json` 으로 복사).
+> ★FAQ 는 다르다(시토 배1036 원칙 · 2026-09-05): 서버 `/srv/erp/faq/{tenant}/faq.json` 이 **라이브 정본**(관리자 페이지가 편집) · 저장소 파일은 **첫 배포 씨앗 + 되밀기 사본**. 배포 스크립트는 서버에 faq.json 이 있으면 덮지 않는다. 내용을 바꿀 땐 관리자 API(생기기 전엔 scp 1회)로 서버를 고치고 저장소로 되밀어 둔다.
 > 지어내지 않는다 — 못 받은 칸은 `null` 또는 `"미수령"`. 대표가 확인한 칸만 `verified: true`.
 
 | 구역 | 칸 | 뜻 | 누가 채우나 | 검증 |
 |---|---|---|---|---|
 | `tenant` | `id` · `name` · `name_en` · `type`(스포츠클럽·PT센터·필라테스…) | 업체 식별 | 시보 | 대표 확인 |
-| `identity` | `one_liner`(한 줄) · `philosophy` · `tone`(어투 규칙) · `bot_persona`(봇이 자기를 부르는 이름 · 예 "웰페리온 AI") | 봇의 말투와 자기소개 — 브랜드가이드 §1·§2 에서 온다 | 시보 초안 → 대표 | 대표 확인 |
+| `identity` | `one_liner`(한 줄) · `philosophy` · `tone`(어투 규칙) · `counselor_persona`{name·greeting·handoff·typing_ms·emoji}(★GM 2026-09-05: 고객 화면은 FAQ·봇 느낌이 아니라 **진짜 상담원과 대화하는 느낌** — 사람 말투·이모지·「답변 중…」 표시 · 'FAQ'·'AI'·'초안' 낱말은 고객 화면에 안 보임) | 봇의 말투와 자기소개 — 브랜드가이드 §1·§2 에서 온다 | 시보 초안 → 대표 | 대표 확인 |
 | `facts` | `address` · `hours` · `phone` · `parking` · `capacity` · `founded` | 사실 정보 — 검색·AI 검색(GEO)이 같은 문장으로 읽어야 함 | 대표 | 대표 확인 필수 |
 | `channels` | `reservation_url`(상담 예약 링크 · 봇이 못 답할 때 보내는 곳) · `kakao` · `instagram` · `blog` · `naver_place` | 손님을 넘길 곳 | 대표 | 링크 실제 열림 확인 |
 | `offerings[]` | `name` · `who`(누구에게) · `what`(무엇을) · `how`(진행 방식) · `price_policy`(금액 대신 "상담 시 안내" 등 문장) | 상품·프로그램 | 시보(원자료) → 대표 | 대표 확인 |
