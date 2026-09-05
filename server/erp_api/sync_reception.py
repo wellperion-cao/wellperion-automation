@@ -69,9 +69,15 @@ def _replace(conn, table, cols, recs):
         if cur > 0:
             print("[keep] %s — 원천 0건 응답, 거울 %d행 유지(원천 조회 이상 의심)" % (table, cur))
             return cur
+    # [2026-09-05 시토 · 검수 C1] 통째 DELETE→INSERT 를 upsert 로 바꿨다. 배984 부터 접수·습득물이 서버 DB 에만 적히는데
+    # 통째 갈아끼우면 시트에 없는 서버 원장 행이 5분 뒤 사라진다. 시트 행은 갱신·추가만 하고, 서버가 적은 행은 그대로 둔다.
+    # 키 = cols[1](reception_items.reg_id · lost_found.found_id · hold_items.intake_row) — 표 정의(schema.sql PK) 와 같은 순서.
+    key = cols[1]
+    sets = ", ".join("%s=EXCLUDED.%s" % (c, c) for c in cols[2:])
     with conn:
-        conn.execute("DELETE FROM %s WHERE tenant_id=%%s" % table, (db.TENANT,))
-        conn.executemany("INSERT INTO %s (%s) VALUES (%s)" % (table, ",".join(cols), ",".join(["%s"] * len(cols))), recs)
+        conn.executemany(
+            "INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (tenant_id, %s) DO UPDATE SET %s"
+            % (table, ",".join(cols), ",".join(["%s"] * len(cols)), key, sets), recs)
     return len(recs)
 
 

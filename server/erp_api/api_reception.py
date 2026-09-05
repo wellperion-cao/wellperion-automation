@@ -109,8 +109,14 @@ def save_photo(photo, file_name, mime, subdir):
         raw = base64.b64decode(b64, validate=False)
         if not raw:
             return ""
-        ext = {"image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/webp": ".webp"}.get(
-            mime, os.path.splitext(file_name or "")[1] or ".jpg")
+        # 확장자는 mime 표 값으로만 — fileName 폴백은 무인증 통로에서 .html/.svg 를 ERP 오리진에 심는 저장 XSS 통로였다
+        # (2026-09-05 검수 C3). 표에 없으면 저장하지 않는다. 파일 머리 바이트로 실제 그림인지도 본다.
+        ext = {"image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/webp": ".webp"}.get(mime)
+        magic_ok = raw[:3] == b"\xff\xd8\xff" or raw[:8] == b"\x89PNG\r\n\x1a\n" or (raw[:4] == b"RIFF" and raw[8:12] == b"WEBP")
+        if not ext or not magic_ok:
+            return ""
+        # subdir 는 화이트리스트 — '../..' 로 업로드 폴더 밖에 쓰이던 것 차단(검수 C2)
+        subdir = subdir if subdir in ("reception", "lost-found") else "reception"
         name = hashlib.sha256(raw).hexdigest()[:24] + ext
         month = time.strftime("%Y%m", time.gmtime(time.time() + 9 * 3600))
         d = os.path.join(UPLOAD_DIR, subdir, month)
