@@ -225,6 +225,11 @@ C:\Python314\python.exe scripts/worklog.py --open-gm {role}
 
 GM 요청: **"부팅되자마자 항로 확인해서 웰리 판단하에 자율 진행."** 부팅 선언(§6)까지 마쳤으면 **거기서 멈춰 GM 요청을 기다리지 않는다.** 아래를 그대로 실행한다.
 
+0. **★세션 등록 + 생존 신호 (GM 지시 2026-09-05 · 살아있는 세션끼리 협업 · 7역할 공통).** 부팅 세션은 부팅으로만 협업하지 않는다 — 살아 있는 동안 낮에 넘어온 배를 바로 받는다.
+   - `ListAgents` 를 한 번 불러 "This session is <이름> [<ref>]" 를 읽고 등록: `C:\Python314\python.exe scripts/session_register.py --role {role} --session "<이름>" --ref <ref>` (파일 = status/sessions/{role}.json · 90분 무신호면 죽은 것으로 판정).
+   - `Monitor`(persistent) 하나를 켠다 — 45초마다 `session_register.py --heartbeat --role {role}` + 내 역할 새 PENDING 배를 알림(본문 = 웰리 세션 2026-09-05 것과 같은 루프). 세션이 살아 있는 한 이 루프가 생존 신호다.
+   - 배를 넘길 때 `queue_dispatch.py` 가 `📨 받는 역할 세션 살아있음 → SendMessage to "<세션>"` 줄을 내면 **그 자리에서 `SendMessage`** 로 배 번호·제목·설계 위치를 보낸다(부팅 없이 즉시 착수). `⏳ 세션 없음` 이면 러너/다음 부팅 몫.
+   - 무인 러너(매시)는 살아 있는 역할을 건너뛴다(`skip_live_session`) — 세션과 러너가 같은 배를 두 번 집지 않는다.
 1. **후보 판정(필수 · 읽기전용):**
    ```
    python scripts/welly_auto_runner.py --boot-candidate --clevel {role}
