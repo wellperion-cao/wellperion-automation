@@ -464,12 +464,6 @@
       ],
       "work": [
         {
-          "time": "09:35",
-          "area": "작업",
-          "event": "배997 — 스케줄러 재기동 확인(PID 20388)",
-          "detail": "커밋 3ccf682dc · 배 11197"
-        },
-        {
           "time": "09:48",
           "area": "작업",
           "event": "GEO 브랜딩 셋업 설계 1장 + 시모 배999(내용·외부 일관성)·시토 배1000(기술층) 전달 (GM 지시 2026-09-05)",
@@ -642,6 +636,12 @@
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
           "detail": "커밋 4bed02b47 · 배 11197"
+        },
+        {
+          "time": "15:27",
+          "area": "작업",
+          "event": "메모리 스냅샷 4주 보관정책 자동정리 반영 (7/10~7/26 zip 삭제, weekly_self_review.py 정본 유지)",
+          "detail": "커밋 21bfe89f3 · 배 11197"
         }
       ],
       "count": 38,
@@ -881,30 +881,12 @@
           "start": "15:16",
           "end": "15:18",
           "minutes": 2,
-          "upload": "✅ 올림 (f4e9f2eae)",
+          "upload": "✅ 올림 (fd7ae0855)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "11:23",
-          "area": "작업",
-          "event": "메모리 회수 훅 memory_recall.py + MEMORY.md 주제 지도 + 규칙→훅 감사 + 부팅 로드 게이지 (배1016)",
-          "detail": "커밋 96dda1995 · 배 11220"
-        },
-        {
-          "time": "11:24",
-          "area": "작업",
-          "event": "배988 종결 큐 갱신",
-          "detail": "커밋 6d0dfb443 · 배 11220"
-        },
-        {
-          "time": "11:24",
-          "area": "작업",
-          "event": "wp_geo_apply.py 메타 문구를 canon_values.json 직독으로 전환 (배1000 후속3 · 재확인+하드코딩 제거)",
-          "detail": "커밋 8a37f27bb · 배 11220"
-        },
         {
           "time": "11:24",
           "area": "작업",
@@ -1066,6 +1048,24 @@
           "area": "작업",
           "event": "L6 접수 시퀀스 tenant 분리 후속 표기 (2026-09-05 검수 범위 제외 명시)",
           "detail": "커밋 9af954506 · 배 11286"
+        },
+        {
+          "time": "15:26",
+          "area": "작업",
+          "event": "module_at 이 urlsplit 로 '//cpo/x' 를 호스트로 먹던 것 정정 — 경로 문자열 직접 정규화 (검수 C4 보강)",
+          "detail": "커밋 11af4504f · 배 11286"
+        },
+        {
+          "time": "15:26",
+          "area": "작업",
+          "event": "서버 캐시 이력·백업 최신+직전만 보존 정리 + 일일 prune cron (배1040)",
+          "detail": "커밋 1b9bd14b7 · 배 11286"
+        },
+        {
+          "time": "15:27",
+          "area": "작업",
+          "event": "전사일정 저장 후 misc_cache 미러 즉시 재동기화 (배1039-B)",
+          "detail": "커밋 fd7ae0855 · 배 11286"
         }
       ],
       "count": 19,
@@ -1802,7 +1802,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 3
         }
       ],
       "repeats": []
@@ -1878,7 +1878,7 @@
           "start": "15:24",
           "end": "15:26",
           "minutes": 1,
-          "upload": "✅ 올림 (71ef9f3db)",
+          "upload": "✅ 올림 (83679f76d)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1962,7 +1962,7 @@
           "start": "15:08",
           "end": "15:19",
           "minutes": 10,
-          "upload": "✅ 올림 (71ef9f3db)",
+          "upload": "✅ 올림 (83679f76d)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1974,7 +1974,7 @@
           "start": "15:23",
           "end": "15:26",
           "minutes": 2,
-          "upload": "✅ 올림 (71ef9f3db)",
+          "upload": "✅ 올림 (83679f76d)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2057,13 +2057,25 @@
           "area": "작업",
           "event": "상담봇 기획설계 §9 — 시모 MVP 시안 아티팩트 링크(배 1035 완료)",
           "detail": "커밋 71ef9f3db · 배 11287"
+        },
+        {
+          "time": "15:27",
+          "area": "작업",
+          "event": "상담봇 = 상담원 대화 느낌(GM 09-05) — 다캠 FAQ 12 대화체·이모지 v0.2 + 페르소나 칸 + 설계 §3·§9 갱신 + FAQ 정본 규칙(서버 라이브 정본·저장소 씨앗) 정정",
+          "detail": "커밋 78d130a50 · 배 11287"
+        },
+        {
+          "time": "15:28",
+          "area": "작업",
+          "event": "상담봇 설계 — 다국어(모델 계층 · 1차 영어 · 결재) 한 줄",
+          "detail": "커밋 83679f76d · 배 11287"
         }
       ],
       "count": 15,
       "done": 14,
       "open": 1,
       "avg_minutes": 5,
-      "work_count": 11,
+      "work_count": 13,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -2079,7 +2091,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 0
+          "waited": 2
         }
       ],
       "repeats": []
