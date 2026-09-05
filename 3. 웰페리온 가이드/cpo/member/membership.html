@@ -2087,6 +2087,12 @@ table.op-t td b{font-size:15px}
 
   </div>
 
+  </div><!-- /type-membership -->
+
+  <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
+  <!-- ★2026-09-05 시포(GM 신고 "강습 회원관리에서 사람찾기 버튼이 작동 안 함") — pane-person 을 #type-membership 안에서
+       꺼내 형제로 둔다. 강습 family 는 type-membership 이 display:none 이라 탭이 켜져도 높이 0 이었다(재현·수리 playwright).
+       사람 찾기는 두 family 공용(원장+문의 3벌)이라 type-pane 밖이 맞는 자리다. -->
   <!-- ══════════════════════════════ 사람 찾기(person view) — 배11123 · 배801 2단계 첫 조각 ══════════════════════════════
        설계 정본 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md §질문8. 읽기 전용 — 쓰기 액션 0개.
        이름·전화·회원번호 하나로 원장(유효회원·법인현황·LOSS보관) + 문의 3벌(멤버십·강습성인·강습유소년)을 붙여 보여준다. -->
@@ -2104,9 +2110,6 @@ table.op-t td b{font-size:15px}
     </div>
   </div>
 
-  </div><!-- /type-membership -->
-
-  <!-- ══════════════════════════════ 유형: 성인 강습 (문의 현황 — 종목 필터) ══════════════════════════════ -->
   <div id="type-lessonAdult" class="type-pane">
 
     <!-- sub-pane: 문의 현황 -->
@@ -5146,6 +5149,8 @@ function switchTab(id, btn) {
 /* 상단 「🔎 사람 찾기」 버튼 — 탭으로 옮기고 검색칸에 커서까지 둔다(GM 지시 2026-09-02 "사람찾기를
    상단에 올려볼까"). 새 화면·새 로직 없이 이미 있는 탭 전환을 부른다. */
 function focusPersonSearch(){
+  // 강습 family 에서는 type-pane(성인·유소년)을 내려 사람 찾기만 보이게 — 되돌리기는 switchType 이 한다(유형 칩·카드 클릭).
+  if (_curFamily === 'lesson') document.querySelectorAll('.type-pane').forEach(function(p){ p.classList.remove('active'); });
   try { switchTab('person'); } catch (e) {}
   var q = document.getElementById('personSearchQ');
   if (q) { q.focus(); q.select(); }
@@ -5231,6 +5236,7 @@ function _renderPersonSearch(res) {
 ───────────────────────────────────────────── */
 function switchType(type) {
   document.querySelectorAll('.type-pane').forEach(function(p){ p.classList.remove('active'); });
+  var _pp = document.getElementById('pane-person'); if (_pp) _pp.classList.remove('active');   // 유형으로 돌아오면 사람 찾기 pane 은 내린다(형제 pane · 2026-09-05)
   var pane = document.getElementById('type-' + type);
   if (pane) pane.classList.add('active');
   document.querySelectorAll('.type-chip[data-type]').forEach(function(c){
