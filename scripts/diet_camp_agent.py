@@ -236,7 +236,7 @@ def bot_gaps(tenant: str = "2_dietcamp", days: int = 7) -> list[str]:
     try:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         import erp_live_audit as e                  # 로그인 헬퍼 재사용(약속 L21)
-        st, body = e.fetch(e.login(), f"/api/chat/{tenant}/unanswered?days={days}")
+        st, body = e.fetch(e.login(), f"/api/chat/{tenant}/unanswered?days={days}&gaps=1")   # gaps=1: 답했어도 정본 칸이 빈 행 포함(시토 9ffa18055)
         if st != 200:
             return []
         seen: list[str] = []
