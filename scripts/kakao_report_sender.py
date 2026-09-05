@@ -951,8 +951,8 @@ AUTO_PIPELINE_SENDERS = {
                           # 문의+컨택&등록 현황(★부서장) + 멤버십 몫(★운영부)
     "점검접수정리",         # report_stream_2_check.py·daily_scheduler.py — 22:30/20:00
                           # 시설·지원·주차 점검현황+종합접수현황 합본(★운영+시설+지원+주차)
-    "강습업장접수",         # report_stream_2b_reception.py build_lesson_digest — 22:30/20:00
-                          # 강습·업장 접수 기한초과분(★부서장)
+    # "강습업장접수" 제거(2026-09-05 GM 지시) — build_lesson_digest 폐기로 이 이름의
+    #   발신 경로가 없어졌다. 저녁 ★부서장 오늘 접수 절은 "문의정리" 한 통에 실린다.
     "접수전달",            # report_stream_2b_reception.py run_intake_relay — 신규 접수 부서별
                           # 실시간 전달(대상 방이 매번 달라 항상 이 이름으로 통과)
     "대표결재전달",        # rep_approval_relay.py — 대표님 결재 촬영본이 올라오면 그 건을
@@ -991,7 +991,7 @@ def _selfcheck_sender_gate() -> None:
     assert _sender_gate_ok("★운영부", "아침정리다이제스트") is True
     assert _sender_gate_ok("★운영부", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
     assert _sender_gate_ok("★부서장", "문의정리") is True
-    assert _sender_gate_ok("★부서장", "강습업장접수") is True
+    assert _sender_gate_ok("★부서장", "강습업장접수") is False, "폐기된 발신 이름(2026-09-05)"
     assert _sender_gate_ok("★운영+시설+지원+주차", "점검접수정리") is True
     assert _sender_gate_ok("★운영+시설+지원+주차", "접수전달") is True
     assert _sender_gate_ok("★부서장", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"

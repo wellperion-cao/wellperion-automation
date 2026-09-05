@@ -1627,12 +1627,13 @@ def _ovd_who(row: dict, dept: str) -> str:
     return _ovd_leaders().get(dept, "") or "담당 미정"
 
 
-def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
+def _build_ovd_block(rows_for_room: list) -> str:
     """3일+ 미처리 접수 → 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다.
 
-    detail=False — [2026-08-29 GM 지시 · 카톡 중복 정리] 건수 리마인드만 낸다.
-    ★부서장 방은 같은 목록이 아침(여기)·저녁(build_lesson_digest) 하루 두 번 전문으로
-    나갔다. 원문 펼침은 저녁 문의 통 한 곳으로 몰고 아침은 건수만 — 정보는 저녁에 그대로."""
+    ★2026-09-05 GM 지시 — "하루의 시작은 누적된 접수 및 컨택 내용을 알려서 컨택 및 내용
+      기록을 하게 만드는 목적. 종합접수처 3건 링크만 딸랑 주는 건 너무한 것 같아."
+      2026-08-29 중복 정리 때 ★부서장 아침을 건수 두 줄로 줄였는데(원문은 저녁으로 몰았다),
+      이번 지시로 아침이 '누적 전문'을 맡는다 — 방과 무관하게 전문 하나만 낸다."""
     from collectors.ops_shared import reception_elapsed_days
     now = datetime.now()
     items: list = []
@@ -1657,11 +1658,6 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
     if not items:
         return ""
     items.sort(key=lambda x: -x["days"])
-    if not detail:
-        return "\n".join([
-            f"🌅 하루의 시작 — 접수 {len(items)}건 · 목록은 저녁 정리 한 통에 담아 드립니다",
-            f"📎 종합접수처 {_OVD_BOARD_URL}",
-        ])
     shown, rest = (items, []) if _OVD_LIST_CAP <= 0 else (items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:])
 
     lines = [f"🌅 하루의 시작 — 아직 안 끝난 접수 {len(items)}건, 마무리 부탁드립니다",
@@ -1691,6 +1687,59 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
     return "\n".join(lines)
 
 
+def _lesson_sla_block() -> tuple:
+    """강습 문의 중 24시간 넘게 컨택 기록이 없는 **누적** 목록 → (본문, 건수).
+
+    ★2026-09-05 GM 지시 — "하루의 시작은 누적된 접수 및 컨택 내용을 알려서 컨택 및 내용
+      기록을 하게 만드는 목적". 그래서 여기엔 sla_alert_gate(직전 발신 대비 변화 없으면
+      스킵)를 걸지 않는다 — 아침 통은 매일 누적 전체가 정답이다. 저녁 ★부서장 통에서는
+      이 절을 뺐다(daily_scheduler · 오늘 것만).
+    판정·문구는 unassigned_nudge 정본을 그대로 쓴다 — 여기서 다시 만들지 않는다(약속 L01).
+    """
+    try:
+        import unassigned_nudge as _un
+        vs = [v for v in _un.collect_sla_violations() if "강습" in v["type"]]
+        return _un.build_sla_alert_text(vs), len(vs)
+    except Exception as exc:
+        log(f"[ovd] 강습 미컨택 목록 실패 — 접수절만 발송: {type(exc).__name__}: {exc}")
+        return "", 0
+
+
+def build_today_reception_block(today: str = "", rows: list | None = None) -> str:
+    """오늘 들어온 종합접수처 접수 중 ★부서장 몫(강습·업장) — 저녁 통 앞절.
+
+    ★2026-09-05 GM 지시 — "하루의 마무리는 오늘 문의 및 접수, 등록된 현황을 알려서 하루
+      마무리를 잘하게 하려는 목적". 누적·적체는 아침 통이 맡고 저녁은 오늘 것만 싣는다.
+    원장(_fetch_rows)·방 분류(_ovd_room_for)·분류 축약·책임자는 이미 있는 것을 쓴다.
+    rows=None 이면 조회한다. 조회 실패(None)면 빈 문자열 — 「접수 없음」으로 거짓말하지 않는다.
+    """
+    today = today or date.today().isoformat()
+    if rows is None:
+        from report_stream_2b_reception import _fetch_rows
+        rows = _fetch_rows()
+        if rows is None:
+            log("[today-reception] 접수 원장 조회 실패 — 절 생략")
+            return ""
+    items = [r for r in rows
+             if str(r.get("createdAt") or "")[:10] == today
+             and _ovd_room_for(str(r.get("dept") or "")) == _OVD_ROOM_LESSON]
+    # 발신 주체를 밝히는 줄 — 실무진 방 규칙(누가 보내는지 항상 밝힌다). 폐기한
+    # build_lesson_digest 가 달고 있던 줄을 그대로 옮겨 왔다.
+    signoff = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
+    if not items:
+        return f"📮 오늘 들어온 접수 없음\n{signoff}"
+    lines = [f"📮 오늘 들어온 접수 {len(items)}건 (강습·업장)"]
+    for r in items:
+        dept = str(r.get("dept") or "").strip() or "부서 미정"
+        loc = str(r.get("loc") or "").strip() or "장소 미정"
+        content = " ".join(str(r.get("content") or "").split()) or "(내용 없음)"
+        lines.append(f"▪ [{_ovd_short_cat(r.get('category'))}] {loc} — {dept} {_ovd_who(r, dept)}")
+        lines.append(f"   {content}")
+    lines.append(f"📎 종합접수처 {_OVD_BOARD_URL}")
+    lines.append(signoff)
+    return "\n".join(lines)
+
+
 def _selfcheck_ovd_block() -> None:
     """빈 값·긴 내용에서도 한 줄이 서는지. 네트워크 없이 돈다.
     ▸2026-08-21: 접수처에 담당 칸이 없어져 픽스처에서도 뺐다 — 부를 사람은 부서 책임자다."""
@@ -1708,6 +1757,21 @@ def _selfcheck_ovd_block() -> None:
     assert "① 확인" in out and "② 처리" in out and "③ 기록" in out, "처리 세 걸음 안내가 빠졌다"
     assert _OVD_BOARD_URL in out and "전달 완료" in out, "어디서·무엇을 하면 되는지가 빠졌다"
     assert max(len(x) for x in out.splitlines()) < 120, "카톡 한 줄이 너무 길다"
+    # 저녁 ★부서장 앞절 — 오늘·강습/팀 것만 걸리는지(2026-09-05 GM 지시).
+    today = date.today().isoformat()
+    tr_rows = [
+        {"createdAt": f"{today} 10:00:00", "category": "강습 문의합니다", "dept": "수영팀",
+         "loc": "수영장", "content": "주말 반 문의", "status": "접수"},
+        {"createdAt": f"{today} 11:00:00", "category": "시설물 고장 접수", "dept": "시설부",
+         "loc": "헬스장", "content": "러닝머신", "status": "접수"},          # 다른 방 몫
+        {"createdAt": "2026-01-01 09:00:00", "category": "강습 문의합니다", "dept": "골프팀",
+         "loc": "", "content": "옛날 건", "status": "접수"},                 # 오늘 아님
+    ]
+    tr = build_today_reception_block(today, rows=tr_rows)
+    assert "오늘 들어온 접수 1건" in tr, tr
+    assert "수영장" in tr and "러닝머신" not in tr and "옛날 건" not in tr, tr
+    assert "웰리" in tr, "발신 주체를 밝히는 줄이 빠졌다"
+    assert build_today_reception_block(today, rows=[]).startswith("📮 오늘 들어온 접수 없음")
     print("[selfcheck] _build_ovd_block OK")
 
 
@@ -1742,11 +1806,18 @@ def _send_ovd_room(room: str) -> bool:
                 if str(r.get("status", "")) not in {"완료"}
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
-    # ★부서장 아침 = 건수만(원문 펼침은 저녁 문의 통 한 곳 — 2026-08-29 GM 지시).
     # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58).
-    block = _build_ovd_block(room_rows, detail=(room != _OVD_ROOM_LESSON))
+    block = _build_ovd_block(room_rows)
+    # ★부서장 아침 = 누적 두 절(접수 전문 + 강습 미컨택 목록) — GM 지시 2026-09-05.
+    if room == _OVD_ROOM_LESSON:
+        sla_text, sla_n = _lesson_sla_block()
+        if sla_text and block:
+            head, _, rest = block.partition("\n")
+            block = f"{head} · 컨택 기록 없는 문의 {sla_n}건\n{rest}\n\n\n{sla_text}"
+        elif sla_text:
+            block = sla_text
     if not block:
-        log(f"[ovd] {room} — 3일+ 없음, 생략")
+        log(f"[ovd] {room} — 보낼 절 없음, 생략")
         return False
     cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room,
            "--sender", "아침정리다이제스트"]

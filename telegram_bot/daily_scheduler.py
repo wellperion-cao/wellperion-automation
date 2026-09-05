@@ -2911,21 +2911,20 @@ def run_daily_digest(early: bool = False) -> None:
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — 압축본 둘 다 없음(빌드 실패)")
 
-        # ── 강습·업장(팀) 기한초과분 — ★부서장 몫 (GM 지시 2026-08-18 · 배696) ──
-        #   [2026-08-29 GM 지시 · 카톡 중복 정리 ②⑧] 별도 통으로 보내지 않는다. 22:33·22:34
-        #   같은 방 두 통(접수 통 + 문의 통)이 1분 간격으로 나갔다(실측) — 아래 문의 정리
-        #   room_payload 의 ★부서장 통에 앞절로 합쳐 한 통으로 낸다. 여기서는 본문만 만든다.
+        # ── 오늘 들어온 강습·업장 접수 — ★부서장 몫 ──────────────────────────────
+        #   ★2026-09-05 GM 지시 — "하루의 마무리는 오늘 문의 및 접수, 등록된 현황을 알려서
+        #     하루 마무리를 잘하게 하려는 목적". 종전엔 여기서 기한초과 적체 리마인드
+        #     (build_lesson_digest)를 만들어 붙였는데, 누적·적체는 아침 통(send_ops_digest
+        #     ★부서장)으로 옮겼다. 저녁은 오늘 것만 — 아래 room_payload 에 앞절로 싣는다.
         try:
-            import report_stream_2b_reception as _s2b_lesson
-            lesson_evening_msg = _s2b_lesson.build_lesson_digest(today) or ""
-            if not lesson_evening_msg:
-                logger.info(f"{label} 강습·업장 기한초과 0건 — ★부서장 접수절 없음")
+            import send_ops_digest as _od_today
+            today_reception_msg = _od_today.build_today_reception_block(today)
         except Exception as e:
-            logger.error(f"{label} 강습·업장 접수 빌드 예외: {e}")
-            lesson_evening_msg = ""
+            logger.error(f"{label} 오늘 접수 절 빌드 예외: {e}")
+            today_reception_msg = ""
     else:
         logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
-        lesson_evening_msg = ""
+        today_reception_msg = ""
 
     # ── 오늘 완료된 운영부 업무 — 하루 일과 정리에도 포함 (GM 2026-08-06 "완료 알림은
     #   완료 시 즉각 1회, 하루 일과 정리에서도 꼭 체크하고 정리해서 보내줘야해") ──────
@@ -2977,12 +2976,13 @@ def run_daily_digest(early: bool = False) -> None:
 
         # [2026-08-29 GM 지시 · 카톡 중복 정리 ②⑧] 방마다 저녁 한 통 — 위에서 빌드만 해 둔
         # 강습·업장 접수절(★부서장)과 오늘 완료건 절(★운영부)을 문의 통에 합쳐 싣는다.
+        # ★2026-09-05 GM 지시 — ★부서장 저녁 통에서 24h SLA 누적 목록을 뺐다(아침 통이 맡는다).
+        #   저녁은 오늘 신규 문의·컨택&등록·처리완료 + 오늘 들어온 접수 = '오늘 것'만.
         room_payload = [
             (KAKAO_DEPTHEAD_ROOM, "강습",
              _scoped_plain("lesson"),
-             _un.build_sla_alert_text([v for v in sla_violations if "강습" in v["type"]])
-             if sla_text else "",
-             lesson_evening_msg),
+             "",
+             today_reception_msg),
             (KAKAO_OPS_DEPT_ROOM, "멤버십",
              _scoped_plain("membership"),
              _un.build_sla_alert_text([v for v in sla_violations if v["type"] == "멤버십"])
@@ -2992,7 +2992,7 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 문의 정리 방별 분리 실패 — 종전 병합본으로 발송: {e}")
         room_payload = [
-            (KAKAO_DEPTHEAD_ROOM, "문의+SLA", inquiry_plain or "", sla_text, lesson_evening_msg),
+            (KAKAO_DEPTHEAD_ROOM, "문의", inquiry_plain or "", "", today_reception_msg),
             (KAKAO_OPS_DEPT_ROOM, "완료건", "", "", daily_done_msg),
         ]
 

@@ -1381,24 +1381,9 @@ def build_kakao_digest(today: str | None = None) -> str:
     return "\n".join(lines)
 
 
-def build_lesson_digest(today: str | None = None) -> str:
-    """★부서장 방 몫 — 강습·업장(팀) 기한초과분만. 없으면 빈 문자열(발신 안 함).
-
-    GM 지시 2026-08-18: '강습부건은 부서장방에, 시설부/운영부/지원부건은
-    ★운영+시설+지원+주차 방에'. 종전에는 전 부서가 한 방으로만 나가서 P.T팀·수영팀
-    건이 강습 담당이 안 보는 방에 섞여 있었다(2026-08-19 웰리 실측 · 배696).
-    같은 목록을 두 방에 통째로 보내지 않는다 — 방마다 자기 몫만 간다.
-    """
-    today = today or datetime.now().strftime("%Y-%m-%d")
-    rows = _fetch_rows()
-    if rows is None:
-        return ""
-    body = _aging_block(rows, scope="lesson")
-    if "기한 초과 건 없음" in body:
-        return ""      # 조용히 넘어간다 — 없는 날 매일 뜨면 소음이다
-    weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
-    return (f"🌙 하루의 마무리 — 접수 {today}({weekday})\n📮 강습·업장 접수 현황\n"
-            "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.\n\n" + body)
+# build_lesson_digest 삭제(2026-09-05 GM 지시) — ★부서장 저녁 통에서 강습·업장 기한초과
+# 적체 리마인드를 뺐다. 누적·적체는 아침 통(send_ops_digest ★부서장)이 맡고, 저녁은 오늘
+# 것만 낸다(send_ops_digest.build_today_reception_block). 호출부가 남지 않아 함수도 지운다.
 
 
 def seed_completion_cursor() -> int:
