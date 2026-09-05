@@ -555,11 +555,12 @@ def _mgr_conversation_message(target_date: str) -> str:
     return (data.get("message") or "").strip()
 
 
-def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
+def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, list]":
     """★중간관리자용 '어제 정리'. rows=업무 시트 전체 행(_fetch_todo_rows()).
 
     미해결건은 담지 않는다 — 별도 발신이 담당한다(2026-08-11 GM 지적, 위 주석 참조).
-    반환 (message, relay_current) — relay_current 는 '열린 요청' 절의 이번 회차 스냅샷.
+    반환 (message, relay_current, reply_hits) — relay_current 는 '열린 요청' 절의 이번
+    회차 스냅샷. reply_hits = 회신 감지로 전달에서 뺀 배들(배1057 · _record_reply_hits 참조).
     빈 값이라도 항상 돌려준다(호출부가 상태 저장 여부를 스스로 결정)."""
     convo = _mgr_conversation_message(target_date)
     parts = [convo] if convo else []
@@ -575,7 +576,7 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     relay_state = _relay_state()
     _migrate_relay_state(relay_state)
     room, contacts = relay_routes()[0]
-    relay_items, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
+    relay_items, relay_current, reply_hits = build_relay_message(contacts, relay_state.get(room, {}))
 
     # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 한 통
     # ASKS_TOTAL_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
@@ -595,7 +596,7 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     message = "\n\n".join(parts)
     # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58)으로
     # 분리했다(GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서").
-    return message, relay_current
+    return message, relay_current, reply_hits
 
 
 def _mgr_already_sent(target_date: str) -> bool:
@@ -621,9 +622,11 @@ def preview_mgr_brief() -> int:
     if not target_date:
         from datetime import timedelta as _td
         target_date = (datetime.now() - _td(days=1)).strftime("%Y-%m-%d")
-    message, _relay_current = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    message, _relay_current, reply_hits = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
     print(f"\n===== {WEEKLY_ROOM} 결정거리 요약 ({target_date}) =====")
     print(message or "(보낼 내용 0건 — 발송 안 함)")
+    if reply_hits:
+        print(f"(회신 감지로 전달 제외 {len(reply_hits)}건 — 미리보기라 note 기록은 안 함)")
     return 0
 
 
@@ -677,6 +680,151 @@ _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
 # ★중간관리자 방 한 곳으로 보낸다. 개인 이름으로 라우팅하지 않는다(방으로 라우팅).
 # ★운영부 방에는 기존 아침 다이제스트(공유 성격)가 그대로 나간다 — 그건 손대지 않았다.
 RELAY_ROOM = "★중간관리자"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 📨 회신 매칭 (GM 지시 2026-09-05 · 배1057 웰리 전달) — 실장님이 방에서 이미 답한 배가
+# 다음 회차 「확인 부탁드릴 것」에 다시 실렸다(실측 09-05: 송의영=허나래·김혜경=김혜경4
+# 건은 09-03 방에 이미 답이 있다). staff_message 스냅샷 비교(_relay_key)만으로는 '방에서
+# 답이 왔다'를 모른다 — ★중간관리자 방 원문(kakao_room_listen 이 만드는 내보내기 .txt,
+# ops_daily_digest.parse_export 재사용 · 새 파서 안 만든다 약속 L21)에서 그 배 키워드
+# (사람 이름·핵심 명사) 2개 이상이 같이 있는 사람 답 줄을 찾으면 전달에서 뺀다.
+# ══════════════════════════════════════════════════════════════════════════
+REPLY_MATCH_LOOKBACK_DAYS = NUDGE_LOOKBACK_DAYS  # 7일 — 그보다 오래된 답은 stale 재알림 몫
+REPLY_RARE_MAX_COUNT = 2  # 최근 코퍼스에서 이 횟수 이하로만 나오면 '드문 낱말'(사람 이름 등)
+_REPLY_STOP_WORDS = {
+    "확인", "부탁", "드립니다", "답변", "진행", "완료", "회원", "명단", "화면", "그리고",
+    "합니다", "주세요", "말씀", "감사", "고맙", "죄송", "관련", "내용", "부분", "처리",
+    "실장님", "소장님", "님께", "부탁드립니다", "봐주시면", "좋겠습니다", "같습니다",
+}
+
+
+def _reply_keywords(staff_message: str, rare_words: "set[str] | None" = None) -> "list[str]":
+    """전달문에서 회신 대조용 키워드 — 한글 3자+ 낱말 중 흔한 상투어(_REPLY_STOP_WORDS)를
+    빼고, rare_words 가 주어지면 그 방 최근 대화에서 드물게(≤REPLY_RARE_MAX_COUNT번) 나온
+    낱말만 남긴다(사람 이름·특정 명사만 남기고 흔한 업무 어휘는 걸러낸다).
+
+    ★2026-09-05 실측 수리 — 처음엔 한글 2자+ 전부·상투어만 뺐더니 "앞으로"·"누구나"·
+    "안내만" 같은 흔한 말이 서로 다른 배에서 우연히 2개씩 겹쳐, 사우나 정비·법인 문의·
+    게스트 이용 등 답이 안 온 배 5척이 엉뚱하게 '회신됨'으로 빠졌다(실측 전달 제외 7건 중
+    5건이 오탐). 3자+ 로 좁히고 코퍼스 희소성(rare_words)까지 같이 걸자 진짜 답(송의영=
+    허나래)만 남고 오탐이 전부 사라졌다 — 두 조건을 다 걸어야 사람 이름 수준으로 좁혀진다.
+    중복은 첫 등장만 남긴다."""
+    seen, out = set(), []
+    for w in re.findall(r"[가-힣]{3,}", staff_message or ""):
+        if w in _REPLY_STOP_WORDS or w in seen:
+            continue
+        if rare_words is not None and w not in rare_words:
+            continue
+        seen.add(w)
+        out.append(w)
+    return out
+
+
+def _reply_rare_words(human_lines: "list[dict]", max_count: int = REPLY_RARE_MAX_COUNT) -> "set[str]":
+    """human_lines 코퍼스에서 max_count번 이하로만 나온 한글 3자+ 낱말 집합 — 사람 이름처럼
+    드문 낱말만 회신 대조 키워드로 쓴다(_reply_keywords 참조)."""
+    from collections import Counter
+    freq: "Counter[str]" = Counter()
+    for line in human_lines:
+        for w in set(re.findall(r"[가-힣]{3,}", str(line.get("msg", "")))):
+            freq[w] += 1
+    return {w for w, c in freq.items() if c <= max_count}
+
+
+def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
+    """★중간관리자 방 최근 lookback_days일치 사람 발화(자동 발신 제외) — [{date,time,msg}].
+    kakao_room_listen 이 만든 원문 내보내기(1. AI자료_아카이브/11_카카오톡/★중간관리자/
+    {YYYY-MM}/*.txt)를 ops_daily_digest 의 기존 파서로 읽는다(새 파서 금지 · 약속 L21)."""
+    try:
+        from ops_daily_digest import ROOM_DIR_BASE, parse_export, read_text_robust, _is_auto_broadcast
+    except Exception as exc:
+        log(f"[reply] ops_daily_digest 파서 로드 실패 — 회신 매칭 생략: {exc}")
+        return []
+    room_dir = ROOM_DIR_BASE / RELAY_ROOM
+    if not room_dir.exists():
+        return []
+    try:
+        t = date.fromisoformat(today)
+    except Exception:
+        return []
+    lo = (t - timedelta(days=lookback_days)).isoformat()
+    month_names = {(t - timedelta(days=d)).strftime("%Y-%m") for d in range(lookback_days + 1)}
+    out = []
+    for mname in month_names:
+        mdir = room_dir / mname
+        if not mdir.exists():
+            continue
+        for txt in mdir.glob("*.txt"):
+            try:
+                by_date = parse_export(read_text_robust(txt))
+            except Exception:
+                continue
+            for d, msgs in by_date.items():
+                if not (lo <= d <= today):
+                    continue
+                for m in msgs:
+                    msg = str(m.get("msg") or "")
+                    if msg and not _is_auto_broadcast(msg):
+                        out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg})
+    return out
+
+
+def _reply_match(staff_message: str, human_lines: "list[dict]", rare_words: "set[str]") -> dict:
+    """staff_message 의 드문 키워드(rare_words 교집합) 2개 이상이 함께 있는 사람 답 줄을
+    찾으면 그 줄({date,time,msg})을, 없으면 {} 를 돌려준다."""
+    kws = _reply_keywords(staff_message, rare_words)
+    if len(kws) < 2:
+        return {}
+    for line in human_lines:
+        if sum(1 for k in kws if k in line["msg"]) >= 2:
+            return line
+    return {}
+
+
+def _record_reply_hits(reply_hits: "list[dict]") -> None:
+    """회신 감지로 전달에서 뺀 배들 note 에 자동 기록 — queue_lock.mutate_queue 경유만
+    (직접 쓰기 금지 · 배1057). 실제 발송이 성공했을 때만 부른다(미리보기·dry-run 은 큐에
+    손 안 댐 — send_mgr_brief 의 성공 분기에서만 호출)."""
+    ids = {h["task_id"]: h["line"] for h in reply_hits if h.get("task_id")}
+    if not ids:
+        return
+    from queue_lock import mutate_queue
+
+    def _mutator(items):
+        for it in items:
+            line = ids.get(str(it.get("task_id") or ""))
+            if not line:
+                continue
+            prev = str(it.get("note") or "")
+            it["note"] = (prev + ("\n" if prev else "") + line).strip()
+
+    mutate_queue(_mutator, holder="send_ops_digest-reply-match")
+    log(f"[reply] 회신 감지 note 기록 {len(ids)}건")
+
+
+def _selfcheck_reply_match() -> None:
+    """3자+ · 코퍼스 희소성 두 조건을 같이 걸어야 사람 이름 수준으로 좁혀지는지 확인
+    (2026-09-05 실측 — 3자+ 만으로는 "앞으로"·"누구나" 같은 흔한 말이 우연히 겹쳐
+    관계없는 배 5척이 '회신됨'으로 잘못 빠졌었다). 네트워크 없이 돈다."""
+    human_lines = [
+        {"date": "2026-09-03", "time": "15:27", "msg": "웰리 송의영 허나래 맞다"},
+        {"date": "2026-09-03", "time": "15:46", "msg": "웰리 김혜경과 김혜경4는 같은분이다"},
+        {"date": "2026-09-02", "time": "10:34",
+         "msg": "이경연 실장님 — 회원 접수 4건, 아직 답변이 안 나갔습니다. 사우나 자리 맡아두기 — "
+                "저녁시간. 앞으로 누구나 이용 가능하도록 검토 부탁드립니다"},
+    ]
+    rare = _reply_rare_words(human_lines)
+    answered = ("실장님 — 회원 4건 확인: ①이경언 회원님 9/3 체험 하셨는지(했다/안 했다) "
+                "②정애디 회원님 구분은 원장에 「멤버십」으로 살아 있습니다(안내만) "
+                "③송의영=허나래 · 김혜경=김혜경4 같은 분으로 원장에 합칩니다(말씀 주신 대로 · 안내만)")
+    assert _reply_match(answered, human_lines, rare), "송의영=허나래 답이 있으면 매치돼야 한다"
+    unanswered = ("실장님 — 법인·단체 문의 응대 기준(유형 A·B·C 표)을 법인 멤버십 상품 설계 A3에 "
+                  "넣었습니다. 앞으로 법인 문의는 이 표대로 응대하시고, 안 맞는 경우만 이 방에 "
+                  "한 줄(안내만)")
+    assert not _reply_match(unanswered, human_lines, rare), \
+        "흔한 낱말(앞으로 등)만 겹치는 배는 매치되면 안 된다(오탐 방지)"
+    print("[selfcheck] _reply_match OK")
 
 
 def log(msg: str) -> None:
@@ -1078,7 +1226,15 @@ def _selfcheck_schedule_block() -> None:
 #   계속 …로 끝나거나 '외 3건'으로 접히는 것보다 다 보고 싶다, 궁금하다."
 #   → 세 상한을 모두 0(= 자르지 않음)으로 둔다. 8/29 의 '한 통 3건'은 이 지시가 대체한다.
 #   접는 대신 줄여야 하는 건 화면에 뜨는 줄이 아니라 안 끝난 '건수' 자체다.
-ASKS_TOTAL_CAP = 0  # 0 = 전부 보여줌(GM 지시 2026-08-30). 종전 3건
+#
+# ★2026-09-05 GM 지시(웰리 전달 · 배1057) — "실장님 전달된 부분 회신 안 돼서 대기가 많아지나?
+#   한 번에 담당자별로 정리해 줄 수 있어?" 실측: 이경연 실장 한 사람 앞으로 하루 20건에 가까운
+#   전달이 몰려 회신이 막혔다. 위 8/30 지시("자르지 않는다")는 총량 얘기였는데, 사람이 한 명일
+#   때 총량이 그대로 그 한 사람 몫이 되는 게 새 문제다 — 그래서 총량 상한(ASKS_TOTAL_CAP)을
+#   버리고 **사람당** 상한(ASKS_PER_PERSON_CAP)으로 바꾼다. 건당 표시도 1줄(전달문 첫 줄만)로
+#   줄인다 — 상세·링크는 화면(👉 안내)에서 본다. 형식 = wellperion-gm-report 스킬 §4-2-2
+#   「★한눈에 읽히게」(사람 제목줄 ▪ · 빈 줄 금지 · 맨 끝 👉 한 줄).
+ASKS_PER_PERSON_CAP = 5  # 사람당 이 이상은 "외 N건 · 화면"으로 접는다(총량은 안 자름)
 ASKS_TITLE_CAP = 0  # 0 = 안 자름. 종전 50자
 ASKS_HOW_CAP = 0    # 0 = 안 자름. 종전 60자
 # ★2026-09-02 시포 — 위 세 상한은 8/30 에 풀었는데 상세 줄 수 상한(2줄)만 코드에 남아
@@ -1131,69 +1287,56 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str, str]":
 
 
 def build_asks_section(relay_items: list, nudge_items: list) -> str:
-    """배 전달(relay)·회신 부탁(nudge) 항목을 오래된 순으로 합쳐 한 통 ASKS_TOTAL_CAP건만
-    보여주고 나머지는 한 줄로 접는다(GM 확정 2026-08-29 — 종전 사람당 상한을 한 통 총량
-    상한으로 바꿨다). 표시는 여전히 사람별로 묶는다. 헤더 건수 = 화면에 실제로 보이는
-    줄 수뿐이다."""
+    """배 전달(relay)·회신 부탁(nudge) 항목을 사람별로 묶어 보여준다(GM 확정 2026-09-05 ·
+    배1057 "담당자별로 한 번에"). 형식 = wellperion-gm-report 스킬 §4-2-2 「★한눈에 읽히게」
+    — 사람 제목줄(▪) · 건당 1줄(전달문 첫 줄만, 상세·링크는 화면에서 확인) · 빈 줄 없음 ·
+    맨 끝 👉 한 줄. 사람당 ASKS_PER_PERSON_CAP건까지만 보여주고 나머지는 "외 N건 · 화면"으로
+    접는다(총량은 안 자름 — 사람이 여럿이면 통 전체 건수는 늘어난다, 그게 이 수리의 목적이다)."""
     items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
     if not items:
         return ""
-    shown = items if ASKS_TOTAL_CAP <= 0 else items[:ASKS_TOTAL_CAP]
-    rest = len(items) - len(shown)
 
-    # ★2026-08-20 GM 지적("정말 복잡해, 직관적이고 명확해야해") — 사람 단위로 묶는다.
-    #   전에는 항목마다 「…님께 한 마디만 답해 주시면 됩니다」가 그대로 반복돼 같은 문장이
-    #   다섯 번 찍혔다. 답하는 방법은 맨 위에 한 번만 적고, 아래는 사람별로 자기 것만 모아
-    #   한 줄씩 둔다 — 받는 사람이 자기 이름만 찾으면 자기 몫이 다 보인다.
-    #   ▸어디서 하는지가 따로 있는 건(📎 링크가 붙은 건)만 그 줄을 살려 둔다.
     by_who: dict = {}
-    for it in shown:
+    for it in items:
         by_who.setdefault(it["who"], []).append(it)
 
-    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
+    shown_total = sum(min(len(g), ASKS_PER_PERSON_CAP) for g in by_who.values())
+    lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"]
     for who, group in by_who.items():
-        lines.append(f"👤 {who}")
-        for it in group:
-            lines.append(f" • {it['ask']}")
-            # 상세는 제목 줄만으로 뜻이 안 통할 때만 붙는다 — 사람 이름·숫자가 여기 있다
-            # (2026-09-01 실측: 종전엔 첫 줄만 실려 「회원 두 분」이 누구인지 잘려 나갔다).
-            for dline in str(it.get("detail") or "").splitlines():
-                if dline.strip():
-                    lines.append(f"   {dline.strip()}")
-            how = str(it.get("how") or "")
-            if "📎" in how or "http" in how:
-                lines.append(f"   {how}")
-    if rest:
-        lines.append(f"…외 {rest}건이 더 있습니다 — 오래된 순 {ASKS_TOTAL_CAP}건만 추렸습니다.")
+        lines.append(f"▪ {who}")
+        for it in group[:ASKS_PER_PERSON_CAP]:
+            lines.append(f"   {it['ask']}")
+        extra = len(group) - ASKS_PER_PERSON_CAP
+        if extra > 0:
+            lines.append(f"   외 {extra}건 · 화면")
+    lines.append("👉 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
 
 
 def _selfcheck_asks_section() -> None:
-    """헤더 건수 = 실제로 보이는 줄 수인지, 그리고 접히는 건·잘리는 글자가 없는지
-    (GM 지시 2026-08-30 — 전부 끝까지 보낸다). 네트워크 없이 돈다."""
+    """사람별 ▪ 제목줄 · 건당 1줄 · 사람당 ASKS_PER_PERSON_CAP건 넘으면 '외 N건 · 화면' ·
+    빈 줄 없음 · 맨 끝 바로 앞 줄이 👉. 네트워크 없이 돈다."""
     relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "실장 건", "how": "h"}]
     nudge = [{"date": f"2026-08-{d:02d}", "who": "이정헌 소장", "ask": f"n{d}건", "how": "h"}
-             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과 합쳐 총 8건
+             for d in range(10, 17)]  # 7건 — 5건 상한을 넘겨 '외 2건'으로 접히는지 확인
     out = build_asks_section(relay, nudge)
-    assert "확인 부탁드릴 것 8건" in out, out  # 헤더 건수 = 실제로 보이는 줄 수
-    assert "더 있습니다" not in out, out       # 접는 꼬리줄이 남아 있으면 안 된다
-    # 답하는 방법 안내는 맨 위 한 번뿐이어야 한다(2026-08-20 GM: 같은 문장이 다섯 번 찍혔다)
-    assert out.count("한 마디만 주시면 됩니다") == 1, out
-    # 여덟 건 전부 본문에 있어야 한다 — 사람이 여럿이어도 밀려 접히지 않는다.
-    for d in range(10, 17):
-        assert f"n{d}건" in out, f"모든 건이 보여야 한다: n{d}"
-    assert "실장 건" in out, "다른 사람 건도 접히지 않아야 한다"
-    # 긴 문장이 '…' 로 끊기지 않는지 — GM 지시 2026-08-30 의 핵심.
-    long_ask = "가나다라마바사아자차카타파하 " * 8
-    out2 = build_asks_section([{"date": "2026-08-01", "who": "테스트", "ask": _cap_line(long_ask, ASKS_TITLE_CAP), "how": "h"}], [])
-    assert "…" not in out2, out2
-    assert out.splitlines()[-1] == RELAY_SIGNOFF
+    lines = out.splitlines()
+    assert "" not in lines, f"빈 줄이 있으면 안 된다: {out!r}"
+    assert lines[-1] == RELAY_SIGNOFF
+    assert lines[-2].startswith("👉"), "맨 끝 바로 앞은 👉 한 줄이어야 한다"
+    assert "▪ 이경연 실장" in out and "▪ 이정헌 소장" in out, "사람별 제목줄(▪)이 있어야 한다"
+    assert "확인 부탁드릴 것 6건" in out, out  # 이정헌 소장 5건(상한) + 이경연 실장 1건
+    assert "실장 건" in out
+    for d in range(10, 15):
+        assert f"n{d}건" in out, f"상한 안 5건은 모두 보여야 한다: n{d}"
+    assert "n15건" not in out and "n16건" not in out, "5건 넘는 건은 접혀야 한다"
+    assert "외 2건 · 화면" in out, out
     assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
     print("[selfcheck] build_asks_section OK")
 
 
-def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]":
+def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict, list]":
     """열려 있는(PENDING·IN_PROGRESS) 배 중 '실무진 전달문'(staff_message)이 있는 것만 담는다.
 
     ★2026-08-06 GM 근본수정 — 예전엔 배 '제목'을 40자 근처에서 잘라 보냈다. 배 제목은
@@ -1204,9 +1347,11 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
 
     매일 같은 목록을 다시 보내면 실무진이 읽기를 멈춘다 — prev_items(지난 회차에 실은
     {key: 스냅샷}) 와 비교해 '새로 생긴 것'·'처리 완료된 것'만 알린다. 변화가 없으면
-    빈 문자열을 돌려 아무것도 보내지 않는다. 반환값 (message, current_items) — 두
-    번째 값은 다음 회차 비교용으로 그대로 저장된다(변화가 없어도 저장 — prev_items 를
-    계속 최신 스냅샷으로 유지해야 다음 변화를 놓치지 않는다).
+    빈 문자열을 돌려 아무것도 보내지 않는다. 반환값 (message, current_items, reply_hits) —
+    두 번째 값은 다음 회차 비교용으로 그대로 저장된다(변화가 없어도 저장 — prev_items 를
+    계속 최신 스냅샷으로 유지해야 다음 변화를 놓치지 않는다). 세 번째 값 reply_hits =
+    이번 회차에 방에서 회신이 감지돼 전달에서 뺀 배들 [{"task_id","line"}] — 호출부가
+    실제 발송 성공 후에만 _record_reply_hits 로 큐 note 에 남긴다(배1057).
 
     ★audience 가 'office' 인 배만 싣는다(GM 2026-08-05 "원래 하던 일인데, 배편에 있는
     내용인거야?"). 큐에는 AI 내부 살림(audience='ai')도 섞여 있는데, 그걸 사람 방에
@@ -1215,13 +1360,17 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         queue = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
     except Exception as exc:
         log(f"[relay] 큐 읽기 실패 — 전달 생략: {exc}")
-        return "", dict(prev_items)
+        return "", dict(prev_items), []
 
     # ★제외 사유를 센다(2026-08-07 GM 지적 배442 — 조용한 탈락 금지). 안 나가는 것도 사고다:
     #   'AI 살림이라 뺐다'와 '전달문이 비어 안 나간다'는 전혀 다른 문제인데 둘 다 침묵이면 구별이 안 된다.
     #   담당이 아예 다른 역할인 배는 정상 범위 밖이라 세지 않는다(그건 탈락이 아니다).
     dropped_why = {"닫힌 배": 0, "AI 내부 살림": 0, "전달문 비어 있음": 0, "audience 칸 비어 있음": 0,
-                   "공유 전용(답 불필요)": 0}
+                   "공유 전용(답 불필요)": 0, "회신 감지": 0}
+    today0 = date.today().isoformat()
+    human_lines = _mgr_room_human_lines(today0)
+    rare_words = _reply_rare_words(human_lines)
+    reply_hits = []
     ships = []
     for x in queue:
         if not isinstance(x, dict) or x.get("clevel") not in contacts:
@@ -1255,6 +1404,13 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         if not bool(x.get("reply_needed", True)):
             dropped_why["공유 전용(답 불필요)"] += 1
             continue
+        hit = _reply_match(_resolve_staff_message(x), human_lines, rare_words)
+        if hit:
+            dropped_why["회신 감지"] += 1
+            when = hit.get("time") or hit.get("date") or ""
+            reply_hits.append({"task_id": str(x.get("task_id") or ""),
+                                "line": f"[회신 감지 {when}] {hit.get('msg', '')[:40]}"})
+            continue
         ships.append(x)
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
@@ -1263,12 +1419,11 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         log(f"[relay] 후보 {len(ships)}척 · 제외 "
             + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음")
             + " · 옛 스냅샷 형식 — 이번 회차는 발신 없이 새 키로만 다시 찍음")
-        today = date.today().isoformat()
         current = {_relay_key(s): {"line": _uncapped_line(_resolve_staff_message(s).strip().splitlines()[0]),
-                                    "last_sent": today} for s in ships}
-        return "", current  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
+                                    "last_sent": today0} for s in ships}
+        return "", current, reply_hits  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
 
-    today = date.today().isoformat()
+    today = today0
     prev_lines = {k: _unpack_snapshot(v, today)[0] for k, v in prev_items.items()}
     prev_sent = {k: _unpack_snapshot(v, today)[1] for k, v in prev_items.items()}
 
@@ -1309,7 +1464,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     #   끝났다"가 섞여 신뢰를 깎는다). 대화 정리 절의 "✅ 확인된 것"이 이미 담당한다.
     #   목록에서 사라진 키는 스냅샷(current)에서도 그냥 빠진다 — 별도 처리 불필요.
     if not new_ships and not stale_ships:
-        return [], current  # 지난번과 같은 목록 — 다시 보내지 않는다
+        return [], current, reply_hits  # 지난번과 같은 목록 — 다시 보내지 않는다
 
     # ★한 항목 = {"date","who","ask","how"} 로 돌려준다. 헤더·건수·상한은 이제
     #   build_asks_section 이 nudge 항목과 합쳐서 한 번에 결정한다(중복 헤더 제거).
@@ -1323,7 +1478,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         ask, how, detail = _split_ask_how(_resolve_staff_message(s), who)
         items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask,
                       "how": how, "detail": detail})
-    return items, current
+    return items, current, reply_hits
 
 
 def _relay_state() -> dict:
@@ -1408,10 +1563,12 @@ def preview_relays() -> int:
     state = _relay_state()
     _migrate_relay_state(state)   # 실제 발신과 같은 조건으로 봐야 미리보기가 미리보기다
     for room, contacts in relay_routes():
-        items, _current = build_relay_message(contacts, state.get(room, {}))
+        items, _current, reply_hits = build_relay_message(contacts, state.get(room, {}))
         message = build_asks_section(items, [])
         print(f"\n===== {room} ({'내용 없음' if not message else '발신 대상'}) =====")
         print(message or "(변화 없음 — 발신 안 함)")
+        if reply_hits:
+            print(f"(회신 감지로 전달 제외 {len(reply_hits)}건 — 미리보기라 note 기록은 안 함)")
         if message:
             body = message.splitlines()
             assert body[-1] == RELAY_SIGNOFF, "AI 주체 서명 누락"
@@ -1471,7 +1628,7 @@ def send_mgr_brief() -> None:
     if _mgr_already_sent(target_date):
         log(f"[mgr] 이미 발송된 회차({target_date}) — 생략")
         return
-    mgr_msg, relay_current = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    mgr_msg, relay_current, reply_hits = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
     if not mgr_msg:
         log("[mgr] 보낼 내용 0건 — 발송 생략")
         return
@@ -1490,6 +1647,8 @@ def send_mgr_brief() -> None:
         _migrate_relay_state(relay_state)
         relay_state[WEEKLY_ROOM] = relay_current
         _save_relay_state(relay_state, waiting_today=len(relay_current))   # 내일 "어제 N건" 비교값
+        if reply_hits:
+            _record_reply_hits(reply_hits)  # 회신 감지된 배 note 기록 — 실제 발송 성공 후에만(배1057)
         log("[mgr] 발송 완료")
     else:
         log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
