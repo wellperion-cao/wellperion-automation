@@ -75,7 +75,7 @@ CLOSE_DAYS_PATH = os.environ.get(
     "ERP_CLOSE_DAYS",
     "/srv/erp/www/status/close_days.json" if os.path.isdir("/srv/erp/www") else
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "status", "close_days.json"))
-COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "global.anthropic.claude-sonnet-5")   # 한 줄로 opus-5 전환(Bedrock 크로스리전 id)
+COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "global.anthropic.claude-sonnet-4-6")   # sonnet-5 는 이 계정 아직 승인 전(실측) — 계약 완료된 4.6 로. 한 줄로 교체(Bedrock 크로스리전 id)
 _SESSION_TURNS = 6     # 배1036 GM 구조전환② — 대화 문맥(최근 N턴)
 _SESSION_MAX = 2000    # ponytail: 세션 상한 없으면 메모리 누수 — 오래된 세션 정리는 재시작뿐(필요해지면 TTL 추가)
 _SESSIONS: dict = {}   # session_id -> [{"role":..,"content":..}, ...] · 프로세스 메모리(재시작하면 비워짐 · FAILS 패턴과 동일)
