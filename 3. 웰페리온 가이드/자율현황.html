@@ -823,6 +823,7 @@
 
   // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 — 공용 헬퍼 ═══════════
   // "2026-07-15 오전 9:30:01"(Task Scheduler 한글) → "07/15 09:30". 1999(첫 실행 전 placeholder)=없음.
+  function _todayMD(){ var d = new Date(); return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0'); }
   function fmtKAmPm(s){
     s = String(s || '');
     var d = s.match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -879,6 +880,12 @@
       var tn = _notifySchtasksName(item.source);
       var ah = tn ? ahMap[tn] : null;
       if(ah && ah.state && String(ah.state).indexOf('실패') === 0){
+        // 오늘 돌았는데 종료코드만 1이면 '죽은배선'이 아니다 — 발신은 나갔을 수 있다(2026-09-05 실측:
+        // 07:30·08:00 4건이 발송 뒤 stdout 오류로 종료코드 1 → 하루 종일 ⚫ 로 떠 GM 이 "난리"로 봄).
+        // 죽은배선 = 어제 이후로 성공 실행이 없는 것. 오늘 한 번 실패는 🟡 로 두고 다음 실행에서 재판정.
+        if(ah.last_run && fmtKAmPm(ah.last_run).indexOf(_todayMD()) === 0){
+          return { sev:'warn', label:'🟡 오늘 종료코드 1(실행은 됨 · 다음 실행에서 재판정)' };
+        }
         return { sev:'dead', label:'⚫ 죽은배선(실행 실패)' };
       }
     }
@@ -1152,10 +1159,12 @@
     if(summaryEl){
       var total = items.length;
       var okTotal = counts.ok + counts.warn;
-      var probTotal = counts.bad + counts.dead;
+      // 문제 = 죽은배선만. 🔴 꺼짐은 GM 킬스위치(결정)라 문제로 세지 않고 따로 적는다(2026-09-05 GM "난리난 것 같은데").
+      var probTotal = counts.dead;
       var nowStr = (function(){ var d=new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); })();
       summaryEl.innerHTML = '오늘 발신 <b>' + okTotal + '/' + total + '</b> 정상' +
         (probTotal ? ' · <span style="color:#ff8a80;">🔴 문제 ' + probTotal + '건</span>' : '') +
+        (counts.bad ? ' · <span style="color:var(--dim);">⏸ 꺼짐 ' + counts.bad + '건(GM 킬스위치)</span>' : '') +
         ' · 마지막 갱신 ' + nowStr;
     }
 
