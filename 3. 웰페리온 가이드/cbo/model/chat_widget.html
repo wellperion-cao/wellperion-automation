@@ -1,0 +1,102 @@
+/* AEO 채팅봇 위젯 (배1018 · 2026-09-05 시토). 순수 JS — <script src="chat_widget.html" data-tenant="..."> 한 줄로 붙인다.
+   배포 위치 = /srv/www/2_dietcamp/chat_widget.html (다캠 페이지와 같은 origin이라 /api/chat 호출에 CORS가 필요 없다).
+   data-tenant 필수("1_wellperion" | "2_dietcamp" — 서버 실제 폴더명). data-api-base 로 다른 origin의 API 를 가리킬 수도 있다(선택, 기본 = 같은 origin).
+   ponytail: 프레임워크 없음 — 말풍선 목록이 아주 길어지는 상담은 상정하지 않는다(그 전에 상담 예약으로 이어진다). */
+(function () {
+  "use strict";
+  var CUR = document.currentScript;
+  var TENANT = (CUR && CUR.getAttribute("data-tenant")) || "";
+  var API_BASE = (CUR && CUR.getAttribute("data-api-base")) || "";
+  if (!TENANT) { console.error("[chat_widget] data-tenant 없음 — 위젯을 붙이지 않는다"); return; }
+
+  var CSS = ""
+    + ".wlp-chat-btn{position:fixed;right:20px;bottom:20px;z-index:999999;width:56px;height:56px;border-radius:50%;"
+    + "background:#8F7659;color:#F4F0EB;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;font-size:24px;}"
+    + ".wlp-chat-panel{position:fixed;right:20px;bottom:86px;z-index:999999;width:320px;max-width:calc(100vw - 40px);"
+    + "height:440px;max-height:calc(100vh - 140px);background:#F4F0EB;color:#221F20;border:1px solid #B79F8A;"
+    + "border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.3);display:none;flex-direction:column;overflow:hidden;"
+    + "font-family:'Noto Sans KR',sans-serif;font-size:14px;}"
+    + ".wlp-chat-panel.open{display:flex;}"
+    + ".wlp-chat-head{background:#8F7659;color:#F4F0EB;padding:10px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}"
+    + ".wlp-chat-head button{background:none;border:none;color:#F4F0EB;font-size:16px;cursor:pointer;}"
+    + ".wlp-chat-body{flex:1;overflow-y:auto;padding:10px;}"
+    + ".wlp-chat-msg{margin-bottom:8px;max-width:88%;padding:8px 10px;border-radius:8px;line-height:1.5;word-break:break-word;}"
+    + ".wlp-chat-msg.me{margin-left:auto;background:#8F7659;color:#F4F0EB;}"
+    + ".wlp-chat-msg.bot{background:#fff;border:1px solid #E3E7EB;}"
+    + ".wlp-chat-msg a{color:#8F7659;font-weight:700;}"
+    + ".wlp-chat-input{display:flex;border-top:1px solid #B79F8A;}"
+    + ".wlp-chat-input input{flex:1;border:none;padding:10px;font-size:14px;background:#fff;color:#221F20;}"
+    + ".wlp-chat-input button{border:none;background:#8F7659;color:#F4F0EB;padding:0 14px;cursor:pointer;font-weight:700;}";
+  var style = document.createElement("style");
+  style.textContent = CSS;
+  document.head.appendChild(style);
+
+  var btn = document.createElement("button");
+  btn.className = "wlp-chat-btn";
+  btn.setAttribute("aria-label", "무엇이든 물어보세요");
+  btn.textContent = "💬";
+
+  var panel = document.createElement("div");
+  panel.className = "wlp-chat-panel";
+  panel.innerHTML =
+    '<div class="wlp-chat-head"><span>무엇이든 물어보세요</span><button type="button" aria-label="닫기">✕</button></div>'
+    + '<div class="wlp-chat-body"></div>'
+    + '<div class="wlp-chat-input"><input type="text" placeholder="궁금한 점을 입력해 주세요" maxlength="300">'
+    + '<button type="button">전송</button></div>';
+
+  document.body.appendChild(btn);
+  document.body.appendChild(panel);
+
+  var body = panel.querySelector(".wlp-chat-body");
+  var input = panel.querySelector("input");
+  var sendBtn = panel.querySelectorAll("button")[1];
+  var closeBtn = panel.querySelector(".wlp-chat-head button");
+
+  function addMsg(text, who) {
+    var div = document.createElement("div");
+    div.className = "wlp-chat-msg " + who;
+    linkify(div, text);
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  // 사용자 입력을 innerHTML 에 절대 넣지 않는다 — URL만 링크로 바꾸고 나머지는 텍스트 노드로 붙인다(XSS 방지).
+  function linkify(el, text) {
+    var re = /(https?:\/\/[^\s]+)/g;
+    var last = 0, m;
+    while ((m = re.exec(text))) {
+      el.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var a = document.createElement("a");
+      a.href = m[0]; a.target = "_blank"; a.rel = "noopener"; a.textContent = m[0];
+      el.appendChild(a);
+      last = m.index + m[0].length;
+    }
+    el.appendChild(document.createTextNode(text.slice(last)));
+  }
+
+  function toggle(open) { panel.classList.toggle("open", open); }
+  btn.addEventListener("click", function () { toggle(!panel.classList.contains("open")); });
+  closeBtn.addEventListener("click", function () { toggle(false); });
+
+  function send() {
+    var q = (input.value || "").trim();
+    if (!q) return;
+    addMsg(q, "me");
+    input.value = "";
+    var thinking = addMsg("…", "bot");
+    fetch(API_BASE + "/api/chat/" + encodeURIComponent(TENANT), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: q })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      thinking.remove();
+      addMsg((data && data.answer) || "잠시 뒤 다시 시도해 주세요.", "bot");
+    }).catch(function () {
+      thinking.remove();
+      addMsg("연결이 원활하지 않습니다. 잠시 뒤 다시 시도해 주세요.", "bot");
+    });
+  }
+  sendBtn.addEventListener("click", send);
+  input.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+})();
