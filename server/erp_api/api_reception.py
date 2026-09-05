@@ -394,24 +394,25 @@ async def update(request: Request):
         return {"ok": False, "error": "상태는 접수|처리중|완료 만 허용"}
 
     conn = _openw()
-    with conn:
-        row = conn.execute("SELECT category, dept, status, data FROM reception_items WHERE tenant_id=%s AND reg_id=%s",
-                           (db.TENANT, reg_id)).fetchone()
-        if not row:
-            conn.close()
-            return {"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}
-        data = json.loads(row["data"])
-        for k in REG_UPDATE_FIELDS:
-            if k in payload and payload[k] is not None:
-                data[k] = str(payload[k])
-        if new_status:
-            data["status"] = new_status
-        status = data.get("status") or row["status"]
-        dept = data.get("dept") or row["dept"]
-        conn.execute("UPDATE reception_items SET status=%s, dept=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND reg_id=%s",
-                     (status, dept, json.dumps(data, ensure_ascii=False), _kst_now(), db.TENANT, reg_id))
-    conn.close()
-    return {"ok": True, "id": reg_id, "status": status, "message": "접수건이 갱신되었습니다."}
+    try:
+        with conn:
+            row = conn.execute("SELECT category, dept, status, data FROM reception_items WHERE tenant_id=%s AND reg_id=%s",
+                               (db.TENANT, reg_id)).fetchone()
+            if not row:
+                return {"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}
+            data = json.loads(row["data"])
+            for k in REG_UPDATE_FIELDS:
+                if k in payload and payload[k] is not None:
+                    data[k] = str(payload[k])
+            if new_status:
+                data["status"] = new_status
+            status = data.get("status") or row["status"]
+            dept = data.get("dept") or row["dept"]
+            conn.execute("UPDATE reception_items SET status=%s, dept=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND reg_id=%s",
+                         (status, dept, json.dumps(data, ensure_ascii=False), _kst_now(), db.TENANT, reg_id))
+            return {"ok": True, "id": reg_id, "status": status, "message": "접수건이 갱신되었습니다."}
+    finally:
+        conn.close()   # ponytail: with 블록 안에서 미리 close() 하면 __exit__ 커밋이 닫힌 연결에 걸려 500 이 난다(배1039-C 실사고) — close 는 항상 with 밖에서
 
 
 @router.post("/photo")
