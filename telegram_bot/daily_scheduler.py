@@ -2663,6 +2663,20 @@ def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
     except Exception as e:
         logger.error(f"카톡 실패 알림 자체 실패: {e}")
 
+
+def _send_telegram_copy(label: str, body: str) -> None:
+    """카톡 하루 양끝(시작/마무리) 본문을 텔레그램 업무보고방에도 사본 1통(GM 지시 2026-09-05
+    '카카오톡이랑 텔레그램이랑 동기화'). best-effort — 실패해도 카톡 발송 결과는 안 바꾼다."""
+    try:
+        agents_dir = str(REPO_ROOT / "wellperion-agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from telegram_notifier import TelegramNotifier
+        TelegramNotifier().send(f"📋 카톡 사본 · {label}\n\n{body}")
+        logger.info(f"[copy] 텔레그램 사본 발송 — {label}")
+    except Exception as e:
+        logger.error(f"[copy] 텔레그램 사본 실패(무시) — {label}: {e}")
+
 # 카카오톡 ★운영+시설+지원+주차 방 — 점검현황·종합접수현황 분리 발송 게이트(GM 2026-07-22 go).
 # --only-room 매칭이라 방 이름은 열린 채팅창 제목과 정확히 일치해야 함(실측 검증됨,
 # scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
@@ -2677,6 +2691,114 @@ def _is_rest_day(d) -> bool:
     """주말(토·일) 또는 휴관·공휴일(close_days) → 20시 발송."""
     import close_days as _cd  # scripts/ 는 상단에서 sys.path 삽입됨
     return d.weekday() >= 5 or _cd.is_closed(d)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 하루 양끝(시작/마무리) 카톡 미발신 감시 — GM 지시 2026-09-05 "카톡이 안 되었을 때
+# 텔레그램이 알림까지도 떠야". kakao_report_sender._notify_send_failure 는 '발신 시도
+# 후 실패'만 잡는다 — 스크립트가 아예 안 돌거나 발신 전에 죽으면(2026-09-05 07:30
+# 종료코드 1 실사고) 그 관문을 못 지나 아무 경보도 없었다. 여기는 로그 부재를 직접 본다.
+# ══════════════════════════════════════════════════════════════════════════
+_BOOKEND_NOTIFIED_PATH = REPO_ROOT / "status" / "bookend_watch_notified.json"
+_BOOKEND_MARKERS = {"morning": "🌅 하루의 시작", "evening": "🌙 하루의 마무리"}
+_BOOKEND_SCHTASK = {"morning": "Wellperion-Ops-Morning-Digest-0730",
+                    "evening": "WellperionDailyScheduler"}
+
+
+def _bookend_dedup_key(kind: str) -> str:
+    return f"{datetime.now().strftime('%Y-%m-%d')}_{kind}"
+
+
+def _bookend_already_notified(kind: str) -> bool:
+    try:
+        data = json.loads(_BOOKEND_NOTIFIED_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        data = {}
+    return bool(data.get(_bookend_dedup_key(kind)))
+
+
+def _bookend_mark_notified(kind: str) -> None:
+    try:
+        data = json.loads(_BOOKEND_NOTIFIED_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        data = {}
+    data[_bookend_dedup_key(kind)] = True
+    try:
+        _BOOKEND_NOTIFIED_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _BOOKEND_NOTIFIED_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        logger.error(f"[bookend-watch] dedup 저장 실패: {e}")
+
+
+def _schtask_last_result(task_name: str) -> str:
+    """schtasks 마지막 실행 결과 한 줄 — 조회 실패는 지어내지 않고 그대로 적는다.
+    ★실측(2026-09-05): schtasks 콘솔 출력은 이 PC 로캘(한국어) 코드페이지(cp949)로 나온다 —
+    utf-8로 읽으면 "마지막 결과" 라벨이 깨져 못 찾는다(라벨도 한국어라 영어 "Last Result" 매칭은 원천 불일치)."""
+    try:
+        proc = subprocess.run(
+            ["schtasks", "/Query", "/TN", task_name, "/FO", "LIST", "/V"],
+            capture_output=True, text=True, encoding="cp949", errors="replace", timeout=15,
+        )
+        if proc.returncode != 0:
+            return "조회 실패(작업 없음)"
+        for line in proc.stdout.splitlines():
+            s = line.strip()
+            if s.startswith("마지막 결과") or s.startswith("Last Result"):
+                return s.split(":", 1)[-1].strip()
+        return "조회 실패(결과값 없음)"
+    except Exception as exc:
+        return f"조회 실패({exc})"
+
+
+def _bookend_sent_ok(kind: str, today: str) -> bool:
+    """오늘자 kakao_sent 로그에서 ★운영+시설+지원+주차 방으로 그 마커 문구가 ok:true 로 나갔는지."""
+    log_path = REPO_ROOT / "logs" / f"kakao_sent-{today}.log"
+    if not log_path.exists():
+        return False
+    marker = _BOOKEND_MARKERS[kind]
+    try:
+        for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if rec.get("ok") and str(rec.get("chat_id") or "") == KAKAO_OPS_ROOM \
+                    and marker in str(rec.get("text") or ""):
+                return True
+    except Exception as exc:
+        logger.error(f"[bookend-watch] 로그 읽기 실패: {exc}")
+    return False
+
+
+def _bookend_watch(kind: str, when_label: str) -> None:
+    """kind='morning'|'evening' — 오늘 그 카톡이 안 나갔으면 업무보고방에 경보 1통(하루 1회)."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _bookend_already_notified(kind):
+        return
+    if _bookend_sent_ok(kind, today):
+        logger.info(f"[bookend-watch] {kind} 정상 발신 확인 — 침묵")
+        return
+    task_result = _schtask_last_result(_BOOKEND_SCHTASK[kind])
+    label = "하루의 시작" if kind == "morning" else "하루의 마무리"
+    try:
+        send_telegram(
+            _GM_REPORT_CHAT_ID,
+            f"🔴 {label} 카톡 미발신 — {when_label} 예정 · 로그 없음\n"
+            f"   예약작업 상태: {task_result}",
+            parse_mode=None,
+        )
+        _bookend_mark_notified(kind)
+        logger.info(f"[bookend-watch] {kind} 미발신 경보 발송")
+    except Exception as e:
+        logger.error(f"[bookend-watch] {kind} 경보 발송 실패: {e}")
+
+
+def run_bookend_watch_evening(early: bool = False) -> None:
+    """저녁 감시 — run_daily_digest 와 같은 휴일 게이트(20:15=휴일 / 22:45=평일)."""
+    rest_day = _is_rest_day(datetime.now().date())
+    if rest_day != early:
+        return
+    _bookend_watch("evening", "20:15" if early else "22:45")
 
 
 def run_daily_digest(early: bool = False) -> None:
@@ -2908,6 +3030,7 @@ def run_daily_digest(early: bool = False) -> None:
             if len(merged) > 2500:
                 logger.warning(f"{label} 카톡 {KAKAO_OPS_ROOM} 압축본이 2,500자 초과({len(merged)}자) — 전체 목록이 새고 있는지 확인 필요")
             _send_ops_kakao(merged, "점검현황+종합접수현황(압축)")
+            _send_telegram_copy("하루의 마무리", merged)
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — 압축본 둘 다 없음(빌드 실패)")
 
@@ -4453,6 +4576,33 @@ def main():
             coalesce=True,
         )
         logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 발송")
+
+        # ── 하루 양끝 카톡 미발신 감시 — GM 지시 2026-09-05 ─────────────────────────
+        scheduler.add_job(
+            _bookend_watch,
+            trigger=CronTrigger(hour=7, minute=55, timezone="Asia/Seoul"),
+            args=["morning", "07:40"],
+            id="bookend_watch_morning",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            run_bookend_watch_evening,
+            trigger=CronTrigger(hour=20, minute=15, timezone="Asia/Seoul"),
+            args=[True],
+            id="bookend_watch_evening_early",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            run_bookend_watch_evening,
+            trigger=CronTrigger(hour=22, minute=45, timezone="Asia/Seoul"),
+            args=[False],
+            id="bookend_watch_evening_late",
+            misfire_grace_time=600,
+            coalesce=True,
+        )
+        logger.info("bookend_watch 등록 완료 — 07:55 하루의 시작 / 20:15·22:45(휴일 게이트) 하루의 마무리 미발신 감시")
 
         # ── 접수 즉시 부서 전달 (15분 간격) — CTO 배627 · GM 승인 2026-08-15 ───────────
         # GM: "다 운영부 라인으로 넘기니 병목이 일어나고 처리가 안 된다. 각 부서에 전달되어
