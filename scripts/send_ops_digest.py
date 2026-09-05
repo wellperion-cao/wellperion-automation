@@ -634,8 +634,20 @@ def preview_mgr_brief() -> int:
     print(message or "(보낼 내용 0건 — 발송 안 함)")
     if reply_hits:
         print(f"(회신 감지로 전달 제외 {len(reply_hits)}건 — 미리보기라 note 기록은 안 함)")
-    print(f"\n===== {NAWOOL_TG_ROOM_KEY} 텔레그램 미리보기 ({target_date}) =====")
-    print(nawool_message or "(보낼 내용 0건 — 발송 안 함)")
+    print(f"\n===== {NAWOOL_TG_ROOM_KEY} 그룹 발송 미리보기 ({target_date}) =====")
+    print("그룹 발송 0건 — 그룹(나우열M) 발신 경로는 work_room_agent(GM 계정) 로 일원화(GM 결정 2026-09-05)")
+    if nawool_message:
+        log("[mgr-preview] 옛 릴레이 나우열M 본문이 여전히 만들어지고 있음(참고용·미발송): "
+            f"{len(nawool_message)}자")
+    print("\n===== GM 개인 봇방 §8 요약 미리보기 =====")
+    try:
+        wra_dir = str(ROOT / "telegram_bot")
+        if wra_dir not in sys.path:
+            sys.path.insert(0, wra_dir)
+        import work_room_agent as _wra
+        print(_wra.build_gm_room_digest())
+    except Exception as exc:
+        print(f"(생성 실패 — {exc})")
     return 0
 
 
@@ -1409,13 +1421,32 @@ def _nawool_chat_id() -> "int | None":
 
 
 def send_nawool_telegram(message: str) -> bool:
-    """나우열M 몫 텔레그램 발송 — notify.telegram_send.send 재사용(새 발신기 없음 · 약속 L21)."""
-    chat_id = _nawool_chat_id()
-    if chat_id is None:
-        log("[nawool] chat_id 미확인 — 발송 생략")
-        return False
+    """★2026-09-05 GM 결정(배1068 후속) — 「업무관리」 그룹(나우열M) 으로 나가는 발신은
+    work_room_agent(GM 계정) 한 경로만 쓴다. 이 함수(옛 릴레이 · 봇 발신·"[AI 웰리]" 서식)의
+    실제 그룹 발송은 여기서 끈다 — 호출부(send_mgr_brief)는 그대로 두고 이 함수 안에서
+    조용히 아무것도 안 보낸다(회귀 최소화 · 새 스위치 안 만든다, 약속 L21). 그 내용은
+    send_gm_room_digest() 가 GM 개인 봇방으로 대신 낸다."""
+    log("[nawool] 그룹 발송 생략 — 그룹 발신 경로는 work_room_agent(GM 계정) 로 일원화(GM 결정 2026-09-05)")
+    return True
+
+
+def send_gm_room_digest() -> bool:
+    """work_room_agent 의 §8 GM 개인 봇방 요약(「업무관리 진행 N건 · 승인 대기 M건」 + 24h
+    KPI + 진행·미등록 상세) 발송 — 옛 릴레이의 나우열M 그룹 발송을 대체한다(위 함수 참고).
+    내용 0건이면 발송 생략(빈 통 안 보냄). best-effort — 실패해도 mgr 회차 전체를 안 막는다."""
+    try:
+        wra_dir = str(ROOT / "telegram_bot")
+        if wra_dir not in sys.path:
+            sys.path.insert(0, wra_dir)
+        import work_room_agent as _wra
+        text = _wra.build_gm_room_digest()
+    except Exception as exc:
+        log(f"[gm-room] work_room_agent 요약 생성 실패 — 생략: {exc}")
+        return True
+    if not text:
+        return True
     from notify.telegram_send import send as _tg_send  # noqa: PLC0415
-    return _tg_send(chat_id, message)
+    return _tg_send(_wra._GM_CHAT_ID, "📋 업무관리 요약(§8)\n\n" + text)
 
 
 CEO_LOG_PATH = ROOT / "status" / "_ceo_log.jsonl"
@@ -1791,15 +1822,15 @@ def send_mgr_brief() -> None:
         if not kakao_ok:
             log(f"[mgr] 카톡 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
 
-    # ★GM 지시 2026-09-05(배1062) — 나우열M 몫은 같은 07:50 회차에서 텔레그램
-    # 「업무관리-나우열M」 방으로 독립 발송(방마다 독립 · 배536 원칙 그대로 적용).
-    nawool_ok = True
-    if nawool_msg:
-        nawool_ok = send_nawool_telegram(nawool_msg)
-        if not nawool_ok:
-            log("[mgr] 나우열M 텔레그램 발송 실패 — 다음 회차 재시도")
+    # ★GM 지시 2026-09-05(배1062) → ★2026-09-05 GM 결정(배1068 후속)으로 경로 변경 —
+    # 「업무관리」 그룹 발송은 껐다(send_nawool_telegram 참고). 나우열M 몫 요약은 이제
+    # GM 개인 봇방으로만 나간다(send_gm_room_digest, work_room_agent.build_gm_room_digest).
+    nawool_ok = send_nawool_telegram(nawool_msg) if nawool_msg else True  # 항상 True(그룹 무발신)
+    gm_room_ok = send_gm_room_digest()
+    if not gm_room_ok:
+        log("[mgr] GM 개인 봇방 §8 요약 발송 실패 — 다음 회차 재시도")
 
-    if kakao_ok and nawool_ok:
+    if kakao_ok and nawool_ok and gm_room_ok:
         _mark_mgr_sent(target_date)
         _record_last_sent(_LAST_SENT_HEARTBEAT_MGR, target_date)  # 배698 — 흡수 판단용(위 참조)
         # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,

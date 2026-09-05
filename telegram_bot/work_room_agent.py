@@ -26,9 +26,14 @@ CHRO 규격(scripts/notify/telegram_user_send.render_chro_task) 렌더 → GM �
      언급)을 안 기다린다 — _handle_register_confirm 은 사람이 먼저 언급했을 때의 빠른 경로.
   ④ 추적 — 매칭된 배는 사람에게 안 묻고 SSOT 상태만 재확인한다.
   ⑤ 보고 — 상태가 '완료'면 즉시 배 종결(mutate_queue) + GM 개인 봇방 1줄. 진행중이면
-     build_tracking_section() 이 한 절로 묶어 GM 07:50 통에 실릴 본문을 만든다(오늘은
-     그 통 자체를 새로 만들지 않았다 — --dry-run 으로 렌더만 확인, §8 아래 한계 참고).
-  ⑥ 미등록 — 발송 뒤 1영업일 지나도 매칭이 안 되면 같은 절에 「등록 확인 부탁」 1줄.
+     build_gm_room_digest() 가 「업무관리 진행 N건 · 승인 대기 M건」 요약 + §4-1 KPI(전달→
+     등록 24h 이내 N/M · 미등록 K건) + 상세 절을 한 본문으로 묶는다 — send_ops_digest.py 의
+     07:50 회차(send_mgr_brief/preview_mgr_brief)가 이 함수를 불러 GM 개인 봇방에 낸다.
+  ⑥ 미등록 — 발송 뒤 1영업일 지나도 매칭이 안 되면 같은 본문에 「등록 확인 부탁」 1줄.
+
+그룹(나우열M) 발신 경로 = 이 파일(GM 계정)이 유일하다(GM 결정 2026-09-05, 배1068 후속) —
+옛 릴레이(send_ops_digest.send_nawool_telegram)의 그룹 발송은 껐다. 그 내용은 이제 위 ⑤
+GM 개인 봇방 본문(승인 대기 카드 목록 + 진행 현황)이 대신한다.
 """
 from __future__ import annotations
 
@@ -37,7 +42,7 @@ import json
 import logging
 import re
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -61,8 +66,9 @@ log = logging.getLogger("work_room_agent")
 _TODO_ID_RE = re.compile(r"TODO-\d+")
 _DONE_WORDS = ("반영했습니다", "완료", "등록했습니다", "처리했습니다")
 _QUESTION_HINTS = ("확인 부탁",)
-_SENT_MARK_RE = re.compile(r"\[업무관리 발송 (\d{4}-\d{2}-\d{2}) \d{2}:\d{2}\]")
+_SENT_MARK_RE = re.compile(r"\[업무관리 발송 (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})\]")
 _TODO_MATCH_RE = re.compile(r"\[TODO 매칭[^\]]*\][^\n]*?→\s*(TODO-\d+)")
+KST = timezone(timedelta(hours=9))
 
 
 def classify(text: str) -> str:
@@ -408,14 +414,13 @@ async def _scan_todo_tracking(ctx) -> None:
             await _escalate(ctx, f"✅ 나우열M 반영(SSOT 완료 확인) — {title}")
 
 
-def build_tracking_section(rows: "list[dict] | None" = None) -> str:
-    """§8 ⑤진행 현황 + ⑥미등록 절 — GM 봇방 07:50 통에 실릴 절 하나(렌더만). 오늘은 그 통
-    자체(스케줄)를 새로 안 만들었다 — python work_room_agent.py --dry-run 으로 본문만
-    확인한다(브리프 §5 한계 참고). 미등록은 발송 뒤 1영업일 지난 것만 올린다(§4-1, 당일
-    재촉 금지)."""
+def _tracking_data(rows: "list[dict] | None" = None) -> "tuple[list[str], list[str]]":
+    """§8 ⑤진행·⑥미등록 원자료 한 번만 계산 — build_tracking_section·build_gm_room_digest
+    가 같이 쓴다(같은 fetch 를 두 번 안 하려고). 미등록은 발송 뒤 1영업일 지난 것만
+    올린다(§4-1, 당일 재촉 금지)."""
     sod = _sod()
     if sod is None:
-        return ""
+        return [], []
     ships = _open_nawool_ships()
     if rows is None:
         rows = _fetch_todo_rows()
@@ -435,6 +440,10 @@ def build_tracking_section(rows: "list[dict] | None" = None) -> str:
         sm = _SENT_MARK_RE.search(note)
         if sm and _business_days_since(sm.group(1)) >= 1:
             unregistered.append(f"▪ {name} — 등록 확인 부탁")
+    return progress, unregistered
+
+
+def _render_tracking_lines(progress: "list[str]", unregistered: "list[str]") -> str:
     lines = []
     if progress:
         lines.append("📋 나우열M 업무 진행 현황")
@@ -443,6 +452,85 @@ def build_tracking_section(rows: "list[dict] | None" = None) -> str:
         lines.append("❓ 등록 확인 부탁")
         lines.extend(unregistered)
     return "\n".join(lines)
+
+
+def build_tracking_section(rows: "list[dict] | None" = None) -> str:
+    """§8 ⑤진행 현황 + ⑥미등록 절 렌더만(하위 호환용 — build_gm_room_digest 가 요약·KPI 까지
+    포함한 완전판)."""
+    return _render_tracking_lines(*_tracking_data(rows))
+
+
+def _parse_ssot_created(row: "dict | None") -> "datetime | None":
+    """SSOT 행 생성일("...Z" UTC) → KST datetime."""
+    if not row:
+        return None
+    raw = str(row.get("생성일") or "")[:19]
+    try:
+        return datetime.strptime(raw, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc).astimezone(KST)
+    except Exception:
+        return None
+
+
+def _parse_sent_marker(m: "re.Match") -> "datetime | None":
+    """[업무관리 발송 YYYY-MM-DD HH:MM] 마커(로컬시각=KST) → datetime."""
+    try:
+        return datetime.strptime(f"{m.group(1)} {m.group(2)}", "%Y-%m-%d %H:%M").replace(tzinfo=KST)
+    except Exception:
+        return None
+
+
+def _kpi_24h_registration(rows: "list[dict] | None" = None) -> "tuple[int, int, int]":
+    """§4-1 KPI — 전달(GM 계정 발송 마커 시각) → 등록(SSOT 행 생성일) 24h 이내 건수.
+    반환 (24h 이내 건수, 매칭된 전체, 미등록). 닫힌 배도 스캔한다 — 추적은 note 마커만
+    보고 배 상태와 무관하다(§8 ④)."""
+    ql = _queue_lock()
+    sod = _sod()
+    if ql is None or sod is None:
+        return 0, 0, 0
+    try:
+        queue = ql.load_queue()
+    except Exception as exc:
+        log.error(f"[work_room] KPI 큐 읽기 실패: {exc}")
+        return 0, 0, 0
+    if rows is None:
+        rows = _fetch_todo_rows()
+    row_by_id = {r.get("id"): r for r in rows if isinstance(r, dict)}
+    ok = matched = unregistered = 0
+    for ship in queue:
+        if not isinstance(ship, dict) or str(ship.get("staff_to") or "").strip() != sod.NAWOOL_WHO:
+            continue
+        note = str(ship.get("note") or "")
+        sent_m = _SENT_MARK_RE.search(note)
+        if not sent_m:
+            continue
+        match_m = _TODO_MATCH_RE.search(note)
+        if not match_m:
+            if _business_days_since(sent_m.group(1)) >= 1:
+                unregistered += 1
+            continue
+        matched += 1
+        created = _parse_ssot_created(row_by_id.get(match_m.group(1)))
+        sent_dt = _parse_sent_marker(sent_m)
+        if created and sent_dt and (created - sent_dt) <= timedelta(hours=24):
+            ok += 1
+    return ok, matched, unregistered
+
+
+def build_gm_room_digest(rows: "list[dict] | None" = None) -> str:
+    """§8 ⑤ GM 개인 봇방 07:50 통에 실릴 완전판 본문 — 「업무관리 진행 N건 · 승인 대기 M건」
+    요약 + §4-1 24h 등록 KPI + 진행·미등록 상세. send_ops_digest.py 의 preview_mgr_brief/
+    send_mgr_brief 가 이 함수를 부른다(그룹(나우열M) 발신은 이제 이 파일이 유일한 경로라
+    거기서는 이 요약을 GM 개인 봇방으로만 보낸다)."""
+    if rows is None:
+        rows = _fetch_todo_rows()
+    progress, unregistered = _tracking_data(rows)
+    pending = _load_pending()
+    ok, matched, kpi_unreg = _kpi_24h_registration(rows)
+    pct = round(ok / matched * 100) if matched else 100
+    summary = (f"업무관리 진행 {len(progress)}건 · 승인 대기 {len(pending)}건\n"
+               f"전달→등록 24h 이내 {ok}/{matched}({pct}%) · 미등록 {kpi_unreg}건")
+    detail = _render_tracking_lines(progress, unregistered)
+    return summary + ("\n\n" + detail if detail else "")
 
 
 async def _escalate(ctx, text: str) -> None:
@@ -616,6 +704,6 @@ if __name__ == "__main__":
     ap.add_argument("--dry-run", action="store_true", help="§8 ⑤진행·⑥미등록 절 렌더만(발송 없음)")
     args = ap.parse_args()
     if args.dry_run:
-        print(build_tracking_section() or "(진행·미등록 항목 없음)")
+        print(build_gm_room_digest())
     else:
         _selfcheck()
