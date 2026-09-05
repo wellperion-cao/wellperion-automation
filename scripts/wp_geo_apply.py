@@ -1,8 +1,23 @@
 # scripts/wp_geo_apply.py — 배1000 실행: JSON-LD 헤더 삽입 + robots.txt 교체 + 홈 메타설명 교체 (단일 세션, 최소 실행).
 import asyncio
+import json
 import sys
 sys.path.insert(0, r"C:\Users\jjky0\welperion-automation\scripts")
 from wordpress_admin_playwright import _import_playwright, _launch, WP_ADMIN_URL
+
+CANON_VALUES_PATH = r"C:\Users\jjky0\welperion-automation\ssot\canon_values.json"
+
+
+def _load_one_liner() -> str:
+    """정본 = ssot/canon_values.json official_one_liner_kr. 여기서만 직독 — 문구 하드코딩 금지."""
+    data = json.load(open(CANON_VALUES_PATH, encoding="utf-8"))
+    for item in data["values"]:
+        if item.get("key") == "official_one_liner_kr":
+            return item["value"]
+    raise RuntimeError("official_one_liner_kr not found in ssot/canon_values.json")
+
+
+ONE_LINER = _load_one_liner()
 
 JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — 배1000(시토) 2026-09-05, 정본=ssot/canon_values.json -->
 <script type="application/ld+json">
@@ -17,7 +32,7 @@ JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — �
    "url": "https://wellperion.com/",
    "telephone": "+82-2-6261-1200",
    "slogan": "하루의 완성, 웰페리온",
-   "description": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.",
+   "description": "__ONE_LINER__",
    "address": {
     "@type": "PostalAddress",
     "streetAddress": "서빙고로 413, 101동 지1층 101호",
@@ -48,7 +63,7 @@ JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — �
     "addressCountry": "KR"
    },
    "areaServed": ["한남동", "용산구", "서울"],
-   "description": "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.",
+   "description": "__ONE_LINER__",
    "openingHoursSpecification": [
     { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "06:00", "closes": "22:30" },
     { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday","Sunday"], "opens": "08:00", "closes": "20:00" }
@@ -91,6 +106,7 @@ JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — �
 }
 </script>
 """
+JSON_LD = JSON_LD.replace("__ONE_LINER__", json.dumps(ONE_LINER, ensure_ascii=False)[1:-1])
 
 ROBOTS_TXT = """# 웰페리온 공개 홈 — 사람 검색·AI 검색 모두 허용 (GEO · 배1000 시토 2026-09-05)
 User-agent: *
@@ -112,7 +128,7 @@ Allow: /
 Sitemap: http://wellperion.com/sitemap_index.xml
 """
 
-HOME_META_DESC = "웰페리온은 서울 한남동에 있는 약 3,000평 규모의 정원제 스포츠클럽입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다."
+HOME_META_DESC = ONE_LINER
 
 
 MARKER = "GEO(생성형 검색 최적화) 구조화 데이터 3종 — 배1000"
