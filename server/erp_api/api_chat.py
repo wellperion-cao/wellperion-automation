@@ -51,6 +51,7 @@ LOG_ROTATE_BYTES = 20 * 1024 * 1024   # 검수 M4 — 크기 넘으면 회전(�
 UNANSWERED_TAIL_BYTES = 300 * 1024    # unanswered 는 전량 스캔 대신 로그 꼬리만 본다(검수 M4)
 _PHONE_RE = re.compile(r"0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}")
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+_URL_RE = re.compile(r"https?://\S+|\b[\w-]+(?:\.[\w-]+)*\.(?:com|co\.kr|kr|net|org)(?:/\S*)?", re.I)
 MATCH_THRESHOLD = 0.5   # ponytail: overlap coefficient 고정값 — 다캠 첫 달 실측 뒤 조정(모델 문서 §6)
 # 배1018 후속(2026-09-05): 어미·조사만 겹쳐 오답 매칭되는 사고("주차 되나요"→멤버십 FAQ) 차단 —
 # _best_match 가 어미 정규화 + 교집합 2개 이상을 함께 요구한다.
@@ -130,6 +131,17 @@ def _load_faq(tenant: str) -> dict:
 def _forbidden_hit(q: str) -> bool:
     return (any(w in q for w in MONEY_WORDS) or any(w in q for w in MEDICAL_WORDS)
             or any(w in q for w in PRICE_QUESTION_WORDS))
+
+
+# 모델 답(출력) 전용 위험 검사 — 질문 관문(_forbidden_hit)과 다르다. 실측(시보): "환불 되나요"에 대한
+# 안전한 미루기 답("계약 조건은 담당자가 안내드립니다")이 MONEY_WORDS 의 "계약"에 걸려 핸드오프로 잘못
+# 떨어졌다 — 근본 원인은 _grounded 가 아니라 이 함수(질문용 낱말을 답에도 그대로 썼다)였다. 답에서는
+# 확정형 약속 문구(가격 숫자를 실제로 부르거나 "무료로/할인해" 약속)만 막는다 — 낱말 자체 언급은 안 막는다.
+OUTPUT_UNSAFE_WORDS = ("원 드리", "원에 드리", "할인해", "무료로 드리")
+
+
+def _output_unsafe(text: str) -> bool:
+    return any(w in text for w in MEDICAL_WORDS) or any(w in text for w in OUTPUT_UNSAFE_WORDS)
 
 
 def _best_match(q: str, faq: list):
@@ -499,9 +511,15 @@ def _is_english_q(q: str) -> bool:
 
 
 def _grounded(text: str, source: str) -> bool:
-    """모델 출력에 근거(FAQ 원문)에 없는 숫자가 새로 등장하면 False(배1036 GM① 근거 밖 숫자 차단)."""
-    src_nums = set(_DIGITS_RE.findall(source or ""))
-    return all(n in src_nums for n in _DIGITS_RE.findall(text or ""))
+    """모델 출력에 근거(정본)에 없는 숫자가 새로 등장하면 False(배1036 GM① 근거 밖 숫자 차단).
+    URL·이메일·전화는 먼저 지운다(식별자 숫자는 비교 대상 아님) · 앞자리 0 은 없는 셈 치고 비교한다
+    ("08:00"의 08 과 자연어 "8시"의 8 을 같은 숫자로 봄 — 시각·날짜 표기 차이 오탐 수리, 시보 실측)."""
+    def _nums(s: str) -> set:
+        s = _URL_RE.sub("", s or "")
+        s = _EMAIL_RE.sub("", s)
+        s = _PHONE_RE.sub("", s)
+        return {n.lstrip("0") or "0" for n in _DIGITS_RE.findall(s)}
+    return _nums(text).issubset(_nums(source))
 
 
 def _today_hours_line(tenant: str) -> str:
@@ -644,7 +662,7 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
                                         % (type(e).__name__, str(e)[:200]))
     if text is None:
         return None, "error"
-    if not text or _forbidden_hit(text) or not _grounded(text, system_text):
+    if not text or _output_unsafe(text) or not _grounded(text, system_text):
         return None, "invalid"
     _session_append(session_id, q, text)
     return text, "ok"
@@ -779,6 +797,21 @@ def _selfcheck() -> None:
     assert _today_hours_line("2_dietcamp") == "", "다캠은 facts.hours 없음 — 빈 문자열이어야 핸드오프로 넘어간다"
     assert not _grounded("100원 할인해드려요", "이 문서엔 숫자가 전혀 없습니다")   # 근거 밖 숫자 → 탈락
     assert _grounded("06:00부터 22:30까지 운영해요", "평일 06:00~22:30 운영")      # 근거 안 숫자만 → 통과
+
+    # 배1036 시보 오탐 신고 수리 — "환불 되나요"에 대한 안전한 미루기 답이 잘못 핸드오프로 떨어진 건 원인이
+    # _grounded 가 아니라 _forbidden_hit(질문용 낱말을 답에도 그대로 씀)였다(재현 확인). 실제 로그 원문으로 검증.
+    real_answer = ("안녕하세요 🙂 웰페리온 멤버십 상담실입니다. 오늘은 저희가 정상 운영하는 날이에요(주말 08:00~20:00).\n\n"
+                   "환불 관련 규정은 상담 시 정확히 안내드리는 부분이라, 제가 이 자리에서 단정해 드리기보다 확인해서 "
+                   "정확히 안내드릴게요 🙏 문의 페이지(wellperion.com/ko/inquiry)에 상담 예약을 남겨 주시면 담당자가 "
+                   "환불·계약 조건을 자세히 도와드립니다. 혹시 더 궁금한 점 있으실까요?")
+    assert _output_unsafe(real_answer) is False, "안전한 미루기 답인데 '계약' 낱말만으로 막히면 안 된다"
+    real_system = _concierge_system_block("1_wellperion", _load_profile("1_wellperion"), _persona_of("1_wellperion"))
+    assert _grounded(real_answer, real_system) is True
+    # 회귀 — 진짜 위험한 확정 문구·지어낸 숫자는 여전히 막힌다.
+    assert _output_unsafe("치료 효과가 확실히 있어요") is True
+    assert _output_unsafe("이번 달만 특별히 할인해 드릴게요") is True
+    assert not _grounded("월 15만원이에요", "정본 안에 이 금액은 없습니다")
+    assert _grounded("오전 8시부터 오후 8시까지예요", "평일 08:00~20:00 운영")   # 앞자리 0 표기차 오탐 수리
     global _ANTHROPIC_CLIENT
     saved = _ANTHROPIC_CLIENT
     _ANTHROPIC_CLIENT = (None, True)   # 강제로 "키 없음(시도 완료)" 상태 — 폴백 경로 결정적 검증
