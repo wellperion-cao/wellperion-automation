@@ -390,6 +390,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260905-38",
+          "no": "38",
+          "got": "업무관리 방 24시간 SSOT 등록 안내(의도·목적·KPI) 발송",
+          "did": "GM 계정 발신 -5492623600",
+          "start": "17:36",
+          "end": "17:36",
+          "minutes": 0,
+          "upload": "✅ 올림 (6cdeb0dbf)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260905-1003",
           "no": "03",
           "got": "키오스크 접수처에 종합접수처 들어가보면 접수하기버튼이 생겼는데 의미없는 버튼이라 삭제",
@@ -772,15 +784,21 @@
           "upload": "✅ 올림 (feccc4a26)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-1044",
+          "no": "44",
+          "got": "업무들 놓치지않게, 업무 전달을 하면 업무 SSOT에 24시간 내에 올리라고해줘, 그 부분에 대해서 친절하게 안내를 해줬으면 좋겠어, 의도와 목적(+목표 KPI) 등 내용 정리해서 보내줘",
+          "did": "",
+          "start": "17:36",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "14:38",
-          "area": "작업",
-          "event": "ERP 권한 정리 설계 — 역할 7 계정·화면 모듈 26+문서함·매트릭스 (GM 지시 2026-09-05)",
-          "detail": "커밋 b26fb2d21 · 배 11197"
-        },
         {
           "time": "14:45",
           "area": "작업",
@@ -954,16 +972,37 @@
           "area": "작업",
           "event": "시우 배1055 월간운영계획 9월 정리 검수·종결 (c9a9bab69)",
           "detail": "커밋 21ed8ef10 · 배 11197"
+        },
+        {
+          "time": "17:37",
+          "area": "작업",
+          "event": "업무관리 방 규약 §4-1 등록 시한 24시간·KPI 추가 (GM 지시 2026-09-05)",
+          "detail": "커밋 6cdeb0dbf · 배 11197"
         }
       ],
-      "count": 64,
-      "done": 64,
-      "open": 0,
+      "count": 66,
+      "done": 65,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-1044",
+          "no": "44",
+          "got": "업무들 놓치지않게, 업무 전달을 하면 업무 SSOT에 24시간 내에 올리라고해줘, 그 부분에 대해서 친절하게 안내를 해줬으면 좋겠어, 의도와 목적(+목표 KPI) 등 내용 정리해서 보내줘",
+          "did": "",
+          "start": "17:36",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -1260,24 +1299,6 @@
       ],
       "work": [
         {
-          "time": "16:36",
-          "area": "작업",
-          "event": "배1056 브리핑 — 원인 문장 확정 문구 반영 + 백업 삭제 순서 놓침 기록",
-          "detail": "커밋 cce65bcc3 · 배 11286"
-        },
-        {
-          "time": "16:36",
-          "area": "작업",
-          "event": "배1036 브리핑 갱신 — 3단 모델 전환(주Opus4.6·대체Sonnet4.6) 라이브 실측·강제오류 대체전환 확인 기록",
-          "detail": "커밋 45eb3d953 · 배 11286"
-        },
-        {
-          "time": "16:41",
-          "area": "작업",
-          "event": "상담봇 세일즈 원칙 5(설계 §3-3)+테넌트 sales_style 프롬프트 반영, chat_log 회전을 보관 방식으로(삭제 0) (GM 추가지시)",
-          "detail": "커밋 e36ad62d2 · 배 11286"
-        },
-        {
           "time": "16:43",
           "area": "작업",
           "event": "배1036 브리핑 갱신 — 세일즈 원칙5·sales_style·chat_log 보관전환 실측 기록",
@@ -1438,6 +1459,24 @@
           "area": "작업",
           "event": "상담봇 needs_facts는 답변 성공 여부와 무관하게 항상 기록 — 모델이 둘러 답해도 정본 칸 빈 신호는 그대로 값지다 (배1074③)",
           "detail": "커밋 126c25278 · 배 11321"
+        },
+        {
+          "time": "17:34",
+          "area": "작업",
+          "event": "업무관리 방 에이전트 — 나우열M 쪽 CHRO 와 AI 라이브 연동 (배1068, GM 지시 2026-09-05)",
+          "detail": "커밋 f9575c07d · 배 11321"
+        },
+        {
+          "time": "17:34",
+          "area": "작업",
+          "event": "상담봇 _fact_present 최상위 구역만 봐서 옆 칸이 빈 걸 놓친 버그 수리 — 실제 필드까지 내려가서 확인(다캠 facts.parking null 실측으로 잡음)",
+          "detail": "커밋 d92ada7cd · 배 11321"
+        },
+        {
+          "time": "17:36",
+          "area": "작업",
+          "event": "배1074 상담봇 공통층 배선 브리핑 — shared 3파일·합집합 금지어·type_id 태깅 실측 기록",
+          "detail": "커밋 b760320d3 · 배 11321"
         }
       ],
       "count": 24,
@@ -2094,6 +2133,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260905-4023",
+          "no": "23",
+          "got": "화면 시크릿 크롬으로 띄워줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "17:34",
+          "end": "17:34",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260905-sales-live",
           "no": "ve",
           "got": "매출보고 궁극 방향(화면=자동보고 원본·서버 라이브) 접수",
@@ -2288,8 +2339,8 @@
           "detail": "커밋 adf2ef303 · 배 11310"
         }
       ],
-      "count": 18,
-      "done": 18,
+      "count": 19,
+      "done": 19,
       "open": 0,
       "avg_minutes": 3,
       "work_count": 30,
@@ -2525,18 +2576,12 @@
           "start": "17:31",
           "end": "17:32",
           "minutes": 0,
-          "upload": "✅ 올림 (5149a7023)",
+          "upload": "✅ 올림 (8c6c01590)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "15:35",
-          "area": "작업",
-          "event": "파트너팀 체계 서버 우선 읽기 배선 — /api/todo 먼저·GAS 폴백",
-          "detail": "커밋 9ef4e121a · 배 11180"
-        },
         {
           "time": "15:36",
           "area": "작업",
@@ -2710,6 +2755,12 @@
           "area": "작업",
           "event": "잠금에 문의 폼 8460 추가",
           "detail": "커밋 5149a7023 · 배 11279"
+        },
+        {
+          "time": "17:35",
+          "area": "작업",
+          "event": "점검 저장 시트범위초과 재발방지 — 남은 append 4곳 _ensureSize_ 적용 (GM 지시 2026-09-05)",
+          "detail": "커밋 d0dbafd5e · 배 11279"
         }
       ],
       "count": 19,
@@ -3389,22 +3440,16 @@
           "ref": "GM-20260905-9044",
           "no": "44",
           "got": "지금 상담봇 관련해서는 G1에 계속 업데이트 및 정본화 진행해줘",
-          "did": "",
+          "did": "gm_handoff --append 신설 · G1 TODO-20260905151538127 진척 줄 추가 · 규칙 = 마일스톤마다 append",
           "start": "17:32",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "17:36",
+          "minutes": 4,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
-        {
-          "time": "09:38",
-          "area": "작업",
-          "event": "다캠 대표님 첫 회신(문의 경로=소개) 반영 — 소통기록·전략구상안·배 892 · 시보 제안 4호(유료 입점 파트너) G1 기록",
-          "detail": "커밋 c59f232cc · 배 11149"
-        },
         {
           "time": "10:18",
           "area": "작업",
@@ -3578,31 +3623,22 @@
           "area": "작업",
           "event": "상담봇 정본 3층 + 공통 학습층 — 컨셉 프리셋 4종·공통 금지어 10규칙·질문 유형 원장 씨앗 20",
           "detail": "커밋 d6471be69 · 배 11305"
+        },
+        {
+          "time": "17:36",
+          "area": "작업",
+          "event": "--append 모드 — GM업무 행 내용에 진척 한 줄 덧붙임 (GM 2026-09-05 상담봇 G1 계속 갱신)",
+          "detail": "커밋 cd81f72f0 · 배 11305"
         }
       ],
       "count": 56,
-      "done": 55,
-      "open": 1,
+      "done": 56,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260905-9044",
-          "no": "44",
-          "got": "지금 상담봇 관련해서는 G1에 계속 업데이트 및 정본화 진행해줘",
-          "did": "",
-          "start": "17:32",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
