@@ -594,7 +594,7 @@
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-09-03",
     "from": "cto",
-    "note": "[시토 → 웰리 전달 2026-09-03] GM 지시 2026-09-03 '다른 C레벨들한테 모듈 AWS 라인으로 얹히라고 해줘야 해, 셋업 시작'. ■ 지금 상태(시토가 오늘 세움): ERP 전 화면이 https://erp.wellperion.com 에서 그대로 열린다(GitHub 5분 자동 동기화 · 로그인 관문 · 계정별 권한 · 회사 구글 로그인). 파일을 옮길 필요 없다 — 저장소에 커밋·푸시하면 5분 내 서버에 뜬다. ■ '얹는다'의 뜻 = 내 화면이 AWS 서버에서 온전히 돌게 만드는 것. 점검 4가지: ①절대경로·GitHub Pages 주소(wellperion-cao.github.io/...)를 하드코딩한 링크·fetch 가 있으면 상대경로로 ②gate.js 커튼(비밀번호 1200/1531)은 서버 관문이 대신하니 그 화면에서 뺄 수 있는지(빼면 GitHub Pages 쪽은 열려 버리므로 — 지금은 두고, 도메인 전환 뒤 일괄 제거. 목록만 적는다) ③GAS 호출은 그대로 두되 어느 화면이 어떤 GAS 액션을 부르는지 표로(다음 단계 = 서버 API 로 이전할 순서 정하기) ④자기 모듈 카드(https://erp.wellperion.com/erp/ · modules.json 은 정본에서 자동 생성 — 이름·설명은 status/module_registry.json description, 담당은 ssot/kpi.json) 이름·설명·담당 정정. ■ 내 몫: ceo 소유 ERP 메인(wellperion_guide(main).html)·자율현황·G1. 실무진 안내문(ERP 주소·로그인 방법·가입 신청 절차)도 웰리 몫 — 카톡 3방 발신은 웰리 한 사람 ■ 하지 말 것: 서버(ssh)·nginx·관문 코드(server/) 직접 수정 — 필요하면 시토에게 한 줄. ■ 끝: 커밋·푸시 뒤 https://erp.wellperion.com 에서 내 화면 1개 이상 실제로 열어 확인(로그인은 업무보고방 관리자 계정 또는 회사 구글). 마지막 줄 = 점검 4가지 결과 표 + 서버 API 이전 순서 제안 1줄.\n\n[웰리 2026-09-03 · 착수] ERP 앱 셸 94건 실측 결과를 시토 배951 로 넘겼다 — 실무진에게 안 보여야 할 화면 28건(인사·채용 15 · 재무 3 · 경영 보고·평가 7 · 신사업 3). 지금은 94건 전부 roles 에 staff 가 들어 있어 회사 계정이면 다 열린다.\n▸웰리 몫 화면은 1건(웰페리온 ERP v2.7)이라 점검할 것이 없다.\n▸함께 확인 = 94건 중 86건이 설명(desc) 빈칸. 실무진이 앱 셸을 열면 이름만 있고 무슨 화면인지 모른다. 설명 정본 = status/module_registry.json 의 각 모듈 description — 각 역할이 자기 것을 채우면 자동으로 붙는다.\n\n[웰리 2026-09-04 · 점검 4가지 결과] ①하드코딩 절대주소: ERP 메인 15곳(깃허브 페이지 13 + '/wellperion-automation/' 접두 2) → 전부 상대경로로 교체(BASE=\"\"). 자율현황 0곳. ②gate.js 커튼: ERP 메인·자율현황 모두 0 — 뺄 것 없음. ③GAS 호출 표 — ERP 메인: AKfycbxDwFkr(업무 todo_list/todo_add/todo_update/todo_done/todo_delete/home_kpi/sales_monthly · 읽기+쓰기) · AKfycbyXw4Za(점검 CHECK_API · 읽기) · AKfycbwk2XS1(종합접수처 · 읽기) · AKfycbykgMyF·AKfycbyyXrdM(commit_file/read_file/restore/snapshot_append/saveBoard · 저장소 쓰기 브릿지). 자율현황: AKfycbxDwFkr 1건(읽기). ④카드: 웰리 몫 1건(ERP 메인) 이름·설명·담당 확인 — erp_module_desc.json 으로 설명 채움(배929). ■ 서버 API 이전 순서 제안: 1) 업무·결재 todo_* 쓰기 5액션(실무진 매일) → 2) commit_file/read_file/restore 저장소 브릿지(GAS 우회 제거) → 3) home_kpi/sales_monthly·CHECK_API 읽기(캐시로 대체 가능) → 4) 종합접수처는 시토 배922 순서대로. ■ 남은 것: erp.wellperion.com 로그인 뒤 ERP 메인 실제 열어 링크 클릭 확인(관리자 계정 필요 · Pages 쪽은 커밋 후 라이브 확인).\n[웰리 2026-09-04 · GAS 액션 보강] CHECK_API(AKfycbyXw4Za): weekly/today_live/board/fcheck_ranges_get(읽기) · saveBoard/save/snapshot_append(쓰기) / SURVEY(AKfycbykgMyF): member_inquiry_list/lesson_stats/member_registered_list/lesson_inquiry_list(읽기) / AKfycbyyXrdM: public-job-status/onbo-active-names/public-stats(읽기). 이전 순서 1)todo_* 쓰기 2)CHECK_API 쓰기 3)commit_file 4)읽기류.\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 974803687)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3e4092302)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 958f9d978)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 1edf524ed)\n- [2026-09-05] 텔레그램 업무관리 방(나우열M) 첫 통 · 배886 갱신 · 시토 배1062 (커밋 aafc72218)\n- [2026-09-05] 텔레그램 사용자 세션 파일(*.session) gitignore — GM 계정 발신기 준비 (커밋 52a9ee35d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 0a8d84688)\n- [2026-09-05] GM 계정 텔레그램 발신기 신설(Telethon) (커밋 1ca03a12b)\n- [2026-09-05] GM 계정 발신기 — 업무지시 규격 --chro-task(CHRO야/업무명/담당자/시작일/종료일/내용) + send_chro_task (GM 확정 2026-09-05) (커밋 39f202f2d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 7aa673f6c)\n- [2026-09-05] GM 계정 발신기 --setup — 코드·2단계 비밀번호 인자로(셸 stdin null EOF 회피) (커밋 f6d86e128)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 fbb13eeab)\n- [2026-09-05] 시토 배1065(업무관리 방 봇 자동응답 끄기) · GM 계정 발신 첫 지시 기록 (커밋 c2e1cefca)\n- [2026-09-05] 시토 배1068 — 업무관리 방 에이전트(AI끼리 라이브 협업) 설계 전달 (커밋 2a98f9c59)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 9816e165a)\n- [2026-09-05] 업무관리 방 운영 규약 v0.1 — 방 고정 공지(msg 10827)·자율화규약 포인터 (GM 지시 2026-09-05) (커밋 bc58680b4)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 f6d0cf34c)\n- [2026-09-05] 업무관리 방 규약 §8 추적·보고 루프(GM 확정) · 배1068 확장 · 잡코리아 지시 SSOT 등록 실증 (커밋 feccc4a26)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 6c6fad59d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 29cfe7c72)\n- [2026-09-05] 시우 배1055 월간운영계획 9월 정리 검수·종결 (c9a9bab69) (커밋 21ed8ef10)\n- [2026-09-05] 업무관리 방 규약 §4-1 등록 시한 24시간·KPI 추가 (GM 지시 2026-09-05) (커밋 6cdeb0dbf)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 98be07852)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 c4a777f29)\n- [2026-09-05] 모델 셋업 재배분 — 리드 3석 Fable 5.1 · 실행 5석 Sonnet · API 기본 체인 Sonnet + 판단 3본 JUDGMENT_CHAIN (GM 지시 2026-09-05) (커밋 245b51df4)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 7c702a2cd)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3e18a419b)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 ccb734062)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 a5496103b)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3f209566d)",
+    "note": "[시토 → 웰리 전달 2026-09-03] GM 지시 2026-09-03 '다른 C레벨들한테 모듈 AWS 라인으로 얹히라고 해줘야 해, 셋업 시작'. ■ 지금 상태(시토가 오늘 세움): ERP 전 화면이 https://erp.wellperion.com 에서 그대로 열린다(GitHub 5분 자동 동기화 · 로그인 관문 · 계정별 권한 · 회사 구글 로그인). 파일을 옮길 필요 없다 — 저장소에 커밋·푸시하면 5분 내 서버에 뜬다. ■ '얹는다'의 뜻 = 내 화면이 AWS 서버에서 온전히 돌게 만드는 것. 점검 4가지: ①절대경로·GitHub Pages 주소(wellperion-cao.github.io/...)를 하드코딩한 링크·fetch 가 있으면 상대경로로 ②gate.js 커튼(비밀번호 1200/1531)은 서버 관문이 대신하니 그 화면에서 뺄 수 있는지(빼면 GitHub Pages 쪽은 열려 버리므로 — 지금은 두고, 도메인 전환 뒤 일괄 제거. 목록만 적는다) ③GAS 호출은 그대로 두되 어느 화면이 어떤 GAS 액션을 부르는지 표로(다음 단계 = 서버 API 로 이전할 순서 정하기) ④자기 모듈 카드(https://erp.wellperion.com/erp/ · modules.json 은 정본에서 자동 생성 — 이름·설명은 status/module_registry.json description, 담당은 ssot/kpi.json) 이름·설명·담당 정정. ■ 내 몫: ceo 소유 ERP 메인(wellperion_guide(main).html)·자율현황·G1. 실무진 안내문(ERP 주소·로그인 방법·가입 신청 절차)도 웰리 몫 — 카톡 3방 발신은 웰리 한 사람 ■ 하지 말 것: 서버(ssh)·nginx·관문 코드(server/) 직접 수정 — 필요하면 시토에게 한 줄. ■ 끝: 커밋·푸시 뒤 https://erp.wellperion.com 에서 내 화면 1개 이상 실제로 열어 확인(로그인은 업무보고방 관리자 계정 또는 회사 구글). 마지막 줄 = 점검 4가지 결과 표 + 서버 API 이전 순서 제안 1줄.\n\n[웰리 2026-09-03 · 착수] ERP 앱 셸 94건 실측 결과를 시토 배951 로 넘겼다 — 실무진에게 안 보여야 할 화면 28건(인사·채용 15 · 재무 3 · 경영 보고·평가 7 · 신사업 3). 지금은 94건 전부 roles 에 staff 가 들어 있어 회사 계정이면 다 열린다.\n▸웰리 몫 화면은 1건(웰페리온 ERP v2.7)이라 점검할 것이 없다.\n▸함께 확인 = 94건 중 86건이 설명(desc) 빈칸. 실무진이 앱 셸을 열면 이름만 있고 무슨 화면인지 모른다. 설명 정본 = status/module_registry.json 의 각 모듈 description — 각 역할이 자기 것을 채우면 자동으로 붙는다.\n\n[웰리 2026-09-04 · 점검 4가지 결과] ①하드코딩 절대주소: ERP 메인 15곳(깃허브 페이지 13 + '/wellperion-automation/' 접두 2) → 전부 상대경로로 교체(BASE=\"\"). 자율현황 0곳. ②gate.js 커튼: ERP 메인·자율현황 모두 0 — 뺄 것 없음. ③GAS 호출 표 — ERP 메인: AKfycbxDwFkr(업무 todo_list/todo_add/todo_update/todo_done/todo_delete/home_kpi/sales_monthly · 읽기+쓰기) · AKfycbyXw4Za(점검 CHECK_API · 읽기) · AKfycbwk2XS1(종합접수처 · 읽기) · AKfycbykgMyF·AKfycbyyXrdM(commit_file/read_file/restore/snapshot_append/saveBoard · 저장소 쓰기 브릿지). 자율현황: AKfycbxDwFkr 1건(읽기). ④카드: 웰리 몫 1건(ERP 메인) 이름·설명·담당 확인 — erp_module_desc.json 으로 설명 채움(배929). ■ 서버 API 이전 순서 제안: 1) 업무·결재 todo_* 쓰기 5액션(실무진 매일) → 2) commit_file/read_file/restore 저장소 브릿지(GAS 우회 제거) → 3) home_kpi/sales_monthly·CHECK_API 읽기(캐시로 대체 가능) → 4) 종합접수처는 시토 배922 순서대로. ■ 남은 것: erp.wellperion.com 로그인 뒤 ERP 메인 실제 열어 링크 클릭 확인(관리자 계정 필요 · Pages 쪽은 커밋 후 라이브 확인).\n[웰리 2026-09-04 · GAS 액션 보강] CHECK_API(AKfycbyXw4Za): weekly/today_live/board/fcheck_ranges_get(읽기) · saveBoard/save/snapshot_append(쓰기) / SURVEY(AKfycbykgMyF): member_inquiry_list/lesson_stats/member_registered_list/lesson_inquiry_list(읽기) / AKfycbyyXrdM: public-job-status/onbo-active-names/public-stats(읽기). 이전 순서 1)todo_* 쓰기 2)CHECK_API 쓰기 3)commit_file 4)읽기류.\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3e4092302)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 958f9d978)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 1edf524ed)\n- [2026-09-05] 텔레그램 업무관리 방(나우열M) 첫 통 · 배886 갱신 · 시토 배1062 (커밋 aafc72218)\n- [2026-09-05] 텔레그램 사용자 세션 파일(*.session) gitignore — GM 계정 발신기 준비 (커밋 52a9ee35d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 0a8d84688)\n- [2026-09-05] GM 계정 텔레그램 발신기 신설(Telethon) (커밋 1ca03a12b)\n- [2026-09-05] GM 계정 발신기 — 업무지시 규격 --chro-task(CHRO야/업무명/담당자/시작일/종료일/내용) + send_chro_task (GM 확정 2026-09-05) (커밋 39f202f2d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 7aa673f6c)\n- [2026-09-05] GM 계정 발신기 --setup — 코드·2단계 비밀번호 인자로(셸 stdin null EOF 회피) (커밋 f6d86e128)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 fbb13eeab)\n- [2026-09-05] 시토 배1065(업무관리 방 봇 자동응답 끄기) · GM 계정 발신 첫 지시 기록 (커밋 c2e1cefca)\n- [2026-09-05] 시토 배1068 — 업무관리 방 에이전트(AI끼리 라이브 협업) 설계 전달 (커밋 2a98f9c59)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 9816e165a)\n- [2026-09-05] 업무관리 방 운영 규약 v0.1 — 방 고정 공지(msg 10827)·자율화규약 포인터 (GM 지시 2026-09-05) (커밋 bc58680b4)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 f6d0cf34c)\n- [2026-09-05] 업무관리 방 규약 §8 추적·보고 루프(GM 확정) · 배1068 확장 · 잡코리아 지시 SSOT 등록 실증 (커밋 feccc4a26)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 6c6fad59d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 29cfe7c72)\n- [2026-09-05] 시우 배1055 월간운영계획 9월 정리 검수·종결 (c9a9bab69) (커밋 21ed8ef10)\n- [2026-09-05] 업무관리 방 규약 §4-1 등록 시한 24시간·KPI 추가 (GM 지시 2026-09-05) (커밋 6cdeb0dbf)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 98be07852)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 c4a777f29)\n- [2026-09-05] 모델 셋업 재배분 — 리드 3석 Fable 5.1 · 실행 5석 Sonnet · API 기본 체인 Sonnet + 판단 3본 JUDGMENT_CHAIN (GM 지시 2026-09-05) (커밋 245b51df4)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 7c702a2cd)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3e18a419b)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 ccb734062)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 a5496103b)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 3f209566d)\n- [2026-09-05] 자동 산출물 적재 — 저장소까지 못 가던 것 올림 (커밋 870a98e98)",
     "next": "점검 4가지 표 + GAS 액션 목록 → 시토에게 서버 API 이전 순서 회신",
     "depends_on": "",
     "ship_no": 11197,
@@ -2740,7 +2740,7 @@
     "task_id": "CTO-2026-09-05-전사일정-GAS-저장-실패-속성-저장용량-한도-초과",
     "clevel": "cto",
     "title": "[시토] 전사일정 GAS 저장 실패 — 「속성 저장용량 한도 초과」(211건 · save_schedule 거부) · 저장소를 시트/서버 미러로 옮기거나 note 압축",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cpo",
@@ -2755,13 +2755,17 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1056-전사일정-속성천장.md",
+    "saw": "전사일정 GAS 청크·백업 Drive 이관 — 212건 저장·재조회 실측 OK",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-09-05-아침-중간관리자-통-확인-부탁드릴-것-절-사람별-한",
     "clevel": "cto",
     "title": "[시토] 아침 중간관리자 통 「확인 부탁드릴 것」 절 — 사람별 한 덩어리·≤5줄·답한 건 자동 제외 (GM 지시 2026-09-05 담당자별 한 번에)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "ceo",
@@ -2776,7 +2780,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1057-중간관리자통-사람별.md",
+    "saw": "중간관리자 통 확인요청 절 26→18줄 · 답한 건 자동 제외 · 사람별 묶음",
+    "terminal": true
   },
   {
     "task_id": "CPO-2026-09-05-회원-쓰기-1단계-MEMBER-OWNER-SAVE-",
@@ -2829,7 +2837,7 @@
     "task_id": "CTO-2026-09-05-전사일정-GAS-쓰기-실패-속성-저장용량-한도를-초",
     "clevel": "cto",
     "title": "[시토] 전사일정 GAS 쓰기 실패 — '속성 저장용량 한도를 초과했습니다' (gm_handoff --done 이 일정 완료 못 닫음 · 2026-09-05 20:2x)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-05",
     "from": "cbo",
@@ -2844,7 +2852,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1056-전사일정-속성천장.md",
+    "saw": "배1056 과 같은 원인(500KB 총량) — MFA 이벤트 gm_handoff --done 완료",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-09-05-매출보고서-서버-판-서버가-같은-모양으로-그려-업무",
@@ -2961,7 +2973,7 @@
     "task_id": "CTO-2026-09-05-알림-한-장-하루-양끝-카톡-텔레그램-동기화-미발신",
     "clevel": "cto",
     "title": "[시토] 알림 한 장 하루 양끝 — 카톡↔텔레그램 동기화·미발신 경보 (GM 지시 2026-09-05)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cto",
@@ -2976,13 +2988,17 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-하루양끝-카톡텔레그램-동기화.md",
+    "saw": "알림 한 장 하루 양끝 소표 · 카톡→텔레그램 사본 · 미발신 감시 3잡(내일 재기동 발효)",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-09-05-서버-쓰기-관문-점검저장-응답-오판-SUCCESS-",
     "clevel": "cto",
     "title": "[시토] 서버 쓰기 관문 점검저장 응답 오판(success→gas-error 53건) 수리·행 복구·대조 재실행",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "coo",
@@ -2997,7 +3013,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1067-쓰기관문-응답오판.md",
+    "saw": "쓰기 관문 판정 통일 · 53행 ok 복구 · reconcile 재실행(가짜 mismatch 0)",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-09-05-업무관리-방-에이전트-나우열M-쪽-CHRO-와-우리",
@@ -3157,7 +3177,7 @@
     "priority": "🛳️크루즈",
     "enqueued_at": "2026-09-05",
     "from": "cmo",
-    "note": "[시모 2026-09-05 · 기다리는 쪽: GM — 권한 관리자 페이지 검수(GM 지시 2026-09-05 18:1x)] GM 원문 2026-09-05 18:1x: '단순 권한페이지가 아니라, 관리자페이지에 여러 권한들을 정리할 수 있는 것들을 만들어줘야하는데 이런건 UI/UX디자인도 필요해서 시모가 도와주면 좋겠어. 지금 권한 페이지를 관리자페이지로 상향해서 정말 멋지게 만들어줘'. 원천 = 시토 배982(개인 구글 로그인 + 가입 시 부서 → 부서 그룹 권한 · 관리자 승인 /auth/admin) · erp/modules.json(105 카드·9 그룹·5 앱그룹) · server/erp_auth/app.py 관리자 라우트 8개(approve/block/delete/toggle_role/lock/perms/dept_apply/undo). 시모 몫 = 관리자 콘솔 UI/UX 실제 페이지(server/erp_auth/admin.html) · 백엔드 = 상태 JSON 1개(/auth/admin/api/state)만 시토 배로. | [시모 2026-09-05 18:5x] 콘솔 v1 완성 = server/erp_auth/admin.html — 탭 5(승인 대기·사람·부서 기본·화면 105·이력) · 사람 표(부서·상태·앱그룹 5칸 막대·보이는 화면 수) + 우측 서랍(부서 기본 한 번에·화면별 기본/허용/거부 3단·저장 전 미리 계산) · 부서×앱그룹 매트릭스(숫자 누르면 화면 칩) · 개인 예외 칩 · 화면 카드(누가 보나) · 이력 되돌리기 · 검색(/) · 라이트/다크 · 모바일 서랍. 판정 로직 = 서버 allowed() 그대로(거부>허용>개인예외>전체>그룹). 미리보기(mock · app.py 상수+modules.json 실물) Playwright: 콘솔 오류 0 · 모바일 가로 넘침 0 · 라이트/다크 스크린샷 6장(스크래치 admin_prev/). 남은 것 = 시토 배1076(상태 JSON 1개 + /auth/admin 마운트 + 배포) → 라이브 검수 → GM 검수.\n- [2026-09-05] ERP 권한 관리자 콘솔 v1 — server/erp_auth/admin.html (승인 대기·사람·부서 기본·화면·이력 한 화면 · 기존 라우트 재사용 · 상태 JSON 1개만 시토 배1076) + 배1075/1076 등록 (GM 지시 2026-09-05) (커밋 27e07267e)\n- [2026-09-05] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 6e652626d) | [시모 2026-09-05 19:4x · 실서버 검수 OK] 시토 배1076 배포(613637f6e) 뒤 https://erp.wellperion.com/auth/admin 실측 — cao@ 로그인 → 관리자 문(unlock) → 콘솔 200 · api/state 200 · 사용자 3·화면 105 · 콘솔 오류 0 · 탭/서랍/부서 매트릭스 렌더 OK(스크래치 live_01~03.png). 관리자 문 미통과 상태에선 「관리자 확인이 필요합니다」 안내 + unlock 링크 정상. ★열린 이슈: GM 이 관리자 화면 비밀번호(서버 ERP_ADMIN_SITE_PW · 9/4 시토 설정)를 모름 — cao@ 계정 비밀번호를 넣어 「맞지 않다」. 값 전달 기록 0건. 시토에게 경위·재설정 경로 요청(19:2x) · GM 텔레그램 통보. 남은 것 = 비밀번호 해결 → GM 검수 → 의견 반영.\n- [2026-09-05] 배1075 실서버 검수 OK·관리자 비밀번호 이슈 기록 · 배1081 종결 · 퇴근 마무리 (커밋 92d63de83)\n- [2026-09-05] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 d00524db2)\n- [2026-09-05] Resume-AI.bat + scripts/session_resume.py — 역할별 최근 세션을 --resume 으로 이어 열고 원격제어(--remote-control)를 자동 부착 (GM 지시 2026-09-05: 계정 바꿔도 세션 이어서·/rc 자동) (커밋 9b5b32367)\n- [2026-09-05] Resume-AI.bat + scripts/session_resume.py — 역할별 최근 세션을 --resume 으로 이어 열고 원격제어(--remote-control)를 자동 부착 · .gitignore 예외 (GM 지시 2026-09-05: 계정 바꿔도 세션 이어서·/rc 자동) (커밋 9ea435db8)",
+    "note": "[시모 2026-09-05 · 기다리는 쪽: GM — 권한 관리자 페이지 검수(GM 지시 2026-09-05 18:1x)] GM 원문 2026-09-05 18:1x: '단순 권한페이지가 아니라, 관리자페이지에 여러 권한들을 정리할 수 있는 것들을 만들어줘야하는데 이런건 UI/UX디자인도 필요해서 시모가 도와주면 좋겠어. 지금 권한 페이지를 관리자페이지로 상향해서 정말 멋지게 만들어줘'. 원천 = 시토 배982(개인 구글 로그인 + 가입 시 부서 → 부서 그룹 권한 · 관리자 승인 /auth/admin) · erp/modules.json(105 카드·9 그룹·5 앱그룹) · server/erp_auth/app.py 관리자 라우트 8개(approve/block/delete/toggle_role/lock/perms/dept_apply/undo). 시모 몫 = 관리자 콘솔 UI/UX 실제 페이지(server/erp_auth/admin.html) · 백엔드 = 상태 JSON 1개(/auth/admin/api/state)만 시토 배로. | [시모 2026-09-05 18:5x] 콘솔 v1 완성 = server/erp_auth/admin.html — 탭 5(승인 대기·사람·부서 기본·화면 105·이력) · 사람 표(부서·상태·앱그룹 5칸 막대·보이는 화면 수) + 우측 서랍(부서 기본 한 번에·화면별 기본/허용/거부 3단·저장 전 미리 계산) · 부서×앱그룹 매트릭스(숫자 누르면 화면 칩) · 개인 예외 칩 · 화면 카드(누가 보나) · 이력 되돌리기 · 검색(/) · 라이트/다크 · 모바일 서랍. 판정 로직 = 서버 allowed() 그대로(거부>허용>개인예외>전체>그룹). 미리보기(mock · app.py 상수+modules.json 실물) Playwright: 콘솔 오류 0 · 모바일 가로 넘침 0 · 라이트/다크 스크린샷 6장(스크래치 admin_prev/). 남은 것 = 시토 배1076(상태 JSON 1개 + /auth/admin 마운트 + 배포) → 라이브 검수 → GM 검수.\n- [2026-09-05] ERP 권한 관리자 콘솔 v1 — server/erp_auth/admin.html (승인 대기·사람·부서 기본·화면·이력 한 화면 · 기존 라우트 재사용 · 상태 JSON 1개만 시토 배1076) + 배1075/1076 등록 (GM 지시 2026-09-05) (커밋 27e07267e)\n- [2026-09-05] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 6e652626d) | [시모 2026-09-05 19:4x · 실서버 검수 OK] 시토 배1076 배포(613637f6e) 뒤 https://erp.wellperion.com/auth/admin 실측 — cao@ 로그인 → 관리자 문(unlock) → 콘솔 200 · api/state 200 · 사용자 3·화면 105 · 콘솔 오류 0 · 탭/서랍/부서 매트릭스 렌더 OK(스크래치 live_01~03.png). 관리자 문 미통과 상태에선 「관리자 확인이 필요합니다」 안내 + unlock 링크 정상. ★열린 이슈: GM 이 관리자 화면 비밀번호(서버 ERP_ADMIN_SITE_PW · 9/4 시토 설정)를 모름 — cao@ 계정 비밀번호를 넣어 「맞지 않다」. 값 전달 기록 0건. 시토에게 경위·재설정 경로 요청(19:2x) · GM 텔레그램 통보. 남은 것 = 비밀번호 해결 → GM 검수 → 의견 반영.\n- [2026-09-05] 배1075 실서버 검수 OK·관리자 비밀번호 이슈 기록 · 배1081 종결 · 퇴근 마무리 (커밋 92d63de83)\n- [2026-09-05] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 d00524db2)\n- [2026-09-05] Resume-AI.bat + scripts/session_resume.py — 역할별 최근 세션을 --resume 으로 이어 열고 원격제어(--remote-control)를 자동 부착 (GM 지시 2026-09-05: 계정 바꿔도 세션 이어서·/rc 자동) (커밋 9b5b32367)\n- [2026-09-05] Resume-AI.bat + scripts/session_resume.py — 역할별 최근 세션을 --resume 으로 이어 열고 원격제어(--remote-control)를 자동 부착 · .gitignore 예외 (GM 지시 2026-09-05: 계정 바꿔도 세션 이어서·/rc 자동) (커밋 9ea435db8)\n- [2026-09-05] Resume-AI.bat — --fork-session 추가(옛 계정 창 기록과 분리 · 원판 설계 유지) (커밋 cbede4341)",
     "next": "콘솔 제작 → 로컬 미리보기 검수 → 시토에 상태 API·마운트 배 → 라이브 검수 → GM 검수",
     "depends_on": "",
     "ship_no": 11335,
@@ -3174,7 +3194,7 @@
     "task_id": "CTO-2026-09-05-권한-관리자-콘솔-마운트-AUTH-ADMIN-을-A",
     "clevel": "cto",
     "title": "[시토] 권한 관리자 콘솔 마운트 — /auth/admin 을 admin.html 로 교체 + 상태 JSON 1개(/auth/admin/api/state) (시모 배1075 · GM 지시 2026-09-05)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cmo",
@@ -3189,7 +3209,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1076-권한관리자콘솔-마운트.md",
+    "saw": "C:/Program Files/Git/auth/admin → admin.html · api/state 401→200 키7 · POST 그대로 · 시모 실서버 검수 OK",
+    "terminal": true
   },
   {
     "task_id": "NEXT-20260905-173526",
@@ -3214,7 +3238,7 @@
     "task_id": "CTO-2026-09-05-점검-저장-시트범위초과-행-자동-확장-오늘-실패-3",
     "clevel": "cto",
     "title": "[시토] 점검 저장 시트범위초과 — 행 자동 확장 + 오늘 실패 3건 복구",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cto",
@@ -3229,7 +3253,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-점검저장-시트범위초과.md",
+    "saw": "점검 저장 시트범위초과 — @175 7곳 가드 · 09-05 실패 3건 유실 0 확인",
+    "terminal": true
   },
   {
     "task_id": "NEXT-20260905-173641",
@@ -3287,7 +3315,7 @@
     "task_id": "CTO-2026-09-05-공지-NOTICE-SAVE-NOTICE-DELETE",
     "clevel": "cto",
     "title": "[시토] 공지(notice_save·notice_delete) 쓰기 관문 열기 — api_write 목적지 표 + erp_write.js WRITE 정규식",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "coo",
@@ -3302,7 +3330,11 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-05"
+    "updated_at": "2026-09-05",
+    "processed_at": "2026-09-05",
+    "artifact": "status/briefs/CTO-2026-09-05-배1082-공지-쓰기관문.md",
+    "saw": "공지 notice_save·notice_delete 서버 관문 · 저장→ok→삭제→잔여 0 실측",
+    "terminal": true
   },
   {
     "task_id": "NEXT-20260905-180405",

@@ -770,6 +770,27 @@ def main() -> int:
         print("=" * 60, file=sys.stderr)
         return 2
 
+    # ── 배 번호 → task_id 해소 (2026-09-05 실사고: 레인 8곳이 --task-id 1056 처럼 짧은 번호로 DONE 을
+    #    보냈는데 큐의 task_id 와 달라 아무 배도 안 바뀌었고, 훅은 exit 0 · 텔레그램 발송까지 해 '완료'로
+    #    보였다. 번호(short_no·ship_no)면 여기서 실제 task_id 로 바꾸고, 큐에 없으면 조용히 넘기지 않는다.)
+    try:
+        _q = json.loads(_QUEUE_PATH.read_text(encoding="utf-8"))
+        _items = _q if isinstance(_q, list) else (_q.get("items") or _q.get("queue") or [])
+        _ids = {str(t.get("task_id")) for t in _items if isinstance(t, dict)}
+        if args.task_id not in _ids:
+            _hit = None
+            if str(args.task_id).isdigit():
+                _n = int(args.task_id)
+                _hit = next((t for t in _items if isinstance(t, dict) and (t.get("short_no") == _n or t.get("ship_no") == _n)), None)
+            if _hit is not None:
+                print("[task-id] 배 번호 %s → %s" % (args.task_id, _hit.get("task_id")))
+                args.task_id = str(_hit.get("task_id"))
+            elif normalize_status(args.status) == "DONE":
+                print("[완료 거부] 큐에 없는 task_id/배 번호: %s — 배 번호(short_no)나 큐의 task_id 를 넣으세요." % args.task_id, file=sys.stderr)
+                return 2
+    except Exception as _exc:  # 큐를 못 읽어도 종전 동작 유지
+        print("[task-id] 큐 대조 생략: %s" % _exc)
+
     title = args.title if args.title else args.summary
     # changelog 는 note(상태 파일 메모) 로 흡수. 별도 변경이력 속성 없음(status json note로 단일화).
     note = args.changelog if args.changelog else args.summary

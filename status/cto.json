@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-09-05-업무관리-방-에이전트-나우열M-쪽-CHRO-와-우리",
-  "last_task_id": "CTO-2026-09-05-업무관리-방-에이전트-나우열M-쪽-CHRO-와-우리",
+  "task_id": "CTO-2026-09-05-공지-NOTICE-SAVE-NOTICE-DELETE",
+  "last_task_id": "CTO-2026-09-05-공지-NOTICE-SAVE-NOTICE-DELETE",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-05T08:35:26Z",
+  "last_pushed_at": "2026-09-05T10:10:53Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -933,12 +933,108 @@
       "note": "2026-09-05 신설",
       "updated_at": "2026-09-05T08:35:26Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-상담봇-공통층-3파일-배선-컨셉-프리셋-공통-금지어",
+      "title": "[후속] 프리셋↔persona 를 양자택일→병합으로 수정 — 프리셋(tone·emoji·greeting·handoff·one_liner) 바닥 + persona 있는 키만 덮기. 웰=concierge·다캠=coach 지정 반영 확인. 라이브 실측: 웰 '환불 되나요' 첫 문장이 곧바로 답('환불 규정에 대해 안내드릴게요' — 운영시간 줄 안 먼저 붙음), 질문 되풀이 없음, 프롬프트 덤프에 프리셋 tone 교정 문구('묻지 않은 것은 먼저 꺼내지 않는다') 포함 확인",
+      "status": "DONE",
+      "note": "[후속] 프리셋↔persona 를 양자택일→병합으로 수정 — 프리셋(tone·emoji·greeting·handoff·one_liner) 바닥 + persona 있는 키만 덮기. 웰=concierge·다캠=coach 지정 반영 확인. 라이브 실측: 웰 '환불 되나요' 첫 문장이 곧바로 답('환불 규정에 대해 안내드릴게요' — 운영시간 줄 안 먼저 붙음), 질문 되풀이 없음, 프롬프트 덤프에 프리셋 tone 교정 문구('묻지 않은 것은 먼저 꺼내지 않는다') 포함 확인",
+      "updated_at": "2026-09-05T08:43:54Z",
+      "blocks": []
+    },
+    {
+      "task_id": "1078",
+      "title": "점검저장 시트범위초과 재발방지: 남은 append 4곳(handleSave/_handleSaveV2Compat/백업복원/시설측정) _ensureSize_ 적용, GAS check v175 재배포, 오늘 실패 3건 실측대조로 유실 0 확인, /api/write 실측 통과",
+      "status": "DONE",
+      "note": "check GAS: 나머지 4개 append 지점에 _ensureSize_ 가드 추가(범위초과 재발방지 완결)",
+      "updated_at": "2026-09-05T08:37:11Z",
+      "blocks": []
+    },
+    {
+      "task_id": "1076",
+      "title": "권한관리자콘솔(admin.html) 서버 마운트 — GET /auth/admin/api/state 신설(401/200) + GET /auth/admin이 admin.html 직접 서빙, POST 저장 그대로 200",
+      "status": "DONE",
+      "note": "app.py: api/state 신설, /auth/admin 교체, 옛 렌더함수 삭제(zero-caller 확인) / deploy_auth.sh: admin.html 배포줄 추가",
+      "updated_at": "2026-09-05T08:46:21Z",
+      "blocks": []
+    },
+    {
+      "task_id": "1082",
+      "title": "공지서식(coo/notice) 저장·삭제를 서버 쓰기 관문(/api/write) 경유로 전환 — api_write.py _gas_key + erp_write.js WRITE 정규식에 notice_save·notice_delete 추가, 배포·자체점검·실측 완료",
+      "status": "DONE",
+      "note": "공지서식(coo/notice) 저장·삭제를 서버 쓰기 관문(/api/write) 경유로 전환 — api_write.py _gas_key + erp_write.js WRITE 정규식에 notice_save·notice_delete 추가, 배포·자체점검·실측 완료",
+      "updated_at": "2026-09-05T09:04:05Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-전사일정-GAS-저장-실패-속성-저장용량-한도-초과",
+      "title": "전사일정 GAS 청크·백업 Drive 이관 — 212건 저장·재조회 실측 OK",
+      "status": "DONE",
+      "note": "전사일정 GAS 청크·백업 Drive 이관 — 212건 저장·재조회 실측 OK",
+      "updated_at": "2026-09-05T10:10:42Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-전사일정-GAS-쓰기-실패-속성-저장용량-한도를-초",
+      "title": "배1056 과 같은 원인(500KB 총량) — MFA 이벤트 gm_handoff --done 완료",
+      "status": "DONE",
+      "note": "배1056 과 같은 원인(500KB 총량) — MFA 이벤트 gm_handoff --done 완료",
+      "updated_at": "2026-09-05T10:10:44Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-아침-중간관리자-통-확인-부탁드릴-것-절-사람별-한",
+      "title": "중간관리자 통 확인요청 절 26→18줄 · 답한 건 자동 제외 · 사람별 묶음",
+      "status": "DONE",
+      "note": "중간관리자 통 확인요청 절 26→18줄 · 답한 건 자동 제외 · 사람별 묶음",
+      "updated_at": "2026-09-05T10:10:45Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-서버-쓰기-관문-점검저장-응답-오판-SUCCESS-",
+      "title": "쓰기 관문 판정 통일 · 53행 ok 복구 · reconcile 재실행(가짜 mismatch 0)",
+      "status": "DONE",
+      "note": "쓰기 관문 판정 통일 · 53행 ok 복구 · reconcile 재실행(가짜 mismatch 0)",
+      "updated_at": "2026-09-05T10:10:47Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-권한-관리자-콘솔-마운트-AUTH-ADMIN-을-A",
+      "title": "C:/Program Files/Git/auth/admin → admin.html · api/state 401→200 키7 · POST 그대로 · 시모 실서버 검수 OK",
+      "status": "DONE",
+      "note": "C:/Program Files/Git/auth/admin → admin.html · api/state 401→200 키7 · POST 그대로 · 시모 실서버 검수 OK",
+      "updated_at": "2026-09-05T10:10:49Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-점검-저장-시트범위초과-행-자동-확장-오늘-실패-3",
+      "title": "점검 저장 시트범위초과 — @175 7곳 가드 · 09-05 실패 3건 유실 0 확인",
+      "status": "DONE",
+      "note": "점검 저장 시트범위초과 — @175 7곳 가드 · 09-05 실패 3건 유실 0 확인",
+      "updated_at": "2026-09-05T10:10:50Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-알림-한-장-하루-양끝-카톡-텔레그램-동기화-미발신",
+      "title": "알림 한 장 하루 양끝 소표 · 카톡→텔레그램 사본 · 미발신 감시 3잡(내일 재기동 발효)",
+      "status": "DONE",
+      "note": "알림 한 장 하루 양끝 소표 · 카톡→텔레그램 사본 · 미발신 감시 3잡(내일 재기동 발효)",
+      "updated_at": "2026-09-05T10:10:52Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-공지-NOTICE-SAVE-NOTICE-DELETE",
+      "title": "공지 notice_save·notice_delete 서버 관문 · 저장→ok→삭제→잔여 0 실측",
+      "status": "DONE",
+      "note": "공지 notice_save·notice_delete 서버 관문 · 저장→ok→삭제→잔여 0 실측",
+      "updated_at": "2026-09-05T10:10:53Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "업무관리 방 에이전트(work_room_agent.py) 신설 — 회신·질문·TODO등록확인 3분류 자동조치 + 승인카드 발신. 임시 테스트 배로 승인→GM계정 실발송→회신감지→종결 함수단위 실측 완료(커밋 f9575c07d). 옛 릴레이와의 중복발송 위험 발견·조치(브리프 참조), 후속 결정 필요.",
-  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/blob/master/status/briefs/CTO-2026-09-05-배1068-업무관리방-에이전트.md",
+  "title": "공지 notice_save·notice_delete 서버 관문 · 저장→ok→삭제→잔여 0 실측",
+  "artifact_url": "status/briefs/CTO-2026-09-05-배1082-공지-쓰기관문.md",
   "commit": "",
-  "note": "2026-09-05 신설",
-  "updated_at": "2026-09-05T08:35:26Z"
+  "note": "공지 notice_save·notice_delete 서버 관문 · 저장→ok→삭제→잔여 0 실측",
+  "updated_at": "2026-09-05T10:10:53Z"
 }
