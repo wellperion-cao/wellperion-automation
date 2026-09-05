@@ -244,144 +244,163 @@ def update_queue_with_bridge(
     today = local_now.strftime("%Y-%m-%d")
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    queue: list = []
-    if _QUEUE_PATH.exists():
-        try:
-            loaded = json.loads(_QUEUE_PATH.read_text(encoding="utf-8"))
-            queue = loaded if isinstance(loaded, list) else []
-        except Exception:
-            queue = []
+    # [2026-09-05 시토] 잠금 없이 읽고 통째로 덮어쓰던 것을 queue_lock.mutate_queue(잠금 안 load→변경→원자 저장) 로 옮겼다.
+    # 같은 시각 다른 세션의 mutate_queue 와 겹치면 서로의 갱신을 지웠다(실사고 2026-09-05: 배1016·1030·1034 종결이 세 번 되돌아옴).
+    _box = {"label": ""}
 
-    # 완료 task 표시(큐에 있으면)
-    for t in queue:
-        if isinstance(t, dict) and t.get("task_id") == task_id:
-            t["status"] = "DONE"
-            t.setdefault("processed_at", today)
-            # ④증거: 완료 단일 정의 4요건 — DONE 항목에 증거 URL 기록(거짓완료 추적)
-            if artifact_url and artifact_url.strip():
-                t["artifact"] = artifact_url.strip()
-            # '봤다' 한 줄(saw) 자동 채움 — --summary 에 숫자나 http 링크가 있으면만.
-            # 그 외 추론 없음(추측으로 채우면 배지가 거짓말이 된다). 이미 있으면 덮어쓰지 않음.
-            if not t.get("saw") and summary and summary.strip():
-                _s = summary.strip()
-                if re.search(r"\d", _s) or "http" in _s.lower():
-                    t["saw"] = _s
-            if next_desc:
-                t["next"] = next_desc
-                t.pop("next_missing", None)
-            elif terminal:
-                t["terminal"] = True
-                t.pop("next_missing", None)
-            else:
-                t["next_missing"] = True
-            break
-
-    # ① 명시적 parent 지정 시: 새 배 대신 umbrella note 에 흡수(중복배 억제).
-    umbrella = None
-    if next_desc and next_parent:
-        for t in queue:
-            if isinstance(t, dict) and t.get("task_id") == next_parent:
-                umbrella = t
-                break
-
-    appended_id = None
-    if next_desc and umbrella is not None:
-        prev_note = str(umbrella.get("note") or "")
-        line = "- [" + today + "] " + next_desc + " (배 " + str(task_id) + ")"
-        if line not in prev_note:  # 멱등
-            umbrella["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
-        label = "다음(umbrella " + str(next_parent) + " 흡수)→ " + next_desc
-    elif next_desc and (next_clevel or clevel).lower() in _EXCLUDED_ROLES:
-        # 인사(시로)·재무(시뽀)는 나우열M 관할 — AI 큐에 배를 만들지 않는다(GM 확정 2026-07-28).
-        # 다만 '다음'을 버리지도 않는다: 끝난 배 안에 한 줄로 남겨 사람이 볼 수 있게 한다.
-        nclevel = (next_clevel or clevel).lower()
+    def _apply(queue):
+        # 완료 task 표시(큐에 있으면)
         for t in queue:
             if isinstance(t, dict) and t.get("task_id") == task_id:
-                prev_note = str(t.get("note") or "")
-                line = ("- [" + today + "] 다음(배 안 만듦 · "
-                        + _ROLE_NICK.get(nclevel, nclevel) + "=나우열M 관할): " + next_desc)
-                if line not in prev_note:  # 멱등
-                    t["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
-                break
-        label = "다음(배 배제 · " + _excluded_notice(nclevel) + ")→ " + next_desc
-
-    elif next_desc:
-        nclevel = (next_clevel or clevel).lower()
-        nick = _ROLE_NICK.get(nclevel, nclevel.upper())
-        bare = _strip_role_tag(next_desc).strip()
-        key = _norm_title(bare)
-
-        # ② 같은 담당·같은 제목의 열린 배가 이미 있으면 새 배를 만들지 않고 그 배에 한 줄 흡수.
-        #    (2026-07-25 같은 문장 5척 도배 재발 방지 — 배10290)
-        twin = None
-        for t in queue:
-            if not isinstance(t, dict):
-                continue
-            if t.get("status") not in ("PENDING", "IN_PROGRESS"):
-                continue
-            if (t.get("clevel") or "").lower() != nclevel:
-                continue
-            if _norm_title(_strip_role_tag(str(t.get("title") or ""))) == key:
-                twin = t
+                t["status"] = "DONE"
+                t.setdefault("processed_at", today)
+                # ④증거: 완료 단일 정의 4요건 — DONE 항목에 증거 URL 기록(거짓완료 추적)
+                if artifact_url and artifact_url.strip():
+                    t["artifact"] = artifact_url.strip()
+                # '봤다' 한 줄(saw) 자동 채움 — --summary 에 숫자나 http 링크가 있으면만.
+                # 그 외 추론 없음(추측으로 채우면 배지가 거짓말이 된다). 이미 있으면 덮어쓰지 않음.
+                if not t.get("saw") and summary and summary.strip():
+                    _s = summary.strip()
+                    if re.search(r"\d", _s) or "http" in _s.lower():
+                        t["saw"] = _s
+                if next_desc:
+                    t["next"] = next_desc
+                    t.pop("next_missing", None)
+                elif terminal:
+                    t["terminal"] = True
+                    t.pop("next_missing", None)
+                else:
+                    t["next_missing"] = True
                 break
 
-        if twin is not None:
-            prev_note = str(twin.get("note") or "")
-            line = "- [" + today + "] " + next_desc + " (배 " + str(task_id) + " 완료로 재확인)"
+        # ① 명시적 parent 지정 시: 새 배 대신 umbrella note 에 흡수(중복배 억제).
+        umbrella = None
+        if next_desc and next_parent:
+            for t in queue:
+                if isinstance(t, dict) and t.get("task_id") == next_parent:
+                    umbrella = t
+                    break
+
+        appended_id = None
+        if next_desc and umbrella is not None:
+            prev_note = str(umbrella.get("note") or "")
+            line = "- [" + today + "] " + next_desc + " (배 " + str(task_id) + ")"
             if line not in prev_note:  # 멱등
-                twin["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
-            label = "다음(기존 배 " + str(twin.get("ship_no") or twin.get("task_id")) + " 흡수)→ " + next_desc
+                umbrella["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
+            label = "다음(umbrella " + str(next_parent) + " 흡수)→ " + next_desc
+        elif next_desc and (next_clevel or clevel).lower() in _EXCLUDED_ROLES:
+            # 인사(시로)·재무(시뽀)는 나우열M 관할 — AI 큐에 배를 만들지 않는다(GM 확정 2026-07-28).
+            # 다만 '다음'을 버리지도 않는다: 끝난 배 안에 한 줄로 남겨 사람이 볼 수 있게 한다.
+            nclevel = (next_clevel or clevel).lower()
+            for t in queue:
+                if isinstance(t, dict) and t.get("task_id") == task_id:
+                    prev_note = str(t.get("note") or "")
+                    line = ("- [" + today + "] 다음(배 안 만듦 · "
+                            + _ROLE_NICK.get(nclevel, nclevel) + "=나우열M 관할): " + next_desc)
+                    if line not in prev_note:  # 멱등
+                        t["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
+                    break
+            label = "다음(배 배제 · " + _excluded_notice(nclevel) + ")→ " + next_desc
+
+        elif next_desc:
+            nclevel = (next_clevel or clevel).lower()
+            nick = _ROLE_NICK.get(nclevel, nclevel.upper())
+            bare = _strip_role_tag(next_desc).strip()
+            key = _norm_title(bare)
+
+            # ② 같은 담당·같은 제목의 열린 배가 이미 있으면 새 배를 만들지 않고 그 배에 한 줄 흡수.
+            #    (2026-07-25 같은 문장 5척 도배 재발 방지 — 배10290)
+            twin = None
+            for t in queue:
+                if not isinstance(t, dict):
+                    continue
+                if t.get("status") not in ("PENDING", "IN_PROGRESS"):
+                    continue
+                if (t.get("clevel") or "").lower() != nclevel:
+                    continue
+                if _norm_title(_strip_role_tag(str(t.get("title") or ""))) == key:
+                    twin = t
+                    break
+
+            if twin is not None:
+                prev_note = str(twin.get("note") or "")
+                line = "- [" + today + "] " + next_desc + " (배 " + str(task_id) + " 완료로 재확인)"
+                if line not in prev_note:  # 멱등
+                    twin["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
+                label = "다음(기존 배 " + str(twin.get("ship_no") or twin.get("task_id")) + " 흡수)→ " + next_desc
+            else:
+                # ③ 새 배는 queue_dispatch 가 만드는 배와 같은 모양으로 만든다(배10290).
+                #    담당 머리표·짧은 번호·난이도·설명이 비면 G1 항로에서 '누가 뭘 하는지'가
+                #    빈칸으로 뜬다(2026-07-28 GM 지적: "담당자도 없는 것들은 삭제하거나 설명해줘").
+                appended_id = "NEXT-" + local_now.strftime("%Y%m%d-%H%M%S")
+                nos = [t.get("ship_no") or 0 for t in queue if isinstance(t, dict)]
+                parent = next((t for t in queue
+                               if isinstance(t, dict) and t.get("task_id") == task_id), None)
+                parent_title = _strip_role_tag(str((parent or {}).get("title") or "")) or str(task_id)
+                note = (
+                    "[브릿지 자동 등록 " + today + "] 배 '" + parent_title + "' 을(를) 끝내면서 "
+                    "남긴 '다음' 이 이 배가 됐다. 담당=" + nick + ".\n"
+                    "▶할 일: " + bare + "\n"
+                    "▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 "
+                    "구조다(약속 L11).\n"
+                    "▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다."
+                )
+                if summary and summary.strip():
+                    note += "\n▶끝난 배 요약: " + summary.strip()
+                ship = {
+                    "task_id": appended_id,
+                    "clevel": nclevel,
+                    "title": "[" + nick + "] " + bare,
+                    "status": "PENDING",
+                    "priority": "⛵돛단배",
+                    "depends_on": task_id,
+                    "from": clevel.lower(),
+                    "origin": "bridge",
+                    "enqueued_at": now_iso,
+                    "note": note,
+                    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+                    "ship_no": (max(nos) + 1) if nos else 1,
+                    "short_no": _next_short_no(queue),
+                }
+                # 되돌릴 수 있는지(reversible)·누가 볼 일인지(audience)는 부모 배의 선언을 잇는다.
+                # 없으면 비워 둔다 — 지어내면 자율 착수 판정이 거짓 근거로 열린다(2026-07-27).
+                if parent is not None:
+                    if parent.get("audience") is not None:
+                        ship["audience"] = parent.get("audience")
+                    if parent.get("reversible") is not None:
+                        ship["reversible"] = parent.get("reversible")
+                queue.append(ship)
+                label = "다음→ " + next_desc + " [" + appended_id + "]"
+        elif terminal:
+            label = "종결(다음 없음)"
         else:
-            # ③ 새 배는 queue_dispatch 가 만드는 배와 같은 모양으로 만든다(배10290).
-            #    담당 머리표·짧은 번호·난이도·설명이 비면 G1 항로에서 '누가 뭘 하는지'가
-            #    빈칸으로 뜬다(2026-07-28 GM 지적: "담당자도 없는 것들은 삭제하거나 설명해줘").
-            appended_id = "NEXT-" + local_now.strftime("%Y%m%d-%H%M%S")
-            nos = [t.get("ship_no") or 0 for t in queue if isinstance(t, dict)]
-            parent = next((t for t in queue
-                           if isinstance(t, dict) and t.get("task_id") == task_id), None)
-            parent_title = _strip_role_tag(str((parent or {}).get("title") or "")) or str(task_id)
-            note = (
-                "[브릿지 자동 등록 " + today + "] 배 '" + parent_title + "' 을(를) 끝내면서 "
-                "남긴 '다음' 이 이 배가 됐다. 담당=" + nick + ".\n"
-                "▶할 일: " + bare + "\n"
-                "▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 "
-                "구조다(약속 L11).\n"
-                "▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다."
-            )
-            if summary and summary.strip():
-                note += "\n▶끝난 배 요약: " + summary.strip()
-            ship = {
-                "task_id": appended_id,
-                "clevel": nclevel,
-                "title": "[" + nick + "] " + bare,
-                "status": "PENDING",
-                "priority": "⛵돛단배",
-                "depends_on": task_id,
-                "from": clevel.lower(),
-                "origin": "bridge",
-                "enqueued_at": now_iso,
-                "note": note,
-                "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
-                "ship_no": (max(nos) + 1) if nos else 1,
-                "short_no": _next_short_no(queue),
-            }
-            # 되돌릴 수 있는지(reversible)·누가 볼 일인지(audience)는 부모 배의 선언을 잇는다.
-            # 없으면 비워 둔다 — 지어내면 자율 착수 판정이 거짓 근거로 열린다(2026-07-27).
-            if parent is not None:
-                if parent.get("audience") is not None:
-                    ship["audience"] = parent.get("audience")
-                if parent.get("reversible") is not None:
-                    ship["reversible"] = parent.get("reversible")
-            queue.append(ship)
-            label = "다음→ " + next_desc + " [" + appended_id + "]"
-    elif terminal:
-        label = "종결(다음 없음)"
-    else:
-        label = "⚠️ 다음 미입력 — 브릿지 끊김"
+            label = "⚠️ 다음 미입력 — 브릿지 끊김"
+
+        _box["label"] = label
+        return queue
 
     if dry_run:
-        print("[DRY-RUN] _queue.json 브릿지 갱신 예정 — " + label)
-        return (label, False)
+        loaded = json.loads(_QUEUE_PATH.read_text(encoding="utf-8")) if _QUEUE_PATH.exists() else []
+        _apply(loaded if isinstance(loaded, list) else [])
+        print("[DRY-RUN] _queue.json 브릿지 갱신 예정 — " + _box["label"])
+        return (_box["label"], False)
+
+    try:
+        sys.path.insert(0, str(_QUEUE_PATH.parents[1] / "scripts"))
+        from queue_lock import mutate_queue as _mutate_queue  # noqa: E402  — 큐 쓰기 관문은 이것 하나
+        _mutate_queue(_apply, holder="clevel_post_action")
+        label = _box["label"]
+        print("[Bridge] _queue.json 갱신 — " + label)
+        # 끝난 일 자동 정리: 완료 2일 경과 DONE 을 _archive.json 으로 이동(오늘 완료는 보고용 잔류). best-effort.
+        try:
+            from queue_archive import sweep_old_done
+            sweep_old_done()
+        except Exception as _e:  # noqa: BLE001
+            print("[WARN] 끝난 일 자동 정리 건너뜀: " + str(_e), file=sys.stderr)
+        return (label, True)
+    except Exception as e:  # noqa: BLE001
+        print("[ERROR] _queue.json 브릿지 갱신 실패: " + str(e), file=sys.stderr)
+        return (_box["label"] or "브릿지 실패", False)
 
     try:
         tmp = _QUEUE_PATH.with_name(_QUEUE_PATH.name + ".tmp")
