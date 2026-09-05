@@ -49,6 +49,15 @@
 - 터지는 상황(재현함): 아무 로그인 계정으로 `//cpo/member/membership.html` 요청 → 권한 없는 계정도 회원 화면을 본다.
   modules.json 103개 모듈 전부에 통한다. 슬래시 3개(`///`)는 정상 정규화되므로 정확히 2개일 때만 뚫린다.
 - 최소 수리: `path = "/" + posixpath.normpath(...).lstrip("/")` 로 선행 슬래시를 1개로 강제한다.
+- ⚠️→✅ 후속 발견 및 해결(2026-09-05, H2 작업 중 실측): 최초 배포분은 `urllib.parse.urlsplit("//cpo/x.html")` 이
+  `posixpath.normpath` 가 보기도 전에 `"cpo"` 를 **netloc** 으로 먹어버려(`path`="/x.html") 재현 문자열을 다시 못
+  닫고 있었다(`module_at("//cpo/member/membership.html")` → `None`). 이후 커밋 `11af4504f`(C4 담당·시토)가
+  `urlsplit` 을 버리고 `uri.split("?",1)[0].split("#",1)[0]` 로 직접 정규화하도록 고쳐 해결됨.
+- 최종 실측(2026-09-05, 서버 `93cbf072d` 배포 · 이 레인 재확인): `module_at("//cpo/member/membership.html")` →
+  `{"id":"member",...}` 정상 해석. `member` 는 마침 이 테스트 계정(info@)에 허용된 모듈이라 재현이 안 돼,
+  권한 없는 모듈로 다시 실측 — `info@wellperion.com` 계정(인사 허브 미허용)으로
+  `X-Original-URI: //chro/hub/index.html` → `/auth/check` `403`(수리 전이었다면 `module_at` 이 `None` 을 돌려줘
+  로그인만 확인하고 `200` 이 났을 자리).
 
 ---
 
@@ -74,6 +83,10 @@
   (재현함). nginx 는 `try_files $uri/index.html`(erp.nginx.conf:40)·`${uri}index.html`(:48)로 파일을 내준다.
 - 터지는 상황: 권한 없는 직원이 `/chro/hub/` 로 인사 허브를 연다.
 - 최소 수리: `module_at` 의 폴백에 `_MODS[2].get(path.rstrip("/") + "/index.html")` 를 한 항 더 붙인다.
+- 수리: 최소 수리 그대로 — `.html` 보정 뒤에 `path.rstrip("/") + "/index.html"` 폴백 한 항 추가.
+- 실측: 인사 허브(`chro-hub-index`) 미허용 계정(info@wellperion.com)으로 `X-Original-URI: /chro/hub/` ·
+  `/chro/hub` 둘 다 `/auth/check` → `403`(수리 전엔 `module_at`이 `None`이라 로그인만 확인하고 통과했다).
+- 커밋: 이 커밋(server/erp_auth/app.py).
 
 ### H3. 공개 접수에 제출 토큰 게이트가 사라졌다
 - 자리: `server/erp_api/api_reception.py:211-267` ↔ 구 GAS `apps_script_reception.js:2894` (`_vSubmitGateOk_`)
@@ -117,12 +130,24 @@
 - 터지는 상황: 공격자가 자기 계정으로 흐름을 시작해 얻은 콜백 URL 을 직원에게 열게 하면, 그 직원 브라우저가
   공격자 계정 세션을 받는다. 이후 직원이 넣는 내용이 공격자 계정에 쌓인다.
 - 최소 수리: `google_start` 에서 난수를 쿠키로 심고 state 에도 넣어 콜백에서 대조한다.
+- 수리: 최소 수리 그대로 — `google_start` 가 난수(`secrets.token_urlsafe(16)`)를 만들어 state JWT `b` 필드에
+  넣고 `erp_oauth_n` 쿠키(HttpOnly·SameSite=lax·path=/auth/google·600초)로도 심는다. `google_callback` 은
+  쿠키를 읽어(`Cookie(default=None)`) state 의 `b` 와 `secrets.compare_digest` 로 대조 — 없거나 다르면
+  "이 브라우저에서 시작되지 않았습니다" 로 즉시 튕긴다.
+- 실측: `curl -sD- https://erp.wellperion.com/auth/google?next=/erp/` → `Set-Cookie: erp_oauth_n=KYmCCb…` 와
+  `state` JWT payload 의 `"b":"KYmCCb…"` 가 일치(같은 난수)함을 확인(2026-09-05).
+- 커밋: 이 커밋(server/erp_auth/app.py).
 
 ### M2. 오픈 리다이렉트 — `next=//도메인`
 - 자리: `server/erp_auth/app.py:344`, `app.py:480`
 - 무엇이 잘못: `next.startswith("/")` 만 본다. `//evil.example` 은 이 검사를 통과하고 브라우저는 외부 사이트로 간다.
 - 터지는 상황: `http://…/auth/login?next=//가짜사이트` 링크로 로그인 직후 위장 페이지에 떨군다.
 - 최소 수리: `next.startswith("/") and not next.startswith("//")` 로 조건을 좁힌다.
+- 수리: `safe_next(next, default="/")` 공용 함수 하나로 4개 호출부(로그인·구글 state·관리자 잠금 화면 폼·POST)
+  를 전부 교체 — 조건은 최소 수리 그대로.
+- 실측(서버 self-check): `safe_next("//evil.example") == "/"` · `safe_next("//evil.example","/auth/admin") == "/auth/admin"`
+  · `safe_next("/erp/") == "/erp/"`(정상 경로는 그대로 통과) — `python3 app.py` self-check ok(2026-09-05).
+- 커밋: 이 커밋(server/erp_auth/app.py).
 
 ### M3. 가입 부서 검증이 화면 선택지보다 넓다
 - 자리: `server/erp_auth/app.py:562` (`if dept not in PRESETS`)
@@ -130,6 +155,11 @@
 - 터지는 상황: 폼을 손으로 고쳐 `dept=전체` 로 신청하면 perms 에 그룹 전체가 박힌 채 승인 대기로 들어간다.
   GM 이 승인 화면에서 `전체` 뱃지를 못 보고 누르면 그 계정이 모든 모듈을 본다.
 - 최소 수리: `if dept not in DEPTS` 로 바꾼다.
+- 수리: 배1026(ERP 권한 정리) 작업에서 `PRESETS`(닉네임 그룹, `전체`·`마케팅` 포함) 자체를 폐기하고 `DEPTS`
+  6개 + `DEPT_ONLY_MODULES`(부서→정확한 모듈 id) 로 단일화하면서 이미 해결됨 — `if dept not in DEPTS` 그대로.
+- 실측: self-check `assert all(d in DEPT_ONLY_MODULES for d in DEPTS)` 통과 · `PRESETS` 심볼 자체가 코드에서
+  삭제돼 `dept=전체`/`dept=마케팅` 신청은 `if dept not in DEPTS` 에서 즉시 막힘(2026-09-05).
+- 커밋: 이 커밋(server/erp_auth/app.py, 배1026 본체 커밋 9afe9551e 에서 선행 적용).
 
 ### M4. 채팅 로그가 무한히 자란다 + 매 조회마다 전량 스캔
 - 자리: `server/erp_api/api_chat.py:105-112`(append), `:145-168`(unanswered)
@@ -192,6 +222,8 @@
 - nginx 는 정규식을 선언 순서로 본다. `/.git/` 처럼 슬래시로 끝나는 점 경로는 위 정규식이 먼저 잡아 404 가 된다
   (파일은 `/.git/config` 처럼 슬래시로 안 끝나므로 여전히 deny 된다 — 실노출은 없다).
 - 최소 수리: `location ~ /\.` 를 `include` 위로 올린다.
+- app 쪽 해당 없음 — 순수 nginx 위치 선언 순서 문제(`server/erp_auth/erp.nginx.conf`), `server/erp_auth/app.py`
+  는 이 결함과 무관하다. 실노출 없다고 이미 확인됐고(파일 경로는 여전히 deny) 수정은 nginx 담당(시토) 몫으로 남김.
 
 ### L3. 금지어 목록이 '보내는 말' 용이라 '받는 질문' 을 못 거른다
 - 자리: `server/erp_api/api_chat.py:31` ← `scripts/diet_camp_agent.py:58` (`"원 드리"·"할인해"·"세금계산서"` 등)
