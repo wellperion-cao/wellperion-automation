@@ -216,7 +216,9 @@ def module_at(uri: str) -> Optional[dict]:
     modules()
     # 선행 슬래시를 1개로 강제 — posixpath.normpath 는 '//x' 를 보존해 '//cpo/…' 요청이 모듈 조회를 빗나가게 했다
     # (권한 판정 우회 · 2026-09-05 검수 C4). nginx 는 merge_slashes 로 파일은 정상으로 내주므로 여기서 맞춘다.
-    path = "/" + posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(uri).path) or "/").lstrip("/")
+    # urlsplit 을 쓰지 않는다 — '//cpo/x' 는 urlsplit 이 '//cpo' 를 호스트로 먹어 path 가 '/x' 가 된다(실측 2026-09-05).
+    raw = uri.split("?", 1)[0].split("#", 1)[0]
+    path = "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
     if path in _MODS[2]:
         return _MODS[2][path]
     if path.endswith(".html"):
@@ -978,6 +980,24 @@ init()
 
 
 if __name__ == "__main__":                     # 회사 계정 판별 자가점검: python app.py
+    # 오픈 리다이렉트 차단(2026-09-05 검수 M2)
+    assert safe_next("/erp/") == "/erp/"
+    assert safe_next("//evil.example") == "/"                 # '/' 로 시작하지만 '//' 는 외부 도메인으로 튄다
+    assert safe_next("evil.example") == "/"                    # '/' 로 시작 안 함
+    assert safe_next("//evil.example", "/auth/admin") == "/auth/admin"
+    # 폴더 index.html 모듈 권한 판정(2026-09-05 검수 H2) — /chro/hub 든 /chro/hub/ 든 같은 모듈로 잡혀야 한다.
+    # MODULES 를 없는 경로로 돌려 modules()의 os.stat 이 항상 실패하게 만든다 — 그래야 실제
+    # /srv/erp/www/erp/modules.json 이 있는 서버에서도 이 임시 _MODS 가 재로딩으로 덮이지 않는다.
+    _real_modules_path, MODULES = MODULES, "/__selftest_no_such_modules_json__"
+    _MODS = (None, [], {"/chro/hub/index.html": {"id": "chro-hub-index"}, "/check.html": {"id": "check"}})
+    assert module_at("/chro/hub/")["id"] == "chro-hub-index"
+    assert module_at("/chro/hub")["id"] == "chro-hub-index"
+    assert module_at("/check")["id"] == "check"                # 기존 .html 생략 보정은 그대로
+    assert module_at("/check.html")["id"] == "check"
+    assert module_at("/없는경로/") is None
+    MODULES = _real_modules_path
+    _MODS = (None, [], {})                                     # 다음 modules() 호출이 실제 파일에서 다시 읽도록 리셋
+
     ok = {"email": "cao@wellperion.com", "email_verified": True, "hd": "wellperion.com"}
     assert is_company_account(ok)
     assert not is_company_account({**ok, "hd": None})                        # 개인 gmail
