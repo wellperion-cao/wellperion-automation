@@ -39,6 +39,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 router = APIRouter()
 FORWARD_TIMEOUT = 55   # 화면 apiPost 상한 60초보다 짧게 — 화면이 끊기 전에 server-forward-failed 를 받게
 
+
+def resp_ok(data):
+    """GAS 응답이 성공인지 판정 — ok 칸 우선, 없으면 success 칸, 둘 다 없으면 성공으로 친다.
+    명시적 false 만 실패(배 1067 — 점검 저장이 {success:true} 만 돌려주는데 여기선 resp.get('ok') 만
+    보고 gas-error 로, pushback.py 는 data.get('ok', True) 로 ok 로 쳐서 같은 응답을 두 판정이
+    서로 다르게 읽었다. 두 곳 모두 이 함수 하나만 쓴다 — pushback.py 가 여기서 import)."""
+    if not isinstance(data, dict):
+        return True
+    if "ok" in data:
+        return bool(data["ok"])
+    if "success" in data:
+        return bool(data["success"])
+    return True
+
 # 어떤 쓰기가 어느 거울을 더럽히나 — ok 응답 뒤 해당 동기화 스크립트를 1회 돌린다.
 #   정본 = 시포 화면 쓰기 액션 전수(배 961 note · 2026-09-03). 빠진 액션이 ok 여도 거울은 5분 옛값이라 전부 적는다.
 #   거울 없는 쓰기(staff_feedback_*·ohnutti_*·client_write_fail)는 GAS 전달만 — 여기 없으면 동기화를 안 돌린다.
@@ -221,7 +235,7 @@ async def write(request: Request):
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
         resp = _gas_forward(body, dest)
-        status = "ok" if resp.get("ok") else "gas-error"
+        status = "ok" if resp_ok(resp) else "gas-error"
     except Exception as e:
         resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}
         status = "forward-failed"
@@ -237,6 +251,12 @@ async def write(request: Request):
 
 
 if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점검(서버 없이)
+    assert resp_ok({"success": True, "saved": 3}) is True     # 배 1067 — ok 칸 없어도 success 로 성공
+    assert resp_ok({"ok": True}) is True
+    assert resp_ok({"ok": False, "error": "bad-token"}) is False
+    assert resp_ok({"success": False}) is False
+    assert resp_ok({}) is True                                 # 둘 다 없으면 성공으로 친다
+    assert resp_ok("not-a-dict") is True
     assert _gas_key("reg_update") == "RECEPTION_EXEC_URL"
     assert _gas_key("lf_submit") == "RECEPTION_EXEC_URL"
     assert _gas_key("hold_complete") == "RECEPTION_EXEC_URL"

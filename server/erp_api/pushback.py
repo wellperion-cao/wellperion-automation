@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api_intake import FORMS, PUSH_MAX_TRIES, gas_forward  # noqa: E402  — 전달·상한은 이중기록 때와 같은 것을 쓴다
 from api_reception_ops import write_gas_key as _rc_gas_key  # noqa: E402
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
-from api_write import MIRROR_SYNC, _SYNC_ARGS, _gas_key  # noqa: E402
+from api_write import MIRROR_SYNC, _SYNC_ARGS, _gas_key, resp_ok  # noqa: E402  — 배 1067: judge 와 api_write 가 같은 판정 함수
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BATCH = 100                       # 1분에 이만큼씩 — 밀려도 다음 분이 이어 받는다
@@ -65,7 +65,7 @@ def judge(table, status, resp):
         data = json.loads(resp)
     except (ValueError, TypeError):
         return "push-error:not-json", False
-    if isinstance(data, dict) and not data.get("ok", True):
+    if not resp_ok(data):
         return "gas-error", True
     return LEDGERS[table]["ok"], True
 
@@ -171,6 +171,8 @@ def selftest():
     assert judge("intake_log", "200", '{"ok":true,"id":"L260908-101010"}') == ("200", True)
     assert judge("write_log", "200", '{"ok":true}') == ("ok", True)
     assert judge("write_log", "200", '{"ok":false,"error":"bad-token"}') == ("gas-error", True)
+    # ok 칸 없이 success 만 있는 응답(점검 저장 등) — api_write.resp_ok 와 같은 판정으로 성공 처리(배 1067)
+    assert judge("write_log", "200", '{"success":true,"saved":3}') == ("ok", True)
     # 200 + 비JSON = 구글이 답한 것(로그인 안내 HTML). 시트엔 한 줄도 없으므로 되민 것으로 치면 안 된다(배 960 H3).
     assert judge("intake_log", "200", "<html>로그인 화면</html>") == ("push-error:not-json", False)
     assert judge("write_log", "200", "") == ("push-error:not-json", False)
