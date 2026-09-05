@@ -39,7 +39,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import send as _tg_send

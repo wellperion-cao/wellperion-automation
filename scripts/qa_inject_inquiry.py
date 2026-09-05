@@ -27,7 +27,7 @@
 import sys, io, json, time
 import requests
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # Funnel GAS webapp exec URL (scripts/telegram_health_check.py _FUNNEL_DIAG_URL 동일 소스)
 FUNNEL_EXEC_URL = (

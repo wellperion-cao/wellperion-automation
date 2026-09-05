@@ -21,7 +21,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")

@@ -41,9 +41,9 @@ from pathlib import Path
 
 # ── Windows CP949 환경에서 한글 출력 보장 ──────────────────────────────────
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf_8"):
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 ───────────────────────────────────────────────────────────────────
 REPO_ROOT = Path(__file__).resolve().parent.parent

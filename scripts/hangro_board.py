@@ -47,7 +47,7 @@ from worklog import GM_AREA, GM_AREAS  # noqa: E402  — 정본=worklog.py(값 �
 # ※ sys 싱글톤에 가드 — __main__ 실행 뒤 모듈로 재import돼도 두 번 감싸지 않게.
 #   이중래핑하면 먼저 만든 wrapper가 GC되며 버퍼를 닫아 'closed file' 버그가 난다.
 if hasattr(sys.stdout, "buffer") and not getattr(sys, "_welp_stdout_wrapped", False):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys._welp_stdout_wrapped = True
 
 # ── 상수 ──────────────────────────────────────────────────────────────────

@@ -1246,5 +1246,5 @@ def main():
 if __name__ == "__main__":
     # 콘솔 한글 깨짐 방지(Windows cp949) — 스탠드얼론 실행 시에만(import 경로에선 전역 스트림 불건드림).
     # 선례: support_check_summary.py main(), self_health_watchdog.py / module_silence_detector.py 하단 가드.
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     main()

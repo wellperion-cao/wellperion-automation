@@ -29,7 +29,7 @@ from pathlib import Path
 # 단독 실행 시에만 stdout 를 UTF-8 로 래핑한다.
 # (import 시 래핑하면 호출부의 stdout 버퍼를 가로채/닫아 I/O 오류를 낼 수 있음)
 if __name__ == "__main__":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")

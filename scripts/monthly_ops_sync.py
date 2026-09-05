@@ -39,7 +39,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
 PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"

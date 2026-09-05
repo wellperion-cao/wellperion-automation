@@ -41,7 +41,7 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 try:
     from honesty_gate import verdict as _honesty_verdict, summary_line as _honesty_summary_line

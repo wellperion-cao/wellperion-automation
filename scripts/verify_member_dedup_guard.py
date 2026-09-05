@@ -15,7 +15,7 @@ _regRemove_ 가 전화번호 첫 매칭만으로 행을 잡거나 매칭 전부�
 import sys, io, json
 import requests
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 FUNNEL_EXEC_URL = (
     "https://script.google.com/macros/s/"

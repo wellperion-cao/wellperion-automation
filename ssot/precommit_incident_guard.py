@@ -25,8 +25,8 @@ import io
 from pathlib import Path
 
 # Windows 콘솔 UTF-8 강제
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # 2026-07-22 커밋 파이프라인 8분+ 정지 사고 복구 후 하드닝:
 # 하위 스캔(divergence_scan.py/forbidden_scan.py)이 느려지거나 멈추면

@@ -16,7 +16,7 @@ INC-020(행번호 밀림으로 실고객 오삭제) 재발방지 원칙 준수 �
 import sys, io, json
 import requests
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 FUNNEL_EXEC_URL = (
     "https://script.google.com/macros/s/"

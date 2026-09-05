@@ -42,9 +42,9 @@ from pathlib import Path
 # Windows 한글 안전 출력
 try:
     if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 옛 TextIOWrapper 재래핑은 GC 때 원래 스트림을 닫아 "I/O operation on closed file" 로 죽었다(2026-09-05 08:00 실사고)
     if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # 옛 TextIOWrapper 재래핑은 GC 때 원래 스트림을 닫아 "I/O operation on closed file" 로 죽었다(2026-09-05 08:00 실사고)
 except Exception:
     pass
 

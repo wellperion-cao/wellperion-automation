@@ -359,9 +359,7 @@ if __name__ == "__main__":
     import io
     import sys
 
-    sys.stdout = io.TextIOWrapper(
-        sys.stdout.buffer, encoding="utf-8", errors="replace"
-    )
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     rows = check_bridges()
     ok_n = sum(1 for _, ok, _ in rows if ok)
     print(f"연동 다리 {ok_n}/{len(rows)} ✅")

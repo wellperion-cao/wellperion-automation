@@ -24,7 +24,7 @@ import re
 from pathlib import Path
 
 # stdout을 UTF-8로 강제 (Windows PYTHONIOENCODING 무관)
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # 스캔 대상 텍스트 확장자 화이트리스트
 TEXT_EXTENSIONS = {

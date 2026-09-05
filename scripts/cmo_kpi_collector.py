@@ -37,9 +37,7 @@ from typing import Any
 
 # Windows 콘솔이 cp949일 때 인코딩 불가 문자를 '?'로 대체해 UnicodeEncodeError 방지
 if sys.stdout.encoding and sys.stdout.encoding.lower() in ("cp949", "cp950", "euc-kr"):
-    sys.stdout = io.TextIOWrapper(
-        sys.stdout.buffer, encoding=sys.stdout.encoding, errors="replace"
-    )
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ──────────────────────────────────────────────
 # 경로 상수

@@ -31,7 +31,7 @@ DEFAULT_FILE = "3. 웰페리온 가이드/cmo/review/review_queue.json"
 ID_KEYS = ("id", "task_id", "ship_no")
 
 try:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 except Exception:
     pass
 

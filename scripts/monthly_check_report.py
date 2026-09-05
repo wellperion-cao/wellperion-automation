@@ -52,7 +52,7 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")

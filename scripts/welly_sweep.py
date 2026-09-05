@@ -47,7 +47,7 @@ LOG_DIR = _REPO / ".omc" / "logs" / "welly_sweep"
 #   ※ hangro_board.py와 동일 가드 플래그(_welp_stdout_wrapped)를 공유 — import 시 이중래핑되면
 #     먼저 만든 wrapper가 GC되며 버퍼를 닫아 'closed file' 버그가 난다(hangro_board 주석 참조).
 if hasattr(sys.stdout, "buffer") and not getattr(sys, "_welp_stdout_wrapped", False):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys._welp_stdout_wrapped = True
 
 import welly_sweep_classifier as wsc  # noqa: E402
