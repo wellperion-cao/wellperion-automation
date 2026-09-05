@@ -60,7 +60,7 @@ def main():
     role = (os.environ.get("WELLPERION_ROLE") or "ai").upper()
     cmd = ["wt", "new-tab", "--title", role, "--suppressApplicationTitle", "-d", ROOT,
            "powershell", "-NoExit", "-Command",
-           "claude --resume %s --remote-control '%s'" % (sid, role)]
+           "claude --resume %s --fork-session --remote-control '%s'" % (sid, role)]
     with open(sp, "w", encoding="utf-8") as f:
         json.dump({"email": email, "prev": prev, "respawned": not dry}, f)
     if dry:
