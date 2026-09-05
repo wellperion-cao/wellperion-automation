@@ -26,6 +26,12 @@
    탭 지연 제거만 남긴다. 주석에 코드를 그대로 인용하지 않는다(찾기 오탐 방지). */
 .wlp-lfr button,.wlp-lfr a,.wlp-lfr input,.wlp-lfr select,.wlp-lfr textarea{touch-action:manipulation}
 
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 위 09-02 설명대로 문서에 맡긴다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
 /* ── 습득물 접수(직원 전용) 페이지 한정 테마 보정 (body.wlp-lfr-page) ── */
 body.wlp-lfr-page h1.entry-title,
 body.wlp-lfr-page .entry-title,

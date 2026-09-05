@@ -18,11 +18,16 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
-   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
-html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-lfg{overscroll-behavior-y:contain}
 .wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 문서에 맡긴다 — html·body 에
+   넘침 규칙을 주면 body 가 자기 스크롤 상자가 돼 터치가 죽는다(09-01·09-02 실측). 위에 있던 2026-08-14
+   스크롤 보장 줄을 그래서 지웠다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
 
 /* ── 습득 분실물 갤러리 페이지 한정 테마 보정 (body.wlp-lfg-page) ── */
 body.wlp-lfg-page h1.entry-title,

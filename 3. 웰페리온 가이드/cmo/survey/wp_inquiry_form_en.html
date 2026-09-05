@@ -23,6 +23,13 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 문서에 맡긴다 — html·body 에
+   넘침 규칙을 주면 body 가 자기 스크롤 상자가 돼 터치가 죽는다(09-01·09-02 실측). */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
 .wlp-inq{
   --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
   --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;

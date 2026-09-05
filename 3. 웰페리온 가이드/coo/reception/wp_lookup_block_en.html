@@ -9,11 +9,18 @@
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   display:flex;justify-content:center;min-height:100vh;margin:0;
 }
-/* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 한 화면에 맞춤(F11 전체화면). 이 CSS는 이 페이지에만 로드됨
-   조회 결과가 많아 화면을 넘으면 스크롤 되도록 방어적으로 열어둔다(2026-08-14 GM 지시 — 키오스크 스크롤 보장). */
-html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+/* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 한 화면에 맞춤(F11 전체화면). 이 CSS는 이 페이지에만 로드됨 */
+html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden}
 #wlp-lk{overscroll-behavior-y:contain}
 #wlp-lk button,#wlp-lk a,#wlp-lk input{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 한글 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 문서에 맡긴다 — html·body 에
+   세로 넘침 규칙을 주면 body 가 자기 스크롤 상자가 돼 터치가 죽는다(09-01·09-02 실측). 위 줄에 있던
+   2026-08-14 스크롤 보장 값 둘을 그래서 뺐다(가로 숨김·배경·여백은 그대로 둔다). */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
 #ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important}
 #footer-outer,#footer-widgets,.footer-outer,#footer-outer .row{display:none!important}
 .wpb_row,.vc_row,.wpb_column,.vc_column_container,.wpb_wrapper,.wpb_text_column,.wpb_raw_html,.vc_column-inner{margin:0!important;padding:0!important}

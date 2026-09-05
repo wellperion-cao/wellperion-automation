@@ -23,7 +23,8 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* ★2026-09-01 — 여기 있던 `html,body{overflow-y:auto!important}` 를 **지웠다. 그것이 범인이었다.**
+/* ★2026-09-01 — 여기 있던 문서 전체 세로 넘침 규칙을 **지웠다. 그것이 범인이었다.**
+   (2026-09-05 주석에서 코드 인용을 걷어냈다 — 라이브 점검이 살아 있는 규칙으로 오탐했다.)
    2026-08-14 에 "스크롤 보장"으로 넣은 줄인데 정반대로 작동했다.
    ▸무엇을 재서 알았나 = 잘 되는 종합접수처 페이지와 이 페이지의 라이브 HTML 을 받아 스크롤 관련
      규칙을 통째로 비교했다. 두 페이지의 스크롤 차이는 **이 한 줄뿐**이었다(종합접수처엔 없다).
@@ -38,6 +39,13 @@
    .wlp-lfg 자체는 스크롤되는 상자가 아니라서, 손가락으로 밀면 문서로 넘어가야 하는데
    그 길이 막혀 아무 일도 안 일어났다. 종합접수처·조회 화면엔 이 줄이 없어서 잘 됐다. */
 .wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 위 09-01 설명대로 문서에 맡긴다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
 /* ★2026-09-01 되돌림 — 여기 있던 「블록 자체를 스크롤 상자로 만들기」(max-height + overflow-y)를
    뺐다. GM 실측: "지금 스크롤 아예 창이 생겼네?" — 화면 안에 또 하나의 스크롤 창이 생겨 더 나빠졌다.
    스크롤은 페이지 전체(문서)가 하는 것이지 이 블록이 하는 게 아니다. 규칙을 아예 두지 않는 것이
