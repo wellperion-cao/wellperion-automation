@@ -1029,6 +1029,11 @@
       //   8 회의           일이 아니라 자리. 맨 아래가 맞다
       var GRP_ORDER = ['매출 및 영업','운영 정책','시설 및 환경','회원·CS',
                        '인사','IT·시스템·자동화','파트너팀','교육·조직문화','회의','분류 미정'];
+      // 대분류 옆 AI 담당 표시 (GM 지시 2026-09-05 "GM업무에서 시포는 매출 및 영업 + 상품설계 + 회원 데이터 관리
+      //   + 회원 CS라인까지 머금어야 해 … 대분류값 옆에 AI 시포 표시"). 9종 대분류에 상품설계·회원 데이터 칸이
+      //   따로 없어 매출 및 영업(상품설계 포함)·회원·CS(회원 데이터 관리 포함) 두 묶음에 붙인다. 정본 = ssot/kpi.json roles.cpo.
+      var GRP_AI = { '매출 및 영업': 'AI 시포 · 매출·영업·상품설계', '회원·CS': 'AI 시포 · 회원 데이터·CS' };
+      function grpAiHtml(c) { return GRP_AI[c] ? ' <span class="ai-owner">' + esc(GRP_AI[c]) + '</span>' : ''; }
       var buckets = {};
       ordered.forEach(function (o) {
         var c = o.category || '분류 미정';
@@ -1041,13 +1046,13 @@
         // 묶음은 토글이되 펴 둔 채로 연다 — 접고 싶을 때만 GM 이 접는다(GM 지시 2026-09-02).
         var inner = [];
         sumOut.push('<tr class="grp-row"><td colspan="5" style="padding:16px 0 5px;font-weight:800;font-size:15px;">'
-                    + esc(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
+                    + esc(c) + grpAiHtml(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
         buckets[c].forEach(function (o) {
           inner.push(cardHtml(o, seq));
           sumOut.push(sumRowHtml(o, seq));
           seq++;
         });
-        cardOut.push('<details class="grpbox" open><summary><b>' + esc(c) + '</b><span>'
+        cardOut.push('<details class="grpbox" open><summary><b>' + esc(c) + '</b>' + grpAiHtml(c) + '<span>'
                      + buckets[c].length + '건</span></summary><div class="grpin">'
                      + inner.join('') + '</div></details>');
       });
