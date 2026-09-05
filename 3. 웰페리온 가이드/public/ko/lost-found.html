@@ -1,0 +1,688 @@
+<!-- 산출물 — 직접 수정 금지. 정본 = 3. 웰페리온 가이드/coo/reception/wp_lost_found_gallery_block.html · 재생성 = scripts/build_public_pages.py -->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 습득물 보기</title>
+</head>
+<body class="page-id-8462">
+<!-- 웰페리온 습득 분실물 현황 갤러리 블록 — 워드프레스 페이지 본문 직접 주입 소스 (SSOT)
+     ★ lost_found_gallery.html(스탠드얼론 원본)을 종합접수처(reception_block.html)와 동일한
+        직접 인라인 주입 방식으로 변환: iframe 없이 vc_raw_html 로 페이지 본문에 그대로 심는다.
+        결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
+     ★ 기능: 백엔드 lf_gallery(공개, 게시중만·민감필드 미반환)로 습득물 카드 목록을 렌더. 회원은 조회만
+        — 단, 직원은 카드 클릭 → PIN → 서명으로 이 화면에서도 수령(lf_handover) 처리 가능(2026-08-31).
+     ★ 삭제(lf_delete)·A3 처분공지 인쇄·처분완료 기록은 게이트된 종합접수처_현황.html 전용(이관 유지).
+     ★ 2026-07-27(시포·GM FB260727-152907): 2026-07-20에 이 화면에 복구했던 '수령' 버튼·PIN게이트·서명모달을
+        다시 제거했다 — PIN(LF_STAFF_PIN)이 소스보기로 노출돼 회원도 클릭·처리까지 가능했고, GM 지시가
+        "회원은 조회만, 수령 처리는 종합접수처 현황에서만"으로 확정됐다. 본인 물건이면 현장 직원(담당
+        매니저)에게 문의하도록 안내만 남긴다.
+     ★ 2026-08-31(GM 지시): 위 07-27 판단을 뒤집고 이 화면에도 수령을 다시 들인다 — 단, 카드 클릭 →
+        직원 PIN(a9fcfe705 복구) → 서명패드 순서를 지켜 회원이 실수로 처리하지 못하게 막는다. PIN은
+        종합접수처 현황(m_pw)과 같은 값이고, 서버(lf_handover)도 서명 없는 요청은 그대로 거부한다 —
+        화면 PIN이 뚫려도 서명 없이는 수령 확정이 안 된다(2중 방어). lf_handover 호출은 종합접수처
+        현황과 같은 GAS 액션·토큰(RECEPTION_SUBMIT_TOKEN)을 그대로 쓴다 — 새 엔드포인트 없음.
+        lf_disposal(공개) upcoming만 병행 fetch → ⏳M월 처분예정 배지(폐기 완료 기록 제외).
+        습득월(foundWhen 우선·없으면 createdAt) 기준 월 선택 필터 추가 — 클라이언트 필터, 재조회 없음.
+     ★ CSS 충돌 방지: 전 규칙을 .wlp-lfg 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
+        WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfg-page 한정으로 숨김
+        (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
+<link rel="stylesheet" href="/assets/wp-typography.css">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+/* ★2026-09-01 — 여기 있던 문서 전체 세로 넘침 규칙을 **지웠다. 그것이 범인이었다.**
+   (2026-09-05 주석에서 코드 인용을 걷어냈다 — 라이브 점검이 살아 있는 규칙으로 오탐했다.)
+   2026-08-14 에 "스크롤 보장"으로 넣은 줄인데 정반대로 작동했다.
+   ▸무엇을 재서 알았나 = 잘 되는 종합접수처 페이지와 이 페이지의 라이브 HTML 을 받아 스크롤 관련
+     규칙을 통째로 비교했다. 두 페이지의 스크롤 차이는 **이 한 줄뿐**이었다(종합접수처엔 없다).
+   ▸왜 막았나 = body 에 overflow 를 지정하면 body 가 자기 스크롤 상자가 되면서, 페이지 전체
+     스크롤을 body 가 대신 맡는 브라우저 기본 동작이 끊긴다. body 는 내용만큼 늘어나 스스로는
+     넘치지 않으므로 스크롤할 것이 없어지고, 화면은 그대로 굳는다(GM 실측 "완전히 굳어있어").
+   ▸종합접수처처럼 아무 규칙도 두지 않는 것이 정답이다 — 브라우저 기본이 이미 스크롤한다.
+   ▸스와이프 관성(-webkit-overflow-scrolling)도 함께 뺐다. 그 값은 스크롤 상자에만 의미가 있다. */
+/* ★2026-09-01 GM 신고 "종합접수처는 터치로 밀면 스크롤되는데 습득물 현황은 안 된다" —
+   여기 있던 .wlp-lfg 의 넘침연쇄 차단 규칙(overscroll 계열, 값 contain)을 지웠다. 그 한 줄이
+   범인이었다. 그 값은 이 상자 안에서 시작한 스크롤이 바깥(문서)으로 넘어가지 않게 막는다. 그런데
+   .wlp-lfg 자체는 스크롤되는 상자가 아니라서, 손가락으로 밀면 문서로 넘어가야 하는데
+   그 길이 막혀 아무 일도 안 일어났다. 종합접수처·조회 화면엔 이 줄이 없어서 잘 됐다. */
+.wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 위 09-01 설명대로 문서에 맡긴다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
+/* ★2026-09-01 되돌림 — 여기 있던 「블록 자체를 스크롤 상자로 만들기」(max-height + overflow-y)를
+   뺐다. GM 실측: "지금 스크롤 아예 창이 생겼네?" — 화면 안에 또 하나의 스크롤 창이 생겨 더 나빠졌다.
+   스크롤은 페이지 전체(문서)가 하는 것이지 이 블록이 하는 게 아니다. 규칙을 아예 두지 않는 것이
+   맞다 — 그 뒤 실측에서 위쪽 overflow 규칙이 오히려 범인으로 드러나 함께 지웠다(위 주석 참조). */
+
+/* ── 습득 분실물 갤러리 페이지 한정 테마 보정 (body.wlp-lfg-page) ── */
+body.wlp-lfg-page h1.entry-title,
+body.wlp-lfg-page .entry-title,
+body.wlp-lfg-page .page-title,
+body.wlp-lfg-page .title-container h1,
+body.wlp-lfg-page .page-header h1{display:none!important}
+body.wlp-lfg-page .buttonizer,
+body.wlp-lfg-page #buttonizer,
+body.wlp-lfg-page [class*="buttonizer"]{display:none!important}
+/* ── 맨 위 흰 띠 제거 (2026-08-13 GM 지시) ──
+   Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
+   페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
+   페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+/* ★2026-09-01 — 헤더를 투명 처리에서 **완전 숨김**으로 바꿨다. 이것이 스크롤이 안 되던 원인이다.
+   ▸무엇을 재서 알았나 = 스크롤이 잘 되는 종합접수처 페이지와 이 페이지의 라이브 CSS 를 헤더
+     규칙까지 통째로 비교했다. 종합접수처는 `#top{display:none}` 으로 헤더를 아예 없앴고,
+     이 페이지만 `background:transparent` 로 **안 보이게만** 했다 — 헤더는 그대로 살아 화면 위에
+     고정(fixed)돼 있었다. 눈에는 안 보이는데 손가락은 헤더를 만지고 있었으니 아무리 밀어도
+     페이지가 안 움직였다(GM 실측 "완전히 굳어있어").
+   ▸GM 지시 2026-09-01 "맨 위에 웰페리온 로고도 삭제해줘, 클릭하면 홈페이지 들어가지고" 와도
+     같은 처방이다 — 로고를 눌러 홈페이지로 빠지던 것도 이 헤더 때문이었다. 한 번에 없앤다.
+   ▸헤더 자리표시자(#header-space)도 함께 없앤다. 남겨 두면 맨 위에 126px 빈 칸이 생긴다. */
+body.wlp-lfg-page #header-space,
+body.wlp-lfg-page #header-outer,
+body.wlp-lfg-page #top{display:none!important}
+body.wlp-lfg-page a.lang-header{display:none!important}
+/* ★2026-09-01 GM 지시 "맨 위에 웰페리온 로고도 삭제해줘, 클릭하면 홈페이지 들어가지고" —
+   키오스크에서 로고를 누르면 회사 홈페이지로 나가 버려 회원이 키오스크 밖으로 빠진다.
+   되돌아올 길이 없어 직원이 다시 잡아 줘야 했다. 로고 자리를 통째로 감춘다(뒤로가기 버튼이
+   이미 조회 첫 화면으로 돌아가는 길을 갖고 있다). 종전 여백 규칙은 감추면 쓸모가 없어 함께 뺐다. */
+body.wlp-lfg-page #header-outer #logo,
+body.wlp-lfg-page #header-outer .logo-spacing{display:none!important}
+/* ── 배경 단일화(full-bleed 페이퍼톤 · 이중색·경계 제거) + 짜투리 여백 축소 ── */
+body.wlp-lfg-page,
+body.wlp-lfg-page #ajax-content-wrap,
+body.wlp-lfg-page .container-wrap,
+body.wlp-lfg-page #content,
+body.wlp-lfg-page .main-content,
+body.wlp-lfg-page .post-area,
+body.wlp-lfg-page .entry-content,
+body.wlp-lfg-page .wpb_row,
+body.wlp-lfg-page .row-bg{background:#faf9f7!important}
+body.wlp-lfg-page .container-wrap{padding-top:0!important;border:none!important;box-shadow:none!important}
+body.wlp-lfg-page #content{padding-top:0!important}
+body.wlp-lfg-page .wlp-lfg{background:transparent!important}
+body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_column-inner{padding-top:0!important;padding-bottom:0!important}
+
+/* ── Design tokens + 베이스 (.wlp-lfg 스코프) ── */
+.wlp-lfg{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+}
+.wlp-lfg *{margin:0;padding:0;box-sizing:border-box}
+.wlp-lfg a{color:var(--accent);text-decoration:none}
+.wlp-lfg .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 44px}
+/* 헤더 로고 ↔ 본문(브랜드텍스트 "WELLPERION"·"습득 분실물") 겹침 해소 (2026-07-15 시토·GM 지시):
+   데스크톱에서 Salient 헤더 로고가 position:absolute 로 본문 상단 위에 겹침 → 본문 상단 여백 확보로
+   로고 아래로 이격(겹침 0). ★반드시 위 .wlp-lfg .wrap 기본 padding 규칙보다 뒤에 둬야 같은 특이도에서
+   소스순서로 이김. 모바일(≤1000px)은 로고와 충분히 이격돼 무영향. (register 블록과 동일 방식)
+   ★실측(1280/1440/1920 동일): 로고 bottom=130, .wrap top=29 → eyebrow.top=29+padTop.
+   90px면 eyebrow.top=119<130 로 11px 겹침 → 130px 로 상향(eyebrow.top=159, 갭≈29px·겹침0). */
+/* ★2026-09-01 — 위 130px 여백은 헤더 로고와 겹치지 않으려고 비워 둔 자리였다. 헤더를 통째로
+   숨긴 지금은 그만큼이 빈 칸으로 남는다. 종합접수처(문의 접수 화면)의 본문 상단 여백 70px 와
+   같은 값으로 맞춘다 — GM "문의하기처럼 일관성 있게". 뒤로가기(top:16px)와도 겹치지 않는다. */
+@media (min-width:1001px){
+  .wlp-lfg .wrap{padding-top:70px}
+}
+
+.wlp-lfg .brand{text-align:center;margin-bottom:8px}
+.wlp-lfg .brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.wlp-lfg .brand h1{font-size:clamp(22px,5.5vw,30px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.wlp-lfg .brand p{font-size:13.5px;color:#777}
+.wlp-lfg .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 22px;max-width:320px}
+.wlp-lfg .gd-line{flex:1;height:1px}
+.wlp-lfg .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.wlp-lfg .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.wlp-lfg .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+
+.wlp-lfg .topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.wlp-lfg .month-filter{display:flex;align-items:center;gap:8px}
+.wlp-lfg .month-filter label{font-size:12.5px;font-weight:700;color:var(--dim);white-space:nowrap}
+/* 월 고르는 칸도 16px — 선택칸도 누르면 확대 대상이다(위 입력칸과 같은 이유 · 2026-09-02) */
+.wlp-lfg .month-select{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--paper);color:var(--text);font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.wlp-lfg .month-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+
+.wlp-lfg .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.wlp-lfg .gcard{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;flex-direction:column;position:relative;cursor:pointer}
+.wlp-lfg .gcard:active{opacity:.92}
+/* ★2026-09-02 실무진 신고 "보여지는 이미지 크기가 달라진다" — 사진칸 높이를 비율 지정에 맡기던 것을
+   높이 못 박기로 바꿨다. 비율 지정(가로세로 비율로 높이를 계산하는 방식)은 브라우저가 그 기능을
+   모르면 통째로 무시되고, 그러면 높이가 사진 원본 크기대로 제각각이 된다 — 키오스크 브라우저가
+   구버전이면 여기서 갈린다. 높이를 픽셀로 박으면 어느 브라우저에서든 같은 크기로 잘린다.
+   ▸잘리는 방식(object-fit:cover)은 그대로라 사진이 찌그러지지 않는다. */
+.wlp-lfg .gcard .ph{width:100%;height:200px;object-fit:cover;background:var(--bg);border-bottom:1px solid var(--border);display:block}
+.wlp-lfg .gcard .body{padding:13px 14px 14px;display:flex;flex-direction:column;flex:1}
+.wlp-lfg .gcard .gid{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.3px}
+.wlp-lfg .gcard .desc{font-size:14.5px;font-weight:600;margin:4px 0 7px;word-break:break-word;line-height:1.45}
+.wlp-lfg .gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
+.wlp-lfg .gcard .meta .loc{color:var(--accent);font-weight:600}
+.wlp-lfg .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+/* 스켈레톤 위 '불러오는 중' 한 줄 — GAS 응답 3초 동안 화면이 멈춘 것처럼 보이지 않게 (2026-08-14 GM 지시) */
+.wlp-lfg .loading-tag{grid-column:1/-1;padding:0 0 14px;text-align:center;color:var(--dim);font-size:13px}
+.wlp-lfg .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
+.wlp-lfg .gcard.imminent{border-color:#e8b44a;box-shadow:0 0 0 1px rgba(232,180,74,.35),0 1px 6px rgba(0,0,0,.04)}
+.wlp-lfg .disp-badge{display:inline-block;font-size:11px;font-weight:800;color:#8a5a00;background:#fdf0d5;border:1px solid #ecc478;border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
+.wlp-lfg .cat-badge{display:inline-block;font-size:11px;font-weight:800;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;margin:0 6px 7px 0;letter-spacing:.2px}
+
+/* ── 스켈레톤 (즉시 렌더·지연 로드 대기 · CLS 0) ── */
+.wlp-lfg .gcard.skel{pointer-events:none}
+.wlp-lfg .skel-ph,.wlp-lfg .skel-line,.wlp-lfg .skel-btn{background:linear-gradient(90deg,#efeae2 25%,#f7f4ee 37%,#efeae2 63%);background-size:400% 100%;animation:wlpShim 1.4s ease infinite}
+.wlp-lfg .skel-line{height:12px;border-radius:6px;margin-bottom:9px}
+.wlp-lfg .skel-line.w40{width:40%}.wlp-lfg .skel-line.w60{width:60%}.wlp-lfg .skel-line.w80{width:80%}
+.wlp-lfg .skel-btn{margin-top:auto;height:42px;border-radius:11px}
+@keyframes wlpShim{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.wlp-lfg .skel-ph,.wlp-lfg .skel-line,.wlp-lfg .skel-btn{animation:none}}
+
+/* ── 보관·폐기 안내 박스 (항상 표시) ── */
+.wlp-lfg .lf-policy{background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px 16px;margin:0 0 20px}
+.wlp-lfg .lf-policy-h{font-size:14.5px;font-weight:800;color:var(--text);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wlp-lfg .lf-policy-h .badge{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:3px 10px;letter-spacing:.3px}
+.wlp-lfg .lf-policy ul{list-style:none !important;padding-left:0 !important;margin:0 !important}
+.wlp-lfg .lf-policy li{position:relative;padding-left:15px;font-size:13px;color:#5c564d;line-height:1.75;list-style:none !important}
+.wlp-lfg .lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
+.wlp-lfg .lf-policy li b{color:var(--text);font-weight:700}
+
+/* ── 수령 서명 모달 + 직원 PIN 게이트 (2026-08-31 복구 · a9fcfe705 원본, 종합접수처_현황.html과 톤 통일) ── */
+.wlp-lfg .modal-back{position:fixed;inset:0;background:rgba(20,18,16,0.55);z-index:9998;display:none;align-items:center;justify-content:center;padding:16px}
+.wlp-lfg .modal-back.show{display:flex}
+/* ★2026-09-01 GM 신고 "수령 완료 누르면 뒷 화면에 직원 비밀번호 입력칸이 떠서 진행이 안 됨".
+   원인 = PIN 창과 수령 창의 z-index 가 9998 로 같은데, PIN 창이 HTML 에서 먼저 나와 뒤에 깔린다.
+   수령 완료를 누르면 PIN 을 묻는 흐름(2026-08-31 GM 지시로 직원 코드를 맨 끝으로 옮김)인데,
+   수령 창이 그대로 열려 있어 PIN 창을 덮어 버렸다 — 눌러도 아무 반응이 없는 것으로 보인다.
+   PIN 창만 한 단 위로 올린다(수령 창은 그대로 둔다 — PIN 을 취소하면 입력하던 내용으로 돌아가야 한다). */
+.wlp-lfg #pinBack{z-index:9999}
+.wlp-lfg .modal{background:var(--paper);border-radius:18px;max-width:440px;width:100%;max-height:92vh;overflow-y:auto;padding:22px 20px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.wlp-lfg .modal h2{font-size:18px;font-weight:800;margin-bottom:4px}
+.wlp-lfg .modal .msub{font-size:12.5px;color:var(--dim);margin-bottom:16px}
+.wlp-lfg .modal .mitem{display:flex;gap:11px;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:16px}
+.wlp-lfg .modal .mitem img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.wlp-lfg .modal .mitem .mt{font-size:13.5px;font-weight:600;word-break:break-word}
+.wlp-lfg .modal .mitem .mm{font-size:11.5px;color:var(--dim)}
+.wlp-lfg .mfield{margin-bottom:13px}
+.wlp-lfg .mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
+/* 글자 16px 고정 — 15px 이하로 내리지 말 것. 모바일·태블릿은 입력칸 글자가 16px 보다 작으면
+   칸을 누르는 순간 화면을 자동으로 확대하고, 그 확대가 남아 화면이 커진 채로 있는다.
+   (2026-08-24 습득물 접수 페이지에서 같은 신고로 이미 고친 값인데 이 수령신청 칸만 빠져 있었다 · 2026-09-02) */
+.wlp-lfg .mfield input,.wlp-lfg .mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+.wlp-lfg .mfield input:focus,.wlp-lfg .mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+.wlp-lfg .sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden}
+.wlp-lfg .sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+.wlp-lfg .sign-hint{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;color:#c8c2b8;font-size:13px;pointer-events:none}
+.wlp-lfg .sign-clear{margin-top:7px;font-size:12.5px;color:var(--red);cursor:pointer;font-weight:600;display:inline-block}
+.wlp-lfg .mbtns{display:flex;gap:10px;margin-top:18px}
+.wlp-lfg .mbtns button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none}
+.wlp-lfg .mbtns .cancel{background:var(--bg);border:1.5px solid var(--border);color:var(--text)}
+.wlp-lfg .mbtns .confirm{background:var(--green);color:#fff}
+.wlp-lfg .mbtns .confirm:disabled{opacity:.45;cursor:not-allowed}
+.wlp-lfg .pin-err{color:var(--red);font-size:12.5px;font-weight:700;margin:-5px 0 14px}
+.wlp-lfg .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.wlp-lfg .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-lfg .toast.err{background:var(--red)}
+
+/* 종합접수처 첫 화면으로 돌아가기 (2026-08-13 GM 지시) — 본문 기둥 왼쪽 끝에 맞춘다 */
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 플로팅 문의 버튼은 전 크기 숨김 */.buttonizer,#buttonizer,[class*="buttonizer"]{display:none!important}@media (max-width:600px){.wlp-lfg .grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#faf9f7!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}.wlp-lfg{ position:relative}
+.wlp-lfg .back-kiosk{position:absolute;top:16px;left:max(16px,calc(50% - 540px));z-index:5;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:44px;
+  border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
+  letter-spacing:.02em;background:transparent;text-decoration:none}
+/* ★2026-09-01 GM "뒤로가기가 너무 천정이랑 딱 달라붙어서" — 여기 있던 (1001px 이상 top:auto)
+   규칙을 뺐다. top:auto 는 헤더가 있던 시절 로고 아래로 자연스럽게 흐르게 하려던 것인데,
+   헤더를 없앤 지금은 화면 맨 위에 그대로 붙는다. 기본 top:16px 를 그대로 쓰고, 아래에서 본문
+   여백을 종합접수처와 같은 값으로 맞춘다(일관성). */
+@media (max-width:520px){ /* 키오스크 규칙은 최상위로 옮김(아래) */@media (max-width:600px){body.page-id-8462 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}}.wlp-lfg .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px} }
+
+/* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
+   휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
+   키오스크 판정은 다른 확대 규칙과 같은 조건(폭 700px 이상 + 세로 화면). */
+@media (max-width:699px){ .wlp-lfg .back-kiosk{display:none} }
+@media (orientation:landscape){ .wlp-lfg .back-kiosk{display:none} }
+
+</style>
+<script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
+
+<div class="wlp-lfg">
+<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion</p>
+    <h1>습득 분실물 현황</h1>
+    <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
+    <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+  </div>
+
+  <div class="lf-policy">
+    <div class="lf-policy-h">📋 습득 분실물 보관·처분 안내 <span class="badge">회원·직원 필독</span></div>
+    <ul>
+      <li>📅 습득한 달 포함 약 <b>1~2개월 보관·공지 후 처분</b>합니다(습득월→다음달 공지→그다음달 처분).</li>
+      <li>🟢 소모품(우산·수건·양말)은 <b>처분월에 폐기</b> / 🟡 일반·🔴 귀중품은 관할 <b>경찰서·LOST112</b>로 인계합니다(유실물법).</li>
+      <li>귀중품(현금·지갑·귀금속·전자기기)은 접수 즉시 <b>별도 보관</b>합니다.</li>
+      <li>수령: 본인 물건이라 생각되면 <b>담당 매니저에게 문의</b>해 주세요 — 직원 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령합니다.</li>
+    </ul>
+  </div>
+
+  <div class="topbar">
+    <div class="month-filter">
+      <label for="monthSel">습득월</label>
+      <select class="month-select" id="monthSel"><option value="">전체</option></select>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
+
+  <p class="info-note">본인 물건이면 <b>현장 직원(담당 매니저)</b>에게 문의해 주세요 — 직원이 카드를 눌러 이 화면에서 바로 수령 처리(직원 확인 → 서명)합니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>하루의 완성, 웰페리온</p>
+</div>
+
+<!-- 직원 확인 PIN 모달 (수령 진입 게이트 · a9fcfe705 복구) -->
+<div class="modal-back" id="pinBack">
+  <div class="modal">
+    <h2>직원 확인</h2>
+    <div class="msub">회원 서명까지 받았습니다. 마지막으로 직원 비밀번호를 입력하면 수령이 완료됩니다.</div>
+    <div class="mfield">
+      <label for="pinInput">직원 비밀번호</label>
+      <input type="password" id="pinInput" placeholder="비밀번호 입력" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="pin-err" id="pinErr" style="display:none">비밀번호가 맞지 않습니다</div>
+    <div class="mbtns">
+      <button class="cancel" id="pinCancel" type="button">취소</button>
+      <button class="confirm" id="pinConfirm" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수령 서명 모달 (a9fcfe705 복구) -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h2>습득물 수령 확인</h2>
+    <div class="msub">현장 직원이 회원 본인확인 후 서명을 받아주세요.</div>
+    <div class="mitem" id="mItem"></div>
+
+    <!-- ① 수령 회원 서명 (성함 + 장소 + 서명패드) -->
+    <div class="mfield">
+      <label for="m_receiver">① 수령 회원 성함</label>
+      <input type="text" id="m_receiver" placeholder="수령하시는 회원 성함" autocomplete="off">
+    </div>
+    <div class="mfield">
+      <label for="m_loc">수령 장소</label>
+      <select id="m_loc"></select>
+    </div>
+    <div class="mfield">
+      <label>수령 회원 서명</label>
+      <div class="sign-wrap">
+        <canvas id="signPad"></canvas>
+        <div class="sign-hint" id="signHint">여기에 서명해 주세요</div>
+      </div>
+      <span class="sign-clear" id="signClear">✕ 다시 서명</span>
+    </div>
+
+    <!-- ② 주는 담당자 선택 -->
+    <div class="mfield">
+      <label for="m_staff">② 주는 담당자</label>
+      <select id="m_staff"></select>
+      <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
+    </div>
+
+    <!-- ③ 수령 완료 -->
+    <div class="mbtns">
+      <button class="cancel" id="mCancel" type="button">취소</button>
+      <button class="confirm" id="mConfirm" type="button">수령 완료</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 서버 관문 /api/write, 아니면 종전 GAS 그대로.
+     서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
+     GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
+     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/write' : RECEPTION_API; }
+  var CACHE_KEY = 'wlp_lf_gallery_v1';
+  var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
+
+  // ── 수령 처리 상수 (종합접수처_현황.html과 동일 값 — 새 인증체계·새 엔드포인트 없음) ──
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+  var STAFF = ['김남욱','이경연','최준용','임정은','윤병현','백승화','이정헌','김종현','박호균','나우열'];
+  // ⚠️ 화면 쪽 PIN — 소스보기로 노출된다. '실수 방지' 수준의 잠금이며 진짜 보안이 아니다.
+  // 진짜 잠금은 서버(lf_handover)가 서명 유무를 다시 검증한다 — 2중 방어(2026-08-31).
+  var LF_STAFF_PIN = '62611200';
+  var PIN_SESSION_KEY = 'wlp_lf_staff_pin_ok';
+
+  function $(id){ return document.getElementById(id); }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
+  function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
+  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월' (배지용)
+  function _fullMonthLabel(ym){ var p=String(ym||'').split('-'); var y=parseInt(p[0],10),m=parseInt(p[1],10); return (isNaN(y)||isNaN(m))?ym:(y+'년 '+m+'월'); } // 'YYYY-MM' → 'YYYY년 M월' (필터용)
+  function _rowMonth(r){ var m=String(r.foundWhen||r.createdAt||'').slice(0,7); return /^\d{4}-\d{2}$/.test(m)?m:''; }
+  function _catBadge(cat){
+    if(cat==='consumable') return '<span class="cat-badge">🟢 소모품</span>';
+    if(cat==='general') return '<span class="cat-badge">🟡 일반</span>';
+    if(cat==='valuable') return '<span class="cat-badge">🔴 고가·중요</span>';
+    return '';
+  }
+
+  // 수령장소 옵션
+  (function(){ var s=$('m_loc'); LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
+  // 주는 담당자 옵션 (선택 placeholder + 직원 목록 + 기타)
+  (function(){ var s=$('m_staff'); var ph=document.createElement('option'); ph.value=''; ph.textContent='담당자 선택'; s.appendChild(ph); STAFF.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; s.appendChild(o); }); var e=document.createElement('option'); e.value='기타'; e.textContent='기타(직접 입력)'; s.appendChild(e); })();
+  $('m_staff').addEventListener('change',function(){ var oth=$('m_staff_other'); if(this.value==='기타'){ oth.style.display='block'; oth.focus(); } else { oth.style.display='none'; oth.value=''; } });
+
+  var _loading=false, _monthSel='', _cur=null;
+  var _upcoming={}, _lastRows=[]; // lf_disposal: foundId→disposeMonth('YYYY-MM') 맵 · 그리드 원본(미필터 전체)
+
+  function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
+  function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
+  function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
+  function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s='<div class="loading-tag">불러오는 중…</div>'; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
+
+  // ── 월 선택 필터 (foundWhen 습득월 기준, 클라이언트 필터 · 재fetch 없음) ──
+  function _populateMonths(rows){
+    var seen={}; rows.forEach(function(r){ var m=_rowMonth(r); if(m) seen[m]=true; });
+    var months=Object.keys(seen).sort().reverse(); // 내림차순(최신월 먼저)
+    var sel=$('monthSel'); var cur=sel.value;
+    sel.innerHTML='<option value="">전체</option>'+months.map(function(m){ return '<option value="'+m+'">'+_esc(_fullMonthLabel(m))+'</option>'; }).join('');
+    sel.value=(months.indexOf(cur)>=0)?cur:'';
+    _monthSel=sel.value;
+  }
+  function _applyFilter(rows){ return _monthSel?rows.filter(function(r){ return _rowMonth(r)===_monthSel; }):rows; }
+  $('monthSel').addEventListener('change',function(){ _monthSel=this.value; _renderFiltered(); });
+
+  function _renderRows(rows){
+    _lastRows=rows;
+    _populateMonths(rows);
+    _renderFiltered();
+  }
+  function _renderFiltered(){
+    var grid=$('grid');
+    var rows=_applyFilter(_lastRows);
+    if(!rows.length){ grid.innerHTML='<div class="state-msg">'+(_monthSel?'해당 월에 게시중인 습득물이 없습니다.':'현재 게시중인 습득물이 없습니다.')+'</div>'; return; }
+    // 폐기 임박(disposeMonth 있는 항목=전월 습득 코호트)을 그리드 상단으로 — 폐기월 오름차순, 그 외는 기존 순서 유지(안정 정렬)
+    var sorted=rows.slice().sort(function(a,b){
+      var ra=_upcoming[a.foundId], rb=_upcoming[b.foundId];
+      var ha=ra!=null, hb=rb!=null;
+      if(ha&&hb) return ra<rb?-1:(ra>rb?1:0);
+      if(ha) return -1;
+      if(hb) return 1;
+      return 0;
+    });
+    grid.innerHTML=sorted.map(_gcard).join('');
+  }
+
+  function load(opts){
+    opts=opts||{};
+    var grid=$('grid');
+    // 캐시 우선(stale-while-revalidate): 재방문 시 즉시 표시
+    if(!opts.force){
+      var c=_readCache();
+      if(c){ _renderRows(c.data); if(Date.now()-c.ts < CACHE_TTL){ return; } }
+    }
+    if(_loading) return; _loading=true;
+    if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML=_skeleton(6); }
+    fetch(RECEPTION_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _loading=false;
+        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; } return; }
+        var rows=Array.isArray(d.data)?d.data:[];
+        _writeCache(rows);
+        _renderRows(rows);
+      })
+      .catch(function(){ _loading=false; if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; } });
+  }
+
+  function _gcard(r){
+    var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
+    var disposeMonth=_upcoming[r.foundId];
+    var imminent=disposeMonth!=null;
+    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 처분예정</div>'):'';
+    return '<div class="gcard'+(imminent?' imminent':'')+'" data-claim="'+_esc(r.foundId||'')+'" data-desc="'+_esc(r.itemDesc||'')+'" data-loc="'+_esc(r.foundLoc||'')+'" data-photo="'+_esc(r.photoUrl||'')+'">'+ph+
+      '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
+      '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
+      '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
+      '</div></div>';
+  }
+
+  // ── 폐기 임박(upcoming) — lf_disposal(공개). 처분 완료 기록·수령·삭제는 종합접수처(직원 게이트) 전용 ──
+  function loadDisposal(){
+    fetch(RECEPTION_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d||!d.ok) return; // 실패는 조용히 스킵 — 게시중 그리드는 그대로 유지
+        var up=Array.isArray(d.upcoming)?d.upcoming:[];
+        _upcoming={};
+        up.forEach(function(u){ _upcoming[u.foundId]=u.disposeMonth; });
+        if(_lastRows.length){ _renderRows(_lastRows); } // 이미 렌더된 게시중 그리드에 배지·정렬 재적용
+      })
+      .catch(function(){ /* 조용히 스킵 */ });
+  }
+
+  // ── 직원 PIN 확인 (수령 진입 게이트, sessionStorage로 세션 중 1회만 · a9fcfe705 복구) ──
+  function _staffPinOk(){ try{ return sessionStorage.getItem(PIN_SESSION_KEY)==='1'; }catch(e){ return false; } }
+  function _setStaffPinOk(){ try{ sessionStorage.setItem(PIN_SESSION_KEY,'1'); }catch(e){} }
+  var _pinCb=null;
+  function _askStaffPin(cb){
+    _pinCb=cb;
+    $('pinErr').style.display='none';
+    $('pinInput').value='';
+    $('pinBack').classList.add('show');
+    setTimeout(function(){ $('pinInput').focus(); },30);
+  }
+  function _closePinModal(){ $('pinBack').classList.remove('show'); _pinCb=null; }
+  $('pinCancel').addEventListener('click',_closePinModal);
+  $('pinBack').addEventListener('click',function(e){ if(e.target===this) _closePinModal(); });
+  $('pinConfirm').addEventListener('click',function(){
+    if($('pinInput').value===LF_STAFF_PIN){
+      _setStaffPinOk();
+      var cb=_pinCb; _closePinModal();
+      if(cb) cb();
+    } else {
+      $('pinErr').style.display='block';
+    }
+  });
+  $('pinInput').addEventListener('keydown',function(e){ if(e.key==='Enter'){ $('pinConfirm').click(); } });
+
+  /* ── 카드 클릭 → 바로 수령 서명 모달 (직원 코드는 맨 끝) ──
+     ★2026-08-31 GM 지시: "회원님이 먼저 수령 서명까지 완료하고 직원 코드 입력이 되게끔."
+     종전에는 카드를 누르는 순간 직원 비밀번호 창이 떠서, 회원이 자기 물건을 눌러도
+     비밀번호부터 마주쳤다. 순서를 뒤집는다 — 성함·서명·담당자까지 회원 앞에서 마치고,
+     「수령 완료」를 누를 때 직원이 코드를 넣는다. 잠금은 약해지지 않는다: 서버(lf_handover)가
+     서명 유무를 다시 검증하고, 코드를 취소하면 전송 자체가 일어나지 않는다. */
+  $('grid').addEventListener('click',function(ev){
+    var c=ev.target.closest('[data-claim]'); if(!c) return;
+    _cur={ id:c.getAttribute('data-claim'), desc:c.getAttribute('data-desc'), loc:c.getAttribute('data-loc'), photo:c.getAttribute('data-photo') };
+    openModal();
+  });
+  function openModal(){
+    var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
+    $('mItem').innerHTML=img+'<div><div class="mt">'+_esc(_cur.desc||'(설명 없음)')+'</div><div class="mm">'+_esc(_cur.id)+' · 📍 '+_esc(_cur.loc||'-')+'</div></div>';
+    $('m_receiver').value=''; $('m_staff').value=''; $('m_staff_other').value=''; $('m_staff_other').style.display='none';
+    /* 수령 장소 기본값 = 리셉션 (실무진 피드백 2026-09-01 · 종합접수처_현황.html 과 같은 규칙).
+       종전에는 습득 장소를 그대로 넣어 수령 장소가 매번 틀렸다 — 습득 장소와 수령 장소는 다른 값이다. */
+    $('m_loc').value='리셉션';
+    clearPad();
+    $('modalBack').classList.add('show');
+    setTimeout(resizePad,30);
+  }
+  function closeModal(){ $('modalBack').classList.remove('show'); _cur=null; }
+  $('mCancel').addEventListener('click',closeModal);
+  $('modalBack').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+  // ── 서명패드 (canvas + pointer → toDataURL PNG) ──
+  var _signCv=$('signPad'), _signCtx=_signCv.getContext('2d'), _drawing=false, _hasInk=false, _lastX=0, _lastY=0;
+  function resizePad(){
+    var rect=_signCv.getBoundingClientRect(); if(!rect.width) return;
+    var dpr=window.devicePixelRatio||1;
+    _signCv.width=Math.round(rect.width*dpr); _signCv.height=Math.round(rect.height*dpr);
+    _signCtx.setTransform(dpr,0,0,dpr,0,0);
+    _signCtx.lineWidth=2.2; _signCtx.lineCap='round'; _signCtx.lineJoin='round'; _signCtx.strokeStyle='#1a1a1a';
+  }
+  window.addEventListener('resize',function(){ if($('modalBack').classList.contains('show')){ resizePad(); } });
+  function _pt(e){ var r=_signCv.getBoundingClientRect(); var p=(e.touches&&e.touches[0])||e; return { x:p.clientX-r.left, y:p.clientY-r.top }; }
+  function _signStart(e){ e.preventDefault(); _drawing=true; var p=_pt(e); _lastX=p.x; _lastY=p.y; if(!_hasInk){ _hasInk=true; $('signHint').style.display='none'; } }
+  function _signMove(e){ if(!_drawing) return; e.preventDefault(); var p=_pt(e); _signCtx.beginPath(); _signCtx.moveTo(_lastX,_lastY); _signCtx.lineTo(p.x,p.y); _signCtx.stroke(); _lastX=p.x; _lastY=p.y; }
+  function _signEnd(){ _drawing=false; }
+  _signCv.addEventListener('pointerdown',_signStart); _signCv.addEventListener('pointermove',_signMove);
+  window.addEventListener('pointerup',_signEnd);
+  function clearPad(){ _hasInk=false; _signCtx&&_signCtx.clearRect(0,0,_signCv.width,_signCv.height); $('signHint').style.display='block'; }
+  $('signClear').addEventListener('click',clearPad);
+
+  // ── 수령 확정 (lf_handover · 종합접수처_현황.html과 동일 액션/토큰) ──
+  $('mConfirm').addEventListener('click',function(){
+    if(!_cur){ return; }
+    var receiver=$('m_receiver').value.trim();
+    if(!receiver){ toast('수령 회원 성함을 입력해 주세요',true); return; }
+    if(!_hasInk){ toast('수령 회원 서명을 받아주세요',true); return; }
+    var staffSel=$('m_staff').value;
+    var handoverStaff=(staffSel==='기타')?$('m_staff_other').value.trim():staffSel;
+    if(!staffSel){ toast('주는 담당자를 선택해 주세요',true); return; }
+    if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요',true); $('m_staff_other').focus(); return; }
+    var sign=_signCv.toDataURL('image/png');
+    var btn=this;
+    /* 직원 코드는 서명이 끝난 여기서 받는다(GM 지시 2026-08-31). 이 기기에서 한 번 넣었으면
+       다시 묻지 않는다. 취소하면 아무것도 전송되지 않는다. */
+    if(_staffPinOk()){ _sendHandover(btn, receiver, handoverStaff, sign); }
+    else { _askStaffPin(function(){ _sendHandover(btn, receiver, handoverStaff, sign); }); }
+  });
+  function _sendHandover(btn, receiver, handoverStaff, sign){
+    if(!_cur){ return; }
+    btn.disabled=true; btn.textContent='처리 중…';
+    var payload={ action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+    fetch(_rcWriteUrl(),{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        btn.disabled=false; btn.textContent='수령 완료';
+        if(d&&d.ok){ toast(_cur.id+' 수령완료 처리됨'); _clearCache(); closeModal(); load({force:true}); }
+        else { toast((d&&d.error)||'수령 처리 실패',true); }
+      })
+      .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
+  }
+
+  // 헤더 로고 → 홈 대신 종합접수처(/ko/reception/)로 (WP Salient #logo; 스탠드얼론엔 없음 → 무해)
+  function _relinkLogo(){ try{ var lg=document.getElementById('logo'); if(lg){ var a=(lg.tagName==='A')?lg:(lg.querySelector('a')||lg); if(a&&a.setAttribute){ a.setAttribute('href','/ko/reception/'); } } }catch(e){} }
+  _relinkLogo(); document.addEventListener('DOMContentLoaded',_relinkLogo); setTimeout(_relinkLogo,600); setTimeout(_relinkLogo,1600);
+
+  // A1: 헤더·안내·레이아웃은 정적 즉시 렌더 → 그리드는 스켈레톤 → idle/지연 후 fetch(LCP를 GAS 콜드스타트와 분리)
+  $('grid').innerHTML=_skeleton(6);
+  var _kick=function(){ load(); loadDisposal(); };
+  if('requestIdleCallback' in window){ requestIdleCallback(_kick,{timeout:1200}); }
+  else { setTimeout(_kick,60); }
+})();
+</script>
+
+<!-- 백스페이스 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 백스페이스 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/ko/lookup/';
+  });
+})();
+</script>
+
+
+<!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
+     남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작 — 휴대폰·PC 방문 회원은 안 튄다. -->
+<script>
+(function(){
+  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var LOOKUP = 'http://wellperion.com/ko/lookup/';
+  var IDLE = 60, left = IDLE, pill;
+  function hasInput(){
+    var els = document.querySelectorAll('input,textarea,select');
+    for (var i=0;i<els.length;i++){
+      var e = els[i];
+      if (e.type==='hidden'||e.type==='button'||e.type==='submit') continue;
+      if (e.type==='checkbox'||e.type==='radio'){ if (e.checked) return true; continue; }
+      if (e.value && String(e.value).trim()) return true;
+    }
+    return false;
+  }
+  function ensurePill(){
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:6;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.55);color:#fff;pointer-events:none;display:none';
+    document.body.appendChild(pill);
+    return pill;
+  }
+  function tick(){
+    if (document.visibilityState === 'hidden') return;
+    var on = KIOSK.matches, p = ensurePill();
+    p.style.display = on ? 'block' : 'none';
+    if (!on){ left = IDLE; return; }
+    left--;
+    p.textContent = left + '초 후 처음 화면으로';
+    if (left <= 0){
+      if (hasInput()){ left = IDLE; return; }
+      location.href = LOOKUP;
+    }
+  }
+  function poke(){ left = IDLE; }
+  ['click','touchstart','keydown','input','change','scroll'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  setInterval(tick, 1000);
+})();
+</script>
+
+<!-- 키오스크 화면 확대 고정 (kiosk-zoom-lock · 2026-08-24 시우 · 실무진 신고 FB260820-144009)
+     최준용M: "조작하는 이용자가 없는데도 화면이 확대(Zoom-in)된 상태로 유지된다."
+     원인: 이 화면들은 단계를 넘어갈 때 페이지를 새로 여는 게 아니라 자바스크립트로 화면만 갈아낀다.
+     브라우저 확대 배율은 그 갈아끼우기로 풀리지 않으므로, 누군가 손가락으로 한 번 벌려 놓으면
+     60초 자동복귀가 돌아도 확대된 채로 남는다. 그래서 확대가 되는 것 자체를 막는다.
+     ★같은 코드가 키오스크 4개 화면(접수 조회·종합접수처·습득물 보기·습득물 접수)에 모두 들어간다 —
+       한 화면만 막으면 옆 화면에서 확대된 채로 넘어와 그대로 남는다.
+     ★Ctrl+0(확대 100%로 되돌리기)은 일부러 막지 않았다. 이미 커져 있는 키오스크를 한 번은
+       사람이 되돌려야 하는데, 그것까지 막으면 되돌릴 방법이 없어진다. -->
+<script>
+(function(){
+  if (window.__wlpKioskZoomLock) return;   /* 두 블록이 한 페이지에 같이 실려도 한 번만 */
+  window.__wlpKioskZoomLock = true;
+
+  /* ① 화면 비율 100% 고정 — 워드프레스 테마가 넣어 둔 viewport 설정을 덮어쓴다. */
+  var v = document.querySelector('meta[name=viewport]');
+  if (!v) { v = document.createElement('meta'); v.setAttribute('name','viewport'); document.head.appendChild(v); }
+  v.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+
+  /* ② 손가락 두 개로 벌리는 확대 차단. passive:false 라야 preventDefault 가 먹는다. */
+  document.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, {passive:false});
+
+  /* 아이패드 사파리는 touchmove 가 아니라 gesture 이벤트로 확대한다 — 따로 막는다. */
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false});
+  });
+
+  /* ③ Ctrl+휠(마우스·터치패드), Ctrl 더하기/빼기 확대 차단. Ctrl+0 은 남겨 둔다(되돌리기용). */
+  document.addEventListener('wheel', function(e){ if (e.ctrlKey) e.preventDefault(); }, {passive:false});
+  document.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && ['+','-','='].indexOf(e.key) >= 0) e.preventDefault();
+  });
+
+  /* ④ 두 번 빠르게 두드려 커지는 확대 + 글자 자동 확대 차단. */
+  var s = document.createElement('style');
+  s.textContent = 'html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}';
+  document.head.appendChild(s);
+})();
+</script>
+
+</body>
+</html>

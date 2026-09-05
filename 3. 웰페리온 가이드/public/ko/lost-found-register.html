@@ -1,0 +1,470 @@
+<!-- 산출물 — 직접 수정 금지. 정본 = 3. 웰페리온 가이드/coo/reception/wp_lost_found_register_block.html · 재생성 = scripts/build_public_pages.py -->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 습득물 접수(직원)</title>
+</head>
+<body class="page-id-8464">
+<!-- 웰페리온 습득물 접수(직원 전용) 블록 — 워드프레스 페이지 본문 직접 주입 소스 (SSOT)
+     ★ 2026-07-16 디자인 재정렬: 회원 접수 폼(reception_block.html)과 동일 브랜드 헤더 골격 도입
+        (eyebrow·h1·골드 디바이더) + 직원 전용 배지 + 차콜 그라디언트 제출버튼으로 시각 구분. JS·id 불변.
+     ★ lost_found_register.html(스탠드얼론 원본)을 종합접수처(reception_block.html)와 동일한
+        직접 인라인 주입 방식으로 변환: iframe 없이 vc_raw_html 로 페이지 본문에 그대로 심는다.
+        결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
+     ★ 기능: 접수 단일 폼(사진 자동압축→Drive·습득일시·습득장소·설명·처리직원 → lf_submit).
+        수령(서명)은 공개 갤러리 카드에서 진행.
+     ★ 2026-07-18 생애주기 단순화(시우): 관리 탭(lf_list·lf_void) 제거 — 접수 단일 폼. 오등록 삭제는
+        습득물 보기(갤러리) 직원 게이트에서 lf_delete로 처리. 30일 미수령 시 자동 폐기(폐기 공지 게시).
+     ★ 2026-07-18 회원/직원 뷰 분리(시우): 습득물 보기(갤러리) 직원 진입 링크 추가(?staff=1, 라이브 WP URL).
+     ★ 접근 게이트(비밀번호 커튼) 제거 (2026-07-15 시토·GM 지시 "비밀번호 없애줘"):
+        직원이 현장에서 바로 등록하도록 무인증 접근. gate.js 인라인 커튼 삭제 —
+        단, 위조방지용 제출 토큰(RECEPTION_SUBMIT_TOKEN=lf_submit)은 폼 내부에 그대로 유지(백엔드 보호).
+     ★ CSS 충돌 방지: 전 규칙을 .wlp-lfr 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
+        WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfr-page 한정으로 숨김
+        (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
+<link rel="stylesheet" href="/assets/wp-typography.css">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+/* ★2026-09-02 — 스크롤 관련 두 줄을 지웠다(습득물 보기·종합접수처와 같은 처방).
+   문서 전체에 넘침 처리를 주면 본문이 자기 스크롤 상자가 되면서 페이지 전체 스크롤이 끊기고,
+   래퍼에 넘침연쇄 차단을 주면 손가락으로 민 힘이 문서로 넘어가지 못한다. 둘 다 2026-08-14 에
+   스크롤 보장용으로 넣었지만 정반대로 작동한다. 규칙을 두지 않는 것이 정답이다.
+   탭 지연 제거만 남긴다. 주석에 코드를 그대로 인용하지 않는다(찾기 오탐 방지). */
+.wlp-lfr button,.wlp-lfr a,.wlp-lfr input,.wlp-lfr select,.wlp-lfr textarea{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 위 09-02 설명대로 문서에 맡긴다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
+/* ── 습득물 접수(직원 전용) 페이지 한정 테마 보정 (body.wlp-lfr-page) ── */
+body.wlp-lfr-page h1.entry-title,
+body.wlp-lfr-page .entry-title,
+body.wlp-lfr-page .page-title,
+body.wlp-lfr-page .title-container h1,
+body.wlp-lfr-page .page-header h1{display:none!important}
+body.wlp-lfr-page .buttonizer,
+body.wlp-lfr-page #buttonizer,
+body.wlp-lfr-page [class*="buttonizer"]{display:none!important}
+/* ── 맨 위 흰 띠 제거 (2026-08-13 GM 지시) ──
+   Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
+   페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
+   페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+body.wlp-lfr-page #header-space,
+body.wlp-lfr-page #header-outer,
+body.wlp-lfr-page #header-outer .container,
+body.wlp-lfr-page #top{background:#f6f6f6!important;border:none!important;box-shadow:none!important}
+/* 이 페이지는 본문 바탕이 밝은 회색(#f6f6f6)인데 body 바탕은 어두워서, 투명으로 두면
+   흰 줄 대신 검은 줄이 생긴다 — 본문 바탕색을 그대로 물려 이어지게 한다. */
+body.wlp-lfr-page a.lang-header{display:none!important}
+body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
+@media (max-width:1000px){
+  body.wlp-lfr-page #header-outer #logo{margin-top:22px!important}
+}
+
+/* ── Design tokens + 베이스 (.wlp-lfr 스코프) ── */
+.wlp-lfr{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+  --blue:#2471a3;--orange:#d68910;
+  /* 직원 전용 차콜 톤 — 회원 접수 폼(골드 accent)과 시각 구분용, 제출버튼·배지 전용 */
+  --charcoal:#3b3a44;--charcoal-2:#2c2b34;--charcoal-bg:rgba(59,58,68,0.08);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  /* ② 이중 배경 제거 (2026-07-15 시토·GM 지시): 래퍼가 아이보리(--bg #faf9f7)를 깔면
+     테마 .container-wrap 회색(#f6f6f6) 위에 얹혀 '아이보리+회색' 이중색·경계로 보임 →
+     reception_block(.wlp-recept)와 동일하게 배경 투명화해 페이지 배경 1겹만 노출(경계 0).
+     (--bg 토큰은 입력칸·photo-zone 배경용으로 그대로 유지) */
+  background:transparent;color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+}
+.wlp-lfr *{margin:0;padding:0;box-sizing:border-box}
+.wlp-lfr a{color:var(--accent);text-decoration:none}
+/* ② 짜투리 여백 축소로 스크롤 단축 (2026-07-15 시토·GM 지시): 상 34→20 · 하 70→40.
+   데스크톱 상단은 아래 로고 겹침수리 override(90px)가 유지 — 겹침 0 보존. */
+.wlp-lfr .wrap{max-width:640px;margin:0 auto;padding:20px 18px 40px}
+/* ② 'WELLPERION STAFF' ↔ 헤더 로고 겹침 해소 (2026-07-15 시토·GM 지시): 데스크톱에서 헤더 로고가
+   position:absolute 로 본문 상단(≈y60–130) 위에 겹쳐 brand-eyebrow(≈y103–125)와 충돌 →
+   본문 상단 여백 확보로 로고 아래로 이격(겹침 0). ★반드시 위 .wrap 기본 padding 규칙보다 뒤에 둬야
+   같은 특이도에서 소스순서로 이김. 모바일(≤1000px)은 이미 로고와 충분히 이격돼 무영향. */
+@media (min-width:1001px){
+  .wlp-lfr .wrap{padding-top:90px}
+}
+
+.wlp-lfr .brand{text-align:center;margin-bottom:22px}
+.wlp-lfr .brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
+.wlp-lfr .brand h1{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.5px;margin-bottom:0}
+.wlp-lfr .brand p{font-size:13.5px;color:#777}
+/* ── 골드 디바이더 (회원 접수 폼 reception_block.html 과 동일 브랜드 골격) ── */
+.wlp-lfr .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px auto 16px;max-width:260px}
+.wlp-lfr .gd-line{flex:1;height:1px}
+.wlp-lfr .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.wlp-lfr .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.wlp-lfr .gd-diamond{color:var(--accent);font-size:9px;line-height:1}
+/* ── 직원 전용 배지 — 차콜 톤(회원 폼엔 없는 직원 구분 표식) ── */
+.wlp-lfr .staff-badge{
+  display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+  padding:6px 16px;background:var(--charcoal-bg);color:var(--charcoal);
+  border:1px solid rgba(59,58,68,0.22);border-radius:20px;
+  font-size:12.5px;font-weight:700;letter-spacing:.2px
+}
+/* ── 운영 가이드 링크 버튼 (2026-07-18: 접수↔가이드 양방향 도입) ── */
+.wlp-lfr .guide-link-btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:12px;
+  padding:9px 16px;background:var(--accent-bg);color:var(--accent);
+  border:1.3px solid rgba(176,141,87,0.35);border-radius:20px;
+  font-size:12.5px;font-weight:700;letter-spacing:.2px
+}
+.wlp-lfr .guide-link-btn:hover{background:rgba(176,141,87,0.16)}
+
+/* PII 안내 배너 */
+.wlp-lfr .pii{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--red-bg);border:1px solid rgba(192,57,43,0.28);
+  border-radius:12px;padding:13px 15px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#7a2f26
+}
+.wlp-lfr .pii .ic{font-size:18px;line-height:1.3}
+.wlp-lfr .pii b{color:var(--red)}
+
+.wlp-lfr .card{background:var(--paper);border:1px solid var(--border);border-radius:18px;padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.wlp-lfr .field{margin-bottom:15px}
+.wlp-lfr .field:last-child{margin-bottom:0}
+.wlp-lfr label.fl{display:block;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
+.wlp-lfr label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+.wlp-lfr .fl-help{font-size:12px;color:var(--dim);margin-top:7px;line-height:1.6}
+.wlp-lfr input[type=text],.wlp-lfr input[type=datetime-local],.wlp-lfr textarea,.wlp-lfr select{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);
+  /* 글자 16px 고정 (2026-08-24 시우 · 실무진 신고 FB260820-144009 "키오스크 화면이 저절로 확대된다").
+     원인은 이 값이 15px 이었던 것 — 모바일·태블릿 브라우저는 입력칸 글자가 16px 보다 작으면
+     칸을 누르는 순간 화면을 자동으로 확대한다. 그 확대가 자동복귀 뒤에도 남아 화면이 커진 채로 있었다.
+     16px 로 올리면 확대 자체가 일어나지 않는다. 15px 이하로 되돌리지 말 것. */
+  padding:13px 14px;border-radius:12px;font-size:16px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
+}
+.wlp-lfr input:focus,.wlp-lfr textarea:focus,.wlp-lfr select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+.wlp-lfr textarea{min-height:90px;resize:vertical}
+.wlp-lfr input[type=datetime-local]{color-scheme:light}
+.wlp-lfr select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+
+.wlp-lfr .photo-zone{border:1.5px dashed var(--border);border-radius:12px;padding:22px;text-align:center;cursor:pointer;background:var(--bg);display:block}
+.wlp-lfr .photo-zone:hover{border-color:var(--accent)}
+.wlp-lfr .photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+.wlp-lfr .photo-zone .ph-text{font-size:13.5px;color:var(--dim)}
+.wlp-lfr .photo-zone input[type=file]{display:none}
+.wlp-lfr .preview{margin-top:12px;display:none}
+.wlp-lfr .preview img{width:100%;max-height:280px;object-fit:cover;border-radius:12px;border:1px solid var(--border)}
+.wlp-lfr .preview .rm{display:inline-block;margin-top:8px;font-size:13px;color:var(--red);cursor:pointer;font-weight:600}
+
+/* 직원용 제출버튼 — 회원 접수 폼(골드)과 달리 차콜 그라디언트로 '직원 전용' 시각 구분 */
+.wlp-lfr .submit-wrap{position:relative;margin-top:4px}
+.wlp-lfr .submit{width:100%;padding:17px;background:linear-gradient(135deg,var(--charcoal),var(--charcoal-2));color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:0;letter-spacing:.3px;box-shadow:0 4px 14px rgba(44,43,52,.25);transition:opacity .18s,transform .12s}
+.wlp-lfr .submit:hover{opacity:.92}
+.wlp-lfr .submit:active{transform:scale(.99)}
+.wlp-lfr .submit:disabled{opacity:.45;cursor:not-allowed}
+.wlp-lfr .submit-tag{
+  position:absolute;top:-9px;right:14px;
+  background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;
+  padding:3px 10px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.15);pointer-events:none
+}
+
+.wlp-lfr .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.15);max-width:90%;text-align:center}
+.wlp-lfr .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-lfr .toast.err{background:var(--red)}
+
+.wlp-lfr .note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.7}
+
+/* 종합접수처 첫 화면으로 돌아가기 (2026-08-13 GM 지시) — 본문 기둥 왼쪽 끝에 맞춘다 */
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 테마 헤더는 전 크기 숨김 · 플로팅 문의 버튼 숨김 */.buttonizer,#buttonizer,[class*="buttonizer"]{display:none!important}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#faf9f7!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}}.wlp-lfr{ position:relative}
+.wlp-lfr .back-kiosk{position:absolute;top:16px;left:max(16px,calc(50% - 320px));z-index:5;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:44px;
+  border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
+  letter-spacing:.02em;background:transparent;text-decoration:none}
+@media (min-width:1001px){ .wlp-lfr .back-kiosk{top:auto} }
+@media (max-width:520px){ /* 키오스크 규칙은 최상위로 옮김(아래) */@media (max-width:600px){body.page-id-8464 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}.wlp-lfr .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px} }
+
+/* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
+   휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
+   키오스크 판정은 다른 확대 규칙과 같은 조건(폭 700px 이상 + 세로 화면). */
+@media (max-width:699px){ .wlp-lfr .back-kiosk{display:none} }
+@media (orientation:landscape){ .wlp-lfr .back-kiosk{display:none} }
+</style>
+<script>try{document.body.classList.add('wlp-lfr-page');}catch(e){}
+/* ① 헤더 로고 링크: 홈(/ko/) → 종합접수처(/ko/reception/) (2026-07-15 시토·GM 지시).
+   로고는 WP 테마(Salient) 요소라 블록에서 JS로 href만 재지정 — 누르면 홈이 아니라 부모(종합접수처)로 복귀. */
+(function(){var R='http://wellperion.com/ko/reception/';
+ function relink(){try{['#header-outer #logo','#logo','a.logo','.logo>a','#logo a'].forEach(function(s){
+   document.querySelectorAll(s).forEach(function(el){if(el&&el.tagName==='A'){el.href=R;}});});}catch(e){}}
+ relink();document.addEventListener('DOMContentLoaded',relink);window.addEventListener('load',relink);})();</script>
+
+<div class="wlp-lfr">
+<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion · Staff</p>
+    <h1>🧳 습득물 접수</h1>
+    <div class="gold-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <p>직원 전용 · 주운 물건을 접수하면 회원 열람 갤러리에 게시됩니다.</p>
+    <div class="staff-badge">🔒 직원 전용 · 주운 물건 접수</div>
+    <div><a class="guide-link-btn" href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/lost_found_guide.html" target="_blank" rel="noopener">📋 운영 가이드 (처리 규정·SOP)</a> <a class="guide-link-btn" href="http://wellperion.com/ko/lost-found/?staff=1" target="_blank" rel="noopener">🧳 습득물 현황·처리</a></div>
+  </div>
+
+  <div class="pii">
+    <span class="ic">🔏</span>
+    <span><b>개인정보 최소 촬영</b> — 물건 위주로 촬영해 주세요. 지갑 속 내용물·신분증·카드 등
+    <b>개인을 식별할 수 있는 정보는 가리고</b> 촬영합니다. (공개 갤러리에 사진이 그대로 노출됩니다.)</span>
+  </div>
+
+  <!-- ── 접수 폼 ── -->
+  <div id="regPane">
+    <div class="card">
+      <div class="field">
+        <label class="fl">습득물 사진</label>
+        <label class="photo-zone" for="f_photo">
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">물건 사진을 촬영·첨부하세요 (자동 압축)</div>
+          <input type="file" id="f_photo" accept="image/*" capture="environment">
+        </label>
+        <div class="preview" id="f_preview">
+          <img id="f_previewImg" alt="첨부 사진 미리보기">
+          <div><span class="rm" id="f_removePhoto">✕ 사진 삭제</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_foundWhen">습득 일시</label>
+        <input type="datetime-local" id="f_foundWhen">
+      </div>
+      <div class="field">
+        <label class="fl" for="f_foundLoc">습득 장소</label>
+        <select id="f_foundLoc"></select>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_itemDesc">습득물 설명 <span class="opt">(브랜드·색상·특징)</span></label>
+        <textarea id="f_itemDesc" placeholder="예: 검정 가죽 지갑, 흰색 에어팟 케이스 …"></textarea>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_category">물품 구분</label>
+        <select id="f_category">
+          <option value="consumable">소모품 (우산·수건·양말 등)</option>
+          <option value="general" selected>일반품 (의류·잡화 등)</option>
+          <option value="valuable">고가·중요품 (귀금속·전자기기·현금·카드·신분증)</option>
+        </select>
+        <div class="fl-help">소모품만 처분월에 폐기됩니다. 일반·고가품은 관할 경찰서·LOST112로 인계됩니다. 고가·중요품은 접수 즉시 별도 보관·책임자 보고.</div>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_staff">접수 직원 <span class="opt" style="color:#c8756f;font-weight:800">*필수</span></label>
+        <input type="text" id="f_staff" placeholder="접수한 직원 성함 (예: 리셉션 김OO)" autocomplete="off" required>
+      </div>
+      <!-- 보관위치·내부메모 (2026-08-24 시우 · 실무진 요청 FB260820-143647) — 물건을 어디 뒀는지가
+           접수 시점에 안 적히면, 나중에 주인이 찾아왔을 때 물건을 찾으러 다녀야 한다.
+           두 칸은 현황 보드판 카드에 그대로 뜬다(직원 화면 전용 · 공개 갤러리에는 안 나간다). -->
+      <div class="field">
+        <label class="fl" for="f_storageLoc">보관 위치 <span class="opt">(선택)</span></label>
+        <input type="text" id="f_storageLoc" placeholder="예: 리셉션 보관함 2번 / 사무실 캐비닛" autocomplete="off">
+        <div class="fl-help">여기 적어 두면 현황 보드판에서 바로 보여 물건을 찾으러 다니지 않아도 됩니다.</div>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_memo">내부 메모 <span class="opt">(선택)</span></label>
+        <textarea id="f_memo" placeholder="직원끼리만 보는 메모 (예: 지갑 안 현금 확인 안 함, 락커 12번 앞에서 습득)"></textarea>
+        <div class="fl-help">회원에게는 보이지 않습니다. 직원 현황 화면에만 나옵니다.</div>
+      </div>
+    </div>
+    <div class="submit-wrap">
+      <button class="submit" id="submitBtn" type="button">🧳 습득물 접수하기</button>
+      <span class="submit-tag">직원용</span>
+    </div>
+    <p class="note">등록 즉시 회원 열람 갤러리(게시중)에 노출됩니다.<br>물건을 찾아가면 갤러리에서 현장 서명 후 자동으로 내려갑니다.</p>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토) — ERP 도메인이면 서버 관문 /api/write, 아니면 종전 GAS 그대로.
+     서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양·오류 코드 무변경).
+     GitHub Pages·워드프레스 주입본에선 판정이 false 라 종전 GAS 직행 — 회귀 0.
+     ROLLBACK: 이 함수가 RECEPTION_API 만 반환하게 하면 원복(한 줄). */
+  // 2026-09-05 배984(시토) — GAS 승인 단계 제거: ERP 도메인이면 서버가 원장(lost_found)에 직접 적는 /api/reception/lost 로.
+  function _rcWriteUrl(){ return /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/lost' : RECEPTION_API; }
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
+
+  var photoData='', photoMime='image/jpeg', photoName='';
+  function $(id){ return document.getElementById(id); }
+  function toast(msg,isErr){ var t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(function(){ t.className='toast'+(isErr?' err':''); },2600); }
+
+  // 습득장소 옵션
+  (function(){ var s=$('f_foundLoc'); var o0=document.createElement('option'); o0.value=''; o0.textContent='장소를 선택하세요'; s.appendChild(o0);
+    LOCATIONS.forEach(function(l){ var o=document.createElement('option'); o.value=l; o.textContent=l; s.appendChild(o); }); })();
+
+  // 습득일시 기본값 = 현재 (로컬)
+  (function(){ var d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); $('f_foundWhen').value=d.toISOString().slice(0,16); })();
+
+  // ── 사진 자동압축 (canvas 리사이즈 → JPEG) — 매출지출현황.html 선례 ──
+  function compressImage(file, cb){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var MAX=1600, w=img.width, h=img.height;
+        if(w>MAX||h>MAX){ if(w>=h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        try{ cb(cv.toDataURL('image/jpeg',0.8),'image/jpeg'); }
+        catch(err){ cb(e.target.result, file.type||'image/jpeg'); } // 압축 실패 시 원본
+      };
+      img.onerror=function(){ cb(e.target.result, file.type||'image/jpeg'); };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  $('f_photo').addEventListener('change',function(ev){
+    var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    if(f.size>12*1024*1024){ toast('사진이 너무 큽니다 (12MB 이하)',true); this.value=''; return; }
+    photoMime=f.type||'image/jpeg'; photoName=(f.name||'lf_photo.jpg').replace(/\.[^.]+$/,'')+'.jpg';
+    compressImage(f,function(dataUrl){ photoData=dataUrl; photoMime='image/jpeg';
+      $('f_previewImg').src=dataUrl; $('f_preview').style.display='block'; });
+  });
+  $('f_removePhoto').addEventListener('click',function(){ photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none'; });
+
+  // ── 등록 제출 ──
+  $('submitBtn').addEventListener('click',function(){
+    if(!photoData){ toast('습득물 사진을 첨부해 주세요',true); return; }
+    var foundLoc=$('f_foundLoc').value.trim(), itemDesc=$('f_itemDesc').value.trim();
+    if(!foundLoc && !itemDesc){ toast('습득장소 또는 설명을 입력해 주세요',true); return; }
+    /* 접수 직원 필수(GM 지시 2026-08-03) — 전엔 '등록 직원(선택)'이라 비워도 접수됐다.
+       누가 받았는지가 없으면 나중에 물어볼 사람이 없어 분실물 책임 추적이 끊긴다. */
+    var staffName=$('f_staff').value.trim();
+    if(!staffName){ toast('접수 직원 성함을 입력해 주세요',true); $('f_staff').focus(); return; }
+    var btn=this; btn.disabled=true; btn.textContent='등록 중…';
+    var payload={ action:'lf_submit', t:RECEPTION_SUBMIT_TOKEN,
+      foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
+      category:$('f_category').value, staff:staffName, photo:photoData, fileName:photoName, mimeType:photoMime,
+      storageLoc:$('f_storageLoc').value.trim(), memo:$('f_memo').value.trim() };
+    fetch(_rcWriteUrl(),{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res&&res.ok){ toast('등록 완료 — '+res.id); resetForm(); }
+        else { toast((res&&res.error)||'등록 실패',true); btn.disabled=false; btn.textContent='🧳 습득물 접수하기'; }
+      })
+      .catch(function(){ toast('네트워크 오류 — 다시 시도해 주세요',true); btn.disabled=false; btn.textContent='🧳 습득물 접수하기'; });
+  });
+  function resetForm(){
+    photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none';
+    $('f_itemDesc').value=''; $('f_staff').value=''; $('f_storageLoc').value=''; $('f_memo').value='';
+    var btn=$('submitBtn'); btn.disabled=false; btn.textContent='🧳 습득물 접수하기';
+  }
+})();
+</script>
+
+<!-- 백스페이스 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 백스페이스 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/ko/lookup/';
+  });
+})();
+</script>
+
+<!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
+     남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작. 입력칸에 뭔가 적혀 있으면 넘어가지 않는다. -->
+<script>
+(function(){
+  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var LOOKUP = 'http://wellperion.com/ko/lookup/';
+  var IDLE = 60, left = IDLE, pill;
+  function hasInput(){
+    var els = document.querySelectorAll('input,textarea,select');
+    for (var i=0;i<els.length;i++){
+      var e = els[i];
+      if (e.type==='hidden'||e.type==='button'||e.type==='submit') continue;
+      if (e.type==='checkbox'||e.type==='radio'){ if (e.checked) return true; continue; }
+      if (e.value && String(e.value).trim()) return true;
+    }
+    return false;
+  }
+  function ensurePill(){
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:6;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.55);color:#fff;pointer-events:none;display:none';
+    document.body.appendChild(pill);
+    return pill;
+  }
+  function tick(){
+    if (document.visibilityState === 'hidden') return;
+    var on = KIOSK.matches, p = ensurePill();
+    p.style.display = on ? 'block' : 'none';
+    if (!on){ left = IDLE; return; }
+    left--;
+    p.textContent = left + '초 후 처음 화면으로';
+    if (left <= 0){
+      if (hasInput()){ left = IDLE; return; }
+      location.href = LOOKUP;
+    }
+  }
+  function poke(){ left = IDLE; }
+  ['click','touchstart','keydown','input','change','scroll'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  setInterval(tick, 1000);
+})();
+</script>
+
+<!-- 키오스크 화면 확대 고정 (kiosk-zoom-lock · 2026-08-24 시우 · 실무진 신고 FB260820-144009)
+     최준용M: "조작하는 이용자가 없는데도 화면이 확대(Zoom-in)된 상태로 유지된다."
+     원인: 이 화면들은 단계를 넘어갈 때 페이지를 새로 여는 게 아니라 자바스크립트로 화면만 갈아낀다.
+     브라우저 확대 배율은 그 갈아끼우기로 풀리지 않으므로, 누군가 손가락으로 한 번 벌려 놓으면
+     60초 자동복귀가 돌아도 확대된 채로 남는다. 그래서 확대가 되는 것 자체를 막는다.
+     ★같은 코드가 키오스크 4개 화면(접수 조회·종합접수처·습득물 보기·습득물 접수)에 모두 들어간다 —
+       한 화면만 막으면 옆 화면에서 확대된 채로 넘어와 그대로 남는다.
+     ★Ctrl+0(확대 100%로 되돌리기)은 일부러 막지 않았다. 이미 커져 있는 키오스크를 한 번은
+       사람이 되돌려야 하는데, 그것까지 막으면 되돌릴 방법이 없어진다. -->
+<script>
+(function(){
+  if (window.__wlpKioskZoomLock) return;   /* 두 블록이 한 페이지에 같이 실려도 한 번만 */
+  window.__wlpKioskZoomLock = true;
+
+  /* ① 화면 비율 100% 고정 — 워드프레스 테마가 넣어 둔 viewport 설정을 덮어쓴다. */
+  var v = document.querySelector('meta[name=viewport]');
+  if (!v) { v = document.createElement('meta'); v.setAttribute('name','viewport'); document.head.appendChild(v); }
+  v.setAttribute('content', 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+
+  /* ② 손가락 두 개로 벌리는 확대 차단. passive:false 라야 preventDefault 가 먹는다. */
+  document.addEventListener('touchmove', function(e){
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, {passive:false});
+
+  /* 아이패드 사파리는 touchmove 가 아니라 gesture 이벤트로 확대한다 — 따로 막는다. */
+  ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){ e.preventDefault(); }, {passive:false});
+  });
+
+  /* ③ Ctrl+휠(마우스·터치패드), Ctrl 더하기/빼기 확대 차단. Ctrl+0 은 남겨 둔다(되돌리기용). */
+  document.addEventListener('wheel', function(e){ if (e.ctrlKey) e.preventDefault(); }, {passive:false});
+  document.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && ['+','-','='].indexOf(e.key) >= 0) e.preventDefault();
+  });
+
+  /* ④ 두 번 빠르게 두드려 커지는 확대 + 글자 자동 확대 차단. */
+  var s = document.createElement('style');
+  s.textContent = 'html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}';
+  document.head.appendChild(s);
+})();
+</script>
+
+</body>
+</html>

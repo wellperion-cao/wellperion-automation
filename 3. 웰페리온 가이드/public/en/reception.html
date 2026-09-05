@@ -1,0 +1,1133 @@
+<!-- 산출물 — 직접 수정 금지. 정본 = 3. 웰페리온 가이드/coo/reception/wp_reception_block_en.html · 재생성 = scripts/build_public_pages.py -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wellperion Reception Desk</title>
+</head>
+<body class="page-id-8751">
+<!-- 웰페리온 Reception Desk 블록 — 워드프레스 'Reception Desk' 페이지(8434) 본문 직접 주입 소스 (SSOT)
+     ★ 근본구조: iframe('미리보기 창') 폐기 → 폼을 페이지에 직접 인라인 주입.
+        문의 페이지(8394)가 wp_inquiry_block.html 을 vc_raw_html 로 직접 심는 것과 완전히 동일한 방식.
+        결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. "창 속의 창" 분리감 0.
+     ★ 기능: 폼 정의(FORMS)·JS·RECEPTION_API·RECEPTION_SUBMIT_TOKEN·LOCATIONS·reg_submit 제출·?loc 프리필·
+        사진 FileReader 를 포함하는 단일 정본(self-contained).
+        QR/페이지 URL 의 ?loc= 는 폼 JS가 location.search 에서 직접 읽음(iframe 중계 JS 불필요·제거).
+     ★ CSS 충돌 방지: 전 규칙을 .wlp-recept 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
+        ENG 언어버튼(a.lang-header)·WP 페이지 타이틀은 page-id-8434 한정으로 숨김.
+     수정 시: 폼 로직(FORMS·토큰·LOCATIONS·GAS 액션) 변경 후
+              draft-reception 모드로 재주입. -->
+<link rel="stylesheet" href="/assets/wp-typography.css">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+.wlp-recept{overscroll-behavior-y:contain}
+.wlp-recept button,.wlp-recept a,.wlp-recept input,.wlp-recept select,.wlp-recept textarea{touch-action:manipulation}
+
+/* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
+   감춘다(동작 그대로 · 접수 조회 2026-09-03 과 같은 규칙). 손가락 스크롤은 문서에 맡긴다 — html·body 에
+   넘침 규칙을 주면 body 가 자기 스크롤 상자가 돼 터치가 죽는다(09-01·09-02 실측). 위에 있던 2026-08-14
+   스크롤 보장 줄을 그래서 지웠다. */
+html{scrollbar-width:none!important;touch-action:pan-x pan-y}
+body{scrollbar-width:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
+
+/* ── Reception Desk 페이지(8434) 한정 테마 보정 ── */
+/* 영어판 없음 → ENG 누르면 홈으로 튐. QR 한글 전용이므로 언어버튼 숨김 */
+body.page-id-8751 a.lang-header{display:none!important}
+/* 상단 테마 로고(누르면 링크가 걸린 이미지) 숨김 — 2026-08-13 GM 지시.
+   본문 맨 위 브랜드 문구(WELLPERION / A Day, Well Completed. / Wellperion Private Sports Club)가
+   그 역할을 대신한다. 로고 자리표시자까지 같이 없애 맨 위 빈 띠도 사라진다. */
+body.page-id-8751 #header-outer,
+body.page-id-8751 #header-space,
+body.page-id-8751 #top{display:none!important}
+/* 노란 Buttonizer 플로팅 '문의하기' 버튼 숨김 — 접수 폼 자체가 있어 불필요·가림 */
+body.page-id-8751 .buttonizer,
+body.page-id-8751 #buttonizer,
+body.page-id-8751 [class*="buttonizer"]{display:none!important}
+/* ── 맨 위 흰 띠 제거 (2026-08-13 GM 지시) ──
+   Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
+   페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
+   페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+body.page-id-8751 #header-space,
+body.page-id-8751 #header-outer,
+body.page-id-8751 #header-outer .container,
+body.page-id-8751 #top{background:#f6f6f6!important;border:none!important;box-shadow:none!important}
+/* 이 페이지는 본문 바탕이 밝은 회색(#f6f6f6)인데 body 바탕은 어두워서, 투명으로 두면
+   흰 줄 대신 검은 줄이 생긴다 — 본문 바탕색을 그대로 물려 이어지게 한다. */
+/* WP 페이지 타이틀 숨김 — 폼 자체 헤더('Reception Desk')를 사용 */
+body.page-id-8751 h1.entry-title,
+body.page-id-8751 .entry-title,
+body.page-id-8751 .page-title,
+body.page-id-8751 .title-container h1,
+body.page-id-8751 .page-header h1{display:none!important}
+
+/* Reception Desk 페이지(8434) 한정 — 헤더 로고 상단 잘림 해소 (문의 페이지 8394와 동일값 차용) */
+body.page-id-8751 #header-outer #logo{margin-top:32px!important}
+@media (max-width:1000px){
+  body.page-id-8751 #header-outer #logo{margin-top:22px!important}
+}
+
+/* ── Design tokens + 베이스 (문의 페이지와 동일 팔레트, .wlp-recept 스코프) ── */
+.wlp-recept{
+  --bg:#faf9f7;
+  --paper:#ffffff;
+  --text:#1a1a1a;
+  --dim:#999;
+  --accent:#b08d57;
+  --accent-bg:rgba(176,141,87,0.09);
+  --border:#e8e2d8;
+  --green:#2e7d5b;
+  --green-bg:rgba(46,125,91,0.10);
+  --red:#c0392b;
+  --blue:#2471a3;
+  --orange:#d68910;
+  /* 배경 2겹 제거 — 문의 페이지(8394)처럼 래퍼 배경 없음. 회색 페이지 배경 1겹만 보이게.
+     (--bg 토큰은 입력칸·photo-zone 배경용으로 유지) */
+  background:transparent;
+  color:var(--text);
+  line-height:1.6;
+  font-size:16px;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;
+  box-sizing:border-box;
+  /* 테마 본문 컬럼 패딩과 무관하게 풀폭 캔버스로 보이도록 좌우 음수마진 없이 자연 배치 */
+}
+.wlp-recept *{box-sizing:border-box;margin:0;padding:0}
+.wlp-recept button{font-family:inherit;-webkit-appearance:none;appearance:none;cursor:pointer}
+.wlp-recept a{text-decoration:none}
+/* 문의 페이지(8394) 골격 차용 — 상·하 여백 동일 리듬(70/80). 폼이라 폭 540·좌우 20 유지 */
+.wlp-recept .wrap{max-width:540px;margin:0 auto;padding:70px 16px 80px}
+
+/* ── Brand Header ── */
+.wlp-recept .brand{text-align:center;margin-bottom:28px}
+.wlp-recept .brand-eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:3px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:12px
+}
+.wlp-recept .brand-slogan{
+  font-size:clamp(26px,6.5vw,40px);font-weight:800;
+  letter-spacing:-1px;color:var(--text);
+  line-height:1.1;margin-bottom:6px
+}
+.wlp-recept .brand-sub{
+  font-size:clamp(14px,3.2vw,18px);font-weight:500;
+  color:#666;letter-spacing:-.2px;margin-bottom:0
+}
+.wlp-recept .gold-divider{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;margin:18px auto 18px;max-width:300px
+}
+.wlp-recept .gd-line{flex:1;height:1px}
+.wlp-recept .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.wlp-recept .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.wlp-recept .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+.wlp-recept .brand h1{
+  font-size:clamp(26px,5vw,32px);font-weight:700;
+  color:var(--text);margin-bottom:8px;letter-spacing:-.4px
+}
+.wlp-recept .brand-desc{font-size:13.5px;color:#777;line-height:1.7}
+
+/* Location chip */
+.wlp-recept .loc-chip{
+  display:inline-block;margin-top:12px;padding:5px 14px;
+  background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(176,141,87,0.28);
+  border-radius:20px;font-size:13px;font-weight:600
+}
+
+/* ── 습득 분실물 현황 보기 링크(공개 갤러리) ── */
+.wlp-recept .lf-link{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;margin-bottom:14px;
+  background:var(--accent-bg);
+  border:1.5px solid rgba(176,141,87,0.28);
+  border-radius:14px;transition:border-color .15s,box-shadow .15s
+}
+.wlp-recept .lf-link:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.15)}
+.wlp-recept .lf-link .lf-ico{font-size:22px;line-height:1;flex-shrink:0}
+.wlp-recept .lf-link .lf-txt{flex:1;display:flex;flex-direction:column;gap:2px}
+.wlp-recept .lf-link .lf-txt b{font-size:14.5px;font-weight:700;color:var(--accent);letter-spacing:-.2px}
+.wlp-recept .lf-link .lf-txt span{font-size:12px;color:#888;line-height:1.4}
+.wlp-recept .lf-link .lf-arrow{font-size:20px;color:var(--accent);flex-shrink:0;line-height:1}
+
+/* ── 습득 분실물 2버튼(접수·보기) — 각각 wellperion.com WP 자체 페이지로 연결 ── */
+.wlp-recept .lf-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media (max-width:460px){.wlp-recept .lf-btns{grid-template-columns:1fr}}
+.wlp-recept .lf-btn{display:flex;align-items:center;gap:10px;padding:14px 15px;background:var(--accent-bg);border:1.5px solid rgba(176,141,87,0.28);border-radius:14px;transition:border-color .15s,box-shadow .15s}
+.wlp-recept .lf-btn:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(176,141,87,.15)}
+.wlp-recept .lf-btn .lf-ico{font-size:20px;line-height:1;flex-shrink:0}
+.wlp-recept .lf-btn .lf-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wlp-recept .lf-btn .lf-txt b{font-size:13.5px;font-weight:700;color:var(--accent);letter-spacing:-.2px}
+.wlp-recept .lf-btn .lf-txt span{font-size:11.5px;color:#888;line-height:1.35}
+
+/* ── Card ── */
+.wlp-recept .card{
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:20px 18px;
+  margin-bottom:14px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04)
+}
+
+/* ── Field ── */
+.wlp-recept .field{margin-bottom:14px}
+.wlp-recept .field:last-child{margin-bottom:0}
+.wlp-recept label.fl{
+  display:block;font-size:13px;font-weight:700;
+  color:var(--accent);margin-bottom:8px;
+  letter-spacing:.3px;text-transform:uppercase
+}
+.wlp-recept label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;text-transform:none}
+
+/* ── Category type buttons ── */
+.wlp-recept .types{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.wlp-recept .type-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:68px;padding:14px 10px 12px;
+  border:1.5px solid var(--border);border-radius:14px;
+  background:var(--paper);color:var(--text);
+  font-size:13px;font-weight:700;font-family:inherit;
+  cursor:pointer;transition:all .18s;
+  text-align:center;line-height:1.4;
+  box-shadow:0 1px 2px rgba(0,0,0,.03)
+}
+.wlp-recept .type-btn .cat-icon{font-size:22px;margin-bottom:6px;line-height:1;display:block}
+.wlp-recept .type-btn .cat-label{font-size:12.5px;font-weight:700;color:inherit;line-height:1.35;display:block}
+.wlp-recept .type-btn:hover{
+  border-color:var(--accent);
+  box-shadow:0 2px 10px rgba(176,141,87,.15)
+}
+.wlp-recept .type-btn.active{
+  border-color:var(--accent);
+  background:var(--accent-bg);
+  color:var(--accent);
+  box-shadow:0 2px 10px rgba(176,141,87,.18)
+}
+/* 세로 크기 통일 (GM 지시 2026-07-23) — 8칸이 같은 높이로 보이게.
+   grid 기본 stretch 에 더해 라벨을 1줄로 고정하고 높이를 못 박는다(줄바꿈으로 한 칸만 커지던 문제 차단). */
+.wlp-recept .type-btn{height:78px;min-height:78px}
+.wlp-recept .type-btn .cat-label{white-space:nowrap}
+/* 직원용 칸(Found item)만 연하게 — 회원이 누를 칸과 구분되게 채도를 낮춘다 */
+.wlp-recept .type-btn.staff{
+  background:var(--bg);
+  border-color:#efeae0;
+  color:var(--dim);
+  box-shadow:none
+}
+.wlp-recept .type-btn.staff:hover{border-color:#ddd4c4;box-shadow:none}
+.wlp-recept .type-btn.staff .cat-icon{opacity:.5}
+.wlp-recept .cat-sub{font-size:11px;font-weight:600;opacity:.85}
+
+/* ── Inputs ── */
+.wlp-recept input[type=text],
+.wlp-recept input[type=tel],
+.wlp-recept input[type=date],
+.wlp-recept textarea,
+.wlp-recept select{
+  width:100%;
+  background:var(--bg);
+  border:1.5px solid var(--border);
+  color:var(--text);
+  padding:13px 14px;
+  border-radius:12px;
+  font-size:15px;
+  font-family:inherit;
+  line-height:1.5;
+  transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;appearance:none;
+  height:auto;min-height:0;margin:0
+}
+.wlp-recept input[type=text]:focus,
+.wlp-recept input[type=tel]:focus,
+.wlp-recept input[type=date]:focus,
+.wlp-recept textarea:focus,
+.wlp-recept select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(176,141,87,.09)
+}
+.wlp-recept input::placeholder,
+.wlp-recept textarea::placeholder{color:#c0b9b0}
+.wlp-recept input[type=date]{color-scheme:light}
+.wlp-recept textarea{min-height:120px;resize:vertical}
+.wlp-recept select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23888' d='M1 1l5 5 5-5'/></svg>");
+  background-repeat:no-repeat;background-position:right 14px center
+}
+
+/* ── Photo zone ── */
+.wlp-recept .photo-zone{
+  border:1.5px dashed var(--border);border-radius:12px;
+  padding:20px;text-align:center;cursor:pointer;
+  transition:border-color .18s;background:var(--bg);display:block
+}
+.wlp-recept .photo-zone:hover{border-color:var(--accent)}
+.wlp-recept .photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+.wlp-recept .photo-zone .ph-text{font-size:13.5px;color:var(--dim)}
+.wlp-recept .photo-zone input[type=file]{display:none}
+.wlp-recept .preview{margin-top:12px;display:none}
+.wlp-recept .preview img{
+  width:100%;max-height:260px;object-fit:cover;
+  border-radius:12px;border:1px solid var(--border)
+}
+.wlp-recept .preview .rm{
+  display:inline-block;margin-top:8px;
+  font-size:13px;color:var(--red);cursor:pointer;font-weight:600
+}
+
+/* ── Submit button ── */
+.wlp-recept .submit{
+  width:100%;padding:17px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:14px;
+  font-size:16px;font-weight:700;font-family:inherit;
+  cursor:pointer;margin-top:4px;
+  transition:opacity .18s,transform .12s;
+  letter-spacing:.3px;line-height:1.2;text-transform:none;text-shadow:none
+}
+.wlp-recept .submit:hover{opacity:.9}
+.wlp-recept .submit:active{transform:scale(.99)}
+.wlp-recept .submit:disabled{opacity:.45;cursor:not-allowed}
+
+/* ── Note / Toast ── */
+.wlp-recept .note{
+  font-size:12.5px;color:var(--dim);
+  text-align:center;margin-top:14px;line-height:1.75
+}
+.wlp-recept .toast{
+  position:fixed;top:24px;left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  background:var(--green);color:#fff;
+  padding:12px 22px;border-radius:12px;
+  font-size:14px;font-weight:700;z-index:99999;
+  transition:transform .3s;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
+  max-width:90%;text-align:center
+}
+.wlp-recept .toast.show{transform:translateX(-50%) translateY(0)}
+.wlp-recept .toast.err{background:var(--red)}
+
+/* ── Done screen ── */
+.wlp-recept .done{display:none;text-align:center;padding:50px 20px}
+.wlp-recept .done .dot{font-size:52px;margin-bottom:16px}
+.wlp-recept .done h2{font-size:22px;font-weight:800;margin-bottom:10px;color:var(--text)}
+.wlp-recept .done p{font-size:14.5px;color:#777;line-height:1.75;margin-bottom:24px}
+.wlp-recept .done .again{
+  padding:13px 28px;
+  background:var(--accent-bg);color:var(--accent);
+  border:1.5px solid var(--accent);
+  border-radius:12px;font-size:14px;font-weight:700;
+  font-family:inherit;cursor:pointer;
+  transition:background .18s
+}
+.wlp-recept .done .again:hover{background:rgba(176,141,87,.18)}
+
+/* ── Misc (JS-generated elements) ── */
+.wlp-recept .hint-empty{font-size:13.5px;color:var(--dim);text-align:center;padding:10px 0 2px}
+.wlp-recept .chk-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.wlp-recept .chk-row input[type=checkbox]{
+  width:20px;height:20px;
+  accent-color:var(--accent);cursor:pointer;flex-shrink:0
+}
+.wlp-recept .chk-row span{font-size:14px;color:var(--text)}
+.wlp-recept .banner-card{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:6px;min-height:48px;padding:11px 10px;
+  border:1.5px solid var(--accent);border-radius:12px;
+  background:var(--accent-bg);cursor:default;user-select:none;text-align:center
+}
+.wlp-recept .banner-icon{font-size:16px;line-height:1}
+.wlp-recept .banner-main{font-size:13px;font-weight:700;color:var(--accent);line-height:1.3}
+.wlp-recept .banner-sub{font-size:11.5px;color:#888;line-height:1.4}
+
+/* ── Social & Footer ── */
+.wlp-recept .footer-divider{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;margin:28px auto 20px;max-width:300px
+}
+.wlp-recept .social-section{text-align:center;margin-bottom:12px}
+.wlp-recept .social-section .social-title{
+  font-size:13px;color:var(--dim);margin-bottom:12px;letter-spacing:-.1px
+}
+.wlp-recept .social-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.wlp-recept .social-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:9px 15px;
+  background:var(--paper);border:1px solid var(--border);
+  border-radius:20px;color:#666;
+  font-size:13px;font-weight:600;font-family:inherit;
+  text-decoration:none;transition:border-color .15s,color .15s
+}
+.wlp-recept .social-chip:hover{border-color:var(--accent);color:var(--accent)}
+.wlp-recept .footer-links{
+  text-align:center;font-size:12.5px;color:var(--dim);line-height:2;margin-top:10px
+}
+.wlp-recept .footer-links a{color:var(--accent);text-decoration:none}
+
+/*[GM 20260720] mobile spacing*/@media (max-width:600px){.wlp-recept .wrap{padding:26px 14px 30px}body.page-id-8434 .container.main-content,body.page-id-8751 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}.wlp-recept .brand{margin-bottom:16px}.wlp-recept .footer-divider{margin:18px auto 14px}.container-wrap{padding-top:18px!important;padding-bottom:18px!important}}
+/* ── 키오스크(세로 큰 화면) 전용 확대 — 2026-08-13 GM 지시 ──
+   "회원님들, 나이 많으신 분들도 접수하고 문의할 수 있게." 세로 큰 화면(키오스크)에서만
+   글자·버튼·입력칸을 크게 키운다. 가로 PC·휴대폰은 지금 그대로(조건: 폭 700px 이상 + 세로 화면). */
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-recept .wrap{max-width:900px;padding:36px 30px 60px}
+  .wlp-recept .brand{margin-bottom:34px}
+  .wlp-recept .brand-eyebrow{font-size:17px;letter-spacing:5px}
+  .wlp-recept .brand-slogan{font-size:40px}
+  .wlp-recept .brand-sub{font-size:21px}
+  .wlp-recept .brand h1{font-size:50px}
+  .wlp-recept .brand-desc{font-size:22px;line-height:1.75}
+  .wlp-recept .loc-chip{font-size:19px;padding:10px 20px}
+  .wlp-recept .lf-link{padding:24px 26px;gap:16px}
+  .wlp-recept .lf-link .lf-ico{font-size:36px}
+  .wlp-recept .lf-link .lf-txt b{font-size:25px}
+  .wlp-recept .lf-link .lf-txt span{font-size:18px}
+  .wlp-recept .lf-link .lf-arrow{font-size:30px}
+  .wlp-recept .lf-btn{padding:22px 22px}
+  .wlp-recept .lf-btn .lf-ico{font-size:32px}
+  .wlp-recept .lf-btn .lf-txt b{font-size:23px}
+  .wlp-recept .lf-btn .lf-txt span{font-size:17px}
+  .wlp-recept .card{padding:30px}
+  .wlp-recept label.fl{font-size:21px}
+  .wlp-recept label.fl .opt{font-size:17px}
+  .wlp-recept .field{margin-bottom:24px}
+  .wlp-recept .types{gap:16px}
+  .wlp-recept .type-btn{height:132px;min-height:132px}
+  .wlp-recept .type-btn .cat-icon{font-size:40px;margin-bottom:10px}
+  .wlp-recept .type-btn .cat-label{font-size:22px}
+  .wlp-recept .cat-sub{font-size:17px}
+  .wlp-recept input[type=text],
+  .wlp-recept input[type=tel],
+  .wlp-recept input[type=date],
+  .wlp-recept select,
+  .wlp-recept textarea{font-size:24px;padding:22px 20px}
+  .wlp-recept textarea{min-height:200px}
+  .wlp-recept .photo-zone{padding:34px}
+  .wlp-recept .photo-zone .ph-icon{font-size:44px}
+  .wlp-recept .photo-zone .ph-text{font-size:21px}
+  .wlp-recept .submit{font-size:30px;padding:30px}
+  .wlp-recept .hint-empty{font-size:20px}
+  /* ── 2026-08-13 GM 검수 보완 (키오스크 세로 화면 한정) ──
+     ①사진 첨부는 감춘다 — 키오스크엔 카메라가 없어 누르면 윈도우 파일 탐색기가 열린다(필수 항목 아님).
+     ②접수하기 버튼을 화면 아래에 고정 — 유형을 고르면 화면이 한 판 넘게 길어져 버튼이 밖으로 나갔다.
+     ③아래 소셜 칩은 감춘다 — 손가락으로 잘못 눌러 외부 사이트로 나가는 것을 막는다.
+     휴대폰·PC 가로 화면은 지금 그대로다. */
+  .wlp-recept .photo-zone,
+  .wlp-recept .preview,
+  .wlp-recept .field:has(.photo-zone){display:none!important}
+  .wlp-recept .social-section,
+  .wlp-recept .footer-links{display:none!important}
+  .wlp-recept .submit{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;
+    width:840px;max-width:calc(100% - 60px);z-index:40;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+  .wlp-recept .wrap{padding-bottom:170px}
+
+  .wlp-recept .wrap .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px;top:6px;left:30px}
+  /* 키오스크에서는 회사 정보 푸터를 숨겨 접수 화면만 보이게 한다(접수 조회 화면과 같은 처리) */
+  #footer-widgets,#footer-outer{display:none!important}
+  html,body{background:#f6f6f6!important}   /* 2026-09-05 시우: 키오스크 첫 화면 아래 테마 검은 바탕이 드러나던 것 */
+}
+
+/* Reception Desk 첫 화면으로 돌아가기 — 화면 왼쪽 위, 본문과 겹치지 않게 (2026-08-13 GM 지시) */
+.wlp-recept{position:relative}
+/* wrap 기준 — 본문 기둥 왼쪽 끝에 자동으로 맞는다(PC·키오스크·폰 공통) */
+.wlp-recept .wrap{position:relative}
+/* 날짜 칸 영어 표기 — 빈 칸일 때만 브라우저가 그리는 '연도-월-일' 을 감추고 yyyy-mm-dd 를 덧쓴다 */
+.wlp-recept .date-en{position:relative;display:block}
+.wlp-recept .date-en input[type=date],
+.wlp-recept .date-en input[type=datetime-local]{width:100%}
+.wlp-recept .date-en:not(.filled) input::-webkit-datetime-edit{color:transparent}
+.wlp-recept .date-en:not(.filled)::after{content:'yyyy-mm-dd';position:absolute;left:20px;top:50%;
+  transform:translateY(-50%);color:#c0b9b0;pointer-events:none;font-size:15px}
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-recept .date-en:not(.filled)::after{left:22px;font-size:24px}
+}
+.wlp-recept .lang-switch{position:absolute;top:14px;right:16px;z-index:5;display:inline-flex;align-items:center;
+  justify-content:center;padding:10px 18px;min-height:44px;border:2px solid var(--text);border-radius:24px;
+  color:var(--text);font-size:13px;font-weight:700;background:transparent;text-decoration:none}
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-recept .wrap .lang-switch{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px;top:6px;right:30px}
+}
+.wlp-recept .back-kiosk{position:absolute;top:14px;left:16px;z-index:5;display:inline-flex;align-items:center;
+  justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--text);
+  border-radius:24px;color:var(--text);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
+@media (max-width:520px){
+  .wlp-recept .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px}.wlp-recept .lang-switch{right:10px;top:-8px;padding:7px 13px;min-height:34px;font-size:12px}
+}
+</style>
+
+<style>
+/* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
+   휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
+   키오스크 판정은 다른 확대 규칙과 같은 조건(폭 700px 이상 + 세로 화면). */
+@media (max-width:699px){ .wlp-recept .back-kiosk{display:none} }
+@media (orientation:landscape){ .wlp-recept .back-kiosk{display:none} }
+</style>
+
+<div class="wlp-recept" lang="en">
+    <div class="toast" id="toast"></div>
+  <div class="wrap" id="formWrap">
+    <a class="back-kiosk" href="#" onclick="location.href='http://wellperion.com/'+'en/lookup/';return false;">&#8592; Back</a>
+    <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'ko/reception/';return false;">KOR</a>
+
+    <!-- ── Brand Header (문의 페이지 동일 구조) ── -->
+    <div class="brand">
+      <p class="brand-eyebrow">Wellperion</p>
+      <h2 class="brand-slogan">A Day, Well Completed.</h2>
+      <p class="brand-sub">Wellperion Private Sports Club</p>
+      <div class="gold-divider">
+        <span class="gd-line left"></span>
+        <span class="gd-diamond">&#9670;</span>
+        <span class="gd-line right"></span>
+      </div>
+      <h1>Reception Desk</h1>
+      <p class="brand-desc">Tell us about anything uncomfortable, or share a suggestion.<br>The responsible team will check and handle it promptly.</p>
+      <div class="loc-chip" id="locChip" style="display:none"></div>
+    </div>
+
+    <!-- ── Lost &amp; Found(공개 갤러리) — GM 지시 2026-07-23: Membership hold와 같은 풀폭 크기로 통일.
+         접수 성격(Membership hold·Found item)은 아래 접수Type 칸으로 내려가고, 여기는 '보기'만 남긴다. ── -->
+    <a class="lf-link" href="http://wellperion.com/en/lost-found/" rel="noopener">
+      <span class="lf-ico">🔍</span>
+      <span class="lf-txt"><b>Lost &amp; Found</b><span>See items we are keeping · check here first if you lost something</span></span>
+      <span class="lf-arrow">›</span>
+    </a>
+
+    <!-- ── Form card ── -->
+    <div class="card">
+      <div class="field">
+        <label class="fl">Choose what you need</label>
+        <div class="types" id="typeGroup">
+          <button type="button" class="type-btn" data-cat="clean">
+            <span class="cat-icon">🧹</span>
+            <span class="cat-label">Cleanliness issue</span>
+          </button>
+          <button type="button" class="type-btn" data-cat="facility">
+            <span class="cat-icon">🛠️</span>
+            <span class="cat-label">Facility fault</span>
+          </button>
+          <button type="button" class="type-btn" data-cat="lost">
+            <span class="cat-icon">🔍</span>
+            <span class="cat-label">Lost item</span>
+          </button>
+          <button type="button" class="type-btn" data-cat="complaint">
+            <span class="cat-icon">💬</span>
+            <span class="cat-label">Complaint</span>
+          </button>
+          <button type="button" class="type-btn" data-cat="praise">
+            <span class="cat-icon">⭐</span>
+            <span class="cat-label">Praise a staff member</span>
+          </button>
+          <button type="button" class="type-btn" data-cat="voice">
+            <span class="cat-icon">🗣️</span>
+            <span class="cat-label">Report a concern</span>
+          </button>
+          <!-- Membership hold (배9910 후속 · GM 지시 2026-07-23) — 별도 페이지로 넘기지 않고 다른 접수처럼 바로 아래 폼이 열린다.
+               ★제출만 시포(회원) 백엔드 HOLD_API 로 직행 — Reception Desk 시트에는 아무것도 쌓이지 않는다(배9910 원칙 유지). -->
+          <button type="button" class="type-btn" data-cat="hold">
+            <span class="cat-icon">🗓️</span>
+            <span class="cat-label">Membership hold</span>
+          </button>
+          <!-- Found item는 직원용 별도 페이지(gate 커튼)라 폼이 아니라 이동 — 칸 모양만 맞춘다 -->
+          <a class="type-btn staff" href="http://wellperion.com/en/lost-found-register/" rel="noopener">
+            <span class="cat-icon">🧳</span>
+            <span class="cat-label">Found item <span class="cat-sub">[staff]</span></span>
+          </a>
+        </div>
+      </div>
+      <!-- 카테고리 선택 시 폼 전체가 여기 렌더됨 -->
+      <div id="formFields"></div>
+      <div class="hint-empty" id="emptyHint">Please choose a request type above first.</div>
+    </div>
+    <button class="submit" id="submitBtn" style="display:none">Submit</button><!-- 2026-09-05 GM 지시: 유형을 고르기 전엔 접수하기 버튼을 감춘다(빈 화면에 고정 버튼만 떠 있어 의미 없음) -->
+    <p class="note">Thank you. We will let you know the result through the contact you gave us.<br>Wellperion Private Sports Club</p>
+
+    <!-- ── Footer social (골드 구분선 + 소셜 링크) ── -->
+    <div class="footer-divider">
+      <span class="gd-line left"></span>
+      <span class="gd-diamond">&#9670;</span>
+      <span class="gd-line right"></span>
+    </div>
+    <div class="social-section">
+      <p class="social-title">More from Wellperion</p>
+      <div class="social-links">
+        <a class="social-chip" href="http://wellperion.com/" target="_blank" rel="noopener">🌐 Website</a>
+        <a class="social-chip" href="https://www.instagram.com/wellperion/" target="_blank" rel="noopener">📷 Instagram</a>
+        <a class="social-chip" href="https://blog.naver.com/wellperion" target="_blank" rel="noopener">📝 Naver Blog</a>
+        <a class="social-chip" href="https://map.naver.com/p/search/웰페리온/place/1048457693" target="_blank" rel="noopener">📍 Naver Map</a>
+      </div>
+    </div>
+    <!-- 이메일 안내(문의/상담·비즈니스)는 사이트 하단 푸터 'Contact.' 위젯에 이미 있어 중복 → 제거(2026-07-15 시토). 소셜 링크만 유지. -->
+  </div>
+
+  <!-- ── Done screen ── -->
+  <div class="wrap done" id="doneWrap">
+    <div class="dot">✅</div>
+    <h2>Your request has been submitted</h2>
+    <p id="doneMsg">Thank you for telling us.<br>The responsible team will look into it right away.</p>
+    <button class="again" id="againBtn">Submit another request</button>
+  </div>
+</div>
+
+<!-- ★ 이하 JS 블록 — 단일 정본(reception_block.html). ?loc 은 페이지 URL에서 직접 읽음. ★ -->
+<script>
+(function(){
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+
+  /* ★쓰기 이중기록 서버 고정(배 960 레인K · 2026-09-04 시토 · GM 지시) — 도메인 판정을 없애고 항상 서버 접수 통로로 보낸다.
+     서버가 intake_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘긴다(응답 모양 무변경 · GAS 가 죽어도 {ok:true,queued:true} 라 손님은 성공).
+     이 폼은 wellperion.com 에서 뜨므로 종전 도메인 판정은 언제나 false 였다 — 그래서 고정으로 바꿨다. CORS * · 본문 2MB · IP 분당 20회.
+     ROLLBACK: 아래 한 줄을 이것으로 되돌린다 →  function _rcSubmitUrl(){ return RECEPTION_API; }
+     2026-09-05 배984(시토) — GAS 승인 단계 제거: 서버가 원장에 직접 적는 /api/reception/submit 으로 전환. */
+  function _rcSubmitUrl(){ return 'https://erp.wellperion.com/api/reception/submit'; }
+  // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+
+  /* ── 접수 재전송 큐 (배 960 M6 · 2026-09-04 시토) ────────────────────────────────────────────
+     한국어 본 reception_block.html 과 같은 규칙(문구만 영어). 통로가 IP 당 분당 20회라 공용 와이파이에서
+     여러 명이 잇달아 접수하면 429 가 오는데, 그 본문은 JSON 이 아니라 종전에는 'Network error' 한 줄만 뜨고
+     손님이 적은 내용이 사라졌다. 429·5xx 면 본문을 localStorage 에 두고 1s·2s·4s… 최대 30초 간격으로 다시 보낸다.
+     ★네트워크 오류처럼 '받았는지 모르는' 경우는 자동 재전송하지 않는다 — 접수엔 중복을 가릴 열쇠가 없다. */
+  var RC_QUEUE_KEY = 'wlp_recept_queue_v1';
+  var rcTimer = null, rcActive = '';
+  function rcqRead(){ try { return JSON.parse(localStorage.getItem(RC_QUEUE_KEY) || '[]'); } catch(e){ return []; } }
+  function rcqWrite(a){ try { localStorage.setItem(RC_QUEUE_KEY, JSON.stringify(a)); } catch(e){} }
+  function rcqUpsert(it){ var a = rcqRead().filter(function(x){ return x.id !== it.id; }); a.push(it); rcqWrite(a); }
+  function rcqRemove(id){ rcqWrite(rcqRead().filter(function(x){ return x.id !== id; })); }
+  function rcqBackoff(n){ return Math.min(30000, 1000 * Math.pow(2, Math.max(0, n - 1))); }
+  function rcqSchedule(ms){ if (rcTimer) clearTimeout(rcTimer); rcTimer = setTimeout(rcqFlush, ms || 1000); }
+  function rcqReset(){ var b = $('submitBtn'); if (b) { b.disabled = false; b.textContent = 'Submit'; } }
+  function rcqDone(){
+    $('formWrap').style.display = 'none';
+    $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.'
+      + '<br><br>You can check the status below.<br>'
+      + '<a href="http://wellperion.com/en/lookup/" style="color:var(--accent);font-weight:700">wellperion.com/en/lookup</a>';
+    $('doneWrap').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+  function rcqRetry(it, status){
+    it.attempts = (it.attempts || 0) + 1;
+    it.nextAt = Date.now() + rcqBackoff(it.attempts);
+    rcqUpsert(it);
+    rcqSchedule(rcqBackoff(it.attempts));
+    if (it.id === rcActive) {
+      rcqReset();
+      toast(status === 429 ? 'We are receiving a lot of requests. Please try again in about a minute — we will also retry automatically.'
+                           : 'Submission is delayed. We are retrying automatically.', true);
+    }
+  }
+  function rcqSend(it){
+    return fetch(_rcSubmitUrl(), {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(it.payload)
+    }).then(function(r){
+      if (r.status === 429 || r.status >= 500) { rcqRetry(it, r.status); return; }
+      return r.json().then(function(res){
+        rcqRemove(it.id);
+        if (res && res.ok) { if (it.id === rcActive) rcqDone(); }
+        else if (it.id === rcActive) { rcqReset(); toast((res && res.error) || 'We could not submit your request. Please try again.', true); }
+      }, function(){
+        rcqRemove(it.id);
+        if (it.id === rcActive) { rcqReset(); toast('We could not submit your request. Please try again.', true); }
+      });
+    }, function(){
+      rcqRemove(it.id);
+      if (it.id === rcActive) { rcqReset(); toast('Network error — please try again.', true); }
+    });
+  }
+  function rcqFlush(){
+    var a = rcqRead(); if (!a.length) return;
+    var now = Date.now();
+    var due = a.filter(function(x){ return !x.nextAt || x.nextAt <= now; });
+    if (!due.length) {
+      rcqSchedule(Math.max(500, Math.min.apply(null, a.map(function(x){ return x.nextAt || now; })) - now));
+      return;
+    }
+    (function next(i){ if (i >= due.length) return; rcqSend(due[i]).then(function(){ next(i + 1); }); })(0);
+  }
+  setTimeout(rcqFlush, 1500);
+
+  /* Membership hold 전용 백엔드 (배9910 후속 · 2026-07-23) — 시포(회원) GAS.
+     ★위 RECEPTION_API 와 다른 곳으로 보낸다: 휴회는 Reception Desk 시트에 쌓지 않고 회원 쪽에서만 처리한다(배9910 원칙).
+     규약: action=member_hold_apply · name/phone/holdKind/holdStart/holdDays/reason.
+     서버가 'hold-gated' 를 주면 아직 온라인 접수 개통 전이라는 뜻 → 데스크 안내로 대체한다. */
+  var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  // 오늘 날짜(YYYY-MM-DD) — Hold starts 과거 선택 차단용
+  function _todayStr(){
+    var d = new Date(), m = String(d.getMonth() + 1), day = String(d.getDate());
+    return d.getFullYear() + '-' + (m.length < 2 ? '0' + m : m) + '-' + (day.length < 2 ? '0' + day : day);
+  }
+  // 휴회 일수 하한 — 신규 7일 / 연장 1일 (2026-07-23 GM 확정 · 시포 화면과 동일 규칙)
+  // (2026-07-23) 신규/연장 하한 판정 함수는 제거 — 회원 화면에서 '구분'을 없애 호출부가 사라졌다.
+  //   일수 적정성은 접수 시트에서 직원이 확인한다(GM 지시).
+
+  // 분실위치 드롭다운 항목 — 필요 시 이 배열만 수정.
+  var LOCATIONS = [{v:'헬스장',t:'Gym'},{v:'수영장',t:'Swimming pool'},{v:'남자사우나',t:'Men\'s sauna'},{v:'여자사우나',t:'Women\'s sauna'},{v:'골프장',t:'Golf'},{v:'스쿼시장',t:'Squash'},{v:'체조장',t:'Gymnastics'},{v:'G.X룸',t:'G.X room'},{v:'락커',t:'Lockers'},{v:'리셉션',t:'Reception'},{v:'주차장',t:'Parking'},{v:'카페',t:'Cafe'},{v:'기타',t:'Other'}];
+
+  // ── 카테고리별 폼 정의 (순서대로 렌더) ──
+  // type: text | tel | date | textarea | select | photo | checkbox
+  // req:true=필수 / opt:true=(optional) 표기 / ph=placeholder·드롭다운 안내문구 / opts=select 항목
+  // key는 백엔드 키와 일치: name·contact·loc·content·photo + 카테고리별 추가키
+  var FORMS = {
+    clean: [
+      { key:'name',     label:'Name',     type:'text',     ph:'Your full name', req:true },
+      { key:'contact',  label:'Phone',   type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'issueKind',label:'Type',     type:'select',   opts:[{v:'악취',t:'Odor'},{v:'쓰레기',t:'Litter'},{v:'곰팡이',t:'Mold'},{v:'기타',t:'Other'}] },
+      { key:'urgency',  label:'Urgency',   type:'select',   opts:[{v:'높음',t:'High'},{v:'보통',t:'Medium'},{v:'낮음',t:'Low'}] },
+      { key:'loc',      label:'Place',     type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'content',  label:'Details', type:'textarea', opt:true, ph:'Anything else you would like to add?' },
+      { key:'photo',    label:'Photo', type:'photo',    opt:true }
+    ],
+    facility: [
+      { key:'name',      label:'Name',          type:'text',     ph:'Your full name', req:true },
+      { key:'contact',   label:'Phone',        type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'equipName', label:'Equipment',     type:'text',     ph:'e.g. Treadmill no.3, shower …' },
+      { key:'severity',  label:'Severity',        type:'select',   opts:[{v:'긴급',t:'Urgent'},{v:'일반',t:'Normal'}] },
+      { key:'usable',    label:'Usable?', type:'select',   opts:[{v:'가능',t:'Usable'},{v:'불가',t:'Not usable'}] },
+      { key:'loc',       label:'Place',          type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'content',   label:'Details',     type:'textarea', opt:true, ph:'Anything else you would like to add?' },
+      { key:'photo',     label:'Photo',     type:'photo',    opt:true }
+    ],
+    lost: [
+      { key:'name',     label:'Name',     type:'text',     ph:'Your full name', req:true },
+      { key:'contact',  label:'Phone',   type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'itemName', label:'Item', type:'text',     ph:'e.g. earbuds, wallet …' },
+      { key:'content',  label:'Item details', type:'textarea', ph:'Brand, colour, and anything that helps us identify it.' },
+      { key:'lostWhen', label:'When lost', type:'date' },
+      { key:'loc',      label:'Place',     type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'photo',    label:'Photo', type:'photo',   opt:true }
+    ],
+    praise: [
+      { key:'name',        label:'Name',           type:'text',     ph:'Your full name', req:true },
+      { key:'contact',     label:'Phone',         type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'targetStaff', label:'Staff member', type:'text',     ph:'Enter their name' },
+      { key:'episode',     label:'What happened',           type:'textarea', ph:'Tell us what they did well.' },
+      { key:'loc',         label:'Place',           type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'content',     label:'Details',      type:'textarea', opt:true, ph:'Anything else you would like to add?' }
+    ],
+    voice: [
+      { key:'anonymousPref', label:'Anonymous',      type:'checkbox' },
+      { key:'name',          label:'Name',           type:'text',     ph:'Your full name', req:true },
+      { key:'contact',       label:'Phone',         type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'targetStaff',   label:'Staff member', type:'text',     ph:'Enter their name' },
+      { key:'episode',       label:'What happened',           type:'textarea', ph:'Tell us what should be improved.' },
+      { key:'loc',           label:'Place',           type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'content',       label:'Details',      type:'textarea', opt:true, ph:'Anything else you would like to add?' }
+    ],
+    complaint: [
+      { key:'name',       label:'Name',       type:'text',     ph:'Your full name', req:true },
+      { key:'contact',    label:'Phone',     type:'tel',      ph:'010-1234-5678', req:true },
+      { key:'area',       label:'Area',       type:'select',   ph:'Choose an area', opts:[{v:'직원 응대',t:'Staff service'},{v:'운영·정책',t:'Operations & policy'},{v:'이용 에티켓',t:'Member etiquette'},{v:'기타',t:'Other'}] },
+      { key:'loc',        label:'Place',       type:'select',   ph:'Choose a place', opts:LOCATIONS },
+      { key:'occurredAt', label:'When it happened',  type:'date' },
+      { key:'content',    label:'Details',       type:'textarea', ph:'Tell us what happened. The more detail you give, the better we can help.' },
+      { key:'photo',      label:'Photo',  type:'photo',    opt:true }
+    ],
+    /* Membership hold (배9910 후속 · GM 지시 2026-07-23 '별도 페이지 말고 바로 아래 폼')
+       ★필드·검증 규약은 시포(회원) Membership hold 화면과 동일해야 한다 —
+         action=member_hold_apply · name/phone/holdKind/holdStart/holdDays/reason.
+         하한은 구분에 따라 다름(신규 7일 / 연장 1일), 상한 60일, 과거 시작일 불가. (2026-07-23 GM 확정)
+       ✅ 사본 2벌 해소(2026-07-23 GM 지시) — 구 별도 페이지 cpo/member/휴회접수.html 은 폼을 걷어내고
+          이 Reception Desk로 보내는 안내 페이지로 전환했다. Membership hold 폼의 정본은 이제 여기 한 곳뿐이다(약속 L01). */
+    hold: [
+      { key:'name',      label:'Name',          type:'text',   ph:'Your full name', req:true },
+      { key:'contact',   label:'Phone',        type:'tel',    ph:'010-1234-5678', req:true },
+      { key:'holdStart', label:'Hold starts',   type:'date',   req:true },
+      { key:'holdEnd',   label:'Hold ends',   type:'date',   req:true },
+      /* 라벨은 '사유' 대신 'Hold type' (GM 확정 2026-07-23) — 선택지가 여행·출장처럼 '상황'이라
+         이유를 캐묻는 인상을 없애고, 앞 칸(Hold starts·종료일)과 '휴회 OO' 리듬을 맞춘다.
+         ★백엔드로 보내는 키는 reason 유지 — 시포 규약(member_hold_apply)이 그대로다. */
+      { key:'reason',    label:'Hold type',     type:'select', ph:'Choose a type',
+        opts:[{v:'여행',t:'Travel'},{v:'출장',t:'Business trip'},{v:'병가·치료',t:'Illness or treatment'},{v:'임신·육아',t:'Pregnancy or childcare'},{v:'개인 사정',t:'Personal reasons'},{v:'기타',t:'Other'}] }
+    ]
+  };
+  // 백엔드로 보낼 추가 필드 키 (없으면 빈값)
+  var EXTRA_KEYS = ['itemName','lostWhen','keepWhere','equipName','severity','usable','issueKind','urgency','targetStaff','episode','anonymousPref','area','occurredAt'];
+
+  var selectedCategory = '';
+  var photoData = '';
+  var photoMime = 'image/jpeg';
+  var photoName = '';
+  var qLoc = '';
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, isErr){
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    setTimeout(function(){ t.className = 'toast' + (isErr ? ' err' : ''); }, 2600);
+  }
+  function formatPhone(v){
+    var d = String(v || '').replace(/\D/g, '').slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return d.slice(0,3) + '-' + d.slice(3);
+    return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+  }
+
+  // QR ?loc= 캡처 — 페이지 자체 URL(location.search)에서 직접 읽음(iframe 중계 불필요)
+  try {
+    qLoc = new URLSearchParams(location.search).get('loc') || '';
+    if (qLoc) {
+      var chip = $('locChip');
+      chip.textContent = '📍 ' + qLoc;
+      chip.style.display = 'inline-block';
+    }
+  } catch (e) {}
+
+  function buildForm(cat){
+    var box = $('formFields');
+    box.innerHTML = '';
+    var defs = FORMS[cat];
+    if (!defs) { $('emptyHint').style.display = 'block'; $('submitBtn').style.display = 'none'; return; }
+    $('emptyHint').style.display = 'none'; $('submitBtn').style.display = '';
+
+    defs.forEach(function(def){
+      var field = document.createElement('div');
+      field.className = 'field';
+
+      if (def.type !== 'checkbox') {
+        var lab = document.createElement('label');
+        lab.className = 'fl';
+        lab.id = 'lbl_' + def.key;
+        lab.setAttribute('for', 'f_' + def.key);
+        lab.innerHTML = def.label + (def.opt ? ' <span class="opt">(optional)</span>' : '');
+        field.appendChild(lab);
+      }
+
+      if (def.type === 'text' || def.type === 'tel') {
+        var inp = document.createElement('input');
+        inp.type = 'text';           // tel 도 text 로 렌더(스타일 유지) + inputmode 만 tel
+        inp.id = 'f_' + def.key;
+        inp.placeholder = def.ph || '';
+        inp.autocomplete = 'off';
+        if (def.type === 'tel') {
+          inp.inputMode = 'tel';
+          inp.addEventListener('input', function(){ this.value = formatPhone(this.value); });
+        }
+        field.appendChild(inp);
+      } else if (def.type === 'date' || def.type === 'datetime-local') {
+        var d = document.createElement('input');
+        d.type = def.type;   // 'date'(날짜만) 또는 'datetime-local'(날짜+시간)
+        d.id = 'f_' + def.key;
+        d.lang = 'en';
+        // Hold starts은 과거를 못 고르게 막는다(시포 규약과 동일 — 서버에서도 재검증)
+        // 휴회 날짜는 과거를 못 고르게 막고, 종료일은 시작일 이전을 못 고르게 연동한다
+        if (def.key === 'holdStart' || def.key === 'holdEnd') { d.min = _todayStr(); }
+        if (def.key === 'holdStart') {
+          d.addEventListener('change', function(){
+            var e = document.getElementById('f_holdEnd');
+            if (e) { e.min = this.value || _todayStr(); if (e.value && e.value < e.min) e.value = ''; }
+          });
+        }
+        var dwrap = document.createElement('span');
+        dwrap.className = 'date-en';
+        dwrap.appendChild(d);
+        var markFilled = function(){ dwrap.classList.toggle('filled', !!d.value); };
+        d.addEventListener('change', markFilled);
+        d.addEventListener('input', markFilled);
+        markFilled();
+        field.appendChild(dwrap);
+      } else if (def.type === 'number') {
+        // 숫자 입력(휴회 일수) — 모바일에서 숫자 키패드가 뜨도록 inputmode 지정
+        var nb = document.createElement('input');
+        nb.type = 'number'; nb.id = 'f_' + def.key;
+        nb.setAttribute('inputmode', 'numeric');
+        nb.min = '1'; nb.max = '60';
+        nb.placeholder = def.ph || '';
+        field.appendChild(nb);
+      } else if (def.type === 'textarea') {
+        var ta = document.createElement('textarea');
+        ta.id = 'f_' + def.key;
+        ta.placeholder = def.ph || '';
+        field.appendChild(ta);
+      } else if (def.type === 'select') {
+        var sel = document.createElement('select');
+        sel.id = 'f_' + def.key;
+        if (def.ph) {
+          var o0 = document.createElement('option');
+          o0.value = ''; o0.textContent = def.ph;
+          sel.appendChild(o0);
+        }
+        (def.opts || []).forEach(function(o){
+          var opt = document.createElement('option');
+          // 값은 한글 그대로(원장 호환), 표기만 영어 — {v:값, t:표기} 형태를 함께 받는다
+          opt.value = (o && o.v) || o; opt.textContent = (o && o.t) || o;
+          sel.appendChild(opt);
+        });
+        field.appendChild(sel);
+      } else if (def.type === 'photo') {
+        var zone = document.createElement('label');
+        zone.className = 'photo-zone';
+        zone.setAttribute('for', 'f_photo');
+        zone.innerHTML = '<div class="ph-icon">📷</div><div class="ph-text">' + ({lost:'Add a photo of the lost item so we can find it faster.',facility:'Add a photo of the broken equipment so repairs can start sooner.',clean:'Add a photo of the spot that needs cleaning so we can act sooner.',complaint:'If you have a photo of the situation, please attach it.'}[selectedCategory] || 'Attach a related photo.') + '</div>'
+          + '<input type="file" id="f_photo" accept="image/*" capture="environment">';
+        field.appendChild(zone);
+        var prev = document.createElement('div');
+        prev.className = 'preview'; prev.id = 'f_preview';
+        prev.innerHTML = '<img id="f_previewImg" alt="Photo preview"><div><span class="rm" id="f_removePhoto">✕ Remove photo</span></div>';
+        field.appendChild(prev);
+      } else if (def.type === 'checkbox') {
+        var chkRow = document.createElement('div');
+        chkRow.className = 'chk-row';
+        chkRow.innerHTML = '<input type="checkbox" id="f_' + def.key + '"><span>Yes, submit this anonymously</span>';
+        field.appendChild(chkRow);
+      }
+
+      box.appendChild(field);
+    });
+
+    wirePhoto();
+    if (qLoc) { var lf = $('f_loc'); if (lf) lf.value = qLoc; }
+    var anon = $('f_anonymousPref');
+    if (anon) anon.addEventListener('change', updateAnonHint);
+    updateAnonHint();
+  }
+
+  function wirePhoto(){
+    var photo = $('f_photo');
+    if (!photo) return;
+    /* ★사진 축소(배 960 레인K · 2026-09-04 시토) — 제출을 서버 통로로 고정하면서 같이 넣었다.
+       서버 본문 상한이 2MB 인데 폰 원본은 3~10MB 이고 base64 는 1.33배로 늘어난다 → 그대로 보내면 413 으로 접수가 통째로 실패한다.
+       긴 변 1600px·JPEG 0.82 로 줄이면 200KB 안팎이라 상한 아래로 들어오고, GAS 의 Drive 업로드도 같이 빨라진다.
+       축소 실패(HEIC 등 디코딩 불가)면 원본 base64 로 폴백한다. instructor_intake.html 과 같은 규칙. */
+    var MAX_EDGE = 1600, JPEG_Q = 0.82, SKIP_UNDER = 600 * 1024;
+    function setPhoto(b64, mime, fname){
+      photoData = b64; photoMime = mime; photoName = fname;
+      var img = $('f_previewImg'); if (img) img.src = b64;
+      var pv = $('f_preview'); if (pv) pv.style.display = 'block';
+    }
+    photo.addEventListener('change', function(ev){
+      var f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      if (f.size > 12 * 1024 * 1024) { toast('That photo is too large (12MB max)', true); this.value = ''; return; }
+      var mime = f.type || 'image/jpeg', fname = f.name || 'voc_photo.jpg';
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var raw = e.target.result;
+        if (!/^image\//.test(mime) || f.size <= SKIP_UNDER) { setPhoto(raw, mime, fname); return; }
+        var im = new Image();
+        im.onload = function(){
+          try {
+            var w = im.naturalWidth, h = im.naturalHeight;
+            var scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+            var cv = document.createElement('canvas');
+            cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+            cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+            setPhoto(cv.toDataURL('image/jpeg', JPEG_Q), 'image/jpeg', fname.replace(/\.[^.]+$/, '') + '.jpg');
+          } catch (err) { setPhoto(raw, mime, fname); }
+        };
+        im.onerror = function(){ setPhoto(raw, mime, fname); };
+        im.src = raw;
+      };
+      reader.readAsDataURL(f);
+    });
+    var rm = $('f_removePhoto');
+    if (rm) rm.addEventListener('click', function(){
+      photoData = ''; photoName = '';
+      var p = $('f_photo'); if (p) p.value = '';
+      var pv = $('f_preview'); if (pv) pv.style.display = 'none';
+    });
+  }
+
+  function updateAnonHint(){
+    var anon = $('f_anonymousPref');
+    var isAnon = !!(anon && anon.checked);
+    ['name','contact'].forEach(function(k){
+      var lbl = $('lbl_' + k);
+      if (!lbl) return;
+      var base = (k === 'name') ? 'Name' : 'Phone';
+      lbl.innerHTML = base + (isAnon ? ' <span class="opt">(optional if anonymous)</span>' : '');
+    });
+  }
+
+  function collect(){
+    var out = {};
+    var defs = FORMS[selectedCategory] || [];
+    defs.forEach(function(def){
+      if (def.type === 'photo') return;
+      var el = $('f_' + def.key);
+      if (!el) return;
+      if (def.type === 'checkbox') out[def.key] = el.checked ? '예' : '아니오';
+      else out[def.key] = (el.value || '').trim();
+    });
+    return out;
+  }
+
+  $('typeGroup').addEventListener('click', function(ev){
+    var btn = ev.target.closest('.type-btn');
+    if (!btn) return;
+    var cat = btn.getAttribute('data-cat');
+    if (cat === selectedCategory) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    selectedCategory = cat;
+    photoData = ''; photoName = '';
+    buildForm(cat);
+    /* 유형을 고르면 작성칸으로 자동 이동 (2026-08-14 GM 지시) — 키오스크 세로 화면은
+       버튼 아래로 손으로 내리기가 어렵다. 브라우저 기본 기능만 쓴다(새 라이브러리 0). */
+    try { $('formFields').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+  });
+
+  $('submitBtn').addEventListener('click', function(){
+    if (!selectedCategory) { toast('Please choose a request type', true); return; }
+    var vals = collect();
+    var isAnon = (selectedCategory === 'voice') && (vals.anonymousPref === '예');
+
+    var defs = FORMS[selectedCategory];
+    for (var i = 0; i < defs.length; i++) {
+      var def = defs[i];
+      if (!def.req) continue;
+      if ((def.key === 'name' || def.key === 'contact') && isAnon) continue;
+      if (!vals[def.key]) { toast(def.label + ' is required', true); return; }
+    }
+
+    var btn = this;
+
+    /* ── Membership hold는 회원(시포) 백엔드로 직행 ── (배9910 후속 · 2026-07-23)
+       Reception Desk 시트에는 쓰지 않는다. 검증 규칙은 시포 화면과 동일하게 유지할 것. */
+    if (selectedCategory === 'hold') {
+      /* 회원 화면에서는 '구분(신규·연장)'과 '휴회 일수'를 묻지 않는다 (GM 지시 2026-07-23)
+         — 회원이 모르는 개념이라 뺐고, 일수 적정성은 접수 시트에서 직원이 확인한다.
+         일수는 시작일~종료일로 자동 계산해 백엔드에 함께 보낸다(직원이 시트에서 바로 보게). */
+      if (vals.holdStart < _todayStr()) { toast('Hold starts은 오늘 이후로 선택해 주세요', true); return; }
+      if (!vals.holdEnd) { toast('Please choose a hold end date', true); return; }
+      if (vals.holdEnd < vals.holdStart) { toast('The hold end date must be after the start date', true); return; }
+      var _days = Math.round((new Date(vals.holdEnd) - new Date(vals.holdStart)) / 86400000) + 1;
+      btn.disabled = true; btn.textContent = 'Submitting…';
+      fetch(HOLD_API, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'member_hold_apply',
+          name: vals.name || '', phone: vals.contact || '',
+          holdKind: '신규',                    // 회원 화면에서 구분을 없앴으므로 기본값 전송 — 실제 신규/연장 판정은 직원이 시트에서
+          holdStart: vals.holdStart || '',
+          holdEnd: vals.holdEnd || '',        // 신규 칸 — 시트에서 기간을 그대로 보게
+          holdDays: _days,                    // 시작~종료로 자동 계산(양끝 포함)
+          reason: vals.reason || ''
+        })
+      })
+      .then(function(r){ return r.text(); })
+      .then(function(t){ try { return JSON.parse(t); } catch (e) { return { ok:false, error:'Unexpected response' }; } })
+      .then(function(res){
+        if (res && res.ok === false) {
+          if (res.error === 'hold-gated') {
+            toast('Online hold requests are not open yet. Please contact the desk and we will handle it right away.', true);
+          } else {
+            toast(res.detail || res.error || 'We could not submit your request. Please try again.', true);
+          }
+          btn.disabled = false; btn.textContent = 'Submit'; return;
+        }
+        $('formWrap').style.display = 'none';
+        $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.';
+        $('doneWrap').style.display = 'block';
+        window.scrollTo(0, 0);
+      })
+      .catch(function(){
+        toast('Network error — please try again.', true);
+        btn.disabled = false; btn.textContent = 'Submit';
+      });
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    var payload = {
+      action: 'reg_submit',
+      t: RECEPTION_SUBMIT_TOKEN,
+      category: selectedCategory,
+      name: vals.name || '',
+      contact: vals.contact || '',
+      loc: vals.loc || '',
+      content: vals.content || '',
+      photo: photoData,
+      fileName: photoName,
+      mimeType: photoMime
+    };
+    EXTRA_KEYS.forEach(function(k){ payload[k] = vals[k] || ''; });
+
+    // 대기큐를 거쳐 보낸다(배 960 M6 · 한국어 본 reception_block.html 과 같은 규칙).
+    // 사람이 다시 누르면 아까 밀려 있던 건은 버린다 — 같은 접수가 두 줄로 들어가지 않게.
+    if (rcActive) rcqRemove(rcActive);
+    rcActive = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    rcqSend({ id: rcActive, payload: payload, attempts: 0, nextAt: 0 });
+  });
+
+  $('againBtn').addEventListener('click', function(){
+    selectedCategory = ''; photoData = ''; photoName = '';
+    Array.prototype.forEach.call(document.querySelectorAll('.type-btn'), function(b){ b.classList.remove('active'); });
+    $('formFields').innerHTML = '';
+    $('emptyHint').style.display = 'block';
+    var btn = $('submitBtn'); btn.disabled = false; btn.textContent = 'Submit';
+    $('doneWrap').style.display = 'none'; $('submitBtn').style.display = 'none';
+    $('formWrap').style.display = 'block';
+    window.scrollTo(0, 0);
+  });
+})();
+</script>
+
+
+<!-- 백스페이스 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 백스페이스 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/' + 'en/lookup/';
+  });
+})();
+</script>
+
+<!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
+     남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작 — 휴대폰·PC 방문 회원은 안 튄다.
+     입력칸에 뭔가 적혀 있으면 넘어가지 않는다(작성 중인 내용 보호). -->
+<script>
+(function(){
+  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var LOOKUP = 'http://wellperion.com/en/lookup/';
+  var IDLE = 60, left = IDLE, pill;
+  function hasInput(){
+    var els = document.querySelectorAll('input,textarea,select');
+    for (var i=0;i<els.length;i++){
+      var e = els[i];
+      if (e.type==='hidden'||e.type==='button'||e.type==='submit') continue;
+      if (e.type==='checkbox'||e.type==='radio'){ if (e.checked) return true; continue; }
+      if (e.value && String(e.value).trim()) return true;
+    }
+    return false;
+  }
+  function ensurePill(){
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:6;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.55);color:#fff;pointer-events:none;display:none';
+    document.body.appendChild(pill);
+    return pill;
+  }
+  function tick(){
+    if (document.visibilityState === 'hidden') return;
+    var on = KIOSK.matches, p = ensurePill();
+    p.style.display = on ? 'block' : 'none';
+    if (!on){ left = IDLE; return; }
+    left--;
+    p.textContent = 'Returning to start in ' + left + 's';
+    if (left <= 0){
+      if (hasInput()){ left = IDLE; return; }
+      location.href = LOOKUP;
+    }
+  }
+  function poke(){ left = IDLE; }
+  ['click','touchstart','keydown','input','change'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  setInterval(tick, 1000);
+})();
+</script>
+
+</body>
+</html>
