@@ -217,8 +217,16 @@ def module_at(uri: str) -> Optional[dict]:
     # 선행 슬래시를 1개로 강제 — posixpath.normpath 는 '//x' 를 보존해 '//cpo/…' 요청이 모듈 조회를 빗나가게 했다
     # (권한 판정 우회 · 2026-09-05 검수 C4). nginx 는 merge_slashes 로 파일은 정상으로 내주므로 여기서 맞춘다.
     path = "/" + posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(uri).path) or "/").lstrip("/")
+    if path in _MODS[2]:
+        return _MODS[2][path]
+    if path.endswith(".html"):
+        return None
     # 깔끔한 주소(.html 생략) 허용 — nginx try_files 가 $uri.html 로 파일을 찾으므로 권한 판정도 같은 파일로(GM 2026-09-05)
-    return _MODS[2].get(path) or (_MODS[2].get(path + ".html") if not path.endswith(".html") else None)
+    m = _MODS[2].get(path + ".html")
+    if m:
+        return m
+    # 폴더 index.html 모듈(/chro/hub/ 등 6개) — nginx try_files 가 $uri/index.html 로 찾는 것과 맞춘다(2026-09-05 검수 H2)
+    return _MODS[2].get(path.rstrip("/") + "/index.html")
 
 
 def perms_of(user) -> Optional[dict]:
@@ -365,6 +373,11 @@ def page(title: str, body: str) -> HTMLResponse:
     return HTMLResponse(f"<!doctype html><html lang=ko><meta charset=utf-8><title>{escape(title)}</title>{STYLE}{body}")
 
 
+def safe_next(next: str, default: str = "/") -> str:
+    """로그인 뒤 돌아갈 주소 검증 — '/' 로 시작하되 '//도메인' 오픈 리다이렉트는 막는다(2026-09-05 검수 M2)."""
+    return next if next.startswith("/") and not next.startswith("//") else default
+
+
 @app.get("/auth/login")
 def login_page(next: str = "/", err: str = "", msg: str = ""):
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
@@ -395,7 +408,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
     FAILS.pop(email, None)
     if u["status"] != "active":
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
-    r = RedirectResponse(next if next.startswith("/") else "/", status_code=303)
+    r = RedirectResponse(safe_next(next), status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
     r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
     return r
@@ -531,25 +544,36 @@ def google_start(request: Request, next: str = "/"):
                     "<p>구글 OAuth 클라이언트를 등록하고 서버 /srv/erp/auth.env 에 "
                     "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET 을 넣으면 켜집니다.</p>"
                     "<p><a href=/auth/login>로그인 화면으로</a></p></div>")
-    state = jwt.encode({"n": next if next.startswith("/") else "/", "exp": int(time.time()) + 600},
+    # 브라우저 결속 난수(2026-09-05 검수 M1) — state 서명만으로는 공격자가 자기 로그인 흐름을 시작해 얻은
+    # 콜백 URL 을 직원에게 열게 하는 로그인 CSRF 를 못 막는다. 이 요청을 시작한 브라우저만 아는 값을
+    # 쿠키+state 둘 다에 넣고 콜백에서 대조한다.
+    nonce = secrets.token_urlsafe(16)
+    state = jwt.encode({"n": safe_next(next), "b": nonce, "exp": int(time.time()) + 600},
                        SECRET, algorithm="HS256")
     # hd 파라미터 없음 = 계정 선택창에 개인 구글 계정도 뜬다(GM 2026-09-05). 회사 계정 여부는 콜백에서 판별.
     q = urllib.parse.urlencode({"client_id": GOOGLE_ID, "redirect_uri": _redirect_uri(request),
                                 "response_type": "code", "scope": "openid email profile",
                                 "state": state, "prompt": "select_account"})
-    return RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + q, status_code=302)
+    r = RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + q, status_code=302)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie("erp_oauth_n", nonce, max_age=600, httponly=True, samesite="lax", path="/auth/google", secure=https)
+    return r
 
 
 @app.get("/auth/google/callback")
-def google_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+def google_callback(request: Request, code: str = "", state: str = "", error: str = "",
+                     erp_oauth_n: Optional[str] = Cookie(default=None)):
     if not GOOGLE_ID or not GOOGLE_SECRET:
         return RedirectResponse("/auth/login?err=구글 로그인이 아직 설정되지 않았습니다", status_code=303)
     if error or not code:
         return RedirectResponse("/auth/login?err=구글 로그인이 취소됐습니다", status_code=303)
     try:
-        nxt = jwt.decode(state, SECRET, algorithms=["HS256"])["n"]
+        state_claims = jwt.decode(state, SECRET, algorithms=["HS256"])
+        nxt = state_claims["n"]
     except jwt.PyJWTError:
         return RedirectResponse("/auth/login?err=로그인 요청이 만료됐습니다. 다시 시도하세요", status_code=303)
+    if not erp_oauth_n or not secrets.compare_digest(erp_oauth_n, state_claims.get("b", "")):
+        return RedirectResponse("/auth/login?err=로그인 요청이 이 브라우저에서 시작되지 않았습니다. 다시 시도하세요", status_code=303)
     try:
         claims = _id_claims(_google_token(code, _redirect_uri(request))["id_token"])
     except Exception:
@@ -655,7 +679,7 @@ def admin_unlock_page(next: str = "/auth/admin", err: str = "", erp_session: Opt
 <h1>관리자 비밀번호</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
 <p class=hint>로그인 계정과 별개인 관리자 전용 비밀번호입니다. 넣으면 {ADMIN_MIN}분 동안 다시 묻지 않습니다.</p>
 <label>관리자 비밀번호<span class=pw><input name=password type=password autocomplete=off required autofocus>""" + TOGGLE + f"""</span></label>
-<input type=hidden name=next value="{escape(next if next.startswith('/') else '/auth/admin')}"><button>확인</button>
+<input type=hidden name=next value="{escape(safe_next(next, '/auth/admin'))}"><button>확인</button>
 <div class=foot><p><a href=/erp/>ERP 로 돌아가기</a></p></div></form>""")
 
 
@@ -675,7 +699,7 @@ def admin_unlock(request: Request, password: str = Form(...), next: str = Form("
         FAILS[key] = (0, time.time() + LOCK_SECS) if count >= LOCK_AFTER else (count, 0.0)
         return RedirectResponse(f"/auth/admin/unlock?err=관리자 비밀번호가 맞지 않습니다&next={next}", status_code=303)
     FAILS.pop(key, None)
-    r = RedirectResponse(next if next.startswith("/") else "/auth/admin", status_code=303)
+    r = RedirectResponse(safe_next(next, "/auth/admin"), status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(ADMIN_COOKIE, _admin_issue(u["id"]), max_age=ADMIN_MIN * 60, httponly=True, samesite="lax", path="/auth/admin", secure=https)
     return r
