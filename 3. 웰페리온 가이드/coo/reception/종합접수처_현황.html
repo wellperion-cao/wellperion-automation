@@ -1199,7 +1199,11 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   if('dueDate' in payload) body.dueDate = payload.dueDate;
   if('policyFix' in payload) body.policyFix = payload.policyFix;
 
-  fetch(REG_API, {
+  /* ★2026-09-05 시우(배1053) — ERP 도메인은 서버 원장에 직접 갱신(/api/reception/update). 배984 이후 새 접수는 서버 원장이
+     정본이라 시트만 보는 GAS reg_update 가 '해당 접수ID를 찾을 수 없습니다'로 100% 실패했다(오늘 접수분 상태·담당·메모 저장 무효).
+     필드는 reg_update 와 1:1. 깃허브 페이지·워드프레스 사본은 종전 GAS 그대로. */
+  var _updUrl = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname) ? '/api/reception/update' : REG_API;
+  fetch(_updUrl, {
     method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
     body:JSON.stringify(body), redirect:'follow'
   }).then(function(r){ return r.json(); }).then(function(d){
