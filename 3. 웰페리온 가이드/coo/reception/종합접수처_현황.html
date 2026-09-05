@@ -676,10 +676,12 @@ if(!ERP_API_ON){
   document.addEventListener('DOMContentLoaded', function(){
     var d = document.createElement('div');
     d.style.cssText = 'padding:10px 14px;background:#5a3a2c;color:#f5f2ef;font-size:14px;line-height:1.5;text-align:center';
-    d.innerHTML = '이 주소에서는 습득물 목록·점수판·처리(삭제·수령·휴회완료)가 열리지 않습니다. ' +
-      '<a href="https://erp.wellperion.com/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html" ' +
-      'style="color:#e6c84e;font-weight:700">웰페리온 ERP에서 열기</a>';
+    /* 2026-09-05 시우 — 안내만 띄우면 실무진이 '습득물 안 된다'고 신고한다(GM 지적). 옛 주소로 열면 3초 뒤 ERP 주소로 자동 이동. */
+    var ERP_URL = 'https://erp.wellperion.com/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html' + (location.search || '');
+    d.innerHTML = '이 주소는 옛 주소입니다 — 습득물·점수판·처리가 열리지 않아 <b>3초 뒤 웰페리온 ERP로 이동</b>합니다. ' +
+      '<a href="' + ERP_URL + '" style="color:#e6c84e;font-weight:700">지금 열기</a>';
     document.body.insertBefore(d, document.body.firstChild);
+    setTimeout(function(){ location.replace(ERP_URL); }, 3000);
   });
 }
 function _rcFetch(apiPath, gasUrl){
