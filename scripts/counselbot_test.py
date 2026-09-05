@@ -14,6 +14,21 @@ import argparse, json, os, shutil, sys, tempfile, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+TESTS = ROOT / "server/counselbot/tests"
+LOG = TESTS / "log.jsonl"
+
+
+def _rate(rid: str, rating: str, note: str) -> int:
+    """문답 한 건에 good/bad 평가·메모를 붙인다(같은 파일 다시 씀 — 원장은 하나)."""
+    rows = [json.loads(l) for l in LOG.read_text(encoding="utf-8").splitlines() if l.strip()]
+    hit = [r for r in rows if r["id"] == rid]
+    if not hit:
+        print("없는 id:", rid); return 1
+    hit[0]["rating"], hit[0]["note"] = rating, note
+    LOG.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    print("기록:", rid, rating, note); return 0
+
+
 FAQ_SRC = {
     "1_wellperion": ROOT / "server/erp_api/seed_faq/1_wellperion.json",
     "2_dietcamp": ROOT / "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json",
@@ -36,10 +51,17 @@ def main() -> int:
     ap.add_argument("--tenant", default="2_dietcamp", choices=sorted(FAQ_SRC))
     ap.add_argument("--file", help="질문 목록 파일(한 줄 = 질문 하나)")
     ap.add_argument("--model", default=None, help="claude CLI 모델명(기본 = model_router 기본 순서)")
+    ap.add_argument("--set", action="store_true", help="server/counselbot/tests/{tenant}_questions.txt 전체 실행")
+    ap.add_argument("--rate", nargs=2, metavar=("ID", "good|bad"), help="log.jsonl 의 문답에 평가 붙이기")
+    ap.add_argument("--note", default="", help="--rate 메모(왜 나쁜가 · 정본에 무엇이 빠졌나)")
     a = ap.parse_args()
+    if a.rate:
+        return _rate(a.rate[0], a.rate[1], a.note)
     qs = [a.question] if a.question else []
     if a.file:
         qs += [l.strip() for l in Path(a.file).read_text(encoding="utf-8").splitlines() if l.strip()]
+    if a.set:
+        qs += [l.strip() for l in (TESTS / (a.tenant + "_questions.txt")).read_text(encoding="utf-8").splitlines() if l.strip()]
     if not qs:
         ap.error("질문 또는 --file 필요")
 
@@ -61,7 +83,13 @@ def main() -> int:
         dt = time.time() - t0
         text = (text or "").strip()
         verdict = "OK" if text and not api_chat._forbidden_hit(text) and api_chat._grounded(text, system) else "검사 탈락→핸드오프"
-        print("\nQ: %s\nA(%s · %.1fs · %s): %s" % (q, used, dt, verdict, text or "(빈 응답)"))
+        rid = time.strftime("%Y%m%d%H%M%S") + "-" + str(abs(hash(q)) % 10000)
+        TESTS.mkdir(parents=True, exist_ok=True)
+        with LOG.open("a", encoding="utf-8") as f:   # 테스트 데이터 = 자산(GM 09-05) — 문답 전부 남긴다
+            f.write(json.dumps({"id": rid, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "tenant": a.tenant, "q": q,
+                                "a": text, "model": used, "sec": round(dt, 1), "verdict": verdict,
+                                "rating": None, "note": ""}, ensure_ascii=False) + "\n")
+        print("\n[%s] Q: %s\nA(%s · %.1fs · %s): %s" % (rid, q, used, dt, verdict, text or "(빈 응답)"))
     return 0
 
 
