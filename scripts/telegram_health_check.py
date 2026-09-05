@@ -331,6 +331,105 @@ def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
         print(f"[WARN] 경보 발송 예외: {e}", flush=True)
 
 
+# ── 점검 6: 종합접수처·습득물 상시 점검 (2026-09-05 시우 · GM "되었다가 안 되었다가") ─────────────
+#   습득물이 하루에도 몇 번씩 되다 안 되다 한 원인은 셋이었다 — ①접수 GAS 승인(스코프)이 재배포·재승인 때 끊김
+#   ②게이트 열쇠가 켜지며 옛 주소(깃허브·WP 사본) 현황 화면의 습득물 칸이 막힘 ③여러 세션이 같은 라이브 페이지를
+#   다른 버전으로 덮어씀. 셋 다 "실무진이 먼저 발견"했다. 이 점검은 15분마다 회원·실무진이 쓰는 경로 그대로 찔러
+#   깨진 순간 GM 업무관리방에 한 줄 알리고, 회복되면 회복 한 줄을 보낸다(같은 상태 반복 발송 없음).
+_RC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec'
+_RC_PAGES = [  # (이름, 주소, 본문에 반드시 있어야 하는 표식) — 표식이 없으면 페이지가 딴 것으로 덮인 것
+    ('습득물 보기', 'http://wellperion.com/ko/lost-found/', 'wlp-lfg'),
+    ('습득물 등록', 'http://wellperion.com/ko/lost-found-register/', 'lf_submit'),
+    ('종합접수처', 'http://wellperion.com/ko/reception/', 'wlp-recept'),
+    ('첫 화면(조회)', 'http://wellperion.com/ko/lookup/', 'wlp-lk'),
+]
+_RC_STATE = os.path.join(_ROOT_DIR, 'status', 'heartbeats', 'coo-reception-health.json')
+
+
+def _check_reception_lost() -> list[str]:
+    issues: list[str] = []
+    # ① 접수 GAS — 진단·공개 갤러리·접수 현황 3종 읽기(회원 화면이 실제로 부르는 것)
+    for name, action, key in (('접수 GAS 진단', 'diag', None), ('습득물 갤러리', 'lf_gallery', 'data'), ('접수 현황판', 'reg_board', 'data')):
+        try:
+            r = requests.get(_RC_GAS, params={'action': action}, timeout=40)
+            d = r.json()
+            if not d.get('ok'):
+                issues.append(f"{name} 응답 ok=false — {str(d.get('error') or d)[:80]} (GAS 승인·스코프 끊김 의심)")
+            elif key and not isinstance(d.get(key), list):
+                issues.append(f"{name} 목록 칸 없음 — 응답 모양이 바뀜")
+        except Exception as e:
+            issues.append(f"{name} 호출 실패 — {str(e)[:60]}")
+    # ② 회원·실무진이 여는 워드프레스 페이지 4장 — 열리고, 제 내용인가
+    for name, url, marker in _RC_PAGES:
+        try:
+            r = requests.get(url, timeout=40, headers={'User-Agent': 'Mozilla/5.0 wellperion-health'})
+            if r.status_code != 200:
+                issues.append(f"{name} 페이지 HTTP {r.status_code}")
+            elif marker not in r.text:
+                issues.append(f"{name} 페이지 내용이 딴 것 — 표식 '{marker}' 없음(엉뚱한 주입 의심)")
+        except Exception as e:
+            issues.append(f"{name} 페이지 열기 실패 — {str(e)[:60]}")
+    # ③ 서버 습득물 API — 로그인 관문 뒤라 401 이 정상. 5xx·불통이면 서버 쪽 고장
+    try:
+        r = requests.get('https://erp.wellperion.com/api/reception/lost', timeout=30)
+        if r.status_code >= 500:
+            issues.append(f"서버 습득물 API HTTP {r.status_code} — ERP 화면 습득물 칸 고장")
+    except Exception as e:
+        issues.append(f"서버 습득물 API 불통 — {str(e)[:60]}")
+    return issues
+
+
+def _reception_state_changed(issues: list[str]) -> tuple[bool, list[str]]:
+    """직전 결과와 비교 — 바뀐 때만 True. (상태, 직전 문제 목록)"""
+    prev: dict = {}
+    try:
+        with open(_RC_STATE, encoding='utf-8') as f:
+            prev = json.load(f)
+    except Exception:
+        pass
+    prev_issues = list(prev.get('issues') or [])
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    rec = {'id': 'coo-reception-health', 'generated_at_kst': now, 'ok': not issues, 'issues': issues,
+           'last_ok_at': (now if not issues else prev.get('last_ok_at')),
+           'detail': ('정상 — GAS 3종·페이지 4장·서버 API' if not issues else ' / '.join(issues)[:300])}
+    try:
+        os.makedirs(os.path.dirname(_RC_STATE), exist_ok=True)
+        with open(_RC_STATE, 'w', encoding='utf-8') as f:
+            json.dump(rec, f, ensure_ascii=False, indent=1)
+    except Exception as e:
+        print(f"[WARN] 상태 파일 기록 실패: {e}", flush=True)
+    return (sorted(issues) != sorted(prev_issues)), prev_issues
+
+
+def run_reception_only(token: str, dry_run: bool) -> None:
+    issues = _check_reception_lost()
+    changed, prev = _reception_state_changed(issues)
+    print(f"[reception] 문제 {len(issues)}건 · 변화 {'있음' if changed else '없음'}", flush=True)
+    for it in issues:
+        print(f"  - {it}", flush=True)
+    if not changed:
+        return
+    # 업무관리방(GM) — 실무진·회원이 쓰는 경로가 끊긴 것은 기계 살림이 아니라 현실 업무다
+    chat = 8254867551
+    try:
+        with open(os.path.join(_ROOT_DIR, 'status', 'telegram_rooms.json'), encoding='utf-8') as f:
+            chat = int(json.load(f).get('업무관리') or chat)
+    except Exception:
+        pass
+    if issues:
+        msg = "🧳 종합접수처·습득물 점검 — 지금 안 됩니다 (AI 시우 · 15분 자동 점검)\n" + "\n".join(f"▪ {i}" for i in issues[:6])
+    else:
+        msg = "🧳 종합접수처·습득물 점검 — 회복됐습니다 (AI 시우)\n▪ 직전 문제: " + " / ".join(prev[:3])[:200]
+    if dry_run:
+        print(f"[DRY-RUN] → chat_id={chat}\n{msg}", flush=True)
+        return
+    try:
+        _tg_send(token, chat, msg, source='telegram_health_check.reception', timeout=15)
+    except Exception as e:
+        print(f"[WARN] 경보 발송 예외: {e}", flush=True)
+
+
+
 # ── 메인 ──────────────────────────────────────────────────────────────────────
 def _check_stale_worktree() -> list[str]:
     """작업트리에 '커밋보다 오래된 파일'이 있나 — 옛 사본이 최신을 덮은 흔적.
@@ -396,10 +495,15 @@ def _check_sales_month() -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description='텔레그램 알림 헬스체크')
     parser.add_argument('--dry-run', action='store_true', help='경보 발송 없이 stdout만')
+    parser.add_argument('--only', choices=['reception'], default=None,
+                        help='reception = 종합접수처·습득물만(15분 주기용 · 변화 있을 때만 업무관리방 한 줄)')
     args = parser.parse_args()
 
     env = _load_env(_ENV_PATH)
     token = env.get('TELEGRAM_BOT_TOKEN', '')
+    if args.only == 'reception':
+        run_reception_only(token, args.dry_run)
+        return
     owner_id_str = env.get('OWNER_ID') or env.get('TELEGRAM_CHAT_ID', '')
     rooms = _default_rooms(env)
 
