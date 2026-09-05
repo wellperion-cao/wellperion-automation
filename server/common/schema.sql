@@ -338,3 +338,37 @@ CREATE TABLE IF NOT EXISTS track_events (
   is_bot        BOOLEAN NOT NULL DEFAULT false
 );
 CREATE INDEX IF NOT EXISTS ix_track_events_ts ON track_events (tenant_id, ts);
+
+-- 회원 쓰기 서버 원장 1단계 — 종목별 담당자 5칸 (배1050 · 2026-09-05 시토 · 시포 스펙 §2-2).
+-- GAS 미러 data(JSON) 안에만 있던 칸을 실컬럼으로 승격 — POST /api/members/write(member_owner_save)가 직접 쓴다.
+-- sync_members.py 의 INSERT 열 목록엔 이 5칸이 없다(의도) — 5분 거울 갱신이 서버가 쓴 값을 되덮지 않는다.
+ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_pt     TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_golf   TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_pl     TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_squash TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_swim   TEXT;
+-- 1회성 이관 백업: 이미 GAS 시트에 담당자 값이 있던 회원은 data JSON 에서 그대로 끌어와 새 컬럼을 채운다.
+-- WHERE owner_* IS NULL 이라 한 번 채우면 이후 재실행은 아무 일도 안 한다(멱등).
+UPDATE members SET owner_pt     = COALESCE(owner_pt,     data::jsonb->>'PT 담당자')     WHERE scope='valid' AND owner_pt     IS NULL;
+UPDATE members SET owner_golf   = COALESCE(owner_golf,   data::jsonb->>'골프 담당자')   WHERE scope='valid' AND owner_golf   IS NULL;
+UPDATE members SET owner_pl     = COALESCE(owner_pl,     data::jsonb->>'P.L 담당자')    WHERE scope='valid' AND owner_pl     IS NULL;
+UPDATE members SET owner_squash = COALESCE(owner_squash, data::jsonb->>'스쿼시 담당자') WHERE scope='valid' AND owner_squash IS NULL;
+UPDATE members SET owner_swim   = COALESCE(owner_swim,   data::jsonb->>'수영 담당자')   WHERE scope='valid' AND owner_swim   IS NULL;
+
+-- 회원변경이력 (GAS _memberLog_ 탭 8칸 이식 + member_no 1칸 추가 — 서버 대조·되돌리기용 · 시포 스펙 "서버 재구현 주의").
+-- 기록 실패가 회원 저장을 막지 않는 GAS 원칙은 그대로(호출부가 같은 트랜잭션에 넣되 실패해도 저장은 별도로 성공 처리하지 않음
+-- — 서버는 원장 갱신과 이력을 한 트랜잭션으로 묶어 부분 성공 자체를 없앤다).
+CREATE TABLE IF NOT EXISTS member_change_log (
+  id           BIGSERIAL PRIMARY KEY,
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  at           TEXT NOT NULL,
+  staff        TEXT,
+  member_no    TEXT,
+  member_name  TEXT,
+  phone_masked TEXT,
+  field        TEXT NOT NULL,
+  old_value    TEXT,
+  new_value    TEXT,
+  screen       TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_member_change_log_no ON member_change_log (tenant_id, member_no, at);

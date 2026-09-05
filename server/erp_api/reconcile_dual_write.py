@@ -135,6 +135,45 @@ def _load(conn, db, since):
     return intake, writes, {"inquiries": inq, "reception_items": rec}
 
 
+# 회원 담당자 5칸 필드→서버 컬럼 (api_members_write.FIELD_TO_COL 과 같은 값 — 대조 전용 사본, 순환 임포트
+# 방지. 필드가 늘면 두 파일을 같이 고친다). members 미러 열쇠는 (member_no, scope) 라 시트 매치는 못 쓰고,
+# members.data(JSON, sync_members.py 가 GAS 원문을 그대로 싣는 칸)의 같은 헤더값과 대조한다(배1050 · 2026-09-05).
+MEMBER_OWNER_FIELDS = ("PT 담당자", "골프 담당자", "P.L 담당자", "스쿼시 담당자", "수영 담당자")
+
+
+def reconcile_member_owner_writes(conn, db, since):
+    """member_owner_save 서버 쓰기 전수 — write_log 에 적힌 (member_no, field, value) 를 그 시각 **이후** 처음
+    돈 sync_members 배치의 members.data JSON 같은 칸 값과 대조한다(시포 스펙 §3 1단계 검증 방법 그대로).
+    아직 그 시각 이후 배치가 한 번도 안 돈 회원번호는 mismatch 로 센다(시트 도달 증명 전이라 무결이 아니다).
+    반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양이라 streak_ok_days
+    가 그대로 먹는다. member_no 를 못 실은 옛 요청(v1 전 데이터)이나 필드가 화이트리스트 밖이면 mismatch."""
+    rows = conn.execute(
+        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_owner_save'"
+        " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
+    days, unmatched = {}, []
+    for r in rows:
+        p = r["payload"] or {}
+        field, no, value = p.get("field"), p.get("_member_no"), p.get("value")
+        day = str(r["at"])[:10]
+        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
+        d["server"] += 1
+        hit = False
+        if field in MEMBER_OWNER_FIELDS and no:
+            row = conn.execute(
+                "SELECT data::jsonb->>%s AS v FROM members WHERE tenant_id=%s AND member_no=%s"
+                " AND scope='valid' AND synced_at > %s ORDER BY synced_at LIMIT 1",
+                (field, db.TENANT, no, r["at"])).fetchone()
+            hit = bool(row) and (row["v"] or "") == (value or "")
+        if hit:
+            d["sheet"] += 1
+        else:
+            d["mismatch"] += 1
+            d["ok"] = False
+            if len(unmatched) < 20:
+                unmatched.append({"date": day, "at": r["at"], "member_no": no, "field": field, "form": "member_owner_save"})
+    return days, unmatched
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
     now = kst_now()
@@ -142,8 +181,9 @@ def main():
     conn = db.connect(readonly=True)
     with conn:
         intake, writes, mirrors = _load(conn, db, since)
+        mo_days, mo_bad = reconcile_member_owner_writes(conn, db, since)
     conn.close()
-    out_forms, unmatched = {}, []
+    out_forms, unmatched = {"member_owner_save": mo_days}, list(mo_bad)
     for form, spec in FORMS.items():
         rows = writes if form == "write" else intake.get(form, [])
         days, bad = reconcile(form, rows, mirrors.get(spec["mirror"] or ""))
@@ -193,6 +233,47 @@ def selftest():
     assert d3["2026-09-01"] == {"server": 1, "sheet": 0, "mismatch": 1, "ok": False, "via": {"mirror": 0, "gas": 0}}, d3
     d4, _ = reconcile("write", [("2026-09-01 10:00:00", {"action": "member_owner_save"}, "ok")], None)
     assert d4["2026-09-01"]["ok"] and d4["2026-09-01"]["via"]["gas"] == 1, d4
+
+    # member_owner_save 서버 대조(배1050) — write_log 값 ↔ members.data JSON 같은 칸, 실 DB 없이 가짜 conn 으로.
+    class _MC:
+        """execute() 호출 순서 고정: write_log 조회 1회 → 행마다 members.data 조회 1회. 실제 SQL 은 안 본다."""
+        def __init__(self, write_rows, member_rows):
+            self.write_rows, self.member_rows, self.i = write_rows, member_rows, 0
+
+        def execute(self, sql, args=None):
+            if "FROM write_log" in sql:
+                self._cur = list(self.write_rows)
+                return self
+            v = self.member_rows[self.i] if self.i < len(self.member_rows) else None
+            self.i += 1
+            return _One(v)
+
+        def fetchall(self):
+            return self._cur
+
+    class _One:
+        def __init__(self, v):
+            self.v = v
+
+        def fetchone(self):
+            return {"v": self.v} if self.v is not None else None
+
+    class _DB:
+        TENANT = "wellperion"
+
+    wl = [
+        {"at": "2026-09-01 10:00:00", "payload": {"field": "PT 담당자", "value": "홍길동", "_member_no": "M00001"}},
+        {"at": "2026-09-01 11:00:00", "payload": {"field": "골프 담당자", "value": "김철수", "_member_no": "M00002"}},
+        {"at": "2026-09-01 12:00:00", "payload": {"field": "P.L 담당자", "value": "이영희", "_member_no": "M00003"}},
+    ]
+    # M00001: 다음 배치 값이 같음(적중) · M00002: 다음 배치 값이 다름(불일치) · M00003: 아직 배치가 안 돎(불일치)
+    days5, bad5 = reconcile_member_owner_writes(_MC(wl, ["홍길동", "김영수", None]), _DB, "2026-09-01")
+    assert days5["2026-09-01"] == {"server": 3, "sheet": 1, "mismatch": 2, "ok": False}, days5
+    assert {b["member_no"] for b in bad5} == {"M00002", "M00003"}, bad5
+    # member_no 를 못 실은 옛 요청(v1 전) = 대조 못 함 → mismatch
+    days6, _ = reconcile_member_owner_writes(
+        _MC([{"at": "2026-09-02 09:00:00", "payload": {"field": "수영 담당자", "value": "박민서"}}], []), _DB, "2026-09-01")
+    assert days6["2026-09-02"]["mismatch"] == 1, days6
 
     # 가린 번호(010-****-5691)에서도 뒤 4자리가 뽑힌다 — 종합접수처 미러가 이 모양이다
     assert phone4("010-****-5691") == "5691" and phone4("", None, "0104736") == "4736" and phone4("abc") == ""
