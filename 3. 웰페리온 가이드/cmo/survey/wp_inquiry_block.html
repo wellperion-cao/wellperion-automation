@@ -10,7 +10,7 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-/* 2026-09-05 시우 · 키오스크 규칙(최상위 · 접수처와 같은 처리) */@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f5f0ea!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}.wlp-inq{ overscroll-behavior-y:contain}
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 플로팅 문의 버튼은 전 크기 숨김 */.buttonizer,#buttonizer,[class*="buttonizer"]{display:none!important}@media (min-width:700px) and (orientation:portrait){.wlp-inq .video-frame{display:none!important}}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f6f6f6!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}.wlp-inq{ overscroll-behavior-y:contain}
 .wlp-inq button,.wlp-inq a,.wlp-inq input,.wlp-inq select,.wlp-inq textarea{touch-action:manipulation}
 
 /* 키오스크 스크롤 공통 (2026-09-05 GM 지시 "스크롤 계속 생기네 · 터치스크롤 전체적으로") — 막대는 눈에서만
@@ -22,7 +22,7 @@ body{scrollbar-width:none!important}
 html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
 
 .wlp-inq{
-  --bg:#f5f0ea;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
+  --bg:#f6f6f6;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;

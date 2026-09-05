@@ -31,7 +31,7 @@ body{scrollbar-width:none!important}
 html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
 
 .wlp-inq{
-  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --bg:#f6f6f6;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
   --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -106,7 +106,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
 .wlp-inq .social-btn{display:flex;align-items:center;justify-content:center;width:48px;height:48px;transition:opacity .18s}
 .wlp-inq .social-icon:hover .social-btn{opacity:.85}
 .wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
-/* 2026-09-05 시우 · 키오스크 규칙(최상위 · 접수처와 같은 처리) */@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f5f0ea!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:520px) { .wlp-inq .type-grid{grid-template-columns:1fr} }
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 플로팅 문의 버튼은 전 크기 숨김 */.buttonizer,#buttonizer,[class*="buttonizer"]{display:none!important}@media (min-width:700px) and (orientation:portrait){.wlp-inq .video-frame{display:none!important}}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f6f6f6!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:520px) { .wlp-inq .type-grid{grid-template-columns:1fr} }
 
 /* ===== FORM ===== */
 .wlp-inq .card{background:var(--paper);border:1px solid var(--line);padding:22px 20px;margin-bottom:14px}

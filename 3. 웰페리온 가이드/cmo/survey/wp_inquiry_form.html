@@ -155,7 +155,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq button,.wlp-inq a,.wlp-inq input,.wlp-inq select,.wlp-inq textarea{touch-action:manipulation}
 
 .wlp-inq{
-  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
+  --bg:#f6f6f6;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
   --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -315,7 +315,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .back-kiosk{position:static;margin:0 0 12px;align-self:flex-start;z-index:5;display:inline-flex;align-items:center;
   justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--ink);
   border-radius:24px;color:var(--ink);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
-/* 2026-09-05 시우 · 키오스크 흐름 통일(접수처와 같은 규칙) */@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f5f0ea!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:520px) {
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 플로팅 문의 버튼은 전 크기 숨김 */.buttonizer,#buttonizer,[class*="buttonizer"]{display:none!important}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#f6f6f6!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:520px) {
   .wlp-inq .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px}
 }
 
