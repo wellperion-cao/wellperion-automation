@@ -19,4 +19,5 @@ if "%SID%"=="" (
   exit /b 1
 )
 echo   [Resume-AI] %ROLE% 세션 %SID:~0,8% 이어서 열기 + 원격제어 자동 부착
-wt new-tab --title "%ROLE%" --suppressApplicationTitle -d "%WORK%" powershell -NoExit -Command "claude --resume %SID% --remote-control '%ROLE%'"
+wt new-tab --title "%ROLE%" --suppressApplicationTitle -d "%WORK%" powershell -NoExit -Command "claude --resume %SID% --fork-session --remote-control '%ROLE%'"
+REM --fork-session: 새 세션 ID 로 갈라져 옛 계정 창의 기록과 섞이지 않는다(웰리 원판 2026-09-05 설계 유지)
