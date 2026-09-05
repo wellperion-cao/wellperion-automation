@@ -18,11 +18,17 @@ $SCP scripts/diet_camp_agent.py $HOST:/srv/erp/api/   # FORBIDDEN(금액·계약
 $SCP server/erp_api/chat.nginx.conf $HOST:/tmp/chat.conf
 $SCP "3. 웰페리온 가이드/cbo/model/chat_widget.html" $HOST:/srv/www/2_dietcamp/chat_widget.html   # 위젯 — 다캠 페이지와 같은 origin
 
-for t in "1_wellperion" "2_dietcamp"; do
+for t in "1_wellperion" "2_dietcamp" "3_spogym"; do
   $S "mkdir -p '/srv/erp/faq/$t'"
   if ! $S "test -f '/srv/erp/faq/$t/faq.json'"; then
-    $SCP "server/erp_api/seed_faq/$t.json" "$HOST:/srv/erp/faq/$t/faq.json"
+    if [ -f "server/erp_api/seed_faq/$t.json" ]; then
+      $SCP "server/erp_api/seed_faq/$t.json" "$HOST:/srv/erp/faq/$t/faq.json"
+    else
+      printf '{"meta":{},"faq":[]}' | $S "cat > '/srv/erp/faq/$t/faq.json'"   # 스포짐 — FAQ 미수령(배1036 요청④)
+    fi
   fi
+  # 프로필(이름·봇 이름·예약 링크)은 관리자 API 가 안 건드리는 칸이라 매번 저장소에서 덮어써도 안전하다.
+  $SCP "server/counselbot/tenants/$t.json" "$HOST:/srv/erp/faq/$t/profile.json"
 done
 
 $S 'sudo mv /tmp/chat.conf /etc/nginx/conf.d/erp-locations/chat.conf \

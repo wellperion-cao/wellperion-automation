@@ -16,7 +16,11 @@ for f in "$SRC"/{before_after_*,drafts_*}.html; do
 done
 $S "sudo mkdir -p /srv/www/2_dietcamp && sudo chown ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
 $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
-$SCP "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json" $HOST:/srv/erp/faq/2_dietcamp/faq.json   # FAQ 정본 = 저장소 · 서버는 사본
+$S "mkdir -p /srv/erp/faq/2_dietcamp"
+if ! $S "test -f /srv/erp/faq/2_dietcamp/faq.json"; then
+  $SCP "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json" $HOST:/srv/erp/faq/2_dietcamp/faq.json   # 첫 배포만 — 있으면 안 건드린다(배1036 관리자 API 편집 보호 · deploy_chat.sh 와 같은 원칙)
+fi
+$SCP "server/counselbot/tenants/2_dietcamp.json" $HOST:/srv/erp/faq/2_dietcamp/profile.json   # 프로필은 매번 갱신(관리자 API 가 안 건드리는 칸)
 $SCP server/erp_api/dietcamp.nginx.conf $HOST:/tmp/dietcamp.conf
 $S "sudo mv /tmp/dietcamp.conf /etc/nginx/conf.d/erp-locations/dietcamp.conf && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx && ls -la /srv/www /srv/www/2_dietcamp"
 rm -rf "$TMP"

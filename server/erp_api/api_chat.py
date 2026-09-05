@@ -374,8 +374,10 @@ def profile_preflight(tenant: str):
 
 
 @router.get("/{tenant}/profile")
-def profile(tenant: str):
-    """센터 이름·봇 이름·예약 링크·FAQ 칩 6개 — 고객 상담봇 페이지가 첫 화면에 그린다(공개 · §3·§5)."""
+def profile(tenant: str, full: bool = False):
+    """센터 이름·봇 이름·예약 링크·FAQ 칩 6개 — 고객 상담봇 페이지가 첫 화면에 그린다(공개 · §3·§5).
+    full=1 이면 faq[] 전체(id·q·a·alt·verified)도 같이 준다 — 관리자 페이지 FAQ 표가 이걸로 그린다(새 GET
+    엔드포인트를 안 늘리려고 이 API 하나에 얹는다 · FAQ 는 원래 공개 콘텐츠라 로그인 없이 봐도 된다)."""
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     prof = _load_profile(tenant)
@@ -394,6 +396,8 @@ def profile(tenant: str):
         "status": meta.get("status") or "",
         "chips": chips, "faq_count": len(faq), "verified_count": sum(1 for it in faq if it.get("verified")),
     }
+    if full:
+        out["faq"] = faq
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
 

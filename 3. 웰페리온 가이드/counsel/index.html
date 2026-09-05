@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상담봇</title>
+<style>
+/* 색 토큰 = erp/brand/tokens.css 값 그대로 인라인(이 페이지는 로그인 없이 열려 관문 뒤 자산을 못 불러온다) */
+:root{--paper:#F4F0EB;--ink:#221F20;--accent-text:#8F7659;--beige:#B79F8A;--line:rgba(34,31,32,.14);--good:#2E6B3A;--bad:#B3402B}
+*{box-sizing:border-box}
+body{margin:0;padding:0;background:var(--paper);color:var(--ink);font:15px/1.6 'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:#fff}
+header{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+header h1{margin:0;font-size:17px;font-weight:700;flex:1}
+.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;border:1px solid var(--line);color:var(--accent-text)}
+.badge.ok{color:var(--good);border-color:transparent;background:rgba(46,107,58,.12)}
+.badge.draft{color:var(--accent-text);background:rgba(183,159,138,.18)}
+.greet{padding:14px 18px 6px;font-size:14px;color:var(--ink)}
+.greet b{color:var(--accent-text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:6px 18px 14px}
+.chip{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;padding:7px 12px;border-radius:16px;cursor:pointer}
+.chip:hover{border-color:var(--beige)}
+#log{flex:1;padding:6px 18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;word-break:keep-all}
+.msg.q{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:2px}
+.msg.a{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:2px}
+.msg.a .fb{margin-top:8px;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--accent-text)}
+.msg.a .fb button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px}
+.msg.a .fb button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.msg.a .reserve{display:inline-block;margin-top:8px;padding:7px 12px;background:var(--ink);color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700}
+form{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+form input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--paper);color:var(--ink)}
+form button{padding:11px 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font:inherit;cursor:pointer}
+footer{padding:10px 18px 18px;font-size:12px;color:var(--accent-text);border-top:1px solid var(--line);text-align:center}
+footer a{color:var(--accent-text)}
+</style>
+</head><body>
+<div class="wrap">
+<header><h1 id="botName">상담봇</h1><span class="badge" id="badge">불러오는 중</span></header>
+<div class="greet">안녕하세요, <b id="botName2">상담봇</b>입니다. 궁금한 것을 짧게 물어보세요.</div>
+<div class="chips" id="chips"></div>
+<div id="log"></div>
+<form id="askForm"><input id="q" placeholder="궁금한 것을 입력하세요" autocomplete="off" required><button type="submit">보내기</button></form>
+<footer id="foot">이 봇은 자주 묻는 질문(FAQ) 만 답합니다.</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var TENANT_BY_PATH = {"/counsel/":"1_wellperion","/dietcamp/counsel/":"2_dietcamp","/spogym/counsel/":"3_spogym"};
+var tenant = TENANT_BY_PATH[location.pathname] || new URLSearchParams(location.search).get("t") || "1_wellperion";
+var API = "/api/chat/" + tenant;
+var log = document.getElementById("log");
+var reservationUrl = "";
+
+function addMsg(role, text, extra){
+  var d = document.createElement("div");
+  d.className = "msg " + role;
+  d.textContent = text;
+  if (extra) d.appendChild(extra);
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function feedbackRow(faqId){
+  var row = document.createElement("div");
+  row.className = "fb";
+  var label = document.createElement("span");
+  label.textContent = "도움이 됐나요?";
+  row.appendChild(label);
+  ["up", "down"].forEach(function(vote){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = vote === "up" ? "👍" : "👎";
+    b.onclick = function(){
+      row.querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+      b.classList.add("on");
+      fetch(API + "/feedback", {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({faq_id: faqId, vote: vote})}).catch(function(){});
+    };
+    row.appendChild(b);
+  });
+  return row;
+}
+
+function ask(text){
+  text = (text || "").trim();
+  if (!text) return;
+  addMsg("q", text);
+  document.getElementById("q").value = "";
+  fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({q:text})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var extra = null;
+      if (!d.answered){
+        var a = document.createElement("a");
+        a.className = "reserve"; a.textContent = "상담 예약";
+        a.href = reservationUrl || "#"; a.target = "_blank"; a.rel = "noopener";
+        extra = a;
+      } else {
+        extra = feedbackRow(d.faq_id);
+      }
+      addMsg("a", d.answer || "", extra);
+    })
+    .catch(function(){ addMsg("a", "지금 답을 받아올 수 없습니다. 잠시 후 다시 시도해 주세요."); });
+}
+
+document.getElementById("askForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  ask(document.getElementById("q").value);
+});
+
+fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
+  var name = p.name || "웰페리온";
+  var persona = p.bot_persona || (name + " AI");
+  document.title = persona + " 상담봇";
+  document.getElementById("botName").textContent = persona;
+  document.getElementById("botName2").textContent = persona;
+  reservationUrl = p.reservation_url || "";
+  var live = /라이브/.test(p.status || "");
+  var badge = document.getElementById("badge");
+  badge.textContent = live ? "확정" : "초안";
+  badge.className = "badge " + (live ? "ok" : "draft");
+  var chips = p.chips || [];
+  var wrap = document.getElementById("chips");
+  chips.slice(0, 6).forEach(function(c){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = c.q;
+    b.onclick = function(){ ask(c.q); };
+    wrap.appendChild(b);
+  });
+  var withAnswer = chips.filter(function(c){ return c.q && c.a; });
+  if (withAnswer.length){
+    var ld = {"@context":"https://schema.org","@type":"FAQPage",
+      "mainEntity": withAnswer.map(function(c){
+        return {"@type":"Question","name":c.q,"acceptedAnswer":{"@type":"Answer","text":c.a}};
+      })};
+    var s = document.createElement("script");
+    s.type = "application/ld+json";
+    s.textContent = JSON.stringify(ld);
+    document.head.appendChild(s);
+  }
+}).catch(function(){});
+})();
+</script>
+</body></html>

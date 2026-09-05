@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상담봇 관리</title>
+<link rel="stylesheet" href="../erp/brand/tokens.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px 22px 60px;background:var(--paper);color:var(--ink);font:14.5px/1.6 'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',-apple-system,system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:19px;margin:0 0 4px}
+.sub{font-size:12.5px;color:var(--accent-text);margin:0 0 14px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tabs a{padding:6px 12px;border-radius:8px;border:1px solid rgba(34,31,32,.16);text-decoration:none;color:var(--ink);font-size:13px;font-weight:600}
+.tabs a.on{background:var(--ink);color:#fff;border-color:transparent}
+.kpi{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.kpi div{flex:1;min-width:120px;padding:12px 14px;border:1px solid rgba(34,31,32,.14);border-radius:8px;background:#fff}
+.kpi b{display:block;font-size:20px}
+.kpi span{font-size:12px;color:var(--accent-text)}
+section{margin-bottom:26px;padding:16px 18px;border:1px solid rgba(34,31,32,.14);border-radius:8px;background:#fff}
+section h2{font-size:15px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid rgba(34,31,32,.1);padding:6px 8px;text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--accent-text);font-weight:700}
+input[type=text],textarea{width:100%;padding:6px 8px;border:1px solid rgba(34,31,32,.2);border-radius:6px;font:inherit}
+textarea{min-height:44px;resize:vertical}
+button{padding:6px 12px;border:0;border-radius:6px;background:var(--ink);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.sec{background:transparent;color:var(--ink);border:1px solid rgba(34,31,32,.2)}
+.muted{color:var(--accent-text);font-size:12.5px}
+.row-add{display:grid;grid-template-columns:1fr 1fr 100px;gap:8px;margin-top:10px}
+.warn{color:#B3402B;font-size:12px;margin-top:4px}
+.acts a{margin-right:12px;font-size:13px;color:var(--ink)}
+.tag{font-size:11px;padding:1px 7px;border-radius:8px;border:1px solid rgba(34,31,32,.2)}
+.tag.on{background:rgba(46,107,58,.14);color:#2E6B3A;border-color:transparent}
+</style>
+</head><body>
+<div class="wrap">
+<h1>상담봇 관리</h1>
+<p class="sub" id="subline">불러오는 중…</p>
+<div class="tabs" id="tabs"></div>
+<div class="kpi" id="kpi"><div><b>-</b><span>질문(오늘)</span></div><div><b>-</b><span>자력 답</span></div><div><b>-</b><span>미답</span></div></div>
+
+<section><h2>① 못 답한 질문(최근 7일)</h2><p class="muted">답 한 줄 넣고 저장하면 바로 FAQ 로 올라갑니다(승격).</p>
+<table><thead><tr><th>질문</th><th>횟수</th><th>답</th><th></th></tr></thead><tbody id="unansweredBody"></tbody></table>
+<p class="muted" id="unansweredEmpty" hidden>최근 7일 미답 없음.</p></section>
+
+<section><h2>② FAQ 표</h2>
+<table><thead><tr><th>질문</th><th>답</th><th>같은 뜻 표현(쉼표 구분)</th><th>확정</th><th></th></tr></thead><tbody id="faqBody"></tbody></table>
+<div class="row-add"><input type="text" id="newQ" placeholder="새 질문"><input type="text" id="newA" placeholder="새 답"><button id="addBtn">+추가</button></div>
+<p class="warn" id="warnMsg" hidden></p></section>
+
+<section><h2>③ 업체 정보</h2>
+<table><tbody id="infoBody"></tbody></table>
+<p class="muted">정본 편집 = 저장소 <code>server/counselbot/tenants/{tenant}.json</code>(시보) — 이 화면은 보기만.</p></section>
+
+<section><h2>④ 통계(최근 30일)</h2>
+<div id="statsBody"></div></section>
+
+<section><h2>⑤ 페이지</h2><div class="acts" id="pageLinks"></div></section>
+</div>
+<script>
+(function(){
+"use strict";
+var TENANTS = [
+  {id:"1_wellperion", name:"웰페리온", path:"/counsel/"},
+  {id:"2_dietcamp", name:"다이어트캠프", path:"/dietcamp/counsel/"},
+  {id:"3_spogym", name:"스포짐", path:"/spogym/counsel/"}
+];
+var qs = new URLSearchParams(location.search);
+var tenant = qs.get("t") || TENANTS[0].id;
+if (!TENANTS.some(function(t){ return t.id === tenant; })) tenant = TENANTS[0].id;
+var API = "/api/chat/" + tenant;
+var tInfo = TENANTS.filter(function(t){ return t.id === tenant; })[0];
+
+document.getElementById("tabs").innerHTML = TENANTS.map(function(t){
+  return '<a href="?t=' + t.id + '"' + (t.id === tenant ? ' class="on"' : '') + '>' + t.name + '</a>';
+}).join("");
+document.getElementById("pageLinks").innerHTML =
+  '<a href="' + tInfo.path + '" target="_blank">고객 페이지 보기</a>' +
+  '<a href="' + tInfo.path + '" target="_blank">초안 페이지 보기</a>';
+
+function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+function j(url, opts){ return fetch(url, opts).then(function(r){ return r.json(); }); }
+
+function loadKpi(){
+  j(API + "/stats?days=1").then(function(s){
+    var k = document.getElementById("kpi").children;
+    k[0].querySelector("b").textContent = s.total;
+    k[1].querySelector("b").textContent = s.answered + (s.answer_ratio != null ? " (" + Math.round(s.answer_ratio*100) + "%)" : "");
+    k[2].querySelector("b").textContent = s.total - s.answered;
+  }).catch(function(){});
+}
+
+function loadUnanswered(){
+  j(API + "/unanswered?days=7").then(function(d){
+    var counts = {};
+    (d.questions || []).forEach(function(row){ counts[row.q] = (counts[row.q] || 0) + 1; });
+    var keys = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+    var body = document.getElementById("unansweredBody");
+    body.innerHTML = "";
+    document.getElementById("unansweredEmpty").hidden = keys.length > 0;
+    keys.forEach(function(q){
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td>' + esc(q) + '</td><td>' + counts[q] + '</td>' +
+        '<td><input type="text" placeholder="답 입력"></td>' +
+        '<td><button class="promote">FAQ 로 올리기</button></td>';
+      tr.querySelector(".promote").onclick = function(){
+        var a = tr.querySelector("input").value.trim();
+        if (!a) return;
+        savefaq({q: q, a: a, verified: true, source: "관리자(미답 승격)"}, function(){
+          tr.remove(); loadFaq(); loadKpi();
+        });
+      };
+      body.appendChild(tr);
+    });
+  }).catch(function(){});
+}
+
+function savefaq(payload, onOk){
+  j(API + "/faq", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)})
+    .then(function(d){
+      var w = document.getElementById("warnMsg");
+      if (d.warn && d.warn.length){ w.hidden = false; w.textContent = "낱말 확인: " + d.warn.join(", ") + " (저장은 됐습니다 · 대표 판단)"; }
+      else { w.hidden = true; }
+      if (onOk) onOk(d);
+    }).catch(function(){ alert("저장 실패 — 다시 시도해 주세요"); });
+}
+
+function loadFaq(){
+  j(API + "/profile?full=1").then(function(p){
+    var body = document.getElementById("faqBody");
+    body.innerHTML = "";
+    (p.faq || []).forEach(function(it){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><textarea data-f="q">' + esc(it.q) + '</textarea></td>' +
+        '<td><textarea data-f="a">' + esc(it.a) + '</textarea></td>' +
+        '<td><input type="text" data-f="alt" value="' + esc((it.alt||[]).join(", ")) + '"></td>' +
+        '<td><span class="tag ' + (it.verified ? "on" : "") + '">' + (it.verified ? "확정" : "초안") +
+          '</span><br><label><input type="checkbox" data-f="verified" ' + (it.verified ? "checked" : "") + '> 확정</label></td>' +
+        '<td><button class="save">저장</button></td>';
+      tr.querySelector(".save").onclick = function(){
+        savefaq({
+          id: it.id,
+          q: tr.querySelector('[data-f=q]').value.trim(),
+          a: tr.querySelector('[data-f=a]').value.trim(),
+          alt: tr.querySelector('[data-f=alt]').value.split(",").map(function(s){ return s.trim(); }).filter(Boolean),
+          verified: tr.querySelector('[data-f=verified]').checked
+        }, function(){ loadFaq(); });
+      };
+      body.appendChild(tr);
+    });
+    document.getElementById("infoBody").innerHTML =
+      '<tr><th>이름</th><td>' + esc(p.name) + '</td></tr>' +
+      '<tr><th>봇 이름</th><td>' + esc(p.bot_persona) + '</td></tr>' +
+      '<tr><th>상태</th><td>' + esc(p.status) + '</td></tr>' +
+      '<tr><th>예약 링크</th><td>' + esc(p.reservation_url) + '</td></tr>' +
+      '<tr><th>FAQ 수</th><td>' + p.faq_count + ' (확정 ' + p.verified_count + ')</td></tr>';
+    document.getElementById("subline").textContent = esc(p.name) + " 상담봇 관리 · FAQ " + p.faq_count + "건";
+  }).catch(function(){});
+}
+
+function loadStats(){
+  j(API + "/stats?days=30").then(function(s){
+    var rows = (s.top_unanswered || []).map(function(r){
+      return '<tr><td>' + esc(r.q) + '</td><td>' + r.count + '</td></tr>';
+    }).join("");
+    document.getElementById("statsBody").innerHTML =
+      '<p class="muted">질문 ' + s.total + ' · 자력 답 ' + s.answered +
+      (s.answer_ratio != null ? ' (' + Math.round(s.answer_ratio*100) + '%)' : '') + '</p>' +
+      (rows ? '<table><thead><tr><th>미답 상위</th><th>횟수</th></tr></thead><tbody>' + rows + '</tbody></table>'
+             : '<p class="muted">미답 없음</p>');
+  }).catch(function(){});
+}
+
+document.getElementById("addBtn").onclick = function(){
+  var q = document.getElementById("newQ").value.trim();
+  var a = document.getElementById("newA").value.trim();
+  if (!q || !a) return;
+  savefaq({q:q, a:a, verified:true, source:"관리자"}, function(){
+    document.getElementById("newQ").value = ""; document.getElementById("newA").value = "";
+    loadFaq(); loadKpi();
+  });
+};
+
+loadKpi(); loadUnanswered(); loadFaq(); loadStats();
+})();
+</script>
+</body></html>
