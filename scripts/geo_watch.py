@@ -124,16 +124,30 @@ def _ab(*args: str, timeout: int = 25) -> str:
     return r.stdout
 
 
+_BLOCK_MARKERS = (
+    "cloudflare", "보안 확인", "확인에 성공했습니다", "잠시만 기다리십시오",
+    "비정상적인 트래픽", "unusual traffic", "captcha", "checking your browser",
+)
+
+
+def _looks_blocked(text: str) -> bool:
+    low = text.lower()
+    return any(m.lower() in low for m in _BLOCK_MARKERS)
+
+
 def _wait_rendered_answer(max_wait: int = 60, interval: int = 5, min_len: int = 300) -> str:
-    """읽은 본문이 일정 길이 이상이 되고 두 번 연속 안정될 때까지 재시도(최대 max_wait 초)."""
+    """읽은 본문이 일정 길이 이상이 되고 두 번 연속 안정될 때까지 재시도(최대 max_wait 초).
+    봇 차단/캡차 페이지는 안정돼도 정답으로 인정하지 않고 max_wait 끝까지 재시도한다."""
     prev = ""
     deadline = time.time() + max_wait
     while time.time() < deadline:
         text = _ab("read", timeout=20)
-        if len(text) >= min_len and text == prev:
+        if len(text) >= min_len and text == prev and not _looks_blocked(text):
             return text
         prev = text
         time.sleep(interval)
+    if _looks_blocked(prev):
+        raise RuntimeError("봇 차단/캡차 페이지에서 벗어나지 못함(agent-browser IP 일시 차단 추정)")
     return prev
 
 

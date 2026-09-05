@@ -1412,16 +1412,26 @@ if (window.matchMedia) {
   fetch('../../status/geo_watch.json?t='+Date.now(),{cache:'no-store'})
     .then(function(r){ if(!r.ok) throw new Error('http'); return r.json(); })
     .then(function(d){
-      var qs = d.queries||[];
-      var total = qs.length;
-      var cited = (d.cited_count!=null) ? d.cited_count : qs.filter(function(q){return q.cited;}).length;
-      var pending = (d.engines_pending||[]).join(', ');
-      var kpi = '<div class="kpi-row">'
-        + '<div class="kpi-card"><div class="num">'+cited+'<span class="unit">/'+total+'</span></div><div class="label">인용 문장</div></div>'
-        + '<div class="kpi-card"><div class="num" style="font-size:14px">'+esc(d.generated_at_kst||'—')+'</div><div class="label">최근 측정</div></div>'
-        + '<div class="kpi-card"><div class="num" style="font-size:14px">'+(pending?esc(pending):'없음')+'</div><div class="label">미구현 엔진</div></div>'
-        + '</div>';
-      var rows = qs.map(function(q){
+      // 형식 감지: 신형(d.engines 오브젝트) vs 구형(d.queries 배열)
+      var qs, cited, engineLabel;
+      if(d.engines && typeof d.engines==='object' && !Array.isArray(d.engines)){
+        var keys=Object.keys(d.engines);
+        var primary=d.engines.claude||d.engines[keys[0]]||{};
+        qs=primary.queries||[];
+        cited=primary.cited_count!=null?primary.cited_count:qs.filter(function(q){return q.cited;}).length;
+        engineLabel=keys.map(function(k){return k+'='+(d.engines[k].cited_count||0)+'/'+qs.length;}).join(' · ');
+      } else {
+        qs=d.queries||[];
+        cited=d.cited_count!=null?d.cited_count:qs.filter(function(q){return q.cited;}).length;
+        var pending=(d.engines_pending||[]).join(', ');
+        engineLabel=(d.engine||'—')+(pending?' (미구현: '+pending+')':'');
+      }
+      var total=qs.length;
+      var kpi='<div class="kpi-row">'
+        +'<div class="kpi-card"><div class="num">'+cited+'<span class="unit">/'+total+'</span></div><div class="label">인용 문장</div></div>'
+        +'<div class="kpi-card"><div class="num" style="font-size:14px">'+esc(d.generated_at_kst||'—')+'</div><div class="label">최근 측정</div></div>'
+        +'</div>';
+      var rows=qs.map(function(q){
         return '<tr>'
           +'<td>'+esc(q.q)+'</td>'
           +'<td style="text-align:center">'+(q.cited?'✅':'—')+'</td>'
@@ -1429,19 +1439,23 @@ if (window.matchMedia) {
           +'<td style="font-size:11px;color:var(--dim)">'+(q.quote?esc(q.quote):'—')+'</td>'
           +'</tr>';
       }).join('');
-      var table = '<div style="overflow-x:auto;margin-top:10px"><table class="channel-table">'
-        + '<thead><tr><th>질문</th><th>인용</th><th style="text-align:right">순위</th><th>인용 문장</th></tr></thead>'
-        + '<tbody>'+rows+'</tbody></table></div>';
-      var hist = d.history||[];
-      var trend = '';
+      var table='<div style="overflow-x:auto;margin-top:10px"><table class="channel-table">'
+        +'<thead><tr><th>질문</th><th>인용</th><th style="text-align:right">순위</th><th>인용 문장</th></tr></thead>'
+        +'<tbody>'+rows+'</tbody></table></div>';
+      var hist=d.history||[];
+      var trend='';
       if(hist.length>=2){
-        trend = '<div style="font-size:10.5px;color:var(--dim);margin-top:8px">주차별 추이: '+hist.map(function(h){return h.cited_count;}).join(' → ')+'</div>';
+        trend='<div style="font-size:10.5px;color:var(--dim);margin-top:8px">주차별 추이: '+hist.map(function(h){
+          if(typeof h.cited_count==='number') return h.cited_count;
+          if(h.cited&&typeof h.cited==='object') return Object.values(h.cited).reduce(function(a,b){return a+b;},0);
+          return '?';
+        }).join(' → ')+'</div>';
       }
-      wrap.innerHTML = '<div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">매주 월 07:10 갱신 · 엔진: '+esc(d.engine||'—')+'</div>'
-        + kpi + table + trend;
+      wrap.innerHTML='<div style="font-size:10.5px;color:var(--dim);margin-bottom:8px">매주 월 07:10 갱신 · 엔진: '+esc(engineLabel)+'</div>'
+        +kpi+table+trend;
     })
     .catch(function(){
-      wrap.innerHTML = '<div class="measure-pending">측정 결과 없음</div>';
+      wrap.innerHTML='<div class="measure-pending">측정 결과 없음</div>';
     });
 })();
 </script>
