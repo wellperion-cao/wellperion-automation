@@ -1,0 +1,59 @@
+{
+  "tenant": {
+    "id": "1_wellperion",
+    "name": "웰페리온",
+    "name_en": "Wellperion",
+    "type": "정원제 스포츠클럽"
+  },
+  "identity": {
+    "one_liner": "정본 = ssot/canon_values.json official_one_liner_kr",
+    "philosophy": null,
+    "tone": "스포츠클럽 · 압박 없이 알리기(브랜드 보이스 정본 참조)",
+    "bot_persona": "웰페리온 AI"
+  },
+  "facts": {
+    "address": "서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동)",
+    "hours": "정본 = ssot/canon_values.json(운영시간)",
+    "phone": "정본 = ssot/canon_values.json(대표전화)",
+    "parking": null,
+    "capacity": null,
+    "founded": null
+  },
+  "channels": {
+    "reservation_url": "http://wellperion.com/ko/inquiry/",
+    "kakao": null,
+    "instagram": null,
+    "blog": "https://m.blog.naver.com/wellperion",
+    "naver_place": null
+  },
+  "offerings": [],
+  "policies": [],
+  "faq_file": "server/erp_api/seed_faq/1_wellperion.json (라이브 홈 JSON-LD FAQPage 14문답 · 배1000 시딩)",
+  "guards": {
+    "forbidden_topics": [
+      "금액·가격 숫자",
+      "의료 진단·치료 판단",
+      "계약·환불 확정",
+      "개인정보 수집"
+    ],
+    "handoff_text": "정확한 안내를 위해 상담 예약을 도와드릴게요."
+  },
+  "learning": {
+    "unanswered_days": 7,
+    "question_bank": [],
+    "ask_channel": "내부 — 시포(회원·문의) 확인",
+    "ask_time": "아침 자가점검"
+  },
+  "kpi": {
+    "baseline": "회원 문의 754건 · 성인 강습 문의 686건(2026 누적 스냅샷 · 09-05 직접 셈)",
+    "metric": "봇이 FAQ 근거로 자력 답한 고객 질문 비율 / 월",
+    "target": null
+  },
+  "meta": {
+    "version": "1.0",
+    "updated": "2026-09-05",
+    "owner_ai": "시보",
+    "status": "라이브(FAQ 14 · 내부 자체 시험 테넌트)",
+    "_note": "null = 미수령(지어내지 않음)"
+  }
+}
