@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-"""AEO 채팅봇 백엔드 (배1018 · 2026-09-05 시토 · 모델 = cbo/model/aeo_chatbot_v0.1.html §4).
+"""상담봇 백엔드 (배1018 시토 → 배1036 구조전환 · 모델 = cbo/model/상담봇_기획설계_v1.0.html §3-1·§3-2).
 
-POST /api/chat/{tenant}            공개(로그인 없음) — 질문 1개 → FAQ 근거 답 또는 고정 문구('상담 예약').
+POST /api/chat/{tenant}            공개(로그인 없음) — 질문 1개 → 정본 학습형 컨시어지 모델(주 엔진) 또는
+    FAQ 매칭(백업 · 키 없음·모델 오류·한도일 때만) → 답 또는 고정 문구('상담 예약').
 GET  /api/chat/{tenant}/unanswered 관문 뒤(로그인) — 최근 N일 미답 질문 목록(시보가 아침 학습 회로로 읽는다).
+PUT  /api/chat/{tenant}/faq · GET .../stats · POST .../feedback · GET .../profile — 배1036 관리자 API 4개.
 
-모델 호출 없음 — 지어내기 원천 차단은 코드로(매칭 실패=고정 문구), 프롬프트가 아니다.
+주 엔진(ANTHROPIC_API_KEY 있을 때) = 업체 정본 11구역+FAQ+오늘 운영 상태를 시스템 프롬프트로 준 컨시어지 모델
+(claude-sonnet-5 · env COUNSEL_MODEL 로 교체 가능) — 지어내기 차단은 프롬프트가 아니라 출력검사 코드
+(_grounded·_forbidden_hit)가 한다. 키 없으면 백업(문장 겹침 매칭·모델 호출 0)으로 자동 전환(회귀 0).
 FAQ 저장 = /srv/erp/faq/{tenant}/faq.json (tenant = "1_wellperion" | "2_dietcamp" — 서버에 이미 있는 실제
     센터 구분 이름 그대로 재사용. GM 지시는 "1_웰페리온/2_다이어트캠프 구분" 이지만, 서버는 이미 이 ASCII 이름으로
     구분해 뒀다(deploy_dietcamp.sh). 저장 위치는 /srv/www 가 아니라 /srv/erp/faq 다 — /srv/www/1_wellperion 은
@@ -30,6 +34,10 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)                                    # 서버 배포 뒤(같은 폴더에 diet_camp_agent.py 도 올린다)
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(_HERE)), "scripts"))  # 로컬 저장소 실행용
 from diet_camp_agent import FORBIDDEN as MONEY_WORDS  # noqa: E402 — 배1018 요청④ 금지어 관문 재사용
+try:
+    from close_days import is_closed as _is_closed_day  # noqa: E402 — 배1036 GM⑥ 오늘 운영 상태(코드 계산 · 기존 규칙 재사용)
+except ImportError:
+    _is_closed_day = None  # 서버에 아직 안 올렸으면(deploy_chat.sh 가 같이 올린다) 오늘 상태 줄만 빈 문자열
 
 router = APIRouter(prefix="/api/chat")
 
@@ -61,6 +69,20 @@ PROFILE_FILENAME = "profile.json"
 TENANTS_SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(_HERE)), "server", "counselbot", "tenants")
 FEEDBACK_LOG_PATH = os.environ.get("ERP_CHAT_FEEDBACK_LOG", "/srv/erp/chat_feedback.jsonl")
 WARN_WORDS = tuple(MONEY_WORDS) + MEDICAL_WORDS + PRICE_QUESTION_WORDS   # 관리자 저장 시 경고(막지 않음) — 배1036 요청⑤
+# close_days.json 정본 = 저장소 status/(공휴일 목록도 여기) — 서버는 /srv/erp/www 가 git 5분 동기화라 그 경로를
+# 그대로 읽는다(별도 배포 불필요). 로컬 자체점검은 저장소 상대경로로 폴백.
+CLOSE_DAYS_PATH = os.environ.get(
+    "ERP_CLOSE_DAYS",
+    "/srv/erp/www/status/close_days.json" if os.path.isdir("/srv/erp/www") else
+    os.path.join(os.path.dirname(os.path.dirname(_HERE)), "status", "close_days.json"))
+COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "claude-sonnet-5")   # 배1036 GM 구조전환 — 한 줄로 claude-opus-5 전환
+_SESSION_TURNS = 6     # 배1036 GM 구조전환② — 대화 문맥(최근 N턴)
+_SESSION_MAX = 2000    # ponytail: 세션 상한 없으면 메모리 누수 — 오래된 세션 정리는 재시작뿐(필요해지면 TTL 추가)
+_SESSIONS: dict = {}   # session_id -> [{"role":..,"content":..}, ...] · 프로세스 메모리(재시작하면 비워짐 · FAILS 패턴과 동일)
+# "오늘 운영하나요"·"지금 영업해요?" 처럼 시간말(오늘·지금)+상태말(영업·운영·휴관…) 둘 다 있어야 매칭 —
+# 시간말만(예: "오늘 저녁 메뉴 추천해 주세요") · 상태말만("운영 시간은 어떻게 되나요" = 일반 FAQ f04 몫)은 여기서 뺀다.
+_HOURS_TEMPORAL_WORDS = ("오늘", "지금", "현재")
+_HOURS_STATUS_WORDS = ("영업", "휴관", "운영", "문 여", "문여", "여나요", "닫나요", "여는지", "닫는지", "몇 시까지", "몇시까지")
 
 
 def _kst_now() -> str:
@@ -176,20 +198,37 @@ async def chat(tenant: str, request: Request):
     except json.JSONDecodeError:
         body = {}
     q = str((body or {}).get("q") or "").strip()
+    session_id = str((body or {}).get("session_id") or "")[:128]   # 배1036 GM 구조전환② — 클라이언트가 만든 임의 문자열
     data = _load_faq(tenant)
     fallback = _fallback_text(tenant, data.get("meta"))
     if not q or _forbidden_hit(q):
         _log(tenant, q, False, None)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
+        return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
+
+    # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음 = "error"(레거시 매칭 백업으로).
+    text, status = _concierge_answer(tenant, q, session_id)
+    if status == "ok":
+        _log(tenant, q, True, None)
+        out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
+    elif status == "invalid":
+        # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
+        _log(tenant, q, False, None)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+        out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
-        item, score = _best_match(q, data.get("faq") or [])
-        if item and score >= MATCH_THRESHOLD:
-            _log(tenant, q, True, item.get("id"))
-            answer = _natural_answer(tenant, q, item)   # ANTHROPIC_API_KEY 없으면 item['a'] 그대로(회귀 0 · 배1036 GM③)
-            out = {"ok": True, "answered": True, "answer": answer, "faq_id": item.get("id"), "tenant": tenant}
+        # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
+        today_line = _today_hours_line(tenant)
+        if today_line and _is_hours_question(q):
+            _log(tenant, q, True, "today_hours")
+            out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
-            _log(tenant, q, False, None)
-            out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
+            item, score = _best_match(q, data.get("faq") or [])
+            if item and score >= MATCH_THRESHOLD:
+                _log(tenant, q, True, item.get("id"))
+                out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
+            else:
+                _log(tenant, q, False, None)
+                out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
 
@@ -412,42 +451,112 @@ def _grounded(text: str, source: str) -> bool:
     return all(n in src_nums for n in _DIGITS_RE.findall(text or ""))
 
 
-def _faq_system_block(tenant: str, persona: dict, faq: list) -> str:
-    """system 프롬프트 — 테넌트 FAQ 전체(질문마다 안 바뀌는 내용)를 담아 prompt caching 이 먹게 한다(배1036 GM①).
-    실제로 어느 FAQ 를 근거로 쓸지는 매 요청 user 메시지의 [근거 FAQ id] 로 지정한다(엉뚱한 근거 차단)."""
-    name = persona.get("name") or (tenant + " 상담")
+def _today_hours_line(tenant: str) -> str:
+    """오늘 운영 상태 한 줄(코드 계산 · 모델 없음) — 배1036 GM⑥·설계 §3-1⑦. facts.hours 없는 테넌트
+    (다캠·스포짐 지금)는 빈 문자열 — 호출부가 핸드오프로 넘어간다. 휴관 판정은 scripts/close_days.is_closed
+    그대로 재사용(기존 지원부 체계.html getDayInfo 와 같은 2·4째 일요일 규칙 · 새로 안 만든다)."""
+    hours = (_load_profile(tenant).get("facts") or {}).get("hours")
+    if not isinstance(hours, dict) or not hours.get("weekday") or _is_closed_day is None:
+        return ""
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+
+    def _fmt(d):
+        return "%d/%d(%s)" % (d.month, d.day, "월화수목금토일"[d.weekday()])
+
+    def _next(d, want_closed):
+        for _ in range(60):
+            d = d + timedelta(days=1)
+            if _is_closed_day(d) == want_closed:
+                return d
+        return d
+    if _is_closed_day(today):
+        return "오늘 %s · 휴관 · 다음 영업일 %s" % (_fmt(today), _fmt(_next(today, False)))
+    try:
+        public_holidays = set(json.loads(Path(CLOSE_DAYS_PATH).read_text(encoding="utf-8")).get("public_holidays", []))
+    except (OSError, json.JSONDecodeError):
+        public_holidays = set()
+    is_holiday = today.strftime("%Y-%m-%d") in public_holidays
+    is_weekend = today.weekday() >= 5
+    today_hours = hours.get("holiday") if is_holiday else (hours.get("weekend") if is_weekend else hours.get("weekday"))
+    return "오늘 %s · %s · 휴관 아님 · 다음 휴관 %s" % (_fmt(today), today_hours or "", _fmt(_next(today, True)))
+
+
+def _is_hours_question(q: str) -> bool:
+    """오늘 운영 여부를 묻는 질문인가(배1036 GM⑥) — 백업(모델 없음) 경로에서 코드로 바로 답할 때 쓴다."""
+    q = q or ""
+    return any(t in q for t in _HOURS_TEMPORAL_WORDS) and any(s in q for s in _HOURS_STATUS_WORDS)
+
+
+def _session_history(session_id: str) -> list:
+    return list(_SESSIONS.get(session_id, [])[-_SESSION_TURNS * 2:]) if session_id else []
+
+
+def _session_append(session_id: str, q: str, a: str) -> None:
+    if not session_id:
+        return
+    hist = _SESSIONS.setdefault(session_id, [])
+    hist.append({"role": "user", "content": q})
+    hist.append({"role": "assistant", "content": a})
+    del hist[:len(hist) - _SESSION_TURNS * 2]   # 최근 N턴만
+    if len(_SESSIONS) > _SESSION_MAX:
+        _SESSIONS.pop(next(iter(_SESSIONS)), None)   # ponytail: 삽입순 dict 맨 앞 제거 — 정교한 LRU 아님(세션 늘면 TTL)
+
+
+_CONCIERGE_PRINCIPLES = (
+    "당신은 호텔 컨시어지처럼 응대하는 상담원입니다. 다음 7원칙을 지킵니다 — "
+    "1)먼저 맞이한다(인사+오늘 상황을 먼저 건넨다) 2)답 먼저, 이유는 짧게(첫 문장에 결론) "
+    "3)'안 됩니다'로 끝내지 않는다(항상 대안 하나) 4)기억한다(같은 대화에서 앞서 말한 걸 다시 안 묻는다) "
+    "5)모르면 확인해서 연락(지어내지 않고 '확인해서 알려드릴게요' + 예약 제안) "
+    "6)마무리도 사람처럼(자연스러운 다음 제안) 7)업체 톤 위에 컨시어지를 얹는다."
+)   # 설계 §3-2 원칙 7 그대로
+
+
+def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
+    """system 프롬프트 = 업체 정본 11구역 전부 + FAQ 전체 + 오늘 상태 한 줄(배1036 GM 구조전환①·설계 §3-1①·⑦).
+    cache_control 로 캐싱 — 정본이 바뀌기 전까진 매 질문 동일해 그대로 재사용된다."""
+    faq = _load_faq(tenant).get("faq") or []
+    faq_lines = "\n".join("- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq)
+    name = persona.get("name") or tenant
     tone = persona.get("emoji") or "적당히"
-    lines = ["- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq]
-    return ("당신은 '%s' 상담원입니다. 손님에게 짧고 자연스럽게, 진짜 상담원처럼 답합니다(FAQ 문장을 그대로 읽지 않는다). "
-            "이모지는 '%s' 수준으로 씁니다. 아래 [FAQ 전체]가 유일한 근거입니다 — 여기 없는 숫자·사실은 만들지 않습니다. "
-            "매 요청에서 지정된 FAQ id 하나만 근거로 답하고, 다른 항목은 어투 참고만 합니다.\n\n[FAQ 전체]\n%s"
-            % (name, tone, "\n".join(lines)))
+    handoff = persona.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
+    service_concept = (prof.get("identity") or {}).get("service_concept") or ""
+    today_line = _today_hours_line(tenant)
+    return (
+        "%s 당신은 '%s' 상담원입니다(%s). 이모지는 '%s' 수준으로 씁니다. "
+        "아래 [업체 정본]·[FAQ]에 적힌 사실·상품·규정만 사실로 말하세요 — 없는 것은 지어내지 말고 "
+        "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
+        "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이).\n\n"
+        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s"
+        % (_CONCIERGE_PRINCIPLES, name, service_concept, tone, handoff, today_line or "미확인",
+           json.dumps(prof, ensure_ascii=False), faq_lines)
+    )
 
 
-def _natural_answer(tenant: str, q: str, item: dict) -> str:
-    """FAQ 원문을 상담원 목소리로 재작성 — client 없으면(키 없음) 즉시 원문 그대로. 실패·금지어·근거 밖
-    숫자는 전부 원문으로 안전하게 떨어진다(모델 호출이 답을 더 나쁘게 만들 수는 있어도 틀리게 만들진 못한다)."""
-    base = item.get("a", "")
+def _concierge_answer(tenant: str, q: str, session_id: str):
+    """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status).
+    status: 'ok'(그대로 응답) · 'invalid'(출력검사 탈락 → 호출부가 핸드오프) ·
+    'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥)."""
     client = _anthropic_client()
     if not client:
-        return base
+        return None, "error"
     persona = _persona_of(tenant)
-    faq = _load_faq(tenant).get("faq") or []
-    system = _faq_system_block(tenant, persona, faq)
-    lang_hint = "질문이 영어이니 영어로 답하세요." if _is_english_q(q) else "한국어로 답하세요."
-    user = "[근거 FAQ id: %s] 손님 질문: %s\n%s 답변 문장만 출력하세요(설명·따옴표 없이)." % (item.get("id"), q, lang_hint)
+    prof = _load_profile(tenant)
+    system = _concierge_system_block(tenant, prof, persona)
+    history = _session_history(session_id)
+    lang_hint = " (질문이 영어이니 영어로 답하세요)" if _is_english_q(q) else ""
     try:
         resp = client.messages.create(
-            model="claude-sonnet-5", max_tokens=400,
+            model=COUNSEL_MODEL, max_tokens=500,
             system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user}],
+            messages=history + [{"role": "user", "content": q + lang_hint}],
         )
         text = "".join(b.text for b in resp.content if b.type == "text").strip()
     except Exception:
-        return base
-    if not text or _forbidden_hit(text) or not _grounded(text, base):
-        return base
-    return text
+        return None, "error"
+    if not text or _forbidden_hit(text) or not _grounded(text, system):
+        return None, "invalid"
+    _session_append(session_id, q, text)
+    return text, "ok"
 
 
 @router.options("/{tenant}/profile")
@@ -556,6 +665,23 @@ def _selfcheck() -> None:
         pass
     assert _warn_words("결제는 상담 시 안내드려요") == ["결제"]
     assert _warn_words("평일 06:00~22:30 운영합니다") == []
+
+    # 배1036 GM 구조전환 — L2 주 엔진(키 유무와 무관하게 결정적으로 검증).
+    assert _is_hours_question("오늘 운영하나요") and _is_hours_question("지금 영업해요?")
+    assert not _is_hours_question("가입은 어떻게 하나요")
+    assert not _is_hours_question("오늘 저녁 메뉴 추천해 주세요")   # 시간말만 — 상태말 없음(실측 오발동 잡음)
+    assert not _is_hours_question("운영 시간은 어떻게 되나요")     # 상태말만 — 일반 FAQ(f04) 몫, 가로채면 안 됨
+    today_line = _today_hours_line("1_wellperion")
+    assert today_line and ("휴관" in today_line), today_line   # 1_wellperion 은 facts.hours 있음 — 항상 한 줄 나온다
+    assert _today_hours_line("2_dietcamp") == "", "다캠은 facts.hours 없음 — 빈 문자열이어야 핸드오프로 넘어간다"
+    assert not _grounded("100원 할인해드려요", "이 문서엔 숫자가 전혀 없습니다")   # 근거 밖 숫자 → 탈락
+    assert _grounded("06:00부터 22:30까지 운영해요", "평일 06:00~22:30 운영")      # 근거 안 숫자만 → 통과
+    global _ANTHROPIC_CLIENT
+    saved = _ANTHROPIC_CLIENT
+    _ANTHROPIC_CLIENT = (None, True)   # 강제로 "키 없음(시도 완료)" 상태 — 폴백 경로 결정적 검증
+    text, status = _concierge_answer("1_wellperion", "테스트 질문", "")
+    assert text is None and status == "error", (text, status)
+    _ANTHROPIC_CLIENT = saved
     print("api_chat selfcheck ok")
 
 

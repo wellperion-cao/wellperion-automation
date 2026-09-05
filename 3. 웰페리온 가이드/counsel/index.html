@@ -13,13 +13,14 @@ header h1{margin:0;font-size:17px;font-weight:700;flex:1}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;margin-right:5px}
 .status{font-size:11.5px;color:var(--accent-text);white-space:nowrap}
 .greet{padding:14px 18px 6px;font-size:14px;color:var(--ink)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;padding:6px 18px 14px}
-.chip{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;padding:7px 12px;border-radius:16px;cursor:pointer}
-.chip:hover{border-color:var(--beige)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:2px 18px 12px}
+.chip{border:1px solid var(--line);background:none;color:var(--accent-text);font-size:12px;padding:5px 10px;border-radius:14px;cursor:pointer}
+.chip:hover{border-color:var(--beige);color:var(--ink)}
 #log{flex:1;padding:6px 18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
 .msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;word-break:keep-all}
 .msg.q{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:2px}
 .msg.a{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:2px}
+.msg.typing{align-self:flex-start;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:2px;color:var(--accent-text);letter-spacing:2px}
 .msg.a .fb{margin-top:8px;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--accent-text)}
 .msg.a .fb button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px}
 .msg.a .fb button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -36,7 +37,7 @@ footer a{color:var(--accent-text)}
 <div class="greet" id="greet">궁금한 것을 편하게 물어보세요.</div>
 <div class="chips" id="chips"></div>
 <div id="log"></div>
-<form id="askForm"><input id="q" placeholder="궁금한 것을 입력하세요" autocomplete="off" required><button type="submit">보내기</button></form>
+<form id="askForm"><input id="q" placeholder="궁금한 것을 편하게 물어보세요" autocomplete="off" autofocus required><button type="submit">보내기</button></form>
 <footer id="foot"></footer>
 </div>
 <script>
@@ -47,6 +48,17 @@ var tenant = TENANT_BY_PATH[location.pathname] || new URLSearchParams(location.s
 var API = "/api/chat/" + tenant;
 var log = document.getElementById("log");
 var reservationUrl = "";
+var typingMs = 900;
+
+// 대화 문맥 유지용 세션 id(배1036 GM 구조전환②) — 이 브라우저 탭 안에서만(sessionStorage), 개인정보 아님.
+var sessionId = "";
+try {
+  sessionId = sessionStorage.getItem("counsel_sid") || "";
+  if (!sessionId) {
+    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+    sessionStorage.setItem("counsel_sid", sessionId);
+  }
+} catch (e) { /* 시크릿 모드 등 저장 불가 — 세션 없이 매 질문 새로(문맥 유지만 못 함) */ }
 
 function addMsg(role, text, extra){
   var d = document.createElement("div");
@@ -84,21 +96,30 @@ function ask(text){
   if (!text) return;
   addMsg("q", text);
   document.getElementById("q").value = "";
-  fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({q:text})})
+  var chips = document.getElementById("chips");
+  if (chips) chips.hidden = true;   // 칩은 첫 질문 전 살짝 보이는 보조일 뿐(GM 09-05) — 대화 시작되면 치운다
+  var typing = document.createElement("div");
+  typing.className = "msg typing"; typing.textContent = "●●●";
+  log.appendChild(typing); log.scrollTop = log.scrollHeight;
+  fetch(API, {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({q:text, session_id:sessionId})})
     .then(function(r){ return r.json(); })
     .then(function(d){
-      var extra = null;
-      if (!d.answered){
-        var a = document.createElement("a");
-        a.className = "reserve"; a.textContent = "상담 예약";
-        a.href = reservationUrl || "#"; a.target = "_blank"; a.rel = "noopener";
-        extra = a;
-      } else {
-        extra = feedbackRow(d.faq_id);
-      }
-      addMsg("a", d.answer || "", extra);
+      setTimeout(function(){
+        typing.remove();
+        var extra = null;
+        if (!d.answered){
+          var a = document.createElement("a");
+          a.className = "reserve"; a.textContent = "상담 예약";
+          a.href = reservationUrl || "#"; a.target = "_blank"; a.rel = "noopener";
+          extra = a;
+        } else {
+          extra = feedbackRow(d.faq_id);
+        }
+        addMsg("a", d.answer || "", extra);
+      }, typingMs);
     })
-    .catch(function(){ addMsg("a", "지금 답을 받아올 수 없습니다. 잠시 후 다시 시도해 주세요."); });
+    .catch(function(){ typing.remove(); addMsg("a", "지금 답을 받아올 수 없습니다. 잠시 후 다시 시도해 주세요."); });
 }
 
 document.getElementById("askForm").addEventListener("submit", function(e){
@@ -111,6 +132,7 @@ fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
   document.title = name;
   document.getElementById("botName").textContent = name;
   if (p.persona && p.persona.greeting) document.getElementById("greet").textContent = p.persona.greeting;
+  if (p.persona && p.persona.typing_ms) typingMs = p.persona.typing_ms;
   reservationUrl = p.reservation_url || "";
   var c = p.contact || {};
   var footBits = [];
@@ -120,7 +142,7 @@ fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
   document.getElementById("foot").innerHTML = footBits.join(" · ");
   var chips = p.chips || [];
   var wrap = document.getElementById("chips");
-  chips.slice(0, 6).forEach(function(c){
+  chips.slice(0, 3).forEach(function(c){   // 처음 한 번 살짝 보이는 보조일 뿐(GM 09-05) — 6개→3개로 가볍게
     var b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.textContent = c.q;
     b.onclick = function(){ ask(c.q); };

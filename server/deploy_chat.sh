@@ -15,6 +15,7 @@ cd "$(dirname "$0")/.."
 
 $SCP server/erp_api/api_chat.py $HOST:/srv/erp/api/
 $SCP scripts/diet_camp_agent.py $HOST:/srv/erp/api/   # FORBIDDEN(금액·계약 금지어) 재사용 — 이 파일만 stdlib 로 끝난다
+$SCP scripts/close_days.py $HOST:/srv/erp/api/        # 오늘 운영 상태 판정(배1036 GM⑥) — stdlib 로 끝난다
 $SCP server/erp_api/chat.nginx.conf $HOST:/tmp/chat.conf
 $SCP "3. 웰페리온 가이드/cbo/model/chat_widget.html" $HOST:/srv/www/2_dietcamp/chat_widget.html   # 위젯 — 다캠 페이지와 같은 origin
 
@@ -53,4 +54,12 @@ curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q3.json
 echo "--- 없는 tenant ---"
 curl -s -o /dev/null -w '%{http_code}\n' https://erp.wellperion.com/api/chat/3_none -X POST \
   -H 'Content-Type: application/json' --data '{"q":"x"}'
+printf '{"q":"오늘 운영하나요"}' > "$TMP/q4.json"
+printf '{"q":"지금 영업해요?"}' > "$TMP/q5.json"
+echo "--- 오늘 운영하나요(배1036 GM⑥) ---"
+curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q4.json" \
+  https://erp.wellperion.com/api/chat/1_wellperion | cut -c1-200; echo
+echo "--- 지금 영업해요?(배1036 GM⑥) ---"
+curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q5.json" \
+  https://erp.wellperion.com/api/chat/1_wellperion | cut -c1-200; echo
 rm -rf "$TMP"
