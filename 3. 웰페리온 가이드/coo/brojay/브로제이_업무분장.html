@@ -229,6 +229,7 @@
   </div>
 </div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 (function(){
   var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
@@ -478,8 +479,8 @@
         var fresh = (data && data.ok && data.board && typeof data.board === 'object') ? data.board : {};
         mutatorFn(fresh);
         _brojBoard = fresh;
-        return fetch(CHECK_GAS, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({action:'saveBoard', key:BROJ_STORAGE_KEY, board:fresh})});
+        // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS.
+        return erpCheckPost(CHECK_GAS, {action:'saveBoard', key:BROJ_STORAGE_KEY, board:fresh});
       })
       .then(function(){ try{ localStorage.setItem('wlp_broj_wrote_at', String(Date.now())); }catch(e){} renderBrojAll(); })
       .catch(function(){ renderBrojAll(); });

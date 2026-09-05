@@ -767,6 +767,7 @@
   </div>
 
 </div>
+<script src="../../_assets/erp_write.js"></script>
 <script>
 /* 체크리스트 저장(GM 지시 2026-08-13 · 03·04·05·09번만) — GM업무.html 의 GM_TASK_CHECKS 와 같은
    공용 CHECK_GAS 보드(PIN 없음, 즉시 저장)에 키(CHAIRMAN_ITEM_CHECKS)만 새로 얹는다. 새 GAS 없음. */
@@ -806,9 +807,8 @@
       .then(function(d){
         var fresh = (d && d.ok && d.board && typeof d.board === 'object') ? d.board : {};
         fresh[k] = checked; board = fresh;
-        return fetch(CHECK_GAS, {method:'POST', redirect:'follow',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({action:'saveBoard', key:KEY, board:fresh})});
+        // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS.
+        return erpCheckPost(CHECK_GAS, {action:'saveBoard', key:KEY, board:fresh});
       })
       .catch(function(){});
   });

@@ -150,6 +150,7 @@
   </div>
 </div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 (function(){
   // 업무분장 페이지의 탭 안에서 열렸을 때는 제목·안내를 숨긴다(바깥에 이미 있다).
@@ -383,9 +384,8 @@
       .then(function(d){
         var fresh = (d && d.board) || {};
         fn(fresh); _board = fresh;
-        return fetch(CHECK_GAS, {method:'POST', redirect:'follow',
-          headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify({action:'saveBoard', key:BROJ_STORAGE_KEY, board:fresh})});
+        // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS.
+        return erpCheckPost(CHECK_GAS, {action:'saveBoard', key:BROJ_STORAGE_KEY, board:fresh});
       })
       .then(function(){ try{ localStorage.setItem('wlp_broj_wrote_at', String(Date.now())); }catch(e){} _saving = false; setStatus(''); render(); })
       .catch(function(){ _saving = false; setStatus('⚠ 저장에 실패했습니다 — 인터넷을 확인하고 다시 시도해 주세요.'); });

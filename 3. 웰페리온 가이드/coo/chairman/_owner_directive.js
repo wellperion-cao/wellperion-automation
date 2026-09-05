@@ -279,14 +279,17 @@
   function ownerCellHtml(id) {
     return '<input type="text" class="mgr-inp" data-mgr-id="' + esc(id) + '" value="' + esc(taskOwners[id] || '') + '" placeholder="담당">';
   }
+  // 저장 직전 읽기만은 서버 미러를 쓰지 않는다 (배 960 H2 · 2026-09-04). 미러는 5분 주기라 그 사이 옆자리에서
+  // 채운 담당 칸이 아직 안 들어와 있다 — 그 낡은 표에 내 값 하나를 얹어 통째로 저장하면 남의 입력이 지워진다.
+  // 표시(loadTaskOwners)는 미러 그대로 두고(느린 날 71칸이 빈 화면이 되던 자리), 저장 경로만 GAS 직독으로 돌린다.
   function saveTaskOwner(id, value) {
-    return _boardRead(OWNER_BOARD_KEY, 8000).then(function (j) {
-      var fresh = (j && j.ok && j.board) ? j.board : {};
+    return _chGet(CH_BOARD_URL + '?action=board&key=' + OWNER_BOARD_KEY, 8000).then(function (j) {
+      // 못 읽었으면 저장하지 않는다 — 빈 표를 얹으면 다른 사람이 채운 담당 칸까지 통째로 지워진다.
+      if (!(j && j.ok && j.board)) return false;
+      var fresh = j.board;
       fresh[id] = value;
-      return fetch(CH_BOARD_URL, {
-        method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'saveBoard', key: OWNER_BOARD_KEY, board: fresh })
-      }).then(function (r) { return r.json(); }).then(function (res) {
+      // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS.
+      return window.erpCheckPost(CH_BOARD_URL, { action: 'saveBoard', key: OWNER_BOARD_KEY, board: fresh }).then(function (r) { return r.json(); }).then(function (res) {
         taskOwners = fresh;
         // 저장 성공 시 서버 미러도 그 키만 즉시 다시 떠오게 한다(5분 주기를 안 기다리고 반영) — best-effort,
         // 실패해도 다음 cron(5분)이 채운다. GitHub Pages(ERP_API_ON=false)는 호출 자체를 안 한다.
@@ -621,10 +624,7 @@
         var next = {};
         Object.keys(chReported).forEach(function (k) { if (k.charAt(0) !== '_') next[k] = chReported[k]; });
         next[id] = todayStr();
-        return fetch(CH_BOARD_URL, {
-          method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'saveBoard', key: CH_BOARD_KEY, board: next })
-        }).then(function (r) { return r.json(); }).then(function (res) {
+        return window.erpCheckPost(CH_BOARD_URL, { action: 'saveBoard', key: CH_BOARD_KEY, board: next }).then(function (r) { return r.json(); }).then(function (res) {
           if (res && res.ok) {
             chReported = next; renderChairman();
             // 담당 칸 저장과 같은 규칙(2026-09-04 배985) — 서버 미러도 그 키만 즉시 다시 떠오게 한다.
