@@ -10,7 +10,10 @@ wellperion.com 안의 폼(문의 wp_inquiry_form · 강사 접수 instructor_int
   POST /api/intake/inquiry     → INTAKE_GAS_URL      (wp_inquiry_form.html · _en)
   POST /api/intake/instructor  → INSTRUCTOR_GAS_URL  (instructor_intake.html)
   POST /api/intake/sunday      → INSTRUCTOR_GAS_URL  (GM의일요일.html · 강사 접수와 같은 GAS)
-  POST /api/intake/reception   → RECEPTION_EXEC_URL  (reception_block.html · _en 의 reg_submit — 배 960 #4b)
+  POST /api/intake/reception   → RECEPTION_EXEC_URL  (배 960 #4b 당시의 reg_submit 통로 — 2026-09-05 배984 부터
+                                 reception_block.html·_en·public/{ko,en}/reception.html 은 전부 POST /api/reception/submit
+                                 (api_reception.py, RECEPTION-<n> 직접 발급)로 고정 배선돼 이 통로를 더 이상 안 부른다.
+                                 이 자리는 옛 캐시·미확인 외부 호출을 위해 남겨 뒀을 뿐 살아있는 폼이 없다(배 1039-C 실측).
   POST /api/intake/selftest    → 기록만(tenant 'selftest') · GAS 전달 없음 — 배포 검증용
   GET  /api/intake/health      → 폼별 건수 · GAS 실패 건수 · 폼별 원본 모드 · 미되밀기 건수 · 마지막 되밀기 시각
 

@@ -17,6 +17,10 @@
   GET  /api/reception/health           행 수·마지막 동기화
   POST /api/reception/submit           reg_submit 대체(공개·무인증 — nginx erp-locations 에서 auth 제외) · 종합접수처 6종 폼
   POST /api/reception/lost             lf_submit 대체(로그인 뒤 · 습득물 등록 — 사진 필수)
+  POST /api/reception/update           reg_update 대체(배 1039-C · 2026-09-05) — 서버 원장 직접 갱신, GAS 는 안 부른다.
+    위 ★ID 연속성 메모대로 시트가 동결돼 있어, 배984 이후 새로 접수된 건은 GAS reg_update 가 시트에서 못 찾아
+    "해당 접수ID를 찾을 수 없습니다" 로 실패한다(상태·담당·메모 저장이 조용히 안 먹는 실사고) — 이 엔드포인트가 그 갭을 메운다.
+    화면 배선(종합접수처_현황.html _update() 가 이 주소를 쓰게 바꾸는 것)은 COO 담당 — 여기서는 API만 연다.
   POST /api/reception/photo            사진만 저장하고 URL 반환(단독 호출용 · submit/lost 는 내부에서 직접 저장한다)
 자체점검: python3 api_reception.py --selftest   (DB·네트워크 없음 — 부서 배정·사진 디코딩 판정만)
 """
@@ -54,6 +58,11 @@ REG_LOC_DEPT = {
     "주차장": "주차관리부", "리셉션": "운영부", "카페": "카페", "기타": "운영부",
 }
 LF_CATEGORIES = ("consumable", "general", "valuable")
+# apps_script_reception.js LEGACY_RECEPTION_STATUSES 와 같은 값 — 갱신 시 status 는 이 셋만 받는다.
+REG_STATUSES = ("접수", "처리중", "완료")
+# reg_update(GAS·_regUpdate) 가 받던 갱신칸 그대로 — 화면 _update() 가 보내는 필드와 1:1(배 1039-C).
+REG_UPDATE_FIELDS = ("memo", "memberReply", "handler", "reporter", "name", "targetStaff",
+                     "dept", "dueDate", "policyFix")
 # 사진 저장 — nginx erp-locations 새 파일이 /uploads/ 를 무인증 정적 서빙한다(배 984). 시트 대신 서버 디스크.
 UPLOAD_DIR = os.environ.get("ERP_UPLOAD_DIR", "/srv/erp/uploads")
 UPLOAD_URL_BASE = "/uploads"
@@ -366,6 +375,45 @@ async def lost_submit(request: Request):
     return {"ok": True, "id": found_id, "photoUrl": photo_url}
 
 
+@router.post("/update")
+async def update(request: Request):
+    """reg_update 대체 — 서버 원장(reception_items) 직접 갱신. 배984 이후 접수건은 시트에 없어 GAS reg_update 가
+    실패하는 갭을 메운다(배 1039-C · 2026-09-05). GAS 는 부르지 않는다 — 시트는 이미 동결된 과거 기록이다."""
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+
+    reg_id = str(payload.get("id") or payload.get("접수ID") or "").strip()
+    if not reg_id:
+        return {"ok": False, "error": "id 필수"}
+    new_status = str(payload.get("status") or "").strip()
+    if new_status and new_status not in REG_STATUSES:
+        return {"ok": False, "error": "상태는 접수|처리중|완료 만 허용"}
+
+    conn = _openw()
+    with conn:
+        row = conn.execute("SELECT category, dept, status, data FROM reception_items WHERE tenant_id=%s AND reg_id=%s",
+                           (db.TENANT, reg_id)).fetchone()
+        if not row:
+            conn.close()
+            return {"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}
+        data = json.loads(row["data"])
+        for k in REG_UPDATE_FIELDS:
+            if k in payload and payload[k] is not None:
+                data[k] = str(payload[k])
+        if new_status:
+            data["status"] = new_status
+        status = data.get("status") or row["status"]
+        dept = data.get("dept") or row["dept"]
+        conn.execute("UPDATE reception_items SET status=%s, dept=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND reg_id=%s",
+                     (status, dept, json.dumps(data, ensure_ascii=False), _kst_now(), db.TENANT, reg_id))
+    conn.close()
+    return {"ok": True, "id": reg_id, "status": status, "message": "접수건이 갱신되었습니다."}
+
+
 @router.post("/photo")
 async def photo_upload(request: Request):
     """사진만 저장 — submit/lost 는 내부에서 직접 save_photo() 를 부르므로 이 경로를 안 거친다.
@@ -386,6 +434,9 @@ async def photo_upload(request: Request):
 
 def selftest():
     assert RECEPTION_SUBMIT_TOKEN == "wlp_voc_7b3f9a2e6c1d4085", "폼(reception_block.html) 상수와 어긋남"  # 검수 H3
+    assert REG_STATUSES == ("접수", "처리중", "완료"), "GAS LEGACY_RECEPTION_STATUSES 와 어긋남"  # 배 1039-C
+    assert set(REG_UPDATE_FIELDS) == {"memo", "memberReply", "handler", "reporter", "name", "targetStaff",
+                                      "dept", "dueDate", "policyFix"}, "GAS _regUpdate 갱신칸과 어긋남"
     assert dept_for("facility", "헬스장") == "시설부"          # 부서 고정 카테고리는 장소 무관
     assert dept_for("clean", "여자사우나") == "지원부(여)"      # 성별 표기 우선
     assert dept_for("clean", "남자") == "지원부(남)"

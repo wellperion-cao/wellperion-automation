@@ -24,9 +24,14 @@ WRITE_AREA = {"RECEPTION_EXEC_URL": "write_reception", "TODO_GAS_URL": "write_to
 # 스위치 열쇠 전수 = 공개 접수 폼(api_intake.FORMS) + 위 다섯 영역. example.json 과 같아야 한다(자체점검이 지킨다).
 NAMES = ("inquiry", "instructor", "sunday", "reception", "selftest") + tuple(sorted(set(WRITE_AREA.values())))
 # server 로 못 바꾸는 폼·영역 (배 960 M2 · 2026-09-04). 스위치 파일에 'server' 라 적혀 있어도 dual 로 돌린다.
-#   접수(reception): 서버가 매기는 접수번호는 L260904-101010 인데 접수 GAS 는 RECEPTION-<n> 을 매긴다.
-#   손님이 받아 간 번호로 직원이 시트에서 찾지 못한다 — 번호 모양이 같아지기 전에는 전환 대상이 아니다.
-NO_SERVER = {"reception": "server 미지원(접수번호 형식 L… vs RECEPTION-n)"}
+#   접수(reception) = api_intake.py 의 옛 POST /api/intake/reception 통로 하나만 가리킨다(번호 L260904-101010
+#   vs GAS RECEPTION-<n> 형식이 달라 손님 번호를 직원이 시트에서 못 찾던 문제). 이 통로는 이제 아무도 안 부른다 —
+#   reception_block.html·wp_reception_block_en.html·public/{ko,en}/reception.html 은 2026-09-05 배984 부터
+#   전혀 다른 통로 POST /api/reception/submit(api_reception.py)으로 고정 배선됐고, 그쪽은 이 스위치를 아예
+#   보지 않고 RECEPTION-<n> 을 곧장 매겨 손님에게 돌려준다 — 실사용 접수는 번호가 이미 통일돼 있다(배 1039-C 실측).
+#   그래서 이 항목을 지우지 않고 dual 로 남긴다: 값을 지우면 옛 통로가 조용히 server 로 켜져(스위치 파일에 이미
+#   'server' 라 적혀 있을 수 있다) 죽은 L-형식 발급 코드가 되살아난다 — 위험 대비 이익이 없어 그대로 둔다.
+NO_SERVER = {"reception": "구 /api/intake/reception 전용 — 실접수는 이미 /api/reception/submit 로 무관(배 1039-C)"}
 _cache = {"stamp": None, "map": {}}
 
 
