@@ -167,13 +167,13 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 .wlp-lfr .note{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.7}
 
 /* 종합접수처 첫 화면으로 돌아가기 (2026-08-13 GM 지시) — 본문 기둥 왼쪽 끝에 맞춘다 */
-.wlp-lfr{position:relative}
+/* 2026-09-05 시우 · 키오스크 규칙 최상위(접수처와 같은 처리) · 테마 헤더는 전 크기 숨김 */body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#faf9f7!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}}.wlp-lfr{ position:relative}
 .wlp-lfr .back-kiosk{position:absolute;top:16px;left:max(16px,calc(50% - 320px));z-index:5;
   display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:44px;
   border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
   letter-spacing:.02em;background:transparent;text-decoration:none}
 @media (min-width:1001px){ .wlp-lfr .back-kiosk{top:auto} }
-@media (max-width:520px){ /* 2026-09-05 시우 · 키오스크 흐름 통일(접수처와 같은 규칙) */@media (min-width:700px) and (orientation:portrait){#footer-outer,#footer-widgets,.buttonizer,#buttonizer,[class*="buttonizer"],.social-bar,.social-section{display:none!important}html,body{background:#faf9f7!important}html{scrollbar-width:none!important;touch-action:pan-x pan-y}body{scrollbar-width:none!important}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}}@media (max-width:600px){body.page-id-8464 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}.wlp-lfr .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px} }
+@media (max-width:520px){ /* 키오스크 규칙은 최상위로 옮김(아래) */@media (max-width:600px){body.page-id-8464 .container.main-content{width:calc(100% - 28px)!important;max-width:none!important;margin:0 14px!important}}body.page-id-8464 #header-outer,body.page-id-8464 #header-space,body.page-id-8464 #top{display:none!important}.wlp-lfr .back-kiosk{left:10px;top:10px;padding:9px 14px;font-size:12.5px} }
 
 /* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
    휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
