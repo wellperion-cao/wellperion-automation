@@ -815,3 +815,5 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
   })();
 })();
 </script>
+<!-- 전환 퍼널 첫 단 측정 — 페이지뷰·문의 버튼 클릭을 서버에 기록(개인정보 없음 · 배1038 · 규격 status/briefs/CTO-2026-09-05-배1034-track-API.md) -->
+<script>(function(){try{var u=new URLSearchParams(location.search),sid=sessionStorage.sid||(sessionStorage.sid=Math.random().toString(36).slice(2));function t(e,g){fetch('https://erp.wellperion.com/api/track',{method:'POST',headers:{'Content-Type':'application/json'},keepalive:true,body:JSON.stringify({event:e,page:location.pathname,target:g||null,post_id:u.get('post_id')||u.get('utm_content')||null,utm_source:u.get('utm_source'),utm_medium:u.get('utm_medium'),utm_campaign:u.get('utm_campaign'),utm_content:u.get('utm_content'),ref:document.referrer?new URL(document.referrer).host:null,sid:sid})}).catch(function(){})}t('view');document.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('a,button');if(!a)return;var g=a.getAttribute('data-track')||(/inquiry/.test(a.getAttribute('href')||'')?'inquiry_btn':(a.type==='submit'?'submit':null));if(g)t('click',g)},true)}catch(e){}})();</script>
