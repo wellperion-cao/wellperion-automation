@@ -12,10 +12,38 @@
 var SCHEDULE_PROP = 'SCHEDULE_SSOT';
 var SCHEDULE_BAK_PROP = 'SCHEDULE_SSOT_BAK';
 
+// ─── 속성창 청크 저장 헬퍼(배1056 · GAS ScriptProperties 값당 9KB 천장 회피) ───
+// 211건 저장이 "속성 저장용량 한도를 초과했습니다" 로 거부된 원인 = 일정 JSON 전체를
+// 한 키에 통째로 넣는 구조. 8000자 단위로 잘라 key__0.. 로 저장하고 조각 수를 key__n 에
+// 적는다. 옛 평문 키(key)는 propGet_ 이 그대로 읽어 주다가 다음 propSet_ 때 지워진다(하위호환).
+function propGet_(props, key) {
+  var plain = props.getProperty(key);
+  if (plain != null) return plain;
+  var n = Number(props.getProperty(key + '__n') || 0);
+  if (!n) return null;
+  var parts = [];
+  for (var i = 0; i < n; i++) parts.push(props.getProperty(key + '__' + i) || '');
+  return parts.join('');
+}
+
+function propSet_(props, key, str) {
+  str = str == null ? '' : String(str);
+  var CHUNK = 8000;
+  var n = Math.ceil(str.length / CHUNK) || 1;
+  for (var i = 0; i < n; i++) {
+    props.setProperty(key + '__' + i, str.slice(i * CHUNK, (i + 1) * CHUNK));
+  }
+  var oldN = Number(props.getProperty(key + '__n') || 0);
+  for (var j = n; j < oldN; j++) props.deleteProperty(key + '__' + j); // 이번이 더 짧으면 찌꺼기 조각 정리
+  props.setProperty(key + '__n', String(n));
+  props.deleteProperty(key); // 옛 평문 키 정리
+}
+
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'load_schedule') return loadSchedule_();
   if (action === 'schedule_dropped') return droppedLog_();
+  if (action === 'props_usage') return propsUsage_();   // 읽기전용 진단(.deploy-check 동일 패턴 재사용 · 배1056)
   return jsonRes_({ ok: true, msg: '웰페리온 전사 일정 SSOT 백엔드 정상 동작 중' });
 }
 
@@ -38,7 +66,7 @@ function doPost(e) {
 // ─── 조회: 저장된 전체 schedule JSON 반환. 저장본 없으면 data:null(프론트가 github seed 폴백) ───
 function loadSchedule_() {
   var props = PropertiesService.getScriptProperties();
-  var raw = props.getProperty(SCHEDULE_PROP);
+  var raw = propGet_(props, SCHEDULE_PROP);
   var data = null;
   if (raw) {
     try { data = JSON.parse(raw); } catch (err) { data = null; }
@@ -48,7 +76,7 @@ function loadSchedule_() {
 }
 
 // ─── 저장: 전체 schedule JSON 덮어쓰기. items 배열 없으면 거부(파괴적 저장 방지) ───
-// 저장 직전 기존 값을 SCHEDULE_SSOT_BAK에 1개 백업(롤백 안전망).
+// 저장 직전 기존 값을 Drive 백업 폴더에 1개 백업(롤백 안전망 · 배1056부터 속성창이 아닌 Drive).
 //
 // ★유실 방지 3종 (GM 지적 2026-08-12 "아무 기록없이 날라간것들이 많고")
 //   저장은 55건 전체를 한 덩어리로 덮어쓴다. 그래서 휴대폰과 PC를 같이 열어 두면 나중 저장이
@@ -59,7 +87,7 @@ function loadSchedule_() {
 //   ③ 사라진 항목 기록 — 없어진 id·이름을 남겨 무엇이 언제 빠졌는지 되짚을 수 있게 한다.
 var SCHEDULE_BAK_KEEP = 3;                       // 롤링 백업 벌 수
 var SCHEDULE_DROP_LOG_PROP = 'SCHEDULE_DROPPED'; // 사라진 항목 기록
-var SCHEDULE_DROP_LOG_MAX = 120;                 // 기록 상한(속성 용량 보호)
+var SCHEDULE_DROP_LOG_MAX = 200;                 // 기록 상한(청크 저장이라 값 자체는 9KB 제약 없음 · 배1056)
 var SCHEDULE_SHRINK_GUARD = 0.7;                 // 이전 건수의 70% 미만이면 거부
 // ★2026-08-26 시토 — 낙관적 잠금(배783 · 실사고 2026-08-25).
 //   그날 141건이 134건으로 줄며 3건이 사라졌는데 위 급감 가드(70%)는 5% 감소라 그냥 통과했다.
@@ -70,13 +98,56 @@ var SCHEDULE_SHRINK_GUARD = 0.7;                 // 이전 건수의 70% 미만�
 //     사라지는 저장이면 거부**한다. 오늘 사고는 이 한 줄만으로도 막혔다.
 var SCHEDULE_REV_PROP = 'SCHEDULE_SSOT_REV';
 
+// ★2026-09-05 시토(배1056) — 백업 3벌을 속성창 대신 Drive 파일로.
+//   실사고: 211건으로 자란 일정 JSON(152KB)을 백업 3벌 + 옛 키 1벌까지 속성창에 그대로
+//   복제해 두니 4벌만으로 456KB, 현재값(152KB)까지 합쳐 766KB — 스크립트 전체 500KB 총량
+//   천장을 넘겨 저장 자체가 거부됐다(개별 속성 9KB 한도가 아니라 이 총량이 진짜 원인).
+//   백업 3벌 롤링이라는 안전망(GM 지적 2026-08-12)은 그대로 두고 저장 위치만 이 프로젝트에
+//   이미 있는 증빙사진 Drive 패턴(evidenceFolder_)과 똑같이 옮긴다.
+var BACKUP_FOLDER_PROP = 'SCHEDULE_BACKUP_FOLDER_ID';
+var BACKUP_FOLDER_NAME = '웰페리온 전사일정 백업';
+
+function backupFolder_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty(BACKUP_FOLDER_PROP);
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (err) { /* 지워졌으면 아래에서 새로 만든다 */ }
+  }
+  var it = DriveApp.getFoldersByName(BACKUP_FOLDER_NAME);
+  var folder = it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER_NAME);
+  props.setProperty(BACKUP_FOLDER_PROP, folder.getId());
+  return folder;
+}
+
+function backupFileName_(n) { return 'schedule_backup_' + n + '.json'; }
+
+function readBackupFile_(folder, name) {
+  var it = folder.getFilesByName(name);
+  return it.hasNext() ? it.next().getBlob().getDataAsString('UTF-8') : null;
+}
+
+function writeBackupFile_(folder, name, content) {
+  var it = folder.getFilesByName(name);
+  if (it.hasNext()) { it.next().setContent(content); }
+  else { folder.createFile(name, content, MimeType.PLAIN_TEXT); }
+}
+
+// 옛 속성 백업 키 정리(있으면 지운다·없으면 그냥 통과 — 몇 번 불러도 안전).
+// 지금 당장 500KB 초과를 풀어야 이번 저장부터 통과한다.
+function purgeOldPropBackups_(props) {
+  ['', '_1', '_2', '_3'].forEach(function (suf) {
+    props.deleteProperty(SCHEDULE_BAK_PROP + suf);
+  });
+}
+
 function saveSchedule_(body) {
   var data = body.data;
   if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
     return jsonRes_({ ok: false, error: 'items 배열이 없는 JSON은 저장할 수 없습니다.' });
   }
   var props = PropertiesService.getScriptProperties();
-  var prev = props.getProperty(SCHEDULE_PROP);
+  purgeOldPropBackups_(props);   // 배1056 — 옛 속성 백업 4벌(456KB) 정리, 지금 총량 초과부터 푼다
+  var prev = propGet_(props, SCHEDULE_PROP);
   var prevItems = [];
   if (prev) {
     try { prevItems = (JSON.parse(prev) || {}).items || []; } catch (err) { prevItems = []; }
@@ -119,25 +190,25 @@ function saveSchedule_(body) {
   }
   if (dropped.length) {
     var log = [];
-    try { log = JSON.parse(props.getProperty(SCHEDULE_DROP_LOG_PROP) || '[]') || []; } catch (err) { log = []; }
+    try { log = JSON.parse(propGet_(props, SCHEDULE_DROP_LOG_PROP) || '[]') || []; } catch (err) { log = []; }
     dropped.forEach(function (it) {
       log.push({ at: nowStr, id: it.id, name: it.name || '', type: it.type || '', next_due: it.next_due || '' });
     });
-    props.setProperty(SCHEDULE_DROP_LOG_PROP,
+    propSet_(props, SCHEDULE_DROP_LOG_PROP,
       JSON.stringify(log.slice(-SCHEDULE_DROP_LOG_MAX)));
   }
 
-  // ② 백업 3벌 롤링 — 오래된 것부터 밀어낸다.
+  // ② 백업 3벌 롤링 — 오래된 것부터 밀어낸다(Drive 파일 · 배1056: 속성창 총량 회피).
   if (prev) {
+    var bfolder = backupFolder_();
     for (var i = SCHEDULE_BAK_KEEP; i > 1; i--) {
-      var older = props.getProperty(SCHEDULE_BAK_PROP + '_' + (i - 1));
-      if (older) props.setProperty(SCHEDULE_BAK_PROP + '_' + i, older);
+      var older = readBackupFile_(bfolder, backupFileName_(i - 1));
+      if (older) writeBackupFile_(bfolder, backupFileName_(i), older);
     }
-    props.setProperty(SCHEDULE_BAK_PROP + '_1', prev);
-    props.setProperty(SCHEDULE_BAK_PROP, prev);  // 옛 키도 유지 — 기존 복구 절차가 이걸 본다
+    writeBackupFile_(bfolder, backupFileName_(1), prev);
   }
 
-  props.setProperty(SCHEDULE_PROP, JSON.stringify(data));
+  propSet_(props, SCHEDULE_PROP, JSON.stringify(data));
   var newRev = nowStr + '#' + data.items.length;   // 판번호 = 저장시각+건수(사람이 읽어도 뜻이 보인다)
   props.setProperty(SCHEDULE_REV_PROP, newRev);
   // ※ 캘린더 반영은 여기서 부르지 않는다 — 웹앱 배포본이 캘린더 권한을 새로 받아야 하고,
@@ -152,9 +223,9 @@ function saveSchedule_(body) {
 }
 
 // ─── 사라진 항목 되짚기 (GET ?action=schedule_dropped) ───
-// 무엇이 언제 빠졌는지 사람이 확인하는 창구. 되살리기는 백업(SCHEDULE_SSOT_BAK_1~3)에서 한다.
+// 무엇이 언제 빠졌는지 사람이 확인하는 창구. 되살리기는 Drive 백업 폴더(schedule_backup_1~3.json)에서 한다.
 function droppedLog_() {
-  var raw = PropertiesService.getScriptProperties().getProperty(SCHEDULE_DROP_LOG_PROP);
+  var raw = propGet_(PropertiesService.getScriptProperties(), SCHEDULE_DROP_LOG_PROP);
   var log = [];
   if (raw) { try { log = JSON.parse(raw) || []; } catch (err) { log = []; } }
   return jsonRes_({ ok: true, count: log.length, dropped: log });
@@ -226,7 +297,7 @@ function calDate_(dateStr, timeStr) {
 }
 
 function syncCalendar_() {
-  var raw = PropertiesService.getScriptProperties().getProperty(SCHEDULE_PROP);
+  var raw = propGet_(PropertiesService.getScriptProperties(), SCHEDULE_PROP);
   if (!raw) return { ok: false, error: '저장된 일정이 없습니다.' };
   var items = (JSON.parse(raw) || {}).items || [];
 
@@ -306,6 +377,19 @@ function setupCalendarSync() {
 }
 
 function hourlyCalendarSync() { syncCalendar_(); }
+
+// 속성창 총량 진단(.deploy-check propsUsage 와 동일 패턴 · 배1056 원인 확인용).
+function propsUsage_() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var total = 0;
+  var byKey = {};
+  Object.keys(props).forEach(function (k) {
+    var b = Utilities.newBlob(k + String(props[k])).getBytes().length;
+    total += b;
+    byKey[k] = b;
+  });
+  return jsonRes_({ ok: true, totalBytes: total, hardLimit: 512000, keyCount: Object.keys(props).length, byKey: byKey });
+}
 
 function jsonRes_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);

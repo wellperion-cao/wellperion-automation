@@ -65,6 +65,9 @@ _PROJECTS = [
     # (그래서 편집기 직접 수정이 관행이 됐고 저장소 사본이 라이브와 어긋났다).
     ("sales", "1Zx0PKWNjrvvVVPVstiYPf0M32moNhLIzAQFW1cL-kQWoGEU29BUCng77", ".deploy-sales"),
     ("procurement", "1pCMppQK15EjSzgRSPfzWyXQl3L8cpbKxfl0WFIFctaYlJtnveU3fVMPj", ".deploy-procurement"),
+    # 전사 일정(.deploy-schedule) — 2026-09-05 등록(배1056). 같은 사각지대: .clasp.json 은
+    # 있는데 이 목록에 없어 배포 관문(gas_deploy_guard)을 못 거치고 있었다.
+    ("schedule", "1oKqTMHVtoe-DMrdA-NRk5tN5rv_9sq3nI5f0Vhqug3708HBTXief3HUA", ".deploy-schedule"),
 ]
 
 _HARD_LIMIT = 200
