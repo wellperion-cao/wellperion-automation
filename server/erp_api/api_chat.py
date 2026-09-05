@@ -70,6 +70,12 @@ CORS = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET
 # 프로필(테넌트 이름·색·예약 링크)도 같은 폴더에 profile.json 으로 둔다(배포가 counselbot/tenants/*.json 을 그대로 복사).
 PROFILE_FILENAME = "profile.json"
 TENANTS_SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(_HERE)), "server", "counselbot", "tenants")
+# 배1074 공통 학습층 — 컨셉 프리셋·공통 금지어·질문 유형(사실 값·개인정보 없음 · never_here). 서버 배포 경로가
+# 없으면(로컬 자체점검) 저장소 상대경로로 폴백 — 그것도 없으면 빈 dict(서비스 안 죽게).
+SHARED_DIR = os.environ.get(
+    "ERP_COUNSELBOT_SHARED",
+    "/srv/erp/counselbot/shared" if os.path.isdir("/srv/erp/counselbot/shared") else
+    os.path.join(os.path.dirname(os.path.dirname(_HERE)), "server", "counselbot", "shared"))
 FEEDBACK_LOG_PATH = os.environ.get("ERP_CHAT_FEEDBACK_LOG", "/srv/erp/chat_feedback.jsonl")
 WARN_WORDS = tuple(MONEY_WORDS) + MEDICAL_WORDS + PRICE_QUESTION_WORDS   # 관리자 저장 시 경고(막지 않음) — 배1036 요청⑤
 # close_days.json 정본 = 저장소 status/(공휴일 목록도 여기) — 서버는 /srv/erp/www 가 git 5분 동기화라 그 경로를
@@ -128,9 +134,34 @@ def _load_faq(tenant: str) -> dict:
     return data
 
 
-def _forbidden_hit(q: str) -> bool:
-    return (any(w in q for w in MONEY_WORDS) or any(w in q for w in MEDICAL_WORDS)
-            or any(w in q for w in PRICE_QUESTION_WORDS))
+def _load_shared(name: str) -> dict:
+    """배1074 — server/counselbot/shared/{name} 읽기. 없으면 빈 dict(서비스 안 죽게)."""
+    try:
+        return json.loads((Path(SHARED_DIR) / name).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_ACCOUNT_NUM_RE = re.compile(r"\d{2,6}-\d{2,6}(?:-\d{2,6})?")   # guards_common '-' 항목 = 계좌번호형 패턴(배1074②)
+
+
+def _common_guard_phrases() -> list:
+    return [p for rule in _load_shared("guards_common.json").get("rules", [])
+            for p in (rule.get("phrases") or []) if p != "-"]
+
+
+def _forbidden_hit(q: str, tenant: str = None) -> bool:
+    """질문 관문 — 공통 금지 phrases(guards_common.json 전부) + 테넌트 추가 phrases(guards.phrases · 배1074②)
+    + 계좌번호형 패턴 + 의료 안전목록(MEDICAL_WORDS · guards_common 이 아직 다 못 덮어 유지). 가격·계약 같은
+    낱말 자체는 더 안 막는다 — 이제 컨시어지 모델이 세일즈 원칙③(숫자 아님)으로 안전하게 다루고, 지어낸
+    숫자·확정 문구는 출력검사(_grounded·_output_unsafe)가 뒷단에서 잡는다."""
+    q = q or ""
+    if _ACCOUNT_NUM_RE.search(q):
+        return True
+    phrases = _common_guard_phrases()
+    if tenant:
+        phrases = phrases + ((_load_profile(tenant).get("guards") or {}).get("phrases") or [])
+    return any(w in q for w in phrases) or any(w in q for w in MEDICAL_WORDS)
 
 
 # 모델 답(출력) 전용 위험 검사 — 질문 관문(_forbidden_hit)과 다르다. 실측(시보): "환불 되나요"에 대한
@@ -185,6 +216,50 @@ def _fallback_text(tenant: str, meta: dict) -> str:
     return f"{base} 예약: {url}" if url else base
 
 
+def _match_question_type(q: str):
+    """공통 질문 유형 매칭(배1074③) — FAQ 매칭(_best_match)과 같은 2-gram 겹침 방식이되, 교집합 최소 1개로
+    완화했다(유형 태깅은 답 선택과 달리 오분류 비용이 낮다 · _best_match 의 2자 이하 통짜 차단은 "주차 되나요"
+    처럼 정규화하면 2자로 줄어드는 흔한 질문까지 막아서 그대로는 못 썼다). 반환 = type_id|None."""
+    types = _load_shared("question_types.json").get("types", [])
+    nq = _normalize_q(q)
+    qb = _bigrams(nq)
+    if not qb:
+        return None
+    best_id, best_score = None, 0.0
+    for t in types:
+        for ex in (t.get("examples") or []):
+            fb = _bigrams(_normalize_q(ex))
+            if not fb or not (qb & fb):
+                continue
+            score = len(qb & fb) / min(len(qb), len(fb))
+            if score >= 0.5 and score > best_score:
+                best_id, best_score = t.get("type_id"), score
+    return best_id
+
+
+def _fact_present(prof: dict, path: str) -> bool:
+    """needs_facts 표기(facts.hours · offerings[].price_policy · policies[topic=환불] 등)가 대충이라도
+    채워졌는지만 본다 — 완벽한 스키마 검증이 아니라 "이 구역이 아예 비었나" 신호용(배1074③ 최소 구현)."""
+    base = re.split(r"[.\[]", path, maxsplit=1)[0]
+    val = (prof or {}).get(base)
+    if isinstance(val, dict):
+        return any(v not in (None, "", "미수령", []) for v in val.values())
+    if isinstance(val, list):
+        return bool(val)
+    return val not in (None, "", "미수령")
+
+
+def _needs_facts_missing(prof: dict, type_id: str) -> list:
+    """type_id 가 답하는 데 필요한 정본 칸 중 비어 있는 것만(배1074③) — 미답 목록에 같이 기록된다."""
+    if not type_id:
+        return []
+    types = _load_shared("question_types.json").get("types", [])
+    t = next((x for x in types if x.get("type_id") == type_id), None)
+    if not t:
+        return []
+    return [p for p in (t.get("needs_facts") or []) if not _fact_present(prof, p)]
+
+
 def _mask_pii(q: str) -> str:
     """로그에 남기기 전 전화번호·이메일 마스킹(검수 M5) — 상담 문의는 대개 "010-...로 연락 주세요" 형태로 온다."""
     return _EMAIL_RE.sub("[이메일]", _PHONE_RE.sub("[전화번호]", q or ""))
@@ -198,8 +273,12 @@ def _rotate_log_keep(path: str) -> None:
         os.replace(path, path + "." + stamp)
 
 
-def _log(tenant: str, q: str, answered: bool, faq_id):
+def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
+    if type_id:
+        row["type_id"] = type_id   # 배1074③ — 공통 질문 유형 태깅
+    if needs_facts:
+        row["needs_facts"] = needs_facts   # 배1074③ — 못 답한 이유(어느 정본 칸이 비었나)
     try:
         os.makedirs(os.path.dirname(LOG_PATH) or ".", exist_ok=True)
         _rotate_log_keep(LOG_PATH)
@@ -226,33 +305,38 @@ async def chat(tenant: str, request: Request):
     session_id = str((body or {}).get("session_id") or "")[:128]   # 배1036 GM 구조전환② — 클라이언트가 만든 임의 문자열
     data = _load_faq(tenant)
     fallback = _fallback_text(tenant, data.get("meta"))
-    if not q or _forbidden_hit(q):
-        _log(tenant, q, False, None)
+    type_id = _match_question_type(q) if q else None   # 배1074③ — 공통 질문 유형 태깅(사실 값·개인정보 없음)
+
+    def _missing(prof=None):
+        return _needs_facts_missing(prof if prof is not None else _load_profile(tenant), type_id)
+
+    if not q or _forbidden_hit(q, tenant):
+        _log(tenant, q, False, None, type_id, _missing())
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
     text, status = (None, "error") if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
-        _log(tenant, q, True, None)
+        _log(tenant, q, True, None, type_id)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
-        _log(tenant, q, False, None)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+        _log(tenant, q, False, None, type_id, _missing())   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
-            _log(tenant, q, True, "today_hours")
+            _log(tenant, q, True, "today_hours", type_id)
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
-                _log(tenant, q, True, item.get("id"))
+                _log(tenant, q, True, item.get("id"), type_id)
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
-                _log(tenant, q, False, None)
+                _log(tenant, q, False, None, type_id, _missing())
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
@@ -288,7 +372,12 @@ def unanswered(tenant: str, days: int = 7):
                 except (KeyError, ValueError):
                     continue
                 if ts >= cutoff:
-                    out.append({"q": row.get("q", ""), "ts": row.get("ts", "")})
+                    item = {"q": row.get("q", ""), "ts": row.get("ts", "")}
+                    if row.get("type_id"):
+                        item["type_id"] = row["type_id"]   # 배1074③
+                    if row.get("needs_facts"):
+                        item["needs_facts"] = row["needs_facts"]   # 배1074③ — 어느 정본 칸이 비었나
+                    out.append(item)
     except OSError:
         pass
     return {"ok": True, "tenant": tenant, "days": days, "count": len(out), "questions": out}
@@ -588,27 +677,54 @@ _CONCIERGE_PRINCIPLES = (
 )   # 설계 §3-2 원칙 7 + §3-3 세일즈 5원칙 그대로
 
 
+def _concept_preset(prof: dict) -> dict:
+    """identity.concept_preset 로 고른 프리셋 1개(배1074① · 없으면 빈 dict — persona 값만 쓴다).
+    persona(counselor_persona)가 프리셋보다 우선(schema.md "네 가지가 안 맞으면 직접 적는다")."""
+    preset_id = (prof.get("identity") or {}).get("concept_preset")
+    if not preset_id:
+        return {}
+    presets = _load_shared("concept_presets.json").get("presets", [])
+    return next((p for p in presets if p.get("id") == preset_id), {}) or {}
+
+
+def _shared_prompt_sections() -> str:
+    """배1074 공통 학습층 — guards_common(전부)·question_types(전부)를 프롬프트에 얹는다. 사실 값·개인정보는
+    여기 없다(never_here) — 규칙 문장·유형·답 뼈대뿐. 파일이 없으면(폴백) 빈 문자열."""
+    parts = []
+    guards = _load_shared("guards_common.json").get("rules", [])
+    if guards:
+        lines = ["- %s → \"%s\"" % (g.get("rule", ""), g.get("say_instead", "")) for g in guards]
+        parts.append("[공통 금지 규칙]\n" + "\n".join(lines))
+    qtypes = _load_shared("question_types.json").get("types", [])
+    if qtypes:
+        lines = ["- %s: %s" % (t.get("type_id", ""), t.get("answer_skeleton", "")) for t in qtypes]
+        parts.append("[질문 유형 답 뼈대 — {facts.*} 는 위 업체 정본 값으로 채운다]\n" + "\n".join(lines))
+    return ("\n\n" + "\n\n".join(parts)) if parts else ""
+
+
 def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
-    """system 프롬프트 = 업체 정본 11구역 전부 + FAQ 전체 + 오늘 상태 한 줄(배1036 GM 구조전환①·설계 §3-1①·⑦).
-    cache_control 로 캐싱 — 정본이 바뀌기 전까진 매 질문 동일해 그대로 재사용된다."""
+    """system 프롬프트 = 업체 정본 11구역 전부 + FAQ 전체 + 오늘 상태 한 줄(배1036 GM 구조전환①·설계 §3-1①·⑦)
+    + 공통 학습층 3파일(배1074). cache_control 로 캐싱 — 정본이 바뀌기 전까진 매 질문 동일해 재사용된다."""
     faq = _load_faq(tenant).get("faq") or []
     faq_lines = "\n".join("- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq)
-    name = persona.get("name") or tenant
-    tone = persona.get("emoji") or "적당히"
-    handoff = persona.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
+    preset = _concept_preset(prof)
+    name = persona.get("name") or preset.get("name") or tenant
+    tone = persona.get("emoji") or preset.get("emoji") or "적당히"
+    handoff = persona.get("handoff") or preset.get("handoff") or "그 부분은 제가 확인해서 알려드릴게요 🙏 상담 예약을 남겨 주시면 연락드립니다."
+    preset_line = (" 컨셉은 '%s'(%s)." % (preset.get("name"), preset.get("one_liner"))) if preset else ""
     service_concept = (prof.get("identity") or {}).get("service_concept") or ""
     sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null(스포짐)이면 생략(배1036 GM 추가①)
     sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
     today_line = _today_hours_line(tenant)
     return (
-        "%s 당신은 '%s' 상담원입니다(%s).%s 이모지는 '%s' 수준으로 씁니다. "
+        "%s 당신은 '%s' 상담원입니다(%s).%s%s 이모지는 '%s' 수준으로 씁니다. "
         "아래 [업체 정본]·[FAQ]에 적힌 사실·상품·규정만 사실로 말하세요 — 없는 것은 지어내지 말고 "
         "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
         "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이). "
         "이 화면은 카카오톡 대화창처럼 평문만 보입니다 — 마크다운 금지(**굵게**·목록 기호·제목 기호 쓰지 않는다).\n\n"
-        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s"
-        % (_CONCIERGE_PRINCIPLES, name, service_concept, sales_line, tone, handoff, today_line or "미확인",
-           json.dumps(prof, ensure_ascii=False), faq_lines)
+        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s%s"
+        % (_CONCIERGE_PRINCIPLES, name, service_concept, preset_line, sales_line, tone, handoff, today_line or "미확인",
+           json.dumps(prof, ensure_ascii=False), faq_lines, _shared_prompt_sections())
     )
 
 
@@ -725,10 +841,11 @@ def _selfcheck() -> None:
     assert item and item["id"] == "q1" and score >= MATCH_THRESHOLD, (item, score)
     item2, score2 = _best_match("전혀 상관없는 질문입니다", [{"id": "q1", "q": "운영 시간은?", "a": "x"}])
     assert score2 < MATCH_THRESHOLD
-    assert _forbidden_hit("결제는 어떻게 하나요") is True
-    assert _forbidden_hit("치료 효과가 있나요") is True
+    # 배1074② 이후 — 가격·계약 낱말 자체는 더 안 막는다(모델이 세일즈③으로 안전하게 다룸 · 출력검사가 뒷단).
+    assert _forbidden_hit("치료 효과가 있나요") is True   # 의료는 그대로 막음(MEDICAL_WORDS 유지)
     assert _forbidden_hit("운영 시간이 궁금해요") is False
-    assert _forbidden_hit("가격이 어떻게 되나요") is True   # 검수 L3 — 받는 질문 관문
+    assert _forbidden_hit("결제는 어떻게 하나요") is False   # 구 동작(가격 낱말 차단)에서 의도적으로 바뀜
+    assert _forbidden_hit("가격이 어떻게 되나요") is False
     assert _mask_pii("010-1234-5678 로 연락 주세요") == "[전화번호] 로 연락 주세요"   # 검수 M5
     assert _mask_pii("문의는 abc@wellperion.com 으로") == "문의는 [이메일] 으로"
 
@@ -825,6 +942,24 @@ def _selfcheck() -> None:
         assert _over_daily_limit(key_tenant) is False
     assert _over_daily_limit(key_tenant) is True   # 301번째 — 한도 초과
     _DAILY_COUNTS.pop((key_tenant, _kst_now()[:10]), None)   # 자체점검 잔여 제거
+
+    # 배1074 — 공통 학습층 3파일 배선.
+    assert _load_shared("guards_common.json").get("rules"), "shared/guards_common.json 못 읽음"
+    assert _load_shared("존재안함.json") == {}, "없는 파일은 빈 dict 로 폴백해야 서비스가 안 죽는다"
+    assert _forbidden_hit("완치가 되나요") is True    # 공통 금지어(no_medical phrases)
+    assert _forbidden_hit("계좌번호 123-456-7890 로 입금") is True   # '-' 항목 = 계좌번호형 정규식
+    assert _forbidden_hit("아무 문제 없는 질문입니다") is False
+    d_with_extra = {"guards": {"phrases": ["업체전용금지어"]}}
+    import unittest.mock as _mock
+    with _mock.patch.object(sys.modules[__name__], "_load_profile", return_value=d_with_extra):
+        assert _forbidden_hit("업체전용금지어 테스트", "1_wellperion") is True   # 테넌트 추가 phrases 합집합
+    assert _match_question_type("주차 되나요") == "parking"
+    assert _match_question_type("환불 되나요") == "refund"
+    assert _match_question_type("아무 상관없는 문장입니다") is None
+    assert _fact_present({"facts": {"hours": {"weekday": "06:00~22:30"}}}, "facts.hours") is True
+    assert _fact_present({"facts": {"hours": None}}, "facts.hours") is False
+    assert _needs_facts_missing({"facts": {}}, "parking") == ["facts.parking"]
+    assert _needs_facts_missing({"facts": {"parking": "무료 30대"}}, "parking") == []
     print("api_chat selfcheck ok")
 
 

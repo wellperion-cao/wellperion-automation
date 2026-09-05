@@ -18,6 +18,8 @@ cd "$(dirname "$0")/.."
 $SCP server/erp_api/api_chat.py $HOST:/srv/erp/api/
 $SCP scripts/diet_camp_agent.py $HOST:/srv/erp/api/   # FORBIDDEN(금액·계약 금지어) 재사용 — 이 파일만 stdlib 로 끝난다
 $SCP scripts/close_days.py $HOST:/srv/erp/api/        # 오늘 운영 상태 판정(배1036 GM⑥) — stdlib 로 끝난다
+$S "mkdir -p /srv/erp/counselbot/shared"
+$SCP server/counselbot/shared/*.json "$HOST:/srv/erp/counselbot/shared/"   # 배1074 공통 학습층(저장소 정본 · 사실 값·개인정보 없음)
 $SCP server/erp_api/chat.nginx.conf $HOST:/tmp/chat.conf
 $SCP "3. 웰페리온 가이드/cbo/model/chat_widget.html" $HOST:/srv/www/2_dietcamp/chat_widget.html   # 위젯 — 다캠 페이지와 같은 origin
 
@@ -50,7 +52,7 @@ curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q1.json
 echo "--- 비매칭 질문 ---"
 curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q2.json" \
   https://erp.wellperion.com/api/chat/1_wellperion | cut -c1-150; echo
-echo "--- 금지어(결제) ---"
+echo "--- 결제·가격 질문(배1074② 이후 = 더 이상 즉시 차단 아님 · 모델이 안전하게 답함) ---"
 curl -s -X POST -H 'Content-Type: application/json' --data-binary @"$TMP/q3.json" \
   https://erp.wellperion.com/api/chat/1_wellperion | cut -c1-150; echo
 echo "--- 없는 tenant ---"
