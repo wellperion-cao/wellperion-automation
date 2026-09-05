@@ -275,7 +275,7 @@ def build_report_text(pb, tc, fc, month_ko):
         "",
         "📌 노출·인지·관심 지표는 외부 플랫폼 수기 입력 — 보고서 페이지에서 추가 확인 요망.",
         "",
-        "📄 상세 보고서 → 웰페리온 ERP (M2 마케팅 현황 대시보드 → 월간 보고서)",
+        "📄 상세 보고서 → 웰페리온 ERP ▸ 마케팅 ▸ 월간마케팅보고서 (https://erp.wellperion.com/cmo/funnel/월간마케팅보고서.html)",
     ]
 
     return "\n".join(lines)
