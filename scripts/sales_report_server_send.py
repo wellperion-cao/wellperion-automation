@@ -16,7 +16,12 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "server" / "erp_api"))
+# 서버 배포 표준 경로(/srv/erp/api — 다른 api_*.py 와 같은 자리 · scp 배포)를 먼저 찾고,
+# 없으면 이 저장소의 server/erp_api 를 쓴다(로컬 실행 · repo 클론이 server/ 를 sparse-checkout
+# 밖에 둘 수 있어 실서버 cron 에서는 항상 앞쪽이 잡힌다).
+_DEPLOYED = Path("/srv/erp/api")
+ERP_API_DIR = _DEPLOYED if _DEPLOYED.is_dir() else (ROOT / "server" / "erp_api")
+sys.path.insert(0, str(ERP_API_DIR))
 sys.path.insert(0, str(ROOT / "scripts"))
 import sales_report_render as render  # noqa: E402
 from tg_outbound_log import send as tg_send  # noqa: E402

@@ -21,7 +21,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve()
 ERP_API_DIR = HERE.parent
-REPO_ROOT = ERP_API_DIR.parents[1]                       # server/erp_api → server → repo root
+# 로컬 repo 클론(server/erp_api/이 파일)이면 parents[1]=repo root. 서버 배포본(/srv/erp/api/이 파일 ·
+# scp 로 이 폴더 하나만 옮겨 server/ 트리 자체가 없다)이면 폰트는 항상 켜져 있는 /srv/erp/repo(sparse-
+# checkout에 "3. 웰페리온 가이드"/ 포함됨)에서 찾는다.
+_DEPLOYED_REPO = Path("/srv/erp/repo")
+REPO_ROOT = _DEPLOYED_REPO if _DEPLOYED_REPO.is_dir() else ERP_API_DIR.parents[1]
 FONT_DIR = REPO_ROOT / "3. 웰페리온 가이드" / "_assets" / "profile"
 
 sys.path.insert(0, str(ERP_API_DIR))
@@ -98,7 +102,7 @@ def build_report():
     overrides = compute_overrides()
     final = dict(cells)
     for k in ("N2", "N3", "N4", "N5", "N6"):
-        final[k] = "%d명" % overrides[k]
+        final[k] = "%s명" % format(overrides[k], ",")
     matched, total, mismatches = compare(cells, final)
     return {"cells": cells, "final": final, "synced_at": synced, "overrides": overrides,
             "matched": matched, "total": total, "mismatches": mismatches,
