@@ -169,8 +169,31 @@ def send_as_gm(chat_id, text: str) -> bool:
     return ok
 
 
+WORK_ROOM_CHAT_ID = -5492623600  # 텔레그램 「업무관리」 그룹(GM·나우열M·봇 · GM 확정 2026-09-05)
+
+
+def render_chro_task(name: str, owner: str, start: str, end: str, content: str) -> str:
+    """업무지시 규격(GM 확정 2026-09-05) — 첫 줄 「CHRO야」 고정. 나우열M 쪽 CHRO(AI)가 이 첫마디로
+    업무지시를 인식해 업무 SSOT 에 바로 등록한다. 줄 순서·라벨은 바꾸지 않는다."""
+    vals = {"업무명": name, "담당자": owner, "시작일": start, "종료일": end, "내용": content}
+    empty = [k for k, v in vals.items() if not str(v or "").strip()]
+    if empty:
+        raise ValueError(f"업무지시 빈 값: {', '.join(empty)}")
+    return "CHRO야\n" + "\n".join(f"{k} : {str(v).strip()}" for k, v in vals.items())
+
+
+def send_chro_task(name, owner, start, end, content, chat_id=WORK_ROOM_CHAT_ID) -> bool:
+    return send_as_gm(chat_id, render_chro_task(name, owner, start, end, content))
+
+
 def _selfcheck():
     import tempfile
+    t = render_chro_task("테스트", "나우열M", "2026-09-08", "2026-09-12", "내용")
+    assert t.splitlines()[0] == "CHRO야" and t.splitlines()[1] == "업무명 : 테스트", t
+    try:
+        render_chro_task("", "x", "y", "z", "w"); raise AssertionError("빈 값 통과")
+    except ValueError:
+        pass
     with tempfile.TemporaryDirectory() as d:
         tmp = Path(d) / ".env"
         tmp.write_text("TG_USER_API_ID=123\nTG_USER_API_HASH=abc\nTG_USER_PHONE=+821012345678\n", encoding="utf-8")
@@ -190,7 +213,26 @@ def main():
     ap.add_argument("--text", type=str)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--selfcheck", action="store_true")
+    ap.add_argument("--chro-task", action="store_true", help="업무지시 규격(CHRO야/업무명/담당자/시작일/종료일/내용)으로 발송 · 기본 chat=업무관리")
+    ap.add_argument("--name"); ap.add_argument("--owner"); ap.add_argument("--start"); ap.add_argument("--end"); ap.add_argument("--content")
     args = ap.parse_args()
+
+    if args.chro_task:
+        try:
+            text = render_chro_task(args.name, args.owner, args.start, args.end, args.content)
+        except ValueError as ex:
+            print(f"[오류] {ex}"); sys.exit(2)
+        chat = args.chat or str(WORK_ROOM_CHAT_ID)
+        cfg, code = _prepare(text)
+        if cfg is None:
+            print(text); sys.exit(code)
+        if args.dry_run:
+            print(f"[dry-run] chat={chat}\n{text}"); return
+        if _today_sent_count() >= _DAILY_CAP:
+            print(f"[상한] 오늘 {_DAILY_CAP}통 발송 완료"); sys.exit(4)
+        ok = _try_send(cfg, chat, text)
+        log_outbound(text, chat_id=chat, source=SOURCE, ok=ok, kind="sendMessage")
+        sys.exit(0 if ok else 1)
 
     if args.selfcheck:
         _selfcheck()
