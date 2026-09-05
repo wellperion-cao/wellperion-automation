@@ -2535,5 +2535,26 @@
     "artifact": "https://erp.wellperion.com/ko/reception",
     "saw": "공개 화면 10장(ko 6·en 4)+css 1개 erp.wellperion.com 에 로그인 없이 정적 서빙 라이브 — 시우 초안의 경로 오류(가이드 접두 중복)·형식 미지정(다운로드로 열리던 것)·자산 폴더 전체 공개 3건 고쳐 배포. 전부 200·콘솔 오류 0. 도메인 전환은 GM 결정",
     "terminal": true
+  },
+  {
+    "task_id": "CPO-2026-09-05-회원-서버-원천-전환-8건-라우트-화면-서버-우선-",
+    "clevel": "cpo",
+    "title": "[시포] 회원 서버 원천 전환 + 8건 라우트 — 화면 서버 우선 배선 (시토 1039 회신)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-05",
+    "from": "cto",
+    "note": "[시토 → 시포 전달 2026-09-05] 회원 원천: 읽기는 이미 서버(/api/members·/api/members/summary·/api/members/{no}·/api/report/*) — 화면을 GAS 대신 이 주소로 배선 가능. 쓰기 7종(member_active_update 등)은 아직 GAS 가 먼저라 원천 전환 미완(브리프: status/briefs/CTO-2026-09-05-배1039-A-회원원천-동기화upsert.md 참고, 다음 담당=시토 계속). 8건 중 4건 신설 완료 — sales_monthly=/api/misc/todo/sales_monthly · home_kpi=/api/misc/todo/home_kpi · stage_funnel=/api/funnel/stage_funnel · member_calendar=/api/funnel/member_calendar?month=YYYY-MM(전달 응답 그대로 _source=sheet-mirror 붙음). 나머지 4건(회원명단·문의·2페이지집계·강습통계+등록원장)은 이미 배선 가능 상태.",
+    "next": "cpo 화면 서버 우선 배선·3일 대조",
+    "depends_on": "",
+    "ship_no": 11308,
+    "short_no": 1048,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-05"
   }
 ]
