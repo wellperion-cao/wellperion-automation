@@ -668,12 +668,6 @@
       ],
       "work": [
         {
-          "time": "11:19",
-          "area": "작업",
-          "event": "§7 0단계 — 세션 등록·생존 신호·직접 알림 (살아있는 세션 협업 · GM 지시 2026-09-05) + 배1013 note",
-          "detail": "커밋 fe8e37b52 · 배 11197"
-        },
-        {
           "time": "11:20",
           "area": "작업",
           "event": "7채널 통일 — 잡코리아 나우열M 발송 · GM 붙여넣기 5곳 GM업무 등록",
@@ -842,10 +836,16 @@
           "detail": "커밋 39f202f2d · 배 11197"
         },
         {
-          "time": "16:54",
+          "time": "16:59",
+          "area": "작업",
+          "event": "GM 계정 발신기 --setup — 코드·2단계 비밀번호 인자로(셸 stdin null EOF 회피)",
+          "detail": "커밋 f6d86e128 · 배 11197"
+        },
+        {
+          "time": "16:59",
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 7aa673f6c · 배 11197"
+          "detail": "커밋 fbb13eeab · 배 11197"
         }
       ],
       "count": 55,
@@ -1124,27 +1124,21 @@
           "upload": "✅ 올림 (3f61d2e0c)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-2039",
+          "no": "39",
+          "got": "지금 AI로 가야할 내용들도 업무보고봇으로 다 오는것 같은데? 맞아?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:58",
+          "end": "17:01",
+          "minutes": 2,
+          "upload": "✅ 올림 (b77da8986)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "16:01",
-          "area": "작업",
-          "event": "상담봇 L2 클라이언트 — AWS Bedrock 우선(EC2 IAM 역할·키 0) + 1P 대안 + 3중 가드(일일한도·모델오류 폴백·Bedrock 실패 텔레그램 경고) (배1036 GM)",
-          "detail": "커밋 b7bca5b3a · 배 11286"
-        },
-        {
-          "time": "16:04",
-          "area": "작업",
-          "event": "상담봇 Bedrock 실패 경고 — 오류 종류 미리 안 가리고 전부 알림(실측: 예상한 AccessDenied 아니라 bedrock-mantle DNS 미응답)",
-          "detail": "커밋 1a0ef9d5e · 배 11286"
-        },
-        {
-          "time": "16:06",
-          "area": "작업",
-          "event": "배1036 브리핑 갱신 — Bedrock 클라이언트·3중 가드·실측(DNS NXDOMAIN 발견) 기록",
-          "detail": "커밋 63d0e58d0 · 배 11286"
-        },
         {
           "time": "16:09",
           "area": "작업",
@@ -1306,10 +1300,28 @@
           "area": "작업",
           "event": "텔레그램 「업무관리-나우열M」 방 등록 + 아침 통 라우팅 분리 (GM 지시 2026-09-05 · 배1062)",
           "detail": "커밋 2d0432b54 · 배 11321"
+        },
+        {
+          "time": "16:59",
+          "area": "작업",
+          "event": "알림 등록부 — 나우열M 텔레그램 통 source 형식 통일(체커 0건)",
+          "detail": "커밋 3b3ed8ffc · 배 11321"
+        },
+        {
+          "time": "16:59",
+          "area": "작업",
+          "event": "알림등록부 배1062 항목 source 형식 정정(schtasks 예약작업명 · 경로) — 체커 불일치 0건",
+          "detail": "커밋 29cac785a · 배 11321"
+        },
+        {
+          "time": "17:00",
+          "area": "작업",
+          "event": "알림 한 장 — 하루 양끝(시작·마무리) 카톡↔텔레그램 동기화 소표 (GM 지시 2026-09-05)",
+          "detail": "커밋 b77da8986 · 배 11321"
         }
       ],
-      "count": 22,
-      "done": 22,
+      "count": 23,
+      "done": 23,
       "open": 0,
       "avg_minutes": 1,
       "work_count": 30,
@@ -1928,18 +1940,6 @@
       ],
       "work": [
         {
-          "time": "07:37",
-          "area": "공통",
-          "event": "해밀턴 법인권 문의 GM 결재 플래그·실장 확인 초안 작성",
-          "detail": "커밋 f7e80fcb9 · 배 11165"
-        },
-        {
-          "time": "09:46",
-          "area": "공통",
-          "event": "동일인 3쌍 회원번호 통일(허나래·송의영·김혜경4) — 배995 종결·증거 문서·웰리 배 회신 문안",
-          "detail": "커밋 c3f6fb112 · 배 11165"
-        },
-        {
           "time": "09:47",
           "area": "공통",
           "event": "배987 종결 — 마감 공유 아침 통 첫 라이브 확인(09-05 07:45 ★운영부)",
@@ -2094,13 +2094,37 @@
           "area": "공통",
           "event": "전사일정 9/7 브로제이 API 이벤트에 요청 명세 A3 링크(저장 복구 뒤 재시도)",
           "detail": "커밋 450efce2c · 배 11310"
+        },
+        {
+          "time": "16:59",
+          "area": "멤버십",
+          "event": "매출회원현황보고 서버 판 반영(회원 5칸 서버 재계산·22칸 대조 줄) + membership 담당자 저장 /api/members/write 배선·member_no 동봉",
+          "detail": "커밋 315f0ea72 · 배 11310"
+        },
+        {
+          "time": "17:00",
+          "area": "배",
+          "event": "배1058 회신 완료(시토 질문 답·22칸 판정)",
+          "detail": ""
+        },
+        {
+          "time": "17:00",
+          "area": "배",
+          "event": "배1063 회신 완료(시토 질문 답·22칸 판정)",
+          "detail": ""
+        },
+        {
+          "time": "17:01",
+          "area": "공통",
+          "event": "배1058·1063 회신 종결(시토 질문 3건 답·22칸 판정) + 22칸 정의서 기준일 규칙 추가",
+          "detail": "커밋 e96bdbd7e · 배 11310"
         }
       ],
       "count": 16,
       "done": 15,
       "open": 1,
       "avg_minutes": 3,
-      "work_count": 28,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -2116,7 +2140,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 7
         }
       ],
       "repeats": []
@@ -2303,6 +2327,18 @@
           "upload": "✅ 올림 (70acdcd22)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-5018",
+          "no": "18",
+          "got": "시우 소유관리 페이지 종합접수처 말고, 다른것도 서버가 정본으로 가면 좋을 것 같은데",
+          "did": "",
+          "start": "16:59",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2487,14 +2523,29 @@
           "detail": "커밋 04ea0fe98 · 배 11315"
         }
       ],
-      "count": 15,
+      "count": 16,
       "done": 15,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 5,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-5018",
+          "no": "18",
+          "got": "시우 소유관리 페이지 종합접수처 말고, 다른것도 서버가 정본으로 가면 좋을 것 같은데",
+          "did": "",
+          "start": "16:59",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cbo": {
