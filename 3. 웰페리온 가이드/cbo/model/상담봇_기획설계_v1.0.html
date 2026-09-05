@@ -40,7 +40,7 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 
 <h2>1. 지금 있는 것 · 없는 것 (실측 2026-09-05)</h2>
 <table><tr><th>층</th><th>있음</th><th>없음(이 설계가 채움)</th></tr>
-<tr><td>답변 엔진</td><td>FAQ 매칭 API <code>POST /api/chat/{tenant}</code>(모델 없음 · 어미 정규화 · alt 동의어 · 금지어 관문) — 시토 배1018 라이브 · 실측 8문 정상</td><td>자연문 답(FAQ 근거 한정 모델 답) · 추천 질문 · 대화 이어가기</td></tr>
+<tr><td>답변 엔진</td><td>FAQ 매칭 API <code>POST /api/chat/{tenant}</code>(모델 없음 · 어미 정규화 · alt 동의어 · 금지어 관문) — 시토 배1018 라이브 · 실측 8문 정상</td><td>자연문 답(FAQ 근거 한정 모델 답) · 추천 질문 · 대화 이어가기 · <b>다국어</b>(지금은 한국어만 — 모델 계층에서 질문 언어 감지 → 한국어 FAQ 매칭 → 그 언어로 답 · 1차 영어 · 비용 💰 GM 결재)</td></tr>
 <tr><td>고객 화면</td><td>위젯 1개(다캠 페이지 2장에 부착)</td><td><b>독립 상담봇 페이지</b>(센터별 · 링크 하나 · 모바일 우선)</td></tr>
 <tr><td>관리자</td><td>미답 목록 API(로그인 뒤 · JSON 만)</td><td><b>관리자 페이지</b>(FAQ 편집 · 미답→FAQ 승격 · 통계 · 프로필 · 초안/확정 표시)</td></tr>
 <tr><td>업체 정본</td><td>웰페리온 FAQ 14 · 다캠 FAQ 12(대표 확인 전)</td><td>공통 스키마 → <b>만듦</b>(server/counselbot/schema.md) · 3업체 프로필 → <b>만듦</b>(스포짐 = 전부 미수령)</td></tr>
