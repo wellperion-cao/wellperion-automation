@@ -16,6 +16,7 @@ for f in "$SRC"/{before_after_*,drafts_*}.html; do
 done
 $S "sudo mkdir -p /srv/www/2_dietcamp && sudo chown ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
 $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
+$SCP "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json" $HOST:/srv/erp/faq/2_dietcamp/faq.json   # FAQ 정본 = 저장소 · 서버는 사본
 $SCP server/erp_api/dietcamp.nginx.conf $HOST:/tmp/dietcamp.conf
 $S "sudo mv /tmp/dietcamp.conf /etc/nginx/conf.d/erp-locations/dietcamp.conf && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx && ls -la /srv/www /srv/www/2_dietcamp"
 rm -rf "$TMP"
