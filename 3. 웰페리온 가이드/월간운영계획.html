@@ -363,6 +363,10 @@
   .dg-obj.st-이월 .dg-obj-bar>i{background:linear-gradient(90deg,#8a6633,var(--carry));}
   .dg-obj.st-완료 .dg-obj-p{color:var(--green);} .dg-obj.st-이월 .dg-obj-p{color:var(--carry);} .dg-obj.st-계획 .dg-obj-p{color:var(--dim);}
   .dg-obj-goal{font-size:11px; color:var(--dim); line-height:1.45;}
+  /* 📄 목표 자료 링크(카드·top3 공용) — 주소 기준 정규화는 resolveDocHref() 한 곳에서만 한다. */
+  .dg-docs{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;}
+  .dg-doc{font-size:11px; color:var(--link); text-decoration:none; border:1px solid var(--border); border-radius:6px; padding:1px 7px; background:var(--paper);}
+  .dg-doc:hover{text-decoration:underline;}
   .dg-empty{font-size:11.5px; color:var(--dim); font-weight:600; padding:4px 0;}
   /* 🎯 부서 분기 목표 블록 (2026-07-23 시우 · GM 결재) — 목표=분기 1개 / 도달점·진척=월 */
   .qgoal{border:1px solid var(--border-strong); border-left:3px solid var(--gold); border-radius:4px;
@@ -496,6 +500,8 @@
   .t3-rank.t3-r3{background:var(--accent);}
   .t3-own{font-size:10.5px; color:var(--dim); margin-left:auto; white-space:nowrap; text-align:right;}
   .t3-title{font-size:13.5px; font-weight:700; color:var(--text); line-height:1.35;}
+  .t3-tlink{color:inherit; text-decoration:none;}
+  .t3-tlink:hover{text-decoration:underline;}
   .t3-prog .prog{min-width:0;}
   .t3-ns{display:flex; min-width:0;}
   .t3-ns .chip.ns{white-space:normal; word-break:keep-all; overflow-wrap:break-word;}
@@ -1835,7 +1841,10 @@
           contribBadge(o) +
           '<span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
           '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
-        '<div class="t3-title">' + esc(o.title) + '</div>' +
+        // 제목 = 아래 부서별 내용의 그 과제로 가는 링크. 예전엔 카드 안에서 누를 수 있는 게 북극성 칩
+        // 하나뿐이라 무엇을 눌러도 운영 가이드 S2 로 튀었다(GM 지적 2026-09-05 "이상한 데로 넘어간다").
+        '<div class="t3-title"><a class="t3-tlink" href="#obj-' + esc(o.id || '') + '">' + esc(o.title) + '</a></div>' +
+        objDocsHtml(o) +
         // top3 카드도 상세표·부서카드와 같은 정직 기준(honestyNoEvidence) — GM 지적 원문 예시(웰페리온 ERP/브로제이=2순위·manual)가 바로 이 카드였다.
         '<div class="t3-prog">' + (honestyNoEvidence(o) ? noEvidenceHtml(o) : progBar(effProgress(o), o.status, false, '', false)) + '</div>' +
         '<div class="t3-ns">' + nsBadge(o) + '</div>' +
@@ -2402,6 +2411,42 @@
       'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
     return html;
   }
+  /* 📄 목표 자료 링크 — monthly_ops_plan.json 의 doc/docs[].href 는 coo/chairman/GM업무.html 기준
+     상대경로로 적혀 있다(정본 표기·GM업무.html 이 그 기준으로 그린다). 이 페이지는 가이드 루트에
+     있어 같은 값을 그대로 쓰면 저장소 밖(../../)이나 없는 파일로 튄다 — GM 지적 2026-09-05
+     "사우나 정비 클릭하면 이상한 데로 넘어간다". 그래서 여기서 한 번만 루트 기준으로 되돌린다. */
+  function resolveDocHref(h){
+    h = String(h == null ? '' : h).trim();
+    if(!h || h.charAt(0) === '#' || h.charAt(0) === '/' || /^(https?:)?\/\//.test(h)) return h;
+    var out = [];
+    ('coo/chairman/' + h).split('/').forEach(function(s){
+      if(s === '' || s === '.') return;
+      if(s === '..') out.pop(); else out.push(s);
+    });
+    return out.join('/');
+  }
+  function docLabel(d){
+    if(d && d.label) return d.label;
+    var h = String((d && d.href) || '');
+    if(/docs\.google\.com/.test(h)) return '구글 시트 열기';
+    var base = h.split('#')[0].split('?')[0].split('/').pop() || '';
+    try{ base = decodeURIComponent(base); }catch(e){}
+    return base.replace(/\.(html?|md|png|jpg|pdf)$/i, '') || '자료';
+  }
+  /* 카드에 붙는 자료 링크. doc(단일)과 docs(배열)를 합쳐 중복 주소는 한 번만 그린다. */
+  function objDocsHtml(o){
+    var seen = {}, out = [];
+    var list = (o.doc ? [{href:o.doc}] : []).concat(Array.isArray(o.docs) ? o.docs : []);
+    list.forEach(function(d){
+      if(typeof d === 'string') d = {href:d};
+      if(!d || !d.href) return;
+      var href = resolveDocHref(d.href);
+      if(!href || seen[href]) return;
+      seen[href] = 1;
+      out.push('<a class="dg-doc" href="' + esc(href) + '" target="_blank" rel="noopener">📄 ' + esc(docLabel(d)) + '</a>');
+    });
+    return out.length ? '<div class="dg-docs">' + out.join('') + '</div>' : '';
+  }
   function objHtml(o){
     var st = o.status || '계획';
     var tgt = (o.target && String(o.target).trim()) ? ('<div class="dg-obj-goal">🎯 월 목표: ' + esc(o.target) + '</div>') : '';
@@ -2419,7 +2464,7 @@
         '<span class="dg-obj-t">' + esc(o.title) + '</span>' +
         '<span class="dg-obj-cnt">' + cur + '</span></div>' +
         '<div class="dg-obj-metric">' + esc(m.name || '이번 달 처리 건수') +
-          ' <span class="dg-obj-cnt-note">· 상시 업무라 진척률(%) 대신 건수로 봅니다</span></div>' + tgt + editExtra +
+          ' <span class="dg-obj-cnt-note">· 상시 업무라 진척률(%) 대신 건수로 봅니다</span></div>' + tgt + objDocsHtml(o) + editExtra +
       '</div>';
     }
     // 편집 모드는 정본 progress 필드(저장 대상)를 그대로 보여준다 — 화면 표시만 체크 개수로 바꾼다.
@@ -2434,7 +2479,7 @@
       '<div class="dg-obj-top"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
       '<span class="dg-obj-t">' + esc(o.title) + '</span>' +
       pctCell + '</div>' +
-      barCell + tgt + editExtra +
+      barCell + tgt + objDocsHtml(o) + editExtra +
     '</div>';
   }
   function objsBlockHtml(cfg, objs){
