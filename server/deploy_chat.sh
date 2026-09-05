@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # AEO 채팅봇 백엔드 배포(배1018 · 시토) — 이 PC(git-bash)에서 실행. 서버 = AWS 15.164.151.105.
 #   bash server/deploy_chat.sh
+# 서버 사전 설치(1회 · 이미 함 · 이 스크립트가 다시 안 함): pip3 install --user anthropic boto3 —
+#   L2 컨시어지 엔진(배1036)이 AWS Bedrock(AnthropicBedrockMantle · EC2 IAM 역할 · 키 0)을 쓴다.
 # 하는 일: api_chat.py + diet_camp_agent.py(금지어 관문 재사용) 를 /srv/erp/api/ 에 올리고,
 #   센터별 faq.json 을 없을 때만 /srv/erp/faq/{tenant}/ 에 심고(있으면 안 건드린다 — 이미 채워둔 내용 보호.
 #   /srv/www 가 아니라 /srv/erp/faq 인 이유 = /srv/www/1_wellperion 은 git 저장소 체크아웃 심볼릭 링크라

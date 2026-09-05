@@ -75,7 +75,7 @@ CLOSE_DAYS_PATH = os.environ.get(
     "ERP_CLOSE_DAYS",
     "/srv/erp/www/status/close_days.json" if os.path.isdir("/srv/erp/www") else
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "status", "close_days.json"))
-COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "claude-sonnet-5")   # 배1036 GM 구조전환 — 한 줄로 claude-opus-5 전환
+COUNSEL_MODEL = os.environ.get("COUNSEL_MODEL", "global.anthropic.claude-sonnet-5")   # 한 줄로 opus-5 전환(Bedrock 크로스리전 id)
 _SESSION_TURNS = 6     # 배1036 GM 구조전환② — 대화 문맥(최근 N턴)
 _SESSION_MAX = 2000    # ponytail: 세션 상한 없으면 메모리 누수 — 오래된 세션 정리는 재시작뿐(필요해지면 TTL 추가)
 _SESSIONS: dict = {}   # session_id -> [{"role":..,"content":..}, ...] · 프로세스 메모리(재시작하면 비워짐 · FAILS 패턴과 동일)
@@ -206,8 +206,8 @@ async def chat(tenant: str, request: Request):
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
-    # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음 = "error"(레거시 매칭 백업으로).
-    text, status = _concierge_answer(tenant, q, session_id)
+    # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
+    text, status = (None, "error") if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
         _log(tenant, q, True, None)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
@@ -418,11 +418,15 @@ def _persona_of(tenant: str) -> dict:
     return (_load_profile(tenant).get("identity") or {}).get("counselor_persona") or {}
 
 
-# ── 배1036 GM 추가 지시(2026-09-05) — 자연문 재작성 계층(L2) ─────────────────────────────
-# ①FAQ 문장 그대로가 아니라 진짜 상담원처럼 말하기 ②질문이 영어면 영어로 ③서버에 ANTHROPIC_API_KEY 가
-# 없으면 이 계층 전체를 건너뛰고 item['a'] 그대로(회귀 0 — 지금 서버엔 키가 없다·GM 결재 뒤 시토가 넣는다).
+# ── L2 클라이언트 — AWS Bedrock 우선(배1036 GM · 계정 cao 통일 · 키 대신 EC2 IAM 역할) ──────
+# 우선순위: Bedrock(AnthropicBedrockMantle · 키 0) → 1P(ANTHROPIC_API_KEY 있으면 대안) → None(백업).
 _ANTHROPIC_CLIENT = (None, False)   # (client|None, tried) — 최초 1회만 만들고 재사용(요청마다 새 client 금지)
 _DIGITS_RE = re.compile(r"\d+")
+BEDROCK_REGION = os.environ.get("ERP_BEDROCK_REGION", "ap-northeast-2")
+BEDROCK_ERROR_WORDS = ("AccessDenied", "ResourceNotFound", "UnrecognizedClient")   # 사용 사례 미제출 상태(지금) 예상 오류
+BEDROCK_ALERT_FLAG = os.environ.get("ERP_BEDROCK_ALERT_FLAG", "/srv/erp/bedrock_alert.txt")
+DAILY_QUESTION_LIMIT = 300   # 테넌트당 하루 이 수를 넘으면 백업 매칭으로 자동 전환(가드①)
+_DAILY_COUNTS: dict = {}     # (tenant, "YYYY-MM-DD") -> count · 프로세스 메모리(재시작하면 리셋 — ponytail: 하루살이라 문제없음
 
 
 def _anthropic_client():
@@ -430,7 +434,12 @@ def _anthropic_client():
     client, tried = _ANTHROPIC_CLIENT
     if tried:
         return client
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    try:
+        from anthropic import AnthropicBedrockMantle
+        client = AnthropicBedrockMantle(aws_region=BEDROCK_REGION)
+    except Exception:
+        client = None   # boto3·SDK 없음 등 — 1P 로 대안
+    if client is None and os.environ.get("ANTHROPIC_API_KEY"):
         try:
             import anthropic
             client = anthropic.Anthropic()
@@ -438,6 +447,38 @@ def _anthropic_client():
             client = None   # ponytail: SDK 미설치 — 키가 와도 이 계층은 그냥 스킵(회귀 0 유지)
     _ANTHROPIC_CLIENT = (client, True)
     return client
+
+
+def _tg_alert_bedrock_once(text: str) -> None:
+    """Bedrock 접근 오류(AccessDenied 등) 하루 1회만 업무보고방 경고 — 매 요청마다 스팸 금지."""
+    today = _kst_now()[:10]
+    try:
+        if Path(BEDROCK_ALERT_FLAG).read_text(encoding="utf-8").strip() == today:
+            return
+    except OSError:
+        pass
+    token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
+    if token and chat:
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                "https://api.telegram.org/bot%s/sendMessage" % token,
+                data=json.dumps({"chat_id": chat, "text": text}).encode(),
+                headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=8)
+        except Exception:
+            pass   # 알림 실패해도 서비스는 계속(이미 백업으로 넘어간 뒤다)
+    try:
+        Path(BEDROCK_ALERT_FLAG).write_text(today, encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _over_daily_limit(tenant: str) -> bool:
+    """테넌트당 하루 질문 300건 넘으면 백업 매칭으로(가드① · 배1036 GM 3중 가드)."""
+    key = (tenant, _kst_now()[:10])
+    _DAILY_COUNTS[key] = _DAILY_COUNTS.get(key, 0) + 1
+    return _DAILY_COUNTS[key] > DAILY_QUESTION_LIMIT
 
 
 def _is_english_q(q: str) -> bool:
@@ -551,7 +592,10 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
             messages=history + [{"role": "user", "content": q + lang_hint}],
         )
         text = "".join(b.text for b in resp.content if b.type == "text").strip()
-    except Exception:
+    except Exception as e:
+        if any(w in str(e) for w in BEDROCK_ERROR_WORDS):
+            _tg_alert_bedrock_once("⚠️ 상담봇 Bedrock 호출 실패(%s) — FAQ 백업으로 자동 전환 중. 모델 액세스·권한 확인 필요."
+                                    % next((w for w in BEDROCK_ERROR_WORDS if w in str(e)), "오류"))
         return None, "error"
     if not text or _forbidden_hit(text) or not _grounded(text, system):
         return None, "invalid"
@@ -682,6 +726,13 @@ def _selfcheck() -> None:
     text, status = _concierge_answer("1_wellperion", "테스트 질문", "")
     assert text is None and status == "error", (text, status)
     _ANTHROPIC_CLIENT = saved
+
+    # 배1036 GM 3중 가드 — ① 일일 한도(가짜 테넌트 키로 실 카운터 안 건드림).
+    key_tenant = "__selfcheck__"
+    for _ in range(DAILY_QUESTION_LIMIT):
+        assert _over_daily_limit(key_tenant) is False
+    assert _over_daily_limit(key_tenant) is True   # 301번째 — 한도 초과
+    _DAILY_COUNTS.pop((key_tenant, _kst_now()[:10]), None)   # 자체점검 잔여 제거
     print("api_chat selfcheck ok")
 
 
