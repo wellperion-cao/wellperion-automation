@@ -273,3 +273,29 @@ CREATE TABLE IF NOT EXISTS misc_cache (
   synced_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, gas, action, params)
 );
+
+-- 문의 유입 경로 칸 (배 925 · status/briefs/CMO-유입경로-발행원장-정의서-20260903.md 표 A · 2026-09-05).
+-- channel_code 11종(6종 채널+5종 특수값, unknown=기록없음) + post_id(publish_ledger 참조, 없으면 NULL).
+-- 기존 문의 행은 DEFAULT 'unknown'이 그대로 채운다(GM 확정: 소급 안 채움 = unknown 명시값으로 채움).
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS channel_code        TEXT NOT NULL DEFAULT 'unknown';
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS post_id             TEXT;
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS channel_captured_at TEXT;
+CREATE INDEX IF NOT EXISTS ix_inq_channel ON inquiries (tenant_id, channel_code, post_id);
+
+-- 콘텐츠 발행 원장 (배 925 · 같은 정의서 표 B · 2026-09-05). review_queue.json 179건의 이관처.
+-- 핵심 칸만 컬럼으로 두고, 제작·검수 파이프라인 부속 칸(folder/preview/slides/... )은 meta JSONB 한 칸에 그대로 싣는다
+-- (버리지 않음 — 정의서 §3). reach/save/inquiry_count 는 저장하지 않는다(매번 계산, 약속 L01).
+CREATE TABLE IF NOT EXISTS publish_ledger (
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  post_id       TEXT NOT NULL,
+  title         TEXT,
+  channel_code  TEXT NOT NULL DEFAULT 'unknown',
+  format        TEXT NOT NULL DEFAULT 'unknown',
+  external_url  TEXT,
+  status        TEXT,
+  published_at  TEXT,
+  note          TEXT,
+  meta          JSONB,
+  synced_at     TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, post_id)
+);
