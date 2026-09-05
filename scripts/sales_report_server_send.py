@@ -49,7 +49,7 @@ def main():
         return 1
 
     png = render.render_png(report, OUT_PNG)
-    caption = "서버 판(병행) · 22칸 대조 %d/%d 일치" % (report["matched"], report["total"])
+    caption = "서버 판(병행) · 기준일 %s · 22칸 대조 %d/%d 일치" % (report["ref_date"], report["matched"], report["total"])
     if report["mismatches"]:
         caption += " · 불일치: " + ", ".join(report["mismatches"])
 

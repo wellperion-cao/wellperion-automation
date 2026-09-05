@@ -7,8 +7,10 @@ member_owner_save(종목별 담당자 5칸) 만 여기서 서버 원장(members)
 나머지 6종(member_active_update 등)은 아직 이 라우트에 안 왔다 — 501 로 /api/write(GAS 경로)를 쓰라고
 안내한다(화면이 잘못 붙어도 조용히 실패하지 않게). 정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-2.
 
-행 찾기: 전화 정규화 첫 매칭 1행. GAS 는 "시트 맨 위 행"이 첫 매칭이지만 서버엔 행 순서가 없어 member_no
-오름차순으로 대신한다(스펙에 없는 결정 — 시포에게 확인 요청, status/briefs/CTO-...-질문 참고).
+행 찾기: payload 에 member_no 가 있으면 번호로 먼저 찾고 전화도 일치해야 한다(불일치=400 거부 · GAS 는
+member_no 를 무시하고 그대로 write-through). member_no 가 없으면 전화 정규화 첫 매칭 1행 — GAS 는
+"시트 맨 위 행"이 첫 매칭이지만 서버엔 행 순서가 없어 member_no 오름차순으로 대신한다(시포 회신
+2026-09-05: 실질 문제 사례 있으면 재검토).
 '컬럼 미발견' 오류는 서버에서 뺐다 — schema.sql 이 5칸을 고정 보장해 발생할 수 없다.
 
 자체점검: python3 api_members_write.py   (DB·네트워크 없음 — 필드매핑·마스킹·직원표기 판정만)
@@ -81,6 +83,7 @@ async def members_write(request: Request):
         return {"ok": False, "error": "no member"}
     value = str(payload.get("value") if payload.get("value") is not None else "").strip()
     staff = _log_who(payload)
+    member_no_in = str(payload.get("member_no") or "").strip()
     user = request.headers.get("x-erp-user", "")
     now = api_write._now_kst()
 
@@ -89,14 +92,23 @@ async def members_write(request: Request):
     except db.Error as e:
         return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
 
-    not_found, member_no, log_id = False, None, None
+    not_found, mismatch, member_no, log_id = False, False, None, None
     with conn:
-        row = conn.execute(
-            ("SELECT member_no, name, phone, {col} AS val FROM members"
-             " WHERE tenant_id=%s AND scope='valid' AND phone=%s ORDER BY member_no LIMIT 1 FOR UPDATE").format(col=col),
-            (db.TENANT, phone)).fetchone()
+        if member_no_in:
+            row = conn.execute(
+                ("SELECT member_no, name, phone, {col} AS val FROM members"
+                 " WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE").format(col=col),
+                (db.TENANT, member_no_in)).fetchone()
+            if row and _norm_phone(row["phone"]) != phone:
+                mismatch, row = True, None
+        else:
+            row = conn.execute(
+                ("SELECT member_no, name, phone, {col} AS val FROM members"
+                 " WHERE tenant_id=%s AND scope='valid' AND phone=%s ORDER BY member_no LIMIT 1 FOR UPDATE").format(col=col),
+                (db.TENANT, phone)).fetchone()
         if not row:
-            not_found = True
+            if not mismatch:
+                not_found = True
         else:
             member_no = row["member_no"]
             old_value = row["val"] or ""
@@ -116,6 +128,11 @@ async def members_write(request: Request):
                 " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
                 (db.TENANT, now, action, json.dumps(payload_log, ensure_ascii=False), user, "pending", None)
             ).fetchone()[0]
+    if mismatch:
+        conn.close()
+        return JSONResponse(status_code=400, content={
+            "ok": False, "error": "member_no-phone-mismatch", "noRetry": True,
+            "detail": "회원번호(%s)와 전화번호가 일치하지 않습니다" % member_no_in})
     if not_found:
         conn.close()
         return {"ok": False, "error": "no member"}
@@ -132,7 +149,7 @@ async def members_write(request: Request):
     conn.close()
     api_write._schedule_sync("sync_members.py")
     return {"ok": True, "phone": phone, "field": field, "value": value, "rowIndex": member_no,
-            "_source": "server", "gas_status": gas_status}
+            "member_no": member_no, "_source": "server", "gas_status": gas_status}
 
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기 자체점검(서버·DB 없이)
