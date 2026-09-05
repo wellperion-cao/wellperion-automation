@@ -71,6 +71,10 @@ def build():
         html = TEMPLATE.format(src_rel=src_rel, lang=lang, title=title,
                                 page_id=page_id, fragment=fragment)
         out_path = PUBLIC / out_rel
+        # GM 지시 2026-09-05 — 종합접수처 최종본 잠금: 잠긴 출력 페이지는 다시 쓰지 않는다
+        import precommit_reception_freeze_guard as _frz
+        if _frz.blocked_paths([out_path.relative_to(ROOT).as_posix()]):
+            print(f"skip(잠금) {out_path.relative_to(ROOT).as_posix()}"); continue
         out_path.write_text(html, encoding="utf-8")
         print(f"built {out_path.relative_to(ROOT).as_posix()}  <- {src_rel}")
 

@@ -1999,6 +1999,11 @@ def main() -> int:
     args = ap.parse_args()
     global _FORCE
     _FORCE = bool(args.force)
+    # GM 지시 2026-09-05 — 종합접수처 최종본 잠금: 잠긴 페이지에 쓰는 모드는 전부 거부(읽기 모드 drift/inspect 는 통과)
+    if args.mode not in ("drift", "inspect", "setup") and args.post_id:
+        import precommit_reception_freeze_guard as _frz
+        if _frz.blocked_post(args.post_id):
+            print(_frz.message(["워드프레스 페이지 %s" % args.post_id])); return 1
     if args.mode == "drift":
         return run_drift(args.post_id)
     if args.mode == "setup":

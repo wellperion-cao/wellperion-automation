@@ -472,6 +472,7 @@ _HOOK_GUARDS = (
     ("queue", "precommit_queue_guard.py"),
     ("erp_anchor", "precommit_erp_anchor_guard.py"),
     ("sheet_link", "precommit_sheet_link_guard.py"),
+    ("reception_freeze", "precommit_reception_freeze_guard.py"),  # GM 지시 2026-09-05 · 접수처 최종본 잠금
 )
 
 
