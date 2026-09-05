@@ -357,11 +357,11 @@
           "ref": "GM-20260905-33",
           "no": "33",
           "got": "업무관리 방에서 업무보고봇 자동응답(GM 전달사항 접수했습니다) 반응 안 해도 됨",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "1065 그룹 게이트 + 89969b9f2 · 재기동 완료",
           "start": "17:01",
-          "end": "17:02",
-          "minutes": 0,
-          "upload": "✅ 올림 (2a98f9c59)",
+          "end": "17:16",
+          "minutes": 14,
+          "upload": "✅ 올림 (89969b9f2)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -385,7 +385,7 @@
           "start": "17:12",
           "end": "17:13",
           "minutes": 1,
-          "upload": "✅ 올림 (bc58680b4)",
+          "upload": "✅ 올림 (feccc4a26)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -733,7 +733,7 @@
           "start": "17:11",
           "end": "17:11",
           "minutes": 0,
-          "upload": "✅ 올림 (bc58680b4)",
+          "upload": "✅ 올림 (feccc4a26)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -745,7 +745,7 @@
           "start": "17:11",
           "end": "17:13",
           "minutes": 1,
-          "upload": "✅ 올림 (bc58680b4)",
+          "upload": "✅ 올림 (feccc4a26)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -757,18 +757,24 @@
           "start": "17:13",
           "end": "17:15",
           "minutes": 1,
-          "upload": "✅ 올림 (bc58680b4)",
+          "upload": "✅ 올림 (feccc4a26)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-1043",
+          "no": "43",
+          "got": "업무관리방에서 우열M에게 전달되는 업무는 CHRO가 인지해서 업무 SSOT로 만들어서 올린다고하니까 웰리는 그것을 추적해서 업무 진행 현황 및 보고까지 마무리 되면 될듯",
+          "did": "",
+          "start": "17:17",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "11:28",
-          "area": "작업",
-          "event": "시스템 현황 카드에 부팅 로드 한 줄 추가",
-          "detail": "커밋 d8f77084e · 배 11284"
-        },
         {
           "time": "11:31",
           "area": "작업",
@@ -938,20 +944,41 @@
           "detail": "커밋 bc58680b4 · 배 11197"
         },
         {
-          "time": "17:14",
+          "time": "17:18",
+          "area": "작업",
+          "event": "업무관리 방 규약 §8 추적·보고 루프(GM 확정) · 배1068 확장 · 잡코리아 지시 SSOT 등록 실증",
+          "detail": "커밋 feccc4a26 · 배 11197"
+        },
+        {
+          "time": "17:19",
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 f6d0cf34c · 배 11197"
+          "detail": "커밋 6c6fad59d · 배 11197"
         }
       ],
-      "count": 63,
+      "count": 64,
       "done": 63,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-1043",
+          "no": "43",
+          "got": "업무관리방에서 우열M에게 전달되는 업무는 CHRO가 인지해서 업무 SSOT로 만들어서 올린다고하니까 웰리는 그것을 추적해서 업무 진행 현황 및 보고까지 마무리 되면 될듯",
+          "did": "",
+          "start": "17:17",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -1238,12 +1265,6 @@
         {
           "time": "16:30",
           "area": "작업",
-          "event": "상담봇 모델 비교 — Sonnet 4.6 vs Opus 4.6 5문 실측(속도·원가·품질) · 라이브는 sonnet-4-6 유지 (배1036)",
-          "detail": "커밋 7cfff0c74 · 배 11286"
-        },
-        {
-          "time": "16:30",
-          "area": "작업",
           "event": "전사일정 GAS 속성창 500KB 총량 천장 — 백업 3벌 Drive 이관으로 211건 저장 복구 (배1056)",
           "detail": "커밋 ac65fdbe7 · 배 11286"
         },
@@ -1414,6 +1435,12 @@
           "area": "작업",
           "event": "서버 쓰기 관문 success→gas-error 오판 수리 — pushback.judge 와 판정 통일 (배1067)",
           "detail": "커밋 69279deee · 배 11321"
+        },
+        {
+          "time": "17:19",
+          "area": "작업",
+          "event": "/home/ 미리보기 — 시모 자족화(d9c08eac2) 뒤 밖 경로 개방 5종 회수, /home/+파비콘만",
+          "detail": "커밋 ab2da9fbe · 배 11321"
         }
       ],
       "count": 23,
@@ -1660,12 +1687,6 @@
       ],
       "work": [
         {
-          "time": "09:53",
-          "area": "작업",
-          "event": "[CMO][CMO-2026-09-04-새-홈-GEO-내용층] [DONE][CMO][CMO-2026-09-03-내-모듈-AWS-라인-얹기] 배970·935 입항 — 라이브 확인 증거 note",
-          "detail": "커밋 5786ccae3 · 배 11199"
-        },
-        {
           "time": "10:19",
           "area": "작업",
           "event": "검수 미리보기 8장 적재 — review_queue 가 참조하는데 미커밋으로 남아 라이브 검수 화면에서 404 나던 것 (참조 없는 1장은 삭제)",
@@ -1838,6 +1859,12 @@
           "area": "작업",
           "event": "새 홈 공개 경로 자족화 — 360 뷰어·프레임·사진 29장을 home/ 안으로 이동(로그인 뒤 경로 참조 제거) · page_ping 제거(공개 페이지) · 참조 8곳 갱신 (배923 · 시토 /home/ 무인증",
           "detail": "커밋 d9c08eac2 · 배 11298"
+        },
+        {
+          "time": "17:19",
+          "area": "작업",
+          "event": "배923 진행 복귀(공개 홈 자족화·GM 검수 주소) · 배999/896/1007 실측 note",
+          "detail": "커밋 ad94b5d8e · 배 11298"
         }
       ],
       "count": 19,
@@ -1860,7 +1887,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 14
+          "waited": 17
         }
       ],
       "repeats": []
@@ -2068,7 +2095,7 @@
           "start": "17:09",
           "end": "17:12",
           "minutes": 3,
-          "upload": "✅ 올림 (524a42472)",
+          "upload": "✅ 올림 (104c65e82)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2080,18 +2107,12 @@
           "start": "17:10",
           "end": "17:10",
           "minutes": 0,
-          "upload": "✅ 올림 (524a42472)",
+          "upload": "✅ 올림 (104c65e82)",
           "open": false,
           "evidence": "⚠️없음"
         }
       ],
       "work": [
-        {
-          "time": "10:40",
-          "area": "공통",
-          "event": "A3 바이크 3사 현황 갱신 — 매트릭스 09-04 방문 완료·견적 09-07주 대기·라이프피트니스 금액 미수령 명시",
-          "detail": "커밋 38087af25 · 배 11165"
-        },
         {
           "time": "10:53",
           "area": "공통",
@@ -2265,6 +2286,12 @@
           "area": "공통",
           "event": "회원쓰기 member_no 우선매칭 + 매출보고 기준일 재계산 (시포 1058/1063 회신 반영)",
           "detail": "커밋 b57591851 · 배 11310"
+        },
+        {
+          "time": "17:17",
+          "area": "멤버십",
+          "event": "매출회원현황보고 서버 판 줄 — /api/report/sales_report_cells(기준일=어제·발송본과 동일) 우선, 없으면 지금 계산 폴백(배1071)",
+          "detail": "커밋 104c65e82 · 배 11310"
         }
       ],
       "count": 18,
@@ -2480,7 +2507,7 @@
           "start": "17:06",
           "end": "17:10",
           "minutes": 3,
-          "upload": "✅ 올림 (8708243cc)",
+          "upload": "✅ 올림 (36045ec7b)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2492,18 +2519,12 @@
           "start": "17:10",
           "end": "17:15",
           "minutes": 4,
-          "upload": "✅ 올림 (8708243cc)",
+          "upload": "✅ 올림 (36045ec7b)",
           "open": false,
           "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "15:12",
-          "area": "작업",
-          "event": "종합접수처 현황 옛 주소(깃허브·WP 사본) → 3초 뒤 ERP 주소로 자동 이동 — 안내만 있어 실무진이 '습득물 안 된다'고 신고하던 것 (GM 2026-09-05)",
-          "detail": "커밋 5251c9232 · 배 11180"
-        },
         {
           "time": "15:16",
           "area": "작업",
@@ -2677,6 +2698,12 @@
           "area": "GM지시",
           "event": "영상 숨김 규칙(시우 09-05) 제거 — 리포 4벌 + 라이브 8394·8408 교체 · 3줄=2열 카드 6장 정상",
           "detail": "GM-20260905-COO-kiosk-inquiry-video"
+        },
+        {
+          "time": "17:18",
+          "area": "작업",
+          "event": "배1073 접수(시토 1067 회신) → 1070 note 합침",
+          "detail": "커밋 36045ec7b · 배 11315"
         }
       ],
       "count": 18,
