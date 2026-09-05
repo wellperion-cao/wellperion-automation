@@ -76,14 +76,15 @@ def _replace(conn, table, cols, recs):
 
 
 def replace_board(conn, rows, now):
+    # 테스트/더미 접수는 미러에 안 싣는다(AWS DB 더미 전수정리 · 2026-09-05) — 시트 자체는 손대지 않는다.
     recs = [(db.TENANT, str(r["regId"]), r.get("category"), r.get("dept"), r.get("status"), r.get("createdAt"),
-             json.dumps(r, ensure_ascii=False), now) for r in rows if r.get("regId")]
+             json.dumps(r, ensure_ascii=False), now) for r in rows if r.get("regId") and not db.is_test_payload(r)]
     return _replace(conn, "reception_items", ["tenant_id", "reg_id", "category", "dept", "status", "created_at", "data", "synced_at"], recs)
 
 
 def replace_lost(conn, rows, now):
     recs = [(db.TENANT, str(r["foundId"]), r.get("status"), r.get("createdAt"), json.dumps(r, ensure_ascii=False), now)
-            for r in rows if r.get("foundId")]
+            for r in rows if r.get("foundId") and not db.is_test_payload(r)]
     return _replace(conn, "lost_found", ["tenant_id", "found_id", "status", "created_at", "data", "synced_at"], recs)
 
 
@@ -156,12 +157,13 @@ def selftest():
     db.init_schema(conn)
     assert js_hash("abc") == "96354", js_hash("abc")          # JS ((h<<5)-h+c)|0 과 같은 값
     assert js_hash("휴회완료키") == js_hash("휴회완료키")
-    board = [{"regId": "R1", "category": "컴플레인 접수", "status": "접수"}, {"regId": "R2", "status": "완료"}, {"content": "id없음"}]
+    board = [{"regId": "R1", "category": "컴플레인 접수", "status": "접수"}, {"regId": "R2", "status": "완료"},
+              {"content": "id없음"}, {"regId": "R3", "content": "테스트 중 입니다."}]
     hold = [{"intakeRow": 2, "name": "홍 길동", "phone": "010-1234-5678", "start": "2026-09-01"}, {"intakeRow": 3, "name": "김철수"}]
     try:
-        assert replace_board(conn, board, "t0") == 2, "regId 없는 행은 버린다"
+        assert replace_board(conn, board, "t0") == 2, "regId 없는 행·테스트 더미 행은 버린다"
         assert replace_board(conn, board[:1], "t1") == 1, "통째로 교체"
-        assert replace_lost(conn, [{"foundId": "F1"}, {}], "t1") == 1
+        assert replace_lost(conn, [{"foundId": "F1"}, {}, {"foundId": "F2", "itemDesc": "테스트입니다"}], "t1") == 1, "더미 습득물은 버린다"
         assert replace_hold(conn, hold, {js_hash("01012345678|20260901|홍길동")}, "t1") == 2
         done = dict(conn.execute("SELECT intake_row, done FROM hold_items WHERE tenant_id=%s", (db.TENANT,)).fetchall())
         assert done == {"2": True, "3": False}, done

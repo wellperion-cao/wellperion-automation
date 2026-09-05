@@ -114,13 +114,16 @@ def streak_ok_days(forms, today):
 
 # ── DB 에서 원장·미러를 읽어 오는 자리 (판정 로직은 위, 여기는 조회만) ────────────────────
 def _load(conn, db, since):
+    # gas_status='test' 행은 뺀다(2026-09-05) — 격리된 테스트 페이로드는 GAS 로 안 보내 미러에도 없다 —
+    # 대조에 넣으면 매번 "시트 도달 못 증명"으로 잡혀 3일 무결 스트릭을 헛되이 끊는다.
     intake = {}
     for r in conn.execute("SELECT form, received_at, payload, gas_status FROM intake_log"
-                          " WHERE tenant_id=%s AND received_at >= %s", (db.TENANT, since)).fetchall():
+                          " WHERE tenant_id=%s AND received_at >= %s AND gas_status != 'test'",
+                          (db.TENANT, since)).fetchall():
         intake.setdefault(r["form"], []).append((r["received_at"], r["payload"] or {}, r["gas_status"]))
     writes = [(r["at"], r["payload"] or {}, r["gas_status"]) for r in
-              conn.execute("SELECT at, payload, gas_status FROM write_log WHERE tenant_id=%s AND at >= %s",
-                           (db.TENANT, since)).fetchall()]
+              conn.execute("SELECT at, payload, gas_status FROM write_log WHERE tenant_id=%s AND at >= %s"
+                          " AND gas_status != 'test'", (db.TENANT, since)).fetchall()]
     inq, rec = {}, {}
     for r in conn.execute("SELECT timestamp, phone FROM inquiries WHERE tenant_id=%s AND type = ANY(%s)"
                           " AND timestamp >= %s", (db.TENANT, list(CAT_MIRROR.values()), since)).fetchall():

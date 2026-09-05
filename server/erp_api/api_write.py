@@ -195,14 +195,21 @@ async def write(request: Request):
     if prev is not None:
         conn.close()
         return prev
+    # 테스트/더미 페이로드 격리(AWS DB 더미 전수정리 · 2026-09-05) — 저장은 하되 GAS 로 안 보내고
+    # 미러 동기화·리셉션 실패대비 정본도 안 건드린다. 운영 화면·집계는 gas_status='test' 행을 그대로 뺀다.
+    is_test = db.is_test_payload(payload)
     area = origin_switch.WRITE_AREA.get(dest)
-    server_mode = bool(area) and origin_switch.mode(area) == "server"   # 스위치 한 줄 — 재시작 없이 갈린다
+    server_mode = bool(area) and origin_switch.mode(area) == "server" and not is_test   # 스위치 한 줄 — 재시작 없이 갈린다
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
             " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
             (db.TENANT, _now_kst(), action, json.dumps(redact_blobs(payload), ensure_ascii=False), user,
-             "queued" if server_mode else "pending", body.decode("utf-8") if server_mode else None)).fetchone()[0]
+             "test" if is_test else ("queued" if server_mode else "pending"),
+             body.decode("utf-8") if server_mode else None)).fetchone()[0]
+    if is_test:
+        conn.close()
+        return {"ok": True, "test": True, "id": log_id}
     if server_mode:
         # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
         conn.close()

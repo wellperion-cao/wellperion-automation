@@ -115,15 +115,23 @@ async def intake(form: str, request: Request):
         return Response(json.dumps({"ok": False, "error": "action-not-allowed"}, ensure_ascii=False),
                         status_code=400, media_type="application/json; charset=utf-8", headers=CORS)
     tenant = "selftest" if form == "selftest" else db.TENANT
-    server_mode = origin_switch.mode(form) == "server"      # 스위치 파일 한 줄 — 재시작 없이 갈린다
+    # 테스트/더미 페이로드 격리(AWS DB 더미 전수정리 · 2026-09-05) — selftest 폼은 이미 tenant 로 갈라져 있어 제외.
+    # 저장은 하되 GAS 로 안 보낸다 — 실제 접수·문의 시트에 개발 테스트 행이 안 쌓인다(재유입 차단).
+    is_test = form != "selftest" and db.is_test_payload(payload)
+    server_mode = origin_switch.mode(form) == "server" and not is_test   # 스위치 파일 한 줄 — 재시작 없이 갈린다
     conn = db.connect()
     with conn:
         row_id = conn.execute(
             "INSERT INTO intake_log (tenant_id, form, received_at, payload, gas_status, raw_body)"
             " VALUES (%s,%s,%s,%s::jsonb,%s,%s) RETURNING id",
             (tenant, form, _kst_now(), json.dumps(redact_blobs(payload), ensure_ascii=False),
-             "queued" if server_mode else "pending", text if server_mode else None)).fetchone()[0]
+             "test" if is_test else ("queued" if server_mode else "pending"),
+             text if server_mode else None)).fetchone()[0]
     # 여기까지 오면 DB 엔 남았다 — 아래가 실패해도 접수는 잃지 않는다.
+    if is_test:
+        conn.close()
+        out = {"ok": True, "id": _receipt_id(), "form": form, "test": True, "row": row_id}
+        return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
     if server_mode:
         conn.close()
         out = {"ok": True, "id": _receipt_id(), "form": form, "queued": True, "mode": "server", "row": row_id}
@@ -168,7 +176,7 @@ def health():
     conn = db.connect(readonly=True)
     with conn:
         rows = conn.execute("SELECT form, COUNT(*) c,"
-                            " SUM(CASE WHEN gas_status IN ('200','skipped','queued') THEN 0 ELSE 1 END) bad,"
+                            " SUM(CASE WHEN gas_status IN ('200','skipped','queued','test') THEN 0 ELSE 1 END) bad,"
                             " COUNT(*) FILTER (WHERE " + _UNPUSHED + ") queued,"
                             " MAX(received_at) last FROM intake_log WHERE tenant_id=%s GROUP BY form",
                             (db.TENANT,)).fetchall()

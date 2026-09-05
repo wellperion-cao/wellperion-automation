@@ -101,6 +101,8 @@ def replace_type(conn, kind, rows, now):
         key = str(r.get("rowKey") or r.get("rowIndex") or "")
         if not key:
             continue
+        if db.is_test_payload(r):    # 테스트/더미 문의는 미러에 안 싣는다(AWS DB 더미 전수정리 · 2026-09-05)
+            continue
         ts = r.get("timestamp")
         recs.append((
             db.TENANT, "%s|%s" % (kind, key), kind, key,
@@ -155,9 +157,10 @@ def selftest():
     conn = db.connect()
     rows = [{"rowKey": "a", "name": "홍길동", "timestamp": "2026-01-01"},
             {"rowKey": "b", "name": "김철수", "timestamp": "2026-02-01"},
-            {"name": "키없음"}]
+            {"name": "키없음"},
+            {"rowKey": "c", "name": "테스트", "phone": "123", "note": "테스트", "timestamp": "2026-01-01"}]
     try:
-        assert replace_type(conn, "멤버십", rows, "t0") == 2, "rowKey 없는 행은 버린다"
+        assert replace_type(conn, "멤버십", rows, "t0") == 2, "rowKey 없는 행·테스트 더미 행은 버린다"
         assert replace_type(conn, "멤버십", rows[:1], "t1") == 1, "같은 유형은 통째로 교체"
         assert conn.execute("SELECT COUNT(*) FROM inquiries WHERE tenant_id=%s", (db.TENANT,)).fetchone()[0] == 1
         replace_type(conn, "성인강습", rows, "t1")
