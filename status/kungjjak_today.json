@@ -500,12 +500,6 @@
       ],
       "work": [
         {
-          "time": "10:48",
-          "area": "작업",
-          "event": "모호 판정 4요소 — 대상·범위·용어·의도 빠지면 즉시 deep-interview 카드 (GM 확정 2026-09-05 · 약속 L14 · ai-ceo.md §1)",
-          "detail": "커밋 02d83cfc2 · 배 11197"
-        },
-        {
           "time": "10:53",
           "area": "작업",
           "event": "배1013(웰리 부팅 다이어트)·배1014(시토 boot_pack 슬라이스) 등록 — GM 지시 2026-09-05",
@@ -674,10 +668,16 @@
           "detail": "커밋 02d21bcd1 · 배 11197"
         },
         {
-          "time": "15:48",
+          "time": "15:54",
+          "area": "작업",
+          "event": "시우 배920 분리수거장 현수막 — 실장 경유 준용M 회신 요청(9/8) 발송",
+          "detail": "kakao 15:54:15 · 마감 9/11 GM 확정"
+        },
+        {
+          "time": "15:54",
           "area": "작업",
           "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 7a1551aeb · 배 11197"
+          "detail": "커밋 477129e3a · 배 11197"
         }
       ],
       "count": 41,
@@ -936,18 +936,6 @@
       ],
       "work": [
         {
-          "time": "14:55",
-          "area": "작업",
-          "event": "채팅봇 FAQ 매칭 — 어미·조사 정규화 + 교집합 2개 이상·0.5 로 오답(주차→정원제) 차단 (배1018 후속)",
-          "detail": "커밋 86276578b · 배 11220"
-        },
-        {
-          "time": "14:56",
-          "area": "작업",
-          "event": "자율현황 🧭 항로 라이브 — erp 도메인에서 서버 사본(1분 동기) 우선 읽기 + 60초 자동 갱신 · 서버 git pull 5분→1분 (GM 2026-09-05)",
-          "detail": "커밋 de4bb33e1 · 배 11220"
-        },
-        {
           "time": "15:00",
           "area": "작업",
           "event": "배1030 재종결(큐 되돌림 정정) + 시트 테스트 행 정리 배 1032(시포)·1033(시우)",
@@ -1114,6 +1102,18 @@
           "area": "작업",
           "event": "배1044 종결 DONE — 시포 화면 GAS 직독 5종 서버 라우트 확인 완료",
           "detail": "커밋 e6f6ea8c4 · 배 11286"
+        },
+        {
+          "time": "15:52",
+          "area": "작업",
+          "event": "종합접수처 서버 원장 상태갱신 API 추가 — 배984 이후 시트동결로 GAS reg_update 실패하는 갭 메움 (배1039-C)",
+          "detail": "커밋 22890f67c · 배 11286"
+        },
+        {
+          "time": "15:55",
+          "area": "작업",
+          "event": "/api/reception/update 없는ID 응답이 500으로 새던 버그 수리 (배1039-C)",
+          "detail": "커밋 9c83578da · 배 11286"
         }
       ],
       "count": 20,
@@ -1260,6 +1260,18 @@
           "upload": "✅ 올림 (98865a41e)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-3013",
+          "no": "13",
+          "got": "지금 5개 진행중인건가? 시모 1007이랑 1009 바로 진행가능하지않아?",
+          "did": "",
+          "start": "15:55",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1444,14 +1456,29 @@
           "detail": "커밋 3ec53247b · 배 11298"
         }
       ],
-      "count": 11,
+      "count": 12,
       "done": 11,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-3013",
+          "no": "13",
+          "got": "지금 5개 진행중인건가? 시모 1007이랑 1009 바로 진행가능하지않아?",
+          "did": "",
+          "start": "15:55",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -1573,9 +1600,21 @@
           "start": "15:39",
           "end": "15:48",
           "minutes": 9,
-          "upload": "✅ 올림 (bd21182f4)",
+          "upload": "✅ 올림 (905a18d8f)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-4014",
+          "no": "14",
+          "got": "시포 881 이건은 웰리건 같은데, 그리고 라이프 피트니스는 금액 받았어, 매트릭스만 다음주에 받으면 되",
+          "did": "",
+          "start": "15:53",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1674,16 +1713,55 @@
           "area": "공통",
           "event": "배1051 브릿지 중복 종결(1048 에서 완료)",
           "detail": "커밋 bd21182f4 · 배 11165"
+        },
+        {
+          "time": "15:52",
+          "area": "공통",
+          "event": "배934 종결 재기록(점검표·이전 순서 완료)",
+          "detail": "커밋 dabb08bdf · 배 11165"
+        },
+        {
+          "time": "15:52",
+          "area": "공통",
+          "event": "회원 쓰기 7종 서버 원장 스펙표 (배1050 · 시토 서버 골격용)",
+          "detail": "커밋 47a1fe110 · 배 11165"
+        },
+        {
+          "time": "15:54",
+          "area": "공통",
+          "event": "배1050 스펙표 완료 기록 · 시토 서버 골격 배 전달",
+          "detail": "커밋 9c97945c5 · 배 11310"
+        },
+        {
+          "time": "15:55",
+          "area": "공통",
+          "event": "배881 GYM 바이크 견적 → 웰리 배 이관(GM 확정 2026-09-05) · 시포 종결",
+          "detail": "커밋 905a18d8f · 배 11310"
         }
       ],
-      "count": 10,
+      "count": 11,
       "done": 10,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
-      "work_count": 16,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-4014",
+          "no": "14",
+          "got": "시포 881 이건은 웰리건 같은데, 그리고 라이프 피트니스는 금액 받았어, 매트릭스만 다음주에 받으면 되",
+          "did": "",
+          "start": "15:53",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -1856,6 +1934,18 @@
           "upload": "✅ 올림 (3c32897c4)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-5017",
+          "no": "17",
+          "got": "시우 920 이건은 다음주까지 마무리해줘 다음주 9.11(금)까지",
+          "did": "",
+          "start": "15:53",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2010,14 +2100,29 @@
           "detail": "커밋 3c32897c4 · 배 11279"
         }
       ],
-      "count": 14,
+      "count": 15,
       "done": 14,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 5,
       "work_count": 25,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-5017",
+          "no": "17",
+          "got": "시우 920 이건은 다음주까지 마무리해줘 다음주 9.11(금)까지",
+          "did": "",
+          "start": "15:53",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -2135,13 +2240,13 @@
           "ref": "GM-20260905-12",
           "no": "12",
           "got": "계정 cao 통일 · API 키 말고 우회 경로? · 상한 걸어도 문제 우려",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "",
           "start": "15:51",
-          "end": "15:51",
-          "minutes": 0,
-          "upload": "✅ 올림 (06dd02b72)",
+          "end": "15:54",
+          "minutes": 3,
+          "upload": "✅ 올림 (fd5eafc8c)",
           "open": false,
-          "evidence": "✅있음"
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260905-9002",
@@ -2307,7 +2412,7 @@
           "start": "15:45",
           "end": "15:45",
           "minutes": 0,
-          "upload": "✅ 올림 (06dd02b72)",
+          "upload": "✅ 올림 (fd5eafc8c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2319,7 +2424,7 @@
           "start": "15:46",
           "end": "15:47",
           "minutes": 0,
-          "upload": "✅ 올림 (06dd02b72)",
+          "upload": "✅ 올림 (fd5eafc8c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2331,9 +2436,21 @@
           "start": "15:50",
           "end": "15:51",
           "minutes": 1,
-          "upload": "✅ 올림 (06dd02b72)",
+          "upload": "✅ 올림 (fd5eafc8c)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260905-9018",
+          "no": "18",
+          "got": "시보도 GM요청: 이상하게 답변하네 표로 답변하는게 있을텐데?",
+          "did": "",
+          "start": "15:52",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2456,16 +2573,37 @@
           "area": "작업",
           "event": "상담봇 §3-1 모델 접근 경로(AWS Bedrock cao 우선 · API 키 대안) + 상한 3중 가드 (GM 2026-09-05)",
           "detail": "커밋 06dd02b72 · 배 11305"
+        },
+        {
+          "time": "15:55",
+          "area": "작업",
+          "event": "상담봇 §3-1 Bedrock 실측 반영(가용 · GM 콘솔 사용 사례 양식 1회 남음)",
+          "detail": "커밋 fd5eafc8c · 배 11305"
         }
       ],
-      "count": 26,
+      "count": 27,
       "done": 26,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
-      "work_count": 20,
+      "work_count": 21,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260905-9018",
+          "no": "18",
+          "got": "시보도 GM요청: 이상하게 답변하네 표로 답변하는게 있을텐데?",
+          "did": "",
+          "start": "15:52",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     }
   },
