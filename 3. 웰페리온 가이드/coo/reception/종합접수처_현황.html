@@ -1162,13 +1162,13 @@ function _card(r){
      이라고 남기셨는데(FB260825-093927) 칸은 이미 이것이었다. 이름이 '처리 메모'뿐이라
      진행 기록용인 줄 몰랐던 것이라 보고 라벨·예시를 붙인다(2026-08-26 시우). */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모 <span style="font-weight:500;">(진행상황 기록 — 여러 줄 누적해 적으셔도 됩니다)</span></label>';
-  h += '<textarea data-reg-memo rows="3" placeholder="예) 8/26 담당자 확인 → 부품 주문 / 8/28 교체 완료">' + _esc(String(r.memo||'')) + '</textarea></div>';
+  h += '<textarea data-reg-memo rows="3" placeholder="[분류] &#10;[확인] &#10;[조치] &#10;[안내] &#10;[다음] ">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
   /* 회원 안내 — 회원 셀프 조회에 노출되는 문구(처리메모와 별개). 비우면 조회화면에서 상태 기본문구가 대신 표시됨. 2026-08-03 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--green);display:block;margin-bottom:4px;">📣 회원 안내 <span style="font-weight:500;color:var(--dim);">(회원이 조회 시 봅니다)</span></label>';
   /* placeholder = 완료 시 자동으로 채워질 카테고리 문구(GAS 의 memberReplyTemplate 그대로 표시,
      여기서 재작성하지 않는다 — 정본 = apps_script_reception.js REG_MEMBER_REPLY_TEMPLATES 한 곳). */
-  h += '<textarea data-reg-memberreply rows="2" placeholder="' + _esc(String(r.memberReplyTemplate || '회원에게 보일 안내 문구 (비우면 상태 기본문구 표시)')) + '">' + _esc(String(r.memberReply||'')) + '</textarea></div>';
+  h += '<textarea data-reg-memberreply rows="2" placeholder="' + _esc(String(r.memberReplyTemplate || '불편을 드려 죄송합니다. 운영팀이 확인 후 신속히 조치하겠습니다.')) + '">' + _esc(String(r.memberReply||'')) + '</textarea></div>';
 
   /* 저장 */
   /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
