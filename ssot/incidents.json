@@ -863,8 +863,8 @@
    "본질": "이관 중 종합접수처의 진실이 둘(시트/GAS ↔ 서버 원장)이고 화면의 읽기·쓰기가 그 사이에 걸쳐 있다. 한 증상을 고칠 때마다 한쪽 경로만 옮겨(읽기는 미러, 쓰기는 서버, 동기화는 시트가 정본) 반대편이 새 증상으로 터졌다. 개별 수리 4번 = 같은 뿌리 1개.",
    "뿌리분류": "이관 중 이중 원천(시트↔서버) + 쓰기·동기화 방향 불일치 + 쓰기→읽기 정합 감시 부재",
    "차단조치": "(시토 배1090 · 진행) ①sync_reception 을 서버 편집 행 무덮기로 ②시트 되밀기는 기존 pushback 경로 ③정합 대조 자가검사(쓰기→동기화→읽기 동일) 매 동기화 ④화면 잔여 GAS 직독(reg_dashboard) 서버로 ⑤오늘 사라진 입력 복구 확인",
-   "상태": "OPEN",
-   "검증증거": "(배1090 완료 시 채움) 상태 변경 → 10분 뒤 새로고침 유지 · 시트 반영 · 최준용M 화면 확인"
+   "상태": "GUARDED",
+   "검증증거": "(a) RECEPTION-1 을 같은 값(status=완료·handler=윤병현)으로 /api/reception/update 갱신 → write_log queued 행 생성 → pushback.py 1회 실행 → gas_status=ok → GAS reg_dashboard 로 시트 대조 일치 확인(2026-09-06 14:34). (b) sync_reception.py 강제 실행 → guard 정상(되돌아간 행 0·되밀기 밀림 0) → RECEPTION-1 값 그대로 유지(14:34). (c) GET /api/reception/dashboard 200 · count=139 = GET /api/reception/board count 와 일치(14:35). ①서버 편집 표식 가드(sync_reception._replace WHERE)는 이전 라인에서 이미 라이브 — 이번 배는 ②시트 되밀기(write_log 재사용) ③정합 자가검사(guard_alert) ④reg_dashboard 서버 라우트 3개를 마저 닫았다. 커밋 afed73f00 · 배포 완료. 화면(종합접수처_현황.html)의 대시보드 주소 배선은 COO 몫으로 남김."
   }
  ]
 }
