@@ -20,13 +20,15 @@ $items = @($Targets | Where-Object { $_ -ne '--incognito' })
 if (-not $items) { Write-Host "열 대상 없음"; exit 1 }
 
 $chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$urls = @($items | ForEach-Object { if ($_ -match '^[a-z]+://') { $_ } elseif (Test-Path $_) { 'file:///' + ((Resolve-Path $_).Path -replace '\\', '/') } else { $_ } })
+# 경로에 공백·한글이 있으면 인자가 셋으로 쪼개져 깨진 탭 3개가 뜬다(2026-09-07 실사고) — Uri 로 %20 인코딩 + 따옴표.
+$urls = @($items | ForEach-Object { if ($_ -match '^[a-z]+://') { $_ } elseif (Test-Path $_) { ([Uri](Resolve-Path $_).Path).AbsoluteUri } else { $_ } })
+$quoted = @($urls | ForEach-Object { '"' + $_ + '"' })
 
 $before = [W.U32]::GetForegroundWindow()
 if (Test-Path $chrome) {
     $args = @('--new-window', "--window-position=$($prim.X),$($prim.Y)", "--window-size=$($prim.Width),$($prim.Height)")
     if ($incog) { $args += '--incognito' }
-    Start-Process $chrome -ArgumentList ($args + $urls)
+    Start-Process $chrome -ArgumentList ($args + $quoted)
 } else {
     foreach ($u in $urls) { Start-Process $u }
 }
