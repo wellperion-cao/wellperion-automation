@@ -627,6 +627,9 @@ def main() -> int:
     ok, image_or_reason = generate_image(target)
     if not ok:
         msg = f"⚠️ 카톡 매출보고 자동 파이프라인 실패 — 이미지 생성 단계: {image_or_reason}"
+        # 2026-09-06 GM: 시트 판이 죽어도 서버 판(09:20 업무보고방 사진 · 배1061)은 살아 있다 —
+        # 경보만 보면 보고가 통째로 없는 줄 안다. 어디에 이미 있는지 한 줄 붙인다.
+        msg += "\n▪ 서버 판은 09:20 업무보고방 사진으로 이미 있음(22칸 대조 캡션 확인) · 4방 재발송은 GM 지시로"
         log(msg)
         send_owner_alert(msg)
         print(f"FAILED: 이미지 생성 실패 — {image_or_reason}")
