@@ -1217,7 +1217,9 @@ def normalize_ai_sender(text: str) -> str:
     (배1087) 빠뜨린 자리·과거 메시지 재사용 경로까지 여기 한 곳이 최종적으로 잡는다."""
     name = _ai_sender_name()
     out = text
-    out = out.replace("웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.", f"{name} 드림")
+    # 「운영지원 '웰리'가 (정리해) 보내드립니다」 류는 낱말이 조금씩 달라 정확 일치로는 샌다
+    # (2026-09-06 14:00·22:45 실발신에 '가 보내드립니다' 변형이 통과) — 정규식으로 통째로 잡는다.
+    out = re.sub(r"웰페리온 AI 운영지원 '웰리'가[^\n]*?보내드립니다\.?", f"{name} 드림", out)
     out = out.replace("웰페리온 AI 총괄 담당 웰리 드림", f"{name} 드림")
     out = out.replace("AI 웰리 드림", f"{name} 드림")
     out = out.replace("AI 웰리입니다", f"{name}입니다")

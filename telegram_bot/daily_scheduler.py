@@ -2684,7 +2684,7 @@ KAKAO_GO_STREAM2 = True
 KAKAO_OPS_ROOM = "★운영+시설+지원+주차"
 # 카톡 발신 맨 끝에 한 번만 붙이는 웰리 서명 — report_stream_2/2b 가 각자 머리에 넣던 것과
 # 같은 문구(2026-08-15 GM 지시로 카톡 합본 머리글을 한 줄로 줄이며 맨 끝 1회로 이동).
-_SENDER_LINE_TAIL = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
+_SENDER_LINE_TAIL = "— 웰페리온 AI 드림"   # 서명 정본 = canon ai_sender_name (배1087 · GM 2026-09-06)
 
 
 def _is_rest_day(d) -> bool:
@@ -4288,7 +4288,7 @@ def main():
             head = ("🔔 시설부 점검 입력이 아직 없습니다" if only_fac else
                     "🔔 점검은 하신 것 같은데 제출이 안 들어왔습니다" if miss else
                     "🔔 아직 시작 전인 회차가 있습니다")
-            body = [head, "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
+            body = [head, "— 웰페리온 AI 드림", ""]
             for g in fresh:
                 if g["zone"] == "시설부":
                     body.append("▪ 시설부 — 오늘 점검 입력이 한 건도 없습니다")
