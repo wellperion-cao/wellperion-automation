@@ -177,6 +177,10 @@ def build_narrative_cells(conn_or_rows, today):
     안 5건) — 원천 = todo_items. conn_or_rows = db 커넥션(조회)이거나 이미 뽑은 행 리스트(로컬 점검용).
     지어낸 숫자·원천 밖 문장 금지 — 대상이 없으면 빈 문자열."""
     rows = _fetch_todo_rows(conn_or_rows) if hasattr(conn_or_rows, "execute") else list(conn_or_rows)
+    # DB 는 end_date 를 date 로, 호출부는 today 를 date 로 넘길 수 있다 — 전부 'YYYY-MM-DD' 문자열로 맞춘다
+    # (2026-09-07 서버 실측: '<' not supported between str and date).
+    today = str(today)[:10]
+    rows = [dict(r, end_date=(str(r["end_date"])[:10] if r["end_date"] else "")) for r in rows]
     from api_todo import gas_hides   # GM 개인 행 가림 — api_todo 한 곳의 규칙(약속 L01), 지연 import(fastapi 회피)
     rows = [r for r in rows if not gas_hides(r["owner"])]
 
