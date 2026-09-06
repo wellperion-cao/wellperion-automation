@@ -447,6 +447,10 @@ async def update(request: Request):
                 data["status"] = new_status
             status = data.get("status") or row["status"]
             dept = data.get("dept") or row["dept"]
+            # ★서버 편집 표식 (2026-09-06 장애 · 최준용M 신고 FB260906-140312 · 배1090). 시트는 동결된 과거 기록인데
+            #   sync_reception 5분 upsert 가 시트 값으로 status·dept·data 를 되돌려 화면 편집이 5분 뒤 원복됐다.
+            #   이 표식이 있는 행은 동기화가 덮지 않는다(sync_reception._replace 의 WHERE). 칸 추가 없이 data 안에 둔다.
+            data["_server_edited"] = _kst_now()
             conn.execute("UPDATE reception_items SET status=%s, dept=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND reg_id=%s",
                          (status, dept, json.dumps(data, ensure_ascii=False), _kst_now(), db.TENANT, reg_id))
             return {"ok": True, "id": reg_id, "status": status, "message": "접수건이 갱신되었습니다."}

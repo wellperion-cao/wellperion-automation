@@ -74,10 +74,13 @@ def _replace(conn, table, cols, recs):
     # 키 = cols[1](reception_items.reg_id · lost_found.found_id · hold_items.intake_row) — 표 정의(schema.sql PK) 와 같은 순서.
     key = cols[1]
     sets = ", ".join("%s=EXCLUDED.%s" % (c, c) for c in cols[2:])
+    # [2026-09-06 시토 · 배1090 장애] 서버가 편집한 행(data._server_edited 표식 · api_reception /update)은 시트 값으로
+    # 되돌리지 않는다 — 시트는 동결된 과거 기록이라 서버보다 새로울 수 없다. 표식 없는 행만 종전대로 갱신.
+    guard = " WHERE (%s.data::jsonb ->> '_server_edited') IS NULL" % table if "data" in cols else ""
     with conn:
         conn.executemany(
-            "INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (tenant_id, %s) DO UPDATE SET %s"
-            % (table, ",".join(cols), ",".join(["%s"] * len(cols)), key, sets), recs)
+            "INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (tenant_id, %s) DO UPDATE SET %s%s"
+            % (table, ",".join(cols), ",".join(["%s"] * len(cols)), key, sets, guard), recs)
     return len(recs)
 
 
