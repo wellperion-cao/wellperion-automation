@@ -92,6 +92,17 @@ def health():
     return {"ok": n > 0, "rows": n, "approvals": a, "last_sync_kst": last, "last_failed_kst": failed or "", "_source": SOURCE}
 
 
+# GM 개인 행 가림 규칙 — GAS todo_list(업무&결재 현황.js `String(r['담당자']).indexOf('김남욱GM') < 0`)와 같은 한 칸(담당자).
+# 서버는 띄어쓰기를 지우고 이름으로 비교한다(「김남욱 GM」·「김남욱」 표기까지). sync_todo 의 정합 대조도 이 한 곳을 쓴다.
+GM_HIDE_SQL = "COALESCE(REPLACE(owner, ' ', ''), '') NOT LIKE %s"
+GM_HIDE_ARG = "%김남욱%"
+
+
+def gas_hides(owner):
+    """GAS 가 실무진 화면에서 가리는 행인가 — GM_HIDE_SQL 과 같은 판정(파이썬 쪽 · 정합 대조용)."""
+    return "김남욱" in (owner or "").replace(" ", "")
+
+
 def _gm_ok(include_gm, gmkey, key_env=None):
     """GAS `_gmKeyOk_` 와 같은 판정 — 김남욱GM 행 통로 열쇠(배326). 값은 서버 env GM_TODO_KEY 한 곳에만."""
     k = (key_env if key_env is not None else os.environ.get("GM_TODO_KEY", "")).strip()
@@ -115,9 +126,10 @@ def todo_list(
         # 그 행들을 못 거른다(2026-09-05 실측: 기본 응답 100건 중 GM 담당 10건 노출). 서버는 공백을 지우고 비교한다.
         # 직함 없는 '김남욱' 표기도 1건 있어(AI 가 적은 행) 이름만으로 거른다 — 같은 이름의 실무진은 없다.
         # COALESCE — NULL NOT LIKE 는 NULL(참 아님)이라 담당자 빈 행이 통째로 빠지던 버그 수리(검수 M6).
-        # creator 도 같은 조건으로 AND — 담당자는 실무진인데 생성자가 GM 인 개인 행까지 같이 가린다.
-        where.append("COALESCE(REPLACE(owner, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
-        where.append("COALESCE(REPLACE(creator, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
+        # ★생성자(creator)로는 거르지 않는다 (2026-09-06 실사고 · 나우열M 신고). GAS todo_list 는 담당자 한 칸만 본다
+        #   (업무&결재 현황.js L2427). 시트는 누가 올려도 생성자를 김남욱GM 으로 적는 구조라(214건 중 188건),
+        #   creator 조건을 AND 하자 실무진 화면에서 26건만 남아 "데이터 유실"로 보였다. 서버 규칙 = GAS 규칙 그대로.
+        where.append(GM_HIDE_SQL); args.append(GM_HIDE_ARG)
     if status:
         where.append("status = %s"); args.append(status)
     if dept:
@@ -143,8 +155,7 @@ def todo_item(
 ):
     where, args = ["tenant_id=%s", "id=%s"], [db.TENANT, item_id]
     if not _gm_ok(include_gm, gmkey):
-        where.append("COALESCE(REPLACE(owner, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
-        where.append("COALESCE(REPLACE(creator, ' ', ''), '') NOT LIKE %s"); args.append("%김남욱%")
+        where.append(GM_HIDE_SQL); args.append(GM_HIDE_ARG)   # 목록과 같은 한 규칙(담당자만)
     conn = _open()
     with conn:
         r = conn.execute("SELECT * FROM todo_items WHERE " + " AND ".join(where), args).fetchone()

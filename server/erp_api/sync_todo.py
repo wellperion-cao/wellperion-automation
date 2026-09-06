@@ -128,6 +128,24 @@ def replace_all(conn, rows, now):
     return len(todos), len(apprs)
 
 
+def staff_parity(conn, rows):
+    """실무진 화면 건수 정합 — GAS 규칙(담당자에 김남욱GM 없음)으로 센 건수 == 서버 /api/todo 가 돌려줄 건수.
+    2026-09-06 실사고: 서버 필터가 생성자 칸까지 걸러 214건 중 26건만 보였는데 어떤 감시기도 안 울렸다
+    (나우열M 신고 · 복원 작업까지 시작). 어긋나면 업무보고방에 한 줄 — 동기화는 막지 않는다."""
+    from api_todo import GM_HIDE_SQL, GM_HIDE_ARG, gas_hides   # 규칙은 api_todo 한 곳(약속 L01)
+    from sync_members import _tell_gm
+    gas_n = sum(1 for r in rows if not gas_hides(r.get("담당자")))
+    srv_n = conn.execute("SELECT COUNT(*) FROM todo_items WHERE tenant_id=%s AND " + GM_HIDE_SQL,
+                         (db.TENANT, GM_HIDE_ARG)).fetchone()[0]
+    if gas_n != srv_n:
+        msg = "⚠️ 업무 SSOT 실무진 화면 정합 어긋남 — GAS %d건 · 서버 /api/todo %d건 (sync_todo)" % (gas_n, srv_n)
+        print("[parity] " + msg)
+        _tell_gm(msg)
+    else:
+        print("[parity] 실무진 화면 %d건 = GAS %d건" % (srv_n, gas_n))
+    return gas_n, srv_n
+
+
 def main():
     load_env()
     conn = db.connect()
@@ -138,6 +156,7 @@ def main():
     if ok:
         n, a = replace_all(conn, rows, now)
         print("[ok] 업무 %d건 · 결재 %d건" % (n, a))
+        staff_parity(conn, rows)
     with conn:
         if ok:
             db.meta_set(conn, "todo_last_sync", now)
