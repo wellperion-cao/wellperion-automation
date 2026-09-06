@@ -801,7 +801,10 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 // ★2026-09-05 배985 — ERP 도메인에서는 todo_list 읽기를 서버 미러(/api/todo, GM업무.html 리더현황과
 // 같은 패턴)로 먼저 읽는다. 기본은 GM 행 제외(GAS 와 동일 규칙) — 이 화면은 원래도 GM 행을 안 썼다.
 // 실패·GitHub Pages 는 종전 GAS 그대로.
-var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+// ★2026-09-06 되돌림 — 서버 미러가 creator까지 걸러 187건 중 167건이 사라지는 장애(GM 행 89%) 유발.
+// 화면이 이미 STAFF_TOKENS로 GM 행을 거르므로 서버 이중 필터는 불필요. 근본 수리(서버 조건 제거)는
+// 권한 밖이라 이 판정만 되돌려 GAS 직접 읽기로 지혈.
+var ERP_API_ON = false;
 function fetchTodoList() {
   var gas = function () {
     return fetch(TODO_API_URL + '?action=todo_list', { redirect: 'follow' })
