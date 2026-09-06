@@ -134,7 +134,20 @@ async def _whoami_async(api_id, api_hash):
         await client.disconnect()
 
 
+def _room_id(chat_id):
+    """--chat 에 방 이름(status/telegram_rooms.json 키 · 예 '업무관리-나우열M')이 오면 숫자 id 로 푼다.
+    2026-09-06 실사고: 이름을 그대로 넘겨 int() 에서 죽고 헬스체크가 '발송 실패 1건'으로 잡았다. 숫자면 그대로."""
+    s = str(chat_id).strip()
+    if s.lstrip("-").isdigit():
+        return int(s)
+    rooms = json.loads((ROOT / "status" / "telegram_rooms.json").read_text(encoding="utf-8"))
+    if s in rooms and rooms[s]:
+        return int(rooms[s])
+    raise ValueError("알 수 없는 방 이름: %s (status/telegram_rooms.json 키 또는 숫자 chat_id)" % s)
+
+
 async def _resolve_and_send(client, chat_id, text):
+    chat_id = _room_id(chat_id)
     try:
         entity = await client.get_entity(int(chat_id))
     except (ValueError, TypeError):
