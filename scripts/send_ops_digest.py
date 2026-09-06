@@ -505,8 +505,11 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
     gm_owned_rows = [r for r in (todo_rows or []) if "김남욱" in str(r.get("담당자", ""))]
     task_owners = _fetch_gm_task_owners() if gm_owned_rows else {}
 
-    kept: dict = {}  # member -> [{"title","owner","date"}], 최신 날짜부터 채운다
-    for e in sorted(window, key=lambda x: str(x.get("date", "")), reverse=True):
+    # ★2026-09-07 GM 지시 「놓친 건은 리마인드 지속」 — 사람당 NUDGE_SHOW_N 자리를 최신 건부터
+    #   채우면 오래된 놓친 건이 영원히 밀려 안 보인다. 오래된 순으로 채운다(웰리가 아침에
+    #   --nudge-review/--resolve 로 지난 건을 닫아야 자리가 돈다).
+    kept: dict = {}  # member -> [{"title","owner","date"}], 오래된 날짜부터 채운다
+    for e in sorted(window, key=lambda x: str(x.get("date", ""))):
         if str(e.get("date", "")) == target_date:
             continue
         for it in e.get("issues") or []:
