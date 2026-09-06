@@ -372,3 +372,533 @@ CREATE TABLE IF NOT EXISTS member_change_log (
   screen       TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_member_change_log_no ON member_change_log (tenant_id, member_no, at);
+
+-- ═══════════════════════════════════════════════════════════════════════════════════════════════
+-- 인사(CHRO) 도메인 — hr 스키마 (인사 데이터 AWS 이관 1단계 · 2026-09-05 CHRO/A-5)
+-- 근거 = CTO 회신 status/briefs/CTO-2026-09-05-인사데이터-AWS이관-서버준비-회신.md (§1 표 2·4 · §2 6단계 · §3)
+--        + CHRO 준비 설계(§1 현행 16탭 실태 진단 · §3 목표 스키마 준비안).
+-- 현행 = 구글시트 16탭 + Apps Script. 이 표들은 그 16탭의 이관처이고, 회신 §2 6단계 중
+--        ①읽기 미러 단계의 그릇이다(②쓰기 서버화 → ③화면 전환 → ④3일 대조 → ⑤GAS 끄기 → ⑥시트 읽기전용).
+--
+-- 이 이관으로 바로잡는 DB 3대 논리 — 이게 이번 작업의 목적이다:
+--   ① 기본키   시트 행번호(rNN)를 신분증처럼 쓰던 것을 그만둔다. 진짜 열쇠 = 각 표의 BIGSERIAL.
+--              rNN 은 버리지 않고 legacy_tab·legacy_row 두 칸으로 보존한다 — 지원자 사진 파일명(photos/r<row>.jpg)·
+--              자동화로그 1,976건·과거 기록·사람의 대화가 전부 rNN 으로 사람을 부른다. 이걸 버리면 연결이 끊긴다.
+--              ★보존은 '추적용'이다. 새 쓰기 경로가 rNN 을 열쇠로 받으면 행번호 의존이 그대로 이사한다 — 받지 않는다.
+--   ② 외래키   사람을 이름 문자열로 잇던 지점(휴무↔직원 · 지원자↔공고 · 평가↔직원 · 온보딩↔직원 · 보드명단↔직원)을
+--              ID 참조로 바꾼다. ★단 실측 고아율이 휴무 17.5％ · 평가 9.4％ · 지원자→공고 33.3％ 다. 지금 NOT NULL 로
+--              조이면 적재가 통째로 실패한다. 그래서 '느슨하게 넣고 정합 뒤 조인다'를 구조로 박는다:
+--                · *_id  FK 는 전부 NULL 허용 — 맞는 짝을 확실히 찾았을 때만 채운다(추측 매칭 금지)
+--                · *_name_raw 원본 이름 문자열은 NOT NULL 로 항상 남긴다 — 못 이어도 사실 자체는 안 잃는다
+--                · 고아 0건 확인 뒤 NOT NULL·FK 를 조인다(맨 아래 '2단계 조이기' 주석 블록이 그 목록)
+--   ③ 타입     숫자·날짜 칸에 DATE·TIME·NUMERIC·BOOLEAN 을 준다. 시트는 타입 강제가 없어 규모점수 열이 24시간
+--              주기로 날짜 서식으로 오염되는 실사고가 있다(함정노트 #54). DB 로 오면 그 오염이 원리적으로 불가능해진다.
+--              ★뜻이 아직 사람 판정 대기인 칸(휴무 '값' 열 202셀 = 마감·오픈·쇼·오/마·'-')은 raw 원문을 보존하고
+--                해석 칸을 NULL 로 둔다 — 추측해서 채우지 않는다.
+--
+-- 규약(기존 ERP 표와 같게 맞춘 것):
+--   · 모든 표에 tenant_id(기본 'wellperion') — 조회는 전부 tenant_id 로 거른다.
+--   · 시트 1행 = DB 1행인 표는 UNIQUE (tenant_id, legacy_tab, legacy_row) 를 갖는다.
+--     적재를 이 열쇠로 upsert 해서 migrate_hr.py 를 몇 번 돌려도 같은 결과가 되게(멱등) 만든다.
+--   · data JSONB = 시트 원본 레코드 통째. 화면(chro/hub/index.html)이 지금 GAS 응답의 한글 칸 이름을 그대로 읽으므로
+--     ①읽기 미러 단계에서는 이 칸을 그대로 돌려주면 화면 수정이 0 이 된다(다른 ERP 미러 표와 같은 방식).
+--     ★⑤단계(GAS 끄기) 뒤에는 정규화 칸이 정본이고 data 는 지워도 된다 — 그때까지의 다리다.
+--   · ⛔ 이 파일 전체는 psycopg2 cursor.execute(sql, ()) 로 한 번에 적용된다 — 주석 안이라도 리터럴 ％ 를 쓰면
+--     자리표시자로 해석돼 스키마 적용 자체가 실패한다. 백분율은 전각 ％ 로 적는다(기존 부분에도 ％ 가 0개인 이유).
+--   · is_test = 쓰기 관문과 같은 판정(common/db.py is_test_payload) 결과. 새 판정 함수를 만들지 않는다(회신 §3).
+--     저장은 하되 읽기 라우트가 기본으로 뺀다.
+-- PII: 개인정보가 실린 칸은 줄 끝에 [PII] 를 단다 — 어느 표가 무엇을 이고 있는지 grep 한 번에 보이게.
+-- ⛔ 주민번호 칸은 만들지 않는다. 현행 '퇴사자 명부' 시트에 주민번호 열이 있고 70행 중 60행이 값을 갖고 있으나
+--    (진단 §1.6 · 체크리스트 D-1) 목적 없는 고유식별정보라 이관 대상에서 뺀다 — migrate_hr.py 가 그 열을 읽지도 않는다.
+-- ═══════════════════════════════════════════════════════════════════════════════════════════════
+CREATE SCHEMA IF NOT EXISTS hr;
+
+-- ── 1. 사람 ─────────────────────────────────────────────────────────────────────────────────────
+-- 실존 인물 1명 = 1행. 지원자·직원·퇴사자는 같은 사람의 '역할·상태'이지 별개 존재가 아니다.
+-- ★자동 병합 금지: 현재근무자 74행에 동명이인 4쌍이 실재한다(진단 §1.2 · 이름 충돌률 5.7％). 이름만 같다고 합치면
+--   연차·평가·급여가 남의 것과 섞인다. (이름+생년월일)이 둘 다 있고 정확히 같을 때만 한 사람으로 본다.
+CREATE TABLE IF NOT EXISTS hr.person (
+  person_id     BIGSERIAL PRIMARY KEY,
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  name          TEXT NOT NULL,                          -- [PII]
+  birth_date    DATE,                                   -- [PII] 없으면 NULL — 가짜 기본값으로 채우지 않는다
+  gender        TEXT,
+  phone         TEXT,                                   -- [PII]
+  email         TEXT,                                   -- [PII]
+  note          TEXT,
+  merge_review  BOOLEAN NOT NULL DEFAULT FALSE,         -- 동일인 후보인데 생년월일이 없어 사람 확인이 필요한 행
+  is_test       BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- 생년월일이 있는 사람만 (이름+생년) 유일. 생년이 없는 행끼리는 유일성을 강제하지 않는다(NULL 은 서로 다르다).
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_person_name_birth ON hr.person (tenant_id, name, birth_date) WHERE birth_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_person_name ON hr.person (tenant_id, name);
+
+-- ── 2. 부서 ─────────────────────────────────────────────────────────────────────────────────────
+-- '보드명단' 탭을 없애기 위한 마스터. 보드 묶음 이름·연차 적용 여부를 부서 속성으로 끌어올린다.
+CREATE TABLE IF NOT EXISTS hr.department (
+  dept_id          BIGSERIAL PRIMARY KEY,
+  tenant_id        TEXT NOT NULL DEFAULT 'wellperion',
+  name             TEXT NOT NULL,
+  board_group      TEXT,                                -- 스케줄보드 묶음 이름(시트 원명과 다를 수 있다)
+  leave_applicable BOOLEAN NOT NULL DEFAULT TRUE,       -- 연차 적용 여부 — 강습 6부서·외주는 FALSE(연차 정책)
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  active           BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, name)
+);
+
+-- ── 3. 고용(현재근무자 + 퇴사자 명부) ────────────────────────────────────────────────────────────
+-- 현행 '현재근무자' 74행 + '퇴사자(명부)' 70행이 한 표로 들어온다 — 같은 사람의 상태 차이일 뿐이다(status).
+-- ★현행 하네스의 '인사현황 시트 행 고정'(삽입·삭제 금지 · 퇴사=행 유지·값만 비움) 규칙은 시트 행번호를 외부 수식이
+--   참조하기 때문에 있었다. 여기서는 퇴사 = status 전이 + resign_date 기입이고 행을 비우지 않는다.
+--   ⚠️ 그 하네스 규칙의 폐기는 외부 수식·페이롤 링크 이관이 끝난 뒤다(이 표를 만든 것만으로 폐기되지 않는다).
+CREATE TABLE IF NOT EXISTS hr.employee (
+  employee_id     BIGSERIAL PRIMARY KEY,
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  person_id       BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,      -- 느슨(NULL 허용) → 2단계에 NOT NULL
+  dept_id         BIGINT REFERENCES hr.department(dept_id) ON DELETE RESTRICT,    -- 느슨(NULL 허용)
+  person_name_raw TEXT NOT NULL,                        -- [PII] 시트 원명 — FK 를 못 이어도 사실은 남는다
+  dept_name_raw   TEXT,
+  roster_display_name TEXT,                             -- 보드 표기명. 시트 원명과 다른 사례 실재 → 여기로 흡수
+  position        TEXT,
+  employment_type TEXT,
+  status          TEXT NOT NULL DEFAULT '재직',          -- 재직·퇴사·휴직 (값 전수 확인 뒤 2단계에 CHECK)
+  hire_date       DATE,
+  resign_date     DATE,
+  birth_date      DATE,                                 -- [PII]
+  phone           TEXT,                                 -- [PII]
+  email           TEXT,                                 -- [PII]
+  work_hours      TEXT,
+  note            TEXT,
+  legacy_tab      TEXT,                                 -- '현재근무자' 또는 '퇴사자'
+  legacy_row      INTEGER,                              -- 시트 물리 행번호 rNN — 추적용, 열쇠 아님
+  is_test         BOOLEAN NOT NULL DEFAULT FALSE,
+  data            JSONB,                                -- 시트 원본 레코드(①단계 화면 호환용)
+  synced_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_emp_status ON hr.employee (tenant_id, status, dept_id);
+CREATE INDEX IF NOT EXISTS ix_hr_emp_person ON hr.employee (tenant_id, person_id);
+CREATE INDEX IF NOT EXISTS ix_hr_emp_name   ON hr.employee (tenant_id, person_name_raw);
+
+-- ── 4. 채용공고 ─────────────────────────────────────────────────────────────────────────────────
+-- 모집인원·담당 C-Level 은 현행 GAS API 로 못 쓰던 칸이다(백엔드 기능 미구현). 여기서는 그냥 일반 칸 — 제약이 사라진다.
+CREATE TABLE IF NOT EXISTS hr.job_posting (
+  posting_id    BIGSERIAL PRIMARY KEY,
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  dept_id       BIGINT REFERENCES hr.department(dept_id) ON DELETE RESTRICT,      -- 느슨(NULL 허용)
+  dept_name_raw TEXT,
+  title         TEXT NOT NULL,
+  status        TEXT,
+  employment_type TEXT,
+  headcount     INTEGER CHECK (headcount IS NULL OR headcount >= 0),
+  start_date    DATE,
+  end_date      DATE,
+  channels      TEXT,
+  owner_clevel  TEXT,
+  detail_url    TEXT,
+  legacy_tab    TEXT,
+  legacy_row    INTEGER,
+  is_test       BOOLEAN NOT NULL DEFAULT FALSE,
+  data          JSONB,
+  synced_at     TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_posting_status ON hr.job_posting (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_hr_posting_title  ON hr.job_posting (tenant_id, title);
+
+-- ── 5. 지원자 ───────────────────────────────────────────────────────────────────────────────────
+-- ★재지원 중복행은 합치지 않는다(2026-08-10 확정 정책 · 실측 6조 13행). 지원 '건'이 1행이고, 같은 사람은 person_id 로만 묶인다.
+--   중복 제거를 하려는 이관 담당자를 막기 위해 지원자명에 UNIQUE 를 걸지 않는 것을 여기 명시해 둔다.
+CREATE TABLE IF NOT EXISTS hr.applicant (
+  applicant_id     BIGSERIAL PRIMARY KEY,
+  tenant_id        TEXT NOT NULL DEFAULT 'wellperion',
+  person_id        BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,     -- 느슨(NULL 허용)
+  posting_id       BIGINT REFERENCES hr.job_posting(posting_id) ON DELETE RESTRICT, -- 느슨 — 실측 고아 33.3％
+  applicant_name   TEXT NOT NULL,                       -- [PII]
+  posting_name_raw TEXT,                                -- 시트 '연결 공고' 원문(URL·화면 문구가 잘못 저장된 사례 3종 실재)
+  stage            TEXT,                                -- 전형 단계. ★덮어쓰기 금지 규칙은 stage_history 로 승격(표 7)
+  applied_at       DATE,
+  source           TEXT,
+  rating           NUMERIC(5,2) CHECK (rating IS NULL OR rating >= 0),
+  interviewer      TEXT,
+  interview_at     TIMESTAMPTZ,
+  phone            TEXT,                                -- [PII]
+  email            TEXT,                                -- [PII]
+  photo_file       TEXT,                                -- 'r<row>.jpg' — 파일명이 행번호에 묶여 있다(리네임은 별도 작업)
+  memo             TEXT,                                -- [PII 최고] 이력서 전문이 이 한 칸에 들어 있다 → 표 6 으로 분해 예정
+  legacy_tab       TEXT,
+  legacy_row       INTEGER,
+  is_test          BOOLEAN NOT NULL DEFAULT FALSE,
+  data             JSONB,
+  synced_at        TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_appl_stage   ON hr.applicant (tenant_id, stage);
+CREATE INDEX IF NOT EXISTS ix_hr_appl_posting ON hr.applicant (tenant_id, posting_id);
+CREATE INDEX IF NOT EXISTS ix_hr_appl_applied ON hr.applicant (tenant_id, applied_at);
+CREATE INDEX IF NOT EXISTS ix_hr_appl_name    ON hr.applicant (tenant_id, applicant_name);
+
+-- ── 6. 지원서 상세(지원자 memo 1칸 분해) ─────────────────────────────────────────────────────────
+-- 목적 = 접근통제를 '칸 단위'로 걸 수 있게 하는 것. memo 한 칸에 생년·주소·학력·경력·자기소개서가 전부 들어 있으면
+-- "필요한 항목만 보기"가 영원히 불가능하다(진단 D-5). ⚠️ 분해 규칙 자체는 아직 없다 —
+-- ①단계 적재는 이 표를 비워 두고, 분해는 재현율 실증 뒤 별도 작업으로 한다(함정노트 #48).
+CREATE TABLE IF NOT EXISTS hr.applicant_document (
+  doc_id        BIGSERIAL PRIMARY KEY,
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  applicant_id  BIGINT NOT NULL REFERENCES hr.applicant(applicant_id) ON DELETE CASCADE,
+  birth_year    INTEGER,                                -- [PII]
+  gender        TEXT,                                   -- [PII]
+  address       TEXT,                                   -- [PII]
+  education     TEXT,                                   -- [PII]
+  career_years  NUMERIC(4,1),
+  certificates  TEXT,
+  self_intro    TEXT,                                   -- [PII]
+  ai_review     TEXT,
+  parsed_from   TEXT,                                   -- 어느 원문에서 뽑았는지(재현율 추적용)
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, applicant_id)
+);
+
+-- ── 7. 전형 단계 이력 ───────────────────────────────────────────────────────────────────────────
+-- 현행 핵심규칙 4('stage 를 임의로 덮지 말 것')를 규칙이 아니라 구조로 바꾼다 — 단계는 덮는 게 아니라 쌓는 것.
+CREATE TABLE IF NOT EXISTS hr.application_stage_history (
+  history_id   BIGSERIAL PRIMARY KEY,
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  applicant_id BIGINT NOT NULL REFERENCES hr.applicant(applicant_id) ON DELETE CASCADE,
+  from_stage   TEXT,
+  to_stage     TEXT NOT NULL,
+  changed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  changed_by   TEXT,
+  note         TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_hr_stage_hist ON hr.application_stage_history (tenant_id, applicant_id, changed_at);
+
+-- ── 8. 인사평가 ─────────────────────────────────────────────────────────────────────────────────
+-- 가산점 상한(클램프) 값은 현행 백엔드 게이트에만 있고 문서 정본에 수치가 없다 → CHECK 는 '음수 아님'만 건다.
+-- 총점 0~100 CHECK 도 2단계로 미룬다(실측 전 조이면 적재가 통째로 멈춘다).
+CREATE TABLE IF NOT EXISTS hr.evaluation (
+  eval_id             BIGSERIAL PRIMARY KEY,
+  tenant_id           TEXT NOT NULL DEFAULT 'wellperion',
+  subject_person_id   BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,   -- 느슨 — 실측 고아 9.4％
+  subject_name_raw    TEXT NOT NULL,                    -- [PII]
+  evaluator_person_id BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,
+  evaluator_name_raw  TEXT,                             -- [PII]
+  title               TEXT,
+  period_start        DATE,
+  period_end          DATE,
+  total_score         NUMERIC(6,2) CHECK (total_score IS NULL OR total_score >= 0),
+  bonus_points        NUMERIC(6,2) CHECK (bonus_points IS NULL OR bonus_points >= 0),
+  grade               TEXT,
+  feedback            TEXT,                             -- [PII]
+  legacy_tab          TEXT,
+  legacy_row          INTEGER,
+  is_test             BOOLEAN NOT NULL DEFAULT FALSE,
+  data                JSONB,
+  synced_at           TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_eval_subject ON hr.evaluation (tenant_id, subject_person_id, period_start);
+CREATE INDEX IF NOT EXISTS ix_hr_eval_name    ON hr.evaluation (tenant_id, subject_name_raw);
+
+-- ── 9. 입사·온보딩 ──────────────────────────────────────────────────────────────────────────────
+-- 설계안은 U(employee_id, track, week_no) 로 중복 생성을 구조 차단하자고 했다(2026-07-30 33→41행 중복 실사고).
+-- ⚠️ 지금은 걸지 않는다 — 현행 70행에 그 조합의 중복이 남아 있으면 적재가 통째로 실패한다. 대신 같은 조합에 인덱스만
+--    두고, 이관 뒤 중복 0 을 확인한 다음 UNIQUE 로 승격한다(맨 아래 2단계 목록). 중복 '생성' 차단은 ②쓰기 서버화의 몫.
+CREATE TABLE IF NOT EXISTS hr.onboarding_item (
+  item_id           BIGSERIAL PRIMARY KEY,
+  tenant_id         TEXT NOT NULL DEFAULT 'wellperion',
+  employee_id       BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT, -- 느슨(NULL 허용)
+  employee_name_raw TEXT NOT NULL,                      -- [PII]
+  track             TEXT,                               -- 정보·체크인·성찰
+  week_no           INTEGER CHECK (week_no IS NULL OR week_no >= 0),
+  title             TEXT,
+  due_date          DATE,
+  done              BOOLEAN NOT NULL DEFAULT FALSE,
+  done_at           DATE,
+  owner             TEXT,
+  note              TEXT,                               -- [PII] 성찰 답변 원문이 들어온다
+  legacy_tab        TEXT,
+  legacy_row        INTEGER,
+  is_test           BOOLEAN NOT NULL DEFAULT FALSE,
+  data              JSONB,
+  synced_at         TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_onbo_emp  ON hr.onboarding_item (tenant_id, employee_id, week_no);
+CREATE INDEX IF NOT EXISTS ix_hr_onbo_dup  ON hr.onboarding_item (tenant_id, employee_name_raw, track, week_no);
+
+-- ── 10. 퇴사처리 ────────────────────────────────────────────────────────────────────────────────
+-- '퇴사자 명부'(사람·재직이력)와 다른 표다 — 이쪽은 퇴사 '처리 절차'(면담·퇴직금) 기록이다.
+CREATE TABLE IF NOT EXISTS hr.resignation (
+  resignation_id    BIGSERIAL PRIMARY KEY,
+  tenant_id         TEXT NOT NULL DEFAULT 'wellperion',
+  employee_id       BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT, -- 느슨(NULL 허용)
+  employee_name_raw TEXT NOT NULL,                      -- [PII]
+  last_work_date    DATE,
+  reason            TEXT,                               -- [PII]
+  interview_note    TEXT,                               -- [PII]
+  severance_paid    BOOLEAN,
+  severance_date    DATE,
+  handled_by        TEXT,
+  legacy_tab        TEXT,
+  legacy_row        INTEGER,
+  is_test           BOOLEAN NOT NULL DEFAULT FALSE,
+  data              JSONB,
+  synced_at         TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_resign_emp ON hr.resignation (tenant_id, employee_id);
+
+-- ── 11. 채용 블랙리스트 ─────────────────────────────────────────────────────────────────────────
+-- 현행 설계(성명+생년+연락처 뒤4자리 복합 판별)가 이미 PII 최소화의 모범이다 — 그대로 유지한다.
+-- ⛔ 주민번호 칸 없음(현행 원칙 유지).
+CREATE TABLE IF NOT EXISTS hr.hire_blacklist (
+  blacklist_id  BIGSERIAL PRIMARY KEY,
+  tenant_id     TEXT NOT NULL DEFAULT 'wellperion',
+  person_id     BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,        -- 느슨(NULL 허용)
+  name          TEXT NOT NULL,                          -- [PII]
+  birth_year    INTEGER,                                -- [PII] 연도만 — 생년월일 전체를 두지 않는다
+  phone_last4   TEXT CHECK (phone_last4 IS NULL OR phone_last4 ~ '^[0-9]{4}$'),   -- [PII] 뒤 4자리만
+  reason        TEXT,
+  registered_at DATE,
+  registered_by TEXT,
+  legacy_tab    TEXT,
+  legacy_row    INTEGER,
+  is_test       BOOLEAN NOT NULL DEFAULT FALSE,
+  data          JSONB,
+  synced_at     TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_blacklist_name ON hr.hire_blacklist (tenant_id, name);
+
+-- ── 12. 휴무 ────────────────────────────────────────────────────────────────────────────────────
+-- 5,603행. 현행 '값' 한 칸이 휴무코드·출근시간·근무조 라벨 3가지 뜻을 겸한다(계약 위반 202셀 = 3.6％).
+-- 그래서 4칸으로 쪼갠다: entry_type(휴무 종류) · shift_start/shift_end(TIME) · shift_label(오픈·마감·쇼…).
+-- ★raw_value 는 시트 원문 그대로 항상 남긴다 — 202셀의 뜻은 아직 사람 판정 대기(체크리스트 C-1)라
+--   해석 칸을 추측으로 채우지 않는다. 판정이 끝나면 raw_value 를 다시 읽어 해석 칸만 채우면 된다.
+-- 유니크: (성명, 날짜)가 사실상 열쇠다(5,603행 실측 중복 0쌍). employee_id 는 NULL 이 섞이므로(고아 11명)
+--   유니크는 이름 기준으로 건다 — 그래야 FK 정합 여부와 무관하게 중복행이 구조적으로 불가능해진다.
+CREATE TABLE IF NOT EXISTS hr.leave_entry (
+  leave_id        BIGSERIAL PRIMARY KEY,
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  employee_id     BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT,  -- 느슨 — 실측 고아 17.5％
+  person_name_raw TEXT NOT NULL,                        -- [PII] 보드 표기명일 수 있다(시트 원명과 다른 사례 실재)
+  dept_name_raw   TEXT,
+  work_date       DATE NOT NULL,
+  entry_type      TEXT,                                 -- 휴·연차·반차오전·반차오후·공휴·대휴·휴관·근무 (미판정이면 NULL)
+  shift_start     TIME,
+  shift_end       TIME,
+  shift_label     TEXT,                                 -- 오픈·마감·쇼·오/마 — 근무조 라벨(휴무코드가 아니다)
+  raw_value       TEXT,                                 -- 시트 '값' 원문 — 해석 실패·판정 대기 셀의 원본 보존
+  data            JSONB,                                -- 시트 원본 레코드(①단계 화면 호환용)
+  legacy_tab      TEXT,
+  legacy_row      INTEGER,
+  is_test         BOOLEAN NOT NULL DEFAULT FALSE,
+  synced_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, person_name_raw, work_date)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_leave_emp_date ON hr.leave_entry (tenant_id, employee_id, work_date);
+CREATE INDEX IF NOT EXISTS ix_hr_leave_date     ON hr.leave_entry (tenant_id, work_date);
+
+-- ── 13. 연차원장 ────────────────────────────────────────────────────────────────────────────────
+-- ★공란은 '미확정'이다 — 0 으로 채우지 않는다(0 으로 채우면 잔여 연차가 조용히 틀린다). 그래서 전부 NULL 허용.
+CREATE TABLE IF NOT EXISTS hr.leave_ledger (
+  ledger_id       BIGSERIAL PRIMARY KEY,
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  employee_id     BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT,  -- 느슨(NULL 허용)
+  person_name_raw TEXT NOT NULL,                        -- [PII]
+  year            INTEGER NOT NULL,
+  granted         NUMERIC(5,1),
+  carry_over      NUMERIC(5,1),
+  used            NUMERIC(5,1),
+  adjust          NUMERIC(5,1),
+  remain          NUMERIC(5,1),
+  note            TEXT,
+  legacy_tab      TEXT,
+  legacy_row      INTEGER,
+  is_test         BOOLEAN NOT NULL DEFAULT FALSE,
+  data            JSONB,                                -- 시트 원본 레코드(①단계 화면 호환용)
+  synced_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, person_name_raw, year)
+);
+
+-- ── 14. 공휴일 ──────────────────────────────────────────────────────────────────────────────────
+-- ⚠️ 현행 시트에 1건뿐이다(2026년 사실상 미등록) — 이관 전 전량 재적재가 선행 과제(체크리스트 C-2).
+CREATE TABLE IF NOT EXISTS hr.holiday (
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  holiday_date DATE NOT NULL,
+  label        TEXT NOT NULL,
+  data         JSONB,                                   -- 시트 원본 레코드(①단계 화면 호환용)
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, holiday_date)
+);
+
+-- ── 15. 근무변경신청 ────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS hr.schedule_change_request (
+  request_id            BIGSERIAL PRIMARY KEY,
+  tenant_id             TEXT NOT NULL DEFAULT 'wellperion',
+  requester_employee_id BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT,  -- 느슨(NULL 허용)
+  requester_name_raw    TEXT NOT NULL,                  -- [PII]
+  approver_name_raw     TEXT,
+  target_date           DATE,
+  request_type          TEXT,
+  before_value          TEXT,
+  after_value           TEXT,
+  reason                TEXT,
+  status                TEXT NOT NULL DEFAULT '대기',    -- 대기·승인·반려
+  requested_at          TIMESTAMPTZ,
+  decided_at            TIMESTAMPTZ,
+  legacy_tab            TEXT,
+  legacy_row            INTEGER,
+  is_test               BOOLEAN NOT NULL DEFAULT FALSE,
+  data                  JSONB,
+  synced_at             TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_schedreq_status ON hr.schedule_change_request (tenant_id, status, target_date);
+
+-- ── 16. 개인일정 ────────────────────────────────────────────────────────────────────────────────
+-- ⚠️ 이 탭의 계약(칸 이름·뜻)이 정본 문서에 없다(진단 §6 미확인 9). 최소 골격만 두고, 칸 추가는 계약 확인 뒤.
+CREATE TABLE IF NOT EXISTS hr.personal_calendar_event (
+  event_id        BIGSERIAL PRIMARY KEY,
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  owner_person_id BIGINT REFERENCES hr.person(person_id) ON DELETE RESTRICT,      -- 느슨(NULL 허용)
+  owner_name_raw  TEXT NOT NULL,                        -- [PII]
+  event_date      DATE,
+  start_time      TIME,
+  end_time        TIME,
+  title           TEXT,                                 -- [PII] 개인 일정 내용
+  memo            TEXT,                                 -- [PII]
+  legacy_tab      TEXT,
+  legacy_row      INTEGER,
+  is_test         BOOLEAN NOT NULL DEFAULT FALSE,
+  data            JSONB,
+  synced_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_cal_owner ON hr.personal_calendar_event (tenant_id, owner_person_id, event_date);
+
+-- ── 17. 자동화로그 ──────────────────────────────────────────────────────────────────────────────
+-- '작업' 문자열 안에 박혀 있던 rNN 을 target_ref 칸으로 끌어올린다(예 'appl:112').
+-- actor_code CHECK 는 A-1~A-12 형식만 받게 하되 NULL 은 허용한다 — 과거 1,976건에 코드 없는 행이 있다.
+-- 코드 필수(fail-closed)로 조이는 것은 정합 확인 뒤 2단계.
+CREATE TABLE IF NOT EXISTS hr.automation_log (
+  log_id      BIGSERIAL PRIMARY KEY,
+  tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
+  occurred_at TIMESTAMPTZ NOT NULL,
+  actor       TEXT NOT NULL,
+  actor_code  TEXT CHECK (actor_code IS NULL OR actor_code ~ '^A-(1[0-2]|[1-9])$'),
+  work        TEXT,                                     -- [PII] 지원자 실명 병기가 의무라 이름이 들어온다
+  result      TEXT,
+  target_ref  TEXT,                                     -- 'appl:112' 처럼 (탭:행) — legacy_row_map 으로 새 PK 를 찾는다
+  legacy_tab  TEXT,
+  legacy_row  INTEGER,
+  is_test     BOOLEAN NOT NULL DEFAULT FALSE,
+  data        JSONB,
+  synced_at   TIMESTAMPTZ,
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_autolog_at    ON hr.automation_log (tenant_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS ix_hr_autolog_actor ON hr.automation_log (tenant_id, actor_code, occurred_at DESC);
+
+-- ── 18. 명령큐 ──────────────────────────────────────────────────────────────────────────────────
+-- ⚠️ 현행 회수(cmd-pull)가 상태를 delivered 로 바꾸는 쓰기성 부작용이 있어 적재 전 조회를 안 했다 —
+--    건수 미확인 상태다(진단 §6 미확인 10). 표만 준비하고 적재는 매니저 확인 뒤.
+CREATE TABLE IF NOT EXISTS hr.command_queue (
+  command_id   BIGSERIAL PRIMARY KEY,
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'delivered', 'done', 'canceled')),
+  command      TEXT,
+  payload      JSONB,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  delivered_at TIMESTAMPTZ,
+  done_at      TIMESTAMPTZ,
+  legacy_tab   TEXT,
+  legacy_row   INTEGER,
+  is_test      BOOLEAN NOT NULL DEFAULT FALSE,
+  UNIQUE (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_cmdq_status ON hr.command_queue (tenant_id, status, created_at);
+
+-- ── 19. rNN 역인덱스 ────────────────────────────────────────────────────────────────────────────
+-- (시트 탭, 행번호) → (새 표, 새 PK). 사진 파일명 r<row>.jpg · 자동화로그 1,976건 · 과거 STATE 기록 ·
+-- 사람의 "r112" 호칭을 새 시스템에서 되짚기 위한 단방향 조회표. 이관 시 각 표 적재와 같은 트랜잭션에서 채운다.
+CREATE TABLE IF NOT EXISTS hr.legacy_row_map (
+  tenant_id    TEXT NOT NULL DEFAULT 'wellperion',
+  legacy_tab   TEXT NOT NULL,
+  legacy_row   INTEGER NOT NULL,
+  target_table TEXT NOT NULL,
+  target_id    BIGINT NOT NULL,
+  mapped_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, legacy_tab, legacy_row)
+);
+CREATE INDEX IF NOT EXISTS ix_hr_legacy_target ON hr.legacy_row_map (tenant_id, target_table, target_id);
+
+-- ── 20-21. 이관 진행 기록 ───────────────────────────────────────────────────────────────────────
+-- migrate_hr.py 가 어디까지 갔는지 남기는 자리. '부분 적재 상태로 조용히 끝남'을 막는 장치다 —
+-- 끝나지 않은 실행은 status='running' 으로 남고, 실패는 'failed' 로 남는다. 성공만 'ok'.
+CREATE TABLE IF NOT EXISTS hr.migration_run (
+  run_id      BIGSERIAL PRIMARY KEY,
+  tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
+  mode        TEXT NOT NULL,                            -- 'dry-run' · 'apply'
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ,
+  status      TEXT NOT NULL DEFAULT 'running' CHECK (status IN ('running', 'ok', 'failed', 'aborted')),
+  note        TEXT,
+  host        TEXT
+);
+CREATE TABLE IF NOT EXISTS hr.migration_step (
+  step_id    BIGSERIAL PRIMARY KEY,
+  run_id     BIGINT NOT NULL REFERENCES hr.migration_run(run_id) ON DELETE CASCADE,
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  tab        TEXT NOT NULL,                             -- 원천 탭·db 열쇠
+  phase      TEXT NOT NULL,                             -- fetch · load · verify
+  source_rows   INTEGER NOT NULL DEFAULT 0,
+  loaded_rows   INTEGER NOT NULL DEFAULT 0,
+  skipped_test  INTEGER NOT NULL DEFAULT 0,
+  failed_rows   INTEGER NOT NULL DEFAULT 0,
+  matched_rows  INTEGER NOT NULL DEFAULT 0,             -- 전수 대조에서 값까지 같았던 행
+  recall_pct    NUMERIC(5,2),                           -- 재현율 = matched / source (함정노트 #48 목표선 99.5％)
+  ok         BOOLEAN NOT NULL DEFAULT FALSE,
+  detail     JSONB,                                     -- ⛔ 개인정보 원문 금지 — 칸 이름·행번호·건수만
+  at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_hr_migstep_run ON hr.migration_step (run_id, at);
+
+-- ═══════════════════════════════════════════════════════════════════════════════════════════════
+-- 2단계 조이기(hardening) — 지금은 '일부러' 걸지 않은 제약 목록.
+-- 조건: ①이관 완료 ②고아 FK 0건 확인 ③값 전수 확인. 그 뒤 아래를 이 파일에 실제 SQL 로 추가한다.
+--   · hr.employee.person_id / dept_id            → SET NOT NULL          (고아 0 확인 뒤)
+--   · hr.leave_entry.employee_id                 → SET NOT NULL          (현재 고아 17.5％)
+--   · hr.evaluation.subject_person_id            → SET NOT NULL          (현재 고아 9.4％)
+--   · hr.applicant.posting_id                    → SET NOT NULL 또는 '미연결' 공고 1행으로 흡수 (현재 고아 33.3％)
+--   · hr.onboarding_item                         → UNIQUE (tenant_id, employee_id, track, week_no)
+--   · hr.employee.status / hr.applicant.stage    → CHECK (값 전수 확인 뒤 목록 고정)
+--   · hr.evaluation.total_score                  → CHECK 0~100 · bonus_points 상한 클램프
+--   · hr.automation_log.actor_code               → SET NOT NULL (공통 셀프체크 6 을 DB 제약으로 승격)
+--   · 각 표 data JSONB                           → ⑤단계(GAS 끄기) 뒤 DROP COLUMN (정규화 칸이 정본이 된 다음)
+-- ═══════════════════════════════════════════════════════════════════════════════════════════════
