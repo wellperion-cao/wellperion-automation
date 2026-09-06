@@ -8,18 +8,24 @@
   ★ID 연속성: RECEPTION-N·LF-N 번호는 배포 시 GAS ScriptProperties 값(RECEPTION_SEQ·LF_SEQ)을 1회 seed 해
     이어받는다(reception_seq·lost_found_seq 시퀀스) — 이후 서버가 유일한 발급자. GAS 쪽 reg_submit/lf_submit 은
     더 이상 호출하지 않는다(같은 번호를 두 곳이 각자 매기면 충돌 — origin_switch.py NO_SERVER 가 경고하던 바로 그 문제).
-    시트는 이 전환 시점 이후로는 갱신되지 않는다(읽기 전용 과거 기록으로 동결) — 후속 과제로 남긴다.
+    시트는 이 전환 시점 이후로는 서버가 직접 쓰지 않는다(신규 접수분은 동결) — 기존 시트 행(배984 이전)의
+    상태·메모 갱신만 /update 가 pushback.py 큐로 되민다(아래 /update 항목 · 배1090 · INC-056).
   app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문은 건드리지 않는다.
   GET  /api/reception/board            reg_board 와 같음 {ok,count,data} + by_status·by_category
   GET  /api/reception/lost             lf_list 와 같음 {ok,count,data}
   GET  /api/reception/hold             member_hold_intake_list 와 같음 + 행마다 done(hold_done_keys 조인)
   GET  /api/reception/scoreboard?period=all|week|month   reg_scoreboard 와 같음 {ok,board}
+  GET  /api/reception/dashboard?period=all|week|month    reg_dashboard 대체(배1090·INC-056 ④) — 화면 잔여 GAS
+    직독 제거용. {ok,count,board,scoreboard,staffNames} — board 는 원장 집계, scoreboard·staffNames 는 5분 거울.
   GET  /api/reception/health           행 수·마지막 동기화
   POST /api/reception/submit           reg_submit 대체(공개·무인증 — nginx erp-locations 에서 auth 제외) · 종합접수처 6종 폼
   POST /api/reception/lost             lf_submit 대체(로그인 뒤 · 습득물 등록 — 사진 필수)
-  POST /api/reception/update           reg_update 대체(배 1039-C · 2026-09-05) — 서버 원장 직접 갱신, GAS 는 안 부른다.
-    위 ★ID 연속성 메모대로 시트가 동결돼 있어, 배984 이후 새로 접수된 건은 GAS reg_update 가 시트에서 못 찾아
-    "해당 접수ID를 찾을 수 없습니다" 로 실패한다(상태·담당·메모 저장이 조용히 안 먹는 실사고) — 이 엔드포인트가 그 갭을 메운다.
+  POST /api/reception/update           reg_update 대체(배 1039-C · 2026-09-05) — 서버 원장 직접 갱신, GAS 는 그 자리에서
+    안 부른다(응답 지연 없음) — 대신 write_log 에 queued 행을 남겨 pushback.py(1분 cron)가 GAS reg_update 로
+    되민다(배1090·INC-056 — 09-06 "5분 뒤 원복" 장애의 뿌리: 시트에 안 쓰던 것을 이걸로 메웠다). 배984 이후
+    새로 접수된 건은 시트에 원래 없어 GAS 가 "해당 접수ID를 찾을 수 없습니다" 로 답하는데, GAS 에 reg_append
+    액션이 없어 새로 넣을 수 없다 — pushback.py 가 그 응답을 gas_status='sheet-missing' 으로만 표시하고
+    재시도하지 않는다(원장에는 이미 반영됨 — 시트만 못 따라간다는 뜻).
     화면 배선(종합접수처_현황.html _update() 가 이 주소를 쓰게 바꾸는 것)은 COO 담당 — 여기서는 API만 연다.
   POST /api/reception/delete           reg_delete 대체(배 1039-D · 2026-09-05) — 서버 원장 직접 삭제, GAS 는 안 부른다.
     삭제 비밀번호(PIN)는 서버에서도 재검증(GM 2026-07-31 지정) — REG_DELETE_PIN env, 없으면 GAS 기본값과 같은 1200.
@@ -44,6 +50,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
+from api_intake import redact_blobs  # noqa: E402  — write_log.payload 저장 전 blob 축약(다른 관문과 같은 규칙)
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
 from sync_reception import hold_key  # noqa: E402  — hold_complete 매칭 정규화(전화·시작일·성명)를 그대로 재사용, 새 계산 안 만듦
 
@@ -226,6 +233,27 @@ def notify(text):
         return False
 
 
+def _reg_update_gas_body(reg_id, category, new_status, payload):
+    """GAS reg_update(_regUpdate) 가 받는 칸 그대로 재현 — REG_UPDATE_FIELDS·status·id·category(순수함수·테스트용)."""
+    body = {"action": "reg_update", "id": reg_id, "category": category}
+    if new_status:
+        body["status"] = new_status
+    for k in REG_UPDATE_FIELDS:
+        if k in payload and payload[k] is not None:
+            body[k] = str(payload[k])
+    return body
+
+
+def _queue_sheet_pushback(conn, action, gas_body):
+    """②시트 되밀기(배1090·INC-056) — 새 워커를 만들지 않고 기존 pushback.py(1분 cron) 경로에 얹는다.
+    write_log 에 gas_status='queued' 행을 남기면 pushback.py 가 dest_key→RECEPTION_EXEC_URL 로 GAS 에 되민다
+    (MIRROR_SYNC 에 reg_update 가 이미 sync_reception.py 로 등록돼 있어 성공 뒤 거울도 같이 다시 뜬다)."""
+    raw = json.dumps(gas_body, ensure_ascii=False)
+    conn.execute("INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                 " VALUES (%s,%s,%s,%s,%s,'queued',%s)",
+                 (db.TENANT, _kst_now(), action, json.dumps(redact_blobs(gas_body), ensure_ascii=False), "", raw))
+
+
 def _rows(conn, table, order):
     rs = conn.execute("SELECT * FROM %s WHERE tenant_id=%%s ORDER BY %s" % (table, order), (db.TENANT,)).fetchall()
     out = []
@@ -277,6 +305,30 @@ def scoreboard(period: str = Query("month")):
     d = json.loads(v) if v else {"ok": True, "board": []}
     d["_source"] = SOURCE
     return d
+
+
+def _dashboard_response(period, data, sb_raw, staff_raw):
+    """GAS _regDashboard 응답 모양 그대로 조립(순수함수·테스트용) — {ok,count,board,scoreboard,staffNames}.
+    sb_raw·staff_raw 는 sync_reception.py 가 5분마다 떠 둔 거울(reception_scoreboard_<period>·reception_staff_names)."""
+    scoreboard = json.loads(sb_raw) if sb_raw else {"ok": True, "period": period, "since": "", "board": []}
+    staff_names = json.loads(staff_raw) if staff_raw else []
+    return {"ok": True, "count": len(data), "board": data, "scoreboard": scoreboard, "staffNames": staff_names, "_source": SOURCE}
+
+
+@router.get("/dashboard")
+def dashboard(period: str = Query("all")):
+    """reg_dashboard 대체(배1090·INC-056 ④) — 화면(종합접수처_현황.html)이 아직 GAS 를 직독하는 마지막 경로를 메운다.
+    board = /board 와 같은 원장 집계, scoreboard·staffNames = sync_reception.py 거울(5분) 그대로 — GAS 응답과 1:1 모양.
+    화면 배선(주소 교체)은 COO 담당 — 여기서는 API만 연다."""
+    period = period.strip().lower()
+    if period not in PERIODS:
+        period = "all"
+    conn = _open()
+    with conn:
+        data = _rows(conn, "reception_items", "created_at DESC, reg_id")
+        sb_raw = db.meta_get(conn, "reception_scoreboard_" + period)
+        staff_raw = db.meta_get(conn, "reception_staff_names")
+    return _dashboard_response(period, data, sb_raw, staff_raw)
 
 
 @router.get("/health")
@@ -453,6 +505,8 @@ async def update(request: Request):
             data["_server_edited"] = _kst_now()
             conn.execute("UPDATE reception_items SET status=%s, dept=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND reg_id=%s",
                          (status, dept, json.dumps(data, ensure_ascii=False), _kst_now(), db.TENANT, reg_id))
+            # ②시트 되밀기(배1090·INC-056) — 기존 pushback.py 큐에 얹는다(새 워커 안 만듦).
+            _queue_sheet_pushback(conn, "reg_update", _reg_update_gas_body(reg_id, row["category"], new_status, payload))
             return {"ok": True, "id": reg_id, "status": status, "message": "접수건이 갱신되었습니다."}
     finally:
         conn.close()   # ponytail: with 블록 안에서 미리 close() 하면 __exit__ 커밋이 닫힌 연결에 걸려 500 이 난다(배1039-C 실사고) — close 는 항상 with 밖에서
@@ -654,6 +708,22 @@ def selftest():
     assert _add_months("2024-08-31 00:00:00", 6) == "2025-02-28"
 
     assert REG_DELETE_PIN == os.environ.get("REG_DELETE_PIN", "1200")  # GAS REG_DELETE_PIN_DEFAULT 와 같은 기본값
+
+    # 시트 되밀기(배1090·INC-056) — GAS reg_update 가 받는 칸과 1:1 이어야 pushback.py 되밀기가 먹는다
+    gb = _reg_update_gas_body("RECEPTION-1", "분실물 접수", "처리중", {"memo": "확인중", "handler": "홍길동", "unknownField": "x"})
+    assert gb == {"action": "reg_update", "id": "RECEPTION-1", "category": "분실물 접수",
+                  "status": "처리중", "memo": "확인중", "handler": "홍길동"}, gb  # REG_UPDATE_FIELDS 밖 칸은 안 실림
+    assert "status" not in _reg_update_gas_body("RECEPTION-2", "청결 이슈 접수", "", {"memo": "x"})  # 상태 미변경 시 status 생략
+
+    # reg_dashboard 대체(배1090·INC-056 ④) — GAS 응답 모양과 1:1
+    d = _dashboard_response("week", [{"regId": "R1"}],
+                            '{"ok":true,"period":"week","since":"2026-09-01","board":[{"name":"홍길동"}]}',
+                            '["홍길동","김철수"]')
+    assert d == {"ok": True, "count": 1, "board": [{"regId": "R1"}],
+                "scoreboard": {"ok": True, "period": "week", "since": "2026-09-01", "board": [{"name": "홍길동"}]},
+                "staffNames": ["홍길동", "김철수"], "_source": SOURCE}, d
+    d2 = _dashboard_response("all", [], None, None)   # 거울이 아직 없을 때 폴백
+    assert d2["scoreboard"] == {"ok": True, "period": "all", "since": "", "board": []} and d2["staffNames"] == [], d2
 
     import tempfile
     global UPLOAD_DIR

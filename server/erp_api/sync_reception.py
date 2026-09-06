@@ -114,6 +114,43 @@ def replace_hold(conn, rows, done_keys, now):
     return _replace(conn, "hold_items", ["tenant_id", "intake_row", "status", "done", "applied_at", "data", "synced_at"], recs)
 
 
+def _server_edited_snapshot(conn):
+    """서버 편집 표식(_server_edited) 행의 status·dept 스냅샷 — 동기화 전후 비교용(배1090·INC-056 ③정합 자가검사).
+    _replace() 의 WHERE 가드가 이 행들을 시트 값으로 안 덮어야 정상 — 바뀌면 가드가 뚫린 것."""
+    rows = conn.execute("SELECT reg_id, status, dept FROM reception_items WHERE tenant_id=%s"
+                        " AND (data::jsonb ->> '_server_edited') IS NOT NULL", (db.TENANT,)).fetchall()
+    return {r["reg_id"]: (r["status"], r["dept"]) for r in rows}
+
+
+def _pushback_backlog(conn, minutes=30):
+    """접수 되밀기(write_log reg_* 큐)가 minutes 분 넘게 안 나갔으면 그 건수 — pushback.py 1분 cron 이 죽었다는 신호
+    (배1090·INC-056 ③정합 자가검사)."""
+    cutoff = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600 - minutes * 60))
+    return conn.execute("SELECT COUNT(*) FROM write_log WHERE tenant_id=%s AND action LIKE 'reg_%%'"
+                        " AND gas_status='queued' AND pushed_at IS NULL AND at < %s", (db.TENANT, cutoff)).fetchone()[0]
+
+
+def guard_alert(conn, drifted, backlog):
+    """상태가 나쁨으로 바뀌거나 나쁨의 내용이 달라질 때만 보낸다(sync_members.alert_on_change 와 같은 규칙 —
+    5분마다 같은 말 반복 금지). 반환 = 보낼 문구(없으면 None)."""
+    fp = "d=%s|b=%d" % (",".join(drifted), backlog)
+    bad = bool(drifted) or backlog > 0
+    prev = db.meta_get(conn, "reception_guard_alert_fp") or ""
+    if fp == prev:
+        return None
+    with conn:
+        db.meta_set(conn, "reception_guard_alert_fp", fp)
+    if bad:
+        lines = ["⚠ 종합접수처 정합 이상(INC-056)"]
+        if drifted:
+            lines.append("   서버 편집 표식 행이 동기화에 되돌아감: %s" % ", ".join(drifted[:10]))
+        if backlog:
+            lines.append("   시트 되밀기(pushback) 30분 이상 밀림: %d건" % backlog)
+        lines.append("   👉 시토 확인")
+        return "\n".join(lines)
+    return "✅ 종합접수처 정합 정상 복귀" if prev else None
+
+
 def main():
     load_env()
     conn = db.connect()
@@ -122,6 +159,7 @@ def main():
     now = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600))   # 서버 시계 UTC → KST
     counts, failed = {}, []
 
+    before_edit = _server_edited_snapshot(conn)   # ③정합 자가검사 — 동기화 전
     dash = gas_get("RECEPTION_EXEC_URL", "reg_dashboard", {"pv": pv, "period": "all"})
     if dash and isinstance(dash.get("board"), list):
         counts["board"] = replace_board(conn, dash["board"], now)
@@ -157,6 +195,18 @@ def main():
     with conn:
         db.meta_set(conn, "reception_last_sync", now)
         db.meta_set(conn, "reception_last_failed", ",".join(failed))
+
+    # ③정합 자가검사(배1090·INC-056) — 매 동기화 뒤: (a) 서버 편집 행이 시트 값으로 되돌아갔는지 (b) 시트 되밀기가 밀렸는지
+    after_edit = _server_edited_snapshot(conn)
+    drifted = sorted(k for k, v in before_edit.items() if after_edit.get(k) != v)
+    backlog = _pushback_backlog(conn)
+    msg = guard_alert(conn, drifted, backlog)
+    if msg:
+        from sync_members import _tell_gm  # noqa: PLC0415 — 새 발신기 안 만들고 기존 헬퍼 재사용
+        print("[guard-alert]", "보냄" if _tell_gm(msg) else "못 보냄(TG 키 없음)", "—", msg.splitlines()[0])
+    else:
+        print("[guard] 정합 정상 — 되돌아간 행 0 · 되밀기 밀림 0")
+
     conn.close()
     print("[done] %s · %s · 실패 %s" % (now, counts, failed or "없음"))
     return 1 if failed else 0
@@ -181,9 +231,33 @@ def selftest():
         replace_hold(conn, hold, None, "t2")          # 완료키 조회 실패 → 종전 done 유지
         done = dict(conn.execute("SELECT intake_row, done FROM hold_items WHERE tenant_id=%s", (db.TENANT,)).fetchall())
         assert done == {"2": True, "3": False}, done
+
+        # ③정합 자가검사(배1090·INC-056) — 서버 편집 표식 행이 동기화로 되돌아가면 잡아낸다.
+        edited = [{"regId": "R1", "category": "컴플레인 접수", "status": "완료", "dept": "운영부", "_server_edited": "t1"}]
+        assert replace_board(conn, edited, "t2") == 1
+        snap1 = _server_edited_snapshot(conn)
+        assert snap1 == {"R1": ("완료", "운영부")}, snap1
+        sheet_stale = [{"regId": "R1", "category": "컴플레인 접수", "status": "접수", "dept": ""}]   # 시트의 옛 값
+        assert replace_board(conn, sheet_stale, "t3") == 1
+        assert _server_edited_snapshot(conn) == snap1, "가드가 안 먹으면 R1 이 시트 옛 값(접수)으로 되돌아간다"
+
+        assert _pushback_backlog(conn) == 0
+        with conn:
+            conn.execute("INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                         " VALUES (%s,%s,%s,%s,%s,'queued',%s)",
+                         (db.TENANT, "2000-01-01 00:00:00", "reg_update", "{}", "", "{}"))
+        assert _pushback_backlog(conn) == 1
+
+        with conn:
+            db.meta_set(conn, "reception_guard_alert_fp", "")
+        assert guard_alert(conn, [], 0) is None                       # 정상 · 첫 기록 — 알림 없음
+        msg = guard_alert(conn, ["R1"], 1)
+        assert msg and "R1" in msg and "1건" in msg, msg               # 나쁨으로 바뀜 — 알림
+        assert guard_alert(conn, ["R1"], 1) is None                    # 같은 나쁨 반복 — 재알림 금지
+        assert guard_alert(conn, [], 0) == "✅ 종합접수처 정합 정상 복귀"
     finally:
         with conn:
-            for t in ("reception_items", "lost_found", "hold_items", "sync_meta"):
+            for t in ("reception_items", "lost_found", "hold_items", "write_log", "sync_meta"):
                 conn.execute("DELETE FROM %s WHERE tenant_id=%%s" % t, (db.TENANT,))
         conn.close()
     print("selftest ok")
