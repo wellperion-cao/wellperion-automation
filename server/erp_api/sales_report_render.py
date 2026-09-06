@@ -151,9 +151,76 @@ def build_report(ref_date=None):
     for k in ("N2", "N3", "N4", "N5", "N6"):
         final[k] = "%s명" % format(overrides[k], ",")
     matched, total, mismatches = compare(cells, final)
+    today = datetime.now(KST).strftime("%Y-%m-%d")
     return {"cells": cells, "final": final, "synced_at": synced, "overrides": overrides, "ref_date": ref_date,
             "matched": matched, "total": total, "mismatches": mismatches,
-            "report_title": _strip_emoji(cells.get("H2", "")) or "매출 및 운영사항 보고"}
+            "report_title": _strip_emoji(cells.get("H2", "")) or "매출 및 운영사항 보고",
+            "narrative": compute_narrative(today)}
+
+
+# ── I20·I21 인사·매출 진행현황 서술 (배1086 · 원천 = todo_items 서버 미러 · 22칸과 별도 계산) ──
+
+def _fetch_todo_rows(conn):
+    """카테고리 [1][2][3][4] 행(tenant 필터만 — GM 가림은 build_narrative_cells 에서 gas_hides 로 적용)."""
+    sql = ("SELECT title, owner, status, category, end_date FROM todo_items WHERE tenant_id=%s"
+           " AND (category LIKE '[1]%%' OR category LIKE '[2]%%' OR category LIKE '[3]%%' OR category LIKE '[4]%%')")
+    return conn.execute(sql, (db.TENANT,)).fetchall()
+
+
+def _md(end_date):
+    """'2026-09-29' → '9/29'(앞 0 없앰 · 시트 표기와 동일)."""
+    return "%d/%d" % (int(end_date[5:7]), int(end_date[8:10]))
+
+
+def build_narrative_cells(conn_or_rows, today):
+    """I20(카테고리[2]인사·[3]파트너팀 미완료 6건)·I21(카테고리[1]매출영업·[4]운영정책 진행중 중 종료일 30일
+    안 5건) — 원천 = todo_items. conn_or_rows = db 커넥션(조회)이거나 이미 뽑은 행 리스트(로컬 점검용).
+    지어낸 숫자·원천 밖 문장 금지 — 대상이 없으면 빈 문자열."""
+    rows = _fetch_todo_rows(conn_or_rows) if hasattr(conn_or_rows, "execute") else list(conn_or_rows)
+    from api_todo import gas_hides   # GM 개인 행 가림 — api_todo 한 곳의 규칙(약속 L01), 지연 import(fastapi 회피)
+    rows = [r for r in rows if not gas_hides(r["owner"])]
+
+    i20_rows = sorted(
+        (r for r in rows if r["category"][:3] in ("[2]", "[3]") and r["status"] in ("진행중", "보류")),
+        key=lambda r: (r["end_date"] or "")[:10] or "9999-99-99")
+    lines = []
+    for r in i20_rows[:6]:
+        end = (r["end_date"] or "")[:10]
+        if end:
+            tag = "~%s 기한 지남" % _md(end) if end < today else "~%s" % _md(end)
+            if r["status"] == "보류":
+                tag += " 보류"
+        else:
+            tag = r["status"]
+        lines.append("▪ %s [%s / 책임: %s]" % (r["title"], tag, r["owner"]))
+    rest = i20_rows[6:]
+    i20 = "\n".join(lines)
+    if rest:
+        i20 += "\n   외 %d건(%s)" % (len(rest), " · ".join(r["title"] for r in rest))
+
+    i21_all = [r for r in rows if r["category"][:3] in ("[1]", "[4]") and r["status"] == "진행중"]
+    cutoff = (datetime.strptime(today, "%Y-%m-%d") + timedelta(days=30)).strftime("%Y-%m-%d")
+    within = sorted((r for r in i21_all if r["end_date"] and today <= r["end_date"][:10] <= cutoff),
+                    key=lambda r: r["end_date"][:10])
+    shown = within[:5]
+    lines2 = ["%d. %s [~%s / 책임: %s]" % (i + 1, r["title"], _md(r["end_date"][:10]), r["owner"])
+              for i, r in enumerate(shown)]
+    i21 = "\n".join(lines2)
+    left = len(i21_all) - len(shown)
+    if left > 0:
+        i21 += "\n   외 %d건(기한 30일 밖 · 기한 없음)" % left
+
+    return {"I20": i20 if lines else "", "I21": i21 if lines2 else ""}
+
+
+def compute_narrative(today):
+    """todo_items 라이브 커넥션을 열어 build_narrative_cells 호출(compute_overrides 와 같은 패턴)."""
+    load_env()
+    conn = db.connect(readonly=True)
+    try:
+        return build_narrative_cells(conn, today)
+    finally:
+        conn.close()
 
 
 # ── PNG 렌더 (Pillow — 서버에 playwright/chromium 없어 표 직접 그림 · 기존 대형 의존성 추가 없음) ──
@@ -241,6 +308,32 @@ def selftest():
         ("2020-01-01", "2026-07-21", "2026-07-21"),  # LOSS<=기준일 → 제외
     ]
     assert _corp_count(corp_rows, ref) == 1
+
+    # I20·I21 — 배1086. conn_or_rows 에 딕셔너리 행 리스트를 바로 준다(로컬 점검 경로).
+    today = "2026-09-07"
+    todo_rows = [
+        {"title": "인사A(기한없음·진행중)", "owner": "나우열M", "status": "진행중", "category": "[2]인사", "end_date": ""},
+        {"title": "인사B(기한 지남)", "owner": "나우열M", "status": "진행중", "category": "[2] 인사", "end_date": "2026-09-03"},
+        {"title": "인사C(보류·기한있음)", "owner": "나우열M", "status": "보류", "category": "[3]파트너팀", "end_date": "2026-09-20"},
+        {"title": "인사D(완료·제외)", "owner": "나우열M", "status": "완료", "category": "[2]인사", "end_date": "2026-09-01"},
+        {"title": "인사E(10/1)", "owner": "나우열M", "status": "진행중", "category": "[3]파트너팀", "end_date": "2026-10-01"},
+        {"title": "인사F(9/30)", "owner": "나우열M", "status": "진행중", "category": "[2]인사", "end_date": "2026-09-30"},
+        {"title": "인사G(9/15)", "owner": "나우열M", "status": "진행중", "category": "[3]파트너팀", "end_date": "2026-09-15"},
+        {"title": "인사H(11/1·외건)", "owner": "나우열M", "status": "진행중", "category": "[3]파트너팀", "end_date": "2026-11-01"},
+        {"title": "매출A(30일안)", "owner": "임정은M", "status": "진행중", "category": "[1]매출", "end_date": "2026-09-29"},
+        {"title": "운영정책A(30일밖)", "owner": "최준용M", "status": "진행중", "category": "[4] 운영 정책", "end_date": "2026-12-01"},
+        {"title": "매출B(기한없음)", "owner": "임정은M", "status": "진행중", "category": "[1]매출", "end_date": ""},
+        {"title": "인사(GM행·가림 대상)", "owner": "김남욱GM", "status": "진행중", "category": "[2]인사", "end_date": "2026-09-05"},
+    ]
+    out = build_narrative_cells(todo_rows, today)
+    assert out["I20"].startswith("▪ 인사B(기한 지남) [~9/3 기한 지남 / 책임: 나우열M]"), out["I20"]
+    assert "▪ 인사C(보류·기한있음) [~9/20 보류 / 책임: 나우열M]" in out["I20"], out["I20"]
+    assert "인사(GM행·가림 대상)" not in out["I20"], out["I20"]     # GM 행 가림(api_todo.gas_hides)
+    assert "인사D(완료·제외)" not in out["I20"], out["I20"]        # 완료 제외
+    assert out["I20"].count("▪") == 6 and "외 1건(인사A(기한없음·진행중))" in out["I20"], out["I20"]
+    assert out["I21"] == "1. 매출A(30일안) [~9/29 / 책임: 임정은M]\n   외 2건(기한 30일 밖 · 기한 없음)", out["I21"]
+    assert build_narrative_cells([], today) == {"I20": "", "I21": ""}   # 원천이 비면 빈 문자열
+
     print("selftest ok")
     return 0
 

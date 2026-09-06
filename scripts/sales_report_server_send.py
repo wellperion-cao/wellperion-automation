@@ -53,14 +53,27 @@ def main():
     if report["mismatches"]:
         caption += " · 불일치: " + ", ".join(report["mismatches"])
 
+    # I20·I21(배1086) — 캡션 뒤에 붙인다. 텔레그램 sendPhoto 캡션 1024자 한도 넘으면 sendMessage 로 한 통 더.
+    narrative = report.get("narrative") or {}
+    i20, i21 = narrative.get("I20", ""), narrative.get("I21", "")
+    narrative_text = ""
+    if i20:
+        narrative_text += "\n\n【I20 인사&파트너팀 진행 사항】\n" + i20
+    if i21:
+        narrative_text += "\n\n【I21 핵심 보고 및 진행 현황】\n" + i21
+    full_caption = caption + narrative_text
+    send_caption, extra_text = (full_caption, None) if len(full_caption) <= 1024 else (caption, narrative_text.strip())
+
     token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
     if not token or not chat:
         print("[fail] TG_BOT_TOKEN/TG_CHAT_ID 없음 (api.env 확인)")
         return 1
 
-    resp = tg_send(token, chat, caption, source="sales_report_server_send", photo=png, full_response=True)
+    resp = tg_send(token, chat, send_caption, source="sales_report_server_send", photo=png, full_response=True)
     ok = bool(isinstance(resp, dict) and resp.get("ok"))
     msg_id = (resp.get("result") or {}).get("message_id") if isinstance(resp, dict) else None
+    if extra_text:
+        tg_send(token, chat, extra_text, source="sales_report_server_send", full_response=True)
     print("DONE: ok=%s message_id=%s png=%s · %s" % (ok, msg_id, png, caption))
     return 0 if ok else 1
 
