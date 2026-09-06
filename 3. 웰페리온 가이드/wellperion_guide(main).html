@@ -3034,14 +3034,6 @@
           var RAW='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/';
           function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
           var _dc=0;
-          function toggleInc(id){
-            var el=document.getElementById(id);
-            var btn=document.getElementById('btn-'+id);
-            if(!el)return;
-            var open=el.style.display!=='none';
-            el.style.display=open?'none':'block';
-            if(btn)btn.textContent=open?'▸ 자세히':'▴ 접기';
-          }
           // incidents
           fetch(RAW+'incidents.json?t='+Date.now(),{cache:'no-store'})
             .then(function(r){return r.json();})

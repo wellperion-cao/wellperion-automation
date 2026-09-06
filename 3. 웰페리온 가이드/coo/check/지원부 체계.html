@@ -1321,7 +1321,7 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
         </div>
         <div style="padding:12px 14px;">
           <div id="support-staff-table"></div>
-          <p style="font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중. <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--orange-bg);color:var(--orange);border:1px solid rgba(230,148,78,0.4);">최종 등록 기준 2026-06-24</span></p>
+          <p style="font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.5;">정원 각 8명 TO · 남·여 일부 충원 진행 중.</p>
         </div>
       </div>
       <!-- ── 🧖 신규회원 사우나 투어 안내 (8단계 순서형 · 편집가능화 SUPPORT_TOUR · 배64) ── -->
@@ -7280,8 +7280,6 @@ function wpLdySheetSet(dateStr, itemId, field, raw){
   wpLdyYearRender();   /* 월 입고가 곧 표②의 그 달 칸 — 같이 갱신한다(2026-09-04) */
   wpLdyMarkTodo();
 }
-/* (날짜 단위 비고 wpLdySheetSetRemark 삭제 — 비고가 품목 단위로 갈렸다(daily[날짜][품목].note · 2026-09-04).
-   저장된 옛 daily[날짜].remark 값은 지우지 않는다 — 쓰는 화면만 없앴다.) */
 function wpLdySheetCell(dateStr, itemId, field, kind){
   var rec = (LAUNDRY_DATA.daily[dateStr] || {})[itemId] || {};
   var v = (rec[field] === undefined || rec[field] === null) ? '' : rec[field];
@@ -7614,9 +7612,6 @@ function wpLdyExportJson(){
 
 wpLdyLoadLocal(); wpLdyMarkTodo();   // 세탁물: 로컬 즉시(서버 동기화는 탭 열 때 wpLdyLoadFromBackend)
 renderG('m');
-/* 로드 시 시드 자동 동기(무트리거) — setTimeout(0)로 스크립트 평가 완료 후 실행(const TDZ 회피)·비차단.
-   시그니처 가드로 회차/명단 바뀐 경우에만 시트 write, 10초 디바운스로 멀티탭 연타 방지. GM 2026-06-23 [시우]. */
-/* 2026-06-27: 시드 자동동기 폐지 — 시트=항목 마스터 단일출처(하드코딩 배열 되쓰기 차단, GM 삭제분 부활 방지). */
 
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
