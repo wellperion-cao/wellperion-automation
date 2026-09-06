@@ -483,8 +483,11 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
     except Exception:
         return []
     lo = (t - timedelta(days=NUDGE_LOOKBACK_DAYS - 1)).isoformat()
+    # ★GM 지시 2026-09-07 — "놓친 건은 리마인드를 지속시켜라". 이경연 실장·이정헌 소장
+    # 몫은 7일이 지나도 열린 채면 계속 후보에 들어야 한다 — 창을 원장 전체로 넓히고,
+    # 하한(lo) 적용은 아래 kept 적재 직전으로 옮겨 나우열M·GM_TASK_OWNERS 매칭 몫에만 건다.
     window = [e for e in ledger
-              if isinstance(e, dict) and lo <= str(e.get("date", "")) <= target_date]
+              if isinstance(e, dict) and str(e.get("date", "")) <= target_date]
 
     resolved_texts, today_texts = [], []
     earliest: dict = {}  # 정규화 제목 -> 이 창에서 처음 나온 날짜
@@ -519,6 +522,11 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
                 member = _gm_task_owner_for_title(title, gm_owned_rows, task_owners)
                 if not member:
                     continue  # 담당 미지정 — 안 보낸다(배855)
+            # 나우열M 몫·GM_TASK_OWNERS 매칭 몫은 종전대로 7일 창 유지(그 도메인은 웰리가
+            # 판단하지 않는다) — 이경연 실장·이정헌 소장 몫만 창 해제(위 GM 지시 2026-09-07).
+            if member in (NAWOOL_WHO,) or owner not in _NUDGE_MEMBERS:
+                if str(e.get("date", "")) < lo:
+                    continue
             rows = kept.setdefault(member, [])
             if any(_nudge_similar(title, r["title"]) for r in rows):
                 continue
@@ -538,6 +546,90 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
                 "how": f"{member}님께 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다.",
             })
     return items
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 📮 원장 닫기·검토 CLI (GM 지시 2026-09-07 — "지난 건은 완료 처리하고, 놓친 건은
+# 리마인드를 지속시켜라"). 위 build_reply_nudge_items 가 매일 다시 싣는 열린 이슈를
+# 웰리가 직접 --nudge-review 로 훑어보고 --resolve 로 닫는다. 새 파일·새 상태 없음 —
+# MGR_LEDGER(원장) 자체를 읽고 쓴다.
+# ══════════════════════════════════════════════════════════════════════════
+def nudge_review() -> int:
+    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 사람별
+    오래된 순으로 상한 없이 전부 출력 — --resolve 로 닫을 후보를 고르는 용도.
+    ledger 파일만 읽는다(모듈 import 부작용 없음)."""
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"FAILED: 원장 읽기 실패 — {exc}")
+        return 1
+
+    today = date.today()
+    rows = []
+    for e in ledger:
+        if not isinstance(e, dict):
+            continue
+        edate = str(e.get("date", ""))
+        for it in e.get("issues") or []:
+            owner = str(it.get("owner") or "").strip()
+            title = str(it.get("issue") or "").strip()
+            if not title or owner not in _NUDGE_MEMBERS or str(it.get("status") or "") != "open":
+                continue
+            try:
+                age = (today - date.fromisoformat(edate)).days
+            except Exception:
+                age = -1
+            rows.append((age, edate, owner, title))
+    rows.sort(key=lambda r: -r[0])
+
+    if not rows:
+        print("(열린 이슈 0건)")
+        return 0
+    for age, edate, owner, title in rows:
+        print(f"{age}일째 | {edate} | {owner} | {title}")
+    return 0
+
+
+def resolve_nudge_issues(fragments: list, why: str = "") -> int:
+    """MGR_LEDGER 에서 status=='open' 이고 제목이 fragments(제목 조각, OR) 중 하나라도
+    포함하면 resolved 로 닫는다 — 아침 리마인드가 이미 답 온 건을 매일 다시 싣는 것을
+    막는 닫기 관문(GM 지시 2026-09-07). 원자 저장(tmp → os.replace)."""
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"FAILED: 원장 읽기 실패 — {exc}")
+        return 1
+
+    needles = [_nudge_norm(f) for f in fragments if f]
+    today = date.today().isoformat()
+    hits = []
+    for e in ledger:
+        if not isinstance(e, dict):
+            continue
+        for it in e.get("issues") or []:
+            if str(it.get("status") or "") != "open":
+                continue
+            title = str(it.get("issue") or "")
+            if not any(n and n in _nudge_norm(title) for n in needles):
+                continue
+            it["status"] = "resolved"
+            it["resolved_by"] = "웰리"
+            it["resolved_at"] = today
+            if why:
+                it["resolved_why"] = why
+            hits.append((str(e.get("date", "")), str(it.get("owner", "")), title))
+
+    if not hits:
+        print("일치 0건")
+        return 1
+
+    tmp = MGR_LEDGER.with_suffix(".tmp")
+    tmp.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, MGR_LEDGER)
+
+    for d, owner, title in hits:
+        print(f"{d} | {owner} | {title}")
+    return 0
 
 
 def _mgr_conversation_message(target_date: str) -> str:
@@ -2351,7 +2443,18 @@ def main() -> int:
                     help="사람 처리 배 전달 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
     ap.add_argument("--mgr-preview", action="store_true",
                     help="★중간관리자 결정거리 요약 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
+    ap.add_argument("--nudge-review", action="store_true",
+                    help="원장(MGR_LEDGER) 열린 이슈를 사람별 오래된 순으로 상한 없이 전부 출력")
+    ap.add_argument("--resolve", action="append", metavar="제목조각",
+                    help="원장에서 이 조각을 포함하는 열린 이슈를 resolved 로 닫는다(여러 번 지정 가능)")
+    ap.add_argument("--why", default="", help="--resolve 사유(선택)")
     args = ap.parse_args()
+
+    if args.nudge_review:
+        return nudge_review()
+
+    if args.resolve:
+        return resolve_nudge_issues(args.resolve, args.why)
 
     if args.relay_preview:
         return preview_relays()
