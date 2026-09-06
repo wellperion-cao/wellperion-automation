@@ -51,17 +51,21 @@ except Exception:
 # 업무 연속성 기준: 판단 본업(Opus) → 표준(Sonnet) → 경량(Haiku). 한 모델이 외부 차단돼도 운영 지속.
 # 2026-09-05 GM 지시 "최대한 효율적으로 · Fable 5.1 로": 기본 체인 = 표준(Sonnet).
 # 콘텐츠·집계·송부 호출부는 기본 체인, 판단 호출부만 JUDGMENT_CHAIN 을 명시해 넘긴다(CLAUDE.md 토큰 라우팅 ⑨).
+# 2026-09-07 시토 실측(아침 요약 프롬프트 10.5K자 · CLI 2.1.261): claude-sonnet-4-6 = 182~289초,
+#   claude-sonnet-5 = 103초, claude-opus-4-8 = 101초, claude-haiku-4-5 = 121초. 09-05 체인을 sonnet-4-6
+#   1순위로 바꾼 뒤 09-06·09-07 아침 요약이 이틀 연속 140초 초과로 죽었다. "실행 = Sonnet" 은 그대로
+#   두고 ID 만 현행 Sonnet 5 로 — 같은 등급에서 2~3배 빠르다.
 MODEL_FALLBACK_CHAIN = [
-    "claude-sonnet-4-6",  # 1순위: 표준 — 일반 오류는 이 모델을 재시도
+    "claude-sonnet-5",    # 1순위: 표준 — 일반 오류는 이 모델을 재시도
     "claude-haiku-4-5",   # 2순위: sonnet "모델차단" 감지 시에만 강등
 ]
 JUDGMENT_CHAIN = [
     "claude-fable-5-1",   # 1순위: 판단·검토 본업(주간 자기검토 · GM 프로필 · 학습 제안)
-    "claude-sonnet-4-6",  # 2순위: fable "모델차단" 감지 시에만 강등
+    "claude-sonnet-5",    # 2순위: fable "모델차단" 감지 시에만 강등
     "claude-haiku-4-5",
 ]
 
-_PER_MODEL_TIMEOUT = 140  # 모델당 호출 타임아웃(초) — 아래 벽시계 상한 근거 참조
+_PER_MODEL_TIMEOUT = 180  # 모델당 호출 타임아웃(초) — 아래 벽시계 상한 근거 참조 (140→180 · 2026-09-07 실측 103초에 여유)
 
 # ── 재시도·백오프 하드닝 (배237 승인건 #244 → GM 재설계 2026-07-02) ─────
 # 근거: 2026-07-01 클로드 서버 일시장애로 3모델(opus/sonnet/haiku) 전멸 →
@@ -72,7 +76,7 @@ _MAX_RETRIES_PER_MODEL = 2       # 모델당 최대 재시도 횟수(최초 시�
 _RETRY_BACKOFFS = [10, 20]       # 재시도 전 대기(초). len == _MAX_RETRIES_PER_MODEL
 # 벽시계 상한 근거(northstar_recommender·gm_aide_scan = 예약작업 10분(600s) 강제종료):
 #   opus(우선순위) 재시도 최악 = (1+_MAX_RETRIES_PER_MODEL)*timeout + sum(_RETRY_BACKOFFS)
-#                              = 3*140s + 30s = 450s(=7.5분) < 480s(8분 목표) < 600s(10분 하드컷).
+#                              = 3*180s + 30s = 570s(=9.5분) < 600s(10분 하드컷).
 #   이게 "일반 오류→규칙폴백" 주경로의 실제 상한이다(일반 오류는 낮은 모델로
 #   내려가지 않고 여기서 (None, None) 반환 — 아래 정책 참조).
 #   "모델차단" 강등 경로는 별도(드문 경로, GM 지시): 차단 응답은 보통 즉시
