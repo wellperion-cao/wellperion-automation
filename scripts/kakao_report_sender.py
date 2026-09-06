@@ -1189,17 +1189,54 @@ def _selfcheck_erp_links() -> None:
     print("[selfcheck] to_erp_links OK")
 
 
+# 대외·실무진 발신 AI 서명 정본 = ssot/canon_values.json ai_sender_name(배1087 · GM 확정 2026-09-06
+# "항상 보고드릴때 웰페리온 AI 라고 정의하자"). 관문 1곳(약속 L21) — build_caption을 지나는
+# 모든 사람 방 발신이 이 치환을 받는다. 내부(업무보고방·큐·텔레그램 AI 방)는 이 함수를 안 거친다.
+_AI_SENDER_CACHE: "str | None" = None
+
+
+def _ai_sender_name() -> str:
+    global _AI_SENDER_CACHE
+    if _AI_SENDER_CACHE is not None:
+        return _AI_SENDER_CACHE
+    name = "웰페리온 AI"
+    try:
+        d = json.loads((ROOT / "ssot" / "canon_values.json").read_text(encoding="utf-8"))
+        for v in d.get("values", []):
+            if v.get("key") == "ai_sender_name" and v.get("value"):
+                name = v["value"]
+                break
+    except Exception:
+        pass
+    _AI_SENDER_CACHE = name
+    return name
+
+
+def normalize_ai_sender(text: str) -> str:
+    """옛 「AI 웰리」류 서명·자기소개를 정본 이름으로 정규화. 원문 쪽도 같이 고쳤지만
+    (배1087) 빠뜨린 자리·과거 메시지 재사용 경로까지 여기 한 곳이 최종적으로 잡는다."""
+    name = _ai_sender_name()
+    out = text
+    out = out.replace("웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.", f"{name} 드림")
+    out = out.replace("웰페리온 AI 총괄 담당 웰리 드림", f"{name} 드림")
+    out = out.replace("AI 웰리 드림", f"{name} 드림")
+    out = out.replace("AI 웰리입니다", f"{name}입니다")
+    out = out.replace("[AI 웰리]", f"[{name}]")
+    out = out.replace("— AI 웰리", f"— {name}")
+    return out
+
+
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
     _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
     마지막으로 모든 방 공통 명단 마스킹(mask_pii) + 존칭 보정(add_honorifics) +
-    링크 공백 인코딩을 거친다."""
+    AI 서명 정규화(normalize_ai_sender) + 링크 공백 인코딩을 거친다."""
     from tg_outbound_log import encode_url_spaces
     text = base_caption
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
         text = _fix_avg_for_chairman(text)
-    out = encode_url_spaces(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}")))
+    out = encode_url_spaces(normalize_ai_sender(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}"))))
     # 회장님 방은 회사 구글 계정 로그인이 없으니 옛 주소 그대로 둔다.
     return out if room.get("name") == CHAIRMAN_ROOM_NAME else to_erp_links(out)
 

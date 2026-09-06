@@ -156,8 +156,10 @@ AUTO_BROADCAST_HEADER_RE = re.compile(
     r")"
 )
 # 옛 문구도 계속 둔다 — 이미 방에 쌓인 지난 메시지가 다시 '사람 말'로 잡히면 안 된다.
-# "AI 웰리 드림" = 2026-08-21 GM 확정 신규 서명(send_ops_digest.RELAY_SIGNOFF).
-AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리", "AI 웰리 드림")
+# "웰페리온 AI 드림" = 2026-09-06 GM 확정 서명(send_ops_digest.RELAY_SIGNOFF · 배1087).
+# 옛 "AI 웰리" 계열도 그대로 둔다 — 방에 이미 쌓인 지난 메시지가 다시 '사람 말'로 잡히면 안 된다.
+AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리", "AI 웰리 드림",
+                          "웰페리온 AI 드림", "— 웰페리온 AI")
 
 
 def _is_auto_broadcast(msg: str) -> bool:

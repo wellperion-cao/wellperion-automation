@@ -689,7 +689,7 @@ RELAY_STALE_DAYS = 1  # 내용 안 바뀐 채 이만큼 묵으면 재알림 = �
 # 2026-08-21 GM 확정 — "AI 총괄 웰리"가 아니라 그냥 "AI 웰리". 직함을 길게 붙이지 않는다.
 # ※ 문구를 바꾸면 ops_daily_digest.AUTO_BROADCAST_SIGNOFF(자동글 걸러내는 자리)에도 같이
 #   넣어야 한다. 안 넣으면 웰리가 보낸 자동 글이 '사람이 쓴 말'로 잡혀 요약에 다시 실린다.
-RELAY_SIGNOFF = "AI 웰리 드림"
+RELAY_SIGNOFF = "웰페리온 AI 드림"
 # 무게 순서(🛳️크루즈 → ⛴️여객선 → ⛵돛단배). 모르는 값은 맨 뒤.
 _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
 
@@ -2121,7 +2121,7 @@ def build_today_reception_block(today: str = "", rows: list | None = None) -> st
              and _ovd_room_for(str(r.get("dept") or "")) == _OVD_ROOM_LESSON]
     # 발신 주체를 밝히는 줄 — 실무진 방 규칙(누가 보내는지 항상 밝힌다). 폐기한
     # build_lesson_digest 가 달고 있던 줄을 그대로 옮겨 왔다.
-    signoff = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
+    signoff = "— 웰페리온 AI 드림"
     if not items:
         return f"📮 오늘 들어온 접수 없음\n{signoff}"
     lines = [f"📮 오늘 들어온 접수 {len(items)}건 (강습·업장)"]
@@ -2166,7 +2166,7 @@ def _selfcheck_ovd_block() -> None:
     tr = build_today_reception_block(today, rows=tr_rows)
     assert "오늘 들어온 접수 1건" in tr, tr
     assert "수영장" in tr and "러닝머신" not in tr and "옛날 건" not in tr, tr
-    assert "웰리" in tr, "발신 주체를 밝히는 줄이 빠졌다"
+    assert "웰페리온 AI" in tr, "발신 주체를 밝히는 줄이 빠졌다"
     assert build_today_reception_block(today, rows=[]).startswith("📮 오늘 들어온 접수 없음")
     print("[selfcheck] _build_ovd_block OK")
 

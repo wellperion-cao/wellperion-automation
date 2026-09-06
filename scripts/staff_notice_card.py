@@ -89,7 +89,7 @@ def build() -> str:
         '소독만 있고 방제가 빠져 있으면 벌레가 계속 나오는 원인일 수 있습니다.</div></div>'
         '<footer class="foot"><div class="frow"><span class="tag">웰페리온</span>'
         '<b>★운영 + 시설 + 지원 + 주차</b> · 2026-08-26</div>'
-        '<div class="frow">AI 웰리 드림</div></footer>'
+        '<div class="frow">웰페리온 AI 드림</div></footer>'
         '</div>'
     )
     return ksc.PAGE_TEMPLATE.format(style=ksc.STYLE_CSS + EXTRA_CSS, card=card)
