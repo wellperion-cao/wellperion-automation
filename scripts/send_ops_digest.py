@@ -1791,13 +1791,19 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
         shown_so_far = shown_total
         folded = False
     else:
+        # ★2026-09-08 시토(배1124) — 종전엔 사람 블록을 통째로 넣거나 뺐다. 실장 7줄(3건+
+        #   배 전달문 2+외 1줄) 뒤에 소장 4줄이 안 들어가 소장 몫이 인라인 0건·"외 4건 — 링크"
+        #   로만 나갔다(09-08 07:51 실측). 소장은 번호로 답할 건이 화면에 없어 회신을 못 한다.
+        #   고침 = 상한을 사람 수로 균등 배분(사람줄 빼고 나눈 몫 · 최소 1건) — 사람마다 앞
+        #   건부터 그 수만큼 싣고, 사람별 "외 N건 · 화면" 줄은 두지 않는다(접힌 건은 아래
+        #   "외 N건 — 링크" 한 줄이 이미 센다). 실장·소장 2명이면 각 3건.
         budget = ASKS_SECTION_CAP - 1
+        per = max(1, (budget - len(by_who)) // len(by_who))
         body, shown_so_far = [], 0
-        for block, cnt in blocks:
-            if len(body) + len(block) > budget:
-                break
-            body.extend(block)
-            shown_so_far += cnt
+        for who, group in by_who.items():
+            body.append(f"▪ {who}")
+            body += [f"   {it['ask']}" for it in group[:per]]
+            shown_so_far += min(len(group), per)
         folded = True
 
     lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"] + body
