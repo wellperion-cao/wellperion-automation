@@ -36,8 +36,13 @@ async def handle_callback(update, ctx) -> None:
     status = "approved" if decision == "a" else "rejected"
     ok, req = push_lock.decide(req_id, status, decided_by)
     if not ok or not req:
+        # 이미 처리된 요청(파일 승인·다른 경로) — 누른 사람에게 그 사실을 답한다(2026-09-07 웰리 · GM 카드 무반응 사고).
+        prev = next((r for r in push_lock.load_approvals()["requests"] if r.get("id") == req_id), None)
+        prev_status = (prev or {}).get("status", "없음")
+        note = {"pushed": "이미 승인·배포됨", "approved": "이미 승인됨(배포 대기)", "rejected": "이미 반려됨",
+                "conflict": "충돌로 보류 중"}.get(prev_status, f"처리 불가(상태 {prev_status})")
         try:
-            await q.edit_message_reply_markup(reply_markup=None)
+            await q.edit_message_text(text=f"ℹ️ {req_id} — {note}", reply_markup=None)
         except Exception:
             pass
         return
