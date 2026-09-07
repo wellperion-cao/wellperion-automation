@@ -102,11 +102,35 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260907-09",
+          "no": "09",
+          "got": "GAS→AWS 이관 — 데이터 유실 0 · 멈추지 말고 계속 · 실무진 혼란 최소",
+          "did": "이관 52% · 서버 원본 0/9 · 다음 09-08 (erp_status 09:56)",
+          "start": "10:05",
+          "end": "10:06",
+          "minutes": 0,
+          "upload": "✅ 올림 (3b50a0cb0)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260907-1004",
           "no": "04",
           "got": "전사일정에 중복되는 것들이 보이는데, 이런건 한번씩 정리좀 해줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "10:00",
+          "end": "10:04",
+          "minutes": 3,
+          "upload": "✅ 올림 (3b50a0cb0)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260907-1005",
+          "no": "05",
+          "got": "GAS -> AWS 데이터 사라지지 않도록, 잘 이관 마무리해야하고, 멈추지말고 계속 작업해줘야 실무진들이 혼란이 적어져 부탁할게",
+          "did": "",
+          "start": "10:05",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -158,20 +182,20 @@
           "detail": "커밋 843becba2 · 배 11197"
         },
         {
-          "time": "10:02",
-          "area": "작업",
-          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 a7d87554f · 배 11197"
-        },
-        {
           "time": "10:03",
           "area": "작업",
           "event": "전사일정 중복 9쌍 병합 — GAS 216→207 · seed 동기화 (GM 지시 2026-09-07)",
           "detail": "커밋 a03394972 · 배 11197"
+        },
+        {
+          "time": "10:06",
+          "area": "작업",
+          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+          "detail": "커밋 985ff3b7a · 배 11197"
         }
       ],
-      "count": 9,
-      "done": 8,
+      "count": 11,
+      "done": 10,
       "open": 1,
       "avg_minutes": 4,
       "work_count": 9,
@@ -179,18 +203,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260907-1004",
-          "no": "04",
-          "got": "전사일정에 중복되는 것들이 보이는데, 이런건 한번씩 정리좀 해줘",
+          "ref": "GM-20260907-1005",
+          "no": "05",
+          "got": "GAS -> AWS 데이터 사라지지 않도록, 잘 이관 마무리해야하고, 멈추지말고 계속 작업해줘야 실무진들이 혼란이 적어져 부탁할게",
           "did": "",
-          "start": "10:00",
+          "start": "10:05",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 1
         }
       ],
       "repeats": []
@@ -437,13 +461,13 @@
           "ref": "GM-20260907-4001",
           "no": "01",
           "got": "시포 Model: Sonnet 5?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "10:02",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:06",
+          "minutes": 3,
+          "upload": "✅ 올림 (ec4a558ba)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -452,31 +476,22 @@
           "area": "멤버십",
           "event": "재등록 대상 집계 갱신 (member_expiry_alert)",
           "detail": "커밋 363ff9aab · 배 11310"
+        },
+        {
+          "time": "10:06",
+          "area": "공통",
+          "event": "I20·I21 타이밍 정렬 배 시토 전달 (GM 지시 2026-09-07)",
+          "detail": "커밋 ec4a558ba · 배 11310"
         }
       ],
       "count": 1,
-      "done": 0,
-      "open": 1,
-      "avg_minutes": null,
-      "work_count": 1,
+      "done": 1,
+      "open": 0,
+      "avg_minutes": 3,
+      "work_count": 2,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260907-4001",
-          "no": "01",
-          "got": "시포 Model: Sonnet 5?",
-          "did": "",
-          "start": "10:02",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "coo": {
