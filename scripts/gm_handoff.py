@@ -124,8 +124,9 @@ def append_todo(todo_id: str, line: str, dry: bool) -> dict:
     """GM업무 한 행의 내용 끝에 진척 한 줄을 덧붙인다(GM 2026-09-05 "G1에 계속 업데이트").
     todo_update 는 전 칸을 다시 보내야 하므로 현재 행을 읽어 내용만 늘린다. 행이 없으면 실패를 그대로 돌려준다."""
     import ops_daily_digest as o
-    rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1"}, timeout=40,
-                      label="gm_handoff append").json().get("data") or []
+    # gmkey 없이 부르면 GM 행이 목록에서 빠져 "행 없음"이 된다(2026-09-07 실측 — 결재 SSOT 유리문 건).
+    rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1", "gmkey": GM_KEY},
+                      timeout=40, label="gm_handoff append").json().get("data") or []
     row = next((r for r in rows if str(r.get("id")) == todo_id), None)
     if not row:
         return {"ok": False, "reason": f"행 없음 {todo_id}"}
