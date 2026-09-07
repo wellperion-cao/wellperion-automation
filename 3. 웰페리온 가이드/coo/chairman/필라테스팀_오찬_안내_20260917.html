@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>필라테스팀 — 여기까지 해오신 것 (2026-09-17)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.55; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  /* 머리말 */
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:11px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:14px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:16px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:20px; font-weight:800;}
+
+  h2{font-size:18px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:12px 16px; font-size:19px; font-weight:600; line-height:1.55;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:8px;}
+  .kpi{border:1.5px solid var(--line); padding:7px 12px;}
+  .kpi .k{font-size:13px; color:var(--dim);}
+  .kpi .v{font-size:25px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .kpi .s{font-size:13px; color:var(--dim);}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; align-items:start; margin-top:13px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+
+  table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  th,td{border:1px solid var(--line); padding:6px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+
+  .quote{border-left:5px solid var(--ok); background:var(--ok-soft); padding:12px 16px;
+         font-size:17px; line-height:1.6;}
+  .quote .tail{margin-top:7px; font-size:17px; font-weight:800; color:var(--ok);}
+  .quote .src{margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .topics{list-style:none; padding:0; margin:0;}
+  .topics li{border-left:5px solid var(--accent); background:#f7f9fb;
+             padding:7px 13px; margin-bottom:4px; break-inside:avoid; font-size:17px;
+             font-weight:600; line-height:1.45;}
+  .topics .w{display:block; margin-top:2px; font-size:13.5px; font-weight:400; color:var(--dim); line-height:1.38;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .note ul,.good ul{margin:5px 0 0; padding-left:20px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk,.topics li{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar button[disabled]{opacity:.5; cursor:default;}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
+
+  .why{ margin-top:11px; background:#eef3f7; border-left:5px solid var(--accent);
+    padding:12px 18px; display:flex; align-items:flex-start; gap:20px; }
+  .why .h{ font-size:17px; font-weight:800; color:var(--accent); white-space:nowrap; }
+  .why .h em{ display:block; font-style:normal; font-size:12.5px; font-weight:500; color:var(--dim); margin-top:3px; }
+  .why .t{ font-size:15.5px; line-height:1.6; }
+  .why .t b{ color:var(--accent); }
+  .why .t .lead{ display:block; margin-top:6px; padding-top:6px; border-top:1px solid #c9d7e2; }
+
+  /* 표 오와열 — 숫자는 오른쪽 정렬·같은 자릿수 폭, 제목칸은 왼쪽 고정 (2026-09-03 GM 지시) */
+  .sheet table td, .sheet table th{ vertical-align:middle; }
+  .sheet table td.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sheet table th.num{ text-align:right; white-space:nowrap; }
+  .sheet table th[data-k]{ text-align:left; }
+  .sheet table tr.sum td, .sheet table tr.sum th{ background:var(--accent-soft); }
+  table.months{ font-size:14px; }
+  table.months td, table.months th{ padding:5px 6px; }
+  .grid > .blk{ margin-top:0; }
+  .blk.wide{ grid-column:1 / -1; }
+  .blk h2{ margin-top:0; }
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">회장님 팀별 오찬 &middot; 4차 (마지막) &mdash; 필라테스팀</div>
+      <div class="ttl">여기까지 해오신 것</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">9월 17일(목) 13:00</div>
+      <div>회장님 &middot; 김남욱 GM &middot; 나우열M &middot; 필라테스팀 전원</div>
+      <div>2026년 1월 ~ 8월 기록</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    올해부터 팀 실적을 따로 세기 시작한 필라테스팀은 1월 1,775만에서 <em>6월 3,936만(목표의 119.3%)</em>까지 <em>반년 만에 2.2배</em>가 됐습니다.
+    유효회원 <em>976명에게 담당 강사가 붙어</em> 연락 기록이 878건 쌓였고, 조영은·황동희 강사가 맡은 문의는 <em>거의 다 등록</em>으로 이어졌습니다. 안전사고는 <em>0건</em>입니다.
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">올해 최고 · 6월</div><div class="v">3,936만</div><div class="s">목표 3,300만 · 119.3% · 올해 첫 목표 초과</div></div>
+    <div class="kpi"><div class="k">1~8월 누계</div><div class="v">1억 9,617만</div><div class="s">월평균 2,452만 · 1월 대비 6월 2.2배</div></div>
+    <div class="kpi"><div class="k">회원 담당제</div><div class="v">976명</div><div class="s">유효회원 995명 중 · 연락 기록 878건</div></div>
+    <div class="kpi"><div class="k">안전사고</div><div class="v">0건</div><div class="s">종합접수처 개설(6/30) 이후 140건 중</div></div>
+  </div>
+
+  <div class="grid">
+
+    <div class="blk">
+      <h2>여덟 달, 숫자로 남은 것</h2>
+      <table class="months">
+        <tr><th data-k style="width:92px"></th><th class="num">1월</th><th class="num">2월</th><th class="num">3월</th><th class="num">4월</th><th class="num">5월</th><th class="num">6월</th><th class="num">7월</th><th class="num">8월</th></tr>
+        <tr><th data-k>매출<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">단위 만원 · 결제</span></th>
+            <td class="num">1,775</td><td class="num">1,700</td><td class="num">2,420</td><td class="num">2,098</td><td class="num">2,955</td><td class="num"><b>3,936</b></td><td class="num">2,847</td><td class="num">1,887</td></tr>
+        <tr><th data-k>목표 달성<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">목표 3,300만</span></th><td class="num">53.8%</td><td class="num">51.5%</td><td class="num">73.3%</td><td class="num">63.6%</td><td class="num">89.5%</td><td class="num"><b>119.3%</b></td><td class="num">86.3%</td><td class="num">57.2%</td></tr>
+      </table>
+      <div style="margin-top:7px; font-size:15px;">
+        1월부터 6월까지 <b>다섯 달 동안 2.2배</b>로 올라 6월에 목표를 넘겼습니다. 여름에 내려온 것은 <b>새로 찾아오는 문의</b>가 줄어서이고(성인 문의 1월 11건 &rarr; 8월 2건), 그래서 팀은 안에 계신 회원에게로 방향을 돌렸습니다.
+      </div>
+      <div class="note" style="margin-top:9px; border-left-color:var(--ok); background:var(--ok-soft);">
+        <b>올해 걸음</b> &mdash; 팀 실적 집계 시작(1월) &rarr; 6월 <b>목표 초과</b> &rarr; 8월 <b>1회 원포인트 수업</b> 기획(정회원 12만 3,900원 · 10회 등록의 문턱) &rarr; 9월 <b>회원 976명 담당제 연락</b> 진행 중.
+      </div>
+
+      <table style="margin-top:11px">
+        <tr><th data-k style="width:150px">새로 들어온 문의</th>
+            <td>올해 성인 <b>50건</b> 중 등록 <b>14건</b> <span style="color:var(--dim)">(등록률 28%)</span> · 8월 2건(기존·과거 회원) · 유소년 22건</td></tr>
+        <tr><th data-k>담당 강사 연락</th>
+            <td><b>878건</b> <span style="color:var(--dim)">회원 담당제 연락 기록 · 9월 첫 주에만 51건 · &lsquo;OT 예정&rsquo;·&lsquo;문자 완료&rsquo;·&lsquo;관심 없음&rsquo;까지 그대로 남김</span></td></tr>
+        <tr><th data-k>함께 만드는 사람</th>
+            <td><b>3명</b> <span style="color:var(--dim)">최은지 원장 · 조영은 · 황동희 · STOTT 필라테스</span></td></tr>
+      </table>
+    </div>
+
+    <div class="blk">
+      <h2>이 숫자를 만든 세 분</h2>
+      <table>
+        <tr><th data-k style="width:118px"></th><th class="num">올해 맡은 문의<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">1~8월 · 성인+유소년</span></th><th class="num">등록으로<br>이어진 것</th><th class="num">담당 회원<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">회원 담당제</span></th><th class="num">소진 매출</th></tr>
+          <tr><th data-k>최은지 <span style="color:var(--dim);font-weight:500">원장</span></th><td class="num">48건</td><td class="num">4건</td><td class="num">154명</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>조영은</th><td class="num">5건</td><td class="num">4건</td><td class="num">657명</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>황동희</th><td class="num">4건</td><td class="num">4건</td><td class="num">165명</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr class="sum"><th data-k><b>합계</b></th><td class="num"><b>57건</b></td><td class="num"><b>12건</b></td><td class="num"><b>976명</b></td><td class="num" style="color:var(--dim)">&mdash;</td></tr>
+      </table>
+      <div style="margin-top:7px; font-size:14px; color:var(--dim)">
+        문의는 강습 문의 원장의 <b>접수 담당자</b>로 셌습니다(다른 팀 강사가 받은 필라테스 문의 16건은 뺐습니다). 조영은·황동희 강사가 맡은 문의는 <b>거의 다 등록</b>으로 이어졌습니다.
+        강사별 소진 매출·파트너/파트타임 구분은 원장이 없어 <b>미수집</b>입니다.
+      </div>
+      <div class="note" style="margin-top:9px">
+        <b>회원이 말했고, 팀이 옮겼습니다</b> &mdash; 수업 중 회원이 꺼낸 수영장 레인 불편을 <b>조영은 강사가 그날 대신 접수</b>(8/22)했고, 필라테스실 모니터 고장도 강사가 먼저 접수(7/31)해 케이블 교체로 처리됐습니다. 자기 종목 밖의 불편까지 회사로 옮기는 팀입니다.
+      </div>
+    </div>
+
+    <div class="blk">
+      <h2>회사가 준비하고 있는 것</h2>
+      <table>
+        <tr><th data-k style="width:118px">연락이 등록으로<br>보이게</th><td>담당제 연락 878건이 등록으로 얼마나 이어지는지 지금은 <b>숫자로 볼 칸이 없습니다.</b> 9월 새 시스템 전환 때 이 칸을 넣습니다.</td></tr>
+        <tr><th data-k>더 받을 수 있게</th><td>회원권 요금은 <b>2027년 2월</b> 인상이 정해졌습니다. 강습 요금을 함께 올릴지는 오늘 같은 자리에서 정해집니다.</td></tr>
+        <tr><th data-k>웰니스 라인</th><td>필라테스 곁에 발레·바레(루프메소드 파트너)가 있고, 유소년(WSC) 웰니스 프로그램 런칭을 협의 중입니다(목·금 15~18시 · 나우열M).</td></tr>
+      </table>
+    </div>
+
+    <div class="blk">
+      <h2>회장님이 물으실 만한 것</h2>
+      <ol class="topics">
+        <li>&ldquo;6월엔 무엇이 달랐습니까?&rdquo; <span class="w">목표를 넘긴 달의 방법 &mdash; 팀이 말로 남겨 두면 다음 달에 다시 씁니다.</span></li>
+        <li>&ldquo;회원들에게 연락하면 어떤 답이 돌아옵니까?&rdquo; <span class="w">담당제 연락 878건 &mdash; &lsquo;관심 없다&rsquo;·&lsquo;무섭다&rsquo;는 답을 어떻게 풀고 있는지.</span></li>
+        <li>&ldquo;원포인트 1회가 10회로 이어집니까?&rdquo; <span class="w">8월에 기획한 1회 수업 &mdash; 현장에서 10회 등록으로 넘기는 그림.</span></li>
+        <li>&ldquo;있으면 훨씬 수월해질 것 하나?&rdquo; <span class="w">건의를 여는 마무리 질문.</span></li>
+      </ol>
+    </div>
+
+    <div class="blk wide">
+      <h2>이 일의 본질</h2>
+      <table>
+        <tr><th data-k style="width:150px">자리는 밖이 아니라<br>안에 있다</th>
+            <td>새로 찾아오는 문의는 1월 11건에서 8월 2건으로 줄었습니다. 그런데 정원이 찬 클럽에는 <b>이미 995명이 계십니다.</b> 그 976명에게 담당 강사가 붙어 한 분씩 연락하는 것 &mdash; 필라테스의 판은 <b>안에 계신 회원</b>입니다.</td>
+            <th data-k style="width:150px">가장 어려운 것을<br>지켜낸 것</th>
+            <td>기구 위에서 몸을 다루는 수업이라 사고 위험이 큽니다. 접수 140건 동안 <b>안전사고 0건</b>. 회원이 &lsquo;무섭다&rsquo;고 답하는 종목에서 <b>다친 분이 한 분도 없었다</b>는 것이 가장 먼저 볼 숫자입니다.</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="why">
+    <div class="h">한 줄로 남기면<em>2026년 1월 ~ 8월</em></div>
+    <div class="t">
+      필라테스팀은 <b>올해부터 실적을 따로 세기 시작해 반년 만에 목표를 넘긴 팀</b>입니다. 밖에서 오는 문의가 줄자 <b>안에 계신 회원 976명</b>에게로 방향을 돌려 878건을 연락했고, 두 강사가 맡은 문의는 거의 다 등록으로 이어졌습니다.
+      회원이 수업 중에 꺼낸 불편을 강사가 대신 접수해 회사로 옮겼고, <b>다친 회원이 한 분도 없었습니다.</b>
+      <span class="lead"><b>오늘 이 자리는</b> 그 여덟 달을 회장님께 그대로 전해 드리는 자리이자, 팀별 오찬 네 번의 <b>마지막 자리</b>입니다. 숫자보다 먼저, <b>한 분 한 분에게 건 전화</b>가 만든 결과입니다.</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    실측 2026-09-07 &mdash; 1~6월 매출은 재무 「운영매출&amp;지출 현황」 6월 마감 스냅샷, 7월은 8/10 집계, 8월은 8/31 월간 보고 원장(결제 기준 · 팀 목표 3,300만). 문의·등록은 강습 문의 원장(1~8월), 접수·안전사고는 종합접수처 원장 140건(6/30~9/5) 전건 확인분, 회원 담당제·연락 기록은 유효회원 원장(9/7), 원포인트 요금은 업무 SSOT 기획안(8/5)입니다. 확인되지 않은 항목은 넣지 않았습니다.
+  </div>
+
+</div>
+
+<!-- PNG 저장 — 저장소 표준(공지 템플릿·모집 페이지와 동일한 html2canvas 방식) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = '필라테스팀_여기까지_해오신것_20260917.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
+  <script src="../../_assets/page_ping.js" defer></script>
+</body>
+</html>

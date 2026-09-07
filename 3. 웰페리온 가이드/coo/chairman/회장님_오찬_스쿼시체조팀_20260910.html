@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회장님 팀별 오찬 3차 — 스쿼시팀 · 체조팀 (2026-09-10)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.55; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  /* 머리말 */
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:11px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:14px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:16px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:20px; font-weight:800;}
+
+  h2{font-size:18px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:12px 16px; font-size:19px; font-weight:600; line-height:1.55;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:8px;}
+  .kpi{border:1.5px solid var(--line); padding:7px 12px;}
+  .kpi .k{font-size:13px; color:var(--dim);}
+  .kpi .v{font-size:25px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .kpi .s{font-size:13px; color:var(--dim);}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; align-items:start; margin-top:13px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+
+  table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  th,td{border:1px solid var(--line); padding:6px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+
+  .quote{border-left:5px solid var(--ok); background:var(--ok-soft); padding:12px 16px;
+         font-size:17px; line-height:1.6;}
+  .quote .tail{margin-top:7px; font-size:17px; font-weight:800; color:var(--ok);}
+  .quote .src{margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .topics{list-style:none; padding:0; margin:0;}
+  .topics li{border-left:5px solid var(--accent); background:#f7f9fb;
+             padding:7px 13px; margin-bottom:4px; break-inside:avoid; font-size:17px;
+             font-weight:600; line-height:1.45;}
+  .topics .w{display:block; margin-top:2px; font-size:13.5px; font-weight:400; color:var(--dim); line-height:1.38;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .note ul,.good ul{margin:5px 0 0; padding-left:20px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk,.topics li{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar button[disabled]{opacity:.5; cursor:default;}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
+
+  /* 표 오와열 — 숫자는 오른쪽 정렬·같은 자릿수 폭, 제목칸은 왼쪽 고정 (2026-09-03 GM 지시) */
+  .sheet table td, .sheet table th{ vertical-align:middle; }
+  .sheet table td.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sheet table th.num{ text-align:right; white-space:nowrap; }
+  .sheet table th[data-k]{ text-align:left; }
+  table.months{ font-size:14px; }
+  table.months td, table.months th{ padding:5px 6px; }
+  .grid > .blk{ margin-top:0; }
+  .blk.wide{ grid-column:1 / -1; }
+  .blk h2{ margin-top:0; }
+  h2 .tag{ display:inline-block; margin-right:8px; padding:0 8px; border-radius:3px; font-size:13px; font-weight:700; vertical-align:middle; }
+  h2 .tag.sq{ background:#0f7a6a; }
+  h2 .tag.gy{ background:#233a7a; }
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">회장님 팀별 오찬 · 3차</div>
+      <div class="ttl">스쿼시팀 · 체조팀과의 오찬</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">9월 10일(목) 13:00</div>
+      <div>회장님 · 김남욱 GM · 나우열M · 스쿼시팀 전원 · 체조팀 전원</div>
+      <div>센터 내부 &mdash; 준비 나우열M (1·2차와 같은 얼개)</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    스쿼시팀은 <em>6월·7월 두 달 연속 목표를 넘겼고</em>(101.0% &rarr; 109.7%) 8월도 95.3%입니다.
+    체조팀은 8월 유소년 문의가 <em>35건으로 7월보다 46% 늘었고</em>, 그중 13건이 <em>소개로 온 문의</em>입니다.
+    두 팀 모두 안전사고는 <em>한 건도 없었습니다.</em>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">스쿼시팀 · 8월 매출</div><div class="v">3,145만</div><div class="s">목표 3,300만 · 95.3% · 7월 3,619만(109.7%)</div></div>
+    <div class="kpi"><div class="k">스쿼시팀 · 1~8월 누계</div><div class="v">2억 2,804만</div><div class="s">월평균 2,850만 · 지난해 월평균 2,695만</div></div>
+    <div class="kpi"><div class="k">체조팀 · 8월 매출</div><div class="v">2,521만</div><div class="s">목표 3,300만 · 76.4% · 1~8월 누계 2억 2,731만</div></div>
+    <div class="kpi"><div class="k">안전사고 (두 팀)</div><div class="v">0건</div><div class="s">종합접수처 개설(6/30) 이후 140건 중</div></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 왼쪽 · 스쿼시팀 -->
+    <div>
+      <div class="blk">
+        <h2><span class="tag sq">스쿼시</span>현황</h2>
+        <table>
+          <tr><th data-k style="width:96px">강사<br>3명</th>
+              <td>이상훈 · 박상현 · 최수진
+                  <span style="color:var(--dim)"> &mdash; <b>팀장 이상훈</b> · 파트너/파트타임 구분은 계약 원장을 아직 못 봐 <b>미수집</b></span></td></tr>
+          <tr><th data-k>올해 걸음</th>
+              <td>2월 마스터클래스·인텐시브 &rarr; 3월 <b>서울시스쿼시연맹 업무협약</b> &rarr; 5월 <b>자체 주니어 오픈(WJO) 개최</b>
+                  <span style="color:var(--dim)">&mdash; 프로그램 &rarr; 외부 제휴 &rarr; 자체 대회로 넓혀 왔습니다</span></td></tr>
+          <tr><th data-k>강습 문의</th>
+              <td><b>8월 성인 11건</b> <span style="color:var(--dim)">(7월 5건 &rarr; 두 배 · 네이버 검색 5 · 기존 회원 3)</span> · 유소년 2건</td></tr>
+          <tr><th data-k>회원이<br>말한 것</th>
+              <td>&ldquo;이런 무더위에 스쿼시장을 들어왔는데 <b>쪄죽을 것 같아요</b>&rdquo; &mdash; 7/7~8/7 <b>같은 접수 5건</b>. 원인은 냉매 누출, 7/29 용접 · 8/10 교체로 <b>처리 완료</b>(8/19 확인). 열린 접수 없음.</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2><span class="tag sq">스쿼시</span>강사 한 분 한 분</h2>
+        <table>
+          <tr><th data-k style="width:96px"></th><th class="num">올해 맡은 문의<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">1~8월 · 성인+유소년</span></th><th class="num">등록으로<br>이어진 것</th><th class="num">담당 회원<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">회원 담당제</span></th><th class="num">소진 매출</th></tr>
+          <tr><th data-k>이상훈 <span style="color:var(--dim);font-weight:500">팀장</span></th><td class="num">106건</td><td class="num">14건</td><td class="num">144명</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>박상현</th><td class="num" style="color:var(--dim)">&mdash;</td><td class="num" style="color:var(--dim)">&mdash;</td><td class="num">9명</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>최수진</th><td class="num" style="color:var(--dim)">&mdash;</td><td class="num" style="color:var(--dim)">&mdash;</td><td class="num" style="color:var(--dim)">&mdash;</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+        </table>
+        <div style="margin-top:6px; font-size:14px; color:var(--dim)">
+          문의는 강습 문의 원장의 <b>접수 담당자</b>로 셌습니다(성인 53 · 유소년 53 전건 팀장 앞). 소진 매출은 페이롤 검증분이 P.T팀만 있어 <b>미수집</b>.
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 · 체조팀 -->
+    <div>
+      <div class="blk">
+        <h2><span class="tag gy">체조</span>현황</h2>
+        <table>
+          <tr><th data-k style="width:96px">강사<br>3명</th>
+              <td>이형주 · 배자경 · 김영운
+                  <span style="color:var(--dim)"> &mdash; <b>팀장 이형주</b> · 파트너/파트타임 구분은 계약 원장을 아직 못 봐 <b>미수집</b></span></td></tr>
+          <tr><th data-k>올해 걸음</th>
+              <td>2월 <b>체조 연계 대회 개최</b> · 6/29~8/14 여름방학 특강(유소년 1:6) · 11월 8일 <b>제2회 웰림픽</b> 유소년 대회(수영·스쿼시·체조 · 접수 9/3~9/23)</td></tr>
+          <tr><th data-k>강습 문의</th>
+              <td><b>8월 유소년 35건</b> <span style="color:var(--dim)">(7월 24건 &rarr; +46% · 소개·지인 13 · 기존 회원 7)</span> · 등록 5건(7월 1건)</td></tr>
+          <tr><th data-k>회원이<br>말한 것</th>
+              <td>&ldquo;수업 전 체조장에서 <b>꿉꿉한 매트 냄새</b>가 난다&rdquo; &mdash; 문의 투어 중 학부모 말을 직원이 그날 접수(7/13·14). 환기 이상 없음 · <b>매트 청소 외주 검토</b>. 열린 접수 없음.</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2><span class="tag gy">체조</span>강사 한 분 한 분</h2>
+        <table>
+          <tr><th data-k style="width:96px"></th><th class="num">올해 맡은 문의<br><span style="font-weight:400;color:var(--dim);font-size:12.5px">1~8월 · 유소년</span></th><th class="num">등록으로<br>이어진 것</th><th class="num">8월 문의</th><th class="num">소진 매출</th></tr>
+          <tr><th data-k>이형주 <span style="color:var(--dim);font-weight:500">팀장</span></th><td class="num">229건</td><td class="num">18건</td><td class="num">24건</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>배자경</th><td class="num">21건</td><td class="num">10건</td><td class="num">5건</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+          <tr><th data-k>김영운</th><td class="num">15건</td><td class="num">6건</td><td class="num">4건</td><td class="num" style="color:var(--dim)">미수집</td></tr>
+        </table>
+        <div style="margin-top:6px; font-size:14px; color:var(--dim)">
+          체조는 유소년 전용이라 <b>회원 담당제 칸이 없습니다.</b> 올해 문의 278건 중 세 분이 265건을 받아 34건이 등록됐습니다. 소진 매출은 같은 이유로 <b>미수집</b>.
+        </div>
+      </div>
+    </div>
+
+    <div class="blk wide">
+      <h2>말씀 나누실 만한 주제</h2>
+      <div class="grid" style="margin-top:0">
+        <div>
+          <ol class="topics">
+            <li>&ldquo;6월·7월 두 달을 넘기셨더군요. <b>오전 시간대</b>를 채우는 일은 손에 잡히십니까?&rdquo;
+              <span class="w">8월 중순부터 오전(9~14시) 활성화 전화 안내·홍보물 3종이 진행 중이고 <b>이상훈 팀장이 직접 검토</b>합니다. 팀장 답이 가장 정확합니다.</span></li>
+            <li>&ldquo;트램폴린장을 스쿼시장으로 바꾸는 이야기가 있습니다. <b>코트가 하나 더 생기면</b> 무엇이 달라집니까?&rdquo;
+              <span class="w">대표님 지시(8/25)로 공사비를 재는 단계 · 오찬 이후 미팅 예정. <b>팀 의견을 먼저 들어 두시는 자리</b>입니다.</span></li>
+            <li>&ldquo;주니어 오픈을 직접 여셨다고 들었습니다. 11월 <b>웰림픽</b>도 그 흐름입니까?&rdquo;
+              <span class="w">WJO(5월) &rarr; 웰림픽(11/8) &mdash; <b>대회를 여는 팀</b>이라는 점을 알아봐 주는 질문입니다.</span></li>
+          </ol>
+        </div>
+        <div>
+          <ol class="topics">
+            <li>&ldquo;8월에 문의가 35건, 그중 13건이 <b>소개</b>로 왔습니다. 부모님들이 무엇을 보고 소개하십니까?&rdquo;
+              <span class="w">유소년 전체 신규 등록은 8월에 줄었는데 체조 문의는 늘었습니다. <b>입소문의 이유</b>를 직접 듣는 질문입니다.</span></li>
+            <li>&ldquo;<b>성인 체조</b> 이야기가 나오고 있습니다. 어른 반을 열면 무엇이 필요합니까?&rdquo;
+              <span class="w">GM 방향은 정해졌고(8/29) 개설 조건·요금은 나우열M이 확인 중입니다. 팀이 바라는 것을 먼저 들어 두시면 됩니다.</span></li>
+            <li>&ldquo;있으면 훨씬 수월해질 것 같은 게 하나 있다면요?&rdquo;
+              <span class="w">두 팀 공통 마무리 &mdash; 건의를 여는 질문. 나오면 적어 두시면 됩니다.</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="blk">
+      <h2>앞으로 나아갈 방향</h2>
+      <table>
+        <tr><th data-k style="width:104px">코트를<br>더 채운다</th>
+            <td>스쿼시는 <b>코트와 시간</b>이 자리입니다. 오전 활성화가 첫 걸음, <b>트램폴린장 &rarr; 스쿼시장 전환</b>은 코트를 늘리는 안입니다(공사비 측정 중). <span style="color:var(--dim)">(회장님·대표님 결정 사항)</span></td></tr>
+        <tr><th data-k>어른 반을<br>만든다</th>
+            <td>체조는 지금 <b>유소년만</b> 있습니다. 성인 체조 신설은 방향이 정해졌고 요금·개설 조건이 남았습니다. <span style="color:var(--dim)">(나우열M 확인 후 GM 결재)</span></td></tr>
+        <tr><th data-k>요금</th>
+            <td>회원권 인상은 <b>2027년 2월 시행</b>으로 정해졌습니다. 강습 요금을 함께 올릴지와 폭은 <b>이 자리에서 정하실 안건</b>입니다. <span style="color:var(--dim)">(회장님·대표님 결정)</span></td></tr>
+      </table>
+    </div>
+
+    <div class="blk">
+      <h2>진행하실 때</h2>
+      <div class="good" style="margin-bottom:6px">
+        <b>이렇게 하시면 좋습니다</b> &mdash; 숫자는 팀마다 한 번만(&ldquo;두 달 연속 넘겼다&rdquo; · &ldquo;문의가 46% 늘었다&rdquo;) ·
+        두 팀이 한 자리라 <b>팀마다 한 번씩 이름을 불러</b> 주시면 자리가 풀립니다 · 건의는 <b>적어 두겠다</b>는 말씀이면 충분합니다.
+      </div>
+      <div class="note">
+        <b>두 팀을 견주지 않습니다</b> &mdash; 스쿼시는 성인·유소년, 체조는 유소년만이라 잣대가 다릅니다. 각 팀 <b>자기 목표 대비</b>로만.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    실측 2026-09-07 · 1~6월 매출은 재무 「운영매출&amp;지출 현황」 6월 마감 스냅샷, 7월은 8/10 집계, 8월은 8/31 월간 보고 원장(결제 기준 · 팀 목표 각 3,300만)입니다. 지난해 실적은 25년 하반기 전사회의 기록, 문의·등록은 강습 문의 원장(1~8월), 접수·안전사고는 종합접수처 원장 140건(6/30~9/5) 전건 확인분, 회원 담당제는 유효회원 원장(9/7)입니다. 강사별 소진 매출·파트너/파트타임 구분은 원장이 없어 미수집으로 두었습니다. · 작성 · AI 웰리 · 보고 김남욱 GM
+  </div>
+
+</div>
+
+<!-- PNG 저장 — 저장소 표준(공지 템플릿·모집 페이지와 동일한 html2canvas 방식) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = '스쿼시체조팀_오찬_20260910.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
+  <script src="../../_assets/page_ping.js" defer></script>
+</body>
+</html>
