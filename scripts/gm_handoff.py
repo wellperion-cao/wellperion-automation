@@ -40,12 +40,21 @@ def _today() -> _dt.date:
 # ── 전사일정 ────────────────────────────────────────────────────────────────
 def add_schedule(title: str, date: str, time: str, assignee: str, note: str, dry: bool) -> dict:
     import schedule_ssot as S
+    import ops_daily_digest as o
     slug = "".join(ch for ch in title if ch.isalnum())[:24]
     item = {"id": f"evt-{date.replace('-', '')}-gm-{slug}", "type": "이벤트", "name": title,
             "category": "meeting", "dept": "경영지원부", "cycle": "", "cycle_confirmed": False,
             "period_months": None, "legal_basis": "", "assignee": assignee, "last_done": "",
             "next_due": date, "time": time or "", "evidence": "", "applies": "있음", "vendor_id": "",
             "repeat": "", "source": f"GM 지시 {_today().isoformat()} (gm_handoff)", "note": note}
+    # GM 지시 2026-09-07 "전사일정에 중복되는 것들이 보이는데 한번씩 정리해줘"(오늘 9쌍 손 병합 실측)
+    # — 카톡 다리(_schedule_is_dup)에만 있던 중복 관문을 사람 경로에도 재사용해 건다. --dry 도 같은 판정.
+    items = S.load().get("items") or []
+    dup_name = o._schedule_is_dup(title, date, items)
+    if dup_name:
+        hit = next((it for it in items if it.get("name") == dup_name), None)
+        print(f"[일정] 중복 — 기존 '{dup_name}' 그대로 씀")
+        return {"ok": True, "dup": True, "id": (hit or {}).get("id"), "name": dup_name}
     if dry:
         return {"ok": True, "dry": True, "id": item["id"]}
     S.pull_from_live()

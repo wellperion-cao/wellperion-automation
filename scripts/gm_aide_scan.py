@@ -416,10 +416,32 @@ def scan_due_hygiene() -> list:
                              o.get("owner") or "", "체크 항목에 [담당: …] 표기 없음"))
 
     sched = read_json(SCHEDULE_SSOT_FILE, {})
-    for it in (sched.get("items") or []):
+    sched_items = sched.get("items") or []
+    for it in sched_items:
         if not (it.get("assignee") or "").strip():
             rows.append(("④전사일정담당빈칸", f"[{it.get('id')}] {(it.get('name') or '')[:30]}",
                          it.get("dept") or "", "assignee 미기재"))
+
+    # ⑨ 닮은제목 — GM 지시 2026-09-07 "전사일정에 중복되는 것들이 보이는데 한번씩 정리해줘"
+    # (오늘 9쌍 손 병합 실측). 카톡 다리(ops_daily_digest._schedule_is_dup)와 같은 규칙을 재사용
+    # — 새 판정 로직을 만들지 않는다. import 순환을 피해 여기서 지연 임포트한다.
+    try:
+        import ops_daily_digest as _o  # noqa: PLC0415
+    except Exception:
+        _o = None
+    if _o is not None:
+        seen_pairs = set()
+        for i, a in enumerate(sched_items):
+            for b in sched_items[i + 1:]:
+                dup_name = _o._schedule_is_dup(a.get("name") or "", str(a.get("next_due") or ""), [b])
+                if not dup_name:
+                    continue
+                pair_key = tuple(sorted([str(a.get("id")), str(b.get("id"))]))
+                if pair_key in seen_pairs:
+                    continue
+                seen_pairs.add(pair_key)
+                rows.append(("⑨닮은제목", f"{a.get('id')} ↔ {b.get('id')} {(a.get('name') or '')[:20]}",
+                             a.get("assignee") or "", f"{b.get('next_due')} 같은 날 닮은 제목"))
 
     reported = read_json(CHAIRMAN_REPORTED_JSON, {})
     try:
