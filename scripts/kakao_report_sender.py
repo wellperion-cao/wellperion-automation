@@ -304,7 +304,13 @@ _ROUTINE_DIGEST_HEADS = ("🌅 하루의 시작", "🌙 하루의 마무리",
 
 
 def _is_routine_digest(text: str) -> bool:
-    head = str(text or "").lstrip()
+    # 밀린 날을 합쳐 보낼 때 맨 위에 「※ 2026-09-05~… 2일치를 함께 보냅니다」 안내줄이 먼저 온다
+    # (ops_daily_digest). 그 줄을 건너뛰고 머리글을 본다 — 2026-09-07 이 줄 때문에 ★운영부
+    # 2일치 통이 실장 경유 가드에 통째로 막혔다.
+    lines = [ln.strip() for ln in str(text or "").splitlines() if ln.strip()]
+    while lines and lines[0].startswith("※"):
+        lines.pop(0)
+    head = lines[0] if lines else ""
     return any(head.startswith(h) for h in _ROUTINE_DIGEST_HEADS)
 
 

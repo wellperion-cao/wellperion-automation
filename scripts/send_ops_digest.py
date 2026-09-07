@@ -387,6 +387,7 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # main()이 relay_current를 저장한다.
 # ══════════════════════════════════════════════════════════════════════════
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
+MORNING_4DEPT_HEARTBEAT_ID = "ops-digest-morning-4dept-sent"   # 🌅 하루의 시작(4부서방) 같은 날 중복방지
 # ★2026-08-26 웰리 실측(배 11039 ⑤ · 배 11070 ③) — 절이 하나씩 늘며 한 통이 35줄까지
 # 나갔다. 카톡 한 통 10줄 안쪽이 GM 확정(2026-08-07)이라 25줄로 낮춘다.
 # (구 25줄 상한 _cap_message_lines 은 2026-08-29 GM 결정으로 삭제 — "줄을 접는 게 아니라
@@ -2730,12 +2731,22 @@ def main() -> int:
         #   밀린 접수 목록이 ★운영부로 옮겨가며 이 방 아침이 비었다. 그 자리를 '오늘 무엇을
         #   하고 무엇이 잘하는 것인가'로 채운다 — 점검(했다)과 접수(회원이 어떻게 느꼈나)
         #   두 축. 저녁 통(build_kakao_digest)의 짝이라 같은 파일에 둔다(약속 L21).
+        # 같은 날 두 번 나가지 않는다 — 2026-09-07 17:02 손 재실행(★운영부 밀린 통 복구) 때
+        #   이 단계만 중복방지가 없어 아침 07:54 에 이미 나간 「하루의 시작」이 4부서방에 또 나갔다.
         try:
-            import report_stream_2_check as _r2
-            _morning_text = _r2.build_morning_kakao()
-            _r2._send_kakao(_morning_text)
-            log("[morning] 4부서방 하루의 시작 발송")
-            _send_telegram_copy("하루의 시작", _morning_text)
+            from module_heartbeat import last_heartbeat, record_heartbeat
+            _today = datetime.now().strftime("%Y-%m-%d")
+            _rec = last_heartbeat(MORNING_4DEPT_HEARTBEAT_ID)
+            if _rec and (_rec.get("state") or {}).get("date") == _today:
+                log(f"[morning] 4부서방 이미 발송된 회차({_today}) — 생략")
+            else:
+                import report_stream_2_check as _r2
+                _morning_text = _r2.build_morning_kakao()
+                _r2._send_kakao(_morning_text)
+                record_heartbeat(MORNING_4DEPT_HEARTBEAT_ID, detail=f"4부서방 하루의 시작 발송 — {_today}",
+                                 extra={"state": {"date": _today}})
+                log("[morning] 4부서방 하루의 시작 발송")
+                _send_telegram_copy("하루의 시작", _morning_text)
         except Exception as exc:
             log(f"[morning] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
