@@ -10,10 +10,12 @@
   ─ 기존 /auth/admin(서버 렌더 표 3장)을 한 화면 콘솔로 상향. 데이터는 아래 한 주소에서 받고, 동작은 이미 있는 라우트를 그대로 부른다.
   ─ 배1026: 신청 대기 = 탭과 무관하게 페이지 맨 위 고정 한 줄 목록(#pend-strip-card). 「화면」 탭 = 모듈 카드 그리드 폐지
     → 회원/운영/점검/경영 그룹별 접힘 표 + 부서 프리셋 일괄 적용 버튼(dept_apply) · 문서함(65+)은 화면 나열 없이 그룹 1줄.
+    「부서 기본 권한」 탭 = 화면×부서 체크 표(GM 이 직접 저장) — GET/POST /auth/admin/dept_presets, 정본은
+    서버 데이터 파일(dept_presets.json), 씨앗은 코드 초안(app.py _DEPT_DRAFT) · 「코드 초안으로 되돌리기」는 로컬 되돌림뿐, 저장을 눌러야 반영.
   ─ 읽기 : GET  /auth/admin/api/state   (시토 배 · 응답 규격은 맨 아래 STATE_SHAPE 주석)
   ─ 쓰기 : POST /auth/admin/{uid}/{approve|block|delete|toggle_role}  ·  /auth/admin/{uid}/lock
            POST /auth/admin/{uid}/perms  (form: g[]=그룹 · m[]=허용 · d[]=거부 · preset=부서 · reset=1)
-           POST /auth/admin/dept_apply/{부서}  ·  POST /auth/admin/undo/{hid}
+           POST /auth/admin/dept_apply/{부서}  ·  POST /auth/admin/undo/{hid}  ·  GET/POST /auth/admin/dept_presets
   ─ 색·서체 = 인증 화면(app.py STYLE)과 같은 토큰(paper/ink/beige · 다크 자동).
   ─ 미리보기 : ?mock=1 이면 같은 폴더 admin_mock.json 을 읽는다(서버 없이 화면만 볼 때).
 -->
@@ -211,13 +213,18 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
     </div>
   </section>
 
-  <!-- 부서 기본 -->
+  <!-- 부서 기본 — 화면×부서 체크 표(GM 이 직접 수정 · 배1026 2026-09-07) -->
   <section class="panel" id="p-depts" role="tabpanel">
     <div class="card">
       <h2>부서 기본 권한</h2>
-      <p class="sub">가입 때 고른 부서가 곧 기본 권한입니다. 숫자를 누르면 그 칸에 들어 있는 화면이 펼쳐집니다. 이 표의 정본은 서버 설정(app.py)이라 여기서는 보기만 하고, 사람별 예외는 「사람」에서 조정합니다.</p>
-      <div class="tw"><table class="mx" id="dept-table"></table></div>
-      <div id="dept-chips" hidden></div>
+      <p class="sub">가입 때 고른 부서가 곧 기본 권한입니다. 체크는 바로 반영되지 않고, <b>저장</b>을 눌러야 정본(서버 데이터 파일)이 바뀝니다. 사람별 예외는 「사람」에서 조정합니다.</p>
+      <p class="notice info" id="dm-meta"></p>
+      <div id="dept-matrix"></div>
+      <div class="save-bar" style="position:static;border:0;padding:14px 0 0">
+        <span class="msg" id="dm-msg">불러오는 중…</span>
+        <button class="btn" id="dm-reset">코드 초안으로 되돌리기</button>
+        <button class="btn pri" id="dm-save" disabled>저장</button>
+      </div>
     </div>
     <div class="card">
       <h2>개인 예외 화면</h2>
@@ -296,7 +303,7 @@ async function load(){
   if(r.status===401||r.status===403||r.redirected&&/login|unlock/.test(r.url)) return gate('관리자 확인이 필요합니다','관리자 비밀번호를 한 번 넣으면 30분 동안 이 화면을 쓸 수 있습니다.','/auth/admin/unlock?next=/auth/admin');
   if(!r.ok) return gate('아직 연결 전입니다','권한 상태 주소(/auth/admin/api/state)가 서버에 없습니다. 연결되면 이 화면이 그대로 켜집니다.');
   S=await r.json(); S.exception_ids=S.exception_ids||[]; S.modules=S.modules||[]; S.users=S.users||[]; S.history=S.history||[];
-  render(); loadPush();
+  render(); loadPush(); loadDeptPresets();
 }
 async function loadPush(){
   if(MOCK){ renderPush([]); return; }
@@ -387,15 +394,38 @@ function renderDrawer(){
 function draftPerms(){ if(!draft) return null; if(!draft.groups.length&&!draft.modules.length&&!draft.deny.length&&!draft.all&&draft.base==='기본(핵심만)') return null; return {groups:draft.groups,modules:draft.modules,deny:draft.deny,all:draft.all,dept:draft.dept,locked:draft.locked}; }
 function dirty(){ const u=S.users.find(x=>x.id===sel); if(!u) return false; const p=perms(u)||{}; const a=JSON.stringify([p.groups||[],p.modules||[],p.deny||[]].map(x=>[...x].sort())); const b=JSON.stringify([draft.groups,draft.modules,draft.deny].map(x=>[...x].sort())); return a!==b||(!perms(u)&&draft.base!=='기본(핵심만)'); }
 function renderDepts(){
-  const dm=S.dept_modules||{}, common=S.common_modules||[]; const byId=Object.fromEntries(S.modules.map(m=>[m.id,m]));
-  const cell=(d,g)=>[...new Set([...common,...(dm[d]||[])])].map(id=>byId[id]).filter(m=>m&&(m.appgroup||'문서함')===g);
-  $('#dept-table').innerHTML=`<thead><tr><th>부서</th>${APPGROUPS.map(g=>`<th style="text-align:center">${g}<br><small style="font-weight:500">전체 ${tot(g)}</small></th>`).join('')}<th>사람</th></tr></thead><tbody>${Object.keys(dm).map(d=>{
-    const ppl=S.users.filter(u=>dept(u)===d&&u.status==='active').length;
-    return `<tr><td><b>${esc(d)}</b></td>${APPGROUPS.map(g=>{const n=cell(d,g).length;return `<td class="cell"><button class="${n?'':'z'} num" data-dept="${esc(d)}" data-g="${g}" aria-expanded="false">${n}</button></td>`;}).join('')}<td class="num">${ppl}명</td></tr>`;}).join('')}</tbody>`;
-  $('#dept-table').onclick=e=>{const b=e.target.closest('button[data-dept]'); if(!b) return; const open=b.getAttribute('aria-expanded')==='true'; $$('#dept-table button[aria-expanded=true]').forEach(x=>x.setAttribute('aria-expanded','false')); const box=$('#dept-chips');
-    if(open){ box.hidden=true; return; } b.setAttribute('aria-expanded','true'); const ms=cell(b.dataset.dept,b.dataset.g);
-    box.hidden=false; box.innerHTML=`<div class="chips"><b style="width:100%;font-size:13px">${esc(b.dataset.dept)} · ${esc(b.dataset.g)} ${ms.length}개</b>${ms.map(m=>`<span class="tag${common.includes(m.id)?'':' acc'}" title="${common.includes(m.id)?'전 부서 공통':'이 부서 전용'}">${esc(m.name)}</span>`).join('')||'<span class="tag">없음</span>'}</div>`; };
+  const byId=Object.fromEntries(S.modules.map(m=>[m.id,m]));
   $('#exc-chips').innerHTML=S.exception_ids.map(id=>{const m=byId[id];return `<span class="tag warn">${esc(m?m.name:id)}</span>`;}).join('')||'<span class="tag">없음</span>';
+}
+/* ── 부서 기본 권한 = 화면×부서 체크 표(배1026 2026-09-07 · GM "일단 초안 셋팅, 내가 수정") ── */
+let DP=null, dpDraft=null;
+function deptDraftInit(src){ dpDraft={}; Object.keys(DP.presets||{}).forEach(d=>{ dpDraft[d]=new Set((src||{})[d]||[]); }); }
+function deptDirty(){ if(!DP||!dpDraft) return false; return Object.keys(dpDraft).some(d=>{
+  const a=[...dpDraft[d]].sort().join(','), b=[...((DP.presets||{})[d]||[])].sort().join(','); return a!==b; }); }
+function deptBarSync(){ const dirty=deptDirty(); $('#dm-save').disabled=!dirty; $('#dm-msg').textContent=dirty?'저장하지 않은 변경이 있습니다':(DP&&DP.updated?`마지막 저장 · ${esc(DP.updated.by||'')} · ${esc(DP.updated.at||'')}`:'코드 초안 그대로(아직 GM 수정 없음)'); }
+function renderDeptMatrix(){
+  if(!DP||!dpDraft) return;
+  $('#dm-meta').textContent=DP.updated?`이 표는 ${DP.updated.at||''} · ${DP.updated.by||''} 가 마지막으로 저장한 정본입니다.`:'아직 아무도 수정하지 않았습니다 — 아래는 코드 초안(§2③ 매트릭스) 값입니다.';
+  const depts=Object.keys(DP.presets||{});
+  const groups=APPGROUPS.filter(g=>g!=='문서함');
+  $('#dept-matrix').innerHTML=groups.map(g=>{
+    const ms=S.modules.filter(m=>(m.appgroup||'문서함')===g);
+    if(!ms.length) return '';
+    return `<details class="grp" open><summary><span class="n">${esc(g)}</span><span class="c">${ms.length}개 화면</span></summary>
+    <div class="tw"><table class="mx"><thead><tr><th>화면</th>${depts.map(d=>`<th style="text-align:center">${esc(d)}</th>`).join('')}</tr></thead><tbody>
+    ${ms.map(m=>`<tr><td>${esc(m.name)}</td>${depts.map(d=>`<td class="cell"><input type="checkbox" data-dm="${esc(d)}|${esc(m.id)}"${dpDraft[d].has(m.id)?' checked':''}></td>`).join('')}</tr>`).join('')}
+    </tbody></table></div></details>`;
+  }).join('');
+  deptBarSync();
+}
+async function loadDeptPresets(){
+  if(MOCK){ DP={presets:S.dept_modules||{},code_draft:S.dept_modules||{},updated:null}; deptDraftInit(DP.presets); renderDeptMatrix(); return; }
+  try{ const r=await fetch('/auth/admin/dept_presets',{credentials:'same-origin',cache:'no-store'}); if(!r.ok) return; DP=await r.json(); deptDraftInit(DP.presets); renderDeptMatrix(); }
+  catch(e){}
+}
+async function saveDeptMatrix(){
+  const body={}; Object.keys(dpDraft).forEach(d=>body[d]=[...dpDraft[d]]);
+  if(await post('/auth/admin/dept_presets',body)){ toast('부서 기본 표를 저장했습니다'); await loadDeptPresets(); }
 }
 function renderScreens(){
   // 그룹별 접힘 표 1개(회원/운영/점검/경영) + 문서함은 화면 개별 나열 없이 그룹 1줄로 접는다(배1026 2026-09-07).
@@ -455,6 +485,10 @@ document.addEventListener('click',async e=>{
 });
 $('#q').addEventListener('input',e=>{ q=e.target.value; renderPeople(); renderScreens(); });
 document.addEventListener('keydown',e=>{ if(e.key==='/'&&document.activeElement!==$('#q')){ e.preventDefault(); $('#q').focus(); } if(e.key==='Escape'&&sel){ sel=null; draft=null; renderPeople(); } });
+document.addEventListener('change',e=>{ const cb=e.target.closest('input[data-dm]'); if(!cb) return;
+  const [d,id]=cb.dataset.dm.split('|'); if(cb.checked) dpDraft[d].add(id); else dpDraft[d].delete(id); deptBarSync(); });
+$('#dm-save').addEventListener('click',saveDeptMatrix);
+$('#dm-reset').addEventListener('click',()=>{ deptDraftInit(DP.code_draft); renderDeptMatrix(); toast('코드 초안으로 되돌렸습니다 — 저장을 눌러야 반영됩니다'); });
 try{ const t=localStorage.getItem('erp_admin_tab'); if(t) go(t); }catch(e){}
 load();
 })();
@@ -468,8 +502,8 @@ STATE_SHAPE — GET /auth/admin/api/state (관리자 쿠키 필요 · 없으면 
              "perms":{"dept":"운영부","groups":[],"modules":["member"],"deny":[],"all":false,"locked":false} | null,
              "fixed_perms": {…account_perms.json 항목…} | null }],
   "modules": [ …erp/modules.json 카드 그대로(id·name·desc·group·appgroup·core·role·staff·path)… ],
-  "dept_modules": {"운영부":[…id…], …},        ← app.py DEPT_ONLY_MODULES
-  "common_modules": […id…],                   ← app.py DEPT_COMMON_MODULES
+  "dept_modules": {"운영부":[…id…], …},        ← app.py dept_presets()(부서별 전체 목록 · 데이터 파일 있으면 그게 정본)
+  "common_modules": [],                        ← 배1026부터 dept_modules 안에 이미 합쳐 들어간다(더 안 씀)
   "exception_ids": […id…],                    ← app.py EXCEPTION_ONLY_IDS
   "history": [{"id":31,"uid":7,"name":"홍길동","changed_by":"ceo@wellperion.com","changed_at":"2026-09-05 11:02","before":"{…}","after":"{…}"}]
 }

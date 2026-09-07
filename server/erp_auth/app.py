@@ -89,8 +89,36 @@ DEPT_ONLY_MODULES = {
 }
 
 
+# 코드 표(위 두 상수) = 부서 기본의 "초안"일 뿐 — 서버 데이터 파일이 있으면 그게 정본이다(GM 이
+# 권한 콘솔 「부서 기본 권한」 탭에서 직접 고친다 · GM 지시 2026-09-07 "일단 초안 셋팅해 주고 내가 수정할 수 있게").
+# account_perms.json 과 같은 mtime 재읽기 패턴 — 재기동 없이 저장 즉시 반영.
+_DEPT_DRAFT = {d: DEPT_COMMON_MODULES + DEPT_ONLY_MODULES.get(d, []) for d in DEPTS}
+DEPT_PRESETS = os.environ.get("ERP_DEPT_PRESETS",
+                              os.path.join(os.path.dirname(os.path.abspath(__file__)), "dept_presets.json"))
+_PRESETS: tuple = (None, None)                 # (mtime, 파일 원본 dict) · 파일 없음/못 읽음 = None
+
+
+def _presets_raw() -> Optional[dict]:
+    global _PRESETS
+    try:
+        mt = os.stat(DEPT_PRESETS).st_mtime
+    except OSError:
+        _PRESETS = (None, None)
+        return None
+    if mt != _PRESETS[0]:
+        with open(DEPT_PRESETS, encoding="utf-8") as f:
+            _PRESETS = (mt, json.load(f))
+    return _PRESETS[1]
+
+
+def dept_presets() -> dict:
+    """부서 → 모듈id 목록. 파일에 없는 부서는 코드 초안으로 메운다(부분 파일도 안전)."""
+    raw = _presets_raw() or {}
+    return {d: raw.get(d, _DEPT_DRAFT[d]) for d in DEPTS}
+
+
 def dept_modules(dept: str) -> list:
-    return DEPT_COMMON_MODULES + DEPT_ONLY_MODULES.get(dept, [])
+    return dept_presets().get(dept, [])
 
 
 # 개인 예외 3건(GM 확정 2026-09-05 §3) — 부서 템플릿·groups·all 매칭으로는 절대 안 열린다.
@@ -765,8 +793,8 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
             "perms": _perms(r), "fixed_perms": accts.get((r["email"] or "").lower()),
         } for r in rows],
         "modules": modules(),
-        "dept_modules": DEPT_ONLY_MODULES,
-        "common_modules": DEPT_COMMON_MODULES,
+        "dept_modules": dept_presets(),          # 부서 → 모듈id 전체 목록(공통+전용 이미 합침) · 데이터 파일 있으면 그게 정본
+        "common_modules": [],                    # ponytail: 공통/전용 구분은 이제 dept_presets 안에 이미 합쳐 들어간다(배1026)
         "exception_ids": list(EXCEPTION_ONLY_IDS),
         "history": [{
             "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
@@ -809,6 +837,36 @@ def dept_apply(dept: str, erp_session: Optional[str] = Cookie(default=None), erp
         _set_perms(r["id"], {"dept": dept, "groups": [], "modules": mods, "deny": p.get("deny", [])}, me["email"])
         n += 1
     return RedirectResponse(f"/auth/admin?msg={urllib.parse.quote(dept)} 부서 기본을 {n}명에 적용했습니다#matrix", status_code=303)
+
+
+# 부서 기본 모듈 표 — GM 콘솔에서 직접 편집(배1026 · GM 2026-09-07). 저장 즉시 dept_modules() 가
+# 이 값을 쓴다(가입 승인 프리셋·「부서 기본 한 번에」 버튼 전부 여기 하나로 수렴 — 벌 두 개 금지).
+@app.get("/auth/admin/dept_presets")
+def admin_dept_presets_get(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    u = current(erp_session)
+    if not u or u["role"] != "admin" or (ADMIN_PW and not _admin_unlocked(erp_admin, u["id"])):
+        raise HTTPException(401, "관리자 확인 필요")
+    return JSONResponse({
+        "presets": dept_presets(), "code_draft": _DEPT_DRAFT,
+        "updated": (_presets_raw() or {}).get("_updated"), "modules": modules(),
+    })
+
+
+@app.post("/auth/admin/dept_presets")
+async def admin_dept_presets_save(request: Request, erp_session: Optional[str] = Cookie(default=None),
+                                  erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin, "/auth/admin")
+    form = await request.form()
+    ids = {m["id"] for m in modules()}
+    out = {d: [v for v in form.getlist(d) if v in ids] for d in DEPTS}   # 모르는 모듈id 는 조용히 버린다(악의 없는 UI만 호출)
+    out["_updated"] = {"by": me["email"], "at": now()}
+    tmp = DEPT_PRESETS + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, DEPT_PRESETS)
+    global _PRESETS
+    _PRESETS = (None, None)                     # 강제 재읽기 — 같은 초 안에 두 번 저장돼도 mtime 비교를 건너뛴다
+    return RedirectResponse("/auth/admin?msg=부서 기본 표를 저장했습니다#depts", status_code=303)
 
 
 @app.post("/auth/admin/undo/{hid}")
