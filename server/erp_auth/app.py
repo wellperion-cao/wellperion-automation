@@ -35,6 +35,7 @@ import hashlib
 import json
 import os
 import posixpath
+import re
 import secrets
 import sys
 import time
@@ -186,6 +187,72 @@ def social_creds(provider: str) -> tuple:
     cid = file_kv.get("id") or os.environ.get(cfg["id_env"], "")
     secret = file_kv.get("secret") or os.environ.get(cfg["secret_env"], "")
     return cid, secret
+
+
+# ── 아이디 가입 · 인사 명부 대조 (배1108 후속 · GM 2026-09-07 "원하는 아이디로, 대신 인사정보 크로스체크") ─
+# 회사 이메일(@wellperion.com) 대신 아이디+비밀번호로 가입 신청할 수 있다. 단, 이름·연락처가
+# 인사 허브 명부와 맞아야 신청이 접수된다(동명이인 방지용 전화 대조 포함) — GAS 는 인사 허브가
+# 이미 쓰는 것 하나를 그대로 재사용한다(관문 두 곳 금지 · 약속 L21).
+UID_RE = re.compile(r"^[a-z0-9._]{4,20}$")
+HR_HUB_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec"
+_HR_ROSTER: tuple = (0.0, None)                # (읽은시각, 명부 list) · 5분 캐시(성공했을 때만 채운다)
+
+
+def valid_username(uid: str) -> bool:
+    return bool(UID_RE.match(uid))
+
+
+def hr_hub_pw() -> str:
+    """social_keys.json 의 hr_hub_pw(관리자 콘솔 저장) 우선, 없으면 환경변수 HR_HUB_PW."""
+    return (_social_keys_raw().get("hr_hub_pw") or "").strip() or os.environ.get("HR_HUB_PW", "")
+
+
+def _digits(s) -> str:
+    return "".join(ch for ch in str(s or "") if ch.isdigit())
+
+
+def hr_match(name: str, phone: str, roster: list) -> bool:
+    """이름 공백제거 완전일치 + 연락처 숫자만 완전일치 — 인사 허브 index.html isAlreadyHiredEmpByPhone_ 과 같은 원칙.
+    이름만 맞고 전화가 다르면 불일치(동명이인 보호), 재직 상태가 퇴직·퇴사면 불일치. 순수 함수 —
+    명부(roster)를 인자로 받으므로 자가점검에서 가짜 리스트를 넣어 테스트할 수 있다."""
+    name_key, phone_key = "".join(str(name or "").split()), _digits(phone)
+    if not name_key or not phone_key:
+        return False
+    for row in roster:
+        row_name = row.get("성명") or row.get("이름") or ""
+        if "".join(str(row_name).split()) != name_key:
+            continue
+        if _digits(row.get("연락처")) != phone_key:
+            continue
+        status = row.get("재직 상태") or row.get("재직상태") or ""
+        if "퇴직" in status or "퇴사" in status:
+            continue
+        return True
+    return False
+
+
+def _hr_roster_fetch() -> list:
+    """인사 허브 GAS 명부를 새로 읽는다. 실패하면 예외를 그대로 던진다(호출부가 사용자 문구로 번역)."""
+    pw = hr_hub_pw()
+    if not pw:
+        raise RuntimeError("hr_hub_pw 미설정")
+    body = json.dumps({"db": "emp", "password": pw}).encode("utf-8")
+    req = urllib.request.Request(HR_HUB_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    rows = data.get("results") if isinstance(data, dict) else data
+    return rows or []
+
+
+def hr_roster() -> list:
+    """5분 메모리 캐시(성공한 결과만 캐시 — 실패는 다음 호출에서 바로 재시도)."""
+    global _HR_ROSTER
+    ts, rows = _HR_ROSTER
+    if rows is not None and time.time() - ts < 300:
+        return rows
+    rows = _hr_roster_fetch()
+    _HR_ROSTER = (time.time(), rows)
+    return rows
 
 
 FAILS: dict[str, tuple[int, float]] = {}       # email -> (연속실패수, 잠금해제시각) · ponytail: 서버 1대 메모리 락, 다중서버면 DB/redis로
@@ -387,8 +454,14 @@ STYLE = (
     "button{width:100%;margin-top:6px;padding:12px;font:inherit;font-weight:700;color:#221F20;background:var(--accent);"
     "border:0;border-radius:8px;cursor:pointer}button:hover{filter:brightness(1.06)}button:active{transform:translateY(1px)}"
     "button.sec{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}"
-    ".g{display:block;margin:12px 0 0;padding:11px;text-align:center;font-weight:700;color:var(--ink);text-decoration:none;"
-    "border:1px solid var(--line-strong);border-radius:8px}.g:hover{background:var(--accent-soft);border-color:var(--accent)}"
+    # 소셜 로그인 = 세로 박스 대신 가로 한 줄 원형 아이콘(GM 2026-09-07 "네모박스는 칸만 먹는다").
+    ".soc{margin-top:16px}.soc-div{position:relative;margin:0 0 14px;text-align:center}"
+    ".soc-div::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line)}"
+    ".soc-div span{position:relative;padding:0 10px;background:var(--paper);font-size:12px;color:var(--ink-soft)}"
+    ".soc-row{display:flex;justify-content:center;align-items:center;gap:14px}"
+    ".soc-row a,.soc-row span{display:flex;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center}"
+    ".soc-row a{text-decoration:none;border:1px solid transparent}.soc-row a:hover{filter:brightness(1.06)}"
+    ".soc-row span.off{opacity:.35;cursor:default;background:var(--accent-soft)}"
     "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
     ".err,.ok{margin:0 0 16px;padding:8px 12px;font-size:13.5px;color:var(--ink);border-left:3px solid var(--accent);background:var(--accent-soft)}"
     ".err{border-left-color:#ED5B3F}"
@@ -457,30 +530,53 @@ def safe_next(next: str, default: str = "/") -> str:
     return next if next.startswith("/") and not next.startswith("//") else default
 
 
+# 인라인 SVG 로고(외부 이미지 금지 · GM 2026-09-07) — 44px 원형 아이콘 안에 넣는다.
+_ICON_GOOGLE = (
+    "<svg viewBox='0 0 48 48' width=22 height=22 aria-hidden=true>"
+    "<path fill='#FFC107' d='M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12"
+    "c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24"
+    "c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z'/>"
+    "<path fill='#FF3D00' d='M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039"
+    "l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z'/>"
+    "<path fill='#4CAF50' d='M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36"
+    "c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z'/>"
+    "<path fill='#1976D2' d='M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571"
+    "c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z'/></svg>")
+_ICON_NAVER = ("<svg viewBox='0 0 24 24' width=17 height=17 aria-hidden=true>"
+              "<path fill='#fff' d='M16.273 12.845 7.376 0H0v24h7.727V11.156L16.624 24H24V0h-7.727z'/></svg>")
+_ICON_KAKAO = ("<svg viewBox='0 0 24 24' width=20 height=20 aria-hidden=true>"
+              "<path fill='#391B1B' d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/></svg>")
+
+
 def _social_login_buttons(next: str) -> str:
-    """네이버·카카오 버튼 — 키 없으면 회색 비활성 + 「준비 중」(기존 .g 스타일 재사용, 색만 인라인)."""
+    """구글·네이버·카카오 — 가로 한 줄 원형 아이콘(GM 2026-09-07 "네모박스는 칸만 먹는다").
+    키 없는 공급자는 회색 비활성 + title「준비 중」(클릭 안 됨 = span)."""
+    provs = [
+        ("google", "구글", GOOGLE_ID, "#fff", "#221F20", _ICON_GOOGLE, "border-color:var(--line-strong)"),
+        ("naver", "네이버", social_creds("naver")[0], SOCIAL["naver"]["color"], SOCIAL["naver"]["fg"], _ICON_NAVER, ""),
+        ("kakao", "카카오", social_creds("kakao")[0], SOCIAL["kakao"]["color"], SOCIAL["kakao"]["fg"], _ICON_KAKAO, ""),
+    ]
     out = []
-    for p in ("naver", "kakao"):
-        cfg = SOCIAL[p]
-        cid, _ = social_creds(p)
+    for pid, label, cid, bg, fg, icon, extra in provs:
+        title = f"{label} 계정으로 로그인"
         if cid:
-            out.append(f'<a class=g style="background:{cfg["color"]};color:{cfg["fg"]};border-color:transparent" '
-                       f'href="/auth/{p}?next={escape(next)}">{cfg["label"]} 계정으로 로그인</a>')
+            out.append(f'<a href="/auth/{pid}?next={escape(next)}" style="background:{bg};color:{fg};{extra}" '
+                       f'aria-label="{title}" title="{title}">{icon}</a>')
         else:
-            out.append(f'<span class=g style="opacity:.5;cursor:default">{cfg["label"]} 계정으로 로그인 · 준비 중</span>')
-    return "".join(out)
+            out.append(f'<span class=off title="{label} · 준비 중" aria-label="{label} · 준비 중">{icon}</span>')
+    return f"""<div class=soc><div class=soc-div><span>또는 소셜 계정으로 로그인</span></div>
+<div class=soc-row>{''.join(out)}</div></div>"""
 
 
 @app.get("/auth/login")
 def login_page(next: str = "/", err: str = "", msg: str = ""):
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
     hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
-    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 구글 계정 또는 회사 이메일로 로그인") + f"""<form method=post action=/auth/login>
+    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 아이디 또는 회사 이메일로 로그인") + f"""<form method=post action=/auth/login>
 <h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}{hint}
-<label>회사 이메일<input name=email type=email autocomplete=username placeholder="이름@wellperion.com" required autofocus></label>
+<label>아이디 또는 이메일<input name=email type=text autocomplete=username placeholder="아이디 또는 이름@wellperion.com" required autofocus></label>
 <label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
-{'<a class=g href="/auth/google?next=' + escape(next) + '">구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
 {_social_login_buttons(next)}
 <div class=foot><p>구글 로그인이 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
 <p>계정이 없으면 <a href=/auth/signup>가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
@@ -510,28 +606,56 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
 
 @app.get("/auth/signup")
 def signup_page(msg: str = ""):
+    dept_opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
     return page("웰페리온 ERP 가입 신청", head("직원용 업무 화면 · 가입 신청") + f"""<form method=post action=/auth/signup>
 <h1>가입 신청</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
-<label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
-<label>회사 이메일 (@wellperion.com)<input name=email type=email autocomplete=email placeholder="이름@wellperion.com" required></label>
+<label>아이디<input name=username autocomplete=username minlength=4 maxlength=20 pattern="[a-z0-9._]{{4,20}}"
+title="영문 소문자·숫자·.·_ 4~20자" placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>비밀번호<input name=password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
-<button>신청</button><div class=foot><p>신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
+<label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
+<label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
+<label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
+<button>신청</button><div class=foot><p>이름·연락처는 인사 등록 정보와 대조됩니다. 신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
 <p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>""")
 
 
 @app.post("/auth/signup")
-def signup(name: str = Form(...), email: str = Form(...), password: str = Form(...)):
-    email = email.strip().lower()
-    if not email.endswith("@" + GOOGLE_HD):
-        return RedirectResponse("/auth/signup?msg=회사 계정(@wellperion.com)만 신청할 수 있습니다", status_code=303)
+def signup(name: str = Form(...), username: str = Form(...), password: str = Form(...),
+           phone: str = Form(...), dept: str = Form(...)):
+    name = name.strip()
+    uid = "".join(username.split()).lower()
+    is_company = uid.endswith("@" + GOOGLE_HD)             # 이메일 형태로 넣으면 종전 구글 회사계정과 같이 자동 활성
+    if dept not in DEPTS:
+        return RedirectResponse("/auth/signup?msg=부서를 선택해 주세요", status_code=303)
+    if not is_company and not valid_username(uid):
+        return RedirectResponse("/auth/signup?msg=아이디는 영문 소문자·숫자·.·_ 4~20자로 입력해 주세요", status_code=303)
+    mark = "회사 계정"
+    if not is_company:
+        if not hr_hub_pw():
+            return RedirectResponse("/auth/signup?msg=가입 신청 대조 준비 중 — 경영지원에 문의", status_code=303)
+        try:
+            roster = hr_roster()
+        except Exception:
+            return RedirectResponse("/auth/signup?msg=인사 정보 확인이 잠시 안 됩니다. 잠시 뒤 다시", status_code=303)
+        if not hr_match(name, phone, roster):
+            return RedirectResponse(
+                "/auth/signup?msg=인사 정보와 이름·연락처가 일치하지 않습니다. 인사 등록된 이름·휴대폰 번호 그대로 입력해 주세요",
+                status_code=303)
+        mark = "인사 대조 ✅"
     salt, h = hash_pw(password)
+    status, approved_at = ("active", now()) if is_company else ("pending", None)
+    perms = {"dept": dept, "phone": _digits(phone), "groups": [], "modules": dept_modules(dept), "deny": []}
     try:
         with db() as c:
-            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                      (T, email, name.strip(), salt, h, now(), None))
+            c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) "
+                      "VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                      (T, uid, name, salt, h, "staff", status, now(), approved_at, json.dumps(perms, ensure_ascii=False)))
     except _db.IntegrityError:
-        return RedirectResponse("/auth/signup?msg=이미 신청된 이메일입니다", status_code=303)
-    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: https://erp.wellperion.com/auth/admin")
+        return RedirectResponse("/auth/signup?msg=이미 있는 아이디입니다", status_code=303)
+    if is_company:
+        tell_gm(f"🔐 ERP 가입 — {name} ({uid} · {dept} · {mark} · 자동 활성)")
+        return RedirectResponse("/auth/signup?msg=가입됐습니다. 바로 로그인할 수 있습니다", status_code=303)
+    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid} · {dept} · {mark})\n승인: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/signup?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
 
 
@@ -1094,12 +1218,18 @@ async def admin_social_keys_save(request: Request, erp_session: Optional[str] = 
     admin_only(erp_session, erp_admin, "/auth/admin")
     form = await request.form()
     cur = _social_keys_raw()   # 빈 칸("새 값이 있을 때만 입력")은 기존 값을 유지 — 제출분만 덮어쓴다
-    out = {}
+    out = dict(cur)            # hr_hub_pw 등 provider 아닌 다른 키(예: 인사 허브 비밀번호)는 그대로 보존
     for p in SOCIAL:
         prev = cur.get(p) or {}
         pid = (form.get(f"{p}_id") or "").strip()
         secret = (form.get(f"{p}_secret") or "").strip()
         out[p] = {"id": pid or prev.get("id", ""), "secret": secret or prev.get("secret", "")}
+    _save_social_keys(out)
+    return RedirectResponse("/auth/admin?msg=소셜 로그인 키를 저장했습니다#screens", status_code=303)
+
+
+def _save_social_keys(out: dict) -> None:
+    """social_keys.json 저장 — provider 키·hr_hub_pw 가 같이 쓰는 파일 하나(관문 두 곳 금지)."""
     tmp = SOCIAL_KEYS_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
@@ -1110,7 +1240,47 @@ async def admin_social_keys_save(request: Request, erp_session: Optional[str] = 
         pass
     global _SOCIAL_KEYS
     _SOCIAL_KEYS = (None, {})                    # 강제 재읽기
-    return RedirectResponse("/auth/admin?msg=소셜 로그인 키를 저장했습니다#screens", status_code=303)
+
+
+# 인사 허브 대조 비밀번호 — 관리자 미니 화면(admin.html 콘솔에는 시토가 나중에 링크만 붙인다).
+@app.get("/auth/admin/hr_check")
+def admin_hr_check_page(msg: str = "", err: str = "", erp_session: Optional[str] = Cookie(default=None),
+                        erp_admin: Optional[str] = Cookie(default=None)):
+    admin_only(erp_session, erp_admin, "/auth/admin/hr_check")
+    state = "설정됨" if hr_hub_pw() else "비어 있음 — 아이디 가입 신청이 전부 막힙니다"
+    return page("인사 허브 대조", head("가입 신청 이름·연락처 대조 · 관리자 전용") + f"""
+{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
+<form method=post action=/auth/admin/hr_check>
+<h1>인사 허브 대조 비밀번호</h1>
+<p class=hint>현재 상태: {state}</p>
+<input type=hidden name=action value=save>
+<label>인사 허브 비밀번호<span class=pw><input name=password type=password autocomplete=off placeholder="새 값이 있을 때만 입력">""" + TOGGLE + f"""</span></label>
+<button>저장</button></form>
+<form method=post action=/auth/admin/hr_check style="margin-top:14px">
+<input type=hidden name=action value=test><button class=sec>대조 테스트(명부만 읽어본다 · 이름·전화 표시 안 함)</button></form>
+<div class=foot><p><a href=/auth/admin>관리자 화면으로</a></p></div>""")
+
+
+@app.post("/auth/admin/hr_check")
+async def admin_hr_check_save(request: Request, erp_session: Optional[str] = Cookie(default=None),
+                              erp_admin: Optional[str] = Cookie(default=None)):
+    admin_only(erp_session, erp_admin, "/auth/admin/hr_check")
+    form = await request.form()
+    if form.get("action") == "test":
+        global _HR_ROSTER
+        _HR_ROSTER = (0.0, None)                # 강제 재조회
+        try:
+            roster = hr_roster()
+        except Exception as e:
+            return RedirectResponse(f"/auth/admin/hr_check?err=대조 테스트 실패: {urllib.parse.quote(str(e)[:80])}", status_code=303)
+        fields = sorted({k for row in roster[:5] for k in row.keys()})
+        return RedirectResponse(
+            f"/auth/admin/hr_check?msg={urllib.parse.quote(f'명부 {len(roster)}명 읽힘 · 필드: ' + (', '.join(fields) or '없음'))}",
+            status_code=303)
+    pw = (form.get("password") or "").strip()
+    if pw:
+        _save_social_keys({**_social_keys_raw(), "hr_hub_pw": pw})
+    return RedirectResponse("/auth/admin/hr_check?msg=저장했습니다", status_code=303)
 
 
 @app.post("/auth/admin/undo/{hid}")
@@ -1256,4 +1426,21 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert _social_identity("kakao", {"id": 123, "kakao_account": {"email": "B@Test.com",
                              "profile": {"nickname": "닉네임"}}}) == ("b@test.com", "닉네임")
     assert set(SOCIAL) == {"naver", "kakao"}
+    # 아이디 가입 규칙(배1108 후속) — 영문 소문자·숫자·.·_ 4~20자.
+    assert valid_username("hong.gd01")
+    assert not valid_username("Hong.GD")            # 대문자 금지
+    assert not valid_username("abc")                # 4자 미만
+    assert not valid_username("a" * 21)              # 20자 초과
+    assert not valid_username("hong gd")             # 공백 금지
+    # 인사 명부 대조(순수 함수 — 가짜 리스트로 검증) — 이름 공백무시 완전일치 + 전화 숫자만 완전일치.
+    roster = [
+        {"성명": "홍 길동", "연락처": "010-1234-5678", "재직 상태": "재직"},
+        {"이름": "김철수", "연락처": "01099998888", "재직상태": "퇴직"},
+        {"성명": "이영희", "연락처": "010-0000-1111", "재직 상태": "재직"},
+    ]
+    assert hr_match("홍길동", "010-1234-5678", roster)          # 공백·하이픈 무시하고 일치
+    assert not hr_match("홍길동", "010-9999-9999", roster)      # 이름 맞아도 전화 다르면 불일치(동명이인 보호)
+    assert not hr_match("김철수", "010-9999-8888", roster)      # 재직상태=퇴직이면 불일치
+    assert not hr_match("없는사람", "010-0000-0000", roster)    # 명부에 없음
+    assert not hr_match("", "", roster)
     print("self-check ok")
