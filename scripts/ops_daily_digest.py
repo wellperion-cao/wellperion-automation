@@ -1693,6 +1693,9 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
         if dry_run:
             print(f"  [다리·미리보기] {owner} ← {title} (기한 {due})")
             posted += 1
+            # ★배1102 웰리 지적(2026-09-07) — 같은 회차 안에서 같은 제목이 또 나오면 이 줄
+            # 하나만 남아야 한다(방금 미리보기로 '만든다'고 찍은 것과도 대조).
+            active_rows.append({"업무명": title, "상태": "진행중", "id": "(미리보기)", "내용": content})
             continue
         res = gm_handoff.add_todo(title, content, str(issue.get("category") or "").strip(),
                                    due, "", False, owner=owner)
@@ -1701,6 +1704,11 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
             continue
         issue["todo_id"] = str(res.get("id") or "")
         posted += 1
+        # ★배1102 웰리 지적(2026-09-07 실측 — "박남일 반장 진급건 정립" 오생성 중복) — 대조
+        # 대상을 사전에 한 번만 뽑고 끝내면 이 회차에서 방금 만든 행과 다음 후보가 다시
+        # 대조되지 않는다. 만들자마자 이 회차의 대조 집합에 즉시 넣는다(단일 패스 유지).
+        active_rows.append({"업무명": title, "상태": "진행중", "id": issue["todo_id"], "내용": content})
+        existing_rows.append({"업무명": title, "상태": "진행중", "id": issue["todo_id"], "내용": content})
         print(f"  [다리] 등록 — {owner} ← {title} (기한 {due} · id {issue['todo_id']})")
     if posted and not dry_run:
         save_ledger(ledger)
@@ -1756,9 +1764,23 @@ def _selfcheck_bridge_to_todo_gate() -> None:
         assert bridge_to_todo(ledger3, "2026-09-07", "★중간관리자", dry_run=True) == 0, \
             "진행중 행과 닮으면 중복 — 새로 안 만듦"
         assert ledger3[0]["issues"][0]["todo_id"] == "T-ACTIVE"
+
+        # ★배1102 웰리 지적(2026-09-07 실측 — "박남일 반장 진급건 정립" 오생성 중복) —
+        # 같은 회차 후보 목록 안에 같은 제목이 두 번 있으면(사람이 같은 건을 이틀 나눠
+        # 다시 말한 경우 등) 하나만 만들고 둘째는 방금 만든 것에 연결돼야 한다.
+        _gas_get = lambda *a, **k: _FakeResp([])  # noqa: E731
+        ledger4 = [{"date": "2026-09-07", "issues": [
+            {"issue": "같은 건 반복", "owner": "이경연 실장", "status": "open"},
+            {"issue": "같은 건 반복", "owner": "이경연 실장", "status": "open"},
+        ]}]
+        assert bridge_to_todo(ledger4, "2026-09-07", "★중간관리자", dry_run=True) == 1, \
+            "같은 회차 안 같은 제목은 방금 만든 것과 재대조해 1건만 만들어야 함"
+        assert not ledger4[0]["issues"][0].get("todo_id"), "첫째(신규)는 미리보기라 아직 todo_id 없음"
+        assert ledger4[0]["issues"][1].get("todo_id") == "(미리보기)", \
+            "둘째 건은 첫째가 방금 만든 것에 연결돼야 함"
     finally:
         _gas_get = orig
-    print("[selfcheck] bridge_to_todo 게이트·안전판·진행중전용 중복대조 OK")
+    print("[selfcheck] bridge_to_todo 게이트·안전판·진행중전용 중복대조·같은회차 자기중복 OK")
 
 
 # ═══════════════════════════════════════════
