@@ -37,7 +37,7 @@ a{color:inherit}button{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 /* ── 상단 ── */
 .top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--line);padding:0 24px}
-.top-in{max-width:1380px;margin:0 auto;display:flex;align-items:center;gap:18px;height:58px}
+.top-in{max-width:none;margin:0;display:flex;align-items:center;gap:18px;height:58px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.18em;font-size:13px;text-decoration:none}
 .brand small{letter-spacing:.06em;font-weight:600;color:var(--ink-soft);font-size:12px}
 .brand small::before{content:"·";margin:0 4px 0 0}
@@ -54,7 +54,7 @@ a{color:inherit}button{font:inherit;color:inherit}
 .me{font-size:12.5px;color:var(--ink-soft);white-space:nowrap}
 .me b{color:var(--ink)}
 /* ── 본문 ── */
-.wrap{max-width:1380px;margin:0 auto;padding:22px 24px 80px}
+.wrap{max-width:none;margin:0;padding:22px 24px 80px}
 .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
 .stat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px 12px;cursor:pointer;text-align:left}
 .stat:hover{border-color:var(--line-strong)}
@@ -97,13 +97,16 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .btn.sm{height:28px;padding:0 10px;font-size:12.5px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.sk-row{display:grid;grid-template-columns:180px 1fr;gap:8px;align-items:center;margin:0 0 10px}
+.sk-row input{height:32px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
+.sk-row input:focus{outline:2px solid var(--focus);outline-offset:1px}
 .empty{padding:26px 10px;text-align:center;color:var(--ink-soft)}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--line-strong);background:var(--paper);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 /* ── 사람 상세 서랍 ── */
-.people{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
-.people td{padding:9px 8px}
+.people{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.people:has(.drawer:not([hidden])){grid-template-columns:minmax(0,1fr) 400px}
 @media(max-width:1080px){.people{grid-template-columns:1fr}.drawer{position:fixed;inset:auto 0 0 0;max-height:82vh;border-radius:18px 18px 0 0;box-shadow:var(--shadow);z-index:30}}
 .drawer{background:var(--paper);border:1px solid var(--line);border-radius:16px;position:sticky;top:74px;max-height:calc(100vh - 92px);overflow:auto}
 .drawer .hd{padding:16px 18px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2}
@@ -243,6 +246,16 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
     <div class="card" style="padding:8px 0 4px">
       <div id="screen-groups"></div>
     </div>
+    <div class="card" id="social-card">
+      <h2>소셜 로그인 키</h2>
+      <p class="sub">네이버·카카오로 로그인 — 키를 넣고 저장하면 로그인 화면에 바로 버튼이 켜집니다. <span id="social-status"></span></p>
+      <div class="sk-row"><label for="sk-naver-id">네이버 Client ID</label><input id="sk-naver-id" type="text" placeholder="새 값이 있을 때만 입력" autocomplete="off"></div>
+      <div class="sk-row"><label for="sk-naver-secret">네이버 Client Secret</label><input id="sk-naver-secret" type="password" placeholder="새 값이 있을 때만 입력" autocomplete="off"></div>
+      <div class="sk-row"><label for="sk-kakao-id">카카오 REST API 키</label><input id="sk-kakao-id" type="text" placeholder="새 값이 있을 때만 입력" autocomplete="off"></div>
+      <div class="sk-row"><label for="sk-kakao-secret">카카오 Client Secret(선택)</label><input id="sk-kakao-secret" type="password" placeholder="선택 · 없으면 비워두세요" autocomplete="off"></div>
+      <button class="btn pri" id="social-save">저장</button>
+      <p class="sub">콜백 주소(공급자 콘솔에 등록) — 네이버 <code>https://erp.wellperion.com/auth/naver/callback</code> · 카카오 <code>https://erp.wellperion.com/auth/kakao/callback</code></p>
+    </div>
   </section>
 
   <!-- 커밋·푸시 승인 -->
@@ -331,7 +344,7 @@ function render(){
     ['#pend-strip-card',pend.length,'승인 대기',pend.length?'warn':''],['people',act.length,'사용 중','ok'],['pending',blk.length,'차단',blk.length?'bad':''],
     ['people',lk.length,'잠금',''],['screens',S.modules.length,'화면',''],['depts',Object.keys(S.dept_modules||{}).length,'부서','']
   ].map(([t,v,l,c])=>`<button class="stat ${c}" data-${t[0]==='#'?'scroll':'go'}="${t}"><div class="v num">${v}</div><div class="l">${l}</div></button>`).join('');
-  renderPendingStrip(pend); renderPending(blk); renderPeople(); renderDepts(); renderScreens(); renderHistory();
+  renderPendingStrip(pend); renderPending(blk); renderPeople(); renderDepts(); renderScreens(); renderSocial(); renderHistory();
 }
 function renderPendingStrip(pend){
   // 항상 맨 위 · 한 줄 승인/반려(배1026 2026-09-07 · GM "정리 끝나면 가입 안내") — 탭과 무관하게 보인다.
@@ -427,6 +440,23 @@ async function saveDeptMatrix(){
   const body={}; Object.keys(dpDraft).forEach(d=>body[d]=[...dpDraft[d]]);
   if(await post('/auth/admin/dept_presets',body)){ toast('부서 기본 표를 저장했습니다'); await loadDeptPresets(); }
 }
+function renderSocial(){
+  const soc=S.social||{};
+  $('#social-status').innerHTML=`네이버 <span class="tag ${soc.naver?'ok':''}">${soc.naver?'✅ 설정됨':'⬜ 비어 있음'}</span> · `
+    +`카카오 <span class="tag ${soc.kakao?'ok':''}">${soc.kakao?'✅ 설정됨':'⬜ 비어 있음'}</span>`;
+}
+async function saveSocialKeys(){
+  const body={
+    naver_id:$('#sk-naver-id').value.trim(), naver_secret:$('#sk-naver-secret').value.trim(),
+    kakao_id:$('#sk-kakao-id').value.trim(), kakao_secret:$('#sk-kakao-secret').value.trim(),
+  };
+  if(!Object.values(body).some(v=>v)){ toast('입력한 값이 없습니다'); return; }
+  if(await post('/auth/admin/social_keys',body)){
+    toast('소셜 로그인 키를 저장했습니다 — 빈 칸은 기존 값을 그대로 둡니다');
+    ['#sk-naver-id','#sk-naver-secret','#sk-kakao-id','#sk-kakao-secret'].forEach(s=>$(s).value='');
+    await load();
+  }
+}
 function renderScreens(){
   // 그룹별 접힘 표 1개(회원/운영/점검/경영) + 문서함은 화면 개별 나열 없이 그룹 1줄로 접는다(배1026 2026-09-07).
   const dm=S.dept_modules||{};
@@ -488,6 +518,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='/'&&document.activeElement!
 document.addEventListener('change',e=>{ const cb=e.target.closest('input[data-dm]'); if(!cb) return;
   const [d,id]=cb.dataset.dm.split('|'); if(cb.checked) dpDraft[d].add(id); else dpDraft[d].delete(id); deptBarSync(); });
 $('#dm-save').addEventListener('click',saveDeptMatrix);
+$('#social-save').addEventListener('click',saveSocialKeys);
 $('#dm-reset').addEventListener('click',()=>{ deptDraftInit(DP.code_draft); renderDeptMatrix(); toast('코드 초안으로 되돌렸습니다 — 저장을 눌러야 반영됩니다'); });
 try{ const t=localStorage.getItem('erp_admin_tab'); if(t) go(t); }catch(e){}
 load();
@@ -505,6 +536,7 @@ STATE_SHAPE — GET /auth/admin/api/state (관리자 쿠키 필요 · 없으면 
   "dept_modules": {"운영부":[…id…], …},        ← app.py dept_presets()(부서별 전체 목록 · 데이터 파일 있으면 그게 정본)
   "common_modules": [],                        ← 배1026부터 dept_modules 안에 이미 합쳐 들어간다(더 안 씀)
   "exception_ids": […id…],                    ← app.py EXCEPTION_ONLY_IDS
+  "social": {"naver":true,"kakao":false},      ← 키 설정 여부만(값 자체는 안 준다) · 저장 POST /auth/admin/social_keys
   "history": [{"id":31,"uid":7,"name":"홍길동","changed_by":"ceo@wellperion.com","changed_at":"2026-09-05 11:02","before":"{…}","after":"{…}"}]
 }
 -->

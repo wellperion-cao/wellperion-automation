@@ -148,6 +148,46 @@ ADMIN_MIN = 30                                 # 관리자 비밀번호 한 번 
 GOOGLE_ID = os.environ.get("GOOGLE_CLIENT_ID", "")      # 없으면 구글 로그인 라우트가 안내만 낸다
 GOOGLE_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_HD = "wellperion.com"                   # 회사 워크스페이스 도메인 — 개인 gmail 차단
+# 네이버·카카오(배1108 · GM 2026-09-07) — 구글과 같은 가입 신청·승인 흐름을 표 하나로 공유한다.
+SOCIAL = {
+    "naver": {"label": "네이버", "color": "#03C75A", "fg": "#fff",
+              "auth_url": "https://nid.naver.com/oauth2.0/authorize",
+              "token_url": "https://nid.naver.com/oauth2.0/token",
+              "profile_url": "https://openapi.naver.com/v1/nid/me",
+              "id_env": "NAVER_CLIENT_ID", "secret_env": "NAVER_CLIENT_SECRET"},
+    "kakao": {"label": "카카오", "color": "#FEE500", "fg": "#221F20",
+              "auth_url": "https://kauth.kakao.com/oauth/authorize",
+              "token_url": "https://kauth.kakao.com/oauth/token",
+              "profile_url": "https://kapi.kakao.com/v2/user/me",
+              "id_env": "KAKAO_REST_API_KEY", "secret_env": "KAKAO_CLIENT_SECRET"},
+}
+# 키 출처 = 환경변수 또는 관리자 콘솔이 쓰는 social_keys.json(파일 있으면 파일 우선 · account_perms.json 과 같은 mtime 재읽기 패턴)
+SOCIAL_KEYS_FILE = os.environ.get("ERP_SOCIAL_KEYS",
+                                  os.path.join(os.path.dirname(os.path.abspath(__file__)), "social_keys.json"))
+_SOCIAL_KEYS: tuple = (None, {})
+
+
+def _social_keys_raw() -> dict:
+    global _SOCIAL_KEYS
+    try:
+        mt = os.stat(SOCIAL_KEYS_FILE).st_mtime
+    except OSError:
+        return {}
+    if mt != _SOCIAL_KEYS[0]:
+        with open(SOCIAL_KEYS_FILE, encoding="utf-8") as f:
+            _SOCIAL_KEYS = (mt, json.load(f))
+    return _SOCIAL_KEYS[1]
+
+
+def social_creds(provider: str) -> tuple:
+    """(client_id, client_secret) — social_keys.json 이 있으면 그 값이 환경변수보다 우선."""
+    file_kv = _social_keys_raw().get(provider) or {}
+    cfg = SOCIAL[provider]
+    cid = file_kv.get("id") or os.environ.get(cfg["id_env"], "")
+    secret = file_kv.get("secret") or os.environ.get(cfg["secret_env"], "")
+    return cid, secret
+
+
 FAILS: dict[str, tuple[int, float]] = {}       # email -> (연속실패수, 잠금해제시각) · ponytail: 서버 1대 메모리 락, 다중서버면 DB/redis로
 
 app = FastAPI(docs_url=None, redoc_url=None)
@@ -417,6 +457,20 @@ def safe_next(next: str, default: str = "/") -> str:
     return next if next.startswith("/") and not next.startswith("//") else default
 
 
+def _social_login_buttons(next: str) -> str:
+    """네이버·카카오 버튼 — 키 없으면 회색 비활성 + 「준비 중」(기존 .g 스타일 재사용, 색만 인라인)."""
+    out = []
+    for p in ("naver", "kakao"):
+        cfg = SOCIAL[p]
+        cid, _ = social_creds(p)
+        if cid:
+            out.append(f'<a class=g style="background:{cfg["color"]};color:{cfg["fg"]};border-color:transparent" '
+                       f'href="/auth/{p}?next={escape(next)}">{cfg["label"]} 계정으로 로그인</a>')
+        else:
+            out.append(f'<span class=g style="opacity:.5;cursor:default">{cfg["label"]} 계정으로 로그인 · 준비 중</span>')
+    return "".join(out)
+
+
 @app.get("/auth/login")
 def login_page(next: str = "/", err: str = "", msg: str = ""):
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
@@ -427,6 +481,7 @@ def login_page(next: str = "/", err: str = "", msg: str = ""):
 <label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
 {'<a class=g href="/auth/google?next=' + escape(next) + '">구글 계정으로 로그인</a>' if GOOGLE_ID else ''}
+{_social_login_buttons(next)}
 <div class=foot><p>구글 로그인이 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
 <p>계정이 없으면 <a href=/auth/signup>가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
 
@@ -541,14 +596,40 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
     return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
 
 
+# ── 소셜 로그인 공용 — state(jwt+브라우저 nonce 쿠키) 구글·네이버·카카오가 같이 쓴다 ──────────
+# 브라우저 결속 난수(2026-09-05 검수 M1) — state 서명만으로는 공격자가 자기 로그인 흐름을 시작해 얻은
+# 콜백 URL 을 직원에게 열게 하는 로그인 CSRF 를 못 막는다. 이 요청을 시작한 브라우저만 아는 값을
+# 쿠키+state 둘 다에 넣고 콜백에서 대조한다.
+def _oauth_redirect_uri(request: Request, provider: str) -> str:
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host}/auth/{provider}/callback"
+
+
+def _oauth_state_new(next: str) -> tuple:
+    """(state, nonce) — nonce 는 쿠키에도 심어 콜백에서 대조한다."""
+    nonce = secrets.token_urlsafe(16)
+    state = jwt.encode({"n": safe_next(next), "b": nonce, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
+    return state, nonce
+
+
+def _oauth_state_verify(state: str, cookie_nonce: Optional[str]) -> str:
+    """반환 = next 경로. 실패하면 ValueError(그대로 err= 뒤에 붙일 한글 문구)."""
+    try:
+        claims = jwt.decode(state, SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        raise ValueError("로그인 요청이 만료됐습니다. 다시 시도하세요")
+    if not cookie_nonce or not secrets.compare_digest(cookie_nonce, claims.get("b", "")):
+        raise ValueError("로그인 요청이 이 브라우저에서 시작되지 않았습니다. 다시 시도하세요")
+    return claims["n"]
+
+
 # ── 구글 계정 로그인 ────────────────────────────────────────────────────
 # 회사 워크스페이스(@wellperion.com) 계정 = GM 승인 없이 바로 통과(GM 지시 2026-09-03).
 # 개인 구글 계정 = 이름·부서 선택 후 GM 승인 대기(GM 지시 2026-09-05 · 역할별 회사계정 1개 방식 폐기).
 # id_token 은 우리 클라이언트 시크릿으로 구글에서 직접(TLS) 받아오므로 서명 재검증 없이 payload 를 읽는다.
 def _redirect_uri(request: Request) -> str:
-    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
-    host = request.headers.get("host") or request.url.netloc
-    return f"{proto}://{host}/auth/google/callback"
+    return _oauth_redirect_uri(request, "google")
 
 
 def _google_token(code: str, redirect_uri: str) -> dict:
@@ -583,12 +664,7 @@ def google_start(request: Request, next: str = "/"):
                     "<p>구글 OAuth 클라이언트를 등록하고 서버 /srv/erp/auth.env 에 "
                     "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET 을 넣으면 켜집니다.</p>"
                     "<p><a href=/auth/login>로그인 화면으로</a></p></div>")
-    # 브라우저 결속 난수(2026-09-05 검수 M1) — state 서명만으로는 공격자가 자기 로그인 흐름을 시작해 얻은
-    # 콜백 URL 을 직원에게 열게 하는 로그인 CSRF 를 못 막는다. 이 요청을 시작한 브라우저만 아는 값을
-    # 쿠키+state 둘 다에 넣고 콜백에서 대조한다.
-    nonce = secrets.token_urlsafe(16)
-    state = jwt.encode({"n": safe_next(next), "b": nonce, "exp": int(time.time()) + 600},
-                       SECRET, algorithm="HS256")
+    state, nonce = _oauth_state_new(next)
     # hd 파라미터 없음 = 계정 선택창에 개인 구글 계정도 뜬다(GM 2026-09-05). 회사 계정 여부는 콜백에서 판별.
     q = urllib.parse.urlencode({"client_id": GOOGLE_ID, "redirect_uri": _redirect_uri(request),
                                 "response_type": "code", "scope": "openid email profile",
@@ -607,12 +683,9 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
     if error or not code:
         return RedirectResponse("/auth/login?err=구글 로그인이 취소됐습니다", status_code=303)
     try:
-        state_claims = jwt.decode(state, SECRET, algorithms=["HS256"])
-        nxt = state_claims["n"]
-    except jwt.PyJWTError:
-        return RedirectResponse("/auth/login?err=로그인 요청이 만료됐습니다. 다시 시도하세요", status_code=303)
-    if not erp_oauth_n or not secrets.compare_digest(erp_oauth_n, state_claims.get("b", "")):
-        return RedirectResponse("/auth/login?err=로그인 요청이 이 브라우저에서 시작되지 않았습니다. 다시 시도하세요", status_code=303)
+        nxt = _oauth_state_verify(state, erp_oauth_n)
+    except ValueError as e:
+        return RedirectResponse(f"/auth/login?err={e}", status_code=303)
     try:
         claims = _id_claims(_google_token(code, _redirect_uri(request))["id_token"])
     except Exception:
@@ -646,15 +719,24 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
     return r
 
 
-@app.get("/auth/google/finish")
-def google_finish_page(t: str = "", next: str = "/", err: str = ""):
-    """개인 구글 계정 첫 로그인 — 이름 확인 + 부서 선택. t 는 600초짜리 서명 토큰(이메일·구글이 준 이름)."""
+# 이름·부서 확인 화면 — 구글 개인계정과 네이버·카카오(항상 개인 취급) 가 공유한다. t 토큰의 "p"(공급자)로
+# 화면 문구·알림만 갈리고, 절차(부서 선택 → perms 초안 → GM 승인 대기)는 하나다(약속 L21 · 관문 늘리지 않는다).
+def _finish_claims(t: str) -> dict:
     try:
-        claims = jwt.decode(t, SECRET, algorithms=["HS256"])
+        return jwt.decode(t, SECRET, algorithms=["HS256"])
     except jwt.PyJWTError:
-        return RedirectResponse("/auth/login?err=인증이 만료됐습니다. 처음부터 다시 로그인하세요", status_code=303)
+        raise ValueError("인증이 만료됐습니다. 처음부터 다시 로그인하세요")
+
+
+def _finish_page(t: str, next: str, err: str, action: str) -> Response:
+    """개인 계정 첫 로그인 — 이름 확인 + 부서 선택. t 는 600초짜리 서명 토큰(이메일·표시이름·공급자)."""
+    try:
+        claims = _finish_claims(t)
+    except ValueError as e:
+        return RedirectResponse(f"/auth/login?err={e}", status_code=303)
+    label = SOCIAL.get(claims.get("p", "google"), {}).get("label", "구글")
     opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
-    return page("가입 완료", head("구글 로그인 확인 · 이름과 부서만 알려주세요") + f"""<form method=post action=/auth/google/finish>
+    return page("가입 완료", head(f"{label} 로그인 확인 · 이름과 부서만 알려주세요") + f"""<form method=post action={action}>
 <h1>가입 완료</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
 <p class=hint>{escape(claims['e'])} 계정으로 계속합니다.</p>
 <label>이름<input name=name value="{escape(claims['n'])}" placeholder="직함 포함, 예: 홍길동 매니저" required></label>
@@ -663,15 +745,14 @@ def google_finish_page(t: str = "", next: str = "/", err: str = ""):
 <button>신청</button><div class=foot><p>신청하면 GM 께 알림이 가고, 승인되면 부서 화면으로 로그인할 수 있습니다.</p></div></form>""")
 
 
-@app.post("/auth/google/finish")
-def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
+def _finish_submit(name: str, dept: str, t: str, next: str, action: str) -> Response:
     try:
-        claims = jwt.decode(t, SECRET, algorithms=["HS256"])
-    except jwt.PyJWTError:
-        return RedirectResponse("/auth/login?err=인증이 만료됐습니다. 처음부터 다시 로그인하세요", status_code=303)
+        claims = _finish_claims(t)
+    except ValueError as e:
+        return RedirectResponse(f"/auth/login?err={e}", status_code=303)
     if dept not in DEPTS:
-        return RedirectResponse(f"/auth/google/finish?t={t}&next={urllib.parse.quote(next, safe='')}&err=부서를 선택하세요", status_code=303)
-    email, salt_pw = claims["e"], secrets.token_urlsafe(32)     # 구글 전용 계정 — 비밀번호 로그인은 못 쓴다
+        return RedirectResponse(f"{action}?t={t}&next={urllib.parse.quote(next, safe='')}&err=부서를 선택하세요", status_code=303)
+    email, salt_pw = claims["e"], secrets.token_urlsafe(32)     # 소셜 전용 계정 — 비밀번호 로그인은 못 쓴다
     salt, h = hash_pw(salt_pw)
     perms = json.dumps({"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, ensure_ascii=False)
     try:
@@ -680,8 +761,144 @@ def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(..
                       (T, email, name.strip(), salt, h, now(), perms))
     except _db.IntegrityError:
         pass                                    # 중복 제출 — 이미 신청돼 있으니 그대로 대기 안내만
-    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept})\n승인: https://erp.wellperion.com/auth/admin")
+    provider = claims.get("p")                  # 구글(기본 흐름)은 문구 그대로, 네이버·카카오만 계정 종류를 덧붙인다
+    suffix = f" · {SOCIAL[provider]['label']} 계정" if provider else ""
+    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept}{suffix})\n승인: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
+
+
+@app.get("/auth/google/finish")
+def google_finish_page(t: str = "", next: str = "/", err: str = ""):
+    return _finish_page(t, next, err, "/auth/google/finish")
+
+
+@app.post("/auth/google/finish")
+def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
+    return _finish_submit(name, dept, t, next, "/auth/google/finish")
+
+
+@app.get("/auth/social/finish")
+def social_finish_page(t: str = "", next: str = "/", err: str = ""):
+    return _finish_page(t, next, err, "/auth/social/finish")
+
+
+@app.post("/auth/social/finish")
+def social_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
+    return _finish_submit(name, dept, t, next, "/auth/social/finish")
+
+
+# ── 네이버·카카오 로그인 ────────────────────────────────────────────────
+# 구글과 달리 회사 계정 개념이 없다 — 로그인하면 무조건 개인 취급, 기존 계정이면 상태만 따르고
+# 신규면 위 _finish_page/_finish_submit(이름·부서 확인 → GM 승인 대기)로 넘긴다.
+def _social_token(provider: str, code: str, redirect_uri: str, client_id: str, client_secret: str, state: str) -> dict:
+    cfg = SOCIAL[provider]
+    data = {"grant_type": "authorization_code", "client_id": client_id, "code": code, "redirect_uri": redirect_uri}
+    if provider == "naver":
+        data["state"] = state
+    if client_secret:
+        data["client_secret"] = client_secret
+    body = urllib.parse.urlencode(data).encode()
+    req = urllib.request.Request(cfg["token_url"], data=body,
+                                 headers={"Content-Type": "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read())
+
+
+def _social_profile(provider: str, access_token: str) -> dict:
+    req = urllib.request.Request(SOCIAL[provider]["profile_url"], headers={"Authorization": f"Bearer {access_token}"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read())
+
+
+def _social_identity(provider: str, profile: dict) -> tuple:
+    """(계정 키로 쓸 이메일, 표시 이름). 카카오가 이메일 미동의면 kakao_{id}@kakao.login 로 대체
+    (발송용 아님 — users.email 칸을 채우는 로그인 식별자일 뿐, 화면엔 「카카오 계정」으로 보인다)."""
+    if provider == "naver":
+        r = profile.get("response") or {}
+        email = (r.get("email") or "").strip().lower()
+        if not email:
+            raise ValueError("네이버 계정에 이메일 제공 동의가 필요합니다")
+        return email, (r.get("name") or email.split("@")[0]).strip()
+    acct = profile.get("kakao_account") or {}
+    email = (acct.get("email") or "").strip().lower()
+    if not email:
+        email = f"kakao_{profile['id']}@kakao.login"
+    name = ((acct.get("profile") or {}).get("nickname") or email.split("@")[0]).strip()
+    return email, name
+
+
+def _social_start(request: Request, provider: str, next: str) -> Response:
+    cfg = SOCIAL[provider]
+    cid, _ = social_creds(provider)
+    if not cid:
+        return page(f"{cfg['label']} 계정 로그인", f"<div class=box><h1>아직 설정 전입니다</h1>"
+                    f"<p>관리자 콘솔(소셜 로그인 키)에서 {cfg['label']} 키를 넣으면 켜집니다.</p>"
+                    "<p><a href=/auth/login>로그인 화면으로</a></p></div>")
+    state, nonce = _oauth_state_new(next)
+    q = urllib.parse.urlencode({"client_id": cid, "redirect_uri": _oauth_redirect_uri(request, provider),
+                                "response_type": "code", "state": state})
+    r = RedirectResponse(cfg["auth_url"] + "?" + q, status_code=302)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie("erp_oauth_n", nonce, max_age=600, httponly=True, samesite="lax", path=f"/auth/{provider}", secure=https)
+    return r
+
+
+def _social_callback(request: Request, provider: str, code: str, state: str, error: str,
+                      erp_oauth_n: Optional[str]) -> Response:
+    cfg = SOCIAL[provider]
+    cid, secret = social_creds(provider)
+    if not cid:
+        return RedirectResponse(f"/auth/login?err={cfg['label']} 로그인이 아직 설정되지 않았습니다", status_code=303)
+    if error or not code:
+        return RedirectResponse(f"/auth/login?err={cfg['label']} 로그인이 취소됐습니다", status_code=303)
+    try:
+        nxt = _oauth_state_verify(state, erp_oauth_n)
+    except ValueError as e:
+        return RedirectResponse(f"/auth/login?err={e}", status_code=303)
+    try:
+        redirect_uri = _oauth_redirect_uri(request, provider)
+        tok = _social_token(provider, code, redirect_uri, cid, secret, state)
+        profile = _social_profile(provider, tok["access_token"])
+        email, name = _social_identity(provider, profile)
+    except ValueError as e:
+        return RedirectResponse(f"/auth/login?err={e}", status_code=303)
+    except Exception:
+        return RedirectResponse(f"/auth/login?err={cfg['label']} 인증에 실패했습니다", status_code=303)
+    with db() as c:
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s", (T, email)).fetchone()
+    if u:
+        if u["status"] == "blocked":
+            return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
+        if u["status"] != "active":
+            return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+        r = RedirectResponse(nxt, status_code=303)
+        https = request.headers.get("x-forwarded-proto") == "https"
+        r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+        return r
+    reg = jwt.encode({"e": email, "n": name, "p": provider, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
+    return RedirectResponse(f"/auth/social/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
+
+
+@app.get("/auth/naver")
+def naver_start(request: Request, next: str = "/"):
+    return _social_start(request, "naver", next)
+
+
+@app.get("/auth/naver/callback")
+def naver_callback(request: Request, code: str = "", state: str = "", error: str = "",
+                    erp_oauth_n: Optional[str] = Cookie(default=None)):
+    return _social_callback(request, "naver", code, state, error, erp_oauth_n)
+
+
+@app.get("/auth/kakao")
+def kakao_start(request: Request, next: str = "/"):
+    return _social_start(request, "kakao", next)
+
+
+@app.get("/auth/kakao/callback")
+def kakao_callback(request: Request, code: str = "", state: str = "", error: str = "",
+                    erp_oauth_n: Optional[str] = Cookie(default=None)):
+    return _social_callback(request, "kakao", code, state, error, erp_oauth_n)
 
 
 # ── 관리자 ──────────────────────────────────────────────────────────────
@@ -796,6 +1013,7 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
         "dept_modules": dept_presets(),          # 부서 → 모듈id 전체 목록(공통+전용 이미 합침) · 데이터 파일 있으면 그게 정본
         "common_modules": [],                    # ponytail: 공통/전용 구분은 이제 dept_presets 안에 이미 합쳐 들어간다(배1026)
         "exception_ids": list(EXCEPTION_ONLY_IDS),
+        "social": {p: bool(social_creds(p)[0]) for p in SOCIAL},   # 값은 안 준다 — 설정됨/비어있음만(키 유출 방지)
         "history": [{
             "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
             "changed_at": h["changed_at"], "before": h["before"], "after": h["after"],
@@ -867,6 +1085,32 @@ async def admin_dept_presets_save(request: Request, erp_session: Optional[str] =
     global _PRESETS
     _PRESETS = (None, None)                     # 강제 재읽기 — 같은 초 안에 두 번 저장돼도 mtime 비교를 건너뛴다
     return RedirectResponse("/auth/admin?msg=부서 기본 표를 저장했습니다#depts", status_code=303)
+
+
+# 소셜 로그인 키(배1108) — 관리자 콘솔 저장. 값은 GET(api/state)으로 절대 안 돌려준다(설정됨/비어있음만).
+@app.post("/auth/admin/social_keys")
+async def admin_social_keys_save(request: Request, erp_session: Optional[str] = Cookie(default=None),
+                                 erp_admin: Optional[str] = Cookie(default=None)):
+    admin_only(erp_session, erp_admin, "/auth/admin")
+    form = await request.form()
+    cur = _social_keys_raw()   # 빈 칸("새 값이 있을 때만 입력")은 기존 값을 유지 — 제출분만 덮어쓴다
+    out = {}
+    for p in SOCIAL:
+        prev = cur.get(p) or {}
+        pid = (form.get(f"{p}_id") or "").strip()
+        secret = (form.get(f"{p}_secret") or "").strip()
+        out[p] = {"id": pid or prev.get("id", ""), "secret": secret or prev.get("secret", "")}
+    tmp = SOCIAL_KEYS_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, SOCIAL_KEYS_FILE)
+    try:
+        os.chmod(SOCIAL_KEYS_FILE, 0o600)
+    except OSError:
+        pass
+    global _SOCIAL_KEYS
+    _SOCIAL_KEYS = (None, {})                    # 강제 재읽기
+    return RedirectResponse("/auth/admin?msg=소셜 로그인 키를 저장했습니다#screens", status_code=303)
 
 
 @app.post("/auth/admin/undo/{hid}")
@@ -1001,4 +1245,15 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert allowed(exception_granted, gm_work)              # modules 로 콕 집으면(개인 예외 부여) 열린다
     all_true = {**staff_u, "perms": json.dumps({"all": True, "deny": []})}
     assert not allowed(all_true, gm_work)                   # all:true(부서 메인 계정)로도 개인 예외는 안 열린다
+    # 네이버·카카오(배1108) — 계정 키 규칙: 카카오 이메일 없으면 kakao_{id}@kakao.login, 네이버는 이메일 필수.
+    assert _social_identity("naver", {"response": {"email": "A@Test.com", "name": "홍길동"}}) == ("a@test.com", "홍길동")
+    try:
+        _social_identity("naver", {"response": {}})
+        assert False, "네이버 이메일 없으면 ValueError 여야 한다"
+    except ValueError:
+        pass
+    assert _social_identity("kakao", {"id": 123, "kakao_account": {}}) == ("kakao_123@kakao.login", "kakao_123")
+    assert _social_identity("kakao", {"id": 123, "kakao_account": {"email": "B@Test.com",
+                             "profile": {"nickname": "닉네임"}}}) == ("b@test.com", "닉네임")
+    assert set(SOCIAL) == {"naver", "kakao"}
     print("self-check ok")
