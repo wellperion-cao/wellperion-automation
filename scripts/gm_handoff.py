@@ -94,6 +94,32 @@ def add_todo(title: str, content: str, category: str, due: str, approval: str, d
     return o._todo_post(params) or {"ok": False, "reason": "응답 없음"}
 
 
+GM_KEY = "1531"  # GM 행(결재 SSOT)은 gmkey 없이는 조회에 안 나온다 — 중복 검사는 반드시 이 키로
+
+
+def _title_head(title: str) -> str:
+    head = str(title or "").split(" — ")[0].split("(")[0]
+    return "".join(ch for ch in head if ch.isalnum()).lower()
+
+
+def find_open_duplicate(title: str) -> dict | None:
+    """열린 행 중 제목 머리가 닮은 것(difflib ≥ 0.75). 2026-09-07 같은 날 두 번 중복 등록한 뒤 박은 가드."""
+    import difflib
+    import ops_daily_digest as o
+    rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1", "gmkey": GM_KEY},
+                      timeout=40, label="gm_handoff dup").json().get("data") or []
+    key = _title_head(title)
+    if not key:
+        return None
+    for r in rows:
+        if r.get("상태") == "완료":
+            continue
+        t = _title_head(r.get("업무명"))
+        if t and difflib.SequenceMatcher(None, key, t).ratio() >= 0.75:
+            return r
+    return None
+
+
 def append_todo(todo_id: str, line: str, dry: bool) -> dict:
     """GM업무 한 행의 내용 끝에 진척 한 줄을 덧붙인다(GM 2026-09-05 "G1에 계속 업데이트").
     todo_update 는 전 칸을 다시 보내야 하므로 현재 행을 읽어 내용만 늘린다. 행이 없으면 실패를 그대로 돌려준다."""
@@ -182,6 +208,7 @@ def main() -> int:
     ap.add_argument("--todo-id")
     ap.add_argument("--event-id")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
     a = ap.parse_args()
     dry = a.dry_run
 
@@ -201,6 +228,12 @@ def main() -> int:
 
     if not a.title:
         ap.error("--title 필요")
+    if not a.force:
+        dup = find_open_duplicate(a.title)
+        if dup:
+            print(f"✖ 같은 건이 이미 있습니다 — {dup.get('id')} 「{dup.get('업무명')}」 (상태 {dup.get('상태')})."
+                  f" 갱신은 --append LINE --todo-id {dup.get('id')}, 정말 다른 건이면 --force")
+            return 2
     due = a.due or a.date or (_today() + _dt.timedelta(days=7)).isoformat()
     r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry) if a.date else None
     r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=a.assignee)
