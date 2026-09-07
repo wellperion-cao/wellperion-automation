@@ -84,6 +84,51 @@ def classify_overlaps(conn):
     return collisions, len(rows) - collisions
 
 
+OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) — 늘리면 거기도 같이 고친다 (배1054)
+    "owner_pt": "PT 담당자", "owner_golf": "골프 담당자", "owner_pl": "P.L 담당자",
+    "owner_squash": "스쿼시 담당자", "owner_swim": "수영 담당자",
+}
+
+
+def sync_owner_cols(conn):
+    """owner_* 5칸을 매 sync 마다 시트 미러(data JSON)로 다시 채운다 — 서버가 아직 원천이 아닌 동안은
+    시트가 이긴다. schema.sql 의 WHERE owner_* IS NULL 1회성 백필만으론 5분마다 갱신되는 data 와
+    owner_* 가 최초 배포 시점 스냅샷에 얼어붙어 어긋난다(배1054 시포 실측: valid 991행 중 846행 불일치).
+    단 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다 — write_log 의 member_owner_save 성공행에서 뽑는다
+    (payload._member_no 는 애초에 대조용으로 넣어 둔 칸 · reconcile_dual_write.py 와 같은 재료).
+    반환 = 예외 아닌 행 중에도 남은 불일치 건수(0 이어야 정상 — 갱신 자체가 안 먹었다는 신호)."""
+    field_to_col = {v: k for k, v in OWNER_COLS.items()}
+    written = {col: set() for col in OWNER_COLS}
+    for field, member_no in conn.execute(
+            "SELECT payload->>'field', payload->>'_member_no' FROM write_log"
+            " WHERE tenant_id=%s AND action='member_owner_save' AND gas_status <> 'test'", (db.TENANT,)):
+        col = field_to_col.get(field)
+        if col and member_no:
+            written[col].add(member_no)
+    mismatch = 0
+    with conn:
+        for col, field in OWNER_COLS.items():
+            skip = list(written[col])
+            if skip:
+                conn.execute(
+                    ("UPDATE members SET {col}=data::jsonb->>%s WHERE tenant_id=%s AND scope='valid'"
+                     " AND member_no <> ALL(%s)").format(col=col), (field, db.TENANT, skip))
+                n = conn.execute(
+                    ("SELECT COUNT(*) FROM members WHERE tenant_id=%s AND scope='valid' AND member_no <> ALL(%s)"
+                     " AND COALESCE({col},'') <> COALESCE(data::jsonb->>%s,'')").format(col=col),
+                    (db.TENANT, skip, field)).fetchone()[0]
+            else:
+                conn.execute(
+                    "UPDATE members SET {col}=data::jsonb->>%s WHERE tenant_id=%s AND scope='valid'".format(col=col),
+                    (field, db.TENANT))
+                n = conn.execute(
+                    ("SELECT COUNT(*) FROM members WHERE tenant_id=%s AND scope='valid'"
+                     " AND COALESCE({col},'') <> COALESCE(data::jsonb->>%s,'')").format(col=col),
+                    (db.TENANT, field)).fetchone()[0]
+            mismatch += n
+    return mismatch
+
+
 def _tell_gm(text):
     """문제가 생기면 업무보고방에 즉시 (GM 지시 2026-09-03). 키는 erp_auth.tell_gm 과 같은
     TG_BOT_TOKEN·TG_CHAT_ID — api.env 에 같은 두 줄을 넣어야 산다(시토 배치 항목)."""
@@ -139,6 +184,10 @@ def main():
         total += n
         unnumbered += u
         print("[ok] %s %d건 (번호 없음 %d)" % (scope, n, u))
+    owner_mismatch = sync_owner_cols(conn)
+    if owner_mismatch:
+        _tell_gm("⚠️ 회원 담당자(owner_*) 정합 어긋남 — 시트 갱신 뒤에도 %d행 불일치(sync_members)" % owner_mismatch)
+    print("[parity] owner_* 불일치 %d행" % owner_mismatch)
     collided, multi = classify_overlaps(conn)
     with conn:
         db.meta_set(conn, "members_last_sync", now)
@@ -187,10 +236,29 @@ def selftest():
         assert alert_on_change(conn, ["valid"], 2, 0) is None, "같은 이상은 반복하지 않는다"
         assert "충돌 1건" in alert_on_change(conn, ["valid"], 2, 1), "이상 내용이 바뀌면 다시 보낸다"
         assert "복귀" in alert_on_change(conn, [], 0, 0)
+        # owner_* 정합 — 시트가 이기되, 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다(배1054)
+        owner_rows = [
+            {"회원번호": "M00003", "회원명": "황금성", "휴대폰 번호": "010-3333-3333", "PT 담당자": "최동오"},
+            {"회원번호": "M00004", "회원명": "김보통", "휴대폰 번호": "010-4444-4444", "PT 담당자": "이보통"},
+        ]
+        replace_scope(conn, "valid", owner_rows, "t5")
+        assert sync_owner_cols(conn) == 0, "갱신 직후엔 예외 없이 다 시트와 일치해야 한다"
+        assert conn.execute("SELECT owner_pt FROM members WHERE tenant_id=%s AND member_no='M00003'", T).fetchone()[0] == "최동오"
+        with conn:
+            conn.execute("UPDATE members SET owner_pt=%s WHERE tenant_id=%s AND member_no='M00003'", ("이형진", db.TENANT))
+            conn.execute(
+                "INSERT INTO write_log (tenant_id,at,action,payload,user_email,gas_status) VALUES (%s,%s,'member_owner_save',%s,%s,'ok')",
+                (db.TENANT, "t5", json.dumps({"field": "PT 담당자", "_member_no": "M00003"}, ensure_ascii=False), ""))
+        assert sync_owner_cols(conn) == 0, "예외행 빼면 여전히 다 일치 — 예외행 자체는 안 세야 한다"
+        assert conn.execute("SELECT owner_pt FROM members WHERE tenant_id=%s AND member_no='M00003'", T).fetchone()[0] == "이형진", \
+            "서버가 쓴 행은 시트값(최동오)으로 안 덮인다"
+        assert conn.execute("SELECT owner_pt FROM members WHERE tenant_id=%s AND member_no='M00004'", T).fetchone()[0] == "이보통", \
+            "예외 아닌 행은 계속 시트를 따라간다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)
             conn.execute("DELETE FROM sync_meta WHERE tenant_id=%s", T)
+            conn.execute("DELETE FROM write_log WHERE tenant_id=%s", T)
         conn.close()
     print("selftest ok")
     return 0
