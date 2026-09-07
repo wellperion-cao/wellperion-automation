@@ -341,14 +341,17 @@ CREATE INDEX IF NOT EXISTS ix_track_events_ts ON track_events (tenant_id, ts);
 
 -- 회원 쓰기 서버 원장 1단계 — 종목별 담당자 5칸 (배1050 · 2026-09-05 시토 · 시포 스펙 §2-2).
 -- GAS 미러 data(JSON) 안에만 있던 칸을 실컬럼으로 승격 — POST /api/members/write(member_owner_save)가 직접 쓴다.
--- sync_members.py 의 INSERT 열 목록엔 이 5칸이 없다(의도) — 5분 거울 갱신이 서버가 쓴 값을 되덮지 않는다.
+-- sync_members.py 의 INSERT 열 목록엔 이 5칸이 없다(의도) — 5분 거울 통짜갱신이 이 칸을 직접 덮지 않는다.
+-- ★단 서버는 아직 원천이 아니다(member_owner_save 실쓰기 극소수). 그동안은 시트가 이겨야 하므로
+--   sync_members.py::sync_owner_cols() 가 매 sync 마다 이 5칸을 data JSON 으로 다시 채운다 — 단
+--   write_log 에 실제 서버쓰기가 있던 (회원번호,필드)만 예외로 안 덮는다(배1054 · 991행 중 846행 어긋남 실측).
 ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_pt     TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_golf   TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_pl     TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_squash TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS owner_swim   TEXT;
--- 1회성 이관 백업: 이미 GAS 시트에 담당자 값이 있던 회원은 data JSON 에서 그대로 끌어와 새 컬럼을 채운다.
--- WHERE owner_* IS NULL 이라 한 번 채우면 이후 재실행은 아무 일도 안 한다(멱등).
+-- 최초 컬럼 신설 시 1회성 시드: 스키마 적용 직후부터 sync_owner_cols() 가 돌기 전까지의 공백을 메운다.
+-- WHERE owner_* IS NULL 이라 한 번 채우면 재실행은 값 있는 행엔 아무 일도 안 한다(멱등 · 이후 유지·보정은 sync 몫).
 UPDATE members SET owner_pt     = COALESCE(owner_pt,     data::jsonb->>'PT 담당자')     WHERE scope='valid' AND owner_pt     IS NULL;
 UPDATE members SET owner_golf   = COALESCE(owner_golf,   data::jsonb->>'골프 담당자')   WHERE scope='valid' AND owner_golf   IS NULL;
 UPDATE members SET owner_pl     = COALESCE(owner_pl,     data::jsonb->>'P.L 담당자')    WHERE scope='valid' AND owner_pl     IS NULL;
