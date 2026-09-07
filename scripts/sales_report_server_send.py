@@ -37,7 +37,28 @@ def _switch_mode():
         return "parallel"                        # 파일 없으면 안전 기본값(병행만·3방 절대 아님)
 
 
+def write_cells(narrative):
+    """I20·I21 시트 기입(배1086 · GM 결재 2026-09-07 「켠다」). 쓰기 관문은 기존 post_to_sheet 하나
+    (GAS 웹앱 허용 칸 I20·I21 · 같은 날 사람이 고친 칸은 덮지 않는 가드 그대로).
+    배1097(GM 2026-09-07): 기입 시각을 I16·I18(08:00)에 맞춰 08:05 --write-cells 로 따로 돌린다 —
+    09:20 발송은 캡션 표시만."""
+    from sales_report_ops_summary import post_to_sheet, _alert_if_bad
+    for cell in ("I20", "I21"):
+        text = (narrative or {}).get(cell, "")
+        if not text:
+            print("[I20·I21] %s 원천 비어 있음 — 기입 안 함" % cell)
+            continue
+        res = post_to_sheet(text, cell)
+        _alert_if_bad(cell, res)
+        print("[I20·I21] %s 기입 %s" % (cell, "ok" if res.get("ok") else res))
+
+
 def main():
+    if "--write-cells" in sys.argv:            # 08:05 cron — 발송 없이 I20·I21 시트 기입만
+        render.load_env()
+        write_cells(render.compute_narrative(render.datetime.now(render.KST).strftime("%Y-%m-%d")))
+        return 0
+
     mode = _switch_mode()
     if mode != "parallel":
         print("[skip] switch mode=%s (parallel 아님 — 발송 안 함)" % mode)
@@ -75,19 +96,6 @@ def main():
     if extra_text:
         tg_send(token, chat, extra_text, source="sales_report_server_send", full_response=True)
 
-    # I20·I21 시트 기입(배1086 · GM 결재 2026-09-07 「켠다」). 쓰기 관문은 기존 post_to_sheet 하나
-    # (GAS 웹앱 @12 · 허용 칸 I20·I21 추가 · 같은 날 사람이 고친 칸은 덮지 않는 가드 그대로).
-    try:
-        from sales_report_ops_summary import post_to_sheet, _alert_if_bad
-        for cell, text in (("I20", i20), ("I21", i21)):
-            if not text:
-                print("[I20·I21] %s 원천 비어 있음 — 기입 안 함" % cell)
-                continue
-            res = post_to_sheet(text, cell)
-            _alert_if_bad(cell, res)
-            print("[I20·I21] %s 기입 %s" % (cell, "ok" if res.get("ok") else res))
-    except Exception as exc:
-        print("[I20·I21] 시트 기입 실패 — %s: %s" % (type(exc).__name__, exc))
     print("DONE: ok=%s message_id=%s png=%s · %s" % (ok, msg_id, png, caption))
     return 0 if ok else 1
 
