@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "진행중",
-  "task_id": "CTO-2026-09-06-나우열M-CHRO-라인-전용-제한-서버-접속-별도-",
-  "last_task_id": "CTO-2026-09-06-나우열M-CHRO-라인-전용-제한-서버-접속-별도-",
+  "task_id": "CTO-2026-09-08-07-50-번호-통-이정헌-소장-몫-인라인-0건-외",
+  "last_task_id": "CTO-2026-09-08-07-50-번호-통-이정헌-소장-몫-인라인-0건-외",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-07T21:01:41Z",
+  "last_pushed_at": "2026-09-07T23:06:16Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -1149,12 +1149,20 @@
       "note": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
       "updated_at": "2026-09-07T21:01:41Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-08-07-50-번호-통-이정헌-소장-몫-인라인-0건-외",
+      "title": "[시토 2026-09-08 08:1x] 원인 = 확인 절 10줄 상한에서 사람 블록을 통째로 넣거나 빼는 구조 — 실장 7줄 뒤 소장 4줄이 통째로 접혀 '외 4건 — 링크'만 나감. 고침(build_asks_section 한 곳) = 상한을 사람 수로 균등 배분(2명이면 각 3건) · 사람별 '외 N건' 줄 제거(접힌 건은 섹션 링크 줄이 셈). 자체 검사 통과 + --dry-run 실측: 실장 #129·#147·#148 / 소장 #132·#138·#149 각 3건 인라인. 커밋 5daaa077c. 남은 것 = 내일 07:50 실발신 로그로 확인 뒤 닫음.",
+      "status": "진행중",
+      "note": "[시토 2026-09-08 08:1x] 원인 = 확인 절 10줄 상한에서 사람 블록을 통째로 넣거나 빼는 구조 — 실장 7줄 뒤 소장 4줄이 통째로 접혀 '외 4건 — 링크'만 나감. 고침(build_asks_section 한 곳) = 상한을 사람 수로 균등 배분(2명이면 각 3건) · 사람별 '외 N건' 줄 제거(접힌 건은 섹션 링크 줄이 셈). 자체 검사 통과 + --dry-run 실측: 실장 #129·#147·#148 / 소장 #132·#138·#149 각 3건 인라인. 커밋 5daaa077c. 남은 것 = 내일 07:50 실발신 로그로 확인 뒤 닫음.",
+      "updated_at": "2026-09-07T23:06:16Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
+  "title": "[시토 2026-09-08 08:1x] 원인 = 확인 절 10줄 상한에서 사람 블록을 통째로 넣거나 빼는 구조 — 실장 7줄 뒤 소장 4줄이 통째로 접혀 '외 4건 — 링크'만 나감. 고침(build_asks_section 한 곳) = 상한을 사람 수로 균등 배분(2명이면 각 3건) · 사람별 '외 N건' 줄 제거(접힌 건은 섹션 링크 줄이 셈). 자체 검사 통과 + --dry-run 실측: 실장 #129·#147·#148 / 소장 #132·#138·#149 각 3건 인라인. 커밋 5daaa077c. 남은 것 = 내일 07:50 실발신 로그로 확인 뒤 닫음.",
   "artifact_url": null,
   "commit": "",
-  "note": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
-  "updated_at": "2026-09-07T21:01:41Z"
+  "note": "[시토 2026-09-08 08:1x] 원인 = 확인 절 10줄 상한에서 사람 블록을 통째로 넣거나 빼는 구조 — 실장 7줄 뒤 소장 4줄이 통째로 접혀 '외 4건 — 링크'만 나감. 고침(build_asks_section 한 곳) = 상한을 사람 수로 균등 배분(2명이면 각 3건) · 사람별 '외 N건' 줄 제거(접힌 건은 섹션 링크 줄이 셈). 자체 검사 통과 + --dry-run 실측: 실장 #129·#147·#148 / 소장 #132·#138·#149 각 3건 인라인. 커밋 5daaa077c. 남은 것 = 내일 07:50 실발신 로그로 확인 뒤 닫음.",
+  "updated_at": "2026-09-07T23:06:16Z"
 }
