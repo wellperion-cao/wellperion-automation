@@ -1620,6 +1620,33 @@ _SCHEDULE_SOURCE = "kakao_digest"
 _SCHEDULE_MAX_PER_RUN = 3      # 하루에 이 이상 나오면 판독이 헛짚은 것이다 — 넣지 않고 사람에게 남긴다
 _SCHEDULE_DUP_RATIO = 0.6      # 같은 날짜에 이 이상 닮은 이름이 있으면 같은 일로 본다
 
+# ★2026-09-07 — 제목 닮음(0.6)만 보다 표현이 다른 같은 일을 놓쳤다(GM 지적, 같은 날 두 번째).
+#   실측: 「채용 면접 — 편도민」↔「골프팀장(위탁사업자) - 편도민면접」류 5쌍. 정지어는 실측 스윕으로
+#   고른 것 — 뺀 낱말이 남으면 서로 다른 두 건까지 묶여 버린다(예: '회장님 요가 미팅' vs '대표 방문').
+_SCHEDULE_STOP_WORDS = frozenset(
+    "회장님 대표님 GM 김남욱 미팅 회의 보고 오찬 완료 진행 시작 확인 설치 공사 계약 안내 전달"
+    " 요청 준비 점검 방문 연락 일정 수업 회원 팀 부 실장 소장 업체 문자 자동".split()
+)
+_SCHEDULE_TOKEN_RE = re.compile(r"[가-힣A-Za-z][가-힣A-Za-z0-9]+")
+_SCHEDULE_CODE_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")  # 조사 없는 영문 코드성 낱말(CCTV·API…) — 한글 낱말보다 훨씬 드물다
+
+
+def _schedule_rare_tokens(title: str) -> list[str]:
+    """제목에서 '드문 낱말'만 뽑는다 — 2자 이상 토큰 중 정지어를 뺀 것."""
+    return [t for t in _SCHEDULE_TOKEN_RE.findall(str(title or "")) if t not in _SCHEDULE_STOP_WORDS]
+
+
+def _schedule_shared_weight(title_a: str, title_b: str) -> int:
+    """두 제목이 공유하는 '드문 낱말' 무게 합. 영문 코드성 낱말은 무게 2, 나머지는 1.
+    조사가 붙어 낱말이 이어진 경우(예: '편도민' vs '편도민면접')는 부분 포함도 같은 낱말로 본다."""
+    rare_a = _schedule_rare_tokens(title_a)
+    rare_b = _schedule_rare_tokens(title_b)
+    total = 0
+    for tok_a in dict.fromkeys(rare_a):  # A쪽 중복 낱말은 한 번만 센다
+        if any(tok_a == tok_b or tok_a in tok_b or tok_b in tok_a for tok_b in rare_b):
+            total += 2 if _SCHEDULE_CODE_RE.match(tok_a) else 1
+    return total
+
 
 def _schedule_norm(name: str) -> str:
     """이름 비교용 정규화. 공백·괄호류를 없애고, **이름 안에 적힌 날짜·기간 표기도 뗀다.**
@@ -1674,6 +1701,39 @@ def _selfcheck_schedule_dup() -> None:
     assert not _schedule_is_dup("세스코 방역 점검", "2026-09-05", items)
     assert not _schedule_is_dup("오넛티 추석 팝업 운영 시작", "2026-09-20", items), "사흘 넘게 떨어지면 남남"
 
+    # ★2026-09-07 — 표현이 다른 같은 일(실측 5쌍, GM 같은 날 2번째 지적)도 잡는지 검사한다.
+    items2 = [
+        {"name": "골프팀장(위탁사업자) - 편도민면접", "next_due": "2026-09-07", "time": "14:00"},
+        {"name": "골프팀장 - 김태엽 면접", "next_due": "2026-09-07", "time": "15:00"},
+        {"name": "딜라이브 API 연동 — 문자 자동 발송 (선불 30만원 충전 · 발신번호 · 고정 IP 등록 회신)",
+         "next_due": "2026-09-07", "time": ""},
+        {"name": "CCTV·보안 계약 요청 컨택 — 블루캅 / ADT캡스", "next_due": "2026-09-07", "time": "10:00"},
+        {"name": "3분기 핵심 부서 평가·전략 로드맵 결과 보고 (회장님·경영진)",
+         "next_due": "2026-09-01", "time": "15:00"},
+    ]
+    assert _schedule_is_dup("채용 면접 — 편도민", "2026-09-07", items2, "14:00"), "같은 시각 + 낱말 1개(조사로 이어붙음)"
+    assert _schedule_is_dup("채용 면접 — 김태엽", "2026-09-07", items2, "15:00"), "낱말 2개 공유"
+    assert _schedule_is_dup(
+        "딜라이브 문자 API 연동 진행 — 9/7(월) 딜라이브 회신(IP 등록·선불 충전) 받아 착수",
+        "2026-09-07", items2), "낱말 다수 공유"
+    assert _schedule_is_dup(
+        "CCTV 공사 — 업체 연락(일정·계약) · 9/7(월) 업체가 먼저 연락 주기로 함",
+        "2026-09-07", items2), "영문 코드성 낱말 1개(무게 2)"
+    assert _schedule_is_dup(
+        "회장님·대표님 보고 — GM업무 01~05 (요금·8월현황9월계획·3분기로드맵·4개부서개선·중간관리자평가)",
+        "2026-09-01", items2), "낱말 다수 공유(부분 포함)"
+
+    # 다른 일까지 같은 일로 묶으면 안 된다 — 실측 '중복 아님' 3쌍(같은 날 ±1일 안)
+    items3 = [
+        {"name": "해충 집중구역 3곳 확정", "next_due": "2026-09-01", "time": ""},
+        {"name": "에스컬레이터 설치팀 방문", "next_due": "2026-09-02", "time": ""},
+        {"name": "박수철 대표 방문 — 공간 리뉴얼", "next_due": "2026-09-04", "time": "15:00"},
+    ]
+    assert not _schedule_is_dup("위생 5항목 1차 현장 확인", "2026-09-01", items3)
+    assert not _schedule_is_dup("브로제이 대표님 미팅 + 키오스크 교체", "2026-09-02", items3)
+    assert not _schedule_is_dup("회장님 요가 1:1 수업 미팅", "2026-09-04", items3, "15:00"), \
+        "같은 시각이어도 드문 낱말 0개면 남남"
+
     # 확정 아닌 건이 자동 등록되던 실사고(2026-09-02 GM 지적) — 그 원문으로 검사한다.
     assert _looks_unconfirmed("회장님 오찬 — 필라+골프팀",
                               "나우열M 19:02 강습부서 마지막 오찬으로 17일 14시 희망(회장님 보고 예정·희망 단계)")
@@ -1685,13 +1745,16 @@ def _selfcheck_schedule_dup() -> None:
     print("[selfcheck] schedule_dup·unconfirmed OK")
 
 
-def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
+def _schedule_is_dup(title: str, due: str, items: list[dict], tm: str = "") -> str:
     """같은 날짜에 이미 같은 일이 있으면 그 이름을 돌려준다(없으면 빈 문자열).
-    사람이 손으로 적은 것도 대상이다 — 같은 사실이 두 줄로 사는 것을 막는다(약속 L23)."""
+    사람이 손으로 적은 것도 대상이다 — 같은 사실이 두 줄로 사는 것을 막는다(약속 L23).
+    ★2026-09-07 — 제목 닮음(0.6)만으로는 표현이 다른 같은 일을 놓친다(GM 지적). 두 규칙을 더 얹는다(OR):
+    (a) 같은 시각 + 드문 낱말 1개 이상 공유, (b) 시각이 없어도 드문 낱말 2개 이상(무게 합) 공유."""
     from difflib import SequenceMatcher
     a = _schedule_norm(title)
     if not a:
         return ""
+    tm = str(tm or "").strip()
     # ★2026-09-02 — 같은 날짜만 보던 것을 하루 앞뒤까지 넓혔다(GM 지적). 실측: 「회장님 요가 1:1 수업
     #   미팅」이 9/4(사람이 등록)와 9/5(카톡 자동 등록) 두 줄로 살아 있었다. 카톡 대화에서 날짜를
     #   읽을 때 하루 어긋나는 일이 흔해, 날짜가 같을 때만 보면 이 부류를 영영 못 잡는다.
@@ -1702,6 +1765,11 @@ def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
         if not b:
             continue
         if a in b or b in a or SequenceMatcher(None, a, b).ratio() >= _SCHEDULE_DUP_RATIO:
+            return str(it.get("name") or "")
+        it_time = str(it.get("time") or "").strip()
+        same_time = bool(tm) and bool(it_time) and tm[:5] == it_time[:5]
+        weight = _schedule_shared_weight(title, it.get("name"))
+        if (same_time and weight >= 1) or weight >= 2:
             return str(it.get("name") or "")
     return ""
 
@@ -1774,7 +1842,7 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
     by_id = {it.get("id"): it for it in items}
     added = []
     for due, title, dept, note, tm in cands:
-        dup = _schedule_is_dup(title, due, items)
+        dup = _schedule_is_dup(title, due, items, tm)
         if dup:
             print(f"  [일정] 건너뜀 — '{title}' ({due}) 같은 날짜에 이미 있음: {dup}")
             continue
