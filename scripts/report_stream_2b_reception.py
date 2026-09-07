@@ -47,6 +47,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 from tg_outbound_log import send as tg_send  # noqa: E402
+from queue_lock import QueueLock  # noqa: E402
 import worklog  # noqa: E402
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)  # 종합접수방
@@ -940,12 +941,28 @@ def commit_completion_cursor() -> bool:
     return True
 
 
+# 되감김 사고(GM 신고 2026-09-07 · RECEPTION-148 완료건이 '새 접수'로 3회 재발신) — 이
+# 파일을 read-modify-write 하는 경로가 여러 개다(_completion_block 저녁 22시대 다이제스트,
+# run_intake_relay 5분 잡, seed_completion_cursor 등). 각자 실행 시작 시점에 읽은 옛 state를
+# 통째로 덮어써, 그 사이 다른 경로가 커서에 추가한 regId가 사라졌다(커서 되감김). 두 커서
+# (reception_seen_new_ids·reception_seen_done_ids)는 한 번 통보한 건은 절대 잊으면 안 되는
+# 단조증가 집합이라, 저장 직전 파일을 다시 읽어 합집합으로 병합한다. 락은 새로 만들지 않고
+# queue_lock.QueueLock(lock_name 만 이 파일 전용으로 분리)을 재사용한다.
+_MERGE_ID_KEYS = ("reception_seen_new_ids", "reception_seen_done_ids")
+
+
 def _save_completion_state(state: dict) -> None:
     try:
         COMPLETION_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        COMPLETION_STATE_PATH.write_text(
-            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        with QueueLock("report_stream_2b_reception", lock_name="dept_completion_notify.lock"):
+            on_disk = _load_completion_state()
+            merged = {**on_disk, **state}
+            for key in _MERGE_ID_KEYS:
+                if key in state:
+                    merged[key] = sorted(set(on_disk.get(key) or []) | set(state.get(key) or []))
+            COMPLETION_STATE_PATH.write_text(
+                json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
     except Exception:
         pass
 
@@ -1078,7 +1095,11 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
         return ""
     seen = set(state.get("reception_seen_new_ids") or [])
     all_ids = {str(r.get("regId")) for r in rows if str(r.get("regId") or "")}
-    new_rows = [r for r in rows if str(r.get("regId") or "") and str(r["regId"]) not in seen]
+    # ★2026-09-07 GM 신고(RECEPTION-148 완료건 재발신) — 완료건은 '새 접수' 후보에서 뺀다.
+    # 커서(seen)만으로 걸러 왔는데, 커서가 어떤 이유로든 되감기면(별도 수정=락+합집합 저장)
+    # 완료건이 그대로 다시 후보에 들어왔다 — 상태로도 한 번 더 막아 이중으로 방어한다.
+    new_rows = [r for r in rows if str(r.get("regId") or "") and str(r["regId"]) not in seen
+                and str(r.get("status", "")) != "완료"]
     if persist:
         global _pending_state
         state["reception_seen_new_ids"] = sorted(all_ids)
@@ -1257,8 +1278,10 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
     if not state.get("intake_relay_enabled") and not (dry_run or test):
         return []
     seen = set(state.get("reception_seen_new_ids") or [])
+    # 완료건은 후보에서 뺀다(_intake_relay_block 과 같은 조건 — 위 주석 참고).
     depts = sorted({str(r.get("dept") or "").strip() or "부서 미정" for r in rows
-                    if str(r.get("regId") or "") and str(r["regId"]) not in seen})
+                    if str(r.get("regId") or "") and str(r["regId"]) not in seen
+                    and str(r.get("status", "")) != "완료"})
     if not depts:
         return []
 
@@ -1279,7 +1302,8 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
                                    persist=False, force=True)
         if not text:
             continue
-        new_sub = [r for r in sub if str(r.get("regId") or "") and str(r["regId"]) not in seen]
+        new_sub = [r for r in sub if str(r.get("regId") or "") and str(r["regId"]) not in seen
+                   and str(r.get("status", "")) != "완료"]
         if dry_run:
             _pn = sum(1 for r in new_sub if str(r.get("photoUrl") or "").strip())
             print(f"[intake-relay] DRY-RUN {room_depts} → {room} (사진 {_pn}장)\n{text}\n", flush=True)

@@ -883,6 +883,22 @@
    "차단조치": "(시우 배1103 · 완료) ①api_reception.py /submit 응답 전 갈래 CORS 헤더 + OPTIONS 204(api_intake 와 같은 값) ②서버 배포(백업 .bak-20260907-cors · GM 승인 PL-20260907-03) ③telegram_health_check --only reception 에 ④항 추가: OPTIONS 204+ACAO · 빈 POST 응답 ACAO 대조",
    "상태": "GUARDED",
    "검증증거": "2026-09-07 15:1x 실측 — OPTIONS 204 ACAO=* / POST(정상 토큰·빈 카테고리) 200 ACAO=* / POST 빈 본문 400 ACAO=* · 라이브 폼 wellperion.com/ko/reception 제출 주소·토큰 = 저장소와 동일 · 남은 확인 = GM 실제 재접수"
+  },
+  {
+   "id": "INC-058",
+   "date": "2026-09-07",
+   "watch_globs": [
+    "scripts/report_stream_2b_reception.py",
+    "status/dept_completion_notify.json"
+   ],
+   "gate": "완료 상태 rows 를 '새 접수' 후보에서 제외 + 이 커서 파일 저장은 락+합집합 병합만 — 통짜 덮어쓰기 금지",
+   "요약": "이미 완료된 접수(RECEPTION-148)가 ★부서장 방에 '새 접수'로 3번(09-02·09-06·09-07) 재발신됐다. GM 신고 2026-09-07 18:2x.",
+   "증상": "수영장 여자사우나 층계 미끄럼방지 테이프 건(상태=완료)이 09-02 13:56·09-06 13:16·09-07 18:06 세 번 '📮 새 접수'로 나감(kakao_sent 로그 실측).",
+   "본질": "두 결함이 겹쳤다. ①_intake_relay_block/run_intake_relay 의 '새 접수' 후보 필터가 커서(seen id)만 보고 상태(완료 여부)를 안 봄 — 커서가 어떤 이유로든 흔들리면 완료건도 그대로 후보에 든다. ②커서 파일(dept_completion_notify.json)을 쓰는 경로가 여럿(저녁 완료통보·5분 즉시전달 등)인데 각자 자기 실행 시작 시점에 읽은 state 를 통째로 덮어써, 그 사이 다른 경로가 커서에 추가한 regId 가 사라짐(되감김) — 파일도 2026-08-15 이후 저장소에 커밋되지 않아 로컬마다 다른 판을 들고 있었다.",
+   "뿌리분류": "정합어긋남",
+   "차단조치": "(시우) ①_intake_relay_block·run_intake_relay 의 새 접수 후보 조건에 status!='완료' 추가(이중 방어 — 커서와 무관하게 완료건은 원천 차단). ②_save_completion_state 를 queue_lock.QueueLock(전용 lock_name) 임계구역 안에서 파일을 다시 읽어 reception_seen_new_ids·reception_seen_done_ids 를 합집합으로 병합 후 쓰게 변경(통짜 덮어쓰기 제거). ③커서 파일을 커밋 대상에 포함(그동안 로컬 전용 갱신이라 누락).",
+   "상태": "GUARDED",
+   "검증증거": "dry-run 실측 — 완료건(RECEPTION-148)을 커서에서 강제로 뺀 상태로 _intake_relay_block 을 태워도 후보 0건(상태 필터가 잡음) 확인. 사본 파일로 병합-저장 재현 — 다른 프로세스가 이미 커밋한 id 를 뒤늦은 stale writer 가 지우지 못하고 합집합으로 남는 것 확인(실파일 미훼손). 실제 카톡 발송은 하지 않음(발송 금지 지시)."
   }
  ]
 }
