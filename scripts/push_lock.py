@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 import os
 import subprocess
 import sys
@@ -141,8 +142,30 @@ def save_approvals(d: dict) -> None:
 
 def _next_id(d: dict, now: datetime) -> str:
     today = now.strftime("%Y%m%d")
-    n = sum(1 for r in d["requests"] if str(r.get("id", "")).startswith(f"PL-{today}-")) + 1
-    return f"PL-{today}-{n:02d}"
+    # 개수가 아니라 최대 번호 + 1 — 행이 유실·삭제돼도 같은 번호가 다시 나오지 않는다(2026-09-07 PL-11·12·21 충돌 사고).
+    nums = [int(m.group(1)) for r in d["requests"]
+            for m in [re.match(rf"PL-{today}-(\d+)$", str(r.get("id", "")))] if m]
+    return f"PL-{today}-{(max(nums) + 1) if nums else 1:02d}"
+
+
+_ROLE_BY_TAG = {"ceo": "ceo", "cto": "cto", "coo": "coo", "cmo": "cmo", "cpo": "cpo", "cbo": "cbo",
+                "chro": "chro", "cfo": "cfo", "웰리": "ceo", "시토": "cto", "시우": "coo", "시모": "cmo",
+                "시포": "cpo", "시보": "cbo", "시로": "chro", "시뽀": "cfo"}
+
+
+def requester_from_message(message: str, fallback: str = "unknown") -> str:
+    """커밋 제목에서 요청 역할을 읽는다 — `feat(cto): …`·`[시토] …`·`chore(S2-COO)` 꼴.
+    못 읽으면 fallback(unknown) → 자동 승인 명단에 없으니 GM 카드로 간다(안전측)."""
+    title = (message or "").splitlines()[0] if message else ""
+    m = re.search(r"\(([^)]+)\)", title)
+    if m:
+        for tok in re.split(r"[-/·,\s]+", m.group(1).lower()):
+            if tok in _ROLE_BY_TAG:
+                return _ROLE_BY_TAG[tok]
+    m = re.search(r"\[([^\]]+)\]", title)
+    if m and m.group(1).strip() in _ROLE_BY_TAG:
+        return _ROLE_BY_TAG[m.group(1).strip()]
+    return fallback
 
 
 def make_request(paths: list[str], sha: str, summary: str, requester: str,
@@ -155,11 +178,16 @@ def make_request(paths: list[str], sha: str, summary: str, requester: str,
     now = now or datetime.now(KST)
     d = load_approvals()
     req_id = _next_id(d, now)
+    # GM 지시 2026-09-07 18:3x: AI C-Level(웰리·시토·시우·시모·시포·시보) 요청은 카드 없이 자동 승인 —
+    # 시로·시뽀·사람·다른 PC 요청만 GM 카드. 명단은 push_lock.json auto_approve_requesters (GM 이 고친다).
+    auto = requester in set(load_lock().get("auto_approve_requesters") or [])
     req = {
         "id": req_id, "sha": sha, "branch": f"lock/{req_id}",
         "paths": paths, "summary": summary, "requester": requester,
         "created_at": now.strftime("%Y-%m-%d %H:%M"),
-        "status": "pending", "decided_at": "", "decided_by": "",
+        "status": "approved" if auto else "pending",
+        "decided_at": now.strftime("%Y-%m-%d %H:%M") if auto else "",
+        "decided_by": "auto(AI C-Level · GM 2026-09-07)" if auto else "",
     }
     d["requests"].append(req)
     save_approvals(d)
@@ -252,6 +280,10 @@ def _selftest() -> None:
     assert _glob_match("3. 웰페리온 가이드/wellperion_guide(main).html", lock["html_glob"])
     assert _glob_match("3. 웰페리온 가이드/coo/x.html", lock["html_glob"])
     assert not _glob_match("status/x.html", lock["html_glob"])
+    assert requester_from_message("feat(cto): x") == "cto"
+    assert requester_from_message("[시포] 회원") == "cpo"
+    assert requester_from_message("chore(S2-COO): y") == "coo"
+    assert requester_from_message("다캠 배포") == "unknown"
     # allow_globs 제외 확인
     assert judge(["ssot/incidents.json"], lock=lock) == []
     # 잠금 밖 경로는 통과

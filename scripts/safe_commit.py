@@ -1105,7 +1105,8 @@ def safe_commit(
                 lock_hits = push_lock.judge_tree_diff(head_tree, tree, root)
                 if lock_hits:
                     req = push_lock.make_request(
-                        paths=lock_hits, sha=new_sha, summary=message, requester=holder, root=root,
+                        paths=lock_hits, sha=new_sha, summary=message,
+                        requester=push_lock.requester_from_message(message, fallback=holder), root=root,
                     )
                     branch_ref = f"refs/heads/{req['branch']}"
                     upd = _git(["update-ref", branch_ref, new_sha], root)
@@ -1121,6 +1122,16 @@ def safe_commit(
                         "reason": (f"🔒 잠금 경로 포함 — {req['branch']} 브랜치로 분리"
                                    f"(GM 승인 대기 {req['id']})"),
                     })
+                    if req.get("status") == "approved":
+                        # AI C-Level 요청 = 자동 승인(GM 2026-09-07 18:3x) — 카드 없이 스위퍼 즉시 1회.
+                        result["reason"] = f"🔓 자동 승인 {req['id']} — 스위퍼가 master 로 올립니다"
+                        try:
+                            subprocess.Popen([sys.executable, str(root / "scripts" / "post_commit_push.py"), "--sweep"],
+                                             cwd=str(root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception:
+                            pass
+                        print(f"🔓 자동 승인 {req['id']} (AI C-Level · 브랜치 {req['branch']} → 스위퍼)")
+                        return result
                     try:
                         push_lock.send_approval_card(req)
                     except Exception as exc:  # 카드 실패해도 요청·브랜치는 유효(fail-open)
