@@ -865,6 +865,24 @@
    "차단조치": "(시토 배1090 · 진행) ①sync_reception 을 서버 편집 행 무덮기로 ②시트 되밀기는 기존 pushback 경로 ③정합 대조 자가검사(쓰기→동기화→읽기 동일) 매 동기화 ④화면 잔여 GAS 직독(reg_dashboard) 서버로 ⑤오늘 사라진 입력 복구 확인",
    "상태": "GUARDED",
    "검증증거": "(a) RECEPTION-1 을 같은 값(status=완료·handler=윤병현)으로 /api/reception/update 갱신 → write_log queued 행 생성 → pushback.py 1회 실행 → gas_status=ok → GAS reg_dashboard 로 시트 대조 일치 확인(2026-09-06 14:34). (b) sync_reception.py 강제 실행 → guard 정상(되돌아간 행 0·되밀기 밀림 0) → RECEPTION-1 값 그대로 유지(14:34). (c) GET /api/reception/dashboard 200 · count=139 = GET /api/reception/board count 와 일치(14:35). ①서버 편집 표식 가드(sync_reception._replace WHERE)는 이전 라인에서 이미 라이브 — 이번 배는 ②시트 되밀기(write_log 재사용) ③정합 자가검사(guard_alert) ④reg_dashboard 서버 라우트 3개를 마저 닫았다. 커밋 afed73f00 · 배포 완료. 화면(종합접수처_현황.html)의 대시보드 주소 배선은 COO 몫으로 남김."
+  },
+  {
+   "id": "INC-057",
+   "date": "2026-09-07",
+   "watch_globs": [
+    "server/erp_api/api_reception.py",
+    "server/erp_api/reception-public.nginx.conf",
+    "3. 웰페리온 가이드/coo/reception/reception_block.html",
+    "scripts/telegram_health_check.py"
+   ],
+   "gate": "다른 도메인(wellperion.com) 폼이 부르는 공개 API 는 응답 전 갈래(200·4xx·OPTIONS)에 CORS 허용 헤더를 단다 — 제출 통로를 바꾸는 배는 같은 배에서 헤더·OPTIONS·15분 점검(OPTIONS+빈 POST 헤더 대조)까지 닫는다 · 헬스체크는 GET 만 보지 않는다",
+   "요약": "종합접수처 6종 폼(wellperion.com)이 09-05 이후 접수 불가 — 제출 통로를 /api/intake/reception(CORS 있음)→/api/reception/submit(CORS 없음)으로 바꾸며 헤더가 빠졌다. 브라우저가 응답을 막아 폼은 네트워크 오류만 띄웠고, 15분 점검은 GET 만 봐 정상이라 했다. GM 신고 2026-09-07 14:5x.",
+   "증상": "청결 이슈 접수 시 네트워크 오류 알림 · 접수 안 됨(GM 신고) · 서버는 200/400 을 정상으로 냈으나 Access-Control-Allow-Origin 없음(실측)",
+   "본질": "통로 교체 때 반대편(호출하는 폼의 origin) 조건을 같이 옮기지 않았다. 서버 쪽 상태값은 전부 정상이라 어떤 감시기도 안 잡았다 — 사람 신고로만 드러남(INC-056 과 같은 뿌리: 한쪽 경로만 옮김).",
+   "뿌리분류": "통로 교체 시 호출측 조건(CORS) 누락 + 헬스체크가 실제 호출 방식(cross-origin POST)을 재현하지 않음",
+   "차단조치": "(시우 배1103 · 완료) ①api_reception.py /submit 응답 전 갈래 CORS 헤더 + OPTIONS 204(api_intake 와 같은 값) ②서버 배포(백업 .bak-20260907-cors · GM 승인 PL-20260907-03) ③telegram_health_check --only reception 에 ④항 추가: OPTIONS 204+ACAO · 빈 POST 응답 ACAO 대조",
+   "상태": "GUARDED",
+   "검증증거": "2026-09-07 15:1x 실측 — OPTIONS 204 ACAO=* / POST(정상 토큰·빈 카테고리) 200 ACAO=* / POST 빈 본문 400 ACAO=* · 라이브 폼 wellperion.com/ko/reception 제출 주소·토큰 = 저장소와 동일 · 남은 확인 = GM 실제 재접수"
   }
  ]
 }

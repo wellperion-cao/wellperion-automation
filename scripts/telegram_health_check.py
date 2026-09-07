@@ -376,6 +376,19 @@ def _check_reception_lost() -> list[str]:
             issues.append(f"서버 습득물 API HTTP {r.status_code} — ERP 화면 습득물 칸 고장")
     except Exception as e:
         issues.append(f"서버 습득물 API 불통 — {str(e)[:60]}")
+    # ④ 공개 제출 통로 — wellperion.com(다른 origin) 폼이 부르므로 응답에 CORS 허용 헤더가 있어야 한다.
+    #    2026-09-07 GM 신고(배1103): 헤더가 빠져 폼이 '네트워크 오류'만 띄웠는데 GET 만 보던 이 점검은 정상이라 했다.
+    #    OPTIONS 는 행을 만들지 않는다 · 빈 본문 POST 는 토큰 게이트에서 400 으로 끝나 행을 만들지 않는다.
+    try:
+        h = {'Origin': 'http://wellperion.com', 'User-Agent': 'Mozilla/5.0 wellperion-health'}
+        r = requests.options('https://erp.wellperion.com/api/reception/submit', headers=h, timeout=30)
+        if r.status_code != 204 or r.headers.get('Access-Control-Allow-Origin') != '*':
+            issues.append(f"접수 제출 통로 OPTIONS HTTP {r.status_code} · CORS={r.headers.get('Access-Control-Allow-Origin')} — 폼에서 '네트워크 오류'")
+        r = requests.post('https://erp.wellperion.com/api/reception/submit', data=b'{}', headers=dict(h, **{'Content-Type': 'text/plain;charset=utf-8'}), timeout=30)
+        if r.headers.get('Access-Control-Allow-Origin') != '*':
+            issues.append(f"접수 제출 통로 POST 응답에 CORS 헤더 없음(HTTP {r.status_code}) — 폼에서 '네트워크 오류'")
+    except Exception as e:
+        issues.append(f"접수 제출 통로 불통 — {str(e)[:60]}")
     return issues
 
 
