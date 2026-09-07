@@ -448,7 +448,7 @@ def signup(name: str = Form(...), email: str = Form(...), password: str = Form(.
                       (T, email, name.strip(), salt, h, now(), None))
     except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 신청된 이메일입니다", status_code=303)
-    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: http://15.164.151.105/auth/admin")
+    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email})\n승인: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/signup?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
 
 
@@ -652,7 +652,7 @@ def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(..
                       (T, email, name.strip(), salt, h, now(), perms))
     except _db.IntegrityError:
         pass                                    # 중복 제출 — 이미 신청돼 있으니 그대로 대기 안내만
-    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept})\n승인: http://15.164.151.105/auth/admin")
+    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept})\n승인: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
 
 
