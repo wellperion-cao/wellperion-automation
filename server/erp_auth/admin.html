@@ -6,8 +6,10 @@
 <meta name="robots" content="noindex,nofollow">
 <title>권한 관리 · 웰페리온 ERP</title>
 <!--
-  ERP 권한 관리자 콘솔 (배1075 · GM 지시 2026-09-05 · 시모)
+  ERP 권한 관리자 콘솔 (배1075 · GM 지시 2026-09-05 · 시모 / 배1026 정리 2026-09-07 · 시토 — GM "모듈 카드로 구성돼 직관적이지 못하다")
   ─ 기존 /auth/admin(서버 렌더 표 3장)을 한 화면 콘솔로 상향. 데이터는 아래 한 주소에서 받고, 동작은 이미 있는 라우트를 그대로 부른다.
+  ─ 배1026: 신청 대기 = 탭과 무관하게 페이지 맨 위 고정 한 줄 목록(#pend-strip-card). 「화면」 탭 = 모듈 카드 그리드 폐지
+    → 회원/운영/점검/경영 그룹별 접힘 표 + 부서 프리셋 일괄 적용 버튼(dept_apply) · 문서함(65+)은 화면 나열 없이 그룹 1줄.
   ─ 읽기 : GET  /auth/admin/api/state   (시토 배 · 응답 규격은 맨 아래 STATE_SHAPE 주석)
   ─ 쓰기 : POST /auth/admin/{uid}/{approve|block|delete|toggle_role}  ·  /auth/admin/{uid}/lock
            POST /auth/admin/{uid}/perms  (form: g[]=그룹 · m[]=허용 · d[]=거부 · preset=부서 · reset=1)
@@ -94,10 +96,6 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 .btn.sm{height:28px;padding:0 10px;font-size:12.5px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .empty{padding:26px 10px;text-align:center;color:var(--ink-soft)}
-.pend-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.pend{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:12px;padding:12px 14px;background:var(--paper-2)}
-.pend .who b{font-size:15px}
-.pend .meta{font-size:12px;color:var(--ink-soft);margin:6px 0 10px}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--line-strong);background:var(--paper);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -148,16 +146,16 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 .mx td.cell button[aria-expanded=true]{background:var(--ink);color:var(--bg)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 12px;background:var(--paper-2);border-radius:10px}
 .chips .tag{background:var(--paper)}
-/* ── 화면 목록 ── */
-.screens{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-.scr{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--paper-2);cursor:pointer;text-align:left}
-.scr:hover{border-color:var(--line-strong)}
-.scr b{display:block;font-size:14px}
-.scr small{display:block;color:var(--ink-soft);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.scr .ft{display:flex;gap:6px;margin-top:8px;align-items:center}
-.scr .ft .cnt{margin-left:auto;font-size:12px;color:var(--ink-soft)}
-.scr .ft .cnt b{color:var(--ink)}
-.viewers{margin:10px 0 0;padding:10px 12px;background:var(--paper);border:1px dashed var(--line-strong);border-radius:10px;font-size:13px}
+/* ── 화면 목록(그룹별 접힘 표 · 배1026 2026-09-07 카드 103장 → 표 1개) ── */
+.scrrow{border-top:1px solid var(--line)}
+.scrrow summary{list-style:none;cursor:pointer;padding:9px 12px;display:flex;align-items:center;gap:8px;font-size:13.5px}
+.scrrow summary::-webkit-details-marker{display:none}
+.scrrow summary::before{content:"›";color:var(--ink-faint);transform:rotate(0deg);transition:transform .15s;font-size:15px}
+.scrrow[open] summary::before{transform:rotate(90deg)}
+.scrrow summary small{color:var(--ink-soft);font-weight:400}
+.scrrow summary .c{margin-left:auto;font-size:12px;color:var(--ink-soft);white-space:nowrap}
+.scrrow .x{color:var(--warn);font-weight:700;font-size:11px;margin-left:2px}
+.scrrow .chips{margin:0 12px 10px}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .gate{max-width:520px;margin:12vh auto;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:28px}
@@ -170,8 +168,8 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 <header class="top"><div class="top-in">
   <a class="brand" href="/erp/">WELLPERION<small>권한 관리</small></a>
   <nav class="tabs" role="tablist" aria-label="권한 관리 화면">
-    <button class="tab" role="tab" data-tab="pending" aria-selected="true">승인 대기<b id="n-pending">0</b></button>
-    <button class="tab" role="tab" data-tab="people">사람<b id="n-people">0</b></button>
+    <button class="tab" role="tab" data-tab="pending">차단·잠금<b id="n-pending">0</b></button>
+    <button class="tab" role="tab" data-tab="people" aria-selected="true">사람<b id="n-people">0</b></button>
     <button class="tab" role="tab" data-tab="depts">부서 기본</button>
     <button class="tab" role="tab" data-tab="screens">화면<b id="n-screens">0</b></button>
     <button class="tab" role="tab" data-tab="push">커밋·푸시 승인<b id="n-push">0</b></button>
@@ -183,15 +181,16 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 </div></header>
 
 <main class="wrap" id="app">
+  <!-- 신청 대기 — 항상 맨 위(탭과 무관 · 배1026 · GM 2026-09-07 "정리 끝나면 가입 안내") -->
+  <div class="card" id="pend-strip-card">
+    <h2>승인 대기</h2>
+    <p class="sub">한 줄 승인/반려. 승인하면 신청한 부서 기본 화면이 바로 열립니다.</p>
+    <div class="tw"><table><thead><tr><th>이름</th><th>부서</th><th>신청 시각</th><th></th></tr></thead><tbody id="pend-strip-body"></tbody></table></div>
+  </div>
   <div class="stat-row" id="stats"></div>
 
-  <!-- 승인 대기 -->
-  <section class="panel on" id="p-pending" role="tabpanel">
-    <div class="card">
-      <h2>지금 처리할 것</h2>
-      <p class="sub">첫 로그인 뒤 부서를 고르고 기다리는 사람. 승인하면 그 부서 기본 화면이 바로 열립니다.</p>
-      <div class="pend-list" id="pend-list"></div>
-    </div>
+  <!-- 승인 대기(상세) — 한 줄 목록은 맨 위 고정, 여기는 차단·잠금만 -->
+  <section class="panel" id="p-pending" role="tabpanel">
     <div class="card">
       <h2>차단·잠금 계정</h2>
       <p class="sub">퇴사·이탈은 차단으로 두고, 권한을 손대면 안 되는 사람은 잠금으로 표시합니다. 부서 일괄 적용은 잠금을 건너뜁니다.</p>
@@ -200,7 +199,7 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
   </section>
 
   <!-- 사람 -->
-  <section class="panel" id="p-people" role="tabpanel">
+  <section class="panel on" id="p-people" role="tabpanel">
     <div class="filters" id="people-filters"></div>
     <div class="people">
       <div class="card" style="margin:0">
@@ -227,10 +226,16 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
     </div>
   </section>
 
-  <!-- 화면 -->
+  <!-- 화면 — 그룹별 접힘 표 1개(모듈 카드 103장 정리 · 배1026 2026-09-07) -->
   <section class="panel" id="p-screens" role="tabpanel">
-    <div class="filters" id="screen-filters"></div>
-    <div class="screens" id="screens"></div>
+    <div class="card">
+      <h2>부서 기본 한 번에</h2>
+      <p class="sub">누르면 그 부서 전원(잠금 계정 제외)에게 부서 기본 화면을 다시 적용합니다.</p>
+      <div class="preset-row" id="screen-presets"></div>
+    </div>
+    <div class="card" style="padding:8px 0 4px">
+      <div id="screen-groups"></div>
+    </div>
   </section>
 
   <!-- 커밋·푸시 승인 -->
@@ -260,7 +265,7 @@ const APPGROUPS=['회원','운영','점검','경영','문서함'];
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MOCK=new URLSearchParams(location.search).get('mock')==='1';
-let S=null, sel=null, draft=null, filter={dept:'전체',status:'전체'}, scrFilter='전체', q='';
+let S=null, sel=null, draft=null, filter={dept:'전체',status:'전체'}, q='';
 
 /* ── 권한 판정 = 서버 allowed() 그대로 ── */
 function perms(u){ if(u.fixed_perms) return u.fixed_perms; return u.perms||null; }
@@ -313,20 +318,22 @@ let tmr; function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.ad
 function render(){
   const us=S.users, pend=us.filter(u=>u.status==='pending'), act=us.filter(u=>u.status==='active'), blk=us.filter(u=>u.status==='blocked'), lk=us.filter(locked);
   $('#me').innerHTML=S.me?`<b>${esc(S.me.name)}</b> 관리자${MOCK?' · 미리보기':''}`:(MOCK?'미리보기':'');
-  $('#n-pending').textContent=pend.length; $('#n-pending').classList.toggle('hot',pend.length>0);
+  $('#n-pending').textContent=blk.length+lk.length; $('#n-pending').classList.toggle('hot',blk.length>0);
   $('#n-people').textContent=us.length; $('#n-screens').textContent=S.modules.length;
   $('#stats').innerHTML=[
-    ['pending',pend.length,'승인 대기',pend.length?'warn':''],['people',act.length,'사용 중','ok'],['pending',blk.length,'차단',blk.length?'bad':''],
+    ['#pend-strip-card',pend.length,'승인 대기',pend.length?'warn':''],['people',act.length,'사용 중','ok'],['pending',blk.length,'차단',blk.length?'bad':''],
     ['people',lk.length,'잠금',''],['screens',S.modules.length,'화면',''],['depts',Object.keys(S.dept_modules||{}).length,'부서','']
-  ].map(([t,v,l,c])=>`<button class="stat ${c}" data-go="${t}"><div class="v num">${v}</div><div class="l">${l}</div></button>`).join('');
-  renderPending(pend,blk); renderPeople(); renderDepts(); renderScreens(); renderHistory();
+  ].map(([t,v,l,c])=>`<button class="stat ${c}" data-${t[0]==='#'?'scroll':'go'}="${t}"><div class="v num">${v}</div><div class="l">${l}</div></button>`).join('');
+  renderPendingStrip(pend); renderPending(blk); renderPeople(); renderDepts(); renderScreens(); renderHistory();
 }
-function renderPending(pend,blk){
-  $('#pend-list').innerHTML=pend.length?pend.map(u=>`<div class="pend">
-    <div class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></div>
-    <div class="meta">${dept(u)?`<span class="tag acc">${esc(dept(u))}</span> · `:''}신청 ${esc(u.created_at||'')}${u.google?' · 구글':''}</div>
-    <div class="acts"><button class="btn ok" data-act="approve" data-uid="${u.id}">승인 — ${esc(dept(u)||'핵심 화면')} 기본으로</button><button class="btn danger sm" data-act="delete" data-uid="${u.id}" data-name="${esc(u.name)}">삭제</button></div>
-  </div>`).join(''):'<div class="empty" style="grid-column:1/-1">기다리는 사람이 없습니다 ✓</div>';
+function renderPendingStrip(pend){
+  // 항상 맨 위 · 한 줄 승인/반려(배1026 2026-09-07 · GM "정리 끝나면 가입 안내") — 탭과 무관하게 보인다.
+  $('#pend-strip-body').innerHTML=pend.length?pend.map(u=>`<tr><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td>
+    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'}</td><td><small>${esc(u.created_at||'')}</small></td>
+    <td><div class="acts"><button class="btn ok sm" data-act="approve" data-uid="${u.id}">승인</button><button class="btn danger sm" data-act="block" data-uid="${u.id}">반려</button></div></td></tr>`).join('')
+    :'<tr><td colspan="4" class="empty">대기 없음</td></tr>';
+}
+function renderPending(blk){
   const rows=[...blk,...S.users.filter(u=>u.status!=='blocked'&&locked(u))];
   $('#blocked-body').innerHTML=rows.length?rows.map(u=>`<tr data-uid="${u.id}"><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'—'}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td><td><small>${esc(u.changed_at||u.approved_at||'')}</small></td>
@@ -391,12 +398,21 @@ function renderDepts(){
   $('#exc-chips').innerHTML=S.exception_ids.map(id=>{const m=byId[id];return `<span class="tag warn">${esc(m?m.name:id)}</span>`;}).join('')||'<span class="tag">없음</span>';
 }
 function renderScreens(){
-  const groups=['전체',...new Set(S.modules.map(m=>m.appgroup||'문서함'))];
-  $('#screen-filters').innerHTML=groups.map(g=>`<button class="chip" data-sf="${esc(g)}" aria-pressed="${scrFilter===g}">${esc(g)}</button>`).join('');
+  // 그룹별 접힘 표 1개(회원/운영/점검/경영) + 문서함은 화면 개별 나열 없이 그룹 1줄로 접는다(배1026 2026-09-07).
+  const dm=S.dept_modules||{};
+  $('#screen-presets').innerHTML=Object.keys(dm).map(k=>`<button class="btn sm" data-dept-preset="${esc(k)}">${esc(k)}</button>`).join('')||'<span class="empty">부서 없음</span>';
   const qq=q.trim().toLowerCase(); const act=S.users.filter(u=>u.status==='active');
-  const list=S.modules.filter(m=>(scrFilter==='전체'||(m.appgroup||'문서함')===scrFilter)&&(!qq||(m.name+' '+m.group+' '+(m.staff||'')).toLowerCase().includes(qq)));
-  $('#screens').innerHTML=list.map(m=>{const v=act.filter(u=>allowed(u,m));return `<button class="scr" data-mid="${esc(m.id)}"><b>${esc(m.name)}</b><small>${esc(m.desc||'')}</small>
-    <div class="ft"><span class="tag">${esc(m.group)}</span>${m.core?'<span class="tag acc">핵심</span>':''}${S.exception_ids.includes(m.id)?'<span class="tag warn">개인 예외</span>':''}<span class="cnt"><b class="num">${v.length}</b>명 봄</span></div><div class="viewers" hidden>${v.length?v.map(u=>esc(u.name)+(dept(u)?` <small style="color:var(--ink-soft)">${esc(dept(u))}</small>`:'')).join(' · '):'아무도 못 봅니다'}</div></button>`;}).join('')||'<div class="empty" style="grid-column:1/-1">없음</div>';
+  const match=m=>!qq||(m.name+' '+m.group+' '+(m.staff||'')).toLowerCase().includes(qq);
+  const core=APPGROUPS.filter(g=>g!=='문서함').map(g=>{
+    const all=S.modules.filter(m=>(m.appgroup||'문서함')===g), list=all.filter(match);
+    return `<details class="grp"${qq&&list.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${list.length}</b>/${all.length} 화면</span></summary>
+    ${list.map(m=>{const v=act.filter(u=>allowed(u,m));
+      return `<details class="scrrow"><summary><span>${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
+      <div class="chips">${v.length?v.map(u=>`<span class="tag" title="${esc(dept(u)||'')}">${esc(u.name)}</span>`).join(''):'<span class="tag">아무도 못 봅니다</span>'}</div></details>`;}).join('')||'<div class="empty">검색 결과 없음</div>'}
+    </details>`;}).join('');
+  const docAll=S.modules.filter(m=>(m.appgroup||'문서함')==='문서함'), docList=docAll.filter(match);
+  const doc=`<details class="grp"><summary><span class="n">문서함</span><span class="c">${docList.length}개 문서 · 안내·초안·보고서 — 화면별 개별 관리 없음(부서+전사 공개 · 페이지 이동 정리는 별도 건)</span></summary></details>`;
+  $('#screen-groups').innerHTML=core+doc;
 }
 function renderHistory(){
   const h=S.history||[]; const byId=Object.fromEntries(S.users.map(u=>[u.id,u]));
@@ -420,11 +436,13 @@ function diffText(b,a){ try{ b=b?JSON.parse(b):null; a=a?JSON.parse(a):null; }ca
 /* ── 상호작용 ── */
 function go(t){ $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t)); try{localStorage.setItem('erp_admin_tab',t);}catch(e){} }
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-go],[data-act],[data-close],[data-save],[data-preset],[data-reset],[data-undo],.chip,.seg button,.scr,tr[data-uid]'); if(!t) return;
+  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-close],[data-save],[data-preset],[data-dept-preset],[data-reset],[data-undo],.chip,.seg button,tr[data-uid]'); if(!t) return;
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.dataset.go) return go(t.dataset.go);
-  if(t.classList.contains('chip')){ if(t.dataset.f){filter[t.dataset.f]=t.dataset.v; renderPeople();} else {scrFilter=t.dataset.sf; renderScreens();} return; }
-  if(t.classList.contains('scr')){ const v=$('.viewers',t); v.hidden=!v.hidden; return; }
+  if(t.dataset.scroll){ document.querySelector(t.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  if(t.classList.contains('chip')){ filter[t.dataset.f]=t.dataset.v; renderPeople(); return; }
+  if(t.dataset.deptPreset){ const d=t.dataset.deptPreset; if(!confirm(`${d} 전원(잠금 제외)에 부서 기본 화면을 다시 적용합니다. 계속할까요?`)) return;
+    if(await post(`/auth/admin/dept_apply/${encodeURIComponent(d)}`)){ toast(d+' 부서 기본을 적용했습니다'); await load(); } return; }
   if(t.matches('.seg button')){ const mid=t.parentElement.dataset.mid, st=t.dataset.st; draft.modules=draft.modules.filter(x=>x!==mid); draft.deny=draft.deny.filter(x=>x!==mid); if(st==='allow') draft.modules.push(mid); if(st==='deny') draft.deny.push(mid); draft.base='개별 설정'; renderDrawer(); return; }
   if(t.dataset.preset){ draft.dept=t.dataset.preset; draft.groups=[]; draft.modules=[...new Set([...(S.common_modules||[]),...((S.dept_modules||{})[t.dataset.preset]||[])])]; draft.deny=[]; draft.all=false; draft.base='개별 설정'; renderDrawer(); toast(t.dataset.preset+' 기본을 넣었습니다 — 저장을 누르면 반영'); return; }
   if(t.hasAttribute('data-reset')){ draft.groups=[];draft.modules=[];draft.deny=[];draft.all=false;draft.base='기본(핵심만)'; renderDrawer(); return; }
