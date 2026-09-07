@@ -24,7 +24,11 @@
 | 회차 | 페이지 | 원본 경로 |
 |---|---|---|
 | 1차 (2026-09-02) | https://wellperion-cao.github.io/wellperion-automation/cbo/dietcamp/before_after_01.html | `3. 웰페리온 가이드/cbo/dietcamp/before_after_01.html` |
-| 셋업 v0.1 (GM 열람용 · 3종 md 렌더) | https://wellperion-cao.github.io/wellperion-automation/cbo/dietcamp/setup_v0.1.html | `3. 웰페리온 가이드/cbo/dietcamp/setup_v0.1.html` — md 고치면 `C:/Python314/python.exe scripts/dietcamp_setup_page.py` 로 다시 만든다 |
+| 셋업 v0.1 (GM 열람용 · 4종 md 렌더) | https://wellperion-cao.github.io/wellperion-automation/cbo/dietcamp/setup_v0.1.html | `3. 웰페리온 가이드/cbo/dietcamp/setup_v0.1.html` — md 고치면 `C:/Python314/python.exe scripts/dietcamp_setup_page.py` 로 다시 만든다 |
+| 대표님용 허브 (표지 · 3장 카드 + FAQ·상담봇) | https://erp.wellperion.com/dietcamp/drafts_v0.1.html | `3. 웰페리온 가이드/cbo/dietcamp/drafts_v0.1.html` — `C:/Python314/python.exe scripts/dietcamp_setup_page.py --partner` 로 다시 만든 뒤 `bash server/deploy_dietcamp.sh` |
+| 회사소개서 (정적 페이지 · 웰페리온 회사소개서 결) | https://erp.wellperion.com/dietcamp/intro.html | `3. 웰페리온 가이드/cbo/dietcamp/intro.html` — 정본 md 고치면 이 페이지도 손으로 같이 고친다(렌더 아님) |
+| 브랜드가이드 (정적 페이지) | https://erp.wellperion.com/dietcamp/brand.html | `3. 웰페리온 가이드/cbo/dietcamp/brand.html` — 정본 md 고치면 이 페이지도 손으로 같이 고친다 |
+| 운영전략 (정적 페이지 · 리스크·결재선·웰페리온 벤치마크 절 제외) | https://erp.wellperion.com/dietcamp/strategy.html | `3. 웰페리온 가이드/cbo/dietcamp/strategy.html` — 정본 md 고치면 이 페이지도 손으로 같이 고친다 |
 
 ## 관련 자동화(기존 · 소유 시토)
 
@@ -50,6 +54,7 @@
 - 대외 발송은 초안 → GM 승인 → `scripts/kakao_report_sender.py`(관문 하나). 매 소통은 페이지로, Before & After 를 확실히.
 - 어투 = 강한 어조·확신(대표님 요청). 웰페리온 톤·금지어를 복사하지 않는다.
 
-## 대표님용 렌더 (GM 지시 2026-09-05)
-- `python scripts/dietcamp_setup_page.py --partner` → `cbo/dietcamp/drafts_v0.1.html` (브랜드가이드·회사소개서·운영전략 3종 · 결재선·웰페리온 벤치마크 절과 내부 이름 제외) → `bash server/deploy_dietcamp.sh` 로 다캠 라인(AWS) `https://erp.wellperion.com/dietcamp/` 에 올린다. github.io 주소는 대표님께 보내지 않는다.
+## 대표님용 렌더·페이지 (GM 지시 2026-09-05 · 2026-09-07 각각 페이지로 분리)
+- `drafts_v0.1.html` = 표지 허브(카드 3장 + FAQ·상담봇 카드) — `python scripts/dietcamp_setup_page.py --partner` 로 렌더(md 첫 줄 버전만 읽어 카드에 표기). 문서 3종은 이제 각각 독립 페이지 `intro.html`(회사소개서) · `brand.html`(브랜드가이드) · `strategy.html`(운영전략, 결재선·웰페리온 벤치마크 절 제외)이며 정적 파일 — **정본 md 를 고치면 이 3장도 손으로 같이 고친다**(렌더 대상 아님). 공통 디자인 시스템 = `dc.css`(웰페리온 회사소개서 결 계승).
+- 배포 = `bash server/deploy_dietcamp.sh` 로 다캠 라인(AWS) `https://erp.wellperion.com/dietcamp/` 에 5개 파일(dc.css·drafts_v0.1·intro·brand·strategy) 모두 올린다. github.io 주소는 대표님께 보내지 않는다.
 - 원칙: **초안 = 기준점 · 방향은 대표님 몫 · 대표님 말씀 받아 v0.1 → v0.2 → v1.0 으로 계속 수정·보완.** 판을 올릴 때마다 소통기록에 한 줄.

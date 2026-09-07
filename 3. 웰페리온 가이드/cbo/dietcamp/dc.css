@@ -1,0 +1,135 @@
+/* 다이어트캠프 디자인 시스템 v0.1 — 웰페리온 회사소개서 결 계승 · 다캠 색(대표님 확정 09-07) */
+:root{
+  --green:#4E7432; --green-deep:#3A5626; --green-pale:#EEF3E9;
+  --black:#0B0B0D; --muted:#CBCCCA; --white:#FFFFFF;
+  --ink:#16180F; --dim:#5C665C; --line:#DCE3D6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--white);color:var(--ink);font-family:"Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;line-height:1.7;word-break:keep-all;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 32px}
+
+/* 라벨 */
+.dc-label{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--green);font-weight:700}
+.dc-label.on-dark{color:#9FD068}
+
+/* 히어로 */
+.dc-hero{position:relative;overflow:hidden;background:var(--black);color:var(--muted);padding:120px 0 84px}
+.dc-hero .hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.34;filter:grayscale(10%) contrast(1.05)}
+.dc-hero .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,13,.55) 0%,rgba(11,11,13,.92) 100%)}
+.dc-hero .hero-inner{position:relative;z-index:1}
+.dc-hero .dc-label{margin-bottom:22px;display:block}
+.dc-hero h1{font-size:clamp(30px,4.6vw,50px);font-weight:800;line-height:1.28;color:#fff;letter-spacing:-.01em;max-width:780px}
+.dc-hero .hero-sub{margin-top:22px;font-size:15px;color:rgba(203,204,202,.85);max-width:600px}
+.hero-philosophy{display:flex;gap:28px;margin-top:34px;flex-wrap:wrap}
+.hero-philosophy div{font-size:13px;color:rgba(203,204,202,.9)}
+.hero-philosophy div b{color:#9FD068;font-weight:700;margin-right:6px}
+.hero-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(203,204,202,.18);border:1px solid rgba(203,204,202,.18);margin-top:44px;max-width:720px}
+.hero-facts .hf{background:rgba(11,11,13,.4);padding:18px 16px}
+.hero-facts .hf-num{font-size:26px;font-weight:800;color:#fff}
+.hero-facts .hf-label{font-size:11px;color:rgba(203,204,202,.75);margin-top:4px}
+
+/* 챕터 */
+section.dc-chapter{padding:80px 0;border-bottom:1px solid var(--line)}
+section.dc-chapter.alt{background:var(--green-pale)}
+section.dc-chapter.dark{background:var(--black);color:var(--muted);border-bottom:none}
+.dc-chapter.dark h2{color:#fff}
+.dc-chapter.dark .dc-lead{color:rgba(203,204,202,.85)}
+.chapter-head{max-width:760px;margin-bottom:44px}
+.chapter-head h2{font-size:clamp(24px,3vw,34px);font-weight:800;margin-top:12px;color:var(--ink);letter-spacing:-.01em}
+.dc-lead{margin-top:16px;font-size:15px;color:var(--dim);line-height:1.85}
+
+/* 카드 그리드 */
+.dc-grid{display:grid;gap:16px}
+.dc-grid.c2{grid-template-columns:repeat(2,1fr)}
+.dc-grid.c3{grid-template-columns:repeat(3,1fr)}
+.dc-grid.c5{grid-template-columns:repeat(5,1fr)}
+.dc-card{background:var(--white);border:1px solid var(--line);padding:26px 24px}
+.dc-card h3{font-size:17px;font-weight:800;color:var(--ink)}
+.dc-card .tag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:8px;display:block}
+.dc-card p{font-size:13.5px;color:var(--dim);margin-top:10px;line-height:1.75}
+.dc-card ul{margin-top:12px;padding-left:0;list-style:none}
+.dc-card ul li{font-size:13px;color:var(--dim);padding:6px 0 6px 14px;position:relative;border-top:1px dashed var(--line)}
+.dc-card ul li:first-child{border-top:none}
+.dc-card ul li::before{content:"—";position:absolute;left:0;color:var(--green)}
+
+/* 숫자 타일 */
+.dc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:8px}
+.dc-tile{background:var(--white);padding:24px 20px}
+.dc-tile .t-num{font-size:28px;font-weight:800;color:var(--green)}
+.dc-tile .t-label{font-size:12px;color:var(--dim);margin-top:6px}
+
+/* 프로그램 칩 */
+.dc-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:20px}
+.dc-chip{padding:12px;background:var(--white);border:1px solid var(--line);text-align:center;font-size:12px;color:var(--dim)}
+
+/* 사진 그리드 */
+.photo-grid{display:grid;gap:10px;margin-top:8px}
+.photo-grid.c3{grid-template-columns:repeat(3,1fr)}
+.photo-grid.c2{grid-template-columns:repeat(2,1fr)}
+.photo-grid img{width:100%;height:100%;aspect-ratio:4/3;object-fit:cover}
+
+/* 타임라인 */
+.dc-timeline{margin-top:32px;overflow-x:auto;padding-bottom:8px}
+.dc-timeline-inner{display:flex;min-width:820px;position:relative;padding-top:12px}
+.dc-timeline-inner::before{content:"";position:absolute;left:0;right:0;top:28px;height:2px;background:var(--green);opacity:.35}
+.dc-step{flex:1;min-width:130px;padding:0 10px;position:relative}
+.dc-step .s-dot{width:14px;height:14px;border-radius:50%;background:var(--white);border:3px solid var(--green);margin:0 auto 14px}
+.dc-step .s-num{text-align:center;font-size:11px;color:var(--green);letter-spacing:.15em;font-weight:700}
+.dc-step .s-desc{text-align:center;font-size:12px;color:var(--dim);margin-top:6px;line-height:1.6}
+
+/* CTA */
+.dc-cta{background:var(--green);color:#fff;padding:64px 0;text-align:center}
+.dc-cta h2{font-size:clamp(22px,3vw,30px);font-weight:800}
+.dc-cta p{margin-top:10px;font-size:14px;color:rgba(255,255,255,.85)}
+
+/* 색 스와치 · 서체 */
+.color-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+.color-cell{border:1px solid var(--line);padding:22px 20px;background:var(--white)}
+.color-swatch{width:100%;height:74px;border:1px solid rgba(0,0,0,.08);margin-bottom:14px}
+.color-name{font-size:14px;font-weight:800;letter-spacing:.06em}
+.color-hex{font-size:12px;color:var(--dim);margin-top:4px;font-family:"SF Mono",Menlo,monospace}
+.typo-row{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.typo-cell{border:1px solid var(--line);padding:20px;background:var(--white)}
+.typo-cell .t-tag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--green);font-weight:700}
+.typo-cell .t-sample{margin-top:8px;font-size:22px}
+.typo-cell.b .t-sample{font-weight:700}
+.typo-cell.m .t-sample{font-weight:500}
+.typo-cell.r .t-sample{font-weight:400}
+
+/* 표 */
+.dc-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}
+.dc-table th,.dc-table td{border:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:top}
+.dc-table th{background:var(--green-pale);font-weight:700}
+
+/* 두열 대조 */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.two-col .col{border:1px solid var(--line);padding:22px 20px}
+.two-col .col.good{border-top:4px solid var(--green)}
+.two-col .col.bad{border-top:4px solid var(--dim)}
+.two-col h4{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.two-col ul{list-style:none}
+.two-col ul li{font-size:13.5px;padding:7px 0;border-top:1px dashed var(--line)}
+.two-col ul li:first-child{border-top:none}
+
+/* 푸터 */
+footer.dc-footer{background:var(--black);color:var(--muted);padding:56px 0 36px}
+footer.dc-footer .f-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:.08em}
+footer.dc-footer .f-meta{margin-top:12px;font-size:12.5px;color:rgba(203,204,202,.75);line-height:1.9}
+footer.dc-footer .f-bottom{margin-top:28px;padding-top:18px;border-top:1px solid rgba(203,204,202,.18);font-size:11px;color:rgba(203,204,202,.5);letter-spacing:.08em}
+.dc-back{display:inline-block;margin-top:8px;font-size:12px;color:rgba(203,204,202,.65)}
+
+/* 반응형 */
+@media (max-width:900px){
+  .dc-grid.c3,.dc-grid.c5,.color-row,.two-col{grid-template-columns:repeat(2,1fr)}
+  .photo-grid.c3{grid-template-columns:repeat(2,1fr)}
+  .hero-facts{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:640px){
+  .wrap{padding:0 20px}
+  .dc-hero{padding:80px 0 56px}
+  section.dc-chapter{padding:56px 0}
+  .dc-grid.c2,.dc-grid.c3,.dc-grid.c5,.color-row,.two-col,.photo-grid.c3,.photo-grid.c2,.hero-facts{grid-template-columns:1fr}
+  .hero-philosophy{gap:14px}
+}
