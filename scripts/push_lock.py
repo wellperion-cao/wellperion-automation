@@ -248,6 +248,10 @@ def _selftest() -> None:
     assert judge(["scripts/sync_members.py"], lock=lock) == ["scripts/sync_members.py"]
     assert judge([".deploy-todo/업무&결재 현황.js"], lock=lock) == [".deploy-todo/업무&결재 현황.js"]
     assert judge(["ssot/canon_values.json"], lock=lock) == ["ssot/canon_values.json"]
+    # 2026-09-07 실사고: 발행루트 바로 아래 main.html 이 html_glob("**/") 을 빠져나가 자물쇠를 우회했다.
+    assert _glob_match("3. 웰페리온 가이드/wellperion_guide(main).html", lock["html_glob"])
+    assert _glob_match("3. 웰페리온 가이드/coo/x.html", lock["html_glob"])
+    assert not _glob_match("status/x.html", lock["html_glob"])
     # allow_globs 제외 확인
     assert judge(["ssot/incidents.json"], lock=lock) == []
     # 잠금 밖 경로는 통과
@@ -306,18 +310,5 @@ def main() -> int:
     return 0
 
 
-def _selftest() -> None:
-    """--selftest: 글롭 판정 회귀 검사(2026-09-07 발행루트 바로 아래 html 우회 사고)."""
-    g = "3. 웰페리온 가이드/**/*.html"
-    assert _glob_match("3. 웰페리온 가이드/wellperion_guide(main).html", g)
-    assert _glob_match("3. 웰페리온 가이드/coo/x.html", g)
-    assert not _glob_match("status/x.html", g)
-    assert _glob_match("server/erp_auth/app.py", "server/**")
-    print("push_lock selftest ok")
-
-
 if __name__ == "__main__":
-    if "--selftest" in sys.argv:
-        _selftest()
-        sys.exit(0)
     sys.exit(main())
