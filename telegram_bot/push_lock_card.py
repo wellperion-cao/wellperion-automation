@@ -9,6 +9,7 @@ telegram_bot/work_room_agent.py 의 wrk: 카드와 같은 구조(callback 접두
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -46,6 +47,13 @@ async def handle_callback(update, ctx) -> None:
         except Exception:
             pass
         return
+    if status == "approved":
+        # 승인 즉시 스위퍼 1회(비동기) — 5분 주기·120초 타임아웃에 걸려 승인 뒤 반영이 늦던 것(2026-09-07 시우 실측 3건).
+        try:
+            subprocess.Popen([sys.executable, str(REPO_ROOT / "scripts" / "post_commit_push.py"), "--sweep"],
+                             cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
     label = "✅ 승인" if decision == "a" else "⛔ 반려"
     tail = "다음 스위퍼 주기(5분 내) master 로 올라갑니다." if decision == "a" else "브랜치를 지웁니다."
     try:
