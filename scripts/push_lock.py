@@ -57,7 +57,10 @@ def _glob_match(path: str, pattern: str) -> bool:
     "server/ 아래 전부"로 매치된다. 새 글롭 엔진을 안 만든다(약속 L21)."""
     q = path.replace("\\", "/")
     p = pattern.replace("\\", "/").replace("**", "*")
-    return q == pattern.rstrip("/") or fnmatch.fnmatchcase(q, p) or (
+    # "a/**/b" 는 폴더 0개(a/b)도 포함해야 한다 — fnmatch 는 '*/' 를 빈 문자열로 못 보므로
+    # '*/' 를 뺀 짝 패턴도 같이 본다(2026-09-07 실측: 발행루트 바로 아래 main.html 이 html_glob 을 빠져나가 자물쇠를 우회).
+    p0 = p.replace("*/", "")
+    return q == pattern.rstrip("/") or fnmatch.fnmatchcase(q, p) or fnmatch.fnmatchcase(q, p0) or (
         p.endswith("/") and q.startswith(p)
     )
 
@@ -303,5 +306,18 @@ def main() -> int:
     return 0
 
 
+def _selftest() -> None:
+    """--selftest: 글롭 판정 회귀 검사(2026-09-07 발행루트 바로 아래 html 우회 사고)."""
+    g = "3. 웰페리온 가이드/**/*.html"
+    assert _glob_match("3. 웰페리온 가이드/wellperion_guide(main).html", g)
+    assert _glob_match("3. 웰페리온 가이드/coo/x.html", g)
+    assert not _glob_match("status/x.html", g)
+    assert _glob_match("server/erp_auth/app.py", "server/**")
+    print("push_lock selftest ok")
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        _selftest()
+        sys.exit(0)
     sys.exit(main())
