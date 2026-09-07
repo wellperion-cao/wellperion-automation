@@ -88,10 +88,6 @@ _OWNER_CHOICES = ["이경연 실장", "최준용M", "윤병현AM", "임정은M",
 _CATEGORY_CHOICES = ["[1] 매출 및 영업", "[2] 인사", "[3] 파트너팀", "[4] 운영 정책",
                      "[5] 시설 및 환경", "[6] 회원·CS", "[7] IT·시스템·자동화",
                      "[8] 교육·조직문화", "[9] 회의"]
-# 기한이 대화에 없을 때 넣는 임시 기한(일). 빈칸으로 두면 지연·임박 알림이 그 건을 영영
-# 안 잡아 '놓치지 않게'라는 요구가 깨진다 — 대신 제목에 (기한 임시)를 붙여 지어낸 값이
-# 아님을 사람이 바로 알게 한다.
-_DEFAULT_DUE_DAYS = 7
 _OWNER_LIST = " · ".join(_OWNER_CHOICES)
 _CATEGORY_LIST = " · ".join(_CATEGORY_CHOICES)
 
@@ -1601,6 +1597,35 @@ _MGR_TODO_MAX_PER_RUN = 20   # 안전판 — 이 이상이면 오탐 배정으�
 _MGR_TODO_TITLE_SIM = 0.8    # 업무 SSOT 기존 행과 제목이 이 이상 닮으면 같은 건으로 본다(중복 방지)
 
 
+def _mgr_todo_dup_hit(title: str, existing_title: str) -> bool:
+    """★2026-09-07 웰리 검수 — 제목 유사도(0.8) 만으로 실측 3/6건을 놓쳤다(같은 일을 다른
+    말로 적은 경우 — 예 "잡코리아 기업정보 소개문구 공식표기 교체" vs "잡코리아 기업정보
+    소개 문구 교체 (공식 표기 통일)" = 유사도 0.784 로 기준 미달). _schedule_is_dup 이
+    전사일정 중복에 쓰는 '드문 낱말 공유'(무게 합 2 이상) 판정을 여기도 겹쳐 쓴다 —
+    날짜 근접 조건은 뺀다(같은 일이 SSOT 행마다 기한을 다르게 갖고 있을 수 있다).
+    ★한계: 낱말이 붙여쓰기/띄어쓰기로 갈리면(예 "분리수거장" vs "분리 수거장") 이 두
+    판정 다 못 잡을 수 있다 — 그런 건 사람이 --nudge-review 로 걸러낸다."""
+    from difflib import SequenceMatcher
+    if SequenceMatcher(None, title, existing_title).ratio() >= _MGR_TODO_TITLE_SIM:
+        return True
+    return _schedule_shared_weight(title, existing_title) >= 2
+
+
+def _selfcheck_mgr_todo_dup_hit() -> None:
+    """배1102 웰리 검수 실측 — 유사도 0.8 미달이지만 같은 일인 두 쌍은 무게(>=2)로 잡히고,
+    남남인 제목은 안 잡히는지(네트워크 없이 돈다)."""
+    assert _mgr_todo_dup_hit(
+        "잡코리아 기업정보 소개문구 공식표기 교체", "잡코리아 기업정보 소개 문구 교체 (공식 표기 통일)"
+    ), "유사도 0.784 로 기준 미달이지만 무게로 잡혀야 함"
+    assert _mgr_todo_dup_hit(
+        "회원 동반 게스트 1일이용 예약제 전환안 정리",
+        "회원 동반 게스트 1일 이용 정책(예약제 · 55,000원 안) — 이경연 실장 검토·보고 승인",
+    )
+    assert not _mgr_todo_dup_hit("에스컬레이터 정밀진단 소견서 접수", "여자사우나 바디드라이기 구매 검토"), \
+        "남남인 제목까지 묶으면 안 됨"
+    print("[selfcheck] _mgr_todo_dup_hit OK")
+
+
 def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
                    dry_run: bool = False) -> int:
     """정방향 — target_date 의 열린 이슈 중 담당이 분명한 것을 업무 SSOT 에 등록한다.
@@ -1614,10 +1639,12 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
     자동 등록 안 함.
 
     등록 안 하는 것: 담당이 _OWNER_CHOICES 밖(주인 없는 일은 장부에 안 쌓는다 · 약속
-    L23) · 이미 todo_id 있음 · 해결된 것. 중복 방지: 업무 SSOT 기존 행 중 원장 키
-    마커(ops_shared.mgr_ledger_marker)가 content 에 이미 있거나 제목 유사도가
-    _MGR_TODO_TITLE_SIM 이상이면 새로 안 만들고 그 행 id 를 todo_id 로 되적는다.
-    안전판 _MGR_TODO_MAX_PER_RUN 건 넘으면 BLOCKED — 아무것도 만들지 않는다."""
+    L23) · 이미 todo_id 있음 · 해결된 것. 중복 방지(배1102 웰리 검수로 강화): 업무 SSOT
+    기존 행 중 원장 키 마커(ops_shared.mgr_ledger_marker)가 content 에 이미 있거나,
+    진행중 행과 제목이 닮았으면(_mgr_todo_dup_hit — 유사도 0.8 또는 드문 낱말 공유
+    무게 2 이상) 새로 안 만들고 그 행 id 를 todo_id 로 되적는다. 기한은 원장 이슈에
+    없으면 지어내지 않고 비워 둔다(약속 L23). 안전판 _MGR_TODO_MAX_PER_RUN 건 넘으면
+    BLOCKED — 아무것도 만들지 않는다."""
     if room_dir_name != "★중간관리자":
         return 0  # ★운영부 등 — 배589 결정 유지(자동 등록 안 함, 조용히 스킵)
 
@@ -1639,7 +1666,6 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
         return 0
 
     import gm_handoff
-    from difflib import SequenceMatcher
     from collectors.ops_shared import mgr_ledger_marker
     try:
         existing_rows = (_gas_get(SSOT_API_URL, params={"action": "todo_list", "include_gm": "1"},
@@ -1649,22 +1675,20 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
         existing_rows = []
         print(f"  → 업무 SSOT 다리: 기존 행 조회 실패({exc}) — 중복 대조 없이 진행")
 
-    today = datetime.now()
-    fallback_due = (today + timedelta(days=_DEFAULT_DUE_DAYS)).strftime("%Y-%m-%d")
+    active_rows = [r for r in existing_rows if isinstance(r, dict) and str(r.get("상태", "")).strip() == "진행중"]
     posted = 0
     for issue in candidates:
         title = str(issue.get("issue") or "").strip()[:80]
         owner = str(issue.get("owner") or "").strip()
         marker = mgr_ledger_marker(target_date, issue.get("issue") or "")
-        dup = next((r for r in existing_rows if isinstance(r, dict) and (
-            marker in str(r.get("내용", ""))
-            or SequenceMatcher(None, title, str(r.get("업무명", ""))).ratio() >= _MGR_TODO_TITLE_SIM
-        )), None)
+        dup = next((r for r in existing_rows if isinstance(r, dict) and marker in str(r.get("내용", ""))), None)
+        if not dup:
+            dup = next((r for r in active_rows if _mgr_todo_dup_hit(title, str(r.get("업무명", "")))), None)
         if dup:
             issue["todo_id"] = str(dup.get("id") or "")
             print(f"  [다리] 이미 있음 — {owner} ← {title} (id {issue['todo_id']})")
             continue
-        due = str(issue.get("due") or "").strip() or fallback_due
+        due = str(issue.get("due") or "").strip()  # 원문에 없으면 비운다(약속 L23 — 지어내지 않음)
         content = (str(issue.get("note") or title).strip() + "\n\n" + marker).strip()
         if dry_run:
             print(f"  [다리·미리보기] {owner} ← {title} (기한 {due})")
@@ -1712,9 +1736,29 @@ def _selfcheck_bridge_to_todo_gate() -> None:
         many = [{"issue": f"건{i}", "owner": "이경연 실장", "status": "open"} for i in range(_MGR_TODO_MAX_PER_RUN + 1)]
         assert bridge_to_todo([{"date": "2026-09-07", "issues": many}],
                               "2026-09-07", "★중간관리자", dry_run=True) == 0, "안전판 초과는 BLOCKED"
+
+        # ★배1102 웰리 검수 — 중복 대조는 '진행중' 행에만 건다(완료된 닮은 행은 대상 아님)
+        class _FakeResp:
+            def __init__(self, rows):
+                self._rows = rows
+
+            def json(self):
+                return {"data": self._rows}
+
+        similar_title_row = {"업무명": "요금 변경 준비 작업", "상태": "완료", "id": "T-DONE"}
+        _gas_get = lambda *a, **k: _FakeResp([similar_title_row])  # noqa: E731
+        assert bridge_to_todo(ledger, "2026-09-07", "★중간관리자", dry_run=True) == 1, \
+            "완료 행은 닮아도 중복으로 안 봐야 함 — 새로 만들 후보로 남는다"
+
+        active_row = {"업무명": "요금 변경 준비 작업", "상태": "진행중", "id": "T-ACTIVE"}
+        _gas_get = lambda *a, **k: _FakeResp([active_row])  # noqa: E731
+        ledger3 = [{"date": "2026-09-07", "issues": [dict(base_issue)]}]
+        assert bridge_to_todo(ledger3, "2026-09-07", "★중간관리자", dry_run=True) == 0, \
+            "진행중 행과 닮으면 중복 — 새로 안 만듦"
+        assert ledger3[0]["issues"][0]["todo_id"] == "T-ACTIVE"
     finally:
         _gas_get = orig
-    print("[selfcheck] bridge_to_todo 게이트·안전판 OK")
+    print("[selfcheck] bridge_to_todo 게이트·안전판·진행중전용 중복대조 OK")
 
 
 # ═══════════════════════════════════════════

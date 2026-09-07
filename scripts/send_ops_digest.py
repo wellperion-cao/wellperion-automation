@@ -2485,8 +2485,10 @@ def main() -> int:
     sent_ovd_ops = sent_ovd_lesson = False
 
     # 절대시각 4통 — 4부서방 07:40 → ★운영부 07:45 → ★중간관리자 07:50 → ★부서장 07:55
-    # (GM 확정 배826 재승인 2026-08-29). dry-run 은 방에 손대지 않으므로 대기·mgr·ovd 는
-    # 그대로 건너뛴다(종전과 같음 · 미리보기는 --mgr-preview/--relay-preview 로 따로 본다).
+    # (GM 확정 배826 재승인 2026-08-29). dry-run 은 방에 손대지 않으므로 4부서방·대기·ovd·
+    # 일정통은 그대로 건너뛴다. ★중간관리자만은 예외(2026-09-07 웰리 검수) — 본문 렌더는
+    # --dry-run 에서도 그대로 보여준다(발송·대기·지문기록만 건너뜀). 4부서방 등도 렌더까지
+    # 보려면 --mgr-preview/--relay-preview 로 따로 본다.
     if not args.dry_run:
         _sleep_until(*MORNING_SEND_TIMES["4부서방"])
         # 🌅 하루의 시작 — 4부서 합본방 (GM 확정 2026-09-03).
@@ -2513,7 +2515,12 @@ def main() -> int:
 
     # ★중간관리자 — ★운영부 결과와 무관하게 시도한다(방마다 독립 · 2026-08-15 수리,
     # send_mgr_brief docstring 참조).
-    if not args.dry_run:
+    # ★2026-09-07 웰리 검수 — --dry-run(방에 손 안 댐) 이 이 방을 통째로 건너뛰어 「확인
+    #   부탁드릴 것」 절이 안 보였다(대기·전송만 건너뛰어야 하는데 렌더까지 건너뜀). --dry-run
+    #   에서도 preview_mgr_brief() 로 본문은 그대로 보여주고, 대기·발송·지문기록만 막는다.
+    if args.dry_run:
+        preview_mgr_brief()
+    else:
         _sleep_until(*MORNING_SEND_TIMES["★중간관리자"])
         try:
             send_mgr_brief()
