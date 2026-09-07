@@ -68,6 +68,23 @@ if %DIRTY% GTR 200 (
   REM    content every morning, silently. Without --autostash, `git pull --rebase`
   REM    simply refuses when the tree is dirty for a touched path - same as the
   REM    DIRTY>200 branch above, an honest skip instead of a silent revert.
+  REM -- network wait (2026-09-07) --
+  REM    Right after wake-up the network is not attached yet: 09-05/06/07 05:56
+  REM    both `claude update` (CEO.bat) and this pull failed for that reason.
+  REM    Poll the remote up to 12 x 5s before pulling instead of failing at once.
+  set NETWAIT=0
+  :netwait
+  git ls-remote --exit-code -q origin HEAD >nul 2>&1
+  if not errorlevel 1 goto netok
+  if %NETWAIT% GEQ 12 (
+    echo   [warn] origin unreachable after 60s - pulling anyway
+    goto netok
+  )
+  set /a NETWAIT+=1
+  timeout /t 5 >nul
+  goto netwait
+  :netok
+  if %NETWAIT% GTR 0 echo [%date% %time%] network wait %NETWAIT%x5s before pull >> logs\morning_boot.log
   git pull --rebase origin master
   if errorlevel 1 (
     echo   [warn] git pull failed - boot continues
