@@ -461,9 +461,14 @@ def scan_due_hygiene() -> list:
                         and (_parse_date_loose(it.get("next_due")) or datetime.min.date()) >= TODAY]
         match_pairs = []
         seen_done_future = set()
+        _PAIR_MAX_GAP_DAYS = 14  # 완료일 뒤 한참 지난 후속 일정(예: 1개월 결과보고)은 중복이 아니다(GM 지시)
         for a in done_items:
+            a_done = _parse_date_loose(a.get("last_done"))
             for b in future_items:
                 if a.get("id") == b.get("id"):
+                    continue
+                b_due = _parse_date_loose(b.get("next_due"))
+                if not b_due or (b_due - a_done).days > _PAIR_MAX_GAP_DAYS:
                     continue
                 if _o._schedule_shared_weight(a.get("name") or "", b.get("name") or "") < 2:
                     continue
