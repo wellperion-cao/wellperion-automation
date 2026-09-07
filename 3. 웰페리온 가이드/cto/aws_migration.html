@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS 이관 전체 현황 — AI CTO</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%81%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#221F20;--paper:#272422;--paper-raised:#2e2b28;
+  --text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;
+  --accent:#B79F8A;--accent-bright:#c9b49e;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;--border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--green-border:rgba(106,191,123,0.3);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--red-border:rgba(237,91,63,0.3);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--yellow-border:rgba(230,200,78,0.3);
+  --navy:#5C7FA6;--navy-bg:rgba(92,127,166,0.12);--navy-border:rgba(92,127,166,0.3);
+  --teal:#4ec4c4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.header h1{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
+.header .sub{font-size:12px;color:var(--dim-mid);}
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);}
+.content{padding:20px 24px 40px;margin:0;}   /* 좌측 정렬 풀폭 표준 */
+
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.stat{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 20px;min-width:180px;flex:1;}
+.stat .lb{font-size:11.5px;color:var(--dim-mid);font-weight:600;margin-bottom:6px;}
+.stat .vl{font-size:26px;font-weight:800;color:var(--accent-bright);}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:8px;display:flex;align-items:baseline;gap:8px;}
+.card-title .stag{font-size:11.5px;font-weight:400;color:var(--dim-mid);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td.area{white-space:nowrap;font-weight:700;}
+
+.st{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;border:1px solid;white-space:nowrap;}
+.st-mirror{color:var(--dim-mid);background:var(--paper-raised);border-color:var(--border);}
+.st-origin{color:var(--navy);background:var(--navy-bg);border-color:var(--navy-border);}
+.st-shrink{color:var(--green);background:var(--green-bg);border-color:var(--green-border);}
+.st-delete{color:var(--dim);background:var(--paper-raised);border-color:var(--border-subtle);}
+.st-none{color:var(--dim);font-size:12px;}
+
+.foot{font-size:12px;color:var(--dim-mid);padding:10px 0 20px;}
+.err{color:var(--red);font-size:13px;padding:10px 0;}
+
+@media (max-width:640px){
+  .content{padding:14px 14px 28px;}
+  .stats{gap:8px;}
+  .stat{min-width:0;padding:10px 12px;}
+  .stat .vl{font-size:20px;}
+  table{font-size:12px;}
+}
+@page{size:A3 landscape;margin:10mm;}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🔁 AWS 이관 전체 현황 <span class="badge">AI 시토</span></h1>
+  <div class="sub" id="subline">정본 = status/aws_migration.json · 불러오는 중…</div>
+</div>
+
+<div class="content">
+
+  <div class="stats">
+    <div class="stat"><div class="lb">진척</div><div class="vl" id="statProgress">—</div></div>
+    <div class="stat"><div class="lb">서버 원천 전환</div><div class="vl" id="statOrigin">—</div></div>
+    <div class="stat"><div class="lb">다음</div><div class="vl" id="statNext" style="font-size:16px;">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">전환 현황<span class="stag">표(영역) | 전환일 | 실무진 변화 — status/briefs/CTO-2026-09-07-AWS-전환-일정표.md 기준</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>영역</th><th>쓰는 사람</th><th>단계</th><th>전환일</th><th>담당</th><th>실무진 변화</th><th>비고</th><th>갱신</th>
+        </tr></thead>
+        <tbody id="rowsBody"><tr><td colspan="8" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">실무진이 보는 변화는 전부 없음(09-07 일정표)</div>
+
+</div>
+
+<script id="seed" type="application/json">{
+  "_doc": "AWS 이관 전체 현황 정본. 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
+  "updated_at": "2026-09-07T06:46:32Z",
+  "updated_at_kst": "2026-09-07 15:46",
+  "summary": {
+    "progress_pct": 52,
+    "origin_switched": "0/9",
+    "next": "09-08 게시판 3키·문의 폼"
+  },
+  "rows": [
+    {
+      "area": "main.html 공지·가이드·매뉴얼 보드 3키",
+      "who_uses": "",
+      "stage": "거울",
+      "switch_date": "09-08(화)",
+      "owner": "",
+      "staff_change": "없음(같은 화면·읽기만)",
+      "note": "읽기 → /api/board (GAS 폴백 유지) · 09-05 첫 미러(1일차) → 09-08 3일 조건 충족",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "시우 28장 읽기(coo/ 화면)",
+      "who_uses": "",
+      "stage": "거울",
+      "switch_date": "09-08~09-10",
+      "owner": "시우",
+      "staff_change": "없음(입력칸·링크 동일)",
+      "note": "읽기 → 서버 우선+GAS 폴백, 쉬운 것부터 하루 3~5장",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "문의 폼 3종(inquiry·instructor·sunday)",
+      "who_uses": "홈페이지 방문자(작성) · 리셉션 · 임정은M(처리)",
+      "stage": "거울",
+      "switch_date": "유입 3일 무결 확보 시 — 빠르면 09-10(목)",
+      "owner": "시모",
+      "staff_change": "없음(폼 화면·접수 안내 동일) · 접수번호 형식 변화 없음 확인 뒤",
+      "note": "스위치 dual → server (시트는 되밀기) · 09-07 현재 3일 연속 유입 0건이라 증거 미확보",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "회원 쓰기 7종",
+      "who_uses": "임정은M(멤버십·강습 등록·상태 변경·LOSS 처리) · 이경연 실장(조회·정정) · 파트너팀(강습 배정 조회)",
+      "stage": "원천 전환",
+      "switch_date": "09-08 대조 판정 → 09-09부터 액션별",
+      "owner": "시포·시토",
+      "staff_change": "없음(같은 화면 · 저장 8.5초→1초 빨라짐)",
+      "note": "member_owner_save 부터 서버 원장 → 시트 write-through · 읽기는 서버 원천 완료",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "업무·결재 SSOT 쓰기(write_todo)",
+      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+      "stage": "거울",
+      "switch_date": "09-11(금)",
+      "owner": "시우",
+      "staff_change": "없음(화면 동일) · 나우열M 통보 필수",
+      "note": "dual → server · 읽기는 이미 서버(12화면+월간운영계획)",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "전사일정 쓰기(write_schedule)",
+      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+      "stage": "거울",
+      "switch_date": "09-11(금)",
+      "owner": "시우",
+      "staff_change": "없음",
+      "note": "dual → server · 웰리 중복 정리(216→207) 끝난 뒤 · 읽기는 check API 편입 완료",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "월간운영계획·GM업무 보드",
+      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+      "stage": "거울",
+      "switch_date": "#5·#6 와 함께(09-11)",
+      "owner": "시우",
+      "staff_change": "없음",
+      "note": "읽기 = 이미 서버(todo/api) · 쓰기 = 업무·결재 SSOT 와 같은 관문",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "점검 3부서 쓰기(write_check)",
+      "who_uses": "4부서 조별 담당(키오스크·폰에서 제출) · 반장·팀장(제출 확인) · GM(08:00 통 보고)",
+      "stage": "거울",
+      "switch_date": "09-12(토) 이후",
+      "owner": "시우",
+      "staff_change": "없음",
+      "note": "dual → server · 읽기는 서버(운영부 화면 28장) · 지금은 GAS+6분 GAS 읽기",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "매출·지출 원장(sales)",
+      "who_uses": "나우열M",
+      "stage": "",
+      "switch_date": "09-15 주",
+      "owner": "나우열M",
+      "staff_change": "있음 가능(지출품의 화면 링크 유지 시 없음) — 안내 대상 후보",
+      "note": "읽기 캐시 → 원장 · 지출품의 쓰기",
+      "updated": "2026-09-07"
+    },
+    {
+      "area": "GAS 축소·삭제(forms·지출현황·트리거)",
+      "who_uses": "",
+      "stage": "",
+      "switch_date": "GM 결재 후 야간",
+      "owner": "GM",
+      "staff_change": "없음",
+      "note": "배포 삭제 · 호출 0 실측 뒤",
+      "updated": "2026-09-07"
+    }
+  ]
+}
+</script>
+<script>
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+var STAGE_CLASS = { '거울':'st-mirror', '원천 전환':'st-origin', '시트 축소':'st-shrink', 'GAS 삭제':'st-delete' };
+function stageBadge(stage){
+  if(!stage) return '<span class="st-none">—</span>';
+  var cls = STAGE_CLASS[stage] || 'st-mirror';
+  return '<span class="st ' + cls + '">' + esc(stage) + '</span>';
+}
+
+function render(d){
+  document.getElementById('subline').textContent = '정본 = status/aws_migration.json · 갱신 ' + (d.updated_at_kst || d.updated_at || '');
+  var s = d.summary || {};
+  document.getElementById('statProgress').textContent = (s.progress_pct != null ? s.progress_pct + '%' : '—');
+  document.getElementById('statOrigin').textContent = s.origin_switched || '—';
+  document.getElementById('statNext').textContent = s.next || '—';
+
+  var rows = d.rows || [];
+  var body = document.getElementById('rowsBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="8" class="dim">등록된 영역이 없습니다.</td></tr>'; return; }
+  body.innerHTML = rows.map(function(r){
+    return '<tr>' +
+      '<td class="area">' + esc(r.area) + '</td>' +
+      '<td>' + esc(r.who_uses) + '</td>' +
+      '<td>' + stageBadge(r.stage) + '</td>' +
+      '<td>' + esc(r.switch_date) + '</td>' +
+      '<td>' + esc(r.owner) + '</td>' +
+      '<td>' + esc(r.staff_change) + '</td>' +
+      '<td>' + esc(r.note) + '</td>' +
+      '<td class="dim">' + esc(r.updated) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function fail(msg){
+  document.getElementById('subline').textContent = msg;
+  document.getElementById('rowsBody').innerHTML = '<tr><td colspan="8" class="err">원천을 못 읽음</td></tr>';
+}
+
+function loadSeed(){
+  try{
+    var el = document.getElementById('seed');
+    var txt = el && el.textContent.trim();
+    if(!txt) return null;
+    return JSON.parse(txt);
+  }catch(e){ return null; }
+}
+
+fetch('../../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
+  .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+  .then(render)
+  .catch(function(){
+    var seed = loadSeed();
+    if(seed){ render(seed); }
+    else { fail('원천을 못 읽음'); }
+  });
+</script>
+<script src="../_assets/page_ping.js" defer></script>
+</body>
+</html>
