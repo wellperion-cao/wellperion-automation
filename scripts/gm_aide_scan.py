@@ -448,8 +448,11 @@ def scan_due_hygiene() -> list:
     # ⑩완료짝미래일정 — GM 지적 2026-09-08 "미리 완료된 건이 남아 있다"
     # (바디프렌드 안마의자: 9/4 완료건과 9/11 예정건이 같이 남아 07:58 카톡에 끝난 설치가 또 나감).
     # 반복(cycle·repeat·period_months)은 원래 여러 번 도니 제외 — 정말 끝난 1회성 건만 잡는다.
-    def _norm_name(s):
-        return re.sub(r"[\s()\[\]{}—\-·:/,.!?~'\"“”‘’]+", "", str(s or ""))
+    _STOPWORDS = {"완료", "예정", "마감", "설치", "리드", "님"}
+
+    def _words(s):
+        toks = re.split(r"[\s()\[\]{}—\-·:/,.!?~'\"“”‘’]+", str(s or ""))
+        return {t for t in toks if len(t) >= 2 and t not in _STOPWORDS}
 
     def _is_recurring(it):
         return bool(it.get("repeat")) or bool(it.get("cycle")) or it.get("period_months") is not None
@@ -462,16 +465,14 @@ def scan_due_hygiene() -> list:
     match_pairs = []
     seen_done_future = set()
     for a in done_items:
-        na = _norm_name(a.get("name"))
-        if len(na) < 6:
+        wa = _words(a.get("name"))
+        if len(wa) < 2:
             continue
         for b in future_items:
             if a.get("id") == b.get("id"):
                 continue
-            nb = _norm_name(b.get("name"))
-            if len(nb) < 6:
-                continue
-            if na[:6] != nb[:6] and na not in nb and nb not in na:
+            wb = _words(b.get("name"))
+            if len(wa & wb) < 2:
                 continue
             pair_key = tuple(sorted([str(a.get("id")), str(b.get("id"))]))
             if pair_key in seen_done_future:
