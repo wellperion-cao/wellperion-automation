@@ -923,6 +923,210 @@ def _reply_match(staff_message: str, human_lines: "list[dict]", rare_words: "set
     return {}
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 📮 회신 매칭 → SSOT 행 append (GM 지시 2026-09-07 · 배1102 ③) — 실장·소장·나우열M 이
+# 카톡/텔레그램 방에서 이미 답한 마커행(배1102 다리가 만든 진행중 SSOT 행)에 그 회신을
+# 「회신 M/D: 원문」으로 append 하고, 완료 낱말이 있으면 상태도 닫는다. _reply_match(위)
+# 를 그대로 재사용 — 새 매칭기 안 만든다(약속 L21).
+# ══════════════════════════════════════════════════════════════════════════
+_REPLY_DONE_WORDS = ("완료", "됐습니다", "됩니다", "끝났", "처리했", "됨")
+_REPLY_DATE_RE = re.compile(r"(\d{1,2})[/.](\d{1,2})")
+
+
+def sync_ssot_replies(target_date: str, todo_rows: list) -> list:
+    """마커 있는 진행중 SSOT 행마다 카톡(★중간관리자)+텔레그램(업무관리-나우열M) 회신을
+    대조 — 맞으면 gm_handoff.append_todo 로 「회신 M/D: 원문」 append. 완료 낱말이 있으면
+    닫고, 없이 날짜만 있으면 종료일만 그 날짜로 갱신, 판정 낱말이 전혀 없으면 append 만
+    (추측으로 상태·기한을 바꾸지 않는다 · 약속 L23). todo_rows 의 해당 딕셔너리도 그
+    자리에서 갱신해 호출부가 재조회 없이 이어 쓴다(약속 L01). 돌려주는 값 = 이번에
+    건드린 행 [{"id","title","line"}] — 큐 note 등에 그대로 적을 수 있다."""
+    from collectors.ops_shared import MGR_LEDGER_MARKER_TAG, TODO_DONE_STATUSES
+    import gm_handoff as gh
+    from ops_daily_digest import _todo_post
+
+    human_lines = _mgr_room_human_lines(target_date) + _nawool_telegram_human_lines(target_date)
+    if not human_lines:
+        return []
+    rare_words = _reply_rare_words(human_lines)
+
+    touched = []
+    for r in todo_rows:
+        if not isinstance(r, dict):
+            continue
+        if MGR_LEDGER_MARKER_TAG not in str(r.get("내용", "")):
+            continue
+        if str(r.get("상태", "")).strip() in TODO_DONE_STATUSES:
+            continue
+        rid = str(r.get("id") or "")
+        title = str(r.get("업무명", "")).strip()
+        if not rid or not title:
+            continue
+        hit = _reply_match(title, human_lines, rare_words)
+        if not hit:
+            continue
+        msg = str(hit.get("msg") or "").strip()
+        try:
+            _, mm, dd = str(hit.get("date") or target_date).split("-")
+            md = f"{int(mm)}/{int(dd)}"
+        except Exception:
+            md = str(hit.get("date") or target_date)
+        res = gh.append_todo(rid, f"회신 {md}: {msg[:80]}", dry=False)
+        if not res.get("ok"):
+            log(f"[reply-sync] append 실패({rid}): {res.get('reason') or res}")
+            continue
+        if any(w in msg for w in _REPLY_DONE_WORDS):
+            done = gh.close_todo(rid, dry=False)
+            if done.get("ok"):
+                r["상태"] = "완료"
+        else:
+            dm = _REPLY_DATE_RE.search(msg)
+            if dm:
+                yyyy = str(target_date)[:4]
+                due = f"{yyyy}-{int(dm.group(1)):02d}-{int(dm.group(2)):02d}"
+                upd = _todo_post({
+                    "action": "todo_update", "id": rid, "title": title,
+                    "category": r.get("카테고리", ""), "owner": r.get("담당자", ""),
+                    "startDate": str(r.get("시작일", ""))[:10], "endDate": due,
+                    "content": r.get("내용", ""), "approval": r.get("결재요청", ""),
+                })
+                if upd.get("ok"):
+                    r["종료일"] = due
+        touched.append({"id": rid, "title": title, "line": f"회신 {md}: {msg[:80]}"})
+    return touched
+
+
+def _selfcheck_sync_ssot_replies() -> None:
+    """배1102 ③ — 완료 낱말이 있는 회신은 append+완료 닫기, 날짜만 있는 회신은 append+종료일
+    갱신, 매칭 없는 행은 그대로. gm_handoff·_todo_post·방 원문 읽기를 전부 가짜로 바꿔
+    네트워크 없이 돈다(호출 인자를 그대로 assert)."""
+    import gm_handoff as gh
+    import ops_daily_digest as o
+    global _mgr_room_human_lines, _nawool_telegram_human_lines
+
+    fake_lines = [
+        {"date": "2026-09-07", "time": "10:00",
+         "msg": "지원부 사우나정비 담당확정 완료했습니다 — 이경연 실장"},
+        {"date": "2026-09-07", "time": "10:05",
+         "msg": "분리수거장 현수막 부착은 9/15 에 하겠습니다"},
+    ]
+    orig_mgr, orig_nawool = _mgr_room_human_lines, _nawool_telegram_human_lines
+    orig_append, orig_close = gh.append_todo, gh.close_todo
+    orig_todo_post = o._todo_post
+    calls = {"append": [], "close": [], "update": []}
+    _mgr_room_human_lines = lambda *a, **k: fake_lines  # noqa: E731
+    _nawool_telegram_human_lines = lambda *a, **k: []  # noqa: E731
+    gh.append_todo = lambda tid, line, dry: (calls["append"].append((tid, line)), {"ok": True})[1]
+    gh.close_todo = lambda tid, dry: (calls["close"].append(tid), {"ok": True})[1]
+    o._todo_post = lambda params: (calls["update"].append(params), {"ok": True})[1]
+    try:
+        rows = [
+            {"id": "T1", "업무명": "지원부 사우나정비 담당확정", "상태": "진행중",
+             "내용": "[중간관리자원장 2026-09-05 | 지원부 사우나정비 담당확정]", "카테고리": "", "담당자": "이경연 실장",
+             "시작일": "", "종료일": "", "결재요청": ""},
+            {"id": "T2", "업무명": "분리수거장 현수막 부착", "상태": "진행중",
+             "내용": "[중간관리자원장 2026-09-05 | 분리수거장 현수막 부착]", "카테고리": "", "담당자": "이경연 실장",
+             "시작일": "", "종료일": "", "결재요청": ""},
+            {"id": "T3", "업무명": "무관 행 아무 매치 없음", "상태": "진행중",
+             "내용": "[중간관리자원장 2026-09-05 | 무관 행 아무 매치 없음]", "카테고리": "", "담당자": "이경연 실장",
+             "시작일": "", "종료일": "", "결재요청": ""},
+        ]
+        touched = sync_ssot_replies("2026-09-07", rows)
+        assert {t["id"] for t in touched} == {"T1", "T2"}, f"매치된 2건만 건드려야 함: {touched}"
+        assert calls["append"][0][0] == "T1" and "완료했습니다" in calls["append"][0][1]
+        assert calls["close"] == ["T1"], "완료 낱말이 있으면 닫아야 함"
+        assert calls["append"][1][0] == "T2" and "9/15" in calls["append"][1][1]
+        assert calls["update"] and calls["update"][0]["id"] == "T2" and calls["update"][0]["endDate"] == "2026-09-15", \
+            "완료 낱말 없이 날짜만 있으면 종료일만 갱신해야 함"
+        assert rows[0]["상태"] == "완료" and rows[1]["종료일"] == "2026-09-15"
+        assert rows[2].get("상태") == "진행중" and "종료일" in rows[2] and rows[2]["종료일"] == "", "매치 없는 행은 안 건드림"
+    finally:
+        _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool
+        gh.append_todo, gh.close_todo = orig_append, orig_close
+        o._todo_post = orig_todo_post
+    print("[selfcheck] sync_ssot_replies 완료닫기·날짜갱신·미매치 OK")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🗓️ 매주 월 07:50 담당별 미결표 (GM 지시 2026-09-07 · 배1102 ④) — send_mgr_brief 흐름
+# 안에서 요일==월일 때만 업무보고방(8254867551)에 1통. 새 예약작업 안 만든다(약속 L21).
+# ══════════════════════════════════════════════════════════════════════════
+def build_weekly_unresolved_table(todo_rows: list, today: str) -> str:
+    """마커 있는 진행중 SSOT 행을 담당별(3인방·L24 묶음)로 세어 미결 건수·최장 경과일
+    (마커에 박힌 원장 날짜 기준)·기한 지난 건수 표. 대상 0건이면 빈 문자열(발송 생략)."""
+    from collectors.ops_shared import MGR_LEDGER_MARKER_TAG, TODO_DONE_STATUSES
+    marker_date_re = re.compile(re.escape(MGR_LEDGER_MARKER_TAG) + r"\s+(\d{4}-\d{2}-\d{2})")
+    stats: dict = {}  # member -> [count, max_age, overdue]
+    for r in todo_rows:
+        if not isinstance(r, dict):
+            continue
+        content = str(r.get("내용", ""))
+        if MGR_LEDGER_MARKER_TAG not in content:
+            continue
+        if str(r.get("상태", "")).strip() in TODO_DONE_STATUSES:
+            continue
+        owner = str(r.get("담당자", "")).strip()
+        member = owner if owner in _NUDGE_MEMBERS else "이경연 실장"
+        age = 0
+        dm = marker_date_re.search(content)
+        if dm:
+            try:
+                age = (date.fromisoformat(today) - date.fromisoformat(dm.group(1))).days
+            except Exception:
+                age = 0
+        due = str(r.get("종료일", "") or "")[:10]
+        overdue = bool(due) and due < today
+        st = stats.setdefault(member, [0, 0, 0])
+        st[0] += 1
+        st[1] = max(st[1], age)
+        st[2] += 1 if overdue else 0
+    if not stats:
+        return ""
+    lines = [f"🗂️ 중간관리자 미결 현황 — {today}(월요 정기)"]
+    for member in sorted(stats, key=lambda k: -stats[k][0]):
+        cnt, max_age, overdue = stats[member]
+        lines.append(f"▪ {member} — 미결 {cnt}건 · 최장 {max_age}일째 · 기한 지남 {overdue}건")
+    return "\n".join(lines)
+
+
+def _send_gm_report_room(text: str) -> bool:
+    """업무보고방(8254867551) 발송 — tg_outbound_log 관문 경유(로그 남음 · kakao_auto_daily_report
+    의 같은 관례 재사용, 새 발신기 안 만듦 · 약속 L21)."""
+    from tg_outbound_log import send as tg_send
+    token = ""
+    try:
+        for line in (ROOT / "telegram_bot" / ".env").read_text(encoding="utf-8").splitlines():
+            if line.startswith("TELEGRAM_BOT_TOKEN="):
+                token = line.split("=", 1)[1].strip()
+                break
+    except Exception as exc:
+        log(f"[weekly] .env 읽기 실패: {exc}")
+        return False
+    if not token:
+        log("[weekly] TELEGRAM_BOT_TOKEN 없음 — 발송 생략")
+        return False
+    return tg_send(token, 8254867551, text, source="send_ops_digest.weekly_unresolved_table", timeout=15)
+
+
+def _selfcheck_weekly_unresolved_table() -> None:
+    """배1102 ④ — 담당별 집계·L24 묶음·기한지남 판정이 맞는지(네트워크 없음)."""
+    rows = [
+        {"담당자": "이경연 실장", "상태": "진행중", "종료일": "2026-09-01",
+         "내용": "[중간관리자원장 2026-08-20 | a]"},
+        {"담당자": "윤병현AM", "상태": "진행중", "종료일": "",
+         "내용": "[중간관리자원장 2026-08-25 | b]"},  # L24 묶음 -> 이경연 실장
+        {"담당자": "이정헌 소장", "상태": "진행중", "종료일": "2026-09-30",
+         "내용": "[중간관리자원장 2026-09-01 | c]"},
+        {"담당자": "나우열M", "상태": "완료", "종료일": "", "내용": "[중간관리자원장 2026-08-01 | d]"},
+        {"담당자": "이경연 실장", "상태": "진행중", "종료일": "", "내용": "마커 없음"},
+    ]
+    table = build_weekly_unresolved_table(rows, "2026-09-07")
+    assert "이경연 실장 — 미결 2건 · 최장 18일째 · 기한 지남 1건" in table, table
+    assert "이정헌 소장 — 미결 1건 · 최장 6일째 · 기한 지남 0건" in table, table
+    assert "나우열M" not in table, "완료 행은 안 들어가야 함"
+    assert build_weekly_unresolved_table([], "2026-09-07") == "", "대상 0건이면 빈 문자열"
+    print("[selfcheck] build_weekly_unresolved_table OK")
+
+
 def _record_reply_hits(reply_hits: "list[dict]") -> None:
     """회신 감지로 전달에서 뺀 배들 note 에 자동 기록 — queue_lock.mutate_queue 경유만
     (직접 쓰기 금지 · 배1057). 실제 발송이 성공했을 때만 부른다(미리보기·dry-run 은 큐에
@@ -1962,7 +2166,26 @@ def send_mgr_brief() -> None:
     if _mgr_already_sent(target_date):
         log(f"[mgr] 이미 발송된 회차({target_date}) — 생략")
         return
-    mgr_msg, relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    # ③ 회신 매칭 → SSOT 행 append(배1102) — 본문을 만들기 '전' 반영해야 방금 닫힌 건이
+    # 이번 회차 「확인 부탁드릴 것」에 다시 안 실린다. 실제 발송 경로에서만 돈다 —
+    # preview_mgr_brief(미리보기)는 이 함수를 안 부르므로 방/SSOT 에 손 안 댄다는 약속이 유지된다.
+    rows = _fetch_todo_rows()
+    touched = sync_ssot_replies(target_date, rows)
+    if touched:
+        log(f"[reply-sync] SSOT 행 {len(touched)}건에 회신 append — " + "; ".join(t["id"] for t in touched))
+
+    # ④ 매주 월 07:50 담당별 미결표(배1102 · GM 지시 2026-09-07) — 그날 카톡 다이제스트가
+    # 비어도(대화 없음 등) 이 주간표는 그대로 나가야 하므로 위 조기 return 보다 앞에서 돈다.
+    if datetime.now().weekday() == 0:  # 월요일
+        try:
+            table = build_weekly_unresolved_table(rows, datetime.now().strftime("%Y-%m-%d"))
+            if table:
+                ok = _send_gm_report_room(table)
+                log(f"[weekly] 담당별 미결표 {'발송' if ok else '발송 실패'}")
+        except Exception as exc:
+            log(f"[weekly] 미결표 예외(무시 — 다음 월요 재시도): {type(exc).__name__}: {exc}")
+
+    mgr_msg, relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(rows, target_date)
     if not mgr_msg and not nawool_msg:
         log("[mgr] 보낼 내용 0건 — 발송 생략")
         return
