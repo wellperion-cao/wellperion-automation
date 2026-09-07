@@ -14,8 +14,9 @@ TMP="$(mktemp -d)"
 for f in "$SRC"/{before_after_*,drafts_*}.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거(서버엔 없는 경로)
 done
-$S "sudo mkdir -p /srv/www/2_dietcamp && sudo chown ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
+$S "sudo mkdir -p /srv/www/2_dietcamp/img && sudo chown -R ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
 $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
+$SCP "$SRC"/img/*.jpg $HOST:/srv/www/2_dietcamp/img/ 2>/dev/null || true   # 대표님 사진 웹 사본(브랜드가이드 v0.2 · 배 892)
 $S "mkdir -p /srv/erp/faq/2_dietcamp"
 if ! $S "test -f /srv/erp/faq/2_dietcamp/faq.json"; then
   $SCP "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json" $HOST:/srv/erp/faq/2_dietcamp/faq.json   # 첫 배포만 — 있으면 안 건드린다(배1036 관리자 API 편집 보호 · deploy_chat.sh 와 같은 원칙)

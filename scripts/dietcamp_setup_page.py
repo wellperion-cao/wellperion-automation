@@ -14,6 +14,7 @@ SRC = [('01_브랜드가이드/다캠_브랜드가이드_v0.1.md', '브랜드가
 
 def inline(s):
     s = html.escape(s, quote=False)
+    s = re.sub(r'!\[(.*?)\]\((.*?)\)', r'<img src="\2" alt="\1" loading="lazy">', s)
     s = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', s)
     s = re.sub(r'`(.+?)`', r'<code>\1</code>', s)
     return s
@@ -124,6 +125,7 @@ th,td{{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-ali
 th{{background:var(--navy-bg);color:var(--navy);font-size:13px}}
 ul,ol{{padding-left:22px;margin:6px 0 10px}} li{{margin-bottom:4px}}
 p{{margin-bottom:8px}} code{{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}}
+img{{max-width:100%;border-radius:6px;margin:8px 0;display:block}}
 .foot{{margin-top:30px;border-top:1px solid var(--line);padding-top:12px;font-size:12.5px;color:var(--dim)}}
 @media (max-width:720px){{table{{display:block;overflow-x:auto}}h1{{font-size:20px}}}}
 </style></head><body><div class="wrap">
