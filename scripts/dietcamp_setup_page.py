@@ -5,6 +5,8 @@
 import sys
 PARTNER = "--partner" in sys.argv
 import os, re, html
+import datetime as _dt
+_TODAY = _dt.date.today().strftime('%Y. %m. %d.')
 os.chdir(r'C:\Users\jjky0\welperion-automation')
 BASE = '2. 브랜드_자료/10_다이어트캠프_브랜드가이드/'
 SRC = [('01_브랜드가이드/다캠_브랜드가이드_v0.1.md', '브랜드가이드'),
@@ -101,7 +103,7 @@ HEAD_GM = """<header><div class="brand">WELLPERION · AI CBO 시보</div><h1>다
 <div class="meta">2026-09-02 · 초안(GM 검토 전 · 대표님 회신 수령 중) · 정본은 다캠 폴더의 md, 이 화면은 렌더 · 배 892</div>
 <div class="meta">만들어 드리는 것 4가지 — ①브랜드가이드 ②회사소개서 ③운영전략 ④현장업무 자동화</div></header>"""
 HEAD_PARTNER = """<header><div class="brand">WELLPERION · AI 브랜딩</div><h1>다이어트캠프 — 초안 세 가지 (브랜드가이드 · 회사소개서 · 운영전략)</h1>
-<div class="meta">받는 분: 다이어트캠프 이승기 대표님 · 이대우 대표님 &nbsp;|&nbsp; 만든 이: 웰페리온 AI &nbsp;|&nbsp; v0.1 · 2026. 09. 05.</div></header>
+<div class="meta">받는 분: 다이어트캠프 이승기 대표님 · 이대우 대표님 &nbsp;|&nbsp; 만든 이: 웰페리온 AI &nbsp;|&nbsp; v0.2 · """ + _TODAY + """</div></header>
 <div class="lead"><b>이 초안은 기준점입니다. 방향은 대표님이 정하십니다.</b><br>
 저희가 대표님 자료와 답변만으로 먼저 적어 둔 것이라, 틀린 곳·다른 생각이 있는 곳이 당연히 있습니다. 그 줄을 짚어 주시면 그 자리에서 고칩니다.<br>
 한 번에 완성하는 문서가 아니라 <b>v0.1 → v0.2 → v1.0</b>으로 대표님 말씀을 받아 계속 수정·보완하며 발전시켜 가는 문서입니다. 「미수령」은 아직 못 받은 것 — 지어내지 않고 비워 두었습니다.</div>"""
