@@ -1,4 +1,152 @@
 {
   "_이 파일은": "자물쇠 라인(배1098) 승인 요청 원장 — 정본은 scripts/push_lock.py 가 읽고 쓴다. 카드·화면 어느 쪽에서 승인/반려해도 이 파일 하나만 바뀐다.",
-  "requests": []
+  "requests": [
+    {
+      "id": "PL-20260907-01",
+      "sha": "1a6d5540a0510be8e4e8523e6c017c0bcf6cefca",
+      "branch": "lock/PL-20260907-01",
+      "paths": [
+        "server/erp_auth/account_perms.json"
+      ],
+      "summary": "feat(auth): info@ 계정에 HR 온보딩 3장(체크인·자가성찰·제도 안내) 허용 (GM 지시 2026-09-07)",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 12:38",
+      "status": "pushed",
+      "decided_at": "2026-09-07 12:39",
+      "decided_by": "GM 채팅 지시 2026-09-07 12:3x 「HR온보딩 info@계정 권한 열어줘」 — 봇 카드 미발효라 웰리가 원문 근거로 기록"
+    },
+    {
+      "id": "PL-20260907-02",
+      "sha": "efb218fe06abae666f475b6dff3ad694e1a3715c",
+      "branch": "lock/PL-20260907-02",
+      "paths": [
+        "server/erp_auth/erp.nginx.conf"
+      ],
+      "summary": "fix(cto): ERP nginx — 화면 응답에 Cache-Control no-cache (배포 직후 새로고침 없이 반영 · GM 2026-09-07 '쿠키값 오류·새로고침')\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 14:54",
+      "status": "pushed",
+      "decided_at": "2026-09-07 14:54",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-03",
+      "sha": "6450ed9913f8a8c931ae7b543ee8648af8631846",
+      "branch": "lock/PL-20260907-03",
+      "paths": [
+        "server/erp_api/api_reception.py"
+      ],
+      "summary": "fix(erp_api): 종합접수처 공개 제출 통로 응답에 CORS 헤더 + OPTIONS 204 — wellperion.com 폼이 '네트워크 오류'로 접수 못 하던 장애 (GM 신고 2026-09-07 · 배1103)",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 14:56",
+      "status": "pushed",
+      "decided_at": "2026-09-07 14:56",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-04",
+      "sha": "cde23ceb11ac007330d3d5d5cc01e5b8d247c667",
+      "branch": "lock/PL-20260907-04",
+      "paths": [
+        "server/erp_auth/admin.html",
+        "server/erp_auth/app.py"
+      ],
+      "summary": "feat(cto): 권한 관리 콘솔에 커밋·푸시 승인 탭(현황) + GET /auth/admin/push_approvals (배1098 2단계)\n\n읽기 전용 탭 + GM 봇방 카드 단일 결정 경로(브리프 §3-4 대안 채택) — 서버 쪽\n쓰기 API 는 두지 않는다. 결정은 scripts/push_lock.decide()(텔레그램 plk: 콜백)\n한 곳에서만 나고, 서버는 5분 git 동기화(/srv/erp/www)로 status/push_approvals.json\n을 읽기만 한다(close_days.json·modules.json 과 동일 패턴).\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 15:31",
+      "status": "pushed",
+      "decided_at": "2026-09-07 15:31",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-05",
+      "sha": "0cf9d520c0b6b03cb1489182e521dc47371c2dc4",
+      "branch": "lock/PL-20260907-05",
+      "paths": [
+        ".deploy-salesops/Code.js"
+      ],
+      "summary": "fix(cto): 매출보고 시트 쓰기 웹앱(salesops · 서버가 쓰는 배포) — I20·I21 허용 + 이번 달 파일 아니면 쓰기 거부 (@4 배포 · 배1086·1097)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 15:38",
+      "status": "pushed",
+      "decided_at": "2026-09-07 15:38",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-06",
+      "sha": "364e784adfee8b18df8947d8a52687498d8a30e6",
+      "branch": "lock/PL-20260907-06",
+      "paths": [
+        "server/common/db.py",
+        "server/erp_api/sync_board.py",
+        "server/erp_api/sync_reception.py"
+      ],
+      "summary": "fix(cto): 서버 동기화 init_schema 를 advisory lock+버전 마커로 — 5분 동기화 교착(DeadlockDetected) 재발 차단 + 크래시도 last_failed 기록 (배1105 · 시우 실측)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 15:42",
+      "status": "pushed",
+      "decided_at": "2026-09-07 15:42",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-07",
+      "sha": "69503158655c7f6d6905d833a76c2f253ebfd833",
+      "branch": "lock/PL-20260907-07",
+      "paths": [
+        "3. 웰페리온 가이드/cto/aws_migration.html"
+      ],
+      "summary": "feat(cto): AWS 이관 전체 현황 페이지 신설 — status/aws_migration.json 정본 + cto/aws_migration.html\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_013CjmHdeNoj7AyvtSoaZ7Kc",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 15:51",
+      "status": "pushed",
+      "decided_at": "2026-09-07 15:51",
+      "decided_by": "Namuk KIM(8254867551)",
+      "note": "master 157da239b 에 동일 내용이 먼저 도착(diff 0) — 스위퍼 충돌 해소 · 시토 16:54"
+    },
+    {
+      "id": "PL-20260907-08",
+      "sha": "116b2a85cf9726cf897e17196ddda64ee495f64f",
+      "branch": "lock/PL-20260907-08",
+      "paths": [
+        "server/erp_auth/app.py"
+      ],
+      "summary": "fix(cto): 가입 신청 GM 알림의 승인 링크를 erp.wellperion.com/auth/admin 으로 (IP 주소 → 도메인 · 배1099)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 15:59",
+      "status": "pushed",
+      "decided_at": "2026-09-07 16:47",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-09",
+      "sha": "e4563206888198fbdc0f8560e5a0ce3dfd7030e3",
+      "branch": "lock/PL-20260907-09",
+      "paths": [
+        "server/erp_auth/admin.html"
+      ],
+      "summary": "feat(cto): 권한 관리 콘솔 정리 — 모듈 카드 103 → 그룹별 표 1개(사람 이름·부서 프리셋) + 신청 대기 맨 위 (배1026 · GM 2026-09-07)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 16:44",
+      "status": "pushed",
+      "decided_at": "2026-09-07 16:48",
+      "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260907-10",
+      "sha": "279f188904fead454e938544bcaca0ee17206a9b",
+      "branch": "lock/PL-20260907-10",
+      "paths": [
+        "server/deploy_auth.sh",
+        "server/erp_auth/admin.html",
+        "server/erp_auth/app.py",
+        "server/erp_auth/dept_presets.json"
+      ],
+      "summary": "feat(cto): 부서 기본 모듈 초안을 데이터로 — 콘솔에서 GM 이 수정·저장 (배1026 · GM 2026-09-07)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 16:54",
+      "status": "approved",
+      "decided_at": "2026-09-07 16:54",
+      "decided_by": "Namuk KIM(8254867551)"
+    }
+  ]
 }
