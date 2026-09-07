@@ -107,10 +107,58 @@ def connect(readonly=False):
     return Conn(raw)
 
 
+_SCHEMA_LOCK_KEY = 11050001          # pg_advisory_lock 고정키(임의) — init_schema 동시 실행 직렬화용
+_schema_version_cache = None
+
+
+def _schema_version():
+    global _schema_version_cache
+    if _schema_version_cache is None:
+        _schema_version_cache = str(int(os.path.getmtime(SCHEMA_FILE)))
+    return _schema_version_cache
+
+
 def init_schema(conn):
-    with open(SCHEMA_FILE, encoding="utf-8") as f:
+    """schema.sql 적용(멱등). pg_advisory_lock 으로 동시 호출을 직렬화하고, sync_meta 의
+    schema_version 이 schema.sql 최종수정시각과 같으면 DDL 을 건너뛴다 — */5 크론 11개가 매번
+    전체 DDL(ALTER TABLE 포함)을 동시에 돌려 서로 AccessExclusiveLock 으로 맞물리던 교착을
+    막는다(배1105 · 시우 실측 DeadlockDetected 154/137회)."""
+    ver = _schema_version()
+    conn.raw.cursor().execute("SELECT pg_advisory_lock(%s)", (_SCHEMA_LOCK_KEY,))
+    conn.raw.commit()
+    try:
+        try:
+            row = conn.execute("SELECT v FROM sync_meta WHERE tenant_id=%s AND k='schema_version'", (TENANT,)).fetchone()
+        except Error:
+            conn.raw.rollback()          # sync_meta 표가 아직 없음(최초 실행) — DDL 로 만든다
+            row = None
+        if row and row[0] == ver:
+            return
+        with open(SCHEMA_FILE, encoding="utf-8") as f:
+            with conn:
+                conn.execute(f.read())
         with conn:
-            conn.execute(f.read())
+            meta_set(conn, "schema_version", ver)
+    finally:
+        conn.raw.cursor().execute("SELECT pg_advisory_unlock(%s)", (_SCHEMA_LOCK_KEY,))
+        conn.raw.commit()
+
+
+def run_sync(name, fn):
+    """sync_*.main() 공통 진입 — init_schema 교착 등으로 meta_set(last_sync/last_failed) 앞에서
+    죽으면 그 회차가 기록 없이 사라져 /api 헬스가 정상으로 보였다(배1105). 크래시를 별도 커넥션으로
+    '<name>_last_failed' 에 남기고 원래 예외는 그대로 다시 던진다(cron 로그·종료코드는 그대로 실패)."""
+    try:
+        return fn()
+    except BaseException as e:
+        try:
+            c = connect()
+            with c:
+                meta_set(c, name + "_last_failed", "CRASH: %s: %s" % (type(e).__name__, str(e)[:200]))
+            c.close()
+        except Exception:
+            pass          # 기록도 안 되면 원래 예외로만 죽는다 — cron 로그에는 그대로 남는다
+        raise
 
 
 def meta_set(conn, k, v):

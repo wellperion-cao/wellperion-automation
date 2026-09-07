@@ -100,4 +100,4 @@ def selftest():
 
 
 if __name__ == "__main__":
-    sys.exit(selftest() if "--selftest" in sys.argv else main())
+    sys.exit(selftest() if "--selftest" in sys.argv else db.run_sync("board", main))
