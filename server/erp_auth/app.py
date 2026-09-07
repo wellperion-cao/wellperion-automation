@@ -12,6 +12,7 @@
     GET  /auth/forbidden              — 403 안내 화면
     GET  /auth/admin                  — 관리자 콘솔(admin.html, SPA 하나가 아래 API로 전부 그린다)
     GET  /auth/admin/api/state        — 콘솔 데이터(관리자 아니거나 비밀번호 미입력=401)
+    GET  /auth/admin/push_approvals   — 🔒 커밋·푸시 승인 현황(읽기 전용 · 배1098 2단계) · 결정은 GM 봇방 카드만
     POST /auth/admin/{uid}/perms      — 계정별 권한 저장(그룹·모듈 허용/거부)
     POST /auth/admin/{uid}/{action}   — approve | block | toggle_role | delete
     GET/POST /auth/admin/unlock       — 관리자 전용 비밀번호(ERP_ADMIN_SITE_PW · 30분 쿠키) — 관리자 화면 전부가 이 문을 지난다
@@ -53,6 +54,13 @@ from common import db as _db   # noqa: E402  — DB 를 여는 유일한 자리 
 
 T = _db.TENANT
 MODULES = os.environ.get("ERP_MODULES", "/srv/erp/www/erp/modules.json")   # 자동 생성본(GitHub 동기화) · 여기서 수정 안 함
+# 🔒 커밋·푸시 승인 원장(배1098) — 정본은 GM PC 저장소 status/push_approvals.json, 결정도 거기서만 난다
+# (텔레그램 plk: 카드 → scripts/push_lock.decide()). 서버는 /srv/erp/www 5분 git 동기화를 그대로 읽기만 한다
+# (close_days.json·modules.json 과 동일 패턴) — 여기서 쓰지 않는다, 관문을 두 곳으로 늘리지 않는다(약속 L21).
+PUSH_APPROVALS = os.environ.get(
+    "ERP_PUSH_APPROVALS",
+    "/srv/erp/www/status/push_approvals.json" if os.path.isdir("/srv/erp/www") else
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "status", "push_approvals.json"))
 GROUPS = ("핵심", "시포", "시모", "시우", "웰리", "시토", "시보", "시로", "시뽀", "GM")   # 핵심 = core:true 모듈 묶음(수동 개별조정용 — 아래 참고)
 # 가입 폼 부서 선택지(GM 2026-09-05 지정 6부서).
 DEPTS = ("운영부", "시설부", "지원부", "주차관리부", "경영지원", "파트너팀")
@@ -765,6 +773,24 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
             "changed_at": h["changed_at"], "before": h["before"], "after": h["after"],
         } for h in hist],
     })
+
+
+@app.get("/auth/admin/push_approvals")
+def admin_push_approvals(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    """🔒 커밋·푸시 승인 현황(읽기 전용 · 배1098 2단계). 결정은 여기서 안 받는다 — GM 개인 봇방
+    [승인]/[반려] 카드가 유일한 결정 경로(scripts/push_lock.decide()). 이유 = 관문을 하나로 유지
+    (약속 L21) — 서버에 쓰기 API를 두면 결정이 두 곳(카드/화면)으로 갈라져 어긋난다."""
+    u = current(erp_session)
+    if not u or u["role"] != "admin" or (ADMIN_PW and not _admin_unlocked(erp_admin, u["id"])):
+        raise HTTPException(401, "관리자 확인 필요")
+    try:
+        with open(PUSH_APPROVALS, encoding="utf-8") as f:
+            reqs = (json.load(f) or {}).get("requests") or []
+    except Exception:
+        reqs = []
+    reqs = sorted(reqs, key=lambda r: r.get("created_at", ""), reverse=True)
+    reqs = sorted(reqs, key=lambda r: r.get("status") != "pending")   # pending 먼저, 나머지는 최신순 유지(stable)
+    return JSONResponse({"requests": reqs})
 
 
 @app.post("/auth/admin/dept_apply/{dept}")
