@@ -253,6 +253,11 @@ function doPost(e) {
     return _json({ ok: false, error: 'empty text — 빈 값으로 덮어쓰지 않습니다' });
   }
 
+  // 이번 달 파일이 아니면 쓰지 않는다(2026-09-07 실사고 — Drive 권한 없이 8월 파일로 폴백해 I20·I21 을 덮어씀.
+  // 09-02 와 같은 본질 2회째). 경고를 응답에 싣는 것으로는 늦다 — 쓰기 자체를 막는다.
+  var wrongFile = _ssWarn_();
+  if (wrongFile) return _json({ ok: false, error: 'wrong file — ' + wrongFile, ssName: _ss().getName() });
+
   var sh = _sheet();
   var before = sh.getRange(cell).getDisplayValue();
   sh.getRange(cell).setValue(text);
@@ -265,6 +270,7 @@ function doPost(e) {
     ssName: sh.getParent().getName(),   // 어느 파일에 썼는지 — 달이 바뀌면 여기가 먼저 드러난다
     warn: _ssWarn_(),
     before_length: before.length,
+    before_text: before,                // 덮어쓴 원문 — 되돌릴 때 이것으로(2026-09-07)
     after_length: after.length,
     wrote_at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
   });
