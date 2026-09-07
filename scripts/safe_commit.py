@@ -94,6 +94,7 @@ from precommit_phantom_delete_guard import (  # noqa: E402
     foreign_delete_violations,
     _log_block as _domain_guard_log,
 )
+import push_lock  # noqa: E402  (배1098 자물쇠 라인 — 잠금 경로 판정 단일 출처)
 
 # ── COO(시우) 도메인 차단 — 2026-08-14 GM 지시로 **완전 제거** ────────────────
 # GM 원문(2026-08-14): "시우것도 건드려도되, 준용M한테 이야기했어, 너무 바빠서 당분간은
@@ -1096,6 +1097,36 @@ def safe_commit(
                     continue
 
                 new_sha = _git_out(["commit-tree", tree, "-p", head, "-m", message], root)
+
+                # ④-lock 자물쇠 라인(배1098 · GM 지시 2026-09-07) — 잠금 경로가 섞였으면
+                # master(HEAD)를 안 건드리고 lock/<요청id> 브랜치에만 커밋한다. 승인 전
+                # push 는 master 만 보므로(post_commit_push.py REMOTE/BRANCH) 배포 0.
+                # 설계: status/briefs/CTO-2026-09-07-배1098-자물쇠라인-설계.md §7.
+                lock_hits = push_lock.judge_tree_diff(head_tree, tree, root)
+                if lock_hits:
+                    req = push_lock.make_request(
+                        paths=lock_hits, sha=new_sha, summary=message, requester=holder, root=root,
+                    )
+                    branch_ref = f"refs/heads/{req['branch']}"
+                    upd = _git(["update-ref", branch_ref, new_sha], root)
+                    if upd.returncode != 0:
+                        result["reason"] = (
+                            f"자물쇠 브랜치 생성 실패: {(upd.stderr or upd.stdout).strip()[:200]}"
+                        )
+                        return result
+                    result.update({
+                        "ok": True, "committed": True, "sha": new_sha,
+                        "locked": True, "lock_request_id": req["id"], "lock_branch": req["branch"],
+                        "changed": lock_hits,
+                        "reason": (f"🔒 잠금 경로 포함 — {req['branch']} 브랜치로 분리"
+                                   f"(GM 승인 대기 {req['id']})"),
+                    })
+                    try:
+                        push_lock.send_approval_card(req)
+                    except Exception as exc:  # 카드 실패해도 요청·브랜치는 유효(fail-open)
+                        print(f"[WARN] 승인 카드 발송 실패(요청은 저장됨): {type(exc).__name__}: {exc}")
+                    print(f"🔒 승인 대기 {req['id']} (브랜치 {req['branch']})")
+                    return result
 
                 # ④ CAS — 경쟁 커밋이 끼어들었으면 update-ref 가 실패한다(원자 갱신)
                 upd = _git(["update-ref", "HEAD", new_sha, head], root)

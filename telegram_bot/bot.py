@@ -84,6 +84,11 @@ try:  # 업무관리 방 에이전트(wrk: 콜백, 2026-09-05 GM 물음 · 배10
 except Exception:
     work_room_agent = None
 
+try:  # 🔒 자물쇠 라인 승인 카드(plk: 콜백, 2026-09-07 GM 지시 · 배1098)
+    import push_lock_card
+except Exception:
+    push_lock_card = None
+
 
 def _install_outbound_logging() -> None:
     """PTB 발신 메서드(send_message/send_photo/reply_text)에 best-effort 로깅 래핑.
@@ -2233,6 +2238,9 @@ def main():
     # 업무관리 방 발송 승인 카드 (wrk:) — 2026-09-05 GM 물음(배1068). sign:·pub:·dig:·kakao_send·ck: 와 접두 안 겹침.
     if work_room_agent is not None:
         app.add_handler(CallbackQueryHandler(work_room_agent.handle_card_callback, pattern=r"^wrk:"))
+    # 🔒 자물쇠 라인 커밋·푸시 승인 카드 (plk:) — 2026-09-07 GM 지시(배1098). 기존 접두와 안 겹침.
+    if push_lock_card is not None:
+        app.add_handler(CallbackQueryHandler(push_lock_card.handle_callback, pattern=r"^plk:"))
     app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO, handle_media))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)

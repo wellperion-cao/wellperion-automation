@@ -1246,11 +1246,132 @@ def _check_remote_drift(root: str) -> None:
         _log(f"PUSH_SWEEPER 원격 표류 감지 실패(best-effort) {e}", root)
 
 
+# ── 🔒 자물쇠 라인(배1098 · GM 지시 2026-09-07) — 승인분 cherry-pick 반영 ──────────
+# safe_commit.py 가 잠금 경로 커밋을 refs/heads/lock/<id> 에 분리해 두면(master 무접촉),
+# GM 이 텔레그램 카드에서 승인/반려한 결과만 status/push_approvals.json 에 status 로 남는다
+# (telegram_bot/push_lock_card.py). 실제 git 반영은 여기 — 이미 5분마다 도는 이 스위퍼 —
+# 한 곳에서만 한다(약속 L21, 새 예약작업 만들지 않음).
+def _land_approved_lock_commit(root: str, sha: str, msg: str) -> tuple[bool, str]:
+    """승인된 lock/<id> 커밋(sha)을 현재 master 위에 터치리스로 얹는다.
+
+    ★git cherry-pick 은 작업트리·인덱스를 건드린다(이 저장소가 도처에서 피해 온 것 —
+    _reconcile() 상단 주석 참조). 대신 이미 이 파일이 통합에 쓰는 것과 같은 패턴
+    (merge-tree --write-tree 3-way + commit-tree + update-ref CAS)을 재사용한다 — head
+    와 sha 의 병합 베이스를 git 이 스스로 찾아 주므로, master 가 그 사이 전진해 있어도
+    (설계상 정상 — lock 커밋이 만들어질 때 master 는 안 움직인다) 안전하게 얹힌다.
+    반환 (True, new_master_sha) 또는 (False, 실패사유)."""
+    head = _rev_parse(root, "HEAD")
+    if not head:
+        return False, "HEAD 확인 실패"
+    mt = subprocess.run(
+        ["git", "merge-tree", "--write-tree", head, sha],
+        cwd=root, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
+    )
+    tree_lines = (mt.stdout or "").strip().splitlines()
+    if mt.returncode != 0 or not tree_lines or len(tree_lines[0].strip()) != 40:
+        return False, _tail("merge-tree 충돌/실패: " + (mt.stdout or mt.stderr or "").strip())
+    tree = tree_lines[0].strip()
+    ct = subprocess.run(
+        ["git", "commit-tree", tree, "-p", head, "-p", sha, "-m", msg],
+        cwd=root, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
+    )
+    new_sha = (ct.stdout or "").strip()
+    if ct.returncode != 0 or len(new_sha) != 40:
+        return False, _tail("commit-tree 실패: " + (ct.stderr or ct.stdout or "").strip())
+    ur = subprocess.run(
+        ["git", "update-ref", "refs/heads/master", new_sha, head],
+        cwd=root, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+    )
+    if ur.returncode != 0:
+        return False, _tail("update-ref 실패(그새 HEAD 이동 — 다음 주기 재시도): "
+                            + (ur.stderr or ur.stdout or "").strip())
+    _sync_index_to_new_head(root, head, new_sha)
+    return True, new_sha
+
+
+def _process_push_lock_approvals(root: str) -> None:
+    """승인(approved)/반려(rejected) 상태인 요청을 실제로 처리 — 승인은 master 반영+push
+    +브랜치 삭제(status=pushed), 반려는 브랜치만 삭제(status=closed). 실패(충돌 등)는
+    status=conflict 로 남기고 사람에게 알린다 — 자동으로 다시 시도하지 않는다(설계 §3)."""
+    try:
+        scr = os.path.join(root, "scripts")
+        if scr not in sys.path:
+            sys.path.insert(0, scr)
+        import push_lock
+    except Exception as e:
+        _log(f"PUSH_SWEEPER push_lock 임포트 실패(skip) {e}", root)
+        return
+    d = push_lock.load_approvals()
+    work = [r for r in d.get("requests", []) if r.get("status") in ("approved", "rejected")]
+    if not work:
+        return
+    import git_lock as _gl
+    lock = GitLock("push-lock-sweeper", root)
+    prev_timeout = _gl.ACQUIRE_TIMEOUT
+    changed = False
+    try:
+        _gl.ACQUIRE_TIMEOUT = 60
+        with lock:
+            for req in work:
+                branch = req.get("branch") or ""
+                req_id = req.get("id", "")
+                if req.get("status") == "rejected":
+                    if branch:
+                        subprocess.run(["git", "update-ref", "-d", f"refs/heads/{branch}"],
+                                       cwd=root, capture_output=True, timeout=20)
+                    req["status"] = "closed"
+                    changed = True
+                    _log(f"PUSH_SWEEPER 자물쇠 반려 처리 — {req_id} 브랜치 삭제", root)
+                    continue
+                sha = req.get("sha") or ""
+                if not sha:
+                    continue
+                ok, info = _land_approved_lock_commit(
+                    root, sha, req.get("summary") or f"자물쇠 승인 반영 {req_id}")
+                if not ok:
+                    req["status"] = "conflict"
+                    changed = True
+                    _log(f"PUSH_SWEEPER 자물쇠 승인 반영 실패({req_id}) {info}", root)
+                    _telegram_warn(
+                        root,
+                        f"⚠️ 자물쇠 승인 {req_id} 반영 실패(충돌 의심) — 사람 확인 필요.\n{info[:200]}",
+                    )
+                    continue
+                rc, err = _push_once(root)
+                if rc != 0:
+                    req["status"] = "conflict"
+                    changed = True
+                    _log(f"PUSH_SWEEPER 자물쇠 승인({req_id}) master 반영 후 push 실패 {err}", root)
+                    _telegram_warn(
+                        root,
+                        f"⚠️ 자물쇠 승인 {req_id} master 반영은 됐지만 push 실패 — 수동 push 필요.\n{err[:200]}",
+                    )
+                    continue
+                if branch:
+                    subprocess.run(["git", "update-ref", "-d", f"refs/heads/{branch}"],
+                                   cwd=root, capture_output=True, timeout=20)
+                req["status"] = "pushed"
+                changed = True
+                _log(f"PUSH_SWEEPER 자물쇠 승인 반영·push 완료 — {req_id}", root)
+    except Exception as e:
+        _log(f"PUSH_SWEEPER 자물쇠 승인 처리 예외 {e}", root)
+    finally:
+        _gl.ACQUIRE_TIMEOUT = prev_timeout
+        if changed:
+            push_lock.save_approvals(d)
+
+
 def _sweep(root: str) -> int:
     """푸시 스위퍼 — 밀린 커밋을 안전하게 드레인(5분 주기 스케줄러용).
     부모 lock 밖에서 독립 실행되므로 GitLock 을 정상 타임아웃으로 획득해 fetch+rebase+push
     한다. 부모 lock 안에서 rebase 없이 실패한 커밋들을 여기서 확실히 올린다.
     진짜 실패(충돌·인증 등)만 경고한다(allow_reconcile=True · alert=True)."""
+    # 🔒 자물쇠 라인 승인분 먼저 처리(배1098) — master 에 새로 실릴 게 있으면 그 다음
+    # 아래 드레인이 그것까지 포함해 push 한다.
+    _process_push_lock_approvals(root)
     # 밀린 커밋이 0이어도 여기는 먼저 본다 — '올릴 커밋이 없다'와 '올려야 할 산출물이
     # 커밋조차 안 됐다'는 다른 상태이고, 후자가 라이브를 옛 값으로 굳힌다.
     _commit_stale_machine_outputs(root)

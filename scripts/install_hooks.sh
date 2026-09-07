@@ -24,6 +24,13 @@ chmod +x "$HOOKS_DIR/post-commit"
 echo "[install_hooks] post-commit hook 설치 완료."
 echo "[install_hooks] 확인: $HOOKS_DIR/post-commit"
 
+# pre-push hook 복사 + 실행권한 (🔒 자물쇠 라인 · 배1098 · 2026-09-07)
+cp "$SCRIPTS_DIR/pre-push.hook" "$HOOKS_DIR/pre-push"
+chmod +x "$HOOKS_DIR/pre-push"
+
+echo "[install_hooks] pre-push hook 설치 완료."
+echo "[install_hooks] 확인: $HOOKS_DIR/pre-push"
+
 # _queue.json 전용 머지 드라이버 등록 (.gitattributes 의 merge=queuejson 와 짝)
 #   여러 세션이 각자 '배'를 추가해도 task_id 합집합으로 자동 병합 → rebase 충돌·자동push 실패 근본차단(2026-06-19 시토)
 git config merge.queuejson.name "_queue.json task_id union merge (CTO)"

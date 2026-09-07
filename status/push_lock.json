@@ -1,0 +1,31 @@
+{
+  "_이 파일은": "AWS 최신버전 외 수정·데이터 이관 커밋의 푸시 GM 승인 관문(GM 지시 2026-09-07 10:3x '커밋 푸시 관련 나한테 승인을 당분간 받는 모듈'). locked=true 이면 아래 paths(allow_globs 제외)에 걸리는 커밋이 master 로 안 가고 lock/<요청id> 브랜치로 분리되어 GM 승인을 기다린다. 커밋 자체는 막지 않는다 — 막는 것은 push(=배포)뿐.",
+  "_푸는 법": "GM 이 채팅으로 '자물쇠 해제' 라고 지시하면 그 세션이 locked 를 false 로 바꾸고 unlocked_by 에 GM 지시 원문·일시를 적는다. AI 가 스스로 풀지 않는다. 부분 해제(특정 경로만 자율)는 allow_globs 만 넓힌다.",
+  "locked": true,
+  "since": "2026-09-07 (배1098 · 1단계 구현)",
+  "by": "GM 지시 2026-09-07 10:3x — 시토 배1098 구현",
+  "unlocked_by": "",
+  "paths": [
+    "server/**",
+    "scripts/sync_*.py",
+    "scripts/pushback*.py",
+    "server/erp_api/reconcile_*.py",
+    "scripts/origin_switch*",
+    "status/origin_switch*.json",
+    "scripts/*migrat*.py",
+    "scripts/*import*.py",
+    ".deploy-*/**",
+    "ssot/**"
+  ],
+  "allow_globs": [
+    "ssot/incidents.json"
+  ],
+  "html_glob": "3. 웰페리온 가이드/**/*.html",
+  "html_origin_markers": [
+    "script.google.com/macros",
+    "/api/",
+    "apiFirst",
+    "ERP_API_ON"
+  ],
+  "_설계 정본": "status/briefs/CTO-2026-09-07-배1098-자물쇠라인-설계.md §2·§7"
+}
