@@ -1,0 +1,50 @@
+diff --git "a/3. \354\233\260\355\216\230\353\246\254\354\230\250 \352\260\200\354\235\264\353\223\234/wellperion_guide(main).html" "b/3. \354\233\260\355\216\230\353\246\254\354\230\250 \352\260\200\354\235\264\353\223\234/wellperion_guide(main).html"
+index 490cab03a..ef21162d5 100644
+--- "a/3. \354\233\260\355\216\230\353\246\254\354\230\250 \352\260\200\354\235\264\353\223\234/wellperion_guide(main).html"
++++ "b/3. \354\233\260\355\216\230\353\246\254\354\230\250 \352\260\200\354\235\264\353\223\234/wellperion_guide(main).html"
+@@ -7509,6 +7509,18 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+       var OPS_STAFF = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
+       function jget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return undefined;}); }
+       function gtext(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.text();}).catch(function(){return undefined;}); }
++      /* ★ 공지·가이드·매뉴얼 3보드 읽기 원천 전환(배1039 · 2026-09-08 시토). ERP 도메인(erp.wellperion.com)에서만
++         서버 미러 /api/board/{key} 를 먼저 부르고, 실패하면 종전 GAS(action=board)로 조용히 돌아간다.
++         미러 = sync_board.py 가 5분마다 GAS board 응답을 그대로 떠온 것 — 응답 모양 동일. 쓰기(saveBoard)는 계속 GAS. */
++      var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
++      function _apiBoard(key){
++        return fetch('/api/board/' + encodeURIComponent(key)).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); });
++      }
++      function boardFirst(key){
++        var gas = function(){ return jget(CHECK_API+"?action=board&key="+key+"&_pv="+Date.now()); };
++        if (!ERP_API_ON) return gas();
++        return _apiBoard(key).catch(function(e){ console.warn('['+key+'] API 실패 → GAS 폴백:', e && e.message); return gas(); });
++      }
+       function withTimeout(promise, ms, fallbackValue){
+         var timer;
+         var timeout = new Promise(function(resolve){ timer = setTimeout(function(){ resolve(fallbackValue); }, ms); });
+@@ -7673,7 +7685,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+       function policyGenId(){ return 'pol_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+       function loadDocPolicy(){
+         var el = document.getElementById('o1-doc-policy'); if(!el) return;
+-        withTimeout(jget(CHECK_API+"?action=board&key=OPS_POLICY_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
++        withTimeout(boardFirst('OPS_POLICY_BOARD'), 8000, undefined).then(function(res){
+           var board = (res && res.ok && res.board) ? res.board : null;
+           POLICY_DATA = {};
+           POLICY_COLS.forEach(function(c){
+@@ -7770,7 +7782,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+       function guideGenId(){ return 'gd_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+       function loadDocGuide(){
+         var el = document.getElementById('o1-doc-guide'); if(!el) return;
+-        withTimeout(jget(CHECK_API+"?action=board&key=OPS_GUIDE_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
++        withTimeout(boardFirst('OPS_GUIDE_BOARD'), 8000, undefined).then(function(res){
+           var arr = (res && res.ok && res.board && Array.isArray(res.board.guide)) ? res.board.guide : null;
+           var src = arr || GUIDE_SEED;
+           GUIDE_DATA.guide = src.map(function(card){
+@@ -8103,7 +8115,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
+         cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+       };
+       function loadOpsBoard(){
+-        withTimeout(jget(CHECK_API+"?action=board&key=OPS_MANUAL_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
++        withTimeout(boardFirst('OPS_MANUAL_BOARD'), 8000, undefined).then(function(res){
+           var data=(res && res.ok && res.board) ? res.board : null;
+           BOARD_DATA={};
+           OPS_BOARD_DAYS.forEach(function(d){
