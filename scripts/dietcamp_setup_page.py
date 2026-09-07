@@ -48,6 +48,16 @@ def md2html(text):
             while i < len(lines) and (re.match(r'^(\d+)\.\s', lines[i]) or lines[i].startswith('- ')):
                 out.append('<li>' + inline(re.sub(r'^(\d+\.|-)\s', '', lines[i])) + '</li>'); i += 1
             out.append(f'</{tag}>'); continue
+        if re.match(r'^!\[', ln):
+            buf = []
+            while i < len(lines) and re.match(r'^!\[', lines[i]):
+                buf.append(inline(lines[i])); i += 1
+            if len(buf) == 1:
+                out.append(f'<p>{buf[0]}</p>')
+            else:
+                items = ''.join(f'<div class="pi">{x}</div>' for x in buf)
+                out.append(f'<div class="photo-grid">{items}</div>')
+            continue
         if ln.strip():
             out.append(f'<p>{inline(ln)}</p>')
         i += 1
@@ -102,32 +112,34 @@ page = f"""<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-:root{{--ink:#101418;--navy:#14304E;--navy-bg:#EDF1F6;--line:#E3E7EB;--dim:#5C666F;--good:#146B4F}}
-body{{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}}
-.wrap{{max-width:1180px;margin:0 auto;padding:24px 20px 60px}}
-header{{border-bottom:3px solid var(--navy);padding-bottom:12px;margin-bottom:10px}}
-.brand{{font-size:12px;letter-spacing:4px;color:var(--navy);font-weight:700}}
-h1{{font-size:24px;font-weight:900;margin-top:4px}}
-.meta{{font-size:13px;color:var(--dim);margin-top:4px}}
-.lead{{background:var(--navy);color:#fff;padding:14px 18px;border-radius:6px;margin:12px 0 18px;font-size:15px;line-height:1.7}}
-.lead b{{color:#FFD86B}}
-nav{{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:8px 0;margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;z-index:5}}
-nav a{{text-decoration:none;color:var(--navy);font-weight:700;font-size:14px;padding:5px 12px;border:1px solid var(--line);border-radius:4px}}
-nav a:hover{{background:var(--navy-bg)}}
-section{{border:1px solid var(--line);border-top:4px solid var(--navy);padding:18px 20px;margin-bottom:26px}}
-.src{{font-size:12px;color:var(--dim);margin-bottom:6px}}
-h2{{font-size:22px;font-weight:900;margin:4px 0 10px}}
-h3{{font-size:17px;color:var(--navy);margin:20px 0 8px;padding-left:8px;border-left:4px solid var(--navy)}}
-h4{{font-size:15px;margin:12px 0 6px}}
-blockquote{{background:var(--navy-bg);border-left:4px solid var(--navy);padding:10px 14px;font-size:13.5px;color:#2B3A4A;margin-bottom:10px}}
-table{{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:14px}}
-th,td{{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}}
-th{{background:var(--navy-bg);color:var(--navy);font-size:13px}}
-ul,ol{{padding-left:22px;margin:6px 0 10px}} li{{margin-bottom:4px}}
-p{{margin-bottom:8px}} code{{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}}
-img{{max-width:100%;border-radius:6px;margin:8px 0;display:block}}
-.foot{{margin-top:30px;border-top:1px solid var(--line);padding-top:12px;font-size:12.5px;color:var(--dim)}}
-@media (max-width:720px){{table{{display:block;overflow-x:auto}}h1{{font-size:20px}}}}
+:root{{--ink:#101418;--green:#4E7432;--green-bg:#EEF4E8;--line:#D8E4D2;--dim:#5C666F;--dark:#0B0B0D;--muted:#CBCCCA}}
+body{{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#F3F6F0;font-size:15px;line-height:1.7;word-break:keep-all;overflow-wrap:anywhere}}
+.wrap{{max-width:1080px;margin:0 auto;background:#fff;box-shadow:0 2px 40px rgba(0,0,0,.08);min-height:100vh}}
+header{{border-bottom:4px solid var(--green);padding:22px 32px 18px}}
+.brand{{font-size:11px;letter-spacing:5px;color:var(--green);font-weight:700}}
+h1{{font-size:24px;font-weight:900;margin-top:6px;color:var(--dark);line-height:1.3}}
+.meta{{font-size:13px;color:var(--dim);margin-top:6px}}
+.lead{{background:var(--dark);color:#fff;padding:16px 32px;font-size:15px;line-height:1.8}}
+.lead b{{color:#9FD068}}
+nav{{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;z-index:5}}
+nav a{{text-decoration:none;color:var(--dark);font-weight:700;font-size:13.5px;padding:5px 14px;border:1px solid var(--line);border-radius:20px}}
+nav a:hover{{background:var(--green);color:#fff;border-color:var(--green)}}
+section{{border:1px solid var(--line);border-top:4px solid var(--green);padding:22px 32px;margin:18px 24px;border-radius:0 0 4px 4px}}
+.src{{font-size:12px;color:var(--dim);margin-bottom:8px}}
+h2{{font-size:21px;font-weight:900;margin:4px 0 12px;color:var(--dark)}}
+h3{{font-size:16px;color:var(--green);margin:22px 0 9px;padding-left:10px;border-left:4px solid var(--green);font-weight:700}}
+h4{{font-size:15px;margin:14px 0 7px;font-weight:700}}
+blockquote{{background:var(--green-bg);border-left:4px solid var(--green);padding:11px 16px;font-size:13.5px;color:#2D3B25;margin-bottom:12px;border-radius:0 4px 4px 0}}
+table{{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:14px}}
+th,td{{border:1px solid var(--line);padding:8px 11px;vertical-align:top;text-align:left}}
+th{{background:var(--green-bg);color:var(--dark);font-size:13px;font-weight:700}}
+ul,ol{{padding-left:24px;margin:7px 0 11px}} li{{margin-bottom:5px}}
+p{{margin-bottom:9px}} code{{background:#EEF4E8;padding:2px 6px;border-radius:3px;font-size:13px;color:#2D4A1A}}
+img{{max-width:100%;border-radius:6px;margin:6px 0;display:block}}
+.photo-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin:14px 0}}
+.photo-grid .pi img{{width:100%;height:200px;object-fit:cover;border-radius:6px;display:block}}
+.foot{{padding:16px 32px;font-size:13px;color:var(--dim);background:var(--green-bg);border-top:1px solid var(--line)}}
+@media (max-width:720px){{table{{display:block;overflow-x:auto}}h1{{font-size:20px}}section{{margin:12px 0;padding:16px 16px}}nav,header,.lead,.foot{{padding-left:16px;padding-right:16px}}}}
 </style></head><body><div class="wrap">
 {HEAD_PARTNER if PARTNER else HEAD_GM}
 <nav>{nav}</nav>
