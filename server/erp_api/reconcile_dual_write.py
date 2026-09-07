@@ -112,6 +112,41 @@ def streak_ok_days(forms, today):
     return n
 
 
+NOT_APPLICABLE_STATUSES = ("sheet-missing",)   # 원천이 이미 서버로 넘어간 표(INC-056 이후 접수) — 대조 실패로 안 센다
+
+
+def reconcile_by_action(rows, ok_statuses=("ok",)):
+    """write_log 액션 하나(예: save=점검저장 · reg_update=접수)만의 날짜별 판정. 미러 없이 gas_status 만 본다.
+    sheet-missing 행은 날짜 버킷을 안 건드리고 na 로만 센다 — '대조 대상 아님'이라 행 0 인 날과 같게
+    streak_ok_days 에서 건너뛴다(폼(action)별 분리 · 시우 실측 2026-09-07)."""
+    days, na = {}, 0
+    for ts, _payload, status in rows:
+        if status in NOT_APPLICABLE_STATUSES:
+            na += 1
+            continue
+        day = str(ts)[:10]
+        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
+        d["server"] += 1
+        if status in ok_statuses:
+            d["sheet"] += 1
+        else:
+            d["mismatch"] += 1
+            d["ok"] = False
+    return days, na
+
+
+def summarize_form(days, today, na=0):
+    """days = {날짜: {server,sheet,mismatch,ok,...}} → by_form 한 칸(ok/total/streak_ok_days/last_fail)."""
+    bad_days = [day for day, v in days.items() if not v["ok"]]
+    return {
+        "ok": sum(v["sheet"] for v in days.values()),
+        "total": sum(v["server"] for v in days.values()),
+        "not_applicable": na,
+        "streak_ok_days": streak_ok_days({"_": days}, today),
+        "last_fail": max(bad_days) if bad_days else None,
+    }
+
+
 # ── DB 에서 원장·미러를 읽어 오는 자리 (판정 로직은 위, 여기는 조회만) ────────────────────
 def _load(conn, db, since):
     # gas_status='test' 행은 뺀다(2026-09-05) — 격리된 테스트 페이로드는 GAS 로 안 보내 미러에도 없다 —
@@ -121,9 +156,12 @@ def _load(conn, db, since):
                           " WHERE tenant_id=%s AND received_at >= %s AND gas_status != 'test'",
                           (db.TENANT, since)).fetchall():
         intake.setdefault(r["form"], []).append((r["received_at"], r["payload"] or {}, r["gas_status"]))
-    writes = [(r["at"], r["payload"] or {}, r["gas_status"]) for r in
-              conn.execute("SELECT at, payload, gas_status FROM write_log WHERE tenant_id=%s AND at >= %s"
-                          " AND gas_status != 'test'", (db.TENANT, since)).fetchall()]
+    write_rows = conn.execute("SELECT at, action, payload, gas_status FROM write_log WHERE tenant_id=%s"
+                              " AND at >= %s AND gas_status != 'test'", (db.TENANT, since)).fetchall()
+    writes = [(r["at"], r["payload"] or {}, r["gas_status"]) for r in write_rows]
+    writes_by_action = {}   # 폼별 스트릭 분리(시우 실측 2026-09-07) — write_log 는 한 표에 여러 액션이 섞여 있다
+    for r in write_rows:
+        writes_by_action.setdefault(r["action"], []).append((r["at"], r["payload"] or {}, r["gas_status"]))
     inq, rec = {}, {}
     for r in conn.execute("SELECT timestamp, phone FROM inquiries WHERE tenant_id=%s AND type = ANY(%s)"
                           " AND timestamp >= %s", (db.TENANT, list(CAT_MIRROR.values()), since)).fetchall():
@@ -132,7 +170,7 @@ def _load(conn, db, since):
                           (db.TENANT, since)).fetchall():
         d = json.loads(r["data"]) if isinstance(r["data"], str) else (r["data"] or {})
         rec.setdefault(str(r["created_at"])[:10], Counter())[phone4(d.get("contact"), d.get("phone"))] += 1
-    return intake, writes, {"inquiries": inq, "reception_items": rec}
+    return intake, writes, {"inquiries": inq, "reception_items": rec}, writes_by_action
 
 
 # 회원 담당자 5칸 필드→서버 컬럼 (api_members_write.FIELD_TO_COL 과 같은 값 — 대조 전용 사본, 순환 임포트
@@ -180,7 +218,7 @@ def main():
     since = (now - timedelta(days=WINDOW_DAYS)).strftime("%Y-%m-%d")
     conn = db.connect(readonly=True)
     with conn:
-        intake, writes, mirrors = _load(conn, db, since)
+        intake, writes, mirrors, writes_by_action = _load(conn, db, since)
         mo_days, mo_bad = reconcile_member_owner_writes(conn, db, since)
     conn.close()
     out_forms, unmatched = {"member_owner_save": mo_days}, list(mo_bad)
@@ -189,12 +227,22 @@ def main():
         days, bad = reconcile(form, rows, mirrors.get(spec["mirror"] or ""))
         out_forms[form] = days
         unmatched += bad
+    today_d = now.date()
+    # 폼(action)별 스트릭 — write 는 합산본(out_forms["write"])이 액션(save=점검저장 · reg_update=접수 등)을
+    # 다 섞어 서로의 실패에 인질로 잡힌다(시우 실측 2026-09-07). by_form 은 액션별로 갈라 따로 센다.
+    by_form = {name: summarize_form(days, today_d) for name, days in out_forms.items() if name != "write"}
+    for action, rows in writes_by_action.items():
+        wdays, na = reconcile_by_action(rows)
+        by_form[action] = summarize_form(wdays, today_d, na)
     result = {
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "window_days": WINDOW_DAYS,
         "forms": out_forms,
         "streak_ok_days": streak_ok_days(out_forms, now.date()),
         "streak_note": "행이 있었던 날만 센다 — 접수 0건인 날은 무결의 증거가 아니라 건너뛴다. 3 이 되면 사람이 서버 원본 전환을 판단한다.",
+        "by_form": by_form,
+        "by_form_note": "폼(action)별 분리 스트릭 — write 합산본(forms.write) 대신 액션별로 본다. "
+                        "not_applicable(sheet-missing)=원천이 이미 서버로 넘어간 표라 대조 실패로 안 센다.",
         "unmatched_samples": unmatched[:20],
     }
     os.makedirs(STATUS_DIR, exist_ok=True)
@@ -285,6 +333,23 @@ def selftest():
     assert streak_ok_days(f, today) == 3, streak_ok_days(f, today)      # 09-07 은 행 0 → 건너뜀
     assert streak_ok_days({"inquiry": {"2026-09-09": ng}}, today) == 0
     assert streak_ok_days({"inquiry": {}}, today) == 0                  # 무입력만으로는 무결이 안 쌓인다
+
+    # 폼(action)별 분리(시우 실측 2026-09-07) — write_check(save) 무결이 reg_update 실패에 안 묶인다
+    save_rows = [("2026-09-07T10:00:00", {}, "ok")] * 3                                 # 점검저장 3/3 ok
+    reg_rows = [("2026-09-07T09:00:00", {}, "push-error:404"),                          # 진짜 실패
+                ("2026-09-07T09:30:00", {}, "sheet-missing")]                           # 대조 대상 아님(서버 원천)
+    d_save, na_save = reconcile_by_action(save_rows)
+    d_reg, na_reg = reconcile_by_action(reg_rows)
+    assert d_save["2026-09-07"] == {"server": 3, "sheet": 3, "mismatch": 0, "ok": True}, d_save
+    assert na_save == 0
+    assert d_reg["2026-09-07"] == {"server": 1, "sheet": 0, "mismatch": 1, "ok": False}, d_reg   # sheet-missing 빠짐
+    assert na_reg == 1
+    tomorrow = datetime(2026, 9, 8).date()
+    assert summarize_form(d_save, tomorrow)["streak_ok_days"] == 1                      # save 는 무결 유지
+    assert summarize_form(d_reg, tomorrow)["streak_ok_days"] == 0                       # reg_update 만 끊긴다
+    # sheet-missing 행뿐인 날은 행 0 인 날과 같게 건너뛴다(날짜 버킷 자체가 안 생긴다)
+    d_na_only, na_only = reconcile_by_action([("2026-09-06T10:00:00", {}, "sheet-missing")])
+    assert d_na_only == {} and na_only == 1
     print("selftest ok")
     return 0
 
