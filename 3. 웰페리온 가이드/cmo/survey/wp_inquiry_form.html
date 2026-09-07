@@ -430,9 +430,9 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   var CONTACT_EMAIL = 'info@wellperion.com';
 
   // ── 개인정보 수집·이용 동의문(기존 구글폼 PIPA 문안 승계 · create_inquiry_forms_kr.gs _pipa_) ──
-  // items — 그 유형에서 실제로 받는 항목이 기본과 다를 때만 넘긴다(예: 택배 주소).
-  //   ★2026-09-02 배896 — 스팀다리미는 택배 발송이라 주소를 받는데, 동의문에 주소가 빠져 있으면
-  //   적힌 것과 실제로 받는 것이 어긋난다(개인정보 고지 의무). 받는 대로 적는다.
+  // items — 그 유형에서 실제로 받는 항목이 기본과 다를 때만 넘긴다. 적힌 것과 실제로 받는 것이
+  //   어긋나면 안 된다(개인정보 고지 의무) — 받는 대로 적는다.
+  //   2026-09-07 GM 변경(배896) — 스팀다리미는 리셉션 구매·관리자 보조 이용으로 전환, 주소 수집 없음.
   function pipa(purpose, thirdParty, items){
     return '개인정보 보호법에 따라 주식회사 웰페리온은 아래와 같이 개인정보를 수집·이용합니다.\n\n'
       + '수집 목적: ' + purpose + '\n'
