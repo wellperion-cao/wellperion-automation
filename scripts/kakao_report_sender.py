@@ -1784,20 +1784,22 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     #   ③비어 있으면 한 번 더 ④그래도 비면 성공이라고 적지 않는다.
     caption_sent = False
     if caption:
-        for attempt in range(2):
+        # 2026-09-07 실측: 검색으로 '방금 연' 방에서만 두 번 다 실패했다(이미 열려 있던 방은 0건).
+        #   새 창은 입력창이 자리 잡기 전이라 0.3초로는 부족하다 — 재시도 3회, 간격을 늘려 간다.
+        for attempt, settle in enumerate((0.5, 1.2, 2.5)):
             focus_window(room_win, room_name)
-            time.sleep(0.3)
+            time.sleep(settle)
             input_box = get_input_box(room_win, room_name)
             input_box.click_input()
-            time.sleep(0.2)
-            paste_text(input_box, caption)
             time.sleep(0.3)
+            paste_text(input_box, caption)
+            time.sleep(0.6)
             try:
                 typed = (input_box.window_text() or "").strip()
             except Exception:
                 typed = ""
             if not typed:
-                log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/2")
+                log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/3")
                 continue
             send_enter(input_box)
             time.sleep(0.5)
@@ -1805,6 +1807,9 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
             break
         if not caption_sent:
             log(f"[{room_name}] ⚠️ 사진은 갔으나 설명 글을 못 보냈다 — 사람이 직접 보내야 한다")
+            # 로그에만 남으면 아무도 모른다(2026-09-07 09:31 ★부서장) — 업무보고방에 한 줄.
+            _notify_send_failure([(room_name, "캡션 붙여넣기 3회 실패(사진만 감)")], "image+caption",
+                                 f"{room_name} 방에 아래 한 줄을 손으로 보내 주세요\n{caption}")
 
     screenshot(room_win, room_name, "sent")
     log(f"[{room_name}] 전송 완료" + ("" if caption_sent or not caption else " (설명 글 누락)"))
