@@ -9,6 +9,10 @@ S="ssh -i $KEY -o StrictHostKeyChecking=accept-new $HOST"
 SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 
+# 배포 전 권한 대조(시포 2026-09-07 · 배1107 짝) — 리다이렉트로 모듈이 바뀌는 화면까지 계정 허용 목록과 대조, 이상이면 배포 중단.
+PY="${PYTHON:-python3}"; [ -x /c/Python314/python.exe ] && PY=/c/Python314/python.exe   # 이 PC 는 python3 가 윈도우 스텁이라 전체 경로
+"$PY" server/erp_auth/account_perms_check.py
+
 $S 'mkdir -p /srv/erp/auth /srv/erp/common'
 $SCP server/erp_auth/app.py server/erp_auth/account_perms.json server/erp_auth/admin.html $HOST:/srv/erp/auth/   # account_perms.json=계정별 권한 정본(배951) · admin.html=관리자 콘솔(배1076, app.py 가 같은 폴더에서 읽는다)
 if ! $S 'test -f /srv/erp/auth/dept_presets.json'; then
