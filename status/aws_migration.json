@@ -1,13 +1,23 @@
 {
   "_doc": "AWS 이관 전체 현황 정본. 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
-  "updated_at": "2026-09-07T06:46:32Z",
-  "updated_at_kst": "2026-09-07 15:46",
+  "updated_at": "2026-09-07T16:00:00+09:00",
+  "updated_at_kst": "2026-09-07 16:00",
   "summary": {
     "progress_pct": 52,
-    "origin_switched": "0/9",
+    "origin_switched": "1/10 (종합접수처 09-05)",
     "next": "09-08 게시판 3키·문의 폼"
   },
   "rows": [
+    {
+      "area": "종합접수처(접수·습득물·휴회 · coo/reception)",
+      "who_uses": "리셉션 · 4부서 반장·팀장 · 회원(QR)",
+      "stage": "원천 전환",
+      "switch_date": "2026-09-05 (완료)",
+      "owner": "시우(+시토)",
+      "staff_change": "없음 — 단, 9/5 이후 접수는 구글 시트에 안 보임(ERP 에서만 확인)",
+      "note": "접수 원본 시트 = 09-05 이전 기록 조회용 · 이후 접수·처리는 ERP 종합접수처에서만(시트에 새 행 안 감 · 상태·메모만 되밀림 · 유실 아님 · 백업 S3 일일 pg_dump) — 배1106 · GM 실측 09-07",
+      "updated": "2026-09-07"
+    },
     {
       "area": "main.html 공지·가이드·매뉴얼 보드 3키",
       "who_uses": "",
