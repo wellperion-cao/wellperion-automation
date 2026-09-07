@@ -28,7 +28,7 @@ if %errorlevel% neq 0 (
 set "AI_DIR=%USERPROFILE%\Wellperion-AI"
 if not exist "%AI_DIR%" mkdir "%AI_DIR%"
 
-curl -fsSL "https://wellperion-cao.github.io/wellperion-automation/erp/launchers/ai_support_CLAUDE.md" -o "%AI_DIR%\CLAUDE.md"
+curl -fsSL "https://erp.wellperion.com/erp/launchers/ai_support_CLAUDE.md" -o "%AI_DIR%\CLAUDE.md"
 if not exist "%AI_DIR%\CLAUDE.md" (
     echo 설정 파일을 받지 못했습니다. 인터넷 연결을 확인하고 다시 더블클릭 해주세요.
     pause
