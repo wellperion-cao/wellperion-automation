@@ -432,6 +432,8 @@ def scan_due_hygiene() -> list:
     if _o is not None:
         seen_pairs = set()
         for i, a in enumerate(sched_items):
+            if not str(a.get("next_due") or "").strip():
+                continue  # 날짜 없는 건끼리는 '같은 날'이 아니다(실측 오탐: 골프팀↔스쿼시팀 대청소)
             for b in sched_items[i + 1:]:
                 dup_name = _o._schedule_is_dup(a.get("name") or "", str(a.get("next_due") or ""), [b])
                 if not dup_name:
