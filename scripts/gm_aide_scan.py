@@ -448,41 +448,34 @@ def scan_due_hygiene() -> list:
     # ⑩완료짝미래일정 — GM 지적 2026-09-08 "미리 완료된 건이 남아 있다"
     # (바디프렌드 안마의자: 9/4 완료건과 9/11 예정건이 같이 남아 07:58 카톡에 끝난 설치가 또 나감).
     # 반복(cycle·repeat·period_months)은 원래 여러 번 도니 제외 — 정말 끝난 1회성 건만 잡는다.
-    _STOPWORDS = {"완료", "예정", "마감", "설치", "리드", "님"}
+    # 낱말겹침 판정은 새로 안 만든다(약속 L21) — _schedule_shared_weight(날짜 조건 없는
+    # '드문 낱말 무게' 버전, _mgr_todo_dup_hit 가 쓰는 것과 동일 기준 ≥2)을 그대로 재사용.
+    if _o is not None:
+        def _is_recurring(it):
+            return bool(it.get("repeat")) or bool(it.get("cycle")) or it.get("period_months") is not None
 
-    def _words(s):
-        toks = re.split(r"[\s()\[\]{}—\-·:/,.!?~'\"“”‘’]+", str(s or ""))
-        return {t for t in toks if len(t) >= 2 and t not in _STOPWORDS}
-
-    def _is_recurring(it):
-        return bool(it.get("repeat")) or bool(it.get("cycle")) or it.get("period_months") is not None
-
-    done_items = [it for it in sched_items if _parse_date_loose(it.get("last_done")) and not _is_recurring(it)]
-    future_items = [it for it in sched_items
-                    if not (it.get("last_done") or "").strip()
-                    and not _is_recurring(it)
-                    and (_parse_date_loose(it.get("next_due")) or datetime.min.date()) >= TODAY]
-    match_pairs = []
-    seen_done_future = set()
-    for a in done_items:
-        wa = _words(a.get("name"))
-        if len(wa) < 2:
-            continue
-        for b in future_items:
-            if a.get("id") == b.get("id"):
-                continue
-            wb = _words(b.get("name"))
-            if len(wa & wb) < 2:
-                continue
-            pair_key = tuple(sorted([str(a.get("id")), str(b.get("id"))]))
-            if pair_key in seen_done_future:
-                continue
-            seen_done_future.add(pair_key)
-            match_pairs.append((a, b))
-    for a, b in match_pairs[:5]:
-        rows.append(("⑩완료짝미래일정",
-                     f"{(a.get('name') or '')[:20]}(완료 {a.get('last_done')}) ↔ {(b.get('name') or '')[:20]}(예정 {b.get('next_due')})",
-                     b.get("assignee") or "", "이름 닮은 완료건이 남아 미래일정으로 또 나감"))
+        done_items = [it for it in sched_items if _parse_date_loose(it.get("last_done")) and not _is_recurring(it)]
+        future_items = [it for it in sched_items
+                        if not (it.get("last_done") or "").strip()
+                        and not _is_recurring(it)
+                        and (_parse_date_loose(it.get("next_due")) or datetime.min.date()) >= TODAY]
+        match_pairs = []
+        seen_done_future = set()
+        for a in done_items:
+            for b in future_items:
+                if a.get("id") == b.get("id"):
+                    continue
+                if _o._schedule_shared_weight(a.get("name") or "", b.get("name") or "") < 2:
+                    continue
+                pair_key = tuple(sorted([str(a.get("id")), str(b.get("id"))]))
+                if pair_key in seen_done_future:
+                    continue
+                seen_done_future.add(pair_key)
+                match_pairs.append((a, b))
+        for a, b in match_pairs[:5]:
+            rows.append(("⑩완료짝미래일정",
+                         f"{(a.get('name') or '')[:20]}(완료 {a.get('last_done')}) ↔ {(b.get('name') or '')[:20]}(예정 {b.get('next_due')})",
+                         b.get("assignee") or "", "이름 닮은 완료건이 남아 미래일정으로 또 나감"))
 
     reported = read_json(CHAIRMAN_REPORTED_JSON, {})
     try:
