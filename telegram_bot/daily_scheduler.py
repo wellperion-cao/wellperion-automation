@@ -139,6 +139,12 @@ except Exception:
     def muted(kind: str) -> bool:
         return False
 
+try:  # 깃헙 링크 → ERP 새 주소 관문(best-effort, 배1115 ① · scripts/kakao_report_sender.py 기존 함수 재사용)
+    from kakao_report_sender import to_erp_links
+except Exception:
+    def to_erp_links(text: str) -> str:
+        return text
+
 try:  # 자율현황 라이브 섹션용 로컬 읽기전용 서버(best-effort) — 임포트 실패해도 발신 무영향
     from live_cli_status_server import start_server as start_live_cli_status_server
 except Exception:
@@ -3420,6 +3426,7 @@ def _run_meeting_reminder() -> None:
                 + f"\nGM업무 화면\n"
                 f"https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html"
             )
+            text = to_erp_links(text)
             if _send(token, chat, text, source="gm_meeting_reminder"):
                 _MEETING_REMIND_SENT.add(key)
                 logger.info(f"{label} 발송 {hhmm} {title} → 하루방({chat})")
@@ -4318,7 +4325,7 @@ def main():
             body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/"
                         + _page.replace(" ", "%20"))
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
-            text = "\n".join(body)
+            text = to_erp_links("\n".join(body))
             # 2026-08-15 GM 지시(중복 알림 정리) — 텔레그램 점검관리방(DIGEST_CHECK_CHAT_ID)
             #   발신을 끊는다. 실측: 이 문구가 같은 시각 report_stream_2_check.py 의 22:30
             #   점검현황과 겹쳐 실무진이 같은 내용을 텔레그램·카톡 두 채널로 받고 있었다

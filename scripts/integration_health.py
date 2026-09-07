@@ -24,6 +24,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # ── 캐논 상수 (라이브 URL/경로는 여기 1곳에만) ─────────────────────────────────
+# 배1115 ① 조사 결론(2026-09-07): 이 URL 은 "발행경로(퍼블리시 파이프라인)가 살아있는지" 를 재는
+# 용도라 로컬 파일로 바꾸면 그 자체를 자기 자신과 비교하게 되어 점검 의미가 사라진다. ERP 로
+# 바꾸려 해도 erp.wellperion.com/status/_queue.json 은 nginx location / 가 auth_request 로 막아
+# 무인증 GET 이 로그인 페이지(302→HTML)로 떨어져 json.loads 가 깨진다(server/erp_auth/erp.nginx.conf
+# 실측). 그래서 지금은 그대로 GitHub Pages 를 쓴다 — 계획 §5 ②(무인증 /public/ 경로 신설) 이후
+# ④(Pages 끄기) 직전에 이 상수만 갈아끼우면 된다.
 LIVE_BASE = "https://wellperion-cao.github.io/wellperion-automation"
 LIVE_QUEUE_URL = f"{LIVE_BASE}/status/_queue.json"
 LIVE_REVIEW_URL = f"{LIVE_BASE}/cmo/review/review_queue.json"
