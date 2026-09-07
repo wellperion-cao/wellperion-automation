@@ -541,18 +541,25 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
                 continue
             if len(rows) >= NUDGE_SHOW_N:
                 continue
-            rows.append({"title": title, "owner": owner,
+            rows.append({"title": title, "owner": owner, "no": it.get("no"),
+                        "due": str(it.get("due") or "").strip(),
                         "date": earliest.get(_nudge_norm(title), str(e.get("date", "")))})
 
     items = []
     for member, rows in kept.items():
         for r in rows:
             tag = f"({r['owner']} 건) " if r["owner"] != member else ""
+            # ★2026-09-07 GM 지시(18:3x) — 「#no 제목 — 기한」 형식(번호로 회신 받아 체크).
+            # no 가 없는(2026-09-07 이전 이력 중 아직 안 매칭된) 건은 번호 없이 제목만.
+            head = f"#{r['no']} " if isinstance(r.get("no"), int) else ""
+            tail = f" — {r['due']}" if r.get("due") else ""
             items.append({
                 "date": r["date"],
                 "who": member,
-                "ask": _cap_line(tag + r["title"], ASKS_TITLE_CAP),
-                "how": f"{member}님께 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다.",
+                "ask": _cap_line(head + tag + r["title"] + tail, ASKS_TITLE_CAP),
+                "how": f"{member}님께 번호(#{r['no']})로 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다."
+                       if isinstance(r.get("no"), int)
+                       else f"{member}님께 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다.",
             })
     return items
 
@@ -1052,6 +1059,96 @@ def _selfcheck_sync_ssot_replies() -> None:
         gh.append_todo, gh.close_todo = orig_append, orig_close
         o._todo_post = orig_todo_post
     print("[selfcheck] sync_ssot_replies 완료닫기·날짜갱신·미매치 OK")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🔢 원장 이슈 번호(#no) 회신 매칭 (GM 지시 2026-09-07 18:3x "번호 붙여라 · 그 번호로
+# 답 받아 체크"). sync_ssot_replies(업무 SSOT 행) 와는 별개 — 이건 MGR_LEDGER 원장의
+# issue 를 직접 건드린다. 카톡(★중간관리자)+텔레그램(업무관리-나우열M) 회신 본문에서
+# #123 같은 번호를 찾아 그 no 의 issue 에 반영한다. 번호 매칭이 먼저다 — 제목 유사도
+# 매칭(_nudge_similar 등)은 이 함수 안에 아예 없다(번호 없으면 이 함수는 그 회신을
+# 건드리지 않는다 · 다른 곳의 유사도 매칭이 여전히 그 몫을 한다).
+# ══════════════════════════════════════════════════════════════════════════
+_LEDGER_REPLY_NO_RE = re.compile(r"#(\d{3})")
+
+
+def sync_ledger_replies(target_date: str, ledger: list) -> list:
+    """카톡·텔레그램 회신 본문에서 #123 형태 번호를 찾아 그 no 의(아직 open 인) 원장
+    issue 에 반영한다. 「했다/완료/끝」등 완료 낱말이 있으면 resolved + note 에 회신 원문,
+    없으면(진행중·날짜 등) note 에 회신 원문만 붙인다(약속 L23 — 기한·상태를 추측으로
+    바꾸지 않는다). 한 회신에 번호가 여럿이면 각각 반영한다. ledger 를 그 자리에서
+    바로 수정하고 저장까지 한다(호출부가 재조회 없이 이어 쓴다). 돌려주는 값 = 이번에
+    건드린 issue [{"no","title","line"}]."""
+    human_lines = _mgr_room_human_lines(target_date) + _nawool_telegram_human_lines(target_date)
+    if not human_lines:
+        return []
+
+    by_no: dict = {}
+    for e in ledger:
+        if not isinstance(e, dict):
+            continue
+        for it in e.get("issues") or []:
+            no = it.get("no")
+            if isinstance(no, int) and str(it.get("status") or "") == "open":
+                by_no[no] = it
+
+    touched = []
+    for line in human_lines:
+        msg = str(line.get("msg") or "")
+        nos = {int(n) for n in _LEDGER_REPLY_NO_RE.findall(msg)}
+        for no in nos:
+            issue = by_no.get(no)
+            if not issue:
+                continue
+            note = str(issue.get("note") or "").strip()
+            issue["note"] = (note + " · " if note else "") + f"회신: {msg[:80]}"
+            if any(w in msg for w in _REPLY_DONE_WORDS):
+                issue["status"] = "resolved"
+                issue["resolved_by"] = "카톡·텔레그램 회신"
+                issue["resolved_at"] = target_date
+            touched.append({"no": no, "title": issue.get("issue", ""), "line": msg[:80]})
+
+    if touched:
+        from ops_daily_digest import save_ledger
+        save_ledger(ledger)
+    return touched
+
+
+def _selfcheck_sync_ledger_replies() -> None:
+    """#no 매칭 — 완료 낱말 있으면 resolved+note, 없으면 note 만, 매칭 없는 번호·회신
+    없는 issue 는 안 건드림, 한 회신에 번호 여럿이면 각각 반영. 네트워크 없이 돈다."""
+    global _mgr_room_human_lines, _nawool_telegram_human_lines
+    import ops_daily_digest as o
+    orig_mgr, orig_nawool = _mgr_room_human_lines, _nawool_telegram_human_lines
+    orig_save = o.save_ledger
+    saved = []
+    fake_lines = [
+        {"date": "2026-09-07", "time": "10:00", "msg": "#101 완료했습니다"},
+        {"date": "2026-09-07", "time": "10:05", "msg": "#102 진행중이고 9/10 에 끝나요 #103 도 같이요"},
+    ]
+    _mgr_room_human_lines = lambda *a, **k: fake_lines  # noqa: E731
+    _nawool_telegram_human_lines = lambda *a, **k: []  # noqa: E731
+    o.save_ledger = lambda ledger: saved.append(True)
+    try:
+        ledger = [{"date": "2026-09-01", "issues": [
+            {"no": 101, "issue": "건101", "owner": "이경연 실장", "status": "open", "note": ""},
+            {"no": 102, "issue": "건102", "owner": "이경연 실장", "status": "open", "note": ""},
+            {"no": 103, "issue": "건103", "owner": "이경연 실장", "status": "open", "note": ""},
+            {"no": 999, "issue": "건999(완료됨)", "owner": "이경연 실장", "status": "resolved", "note": ""},
+        ]}]
+        touched = sync_ledger_replies("2026-09-07", ledger)
+        assert {t["no"] for t in touched} == {101, 102, 103}, touched
+        issues = ledger[0]["issues"]
+        assert issues[0]["status"] == "resolved" and "완료했습니다" in issues[0]["note"], issues[0]
+        assert issues[0]["resolved_by"] == "카톡·텔레그램 회신"
+        assert issues[1]["status"] == "open" and "9/10" in issues[1]["note"], "완료 낱말 없으면 note 만"
+        assert issues[2]["status"] == "open" and "진행중" in issues[2]["note"], "한 회신 안 번호 여럿 각각 반영"
+        assert issues[3]["status"] == "resolved" and issues[3]["note"] == "", "이미 닫힌 issue(#999)는 회신 없어 안 건드림"
+        assert saved, "건드린 게 있으면 저장해야 함"
+    finally:
+        _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool
+        o.save_ledger = orig_save
+    print("[selfcheck] sync_ledger_replies 번호매칭·완료판정·복수번호 OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1706,7 +1803,7 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"] + body
     if folded:
         lines.append(f"외 {shown_total - shown_so_far}건 — {ASKS_SECTION_LINK}")
-    lines.append("👉 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
+    lines.append("👉 번호(#숫자) 있는 건은 회신에 그 번호 + 했다/진행중/언제로, 없는 건은 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
 
@@ -1735,7 +1832,7 @@ def build_nawool_telegram_message(items: list) -> str:
     extra = len(items) - ASKS_PER_PERSON_CAP
     if extra > 0:
         lines.append(f"외 {extra}건 · 화면")
-    lines.append("👉 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
+    lines.append("👉 번호(#숫자) 있는 건은 회신에 그 번호 + 했다/진행중/언제로, 없는 건은 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     return "\n".join(lines)
 
 
@@ -2181,6 +2278,17 @@ def send_mgr_brief() -> None:
     touched = sync_ssot_replies(target_date, rows)
     if touched:
         log(f"[reply-sync] SSOT 행 {len(touched)}건에 회신 append — " + "; ".join(t["id"] for t in touched))
+
+    # ③-2 번호(#no) 회신 매칭 → 원장 issue 반영(GM 지시 2026-09-07 18:3x). 위 SSOT 매칭과
+    # 같은 이유로 본문 조립 전에 돈다 — 방금 닫힌 건이 이번 회차 리마인드에 다시 안 실린다.
+    try:
+        ledger_for_reply = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+        no_touched = sync_ledger_replies(target_date, ledger_for_reply)
+        if no_touched:
+            log(f"[reply-sync] 원장 이슈 {len(no_touched)}건에 번호 회신 반영 — "
+                + "; ".join(f"#{t['no']}" for t in no_touched))
+    except Exception as exc:
+        log(f"[reply-sync] 원장 번호 매칭 예외(무시 — 다음 회차 재시도): {type(exc).__name__}: {exc}")
 
     # ④ 매주 월 07:50 담당별 미결표(배1102 · GM 지시 2026-09-07) — 그날 카톡 다이제스트가
     # 비어도(대화 없음 등) 이 주간표는 그대로 나가야 하므로 위 조기 return 보다 앞에서 돈다.

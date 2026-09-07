@@ -1011,7 +1011,77 @@ def recent_issues_digest(ledger: list[dict], before_date: str, days: int = RECEN
     return "\n".join(lines)
 
 
+_LEDGER_NO_ALNUM_RE = re.compile(r"[0-9A-Za-z가-힣]")
+_LEDGER_NO_KEY_LEN = 18   # 웰리 수기 기준(2026-09-07 18:3x) — 제목 앞 18자 알파넘만
+_LEDGER_NO_SIM = 0.75     # 위와 같은 수기 기준 — 이 이상 닮고 owner 도 같으면 같은 건
+
+
+def _ledger_no_key(title: str) -> str:
+    return "".join(_LEDGER_NO_ALNUM_RE.findall(str(title or "")))[:_LEDGER_NO_KEY_LEN]
+
+
+def _ledger_no_same_issue(owner_a: str, title_a: str, owner_b: str, title_b: str) -> bool:
+    if str(owner_a or "").strip() != str(owner_b or "").strip():
+        return False
+    from difflib import SequenceMatcher
+    return SequenceMatcher(None, _ledger_no_key(title_a), _ledger_no_key(title_b)).ratio() >= _LEDGER_NO_SIM
+
+
+def assign_ledger_no(ledger: list[dict], issues: list[dict]) -> list[dict]:
+    """새 issue 마다 식별 번호(no)를 부여한다(GM 지시 2026-09-07 18:3x "번호 붙여라 · 그
+    번호로 답 받아 체크" — 웰리가 원장에 손으로 101~203 을 박은 것을 코드로 대체).
+
+    번호 = 원장 파일 전체 max(no)+1. 같은 건(owner 같고 _ledger_no_same_issue)이 과거에
+    이미 있으면 그 번호를 그대로 쓴다 — 웰리가 쓴 기준(owner 일치 + 제목 앞 18자 알파넘
+    difflib≥0.75) 그대로. 과거에 매칭된 행에 no 가 아직 없으면(2026-09-07 이전 이력) 그
+    자리에서 부여해 심는다(멱등 백필). issues 안에서 서로 닮은 건이 여럿이면 먼저 번호 받은
+    것을 이어서 대조해 같은 배치 안 중복도 한 번호로 묶는다."""
+    history: list[dict] = [it for e in ledger for it in (e.get("issues") or [])]
+    max_no = max([it["no"] for it in history if isinstance(it.get("no"), int)], default=0)
+    for it in issues:
+        if isinstance(it.get("no"), int):
+            history.append(it)
+            continue
+        owner, title = it.get("owner"), it.get("issue")
+        match = next((h for h in history
+                      if _ledger_no_same_issue(owner, title, h.get("owner"), h.get("issue"))), None)
+        if match:
+            if not isinstance(match.get("no"), int):
+                max_no += 1
+                match["no"] = max_no
+            it["no"] = match["no"]
+        else:
+            max_no += 1
+            it["no"] = max_no
+        history.append(it)
+    return issues
+
+
+def _selfcheck_assign_ledger_no() -> None:
+    """새 번호 증가 · 같은 건 재등장 시 번호 유지 · 과거 무번호 행 매칭 시 백필 · 같은
+    배치 안 중복도 한 번호로 묶이는지(네트워크 없음)."""
+    ledger = [
+        {"date": "2026-09-05", "issues": [
+            {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "open", "no": 200},
+            {"issue": "분리수거장 정리", "owner": "이경연 실장", "status": "open"},  # no 없는 과거 행
+        ]},
+    ]
+    new_issues = [
+        {"issue": "요금 변경 준비 마무리", "owner": "이경연 실장", "status": "open"},  # 200 과 닮음 → 200 재사용
+        {"issue": "분리수거장 정리 작업", "owner": "이경연 실장", "status": "open"},   # 무번호 행과 닮음 → 백필+재사용
+        {"issue": "완전히 새로운 건", "owner": "이경연 실장", "status": "open"},
+        {"issue": "완전히 새로운 건 반복", "owner": "이경연 실장", "status": "open"},  # 위 새 건과 같은 배치 안 중복
+    ]
+    assign_ledger_no(ledger, new_issues)
+    assert new_issues[0]["no"] == 200, "같은 건 재등장은 기존 번호 유지"
+    assert ledger[0]["issues"][1]["no"] == new_issues[1]["no"] == 201, "무번호 과거 행은 매칭 시 백필(다음 번호)"
+    assert new_issues[2]["no"] == 202
+    assert new_issues[3]["no"] == 202, "같은 배치 안 닮은 건도 한 번호로 묶여야 함"
+    print("[selfcheck] assign_ledger_no 신규증가·재등장유지·과거백필·배치내중복 OK")
+
+
 def upsert_ledger(ledger: list[dict], date: str, issues: list[dict], source_file: str) -> list[dict]:
+    assign_ledger_no(ledger, issues)
     ledger = [e for e in ledger if e.get("date") != date]
     ledger.append({
         "date": date,
