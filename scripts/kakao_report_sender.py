@@ -1174,14 +1174,8 @@ def _selfcheck_honorifics() -> None:
 # 옛 주소(GitHub Pages)는 로그인 관문 밖이라 계정별 권한이 걸리지 않는다. 발신 관문 한 곳에서
 # 바꾸므로 링크를 만드는 스크립트 30개(53곳)를 각각 고칠 필요가 없다.
 # ★.html 만 바꾼다 — 이미지·PDF 는 회원·외부에게도 나가는 것이라 로그인 뒤로 넣으면 안 열린다.
-_OLD_PAGES_BASE = "https://wellperion-cao.github.io/wellperion-automation/"
-_ERP_BASE = "https://erp.wellperion.com/"
-_ERP_LINK_RE = re.compile(re.escape(_OLD_PAGES_BASE) + r"(\S*?\.html(?:[?#][^\s)]*)?)")
-
-
-def to_erp_links(text: str) -> str:
-    """옛 주소의 업무 화면(.html) 링크만 ERP 새 주소로 바꾼다."""
-    return _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), text)
+# 정본은 텔레그램·카톡 공용 관문 tg_outbound_log.to_erp_links (2026-09-08 배1115 ① 이동) — 여기선 이름만 빌린다.
+from tg_outbound_log import to_erp_links, _OLD_PAGES_BASE, _ERP_BASE  # noqa: E402
 
 
 def _selfcheck_erp_links() -> None:

@@ -154,6 +154,29 @@ def encode_url_spaces(text):
     return _URL_WITH_SPACE.sub(_fix, str(text or ''))
 
 
+# ★옛 Pages 주소 → ERP 주소 치환 정본 (2026-09-03 GM 지시 · 2026-09-08 배1115 ① 여기로 이동).
+#   텔레그램(send)·카톡(kakao_report_sender.build_caption) 두 관문이 같은 함수를 쓴다 — 발신 스크립트
+#   26개가 각자 주소 상수를 고치는 대신 관문 한 곳에서 바꾼다(약속 L21).
+#   .html 만 바꾼다 — 이미지·PDF 는 회원·외부에게도 나가는 것이라 로그인 뒤로 넣으면 안 열린다.
+_OLD_PAGES_BASE = "https://wellperion-cao.github.io/wellperion-automation/"
+_ERP_BASE = "https://erp.wellperion.com/"
+_ERP_LINK_RE = re.compile(re.escape(_OLD_PAGES_BASE) + r"(\S*?\.html(?:[?#][^\s)]*)?)")
+
+
+def to_erp_links(text: str) -> str:
+    """옛 주소의 업무 화면(.html) 링크만 ERP 새 주소로 바꾼다."""
+    return _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), str(text or ''))
+
+
+def selfcheck_to_erp_links():
+    old = _OLD_PAGES_BASE
+    assert to_erp_links(f"점검 {old}coo/check/전사_일정.html 보세요") ==         "점검 https://erp.wellperion.com/coo/check/전사_일정.html 보세요", "업무 화면은 새 주소로"
+    assert to_erp_links(f"{old}cpo/member/membership.html?manage=lesson").endswith(
+        "membership.html?manage=lesson"), "쿼리는 그대로 붙어 간다"
+    assert to_erp_links(f"시안 {old}reports/현수막.png") == f"시안 {old}reports/현수막.png",         "이미지는 옛 주소 그대로 — 로그인 뒤로 넣으면 회원·외부가 못 연다"
+    print('[selfcheck] to_erp_links OK')
+
+
 def selfcheck_encode_url_spaces():
     """공백 낀 주소는 인코딩하고, 주소 둘이 한 줄에 있으면 삼키지 않는다."""
     base = 'https://wellperion-cao.github.io/wellperion-automation/'
@@ -215,7 +238,8 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
     full_response=True 면 bool 대신 텔레그램 응답 dict 를 그대로 돌려준다 — 호출측이
     message_id 등 응답 필드가 필요할 때만 쓴다(기본은 기존과 동일한 bool, 회귀 없음)."""
     import urllib.request, urllib.parse, urllib.error
-    text = encode_url_spaces(text)
+    # 봇 방(업무보고·점검관리·AI 진행현황·문의알림·하루방)은 전부 ERP 계정 보유자 — 관문에서 ERP 주소로(배1115 ①).
+    text = to_erp_links(encode_url_spaces(text))
     _log_lint(lint_outbound(text, chat_id, source), chat_id, source)
 
     file_field = file_bytes = file_name = None
