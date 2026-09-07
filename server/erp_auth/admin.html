@@ -12,6 +12,8 @@
     → 회원/운영/점검/경영 그룹별 접힘 표 + 부서 프리셋 일괄 적용 버튼(dept_apply) · 문서함(65+)은 화면 나열 없이 그룹 1줄.
     「부서 기본 권한」 탭 = 화면×부서 체크 표(GM 이 직접 저장) — GET/POST /auth/admin/dept_presets, 정본은
     서버 데이터 파일(dept_presets.json), 씨앗은 코드 초안(app.py _DEPT_DRAFT) · 「코드 초안으로 되돌리기」는 로컬 되돌림뿐, 저장을 눌러야 반영.
+  ─ 배1075(시모 2026-09-07 · GM "숫자만 있으니 어떤 화면인지 모르겠어"): 「사람」 행을 누르면 그 아래로 그룹 5장 모듈카드(화면 이름·한 줄 뜻·보임 ✓)가
+    펼쳐진다(한 사람만). 「부서 기본」 탭 맨 위 = 부서별 추천 모듈 카드 6장(근거 한 줄 · 지금 표와 ±n · 「채우기」= 기존 dept_presets POST 재사용).
   ─ 읽기 : GET  /auth/admin/api/state   (시토 배 · 응답 규격은 맨 아래 STATE_SHAPE 주석)
   ─ 쓰기 : POST /auth/admin/{uid}/{approve|block|delete|toggle_role}  ·  /auth/admin/{uid}/lock
            POST /auth/admin/{uid}/perms  (form: g[]=그룹 · m[]=허용 · d[]=거부 · preset=부서 · reset=1)
@@ -107,7 +109,7 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 /* ── 사람 상세 서랍 ── */
 .people{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
 .people:has(.drawer:not([hidden])){grid-template-columns:minmax(0,1fr) 400px}
-@media(max-width:1080px){.people{grid-template-columns:1fr}.drawer{position:fixed;inset:auto 0 0 0;max-height:82vh;border-radius:18px 18px 0 0;box-shadow:var(--shadow);z-index:30}}
+@media(max-width:1080px){.people,.people:has(.drawer:not([hidden])){grid-template-columns:minmax(0,1fr)}.people .drawer{position:fixed;inset:auto 0 0 0;max-height:82vh;border-radius:18px 18px 0 0;box-shadow:var(--shadow);z-index:30}}
 .drawer{background:var(--paper);border:1px solid var(--line);border-radius:16px;position:sticky;top:74px;max-height:calc(100vh - 92px);overflow:auto}
 .drawer .hd{padding:16px 18px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2}
 .drawer .hd h3{margin:0;font-size:17px}
@@ -161,6 +163,31 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
 .scrrow summary .c{margin-left:auto;font-size:12px;color:var(--ink-soft);white-space:nowrap}
 .scrrow .x{color:var(--warn);font-weight:700;font-size:11px;margin-left:2px}
 .scrrow .chips{margin:0 12px 10px}
+/* ── 모듈카드(배1075 2026-09-07 · GM "숫자만 있으니 어떤 화면인지 모르겠어") — 사람 행 아래 펼침 + 부서 추천 ── */
+tr.xp td{padding:0 0 12px;background:var(--paper-2)}
+.mcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:12px}
+tr.xp .mcards{position:sticky;left:0}  /* 너비는 JS 가 표 스크롤 영역 폭으로 맞춘다(td 안 % 폭은 min-content 로 풀려 한 글자씩 줄바꿈) */
+.mc{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.mc.wide{grid-column:1/-1}
+.mc h4{margin:0 0 6px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.mc h4 .c{margin-left:auto;font-size:12px;color:var(--ink-soft);font-weight:500;white-space:nowrap}
+.mc h4 .c b{color:var(--ink)}
+.mc ul{list-style:none;margin:0;padding:0}
+.mc li{padding:4px 0 4px 20px;border-top:1px solid var(--line);font-size:13px;line-height:1.35;position:relative;color:var(--ink-faint)}
+.mc li.on{color:var(--ink);font-weight:600}
+.mc li::before{content:"·";position:absolute;left:4px;top:4px}
+.mc li.on::before{content:"✓";color:var(--ok);font-weight:700}
+.mc li small{display:block;font-weight:400;color:inherit;font-size:11.5px;opacity:.85}
+.mc li.on small{color:var(--ink-soft)}
+.mc details summary{cursor:pointer;font-size:12.5px;color:var(--ink-soft);padding:4px 0}
+.mc .why{font-size:12.5px;color:var(--ink-soft);margin:0 0 8px}
+.mc .why b{color:var(--ink)}
+.mc .diff{font-size:12px;margin:8px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mc .diff .tag.ok::before{content:"+"}.mc .diff .tag.bad::before{content:"−"}
+.mc .grp-line{font-size:12.5px;padding:3px 0;display:flex;gap:8px}
+.mc .grp-line b{min-width:42px}
+.mc .grp-line span{color:var(--ink-soft);min-width:0}
+@media(max-width:720px){.mcards{grid-template-columns:1fr}}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .gate{max-width:520px;margin:12vh auto;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:28px}
@@ -222,6 +249,7 @@ tbody tr[data-uid]:hover{background:var(--paper-2)}
       <h2>부서 기본 권한</h2>
       <p class="sub">가입 때 고른 부서가 곧 기본 권한입니다. 체크는 바로 반영되지 않고, <b>저장</b>을 눌러야 정본(서버 데이터 파일)이 바뀝니다. 사람별 예외는 「사람」에서 조정합니다.</p>
       <p class="notice info" id="dm-meta"></p>
+      <div class="mcards" id="dept-rec" style="padding:0 0 14px"></div>
       <div id="dept-matrix"></div>
       <div class="save-bar" style="position:static;border:0;padding:14px 0 0">
         <span class="msg" id="dm-msg">불러오는 중…</span>
@@ -285,7 +313,7 @@ const APPGROUPS=['회원','운영','점검','경영','문서함'];
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MOCK=new URLSearchParams(location.search).get('mock')==='1';
-let S=null, sel=null, draft=null, filter={dept:'전체',status:'전체'}, q='';
+let S=null, sel=null, xp=null, draft=null, filter={dept:'전체',status:'전체'}, q='';   // sel=서랍(편집) · xp=행 아래 모듈카드 펼침(배1075)
 
 /* ── 권한 판정 = 서버 allowed() 그대로 ── */
 function perms(u){ if(u.fixed_perms) return u.fixed_perms; return u.perms||null; }
@@ -370,11 +398,23 @@ function renderPeople(){
   $('#people-filters').innerHTML=depts.map(d=>`<button class="chip" data-f="dept" data-v="${esc(d)}" aria-pressed="${filter.dept===d}">${esc(d)}</button>`).join('')+'<span style="width:10px"></span>'+sts.map(([v,l])=>`<button class="chip" data-f="status" data-v="${v}" aria-pressed="${filter.status===v}">${l}</button>`).join('');
   const list=peopleList(); const n=S.modules.length;
   $('#people-body').innerHTML=list.length?list.map(u=>{const p=perms(u);const seen=u.role==='admin'?n:S.modules.filter(m=>allowed(u,m,p)).length;
-    return `<tr data-uid="${u.id}" class="${sel===u.id?'sel':''}"><td class="who"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
+    return `<tr data-uid="${u.id}" class="${sel===u.id||xp===u.id?'sel':''}"><td class="who"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
     <td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}</td><td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span></td>
     ${APPGROUPS.map(g=>{const c=u.role==='admin'?tot(g):cnt(u,g,p),t=tot(g);return `<td><div class="bar ${c===t?'full':c?'':'none'}" style="--w:${t?Math.round(c/t*100):0}%" title="${g} ${c}/${t}"><i></i><span class="num">${c}/${t}</span></div></td>`;}).join('')}
-    <td class="num"><b>${seen}</b><small style="color:var(--ink-soft)">/${n}</small></td></tr>`;}).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
-  renderDrawer();
+    <td class="num"><b>${seen}</b><small style="color:var(--ink-soft)">/${n}</small></td></tr>${xp===u.id?`<tr class="xp"><td colspan="9">${personCards(u,p)}</td></tr>`:''}`;}).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
+  cardsWidth(); renderDrawer();
+}
+function cardsWidth(){ const tw=$('#people-table').parentElement; $$('tr.xp .mcards').forEach(e=>e.style.width=tw.clientWidth+'px'); }
+window.addEventListener('resize',cardsWidth);
+/* ── 모듈카드(배1075) — 누른 사람 행 아래 그룹 5장: 화면 이름·한 줄 뜻, 보이면 ✓진하게 / 안 보이면 옅게 ── */
+function screenLi(m,on){ return `<li class="${on?'on':''}">${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x" style="color:var(--warn);font-size:11px;margin-left:4px">개인 예외</span>':''}${m.desc?`<small>${esc(m.desc)}</small>`:''}</li>`; }
+function personCards(u,p){
+  return `<div class="mcards">${APPGROUPS.map(g=>{
+    const ms=S.modules.filter(m=>(m.appgroup||'문서함')===g), on=ms.filter(m=>allowed(u,m,p));
+    const list=`<ul>${ms.map(m=>screenLi(m,allowed(u,m,p))).join('')}</ul>`;
+    const doc=g==='문서함';
+    return `<div class="mc${doc?' wide':''}"><h4>${esc(g)}<span class="c"><b class="num">${on.length}</b>/${ms.length} 보임</span></h4>${doc?`<details><summary>문서 ${ms.length}개 펼치기</summary>${list}</details>`:list}</div>`;
+  }).join('')}</div>`;
 }
 function renderDrawer(){
   const d=$('#drawer'); const u=S.users.find(x=>x.id===sel); if(!u){ d.hidden=true; return; } d.hidden=false;
@@ -429,7 +469,42 @@ function renderDeptMatrix(){
     ${ms.map(m=>`<tr><td>${esc(m.name)}</td>${depts.map(d=>`<td class="cell"><input type="checkbox" data-dm="${esc(d)}|${esc(m.id)}"${dpDraft[d].has(m.id)?' checked':''}></td>`).join('')}</tr>`).join('')}
     </tbody></table></div></details>`;
   }).join('');
-  deptBarSync();
+  renderDeptRec(); deptBarSync();
+}
+/* ── 부서별 추천 모듈 카드(배1075) — 근거: modules.json staff(담당 실무진) · ssot/ownership_map.json 부서 편제 · app.py §2③ 코드 초안.
+   공통 = 코드 초안 전 부서 교집합. 인사·재무(나우열M) 화면은 지원부·경영지원에만. 경영 그룹은 경영지원에만. 문서함·개인 예외는 넣지 않는다. ── */
+const REC={
+  '운영부':{staff:['이경연 실장','최준용M','윤병현AM','임정은M'],ids:['check','cmo-funnel-콘텐츠문의현황'],why:'운영부 편제(이경연 실장·최준용M·윤병현AM·임정은M)가 담당인 화면 + 운영부 체계 + §2③ 초안의 점검·콘텐츠 문의'},
+  '시설부':{staff:['이정헌 소장'],why:'시설부=이정헌 소장 담당 화면(시설 점검·고장 접수)'},
+  '지원부':{staff:['나우열M'],ids:['check'],why:'인사·재무=나우열M 영역(ownership_map) — 지원부·경영지원에만 · 경영 그룹 제외 · §2③ 초안의 점검'},
+  '경영지원':{staff:['나우열M'],why:'인사·재무=나우열M 영역(ownership_map) — 경영 그룹 포함'},
+  '주차관리부':{ids:['check','coo-check-주차관리부-체계'],why:'코드 초안 §2③(시토) — 시설 점검 + 주차부 체계(주차장 안내는 공통)'},
+  '파트너팀':{ids:['cpo-member-lesson','coo-check-파트너팀-체계','cmo-intake-instructor-intake'],why:'파트너팀=강습팀 — 강습 회원 · 강사 콘텐츠 접수 · 파트너팀 체계'},
+};
+function recCommon(){ const ls=Object.values(DP.code_draft||{}); return ls.length?ls[0].filter(id=>ls.every(l=>l.includes(id))):[]; }
+function recIds(d){
+  const r=REC[d]||{}, own=`coo-check-${d}-체계`, common=recCommon();
+  const hit=m=>{ if((m.appgroup||'문서함')==='문서함'||S.exception_ids.includes(m.id)) return false;
+    if(m.id===own) return true; if(/^coo-check-.+-체계$/.test(m.id)) return false;
+    if((r.ids||[]).includes(m.id)) return true;
+    if(m.appgroup==='경영'&&d!=='경영지원') return false;
+    return (r.staff||[]).some(s=>(m.staff||'').includes(s)); };
+  return [...new Set([...common,...S.modules.filter(hit).map(m=>m.id)])];
+}
+function renderDeptRec(){
+  const byId=Object.fromEntries(S.modules.map(m=>[m.id,m])), common=recCommon(), groups=APPGROUPS.filter(g=>g!=='문서함');
+  $('#dept-rec').innerHTML=Object.keys(DP.presets||{}).map(d=>{
+    const ids=recIds(d), cur=dpDraft[d]||new Set(), add=ids.filter(id=>!cur.has(id)), del=[...cur].filter(id=>!ids.includes(id));
+    const nm=l=>l.map(id=>(byId[id]||{name:id}).name).join(' · ');
+    const own=ids.filter(id=>!common.includes(id));
+    return `<div class="mc"><h4>${esc(d)}<span class="c">추천 <b class="num">${ids.length}</b> 화면</span></h4>
+    <p class="why">${esc((REC[d]||{}).why||'근거 없음 — 공통만')}</p>
+    ${groups.map(g=>{const l=own.filter(id=>(byId[id]||{}).appgroup===g); return l.length?`<div class="grp-line"><b>${esc(g)} ${l.length}</b><span>${esc(nm(l))}</span></div>`:'';}).join('')}
+    <div class="grp-line"><b>공통 ${common.length}</b><span>종합접수처·업무·결재 현황·전사 일정·휴무 등(전 부서 같음)</span></div>
+    <div class="diff">지금 표와 ${add.length||del.length?`<span class="tag ok" title="${esc(nm(add))}">${add.length}</span><span class="tag bad" title="${esc(nm(del))}">${del.length}</span>`:'<span class="tag">같음</span>'}
+      <button class="btn sm pri" data-rec="${esc(d)}" ${add.length||del.length?'':'disabled'}>이 추천으로 부서 기본 채우기</button></div>
+    <p class="why" style="margin:6px 0 0">되돌리기 = 아래 표에서 체크를 고쳐 저장</p></div>`;
+  }).join('');
 }
 async function loadDeptPresets(){
   if(MOCK){ DP={presets:S.dept_modules||{},code_draft:S.dept_modules||{},updated:null}; deptDraftInit(DP.presets); renderDeptMatrix(); return; }
@@ -496,8 +571,10 @@ function diffText(b,a){ try{ b=b?JSON.parse(b):null; a=a?JSON.parse(a):null; }ca
 /* ── 상호작용 ── */
 function go(t){ $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t)); try{localStorage.setItem('erp_admin_tab',t);}catch(e){} }
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-close],[data-save],[data-preset],[data-dept-preset],[data-reset],[data-undo],.chip,.seg button,tr[data-uid]'); if(!t) return;
+  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-close],[data-save],[data-preset],[data-dept-preset],[data-reset],[data-undo],[data-rec],.chip,.seg button,tr[data-uid]'); if(!t) return;
   if(t.dataset.tab) return go(t.dataset.tab);
+  if(t.dataset.rec){ const d=t.dataset.rec; if(!confirm(`${d} 부서 기본을 추천 묶음으로 바꿔 저장합니다(표의 다른 저장 안 한 체크도 함께 저장). 계속할까요?`)) return;
+    dpDraft[d]=new Set(recIds(d)); renderDeptMatrix(); await saveDeptMatrix(); return; }
   if(t.dataset.go) return go(t.dataset.go);
   if(t.dataset.scroll){ document.querySelector(t.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
   if(t.classList.contains('chip')){ filter[t.dataset.f]=t.dataset.v; renderPeople(); return; }
@@ -511,12 +588,12 @@ document.addEventListener('click',async e=>{
   if(t.dataset.undo){ if(await post(`/auth/admin/undo/${t.dataset.undo}`)){ toast('되돌렸습니다'); await load(); } return; }
   if(t.dataset.act){ const uid=+t.dataset.uid, a=t.dataset.act; if(a==='delete'&&!confirm(`${t.dataset.name} 계정을 지웁니다. 되돌릴 수 없습니다.`)) return;
     if(await post(a==='lock'?`/auth/admin/${uid}/lock`:`/auth/admin/${uid}/${a}`)){ toast({approve:'승인했습니다',block:'차단했습니다',delete:'지웠습니다',toggle_role:'역할을 바꿨습니다',lock:'잠금 상태를 바꿨습니다'}[a]); draft=null; await load(); } return; }
-  if(t.matches('tr[data-uid]')){ sel=+t.dataset.uid; draft=null; go('people'); renderPeople(); return; }
+  if(t.matches('tr[data-uid]')){ const id=+t.dataset.uid; xp=xp===id?null:id; sel=id; draft=null; go('people'); renderPeople(); return; }
 });
 $('#q').addEventListener('input',e=>{ q=e.target.value; renderPeople(); renderScreens(); });
 document.addEventListener('keydown',e=>{ if(e.key==='/'&&document.activeElement!==$('#q')){ e.preventDefault(); $('#q').focus(); } if(e.key==='Escape'&&sel){ sel=null; draft=null; renderPeople(); } });
 document.addEventListener('change',e=>{ const cb=e.target.closest('input[data-dm]'); if(!cb) return;
-  const [d,id]=cb.dataset.dm.split('|'); if(cb.checked) dpDraft[d].add(id); else dpDraft[d].delete(id); deptBarSync(); });
+  const [d,id]=cb.dataset.dm.split('|'); if(cb.checked) dpDraft[d].add(id); else dpDraft[d].delete(id); renderDeptRec(); deptBarSync(); });
 $('#dm-save').addEventListener('click',saveDeptMatrix);
 $('#social-save').addEventListener('click',saveSocialKeys);
 $('#dm-reset').addEventListener('click',()=>{ deptDraftInit(DP.code_draft); renderDeptMatrix(); toast('코드 초안으로 되돌렸습니다 — 저장을 눌러야 반영됩니다'); });
