@@ -473,11 +473,14 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
     담당 있는 열린 이슈를 SSOT 행으로 만든다 · 배1102). 원장은 그 SSOT 행을 만들 때의
     추출 소스로만 남는다.
 
-    필터: 생성자='김남욱GM' · content 에 원장 키 마커(ops_shared.MGR_LEDGER_MARKER_TAG)
-    있음(=배1102 다리가 만든 행만) · 상태가 TODO_DONE_STATUSES 아님(미완). 정렬: 기한
-    (종료일) 오래된 순. 담당별 NUDGE_SHOW_N 상한(오래된 것부터 채움 — 배1085).
-    담당이 3인방(_NUDGE_MEMBERS) 밖 운영부 실무진(윤병현AM 등)이면 약속 L24(운영부는
-    실장 경유)대로 이경연 실장 묶음에 합치되, 줄에는 원 담당 이름을 남긴다.
+    필터: content 에 원장 키 마커(ops_shared.MGR_LEDGER_MARKER_TAG) 있음(=배1102 다리가
+    만든 행만 — 생성자는 안 본다. ★2026-09-07 웰리 검수: 생성자=김남욱GM 조건 제거 —
+    마커가 있으면 기존 행에 append_todo 로 마커만 옮겨붙은 경우(생성자 공란인 행 포함)
+    도 소스로 잡아야 한다 · 실측 TODO-20260905171415092) · 상태가 TODO_DONE_STATUSES
+    아님(미완). 정렬: 기한(종료일) 오래된 순. 담당별 NUDGE_SHOW_N 상한(오래된 것부터
+    채움 — 배1085). 담당이 3인방(_NUDGE_MEMBERS) 밖 운영부 실무진(윤병현AM 등)이면
+    약속 L24(운영부는 실장 경유)대로 이경연 실장 묶음에 합치되, 줄에는 원 담당 이름을
+    남긴다.
 
     todo_rows — 업무&결재 SSOT 전체 행(build_mgr_daily_brief 가 이미 _fetch_todo_rows()로
     가져온 것을 그대로 넘긴다 · 새 조회 안 만든다)."""
@@ -486,8 +489,6 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
     cand = []
     for r in (todo_rows or []):
         if not isinstance(r, dict):
-            continue
-        if str(r.get("생성자", "")).strip() != "김남욱GM":
             continue
         if MGR_LEDGER_MARKER_TAG not in str(r.get("내용", "")):
             continue
@@ -528,8 +529,9 @@ def _selfcheck_reply_nudge_from_ssot() -> None:
     rows = [
         # 마커 없음 — 배1102 다리가 안 만든 행(사람이 직접 올린 것 등), 후보에서 빠져야 함
         {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "무관 행", "내용": "그냥 메모", "상태": "진행중", "종료일": "2026-09-01"},
-        # 생성자 다름 — 빠져야 함
-        {"생성자": "웰리", "담당자": "이경연 실장", "업무명": "웰리행", "내용": "[중간관리자원장 2026-09-01 | x]", "상태": "진행중", "종료일": "2026-09-01"},
+        # 마커 있음 + 생성자 공란(기존 행에 마커만 옮겨붙은 경우) — ★2026-09-07 검수로
+        # 생성자 조건을 뺐으니 이제 잡혀야 한다(실측 TODO-20260905171415092 재현)
+        {"생성자": "", "담당자": "나우열M", "업무명": "생성자공란행", "내용": "[중간관리자원장 2026-09-01 | w]", "상태": "진행중", "종료일": "2026-09-15"},
         # 완료 — 빠져야 함
         {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "완료건", "내용": "[중간관리자원장 2026-09-01 | y]", "상태": "완료", "종료일": "2026-09-01"},
         # 정상 후보 3건 — 기한 오래된 순 정렬 확인용
@@ -539,10 +541,12 @@ def _selfcheck_reply_nudge_from_ssot() -> None:
         {"생성자": "김남욱GM", "담당자": "윤병현AM", "업무명": "실무진건", "내용": "[중간관리자원장 2026-08-20 | z3]", "상태": "진행중", "종료일": "2026-08-28"},
     ]
     items = build_reply_nudge_items("2026-09-07", rows)
-    assert len(items) == 3, f"필터 후 3건이어야 함(마커없음·생성자다름·완료 제외): {items}"
+    assert len(items) == 4, f"필터 후 4건이어야 함(마커없음·완료 제외 / 생성자공란은 이제 포함): {items}"
     who_set = {it["who"] for it in items}
-    assert who_set == {"이경연 실장"}, "3인방 밖은 이경연 실장 묶음으로 합쳐져야 함(약속 L24)"
-    assert items[0]["date"] < items[1]["date"] < items[2]["date"], "기한 오래된 순 정렬"
+    assert who_set == {"이경연 실장", "나우열M"}
+    assert any(it["ask"] == "생성자공란행" for it in items), "생성자 공란도 마커만 있으면 잡혀야 함"
+    ekyung = [it for it in items if it["who"] == "이경연 실장"]
+    assert ekyung[0]["date"] < ekyung[1]["date"] < ekyung[2]["date"], "기한 오래된 순 정렬"
     assert any("윤병현AM 건" in it["ask"] for it in items), "원 담당 이름은 줄에 남아야 함"
 
     # 담당별 NUDGE_SHOW_N(3) 상한 — 4번째부터는 빠진다
@@ -562,16 +566,11 @@ def _selfcheck_reply_nudge_from_ssot() -> None:
 # 웰리가 직접 --nudge-review 로 훑어보고 --resolve 로 닫는다. 새 파일·새 상태 없음 —
 # MGR_LEDGER(원장) 자체를 읽고 쓴다.
 # ══════════════════════════════════════════════════════════════════════════
-def nudge_review() -> int:
-    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 사람별
-    오래된 순으로 상한 없이 전부 출력 — --resolve 로 닫을 후보를 고르는 용도.
-    ledger 파일만 읽는다(모듈 import 부작용 없음)."""
-    try:
-        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
-    except Exception as exc:
-        print(f"FAILED: 원장 읽기 실패 — {exc}")
-        return 1
-
+def mgr_open_candidates(ledger: list) -> list:
+    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 오래된 순으로
+    돌려준다 — {"age","date","owner","title","issue"}(issue=원장 원본 딕셔너리, todo_id 를
+    되적을 때 그대로 쓴다). nudge_review(사람이 보는 CLI)와 배1102 SSOT 다리(bridge_to_todo
+    호출부)가 이 판정 하나를 공유한다(약속 L01 — 두 곳이 각자 세면 숫자가 갈린다)."""
     today = date.today()
     rows = []
     for e in ledger:
@@ -587,14 +586,27 @@ def nudge_review() -> int:
                 age = (today - date.fromisoformat(edate)).days
             except Exception:
                 age = -1
-            rows.append((age, edate, owner, title))
-    rows.sort(key=lambda r: -r[0])
+            rows.append({"age": age, "date": edate, "owner": owner, "title": title, "issue": it})
+    rows.sort(key=lambda r: -r["age"])
+    return rows
 
+
+def nudge_review() -> int:
+    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 사람별
+    오래된 순으로 상한 없이 전부 출력 — --resolve 로 닫을 후보를 고르는 용도.
+    ledger 파일만 읽는다(모듈 import 부작용 없음)."""
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"FAILED: 원장 읽기 실패 — {exc}")
+        return 1
+
+    rows = mgr_open_candidates(ledger)
     if not rows:
         print("(열린 이슈 0건)")
         return 0
-    for age, edate, owner, title in rows:
-        print(f"{age}일째 | {edate} | {owner} | {title}")
+    for r in rows:
+        print(f"{r['age']}일째 | {r['date']} | {r['owner']} | {r['title']}")
     return 0
 
 
