@@ -18,6 +18,8 @@
   GET  /api/reception/dashboard?period=all|week|month    reg_dashboard 대체(배1090·INC-056 ④) — 화면 잔여 GAS
     직독 제거용. {ok,count,board,scoreboard,staffNames} — board 는 원장 집계, scoreboard·staffNames 는 5분 거울.
   GET  /api/reception/health           행 수·마지막 동기화
+  GET  /api/reception/similar          유사건 조회(배1120·시우 요청) — dept+text 필수, category 선택, days(60)·limit(5)
+    최근 days 일·같은 dept(+category) 안에서 difflib·토큰 유사도 0.5 이상 상위 limit 개. 무인증(제출 전 폼 호출).
   POST /api/reception/submit           reg_submit 대체(공개·무인증 — nginx erp-locations 에서 auth 제외) · 종합접수처 6종 폼
   POST /api/reception/lost             lf_submit 대체(로그인 뒤 · 습득물 등록 — 사진 필수)
   POST /api/reception/update           reg_update 대체(배 1039-C · 2026-09-05) — 서버 원장 직접 갱신, GAS 는 그 자리에서
@@ -39,9 +41,11 @@
 자체점검: python3 api_reception.py --selftest   (DB·네트워크 없음 — 부서 배정·사진 디코딩 판정만)
 """
 import base64
+import difflib
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -149,6 +153,27 @@ def _cat_resolve(cat_raw):
         if v["label"] == cat_raw:
             return v["label"]
     return None
+
+
+_TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
+
+
+def _norm_text(s):
+    """공백 정규화 — 연속 공백·개행을 하나로, 앞뒤 트림(/similar 유사도 비교 전처리)."""
+    return re.sub(r"\s+", " ", str(s or "")).strip()
+
+
+def _similarity(a, b):
+    """difflib 비율(표기·어순 그대로 비교)과 단어 토큰 Jaccard 비율(어순 달라도 겹치는 낱말 비교) 중 큰 값 —
+    새 의존성 없이 두 성격을 함께 본다(/similar). ponytail: 진짜 형태소(명사) 추출이 아니라 단어 토큰이라
+    어미가 다르면 못 잡는다 — 정확도 더 필요해지면 형태소 분석기 도입."""
+    na, nb = _norm_text(a), _norm_text(b)
+    if not na or not nb:
+        return 0.0
+    seq_ratio = difflib.SequenceMatcher(None, na, nb).ratio()
+    ta, tb = set(_TOKEN_RE.findall(na)), set(_TOKEN_RE.findall(nb))
+    tok_ratio = (len(ta & tb) / len(ta | tb)) if (ta or tb) else 0.0
+    return max(seq_ratio, tok_ratio)
 
 
 def _add_months(date_str, months):
@@ -345,6 +370,53 @@ def health():
         meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE tenant_id=%s AND k LIKE 'reception_last%%'", (db.TENANT,)).fetchall())
     return {"ok": True, "rows": n, "hold_done": hold_done, "last_sync_kst": meta.get("reception_last_sync"),
             "last_failed": meta.get("reception_last_failed") or "", "_source": SOURCE}
+
+
+@router.get("/similar")
+def similar(category: str = Query(""), dept: str = Query(""), text: str = Query(""),
+            days: int = Query(60, ge=1, le=365), limit: int = Query(5, ge=1, le=50)):
+    """유사건 조회(배1120 · 시우 요청 2026-09-07) — 접수 폼이 제출 전에 불러 회원에게 미리 보여준다(GM 신고
+    RECEPTION-148 체감 중복 원인: 제출 성공 확인이 없어 응답 오류시 재제출). 무인증(/submit 과 같은 공개 원칙 ·
+    쓰기 없음). 최근 days 일 · 같은 dept(+category 지정 시 그것도 같이) 안에서 content 를 difflib·토큰 유사도로
+    매겨 0.5 이상만 상위 limit 개. 삭제된 건은 reception_items 에서 즉시 하드삭제되므로(/delete) 별도 상태
+    제외가 필요 없다(취소 상태 자체가 없음 — REG_STATUSES=접수/처리중/완료).
+    ★60일 범위 건수 실측(2026-09-07 서버 조회) = 124건 — 새 인덱스 없이 파이썬 비교로 충분."""
+    dept = dept.strip()
+    text = text.strip()
+    if not dept or not text:
+        return JSONResponse({"ok": False, "error": "dept·text 필수"}, status_code=400)
+    cat_label = _cat_resolve(category)
+    if cat_label is None:
+        return JSONResponse({"ok": False, "error": "알 수 없는 카테고리입니다: %s" % category[:60]}, status_code=400)
+
+    import datetime as _dtm
+    cutoff = (_dtm.datetime.strptime(_kst_now(), "%Y-%m-%d %H:%M:%S")
+              - _dtm.timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = _open()
+    with conn:
+        sql = ("SELECT reg_id, category, dept, status, created_at, data FROM reception_items"
+               " WHERE tenant_id=%s AND dept=%s AND created_at>%s")
+        params = [db.TENANT, dept, cutoff]
+        if cat_label:
+            sql += " AND category=%s"
+            params.append(cat_label)
+        rows = conn.execute(sql, tuple(params)).fetchall()
+
+    items = []
+    for r in rows:
+        try:
+            d = json.loads(r["data"])
+        except (TypeError, ValueError):
+            d = {}
+        content = d.get("content", "")
+        score = _similarity(text, content)
+        if score >= 0.5:
+            items.append({"id": r["reg_id"], "title": content, "dept": r["dept"], "category": r["category"],
+                         "status": d.get("status") or r["status"], "created_at": r["created_at"],
+                         "score": round(score, 3)})
+    items.sort(key=lambda x: x["score"], reverse=True)
+    return {"ok": True, "items": items[:limit], "_source": "server"}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -726,6 +798,10 @@ def selftest():
     assert _add_months("2024-08-31 00:00:00", 6) == "2025-02-28"
 
     assert REG_DELETE_PIN == os.environ.get("REG_DELETE_PIN", "1200")  # GAS REG_DELETE_PIN_DEFAULT 와 같은 기본값
+
+    # 유사건 조회(배1120) 유사도 함수 — 같은 문장 ≥0.9 · 다른 문장 <0.5
+    assert _similarity("헬스장 러닝머신 3번이 고장났어요", "헬스장  러닝머신 3번이   고장났어요") >= 0.9
+    assert _similarity("헬스장 러닝머신 고장", "카페 원두가 다 떨어졌어요") < 0.5
 
     # 시트 되밀기(배1090·INC-056) — GAS reg_update 가 받는 칸과 1:1 이어야 pushback.py 되밀기가 먹는다
     gb = _reg_update_gas_body("RECEPTION-1", "분실물 접수", "처리중", {"memo": "확인중", "handler": "홍길동", "unknownField": "x"})
