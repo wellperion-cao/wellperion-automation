@@ -389,6 +389,21 @@ def _check_reception_lost() -> list[str]:
             issues.append(f"접수 제출 통로 POST 응답에 CORS 헤더 없음(HTTP {r.status_code}) — 폼에서 '네트워크 오류'")
     except Exception as e:
         issues.append(f"접수 제출 통로 불통 — {str(e)[:60]}")
+    # ⑤ 시트 되밀기(pushback) — write_check 를 server 원본으로 전환(배1070·2026-09-07)한 뒤
+    #    시트로 못 넘어간 건이 쌓이면 GM 화면은 정상으로 보이는데 시트만 비어간다. 조용히 실패하는
+    #    부류라 여기서 직접 잡는다. 되돌리기 = origin_switch.json 의 write_check 를 "dual" 로.
+    try:
+        r = requests.get('https://erp.wellperion.com/api/intake/health', timeout=30)
+        d = r.json()
+        pb = d.get('pushback') or {}
+        failed, unpushed = pb.get('failed') or 0, pb.get('unpushed') or 0
+        if failed > 0 or unpushed >= 5:
+            issues.append(
+                f"시트 되밀기 실패 — 실패 {failed}건 · 미반영 {unpushed}건 (시트에 못 간 점검·접수 데이터 존재). "
+                "되돌리려면 서버 origin_switch.json write_check 를 dual 로"
+            )
+    except Exception as e:
+        issues.append(f"시트 되밀기 상태 조회 실패 — {str(e)[:60]}")
     return issues
 
 
