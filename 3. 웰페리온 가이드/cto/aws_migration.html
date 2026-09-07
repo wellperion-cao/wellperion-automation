@@ -251,7 +251,7 @@ function loadSeed(){
   }catch(e){ return null; }
 }
 
-fetch('../../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
+fetch('../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
   .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
   .then(render)
   .catch(function(){
