@@ -92,7 +92,6 @@ _CATEGORY_CHOICES = ["[1] 매출 및 영업", "[2] 인사", "[3] 파트너팀", 
 # 안 잡아 '놓치지 않게'라는 요구가 깨진다 — 대신 제목에 (기한 임시)를 붙여 지어낸 값이
 # 아님을 사람이 바로 알게 한다.
 _DEFAULT_DUE_DAYS = 7
-_BRIDGE_CREATOR = "AI 아침정리"
 _OWNER_LIST = " · ".join(_OWNER_CHOICES)
 _CATEGORY_LIST = " · ".join(_CATEGORY_CHOICES)
 
@@ -1028,9 +1027,75 @@ def upsert_ledger(ledger: list[dict], date: str, issues: list[dict], source_file
     return ledger
 
 
+_LEDGER_RESOLVE_FIELDS = ("resolved_by", "resolved_at", "resolved_why")
+
+
 def save_ledger(ledger: list[dict]) -> None:
+    """★2026-09-07 실측 결함 수리(배1102) — 14:05 회차가 이 함수로 원장을 통째로 다시 쓰면서
+    08:1x 웰리가 --resolve 로 닫은 39건의 resolved_by 표시가 13건만 남고 지워졌다. 원인:
+    이 프로세스가 원장을 메모리에 로드한 '이후' 다른 프로세스(send_ops_digest --resolve)가
+    디스크 원장을 먼저 닫았는데, 이 함수가 그 사실을 모른 채 자기 메모리 사본으로 덮어썼다.
+    저장 직전 디스크의 현재 원장을 다시 읽어, 같은 (date, issue) 키에 이미 있는 해소 표시를
+    메모리 쪽이 비어 있을 때만 병합해 넣는다 — 메모리가 이미 자체적으로 해소 처리를 했으면
+    (예: mark_late_replied_resolved) 그 값이 그대로 남는다(방금 처리한 것이 우선)."""
     LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        disk = json.loads(LEDGER_PATH.read_text(encoding="utf-8")) if LEDGER_PATH.exists() else []
+    except Exception:
+        disk = []
+    disk_issues: dict = {}
+    if isinstance(disk, list):
+        for e in disk:
+            if not isinstance(e, dict):
+                continue
+            for it in e.get("issues") or []:
+                disk_issues[(e.get("date"), it.get("issue"))] = it
+    for e in ledger:
+        for it in e.get("issues") or []:
+            prior = disk_issues.get((e.get("date"), it.get("issue")))
+            if not prior or not prior.get("resolved_by") or it.get("resolved_by"):
+                continue
+            it["status"] = prior.get("status", it.get("status"))
+            for f in _LEDGER_RESOLVE_FIELDS:
+                if prior.get(f):
+                    it[f] = prior[f]
     LEDGER_PATH.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _selfcheck_save_ledger_preserves_resolved() -> None:
+    """배1102 결함 재현 — 디스크에 이미 있는 resolved_by 가 메모리 사본 저장으로
+    지워지지 않는지(네트워크 없이, 임시 경로로 돈다)."""
+    import tempfile
+    global LEDGER_PATH
+    orig = LEDGER_PATH
+    with tempfile.TemporaryDirectory() as d:
+        LEDGER_PATH = Path(d) / "_digest_ledger.json"
+        disk_state = [{"date": "2026-09-07", "issues": [
+            {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "resolved",
+             "resolved_by": "웰리", "resolved_at": "2026-09-07"},
+        ]}]
+        LEDGER_PATH.write_text(json.dumps(disk_state, ensure_ascii=False), encoding="utf-8")
+        # 다른 프로세스가 디스크를 이미 닫은 뒤, 이 프로세스는 그 사실을 모른 채(로드 시점이
+        # 더 일러) 같은 이슈를 status=open 인 채로 들고 저장을 시도한다.
+        stale_memory = [{"date": "2026-09-07", "issues": [
+            {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "open"},
+        ]}]
+        save_ledger(stale_memory)
+        saved = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
+        it = saved[0]["issues"][0]
+        assert it["status"] == "resolved", "디스크의 resolved 표시가 살아남아야 한다"
+        assert it["resolved_by"] == "웰리", "resolved_by 가 지워지면 안 된다"
+        assert it["resolved_at"] == "2026-09-07"
+        # 메모리 쪽이 스스로 이미 다른 해결자로 닫았으면 그 값이 우선(방금 처리 우선)
+        fresh_memory = [{"date": "2026-09-07", "issues": [
+            {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "resolved",
+             "resolved_by": "코드 대조"},
+        ]}]
+        save_ledger(fresh_memory)
+        saved2 = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
+        assert saved2[0]["issues"][0]["resolved_by"] == "코드 대조", "메모리가 이미 닫았으면 그 값이 이긴다"
+    LEDGER_PATH = orig
+    print("[selfcheck] save_ledger resolved_by 보존 OK")
 
 
 # ═══════════════════════════════════════════
@@ -1200,8 +1265,10 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
     # 이미 끝난 일이 오늘 정리의 '반복·미해결'에 또 실린다.
     closed = pull_done_from_todo(ledger)
     if closed:
-        save_ledger(ledger)
-        print(f"  → 장부에서 완료된 건 {closed}건을 원장에 반영(양방향 회수)")
+        if not bridge_dry_run:
+            save_ledger(ledger)
+        print(f"  → 장부에서 완료된 건 {closed}건을 원장에 반영(양방향 회수)"
+              + ("(미리보기 — 저장 안 함)" if bridge_dry_run else ""))
     past_digest = recent_issues_digest(ledger, before_date=target_date)
 
     print("[4/5] 두뇌(claude CLI · model_router 폴백) 호출...")
@@ -1222,8 +1289,10 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
             print(f"  → 코드 대조: 대화 후반부 본인 확인 발언 감지 {len(auto_resolved)}건 자동 해결 처리(재요청 방지)")
             message = strip_confirmed_bullets(message, [i["issue"] for i in auto_resolved])
         ledger = upsert_ledger(ledger, target_date, issues, source_file=export_path.name)
-        save_ledger(ledger)
-        print(f"  → 원장 갱신: {LEDGER_PATH.relative_to(ROOT)} (이슈 {len(issues)}건, 날짜 {target_date})")
+        if not bridge_dry_run:
+            save_ledger(ledger)
+        print(f"  → 원장 갱신: {LEDGER_PATH.relative_to(ROOT)} (이슈 {len(issues)}건, 날짜 {target_date})"
+              + ("(미리보기 — 저장 안 함)" if bridge_dry_run else ""))
 
     # 전사일정 다리(배577) — 메시지를 조립하기 전에 등록한다. 등록 결과를 그 메시지에 한 줄로
     # 붙여 같이 내보내기 위해서다(새 발송 경로를 만들지 않는다 · 약속 L21).
@@ -1250,7 +1319,8 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
             "source_file": export_path.name, "issues": [], "metrics": fin_metrics,
         })
         ledger.sort(key=lambda x: x["date"])
-    save_ledger(ledger)
+    if not bridge_dry_run:
+        save_ledger(ledger)
 
     # 문의·등록 + 오늘 예약 = 한 섹션으로 합침(예약 헤더 떼고 문의 아래에)
     mid_block = inquiry_block
@@ -1285,7 +1355,8 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
         # 임정은M 마감 공유(규칙 파서) — 두뇌 요약과 별개로 숫자·이름을 그대로 싣고, 오늘 날짜 걸린 것을 꺼낸다(GM 2026-09-04)
         try:
             share_block = build_share_block(target_date, human_messages, today_str, ledger)
-            save_ledger(ledger)
+            if not bridge_dry_run:
+                save_ledger(ledger)
         except Exception as _se:
             share_block = ""
             print(f"  → 마감 공유 블록 실패(무시·본문 영향 0): {type(_se).__name__}: {_se}")
@@ -1526,83 +1597,124 @@ def strip_confirmed_bullets(message: str, resolved_titles: list[str]) -> str:
 # (_bridge_ask_lines 「🗂 업무 SSOT 에 올리실 건가요?」 되묻기는 2026-08-29 GM 지시로 삭제.)
 
 
+_MGR_TODO_MAX_PER_RUN = 20   # 안전판 — 이 이상이면 오탐 배정으로 보고 아무것도 안 만든다(사람 확인)
+_MGR_TODO_TITLE_SIM = 0.8    # 업무 SSOT 기존 행과 제목이 이 이상 닮으면 같은 건으로 본다(중복 방지)
+
+
 def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
                    dry_run: bool = False) -> int:
     """정방향 — target_date 의 열린 이슈 중 담당이 분명한 것을 업무 SSOT 에 등록한다.
 
-    등록 안 하는 것: 담당 빈칸(주인 없는 일은 장부에 안 쌓는다 · 약속 L23) · 이미 올린 것
-    (todo_id 존재) · 해결된 것. 기한이 대화에 없으면 오늘+7일을 임시로 넣고 제목에 그렇게
-    적는다 — 기한이 없으면 지연·임박 알림이 영영 안 잡아 '놓치지 않게'가 깨지기 때문이다."""
-    # ★★자동 등록은 끝났다 (GM 지시 2026-08-12 · 배589). 코드로 막는다 — 스위치로 두지 않는다.
-    #   GM 원문: "SSOT에 올린것들은 삭제해, 실무진들이 할 것 까지 다해버리면 어떻게해" /
-    #   "실무진들에게 SSOT올려서 작업하는 현황 보고 받을 수 있도록 진행해야해 웰리가 거기까지 해주면 안되"
-    #   무슨 일이었나: 2026-08-12 13:49 카톡 대화 정리에서 5건이 사람 담당으로 자동 등록됐고
-    #   (나우열M 2·이경연 실장 2·윤병현AM 1) 4건은 기한이 대화에 없어 7일 뒤로 임의로 박혔다.
-    #   왜 끄는가: 업무 SSOT 는 **실무진이 스스로 올리고 그 진행을 보고하는 판**이다. AI 가 대신
-    #   올리면 그 사람의 일이 사라지고 우리는 진행 보고를 받을 수 없다.
-    #   ▸스위치(todo_bridge_enabled)를 false 로만 두지 않는다 — 꺼둔 게이트는 죽은 코드가 되어
-    #     나중에 누가 다시 켠다(약속 L21). 그래서 등록 경로 자체를 여기서 끊는다.
-    #   ▸되묻기 절(_bridge_ask_lines)은 2026-08-29 GM 지시로 삭제 — 등록은 사람이 SSOT 화면에서 직접.
-    #     등록은 사람이 한다.
-    #   ▸구분: 전사일정 자동 등록(배577)은 그대로 간다 — 날짜는 놓치면 안 되고 GM 이 그 방식을 골랐다.
-    if not dry_run:
-        print("  → 업무 장부 자동 등록: 하지 않는다(GM 지시 2026-08-12 · 배589) — 방에 되묻기로 대체")
-        return 0
+    ★2026-09-07 GM 지시로 ★중간관리자 방에 한해 재개(배1102). 2026-08-12(배589)에 이
+    자동 등록을 완전히 껐던 이유는 실무진이 스스로 올려야 할 SSOT 자리를 AI 가 대신
+    채워 진행 보고를 받을 길이 없어졌기 때문이다. 이번은 다르다 — GM 원문(2026-09-07
+    14:1x) "중간관리자방에 각 담당자 배정해서 전달해서 업무 SSOT 생성 및 진행 현황
+    추적해서 절대 놓치지 않게 해줘": 실무진이 스스로 올리길 기다리는 게 아니라 GM 이
+    직접 추적판을 만들라는 지시다. ★운영부(다른 room_dir_name)는 배589 결정 그대로 —
+    자동 등록 안 함.
+
+    등록 안 하는 것: 담당이 _OWNER_CHOICES 밖(주인 없는 일은 장부에 안 쌓는다 · 약속
+    L23) · 이미 todo_id 있음 · 해결된 것. 중복 방지: 업무 SSOT 기존 행 중 원장 키
+    마커(ops_shared.mgr_ledger_marker)가 content 에 이미 있거나 제목 유사도가
+    _MGR_TODO_TITLE_SIM 이상이면 새로 안 만들고 그 행 id 를 todo_id 로 되적는다.
+    안전판 _MGR_TODO_MAX_PER_RUN 건 넘으면 BLOCKED — 아무것도 만들지 않는다."""
+    if room_dir_name != "★중간관리자":
+        return 0  # ★운영부 등 — 배589 결정 유지(자동 등록 안 함, 조용히 스킵)
 
     entry = next((e for e in ledger if e.get("date") == target_date), None)
     if not entry:
         return 0
+    candidates = [it for it in (entry.get("issues") or [])
+                  if it.get("status") == "open" and not it.get("todo_id")
+                  and str(it.get("owner") or "").strip() in _OWNER_CHOICES
+                  and str(it.get("issue") or "").strip()]
+    if not candidates:
+        print("  → 업무 SSOT 다리: 대상 0건")
+        return 0
+    print(f"  → 업무 SSOT 다리 대상 {len(candidates)}건: " +
+          "; ".join(f"{c['owner']}←{str(c['issue'])[:40]}" for c in candidates))
+    if len(candidates) > _MGR_TODO_MAX_PER_RUN:
+        print(f"  → 업무 SSOT 다리: BLOCKED — {len(candidates)}건이 안전판"
+              f"({_MGR_TODO_MAX_PER_RUN}) 초과, 아무것도 만들지 않음(사람 확인 필요)")
+        return 0
+
+    import gm_handoff
+    from difflib import SequenceMatcher
+    from collectors.ops_shared import mgr_ledger_marker
+    try:
+        existing_rows = (_gas_get(SSOT_API_URL, params={"action": "todo_list", "include_gm": "1"},
+                                  timeout=40, label="mgr-todo-bridge dedup")
+                         .json().get("data") or [])
+    except Exception as exc:
+        existing_rows = []
+        print(f"  → 업무 SSOT 다리: 기존 행 조회 실패({exc}) — 중복 대조 없이 진행")
+
     today = datetime.now()
     fallback_due = (today + timedelta(days=_DEFAULT_DUE_DAYS)).strftime("%Y-%m-%d")
     posted = 0
-    for issue in entry.get("issues") or []:
-        if issue.get("status") != "open" or issue.get("todo_id"):
-            continue
-        owner = str(issue.get("owner") or "").strip()
-        if owner not in _OWNER_CHOICES:
-            continue  # 담당 불명 — 사람이 정한다
-        due = str(issue.get("due") or "").strip()
-        temp_due = not due
+    for issue in candidates:
         title = str(issue.get("issue") or "").strip()[:80]
-        if not title:
+        owner = str(issue.get("owner") or "").strip()
+        marker = mgr_ledger_marker(target_date, issue.get("issue") or "")
+        dup = next((r for r in existing_rows if isinstance(r, dict) and (
+            marker in str(r.get("내용", ""))
+            or SequenceMatcher(None, title, str(r.get("업무명", ""))).ratio() >= _MGR_TODO_TITLE_SIM
+        )), None)
+        if dup:
+            issue["todo_id"] = str(dup.get("id") or "")
+            print(f"  [다리] 이미 있음 — {owner} ← {title} (id {issue['todo_id']})")
             continue
-        if temp_due:
-            due = fallback_due
-            title += " (기한 임시)"
-        params = {
-            "action": "todo_add",
-            "title": title,
-            "category": str(issue.get("category") or "").strip(),
-            "owner": owner,
-            "startDate": today.strftime("%Y-%m-%d"),
-            "endDate": due,
-            "content": (f"{issue.get('note') or ''}\n\n"
-                        f"— {room_dir_name} {target_date} 카톡 대화 정리에서 자동 등록"
-                        + ("\n— 기한은 대화에 없어 7일 뒤로 임시 지정했습니다. 담당자가 조정해 주세요."
-                           if temp_due else "")).strip(),
-            "link": "", "approval": "", "difficulty": "중",
-            "creator": _BRIDGE_CREATOR,
-        }
+        due = str(issue.get("due") or "").strip() or fallback_due
+        content = (str(issue.get("note") or title).strip() + "\n\n" + marker).strip()
         if dry_run:
             print(f"  [다리·미리보기] {owner} ← {title} (기한 {due})")
             posted += 1
             continue
-        try:
-            res = _todo_post(params)
-        except Exception as e:
-            print(f"  [다리] 등록 실패({title}): {type(e).__name__}: {e}")
+        res = gm_handoff.add_todo(title, content, str(issue.get("category") or "").strip(),
+                                   due, "", False, owner=owner)
+        if not (res or {}).get("ok"):
+            print(f"  [다리] 등록 실패({title}): {(res or {}).get('reason') or res}")
             continue
-        new_id = str((res or {}).get("id") or (res or {}).get("data", {}).get("id") or "")
-        if not (res or {}).get("ok") or not new_id:
-            print(f"  [다리] 등록 거절({title}): {str(res)[:160]}")
-            continue
-        issue["todo_id"] = new_id
+        issue["todo_id"] = str(res.get("id") or "")
         posted += 1
-        print(f"  [다리] 등록 — {owner} ← {title} (기한 {due} · id {new_id})")
+        print(f"  [다리] 등록 — {owner} ← {title} (기한 {due} · id {issue['todo_id']})")
     if posted and not dry_run:
         save_ledger(ledger)
-    print(f"  → 업무 장부 다리: {posted}건 {'미리보기' if dry_run else '등록'}")
+    print(f"  → 업무 SSOT 다리: {posted}건 {'미리보기' if dry_run else '등록'}")
     return posted
+
+
+def _selfcheck_bridge_to_todo_gate() -> None:
+    """bridge_to_todo 의 순수 로직(방 게이트·후보 필터·안전판)만 검사 — GAS 조회는
+    _gas_get 을 무응답으로 바꿔 네트워크 없이 돈다(dry_run=True 라 등록 호출도 없음)."""
+    global _gas_get
+    orig = _gas_get
+    _gas_get = lambda *a, **k: None  # noqa: E731 — existing_rows=[] 로 fail-soft
+    try:
+        # ★운영부는 방 게이트에서 바로 스킵(배589 결정 유지)
+        assert bridge_to_todo([{"date": "2026-09-07", "issues": [
+            {"issue": "x", "owner": "이경연 실장", "status": "open"}]}],
+            "2026-09-07", "★운영부", dry_run=True) == 0
+
+        base_issue = {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "open"}
+        ledger = [{"date": "2026-09-07", "issues": [dict(base_issue)]}]
+        assert bridge_to_todo(ledger, "2026-09-07", "★중간관리자", dry_run=True) == 1, "정상 후보 1건은 미리보기 1건"
+
+        # 담당 불명·이미 todo_id 있음·해결됨 — 후보에서 빠져야 한다
+        ledger2 = [{"date": "2026-09-07", "issues": [
+            {"issue": "a", "owner": "", "status": "open"},
+            {"issue": "b", "owner": "이경연 실장", "status": "open", "todo_id": "TODO-1"},
+            {"issue": "c", "owner": "이경연 실장", "status": "resolved"},
+        ]}]
+        assert bridge_to_todo(ledger2, "2026-09-07", "★중간관리자", dry_run=True) == 0
+
+        # 안전판 — 21건이면 BLOCKED(0건, 아무것도 안 만듦)
+        many = [{"issue": f"건{i}", "owner": "이경연 실장", "status": "open"} for i in range(_MGR_TODO_MAX_PER_RUN + 1)]
+        assert bridge_to_todo([{"date": "2026-09-07", "issues": many}],
+                              "2026-09-07", "★중간관리자", dry_run=True) == 0, "안전판 초과는 BLOCKED"
+    finally:
+        _gas_get = orig
+    print("[selfcheck] bridge_to_todo 게이트·안전판 OK")
 
 
 # ═══════════════════════════════════════════

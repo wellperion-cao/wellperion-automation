@@ -465,78 +465,49 @@ def _nudge_similar(a: str, b: str) -> bool:
 
 
 def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -> list:
-    """전날들의 열린 건(담당 있음)을 항목 리스트로 돌려준다 — {"date","who","ask","how"}.
-    build_asks_section 이 배 전달(relay) 항목과 합쳐 오래된 순으로 잘라 보여준다
-    (2026-08-20 GM 지적 — 📌·📮 절이 각자 헤더·건수를 가져 복잡하던 것을 하나로 합쳤다).
+    """담당·기한 붙은 미완 건을 항목 리스트로 돌려준다 — {"date","who","ask","how"}.
+    build_asks_section 이 배 전달(relay) 항목과 합쳐 기한 오래된 순으로 잘라 보여준다.
 
-    거르는 것: ①어제(target_date) 대화에 나온 건(⚠️/✅ 절이 담당) ②나중에 resolved 로
-    닫힌 건 ③담당 빈칸(주인 없는 일은 사람한테 묻지 않는다 · 약속 L23) ④서로 닮은 중복
-    (최신 문구만 남김). date = 이 창(window) 안에서 그 건이 처음 나온 날 — 오래 묵을수록
-    먼저 보이게 한다.
+    ★2026-09-07 GM 지시(배1102) — 원장(MGR_LEDGER) 대신 **업무 SSOT 미완 행**을 읽는다.
+    추적 정본이 원장에서 SSOT 행으로 옮겨갔다(ops_daily_digest.bridge_to_todo 가 원장의
+    담당 있는 열린 이슈를 SSOT 행으로 만든다 · 배1102). 원장은 그 SSOT 행을 만들 때의
+    추출 소스로만 남는다.
+
+    필터: 생성자='김남욱GM' · content 에 원장 키 마커(ops_shared.MGR_LEDGER_MARKER_TAG)
+    있음(=배1102 다리가 만든 행만) · 상태가 TODO_DONE_STATUSES 아님(미완). 정렬: 기한
+    (종료일) 오래된 순. 담당별 NUDGE_SHOW_N 상한(오래된 것부터 채움 — 배1085).
+    담당이 3인방(_NUDGE_MEMBERS) 밖 운영부 실무진(윤병현AM 등)이면 약속 L24(운영부는
+    실장 경유)대로 이경연 실장 묶음에 합치되, 줄에는 원 담당 이름을 남긴다.
 
     todo_rows — 업무&결재 SSOT 전체 행(build_mgr_daily_brief 가 이미 _fetch_todo_rows()로
-    가져온 것을 그대로 넘긴다 · 새 조회 안 만든다). owner 가 3인방 아무도 아닐 때 이 중
-    담당자=김남욱 행과 제목을 대조해 GM_TASK_OWNERS 담당값을 찾는다(배855)."""
-    try:
-        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
-        t = date.fromisoformat(target_date)
-    except Exception:
-        return []
-    lo = (t - timedelta(days=NUDGE_LOOKBACK_DAYS - 1)).isoformat()
-    # ★GM 지시 2026-09-07 — "놓친 건은 리마인드를 지속시켜라". 이경연 실장·이정헌 소장
-    # 몫은 7일이 지나도 열린 채면 계속 후보에 들어야 한다 — 창을 원장 전체로 넓히고,
-    # 하한(lo) 적용은 아래 kept 적재 직전으로 옮겨 나우열M·GM_TASK_OWNERS 매칭 몫에만 건다.
-    window = [e for e in ledger
-              if isinstance(e, dict) and str(e.get("date", "")) <= target_date]
+    가져온 것을 그대로 넘긴다 · 새 조회 안 만든다)."""
+    from collectors.ops_shared import MGR_LEDGER_MARKER_TAG, TODO_DONE_STATUSES
 
-    resolved_texts, today_texts = [], []
-    earliest: dict = {}  # 정규화 제목 -> 이 창에서 처음 나온 날짜
-    for e in sorted(window, key=lambda x: str(x.get("date", ""))):
-        for it in e.get("issues") or []:
-            title = str(it.get("issue") or "").strip()
-            if not title:
-                continue
-            earliest.setdefault(_nudge_norm(title), str(e.get("date", "")))
-            if str(it.get("status") or "") == "resolved":
-                resolved_texts.append(title)
-            if str(e.get("date", "")) == target_date:
-                today_texts.append(title)
-
-    gm_owned_rows = [r for r in (todo_rows or []) if "김남욱" in str(r.get("담당자", ""))]
-    task_owners = _fetch_gm_task_owners() if gm_owned_rows else {}
-
-    # ★2026-09-07 GM 지시 「놓친 건은 리마인드 지속」 — 사람당 NUDGE_SHOW_N 자리를 최신 건부터
-    #   채우면 오래된 놓친 건이 영원히 밀려 안 보인다. 오래된 순으로 채운다(웰리가 아침에
-    #   --nudge-review/--resolve 로 지난 건을 닫아야 자리가 돈다).
-    kept: dict = {}  # member -> [{"title","owner","date"}], 오래된 날짜부터 채운다
-    for e in sorted(window, key=lambda x: str(x.get("date", ""))):
-        if str(e.get("date", "")) == target_date:
+    cand = []
+    for r in (todo_rows or []):
+        if not isinstance(r, dict):
             continue
-        for it in e.get("issues") or []:
-            title = str(it.get("issue") or "").strip()
-            owner = str(it.get("owner") or "").strip()
-            if not title or not owner or str(it.get("status") or "") != "open":
-                continue
-            if any(_nudge_similar(title, x) for x in resolved_texts + today_texts):
-                continue
-            if owner in _NUDGE_MEMBERS:
-                member = owner
-            else:
-                member = _gm_task_owner_for_title(title, gm_owned_rows, task_owners)
-                if not member:
-                    continue  # 담당 미지정 — 안 보낸다(배855)
-            # 나우열M 몫·GM_TASK_OWNERS 매칭 몫은 종전대로 7일 창 유지(그 도메인은 웰리가
-            # 판단하지 않는다) — 이경연 실장·이정헌 소장 몫만 창 해제(위 GM 지시 2026-09-07).
-            if member in (NAWOOL_WHO,) or owner not in _NUDGE_MEMBERS:
-                if str(e.get("date", "")) < lo:
-                    continue
-            rows = kept.setdefault(member, [])
-            if any(_nudge_similar(title, r["title"]) for r in rows):
-                continue
-            if len(rows) >= NUDGE_SHOW_N:
-                continue
-            rows.append({"title": title, "owner": owner,
-                        "date": earliest.get(_nudge_norm(title), str(e.get("date", "")))})
+        if str(r.get("생성자", "")).strip() != "김남욱GM":
+            continue
+        if MGR_LEDGER_MARKER_TAG not in str(r.get("내용", "")):
+            continue
+        if str(r.get("상태", "")).strip() in TODO_DONE_STATUSES:
+            continue
+        owner = str(r.get("담당자", "")).strip()
+        title = str(r.get("업무명", "")).strip()
+        if not owner or not title:
+            continue
+        due = str(r.get("종료일", "") or "")[:10] or "9999-99-99"
+        cand.append((due, owner, title))
+    cand.sort(key=lambda x: x[0])
+
+    kept: dict = {}  # member -> [{"title","owner","date"}], 기한 오래된 것부터 채운다
+    for due, owner, title in cand:
+        member = owner if owner in _NUDGE_MEMBERS else "이경연 실장"  # 약속 L24 — 운영부는 실장 경유
+        rows = kept.setdefault(member, [])
+        if len(rows) >= NUDGE_SHOW_N:
+            continue
+        rows.append({"title": title, "owner": owner, "date": due})
 
     items = []
     for member, rows in kept.items():
@@ -549,6 +520,40 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
                 "how": f"{member}님께 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다.",
             })
     return items
+
+
+def _selfcheck_reply_nudge_from_ssot() -> None:
+    """build_reply_nudge_items 가 원장 대신 SSOT 행에서 뽑는지 — 필터·정렬·상한·L24
+    묶음까지 순수 데이터로 검사(네트워크 없음)."""
+    rows = [
+        # 마커 없음 — 배1102 다리가 안 만든 행(사람이 직접 올린 것 등), 후보에서 빠져야 함
+        {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "무관 행", "내용": "그냥 메모", "상태": "진행중", "종료일": "2026-09-01"},
+        # 생성자 다름 — 빠져야 함
+        {"생성자": "웰리", "담당자": "이경연 실장", "업무명": "웰리행", "내용": "[중간관리자원장 2026-09-01 | x]", "상태": "진행중", "종료일": "2026-09-01"},
+        # 완료 — 빠져야 함
+        {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "완료건", "내용": "[중간관리자원장 2026-09-01 | y]", "상태": "완료", "종료일": "2026-09-01"},
+        # 정상 후보 3건 — 기한 오래된 순 정렬 확인용
+        {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "최신건", "내용": "[중간관리자원장 2026-09-06 | z1]", "상태": "진행중", "종료일": "2026-09-10"},
+        {"생성자": "김남욱GM", "담당자": "이경연 실장", "업무명": "오래된건", "내용": "[중간관리자원장 2026-08-24 | z2]", "상태": "진행중", "종료일": "2026-08-31"},
+        # 3인방 밖(운영부 실무진) — 이경연 실장 묶음으로 합쳐져야 함(L24)
+        {"생성자": "김남욱GM", "담당자": "윤병현AM", "업무명": "실무진건", "내용": "[중간관리자원장 2026-08-20 | z3]", "상태": "진행중", "종료일": "2026-08-28"},
+    ]
+    items = build_reply_nudge_items("2026-09-07", rows)
+    assert len(items) == 3, f"필터 후 3건이어야 함(마커없음·생성자다름·완료 제외): {items}"
+    who_set = {it["who"] for it in items}
+    assert who_set == {"이경연 실장"}, "3인방 밖은 이경연 실장 묶음으로 합쳐져야 함(약속 L24)"
+    assert items[0]["date"] < items[1]["date"] < items[2]["date"], "기한 오래된 순 정렬"
+    assert any("윤병현AM 건" in it["ask"] for it in items), "원 담당 이름은 줄에 남아야 함"
+
+    # 담당별 NUDGE_SHOW_N(3) 상한 — 4번째부터는 빠진다
+    many_rows = [
+        {"생성자": "김남욱GM", "담당자": "이정헌 소장", "업무명": f"건{i}",
+         "내용": f"[중간관리자원장 2026-08-2{i} | 건{i}]", "상태": "진행중", "종료일": f"2026-08-2{i}"}
+        for i in range(4)
+    ]
+    capped = build_reply_nudge_items("2026-09-07", many_rows)
+    assert len(capped) == NUDGE_SHOW_N, f"사람당 {NUDGE_SHOW_N}건 상한(배1085)"
+    print("[selfcheck] build_reply_nudge_items SSOT 소스 전환 OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════

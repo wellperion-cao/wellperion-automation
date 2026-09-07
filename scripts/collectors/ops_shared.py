@@ -50,6 +50,15 @@ SCHEDULE_GAS_URL = os.environ.get(
 # todo_list '상태' 완료 판정 기준(양쪽 소비자 동일).
 TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
 
+# ★중간관리자 원장 이슈 → 업무 SSOT 행 다리(배1102 · GM 지시 2026-09-07)의 추적 열쇠.
+# 만드는 쪽(ops_daily_digest.bridge_to_todo)과 읽는 쪽(send_ops_digest.build_reply_nudge_items)
+# 이 같은 문자열을 봐야 다리가 안 끊긴다(약속 L01) — 여기 한 곳에만 둔다.
+MGR_LEDGER_MARKER_TAG = "[중간관리자원장"
+
+
+def mgr_ledger_marker(date: str, issue: str) -> str:
+    return f"[중간관리자원장 {date} | {issue}]"
+
 
 def reception_key() -> str:
     """접수 GAS 접근 게이트 열쇠(GAS ScriptProperties ACCESS_TOKEN 과 같은 값).
