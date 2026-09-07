@@ -125,6 +125,7 @@
      기준임을 qty 힌트로 안내). ②OHNUTTI_PRICE를 세트 2종 배열 구조로 교체(소비자가→판매가 20% 할인
      확정값, 나란히 표시). ③10세트 이상 할인율(30%)을 GUIDES.ohnutti.note에 명시.
      2026-08-10 GM 확정 — 단체가 = 소비자가 기준 30% (GM 확정 2026-08-10 · 지난 설 18,060원과 동일 산식).
+     2026-09-06 윤병현 매니저 — 오넛티 수량(f_qty) 입력 시 예상 금액 실시간 표시(.field-est) 추가 — 세트 라디오+수량으로 OHNUTTI_PRICE 계산(10세트↑ bulk), 미선택·0이면 숨김.
      2026-09-02 재적용(윤병현 매니저) — 09-02 시토 커밋들이 08-31 이전 베이스로 파일을 덮어써 아래 3건이 소실 → 최신본 위에 병합 복구: ①단체가 절사 2구 18,000/3구 17,900(08-31) ②g-price-row flex-wrap+g-price-bulk 모바일 줄바꿈(09-01) ③배송지 10세트 미만 잠금+계좌이체 시 계좌·입금자명 안내(09-01). ★이 파일 커밋 전 반드시 최신본 pull — WP 8460과 8831(오넛티 전용 /ko/ohnutti-form/) 두 페이지에 함께 재주입할 것.
      ★이 파일의 HTML 주석·인라인 스크립트는 view-source로 그대로 노출되므로
      비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시, ★주의: 이 파일 주석 텍스트 안에 꺾쇠괄호+
@@ -261,6 +262,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .field-info{font-size:13.5px;color:var(--ink);line-height:1.6}
 .wlp-inq .field.is-locked input{background:var(--bg);color:var(--dim);cursor:not-allowed}
 .wlp-inq .field-lock{font-size:12px;color:var(--dim);margin:6px 0 0}
+.wlp-inq .field-est{margin:8px 0 0;font-size:14px;font-weight:700;color:var(--coral)}
+.wlp-inq .field-est span{font-weight:400;color:var(--muted);font-size:12.5px}
 .wlp-inq .bank-box{margin-top:12px;padding:14px 16px;border:1px solid var(--line);background:var(--bg)}
 .wlp-inq .bank-row{display:flex;gap:12px;font-size:13.5px;line-height:1.7}
 .wlp-inq .bank-row span{flex:0 0 68px;color:var(--dim)}
@@ -449,7 +452,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   }
 
   // 유형별 수집 항목 — 기본과 다른 유형만 적는다(없으면 위 기본 문구가 쓰인다).
-  var PIPA_ITEMS = { steamiron: '성함, 연락처, 받으실 주소, 배송 시 요청사항, 결제 방법, 남기신 말씀' };
+  // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용: 주소·배송·결제 항목 수집 안 함(성함·연락처만, 선택)
+  var PIPA_ITEMS = { steamiron: '성함, 연락처(선택)' };
 
   // ── 유입경로(문의 경로) 표준 옵션 ──
   var CHANNELS = ['네이버 검색·플레이스','네이버 블로그','인스타그램','당근마켓','동부이촌동 커뮤니티','카카오톡','소개·지인','기존·과거 회원','오프라인(간판·방문)','기타'];
@@ -530,24 +534,15 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         { key:'proposal',    label:'제안 내용', type:'textarea', ph:'제휴 제안 내용을 자유롭게 적어주세요.' }
       ]
     },
-    // ── 진공 스팀다리미 구매 신청 (GM 지시 2026-09-02 · 오넛티와 같은 뼈대) ──
+    // ── 진공 스팀다리미 안내 (2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용) ──
     //   근거 = coo/chairman/스팀다리미_검토.html (2026-08-04 에이스전기 주영종 대표 통화 확정분).
-    //   남·여 파우더룸·탈의실에 각 1대를 비치해 회원이 그 자리에서 쓰시고, 같은 제품을 원하시는
-    //   회원께 판매한다. 수량은 여러 대를 사시는 경우가 드물어 숫자 입력 대신 자유 메모로 받는다.
+    //   비치: 남·여 사우나 파우더 공간. 이용: 요청 시 사우나 관리자가 도와드린다. 구매: 리셉션에서
+    //   진행(온라인 구매 신청·택배·주소 수집 없음) — 그래서 이 폼은 선택 사항인 리셉션 회신 요청만 받는다.
     steamiron: {
-      purpose: '진공 스팀다리미 구매 신청 접수 및 수령·결제 안내',
+      purpose: '진공 스팀다리미 안내 및 리셉션 회신(선택)',
       fields: [
-        { key:'name',    label:'성함',   type:'text', ph:'실명을 입력해 주세요', req:true },
-        { key:'phone',   label:'연락처', type:'tel',  ph:'010-1234-5678', req:true },
-        { key:'qty',     label:'수량',   type:'select', ph:'선택해 주세요', req:true, opts:['1대','2대','3대 이상'] },
-        // 택배로 보내드리는 상품이라 주소가 없으면 발송을 못 한다 — 필수(GM 지시 2026-09-02 · 배896)
-        { key:'address', label:'받으실 주소', type:'text', req:true, hint:'택배로 보내드립니다', ph:'도로명 주소와 상세 주소를 함께 적어 주세요' },
-        // 결제는 리셉션에서 확인해 드린다. 두 가지 중 편하신 쪽을 미리 고르시게 한다(GM 지시 2026-09-02)
-        // 배송 시 기재사항 — 에이스전자 요청(2026-09-03 회신). 택배 기사님께 전달되는 한 줄이라 고르기만 하면 되게 select.
-        //   뒷단(GAS 시트)은 손대지 않는다 — 제출 때 '남기실 말씀' 앞에 [배송 요청] 한 줄로 합쳐 보낸다(약속 L21).
-        { key:'delivery', label:'배송 시 요청사항', type:'select', opt:true, ph:'선택해 주세요', opts:['문 앞에 놓아주세요','경비실에 맡겨주세요','대문 앞에 놓아주세요','부재 시 연락 주세요'] },
-        { key:'pay',     label:'결제 방법', type:'radio', req:true, opts:['현장 결제 (리셉션)','계좌이체'] },
-        { key:'message', label:'남기실 말씀', type:'textarea', opt:true, ph:'수령 희망 시기 등 편하게 적어 주세요.' }
+        { key:'name',    label:'성함',   type:'text', ph:'실명을 입력해 주세요', opt:true },
+        { key:'phone',   label:'연락처(리셉션 회신 요청·선택)', type:'tel',  ph:'010-1234-5678', opt:true }
       ]
     },
     ohnutti: {
@@ -596,16 +591,15 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       lead:'웰페리온과 함께 성장할 파트너를 찾습니다. 콜라보레이션부터 입점·B2B 복지·콘텐츠 협업까지 다양한 제휴를 환영합니다.',
       note:'담당 부서 검토 후 회신드립니다.'
     },
-    // 진공 스팀다리미 — 가이드(써 보시는 법)와 구매 안내를 한 자리에 둔다(GM 지시 2026-09-02).
-    //   숫자·조건은 스팀다리미_검토.html 확정분만 적는다. 부가세 포함 여부와 수령 방식(재고 보유 /
-    //   주문 후 수령)은 아직 운영부 회신 전이라 여기에 쓰지 않는다 — 지어내지 않는다(약속 L05·L25).
+    // 진공 스팀다리미 — 가이드(안내)를 한 자리에 둔다.
+    //   숫자·조건은 스팀다리미_검토.html 확정분만 적는다 — 지어내지 않는다(약속 L05·L25).
+    // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용: 비치 2곳(여자·남자 사우나 파우더 공간),
+    //   이용은 사우나 관리자에게 요청, 구매는 리셉션에서(택배·주소 수집 없음).
     steamiron: {
-      // 설치 자리 3곳 = GM 확정 2026-09-02(여 사우나 파우더 공간 · 남 사우나 파우더 공간 · 굿즈 매대).
-      // 상품명·모델·배송 조건 = 에이스전자 주성현 회신 2026-09-03 확정분(부가세 포함 108,000 · 12시 전 주문 당일 발송 · 1~2일).
-      lead:'<b>홈앤아트 에어 진공 스팀다리미</b>(HASI-1100W)를 여자·남자 사우나 파우더 공간과 굿즈 매대, 세 곳에 두었습니다. 사우나에 들어가시기 전이나 나오신 뒤 그 자리에서 바로 써 보시고, 같은 제품을 회원가로 집까지 받아 보실 수 있습니다.',
-      tags:['여자 사우나 파우더 공간','남자 사우나 파우더 공간','굿즈 매대'],
-      // ★2026-09-02 GM 정정(배896) — 담당자가 따로 연락드리지 않는다. 리셉션에서 결제 확인까지 도와드리는 것이 실제 흐름이다.
-      note:'신청하시면 리셉션에서 결제(현장 결제 또는 계좌이체)를 확인해 드리고, 결제가 확인되면 남겨주신 주소로 택배를 보내드립니다. 사용 중 궁금하신 점도 리셉션에 말씀해 주세요.'
+      // 상품명·모델 = 에이스전자 주성현 회신 2026-09-03 확정분(부가세 포함 108,000).
+      lead:'<b>홈앤아트 에어 진공 스팀다리미</b>(HASI-1100W)를 여자·남자 사우나 파우더 공간, 두 곳에 두었습니다. 이용을 원하시면 사우나 관리자에게 말씀해 주시면 도와드립니다.',
+      tags:['여자 사우나 파우더 공간','남자 사우나 파우더 공간'],
+      note:'구매는 리셉션에서 도와드립니다. 사용 중 궁금하신 점도 리셉션에 말씀해 주세요.'
     },
     ohnutti: {
       lead:'웰페리온과 오넛티가 함께 준비한 추석 선물세트입니다. 지난 설에는 준비한 물량이 일찍 소진돼 뒤늦게 찾아주신 분들이 구매하지 못했습니다. 이번에는 미리 접수를 받아 순서대로 확보해 드립니다. 500세트 한정이며, 접수 순서대로 안내드립니다. 접수 후 결제를 마치셔야 확정됩니다.',
@@ -613,11 +607,13 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     }
   };
 
-  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnutti:'추석 선물세트 신청', steamiron:'진공 스팀다리미 구매 신청' };
+  // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용: steamiron = '구매 신청' 아닌 '안내'
+  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnutti:'추석 선물세트 신청', steamiron:'진공 스팀다리미 안내' };
 
   // 제출 버튼 문구 — 기본 "문의 접수하기", 오넛티만 "선물세트 구매 대기 신청"(2026-08-07 GM 지시, 오넛티 한정)
   var SUBMIT_LABEL_DEFAULT = '문의 접수하기';
-  var SUBMIT_LABEL = { ohnutti: '선물세트 구매 대기 신청', steamiron: '구매 신청하기' };
+  // steamiron은 2026-09-07 GM 변경(배896)으로 구매 신청이 아니라 안내라 기본값("문의 접수하기") 사용
+  var SUBMIT_LABEL = { ohnutti: '선물세트 구매 대기 신청' };
 
   // ── 입회 나이 안내(접이식, 멤버십·성인강습 한정) — 2026-07-21 시포·GM ──
   var AGE_POLICY_HTML =
@@ -639,7 +635,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     rental: '행사·촬영·모임을 위한 공간 대관을 안내해 드립니다.',
     business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.',
     ohnutti: '추석 선물세트 신청을 도와드립니다.',
-    steamiron: '파우더룸에 비치된 진공 스팀다리미를 택배로 보내드립니다.'
+    // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용
+    steamiron: '남·여 사우나 파우더 공간에 비치된 진공 스팀다리미를 안내해 드립니다.'
   };
   // 2번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 아래 hero-note("접수 순서대로 현장에서 결제 후
   //   제공해 드립니다")가 같은 뜻이라 중복이 돼(2026-08-07 GM 재지적) — 오넛티는 이 줄 자체를 숨긴다.
@@ -652,9 +649,8 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   // 제출버튼 아래 안내 1번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 담당자가 전화하는 구조가
   //   아니므로 접수 후 무엇이 일어나는지로 교체(2026-08-07 GM 재지적, 사람 손 최소화).
   var NOTE_LINE1_DEFAULT = '남겨주신 연락처로 담당자가 안내드립니다.';
-  var NOTE_LINE1 = { ohnutti: '방문·결제 순서로 접수가 확정됩니다.',
-                     // ★2026-09-02 GM 정정(배896) — 담당자가 연락드리는 흐름이 아니다.
-                     steamiron: '결제가 확인되면 남겨주신 주소로 보내드립니다.' };
+  // steamiron은 2026-09-07 GM 변경(배896)으로 리셉션 구매·관리자 보조 이용이라 이 특례를 제거하고 기본값 사용
+  var NOTE_LINE1 = { ohnutti: '방문·결제 순서로 접수가 확정됩니다.' };
   function setHeroSub(cat){
     $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT;
     // 히어로 2번째 줄('담당자가 빠르게 연락드립니다')을 감출 유형 — 담당자 연락이 실제 흐름이 아닌 것들.
@@ -736,11 +732,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         + '<span class="g-price-list">128,000원</span>'
         + '<span class="g-price-sale">108,000원<span class="g-price-vat">부가세 포함</span></span>'
         + '</div></div>';
-      html += '<div class="g-ship">'
-        + '<span><b>발송</b> 12시 전 주문 당일 · 12시 이후 다음 날</span>'
-        + '<span><b>배송</b> 보통 1~2일 (제주·산간 지역은 더 걸릴 수 있습니다)</span>'
-        + '<span><b>수령</b> 남겨주신 주소로 택배</span>'
-        + '</div>';
+      // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용: 배송 조건 줄(g-ship) 제거(택배 없음)
     }
     // 오넛티 세트별 가격(소비자가→판매가) — list·sale 둘 다 채워진 세트만 표시(2026-08-07 GM 확정값)
     if (cat === 'ohnutti') {
@@ -880,6 +872,23 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         payEl.parentNode.appendChild(bank);
         var syncBank = function(){ bank.style.display = (payEl.value === '계좌이체') ? 'block' : 'none'; };
         payEl.addEventListener('change', syncBank); syncBank();
+      }
+      // ③ 수량 입력 시 예상 금액 실시간 표시 (2026-09-06 윤병현 매니저 지시) — 단가는 OHNUTTI_PRICE 단일 출처, 10세트 티어 자동
+      if (qtyEl) {
+        var estP = document.createElement('p'); estP.className = 'field-est'; estP.style.display = 'none';
+        qtyEl.parentNode.appendChild(estP);
+        var syncEst = function(){
+          var n = parseInt(String(qtyEl.value).replace(/[^0-9]/g,''), 10) || 0;
+          var ch = document.querySelector('#f_setType input[type=radio]:checked');
+          if (!n || !ch) { estP.style.display = 'none'; return; }
+          var pr = OHNUTTI_PRICE[ ch.value.indexOf('2구') > -1 ? 0 : 1 ];
+          var unit = n >= 10 ? pr.bulk : pr.sale;
+          estP.innerHTML = '예상 금액 <b>' + (unit * n).toLocaleString() + '원</b> <span>(' + unit.toLocaleString() + '원 × ' + n + '세트' + (n >= 10 ? ' · 10세트 이상 30% 할인 적용' : '') + ')</span>';
+          estP.style.display = '';
+        };
+        qtyEl.addEventListener('input', syncEst);
+        document.querySelectorAll('#f_setType input[type=radio]').forEach(function(rb){ rb.addEventListener('change', syncEst); });
+        syncEst();
       }
     }
 
@@ -1066,10 +1075,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
     if (pd.length < 9 || pd.length > 11) { toast('연락처를 정확히 입력해 주세요', true); return; }
     if (!vals.consent) { toast('개인정보 수집·이용에 동의해 주세요', true); return; }
 
-    // 진공 스팀다리미 — 배송 요청사항을 '남기실 말씀' 앞에 한 줄로 합쳐 보낸다(시트 칸 추가 없이, 2026-09-03)
-    if (vals.category === 'steamiron' && vals.delivery) {
-      vals.message = '[배송 요청] ' + vals.delivery + (vals.message ? '\n' + vals.message : '');
-    }
+    // 2026-09-07 GM 변경(배896) — 리셉션 구매·관리자 보조 이용: delivery 필드 자체가 없어져 합치기 로직 제거
     var sid = uuid();
     var payload = {
       action:'intake_submit', t:INTAKE_TOKEN, submissionId:sid,
