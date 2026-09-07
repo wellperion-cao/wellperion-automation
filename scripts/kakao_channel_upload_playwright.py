@@ -371,9 +371,12 @@ async def run_setup() -> int:
             cookies = await context.cookies()
         except Exception:
             break  # 브라우저 창을 GM이 닫음
-        # 카카오 인증 쿠키(_kau/_kawlt 등) 보유 = 로그인 성립
+        # 카카오 로그인 토큰 보유 = 로그인 성립
         # (center-pf.kakao.com → business.kakao.com 리다이렉트라 URL 판정 대신 쿠키 판정, 실측 2026-06-03)
-        if any(c.get("name") in ("_kau", "_kawlt", "_kawltea", "_karmt") for c in cookies):
+        # ★2026-09-07 정정: _kau 는 로그인 전에도 깔리는 기기 식별 쿠키라 판정에서 뺀다.
+        #   넣어 두면 창을 띄우자마자 '세션 확인 완료'가 찍혀 미로그인을 성공으로 보고한다(실측: 배999 카카오
+        #   재로그인 뒤 쿠키 7개 전부 _kau·tiara 추적뿐이었는데 로그인 성공으로 표시됨).
+        if any(c.get("name") in ("_kawlt", "_kawltea", "_karmt") for c in cookies):
             has_session = True
             break
         await asyncio.sleep(3)
