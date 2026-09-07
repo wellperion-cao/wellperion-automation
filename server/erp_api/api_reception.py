@@ -47,7 +47,7 @@ import time
 import urllib.request
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from api_intake import redact_blobs  # noqa: E402  — write_log.payload 저장 전 blob 축약(다른 관문과 같은 규칙)
@@ -57,6 +57,10 @@ from sync_reception import hold_key  # noqa: E402  — hold_complete 매칭 정�
 SOURCE = "sheet-mirror"
 PERIODS = ("all", "week", "month")
 router = APIRouter(prefix="/api/reception")
+# 공개 제출 통로(/submit)는 wellperion.com(다른 origin)의 폼이 부른다 — 응답에 이 헤더가 없으면 브라우저가 응답을
+# 막아 폼은 '네트워크 오류'만 띄운다(2026-09-07 GM 신고 · 배1103). api_intake·api_track 과 같은 값.
+CORS = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"}
 
 # ─── 카테고리·부서 배정 — apps_script_reception.js REG_CATEGORIES·REG_LOC_DEPT·_regDeptFor 이식 (배 984) ───
 #   dept 변경 시 원본(GAS)도 같이 고쳐야 하던 것을, 이제 이 표 한 곳만 고치면 된다(GAS 쪽은 더 이상 안 쓴다).
@@ -346,8 +350,22 @@ def health():
 # ═══════════════════════════════════════════════════════════════════════
 #  쓰기 — 배 984 (2026-09-05) · 서버가 원장, GAS 는 더 이상 부르지 않는다
 # ═══════════════════════════════════════════════════════════════════════
+@router.options("/submit")
+def submit_preflight():
+    return Response(status_code=204, headers=CORS)
+
+
 @router.post("/submit")
 async def submit(request: Request):
+    """공개 폼 응답은 어떤 갈래든 CORS 헤더를 단다 — 본문 판정은 _submit 그대로."""
+    resp = await _submit(request)
+    if isinstance(resp, JSONResponse):
+        resp.headers.update(CORS)
+        return resp
+    return JSONResponse(resp, headers=CORS)
+
+
+async def _submit(request: Request):
     """reg_submit 대체 — 종합접수처 6종 폼(분실물·시설고장·청결·칭찬·쓴소리·컴플레인).
     무인증(nginx erp-locations 가 /api/reception/submit 만 auth_request 제외 — 공개 키오스크가 부른다)."""
     try:
