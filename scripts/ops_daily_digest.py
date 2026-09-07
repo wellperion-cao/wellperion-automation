@@ -1596,6 +1596,12 @@ def strip_confirmed_bullets(message: str, resolved_titles: list[str]) -> str:
 _MGR_TODO_MAX_PER_RUN = 20   # 안전판 — 이 이상이면 오탐 배정으로 보고 아무것도 안 만든다(사람 확인)
 _MGR_TODO_TITLE_SIM = 0.8    # 업무 SSOT 기존 행과 제목이 이 이상 닮으면 같은 건으로 본다(중복 방지)
 
+# ★2026-09-07 GM 지시(17:5x "하지말라니까?") — AI 는 남의 업무 SSOT 행을 만들지 않는다.
+# 예외 = GM업무(생성자·담당 김남욱 GM 본인)뿐(약속 08-18). 오늘 배1102 가 이 다리를 열어
+# 47행을 일괄 생성했고(대상 owner 는 전부 _OWNER_CHOICES = 실무진, GM 본인이 아니다) 웰리가
+# AI 생성 39행을 전부 삭제·정정 발신했다. 기본값 OFF — 코드 상수로 끈다(환경변수 우회 금지).
+_MGR_TODO_BRIDGE_ENABLED = False
+
 
 def _mgr_todo_dup_hit(title: str, existing_title: str) -> bool:
     """★2026-09-07 웰리 검수 — 제목 유사도(0.8) 만으로 실측 3/6건을 놓쳤다(같은 일을 다른
@@ -1645,6 +1651,8 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
     무게 2 이상) 새로 안 만들고 그 행 id 를 todo_id 로 되적는다. 기한은 원장 이슈에
     없으면 지어내지 않고 비워 둔다(약속 L23). 안전판 _MGR_TODO_MAX_PER_RUN 건 넘으면
     BLOCKED — 아무것도 만들지 않는다."""
+    if not _MGR_TODO_BRIDGE_ENABLED:
+        return 0  # GM 08-18 규칙 — AI는 GM업무(본인 것) 외 SSOT 행을 만들지 않는다(09-07 47행 사고로 OFF)
     if room_dir_name != "★중간관리자":
         return 0  # ★운영부 등 — 배589 결정 유지(자동 등록 안 함, 조용히 스킵)
 
@@ -1717,12 +1725,21 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
 
 
 def _selfcheck_bridge_to_todo_gate() -> None:
-    """bridge_to_todo 의 순수 로직(방 게이트·후보 필터·안전판)만 검사 — GAS 조회는
-    _gas_get 을 무응답으로 바꿔 네트워크 없이 돈다(dry_run=True 라 등록 호출도 없음)."""
-    global _gas_get
+    """bridge_to_todo 의 순수 로직(OFF 스위치·방 게이트·후보 필터·안전판)만 검사 — GAS
+    조회는 _gas_get 을 무응답으로 바꿔 네트워크 없이 돈다(dry_run=True 라 등록 호출도 없음)."""
+    global _gas_get, _MGR_TODO_BRIDGE_ENABLED
     orig = _gas_get
+    orig_enabled = _MGR_TODO_BRIDGE_ENABLED
     _gas_get = lambda *a, **k: None  # noqa: E731 — existing_rows=[] 로 fail-soft
     try:
+        # ★기본값 OFF(09-07 47행 사고) — 정상 후보라도 스위치가 꺼져 있으면 아무것도 안 만든다
+        assert not orig_enabled, "기본값은 반드시 OFF — 켜져 있으면 GM 08-18 규칙 위반"
+        assert bridge_to_todo(
+            [{"date": "2026-09-07", "issues": [
+                {"issue": "요금 변경 준비", "owner": "이경연 실장", "status": "open"}]}],
+            "2026-09-07", "★중간관리자", dry_run=True) == 0, "OFF 상태면 정상 후보도 0건이어야 함"
+
+        _MGR_TODO_BRIDGE_ENABLED = True  # 아래부터는 내부 로직(게이트·중복대조·안전판) 검사 — 켜둔 채로만 의미가 있다
         # ★운영부는 방 게이트에서 바로 스킵(배589 결정 유지)
         assert bridge_to_todo([{"date": "2026-09-07", "issues": [
             {"issue": "x", "owner": "이경연 실장", "status": "open"}]}],
@@ -1780,7 +1797,8 @@ def _selfcheck_bridge_to_todo_gate() -> None:
             "둘째 건은 첫째가 방금 만든 것에 연결돼야 함"
     finally:
         _gas_get = orig
-    print("[selfcheck] bridge_to_todo 게이트·안전판·진행중전용 중복대조·같은회차 자기중복 OK")
+        _MGR_TODO_BRIDGE_ENABLED = orig_enabled
+    print("[selfcheck] bridge_to_todo OFF스위치·게이트·안전판·진행중전용 중복대조·같은회차 자기중복 OK")
 
 
 # ═══════════════════════════════════════════
