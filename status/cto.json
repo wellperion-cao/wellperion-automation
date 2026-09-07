@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
-  "status": "DONE",
-  "task_id": "CTO-2026-09-07-중간관리자-요청-담당-기한-배정-업무-SSOT-행-",
-  "last_task_id": "CTO-2026-09-07-중간관리자-요청-담당-기한-배정-업무-SSOT-행-",
+  "status": "진행중",
+  "task_id": "CTO-2026-09-06-나우열M-CHRO-라인-전용-제한-서버-접속-별도-",
+  "last_task_id": "CTO-2026-09-06-나우열M-CHRO-라인-전용-제한-서버-접속-별도-",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-07T06:59:27Z",
+  "last_pushed_at": "2026-09-07T21:01:41Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -1117,12 +1117,44 @@
       "note": "중간관리자 요청 루프 자동화 — SSOT 49행 · 07:50 소스 전환 · 회신→행 append · 월요 미결표",
       "updated_at": "2026-09-07T06:59:27Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-07-지출품의-품의-검토-승인-버튼-사라짐-GM-신고-2",
+      "title": "가이드 두 곳(상단 링크·구매요청 안내 버튼)에 「✅ 품의 승인」 → 매출지출현황.html?req=1 복구(fe6d6887a). 원인 = 어제 배1095 가 🛒 구매요청 링크를 실무진용 지출품의.html 로 바꾸며 승인자(GM) 진입이 사라짐. 지출품의.html(실무진 신청 화면) 그대로 · cfo 화면 미접촉 · 라이브 확인.",
+      "status": "DONE",
+      "note": "가이드 두 곳(상단 링크·구매요청 안내 버튼)에 「✅ 품의 승인」 → 매출지출현황.html?req=1 복구(fe6d6887a). 원인 = 어제 배1095 가 🛒 구매요청 링크를 실무진용 지출품의.html 로 바꾸며 승인자(GM) 진입이 사라짐. 지출품의.html(실무진 신청 화면) 그대로 · cfo 화면 미접촉 · 라이브 확인.",
+      "updated_at": "2026-09-07T09:24:19Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-07-종합접수처-유사건-조회-API-신설-요청-API-R",
+      "title": "GET /api/reception/similar 라이브(18:4x) — dept·text 필수, category·days(60)·limit(5) 선택 · 최근 60일 같은 부서(·분류) reception_items 를 difflib/Jaccard 유사도 ≥0.5 내림차순 · 응답 {ok, items[{id,title,dept,category,status,created_at,score}], _source} · 공개 통로(제출 폼이 제출 전 호출 · submit 과 같은 존·무인증) · 외부 실측 200. 시우 화면 배선은 시우 몫.",
+      "status": "DONE",
+      "note": "GET /api/reception/similar 라이브(18:4x) — dept·text 필수, category·days(60)·limit(5) 선택 · 최근 60일 같은 부서(·분류) reception_items 를 difflib/Jaccard 유사도 ≥0.5 내림차순 · 응답 {ok, items[{id,title,dept,category,status,created_at,score}], _source} · 공개 통로(제출 폼이 제출 전 호출 · submit 과 같은 존·무인증) · 외부 실측 200. 시우 화면 배선은 시우 몫.",
+      "updated_at": "2026-09-07T09:39:09Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-07-서버-5분-동기화-교착-DEADLOCK-조용한-실패",
+      "title": "교착 수리 배포 뒤 14시간 실측 — 서버 로그 16개 DeadlockDetected 0 · last_failed 전부 빈값 · 크론 오프셋 11개 유지 · 닫음",
+      "status": "DONE",
+      "note": "교착 수리 배포 뒤 14시간 실측 — 서버 로그 16개 DeadlockDetected 0 · last_failed 전부 빈값 · 크론 오프셋 11개 유지 · 닫음",
+      "updated_at": "2026-09-07T21:01:40Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-06-나우열M-CHRO-라인-전용-제한-서버-접속-별도-",
+      "title": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
+      "status": "진행중",
+      "note": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
+      "updated_at": "2026-09-07T21:01:41Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "중간관리자 요청 루프 자동화 — SSOT 49행 · 07:50 소스 전환 · 회신→행 append · 월요 미결표",
-  "artifact_url": "커밋 974d17f2c·5e22b6d19·3757af22e·e3b9dbfab · dry-run 33줄\r",
+  "title": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
+  "artifact_url": null,
   "commit": "",
-  "note": "중간관리자 요청 루프 자동화 — SSOT 49행 · 07:50 소스 전환 · 회신→행 append · 월요 미결표",
-  "updated_at": "2026-09-07T06:59:27Z"
+  "note": "[시토 2026-09-08 06:0x 자가점검] erp-chro 서비스가 app.py 없는 빈 폴더에서 Restart=always 로 하루 16,654회 재시작 루프(조용한 실패) → 유닛에 ConditionPathExists=/srv/erp/chro/api/app.py 추가·적용(서버+저장소 server/erp_chro/erp-chro.service) → 앱 오기 전엔 조용히 건너뜀. 추가 확인: chro 계정 python3 에 fastapi·uvicorn 없음 — 앱 올릴 때 pip install --user 필요(--add-key 절차에 같이). 공개키 아직 0개(업무관리 방 회신 대기)",
+  "updated_at": "2026-09-07T21:01:41Z"
 }

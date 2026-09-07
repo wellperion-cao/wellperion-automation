@@ -1,6 +1,8 @@
 [Unit]
 Description=Wellperion HR API (FastAPI) — chro 전용 제한 계정 (배1093)
 After=network.target postgresql.service
+# app.py 가 없으면 시작하지 않는다 — 빈 폴더에 Restart=always 가 붙어 하루 1만 6천 회 재시작 루프(2026-09-08 자가점검)
+ConditionPathExists=/srv/erp/chro/api/app.py
 
 [Service]
 User=chro
