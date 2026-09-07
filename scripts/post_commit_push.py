@@ -1273,7 +1273,9 @@ def _land_approved_lock_commit(root: str, sha: str, msg: str) -> tuple[bool, str
         return False, _tail("merge-tree 충돌/실패: " + (mt.stdout or mt.stderr or "").strip())
     tree = tree_lines[0].strip()
     ct = subprocess.run(
-        ["git", "commit-tree", tree, "-p", head, "-p", sha, "-m", msg],
+        # 부모는 master 하나만(체리픽과 같은 모양) — 두 부모로 만들면 lock 커밋이 master 이력에 그대로
+        # 들어와 같은 변경이 두 줄로 보인다(2026-09-07 첫 실측 1a6d5540a·bef634f5a · 웰리 지적).
+        ["git", "commit-tree", tree, "-p", head, "-m", msg],
         cwd=root, capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
     )
