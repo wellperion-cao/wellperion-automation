@@ -1077,12 +1077,26 @@
   var _noticeSource = 'local';
   function ntGetSaved(){ try{ return JSON.parse(localStorage.getItem(SAVED_KEY))||[]; }catch(e){ return []; } }
   function ntSetSaved(arr){ try{ localStorage.setItem(SAVED_KEY, JSON.stringify(arr)); }catch(e){} }
-  /* 서버 목록 조회: 성공 시 배열, 실패/미배포 시 null */
+  /* 서버(GAS) 직접 조회: 성공 시 배열, 실패/미배포 시 null. 저장/삭제 직후 재확인은 항상 이걸로(미러는 5분 지연). */
   function ntServerList(){
     return fetch(NOTICE_API_URL + '?action=notice_list&_=' + Date.now(), { redirect:'follow' })
       .then(function(r){ return r.json(); })
       .then(function(j){ return (j && j.ok && Array.isArray(j.data)) ? j.data : null; })
       .catch(function(){ return null; });
+  }
+  /* ★2026-09-07 시우 배1070 — ERP 도메인에서는 서버 거울(/api/misc/todo/notice_list, 파트너팀 체계.html
+     /api/todo 와 같은 패턴 · 시토 배1113 라이브)을 먼저 읽는다. 실패·비배열·타임아웃이면 GAS 로 폴백.
+     forceGas=true 면(저장·삭제 직후) 미러를 건너뛰고 GAS 로 직행 — 미러는 5분 주기라 방금 쓴 값이 없다. */
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  var NOTICE_MIRROR_URL = '/api/misc/todo/notice_list';
+  function ntFetchList(forceGas){
+    if(forceGas || !ERP_API_ON) return ntServerList();
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 4000) : null;
+    return fetch(NOTICE_MIRROR_URL, { cache:'no-store', signal: ctrl && ctrl.signal })
+      .then(function(r){ if(timer) clearTimeout(timer); if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+      .then(function(j){ return (j && j.ok && Array.isArray(j.data)) ? j.data : ntServerList(); })
+      .catch(function(e){ if(timer) clearTimeout(timer); console.warn('[공지] 서버 거울 실패 → GAS 폴백:', e&&e.message); return ntServerList(); });
   }
   function ntCollectSaveData(){
     return {
@@ -1132,7 +1146,7 @@
     ntServerSave(data).then(function(){
       return ntVerifySaved(data.id, 2);
     }).then(function(confirmed){
-      ntRenderSavedList();
+      ntRenderSavedList(true); /* 저장 직후 — 미러 지연 피해 GAS 직행 */
       if(confirmed){
         alert('저장되었습니다.');
       } else {
@@ -1177,8 +1191,8 @@
     ntSetSaved(ntGetSaved().filter(function(it){ return String(it.id) !== String(id); }));
     if(_noticeSource === 'server'){
       window.erpTodoCall(NOTICE_API_URL, { action:'notice_delete', id:String(id) })
-        .then(function(){ setTimeout(function(){ ntRenderSavedList(); }, 700); })
-        .catch(function(){ ntRenderSavedList(); });
+        .then(function(){ setTimeout(function(){ ntRenderSavedList(true); }, 700); }) /* 삭제 직후 — 미러 지연 피해 GAS 직행 */
+        .catch(function(){ ntRenderSavedList(true); });
     } else {
       ntRenderSavedList();
     }
@@ -1216,10 +1230,10 @@
     });
     container.innerHTML = html;
   }
-  window.ntRenderSavedList = function(){
+  window.ntRenderSavedList = function(forceGas){
     var container = el('noticeSavedList');
     if(!container) return;
-    ntServerList().then(function(list){
+    ntFetchList(forceGas).then(function(list){
       if(list === null){ ntRenderItems(ntGetSaved(), 'local'); return; } /* 서버 미가용 → 로컬 */
       if(ntMigrateIfNeeded(list)){ setTimeout(function(){ ntServerList().then(function(l2){ ntRenderItems(l2||[], 'server'); }); }, 1200); return; }
       ntRenderItems(list, 'server');
