@@ -372,10 +372,30 @@ def missed_targets(target_date: datetime, limit: int = 10) -> "list[datetime]":
     out: list[datetime] = []
     day = last_ok + timedelta(days=1)
     while day < target_day and len(out) < limit:
-        if not is_closed(day):
+        if not is_closed(day) and not reported_in_send_log(day):
             out.append(day)
         day += timedelta(days=1)
     return out
+
+
+def reported_in_send_log(day: datetime) -> bool:
+    """그날치 보고가 회장님 방으로 실제로 나갔는지 발신 로그로 본다(약속 L03 — 기록 말고 현실).
+
+    2026-09-07 실사고: 9/5 회차가 09:30 에 실패한 뒤 13:01 에 손으로 다시 나갔는데 STATUS_FILE 의
+    last_ok_target 은 안 바뀌어, 다음 날 인사말이 「9.5(토)·9.6(일) …」로 4개 방에 나갔다.
+    STATUS_FILE 은 이 스크립트가 보낸 회차만 알고, 손으로 다시 보낸 회차는 발신 로그에만 있다."""
+    tag = f"{_md(day)} 매출 및 운영사항"
+    for offset in range(0, 4):                       # 그날부터 사흘 뒤까지(밀려서 나간 경우)
+        f = ROOT / "logs" / f"kakao_sent-{(day + timedelta(days=offset)).strftime('%Y-%m-%d')}.log"
+        if not f.exists():
+            continue
+        try:
+            for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+                if '"차의주 회장님"' in line and "image" in line and tag in line:
+                    return True
+        except Exception:
+            continue
+    return False
 
 
 def build_caption_with_missed(target_date: datetime, missed: "list[datetime]") -> str:
