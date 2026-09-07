@@ -364,7 +364,7 @@ async def run_setup() -> int:
     print("[INFO] (Enter 불필요. 최대 5분 대기, 로그인 끝나면 자동 마무리)")
 
     has_session = False
-    waited, deadline = 0, 300  # 초
+    waited, deadline = 0, 600  # 초 (2026-09-07: 5분이 짧아 GM 이 창을 못 보고 지나침 — 다른 setup 과 같은 10분)
     while waited < deadline:
         try:
             current_url = page.url
