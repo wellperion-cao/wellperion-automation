@@ -33,7 +33,9 @@ import urllib.request
 from fastapi import APIRouter, Request
 
 SOURCE = "server-last-good"
-FORWARD_TIMEOUT = 55          # 화면 읽기 대기 상한보다 짧게 — 화면이 끊기 전에 server-forward-failed 를 받게
+FORWARD_TIMEOUT = 20          # 화면 폴링 주기(30초)보다 짧게 — 55초였을 때 요청이 겹쳐 쌓여 서버 전체가 굶었다
+#   (2026-09-08 실사고 FB260908-220704: 리셉션 업무 화면 30초 폴링 × GAS 왕복 최대 55초 → 종합접수처 조회 40초+ 대기).
+#   20초 안에 GAS 가 답 못 하면 server-forward-failed 로 끊고 화면이 그 다음 회차에 다시 묻는다.
 _LAST = {}                    # (환경변수 열쇠, 시트) -> {"pw": sha256, "data": {...}, "at": KST}
 _LAST_MAX = 32                # 리셉션 9시트 + 라커 3탭 — ponytail: 상한만 두고 가장 먼저 들어온 것부터 버린다
 _WRITE_ACTIONS = ("update", "append")

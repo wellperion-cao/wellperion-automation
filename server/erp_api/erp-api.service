@@ -7,7 +7,10 @@ User=ec2-user
 WorkingDirectory=/srv/erp/api
 EnvironmentFile=/srv/erp/api.env
 EnvironmentFile=/srv/erp/db.env
-ExecStart=/usr/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port 8001
+# 워커 2개(코어 수와 같게 · 2026-09-08 실사고) — 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가
+# 외부 GAS 왕복을 기다리는 동안 단일 워커가 통째로 막혀 종합접수처 조회(습득물·컴플레인·청결)가 40초 넘게
+# 굶었다(실무진 신고 FB260908-220704). 워커를 나누면 한 요청이 외부를 기다려도 다른 요청이 응답한다.
+ExecStart=/usr/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port 8001 --workers 2
 Restart=always
 RestartSec=3
 
