@@ -218,8 +218,9 @@ OPEN = ("PENDING", "IN_PROGRESS")
 
 def _append_to_ship(role: str, room_name: str, ship_no, fresh: list[dict]) -> str | None:
     """이 방 전용 배(kakao_rooms.json external_rooms.ship_no)에 note 한 줄씩 append.
-    전용 배가 없거나 닫혀 있을 때만 owner_role 의 열린 배 중 가장 최근 것으로 폴백한다
-    (GM 지적 2026-09-08 — "가장 최근 것" 하나로 몰면 방마다 섞여 시보가 못 읽는다).
+    붙이는 배는 그 고정 매핑 하나뿐이다 — 역할 추론 폴백은 쓰지 않는다(2026-09-08 시보 확인).
+    전용 배가 없거나 닫혀 있으면 여기서 아무 데도 붙이지 않고 None 을 돌려주며,
+    호출부가 그 방 전용 배를 새로 띄운다(_new_ship_for_external).
     큐 쓰기는 queue_lock.mutate_queue 한 관문으로만(약속 — 직접 열어 쓰지 않는다).
     돌려주는 값 = 붙인 배의 표시 번호(short_no 우선) — 없으면 None(붙일 배가 없었다는 뜻)."""
     from queue_lock import mutate_queue
