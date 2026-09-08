@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3라인 직무 정의서 · 전결 범위표 (초안) — 웰페리온 A4 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root{
+  --ink:#101418; --navy:#14304E; --navy-2:#0E2439; --navy-bg:#EDF1F6;
+  --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --gray:#8A939B;
+  --line:#E3E7EB; --dim:#5C666F;
+}
+html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact; word-break:keep-all; }
+
+.bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+  display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+  font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+.bar b{ font-weight:700; letter-spacing:-.2px; }
+.bar .sp{ flex:1; }
+.bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+  background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+.bar button:hover{ background:#DCE4EE; }
+.bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+@media print { .bar{ display:none !important; } html,body{ background:#fff; }
+  .page{ margin:0 !important; box-shadow:none !important; page-break-after:always; }
+  .page:last-child{ page-break-after:auto; } }
+
+.page{ width:794px; min-height:1123px; background:#fff; margin:66px auto 30px; padding:34px 42px 26px;
+  display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); }
+.page:last-child{ margin-bottom:66px; }
+
+.head{ border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
+.brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:12px; color:var(--navy);
+  letter-spacing:5px; margin-bottom:3px; }
+.headrow{ display:flex; align-items:flex-end; }
+.title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:24px; letter-spacing:-.7px; line-height:1.2; }
+.meta{ margin-left:auto; text-align:right; font-size:10.5px; line-height:1.55; color:#3C464F; }
+.meta b{ color:var(--ink); font-weight:700; }
+.who{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
+  background:#F6F8FA; padding:4px 10px; font-size:11.5px; color:var(--dim); }
+.who b{ color:var(--navy); font-size:12px; }
+
+.dir{ margin-top:12px; background:var(--navy); color:#fff; padding:8px 15px 9px; font-size:12.4px; line-height:1.55; }
+.dir b{ letter-spacing:1px; }
+.dir span{ opacity:.85; }
+
+.sec-h{ margin-top:14px; font-size:13.6px; font-weight:700; color:var(--navy); letter-spacing:-.2px;
+  border-bottom:1.5px solid var(--navy); padding-bottom:3px; margin-bottom:6px;
+  display:flex; align-items:baseline; }
+.sec-h .hint{ margin-left:auto; font-size:10.5px; font-weight:400; color:var(--dim); }
+
+table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+th,td{ border:1px solid var(--line); padding:6px 9px; font-size:11.8px; line-height:1.42; vertical-align:top; }
+thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:11.6px; border-color:#2A4763; text-align:left; }
+td.k{ background:#F6F8FA; font-weight:700; font-size:11.6px; color:var(--navy); width:22%; }
+td ul{ list-style:none; }
+td ul li{ padding:1.5px 0 1.5px 11px; position:relative; }
+td ul li::before{ content:'·'; position:absolute; left:0; color:var(--dim); }
+.dash{ color:var(--gray); text-align:center; }
+
+.note{ margin-top:6px; font-size:10.8px; color:var(--dim); line-height:1.5; border-left:3px solid var(--warn); padding-left:8px; }
+
+.foot{ margin-top:auto; padding-top:10px; border-top:1px solid var(--line); font-size:9.8px; color:var(--gray); line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>3라인 직무 정의서 · 전결 범위표 (초안 · A4 3장)</b>
+  <span class="note">정본 docs/3라인_직책체계_20260831.md §1·§6</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A4 인쇄</button>
+</div>
+
+<!-- ===== 1장 — 운영부 리더 ===== -->
+<div class="page">
+  <div class="head">
+    <div class="brand">WELLPERION</div>
+    <div class="headrow">
+      <div class="title">운영부 리더 <span style="font-size:14px;font-weight:600;color:var(--dim);">— 직무 정의서 · 전결 범위표</span></div>
+      <div class="meta">
+        작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님</b><br>
+        보고일 <b>2026. 09. 08.</b> · 문서번호 <b>WP-GM-260908-01</b>
+      </div>
+    </div>
+    <div class="who">현 수행자 <b>이경연 실장</b></div>
+  </div>
+
+  <div class="dir">
+    <b>방향</b> — 직책 기준으로 설계했다. 수행자가 바뀌어도 자리와 기준은 남는다. <span>(GM 2026-08-31)</span><br>
+    <span>회장님·대표님이 현장 걱정 없이 방향과 중요 결정에 집중할 수 있는 클럽 — 그 구조를 이루는 3개 직책 중 하나가 운영부 리더다.</span>
+  </div>
+
+  <div class="sec-h">① 직무 정의</div>
+  <table>
+    <colgroup><col style="width:22%"><col></colgroup>
+    <tbody>
+      <tr><td class="k">책임 범위</td><td>회원 · 매출 · 현장 운영</td></tr>
+      <tr><td class="k">보고</td><td>주간 1장 → GM</td></tr>
+      <tr><td class="k">GM 확인 지표</td><td>신규/해지/재등록률 · 컴플레인 건수 · 매출</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec-h">② 전결 범위표 <span class="hint">§1(12/31 목표) + §6(9월 시범)</span></div>
+  <table>
+    <colgroup><col style="width:34%"><col style="width:33%"><col style="width:33%"></colgroup>
+    <thead><tr><th>직책 전결 (사후 보고)</th><th>GM 판단</th><th>회장님 사전 보고</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><ul>
+          <li>회원 응대</li>
+          <li>규정 내 환불 · 휴회 · 재등록</li>
+          <li>기승인 프로모션 실행</li>
+          <li>강사 시간표 조정</li>
+        </ul></td>
+        <td><ul>
+          <li>회원 응대 · 컴플레인</li>
+          <li>규정 내 환불 · 휴회 · 재등록</li>
+          <li>기승인 프로모션 실행</li>
+          <li>비품 ○○만원 이하</li>
+          <li>강사 시간표 조정</li>
+        </ul></td>
+        <td><ul>
+          <li>요금 정책</li>
+          <li>신규 프로모션</li>
+          <li>시설 구조 변경 필요 조치</li>
+          <li>○○만원 초과</li>
+          <li>규정 외 환불 · 특례</li>
+        </ul></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">9/1~9/30 시범: 「GM 판단」 칸은 시범 기간 GM이 즉시 판단·실행하고 사후 보고한다(§6). 시범이 끝나면 「직책 전결」 칸(§1)으로 넘어간다. 보고 방식 — 법적 대응 가능성이면 즉시, 그 외는 주간.</div>
+
+  <div class="foot">
+    출처 — docs/3라인_직책체계_20260831.md §1(목표 구조) · §6(시범 전결 범위). 금액 상한(○○만원) 빈칸은 회장님이 직접 기입한다.
+  </div>
+</div>
+
+<!-- ===== 2장 — 시설부 소장 ===== -->
+<div class="page">
+  <div class="head">
+    <div class="brand">WELLPERION</div>
+    <div class="headrow">
+      <div class="title">시설부 소장 <span style="font-size:14px;font-weight:600;color:var(--dim);">— 직무 정의서 · 전결 범위표</span></div>
+      <div class="meta">
+        작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님</b><br>
+        보고일 <b>2026. 09. 08.</b> · 문서번호 <b>WP-GM-260908-01</b>
+      </div>
+    </div>
+    <div class="who">현 수행자 <b>이정헌 소장</b></div>
+  </div>
+
+  <div class="dir">
+    <b>방향</b> — 직책 기준으로 설계했다. 수행자가 바뀌어도 자리와 기준은 남는다. <span>(GM 2026-08-31)</span><br>
+    <span>회장님·대표님이 현장 걱정 없이 방향과 중요 결정에 집중할 수 있는 클럽 — 그 구조를 이루는 3개 직책 중 하나가 시설부 소장이다.</span>
+  </div>
+
+  <div class="sec-h">① 직무 정의</div>
+  <table>
+    <colgroup><col style="width:22%"><col></colgroup>
+    <tbody>
+      <tr><td class="k">책임 범위</td><td>설비 · 안전 · 공사</td></tr>
+      <tr><td class="k">보고</td><td>주간 1장 → GM</td></tr>
+      <tr><td class="k">GM 확인 지표</td><td>점검 이행률 · 고장 대응 시간 · 안전사고 0건</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec-h">② 전결 범위표 <span class="hint">§1(12/31 목표) + §6(9월 시범)</span></div>
+  <table>
+    <colgroup><col style="width:34%"><col style="width:33%"><col style="width:33%"></colgroup>
+    <thead><tr><th>직책 전결 (사후 보고)</th><th>GM 판단</th><th>회장님 사전 보고</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><ul>
+          <li>긴급 대응</li>
+          <li>정기 점검</li>
+          <li>수선 ○○만원 이하</li>
+        </ul></td>
+        <td><ul>
+          <li>안전 즉시 조치(운행 정지 · 출입 통제 · 펜스)</li>
+          <li>긴급 A/S 접수 및 임시 조치</li>
+          <li>긴급 수선 ○○만원 이하</li>
+          <li>회원 안내</li>
+        </ul></td>
+        <td><ul>
+          <li>설비 교체 · 공사</li>
+          <li>○○만원 초과</li>
+          <li>운영 시간 변경 필요 조치</li>
+        </ul></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">9/1~9/30 시범: 「GM 판단」 칸은 시범 기간 GM이 즉시 판단·실행하고 사후 보고한다(§6). 시범이 끝나면 「직책 전결」 칸(§1)으로 넘어간다. 보고 방식 — 안전사고 또는 4시간 이상 중단이면 즉시, 그 외는 주간.</div>
+
+  <div class="foot">
+    출처 — docs/3라인_직책체계_20260831.md §1(목표 구조) · §6(시범 전결 범위). 금액 상한(○○만원) 빈칸은 회장님이 직접 기입한다.
+  </div>
+</div>
+
+<!-- ===== 3장 — 인사·재무 리더 ===== -->
+<div class="page">
+  <div class="head">
+    <div class="brand">WELLPERION</div>
+    <div class="headrow">
+      <div class="title">인사 · 재무 리더 <span style="font-size:14px;font-weight:600;color:var(--dim);">— 직무 정의서 · 전결 범위표</span></div>
+      <div class="meta">
+        작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님</b><br>
+        보고일 <b>2026. 09. 08.</b> · 문서번호 <b>WP-GM-260908-01</b>
+      </div>
+    </div>
+    <div class="who">현 수행자 <b>나우열M</b></div>
+  </div>
+
+  <div class="dir">
+    <b>방향</b> — 직책 기준으로 설계했다. 수행자가 바뀌어도 자리와 기준은 남는다. <span>(GM 2026-08-31)</span><br>
+    <span>회장님·대표님이 현장 걱정 없이 방향과 중요 결정에 집중할 수 있는 클럽 — 그 구조를 이루는 3개 직책 중 하나가 인사·재무 리더다.</span>
+  </div>
+
+  <div class="sec-h">① 직무 정의</div>
+  <table>
+    <colgroup><col style="width:22%"><col></colgroup>
+    <tbody>
+      <tr><td class="k">책임 범위</td><td>인사 · 급여 · 손익 · 예산</td></tr>
+      <tr><td class="k">보고</td><td>월간 손익 → GM</td></tr>
+      <tr><td class="k">GM 확인 지표</td><td>인건비율 · 부서별 손익 · 예산 대비 지출</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec-h">② 전결 범위표 <span class="hint">§1(12/31 목표) + §6(9월 시범 제외)</span></div>
+  <table>
+    <colgroup><col style="width:34%"><col style="width:33%"><col style="width:33%"></colgroup>
+    <thead><tr><th>직책 전결 (사후 보고)</th><th>GM 판단</th><th>회장님 사전 보고</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><ul>
+          <li>급여 산정</li>
+          <li>근태</li>
+          <li>채용 실무</li>
+          <li>지출 집행 ○○만원 이하</li>
+        </ul></td>
+        <td class="dash">— (시범 제외)</td>
+        <td><ul>
+          <li>인사(채용 · 퇴직 · 직책 · 급여)</li>
+          <li>예산(월 예산 외 · 신규 계약)</li>
+          <li>대외(상가 · 임대인 · 제휴)</li>
+        </ul></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">9/1~9/30 시범 제외 — 인사·재무는 시범 범위에 들지 않는다(§6). GM이 대신 판단하지 않고, 현행 사전 보고를 그대로 유지한다.</div>
+
+  <div class="foot">
+    출처 — docs/3라인_직책체계_20260831.md §1(목표 구조) · §6(시범 전결 범위 · 시범 제외). 금액 상한(○○만원) 빈칸은 회장님이 직접 기입한다.
+  </div>
+</div>
+
+</body>
+</html>
