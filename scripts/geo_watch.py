@@ -232,7 +232,12 @@ def _parse_engines() -> list[str]:
         if i + 1 < len(sys.argv):
             picked = [e.strip() for e in sys.argv[i + 1].split(",") if e.strip() in ENGINES]
             return picked or list(ENGINES)
-    return list(ENGINES)
+    return list(DEFAULT_ENGINES)
+
+
+# 기본 엔진 = claude 하나(2026-09-08 시토 · 배1002 실측): 브라우저 3개(챗GPT·퍼플렉시티·구글)는 봇 차단·캡차·200초 무응답이라
+# 월 07:10 예약이 통째로 강제 종료(rc 0xC000013A)돼 claude 결과까지 잃었다(09-07). 브라우저 엔진은 --engines 로 켤 때만.
+DEFAULT_ENGINES = ["claude"]
 
 
 def main() -> None:
