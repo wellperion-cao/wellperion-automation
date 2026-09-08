@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>GYM 바이크 2종 도입 — 3사 견적 비교 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>GYM 바이크 2종 도입 — 3사 견적 비교 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">GYM 바이크 2종 도입 — 3사 견적 비교</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b><br>
+      작성일 <b>2026. 09. 09.</b> · 문서번호 <b>WP-GM-260909-01</b><br>
+      대상 <b>입식·좌식 바이크 각 1종 도입(3사 견적)</b> · 금액 <b>VAT 별도</b>
+    </div>
+  </div>
+
+  <!-- ② 방향 -->
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">현재 기준선</div>
+        <div class="q">3사 견적이 모두 들어오면 같은 표에서 비교해 결재 SSOT 상신한다.</div>
+        <div class="d">현재 확정 기준선은 테크노짐 2종 합계 1,735만원(정가 2,478만 · 30% 할인). 라이프피트니스는 금액 GM 수령 완료 · 기재 대기, 매트릭스는 09-04 현장 방문 후 이번 주 견적 수령 예정 — 3사 금액이 모두 모이면 본 문서를 같은 번호로 갱신한다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    직접 비교 불가 — 라이프피트니스 · 매트릭스 금액 미기재(수령 대기)
+    <span>&nbsp;/ 3사 기종(입식·좌식 모델명·사양) 동일성도 아직 미확인 — 아래 표는 테크노짐 확정 견적 + 2사 대기 현황이며 최종 비교표가 아닙니다.</span>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:118px"><col style="width:118px"><col style="width:150px"><col style="width:150px"><col style="width:112px"><col style="width:150px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">업체</th>
+        <th>기종</th>
+        <th>정가</th>
+        <th>할인가</th>
+        <th>납기</th>
+        <th>A/S · 보증</th>
+        <th>비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="7">테크노짐 &nbsp;— <span style="letter-spacing:0">견적 확보 완료(시포 전달 2026-09-05)</span></td></tr>
+      <tr><td class="k">테크노짐</td><td class="ctr">입식 1종</td><td class="num">12,180,000 원</td><td class="ctr est">2종 합산 할인가 참조</td><td class="ctr warn">확인 필요</td><td class="ctr warn">확인 필요</td><td>단품 정가</td></tr>
+      <tr><td class="k">테크노짐</td><td class="ctr">좌식 1종</td><td class="num">12,600,000 원</td><td class="ctr est">2종 합산 할인가 참조</td><td class="ctr warn">확인 필요</td><td class="ctr warn">확인 필요</td><td>단품 정가</td></tr>
+      <tr class="sum"><td class="k">테크노짐</td><td class="ctr strong">2종 합계</td><td class="num strong">24,780,000 원</td><td class="num strong good">17,350,000 원 <span class="est">(30% 할인)</span></td><td class="ctr warn">확인 필요</td><td class="ctr warn">확인 필요</td><td>오늘 9/9 테크노짐 APAC 방문투어에서 재확인 기회</td></tr>
+
+      <tr class="grp"><td colspan="7">라이프피트니스 &nbsp;— <span style="letter-spacing:0">금액 GM 수령 완료 · 기재 대기</span></td></tr>
+      <tr><td class="k">라이프피트니스</td><td class="ctr warn">확인 필요</td><td class="ctr bad">GM 보유 · 기재 대기</td><td class="ctr bad">GM 보유 · 기재 대기</td><td class="ctr warn">확인 필요</td><td class="ctr warn">확인 필요</td><td>08-27 쇼룸 방문 시 금액·기종 자료는 별도 — 이 문서에는 없음</td></tr>
+
+      <tr class="grp"><td colspan="7">매트릭스 &nbsp;— <span style="letter-spacing:0">견적 수령 전</span></td></tr>
+      <tr><td class="k">매트릭스</td><td class="ctr warn">확인 필요</td><td class="ctr bad">수령 예정(이번 주)</td><td class="ctr bad">수령 예정(이번 주)</td><td class="ctr warn">확인 필요</td><td class="ctr warn">확인 필요</td><td>09-04 현장 방문 완료 · 이번 주 견적 수령 예정</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">3사 중 1사(테크노짐)만 금액 확보 — 지금은 3사 비교가 아니다.</li>
+        <li class="r1">기종·사양(입식/좌식 모델명) 동일성 미확인 — 확보돼도 바로 비교 불가할 수 있다.</li>
+        <li class="r2">테크노짐 할인가는 2종 합산치만 확정 — 단품별 할인가는 별도 확인 필요.</li>
+        <li class="r2">납기·A/S·보증 조건 3사 전부 미기재.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">라이프피트니스 금액을 GM께 받아 이 표에 기재</li>
+        <li class="n">매트릭스 견적 수령(이번 주 예정) 확인·독촉</li>
+        <li class="n">9/9 테크노짐 APAC 방문투어에서 납기·A/S·단품 할인가 재확인</li>
+        <li class="n">3사 금액 모두 모이면 기종·사양 동일성 먼저 맞춘 뒤 본 문서 갱신</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>다음 단계</h3>
+      <ul>
+        <li>3사 금액이 모두 모이면 같은 문서번호로 갱신해 결재 SSOT(GM · 대표님)에 상신한다.</li>
+        <li>지금은 결재 대상이 아니다 — 현황 공유용.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>산출 근거</b> — 테크노짐 입식 12,180,000원 · 좌식 12,600,000원 · 2종 합계 정가 24,780,000원(= 2,478만) · 30% 할인 시 17,350,000원(= 1,735만). status/_queue.json short_no 1052(웰리) · 881(시포) 이관 기록 직독. 전 금액 VAT 별도.</div>
+    <div><b>(추정) 표기</b> — 이 문서에 (추정)으로 표기한 금액은 없다. 라이프피트니스 · 매트릭스는 추정치가 아니라 <b>미수령 금액</b>이라 「기재 대기」 · 「수령 예정」으로만 표기했다.</div>
+    <div><b>출처</b> — status/_queue.json short_no 1052 note(2026-09-09 갱신). 관련 A3 <b>260821_헬스장비_웰페리온컨텍스트_A3</b>(업체 공유용 컨텍스트 문서 · 본 견적 비교와 별건) · <b>260827_라이프피트니스_쇼룸방문보고_A3</b>(금액·기종 자료 없음). <b>차기 보고</b> — 3사 금액 모두 확보 시 본 문서 갱신(같은 문서번호 유지).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260909_GYM바이크_3사견적비교_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
