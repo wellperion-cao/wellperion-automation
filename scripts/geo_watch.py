@@ -44,6 +44,18 @@ QUERIES = [
     "한남동 헬스 PT",
     "hannam sports club membership",
 ]
+# AX 허브(스포츠클럽 운영자 대상 · wellperion.com/ax/) 기준선 8문 — 시보 확정 2026-09-08 (배1131·1132).
+#   회원 8문과 따로 센다(cited_count_ax) — 전환 전엔 0 이 정상.
+QUERIES_AX = [
+    "스포츠센터 AI 도입 사례",
+    "헬스장 운영 자동화 사례",
+    "종합스포츠센터 고객 문의 자동 응대",
+    "스포츠클럽 시설 점검 체크리스트 자동화",
+    "체육시설 매출 일보 자동 보고",
+    "스포츠센터 AX 전환",
+    "수영장 헬스장 통합 접수 시스템",
+    "sports club AI transformation case korea",
+]
 
 CITE_TOKEN = "wellperion"
 QUERY_GAP_SEC = 3  # 질문 사이 대기(봇 차단 방지)
@@ -243,7 +255,7 @@ DEFAULT_ENGINES = ["claude"]
 def main() -> None:
     dry = "--dry-run" in sys.argv
     engines = _parse_engines()
-    queries = QUERIES[:1] if dry else QUERIES
+    queries = QUERIES[:1] if dry else QUERIES + QUERIES_AX
 
     used_browser = any(e != "claude" for e in engines)
     results_by_engine: dict[str, list[dict]] = {e: [] for e in engines}
@@ -266,8 +278,10 @@ def main() -> None:
     engines_out = {}
     cited_today = {}
     for e, results in results_by_engine.items():
-        cited_count = sum(1 for r in results if r["cited"] is True)
-        engines_out[e] = {"cited_count": cited_count, "queries": results}
+        ax = set(QUERIES_AX)
+        cited_count = sum(1 for r in results if r["cited"] is True and r["q"] not in ax)
+        cited_ax = sum(1 for r in results if r["cited"] is True and r["q"] in ax)
+        engines_out[e] = {"cited_count": cited_count, "cited_count_ax": cited_ax, "queries": results}
         cited_today[e] = cited_count
 
     history = []
