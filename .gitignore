@@ -174,6 +174,9 @@ status/_safe_commit_pending.json
 # 깃허브 100MB 하드리밋에 걸리면 전 세션 푸시가 막힌다 → 추적 제외 + 20MB 회전.
 status/welly_auto_runner_log.jsonl
 status/welly_auto_runner_log.jsonl.1
+# 커밋 관문(pre-commit 가드)이 남기는 판정 기록 — PC·세션마다 각자 쌓인다. 추적하면 커밋할 때마다
+#   서로 다른 줄이 붙어 충돌만 난다(위 welly_auto_runner_log.jsonl 과 같은 이유). 로컬에 두고 재생성.
+logs/*.jsonl
 
 # 외부 업체 담당자 개인 연락처 — 이 저장소는 공개(PUBLIC)라 커밋하면 인터넷에 노출된다.
 # 값은 로컬에만 두고, 저장소 문서에는 "이름·직함 + 이 경로" 만 적는다 (2026-08-24 시토).
