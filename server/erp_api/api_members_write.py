@@ -14,8 +14,9 @@ member_archive_restore(LOSS보관→유효회원 전환 · 6단계) 를 여기�
 행 찾기 — member_archive_restore(_handle_member_archive_restore): GAS 원본(Survey.js L9892~10024)은
 보관 행을 삭제하고 유효회원에 새 행을 append 한다(회원번호는 인계). 서버는 미러 열쇠가 (member_no,scope)
 라 같은 행의 scope 만 'archive'→'valid' 로 바꾸는 UPDATE 한 번으로 끝난다 — 새 채번 자체가 없어 결함④
-(registry_build 가 새 번호를 먼저 준 뒤 옛 번호로 덮어 번호 1개 낭비)가 구조적으로 사라진다(CTO 배1050
-§6 6단계 결정). GAS 의 '새 행'과 결과를 맞추려면 새 행이 안 갖는 옛 칸(종목담당자 5·휴회 6·LOSS일자·
+(registry_build 가 새 번호를 먼저 준 뒤 옛 번호로 덮어 번호 1개 낭비)는 서버 원장에서만 사라진다(CTO
+배1050 §6 6단계 결정) — GAS write-through 는 그대로 새 행을 append 한 뒤 registry_build 를 타므로 거기선
+여전히 번호 1개가 낭비된다(배1054 검토). GAS 의 '새 행'과 결과를 맞추려면 새 행이 안 갖는 옛 칸(종목담당자 5·휴회 6·LOSS일자·
 재등록상담 3·재등록예약목록·종료사유 2 = ARCHIVE_RESET_COLS)을 명시적으로 비운다(GM 지시 "이관건이니
 기존 자료는 없어져야해"). 경로 A(유효회원에 이미 같은 전화·같은 이름) = 보관 행만 삭제하는 뒷정리.
 경로 B(없음) = scope 전환 + 칸 인계. 이름이 다르면 already-active 거부. 보관 행이 아예 없거나(0건)
@@ -1036,14 +1037,25 @@ async def members_write(request: Request):
             "detail": "회원 쓰기 서버 이관은 아직 %s 를 처리하지 않습니다. "
                       "%s 는 GAS 경로(/api/write)를 쓰세요." % (", ".join(_IMPLEMENTED), action[:60])})
 
-    if action == "member_active_update":   # 3단계(배1054) — 칸 자유 쓰기·행 변환·일괄이 나머지 둘과 모양이 달라 갈라둔다
-        return _handle_member_active_update(payload, body, request.headers.get("x-erp-user", ""))
-    if action == "member_hold_approve":    # 4단계(배1054) — 2원장(members+hold_items)·멱등 가드가 따로 필요해 갈라둔다
-        return _handle_member_hold_approve(payload, body, request.headers.get("x-erp-user", ""))
-    if action == "member_archive_restore":  # 6단계(배1054) — phone 열쇠·경로 2갈래(뒷정리/복귀)·dryRun 이 따로 필요해 갈라둔다
-        return _handle_member_archive_restore(payload, body, request.headers.get("x-erp-user", ""))
-
     user = request.headers.get("x-erp-user", "")
+    try:
+        idem_conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+    # /api/write 와 같은 방식(api_write._idem_hit 재사용) — 서버는 처리를 끝냈는데 응답만 유실돼 화면이
+    # 같은 idem 열쇠로 재전송하면, 핸들러를 다시 태우지 않고 그때 저장한 응답을 그대로 돌려준다(배1054 경미④).
+    prev = api_write._idem_hit(idem_conn, user, payload)
+    idem_conn.close()
+    if prev is not None:
+        return prev
+
+    if action == "member_active_update":   # 3단계(배1054) — 칸 자유 쓰기·행 변환·일괄이 나머지 둘과 모양이 달라 갈라둔다
+        return _handle_member_active_update(payload, body, user)
+    if action == "member_hold_approve":    # 4단계(배1054) — 2원장(members+hold_items)·멱등 가드가 따로 필요해 갈라둔다
+        return _handle_member_hold_approve(payload, body, user)
+    if action == "member_archive_restore":  # 6단계(배1054) — phone 열쇠·경로 2갈래(뒷정리/복귀)·dryRun 이 따로 필요해 갈라둔다
+        return _handle_member_archive_restore(payload, body, user)
+
     now = api_write._now_kst()
     is_test = db.is_test_payload(payload)
     tenant = "selftest" if is_test else db.TENANT
@@ -1484,6 +1496,44 @@ def _selftest_archive_restore_active_ambiguous():
     assert not any(sql.startswith(("UPDATE", "DELETE")) for sql, _ in fake.executed), fake.executed
 
 
+def _selftest_archive_restore_write_paths():
+    """member_archive_restore 경로 A·B 실제 실행 자체점검(배1054 경미⑤) — _FakeArchiveConn 재활용,
+    DB·네트워크 없음(is_test payload 라 GAS 호출도 없다). 경로 A(뒷정리)는 DELETE 만, 경로 B(복귀)는
+    UPDATE 가 실제로 나가는지 + 개월 계산(_add_months_js)·19칸 리셋(실컬럼·data JSON 둘 다)이 맞는지
+    값까지 확인한다(기존 3점검이 상수·가드 갈래만 봤다면 여긴 계산·값 산출까지 본다)."""
+    from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다
+    orig_now, orig_connect = api_write._now_kst, db.connect
+    api_write._now_kst = lambda: "2026-09-08 12:00:00"   # 개월 계산 기준 시각 고정 — 실행 시각에 안 흔들린다
+    try:
+        # 경로 A — 뒷정리: 이미 유효회원(이름 일치) → 보관 행 DELETE 만 나가고 UPDATE 는 없어야 한다.
+        arch_a = dict(_ARCH_ROW_STUB, member_no="M00020", name="정리대상")
+        fake_a = _FakeArchiveConn(arch_count=1, arch_row=arch_a, already_valid=None,
+                                  actives=[{"member_no": "M00001", "name": "정리대상"}])
+        db.connect = lambda: fake_a
+        out_a = _handle_member_archive_restore({"phone": "010-0000-0000"}, b"{}", "테스트")
+        assert out_a["ok"] is True and out_a.get("cleaned") is True and out_a["gas_status"] == "skipped-test", out_a
+        assert any(sql.startswith("DELETE FROM members") for sql, _ in fake_a.executed), fake_a.executed
+        assert not any(sql.startswith("UPDATE members") for sql, _ in fake_a.executed), fake_a.executed
+
+        # 경로 B — 복귀: 유효회원 없음 → scope 전환 UPDATE 한 번. 개월(6)+고정 시각으로 종료일을 직접
+        # 계산해 대조하고, 리셋 19칸이 실컬럼·data JSON 둘 다 빈 문자열인지 값으로 확인한다.
+        arch_b = dict(_ARCH_ROW_STUB, member_no="M00021", name="복귀대상", reg_seq="3")
+        fake_b = _FakeArchiveConn(arch_count=1, arch_row=arch_b, already_valid=None, actives=[])
+        db.connect = lambda: fake_b
+        out_b = _handle_member_archive_restore({"phone": "010-0000-0000", "months": 6}, b"{}", "테스트")
+        assert out_b["ok"] is True and out_b.get("restored") is True and out_b["seq"] == "4", out_b
+        upd_sql, upd_args = next((sql, a) for sql, a in fake_b.executed if sql.startswith("UPDATE members"))
+        expected_end = (datetime.strptime(_add_months_js("2026-09-08", 6), "%Y-%m-%d")
+                        - timedelta(days=1)).strftime("%Y-%m-%d")
+        assert upd_args[7] == expected_end, (upd_args[7], expected_end)          # set_vals 순서 8번째 = end_date
+        assert all(upd_args[14 + i] == "" for i in range(len(ARCHIVE_RESET_COLS))), upd_args   # 리셋 19칸(실컬럼)
+        reset_json = json.loads(upd_args[-4])                                   # data JSON 오버레이 값
+        assert set(reset_json) == set(_ARCHIVE_RESET_LABELS.values()) and all(v == "" for v in reset_json.values()), reset_json
+        assert "data=(data::jsonb || " in upd_sql and "synced_at=%s" in upd_sql, upd_sql
+    finally:
+        api_write._now_kst, db.connect = orig_now, orig_connect
+
+
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
@@ -1564,4 +1614,5 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     _selftest_archive_restore_pk_guard()
     _selftest_archive_restore_double_click_noop()
     _selftest_archive_restore_active_ambiguous()
+    _selftest_archive_restore_write_paths()
     print("자체점검 통과")
