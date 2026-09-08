@@ -81,8 +81,56 @@ def _save(st: dict) -> None:
     STATE.write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _commit_state() -> None:
+    """지문 상태를 커밋해 둔다(배1140 · 시토). 이 파일이 미커밋으로만 쌓이면 공유 작업트리에서
+    누군가의 git 되돌림(reset/checkout 류)이 그때그때 최신 커밋으로 되감아 지문이 사라진다 —
+    2026-08-24 커밋 이후 실측: 그 뒤 로그상 새 호출 19건 이상이 잡혔는데 지문은 5건에 묶여 있었다
+    (2026-09-08 07:30 에 정상 잡힌 지문이 09-09 07:30 재발화 전 사라짐 — 배1139 원인).
+    safe_commit 은 락 직렬화·HEAD 재검증을 이미 하므로(cpo_inquiry_snapshot.py 관례 재사용,
+    약속 L21) 여기서 새 커밋 로직을 만들지 않는다. 실패해도 접수 자체는 이미 끝났다 — 무해."""
+    try:
+        rel = str(STATE.relative_to(ROOT)).replace("\\", "/")
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "safe_commit.py"),
+             "-m", "chore(cto): 카톡 호출 접수 지문 갱신 (kakao_listen_state)", "--", rel],
+            cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", timeout=120)
+        if r.returncode != 0:
+            print(f"[warn] 지문 커밋 실패(무해 — 다음 회차 재시도): rc={r.returncode}")
+    except Exception as e:
+        print(f"[warn] 지문 커밋 실패(무해): {type(e).__name__}: {e}")
+
+
+REPLY_LOOKAHEAD_DAYS = 2  # ops_room_issue_extract.py RESOLVE_LOOKAHEAD_DAYS 관례 재사용(약속 L21)
+# 완료·확인 신호 키워드 — ops_room_issue_extract.py _RESOLVED_RE 와 같은 관례(약속 L21 재사용).
+_REPLIED_RE = re.compile(
+    r"(확인했습니다|확인했어요|확인함|처리했습니다|처리했어요|해결|완료|끝났습니다|"
+    r"됐습니다|됐어요|드렸습니다|전달했습니다|전달했어요|답변|회신)"
+)
+_TOKEN_RE = re.compile(r"[가-힣A-Za-z0-9]{2,}")
+# 흔한 업무어 — 어느 대화에나 등장해 겹치는 척만 한다. 이걸 빼야 "우연히 완료 신호가 낀 다른
+# 화제"를 답신으로 오판하지 않는다(실측 2026-09-09: 이 목록 없이는 호출 29건 중 18건이 오탐).
+_GENERIC_TOKENS = {"업무", "확인", "완료", "처리", "오늘", "내일", "어제", "회신", "답변", "그거", "이거"}
+
+
+def _shares_topic(call_text: str, reply_text: str) -> bool:
+    """호출과 답신이 같은 화제인지 — 완료 신호만으로는 GM 이 그 시간대에 한 다른 말과
+    구별이 안 된다(배1140). 서로 겹치는 구체 낱말(흔한 업무어 제외)이 있어야 같은 화제로 본다."""
+    call_toks = _TOKEN_RE.findall(call_text)
+    reply_toks = set(_TOKEN_RE.findall(reply_text)) - _GENERIC_TOKENS
+    return any(t in reply_toks for t in call_toks if t not in _GENERIC_TOKENS)
+
+
+def _day_ord(day: str) -> int:
+    y, m, d = (int(x) for x in day.split("-"))
+    return datetime(y, m, d).toordinal()
+
+
 def extract(text: str) -> list[dict]:
-    """내보낸 대화에서 「웰리」 호출만 뽑는다. 나머지 줄은 버린다."""
+    """내보낸 대화에서 「웰리」 호출만 뽑는다. 나머지 줄은 버린다.
+    각 호출에 replied(호출 뒤 REPLY_LOOKAHEAD_DAYS 일 내 김남욱 발신 확인·완료 신호 유무)를 매긴다 —
+    GM 본인이든 AI 대행이든 이 계정 이름으로 나가므로(kakao_room_listen_external.py GM_SELF 와
+    동일 근거), 큐를 거치지 않고 방에서 이미 답한 건은 지문이 사라져도 다시 배로 뜨지 않는다(배1140)."""
+    lines: list[dict] = []      # 판정용 — 방 안 전체 발신 줄(누구든), 호출 뒤 답신 탐색에만 쓴다
     out, cur, day = [], None, ""
     for raw in text.splitlines():
         d = DAY.match(raw.strip())
@@ -92,16 +140,38 @@ def extract(text: str) -> list[dict]:
             continue
         m = LINE.match(raw.strip())
         if m:
+            who = m.group("who").strip()
             body = m.group("text").strip()
+            lines.append({"who": who, "day": day, "text": body})
             if body.startswith(WAKE):
-                cur = {"who": m.group("who").strip(), "day": day,
-                       "when": m.group("when").strip(),
-                       "text": body[len(WAKE):].lstrip(_AFTER_WAKE).strip()}
+                cur = {"who": who, "day": day, "when": m.group("when").strip(),
+                       "text": body[len(WAKE):].lstrip(_AFTER_WAKE).strip(),
+                       "_line_idx": len(lines) - 1}
                 out.append(cur)
             else:
                 cur = None          # 다른 사람 말 — 이어붙이지 않는다
         elif cur is not None and raw.strip():
             cur["text"] = (cur["text"] + "\n" + raw.strip()).strip()   # 여러 줄 호출
+
+    for c in out:
+        idx = c.pop("_line_idx")
+        replied = False
+        # GM 본인이 부른 호출은 이 판정 대상이 아니다 — "이미 GM 이 방에서 직접 답했다"는
+        # 실무진이 부르고 GM 이 답한 경우만 뜻한다(배1140 실사고 그대로). GM 자신의 호출 뒤에
+        # 나오는 그의 다른 발신까지 "답신"으로 잡으면 자기 자신에게 오탐만 늘어난다.
+        if c["day"] and c["who"] != GM_SELF:
+            call_ord = _day_ord(c["day"])
+            for later in lines[idx + 1:]:
+                if not later.get("day"):
+                    continue
+                if _day_ord(later["day"]) - call_ord > REPLY_LOOKAHEAD_DAYS:
+                    break
+                later_text = later.get("text", "")
+                if (later["who"] == GM_SELF and _REPLIED_RE.search(later_text)
+                        and _shares_topic(c["text"], later_text)):
+                    replied = True
+                    break
+        c["replied"] = replied
     return [c for c in out if c["text"]]
 
 
@@ -353,6 +423,7 @@ def run_external(dry: bool) -> int:
         _ping_external(name, role, fresh, disp)
     if not dry:
         _save(st)
+        _commit_state()
     if not any_new:
         print("[external] 새 줄 없음 — 전 방 조용")
     return 0
@@ -386,16 +457,25 @@ def main() -> int:
     calls = [c for c in calls if c.get("day", "") >= cutoff]
     st = _state()
     seen = set(st.get("seen", []))
-    fresh = [c for c in calls if fingerprint(c) not in seen]
-    print(f"호출 {len(calls)}건(최근 {a.since_days}일) · 새 것 {len(fresh)}건 · 지난 것 {len(old)}건 건너뜀")
+    fresh_all = [c for c in calls if fingerprint(c) not in seen]
+    # 이미 방에서 답신된 건(호출 뒤 REPLY_LOOKAHEAD_DAYS 일 내 김남욱 발신 줄)은 지문이 사라져도
+    # 다시 배로 뜨지 않는다 — 지문 유지(_commit_state)가 1차 방어, 이건 2차 방어(배1140).
+    replied_skip = [c for c in fresh_all if c.get("replied")]
+    fresh = [c for c in fresh_all if not c.get("replied")]
+    print(f"호출 {len(calls)}건(최근 {a.since_days}일) · 새 것 {len(fresh)}건"
+          + (f" · 이미 답신됨(제외) {len(replied_skip)}건" if replied_skip else "")
+          + f" · 지난 것 {len(old)}건 건너뜀")
     made = []
     for c in fresh:
         if to_ship(c, a.dry_run) and not a.dry_run:
             seen.add(fingerprint(c))
             made.append(c)
     if not a.dry_run:
+        for c in replied_skip:
+            seen.add(fingerprint(c))
         st["seen"] = sorted(seen)
         _save(st)
+        _commit_state()
         _ping(made)
     return 0
 
@@ -443,6 +523,21 @@ def demo() -> None:
     assert extract("[A] [오전 1:00] 웰리야") == [], "본문 없는 호출은 버려야 한다"
     assert extract("[A] [오전 1:00] 웰리") == [], "이름만 부른 것도 버려야 한다"
     print("[OK] 자체 점검 통과 — 「웰리」·「웰리야」·「웰리님」 3건 추출, 남의 대화 미포함")
+
+    # replied 판정 — 배1140 실사고 재현: 호출 다음날 김남욱 발신이 있으면 replied=True.
+    reply_sample = (
+        "--------------- 2026년 9월 7일 월요일 ---------------\n"
+        "[이경연 실장] [오후 5:29] 웰리 분리수거장 마감일 변경함\n"
+        "--------------- 2026년 9월 8일 화요일 ---------------\n"
+        "[김남욱] [오전 8:00] 실장님, 분리수거장 건 확인했습니다.\n"
+        "--------------- 2026년 9월 9일 수요일 ---------------\n"
+        "[이정헌] [오전 9:00] 웰리 소화기 점검일 언제였지?\n"
+    )
+    got3 = extract(reply_sample)
+    assert len(got3) == 2, got3
+    assert got3[0]["replied"] is True, "다음날 김남욱 발신을 답신으로 못 잡았다(배1140 재발)"
+    assert got3[1]["replied"] is False, "답신 없는 호출을 답신됨으로 오판했다"
+    print("[OK] replied 판정 자체 점검 통과 — 호출 뒤 김남욱 발신 유무 정상 판정")
 
     # external_rooms 감지 — 우리 쪽(GM_SELF) 발신은 빠지고 상대 발언만 남는지.
     ext_sample = (
