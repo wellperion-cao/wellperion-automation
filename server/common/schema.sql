@@ -395,6 +395,30 @@ UPDATE members SET hold_end_date   = COALESCE(hold_end_date,   data::jsonb->>'�
 UPDATE members SET hold_count      = COALESCE(hold_count,      data::jsonb->>'휴회횟수')               WHERE scope='valid' AND hold_count      IS NULL AND tenant_id='wellperion';
 UPDATE members SET hold_cum_days   = COALESCE(hold_cum_days,   data::jsonb->>'휴회누적일수')           WHERE scope='valid' AND hold_cum_days   IS NULL AND tenant_id='wellperion';
 
+-- 회원 쓰기 서버 원장 3단계 — member_active_update(칸 자유 쓰기) 중 실컬럼이 아직 없던 9칸 (배1054 3단계 ·
+-- 2026-09-08 시토 · 시포 스펙 §2-1 ⑤). owner_*/hold_status 와 같은 패턴 — 이 칸들은 sync_members.py 의
+-- replace_scope() INSERT 목록에 없어 5분 배치가 손대지 않는다. sync_members.py::sync_owner_cols() 가
+-- OWNER_COLS 에 추가된 이 9칸도 매 sync 마다 data JSON 으로 다시 채우되, write_log 에 서버가 실제로 쓴
+-- (회원번호,칸)은 예외로 안 덮는다(owner_pt 와 동일 원리).
+ALTER TABLE members ADD COLUMN IF NOT EXISTS address           TEXT;  -- 주소
+ALTER TABLE members ADD COLUMN IF NOT EXISTS note              TEXT;  -- 비고
+ALTER TABLE members ADD COLUMN IF NOT EXISTS age               TEXT;  -- 나이
+ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_consult_date  TEXT;  -- 재등록상담 날짜
+ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_consult_time  TEXT;  -- 재등록상담 시간
+ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_consult_note  TEXT;  -- 재등록상담 내용
+ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_reservation   TEXT;  -- 재등록예약목록(JSON 배열 원문)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS end_reason        TEXT;  -- 종료사유
+ALTER TABLE members ADD COLUMN IF NOT EXISTS end_reason_memo   TEXT;  -- 종료사유메모
+UPDATE members SET address          = COALESCE(address,          data::jsonb->>'주소')            WHERE scope='valid' AND address          IS NULL AND tenant_id='wellperion';
+UPDATE members SET note             = COALESCE(note,             data::jsonb->>'비고')            WHERE scope='valid' AND note             IS NULL AND tenant_id='wellperion';
+UPDATE members SET age              = COALESCE(age,              data::jsonb->>'나이')            WHERE scope='valid' AND age              IS NULL AND tenant_id='wellperion';
+UPDATE members SET reg_consult_date = COALESCE(reg_consult_date, data::jsonb->>'재등록상담 날짜')  WHERE scope='valid' AND reg_consult_date IS NULL AND tenant_id='wellperion';
+UPDATE members SET reg_consult_time = COALESCE(reg_consult_time, data::jsonb->>'재등록상담 시간')  WHERE scope='valid' AND reg_consult_time IS NULL AND tenant_id='wellperion';
+UPDATE members SET reg_consult_note = COALESCE(reg_consult_note, data::jsonb->>'재등록상담 내용')  WHERE scope='valid' AND reg_consult_note IS NULL AND tenant_id='wellperion';
+UPDATE members SET reg_reservation  = COALESCE(reg_reservation,  data::jsonb->>'재등록예약목록')    WHERE scope='valid' AND reg_reservation  IS NULL AND tenant_id='wellperion';
+UPDATE members SET end_reason       = COALESCE(end_reason,       data::jsonb->>'종료사유')          WHERE scope='valid' AND end_reason       IS NULL AND tenant_id='wellperion';
+UPDATE members SET end_reason_memo  = COALESCE(end_reason_memo,  data::jsonb->>'종료사유메모')      WHERE scope='valid' AND end_reason_memo  IS NULL AND tenant_id='wellperion';
+
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- 인사(CHRO) 도메인 — hr 스키마 (인사 데이터 AWS 이관 1단계 · 2026-09-05 CHRO/A-5)
 -- 근거 = CTO 회신 status/briefs/CTO-2026-09-05-인사데이터-AWS이관-서버준비-회신.md (§1 표 2·4 · §2 6단계 · §3)

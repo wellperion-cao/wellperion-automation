@@ -233,6 +233,46 @@ def reconcile_member_hold_writes(conn, db, since):
         conn, db, since, "member_hold_transition", "status", lambda p: MEMBER_HOLD_FIELD)
 
 
+def reconcile_member_active_writes(conn, db, since):
+    """member_active_update(3단계 · 배1054) 서버 쓰기 전수 대조 — 앞의 owner_save·hold_transition 과 달리
+    한 쓰기가 여러 칸을 동시에 바꿀 수 있어(fields 다중 저장) _reconcile_member_col_writes(칸 1개 전용)를
+    못 쓴다. write_log 의 payload._saved(api_members_write._member_active_update_one 이 실어 둔, 실제로
+    저장한 모든 칸 이름→값)를 그 시각 이후 처음 돈 sync_members 배치의 members.data JSON 같은 칸들과
+    한 번에 비교한다 — 그 쓰기가 바꾼 칸 전부가 일치해야 그 행이 무결(부분 일치는 무결이 아니다).
+    반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양."""
+    rows = conn.execute(
+        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
+        " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
+    days, unmatched = {}, []
+    for r in rows:
+        p = r["payload"] or {}
+        no, saved = p.get("_member_no"), p.get("_saved") or {}
+        day = str(r["at"])[:10]
+        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
+        d["server"] += 1
+        hit = False
+        if no and saved:
+            row = conn.execute(
+                "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                " AND synced_at > %s ORDER BY synced_at LIMIT 1",
+                (db.TENANT, no, r["at"])).fetchone()
+            if row:
+                try:
+                    mirror = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
+                except Exception:
+                    mirror = {}
+                hit = all((mirror.get(f) or "") == (v or "") for f, v in saved.items())
+        if hit:
+            d["sheet"] += 1
+        else:
+            d["mismatch"] += 1
+            d["ok"] = False
+            if len(unmatched) < 20:
+                unmatched.append({"date": day, "at": r["at"], "member_no": no,
+                                  "fields": list(saved.keys()), "form": "member_active_update"})
+    return days, unmatched
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
     now = kst_now()
@@ -242,9 +282,10 @@ def main():
         intake, writes, mirrors, writes_by_action = _load(conn, db, since)
         mo_days, mo_bad = reconcile_member_owner_writes(conn, db, since)
         mh_days, mh_bad = reconcile_member_hold_writes(conn, db, since)
+        ma_days, ma_bad = reconcile_member_active_writes(conn, db, since)
     conn.close()
-    out_forms = {"member_owner_save": mo_days, "member_hold_transition": mh_days}
-    unmatched = list(mo_bad) + list(mh_bad)
+    out_forms = {"member_owner_save": mo_days, "member_hold_transition": mh_days, "member_active_update": ma_days}
+    unmatched = list(mo_bad) + list(mh_bad) + list(ma_bad)
     for form, spec in FORMS.items():
         rows = writes if form == "write" else intake.get(form, [])
         days, bad = reconcile(form, rows, mirrors.get(spec["mirror"] or ""))
@@ -355,6 +396,43 @@ def selftest():
     days7, bad7 = reconcile_member_hold_writes(_MC(wl2, ["진행중", None]), _DB, "2026-09-01")
     assert days7["2026-09-01"] == {"server": 2, "sheet": 1, "mismatch": 1, "ok": False}, days7
     assert {b["member_no"] for b in bad7} == {"M00011"}, bad7
+
+    # member_active_update(3단계 배1054) 대조 — 한 쓰기가 여러 칸(payload._saved)을 동시에 바꾼다.
+    # M00020: 저장한 두 칸 다 다음 배치 값과 일치(적중) · M00021: 한 칸만 어긋나도 그 행 전체가 불일치.
+    class _DataOne:
+        def __init__(self, v):
+            self.v = v
+
+        def fetchone(self):
+            return {"data": self.v} if self.v is not None else None
+
+    class _MC2:
+        def __init__(self, write_rows, member_rows):
+            self.write_rows, self.member_rows, self.i = write_rows, member_rows, 0
+
+        def execute(self, sql, args=None):
+            if "FROM write_log" in sql:
+                self._cur = list(self.write_rows)
+                return self
+            v = self.member_rows[self.i] if self.i < len(self.member_rows) else None
+            self.i += 1
+            return _DataOne(v)
+
+        def fetchall(self):
+            return self._cur
+
+    wl3 = [
+        {"at": "2026-09-01 10:00:00",
+         "payload": {"_member_no": "M00020", "_saved": {"주소": "서울시", "비고": "메모"}}},
+        {"at": "2026-09-01 11:00:00",
+         "payload": {"_member_no": "M00021", "_saved": {"주소": "부산시", "비고": "메모"}}},
+    ]
+    days8, bad8 = reconcile_member_active_writes(
+        _MC2(wl3, [json.dumps({"주소": "서울시", "비고": "메모"}, ensure_ascii=False),
+                   json.dumps({"주소": "대구시", "비고": "메모"}, ensure_ascii=False)]),
+        _DB, "2026-09-01")
+    assert days8["2026-09-01"] == {"server": 2, "sheet": 1, "mismatch": 1, "ok": False}, days8
+    assert {b["member_no"] for b in bad8} == {"M00021"}, bad8
 
     # 가린 번호(010-****-5691)에서도 뒤 4자리가 뽑힌다 — 종합접수처 미러가 이 모양이다
     assert phone4("010-****-5691") == "5691" and phone4("", None, "0104736") == "4736" and phone4("abc") == ""

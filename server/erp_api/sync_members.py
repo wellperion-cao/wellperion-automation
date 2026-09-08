@@ -88,30 +88,45 @@ OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) + h
     "owner_pt": "PT 담당자", "owner_golf": "골프 담당자", "owner_pl": "P.L 담당자",
     "owner_squash": "스쿼시 담당자", "owner_swim": "수영 담당자",
     "hold_status": "휴회접수상태",   # member_hold_approve·휴회복귀 등 아직 서버로 안 옮긴 GAS 경로가 계속 이 칸을 쓴다(배1054 검토①)
+    # member_active_update(3단계) 신설 9칸 — api_members_write._ACTIVE_COL_MAP 뒤쪽 9개와 값이 같다(역방향).
+    # replace_scope() COLS 목록에 없어(=매 sync 마다 손대지 않는 칸) owner_*·hold_status 와 같은 이유로
+    # 여기서 data JSON 을 원천 삼아 되채워야 한다 — 안 넣으면 첫 백필(schema.sql) 이후 영원히 옛값으로 언다.
+    "address": "주소", "note": "비고", "age": "나이",
+    "reg_consult_date": "재등록상담 날짜", "reg_consult_time": "재등록상담 시간", "reg_consult_note": "재등록상담 내용",
+    "reg_reservation": "재등록예약목록", "end_reason": "종료사유", "end_reason_memo": "종료사유메모",
 }
-_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition")
+_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition", "member_active_update")
 
 
 def sync_owner_cols(conn):
-    """owner_* 5칸 + hold_status 1칸을 매 sync 마다 시트 미러(data JSON)로 다시 채운다 — 서버가 아직
-    원천이 아닌 동안은 시트가 이긴다. schema.sql 의 WHERE owner_* IS NULL 1회성 백필만으론 5분마다
-    갱신되는 data 와 owner_* 가 최초 배포 시점 스냅샷에 얼어붙어 어긋난다(배1054 시포 실측: valid 991행
-    중 846행 불일치). 단 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다 — write_log 의 member_owner_save·
-    member_hold_transition 성공행에서 뽑는다(payload._member_no 는 애초에 대조용으로 넣어 둔 칸 ·
-    reconcile_dual_write.py 와 같은 재료). member_hold_transition 은 payload 에 'field' 키가 없다 —
-    액션 자체가 hold_status 칸을 가리키므로 그 자리에 고정으로 채운다.
+    """OWNER_COLS 의 실컬럼(owner_* 5칸·hold_status·member_active_update 신설 9칸)을 매 sync 마다 시트
+    미러(data JSON)로 다시 채운다 — 서버가 아직 원천이 아닌 동안은 시트가 이긴다. schema.sql 의
+    WHERE owner_* IS NULL 1회성 백필만으론 5분마다 갱신되는 data 와 실컬럼이 최초 배포 시점 스냅샷에
+    얼어붙어 어긋난다(배1054 시포 실측: valid 991행 중 846행 불일치). 단 서버가 실제로 쓴 (회원번호,필드)는
+    안 덮는다 — write_log 의 member_owner_save·member_hold_transition·member_active_update 성공행에서
+    뽑는다(payload._member_no 는 애초에 대조용으로 넣어 둔 칸 · reconcile_dual_write.py 와 같은 재료).
+    member_hold_transition 은 payload 에 'field' 키가 없다 — 액션 자체가 hold_status 칸을 가리키므로
+    그 자리에 고정으로 채운다. member_active_update 는 한 저장이 여러 칸을 동시에 바꿀 수 있어 'field'
+    한 칸이 아니라 payload._cols(실컬럼에 쓴 칸 이름 목록 · api_members_write 가 넣어 둔다)를 본다.
     반환 = 예외 아닌 행 중에도 남은 불일치 건수(0 이어야 정상 — 갱신 자체가 안 먹었다는 신호)."""
     field_to_col = {v: k for k, v in OWNER_COLS.items()}
     written = {col: set() for col in OWNER_COLS}
-    for action, field, member_no in conn.execute(
-            "SELECT action, payload->>'field', payload->>'_member_no' FROM write_log"
+    for action, field, cols, member_no in conn.execute(
+            "SELECT action, payload->>'field', payload->'_cols', payload->>'_member_no' FROM write_log"
             " WHERE tenant_id=%s AND action = ANY(%s) AND gas_status <> 'test'",
             (db.TENANT, list(_OWNER_SYNC_ACTIONS))):
+        if not member_no:
+            continue
         if action == "member_hold_transition":
-            field = OWNER_COLS["hold_status"]
-        col = field_to_col.get(field)
-        if col and member_no:
-            written[col].add(member_no)
+            names = [OWNER_COLS["hold_status"]]
+        elif action == "member_active_update":
+            names = cols if isinstance(cols, list) else ([field] if field else [])
+        else:
+            names = [field] if field else []
+        for nm in names:
+            col = field_to_col.get(nm)
+            if col:
+                written[col].add(member_no)
     mismatch = 0
     with conn:
         for col, field in OWNER_COLS.items():
@@ -273,6 +288,22 @@ def selftest():
         assert sync_owner_cols(conn) == 0, "hold_status 예외행도 빼면 여전히 일치"
         assert conn.execute("SELECT hold_status FROM members WHERE tenant_id=%s AND member_no='M00005'", T).fetchone()[0] == "완료", \
             "서버가 쓴 hold_status 는 시트값(진행중)으로 안 덮인다"
+        # member_active_update(3단계 배1054) — 한 쓰기가 여러 신설 칸(주소·비고)을 동시에 바꾼다. payload
+        # 에 'field' 한 칸이 아니라 '_cols'(목록)가 실려 온다(api_members_write._member_active_update_one).
+        active_rows = [{"회원번호": "M00006", "회원명": "자유쓰기테스트", "휴대폰 번호": "010-6666-6666",
+                        "주소": "서울시", "비고": "메모"}]
+        replace_scope(conn, "valid", owner_rows + hold_rows + active_rows, "t7")
+        assert sync_owner_cols(conn) == 0
+        with conn:
+            conn.execute("UPDATE members SET address=%s, note=%s WHERE tenant_id=%s AND member_no='M00006'",
+                        ("부산시", "새메모", db.TENANT))
+            conn.execute(
+                "INSERT INTO write_log (tenant_id,at,action,payload,user_email,gas_status) VALUES (%s,%s,'member_active_update',%s,%s,'ok')",
+                (db.TENANT, "t7", json.dumps({"_member_no": "M00006", "_cols": ["주소", "비고"]}, ensure_ascii=False), ""))
+        assert sync_owner_cols(conn) == 0, "member_active_update 다건 예외도 나머지와 함께 일치해야 한다"
+        an_row = conn.execute("SELECT address, note FROM members WHERE tenant_id=%s AND member_no='M00006'", T).fetchone()
+        assert (an_row["address"], an_row["note"]) == ("부산시", "새메모"), \
+            "서버가 쓴 신설 칸 다건은 시트값(서울시·메모)으로 안 덮인다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)

@@ -1,19 +1,33 @@
 # -*- coding: utf-8 -*-
-"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2단계 · 시토).
+"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2단계·3단계 · 시토).
 
-member_owner_save(종목별 담당자 5칸 · 1단계) · member_hold_transition(휴회접수상태 1칸 · 2단계) 만 여기서
-서버 원장(members)에 먼저 쓴다 — ①검증 ②서버 원장 갱신 + member_change_log 이력 1줄(한 트랜잭션 · 값 같으면
-이력 없이 ok) ③기존 GAS 로 write-through(시트도 유지 · api_write._gas_forward 재사용 · 실패해도 서버 저장은
-이미 끝남 — 응답 gas_status 로만 알린다). 나머지 5종(member_active_update 등)은 아직 이 라우트에 안 왔다 —
-501 로 /api/write(GAS 경로)를 쓰라고 안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
-정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-2·2-6.
+member_owner_save(종목별 담당자 5칸 · 1단계) · member_hold_transition(휴회접수상태 1칸 · 2단계) ·
+member_active_update(칸 자유 쓰기 · 3단계) 를 여기서 서버 원장(members)에 먼저 쓴다 — ①검증 ②서버 원장
+갱신 + member_change_log 이력 1줄(한 트랜잭션 · 값 같으면 이력 없이 ok) ③기존 GAS 로 write-through(시트도
+유지 · api_write._gas_forward 재사용 · 실패해도 서버 저장은 이미 끝남 — 응답 gas_status 로만 알린다).
+나머지 4종(member_registered_add 등)은 아직 이 라우트에 안 왔다 — 501 로 /api/write(GAS 경로)를 쓰라고
+안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
+정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-6.
 
-행 찾기(두 액션 공통 _find_and_lock): payload 에 member_no 가 있으면 번호로 먼저 찾고 전화도 일치해야 한다
-(불일치=400 거부 · GAS 는 member_no 를 무시하고 그대로 write-through). member_no 가 없으면 전화 정규화
-첫 매칭 1행(member_no 오름차순 — 시트엔 없는 순서 개념이라 이걸로 대신한다). 두 경우 다 SQL 이 phone=%s 로
-필터링해 행의 전화가 비어 있으면 애초에 안 걸린다 — GAS keyPhone 폴백의 fail-open(행 전화 빈칸이면 통과 ·
-Survey.js L10808)이 서버에는 구조적으로 없다(결함① 반영 · 배1054).
+행 찾기 — member_owner_save·member_hold_transition(_find_and_lock): payload 에 member_no 가 있으면
+번호로 먼저 찾고 전화도 일치해야 한다(불일치=400 거부 · GAS 는 member_no 를 무시하고 그대로 write-through).
+member_no 가 없으면 전화 정규화 첫 매칭 1행(member_no 오름차순 — 시트엔 없는 순서 개념이라 이걸로 대신한다).
+두 경우 다 SQL 이 phone=%s 로 필터링해 행의 전화가 비어 있으면 애초에 안 걸린다 — GAS keyPhone 폴백의
+fail-open(행 전화 빈칸이면 통과 · Survey.js L10808)이 서버에는 구조적으로 없다(결함① 반영 · 배1054).
 '컬럼 미발견'·'유효회원 시트 없음' 류 오류는 서버에서 뺐다 — schema.sql 이 컬럼을 고정 보장해 발생할 수 없다.
+
+행 찾기 — member_active_update(_resolve_active_row): 화면이 아직 rowIndex+rowKey(또는 keyPhone)를 보낸다
+(물리 시트 행 좌표 — 서버엔 그런 개념이 없다). rowIndex 는 서버 쪽 조회에 안 쓴다 — GAS 로 그대로
+write-through 될 때 GAS 자신의 지문 스캔이 시트 물리 행을 다시 확정하므로(약속 L21·행 재구현 금지), 서버는
+member_no 하나만 확정하면 된다. 변환은 3단 그대로: ① member_no 명시 시 그 행 + 전화 대조 ② rowKey
+('tsNorm|phoneNorm[|nameNorm]') — 미러 members.data JSON 의 rowKey(=GAS 가 같은 재료로 계산해 매 sync 마다
+실어 보내는 값)와 정확히 같은 행을 찾는다(전수 스캔 대신 값 대조 — 결과는 같다: 1건=확정) · 0건이면 keyPhone/
+rowKey 의 전화 조각으로 단독 매칭 1건일 때만 복구(GAS Survey.js L9708 이식) · 2건+(가족 동일 지문)는 서버엔
+물리행 후보 비교가 없어 rowkey-ambiguous 로 거부(회원번호로 재시도 요구) ③ 지문 없으면 keyPhone 단독 매칭.
+저장 칸 = 화이트리스트 없음(GAS 그대로) — 미리 약속한 21칸(_ACTIVE_COL_MAP, 이미 있던 sync 컬럼 12 + 배1054
+3단계 신설 9)은 실컬럼에, 그 밖의 칸은 members.data(JSON) 에 직접 patch(jsonb_set) 한다 — GAS 가 실제로
+그 헤더를 못 찾으면 write-through 가 gas-error 로 거부하고 우리 쪽도 되돌린다(_finish revert). updates[]
+(최대 30건 일괄)는 GAS 와 같은 재진입 방식 — 항목마다 부모 payload 를 상속해 단건 경로를 그대로 다시 탄다.
 
 테스트/더미 payload(db.is_test_payload — /api/write·/api/intake 와 같은 판별기)는 tenant 'selftest' 에서만
 행을 찾고 고친다(실 회원 tenant 'wellperion' 은 안 건드림) · GAS 전달도 안 한다(gas_status='skipped-test' ·
@@ -43,14 +57,47 @@ FIELD_TO_COL = {
 HOLD_STATUSES = ("완료", "진행중")            # GAS 화이트리스트 그대로(Survey.js L10793)
 HOLD_COL = "hold_status"
 HOLD_FIELD_LABEL = "휴회접수상태"              # member_change_log 의 field 칸 · GAS 헤더명과 동일
-# 아직 이 라우트가 처리 안 하는 나머지 5종(시포 스펙 §2-1·2-3~2-5·2-7) — 501 안내에만 쓴다(화이트리스트 아님).
-_NOT_YET = ("member_active_update", "member_registered_add", "member_registered_remove",
+# 아직 이 라우트가 처리 안 하는 나머지 4종(시포 스펙 §2-3~2-5·2-7) — 501 안내에만 쓴다(화이트리스트 아님).
+_NOT_YET = ("member_registered_add", "member_registered_remove",
             "member_archive_restore", "member_hold_approve")
-_IMPLEMENTED = ("member_owner_save", "member_hold_transition")
+_IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update")
+
+# member_active_update(3단계 · 배1054) — 칸 이름(공백 제거 정규화) → 실컬럼. GAS 는 화이트리스트 없이 시트
+# 헤더에 있는 칸이면 뭐든 쓰지만(_auFindCol), 서버는 미리 컬럼을 둔 칸만 실컬럼에 쓰고 나머지는
+# members.data(JSON) 에 직접 patch 한다(_active_write_one 참조) — 자유 쓰기 계약은 그대로 유지된다.
+# 앞 12개는 sync_members.py COLS 가 이미 미러링하는 기존 실컬럼 재사용(새 스키마 불필요 · 5분 배치가 항상
+# 최신으로 되돌려 놓으므로 sync_owner_cols 예외 대상이 아니다). 뒤 9개는 배1054 3단계 신설(schema.sql) —
+# replace_scope() 가 안 건드리는 칸이라 OWNER_COLS 에도 넣어(sync_members.py) 얼어붙지 않게 한다.
+_ACTIVE_COL_MAP = {
+    "회원명": "name", "회원구분": "kind", "세부구분": "kind2", "수강반종목명": "program",
+    "등록분류": "reg_class", "등록회차": "reg_seq", "등록일자": "reg_date",
+    "시작일자": "start_date", "종료일자": "end_date", "LOSS일자": "loss_date",
+    "잔여일(일)": "remain_days", "담당자": "owner",
+    "주소": "address", "비고": "note", "나이": "age",
+    "재등록상담날짜": "reg_consult_date", "재등록상담시간": "reg_consult_time", "재등록상담내용": "reg_consult_note",
+    "재등록예약목록": "reg_reservation", "종료사유": "end_reason", "종료사유메모": "end_reason_memo",
+}
+ACT_RES_COL = "재등록예약목록"   # GAS Survey.js L2356 상수와 같은 값 — 저장 시 재등록상담 3칸으로 미러(L9854~9862 이식)
+_ACTIVE_ERRORS = {   # GAS 오류 문구 그대로(Survey.js L9678·9691·9743·9762·9776) — 서버는 물리행 대신 member_no 로 판정
+    "unverified": {"ok": False, "error": "row-key-unverified",
+                   "detail": "행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요"},
+    "not_found": {"ok": False, "error": "rowkey-not-found",
+                  "detail": "행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요"},
+    "ambiguous": {"ok": False, "error": "rowkey-ambiguous", "noRetry": True,
+                  "detail": "지문키 중복 매칭 — 회원번호(member_no)를 포함해 다시 시도하세요"},
+    "member_no_mismatch": {"ok": False, "error": "member_no-phone-mismatch", "noRetry": True,
+                           "detail": "회원번호와 전화번호가 일치하지 않습니다"},
+}
 
 
 def _norm_phone(v):
     return re.sub(r"\D", "", str(v or ""))
+
+
+def _norm_col(v):
+    """칸 이름 정규화 — 공백·줄바꿈 전부 제거(GAS `.replace(/\\s/g,'')`와 동일). 헤더가 '잔여일\\n(일)'처럼
+    줄바꿈이 섞여 있어도 매칭되게 한다."""
+    return re.sub(r"\s+", "", str(v or ""))
 
 
 def _mask_phone(v):
@@ -93,13 +140,84 @@ def _find_and_lock(conn, tenant, col, member_no_in, phone):
     return (rows[0] if rows else None), False, False
 
 
+def _resolve_active_row(conn, tenant, payload):
+    """member_active_update 전용 — rowIndex+rowKey(또는 keyPhone) → member_no 행 변환(FOR UPDATE).
+    반환 (row|None, error_code|None). error_code 는 _ACTIVE_ERRORS 의 키 중 하나(성공 시 None).
+    GAS 의 지문 3단 복구(Survey.js L9678~9776)를 '물리 행 스캔' 대신 '미러 rowKey 값 대조'로 재현한다 —
+    member_no 가 곧 서버의 행 열쇠라 물리행 후보 비교(지문 중복 시 rowIndex 로 고르는 GAS 마지막 단)는
+    필요 없다(회원번호 명시를 요구하는 쪽이 더 안전 — INC-020 원칙)."""
+    member_no_in = str(payload.get("member_no") or "").strip()
+    row_key = str(payload.get("rowKey") or "").strip()
+    key_phone = _norm_phone(payload.get("keyPhone"))
+    rk_parts = row_key.split("|") if row_key else []
+    rk_phone = _norm_phone(rk_parts[1]) if len(rk_parts) > 1 else ""
+    phone = key_phone or rk_phone
+
+    if member_no_in:
+        row = conn.execute(
+            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE",
+            (tenant, member_no_in)).fetchone()
+        if not row:
+            return None, "not_found"
+        if phone and _norm_phone(row["phone"]) != phone:
+            return None, "member_no_mismatch"
+        return row, None
+
+    if row_key:
+        rows = conn.execute(
+            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND data::jsonb->>'rowKey'=%s FOR UPDATE",
+            (tenant, row_key)).fetchall()
+        if len(rows) == 1:
+            return rows[0], None
+        if not rows:
+            if phone:   # 지문 미스 복구 — 전화 단독 매칭 정확히 1건일 때만(GAS Survey.js L9708 이식)
+                cand = conn.execute(
+                    "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
+                    (tenant, phone)).fetchall()
+                if len(cand) == 1:
+                    return cand[0], None
+            return None, "not_found"
+        return None, "ambiguous"   # 2건+(가족 동일 지문) — 물리행 후보비교가 없어 회원번호 명시를 요구한다
+
+    if phone:
+        rows = conn.execute(
+            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
+            (tenant, phone)).fetchall()
+        if len(rows) == 1:
+            return rows[0], None
+        if not rows:
+            return None, "not_found"
+        return None, "ambiguous"
+
+    return None, "unverified"
+
+
+def _parse_first_reservation(raw):
+    """ACT_RES_COL(재등록예약목록) 값(JSON 배열 문자열 또는 이미 파싱된 리스트)의 첫 예약 date/time/note.
+    GAS `_resParse_`(Survey.js L2384) 이식. ponytail: 날짜·시간 정규화(_miToISO_·_miTime_)는 생략하고
+    원본 문자열을 그대로 쓴다 — 이 미러는 달력 폴백 안전망일 뿐 주 저장소가 아니다(재등록예약목록 원본은
+    그대로 남아 무손실). 정규화가 필요해지면 그때 추가한다."""
+    try:
+        arr = raw if isinstance(raw, list) else json.loads(str(raw or "").strip() or "[]")
+    except Exception:
+        return "", "", ""
+    if not isinstance(arr, list) or not arr or not isinstance(arr[0], dict):
+        return "", "", ""
+    it = arr[0]
+    return str(it.get("date") or ""), str(it.get("time") or ""), str(it.get("note") or "")
+
+
 def _finish(conn, body, log_id, is_test, extra, revert=None):
-    """두 액션 공통 꼬리 — GAS write-through + write_log.gas_status 갱신 + 거울 재동기화 스케줄.
+    """두 세 액션 공통 꼬리 — GAS write-through + write_log.gas_status 갱신 + 거울 재동기화 스케줄.
     extra(dict) 를 응답에 얹는다. is_test 면 GAS 는 아예 안 부른다(dry-run).
     GAS 가 거부하거나(예: {ok:false,error:'hold-gated'}) 안 닿으면(forward-failed), 서버 원장은 이미
     갱신된 뒤이므로 revert(있으면 · 값이 실제로 바뀐 호출만) 로 보상 UPDATE + 취소 이력을 남기고
     ok=False + GAS 의 error 를 그대로 실어 돌려준다 — membership.html 의 d.ok===false/hold-gated
-    분기가 살아난다(배1054 검토②)."""
+    분기가 살아난다(배1054 검토②).
+    revert = 단일 dict(owner_save·hold_transition — 기존 그대로) 또는 dict 의 리스트(member_active_update —
+    한 저장이 여러 칸을 동시에 바꿀 수 있어 칸마다 하나씩). 각 항목의 kind='json' 이면 실컬럼이 아니라
+    members.data(JSON) 를 되돌린다(kind 없음/'col'=기존처럼 실컬럼 UPDATE·하위호환)."""
+    reverts = revert if isinstance(revert, list) else ([revert] if revert else [])
     if is_test:
         conn.close()
         return dict(extra, ok=True, _source="server", gas_status="skipped-test")
@@ -114,15 +232,22 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
         with conn:
             conn.execute("UPDATE write_log SET gas_status=%s, gas_response=%s WHERE id=%s",
                          (gas_status, json.dumps(resp, ensure_ascii=False)[:20000], log_id))
-            if not gas_ok and revert:
-                conn.execute(
-                    "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=revert["col"]),
-                    (revert["old_value"], revert["tenant"], revert["member_no"]))
-                conn.execute(
-                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (revert["tenant"], api_write._now_kst(), "시스템(GAS거부롤백)", revert["member_no"], revert["name"],
-                     revert["phone_masked"], revert["field"], revert["new_value"], revert["old_value"], "멤버십"))
+            if not gas_ok:
+                for rv in reverts:
+                    if rv.get("kind") == "json":
+                        conn.execute(
+                            "UPDATE members SET data=jsonb_set(data::jsonb, %s, to_jsonb(%s::text), true)::text"
+                            " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                            ([rv["json_field"]], rv["old_value"], rv["tenant"], rv["member_no"]))
+                    else:
+                        conn.execute(
+                            "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=rv["col"]),
+                            (rv["old_value"], rv["tenant"], rv["member_no"]))
+                    conn.execute(
+                        "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                        " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        (rv["tenant"], api_write._now_kst(), "시스템(GAS거부롤백)", rv["member_no"], rv["name"],
+                         rv["phone_masked"], rv["field"], rv["new_value"], rv["old_value"], "멤버십"))
     except Exception:
         conn.close()
         raise
@@ -140,6 +265,150 @@ def _member_no_mismatch(member_no_in):
         "detail": "회원번호(%s)와 전화번호가 일치하지 않습니다" % member_no_in})
 
 
+def _member_active_update_one(payload, raw_body, user):
+    """member_active_update 한 건 — 행 변환 → 칸 저장(실컬럼 우선·나머지 data JSON patch) → 이력 →
+    write_log → GAS write-through(_finish). 항상 plain dict 를 돌려준다(일괄 처리가 그대로 모아 쓴다).
+    GAS 원본(Survey.js L9624~9880) 대비: rowIndex 필수 검증·컬럼 미발견 오류는 뺐다(서버는 물리행이 없고
+    schema.sql 이 칸을 고정 보장) — 그 대신 write-through 가 gas-error 로 걸러 준다."""
+    fields = payload.get("fields") if isinstance(payload.get("fields"), dict) else None
+    col = str(payload.get("col") or "").strip()
+    if not fields and not col:
+        return {"ok": False, "error": "col 또는 fields 필수"}
+
+    now = api_write._now_kst()
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
+
+    try:
+        conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+
+    err_code, log_id, reverts, extra = None, None, None, None
+    try:
+        with conn:
+            row, err_code = _resolve_active_row(conn, tenant, payload)
+            if row:
+                row = dict(row)
+                member_no = row["member_no"]
+                staff = _log_who(payload, user)
+                try:
+                    data_obj = json.loads(row["data"]) if row["data"] else {}
+                    if not isinstance(data_obj, dict):
+                        data_obj = {}
+                except Exception:
+                    data_obj = {}
+
+                # 대상 칸 목록 — fields(다중) 우선, 없으면 col/value 단건(휴대폰은 GAS 그대로 거부/스킵)
+                targets = []
+                if fields:
+                    for fk, fv in fields.items():
+                        fname = str(fk).strip()
+                        if not fname or "휴대폰" in _norm_col(fname):
+                            continue   # 전화 칸은 조용히 스킵(GAS L9849)
+                        targets.append((fname, fv))
+                    if ACT_RES_COL in fields:   # 재등록예약목록 → 재등록상담 3칸 미러(GAS L9854~9862 이식)
+                        d, t, n = _parse_first_reservation(fields[ACT_RES_COL])
+                        targets += [("재등록상담 날짜", d), ("재등록상담 시간", t), ("재등록상담 내용", n)]
+                elif "휴대폰" in _norm_col(col):
+                    err_code = "phone-blocked"
+                else:
+                    targets.append((col, payload.get("value")))
+
+                if not err_code:
+                    saved, wrote_names, promoted_names, reverts = {}, [], [], []
+                    for fname, fv in targets:
+                        new_val = "" if fv is None else str(fv)
+                        dbcol = _ACTIVE_COL_MAP.get(_norm_col(fname))
+                        if dbcol:
+                            promoted_names.append(fname)
+                            old_val = "" if row.get(dbcol) is None else str(row[dbcol])
+                            if old_val != new_val:   # 멱등 — 같은 값 재저장은 이력 안 남기고 ok
+                                conn.execute(
+                                    "UPDATE members SET {c}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                                    .format(c=dbcol), (new_val, tenant, member_no))
+                                conn.execute(
+                                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
+                                    " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                    (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
+                                     fname, old_val, new_val, "멤버십"))
+                                reverts.append({"kind": "col", "col": dbcol, "field": fname, "tenant": tenant,
+                                                "member_no": member_no, "old_value": old_val, "new_value": new_val,
+                                                "name": row["name"] or "", "phone_masked": _mask_phone(row["phone"])})
+                                row[dbcol] = new_val   # 같은 요청 안 재조회 대비
+                        else:
+                            old_val = str(data_obj.get(fname) or "")
+                            if old_val != new_val:
+                                conn.execute(
+                                    "UPDATE members SET data=jsonb_set(data::jsonb, %s, to_jsonb(%s::text), true)::text"
+                                    " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                                    ([fname], new_val, tenant, member_no))
+                                conn.execute(
+                                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
+                                    " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                    (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
+                                     fname, old_val, new_val, "멤버십"))
+                                reverts.append({"kind": "json", "json_field": fname, "field": fname, "tenant": tenant,
+                                                "member_no": member_no, "old_value": old_val, "new_value": new_val,
+                                                "name": row["name"] or "", "phone_masked": _mask_phone(row["phone"])})
+                                data_obj[fname] = new_val
+                        saved[fname] = new_val
+                        wrote_names.append(fname)
+
+                    payload_log = dict(payload)
+                    payload_log["_member_no"] = member_no    # 대조 전용(reconcile_dual_write.py)
+                    payload_log["_cols"] = promoted_names    # sync_members.py::sync_owner_cols 예외 대상(실컬럼만)
+                    payload_log["_saved"] = saved            # 대조 전용 — 실제로 저장한 값(실컬럼+JSON patch 전부)
+                    log_id = conn.execute(
+                        "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                        (tenant, now, "member_active_update", json.dumps(payload_log, ensure_ascii=False), user,
+                         "test" if is_test else "pending", None)
+                    ).fetchone()[0]
+                    extra = {"rowIndex": member_no, "member_no": member_no, "saved": saved}
+                    if fields:
+                        extra["cols"] = wrote_names
+                    else:
+                        extra["col"] = col
+    except Exception:
+        conn.close()
+        raise
+    if err_code == "phone-blocked":
+        conn.close()
+        return {"ok": False, "error": "전화번호는 시트에서 직접 수정해주세요"}
+    if err_code:
+        conn.close()
+        return _ACTIVE_ERRORS[err_code]
+    return _finish(conn, raw_body, log_id, is_test, extra, reverts or None)
+
+
+def _handle_member_active_update(payload, raw_body, user):
+    """member_active_update 진입점 — updates[](최대 30건 일괄)면 GAS 와 같은 재진입 방식으로 항목마다
+    부모 payload 를 상속해 단건 경로(_member_active_update_one)를 그대로 다시 태운다(로직 복제 금지 ·
+    Survey.js L9624~9638 이식). 한 건이 실패해도 나머지는 계속한다."""
+    updates = payload.get("updates")
+    if isinstance(updates, list) and updates:
+        if len(updates) > 30:
+            return {"ok": False, "error": "updates-too-many", "detail": "한 번에 30건까지 — 나눠 보내세요"}
+        results, ok_count = [], 0
+        for item in updates:
+            one = {k: v for k, v in payload.items() if k != "updates"}
+            if isinstance(item, dict):
+                one.update(item)
+            one["action"] = "member_active_update"
+            one.pop("updates", None)   # 재귀 폭주 차단(항목이 updates 를 품고 와도 무시 · GAS 동일)
+            try:
+                one_body = json.dumps(one, ensure_ascii=False).encode("utf-8")
+                r = _member_active_update_one(one, one_body, user)
+            except Exception as e:
+                r = {"ok": False, "error": "batch-item-failed", "detail": str(e)}
+            if r.get("ok"):
+                ok_count += 1
+            results.append(r)
+        return {"ok": ok_count == len(updates), "count": len(updates), "okCount": ok_count, "results": results}
+    return _member_active_update_one(payload, raw_body, user)
+
+
 @router.post("/write")
 async def members_write(request: Request):
     body = await request.body()
@@ -153,6 +422,9 @@ async def members_write(request: Request):
             "ok": False, "error": "not-implemented", "noRetry": False,
             "detail": "회원 쓰기 서버 이관은 아직 %s 를 처리하지 않습니다. "
                       "%s 는 GAS 경로(/api/write)를 쓰세요." % (", ".join(_IMPLEMENTED), action[:60])})
+
+    if action == "member_active_update":   # 3단계(배1054) — 칸 자유 쓰기·행 변환·일괄이 나머지 둘과 모양이 달라 갈라둔다
+        return _handle_member_active_update(payload, body, request.headers.get("x-erp-user", ""))
 
     user = request.headers.get("x-erp-user", "")
     now = api_write._now_kst()
@@ -322,12 +594,46 @@ def _selftest_finish_revert():
     assert any("UPDATE members SET hold_status" in sql for sql, _ in conn.executed), conn.executed
     assert any("member_change_log" in sql for sql, _ in conn.executed), conn.executed
 
+    # member_active_update(3단계) 다건 revert — 리스트 안에 실컬럼(col)·JSON patch(json) 두 종류가 섞여도
+    # 둘 다 되돌아가고 이력이 두 줄 남는지(배1054 검토② 일반화). GAS 거부(가상)로 forward 를 스텁.
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "컬럼 미발견: X"}
+    try:
+        conn2 = _FakeConn()
+        reverts = [
+            {"kind": "col", "col": "note", "field": "비고", "tenant": "wellperion", "member_no": "M00002",
+             "old_value": "old", "new_value": "new", "name": "테스트", "phone_masked": "010-1234-****"},
+            {"kind": "json", "json_field": "PT Contact", "field": "PT Contact", "tenant": "wellperion",
+             "member_no": "M00002", "old_value": "old2", "new_value": "new2", "name": "테스트",
+             "phone_masked": "010-1234-****"},
+        ]
+        out2 = _finish(conn2, b"{}", 1, False, {"rowIndex": "M00002"}, reverts)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out2["ok"] is False and conn2.closed
+    assert any("UPDATE members SET note" in sql for sql, _ in conn2.executed), conn2.executed
+    assert any("jsonb_set" in sql for sql, _ in conn2.executed), conn2.executed
+    assert sum("member_change_log" in sql for sql, _ in conn2.executed) == 2, conn2.executed
+
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
-    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition"}
+    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update"}
     assert not set(_IMPLEMENTED) & set(_NOT_YET)
+    # member_active_update(3단계) 칸 매핑 — 헤더에 줄바꿈·공백이 섞여도 정규화로 잡힌다.
+    assert _norm_col("잔여일\n(일)") == "잔여일(일)" and _norm_col(" 재등록상담 날짜 ") == "재등록상담날짜"
+    assert _ACTIVE_COL_MAP["재등록상담날짜"] == "reg_consult_date"
+    assert _ACTIVE_COL_MAP["잔여일(일)"] == "remain_days"   # sync_members.py COLS 재사용(새 스키마 불필요)
+    assert _ACTIVE_COL_MAP["주소"] == "address" and _ACTIVE_COL_MAP["종료사유메모"] == "end_reason_memo"
+    assert len(_ACTIVE_COL_MAP) == 21
+    assert set(_ACTIVE_ERRORS) == {"unverified", "not_found", "ambiguous", "member_no_mismatch"}
+    # 재등록예약목록 첫 예약 파싱(GAS _resParse_ 이식) — 빈 값·이상값은 무손실 스킵.
+    assert _parse_first_reservation('[{"date":"2026-09-10","time":"14:00","note":"전화상담"}]') \
+        == ("2026-09-10", "14:00", "전화상담")
+    assert _parse_first_reservation("") == ("", "", "")
+    assert _parse_first_reservation("[]") == ("", "", "")
+    assert _parse_first_reservation("not-json") == ("", "", "")
+    assert _parse_first_reservation([{"date": "2026-09-11"}]) == ("2026-09-11", "", "")
     assert HOLD_STATUSES == ("완료", "진행중") and HOLD_COL == "hold_status"
     assert _norm_phone("010-1234-5678") == "01012345678" and _norm_phone(None) == ""
     assert _mask_phone("010-1234-5678") == "010-1234-****"        # 뒤 4자리만 가림 · 앞은 그대로
