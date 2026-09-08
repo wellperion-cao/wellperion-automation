@@ -1421,7 +1421,7 @@
     "task_id": "NEXT-20260909-082848",
     "clevel": "cto",
     "title": "[시토] 판매 단계 모듈이 생기면 sellable=selling 으로 올리고, 테넌트 내보내기는 시보 확인 뒤 발효",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "depends_on": "CTO-2026-09-08-AI-자산-원장-하나로-ERP-카드-106-자동화-",
     "from": "cto",
@@ -1433,6 +1433,10 @@
     "short_no": 1143,
     "audience": "ai",
     "reversible": true,
-    "updated_at": "2026-09-09"
+    "updated_at": "2026-09-09",
+    "processed_at": "2026-09-09",
+    "artifact": "commit:6090ca4ed",
+    "saw": "배로 만들지 않는 종류라 즉시 종결 — 「판매 단계 모듈이 생기면」은 그 사건이 왔을 때 하면 되는 조건부 대기건이다(부팅 규칙 8-1). 배1136 종결 시 next 를 잘못 적어 자동 생성됐다. sellable 칸과 생성기 로직은 이미 들어가 있어 값만 올리면 되고, 테넌트 내보내기는 만들 때 시보에게 알린다",
+    "terminal": true
   }
 ]
