@@ -234,17 +234,16 @@ def _append_to_ship(role: str, room_name: str, ship_no, fresh: list[dict]) -> st
         pinned = next((it for it in queue if isinstance(it, dict) and it.get("ship_no") == ship_no), None) \
             if ship_no is not None else None
         block = "\n".join(lines)
-        if pinned is not None and pinned.get("status") in OPEN:
-            target = pinned
-        else:
-            if pinned is not None:
-                block = (f"- [시토 {now} · 전용 배 {ship_no} 닫힘(status={pinned.get('status')}) → "
-                         f"{role} 최근 열린 배로 폴백]\n") + block
-            open_ships = [it for it in queue if isinstance(it, dict) and it.get("clevel") == role
-                          and it.get("status") in OPEN]
-            if not open_ships:
-                return queue
-            target = max(open_ships, key=lambda x: x.get("ship_no") or 0)
+        # ★방 → 배는 고정 매핑만 쓴다(external_rooms.ship_no). 시보 확인 2026-09-08.
+        #   "그 역할의 가장 최근 배" 추론으로 폴백하면 방마다 내용이 섞여 담당이 못 읽는다 —
+        #   09-08 초판이 그렇게 해서 조재오·다캠 대화 6줄이 무관한 AX 허브 배에 붙었다.
+        #   전용 배가 없거나 닫혀 있으면 여기서 붙이지 않고, 호출부가 그 방 전용 배를 새로 띄운다.
+        if pinned is None or pinned.get("status") not in OPEN:
+            hit["need_new_ship"] = True
+            hit["closed_reason"] = (f"전용 배 {ship_no} 닫힘(status={pinned.get('status')})"
+                                    if pinned is not None else "전용 배 미지정")
+            return queue
+        target = pinned
         prev = str(target.get("note") or "")
         target["note"] = (prev + ("\n" if prev else "") + block).strip()
         hit["disp"] = target.get("short_no") if target.get("short_no") is not None else target.get("ship_no")
@@ -255,8 +254,9 @@ def _append_to_ship(role: str, room_name: str, ship_no, fresh: list[dict]) -> st
 
 
 def _new_ship_for_external(role: str, room_name: str, fresh: list[dict]) -> None:
-    """owner_role 에게 열린 배가 하나도 없을 때만 — queue_dispatch 로 배 1척을 새로 띄운다.
-    같은 제목이면 다음 회차부터는 이 배가 '가장 최근 열린 배'가 되어 append 경로를 그대로 탄다."""
+    """전용 배(external_rooms.ship_no)가 없거나 닫혔을 때 — 그 방 전용 배 1척을 새로 띄운다.
+    제목에 방 이름이 들어가므로 방마다 다른 배가 서고, 담당이 kakao_rooms.json 의 ship_no 를
+    그 번호로 바꿔 주면 다음 회차부터 고정 매핑으로 돌아온다(역할 추론 폴백은 쓰지 않는다)."""
     now = datetime.now().strftime("%Y-%m-%d")
     lines = [f"- [{now} · 카톡 자동감지] {c['who']}: {c['text'].replace(chr(10), ' ')[:60]}" for c in fresh]
     cmd = [sys.executable, str(ROOT / "scripts" / "queue_dispatch.py"),
