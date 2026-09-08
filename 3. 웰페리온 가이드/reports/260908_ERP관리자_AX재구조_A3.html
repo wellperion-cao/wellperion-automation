@@ -82,10 +82,10 @@
             <tr><td>설명 빈칸 카드</td><td>7 (다이어트캠프 2 · 상담봇 4 · 구매요청 1)</td></tr>
             <tr><td>담당 빈칸 카드</td><td>2 (월간 운영계획 · GM 교육)</td></tr>
             <tr><td>자동화 등록부 모듈</td><td>31</td></tr>
-            <tr><td>카드 ↔ 등록부 id 매칭</td><td class="bad">0 — 두 원장이 서로를 모른다(번호 체계가 다름)</td></tr>
+            <tr><td>카드 원장 = 자동 생성</td><td>생성기가 화면 · 소유 · KPI · 등록부 4곳을 읽음(scripts/erp_modules_build.py)</td></tr>
+            <tr><td>화면 ↔ 자동화 연결고리 front_card 채움</td><td class="strong">29/31</td></tr>
           </tbody>
         </table>
-        <div class="sub" style="margin-top:4px;">※ 이 표의 「두 원장이 서로를 모른다」가 표준 축의 첫 문제다.</div>
       </div>
 
       <div>
@@ -109,18 +109,22 @@
     <div class="right" style="flex:1;">
 
       <div>
-        <div class="sec-h">④ 자산 한 원장 <span class="hint">구독으로 가는 길</span></div>
+        <div class="sec-h">④ 자산 한 원장 <span class="hint">합치지 않는다 — 잇는다</span></div>
         <div class="lineblk">
-          <div class="rl">원장 통합 + 칸 하나 더</div>
-          <div class="rr">카드 · 자동화 · 에이전트 · 상담봇을 한 원장(등록부)에 모으고 칸 하나를 더 둔다: 「내부 전용 / 밖에 팔 수 있음 / 이미 파는 중」</div>
+          <div class="rl">screen_id 로 잇는다</div>
+          <div class="rr">카드 원장(화면 106)과 자동화 등록부(31)는 종류가 달라 안 합친다. 등록부에 screen_id 한 칸을 추가(값=카드 id)하고, 생성기가 카드에 automation[] 을 붙여 화면이 무슨 자동화를 물고 있는지 보이게 한다</div>
         </div>
         <div class="lineblk">
           <div class="rl">이미 파는 중</div>
-          <div class="rr">상담봇(웰페리온 1호 · 다이어트캠프 2호 · 스포짐 3호 예정). 파는 것만 업체별로 복제한다 — 업체 추가 = 프로필 파일 1개 + 서버 경로 1줄</div>
+          <div class="rr">상담봇(웰페리온 1호 · 다이어트캠프 2호 · 스포짐 3호 예정). 파는 것만 업체별로 복제한다 — 업체 추가 = 프로필 파일 1개 + 서버 경로 1줄. 판매 상태(sellable: internal/sellable/selling)는 등록부 쪽에 단다</div>
         </div>
         <div class="lineblk">
           <div class="rl">구독 단위</div>
           <div class="rr">모듈 1개 = 월 구독 1건. 값은 GM 결재 전이라 이 장에 적지 않는다</div>
+        </div>
+        <div class="lineblk">
+          <div class="rl">멀티테넌트</div>
+          <div class="rr">DB 주요 표에 tenant_id 가 이미 있어 뼈대는 서 있다. 남은 건 화면 셸이 tenant 를 읽는 것(GM 결재 뒤 별도)</div>
         </div>
       </div>
 
@@ -142,11 +146,12 @@
           <tbody>
             <tr><td class="k ctr">1</td><td>106개 판정표 확정(GM 확인)</td><td>웰리</td></tr>
             <tr><td class="k ctr">2</td><td>문서 35개 문서함 이동 · 카드 규격 5칸 채우기</td><td>웰리</td></tr>
-            <tr><td class="k ctr">3</td><td>두 원장 합치기 · 자산 원장 API · 구독 칸</td><td>시토</td></tr>
+            <tr><td class="k ctr">3</td><td>screen_id · automation[] · sellable 을 생성기 한 곳에 넣기</td><td>시토</td></tr>
             <tr><td class="k ctr">4</td><td>관리자 화면 3축 개편</td><td>웰리</td></tr>
             <tr><td class="k ctr">5</td><td>상담봇을 첫 구독 상품으로 얹기</td><td>시보 · 시토</td></tr>
           </tbody>
         </table>
+        <div class="sub" style="margin-top:4px;">※ 서버 원천 API 신규 없음 — modules.json 이 이미 서버 미러. 외부 공개가 필요할 때만 /api/assets 1개만 추가한다.</div>
       </div>
 
     </div>
@@ -155,7 +160,7 @@
   <div class="foot">
     <div><b>3대축 출처</b> — 삼성SDS REAL Summit 2026 AX 전략 발표 원문(표준 · 자산 · 운영)을 웰페리온 ERP 관리자 페이지 재구조 기준으로 그대로 적용했다. Model · Framework · UI/UX · Infrastructure는 축이 아니라 축 안에서 갈아 끼우는 대상이다.</div>
     <div><b>남은 빈칸</b> — 설명 빈칸 7건 · 담당 빈칸 2건(월간 운영계획 · GM 교육)은 2단계에서 채운다. 경계선(보는 화면 21개)의 모듈/문서 판정은 GM 확인 뒤 확정한다.</div>
-    <div><b>정본</b> — status/module_registry.json(자동화 등록부 31건) · ERP 관리자 페이지 카드 원장(106건). 두 원장 id 매칭 0건이 표준 축 첫 과제다.</div>
+    <div><b>정본</b> — status/module_registry.json(자동화 등록부 31건) · ERP 관리자 페이지 카드 원장(106건, scripts/erp_modules_build.py 생성기 산출물). 화면과 자동화는 종류가 달라 별도 유지 — screen_id 로 잇는다.</div>
   </div>
 
 </div>
