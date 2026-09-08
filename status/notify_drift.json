@@ -1,7 +1,20 @@
 {
-  "generated_at": "2026-09-08 11:27:39",
+  "generated_at": "2026-09-08 13:57:16",
   "registry_items": 68,
-  "automation_health_items": 38,
-  "mismatch_count": 0,
-  "mismatches": []
+  "automation_health_items": 39,
+  "mismatch_count": 2,
+  "mismatches": [
+    {
+      "kind": "UNREGISTERED_TASK",
+      "registry_id": null,
+      "task_name": "Wellperion-Weekly-Report-Draft-Mon-0700",
+      "detail": "예약작업 'Wellperion-Weekly-Report-Draft-Mon-0700'이 발신형 이름인데 notify_registry.json 어느 항목에도 안 걸림 — 신규 발신이면 등록부에 추가 필요(이름 휴리스틱, 오탐 가능)"
+    },
+    {
+      "kind": "MODULE_ROOM_NOT_IN_SSOT",
+      "registry_id": "ceo-3line-weekly",
+      "task_name": "8254867551",
+      "detail": "모듈 'ceo-3line-weekly' 의 발신 방 '8254867551' 이 status/telegram_rooms.json 에 없음 — 이름을 맞춰야 한다. ※`module_reporter` 를 거쳐 보내는 모듈이면 방 번호를 못 구해 발송이 조용히 막히고, 직접 보내는 모듈이면 표기 불일치다(발송 여부는 별도 확인)"
+    }
+  ]
 }
