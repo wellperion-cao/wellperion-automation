@@ -295,6 +295,33 @@ def check_unpushed() -> tuple[str, bool, str]:
         return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
 
 
+def check_server_pushback() -> tuple[str, bool, str]:
+    """서버 되밀기(pushback): 서버 원장에만 적힌 행이 시트로 못 돌아간 건수.
+
+    왜 보나 — 원본 스위치가 server 인 영역은 화면이 서버에만 쓰고, 시트는 pushback(1분 cron)이
+    되민다. 되밀기가 멈추면 시트에서 그 데이터가 영영 안 보이는데 서버 상태값은 전부 정상이라
+    어떤 감시기도 안 잡았다(2026-09-08 실측: health API 안에만 있고 아무도 안 읽음).
+    unpushed 는 순간값이라 1분 뒤 0 이 되는 게 정상 — 30건 넘거나 failed 가 있을 때만 경보한다.
+    """
+    name = "서버 되밀기"
+    code, out, err = _ssh_run("curl -s --max-time 10 http://127.0.0.1:8001/api/intake/health")
+    if code != 0 or not out.strip():
+        return name, True, f"확인 불가(서버 접속 실패) — {(err or '응답 없음')[:60]}"
+    try:
+        d = json.loads(out)
+    except Exception:
+        return name, True, "확인 불가(health 응답이 JSON 아님)"
+    pb = d.get("pushback") or {}
+    unpushed = int(pb.get("unpushed") or 0)
+    failed = int(pb.get("failed") or 0)
+    last = str(pb.get("last_pushed_at") or "-")
+    if failed:
+        return name, False, f"되밀기 실패 {failed}건 · 대기 {unpushed}건 — 시트에 안 남는 중(마지막 {last})"
+    if unpushed > 30:
+        return name, False, f"되밀기 대기 {unpushed}건 정체 — cron 정지 의심(마지막 {last})"
+    return name, True, f"대기 {unpushed}건 · 실패 0 (마지막 {last})"
+
+
 def check_kpi_freshness() -> tuple[str, bool, str]:
     """⑥ KPI 집계 신선도: kpi_values.json generated_at 이 25시간 이내(스케줄=07:50·21:00 일 2회,
     최대 간격 약 13.2h + 1회 결측 여유분).
@@ -371,6 +398,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_sheet_gas,
         check_review_live,
         check_unpushed,
+        check_server_pushback,
         check_kpi_freshness,
         check_page_score_stale_ship_refs,
     )
