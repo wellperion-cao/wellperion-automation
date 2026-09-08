@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-09-08-카카오-양방향-속도-밖과-트는-방-3-4개-만-1시",
-  "last_task_id": "CTO-2026-09-08-카카오-양방향-속도-밖과-트는-방-3-4개-만-1시",
+  "task_id": "CTO-2026-09-08-FB-FB260908-220704",
+  "last_task_id": "CTO-2026-09-08-FB-FB260908-220704",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-08T11:56:42Z",
+  "last_pushed_at": "2026-09-08T13:19:50Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -1237,12 +1237,20 @@
       "note": "밖과 트는 방 2개(★조재오부장님·다이어트캠프 이승기 대표님)만 1시간마다(08~21시) 내보내 상대가 쓴 새 줄만 감지 → 방별 전용 배(11291·11305)에 한 줄 append + AI 진행현황방 알림. 목록 = kakao_rooms.json external_rooms(새 원장 0) · 커서 = 방별 last_processed_at(최초 가동은 기준선만 잡고 과거 안 올림) · 중복 = 기존 지문 재사용 · 회차당 20줄 상한. 실측 2회차 「새 줄 없음」 정상. 예약 Wellperion-Kakao-External-Hourly 등록·Ready. 창 가림은 불가(Ctrl+S 가 먹으려면 방 창이 앞에 와야 함 — 08-25 실측 그대로 · 억지 우회 안 함). 초판 결함 3건(무관한 배에 붙음·옛 대화를 새 것으로 판정·오배치 6줄) 수리 완료 aabd516a4.",
       "updated_at": "2026-09-08T11:56:42Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-08-FB-FB260908-220704",
+      "title": "원인 = 접수처 화면이 아니라 서버가 굶음. 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가 GAS 왕복을 최대 55초 기다리는데 uvicorn 워커가 1개뿐이라 그동안 /api/reception/board·lost 가 통째로 대기(실측 40초 초과 실패 → 화면 '불러오지 못했다' 팝업 · 습득물·컴플레인·청결 동일 증상). 조치 = ①erp-api 워커 2개(코어 수와 동일 · 메모리 여유 951MB) ②FORWARD_TIMEOUT 55→20초(화면 폴링 30초보다 짧게). 배포·재시작 뒤 실측 board/lost/dashboard 3경로 3회 전부 0.03~0.05초. DB 는 무관(쿼리 1.4ms·죽은 행 0). 실무진 시트 처리상태·메모 갱신 완료(staff_feedback_update ok · FB260908-220704). 종합접수처 화면 자체는 시우 소관이라 미접촉 — 서버 쪽만 고침.",
+      "status": "DONE",
+      "note": "원인 = 접수처 화면이 아니라 서버가 굶음. 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가 GAS 왕복을 최대 55초 기다리는데 uvicorn 워커가 1개뿐이라 그동안 /api/reception/board·lost 가 통째로 대기(실측 40초 초과 실패 → 화면 '불러오지 못했다' 팝업 · 습득물·컴플레인·청결 동일 증상). 조치 = ①erp-api 워커 2개(코어 수와 동일 · 메모리 여유 951MB) ②FORWARD_TIMEOUT 55→20초(화면 폴링 30초보다 짧게). 배포·재시작 뒤 실측 board/lost/dashboard 3경로 3회 전부 0.03~0.05초. DB 는 무관(쿼리 1.4ms·죽은 행 0). 실무진 시트 처리상태·메모 갱신 완료(staff_feedback_update ok · FB260908-220704). 종합접수처 화면 자체는 시우 소관이라 미접촉 — 서버 쪽만 고침.",
+      "updated_at": "2026-09-08T13:19:50Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "밖과 트는 방 2개(★조재오부장님·다이어트캠프 이승기 대표님)만 1시간마다(08~21시) 내보내 상대가 쓴 새 줄만 감지 → 방별 전용 배(11291·11305)에 한 줄 append + AI 진행현황방 알림. 목록 = kakao_rooms.json external_rooms(새 원장 0) · 커서 = 방별 last_processed_at(최초 가동은 기준선만 잡고 과거 안 올림) · 중복 = 기존 지문 재사용 · 회차당 20줄 상한. 실측 2회차 「새 줄 없음」 정상. 예약 Wellperion-Kakao-External-Hourly 등록·Ready. 창 가림은 불가(Ctrl+S 가 먹으려면 방 창이 앞에 와야 함 — 08-25 실측 그대로 · 억지 우회 안 함). 초판 결함 3건(무관한 배에 붙음·옛 대화를 새 것으로 판정·오배치 6줄) 수리 완료 aabd516a4.",
-  "artifact_url": "scripts/kakao_rooms.json",
+  "title": "원인 = 접수처 화면이 아니라 서버가 굶음. 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가 GAS 왕복을 최대 55초 기다리는데 uvicorn 워커가 1개뿐이라 그동안 /api/reception/board·lost 가 통째로 대기(실측 40초 초과 실패 → 화면 '불러오지 못했다' 팝업 · 습득물·컴플레인·청결 동일 증상). 조치 = ①erp-api 워커 2개(코어 수와 동일 · 메모리 여유 951MB) ②FORWARD_TIMEOUT 55→20초(화면 폴링 30초보다 짧게). 배포·재시작 뒤 실측 board/lost/dashboard 3경로 3회 전부 0.03~0.05초. DB 는 무관(쿼리 1.4ms·죽은 행 0). 실무진 시트 처리상태·메모 갱신 완료(staff_feedback_update ok · FB260908-220704). 종합접수처 화면 자체는 시우 소관이라 미접촉 — 서버 쪽만 고침.",
+  "artifact_url": "server/erp_api/erp-api.service",
   "commit": "",
-  "note": "밖과 트는 방 2개(★조재오부장님·다이어트캠프 이승기 대표님)만 1시간마다(08~21시) 내보내 상대가 쓴 새 줄만 감지 → 방별 전용 배(11291·11305)에 한 줄 append + AI 진행현황방 알림. 목록 = kakao_rooms.json external_rooms(새 원장 0) · 커서 = 방별 last_processed_at(최초 가동은 기준선만 잡고 과거 안 올림) · 중복 = 기존 지문 재사용 · 회차당 20줄 상한. 실측 2회차 「새 줄 없음」 정상. 예약 Wellperion-Kakao-External-Hourly 등록·Ready. 창 가림은 불가(Ctrl+S 가 먹으려면 방 창이 앞에 와야 함 — 08-25 실측 그대로 · 억지 우회 안 함). 초판 결함 3건(무관한 배에 붙음·옛 대화를 새 것으로 판정·오배치 6줄) 수리 완료 aabd516a4.",
-  "updated_at": "2026-09-08T11:56:42Z"
+  "note": "원인 = 접수처 화면이 아니라 서버가 굶음. 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가 GAS 왕복을 최대 55초 기다리는데 uvicorn 워커가 1개뿐이라 그동안 /api/reception/board·lost 가 통째로 대기(실측 40초 초과 실패 → 화면 '불러오지 못했다' 팝업 · 습득물·컴플레인·청결 동일 증상). 조치 = ①erp-api 워커 2개(코어 수와 동일 · 메모리 여유 951MB) ②FORWARD_TIMEOUT 55→20초(화면 폴링 30초보다 짧게). 배포·재시작 뒤 실측 board/lost/dashboard 3경로 3회 전부 0.03~0.05초. DB 는 무관(쿼리 1.4ms·죽은 행 0). 실무진 시트 처리상태·메모 갱신 완료(staff_feedback_update ok · FB260908-220704). 종합접수처 화면 자체는 시우 소관이라 미접촉 — 서버 쪽만 고침.",
+  "updated_at": "2026-09-08T13:19:50Z"
 }
