@@ -220,16 +220,16 @@
       "nick": "시토",
       "items": [
         {
-          "ref": "GM-20260908-01",
-          "no": "01",
-          "got": "AWS 이관 진행 + 병렬로 배편(열린 배) 진행 (GM 2026-09-08 11:2x)",
-          "did": "",
-          "start": "11:30",
-          "end": "14:09",
-          "minutes": 159,
-          "upload": "✅ 올림 (a9cb89e9f)",
+          "ref": "GM-20260908-02",
+          "no": "02",
+          "got": "AWS 이관 계속 진행 — 충돌·데이터 유실 절대 금지 (GM 2026-09-08 14:2x)",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:30",
+          "end": "16:35",
+          "minutes": 4,
+          "upload": "✅ 올림 (4f1128757)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "🔁재확인"
         },
         {
           "ref": "GM-20260908-2002",
@@ -343,13 +343,13 @@
           "ref": "GM-20260908-2027",
           "no": "27",
           "got": "AWS 이관 진행해 충돌나거나 데이터 사라지면 안되",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:30",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:35",
+          "minutes": 4,
+          "upload": "✅ 올림 (4f1128757)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -406,31 +406,34 @@
           "area": "작업",
           "event": "GEO 주간 측정에 AX 허브 운영자 8문 편입(cited_count_ax 별도 집계) + 09-08 기준선 (배1132 · 시보 확정)",
           "detail": "커밋 b8efa0ed3 · 배 11376"
+        },
+        {
+          "time": "16:34",
+          "area": "작업",
+          "event": "상태점검에 서버 되밀기(pushback) 감시 추가 — 시트로 못 돌아간 행·실패를 잡는다(전환 뒤 데이터 유실 사각) (GM 2026-09-08)",
+          "detail": "커밋 fbfde622e · 배 11376"
+        },
+        {
+          "time": "16:36",
+          "area": "작업",
+          "event": "시우 화면 잔여 2장(리셉션 업무·라커관리) GAS 호출 실측 + 읽기 미러 설계 (배1039 #2)",
+          "detail": "커밋 ca1e22725 · 배 11376"
+        },
+        {
+          "time": "16:37",
+          "area": "작업",
+          "event": "시우 화면 28/28 서버 관문 확인 — 09-07 인벤토리의 '리셉션 업무·라커관리 GAS 직접' 오판 정정 + 현황표 갱신 (배1039 #2 · 2026-09-08)",
+          "detail": "커밋 4f1128757 · 배 11376"
         }
       ],
       "count": 11,
-      "done": 10,
-      "open": 1,
-      "avg_minutes": 15,
-      "work_count": 9,
+      "done": 11,
+      "open": 0,
+      "avg_minutes": 0,
+      "work_count": 12,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260908-2027",
-          "no": "27",
-          "got": "AWS 이관 진행해 충돌나거나 데이터 사라지면 안되",
-          "did": "",
-          "start": "16:30",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
