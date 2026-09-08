@@ -30,7 +30,7 @@ import sys
 import time
 import urllib.request
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Body
 
 SOURCE = "server-last-good"
 FORWARD_TIMEOUT = 20          # 화면 폴링 주기(30초)보다 짧게 — 55초였을 때 요청이 겹쳐 쌓여 서버 전체가 굶었다
@@ -94,9 +94,12 @@ def _failed(detail, t, payload):
     return out
 
 
+# ★동기 def 로 둔다(2026-09-08 실사고 FB260908-220704). 이 라우트는 아래에서 urllib(동기)로 GAS 를
+#   왕복하는데, async def 면 그 대기가 이벤트 루프를 통째로 막아 **같은 워커의 다른 요청이 전부 굶는다**
+#   — 종합접수처 조회(습득물·컴플레인·청결)가 40초 넘게 대기하다 "불러오지 못했다" 팝업이 났다.
+#   동기 def 면 FastAPI 가 threadpool 로 돌려 루프가 살아 있다. 여기에 await 를 다시 넣지 마라.
 @router.post("/api/reception-ops")
-async def reception_ops(request: Request):
-    body = await request.body()
+def reception_ops(body: bytes = Body(b"")):
     try:
         payload = json.loads(body.decode("utf-8"))
     except Exception:
