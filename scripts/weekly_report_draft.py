@@ -10,8 +10,9 @@
   ③ 지적사항 처리 결과 — 회장님 지시 트래킹 원문이 아직 없다(GM PC) → 「자료 대기」 고정.
   ④ 다음 주 예정   — 전사일정 next_due 오늘~+7일.
 
-발신 = wellperion-agents/telegram_notifier.TelegramNotifier(기존 관문)만. 기본 dry-run,
---send 일 때만 업무 보고 방으로 나간다. 이 초안은 GM 검수 후 회장님께 나간다 — 자동 회장님 발송 아님.
+발신 = scripts/notify/telegram_send.send(정본 관문 · tg_outbound_log 경유) 업무 보고 방(8254867551)
+으로. 기본 dry-run, --send 일 때만 나간다. --date YYYY-MM-DD 로 기준일 지정(테스트·지난주 재발송용).
+이 초안은 GM 검수 후 회장님께 나간다 — 자동 회장님 발송 아님.
 """
 import json
 import sys
@@ -24,6 +25,7 @@ DRAFT_DIR = ROOT / "status" / "drafts"
 MAX_LINES = 15  # 섹션당 표시 상한 — 넘치면 「외 N건」으로 전사일정 화면을 가리킨다
 SCHEDULE_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html"
 WD_KOR = "월화수목금토일"
+GM_CHAT_ID = 8254867551  # 업무보고방 SSOT(ssot/canon_values.json telegram_chat_id)
 
 
 def _load_items():
@@ -106,6 +108,8 @@ def main(argv):
     force = "--force" in argv
     send = "--send" in argv
     today = date.today()
+    if "--date" in argv:
+        today = datetime.strptime(argv[argv.index("--date") + 1], "%Y-%m-%d").date()
     if today.weekday() != 0 and not force:
         print(f"[skip] 월요일 아님({today}) — 초안 생성 안 함")
         return 0
@@ -117,10 +121,9 @@ def main(argv):
     print(f"[ok] 초안 저장 {out}")
 
     if send:
-        sys.path.insert(0, str(ROOT / "wellperion-agents"))
-        from telegram_notifier import TelegramNotifier  # 기존 관문(L21)
-        TelegramNotifier().send(text)
-        print("[ok] 업무 보고 방 발신 완료")
+        from notify.telegram_send import send as tg_send  # noqa: PLC0415 — 정본 발신 관문
+        ok = tg_send(GM_CHAT_ID, text)
+        print(f"[ok] 업무 보고 방 발신 {'완료' if ok else '실패'}")
     else:
         print(text)
     return 0
