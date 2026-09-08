@@ -109,6 +109,20 @@ def fingerprint(c: dict) -> str:
     return f"{c.get('day','')}|{c['who']}|{c['when']}|{c['text'][:40]}"
 
 
+_AMPM = re.compile(r"(오전|오후)\s*(\d{1,2}):(\d{2})")
+
+
+def call_key(c: dict) -> str:
+    """day+when → "YYYY-MM-DD HH:MM"(24시간) 정렬 키. 카톡 내보내기는 분 단위까지만 준다 —
+    같은 분에 여러 줄이 와도 이 키로는 못 가른다(그건 fingerprint 의 몫)."""
+    m = _AMPM.match((c.get("when") or "").strip())
+    if not m:
+        return f"{c.get('day','')} 00:00"
+    ap, h, mi = m.group(1), int(m.group(2)), m.group(3)
+    h = (0 if h == 12 else h) if ap == "오전" else (12 if h == 12 else h + 12)
+    return f"{c.get('day','')} {h:02d}:{mi}"
+
+
 def extract_external(text: str) -> list[dict]:
     """상대(GM_SELF 제외)가 쓴 줄만 뽑는다. extract()와 뼈대는 같고 조건만 다르다
     ("웰리" 호출 대신 "우리 쪽 아님") — 두 조건을 하나로 합치면 오히려 읽기 어려워져 그대로 둔다."""
@@ -199,24 +213,38 @@ def _export_now_external(room_name: str) -> Path | None:
     return _latest_export_for(room_name)
 
 
-def _append_to_open_ship(role: str, room_name: str, fresh: list[dict]) -> str | None:
-    """owner_role 의 열린 배 중 가장 최근 것(ship_no 최대)에 note 한 줄씩 append.
+OPEN = ("PENDING", "IN_PROGRESS")
+
+
+def _append_to_ship(role: str, room_name: str, ship_no, fresh: list[dict]) -> str | None:
+    """이 방 전용 배(kakao_rooms.json external_rooms.ship_no)에 note 한 줄씩 append.
+    전용 배가 없거나 닫혀 있을 때만 owner_role 의 열린 배 중 가장 최근 것으로 폴백한다
+    (GM 지적 2026-09-08 — "가장 최근 것" 하나로 몰면 방마다 섞여 시보가 못 읽는다).
     큐 쓰기는 queue_lock.mutate_queue 한 관문으로만(약속 — 직접 열어 쓰지 않는다).
-    돌려주는 값 = 붙인 배의 표시 번호(short_no 우선) — 없으면 None(열린 배가 없었다는 뜻)."""
+    돌려주는 값 = 붙인 배의 표시 번호(short_no 우선) — 없으면 None(붙일 배가 없었다는 뜻)."""
     from queue_lock import mutate_queue
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     lines = [f"- [시토 {now} · 카톡 자동감지 · {room_name}] {c['who']}: {c['text'].replace(chr(10), ' ')[:60]}"
              for c in fresh]
-    block = "\n".join(lines)
     hit: dict = {}
 
     def mutator(queue):
-        open_ships = [it for it in queue if isinstance(it, dict) and it.get("clevel") == role
-                      and it.get("status") in ("PENDING", "IN_PROGRESS")]
-        if not open_ships:
-            return queue
-        target = max(open_ships, key=lambda x: x.get("ship_no") or 0)
+        target = None
+        pinned = next((it for it in queue if isinstance(it, dict) and it.get("ship_no") == ship_no), None) \
+            if ship_no is not None else None
+        block = "\n".join(lines)
+        if pinned is not None and pinned.get("status") in OPEN:
+            target = pinned
+        else:
+            if pinned is not None:
+                block = (f"- [시토 {now} · 전용 배 {ship_no} 닫힘(status={pinned.get('status')}) → "
+                         f"{role} 최근 열린 배로 폴백]\n") + block
+            open_ships = [it for it in queue if isinstance(it, dict) and it.get("clevel") == role
+                          and it.get("status") in OPEN]
+            if not open_ships:
+                return queue
+            target = max(open_ships, key=lambda x: x.get("ship_no") or 0)
         prev = str(target.get("note") or "")
         target["note"] = (prev + ("\n" if prev else "") + block).strip()
         hit["disp"] = target.get("short_no") if target.get("short_no") is not None else target.get("ship_no")
@@ -260,52 +288,67 @@ def _ping_external(room_name: str, role: str, fresh: list[dict], disp) -> None:
         print(f"[WARN] 알림 실패(배는 정상 등록됨): {type(e).__name__}: {e}")
 
 
-def run_external(dry: bool, since_days: int = 1) -> int:
+def run_external(dry: bool) -> int:
+    """방마다 last_processed_at(마지막으로 처리한 상대 발언 시각) 뒤에 온 줄만 배에 올린다.
+    GM 지적 2026-09-08 — since-days(날짜 단위) 컷오프로는 "어제 이미 시보가 회신까지 마친 대화"도
+    다시 새 걸로 본다. 시분 단위 커서(call_key)로 바꿔 이미 처리한 순간 이후만 본다.
+    최초 가동(그 방에 last_processed_at 이 아예 없을 때)은 지금 시각을 기준선으로만 잡고
+    아무것도 올리지 않는다 — 안 그러면 방이 열린 날부터 전부가 '새 것'이 된다(2026-09-08 실사고)."""
     rooms = _load_external_rooms()
     if not rooms:
         print("[external] kakao_rooms.json 에 external_rooms 없음 — 할 일 없음")
         return 0
-    # ★내보낸 파일은 방이 열린 날(몇 달 전)부터 전부 들어 있다 — 첫 가동 실측(2026-09-08)에서
-    #   날짜 제한 없이 돌렸다가 752줄(수개월치 사적 대화 포함)이 배 노트 하나에 그대로 쌓였다
-    #   (즉시 git checkout 으로 되돌림). main()의 ★중간관리자 처리와 같은 cutoff 을 반드시 건다.
-    cutoff = (datetime.now() - timedelta(days=since_days)).strftime("%Y-%m-%d")
+    now_key = datetime.now().strftime("%Y-%m-%d %H:%M")
     st = _state()
     ext = st.setdefault("external", {})
     any_new = False
+    MAX_LINES = 20  # 안전판(2026-09-08) — 커서가 있어도 혹시 몰아온 하루엔 이 이상 안 싣는다
     for r in rooms:
-        name, role = r.get("name"), r.get("owner_role")
+        name, role, ship_no = r.get("name"), r.get("owner_role"), r.get("ship_no")
         if not name or not role:
             print(f"[external] 항목에 name·owner_role 없음 — 건너뜀: {r}")
             continue
+        room_state = ext.get(name, {})
+        last = room_state.get("last_processed_at")
         print(f"[external] {name} 내보내기 시작")
         p = _export_now_external(name)
         if p is None or not p.exists():
             print(f"[external] {name} — 내보내기 실패, 건너뜀")
             continue
         calls = extract_external(p.read_text(encoding="utf-8", errors="replace"))
-        old = [c for c in calls if c.get("day", "") < cutoff]
-        calls = [c for c in calls if c.get("day", "") >= cutoff]
-        seen = set(ext.get(name, {}).get("seen", []))
-        fresh_all = [c for c in calls if fingerprint(c) not in seen]
-        # 2차 안전판(2026-09-08 실사고 대비) — cutoff 을 지나도 하루에 유난히 말이 많으면
-        # 배 노트가 계속 커진다. 최근 것 위주로 최대 MAX_LINES 만 배에 싣고, 나머지도 seen 에는
-        # 넣어(다음 회차에 또 안 걸리게) 두 번 다시 안 실린다 — 유실이 아니라 '요약 생략'이다.
-        MAX_LINES = 20
+
+        if last is None:
+            print(f"[external] {name} — 최초 가동, 과거는 안 올리고 기준선만 잡음({now_key})")
+            if not dry:
+                ext[name] = {"last_processed_at": now_key, "seen": []}
+            continue
+
+        seen = set(room_state.get("seen", []))
+        # last 이후(같은 분 포함 — 분 해상도라 같은 분 재발화를 놓치지 않게 >=)만 후보,
+        # 그 안에서 이미 처리한 것은 fingerprint 로 걸러낸다(같은 분 중복 발화 대비).
+        candidates = [c for c in calls if call_key(c) >= last]
+        fresh_all = [c for c in candidates if fingerprint(c) not in seen]
         fresh = fresh_all[-MAX_LINES:]
         skipped = len(fresh_all) - len(fresh)
-        print(f"[external] {name} — 최근 {since_days}일 발언 {len(calls)}건(지난 것 {len(old)}건 건너뜀) · "
-              f"새 것 {len(fresh_all)}건" + (f" · 배에는 최근 {MAX_LINES}건만(초과 {skipped}건 생략)" if skipped else ""))
+        print(f"[external] {name} — {last} 이후 {len(candidates)}건 · 새 것 {len(fresh_all)}건" +
+              (f" · 배에는 최근 {MAX_LINES}건만(초과 {skipped}건 생략)" if skipped else ""))
+
+        new_last = max((call_key(c) for c in candidates), default=last)
+        new_last = max(new_last, last)
         if not fresh_all:
+            if not dry:
+                ext[name] = {"last_processed_at": new_last, "seen": sorted(seen)[-500:]}
             continue
         any_new = True
         if dry:
             for c in fresh:
                 print(f"    (dry) {c['who']}: {c['text'][:60]}")
             continue
-        disp = _append_to_open_ship(role, name, fresh)
+        disp = _append_to_ship(role, name, ship_no, fresh)
         if disp is None:
             _new_ship_for_external(role, name, fresh)
-        ext[name] = {"seen": sorted(seen | {fingerprint(c) for c in fresh_all})[-500:]}
+        ext[name] = {"last_processed_at": new_last,
+                     "seen": sorted(seen | {fingerprint(c) for c in candidates})[-500:]}
         _ping_external(name, role, fresh, disp)
     if not dry:
         _save(st)
@@ -328,7 +371,7 @@ def main() -> int:
     a = ap.parse_args()
 
     if a.external:
-        return run_external(a.dry_run, a.since_days)
+        return run_external(a.dry_run)
 
     p = Path(a.file) if a.file else (_export_now() if a.export else _latest_export())
     if p is None or not p.exists():
@@ -413,6 +456,14 @@ def demo() -> None:
     assert "자진 좋다" in got2[0]["text"], "여러 줄 발언이 이어붙지 않았다"
     assert "감사합니다" not in got2[0]["text"], "우리 쪽 발신이 딸려 들어왔다"
     print("[OK] external_rooms 자체 점검 통과 — GM_SELF 발신 제외, 상대 발언만 추출")
+
+    # last_processed_at 커서 계산(call_key) — 오전/오후 12시 경계가 실수하기 가장 쉬운 지점.
+    assert call_key({"day": "2026-09-08", "when": "오전 11:18"}) == "2026-09-08 11:18"
+    assert call_key({"day": "2026-09-08", "when": "오후 8:07"}) == "2026-09-08 20:07"
+    assert call_key({"day": "2026-09-08", "when": "오후 12:00"}) == "2026-09-08 12:00", "오후 12시=정오"
+    assert call_key({"day": "2026-09-08", "when": "오전 12:00"}) == "2026-09-08 00:00", "오전 12시=자정"
+    assert call_key({"day": "2026-09-07", "when": "오전 11:18"}) < call_key({"day": "2026-09-08", "when": "오전 0:01"})
+    print("[OK] call_key 자체 점검 통과 — 오전/오후 12시 경계·날짜 비교 정상")
 
 
 if __name__ == "__main__":
