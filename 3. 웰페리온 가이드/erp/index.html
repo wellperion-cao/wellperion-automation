@@ -87,6 +87,7 @@
   <div class="tabs" role="tablist">
     <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">화면</button>
     <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
+    <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
   </div>
 
   <div id="pane-mod" role="tabpanel">
@@ -98,6 +99,17 @@
     <div class="note">여기 있는 것은 <b>설치·도구 파일</b>입니다. 회원·매출·인사 같은 회사 자료는
       내려받는 곳이 아니라 화면에서 봅니다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남습니다.</div>
     <div class="dl" id="downloads"><div class="msg">불러오는 중…</div></div>
+  </div>
+
+  <div id="pane-adm" role="tabpanel" hidden>
+    <div class="note">누구에게 어떤 화면을 열어줄지 정하는 곳입니다. <b>로그인과 별개인 관리자 비밀번호</b>를 한 번 더 넣습니다(30분).</div>
+    <div class="modules">
+      <a class="mod" href="/auth/admin">
+        <div class="name">권한 관리 열기</div>
+        <div class="desc">신청 대기 · 사람별 권한 · 부서 기본 권한을 한 화면에서 본다.</div>
+        <div class="owner">관리자 전용</div>
+      </a>
+    </div>
   </div>
 </div>
 
@@ -112,6 +124,9 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   document.getElementById('who').innerHTML =
     esc(me.name || me.email || '') + '<span class="role">' + esc(me.role || '') + '</span>';
   document.getElementById('logout').hidden = false;
+  // 관리자에게만 「권한관리」 탭을 띄운다. ★이건 보기 편하라고 감추는 것일 뿐 잠금이 아니다 —
+  //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
+  if (me.role === 'admin') document.getElementById('tab-adm').hidden = false;
   return loadModules(me.role, me.allowed_ids || null);
 }).catch(function(e){
   // 로컬에서 파일로 열면 /auth/me 가 없다 — 튕기지 않고 권한 없는 상태로 그려 둔다.
@@ -189,16 +204,18 @@ function loadDownloads(){
 
 // 2-2) 탭 전환 — 다운로드 판은 처음 열 때 한 번만 읽는다.
 var dlLoaded = false;
+var TABS = ['mod', 'dl', 'adm'];
 function showTab(which){
-  var mod = which === 'mod';
-  document.getElementById('tab-mod').setAttribute('aria-selected', mod);
-  document.getElementById('tab-dl').setAttribute('aria-selected', !mod);
-  document.getElementById('pane-mod').hidden = !mod;
-  document.getElementById('pane-dl').hidden = mod;
-  if (!mod && !dlLoaded) { dlLoaded = true; loadDownloads(); }
+  TABS.forEach(function(k){
+    var on = (k === which);
+    document.getElementById('tab-' + k).setAttribute('aria-selected', on);
+    document.getElementById('pane-' + k).hidden = !on;
+  });
+  if (which === 'dl' && !dlLoaded) { dlLoaded = true; loadDownloads(); }
 }
-document.getElementById('tab-mod').addEventListener('click', function(){ showTab('mod'); });
-document.getElementById('tab-dl').addEventListener('click', function(){ showTab('dl'); });
+TABS.forEach(function(k){
+  document.getElementById('tab-' + k).addEventListener('click', function(){ showTab(k); });
+});
 
 // 3) 제목 필터 — 안 남은 섹션은 제목째 감춘다.
 function filter(){

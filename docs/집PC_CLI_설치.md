@@ -27,14 +27,16 @@
 **안 담는 것: `.credentials.json`(로그인 토큰)·세션 기록·캐시.** 토큰은 절대 옮기지 않는다.
 
 ### ② 집 PC — 설치 (10~20분, 인터넷 필요)
-**가장 쉬운 길:** ERP 모듈홈(`erp.wellperion.com/erp/`) → **「다운로드」 탭** → 「집 PC 설치 꾸러미」 내려받아 더블클릭. 아래 명령은 그 파일이 하는 일과 같다.
+zip 을 집 PC 바탕화면(또는 다운로드)에 둔다. 그리고 **ERP 모듈홈**(`https://erp.wellperion.com/erp/`) → **「다운로드」 탭** → **「집 PC 설치 꾸러미」** 를 받아 더블클릭한다. 파일 배포는 **회사 서버(AWS)에서만** 한다 — 외부 저장소 주소로 받지 않는다.
 
-zip 을 집 PC 바탕화면(또는 다운로드)에 둔 뒤, PowerShell 에서:
+명령으로 하려면 PowerShell 에서:
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ops/home_pc_setup.ps1 -OutFile "$env:TEMP\home_pc_setup.ps1"
+Invoke-WebRequest https://erp.wellperion.com/erp/launchers/home_pc_setup.ps1 -OutFile "$env:TEMP\home_pc_setup.ps1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1"
 ```
 (저장소가 이미 있으면 `ops\home_pc_setup.bat` 더블클릭이면 된다. zip 위치를 직접 주려면 `-ConfigZip "경로"`.)
+
+> ⚠️ **저장소 본체는 아직 GitHub 에 있다.** 설치 3단계 중 「저장소 내려받기」만 그렇다(`-RepoUrl` 인자로 옮길 수 있게 빼 두었다). 저장소를 비공개로 돌리면 이 단계에서 로그인을 한 번 묻는다 — 막힌 게 아니라 정상이다.
 스크립트는 관리자 권한을 스스로 올리고(UAC '예'), 6단계를 돌고, 끝에 점검표를 찍는다. 각 단계는 실패해도 다음으로 간다. 로그 = `logs\home_pc_setup.log`.
 
 ### ③ 집 PC — 사람이 1회
@@ -60,6 +62,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1
 ## 4-1. 배포 사본 (ERP 다운로드 탭)
 ERP 가 내주는 폴더는 `3. 웰페리온 가이드/erp/launchers/` 다. 그래서 설치 스크립트 사본이 그곳에도 있다 — **정본은 `ops/home_pc_setup.ps1`**. 스크립트를 고치면 두 곳을 같이 고친다. 목록은 `erp/downloads.json` 한 곳만 고치면 되고 화면(`erp/index.html`)은 손대지 않는다.
 **이 폴더는 로그인 없이 열리는 공개 통로다 — 회사 자료가 든 파일은 절대 두지 않는다.**
+
+모듈홈 탭은 셋이다 — **화면 / 다운로드 / 권한관리**. 「권한관리」 탭은 **관리자로 로그인했을 때만 뜨고**, 눌러도 기존 관리자 화면(`/auth/admin`)으로 갈 뿐이다. 탭을 감추는 것은 보기 편하라는 것이지 잠금이 아니다 — 실제 차단은 서버가 한다(관리자가 아니면 거부, 관리자여도 비밀번호 한 번 더).
 
 ## 5. 이번에 같이 고친 것 (사용자명 하드코딩 제거)
 회사 사용자명 `jjky0` 절대경로가 박혀 있어 집 PC 에서 깨지던 4곳을 저장소·홈 기준으로 바꿨다: `scripts/worklog.py`(ROOT) · `scripts/session_resume.py`(PROJECT_DIR) · `scripts/skill_inventory.py`(BASE_DIR) · `scripts/wellperion_hud.mjs`(OMC_HUD). 회사 PC 에서는 값이 같아 동작 변화 없다.

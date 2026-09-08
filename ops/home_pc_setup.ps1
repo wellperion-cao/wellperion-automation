@@ -25,6 +25,7 @@
 #>
 param(
   [string]$ConfigZip = "",
+  [string]$RepoUrl   = "https://github.com/wellperion-cao/wellperion-automation.git",
   [switch]$SkipWinget,
   [switch]$SkipVenv
 )
@@ -37,6 +38,7 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if (-not $isAdmin) {
   $fwd = @()
   if ($ConfigZip)  { $fwd += "-ConfigZip `"$ConfigZip`"" }
+  if ($RepoUrl -ne "https://github.com/wellperion-cao/wellperion-automation.git") { $fwd += "-RepoUrl `"$RepoUrl`"" }
   if ($SkipWinget) { $fwd += "-SkipWinget" }
   if ($SkipVenv)   { $fwd += "-SkipVenv" }
   Write-Host "관리자 권한으로 다시 엽니다(UAC 창에서 '예')..."
@@ -45,7 +47,8 @@ if (-not $isAdmin) {
 }
 
 $Work      = Join-Path $env:USERPROFILE 'welperion-automation'
-$RepoUrl   = 'https://github.com/wellperion-cao/wellperion-automation.git'
+# 저장소 주소는 -RepoUrl 로 바꾼다(위 param). 저장소를 비공개로 돌리거나 다른 곳으로 옮기면
+# 그 인자만 주면 된다 — 비공개면 첫 clone 때 로그인을 한 번 묻는다(막힌 게 아니라 정상이다).
 $Py        = 'C:\Python314\python.exe'
 $ClaudeDir = Join-Path $env:USERPROFILE '.claude'
 $Report    = New-Object System.Collections.ArrayList
@@ -116,6 +119,7 @@ Step "3/6 저장소 $Work"
 if (Has 'git') {
   if (-not (Test-Path (Join-Path $Work '.git'))) {
     Log "git clone $RepoUrl"
+    Log "  (저장소가 비공개면 여기서 로그인을 한 번 묻는다 - 정상)"
     git clone $RepoUrl $Work 2>&1 | Tee-Object -FilePath $Log -Append | Out-Null
   } else {
     Log "이미 있음 - git pull --rebase origin master"
@@ -253,3 +257,4 @@ Write-Host "  1. 새 PowerShell 창을 열고  claude  → /login  (회사와 �
 Write-Host "  2. $Work 에서 'Start-AI CEO.bat' 더블클릭 → 부팅 선언 표·상태줄 확인"
 Write-Host "  3. 텔레그램 봇·스케줄러·예약작업·Startup 바로가기는 집 PC 에 만들지 않는다(회사 PC 가 상시 가동)"
 Write-Host "  4. zip 없이 설치했으면 ponytail·graphify·headroom 은 회사 PC 에서 ops\export_claude_config.bat 로 zip 을 만들어 -ConfigZip 으로 한 번 더 실행"
+Write-Host "  * 이 스크립트를 다시 받을 곳 = ERP 모듈홈 > 다운로드 탭 (https://erp.wellperion.com/erp/)"
