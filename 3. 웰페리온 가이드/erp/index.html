@@ -6,20 +6,34 @@
 <title>웰페리온 ERP</title>
 <link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
 <style>
-  /* 색·폰트는 wellperion_guide(main).html 의 :root 를 그대로 쓴다 (2026-09-03) */
+  /* 색 = 권한관리·로그인 화면과 같은 토큰(밝은 종이 톤 · 다크 자동) — GM 지시 2026-09-08
+     "권한관리가 더 밝아서 보기 좋다". 종전엔 가이드 허브의 어두운 :root 를 썼는데, 권한관리 화면을
+     이 안에 끼워 띄우게 되면서 한 화면에 밝은 판과 어두운 판이 같이 뜨는 것도 함께 해소된다.
+     강조색 = 브랜드 시그니처 에메랄드 #63BBA0 (브랜드 기반 문서 · GM 지시). 종전 베이지 #B79F8A 대체. */
   :root{
-    --bg:#221F20; --paper:#2a2725; --text:#f5f2ef; --text-soft:#d4d0cc;
-    --dim:#8c8b83; --dim-soft:#6b6a64;
-    --accent:#B79F8A; --accent-hover:#d4b89e; --accent-bg:rgba(183,159,138,0.12);
-    --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
+    --bg:#F4F0EB; --paper:#fff; --text:#221F20; --text-soft:#4A423C;
+    --dim:#6E655C; --dim-soft:#9C938A;
+    --accent:#63BBA0; --accent-hover:#3F9B80; --accent-bg:rgba(99,187,160,0.12);
+    --border:rgba(34,31,32,0.12); --border-strong:rgba(34,31,32,0.26); --gray-bg:#FBF9F6;
   }
+  /* 보는 사람이 다크 모드면 같이 어두워진다 — 끼워 띄우는 권한관리 화면이 그렇게 동작하므로 짝을 맞춘다 */
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme=light]){
+      --bg:#221F20; --paper:#2a2725; --text:#F4F0EB; --text-soft:#CFC8C1;
+      --dim:#AAA098; --dim-soft:#7E766E;
+      --accent:#63BBA0; --accent-hover:#8ED6BF; --accent-bg:rgba(99,187,160,0.16);
+      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#302c2a;
+    }
+  }
+  html{color-scheme:light dark;}
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
        color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
        -webkit-font-smoothing:antialiased;}
 
-  .topbar{display:flex; align-items:center; gap:14px; padding:16px 40px;
+  .topbar{display:flex; align-items:center; gap:22px; padding:0 40px; height:58px;
+          position:sticky; top:0; z-index:20;
           background:var(--paper); border-bottom:1px solid var(--border);}
   .topbar .brand{display:flex; align-items:center; color:var(--text);}
   .topbar .brand svg{height:16px; width:auto; display:block;}  /* 브랜드 자산 정본 = erp/brand/ (배932·952) */
@@ -27,12 +41,13 @@
   .topbar .who{margin-left:auto; font-size:13.5px; color:var(--text-soft);}
   .topbar .who .role{display:inline-block; font-size:11.5px; font-weight:600;
                      padding:2px 9px; border-radius:20px; background:var(--accent);
-                     color:#221F20; margin-left:7px;}
+                     color:#fff; margin-left:7px;}
   .topbar a.logout{font-size:13px; color:var(--dim); text-decoration:none; margin-left:16px;}
   .topbar a.logout:hover{color:var(--accent-hover);}
 
   .main{max-width:1100px; padding:40px 40px 80px;}
   h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
+  [role=tabpanel] > h2:first-child{margin-top:0;}
   .meta{font-size:13px; color:var(--dim); margin-bottom:30px;}
   h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
      border-bottom:2px solid var(--gray-bg);}
@@ -41,7 +56,7 @@
   .mod{display:block; background:var(--paper); border:1px solid var(--border);
        border-radius:12px; padding:20px 22px; text-decoration:none; color:inherit;
        transition:border-color 0.12s, background 0.12s;}
-  .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
+  .mod:hover{border-color:var(--accent); background:var(--accent-bg); box-shadow:0 4px 14px rgba(34,31,32,.07);}
   .mod .name{font-size:17px; font-weight:700; margin-bottom:6px;}
   .mod .desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
   .mod .owner{font-size:12.5px; color:var(--dim); margin-top:12px;
@@ -60,56 +75,64 @@
 
   .msg{color:var(--dim); font-size:14px;}
 
-  /* 탭 — 모듈 / 다운로드 (배1120 · 2026-09-08) */
-  .tabs{display:flex; gap:4px; margin-bottom:22px; border-bottom:1px solid var(--border);}
-  .tabs button{background:none; border:0; padding:10px 16px; font:inherit; font-weight:600;
-               color:var(--dim); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;}
-  .tabs button:hover{color:var(--text-soft);}
+  /* 탭 = 최상단 상단바 안 (GM 지시 2026-09-08 — 본문에 있던 것을 위로 올렸다) */
+  .tabs{display:flex; gap:2px; height:100%; overflow-x:auto; scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tabs button{background:none; border:0; padding:0 14px; height:100%; font:inherit; font-weight:600;
+               white-space:nowrap; color:var(--dim); cursor:pointer;
+               border-bottom:2px solid transparent; margin-bottom:-1px;}
+  .tabs button:hover{color:var(--text);}
   .tabs button[aria-selected=true]{color:var(--text); border-bottom-color:var(--accent);}
+  .tabs button:focus-visible{outline:2px solid var(--accent); outline-offset:-6px; border-radius:8px;}
   .dl .mod .owner::before{content:"내려받기 · ";}
   .note{font-size:13px; color:var(--dim); background:var(--gray-bg);
         border-left:2px solid var(--border-strong); padding:10px 14px; border-radius:6px; margin-bottom:20px;}
+  .note a{color:var(--accent-hover);}
+  /* 권한관리 끼워넣기 — 서버가 내주는 관리자 화면을 이 자리에 그대로 띄운다 */
+  /* 관리자 화면은 넓은 콘솔이다 — 모듈 목록용 1100px 틀에 가두지 않고 창 폭을 다 쓴다.
+     .main 은 왼쪽 정렬(좌우 여백 40px)이라 이 폭이 화면에 정확히 들어맞는다. */
+  #pane-adm{width:calc(100vw - 80px);}
+  #adm-frame{width:100%; height:calc(100vh - 260px); min-height:560px; border:1px solid var(--border);
+             border-radius:12px; background:var(--paper); display:block;}
+  @media(max-width:640px){ #pane-adm{width:auto;} }
   @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="brand" aria-label="웰페리온 ERP"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108.7954 17.5240" height="20" role="img" aria-hidden="true"><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,96.8257,43.6787)" d="M0 0-3.093 5.825 .208 12.412H-1.778L-4.214 7.871-6.597 12.412H-8.731L-5.319 5.821-8.288-.041-14.694 12.412H-16.902L-8.271-3.912-4.197 3.954-.035-3.89 8.62 12.412H6.316Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,117.7407,42.6162)" d="M0 0-2.349 7.471H-3.277L-5.625 .004-8.025 7.47-9.046 7.471-6.261-1.094-4.967-1.096-2.813 5.929-.672-1.096 .621-1.094 3.419 7.471 2.399 7.47Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,122.3008,43.71)" d="M0 0H5.357V.776H.981V3.928H5.211V4.705H.981V7.788H5.357V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,130.3896,35.1455)" d="M0 0H-.981V-8.564H4.059V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,136.5166,35.1455)" d="M0 0H-.981V-8.564H4.058V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,147.4697,38.5273)" d="M0 0C-.151-.258-.361-.46-.635-.607-.857-.722-1.104-.81-1.378-.867-1.653-.925-2.063-.954-2.611-.954H-4.296V2.605H-3.036-2.718-2.399C-2.108 2.605-1.855 2.591-1.643 2.564-1.431 2.537-1.214 2.486-.993 2.409-.18 2.115 .224 1.584 .224 .814 .224 .529 .15 .257 0 0M-.078 2.917C-.45 3.126-.826 3.255-1.206 3.306-1.587 3.355-2.086 3.382-2.705 3.382H-5.277V-5.185H-4.296V-1.73H-2.452C-1.895-1.73-1.45-1.699-1.112-1.637-.652-1.552-.252-1.398 .094-1.173 .835-.695 1.207-.034 1.207 .808 1.207 1.743 .779 2.446-.078 2.917" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,150.0439,43.71)" d="M0 0H5.356V.776H.979V3.928H5.21V4.705H.979V7.788H5.356V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,163.793,37.938)" d="M0 0C0 .517-.129 .981-.39 1.391-.65 1.8-1.027 2.128-1.523 2.375-1.912 2.568-2.305 2.685-2.704 2.728-3.103 2.77-3.637 2.793-4.309 2.793H-6.643V-5.772H-5.66V2.016H-4.109C-3.632 2.016-3.215 1.991-2.855 1.946-2.498 1.899-2.178 1.79-1.895 1.616-1.611 1.442-1.389 1.217-1.225 .943-1.062 .669-.98 .381-.98 .081-.98-.314-1.09-.662-1.311-.963-1.532-1.265-1.846-1.496-2.253-1.659-2.536-1.767-2.8-1.832-3.05-1.856-3.296-1.878-3.654-1.891-4.122-1.891H-4.388-4.679L-1.353-5.772-.127-5.771-2.886-2.572C-2.092-2.572-1.411-2.316-.846-1.807-.281-1.298 0-.696 0 0" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,0,80)" d="M165.201 36.29H166.181V44.854H165.201Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,175.9219,41.9678)" d="M0 0C-.818-.707-1.806-1.061-2.964-1.061-4.096-1.061-5.079-.71-5.914-.012-6.751 .686-7.168 1.524-7.168 2.504-7.168 3.515-6.759 4.374-5.939 5.079-5.123 5.785-4.131 6.138-2.964 6.138-1.831 6.138-.85 5.791-.02 5.096 .812 4.401 1.227 3.561 1.227 2.573 1.227 1.564 .819 .704 0 0M.663 5.682C-.366 6.534-1.58 6.961-2.977 6.961-4.409 6.961-5.629 6.529-6.638 5.665-7.646 4.8-8.149 3.746-8.149 2.504-8.149 1.285-7.634 .249-6.604-.604-5.573-1.456-4.364-1.883-2.977-1.883-1.544-1.883-.321-1.448 .69-.579 1.7 .287 2.208 1.339 2.208 2.573 2.208 3.794 1.692 4.829 .663 5.682" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,186.5371,35.1455)" d="M0 0V-7.119L-5.494-.004-6.816 0V-8.564H-5.836V-1.033L0-8.564H.982V0Z" fill="currentColor"/></svg><span class="sub">ERP · 모듈 홈</span></div>
+  <div class="brand" aria-label="웰페리온 ERP"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108.7954 17.5240" height="20" role="img" aria-hidden="true"><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,96.8257,43.6787)" d="M0 0-3.093 5.825 .208 12.412H-1.778L-4.214 7.871-6.597 12.412H-8.731L-5.319 5.821-8.288-.041-14.694 12.412H-16.902L-8.271-3.912-4.197 3.954-.035-3.89 8.62 12.412H6.316Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,117.7407,42.6162)" d="M0 0-2.349 7.471H-3.277L-5.625 .004-8.025 7.47-9.046 7.471-6.261-1.094-4.967-1.096-2.813 5.929-.672-1.096 .621-1.094 3.419 7.471 2.399 7.47Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,122.3008,43.71)" d="M0 0H5.357V.776H.981V3.928H5.211V4.705H.981V7.788H5.357V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,130.3896,35.1455)" d="M0 0H-.981V-8.564H4.059V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,136.5166,35.1455)" d="M0 0H-.981V-8.564H4.058V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,147.4697,38.5273)" d="M0 0C-.151-.258-.361-.46-.635-.607-.857-.722-1.104-.81-1.378-.867-1.653-.925-2.063-.954-2.611-.954H-4.296V2.605H-3.036-2.718-2.399C-2.108 2.605-1.855 2.591-1.643 2.564-1.431 2.537-1.214 2.486-.993 2.409-.18 2.115 .224 1.584 .224 .814 .224 .529 .15 .257 0 0M-.078 2.917C-.45 3.126-.826 3.255-1.206 3.306-1.587 3.355-2.086 3.382-2.705 3.382H-5.277V-5.185H-4.296V-1.73H-2.452C-1.895-1.73-1.45-1.699-1.112-1.637-.652-1.552-.252-1.398 .094-1.173 .835-.695 1.207-.034 1.207 .808 1.207 1.743 .779 2.446-.078 2.917" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,150.0439,43.71)" d="M0 0H5.356V.776H.979V3.928H5.21V4.705H.979V7.788H5.356V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,163.793,37.938)" d="M0 0C0 .517-.129 .981-.39 1.391-.65 1.8-1.027 2.128-1.523 2.375-1.912 2.568-2.305 2.685-2.704 2.728-3.103 2.77-3.637 2.793-4.309 2.793H-6.643V-5.772H-5.66V2.016H-4.109C-3.632 2.016-3.215 1.991-2.855 1.946-2.498 1.899-2.178 1.79-1.895 1.616-1.611 1.442-1.389 1.217-1.225 .943-1.062 .669-.98 .381-.98 .081-.98-.314-1.09-.662-1.311-.963-1.532-1.265-1.846-1.496-2.253-1.659-2.536-1.767-2.8-1.832-3.05-1.856-3.296-1.878-3.654-1.891-4.122-1.891H-4.388-4.679L-1.353-5.772-.127-5.771-2.886-2.572C-2.092-2.572-1.411-2.316-.846-1.807-.281-1.298 0-.696 0 0" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,0,80)" d="M165.201 36.29H166.181V44.854H165.201Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,175.9219,41.9678)" d="M0 0C-.818-.707-1.806-1.061-2.964-1.061-4.096-1.061-5.079-.71-5.914-.012-6.751 .686-7.168 1.524-7.168 2.504-7.168 3.515-6.759 4.374-5.939 5.079-5.123 5.785-4.131 6.138-2.964 6.138-1.831 6.138-.85 5.791-.02 5.096 .812 4.401 1.227 3.561 1.227 2.573 1.227 1.564 .819 .704 0 0M.663 5.682C-.366 6.534-1.58 6.961-2.977 6.961-4.409 6.961-5.629 6.529-6.638 5.665-7.646 4.8-8.149 3.746-8.149 2.504-8.149 1.285-7.634 .249-6.604-.604-5.573-1.456-4.364-1.883-2.977-1.883-1.544-1.883-.321-1.448 .69-.579 1.7 .287 2.208 1.339 2.208 2.573 2.208 3.794 1.692 4.829 .663 5.682" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,186.5371,35.1455)" d="M0 0V-7.119L-5.494-.004-6.816 0V-8.564H-5.836V-1.033L0-8.564H.982V0Z" fill="currentColor"/></svg><span class="sub">ERP</span></div>
+  <div class="tabs" role="tablist">
+    <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">모듈</button>
+    <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
+    <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
+  </div>
   <div class="who" id="who">확인 중…</div>
   <a class="logout" id="logout" href="/auth/logout" hidden>로그아웃</a>
 </div>
 
 <div class="main">
-  <h2>모듈</h2>
-  <div class="meta">회원 · 운영 · 점검 · 경영 4그룹 + 문서함(안내·초안·보고서).</div>
-
-  <div class="tabs" role="tablist">
-    <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">화면</button>
-    <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
-    <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
-  </div>
-
   <div id="pane-mod" role="tabpanel">
+    <h2>모듈</h2>
+    <div class="meta">회원 · 운영 · 점검 · 경영 4그룹 + 문서함(안내·초안·보고서).</div>
     <input class="find" id="find" type="search" placeholder="화면 이름으로 찾기" autocomplete="off">
     <div id="sections"><div class="msg">불러오는 중…</div></div>
   </div>
 
   <div id="pane-dl" role="tabpanel" hidden>
+    <h2>다운로드</h2>
+    <div class="meta">설치·도구 파일.</div>
     <div class="note">여기 있는 것은 <b>설치·도구 파일</b>입니다. 회원·매출·인사 같은 회사 자료는
       내려받는 곳이 아니라 화면에서 봅니다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남습니다.</div>
     <div class="dl" id="downloads"><div class="msg">불러오는 중…</div></div>
   </div>
 
   <div id="pane-adm" role="tabpanel" hidden>
-    <div class="note">누구에게 어떤 화면을 열어줄지 정하는 곳입니다. <b>로그인과 별개인 관리자 비밀번호</b>를 한 번 더 넣습니다(30분).</div>
-    <div class="modules">
-      <a class="mod" href="/auth/admin">
-        <div class="name">권한 관리 열기</div>
-        <div class="desc">신청 대기 · 사람별 권한 · 부서 기본 권한을 한 화면에서 본다.</div>
-        <div class="owner">관리자 전용</div>
-      </a>
-    </div>
+    <h2>권한관리</h2>
+    <div class="meta">관리자 전용.</div>
+    <div class="note">누구에게 어떤 화면을 열어줄지 정하는 곳입니다. <b>로그인과 별개인 관리자 비밀번호</b>를 한 번 더 넣습니다(30분).
+      아래가 비어 보이면 <a href="/auth/admin" target="_blank" rel="noopener">새 창으로 열기</a>.</div>
+    <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
   </div>
 </div>
 
@@ -143,29 +166,37 @@ function loadModules(role, allowedIds){
   return fetch('modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('sections');
     root.innerHTML = '';
-    var group = null, grid = null;
 
+    // 그룹별로 먼저 모은 다음 한 번씩 그린다 (2026-09-08).
+    //   왜: 예전엔 목록을 훑으며 '앞 항목과 그룹이 다르면' 새 제목을 붙였다. 그런데 매일 쓰는
+    //   핵심 화면 3개가 목록 맨 앞에 따로 모여 있어서, 「회원」·「점검」 제목이 각각 두 번씩
+    //   나뉘어 나왔다(회원 2개 … 점검 1개 … 회원 4개 …). 그룹으로 모으면 한 번씩만 나온다.
+    //   그룹이 나오는 차례는 목록에 처음 등장한 순서를 그대로 따른다.
+    var order = [], bag = {};
     (d.modules || []).forEach(function(m){
       var g = m.appgroup || '문서함';   // 회원·운영·점검·경영·문서함 5그룹(배1026 · 2026-09-05)
-      if (g !== group) {
-        group = g;
-        var h = document.createElement('h3');
-        h.innerHTML = esc(g) + '<span class="n"></span>';
-        root.appendChild(h);
-        grid = document.createElement('div');
-        grid.className = 'modules';
-        root.appendChild(grid);
-      }
-      if (allowedIds && allowedIds.indexOf(m.id) < 0) return;     // 권한 밖 화면은 카드 자체를 안 그린다(forEach)
-      var allowed = true;
-      var a = document.createElement('a');
-      a.className = 'mod' + (allowed ? '' : ' locked');
-      a.href = m.path;
-      a.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
-      a.innerHTML = '<div class="name">' + esc(m.name) + '</div>' +
-                    (m.desc ? '<div class="desc">' + esc(m.desc) + '</div>' : '') +
-                    (m.staff ? '<div class="owner">담당 ' + esc(m.staff) + '</div>' : '');
-      grid.appendChild(a);
+      if (allowedIds && allowedIds.indexOf(m.id) < 0) return;     // 권한 밖 화면은 카드 자체를 안 그린다
+      if (!bag[g]) { bag[g] = []; order.push(g); }
+      bag[g].push(m);
+    });
+
+    order.forEach(function(g){
+      var h = document.createElement('h3');
+      h.innerHTML = esc(g) + '<span class="n"></span>';
+      root.appendChild(h);
+      var grid = document.createElement('div');
+      grid.className = 'modules';
+      root.appendChild(grid);
+      bag[g].forEach(function(m){
+        var a = document.createElement('a');
+        a.className = 'mod';
+        a.href = m.path;
+        a.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
+        a.innerHTML = '<div class="name">' + esc(m.name) + '</div>' +
+                      (m.desc ? '<div class="desc">' + esc(m.desc) + '</div>' : '') +
+                      (m.staff ? '<div class="owner">담당 ' + esc(m.staff) + '</div>' : '');
+        grid.appendChild(a);
+      });
     });
     if (!root.children.length) root.innerHTML = '<div class="msg">모듈이 없다.</div>';
     filter();
@@ -203,7 +234,7 @@ function loadDownloads(){
 }
 
 // 2-2) 탭 전환 — 다운로드 판은 처음 열 때 한 번만 읽는다.
-var dlLoaded = false;
+var dlLoaded = false, admLoaded = false;
 var TABS = ['mod', 'dl', 'adm'];
 function showTab(which){
   TABS.forEach(function(k){
@@ -212,6 +243,8 @@ function showTab(which){
     document.getElementById('pane-' + k).hidden = !on;
   });
   if (which === 'dl' && !dlLoaded) { dlLoaded = true; loadDownloads(); }
+  // 관리자 화면은 서버가 내준다 — 처음 열 때 한 번만 불러온다(매번 다시 안 부른다).
+  if (which === 'adm' && !admLoaded) { admLoaded = true; document.getElementById('adm-frame').src = '/auth/admin'; }
 }
 TABS.forEach(function(k){
   document.getElementById('tab-' + k).addEventListener('click', function(){ showTab(k); });

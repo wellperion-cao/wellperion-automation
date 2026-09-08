@@ -27,7 +27,7 @@
 **안 담는 것: `.credentials.json`(로그인 토큰)·세션 기록·캐시.** 토큰은 절대 옮기지 않는다.
 
 ### ② 집 PC — 설치 (10~20분, 인터넷 필요)
-zip 을 집 PC 바탕화면(또는 다운로드)에 둔다. 그리고 **ERP 모듈홈**(`https://erp.wellperion.com/erp/`) → **「다운로드」 탭** → **「집 PC 설치 꾸러미」** 를 받아 더블클릭한다. 파일 배포는 **회사 서버(AWS)에서만** 한다 — 외부 저장소 주소로 받지 않는다.
+zip 을 집 PC 바탕화면(또는 다운로드)에 둔다. 그리고 **ERP 모듈홈**(`https://erp.wellperion.com/erp/`) → **「다운로드」 탭** → **「관리자 AI」** 를 받아 더블클릭한다. 파일 배포는 **회사 서버(AWS)에서만** 한다 — 외부 저장소 주소로 받지 않는다.
 
 명령으로 하려면 PowerShell 에서:
 ```powershell
@@ -63,7 +63,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1
 ERP 가 내주는 폴더는 `3. 웰페리온 가이드/erp/launchers/` 다. 그래서 설치 스크립트 사본이 그곳에도 있다 — **정본은 `ops/home_pc_setup.ps1`**. 스크립트를 고치면 두 곳을 같이 고친다. 목록은 `erp/downloads.json` 한 곳만 고치면 되고 화면(`erp/index.html`)은 손대지 않는다.
 **이 폴더는 로그인 없이 열리는 공개 통로다 — 회사 자료가 든 파일은 절대 두지 않는다.**
 
-모듈홈 탭은 셋이다 — **화면 / 다운로드 / 권한관리**. 「권한관리」 탭은 **관리자로 로그인했을 때만 뜨고**, 눌러도 기존 관리자 화면(`/auth/admin`)으로 갈 뿐이다. 탭을 감추는 것은 보기 편하라는 것이지 잠금이 아니다 — 실제 차단은 서버가 한다(관리자가 아니면 거부, 관리자여도 비밀번호 한 번 더).
+모듈홈 탭은 셋이다 — **화면 / 다운로드 / 권한관리**. 「권한관리」 탭은 **관리자로 로그인했을 때만 뜨고**, 누르면 서버가 내주는 관리자 화면(`/auth/admin`)이 **그 자리에 그대로 뜬다**(끼워넣기 · 페이지 이동 없음). 화면이 안 뜨면 안내문의 「새 창으로 열기」로 연다. 탭을 감추는 것은 보기 편하라는 것이지 잠금이 아니다 — 실제 차단은 서버가 한다(관리자가 아니면 거부, 관리자여도 비밀번호 한 번 더).
+
+설치가 끝나면 그 PC 의 `%USERPROFILE%\welperion-automation\` 안에 **`Start-AI CEO.bat` ~ `Start-AI CBO.bat` 8개**와 **`Resume-AI.bat`**(최근 세션 이어서 열기)이 생긴다. 회사 PC 와 같은 파일이고, 더블클릭이 곧 부팅이다.
 
 ## 5. 이번에 같이 고친 것 (사용자명 하드코딩 제거)
 회사 사용자명 `jjky0` 절대경로가 박혀 있어 집 PC 에서 깨지던 4곳을 저장소·홈 기준으로 바꿨다: `scripts/worklog.py`(ROOT) · `scripts/session_resume.py`(PROJECT_DIR) · `scripts/skill_inventory.py`(BASE_DIR) · `scripts/wellperion_hud.mjs`(OMC_HUD). 회사 PC 에서는 값이 같아 동작 변화 없다.
