@@ -198,6 +198,14 @@ def hand_name():
     return read_json("status/erp_module_desc.json").get("name", {})
 
 
+def hand_staff():
+    """사람이 적어 둔 카드 담당(id 키) — 정본 = status/erp_module_desc.json staff.
+    kpi.json roles 에 없는 소유자(GM 본인 화면 등)를 여기서 채운다. kpi.json 은
+    C-Level 7역할 스키마라 gm 키가 없고, 그 스키마를 늘리면 부팅·항로·디스패치가
+    gm 을 역할로 오인한다(배1135 2단계 실측)."""
+    return read_json("status/erp_module_desc.json").get("staff", {})
+
+
 def registry_desc():
     """자동화 등록부에서 화면 파일을 가리키는 항목의 설명 한 줄. {파일명: 설명}"""
     out = {}
@@ -289,6 +297,7 @@ def build():
     # 카드 한 줄에 들어갈 만큼만 — kpi.json 의 staff 는 웰리처럼 괄호로 긴 부연이 붙기도 한다.
     staff_of = {r: (v.get("staff") or "").split("(")[0].strip(" ·")
                 for r, v in read_json("ssot/kpi.json").get("roles", {}).items()}
+    hand_staff_map = hand_staff()
     nick_of = dict(ROLE_ORDER)
     # 닉네임은 ownership_map 이 정본 — 다르면 그쪽을 따른다.
     for r in read_json("ssot/ownership_map.json").get("roles", []):
@@ -328,7 +337,7 @@ def build():
                 or hand_file.get(os.path.basename(rel))
                 or descs.get(os.path.basename(rel), ""))),
             "path": "../" + rel,
-            "staff": (core["staff"] if core else staff_of.get(role, "")),
+            "staff": (core["staff"] if core else (hand_staff_map.get(mid) or staff_of.get(role, ""))),
             # roles 칸 삭제(배1026) — 전 카드가 ["admin","staff"] 동일해 정보 0이었다(웰리 실측 2026-09-05).
             # 권한 판정은 allowed() 가 core·group·modules/deny/appgroups 로 한다.
         })
