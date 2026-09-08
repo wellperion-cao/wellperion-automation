@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-09-07-ERP-로그인-소셜-버튼-아이콘화-아이디-비밀번호-",
-  "last_task_id": "CTO-2026-09-07-ERP-로그인-소셜-버튼-아이콘화-아이디-비밀번호-",
+  "task_id": "CTO-2026-09-08-AI-자산-원장-하나로-ERP-카드-106-자동화-",
+  "last_task_id": "CTO-2026-09-08-AI-자산-원장-하나로-ERP-카드-106-자동화-",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-08T23:21:51Z",
+  "last_pushed_at": "2026-09-08T23:28:48Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -1224,10 +1224,10 @@
     },
     {
       "task_id": "CTO-2026-09-08-AI-자산-원장-하나로-ERP-카드-106-자동화-",
-      "title": "[시토 2026-09-08 17:0x 판단 회신] 실측 정정 — erp/modules.json 은 손 원장이 아니라 빌드 산출물(scripts/erp_modules_build.py 가 화면 파일+ownership_map+kpi+module_registry 4곳을 읽어 생성). 카드 106=화면 · 등록부 31=자동화 로 종류가 달라 id 교집합 0 이 정상(합칠 두 벌 아님). 판단 = ①새 SSOT·새 id 체계 없이 등록부에 screen_id 한 칸 + 생성기가 카드에 automation[] 을 붙임(1차 매핑은 기존 front_card 29/31) ②sellable(internal|sellable|selling)은 등록부 칸 — 판매 단위는 화면이 아니라 자동화+화면 묶음 ③새 읽기 API 불필요 — modules.json 은 서버 미러(/srv/erp/www)로 이미 서버 원천 · 무로그인 외부 조회가 필요할 때만 /api/assets 1개 ④테넌트 복제 가능 — DB 전 표에 tenant_id 실재(members·reception·hold_items·write_log), 남은 건 화면 셸의 tenant 인식(GM 결재 뒤). 착수 = 웰리 판정표 수신 뒤 ①② 생성기 한 곳.",
-      "status": "진행중",
-      "note": "[시토 2026-09-08 17:0x 판단 회신] 실측 정정 — erp/modules.json 은 손 원장이 아니라 빌드 산출물(scripts/erp_modules_build.py 가 화면 파일+ownership_map+kpi+module_registry 4곳을 읽어 생성). 카드 106=화면 · 등록부 31=자동화 로 종류가 달라 id 교집합 0 이 정상(합칠 두 벌 아님). 판단 = ①새 SSOT·새 id 체계 없이 등록부에 screen_id 한 칸 + 생성기가 카드에 automation[] 을 붙임(1차 매핑은 기존 front_card 29/31) ②sellable(internal|sellable|selling)은 등록부 칸 — 판매 단위는 화면이 아니라 자동화+화면 묶음 ③새 읽기 API 불필요 — modules.json 은 서버 미러(/srv/erp/www)로 이미 서버 원천 · 무로그인 외부 조회가 필요할 때만 /api/assets 1개 ④테넌트 복제 가능 — DB 전 표에 tenant_id 실재(members·reception·hold_items·write_log), 남은 건 화면 셸의 tenant 인식(GM 결재 뒤). 착수 = 웰리 판정표 수신 뒤 ①② 생성기 한 곳.",
-      "updated_at": "2026-09-08T09:55:08Z",
+      "title": "두 원장을 합치지 않고 한 방향으로 이었다 — 생성기가 등록부 front_card 를 읽어 카드에 automation[]·screen_id·sellable 을 채운다. 결과: 자동화 31건 중 화면 있는 29건이 카드 5장에 붙고, 화면 없는 2건(다캠 에이전트·KPI 대조)은 미부착이 정상이라 stderr 로 명시 보고. 애매한 앵커 2건(마케팅 퍼널·전사일정)은 front_card.card 로 확정. sellable 은 등록부 칸으로 신설(31건 기본 internal) · 카드엔 요약값",
+      "status": "DONE",
+      "note": "두 원장을 합치지 않고 한 방향으로 이었다 — 생성기가 등록부 front_card 를 읽어 카드에 automation[]·screen_id·sellable 을 채운다. 결과: 자동화 31건 중 화면 있는 29건이 카드 5장에 붙고, 화면 없는 2건(다캠 에이전트·KPI 대조)은 미부착이 정상이라 stderr 로 명시 보고. 애매한 앵커 2건(마케팅 퍼널·전사일정)은 front_card.card 로 확정. sellable 은 등록부 칸으로 신설(31건 기본 internal) · 카드엔 요약값",
+      "updated_at": "2026-09-08T23:28:48Z",
       "blocks": []
     },
     {
@@ -1264,9 +1264,9 @@
     }
   ],
   "agent": "cto",
-  "title": "라이브 실측 완료 — 로그인 화면에 구글 아이콘 버튼(aria-label·title 있음) · 네이버·카카오는 「준비 중」 회색 표시(키 입력 대기 = 배1108) · 아이디 또는 이름@wellperion.com 입력칸 + 비밀번호 표시·숨김 · 가입 링크 /auth/signup 200",
-  "artifact_url": "https://erp.wellperion.com/auth/login",
+  "title": "두 원장을 합치지 않고 한 방향으로 이었다 — 생성기가 등록부 front_card 를 읽어 카드에 automation[]·screen_id·sellable 을 채운다. 결과: 자동화 31건 중 화면 있는 29건이 카드 5장에 붙고, 화면 없는 2건(다캠 에이전트·KPI 대조)은 미부착이 정상이라 stderr 로 명시 보고. 애매한 앵커 2건(마케팅 퍼널·전사일정)은 front_card.card 로 확정. sellable 은 등록부 칸으로 신설(31건 기본 internal) · 카드엔 요약값",
+  "artifact_url": "commit:6090ca4ed",
   "commit": "",
-  "note": "라이브 실측 완료 — 로그인 화면에 구글 아이콘 버튼(aria-label·title 있음) · 네이버·카카오는 「준비 중」 회색 표시(키 입력 대기 = 배1108) · 아이디 또는 이름@wellperion.com 입력칸 + 비밀번호 표시·숨김 · 가입 링크 /auth/signup 200",
-  "updated_at": "2026-09-08T23:21:51Z"
+  "note": "두 원장을 합치지 않고 한 방향으로 이었다 — 생성기가 등록부 front_card 를 읽어 카드에 automation[]·screen_id·sellable 을 채운다. 결과: 자동화 31건 중 화면 있는 29건이 카드 5장에 붙고, 화면 없는 2건(다캠 에이전트·KPI 대조)은 미부착이 정상이라 stderr 로 명시 보고. 애매한 앵커 2건(마케팅 퍼널·전사일정)은 front_card.card 로 확정. sellable 은 등록부 칸으로 신설(31건 기본 internal) · 카드엔 요약값",
+  "updated_at": "2026-09-08T23:28:48Z"
 }
