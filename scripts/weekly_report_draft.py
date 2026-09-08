@@ -34,7 +34,7 @@ CHAIRMAN_DIR = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman"
 CHAIRMAN_ITEMS_JS = CHAIRMAN_DIR / "_chairman_items.js"
 CHAIRMAN_REPORTED_JSON = CHAIRMAN_DIR / "chairman_reported.json"
 DRAFT_DIR = ROOT / "status" / "drafts"
-MAX_LINES = 15  # 섹션당 표시 상한 — 넘치면 「외 N건」으로 전사일정 화면을 가리킨다
+MAX_LINES = 15  # 섹션당 표시 상한 — 넘치면 「외 N건」으로 그 섹션의 원천 화면을 가리킨다
 SCHEDULE_URL = "https://erp.wellperion.com/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html"  # GM 2026-09-07 "깃헙 의존 걷어내기"
 WD_KOR = "월화수목금토일"
 GM_CHAT_ID = 8254867551  # 업무보고방 SSOT(ssot/canon_values.json telegram_chat_id)
@@ -79,13 +79,13 @@ def _clean(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _section(lines):
+def _section(lines, ref="업무·결재 SSOT 화면 참조"):
     lines = [_clean(l) for l in lines]
     if not lines:
         return ["· (해당 없음)"]
     shown = lines[:MAX_LINES]
     if len(lines) > MAX_LINES:
-        shown.append(f"· 외 {len(lines) - MAX_LINES}건 — 전사일정 화면 참조")
+        shown.append(f"· 외 {len(lines) - MAX_LINES}건 — {ref}")
     return shown
 
 
@@ -239,10 +239,10 @@ def build_draft(today=None):
         *_section(chairman_pending_lines),
         "",
         "③ 지적사항 처리 결과 — 회장님 지시 원장(coo/chairman) 기준",
-        *_section(_build_chairman_section(last_mon, last_sun)),
+        *_section(_build_chairman_section(last_mon, last_sun), ref="회장님 지시 원장 참조"),
         "",
         "④ 다음 주 예정 — 전사일정 (회장님 담당 건은 ★ 상단)",
-        *_section(upcoming_lines),
+        *_section(upcoming_lines, ref="전사일정 화면 참조"),
         "",
         f"📎 전사일정 {SCHEDULE_URL}",
         "📄 양식 정본 docs/3라인_직책체계_20260831.md §7",
