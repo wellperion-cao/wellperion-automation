@@ -104,22 +104,28 @@ TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
 
 # ── ERP 권한 정리(배1026 · 2026-09-05 웰리 설계 §2②) ──────────────────────────
 # 앱 셸 첫 화면 그룹 4개 + 문서함. 여기 없는 id 는 전부 문서함(안내·초안·보고서·가이드·공고 37+건).
+# ★2026-09-08 CEO 판정표(status/briefs/CEO-2026-09-08-ERP카드-106-판정표.md · 모듈41·문서65)와 정렬(배1135).
 APPGROUP_IDS = {
     "회원": ["member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
-            "cpo-member-오넛티-접수현황", "cpo-product-상품기획"],
-    "운영": ["coo-reception-종합접수처-현황", "coo-reception-lost-found-register",
+            "cpo-member-오넛티-접수현황"],
+    "운영": ["coo-reception-lost-found-register",
             "coo-reception-lost-found-gallery", "coo-reception-lost-found-disposal",
-            "coo-리셉션-업무-라커관리-index", "coo-리셉션-업무-index",
-            "coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot", "cpo-member-실무진피드백",
+            "coo-리셉션-업무-라커관리-index",
+            "coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot",
             "cmo-intake-instructor-intake", "cmo-funnel-콘텐츠문의현황",
-            "coo-brojay-브로제이-업무분장", "coo-brojay-브로제이-확인목록",
-            "coo-notice-게시물-프로필월", "coo-check-주차장-이용안내-공지문",
-            "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave"],
-    "점검": ["check", "coo-check-운영부-체계", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
+            "coo-brojay-브로제이-업무분장",
+            "coo-notice-게시물-프로필월",
+            "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave",
+            "cbo-counsel-admin", "chro-hub-onboarding-self", "chro-hub-onboarding",
+            "chro-hub-calendar", "cmo-series-ai시리즈보드"],
+    "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-report-매출회원현황보고", "coo-chairman-gm업무", "gm-월간운영계획",
+    "경영": ["coo-chairman-gm업무", "gm-월간운영계획",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
-            "chro-hub-index", "chro-recruiting-index", "cto-자율현황", "cto-automation-카톡전송관리"],
+            "cto-자율현황", "cto-automation-카톡전송관리",
+            "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
+            "cmo-funnel-월간마케팅보고서", "coo-chairman-대표님-지시사항",
+            "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],
 }
 APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함"]
 APPGROUP_OF = {mid: g for g, ids in APPGROUP_IDS.items() for mid in ids}
