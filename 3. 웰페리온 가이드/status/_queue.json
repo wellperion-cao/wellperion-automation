@@ -875,10 +875,10 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-08",
+    "updated_at": "2026-09-09",
     "aide_interview_needed": false,
     "aide_interview_reason": "",
-    "runner_claimed_at": "2026-09-07T22:30:02Z"
+    "runner_claimed_at": "2026-09-08T23:30:02Z"
   },
   {
     "task_id": "COO-2026-09-06-운영-시설-지원-주차-방-대화-안-되는-이슈건-추출",
@@ -1438,5 +1438,26 @@
     "artifact": "commit:6090ca4ed",
     "saw": "배로 만들지 않는 종류라 즉시 종결 — 「판매 단계 모듈이 생기면」은 그 사건이 왔을 때 하면 되는 조건부 대기건이다(부팅 규칙 8-1). 배1136 종결 시 next 를 잘못 적어 자동 생성됐다. sellable 칸과 생성기 로직은 이미 들어가 있어 값만 올리면 되고, 테넌트 내보내기는 만들 때 시보에게 알린다",
     "terminal": true
+  },
+  {
+    "task_id": "CEO-2026-09-09-중간관리자-전달-3-웰페리온-가이드-CHRO-HUB",
+    "clevel": "ceo",
+    "title": "[웰리] 인사 허브 placeholder 사진 절대주소 1줄 — 깃헙 Pages 비공개 전환 전에만 정리(나우열M 도메인 · 지금 사람 안 부름)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-09",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-09-09] 담당자: 나우열M (scripts/kakao_rooms.json ★중간관리자 members 참조) — 배1115③ 깨긴 의존 걷어내기: 783행 PLACEHOLDER_PHOTO 절대주소(https://wellperion-cao.github.io/wellperion-automation/chro/hub/photos/placeholder-person.jpg)를 루트 상대경로(/chro/hub/photos/placeholder-person.jpg)로 한 줄만 바꾸면 됨. 사용자 체감 변화 없음(nginx sub_filter가 이미 흡수 중) — 정리 목적.\n[웰리 2026-09-09 08:5x 판정] 지금 사람(나우열M)을 부르지 않는다 — 사용자 체감 변화 0 이고 nginx sub_filter 가 그 절대주소를 이미 흡수하고 있어 현재 깨진 곳이 없다. CHRO 도메인은 AI 전원 미접촉이라 우리가 고칠 수도 없다. 다만 배1115 목표대로 GitHub Pages 를 비공개로 돌리면 그때 이 사진이 404 가 된다 — 그러므로 버리지 않고 **Pages 비공개 전환 직전 체크리스트 항목**으로 묶는다. 그 시점에 나우열M 께 한 줄(또는 GM 결재로 예외 수정)로 처리한다. 시토 1115 에 같이 전달함.\n[웰리 참고] 이 배를 만든 자동 경로(queue_dispatch 'CHRO 파일 발견 → 중간관리자 전달')는 제목이 옛 규칙이다 — 나우열M 건 방은 2026-09-07 GM 확정으로 텔레그램 업무관리 방(-5492623600 · GM 계정 발신)이고 ★중간관리자 방이 아니다. 문구 수정은 시토에게 넘김.",
+    "next": "배1115 GitHub Pages 비공개 전환 직전에 처리 — 그전엔 사람 안 부름",
+    "depends_on": "",
+    "ship_no": 11397,
+    "short_no": 1144,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-09"
   }
 ]
