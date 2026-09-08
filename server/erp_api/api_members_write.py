@@ -68,7 +68,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리
 import api_write  # noqa: E402  — GAS 포워드·거울 재동기화 재사용(로직 중복 금지)
 from sync_reception import gas_get  # noqa: E402  — 접수 시트 재독(승인 계산 재료 · 새 경로 금지 · 배1054 재검토①)
-import api_reception  # noqa: E402  — _add_months(개월 계산 · GAS setMonth 와 동일 뜻) 재사용, 새 계산 안 만듦
+# api_reception._add_months 는 말일 클램프라 여기(archive_restore 개월 계산)엔 안 맞는다 — 대신 이 파일의
+# _add_months_js(JS setMonth 오버플로 이식)를 쓴다(배1054 검토① · api_reception 임포트 자체가 불필요해졌다).
 
 router = APIRouter(prefix="/api/members")
 
@@ -127,16 +128,30 @@ _ACTIVE_ERRORS = {   # GAS 오류 문구 그대로(Survey.js L9678·9691·9743·
 MEMBER_DEFAULT_OWNER = "임정은"
 # GAS 의 '새 행'이 안 갖는 칸 — scope 전환(경로 B)에서 전부 빈 문자열로 되돌린다(옛 보관 기록이 새 유효회원
 # 행으로 새지 않게 · GM 지시 "이관건이니 기존 자료는 없어져야해"). loss_date 도 포함 — 더는 LOSS가 아니다.
-# ponytail: members.data(JSON) 원문은 손 안 댄다 — 5분 뒤 sync_members.py replace_scope('valid') 가 GAS
-# 의 진짜 새 행(이 칸들이 실제로 빈 시트 값)으로 data 를 통째로 갈아끼우고, 그 직후 같은 사이클의
-# sync_owner_cols() 가 그 새 data 로 이 실컬럼들을 다시 채워 자연히 맞아든다(회귀 자가치유). GAS
-# write-through 가 실패하지 않는 한(그때는 _finish 가 이 UPDATE 자체를 되돌린다) 다시 살아날 옛값이 없다.
+# members.data(JSON) 원문도 이 19칸 라벨만 빈 문자열로 덮는다(배1054 검토③ — members_report 가 data 를
+# 직독해 실컬럼만 고치면 다음 sync 전까지 화면에 옛 LOSS보관 값이 그대로 보인다). 나머지 필드(이름·주소 등
+# 인계값)는 data 원문에 안 손댄다 — 5분 뒤 sync_members.py replace_scope('valid') 가 GAS 의 진짜 새 행으로
+# data 를 통째로 갈아끼우고, 그 직후 같은 사이클의 sync_owner_cols() 가 그 새 data 로 이 실컬럼들을 다시
+# 채워 자연히 맞아든다(회귀 자가치유 · sync_owner_cols 예외 등록은 그 사이 창에서 옛 data 로 되밀리지
+# 않게 하는 것 · sync_members.py _OWNER_SYNC_ACTIONS 참조). GAS write-through 가 실패하지 않는 한
+# (그때는 _finish 가 이 UPDATE 자체를 되돌린다) 다시 살아날 옛값이 없다.
 ARCHIVE_RESET_COLS = (
     "kind2", "owner_pt", "owner_golf", "owner_pl", "owner_squash", "owner_swim",
     "hold_status", "hold_period", "hold_start_date", "hold_end_date", "hold_count", "hold_cum_days",
     "loss_date", "reg_consult_date", "reg_consult_time", "reg_consult_note",
     "reg_reservation", "end_reason", "end_reason_memo",
 )
+# ARCHIVE_RESET_COLS(내부 컬럼명) → 시트 라벨 — 기존 역방향 매핑들(FIELD_TO_COL·HOLD_APPROVE_COL_MAP)을
+# 재사용해 조립한다(새 사본 유지 금지). kind2·loss_date·재등록/종료사유 6칸은 다른 곳에 col→label 매핑이
+# 없어 여기서만 직접 적는다(sync_members.py OWNER_COLS 의 같은 라벨과 값이 같아야 한다 — 어긋나면 sync 쪽
+# 예외 등록이 안 먹는다).
+_ARCHIVE_RESET_LABELS = dict(HOLD_APPROVE_COL_MAP)
+_ARCHIVE_RESET_LABELS.update({col: label for label, col in FIELD_TO_COL.items()})
+_ARCHIVE_RESET_LABELS.update({
+    "kind2": "세부구분", "loss_date": "LOSS일자",
+    "reg_consult_date": "재등록상담 날짜", "reg_consult_time": "재등록상담 시간", "reg_consult_note": "재등록상담 내용",
+    "reg_reservation": "재등록예약목록", "end_reason": "종료사유", "end_reason_memo": "종료사유메모",
+})
 
 
 def _norm_phone(v):
@@ -153,6 +168,20 @@ def _hold_end_calc(start, days):
     from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다
     d = datetime.strptime(start, "%Y-%m-%d") + timedelta(days=days - 1)
     return d.strftime("%Y-%m-%d")
+
+
+def _add_months_js(date_str, months):
+    """member_archive_restore(6단계) 전용 개월 덧셈 — GAS `setMonth` 오버플로 이식(배1054 검토①).
+    api_reception._add_months 는 말일을 클램프한다(8/31+6→2/28) — 서명 파기예정일처럼 '그 달 안'을
+    보장해야 하는 자리엔 맞지만, GAS Survey.js L10004 의 개월 계산은 JS Date.setMonth 그대로라 말일을
+    넘기면 다음 달로 밀린다(8/31+6→3/3). 두 계산은 뜻이 달라 하나를 재사용하면 어긋난다 — 이 자리만
+    전용 헬퍼를 쓴다(_add_months 재사용 끊음). 실측: 2026-08-31+6→2027-03-03 · 2026-01-31+1→2026-03-03 ·
+    2026-05-31+1→2026-07-01(호출부가 이 값에서 -1일 해 최종 종료일을 낸다)."""
+    from datetime import date, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다
+    d = date.fromisoformat(date_str[:10])
+    total = d.month - 1 + months
+    y, m = d.year + total // 12, total % 12 + 1
+    return (date(y, m, 1) + timedelta(days=d.day - 1)).isoformat()
 
 
 def _hold_num(v):
@@ -763,6 +792,7 @@ def _handle_member_archive_restore(payload, raw_body, user):
     except db.Error as e:
         return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
 
+    is_dry = payload.get("dryRun") is True or str(payload.get("dryRun")) == "true"
     err_response, log_id, revert, extra = None, None, None, None
     try:
         with conn:
@@ -774,7 +804,8 @@ def _handle_member_archive_restore(payload, raw_body, user):
                                 "detail": "LOSS보관에 같은 전화번호가 %d건 있어 어느 분인지 정할 수 없습니다 — 시트에서 직접 확인해주세요" % arch_count}
             elif arch_count == 0:
                 # 회원번호 없는 옛 보관 행 등 미러가 못 실은 경우 — 서버는 판단하지 않고 GAS 로 그대로 넘긴다
-                # (member_active_update 의 passThrough 와 같은 이유 · 서버 원장은 안 건드림).
+                # (member_active_update 의 passThrough 와 같은 이유 · 서버 원장은 안 건드림). dryRun 이어도
+                # 서버가 판단할 재료가 없으니 그대로 GAS 에 미뤄 GAS 쪽 미리보기를 타게 한다.
                 log_id = conn.execute(
                     "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
                     " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
@@ -783,148 +814,205 @@ def _handle_member_archive_restore(payload, raw_body, user):
                 ).fetchone()[0]
                 extra = {"passThrough": True}
             else:
-                arch = dict(conn.execute(
+                # COUNT(잠금 없음)와 아래 FOR UPDATE 사이에 다른 요청이 먼저 이 행을 이관했을 수 있다
+                # (이중클릭 · 배1054 검토⑥) — fetchone() 이 None 이면 이미 처리된 것으로 보고 no-op 응답
+                # (4단계 member_hold_approve 의 상태 재검사 가드와 같은 모양 · 회원 원장 무변경·GAS 미호출).
+                arch_row = conn.execute(
                     "SELECT * FROM members WHERE tenant_id=%s AND scope='archive' AND phone=%s FOR UPDATE",
-                    (tenant, phone)).fetchone())
-                member_no = arch["member_no"]
-                arch_name = (arch.get("name") or "").strip()
-                active = conn.execute(
-                    "SELECT member_no, name FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
-                    " ORDER BY member_no LIMIT 1", (tenant, phone)).fetchone()
-                if active:   # 경로 A — 뒷정리: 이미 유효회원. 이름 같을 때만 보관 행 삭제(GAS L9917~9936 이식).
-                    active_name = (active["name"] or "").strip()
-                    if not arch_name or arch_name != active_name:
-                        err_response = {"ok": False, "error": "already-active",
-                                        "detail": "이미 유효회원에 등록된 전화번호입니다 — 보관 기록의 이름(%s)과 유효회원 이름(%s)이 달라 자동 정리하지 않습니다"
-                                                  % (arch_name or "?", active_name or "?")}
+                    (tenant, phone)).fetchone()
+                if not arch_row:
+                    # err_response 를 여기서 정하고 with 블록은 그대로 정상 종료시킨다(밖에서 close+반환) —
+                    # with 블록 '안'에서 conn.close()+return 하면 __exit__ 가 닫힌 커넥션에 커밋을 시도해
+                    # 500 이 난다(hold_approve 재검토와 같은 함정 · 배1054 검토⑥).
+                    err_response = {"ok": True, "phone": payload.get("phone"), "noop": True, "_source": "server",
+                                    "detail": "이미 처리된 LOSS보관 복귀입니다(다른 요청이 먼저 처리)"}
+                else:
+                    arch = dict(arch_row)
+                    member_no = arch["member_no"]
+                    arch_name = (arch.get("name") or "").strip()
+                    # PK(tenant_id,member_no,scope) 충돌 차단(배1054 검토④) — 이 회원번호가 전화번호와 무관하게
+                    # 이미 유효회원에도 있으면(데이터 정합 문제) scope 전환 UPDATE 가 PK 를 깨 500 이 난다. 아래
+                    # phone 기준 already-active 판정과 별개로, member_no 기준으로 먼저 걸러 서버 예외를 막는다.
+                    already_valid = conn.execute(
+                        "SELECT 1 FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                        (tenant, member_no)).fetchone()
+                    if already_valid:
+                        err_response = {"ok": False, "error": "already-active", "noRetry": True,
+                                        "detail": "회원번호(%s)가 이미 유효회원에도 있습니다 — 데스크에서 회원 정보를 직접 확인해주세요" % member_no}
                     else:
-                        revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
-                                  "cur_scope": None, "old_row": arch, "field": "LOSS보관 이관정리",
-                                  "name": arch_name, "phone_masked": _mask_phone(phone)}
-                        conn.execute("DELETE FROM members WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
-                                    (tenant, member_no))
-                        conn.execute(
-                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 이관정리",
-                             "LOSS보관 삭제 · 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
-                             "유효회원 회원번호 %s" % active["member_no"], "멤버십"))
-                        payload_log = dict(payload)
-                        payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py)
-                        log_id = conn.execute(
-                            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
-                            " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                            (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
-                             "test" if is_test else "pending", None)
-                        ).fetchone()[0]
-                        extra = {"cleaned": True, "name": arch_name, "archiveRow": member_no, "activeRow": active["member_no"]}
-                elif not arch_name:
-                    err_response = {"ok": False, "error": "archive-row-invalid", "detail": "보관 행에서 회원명을 읽지 못했습니다"}
-                else:   # 경로 B — 복귀(GAS L9937~10023 이식) — scope 전환 + 칸 인계 한 UPDATE
-                    try:
-                        data_obj = json.loads(arch["data"]) if arch["data"] else {}
-                        if not isinstance(data_obj, dict):
-                            data_obj = {}
-                    except Exception:
-                        data_obj = {}
-                    # 주소·비고·나이는 archive scope 행에 실컬럼이 없다(schema.sql 백필·sync_owner_cols 둘 다
-                    # scope='valid' 한정) — data JSON 에서 직접 읽는다(_data_get_norm 재사용).
-                    addr_key, addr_hit = _data_get_norm(data_obj, "주소")
-                    note_key, note_hit = _data_get_norm(data_obj, "비고")
-                    age_key, age_hit = _data_get_norm(data_obj, "나이")
-                    carry_addr = str(data_obj.get(addr_key) or "").strip() if addr_hit else ""
-                    carry_note = str(data_obj.get(note_key) or "").strip() if note_hit else ""
-                    carry_age = str(data_obj.get(age_key) or "").strip() if age_hit else ""
-                    carry_kind = (arch.get("kind") or "").strip()
-                    carry_owner = (arch.get("owner") or "").strip()
-                    seq_raw = arch.get("reg_seq") or ""
-                    seq_digits = re.sub(r"[^0-9]", "", str(seq_raw))
-                    seq_n = int(seq_digits) if seq_digits else None
-                    new_seq = str(seq_n + 1) if (seq_n and seq_n > 0) else str(seq_raw)   # GAS 그대로 — 못 읽으면 원값
+                        # 전화 일치 유효회원 조회 — 가족 공유 전화로 2건+ 나오면 이름이 일치하는 행 하나로
+                        # 좁힌다(배1054 검토⑦). 그래도 0건/2건+ 남으면 서버는 못 고르고 GAS pass-through
+                        # (물리 시트 스캔은 GAS 만 할 수 있다 · member_active_update 의 ambiguous 와 같은 이유).
+                        actives = conn.execute(
+                            "SELECT member_no, name FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
+                            " ORDER BY member_no", (tenant, phone)).fetchall()
+                        active, active_ambiguous = None, False
+                        if len(actives) == 1:
+                            active = actives[0]
+                        elif len(actives) > 1:
+                            name_hits = [a for a in actives if (a["name"] or "").strip() == arch_name]
+                            active = name_hits[0] if len(name_hits) == 1 else None
+                            active_ambiguous = active is None
 
-                    reg_class = str(payload.get("regClass") or "").strip() or "L재등록"
-                    program_new = str(payload.get("program") or "").strip() or (arch.get("program") or "")
-                    reg_date = str(payload.get("regDate") or "").strip() or now[:10]
-                    try:
-                        months_n = int(payload.get("months"))
-                    except (TypeError, ValueError):
-                        months_n = 0
-                    start_in = str(payload.get("startDate") or "").strip()
-                    end_in = str(payload.get("endDate") or "").strip()
+                        if active_ambiguous:
+                            log_id = conn.execute(
+                                "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                                " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                (tenant, now, "member_archive_restore", json.dumps(dict(payload), ensure_ascii=False), user,
+                                 "test" if is_test else "pending", None)
+                            ).fetchone()[0]
+                            extra = {"passThrough": True}
+                        elif active:   # 경로 A — 뒷정리: 이미 유효회원. 이름 같을 때만 보관 행 삭제(GAS L9917~9936 이식).
+                            active_name = (active["name"] or "").strip()
+                            if not arch_name or arch_name != active_name:
+                                err_response = {"ok": False, "error": "already-active",
+                                                "detail": "이미 유효회원에 등록된 전화번호입니다 — 보관 기록의 이름(%s)과 유효회원 이름(%s)이 달라 자동 정리하지 않습니다"
+                                                          % (arch_name or "?", active_name or "?")}
+                            elif is_dry:   # 미리보기 — 치명① 공통 게이트: 쓰기·GAS 호출 없이 판정 결과만
+                                err_response = {"ok": True, "dryRun": True, "preview": {
+                                    "path": "cleanup", "target": {"name": arch_name, "phone": payload.get("phone"), "archiveRow": member_no},
+                                    "activeRow": active["member_no"]}}
+                            else:
+                                revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                                          "cur_scope": None, "old_row": arch, "field": "LOSS보관 이관정리",
+                                          "name": arch_name, "phone_masked": _mask_phone(phone)}
+                                conn.execute("DELETE FROM members WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
+                                            (tenant, member_no))
+                                conn.execute(
+                                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                    (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 이관정리",
+                                     "LOSS보관 삭제 · 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
+                                     "유효회원 회원번호 %s" % active["member_no"], "멤버십"))
+                                payload_log = dict(payload)
+                                payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py)
+                                log_id = conn.execute(
+                                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                    (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
+                                     "test" if is_test else "pending", None)
+                                ).fetchone()[0]
+                                extra = {"cleaned": True, "name": arch_name, "archiveRow": member_no, "activeRow": active["member_no"]}
+                        elif not arch_name:
+                            err_response = {"ok": False, "error": "archive-row-invalid", "detail": "보관 행에서 회원명을 읽지 못했습니다"}
+                        else:   # 경로 B — 복귀(GAS L9937~10023 이식) — scope 전환 + 칸 인계 한 UPDATE
+                            try:
+                                data_obj = json.loads(arch["data"]) if arch["data"] else {}
+                                if not isinstance(data_obj, dict):
+                                    data_obj = {}
+                            except Exception:
+                                data_obj = {}
+                            # 주소·비고·나이는 archive scope 행에 실컬럼이 없다(schema.sql 백필·sync_owner_cols 둘 다
+                            # scope='valid' 한정) — data JSON 에서 직접 읽는다(_data_get_norm 재사용).
+                            addr_key, addr_hit = _data_get_norm(data_obj, "주소")
+                            note_key, note_hit = _data_get_norm(data_obj, "비고")
+                            age_key, age_hit = _data_get_norm(data_obj, "나이")
+                            carry_addr = str(data_obj.get(addr_key) or "").strip() if addr_hit else ""
+                            carry_note = str(data_obj.get(note_key) or "").strip() if note_hit else ""
+                            carry_age = str(data_obj.get(age_key) or "").strip() if age_hit else ""
+                            carry_kind = (arch.get("kind") or "").strip()
+                            carry_owner = (arch.get("owner") or "").strip()
+                            seq_raw = arch.get("reg_seq") or ""
+                            seq_digits = re.sub(r"[^0-9]", "", str(seq_raw))
+                            seq_n = int(seq_digits) if seq_digits else None
+                            new_seq = str(seq_n + 1) if (seq_n and seq_n > 0) else str(seq_raw)   # GAS 그대로 — 못 읽으면 원값
 
-                    # 시작/종료/잔여일 — 개월수 계산(있으면) 위에 명시적 시작/종료일이 항상 우선(GAS L10004~10011).
-                    final_start, final_end, final_remain = "", "", ""
-                    if months_n > 0:
-                        base_start = start_in or reg_date
-                        try:
-                            end_calc = api_reception._add_months(base_start, months_n)
-                            ed = datetime.strptime(end_calc, "%Y-%m-%d") - timedelta(days=1)
-                            final_start, final_end = base_start, ed.strftime("%Y-%m-%d")
-                            now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
-                            final_remain = str(round((ed - now_dt).total_seconds() / 86400))
-                        except ValueError:
-                            pass
-                    if start_in:
-                        final_start = start_in
-                    if end_in:
-                        final_end = end_in
-                        try:
-                            ed2 = datetime.strptime(end_in, "%Y-%m-%d")
-                            now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
-                            final_remain = str(round((ed2 - now_dt).total_seconds() / 86400))
-                        except ValueError:
-                            pass
+                            reg_class = str(payload.get("regClass") or "").strip() or "L재등록"
+                            program_new = str(payload.get("program") or "").strip() or (arch.get("program") or "")
+                            reg_date = str(payload.get("regDate") or "").strip() or now[:10]
+                            try:
+                                months_n = int(payload.get("months"))
+                            except (TypeError, ValueError):
+                                months_n = 0
+                            start_in = str(payload.get("startDate") or "").strip()
+                            end_in = str(payload.get("endDate") or "").strip()
 
-                    preview = {
-                        "target": {"name": arch_name, "phone": payload.get("phone"), "archiveRow": member_no},
-                        "carried": {"나이": carry_age, "회원구분": carry_kind, "수강반종목명": arch.get("program") or "",
-                                    "담당자": carry_owner, "주소": carry_addr, "비고": carry_note,
-                                    "등록회차": "%s → %s" % (str(seq_raw), new_seq)},
-                        "newValues": {"regDate": reg_date, "startDate": start_in or None, "endDate": end_in or None,
-                                      "months": months_n if months_n > 0 else None, "regClass": reg_class, "program": program_new},
-                    }
-                    if payload.get("dryRun") is True or str(payload.get("dryRun")) == "true":
-                        err_response = {"ok": True, "dryRun": True, "preview": preview}   # 미리보기 — 쓰기·GAS 호출 없음
-                    else:
-                        set_vals = {
-                            "scope": "valid", "name": arch_name, "program": program_new, "reg_class": reg_class,
-                            "reg_seq": new_seq, "reg_date": reg_date, "start_date": final_start,
-                            "end_date": final_end, "remain_days": final_remain,
-                            "kind": carry_kind, "owner": carry_owner or MEMBER_DEFAULT_OWNER,
-                            "address": carry_addr, "note": carry_note, "age": carry_age,
-                        }
-                        for c in ARCHIVE_RESET_COLS:
-                            set_vals[c] = ""
-                        set_sql = ", ".join("%s=%%s" % c for c in set_vals)
-                        conn.execute(
-                            "UPDATE members SET " + set_sql + " WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
-                            list(set_vals.values()) + [tenant, member_no])
-                        revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
-                                  "cur_scope": "valid", "old_row": arch, "field": "LOSS보관 재등록복귀",
-                                  "name": arch_name, "phone_masked": _mask_phone(phone)}
-                        conn.execute(
-                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 원본삭제",
-                             "LOSS보관 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
-                             "유효회원 전환(등록분류:%s)" % reg_class, "멤버십"))
-                        conn.execute(
-                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 재등록복귀",
-                             "LOSS보관 회원번호 %s" % member_no,
-                             "유효회원 회원번호 %s(등록분류:%s)" % (member_no, reg_class), "멤버십"))
-                        payload_log = dict(payload)
-                        payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py)
-                        log_id = conn.execute(
-                            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
-                            " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                            (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
-                             "test" if is_test else "pending", None)
-                        ).fetchone()[0]
-                        extra = {"restored": True, "name": arch_name, "phone": payload.get("phone"),
-                                "archiveRow": member_no, "newRow": member_no, "member_no": member_no,
-                                "regClass": reg_class, "seq": new_seq}
+                            # 시작/종료/잔여일 — 개월수 계산(있으면) 위에 명시적 시작/종료일이 항상 우선(GAS L10004~10011).
+                            # 개월 덧셈은 _add_months_js(JS setMonth 오버플로) — api_reception._add_months(말일 클램프)
+                            # 와 결과가 다르다(배1054 검토①·8/31+6→클램프 2/28 대신 오버플로 3/3, -1일=3/2).
+                            final_start, final_end, final_remain = "", "", ""
+                            if months_n > 0:
+                                base_start = start_in or reg_date
+                                try:
+                                    end_calc = _add_months_js(base_start, months_n)
+                                    ed = datetime.strptime(end_calc, "%Y-%m-%d") - timedelta(days=1)
+                                    final_start, final_end = base_start, ed.strftime("%Y-%m-%d")
+                                    now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+                                    final_remain = str(round((ed - now_dt).total_seconds() / 86400))
+                                except ValueError:
+                                    pass
+                            if start_in:
+                                final_start = start_in
+                            if end_in:
+                                final_end = end_in
+                                try:
+                                    ed2 = datetime.strptime(end_in, "%Y-%m-%d")
+                                    now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+                                    final_remain = str(round((ed2 - now_dt).total_seconds() / 86400))
+                                except ValueError:
+                                    pass
+
+                            preview = {
+                                "target": {"name": arch_name, "phone": payload.get("phone"), "archiveRow": member_no},
+                                "carried": {"나이": carry_age, "회원구분": carry_kind, "수강반종목명": arch.get("program") or "",
+                                            "담당자": carry_owner, "주소": carry_addr, "비고": carry_note,
+                                            "등록회차": "%s → %s" % (str(seq_raw), new_seq)},
+                                "newValues": {"regDate": reg_date, "startDate": start_in or None, "endDate": end_in or None,
+                                              "months": months_n if months_n > 0 else None, "regClass": reg_class, "program": program_new},
+                            }
+                            if is_dry:   # 미리보기 — 치명① 공통 게이트: 쓰기·GAS 호출 없이 판정 결과만
+                                err_response = {"ok": True, "dryRun": True, "preview": preview}
+                            else:
+                                set_vals = {
+                                    "scope": "valid", "name": arch_name, "program": program_new, "reg_class": reg_class,
+                                    "reg_seq": new_seq, "reg_date": reg_date, "start_date": final_start,
+                                    "end_date": final_end, "remain_days": final_remain,
+                                    "kind": carry_kind, "owner": carry_owner or MEMBER_DEFAULT_OWNER,
+                                    "address": carry_addr, "note": carry_note, "age": carry_age,
+                                }
+                                for c in ARCHIVE_RESET_COLS:
+                                    set_vals[c] = ""
+                                # data JSON 도 리셋 19칸의 시트 라벨을 빈 문자열로 덮는다(배1054 검토③ — members_report
+                                # 가 data 를 직독) · synced_at 도 이 요청 시각으로 갱신한다(배1054 검토⑤ — 이래야
+                                # sync_members.py replace_scope 의 diff-삭제 가드가 '이번 배치 시작 뒤 서버가 만든
+                                # valid 행'으로 이 행을 알아보고 배치 목록에 아직 없어도 안 지운다).
+                                reset_json = json.dumps({v: "" for v in _ARCHIVE_RESET_LABELS.values()}, ensure_ascii=False)
+                                set_sql = ", ".join("%s=%%s" % c for c in set_vals)
+                                conn.execute(
+                                    "UPDATE members SET " + set_sql + ", data=(data::jsonb || %s::jsonb)::text, synced_at=%s"
+                                    " WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
+                                    list(set_vals.values()) + [reset_json, now, tenant, member_no])
+                                revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                                          "cur_scope": "valid", "old_row": arch, "field": "LOSS보관 재등록복귀",
+                                          "name": arch_name, "phone_masked": _mask_phone(phone)}
+                                conn.execute(
+                                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                    (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 원본삭제",
+                                     "LOSS보관 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
+                                     "유효회원 전환(등록분류:%s)" % reg_class, "멤버십"))
+                                conn.execute(
+                                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                    (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 재등록복귀",
+                                     "LOSS보관 회원번호 %s" % member_no,
+                                     "유효회원 회원번호 %s(등록분류:%s)" % (member_no, reg_class), "멤버십"))
+                                payload_log = dict(payload)
+                                payload_log["_member_no"] = member_no      # 대조 전용(reconcile_dual_write.py)
+                                # sync_members.py::sync_owner_cols 예외 대상(배1054 검토② — 되밀림 차단). 라벨
+                                # 중 세부구분·LOSS일자 등 OWNER_COLS 밖 2개는 sync 쪽에서 못 찾아 조용히 무시된다
+                                # (field_to_col.get() 이 None → skip) — 목록에 다 넣어도 해롭지 않다.
+                                payload_log["_cols"] = list(_ARCHIVE_RESET_LABELS.values())
+                                payload_log["_saved"] = {"종료일자": final_end, "등록회차": new_seq}   # 대조 전용(경미①)
+                                log_id = conn.execute(
+                                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                    (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
+                                     "test" if is_test else "pending", None)
+                                ).fetchone()[0]
+                                extra = {"restored": True, "name": arch_name, "phone": payload.get("phone"),
+                                        "archiveRow": member_no, "newRow": member_no, "member_no": member_no,
+                                        "regClass": reg_class, "seq": new_seq}
     except Exception:
         conn.close()
         raise
@@ -1288,6 +1376,114 @@ def _selftest_hold_approve_gas_reread():
     assert hold_updates and '"_server_edited"' in hold_updates[0][1], hold_updates   # 재검토(중요3)
 
 
+class _FakeArchiveCur:
+    """member_archive_restore 단위 검증용 최소 커서 — fetchone/fetchall 만 미리 정한 값을 돌려준다."""
+    def __init__(self, one=None, many=None):
+        self._one, self._many = one, many
+
+    def fetchone(self):
+        return self._one
+
+    def fetchall(self):
+        return self._many or []
+
+
+class _FakeArchiveConn:
+    """member_archive_restore 단위 검증용 최소 DB 스텁(네트워크·실 DB 없음) — SQL 앞부분으로 결과를 골라 돌려준다."""
+    def __init__(self, arch_count=1, arch_row=None, already_valid=None, actives=None):
+        self.executed = []
+        self.arch_count, self.arch_row = arch_count, arch_row
+        self.already_valid, self.actives = already_valid, actives
+
+    def execute(self, sql, args=()):
+        self.executed.append((sql, args))
+        if "SELECT COUNT(*) FROM members" in sql:
+            return _FakeArchiveCur(one=[self.arch_count])
+        if "FROM members" in sql and "scope='archive'" in sql and "FOR UPDATE" in sql:
+            return _FakeArchiveCur(one=self.arch_row)
+        if "SELECT 1 FROM members" in sql and "scope='valid'" in sql:
+            return _FakeArchiveCur(one=self.already_valid)
+        if "SELECT member_no, name FROM members" in sql:
+            return _FakeArchiveCur(many=self.actives)
+        if "RETURNING id" in sql:
+            return _FakeArchiveCur(one=[1])
+        return _FakeArchiveCur()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def close(self):
+        pass
+
+
+_ARCH_ROW_STUB = {"member_no": "M00010", "name": "복귀테스트", "phone": "01011112222", "kind": "일반",
+                  "owner": "김담당", "program": "PT", "reg_seq": "1", "data": "{}"}
+
+
+def _selftest_archive_restore_dry_run_gate():
+    """member_archive_restore(6단계) 치명① — dryRun 이면 arch_count==1 판정 직후 공통 게이트에서 막혀
+    실제 UPDATE/DELETE·write_log INSERT·GAS 전달 없이 판정(preview)만 나가는지(DB·네트워크 없음)."""
+    fake = _FakeArchiveConn(arch_count=1, arch_row=dict(_ARCH_ROW_STUB), already_valid=None, actives=[])
+    orig_connect = db.connect
+    db.connect = lambda: fake
+    try:
+        out = _handle_member_archive_restore(
+            {"phone": "010-1111-2222", "dryRun": True, "months": 6}, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+    assert out["ok"] is True and out["dryRun"] is True and "preview" in out, out
+    assert not any(sql.startswith(("UPDATE", "DELETE", "INSERT")) for sql, _ in fake.executed), fake.executed
+
+
+def _selftest_archive_restore_pk_guard():
+    """member_archive_restore 재검토④ — 이 회원번호가 이미 scope='valid' 에도 있으면 PK(tenant_id,member_no,
+    scope) 충돌 UPDATE 를 시도하기 전에 already-active 로 거른다(DB·네트워크 없음)."""
+    fake = _FakeArchiveConn(arch_count=1, arch_row=dict(_ARCH_ROW_STUB, member_no="M00011"),
+                            already_valid=[1], actives=[])
+    orig_connect = db.connect
+    db.connect = lambda: fake
+    try:
+        out = _handle_member_archive_restore({"phone": "010-1111-2222"}, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+    assert out["ok"] is False and out["error"] == "already-active", out
+    assert not any(sql.startswith("UPDATE") for sql, _ in fake.executed), fake.executed
+
+
+def _selftest_archive_restore_double_click_noop():
+    """member_archive_restore 재검토⑥ — COUNT(잠금 없음) 뒤 FOR UPDATE 가 빈 손이면(이중클릭으로 다른
+    요청이 먼저 처리) no-op 으로 끝난다 — with 블록 안에서 close+return 하지 않아 __exit__ 커밋 실패가
+    안 난다(hold_approve 와 같은 함정 회피 확인, DB·네트워크 없음)."""
+    fake = _FakeArchiveConn(arch_count=1, arch_row=None)
+    orig_connect = db.connect
+    db.connect = lambda: fake
+    try:
+        out = _handle_member_archive_restore({"phone": "010-1111-2222"}, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+    assert out["ok"] is True and out.get("noop") is True, out
+
+
+def _selftest_archive_restore_active_ambiguous():
+    """member_archive_restore 재검토⑦ — 같은 전화 유효회원이 2건+ 인데 이름이 일치하는 행이 정확히 1건이
+    아니면(0건·2건+) 서버는 안 고르고 GAS pass-through 로 넘긴다(DB·네트워크 없음 · is_test payload 라
+    gas_status=skipped-test 로 확인)."""
+    actives = [{"member_no": "M00001", "name": "아빠"}, {"member_no": "M00002", "name": "엄마"}]
+    fake = _FakeArchiveConn(arch_count=1, arch_row=dict(_ARCH_ROW_STUB, member_no="M00012", name="가족회원"),
+                            already_valid=None, actives=actives)
+    orig_connect = db.connect
+    db.connect = lambda: fake
+    try:
+        out = _handle_member_archive_restore({"phone": "010-0000-0000"}, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+    assert out["ok"] is True and out.get("passThrough") is True and out["gas_status"] == "skipped-test", out
+    assert not any(sql.startswith(("UPDATE", "DELETE")) for sql, _ in fake.executed), fake.executed
+
+
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
@@ -1300,6 +1496,18 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert len(ARCHIVE_RESET_COLS) == 19 and len(set(ARCHIVE_RESET_COLS)) == 19
     assert "owner_pt" in ARCHIVE_RESET_COLS and "hold_status" in ARCHIVE_RESET_COLS and "loss_date" in ARCHIVE_RESET_COLS
     assert "address" not in ARCHIVE_RESET_COLS and "note" not in ARCHIVE_RESET_COLS and "age" not in ARCHIVE_RESET_COLS
+    # _ARCHIVE_RESET_LABELS — ARCHIVE_RESET_COLS 19칸 전부 라벨이 있어야 한다(sync_members.py OWNER_COLS 의
+    # 같은 칸과 값이 같아야 sync 예외 등록이 먹는다 · 배1054 검토②).
+    assert set(_ARCHIVE_RESET_LABELS) == set(ARCHIVE_RESET_COLS) and len(_ARCHIVE_RESET_LABELS) == 19
+    assert _ARCHIVE_RESET_LABELS["owner_pt"] == "PT 담당자" and _ARCHIVE_RESET_LABELS["hold_status"] == "휴회접수상태"
+    assert _ARCHIVE_RESET_LABELS["hold_period"] == "휴회기간(휴회일수)" and _ARCHIVE_RESET_LABELS["loss_date"] == "LOSS일자"
+    assert _ARCHIVE_RESET_LABELS["kind2"] == "세부구분" and _ARCHIVE_RESET_LABELS["reg_reservation"] == "재등록예약목록"
+    # _add_months_js(GAS setMonth 오버플로 이식 · 배1054 검토①) — api_reception._add_months(말일 클램프)와
+    # 갈라지는 지점(말일+개월이 그 달에 없는 날짜)에서 GAS 실측값과 일치해야 한다.
+    assert _add_months_js("2026-08-31", 6) == "2027-03-03"   # 클램프면 2027-02-28 — GAS 는 오버플로
+    assert _add_months_js("2026-01-31", 1) == "2026-03-03"   # 클램프면 2026-02-28
+    assert _add_months_js("2026-05-31", 1) == "2026-07-01"   # 클램프면 2026-06-30
+    assert _add_months_js("2026-01-15", 2) == "2026-03-15"   # 말일 아니면 클램프와 결과가 같다
     # member_hold_approve(4단계) 헬퍼 — GAS _holdMinOnce_·_holdEndCalc_·_amNum 이식.
     assert _hold_min_once("신규") == 7 and _hold_min_once("연장") == 1 and _hold_min_once("") == 7
     assert _hold_end_calc("2026-08-01", 30) == "2026-08-30"   # 시작+29일
@@ -1352,4 +1560,8 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     _selftest_finish_revert()
     _selftest_hold_approve_passthrough()
     _selftest_hold_approve_gas_reread()
+    _selftest_archive_restore_dry_run_gate()
+    _selftest_archive_restore_pk_guard()
+    _selftest_archive_restore_double_click_noop()
+    _selftest_archive_restore_active_ambiguous()
     print("자체점검 통과")

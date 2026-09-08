@@ -42,7 +42,13 @@ def replace_scope(conn, scope, rows, now):
     """한 scope 를 diff 삭제(이 배치에 없는 회원번호만) + upsert 로 갈아끼운다. 반환 = (넣은 건수, 회원번호 없어 뺀 건수).
     열쇠 = (회원번호, scope) — 같은 사람이 유효회원과 LOSS보관에 같은 번호로 함께 있는 것은 이력이라 다 싣는다.
     [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 였던 것을 upsert 로 바꿨다 — 회원 쓰기가 서버 원장에 먼저
-    적히면(회원 원천 전환) 그 회원번호가 이번 GAS 배치에도 있는 한 사라지지 않는다."""
+    적히면(회원 원천 전환) 그 회원번호가 이번 GAS 배치에도 있는 한 사라지지 않는다.
+    diff 삭제에 `synced_at <= now`(이 배치 시작 시각 · main() 이 gas_get 호출 전에 찍어 넘긴다) 조건을 더한다
+    (배1054 검토⑤) — member_archive_restore(6단계)가 UPDATE 로 scope='archive'→'valid' 를 만드는 순간부터
+    (synced_at=그 요청 시각) 이번 GAS 조회가 끝나기까지는 그 회원번호가 아직 이번 배치 목록에 없을 수 있다
+    (GAS 쓰기는 서버 커밋 뒤에 도는 동기 호출이라 조회 시점이 딱 겹치면 못 실을 수 있다). 요청 시각이 항상
+    이번 배치 시작보다 늦으므로(같은 사이클 안에서 만들어진 valid 행만 해당) synced_at 비교로 갈린다 —
+    옛 행(진짜 사라져야 할 행)은 synced_at 이 이번 배치보다 훨씬 이전이라 그대로 지워진다."""
     recs, unnumbered = [], 0
     for r in rows:
         n = _norm_row(r)
@@ -62,10 +68,10 @@ def replace_scope(conn, scope, rows, now):
     member_nos = [r[1] for r in recs]
     with conn:
         if member_nos:
-            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s AND member_no <> ALL(%s)",
-                        (db.TENANT, scope, member_nos))
+            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s AND member_no <> ALL(%s) AND synced_at <= %s",
+                        (db.TENANT, scope, member_nos, now))
         else:
-            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s", (db.TENANT, scope))
+            conn.execute("DELETE FROM members WHERE tenant_id=%s AND scope=%s AND synced_at <= %s", (db.TENANT, scope, now))
         conn.executemany(
             "INSERT INTO members (tenant_id,member_no,scope," + ",".join(cols) + ")"
             " VALUES (" + ",".join(["%s"] * (len(cols) + 3)) + ")"
@@ -99,7 +105,8 @@ OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) + h
     "hold_period": "휴회기간(휴회일수)", "hold_start_date": "휴회시작일", "hold_end_date": "휴회종료일",
     "hold_count": "휴회횟수", "hold_cum_days": "휴회누적일수",
 }
-_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve")
+_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve",
+                       "member_archive_restore")
 
 
 def sync_owner_cols(conn):
@@ -111,8 +118,12 @@ def sync_owner_cols(conn):
     뽑는다(payload._member_no 는 애초에 대조용으로 넣어 둔 칸 · reconcile_dual_write.py 와 같은 재료).
     member_hold_transition 은 payload 에 'field' 키가 없다 — 액션 자체가 hold_status 칸을 가리키므로
     그 자리에 고정으로 채운다. member_active_update·member_hold_approve(4단계 · 승인만 — reject 는 회원
-    원장을 안 건드려 member_no 자체가 없다)는 한 저장이 여러 칸을 동시에 바꿀 수 있어 'field' 한 칸이
-    아니라 payload._cols(실컬럼에 쓴 칸 이름 목록 · api_members_write 가 넣어 둔다)를 본다.
+    원장을 안 건드려 member_no 자체가 없다)·member_archive_restore(6단계 경로B — 리셋한 17칸 라벨)는
+    한 저장이 여러 칸을 동시에 바꿀 수 있어 'field' 한 칸이 아니라 payload._cols(실컬럼에 쓴 칸 이름
+    목록 · api_members_write 가 넣어 둔다)를 본다. member_archive_restore 를 여기 넣는 이유 — GAS
+    write-through 는 동기 호출이지만 그 직후 5분 배치가 도는 순간까지 짧은 창이 있고, 그 창에서 이
+    행을 sync_owner_cols() 가 옛 archive data JSON(아직 안 갈렸다)으로 되채우면 방금 리셋한 값이
+    되밀린다 — 예외로 빼면 다음 배치가 진짜 새 data 로 갈아낀 뒤에만 채워져 되밀림이 없다(배1054 검토②).
     반환 = 예외 아닌 행 중에도 남은 불일치 건수(0 이어야 정상 — 갱신 자체가 안 먹었다는 신호)."""
     field_to_col = {v: k for k, v in OWNER_COLS.items()}
     written = {col: set() for col in OWNER_COLS}
@@ -124,7 +135,7 @@ def sync_owner_cols(conn):
             continue
         if action == "member_hold_transition":
             names = [OWNER_COLS["hold_status"]]
-        elif action in ("member_active_update", "member_hold_approve"):
+        elif action in ("member_active_update", "member_hold_approve", "member_archive_restore"):
             names = cols if isinstance(cols, list) else ([field] if field else [])
         else:
             names = [field] if field else []
@@ -331,6 +342,35 @@ def selftest():
                               " WHERE tenant_id=%s AND member_no='M00007'", T).fetchone()
         assert (ah_row["hold_start_date"], ah_row["hold_count"], ah_row["hold_cum_days"]) == ("2026-08-05", "2", "60"), \
             "서버가 쓴 휴회 승인 5칸은 시트값(2026-08-01·1·30)으로 안 덮인다"
+        # member_archive_restore(6단계 배1054) — 경로 B 가 리셋한 17칸(OWNER_COLS 교집합)도 같은 예외 규칙
+        # (배1054 검토② — sync_owner_cols 되밀림 차단). 시트가 아직 옛 담당자·상태를 들고 있어도(짧은 창)
+        # 서버가 방금 리셋한 빈값이 안 덮인다.
+        arch_reset_rows = [{"회원번호": "M00008", "회원명": "복귀테스트", "휴대폰 번호": "010-8888-8888",
+                            "PT 담당자": "옛담당자", "휴회접수상태": "완료"}]
+        replace_scope(conn, "valid", owner_rows + hold_rows + active_rows + hold_appr_rows + arch_reset_rows, "t9")
+        assert sync_owner_cols(conn) == 0, "예외 등록 전에는 시트값 그대로 일치해야 한다"
+        with conn:
+            conn.execute("UPDATE members SET owner_pt=%s, hold_status=%s WHERE tenant_id=%s AND member_no='M00008'",
+                        ("", "", db.TENANT))
+            conn.execute(
+                "INSERT INTO write_log (tenant_id,at,action,payload,user_email,gas_status) VALUES (%s,%s,'member_archive_restore',%s,%s,'ok')",
+                (db.TENANT, "t9", json.dumps({"_member_no": "M00008", "_cols": ["PT 담당자", "휴회접수상태"]}, ensure_ascii=False), ""))
+        assert sync_owner_cols(conn) == 0, "member_archive_restore 리셋 예외도 나머지와 함께 일치해야 한다"
+        row8 = conn.execute("SELECT owner_pt, hold_status FROM members WHERE tenant_id=%s AND member_no='M00008'", T).fetchone()
+        assert (row8["owner_pt"], row8["hold_status"]) == ("", ""), \
+            "서버가 리셋한 값은 시트에 남은 옛값(옛담당자·완료)으로 안 덮인다"
+        # replace_scope diff-삭제 synced_at 가드(배1054 검토⑤) — 배치 시작(now) '뒤' 서버가 만든 valid 행은
+        # 이번 배치 목록에 없어도 지우면 안 된다(member_archive_restore 가 scope='archive'→'valid' 로 만든
+        # 새 valid 열쇠가 GAS write-through 완료 전에 sync 가 mid-fetch 로 겹치는 race 대비).
+        with conn:
+            conn.execute(
+                "INSERT INTO members (tenant_id,member_no,scope,name,phone,data,synced_at) VALUES"
+                " (%s,'M00777','valid','늦은복귀','01077777777','{}',%s)"
+                " ON CONFLICT (tenant_id,member_no,scope) DO UPDATE SET synced_at=EXCLUDED.synced_at",
+                (db.TENANT, "t9-late"))   # "t9-late" > "t9"(사전순) — 아래 배치 시작 시각보다 늦다
+        replace_scope(conn, "valid", owner_rows + hold_rows + active_rows + hold_appr_rows + arch_reset_rows, "t9")
+        assert conn.execute("SELECT COUNT(*) FROM members WHERE tenant_id=%s AND member_no='M00777'", T).fetchone()[0] == 1, \
+            "배치 시작보다 늦게 서버가 만든 valid 행은 배치 목록에 없어도 지워지면 안 된다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)
