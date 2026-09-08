@@ -564,7 +564,11 @@ def run(month: str | None, apply: bool) -> None:
         # 정직 딱지 — verdict 와 무관하게 모든 objective 에 매긴다(honesty 없는 옛 항목도 포함).
         # 'at' 는 비교에서 제외(당일 재실행은 무변경으로 취급 · sync_observed 비교와 동일 관례).
         honesty = honesty_from_verdict(v, o)
-        prior_honesty = {k: val for k, val in (o.get("honesty") or {}).items() if k != "at"}
+        prior_honesty_raw = o.get("honesty")
+        if prior_honesty_raw and not isinstance(prior_honesty_raw, dict):
+            print(f"[경고] honesty 스키마 위반(문자열) — id={o.get('id')} 값={prior_honesty_raw!r} → 무시하고 재산정", file=sys.stderr)
+            prior_honesty_raw = None
+        prior_honesty = {k: val for k, val in (prior_honesty_raw or {}).items() if k != "at"}
         new_honesty_cmp = {k: val for k, val in honesty.items() if k != "at"}
         if prior_honesty != new_honesty_cmp:
             honesty_changed += 1
