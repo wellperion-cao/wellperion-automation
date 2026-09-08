@@ -48,7 +48,8 @@ OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 #   1) 자율 러너(welly_auto_runner.DEFAULT_CLEVELS)가 chro·cfo·coo 앞 배를 절대 집지 않는다
 #      (에이전트 미가동 — 무인 실행 대상에서 항상 제외).
 #   2) 그 도메인 파일의 "직접 수정"은 scripts/safe_commit.py 의 DOMAIN_MODIFY_RULES 가
-#      커밋 관문에서 차단한다(발견 시 ★중간관리자 방으로 전달만).
+#      커밋 관문에서 차단한다(발견 시 전달만 — 나우열M 건은 텔레그램 업무관리 방,
+#      GM 확정 2026-09-07 로 ★중간관리자 카톡방은 이경연 실장·이정헌 소장 중심이 됐다).
 # 상세·GM 원문 = ssot/kpi.json _라인분담_2026_08_05_chro_cfo.
 #
 # 예외: 사람(GM·나우열M)이 손으로 큐를 고치는 것은 막지 않는다 — 여기 있던 차단도
@@ -199,7 +200,9 @@ def build_ship(args, queue):
 
 
 # 이 역할 앞으로 띄운 배는 아침 카톡으로 사람 방에 중계된다(send_ops_digest).
-# 시우→★운영부(최준용M) · 시로·시뽀→★중간관리자(나우열M).
+# 시우→★운영부(이경연 실장) · 시로·시뽀→텔레그램 업무관리 방(나우열M · GM 계정 발신).
+# ★2026-09-07 GM 확정으로 나우열M 건이 ★중간관리자 카톡방에서 빠졌다 — 그 방은 이제
+#   이경연 실장·이정헌 소장 중심이다. 방 정본 = scripts/safe_commit.py DOMAIN_MODIFY_RULES.
 RELAYED_ROLES = {"coo", "chro", "cfo"}
 
 
