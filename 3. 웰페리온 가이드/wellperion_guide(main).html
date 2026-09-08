@@ -5429,7 +5429,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <div id="t1-effect-log-body"><div style="color:var(--dim);font-size:13px;padding:8px 0;">불러오는 중…</div></div>
         <script>
         (function(){
-          var LP_URL = '/wellperion-automation/status/learning_proposals.json';
+          var LP_URL = 'status/learning_proposals.json';
           function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
           function effectBadge(ef){
             if(ef==='효과있음') return '<span style="background:rgba(5,150,105,0.15);color:#059669;font-weight:700;border-radius:99px;padding:2px 10px;font-size:12px;">✅ 효과있음</span>';
@@ -10649,9 +10649,9 @@ function crTab(btn, panelId) {
     //   기존 발행미러(3. 웰페리온 가이드/status/_queue.json, pre-commit ①-3 sync_queue_mirror 자동동기화)로 폴백.
     //   ※ 빈 화면/위장 0건 금지 — 둘 다 실패해야만 빈 배열.
     var GM1_QUEUE_RAW_URL         = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue.json';
-    var GM1_QUEUE_MIRROR_URL      = '/wellperion-automation/status/_queue.json';
+    var GM1_QUEUE_MIRROR_URL      = 'status/_queue.json';
     var GM1_QUEUE_ARCH_RAW_URL    = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/_queue_archive.json';
-    var GM1_QUEUE_ARCH_MIRROR_URL = '/wellperion-automation/status/_queue_archive.json';
+    var GM1_QUEUE_ARCH_MIRROR_URL = 'status/_queue_archive.json';
     // ★반환 형태 = {data, failed} — 원본·미러 둘 다 실패한 경우만 failed:true(부분 성공은 failed:false로 정상 취급).
     //   빈 배열만 반환하면 호출부가 "정상인데 0건"과 "실패해서 0건"을 구분 못 해 빈 화면이 진짜 0건으로 위장된다
     //   (2026-07-24 GM 지적 · 웰리 수정 — route interception 재현으로 실증: raw+미러 둘 다 차단 시 "오늘 진행 중인 항목이 없습니다"로 표시돼 있었음).
