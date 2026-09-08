@@ -29,7 +29,10 @@ SHIFT_LABELS = {"am": "오전조", "pm": "오후조", "close": "마감조", "nig
 _EARLIER_SHIFT = {"pm": "오전조", "close": "오후조", "night": "마감조", "am": "오전조"}
 
 # 원장에서 하루 최종 미완료를 적재할 대상 회차(23시=하루 마감이라 저녁 회차 포함).
-LEDGER_SHIFTS = ("pm", "close", "night")
+# ★2026-09-07 GM 지시(사우나 점검 누락) 실측 — am 이 빠져 있어 오전조(오픈 직후) 사우나
+#   미체크(OP-1/OP-2/OP-5·A-1~A-3 등)가 반복감지에 통째로 안 잡혔다(구조적 사각지대).
+#   am 을 더한다 — 14일 백필(status/check_incomplete_ledger.json)도 am 포함으로 다시 채움.
+LEDGER_SHIFTS = ("am", "pm", "close", "night")
 
 WINDOW_DAYS = 7      # 반복 판정 관찰 창(최근 N일)
 THRESHOLD_DAYS = 4   # 창 내 N일 이상 미완료 = '반복'
@@ -230,7 +233,12 @@ def format_suggestion_lines(
 # ── 편의: 원장 적재 + 제안 라인 조립(daily_scheduler에서 호출) ──────────────────
 def append_daily_from_live(ledger_path, date_str: str, unchecked_by_shift: dict) -> dict:
     """라이브 uncheckedByShift로 하루 레코드를 만들어 멱등 적재 후 저장. 저장된 ledger 반환.
-    실패해도 예외를 던지지 않음(발신 무영향) — 실패 시 기존 ledger 반환."""
+    실패해도 예외를 던지지 않음(발신 무영향) — 실패 시 기존 ledger 반환.
+
+    ★2026-09-07 — 원장이 2026-08-25~09-06 조용히 14일 안 쌓인 사고(사우나 점검 반복감지가
+    그 기간 통째로 죽었었음)가 이 try/except의 '조용한 실패'에 원인이 있었을 가능성을 배제
+    못 해 실패를 로그로 남긴다(scheduler 로거 — daily_scheduler.py 와 같은 이름이라 그 파일
+    핸들러로 그대로 잡힌다). 반환 계약(예외 안 던짐)은 그대로 유지."""
     try:
         ledger = load_ledger(ledger_path)
         record = build_daily_record(unchecked_by_shift)
@@ -238,6 +246,13 @@ def append_daily_from_live(ledger_path, date_str: str, unchecked_by_shift: dict)
         save_ledger(ledger_path, ledger)
         return ledger
     except Exception:
+        try:
+            import logging
+            logging.getLogger("scheduler").exception(
+                f"check_incomplete_detector.append_daily_from_live 적재 실패 (date={date_str})"
+            )
+        except Exception:
+            pass
         return load_ledger(ledger_path)
 
 
@@ -251,17 +266,52 @@ def suggestion_lines_for_today(ledger_path, today: str) -> list[str]:
         return []
 
 
+def _build_fixture_ledger() -> dict:
+    """자체검사용 합성 원장 — 실제 status/check_incomplete_ledger.json 은 매일 값이 바뀌므로
+    거기 묶으면 원장이 정상적으로 채워질수록(백필·실운영) 테스트가 깨진다(2026-09-07 실측:
+    14일 백필 후 B-8 비율이 100%→56.7%로 내려가 assert 가 깨짐 — 데이터가 틀린 게 아니라
+    테스트가 살아있는 데이터에 묶여 있던 게 문제). 알고리즘만 검증하도록 고정된 합성 데이터로 분리."""
+    days = [f"2099-01-{i:02d}" for i in range(1, 11)]  # 10일 · 실데이터와 안 겹치는 가짜 연도
+    close_b8 = set(days)                 # 10/10 — 압도적으로 안 되는 항목
+    close_shared = set(days[:6])         # A-1·C-1 이 같이 6/10 — 회차 통째 결측 패턴(항목 문제 아님)
+    close_x = set(days[:5])
+    close_y = set(days[:4])
+    pm_c8 = set(days[:7])                # 7/10 — pm 평균 대비 뚜렷이 튐
+    pm_p1 = set(days[:2])
+    pm_p2 = set(days[:1])
+    ledger = {}
+    for d in days:
+        close_items = []
+        if d in close_b8:
+            close_items.append("B-8 개인락커 청결 관리(요청 시)")
+        if d in close_shared:
+            close_items += ["A-1 사우나 탕", "C-1 내부 화장실"]
+        if d in close_x:
+            close_items.append("X 더미항목")
+        if d in close_y:
+            close_items.append("Y 더미항목")
+        pm_items = []
+        if d in pm_c8:
+            pm_items.append("C-8 센터 화분")
+        if d in pm_p1:
+            pm_items.append("P-1 더미항목")
+        if d in pm_p2:
+            pm_items.append("P-2 더미항목")
+        ledger[d] = {"support": {"close": close_items, "pm": pm_items}}
+    return ledger
+
+
 if __name__ == "__main__":
-    # 자체검사 — 실제 원장으로 판정 기준이 의도대로 가르는지 확인.
-    _led = load_ledger(Path(__file__).resolve().parent.parent / "status" / "check_incomplete_ledger.json")
+    # 자체검사 — 합성 원장으로 판정 기준(50%↑ AND 회차평균대비 +25%p↑)이 의도대로 가르는지 확인.
+    _led = _build_fixture_ledger()
     _rows = detect_dead_items(_led)
     for _r in _rows:
         print("%-6s %5.1f%% (%2d/%d) 평균%4.1f%% 초과+%4.1f%%p  %s" % (
             _r["shift_label"], _r["rate"] * 100, _r["days"], _r["total_days"],
             _r["shift_avg"] * 100, _r["excess"] * 100, _r["item"]))
     _hit = {(r["shift"], r["item"]) for r in _rows}
-    assert ("close", "B-8 개인락커 청결 관리(요청 시)") in _hit, "B-8(마감조) 100% 미체크가 후보에서 빠졌다"
-    assert ("pm", "C-8 센터 화분") in _hit, "C-8(오후조)가 후보에서 빠졌다"
+    assert ("close", "B-8 개인락커 청결 관리(요청 시)") in _hit, "B-8(마감조) 10/10 미체크가 후보에서 빠졌다"
+    assert ("pm", "C-8 센터 화분") in _hit, "C-8(오후조) 7/10 이 후보에서 빠졌다"
     assert ("close", "A-1 사우나 탕") not in _hit, "A-1(마감조)은 회차 통째 결측이라 후보가 아니어야 한다"
     assert ("close", "C-1 내부 화장실") not in _hit, "C-1(마감조)은 회차 통째 결측이라 후보가 아니어야 한다"
     print("자체검사 통과 — 후보 %d건" % len(_rows))

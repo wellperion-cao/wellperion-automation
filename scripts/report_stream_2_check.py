@@ -402,8 +402,9 @@ def build_morning_kakao(today: str | None = None) -> str:
     IND = "   "
     out = [f"🌅 하루의 시작 — 점검·접수 {disp}"]
 
+    d_yest = _scs.fetch_gas({"action": "today_live", "dept": "support", "date": yest})
     sup_today, _ = _scs.build_support_section(today)
-    sup_yest, _ = _scs.build_support_section(yest)
+    sup_yest, _ = _scs.build_support_section(yest, data=d_yest)
     fac_yest, _ = _scs.build_facility_section(yest)
 
     # ── 🎯 오늘 채울 것 — 조별 '예정' 건수(분모)만. 07:40 엔 실적이 아직 없다.
@@ -441,11 +442,49 @@ def build_morning_kakao(today: str | None = None) -> str:
         out.extend((IND if g[:1] in "👏🧹✅" else IND * 2) + g for g in good)
 
     # ── ⚠️ 어제 못 채운 것 — 오늘 먼저 손대라는 뜻이라 어제 값만 쓴다.
-    miss = [(z, g, t) for z in ("남성구역", "여성구역")
+    # ★2026-09-07 GM 지시(여·남 사우나 점검 누락) — 0/N 은 '그 조가 하루 종일 손도 안 댄 것'이지
+    #   제출 버튼만 안 누른 게 아니다. 사우나 항목(A-1~A-3·A-7·B-2 — 남녀 공통이라 회차마다
+    #   체크리스트에 있다·.deploy-check/지원팀 일일점검.js)도 항상 같이 빠진다. 새 줄을 늘리지
+    #   않고(약속 L21) 이 줄에 사우나 태그만 더하고, 사우나가 낀 미체크를 앞으로 재정렬한다.
+    SAUNA_KEYWORDS = ("사우나", "탕", "파우더", "발매트")
+    _SHIFT_KEY = {"오전조": "am", "오후조": "pm", "마감조": "close"}
+    _GENDER_KEY = {"남성구역": "m", "여성구역": "f"}
+
+    def _sauna_missed(zone: str, shift_label: str) -> bool:
+        if not isinstance(d_yest, dict):
+            return False
+        bucket = ((d_yest.get("uncheckedByShift") or {}).get(_SHIFT_KEY.get(shift_label, ""), {})
+                  or {}).get(_GENDER_KEY.get(zone, ""), [])
+        return any(any(k in str(n) for k in SAUNA_KEYWORDS) for n in bucket)
+
+    def _sauna_streak(shift_label: str) -> int:
+        """그 회차에서 사우나 항목이 연속 며칠째 빠졌는지 — 원장(남녀 합산) 기준, 어제부터 거슬러."""
+        try:
+            import check_incomplete_detector as _cid
+            ledger = _cid.load_ledger(_scs.CHECK_INCOMPLETE_LEDGER)
+        except Exception:
+            return 0
+        shift_key = _SHIFT_KEY.get(shift_label, "")
+        n, day = 0, _d - timedelta(days=1)
+        while n <= 30:
+            rec = ((ledger.get(day.strftime("%Y-%m-%d")) or {}).get("support") or {}).get(shift_key, [])
+            if not any(any(k in str(it) for k in SAUNA_KEYWORDS) for it in rec):
+                break
+            n += 1
+            day -= timedelta(days=1)
+        return n
+
+    miss = [(z, g, t, _sauna_missed(z, g)) for z in ("남성구역", "여성구역")
             for g, dn, t in _groups(sup_yest, z) if t and dn == 0]
+    miss.sort(key=lambda m: not m[3])   # 사우나 포함이 먼저
     if miss:
         out.append("⚠️ 어제 못 채운 것 — 오늘 먼저")
-        out.extend(IND + f"{z} {g} 0/{t}" for z, g, t in miss)
+        for z, g, t, sauna in miss:
+            tag = ""
+            if sauna:
+                streak = _sauna_streak(g)
+                tag = f" — 사우나 {streak}일째 미체크" if streak >= 2 else " — 사우나 포함"
+            out.append(IND + f"{z} {g} 0/{t}{tag}")
 
     # ── 🔁 계속 빠지는 항목 — 오늘 조회분(최근 7일 누적)을 그대로 옮긴다.
     rep = [ln.strip() for ln in sup_today if ln.strip().startswith("·")][:3]
