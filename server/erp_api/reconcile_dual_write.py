@@ -319,6 +319,41 @@ def reconcile_member_hold_approve_writes(conn, db, since):
     return days, unmatched
 
 
+def reconcile_member_archive_restore_writes(conn, db, since):
+    """member_archive_restore(6단계 · 배1054) 서버 쓰기 전수 대조 — 뒷정리(cleaned)·복귀(restored) 두 경로
+    다 최종 상태는 같다: 그 회원번호가 scope='valid' 로 정확히 1건 남고 scope='archive' 에는 0건이어야
+    한다(서버는 scope UPDATE 한 번뿐이라 새 채번이 없다 — 회원번호는 write_log 시점 그대로). passThrough
+    (서버 미러에 보관 행이 없어 GAS 로만 넘긴 건 · _member_no 자체가 없다)는 대조 재료가 없어 다른
+    액션의 같은 경우(member_active_update)처럼 항상 mismatch 로 잡힌다 — 알려진 한계, 새 판정 안 만든다."""
+    rows = conn.execute(
+        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_archive_restore'"
+        " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
+    days, unmatched = {}, []
+    for r in rows:
+        p = r["payload"] or {}
+        no = p.get("_member_no")
+        day = str(r["at"])[:10]
+        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
+        d["server"] += 1
+        hit = False
+        if no:
+            valid_row = conn.execute(
+                "SELECT 1 FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                " AND synced_at > %s LIMIT 1", (db.TENANT, no, r["at"])).fetchone()
+            archive_row = conn.execute(
+                "SELECT 1 FROM members WHERE tenant_id=%s AND member_no=%s AND scope='archive'"
+                " AND synced_at > %s LIMIT 1", (db.TENANT, no, r["at"])).fetchone()
+            hit = bool(valid_row) and not archive_row
+        if hit:
+            d["sheet"] += 1
+        else:
+            d["mismatch"] += 1
+            d["ok"] = False
+            if len(unmatched) < 20:
+                unmatched.append({"date": day, "at": r["at"], "member_no": no, "form": "member_archive_restore"})
+    return days, unmatched
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
     now = kst_now()
@@ -330,10 +365,12 @@ def main():
         mh_days, mh_bad = reconcile_member_hold_writes(conn, db, since)
         ma_days, ma_bad = reconcile_member_active_writes(conn, db, since)
         mha_days, mha_bad = reconcile_member_hold_approve_writes(conn, db, since)
+        mar_days, mar_bad = reconcile_member_archive_restore_writes(conn, db, since)
     conn.close()
     out_forms = {"member_owner_save": mo_days, "member_hold_transition": mh_days,
-                 "member_active_update": ma_days, "member_hold_approve": mha_days}
-    unmatched = list(mo_bad) + list(mh_bad) + list(ma_bad) + list(mha_bad)
+                 "member_active_update": ma_days, "member_hold_approve": mha_days,
+                 "member_archive_restore": mar_days}
+    unmatched = list(mo_bad) + list(mh_bad) + list(ma_bad) + list(mha_bad) + list(mar_bad)
     for form, spec in FORMS.items():
         rows = writes if form == "write" else intake.get(form, [])
         days, bad = reconcile(form, rows, mirrors.get(spec["mirror"] or ""))
@@ -500,6 +537,37 @@ def selftest():
     days11, bad11 = reconcile_member_hold_approve_writes(
         _MC2(wl5, [json.dumps({"휴회횟수": "2", "휴회누적일수": "30"}, ensure_ascii=False)]), _DB, "2026-09-01")
     assert days11["2026-09-01"]["mismatch"] == 1 and {b["member_no"] for b in bad11} == {"M00040"}, (days11, bad11)
+
+    # member_archive_restore(6단계 배1054) 대조 — write_log(_member_no) ↔ scope='valid' 1건·scope='archive' 0건.
+    class _MC3:
+        """execute() 순서: write_log 조회 1회 → 행마다 (valid 존재확인, archive 존재확인) 2회씩(SELECT 1 형)."""
+        def __init__(self, write_rows, exist_rows):
+            self.write_rows, self.exist_rows, self.i = write_rows, exist_rows, 0
+
+        def execute(self, sql, args=None):
+            if "FROM write_log" in sql:
+                self._cur = list(self.write_rows)
+                return self
+            v = self.exist_rows[self.i] if self.i < len(self.exist_rows) else None
+            self.i += 1
+            return _One(v)
+
+        def fetchall(self):
+            return self._cur
+
+    wl6 = [
+        {"at": "2026-09-01 10:00:00", "payload": {"_member_no": "M00050"}},   # valid 1건·archive 0건 → 적중
+        {"at": "2026-09-01 11:00:00", "payload": {"_member_no": "M00051"}},   # valid 아직 없음(배치 전) → 불일치
+        {"at": "2026-09-01 12:00:00", "payload": {"_member_no": "M00052"}},   # valid 있는데 archive 도 남음(잔존) → 불일치
+    ]
+    days13, bad13 = reconcile_member_archive_restore_writes(
+        _MC3(wl6, [1, None, None, None, 1, 1]), _DB, "2026-09-01")
+    assert days13["2026-09-01"] == {"server": 3, "sheet": 1, "mismatch": 2, "ok": False}, days13
+    assert {b["member_no"] for b in bad13} == {"M00051", "M00052"}, bad13
+    # passThrough(회원번호 없는 옛 보관 행 등) — 대조 재료가 없어 항상 불일치(member_active_update 와 같은 한계)
+    days14, _ = reconcile_member_archive_restore_writes(
+        _MC3([{"at": "2026-09-02 09:00:00", "payload": {}}], []), _DB, "2026-09-01")
+    assert days14["2026-09-02"]["mismatch"] == 1, days14
 
     # 가린 번호(010-****-5691)에서도 뒤 4자리가 뽑힌다 — 종합접수처 미러가 이 모양이다
     assert phone4("010-****-5691") == "5691" and phone4("", None, "0104736") == "4736" and phone4("abc") == ""

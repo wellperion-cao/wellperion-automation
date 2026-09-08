@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
-"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2·3·4단계 · 시토).
+"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2·3·4·6단계 · 시토).
 
 member_owner_save(종목별 담당자 5칸 · 1단계) · member_hold_transition(휴회접수상태 1칸 · 2단계) ·
-member_active_update(칸 자유 쓰기 · 3단계) · member_hold_approve(휴회 승인/반려 · 2원장 · 4단계) 를
-여기서 서버 원장(members + hold_items)에 먼저 쓴다 — ①검증 ②서버 원장 갱신 + member_change_log 이력
-1줄(한 트랜잭션 · 값 같으면 이력 없이 ok) ③기존 GAS 로 write-through(시트도 유지 · api_write._gas_forward
-재사용 · 실패해도 서버 저장은 이미 끝남 — 응답 gas_status 로만 알린다).
-나머지 3종(member_registered_add 등)은 아직 이 라우트에 안 왔다 — 501 로 /api/write(GAS 경로)를 쓰라고
-안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
-정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-6·2-7.
+member_active_update(칸 자유 쓰기 · 3단계) · member_hold_approve(휴회 승인/반려 · 2원장 · 4단계) ·
+member_archive_restore(LOSS보관→유효회원 전환 · 6단계) 를 여기서 서버 원장(members + hold_items)에
+먼저 쓴다 — ①검증 ②서버 원장 갱신 + member_change_log 이력 1줄(한 트랜잭션 · 값 같으면 이력 없이 ok)
+③기존 GAS 로 write-through(시트도 유지 · api_write._gas_forward 재사용 · 실패해도 서버 저장은 이미
+끝남 — 응답 gas_status 로만 알린다).
+나머지 2종(member_registered_add·member_registered_remove)은 아직 이 라우트에 안 왔다 — 501 로
+/api/write(GAS 경로)를 쓰라고 안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
+정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-5·2-6·2-7.
+
+행 찾기 — member_archive_restore(_handle_member_archive_restore): GAS 원본(Survey.js L9892~10024)은
+보관 행을 삭제하고 유효회원에 새 행을 append 한다(회원번호는 인계). 서버는 미러 열쇠가 (member_no,scope)
+라 같은 행의 scope 만 'archive'→'valid' 로 바꾸는 UPDATE 한 번으로 끝난다 — 새 채번 자체가 없어 결함④
+(registry_build 가 새 번호를 먼저 준 뒤 옛 번호로 덮어 번호 1개 낭비)가 구조적으로 사라진다(CTO 배1050
+§6 6단계 결정). GAS 의 '새 행'과 결과를 맞추려면 새 행이 안 갖는 옛 칸(종목담당자 5·휴회 6·LOSS일자·
+재등록상담 3·재등록예약목록·종료사유 2 = ARCHIVE_RESET_COLS)을 명시적으로 비운다(GM 지시 "이관건이니
+기존 자료는 없어져야해"). 경로 A(유효회원에 이미 같은 전화·같은 이름) = 보관 행만 삭제하는 뒷정리.
+경로 B(없음) = scope 전환 + 칸 인계. 이름이 다르면 already-active 거부. 보관 행이 아예 없거나(0건)
+회원번호 없는 옛 행이라 미러에 안 실렸으면(§2 공통사실) 서버는 판단하지 않고 GAS 로 그대로 넘긴다
+(member_active_update 의 passThrough 와 같은 이유).
 
 행 찾기 — member_hold_approve(_handle_member_hold_approve): 접수 행 = hold_items 미러(intake_row 열쇠 ·
 sync_reception.py 가 5분마다 GAS member_hold_intake_list 를 그대로 얹는다) 를 FOR UPDATE 로 잠그고 그
@@ -55,6 +67,8 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리
 import api_write  # noqa: E402  — GAS 포워드·거울 재동기화 재사용(로직 중복 금지)
+from sync_reception import gas_get  # noqa: E402  — 접수 시트 재독(승인 계산 재료 · 새 경로 금지 · 배1054 재검토①)
+import api_reception  # noqa: E402  — _add_months(개월 계산 · GAS setMonth 와 동일 뜻) 재사용, 새 계산 안 만듦
 
 router = APIRouter(prefix="/api/members")
 
@@ -66,9 +80,10 @@ FIELD_TO_COL = {
 HOLD_STATUSES = ("완료", "진행중")            # GAS 화이트리스트 그대로(Survey.js L10793)
 HOLD_COL = "hold_status"
 HOLD_FIELD_LABEL = "휴회접수상태"              # member_change_log 의 field 칸 · GAS 헤더명과 동일
-# 아직 이 라우트가 처리 안 하는 나머지 3종(시포 스펙 §2-3~2-5) — 501 안내에만 쓴다(화이트리스트 아님).
-_NOT_YET = ("member_registered_add", "member_registered_remove", "member_archive_restore")
-_IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve")
+# 아직 이 라우트가 처리 안 하는 나머지 2종(시포 스펙 §2-3~2-4) — 501 안내에만 쓴다(화이트리스트 아님).
+_NOT_YET = ("member_registered_add", "member_registered_remove")
+_IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve",
+                "member_archive_restore")
 
 # member_hold_approve(4단계 · 배1054) — 승인 시 갱신 6칸(GAS Survey.js L10762~10766 이식). schema.sql 이
 # 2단계 때 미리 만들어 둔 hold_* 칸(hold_status 는 2단계가 이미 씀 · 나머지 5개는 이 단계가 처음 쓴다) —
@@ -108,6 +123,21 @@ _ACTIVE_ERRORS = {   # GAS 오류 문구 그대로(Survey.js L9678·9691·9743·
                            "detail": "회원번호와 전화번호가 일치하지 않습니다"},
 }
 
+# member_archive_restore(6단계 · 배1054) — GAS MEMBER_DEFAULT_OWNER 상수(Survey.js L2721) 그대로.
+MEMBER_DEFAULT_OWNER = "임정은"
+# GAS 의 '새 행'이 안 갖는 칸 — scope 전환(경로 B)에서 전부 빈 문자열로 되돌린다(옛 보관 기록이 새 유효회원
+# 행으로 새지 않게 · GM 지시 "이관건이니 기존 자료는 없어져야해"). loss_date 도 포함 — 더는 LOSS가 아니다.
+# ponytail: members.data(JSON) 원문은 손 안 댄다 — 5분 뒤 sync_members.py replace_scope('valid') 가 GAS
+# 의 진짜 새 행(이 칸들이 실제로 빈 시트 값)으로 data 를 통째로 갈아끼우고, 그 직후 같은 사이클의
+# sync_owner_cols() 가 그 새 data 로 이 실컬럼들을 다시 채워 자연히 맞아든다(회귀 자가치유). GAS
+# write-through 가 실패하지 않는 한(그때는 _finish 가 이 UPDATE 자체를 되돌린다) 다시 살아날 옛값이 없다.
+ARCHIVE_RESET_COLS = (
+    "kind2", "owner_pt", "owner_golf", "owner_pl", "owner_squash", "owner_swim",
+    "hold_status", "hold_period", "hold_start_date", "hold_end_date", "hold_count", "hold_cum_days",
+    "loss_date", "reg_consult_date", "reg_consult_time", "reg_consult_note",
+    "reg_reservation", "end_reason", "end_reason_memo",
+)
+
 
 def _norm_phone(v):
     return re.sub(r"\D", "", str(v or ""))
@@ -126,13 +156,12 @@ def _hold_end_calc(start, days):
 
 
 def _hold_num(v):
-    """GAS _amNum 이식(Survey.js L10741 부근) — 숫자·부호 아닌 문자 제거 후 parseInt, 실패하면 0.
+    """GAS _amNum 이식(Survey.js L10741 부근) — 숫자·부호 아닌 문자 제거 후 parseInt 와 같이 앞자리
+    연속 숫자만 취한다(예: "1-2"→1 · 배1054 재검토⑦, 옛 int() 는 "1-2" 에서 ValueError→0 으로 GAS 와 어긋났다).
     hold_count·hold_cum_days 는 schema.sql 에 TEXT 로 있다(GAS 시트 셀 값 그대로 옮긴 사본)."""
     raw = re.sub(r"[^0-9\-]", "", str(v or ""))
-    try:
-        return int(raw)
-    except ValueError:
-        return 0
+    m = re.match(r"-?\d+", raw)
+    return int(m.group()) if m else 0
 
 
 def _norm_col(v):
@@ -320,6 +349,25 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
                     if rv.get("kind") == "hold":   # member_hold_approve(4단계) — 접수 행 상태·JSON 복원, 회원 이력 없음
                         conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
                                      (rv["old_status"], rv["old_data"], rv["tenant"], rv["intake_row"]))
+                        continue
+                    if rv.get("kind") == "archive_row":   # member_archive_restore(6단계) — 행 전체 스냅샷 복원
+                        old_row, cols = rv["old_row"], list(rv["old_row"].keys())
+                        if rv.get("cur_scope"):   # 경로 B 되돌리기 — scope='valid' 로 바뀐 행을 옛 값 전체로 UPDATE
+                            conn.execute(
+                                "UPDATE members SET " + ", ".join("%s=%%s" % c for c in cols)
+                                + " WHERE tenant_id=%s AND member_no=%s AND scope=%s",
+                                [old_row[c] for c in cols] + [rv["tenant"], rv["member_no"], rv["cur_scope"]])
+                        else:   # 경로 A 되돌리기 — DELETE 했던 보관 행을 그대로 재삽입
+                            conn.execute(
+                                "INSERT INTO members (" + ",".join(cols) + ") VALUES ("
+                                + ",".join(["%s"] * len(cols)) + ") ON CONFLICT (tenant_id, member_no, scope) DO NOTHING",
+                                [old_row[c] for c in cols])
+                        conn.execute(
+                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (rv["tenant"], api_write._now_kst(), "시스템(GAS거부롤백)", rv["member_no"],
+                             rv.get("name", ""), rv.get("phone_masked", ""), rv.get("field", "LOSS보관 복귀취소"),
+                             "GAS거부", "원상복구", "멤버십"))
                         continue
                     if rv.get("kind") == "json":
                         if rv.get("had_key", True):
@@ -558,7 +606,16 @@ def _handle_member_hold_approve(payload, raw_body, user):
                 "SELECT status, data FROM hold_items WHERE tenant_id=%s AND intake_row=%s FOR UPDATE",
                 (tenant, intake_row)).fetchone()
             if not intake:
-                err_response = {"ok": False, "error": "접수 행 없음"}
+                # 재검토(치명2) — 화면 목록은 GAS 라이브라 5분 미러에 아직 안 실린 신규 접수행이 뜰 수 있다.
+                # 접수 없음 거부 대신 GAS 로 그대로 넘긴다(3단계 member_active_update pass-through 와 같은
+                # 방식 · members·hold_items 는 서버가 안 건드리고 다음 sync_reception 이 따라잡는다).
+                log_id = conn.execute(
+                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                    (tenant, now, "member_hold_approve", json.dumps(dict(payload), ensure_ascii=False), user,
+                     "test" if is_test else "pending", None)
+                ).fetchone()[0]
+                extra = {"passThrough": True, "decision": decision, "intakeRow": intake_row_n}
             else:
                 try:
                     idata = json.loads(intake["data"]) if intake["data"] else {}
@@ -581,6 +638,7 @@ def _handle_member_hold_approve(payload, raw_body, user):
                                 "old_status": old_status, "old_data": intake["data"]}]
                     extra = {"decision": "reject", "intakeRow": intake_row_n}
                     idata["status"] = "반려"
+                    idata["_server_edited"] = now   # 재검토(중요3) — sync_reception._replace 가드가 이 행을 시트 값으로 안 덮게
                     conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
                                  ("반려", json.dumps(idata, ensure_ascii=False), tenant, intake_row))
                     log_id = conn.execute(
@@ -590,76 +648,94 @@ def _handle_member_hold_approve(payload, raw_body, user):
                          "test" if is_test else "pending", None)
                     ).fetchone()[0]
                 else:   # decision == "approve"
-                    req_start = str(idata.get("start") or "").strip()
-                    req_days = idata.get("wishDays")
-                    if not re.match(r"^\d{4}-\d{2}-\d{2}$", req_start) or not isinstance(req_days, int) or isinstance(req_days, bool):
-                        err_response = {"ok": False, "error": "bad-request", "detail": "접수 기간/일수 불량"}
+                    # 재검토(치명1) — 계산 재료(start·wishDays·kind)는 5분 옛 미러(idata) 대신 접수 시트를
+                    # 승인 시점에 다시 읽어 쓴다(GAS Survey.js L10745~10751 과 동일 — 직원이 접수 시트에서
+                    # 구분·희망일수를 고치는 것이 설계된 흐름이라, 미러 값으로 계산하면 그 수정이 무시된다).
+                    # FOR UPDATE 잠금(위 old_status 재검사)은 그대로 미러로 — 여긴 계산 재료만 GAS 원본.
+                    if is_test:   # dry-run(tenant selftest) 은 실 GAS 를 안 부른다 — 미러(idata)를 그대로 재료로
+                        live_row = idata
                     else:
-                        kind = str(idata.get("kind") or "").strip() or "신규"
-                        m_hits = conn.execute(
-                            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
-                            (tenant, intake_phone)).fetchall()
-                        if not m_hits:
-                            err_response = {"ok": False, "error": "member-not-found",
-                                            "detail": "회원DB에서 일치 회원을 찾을 수 없습니다(전화 확인)"}
-                        elif len(m_hits) > 1:
-                            err_response = {"ok": False, "error": "member-ambiguous", "detail": "동일 전화 회원 다수 — 데스크 확인"}
+                        live = gas_get("FUNNEL_EXEC_URL", "member_hold_intake_list")
+                        live_row = None
+                        for r in (live or {}).get("data") or []:
+                            if str(r.get("intakeRow")) == intake_row:
+                                live_row = r
+                                break
+                    if live_row is None:
+                        err_response = {"ok": False, "error": "server-forward-failed",
+                                        "detail": "접수 시트 재조회 실패 — 잠시 후 다시 시도하세요", "noRetry": False}
+                    else:
+                        req_start = str(live_row.get("start") or "").strip()
+                        req_days = live_row.get("wishDays")
+                        if not re.match(r"^\d{4}-\d{2}-\d{2}$", req_start) or not isinstance(req_days, int) or isinstance(req_days, bool):
+                            err_response = {"ok": False, "error": "bad-request", "detail": "접수 기간/일수 불량"}
                         else:
-                            mrow = dict(m_hits[0])
-                            member_no = mrow["member_no"]
-                            am_c, am_d = _hold_num(mrow.get("hold_count")), _hold_num(mrow.get("hold_cum_days"))
-                            min_once = _hold_min_once(kind)
-                            if req_days < min_once or req_days > HOLD_MAX_ONCE:
-                                err_response = {"ok": False, "error": "휴회 일수 범위(%s %d~%d일) 위반: %d일"
-                                               % (kind, min_once, HOLD_MAX_ONCE, req_days)}
-                            elif am_c + 1 > HOLD_MAX_COUNT:
-                                err_response = {"ok": False, "error": "휴회 횟수 한도 초과(최대 %d회, 현재 %d회)" % (HOLD_MAX_COUNT, am_c)}
-                            elif am_d + req_days > HOLD_MAX_TOTAL:
-                                err_response = {"ok": False, "error": "누적 휴회일수 한도 초과(최대 %d일, 현재 %d+%d일)"
-                                               % (HOLD_MAX_TOTAL, am_d, req_days)}
+                            kind = str(live_row.get("kind") or "").strip() or "신규"
+                            m_hits = conn.execute(
+                                "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
+                                (tenant, intake_phone)).fetchall()
+                            if not m_hits:
+                                err_response = {"ok": False, "error": "member-not-found",
+                                                "detail": "회원DB에서 일치 회원을 찾을 수 없습니다(전화 확인)"}
+                            elif len(m_hits) > 1:
+                                err_response = {"ok": False, "error": "member-ambiguous", "detail": "동일 전화 회원 다수 — 데스크 확인"}
                             else:
-                                req_end = _hold_end_calc(req_start, req_days)
-                                new_vals = {
-                                    "hold_period": "%s ~ %s (%d일)" % (req_start, req_end, req_days),
-                                    "hold_start_date": req_start, "hold_end_date": req_end,
-                                    "hold_count": str(am_c + 1), "hold_cum_days": str(am_d + req_days), "hold_status": "진행중",
-                                }
-                                reverts = [{"kind": "hold", "tenant": tenant, "intake_row": intake_row,
-                                            "old_status": old_status, "old_data": intake["data"]}]
-                                saved, changed_labels = {}, []
-                                for col, new_val in new_vals.items():
-                                    label = HOLD_APPROVE_COL_MAP[col]
-                                    old_val = mrow.get(col) or ""
-                                    saved[label] = new_val
-                                    if old_val != new_val:   # 멱등 — 같은 값이면 이력 없이 스킵(stage1~3 과 같은 규칙)
-                                        changed_labels.append(label)
-                                        conn.execute(
-                                            "UPDATE members SET {c}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
-                                            .format(c=col), (new_val, tenant, member_no))
-                                        conn.execute(
-                                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
-                                            " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                                            (tenant, now, staff, member_no, mrow.get("name") or "", _mask_phone(mrow.get("phone")),
-                                             label, old_val, new_val, "멤버십"))
-                                        reverts.append({"kind": "col", "col": col, "field": label, "tenant": tenant,
-                                                        "member_no": member_no, "old_value": old_val, "new_value": new_val,
-                                                        "name": mrow.get("name") or "", "phone_masked": _mask_phone(mrow.get("phone"))})
-                                idata["status"] = "승인"
-                                conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
-                                             ("승인", json.dumps(idata, ensure_ascii=False), tenant, intake_row))
-                                extra = {"decision": "approve", "intakeRow": intake_row_n, "memberRow": member_no,
-                                        "member_no": member_no, "count": am_c + 1, "cumDays": am_d + req_days,
-                                        "period": "%s ~ %s" % (req_start, req_end), "extended": False}
-                                payload_log = dict(payload)
-                                payload_log["_member_no"] = member_no    # 대조 전용(reconcile_dual_write.py)
-                                payload_log["_cols"] = changed_labels    # sync_members.py::sync_owner_cols 예외 대상(실컬럼만)
-                                payload_log["_saved"] = saved            # 대조 전용 — 실제로 저장한 값(변경 없어도 전부)
-                                log_id = conn.execute(
-                                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
-                                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                                    (tenant, now, "member_hold_approve", json.dumps(payload_log, ensure_ascii=False), user,
-                                     "test" if is_test else "pending", None)
-                                ).fetchone()[0]
+                                mrow = dict(m_hits[0])
+                                member_no = mrow["member_no"]
+                                am_c, am_d = _hold_num(mrow.get("hold_count")), _hold_num(mrow.get("hold_cum_days"))
+                                min_once = _hold_min_once(kind)
+                                if req_days < min_once or req_days > HOLD_MAX_ONCE:
+                                    err_response = {"ok": False, "error": "휴회 일수 범위(%s %d~%d일) 위반: %d일"
+                                                   % (kind, min_once, HOLD_MAX_ONCE, req_days)}
+                                elif am_c + 1 > HOLD_MAX_COUNT:
+                                    err_response = {"ok": False, "error": "휴회 횟수 한도 초과(최대 %d회, 현재 %d회)" % (HOLD_MAX_COUNT, am_c)}
+                                elif am_d + req_days > HOLD_MAX_TOTAL:
+                                    err_response = {"ok": False, "error": "누적 휴회일수 한도 초과(최대 %d일, 현재 %d+%d일)"
+                                                   % (HOLD_MAX_TOTAL, am_d, req_days)}
+                                else:
+                                    req_end = _hold_end_calc(req_start, req_days)
+                                    new_vals = {
+                                        "hold_period": "%s ~ %s (%d일)" % (req_start, req_end, req_days),
+                                        "hold_start_date": req_start, "hold_end_date": req_end,
+                                        "hold_count": str(am_c + 1), "hold_cum_days": str(am_d + req_days), "hold_status": "진행중",
+                                    }
+                                    reverts = [{"kind": "hold", "tenant": tenant, "intake_row": intake_row,
+                                                "old_status": old_status, "old_data": intake["data"]}]
+                                    saved, changed_labels = {}, []
+                                    for col, new_val in new_vals.items():
+                                        label = HOLD_APPROVE_COL_MAP[col]
+                                        old_val = mrow.get(col) or ""
+                                        saved[label] = new_val
+                                        if old_val != new_val:   # 멱등 — 같은 값이면 이력 없이 스킵(stage1~3 과 같은 규칙)
+                                            changed_labels.append(label)
+                                            conn.execute(
+                                                "UPDATE members SET {c}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                                                .format(c=col), (new_val, tenant, member_no))
+                                            conn.execute(
+                                                "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
+                                                " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                                (tenant, now, staff, member_no, mrow.get("name") or "", _mask_phone(mrow.get("phone")),
+                                                 label, old_val, new_val, "멤버십"))
+                                            reverts.append({"kind": "col", "col": col, "field": label, "tenant": tenant,
+                                                            "member_no": member_no, "old_value": old_val, "new_value": new_val,
+                                                            "name": mrow.get("name") or "", "phone_masked": _mask_phone(mrow.get("phone"))})
+                                    idata["status"] = "승인"
+                                    idata["_server_edited"] = now   # 재검토(중요3) — sync_reception._replace 가드가 이 행을 시트 값으로 안 덮게
+                                    conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
+                                                 ("승인", json.dumps(idata, ensure_ascii=False), tenant, intake_row))
+                                    extra = {"decision": "approve", "intakeRow": intake_row_n,
+                                            "member_no": member_no, "count": am_c + 1, "cumDays": am_d + req_days,
+                                            "period": "%s ~ %s" % (req_start, req_end), "extended": False}
+                                    payload_log = dict(payload)
+                                    payload_log["_member_no"] = member_no    # 대조 전용(reconcile_dual_write.py)
+                                    payload_log["_cols"] = changed_labels    # sync_members.py::sync_owner_cols 예외 대상(실컬럼만)
+                                    payload_log["_saved"] = saved            # 대조 전용 — 실제로 저장한 값(변경 없어도 전부)
+                                    log_id = conn.execute(
+                                        "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                                        " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                        (tenant, now, "member_hold_approve", json.dumps(payload_log, ensure_ascii=False), user,
+                                         "test" if is_test else "pending", None)
+                                    ).fetchone()[0]
     except Exception:
         conn.close()
         raise
@@ -667,6 +743,195 @@ def _handle_member_hold_approve(payload, raw_body, user):
         conn.close()
         return err_response
     return _finish(conn, raw_body, log_id, is_test, extra, reverts)
+
+
+def _handle_member_archive_restore(payload, raw_body, user):
+    """member_archive_restore(6단계 · 배1054) — 모듈 docstring 상단 '행 찾기' 절 참조. 항상 plain dict
+    또는 JSONResponse 를 돌려준다(다른 핸들러와 동형)."""
+    from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다(stage1~4 관례 그대로)
+
+    phone = _norm_phone(payload.get("phone"))
+    if not phone:
+        return {"ok": False, "error": "phone 필수"}
+    now = api_write._now_kst()
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
+    staff = _log_who(payload, user)
+
+    try:
+        conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+
+    err_response, log_id, revert, extra = None, None, None, None
+    try:
+        with conn:
+            arch_count = conn.execute(
+                "SELECT COUNT(*) FROM members WHERE tenant_id=%s AND scope='archive' AND phone=%s",
+                (tenant, phone)).fetchone()[0]
+            if arch_count >= 2:
+                err_response = {"ok": False, "error": "archive-ambiguous", "noRetry": True,
+                                "detail": "LOSS보관에 같은 전화번호가 %d건 있어 어느 분인지 정할 수 없습니다 — 시트에서 직접 확인해주세요" % arch_count}
+            elif arch_count == 0:
+                # 회원번호 없는 옛 보관 행 등 미러가 못 실은 경우 — 서버는 판단하지 않고 GAS 로 그대로 넘긴다
+                # (member_active_update 의 passThrough 와 같은 이유 · 서버 원장은 안 건드림).
+                log_id = conn.execute(
+                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                    (tenant, now, "member_archive_restore", json.dumps(dict(payload), ensure_ascii=False), user,
+                     "test" if is_test else "pending", None)
+                ).fetchone()[0]
+                extra = {"passThrough": True}
+            else:
+                arch = dict(conn.execute(
+                    "SELECT * FROM members WHERE tenant_id=%s AND scope='archive' AND phone=%s FOR UPDATE",
+                    (tenant, phone)).fetchone())
+                member_no = arch["member_no"]
+                arch_name = (arch.get("name") or "").strip()
+                active = conn.execute(
+                    "SELECT member_no, name FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
+                    " ORDER BY member_no LIMIT 1", (tenant, phone)).fetchone()
+                if active:   # 경로 A — 뒷정리: 이미 유효회원. 이름 같을 때만 보관 행 삭제(GAS L9917~9936 이식).
+                    active_name = (active["name"] or "").strip()
+                    if not arch_name or arch_name != active_name:
+                        err_response = {"ok": False, "error": "already-active",
+                                        "detail": "이미 유효회원에 등록된 전화번호입니다 — 보관 기록의 이름(%s)과 유효회원 이름(%s)이 달라 자동 정리하지 않습니다"
+                                                  % (arch_name or "?", active_name or "?")}
+                    else:
+                        revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                                  "cur_scope": None, "old_row": arch, "field": "LOSS보관 이관정리",
+                                  "name": arch_name, "phone_masked": _mask_phone(phone)}
+                        conn.execute("DELETE FROM members WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
+                                    (tenant, member_no))
+                        conn.execute(
+                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 이관정리",
+                             "LOSS보관 삭제 · 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
+                             "유효회원 회원번호 %s" % active["member_no"], "멤버십"))
+                        payload_log = dict(payload)
+                        payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py)
+                        log_id = conn.execute(
+                            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                            " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                            (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
+                             "test" if is_test else "pending", None)
+                        ).fetchone()[0]
+                        extra = {"cleaned": True, "name": arch_name, "archiveRow": member_no, "activeRow": active["member_no"]}
+                elif not arch_name:
+                    err_response = {"ok": False, "error": "archive-row-invalid", "detail": "보관 행에서 회원명을 읽지 못했습니다"}
+                else:   # 경로 B — 복귀(GAS L9937~10023 이식) — scope 전환 + 칸 인계 한 UPDATE
+                    try:
+                        data_obj = json.loads(arch["data"]) if arch["data"] else {}
+                        if not isinstance(data_obj, dict):
+                            data_obj = {}
+                    except Exception:
+                        data_obj = {}
+                    # 주소·비고·나이는 archive scope 행에 실컬럼이 없다(schema.sql 백필·sync_owner_cols 둘 다
+                    # scope='valid' 한정) — data JSON 에서 직접 읽는다(_data_get_norm 재사용).
+                    addr_key, addr_hit = _data_get_norm(data_obj, "주소")
+                    note_key, note_hit = _data_get_norm(data_obj, "비고")
+                    age_key, age_hit = _data_get_norm(data_obj, "나이")
+                    carry_addr = str(data_obj.get(addr_key) or "").strip() if addr_hit else ""
+                    carry_note = str(data_obj.get(note_key) or "").strip() if note_hit else ""
+                    carry_age = str(data_obj.get(age_key) or "").strip() if age_hit else ""
+                    carry_kind = (arch.get("kind") or "").strip()
+                    carry_owner = (arch.get("owner") or "").strip()
+                    seq_raw = arch.get("reg_seq") or ""
+                    seq_digits = re.sub(r"[^0-9]", "", str(seq_raw))
+                    seq_n = int(seq_digits) if seq_digits else None
+                    new_seq = str(seq_n + 1) if (seq_n and seq_n > 0) else str(seq_raw)   # GAS 그대로 — 못 읽으면 원값
+
+                    reg_class = str(payload.get("regClass") or "").strip() or "L재등록"
+                    program_new = str(payload.get("program") or "").strip() or (arch.get("program") or "")
+                    reg_date = str(payload.get("regDate") or "").strip() or now[:10]
+                    try:
+                        months_n = int(payload.get("months"))
+                    except (TypeError, ValueError):
+                        months_n = 0
+                    start_in = str(payload.get("startDate") or "").strip()
+                    end_in = str(payload.get("endDate") or "").strip()
+
+                    # 시작/종료/잔여일 — 개월수 계산(있으면) 위에 명시적 시작/종료일이 항상 우선(GAS L10004~10011).
+                    final_start, final_end, final_remain = "", "", ""
+                    if months_n > 0:
+                        base_start = start_in or reg_date
+                        try:
+                            end_calc = api_reception._add_months(base_start, months_n)
+                            ed = datetime.strptime(end_calc, "%Y-%m-%d") - timedelta(days=1)
+                            final_start, final_end = base_start, ed.strftime("%Y-%m-%d")
+                            now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+                            final_remain = str(round((ed - now_dt).total_seconds() / 86400))
+                        except ValueError:
+                            pass
+                    if start_in:
+                        final_start = start_in
+                    if end_in:
+                        final_end = end_in
+                        try:
+                            ed2 = datetime.strptime(end_in, "%Y-%m-%d")
+                            now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+                            final_remain = str(round((ed2 - now_dt).total_seconds() / 86400))
+                        except ValueError:
+                            pass
+
+                    preview = {
+                        "target": {"name": arch_name, "phone": payload.get("phone"), "archiveRow": member_no},
+                        "carried": {"나이": carry_age, "회원구분": carry_kind, "수강반종목명": arch.get("program") or "",
+                                    "담당자": carry_owner, "주소": carry_addr, "비고": carry_note,
+                                    "등록회차": "%s → %s" % (str(seq_raw), new_seq)},
+                        "newValues": {"regDate": reg_date, "startDate": start_in or None, "endDate": end_in or None,
+                                      "months": months_n if months_n > 0 else None, "regClass": reg_class, "program": program_new},
+                    }
+                    if payload.get("dryRun") is True or str(payload.get("dryRun")) == "true":
+                        err_response = {"ok": True, "dryRun": True, "preview": preview}   # 미리보기 — 쓰기·GAS 호출 없음
+                    else:
+                        set_vals = {
+                            "scope": "valid", "name": arch_name, "program": program_new, "reg_class": reg_class,
+                            "reg_seq": new_seq, "reg_date": reg_date, "start_date": final_start,
+                            "end_date": final_end, "remain_days": final_remain,
+                            "kind": carry_kind, "owner": carry_owner or MEMBER_DEFAULT_OWNER,
+                            "address": carry_addr, "note": carry_note, "age": carry_age,
+                        }
+                        for c in ARCHIVE_RESET_COLS:
+                            set_vals[c] = ""
+                        set_sql = ", ".join("%s=%%s" % c for c in set_vals)
+                        conn.execute(
+                            "UPDATE members SET " + set_sql + " WHERE tenant_id=%s AND member_no=%s AND scope='archive'",
+                            list(set_vals.values()) + [tenant, member_no])
+                        revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                                  "cur_scope": "valid", "old_row": arch, "field": "LOSS보관 재등록복귀",
+                                  "name": arch_name, "phone_masked": _mask_phone(phone)}
+                        conn.execute(
+                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 원본삭제",
+                             "LOSS보관 원본: %s" % json.dumps(arch, ensure_ascii=False, default=str)[:900],
+                             "유효회원 전환(등록분류:%s)" % reg_class, "멤버십"))
+                        conn.execute(
+                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (tenant, now, staff, member_no, arch_name, _mask_phone(phone), "LOSS보관 재등록복귀",
+                             "LOSS보관 회원번호 %s" % member_no,
+                             "유효회원 회원번호 %s(등록분류:%s)" % (member_no, reg_class), "멤버십"))
+                        payload_log = dict(payload)
+                        payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py)
+                        log_id = conn.execute(
+                            "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                            " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                            (tenant, now, "member_archive_restore", json.dumps(payload_log, ensure_ascii=False), user,
+                             "test" if is_test else "pending", None)
+                        ).fetchone()[0]
+                        extra = {"restored": True, "name": arch_name, "phone": payload.get("phone"),
+                                "archiveRow": member_no, "newRow": member_no, "member_no": member_no,
+                                "regClass": reg_class, "seq": new_seq}
+    except Exception:
+        conn.close()
+        raise
+    if err_response is not None:
+        conn.close()
+        return err_response
+    return _finish(conn, raw_body, log_id, is_test, extra, revert)
 
 
 @router.post("/write")
@@ -687,6 +952,8 @@ async def members_write(request: Request):
         return _handle_member_active_update(payload, body, request.headers.get("x-erp-user", ""))
     if action == "member_hold_approve":    # 4단계(배1054) — 2원장(members+hold_items)·멱등 가드가 따로 필요해 갈라둔다
         return _handle_member_hold_approve(payload, body, request.headers.get("x-erp-user", ""))
+    if action == "member_archive_restore":  # 6단계(배1054) — phone 열쇠·경로 2갈래(뒷정리/복귀)·dryRun 이 따로 필요해 갈라둔다
+        return _handle_member_archive_restore(payload, body, request.headers.get("x-erp-user", ""))
 
     user = request.headers.get("x-erp-user", "")
     now = api_write._now_kst()
@@ -910,17 +1177,135 @@ def _selftest_finish_revert():
     assert any("UPDATE members SET hold_status" in sql for sql, _ in conn4.executed), conn4.executed
     assert sum("member_change_log" in sql for sql, _ in conn4.executed) == 1, conn4.executed   # hold 항목은 이력 없음
 
+    # member_archive_restore(6단계) revert — kind='archive_row', 경로 B(cur_scope 있음)는 UPDATE 로,
+    # 경로 A(cur_scope 없음 · 삭제했던 행)는 INSERT 로 전체 스냅샷을 되돌린다.
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "gas-error"}
+    try:
+        conn5 = _FakeConn()
+        revert5 = {"kind": "archive_row", "tenant": "wellperion", "member_no": "M00005", "cur_scope": "valid",
+                   "old_row": {"tenant_id": "wellperion", "member_no": "M00005", "scope": "archive", "name": "테스트"},
+                   "name": "테스트", "phone_masked": "010-1234-****"}
+        out5 = _finish(conn5, b"{}", 1, False, {"restored": True, "member_no": "M00005"}, revert5)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out5["ok"] is False and conn5.closed
+    assert any("UPDATE members SET" in sql and "scope=%s" in sql for sql, _ in conn5.executed), conn5.executed
+    assert not any(sql.startswith("INSERT INTO members") for sql, _ in conn5.executed), conn5.executed
+
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "gas-error"}
+    try:
+        conn6 = _FakeConn()
+        revert6 = {"kind": "archive_row", "tenant": "wellperion", "member_no": "M00006", "cur_scope": None,
+                   "old_row": {"tenant_id": "wellperion", "member_no": "M00006", "scope": "archive", "name": "테스트"},
+                   "name": "테스트", "phone_masked": "010-1234-****"}
+        out6 = _finish(conn6, b"{}", 1, False, {"cleaned": True}, revert6)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out6["ok"] is False and conn6.closed
+    assert any(sql.startswith("INSERT INTO members") for sql, _ in conn6.executed), conn6.executed
+    assert sum("member_change_log" in sql for sql, _ in conn6.executed) == 1, conn6.executed
+
+
+class _FakeHoldCur:
+    """member_hold_approve 단위 검증용 최소 커서 — fetchone/fetchall 만 미리 정한 값을 돌려준다."""
+    def __init__(self, one=None, many=None):
+        self._one, self._many = one, many
+
+    def fetchone(self):
+        return self._one
+
+    def fetchall(self):
+        return self._many or []
+
+
+class _FakeHoldConn:
+    """member_hold_approve 단위 검증용 최소 DB 스텁(네트워크·실 DB 없음) — SQL 앞부분으로 결과를 골라 돌려준다."""
+    def __init__(self, hold_row=None, member_rows=None):
+        self.executed = []
+        self.hold_row, self.member_rows = hold_row, member_rows
+
+    def execute(self, sql, args=()):
+        self.executed.append((sql, args))
+        if "SELECT status, data FROM hold_items" in sql:
+            return _FakeHoldCur(one=self.hold_row)
+        if "SELECT * FROM members" in sql:
+            return _FakeHoldCur(many=self.member_rows)
+        if "RETURNING id" in sql:
+            return _FakeHoldCur(one=[1])
+        return _FakeHoldCur()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def close(self):
+        pass
+
+
+def _selftest_hold_approve_passthrough():
+    """member_hold_approve(4단계) 재검토(치명2) — 접수 행이 미러에 없으면(화면은 GAS 라이브라 5분 미러가
+    아직 못 따라간 신규 접수일 수 있다) 거부 대신 GAS pass-through 로 넘어가는지(DB·네트워크 없음 · is_test
+    payload 라 gas_status=skipped-test 로 확인)."""
+    fake = _FakeHoldConn(hold_row=None)
+    orig_connect = db.connect
+    db.connect = lambda: fake
+    try:
+        out = _handle_member_hold_approve(
+            {"decision": "approve", "intakeRow": 9, "keyPhone": "010-0000-0000"}, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+    assert out["ok"] is True and out["gas_status"] == "skipped-test" and out.get("passThrough") is True, out
+    assert not any("UPDATE hold_items" in sql or "UPDATE members" in sql for sql, _ in fake.executed), fake.executed
+
+
+def _selftest_hold_approve_gas_reread():
+    """member_hold_approve(4단계) 재검토(치명1) — 승인 계산 재료가 5분 옛 미러(idata)가 아니라 gas_get 재조회
+    값으로 쓰이는지 단위 검증(DB·네트워크 없음 · gas_get 스텁). 미러는 옛 값(연장·2026-01-01·5일)을,
+    GAS 재조회는 다른 값(신규·2026-09-10·14일)을 돌려준다 — 응답 period 가 재조회 값 기준
+    (2026-09-10~2026-09-23)이면 통과, 미러 값 기준이면 실패."""
+    stale_idata = {"phone": "01099998888", "status": "접수대기", "start": "2026-01-01", "wishDays": 5, "kind": "연장"}
+    live_row = {"intakeRow": 7, "start": "2026-09-10", "wishDays": 14, "kind": "신규", "phone": "01099998888"}
+    member_row = {"member_no": "M00099", "phone": "01099998888", "name": "테스트", "hold_count": "0",
+                  "hold_cum_days": "0", "hold_period": "", "hold_start_date": "", "hold_end_date": "",
+                  "hold_status": ""}
+    fake = _FakeHoldConn(hold_row={"status": "접수대기", "data": json.dumps(stale_idata, ensure_ascii=False)},
+                         member_rows=[member_row])
+    orig_connect, orig_gas_get, orig_forward = db.connect, globals()["gas_get"], api_write._gas_forward
+    db.connect = lambda: fake
+    globals()["gas_get"] = lambda url_key, action, params=None, timeout=90: {"ok": True, "data": [live_row]}
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "test-reject"}
+    try:
+        out = _handle_member_hold_approve(
+            {"decision": "approve", "intakeRow": 7, "keyPhone": "010-9999-8888"}, b"{}", "테스트")
+    finally:
+        db.connect, api_write._gas_forward = orig_connect, orig_forward
+        globals()["gas_get"] = orig_gas_get
+    assert out["period"] == "2026-09-10 ~ 2026-09-23", out   # GAS 재조회 값 기준(미러 값이면 2026-01-05)
+    assert out["count"] == 1 and out["cumDays"] == 14, out
+    hold_updates = [a for sql, a in fake.executed if "UPDATE hold_items SET status" in sql]
+    assert hold_updates and '"_server_edited"' in hold_updates[0][1], hold_updates   # 재검토(중요3)
+
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
-    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve"}
+    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update",
+                                 "member_hold_approve", "member_archive_restore"}
     assert not set(_IMPLEMENTED) & set(_NOT_YET)
+    assert set(_NOT_YET) == {"member_registered_add", "member_registered_remove"}
+    # member_archive_restore(6단계) 상수 — GAS MEMBER_DEFAULT_OWNER·새 행이 안 갖는 칸 목록.
+    assert MEMBER_DEFAULT_OWNER == "임정은"
+    assert len(ARCHIVE_RESET_COLS) == 19 and len(set(ARCHIVE_RESET_COLS)) == 19
+    assert "owner_pt" in ARCHIVE_RESET_COLS and "hold_status" in ARCHIVE_RESET_COLS and "loss_date" in ARCHIVE_RESET_COLS
+    assert "address" not in ARCHIVE_RESET_COLS and "note" not in ARCHIVE_RESET_COLS and "age" not in ARCHIVE_RESET_COLS
     # member_hold_approve(4단계) 헬퍼 — GAS _holdMinOnce_·_holdEndCalc_·_amNum 이식.
     assert _hold_min_once("신규") == 7 and _hold_min_once("연장") == 1 and _hold_min_once("") == 7
     assert _hold_end_calc("2026-08-01", 30) == "2026-08-30"   # 시작+29일
     assert _hold_end_calc("2026-08-01", 1) == "2026-08-01"    # 1일이면 당일 종료
     assert _hold_num("3") == 3 and _hold_num("") == 0 and _hold_num(None) == 0 and _hold_num("12일") == 12
+    assert _hold_num("1-2") == 1   # 재검토⑦ — GAS parseInt("1-2")==1 과 같게(옛 int() 는 ValueError→0 이었다)
     assert set(HOLD_APPROVE_COL_MAP) == {"hold_period", "hold_start_date", "hold_end_date",
                                          "hold_count", "hold_cum_days", "hold_status"}
     assert HOLD_APPROVE_COL_MAP["hold_period"] == "휴회기간(휴회일수)" and HOLD_APPROVE_COL_MAP["hold_status"] == HOLD_FIELD_LABEL
@@ -963,5 +1348,8 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert not db.is_test_payload({"field": "PT 담당자", "phone": "010-2781-7262", "value": "x"})
     assert db.is_test_payload({"keyPhone": "010-0000-0000", "status": "완료"})   # 검토① member_hold_transition 열쇠
     assert db.is_test_payload({"decision": "approve", "intakeRow": 5, "keyPhone": "010-0000-0000"})   # member_hold_approve
+    assert db.is_test_payload({"phone": "010-0000-0000", "regDate": "2026-09-08"})   # member_archive_restore
     _selftest_finish_revert()
+    _selftest_hold_approve_passthrough()
+    _selftest_hold_approve_gas_reread()
     print("자체점검 통과")
