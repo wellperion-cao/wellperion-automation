@@ -56,7 +56,8 @@ import path from 'node:path';
 import tty from 'node:tty';
 import os from 'node:os';
 
-const OMC_HUD = 'C:/Users/jjky0/.claude/hud/omc-hud-cost.mjs';
+// 사용자 홈 기준 — 회사(jjky0)·집 PC 어디서든 같은 줄로 동작(집 PC 설치 2026-09-08).
+const OMC_HUD = path.join(os.homedir(), '.claude', 'hud', 'omc-hud-cost.mjs').replace(/\\/g, '/');
 const NODE = process.execPath;
 
 // 역할 기억함 — 한 번 알아낸 역할을 세션별로 적어둔다(2026-07-25 GM 지시).
