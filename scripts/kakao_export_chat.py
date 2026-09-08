@@ -116,6 +116,14 @@ def _find_dialog(keyword: str, timeout: float, exclude: int | None = None) -> in
     return None
 
 
+def _is_stray_export_title(title: str) -> bool:
+    """내보내기가 남기는 창 두 종류 — '다른 이름으로 저장'(실패 때) · '대화 내보내기 · 완료되었습니다'(성공 때).
+    2026-09-08 시보 재현: 성공 뒤 완료 창(확인 버튼)이 남아 카톡 창이 통째로 비활성 → 다음 내보내기·발신 전부
+    ElementNotEnabled. 둘 다 같은 자리에서 닫는다."""
+    t = str(title or "")
+    return ("저장" in t) or ("내보내기" in t)
+
+
 def close_stray_save_dialog() -> int:
     """열린 채 남아 있는 '다른 이름으로 저장' 대화상자를 닫는다. 닫은 개수를 돌려준다.
 
@@ -133,20 +141,37 @@ def close_stray_save_dialog() -> int:
 
     def cb(h, _):
         if (win32gui.IsWindowVisible(h) and win32gui.GetClassName(h) == "#32770"
-                and "저장" in win32gui.GetWindowText(h)):
+                and _is_stray_export_title(win32gui.GetWindowText(h))):
             stray.append(h)
         return True
 
     win32gui.EnumWindows(cb, None)
+
+    # ★'대화 내보내기 · 완료되었습니다' 창은 #32770 이 아니라 카톡 자체 클래스(EVA_Window_Dblclk)·제목 없음이다
+    #   (2026-09-08 실측: 300×227 · 소유자 = 그 방 창 · 방 창은 IsWindowEnabled=0 으로 잠김 · WM_CLOSE 로 닫히면
+    #   방 창이 다시 활성). 제목으로는 못 찾으니 「제목 없음 + 소유자 방 창이 비활성 + 작은 크기」로 잡는다.
+    def cb2(h, _):
+        if not (win32gui.IsWindowVisible(h) and win32gui.GetClassName(h) == "EVA_Window_Dblclk"
+                and not win32gui.GetWindowText(h)):
+            return True
+        own = win32gui.GetWindow(h, win32con.GW_OWNER)
+        if not own or win32gui.IsWindowEnabled(own):
+            return True
+        l, t, r, b = win32gui.GetWindowRect(h)
+        if (r - l) < 600 and (b - t) < 400:
+            stray.append(h)
+        return True
+
+    win32gui.EnumWindows(cb2, None)
     for h in stray:
         try:
             win32gui.PostMessage(h, win32con.WM_CLOSE, 0, 0)
             closed += 1
         except Exception as e:
-            log(f"[export] 남은 저장창 닫기 실패: {type(e).__name__}: {e}")
+            log(f"[export] 남은 저장·완료창 닫기 실패: {type(e).__name__}: {e}")
     if closed:
         time.sleep(0.8)
-        log(f"[export] 남아 있던 저장 대화상자 {closed}개를 닫았다(카톡 창이 잠겨 있었다)")
+        log(f"[export] 남아 있던 저장·완료 대화상자 {closed}개를 닫았다(카톡 방 창이 잠겨 있었다)")
     return closed
 
 
@@ -242,6 +267,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     log(f"[export] {'성공' if ok else '실패'} — {out_path} ({size:,} bytes)")
     if ok:
         _warn_if_stale(out_path)
+    close_stray_save_dialog()          # 성공 뒤 남는 '대화 내보내기 · 완료되었습니다' 창도 여기서 닫는다(배 시보→시토 2026-09-08)
     return ok
 
 

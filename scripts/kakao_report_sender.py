@@ -537,10 +537,18 @@ def _dismiss_kakao_dialog() -> str | None:
     """
     closed = None
     targets: list[int] = []
+    # 내보내기가 남긴 '완료되었습니다' 창(카톡 자체 클래스·제목 없음)은 내보내기 관문의 판별기 한 곳만 안다 — 재사용(2026-09-08 시보 재현 · 배1130).
+    try:
+        from kakao_export_chat import close_stray_save_dialog as _close_export_leftovers
+        n = _close_export_leftovers()
+        if n:
+            closed = f"내보내기 잔여창 {n}개"
+    except Exception as e:  # noqa: BLE001
+        log(f"[카톡] 내보내기 잔여창 정리 건너뜀: {e}")
 
     def _top(h, _):
         if win32gui.GetClassName(h) == "#32770" and win32gui.IsWindowVisible(h) \
-                and "카카오" in win32gui.GetWindowText(h):
+                and any(w in win32gui.GetWindowText(h) for w in ("카카오", "내보내기")):   # '대화 내보내기 · 완료되었습니다' 창도 같은 잠금(2026-09-08 시보 재현)
             targets.append(h)
         return True
 
