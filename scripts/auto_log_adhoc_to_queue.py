@@ -271,8 +271,13 @@ def _should_skip(meta: dict, queue: list) -> bool:
     subject = meta["subject"]
     low = subject.lower()
     # b. 제목 패턴.
-    if low.startswith("chore(erp)") or low.startswith("chore(queue)"):
+    if low.startswith("chore(erp)") or low.startswith("chore(queue)") or low.startswith("chore(auto)"):
         return True
+    # b-0. 통합·자동 산출물 커밋(배1125 · 2026-09-08 시토): 「non-ff 해소」·「발행본 갱신」·「자동 산출물」은
+    #   실작업이 아니라 저장소 살림 — 열린 배 note 에 붙으면 잡음만 는다(웰리 실측 note 4,400자 중 절반).
+    for kw in ("non-ff 해소", "발행본 갱신", "자동 산출물"):
+        if kw in subject:
+            return True
     # b-1. 자율 웰리 스윕(welly_sweep) self-exclude — 가역성 불변식(1작업=1커밋) 보존(T0).
     #   sweep 커밋이 post-commit 훅을 타고 2차 chore(queue) 커밋을 낳으면 'git 1줄 되돌림'이
     #   깨진다. 제목 접두사 chore(welly-sweep) 또는 본문 [welly-sweep] 태그면 자동기록 skip.
@@ -295,6 +300,11 @@ def _should_skip(meta: dict, queue: list) -> bool:
         real = [f for f in files if f not in AUTO_ONLY_PATHS]
         # home changelog 류도 자동발행으로 간주(파일명에 changelog 포함).
         real = [f for f in real if "changelog" not in f.lower()]
+        # 산출물 폴더만 바뀐 커밋(status/·logs/·발행루트 status/·qa_screenshots/)도 실작업 0 — 파일명을
+        # 하나씩 등록하는 대신 폴더로 판정한다(배1125). 배 note·브리프(status/briefs/)는 사람 기록이라 예외.
+        real = [f for f in real if not (
+            (f.startswith(("status/", "logs/", "3. 웰페리온 가이드/status/", "qa_screenshots/"))
+             and not f.startswith("status/briefs/")))]
         if not real:
             return True
     # d. 이미 로깅됨.
