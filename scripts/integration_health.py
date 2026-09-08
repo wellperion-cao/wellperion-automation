@@ -23,16 +23,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# ── 캐논 상수 (라이브 URL/경로는 여기 1곳에만) ─────────────────────────────────
-# 배1115 ① 조사 결론(2026-09-07): 이 URL 은 "발행경로(퍼블리시 파이프라인)가 살아있는지" 를 재는
-# 용도라 로컬 파일로 바꾸면 그 자체를 자기 자신과 비교하게 되어 점검 의미가 사라진다. ERP 로
-# 바꾸려 해도 erp.wellperion.com/status/_queue.json 은 nginx location / 가 auth_request 로 막아
-# 무인증 GET 이 로그인 페이지(302→HTML)로 떨어져 json.loads 가 깨진다(server/erp_auth/erp.nginx.conf
-# 실측). 그래서 지금은 그대로 GitHub Pages 를 쓴다 — 계획 §5 ②(무인증 /public/ 경로 신설) 이후
-# ④(Pages 끄기) 직전에 이 상수만 갈아끼우면 된다.
-LIVE_BASE = "https://wellperion-cao.github.io/wellperion-automation"
-LIVE_QUEUE_URL = f"{LIVE_BASE}/status/_queue.json"
-LIVE_REVIEW_URL = f"{LIVE_BASE}/cmo/review/review_queue.json"
+# ── 캐논 상수 (라이브 판정은 여기 1곳에만) ─────────────────────────────────
+# 배1115 ④(2026-09-08): GitHub Pages 를 비공개로 돌리면서 무인증 GET 판정이 불가능해졌다.
+# ERP 서버(erp.wellperion.com)는 HTTP 가 로그인 벽(auth_request)이라 여전히 GET 은 못 쓰지만,
+# ssh 로는 서버가 매분 git pull 하는 저장소 사본(/srv/erp/www)을 그대로 볼 수 있다 — 이걸로 대체.
+SSH_KEY = str(Path.home() / ".aws" / "wellperion-sito.pem")
+SSH_HOST = "15.164.151.105"
+SSH_USER = "ec2-user"
+REMOTE_REPO = "/srv/erp/www"
 # G1 이 쓰는 업무·결재 SSOT (todo_list GAS) — wellperion_guide(main).html 의 TODO_API_URL 과 동일
 SSOT_API_URL = (
     "https://script.google.com/macros/s/"
@@ -52,6 +50,33 @@ ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")
 HTTP_TIMEOUT = 15
 REMOTE = "origin"
 BRANCH = "master"
+
+
+def _ssh_run(remote_cmd: str, timeout: int = 25) -> tuple[int, str, str]:
+    """ERP 서버에서 명령 실행 → (returncode, stdout, stderr). 예외도 rc=-1 로 흡수."""
+    try:
+        r = subprocess.run(
+            ["ssh", "-i", SSH_KEY, "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=no",
+             f"{SSH_USER}@{SSH_HOST}", remote_cmd],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
+        )
+        return r.returncode, r.stdout or "", r.stderr or ""
+    except Exception as e:
+        return -1, "", f"{type(e).__name__}: {str(e)[:80]}"
+
+
+def _local_master_head() -> tuple[str | None, int]:
+    """로컬 origin/master 의 (sha, 커밋시각epoch). 실패 시 (None, 0)."""
+    try:
+        r1 = subprocess.run(["git", "rev-parse", f"{REMOTE}/{BRANCH}"], cwd=str(ROOT),
+                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
+        r2 = subprocess.run(["git", "log", "-1", "--format=%ct", f"{REMOTE}/{BRANCH}"], cwd=str(ROOT),
+                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
+        if r1.returncode != 0 or r2.returncode != 0:
+            return None, 0
+        return r1.stdout.strip(), int(r2.stdout.strip())
+    except Exception:
+        return None, 0
 
 
 def _http_get(url: str, timeout: int = HTTP_TIMEOUT):
@@ -131,59 +156,55 @@ def _unpushed_count() -> int:
 
 
 def check_queue_live() -> tuple[str, bool, str]:
-    """① G1 큐 라이브: HTTP 200 + JSON + 라이브 active == 로컬 active.
+    """① G1 큐 라이브: ERP 서버(erp.wellperion.com) git 사본을 ssh 로 직접 대조(배1115 ④).
 
-    건수 불일치 + 미푸시=0 + HTTP 200 → CDN 캐시 지연으로 분류(경보 없음, INC-007 후속).
-    진짜 끊김 = (미푸시>0) OR (HTTP non-200).
+    서버 HEAD == 로컬 origin/master(발행 도달) 이거나, 뒤처짐이 pull 주기(1분) 감안 10분
+    이내면 정상. 그 안에서는 active 건수 불일치도 '아직 안 당겨옴'으로 보고 경보하지 않는다.
+    ssh 자체가 안 되면(네트워크/키) '끊김'으로 단정하지 않고 '확인 불가'로만 분류한다.
     """
     name = "G1 큐 라이브"
+    rc, out, err = _ssh_run(
+        f"cd {REMOTE_REPO} && git rev-parse HEAD && git log -1 --format=%ct HEAD "
+        f"&& git status --short | wc -l && cat status/_queue.json"
+    )
+    if rc != 0:
+        return name, True, f"라이브 확인 불가(ssh 실패: {(err or str(rc)).strip()[:80]})"
+    lines = out.splitlines()
+    if len(lines) < 4:
+        return name, True, f"라이브 확인 불가(서버 출력 형식 이상: {len(lines)}줄)"
+    server_head, server_ts_s, dirty_s = lines[0].strip(), lines[1].strip(), lines[2].strip()
     try:
-        status, body = _http_get(LIVE_QUEUE_URL)
-        if status != 200:
-            return name, False, f"라이브 HTTP {status} — 발행경로 끊김(404 회귀 의심)"
-        live = json.loads(body)
-        live_active = _active_count(live)
-        if live_active < 0:
-            return name, False, "라이브 JSON 형식 이상(리스트 아님)"
-        local_active = _local_active_count()
-        if local_active < 0:
-            return name, False, f"라이브 active {live_active}건 / 로컬 큐 읽기 실패"
-        if live_active != local_active:
-            # 미푸시 여부로 진짜 끊김 vs CDN 캐시 지연 구분 (INC-007 후속)
-            unpushed = _unpushed_count()
-            if unpushed > 0:
-                # ★2026-07-31 시토(GM "AI진행현황에 이게 너무 많이 뜬다") — 자가복구 창을 여기에도 적용.
-                #   왜: 아래 ⑤ 미푸시 커밋 점검은 이미 600초 창을 두고 "그 안의 순간 미푸시는 정상"으로
-                #   보는데, 이 ① 점검만 창 없이 **미푸시가 1건이라도 보이면 즉시 경보**했다. 커밋은
-                #   몇 초 뒤 스스로 push 되므로, 그 순간을 스쳐 본 점검이 확인방에 '다리 끊김'을
-                #   띄우고 정작 GM 이 열어볼 땐 이미 0건이다(실측 2026-07-31 11:27 경보 → 확인 시 0건).
-                #   같은 판정을 두 곳이 다르게 하고 있었으므로 창 계산은 한 곳(_unpushed_settle_age)만 쓴다.
-                age = _unpushed_settle_age()
-                if age is not None and age < PUSH_SETTLE_SEC:
-                    return (
-                        name,
-                        True,
-                        f"동기화 진행 중 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
-                        f" (미푸시 {unpushed}건 · {age}s, 자가복구 창 내) — 정상",
-                    )
-                return (
-                    name,
-                    False,
-                    f"건수 불일치 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
-                    f" (미푸시 {unpushed}건 · 즉시 push 필요)",
-                )
-            # 미푸시=0 + HTTP 200 = CDN 반영 지연(캐시). 경보 안 띄움.
-            return (
-                name,
-                True,
-                f"CDN 캐시 지연 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
-                f" (미푸시 0 · Pages 반영 대기 중, 정상)",
-            )
-        return name, True, f"HTTP 200 · active {live_active}건 라이브=로컬 일치"
-    except urllib.error.HTTPError as e:
-        return name, False, f"라이브 HTTP {e.code} — 발행경로 끊김"
-    except Exception as e:
-        return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
+        server_ts = int(server_ts_s)
+    except ValueError:
+        return name, True, "라이브 확인 불가(서버 커밋시각 파싱 실패)"
+    dirty_n = int(dirty_s) if dirty_s.isdigit() else -1
+    try:
+        server_active = _active_count(json.loads("\n".join(lines[3:])))
+    except Exception:
+        server_active = -1
+    local_active = _local_active_count()
+    local_master, local_ts = _local_master_head()
+    if local_master is None:
+        return name, True, "라이브 확인 불가(로컬 origin/master 조회 실패)"
+
+    if server_head == local_master:
+        head_ok, lag_txt = True, "HEAD 일치(발행 도달)"
+    else:
+        lag = max(0, local_ts - server_ts)
+        if lag <= PUSH_SETTLE_SEC:
+            head_ok, lag_txt = True, f"HEAD {lag}s 뒤처짐(허용 {PUSH_SETTLE_SEC // 60}분 내)"
+        else:
+            head_ok, lag_txt = False, f"HEAD {lag // 60}분 뒤처짐(pull 정체 의심)"
+
+    if not head_ok or server_active < 0 or local_active < 0:
+        ok = False
+    elif server_head == local_master:
+        ok = server_active == local_active
+    else:
+        ok = True  # 아직 안 당겨온 지연 창 안 — active 불일치는 예상됨(경보 안 함)
+    dirty_txt = f"더티 {dirty_n}건" if dirty_n >= 0 else "더티 확인 실패"
+    detail = f"{lag_txt} · {dirty_txt} · 서버 active {server_active}건/로컬 {local_active}건"
+    return name, ok, detail
 
 
 def check_queue_mirror() -> tuple[str, bool, str]:
@@ -229,19 +250,20 @@ def check_sheet_gas() -> tuple[str, bool, str]:
 
 
 def check_review_live() -> tuple[str, bool, str]:
-    """④ M5 검수큐 라이브: HTTP 200 + JSON 파싱."""
+    """④ M5 검수큐 라이브: ERP 서버 사본을 ssh 로 직접 파싱(배1115 ④).
+
+    ssh 자체가 안 되면(네트워크/키) '끊김'으로 단정하지 않고 '확인 불가'로만 분류한다.
+    """
     name = "M5 검수큐 라이브"
+    rc, out, err = _ssh_run(f"cat {REMOTE_REPO}/cmo/review/review_queue.json")
+    if rc != 0:
+        return name, True, f"라이브 확인 불가(ssh 실패: {(err or str(rc)).strip()[:80]})"
     try:
-        status, body = _http_get(LIVE_REVIEW_URL)
-        if status != 200:
-            return name, False, f"라이브 HTTP {status} — 검수큐 발행경로 끊김"
-        d = json.loads(body)
-        n = len(d) if hasattr(d, "__len__") else "?"
-        return name, True, f"HTTP 200 · {n}건 파싱 OK"
-    except urllib.error.HTTPError as e:
-        return name, False, f"라이브 HTTP {e.code} — 검수큐 발행경로 끊김"
+        d = json.loads(out)
     except Exception as e:
-        return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
+        return name, False, f"서버 사본 파싱 실패({type(e).__name__})"
+    n = len(d) if hasattr(d, "__len__") else "?"
+    return name, True, f"서버 사본 파싱 OK · {n}건"
 
 
 def check_unpushed() -> tuple[str, bool, str]:
