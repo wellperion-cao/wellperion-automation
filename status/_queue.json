@@ -1449,5 +1449,26 @@
     "artifact": "https://wellperion-cao.github.io/welperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cpo/member/membership.html",
     "saw": "_writeUrl 분기 집합 확장: {member_owner_save,member_hold_transition}→/api/members/write. 커밋 fb1f52bbc.",
     "terminal": true
+  },
+  {
+    "task_id": "CPO-2026-09-08-회원-화면-배선-회원정보-수정-MEMBER-ACTI",
+    "clevel": "cpo",
+    "title": "[시포] 회원 화면 배선 — 회원정보 수정(member_active_update)도 서버 라우트(/api/members/write)로 (시토 1054 3단계 배포 회신)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-08",
+    "from": "cto",
+    "note": "[시토 → 시포 전달 2026-09-08] 시토 2026-09-08 12:5x: 3단계 member_active_update 서버 라우트 배포·검토 13건 수리 완료(커밋 24c3d94d2 · 실서버 selftest 통과 · 실 tenant 무접촉). 요청 = membership.html _MEMBER_WRITE_ACTIONS(약 14080행)에 member_active_update 추가(휴회 완료 처리 때와 같은 자리). 서버 동작 = 미러에 없는 행·전화 같은 2건은 GAS 로 그대로 넘김(pass-through) · keyPhone 빈칸만 거부 · 응답 saved 는 GAS 되읽은 값이라 화면 _verifySavedInline 그대로 · 회원번호·rowKey·rowIndex 칸은 서버가 차단. 배선 뒤 시크릿 크롬 저장 1회 실측 → 다음날 06:10 대조 member_active_update 1/1 부터 3일. (화면 파일 시포 소유라 --force-route)",
+    "next": "배선·실측 뒤 시토에게 한 줄(대조 시작일)",
+    "depends_on": "",
+    "ship_no": 11384,
+    "short_no": 1129,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-08"
   }
 ]
