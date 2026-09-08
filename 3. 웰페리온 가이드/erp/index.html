@@ -132,12 +132,11 @@ function loadModules(role, allowedIds){
   });
 }
 
-// 역할별 노출 — 화면 표시만(권한 체계 아님). GM·CEO 는 전체, 그 외는 내 role 카드만.
-// role 을 못 정했으면(/auth/me 실패 등) 판단할 근거가 없으니 전체를 보여준다.
-function visibleByRole(mods){
-  if (!MY_ROLE || MY_ROLE === 'gm' || MY_ROLE === 'ceo') return mods;
-  return mods.filter(function(m){ return m.role === MY_ROLE; });
-}
+// 역할별 노출 — 판정은 서버가 준 allowed_ids 하나뿐이다(loadModules 에서 이미 걸렀다).
+// 카드의 role 로 거르지 않는다: role 은 "그 화면을 만든 부서"고, 쓰는 사람은 staff 칸이다.
+// 실측 2026-09-09 — 회원·문의 카드는 role=cpo 인데 실사용자는 운영부 이경연 실장이라,
+// role 로 거르면 실장 계정에서 회원 화면이 통째로 사라진다(사람이 못 쓰는 장애).
+function visibleByRole(mods){ return mods; }
 
 // 운영 축 — 실측 카드 수만. 카드별 가동·비용 신호는 screen_id 연결(3단계) 전엔 근거가 없어 안 그린다.
 function renderOps(){
