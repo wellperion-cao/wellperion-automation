@@ -1632,7 +1632,7 @@
     "task_id": "CTO-2026-09-08-카카오-양방향-속도-밖과-트는-방-3-4개-만-1시",
     "clevel": "cto",
     "title": "[시토] 카카오 양방향 속도 — 밖과 트는 방(3~4개)만 1시간마다 내보내기·새 톡 감지 후 담당 배·알림",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-08",
     "from": "cbo",
@@ -1647,6 +1647,10 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-08"
+    "updated_at": "2026-09-08",
+    "processed_at": "2026-09-08",
+    "artifact": "scripts/kakao_rooms.json",
+    "saw": "밖과 트는 방 2개(★조재오부장님·다이어트캠프 이승기 대표님)만 1시간마다(08~21시) 내보내 상대가 쓴 새 줄만 감지 → 방별 전용 배(11291·11305)에 한 줄 append + AI 진행현황방 알림. 목록 = kakao_rooms.json external_rooms(새 원장 0) · 커서 = 방별 last_processed_at(최초 가동은 기준선만 잡고 과거 안 올림) · 중복 = 기존 지문 재사용 · 회차당 20줄 상한. 실측 2회차 「새 줄 없음」 정상. 예약 Wellperion-Kakao-External-Hourly 등록·Ready. 창 가림은 불가(Ctrl+S 가 먹으려면 방 창이 앞에 와야 함 — 08-25 실측 그대로 · 억지 우회 안 함). 초판 결함 3건(무관한 배에 붙음·옛 대화를 새 것으로 판정·오배치 6줄) 수리 완료 aabd516a4.",
+    "terminal": true
   }
 ]
