@@ -63,34 +63,43 @@ def _mask_phone(v):
     return (m.group(1) + "-" + m.group(2) if m else head) + "-****"
 
 
-def _log_who(payload):
-    """GAS _logWho_ 이식(Survey.js L1268) — staff 키 자체가 없으면 '자동'(자동접수), 있는데 비면 '이름미상'."""
+def _log_who(payload, user=""):
+    """GAS _logWho_ 이식(Survey.js L1268) 확장 — staff 키 자체가 없으면 요청 헤더 x-erp-user, 그것도
+    없으면 '자동'(자동접수). staff 키가 있는데 비어 있으면 '이름미상'(GAS 그대로 · 배1054 검토④)."""
     if not isinstance(payload, dict) or "staff" not in payload:
-        return "자동"
+        return str(user or "").strip() or "자동"
     return str(payload.get("staff") or "").strip() or "이름미상"
 
 
 def _find_and_lock(conn, tenant, col, member_no_in, phone):
-    """member_no 있으면 번호로 찾고 전화 일치 확인(불일치=mismatch) · 없으면 전화 첫 매칭(member_no 오름차순).
-    반환 (row|None, mismatch:bool). row 는 member_no·name·phone·val(해당 칸) 을 담은 DictRow."""
+    """member_no 있으면 번호로 찾고 전화 일치 확인(불일치=mismatch) · 없으면 전화 매칭(member_no 오름차순 최대 2건 조회).
+    전화 매칭이 2건 이상이면 첫 행에 조용히 쓰지 않고 ambiguous 로 거부한다(GAS Survey.js:10802 규칙 이식 ·
+    가족 회원 같은 번호 실사례 · 배1054 검토③). 반환 (row|None, mismatch:bool, ambiguous:bool).
+    row 는 member_no·name·phone·val(해당 칸) 을 담은 DictRow."""
     if member_no_in:
         row = conn.execute(
             ("SELECT member_no, name, phone, {col} AS val FROM members"
              " WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE").format(col=col),
             (tenant, member_no_in)).fetchone()
         if row and _norm_phone(row["phone"]) != phone:
-            return None, True
-        return row, False
-    row = conn.execute(
+            return None, True, False
+        return row, False, False
+    rows = conn.execute(
         ("SELECT member_no, name, phone, {col} AS val FROM members"
-         " WHERE tenant_id=%s AND scope='valid' AND phone=%s ORDER BY member_no LIMIT 1 FOR UPDATE").format(col=col),
-        (tenant, phone)).fetchone()
-    return row, False
+         " WHERE tenant_id=%s AND scope='valid' AND phone=%s ORDER BY member_no LIMIT 2 FOR UPDATE").format(col=col),
+        (tenant, phone)).fetchall()
+    if len(rows) > 1:
+        return None, False, True
+    return (rows[0] if rows else None), False, False
 
 
-def _finish(conn, body, log_id, is_test, extra):
+def _finish(conn, body, log_id, is_test, extra, revert=None):
     """두 액션 공통 꼬리 — GAS write-through + write_log.gas_status 갱신 + 거울 재동기화 스케줄.
-    extra(dict) 를 응답에 얹는다. is_test 면 GAS 는 아예 안 부른다(dry-run)."""
+    extra(dict) 를 응답에 얹는다. is_test 면 GAS 는 아예 안 부른다(dry-run).
+    GAS 가 거부하거나(예: {ok:false,error:'hold-gated'}) 안 닿으면(forward-failed), 서버 원장은 이미
+    갱신된 뒤이므로 revert(있으면 · 값이 실제로 바뀐 호출만) 로 보상 UPDATE + 취소 이력을 남기고
+    ok=False + GAS 의 error 를 그대로 실어 돌려준다 — membership.html 의 d.ok===false/hold-gated
+    분기가 살아난다(배1054 검토②)."""
     if is_test:
         conn.close()
         return dict(extra, ok=True, _source="server", gas_status="skipped-test")
@@ -100,10 +109,27 @@ def _finish(conn, body, log_id, is_test, extra):
     except Exception as e:
         resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}
         gas_status = "forward-failed"
-    with conn:
-        conn.execute("UPDATE write_log SET gas_status=%s, gas_response=%s WHERE id=%s",
-                     (gas_status, json.dumps(resp, ensure_ascii=False)[:20000], log_id))
+    gas_ok = gas_status == "ok"
+    try:
+        with conn:
+            conn.execute("UPDATE write_log SET gas_status=%s, gas_response=%s WHERE id=%s",
+                         (gas_status, json.dumps(resp, ensure_ascii=False)[:20000], log_id))
+            if not gas_ok and revert:
+                conn.execute(
+                    "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=revert["col"]),
+                    (revert["old_value"], revert["tenant"], revert["member_no"]))
+                conn.execute(
+                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (revert["tenant"], api_write._now_kst(), "시스템(GAS거부롤백)", revert["member_no"], revert["name"],
+                     revert["phone_masked"], revert["field"], revert["new_value"], revert["old_value"], "멤버십"))
+    except Exception:
+        conn.close()
+        raise
     conn.close()
+    if not gas_ok:
+        return dict(extra, ok=False, _source="server", gas_status=gas_status,
+                    error=(resp.get("error") or "gas-error"), detail=resp.get("detail"))
     api_write._schedule_sync("sync_members.py")
     return dict(extra, ok=True, _source="server", gas_status=gas_status)
 
@@ -150,33 +176,44 @@ async def members_write(request: Request):
             conn.close()
             return {"ok": False, "error": "no member"}
         value = str(payload.get("value") if payload.get("value") is not None else "").strip()
-        staff = _log_who(payload)
+        staff = _log_who(payload, user)
 
-        not_found, mismatch, member_no, log_id = False, False, None, None
-        with conn:
-            row, mismatch = _find_and_lock(conn, tenant, col, member_no_in, phone)
-            if not row:
-                not_found = not mismatch
-            else:
-                member_no = row["member_no"]
-                old_value = row["val"] or ""
-                if old_value != value:   # 멱등 — 같은 값 재저장은 이력 안 남기고 ok(시포 스펙 "서버 재구현 주의")
-                    conn.execute(
-                        "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=col),
-                        (value, tenant, member_no))
-                    conn.execute(
-                        "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                        " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                        (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
-                         field, old_value, value, "멤버십"))
-                payload_log = dict(payload)
-                payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
-                log_id = conn.execute(
-                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
-                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                    (tenant, now, action, json.dumps(payload_log, ensure_ascii=False), user,
-                     "test" if is_test else "pending", None)
-                ).fetchone()[0]
+        not_found, mismatch, ambiguous, member_no, log_id, revert = False, False, False, None, None, None
+        try:
+            with conn:
+                row, mismatch, ambiguous = _find_and_lock(conn, tenant, col, member_no_in, phone)
+                if not row:
+                    not_found = not mismatch and not ambiguous
+                else:
+                    member_no = row["member_no"]
+                    old_value = row["val"] or ""
+                    if old_value != value:   # 멱등 — 같은 값 재저장은 이력 안 남기고 ok(시포 스펙 "서버 재구현 주의")
+                        conn.execute(
+                            "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=col),
+                            (value, tenant, member_no))
+                        conn.execute(
+                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                            " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
+                             field, old_value, value, "멤버십"))
+                        revert = {"col": col, "field": field, "tenant": tenant, "member_no": member_no,
+                                  "old_value": old_value, "new_value": value, "name": row["name"] or "",
+                                  "phone_masked": _mask_phone(row["phone"])}
+                    payload_log = dict(payload)
+                    payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
+                    log_id = conn.execute(
+                        "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                        (tenant, now, action, json.dumps(payload_log, ensure_ascii=False), user,
+                         "test" if is_test else "pending", None)
+                    ).fetchone()[0]
+        except Exception:
+            conn.close()
+            raise
+        if ambiguous:
+            conn.close()
+            return {"ok": False, "error": "rowkey-ambiguous", "noRetry": True,
+                    "detail": "전화번호 중복 매칭(다중 회원) — 회원번호(member_no)를 포함해 다시 시도하세요"}
         if mismatch:
             conn.close()
             return _member_no_mismatch(member_no_in)
@@ -184,7 +221,8 @@ async def members_write(request: Request):
             conn.close()
             return {"ok": False, "error": "no member"}
         return _finish(conn, body, log_id, is_test,
-                       {"phone": phone, "field": field, "value": value, "rowIndex": member_no, "member_no": member_no})
+                       {"phone": phone, "field": field, "value": value, "rowIndex": member_no, "member_no": member_no},
+                       revert)
 
     # action == "member_hold_transition" (2단계 · 배1054)
     status = str(payload.get("status") or "").strip()
@@ -195,33 +233,44 @@ async def members_write(request: Request):
     if not phone:
         conn.close()
         return {"ok": False, "error": "row-key-unverified", "detail": "행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 시도하세요"}
-    staff = _log_who(payload)
+    staff = _log_who(payload, user)
 
-    not_found, mismatch, member_no, log_id = False, False, None, None
-    with conn:
-        row, mismatch = _find_and_lock(conn, tenant, HOLD_COL, member_no_in, phone)
-        if not row:
-            not_found = not mismatch
-        else:
-            member_no = row["member_no"]
-            old_value = row["val"] or ""
-            if old_value != status:   # 멱등 — 같은 상태 재저장은 이력 안 남기고 ok
-                conn.execute(
-                    "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=HOLD_COL),
-                    (status, tenant, member_no))
-                conn.execute(
-                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
-                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
-                     HOLD_FIELD_LABEL, old_value, status, "멤버십"))
-            payload_log = dict(payload)
-            payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
-            log_id = conn.execute(
-                "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
-                " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                (tenant, now, action, json.dumps(payload_log, ensure_ascii=False), user,
-                 "test" if is_test else "pending", None)
-            ).fetchone()[0]
+    not_found, mismatch, ambiguous, member_no, log_id, revert = False, False, False, None, None, None
+    try:
+        with conn:
+            row, mismatch, ambiguous = _find_and_lock(conn, tenant, HOLD_COL, member_no_in, phone)
+            if not row:
+                not_found = not mismatch and not ambiguous
+            else:
+                member_no = row["member_no"]
+                old_value = row["val"] or ""
+                if old_value != status:   # 멱등 — 같은 상태 재저장은 이력 안 남기고 ok
+                    conn.execute(
+                        "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=HOLD_COL),
+                        (status, tenant, member_no))
+                    conn.execute(
+                        "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                        " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
+                         HOLD_FIELD_LABEL, old_value, status, "멤버십"))
+                    revert = {"col": HOLD_COL, "field": HOLD_FIELD_LABEL, "tenant": tenant, "member_no": member_no,
+                              "old_value": old_value, "new_value": status, "name": row["name"] or "",
+                              "phone_masked": _mask_phone(row["phone"])}
+                payload_log = dict(payload)
+                payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
+                log_id = conn.execute(
+                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                    (tenant, now, action, json.dumps(payload_log, ensure_ascii=False), user,
+                     "test" if is_test else "pending", None)
+                ).fetchone()[0]
+    except Exception:
+        conn.close()
+        raise
+    if ambiguous:
+        conn.close()
+        return {"ok": False, "error": "rowkey-ambiguous", "noRetry": True,
+                "detail": "전화번호 중복 매칭(다중 회원) — 회원번호(member_no)를 포함해 다시 시도하세요"}
     if mismatch:
         conn.close()
         return _member_no_mismatch(member_no_in)
@@ -229,7 +278,49 @@ async def members_write(request: Request):
         conn.close()
         return {"ok": False, "error": "rowkey-not-found", "detail": "회원 행 확인 불가 — 목록 새로고침 후 다시 시도하세요"}
     return _finish(conn, body, log_id, is_test,
-                   {"status": status, "rowIndex": member_no, "member_no": member_no})
+                   {"status": status, "rowIndex": member_no, "member_no": member_no},
+                   revert)
+
+
+def _selftest_finish_revert():
+    """단위 자체점검(DB·네트워크 없음) — GAS 거부 시 _finish 가 ok=False + 보상 UPDATE·취소이력을
+    내는지 확인(배1054 검토② · api_write._gas_forward 를 스텁으로 교체)."""
+    class _FakeCur:
+        def fetchone(self):
+            return [1]
+
+    class _FakeConn:
+        def __init__(self):
+            self.executed = []
+            self.closed = False
+
+        def execute(self, sql, args=()):
+            self.executed.append((sql, args))
+            return _FakeCur()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def close(self):
+            self.closed = True
+
+    orig_forward = api_write._gas_forward
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {
+        "ok": False, "error": "hold-gated", "detail": "휴회 상태 반영은 GM 검증 후 개통됩니다(현재 미개통)"}
+    try:
+        conn = _FakeConn()
+        revert = {"col": HOLD_COL, "field": HOLD_FIELD_LABEL, "tenant": "wellperion", "member_no": "M00001",
+                  "old_value": "진행중", "new_value": "완료", "name": "테스트", "phone_masked": "010-1234-****"}
+        out = _finish(conn, b"{}", 1, False, {"status": "완료", "member_no": "M00001"}, revert)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out["ok"] is False and out["error"] == "hold-gated", out
+    assert conn.closed
+    assert any("UPDATE members SET hold_status" in sql for sql, _ in conn.executed), conn.executed
+    assert any("member_change_log" in sql for sql, _ in conn.executed), conn.executed
 
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
@@ -242,10 +333,13 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert _mask_phone("010-1234-5678") == "010-1234-****"        # 뒤 4자리만 가림 · 앞은 그대로
     assert _mask_phone("01012345678") == "010-1234-****"          # 구분자 없어도 같은 결과
     assert _mask_phone("123") == "123"                            # 8자리 미만은 원본 그대로(GAS 그대로)
-    assert _log_who({}) == "자동"                                  # staff 키 자체가 없음 = 자동접수
+    assert _log_who({}) == "자동"                                  # staff 키 자체가 없음, 헤더도 없음 = 자동접수
+    assert _log_who({}, "임정은") == "임정은"                       # staff 키 없음 → x-erp-user 헤더로 대체(배1054 검토④)
     assert _log_who({"staff": ""}) == "이름미상"                    # 키는 있는데 비어 있음
     assert _log_who({"staff": " 임정은 "}) == "임정은"
     # 배1054 dry-run 갈래 — 더미 전화(이름 칸 없음)는 테스트로 잡혀 tenant 'selftest' 로만 향해야 한다.
     assert db.is_test_payload({"field": "PT 담당자", "phone": "010-0000-0000", "value": "x"})
     assert not db.is_test_payload({"field": "PT 담당자", "phone": "010-2781-7262", "value": "x"})
+    assert db.is_test_payload({"keyPhone": "010-0000-0000", "status": "완료"})   # 검토① member_hold_transition 열쇠
+    _selftest_finish_revert()
     print("자체점검 통과")

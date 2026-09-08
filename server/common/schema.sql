@@ -388,12 +388,12 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_start_date TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_end_date   TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_count      TEXT;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_cum_days   TEXT;
-UPDATE members SET hold_status     = COALESCE(hold_status,     data::jsonb->>'휴회접수상태')          WHERE scope='valid' AND hold_status     IS NULL;
-UPDATE members SET hold_period     = COALESCE(hold_period,     data::jsonb->>'휴회기간(휴회일수)')     WHERE scope='valid' AND hold_period     IS NULL;
-UPDATE members SET hold_start_date = COALESCE(hold_start_date, data::jsonb->>'휴회시작일')             WHERE scope='valid' AND hold_start_date IS NULL;
-UPDATE members SET hold_end_date   = COALESCE(hold_end_date,   data::jsonb->>'휴회종료일')             WHERE scope='valid' AND hold_end_date   IS NULL;
-UPDATE members SET hold_count      = COALESCE(hold_count,      data::jsonb->>'휴회횟수')               WHERE scope='valid' AND hold_count      IS NULL;
-UPDATE members SET hold_cum_days   = COALESCE(hold_cum_days,   data::jsonb->>'휴회누적일수')           WHERE scope='valid' AND hold_cum_days   IS NULL;
+UPDATE members SET hold_status     = COALESCE(hold_status,     data::jsonb->>'휴회접수상태')          WHERE scope='valid' AND hold_status     IS NULL AND tenant_id='wellperion';
+UPDATE members SET hold_period     = COALESCE(hold_period,     data::jsonb->>'휴회기간(휴회일수)')     WHERE scope='valid' AND hold_period     IS NULL AND tenant_id='wellperion';
+UPDATE members SET hold_start_date = COALESCE(hold_start_date, data::jsonb->>'휴회시작일')             WHERE scope='valid' AND hold_start_date IS NULL AND tenant_id='wellperion';
+UPDATE members SET hold_end_date   = COALESCE(hold_end_date,   data::jsonb->>'휴회종료일')             WHERE scope='valid' AND hold_end_date   IS NULL AND tenant_id='wellperion';
+UPDATE members SET hold_count      = COALESCE(hold_count,      data::jsonb->>'휴회횟수')               WHERE scope='valid' AND hold_count      IS NULL AND tenant_id='wellperion';
+UPDATE members SET hold_cum_days   = COALESCE(hold_cum_days,   data::jsonb->>'휴회누적일수')           WHERE scope='valid' AND hold_cum_days   IS NULL AND tenant_id='wellperion';
 
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- 인사(CHRO) 도메인 — hr 스키마 (인사 데이터 AWS 이관 1단계 · 2026-09-05 CHRO/A-5)

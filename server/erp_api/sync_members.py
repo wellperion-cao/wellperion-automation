@@ -84,24 +84,31 @@ def classify_overlaps(conn):
     return collisions, len(rows) - collisions
 
 
-OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) — 늘리면 거기도 같이 고친다 (배1054)
+OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) + hold_status 1칸 — 늘리면 거기도 같이 고친다 (배1054)
     "owner_pt": "PT 담당자", "owner_golf": "골프 담당자", "owner_pl": "P.L 담당자",
     "owner_squash": "스쿼시 담당자", "owner_swim": "수영 담당자",
+    "hold_status": "휴회접수상태",   # member_hold_approve·휴회복귀 등 아직 서버로 안 옮긴 GAS 경로가 계속 이 칸을 쓴다(배1054 검토①)
 }
+_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition")
 
 
 def sync_owner_cols(conn):
-    """owner_* 5칸을 매 sync 마다 시트 미러(data JSON)로 다시 채운다 — 서버가 아직 원천이 아닌 동안은
-    시트가 이긴다. schema.sql 의 WHERE owner_* IS NULL 1회성 백필만으론 5분마다 갱신되는 data 와
-    owner_* 가 최초 배포 시점 스냅샷에 얼어붙어 어긋난다(배1054 시포 실측: valid 991행 중 846행 불일치).
-    단 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다 — write_log 의 member_owner_save 성공행에서 뽑는다
-    (payload._member_no 는 애초에 대조용으로 넣어 둔 칸 · reconcile_dual_write.py 와 같은 재료).
+    """owner_* 5칸 + hold_status 1칸을 매 sync 마다 시트 미러(data JSON)로 다시 채운다 — 서버가 아직
+    원천이 아닌 동안은 시트가 이긴다. schema.sql 의 WHERE owner_* IS NULL 1회성 백필만으론 5분마다
+    갱신되는 data 와 owner_* 가 최초 배포 시점 스냅샷에 얼어붙어 어긋난다(배1054 시포 실측: valid 991행
+    중 846행 불일치). 단 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다 — write_log 의 member_owner_save·
+    member_hold_transition 성공행에서 뽑는다(payload._member_no 는 애초에 대조용으로 넣어 둔 칸 ·
+    reconcile_dual_write.py 와 같은 재료). member_hold_transition 은 payload 에 'field' 키가 없다 —
+    액션 자체가 hold_status 칸을 가리키므로 그 자리에 고정으로 채운다.
     반환 = 예외 아닌 행 중에도 남은 불일치 건수(0 이어야 정상 — 갱신 자체가 안 먹었다는 신호)."""
     field_to_col = {v: k for k, v in OWNER_COLS.items()}
     written = {col: set() for col in OWNER_COLS}
-    for field, member_no in conn.execute(
-            "SELECT payload->>'field', payload->>'_member_no' FROM write_log"
-            " WHERE tenant_id=%s AND action='member_owner_save' AND gas_status <> 'test'", (db.TENANT,)):
+    for action, field, member_no in conn.execute(
+            "SELECT action, payload->>'field', payload->>'_member_no' FROM write_log"
+            " WHERE tenant_id=%s AND action = ANY(%s) AND gas_status <> 'test'",
+            (db.TENANT, list(_OWNER_SYNC_ACTIONS))):
+        if action == "member_hold_transition":
+            field = OWNER_COLS["hold_status"]
         col = field_to_col.get(field)
         if col and member_no:
             written[col].add(member_no)
@@ -254,6 +261,18 @@ def selftest():
             "서버가 쓴 행은 시트값(최동오)으로 안 덮인다"
         assert conn.execute("SELECT owner_pt FROM members WHERE tenant_id=%s AND member_no='M00004'", T).fetchone()[0] == "이보통", \
             "예외 아닌 행은 계속 시트를 따라간다"
+        # hold_status 도 같은 예외 규칙 — member_hold_transition 행은 payload 에 field 키가 없다(배1054 검토①)
+        hold_rows = [{"회원번호": "M00005", "회원명": "휴회테스트", "휴대폰 번호": "010-5555-5555", "휴회접수상태": "진행중"}]
+        replace_scope(conn, "valid", owner_rows + hold_rows, "t6")
+        assert sync_owner_cols(conn) == 0
+        with conn:
+            conn.execute("UPDATE members SET hold_status=%s WHERE tenant_id=%s AND member_no='M00005'", ("완료", db.TENANT))
+            conn.execute(
+                "INSERT INTO write_log (tenant_id,at,action,payload,user_email,gas_status) VALUES (%s,%s,'member_hold_transition',%s,%s,'ok')",
+                (db.TENANT, "t6", json.dumps({"status": "완료", "_member_no": "M00005"}, ensure_ascii=False), ""))
+        assert sync_owner_cols(conn) == 0, "hold_status 예외행도 빼면 여전히 일치"
+        assert conn.execute("SELECT hold_status FROM members WHERE tenant_id=%s AND member_no='M00005'", T).fetchone()[0] == "완료", \
+            "서버가 쓴 hold_status 는 시트값(진행중)으로 안 덮인다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)

@@ -33,7 +33,7 @@ _TEST_EXACT_VALUES = {"테스트", "test", "더미", "dummy", "샘플"}
 _TEST_TEXT_KEYS = ("name", "title", "content", "note", "memo", "reporter", "itemDesc", "ownerName",
                    "요청자", "물품", "handler", "round", "shift", "submitter", "reason", "보류사유")
 _NAME_KEYS = ("name", "reporter", "ownerName")     # 실명이 있으면 더미 전화 하나만으로는 안 잡는다(외국인·워크인 실고객 실사례)
-_TEST_PHONE_KEYS = ("phone", "contact", "hp")
+_TEST_PHONE_KEYS = ("phone", "contact", "hp", "keyPhone")
 
 
 def is_test_payload(payload):
@@ -177,6 +177,7 @@ if __name__ == "__main__":   # python3 db.py — is_test_payload 자체점검(DB
     assert is_test_payload({"itemDesc": "테스트입니다 체조장 문 앞에서 습득"})
     assert is_test_payload({"title": "[테스트] 배960 쓰기관문 왕복"})
     assert is_test_payload({"phone": "010-0000-0000", "staff": "", "action": "member_archive_restore"})  # 이름 없음
+    assert is_test_payload({"keyPhone": "010-0000-0000", "status": "완료"})  # member_hold_transition 열쇠(배1054 검토①)
     assert not is_test_payload({"name": "Sina.Melchin@gmx.de", "phone": "010-0000-0000"})  # 실고객 플레이스홀더 전화
     assert not is_test_payload({"content": "롤러괄사를 사용했는데...", "name": "이정숙"})   # 실제 컴플레인
     assert not is_test_payload({"itemDesc": "토끼 당근 손수건", "staff": "진수아"})
