@@ -1121,7 +1121,8 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
 
     if touched:
         from ops_daily_digest import save_ledger
-        save_ledger(ledger)
+        save_ledger(ledger, path=MGR_LEDGER)  # ops_daily_digest.LEDGER_PATH 전역은 ★운영부
+        # 기본값이라 그냥 부르면 엉뚱한 방에 써진다(배1124 실측) — 이 방 경로를 명시한다.
     return touched
 
 
@@ -1140,7 +1141,7 @@ def _selfcheck_sync_ledger_replies() -> None:
     ]
     _mgr_room_human_lines = lambda *a, **k: fake_lines  # noqa: E731
     _nawool_telegram_human_lines = lambda *a, **k: []  # noqa: E731
-    o.save_ledger = lambda ledger: saved.append(True)
+    o.save_ledger = lambda ledger, path=None: saved.append(path)
     try:
         ledger = [{"date": "2026-09-01", "issues": [
             {"no": 101, "issue": "건101", "owner": "이경연 실장", "status": "open", "note": ""},
@@ -1164,6 +1165,8 @@ def _selfcheck_sync_ledger_replies() -> None:
         assert issues[5]["status"] == "resolved" and "정상작동" in issues[5]["note"], \
             "제목에 박힌 (#133) 별칭으로 옛 번호 회신이 현재 열린 211 로 붙어야 함"
         assert saved, "건드린 게 있으면 저장해야 함"
+        assert saved[0] == MGR_LEDGER, \
+            "save_ledger 에 path=MGR_LEDGER 를 안 주면 전역 LEDGER_PATH(★운영부 기본값)에 잘못 써진다(배1124 실측)"
     finally:
         _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool
         o.save_ledger = orig_save

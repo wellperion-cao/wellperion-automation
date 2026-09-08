@@ -1115,17 +1115,25 @@ def upsert_ledger(ledger: list[dict], date: str, issues: list[dict], source_file
 _LEDGER_RESOLVE_FIELDS = ("resolved_by", "resolved_at", "resolved_why")
 
 
-def save_ledger(ledger: list[dict]) -> None:
+def save_ledger(ledger: list[dict], path: "Path | None" = None) -> None:
     """★2026-09-07 실측 결함 수리(배1102) — 14:05 회차가 이 함수로 원장을 통째로 다시 쓰면서
     08:1x 웰리가 --resolve 로 닫은 39건의 resolved_by 표시가 13건만 남고 지워졌다. 원인:
     이 프로세스가 원장을 메모리에 로드한 '이후' 다른 프로세스(send_ops_digest --resolve)가
     디스크 원장을 먼저 닫았는데, 이 함수가 그 사실을 모른 채 자기 메모리 사본으로 덮어썼다.
     저장 직전 디스크의 현재 원장을 다시 읽어, 같은 (date, issue) 키에 이미 있는 해소 표시를
     메모리 쪽이 비어 있을 때만 병합해 넣는다 — 메모리가 이미 자체적으로 해소 처리를 했으면
-    (예: mark_late_replied_resolved) 그 값이 그대로 남는다(방금 처리한 것이 우선)."""
-    LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    (예: mark_late_replied_resolved) 그 값이 그대로 남는다(방금 처리한 것이 우선).
+
+    ★2026-09-09 실측 결함 수리(시토·배1102/1124) — LEDGER_PATH 는 모듈 전역이고 기본값이
+    ★운영부다. send_ops_digest.py 가 ★중간관리자 원장(MGR_LEDGER)을 메모리에 로드해
+    고친 뒤 이 함수를 그냥 부르면, 이 함수는 자기 프로세스의 LEDGER_PATH 전역(★운영부
+    기본값)에 써 버린다 — sync_ledger_replies 가 몇 주째 "성공" 로그를 남기면서 실제로는
+    엉뚱한 방(★운영부) 원장에 회신 note 를 쌓고 있었다(#132·#149 실측). path 인자를 주면
+    그 경로에, 안 주면 기존처럼 전역 LEDGER_PATH 에 — 기존 호출부는 그대로 동작한다."""
+    path = path or LEDGER_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        disk = json.loads(LEDGER_PATH.read_text(encoding="utf-8")) if LEDGER_PATH.exists() else []
+        disk = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
     except Exception:
         disk = []
     disk_issues: dict = {}
@@ -1144,7 +1152,7 @@ def save_ledger(ledger: list[dict]) -> None:
             for f in _LEDGER_RESOLVE_FIELDS:
                 if prior.get(f):
                     it[f] = prior[f]
-    LEDGER_PATH.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _selfcheck_save_ledger_preserves_resolved() -> None:
@@ -1179,8 +1187,20 @@ def _selfcheck_save_ledger_preserves_resolved() -> None:
         save_ledger(fresh_memory)
         saved2 = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
         assert saved2[0]["issues"][0]["resolved_by"] == "코드 대조", "메모리가 이미 닫았으면 그 값이 이긴다"
+
+        # ★2026-09-09 재현(배1124) — send_ops_digest.py 처럼 다른 프로세스가 다른 방 원장을
+        # 메모리에 들고 있을 때, path= 를 주면 전역 LEDGER_PATH(★운영부 기본값) 말고
+        # 그 경로에 정확히 써야 한다(안 주면 여태처럼 전역에 — 위 테스트로 이미 확인됨).
+        other_path = Path(d) / "_다른방_digest_ledger.json"
+        other_memory = [{"date": "2026-09-08", "issues": [
+            {"issue": "다른 방 건", "owner": "이정헌 소장", "status": "open"},
+        ]}]
+        save_ledger(other_memory, path=other_path)
+        assert other_path.exists(), "path= 를 주면 그 파일에 써야 한다"
+        assert json.loads(LEDGER_PATH.read_text(encoding="utf-8")) == saved2, \
+            "path= 를 줬는데 전역 LEDGER_PATH 파일을 건드리면 안 된다"
     LEDGER_PATH = orig
-    print("[selfcheck] save_ledger resolved_by 보존 OK")
+    print("[selfcheck] save_ledger resolved_by 보존·path 인자 격리 OK")
 
 
 # ═══════════════════════════════════════════
