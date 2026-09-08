@@ -96,6 +96,9 @@
 배포: https://wellperion-cao.github.io/wellperion-automation/
 GM 업무·AI C-Level 협업 매뉴얼·교육자료·고도화 프롬프트 단일 마스터. 세부 지식은 허브를 펼쳐 참조 (허브=원본, CLAUDE.md=인덱스).
 
+## 6-1. 집 PC 설치
+집 PC 에 회사와 같은 CLI 환경 = `docs/집PC_CLI_설치.md` (회사 `ops/export_claude_config.bat` → 집 `ops/home_pc_setup.ps1`). 집 PC 는 CLI 세션 전용 — 봇·스케줄러·예약작업 금지.
+
 ## 7. 외부 도구 3종 (2026-07-31 GM 지시로 설치)
 
 | 도구 | 무엇 | 언제 |

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path(__file__).resolve().parent.parent  # 사용자명 무관(집 PC 설치 2026-09-08)
 PLUGINS_DIR = Path.home() / ".claude" / "plugins"
 INSTALLED_PLUGINS = PLUGINS_DIR / "installed_plugins.json"
 CACHE_DIR = PLUGINS_DIR / "cache"
