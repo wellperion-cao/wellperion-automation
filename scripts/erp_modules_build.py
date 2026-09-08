@@ -238,6 +238,11 @@ def make_id(role, rel):
 #   2차: 1차가 안 걸리면 anchor 문자열이 실제로 들어있는 카드 파일을 전체 스캔해 유일하게
 #        걸리는 카드에 붙인다(window 가 "M1"/"O1" 처럼 웰페리온 가이드 안의 패널 이름이라
 #        카드 name 과 안 겹치는 경우 — anchor 를 그 패널이 있는 페이지 파일에서 찾아낸다).
+#   0차(2026-09-09 추가): front_card 에 card="<카드 id>" 가 있으면 그것을 먼저 믿는다.
+#        anchor 가 여러 화면에서 공통으로 쓰이는 링크·패널 이름일 때(예: "전사_일정.html" 은
+#        10개 카드가 서로 링크로 걸고 있고 "m1-dash" 는 가이드 본체에도 있다) 2차가 유일 매칭에
+#        실패해 조용히 빠진다. 그런 모듈만 등록부에서 카드를 직접 가리킨다 — window·anchor 는
+#        다른 화면이 쓰고 있으므로 지우지 않고 그대로 둔다(비파괴).
 #   둘 다 실패(또는 front_card 자체가 없음) → automation 안 붙임, stderr 로 보고.
 SELLABLE_RANK = {"internal": 0, "sellable": 1, "selling": 2}
 
@@ -263,16 +268,25 @@ def attach_asset_ledger(items):
     reg_modules = read_json("status/module_registry.json").get("modules", [])
     reg_sellable = {}
     missing = []
+    no_screen = []
 
     for reg in reg_modules:
         rid = reg.get("id")
         reg_sellable[rid] = reg.get("sellable") or "internal"
         fc = reg.get("front_card")
         if not fc:
+            # 화면 없는 자동화(경보·대조만 하고 사람 화면이 없는 것)는 카드에 안 붙는 게 정상이다.
+            # 다만 '조용히 빠지는 것'과 구분되게 세어서 보고한다(2026-09-09).
+            no_screen.append(rid)
             continue
         window = (fc.get("window") or "").strip()
         anchor = (fc.get("anchor") or "").strip()
-        target = by_name.get(window)
+        card_id = (fc.get("card") or "").strip()
+        by_id = {m["id"] for m in items}
+        target = card_id if card_id in by_id else None
+        if card_id and not target:
+            print("[assets] front_card.card 가 없는 카드를 가리킴: %s → %s" % (rid, card_id), file=sys.stderr)
+        target = target or by_name.get(window)
         if not target and anchor:
             hits = [m["id"] for m in items
                     if anchor in read_full(m["path"][3:] if m["path"].startswith("../") else m["path"])]
@@ -282,6 +296,10 @@ def attach_asset_ledger(items):
             automation[target].append(rid)
         else:
             missing.append(rid)
+
+    if no_screen:
+        print("[assets] 화면 없는 자동화 %d건(카드 미부착이 정상): %s"
+              % (len(no_screen), ", ".join(sorted(no_screen))), file=sys.stderr)
 
     for m in items:
         ids = sorted(automation.get(m["id"], []))
