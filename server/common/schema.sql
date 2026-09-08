@@ -376,6 +376,25 @@ CREATE TABLE IF NOT EXISTS member_change_log (
 );
 CREATE INDEX IF NOT EXISTS ix_member_change_log_no ON member_change_log (tenant_id, member_no, at);
 
+-- 회원 쓰기 서버 원장 2단계 — 휴회 6칸 (배1054 · 2026-09-08 시토 · 시포 스펙 §2-6/2-7).
+-- 이번 배는 hold_status(휴회접수상태)만 POST /api/members/write(member_hold_transition)가 쓴다.
+-- 나머지 5칸은 4단계(member_hold_approve)가 쓸 자리를 미리 만든다(1단계 owner_* 5칸을 한 번에 넣은 것과 같은 방식).
+-- owner_* 와 달리 아직 sync_members.py 쪽 되채움(sync_*_cols) 은 없다 — 화면이 이 액션을 호출하는 진입점이
+-- 현재 도달 불가(membership.html 구 holdComplete 클러스터, 2026-08-16 죽은 코드)라 드리프트 위험이 없다.
+-- 실사용이 붙으면 owner_* 가 배1054 실측(846/991 불일치)으로 sync_owner_cols() 를 얻은 것과 같은 근거로 추가한다.
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_status     TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_period     TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_start_date TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_end_date   TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_count      TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS hold_cum_days   TEXT;
+UPDATE members SET hold_status     = COALESCE(hold_status,     data::jsonb->>'휴회접수상태')          WHERE scope='valid' AND hold_status     IS NULL;
+UPDATE members SET hold_period     = COALESCE(hold_period,     data::jsonb->>'휴회기간(휴회일수)')     WHERE scope='valid' AND hold_period     IS NULL;
+UPDATE members SET hold_start_date = COALESCE(hold_start_date, data::jsonb->>'휴회시작일')             WHERE scope='valid' AND hold_start_date IS NULL;
+UPDATE members SET hold_end_date   = COALESCE(hold_end_date,   data::jsonb->>'휴회종료일')             WHERE scope='valid' AND hold_end_date   IS NULL;
+UPDATE members SET hold_count      = COALESCE(hold_count,      data::jsonb->>'휴회횟수')               WHERE scope='valid' AND hold_count      IS NULL;
+UPDATE members SET hold_cum_days   = COALESCE(hold_cum_days,   data::jsonb->>'휴회누적일수')           WHERE scope='valid' AND hold_cum_days   IS NULL;
+
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- 인사(CHRO) 도메인 — hr 스키마 (인사 데이터 AWS 이관 1단계 · 2026-09-05 CHRO/A-5)
 -- 근거 = CTO 회신 status/briefs/CTO-2026-09-05-인사데이터-AWS이관-서버준비-회신.md (§1 표 2·4 · §2 6단계 · §3)
