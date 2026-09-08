@@ -100,6 +100,27 @@ def _norm_col(v):
     return re.sub(r"\s+", "", str(v or ""))
 
 
+_ACTIVE_BLOCKED_FIELDS = ("휴대폰", "회원번호")   # 부분일치(포함) 차단 — 열쇠 칸은 이 라우트로 못 고친다
+_ACTIVE_BLOCKED_KEYS = ("rowkey", "rowindex")      # 정확일치 차단(영문 지문키 필드명 · 시트 헤더가 아니다)
+
+
+def _is_active_blocked_field(fname):
+    n = _norm_col(fname)
+    if any(b in n for b in _ACTIVE_BLOCKED_FIELDS):
+        return True
+    return n.lower() in _ACTIVE_BLOCKED_KEYS
+
+
+def _data_get_norm(data_obj, fname):
+    """members.data(JSON) 키를 공백 정규화로 찾는다(원본 JSON 은 시트 헤더 그대로라 공백이 섞일 수 있다 ·
+    reconcile_dual_write.py 대조와 같은 정규화, 배1054 검토⑤·⑥ 사본). 반환 (실제 키, 발견 여부)."""
+    nk = _norm_col(fname)
+    for k in data_obj:
+        if _norm_col(k) == nk:
+            return k, True
+    return fname, False
+
+
 def _mask_phone(v):
     """GAS _logMaskPhone_ 이식(Survey.js L1260) — 뒤 4자리를 가리고 앞은 그대로(010-1234-****). 8자리 미만은 원본."""
     d = re.sub(r"\D", "", str(v or ""))
@@ -154,12 +175,14 @@ def _resolve_active_row(conn, tenant, payload):
     phone = key_phone or rk_phone
 
     if member_no_in:
+        if not phone:   # 회원번호만 오고 전화 대조 재료가 없으면 거부(GAS Survey.js:9781 과 동일 · 배1054 검토②)
+            return None, "unverified"
         row = conn.execute(
             "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE",
             (tenant, member_no_in)).fetchone()
         if not row:
             return None, "not_found"
-        if phone and _norm_phone(row["phone"]) != phone:
+        if _norm_phone(row["phone"]) != phone:
             return None, "member_no_mismatch"
         return row, None
 
@@ -192,19 +215,37 @@ def _resolve_active_row(conn, tenant, payload):
     return None, "unverified"
 
 
+_CONTACT_BY_RE = re.compile(r"\s*\(컨택:([^()]*)\)\s*$")   # GAS CONTACT_BY_RE(Survey.js L2371) 사본
+
+
 def _parse_first_reservation(raw):
-    """ACT_RES_COL(재등록예약목록) 값(JSON 배열 문자열 또는 이미 파싱된 리스트)의 첫 예약 date/time/note.
-    GAS `_resParse_`(Survey.js L2384) 이식. ponytail: 날짜·시간 정규화(_miToISO_·_miTime_)는 생략하고
-    원본 문자열을 그대로 쓴다 — 이 미러는 달력 폴백 안전망일 뿐 주 저장소가 아니다(재등록예약목록 원본은
-    그대로 남아 무손실). 정규화가 필요해지면 그때 추가한다."""
+    """ACT_RES_COL(재등록예약목록) 값(JSON 배열 문자열 또는 이미 파싱된 리스트)의 첫 '유효' 예약 date/time/note.
+    GAS `_resParse_`(Survey.js L2384) 이식 — date/time/note/by 가 전부 빈 항목은 건너뛰고 첫 유효 항목을
+    쓴다(배열 첫 칸이 빈 값으로 밀린 옛 데이터 대비). note 끝의 '(컨택:이름)' 마커(GAS `_ctBySplit_`)는
+    떼어내고 저장한다. ponytail: 날짜·시간 정규화(_miToISO_·_miTime_)는 생략하고 원본 문자열을 그대로 쓴다
+    — 이 미러는 달력 폴백 안전망일 뿐 주 저장소가 아니다(재등록예약목록 원본은 그대로 남아 무손실).
+    정규화가 필요해지면 그때 추가한다."""
     try:
         arr = raw if isinstance(raw, list) else json.loads(str(raw or "").strip() or "[]")
     except Exception:
         return "", "", ""
-    if not isinstance(arr, list) or not arr or not isinstance(arr[0], dict):
+    if not isinstance(arr, list):
         return "", "", ""
-    it = arr[0]
-    return str(it.get("date") or ""), str(it.get("time") or ""), str(it.get("note") or "")
+    for it in arr:
+        if not isinstance(it, dict):
+            continue
+        d = str(it.get("date") or "")
+        t = str(it.get("time") or "")
+        n = "" if it.get("note") is None else str(it.get("note"))
+        by = str(it.get("by") or "").strip()
+        m = _CONTACT_BY_RE.search(n)
+        if m:
+            n = _CONTACT_BY_RE.sub("", n).strip()
+            by = by or m.group(1).strip()
+        if not d and not t and not n and not by:
+            continue
+        return d, t, n
+    return "", "", ""
 
 
 def _finish(conn, body, log_id, is_test, extra, revert=None):
@@ -235,10 +276,16 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
             if not gas_ok:
                 for rv in reverts:
                     if rv.get("kind") == "json":
-                        conn.execute(
-                            "UPDATE members SET data=jsonb_set(data::jsonb, %s, to_jsonb(%s::text), true)::text"
-                            " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
-                            ([rv["json_field"]], rv["old_value"], rv["tenant"], rv["member_no"]))
+                        if rv.get("had_key", True):
+                            conn.execute(
+                                "UPDATE members SET data=jsonb_set(data::jsonb, %s, to_jsonb(%s::text), true)::text"
+                                " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                                ([rv["json_field"]], rv["old_value"], rv["tenant"], rv["member_no"]))
+                        else:   # 원래 키 자체가 없었다 — ""로 되돌리면 빈 그림자 키가 남는다(배1054 검토⑦)
+                            conn.execute(
+                                "UPDATE members SET data=(data::jsonb - %s)::text"
+                                " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                                (rv["json_field"], rv["tenant"], rv["member_no"]))
                     else:
                         conn.execute(
                             "UPDATE members SET {col}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'".format(col=rv["col"]),
@@ -256,7 +303,10 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
         return dict(extra, ok=False, _source="server", gas_status=gas_status,
                     error=(resp.get("error") or "gas-error"), detail=resp.get("detail"))
     api_write._schedule_sync("sync_members.py")
-    return dict(extra, ok=True, _source="server", gas_status=gas_status)
+    out = dict(extra, ok=True, _source="server", gas_status=gas_status)
+    if isinstance(resp.get("saved"), dict):   # GAS 되읽은 값 우선(화면 _verifySavedInline 이 조용한 거부를 잡게 · 배1054 검토③)
+        out["saved"] = resp["saved"]
+    return out
 
 
 def _member_no_mismatch(member_no_in):
@@ -288,7 +338,22 @@ def _member_active_update_one(payload, raw_body, user):
     try:
         with conn:
             row, err_code = _resolve_active_row(conn, tenant, payload)
-            if row:
+            if not row and err_code in ("not_found", "ambiguous"):
+                # 서버 미러엔 회원번호 없어 못 찾거나(시트 원행에 회원번호가 없어 애초에 안 실림) 전화
+                # 지문이 겹쳐 후보가 여럿이라(②) 서버는 못 고르지만, GAS 는 물리 시트를 직접 스캔해
+                # rowIndex 로 확정할 수 있다 — 서버 원장은 안 건드리고 GAS 로만 그대로 전달한다
+                # (pass-through · 응답은 GAS 것을 그대로 · 배1054 검토③). keyPhone 자체가 빈 'unverified'는
+                # 여전히 fail-closed(서버가 판단할 재료가 아예 없다).
+                payload_log = dict(payload)
+                log_id = conn.execute(
+                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                    (tenant, now, "member_active_update", json.dumps(payload_log, ensure_ascii=False), user,
+                     "test" if is_test else "pending", None)
+                ).fetchone()[0]
+                extra = {"passThrough": True}
+                err_code = None
+            elif row:
                 row = dict(row)
                 member_no = row["member_no"]
                 staff = _log_who(payload, user)
@@ -304,13 +369,13 @@ def _member_active_update_one(payload, raw_body, user):
                 if fields:
                     for fk, fv in fields.items():
                         fname = str(fk).strip()
-                        if not fname or "휴대폰" in _norm_col(fname):
-                            continue   # 전화 칸은 조용히 스킵(GAS L9849)
+                        if not fname or _is_active_blocked_field(fname):
+                            continue   # 전화·회원번호·지문키 칸은 조용히 스킵(GAS L9849 + 배1054 검토⑥)
                         targets.append((fname, fv))
                     if ACT_RES_COL in fields:   # 재등록예약목록 → 재등록상담 3칸 미러(GAS L9854~9862 이식)
                         d, t, n = _parse_first_reservation(fields[ACT_RES_COL])
                         targets += [("재등록상담 날짜", d), ("재등록상담 시간", t), ("재등록상담 내용", n)]
-                elif "휴대폰" in _norm_col(col):
+                elif _is_active_blocked_field(col):
                     err_code = "phone-blocked"
                 else:
                     targets.append((col, payload.get("value")))
@@ -321,9 +386,9 @@ def _member_active_update_one(payload, raw_body, user):
                         new_val = "" if fv is None else str(fv)
                         dbcol = _ACTIVE_COL_MAP.get(_norm_col(fname))
                         if dbcol:
-                            promoted_names.append(fname)
                             old_val = "" if row.get(dbcol) is None else str(row[dbcol])
                             if old_val != new_val:   # 멱등 — 같은 값 재저장은 이력 안 남기고 ok
+                                promoted_names.append(fname)   # sync_members.py 예외 대상은 실제로 값이 바뀐 칸만(배1054 검토①)
                                 conn.execute(
                                     "UPDATE members SET {c}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
                                     .format(c=dbcol), (new_val, tenant, member_no))
@@ -337,21 +402,23 @@ def _member_active_update_one(payload, raw_body, user):
                                                 "name": row["name"] or "", "phone_masked": _mask_phone(row["phone"])})
                                 row[dbcol] = new_val   # 같은 요청 안 재조회 대비
                         else:
-                            old_val = str(data_obj.get(fname) or "")
+                            dkey, had_key = _data_get_norm(data_obj, fname)   # 공백 정규화 키 대조(배1054 검토⑤·⑥)
+                            old_val = str(data_obj.get(dkey) or "") if had_key else ""
                             if old_val != new_val:
                                 conn.execute(
                                     "UPDATE members SET data=jsonb_set(data::jsonb, %s, to_jsonb(%s::text), true)::text"
                                     " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
-                                    ([fname], new_val, tenant, member_no))
+                                    ([dkey], new_val, tenant, member_no))
                                 conn.execute(
                                     "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
                                     " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                                     (tenant, now, staff, member_no, row["name"] or "", _mask_phone(row["phone"]),
                                      fname, old_val, new_val, "멤버십"))
-                                reverts.append({"kind": "json", "json_field": fname, "field": fname, "tenant": tenant,
-                                                "member_no": member_no, "old_value": old_val, "new_value": new_val,
-                                                "name": row["name"] or "", "phone_masked": _mask_phone(row["phone"])})
-                                data_obj[fname] = new_val
+                                reverts.append({"kind": "json", "json_field": dkey, "had_key": had_key, "field": fname,
+                                                "tenant": tenant, "member_no": member_no, "old_value": old_val,
+                                                "new_value": new_val, "name": row["name"] or "",
+                                                "phone_masked": _mask_phone(row["phone"])})
+                                data_obj[dkey] = new_val
                         saved[fname] = new_val
                         wrote_names.append(fname)
 
@@ -375,7 +442,7 @@ def _member_active_update_one(payload, raw_body, user):
         raise
     if err_code == "phone-blocked":
         conn.close()
-        return {"ok": False, "error": "전화번호는 시트에서 직접 수정해주세요"}
+        return {"ok": False, "error": "전화·회원번호·지문키 칸은 이 경로로 수정할 수 없습니다"}
     if err_code:
         conn.close()
         return _ACTIVE_ERRORS[err_code]
@@ -614,6 +681,20 @@ def _selftest_finish_revert():
     assert any("jsonb_set" in sql for sql, _ in conn2.executed), conn2.executed
     assert sum("member_change_log" in sql for sql, _ in conn2.executed) == 2, conn2.executed
 
+    # JSON 칸 되돌리기 — 원래 키가 없었으면(had_key=False) ""로 되돌리지 않고 키 자체를 지운다(배1054 검토⑦).
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "컬럼 미발견: X"}
+    try:
+        conn3 = _FakeConn()
+        revert3 = {"kind": "json", "json_field": "PT Contact", "had_key": False, "field": "PT Contact",
+                   "tenant": "wellperion", "member_no": "M00003", "old_value": "", "new_value": "new3",
+                   "name": "테스트", "phone_masked": "010-1234-****"}
+        out3 = _finish(conn3, b"{}", 1, False, {"rowIndex": "M00003"}, revert3)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out3["ok"] is False and conn3.closed
+    assert any("data::jsonb - " in sql or "data::jsonb -" in sql for sql, _ in conn3.executed), conn3.executed
+    assert not any("jsonb_set" in sql for sql, _ in conn3.executed), conn3.executed
+
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
@@ -634,6 +715,17 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert _parse_first_reservation("[]") == ("", "", "")
     assert _parse_first_reservation("not-json") == ("", "", "")
     assert _parse_first_reservation([{"date": "2026-09-11"}]) == ("2026-09-11", "", "")
+    # 첫 항목이 완전히 빈 값이면 건너뛰고 다음 유효 항목을 쓴다 · note 끝 '(컨택:이름)' 마커는 떼어낸다(배1054 검토④).
+    assert _parse_first_reservation(
+        '[{"date":"","time":"","note":""},{"date":"2026-09-12","time":"10:00","note":"상담 (컨택:임정은)"}]'
+    ) == ("2026-09-12", "10:00", "상담")
+    # 열쇠 칸(전화·회원번호·rowKey·rowIndex)은 member_active_update 로 못 고친다(배1054 검토⑥).
+    assert _is_active_blocked_field("휴대폰번호") and _is_active_blocked_field("회원번호")
+    assert _is_active_blocked_field("rowKey") and _is_active_blocked_field("rowIndex")
+    assert not _is_active_blocked_field("주소")
+    # members.data 키가 공백·줄바꿈 섞여도 정규화 대조로 찾는다(reconcile_dual_write.py 대조와 같은 규칙).
+    assert _data_get_norm({"PT\nContact": "x"}, "PT Contact") == ("PT\nContact", True)
+    assert _data_get_norm({}, "PT Contact") == ("PT Contact", False)
     assert HOLD_STATUSES == ("완료", "진행중") and HOLD_COL == "hold_status"
     assert _norm_phone("010-1234-5678") == "01012345678" and _norm_phone(None) == ""
     assert _mask_phone("010-1234-5678") == "010-1234-****"        # 뒤 4자리만 가림 · 앞은 그대로

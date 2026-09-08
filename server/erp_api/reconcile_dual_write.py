@@ -233,6 +233,12 @@ def reconcile_member_hold_writes(conn, db, since):
         conn, db, since, "member_hold_transition", "status", lambda p: MEMBER_HOLD_FIELD)
 
 
+def _norm_mirror_key(k):
+    """시트 머리글 줄바꿈·공백 정규화 — sync_members.py::_norm_row 와 같은 규칙(대조 양쪽 키를 같은
+    모양으로 맞춰야 한다 · 배1054 검토⑤)."""
+    return re.sub(r"\s+", "", str(k or ""))
+
+
 def reconcile_member_active_writes(conn, db, since):
     """member_active_update(3단계 · 배1054) 서버 쓰기 전수 대조 — 앞의 owner_save·hold_transition 과 달리
     한 쓰기가 여러 칸을 동시에 바꿀 수 있어(fields 다중 저장) _reconcile_member_col_writes(칸 1개 전용)를
@@ -261,7 +267,8 @@ def reconcile_member_active_writes(conn, db, since):
                     mirror = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
                 except Exception:
                     mirror = {}
-                hit = all((mirror.get(f) or "") == (v or "") for f, v in saved.items())
+                mirror_norm = {_norm_mirror_key(k): v for k, v in mirror.items()}
+                hit = all((mirror_norm.get(_norm_mirror_key(f)) or "") == (v or "") for f, v in saved.items())
         if hit:
             d["sheet"] += 1
         else:
@@ -433,6 +440,13 @@ def selftest():
         _DB, "2026-09-01")
     assert days8["2026-09-01"] == {"server": 2, "sheet": 1, "mismatch": 1, "ok": False}, days8
     assert {b["member_no"] for b in bad8} == {"M00021"}, bad8
+
+    # 대조 키 정규화(배1054 검토⑤) — 미러 data JSON 헤더에 줄바꿈이 섞여도 같은 칸으로 맞춰 대조한다.
+    wl4 = [{"at": "2026-09-01 12:00:00", "payload": {"_member_no": "M00030", "_saved": {"재등록상담 날짜": "2026-09-10"}}}]
+    days9, bad9 = reconcile_member_active_writes(
+        _MC2(wl4, [json.dumps({"재등록상담\n날짜": "2026-09-10"}, ensure_ascii=False)]), _DB, "2026-09-01")
+    assert days9["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days9
+    assert not bad9
 
     # 가린 번호(010-****-5691)에서도 뒤 4자리가 뽑힌다 — 종합접수처 미러가 이 모양이다
     assert phone4("010-****-5691") == "5691" and phone4("", None, "0104736") == "4736" and phone4("abc") == ""

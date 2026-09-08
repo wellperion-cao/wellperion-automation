@@ -409,15 +409,17 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_consult_note  TEXT;  -- 재등�
 ALTER TABLE members ADD COLUMN IF NOT EXISTS reg_reservation   TEXT;  -- 재등록예약목록(JSON 배열 원문)
 ALTER TABLE members ADD COLUMN IF NOT EXISTS end_reason        TEXT;  -- 종료사유
 ALTER TABLE members ADD COLUMN IF NOT EXISTS end_reason_memo   TEXT;  -- 종료사유메모
-UPDATE members SET address          = COALESCE(address,          data::jsonb->>'주소')            WHERE scope='valid' AND address          IS NULL AND tenant_id='wellperion';
-UPDATE members SET note             = COALESCE(note,             data::jsonb->>'비고')            WHERE scope='valid' AND note             IS NULL AND tenant_id='wellperion';
-UPDATE members SET age              = COALESCE(age,              data::jsonb->>'나이')            WHERE scope='valid' AND age              IS NULL AND tenant_id='wellperion';
-UPDATE members SET reg_consult_date = COALESCE(reg_consult_date, data::jsonb->>'재등록상담 날짜')  WHERE scope='valid' AND reg_consult_date IS NULL AND tenant_id='wellperion';
-UPDATE members SET reg_consult_time = COALESCE(reg_consult_time, data::jsonb->>'재등록상담 시간')  WHERE scope='valid' AND reg_consult_time IS NULL AND tenant_id='wellperion';
-UPDATE members SET reg_consult_note = COALESCE(reg_consult_note, data::jsonb->>'재등록상담 내용')  WHERE scope='valid' AND reg_consult_note IS NULL AND tenant_id='wellperion';
-UPDATE members SET reg_reservation  = COALESCE(reg_reservation,  data::jsonb->>'재등록예약목록')    WHERE scope='valid' AND reg_reservation  IS NULL AND tenant_id='wellperion';
-UPDATE members SET end_reason       = COALESCE(end_reason,       data::jsonb->>'종료사유')          WHERE scope='valid' AND end_reason       IS NULL AND tenant_id='wellperion';
-UPDATE members SET end_reason_memo  = COALESCE(end_reason_memo,  data::jsonb->>'종료사유메모')      WHERE scope='valid' AND end_reason_memo  IS NULL AND tenant_id='wellperion';
+-- tenant_id 하드코딩 없음(배1054 검토⑧) — 각 행은 자기 tenant_id 의 data JSON 에서만 값을 끌어오므로
+-- 필터를 빼도 남의 tenant 값이 섞이지 않는다. 대신 향후 tenant 가 늘어도 백필이 저절로 적용된다.
+UPDATE members SET address          = COALESCE(address,          data::jsonb->>'주소')            WHERE scope='valid' AND address          IS NULL;
+UPDATE members SET note             = COALESCE(note,             data::jsonb->>'비고')            WHERE scope='valid' AND note             IS NULL;
+UPDATE members SET age              = COALESCE(age,              data::jsonb->>'나이')            WHERE scope='valid' AND age              IS NULL;
+UPDATE members SET reg_consult_date = COALESCE(reg_consult_date, data::jsonb->>'재등록상담 날짜')  WHERE scope='valid' AND reg_consult_date IS NULL;
+UPDATE members SET reg_consult_time = COALESCE(reg_consult_time, data::jsonb->>'재등록상담 시간')  WHERE scope='valid' AND reg_consult_time IS NULL;
+UPDATE members SET reg_consult_note = COALESCE(reg_consult_note, data::jsonb->>'재등록상담 내용')  WHERE scope='valid' AND reg_consult_note IS NULL;
+UPDATE members SET reg_reservation  = COALESCE(reg_reservation,  data::jsonb->>'재등록예약목록')    WHERE scope='valid' AND reg_reservation  IS NULL;
+UPDATE members SET end_reason       = COALESCE(end_reason,       data::jsonb->>'종료사유')          WHERE scope='valid' AND end_reason       IS NULL;
+UPDATE members SET end_reason_memo  = COALESCE(end_reason_memo,  data::jsonb->>'종료사유메모')      WHERE scope='valid' AND end_reason_memo  IS NULL;
 
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- 인사(CHRO) 도메인 — hr 스키마 (인사 데이터 AWS 이관 1단계 · 2026-09-05 CHRO/A-5)

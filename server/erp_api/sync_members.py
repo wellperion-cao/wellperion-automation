@@ -113,7 +113,7 @@ def sync_owner_cols(conn):
     written = {col: set() for col in OWNER_COLS}
     for action, field, cols, member_no in conn.execute(
             "SELECT action, payload->>'field', payload->'_cols', payload->>'_member_no' FROM write_log"
-            " WHERE tenant_id=%s AND action = ANY(%s) AND gas_status <> 'test'",
+            " WHERE tenant_id=%s AND action = ANY(%s) AND gas_status = 'ok'",
             (db.TENANT, list(_OWNER_SYNC_ACTIONS))):
         if not member_no:
             continue
@@ -208,7 +208,8 @@ def main():
         print("[ok] %s %d건 (번호 없음 %d)" % (scope, n, u))
     owner_mismatch = sync_owner_cols(conn)
     if owner_mismatch:
-        _tell_gm("⚠️ 회원 담당자(owner_*) 정합 어긋남 — 시트 갱신 뒤에도 %d행 불일치(sync_members)" % owner_mismatch)
+        _tell_gm("⚠️ 회원 실컬럼 정합 어긋남 — 시트 갱신 뒤에도 %d행 불일치(sync_members · 어긋난 칸=%s)"
+                 % (owner_mismatch, ",".join(OWNER_COLS)))
     print("[parity] owner_* 불일치 %d행" % owner_mismatch)
     collided, multi = classify_overlaps(conn)
     with conn:
