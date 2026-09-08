@@ -877,6 +877,18 @@ def _reply_rare_words(human_lines: "list[dict]", max_count: int = REPLY_RARE_MAX
     return {w for w, c in freq.items() if c <= max_count}
 
 
+_OWN_BROADCAST_MARKERS = (RELAY_SIGNOFF, "🧾 확인 부탁드릴 것", "🌅 하루의 시작")
+
+
+def _is_own_broadcast(msg: str) -> bool:
+    """이 스크립트가 ★중간관리자 방에 낸 다이제스트 본문이면 True(회신 후보 제외).
+    ops_daily_digest._is_auto_broadcast 는 옛 헤더 문구 기준이라 지금 헤더(🧾 확인 부탁드릴 것)를
+    못 잡아, 우리가 「#132 …」식으로 번호를 나열한 공고문이 사람 회신으로 오인돼 매 회차
+    자기 자신에게 중복 note 를 쌓았다(2026-09-09 배1102 후속 실측). 서명·현재 헤더로
+    한 번 더 거른다(새 파서 없이 기존 신호 재사용 · 약속 L21)."""
+    return any(mk in msg for mk in _OWN_BROADCAST_MARKERS)
+
+
 def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
     """★중간관리자 방 최근 lookback_days일치 사람 발화(자동 발신 제외) — [{date,time,msg}].
     kakao_room_listen 이 만든 원문 내보내기(1. AI자료_아카이브/11_카카오톡/★중간관리자/
@@ -910,7 +922,7 @@ def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_
                     continue
                 for m in msgs:
                     msg = str(m.get("msg") or "")
-                    if msg and not _is_auto_broadcast(msg):
+                    if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg):
                         out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg})
     return out
 
@@ -1071,6 +1083,10 @@ def _selfcheck_sync_ssot_replies() -> None:
 # ══════════════════════════════════════════════════════════════════════════
 _LEDGER_REPLY_NO_RE = re.compile(r"#(\d{3})")
 _LEDGER_REPLY_TAG_RE = re.compile(r"\(#(\d+)\)")  # 제목에 박힌 "(#133)" 같은 옛 번호 자기표기
+# 회신 규격 자체가 "#번호 + 했다"(ops_daily_digest 안내문 원문) — "했다"가 이 번호 프로토콜의
+# 완료 신호다. sync_ssot_replies(제목 유사도 매칭)까지 넓히면 무관한 문장의 과거형에도
+# 오탐하니 번호 매칭 여기(_LEDGER_REPLY_DONE_WORDS)에만 더한다.
+_LEDGER_REPLY_DONE_WORDS = _REPLY_DONE_WORDS + ("했다",)
 
 
 def sync_ledger_replies(target_date: str, ledger: list) -> list:
@@ -1106,18 +1122,31 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
     touched = []
     for line in human_lines:
         msg = str(line.get("msg") or "")
-        nos = {int(n) for n in _LEDGER_REPLY_NO_RE.findall(msg)}
-        for no in nos:
+        matches = list(_LEDGER_REPLY_NO_RE.finditer(msg))
+        if not matches:
+            continue
+        # 번호가 하나뿐이면 지금까지처럼 메시지 전체를 그 번호 몫으로 본다. 여럿이면
+        # "#숫자" 경계로 잘라, 각 번호는 자기 조각 안에서만 완료 낱말을 판정한다 —
+        # 안 그러면 한 번호의 "됨"이 다른 번호까지 같이 닫아버린다(2026-09-09 실측:
+        # "#132 했다(정상작동 됨.) #133 했다 #149 진행중" 에서 #149 가 됨 때문에 오탁 닫힘).
+        if len(matches) == 1:
+            chunk_by_no = {int(matches[0].group(1)): msg}
+        else:
+            chunk_by_no = {}
+            for i, m in enumerate(matches):
+                end = matches[i + 1].start() if i + 1 < len(matches) else len(msg)
+                chunk_by_no[int(m.group(1))] = msg[m.start():end].strip()
+        for no, chunk in chunk_by_no.items():
             issue = by_no.get(no)
             if not issue:
                 continue
             note = str(issue.get("note") or "").strip()
-            issue["note"] = (note + " · " if note else "") + f"회신: {msg[:80]}"
-            if any(w in msg for w in _REPLY_DONE_WORDS):
+            issue["note"] = (note + " · " if note else "") + f"회신: {chunk[:80]}"
+            if any(w in chunk for w in _LEDGER_REPLY_DONE_WORDS):
                 issue["status"] = "resolved"
                 issue["resolved_by"] = "카톡·텔레그램 회신"
                 issue["resolved_at"] = target_date
-            touched.append({"no": no, "title": issue.get("issue", ""), "line": msg[:80]})
+            touched.append({"no": no, "title": issue.get("issue", ""), "line": chunk[:80]})
 
     if touched:
         from ops_daily_digest import save_ledger
@@ -1128,12 +1157,24 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
 
 def _selfcheck_sync_ledger_replies() -> None:
     """#no 매칭 — 완료 낱말 있으면 resolved+note, 없으면 note 만, 매칭 없는 번호·회신
-    없는 issue 는 안 건드림, 한 회신에 번호 여럿이면 각각 반영. 네트워크 없이 돈다."""
+    없는 issue 는 안 건드림, 한 회신에 번호 여럿이면 각각 반영. 네트워크 없이 돈다.
+    ★2026-09-09 수리(배1102 후속 실측) 케이스 2개 추가 —
+    ① 우리 다이제스트 본문(헤더+서명)은 회신 후보에서 제외돼야 함(_is_own_broadcast)
+    ② 한 메시지에 번호가 여럿이면 완료 낱말을 그 번호의 조각 안에서만 판정 — #132 의
+    "됨"이 #149 까지 같이 닫으면 안 되고, 회신 규격("#번호 + 했다")대로 "했다"만 있는
+    #133·#163 도 닫혀야 한다(09-09 이정헌 소장 실제 원문)."""
     global _mgr_room_human_lines, _nawool_telegram_human_lines
     import ops_daily_digest as o
     orig_mgr, orig_nawool = _mgr_room_human_lines, _nawool_telegram_human_lines
     orig_save = o.save_ledger
     saved = []
+
+    own_broadcast_msg = ("🧾 확인 부탁드릴 것 2건\n#132 시설물 고장 결과 — 9/12\n"
+                          "#133 소방 지적사항 조치 결과 — 9/12\n웰페리온 AI 드림")
+    assert _is_own_broadcast(own_broadcast_msg), "헤더+서명 있는 우리 통은 우리 발신으로 걸러야 함"
+    assert not _is_own_broadcast("#132 했다(정상작동 됨.) #133 했다, #163 했다"), \
+        "사람이 번호로 답한 회신을 우리 발신으로 오판하면 안 됨"
+
     fake_lines = [
         {"date": "2026-09-07", "time": "10:00", "msg": "#101 완료했습니다"},
         {"date": "2026-09-07", "time": "10:05", "msg": "#102 진행중이고 9/10 에 끝나요 #103 도 같이요"},
@@ -1159,7 +1200,7 @@ def _selfcheck_sync_ledger_replies() -> None:
         assert issues[0]["status"] == "resolved" and "완료했습니다" in issues[0]["note"], issues[0]
         assert issues[0]["resolved_by"] == "카톡·텔레그램 회신"
         assert issues[1]["status"] == "open" and "9/10" in issues[1]["note"], "완료 낱말 없으면 note 만"
-        assert issues[2]["status"] == "open" and "진행중" in issues[2]["note"], "한 회신 안 번호 여럿 각각 반영"
+        assert issues[2]["status"] == "open" and "도 같이요" in issues[2]["note"], "번호 조각 단위로 note 를 자른다"
         assert issues[3]["status"] == "resolved" and issues[3]["note"] == "", "이미 닫힌 issue(#999)는 회신 없어 안 건드림"
         assert issues[4]["note"] == "", "옛 133 행(이미 닫힘)은 안 건드림 — 별칭이 후속 211 로 대신 받는다"
         assert issues[5]["status"] == "resolved" and "정상작동" in issues[5]["note"], \
@@ -1167,10 +1208,30 @@ def _selfcheck_sync_ledger_replies() -> None:
         assert saved, "건드린 게 있으면 저장해야 함"
         assert saved[0] == MGR_LEDGER, \
             "save_ledger 에 path=MGR_LEDGER 를 안 주면 전역 LEDGER_PATH(★운영부 기본값)에 잘못 써진다(배1124 실측)"
+
+        # ② 09-09 이정헌 소장 실제 회신 — #132 는 "됨", #133·#163 은 "했다" 로 닫히고,
+        # #149 는 진행중이라 남의 완료 낱말에 휩쓸리지 않고 열려 있어야 한다.
+        ledger2 = [{"date": "2026-09-09", "issues": [
+            {"no": 132, "issue": "시설물 고장 4건 결과", "owner": "이정헌 소장", "status": "open", "note": ""},
+            {"no": 133, "issue": "소방 지적사항 조치 결과·점검주기", "owner": "이정헌 소장", "status": "open", "note": ""},
+            {"no": 149, "issue": "수영장 타일 사이 오염 청소", "owner": "이정헌 소장", "status": "open", "note": ""},
+            {"no": 163, "issue": "에스컬레이터 정밀진단 소견서", "owner": "이정헌 소장", "status": "open", "note": ""},
+        ]}]
+        fake_lines2 = [{"date": "2026-09-09", "time": "13:17",
+                        "msg": "#132 했다(정상작동 됨.) #133 했다, #163 했다 #149 진행중(휴관일에 실리콘작업하기로 정함)"}]
+        _mgr_room_human_lines = lambda *a, **k: fake_lines2  # noqa: E731
+        touched2 = sync_ledger_replies("2026-09-09", ledger2)
+        assert {t["no"] for t in touched2} == {132, 133, 149, 163}, touched2
+        issues2 = ledger2[0]["issues"]
+        assert issues2[0]["status"] == "resolved", "#132 는 됨 으로 닫혀야 함"
+        assert issues2[1]["status"] == "resolved", "#133 은 했다 로 닫혀야 함(회신 규격)"
+        assert issues2[2]["status"] == "open" and "진행중" in issues2[2]["note"], \
+            "#149 는 #132 조각의 됨 때문에 같이 닫히면 안 됨"
+        assert issues2[3]["status"] == "resolved", "#163 은 했다 로 닫혀야 함"
     finally:
         _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool
         o.save_ledger = orig_save
-    print("[selfcheck] sync_ledger_replies 번호매칭·완료판정·복수번호 OK")
+    print("[selfcheck] sync_ledger_replies 번호매칭·완료판정·복수번호·우리발신제외 OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════
