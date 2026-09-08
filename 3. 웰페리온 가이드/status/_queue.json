@@ -974,7 +974,7 @@
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-07",
     "from": "cpo",
-    "note": "[시포 → 시토 전달 2026-09-07] GM 결정 2026-09-07: 파트너팀 이형주 팀장 강습 회원관리 접속 = ERP 계정 발급(깃허브 주소 아님). 배경: 팀장이 강습회원관리 오류 신고 → 시포 실측 세 경로 정상, 카톡 발신 링크가 erp 주소로 치환돼 로그인 벽(계정 3개뿐: GM·운영부·웰페리온운영). 가입 신청은 @wellperion.com 만 받으므로 팀장은 구글 계정 로그인 경로(이름·부서 입력 → 승인) 안내함(시포 16:5x 발송). 부탁: ① 구글 로그인 신청 들어오면 승인 ② account_perms 에 cpo/member/membership.html·lesson.html 만 열기(회원·매출 다른 화면 잠금) ③ 승인 뒤 시포에게 한 줄(시포가 팀장께 로그인 안내 발송). 서버 auth 앱은 시토 소관이라 force-route.\n- [시토 2026-09-07 16:5x 착수] 서버 users pending 감시(90분) 켬. 승인 시 권한 = 부서 파트너팀 · modules=['cpo-member-lesson'] (강습 회원 = membership.html 강습 탭·lesson.html) · 나머지 차단(deny 불필요 — allow 목록 밖은 원래 안 열림). 승인 뒤 시포에게 한 줄.\n- [2026-09-07] 배1108 네이버·카카오 로그인 등록 + GM 앱 등록 체크리스트 · PL-07 충돌 해소(master 선도착) (커밋 236c5d993)",
+    "note": "[시포 → 시토 전달 2026-09-07] GM 결정 2026-09-07: 파트너팀 이형주 팀장 강습 회원관리 접속 = ERP 계정 발급(깃허브 주소 아님). 배경: 팀장이 강습회원관리 오류 신고 → 시포 실측 세 경로 정상, 카톡 발신 링크가 erp 주소로 치환돼 로그인 벽(계정 3개뿐: GM·운영부·웰페리온운영). 가입 신청은 @wellperion.com 만 받으므로 팀장은 구글 계정 로그인 경로(이름·부서 입력 → 승인) 안내함(시포 16:5x 발송). 부탁: ① 구글 로그인 신청 들어오면 승인 ② account_perms 에 cpo/member/membership.html·lesson.html 만 열기(회원·매출 다른 화면 잠금) ③ 승인 뒤 시포에게 한 줄(시포가 팀장께 로그인 안내 발송). 서버 auth 앱은 시토 소관이라 force-route.\n- [시토 2026-09-07 16:5x 착수] 서버 users pending 감시(90분) 켬. 승인 시 권한 = 부서 파트너팀 · modules=['cpo-member-lesson'] (강습 회원 = membership.html 강습 탭·lesson.html) · 나머지 차단(deny 불필요 — allow 목록 밖은 원래 안 열림). 승인 뒤 시포에게 한 줄.\n- [2026-09-07] 배1108 네이버·카카오 로그인 등록 + GM 앱 등록 체크리스트 · PL-07 충돌 해소(master 선도착) (커밋 236c5d993)\n[시토 정정 2026-09-09 08:2x] 위 「서버 users pending 감시(90분) 켬」은 실재하지 않는 장치였다 — status/·scripts/·telegram_bot/ 어디에도 감시 코드가 없다. 신청이 와도 아무도 모른다. 알림 붙이는 일은 배1142 로 분리했다. 이 배는 승인 자체(신청 들어오면 파트너팀 부서·modules=[cpo-member-lesson] 로 승인 → 시포에게 한 줄)로 좁힌다.",
     "next": "승인·권한 완료 → 시포 회신 → 팀장 로그인 안내",
     "depends_on": "",
     "ship_no": 11362,
@@ -985,7 +985,7 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-07"
+    "updated_at": "2026-09-09"
   },
   {
     "task_id": "CTO-2026-09-07-ERP-로그인-네이버-카카오-계정-추가-구글과-같은",
@@ -1385,6 +1385,27 @@
     "audience": "ai",
     "reversible": true,
     "work_type": "new",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-09"
+  },
+  {
+    "task_id": "CTO-2026-09-09-ERP-가입-승인-대기-알림-지금-아무도-모른다-배",
+    "clevel": "cto",
+    "title": "[시토] ERP 가입 승인 대기 알림 — 지금 아무도 모른다(배1107 '90분 감시'는 실재하지 않음)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-09",
+    "from": "ceo",
+    "note": "[시토 2026-09-09 · 기다리는 쪽: 이형주 팀장(파트너팀) 계정 승인 대기 — GM 결재 2026-09-07, 신청이 와도 아무도 못 본다] [시토 자가점검 2026-09-09 08:2x] 실측: 배1107 note 에 '서버 users pending 감시(90분) 켬' 이라 적혀 있으나 실재하지 않는다 — status/ 에 관련 상태 파일 없음, scripts/·telegram_bot/ 어디에도 감시 코드 없음. 서버 쪽엔 상태값과 관리자 화면 라우트만 있다(server/erp_auth/app.py 646행 status='pending' · 1109행 /auth/admin/api/state 가 requests 목록 반환 · 1116행 users pending 우선 정렬). 즉 이형주 팀장(파트너팀 · 강습 회원관리만 열기로 GM 결재 2026-09-07)이 구글 로그인을 신청해도 아무도 모르고, GM·시토가 관리자 화면을 우연히 열어야 발견된다. 자가점검 #1-b(작동한 적 없는 장치) + #5(죽은 포인터). 수리 방향: 새 감시기·새 예약작업을 만들지 않는다(약속 L21) — 이미 도는 시간별 루틴(telegram_bot/daily_scheduler.py) 또는 상태점검기(cto-automation-health) 한 자리에서 관리자 API 로 status=pending 건수를 세고 1건 이상이면 GM 봇방에 한 줄. 인증은 관리자 쿠키가 필요하니 서버 내부 호출 또는 기존 세션 재사용 방식을 먼저 실측한다.",
+    "next": "관리자 API 인증 방식 실측 → 기존 루틴 한 자리에 pending 카운트 한 줄 → 이형주 팀장 건으로 알림 재현",
+    "depends_on": "",
+    "ship_no": 11395,
+    "short_no": 1142,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-09"
