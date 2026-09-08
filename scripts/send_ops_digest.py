@@ -1070,6 +1070,7 @@ def _selfcheck_sync_ssot_replies() -> None:
 # 건드리지 않는다 · 다른 곳의 유사도 매칭이 여전히 그 몫을 한다).
 # ══════════════════════════════════════════════════════════════════════════
 _LEDGER_REPLY_NO_RE = re.compile(r"#(\d{3})")
+_LEDGER_REPLY_TAG_RE = re.compile(r"\(#(\d+)\)")  # 제목에 박힌 "(#133)" 같은 옛 번호 자기표기
 
 
 def sync_ledger_replies(target_date: str, ledger: list) -> list:
@@ -1078,7 +1079,15 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
     없으면(진행중·날짜 등) note 에 회신 원문만 붙인다(약속 L23 — 기한·상태를 추측으로
     바꾸지 않는다). 한 회신에 번호가 여럿이면 각각 반영한다. ledger 를 그 자리에서
     바로 수정하고 저장까지 한다(호출부가 재조회 없이 이어 쓴다). 돌려주는 값 = 이번에
-    건드린 issue [{"no","title","line"}]."""
+    건드린 issue [{"no","title","line"}].
+
+    ★2026-09-09 실측 결함 수리(시토·배1102/1124) — assign_ledger_no 가 유사도 대조를
+    통과 못 해 같은 건에 새 번호(133→211)를 매겨도, 사람은 예전에 받은 번호(#133)로
+    회신한다. 그러면 이 번호는 사람 눈엔 여전히 살아 있는데 원장에선 이미 「resolved」로
+    닫힌 옛 no라 by_no 에서 빠져 회신이 어디에도 안 붙고 그 issue는 영영 open 으로
+    남는다(#133→211 실측 · 배1124). 지금 open 인 issue 의 제목에 박힌 "(#옛번호)" 자기
+    표기를 별칭으로 같이 등록해, 옛 번호로 온 회신도 현재 열려 있는 후속 issue 를 찾게
+    한다(새 파일·새 장치 없이 이 함수 안에서만)."""
     human_lines = _mgr_room_human_lines(target_date) + _nawool_telegram_human_lines(target_date)
     if not human_lines:
         return []
@@ -1091,6 +1100,8 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
             no = it.get("no")
             if isinstance(no, int) and str(it.get("status") or "") == "open":
                 by_no[no] = it
+                for tag in _LEDGER_REPLY_TAG_RE.findall(str(it.get("issue") or "")):
+                    by_no[int(tag)] = it  # 옛 번호 별칭 — 같은 issue 를 가리킴
 
     touched = []
     for line in human_lines:
@@ -1125,6 +1136,7 @@ def _selfcheck_sync_ledger_replies() -> None:
     fake_lines = [
         {"date": "2026-09-07", "time": "10:00", "msg": "#101 완료했습니다"},
         {"date": "2026-09-07", "time": "10:05", "msg": "#102 진행중이고 9/10 에 끝나요 #103 도 같이요"},
+        {"date": "2026-09-07", "time": "10:10", "msg": "#133 했다(정상작동 됨.)"},
     ]
     _mgr_room_human_lines = lambda *a, **k: fake_lines  # noqa: E731
     _nawool_telegram_human_lines = lambda *a, **k: []  # noqa: E731
@@ -1135,15 +1147,22 @@ def _selfcheck_sync_ledger_replies() -> None:
             {"no": 102, "issue": "건102", "owner": "이경연 실장", "status": "open", "note": ""},
             {"no": 103, "issue": "건103", "owner": "이경연 실장", "status": "open", "note": ""},
             {"no": 999, "issue": "건999(완료됨)", "owner": "이경연 실장", "status": "resolved", "note": ""},
+            # 133은 유사도 실패로 새 번호(211)로 다시 태어났다(#133→211 실측 · 배1124) —
+            # 옛 133 행은 이미 resolved 라 by_no 에 없다. 사람은 여전히 #133으로 회신한다.
+            {"no": 133, "issue": "옛 소방 건", "owner": "이정헌 소장", "status": "resolved", "note": ""},
+            {"no": 211, "issue": "소방 지적사항 조치(#133)", "owner": "이정헌 소장", "status": "open", "note": ""},
         ]}]
         touched = sync_ledger_replies("2026-09-07", ledger)
-        assert {t["no"] for t in touched} == {101, 102, 103}, touched
+        assert {t["no"] for t in touched} == {101, 102, 103, 133}, touched
         issues = ledger[0]["issues"]
         assert issues[0]["status"] == "resolved" and "완료했습니다" in issues[0]["note"], issues[0]
         assert issues[0]["resolved_by"] == "카톡·텔레그램 회신"
         assert issues[1]["status"] == "open" and "9/10" in issues[1]["note"], "완료 낱말 없으면 note 만"
         assert issues[2]["status"] == "open" and "진행중" in issues[2]["note"], "한 회신 안 번호 여럿 각각 반영"
         assert issues[3]["status"] == "resolved" and issues[3]["note"] == "", "이미 닫힌 issue(#999)는 회신 없어 안 건드림"
+        assert issues[4]["note"] == "", "옛 133 행(이미 닫힘)은 안 건드림 — 별칭이 후속 211 로 대신 받는다"
+        assert issues[5]["status"] == "resolved" and "정상작동" in issues[5]["note"], \
+            "제목에 박힌 (#133) 별칭으로 옛 번호 회신이 현재 열린 211 로 붙어야 함"
         assert saved, "건드린 게 있으면 저장해야 함"
     finally:
         _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool

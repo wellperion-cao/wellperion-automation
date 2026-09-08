@@ -1014,6 +1014,7 @@ def recent_issues_digest(ledger: list[dict], before_date: str, days: int = RECEN
 _LEDGER_NO_ALNUM_RE = re.compile(r"[0-9A-Za-z가-힣]")
 _LEDGER_NO_KEY_LEN = 18   # 웰리 수기 기준(2026-09-07 18:3x) — 제목 앞 18자 알파넘만
 _LEDGER_NO_SIM = 0.75     # 위와 같은 수기 기준 — 이 이상 닮고 owner 도 같으면 같은 건
+_LEDGER_NO_TAG_RE = re.compile(r"\(#(\d+)\)")  # 제목에 박힌 "(#133)" 같은 옛 번호 자기표기
 
 
 def _ledger_no_key(title: str) -> str:
@@ -1035,16 +1036,27 @@ def assign_ledger_no(ledger: list[dict], issues: list[dict]) -> list[dict]:
     이미 있으면 그 번호를 그대로 쓴다 — 웰리가 쓴 기준(owner 일치 + 제목 앞 18자 알파넘
     difflib≥0.75) 그대로. 과거에 매칭된 행에 no 가 아직 없으면(2026-09-07 이전 이력) 그
     자리에서 부여해 심는다(멱등 백필). issues 안에서 서로 닮은 건이 여럿이면 먼저 번호 받은
-    것을 이어서 대조해 같은 배치 안 중복도 한 번호로 묶는다."""
+    것을 이어서 대조해 같은 배치 안 중복도 한 번호로 묶는다.
+
+    ★2026-09-09 실측 결함 수리(시토·배1102/1124) — 제목이 날짜 접두("6/22 ")를 떼거나
+    "확인"·"결과" 같은 말을 더하는 정도로만 바뀌어도 difflib 비율이 0.75 밑으로 떨어져
+    같은 건이 새 번호로 다시 태어났다(133→211→215 3중 포크 실측). 두뇌(LLM)가 carryover
+    제목에 "(#133)" 처럼 옛 번호를 직접 박아 주는 경우 그 표기를 유사도 대조보다 먼저
+    믿는다 — 추측이 아니라 시스템이 스스로 남긴 자기참조라 유사도보다 확실하다."""
     history: list[dict] = [it for e in ledger for it in (e.get("issues") or [])]
-    max_no = max([it["no"] for it in history if isinstance(it.get("no"), int)], default=0)
+    by_no: dict = {it["no"]: it for it in history if isinstance(it.get("no"), int)}
+    max_no = max(by_no, default=0)
     for it in issues:
         if isinstance(it.get("no"), int):
             history.append(it)
+            by_no[it["no"]] = it
             continue
         owner, title = it.get("owner"), it.get("issue")
-        match = next((h for h in history
-                      if _ledger_no_same_issue(owner, title, h.get("owner"), h.get("issue"))), None)
+        tag_m = _LEDGER_NO_TAG_RE.search(str(title or ""))
+        match = by_no.get(int(tag_m.group(1))) if tag_m else None
+        if not match:
+            match = next((h for h in history
+                          if _ledger_no_same_issue(owner, title, h.get("owner"), h.get("issue"))), None)
         if match:
             if not isinstance(match.get("no"), int):
                 max_no += 1
@@ -1054,6 +1066,7 @@ def assign_ledger_no(ledger: list[dict], issues: list[dict]) -> list[dict]:
             max_no += 1
             it["no"] = max_no
         history.append(it)
+        by_no[it["no"]] = it
     return issues
 
 
@@ -1077,7 +1090,13 @@ def _selfcheck_assign_ledger_no() -> None:
     assert ledger[0]["issues"][1]["no"] == new_issues[1]["no"] == 201, "무번호 과거 행은 매칭 시 백필(다음 번호)"
     assert new_issues[2]["no"] == 202
     assert new_issues[3]["no"] == 202, "같은 배치 안 닮은 건도 한 번호로 묶여야 함"
-    print("[selfcheck] assign_ledger_no 신규증가·재등장유지·과거백필·배치내중복 OK")
+
+    # ★2026-09-09 재현(배1124) — 제목이 크게 바뀌어 유사도가 0.75 밑으로 떨어져도
+    # "(#200)" 자기참조 표기가 있으면 새 번호로 안 흩어지고 200을 그대로 쓴다.
+    reworded = [{"issue": "완전히 다른 말투로 다시 쓴 요금 항목 확인(#200)", "owner": "이경연 실장", "status": "open"}]
+    assign_ledger_no(ledger, reworded)
+    assert reworded[0]["no"] == 200, "제목에 박힌 (#no) 자기참조는 유사도 대조보다 먼저 믿는다"
+    print("[selfcheck] assign_ledger_no 신규증가·재등장유지·과거백필·배치내중복·자기참조태그 OK")
 
 
 def upsert_ledger(ledger: list[dict], date: str, issues: list[dict], source_file: str) -> list[dict]:
