@@ -170,9 +170,15 @@ _CFO_GM_JUDGMENT_NOTE = (
 #   이 한 줄만 바꾸면 이걸 읽는 발신부(아침 운영부 전달 등)가 함께 따라온다(약속 L01).
 #   ▸개인 이름을 지우는 게 아니라 **받는 사람**을 실장으로 바꾸는 것이다 — 누가 실제로 할지는
 #     실장이 나눈다(본문 안에 개인 이름이 남는 것은 참고 정보라 그대로 둔다).
+# ★2026-09-09 시토(웰리 지적) — 나우열M 건의 방이 바뀌었다. GM 확정 2026-09-07:
+#   "나우열M은 업무관리방으로 따로 빼줘 … 이경연, 이정헌 만 따로 분류해서 전달". 즉
+#   ★중간관리자 카톡방은 이제 이경연 실장·이정헌 소장 중심이고, 나우열M 앞 전달은
+#   텔레그램 「업무관리」 그룹(-5492623600 · GM 계정 발신 telegram_user_send)이다.
+#   차단 안내가 옛 방을 가리키면 막힌 사람이 엉뚱한 방으로 보낸다 — 여기 한 줄이 정본이라
+#   이것만 바꾸면 안내 문구가 따라온다(약속 L01).
 DOMAIN_MODIFY_RULES = (
-    ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, "★중간관리자", None),
-    ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, "★중간관리자", _CFO_GM_JUDGMENT_NOTE),
+    ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, "업무관리(텔레그램)", None),
+    ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, "업무관리(텔레그램)", _CFO_GM_JUDGMENT_NOTE),
 )
 
 
@@ -206,13 +212,17 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         return None
     extra = f" 외 {len(hits) - 1}건" if len(hits) > 1 else ""
     note = f" [GM 판단 대상] {judgment_note}" if judgment_note else ""
-    room_tag = room.lstrip("★")
+    room_tag = room.lstrip("★").split("(")[0]
+    # 방이 카톡이냐 텔레그램이냐로 안내 문장이 갈린다(2026-09-09 · GM 확정 2026-09-07).
+    where = "텔레그램 업무관리 방" if "텔레그램" in room else f"{room} 카톡방"
+    ref = ("scripts/notify/telegram_user_send.py · GM 계정 발신"
+           if "텔레그램" in room else f"scripts/kakao_rooms.json {room} members 참조")
     return (
         f"{role_label} 도메인 차단: {hits[0]}{extra} — AI가 직접 수정하지 않습니다"
-        f"(GM 확정 2026-08-05). 담당: {contact}. {room} 카톡방에 담당자 붙여 전달하세요: "
+        f"(GM 확정 2026-08-05). 담당: {contact}. {where}에 담당자 붙여 전달하세요: "
         f"python scripts/queue_dispatch.py --to ceo --title \"[{room_tag} 전달] "
-        f"{hits[0]} 수정 필요\" --note \"담당자: {contact} (scripts/kakao_rooms.json "
-        f"{room} members 참조)\" (웰리가 {room} 방으로 전달)."
+        f"{hits[0]} 수정 필요\" --note \"담당자: {contact} ({ref})\" "
+        f"(웰리가 {where}으로 전달)."
         f" 강행하려면 env {_DOMAIN_FORCE_ENV}={role_token}(그 도메인만 열림·로그 남음)."
         f" ★강행은 사람·리드가 판단한다 — 막혔다고 자동으로 누르지 마라.{note}"
     )
