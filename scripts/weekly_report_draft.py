@@ -35,7 +35,7 @@ CHAIRMAN_ITEMS_JS = CHAIRMAN_DIR / "_chairman_items.js"
 CHAIRMAN_REPORTED_JSON = CHAIRMAN_DIR / "chairman_reported.json"
 DRAFT_DIR = ROOT / "status" / "drafts"
 MAX_LINES = 15  # 섹션당 표시 상한 — 넘치면 「외 N건」으로 전사일정 화면을 가리킨다
-SCHEDULE_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html"
+SCHEDULE_URL = "https://erp.wellperion.com/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html"  # GM 2026-09-07 "깃헙 의존 걷어내기"
 WD_KOR = "월화수목금토일"
 GM_CHAT_ID = 8254867551  # 업무보고방 SSOT(ssot/canon_values.json telegram_chat_id)
 GM_KEY = "1531"  # gm_handoff.py 와 동일 — 없으면 GM 행이 todo_list 조회에서 빠진다
@@ -68,7 +68,19 @@ def _fmt(item, due):
     return "· " + line
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]*>")
+_MD_CHARS = str.maketrans("", "", "`*_#")
+
+
+def _clean(text):
+    """모든 출력 줄 공통 세척 — GAS 원본 칸에 섞인 HTML 태그·백틱·마크다운 기호 제거
+    (팀장 지적 2026-09-08: `26. 09. 01· <p style=…> 같은 잡음이 그대로 나갔다)."""
+    text = _HTML_TAG_RE.sub("", str(text)).translate(_MD_CHARS)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def _section(lines):
+    lines = [_clean(l) for l in lines]
     if not lines:
         return ["· (해당 없음)"]
     shown = lines[:MAX_LINES]
@@ -92,12 +104,6 @@ def _todo_rows():
         return None
 
 
-def _last_content_line(text, limit=60):
-    lines = [ln.strip() for ln in str(text or "").splitlines() if ln.strip()]
-    line = lines[-1] if lines else ""
-    return line if len(line) <= limit else line[: limit - 1] + "…"
-
-
 def _row_date(row, *keys):
     for k in keys:
         raw = str(row.get(k) or "").strip()[:10]
@@ -118,7 +124,7 @@ def _build_gm_done(rows, last_mon, last_sun):
         done = _row_date(r, "완료일", "수정일", "종료일")
         if done is None or not (last_mon <= done <= last_sun):
             continue
-        line = f"· {r.get('업무명', '(제목 없음)')} — {_last_content_line(r.get('내용'))}"
+        line = f"· {r.get('업무명', '(제목 없음)')} — 완료 {done.month}/{done.day}"
         appr = str(r.get("결재요청", "")).strip()
         if appr:
             line += f" (결재: {appr})"
@@ -145,12 +151,22 @@ _CHAIRMAN_ENTRY_RE = re.compile(
 )
 _CHAIRMAN_DATE_RE = re.compile(r"GM\s*전달\s*(\d{4})-(\d{2})-(\d{2})")
 _CHAIRMAN_STATUS_TOKENS = ("진행 중", "대기", "미정")
+# d35~d41 = 원문 자체에 등재일 표현이 없다(「기한 2026-12-31」만 있음 — 이건 마감일이지 등재일이 아니다).
+# 출처는 9/1 보고 안건 6(1면 표) — 3. 웰페리온 가이드/reports/260930_3라인시범_결과보고_A3.html
+# 143행 "원문(9/1 보고 안건 6 · 1면 표)의 지적 항목은 7건" 이 근거(팀장 지시 2026-09-08).
+_CHAIRMAN_REG_OVERRIDE = {f"d{n}": (9, 1) for n in range(35, 42)}
 
 
 def _chairman_status_line(cid, title, when):
     status = next((t.replace(" ", "") for t in _CHAIRMAN_STATUS_TOKENS if t in when), "확인필요")
     m = _CHAIRMAN_DATE_RE.search(when)
-    reg = f"{int(m.group(2))}/{int(m.group(3))}" if m else "미상"
+    if m:
+        reg = f"{int(m.group(2))}/{int(m.group(3))}"
+    elif cid in _CHAIRMAN_REG_OVERRIDE:
+        mo, d = _CHAIRMAN_REG_OVERRIDE[cid]
+        reg = f"{mo}/{d}"
+    else:
+        reg = "미상"
     return f"· {title} — {status} · 등재 {reg}"
 
 
@@ -263,13 +279,14 @@ def _self_check():
     # 최소 자가검증 — 발송 없음. 새 필터링 로직(순수 함수)은 가짜 행으로 오프라인 검증.
     last_mon, last_sun = date(2026, 8, 31), date(2026, 9, 6)
     done_rows = [
-        {"담당자": "김남욱 GM", "상태": "완료", "수정일": "2026-09-02", "업무명": "테스트건",
-         "내용": "1줄\n마지막 줄", "결재요청": "GM"},
-        {"담당자": "이경연 실장", "상태": "완료", "수정일": "2026-09-02", "업무명": "실장건", "내용": "x"},
-        {"담당자": "김남욱 GM", "상태": "진행중", "수정일": "2026-09-02", "업무명": "미완료건", "내용": "x"},
+        {"담당자": "김남욱 GM", "상태": "완료", "수정일": "2026-09-02", "업무명": "테스트건", "결재요청": "GM"},
+        {"담당자": "이경연 실장", "상태": "완료", "수정일": "2026-09-02", "업무명": "실장건"},
+        {"담당자": "김남욱 GM", "상태": "진행중", "수정일": "2026-09-02", "업무명": "미완료건"},
     ]
     done = _build_gm_done(done_rows, last_mon, last_sun)
-    assert len(done) == 1 and "테스트건" in done[0] and "마지막 줄" in done[0], done
+    assert done == ["· 테스트건 — 완료 9/2 (결재: GM)"], done
+
+    assert _clean('<p style="color:#fff">a`b*c_d#e</p>  f') == "abcde f"
 
     pend_rows = [
         {"결재요청": "회장,대표", "상태": "진행중", "업무명": "결재대기건", "종료일": "2026-09-10"},
