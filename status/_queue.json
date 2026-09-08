@@ -1672,7 +1672,7 @@
     "feedback_id": "FB260908-220704",
     "updated_at": "2026-09-08",
     "processed_at": "2026-09-08",
-    "artifact": "server/erp_api/erp-api.service",
+    "artifact": "server/erp_api/api_reception_ops.py",
     "saw": "원인 = 접수처 화면이 아니라 서버가 굶음. 리셉션 업무 화면이 30초마다 부르는 /api/reception-ops 가 GAS 왕복을 최대 55초 기다리는데 uvicorn 워커가 1개뿐이라 그동안 /api/reception/board·lost 가 통째로 대기(실측 40초 초과 실패 → 화면 '불러오지 못했다' 팝업 · 습득물·컴플레인·청결 동일 증상). 조치 = ①erp-api 워커 2개(코어 수와 동일 · 메모리 여유 951MB) ②FORWARD_TIMEOUT 55→20초(화면 폴링 30초보다 짧게). 배포·재시작 뒤 실측 board/lost/dashboard 3경로 3회 전부 0.03~0.05초. DB 는 무관(쿼리 1.4ms·죽은 행 0). 실무진 시트 처리상태·메모 갱신 완료(staff_feedback_update ok · FB260908-220704). 종합접수처 화면 자체는 시우 소관이라 미접촉 — 서버 쪽만 고침.",
     "terminal": true
   }
