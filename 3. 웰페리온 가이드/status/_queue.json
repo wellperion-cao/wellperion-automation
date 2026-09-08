@@ -1563,5 +1563,26 @@
     "audience": "ai",
     "reversible": true,
     "updated_at": "2026-09-08"
+  },
+  {
+    "task_id": "CTO-2026-09-08-ERP-사무실-PC-자동-로그인-고정-IP-114-",
+    "clevel": "cto",
+    "title": "[시토] 🔒 ERP 사무실 PC 자동 로그인 — 고정 IP(114.207.50.85)+기기 기억 · 부서 계정 자동(읽기) · 세션 90일 · 카톡 링크 외부 브라우저 (GM 「해보자」 2026-09-08 16:1x)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-08",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-09-08] GM 결정 2026-09-08 16:1x 「해보자」. 실측(웰리): 세션 쿠키 SESSION_DAYS=30 · 계정 4개(GM admin·운영부(info)·웰페리온강습·웰페리온운영) · nginx access 최근 3000줄 중 /auth/login 호출 사무실 고정 IP 114.207.50.85 가 56회(반복 로그인 실재). 설계 방향(웰리): ①요청 IP == 사무실 고정 IP 이고 세션 없음 → 부서 계정(운영부 info 또는 화면별 기본 계정)으로 자동 발급하되 읽기 화면만 — 쓰기 관문(/api/write·erp_write.js)·관리자(/erp_auth/admin)·인사 폴더는 지금대로 로그인 요구 ②SESSION_DAYS 30→90 ③kakao_report_sender 링크가 카톡 내장 브라우저 대신 외부 브라우저로 열리게(가능한 방식 실측 · 안 되면 안내 문구) ④★전제 게이트: 회원 와이파이 바깥 IP 가 114.207.50.85 와 다를 때만 ①을 켠다 — 웰리가 소장님께 확인 요청 발신(★중간관리자 09-08 16:30). 같으면 ①은 끄고 ②③만. ⑤켜기 전 GM 결재 카드(🔒 인증 통로 변경).",
+    "next": "①~③ 설계 1장 + 전제 확인값 받으면 켜기 카드 → 웰리",
+    "depends_on": "",
+    "ship_no": 11389,
+    "short_no": 1134,
+    "module": "home",
+    "audience": "office",
+    "reversible": false,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-08"
   }
 ]
