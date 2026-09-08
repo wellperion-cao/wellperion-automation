@@ -27,6 +27,8 @@
 **안 담는 것: `.credentials.json`(로그인 토큰)·세션 기록·캐시.** 토큰은 절대 옮기지 않는다.
 
 ### ② 집 PC — 설치 (10~20분, 인터넷 필요)
+**가장 쉬운 길:** ERP 모듈홈(`erp.wellperion.com/erp/`) → **「다운로드」 탭** → 「집 PC 설치 꾸러미」 내려받아 더블클릭. 아래 명령은 그 파일이 하는 일과 같다.
+
 zip 을 집 PC 바탕화면(또는 다운로드)에 둔 뒤, PowerShell 에서:
 ```powershell
 Invoke-WebRequest https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ops/home_pc_setup.ps1 -OutFile "$env:TEMP\home_pc_setup.ps1"
@@ -54,6 +56,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1
 | 상태줄이 회색 한 줄 | OMC HUD(`~/.claude/hud/omc-hud-cost.mjs`) 가 아직 없음 — OMC 플러그인 첫 실행 뒤 생긴다. 다음 부팅에 `ensure_statusline.py` 가 맞춘다 |
 | `Resume-AI.bat` 이 세션을 못 찾음 | 집 PC 엔 회사 세션 기록이 없다(정상). 새로 부팅하려면 `Start-AI <역할>.bat` |
 | 커밋이 push 안 됨 | git hooks 미설치 — Git Bash 에서 `sh scripts/install_hooks.sh` |
+
+## 4-1. 배포 사본 (ERP 다운로드 탭)
+ERP 가 내주는 폴더는 `3. 웰페리온 가이드/erp/launchers/` 다. 그래서 설치 스크립트 사본이 그곳에도 있다 — **정본은 `ops/home_pc_setup.ps1`**. 스크립트를 고치면 두 곳을 같이 고친다. 목록은 `erp/downloads.json` 한 곳만 고치면 되고 화면(`erp/index.html`)은 손대지 않는다.
+**이 폴더는 로그인 없이 열리는 공개 통로다 — 회사 자료가 든 파일은 절대 두지 않는다.**
 
 ## 5. 이번에 같이 고친 것 (사용자명 하드코딩 제거)
 회사 사용자명 `jjky0` 절대경로가 박혀 있어 집 PC 에서 깨지던 4곳을 저장소·홈 기준으로 바꿨다: `scripts/worklog.py`(ROOT) · `scripts/session_resume.py`(PROJECT_DIR) · `scripts/skill_inventory.py`(BASE_DIR) · `scripts/wellperion_hud.mjs`(OMC_HUD). 회사 PC 에서는 값이 같아 동작 변화 없다.
