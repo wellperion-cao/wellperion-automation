@@ -9,7 +9,11 @@
 import argparse, glob, os, re, sys
 
 ROLES = ("ceo", "cmo", "cto", "coo", "cpo", "cfo", "chro", "cbo")
-PROJECT_DIR = os.path.join(os.path.expanduser("~"), ".claude", "projects", "C--Users-jjky0-welperion-automation")
+# Claude Code 는 프로젝트 기록 폴더 이름을 저장소 절대경로의 영숫자 외 문자를 '-' 로 바꿔 만든다.
+# 회사·집 PC 사용자명이 달라도 같은 규칙으로 계산한다(집 PC 설치 2026-09-08).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.path.join(os.path.expanduser("~"), ".claude", "projects",
+                           re.sub(r"[^A-Za-z0-9]", "-", _REPO_ROOT))
 
 
 def role_of(path: str):

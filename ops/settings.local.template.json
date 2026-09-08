@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c C:\\Python314\\python.exe \"%USERPROFILE%\\welperion-automation\\scripts\\shell_first_line_guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c C:\\Python314\\python.exe \"%USERPROFILE%\\welperion-automation\\scripts\\worklog.py\" --hook-prompt --recall",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c \"%USERPROFILE%\\welperion-automation\\scripts\\auto_next_ship_hook.cmd\"",
+            "timeout": 40
+          }
+        ]
+      }
+    ]
+  }
+}
