@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
-"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2단계·3단계 · 시토).
+"""회원 쓰기 서버 원장 — POST /api/members/write (배1050 1단계 · 배1054 2·3·4단계 · 시토).
 
 member_owner_save(종목별 담당자 5칸 · 1단계) · member_hold_transition(휴회접수상태 1칸 · 2단계) ·
-member_active_update(칸 자유 쓰기 · 3단계) 를 여기서 서버 원장(members)에 먼저 쓴다 — ①검증 ②서버 원장
-갱신 + member_change_log 이력 1줄(한 트랜잭션 · 값 같으면 이력 없이 ok) ③기존 GAS 로 write-through(시트도
-유지 · api_write._gas_forward 재사용 · 실패해도 서버 저장은 이미 끝남 — 응답 gas_status 로만 알린다).
-나머지 4종(member_registered_add 등)은 아직 이 라우트에 안 왔다 — 501 로 /api/write(GAS 경로)를 쓰라고
+member_active_update(칸 자유 쓰기 · 3단계) · member_hold_approve(휴회 승인/반려 · 2원장 · 4단계) 를
+여기서 서버 원장(members + hold_items)에 먼저 쓴다 — ①검증 ②서버 원장 갱신 + member_change_log 이력
+1줄(한 트랜잭션 · 값 같으면 이력 없이 ok) ③기존 GAS 로 write-through(시트도 유지 · api_write._gas_forward
+재사용 · 실패해도 서버 저장은 이미 끝남 — 응답 gas_status 로만 알린다).
+나머지 3종(member_registered_add 등)은 아직 이 라우트에 안 왔다 — 501 로 /api/write(GAS 경로)를 쓰라고
 안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
-정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-6.
+정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-6·2-7.
+
+행 찾기 — member_hold_approve(_handle_member_hold_approve): 접수 행 = hold_items 미러(intake_row 열쇠 ·
+sync_reception.py 가 5분마다 GAS member_hold_intake_list 를 그대로 얹는다) 를 FOR UPDATE 로 잠그고 그
+자리에서 status 를 재검사한다 — GAS 원본(Survey.js L10708~10783)은 접수 상태를 전혀 안 보고 그대로
+증분해 같은 승인을 두 번 누르면 횟수·누적일이 두 번 오르는 결함이 있다(시포 스펙 §2-7 결함②). 서버는
+status != '접수대기' 면 GAS 로 넘기지 않고 즉시 no-op 을 돌려준다(회원 원장 무변경·이력 없음·GAS 미호출 —
+GAS 로 넘기면 GAS 자신의 결함으로 거기서도 두 번째 증분이 일어난다). 회원 행은 접수 행의 전화(mirror
+phone)로 찾는다(GAS 와 동일한 fail-closed: 0건=member-not-found·2건+=member-ambiguous).
 
 행 찾기 — member_owner_save·member_hold_transition(_find_and_lock): payload 에 member_no 가 있으면
 번호로 먼저 찾고 전화도 일치해야 한다(불일치=400 거부 · GAS 는 member_no 를 무시하고 그대로 write-through).
@@ -57,10 +66,20 @@ FIELD_TO_COL = {
 HOLD_STATUSES = ("완료", "진행중")            # GAS 화이트리스트 그대로(Survey.js L10793)
 HOLD_COL = "hold_status"
 HOLD_FIELD_LABEL = "휴회접수상태"              # member_change_log 의 field 칸 · GAS 헤더명과 동일
-# 아직 이 라우트가 처리 안 하는 나머지 4종(시포 스펙 §2-3~2-5·2-7) — 501 안내에만 쓴다(화이트리스트 아님).
-_NOT_YET = ("member_registered_add", "member_registered_remove",
-            "member_archive_restore", "member_hold_approve")
-_IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update")
+# 아직 이 라우트가 처리 안 하는 나머지 3종(시포 스펙 §2-3~2-5) — 501 안내에만 쓴다(화이트리스트 아님).
+_NOT_YET = ("member_registered_add", "member_registered_remove", "member_archive_restore")
+_IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve")
+
+# member_hold_approve(4단계 · 배1054) — 승인 시 갱신 6칸(GAS Survey.js L10762~10766 이식). schema.sql 이
+# 2단계 때 미리 만들어 둔 hold_* 칸(hold_status 는 2단계가 이미 씀 · 나머지 5개는 이 단계가 처음 쓴다) —
+# sync_members.py OWNER_COLS·reconcile_dual_write.py 대조가 같은 라벨을 재사용한다(순환 임포트 방지 사본).
+HOLD_PERIOD_LABEL = "휴회기간(휴회일수)"       # GAS HOLD_PERIOD_COL 상수와 같은 값
+HOLD_APPROVE_COL_MAP = {
+    "hold_period": HOLD_PERIOD_LABEL, "hold_start_date": "휴회시작일", "hold_end_date": "휴회종료일",
+    "hold_count": "휴회횟수", "hold_cum_days": "휴회누적일수", "hold_status": HOLD_FIELD_LABEL,
+}
+HOLD_MAX_COUNT, HOLD_MAX_TOTAL, HOLD_MIN_ONCE, HOLD_MAX_ONCE = 3, 60, 7, 60   # GAS HLD_* 상수 그대로
+HOLD_KIND_EXTEND = "연장"                     # GAS HLD_KIND_EXTEND — 연장은 1회 하한이 면제(1~60일)
 
 # member_active_update(3단계 · 배1054) — 칸 이름(공백 제거 정규화) → 실컬럼. GAS 는 화이트리스트 없이 시트
 # 헤더에 있는 칸이면 뭐든 쓰지만(_auFindCol), 서버는 미리 컬럼을 둔 칸만 실컬럼에 쓰고 나머지는
@@ -92,6 +111,28 @@ _ACTIVE_ERRORS = {   # GAS 오류 문구 그대로(Survey.js L9678·9691·9743·
 
 def _norm_phone(v):
     return re.sub(r"\D", "", str(v or ""))
+
+
+def _hold_min_once(kind):
+    """GAS _holdMinOnce_ 이식 — 연장은 1일부터, 신규는 최소 7일(Survey.js L10566)."""
+    return 1 if kind == HOLD_KIND_EXTEND else HOLD_MIN_ONCE
+
+
+def _hold_end_calc(start, days):
+    """GAS _holdEndCalc_ 이식(Survey.js L10571) — 시작일 + (일수-1)일 = 종료일."""
+    from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다
+    d = datetime.strptime(start, "%Y-%m-%d") + timedelta(days=days - 1)
+    return d.strftime("%Y-%m-%d")
+
+
+def _hold_num(v):
+    """GAS _amNum 이식(Survey.js L10741 부근) — 숫자·부호 아닌 문자 제거 후 parseInt, 실패하면 0.
+    hold_count·hold_cum_days 는 schema.sql 에 TEXT 로 있다(GAS 시트 셀 값 그대로 옮긴 사본)."""
+    raw = re.sub(r"[^0-9\-]", "", str(v or ""))
+    try:
+        return int(raw)
+    except ValueError:
+        return 0
 
 
 def _norm_col(v):
@@ -255,9 +296,10 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
     갱신된 뒤이므로 revert(있으면 · 값이 실제로 바뀐 호출만) 로 보상 UPDATE + 취소 이력을 남기고
     ok=False + GAS 의 error 를 그대로 실어 돌려준다 — membership.html 의 d.ok===false/hold-gated
     분기가 살아난다(배1054 검토②).
-    revert = 단일 dict(owner_save·hold_transition — 기존 그대로) 또는 dict 의 리스트(member_active_update —
-    한 저장이 여러 칸을 동시에 바꿀 수 있어 칸마다 하나씩). 각 항목의 kind='json' 이면 실컬럼이 아니라
-    members.data(JSON) 를 되돌린다(kind 없음/'col'=기존처럼 실컬럼 UPDATE·하위호환)."""
+    revert = 단일 dict(owner_save·hold_transition — 기존 그대로) 또는 dict 의 리스트(member_active_update·
+    member_hold_approve — 한 저장이 여러 칸/두 표를 동시에 바꿀 수 있어 항목마다 하나씩). 각 항목의
+    kind='json' 이면 실컬럼이 아니라 members.data(JSON) 를 되돌리고, kind='hold' 면 hold_items(접수 행)
+    status·data 를 되돌린다(회원 이력 없음 — 4단계). kind 없음/'col'=기존처럼 members 실컬럼 UPDATE(하위호환)."""
     reverts = revert if isinstance(revert, list) else ([revert] if revert else [])
     if is_test:
         conn.close()
@@ -275,6 +317,10 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
                          (gas_status, json.dumps(resp, ensure_ascii=False)[:20000], log_id))
             if not gas_ok:
                 for rv in reverts:
+                    if rv.get("kind") == "hold":   # member_hold_approve(4단계) — 접수 행 상태·JSON 복원, 회원 이력 없음
+                        conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
+                                     (rv["old_status"], rv["old_data"], rv["tenant"], rv["intake_row"]))
+                        continue
                     if rv.get("kind") == "json":
                         if rv.get("had_key", True):
                             conn.execute(
@@ -476,6 +522,153 @@ def _handle_member_active_update(payload, raw_body, user):
     return _member_active_update_one(payload, raw_body, user)
 
 
+def _handle_member_hold_approve(payload, raw_body, user):
+    """member_hold_approve(4단계 · 배1054) — 접수 행(hold_items 미러) FOR UPDATE 잠금 → 상태 재검사(결함②
+    가드) → (approve 시) 회원 매칭·한도 검증·6칸 갱신 → 접수 행 상태 갱신 → GAS write-through(_finish).
+    GAS 원본(Survey.js L10708~10783) 대비: reject 는 회원 조회조차 없다(접수 행만 갱신) — 그대로 이식."""
+    decision = str(payload.get("decision") or "").strip()
+    if decision not in ("approve", "reject"):
+        return {"ok": False, "error": "decision=approve|reject"}
+    try:
+        intake_row_n = int(str(payload.get("intakeRow") or "").strip())
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "intakeRow 필수(2 이상)"}
+    if intake_row_n < 2:
+        return {"ok": False, "error": "intakeRow 필수(2 이상)"}
+    intake_row = str(intake_row_n)
+    key_phone = _norm_phone(payload.get("keyPhone"))
+    staff = _log_who(payload, user)
+    now = api_write._now_kst()
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
+
+    try:
+        conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+
+    # err_response 에 값이 들어가면 그 자리에서 확정(with 블록을 정상 종료시켜 커밋한 뒤 밖에서 close+반환) —
+    # with 블록 '안'에서 conn.close()+return 하면 __exit__ 가 닫힌 커넥션에 커밋을 시도해 500 이 난다
+    # (배1054 검토 · 실측: psycopg2.InterfaceError: connection already closed). stage1~3 의 err_code 패턴과
+    # 같은 이유로 여기서도 조건을 끝까지 평가해 with 블록이 스스로 끝나게 한다.
+    err_response, log_id, reverts, extra = None, None, None, None
+    try:
+        with conn:
+            intake = conn.execute(
+                "SELECT status, data FROM hold_items WHERE tenant_id=%s AND intake_row=%s FOR UPDATE",
+                (tenant, intake_row)).fetchone()
+            if not intake:
+                err_response = {"ok": False, "error": "접수 행 없음"}
+            else:
+                try:
+                    idata = json.loads(intake["data"]) if intake["data"] else {}
+                    if not isinstance(idata, dict):
+                        idata = {}
+                except Exception:
+                    idata = {}
+                old_status = intake["status"] or idata.get("status") or ""
+                intake_phone = _norm_phone(idata.get("phone"))
+                if key_phone and key_phone != intake_phone:   # GAS L10723 그대로 — 접수 전화가 비어도 대조는 건다
+                    err_response = {"ok": False, "error": "row-key-mismatch",
+                                    "detail": "접수 행 검증 실패 — 새로고침 후 다시 시도하세요"}
+                elif old_status and old_status != "접수대기":
+                    # 결함② 멱등 가드 — 이미 승인/반려된 접수는 GAS 로 넘기지 않는다(GAS 는 상태를 안 보고 그대로
+                    # 증분해 두 번째 요청도 거기서 카운트가 오른다 · 시포 스펙 §2-7). 회원 원장 무변경·이력 없음.
+                    err_response = {"ok": True, "decision": decision, "intakeRow": intake_row_n, "noop": True,
+                                    "_source": "server", "detail": "이미 처리된 접수입니다(상태=%s)" % old_status}
+                elif decision == "reject":   # GAS 원본대로 reject 는 회원 조회조차 없다(접수 행만 갱신)
+                    reverts = [{"kind": "hold", "tenant": tenant, "intake_row": intake_row,
+                                "old_status": old_status, "old_data": intake["data"]}]
+                    extra = {"decision": "reject", "intakeRow": intake_row_n}
+                    idata["status"] = "반려"
+                    conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
+                                 ("반려", json.dumps(idata, ensure_ascii=False), tenant, intake_row))
+                    log_id = conn.execute(
+                        "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                        " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                        (tenant, now, "member_hold_approve", json.dumps(dict(payload), ensure_ascii=False), user,
+                         "test" if is_test else "pending", None)
+                    ).fetchone()[0]
+                else:   # decision == "approve"
+                    req_start = str(idata.get("start") or "").strip()
+                    req_days = idata.get("wishDays")
+                    if not re.match(r"^\d{4}-\d{2}-\d{2}$", req_start) or not isinstance(req_days, int) or isinstance(req_days, bool):
+                        err_response = {"ok": False, "error": "bad-request", "detail": "접수 기간/일수 불량"}
+                    else:
+                        kind = str(idata.get("kind") or "").strip() or "신규"
+                        m_hits = conn.execute(
+                            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
+                            (tenant, intake_phone)).fetchall()
+                        if not m_hits:
+                            err_response = {"ok": False, "error": "member-not-found",
+                                            "detail": "회원DB에서 일치 회원을 찾을 수 없습니다(전화 확인)"}
+                        elif len(m_hits) > 1:
+                            err_response = {"ok": False, "error": "member-ambiguous", "detail": "동일 전화 회원 다수 — 데스크 확인"}
+                        else:
+                            mrow = dict(m_hits[0])
+                            member_no = mrow["member_no"]
+                            am_c, am_d = _hold_num(mrow.get("hold_count")), _hold_num(mrow.get("hold_cum_days"))
+                            min_once = _hold_min_once(kind)
+                            if req_days < min_once or req_days > HOLD_MAX_ONCE:
+                                err_response = {"ok": False, "error": "휴회 일수 범위(%s %d~%d일) 위반: %d일"
+                                               % (kind, min_once, HOLD_MAX_ONCE, req_days)}
+                            elif am_c + 1 > HOLD_MAX_COUNT:
+                                err_response = {"ok": False, "error": "휴회 횟수 한도 초과(최대 %d회, 현재 %d회)" % (HOLD_MAX_COUNT, am_c)}
+                            elif am_d + req_days > HOLD_MAX_TOTAL:
+                                err_response = {"ok": False, "error": "누적 휴회일수 한도 초과(최대 %d일, 현재 %d+%d일)"
+                                               % (HOLD_MAX_TOTAL, am_d, req_days)}
+                            else:
+                                req_end = _hold_end_calc(req_start, req_days)
+                                new_vals = {
+                                    "hold_period": "%s ~ %s (%d일)" % (req_start, req_end, req_days),
+                                    "hold_start_date": req_start, "hold_end_date": req_end,
+                                    "hold_count": str(am_c + 1), "hold_cum_days": str(am_d + req_days), "hold_status": "진행중",
+                                }
+                                reverts = [{"kind": "hold", "tenant": tenant, "intake_row": intake_row,
+                                            "old_status": old_status, "old_data": intake["data"]}]
+                                saved, changed_labels = {}, []
+                                for col, new_val in new_vals.items():
+                                    label = HOLD_APPROVE_COL_MAP[col]
+                                    old_val = mrow.get(col) or ""
+                                    saved[label] = new_val
+                                    if old_val != new_val:   # 멱등 — 같은 값이면 이력 없이 스킵(stage1~3 과 같은 규칙)
+                                        changed_labels.append(label)
+                                        conn.execute(
+                                            "UPDATE members SET {c}=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                                            .format(c=col), (new_val, tenant, member_no))
+                                        conn.execute(
+                                            "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name,"
+                                            " phone_masked, field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                                            (tenant, now, staff, member_no, mrow.get("name") or "", _mask_phone(mrow.get("phone")),
+                                             label, old_val, new_val, "멤버십"))
+                                        reverts.append({"kind": "col", "col": col, "field": label, "tenant": tenant,
+                                                        "member_no": member_no, "old_value": old_val, "new_value": new_val,
+                                                        "name": mrow.get("name") or "", "phone_masked": _mask_phone(mrow.get("phone"))})
+                                idata["status"] = "승인"
+                                conn.execute("UPDATE hold_items SET status=%s, data=%s WHERE tenant_id=%s AND intake_row=%s",
+                                             ("승인", json.dumps(idata, ensure_ascii=False), tenant, intake_row))
+                                extra = {"decision": "approve", "intakeRow": intake_row_n, "memberRow": member_no,
+                                        "member_no": member_no, "count": am_c + 1, "cumDays": am_d + req_days,
+                                        "period": "%s ~ %s" % (req_start, req_end), "extended": False}
+                                payload_log = dict(payload)
+                                payload_log["_member_no"] = member_no    # 대조 전용(reconcile_dual_write.py)
+                                payload_log["_cols"] = changed_labels    # sync_members.py::sync_owner_cols 예외 대상(실컬럼만)
+                                payload_log["_saved"] = saved            # 대조 전용 — 실제로 저장한 값(변경 없어도 전부)
+                                log_id = conn.execute(
+                                    "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                                    " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                                    (tenant, now, "member_hold_approve", json.dumps(payload_log, ensure_ascii=False), user,
+                                     "test" if is_test else "pending", None)
+                                ).fetchone()[0]
+    except Exception:
+        conn.close()
+        raise
+    if err_response is not None:
+        conn.close()
+        return err_response
+    return _finish(conn, raw_body, log_id, is_test, extra, reverts)
+
+
 @router.post("/write")
 async def members_write(request: Request):
     body = await request.body()
@@ -492,6 +685,8 @@ async def members_write(request: Request):
 
     if action == "member_active_update":   # 3단계(배1054) — 칸 자유 쓰기·행 변환·일괄이 나머지 둘과 모양이 달라 갈라둔다
         return _handle_member_active_update(payload, body, request.headers.get("x-erp-user", ""))
+    if action == "member_hold_approve":    # 4단계(배1054) — 2원장(members+hold_items)·멱등 가드가 따로 필요해 갈라둔다
+        return _handle_member_hold_approve(payload, body, request.headers.get("x-erp-user", ""))
 
     user = request.headers.get("x-erp-user", "")
     now = api_write._now_kst()
@@ -695,12 +890,40 @@ def _selftest_finish_revert():
     assert any("data::jsonb - " in sql or "data::jsonb -" in sql for sql, _ in conn3.executed), conn3.executed
     assert not any("jsonb_set" in sql for sql, _ in conn3.executed), conn3.executed
 
+    # member_hold_approve(4단계) revert — kind='hold' 는 hold_items 상태·data 만 되돌리고 member_change_log
+    # 는 안 남긴다(회원 원장을 안 건드린 reject 케이스도 이 kind 하나로 되돌아간다 · 배1054 검토②).
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": {"ok": False, "error": "hold-gated"}
+    try:
+        conn4 = _FakeConn()
+        reverts4 = [
+            {"kind": "hold", "tenant": "wellperion", "intake_row": "5", "old_status": "접수대기",
+             "old_data": '{"status":"접수대기"}'},
+            {"kind": "col", "col": "hold_status", "field": HOLD_FIELD_LABEL, "tenant": "wellperion",
+             "member_no": "M00004", "old_value": "", "new_value": "진행중", "name": "테스트",
+             "phone_masked": "010-1234-****"},
+        ]
+        out4 = _finish(conn4, b"{}", 1, False, {"decision": "approve", "intakeRow": 5}, reverts4)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out4["ok"] is False and conn4.closed
+    assert any("UPDATE hold_items SET status" in sql for sql, _ in conn4.executed), conn4.executed
+    assert any("UPDATE members SET hold_status" in sql for sql, _ in conn4.executed), conn4.executed
+    assert sum("member_change_log" in sql for sql, _ in conn4.executed) == 1, conn4.executed   # hold 항목은 이력 없음
+
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
-    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update"}
+    assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve"}
     assert not set(_IMPLEMENTED) & set(_NOT_YET)
+    # member_hold_approve(4단계) 헬퍼 — GAS _holdMinOnce_·_holdEndCalc_·_amNum 이식.
+    assert _hold_min_once("신규") == 7 and _hold_min_once("연장") == 1 and _hold_min_once("") == 7
+    assert _hold_end_calc("2026-08-01", 30) == "2026-08-30"   # 시작+29일
+    assert _hold_end_calc("2026-08-01", 1) == "2026-08-01"    # 1일이면 당일 종료
+    assert _hold_num("3") == 3 and _hold_num("") == 0 and _hold_num(None) == 0 and _hold_num("12일") == 12
+    assert set(HOLD_APPROVE_COL_MAP) == {"hold_period", "hold_start_date", "hold_end_date",
+                                         "hold_count", "hold_cum_days", "hold_status"}
+    assert HOLD_APPROVE_COL_MAP["hold_period"] == "휴회기간(휴회일수)" and HOLD_APPROVE_COL_MAP["hold_status"] == HOLD_FIELD_LABEL
     # member_active_update(3단계) 칸 매핑 — 헤더에 줄바꿈·공백이 섞여도 정규화로 잡힌다.
     assert _norm_col("잔여일\n(일)") == "잔여일(일)" and _norm_col(" 재등록상담 날짜 ") == "재등록상담날짜"
     assert _ACTIVE_COL_MAP["재등록상담날짜"] == "reg_consult_date"
@@ -739,5 +962,6 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert db.is_test_payload({"field": "PT 담당자", "phone": "010-0000-0000", "value": "x"})
     assert not db.is_test_payload({"field": "PT 담당자", "phone": "010-2781-7262", "value": "x"})
     assert db.is_test_payload({"keyPhone": "010-0000-0000", "status": "완료"})   # 검토① member_hold_transition 열쇠
+    assert db.is_test_payload({"decision": "approve", "intakeRow": 5, "keyPhone": "010-0000-0000"})   # member_hold_approve
     _selftest_finish_revert()
     print("자체점검 통과")

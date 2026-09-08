@@ -280,6 +280,45 @@ def reconcile_member_active_writes(conn, db, since):
     return days, unmatched
 
 
+def reconcile_member_hold_approve_writes(conn, db, since):
+    """member_hold_approve(4단계 · 배1054) 서버 쓰기 전수 대조 — reconcile_member_active_writes 와 같은
+    다중칸 비교(payload._saved ↔ members.data JSON)를 쓰되, reject 행(회원 원장 무변경 · _member_no 자체가
+    없다)은 대상에서 뺀다 — approve 만 members 미러와 대조할 재료가 있다."""
+    rows = conn.execute(
+        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_hold_approve'"
+        " AND gas_status='ok' AND payload->>'decision'='approve' AND at >= %s ORDER BY at",
+        (db.TENANT, since)).fetchall()
+    days, unmatched = {}, []
+    for r in rows:
+        p = r["payload"] or {}
+        no, saved = p.get("_member_no"), p.get("_saved") or {}
+        day = str(r["at"])[:10]
+        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
+        d["server"] += 1
+        hit = False
+        if no and saved:
+            row = conn.execute(
+                "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                " AND synced_at > %s ORDER BY synced_at LIMIT 1",
+                (db.TENANT, no, r["at"])).fetchone()
+            if row:
+                try:
+                    mirror = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
+                except Exception:
+                    mirror = {}
+                mirror_norm = {_norm_mirror_key(k): v for k, v in mirror.items()}
+                hit = all((mirror_norm.get(_norm_mirror_key(f)) or "") == (v or "") for f, v in saved.items())
+        if hit:
+            d["sheet"] += 1
+        else:
+            d["mismatch"] += 1
+            d["ok"] = False
+            if len(unmatched) < 20:
+                unmatched.append({"date": day, "at": r["at"], "member_no": no,
+                                  "fields": list(saved.keys()), "form": "member_hold_approve"})
+    return days, unmatched
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
     now = kst_now()
@@ -290,9 +329,11 @@ def main():
         mo_days, mo_bad = reconcile_member_owner_writes(conn, db, since)
         mh_days, mh_bad = reconcile_member_hold_writes(conn, db, since)
         ma_days, ma_bad = reconcile_member_active_writes(conn, db, since)
+        mha_days, mha_bad = reconcile_member_hold_approve_writes(conn, db, since)
     conn.close()
-    out_forms = {"member_owner_save": mo_days, "member_hold_transition": mh_days, "member_active_update": ma_days}
-    unmatched = list(mo_bad) + list(mh_bad) + list(ma_bad)
+    out_forms = {"member_owner_save": mo_days, "member_hold_transition": mh_days,
+                 "member_active_update": ma_days, "member_hold_approve": mha_days}
+    unmatched = list(mo_bad) + list(mh_bad) + list(ma_bad) + list(mha_bad)
     for form, spec in FORMS.items():
         rows = writes if form == "write" else intake.get(form, [])
         days, bad = reconcile(form, rows, mirrors.get(spec["mirror"] or ""))
@@ -447,6 +488,18 @@ def selftest():
         _MC2(wl4, [json.dumps({"재등록상담\n날짜": "2026-09-10"}, ensure_ascii=False)]), _DB, "2026-09-01")
     assert days9["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days9
     assert not bad9
+
+    # member_hold_approve(4단계 배1054) 대조 — reject 행(decision!='approve')은 SQL WHERE 로 이미 빠지므로
+    # _MC2 에는 approve 행만 들어온다(reject 는 write_log 에 decision='reject' 로 남아 이 쿼리에 안 잡힌다).
+    wl5 = [{"at": "2026-09-01 13:00:00", "payload": {"_member_no": "M00040", "decision": "approve",
+                                                     "_saved": {"휴회횟수": "1", "휴회누적일수": "30"}}}]
+    days10, bad10 = reconcile_member_hold_approve_writes(
+        _MC2(wl5, [json.dumps({"휴회횟수": "1", "휴회누적일수": "30"}, ensure_ascii=False)]), _DB, "2026-09-01")
+    assert days10["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days10
+    assert not bad10
+    days11, bad11 = reconcile_member_hold_approve_writes(
+        _MC2(wl5, [json.dumps({"휴회횟수": "2", "휴회누적일수": "30"}, ensure_ascii=False)]), _DB, "2026-09-01")
+    assert days11["2026-09-01"]["mismatch"] == 1 and {b["member_no"] for b in bad11} == {"M00040"}, (days11, bad11)
 
     # 가린 번호(010-****-5691)에서도 뒤 4자리가 뽑힌다 — 종합접수처 미러가 이 모양이다
     assert phone4("010-****-5691") == "5691" and phone4("", None, "0104736") == "4736" and phone4("abc") == ""

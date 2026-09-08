@@ -94,8 +94,12 @@ OWNER_COLS = {   # api_members_write.FIELD_TO_COL 과 같은 5칸(역방향) + h
     "address": "주소", "note": "비고", "age": "나이",
     "reg_consult_date": "재등록상담 날짜", "reg_consult_time": "재등록상담 시간", "reg_consult_note": "재등록상담 내용",
     "reg_reservation": "재등록예약목록", "end_reason": "종료사유", "end_reason_memo": "종료사유메모",
+    # member_hold_approve(4단계 · 배1054) 신설 5칸 — api_members_write.HOLD_APPROVE_COL_MAP 과 같은 값(역방향).
+    # hold_status 는 위에서 이미 예외 처리(2단계) — 여기 5칸도 같은 규칙(서버가 쓴 (회원번호,칸)은 안 덮음).
+    "hold_period": "휴회기간(휴회일수)", "hold_start_date": "휴회시작일", "hold_end_date": "휴회종료일",
+    "hold_count": "휴회횟수", "hold_cum_days": "휴회누적일수",
 }
-_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition", "member_active_update")
+_OWNER_SYNC_ACTIONS = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve")
 
 
 def sync_owner_cols(conn):
@@ -106,8 +110,9 @@ def sync_owner_cols(conn):
     안 덮는다 — write_log 의 member_owner_save·member_hold_transition·member_active_update 성공행에서
     뽑는다(payload._member_no 는 애초에 대조용으로 넣어 둔 칸 · reconcile_dual_write.py 와 같은 재료).
     member_hold_transition 은 payload 에 'field' 키가 없다 — 액션 자체가 hold_status 칸을 가리키므로
-    그 자리에 고정으로 채운다. member_active_update 는 한 저장이 여러 칸을 동시에 바꿀 수 있어 'field'
-    한 칸이 아니라 payload._cols(실컬럼에 쓴 칸 이름 목록 · api_members_write 가 넣어 둔다)를 본다.
+    그 자리에 고정으로 채운다. member_active_update·member_hold_approve(4단계 · 승인만 — reject 는 회원
+    원장을 안 건드려 member_no 자체가 없다)는 한 저장이 여러 칸을 동시에 바꿀 수 있어 'field' 한 칸이
+    아니라 payload._cols(실컬럼에 쓴 칸 이름 목록 · api_members_write 가 넣어 둔다)를 본다.
     반환 = 예외 아닌 행 중에도 남은 불일치 건수(0 이어야 정상 — 갱신 자체가 안 먹었다는 신호)."""
     field_to_col = {v: k for k, v in OWNER_COLS.items()}
     written = {col: set() for col in OWNER_COLS}
@@ -119,7 +124,7 @@ def sync_owner_cols(conn):
             continue
         if action == "member_hold_transition":
             names = [OWNER_COLS["hold_status"]]
-        elif action == "member_active_update":
+        elif action in ("member_active_update", "member_hold_approve"):
             names = cols if isinstance(cols, list) else ([field] if field else [])
         else:
             names = [field] if field else []
@@ -305,6 +310,27 @@ def selftest():
         an_row = conn.execute("SELECT address, note FROM members WHERE tenant_id=%s AND member_no='M00006'", T).fetchone()
         assert (an_row["address"], an_row["note"]) == ("부산시", "새메모"), \
             "서버가 쓴 신설 칸 다건은 시트값(서울시·메모)으로 안 덮인다"
+        # member_hold_approve(4단계 배1054) — 승인 1건이 휴회 5칸(hold_status 포함 총 6칸 중 새 5칸)을 동시에
+        # 바꾼다. member_active_update 와 같은 '_cols' 목록 규칙을 그대로 재사용(액션명만 다르다).
+        hold_appr_rows = [{"회원번호": "M00007", "회원명": "휴회승인테스트", "휴대폰 번호": "010-7777-7777",
+                           "휴회기간(휴회일수)": "2026-08-01 ~ 2026-08-30 (30일)", "휴회시작일": "2026-08-01",
+                           "휴회종료일": "2026-08-30", "휴회횟수": "1", "휴회누적일수": "30"}]
+        replace_scope(conn, "valid", owner_rows + hold_rows + active_rows + hold_appr_rows, "t8")
+        assert sync_owner_cols(conn) == 0
+        with conn:
+            conn.execute(
+                "UPDATE members SET hold_period=%s, hold_start_date=%s, hold_end_date=%s, hold_count=%s,"
+                " hold_cum_days=%s WHERE tenant_id=%s AND member_no='M00007'",
+                ("2026-08-05 ~ 2026-09-03 (30일)", "2026-08-05", "2026-09-03", "2", "60", db.TENANT))
+            conn.execute(
+                "INSERT INTO write_log (tenant_id,at,action,payload,user_email,gas_status) VALUES (%s,%s,'member_hold_approve',%s,%s,'ok')",
+                (db.TENANT, "t8", json.dumps({"_member_no": "M00007", "_cols": [
+                    "휴회기간(휴회일수)", "휴회시작일", "휴회종료일", "휴회횟수", "휴회누적일수"]}, ensure_ascii=False), ""))
+        assert sync_owner_cols(conn) == 0, "member_hold_approve 다건 예외도 나머지와 함께 일치해야 한다"
+        ah_row = conn.execute("SELECT hold_start_date, hold_count, hold_cum_days FROM members"
+                              " WHERE tenant_id=%s AND member_no='M00007'", T).fetchone()
+        assert (ah_row["hold_start_date"], ah_row["hold_count"], ah_row["hold_cum_days"]) == ("2026-08-05", "2", "60"), \
+            "서버가 쓴 휴회 승인 5칸은 시트값(2026-08-01·1·30)으로 안 덮인다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)
