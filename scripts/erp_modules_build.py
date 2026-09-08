@@ -218,6 +218,73 @@ def make_id(role, rel):
     return "%s-%s" % (role, slug.lower())
 
 
+# ── 자산 원장 3칸(배1136 · 시토) ──────────────────────────────────────────
+# automation·screen_id·sellable 을 카드에 채운다. 새 SSOT 없이 두 파일만 쓴다:
+# status/module_registry.json(모듈 31 · 도는 자동화, sellable 정본) →(역방향 색인)→
+# 3. 웰페리온 가이드/erp/modules.json(카드 114 · 화면, automation·sellable 요약만 받음).
+#
+# 매칭 규칙(실측, 배1136): 등록부 각 모듈의 front_card={window, anchor} 로 카드를 찾는다.
+#   1차: window 문자열이 카드의 name 과 완전히 같은 카드(예: window="자율현황" → name="자율현황"
+#        카드 = 자율현황.html 자체 화면). 카드 이름 하나엔 여러 모듈이 몰릴 수 있다(예: 자율현황
+#        페이지 안에 시토·시모·웰리 모듈이 같이 뜬다) — 정상이다.
+#   2차: 1차가 안 걸리면 anchor 문자열이 실제로 들어있는 카드 파일을 전체 스캔해 유일하게
+#        걸리는 카드에 붙인다(window 가 "M1"/"O1" 처럼 웰페리온 가이드 안의 패널 이름이라
+#        카드 name 과 안 겹치는 경우 — anchor 를 그 패널이 있는 페이지 파일에서 찾아낸다).
+#   둘 다 실패(또는 front_card 자체가 없음) → automation 안 붙임, stderr 로 보고.
+SELLABLE_RANK = {"internal": 0, "sellable": 1, "selling": 2}
+
+
+def attach_asset_ledger(items):
+    """카드에 automation[]·screen_id·sellable 을 채운다. 미매칭 모듈 id 리스트를 돌려준다."""
+    by_name = {}
+    for m in items:
+        by_name.setdefault(m["name"], m["id"])  # 이름 하나에 카드 하나만 있다고 본다(실측상 참)
+
+    file_cache = {}
+
+    def read_full(rel):
+        if rel not in file_cache:
+            try:
+                with io.open(os.path.join(GUIDE, rel), encoding="utf-8", errors="replace") as f:
+                    file_cache[rel] = f.read()
+            except Exception:
+                file_cache[rel] = ""
+        return file_cache[rel]
+
+    automation = {m["id"]: [] for m in items}
+    reg_modules = read_json("status/module_registry.json").get("modules", [])
+    reg_sellable = {}
+    missing = []
+
+    for reg in reg_modules:
+        rid = reg.get("id")
+        reg_sellable[rid] = reg.get("sellable") or "internal"
+        fc = reg.get("front_card")
+        if not fc:
+            continue
+        window = (fc.get("window") or "").strip()
+        anchor = (fc.get("anchor") or "").strip()
+        target = by_name.get(window)
+        if not target and anchor:
+            hits = [m["id"] for m in items
+                    if anchor in read_full(m["path"][3:] if m["path"].startswith("../") else m["path"])]
+            if len(hits) == 1:
+                target = hits[0]
+        if target:
+            automation[target].append(rid)
+        else:
+            missing.append(rid)
+
+    for m in items:
+        ids = sorted(automation.get(m["id"], []))
+        m["screen_id"] = m["id"]  # id 가 이미 안정 식별자라 새로 만들지 않는다 — 그대로 노출만
+        m["automation"] = ids
+        vals = [reg_sellable.get(a, "internal") for a in ids]
+        m["sellable"] = max(vals, key=lambda v: SELLABLE_RANK.get(v, 0)) if vals else "internal"
+
+    return missing
+
+
 def build():
     # 카드 한 줄에 들어갈 만큼만 — kpi.json 의 staff 는 웰리처럼 괄호로 긴 부연이 붙기도 한다.
     staff_of = {r: (v.get("staff") or "").split("(")[0].strip(" ·")
@@ -285,7 +352,8 @@ def build():
     appgroup_rank = {g: i for i, g in enumerate(APPGROUP_ORDER)}
     items.sort(key=lambda m: (0, core_rank[m["id"]], "") if m["core"]
                else (1, appgroup_rank.get(m["appgroup"], 99), order.get(m["role"], 99), m["name"]))
-    return items
+    missing_automation = attach_asset_ledger(items)
+    return items, missing_automation
 
 
 def write(items):
@@ -340,7 +408,7 @@ def main():
     if "--pre-commit" in args and not staged_trigger():
         return 0
 
-    items = build()
+    items, missing_automation = build()
     bad = missing_paths(items)
 
     if "--check" in args:
@@ -367,6 +435,14 @@ def main():
     print("  핵심 %d · 없는 경로 %d" % (sum(1 for m in items if m["core"]), len(bad)))
     for b in bad:
         print("  없음:", b)
+    with_auto = sum(1 for m in items if m["automation"])
+    print("  automation 붙은 카드 %d · sellable(internal/sellable/selling) %d/%d/%d" % (
+        with_auto,
+        sum(1 for m in items if m["sellable"] == "internal"),
+        sum(1 for m in items if m["sellable"] == "sellable"),
+        sum(1 for m in items if m["sellable"] == "selling")))
+    if missing_automation:
+        print("  미매칭 모듈 %d건: %s" % (len(missing_automation), ", ".join(missing_automation)))
     return 0
 
 
@@ -377,13 +453,16 @@ def _selftest():
     assert not is_screen("coo/notice/notice_template.html")
     assert not is_screen("coo/tmp/뭔가.html")
     assert make_id("cpo", "cpo/member/lesson.html") == "cpo-member-lesson"
-    items = build()
+    items, missing_automation = build()
     assert items and items[0]["core"], "핵심 모듈이 맨 위가 아니다"
     assert [m["id"] for m in items if m["core"]] == ["member", "inquiry", "check"]
     assert not missing_paths(items), "없는 경로가 있다"
     ids = [m["id"] for m in items]
     assert len(ids) == len(set(ids)), "id 중복"
-    print("selftest OK ·", len(items), "건")
+    assert all("automation" in m and "screen_id" in m and "sellable" in m for m in items), \
+        "자산 원장 3칸 누락"
+    assert any(m["automation"] for m in items), "automation 이 한 카드에도 안 붙었다"
+    print("selftest OK ·", len(items), "건 · 미매칭 모듈", len(missing_automation))
 
 
 if __name__ == "__main__":
