@@ -949,6 +949,38 @@
       "reversible": true,
       "entrypoint": "scripts/geo_watch.py",
       "created": "2026-09-05"
+    },
+    {
+      "id": "ceo-3line-weekly",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "3라인 주간 리포트 초안 — 매주 월 07:00 업무보고방에 §7 양식(전결 처리·회장님 판단 필요·지적사항 처리·다음 주 예정) 초안 발신 → GM 검수 → 회장님 발송은 웰리 손. 정본 docs/3라인_직책체계_20260831.md §7 · 스크립트 scripts/weekly_report_draft.py(배860) · 배선 시토 1127(2026-09-08 · 발신기 telegram_send · 예약 Wellperion-Weekly-Report-Draft-Mon-0700). 첫 실발신 2026-09-08 11:46 (message_id 10494).",
+      "data_source": {
+        "kind": "log",
+        "ref": "logs/telegram_sent-YYYY-MM-DD.log (📋 주간 리포트 초안 줄)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "8254867551",
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "예약작업 Wellperion-Weekly-Report-Draft-Mon-0700 무인 가동. 회장님 자동 발송 없음 — GM 검수 뒤 웰리가 보낸다.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ],
   "_removed": [
