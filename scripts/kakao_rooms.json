@@ -94,5 +94,20 @@
     "mgr": "★중간관리자",
     "foursplit": "★운영+시설+지원+주차",
     "dept": "★부서장"
-  }
+  },
+  "_external_rooms_doc": "밖과 트는 방(외부 상대방) 목록 — kakao_room_listen.py --external 이 1시간마다 돈다(GM 결정 2026-09-08 20:2x · 시토 배1137). all_rooms 의 category='대외'·개인 1:1 방 중 상대가 GM_SELF(김남욱)와 별개 계정으로 톡을 쓰는 방만 여기 올린다. owner_role = 그 방 담당 C-Level(clevel 코드) — 새 톡이 오면 이 역할의 열린 배 중 가장 최근 것에 note 를 append 한다(없으면 새로 만든다). name = 카톡 창 제목과 정확히 일치해야 한다(kakao_export_chat.py 가 그대로 --room 인자로 받는다).",
+  "external_rooms": [
+    {
+      "name": "★조재오부장님",
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "note": "GM 개인 1:1 방 — 골프 이벤트 상담 진행 중(2026-09-08 · 시보 배1031). 발신 로그 확인 완료(logs/kakao_sent-*.log chat_id=★조재오부장님)."
+    },
+    {
+      "name": "다이어트캠프 이승기 대표님",
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "note": "대외 협업 방 — 다이어트캠프 브랜드가이드 제작 진행 중(시모 배790 산출물 · 상담봇 사업은 시보 배1017/1027). 발신 로그 확인 완료(chat_id=다이어트캠프 이승기 대표님)."
+    }
+  ]
 }
