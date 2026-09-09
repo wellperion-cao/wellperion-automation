@@ -59,7 +59,7 @@ def compose_cta_card(output_path: Path) -> None:
     # ── 중앙 카피 블록 ──
     # 아이브로 (베이지)
     eyebrow_font = load_font("semibold", 30)
-    draw.text((W // 2, 372), "한남동 프리미엄 라이프스타일 스포츠클럽",
+    draw.text((W // 2, 372), "한남동 정원제 스포츠클럽",
               font=eyebrow_font, fill=BEIGE, anchor="mm")
 
     # 대제목 (흰색 bold)
