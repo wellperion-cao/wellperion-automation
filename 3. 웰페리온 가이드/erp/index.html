@@ -102,7 +102,7 @@
              border-radius:12px; background:var(--paper); display:block;}
   @media(max-width:640px){ #pane-adm{width:auto;} }
   /* 사용량 탭 — 화면 하나를 그대로 끼워 띄운다(권한관리와 같은 방식). 탭으로 격상(GM 2026-09-09). */
-  #use-frame{width:100%; height:calc(100vh - 260px); min-height:560px; border:1px solid var(--border);
+  #use-frame{width:100%; height:calc(100vh - 150px); min-height:560px; border:1px solid var(--border);
              border-radius:12px; background:var(--paper); display:block;}
   @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
 </style>
@@ -114,7 +114,7 @@
   <div class="tabs" role="tablist">
     <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">실행 모듈</button>
     <button id="tab-doc" role="tab" aria-selected="false" aria-controls="pane-doc">문서함</button>
-    <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">사용량</button>
+    <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">토큰 사용량</button>
     <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
     <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
   </div>
@@ -139,8 +139,7 @@
   </div>
 
   <div id="pane-use" role="tabpanel" hidden>
-    <h2>사용량</h2>
-    <div class="meta">AI 가 하루·주 단위로 얼마나 일했는지와, 어떤 일에 어떤 모델을 쓰는지 기준.</div>
+    <!-- 제목·설명을 여기 두지 않는다 — 끼워 띄우는 페이지가 자기 제목을 이미 갖고 있어 두 번 나온다(GM 지적 2026-09-09). -->
     <iframe id="use-frame" title="토큰 사용량" src="about:blank"></iframe>
   </div>
 
