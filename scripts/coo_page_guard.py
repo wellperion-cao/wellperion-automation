@@ -49,6 +49,11 @@ TOUCH_HINTS = ("리셉션 업무",)
 # 키오스크(세로 큰 화면)와 데스크톱(가로) 둘 다 본다 — 오늘 잘림은 가로에서만 났다.
 VIEWPORTS = [("키오스크 세로", 1080, 1920), ("데스크톱 가로", 1920, 1080)]
 
+# A3 가로 인쇄 전용 문서(회장님 보고·오찬 안내 등 coo/chairman/) — 종이에 맞춘 297mm 폭이라
+# 세로 1080px 창에서는 반드시 잘린다. 그건 흠이 아니라 용도다. 키오스크 판정에서 뺀다
+# (2026-09-09 · 오탐 2건이 매일 올라와 걸림 목록의 신뢰를 깎았다).
+PRINT_ONLY_HINTS = ("chairman",)
+
 PROBE = """() => {
   const de = document.documentElement, body = document.body;
   const small = [];
@@ -128,7 +133,8 @@ async def check(targets: list[tuple[str, str, bool]]) -> list[dict]:
         b = await pw.chromium.launch()
         for name, url, touch in targets:
             hits: list[str] = []
-            for vp_name, w, h in VIEWPORTS:
+            vps = VIEWPORTS[1:] if any(h in url for h in PRINT_ONLY_HINTS) else VIEWPORTS
+            for vp_name, w, h in vps:
                 pg = await b.new_page(viewport={"width": w, "height": h})
                 try:
                     await pg.goto(url, wait_until="load", timeout=45000)
