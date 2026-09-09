@@ -116,7 +116,6 @@
     <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">실행 모듈</button>
     <button id="tab-doc" role="tab" aria-selected="false" aria-controls="pane-doc">문서함</button>
     <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">토큰 사용량</button>
-    <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
     <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
   </div>
   <div class="who" id="who">확인 중…</div>
@@ -142,14 +141,6 @@
   <div id="pane-use" role="tabpanel" hidden>
     <!-- 제목·설명을 여기 두지 않는다 — 끼워 띄우는 페이지가 자기 제목을 이미 갖고 있어 두 번 나온다(GM 지적 2026-09-09). -->
     <iframe id="use-frame" title="토큰 사용량" src="about:blank"></iframe>
-  </div>
-
-  <div id="pane-dl" role="tabpanel" hidden>
-    <h2>다운로드</h2>
-    <div class="meta">설치·도구 파일.</div>
-    <div class="note">여기 있는 것은 <b>설치·도구 파일</b>입니다. 회원·매출·인사 같은 회사 자료는
-      내려받는 곳이 아니라 화면에서 봅니다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남습니다.</div>
-    <div class="dl" id="downloads"><div class="msg">불러오는 중…</div></div>
   </div>
 
   <div id="pane-adm" role="tabpanel" hidden>
@@ -261,43 +252,15 @@ function loadModules(role, allowedIds){
   });
 }
 
-// 2-1) 다운로드 목록 — downloads.json 한 곳만 보고 그린다(파일을 늘려도 이 화면은 안 고친다).
-//      ★회사 자료는 여기 올리지 않는다. 이 파일들이 놓인 /erp/launchers/ 는 로그인 없이 열리는
-//        공개 통로라, 카드를 감춰도 주소를 아는 사람은 그냥 받는다 — 화면 숨김은 잠금이 아니다.
-function loadDownloads(){
-  return fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
-    var root = document.getElementById('downloads');
-    var grid = document.createElement('div');
-    grid.className = 'modules';
-    (d.downloads || []).forEach(function(x){
-      var a = document.createElement('a');
-      a.className = 'mod';
-      a.href = x.file;
-      a.setAttribute('download', '');
-      a.innerHTML = '<div class="name">' + esc(x.name) + '</div>' +
-                    (x.desc ? '<div class="desc">' + esc(x.desc) + '</div>' : '') +
-                    (x.for ? '<div class="owner">' + esc(x.for) + '</div>' : '');
-      grid.appendChild(a);
-    });
-    root.innerHTML = '';
-    if (!grid.children.length) root.innerHTML = '<div class="msg">받을 파일이 없다.</div>';
-    else root.appendChild(grid);
-  }).catch(function(){
-    document.getElementById('downloads').innerHTML =
-      '<div class="msg">받을 파일 목록(downloads.json)을 불러오지 못했다.</div>';
-  });
-}
-
-// 2-2) 탭 전환 — 다운로드 판은 처음 열 때 한 번만 읽는다.
-var dlLoaded = false, admLoaded = false, useLoaded = false;
-var TABS = ['mod', 'doc', 'use', 'dl', 'adm'];
+// 2-2) 탭 전환 — 무거운 판(사용량·권한관리)은 처음 열 때 한 번만 읽는다.
+var admLoaded = false, useLoaded = false;
+var TABS = ['mod', 'doc', 'use', 'adm'];   // 다운로드는 회사 관리자 콘솔로 옮겼다(GM 2026-09-09)
 function showTab(which){
   TABS.forEach(function(k){
     var on = (k === which);
     document.getElementById('tab-' + k).setAttribute('aria-selected', on);
     document.getElementById('pane-' + k).hidden = !on;
   });
-  if (which === 'dl' && !dlLoaded) { dlLoaded = true; loadDownloads(); }
   // 사용량 판도 처음 열 때 한 번만 불러온다.
   if (which === 'use' && !useLoaded) { useLoaded = true; document.getElementById('use-frame').src = '../cto/automation/토큰 사용량.html'; }
   // 관리자 화면은 서버가 내준다 — 처음 열 때 한 번만 불러온다(매번 다시 안 부른다).
