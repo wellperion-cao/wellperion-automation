@@ -120,13 +120,24 @@ def streak_ok_days(forms, today):
 NOT_APPLICABLE_STATUSES = ("sheet-missing",)   # 원천이 이미 서버로 넘어간 표(INC-056 이후 접수) — 대조 실패로 안 센다
 
 
+def _is_dry_run(payload):
+    """미리보기 요청인가. 미리보기는 쓰기가 아니라 '이렇게 될 겁니다'를 물어보는 것이라 대조 대상이 아니다.
+
+    2026-09-09 실측: member_archive_restore 가 09-08 에 0/1 로 이 갈래 전체를 붙잡고 있었는데,
+    그 한 건이 dryRun 미리보기였다(보관에 없는 전화라 GAS 가 archive-not-found 를 답한 것 —
+    묻는 말에 제대로 답한 것이지 데이터가 어긋난 게 아니다). 쓰지도 않은 것을 '시트에 안 들어갔다'로
+    세면 계측기가 매일 거짓 신호를 준다.
+    """
+    return isinstance(payload, dict) and (payload.get("dryRun") is True or str(payload.get("dryRun")) == "true")
+
+
 def reconcile_by_action(rows, ok_statuses=("ok",)):
     """write_log 액션 하나(예: save=점검저장 · reg_update=접수)만의 날짜별 판정. 미러 없이 gas_status 만 본다.
     sheet-missing 행은 날짜 버킷을 안 건드리고 na 로만 센다 — '대조 대상 아님'이라 행 0 인 날과 같게
     streak_ok_days 에서 건너뛴다(폼(action)별 분리 · 시우 실측 2026-09-07)."""
     days, na = {}, 0
-    for ts, _payload, status in rows:
-        if status in NOT_APPLICABLE_STATUSES:
+    for ts, payload, status in rows:
+        if status in NOT_APPLICABLE_STATUSES or _is_dry_run(payload):
             na += 1
             continue
         day = str(ts)[:10]
@@ -554,6 +565,14 @@ def selftest():
                                   "via": {"mirror": 1, "gas": 1}}, days["2026-09-01"]
     assert days["2026-09-02"]["ok"] and days["2026-09-02"]["via"] == {"mirror": 1, "gas": 0}, days["2026-09-02"]
     assert len(bad) == 1 and bad[0]["key"] == "4444" and bad[0]["via"] == "mirror", bad
+
+    # 미리보기(dryRun)는 쓰기가 아니다 — 실패로도 성공으로도 세지 않고 not_applicable 로만 센다
+    dry = [("2026-09-08T13:00:00", {"dryRun": True, "phone": "010-0000-9001"}, "gas-error")]
+    dd, dna = reconcile_by_action(dry)
+    assert dd == {} and dna == 1, (dd, dna)
+    wet = [("2026-09-08T13:00:00", {"phone": "010-1111-2222"}, "gas-error")]
+    wd, wna = reconcile_by_action(wet)
+    assert wd["2026-09-08"]["mismatch"] == 1 and wna == 0, (wd, wna)
 
     # 같은 뒤 4자리 2건이면 미러에도 2건 있어야 둘 다 맞는다(하나만 있으면 1건 불일치)
     dup = [("2026-09-01T10:00:00", {"category": "adult", "phone": "010-0000-9999"}, "200")] * 2
