@@ -17,7 +17,7 @@
   // notice_list(읽기)는 화면이 gasCall 을 직접 부른다 — 관문 대상 아님.
   // product_plan_save·product_plan_delete(cpo/product 상품기획) = 화면 실제 목적지(TODO_API_URL)가 같은 업무
   //   GAS 라 여기 포함(배 1039 폼류4종 · api_write._gas_key 와 같은 표 · 거울 없음).
-  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete)|product_plan_(save|delete))$/;
+  var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete)|product_plan_(save|delete)|kakao_rooms_(save|delete))$/;
 
   function _json(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);

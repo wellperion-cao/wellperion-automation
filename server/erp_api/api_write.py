@@ -123,7 +123,9 @@ def _gas_key(action):
     if action.startswith(("reg_", "lf_", "voc_")) or action == "hold_complete":
         return "RECEPTION_EXEC_URL"
     if action.startswith(("todo_", "approval_rep_")) or action in (
-            "notice_save", "notice_delete", "product_plan_save", "product_plan_delete"):
+            "notice_save", "notice_delete", "product_plan_save", "product_plan_delete",
+            # 카톡 전송방 등록부(cto/automation · 배11299 GAS 정리) — 같은 업무 GAS 프로젝트다.
+            "kakao_rooms_save", "kakao_rooms_delete"):
         return "TODO_GAS_URL"   # 공지서식(coo/notice·배 1082)·상품기획(cpo/product·배 1039) — 같은 업무 GAS 프로젝트.
         # 거울 없음 — MIRROR_SYNC 미등록(상품기획 시트는 원본이 시트 자체).
     if action in _CHECK_GAS_ACTIONS:
