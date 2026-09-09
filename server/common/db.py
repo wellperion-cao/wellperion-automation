@@ -28,6 +28,12 @@ SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema.s
 #   진짜 상담 기록을 오탐 삭제한다(2026-09-05 감사 실사례). 자체선언 태그([테스트]·[자동QA]류)와
 #   더미 연락처(010-0000-0000·전부 0·자릿수 미달)만 마커로 본다.
 _TEST_TAG_RE = re.compile(r"\[테스트\]|\[자동qa\]|\[자동검증\]|테스트입니다|테스트\s*중\s*입니다", re.I)
+# 배관점검 표식은 위 테스트 태그와 **일부러 갈라 둔다** (배1166 · 2026-09-09).
+# 위 태그가 붙으면 api_intake 가 gas_status='test' 로 찍고 GAS 전달을 건너뛰며 sync_reception 이
+# 미러에서도 뺀다 — 그러면 서버에만 행이 남아 대조가 '시트 도달 못 증명'으로 잡히고, 무결 스트릭을
+# 쌓으려던 것이 거꾸로 끊는다. 배관점검 행은 진짜 접수와 똑같이 GAS 를 타고 미러까지 들어가야
+# 대조의 증거가 된다. 사람 목록에서만 빠진다(is_verification_row).
+_PROBE_TAG_RE = re.compile(r"\[배관점검\]", re.I)
 _TEST_PHONE_RE = re.compile(r"^0?10-?0000-?0000$|^0{10,11}$|^\d{1,4}$")
 _TEST_EXACT_VALUES = {"테스트", "test", "더미", "dummy", "샘플"}
 _TEST_TEXT_KEYS = ("name", "title", "content", "note", "memo", "reporter", "itemDesc", "ownerName",
@@ -45,14 +51,17 @@ def is_verification_row(payload):
     이름 없이 접수된 진짜 워크인 기록이 목록에서 사라진다. 검증 행이 하나 보이는 것보다
     실제 접수 하나가 안 보이는 쪽이 훨씬 나쁘다.
 
-    태그 목록은 위 `_TEST_TAG_RE` 하나를 같이 쓴다 — 판정 낱말을 두 벌로 두지 않는다.
+    보는 태그는 둘이다 — 개발 테스트 태그(_TEST_TAG_RE)와 배관점검 표식(_PROBE_TAG_RE).
+    둘 다 사람 목록에서는 빠지지만, GAS 전달 여부는 정반대다(위 _PROBE_TAG_RE 주석 참조).
     """
     if not isinstance(payload, dict):
         return False
     for key in _TEST_TEXT_KEYS:
         v = payload.get(key)
-        if isinstance(v, str) and v.strip() and _TEST_TAG_RE.search(v.strip()):
-            return True
+        if isinstance(v, str) and v.strip():
+            vv = v.strip()
+            if _TEST_TAG_RE.search(vv) or _PROBE_TAG_RE.search(vv):
+                return True
     return False
 
 
