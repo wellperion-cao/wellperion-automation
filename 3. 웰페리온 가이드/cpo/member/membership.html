@@ -8846,10 +8846,9 @@ var _activeCrossLoading = {};   // 같은 스코프를 두 번 부르지 않게
 function _activeLoadOtherScope(scope, query) {
   if (_activeCrossLoading[scope] || GAS_URL === GAS_PLACEHOLDER) return;
   _activeCrossLoading[scope] = true;
-  fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 읽기 관문 하나(_memberListFetch)로 통일: ERP 도메인은 서버 미러, 실패·6분 내 쓰기면 GAS.
+  _memberListFetch(scope)
     .then(function(data){
-      data = _maDecodeRowsFormat(data);
       if (!data.ok) return;
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
       _activeCacheSave(scope, data.headers || [], data.data || []);
@@ -10710,9 +10709,8 @@ var RECON_COLS = { date: '재등록상담 날짜', time: '재등록상담 시간
 function ensureActiveMembers(cb) {
   if (_activeRows && _activeRows.length) { cb(); return; }
   if (GAS_URL === GAS_PLACEHOLDER) { cb(); return; }
-  fetch(GAS_URL + '?action=member_active_list&scope=valid&format=rows' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
-    .then(function(d){ d = _maDecodeRowsFormat(d); if (d && d.ok) { _activeHeaders = d.headers || _activeHeaders; _activeRows = d.data || []; } cb(); })
+  _memberListFetch('valid')   // ★2026-09-09 배1050 — 읽기 관문 하나로 통일(서버 미러 우선·GAS 폴백)
+    .then(function(d){ if (d && d.ok) { _activeHeaders = d.headers || _activeHeaders; _activeRows = d.data || []; } cb(); })
     .catch(function(){ cb(); });
 }
 
@@ -10735,9 +10733,8 @@ function _ensureEndedMembersBg(cb) {
   if (GAS_URL === GAS_PLACEHOLDER) { cb && cb(); return; }
   if (_endedBgLoading) { return; }   // 이미 진행 중 — 완료 시 renderTodayActionPanel 재호출로 자연히 반영(콜백 중복 생략)
   _endedBgLoading = true;
-  fetch(GAS_URL + '?action=member_active_list&scope=ended&format=rows' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
-    .then(function(d){ d = _maDecodeRowsFormat(d); if (d && d.ok) { _endedRowsBg = d.data || []; _endedBgLoaded = true; } })
+  _memberListFetch('ended')   // ★2026-09-09 배1050 — 읽기 관문 하나로 통일(서버 미러 우선·GAS 폴백)
+    .then(function(d){ if (d && d.ok) { _endedRowsBg = d.data || []; _endedBgLoaded = true; } })
     .catch(function(){ _noteLoadFail('종료회원 목록'); })
     .then(function(){ _endedBgLoading = false; cb && cb(); });
 }
