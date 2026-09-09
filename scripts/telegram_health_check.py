@@ -420,6 +420,24 @@ def _check_reception_lost() -> list[str]:
             issues.append(
                 f"시트 되밀기 멈춤 — 미반영 {unpushed}건이 30분 넘게 시트로 안 넘어갔습니다"
             )
+        # ⑥ 조용한 0 — 통로는 정상인데 접수가 며칠째 안 들어오는 경우(2026-09-09 실측:
+        #   09-05 이후 나흘 0건). 통로 점검(①~⑤)은 전부 통과하므로 어떤 감시기도 안 잡는다.
+        #   09-05 CORS 로 폼이 막혔던 전례(INC-057)가 있어 "진짜 0"과 "또 막힘"을 갈라야 한다.
+        #   평일 기준 2일 넘게 새 접수가 없으면 한 줄 띄운다 — 판정은 사람이 한다.
+        try:
+            from datetime import datetime, date, timedelta
+            last_rc = (((d.get('forms') or {}).get('reception') or {}).get('last') or '')
+            if last_rc:
+                last_day = datetime.fromisoformat(last_rc).date()
+                gap = sum(1 for i in range(1, (date.today() - last_day).days + 1)
+                          if (last_day + timedelta(days=i)).weekday() < 5)
+                if gap >= 3:
+                    issues.append(
+                        f"종합접수처 새 접수 없음 — 마지막 {last_day} 이후 평일 {gap}일째 0건"
+                        " (통로는 정상 · 진짜 0인지 사람 확인 필요)"
+                    )
+        except Exception:
+            pass
     except Exception as e:
         issues.append(f"시트 되밀기 상태 조회 실패 — {str(e)[:60]}")
     return issues
