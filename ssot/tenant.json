@@ -1,0 +1,33 @@
+{
+  "_doc": "테넌트 팩 목록 — ERP 제품화(배1148 · 2026-09-09). 뼈대(절차·스크립트·스킬)는 그대로 두고, 회사가 바뀌면 여기 적힌 파일 한 벌만 갈아끼운다. ★값을 여기에 복사하지 않는다(약속 L01) — 이 파일은 '어느 파일이 우리값인가'만 가리키는 목록이다. 판정 근거 전수 = status/briefs/CEO-2026-09-09-뼈대-우리값-판정표.md",
+  "tenant_id": "wellperion",
+  "swap_files": {
+    "회사 공식값": "ssot/canon_values.json",
+    "브랜드 용어·컬러·계정": "ssot/brand.json",
+    "금지어·대체어": "ssot/forbidden_terms.json",
+    "역할 닉네임·소유 화면": "ssot/ownership_map.json",
+    "KPI·실무진": "ssot/kpi.json",
+    "발행 채널·계정": "ssot/publish_channels.json",
+    "결정·경위 기록": "ssot/약속.json",
+    "사고 기록·기준선": ["ssot/incidents.json", "ssot/incident_baseline.json"],
+    "시트 칸 계약": "ssot/sheet_columns.json",
+    "결정 이력": "ssot/decision_contracts.json",
+    "권한 분기 규약": "ssot/자율화규약.md",
+    "역할 페르소나": "wellperion-agents/.claude/agents/ai-*.md",
+    "브랜드 제작 규격": ".claude/skills/wellperion-brand/SKILL.md"
+  },
+  "frame_files": {
+    "_": "회사가 바뀌어도 그대로 쓰는 것 — 갈아끼우지 않는다",
+    "부팅·자가점검 절차": ".claude/skills/wellperion-boot/SKILL.md",
+    "보고 표 8요소 정본": ".claude/skills/wellperion-gm-report/SKILL.md",
+    "A3 보고서 규격": ".claude/skills/welly-gm-a3-report/SKILL.md",
+    "원칙 조항": "ssot/CONSTITUTION.md",
+    "엔진 스크립트": ["ssot/canon.py", "ssot/enforcement.py", "ssot/forbidden_scan.py", "ssot/divergence_scan.py", "ssot/incident_regression_monitor.py", "ssot/precommit_incident_guard.py", "ssot/publish_verify_pending.py", "ssot/welly_boot_guard.py", "ssot/dashboard.html"]
+  },
+  "고유명_읽는_자리": {
+    "_": "뼈대 문서 본문에 나오는 닉네임·회사명은 아래 경로의 값을 사람이 읽기 쉽게 적어 둔 표기다. 타사 도입 시 본문 표기를 그 회사 값으로 바꾼다.",
+    "역할 닉네임": "ssot/ownership_map.json > roles[].nick",
+    "회사 이름·주소·전화": "ssot/canon_values.json",
+    "보고 방·봇": "ssot/publish_channels.json"
+  }
+}
