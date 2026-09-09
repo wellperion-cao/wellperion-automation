@@ -1058,6 +1058,29 @@
         "card": null
       },
       "docs": "status/briefs/CEO-2026-09-09-업무루프-끊긴자리-진단.md"
+    },
+    {
+      "id": "ceo-weekly-schedule-notice",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "주간 일정 공유 — 매주 월 08:10 이번 주(월~토) 전사일정을 카톡 ★관리부·★운영부 두 방에 같은 글로. GM 지시 2026-09-09(「1주씩 · 토요일까지 · 운영부방과 같게」). ★중간관리자 방은 관리부와 멤버가 겹쳐 뺐고 나우열M 은 텔레그램 업무관리 방으로 따로 받는다. 주 중간에 돌리면 오늘부터 토요일까지만 낸다 — 지나간 날을 다시 보내지 않는다. 스크립트 scripts/weekly_schedule_notice.py · 예약 Wellperion-Weekly-Schedule-Notice-Mon-0810 · 발신 관문은 kakao_report_sender 하나.",
+      "data_source": {
+        "kind": "log",
+        "ref": "logs/kakao_sent-{date}.log"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "전사_일정.html",
+        "card": null
+      }
     }
   ],
   "_removed": [
