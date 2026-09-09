@@ -1,0 +1,27 @@
+{
+  "diagnosed_at": "2026-09-09T13:10:00+09:00",
+  "diagnosed_by": "CPO (시포) — 웰리 대행",
+  "task_id": "CPO-2026-09-09-회원-수정-MEMBER-ACTIVE-UPDATE-0",
+  "subject": "09-08 member_active_update 불일치 2건",
+  "verdict": "데이터_손실_없음",
+  "root_cause": "덮어쓰기(overwrite) 패턴 — 동일 회원·동일 필드를 11초 간격으로 두 번 수정, 대조기가 앞 쓰기를 영원히 불일치로 세는 구조적 문제",
+  "evidence": {
+    "unmatched_count": 2,
+    "original_claim": "14건 중 5건 (CTO 수리 전)",
+    "after_cto_fix": "11건 중 2건 (시토 계측기 수리 반영)",
+    "member": "M00229",
+    "field": "시작\n일자",
+    "write_1": "2026-09-08T17:59:50",
+    "write_2": "2026-09-08T18:00:01",
+    "gap_seconds": 11,
+    "sync_after_write_1": "2026-09-08T17:59:53",
+    "sync_result": "실패 없음 (1748건 갱신)",
+    "data_in_sheet": "정상 — 마지막 쓰기 값이 반영됨"
+  },
+  "action_required": {
+    "owner": "CTO (시토)",
+    "task": "대조 규칙 수정 — 같은 (회원, 필드) 쌍에 여러 쓰기가 있으면 마지막 쓰기만 대조하도록",
+    "priority": "낮음 — 데이터 손실 아님, 계측기 오탐 수정"
+  },
+  "note_on_newline_field": "「시작\n일자」 필드는 09-08 불일치 2건 모두 해당. CTO 정규화가 헤더 비교에는 적용됐으나 덮어쓰기 탓에 불일치 남은 것 — 헤더 정규화 문제 아님"
+}
