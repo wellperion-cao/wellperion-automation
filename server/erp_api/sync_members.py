@@ -167,6 +167,34 @@ def sync_owner_cols(conn):
     return mismatch
 
 
+def canon_drift(conn, hours=6):
+    """서버가 쓴 수강반종목명이 GAS 가 쓴 것과 갈렸는지 센다(배1050 · 시토 제안 2026-09-09).
+
+    member_registered_add 는 화면이 보낸 축약 종목명('플래티넘')을 정식명으로 펴서 저장한다. GAS 는
+    유효회원 시트 열을 훑어 고르고(_memberProgramCanon_), 서버는 그 열의 거울을 훑어 고른다
+    (api_members_write._program_canon) — 거울이 낡은 채로 계산하면 두 값이 갈릴 수 있다.
+
+    ★'거울로 계산한 값 vs 서버 함수 값'을 맞춰 보는 대조는 두 쪽이 같은 재료라 늘 같게 나온다 —
+    아무것도 못 잡는다. 그래서 여기서는 **서버가 그때 쓴 값**(member_change_log 의 등록 추가 이력)과
+    **지금 막 시트에서 새로 뜬 거울 값**을 맞춘다. 이 함수는 replace_scope 직후에만 뜻이 있다.
+
+    최근 %d시간 안의 등록 추가만 본다 — 그 뒤 다른 저장으로 종목이 정상적으로 바뀌었으면 갈린 것으로
+    잘못 셀 수 있어 창을 짧게 잡는다(0 이 아니면 사람이 그 회원번호를 직접 본다)."""
+    since = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600 - hours * 3600))
+    drift = []
+    for r in conn.execute(
+            "SELECT l.member_no, l.new_value, m.program FROM member_change_log l"
+            " JOIN members m ON m.tenant_id=l.tenant_id AND m.member_no=l.member_no AND m.scope='valid'"
+            " WHERE l.tenant_id=%s AND l.field='등록 추가' AND l.at>=%s", (db.TENANT, since)).fetchall():
+        try:
+            wrote = (json.loads(r["new_value"]) or {}).get("program")
+        except Exception:
+            continue
+        if wrote and str(wrote).strip() != str(r["program"] or "").strip():
+            drift.append(r["member_no"])
+    return drift
+
+
 def _tell_gm(text):
     """문제가 생기면 업무보고방에 즉시 (GM 지시 2026-09-03). 키는 erp_auth.tell_gm 과 같은
     TG_BOT_TOKEN·TG_CHAT_ID — api.env 에 같은 두 줄을 넣어야 산다(시토 배치 항목)."""
@@ -227,8 +255,11 @@ def main():
         _tell_gm("⚠️ 회원 실컬럼 정합 어긋남 — 시트 갱신 뒤에도 %d행 불일치(sync_members · 어긋난 칸=%s)"
                  % (owner_mismatch, ",".join(OWNER_COLS)))
     print("[parity] owner_* 불일치 %d행" % owner_mismatch)
+    drift = canon_drift(conn)   # 서버가 편 종목명이 시트와 갈렸나(배1050) — 0 이면 조용하다
+    print("[parity] 종목명 정규화 갈림 %d건%s" % (len(drift), (" · " + ",".join(drift[:5])) if drift else ""))
     collided, multi = classify_overlaps(conn)
     with conn:
+        db.meta_set(conn, "members_canon_drift", ",".join(drift))
         db.meta_set(conn, "members_last_sync", now)
         db.meta_set(conn, "members_last_failed", ",".join(failed))
         db.meta_set(conn, "members_unnumbered", str(unnumbered))
@@ -371,11 +402,30 @@ def selftest():
         replace_scope(conn, "valid", owner_rows + hold_rows + active_rows + hold_appr_rows + arch_reset_rows, "t9")
         assert conn.execute("SELECT COUNT(*) FROM members WHERE tenant_id=%s AND member_no='M00777'", T).fetchone()[0] == 1, \
             "배치 시작보다 늦게 서버가 만든 valid 행은 배치 목록에 없어도 지워지면 안 된다"
+        # canon_drift(배1050) — 서버가 쓴 종목명이 방금 뜬 거울과 다르면 그 회원번호를 잡아낸다.
+        now_kst = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600))
+        with conn:
+            conn.execute(
+                "INSERT INTO members (tenant_id,member_no,scope,name,phone,program,data,synced_at) VALUES"
+                " (%s,'M00888','valid','정규화','01088888888','플래티넘(정)6개월','{}',%s)"
+                " ON CONFLICT (tenant_id,member_no,scope) DO UPDATE SET program=EXCLUDED.program",
+                (db.TENANT, now_kst))
+            conn.execute(
+                "INSERT INTO member_change_log (tenant_id,at,staff,member_no,member_name,phone_masked,"
+                " field,old_value,new_value,screen) VALUES (%s,%s,'자동','M00888','정규화','010-8888-****',"
+                " '등록 추가','{}',%s,'멤버십')",
+                (db.TENANT, now_kst, json.dumps({"program": "플래티넘(정)12개월"}, ensure_ascii=False)))
+        assert canon_drift(conn) == ["M00888"], "서버가 쓴 종목명과 시트 거울이 다르면 잡아야 한다"
+        with conn:
+            conn.execute("UPDATE members SET program=%s WHERE tenant_id=%s AND member_no='M00888'",
+                        ("플래티넘(정)12개월", db.TENANT))
+        assert canon_drift(conn) == [], "같으면 조용해야 한다"
     finally:
         with conn:
             conn.execute("DELETE FROM members WHERE tenant_id=%s", T)
             conn.execute("DELETE FROM sync_meta WHERE tenant_id=%s", T)
             conn.execute("DELETE FROM write_log WHERE tenant_id=%s", T)
+            conn.execute("DELETE FROM member_change_log WHERE tenant_id=%s", T)
         conn.close()
     print("selftest ok")
     return 0
