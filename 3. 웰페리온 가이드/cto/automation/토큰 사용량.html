@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>토큰 사용량 — WELLPERION</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#221F20;--paper:#272422;--paper-raised:#2e2b28;
+  --text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;
+  --accent:#B79F8A;--accent-bright:#c9b49e;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;--border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.10);--green-border:rgba(106,191,123,0.28);
+  --red:#ED5B3F;
+  --blue:#7ac4f0;--pink:#e88ac0;--gold:#f0c674;--teal:#4ec4c4;--purple:#b79ff0;
+  --radius-card:14px;--radius-btn:8px;--radius-chip:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+.sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);box-shadow:0 1px 0 var(--border),0 4px 16px rgba(0,0,0,0.4);}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);}
+.header-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.header h1{font-size:16px;font-weight:800;margin:0;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
+.header .sub{font-size:11px;color:var(--dim-mid);line-height:1.5;margin-top:3px;}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 9px;border-radius:var(--radius-chip);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);letter-spacing:0.02em;}
+.header-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);}
+
+.content{padding:24px;max-width:980px;margin:0;}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,0.35);}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:12px;display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;}
+.dim{color:var(--dim-mid);}
+.note{font-size:11.5px;color:var(--dim-mid);line-height:1.7;margin-top:8px;}
+
+/* 요약 4칸 */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+.stat-tile{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.stat-label{font-size:11.5px;color:var(--dim-mid);font-weight:600;}
+.stat-value{font-size:20px;font-weight:800;color:var(--text);margin-top:4px;}
+.stat-sub{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.5;}
+
+/* 표 */
+.tbl-wrap{overflow-x:auto;margin-top:6px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:7px 9px;border-bottom:1px solid var(--border-subtle);vertical-align:middle;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+td.num,th.num{text-align:right;}
+.cell-out{color:var(--text);font-weight:700;}
+.cell-tot{color:var(--dim-mid);font-size:11px;}
+
+/* 모델별 막대 */
+.bar-row{display:flex;align-items:center;gap:10px;margin:7px 0;}
+.bar-label{width:150px;flex-shrink:0;font-size:12px;color:var(--text-soft,var(--text));}
+.bar-track{flex:1;background:var(--paper-raised);border-radius:6px;height:16px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;}
+.bar-value{width:80px;flex-shrink:0;text-align:right;font-size:11.5px;color:var(--dim-mid);}
+
+.acct-empty{font-size:12.5px;color:var(--dim);padding:6px 0;}
+
+@media(max-width:480px){
+  .content{padding:14px;}
+  .card{padding:14px 14px;}
+  .bar-label{width:100px;}
+}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<div class="sticky-top">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>💳 토큰 사용량 <span class="badge">AI 시토</span></h1>
+        <div class="sub">AI CTO (시토) · 클로드 모델별·날짜별 토큰 사용량 · GM 질문 2026-09-09</div>
+      </div>
+      <div class="header-actions">
+        <a href="../../자율현황.html" class="action-btn">← 자율현황(T2)</a>
+        <a href="../../wellperion_guide(main).html" class="action-btn">← ERP 홈</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="card">
+    <div class="card-title"><span>📊 요약</span><span id="rangeNote" class="dim" style="font-size:11px;font-weight:400;">불러오는 중…</span></div>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-tile"><div class="stat-label">오늘</div><div class="stat-value">…</div></div>
+      <div class="stat-tile"><div class="stat-label">어제</div><div class="stat-value">…</div></div>
+      <div class="stat-tile"><div class="stat-label">이번 주(월~일)</div><div class="stat-value">…</div></div>
+      <div class="stat-tile"><div class="stat-label">지난 주</div><div class="stat-value">…</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>📅 일자별 (최근 14일)</span></div>
+    <div class="tbl-wrap"><table id="dayTable"><thead></thead><tbody><tr><td class="dim">불러오는 중…</td></tr></tbody></table></div>
+    <div class="note">칸 표기 = <b>출력 토큰</b> / <span class="cell-tot">전체 합계(입력+캐시생성+캐시읽기+출력)</span>. 캐시 읽기는 같은 대화를 이어갈 때 다시 읽는 양이라 실제 새로 쓴 양과 다르다 — 전체 합계 대부분을 캐시 읽기가 차지한다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🧩 모델별 (최근 7일 · 전체 합계 기준)</span></div>
+    <div id="modelBars"><div class="dim">불러오는 중…</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🗂 프로젝트별 상위 8</span></div>
+    <div class="tbl-wrap"><table id="projTable"><thead><tr><th>프로젝트(작업창)</th><th class="num">세션</th><th class="num">전체 합계</th></tr></thead><tbody><tr><td class="dim" colspan="3">불러오는 중…</td></tr></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>👤 계정별</span></div>
+    <div id="acctBody" class="dim">불러오는 중…</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  function fmt(n){ n = n||0; return n.toLocaleString('ko-KR'); }
+  function fmtShort(n){
+    n = n||0;
+    if(Math.abs(n) >= 1e8) return (n/1e8).toFixed(1) + '억';
+    if(Math.abs(n) >= 1e4) return (n/1e4).toFixed(1) + '만';
+    return fmt(n);
+  }
+  function shortModel(m){ return String(m||'').replace(/^claude-/, ''); }
+  function pad2(n){ return (n<10?'0':'')+n; }
+  function dstr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function bucketTotal(b){ return (b.input||0)+(b.cache_creation||0)+(b.cache_read||0)+(b.output||0); }
+  var MODEL_COLOR = { }; var PALETTE = ['var(--accent)','var(--blue)','var(--green)','var(--gold)','var(--pink)','var(--teal)','var(--purple)','var(--red)'];
+  function colorFor(m, idx){ return MODEL_COLOR[m] || PALETTE[idx % PALETTE.length]; }
+
+  fetch('../../status/token_usage.json?_=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(render)
+    .catch(function(e){
+      document.getElementById('rangeNote').textContent = '불러오기 실패';
+      document.getElementById('dayTable').querySelector('tbody').innerHTML = '<tr><td class="dim">데이터를 불러오지 못했습니다 (' + esc(e.message) + ')</td></tr>';
+    });
+
+  function render(d){
+    var days = d.days || {};
+    var dates = Object.keys(days).sort(); // 오름차순
+    document.getElementById('rangeNote').textContent = (d.range ? (d.range.from + ' ~ ' + d.range.to) : '') + ' · 최근 ' + dates.length + '일';
+
+    // ── 요약 4칸 ──
+    var today = new Date();
+    var y = new Date(today); y.setDate(y.getDate()-1);
+    var dow = today.getDay(); var mondayOffset = (dow===0?-6:1-dow);
+    var thisMon = new Date(today); thisMon.setDate(thisMon.getDate()+mondayOffset);
+    var thisSun = new Date(thisMon); thisSun.setDate(thisSun.getDate()+6);
+    var lastMon = new Date(thisMon); lastMon.setDate(lastMon.getDate()-7);
+    var lastSun = new Date(thisMon); lastSun.setDate(lastSun.getDate()-1);
+
+    function sumRange(fromStr, toStr){
+      var out = {input:0, cache_creation:0, cache_read:0, output:0};
+      dates.forEach(function(day){
+        if(day < fromStr || day > toStr) return;
+        var models = days[day];
+        Object.keys(models).forEach(function(m){
+          var b = models[m];
+          out.input += b.input; out.cache_creation += b.cache_creation;
+          out.cache_read += b.cache_read; out.output += b.output;
+        });
+      });
+      return out;
+    }
+    function tileHtml(label, sum){
+      var total = bucketTotal(sum);
+      return '<div class="stat-tile"><div class="stat-label">' + esc(label) + '</div>'
+        + '<div class="stat-value">' + fmtShort(total) + '</div>'
+        + '<div class="stat-sub">출력 ' + fmtShort(sum.output) + ' · 캐시읽기 ' + fmtShort(sum.cache_read) + '</div></div>';
+    }
+    document.getElementById('statGrid').innerHTML =
+      tileHtml('오늘', sumRange(dstr(today), dstr(today))) +
+      tileHtml('어제', sumRange(dstr(y), dstr(y))) +
+      tileHtml('이번 주(월~일)', sumRange(dstr(thisMon), dstr(thisSun))) +
+      tileHtml('지난 주', sumRange(dstr(lastMon), dstr(lastSun)));
+
+    // ── 일자별 표 (최근 14일) ──
+    var last14 = dates.slice(-14).reverse(); // 최신이 위
+    var modelSet = {};
+    last14.forEach(function(day){ Object.keys(days[day]).forEach(function(m){ modelSet[m]=true; }); });
+    var models = Object.keys(modelSet).sort();
+    var thead = '<tr><th>날짜</th>' + models.map(function(m){ return '<th class="num">'+esc(shortModel(m))+'</th>'; }).join('') + '<th class="num">합계</th></tr>';
+    var tbody = last14.map(function(day){
+      var rowTotal = 0;
+      var cells = models.map(function(m){
+        var b = days[day][m];
+        if(!b) return '<td class="num dim">—</td>';
+        rowTotal += bucketTotal(b);
+        return '<td class="num"><span class="cell-out">'+fmt(b.output)+'</span><br><span class="cell-tot">'+fmtShort(bucketTotal(b))+'</span></td>';
+      }).join('');
+      return '<tr><td>'+esc(day)+'</td>'+cells+'<td class="num" style="font-weight:700;">'+fmtShort(rowTotal)+'</td></tr>';
+    }).join('');
+    document.getElementById('dayTable').querySelector('thead').innerHTML = thead;
+    document.getElementById('dayTable').querySelector('tbody').innerHTML = tbody || '<tr><td class="dim">데이터 없음</td></tr>';
+
+    // ── 모델별 막대(최근 7일) ──
+    var last7 = dates.slice(-7);
+    var modelTotals = {};
+    last7.forEach(function(day){
+      Object.keys(days[day]).forEach(function(m){
+        modelTotals[m] = (modelTotals[m]||0) + bucketTotal(days[day][m]);
+      });
+    });
+    var mEntries = Object.keys(modelTotals).map(function(m){ return [m, modelTotals[m]]; }).sort(function(a,b){ return b[1]-a[1]; });
+    var maxV = mEntries.length ? mEntries[0][1] : 1;
+    document.getElementById('modelBars').innerHTML = mEntries.length ? mEntries.map(function(e, i){
+      var pct = maxV ? Math.max(2, Math.round(e[1]/maxV*100)) : 0;
+      return '<div class="bar-row"><div class="bar-label">' + esc(shortModel(e[0])) + '</div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+colorFor(e[0], i)+';"></div></div>'
+        + '<div class="bar-value">' + fmtShort(e[1]) + '</div></div>';
+    }).join('') : '<div class="dim">데이터 없음</div>';
+
+    // ── 프로젝트별 상위 8 ──
+    var projects = d.projects || {};
+    var pEntries = Object.keys(projects).map(function(p){ return [p, projects[p]]; })
+      .sort(function(a,b){ return bucketTotal(b[1]) - bucketTotal(a[1]); }).slice(0,8);
+    document.getElementById('projTable').querySelector('tbody').innerHTML = pEntries.length ? pEntries.map(function(e){
+      return '<tr><td>'+esc(e[0])+'</td><td class="num">'+fmt(e[1].sessions)+'</td><td class="num">'+fmtShort(bucketTotal(e[1]))+'</td></tr>';
+    }).join('') : '<tr><td class="dim" colspan="3">데이터 없음</td></tr>';
+
+    // ── 계정별 ──
+    var acc = d.accounts || {};
+    var bySrc = acc.sessions_by_account || {};
+    var keys = Object.keys(bySrc);
+    var acctHtml = '';
+    if(!keys.length){
+      acctHtml = '<div class="acct-empty">기록 없음 — ' + esc(acc.tracked_since || '2026-09-09') + '부터 쌓임 (그 전 대화는 계정 구분이 로그에 없다)</div>';
+    } else {
+      acctHtml = '<div class="tbl-wrap"><table><thead><tr><th>계정</th><th class="num">세션(추적 시작 이후)</th></tr></thead><tbody>'
+        + keys.map(function(k){ return '<tr><td>'+esc(k)+'</td><td class="num">'+fmt(bySrc[k])+'</td></tr>'; }).join('')
+        + '</tbody></table></div>'
+        + '<div class="note">현재 로그인 계정: ' + esc(acc.current || '') + ' · ' + esc(acc.tracked_since || '') + ' 이전 대화는 계정 미상.</div>';
+    }
+    document.getElementById('acctBody').innerHTML = acctHtml;
+  }
+})();
+</script>
+
+</body>
+</html>

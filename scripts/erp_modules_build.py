@@ -122,7 +122,7 @@ APPGROUP_IDS = {
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
     "경영": ["coo-chairman-gm업무", "gm-월간운영계획",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
-            "cto-자율현황", "cto-automation-카톡전송관리",
+            "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
             "cmo-funnel-월간마케팅보고서", "coo-chairman-대표님-지시사항",
             "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],

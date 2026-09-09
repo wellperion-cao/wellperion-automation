@@ -56,6 +56,8 @@ SYNC_PAIRS = [
     ("status/notify_registry.json",      "3. 웰페리온 가이드/status/notify_registry.json"),
     # GEO 인용 현황 (2026-09-05 · 배1000): 콘텐츠문의현황 GEO 카드가 발행루트에서 직독한다.
     ("status/geo_watch.json",            "3. 웰페리온 가이드/status/geo_watch.json"),
+    # 토큰 사용량 (2026-09-09): cto/automation/토큰 사용량.html 이 발행루트에서 직독한다.
+    ("status/token_usage.json",          "3. 웰페리온 가이드/status/token_usage.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지
