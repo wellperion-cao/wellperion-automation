@@ -1015,7 +1015,11 @@ function applyServerPanel(){
     var el = document.getElementById('serverCmp');
     el.style.display = '';
     el.innerHTML = '🖥 <b>서버 판 반영</b> — 회원 5칸은 서버 회원 원장으로 다시 센 값 · 22칸 대조 <b>' + (22 - diff.length) + '/22</b>' +
-      (diff.length ? ' · 불일치: ' + esc(diff.join(', ')) : ' 일치') + ' <span style="color:var(--dim)">(' + basis + ')</span>';
+      (diff.length ? ' · 불일치: ' + esc(diff.join(', ')) : ' 일치') + ' <span style="color:var(--dim)">(' + basis + ')</span>' +
+      /* 남은 손입력 칸을 같은 줄에 밝힌다(배1071 ② 원천 교체 진척 — 새 UI 블록을 만들지 않는다).
+         회원 5칸은 서버가 세고, 매출 11칸·입장 3칸은 아직 실무진이 일자탭에 손으로 적는다.
+         브로제이 API(배908)가 오면 이 줄의 남은 14칸이 0이 된다. */
+      ' <span style="color:var(--dim)">· 아직 사람 손 <b>14칸</b>(매출 11 · 입장 3) — 브로제이 연동 뒤 사라짐</span>';
   });
 }
 
