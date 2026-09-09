@@ -476,6 +476,54 @@ def focus_window(win, room_name: str) -> None:
     time.sleep(0.3)
 
 
+def close_room_window(win, room_name: str) -> bool:
+    """전달·저장이 끝난 방 창을 닫는다(GM 지시 2026-09-09 — "전달 완료되었으면 창 꺼주고").
+
+    라이브 실측 2026-09-09: 방 창(EVA_Window_Dblclk)에 포커스를 준 뒤 Escape 한 번이면
+    그 창이 닫히고 채팅방 목록만 남는다. GM 이 말한 "esc 두 번"은 방 안에서 찾기(검색)를
+    열어 둔 상태 — 첫 번째가 검색을 닫고 두 번째가 방을 닫는다. 그래서 두 번 보낸다:
+    검색이 열려 있으면 두 번이 필요하고, 안 열려 있으면 첫 번째로 이미 닫혀 두 번째는
+    허공에 떨어진다(닫힌 창에는 키가 안 간다).
+
+    ★메인창에는 절대 보내지 않는다 — 메인창에서 Escape 는 카톡을 트레이로 숨겨 버려
+    다음 발신이 통째로 막힌다(기존 실측 함정, _ensure_chat_tab 주석 참조). 그래서 제목이
+    방 이름과 정확히 같은 창일 때만 진행한다.
+
+    실패해도 발신 결과에 영향을 주지 않는다(best-effort) — 창 정리는 발신의 부속이다."""
+    try:
+        title = (win.window_text() or "").strip()
+    except Exception:
+        return False
+    if not title or title != room_name or title == "카카오톡":
+        log(f"[{room_name}] 창 닫기 건너뜀 — 방 창이 아님(제목 {title!r})")
+        return False
+    def _gone() -> bool:
+        # 창이 이미 닫혔으면 exists()/window_text() 자체가 COM 오류를 던진다
+        # (실측 2026-09-09: -2147220991 '이벤트에서 가입자를 불러낼 수 없습니다').
+        # 그 예외는 실패가 아니라 '닫혔다'는 뜻이므로 그렇게 읽는다.
+        try:
+            return not win.exists()
+        except Exception:
+            return True
+
+    try:
+        focus_window(win, room_name)
+    except Exception:
+        pass
+    for _ in range(2):
+        if _gone():
+            break
+        try:
+            pyautogui.press("esc")
+        except Exception as exc:
+            log(f"[{room_name}] 창 닫기 키 전송 실패(무시): {exc}")
+            break
+        time.sleep(0.4)
+    closed = _gone()
+    log(f"[{room_name}] 방 창 {'닫음' if closed else '안 닫힘'}")
+    return closed
+
+
 # ── 자동 방 열기(2026-07-06 추가, GM PC 라이브 실측 검증 완료) — 방 창을 못 찾았을 때
 #    카톡 메인창 검색으로 자동으로 방을 연다. §0-4/§0-5 실측 함정 참조.
 def _enum_all_top_level_windows() -> list[tuple[int, str, str]]:
@@ -1724,6 +1772,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         screenshot(room_win, room_name, "dryrun_message_preview")
         clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
         log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
+        close_room_window(room_win, room_name)
         return True, ""
 
     send_enter(input_box)
@@ -1733,6 +1782,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
     record_dedup_sent(room_name, text=text)
     _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
                   ok=True, kind="message", channel="kakao")
+    close_room_window(room_win, room_name)
     return True, ""
 
 
@@ -1777,6 +1827,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
         else:
             clear_input(input_box)  # 팝업 없이 인라인 미리보기였던 구버전 카톡용 폴백
         log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, 전송 생략(안전) — 캡션 미리보기: {caption!r}")
+        close_room_window(room_win, room_name)
         return True, ""
 
     if popup is not None:
@@ -1827,6 +1878,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     _log_outbound(caption if caption_sent else "", chat_id=room_name,
                   source="kakao_report_sender.image", ok=True,
                   kind="image+caption" if caption_sent else "image", channel="kakao")
+    close_room_window(room_win, room_name)
     return True, ""
 
 
