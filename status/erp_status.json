@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-09-08T22:26:33Z",
-  "generated_at_kst": "2026-09-09 07:26",
-  "summary": "대체로 정상 (일부 확인 불가)",
+  "generated_at": "2026-09-09T01:22:39Z",
+  "generated_at_kst": "2026-09-09 10:22",
+  "summary": "⚠️ 점검 필요: 미푸시 커밋",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "13분 전 활동",
+      "detail": "0분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 4분 전(생존) · 최근 발신 89분 전",
+      "detail": "하트비트 6분 전(생존) · 최근 발신 0분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -29,7 +29,7 @@
     {
       "name": "GAS→AWS 이관",
       "state": "진행",
-      "detail": "약 52% · 서버 원본 0/9 · 다음 09-08 문의 폼 · 원본전환 확인 못 잼(ssh)",
+      "detail": "약 61% · 서버 원본 2/9 · 다음 09-08 문의 폼",
       "note": "영역 9 가중(문의·회원/문의폼/강사폼/종합접수처/점검3부서/업무·결재/인사허브/매출3종/소형4개) · 배 960"
     }
   ],
@@ -37,17 +37,17 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HEAD 일치(발행 도달) · 더티 1건 · 서버 active 62건/로컬 62건"
+      "detail": "라이브 확인 불가(로컬 origin/master 조회 실패)"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 62건/337284B"
+      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 60건/425864B"
     },
     {
       "name": "시트 GAS(todo_list)",
       "state": "정상",
-      "detail": "HTTP 200 · data 203건"
+      "detail": "HTTP 200 · data 205건"
     },
     {
       "name": "M5 검수큐 라이브",
@@ -56,18 +56,18 @@
     },
     {
       "name": "미푸시 커밋",
-      "state": "정상",
-      "detail": "없음 — 로컬=origin/master 동기화"
+      "state": "이상",
+      "detail": "확인 불가(원격 ref 없음/네트워크)"
     },
     {
       "name": "서버 되밀기",
       "state": "정상",
-      "detail": "대기 0건 · 실패 0 (마지막 2026-09-08T22:04:07)"
+      "detail": "대기 0건 · 실패 0 (마지막 2026-09-09T10:22:09)"
     },
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "1.5h 전 갱신 — 정상"
+      "detail": "2.5h 전 갱신 — 정상"
     },
     {
       "name": "업무 SSOT 배번호 신선도",
@@ -127,10 +127,10 @@
     }
   },
   "git_sync": {
-    "state": "정상",
-    "detail": "미푸시 0건 · origin 최신 26분 전",
-    "unpushed": 0,
-    "origin_at": "2026-09-09T07:00:17+09:00"
+    "state": "불명",
+    "detail": "미푸시 조회 실패",
+    "unpushed": null,
+    "origin_at": null
   },
   "archive_summary": {
     "total": 4015,

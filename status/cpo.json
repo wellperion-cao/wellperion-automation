@@ -1,9 +1,9 @@
 {
   "clevel": "cpo",
-  "status": "DONE",
-  "last_task_id": "CPO-2026-09-01-GYM-바이크-2종-도입-3사-견적-비교-후-GM-",
+  "status": "진행중",
+  "last_task_id": "CPO-2026-09-05-매출-및-회원-현황-보고-화면-자동보고-원본-서버-",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-05T06:55:06Z",
+  "last_pushed_at": "2026-09-08T23:38:40Z",
   "active_tasks": [
     {
       "task_id": "CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION",
@@ -900,13 +900,45 @@
       "note": "시포 화면 서버 우선 배선 8건 완료(회원 명단·문의·2페이지·강습 3종·퍼널 단계·예약 달력·월매출·연KPI·LOSS 집계·요약 카드) + 서버 미러 12 라우트 GAS 대조 12/12 일치(GM 지시로 3일 기다리지 않고 오늘 대조). 쓰기 7종은 배1050",
       "updated_at": "2026-09-05T06:47:08Z",
       "blocks": []
+    },
+    {
+      "task_id": "CPO-2026-09-05-매출-및-회원-현황-보고-화면-자동보고-원본-서버-",
+      "title": "③화면 직관화 완료: 등록·재등록·환불(어제 돈)을 왼쪽 컬럼 위로 이동(매출현황 아래). GM 읽는 순서 반영. JS 변경 없음. 다음: 브로제이 API(배908) 연동 후 매출 11칸·입장 3칸 서버 원천 교체.",
+      "status": "진행중",
+      "note": "③화면 직관화 완료: 등록·재등록·환불(어제 돈)을 왼쪽 컬럼 위로 이동(매출현황 아래). GM 읽는 순서 반영. JS 변경 없음. 다음: 브로제이 API(배908) 연동 후 매출 11칸·입장 3칸 서버 원천 교체.",
+      "updated_at": "2026-09-08T23:38:40Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CPO-2026-09-08-회원-화면-배선-휴회-완료-처리-MEMBER-HOL",
+      "title": "_writeUrl 분기 집합 확장: {member_owner_save,member_hold_transition}→/api/members/write. 커밋 fb1f52bbc.",
+      "status": "DONE",
+      "note": "_writeUrl 분기 집합 확장: {member_owner_save,member_hold_transition}→/api/members/write. 커밋 fb1f52bbc.",
+      "updated_at": "2026-09-08T03:32:04Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CPO-2026-09-08-회원-화면-배선-회원정보-수정-MEMBER-ACTI",
+      "title": "membership.html _MEMBER_WRITE_ACTIONS에 member_active_update 추가(서버 라우트 배선 3단계 · sha=7cb2091eb). 4단계 member_hold_approve는 시토 「4단계 수리 배포 완료」 노트 대기.",
+      "status": "DONE",
+      "note": "membership.html _MEMBER_WRITE_ACTIONS에 member_active_update 추가(서버 라우트 배선 3단계 · sha=7cb2091eb). 4단계 member_hold_approve는 시토 「4단계 수리 배포 완료」 노트 대기.",
+      "updated_at": "2026-09-08T04:34:45Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CPO-2026-09-05-회원-쓰기-7종-MEMBER-ACTIVE-UPDAT",
+      "title": "3단계(member_active_update) 프론트 배선 완료·서버 selftest 통과 / 4단계(member_hold_approve) 시토 「4단계 수리 배포 완료」 노트 대기 중 / 6단계(member_archive_restore) 서버 완료·확인 노트 대기 중",
+      "status": "진행중",
+      "note": "[2026-09-09 시포 웰리] selftest 통과 확인·3단계 배선 검증·4단계 gate 대기 명시",
+      "updated_at": "2026-09-08T22:39:20Z",
+      "blocks": []
     }
   ],
   "agent": "cpo",
-  "task_id": "CPO-2026-09-01-GYM-바이크-2종-도입-3사-견적-비교-후-GM-",
-  "title": "GM 확정: 웰리 건 → 웰리 배로 이관(테크노짐 확보·라이프피트니스 금액 GM 수령·매트릭스 다음 주). 시포 배 종결",
-  "updated_at": "2026-09-05T06:55:06Z",
-  "artifact_url": "3. 웰페리온 가이드/reports/260827_라이프피트니스_쇼룸방문보고_A3.html",
+  "task_id": "CPO-2026-09-05-매출-및-회원-현황-보고-화면-자동보고-원본-서버-",
+  "title": "③화면 직관화 완료: 등록·재등록·환불(어제 돈)을 왼쪽 컬럼 위로 이동(매출현황 아래). GM 읽는 순서 반영. JS 변경 없음. 다음: 브로제이 API(배908) 연동 후 매출 11칸·입장 3칸 서버 원천 교체.",
+  "updated_at": "2026-09-08T23:38:40Z",
+  "artifact_url": "9194212d0",
   "commit": "e6ae8888c",
-  "note": "GM 확정: 웰리 건 → 웰리 배로 이관(테크노짐 확보·라이프피트니스 금액 GM 수령·매트릭스 다음 주). 시포 배 종결"
+  "note": "③화면 직관화 완료: 등록·재등록·환불(어제 돈)을 왼쪽 컬럼 위로 이동(매출현황 아래). GM 읽는 순서 반영. JS 변경 없음. 다음: 브로제이 API(배908) 연동 후 매출 11칸·입장 3칸 서버 원천 교체."
 }
