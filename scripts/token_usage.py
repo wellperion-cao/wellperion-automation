@@ -24,20 +24,22 @@ ACCOUNTS_LOG = REPO / "status" / "token_usage_accounts.jsonl"
 KST = timezone(timedelta(hours=9))
 KEEP_DAYS = 30
 
-# 단가표 — 출처 = Anthropic 공개 단가 · 기준일 2026-06-24 · 값이 바뀌면 이 표만 고친다.
-# 백만 토큰당 USD(input/output). cache_read 는 claude-fable-5-1 만 확인됨(다른 모델·
-# cache_creation 전체는 단가 미확인 — 값을 추정해 채우지 않고 "단가 미상"으로 뺀다).
+# 단가표 — 출처 = Anthropic 공개 단가(claude-api 스킬 확인, 2026-09-10) · 값이 바뀌면 이 표만 고친다.
+# 백만 토큰당 USD. cache_read·cache_write_5m·cache_write_1h 는 공식 캐시 경제학 공식으로 계산:
+#   캐시읽기 = input×0.1 (Fable 5.1 만 예외로 input×0.025 — 공식 확인됨, 스킬 shared/models.md)
+#   캐시생성 5분 = input×1.25, 캐시생성 1시간 = input×2 (전 모델 공통, 스킬 shared/prompt-caching.md)
+# 이 공식으로 모든 모델이 "같은 자"로 잡힌다 — 모델 간 금액 비교 가능(GM 09-09 지적 해결).
 PRICE_TABLE = {
-    "claude-fable-5-1":  {"input": 10.00, "output": 50.00, "cache_read": 0.25},
-    "claude-fable-5":    {"input": 10.00, "output": 50.00},
-    "claude-opus-5":     {"input": 5.00, "output": 25.00},
-    "claude-opus-4-8":   {"input": 5.00, "output": 25.00},
-    "claude-opus-4-7":   {"input": 5.00, "output": 25.00},
-    "claude-opus-4-6":   {"input": 5.00, "output": 25.00},
-    "claude-sonnet-5":   {"input": 2.00, "output": 10.00},
-    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
-    "claude-haiku-4-5":  {"input": 1.00, "output": 5.00},
-    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},  # 로그 실측 id(날짜접미 포함) — 같은 모델, 값 동일
+    "claude-fable-5-1":  {"input": 10.00, "output": 50.00, "cache_read": 0.25, "cache_write_5m": 12.50, "cache_write_1h": 20.00},
+    "claude-fable-5":    {"input": 10.00, "output": 50.00, "cache_read": 1.00, "cache_write_5m": 12.50, "cache_write_1h": 20.00},
+    "claude-opus-5":     {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m": 6.25, "cache_write_1h": 10.00},
+    "claude-opus-4-8":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m": 6.25, "cache_write_1h": 10.00},
+    "claude-opus-4-7":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m": 6.25, "cache_write_1h": 10.00},
+    "claude-opus-4-6":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write_5m": 6.25, "cache_write_1h": 10.00},
+    "claude-sonnet-5":   {"input": 2.00, "output": 10.00, "cache_read": 0.20, "cache_write_5m": 2.50, "cache_write_1h": 4.00},
+    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00, "cache_read": 0.30, "cache_write_5m": 3.75, "cache_write_1h": 6.00},
+    "claude-haiku-4-5":  {"input": 1.00, "output": 5.00, "cache_read": 0.10, "cache_write_5m": 1.25, "cache_write_1h": 2.00},
+    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00, "cache_read": 0.10, "cache_write_5m": 1.25, "cache_write_1h": 2.00},  # 로그 실측 id(날짜접미 포함) — 같은 모델, 값 동일
 }
 USD_KRW = 1400  # 환율 고정(GM 지시 2026-09-09) — 실시간 조회 안 함(외부 호출 금지)
 
@@ -61,7 +63,8 @@ def proj_name(cwd):
 
 
 def empty_bucket():
-    return {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "sessions": []}
+    return {"input": 0, "cache_creation": 0, "cache_creation_5m": 0, "cache_creation_1h": 0,
+            "cache_read": 0, "output": 0, "sessions": []}
 
 
 def parse_file(path):
@@ -96,6 +99,9 @@ def parse_file(path):
                 bucket = days.setdefault(day, {}).setdefault(model, empty_bucket())
                 bucket["input"] += int(usage.get("input_tokens") or 0)
                 bucket["cache_creation"] += int(usage.get("cache_creation_input_tokens") or 0)
+                cc = usage.get("cache_creation") or {}  # {ephemeral_5m_input_tokens, ephemeral_1h_input_tokens} — 5분/1시간 단가 갈라 매기는 근거
+                bucket["cache_creation_5m"] += int(cc.get("ephemeral_5m_input_tokens") or 0)
+                bucket["cache_creation_1h"] += int(cc.get("ephemeral_1h_input_tokens") or 0)
                 bucket["cache_read"] += int(usage.get("cache_read_input_tokens") or 0)
                 bucket["output"] += int(usage.get("output_tokens") or 0)
                 sid = rec.get("sessionId")
@@ -180,22 +186,31 @@ def account_summary():
 
 
 def cost_for_bucket(model, b):
-    """모델·버킷(input/cache_creation/cache_read/output) → (원화, 단가있는토큰수, 단가미상토큰수).
-    단가표에 없는 모델은 전체가 단가미상. 있는 모델도 cache_creation·
-    (fable-5-1 외) cache_read 는 단가미상으로 뺀다(0원 아님)."""
+    """모델·버킷(input/cache_creation[_5m/_1h]/cache_read/output) → (원화, 단가있는토큰수, 단가미상토큰수).
+    단가표에 없는 모델은 전체가 단가미상. 있는 모델은 캐시읽기·캐시생성(5분/1시간 분리)까지 전부
+    공식 단가로 매긴다 — 옛 로그처럼 5분/1시간 분리값이 없는 cache_creation 잔여분만 단가미상으로 뺀다."""
     price = PRICE_TABLE.get(model)
     total = b["input"] + b["cache_creation"] + b["cache_read"] + b["output"]
     if not price:
         return 0.0, 0, total
     usd = (b["input"] * price["input"] + b["output"] * price["output"]) / 1_000_000
     priced = b["input"] + b["output"]
-    unpriced = b["cache_creation"]
+    unpriced = 0
     cache_read_price = price.get("cache_read")
     if cache_read_price is not None:
         usd += b["cache_read"] * cache_read_price / 1_000_000
         priced += b["cache_read"]
     else:
         unpriced += b["cache_read"]
+    known_split = b["cache_creation_5m"] + b["cache_creation_1h"]
+    write_5m_price = price.get("cache_write_5m")
+    write_1h_price = price.get("cache_write_1h")
+    if write_5m_price is not None and write_1h_price is not None:
+        usd += (b["cache_creation_5m"] * write_5m_price + b["cache_creation_1h"] * write_1h_price) / 1_000_000
+        priced += known_split
+        unpriced += max(b["cache_creation"] - known_split, 0)  # 옛 로그(5분/1시간 분리 없음) 잔여분만
+    else:
+        unpriced += b["cache_creation"]
     return usd * USD_KRW, priced, unpriced
 
 
@@ -206,8 +221,9 @@ def sum_model_buckets(days_out, day_filter):
         if not day_filter(day):
             continue
         for model, b in models.items():
-            acc = result.setdefault(model, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0})
-            for k in ("input", "cache_creation", "cache_read", "output"):
+            acc = result.setdefault(model, {"input": 0, "cache_creation": 0, "cache_creation_5m": 0,
+                                             "cache_creation_1h": 0, "cache_read": 0, "output": 0})
+            for k in ("input", "cache_creation", "cache_creation_5m", "cache_creation_1h", "cache_read", "output"):
                 acc[k] += b[k]
     return result
 
@@ -262,16 +278,20 @@ def main():
             if day < cutoff:
                 continue
             for model, b in models.items():
-                mb = merged_days.setdefault(day, {}).setdefault(model, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "sessions": set()})
+                mb = merged_days.setdefault(day, {}).setdefault(model, {"input": 0, "cache_creation": 0, "cache_creation_5m": 0, "cache_creation_1h": 0, "cache_read": 0, "output": 0, "sessions": set()})
                 mb["input"] += b["input"]
                 mb["cache_creation"] += b["cache_creation"]
+                mb["cache_creation_5m"] += b.get("cache_creation_5m", 0)  # 옛 파일캐시 잔존분 방어(신규 필드 없음)
+                mb["cache_creation_1h"] += b.get("cache_creation_1h", 0)
                 mb["cache_read"] += b["cache_read"]
                 mb["output"] += b["output"]
                 mb["sessions"].update(b["sessions"])
 
-                pb = proj_totals.setdefault(project, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "sessions": set()})
+                pb = proj_totals.setdefault(project, {"input": 0, "cache_creation": 0, "cache_creation_5m": 0, "cache_creation_1h": 0, "cache_read": 0, "output": 0, "sessions": set()})
                 pb["input"] += b["input"]
                 pb["cache_creation"] += b["cache_creation"]
+                pb["cache_creation_5m"] += b.get("cache_creation_5m", 0)
+                pb["cache_creation_1h"] += b.get("cache_creation_1h", 0)
                 pb["cache_read"] += b["cache_read"]
                 pb["output"] += b["output"]
                 pb["sessions"].update(b["sessions"])
@@ -286,6 +306,7 @@ def main():
         day: {
             model: {
                 "input": b["input"], "cache_creation": b["cache_creation"],
+                "cache_creation_5m": b["cache_creation_5m"], "cache_creation_1h": b["cache_creation_1h"],
                 "cache_read": b["cache_read"], "output": b["output"],
                 "sessions": len(b["sessions"]),
             }
@@ -296,6 +317,7 @@ def main():
     proj_out = {
         p: {
             "input": b["input"], "cache_creation": b["cache_creation"],
+            "cache_creation_5m": b["cache_creation_5m"], "cache_creation_1h": b["cache_creation_1h"],
             "cache_read": b["cache_read"], "output": b["output"],
             "sessions": len(b["sessions"]),
         }
@@ -322,8 +344,8 @@ def main():
         "pricing": {
             "usd_krw": USD_KRW,
             "usd_krw_note": "환율 1,400원 고정 · 실시간 조회 안 함",
-            "price_table_note": "출처 = Anthropic 공개 단가 · 기준일 2026-06-24 · 값이 바뀌면 PRICE_TABLE 만 고친다",
-            "unpriced_note": "단가 미상 모델·캐시생성 전체·(fable-5-1 외) 캐시읽기는 0원이 아니라 '단가 미상 토큰'으로 뺀다",
+            "price_table_note": "출처 = Anthropic 공개 단가(claude-api 스킬 확인, 2026-09-10) · 값이 바뀌면 PRICE_TABLE 만 고친다",
+            "unpriced_note": "표에 있는 모델은 캐시읽기·캐시생성(5분/1시간)까지 전부 공식 단가로 매겨 모델 간 금액이 '같은 자'로 비교된다. 단가표에 없는 모델(신규·미등록)만 전체가 단가미상 토큰으로 빠진다.",
             "this_month": price_summary(sum_model_buckets(days_out, lambda d: d >= month_start)),
             "last_7d": price_summary(sum_model_buckets(days_out, lambda d: d >= last7_start)),
             "prev_7d": price_summary(sum_model_buckets(days_out, lambda d: prev7_start <= d <= prev7_end)),
@@ -342,7 +364,7 @@ if __name__ == "__main__":
     for _day, _models in _d["days"].items():
         assert len(_day) == 10 and _day[4] == "-" and _day[7] == "-", "날짜 형식 오류: %s" % _day
         for _m, _b in _models.items():
-            for _k in ("input", "cache_creation", "cache_read", "output", "sessions"):
+            for _k in ("input", "cache_creation", "cache_creation_5m", "cache_creation_1h", "cache_read", "output", "sessions"):
                 assert _b[_k] >= 0, "음수 발견: %s/%s/%s" % (_day, _m, _k)
     for _period in ("this_month", "last_7d", "prev_7d"):
         _p = _d["pricing"][_period]

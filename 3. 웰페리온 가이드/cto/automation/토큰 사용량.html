@@ -213,6 +213,7 @@ details.fold .fold-body{padding:0 20px 18px;}
     return eok(n) + '억';
   }
   function shortModel(m){ return String(m||'').replace(/^claude-/, ''); }
+  function fmtWon(n){ n = n||0; if(n < 10000) return (n>0?'1만원 미만':'0원'); return Math.round(n/10000).toLocaleString('ko-KR')+'만원'; }
   function pad2(n){ return (n<10?'0':'')+n; }
   function dstr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
   function bucketTotal(b){ return (b.input||0)+(b.cache_creation||0)+(b.cache_read||0)+(b.output||0); }
@@ -282,7 +283,7 @@ details.fold .fold-body{padding:0 20px 18px;}
 
     document.getElementById('heroNote').innerHTML =
       '숫자는 <b>전체 합계</b>(입력+캐시생성+캐시읽기+출력)다. 대부분은 캐시 읽기 — 같은 대화를 이어갈 때 다시 읽는 양이라 새로 쓴 양보다 크다. '
-      + '달끼리 비교는 기록이 ' + esc((d.range && d.range.from) || '') + ' 부터라 아직 못 한다. 돈으로 환산한 값은 단가표가 없어 <b>측정 전</b>이다.';
+      + '달끼리 비교는 기록이 ' + esc((d.range && d.range.from) || '') + ' 부터라 아직 못 한다. 아래 모델별 막대의 원화는 캐시읽기·캐시생성(5분/1시간)까지 전 모델 <b>같은 공식 단가</b>로 매긴 값 — 모델끼리 금액 비교가 된다.';
 
     // ── 날마다 얼마나 (최근 14일 막대) ──
     var last14 = dates.slice(-14); // 왼쪽이 과거
@@ -317,11 +318,13 @@ details.fold .fold-body{padding:0 20px 18px;}
     });
     var mEntries = Object.keys(modelTotals).map(function(m){ return [m, modelTotals[m]]; }).sort(function(a,b){ return b[1]-a[1]; });
     var maxV = mEntries.length ? mEntries[0][1] : 1;
+    var last7Krw = ((d.pricing || {}).last_7d || {}).by_model || {};  // 모델별 막대와 같은 최근7일 범위 — 원화도 같은 자로 잰다
     document.getElementById('modelBars').innerHTML = mEntries.length ? mEntries.map(function(e, i){
       var pct = maxV ? Math.max(2, Math.round(e[1]/maxV*100)) : 0;
+      var krw = (last7Krw[e[0]] || {}).krw;
       return '<div class="bar-row"><div class="bar-label">' + esc(shortModel(e[0])) + '</div>'
         + '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+colorFor(e[0], i)+';"></div></div>'
-        + '<div class="bar-value">' + fmtShort(e[1]) + '</div></div>';
+        + '<div class="bar-value">' + fmtShort(e[1]) + (krw != null ? '<span class="dim" style="font-size:10px;margin-left:5px;">' + fmtWon(krw) + '</span>' : '') + '</div></div>';
     }).join('') : '<div class="dim">데이터 없음</div>';
 
     // ── 작업창별 상위 5 (모델별과 같은 막대 모양으로 — 한 화면에서 표와 막대가 섞이지 않게) ──
