@@ -28,7 +28,9 @@ GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SC
 #   배1050(시포 2026-09-09) — 실무진피드백·오넛티 조회가 브라우저에서 GAS 로 바로 가던 마지막 두 자리.
 POST_BODY = {("funnel", "staff_feedback_list"): ("t", "INTAKE_SUBMIT_TOKEN"),
              ("funnel", "ohnutti_team_list"): ("code", "OHNUTTI_ACCESS_CODE")}
-ACTIONS = {"renewal": ("stats",), "ops": ("vendor_list",), "schedule": ("load_schedule",),
+# fcheck_ranges_get = 시설부 「점검기준」 조회(공개 GET · 배9199). vendor_list 와 **같은 점검 GAS**라
+#   새 열쇠를 만들지 않고 ops 밑에 붙인다(시우 배1179 문의 · 2026-09-09).
+ACTIONS = {"renewal": ("stats",), "ops": ("vendor_list", "fcheck_ranges_get"), "schedule": ("load_schedule",),
            # home_kpi·sales_monthly = 업무&결재 GAS(TODO_GAS_URL)의 매출·지출 KPI 액션 — 배1039-A 시토.
            # notice_list = 공지서식(coo/notice · 배1113) 목록 조회 — 같은 GAS(notice_save/delete 도 이 GAS·배1082).
            # product_plan_list = 상품기획 화면(cpo/product · 배1050) 목록 조회 — 같은 업무&결재 GAS · 파라미터 없음.
@@ -105,7 +107,7 @@ def store(conn, gas, action, params, data, now):
 
 def jobs():
     """(gas, action, params) — 표를 늘리려면 여기 한 줄 + GAS_ENV/ACTIONS 만 추가한다(파일은 하나로 유지)."""
-    return [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
+    return [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("ops", "fcheck_ranges_get", ""), ("schedule", "load_schedule", ""),
             ("todo", "home_kpi", ""), ("todo", "sales_monthly", ""), ("todo", "notice_list", ""),
             ("todo", "product_plan_list", ""),
             ("funnel", "staff_feedback_list", ""), ("funnel", "ohnutti_team_list", "")]
