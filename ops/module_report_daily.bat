@@ -25,6 +25,15 @@ REM instead of adding a new scheduled task. Runs last so a failure here cannot
 REM affect the module report above.
 "%PY%" "%ROOT%\scripts\build_voyage_map.py"
 if errorlevel 1 set FAILED=%FAILED% build_voyage_map
+
+REM 2026-09-09 (cto, bae 1158): the silence detector already ran daily here, but only through
+REM module_reporter's publish_snapshot() - it wrote status\module_silence_snapshot.json and told
+REM nobody. It HAD caught cto-gm-day-pipeline going quiet, and that sat unread while
+REM monthly_ops_sync crashed for 9 straight days. A watcher that only writes a file is not a
+REM watcher. --live sends one grouped message per day (its own rate limit), so this adds no
+REM new scheduled task and no extra noise. Runs last so a send failure cannot affect the above.
+"%PY%" "%ROOT%\scripts\module_silence_detector.py" --live
+if errorlevel 1 set FAILED=%FAILED% module_silence_detector
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed

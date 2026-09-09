@@ -61,8 +61,13 @@ STATUS_DIR = PROJECT_ROOT / "status"
 LOG_PATH = STATUS_DIR / "module_silence_log.jsonl"
 SNAPSHOT_PATH = STATUS_DIR / "module_silence_snapshot.json"  # 자율현황.html #layer-automation 이 읽는 발행물(로컬 기록 전용·알림 아님)
 ROOMS_PATH = STATUS_DIR / "telegram_rooms.json"
-BOT_ROOM = "자동화현황방"  # 기존 채널 재사용(새 봇·새 방 금지)
-LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#health"
+# 2026-09-09 (배1158): 「자동화현황방」은 실재하지 않는 이름이었다 — 방 등록부(telegram_rooms.json)에
+# 그런 열쇠가 없어 발신 직전 room_unresolved 로 조용히 되돌아갔다. 즉 이 감시기는 만들어진 뒤
+# 한 번도 알림을 보낸 적이 없다(자가점검 「작동한 적 없는 장치」 부류). 등록부에 실재하고 용도가
+# 「AI 작업 관련된 내용만(백엔드 라인)」인 AI관리 방으로 맞춘다 — 새 방·새 봇을 만들지 않는다(약속 L21).
+BOT_ROOM = "AI관리"
+# 2026-09-09 (배1115): 깃헙 주소 → ERP. 실무진·GM 이 여는 곳은 erp.wellperion.com 하나다.
+LINK = "https://erp.wellperion.com/자율현황.html#health"
 
 # ── 예상 갱신주기(h) — notify_spec 의 유일한 주기 필드를 그대로 쓴다 ──────────
 DAILY_MAX_H = 30
