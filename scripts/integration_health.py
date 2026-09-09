@@ -354,6 +354,31 @@ def check_server_cron_dryrun() -> tuple[str, bool, str]:
     return name, True, "--dry-run 으로 헛도는 예약작업 없음"
 
 
+def check_member_canon_drift() -> tuple[str, bool, str]:
+    """회원 종목명 정규화가 GAS 와 갈렸나 (시포 커밋 d0e38bdaa · 2026-09-09).
+
+    왜 보나 — 서버가 종목명 정규화를 다시 구현했다(GAS _memberProgramCanon_ 이식). 재료가 시트 거울이라
+    거울이 낡은 채로 정규화하면 GAS 와 다른 표기를 쓰게 된다. 09-06 업무 SSOT 214→26건이 바로 그 부류였다
+    — 서버가 GAS 와 '조금 다른 규칙'을 갖게 됐는데 사람 신고 전까지 아무도 몰랐다.
+    시포가 sync_members 안에 갈림을 세는 자리를 붙였다. 그 값을 읽는 쪽이 없으면 어제 되밀기 워커와
+    같은 꼴이 되므로(써 두기만 하고 아무도 안 봄) 여기서 센다.
+    """
+    name = "회원 종목명 정합"
+    code, out, err = _ssh_run(
+        "cd /srv/erp && /usr/bin/python3 -c \"import sys;sys.path.insert(0,'/srv/erp');"
+        "from common import db;c=db.connect(readonly=True);"
+        "r=c.execute(\\\"SELECT v FROM sync_meta WHERE tenant_id=%s AND k='members_canon_drift'\\\",(db.TENANT,)).fetchone();"
+        "print((r['v'] if r else '') or '')\""
+    )
+    if code != 0:
+        return name, True, f"확인 불가(서버 접속 실패) — {(err or str(code)).strip()[:60]}"
+    val = (out or "").strip()
+    if not val:
+        return name, True, "갈림 0건"
+    nos = [x for x in val.replace(",", " ").split() if x]
+    return name, False, f"종목명이 GAS 와 갈린 회원 {len(nos)}명 — {', '.join(nos[:5])}{' 외' if len(nos) > 5 else ''}"
+
+
 def check_kpi_freshness() -> tuple[str, bool, str]:
     """⑥ KPI 집계 신선도: kpi_values.json generated_at 이 25시간 이내(스케줄=07:50·21:00 일 2회,
     최대 간격 약 13.2h + 1회 결측 여유분).
@@ -432,6 +457,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_unpushed,
         check_server_pushback,
         check_server_cron_dryrun,
+        check_member_canon_drift,
         check_kpi_freshness,
         check_page_score_stale_ship_refs,
     )
