@@ -18,7 +18,7 @@ import json
 import re
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 OUT = ROOT / "3. 웰페리온 가이드" / "cmo" / "series" / "series_data.json"
 
 # producer 모듈 로드(검증된 파서 재사용)

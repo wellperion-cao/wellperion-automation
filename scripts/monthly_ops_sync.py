@@ -41,7 +41,7 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"
 QUEUE_FILE = BASE_DIR / "status" / "_queue.json"
 

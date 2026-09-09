@@ -38,7 +38,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:

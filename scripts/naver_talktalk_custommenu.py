@@ -34,7 +34,7 @@ try:
 except Exception:
     pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 STORAGE_STATE = ROOT / "profiles" / "naver-blog_state.json"
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 CUSTOMMENU_URL = "https://partner.talk.naver.com/web/accounts/102187005/custommenu"

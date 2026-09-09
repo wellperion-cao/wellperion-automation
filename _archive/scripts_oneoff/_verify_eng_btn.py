@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from ssot.canon import canon_get
 _INQUIRY_URL = "http://" + canon_get("inquiry_path") + "/"
 
-EVIDENCE = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
+EVIDENCE = Path.home() / r"welperion-automation\scripts\poc-evidence"
 EVIDENCE.mkdir(parents=True, exist_ok=True)
 
 JS_ENG_BTN = """

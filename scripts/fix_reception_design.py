@@ -22,7 +22,7 @@ try:
 except Exception:
     pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 PROFILE_DIR = ROOT / "profiles" / "wordpress"
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 SCRATCHPAD = Path(r"C:\Users\jjky0\AppData\Local\Temp\claude\C--Users-jjky0-welperion-automation\e0d6c6df-0836-46ea-8aad-5e624987d96a\scratchpad")

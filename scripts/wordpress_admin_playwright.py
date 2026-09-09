@@ -27,7 +27,7 @@ try:
 except Exception:
     pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 PROFILE_DIR = ROOT / "profiles" / "wordpress"
 SESSION_STATE_FILE = PROFILE_DIR / "wp_session.json"  # 인증정보 — .gitignore profiles/* 로 커밋 제외됨
 

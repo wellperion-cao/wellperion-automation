@@ -57,7 +57,7 @@ from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 MATRIX_FILE = BASE_DIR / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix.json"
 QUEUE_FILE = BASE_DIR / "status" / "_queue.json"
 KPI_FILE = BASE_DIR / "status" / "kpi_values.json"

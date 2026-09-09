@@ -17,7 +17,8 @@ import re
 import sys
 from pathlib import Path
 
-MEMORY_DIR = Path(r"C:\Users\jjky0\.claude\projects\C--Users-jjky0-welperion-automation\memory")
+_PROJECT_KEY = str(Path.home() / "welperion-automation").replace(":", "-").replace("\\", "-")
+MEMORY_DIR = Path.home() / ".claude" / "projects" / _PROJECT_KEY / "memory"
 TOP_N = 3
 _HANGUL_RUN = re.compile(r"[가-힣]{2,}")
 _FRONTMATTER = re.compile(r"^---\n(.*?\n)---\n(.*)$", re.S)

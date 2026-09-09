@@ -27,7 +27,7 @@ import unicodedata
 import urllib.parse
 from pathlib import Path
 
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 MATRIX_FILE = BASE_DIR / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix.json"
 
 # Pages 배포 루트 = 가이드 폴더가 루트(가이드 접두사 금지 → 404, INC 참조 reference_pages_url_no_guide_prefix).

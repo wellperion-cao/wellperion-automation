@@ -9,7 +9,7 @@ import asyncio
 from pathlib import Path
 from playwright.async_api import async_playwright
 
-EVIDENCE = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
+EVIDENCE = Path.home() / r"welperion-automation\scripts\poc-evidence"
 EVIDENCE.mkdir(parents=True, exist_ok=True)
 
 # 주입할 JS — 문의 페이지에서만 lang-header href를 올바른 대응 URL로 교체
@@ -33,7 +33,7 @@ IHF_URL = "http://wellperion.com/wp/wp-admin/options-general.php?page=insert-hea
 async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch_persistent_context(
-            user_data_dir=str(Path(r"C:\Users\jjky0\welperion-automation\profiles\wordpress")),
+            user_data_dir=str(Path.home() / r"welperion-automation\profiles\wordpress"),
             headless=False,
             ignore_https_errors=True,
             no_viewport=True,

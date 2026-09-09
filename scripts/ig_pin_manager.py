@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 PROFILE_BASE = ROOT / "profiles" / "instagram"
 EVIDENCE = ROOT / "scripts" / "poc-evidence"
 LOGIN_SIGNALS = ("accounts/login", "accounts/onetap", "/challenge/")

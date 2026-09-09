@@ -37,7 +37,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SHIP_QUEUE_PATH = ROOT / "status" / "_queue.json"
 SHIP_QUEUE_ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"

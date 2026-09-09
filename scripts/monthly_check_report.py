@@ -55,7 +55,7 @@ except Exception:
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 LOG_FILE = BASE_DIR / "status" / "support_monthly_report_log.jsonl"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"  # 토큰·챗ID 단일출처(INC-004)
 

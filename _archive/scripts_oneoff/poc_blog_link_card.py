@@ -18,7 +18,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 # 삽입할 기본 CTA URL (깔끔한 형태 — UTM 없이 og:image 노출 우선)

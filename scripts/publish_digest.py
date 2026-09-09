@@ -61,7 +61,7 @@ except Exception:
 from review_states import TERMINAL_STATES
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 ENV_FILE = ROOT / "telegram_bot" / ".env"
 SENT_LEDGER = ROOT / "scripts" / ".publish_digest_sent.json"
 REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"

@@ -14,8 +14,9 @@ import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-MEMORY_INDEX = Path(r"C:\Users\jjky0\.claude\projects\C--Users-jjky0-welperion-automation\memory\MEMORY.md")
+ROOT = Path.home() / "welperion-automation"
+_PROJECT_KEY = str(Path.home() / "welperion-automation").replace(":", "-").replace("\\", "-")
+MEMORY_INDEX = Path.home() / ".claude" / "projects" / _PROJECT_KEY / "memory" / "MEMORY.md"
 BOOT_SKILL = ROOT / ".claude" / "skills" / "wellperion-boot" / "SKILL.md"
 REPORT_SKILL = ROOT / ".claude" / "skills" / "wellperion-gm-report" / "SKILL.md"
 AGENTS_DIR = ROOT / "wellperion-agents" / ".claude" / "agents"

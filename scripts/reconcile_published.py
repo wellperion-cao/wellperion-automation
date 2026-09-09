@@ -49,7 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import merge_save_review_queue  # noqa: E402
 
-ROOT        = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT        = Path.home() / "welperion-automation"
 QUEUE_PATH  = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SCRIPTS_DIR = ROOT / "scripts"
 NOTIFY_SCRIPT = SCRIPTS_DIR / "notify_published_links.py"

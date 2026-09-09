@@ -48,7 +48,7 @@ except Exception:
         return False
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"
 SUMMARY_FILE = BASE_DIR / "scripts" / "_education_data" / "latest_summary.json"
 PROPOSALS_FILE = BASE_DIR / "status" / "learning_proposals.json"

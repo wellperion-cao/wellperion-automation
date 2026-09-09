@@ -10,7 +10,7 @@
 #   → 시디(AI CTO)가 무료 AI 그림 생성을 자동화할 수 있다.
 #
 # 실행 전 사전 설치 (GM님 로컬 PC 1회):
-#   cd C:\Users\jjky0\welperion-automation
+#   cd %USERPROFILE%\welperion-automation
 #   .venv\Scripts\activate  (없으면: python -m venv .venv)
 #   pip install playwright
 #   playwright install chromium
@@ -61,7 +61,7 @@ _harden_console_encoding()
 # -----------------------------------------------------------------
 # 상수
 # -----------------------------------------------------------------
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 BING_CREATE_URL = "https://www.bing.com/images/create"
 
 # Persistent Context 프로필 (Bing 전용) — 인스타 멀티계정 프로필 패턴 동일.

@@ -51,12 +51,13 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"
 STATUS_DIR = BASE_DIR / "status"
 SCRIPTS_DIR = BASE_DIR / "scripts"
 
-MEMORY_DIR = Path(r"C:\Users\jjky0\.claude\projects\C--Users-jjky0-welperion-automation\memory")
+_PROJECT_KEY = str(Path.home() / "welperion-automation").replace(":", "-").replace("\\", "-")
+MEMORY_DIR = Path.home() / ".claude" / "projects" / _PROJECT_KEY / "memory"
 MEMORY_INDEX = MEMORY_DIR / "MEMORY.md"
 
 SNAPSHOT_DIR = STATUS_DIR / "_memory_snapshots"

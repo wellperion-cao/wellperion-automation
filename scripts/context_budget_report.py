@@ -33,8 +33,9 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
-REPO = Path(r"C:\Users\jjky0\welperion-automation")
-MEM_DIR = Path(r"C:\Users\jjky0\.claude\projects\C--Users-jjky0-welperion-automation\memory")
+REPO = Path.home() / "welperion-automation"
+_PROJECT_KEY = str(Path.home() / "welperion-automation").replace(":", "-").replace("\\", "-")
+MEM_DIR = Path.home() / ".claude" / "projects" / _PROJECT_KEY / "memory"
 OUT = REPO / "status" / "context_budget.json"
 
 # 측정 대상: (표시명, 경로 또는 glob, 종류)

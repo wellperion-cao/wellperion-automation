@@ -58,7 +58,7 @@ for _stream_name in ("stdout", "stderr"):
         except Exception:
             pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 ROADMAP = ROOT / "instagram" / "_AI시리즈_로드맵.md"
 INSTAGRAM_DIR = ROOT / "instagram"
 # AI 시리즈(개인계정 namuk) 편들은 instagram/namuk.wellperion/ 하위에 거주(회사 콘텐츠와 분리).

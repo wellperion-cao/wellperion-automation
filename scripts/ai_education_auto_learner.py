@@ -34,12 +34,12 @@ except Exception:
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"
 DATA_DIR = BASE_DIR / "scripts" / "_education_data"
 COLLECT_FILE = DATA_DIR / "latest_collect.json"
 SUMMARY_FILE = DATA_DIR / "latest_summary.json"
-ARCHIVE_DIR = Path(r"C:\Users\jjky0\Desktop\_정리완료\03_교육")
+ARCHIVE_DIR = Path.home() / r"Desktop\_정리완료\03_교육"
 SOURCES_FILE = BASE_DIR / "learning" / "sources.json"
 
 # ── 수집 대상 소스 (기본값) ──

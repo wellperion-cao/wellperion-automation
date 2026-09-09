@@ -41,7 +41,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 INVENTORY = ROOT / "instagram" / "_실전사례_2주플랜.md"
 NAMUK_DIR = ROOT / "instagram" / "namuk.wellperion"
 REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"

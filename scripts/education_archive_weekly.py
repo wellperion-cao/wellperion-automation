@@ -32,7 +32,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from dotenv import load_dotenv
 
 # .env 위치: 레포 telegram_bot/.env (TELEGRAM_BOT_TOKEN/OWNER_ID SSOT)
-_BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+_BASE_DIR = Path.home() / "welperion-automation"
 load_dotenv(_BASE_DIR / "telegram_bot" / ".env")
 
 import requests  # send_telegram 발송용

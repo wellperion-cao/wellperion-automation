@@ -8,7 +8,7 @@ PARTNER = "--partner" in sys.argv
 import os, re, html
 import datetime as _dt
 _TODAY = _dt.date.today().strftime('%Y. %m. %d.')
-os.chdir(r'C:\Users\jjky0\welperion-automation')
+os.chdir(os.path.expanduser(r'~\welperion-automation'))
 BASE = '2. 브랜드_자료/10_다이어트캠프_브랜드가이드/'
 SRC = [('01_브랜드가이드/다캠_브랜드가이드_v0.1.md', '브랜드가이드'),
        ('02_회사소개서/다캠_회사소개서_v0.1.md', '회사소개서'),

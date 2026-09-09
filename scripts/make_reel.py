@@ -58,7 +58,7 @@ from moviepy import ImageClip, VideoClip, VideoFileClip, concatenate_videoclips,
 from moviepy.video.fx import CrossFadeIn
 from moviepy.audio.fx import AudioFadeOut
 
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+PROJECT_ROOT = Path.home() / "welperion-automation"
 MOVIE_DIR = PROJECT_ROOT / "instagram" / "Movie"
 MUSIC_POOL_DIR = PROJECT_ROOT / "instagram" / "_assets" / "music"
 

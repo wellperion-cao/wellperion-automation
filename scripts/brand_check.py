@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 BRAND_JSON = ROOT / "ssot" / "brand.json"
 FORBIDDEN_JSON = ROOT / "ssot" / "forbidden_terms.json"
 BRAND_CONSTANTS_PY = ROOT / "scripts" / "brand_constants.py"

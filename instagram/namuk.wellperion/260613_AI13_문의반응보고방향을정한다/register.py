@@ -1,7 +1,7 @@
 # 새 #13 M5 등록 + 텔레그램 [승인]카드 — register_publish 1회 호출(수동 경로 send_card=True)
 import sys
 from pathlib import Path
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 sys.path.insert(0, str(ROOT / "scripts"))
 from publish_register import register_publish
 

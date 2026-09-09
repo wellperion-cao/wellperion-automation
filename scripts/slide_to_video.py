@@ -34,9 +34,7 @@ RATIO_MAP = {
 }
 
 # Pretendard 폰트 경로 (설치된 경우 우선 사용)
-_PRETENDARD_BOLD = Path(
-    r"C:/Users/jjky0/Downloads/Pretendard-1.3.9/public/static/alternative/Pretendard-Bold.ttf"
-)
+_PRETENDARD_BOLD = Path.home() / "Downloads/Pretendard-1.3.9/public/static/alternative/Pretendard-Bold.ttf"
 _FALLBACK_FONT = Path(r"C:/Windows/Fonts/malgun.ttf")
 
 

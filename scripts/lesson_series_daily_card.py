@@ -29,7 +29,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 SENT_STATE = ROOT / "status" / "lesson_series_daily_card_sent.json"
 

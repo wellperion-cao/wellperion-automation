@@ -2,10 +2,11 @@
 import asyncio
 import json
 import sys
-sys.path.insert(0, r"C:\Users\jjky0\welperion-automation\scripts")
+from pathlib import Path
+sys.path.insert(0, str(Path.home() / "welperion-automation" / "scripts"))
 from wordpress_admin_playwright import _import_playwright, _launch, WP_ADMIN_URL
 
-CANON_VALUES_PATH = r"C:\Users\jjky0\welperion-automation\ssot\canon_values.json"
+CANON_VALUES_PATH = str(Path.home() / "welperion-automation" / "ssot" / "canon_values.json")
 
 
 def _load_one_liner() -> str:

@@ -27,7 +27,7 @@ from pathlib import Path
 # -----------------------------------------------------------------
 # 경로
 # -----------------------------------------------------------------
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+PROJECT_ROOT = Path.home() / "welperion-automation"
 _BRAND_JSON = PROJECT_ROOT / "ssot" / "brand.json"
 
 # -----------------------------------------------------------------

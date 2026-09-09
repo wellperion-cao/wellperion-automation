@@ -67,7 +67,7 @@ except Exception:  # 로거 부재가 발행 파이프라인을 죽이면 안 �
     def _replay_append(*_a, **_k):
         return False
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 PUBLISH_SCRIPT = ROOT / "scripts" / "instagram_upload_playwright.py"
 BLOG_SCRIPT = ROOT / "scripts" / "naver_blog_upload_playwright.py"   # 블로그 발행 스크립트

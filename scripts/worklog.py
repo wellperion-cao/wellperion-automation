@@ -31,8 +31,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# 저장소 루트 = 이 파일 기준(사용자명·PC 가 달라도 동작 — 집 PC 설치 2026-09-08)
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path.home() / "welperion-automation"
 WORKLOG_PATH = ROOT / "status" / "worklog.jsonl"
 
 KST = timezone(timedelta(hours=9))

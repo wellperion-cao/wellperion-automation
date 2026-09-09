@@ -57,7 +57,7 @@ except Exception:
         return False
 
 # ── 경로 상수 ──
-BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
+BASE_DIR = Path.home() / "welperion-automation"
 PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"
 LOG_FILE = BASE_DIR / "status" / "monthly_ops_log.jsonl"
 ENV_FILE = BASE_DIR / "telegram_bot" / ".env"  # 토큰·챗ID 단일출처(INC-004)

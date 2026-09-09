@@ -3,7 +3,7 @@
 #         멀티계정(--account) + 영상(mp4) 캐러셀 + ig_NN 폴더 형식 지원
 #
 # 실행 전 사전 설치 (GM님 로컬 PC 1회):
-#   cd C:\Users\jjky0\welperion-automation
+#   cd %USERPROFILE%\welperion-automation
 #   .venv\Scripts\activate  (없으면: python -m venv .venv)
 #   pip install playwright
 #   playwright install chromium
@@ -28,7 +28,7 @@
 #   profiles/instagram/{account}/  (기본 account: namuk.wellperion)
 #
 # 결과 확인:
-#   C:\Users\jjky0\welperion-automation\scripts\poc-evidence\instagram-{mode}-{timestamp}.png
+#   %USERPROFILE%\welperion-automation\scripts\poc-evidence\instagram-{mode}-{timestamp}.png
 
 import argparse
 import asyncio
@@ -79,7 +79,7 @@ INSTAGRAM_HOME_URL = "https://www.instagram.com"
 
 # Persistent Context 프로필 베이스 디렉터리 — 계정별 하위 폴더로 분리
 # 실제 경로: PROFILE_BASE / {account}  (예: profiles/instagram/namuk.wellperion)
-PROFILE_BASE = Path(r"C:\Users\jjky0\welperion-automation\profiles\instagram")
+PROFILE_BASE = Path.home() / r"welperion-automation\profiles\instagram"
 
 # 기본 계정 (--account 미지정 시)
 DEFAULT_ACCOUNT = "namuk.wellperion"
@@ -89,7 +89,7 @@ def get_profile_dir(account: str) -> Path:
     """계정명 → Persistent Context 프로필 경로. 기존 단일 프로필과 호환."""
     return PROFILE_BASE / account
 
-EVIDENCE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
+EVIDENCE_DIR = Path.home() / r"welperion-automation\scripts\poc-evidence"
 
 # headful 고정 UA (Mobile UA는 데스크탑 업로드 UI 비활성화 유발 — 데스크탑 UA 고정)
 FIXED_UA = (
@@ -483,7 +483,7 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
 # CropAspectVerifyFailed 로 run_publish 가 이 패딩을 적용해 1회 재시도한다(마지막 안전망 —
 # 잘라내기 아님, 캔버스 확장). 정사각이면 IG 기본 크롭과 이미 같은 비율이라 그대로 통과.
 # -----------------------------------------------------------------
-IG_PAD_CACHE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\.ig_pad_cache")
+IG_PAD_CACHE_DIR = Path.home() / r"welperion-automation\scripts\.ig_pad_cache"
 
 
 class CropAspectVerifyFailed(Exception):
@@ -927,7 +927,7 @@ async def _probe_selector_group(page, label: str, selectors: list[str]) -> str |
 # 수동 --mode publish 경로에서도 큐가 '발행완료'로 갱신되게 (누락 반복 방지).
 # 예외는 광범위 try/except 로 포획 — 발행 자체를 절대 깨지 않음.
 # -----------------------------------------------------------------
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 _REVIEW_QUEUE_PATH = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 
 

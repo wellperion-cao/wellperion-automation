@@ -35,7 +35,7 @@ except Exception:
     def _tg_gateway_send(*a, **k):
         return None
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 M1_URL = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#M1"
 

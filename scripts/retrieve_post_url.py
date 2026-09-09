@@ -36,7 +36,7 @@ try:
 except Exception:
     pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 
 # 채널별 세션 프로파일 경로 (기존 upload 스크립트 PERSISTENT_PROFILE_DIR 재사용)
 BLOG_PROFILE   = ROOT / "profiles" / "naver-blog"

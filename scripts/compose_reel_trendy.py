@@ -37,7 +37,7 @@ from moviepy import VideoClip, concatenate_videoclips, AudioFileClip
 from moviepy.video.fx import CrossFadeIn
 from moviepy.audio.fx import AudioFadeOut
 
-PROJECT_ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+PROJECT_ROOT = Path.home() / "welperion-automation"
 MOVIE_DIR = PROJECT_ROOT / "instagram" / "Movie"
 
 # 폰트 (실제 존재 경로 자동 선택)

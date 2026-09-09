@@ -20,7 +20,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance
 
-SCRIPTS = Path(r"C:\Users\jjky0\welperion-automation\scripts")
+SCRIPTS = Path.home() / r"welperion-automation\scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from compose_barre import (
@@ -28,7 +28,7 @@ from compose_barre import (
 )
 from brand_constants import BEIGE, BLACK_BG, WHITE, GRAY, SEP_LINE
 
-ROOT     = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT     = Path.home() / "welperion-automation"
 SCENES   = ROOT / "instagram" / "Image" / "방학특강(원본 이미지)"
 OUT      = ROOT / "instagram" / "260701_여름방학특강_ep3" / "output(인스타그램)"
 GUIDE    = ROOT / "3. 웰페리온 가이드"

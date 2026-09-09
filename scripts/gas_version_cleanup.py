@@ -40,7 +40,7 @@ try:
 except Exception:
     pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 PROFILE_DIR = ROOT / "profiles" / "gas-cleanup"
 SCRATCH = Path(r"C:\Users\jjky0\AppData\Local\Temp\claude\C--Users-jjky0-welperion-automation\ca5d031a-83b7-43bd-bfba-3fb30c49b86a\scratchpad")
 STATUS_PATH = SCRATCH / "gas_cleanup_status.json"

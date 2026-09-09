@@ -79,7 +79,7 @@ for _stream_name in ("stdout", "stderr"):
         except Exception:
             pass
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 REVIEW_DIR = ROOT / "3. 웰페리온 가이드" / "cmo" / "review"
 REVIEW_QUEUE_PATH = REVIEW_DIR / "review_queue.json"
 ENV_PATH = ROOT / "telegram_bot" / ".env"

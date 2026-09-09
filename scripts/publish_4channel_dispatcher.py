@@ -52,7 +52,7 @@ except Exception:
 # ─────────────────────────────────────────────
 # 경로 상수
 # ─────────────────────────────────────────────
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 SCRIPTS_DIR = ROOT / "scripts"
 
 # 채널별 업로드 스크립트 경로 (수정 금지 — 기존 파일)

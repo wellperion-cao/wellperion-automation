@@ -23,13 +23,13 @@ def _harden_console():
 
 _harden_console()
 
-PROFILE_DIR = Path(r"C:\Users\jjky0\welperion-automation\profiles\instagram\namuk.wellperion")
-EVIDENCE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence")
+PROFILE_DIR = Path.home() / r"welperion-automation\profiles\instagram\namuk.wellperion"
+EVIDENCE_DIR = Path.home() / r"welperion-automation\scripts\poc-evidence"
 ACCOUNT = "namuk.wellperion"
 IG_PROFILE_URL = f"https://www.instagram.com/{ACCOUNT}/"
 
-LEDGER_PATH = Path(r"C:\Users\jjky0\welperion-automation\status\ig_engagement_ledger.json")
-REVIEW_QUEUE_PATH = Path(r"C:\Users\jjky0\welperion-automation\3. 웰페리온 가이드\cmo\review\review_queue.json")
+LEDGER_PATH = Path.home() / r"welperion-automation\status\ig_engagement_ledger.json"
+REVIEW_QUEUE_PATH = Path.home() / r"welperion-automation\3. 웰페리온 가이드\cmo\review\review_queue.json"
 
 VIDEO_EXTS = (".mp4", ".mov", ".m4v", ".webm")
 
@@ -60,7 +60,7 @@ def _detect_format(entry):
         return "reel"
     folder = entry.get("folder") if entry else None
     if folder:
-        folder_path = Path(r"C:\Users\jjky0\welperion-automation") / folder
+        folder_path = Path.home() / "welperion-automation" / folder
         try:
             if folder_path.exists():
                 for f in folder_path.rglob("*"):
@@ -363,7 +363,7 @@ async def main():
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
     # JSON 저장
-    out_path = Path(r"C:\Users\jjky0\welperion-automation\scripts\poc-evidence") / f"ig_engagement_poc_{result['timestamp']}.json"
+    out_path = Path.home() / r"welperion-automation\scripts\poc-evidence" / f"ig_engagement_poc_{result['timestamp']}.json"
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n결과 저장: {out_path}")
 

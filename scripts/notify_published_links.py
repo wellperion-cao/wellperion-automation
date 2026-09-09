@@ -25,7 +25,7 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 ENV_FILE = ROOT / "telegram_bot" / ".env"
 
