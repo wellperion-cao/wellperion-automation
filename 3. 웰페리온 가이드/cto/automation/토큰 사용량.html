@@ -267,7 +267,10 @@ td.num,th.num{text-align:right;}
       acctHtml = '<div class="acct-empty">기록 없음 — ' + esc(acc.tracked_since || '2026-09-09') + '부터 쌓임 (그 전 대화는 계정 구분이 로그에 없다)</div>';
     } else {
       acctHtml = '<div class="tbl-wrap"><table><thead><tr><th>계정</th><th class="num">세션(추적 시작 이후)</th></tr></thead><tbody>'
-        + keys.map(function(k){ return '<tr><td>'+esc(k)+'</td><td class="num">'+fmt(bySrc[k])+'</td></tr>'; }).join('')
+        + keys.map(function(k){
+            var n = bySrc[k];
+            return '<tr><td>'+esc(k)+'</td><td class="num">'
+              + (n ? fmt(n) : '<span class="dim">아직 기록 없음</span>') + '</td></tr>'; }).join('')
         + '</tbody></table></div>'
         + '<div class="note">현재 로그인 계정: ' + esc(acc.current || '') + ' · ' + esc(acc.tracked_since || '') + ' 이전 대화는 계정 미상.</div>';
     }

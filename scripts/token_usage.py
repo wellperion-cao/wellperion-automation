@@ -137,8 +137,17 @@ def append_new_sessions(today_str, sessions_today, account):
             f.write(json.dumps({"sessionId": sid, "account": account, "first_seen": today_str}, ensure_ascii=False) + "\n")
 
 
+# 회사가 쓰는 클로드 계정 — GM 지시 2026-09-09 (cao 외 info·lessons 추가).
+# 아직 그 계정으로 뜬 세션이 없어도 화면에 줄을 세워 「아직 기록 없음」으로 보이게 한다.
+KNOWN_ACCOUNTS = [
+    "cao@wellperion.com",
+    "info@wellperion.com",
+    "lessons@wellperion.com",
+]
+
+
 def account_summary():
-    counts = {}
+    counts = {a: 0 for a in KNOWN_ACCOUNTS}
     if ACCOUNTS_LOG.exists():
         with open(ACCOUNTS_LOG, encoding="utf-8") as f:
             for line in f:
