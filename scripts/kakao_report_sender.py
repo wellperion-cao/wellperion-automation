@@ -1821,28 +1821,31 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         return False, "near_dup"
 
     room_win = open_or_find_room(room_name)
-    focus_window(room_win, room_name)
-    input_box = get_input_box(room_win, room_name)
-    input_box.click_input()
-    time.sleep(0.2)
-    paste_text(input_box, text)
+    try:
+        focus_window(room_win, room_name)
+        input_box = get_input_box(room_win, room_name)
+        input_box.click_input()
+        time.sleep(0.2)
+        paste_text(input_box, text)
 
-    if dry_run:
-        screenshot(room_win, room_name, "dryrun_message_preview")
-        clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
-        log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
-        close_room_window(room_win, room_name)
+        if dry_run:
+            screenshot(room_win, room_name, "dryrun_message_preview")
+            clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
+            log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
+            return True, ""
+
+        send_enter(input_box)
+        time.sleep(0.5)
+        screenshot(room_win, room_name, "message_sent")
+        log(f"[{room_name}] 텍스트 전송 완료")
+        record_dedup_sent(room_name, text=text)
+        _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
+                      ok=True, kind="message", channel="kakao")
         return True, ""
-
-    send_enter(input_box)
-    time.sleep(0.5)
-    screenshot(room_win, room_name, "message_sent")
-    log(f"[{room_name}] 텍스트 전송 완료")
-    record_dedup_sent(room_name, text=text)
-    _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
-                  ok=True, kind="message", channel="kakao")
-    close_room_window(room_win, room_name)
-    return True, ""
+    finally:
+        # 성공이든 예외든 방 창은 닫는다(GM 지시 2026-09-09) — close_room_window 자체가
+        # best-effort(내부 try/except)라 여기서 발신 결과·예외를 덮지 않는다.
+        close_room_window(room_win, room_name)
 
 
 def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> tuple[bool, str]:
@@ -1874,71 +1877,74 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
             return False, "near_dup"
 
     room_win = open_or_find_room(room_name)
-    focus_window(room_win, room_name)
-    image_to_clipboard(image_path)
-    input_box = paste_image_preview(room_win, room_name)
-    popup = find_clipboard_popup()  # 실측: Ctrl+V는 보통 별도 "클립보드 이미지 전송" 팝업을 띄움
+    try:
+        focus_window(room_win, room_name)
+        image_to_clipboard(image_path)
+        input_box = paste_image_preview(room_win, room_name)
+        popup = find_clipboard_popup()  # 실측: Ctrl+V는 보통 별도 "클립보드 이미지 전송" 팝업을 띄움
 
-    if dry_run:
-        screenshot(room_win, room_name, "dryrun_preview")
+        if dry_run:
+            screenshot(room_win, room_name, "dryrun_preview")
+            if popup is not None:
+                cancel_clipboard_popup(popup, room_name)  # 팝업은 별도 창 — Escape로 직접 닫아야 함
+            else:
+                clear_input(input_box)  # 팝업 없이 인라인 미리보기였던 구버전 카톡용 폴백
+            log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, 전송 생략(안전) — 캡션 미리보기: {caption!r}")
+            return True, ""
+
         if popup is not None:
-            cancel_clipboard_popup(popup, room_name)  # 팝업은 별도 창 — Escape로 직접 닫아야 함
+            confirm_clipboard_popup(popup, room_name)  # 이미지 전송(팝업 캡션칸 Enter)
         else:
-            clear_input(input_box)  # 팝업 없이 인라인 미리보기였던 구버전 카톡용 폴백
-        log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, 전송 생략(안전) — 캡션 미리보기: {caption!r}")
-        close_room_window(room_win, room_name)
+            send_enter(input_box)  # 팝업 없는 구버전 카톡 폴백 — 입력창에서 바로 전송
+        time.sleep(1.0)
+        # ── 캡션은 사진 다음의 '별도 메시지' 다. 붙여넣기가 먹었는지 눈으로 확인하고 보낸다.
+        #   2026-08-12 실사고: 사진은 갔는데 캡션이 안 갔고, 로그에는 image+caption 성공으로
+        #   찍혔다. GM 이 방을 보고서야 알았다("내용을 사진에 넣지말고 따로 남겨줘"). 원인은
+        #   이미지 전송 팝업이 닫힌 직후 포커스가 방 입력창에 없어 붙여넣기가 허공에 떨어진 것.
+        #   그래서 ①방 창을 다시 앞으로 ②붙인 뒤 입력창에 글이 실제로 들어갔는지 확인
+        #   ③비어 있으면 한 번 더 ④그래도 비면 성공이라고 적지 않는다.
+        caption_sent = False
+        if caption:
+            # 2026-09-07 실측: 검색으로 '방금 연' 방에서만 두 번 다 실패했다(이미 열려 있던 방은 0건).
+            #   새 창은 입력창이 자리 잡기 전이라 0.3초로는 부족하다 — 재시도 3회, 간격을 늘려 간다.
+            for attempt, settle in enumerate((0.5, 1.2, 2.5)):
+                focus_window(room_win, room_name)
+                time.sleep(settle)
+                input_box = get_input_box(room_win, room_name)
+                input_box.click_input()
+                time.sleep(0.3)
+                paste_text(input_box, caption)
+                time.sleep(0.6)
+                try:
+                    typed = (input_box.window_text() or "").strip()
+                except Exception:
+                    typed = ""
+                if not typed:
+                    log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/3")
+                    continue
+                send_enter(input_box)
+                time.sleep(0.5)
+                caption_sent = True
+                break
+            if not caption_sent:
+                log(f"[{room_name}] ⚠️ 사진은 갔으나 설명 글을 못 보냈다 — 사람이 직접 보내야 한다")
+                # 로그에만 남으면 아무도 모른다(2026-09-07 09:31 ★부서장) — 업무보고방에 한 줄.
+                _notify_send_failure([(room_name, "캡션 붙여넣기 3회 실패(사진만 감)")], "image+caption",
+                                     f"{room_name} 방에 아래 한 줄을 손으로 보내 주세요\n{caption}")
+
+        screenshot(room_win, room_name, "sent")
+        log(f"[{room_name}] 전송 완료" + ("" if caption_sent or not caption else " (설명 글 누락)"))
+        record_dedup_sent(room_name, text=caption, image_path=image_path)
+        # 로그는 실제로 나간 것만 적는다 — 캡션이 못 갔는데 image+caption 으로 적으면
+        # 어떤 감시기도 그 누락을 못 잡는다(오늘 사고의 실제 원인).
+        _log_outbound(caption if caption_sent else "", chat_id=room_name,
+                      source="kakao_report_sender.image", ok=True,
+                      kind="image+caption" if caption_sent else "image", channel="kakao")
         return True, ""
-
-    if popup is not None:
-        confirm_clipboard_popup(popup, room_name)  # 이미지 전송(팝업 캡션칸 Enter)
-    else:
-        send_enter(input_box)  # 팝업 없는 구버전 카톡 폴백 — 입력창에서 바로 전송
-    time.sleep(1.0)
-    # ── 캡션은 사진 다음의 '별도 메시지' 다. 붙여넣기가 먹었는지 눈으로 확인하고 보낸다.
-    #   2026-08-12 실사고: 사진은 갔는데 캡션이 안 갔고, 로그에는 image+caption 성공으로
-    #   찍혔다. GM 이 방을 보고서야 알았다("내용을 사진에 넣지말고 따로 남겨줘"). 원인은
-    #   이미지 전송 팝업이 닫힌 직후 포커스가 방 입력창에 없어 붙여넣기가 허공에 떨어진 것.
-    #   그래서 ①방 창을 다시 앞으로 ②붙인 뒤 입력창에 글이 실제로 들어갔는지 확인
-    #   ③비어 있으면 한 번 더 ④그래도 비면 성공이라고 적지 않는다.
-    caption_sent = False
-    if caption:
-        # 2026-09-07 실측: 검색으로 '방금 연' 방에서만 두 번 다 실패했다(이미 열려 있던 방은 0건).
-        #   새 창은 입력창이 자리 잡기 전이라 0.3초로는 부족하다 — 재시도 3회, 간격을 늘려 간다.
-        for attempt, settle in enumerate((0.5, 1.2, 2.5)):
-            focus_window(room_win, room_name)
-            time.sleep(settle)
-            input_box = get_input_box(room_win, room_name)
-            input_box.click_input()
-            time.sleep(0.3)
-            paste_text(input_box, caption)
-            time.sleep(0.6)
-            try:
-                typed = (input_box.window_text() or "").strip()
-            except Exception:
-                typed = ""
-            if not typed:
-                log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/3")
-                continue
-            send_enter(input_box)
-            time.sleep(0.5)
-            caption_sent = True
-            break
-        if not caption_sent:
-            log(f"[{room_name}] ⚠️ 사진은 갔으나 설명 글을 못 보냈다 — 사람이 직접 보내야 한다")
-            # 로그에만 남으면 아무도 모른다(2026-09-07 09:31 ★부서장) — 업무보고방에 한 줄.
-            _notify_send_failure([(room_name, "캡션 붙여넣기 3회 실패(사진만 감)")], "image+caption",
-                                 f"{room_name} 방에 아래 한 줄을 손으로 보내 주세요\n{caption}")
-
-    screenshot(room_win, room_name, "sent")
-    log(f"[{room_name}] 전송 완료" + ("" if caption_sent or not caption else " (설명 글 누락)"))
-    record_dedup_sent(room_name, text=caption, image_path=image_path)
-    # 로그는 실제로 나간 것만 적는다 — 캡션이 못 갔는데 image+caption 으로 적으면
-    # 어떤 감시기도 그 누락을 못 잡는다(오늘 사고의 실제 원인).
-    _log_outbound(caption if caption_sent else "", chat_id=room_name,
-                  source="kakao_report_sender.image", ok=True,
-                  kind="image+caption" if caption_sent else "image", channel="kakao")
-    close_room_window(room_win, room_name)
-    return True, ""
+    finally:
+        # 성공이든 예외든 방 창은 닫는다(GM 지시 2026-09-09) — close_room_window 자체가
+        # best-effort(내부 try/except)라 여기서 발신 결과·예외를 덮지 않는다.
+        close_room_window(room_win, room_name)
 
 
 # ══════════════════════════════════════════════════════════════════════════
