@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>웰페리온 ERP 권한 매트릭스 (GM 확정 2026-09-05)</title>
+<style>
+  @page { size: A3 landscape; margin: 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; font-size: 11px; background: #fff; color: #111; }
+  h1 { font-size: 14px; font-weight: 700; padding: 8px 0 4px; }
+  .sub { font-size: 10px; color: #555; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; padding: 4px 5px; text-align: center; vertical-align: middle; }
+  th { background: #1a1a2e; color: #fff; font-weight: 600; font-size: 10.5px; }
+  th.group-col { background: #2d2d44; }
+  .mod-name { text-align: left; font-size: 10.5px; }
+  .group-header { background: #eef0f5; font-weight: 700; font-size: 10.5px; text-align: left; padding-left: 6px; }
+  .o  { color: #1a6e1a; font-weight: 700; }
+  .tri { color: #b36a00; }
+  .dash { color: #aaa; }
+  .note-cell { font-size: 9.5px; color: #555; text-align: left; }
+  .legend { font-size: 10px; margin-top: 8px; }
+  .legend span { margin-right: 16px; }
+  .col-mgr { width: 7%; }
+  .col-mid { width: 12%; }
+  .col-les { width: 10%; }
+  .col-ops { width: 7%; }
+  .col-fac { width: 7%; }
+  .col-sup { width: 7%; }
+  .col-prk { width: 7%; }
+  .col-mod { width: auto; }
+</style>
+</head>
+<body>
+<h1>웰페리온 ERP 권한 매트릭스</h1>
+<div class="sub">GM 확정 2026-09-05 · 정본 = status/briefs/CEO-2026-09-05-ERP-권한-정리-설계.md § 3 · 시토 배1026 구현 중</div>
+
+<table>
+<colgroup>
+  <col class="col-mod">
+  <col class="col-mgr">
+  <col class="col-mid">
+  <col class="col-les">
+  <col class="col-ops">
+  <col class="col-fac">
+  <col class="col-sup">
+  <col class="col-prk">
+</colgroup>
+<thead>
+  <tr>
+    <th class="group-col" style="text-align:left;padding-left:6px;">그룹 · 모듈</th>
+    <th>관리자<br><span style="font-size:9px;font-weight:400">cao@ ceo@</span></th>
+    <th>중간관리자<br><span style="font-size:9px;font-weight:400">개인 예외 별도</span></th>
+    <th>강습&amp;파트너팀<br><span style="font-size:9px;font-weight:400">lessons@</span></th>
+    <th>운영부<br><span style="font-size:9px;font-weight:400">info@</span></th>
+    <th>시설부</th>
+    <th>지원부<br><span style="font-size:9px;font-weight:400">support@</span></th>
+    <th>주차부</th>
+  </tr>
+</thead>
+<tbody>
+
+<tr><td colspan="8" class="group-header">【 회원 】</td></tr>
+<tr>
+  <td class="mod-name">회원 · 문의 · 재등록 · 오넛티</td>
+  <td class="o">○</td><td class="o">○</td><td class="dash">—</td>
+  <td class="o">○</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">강습 회원</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td>
+  <td class="o">○</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">상품 기획</td>
+  <td class="o">○</td><td class="o">○</td><td class="dash">—</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+
+<tr><td colspan="8" class="group-header">【 운영 】</td></tr>
+<tr>
+  <td class="mod-name">종합접수처 · 습득물 3 · 실무진 피드백 · 업무 현황</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td><td class="o">○</td>
+</tr>
+<tr>
+  <td class="mod-name">결재 현황</td>
+  <td class="o">○</td><td class="o">○</td><td class="tri">△</td>
+  <td class="o">○</td><td class="tri">△</td><td class="tri">△</td><td class="tri">△</td>
+</tr>
+<tr>
+  <td class="mod-name">라커 · 리셉션 업무 · 브로제이 2 · 프로필월 · 콘텐츠 접수·문의</td>
+  <td class="o">○</td><td class="o">○</td><td class="dash">—</td>
+  <td class="o">○</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+
+<tr><td colspan="8" class="group-header">【 점검 】</td></tr>
+<tr>
+  <td class="mod-name">점검(전체)</td>
+  <td class="o">○</td><td class="o">○</td><td class="dash">—</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td><td class="o">○</td>
+</tr>
+<tr>
+  <td class="mod-name">부서 체계 (운영·시설·지원·주차·파트너팀)</td>
+  <td class="o">○</td><td class="o">○</td>
+  <td class="note-cell">파트너팀만</td>
+  <td class="note-cell">운영부만</td>
+  <td class="note-cell">시설부만</td>
+  <td class="note-cell">지원부만</td>
+  <td class="note-cell">주차부만</td>
+</tr>
+<tr>
+  <td class="mod-name">전사 일정 · 거래업체 · 주차장 안내</td>
+  <td class="o">○</td><td class="o">○</td><td class="tri">△</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td><td class="o">○</td>
+</tr>
+
+<tr><td colspan="8" class="group-header">【 경영 】</td></tr>
+<tr>
+  <td class="mod-name">스케줄보드 · 휴무</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td>
+  <td class="o">○</td><td class="o">○</td><td class="o">○</td><td class="o">○</td>
+</tr>
+<tr>
+  <td class="mod-name">매출·회원 보고</td>
+  <td class="o">○</td><td class="o">○</td><td class="dash">—</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">매출/지출 현황 · 인사 허브 · 채용</td>
+  <td class="o">○</td>
+  <td class="note-cell">나우열M 개인만</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">GM 업무</td>
+  <td class="o">○</td>
+  <td class="note-cell">김남욱 GM 개인만</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">월간 운영계획</td>
+  <td class="o">○</td>
+  <td class="note-cell">이경연 실장 개인만</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+<tr>
+  <td class="mod-name">자율현황 · 카톡 전송 관리</td>
+  <td class="o">○</td><td class="dash">—</td><td class="dash">—</td>
+  <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
+</tr>
+
+<tr><td colspan="8" class="group-header">【 문서함 】</td></tr>
+<tr>
+  <td class="mod-name">문서함 (안내·초안·보고서·가이드·공고 등)</td>
+  <td class="note-cell">전부</td>
+  <td class="note-cell">자기 부서 + 전사</td>
+  <td class="note-cell">자기 팀 + 전사</td>
+  <td class="note-cell">운영부 + 전사</td>
+  <td class="note-cell">시설부 + 전사</td>
+  <td class="note-cell">지원부 + 전사</td>
+  <td class="note-cell">주차부 + 전사</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="legend">
+  <span><strong class="o">○</strong> 보기·쓰기</span>
+  <span><strong class="tri">△</strong> 보기만</span>
+  <span><strong class="dash">—</strong> 없음</span>
+  <span>빈 칸(부서체계·문서함)은 소속 부서 단위로 접근</span>
+  <span style="float:right;color:#888">인쇄 = A3 가로 1장 · 웰페리온 AI 웰리 · 2026-09-05</span>
+</div>
+</body>
+</html>
