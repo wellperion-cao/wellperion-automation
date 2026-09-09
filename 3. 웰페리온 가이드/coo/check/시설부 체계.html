@@ -711,8 +711,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       document.getElementById('facLegalCount').textContent = '· ' + n + '건';
       document.getElementById('facLegalAsk').style.display = 'block';
     }
-    fetch(LIVE + Date.now(), {cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    /* AWS 이관(배 11430 · 2026-09-09) — ERP 도메인에서는 서버 거울을 먼저 부른다.
+       거울(sync_misc.py)이 GAS 응답을 모양 그대로 떠 온 것이라 아래 판정 코드는 그대로 쓴다.
+       실패하면 종전 GAS 라이브 → 저장소 시드 순서로 물러선다(숫자가 0이 되는 것보다 낫다).
+       이 블록은 페이지 앞쪽이라 아래 ERP_API_ON 이 아직 없다 — 여기서 따로 본다. */
+    var ON_ERP = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+    function readSchedule(){
+      var gas = function(){ return fetch(LIVE + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }); };
+      if(!ON_ERP) return gas();
+      return fetch('/api/misc/schedule/load_schedule', {cache:'no-store'})
+        .then(function(r){ if(!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[법정점검 빈칸] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+    }
+    readSchedule()
       .then(function(res){
         if(!(res && res.ok && res.data && res.data.items)) throw new Error('live empty');
         show(countBlank(res.data.items));
@@ -2830,8 +2841,9 @@ async function loadVendorCategoriesFromBackend(){
   loadVendorCategories();
   if(!ONLINE){ vendorRenderCategorySelects(); renderVendorBoard(); return; }
   try{
-    const res = await fetch(API_URL+'?action=board&key='+encodeURIComponent(VENDOR_CAT_KEY),{method:'GET',redirect:'follow'});
-    const data = await res.json();
+    /* AWS 이관(배 11430) — 서버 거울 /api/board 먼저, 실패하면 종전 GAS. 판정·저장은 그대로. */
+    const data = await _chkRead('/api/board/'+encodeURIComponent(VENDOR_CAT_KEY),
+                                '?action=board&key='+encodeURIComponent(VENDOR_CAT_KEY), '거래업체분류');
     if(data && data.ok && data.board && (Array.isArray(data.board) || Array.isArray(data.board.cols))){
       applyVendorCats(data.board);
       localStorage.setItem(VENDOR_CAT_KEY, JSON.stringify({cols:VENDOR_COLS}));
@@ -3029,8 +3041,8 @@ async function loadVendorFromBackend(){
     return;
   }
   try{
-    const res = await fetch(API_URL+'?action=vendor_list',{method:'GET',redirect:'follow'});
-    const data = await res.json();
+    /* AWS 이관(배 11430) — 서버 거울 /api/misc/ops/vendor_list 먼저, 실패하면 종전 GAS. */
+    const data = await _chkRead('/api/misc/ops/vendor_list', '?action=vendor_list', '거래업체목록');
     if(data && data.ok && Array.isArray(data.vendors)){
       const grouped={};
       data.vendors.forEach(v=>{
