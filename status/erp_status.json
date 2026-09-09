@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-09-09T22:27:48Z",
-  "generated_at_kst": "2026-09-10 07:27",
-  "summary": "대체로 정상 (일부 확인 불가)",
+  "generated_at": "2026-09-09T22:57:50Z",
+  "generated_at_kst": "2026-09-10 07:57",
+  "summary": "⚠️ 점검 필요: G1 큐 라이브",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "4분 전 활동",
+      "detail": "2분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 4분 전(생존) · 최근 발신 89분 전",
+      "detail": "하트비트 4분 전(생존) · 최근 발신 119분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -36,13 +36,13 @@
   "bridges": [
     {
       "name": "G1 큐 라이브",
-      "state": "정상",
-      "detail": "HEAD 일치(발행 도달) · 더티 1건 · 서버 active 66건/로컬 66건"
+      "state": "이상",
+      "detail": "HEAD 일치(발행 도달) · 더티 1건 · 서버 active 66건/로컬 68건"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 66건/362611B"
+      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 68건/365371B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -77,7 +77,7 @@
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "1.5h 전 갱신 — 정상"
+      "detail": "0.1h 전 갱신 — 정상"
     },
     {
       "name": "업무 SSOT 배번호 신선도",
@@ -138,9 +138,9 @@
   },
   "git_sync": {
     "state": "정상",
-    "detail": "미푸시 0건 · origin 최신 6분 전",
+    "detail": "미푸시 0건 · origin 최신 4분 전",
     "unpushed": 0,
-    "origin_at": "2026-09-10T07:21:47+09:00"
+    "origin_at": "2026-09-10T07:53:36+09:00"
   },
   "archive_summary": {
     "total": 4060,
