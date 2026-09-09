@@ -8,18 +8,29 @@ sync_inquiries.py 와 같은 GAS(FUNNEL_EXEC_URL · Survey 프로젝트)의 집�
 
 실행: python3 /srv/erp/api/sync_funnel.py   (cron 5분 · /etc/cron.d/erp-funnel-sync)
 자체점검: python3 sync_funnel.py --selftest  (같은 DB 의 tenant 'selftest' · 네트워크 없음)
+
+MIN_INTERVAL(배1108 · 시토 2026-09-09) — 21개를 5분마다 몰아치면서 무거운 몇 개가 읽기 상한(60초)에
+걸린다(실측: funnel_conversion_detail 61.17초, 나머지 20개는 1.7~11.4초). 크론은 그대로 5분 하나 —
+느린 값만 파일 안에서 건너뛴다(직전 funnel_cache.synced_at 과 비교). 건너뜀은 실패가 아니다(로그에 별도 표시).
 """
 import json
 import os
 import sys
 import time
 import urllib.parse
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, gas_get, load_env  # noqa: E402  — 같은 env·같은 GAS·같은 DB
 
 PLAIN = ("funnel_conversion", "funnel_conversion_detail", "lesson_breakdown", "stage_funnel")
+
+# action → 최소 재조회 간격(초). 미등재 액션은 매 랩(5분)마다 그대로 새로 받는다.
+# funnel_conversion_detail 만 등재 — 실측(2026-09-09) 61.17초로 유일하게 60초 상한에 걸치는 무거운 집계.
+# 나머지 20개는 실측 최대 11.4초(member_calendar)로 상한에 여유가 있어 그대로 5분마다 받는다.
+MIN_INTERVAL = {"funnel_conversion_detail": 900}  # 15분
+# 위 액션은 15분마다만 돌므로 60초 상한을 90초로 여유 있게 줘도 5분 랩과 안 겹친다.
+TIMEOUT_OVERRIDE = {"funnel_conversion_detail": 90}
 
 
 def _kst_now():
@@ -38,6 +49,21 @@ def store(conn, action, params, data, now):
                      (db.TENANT, action, key_of(params), json.dumps(data, ensure_ascii=False), now))
 
 
+def _due(conn, action, params, now_dt):
+    """MIN_INTERVAL 안 지났으면 False(건너뜀) — funnel_cache.synced_at 을 직전 조회 시각으로 그대로 쓴다."""
+    interval = MIN_INTERVAL.get(action, 0)
+    if interval <= 0:
+        return True
+    row = conn.execute(
+        "SELECT synced_at FROM funnel_cache WHERE tenant_id=%s AND action=%s AND params=%s",
+        (db.TENANT, action, key_of(params)),
+    ).fetchone()
+    if not row:
+        return True
+    last = datetime.strptime(row["synced_at"], "%Y-%m-%dT%H:%M:%S")
+    return (now_dt - last).total_seconds() >= interval
+
+
 def month_ranges(today):
     first = today.replace(day=1)
     out = [(first, today)]                                   # 이번달 1일~오늘
@@ -51,7 +77,8 @@ def month_ranges(today):
 def main():
     load_env()
     conn = db.connect()
-    now, failed = _kst_now(), []
+    now, failed, skipped = _kst_now(), [], []
+    now_dt = datetime.strptime(now, "%Y-%m-%dT%H:%M:%S")
     jobs = [(a, {}) for a in PLAIN]
     today = date.fromtimestamp(time.time() + 9 * 3600)
     jobs += [("period_breakdown", {"from": f.isoformat(), "to": t.isoformat()}) for f, t in month_ranges(today)]
@@ -69,7 +96,10 @@ def main():
     jobs += [(a, {"type": t}) for a in ("rentbiz_inquiry_list", "rentbiz_stats") for t in ("rent", "biz")]
     jobs += [(a, {"type": t, "scope": "all"}) for a in ("rentbiz_inquiry_list", "rentbiz_stats") for t in ("rent", "biz")]
     for action, params in jobs:
-        data = gas_get(action, params)
+        if not _due(conn, action, params, now_dt):
+            skipped.append(action)
+            continue
+        data = gas_get(action, params, timeout=TIMEOUT_OVERRIDE.get(action, 60))
         if data is None:
             failed.append(action)
             continue
@@ -78,7 +108,11 @@ def main():
         db.meta_set(conn, "funnel_last_sync", now)
         db.meta_set(conn, "funnel_last_failed", ",".join(failed))
     conn.close()
-    print("funnel sync %s · %d/%d ok%s" % (now, len(jobs) - len(failed), len(jobs), (" · 실패 " + ",".join(failed)) if failed else ""))
+    print("funnel sync %s · %d/%d ok%s%s" % (
+        now, len(jobs) - len(failed) - len(skipped), len(jobs),
+        (" · 실패 " + ",".join(failed)) if failed else "",
+        (" · 건너뜀 " + ",".join(skipped)) if skipped else "",
+    ))
     return 1 if failed else 0
 
 
@@ -92,6 +126,15 @@ def selftest():
     conn.close()
     assert len(rows) == 1 and rows[0]["params"] == "from=2026-09-01&to=2026-09-03" and json.loads(rows[0]["data"])["n"] == 2, rows
     assert month_ranges(date(2026, 9, 3))[2] == (date(2026, 7, 1), date(2026, 7, 31))
+
+    # _due — MIN_INTERVAL 없는 액션은 항상 True, 등재된 액션은 직전 synced_at 이후 간격이 안 지나면 False.
+    conn = db.connect()
+    now_dt = datetime.strptime(_kst_now(), "%Y-%m-%dT%H:%M:%S")
+    assert _due(conn, "lesson_breakdown", {}, now_dt) is True  # 미등재
+    store(conn, "funnel_conversion_detail", {}, {"ok": True}, now_dt.strftime("%Y-%m-%dT%H:%M:%S"))
+    assert _due(conn, "funnel_conversion_detail", {}, now_dt) is False               # 방금 저장 — 15분 안 지남
+    assert _due(conn, "funnel_conversion_detail", {}, now_dt + timedelta(minutes=16)) is True  # 16분 뒤엔 다시 due
+    conn.close()
     print("selftest ok")
     return 0
 
