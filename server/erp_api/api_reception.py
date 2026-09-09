@@ -320,6 +320,82 @@ def lost():
     return {"ok": True, "count": len(data), "data": data, "_source": SOURCE}
 
 
+# 분실물 공개 화면 두 곳(갤러리·폐기 임박)이 쓰는 칸 — GAS _lfGallery/_lfDisposal 이 내주는 것과 같은 목록이다.
+# 여기 없는 칸(주인성함·주인연락처·수령자연락처·보관위치·내부메모·서명URL·등록직원)은 공개 응답에 절대 안 싣는다.
+# 목록을 코드로 못 박아 두는 것 자체가 노출 차단이다(GAS 쪽도 같은 방식 — LF_HEADERS vs LF_EXTRA_HEADERS).
+_LF_PUBLIC_FIELDS = ("foundId", "foundWhen", "foundLoc", "itemDesc", "photoUrl", "createdAt", "category")
+_LF_POSTED = "게시중"
+
+
+def _lf_month_index(date_str):
+    """'YYYY-MM-DD …' → 연*12+월. GAS _lfMonthIndex_ 와 같은 값(못 읽으면 None — 그 행은 건드리지 않는다)."""
+    t = str(date_str or "").strip()[:10].replace("/", "-")
+    m = re.match(r"^(\d{4})-(\d{2})", t)
+    return int(m.group(1)) * 12 + int(m.group(2)) - 1 if m else None
+
+
+def _lf_public_rows(conn):
+    """공개 화면이 볼 습득물 = 게시중이면서 아직 폐기월이 안 온 것.
+
+    GAS 는 조회할 때마다 시트를 훑어 폐기월이 지난 행을 폐기물/경찰인계로 바꾼다(_lfAutoDispose_ ·
+    습득월 M → M+2 폐기). 서버 거울은 그 전환을 못 하므로 **같은 규칙을 걸러 내는 쪽으로** 적용한다 —
+    안 그러면 GAS 는 이미 내린 물건을 서버 화면만 계속 걸어 두게 된다. 원장을 고치지는 않는다
+    (전환은 시트가 정본이고, 거울이 5분마다 그 결과를 받아 온다).
+    """
+    cur = _lf_month_index(_kst_now())
+    out = []
+    for d in _rows(conn, "lost_found", "created_at DESC, found_id"):
+        if str(d.get("status") or "") != _LF_POSTED:
+            continue
+        mi = _lf_month_index(d.get("foundWhen") or d.get("createdAt"))
+        if mi is not None and cur is not None and cur >= mi + 2:
+            continue                      # 폐기월 도래 — GAS 라면 이미 내렸을 행
+        out.append(d)
+    return out
+
+
+@router.get("/lost/public")
+def lost_public(view: str = Query("gallery")):
+    """무로그인 공개 조회 — 분실물 갤러리(대외 홈페이지·워드프레스 임베드)가 GAS 대신 부르는 자리.
+
+    GAS lf_gallery·lf_disposal 과 **같은 칸·같은 규칙**으로 돌려준다(미러 읽기 규칙은 GAS 그 줄을 그대로 ·
+    2026-09-06 INC-055 교훈). 화면 배선은 COO 담당 — 여기서는 API 만 연다.
+      view=gallery   {ok,count,data}          게시중 목록
+      view=disposal  {ok,upcoming,disposed}   전월 습득분(다음달 폐기 예정) + 이미 처분된 것
+    """
+    if view not in ("gallery", "disposal"):
+        return JSONResponse({"ok": False, "error": "view 는 gallery|disposal"}, status_code=400, headers=CORS)
+    conn = _open()
+    with conn:
+        if view == "gallery":
+            rows = [{k: (d.get(k) or "") for k in _LF_PUBLIC_FIELDS} for d in _lf_public_rows(conn)]
+            rows.sort(key=lambda r: str(r.get("createdAt") or ""), reverse=True)
+            return JSONResponse({"ok": True, "count": len(rows), "data": rows, "_source": SOURCE}, headers=CORS)
+        all_rows = _rows(conn, "lost_found", "created_at DESC, found_id")
+    cur = _lf_month_index(_kst_now())
+    upcoming, disposed = [], []
+    for d in all_rows:
+        status, category = str(d.get("status") or ""), str(d.get("category") or "")
+        base = {k: (d.get(k) or "") for k in ("foundId", "itemDesc", "foundLoc", "foundWhen", "photoUrl")}
+        if status == _LF_POSTED:
+            mi = _lf_month_index(d.get("foundWhen") or d.get("createdAt"))
+            if mi is None or cur is None or mi != cur - 1:
+                continue                  # 전월 습득분만 '임박'으로 보여 준다(GAS 와 같은 조건)
+            di = mi + 2
+            base["disposeMonth"] = "%d-%02d" % (di // 12, di % 12 + 1)
+            base["category"] = category
+            base["track"] = "dispose" if category == "consumable" else "police"
+            upcoming.append(base)
+        elif status in ("폐기물", "경찰인계"):
+            base["disposedAt"] = d.get("disposedAt") or ""
+            base["category"] = category
+            base["track"] = "dispose" if status == "폐기물" else "police"
+            disposed.append(base)
+    upcoming.sort(key=lambda r: str(r.get("foundId") or ""))
+    disposed.sort(key=lambda r: str(r.get("disposedAt") or ""), reverse=True)
+    return JSONResponse({"ok": True, "upcoming": upcoming, "disposed": disposed, "_source": SOURCE}, headers=CORS)
+
+
 @router.get("/hold")
 def hold():
     conn = _open()
