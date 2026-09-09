@@ -331,7 +331,14 @@ async def chat(tenant: str, request: Request):
     # 답변 성공 여부와 상관없이 항상 같이 기록한다(배1074③).
     missing = _needs_facts_missing(_load_profile(tenant), type_id) if type_id else []
 
-    if not q or _forbidden_hit(q, tenant):
+    if not q:
+        # 빈 입력은 문답으로 세지 않는다(2026-09-09 시토 · 시보 실측) — 엔터만 친 것을 미답으로
+        # 적으면 자력 답변률 분모가 흐려진다. 실제로 웰페리온·다캠 양쪽에 q="" 가 1건씩 쌓여 있었다.
+        # 금지어(_forbidden_hit)는 그대로 기록한다 — 그건 무엇을 묻는지가 값진 신호다.
+        out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
+        return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
+
+    if _forbidden_hit(q, tenant):
         _log(tenant, q, False, None, type_id, missing, session_id)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
