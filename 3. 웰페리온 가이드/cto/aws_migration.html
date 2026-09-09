@@ -92,6 +92,17 @@ td.area{white-space:nowrap;font-weight:700;}
     </div>
   </div>
 
+  <!-- 영역별 요약 — 한 영역은 그 안 화면이 전부 풀려야 끊긴다. 아래 상세표의 묶음 보기다. -->
+  <div class="card">
+    <div class="card-title">어디부터 끊을 수 있나<span class="stag" id="areaTag">영역별 · 불러오는 중…</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>영역</th><th>남은 자리</th><th>무엇이 남았나</th><th>순서</th></tr></thead>
+        <tbody id="areaBody"><tr><td colspan="4" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- 서버만 쓰게 끊으면 깨지는 자리 — 희만이 조언(의존 항목을 다 적고 서버에 1:1 로 옮긴다)대로 잰 것이다.
        숫자는 status/aws_migration.json 의 blockers 가 정본이고, 이 화면은 그리기만 한다. -->
   <div class="card">
@@ -263,6 +274,19 @@ function fail(msg){
   document.getElementById('rowsBody').innerHTML = '<tr><td colspan="8" class="err">원천을 못 읽음</td></tr>';
 }
 
+function renderAreas(d){
+  var rows = d.blockers_area || [];
+  var body = document.getElementById('areaBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="4" class="dim">등록된 영역이 없습니다.</td></tr>'; return; }
+  body.innerHTML = rows.map(function(r){
+    var n = String(r.near || '');
+    var cls = n.indexOf('끝') >= 0 ? 'st-done' : (n.indexOf('가깝') >= 0 ? 'st-go' : (n.indexOf('두 번째') >= 0 ? 'st-ask' : 'st-no'));
+    return '<tr><td class="area">' + esc(r.area) + '</td><td>' + esc(r.left) + '곳</td><td>' +
+           esc(r.what) + '</td><td><span class="st ' + cls + '">' + esc(n) + '</span></td></tr>';
+  }).join('');
+  document.getElementById('areaTag').textContent = d.blockers_area_doc || '';
+}
+
 function renderBlockers(d){
   var rows = d.blockers || [];
   var body = document.getElementById('blkBody');
@@ -295,10 +319,10 @@ function loadSeed(){
 
 fetch('../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
   .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
-  .then(function(d){ render(d); renderBlockers(d); })
+  .then(function(d){ render(d); renderAreas(d); renderBlockers(d); })
   .catch(function(){
     var seed = loadSeed();
-    if(seed){ render(seed); renderBlockers(seed); }
+    if(seed){ render(seed); renderAreas(seed); renderBlockers(seed); }
     else { fail('원천을 못 읽음'); }
   });
 </script>
