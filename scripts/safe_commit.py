@@ -276,6 +276,86 @@ def _gas_shrink_violations(head_tree: str, tree: str, diff_pairs, root: Path) ->
     ]
 
 
+# ── 화면 기능표지 유실 차단(2026-09-09 시토 — GM 실사고 재발방지) ──────────────
+# 2026-09-08 모듈홈(erp/index.html)에 「다운로드」(aa3dd96eb)·「권한관리」(a87831a58)
+# 탭을 넣었는데, 2026-09-09 다른 세션이 같은 파일을 3축 개편(bdac5c16c)하며 그
+# 두 탭이 통째로 사라졌다. 커밋은 정상 통과했고 GM 이 화면을 보고서야 발견했다.
+# 판정: HTML 커밋마다 HEAD 판과 새 판의 `id="..."`/`data-tab="..."` 값 집합을
+# 비교해, HEAD 에 있던 값이 새 판에서 사라졌으면 유실로 센다(새로 생긴 값은
+# 안 셈 — 추가는 정상). 문구·색·클래스는 이 두 속성이 아니므로 안 걸린다.
+# 임계값 근거(실측, 2026-09-09):
+#   - 이번 사고(HEAD=6bd879024, 새판=bdac5c16c)는 8개 유실
+#     (adm-frame·downloads·pane-adm·pane-dl·pane-mod·tab-adm·tab-dl·tab-mod).
+#   - 최근 HTML 수정 커밋 200개(부모 대비)를 같은 판정에 먹여 보면 372개는 유실
+#     0, 정상 리팩터도 최대 4개(다캠 슬라이드 s0~s3 통합 등)까지만 간다 — 5개
+#     이상은 관측 안 됨. 단 화면을 통째로 새로 짜는 드문 커밋(예: 시설 둘러보기
+#     걷기 방식 교체 16개, 지원부 체계 린넨 개편 11개)은 5개를 넘는다 — 이런
+#     의도된 대개편은 강행 스위치로 통과시킨다(막되 우회로는 열어 둠, 기존
+#     GAS 축소 가드와 같은 설계).
+#   → 5 는 관측된 정상 리팩터 최대(4)보다 크고 이번 사고(8)보다 작다.
+# 강행: env WP_ALLOW_FEATURE_LOSS 에 **파일명(디렉터리 뺀 basename)** 을 넣는다
+# (도메인 가드와 같은 방식 — "무엇을 넘는지" 이름으로 말해야 열린다. 쉼표로 여러 개).
+FEATURE_MARKER_LOSS_BLOCK_COUNT = 5
+_FEATURE_LOSS_FORCE_ENV = "WP_ALLOW_FEATURE_LOSS"
+# id/data-tab 속성만 본다 — 같은 줄 안에서만 매칭(줄 넘어 매칭되면 미니파이된
+# JS 문자열 안 우연 일치가 커진다. DOTALL 안 씀 = 이미 그 안전장치).
+_FEATURE_MARKER_RE = re.compile(r'\b(id|data-tab)=(["\'])(.*?)\2')
+
+
+def _feature_markers(html_text: str) -> set[tuple[str, str]]:
+    return {(attr, val) for attr, _, val in _FEATURE_MARKER_RE.findall(html_text)}
+
+
+def _feature_marker_loss_violations(head_tree: str, tree: str, diff_pairs, root: Path) -> list[str]:
+    """HTML 파일에서 id/data-tab 표지가 임계값 이상 사라지면 위반 문구를 만든다(없으면 빈 리스트)."""
+    hits: list[tuple[str, list[tuple[str, str]]]] = []
+    for status, path in diff_pairs:
+        if status != "M" or not path.endswith(".html"):
+            continue
+        old = _git(["show", f"{head_tree}:{path}"], root)
+        new = _git(["show", f"{tree}:{path}"], root)
+        if old.returncode != 0 or new.returncode != 0:
+            continue  # 새 파일·바이너리 등 — 이 가드 대상 아님(다른 판정이 이미 담당)
+        lost = sorted(_feature_markers(old.stdout) - _feature_markers(new.stdout))
+        if len(lost) >= FEATURE_MARKER_LOSS_BLOCK_COUNT:
+            hits.append((path, lost))
+    if not hits:
+        return []
+    forced = {t.strip() for t in os.environ.get(_FEATURE_LOSS_FORCE_ENV, "").split(",") if t.strip()}
+    violations: list[str] = []
+    for path, lost in hits:
+        base = Path(path).name
+        if base in forced:
+            _domain_guard_log("feature_marker_loss_force", [path], str(root))
+            print(f"[WARN] {_FEATURE_LOSS_FORCE_ENV} 에 {base} 포함 — 기능표지 유실 가드 강행 통과: "
+                  f"{path}({len(lost)}개)")
+            continue
+        shown = ", ".join(f'{attr}="{val}"' for attr, val in lost[:10])
+        extra = f" 외 {len(lost) - 10}건" if len(lost) > 10 else ""
+        violations.append(
+            f"기능표지 유실 차단: {path} 에서 id/data-tab {len(lost)}개가 사라집니다 — "
+            f"{shown}{extra}. 화면을 다시 쓰다 기존 탭·패널이 통째로 빠졌을 수 있습니다"
+            f"(2026-09-09 다운로드·권한관리 탭 유실 실사고 재발방지). 의도한 개편이면 "
+            f"{_FEATURE_LOSS_FORCE_ENV}={base} 로 다시 실행하세요."
+        )
+    return violations
+
+
+def _feature_marker_loss_selfcheck() -> None:
+    """모듈 단독 실행 시 재현·오탐 검증(외부 git 리포 없이 문자열만으로 판정 로직 확인)."""
+    head_html = '<div id="tab-dl">a</div><div id="tab-adm">b</div><div id="keep">c</div>'
+    new_html = '<div id="keep">c</div><div id="new-one">d</div>'
+    lost = sorted(_feature_markers(head_html) - _feature_markers(new_html))
+    assert lost == [("id", "tab-adm"), ("id", "tab-dl")], lost
+    assert len(lost) < FEATURE_MARKER_LOSS_BLOCK_COUNT  # 2개 — 임계값(5) 밑, 오탐 아님 확인
+    # 오늘 사고 규모(8개) 재현 — 임계값을 넘어야 한다
+    big_head = "".join(f'<div id="tab-{i}">x</div>' for i in range(8)) + '<div id="keep">c</div>'
+    big_new = '<div id="keep">c</div>'
+    big_lost = _feature_markers(big_head) - _feature_markers(big_new)
+    assert len(big_lost) == 8 >= FEATURE_MARKER_LOSS_BLOCK_COUNT
+    print("[selfcheck] _feature_marker_loss_violations 판정 로직 OK")
+
+
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
 _INDEX_LOCK_WAIT_SEC = 0.5
@@ -656,6 +736,9 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
 
     # GAS 사본 축소 차단(2026-08-10 — 위 GAS_SHRINK_BLOCK_LINES 주석 참조)
     violations.extend(_gas_shrink_violations(head_tree, tree, diff_pairs, root))
+
+    # 화면 기능표지 유실 차단(2026-09-09 — 위 §_feature_marker_loss_violations 주석 참조)
+    violations.extend(_feature_marker_loss_violations(head_tree, tree, diff_pairs, root))
 
     # 일반 혼입 삭제 판정(2026-08-04 GM 근본분석 — 로직은 가드 모듈 단일 출처):
     # 비삭제 변경과 섞인 커밋의 삭제는 caller 가 rel_paths 에 **파일 단위로 정확히**
@@ -1359,4 +1442,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--selfcheck" in sys.argv:
+        _feature_marker_loss_selfcheck()
+        raise SystemExit(0)
     raise SystemExit(main())
