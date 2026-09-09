@@ -7,9 +7,16 @@ member_archive_restore(LOSS보관→유효회원 전환 · 6단계) 를 여기�
 먼저 쓴다 — ①검증 ②서버 원장 갱신 + member_change_log 이력 1줄(한 트랜잭션 · 값 같으면 이력 없이 ok)
 ③기존 GAS 로 write-through(시트도 유지 · api_write._gas_forward 재사용 · 실패해도 서버 저장은 이미
 끝남 — 응답 gas_status 로만 알린다).
-나머지 2종(member_registered_add·member_registered_remove)은 아직 이 라우트에 안 왔다 — 501 로
-/api/write(GAS 경로)를 쓰라고 안내한다(화면이 잘못 붙어도 조용히 실패하지 않게).
-정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1·2-2·2-5·2-6·2-7.
+member_registered_add(직접등록 · 5단계) · member_registered_remove(되돌리기 · 7단계) 까지 들어와 7종이
+전부 이 라우트를 탄다(배1050 · 시포 2026-09-09) — 501 안내는 남은 게 없다.
+정본 = status/briefs/CPO-2026-09-05-회원쓰기7종-서버원장-스펙.md §2-1~2-7.
+
+행 찾기 — member_registered_add·member_registered_remove: 전화 정규화 한 열쇠. 두 액션이 건드리는 탭은
+둘('26년 등록현황' + 유효회원)인데 등록현황은 월별 체크표라 미러에 없다 — 시트 전용으로 두고(시포 스펙
+§2-3 판단) 서버는 유효회원만 맡는다. add 는 전화가 정확히 1건일 때만 서버가 고친다(0건=새 회원이라
+회원번호 채번이 필요한데 번호는 GAS registry_build 몫이다 · 2건+=GAS 도 phone-ambiguous 로 거부한다 —
+둘 다 그대로 GAS 로 넘긴다). remove 는 GAS 와 같은 조건(전화 단독 매칭 + 등록회차 1)일 때만 행을 지우고,
+지우기 전에 행 전체를 이력에 남긴다 — 비밀번호 게이트는 GAS 가 판정하고 거부하면 _finish 가 되살린다.
 
 행 찾기 — member_archive_restore(_handle_member_archive_restore): GAS 원본(Survey.js L9892~10024)은
 보관 행을 삭제하고 유효회원에 새 행을 append 한다(회원번호는 인계). 서버는 미러 열쇠가 (member_no,scope)
@@ -82,10 +89,9 @@ FIELD_TO_COL = {
 HOLD_STATUSES = ("완료", "진행중")            # GAS 화이트리스트 그대로(Survey.js L10793)
 HOLD_COL = "hold_status"
 HOLD_FIELD_LABEL = "휴회접수상태"              # member_change_log 의 field 칸 · GAS 헤더명과 동일
-# 아직 이 라우트가 처리 안 하는 나머지 2종(시포 스펙 §2-3~2-4) — 501 안내에만 쓴다(화이트리스트 아님).
-_NOT_YET = ("member_registered_add", "member_registered_remove")
+_NOT_YET = ()   # 7종 전부 이 라우트가 처리한다(5·7단계 = 배1050 시포 2026-09-09). 501 안내는 남은 게 없다.
 _IMPLEMENTED = ("member_owner_save", "member_hold_transition", "member_active_update", "member_hold_approve",
-                "member_archive_restore")
+                "member_archive_restore", "member_registered_add", "member_registered_remove")
 
 # member_hold_approve(4단계 · 배1054) — 승인 시 갱신 6칸(GAS Survey.js L10762~10766 이식). schema.sql 이
 # 2단계 때 미리 만들어 둔 hold_* 칸(hold_status 는 2단계가 이미 씀 · 나머지 5개는 이 단계가 처음 쓴다) —
@@ -1023,6 +1029,212 @@ def _handle_member_archive_restore(payload, raw_body, user):
     return _finish(conn, raw_body, log_id, is_test, extra, revert)
 
 
+def _prog_sig(text, months):
+    """수강반종목명의 '같은 상품인가' 지문 — GAS _memberProgramCanon_ 안의 _sig(Survey.js L2756) 그대로."""
+    t = str(text or "")
+    grade = "N" if "노블레스" in t else ("P" if "플래티넘" in t else "")
+    if not grade:
+        return ""
+    golf = "G" if "골프" in t else "-"
+    term = "S" if "(단)" in t else ("R" if "(정)" in t else ("S" if (0 < months <= 1) else "R"))
+    return grade + golf + term
+
+
+def _program_canon(conn, tenant, program, months):
+    """화면이 보낸 축약 종목명('플래티넘')을 유효회원이 실제로 쓰는 정식명으로 맞춘다 —
+    GAS _memberProgramCanon_(Survey.js L2753) 이식. GAS 는 유효회원 시트의 수강반종목명 열을 훑어
+    같은 지문 중 가장 많이 쓰인 표기를 고른다. 서버는 그 열의 거울(members.program · scope='valid')을
+    같은 방식으로 훑는다 — 거울이 그 시트 열 자체라 결과가 같다. 지문이 안 잡히면(등급 낱말이 없으면)
+    원문 그대로 — GAS 와 동일. 동률일 때 먼저 나온 값을 쓰는 것도 같게 하려고 member_no 순으로 읽는다."""
+    raw = str(program or "").strip()
+    want = _prog_sig(raw, months)
+    if not raw or not want:
+        return raw
+    tally = {}
+    for r in conn.execute(
+            "SELECT program FROM members WHERE tenant_id=%s AND scope='valid' AND COALESCE(program,'')<>''"
+            " ORDER BY member_no", (tenant,)).fetchall():
+        v = str(r["program"] or "").strip()
+        if not v or _prog_sig(v, 0) != want:   # 기존 값은 months=0 으로 지문을 낸다(GAS _sig(v, 0))
+            continue
+        tally[v] = tally.get(v, 0) + 1
+    best, best_n = "", 0
+    for k, n in tally.items():
+        if n > best_n:
+            best, best_n = k, n
+    return best or raw
+
+
+def _handle_member_registered_add(payload, raw_body, user):
+    """member_registered_add(5단계 · 배1050) — 화면 '+직접등록'. GAS Survey.js L9021~9050 + _memberActiveUpsert_
+    (L2781~2930) 이식.
+
+    두 탭 중 서버가 맡는 것은 유효회원뿐이다. '26년 등록현황'은 월별 체크표라 미러에 없고 시트 전용으로
+    둔다(시포 스펙 §2-3 판단) — GAS write-through 가 그대로 갱신한다.
+
+    행 찾기 = 전화 정규화. 서버가 손대는 경우는 **전화가 정확히 1건 잡힐 때뿐**이다.
+      · 0건(새 회원) = 서버가 행을 만들지 않는다. 회원번호는 GAS member_registry_build 가 채번하고
+        미러 열쇠가 (member_no, scope) 라서, 서버가 번호를 지어내면 다음 배치와 충돌한다 — GAS 로 넘기고
+        5분 뒤 sync 가 그 행을 싣는다(member_active_update 의 passThrough 와 같은 이유).
+      · 2건+(가족 공유 전화) = GAS 도 phone-ambiguous 로 거부한다(L2834 · 이때 등록현황 upsert 와 텔레그램은
+        이미 나간 뒤다). 서버가 먼저 거부하면 등록현황이 안 갱신돼 결과가 달라지므로 그대로 넘긴다.
+    등록회차 = 등록일자가 실제로 바뀔 때만 +1(GAS L2870~2873 판정 그대로 — 분류 글자가 아니라 날짜로 가른다).
+    담당자는 GAS 와 같이 항상 MEMBER_DEFAULT_OWNER 로 덮는다(opts.owner 고정 · L2785)."""
+    from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다(다른 핸들러 관례 그대로)
+
+    phone = _norm_phone(payload.get("phone"))
+    if not phone:
+        return {"ok": False, "error": "전화번호 필수(중복 방지 키)"}
+    now = api_write._now_kst()
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
+    staff = _log_who(payload, user)
+    name = str(payload.get("name") or "").strip()
+    reg_date = str(payload.get("regDate") or "").strip() or now[:10]
+    age = str(payload.get("age") or "").strip()
+    try:
+        months = int(payload.get("months"))
+    except (TypeError, ValueError):
+        months = 0
+
+    try:
+        conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+
+    log_id, revert, extra = None, None, None
+    try:
+        with conn:
+            rows = conn.execute(
+                "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
+                " ORDER BY member_no FOR UPDATE", (tenant, phone)).fetchall()
+            payload_log = dict(payload)
+            if len(rows) != 1:
+                extra = {"passThrough": True, "activeMatched": len(rows)}
+            else:
+                cur = dict(rows[0])
+                member_no = cur["member_no"]
+                payload_log["_member_no"] = member_no   # 대조 전용(reconcile_dual_write.py) — 화면이 보낸 값이 아니다
+                set_vals = {"owner": MEMBER_DEFAULT_OWNER}
+                if name:
+                    set_vals["name"] = name
+                program = _program_canon(conn, tenant, payload.get("program"), months)
+                if program:
+                    set_vals["program"] = program
+                set_vals["reg_date"] = reg_date
+                if age:
+                    set_vals["age"] = age
+                if months > 0:   # 개월수가 있을 때만 기간 3칸을 쓴다(GAS moN>0 조건 그대로)
+                    start = str(payload.get("startDate") or "").strip() or reg_date
+                    try:
+                        ed = datetime.strptime(_add_months_js(start, months), "%Y-%m-%d") - timedelta(days=1)
+                        now_dt = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+                        set_vals["start_date"] = start
+                        set_vals["end_date"] = ed.strftime("%Y-%m-%d")
+                        set_vals["remain_days"] = str(round((ed - now_dt).total_seconds() / 86400))
+                    except ValueError:
+                        pass
+                prev_reg = str(cur.get("reg_date") or "").strip()
+                if prev_reg and prev_reg != reg_date:   # 재등록 — 옛 등록일자가 있어야 비교가 성립한다(GAS 그대로)
+                    digits = re.sub(r"[^0-9]", "", str(cur.get("reg_seq") or ""))
+                    prev_seq = int(digits) if digits else 0
+                    set_vals["reg_seq"] = str((prev_seq if prev_seq > 0 else 1) + 1)
+                changed = {c: v for c, v in set_vals.items() if str(cur.get(c) or "") != str(v)}
+                if changed:
+                    conn.execute(
+                        "UPDATE members SET " + ", ".join("%s=%%s" % c for c in changed) + ", synced_at=%s"
+                        " WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                        list(changed.values()) + [now, tenant, member_no])
+                    revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                              "cur_scope": "valid", "old_row": cur, "field": "등록 추가",
+                              "name": cur.get("name") or "", "phone_masked": _mask_phone(phone)}
+                    conn.execute(
+                        "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                        " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        (tenant, now, staff, member_no, cur.get("name") or "", _mask_phone(phone), "등록 추가",
+                         json.dumps({c: cur.get(c) for c in changed}, ensure_ascii=False, default=str)[:900],
+                         json.dumps(changed, ensure_ascii=False, default=str)[:900], "멤버십"))
+                extra = {"member_no": member_no, "updated": sorted(changed)}
+            log_id = conn.execute(
+                "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                (tenant, now, "member_registered_add", json.dumps(payload_log, ensure_ascii=False), user,
+                 "test" if is_test else "pending", None)
+            ).fetchone()[0]
+    except Exception:
+        conn.close()
+        raise
+    return _finish(conn, raw_body, log_id, is_test, dict(extra, message="등록 추가되었습니다."), revert)
+
+
+def _handle_member_registered_remove(payload, raw_body, user):
+    """member_registered_remove(7단계 · 배1050) — 화면 '+직접등록' 되돌리기. GAS Survey.js L9055~9065 +
+    _regRemove_·_regActiveRemoveIfSole_(L2634~2700) 이식.
+
+    등록현황 탭 삭제는 시트 전용이라 GAS 가 한다(§2-3 과 같은 결정). 서버가 맡는 것은 유효회원 행이고,
+    지우는 조건도 GAS 와 같다 — **전화 매칭이 정확히 1건이고 등록회차가 1일 때만**(이전 등록 이력이 있는
+    회원은 지우지 않는다 · INC-020). 0건·2건+·회차 2 이상이면 유효회원은 손대지 않는다.
+
+    비밀번호는 서버가 갖고 있지 않다(STAFF_GATE_PW = GAS 속성 · 새 인증체계를 만들지 않는다는 약속 L21).
+    게이트는 GAS write-through 가 그대로 판정하고, 거부하면 _finish 가 지운 행을 스냅샷으로 되살린다.
+    빈 비밀번호는 GAS 가 반드시 거부하므로 서버가 아예 지우지 않는다 — 오타 한 번에 지웠다 되살리는
+    왕복을 만들지 않기 위한 앞단 가드다(판정 자체는 여전히 GAS 몫)."""
+    phone = _norm_phone(payload.get("phone"))
+    if not phone:
+        return {"ok": False, "error": "phone 필수"}
+    now = api_write._now_kst()
+    is_test = db.is_test_payload(payload)
+    tenant = "selftest" if is_test else db.TENANT
+    staff = _log_who(payload, user)
+    has_pw = str(payload.get("password") or "") != ""
+
+    try:
+        conn = db.connect()
+    except db.Error as e:
+        return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+
+    log_id, revert, extra = None, None, None
+    try:
+        with conn:
+            rows = conn.execute(
+                "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
+                " ORDER BY member_no FOR UPDATE", (tenant, phone)).fetchall()
+            payload_log = dict(payload)
+            payload_log.pop("password", None)   # 게이트 비밀번호는 원장에 남기지 않는다
+            seq_n = None
+            if len(rows) == 1:
+                digits = re.sub(r"[^0-9]", "", str(dict(rows[0]).get("reg_seq") or ""))
+                seq_n = int(digits) if digits else 0
+            if has_pw and len(rows) == 1 and seq_n == 1:
+                cur = dict(rows[0])
+                member_no = cur["member_no"]
+                payload_log["_member_no"] = member_no
+                conn.execute("DELETE FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                             (tenant, member_no))
+                revert = {"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                          "cur_scope": None, "old_row": cur, "field": "등록 해제",
+                          "name": cur.get("name") or "", "phone_masked": _mask_phone(phone)}
+                conn.execute(
+                    "INSERT INTO member_change_log (tenant_id, at, staff, member_no, member_name, phone_masked,"
+                    " field, old_value, new_value, screen) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (tenant, now, staff, member_no, cur.get("name") or "", _mask_phone(phone), "등록 해제",
+                     "유효회원 원본: %s" % json.dumps(cur, ensure_ascii=False, default=str)[:900],
+                     "삭제(등록회차 1)", "멤버십"))
+                extra = {"activeRemoved": True, "member_no": member_no}
+            else:
+                extra = {"activeRemoved": False, "activeMatched": len(rows), "regSeq": seq_n}
+            log_id = conn.execute(
+                "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                (tenant, now, "member_registered_remove", json.dumps(payload_log, ensure_ascii=False), user,
+                 "test" if is_test else "pending", None)
+            ).fetchone()[0]
+    except Exception:
+        conn.close()
+        raise
+    return _finish(conn, raw_body, log_id, is_test, dict(extra, message="등록이 해제되었습니다."), revert)
+
+
 @router.post("/write")
 async def members_write(request: Request):
     body = await request.body()
@@ -1055,6 +1267,10 @@ async def members_write(request: Request):
         return _handle_member_hold_approve(payload, body, user)
     if action == "member_archive_restore":  # 6단계(배1054) — phone 열쇠·경로 2갈래(뒷정리/복귀)·dryRun 이 따로 필요해 갈라둔다
         return _handle_member_archive_restore(payload, body, user)
+    if action == "member_registered_add":    # 5단계(배1050) — 두 탭 중 유효회원만 서버, 새 회원은 GAS 채번에 맡긴다
+        return _handle_member_registered_add(payload, body, user)
+    if action == "member_registered_remove":  # 7단계(배1050) — 유효회원 삭제는 '단독·등록회차 1'일 때만
+        return _handle_member_registered_remove(payload, body, user)
 
     now = api_write._now_kst()
     is_test = db.is_test_payload(payload)
@@ -1534,13 +1750,138 @@ def _selftest_archive_restore_write_paths():
         api_write._now_kst, db.connect = orig_now, orig_connect
 
 
+class _FakeRegConn:
+    """member_registered_add/remove 단위 검증용 최소 DB 스텁 — SQL 앞부분으로 결과를 골라 돌려준다."""
+    def __init__(self, actives=None, programs=()):
+        self.executed = []
+        self.actives = actives or []
+        self.programs = [{"program": p} for p in programs]
+
+    def execute(self, sql, args=()):
+        self.executed.append((sql, args))
+        if "SELECT program FROM members" in sql:
+            return _FakeArchiveCur(many=self.programs)
+        if "SELECT * FROM members" in sql and "FOR UPDATE" in sql:
+            return _FakeArchiveCur(many=self.actives)
+        if "RETURNING id" in sql:
+            return _FakeArchiveCur(one=[1])
+        return _FakeArchiveCur()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def close(self):
+        pass
+
+
+def _run_reg(handler, payload, conn):
+    orig_connect = db.connect
+    db.connect = lambda: conn
+    try:
+        return handler(payload, b"{}", "테스트")
+    finally:
+        db.connect = orig_connect
+
+
+def _selftest_registered_add_passthrough():
+    """전화가 0건(새 회원)·2건+(가족 공유)면 서버는 회원 원장을 안 건드리고 GAS 로 넘긴다 —
+    회원번호 채번은 GAS registry_build 몫이고, 2건+는 GAS 도 거부하되 등록현황 갱신은 이미 끝난 뒤다."""
+    for actives in ([], [{"member_no": "M1"}, {"member_no": "M2"}]):
+        conn = _FakeRegConn(actives=actives)
+        out = _run_reg(_handle_member_registered_add,
+                       {"name": "[테스트] 등록추가", "phone": "010-1111-2222", "months": 3}, conn)
+        assert out["ok"] is True and out.get("passThrough") is True, out
+        assert out["gas_status"] == "skipped-test", out
+        assert not any("UPDATE members" in s for s, _ in conn.executed), conn.executed
+
+
+def _selftest_registered_add_reg_seq_and_period():
+    """전화 단독 매칭이면 서버가 고친다 — 등록일자가 바뀌었으니 등록회차 +1, 개월수가 있으니 기간 3칸,
+    담당자는 GAS 와 같이 항상 임정은으로 덮는다."""
+    cur = {"member_no": "M00007", "name": "박기순", "phone": "01011112222", "program": "플래티넘(정)",
+           "reg_date": "2026-01-10", "reg_seq": "8", "owner": "김담당", "age": "", "start_date": "",
+           "end_date": "", "remain_days": ""}
+    conn = _FakeRegConn(actives=[cur])
+    out = _run_reg(_handle_member_registered_add,
+                   {"name": "[테스트] 등록추가", "phone": "010-1111-2222", "regDate": "2026-09-09",
+                    "months": 6, "program": "플래티넘"}, conn)
+    assert out["ok"] is True and out["member_no"] == "M00007", out
+    upd = [(s, a) for s, a in conn.executed if "UPDATE members" in s]
+    assert len(upd) == 1, conn.executed
+    sql, args = upd[0]
+    cols = [p.split("=")[0].strip() for p in sql.split("SET", 1)[1].split(", synced_at")[0].split(",")]
+    vals = dict(zip(cols, args))
+    assert vals["reg_seq"] == "9", vals            # 8 → 9 (등록일자가 실제로 바뀔 때만 · GAS L2870)
+    assert vals["reg_date"] == "2026-09-09", vals
+    assert vals["owner"] == MEMBER_DEFAULT_OWNER, vals
+    assert vals["start_date"] == "2026-09-09" and vals["end_date"] == "2027-03-08", vals   # 시작+6개월−1일
+    assert "등록 추가" in json.dumps(conn.executed, ensure_ascii=False, default=str)
+
+
+def _selftest_registered_add_same_date_is_idempotent():
+    """같은 등록일자로 다시 저장하면 회차가 안 오른다(GAS 멱등 규칙 그대로) — 옛 등록일자가 비어 있어도 안 올린다."""
+    for prev_reg in ("2026-09-09", ""):
+        cur = {"member_no": "M1", "name": "재저장", "phone": "01011112222", "program": "",
+               "reg_date": prev_reg, "reg_seq": "3", "owner": MEMBER_DEFAULT_OWNER}
+        conn = _FakeRegConn(actives=[cur])
+        _run_reg(_handle_member_registered_add,
+                 {"name": "[테스트] 등록추가", "phone": "010-1111-2222", "regDate": "2026-09-09"}, conn)
+        upd = [s for s, _ in conn.executed if "UPDATE members" in s]
+        assert not any("reg_seq" in s for s in upd), upd
+
+
+def _selftest_program_canon():
+    """축약 종목명을 유효회원이 실제로 쓰는 정식명으로 맞춘다 — 같은 지문 중 최다 표기(GAS 이식).
+    등급 낱말이 없으면 지문이 안 서므로 원문 그대로."""
+    conn = _FakeRegConn(programs=("플래티넘(정)6개월", "플래티넘(정)6개월", "플래티넘 골프(정)", "노블레스(정)"))
+    assert _program_canon(conn, "t", "플래티넘", 6) == "플래티넘(정)6개월"
+    assert _program_canon(conn, "t", "플래티넘 골프", 6) == "플래티넘 골프(정)"
+    assert _program_canon(conn, "t", "PT 10회", 0) == "PT 10회"      # 등급 없음 = 원문
+    assert _program_canon(conn, "t", "", 0) == ""
+    assert _prog_sig("플래티넘", 1) == "P-S" and _prog_sig("플래티넘", 6) == "P-R"   # 1개월 이하 = 단기
+    assert _prog_sig("노블레스 골프(단)", 12) == "NGS"                # 글자 표기가 개월수보다 우선
+
+
+def _selftest_registered_remove_sole_and_seq1():
+    """유효회원 삭제는 전화 단독 매칭 + 등록회차 1일 때만 — 회차 2 이상·2건+·0건은 손대지 않는다(INC-020)."""
+    cur = {"member_no": "M5", "name": "직접등록", "phone": "01011112222", "reg_seq": "1"}
+    conn = _FakeRegConn(actives=[cur])
+    out = _run_reg(_handle_member_registered_remove,
+                   {"name": "[테스트] 해제", "phone": "010-1111-2222", "password": "x"}, conn)
+    assert out["ok"] is True and out["activeRemoved"] is True, out
+    assert any("DELETE FROM members" in s for s, _ in conn.executed), conn.executed
+    assert any("유효회원 원본" in json.dumps(a, ensure_ascii=False, default=str)
+               for s, a in conn.executed if "member_change_log" in s), conn.executed
+
+    for actives in ([dict(cur, reg_seq="2")], [], [cur, dict(cur, member_no="M6")]):
+        conn2 = _FakeRegConn(actives=actives)
+        out2 = _run_reg(_handle_member_registered_remove,
+                        {"name": "[테스트] 해제", "phone": "010-1111-2222", "password": "x"}, conn2)
+        assert out2["activeRemoved"] is False, out2
+        assert not any("DELETE FROM members" in s for s, _ in conn2.executed), conn2.executed
+
+
+def _selftest_registered_remove_needs_password():
+    """비밀번호가 비면 GAS 가 반드시 거부한다 — 서버가 지웠다 되살리는 왕복을 만들지 않는다(판정은 GAS 몫)."""
+    conn = _FakeRegConn(actives=[{"member_no": "M5", "name": "직접등록", "phone": "01011112222", "reg_seq": "1"}])
+    out = _run_reg(_handle_member_registered_remove, {"name": "[테스트] 해제", "phone": "010-1111-2222"}, conn)
+    assert out["activeRemoved"] is False, out
+    assert not any("DELETE FROM members" in s for s, _ in conn.executed), conn.executed
+    assert _handle_member_registered_remove({"name": "[테스트]"}, b"{}", "")["error"] == "phone 필수"
+    assert _handle_member_registered_add({"name": "[테스트]"}, b"{}", "")["error"] == "전화번호 필수(중복 방지 키)"
+
+
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
     assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update",
-                                 "member_hold_approve", "member_archive_restore"}
+                                 "member_hold_approve", "member_archive_restore",
+                                 "member_registered_add", "member_registered_remove"}
     assert not set(_IMPLEMENTED) & set(_NOT_YET)
-    assert set(_NOT_YET) == {"member_registered_add", "member_registered_remove"}
+    assert _NOT_YET == ()   # 7종 전부 이 라우트가 처리한다 — 화면이 GAS 경로로 되돌아갈 액션이 없다
     # member_archive_restore(6단계) 상수 — GAS MEMBER_DEFAULT_OWNER·새 행이 안 갖는 칸 목록.
     assert MEMBER_DEFAULT_OWNER == "임정은"
     assert len(ARCHIVE_RESET_COLS) == 19 and len(set(ARCHIVE_RESET_COLS)) == 19
@@ -1615,4 +1956,11 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     _selftest_archive_restore_double_click_noop()
     _selftest_archive_restore_active_ambiguous()
     _selftest_archive_restore_write_paths()
+    # member_registered_add·member_registered_remove(5·7단계 · 배1050)
+    _selftest_program_canon()
+    _selftest_registered_add_passthrough()
+    _selftest_registered_add_reg_seq_and_period()
+    _selftest_registered_add_same_date_is_idempotent()
+    _selftest_registered_remove_sole_and_seq1()
+    _selftest_registered_remove_needs_password()
     print("자체점검 통과")
