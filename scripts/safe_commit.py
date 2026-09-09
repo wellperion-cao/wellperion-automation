@@ -1088,7 +1088,7 @@ def safe_commit(
     #   재귀 진입 시 같은 락을 두 번 잡지 않는다). 이 커밋에 섞지 않는다.
     healed = _flush_pending(root, push)
     if healed:
-        print(f"[자가치유] 지난 커밋 실패분 {len(healed)}건 밀어 올림 — "
+        print(f"[자가치유] 지난 저장 실패분 {len(healed)}건 배포함 — "
               + ", ".join(h["sha"][:9] for h in healed if h.get("sha")))
 
     try:
@@ -1212,24 +1212,23 @@ def safe_commit(
                         "ok": True, "committed": True, "sha": new_sha,
                         "locked": True, "lock_request_id": req["id"], "lock_branch": req["branch"],
                         "changed": lock_hits,
-                        "reason": (f"🔒 잠금 경로 포함 — {req['branch']} 브랜치로 분리"
-                                   f"(GM 승인 대기 {req['id']})"),
+                        "reason": (f"🔒 저장 완료 · 배포는 GM 승인 뒤 — 원천 경로 {req['id']}"),
                     })
                     if req.get("status") == "approved":
                         # AI C-Level 요청 = 자동 승인(GM 2026-09-07 18:3x) — 카드 없이 스위퍼 즉시 1회.
-                        result["reason"] = f"🔓 자동 승인 {req['id']} — 스위퍼가 master 로 올립니다"
+                        result["reason"] = f"🔓 저장 완료 · 배포 진행 {req['id']}(5분 안 반영)"
                         try:
                             subprocess.Popen([sys.executable, str(root / "scripts" / "post_commit_push.py"), "--sweep"],
                                              cwd=str(root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                         except Exception:
                             pass
-                        print(f"🔓 자동 승인 {req['id']} (AI C-Level · 브랜치 {req['branch']} → 스위퍼)")
+                        print(f"🔓 저장 완료 · 배포 진행 {req['id']} — 원천 경로라 5분 안에 반영됩니다")
                         return result
                     try:
                         push_lock.send_approval_card(req)
                     except Exception as exc:  # 카드 실패해도 요청·브랜치는 유효(fail-open)
                         print(f"[WARN] 승인 카드 발송 실패(요청은 저장됨): {type(exc).__name__}: {exc}")
-                    print(f"🔒 승인 대기 {req['id']} (브랜치 {req['branch']})")
+                    print(f"🔒 저장 완료 · 배포는 GM 승인 대기 {req['id']}")
                     return result
 
                 # ④ CAS — 경쟁 커밋이 끼어들었으면 update-ref 가 실패한다(원자 갱신)
@@ -1261,7 +1260,7 @@ def safe_commit(
                     result["reason"] = f"무관 경로 혼입 {len(foreign)}건(사후 재확인 — 이례적)"
                 else:
                     result["ok"] = True
-                    result["reason"] = f"커밋 완료 {len(changed)}건"
+                    result["reason"] = f"저장 완료 {len(changed)}건"
                 break
             else:
                 result["reason"] = f"HEAD 경합 {max_retries}회 재시도 초과(커밋 안 함)"
@@ -1315,7 +1314,7 @@ def safe_commit(
                 encoding="utf-8", errors="replace", timeout=120,
             )
         except Exception as exc:  # push 실패는 커밋을 되돌리지 않는다(fail-open)
-            print(f"[WARN] push 실패(커밋은 유지 — 다음 워처가 올림): {type(exc).__name__}: {exc}")
+            print(f"[WARN] 배포 실패(저장은 그대로 — 다음 워처가 올림): {type(exc).__name__}: {exc}")
         _reply_to_feedback_in_message(message)
     return result
 

@@ -238,11 +238,11 @@ def send_approval_card(req: dict, dry_run: bool = False) -> bool:
     paths = req.get("paths") or []
     extra_n = f" 외 {len(paths) - 1}건" if len(paths) > 1 else ""
     text = (
-        f"🔒 커밋·푸시 승인 요청 {req['id']}\n"
+        f"🔒 배포 승인 요청 {req['id']}\n"
         f"요청자 : {req.get('requester', '')}\n"
         f"경로 : {paths[0] if paths else ''}{extra_n}\n"
         f"요약 : {str(req.get('summary', ''))[:200]}\n\n"
-        "[✅ 승인]하면 다음 스위퍼 주기(5분 내)에 master 로 올라갑니다. [⛔ 반려]하면 브랜치를 지웁니다."
+        "[✅ 승인]하면 5분 안에 배포됩니다. [⛔ 반려]하면 이 저장분은 배포하지 않습니다."
     )
     markup = {
         "inline_keyboard": [[
@@ -322,9 +322,9 @@ def check_push(remote_ref: str, remote_sha: str, local_sha: str) -> int:
     if not uncovered:
         return 0
     extra = f" 외 {len(uncovered) - 5}건" if len(uncovered) > 5 else ""
-    print("[자물쇠 차단] GM 승인 없이 잠금 경로를 master 로 push 할 수 없습니다.", file=sys.stderr)
+    print("[자물쇠 차단] 원천 경로는 GM 승인 없이 배포할 수 없습니다.", file=sys.stderr)
     print(f"  막힌 경로: {', '.join(uncovered[:5])}{extra}", file=sys.stderr)
-    print("  scripts/safe_commit.py 로 커밋하면 lock/<id> 브랜치 + GM 승인 카드가 자동으로 나갑니다.",
+    print("  scripts/safe_commit.py 로 저장하면 배포 승인 카드가 자동으로 나갑니다.",
           file=sys.stderr)
     return 1
 
