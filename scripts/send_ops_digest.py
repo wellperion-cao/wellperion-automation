@@ -1142,6 +1142,11 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
                 continue
             note = str(issue.get("note") or "").strip()
             issue["note"] = (note + " · " if note else "") + f"회신: {chunk[:80]}"
+            # 회신은 왔지만 완료 낱말이 없으면 status 는 open 으로 남는다(진행중이니 맞다).
+            # 그러면 소비자가 "open == 아직 답이 없다"로 읽어 이미 답한 건을 다시 묻는다
+            # (2026-09-09 실측: #149 소장 9/8 "진행중" 회신 뒤 재요청 문안에 다시 실림).
+            # note 문자열을 파싱하게 두지 말고, 회신이 붙은 날짜를 칸으로 남긴다.
+            issue["replied_at"] = target_date
             if any(w in chunk for w in _LEDGER_REPLY_DONE_WORDS):
                 issue["status"] = "resolved"
                 issue["resolved_by"] = "카톡·텔레그램 회신"
@@ -1200,6 +1205,10 @@ def _selfcheck_sync_ledger_replies() -> None:
         assert issues[0]["status"] == "resolved" and "완료했습니다" in issues[0]["note"], issues[0]
         assert issues[0]["resolved_by"] == "카톡·텔레그램 회신"
         assert issues[1]["status"] == "open" and "9/10" in issues[1]["note"], "완료 낱말 없으면 note 만"
+        assert issues[1]["replied_at"] == "2026-09-07", \
+            "회신은 왔는데 안 끝난 건은 open 이라도 replied_at 이 있어야 한다 — 없으면 소비자가 " \
+            "'답이 없다'로 읽어 이미 답한 건을 다시 묻는다(#149 실측)"
+        assert "replied_at" not in issues[3], "회신 없는 issue 에는 안 붙는다"
         assert issues[2]["status"] == "open" and "도 같이요" in issues[2]["note"], "번호 조각 단위로 note 를 자른다"
         assert issues[3]["status"] == "resolved" and issues[3]["note"] == "", "이미 닫힌 issue(#999)는 회신 없어 안 건드림"
         assert issues[4]["note"] == "", "옛 133 행(이미 닫힘)은 안 건드림 — 별칭이 후속 211 로 대신 받는다"
