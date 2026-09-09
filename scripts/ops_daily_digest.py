@@ -270,7 +270,9 @@ def build_reception_block(target_date: str) -> str:
         if not data.get("ok"):
             lines.append(f" • {_NO_SOURCE}")
             return "\n".join(lines)
-        rows = data.get("data", [])
+        # 시트 + 서버 신규분 — 9월 5일 이후 접수는 서버 원장에만 있다(배1166).
+        from collectors.ops_shared import reception_rows as _merge_rows
+        rows = _merge_rows(data.get("data", []))
     except Exception:
         lines.append(f" • {_NO_SOURCE}")
         return "\n".join(lines)

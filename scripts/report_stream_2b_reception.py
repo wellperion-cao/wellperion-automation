@@ -108,7 +108,10 @@ def _fetch_rows() -> list[dict] | None:
         try:
             data = resp.json()
             if data.get("ok"):
-                rows = data.get("data", [])
+                # 시트 + 서버 신규분 — 9월 5일 이후 접수는 서버 원장에만 있다(배1166).
+                from collectors.ops_shared import reception_rows as _merge_rows
+                rows = _merge_rows(data.get("data", []),
+                                   log_fn=lambda m: print(f"[stream2b] {m}", file=sys.stderr))
                 try:
                     _ROWS_CACHE_PATH.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
                 except Exception as e:

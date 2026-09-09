@@ -111,6 +111,77 @@ def gas_get(
     return None
 
 
+ERP_API_BASE = os.environ.get("ERP_API_BASE", "https://erp.wellperion.com")
+
+
+def _env_line(key: str) -> str:
+    """telegram_bot/.env 한 줄 읽기 — reception_key 와 같은 관례(값은 저장소에 두지 않는다)."""
+    v = os.environ.get(key, "").strip()
+    if v:
+        return v
+    try:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))), "telegram_bot", ".env")
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith(key + "="):
+                    return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
+def server_reception_rows(*, timeout: int = 20, log_fn=None) -> list | None:
+    """서버 원장의 접수 목록. 못 읽으면 None(호출부는 종전 GAS 값으로 간다).
+
+    로그인 쿠키(erp_session)를 그대로 쓴다 — 새 인증 체계도, 새 공개 통로도 만들지 않는다.
+    토큰은 telegram_bot/.env 의 ERP_SESSION_TOKEN 한 줄(저장소 밖).
+    """
+    tok = _env_line("ERP_SESSION_TOKEN")
+    if not tok:
+        return None
+    try:
+        r = requests.get(ERP_API_BASE + "/api/reception/board",
+                         headers={"Cookie": "erp_session=" + tok}, timeout=timeout)
+        if r.status_code != 200:
+            if log_fn:
+                log_fn(f"서버 접수 조회 HTTP {r.status_code} — 시트 값으로 갑니다")
+            return None
+        d = r.json()
+        return d.get("data") or [] if d.get("ok") else None
+    except Exception as e:
+        if log_fn:
+            log_fn(f"서버 접수 조회 실패: {e} — 시트 값으로 갑니다")
+        return None
+
+
+def merge_reception_rows(sheet_rows: list | None, server_rows: list | None) -> list:
+    """시트 목록 + 서버에만 있는 접수를 접수번호로 합친다 (배1166 · 2026-09-09).
+
+    왜 합치나: 9월 5일(배984)부터 새 접수는 서버 원장에만 적히고 시트는 동결됐다. 그런데
+    아침·저녁 접수 통은 아직 시트(reg_list)를 읽어서, 그 뒤 들어온 접수가 실무진 통에
+    한 번도 안 실렸다(09-07·08 접수 8건 · 그중 회원 타박상 건 포함).
+
+    왜 시트를 버리지 않나: 시트 행에만 있는 칸이 여섯이다(area·dueDate·handlerCanon·
+    memberReplyTemplate·occurredAt·policyFix). 통이 그 칸들을 실제로 쓴다(기한·담당 정규화 등).
+    서버 값으로 통째 갈아치우면 옛 접수의 그 정보가 사라진다. 그래서 시트 행은 그대로 두고
+    **서버에만 있는 접수만 덧붙인다** — 잃는 것 없이 빠진 것만 채운다.
+    """
+    out = list(sheet_rows or [])
+    if not server_rows:
+        return out
+    have = {str(r.get("regId") or "") for r in out if isinstance(r, dict)}
+    for r in server_rows:
+        if isinstance(r, dict) and str(r.get("regId") or "") not in have:
+            out.append(r)
+    return out
+
+
+def reception_rows(sheet_rows: list | None, *, log_fn=None) -> list:
+    """접수 통이 읽어야 하는 최종 목록 — 시트 + 서버 신규분."""
+    return merge_reception_rows(sheet_rows, server_reception_rows(log_fn=log_fn))
+
+
 def reception_elapsed_days(r: dict, now: datetime | None = None) -> int:
     """종합접수처(RECEPTION_EXEC_URL reg_list) 한 건의 접수 경과일수 — 정본.
 
