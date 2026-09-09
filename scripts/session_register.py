@@ -30,7 +30,8 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPTS_DIR)
@@ -38,7 +39,11 @@ SESSIONS_DIR = os.path.join(_PROJECT_ROOT, "status", "sessions")
 
 # 살아있음 판정 창. 부팅 뒤 한참 조용한 세션도 사람이 창을 열어 둔 동안은 살아 있다고 본다.
 # 짧게 잡으면 러너가 그 세션 옆에서 같은 배를 또 집는다(원래 문제로 되돌아감).
-ALIVE_MINUTES = 90
+# 생존 창. 세션은 살아 있는 동안 45초마다 심장박동을 남기므로, 실제로 도는 세션의
+# 기록은 몇 분을 넘지 않는다. 종전 90분은 이미 죽은 세션을 한 시간 반 동안 '살아있음'
+# 으로 보이게 했다 — 2026-09-09 재부팅 때 웰리·시포 세션이 사라졌는데 38분째 초록으로
+# 남아, 배를 넘기려던 쪽이 없는 세션을 부르고 지연됐다.
+ALIVE_MINUTES = 15
 
 
 def path_for(role: str) -> str:
@@ -117,7 +122,25 @@ def alive(role: str, minutes: int = ALIVE_MINUTES) -> dict:
     age = (_now() - stamp).total_seconds() / 60.0
     out["age_min"] = round(age, 1)
     out["alive"] = age <= minutes
+    # 재부팅으로 사라진 세션은 창이 아직 안 지났어도 죽은 것이다. 기계가 켜진 시각보다
+    # 앞선 심장박동은 지난 부팅 때 것이라 그 세션은 이미 없다.
+    if out["alive"]:
+        boot = _boot_time()
+        if boot is not None and stamp < boot:
+            out["alive"] = False
+            out["reason"] = "재부팅 이전 기록"
     return out
+
+
+def _boot_time() -> datetime | None:
+    """기계가 켜진 시각. 못 재면 None(그러면 부팅 판정을 건너뛴다)."""
+    try:
+        up = time.monotonic()  # 윈도우·리눅스 모두 부팅 후 경과 초
+        if up <= 0:
+            return None
+        return _now() - timedelta(seconds=up)
+    except Exception:
+        return None
 
 
 def print_list() -> None:
