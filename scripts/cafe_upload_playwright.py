@@ -68,8 +68,10 @@ except Exception:
 # 상수
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-cafe"  # 실제 저장된 카페 로그인 세션
-COOKIE_STATE_PATH = ROOT / "profiles" / "naver-cafe_state.json"  # storage_state(쿠키·localStorage) — 프로필 손상 회피용
+from tenant_profile import profile_paths  # 계정 자리 — WP_TENANT 없으면 웰페리온 경로 그대로
+
+# 실제 저장된 카페 로그인 세션 · storage_state(쿠키·localStorage) — 프로필 손상 회피용
+PERSISTENT_PROFILE_DIR, COOKIE_STATE_PATH = profile_paths("naver-cafe")
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"

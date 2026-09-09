@@ -55,7 +55,9 @@ except Exception:
 # 상수
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "kakao-channel"  # 카카오 채널 관리자 로그인 세션
+from tenant_profile import profile_paths  # 계정 자리 — WP_TENANT 없으면 웰페리온 경로 그대로
+
+PERSISTENT_PROFILE_DIR, _ = profile_paths("kakao-channel")  # 카카오 채널 관리자 로그인 세션
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 # 카카오 채널 관리자 홈. 미로그인 시 accounts.kakao.com 으로 리다이렉트된다.

@@ -70,8 +70,10 @@ except Exception:
 # 상수
 # -----------------------------------------------------------------
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
-PERSISTENT_PROFILE_DIR = ROOT / "profiles" / "naver-blog"  # 실제 저장된 블로그 로그인 세션
-COOKIE_STATE_PATH = ROOT / "profiles" / "naver-blog_state.json"  # storage_state(쿠키·localStorage) — 프로필 손상 회피용
+from tenant_profile import profile_paths  # 계정 자리 — WP_TENANT 없으면 웰페리온 경로 그대로
+
+# 실제 저장된 블로그 로그인 세션 · storage_state(쿠키·localStorage) — 프로필 손상 회피용
+PERSISTENT_PROFILE_DIR, COOKIE_STATE_PATH = profile_paths("naver-blog")
 EVIDENCE_DIR = ROOT / "scripts" / "poc-evidence"
 
 NAVER_LOGIN_URL = "https://nid.naver.com/nidlogin.login"
@@ -229,7 +231,14 @@ class BlogPost:
         self.body = body
         self.image_paths = image_paths
         self.sticker_count = sticker_count
-        self.link_card_url = link_card_url or LINK_CARD_CTA_URL
+        # 파트너 계정(WP_TENANT)으로 쓰는 글에는 웰페리온 문의 링크를 넣지 않는다.
+        # 2026-09-09 실측: 부장님 블로그 임시저장분에 웰페리온 문의 주소가 섞여 들어갔다.
+        if link_card_url:
+            self.link_card_url = link_card_url
+        elif (os.environ.get("WP_TENANT") or "").strip():
+            self.link_card_url = ""
+        else:
+            self.link_card_url = LINK_CARD_CTA_URL
         self.tags = tags or []  # # 포함 형태(예: ['#한남동골프', '#WELLPERION'])
 
 
@@ -411,11 +420,15 @@ def _import_playwright():
         sys.exit(10)
 
 
-async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=True):
+async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=True,
+                                       ignore_default_args=None):
     """영속 프로필 launch_persistent_context — 손상(런치 실패) 시 프로필 백업 후 새 프로필로 1회 재시도(자가치유 §3)."""
     kwargs = dict(user_data_dir=str(PERSISTENT_PROFILE_DIR), headless=headless, no_viewport=no_viewport)
+    kwargs.update(_channel_kwargs())
     if args:
         kwargs["args"] = args
+    if ignore_default_args:
+        kwargs["ignore_default_args"] = ignore_default_args
     PERSISTENT_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     try:
         return await p.chromium.launch_persistent_context(**kwargs)
@@ -435,16 +448,35 @@ async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=Tr
         return await p.chromium.launch_persistent_context(**kwargs)
 
 
+# 자동화 표시를 끈다 — 켜져 있으면 로그인 화면이 비밀번호가 맞아도 계속 다시 뜬다
+# (2026-09-09 GM 실사례: 네이버·메타 둘 다 확인 문턱에서 되돌아왔다)
+_LAUNCH_ARGS = ["--start-maximized", "--disable-blink-features=AutomationControlled"]
+_HIDE_AUTOMATION = ["--enable-automation"]
+
+
+def _channel_kwargs() -> dict:
+    """WP_BROWSER_CHANNEL=chrome 이면 이 PC에 깔린 진짜 크롬으로 연다.
+    안 주면 종전대로 playwright 내장 브라우저 — 기존 발행 경로는 그대로다."""
+    ch = (os.environ.get("WP_BROWSER_CHANNEL") or "").strip()
+    return {"channel": ch} if ch else {}
+
+
 async def _launch_context(async_playwright):
     p = await async_playwright().start()
     if COOKIE_STATE_PATH.exists():
         # 쿠키 인증 모드 — 영속 프로필 손상 회피(fresh context)
-        browser = await p.chromium.launch(headless=False, args=["--start-maximized"])
+        browser = await p.chromium.launch(
+            headless=False, args=_LAUNCH_ARGS, ignore_default_args=_HIDE_AUTOMATION,
+            **_channel_kwargs(),
+        )
         context = await browser.new_context(storage_state=str(COOKIE_STATE_PATH), no_viewport=True)
         print(f"[INFO] 쿠키 인증 모드 — storage_state 주입 ({COOKIE_STATE_PATH.name})")
         return p, context
     # 폴백: 기존 영속 프로필 (state 미생성 시 — 무회귀)
-    context = await _launch_persistent_with_heal(p, headless=False, args=["--start-maximized"], no_viewport=True)
+    context = await _launch_persistent_with_heal(
+        p, headless=False, args=_LAUNCH_ARGS,
+        ignore_default_args=_HIDE_AUTOMATION, no_viewport=True,
+    )
     print("[INFO] 영속 프로필 모드 (쿠키 state 미생성 — migrate-cookies/setup으로 생성 권장)")
     return p, context
 
@@ -531,7 +563,7 @@ async def run_setup() -> int:
         )
 
     has_session = False
-    waited, deadline = 0, 300  # 초
+    waited, deadline = 0, 900  # 초 — 확인 절차(로봇 아님·기기 인증)까지 여유를 둔다
     while waited < deadline:
         try:
             cookies = await context.cookies()
@@ -595,8 +627,27 @@ async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
 # -----------------------------------------------------------------
 # 글쓰기 진입 + 제목·본문·이미지 입력 (draft·publish 공용 본체)
 # -----------------------------------------------------------------
+async def _resolve_blog_id(page) -> str:
+    """지금 로그인한 사람의 블로그 아이디를 직접 물어본다.
+    2026-09-09: 아이디가 'wellperion' 으로 박혀 있어, 파트너 계정으로 로그인하고도
+    웰페리온 블로그에 쓰려 해 본문 입력이 통째로 실패했다. 계정이 바뀌면 블로그도 바뀐다."""
+    try:
+        await page.goto("https://blog.naver.com/MyBlog.naver",
+                        wait_until="domcontentloaded", timeout=20_000)
+        await page.wait_for_timeout(1200)
+        m = re.search(r"blog\.naver\.com/([A-Za-z0-9_-]{3,})", page.url or "")
+        if m and m.group(1) not in ("MyBlog", "section", "PostList"):
+            return m.group(1)
+    except Exception as e:
+        print(f"[WARN] 블로그 아이디 자동 확인 실패({type(e).__name__}) — 기본값을 쓴다")
+    return DEFAULT_BLOG_ID
+
+
 async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> None:
-    write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id or DEFAULT_BLOG_ID)
+    if not blog_id:
+        blog_id = await _resolve_blog_id(page)
+        print(f"[INFO] 로그인한 계정의 블로그: {blog_id}")
+    write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id)
     print(f"[INFO] 글쓰기 진입: {write_url}")
     await page.goto(write_url, wait_until="domcontentloaded", timeout=30_000)
     await page.wait_for_timeout(3000)

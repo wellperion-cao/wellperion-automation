@@ -695,7 +695,10 @@ async def run_setup(account: str = DEFAULT_ACCOUNT) -> None:
             user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
+            # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
+            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
         page = await context.new_page()
@@ -736,7 +739,7 @@ async def run_setup(account: str = DEFAULT_ACCOUNT) -> None:
 # setup-auto 모드 — 로그인을 자동 감지해 세션 저장 (Enter 불필요)
 # 백그라운드 실행 가능: headful 창이 뜨면 GM이 로그인만 하면 자동 종료.
 # -----------------------------------------------------------------
-async def run_setup_auto(account: str = DEFAULT_ACCOUNT, max_wait_sec: int = 300) -> None:
+async def run_setup_auto(account: str = DEFAULT_ACCOUNT, max_wait_sec: int = 900) -> None:
     profile_dir = get_profile_dir(account)
     print("[INFO] === SETUP-AUTO 모드 시작 ===")
     print(f"[INFO] 계정: {account}")
@@ -749,7 +752,10 @@ async def run_setup_auto(account: str = DEFAULT_ACCOUNT, max_wait_sec: int = 300
             user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
+            # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
+            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
         page = await context.new_page()
@@ -802,7 +808,10 @@ async def run_dryrun(account: str = DEFAULT_ACCOUNT) -> None:
             user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
+            # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
+            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
 
@@ -1081,7 +1090,10 @@ async def run_publish(
             user_data_dir=str(profile_dir),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
+            # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
+            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
         page = await context.new_page()

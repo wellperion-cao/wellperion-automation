@@ -280,10 +280,21 @@ def _dispatch(
     content_dir: Path,
     do_run: bool,
     i_am_sure: bool,
+    tenant: str = "",
 ) -> list[dict]:
-    """채널별 실행·dry-run 수행. 결과 리스트 반환."""
+    """채널별 실행·dry-run 수행. 결과 리스트 반환.
+
+    tenant = 어느 계정으로 올릴지. 빈 값이면 웰페리온 — 종전 경로 그대로다.
+    계정은 하위 스크립트에 환경변수 WP_TENANT 로 넘긴다(scripts/tenant_profile.py).
+    """
     # campaign 슬러그 1회 산출 (콘텐츠 폴더 경로 기반)
     campaign = _slugify_campaign(str(content_dir))
+
+    env = None
+    if tenant:
+        env = dict(os.environ)
+        env["WP_TENANT"] = tenant
+        print(f"[계정] {tenant} 계정 자리로 올린다 (profiles/{tenant}_*)")
 
     results = []
     for ch in channels:
@@ -306,7 +317,7 @@ def _dispatch(
         else:
             # 실제 실행
             print(f"\n[{ch}] 실행 중...")
-            ret = subprocess.run(argv, cwd=str(ROOT))
+            ret = subprocess.run(argv, cwd=str(ROOT), env=env)
             rc = ret.returncode
             results.append({
                 "ch": ch,
@@ -351,6 +362,10 @@ def parse_args() -> argparse.Namespace:
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="하위 업로드 스크립트의 발행 가드 해제 플래그 — 실 발행 시 그대로 전파",
     )
+    parser.add_argument(
+        "--tenant", default="",
+        help="어느 계정으로 올릴지 (예: jo). 안 주면 웰페리온 계정 — 기존 발행 그대로",
+    )
     return parser.parse_args()
 
 
@@ -387,7 +402,7 @@ def main() -> int:
     print(f"  채널: {channels}")
     print(f"{'='*60}\n")
 
-    results = _dispatch(channels, content_dir, args.do_run, args.i_am_sure)
+    results = _dispatch(channels, content_dir, args.do_run, args.i_am_sure, args.tenant)
 
     # 결과 표 출력
     print(f"\n{'─'*60}")
