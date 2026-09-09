@@ -1,0 +1,18 @@
+[Unit]
+Description=Wellperion ERP API (%i 환경)
+After=network.target postgresql.service
+
+[Service]
+User=ec2-user
+WorkingDirectory=/srv/erp/%i/api
+EnvironmentFile=/srv/erp/%i/api.env
+EnvironmentFile=/srv/erp/%i/db.env
+# 라이브(erp-api.service)와 같은 코드·다른 자료다. 워커 1개 — 손님이 없는 비행기라 동시요청이 없다.
+# 포트는 환경파일 ERP_PORT 가 정한다(alpha 8003 · beta 8002). systemd 는 ExecStart 에서 변수를
+# 못 펼치므로 셸을 한 겹 끼운다.
+ExecStart=/bin/sh -c 'exec /usr/bin/python3 -m uvicorn app:app --host 127.0.0.1 --port $ERP_PORT --workers 1'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -220,6 +220,59 @@
     </div>
   </div>
 
+  <!-- 환경 3벌 — GM 지시 2026-09-09 「상용 서비스는 이렇게 분리해 둔다」. 실제로 세워 둔 것이지 계획이 아니다.
+       세운 방법 = server/deploy_env.sh {alpha|beta} · 유닛 erp-api@.service · 라이브는 종전 deploy_api.sh 그대로. -->
+  <h3>환경 3벌 <span class="n">고칠 땐 알파에서 · 태우기 전엔 베타에서 · 손님은 라이브에만</span></h3>
+  <p class="lead">날고 있는 비행기를 고치지 않습니다. 같은 비행기를 한 대 더 만들어 <b>손님 없이 이착륙</b>해 본 뒤 손님을 옮겨 태웁니다. 세 벌은 <b>코드도 자료도 완전히 별개</b>이고, 알파·베타에는 <b>밖으로 나가는 주소(구글 시트·카톡방·브로제이)를 아예 주지 않았습니다</b> — 그래서 거기서 무슨 시험을 해도 실무진 시트에는 한 줄도 안 적힙니다.</p>
+  <div class="layers">
+    <div class="layer">
+      <div class="tag">알파</div>
+      <div class="name">반복 개발</div>
+      <div class="desc">고치고 깨뜨리는 자리. 하루에 몇 번을 갈아엎어도 아무도 안 다칩니다.</div>
+      <div class="stat"><span class="k">주소</span><span class="v">/alpha/api/</span></div>
+      <div class="stat"><span class="k">자료칸</span><span class="v">erp_alpha</span></div>
+      <div class="stat"><span class="k">밖으로</span><span class="v">안 나감</span></div>
+      <div class="stat"><span class="k">지금</span><span class="v" id="env-alpha">확인 중…</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">베타</div>
+      <div class="name">배포 전 시험</div>
+      <div class="desc">라이브에 올리기 직전 판을 그대로 올려 돌려 보는 자리. 이관이 끝난 세상(서버가 유일 원본)을 미리 살아 봅니다.</div>
+      <div class="stat"><span class="k">주소</span><span class="v">/beta/api/</span></div>
+      <div class="stat"><span class="k">자료칸</span><span class="v">erp_beta</span></div>
+      <div class="stat"><span class="k">원본</span><span class="v">서버 하나</span></div>
+      <div class="stat"><span class="k">지금</span><span class="v" id="env-beta">확인 중…</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">라이브</div>
+      <div class="name">서비스 중</div>
+      <div class="desc">실무진과 회원이 실제로 쓰는 자리. 여기엔 베타를 지난 판만 올라갑니다.</div>
+      <div class="stat"><span class="k">주소</span><span class="v">/api/</span></div>
+      <div class="stat"><span class="k">자료칸</span><span class="v">erp</span></div>
+      <div class="stat"><span class="k">밖으로</span><span class="v">시트·카톡·브로제이</span></div>
+      <div class="stat"><span class="k">지금</span><span class="v" id="env-live">확인 중…</span></div>
+    </div>
+  </div>
+  <p class="lead">올라가는 방향은 <b>알파 → 베타 → 라이브</b> 한 방향뿐입니다. 거꾸로 라이브에서 고쳐 내려오는 길은 두지 않았습니다 — 그 길이 있으면 아무도 위 두 벌을 쓰지 않습니다.</p>
+
+  <script>
+  /* 세 벌이 정말 각자 살아 있는지는 화면이 직접 물어서 답합니다 — 상태를 손으로 적어 두면 죽어도 살아 있다고 나옵니다.
+     각 환경의 /api/health 가 자기 이름(_env)과 자기 자료칸의 건수를 돌려줍니다. 이름이 안 맞으면 그것도 그대로 적습니다. */
+  [['alpha','/alpha/api/health'], ['beta','/beta/api/health'], ['live','/api/health']].forEach(function(p){
+    var el = document.getElementById('env-' + p[0]);
+    fetch(p[1], {cache:'no-store'}).then(function(r){
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    }).then(function(d){
+      var name = d._env || '이름 없음';
+      var n = (typeof d.rows === 'number') ? d.rows : null;
+      el.textContent = (name === p[0] ? '살아 있음' : '이름이 ' + name) + (n === null ? '' : ' · 문의 ' + n + '건');
+    }).catch(function(e){
+      el.textContent = '응답 없음(' + e.message + ')';
+    });
+  });
+  </script>
+
   <h3>다운로드 <span class="n">설치·도구 파일 — 회사 관리자 자리(GM 확정 2026-09-09)</span></h3>
   <p class="lead">여기 있는 것은 설치·도구 파일이다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라 화면에서 본다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남는다.</p>
   <div class="entries" id="downloads"><div class="desc">불러오는 중…</div></div>

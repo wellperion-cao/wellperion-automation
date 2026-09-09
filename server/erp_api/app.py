@@ -16,6 +16,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
 
 SOURCE = "sheet-mirror"
+# 어느 비행기에 말하고 있는지 — 라이브/베타/알파가 같은 코드라 응답만 보고는 구별이 안 된다.
+# 값은 환경파일 ERP_ENV 하나(라이브는 안 적혀 있어 live 로 읽힌다).
+ENV_NAME = os.environ.get("ERP_ENV", "live")
 
 app = FastAPI(title="Wellperion inquiry mirror API", docs_url=None, redoc_url=None)
 
@@ -39,7 +42,7 @@ def health():
     try:
         conn = _conn()
     except db.Error as e:
-        return {"ok": False, "detail": "DB 열기 실패: %s" % e, "_source": SOURCE}
+        return {"ok": False, "detail": "DB 열기 실패: %s" % e, "_source": SOURCE, "_env": ENV_NAME}
     with conn:
         rows = conn.execute("SELECT type, COUNT(*) c FROM inquiries WHERE tenant_id=%s GROUP BY type", (db.TENANT,)).fetchall()
         meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE tenant_id=%s", (db.TENANT,)).fetchall())
@@ -51,6 +54,7 @@ def health():
         "last_sync_kst": meta.get("last_sync"),
         "last_failed": meta.get("last_failed") or "",
         "_source": SOURCE,
+        "_env": ENV_NAME,
     }
 
 
