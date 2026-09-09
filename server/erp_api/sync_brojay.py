@@ -22,6 +22,7 @@ lesson_records 와 같은 이유다: 브로제이 칸 이름을 우리가 정규
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -44,17 +45,60 @@ def days(frm, to):
     return [(a + timedelta(days=i)).isoformat() for i in range((b - a).days + 1)]
 
 
+MAX_PAGES = 50          # 폭주 방지 — 하루치가 이보다 많으면 사양이 바뀐 것이니 사람이 본다
+_PAGE_RE = re.compile(r"([?&]page_index=)(\d+)")
+
+
+def _one(url, headers, timeout):
+    """한 장 조회. 성공 = 파싱된 JSON, 실패 = None."""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception as e:  # noqa: BLE001 — 사유를 찍고 그 날짜는 건드리지 않는다
+        print("[warn] %s 조회 실패: %s: %s" % (url.split("?")[0], type(e).__name__, str(e)[:150]))
+        return None
+
+
 def fetch(url_tpl, key, auth_tpl, day, timeout=60):
-    """하루치 1회 조회. 성공 = 파싱된 JSON, 실패 = None(빈 값으로 덮어쓰지 않는다)."""
+    """하루치 **전량** 조회. 성공 = {"data":[...]}, 실패 = None(빈 값으로 덮어쓰지 않는다).
+
+    브로제이는 한 날이 여러 장이다(시포 실측 2026-09-08: 매출 27건 1장 · 입장 744건 4장).
+    한 번만 부르면 입장이 200건에서 잘리는데, 잘린 줄 모르고 저장되는 것이 제일 나쁘다.
+    장 넘기는 방식이 둘이라 갈라서 다룬다:
+      · 입장 — 주소에 page_index=N. 0부터 올려 가며 빈 장이 나오면 멈춘다.
+      · 매출 — 응답에 pagination{has_next,next_cursor}. 지금은 has_next=false 한 장으로 끝난다.
+               ★has_next 가 true 인데 이어 부를 방법을 모르면 **그 날짜를 실패로 돌린다** —
+               커서 파라미터 이름을 지어내 반쪽만 저장하느니 안 저장하는 쪽이 낫다(다음 실행이 다시 시도).
+    """
     name, _, val = auth_tpl.partition(":")
     headers = {"User-Agent": "wellperion-erp-api", name.strip(): val.strip().replace("{key}", key)}
-    req = urllib.request.Request(url_tpl.replace("{date}", day), headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        print("[warn] %s %s 조회 실패: %s: %s" % (url_tpl.split("?")[0], day, type(e).__name__, str(e)[:150]))
+    url = url_tpl.replace("{date}", day)
+
+    if not _PAGE_RE.search(url):
+        d = _one(url, headers, timeout)
+        if d is None:
+            return None
+        pg = d.get("pagination") if isinstance(d, dict) else None
+        if isinstance(pg, dict) and pg.get("has_next"):
+            print("[warn] %s %s 이어질 장이 있는데(has_next) 커서 사양을 몰라 반쪽 저장을 막는다 — 이 날짜는 건너뛴다"
+                  % (url.split("?")[0], day))
+            return None
+        return d
+
+    rows, page = [], 0
+    while page < MAX_PAGES:
+        d = _one(_PAGE_RE.sub(lambda m: m.group(1) + str(page), url), headers, timeout)
+        if d is None:
+            return None                      # 중간 장이 실패하면 그 날은 통째로 안 건드린다
+        got = d.get("data") if isinstance(d, dict) else None
+        if not isinstance(got, list) or not got:
+            break
+        rows.extend(got)
+        page += 1
+    else:
+        print("[warn] %s %s 장이 %d 을 넘었다 — 사양 변경 의심, 저장하지 않는다" % (url.split("?")[0], day, MAX_PAGES))
         return None
+    return {"data": rows, "_pages": page}
 
 
 def upsert(conn, items, now):
