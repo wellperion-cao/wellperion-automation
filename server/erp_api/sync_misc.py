@@ -21,12 +21,19 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
 
-GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SCHEDULE_GAS_URL", "todo": "TODO_GAS_URL"}
+GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SCHEDULE_GAS_URL", "todo": "TODO_GAS_URL",
+           "funnel": "FUNNEL_EXEC_URL"}
+# POST 로만 답하는 조회 — 본문에 열쇠를 실어야 GAS 가 열어 준다(Survey.js _staffFeedbackWriteAuthed_·_ohnuttiTeamAuthed_).
+# 값은 저장소에 두지 않는다(api.env 에만) — 없으면 그 일감만 건너뛴다(조용한 실패 금지 · 화면은 종전 GAS 로 폴백).
+#   배1050(시포 2026-09-09) — 실무진피드백·오넛티 조회가 브라우저에서 GAS 로 바로 가던 마지막 두 자리.
+POST_BODY = {("funnel", "staff_feedback_list"): ("t", "INTAKE_SUBMIT_TOKEN"),
+             ("funnel", "ohnutti_team_list"): ("code", "OHNUTTI_ACCESS_CODE")}
 ACTIONS = {"renewal": ("stats",), "ops": ("vendor_list",), "schedule": ("load_schedule",),
            # home_kpi·sales_monthly = 업무&결재 GAS(TODO_GAS_URL)의 매출·지출 KPI 액션 — 배1039-A 시토.
            # notice_list = 공지서식(coo/notice · 배1113) 목록 조회 — 같은 GAS(notice_save/delete 도 이 GAS·배1082).
            # product_plan_list = 상품기획 화면(cpo/product · 배1050) 목록 조회 — 같은 업무&결재 GAS · 파라미터 없음.
-           "todo": ("home_kpi", "sales_monthly", "notice_list", "product_plan_list")}
+           "todo": ("home_kpi", "sales_monthly", "notice_list", "product_plan_list"),
+           "funnel": ("staff_feedback_list", "ohnutti_team_list")}
 CALLBACK = "__wp"
 # renewal 만 JSONP(콜백 래핑 · months 로 응답 확인) — ops/schedule/todo 는 board 와 같은 순JSON({ok:true,...},
 # action 파라미터로 라우팅되는 다목적 GAS)이라 콜백을 안 씌운다(배990).
@@ -50,6 +57,27 @@ def gas_call(gas, action, timeout=60):
     url = os.environ.get(GAS_ENV[gas], "")
     if not url:
         raise SystemExit("%s 없음 — /srv/erp/api.env 를 확인" % GAS_ENV[gas])
+    body_spec = POST_BODY.get((gas, action))
+    if body_spec:                                 # 본문에 열쇠를 싣는 POST 조회(실무진피드백·오넛티)
+        field, env_key = body_spec
+        secret = os.environ.get(env_key, "").strip()
+        if not secret:
+            print("[warn] %s/%s 건너뜀 — api.env 에 %s 없음" % (gas, action, env_key))
+            return None
+        payload = json.dumps({"action": action, field: secret}, ensure_ascii=False).encode("utf-8")
+        preq = urllib.request.Request(url, data=payload,
+                                      headers={"Content-Type": "text/plain;charset=utf-8",
+                                               "User-Agent": "wellperion-erp-api"})
+        try:
+            with urllib.request.urlopen(preq, timeout=timeout) as r:
+                pdata = json.loads(r.read().decode("utf-8"))
+        except Exception as e:
+            print("[warn] %s/%s 조회 실패: %s: %s" % (gas, action, type(e).__name__, str(e)[:120]))
+            return None
+        if not isinstance(pdata, dict) or not pdata.get("ok"):
+            print("[warn] %s/%s 응답 검증 실패" % (gas, action))
+            return None
+        return pdata
     jsonp = gas in JSONP_GAS
     q = urllib.parse.urlencode({"callback": CALLBACK, "_": int(time.time())} if jsonp
                                 else {"action": action, "_pv": int(time.time())})
@@ -79,7 +107,8 @@ def jobs():
     """(gas, action, params) — 표를 늘리려면 여기 한 줄 + GAS_ENV/ACTIONS 만 추가한다(파일은 하나로 유지)."""
     return [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
             ("todo", "home_kpi", ""), ("todo", "sales_monthly", ""), ("todo", "notice_list", ""),
-            ("todo", "product_plan_list", "")]
+            ("todo", "product_plan_list", ""),
+            ("funnel", "staff_feedback_list", ""), ("funnel", "ohnutti_team_list", "")]
 
 
 def main():
@@ -124,7 +153,8 @@ def selftest():
         assert len(r) == 1 and r[0]["synced_at"] == "2026-09-04 10:05:00" and json.loads(r[0]["data"])["months"][0]["num"] == 9, r
         assert jobs() == [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
                           ("todo", "home_kpi", ""), ("todo", "sales_monthly", ""), ("todo", "notice_list", ""),
-                          ("todo", "product_plan_list", "")]
+                          ("todo", "product_plan_list", ""),
+                          ("funnel", "staff_feedback_list", ""), ("funnel", "ohnutti_team_list", "")]
         assert all(a in ACTIONS[g] for g, a, _ in jobs()), "모든 일감은 API 허용 액션 안"
         assert JSONP_GAS == {"renewal"}, "ops/schedule 은 순JSON(board 와 같은 관례) — GAS_ENV/ACTIONS 만 늘려도 안전"
     finally:

@@ -5521,8 +5521,9 @@ function lessonLoad(t) {
 function lessonLoadStats(t) {
   var st = _lessonState[t];
   if (GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : ''))
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 강습 미러 우선(4916 요약 경로와 같은 라우트), 실패하면 종전 GAS.
+  var _lsGas = function(){ return fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(st.type) + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/lesson/stats?type=' + encodeURIComponent(st.type) + '&scope=' + (st.scope === 'all' ? 'all' : 'year')).catch(function(){ return _lsGas(); }) : _lsGas())
     .then(function(d){
       if (!d || !d.ok) return;
       var el = document.getElementById('lessonStatLine_' + t);
@@ -6618,8 +6619,9 @@ function lessonRegLoad(t, force) {
   if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 자동으로 등록 회원이 표시됩니다.'); return; }
   if (b) b.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + (force ? '&fresh=1' : '') + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 강습 미러 우선. 단 '새로고침'(force)은 원본을 다시 읽는 게 목적이라 GAS 그대로 간다.
+  var _lrGas = function(){ return fetch(GAS_URL + '?action=lesson_registered_roster&type=' + encodeURIComponent(st.type) + (force ? '&fresh=1' : '') + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !force && !_wroteRecently()) ? _apiLessonRoster(st.type).catch(function(){ return _lrGas(); }) : _lrGas())
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.roster = d.roster || [];
@@ -6654,8 +6656,9 @@ function lessonRegistryLoad(t) {
   if (GAS_URL === GAS_PLACEHOLDER) { if (b) b.innerHTML = _lessonRegRow('미연동', 'GAS URL이 교체되면 오늘 등록 회원이 표시됩니다.'); return; }
   if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 강습 미러 우선. 서버 registry 는 인자가 없으면 오늘 하루로 자른다(GAS 무인자와 같은 범위).
+  var _lgGas = function(){ return fetch(GAS_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(st.type) + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/lesson/registry?type=' + encodeURIComponent(st.type)).catch(function(){ return _lgGas(); }) : _lgGas())
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || 'GAS 응답 오류');
       st.registry = d.data || [];

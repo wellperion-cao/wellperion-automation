@@ -176,6 +176,8 @@ table.otbl tr:last-child td{border-bottom:none}
     var prevVal = sel.getAttribute('data-prev') || newVal;
     sel.disabled = true;
     var _p = { action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal };
+    // ★2026-09-09 배1050 — 쓰기 도장. 서버 거울(5분 주기)이 방금 바꿈 건을 아직 모르는 동안만 목록을 GAS 로 읽는다.
+    try { localStorage.setItem('ohnutti_wrote_at', String(Date.now())); } catch (e) {}
     // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인이면 서버 /api/write(이중기록) 뒤 GAS, 아니면 종전 GAS 직행. 응답 모양 동일.
     (window.erpFunnelCall ? erpFunnelCall(GAS_URL, _p) : fetch(GAS_URL, {
       method: 'POST', redirect: 'follow',
@@ -208,12 +210,21 @@ table.otbl tr:last-child td{border-bottom:none}
   // 입장 게이트(gate.js)를 이미 통과할 때 쓴 비밀번호를 그대로 조회 코드로 쓴다 — 화면에 코드 입력칸을 따로 두지 않는다.
   function load(code){
     setMsg('불러오는 중…');
-    fetch(GAS_URL, {
-      method: 'POST', redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'ohnutti_team_list', code: code })
-    })
-    .then(function(r){ return r.json(); })
+    // ★2026-09-09 배1050 — ERP 도메인은 서버 거울(/api/misc/funnel/ohnutti_team_list) 먼저,
+    //   실패하면 종전 GAS. 거울은 서버가 접속코드를 쥐고 떠온다 — 브라우저가 코드를 들고 GAS 로 가지 않는다.
+    var _otGas = function(){
+      return fetch(GAS_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'ohnutti_team_list', code: code })
+      }).then(function(r){ return r.json(); });
+    };
+    var _otApiOn = /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname);
+    try { if (Date.now() - Number(localStorage.getItem('ohnutti_wrote_at') || 0) < 6 * 60 * 1000) _otApiOn = false; } catch (e) {}
+    (_otApiOn ? fetch('/api/misc/funnel/ohnutti_team_list')
+        .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[오넋티 접수] API 실패 → GAS 폴백:', e && e.message); return _otGas(); })
+      : _otGas())
     .then(function(d){
       if(!d || !d.ok){
         setMsg((d && d.error) || '조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
