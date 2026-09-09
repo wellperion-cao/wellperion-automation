@@ -565,7 +565,7 @@ def _reconcile(root: str) -> tuple[bool, str]:
                         if stale:
                             warn = (
                                 f"⚠️ 이 PC 파일 {len(stale)}개가 방금 들어온 최신본보다 뒤져 "
-                                f"있습니다 — 그대로 커밋하면 남의 작업을 지웁니다: "
+                                f"있습니다 — 이대로 저장하면 남의 작업을 지웁니다: "
                                 + ", ".join(stale[:10])
                                 + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
                             )
@@ -648,7 +648,7 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
         if alert and _alert_should_send(root, "timeout"):
             _telegram_warn(
                 root,
-                "⚠️ 자동 push 타임아웃 — 스위퍼 재시도도 실패. 수동 `git push` 필요.",
+                "⚠️ 자동 배포가 시간 초과로 멈췄습니다 — 재시도도 실패. 손으로 다시 올려야 합니다.",
             )
         return
 
@@ -687,7 +687,7 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
     if alert and _alert_should_send(root, err):
         _telegram_warn(
             root,
-            "⚠️ 자동 push 가 스위퍼 재시도에도 실패 — origin 미동기화(커밋 로컬 보존). "
+            "⚠️ 자동 배포가 재시도에도 실패 — 공용 서버에 아직 안 올라갔습니다(저장은 이 PC 에 남아 있습니다). "
             f"수동 `git push` 필요.\n{err}",
         )
 
@@ -854,9 +854,9 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
             if _alert_should_send(root, f"streak_max::{why}"):
                 _telegram_warn(
                     root,
-                    f"⚠️ 자동 push 가 {streak}회 연속 막혀 '통합 여는 커밋'을 중단했습니다.\n"
+                    f"⚠️ 자동 배포가 {streak}회 연속 막혀 통합 작업을 중단했습니다.\n"
                     + (f"막은 이유: {why[:180]}\n" if why else "")
-                    + "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
+                    + "저장한 것은 이 PC 에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
                 )
         st["precommit_streak"] = streak + 1
         _alert_state_write(root, st)
@@ -936,8 +936,8 @@ def _push_succeeded(root: str) -> None:
             _log(f"POST_COMMIT_PUSH 회복 — 정체 {stuck_min}분 만에 해소, 확인방에 닫힘 1통", root)
             _telegram_warn(
                 root,
-                f"✅ 자동 push 정상화 — 밀려 있던 것이 모두 올라갔습니다(정체 {stuck_min}분).\n"
-                "앞서 보낸 push 실패 알림은 해소된 건입니다.",
+                f"✅ 자동 배포 정상화 — 밀려 있던 것이 모두 올라갔습니다(멈춰 있던 시간 {stuck_min}분).\n"
+                "앞서 보낸 배포 실패 알림은 해소된 건입니다.",
             )
 
 
@@ -1212,9 +1212,9 @@ def _check_remote_drift(root: str) -> None:
                 stale = _detect_stale_worktree_copies(root, head, theirs)
                 if stale:
                     warn = (
-                        f"⚠️ [원격 지연] 이 PC 디스크 파일 {len(stale)}개가 origin 최신본보다 "
-                        "뒤져 있습니다(origin 에 이미 들어온 변경을 이 PC 가 아직 못 받음 — "
-                        "pull 로 해소됨) — 그대로 커밋하면 남의 작업을 지웁니다: "
+                        f"⚠️ 이 PC 파일 {len(stale)}개가 공용 최신본보다 뒤져 있습니다 — "
+                        "다른 세션이 올린 변경을 이 PC 가 아직 못 받았습니다. "
+                        "이대로 저장하면 남의 작업을 지웁니다(받아오면 풀립니다): "
                         + ", ".join(stale[:10])
                         + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
                     )
@@ -1349,7 +1349,8 @@ def _process_push_lock_approvals(root: str) -> None:
                     _log(f"PUSH_SWEEPER 자물쇠 승인({req_id}) master 반영 후 push 실패 {err}", root)
                     _telegram_warn(
                         root,
-                        f"⚠️ 자물쇠 승인 {req_id} master 반영은 됐지만 push 실패 — 수동 push 필요.\n{err[:200]}",
+                        f"⚠️ 자물쇠 승인 {req_id} — 저장은 됐지만 공용 서버로 못 올렸습니다. "
+                        f"손으로 다시 올려야 합니다.\n{err[:200]}",
                     )
                     continue
                 if branch:
@@ -1438,7 +1439,7 @@ def main() -> int:
                 if _unpushed_count(root) != 0:
                     _telegram_warn(
                         root,
-                        "⚠️ 자동 push 스위퍼가 오류로 중단 — 밀린 커밋이 남아 있습니다.\n"
+                        "⚠️ 자동 배포가 오류로 중단 — 아직 안 올라간 것이 남아 있습니다.\n"
                         f"{type(e).__name__}: {str(e)[:200]}",
                     )
             except Exception:
