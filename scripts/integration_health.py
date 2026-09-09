@@ -322,6 +322,38 @@ def check_server_pushback() -> tuple[str, bool, str]:
     return name, True, f"대기 {unpushed}건 · 실패 0 (마지막 {last})"
 
 
+# 서버 크론에 --dry-run 이 붙어 있어도 실제로 일하는 것 = 여기 적은 것뿐. 나머지는 '등록만 되고 아무 일도
+# 안 하는 장치'로 본다. 새로 넣을 때는 로그에서 실제 산출물(파일·발신)을 눈으로 확인한 뒤 적는다.
+DRYRUN_OK = {
+    "ig_reach_collector.py": "--dry-run 인데도 원장을 실제로 쓴다(스크립트마다 뜻이 다름) — 2026-09-09 로그 실측",
+}
+
+
+def check_server_cron_dryrun() -> tuple[str, bool, str]:
+    """서버 예약작업이 '등록만 되고 아무 일도 안 하는' 상태인지.
+
+    왜 보나 — 2026-09-07 에 PC 예약작업 5개를 「서버 크론 6개 100% 등록 확인」을 근거로 껐는데,
+    그 서버 크론 중 넷이 --dry-run 이라 접수 배선·마케팅 발신·토큰 갱신이 이틀간 아무 일도 안 했다.
+    등록됐는지가 아니라 그 일을 실제로 하는지를 세야 한다. 같은 본질이 전날 침묵감시기에서도 났다.
+    """
+    name = "서버 예약작업 실효"
+    code, out, err = _ssh_run("crontab -l 2>/dev/null; sudo grep -h -v '^#' /etc/cron.d/* 2>/dev/null")
+    if code != 0 or not out.strip():
+        return name, True, f"확인 불가(서버 접속 실패) — {(err or '응답 없음')[:60]}"
+    inert = []
+    for line in out.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "--dry-run" not in line:
+            continue
+        script = next((w.rsplit("/", 1)[-1] for w in line.split() if w.endswith(".py")), line[:40])
+        if script not in DRYRUN_OK:
+            inert.append(script)
+    if inert:
+        uniq = sorted(set(inert))
+        return name, False, f"--dry-run 으로만 도는 예약작업 {len(uniq)}개 — 등록만 되고 일은 안 한다: {', '.join(uniq)}"
+    return name, True, "--dry-run 으로 헛도는 예약작업 없음"
+
+
 def check_kpi_freshness() -> tuple[str, bool, str]:
     """⑥ KPI 집계 신선도: kpi_values.json generated_at 이 25시간 이내(스케줄=07:50·21:00 일 2회,
     최대 간격 약 13.2h + 1회 결측 여유분).
@@ -399,6 +431,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_review_live,
         check_unpushed,
         check_server_pushback,
+        check_server_cron_dryrun,
         check_kpi_freshness,
         check_page_score_stale_ship_refs,
     )
