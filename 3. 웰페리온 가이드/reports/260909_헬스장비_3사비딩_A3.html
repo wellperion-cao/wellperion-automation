@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>헬스장비 3사 비딩 요약 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<!--
+  브로제이 견적 요약 A3 — 2026-09-03 시우 (welly-gm-a3-report 규격 · 레퍼런스 260828_상가관리_현황_A3 CSS 승계)
+  원본 = G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&미션 진행(경영지원부)/26.9.3 브로제이 턴게이트+출입구 키오스크/ (견적서 PDF 3부 · 2026.09.03 · 담당 조성재)
+  숫자는 견적서 그대로 옮겼고 합산만 시우가 했다. 추정치는 (추정) 표기.
+-->
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar .note{ font-size:11.5px; opacity:.8; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 22px; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy); letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:27px; letter-spacing:-.8px; line-height:1.2; word-break:keep-all; max-width:880px; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); } .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0; border-bottom:1px solid var(--line); }
+  .sign .b{ height:44px; }
+  .ask{ margin-top:12px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); display:flex; gap:12px; }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:22px; font-weight:900; opacity:.55; line-height:1; }
+  .ask .q{ font-size:14.5px; font-weight:700; line-height:1.45; letter-spacing:-.2px; }
+  .ask .d{ font-size:12px; line-height:1.5; margin-top:4px; opacity:.9; }
+  .alert{ margin-top:8px; background:#FBEDEA; border:1px solid #E2B5AE; color:var(--bad); font-size:12.5px; font-weight:700; padding:7px 14px; line-height:1.5; }
+  .alert span{ font-weight:500; color:#6B2020; }
+  .main{ margin-top:10px; flex:1; min-height:0; display:flex; gap:14px; }
+  table{ border-collapse:collapse; table-layout:fixed; width:100%; align-self:flex-start; }
+  th,td{ border:1px solid var(--line); padding:6px 10px; font-size:12.6px; line-height:1.35; vertical-align:middle; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:13.5px; border-color:#2A4763; text-align:center; }
+  thead th.k{ text-align:left; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:12.6px; color:var(--navy); }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.c{ text-align:center; }
+  tr.grp td{ background:var(--navy-bg); color:var(--navy); font-weight:700; font-size:12.2px; padding:4px 10px; letter-spacing:-.2px; }
+  tr.sum td{ background:#F1F4F8; font-weight:700; }
+  tr.total td{ background:var(--navy); color:#fff; font-weight:700; font-size:13.5px; border-color:#2A4763; }
+  .good{ color:var(--good); font-weight:700; } .warn{ color:var(--warn); font-weight:700; } .bad{ color:var(--bad); font-weight:700; }
+  .dim{ color:#6B7580; font-weight:400; font-size:11.5px; }
+  .side{ width:430px; flex:none; display:flex; flex-direction:column; gap:10px; }
+  .box{ border:1px solid var(--line); padding:10px 13px; }
+  .box h3{ font-size:12.5px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid var(--line); }
+  .box li{ font-size:12.2px; line-height:1.45; margin:0 0 5px 14px; }
+  .box li b{ font-weight:700; }
+  .box.rec{ background:var(--navy-bg); border-color:#C9D5E3; flex:1; }
+  .kpi{ display:flex; gap:8px; }
+  .kpi div{ flex:1; border:1px solid var(--line); padding:8px 10px; }
+  .kpi .l{ font-size:10.5px; color:#5C666F; letter-spacing:.5px; }
+  .kpi .v{ font-size:19px; font-weight:900; color:var(--navy); margin-top:2px; letter-spacing:-.4px; font-variant-numeric:tabular-nums; }
+  .kpi .s{ font-size:10.5px; color:#5C666F; margin-top:1px; }
+  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px; display:flex; gap:26px; font-size:10.6px; line-height:1.5; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>헬스장비 3사 비딩 요약 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">헬스장 장비 교체 — 3사 비딩 요약<br><span style="font-size:19px;color:#3C464F">라이프피트니스 B안 기준 · 매트릭스 · 테크노짐 · 견적 총액 8.0억 ~ 9.9억</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b><br>
+      견적일 <b>LF 09.02 · 매트릭스 09.07 · 테크노짐 08.28</b> · 작성일 <b>2026. 09. 09.</b> · 문서번호 <b>WP-GM-260909-03</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it"><div class="n">01</div><div><div class="q">총액이 아니라 <b>같은 장비끼리 대당 단가</b>로 맞대어 본다.</div><div class="d">세 견적의 대수가 61 · 73 · 45 로 달라 총액 비교는 뜻이 없다. 러닝머신처럼 세 곳 모두 있는 품목을 먼저 맞춰 보면 실제 가격 차이가 드러난다. 러닝머신 대당 = 라이프피트니스 2,700만 · 매트릭스 2,373만 · 테크노짐 3,430만(정가 기준).</div></div></div>
+      <div class="it"><div class="n">02</div><div><div class="q">라이프피트니스 B안 견적은 <b>9월 12일에 만료</b>된다 — 유효기간 10일.</div><div class="d">9월 2일 발행이라 사흘 남았다. 이 안을 살려 두려면 연장을 먼저 받아야 한다. 매트릭스는 60일이라 11월 초까지, 테크노짐은 견적서에 값이 비어 있어 확인이 필요하다.</div></div></div>
+    </div>
+  </div>
+  <div class="alert">⚠ 직접 비교 불가 — <span>대수가 <b>61 · 73 · 45</b> 로 다르고 구성 품목도 같지 않다. 라이프피트니스는 <b>정가에서 25% 깎은 값</b>이고 부가세 표기가 없어 포함 여부를 확인해야 한다. 매트릭스와 테크노짐은 <b>부가세 별도</b>가 명시돼 있다 — 같은 기준으로 다시 세우기 전에는 「가장 싸다」고 말할 수 없다</span></div>
+
+  <div class="main">
+    <div class="tblcol" style="flex:1; min-width:0;">
+      <table>
+        <thead><tr><th class="k" style="width:190px">항목</th><th style="width:200px">라이프피트니스 <span class="dim" style="color:#cfd8e3;font-weight:400">B안</span></th><th style="width:190px">매트릭스</th><th style="width:190px">테크노짐</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="5">금액</td></tr>
+          <tr class="total"><td class="k" style="background:var(--navy);color:#fff">견적 총액</td><td class="n">801,975,000</td><td class="n">918,060,000</td><td class="n">986,470,000</td><td>세 곳 모두 견적서 그대로</td></tr>
+          <tr><td class="k">부가세</td><td class="c warn">표기 없음 — 확인 필요</td><td class="c">별도 명시</td><td class="c">별도 명시</td><td>포함이면 라이프피트니스가 실질 더 낮고, 별도면 세 곳이 같은 기준</td></tr>
+          <tr><td class="k">정가 · 할인</td><td class="c">정가 1,069,300,000 <span class="dim">-25%</span></td><td class="c dim">할인 표기 없음</td><td class="c">정가 대비 감액 있음 <span class="dim">845,600,000 표기</span></td><td>라이프피트니스만 할인율이 견적서에 드러난다</td></tr>
+          <tr><td class="k">대수</td><td class="c">61 sets</td><td class="c">73대</td><td class="c">45 sets</td><td>★대수가 달라 총액 직접 비교 불가</td></tr>
+          <tr><td class="k">대당 평균</td><td class="c">약 1,315만</td><td class="c">약 1,258만</td><td class="c">약 2,192만</td><td>구성이 달라 참고값 <span class="dim">(추정 — 총액÷대수)</span></td></tr>
+          <tr class="grp"><td colspan="5">같은 품목 대당 단가 — 러닝머신</td></tr>
+          <tr><td class="k">러닝머신 단가 · 대수</td><td class="c">27,000,000 · 18대</td><td class="c">23,730,000 · 20대</td><td class="c">34,300,000 · 15대</td><td>세 곳 모두 있는 유일한 대량 품목 — 여기가 가장 정직한 비교점</td></tr>
+          <tr><td class="k">러닝머신 소계</td><td class="n">486,000,000</td><td class="n">474,600,000</td><td class="n">514,500,000</td><td>총액의 절반 이상을 러닝머신이 차지한다</td></tr>
+          <tr class="grp"><td colspan="5">계약 조건</td></tr>
+          <tr><td class="k">결제</td><td class="c warn">계약금 50% · 잔금 50%</td><td class="c" style="color:#146B4F">30% · 40% · 30%</td><td class="c">현금</td><td>라이프피트니스는 계약 직후 절반이 나간다 — 자금 부담이 가장 앞선다</td></tr>
+          <tr><td class="k">납기</td><td class="c warn">계약 후 약 6개월</td><td class="c" style="color:#146B4F">계약 후 60~70일</td><td class="c dim">견적서 값 비어 있음</td><td>라이프피트니스는 반년 뒤 — 교체 시점이 크게 밀린다</td></tr>
+          <tr><td class="k">보증</td><td class="c" style="color:#146B4F">3년 <span class="dim">소모품 제외</span></td><td class="c">2년 무상</td><td class="c">2년 무상</td><td>보증만 놓고 보면 라이프피트니스가 1년 길다</td></tr>
+          <tr><td class="k">견적 유효기간</td><td class="c bad">10일 — 9/12 만료</td><td class="c">60일 — 11월 초</td><td class="c dim">견적서 값 비어 있음</td><td>사흘 남았다 · 연장 요청이 먼저다</td></tr>
+          <tr class="grp"><td colspan="5">참고 — 라이프피트니스 A안</td></tr>
+          <tr><td class="k">A안 총액</td><td class="c">946,125,000</td><td class="c">—</td><td class="c">—</td><td>B안보다 1.44억 높다 · 같은 날 같은 담당이 낸 상위안</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="side">
+      <div class="kpi">
+        <div><div class="l">라이프피트니스 B안</div><div class="v">8.02억</div><div class="s">61 sets · 부가세 표기 없음</div></div>
+        <div><div class="l">매트릭스</div><div class="v">9.18억</div><div class="s">73대 · VAT 별도</div></div>
+        <div><div class="l">테크노짐</div><div class="v">9.86억</div><div class="s">45 sets · VAT 별도</div></div>
+      </div>
+      <div class="box">
+        <h3>핵심 리스크</h3>
+        <ul>
+          <li><b class="bad">⚠ 상</b> 세 견적의 <b>기준이 다르다</b> — 대수 61·73·45, 부가세 표기 유무, 할인 반영 여부. 이대로 총액을 견주면 잘못된 결론이 나온다.</li>
+          <li><b class="bad">⚠ 상</b> 라이프피트니스 B안 <b>유효기간이 9/12</b>에 끝난다. 가장 낮은 금액이 사흘 뒤 사라진다.</li>
+          <li><b class="warn">△ 중</b> 납기가 <b>6개월 vs 2개월</b>로 벌어진다. 회원이 쓰는 장비라 교체 시점이 금액만큼 중요하다.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>실행 액션</h3>
+        <ul>
+          <li>세 업체에 <b>같은 장비 목록</b>으로 다시 받는다 — 러닝머신·바이크·근력 기구 대수를 우리가 정해 통일한다</li>
+          <li>라이프피트니스에 <b>유효기간 연장</b> 요청(9/12 만료) · 부가세 포함 여부 확인</li>
+          <li>테크노짐에 <b>납기·유효기간</b> 확인 — 견적서에 값이 비어 있다</li>
+          <li>매트릭스는 조건이 가장 또렷하다 — 이 조건을 <b>협상 기준선</b>으로 쓴다</li>
+        </ul>
+      </div>
+      <div class="box rec">
+        <h3>GM 권고</h3>
+        <ul>
+          <li>지금 숫자로는 <b>금액이 갈리는 게 아니라 기준이 갈린다.</b> 대수를 맞추면 순위가 바뀔 수 있다.</li>
+          <li>러닝머신 대당으로만 보면 <b>매트릭스가 가장 낮고</b> 테크노짐이 가장 높다. 총액 순위와 같은 방향이라 이 축은 뒤집히기 어렵다.</li>
+          <li><b>납기와 결제 조건</b>은 매트릭스가 확실히 낫다. 라이프피트니스는 금액이 낮은 대신 반년을 기다리고 계약 직후 절반을 낸다.</li>
+          <li>가격만 보고 고르는 자리가 아니라, <b>같은 조건으로 다시 받는 자리</b>다. 3사 재견적이 다음 단계다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>출처</b> — 라이프피트니스 B안 견적서 D25-0425A(2026.09.02 · 김순홍 이사 010-6338-0130 · ㈜도일트레이딩) · 매트릭스 견적서 260907_한남 웰페리온(존슨헬스테크코리아 · 고명진 매니저 010-8060-7513) · 테크노짐 견적서 GSM-0001001805(2026.08.28 · 갤럭시아에스엠). 경로 G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&amp;미션 진행(경영지원부)/26.8.21 운동 장비 비교/.</div>
+    <div><b>정직 표기</b> — 대당 평균은 <b>(추정)</b>이다. 총액을 대수로 나눈 값이라 구성이 다른 세 견적을 같게 만들지 못한다. 테크노짐의 납기·유효기간은 견적서 서식에 값이 비어 있어 <b>「견적서 값 비어 있음」</b>으로 둔다 — 없는 값을 지어내지 않는다. 라이프피트니스 부가세는 견적서에 표기가 없어 포함 여부를 확인 전까지 단정하지 않는다.</div>
+    <div><b>차기 보고</b> — 같은 장비 목록으로 3사 재견적을 받으면 <b>같은 문서번호로 2차 갱신</b>. 관련 자료 = 쇼룸 방문 보고(260827_라이프피트니스_쇼룸방문보고_A3) · 업체 공유용 컨텍스트 A3(260821_헬스장비_웰페리온컨텍스트_A3).</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('sheet'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+    var a = document.createElement('a'); a.download = '260909_헬스장비_3사비딩_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+  });
+};
+</script>
+</body>
+</html>
