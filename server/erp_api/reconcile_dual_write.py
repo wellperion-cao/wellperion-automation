@@ -310,17 +310,22 @@ def _norm_mirror_key(k):
     return re.sub(r"\s+", "", str(k or ""))
 
 
-def reconcile_member_active_writes(conn, db, since):
-    """member_active_update(3단계 · 배1054) 서버 쓰기 전수 대조 — 앞의 owner_save·hold_transition 과 달리
-    한 쓰기가 여러 칸을 동시에 바꿀 수 있어(fields 다중 저장) _reconcile_member_col_writes(칸 1개 전용)를
-    못 쓴다. write_log 의 payload._saved(api_members_write._member_active_update_one 이 실어 둔, 실제로
-    저장한 모든 칸 이름→값)를 그 시각 이후 처음 돈 sync_members 배치의 members.data JSON 같은 칸들과
-    한 번에 비교한다 — 그 쓰기가 바꾼 칸 전부가 일치해야 그 행이 무결(부분 일치는 무결이 아니다).
-    반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양."""
-    rows = conn.execute(
-        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
-        " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
-    days, unmatched = {}, []
+def _reconcile_member_multifield_writes(conn, db, rows, form):
+    """한 쓰기가 여러 칸을 동시에 바꾸는 폼(member_active_update · member_hold_approve)의 공통 대조.
+
+    payload._saved(그 쓰기가 실제로 저장한 칸 이름→값)를 그 시각 **이후** 처음 돈 sync_members 배치의
+    members.data JSON 같은 칸들과 한 번에 비교한다 — 그 쓰기가 바꾼 칸 전부가 일치해야 무결.
+
+    ★같은 (회원, 칸)을 여러 번 쓴 경우 마지막 쓰기만 대조한다 (시포 진단 2026-09-09 · 배1142/11427).
+      미러에는 마지막 값만 남으므로, 앞선 쓰기는 시트에 제대로 닿았어도 영원히 불일치로 잡힌다.
+      실측: M00229 「시작 일자」를 09-08 17:59:50 과 18:00:01, 11초 간격으로 두 번 고쳤다 — 데이터
+      손실은 없는데 대조기가 2건을 틀렸다고 세어 전사 무결 스트릭을 끊고 있었다.
+      덮인 칸은 '틀린 것'이 아니라 '못 재는 것'이라 세지 않는다 — 한 쓰기의 칸이 전부 덮였으면 그 행은
+      날짜 버킷을 아예 건드리지 않는다(_saved 없는 옛 형식 행과 같은 처리).
+
+    반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양.
+    """
+    prepared = []
     for r in rows:
         p = r["payload"] or {}
         no, saved = p.get("_member_no"), p.get("_saved") or {}
@@ -328,86 +333,67 @@ def reconcile_member_active_writes(conn, db, since):
             # 회원번호를 안 실은 쓰기 — 화면이 전화번호를 열쇠로 보낸 경우. 미러에서 찾아 이어간다.
             no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
         if not saved:
-            # `_saved`(그 쓰기가 실제로 바꾼 칸 목록)는 배1054 부터 실린다. 그 전 형식으로 적힌 행은
-            # **무엇을 바꿨는지 자체를 모른다** — 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이
-            # 바뀐 날 이전이 통째로 실패가 되어 무결 스트릭이 영영 안 찬다(실측 2026-09-09: 회원 수정
-            # 09-04·06·07 의 56건이 전부 이 부류였고 gas_status 는 모두 ok 였다). 시트 도달을 못 따진
-            # 행은 날짜 버킷을 아예 건드리지 않는다 — 행 0 인 날과 같게 건너뛴다(끊지도, 세지도 않는다).
+            # `_saved` 는 배1054 부터 실린다. 그 전 형식으로 적힌 행은 **무엇을 바꿨는지 자체를 모른다** —
+            # 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이 바뀐 날 이전이 통째로 실패가 되어 무결
+            # 스트릭이 영영 안 찬다(실측 2026-09-09: 회원 수정 09-04·06·07 의 56건이 전부 이 부류였고
+            # gas_status 는 모두 ok 였다). 날짜 버킷을 아예 건드리지 않는다 — 행 0 인 날과 같게 건너뛴다.
             continue
-        day = str(r["at"])[:10]
+        prepared.append((r["at"], no, saved))
+
+    # (회원, 칸)마다 마지막으로 쓴 행이 몇 번째인지. rows 는 at 오름차순이라 뒤에 온 것이 마지막이다.
+    last_at = {}
+    for i, (at, no, saved) in enumerate(prepared):
+        for f in saved:
+            last_at[(no, _norm_mirror_key(f))] = i
+
+    days, unmatched = {}, []
+    for i, (at, no, saved) in enumerate(prepared):
+        live = {f: v for f, v in saved.items() if last_at.get((no, _norm_mirror_key(f))) == i}
+        if not live:
+            continue          # 이 쓰기의 칸이 전부 나중 쓰기에 덮였다 — 못 재는 행
+        day = str(at)[:10]
         d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
         d["server"] += 1
         hit = False
-        if no and saved:
+        if no:
             row = conn.execute(
                 "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
                 " AND synced_at > %s ORDER BY synced_at LIMIT 1",
-                (db.TENANT, no, r["at"])).fetchone()
+                (db.TENANT, no, at)).fetchone()
             if row:
                 try:
                     mirror = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
                 except Exception:
                     mirror = {}
                 mirror_norm = {_norm_mirror_key(k): v for k, v in mirror.items()}
-                hit = all((mirror_norm.get(_norm_mirror_key(f)) or "") == (v or "") for f, v in saved.items())
+                hit = all((mirror_norm.get(_norm_mirror_key(f)) or "") == (v or "") for f, v in live.items())
         if hit:
             d["sheet"] += 1
         else:
             d["mismatch"] += 1
             d["ok"] = False
             if len(unmatched) < 20:
-                unmatched.append({"date": day, "at": r["at"], "member_no": no,
-                                  "fields": list(saved.keys()), "form": "member_active_update"})
+                unmatched.append({"date": day, "at": at, "member_no": no,
+                                  "fields": list(live.keys()), "form": form})
     return days, unmatched
 
 
+def reconcile_member_active_writes(conn, db, since):
+    """member_active_update(3단계 · 배1054) 서버 쓰기 전수 대조 — 다중칸 공통 뼈대를 쓴다."""
+    rows = conn.execute(
+        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
+        " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
+    return _reconcile_member_multifield_writes(conn, db, rows, "member_active_update")
+
+
 def reconcile_member_hold_approve_writes(conn, db, since):
-    """member_hold_approve(4단계 · 배1054) 서버 쓰기 전수 대조 — reconcile_member_active_writes 와 같은
-    다중칸 비교(payload._saved ↔ members.data JSON)를 쓰되, reject 행(회원 원장 무변경 · _member_no 자체가
-    없다)은 대상에서 뺀다 — approve 만 members 미러와 대조할 재료가 있다."""
+    """member_hold_approve(4단계 · 배1054) — 같은 다중칸 대조. reject 행(회원 원장 무변경 · _member_no
+    자체가 없다)은 SQL 에서 뺀다 — approve 만 members 미러와 대조할 재료가 있다."""
     rows = conn.execute(
         "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_hold_approve'"
         " AND gas_status='ok' AND payload->>'decision'='approve' AND at >= %s ORDER BY at",
         (db.TENANT, since)).fetchall()
-    days, unmatched = {}, []
-    for r in rows:
-        p = r["payload"] or {}
-        no, saved = p.get("_member_no"), p.get("_saved") or {}
-        if not no:
-            # 회원번호를 안 실은 쓰기 — 화면이 전화번호를 열쇠로 보낸 경우. 미러에서 찾아 이어간다.
-            no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
-        if not saved:
-            # `_saved`(그 쓰기가 실제로 바꾼 칸 목록)는 배1054 부터 실린다. 그 전 형식으로 적힌 행은
-            # **무엇을 바꿨는지 자체를 모른다** — 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이
-            # 바뀐 날 이전이 통째로 실패가 되어 무결 스트릭이 영영 안 찬다(실측 2026-09-09: 회원 수정
-            # 09-04·06·07 의 56건이 전부 이 부류였고 gas_status 는 모두 ok 였다). 시트 도달을 못 따진
-            # 행은 날짜 버킷을 아예 건드리지 않는다 — 행 0 인 날과 같게 건너뛴다(끊지도, 세지도 않는다).
-            continue
-        day = str(r["at"])[:10]
-        d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
-        d["server"] += 1
-        hit = False
-        if no and saved:
-            row = conn.execute(
-                "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
-                " AND synced_at > %s ORDER BY synced_at LIMIT 1",
-                (db.TENANT, no, r["at"])).fetchone()
-            if row:
-                try:
-                    mirror = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
-                except Exception:
-                    mirror = {}
-                mirror_norm = {_norm_mirror_key(k): v for k, v in mirror.items()}
-                hit = all((mirror_norm.get(_norm_mirror_key(f)) or "") == (v or "") for f, v in saved.items())
-        if hit:
-            d["sheet"] += 1
-        else:
-            d["mismatch"] += 1
-            d["ok"] = False
-            if len(unmatched) < 20:
-                unmatched.append({"date": day, "at": r["at"], "member_no": no,
-                                  "fields": list(saved.keys()), "form": "member_hold_approve"})
-    return days, unmatched
+    return _reconcile_member_multifield_writes(conn, db, rows, "member_hold_approve")
 
 
 def reconcile_member_archive_restore_writes(conn, db, since):
@@ -517,10 +503,16 @@ def main():
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "window_days": WINDOW_DAYS,
         "forms": out_forms,
-        "streak_ok_days": streak_ok_days(out_forms, now.date()),
+        # 합산본(forms.write)은 이 숫자에서 뺀다 — 액션 40여 개를 한 통에 담아 어느 하나만 실패해도
+        # 전사 스트릭이 끊기고, sheet-missing(대조 대상 아님) 제외도 이 통에는 안 걸린다(by_form 에만 걸린다).
+        # 서로 무관한 갈래가 서로를 인질로 잡는 자리라 결정에 쓸 수 없었다(2026-09-09 실측: 09-08 write
+        # 10건 중 3건이 sheet-missing 이었는데 합산본은 그것도 실패로 셌다). 액션·영역별은 by_form·by_area.
+        "streak_ok_days": streak_ok_days({k: v for k, v in out_forms.items() if k != "write"}, now.date()),
         "streak_note": ("행이 있었던 날만 센다 — 접수 0건인 날은 무결의 증거가 아니라 건너뛴다. "
-                        "전환 자격은 갈래마다 by_form 의 qualified·qualified_by 를 본다: 거래가 잦으면 3일 연속 무결, "
-                        "거래가 드문 갈래(대조한 날 3일 미만)는 최근 3건 연속 무결. 전환은 사람이 판단한다."),
+                        "합산본(forms.write)은 이 숫자에서 뺐다 — 무관한 액션끼리 서로를 인질로 잡는다. "
+                        "전환 자격은 갈래마다 by_form, 스위치를 켤 단위는 by_area 의 qualified·qualified_by 를 본다: "
+                        "거래가 잦으면 3일 연속 무결, 거래가 드문 갈래(대조한 날 3일 미만)는 최근 3건 연속 무결. "
+                        "전환은 사람이 판단한다."),
         "by_form": by_form,
         "by_form_note": "폼(action)별 분리 스트릭 — write 합산본(forms.write) 대신 액션별로 본다. "
                         "not_applicable(sheet-missing)=원천이 이미 서버로 넘어간 표라 대조 실패로 안 센다.",
@@ -540,6 +532,11 @@ def main():
     today = now.date().isoformat()
     print("대조 %s · streak=%d · %s" % (result["generated_at"], result["streak_ok_days"], " ".join(
         "%s %d/%d" % (k, v.get(today, {}).get("sheet", 0), v.get(today, {}).get("server", 0)) for k, v in out_forms.items())))
+    # 사람이 실제로 정하는 것은 '어느 영역을 켤까' 하나다 — 그 답을 맨 아래 한 줄로 같이 낸다.
+    ready = sorted(a for a, v in by_area.items() if v["qualified"] and v["mode"] != "server")
+    print("전환 자격(영역) %d/%d%s" % (
+        sum(1 for v in by_area.values() if v["qualified"]), len(by_area),
+        (" · 켤 수 있는 것: " + ", ".join(ready)) if ready else " · 새로 켤 것 없음"))
     return 0
 
 
