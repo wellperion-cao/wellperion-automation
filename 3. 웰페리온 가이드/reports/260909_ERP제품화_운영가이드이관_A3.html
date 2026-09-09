@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ERP 제품화 — 운영 가이드 이관 설계 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="_a3_report.css" rel="stylesheet">
+<style>
+  .nine td{ height:auto; padding:5px 8px; vertical-align:top; line-height:1.36; font-size:11.6px; }
+  .lineblk{ border:1px solid var(--line); border-left:5px solid var(--navy); padding:6px 11px 7px; margin-bottom:6px; background:#FAFBFC; }
+  .lineblk:last-child{ margin-bottom:0; }
+  .lineblk .rl{ font-size:12.2px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .lineblk .rr{ font-size:11.3px; color:#3C464F; margin-top:2px; line-height:1.48; }
+  .tag-gud{ display:inline-block; font-size:10.3px; font-weight:700; padding:1px 6px; border-radius:2px; }
+  .tag-gud.g{ background:#E3F1EA; color:var(--good); }
+  .tag-gud.b{ background:#F5EAEA; color:var(--bad); }
+  .tag-gud.m{ background:#F6EEDD; color:var(--warn); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>ERP 제품화 — 운영 가이드 이관 설계 (A3 1장)</b>
+  <span class="note">뼈대(제품)·우리 값(테넌트) 가르기 — 상담봇 층가르기를 조직 운영 가이드에 적용</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+</div>
+
+<div class="page">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">ERP 제품화 — 운영 가이드 이관 설계</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 09.</b> · 문서번호 <b>WP-GM-260909-02</b><br>
+      근거 <b>GM 지시 2026-09-09</b>(웰리 배1148)
+    </div>
+  </div>
+
+  <div class="top">
+    <div class="core">
+      <div class="c" style="flex:1;">
+        <div class="lb">방 향</div>
+        <div class="tx">C-Level 운영 가이드를 「뼈대(제품)」과 「우리 값(테넌트)」으로 갈라, 뼈대는 다른 회사가 그대로 받아 쓰는 한 벌로 만든다.</div>
+        <div class="sub">가르는 자리는 이미 있다 — <b>ssot/</b>가 우리 값 쪽, <b>.claude/skills/</b>가 뼈대 쪽. 상담봇에서 검증한 층가르기(웰페리온 1호·다이어트캠프 2호·스포짐 3호)를 그대로 옮긴다. GM 이 예로 든 09-08 「집 PC 설치 꾸러미」 다운로드가 본보기 모양이다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="body2">
+
+    <div class="left" style="flex:1.08;">
+
+      <div>
+        <div class="sec-h">① 지금 얼마나 무거운가 <span class="hint">실측 · 2026-09-09</span></div>
+        <table class="nine tight">
+          <colgroup><col style="width:56%"><col style="width:44%"></colgroup>
+          <thead><tr><th>무엇</th><th>값</th></tr></thead>
+          <tbody>
+            <tr><td>가이드 전체 파일</td><td class="strong">1,072,224 바이트(≈1.05MB)</td></tr>
+            <tr><td>S2(AI C-Level 운영 가이드) 영역</td><td class="strong">333,222 바이트 <span class="est">(전체의 31%)</span></td></tr>
+            <tr><td>S2 내부 탭 수</td><td>16개 <span class="est">(공통1·역할8·공유보조7)</span></td></tr>
+            <tr><td>역할 탭 분량(문자수)</td><td class="est">공통 64,744 · CEO 12,797 · COO 9,753 · CMO 6,949 · CTO 6,325 · CBO 4,329 · CFO 2,868 · CHRO 2,520 · CPO 1,454(정규식 근사·마크업 포함)</td></tr>
+            <tr><td>흡수 방식</td><td>S2는 클라이언트 JS 렌더라 파일 읽기로 안 흡수됨("불러오는 중"만 보임). <b>boot_pack.py</b>(251줄)가 약속·incidents·canon·자율화규약·CONSTITUTION·module_registry 5종을 역할별로 슬라이스해 부팅 시 직독시키는 방식이 배1014 로 이미 검증됨</td></tr>
+            <tr><td>중복 서술</td><td class="strong">최소 2건 확인(추정 아님)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">② 뼈대/우리값 판정 <span class="hint">37건 중 대표 · 전체=브리프</span></div>
+        <table class="tight">
+          <colgroup><col style="width:30%"><col style="width:14%"><col style="width:56%"></colgroup>
+          <thead><tr><th>파일</th><th class="ctr">판정</th><th>근거</th></tr></thead>
+          <tbody>
+            <tr><td>ssot/CONSTITUTION.md</td><td class="ctr"><span class="tag-gud g">뼈대</span></td><td>"SSOT 메타층" 자칭 — 진실단일화·재발방지 원칙은 회사 무관</td></tr>
+            <tr><td>ssot/canon_values.json</td><td class="ctr"><span class="tag-gud b">우리값</span></td><td>포지셔닝·금지어 등 GM 확정값</td></tr>
+            <tr><td>ssot/welly_boot_guard.py 등 8개 .py</td><td class="ctr"><span class="tag-gud g">뼈대</span></td><td>강제·스캔·감시 엔진 — 값 파일만 갈아끼우면 재사용</td></tr>
+            <tr><td>ssot/자율화규약.md</td><td class="ctr"><span class="tag-gud m">혼합</span></td><td>3-트리거 개념=뼈대, §2 아침 루틴=wellperion-boot §2-1 과 중복(188행 자기 인정)</td></tr>
+            <tr><td>.claude/skills/wellperion-boot·gm-report</td><td class="ctr"><span class="tag-gud g">뼈대</span></td><td>절차는 회사 무관이나 본문에 웰리·시토 등 실명 다수 — 변수화 필요</td></tr>
+            <tr><td>.claude/skills/wellperion-brand</td><td class="ctr"><span class="tag-gud b">우리값</span></td><td><b>뼈대 폴더에 있는 우리값</b> — IG 계정·컬러·용어 완전 회사 고유. 위치·성격 어긋난 핵심 사례</td></tr>
+            <tr><td>wellperion-agents/agents/*.md ×8</td><td class="ctr"><span class="tag-gud b">우리값</span></td><td>닉네임·실무진·KPI 고유. 6섹션 틀(페르소나·역할·KPI·실무진·업무·협업)만 뼈대 템플릿감</td></tr>
+          </tbody>
+        </table>
+        <div class="sub" style="margin-top:4px;">집계 — <b>뼈대 16 · 우리값 20 · 혼합 1</b>(전 37건). 전체 표 = status/briefs/CEO-2026-09-09-뼈대-우리값-판정표.md</div>
+      </div>
+
+    </div>
+
+    <div class="right" style="flex:1;">
+
+      <div>
+        <div class="sec-h">③ 이관 단계 <span class="hint">두 벌로 두지 않는다</span></div>
+        <table class="tight">
+          <colgroup><col style="width:9%"><col style="width:65%"><col style="width:26%"></colgroup>
+          <thead><tr><th class="k ctr">단계</th><th>내용</th><th>담당</th></tr></thead>
+          <tbody>
+            <tr><td class="k ctr">1</td><td>판정 확정 — wellperion-brand를 ssot/로 이전, 자율화규약§2 중복 조항 삭제(§2-1 참조로 교체)</td><td>웰리</td></tr>
+            <tr><td class="k ctr">2</td><td>뼈대 파일 안 하드코딩 값(닉네임·채널명) 변수화 — boot·gm-report 스킬 + agents 8개 템플릿 분리</td><td>웰리</td></tr>
+            <tr><td class="k ctr">3</td><td>우리값 파일 테넌트 팩으로 정리, boot_pack.py식 역할별 슬라이스를 나머지 값 파일로 확대</td><td>시토</td></tr>
+            <tr><td class="k ctr">4</td><td>「운영 가이드 받기」를 집PC설치.bat 같은 다운로드 항목으로 erp/launchers·downloads.json에 추가</td><td>시토</td></tr>
+            <tr><td class="k ctr">5</td><td>신규 업체 시험 적용 — 뼈대 팩 + 빈 테넌트 양식 전달</td><td>시보</td></tr>
+          </tbody>
+        </table>
+        <div class="lineblk" style="margin-top:6px;">
+          <div class="rl">단계 판정 기준</div>
+          <div class="rr">각 단계 완료 뒤 같은 내용이 두 곳에 서술돼 있으면 그 단계는 미완료로 되돌린다 — ①표 아침 자가점검·보고표 8요소 사례가 실제로 그렇게 두 벌이 됐다</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-h">④ 타사 도입 <span class="hint">받아 시작하는 한 벌</span></div>
+        <ul class="dir">
+          <li><b>뼈대 팩</b> <span>— 절차 스킬(boot·gm-report·welly-gm-a3-report 등 5종) + ssot 엔진 스크립트 11개 + agents 6섹션 템플릿 + boot_pack.py 슬라이스 방식</span></li>
+          <li><b>빈 테넌트 양식</b> <span>— canon_values·kpi·brand·ownership_map·forbidden_terms 등 값 파일을 빈 스키마로 복제</span></li>
+          <li><b>첫 시험 대상</b> <span>— 다이어트캠프·스포짐 라인(시보 배1017). 상담봇에서 이미 검증한 층가르기를 그대로 적용</span></li>
+          <li class="no"><b>요금·계약</b> <span>— GM 결재 영역. 이 문서에서 정하지 않는다</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>추정치</b> — 역할 탭 문자수는 정규식 매칭 근사치(HTML/JS 마크업 포함, 실제 텍스트량과 다름)로 표기함(추정). 나머지 수치는 wc -c·grep 카운트·저장소 직접 대조로 확정치.</div>
+    <div><b>산출 근거</b> — 파일 크기 wc -c · S2 경계 id="S2"~id="G1" 라인 슬라이스 · 탭 수 data-panel 그레프 · 판정표 37건은 ssot/·.claude/skills/·agents/*.md 전수 대조.</div>
+    <div><b>차기 보고</b> — 판정표 GM 확인 뒤 이관 1단계(자율화규약§2 정리·wellperion-brand 이전) 착수 시 같은 문서번호로 갱신.</div>
+  </div>
+
+</div>
+</body>
+</html>
