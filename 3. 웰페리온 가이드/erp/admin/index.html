@@ -165,8 +165,11 @@
   <p class="lead" id="ping-line" hidden></p>
 
   <script>
-  /* 숫자는 세어서 적지 않는다 — 손으로 적으면 낡는다(2026-09-09 실측: 화면 114 로 적혀 있었으나 실제 127).
-     erp/modules.json 이 정본이고 scripts/erp_modules_build.py 가 화면 파일에서 자동으로 만든다. */
+  /* 숫자는 손으로 적지 않고 원장에서 읽는다. erp/modules.json 이 정본이고
+     scripts/erp_modules_build.py 가 화면 파일에서 자동으로 만든다.
+     ★2026-09-09 정정: 여기 「실제 127」이라 적었던 것은 틀렸다. 라이브 원장은 114 다.
+     127 은 커밋 안 된 재생성본(회장님 A3 보고 13장이 더 들어간 것)이라 화면과 무관하다.
+     그래서 숫자를 주석에 적지 않는다 — 적는 순간 다음 사람이 화면을 그 값에 맞추려 든다. */
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var n = (d.modules || []).length;
     if (!n) return;
