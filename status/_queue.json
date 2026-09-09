@@ -2011,5 +2011,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-09"
+  },
+  {
+    "task_id": "COO-2026-09-09-시트에-없는-접수-8건-복구-확인",
+    "clevel": "coo",
+    "title": "[시우] 시트에 없는 접수 8건 — 미완료 5건이 이틀째 부서에 안 감 (통로 교체 여파 · GM 지시 줄기)",
+    "status": "IN_PROGRESS",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-09-09",
+    "from": "coo",
+    "note": "[시우 2026-09-09 12:3x · GM 지시 줄기 배1166 파생] 09-07 통로 교체 뒤 서버에만 있고 시트에 없는 접수 8건(RECEPTION-164~172) 중 미완료 5건이 이틀째 담당 부서에 안 갔다.\n· 원인 = /api/reception/submit 이 reception_items 에만 적고 intake_log·GAS 를 안 탄다. origin_switch reception=dual 인데 그 스위치를 읽는 곳이 옛 경로뿐이라 새 경로는 스위치를 안 본다. 종합접수처 원천이 결재 없이 사실상 서버로 넘어가 있었다.\n· 피해 경로 = report_stream_2b_reception._fetch_rows() 가 GAS reg_list(시트)를 읽는다. 아침·저녁 접수 통·정체 집계·GM 격상 판정·reception_watch.json 이 전부 그 함수를 먹는다. 그래서 이 8건은 실무진 카톡에 한 번도 안 실렸다.\n· 미완료 5건 = 167 지원부(여) 사우나 바닥 미끄럼 · 168 지원부(여) 컴플레인 · 170 지원부(남) 유리 밑 곰팡이 · 171 지원부(여) 샤워기 칸막이 수건 · 172 운영부 얼굴인식 미인증 출석.\n· 시토가 서버 쪽 복구(=/submit 을 intake_log·GAS 로 되돌리고 빠진 건 시트 채우기, 접수번호 열쇠 대조)를 맡고 GM 께 올린다. 시우는 채워진 뒤 그 5건이 아침 통에 실리는지 확인하고, 안 실리면 도메인 방으로 따로 보낸다.\n· 시우 정정 = 오늘 아침 GM 께 올린 「9/5 이후 접수 0건」은 틀렸다. 8건이 들어왔고 intake_log 만 비어 있었다.",
+    "next": "시토 시트 채움 완료 → 미완료 5건이 아침 통에 실리는지 확인 → 안 실리면 ★운영+시설+지원+주차 방으로 따로 발신",
+    "depends_on": "",
+    "ship_no": 1169,
+    "short_no": 1169,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "2026-09-09",
+    "updated_at": "2026-09-09"
   }
 ]
