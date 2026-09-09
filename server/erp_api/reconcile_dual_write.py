@@ -135,14 +135,58 @@ def reconcile_by_action(rows, ok_statuses=("ok",)):
     return days, na
 
 
+RARE_MIN_ROWS = 3     # 거래가 드문 갈래는 '최근 N건 연속 무결'로 대신 잰다
+RARE_MAX_DAYS = 3     # 대조 창에서 행이 있던 날이 이보다 적으면 '거래가 드문 갈래'로 본다
+
+
+def recent_ok_rows(days, today):
+    """가장 최근 날부터 거꾸로, ok 인 날이 이어지는 동안 쌓인 서버 행 수. 오늘은 아직 쌓이는 중이라 뺀다."""
+    cut = today.isoformat()
+    total = 0
+    for day in sorted((d for d in days if d < cut), reverse=True):
+        if not days[day]["ok"]:
+            break
+        total += days[day].get("server", 0)
+    return total
+
+
+def qualification(days, today):
+    """전환해도 되는가 — (연속일수, 무엇으로 통과했나, 통과여부).
+
+    왜 규칙이 둘인가 (2026-09-09 시토 · GM 지시 「막히는 것을 뚫어라」):
+    종전 규칙은 '3일 연속 무결' 하나뿐이었다. 그런데 그 3일은 **행이 있었던 날만** 센다.
+    강사 접수·일요일 접수·회원 보류처럼 한 달에 몇 건인 기능은 사흘치 거래가 영영 안 쌓여
+    이 규칙으로는 **원리상 절대 전환되지 않는다**(실측 2026-09-09: 그 부류 5갈래 전부 streak=0,
+    대조한 날 0일). 거래가 없다는 것과 품질이 나쁘다는 것은 다른데, 한 자로 재고 있었다.
+
+    그래서 거래가 드문 갈래에는 시간 대신 건수로 잰다 — 최근 접수 3건이 연속으로 무결이면
+    그 배관은 증명된 것이다. 잣대를 느슨하게 한 게 아니라, 잴 수 없는 것을 잴 수 있게 바꾼 것이다.
+    어느 규칙으로 통과했는지는 출력에 그대로 남는다 — 사람이 전환을 판단할 때 봐야 한다.
+    """
+    sd = streak_ok_days({"_": days}, today)
+    if sd >= 3:
+        return sd, "3일 연속 무결", True
+    cut = today.isoformat()
+    had_days = len([d for d, v in days.items() if (v.get("server") or 0) > 0 and d < cut])
+    if had_days < RARE_MAX_DAYS:
+        rows = recent_ok_rows(days, today)
+        if rows >= RARE_MIN_ROWS:
+            return sd, "거래가 드문 갈래 — 최근 %d건 연속 무결" % rows, True
+    return sd, None, False
+
+
 def summarize_form(days, today, na=0):
     """days = {날짜: {server,sheet,mismatch,ok,...}} → by_form 한 칸(ok/total/streak_ok_days/last_fail)."""
     bad_days = [day for day, v in days.items() if not v["ok"]]
+    sd, by, ok = qualification(days, today)
     return {
         "ok": sum(v["sheet"] for v in days.values()),
         "total": sum(v["server"] for v in days.values()),
         "not_applicable": na,
-        "streak_ok_days": streak_ok_days({"_": days}, today),
+        "streak_ok_days": sd,
+        "recent_ok_rows": recent_ok_rows(days, today),
+        "qualified": ok,
+        "qualified_by": by,
         "last_fail": max(bad_days) if bad_days else None,
     }
 
@@ -399,7 +443,9 @@ def main():
         "window_days": WINDOW_DAYS,
         "forms": out_forms,
         "streak_ok_days": streak_ok_days(out_forms, now.date()),
-        "streak_note": "행이 있었던 날만 센다 — 접수 0건인 날은 무결의 증거가 아니라 건너뛴다. 3 이 되면 사람이 서버 원본 전환을 판단한다.",
+        "streak_note": ("행이 있었던 날만 센다 — 접수 0건인 날은 무결의 증거가 아니라 건너뛴다. "
+                        "전환 자격은 갈래마다 by_form 의 qualified·qualified_by 를 본다: 거래가 잦으면 3일 연속 무결, "
+                        "거래가 드문 갈래(대조한 날 3일 미만)는 최근 3건 연속 무결. 전환은 사람이 판단한다."),
         "by_form": by_form,
         "by_form_note": "폼(action)별 분리 스트릭 — write 합산본(forms.write) 대신 액션별로 본다. "
                         "not_applicable(sheet-missing)=원천이 이미 서버로 넘어간 표라 대조 실패로 안 센다.",
@@ -600,6 +646,19 @@ def selftest():
     assert streak_ok_days(f, today) == 3, streak_ok_days(f, today)      # 09-07 은 행 0 → 건너뜀
     assert streak_ok_days({"inquiry": {"2026-09-09": ng}}, today) == 0
     assert streak_ok_days({"inquiry": {}}, today) == 0                  # 무입력만으로는 무결이 안 쌓인다
+
+    # 거래가 드문 갈래 — 시간으로는 영영 안 차므로 건수로 잰다(2026-09-09)
+    rare = {"2026-09-08": {"server": 2, "ok": True}, "2026-09-02": {"server": 1, "ok": True}}
+    sd, by, okq = qualification(rare, today)
+    assert sd < 3 and okq and "드문" in by, (sd, by, okq)               # 이틀뿐인데 3건 무결 → 통과
+    thin = {"2026-09-08": {"server": 1, "ok": True}}
+    assert qualification(thin, today)[2] is False                        # 1건뿐이면 아직 아니다
+    rare_ng = {"2026-09-08": {"server": 3, "ok": False}}
+    assert qualification(rare_ng, today)[2] is False                     # 최근 날이 실패면 통과 아님
+    assert qualification(f["inquiry"], today)[1] == "3일 연속 무결"      # 잦은 갈래는 종전 규칙 그대로
+    busy = {"2026-09-%02d" % d: {"server": 1, "ok": True} for d in (5, 6, 7, 8, 9)}
+    assert qualification(busy, today) == (5, "3일 연속 무결", True)      # 날이 많으면 드문 규칙을 안 탄다
+    assert recent_ok_rows(rare, today) == 3
 
     # 폼(action)별 분리(시우 실측 2026-09-07) — write_check(save) 무결이 reg_update 실패에 안 묶인다
     save_rows = [("2026-09-07T10:00:00", {}, "ok")] * 3                                 # 점검저장 3/3 ok
