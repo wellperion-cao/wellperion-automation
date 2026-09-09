@@ -157,6 +157,17 @@ def _gas_key(action):
 BODY_NEVER_ARRIVED = "action 필수"
 
 
+# ★어떤 스위치가 켜져 있어도 서버 원본으로 안 가는 동작들 (2026-09-09 시토 · 화면 전수 실측에서 나온 것).
+#   공통점 하나: 그 동작의 「진짜 결과」가 구글 쪽에만 있고, 서버가 즉시 ok 를 주면 사람에게 거짓말이 된다.
+#   영역 스위치(origin_switch.WRITE_AREA)보다 촘촘한 자리다 — 영역 하나에 동작 수십 개가 붙어 있어서,
+#   영역을 끊을 준비가 됐어도 이 몇 개는 남겨 둬야 한다. 여기 있으면 dual 로 돌아 종전과 똑같이 동작한다.
+NO_SERVER_ACTIONS = {
+    "unlock_round": "제출잠금 해제 비밀번호를 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다",
+    "todo_upload": "첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 그 주소를 만들 수 없고, 없으면 첨부가 통째로 사라진다",
+    "save_schedule": "동시편집 판번호(rev)를 GAS 가 매긴다 — 없으면 다음 저장이 전부 막히거나 충돌 감지가 죽는다",
+}
+
+
 def server_ok(log_id, **extra):
     """서버 원본 모드 응답을 만드는 단 한 자리. 위 주석대로 'id' 라는 이름은 여기서 절대 안 나온다."""
     r = {"ok": True, "success": True, "logId": log_id}
@@ -285,7 +296,8 @@ async def write(request: Request):
     # 미러 동기화·리셉션 실패대비 정본도 안 건드린다. 운영 화면·집계는 gas_status='test' 행을 그대로 뺀다.
     is_test = db.is_test_payload(payload)
     area = origin_switch.WRITE_AREA.get(dest)
-    server_mode = bool(area) and origin_switch.mode(area) == "server" and not is_test   # 스위치 한 줄 — 재시작 없이 갈린다
+    server_mode = (bool(area) and origin_switch.mode(area) == "server" and not is_test
+                   and action not in NO_SERVER_ACTIONS)   # 스위치 한 줄 — 재시작 없이 갈린다
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
@@ -403,6 +415,9 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
     _C.row = {"id": 7, "gas_response": None}
+    for _a in ("unlock_round", "todo_upload", "save_schedule"):
+        assert _a in NO_SERVER_ACTIONS, "%s 를 서버 원본으로 보내면 사람에게 거짓말이 된다" % _a
+        assert _gas_key(_a) is not None, "%s 는 목적지 표에 있어야 dual 로 돌아간다" % _a
     assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
