@@ -25,6 +25,7 @@
   python scripts/kakao_room_listen.py                      # 아카이브 최신본에서 읽기
   python scripts/kakao_room_listen.py --dry-run            # 배 안 만들고 뽑히는 것만 보기
   python scripts/kakao_room_listen.py --selfcheck          # 자체 점검
+  python scripts/kakao_room_listen.py --external --probe   # 로컬DB mtime 판정만(내보내기 안 함)
 언제 도나 (2026-08-25 GM 변경)
   아침 07:30 운영부 다이제스트(scripts/ops_morning_digest.bat)가 하루 한 번 부른다.
   ▸전에는 매시 08~20시 전용 예약작업(Wellperion-Kakao-Room-Listen-Hourly)이 돌았다. 실측 결과
@@ -38,9 +39,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -359,20 +362,91 @@ def _ping_external(room_name: str, role: str, fresh: list[dict], disp) -> None:
         print(f"[WARN] 알림 실패(배는 정상 등록됨): {type(e).__name__}: {e}")
 
 
-def run_external(dry: bool) -> int:
+def _kakao_activity_snapshot() -> dict[str, float] | None:
+    """방마다 로컬 대화DB 파일(chatLogs_<id>.edb[-wal])의 수정시각 스냅샷(배1149 실측).
+    카톡 PC는 새 메시지가 오면 그 방의 -wal(없으면 .edb 자체) mtime을 갱신한다 — 내용은
+    암호화라 못 읽지만 "뭔가 왔다/안 왔다"는 시각만으로 가른다(포커스·클릭 0회).
+    -shm은 뺀다 — 세션이 열릴 때마다 전 방이 동시에 갱신돼(실측: 전부 같은 시각) 신호가 아니라
+    노이즈다. 폴더가 없거나 읽기 실패하면 None — 호출부가 fail-open(저장 진행)한다."""
+    local = os.environ.get("LOCALAPPDATA")
+    if not local:
+        return None
+    users_dir = Path(local) / "Kakao" / "KakaoTalk" / "users"
+    if not users_dir.exists():
+        return None
+    snap: dict[str, float] = {}
+    try:
+        for chat_data in users_dir.glob("*/chat_data"):
+            for f in chat_data.glob("chatLogs_*.edb*"):
+                if f.name.endswith("-shm"):
+                    continue
+                base_id = f.name.split(".edb")[0]
+                mtime = f.stat().st_mtime
+                if mtime > snap.get(base_id, 0.0):
+                    snap[base_id] = mtime
+    except OSError:
+        return None
+    return snap
+
+
+def _kakao_local_changed(baseline: dict[str, float] | None, snap: dict[str, float]) -> list[str]:
+    """직전 스냅샷 대비 mtime이 늘어난(또는 새로 생긴) 파일id 목록. baseline이 없으면(첫 실행)
+    전부를 '바뀐 것'으로 본다 — 기준선이 없을 때 무조건 건너뛰면 첫 실행에 진짜 새 메시지를
+    놓칠 수 있다(안전 쪽으로 기운다)."""
+    if baseline is None:
+        return sorted(snap.keys())
+    return [k for k, v in snap.items() if v > baseline.get(k, 0.0)]
+
+
+def run_external(dry: bool, probe: bool = False) -> int:
     """방마다 last_processed_at(마지막으로 처리한 상대 발언 시각) 뒤에 온 줄만 배에 올린다.
     GM 지적 2026-09-08 — since-days(날짜 단위) 컷오프로는 "어제 이미 시보가 회신까지 마친 대화"도
     다시 새 걸로 본다. 시분 단위 커서(call_key)로 바꿔 이미 처리한 순간 이후만 본다.
     최초 가동(그 방에 last_processed_at 이 아예 없을 때)은 지금 시각을 기준선으로만 잡고
-    아무것도 올리지 않는다 — 안 그러면 방이 열린 날부터 전부가 '새 것'이 된다(2026-09-08 실사고)."""
+    아무것도 올리지 않는다 — 안 그러면 방이 열린 날부터 전부가 '새 것'이 된다(2026-09-08 실사고).
+
+    GM 지적 2026-09-09(배1149) — 매시 카톡 창을 앞으로 띄워 GM 화면을 8~14분/일 가렸다.
+    실측 결과 그 회차는 거의 항상 헛돌았다(대상 방에 새 메시지가 없었다). 방↔로컬DB파일id
+    매핑은 암호화 때문에 지금은 못 만든다 — 대신 "저장이 필요한가"만 거른다: 로컬 대화DB
+    파일(어느 방이든) mtime이 하나도 안 바뀌었으면 그 시간 동안 카톡에 아무 메시지도 안 왔다는
+    뜻이므로 내보내기 자체를 통째로 건너뛴다(포커스 0회). 하나라도 바뀌면 — 그게 대상 방이
+    아닐 수도 있지만 — 지금까지 하던 대로 진행한다(그래도 지금보다 나쁘지 않다, fail-open).
+    변화가 있었던 회차는 그 파일id들을 상태 파일에 몇 건만 쌓아 둔다 — 며칠 지나면 어느 id가
+    어느 방인지 저절로 드러나고, 그때 가서 매핑을 좁히면 된다(지금은 만들려 하지 않는다)."""
     rooms = _load_external_rooms()
     if not rooms:
         print("[external] kakao_rooms.json 에 external_rooms 없음 — 할 일 없음")
         return 0
+    t0 = time.monotonic()
     now_key = datetime.now().strftime("%Y-%m-%d %H:%M")
     st = _state()
+    activity = st.setdefault("external_activity", {})
+    snap = _kakao_activity_snapshot()
+    if snap is None:
+        changed_ids: list[str] | None = None
+        print("[external] 로컬 대화DB mtime 확인 실패 — 저장 진행(fail-open)")
+    else:
+        changed_ids = _kakao_local_changed(activity.get("mtimes"), snap)
+        skip = not changed_ids
+        if skip or probe:
+            # skip이면 "찍어 보니 조용했다"를 기준선으로 남긴다. probe면 실제 내보내기는
+            # 안 하지만 판정에 쓴 스냅샷은 남겨야 다음 --probe 로 skip 경로를 재현해 볼 수 있다.
+            activity["mtimes"] = snap
+            if not dry:
+                _save(st)
+                _commit_state()
+        if skip:
+            elapsed = time.monotonic() - t0
+            print(f"[external] 새 메시지 없음 — 저장 건너뜀(포커스 0회) · {elapsed:.1f}초")
+            return 0
+        print(f"[external] 로컬 대화DB 변화 {len(changed_ids)}건 감지 — 저장 진행")
+    if probe:
+        elapsed = time.monotonic() - t0
+        print(f"[external] (probe) 저장 경로로 진입함 · {elapsed:.1f}초 · 실제 내보내기는 안 함")
+        return 0
     ext = st.setdefault("external", {})
     any_new = False
+    rooms_with_new: list[str] = []
     MAX_LINES = 20  # 안전판(2026-09-08) — 커서가 있어도 혹시 몰아온 하루엔 이 이상 안 싣는다
     for r in rooms:
         name, role, ship_no = r.get("name"), r.get("owner_role"), r.get("ship_no")
@@ -411,6 +485,7 @@ def run_external(dry: bool) -> int:
                 ext[name] = {"last_processed_at": new_last, "seen": sorted(seen)[-500:]}
             continue
         any_new = True
+        rooms_with_new.append(name)
         if dry:
             for c in fresh:
                 print(f"    (dry) {c['who']}: {c['text'][:60]}")
@@ -421,6 +496,12 @@ def run_external(dry: bool) -> int:
         ext[name] = {"last_processed_at": new_last,
                      "seen": sorted(seen | {fingerprint(c) for c in candidates})[-500:]}
         _ping_external(name, role, fresh, disp)
+    if snap is not None:
+        activity["mtimes"] = snap
+        if rooms_with_new:
+            hist = activity.setdefault("history", [])
+            hist.append({"at": now_key, "changed_ids": changed_ids, "rooms_with_new": rooms_with_new})
+            activity["history"] = hist[-5:]  # 매핑용 흔적만 — 최근 5건만 쌓는다
     if not dry:
         _save(st)
         _commit_state()
@@ -440,10 +521,13 @@ def main() -> int:
     ap.add_argument("--external", action="store_true",
                     help="★중간관리자 대신 kakao_rooms.json external_rooms(밖과 트는 방)를 돈다 — "
                          "새 줄 감지 → owner_role 배에 append(GM 결정 2026-09-08 · 배1137)")
+    ap.add_argument("--probe", action="store_true",
+                    help="--external 전용 — 로컬DB mtime 판정만 찍고 멈춘다(내보내기 자체를 안 함, "
+                         "배1149 스킵판정 검증용)")
     a = ap.parse_args()
 
     if a.external:
-        return run_external(a.dry_run)
+        return run_external(a.dry_run, probe=a.probe)
 
     p = Path(a.file) if a.file else (_export_now() if a.export else _latest_export())
     if p is None or not p.exists():
@@ -560,6 +644,12 @@ def demo() -> None:
     assert call_key({"day": "2026-09-08", "when": "오전 12:00"}) == "2026-09-08 00:00", "오전 12시=자정"
     assert call_key({"day": "2026-09-07", "when": "오전 11:18"}) < call_key({"day": "2026-09-08", "when": "오전 0:01"})
     print("[OK] call_key 자체 점검 통과 — 오전/오후 12시 경계·날짜 비교 정상")
+
+    # 로컬DB mtime 스킵 판정(배1149) — 기준선 없음=전부 변화, 있음=늘어난 것만.
+    assert _kakao_local_changed(None, {"a": 1.0}) == ["a"], "기준선 없을 때는 안전 쪽(전부 변화)"
+    assert _kakao_local_changed({"a": 1.0}, {"a": 1.0}) == [], "안 늘었으면 변화 없음"
+    assert _kakao_local_changed({"a": 1.0}, {"a": 2.0, "b": 5.0}) == ["a", "b"], "늘었거나 새로 생기면 변화"
+    print("[OK] 로컬DB mtime 스킵 판정 자체 점검 통과")
 
 
 if __name__ == "__main__":
