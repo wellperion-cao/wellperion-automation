@@ -198,12 +198,19 @@ function loadModules(role, allowedIds){
     //   핵심 화면 3개가 목록 맨 앞에 따로 모여 있어서, 「회원」·「점검」 제목이 각각 두 번씩
     //   나뉘어 나왔다(회원 2개 … 점검 1개 … 회원 4개 …). 그룹으로 모으면 한 번씩만 나온다.
     //   그룹이 나오는 차례는 목록에 처음 등장한 순서를 그대로 따른다.
-    var order = [], bag = {}, docs = [];
+    // 자주 여는 화면을 맨 위로 — 실측 2026-09-09: GM 이 매일 보는 「GM 업무」 카드가
+    //   스크롤 7.1화면(6,345px) 아래에 묻혀 있었다(회원 카드는 0.5화면). 목록 차례가
+    //   부서 순서라 자주 쓰는 것일수록 아래로 갔다. 여기 적힌 것만 맨 위 한 줄로 올린다.
+    var PINNED = ['coo-chairman-gm업무', 'coo-todo-업무-현황-ssot', 'coo-todo-결재-현황-ssot',
+                  'member', 'inquiry', 'check', 'cto-자율현황'];
+    var order = [], bag = {}, docs = [], pinned = {};
     (d.modules || []).forEach(function(m){
       var g = m.appgroup || '문서함';   // 회원·운영·점검·경영·문서함 5그룹(배1026 · 2026-09-05)
       if (allowedIds && allowedIds.indexOf(m.id) < 0) return;     // 권한 밖 화면은 카드 자체를 안 그린다
       // 문서(읽는 것)는 카드 자리에서 빼 문서함 탭으로 보낸다(배1135 4단계 · GM 지시 2026-09-08).
       if (g === '문서함') { docs.push(m); return; }
+      var pi = PINNED.indexOf(m.id);
+      if (pi >= 0) { pinned[pi] = m; return; }   // 자주 여는 것은 아래 그룹에 또 그리지 않는다
       if (!bag[g]) { bag[g] = []; order.push(g); }
       bag[g].push(m);
     });
@@ -228,11 +235,13 @@ function loadModules(role, allowedIds){
       list.forEach(function(m){ grid.appendChild(card(m)); });
     }
 
+    var pinList = PINNED.map(function(_, i){ return pinned[i]; }).filter(Boolean);
+    if (pinList.length) section(root, '자주 여는 것', pinList);
     order.forEach(function(g){ section(root, g, bag[g]); });
     if (docs.length) section(rootDoc, '문서함', docs);
 
     // 운영 축 — 지금 몇 장인지만 센다. 가동·비용 3색 신호는 자동화 잇기(시토 1136) 뒤에 붙인다.
-    var execCount = 0;
+    var execCount = pinList.length;
     order.forEach(function(g){ execCount += bag[g].length; });
     var ops = document.getElementById('ops');
     ops.hidden = false;
