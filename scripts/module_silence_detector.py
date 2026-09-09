@@ -70,17 +70,22 @@ WEEKLY_MAX_H = 24 * 9   # 216
 MONTHLY_MAX_H = 24 * 35  # 840
 
 # notify_spec.daily/weekly/monthly 가 전부 false(주기 미선언)라도, 로컬 아티팩트가
-# 이 시간 내에 갱신됐으면 "모름(판정불가)"이 아니라 "활동(주기미선언)"으로 정직
-# 분리한다(감사 확정 2026-07-22 — cmo-publish-digest·coo-schedule-ssot·
-# coo-monthly-ops·cpo-sheet-contract-check 4건이 실제로는 최근에 가동했는데
-# 주기 미선언 한 가지 이유로 '모름'에 뭉뚱그려져 있었음). 새 임계를 만드는 대신
-# 등록부에 이미 있는 가장 넉넉한 선언 주기 MONTHLY_MAX_H(840h=35d)를 그대로
-# 재사용 — 주기 미선언 모듈이라도 월간 모듈보다 오래 조용할 이유는 없다는
-# 판단(coo-monthly-ops처럼 이름은 월간인데 notify_spec 미선언인 사례 포함).
-# 이 임계를 넘긴 채 주기 미선언인 모듈은 그대로 "모름" 유지(억지 활동 판정 금지).
-# silent 판정(watchdog)은 max_h(선언된 주기)가 있는 모듈에만 적용되므로 이
-# 임계는 그 로직과 무관 — 침묵 경보를 약화시키지 않는다.
-NO_CADENCE_ACTIVE_MAX_H = MONTHLY_MAX_H  # 840h(35d) — 기존 상수 재사용
+# 있는 모듈은 "판정불가"로 방치하지 않고 느슨한 기본 기준(DEFAULT_NO_CADENCE_MAX_H)
+# 으로 침묵 여부를 잰다 — declared cadence("silent")와는 구분해 "silent_no_cadence"
+# 로 별도 표시한다(섞으면 급한 것이 묻힌다).
+#
+# ★2026-09-09 INC-057 — 이 상수가 예전엔 MONTHLY_MAX_H(840h=35d)를 재사용해
+# "주기 미선언 모듈은 35일까지 조용해도 정상"으로 방치했다. coo-monthly-ops
+# (매일 07:00 갱신하는 모듈인데 notify_spec 전부 false)가 9일 연속 크래시로
+# 조용했는데도 이 임계 안이라 안 걸렸다(2026-09-09 실사고). 등록부 전수(31개)
+# 확인 결과 이 "로컬 아티팩트는 있는데 주기 미선언"인 모듈은 3개뿐이고
+# (coo-schedule-ssot·cpo-inquiry-snapshot·ceo-gm-aide), git log로 실측한
+# 갱신 간격은 셋 다 하루 이내(coo-schedule-ssot=하루 여러 번, 나머지 둘=매일
+# 06시대). 정상 주기(하루)의 3배인 72h를 기본 기준으로 잡으면 이 3개 모두
+# 오늘 기준 오탐 0건(각 10.1h·0.0h·1.7h 전 활동)이면서 35일→3일로 사각지대를
+# 좁힌다. 값을 늘려야 할 새 사례가 나오면 그때 그 모듈에 notify_spec을
+# 선언해 declared-cadence 경로로 옮기는 것이 정답 — 이 기본값을 올리지 않는다.
+DEFAULT_NO_CADENCE_MAX_H = 72  # 3d = 실측 최장 주기(1일)의 3배(위 INC-057 주석 참조)
 
 # json/jsonl 내부에서 찾을 timestamp 키(우선순위 순, 실측 확인한 키들)
 TS_KEYS = ("generated_at", "updated_at", "last_run", "logged_at", "ts", "timestamp", "at", "date")
@@ -201,6 +206,52 @@ def _strip_paren(s: str) -> str:
     return re.sub(r"\([^)]*\)", "", s).strip()
 
 
+def _worklog_signal(area: str, root: Path):
+    """status/worklog.jsonl 에서 그 area 의 마지막 성공(result=ok) 시각.
+
+    왜 mtime 이 아니라 이걸 보나 — 2026-09-09 실측: 월간계획 동기화(업무 루프 4단계)가
+    9일 연속 크래시했는데, data_source 로 걸어 둔 입력 파일(status/monthly_ops_plan.json)이
+    사람 손편집으로 계속 바뀌어 감시가 매일 통과시켰다. 파일이 새것인 것과 그 자동화가
+    돈 것은 다른 사실이다. worklog 는 실행이 끝나야만 줄이 쌓이므로 오인이 안 생긴다.
+
+    ref 표기 = "worklog:월간계획" (area 는 worklog 가 쓰는 그 값 그대로).
+    """
+    path = root / "status" / "worklog.jsonl"
+    if not path.exists():
+        return None
+    latest = None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or area not in line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except Exception:
+                    continue
+                if str(row.get("area") or "") != area:
+                    continue
+                if str(row.get("result") or "") != "ok":
+                    continue
+                ts = str(row.get("ts") or "")
+                if not ts:
+                    continue
+                try:
+                    dt = datetime.fromisoformat(ts)
+                except ValueError:
+                    continue
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=KST)   # 저장소 관행 — tz 표기 없는 시각은 KST
+                if latest is None or dt > latest:
+                    latest = dt
+    except Exception:
+        return None
+    if latest is None:
+        return None
+    return latest, f"worklog area={area} 마지막 성공"
+
+
 def _resolve_segment(seg: str, root: Path):
     """ref 한 조각(paren 제거 전) → 유효 신호 후보 (datetime, method) 또는 None.
     - '{date}' 등 플레이스홀더 → glob 패턴으로 최신 매치 탐색
@@ -212,6 +263,9 @@ def _resolve_segment(seg: str, root: Path):
     seg = _strip_paren(seg).strip()
     if not seg:
         return None
+
+    if seg.startswith("worklog:"):
+        return _worklog_signal(seg.split(":", 1)[1].strip(), root)
 
     if "{" in seg and "}" in seg:
         pattern = re.sub(r"\{[^}]*\}", "*", seg)
@@ -296,7 +350,13 @@ def expected_max_silence_hours(notify_spec):
 
 def judge_module(module: dict, root: Path = PROJECT_ROOT, now=None):
     """모듈 1개 판정 → dict(id, owner_role, owner_nick, feature, status, ...).
-    status: silent | ok | active_no_cadence | unmeasurable | not_applicable"""
+    status: silent | silent_no_cadence | ok | active_no_cadence | unmeasurable | not_applicable
+      - silent: notify_spec 선언 주기를 초과(기존과 동일 · 가장 확실한 신호)
+      - silent_no_cadence: 주기 미선언이지만 로컬 아티팩트가 DEFAULT_NO_CADENCE_MAX_H
+        보다 오래 조용함(INC-057 신설 — 예전엔 이 구간이 35일까지 'active_no_cadence'
+        로 숨었다). declared-cadence 침묵과 원인 확신도가 달라 별도 버킷으로 둔다.
+      - unmeasurable: 로컬 아티팩트를 아예 못 찾음(원격 전용 등 — 판정 자체가 불가,
+        조용히 '정상'으로 통과시키지 않는다)."""
     now = _now_utc(now)
     mid = module.get("id")
     base = {
@@ -319,15 +379,17 @@ def judge_module(module: dict, root: Path = PROJECT_ROOT, now=None):
 
     if max_h is None:
         silence_h = (now - last_dt).total_seconds() / 3600
-        if silence_h <= NO_CADENCE_ACTIVE_MAX_H:
+        if silence_h <= DEFAULT_NO_CADENCE_MAX_H:
             return {**base, "status": "active_no_cadence",
                     "detail": f"최근 활동 감지({silence_h:.1f}h 전, {method}) — "
-                              f"notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
+                              f"notify_spec 주기 미선언(기본기준 {DEFAULT_NO_CADENCE_MAX_H}h 이내)",
                     "last_activity": last_dt.isoformat(), "method": method,
                     "silence_hours": round(silence_h, 1)}
-        return {**base, "status": "unmeasurable",
-                "detail": f"주기 미선언(daily/weekly/monthly 전부 false) — 판정불가",
+        return {**base, "status": "silent_no_cadence",
+                "detail": f"{silence_h:.1f}h 전 마지막 신호({method}) · 주기 미선언 기본기준 "
+                          f"{DEFAULT_NO_CADENCE_MAX_H}h 초과(declared-cadence 침묵보다 확신도 낮음)",
                 "last_activity": last_dt.isoformat(), "method": method,
+                "max_allowed_hours": DEFAULT_NO_CADENCE_MAX_H,
                 "silence_hours": round(silence_h, 1)}
 
     silence_h = (now - last_dt).total_seconds() / 3600
@@ -352,14 +414,21 @@ def scan_registry(registry=None, root: Path = PROJECT_ROOT, now=None, registry_p
 
 
 def silent_modules(scan_result):
+    """declared-cadence 침묵만(기존과 동일 시그니처·의미 불변)."""
     return [r for r in scan_result if r.get("status") == "silent"]
+
+
+def silent_no_cadence_modules(scan_result):
+    """주기 미선언 침묵만(INC-057 신설 — silent_modules와 절대 합치지 않는다)."""
+    return [r for r in scan_result if r.get("status") == "silent_no_cadence"]
 
 
 # ── 스냅샷 발행(로컬 파일만 기록 · 알림·발신과 무관) ────────────────────────
 def build_snapshot(scan, now=None):
     """전체 스캔 결과 → 화면(자율현황.html)이 읽을 스냅샷 dict."""
     now = _now_utc(now)
-    counts = {"ok": 0, "silent": 0, "unmeasurable": 0, "active_no_cadence": 0, "not_applicable": 0}
+    counts = {"ok": 0, "silent": 0, "silent_no_cadence": 0, "unmeasurable": 0,
+              "active_no_cadence": 0, "not_applicable": 0}
     for r in scan:
         st = r.get("status")
         if st in counts:
@@ -436,19 +505,32 @@ def _append_log(record, log_path=LOG_PATH):
         pass
 
 
-def build_digest_message(silent_list, now=None):
-    """침묵 모듈 목록 → 텔레그램 메시지(1통). silent_list 비어있으면 None(발송 없음)."""
-    if not silent_list:
+def build_digest_message(silent_list, now=None, silent_no_cadence_list=None):
+    """침묵 모듈 목록 → 텔레그램 메시지(1통). 둘 다 비어있으면 None(발송 없음).
+    두 구간(declared-cadence / 주기미선언)을 섞지 않고 별도 절로 낸다(INC-057)."""
+    silent_no_cadence_list = silent_no_cadence_list or []
+    if not silent_list and not silent_no_cadence_list:
         return None
     now = _now_utc(now)
-    lines = [f"🔇 모듈 침묵 감지 — {len(silent_list)}건 (예상 주기 초과)"]
-    for m in sorted(silent_list, key=lambda x: -(x.get("silence_hours") or 0)):
-        dot = color_dot(m.get("owner_role"))
-        days = (m.get("silence_hours") or 0) / 24
-        lines.append(
-            f"  {dot} {m['id']} — {days:.1f}일째 조용함 "
-            f"(허용 {m.get('cadence')}주기 · {m.get('feature', '')[:40]})"
-        )
+    lines = []
+    if silent_list:
+        lines.append(f"🔇 모듈 침묵 감지 — {len(silent_list)}건 (예상 주기 초과)")
+        for m in sorted(silent_list, key=lambda x: -(x.get("silence_hours") or 0)):
+            dot = color_dot(m.get("owner_role"))
+            days = (m.get("silence_hours") or 0) / 24
+            lines.append(
+                f"  {dot} {m['id']} — {days:.1f}일째 조용함 "
+                f"(허용 {m.get('cadence')}주기 · {m.get('feature', '')[:40]})"
+            )
+    if silent_no_cadence_list:
+        if lines:
+            lines.append("")
+        lines.append(f"🔸 주기 미선언 모듈 장기침묵 — {len(silent_no_cadence_list)}건 "
+                      f"(기본기준 {DEFAULT_NO_CADENCE_MAX_H}h 초과 · 확신도는 위 항목보다 낮음)")
+        for m in sorted(silent_no_cadence_list, key=lambda x: -(x.get("silence_hours") or 0)):
+            dot = color_dot(m.get("owner_role"))
+            days = (m.get("silence_hours") or 0) / 24
+            lines.append(f"  {dot} {m['id']} — {days:.1f}일째 조용함 ({m.get('feature', '')[:40]})")
     lines.append(LINK)
     return "\n".join(lines)
 
@@ -472,43 +554,45 @@ def run_detector(*, dry_run=True, root: Path = PROJECT_ROOT, now=None,
 
     scan = scan_registry(root=root, now=now, registry_path=registry_path)
     silent = silent_modules(scan)
+    silent_nc = silent_no_cadence_modules(scan)  # INC-057 — declared-cadence와 분리 집계
 
-    if not silent:
+    if not silent and not silent_nc:
         # 하트비트: 발신 없음(무소식이 희소식)이지만, 이 감지기 자신도 등록부 모듈
         # (cto-module-silence-detector)이라 매일 1줄이라도 남겨야 자기 신선도를
         # 스스로 증명할 수 있다(라이브 실행시에만 — dry-run 은 부작용 0 유지).
         if not dry_run and not _already_logged_today(date_str, log_path=log_path):
             _append_log({"date": date_str, "sent": False, "reason": "no_op",
                          "n_silent": 0}, log_path=log_path)
-        return {"date": date_str, "scan": scan, "silent": [], "action": "no_op",
-                "reason": "침묵 모듈 없음 — 발신 없음(무소식이 희소식)"}
+        return {"date": date_str, "scan": scan, "silent": [], "silent_no_cadence": [],
+                "action": "no_op", "reason": "침묵 모듈 없음 — 발신 없음(무소식이 희소식)"}
 
-    text = build_digest_message(silent, now=now)
+    text = build_digest_message(silent, now=now, silent_no_cadence_list=silent_nc)
 
     if dry_run:
-        return {"date": date_str, "scan": scan, "silent": silent, "action": "dry-run",
-                "text": text}
+        return {"date": date_str, "scan": scan, "silent": silent, "silent_no_cadence": silent_nc,
+                "action": "dry-run", "text": text}
 
     if _already_sent_today(date_str, log_path=log_path):
-        return {"date": date_str, "scan": scan, "silent": silent, "action": "skip",
-                "reason": "dedup(오늘 이미 발송)"}
+        return {"date": date_str, "scan": scan, "silent": silent, "silent_no_cadence": silent_nc,
+                "action": "skip", "reason": "dedup(오늘 이미 발송)"}
 
     rooms = _load_json(rooms_path, {})
     chat_id = rooms.get(BOT_ROOM)
     if chat_id is None:
         _append_log({"date": date_str, "sent": False, "reason": "room_unresolved",
-                      "n_silent": len(silent)}, log_path=log_path)
-        return {"date": date_str, "scan": scan, "silent": silent, "action": "skip",
-                "reason": "room_unresolved"}
+                      "n_silent": len(silent) + len(silent_nc)}, log_path=log_path)
+        return {"date": date_str, "scan": scan, "silent": silent, "silent_no_cadence": silent_nc,
+                "action": "skip", "reason": "room_unresolved"}
 
     if sender is None:
         from notify.telegram_send import send as sender  # noqa: PLC0415
 
     ok = bool(sender(chat_id, text))
     _append_log({"date": date_str, "sent": ok, "chat_id": chat_id,
-                 "n_silent": len(silent), "ids": [m["id"] for m in silent]},
+                 "n_silent": len(silent) + len(silent_nc),
+                 "ids": [m["id"] for m in silent] + [m["id"] for m in silent_nc]},
                 log_path=log_path)
-    return {"date": date_str, "scan": scan, "silent": silent,
+    return {"date": date_str, "scan": scan, "silent": silent, "silent_no_cadence": silent_nc,
             "action": "sent" if ok else "send_failed", "text": text}
 
 
@@ -525,21 +609,24 @@ def main(argv=None):
         snap = publish_snapshot()
         c = snap["summary"]
         print(f"[published] {SNAPSHOT_PATH} — 총 {snap['total']}건 "
-              f"(정상 {c['ok']} · 침묵 {c['silent']} · 모름 {c['unmeasurable']} · "
-              f"활동(주기미선언) {c.get('active_no_cadence', 0)} · 대상아님 {c['not_applicable']})")
+              f"(정상 {c['ok']} · 침묵 {c['silent']} · 주기미선언침묵 {c.get('silent_no_cadence', 0)} · "
+              f"모름 {c['unmeasurable']} · 활동(주기미선언) {c.get('active_no_cadence', 0)} · "
+              f"대상아님 {c['not_applicable']})")
         return 0
 
     if args.scan_only:
         scan = scan_registry()
         for r in scan:
-            print(f"[{r['status']:>13}] {r['id']:<32} {r.get('detail', '')}")
+            print(f"[{r['status']:>17}] {r['id']:<32} {r.get('detail', '')}")
         n_silent = sum(1 for r in scan if r["status"] == "silent")
+        n_silent_nc = sum(1 for r in scan if r["status"] == "silent_no_cadence")
         n_unmeas = sum(1 for r in scan if r["status"] == "unmeasurable")
         n_active = sum(1 for r in scan if r["status"] == "active_no_cadence")
         n_na = sum(1 for r in scan if r["status"] == "not_applicable")
         n_ok = sum(1 for r in scan if r["status"] == "ok")
         print(f"\n총 {len(scan)}건 — ok {n_ok} · silent {n_silent} · "
-              f"판정불가 {n_unmeas} · 활동(주기미선언) {n_active} · 대상아님 {n_na}")
+              f"주기미선언침묵 {n_silent_nc} · 판정불가 {n_unmeas} · "
+              f"활동(주기미선언) {n_active} · 대상아님 {n_na}")
         return 0
 
     out = run_detector(dry_run=not args.live)

@@ -564,8 +564,9 @@
       "owner_nick": "웰리",
       "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT. objective.due 있는 목표는 monthly_ops_sync.py(기존 일일 파이프라인)가 전사일정 GAS(coo-schedule-ssot)에 mop-{id}로 멱등 등록(GM 지시 2026-08-03·약속 L23 — 복제 아닌 1회 연동)",
       "data_source": {
-        "kind": "json",
-        "ref": "status/monthly_ops_plan.json"
+        "kind": "worklog",
+        "ref": "worklog:월간계획 + status/monthly_ops_plan.json",
+        "_ref_주석": "2026-09-09 교체 — 종전 ref 는 status/monthly_ops_plan.json 하나였다. 그 파일은 monthly_ops_sync 의 출력이면서 동시에 사람이 손으로 고치는 입력이라, 동기화가 09-01~09-09 9일 연속 AttributeError 로 죽는 동안에도 손편집 때문에 mtime 이 매일 새것이었고 침묵 감지기가 통과시켰다. worklog:월간계획 은 그 스크립트가 실제로 끝났을 때만 줄이 쌓이므로 오인이 안 생긴다."
       },
       "notify_spec": {
         "daily": true,
@@ -927,8 +928,16 @@
       "owner_nick": "시토",
       "feature": "home 카드 숫자 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천, 화면 DOM 안 읽음). GM 물음 2026-08-26 '이제 home에 있는 데이터를 믿어도 되는거지?' 에 대한 장치. 그날 하루에만 기준이 어긋난 곳이 3군데 나왔고(유형별 큰숫자가 누적 / 상단 3칸이 전체 기준 / 시설부 안전 카테고리가 이름 변경으로 두 줄) 전부 GM 이 먼저 발견하셨다 — 공통점이 '한 카드 안에서 기준이 둘로 갈렸다' 라 합만 봐도 잡힌다. ★새 스크립트·새 예약작업을 만들지 않았다(약속 L21): 계산은 erp_status_publisher 30분 주기에 얹고, 표출은 hangro_board 시토 부팅 슬라이스가 결과 파일을 표로 그리기만 한다(판정 로직 복제 0).",
       "data_source": {
-        "type": "json",
-        "path": "status/home_kpi_crosscheck.json"
+        "kind": "json",
+        "ref": "status/home_kpi_crosscheck.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "_note": "[2026-09-09·INC-057] 이 모듈은 애초 data_source가 kind/ref 표준이 아니라 type/path로 등록돼 module_silence_detector가 로컬 아티팩트를 아예 못 찾고(ref 없음) 조용히 unmeasurable로 새고 있었다 — 침묵감지 자체가 안 걸리는 스키마 사각지대였다(등록부 상 유일한 두 사례, cto-diet-camp-agent와 함께 발견). 표준화하며 실제 편승 주기(30분)에 맞춰 daily=true 선언. bot_id=null 유지(발신 게이트 무관)."
       },
       "schedule": "30분(erp_status_publisher 편승)",
       "surface": "시토 부팅 화면 「🔢 화면 숫자 정합」 — 어긋난 것만 표로",
@@ -942,8 +951,16 @@
       "owner_nick": "시토",
       "feature": "다이어트캠프 이승기 대표님 대화 에이전트 — 방을 읽어 새 말씀이 있으면 답장 1통, 없으면 아침 질문 1통(하루 1회 · GM 지시 2026-09-03 \"계속 질문해 대표님 생각을 끌어내라\"). 목적=다캠 브랜드 기준을 대표님 생각으로 채우기(설문 8문항은 09-02 수령 완료). 시보가 09-03 브리프·아침질문·--send-at 반영. 수신=kakao_export_chat / 작성=model_router / 발신=kakao_report_sender / 통보=telegram_notifier. 새 관문 없음(약속 L21). 안전장치=하루 6통 상한·10줄 상한·돈/계약 표현 차단(걸리면 발신 대신 GM 보고)·enabled 스위치. 종전 07시 원고 릴레이(daily_scheduler.run_diet_camp_morning)는 같은 날 일시정지했다 — 이 에이전트가 2주 무사고로 돌면 그 블록을 삭제한다(2026-09-16 판정).",
       "data_source": {
-        "type": "json",
-        "path": "status/diet_camp_agent.json"
+        "kind": "json",
+        "ref": "status/diet_camp_agent.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "_note": "[2026-09-09·INC-057] type/path 비표준 스키마라 module_silence_detector가 로컬 아티팩트를 못 찾아 조용히 unmeasurable로 새고 있었다(cto-kpi-crosscheck와 함께 발견된 두 사례). 표준화하며 실제 06:50/07:00 매일 가동에 맞춰 daily=true 선언. bot_id=null 유지."
       },
       "schedule": "매일 06:50 대화 저장·초안 → 07:00 발신 1통 (GM 지시 2026-09-03 · 종전 07:00 1회 · 그 전 2시간마다 7회)",
       "entrypoint": "scripts/diet_camp_agent.py",
@@ -1016,6 +1033,31 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "ceo-work-loop",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "GM 업무 루프 5단계 — GM업무 등록 → 중간관리자 인계 → 업무 SSOT 체크 → GM업무 체크 → 일일·주간·월간 보고. GM 지시 2026-09-02(배895)로 세운 루프이고, 2026-09-09 GM 이 「루프가 잘 안 되는 것 같다」고 지적해 전 단계를 실측한 뒤 등록했다. ★이 항목은 지도다 — 단계마다 심장박동이 다른 곳에 있어 한 신호로는 못 잡는다. ①GM업무 등록 = 업무·결재 SSOT GAS 원장(원격 · 로컬 흔적 없음 · coo-work-approval) ②중간관리자 인계 = ops_daily_digest 가 쌓는 방 원장 _digest_ledger.json(매일) ③업무 SSOT 체크 = ②와 같은 파이프(07:50 담당별 번호 통) ④GM업무 체크 = monthly_ops_sync(매일 07:00) · 신호 worklog:월간계획 ← 9일 죽었던 자리 ⑤보고 = 일일 07:50·08:00 / 주간 월 07:00(ceo-3line-weekly) / 월간은 아직 없음(시토 1141). ★진짜 사고 원인은 크래시가 아니라 9일 동안 아무 경보도 없었다는 것이다 — 예약 결과코드가 0 으로 찍혀 감시가 통과시켰다(INC-021 과 같은 종류). 산출물 신선도 감시 = 시토 배 1158.",
+      "data_source": {
+        "kind": "worklog",
+        "ref": "worklog:월간계획",
+        "_ref_주석": "가장 약한 고리 하나만 건다. 여러 단계를 ' + ' 로 이어 붙이면 감지기가 그중 가장 최신 시각을 취하므로, 한 단계가 죽어도 다른 단계가 신선해서 통과한다 — 이번 사고와 똑같은 오판정이 된다. 나머지 단계는 각자의 모듈(coo-work-approval · coo-monthly-ops · ceo-3line-weekly)이 따로 감시한다."
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "G1",
+        "anchor": "GM업무.html",
+        "card": null
+      },
+      "docs": "status/briefs/CEO-2026-09-09-업무루프-끊긴자리-진단.md"
     }
   ],
   "_removed": [
