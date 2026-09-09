@@ -61,6 +61,13 @@ def main():
     cal_prev = (cal_first - timedelta(days=1)).replace(day=1)
     cal_next = (cal_first + timedelta(days=32)).replace(day=1)
     jobs += [("member_calendar", {"month": m.strftime("%Y-%m")}) for m in (cal_prev, cal_first, cal_next)]
+    # +4 배1050(시포 2026-09-09) — 회원관리 화면의 마지막 GAS 직행 읽기. 이 넷은 계속 자라는 목록이라
+    # 캐시미스 1회 폴백만으로는 첫 값이 굳는다(달력처럼 '지난 달은 안 변한다'가 성립하지 않는다) —
+    # 화면이 실제로 쓰는 조합을 여기서 5분마다 새로 덮는다.
+    jobs += [("type_channel_breakdown", {})]
+    jobs += [("member_log_list", {"scope": s}) for s in ("멤버십", "강습")]
+    jobs += [(a, {"type": t}) for a in ("rentbiz_inquiry_list", "rentbiz_stats") for t in ("rent", "biz")]
+    jobs += [(a, {"type": t, "scope": "all"}) for a in ("rentbiz_inquiry_list", "rentbiz_stats") for t in ("rent", "biz")]
     for action, params in jobs:
         data = gas_get(action, params)
         if data is None:

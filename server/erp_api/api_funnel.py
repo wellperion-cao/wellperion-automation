@@ -16,7 +16,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_funnel import _kst_now, db, gas_get, key_of, load_env, store  # noqa: E402
 
 ACTIONS = ("period_breakdown", "funnel_conversion", "funnel_conversion_detail", "lesson_breakdown",
-           "stage_funnel", "member_calendar")  # +2 배1039-A(시토) — 시포 8건: 퍼널·예약 달력
+           "stage_funnel", "member_calendar",                      # +2 배1039-A(시토) — 시포 8건: 퍼널·예약 달력
+           # +4 배1050(시포 2026-09-09) — 회원관리 화면에 마지막까지 남아 있던 GAS 직행 읽기. 셋 다 읽기 전용이고
+           # 파라미터가 적어(scope·type) 같은 캐시 열쇠 규칙(key_of)에 그대로 맞는다. 화면은 `_`(캐시버스터)·
+           # key(접속토큰)를 이 주소엔 붙이지 않는다 — 붙이면 열쇠가 매번 달라져 캐시가 늘 빗나간다.
+           "member_log_list", "type_channel_breakdown", "rentbiz_inquiry_list", "rentbiz_stats")
 SOURCE = "sheet-mirror"
 router = APIRouter(prefix="/api/funnel")
 load_env()
