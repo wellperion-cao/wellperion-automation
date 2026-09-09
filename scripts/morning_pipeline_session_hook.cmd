@@ -20,6 +20,11 @@ set "PY=C:\Python314\python.exe"
 set "SCRIPT=%WORK%\wellperion-agents\scripts\ceo_morning_pipeline.py"
 set "LOGDIR=%WORK%\wellperion-agents\logs"
 
+REM --- token account log (bae 1147) ---
+REM Record which login account this session runs under (one line, append only).
+REM Reads the SessionStart JSON from stdin. Never blocks or fails session start.
+if exist "%PY%" "%PY%" "%WORK%\scripts\session_account_log.py" 2>nul
+
 if not exist "%PY%" exit /b 0
 if not exist "%SCRIPT%" exit /b 0
 if not exist "%LOGDIR%" mkdir "%LOGDIR%" >nul 2>&1
