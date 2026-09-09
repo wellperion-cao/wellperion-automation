@@ -69,7 +69,7 @@ except Exception:
 # -----------------------------------------------------------------
 # 상수
 # -----------------------------------------------------------------
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+ROOT = Path.home() / "welperion-automation"
 from tenant_profile import profile_paths  # 계정 자리 — WP_TENANT 없으면 웰페리온 경로 그대로
 
 # 실제 저장된 블로그 로그인 세션 · storage_state(쿠키·localStorage) — 프로필 손상 회피용
@@ -306,11 +306,16 @@ def build_post(args: argparse.Namespace) -> BlogPost:
     # 링크카드 href 전용 UTM URL (campaign 없으면 body_file 경로에서 자동 슬러그)
     _campaign = args.campaign or (slugify_campaign(args.body_file) if args.body_file else "")
     _link_card_url = build_inquiry_utm_url("naver_blog", _campaign or None)
+    # 파트너 계정 글에는 웰페리온 문의 링크·CTA 카드를 붙이지 않는다(2026-09-09 실측 정정).
+    _is_tenant = bool((os.environ.get("WP_TENANT") or "").strip())
+    if _is_tenant:
+        _link_card_url = ""
     image_dir = Path(args.image_dir) if args.image_dir else None
     if image_dir and not image_dir.is_absolute():
         image_dir = ROOT / image_dir
     images = collect_images(image_dir, args.image_glob)
-    images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
+    if not _is_tenant:
+        images = append_cta_card(images)  # 4채널 마지막 이미지로 문의 CTA 카드(IG 제외)
     sticker_count = getattr(args, "sticker_count", STICKER_COUNT_DEFAULT)
     # --tags CLI 명시 지정 시 본문 자동추출 태그(_tags) 대신 사용 — 본문에서 해시태그 줄을
     # 아예 뺀 경우(발행 태그칸에만 넣고 싶을 때) 대비 (2026-07-03 GM).
@@ -741,7 +746,10 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
         await _attach_images(page, target, post.image_paths)
 
     # 2) 문의 링크카드 (이미지 다음)
-    await _insert_link_card(page, target, url=post.link_card_url)
+    if post.link_card_url:
+        await _insert_link_card(page, target, url=post.link_card_url)
+    else:
+        print("[INFO] 링크 카드 없음 — 파트너 계정 글이라 웰페리온 문의 링크를 붙이지 않는다")
 
     # 3) 스티커 (맨 끝)
     if sticker_count > 0:
