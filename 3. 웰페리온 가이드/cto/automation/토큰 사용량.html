@@ -32,7 +32,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .action-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--radius-btn);background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);text-decoration:none;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .action-btn:hover{background:rgba(183,159,138,0.2);color:var(--accent-bright);}
 
-.content{padding:24px;max-width:980px;margin:0;}
+.content{padding:24px;max-width:980px;margin:0 auto;}
 .card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,0.35);}
 .card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:12px;display:flex;align-items:center;gap:6px;justify-content:space-between;flex-wrap:wrap;}
 .dim{color:var(--dim-mid);}
@@ -64,22 +64,61 @@ td.num,th.num{text-align:right;}
 
 .acct-empty{font-size:12.5px;color:var(--dim);padding:6px 0;}
 
+/* 맨 위 결론 — 이 화면에서 제일 먼저 읽히는 자리 */
+.hero{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;}
+.hero-main{min-width:200px;}
+.hero-num{font-size:46px;font-weight:800;letter-spacing:-0.02em;line-height:1.05;}
+.hero-unit{font-size:20px;font-weight:700;color:var(--dim-mid);margin-left:4px;}
+.hero-cap{font-size:12px;color:var(--dim-mid);font-weight:600;margin-bottom:2px;}
+.delta{display:inline-flex;align-items:baseline;gap:5px;font-size:15px;font-weight:700;padding:5px 12px;border-radius:var(--radius-chip);}
+.delta.up{background:rgba(237,91,63,0.12);color:var(--red);border:1px solid rgba(237,91,63,0.3);}
+.delta.down{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+.delta.flat{background:var(--paper-raised);color:var(--dim-mid);border:1px solid var(--border);}
+.delta small{font-weight:600;font-size:11px;opacity:0.85;}
+
+/* 일자별 — 표 대신 막대. 늘었는지 줄었는지를 눈으로 본다 */
+.daybars{display:flex;align-items:flex-end;gap:5px;height:118px;margin-top:4px;}
+.daybar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0;}
+.daybar .fill{background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;transition:none;}
+.daybar.is-today .fill{background:var(--accent-bright);}
+.daybar .amt{font-size:9.5px;color:var(--dim-mid);text-align:center;margin-bottom:3px;white-space:nowrap;}
+.daylabs{display:flex;gap:5px;margin-top:5px;}
+.daylabs span{flex:1;text-align:center;font-size:9.5px;color:var(--dim);white-space:nowrap;min-width:0;}
+
+/* 어디에 많이 — 모델·프로젝트 나란히 */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+.col-head{font-size:12px;font-weight:700;color:var(--dim-mid);margin-bottom:8px;}
+
+details.fold{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-card);padding:0;margin-bottom:18px;}
+details.fold>summary{cursor:pointer;padding:14px 20px;font-size:13.5px;font-weight:700;color:var(--accent-bright);list-style:none;}
+details.fold>summary::-webkit-details-marker{display:none;}
+details.fold>summary::before{content:"▸ ";color:var(--dim-mid);}
+details.fold[open]>summary::before{content:"▾ ";}
+details.fold .fold-body{padding:0 20px 18px;}
+
+@media(max-width:760px){
+  .two-col{grid-template-columns:1fr;gap:18px;}
+}
 @media(max-width:480px){
   .content{padding:14px;}
   .card{padding:14px 14px;}
   .bar-label{width:100px;}
+  .hero-num{font-size:36px;}
+  .daybars{height:90px;}
 }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
 <body>
 
-<div class="sticky-top">
+<!-- ERP 모듈 홈이 이 페이지를 iframe 으로 띄울 때는 바깥에 이미 제목이 있다.
+     둘 다 뜨면 같은 제목이 두 번 보인다(GM 지적 2026-09-09) — 그때는 이 머리를 숨긴다. -->
+<div class="sticky-top" id="pageHeader">
   <div class="header">
     <div class="header-top">
       <div>
         <h1>💳 토큰 사용량 <span class="badge">AI 시토</span></h1>
-        <div class="sub">AI CTO (시토) · 사용량 + 모델 지정 규칙 · GM 질문 2026-09-09</div>
+        <div class="sub">AI 가 쓴 토큰이 얼마나 되는지 · 어디에 많이 쓰는지</div>
       </div>
       <div class="header-actions">
         <a href="../../자율현황.html" class="action-btn">← 자율현황(T2)</a>
@@ -91,39 +130,43 @@ td.num,th.num{text-align:right;}
 
 <div class="content">
 
+  <!-- ① 이번 달 얼마 · ② 늘었나 줄었나 -->
   <div class="card">
-    <div class="card-title"><span>📊 요약</span><span id="rangeNote" class="dim" style="font-size:11px;font-weight:400;">불러오는 중…</span></div>
-    <div class="stat-grid" id="statGrid">
-      <div class="stat-tile"><div class="stat-label">오늘</div><div class="stat-value">…</div></div>
-      <div class="stat-tile"><div class="stat-label">어제</div><div class="stat-value">…</div></div>
-      <div class="stat-tile"><div class="stat-label">이번 주(월~일)</div><div class="stat-value">…</div></div>
-      <div class="stat-tile"><div class="stat-label">지난 주</div><div class="stat-value">…</div></div>
+    <div class="card-title"><span>이번 달 쓴 양</span><span id="rangeNote" class="dim" style="font-size:11px;font-weight:400;">불러오는 중…</span></div>
+    <div class="hero" id="heroBox"><div class="dim">불러오는 중…</div></div>
+    <div class="note" id="heroNote"></div>
+  </div>
+
+  <!-- 날마다 얼마나 -->
+  <div class="card">
+    <div class="card-title"><span>날마다 얼마나</span><span class="dim" style="font-size:11px;font-weight:400;">최근 14일</span></div>
+    <div id="dayChart"><div class="dim">불러오는 중…</div></div>
+  </div>
+
+  <!-- ③ 어디에 많이 -->
+  <div class="card">
+    <div class="card-title"><span>어디에 많이 썼나</span><span class="dim" style="font-size:11px;font-weight:400;">최근 7일</span></div>
+    <div class="two-col">
+      <div>
+        <div class="col-head">모델별</div>
+        <div id="modelBars"><div class="dim">불러오는 중…</div></div>
+      </div>
+      <div>
+        <div class="col-head">작업창별 (상위 5 · 추적 시작 이후 누계)</div>
+        <div id="projBars"><div class="dim">불러오는 중…</div></div>
+      </div>
     </div>
   </div>
 
+  <!-- ④ 계정별 -->
   <div class="card">
-    <div class="card-title"><span>📅 일자별 (최근 14일)</span></div>
-    <div class="tbl-wrap"><table id="dayTable"><thead></thead><tbody><tr><td class="dim">불러오는 중…</td></tr></tbody></table></div>
-    <div class="note">칸 표기 = <b>출력 토큰</b> / <span class="cell-tot">전체 합계(입력+캐시생성+캐시읽기+출력)</span>. 캐시 읽기는 같은 대화를 이어갈 때 다시 읽는 양이라 실제 새로 쓴 양과 다르다 — 전체 합계 대부분을 캐시 읽기가 차지한다.</div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span>🧩 모델별 (최근 7일 · 전체 합계 기준)</span></div>
-    <div id="modelBars"><div class="dim">불러오는 중…</div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span>🗂 프로젝트별 상위 8</span></div>
-    <div class="tbl-wrap"><table id="projTable"><thead><tr><th>프로젝트(작업창)</th><th class="num">세션</th><th class="num">전체 합계</th></tr></thead><tbody><tr><td class="dim" colspan="3">불러오는 중…</td></tr></tbody></table></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><span>👤 계정별</span></div>
+    <div class="card-title"><span>계정별</span></div>
     <div id="acctBody" class="dim">불러오는 중…</div>
   </div>
 
-  <div class="card">
-    <div class="card-title"><span>🧭 모델 지정 규칙</span><span class="dim" style="font-size:11px;font-weight:400;">GM 확정 2026-09-09</span></div>
+  <details class="fold">
+    <summary>모델 지정 규칙 — 어떤 일에 어떤 모델을 쓰나 <span class="dim" style="font-size:11px;font-weight:400;">GM 확정 2026-09-09</span></summary>
+    <div class="fold-body">
     <div class="tbl-wrap"><table>
       <thead><tr><th>일의 성격</th><th>쓰는 모델</th></tr></thead>
       <tbody>
@@ -146,7 +189,8 @@ td.num,th.num{text-align:right;}
       </tbody>
     </table></div>
     <div class="note"><b>지금은 난이도를 보고 자동으로 고르는 장치가 없다. 자리마다 고정값이고, 서브에이전트만 그때그때 사람이 정한다.</b></div>
-  </div>
+    </div>
+  </details>
 
 </div>
 
@@ -154,11 +198,19 @@ td.num,th.num{text-align:right;}
 (function(){
   var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
   function fmt(n){ n = n||0; return n.toLocaleString('ko-KR'); }
+  // 단위를 하나로 고정한다(억). 억/만/원숫자가 한 화면에 섞이면 큰지 작은지 비교가 안 된다.
+  function eok(n){
+    n = n||0;
+    var v = n/1e8;
+    if(v === 0) return '0';
+    if(v < 0.1) return '0.1 미만';
+    return v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('ko-KR');
+  }
+  // '0.1 미만' 뒤에 그냥 '억'을 붙이면 「0.1 미만억」이 된다. 단위를 앞에 붙여 읽히게 한다.
   function fmtShort(n){
     n = n||0;
-    if(Math.abs(n) >= 1e8) return (n/1e8).toFixed(1) + '억';
-    if(Math.abs(n) >= 1e4) return (n/1e4).toFixed(1) + '만';
-    return fmt(n);
+    if(n > 0 && n < 1e7) return '0.1억 미만';
+    return eok(n) + '억';
   }
   function shortModel(m){ return String(m||'').replace(/^claude-/, ''); }
   function pad2(n){ return (n<10?'0':'')+n; }
@@ -172,7 +224,8 @@ td.num,th.num{text-align:right;}
     .then(render)
     .catch(function(e){
       document.getElementById('rangeNote').textContent = '불러오기 실패';
-      document.getElementById('dayTable').querySelector('tbody').innerHTML = '<tr><td class="dim">데이터를 불러오지 못했습니다 (' + esc(e.message) + ')</td></tr>';
+      document.getElementById('heroBox').innerHTML =
+        '<div class="dim">데이터를 불러오지 못했습니다 (' + esc(e.message) + ')</div>';
     });
 
   function render(d){
@@ -180,14 +233,7 @@ td.num,th.num{text-align:right;}
     var dates = Object.keys(days).sort(); // 오름차순
     document.getElementById('rangeNote').textContent = (d.range ? (d.range.from + ' ~ ' + d.range.to) : '') + ' · 최근 ' + dates.length + '일';
 
-    // ── 요약 4칸 ──
     var today = new Date();
-    var y = new Date(today); y.setDate(y.getDate()-1);
-    var dow = today.getDay(); var mondayOffset = (dow===0?-6:1-dow);
-    var thisMon = new Date(today); thisMon.setDate(thisMon.getDate()+mondayOffset);
-    var thisSun = new Date(thisMon); thisSun.setDate(thisSun.getDate()+6);
-    var lastMon = new Date(thisMon); lastMon.setDate(lastMon.getDate()-7);
-    var lastSun = new Date(thisMon); lastSun.setDate(lastSun.getDate()-1);
 
     function sumRange(fromStr, toStr){
       var out = {input:0, cache_creation:0, cache_read:0, output:0};
@@ -202,36 +248,64 @@ td.num,th.num{text-align:right;}
       });
       return out;
     }
-    function tileHtml(label, sum){
-      var total = bucketTotal(sum);
-      return '<div class="stat-tile"><div class="stat-label">' + esc(label) + '</div>'
-        + '<div class="stat-value">' + fmtShort(total) + '</div>'
-        + '<div class="stat-sub">출력 ' + fmtShort(sum.output) + ' · 캐시읽기 ' + fmtShort(sum.cache_read) + '</div></div>';
-    }
-    document.getElementById('statGrid').innerHTML =
-      tileHtml('오늘', sumRange(dstr(today), dstr(today))) +
-      tileHtml('어제', sumRange(dstr(y), dstr(y))) +
-      tileHtml('이번 주(월~일)', sumRange(dstr(thisMon), dstr(thisSun))) +
-      tileHtml('지난 주', sumRange(dstr(lastMon), dstr(lastSun)));
+    // ── ① 이번 달 얼마 · ② 늘었나 줄었나 ──
+    // 달끼리 비교하고 싶지만 기록이 8/11 부터라 8월 전체가 없다. 없는 비교를 지어내지 않고
+    // 둘 다 온전한 「최근 7일 ↔ 직전 7일」로 잰다.
+    var monthFrom = dstr(today).slice(0,8) + '01';
+    var monthSum = bucketTotal(sumRange(monthFrom, dstr(today)));
 
-    // ── 일자별 표 (최근 14일) ──
-    var last14 = dates.slice(-14).reverse(); // 최신이 위
-    var modelSet = {};
-    last14.forEach(function(day){ Object.keys(days[day]).forEach(function(m){ modelSet[m]=true; }); });
-    var models = Object.keys(modelSet).sort();
-    var thead = '<tr><th>날짜</th>' + models.map(function(m){ return '<th class="num">'+esc(shortModel(m))+'</th>'; }).join('') + '<th class="num">합계</th></tr>';
-    var tbody = last14.map(function(day){
-      var rowTotal = 0;
-      var cells = models.map(function(m){
-        var b = days[day][m];
-        if(!b) return '<td class="num dim">—</td>';
-        rowTotal += bucketTotal(b);
-        return '<td class="num"><span class="cell-out">'+fmt(b.output)+'</span><br><span class="cell-tot">'+fmtShort(bucketTotal(b))+'</span></td>';
-      }).join('');
-      return '<tr><td>'+esc(day)+'</td>'+cells+'<td class="num" style="font-weight:700;">'+fmtShort(rowTotal)+'</td></tr>';
+    function daysAgo(n){ var x = new Date(today); x.setDate(x.getDate()-n); return dstr(x); }
+    var last7Sum = bucketTotal(sumRange(daysAgo(6), dstr(today)));
+    var prev7Sum = bucketTotal(sumRange(daysAgo(13), daysAgo(7)));
+
+    var deltaHtml;
+    if(!prev7Sum){
+      deltaHtml = '<span class="delta flat">비교할 앞 기간 없음</span>';
+    } else {
+      var pct = Math.round((last7Sum - prev7Sum) / prev7Sum * 100);
+      var cls = pct > 5 ? 'up' : (pct < -5 ? 'down' : 'flat');
+      var mark = pct > 0 ? '▲' : (pct < 0 ? '▼' : '=');
+      deltaHtml = '<span class="delta ' + cls + '">' + mark + ' ' + Math.abs(pct) + '%'
+        + '<small>직전 7일 대비</small></span>';
+    }
+
+    document.getElementById('heroBox').innerHTML =
+      '<div class="hero-main">'
+      + '<div class="hero-cap">' + esc(monthFrom.slice(5,7)) + '월 1일부터 오늘까지</div>'
+      + '<div class="hero-num">' + eok(monthSum) + '<span class="hero-unit">억 토큰</span></div>'
+      + '</div>'
+      + '<div class="hero-main" style="min-width:150px;">'
+      + '<div class="hero-cap">최근 7일</div>'
+      + '<div class="hero-num" style="font-size:28px;">' + eok(last7Sum) + '<span class="hero-unit" style="font-size:15px;">억</span></div>'
+      + '</div>'
+      + '<div style="padding-bottom:6px;">' + deltaHtml + '</div>';
+
+    document.getElementById('heroNote').innerHTML =
+      '숫자는 <b>전체 합계</b>(입력+캐시생성+캐시읽기+출력)다. 대부분은 캐시 읽기 — 같은 대화를 이어갈 때 다시 읽는 양이라 새로 쓴 양보다 크다. '
+      + '달끼리 비교는 기록이 ' + esc((d.range && d.range.from) || '') + ' 부터라 아직 못 한다. 돈으로 환산한 값은 단가표가 없어 <b>측정 전</b>이다.';
+
+    // ── 날마다 얼마나 (최근 14일 막대) ──
+    var last14 = dates.slice(-14); // 왼쪽이 과거
+    var dayTotals = last14.map(function(day){
+      var t = 0;
+      Object.keys(days[day]).forEach(function(m){ t += bucketTotal(days[day][m]); });
+      return t;
+    });
+    var dayMax = Math.max.apply(null, dayTotals.concat([1]));
+    var todayStr = dstr(today);
+    var barsHtml = last14.map(function(day, i){
+      var h = Math.max(2, Math.round(dayTotals[i] / dayMax * 92));
+      var isToday = day === todayStr;
+      return '<div class="daybar' + (isToday ? ' is-today' : '') + '" title="' + esc(day) + ' · ' + fmtShort(dayTotals[i]) + '">'
+        + '<div class="amt">' + eok(dayTotals[i]) + '</div>'
+        + '<div class="fill" style="height:' + h + '%;"></div></div>';
     }).join('');
-    document.getElementById('dayTable').querySelector('thead').innerHTML = thead;
-    document.getElementById('dayTable').querySelector('tbody').innerHTML = tbody || '<tr><td class="dim">데이터 없음</td></tr>';
+    var labsHtml = last14.map(function(day){
+      return '<span>' + esc(day.slice(5).replace('-', '/')) + '</span>';
+    }).join('');
+    document.getElementById('dayChart').innerHTML = last14.length
+      ? '<div class="daybars">' + barsHtml + '</div><div class="daylabs">' + labsHtml + '</div>'
+      : '<div class="dim">데이터 없음</div>';
 
     // ── 모델별 막대(최근 7일) ──
     var last7 = dates.slice(-7);
@@ -250,13 +324,18 @@ td.num,th.num{text-align:right;}
         + '<div class="bar-value">' + fmtShort(e[1]) + '</div></div>';
     }).join('') : '<div class="dim">데이터 없음</div>';
 
-    // ── 프로젝트별 상위 8 ──
+    // ── 작업창별 상위 5 (모델별과 같은 막대 모양으로 — 한 화면에서 표와 막대가 섞이지 않게) ──
     var projects = d.projects || {};
-    var pEntries = Object.keys(projects).map(function(p){ return [p, projects[p]]; })
-      .sort(function(a,b){ return bucketTotal(b[1]) - bucketTotal(a[1]); }).slice(0,8);
-    document.getElementById('projTable').querySelector('tbody').innerHTML = pEntries.length ? pEntries.map(function(e){
-      return '<tr><td>'+esc(e[0])+'</td><td class="num">'+fmt(e[1].sessions)+'</td><td class="num">'+fmtShort(bucketTotal(e[1]))+'</td></tr>';
-    }).join('') : '<tr><td class="dim" colspan="3">데이터 없음</td></tr>';
+    var pEntries = Object.keys(projects).map(function(p){ return [p, bucketTotal(projects[p])]; })
+      .sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+    var pMax = pEntries.length ? pEntries[0][1] : 1;
+    document.getElementById('projBars').innerHTML = pEntries.length ? pEntries.map(function(e, i){
+      var pct = pMax ? Math.max(2, Math.round(e[1]/pMax*100)) : 0;
+      return '<div class="bar-row"><div class="bar-label" style="width:130px;" title="' + esc(e[0]) + '">'
+        + esc(e[0].length > 16 ? e[0].slice(0,15) + '…' : e[0]) + '</div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+colorFor(e[0], i)+';"></div></div>'
+        + '<div class="bar-value">' + fmtShort(e[1]) + '</div></div>';
+    }).join('') : '<div class="dim">데이터 없음</div>';
 
     // ── 계정별 ──
     var acc = d.accounts || {};
@@ -266,16 +345,29 @@ td.num,th.num{text-align:right;}
     if(!keys.length){
       acctHtml = '<div class="acct-empty">기록 없음 — ' + esc(acc.tracked_since || '2026-09-09') + '부터 쌓임 (그 전 대화는 계정 구분이 로그에 없다)</div>';
     } else {
-      acctHtml = '<div class="tbl-wrap"><table><thead><tr><th>계정</th><th class="num">세션(추적 시작 이후)</th></tr></thead><tbody>'
-        + keys.map(function(k){
-            var n = bySrc[k];
-            return '<tr><td>'+esc(k)+'</td><td class="num">'
-              + (n ? fmt(n) : '<span class="dim">아직 기록 없음</span>') + '</td></tr>'; }).join('')
-        + '</tbody></table></div>'
-        + '<div class="note">현재 로그인 계정: ' + esc(acc.current || '') + ' · ' + esc(acc.tracked_since || '') + ' 이전 대화는 계정 미상.</div>';
+      // 세 줄짜리 표가 카드 하나를 통째로 먹었다. 쓴 계정만 세우고 안 쓴 계정은 한 줄로 붙인다.
+      var used = keys.filter(function(k){ return bySrc[k]; });
+      var unused = keys.filter(function(k){ return !bySrc[k]; });
+      acctHtml = '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;">'
+        + (used.length
+            ? used.map(function(k){
+                return '<div><span style="font-weight:700;">' + esc(k) + '</span>'
+                  + ' <span class="dim">세션 ' + fmt(bySrc[k]) + '</span></div>'; }).join('')
+            : '<div class="dim">아직 어느 계정에도 기록이 없다</div>')
+        + '</div>'
+        + (unused.length ? '<div class="note">아직 기록 없음: ' + esc(unused.join(' · ')) + '</div>' : '')
+        + '<div class="note">' + esc(acc.tracked_since || '') + ' 이전 대화는 계정 구분이 로그에 없어 세지 못한다.</div>';
     }
     document.getElementById('acctBody').innerHTML = acctHtml;
   }
+
+  // 모듈 홈이 iframe 으로 띄우면 바깥에 이미 제목이 있다 — 그때만 이 머리를 숨긴다.
+  try {
+    if (window.self !== window.top) {
+      var h = document.getElementById('pageHeader');
+      if (h) h.style.display = 'none';
+    }
+  } catch (e) { /* 교차 출처면 판단할 수 없다 — 머리를 그대로 둔다 */ }
 })();
 </script>
 
