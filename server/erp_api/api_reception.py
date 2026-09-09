@@ -288,6 +288,11 @@ def _rows(conn, table, order):
     out = []
     for r in rs:
         d = json.loads(r["data"])
+        # 자동 검증용 행은 사람 목록에서 뺀다(배1166). 미러 표에는 그대로 남아 있어 서버↔시트
+        # 대조(reconcile_dual_write)는 종전대로 이 행을 센다 — 화면에서만 안 보이는 것이다.
+        # 목록을 내주는 곳이 board·lost·hold 셋인데 전부 이 함수를 지나므로 여기 한 곳에만 둔다.
+        if db.is_verification_row(d):
+            continue
         d["_synced_at"] = r["synced_at"]
         if "done" in r.keys():
             d["done"] = bool(r["done"])

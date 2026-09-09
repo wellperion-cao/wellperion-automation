@@ -36,6 +36,26 @@ _NAME_KEYS = ("name", "reporter", "ownerName")     # 실명이 있으면 더미 
 _TEST_PHONE_KEYS = ("phone", "contact", "hp", "keyPhone")
 
 
+def is_verification_row(payload):
+    """사람이 보는 목록에서 뺄 「자동 검증용」 행인지 (배1166 · 2026-09-09 시토·시우).
+
+    `is_test_payload` 와 묻는 것이 다르다. 저쪽은 "이걸 GAS 로 내보내도 되나"를 묻고,
+    이쪽은 "이걸 실무진 목록에 보여도 되나"를 묻는다. 그래서 판정 폭도 다르다 —
+    여기서는 **자체선언 태그만** 본다. 저쪽이 함께 보는 더미 연락처 규칙까지 끌어오면
+    이름 없이 접수된 진짜 워크인 기록이 목록에서 사라진다. 검증 행이 하나 보이는 것보다
+    실제 접수 하나가 안 보이는 쪽이 훨씬 나쁘다.
+
+    태그 목록은 위 `_TEST_TAG_RE` 하나를 같이 쓴다 — 판정 낱말을 두 벌로 두지 않는다.
+    """
+    if not isinstance(payload, dict):
+        return False
+    for key in _TEST_TEXT_KEYS:
+        v = payload.get(key)
+        if isinstance(v, str) and v.strip() and _TEST_TAG_RE.search(v.strip()):
+            return True
+    return False
+
+
 def is_test_payload(payload):
     """쓰기 관문(/api/write · /api/intake/*)에 실린 payload 나 GAS 미러 동기화 행이 테스트/더미인지 판별.
     True 면 호출부가 저장은 하되 GAS 전달·미러 동기화·알림·집계에서 뺀다(재유입 차단).
