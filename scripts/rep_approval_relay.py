@@ -180,6 +180,88 @@ def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, toda
     return msgs
 
 
+# ── ⑤ 담당별 진행 현황(GM업무 열린 행) ─────────────────────────────────────
+# GM 지시 2026-09-09 — 신규 등록(③)과 결재 완료(①)는 이미 나가는데, **진행 중인 건이
+# 담당에게 전달되는 축**이 없었다. 열린 행을 사람별로 갈라 그 사람 방으로 보낸다.
+#   ▸GM 본인·외부 업체 담당분은 보내지 않는다 — GM 원문 "도저히 안 되는건 내가 일단 머금는걸로".
+#   ▸나우열M 은 카톡이 아니라 텔레그램 업무관리 방이 채널이라 이 통에서 뺀다(방 분리 규칙).
+#   ▸사람별 소제목으로 갈라 한 통에 담는다. 실장·소장이 자기 것을 골라 읽지 않아도 되게.
+SENDER_ASSIGN = "업무등록묶음"      # 같은 성격이라 발신 이름을 나누지 않는다(약속 L21)
+
+# 이 이름이 담당 칸에 들어 있으면 전달하지 않는다(GM 이 쥐는 것 + 외부 업체).
+#   업체명이 담당 칸에 들어간 행도 제외한다 — 사람이 아니라 계약 상대라 이 방에서 할 일이 없다.
+_HOLD_OWNER_RE = re.compile(r"GM|김남욱|나우열")
+_VENDOR_RE = re.compile(r"브로제이|더함비즈|성실케어|카처|테크노짐|갤럭시아|우리강화|바디프렌드|\(|\)")
+
+
+def _owner_key(raw: str) -> str:
+    """담당 칸 → 사람 한 명 이름. 「최준용M,이경연 실장」처럼 여럿이면 앞사람 기준."""
+    return str(raw or "").split(",")[0].strip()
+
+
+def pick_assign_rows(rows: list[dict]) -> dict[str, list[dict]]:
+    """열린 행을 담당별로 묶는다. GM·외부 업체·나우열M 은 뺀다."""
+    out: dict[str, list[dict]] = {}
+    for r in rows:
+        if str(r.get("상태") or "").strip() == "완료":
+            continue
+        who = _owner_key(r.get("담당자"))
+        if not who or _HOLD_OWNER_RE.search(who):
+            continue
+        if _VENDOR_RE.search(who):        # 「성실케어(김재훈 본부장)」·「브로제이·더함비즈」 등 업체
+            continue
+        out.setdefault(who, []).append(r)
+    return out
+
+
+def build_assign_message(by_owner: dict[str, list[dict]], today: str | None = None) -> str:
+    if not by_owner:
+        return ""
+    _, md = _md(today)
+    total = sum(len(v) for v in by_owner.values())
+    lines = [f"📋 {md} 업무 현황 — 진행 중인 것 {total}건"]
+    for who in sorted(by_owner, key=lambda k: -len(by_owner[k])):
+        items = by_owner[who]
+        # 사람당 두 줄만 쓴다 — 이름·건수 한 줄, 가장 급한 것 한 줄. 카톡은 길면 안 읽힌다.
+        # 전체 목록은 업무 화면에서 본인 이름으로 거르면 되므로 여기 다 옮기지 않는다.
+        dated = [r for r in items if len(_kst_day(r.get("종료일"))) == 10]
+        soonest = min(dated, key=lambda r: _kst_day(r.get("종료일"))) if dated else items[0]
+        due = _kst_day(soonest.get("종료일"))
+        # 기한이 이미 지난 것을 「가장 급한 것」이라 부르면 사람이 무엇이 문제인지 모른다.
+        # 지난 것은 며칠 지났는지, 앞으로 올 것은 날짜를 적는다.
+        if len(due) == 10:
+            gap = (date.fromisoformat(due) - date.today()).days
+            tail = f" — {-gap}일 지남" if gap < 0 else f" — {int(due[5:7])}/{int(due[8:10])}"
+            head = "가장 오래 밀린 것" if gap < 0 else "가장 급한 것"
+        else:
+            tail, head = "", "기한 없는 것"
+        lines.append(f"👤 {who} {len(items)}건")
+        lines.append(f"   {head} · {str(soonest.get('업무명') or '').strip()[:32]}{tail}")
+    # 카톡은 공백에서 링크를 끊는다 — 경로에 공백이 있으면 %20 으로 넣는다.
+    lines.append("📎 업무 화면 https://erp.wellperion.com/coo/todo/"
+                 "%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html")
+    lines.append("👉 끝난 건은 완료로 바꿔 주시고, 담당·마감이 다르면 알려 주세요.")
+    lines.append(SIGNOFF)
+    return "\n".join(lines)
+
+
+def run_assign_brief(send: bool = False, dry_run: bool = False) -> int:
+    rows = fetch_rows()
+    if rows is None:
+        print("[assign-brief] 업무 시트 조회 실패 — 이번 회차 건너뜀")
+        return 1
+    by_owner = pick_assign_rows(rows)
+    msg = build_assign_message(by_owner)
+    total = sum(len(v) for v in by_owner.values())
+    print(f"[assign-brief] 담당 {len(by_owner)}명 · 진행 중 {total}건")
+    if msg:
+        print(f"── 미리보기 ({len(msg.splitlines())}줄) ──\n{msg}")
+    if not msg or not send:
+        return 0
+    send_via_gate(msg, dry_run, SENDER_ASSIGN)
+    return 0
+
+
 # ── ③ 오늘 올라온 업무(업무 SSOT 신규 행) ────────────────────────────────────
 def pick_new_rows(rows: list[dict], notified: dict[str, str], today: str) -> list[dict]:
     """생성일(KST)=오늘 · 생성자가 AI 가 아닌 행 · 아직 안 알린 것. 생성자 빈칸=사람(페이지 직접 등록)."""
@@ -368,6 +450,8 @@ if __name__ == "__main__":
     ap.add_argument("--dry-run", action="store_true", help="--send 와 함께: 관문 DRY-RUN(카톡 창에 붙였다 지움)")
     ap.add_argument("--new-rows", action="store_true", help="③ 오늘 올라온 업무 묶음(미리보기·--send)")
     ap.add_argument("--scoreboard", action="store_true", help="④ 저녁 점수판 미리보기(발신 없음)")
+    ap.add_argument("--assign-brief", action="store_true",
+                    help="⑤ 담당별 진행 현황 묶음(미리보기·--send) — GM·외부업체·나우열M 제외")
     ap.add_argument("--selfcheck", action="store_true")
     a = ap.parse_args()
     if a.selfcheck:
@@ -377,6 +461,8 @@ if __name__ == "__main__":
         _rows = fetch_rows()
         print(scoreboard_section(_rows) if _rows is not None else "[scoreboard] 조회 실패")
         sys.exit(0)
+    if a.assign_brief:
+        sys.exit(run_assign_brief(send=a.send, dry_run=a.dry_run))
     if a.new_rows:
         sys.exit(run_new_rows(send=a.send, dry_run=a.dry_run))
     sys.exit(run(send=a.send, dry_run=a.dry_run))
