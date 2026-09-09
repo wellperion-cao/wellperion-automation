@@ -81,7 +81,11 @@
 
 ### 토큰 라우팅 매트릭스
 > 정본 = **S2 공통탭 ▸ 통합원칙 ⑨** (Haiku=read·lookup·송부 / Sonnet=가동·patch·집계·git·콘텐츠·로그 / Opus=판단·결정·검토·결재·이슈진단). 상세·갱신은 S2에만 — 표 중복 금지.
-- 세션 모델(GM 확정 2026-09-07 · 정본=`Start-AI *.bat` `--model`): **8석 전부 Fable 5.1**(판단·설계·검토·대외 문안은 세션이 직접) / 반복·실행(집계·patch·git·송부·콘텐츠 가공)은 Sonnet·Haiku 서브에이전트로 내려 비용 방어 — 자리가 아니라 일이 부하 모델을 고른다. API 스크립트 = `scripts/model_router.py` 기본 체인 Sonnet, 판단 3본(주간 자기검토·GM 프로필·학습 제안)만 `JUDGMENT_CHAIN`(Fable). 자동 러너 = Sonnet. 전역 기본(`~/.claude/settings.json`) = Fable 5.1(1M 컨텍스트 해제 — 200K 초과 2배 과금 방지).
+- 모델 라우팅 정본 = **`ssot/model_routing.json` 한 곳**(GM 지시 2026-09-09 · 종전 3곳 분산 폐지). 세션·서브에이전트·API 스크립트가 각자 다른 모델을 박아 서로 어긋났던 것을 여기로 모았다 — 값을 이 파일에 베끼지 않는다.
+  - **세션 = GM 이 `/model` 로 고르는 값 하나.** `Start-AI *.bat` 은 `--model` 을 넘기지 않는다(넘기면 배치가 GM 설정을 덮어써 다음 창에서 되돌아간다 — 2026-09-09 실측, 8개 배치가 전부 Fable 을 박고 있었다).
+  - **서브에이전트 = 일이 고른다.** 읽기·조회·송부=Haiku / 코드 수정·집계·저장·콘텐츠 가공=Sonnet / 판단·설계·검토·진단=Opus. 루틴에 비싼 모델을 지정하면 `scripts/agent_model_guard.py`(PreToolUse)가 막는다 — 지시문에 「모델판단필요」를 적으면 통과.
+  - **API 스크립트** = `scripts/model_router.py` 기본 체인 Sonnet, 판단 3본(주간 자기검토·GM 프로필·학습 제안)만 `JUDGMENT_CHAIN`. 자동 러너 = Sonnet.
+  - ⚠️ 현재 전역값 `opus[1m]` 은 1M 컨텍스트다 — 한 세션이 200K 토큰을 넘기면 그 뒤 호출이 두 배로 계산된다. 긴 작업 뒤엔 `/clear`.
 - 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(`executor` 등) 위임. 메인 모델로 처리 시 위반.
 
 상세 교육자료·고도화 프롬프트 → 웰페리온 ERP 참조 (6번)
