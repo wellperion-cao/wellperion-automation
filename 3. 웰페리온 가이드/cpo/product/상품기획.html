@@ -846,11 +846,21 @@ function _collectPolicy(){
   });
   return rows;
 }
+// ★2026-09-09 배1050 — 상품기획 목록 읽기도 ERP 도메인에서는 서버 거울(/api/misc/todo/product_plan_list)
+//   먼저, 실패하면 종전 업무&결재 GAS. 응답 모양은 GAS 그대로(api_misc 가 통째로 저장해 돌려준다).
+var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+function _planListFetch(){
+  var gas = function(){ return fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'}).then(function(r){ return r.json(); }); };
+  if (!ERP_API_ON) return gas();
+  try { if (Date.now() - Number(localStorage.getItem('cpo_plan_wrote_at') || 0) < 6 * 60 * 1000) return gas(); } catch (e) {}
+  return fetch('/api/misc/todo/product_plan_list')
+    .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+    .catch(function(e){ console.warn('[상품기획 목록] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
 function loadPolicyTable(force){
   if(_policyLoaded && !force) return;
   _policyStatus('불러오는 중…');
-  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
-    .then(function(r){ return r.json(); })
+  _planListFetch()
     .then(function(res){
       var found=null;
       if(res.ok && res.data) found=res.data.find(function(x){ return String(x.id)===POLICY_TABLE_ID; });
@@ -881,6 +891,9 @@ function savePolicyTable(){
    text/plain 단순요청이라 사전확인(preflight) 없이 통과하고, redirect 를 따라가면 {ok,error} 를 읽는다.
    회원관리(membership.html apiPost)에서 라이브 검증된 방식과 동일 — 새 방식 발명 아님. */
 function _todoPost(payload){
+  // ★2026-09-09 배1050 — 쓰기 도장. 이 브라우저에서 6분 안에 시트에 쓴 게 있으면 서버 거울(5분 주기)이
+  //   그 한 건을 아직 모른다 — 그동안만 목록을 GAS 에서 읽는다(membership.html 과 같은 규칙).
+  try { localStorage.setItem('cpo_plan_wrote_at', String(Date.now())); } catch (e) {}
   // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인에서만 product_plan_save/delete 를 서버 /api/write(이중기록) 뒤 GAS 로. 그 밖은 종전 POST 그대로.
   if (window.erpTodoCall && /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname) && window.erpTodoIsWrite && erpTodoIsWrite(payload && payload.action)) {
     // GAS 는 body.item || body 를 항목으로 읽는다 — 관문 폴백(GET 쿼리)에서 중첩 item 이 '[object Object]' 로 깨지지 않게 평탄화해 보낸다.
@@ -1147,8 +1160,7 @@ function setStatus(msg, isErr) {
 function _planKey(it){ return (it.구분||'') + '|' + (it.제안명||''); }
 function loadPlans() {
   setStatus('불러오는 중…');
-  fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
-    .then(function(r){ return r.json(); })
+  _planListFetch()
     .then(function(res) {
       // 정책 예약 레코드(구분 '_' 시작·POLICY-PRICING 등)는 워크샵 카드에서 제외. 2026-07-02 시포
       var saved = (res.ok && res.data && res.data.length > 0) ? res.data.filter(function(x){ return String(x.구분||'').charAt(0) !== '_'; }) : [];

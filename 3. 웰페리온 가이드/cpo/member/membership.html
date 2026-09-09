@@ -4155,9 +4155,13 @@ function renderMemberLog(){
   if (!box) return;
   var scope = (_curFamily === 'lesson') ? '강습' : '멤버십';
   box.textContent = '불러오는 중…';
-  fetch(GAS_URL + '?action=member_log_list&scope=' + encodeURIComponent(scope) + '&_=' + Date.now(),
-        { redirect:'follow' })
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — ERP 도메인은 퍼널 미러(/api/funnel/member_log_list) 먼저, 실패하면 종전 GAS.
+  //   미러 주소엔 캐시버스터(_)·접속토큰(key)을 안 붙인다 — 붙이면 캐시 열쇠가 매번 달라진다.
+  var _mlGas = function(){
+    return fetch(GAS_URL + '?action=member_log_list&scope=' + encodeURIComponent(scope) + '&_=' + Date.now(),
+                 { redirect:'follow' }).then(function(r){ return r.json(); });
+  };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/member_log_list?scope=' + encodeURIComponent(scope)).catch(function(e){ console.warn('[변경이력] API 실패 → GAS 폴백:', e && e.message); return _mlGas(); }) : _mlGas())
     .then(function(d){
       var rows = (d && d.data) || [];
       var head = '<div style="color:var(--dim);font-size:12px;margin-bottom:10px;">'
@@ -4992,8 +4996,9 @@ function _postInqFetchFunnel(cb){
 function _postInqFetchTc(cb){
   if (_postInqCache.tc) { cb(_postInqCache.tc); return; }
   if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  fetch(GAS_URL + '?action=type_channel_breakdown' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS.
+  var _tcGas = function(){ return fetch(GAS_URL + '?action=type_channel_breakdown' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/type_channel_breakdown').catch(function(){ return _tcGas(); }) : _tcGas())
     .then(function(d){ if (d && d.ok) _postInqCache.tc = d; cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -7151,8 +7156,10 @@ function renderRentbiz(t) {
   var b = document.getElementById('rentbizBody_' + t);
   if (b) b.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="loading-spinner"></div>' +
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
-  fetch(GAS_URL + '?action=rentbiz_inquiry_list&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS(공간렌트·비즈니스 문의).
+  var _rbQs = 'type=' + t + (st.scope === 'all' ? '&scope=all' : '');
+  var _rbGas = function(){ return fetch(GAS_URL + '?action=rentbiz_inquiry_list&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/rentbiz_inquiry_list?' + _rbQs).catch(function(e){ console.warn('[렌트비즈 문의] API 실패 → GAS 폴백:', e && e.message); return _rbGas(); }) : _rbGas())
     .then(function(d){
       if (!d.ok) throw new Error(d.error || 'GAS 응답 오류');
       st.rows = d.data || [];
@@ -7179,8 +7186,10 @@ function _rentbizStatsFail(t){
 function rentbizLoadStats(t) {
   var st = _rentbizState[t];
   if (!st || GAS_URL === GAS_PLACEHOLDER) return;
-  fetch(GAS_URL + '?action=rentbiz_stats&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS.
+  var _rsQs = 'type=' + t + (st.scope === 'all' ? '&scope=all' : '');
+  var _rsGas = function(){ return fetch(GAS_URL + '?action=rentbiz_stats&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : '')).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/rentbiz_stats?' + _rsQs).catch(function(){ return _rsGas(); }) : _rsGas())
     .then(function(d){
       if (!d || !d.ok) { _rentbizStatsFail(t); return; }
       var elTotal = document.getElementById('rentbizStatTotal_' + t);
