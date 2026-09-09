@@ -1,6 +1,7 @@
 # scripts/wp_geo_apply.py — 배1000 실행: JSON-LD 헤더 삽입 + robots.txt 교체 + 홈 메타설명 교체 (단일 세션, 최소 실행).
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path.home() / "welperion-automation" / "scripts"))
@@ -20,94 +21,56 @@ def _load_one_liner() -> str:
 
 ONE_LINER = _load_one_liner()
 
-JSON_LD = """<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — 배1000(시토) 2026-09-05, 정본=ssot/canon_values.json -->
-<script type="application/ld+json">
-{
- "@context": "https://schema.org",
- "@graph": [
-  {
-   "@type": "Organization",
-   "@id": "https://wellperion.com/#org",
-   "name": "웰페리온",
-   "alternateName": ["Wellperion", "주식회사 웰페리온"],
-   "url": "https://wellperion.com/",
-   "telephone": "+82-2-6261-1200",
-   "slogan": "하루의 완성, 웰페리온",
-   "description": "__ONE_LINER__",
-   "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "서빙고로 413, 101동 지1층 101호",
-    "addressLocality": "용산구",
-    "addressRegion": "서울특별시",
-    "addressCountry": "KR"
-   },
-   "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "+82-2-6261-1200",
-    "contactType": "customer service",
-    "availableLanguage": ["ko", "en"],
-    "url": "http://wellperion.com/ko/inquiry/"
-   }
-  },
-  {
-   "@type": "SportsActivityLocation",
-   "@id": "https://wellperion.com/#club",
-   "name": "웰페리온 스포츠클럽",
-   "parentOrganization": { "@id": "https://wellperion.com/#org" },
-   "url": "https://wellperion.com/",
-   "telephone": "+82-2-6261-1200",
-   "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "서빙고로 413, 101동 지1층 101호",
-    "addressLocality": "용산구",
-    "addressRegion": "서울특별시",
-    "addressCountry": "KR"
-   },
-   "areaServed": ["한남동", "용산구", "서울"],
-   "description": "__ONE_LINER__",
-   "openingHoursSpecification": [
-    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "06:00", "closes": "22:30" },
-    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday","Sunday"], "opens": "08:00", "closes": "20:00" }
-   ],
-   "amenityFeature": [
-    { "@type": "LocationFeatureSpecification", "name": "P.T", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "필라테스", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "수영장", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "골프(GDR·QED)", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "스쿼시", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "체조", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "G.X", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "사우나", "value": true },
-    { "@type": "LocationFeatureSpecification", "name": "스파", "value": true }
-   ],
-   "isAccessibleForFree": false,
-   "publicAccess": false
-  },
-  {
-   "@type": "FAQPage",
-   "@id": "https://wellperion.com/#faq",
-   "mainEntity": [
-    { "@type": "Question", "name": "웰페리온은 예약 없이 방문할 수 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "투어·상담은 사전 예약제로만 진행합니다. 예약 없이 방문하는 워크인 등록은 운영하지 않습니다. 문의: wellperion.com/ko/inquiry" } },
-    { "@type": "Question", "name": "멤버십은 어떻게 운영되나요?", "acceptedAnswer": { "@type": "Answer", "text": "정원제로 운영합니다. 정원이 찼을 때는 대기 멤버십을 함께 운영하며, 자세한 안내는 상담 시 드립니다." } },
-    { "@type": "Question", "name": "가입은 어떻게 하나요?", "acceptedAnswer": { "@type": "Answer", "text": "문의 페이지(wellperion.com/ko/inquiry)에서 투어·상담을 예약하고, 방문 상담 후 가입합니다. 정원이 찼을 때는 대기 멤버십을 안내합니다." } },
-    { "@type": "Question", "name": "운영 시간은 어떻게 되나요?", "acceptedAnswer": { "@type": "Answer", "text": "평일 06:00~22:30, 주말·공휴일 08:00~20:00. 휴관일은 신정, 설·추석 명절 연휴, 매월 둘째·넷째 주 일요일입니다." } },
-    { "@type": "Question", "name": "어디에 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "서울특별시 용산구 서빙고로 413, 101동 지1층(한남동). 대표 전화 02-6261-1200." } },
-    { "@type": "Question", "name": "어떤 시설을 이용할 수 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "수영·트레이닝·골프(GDR·QED 2종 타석)·스쿼시·체조·필라테스·사우나·스파를 한 공간에서 이용합니다." } },
-    { "@type": "Question", "name": "강습도 예약제인가요?", "acceptedAnswer": { "@type": "Answer", "text": "네. 성인 강습(수영·P.T·필라테스·골프·스쿼시·발레·바레)과 유소년 강습 모두 사전 예약제로 진행하며, 워크인 등록은 운영하지 않습니다." } },
-    { "@type": "Question", "name": "유소년 강습은 어떤 종목이 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "수영, 스쿼시, KPGA 주니어 골프, 체조, 브래드리틀 뮤지컬 아카데미가 있습니다. 대상 연령과 일정은 종목별로 상담 시 안내합니다." } },
-    { "@type": "Question", "name": "영어로 진행되는 강습이 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "강습은 기본적으로 한국어로 진행합니다. 영어 강습은 뮤지컬·수영·스쿼시만 가능하며, 문의 페이지로 문의해 주세요." } },
-    { "@type": "Question", "name": "운동복이나 수건은 준비되어 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "네. 운동복·양말·수건·샤워 어메니티가 구비되어 있고, 수영 이용 시 바스타올을 드립니다. 실내용 운동화만 준비해 주세요. 수영을 하시는 분은 수영복·수영모·수경을 준비해 주세요." } },
-    { "@type": "Question", "name": "스파·살롱·카페도 있나요?", "acceptedAnswer": { "@type": "Answer", "text": "파트너 시설로 Cinq Mondes(생크몽드) 스파, beautévu 살롱, CUPS 카페가 함께 있습니다. 이용 안내는 대표 전화 02-6261-1200으로 문의해 주세요." } },
-    { "@type": "Question", "name": "규모는 어느 정도인가요?", "acceptedAnswer": { "@type": "Answer", "text": "서울 용산구 한남동, 약 3,000평 규모의 단일 공간입니다." } },
-    { "@type": "Question", "name": "한남동 스포츠클럽 멤버십은 어떻게 운영되나요?", "acceptedAnswer": { "@type": "Answer", "text": "웰페리온의 한남동 스포츠클럽 멤버십은 정원제로 운영합니다. 서울 용산구 서빙고로 413, 약 3,000평 규모의 단일 공간에서 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 이용합니다. 정원이 찼을 때는 대기 멤버십을 안내하며, 가입 전 투어·상담은 예약제입니다. 문의: wellperion.com/ko/inquiry" } },
-    { "@type": "Question", "name": "용산 프라이빗 멤버십 스포츠클럽을 찾고 있는데, 웰페리온이 해당하나요?", "acceptedAnswer": { "@type": "Answer", "text": "네, 웰페리온이 해당합니다. 저희는 서울 용산구 한남동에 있는 정원제 스포츠클럽으로, 약 3,000평 규모의 단일 공간에서 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영합니다. 투어와 상담은 예약제이며, 대표 전화 02-6261-1200 또는 wellperion.com/ko/inquiry 로 문의해 주세요." } }
-   ]
-  }
- ]
-}
-</script>
-"""
-JSON_LD = JSON_LD.replace("__ONE_LINER__", json.dumps(ONE_LINER, ensure_ascii=False)[1:-1])
+# 구조화 데이터 정본 = 새 홈 파일 하나(3. 웰페리온 가이드/home/index.html)의 JSON-LD 그래프.
+# 종전에는 같은 그래프를 이 파일에도 통째로 베껴 두고 있었다 — 2026-09-09 실측에서 질문이 홈 20개 :
+# 도구 14개로 갈렸고, Organization.description 도 서로 달랐다. 시모가 홈을 고칠 때마다 시토에게
+# "도구에도 옮겨 달라"고 부탁해야 하는 구조 자체가 원인이라 베끼기를 없앴다(시모 배1172 합의).
+#   · 질문답변·시설 정보 = 홈 파일이 정본 (시모가 고친다)
+#   · 회사 한 줄 소개    = ssot/canon_values.json 이 정본 (공식값이라 홈보다 우선한다)
+HOME_HTML_PATH = str(Path.home() / "welperion-automation" / "3. 웰페리온 가이드" / "home" / "index.html")
+MIN_QUESTIONS = 10   # 홈 파일이 깨졌을 때 반쪽 그래프를 라이브에 넣지 않기 위한 바닥값
+
+
+def _build_json_ld() -> str:
+    """새 홈의 JSON-LD 그래프를 그대로 읽어 라이브 주입본을 만든다. 못 읽거나 모양이 어긋나면 예외."""
+    html = open(HOME_HTML_PATH, encoding="utf-8").read()
+    graph = None
+    for block in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S):
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        if isinstance(data, dict) and "@graph" in data:
+            graph = data
+            break
+    if graph is None:
+        raise RuntimeError("새 홈에서 JSON-LD @graph 를 못 찾았다 — %s" % HOME_HTML_PATH)
+
+    types = [n.get("@type") for n in graph["@graph"]]
+    for need in ("Organization", "SportsActivityLocation", "FAQPage"):
+        if need not in types:
+            raise RuntimeError("새 홈 그래프에 %s 가 없다 — 주입 중단" % need)
+    faq = next(n for n in graph["@graph"] if n.get("@type") == "FAQPage")
+    if len(faq.get("mainEntity") or []) < MIN_QUESTIONS:
+        raise RuntimeError("질문이 %d개뿐이다(최소 %d) — 홈 파일이 깨졌는지 먼저 본다"
+                           % (len(faq.get("mainEntity") or []), MIN_QUESTIONS))
+
+    # 회사 한 줄 소개만 공식값으로 덮는다 — 홈 파일에는 짧은 손글씨 소개가 들어 있다(2026-09-09 실측).
+    org = next(n for n in graph["@graph"] if n.get("@type") == "Organization")
+    org["description"] = ONE_LINER
+
+    body = json.dumps(graph, ensure_ascii=False, indent=1)
+    return (
+        "<!-- GEO(생성형 검색 최적화) 구조화 데이터 3종 — 배1000(시토) 2026-09-05,\n"
+        "     정본 = home/index.html 그래프 + ssot/canon_values.json 한 줄 소개."
+        " 여기서 손으로 고치지 않는다. -->\n"
+        '<script type="application/ld+json">\n'
+        + body
+        + "\n</script>\n"
+    )
+
+
+JSON_LD = _build_json_ld()
 
 ROBOTS_TXT = """# 웰페리온 공개 홈 — 사람 검색·AI 검색 모두 허용 (GEO · 배1000 시토 2026-09-05)
 User-agent: *
