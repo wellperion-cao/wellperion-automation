@@ -105,7 +105,31 @@
 
   <h2>이 시스템이 무엇인가</h2>
   <div class="meta">이 ERP는 실행 화면 <b>114장</b> · 자동화 모듈 <b>31개</b> · AI C-Level 역할 <b>8개</b>로 구성된 업무 플랫폼입니다.</div>
-  <p class="lead">업무 홈(<code>/</code>)이 매일 쓰는 화면을 모아 보여준다면, 이 콘솔(<code>/admin/</code>)은 그 화면·자동화·파트너사 설정값을 한자리에서 통제하는 곳입니다. 삼성SDS REAL Summit 2026 발표의 표준·자산·운영 3대축을 그대로 가져와 구성했습니다.</p>
+  <p class="lead">여기서 모듈·권한·비용·가동을 연다. 아래 설명과 표는 이 시스템이 어떻게 짜여 있는지 알아야 할 때만 보면 된다.</p>
+
+  <h3>관리 입구 <span class="n">누르면 그 화면이 열린다</span></h3>
+  <div class="entries">
+    <a class="entry" href="/">
+      <div class="name">모듈 홈</div>
+      <div class="desc">파트너사 직원이 매일 쓰는 화면 114장</div>
+    </a>
+    <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
+      <div class="name">권한관리</div>
+      <div class="desc">누가 이 시스템에 들어올 수 있는지</div>
+    </a>
+    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
+      <div class="name">토큰 사용량</div>
+      <div class="desc">이번 달 AI 비용</div>
+    </a>
+    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
+      <div class="name">자율현황</div>
+      <div class="desc">자동화가 오늘도 돌고 있는지</div>
+    </a>
+    <a class="entry" href="../index.html">
+      <div class="name">다운로드</div>
+      <div class="desc">설치·도구 파일 (ERP 홈 → 다운로드 탭)</div>
+    </a>
+  </div>
 
   <h3>두 겹 구조 <span class="n">파는 회사 / 쓰는 회사</span></h3>
   <p class="lead">이 시스템은 두 겹입니다. 위 겹은 이 ERP를 만들어 파는 회사(플랫폼)이고, 아래 겹은 이 ERP를 가져다 쓰는 회사(파트너사)입니다. 회사가 바뀌어도 그대로 쓰는 뼈대는 플랫폼이 소유하고, 파트너사마다 다른 값(브랜드·용어·조직·채널)은 파트너사 자리에 따로 둡니다. 지금 등록된 파트너사는 웰페리온 1곳(1호)입니다 — 파트너사가 늘면 아래 「파트너사 설정값」 표에 회사별로 줄이 늡니다.</p>
@@ -191,25 +215,6 @@
     </tbody>
   </table></div>
 
-  <h3>관리 입구</h3>
-  <div class="entries">
-    <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
-      <div class="name">권한관리</div>
-      <div class="desc">누가 이 시스템에 들어올 수 있는지</div>
-    </a>
-    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
-      <div class="name">토큰 사용량</div>
-      <div class="desc">이번 달 AI 비용</div>
-    </a>
-    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
-      <div class="name">자율현황</div>
-      <div class="desc">자동화가 오늘도 돌고 있는지</div>
-    </a>
-    <a class="entry" href="../index.html">
-      <div class="name">다운로드</div>
-      <div class="desc">설치·도구 파일 (ERP 홈 → 다운로드 탭)</div>
-    </a>
-  </div>
 
   <div class="foot">숫자는 2026-09-09 기준 실측(erp/modules.json·status/module_registry.json·ssot/kpi.json·status/heartbeats/). 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
 
