@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>상담</title>
+<!--SEO:start 이 블록은 테넌트마다 다르다. 이 파일이 곧 웰페리온 /counsel/ 이라 웰페리온 값이 들어 있고,
+     다캠·고척 사본은 server/deploy_counsel_pages.sh 가 각 tenants/*.json 의 seo 로 갈아 끼운다(값이 없으면 중립문).
+     왜 정적으로 박나: 크롤러는 자바스크립트를 안 돌린다 — botName·greet 를 프로필에서 채우는 것만으로는
+     밖에서 이 페이지가 무엇인지 알 길이 없다(제목이 「상담」 한 낱말이고 본문에 「웰페리온」이 0번 나왔다 · 시모 실측 2026-09-09).-->
+<title>웰페리온 상담 — 한남동 정원제 스포츠클럽 문의</title>
+<meta name="description" content="서울 용산구 한남동 웰페리온. 수영·골프·스쿼시·유소년 체조 강습과 멤버십을 상담원에게 바로 물어보세요. 대표 전화 02-6261-1200.">
+<link rel="canonical" href="https://erp.wellperion.com/counsel/">
+<!--SEO:end-->
 <style>
 /* 색 토큰 = erp/brand/tokens.css 값 그대로 인라인(이 페이지는 로그인 없이 열려 관문 뒤 자산을 못 불러온다) */
 :root{--paper:#F4F0EB;--ink:#221F20;--accent-text:#8F7659;--beige:#B79F8A;--line:rgba(34,31,32,.14);--good:#2E6B3A;--bad:#B3402B}
@@ -33,8 +40,8 @@ footer a{color:var(--accent-text)}
 </style>
 </head><body>
 <div class="wrap">
-<header><h1 id="botName">상담</h1><span class="status"><span class="dot"></span>응답 가능</span></header>
-<div class="greet" id="greet">궁금한 것을 편하게 물어보세요.</div>
+<header><h1 id="botName"><!--H1-->웰페리온에 무엇이든 물어보세요<!--/H1--></h1><span class="status"><span class="dot"></span>응답 가능</span></header>
+<div class="greet" id="greet"><!--GREET-->한남동 정원제 스포츠클럽 · 수영 · 골프 · 스쿼시 · 유소년 체조 · 멤버십<!--/GREET--></div>
 <div class="chips" id="chips"></div>
 <div id="log"></div>
 <form id="askForm"><input id="q" placeholder="궁금한 것을 편하게 물어보세요" autocomplete="off" autofocus required><button type="submit">보내기</button></form>

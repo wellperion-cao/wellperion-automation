@@ -12,8 +12,16 @@ cd "$(dirname "$0")/.."
 PAGE="3. 웰페리온 가이드/counsel/index.html"
 
 $S "sudo mkdir -p /srv/www/3_gocheokgolf && sudo chown ec2-user:ec2-user /srv/www/3_gocheokgolf && mkdir -p /srv/www/2_dietcamp/counsel /srv/www/3_gocheokgolf/counsel"
-$SCP "$PAGE" "$HOST:/srv/www/2_dietcamp/counsel/index.html"
-$SCP "$PAGE" "$HOST:/srv/www/3_gocheokgolf/counsel/index.html"
+# 사본은 템플릿 그대로가 아니라 각 테넌트 머리글로 갈아 끼워 올린다(배1002 AEO · 2026-09-09).
+# 템플릿에 박힌 것은 웰페리온 값이다 — 그대로 올리면 다캠 페이지 제목이 「웰페리온 상담」이 된다.
+# 프로필에 seo 가 없으면 렌더러가 중립문을 넣는다(값이 없을 때 남의 이름을 다는 쪽이 훨씬 나쁘다).
+TMP=$(mktemp -d)
+for t in 2_dietcamp 3_gocheokgolf; do
+  C:/Python314/python.exe server/counselbot/render_counsel_page.py "$PAGE" "server/counselbot/tenants/$t.json" "$TMP/$t.html"
+done
+$SCP "$TMP/2_dietcamp.html" "$HOST:/srv/www/2_dietcamp/counsel/index.html"
+$SCP "$TMP/3_gocheokgolf.html" "$HOST:/srv/www/3_gocheokgolf/counsel/index.html"
+rm -rf "$TMP"
 $SCP server/erp_api/counsel-public.nginx.conf $HOST:/tmp/counsel-public.conf
 $S "sudo mv /tmp/counsel-public.conf /etc/nginx/conf.d/erp-locations/counsel-public.conf \
     && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx"
