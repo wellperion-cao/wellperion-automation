@@ -537,7 +537,10 @@ table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weig
 table.a3l-grid td.a3l-shade{background:#faf7f3!important}
 /* 한 장 = A4 가로 인쇄 영역(210−5×2). 표가 남은 높이를 다 먹어 하단 여백선에 닿는다 —
    장마다 행 높이를 손으로 맞추지 않는다(브라우저가 행에 균등 배분한다 · GM 2026-09-04). */
-.a3l-page{height:190mm;display:flex;flex-direction:column;page-break-after:always;break-after:page}
+/* 한 장 높이 — 인쇄 여백 10mm 를 뺀 자리(190mm)에 딱 맞춰 두었더니 여유가 0 이라, 인쇄 대화상자에서
+   여백·배율이 조금만 달라져도 마지막 줄이 다음 장으로 밀렸다(GM 2026-09-09 "칸이 넘어가는 것 같은데").
+   5mm 를 비워 둔다 — 눈에는 거의 같고, 밀림은 사라진다. */
+.a3l-page{height:185mm;display:flex;flex-direction:column;page-break-after:always;break-after:page}
 .a3l-page:last-child{page-break-after:auto;break-after:auto}
 .a3l-page>table{flex:1 1 auto}
 .a3l-page-cap{font-size:13px;font-weight:800;color:#2a2018;margin:0 0 5px}
@@ -966,7 +969,7 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
   </div>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
-  <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry')">🧺 린넨 관리</button>
+  <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry','ldylock')">🧺 린넨 관리 🔒</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간 지원부 현황·계획·보고</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
@@ -1833,6 +1836,12 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
   .wp-ldy__tbl th,.wp-ldy__tbl td{border:1px solid var(--border);padding:7px 8px;text-align:center}
   .wp-ldy__tbl th{background:var(--paper,#2a2725);font-weight:700;white-space:nowrap}
   .wp-ldy__tbl td.wp-ldy__name{text-align:left;font-weight:650;white-space:nowrap}
+  /* 표 머리 고정 — 패드에서 아래로 내려도 어느 칸인지 보이게 (GM 지시 2026-09-09 "패드로 스크롤 내릴 시
+     항목 헤드값 고정"). 표를 감싼 칸이 가로 스크롤 상자라 세로도 이 상자 안에서 굴린다 — 그래야 머리가
+     상자 위에 붙는다(페이지 스크롤에 맡기면 상자가 스크롤 부모라 sticky 가 안 먹는다). */
+  .wp-ldy__scroll{overflow:auto;max-height:72vh}
+  .wp-ldy__scroll .wp-ldy__tbl thead{position:sticky;top:0;z-index:4}
+  .wp-ldy__scroll .wp-ldy__tbl thead th{background:var(--paper,#2a2725)}
   .wp-ldy__in{width:82px;padding:6px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:right;font-family:inherit}
   .wp-ldy__in:disabled{opacity:.45;cursor:not-allowed}
   /* 월간 출하 그리드(30~31행)만 여백 축소 — 스크롤 절감(GM "스크롤이 너무 길다" 2026-09-01). 다른 표·입력칸은 그대로. */
@@ -1889,55 +1898,11 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
     <!-- ══ 4표 공통 규격(김훈 주임 썸네일 2026-09-04 · "그리드 형식은 디자인의 통일성이 중요") ══
          네 표 모두 같은 틀이다 — 행 = 날짜/월 · 열 = 품목 묶음(품목 원장 순) · 맨 아래 총계 행.
          머리·본문·총계는 wpLdyGridHead / wpLdyGridFoot 한 벌이 그린다(표마다 베끼지 않는다). ══ -->
-    <div id="wpLdyView-sheet">
-      <div class="wp-ldy__h" style="margin-top:4px">📄 월간(일별) 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 하루 한 줄, 입고만</span></div>
-      <div class="wp-ldy__hint">종이(출하표)에 적은 <b>입고</b>(받은 개수)를 옮겨 적습니다. 남·여 사우나 <b>합계</b>입니다. 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
-      <div class="wp-ldy__bar">
-        <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderAll()">
-        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
-        <span id="wpLdySheetState" class="wp-ldy__k"></span>
-        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 가로 4장 — ①월간(일별) ②연간 ③월간 인벤토리 ④린넨 창고. 현장에서 손으로 적는 종이">🖨 린넨 4장 인쇄 (A4)</button>
-        <button class="wp-ldy__btn" onclick="printA4Laundry('en')" title="같은 4장의 영문판 — 제목·머리글·날짜만 영문">🖨 린넨 4장 인쇄 (A4-En)</button>
-        <button class="wp-ldy__btn" onclick="pngA4Laundry('',this)" title="같은 4장을 PNG 파일 4개로 내려받습니다">⬇ PNG 저장</button>
-        <button class="wp-ldy__btn" onclick="pngA4Laundry('en',this)" title="영문판 4장을 PNG 파일 4개로">⬇ PNG 저장 (En)</button>
-      </div>
-      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
-      <div class="wp-ldy__hint" id="wpLdySheetNote"></div>
-    </div>
-
-    <!-- ② 연간(월별) 체크리스트 — 값은 표①의 월 총계가 자동으로 흘러 들어온다(손입력 아님). 비고만 손입력. -->
-    <div id="wpLdyView-year">
-      <div class="wp-ldy__h">📅 연간(월별) 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 1~12월 · 입고는 자동</span></div>
-      <div class="wp-ldy__hint">표 ①의 월 총계가 그대로 올라옵니다. 손으로 적는 칸은 맨 오른쪽 <b>비고</b> 하나뿐입니다.</div>
-      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdyYearTbl"></table></div>
-    </div>
-
-    <!-- ③ 월간 인벤토리 리스트 — 매월 30일, 남·여 사우나에서 「사용 중」 수량을 센다(창고 박스는 표④). -->
-    <div id="wpLdyView-inv">
-      <div class="wp-ldy__h">📋 월간 인벤토리 리스트 <span class="wp-ldy__k" style="font-weight:600">— 매월 30일 진행 · 사용 중 수량</span></div>
-      <div class="wp-ldy__hint">매월 30일, 남 사우나·여 사우나에 <b>나가 있는(사용 중) 수량</b>을 각각 셉니다. 창고 박스는 아래 표 ④입니다.</div>
-      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdyInvTbl"></table></div>
-      <div class="wp-ldy__bar" style="margin-top:8px">
-        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdyInvSave()">저장</button>
-        <span id="wpLdyInvState" class="wp-ldy__k"></span>
-      </div>
-    </div>
-
-    <!-- ④ 린넨 창고 체크리스트 — 매월 30일, 창고에 보관 중인 박스 제품 수량. -->
-    <div id="wpLdyView-wh">
-      <div class="wp-ldy__h">🏬 린넨 창고 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 매월 30일 진행 · 창고 보관 박스</span></div>
-      <div class="wp-ldy__hint">매월 30일, 린넨 창고에 <b>박스로 보관 중인 수량</b>을 셉니다.</div>
-      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdyWhTbl"></table></div>
-      <div class="wp-ldy__bar" style="margin-top:8px">
-        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdyWhSave()">저장</button>
-        <span id="wpLdyWhState" class="wp-ldy__k"></span>
-      </div>
-    </div>
-
     <!-- ══ 📖 린넨 관리 가이드라인 — GM 확정 2026-09-04. 운영 규칙 6줄 + 김훈 주임 에필로그 원문.
          값이 없는 안내 블록이라 마크업 상수다(저장소 없음). 부서장 방 공유는 하지 않는다(GM 결정). ══ -->
     <div id="wpLdyView-guide">
-      <div class="wp-ldy__h">📖 린넨 관리 가이드라인</div>
+      <div class="wp-ldy__h" style="cursor:pointer;margin-top:4px" onclick="wpLdyToggleGuide()">📖 린넨 관리 가이드라인 <span id="wpLdyGuideCaret" class="wp-ldy__k">▾ 펼치기</span></div>
+      <div id="wpLdyGuideBox" style="display:none">
 
       <!-- 🏭 세탁업체 — 연락처는 여기 한 곳만 둔다(협조요청 C). 저장소 없이 마크업 상수. -->
       <div class="wp-ldy__notice" style="align-items:flex-start">
@@ -1970,12 +1935,58 @@ table.a3l-month td.a3l-date .a3l-off{margin-left:4px;font-size:9px;font-weight:8
         <span style="display:block;text-align:right">— 김훈</span>
       </div>
     </div>
+    </div>
     <!-- 「📝 오늘 점검」·「📊 월간 현황」 두 섹션은 삭제(김훈 주임 정리 B · 2026-09-04).
          ▸오늘 점검 = 입고를 ①과 두 곳에 적게 만들었다. 두 곳에 같은 걸 적지 않는다.
          ▸월간 현황 = 카드·표가 전부 일별 마감재고에서 나온 값(사용량·로스·결품 경고)이라 근거가 사라졌다.
          계산 함수(wpLdyUsage·wpLdyMonthStats·wpLdyLowDays·wpLdyLossRising·wpLdyRenderToday·wpLdyRenderMonth)는
          지우지 않았다 — 저장된 옛 daily[].end 데이터와 함께 보존한다. 호출부만 걷었다.
          「＋ 신품 투입 기록」 입력은 ⑤ 품목 원장으로 옮겼다(값이 총 투입 누계로 들어가는 곳). -->
+
+    <div id="wpLdyView-sheet">
+      <div class="wp-ldy__h" style="margin-top:4px">📄 월간(일별) 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 하루 한 줄, 입고만</span></div>
+      <div class="wp-ldy__hint">종이(출하표)에 적은 <b>입고</b>(받은 개수)를 옮겨 적습니다. 남·여 사우나 <b>합계</b>입니다. 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
+      <div class="wp-ldy__bar">
+        <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderAll()">
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
+        <span id="wpLdySheetState" class="wp-ldy__k"></span>
+        <button class="wp-ldy__btn" onclick="printA4Laundry()" title="A4 가로 4장 — ①월간(일별) ②연간 ③월간 인벤토리 ④린넨 창고. 현장에서 손으로 적는 종이">🖨 린넨 4장 인쇄 (A4)</button>
+        <button class="wp-ldy__btn" onclick="printA4Laundry('en')" title="같은 4장의 영문판 — 제목·머리글·날짜만 영문">🖨 린넨 4장 인쇄 (A4-En)</button>
+        <button class="wp-ldy__btn" onclick="pngA4Laundry('',this)" title="같은 4장을 PNG 파일 4개로 내려받습니다">⬇ PNG 저장</button>
+        <button class="wp-ldy__btn" onclick="pngA4Laundry('en',this)" title="영문판 4장을 PNG 파일 4개로">⬇ PNG 저장 (En)</button>
+      </div>
+      <div class="wp-ldy__scroll"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
+      <div class="wp-ldy__hint" id="wpLdySheetNote"></div>
+    </div>
+
+    <!-- ② 연간(월별) 체크리스트 — 값은 표①의 월 총계가 자동으로 흘러 들어온다(손입력 아님). 비고만 손입력. -->
+    <div id="wpLdyView-year">
+      <div class="wp-ldy__h">📅 연간(월별) 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 1~12월 · 입고는 자동</span></div>
+      <div class="wp-ldy__hint">표 ①의 월 총계가 그대로 올라옵니다. 손으로 적는 칸은 맨 오른쪽 <b>비고</b> 하나뿐입니다.</div>
+      <div class="wp-ldy__scroll"><table class="wp-ldy__tbl" id="wpLdyYearTbl"></table></div>
+    </div>
+
+    <!-- ③ 월간 인벤토리 리스트 — 매월 30일, 남·여 사우나에서 「사용 중」 수량을 센다(창고 박스는 표④). -->
+    <div id="wpLdyView-inv">
+      <div class="wp-ldy__h">📋 월간 인벤토리 리스트 <span class="wp-ldy__k" style="font-weight:600">— 매월 30일 진행 · 사용 중 수량</span></div>
+      <div class="wp-ldy__hint">매월 30일, 남 사우나·여 사우나에 <b>나가 있는(사용 중) 수량</b>을 각각 셉니다. 창고 박스는 아래 표 ④입니다.</div>
+      <div class="wp-ldy__scroll"><table class="wp-ldy__tbl" id="wpLdyInvTbl"></table></div>
+      <div class="wp-ldy__bar" style="margin-top:8px">
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdyInvSave()">저장</button>
+        <span id="wpLdyInvState" class="wp-ldy__k"></span>
+      </div>
+    </div>
+
+    <!-- ④ 린넨 창고 체크리스트 — 매월 30일, 창고에 보관 중인 박스 제품 수량. -->
+    <div id="wpLdyView-wh">
+      <div class="wp-ldy__h">🏬 린넨 창고 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 매월 30일 진행 · 창고 보관 박스</span></div>
+      <div class="wp-ldy__hint">매월 30일, 린넨 창고에 <b>박스로 보관 중인 수량</b>을 셉니다.</div>
+      <div class="wp-ldy__scroll"><table class="wp-ldy__tbl" id="wpLdyWhTbl"></table></div>
+      <div class="wp-ldy__bar" style="margin-top:8px">
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdyWhSave()">저장</button>
+        <span id="wpLdyWhState" class="wp-ldy__k"></span>
+      </div>
+    </div>
 
     <!-- ⑤ 품목 원장 — 가끔 손대는 곳이라 접어 둔다. -->
     <div id="wpLdyView-ledger">
@@ -5873,14 +5884,54 @@ document.addEventListener('click', function(){ closeAllDropdowns(); });
 window.addEventListener('scroll', function(){ closeAllDropdowns(); }, true);
 window.addEventListener('resize', function(){ closeAllDropdowns(); });
 
+/* ── 잠긴 탭(점검 남·여 · 린넨 관리)의 10분 무동작 잠금 (GM 지시 2026-09-09) ──
+   비번을 한 번 넣으면 창을 닫을 때까지 열려 있었다. 패드를 현장에 두고 자리를 비우면 아무나 열린 화면을
+   본다. 10분 동안 아무 동작이 없으면 열쇠를 버리고 다시 묻는다.
+   판정 = 마지막 동작 시각 하나(lockSeen)만 본다 — 탭마다 타이머를 두지 않는다. 열려 있는 채로 10분이
+   지나면 그 자리에서 잠긴 탭을 닫고 첫 화면(규정)으로 돌려보낸다. */
+var LOCK_IDLE_MS = 10 * 60 * 1000;
+var LOCK_KEYS = ['checkAuth', 'ldyAuth'];
+var LOCKED_TABS = ['check-m', 'check-f', 'laundry'];
+function lockTouch(){ try{ sessionStorage.setItem('lockSeen', String(Date.now())); }catch(e){} }
+function lockIdleMs(){
+  var t = 0;
+  try{ t = parseInt(sessionStorage.getItem('lockSeen') || '0', 10) || 0; }catch(e){}
+  return t ? (Date.now() - t) : Infinity;
+}
+function lockExpireIfIdle(){
+  if (lockIdleMs() <= LOCK_IDLE_MS) return false;
+  LOCK_KEYS.forEach(function(k){ try{ sessionStorage.removeItem(k); }catch(e){} });
+  return true;
+}
+['click','keydown','input','touchstart','wheel'].forEach(function(ev){
+  document.addEventListener(ev, lockTouch, {passive:true});
+});
+setInterval(function(){
+  if (!lockExpireIfIdle()) return;
+  var open = LOCKED_TABS.filter(function(t){
+    var el = document.getElementById('tab-' + t);
+    return el && !el.classList.contains('hidden');
+  });
+  if (open.length){ lockTouch(); switchTab('policy'); }   /* 열려 있던 잠긴 탭은 닫고 첫 화면으로 */
+}, 30000);
+
 function switchTab(tab, opts){
   // 탭 떠나기 전, 대기 중인 저장 스냅샷을 즉시 전송(떠나는 탭 체크 영속 보장 — 스냅샷이라 레이스 없음). GM 2026-06-12
   try{ flushStagedPush(); }catch(e){}
+  // 10분 무동작이면 잠긴 탭 열쇠를 버린다(GM 지시 2026-09-09) — 아래 두 게이트가 다시 비번을 묻는다.
+  lockExpireIfIdle(); lockTouch();
   // 점검(남)·점검(여) 비밀번호 보호
   if(opts==='lock' && sessionStorage.getItem('checkAuth')!=='1'){
     var pw = prompt('점검 탭 비밀번호를 입력하세요');
     if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return; }
     sessionStorage.setItem('checkAuth','1');
+  }
+  // 🧺 린넨 관리 탭 잠금 — 비밀번호 0909 (GM 지시 2026-09-09). 점검 탭과 같은 방식이되 세션 열쇠는
+  // 따로 둔다(점검 비번을 아는 사람이 린넨까지 자동으로 열리면 잠근 뜻이 없다).
+  if(opts==='ldylock' && sessionStorage.getItem('ldyAuth')!=='1'){
+    var lpw = prompt('린넨 관리 비밀번호를 입력하세요');
+    if(lpw !== '0909'){ if(lpw !== null) alert('비밀번호가 틀립니다.'); return; }
+    sessionStorage.setItem('ldyAuth','1');
   }
   // 매뉴얼(항목 관리) 탭 진입 게이트 — 비번 모르면 매뉴얼 자체를 못 엶. 편집 5함수와 editAuth 세션 공유(통과 시 내부 편집 재입력 없음). 실패·취소 시 DOM 변경 전 return → 직전 탭 그대로. 역롤백=이 if 블록 삭제. [시우 2026-06-26]
   if(tab==='manual' && typeof requireEditAuth==='function' && !requireEditAuth()) return;
@@ -6987,6 +7038,15 @@ function wpLdyToggleLedger(force){
   var open = (force === undefined) ? (box.style.display === 'none') : !!force;
   box.style.display = open ? '' : 'none';
   var c = document.getElementById('wpLdyLedgerCaret');
+  if (c) c.textContent = open ? '▴ 접기' : '▾ 펼치기';
+}
+/* 📖 린넨 관리 가이드라인 접힘 — 맨 위 토글 줄(GM 지시 2026-09-09 "가이드라인은 맨 위로 토글라인으로").
+   품목 원장 토글과 같은 방식이라 새 장치를 만들지 않는다. */
+function wpLdyToggleGuide(force){
+  var box = document.getElementById('wpLdyGuideBox'); if (!box) return;
+  var open = (force === undefined) ? (box.style.display === 'none') : !!force;
+  box.style.display = open ? '' : 'none';
+  var c = document.getElementById('wpLdyGuideCaret');
   if (c) c.textContent = open ? '▴ 접기' : '▾ 펼치기';
 }
 /* 기초재고 입력칸으로 데려간다(옛 서브탭 이동을 대체) */
