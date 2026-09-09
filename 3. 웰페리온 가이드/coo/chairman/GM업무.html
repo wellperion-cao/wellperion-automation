@@ -263,6 +263,8 @@
   .chk-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
   .chk-box .nh{font-size:var(--fs-1);font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
   .chk-box .nh .gm-check-cnt{color:var(--brass);font-weight:700;margin-left:6px;letter-spacing:0;}
+  /* GM 지시 줄(2026-09-09) — 할 일과 같은 체크박스지만 눈에 먼저 들어와야 한다. */
+  .chk-box .nh.gmdir{color:var(--brass);border-left:3px solid var(--brass);padding-left:6px;}
   .chk-box ul{margin:0;padding-left:2px;list-style:none;}
   .chk-box li{font-size:var(--fs-2);line-height:1.55;margin-bottom:3px;}
   .chk-box label{display:flex;gap:6px;align-items:baseline;cursor:pointer;}
@@ -938,9 +940,18 @@
               return '<li><label><input type="checkbox" class="gm-chk" data-obj-id="' + esc(it.id) + '" data-idx="' + t.idx + '"' +
                 (t.checked ? ' checked' : '') + '><span class="cno">' + (ti + 1) + '</span><span class="ctx">' + esc(t.text) + '</span></label></li>';
             }
-            var pendLi = [], doneLi = [];
-            todos.forEach(function (t, ti) { (t.checked ? doneLi : pendLi).push(liOf(t, ti)); });
-            return '<div class="chk-box"><div class="nh">할 일 <span class="gm-check-cnt">' + doneCount + '/' + todos.length + ' 완료</span></div>' +
+            // GM 이 이 화면을 보며 준 지시는 「□ [GM 지시 YYYY-MM-DD] …」 한 줄로 카드에 남는다
+            // (GM 지시 2026-09-09 "GM업무 페이지에서 지시한 내용들도 놓치지않게 체크할 수 있게").
+            // 같은 체크박스이되 할 일 사이에 섞이면 묻히므로 맨 위에 따로 세운다 — 끝난 줄은
+            // 종전대로 「끝난 N개」 안으로 들어간다(별도 보관함을 새로 만들지 않는다).
+            var pendLi = [], doneLi = [], gmLi = [];
+            todos.forEach(function (t, ti) {
+              if (t.checked) { doneLi.push(liOf(t, ti)); return; }
+              (t.text.indexOf('[GM 지시') === 0 ? gmLi : pendLi).push(liOf(t, ti));
+            });
+            return '<div class="chk-box">' +
+              (gmLi.length ? '<div class="nh gmdir">GM 지시 <span class="gm-check-cnt">' + gmLi.length + '건 미확인</span></div><ul>' + gmLi.join('') + '</ul>' : '') +
+              '<div class="nh">할 일 <span class="gm-check-cnt">' + doneCount + '/' + todos.length + ' 완료</span></div>' +
               (pendLi.length ? '<ul>' + pendLi.join('') + '</ul>' : '') +
               (doneLi.length ? '<details class="donechk"><summary>끝난 ' + doneLi.length + '개</summary><ul>' + doneLi.join('') + '</ul></details>' : '') +
               '</div>';

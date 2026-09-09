@@ -357,6 +357,42 @@ def _parse_date_loose(s) -> "datetime.date | None":
         return None
 
 
+GM_CHECK_BOARD_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
+)  # GM업무.html 의 CHECK_GAS 와 같은 보드(약속 L21 — 새 저장소 만들지 않는다)
+GM_CHECK_BOARD_KEY = "GM_TASK_CHECKS"
+
+
+def _check_hash(text: str) -> str:
+    """GM업무.html chkKey() 의 해시를 그대로 옮긴 것 — 같은 줄이 같은 키가 되어야
+    화면에서 누른 체크를 여기서도 읽는다. 순수 djb2 계열, 암호용 아님."""
+    s = re.sub(r"\s+", " ", str(text or "")).strip()
+    h = 0
+    for ch in s:
+        h = (h * 31 + ord(ch)) & 0xFFFFFFFF
+    if h == 0:
+        return "0"
+    out = ""
+    while h:
+        h, r = divmod(h, 36)
+        out = "0123456789abcdefghijklmnopqrstuvwxyz"[r] + out
+    return out
+
+
+def _gm_check_board() -> dict:
+    """GM 이 화면에서 누른 체크 상태 {키: True/False}. 못 읽으면 {}(fail-soft —
+    아침 표 전체를 막지 않는다. 대신 그날은 이미 끈 줄도 한 번 더 뜬다)."""
+    try:
+        url = f"{GM_CHECK_BOARD_URL}?action=board&key={GM_CHECK_BOARD_KEY}"
+        with urllib.request.urlopen(url, timeout=20) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        b = d.get("board") if d.get("ok") else None
+        return b if isinstance(b, dict) else {}
+    except Exception:
+        return {}
+
+
 def scan_due_hygiene() -> list:
     """기한 위생 점검(배732 · 약속 L26⑤). 전사일정(schedule_ssot)·월간운영계획(monthly_ops_plan)·
     회장님 보고 목록 3곳을 읽어 ①기한없음 ②기한넘김 ③체크리스트100%인데 미이관 ④전사일정 담당빈칸
@@ -414,6 +450,34 @@ def scan_due_hygiene() -> list:
                     continue
                 rows.append(("⑧담당없음", f"[{o.get('id')}] {l[:40]}",
                              o.get("owner") or "", "체크 항목에 [담당: …] 표기 없음"))
+
+    # ⑫지시미체크 — GM 지시 2026-09-09 "GM업무 페이지에서 지시한 내용들도 놓치지않게 체크할 수 있게".
+    # GM 이 화면을 보며 준 지시는 그날 코드·보드에만 반영되고 카드에는 흔적이 안 남아, 다음에 화면을
+    # 열면 무엇을 시켰는지 GM 이 기억해내야 했다(2026-09-09 상가 분류 이동·담당 고정 두 건 실측).
+    # 약속: GM 지시는 그 카드 progress_note 에 「□ [GM 지시 YYYY-MM-DD] …」 한 줄로 남긴다 —
+    # 화면의 「할 일」 박스가 그 줄을 그대로 체크박스로 그리므로 GM 이 거기서 끈다.
+    # 여기서는 그 줄 중 아직 안 꺼진 것만 센다. 체크 상태는 두 곳에 있다 —
+    #   ① 카드 원문의 ☑ (AI 가 닫은 것)  ② GM_TASK_CHECKS 보드(GM 이 화면에서 누른 것).
+    # 보드를 안 보면 GM 이 이미 끈 줄을 매일 다시 올린다.
+    board = _gm_check_board()
+    for o in all_objs:
+        if o.get("status") == "완료":
+            continue
+        for ln in (o.get("progress_note") or "").splitlines():
+            t = ln.strip()
+            if not t.startswith("□") or "[GM 지시" not in t:
+                continue
+            text = t[1:].strip()
+            if board.get(f"{o.get('id')}::{_check_hash(text)}") is True:
+                continue
+            m = re.search(r"\[GM 지시\s*(\d{4}-\d{2}-\d{2})", t)
+            days = ""
+            if m:
+                d0 = _parse_date_loose(m.group(1))
+                if d0:
+                    days = f" · {(TODAY - d0).days}일째"
+            rows.append(("⑫지시미체크", f"[{o.get('id')}] {text[:40]}",
+                         o.get("owner") or "", f"GM 지시 미체크{days}"))
 
     sched = read_json(SCHEDULE_SSOT_FILE, {})
     sched_items = sched.get("items") or []
