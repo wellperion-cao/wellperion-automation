@@ -272,7 +272,7 @@ def e2e():
         with urllib.request.urlopen(req, timeout=20) as r:
             resp = json.loads(r.read().decode("utf-8"))
         assert resp.get("ok") and resp.get("mode") == "server", resp
-        steps.append("POST 즉시 ok · mode=server · 접수번호 %s" % resp.get("id"))
+        steps.append("POST 즉시 ok · mode=server · 원장 행번호 %s" % resp.get("logId"))
 
         conn = db.connect()
         row = conn.execute("SELECT id, gas_status, raw_body, pushed_at FROM intake_log WHERE tenant_id='selftest'"

@@ -146,7 +146,22 @@ def _gas_key(action):
 # GAS 라우터가 action 칸이 비었을 때만 내는 답. 본문이 doPost 에 닿았으면 action 은 항상 있다 —
 # 2026-09-09 실측: 모르는 action 을 보내면 GAS 는 「알 수 없는 action: …」이라 답한다(즉 본문을 봤다).
 # 그러니 이 답이 오면 본문이 GAS 에 닿지 않은 것이고, 시트엔 아무것도 안 써졌다 → 다시 보내도 중복이 아니다.
+# ★서버 원본 모드 응답에는 절대 "id" 를 담지 않는다 (2026-09-09 시토 · 실측으로 찾은 자리).
+#   GAS 응답의 id 는 「업무 id·접수번호」이고 서버가 아는 id 는 「write_log 행번호」다 — 전혀 다른 숫자다.
+#   같은 이름으로 돌려주면 화면은 그것을 접수번호라 믿고 그대로 쓴다. 실제로 두 화면이 그렇게 읽고 있었다:
+#     · coo/todo/업무 현황 SSOT — todo_add 응답의 id 로 첨부를 붙인다 → 엉뚱한 업무에 사진이 붙는다
+#     · cpo/member/실무진피드백 — 접수번호로 화면에 찍는다 → 사람에게 틀린 번호를 보여 준다
+#   없는 값을 안 주는 것이 틀린 값을 주는 것보다 낫다. 그래서 logId 라는 다른 이름으로만 준다 —
+#   화면은 undefined 를 받고 그 자리에서 눈에 띄게 멈춘다(조용히 틀리지 않는다).
+#   success 를 ok 와 함께 싣는 이유: 점검 화면 몇 곳이 d.success 만 본다(주차관리부는 그것 하나로 실패 판정).
 BODY_NEVER_ARRIVED = "action 필수"
+
+
+def server_ok(log_id, **extra):
+    """서버 원본 모드 응답을 만드는 단 한 자리. 위 주석대로 'id' 라는 이름은 여기서 절대 안 나온다."""
+    r = {"ok": True, "success": True, "logId": log_id}
+    r.update(extra)
+    return r
 
 
 def body_never_arrived(data):
@@ -223,7 +238,7 @@ def _idem_hit(conn, user, payload):
         return None
     if row["gas_response"]:
         return row["gas_response"] if isinstance(row["gas_response"], dict) else json.loads(row["gas_response"])
-    return {"ok": True, "queued": True, "id": row["id"], "duplicate": True}
+    return server_ok(row["id"], queued=True, duplicate=True)
 
 
 def _schedule_sync(script):
@@ -280,11 +295,11 @@ async def write(request: Request):
              body.decode("utf-8") if server_mode else None)).fetchone()[0]
     if is_test:
         conn.close()
-        return {"ok": True, "test": True, "id": log_id}
+        return server_ok(log_id, test=True)
     if server_mode:
         # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
         conn.close()
-        return {"ok": True, "queued": True, "id": log_id, "mode": "server"}
+        return server_ok(log_id, queued=True, mode="server")
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
         resp = _gas_forward(body, dest)
@@ -388,5 +403,7 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
     _C.row = {"id": 7, "gas_response": None}
+    assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
+    assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
     print("자체점검 통과")

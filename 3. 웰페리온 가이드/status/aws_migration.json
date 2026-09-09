@@ -1,7 +1,7 @@
 {
   "_doc": "AWS 이관 전체 현황 정본(발행루트 안 — 화면이 ../status/ 로 직접 읽는다 · 2026-09-07 17:4x 이전 위치 status/aws_migration.json 폐지). 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
   "updated_at": "2026-09-08T16:37:00+09:00",
-  "updated_at_kst": "2026-09-08 16:37",
+  "updated_at_kst": "2026-09-09 20:40",
   "summary": {
     "progress_pct": 52,
     "origin_switched": "1/10 (종합접수처 09-05)",
@@ -121,5 +121,149 @@
       "note": "배포 삭제 · 호출 0 실측 뒤",
       "updated": "2026-09-07"
     }
-  ]
+  ],
+  "blockers_doc": "서버만 쓰게 끊으면 깨지는 자리 전수 — 화면 코드를 열어 잰 것이다(2026-09-09 시토). 판정 기준 하나: 그 화면이 응답에서 ok 말고 다른 칸을 읽는가. 읽으면 아직 못 끊는다. 「가능」 = 서버가 그 값을 대신 매길 수 있다 / 「불가」 = 구글 쪽에서만 나오는 값(Drive 주소·판번호·비번 검증) / 「판단필요」 = 서버가 채번을 넘겨받아야 하는 것 — GM·시토 결정거리.",
+  "blockers": [
+    {
+      "screen": "업무 현황 SSOT",
+      "action": "todo_upload",
+      "field": "url",
+      "effect": "사진이 본문에 안 박히고 업로드 실패로 뜬다",
+      "can": "불가"
+    },
+    {
+      "screen": "업무 현황 SSOT",
+      "action": "todo_add",
+      "field": "id",
+      "effect": "첨부가 엉뚱한 업무에 붙는다(서버 id 는 뜻이 다른 숫자) — 2026-09-09 서버가 id 이름을 안 쓰게 고쳐 조용한 오염은 막았다",
+      "can": "판단필요"
+    },
+    {
+      "screen": "결재 현황 SSOT",
+      "action": "todo_sign",
+      "field": "next",
+      "effect": "중간 결재인데 「결재 완료」 축하가 뜬다",
+      "can": "가능"
+    },
+    {
+      "screen": "매출지출현황",
+      "action": "add",
+      "field": "no",
+      "effect": "품의번호가 안 나온다(영수증에 적을 번호)",
+      "can": "판단필요"
+    },
+    {
+      "screen": "매출지출현황",
+      "action": "add",
+      "field": "instant",
+      "effect": "최저가 안내 문구가 사라진다(등록은 됨)",
+      "can": "불가"
+    },
+    {
+      "screen": "매출지출현황",
+      "action": "asset_issue",
+      "field": "labels",
+      "effect": "라벨 번호를 못 보여 준다",
+      "can": "판단필요"
+    },
+    {
+      "screen": "매출지출현황",
+      "action": "asset_del",
+      "field": "blocked·deleted",
+      "effect": "부착 라벨 거부 안내가 없고 화면에서 행이 안 지워진다",
+      "can": "판단필요"
+    },
+    {
+      "screen": "전사 일정",
+      "action": "save_schedule",
+      "field": "rev·serverRev·count",
+      "effect": "동시편집 판번호가 안 올라 다음 저장이 전부 막히거나 충돌 감지가 통째로 죽는다",
+      "can": "불가"
+    },
+    {
+      "screen": "주차관리부 체계",
+      "action": "save",
+      "field": "success",
+      "effect": "저장이 되는데 100% 실패로 보인다 — 2026-09-09 서버가 success 를 같이 실어 해결",
+      "can": "가능(끝)"
+    },
+    {
+      "screen": "지원부 체계",
+      "action": "save",
+      "field": "ledgerOk",
+      "effect": "상태동기화 지연 안내가 사라진다(저장 판정엔 무영향)",
+      "can": "가능"
+    },
+    {
+      "screen": "시설부 체계",
+      "action": "fcheck_ranges_save",
+      "field": "count",
+      "effect": "저장 행수 표시가 화면 값으로 대체된다 — 무해",
+      "can": "가능"
+    },
+    {
+      "screen": "리셉션 업무",
+      "action": "append",
+      "field": "newRow",
+      "effect": "토스트가 「기록됨 · undefined행」",
+      "can": "가능"
+    },
+    {
+      "screen": "리셉션 업무",
+      "action": "update",
+      "field": "error(unauthorized·formula_cell)",
+      "effect": "쓰기 비번이 틀려도 저장된 것처럼 보인다",
+      "can": "불가"
+    },
+    {
+      "screen": "리셉션 업무",
+      "action": "update",
+      "field": "before·after·via",
+      "effect": "로컬 수정로그가 빈칸",
+      "can": "불가"
+    },
+    {
+      "screen": "라커관리",
+      "action": "update",
+      "field": "error(unauthorized)",
+      "effect": "틀린 비번이 성공으로 보인다",
+      "can": "불가"
+    },
+    {
+      "screen": "실무진피드백",
+      "action": "staff_feedback_submit",
+      "field": "id",
+      "effect": "접수번호가 안 나오고 사진 첨부 단계를 건너뛴다",
+      "can": "판단필요"
+    },
+    {
+      "screen": "실무진피드백",
+      "action": "staff_feedback_photo",
+      "field": "err",
+      "effect": "실패 사유가 「알 수 없는 오류」",
+      "can": "가능"
+    },
+    {
+      "screen": "멤버십 회원관리",
+      "action": "member_inquiry_* (WriteBuffer)",
+      "field": "saved",
+      "effect": "저장마다 전체 재조회 — 실측 9.1초 느려진다",
+      "can": "판단필요"
+    },
+    {
+      "screen": "멤버십 회원관리",
+      "action": "member_inquiry_* (WriteBuffer)",
+      "field": "error(rowkey-not-found 등 4종)",
+      "effect": "지문 재채번 재시도가 죽어 저장 유실이 조용히 남는다",
+      "can": "불가"
+    },
+    {
+      "screen": "멤버십 회원관리",
+      "action": "lesson_inquiry_add",
+      "field": "error(lesson-add-duplicate)",
+      "effect": "중복 확인 뒤 강제 재전송 흐름이 사라진다",
+      "can": "판단필요"
+    }
+  ],
+  "blockers_free": 22
 }

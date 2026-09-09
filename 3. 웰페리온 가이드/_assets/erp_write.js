@@ -12,6 +12,58 @@
    서버 목적지 판정(api_write._gas_key)과 같은 접두사(todo_ · approval_rep_)를 쓴다 — 한쪽만 늘리면 안 된다. */
 (function (w) {
   var ERP_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+
+  /* ── 시험 비행 (배1183 · 2026-09-09 시토) ─────────────────────────────────────────────────
+     주소에 ?erpenv=beta 를 붙이면 이 화면의 쓰기가 라이브가 아니라 베타 서버로 간다.
+     날고 있는 비행기를 고치지 않고, 같은 화면을 손님 없이 한 번 띄워 보는 자리다.
+       ?erpenv=beta  → /beta/api/write  (자료칸 erp_beta · 원본 스위치 server 하나)
+       ?erpenv=alpha → /alpha/api/write (자료칸 erp_alpha)
+       ?erpenv=off   → 되돌리기(이 탭에서 지운다)
+     ★두 가지를 반드시 지킨다 —
+       ① 시험 환경에서는 GAS 폴백을 막는다. 안 막으면 관문이 한 번 삐끗할 때 그 쓰기가
+          진짜 구글 시트에 들어간다. 손님 없는 비행기의 뜻이 사라진다.
+       ② 화면 위에 빨간 띠를 띄운다. 실무진이 시험 화면을 라이브로 착각하면
+          "저장했는데 안 보인다"가 된다. 눈에 보이게 하는 것이 유일한 방어다.
+     ponytail: 읽기(/api/todo·/api/reception-ops)는 라이브 그대로다 — 시험 목적이
+       「서버만 쓰게 끊었을 때 화면이 깨지나」이고 그건 쓰기 응답으로 갈린다.
+       읽기까지 옮기려면 각 화면의 읽기 주소를 손봐야 하는데 값을 못 한다. */
+  var ENV = (function () {
+    try {
+      var m = /[?&]erpenv=(alpha|beta|off)/.exec(location.search);
+      if (m) {
+        if (m[1] === 'off') { sessionStorage.removeItem('erpEnv'); return ''; }
+        sessionStorage.setItem('erpEnv', m[1]);
+        return m[1];
+      }
+      return sessionStorage.getItem('erpEnv') || '';
+    } catch (e) { return ''; }        /* 시크릿·저장 막힌 브라우저 — 시험 아님으로 본다 */
+  })();
+
+  function gwPath(p) { return ENV ? '/' + ENV + p : p; }
+
+  /* 시험 환경에선 GAS 로 나가는 「쓰기」 길을 막는다 — 폴백이 살아 있으면 빈 비행기가 아니다.
+     ★읽기는 막지 않는다. 이 파일의 관문 함수들은 읽기 액션도 그대로 GAS 로 흘려보내는데,
+       그것까지 막으면 시험 화면이 목록을 못 불러 아예 안 뜬다. 막아야 하는 건 시트를 바꾸는 쓰기다. */
+  function noGas(gas, params, isWrite) {
+    if (!ENV) return gas;
+    return function () {
+      if (isWrite(String((params && params.action) || ''))) {
+        throw new Error('시험 환경(' + ENV + ') — 구글 시트로 나가는 길은 막아 뒀다');
+      }
+      return gas();
+    };
+  }
+
+  if (ENV) {
+    document.addEventListener('DOMContentLoaded', function () {
+      var b = document.createElement('div');
+      b.textContent = '시험 비행 ' + ENV.toUpperCase() + ' — 여기서 저장한 것은 실제 시트에 안 들어갑니다. 되돌리기: 주소에 ?erpenv=off';
+      b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:2147483647;background:#B3402B;color:#fff;' +
+                        'font:700 13px/1.5 system-ui,sans-serif;padding:7px 12px;text-align:center;letter-spacing:-.01em';
+      document.body.appendChild(b);
+      document.body.style.paddingTop = '32px';
+    });
+  }
   // 쓰기만 관문을 탄다. todo_list·todo_scoreboard·todo_categories·ai_list 는 읽기라 제외.
   // notice_save·notice_delete(coo/notice 공지서식) = 같은 GAS 프로젝트에 얹혀 있어 여기 포함(배 1082 · 거울 없음).
   // notice_list(읽기)는 화면이 gasCall 을 직접 부른다 — 관문 대상 아님.
@@ -36,8 +88,9 @@
   }
   function gwPost(path, params) {
     if (path === '/api/write' && params && !params.idem) params.idem = _uuid();
+    var url = gwPath(path);          /* 시험 비행이면 /beta/api/... 로 나간다 */
     var send = function () {
-      return fetch(path, {
+      return fetch(url, {
         method: 'POST', cache: 'no-store',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(params)
@@ -64,7 +117,7 @@
 
   /* 화면이 부르는 것 하나. 읽기·비ERP 도메인·관문 실패는 전부 종전 GAS 로 간다 — 응답 모양 무변경. */
   function erpTodoCall(gasUrl, params) {
-    var gas = function () { return gasCall(gasUrl, params); };
+    var gas = noGas(function () { return gasCall(gasUrl, params); }, params, function (a) { return WRITE.test(a); });
     if (!ERP_ON || !params || !WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
@@ -88,13 +141,13 @@
   var CHECK_WRITE = /^(save|saveBoard|saveItems|snapshot_append|unlock_round|save_insp_memo|save_facility_measure|save_facility_notes|fcheck_ranges_save|vendor_save|save_schedule)$/;
 
   function erpCheckPost(gasUrl, params) {
-    var gas = function () {
+    var gas = noGas(function () {
       return fetch(gasUrl, {
         method: 'POST', redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(params)
       });
-    };
+    }, params, function (a) { return CHECK_WRITE.test(a); });
     if (!ERP_ON || !params || !CHECK_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -129,12 +182,12 @@
   var PROC_WRITE = /^(add|delete|status|photo|asset_(update|label|issue|del))$/;
 
   function erpProcCall(gasUrl, params) {
-    var gas = function () {
+    var gas = noGas(function () {
       return fetch(gasUrl, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(params)
       }).then(function (r) { return r.json(); });
-    };
+    }, params, function (a) { return PROC_WRITE.test(a); });
     if (!ERP_ON || !params || !PROC_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
@@ -159,13 +212,13 @@
   var RC_WRITE = /^(update|append)$/;
 
   function erpRcPost(gasUrl, payload) {
-    var gas = function () {
+    var gas = noGas(function () {
       return fetch(gasUrl, {
         method: 'POST', redirect: 'follow', credentials: 'omit', cache: 'no-store',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-    };
+    }, payload, function (a) { return RC_WRITE.test(a); });
     if (!ERP_ON || !payload || !(payload.tab || payload.db)) return gas();
     var isWrite = RC_WRITE.test(String(payload.action || ''));
     var fail = function () { return { via: 'gas', stale: null }; };   // 관문을 못 씀 — 종전 경로로
@@ -201,13 +254,13 @@
   var FUNNEL_WRITE = /^(ohnutti_status_update|staff_feedback_submit|staff_feedback_photo)$/;   // 사진은 서버가 INSTRUCTOR_GAS_URL 로 넘긴다(2026-09-05)
 
   function erpFunnelCall(gasUrl, params) {
-    var gas = function () {
+    var gas = noGas(function () {
       return fetch(gasUrl, {
         method: 'POST', redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(params)
       }).then(function (r) { return r.json(); });
-    };
+    }, params, function (a) { return FUNNEL_WRITE.test(a); });
     if (!ERP_ON || !params || !FUNNEL_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })

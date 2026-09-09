@@ -58,6 +58,12 @@ td.area{white-space:nowrap;font-weight:700;}
   table{font-size:12px;}
 }
 @page{size:A3 landscape;margin:10mm;}
+  /* 서버 대신 매길 수 있나 — 네 갈래 (초록=끝 · 파랑=가능 · 회색=불가 · 노랑=판단필요) */
+  .st-done{background:#DFF0E3;color:#2E6B3A}
+  .st-go{background:#E3ECF7;color:#2C4A73}
+  .st-no{background:#ECEAE7;color:#6B645C}
+  .st-ask{background:#F7EFDC;color:#8A6A22}
+  td code{font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:rgba(0,0,0,.05);padding:1px 4px;border-radius:3px}
 </style>
 </head>
 <body>
@@ -84,6 +90,21 @@ td.area{white-space:nowrap;font-weight:700;}
         <tbody id="rowsBody"><tr><td colspan="8" class="dim">불러오는 중…</td></tr></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- 서버만 쓰게 끊으면 깨지는 자리 — 희만이 조언(의존 항목을 다 적고 서버에 1:1 로 옮긴다)대로 잰 것이다.
+       숫자는 status/aws_migration.json 의 blockers 가 정본이고, 이 화면은 그리기만 한다. -->
+  <div class="card">
+    <div class="card-title">서버만 쓰게 끊으면 깨지는 자리<span class="stag" id="blkTag">화면 코드를 열어 잰 것 · 불러오는 중…</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>화면</th><th>동작</th><th>읽는 응답 칸</th><th>없으면 어떻게 되나</th><th>서버가 대신 매길 수 있나</th>
+        </tr></thead>
+        <tbody id="blkBody"><tr><td colspan="5" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="foot" id="blkDoc"></div>
   </div>
 
   <div class="foot">실무진이 보는 변화는 전부 없음(09-07 일정표)</div>
@@ -242,6 +263,27 @@ function fail(msg){
   document.getElementById('rowsBody').innerHTML = '<tr><td colspan="8" class="err">원천을 못 읽음</td></tr>';
 }
 
+function renderBlockers(d){
+  var rows = d.blockers || [];
+  var body = document.getElementById('blkBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="5" class="dim">등록된 항목이 없습니다.</td></tr>'; return; }
+  body.innerHTML = rows.map(function(r){
+    var can = String(r.can || '');
+    var cls = can.indexOf('끝') >= 0 ? 'st-done' : (can === '가능' ? 'st-go' : (can === '불가' ? 'st-no' : 'st-ask'));
+    return '<tr>' +
+      '<td class="area">' + esc(r.screen) + '</td>' +
+      '<td>' + esc(r.action) + '</td>' +
+      '<td><code>' + esc(r.field) + '</code></td>' +
+      '<td>' + esc(r.effect) + '</td>' +
+      '<td><span class="st ' + cls + '">' + esc(can) + '</span></td>' +
+    '</tr>';
+  }).join('');
+  var free = d.blockers_free;
+  document.getElementById('blkTag').textContent =
+    '막힌 자리 ' + rows.length + '곳' + (free ? ' · 지금 당장 끊어도 되는 화면 ' + free + '곳' : '');
+  document.getElementById('blkDoc').textContent = d.blockers_doc || '';
+}
+
 function loadSeed(){
   try{
     var el = document.getElementById('seed');
@@ -253,10 +295,10 @@ function loadSeed(){
 
 fetch('../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
   .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
-  .then(render)
+  .then(function(d){ render(d); renderBlockers(d); })
   .catch(function(){
     var seed = loadSeed();
-    if(seed){ render(seed); }
+    if(seed){ render(seed); renderBlockers(seed); }
     else { fail('원천을 못 읽음'); }
   });
 </script>
