@@ -422,6 +422,20 @@ def scan_due_hygiene() -> list:
             rows.append(("④전사일정담당빈칸", f"[{it.get('id')}] {(it.get('name') or '')[:30]}",
                          it.get("dept") or "", "assignee 미기재"))
 
+    # ⑪반복멈춤 — GM 지시 2026-09-09 「화분이 시들어간다 · 다신 안 나오게 체크도 해줘」.
+    # 정기로 돌기로 한 일이 조용히 멈추면 아무도 모른다. 화분(격주)·대청소(매주) 같은
+    # repeat 일정은 ⑩완료짝 판정에서 통째로 제외돼 있어(원래 여러 번 도니까) 기한을 넘겨도
+    # 어느 표에도 안 걸렸다. repeat 가 박힌 것만 본다 — cycle="1회" 같은 지난 1회성 일정은
+    # 대상이 아니다(전사일정 기한 넘김 전체는 94건이라 얹으면 표가 죽는다).
+    for it in sched_items:
+        if not str(it.get("repeat") or "").strip():
+            continue
+        due = _parse_date_loose(it.get("next_due"))
+        done = _parse_date_loose(it.get("last_done"))
+        if due and due < TODAY and not (done and done >= due):
+            rows.append(("⑪반복멈춤", f"[{it.get('id')}] {(it.get('name') or '')[:30]}",
+                         it.get("assignee") or "", f"{it.get('repeat')} · {it.get('next_due')} 지남·완료 기록 없음"))
+
     # ⑨ 닮은제목 — GM 지시 2026-09-07 "전사일정에 중복되는 것들이 보이는데 한번씩 정리해줘"
     # (오늘 9쌍 손 병합 실측). 카톡 다리(ops_daily_digest._schedule_is_dup)와 같은 규칙을 재사용
     # — 새 판정 로직을 만들지 않는다. import 순환을 피해 여기서 지연 임포트한다.
