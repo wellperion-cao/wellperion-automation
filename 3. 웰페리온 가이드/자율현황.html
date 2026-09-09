@@ -7,44 +7,44 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤖%3C/text%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#221F20; --paper:#2a2725; --surface:#1a1817;
-    --text:#f5f2ef; --text-soft:#d4d0cc; --dim:#8c8b83;
-    --accent:#7C3AED; --accent-soft:#a875f5;
-    --gold:#f0c674; --green:#6abf7b; --blue:#7ac4f0; --pink:#e88ac0; --teal:#4fc4b0;
-    --border:#3d3835; --border-strong:#4d4845;
+    --bg:#F2EFEB; --paper:#F4F1EE; --surface:#F1ECE8;
+    --text:#23211F; --text-soft:#3B3734; --dim:#6B655F;
+    --accent:#43207E; --accent-soft:#46207E;
+    --gold:#7E5F20; --green:#2F6F3C; --blue:#205B7E; --pink:#7E2056; --teal:#277769;
+    --border:#D5CCC3; --border-strong:#CFC5BA;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 16px 40px;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:var(--fs-2); -webkit-font-smoothing:antialiased; padding:18px 16px 40px;}
   .wrap{max-width:100%; margin:0;}
 
   header.page-head{margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px;}
-  header.page-head h1{font-size:22px; font-weight:800; letter-spacing:-0.02em;}
-  header.page-head .sub{font-size:12px; color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
-  header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
+  header.page-head h1{font-size:var(--fs-5); font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .sub{font-size:var(--fs-2); color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
+  header.page-head .back{font-size:var(--fs-2); color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
-  h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
-  .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
+  h2.sec{font-size:var(--fs-3); font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
+  .sec-note{font-size:var(--fs-1); color:var(--dim); margin-bottom:10px; line-height:1.45;}
   /* 채널 로고(인라인 SVG) — 이모지 대신 실제 카카오톡·텔레그램 로고. AI운영한장.html 과 같은 규격. */
   .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 4px 0 0; flex:none;}
   /* 알림 한 장 상태칸(GM 지적 2026-08-01) — 상태 밑 설명을 접어 한 줄만 보인다.
      그 설명이 최대 302자라 좁은 칸에서 글벽이 되어 줄 높이를 밀고 있었다.
      (상태 라벨 자체의 nowrap 은 아래 .statchip 규칙에 이미 있다 — 중복으로 두지 않는다.) */
-  .statnote{font-size:10.5px; color:var(--dim); margin-top:3px; line-height:1.35;}
+  .statnote{font-size:var(--fs-1); color:var(--dim); margin-top:3px; line-height:1.35;}
   .statnote .cellmore summary{cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   /* 표 칸 — 요약만 보이고 전문은 펼쳐보기(글벽 방지 · 정보 손실 0 · 2026-07-24) */
   .cellmore{max-width:520px;}
   .cellmore>summary{cursor:pointer; list-style:none; word-break:keep-all; overflow-wrap:anywhere; line-height:1.55;}
   .cellmore>summary::-webkit-details-marker{display:none;}
-  .cellmore>summary::after{content:' 펼쳐보기'; font-size:11px; font-weight:700; color:var(--accent-soft); white-space:nowrap;}
+  .cellmore>summary::after{content:' 펼쳐보기'; font-size:var(--fs-1); font-weight:700; color:var(--accent-soft); white-space:nowrap;}
   .cellmore[open]>summary::after{content:' 접기';}
   .cellfull{margin-top:7px; padding-top:7px; border-top:1px dashed var(--border); color:var(--text-soft); line-height:1.65; word-break:keep-all; overflow-wrap:anywhere;}
 
   /* ── 정직 프레이밍 노트: 자율=제안·감시 위주 현상태 명시(배237) ── */
   .honest-note{display:flex; gap:9px; align-items:flex-start; margin:2px 0 18px; padding:10px 13px; border:1px solid var(--border-strong); border-left:3px solid var(--dim); border-radius:9px; background:var(--surface);}
-  .honest-note .hn-ico{font-size:14px; line-height:1.4; opacity:0.8;}
-  .honest-note .hn-txt{font-size:11.5px; color:var(--dim); line-height:1.55;}
+  .honest-note .hn-ico{font-size:var(--fs-3); line-height:1.4; opacity:0.8;}
+  .honest-note .hn-txt{font-size:var(--fs-1); color:var(--dim); line-height:1.55;}
   .honest-note .hn-txt b{color:var(--text-soft); font-weight:700;}
 
   /* ── ① 자율로 한 일 레이어 ── */
@@ -54,100 +54,100 @@
   .routines{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:11px;}
   .rcard{position:relative; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--rc,var(--accent)); border-radius:11px; padding:12px 14px 13px; min-width:0;}
   .rcard-top{display:flex; align-items:flex-start; gap:9px; margin-bottom:8px;}
-  .rcard-ico{font-size:22px; line-height:1; flex-shrink:0;}
+  .rcard-ico{font-size:var(--fs-5); line-height:1; flex-shrink:0;}
   .rcard-tt{flex:1; min-width:0;}
-  .rcard-nm{font-size:13.5px; font-weight:700; letter-spacing:-0.01em; line-height:1.35;}
-  .rcard-cy{font-size:10.5px; color:var(--dim); margin-top:2px;}
+  .rcard-nm{font-size:var(--fs-3); font-weight:700; letter-spacing:-0.01em; line-height:1.35;}
+  .rcard-cy{font-size:var(--fs-1); color:var(--dim); margin-top:2px;}
   .rcard-meta{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px;}
   .rcard-meta .rcard-cy{margin-top:0;}
-  .pill{flex-shrink:0; font-size:10px; font-weight:800; border-radius:20px; padding:3px 9px; white-space:nowrap; letter-spacing:0.02em;}
-  .pill.on{color:#0c1a10; background:var(--green);}
+  .pill{flex-shrink:0; font-size:var(--fs-1); font-weight:800; border-radius:20px; padding:3px 9px; white-space:nowrap; letter-spacing:0.02em;}
+  .pill.on{color:#FFFFFF; background:var(--green);}
   .pill.idle{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .pill.na{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.30);}
-  .pill.warn{color:#2a2004; background:var(--gold);}
-  .rrow{display:flex; gap:6px; font-size:11.5px; line-height:1.5; padding:2px 0; border-top:1px dashed var(--border); margin-top:2px;}
+  .pill.warn{color:#FFFFFF; background:var(--gold);}
+  .rrow{display:flex; gap:6px; font-size:var(--fs-1); line-height:1.5; padding:2px 0; border-top:1px dashed var(--border); margin-top:2px;}
   .rrow:first-of-type{border-top:none;}
   .rrow .rk{color:var(--dim); min-width:56px; flex-shrink:0;}
   .rrow .rv{color:var(--text-soft); flex:1; min-width:0; word-break:keep-all; overflow-wrap:break-word;}
   .rrow .rv b{color:var(--text);}
 
-  .feed-status{padding:16px 14px; font-size:12px; color:var(--dim); text-align:center;}
+  .feed-status{padding:16px 14px; font-size:var(--fs-2); color:var(--dim); text-align:center;}
 
   /* ── 👥 시포 자율 회원관리·📣 시모 자율 마케팅 전용 스타일(.cmo-loop·.cpo-live-strip 등)
      삭제 — GM 승인 자율현황 5섹션 정리(2026-08-15). 해당 섹션 HTML과 함께 걷음. ── */
 
   /* ── 🔧 시우 실무 3층 v2(배포 배): 라이브 지표 + 실무역할·개선SOP 접기(신규 최소·details 재사용) ── */
   .coo-tier{margin-top:14px;}
-  .coo-tier-h{font-size:12.5px; font-weight:800; color:var(--text-soft); margin:0 0 6px; display:flex; align-items:center; gap:6px;}
-  .coo-tier-h .tier-badge{font-size:9.5px; font-weight:800; color:#0c1a10; background:var(--green); border-radius:8px; padding:1px 7px;}
+  .coo-tier-h{font-size:var(--fs-2); font-weight:800; color:var(--text-soft); margin:0 0 6px; display:flex; align-items:center; gap:6px;}
+  .coo-tier-h .tier-badge{font-size:var(--fs-1); font-weight:800; color:#FFFFFF; background:var(--green); border-radius:8px; padding:1px 7px;}
   details.coo-details{margin-top:10px; border:1px solid var(--border-strong); border-radius:10px; padding:9px 13px 12px; background:var(--paper);}
-  details.coo-details summary{cursor:pointer; list-style:none; font-size:12.5px; font-weight:700; color:var(--text-soft);}
+  details.coo-details summary{cursor:pointer; list-style:none; font-size:var(--fs-2); font-weight:700; color:var(--text-soft);}
   details.coo-details summary::-webkit-details-marker{display:none;}
   details.coo-details summary::before{content:'▸'; display:inline-block; margin-right:6px; color:var(--dim); transition:transform .15s;}
   details.coo-details[open] summary::before{transform:rotate(90deg);}
   details.coo-details .coo-tbl-wrap{overflow-x:auto; max-width:100%; margin-top:9px;}
-  details.coo-details table{border-collapse:collapse; width:100%; min-width:480px; font-size:12px; background:var(--surface); border-radius:8px; overflow:hidden;}
+  details.coo-details table{border-collapse:collapse; width:100%; min-width:480px; font-size:var(--fs-2); background:var(--surface); border-radius:8px; overflow:hidden;}
   details.coo-details th, details.coo-details td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
-  details.coo-details th{background:var(--paper); font-weight:700; color:var(--text); font-size:11px;}
+  details.coo-details th{background:var(--paper); font-weight:700; color:var(--text); font-size:var(--fs-1);}
   .coo-flow{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:9px;}
-  .coo-flow-step{font-size:11px; font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 9px; background:var(--surface); white-space:nowrap;}
-  .coo-flow-arrow{color:var(--dim); font-size:12px;}
-  .coo-tag{display:inline-block; font-size:9.5px; font-weight:700; border-radius:8px; padding:1px 7px; margin-left:5px; vertical-align:1px;}
+  .coo-flow-step{font-size:var(--fs-1); font-weight:700; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:8px; padding:5px 9px; background:var(--surface); white-space:nowrap;}
+  .coo-flow-arrow{color:var(--dim); font-size:var(--fs-2);}
+  .coo-tag{display:inline-block; font-size:var(--fs-1); font-weight:700; border-radius:8px; padding:1px 7px; margin-left:5px; vertical-align:1px;}
   .coo-tag.wait{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
 
   /* ── 🚢 진행·정박 미션 표뷰(카드 나열 → 표 전환 · GM 지시 2026-07-22) ── */
   .gtbl-wrap{overflow-x:auto; max-width:100%; margin:2px 0 4px;}
-  .gtbl{border-collapse:collapse; width:100%; min-width:520px; font-size:12.5px; background:var(--surface); border-radius:8px; overflow:hidden;}
+  .gtbl{border-collapse:collapse; width:100%; min-width:520px; font-size:var(--fs-2); background:var(--surface); border-radius:8px; overflow:hidden;}
   .gtbl th, .gtbl td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top; color:var(--text-soft);}
-  .gtbl th{background:var(--paper); font-weight:700; color:var(--text); font-size:11.5px;}
+  .gtbl th{background:var(--paper); font-weight:700; color:var(--text); font-size:var(--fs-1);}
   .gtbl tr:hover td{background:rgba(124,58,237,0.07);}
   .gtbl td strong{color:var(--text);}
 
-  footer.foot{margin-top:22px; font-size:10.5px; color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
+  footer.foot{margin-top:22px; font-size:var(--fs-1); color:var(--dim); border-top:1px solid var(--border); padding-top:11px; line-height:1.6;}
   footer.foot b{color:var(--text-soft);}
-  code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
+  code{background:rgba(34,31,32,0.07); color:#40207E; border-radius:4px; padding:1px 5px; font-size:var(--fs-1);}
 
 
   /* ── ② 돌아가는 자동화 (구 T2 위젯 이식 · 배237 · 2026-07-03) ── */
   .autopanel{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:14px 18px; margin:8px 0 18px;}
   .autopanel.health{border-left-color:var(--green);}
-  .autopanel-headline{font-size:15px; font-weight:800; margin:6px 0 12px;}
+  .autopanel-headline{font-size:var(--fs-3); font-weight:800; margin:6px 0 12px;}
   .autopanel-headline.health{color:var(--green);}
-  .autopanel-body{font-size:13px; margin-bottom:8px;}
-  .autopanel-time{font-size:11px; color:var(--dim); margin-top:8px;}
+  .autopanel-body{font-size:var(--fs-2); margin-bottom:8px;}
+  .autopanel-time{font-size:var(--fs-1); color:var(--dim); margin-top:8px;}
 
-  .statchip{display:inline-block; font-size:12px; font-weight:700; border-radius:12px; padding:2px 9px; white-space:nowrap;}
-  .statchip.ok{color:#0c1a10; background:var(--green);}
-  .statchip.bad{color:#2a0e0c; background:#e2695f;}
+  .statchip{display:inline-block; font-size:var(--fs-2); font-weight:700; border-radius:12px; padding:2px 9px; white-space:nowrap;}
+  .statchip.ok{color:#FFFFFF; background:var(--green);}
+  .statchip.bad{color:#201F1D; background:#F5E6E5;}
   .statchip.idle{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
-  .statchip.warn{color:#2a2004; background:var(--gold);}
+  .statchip.warn{color:#FFFFFF; background:var(--gold);}
   .statchip.static{color:var(--dim); background:transparent; border:1px dashed var(--border-strong); font-weight:700;}
-  .statchip.dead{color:#c9c6c1; background:#3a3735; border:1px solid #55504c;}
+  .statchip.dead{color:#423E3B; background:#F7F5F3; border:1px solid #CCC1B6;}
 
   /* ── 채널 인라인 SVG 로고 (일 흐름 시각표에서 이식 · 2026-07-15) + 방 이름 라벨 ── */
   /* ── 📨 알림 한 장 필터 (배1307 · 2026-07-20 신설 · 배10437 · 2026-07-31 방 축 통합 ·
      2026-09-05 단순화 — GM "너무 방대해졌는데 단순화도 같이": 방·담당 필터·드리프트 배너 걷고
      토글 1개+검색 1칸으로 합쳤다. 문제 행은 .notify-problem-line 한 벌로 흡수) ── */
   .notify-filters{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:0 0 10px;}
-  .nf-btn{font-size:11.5px; font-weight:700; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; cursor:pointer; white-space:nowrap;}
+  .nf-btn{font-size:var(--fs-1); font-weight:700; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; cursor:pointer; white-space:nowrap;}
   .nf-btn:hover{border-color:var(--accent-soft);}
   .nf-btn.active{color:#1a1330; background:var(--accent-soft); border-color:var(--accent-soft);}
-  .nf-btn.nf-problem.active{color:#2a0e0c; background:#e2695f; border-color:#e2695f;}
-  .nf-search{font-size:11.5px; color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; min-width:150px;}
-  .notify-problem-line{padding:8px 13px; margin:0 0 8px; border:1px solid rgba(226,105,95,0.4); border-left:3px solid #e2695f; border-radius:9px; background:rgba(226,105,95,0.08); font-size:12px; color:var(--text-soft); line-height:1.55;}
-  .notify-problem-line b{color:#ff8a80;}
+  .nf-btn.nf-problem.active{color:#201F1D; background:#F5E6E5; border-color:#e2695f;}
+  .nf-search{font-size:var(--fs-1); color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; min-width:150px;}
+  .notify-problem-line{padding:8px 13px; margin:0 0 8px; border:1px solid rgba(226,105,95,0.4); border-left:3px solid #e2695f; border-radius:9px; background:rgba(226,105,95,0.08); font-size:var(--fs-2); color:var(--text-soft); line-height:1.55;}
+  .notify-problem-line b{color:#7E2720;}
 
   /* ── 🗂 접기 상자 공용(기본 접힘 · 2026-07-15 · 「배 정리·보관함」이 사용) ── */
   details.hist-fold{margin:16px 0 6px;}
-  details.hist-fold > summary{cursor:pointer; list-style:none; font-size:15px; font-weight:700; color:var(--text); padding:6px 0; display:flex; align-items:baseline; gap:7px;}
+  details.hist-fold > summary{cursor:pointer; list-style:none; font-size:var(--fs-3); font-weight:700; color:var(--text); padding:6px 0; display:flex; align-items:baseline; gap:7px;}
   details.hist-fold > summary::-webkit-details-marker{display:none;}
   details.hist-fold > summary::before{content:'▸'; color:var(--dim); font-weight:400;}
   details.hist-fold[open] > summary::before{content:'▾';}
-  details.hist-fold > summary .hist-sub{font-size:11px; font-weight:400; color:var(--dim);}
+  details.hist-fold > summary .hist-sub{font-size:var(--fs-1); font-weight:400; color:var(--dim);}
 
   @media (max-width:560px){
-    body{padding:14px 12px 36px; font-size:12.5px;}
-    header.page-head h1{font-size:19px;}
+    body{padding:14px 12px 36px; font-size:var(--fs-2);}
+    header.page-head h1{font-size:var(--fs-4);}
     .routines{grid-template-columns:1fr;}
   }
 
@@ -160,7 +160,7 @@
     word-break:keep-all;            /* 낱말 중간에서 끊기지 않게(GM 2026-07-22 '글 끊김 금지') */
   }
   td.cellclamp::after{
-    content:'⌄ 더보기'; display:block; font-size:10px; color:var(--dim); margin-top:2px;
+    content:'⌄ 더보기'; display:block; font-size:var(--fs-1); color:var(--dim); margin-top:2px;
   }
   td.cellclamp-open{ -webkit-line-clamp:unset; overflow:visible; }
   td.cellclamp-open::after{ content:'⌃ 접기'; }
@@ -170,11 +170,12 @@
    실무진·GM 이 화면을 열었을 때 물어볼 상대가 바로 보이게 하는 것이 목적이다. */
 .ai-owner{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
   margin-left:10px;padding:3px 9px;border-radius:100px;
-  font-size:11.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
-  background:rgba(143,112,41,.12);color:#8F7029;border:1px solid rgba(143,112,41,.35);}
-@media print{ .ai-owner{border-color:#999;color:#555;background:none;} }
+  font-size:var(--fs-1);font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  background:rgba(143,112,41,.12);color:#7B6023;border:1px solid rgba(143,112,41,.35);}
+@media print{ .ai-owner{border-color:#B2A190;color:#6B655F;background:none;} }
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
+<link rel="stylesheet" href="assets/wp-ui.css">
 </head>
 <body>
 <div class="wrap">
@@ -192,24 +193,24 @@
        G1 의 🌟 자리는 「GM 개인 북극성」으로 비워 두고, 전사 비전(=AI 배가 향하는 목적지)과
        공용 항해 범례 정본은 여기 한 벌만 둔다. G1 에는 링크 한 줄만 남긴다(두 벌 금지). ══ -->
     <!-- ══ 🌟 북극성 — 우리가 가는 곳 (비전·목적지 정의 본체 · 홈→G1 이관 단일 배치 · 웰리·GM 2026-06-12) ══ -->
-    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
+    <div style="background:linear-gradient(135deg,#F3F0EC 0%,#E9E8F3 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-size:22px;">🌟</span>
-        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:-0.01em;">북극성 — 우리가 가는 곳</span>
+        <span style="font-size:var(--fs-5);">🌟</span>
+        <span style="color:#201F1D;font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;">북극성 — 우리가 가는 곳</span>
       </div>
-      <p style="color:#e7e1f5;font-size:15px;font-weight:700;line-height:1.55;margin:0 0 12px;">웰페리온 ERP를 정말 잘 만들어, <span style="color:#cbb6f0;">모든 스포츠클럽이 이 ERP로 운영되게 한다.</span></p>
-      <p style="color:#cfc7e8;font-size:13px;line-height:1.75;margin:0;">운영의 잡무는 시스템이 책임집니다. 그래서 사람은 <strong style="color:#fff;">사람을 키우는 일</strong> — 회원의 <strong style="color:#fff;">정신적·육체적 성장</strong>이라는 본질에 몰입합니다. 그렇게 <strong style="color:#cbb6f0;">성장이 지속되는 비즈니스 생태계</strong>를 만듭니다.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
-        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
-        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
+      <p style="color:#282624;font-size:var(--fs-3);font-weight:700;line-height:1.55;margin:0 0 12px;">웰페리온 ERP를 정말 잘 만들어, <span style="color:#42207E;">모든 스포츠클럽이 이 ERP로 운영되게 한다.</span></p>
+      <p style="color:#3E2E70;font-size:var(--fs-2);line-height:1.75;margin:0;">운영의 잡무는 시스템이 책임집니다. 그래서 사람은 <strong style="color:#201F1D;">사람을 키우는 일</strong> — 회원의 <strong style="color:#201F1D;">정신적·육체적 성장</strong>이라는 본질에 몰입합니다. 그렇게 <strong style="color:#42207E;">성장이 지속되는 비즈니스 생태계</strong>를 만듭니다.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(34,31,32,0.10);">
+        <span style="font-size:var(--fs-1);font-weight:600;color:#42207E;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
+        <span style="font-size:var(--fs-1);color:#6B655F;align-self:center;">→</span>
+        <span style="font-size:var(--fs-1);font-weight:600;color:#42207E;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
+        <span style="font-size:var(--fs-1);color:#6B655F;align-self:center;">→</span>
+        <span style="font-size:var(--fs-1);font-weight:600;color:#42207E;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
       </div>
-      <p style="color:#cfc7e8;font-size:12px;margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
+      <p style="color:#3E2E70;font-size:var(--fs-2);margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
       <!-- ══ 🌊 자동화 → 자율화 — 별도 섹션이었던 것을 북극성 블록 안으로 흡수(GM 지시 2026-08-15 "북극성 아래에 자동화 → 자율화 병합"). 제목 한 겹(h2)만 없앴다, 문구는 그대로. ══ -->
-      <p style="color:#cfc7e8;font-size:12px;margin:6px 0 0;">🌊 <b style="color:#fff;">자동화 → 자율화</b>: <b style="color:#fff;">자동화</b>=정시 스크립트 · <b style="color:#fff;">자율화</b>=AI가 포착·판단·처리, 사람은 방향·결재.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#8ca6d6;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span></div>
+      <p style="color:#3E2E70;font-size:var(--fs-2);margin:6px 0 0;">🌊 <b style="color:#201F1D;">자동화 → 자율화</b>: <b style="color:#201F1D;">자동화</b>=정시 스크립트 · <b style="color:#201F1D;">자율화</b>=AI가 포착·판단·처리, 사람은 방향·결재.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:var(--fs-1);color:#6B655F;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(34,31,32,0.08);"><span>🌟 <strong style="color:#42207E;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#2A4474;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span></div>
     </div>
     <!-- ══ /북극성 ══ -->
 
@@ -220,14 +221,14 @@
        방 필터·담당 필터·드리프트 배너를 걷고 토글 1개+검색 1칸으로 합쳤다. 컨테이너 id·렌더 함수
        이름은 최대한 유지(다른 화면 참조 없음 확인). ══ -->
   <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 <span style="font-size:12px;font-weight:400;color:var(--dim);">(카톡·텔레그램 발신 전체)</span></h2>
+    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">(카톡·텔레그램 발신 전체)</span></h2>
     <div id="alert-board-summary" class="sec-note" style="margin:0 0 6px;font-weight:700;">불러오는 중…</div>
     <!-- 🌅🌙 하루 양끝(시작/마무리) 카톡↔텔레그램 동기화 소표 — GM 지시 2026-09-05.
          bookend:'start'|'end' 태그 붙은 등록부 항목만 골라 그린다(renderBookendBoard). -->
     <div id="alert-bookend" style="margin:0 0 8px;"></div>
     <div id="alert-board-problems"></div>
     <details id="alert-board-details">
-      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">전체 펼치기</summary>
+      <summary style="cursor:pointer;list-style:none;font-size:var(--fs-2);font-weight:700;color:var(--accent-soft);">전체 펼치기</summary>
       <div class="sec-note" style="margin:8px 0 10px;">🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
       <div class="notify-filters" id="notify-filters">
         <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만</button>
@@ -243,7 +244,7 @@
        wellperion_guide(main).html#T2 가 "T2 ▸ 🖥️ 시스템 현황"으로 가리키는 자리인데 이 페이지에 렌더가
        없었다 — 배 960 레인 M(2026-09-04 시토, GAS→AWS 이관 진척률 행 추가) 작업 중 발견해 최소 복구. ══ -->
   <div id="erp-systems-panel" class="autopanel" style="border-left-color:var(--accent);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">🖥️ 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">(기계 상태만 · erp_status.json)</span></h2>
+    <h2 class="sec" style="margin-top:0;">🖥️ 시스템 현황 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">(기계 상태만 · erp_status.json)</span></h2>
     <div id="erp-systems-rows">불러오는 중…</div>
   </div>
   <!-- ══ /시스템 현황 ══ -->
@@ -256,7 +257,7 @@
   <div id="cli-live" class="autopanel" style="border-left-color:var(--green);display:none;margin-top:14px;">
     <h2 class="sec" style="margin-top:0;">
       <span id="cli-live-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dim);margin-right:6px;"></span>
-      🟢 CLI 라이브 <span style="font-size:12px;font-weight:400;color:var(--dim);">(지금 이 PC 에서 도는 CLI 실시간 · GM PC 전용)</span>
+      🟢 CLI 라이브 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">(지금 이 PC 에서 도는 CLI 실시간 · GM PC 전용)</span>
     </h2>
     <div id="cli-live-status" class="sec-note" style="margin:0 0 8px;"></div>
     <div id="cli-live-items"></div>
@@ -290,7 +291,7 @@
   <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
        판정은 담당 구분(audience==='ai') 하나로만 — G1 렌더·아침 텔레그램 보고와 같은 기준이라 세 표면이
        자동으로 안 겹치고 안 샌다. 데이터는 아래 「🗂 배 정리」가 받아 둔 _queueAll 재사용(새 fetch 0). ════ -->
-  <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(열린 배 전부 — 북극성으로 가는 오늘의 뱃길 · 🤖 는 AI 내부 살림)</span></h2>
+  <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">(열린 배 전부 — 북극성으로 가는 오늘의 뱃길 · 🤖 는 AI 내부 살림)</span></h2>
   <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
   <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
   <!-- GM 본인 할 일은 여기로 옮기지 않는다 — 개수·링크만. 본문은 G1 비번 뒤에 그대로 둔다
@@ -309,9 +310,9 @@
        으로 오분류돼 함께 걷혔다. GM 이 "정말 중요해"라고 한 채점표라 복원한다(승인 불요 — 원복).
        내용·구조 무변경, 위치만 항로 바로 아래로. ══ -->
   <details id="sec-page-score" style="margin:8px 0 24px;">
-    <summary style="cursor:pointer;list-style:none;"><h3 id="ps-title" style="display:inline;"><span class="ico">📊</span>ERP 화면 완성도·열람</h3><span id="ps-badge" style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">불러오는 중…</span></summary>
-    <p style="font-size:12px;color:var(--dim);margin:6px 0 10px;">실무진 소유 화면을 AI가 채점한 품질 계기판 — 기준은 "실무진이 이 화면만 보고 자기 업무를 끝낼 수 있는가"(라이브 연동·입력저장·빈칸·죽은 버튼·인쇄/모바일 5축 감점). <b>85% 미만이 아침 자가점검의 그날 일감</b>이 됩니다. 열람 = 화면이 실제로 열린 마지막 시각(매일 07:40 수집). 시로·시뽀 화면은 나우열M 라인이라 채점하지 않습니다. 정본 = <code>status/page_score.json</code> · <code>status/page_ping.json</code>(손 관리 · 재채점은 이 파일을 직접 고칩니다).</p>
-    <div id="ps-body"><div style="color:var(--dim);font-size:13px;padding:8px 0;">불러오는 중…</div></div>
+    <summary style="cursor:pointer;list-style:none;"><h3 id="ps-title" style="display:inline;"><span class="ico">📊</span>ERP 화면 완성도·열람</h3><span id="ps-badge" style="font-size:0.78em;color:#6B655F;font-weight:400;margin-left:8px;">불러오는 중…</span></summary>
+    <p style="font-size:var(--fs-2);color:var(--dim);margin:6px 0 10px;">실무진 소유 화면을 AI가 채점한 품질 계기판 — 기준은 "실무진이 이 화면만 보고 자기 업무를 끝낼 수 있는가"(라이브 연동·입력저장·빈칸·죽은 버튼·인쇄/모바일 5축 감점). <b>85% 미만이 아침 자가점검의 그날 일감</b>이 됩니다. 열람 = 화면이 실제로 열린 마지막 시각(매일 07:40 수집). 시로·시뽀 화면은 나우열M 라인이라 채점하지 않습니다. 정본 = <code>status/page_score.json</code> · <code>status/page_ping.json</code>(손 관리 · 재채점은 이 파일을 직접 고칩니다).</p>
+    <div id="ps-body"><div style="color:var(--dim);font-size:var(--fs-2);padding:8px 0;">불러오는 중…</div></div>
   </details>
   <script>
   (function(){
@@ -327,7 +328,7 @@
         var body  = document.getElementById('ps-body');
         if(!score || !Array.isArray(score.pages) || !score.pages.length){
           if(badge) badge.textContent = '(데이터 없음)';
-          if(body)  body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">status/page_score.json 을 불러오지 못했습니다.</div>';
+          if(body)  body.innerHTML = '<div style="color:var(--dim);font-size:var(--fs-2);padding:8px 0;">status/page_score.json 을 불러오지 못했습니다.</div>';
           return;
         }
         var pages = score.pages.slice();
@@ -340,27 +341,27 @@
         function row(p){
           var lo = lastOpen[p.name];
           return '<tr>'
-            + '<td style="padding:4px 8px;white-space:nowrap;font-weight:700;color:' + ((p.score||0)<70?'#dc2626':(p.score||0)<85?'#d97706':'#059669') + ';">' + (p.score||0) + '%</td>'
-            + '<td style="padding:4px 8px;">' + esc(p.name) + ' <span style="color:var(--dim);font-size:11px;">(' + esc(p.owner_nick||p.role||'') + ')</span></td>'
-            + '<td style="padding:4px 8px;font-size:12px;color:var(--dim);">' + esc(p.note||'') + '</td>'
-            + '<td style="padding:4px 8px;font-size:12px;white-space:nowrap;color:' + (lo?'var(--dim)':'#d97706') + ';">' + (lo ? esc(lo) : '열람 흔적 없음') + '</td>'
+            + '<td style="padding:4px 8px;white-space:nowrap;font-weight:700;color:' + ((p.score||0)<70?'#B91C1C':(p.score||0)<85?'#9A5502':'#046B4C') + ';">' + (p.score||0) + '%</td>'
+            + '<td style="padding:4px 8px;">' + esc(p.name) + ' <span style="color:var(--dim);font-size:var(--fs-1);">(' + esc(p.owner_nick||p.role||'') + ')</span></td>'
+            + '<td style="padding:4px 8px;font-size:var(--fs-2);color:var(--dim);">' + esc(p.note||'') + '</td>'
+            + '<td style="padding:4px 8px;font-size:var(--fs-2);white-space:nowrap;color:' + (lo?'var(--dim)':'#9A5502') + ';">' + (lo ? esc(lo) : '열람 흔적 없음') + '</td>'
             + '</tr>';
         }
-        var head = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'
+        var head = '<table style="width:100%;border-collapse:collapse;font-size:var(--fs-2);"><thead><tr>'
           + '<th style="text-align:left;padding:4px 8px;">완성도</th><th style="text-align:left;padding:4px 8px;">화면 (소유)</th>'
           + '<th style="text-align:left;padding:4px 8px;">감점 사유</th><th style="text-align:left;padding:4px 8px;">마지막 열람</th></tr></thead><tbody>';
         var h = '';
         if(low.length){
-          h += '<div class="sec-note" style="border-left:3px solid #d97706;padding-left:10px;margin:0 0 8px;"><b>85% 미만 ' + low.length + '개</b> — 아침 자가점검이 이 목록을 일감으로 씁니다.</div>';
+          h += '<div class="sec-note" style="border-left:3px solid #CEB599;padding-left:10px;margin:0 0 8px;"><b>85% 미만 ' + low.length + '개</b> — 아침 자가점검이 이 목록을 일감으로 씁니다.</div>';
           h += head + low.map(row).join('') + '</tbody></table>';
         }
         var rest = pages.filter(function(p){ return (p.score||0) >= 85; });
         if(rest.length){
-          h += '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:var(--dim);">85% 이상 ' + rest.length + '개 펼치기</summary>'
+          h += '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:var(--fs-2);color:var(--dim);">85% 이상 ' + rest.length + '개 펼치기</summary>'
              + head + rest.map(row).join('') + '</tbody></table></details>';
         }
         if(score.excluded_count){
-          h += '<div style="font-size:11px;color:var(--dim);margin-top:6px;">채점 제외 ' + score.excluded_count + '개(리다이렉트 스텁·파일 부재)는 정본 JSON 의 excluded 에 있습니다.</div>';
+          h += '<div style="font-size:var(--fs-1);color:var(--dim);margin-top:6px;">채점 제외 ' + score.excluded_count + '개(리다이렉트 스텁·파일 부재)는 정본 JSON 의 excluded 에 있습니다.</div>';
         }
         if(body) body.innerHTML = h;
       })
@@ -385,8 +386,8 @@
       var target = new Date((data.target_date || '2026-12-31') + 'T00:00:00');
       var dday = Math.ceil((target - new Date()) / 86400000);
       var title = document.getElementById('three-line-title');
-      if(title) title.innerHTML = '🎯 3라인 12/31 완료 기준 <span style="font-size:12px;font-weight:400;color:var(--dim);">— D-' + dday + '</span>';
-      var vColor = { '진행중':'#d97706', '미측정':'var(--dim)', '완료':'var(--green)', '미달':'#dc2626' };
+      if(title) title.innerHTML = '🎯 3라인 12/31 완료 기준 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">— D-' + dday + '</span>';
+      var vColor = { '진행중':'#9A5502', '미측정':'var(--dim)', '완료':'var(--green)', '미달':'#B91C1C' };
       var rows = data.rows.map(function(r){
         return '<tr><td style="padding:4px 8px;">' + esc(r.indicator) + '</td>'
           + '<td style="padding:4px 8px;">' + esc(r.criteria) + '</td>'
@@ -395,7 +396,7 @@
       }).join('');
       var body = document.getElementById('three-line-body');
       if(body){
-        body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'
+        body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:var(--fs-2);"><thead><tr>'
           + '<th style="text-align:left;padding:4px 8px;">지표</th><th style="text-align:left;padding:4px 8px;">기준</th>'
           + '<th style="text-align:left;padding:4px 8px;">현재</th><th style="text-align:left;padding:4px 8px;">판정</th></tr></thead><tbody>'
           + rows + '</tbody></table>';
@@ -420,7 +421,7 @@
     <summary>📚 학습 <span class="hist-sub">— GM 교육 자료 · AI 가 스스로 낸 학습 제안</span></summary>
     <div class="sec-note" style="margin:8px 0 10px;">
       새로 배운 것은 <a href="gm/GM_교육.html" target="_blank" rel="noopener"
-         style="display:inline-block;padding:3px 10px;border-radius:4px;background:var(--accent,#4a9eff);color:#fff;font-weight:700;text-decoration:none;">📘 GM 교육 자료 열기</a>
+         style="display:inline-block;padding:3px 10px;border-radius:4px;background:var(--accent,#E5EDF5);color:#201F1D;font-weight:700;text-decoration:none;">📘 GM 교육 자료 열기</a>
       에 번호를 붙여 쌓입니다(인쇄 가능).
       아래는 <b>AI 가 스스로 낸 학습 제안</b>입니다 — 무엇을 바꾸면 나아지는지 근거와 함께 적힙니다.
     </div>
@@ -708,9 +709,9 @@
           return '<tr' + rowStyle + '><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
             + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
             + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
-            + (isAiShip(s) ? ' <span title="AI 내부 살림" style="font-size:11px;">🤖</span>' : '')
-            + (staleDays(s) >= 14 ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '')
-            + (sec.key === 'mfOverdue' ? '<br><span style="font-size:11px;color:#c62828;">' + mfDaysLate(s) + '일 지남</span>' : '') + '</td>'
+            + (isAiShip(s) ? ' <span title="AI 내부 살림" style="font-size:var(--fs-1);">🤖</span>' : '')
+            + (staleDays(s) >= 14 ? '<br><span style="font-size:var(--fs-1);color:#7E6020;">' + staleDays(s) + '일째 멈춤</span>' : '')
+            + (sec.key === 'mfOverdue' ? '<br><span style="font-size:var(--fs-1);color:#7E2020;">' + mfDaysLate(s) + '일 지남</span>' : '') + '</td>'
             + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td>'
             + '<td style="text-align:center;">' + trashBtn(s) + '</td></tr>';
         });
@@ -729,7 +730,7 @@
   function trashBtn(s){
     if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
     return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 항로에서 지웁니다"'
-      + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;">🗑</button>';
+      + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:var(--fs-2);">🗑</button>';
   }
 
   /* 📚 학습 — status/learning_proposals.json 을 그대로 그린다(새 원장 없음 · GM 지시 2026-08-24).
@@ -987,7 +988,7 @@
       list.map(function(r, idx){
         var when = esc(r.item.when || '부정기');
         var mark = (idx === nextIdx)
-          ? '<span style="color:var(--accent);font-weight:700;font-size:11px;margin-left:6px;">다음</span>' : '';
+          ? '<span style="color:var(--accent);font-weight:700;font-size:var(--fs-1);margin-left:6px;">다음</span>' : '';
         /* 시(時)가 바뀌는 첫 줄에 굵은 윗줄 하나(2026-09-02) — 45줄이 한 덩어리로 쏟아져
            07시대와 09시대의 경계가 안 보였다. 묶음·접기는 GM 이 이미 뺐으니(2026-08-31
            "분리해서 보여주는데 더 보기 불편해") 접지 않고 경계선만 긋는다 — 읽는 흐름 무변경. */
@@ -1007,7 +1008,7 @@
         }
         return '<tr' + (rowStyle ? ' style="' + rowStyle + '"' : '') + '><td style="white-space:nowrap;font-weight:700;">' + when + mark + '</td>' +
                '<td>' + esc(r.item.what || '') + '</td>' +
-               '<td style="font-size:12px;color:var(--dim);">' + alertRoomCellHtml(r.item) + '</td>' +
+               '<td style="font-size:var(--fs-2);color:var(--dim);">' + alertRoomCellHtml(r.item) + '</td>' +
                '<td><span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span>' + noteTxt + '</td>' +
                '<td>' + alertLastSentCell(r.item, ahMap || {}) + '</td></tr>';
       }).join('') + '</table></div>';
@@ -1033,12 +1034,12 @@
       return '<td style="vertical-align:top;padding:4px 8px;">' +
         '<div style="font-weight:700;font-variant-numeric:tabular-nums;">' + esc(r.item.when || '') + '</div>' +
         '<span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span>' +
-        '<div style="font-size:11px;color:var(--dim);margin-top:2px;">' + alertLastSentCell(r.item, _alertAhMap) + '</div></td>';
+        '<div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;">' + alertLastSentCell(r.item, _alertAhMap) + '</div></td>';
     }
     if(!rowsById[BOOKEND_CELLS.kStart] && !rowsById[BOOKEND_CELLS.tStart]){
       wrap.innerHTML = ''; return; // 등록부 로딩 실패 등 — 조용히 생략(0을 지어내지 않는다)
     }
-    wrap.innerHTML = '<div style="font-weight:700;font-size:13px;margin:0 0 4px;">🌅🌙 하루 양끝</div>' +
+    wrap.innerHTML = '<div style="font-weight:700;font-size:var(--fs-2);margin:0 0 4px;">🌅🌙 하루 양끝</div>' +
       '<div class="coo-tbl-wrap"><table style="border-collapse:collapse;">' +
       '<tr><th style="padding:4px 8px;"></th><th style="padding:4px 8px;">카카오톡 현장</th><th style="padding:4px 8px;">텔레그램 GM</th></tr>' +
       '<tr><td style="font-weight:700;padding:4px 8px;">하루의 시작</td>' + cell(BOOKEND_CELLS.kStart) + cell(BOOKEND_CELLS.tStart) + '</tr>' +
@@ -1092,7 +1093,7 @@
     wrap.innerHTML = '<table class="gtbl"><tr><th>이름</th><th>상태</th><th>상세</th></tr>' +
       rows.map(function(s){
         var cls = chip[s.state] || 'idle';
-        return '<tr><td><strong>' + esc(s.name) + '</strong>' + (s.note ? '<div style="font-size:11px;color:var(--dim);">' + esc(s.note) + '</div>' : '') + '</td>' +
+        return '<tr><td><strong>' + esc(s.name) + '</strong>' + (s.note ? '<div style="font-size:var(--fs-1);color:var(--dim);">' + esc(s.note) + '</div>' : '') + '</td>' +
           '<td><span class="statchip ' + cls + '">' + esc(s.state || '?') + '</span></td>' +
           '<td>' + esc(s.detail || '') + '</td></tr>';
       }).join('') + '</table>';
@@ -1125,13 +1126,13 @@
         return k + ' ' + (typeof latest[k] === 'number' ? latest[k].toLocaleString('ko-KR') : '?') + '자';
       }).join(' · ');
       parts.push('<span title="' + esc(detail) + '">' + esc(BOOT_LOAD_NICK[role] || role) + ' ' +
-        (cur > BOOT_LOAD_GOAL ? '<span style="color:#e2695f;font-weight:700;">' + numStr + '</span>' : numStr) +
+        (cur > BOOT_LOAD_GOAL ? '<span style="color:#7E2720;font-weight:700;">' + numStr + '</span>' : numStr) +
         arrow + '</span>');
     });
     if(!parts.length) return;
     var line = document.createElement('div');
     line.className = 'sec-note';
-    line.style.cssText = 'margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);';
+    line.style.cssText = 'margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(34,31,32,0.08);';
     line.innerHTML = '🧠 부팅 로드(자) ' + parts.join(' · ') + (latestDate ? ' — ' + esc(latestDate.slice(5)) : '') + ' · 목표 ≤51,000(≈30K 토큰)';
     wrap.appendChild(line);
   }
@@ -1199,7 +1200,7 @@
       var probTotal = counts.dead;
       var nowStr = (function(){ var d=new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); })();
       summaryEl.innerHTML = '오늘 발신 <b>' + okTotal + '/' + total + '</b> 정상' +
-        (probTotal ? ' · <span style="color:#ff8a80;">🔴 문제 ' + probTotal + '건</span>' : '') +
+        (probTotal ? ' · <span style="color:#7E2720;">🔴 문제 ' + probTotal + '건</span>' : '') +
         (counts.bad ? ' · <span style="color:var(--dim);">⏸ 꺼짐 ' + counts.bad + '건(GM 킬스위치)</span>' : '') +
         ' · 마지막 갱신 ' + nowStr;
     }

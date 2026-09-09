@@ -9,18 +9,18 @@
   :root{
     --bg:#F2EFEB; --paper:#F4F1EE; --sidebar:#F1ECE8;
     --text:#23211F; --text-soft:#3B3734; --dim:#6B655F; --dim-soft:#6B655F;
-    --accent:#755538; --accent-hover:#785636; --accent-bg:rgba(183,159,138,0.12); --accent-line:#B79F8A;
-    --warm:#A33C29; --warm-bg:rgba(237,91,63,0.12);
-    --grow:#347A42; --grow-bg:rgba(106,191,123,0.12);
+    --accent:#6B4E33; --accent-hover:#6D4E31; --accent-bg:rgba(183,159,138,0.12); --accent-line:#B79F8A;
+    --warm:#7E2F20; --warm-bg:rgba(237,91,63,0.12);
+    --grow:#2F6F3C; --grow-bg:rgba(106,191,123,0.12);
     --border:#D5CCC3; --border-strong:#CFC5BA; --gray-bg:#F4F1EE;
     --paper-soft:#F2EFEB;
     /* 운영부 매뉴얼 이관 콘텐츠용 색(원본 운영부 체계.html :root 값 그대로, 2026-08-29) */
-    --green:#347A42; --green-bg:rgba(106,191,123,0.12);
-    --red:#A33C29; --red-bg:rgba(237,91,63,0.12);
-    --yellow:#A38B29; --yellow-bg:rgba(230,200,78,0.12);
-    --blue:#2A6DA2; --blue-bg:rgba(91,159,213,0.12);
-    --purple:#57319B; --purple-bg:rgba(167,139,218,0.12);
-    --orange:#A36129; --orange-bg:rgba(230,148,78,0.12);
+    --green:#2F6F3C; --green-bg:rgba(106,191,123,0.12);
+    --red:#7E2F20; --red-bg:rgba(237,91,63,0.12);
+    --yellow:#7E6C20; --yellow-bg:rgba(230,200,78,0.12);
+    --blue:#21547D; --blue-bg:rgba(91,159,213,0.12);
+    --purple:#432678; --purple-bg:rgba(167,139,218,0.12);
+    --orange:#7E4B20; --orange-bg:rgba(230,148,78,0.12);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
@@ -197,8 +197,8 @@
   .gm1-chip.status-hold{background:var(--warn-bg,rgba(183,159,138,0.12));color:var(--accent);}
   .gm1-chip.date{background:var(--accent-bg);color:var(--accent);cursor:pointer;}
   .gm1-chip.date:hover{background:rgba(183,159,138,0.25);}
-  .gm1-chip.ssot{background:rgba(126,87,194,0.1);color:#4C2E80;opacity:0.6;font-size:var(--fs-1);padding:1px 6px;}
-  .gm1-chip.log{background:rgba(126,87,194,0.13);color:#4C2E80;}
+  .gm1-chip.ssot{background:rgba(126,87,194,0.1);color:#452A74;opacity:0.6;font-size:var(--fs-1);padding:1px 6px;}
+  .gm1-chip.log{background:rgba(126,87,194,0.13);color:#452A74;}
   /* 밀도 완화 — 예정 항구/입항 라인 줄간격·여백 확대, 카테고리·SSOT 태그 흐리게 (2026-07-18) */
   #today-task-list .gm1-wait-line,#today-task-list .gm1-done-line{padding:11px 0!important;line-height:1.5;}
   #today-task-list .gm1-tag-faint{opacity:0.62;}
@@ -207,7 +207,7 @@
   .gm1-action-btn:hover{opacity:0.8;}
   .gm1-action-btn.edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);}
   .gm1-action-btn.done{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);}
-  .gm1-action-btn.hold{background:var(--orange-bg,rgba(230,148,78,0.14));color:var(--orange,#A36129);border-color:rgba(230,148,78,0.3);}
+  .gm1-action-btn.hold{background:var(--orange-bg,rgba(230,148,78,0.14));color:var(--orange,#7E4B20);border-color:rgba(230,148,78,0.3);}
   .gm1-action-btn.del{background:transparent;color:var(--dim);border-color:var(--border);}
   .gm1-action-btn.del:hover{color:var(--warm);border-color:var(--warm);opacity:1;}
   /* task-actions 하단 버튼 줄 */
@@ -219,9 +219,9 @@
     display:inline-flex; align-items:center; gap:4px; font-size:var(--fs-2); font-weight:600;
     padding:2px 10px; border-radius:12px; background:var(--accent-bg); color:var(--accent);
   }
-  .owner-chip.gm{background:rgba(183,159,138,0.2); color:#785636;}
+  .owner-chip.gm{background:rgba(183,159,138,0.2); color:#6D4E31;}
   .owner-chip.mgr{background:var(--grow-bg); color:var(--grow);}
-  .owner-chip.dir{background:rgba(237,91,63,0.15); color:#A33C29;}
+  .owner-chip.dir{background:rgba(237,91,63,0.15); color:#7E2F20;}
 
   /* 카테고리 헤더 */
   .cat-header{
@@ -316,7 +316,7 @@
     #home .lead,#home .doc-header .meta{display:none!important;}
     :root{
       --bg:#ffffff; --paper:#ffffff; --sidebar:#ffffff; --gray-bg:#f0efed;
-      --text:#1a1a1a; --text-soft:#2b2b2b; --dim:#555555; --dim-soft:#6B655F;
+      --text:#1a1a1a; --text-soft:#2b2b2b; --dim:#6B655F; --dim-soft:#6B655F;
       --border:#cccccc; --border-strong:#bbbbbb; --accent-bg:#f4f1ed;
       --paper-soft:#f5f3f0;
     }
@@ -335,7 +335,7 @@
     table{font-size:10pt;} th,td{padding:6px 8px;}
     .badge{border:1px solid #B2A190!important; background:#eee!important; color:#333!important;}
     .owner-chip,.owner-chip.gm,.owner-chip.mgr,.owner-chip.dir{background:#eee!important; color:#333!important; border:1px solid #ccc;}
-    a{color:#1a4f8f!important; text-decoration:none!important;}
+    a{color:#204B7E!important; text-decoration:none!important;}
     a[href]::after{content:none!important;}
     .diagram svg{max-height:300px;}
     pre,[style*="#16181c"]{background:#f0efed!important; color:#1a1a1a!important;}
@@ -359,7 +359,7 @@
   .kpi-metric-value{font-size:var(--fs-5);font-weight:700;color:var(--text);line-height:1.2;}
   .kpi-metric-value .kpi-unit{font-size:var(--fs-2);font-weight:400;color:var(--dim);margin-left:3px;}
   .kpi-pending{display:inline-block;background:var(--gray-bg);color:var(--dim);font-size:var(--fs-1);font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:0.03em;}
-  .kpi-card.ceo-card{background:linear-gradient(135deg,#F1EDEA 0%,#2a2725 100%);border-color:var(--border-strong);}
+  .kpi-card.ceo-card{background:linear-gradient(135deg,#F1EDEA 0%,#F4F1EE 100%);border-color:var(--border-strong);}
   .kpi-card.ceo-card .kpi-card-label{color:var(--accent-hover);}
   @media(max-width:768px){
     .kpi-grid{grid-template-columns:1fr;}
@@ -476,7 +476,7 @@
     </div><!-- /home-hero-row -->
 
     <!-- ⑤ 운영 현황 상세 (컴팩트 v2 2026-06-08) -->
-    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:var(--fs-4);font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:var(--fs-1);color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="월간운영계획.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🗓️ 월간 운영계획·보고 ↗</a><a href="coo/check/전사_일정.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📅 전사 일정 ↗</a><a href="coo/report/매출회원현황보고.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 매출 및 회원 현황 보고 ↗</a></div>
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:var(--fs-4);font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:var(--fs-1);color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="월간운영계획.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🗓️ 월간 운영계획·보고 ↗</a><a href="coo/check/전사_일정.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📅 전사 일정 ↗</a><a href="coo/report/매출회원현황보고.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 매출 및 회원 현황 보고 ↗</a></div>
 
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
@@ -540,7 +540,7 @@
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M7 7H5v14h14V7h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span>
           <div style="min-width:0;"><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span id="kpiWaPeriodLabel">이번달 기준</span> · 업무·결재 통합 · AI COO(시우)</div></div>
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📋 업무&amp;결재 SSOT →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📋 업무&amp;결재 SSOT →</a>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:start;" class="wa-block-grid">
@@ -588,7 +588,7 @@
            [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 이중 박스 없이 내부 타일이 직접 노출.
            border/background/radius/padding 제거, flex-column(하단 링크 정렬)·내부 타일·min-height·id·링크 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
       <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;">
-        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div style="min-width:0;"><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">문의&등록 현황</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">멤버십·강습 문의·등록 · AI CPO(시포)</div></div><a href="cpo/member/membership.html?manage=membership" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">👥 회원 관리 →</a></div>
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div style="min-width:0;"><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">문의&등록 현황</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">멤버십·강습 문의·등록 · AI CPO(시포)</div></div><a href="cpo/member/membership.html?manage=membership" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">👥 회원 관리 →</a></div>
 
         <!-- [2026-08-26 GM 4번째 지적] "종합접수처 세로 사이즈 문의&등록 현황이랑 맞춰".
              실측(라이브 렌더): 두 카드의 겉 높이·헤더·링크 행은 이미 정확히 같았다(398px, 헤더 top 1038, 링크 top 1398).
@@ -641,7 +641,7 @@
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:var(--fs-4);flex-shrink:0;">🙋</span>
           <div><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">6유형 접수 관리 · AI COO(시우)</div></div>
-          <a href="coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
+          <a href="coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
         </div>
         <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
              [2026-08-25 GM 지시] ①큰숫자=이번달 / 작은 서브=누적 으로 스왑(id 는 그대로 두고 표시 위치만 교체 —
@@ -659,7 +659,7 @@
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:var(--fs-1);color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
-            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocNewMonth" style="font-size:var(--fs-6);font-weight:800;color:var(--orange,#A36129);line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(미처리 <b id="kpiVocNew" style="font-weight:700;color:var(--orange,#A36129);">—</b>)</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocNewMonth" style="font-size:var(--fs-6);font-weight:800;color:var(--orange,#7E4B20);line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(미처리 <b id="kpiVocNew" style="font-weight:700;color:var(--orange,#7E4B20);">—</b>)</span></div>
             <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
                  라벨을 '누적'으로 달았더니 이번달 46 · 누적 31 이 되어 앞뒤가 안 맞았다(2026-08-25 실측). -->
             
@@ -667,11 +667,11 @@
           </div>
           <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:var(--fs-1);color:var(--dim);margin-bottom:5px;font-weight:600;">처리중 · 이번달</div>
-            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocWip" style="font-size:var(--fs-6);font-weight:800;color:var(--blue,#2A6DA2);line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(누적 <b id="kpiVocWipTotal" style="font-weight:700;color:var(--blue,#2A6DA2);">—</b>)</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocWip" style="font-size:var(--fs-6);font-weight:800;color:var(--blue,#21547D);line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(누적 <b id="kpiVocWipTotal" style="font-weight:700;color:var(--blue,#21547D);">—</b>)</span></div>
           </div>
           <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:var(--fs-1);color:var(--dim);margin-bottom:5px;font-weight:600;">완료 · 이번달</div>
-            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocDoneMonth" style="font-size:var(--fs-6);font-weight:800;color:var(--grow,#347A42);line-height:1;" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(누적 <b id="kpiVocDone" style="font-weight:700;color:var(--grow,#347A42);">—</b>)</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocDoneMonth" style="font-size:var(--fs-6);font-weight:800;color:var(--grow,#2F6F3C);line-height:1;" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(누적 <b id="kpiVocDone" style="font-weight:700;color:var(--grow,#2F6F3C);">—</b>)</span></div>
           </div>
         </div>
         <!-- 옆 문의&등록 카드와 짝 처리(2026-08-26) — 남는 높이를 이 블록이 채운다. 어느 카드 내용이 길어지든
@@ -691,7 +691,7 @@
     <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;flex-wrap:wrap;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:var(--fs-4);font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:var(--fs-1);color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><!--
       [2026-08-28 GM 지시] 「부서별 점검 상세 →」 한 개를 부서별 3개로 갈랐다. 지원부(남)·지원부(여)는
       같은 페이지라 「지원부」 하나로 둔다. 카드는 네 라인(시설부·지원부(남)·지원부(여)·주차관리부). -->
-      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><a href="coo/check/시설부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🏭 시설부 →</a><a href="coo/check/지원부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🧴 지원부 →</a><a href="coo/check/주차관리부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#173a2c);color:#2E805E;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🅿 주차관리부 →</a></span></div>
+      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><a href="coo/check/시설부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🏭 시설부 →</a><a href="coo/check/지원부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🧴 지원부 →</a><a href="coo/check/주차관리부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#E9F7F1,#E5F5EF);color:#2A7455;border:1px solid #9DD0BE;border-radius:20px;text-decoration:none;white-space:nowrap;">🅿 주차관리부 →</a></span></div>
     <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
       <div style="text-align:center;padding:16px;color:var(--dim);font-size:var(--fs-2);grid-column:1/-1;">점검 현황 불러오는 중...</div>
     </div>
@@ -1383,14 +1383,14 @@
               //   ▸접수는 주황, 완료는 초록으로 색을 고정한다 — 카드 상단 3칸(접수·처리중·완료)과 같은 색이라
               //     위아래로 훑을 때 같은 뜻이 같은 색으로 읽힌다.
               + '<div style="line-height:1;white-space:nowrap;">'
-              +   '<span style="font-size:var(--fs-4);font-weight:800;color:var(--orange,#A36129);">' + mNew + '</span>'
+              +   '<span style="font-size:var(--fs-4);font-weight:800;color:var(--orange,#7E4B20);">' + mNew + '</span>'
               +   '<span style="font-size:var(--fs-1);color:var(--dim);margin:0 2px;">/</span>'
-              +   '<span style="font-size:var(--fs-3);font-weight:800;color:var(--grow,#347A42);">' + mDone + '</span>'
+              +   '<span style="font-size:var(--fs-3);font-weight:800;color:var(--grow,#2F6F3C);">' + mDone + '</span>'
               + '</div>'
               /* [2026-08-28 GM 지시] 칸을 낮춘다 — '이번달 접수/완료' 라벨 줄은 위 안내문이 이미
                  같은 말을 하므로 뺐다. 누적은 한 줄로 붙인다(맨 위 3칸을 줄인 방식과 같게). */
               + '<div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">'
-              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b>·<b style="color:var(--grow,#347A42);">' + tDone + '</b></div>'
+              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b>·<b style="color:var(--grow,#2F6F3C);">' + tDone + '</b></div>'
               + '</div>';
           });
           grid.innerHTML = html;
@@ -1651,46 +1651,46 @@
     <p class="lead">웰페리온은 2017년 한남동에서 시작한 <strong>3,000평 규모의 프리미엄 라이프스타일 클럽</strong>입니다. 운동과 회복을 한 공간·한 멤버십·한 동선 안에 담아, 회원 한 사람의 건강한 하루를 완성합니다. 이 페이지는 <strong>회사소개서와 전략 로드맵의 진입점</strong>이며, 직원과 외부가 같은 내용을 봅니다.</p>
 
     <!-- 문서 진입 카드 (2026-07-23 개편 · 통합 소개서 주력) -->
-    <div class="card" style="background:linear-gradient(135deg,#F2EFEB 0%,#3A3536 100%); border:none; padding:24px 26px; margin:18px 0 24px; border-radius:14px;">
-      <div style="font-size:var(--fs-2); letter-spacing:0.2em; text-transform:uppercase; color:#755538; font-weight:600; margin-bottom:6px;">WELLPERION · 공식 문서</div>
+    <div class="card" style="background:linear-gradient(135deg,#F2EFEB 0%,#F7F5F3 100%); border:none; padding:24px 26px; margin:18px 0 24px; border-radius:14px;">
+      <div style="font-size:var(--fs-2); letter-spacing:0.2em; text-transform:uppercase; color:#6B4E33; font-weight:600; margin-bottom:6px;">WELLPERION · 공식 문서</div>
       <div style="font-size:var(--fs-2);color:#47433F;margin-bottom:16px;">웰페리온이 밖으로 내보내는 문서는 모두 이 칸에 있습니다. <strong style="color:#201F1D;">회사를 말하는 문서</strong>와 <strong style="color:#201F1D;">상대에게 건네는 제안서</strong> 두 갈래입니다.</div>
 
-      <div style="font-size:var(--fs-1);letter-spacing:0.18em;text-transform:uppercase;color:#755538;font-weight:600;margin-bottom:9px;">소개 · Introduction</div>
+      <div style="font-size:var(--fs-1);letter-spacing:0.18em;text-transform:uppercase;color:#6B4E33;font-weight:600;margin-bottom:9px;">소개 · Introduction</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a href="회사문서/웰페리온_회사소개서_통합.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7EBE9;color:#201F1D;box-shadow:0 2px 10px rgba(237,91,63,0.34);">📘 회사소개서 v2.2</a>
         <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.34);">🗺️ 전략 로드맵</a>
-        <a href="cmo/home/홈페이지_파생초안.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🏠 공개 홈페이지 <span style="font-size:var(--fs-1);font-weight:600;color:#755538;">초안</span></a>
+        <a href="cmo/home/홈페이지_파생초안.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🏠 공개 홈페이지 <span style="font-size:var(--fs-1);font-weight:600;color:#6B4E33;">초안</span></a>
       </div>
 
-      <div style="font-size:var(--fs-1);letter-spacing:0.18em;text-transform:uppercase;color:#755538;font-weight:600;margin:18px 0 9px;">제안 · Proposals</div>
+      <div style="font-size:var(--fs-1);letter-spacing:0.18em;text-transform:uppercase;color:#6B4E33;font-weight:600;margin:18px 0 9px;">제안 · Proposals</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a href="회사문서/웰페리온_법인멤버십_제안서.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🏛️ 법인 멤버십 제안서</a>
-        <a href="회사문서/웰페리온_위탁운영_제안서.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🤝 위탁운영 제안서 <span style="font-size:var(--fs-1);font-weight:600;color:#755538;">초안</span></a>
+        <a href="회사문서/웰페리온_위탁운영_제안서.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🤝 위탁운영 제안서 <span style="font-size:var(--fs-1);font-weight:600;color:#6B4E33;">초안</span></a>
       </div>
 
-      <div style="font-size:var(--fs-1);color:#635D58;margin-top:15px;line-height:1.75;">
-        <strong style="color:#755538;">회사소개서</strong>는 브랜드확장 소개서까지 합친 통합본 <strong style="color:#755538;">13장</strong>입니다 — 시설 사진 16장은 「한 공간, 열여섯 가지 경험」 한 장에 모았습니다. <strong style="color:#755538;">공개 홈페이지</strong>는 여기서 뽑은 짧은 공개용 파생본이며, 아직 발행 전 초안이라 지금의 wellperion.com 을 대체하지 않았습니다.<br>
-        <strong style="color:#755538;">법인 멤버십 제안서</strong>는 임직원과 가족의 멤버십을 기업·기관에 제안하는 문서입니다(8장). 국문과 영문이 한 파일에 있어 <strong style="color:#201F1D;">문서 안 상단 KO / EN</strong> 으로 바뀌고, 메일로 보낼 때 주소 끝에 <strong style="color:#201F1D;">#en</strong> 을 붙이면 영문으로 바로 열립니다 — 국내 기업은 국문, 대사관·외국계는 영문. 같은 자리에서 <strong style="color:#201F1D;">16:9</strong> 를 고르면 구글 슬라이드에 그대로 넣을 수 있는 비율로 바뀝니다.<br>
-        <strong style="color:#755538;">위탁운영 제안서</strong>는 시설 운영을 맡길지 검토하는 곳에 보내는 문서입니다(법무 검토 전 초안).<br>
-        <strong style="color:#755538;">전략 로드맵</strong>은 2026년 5월 시점의 보고본입니다 — 현재 진척은 아래 6단계 표(월간 운영계획 실측)를 보십시오.<br>
+      <div style="font-size:var(--fs-1);color:#6B655F;margin-top:15px;line-height:1.75;">
+        <strong style="color:#6B4E33;">회사소개서</strong>는 브랜드확장 소개서까지 합친 통합본 <strong style="color:#6B4E33;">13장</strong>입니다 — 시설 사진 16장은 「한 공간, 열여섯 가지 경험」 한 장에 모았습니다. <strong style="color:#6B4E33;">공개 홈페이지</strong>는 여기서 뽑은 짧은 공개용 파생본이며, 아직 발행 전 초안이라 지금의 wellperion.com 을 대체하지 않았습니다.<br>
+        <strong style="color:#6B4E33;">법인 멤버십 제안서</strong>는 임직원과 가족의 멤버십을 기업·기관에 제안하는 문서입니다(8장). 국문과 영문이 한 파일에 있어 <strong style="color:#201F1D;">문서 안 상단 KO / EN</strong> 으로 바뀌고, 메일로 보낼 때 주소 끝에 <strong style="color:#201F1D;">#en</strong> 을 붙이면 영문으로 바로 열립니다 — 국내 기업은 국문, 대사관·외국계는 영문. 같은 자리에서 <strong style="color:#201F1D;">16:9</strong> 를 고르면 구글 슬라이드에 그대로 넣을 수 있는 비율로 바뀝니다.<br>
+        <strong style="color:#6B4E33;">위탁운영 제안서</strong>는 시설 운영을 맡길지 검토하는 곳에 보내는 문서입니다(법무 검토 전 초안).<br>
+        <strong style="color:#6B4E33;">전략 로드맵</strong>은 2026년 5월 시점의 보고본입니다 — 현재 진척은 아래 6단계 표(월간 운영계획 실측)를 보십시오.<br>
         인쇄는 문서를 연 뒤 <strong style="color:#201F1D;">문서 안 상단</strong>에서 <strong style="color:#201F1D;">A4 · A3</strong> 와 가로 · 세로를 골라 바로 하실 수 있습니다.
       </div>
       <details style="margin-top:13px;">
-        <summary style="cursor:pointer;font-size:var(--fs-2);color:#755538;font-weight:600;">밖으로 내보내지 않는 문서 (내부 검토용)</summary>
-        <div style="font-size:var(--fs-1);color:#635D58;margin-top:10px;line-height:1.8;">
+        <summary style="cursor:pointer;font-size:var(--fs-2);color:#6B4E33;font-weight:600;">밖으로 내보내지 않는 문서 (내부 검토용)</summary>
+        <div style="font-size:var(--fs-1);color:#6B655F;margin-top:10px;line-height:1.8;">
           <a href="회사문서/웰페리온_법인계약조건_초안_A3_20260810.html" target="_blank" style="color:#47433F;text-decoration:underline;">📐 법인 계약 조건 초안</a>
           — 법인 멤버십의 값·조건을 정하기 위한 한 장. 가족 범위·정원 계산 방식 등 여섯 가지가 결정 대기 중입니다.<br>
           <a href="cmo/home/홈페이지.html" target="_blank" style="color:#47433F;text-decoration:underline;">🌐 공개 홈페이지 원고</a>
-          — 지금의 wellperion.com 을 옮겨 적은 저장소 원고입니다(법인 멤버십 구역 포함). 위 「공개 홈페이지」 단추는 회사소개서에서 뽑은 <strong style="color:#755538;">다른 파생본</strong>이니 헷갈리지 마십시오.
+          — 지금의 wellperion.com 을 옮겨 적은 저장소 원고입니다(법인 멤버십 구역 포함). 위 「공개 홈페이지」 단추는 회사소개서에서 뽑은 <strong style="color:#6B4E33;">다른 파생본</strong>이니 헷갈리지 마십시오.
         </div>
       </details>
       <details style="margin-top:14px;">
-        <summary style="cursor:pointer;font-size:var(--fs-2);color:#755538;font-weight:600;">이전 버전 문서 (참고용)</summary>
+        <summary style="cursor:pointer;font-size:var(--fs-2);color:#6B4E33;font-weight:600;">이전 버전 문서 (참고용)</summary>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
           <a href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank" style="font-size:var(--fs-2);color:#47433F;text-decoration:underline;">회사소개서 v2.19</a>
-          <span style="color:#5c5654">·</span>
+          <span style="color:#6B655F">·</span>
           <a href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank" style="font-size:var(--fs-2);color:#47433F;text-decoration:underline;">브랜드확장 소개서 v1</a>
-          <span style="color:#5c5654">·</span>
+          <span style="color:#6B655F">·</span>
           <a href="회사문서/회사소개서_A3_전체_20260722.html" target="_blank" style="font-size:var(--fs-2);color:#47433F;text-decoration:underline;">A3 시안 (07-22)</a>
         </div>
       </details>
@@ -1919,8 +1919,8 @@
       <div style="font-size:var(--fs-2); font-weight:700; letter-spacing:0.06em; color:var(--dim); text-transform:uppercase; margin-bottom:16px;">🟢 오늘 진행 현황</div>
       <div id="dash-today-date" style="font-size:var(--fs-2); color:var(--dim); margin-bottom:12px;"></div>
       <div class="kpi-grid" id="dash-today-grid">
-        <div class="kpi-card"><div class="kpi-card-label">✅ 오늘 완료</div><div id="dash-done" style="font-size:var(--fs-6);font-weight:700;color:#29A355;margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
-        <div class="kpi-card"><div class="kpi-card-label">🟡 진행 중·위임</div><div id="dash-doing" style="font-size:var(--fs-6);font-weight:700;color:#A38B29;margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
+        <div class="kpi-card"><div class="kpi-card-label">✅ 오늘 완료</div><div id="dash-done" style="font-size:var(--fs-6);font-weight:700;color:#207E42;margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
+        <div class="kpi-card"><div class="kpi-card-label">🟡 진행 중·위임</div><div id="dash-doing" style="font-size:var(--fs-6);font-weight:700;color:#7E6C20;margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
         <div class="kpi-card"><div class="kpi-card-label">⏸️ 대기 큐</div><div id="dash-waiting" style="font-size:var(--fs-6);font-weight:700;color:var(--accent);margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
         <div class="kpi-card"><div class="kpi-card-label">📝 미시작</div><div id="dash-todo" style="font-size:var(--fs-6);font-weight:700;color:var(--text);margin:8px 0 4px;">—</div><div style="font-size:var(--fs-1);color:var(--dim);">건</div></div>
       </div>
@@ -2054,16 +2054,16 @@
         #matrix-section table.matrix{border-collapse:collapse; width:100%; min-width:995px; font-size:var(--fs-2); table-layout:fixed;}
         #matrix-section table.matrix th, #matrix-section table.matrix td{border:1px solid var(--border); padding:7px 9px; text-align:left; vertical-align:top; line-height:1.42; white-space:pre-wrap; word-break:break-word;}
         #matrix-section table.matrix thead th{background:var(--surface); font-weight:700; font-size:var(--fs-2); position:sticky; top:0; z-index:2;}
-        #matrix-section table.matrix thead th.grp-np{color:#A37A29;}
-        #matrix-section table.matrix thead th.grp-boot{color:#2976A3;}
-        #matrix-section table.matrix thead th.grp-guard{color:#347A42;}
+        #matrix-section table.matrix thead th.grp-np{color:#7E5F20;}
+        #matrix-section table.matrix thead th.grp-boot{color:#205B7E;}
+        #matrix-section table.matrix thead th.grp-guard{color:#2F6F3C;}
         #matrix-section table.matrix th.role-col, #matrix-section table.matrix col.role-col{width:95px; min-width:90px;}
         #matrix-section td.role-cell{background:var(--surface);}
         #matrix-section td.role-cell .ricon{font-size:var(--fs-4);}
         #matrix-section td.role-cell .rname{font-weight:800; font-size:var(--fs-3);}
         #matrix-section td.role-cell .rtitle{font-size:var(--fs-1); color:var(--dim); margin-top:1px;}
         #matrix-section td.role-cell .rowner{font-size:var(--fs-1); color:var(--accent-soft); margin-top:2px;}
-        #matrix-section .rdraft{font-size:var(--fs-1);color:#A32980;background:rgba(238,0,170,0.12);border-radius:3px;padding:1px 4px;font-weight:600;vertical-align:middle;margin-left:4px;}
+        #matrix-section .rdraft{font-size:var(--fs-1);color:#7E2063;background:rgba(238,0,170,0.12);border-radius:3px;padding:1px 4px;font-weight:600;vertical-align:middle;margin-left:4px;}
         #matrix-section tr.role-gm td{background:rgba(184,134,11,0.10);}
         #matrix-section tr.role-gm td.role-cell{background:rgba(184,134,11,0.18);}
         #matrix-section .dim-label{font-size:var(--fs-1); font-weight:700; letter-spacing:0.02em; color:var(--dim); display:block; margin-bottom:1px; text-transform:uppercase;}
@@ -2095,14 +2095,14 @@
         #matrix-section .matrix-status{padding:14px; font-size:var(--fs-2); color:var(--dim);}
         #matrix-section .kbar{height:6px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-bottom:2px;}
         #matrix-section .kbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-soft)); border-radius:4px;}
-        #matrix-section .kbar.alt>i{background:linear-gradient(90deg,#EAF6EC,#6abf7b);}
+        #matrix-section .kbar.alt>i{background:linear-gradient(90deg,#EAF6EC,#E6F4E9);}
         #matrix-section .pstat{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:5px;}
         #matrix-section .pstat b{color:var(--accent-soft);}
         #matrix-section .nsreach-note{font-size:var(--fs-1); color:var(--dim); font-weight:400;}
         #matrix-section .kbar.gold{height:9px; border-color:rgba(240,198,116,0.45);}
-        #matrix-section .kbar.gold>i{background:linear-gradient(90deg,#F7F3E9,#f0c674);}
-        #matrix-section .nsreach-meta{font-size:var(--fs-2); color:#A37A29; font-weight:700; margin-top:2px;}
-        #matrix-section .nsreach-meta b{color:#A38029; font-size:var(--fs-3);}
+        #matrix-section .kbar.gold>i{background:linear-gradient(90deg,#F7F3E9,#F5F0E5);}
+        #matrix-section .nsreach-meta{font-size:var(--fs-2); color:#7E5F20; font-weight:700; margin-top:2px;}
+        #matrix-section .nsreach-meta b{color:#7E6320; font-size:var(--fs-3);}
         #matrix-section .workrate{margin:1px 0 5px; opacity:0.62;}
         #matrix-section .workrate-h{display:block; font-size:var(--fs-1); color:var(--dim); text-transform:none; letter-spacing:0; margin-bottom:1px;}
         #matrix-section .kbar.neutral{height:3px;}
@@ -2110,9 +2110,9 @@
         #matrix-section .workrate-meta{font-size:var(--fs-1); color:var(--dim);}
         #matrix-section .workrate-meta b{color:var(--text-soft);}
         #matrix-section .incd{margin:6px 0 4px; padding:6px 8px; border:1px solid rgba(106,191,123,0.28); border-left:3px solid #82C38F; border-radius:8px; background:rgba(106,191,123,0.06);}
-        #matrix-section .incd-h{display:block; font-size:var(--fs-1); font-weight:800; color:#347A42; margin-bottom:3px;}
+        #matrix-section .incd-h{display:block; font-size:var(--fs-1); font-weight:800; color:#2F6F3C; margin-bottom:3px;}
         #matrix-section .incd-meta{font-size:var(--fs-2); color:var(--text-soft);}
-        #matrix-section .incd-meta b{color:#2D803E;}
+        #matrix-section .incd-meta b{color:#297539;}
         #matrix-section .incd-recent{display:block; font-size:var(--fs-1); color:var(--dim); margin-top:2px; line-height:1.35;}
         #matrix-section .mx-controls{display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; margin:6px 0 8px; padding:8px 10px; background:var(--paper); border:1px solid var(--border); border-radius:9px;}
         #matrix-section .mx-controls .grp{display:flex; flex-wrap:wrap; gap:5px; align-items:center;}
@@ -2147,13 +2147,13 @@
         #matrix-section .crow-role{font-size:var(--fs-2); color:var(--text-soft); max-width:44ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
         #matrix-section .crow-prod{font-size:var(--fs-1); color:var(--dim); display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px;}
         #matrix-section .crow-prodseg{font-size:var(--fs-1); font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap;}
-        #matrix-section .crow-prodseg.auto{color:#2D803E; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+        #matrix-section .crow-prodseg.auto{color:#297539; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
         #matrix-section .crow-prodseg.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
-        #matrix-section .crow-prodseg.semi{color:#2976A3; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
-        #matrix-section .crow-prodseg.propose{color:#A32980; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+        #matrix-section .crow-prodseg.semi{color:#205B7E; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+        #matrix-section .crow-prodseg.propose{color:#7E2063; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
         #matrix-section .crow-prodseg.manual{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
         #matrix-section .crow-metric{font-size:var(--fs-1); font-weight:700; border-radius:20px; padding:1px 7px; white-space:nowrap; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
-        #matrix-section .crow-metric.reach{color:#A38629; background:rgba(184,134,11,0.14); border:1px solid rgba(184,134,11,0.35);}
+        #matrix-section .crow-metric.reach{color:#7E6820; background:rgba(184,134,11,0.14); border:1px solid rgba(184,134,11,0.35);}
         #matrix-section .crow-metric.queue{color:var(--accent-soft); background:rgba(124,58,237,0.10); border:1px solid rgba(124,58,237,0.28);}
         @media (max-width:640px){ #matrix-section .crow-role{max-width:26ch;} }
         #matrix-section .ebtn{font-size:var(--fs-1); padding:3px 11px; border-radius:7px; cursor:pointer; margin-left:6px;}
@@ -2170,11 +2170,11 @@
         #matrix-section .nsmap-row{font-size:var(--fs-2); color:var(--text-soft); line-height:1.45; margin-bottom:2px;}
         #matrix-section .nsmap-row .nsmap-k{display:inline-block; min-width:58px; font-size:var(--fs-1); color:var(--dim); text-transform:uppercase; letter-spacing:0.02em;}
         #matrix-section .nsmap-row b{color:var(--text);}
-        #matrix-section .nsmap-path{font-size:var(--fs-1); color:#A37A29; margin-top:4px; line-height:1.4;}
+        #matrix-section .nsmap-path{font-size:var(--fs-1); color:#7E5F20; margin-top:4px; line-height:1.4;}
         #matrix-section .nsax-list{margin:3px 0 2px;}
         #matrix-section .nsax{font-size:var(--fs-1); line-height:1.5; color:var(--text-soft); margin-bottom:1px;}
         #matrix-section .nsax .nsax-name{color:var(--dim);}
-        #matrix-section .nsax.nsax-live b{color:#2D803E;}
+        #matrix-section .nsax.nsax-live b{color:#297539;}
         #matrix-section .nsax.nsax-none{opacity:0.72;}
         #matrix-section .nsax.nsax-none b{color:var(--dim); font-weight:600;}
         #matrix-section .nsax-goal{font-size:var(--fs-1); color:var(--dim);}
@@ -2182,8 +2182,8 @@
         #matrix-section .ns-role-h .ns-badge{margin-left:auto;}
         #matrix-section .ns-line{font-size:var(--fs-1); color:var(--text-soft); line-height:1.42; margin:0 0 6px; padding-bottom:6px; border-bottom:1px dashed var(--border);}
         #matrix-section .ns-badge{display:inline-block; font-size:var(--fs-1); font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap; line-height:1.5;}
-        #matrix-section .ns-badge.measured{color:#2D803E; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
-        #matrix-section .ns-badge.draft{color:#A32980; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+        #matrix-section .ns-badge.measured{color:#297539; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+        #matrix-section .ns-badge.draft{color:#7E2063; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
         #matrix-section .ns-badge.unmeasured{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
         #matrix-section .c2-card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 10px; margin-bottom:8px;}
         #matrix-section .c2-card:last-child{margin-bottom:0;}
@@ -2191,17 +2191,17 @@
         #matrix-section .prod-legend{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:4px 0 10px; font-size:var(--fs-1); color:var(--dim);}
         #matrix-section .prod-legtxt{margin-right:6px;}
         #matrix-section .prod-mat{display:inline-block; font-size:var(--fs-1); font-weight:700; border-radius:20px; padding:1px 8px; white-space:nowrap;}
-        #matrix-section .prod-mat.auto{color:#2D803E; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
+        #matrix-section .prod-mat.auto{color:#297539; background:rgba(106,191,123,0.14); border:1px solid rgba(106,191,123,0.35);}
         #matrix-section .prod-mat.mech{color:var(--accent-soft); background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.32);}
-        #matrix-section .prod-mat.semi{color:#2976A3; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
-        #matrix-section .prod-mat.propose{color:#A32980; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
+        #matrix-section .prod-mat.semi{color:#205B7E; background:rgba(122,196,240,0.14); border:1px solid rgba(122,196,240,0.35);}
+        #matrix-section .prod-mat.propose{color:#7E2063; background:rgba(238,0,170,0.12); border:1px solid rgba(238,0,170,0.32);}
         #matrix-section .prod-cell{margin-top:8px; padding-top:7px; border-top:1px dashed var(--border);}
         #matrix-section .prod-mod{margin-top:5px;}
         #matrix-section .prod-mod:first-of-type{margin-top:3px;}
         #matrix-section .prod-mod:last-child{margin-bottom:0; padding-bottom:0; border-bottom:none;}
         #matrix-section .prod-feat{font-size:var(--fs-2); color:var(--text-soft); line-height:1.42; margin-bottom:3px;}
         #matrix-section .prod-free{font-size:var(--fs-1); color:var(--dim); line-height:1.4;}
-        #matrix-section .prod-free b{color:#2D803E; font-weight:600;}
+        #matrix-section .prod-free b{color:#297539; font-weight:600;}
         @media print{
           #matrix-section td.role-summary-cell{position:static !important; background:#f4f4f4 !important; color:#111 !important;}
           #matrix-section .crow-toggle{display:none !important;}
@@ -2209,12 +2209,12 @@
           #matrix-section .crow-prod{color:#333 !important;}
           #matrix-section .crow-prodseg{border-width:1px !important;}
           #matrix-section .crow-prodseg.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
-          #matrix-section .crow-prodseg.mech{color:#4a2a91 !important; background:#efe8fb !important;}
-          #matrix-section .crow-prodseg.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
-          #matrix-section .crow-prodseg.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+          #matrix-section .crow-prodseg.mech{color:#3F247A !important; background:#efe8fb !important;}
+          #matrix-section .crow-prodseg.semi{color:#20587E !important; background:#e8f3fb !important;}
+          #matrix-section .crow-prodseg.propose{color:#7E2061 !important; background:#fbe6f3 !important;}
           #matrix-section .crow-metric{border-width:1px !important;}
-          #matrix-section .crow-metric.reach{color:#8a6d1a !important; background:#f7f0dc !important;}
-          #matrix-section .crow-metric.queue{color:#4a2a91 !important; background:#efe8fb !important;}
+          #matrix-section .crow-metric.reach{color:#7E6620 !important; background:#f7f0dc !important;}
+          #matrix-section .crow-metric.queue{color:#3F247A !important; background:#efe8fb !important;}
           #matrix-section table.matrix{min-width:0; font-size:var(--fs-1);}
           #matrix-section table.matrix th, #matrix-section table.matrix td{padding:3px 4px;}
           #matrix-section .matrix-scroll, #matrix-section table.matrix tr{break-inside:avoid;}
@@ -2246,22 +2246,22 @@
           #matrix-section .ns-line{color:#222 !important; border-color:#ccc !important;}
           #matrix-section .ns-badge{border-width:1px !important;}
           #matrix-section .ns-badge.measured{color:#1a6b34 !important; background:#e8f6ec !important; border-color:#80BD91 !important;}
-          #matrix-section .ns-badge.draft{color:#9c1c74 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
-          #matrix-section .ns-badge.unmeasured{color:#555 !important; background:#f0f0f0 !important; border-color:#bbb !important;}
+          #matrix-section .ns-badge.draft{color:#7E2061 !important; background:#fbe6f3 !important; border-color:#e0a0c8 !important;}
+          #matrix-section .ns-badge.unmeasured{color:#6B655F !important; background:#f0f0f0 !important; border-color:#bbb !important;}
           #matrix-section .rtbl td{border-color:#B2A190 !important; color:#111 !important; background:#fff !important;}
           #matrix-section .rtbl-t{color:#333 !important;}
           #matrix-section .rtbl-sec td{background:#ececec !important; color:#000 !important;}
           #matrix-section .rtbl-cap td{background:#f4f4f4 !important; color:#333 !important;}
           #matrix-section .c2-card{background:#fff !important; border-color:#ccc !important;}
-          #matrix-section .c2-card .dim-label{color:#4a2a91 !important;}
+          #matrix-section .c2-card .dim-label{color:#3F247A !important;}
           #matrix-section .prod-cell{border-color:#ccc !important;}
           #matrix-section .prod-feat{color:#111 !important;}
           #matrix-section .prod-free{color:#333 !important;} #matrix-section .prod-free b{color:#1a6b34 !important;}
           #matrix-section .prod-mat{border-width:1px !important;}
           #matrix-section .prod-mat.auto{color:#1a6b34 !important; background:#e8f6ec !important;}
-          #matrix-section .prod-mat.mech{color:#4a2a91 !important; background:#efe8fb !important;}
-          #matrix-section .prod-mat.semi{color:#1b4f72 !important; background:#e8f3fb !important;}
-          #matrix-section .prod-mat.propose{color:#9c1c74 !important; background:#fbe6f3 !important;}
+          #matrix-section .prod-mat.mech{color:#3F247A !important; background:#efe8fb !important;}
+          #matrix-section .prod-mat.semi{color:#20587E !important; background:#e8f3fb !important;}
+          #matrix-section .prod-mat.propose{color:#7E2061 !important; background:#fbe6f3 !important;}
           #matrix-section .prod-legend, #matrix-section .prod-legtxt{color:#333 !important;}
         }
         </style>
@@ -3041,15 +3041,15 @@
               var going=list.filter(function(i){return i['상태']==='OPEN';}).length;
               var cEl=document.getElementById('common-incidents-count');
               if(cEl)cEl.innerHTML=
-                '<span style="background:#edf7f0;color:#1a7a3c;border:1px solid #b6dfc5;border-radius:14px;padding:3px 12px;font-weight:700;">✅ 막음 완료 '+done+'건</span>'+
-                (going?'<span style="background:#fff4e6;color:#b85c00;border:1px solid #f5c89a;border-radius:14px;padding:3px 12px;font-weight:700;margin-left:6px;">⏳ 진행 중 '+going+'건</span>':'');
+                '<span style="background:#edf7f0;color:#207E41;border:1px solid #b6dfc5;border-radius:14px;padding:3px 12px;font-weight:700;">✅ 막음 완료 '+done+'건</span>'+
+                (going?'<span style="background:#fff4e6;color:#7E4F20;border:1px solid #f5c89a;border-radius:14px;padding:3px 12px;font-weight:700;margin-left:6px;">⏳ 진행 중 '+going+'건</span>':'');
               var h='';
               list.forEach(function(inc){
                 var summary=esc(inc['요약']||inc['증상']||'');
                 var guarded=inc['상태']==='GUARDED';
                 var pill=guarded
-                  ?'<span style="background:#edf7f0;color:#1a7a3c;border:1px solid #b6dfc5;border-radius:12px;padding:2px 10px;font-size:var(--fs-1);font-weight:700;white-space:nowrap;">✅ 막음 완료</span>'
-                  :'<span style="background:#fff4e6;color:#b85c00;border:1px solid #f5c89a;border-radius:12px;padding:2px 10px;font-size:var(--fs-1);font-weight:700;white-space:nowrap;">⏳ 아직 진행 중</span>';
+                  ?'<span style="background:#edf7f0;color:#207E41;border:1px solid #b6dfc5;border-radius:12px;padding:2px 10px;font-size:var(--fs-1);font-weight:700;white-space:nowrap;">✅ 막음 완료</span>'
+                  :'<span style="background:#fff4e6;color:#7E4F20;border:1px solid #f5c89a;border-radius:12px;padding:2px 10px;font-size:var(--fs-1);font-weight:700;white-space:nowrap;">⏳ 아직 진행 중</span>';
                 var detId='ci-'+(++_dc);
                 var detail='';
                 if(inc['차단조치'])detail+='<div><strong>조치:</strong> '+esc(inc['차단조치'])+'</div>';
@@ -3082,7 +3082,7 @@
                 h+='<div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">';
                 h+='<div style="font-weight:700;margin-bottom:4px;">'+label+'</div>';
                 h+='<div style="font-family:monospace;font-size:var(--fs-2);background:var(--bg);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px;word-break:break-all;">'+val+'</div><br>';
-                h+='<span style="font-size:var(--fs-1);color:#1a7a3c;background:#edf7f0;border:1px solid #b6dfc5;border-radius:10px;padding:1px 8px;">✅ 한 곳에서 관리</span>';
+                h+='<span style="font-size:var(--fs-1);color:#207E41;background:#edf7f0;border:1px solid #b6dfc5;border-radius:10px;padding:1px 8px;">✅ 한 곳에서 관리</span>';
                 h+='</div>';
               });
               h+='</div>';
@@ -4252,19 +4252,19 @@
 
     <!-- 📦 콘텐츠 허브 — O1식 박스 링크 그리드 (2026-07-22 GM 지시: M1 단순화 · #m1-dash 인라인 대시보드는 cmo/funnel/콘텐츠문의현황.html로 이관, 강사접수 iframe은 링크 박스로 대체) -->
     <section id="m1-hub" style="margin:18px 0;">
-      <a href="cmo/intake/instructor_intake.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:16px 20px;background:linear-gradient(135deg,#E9F7F2,#1a1a2a);border:1px solid #9DD0BE;border-radius:14px;text-decoration:none;color:#201F1D;">
+      <a href="cmo/intake/instructor_intake.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:16px 20px;background:linear-gradient(135deg,#E9F7F2,#F3EFEC);border:1px solid #9DD0BE;border-radius:14px;text-decoration:none;color:#201F1D;">
         <span style="font-size:var(--fs-6);flex-shrink:0;">🎬</span>
         <span style="flex:1;">
           <span style="display:block;font-size:var(--fs-4);font-weight:800;">콘텐츠 접수 — 사진·영상·소개 직접 받기</span>
-          <span style="display:block;font-size:var(--fs-2);color:#2E805E;margin-top:3px;line-height:1.5;">강사·현장 콘텐츠를 폼으로 접수 → 공식 톤으로 제작·검수·발행. 마감 없이 상시.</span>
+          <span style="display:block;font-size:var(--fs-2);color:#2A7455;margin-top:3px;line-height:1.5;">강사·현장 콘텐츠를 폼으로 접수 → 공식 톤으로 제작·검수·발행. 마감 없이 상시.</span>
         </span>
         <span style="font-size:var(--fs-2);font-weight:800;color:#201F1D;background:#E9F7F2;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
-      <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#1a1a2a);border:1px solid #C6B389;border-radius:14px;text-decoration:none;color:#201F1D;">
+      <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#F3EFEC);border:1px solid #C6B389;border-radius:14px;text-decoration:none;color:#201F1D;">
         <span style="font-size:var(--fs-6);flex-shrink:0;">📊</span>
         <span style="flex:1;">
           <span style="display:block;font-size:var(--fs-4);font-weight:800;">콘텐츠 문의 현황 — 채널별 발행·문의·전환</span>
-          <span style="display:block;font-size:var(--fs-2);color:#A38329;margin-top:3px;line-height:1.5;">라이브 대시보드 · 기간 필터 · 채널별 성과 · 인사이트.</span>
+          <span style="display:block;font-size:var(--fs-2);color:#7E6620;margin-top:3px;line-height:1.5;">라이브 대시보드 · 기간 필터 · 채널별 성과 · 인사이트.</span>
         </span>
         <span style="font-size:var(--fs-2);font-weight:800;color:#221F20;background:#F7F2E9;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
@@ -4272,11 +4272,11 @@
            개인계정 @namuk.wellperion 하루 기록. 옛 이름 'GM의 일요일' 은 일요일에만 쓸 수 있고
            'GM' 이 들어가 본인 것으로만 읽혀서 뺐다. 주소는 그대로 둔다(북마크 보존).
            뒷단은 위 '콘텐츠 접수'와 같은 GAS·같은 검수큐를 재사용한다(분류만 '어떤 하루'). -->
-      <a href="cmo/sunday/GM의일요일.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#1a1a2a);border:1px solid #CDA798;border-radius:14px;text-decoration:none;color:#201F1D;">
+      <a href="cmo/sunday/GM의일요일.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#F3EFEC);border:1px solid #CDA798;border-radius:14px;text-decoration:none;color:#201F1D;">
         <span style="font-size:var(--fs-6);flex-shrink:0;">🌤️</span>
         <span style="flex:1;">
           <span style="display:block;font-size:var(--fs-4);font-weight:800;">어떤 하루 — 개인계정 기록</span>
-          <span style="display:block;font-size:var(--fs-2);color:#894825;margin-top:3px;line-height:1.5;">사진 올리면 제목·문장·캡션 자동 초안 → 캐러셀 미리보기 → 텔레그램 검수 → 승인 시 발행. 평일·주말 아무 날이나. @namuk.wellperion 전용.</span>
+          <span style="display:block;font-size:var(--fs-2);color:#7C4122;margin-top:3px;line-height:1.5;">사진 올리면 제목·문장·캡션 자동 초안 → 캐러셀 미리보기 → 텔레그램 검수 → 승인 시 발행. 평일·주말 아무 날이나. @namuk.wellperion 전용.</span>
         </span>
         <span style="font-size:var(--fs-2);font-weight:800;color:#201F1D;background:#F7EDE9;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
@@ -4420,7 +4420,7 @@
       function dateKey(it){return it.published_at||(((it.id||'').match(/\d{4}-\d{2}-\d{2}/)||[''])[0])||it.assigned_at||it.enqueued_at||'';}
       function pubDate(it){var k=dateKey(it);return k?k.slice(0,10):'';}
       function isDone(st){return st==='발행완료'||st==='rejected'||st==='반려'||st==='확인필요'||st==='폐기';}
-      function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':e==='발행검증대기'?'<span style="color:#5629A3;font-weight:700;">🔍 발행검증대기 · IG 확인 후 완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#A32929;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#A35629);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#A35629;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
+      function badgeOf(e){return e==='발행완료'?'<span style="color:var(--green);font-weight:700;">✅ 발행완료</span>':e==='발행검증대기'?'<span style="color:#43207E;font-weight:700;">🔍 발행검증대기 · IG 확인 후 완료</span>':(e==='approved'||e==='승인')?'<span style="color:var(--accent);font-weight:700;">🟡 승인됨 · 발행 진행 중</span>':e==='발행실패'?'<span style="color:#7E2020;font-weight:700;">❌ 발행 실패 · 재시도 필요</span>':e==='수동발행대기'?'<span style="color:var(--accent);font-weight:700;">📦 수동 발행 대기</span>':(e==='rejected'||e==='반려')?'<span style="color:var(--warm,#7E4320);font-weight:700;">↩ 반려됨</span>':e==='확인필요'?'<span style="color:#7E4320;font-weight:700;">🔎 발행 확인필요 · URL 수동확인</span>':'<span style="color:var(--accent);font-weight:700;">🟡 검수 대기</span>';}
       // 계정 분류: account 필드 우선, 없으면 channel 문자열로 추론, 미분류는 namuk
       function acctOf(it){
         var a=(it.account||'').toLowerCase();var ch=(it.channel||'').toLowerCase();
@@ -5410,8 +5410,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var LP_URL = 'status/learning_proposals.json';
           function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
           function effectBadge(ef){
-            if(ef==='효과있음') return '<span style="background:rgba(5,150,105,0.15);color:#059669;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">✅ 효과있음</span>';
-            if(ef==='효과없음') return '<span style="background:rgba(220,38,38,0.12);color:#A32929;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">효과없음</span>';
+            if(ef==='효과있음') return '<span style="background:rgba(5,150,105,0.15);color:#207E61;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">✅ 효과있음</span>';
+            if(ef==='효과없음') return '<span style="background:rgba(220,38,38,0.12);color:#7E2020;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">효과없음</span>';
             return '<span style="background:rgba(107,114,128,0.15);color:#6B655F;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">⏳ 미확인</span>';
           }
           fetch(LP_URL + '?_=' + Date.now(), {cache:'no-store'})
@@ -5475,12 +5475,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
          전에는 전사 비전("모든 스포츠클럽이 이 ERP로")이 이 자리를 차지하고 있었다. 그건 GM 개인 것이
          아니라 AI 배가 향하는 목적지라 자율현황으로 옮겼다(층위 혼동 정리 · CLAUDE.md §3-1).
          값은 비워 둔다 — 지어내지 않는다. GM 이 채우면 그때 여기에 들어온다. ══ -->
-    <div style="background:linear-gradient(135deg,#F3F0EC 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
+    <div style="background:linear-gradient(135deg,#F3F0EC 0%,#E9E8F3 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
       <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;">
         <span style="font-size:var(--fs-5);">🌟</span>
         <span style="color:#201F1D;font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;">GM 개인 북극성</span>
       </div>
-      <p id="gm-hero-northstar" style="color:#44327B;font-size:var(--fs-2);line-height:1.75;margin:0;">불러오는 중…</p>
+      <p id="gm-hero-northstar" style="color:#3E2E70;font-size:var(--fs-2);line-height:1.75;margin:0;">불러오는 중…</p>
     </div>
 
     <!-- ══ 🌤️ 오늘 하루 한 장 (GM 지시 2026-08-08 "내 개인 영역을 더 업그레이드") ══
@@ -5545,13 +5545,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <table id="gm1CalTable" style="width:100%;border-collapse:collapse;table-layout:fixed;">
           <thead>
             <tr id="gm1CalHeader">
-              <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);color:#A32929;">일</th>
+              <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);color:#7E2020;">일</th>
               <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);">월</th>
               <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);">화</th>
               <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);">수</th>
               <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);">목</th>
               <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);">금</th>
-              <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);color:#2952A3;">토</th>
+              <th style="padding:6px 4px;text-align:center;font-size:var(--fs-2);color:#20407E;">토</th>
             </tr>
           </thead>
           <tbody id="gm1CalBody"></tbody>
@@ -6258,7 +6258,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <!-- ══ 📝 GM 개인 메모 — 로드맵 (S2 공통탭에서 이관 · 이 브라우저 localStorage 전용 · 공유 아님 · 2026-07-22) ══ -->
       <div data-panel="roadmap">
       <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px;"><span class="ico">📝</span>GM 개인 메모 — 로드맵 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">— 이 브라우저에만 저장 · 공유 아님</span></h3>
-      <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 10px;">웰페리온 자동화 로드맵 GM 개인 메모. <strong style="color:#A32980;">📝 localStorage — 이 브라우저에만 저장되며 다른 AI·기기에 공유되지 않습니다.</strong> 클릭해 자유롭게 편집하세요.</p>
+      <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 10px;">웰페리온 자동화 로드맵 GM 개인 메모. <strong style="color:#7E2063;">📝 localStorage — 이 브라우저에만 저장되며 다른 AI·기기에 공유되지 않습니다.</strong> 클릭해 자유롭게 편집하세요.</p>
       <table id="g1-roadmap-table">
         <tr><th style="width:128px">모듈</th><th style="width:42%;">지금 (현재)</th><th>목표 (완성 시)</th></tr>
         <tr><td>👥 회원 (CPO)</td><td>회원 DB·재등록 현황 시트 운영</td><td>가입·갱신 자동 · LOSS징후 감지→케어 · NPS 자동수집 · 갱신율 추적</td></tr>
@@ -6321,7 +6321,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <!-- GM 사용법 (2026-06-01 v2 — 풀에디터·Sheets 동기화·캘린더 반영) -->
     <details class="toggle" style="margin:16px 0 20px;">
       <summary style="font-weight:700;">🌿 GM 사용법 (클릭해서 펼치기)</summary>
-    <div class="card" style="background:linear-gradient(135deg,#F3F0ED 0%,#2a3a2a 100%); border:none; padding:18px 22px; margin:8px 0 0; border-radius:14px;">
+    <div class="card" style="background:linear-gradient(135deg,#F3F0ED 0%,#F6F4F1 100%); border:none; padding:18px 22px; margin:8px 0 0; border-radius:14px;">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <span style="font-size:var(--fs-4);">🌿</span>
         <span style="color:#201F1D; font-weight:700; font-size:var(--fs-3); letter-spacing:0.02em;">GM 사용법</span>
@@ -6329,17 +6329,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- 핵심 3단계 -->
       <table style="margin:0 0 14px; background:transparent;">
-        <tr style="background:transparent;"><th style="width:50px; color:#367836; background:transparent; border-color:#B6CFB6;">#</th><th style="color:#367836; background:transparent; border-color:#B6CFB6;">할 일</th><th style="color:#367836; background:transparent; border-color:#B6CFB6;">방법</th></tr>
-        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#367836;">①</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>할 일 등록</strong></td><td style="color:#383532; border-color:#B6CFB6;">아래 오늘 할 일에 신규 등록. 웰리(AI CEO)가 받아서 6 C-Level에 자동 배분·검증</td></tr>
-        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#367836;">②</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>결과 받기</strong></td><td style="color:#383532; border-color:#B6CFB6;">텔레그램으로 "통과" / "반려" 알림만 받기</td></tr>
-        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#367836;">③</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>반려 시</strong></td><td style="color:#383532; border-color:#B6CFB6;">시드 수정 후 다시 등록. CEO가 자동 재시작</td></tr>
+        <tr style="background:transparent;"><th style="width:50px; color:#316D31; background:transparent; border-color:#B6CFB6;">#</th><th style="color:#316D31; background:transparent; border-color:#B6CFB6;">할 일</th><th style="color:#316D31; background:transparent; border-color:#B6CFB6;">방법</th></tr>
+        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#316D31;">①</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>할 일 등록</strong></td><td style="color:#383532; border-color:#B6CFB6;">아래 오늘 할 일에 신규 등록. 웰리(AI CEO)가 받아서 6 C-Level에 자동 배분·검증</td></tr>
+        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#316D31;">②</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>결과 받기</strong></td><td style="color:#383532; border-color:#B6CFB6;">텔레그램으로 "통과" / "반려" 알림만 받기</td></tr>
+        <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong style="color:#316D31;">③</strong></td><td style="color:#2A2825; border-color:#B6CFB6;"><strong>반려 시</strong></td><td style="color:#383532; border-color:#B6CFB6;">시드 수정 후 다시 등록. CEO가 자동 재시작</td></tr>
       </table>
 
       <!-- 풀에디터 기능 안내 -->
       <div style="border-top:1px solid #B6CFB6; padding-top:12px; margin-bottom:10px;">
-        <div style="color:#367836; font-size:var(--fs-2); font-weight:700; margin-bottom:8px; letter-spacing:0.04em;">📋 오늘 할 일 — 풀에디터 기능</div>
+        <div style="color:#316D31; font-size:var(--fs-2); font-weight:700; margin-bottom:8px; letter-spacing:0.04em;">📋 오늘 할 일 — 풀에디터 기능</div>
         <table style="margin:0; background:transparent; font-size:var(--fs-2);">
-          <tr style="background:transparent;"><th style="color:#387538; background:transparent; border-color:#B6CFB6; width:110px;">기능</th><th style="color:#387538; background:transparent; border-color:#B6CFB6;">사용법</th></tr>
+          <tr style="background:transparent;"><th style="color:#336B33; background:transparent; border-color:#B6CFB6; width:110px;">기능</th><th style="color:#336B33; background:transparent; border-color:#B6CFB6;">사용법</th></tr>
           <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong>편집</strong></td><td style="color:#383532; border-color:#B6CFB6;">카드 우측 <strong>편집</strong> 버튼 → 제목·날짜·상태·내용·진척 로그·예산 입력 → 저장</td></tr>
           <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong>날짜 변경</strong></td><td style="color:#383532; border-color:#B6CFB6;">카드의 <strong>📅 날짜 chip</strong> 클릭 → 시작일·종료일 수정</td></tr>
           <tr style="background:transparent;"><td style="color:#2A2825; border-color:#B6CFB6;"><strong>진척 로그</strong></td><td style="color:#383532; border-color:#B6CFB6;">편집 모달 → 날짜 + 내용 입력 후 <strong>추가</strong> — 누적 기록. 📈 숫자 chip으로 건수 표시</td></tr>
@@ -6353,7 +6353,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- Sheets 동기화 + 캘린더 -->
       <div style="border-top:1px solid #B6CFB6; padding-top:10px; margin-bottom:8px;">
-        <div style="color:#367836; font-size:var(--fs-2); font-weight:700; margin-bottom:6px; letter-spacing:0.04em;">☁️ Sheets 동기화 &amp; 캘린더</div>
+        <div style="color:#316D31; font-size:var(--fs-2); font-weight:700; margin-bottom:6px; letter-spacing:0.04em;">☁️ Sheets 동기화 &amp; 캘린더</div>
         <div style="color:#383532; font-size:var(--fs-2); line-height:1.7;">
           • <strong style="color:#2A2825;">편집 내용은 Google Sheets에 자동 저장</strong> — PC·모바일 어디서나 동일하게 반영.<br>
           • SSOT에서 넘어온 항목(SSOT 뱃지)도 <strong>편집 버튼</strong>으로 직접 수정 가능.<br>
@@ -6361,8 +6361,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </div>
       </div>
 
-      <div style="font-size:var(--fs-2); color:#387538; line-height:1.5;">
-        그 외 모든 것 (큐·상태 머신·watcher·자동 검증 등) = 백그라운드 자동. <strong style="color:#367836;">GM은 ① ② ③만. 나머지는 필요할 때 위 기능 활용.</strong>
+      <div style="font-size:var(--fs-2); color:#336B33; line-height:1.5;">
+        그 외 모든 것 (큐·상태 머신·watcher·자동 검증 등) = 백그라운드 자동. <strong style="color:#316D31;">GM은 ① ② ③만. 나머지는 필요할 때 위 기능 활용.</strong>
       </div>
     </div>
     </details>
@@ -6795,20 +6795,20 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </div>
 
-    <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#E9F7F2,#1a1a2a);border:1px solid #9DD0BE;border-radius:14px;text-decoration:none;color:#201F1D;">
+    <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#E9F7F2,#F3EFEC);border:1px solid #9DD0BE;border-radius:14px;text-decoration:none;color:#201F1D;">
       <span style="font-size:var(--fs-6);flex-shrink:0;">🗓️</span>
       <span style="flex:1;">
         <span style="display:block;font-size:var(--fs-4);font-weight:800;">월간 운영 계획·보고 — 이 달 목표·결과</span>
-        <span style="display:block;font-size:var(--fs-2);color:#2E805E;margin-top:3px;line-height:1.5;">매출·채용·부서·ERP 등 그 달 운영 목표를 한 곳에. 매출 목표 실측 자동 대비 · 월초 계획/월말 보고 카드 자동.</span>
+        <span style="display:block;font-size:var(--fs-2);color:#2A7455;margin-top:3px;line-height:1.5;">매출·채용·부서·ERP 등 그 달 운영 목표를 한 곳에. 매출 목표 실측 자동 대비 · 월초 계획/월말 보고 카드 자동.</span>
       </span>
       <span style="font-size:var(--fs-2);font-weight:800;color:#201F1D;background:#E9F7F2;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
     </a>
 
-    <a href="전사회의.html" style="display:flex;align-items:center;gap:14px;margin:-6px 0 18px;padding:14px 20px;background:linear-gradient(135deg,#F2EFEB,#1a1a2a);border:1px solid #C6B389;border-radius:14px;text-decoration:none;color:#201F1D;">
+    <a href="전사회의.html" style="display:flex;align-items:center;gap:14px;margin:-6px 0 18px;padding:14px 20px;background:linear-gradient(135deg,#F2EFEB,#F3EFEC);border:1px solid #C6B389;border-radius:14px;text-decoration:none;color:#201F1D;">
       <span style="font-size:var(--fs-6);flex-shrink:0;">🏢</span>
       <span style="flex:1;">
         <span style="display:block;font-size:var(--fs-3);font-weight:800;">전사회의 자료 (24~26 기간 셀렉터·A3 1장)</span>
-        <span style="display:block;font-size:var(--fs-2);color:#A38329;margin-top:3px;line-height:1.5;">기간 선택으로 24/25 상·하반기 재현 + 26 상반기 라이브 · A3 가로 1장 인쇄용.</span>
+        <span style="display:block;font-size:var(--fs-2);color:#7E6620;margin-top:3px;line-height:1.5;">기간 선택으로 24/25 상·하반기 재현 + 26 상반기 라이브 · A3 가로 1장 인쇄용.</span>
       </span>
       <span style="font-size:var(--fs-2);font-weight:800;color:#221F20;background:#F7F2E9;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
     </a>
@@ -7064,7 +7064,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
           + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+caption+'</div>'
           + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+value+'</div>'
-          + '<div style="font-size:.74rem;color:var(--red, #A33429);margin-top:6px;font-weight:700;">'+sub+'</div></div>';
+          + '<div style="font-size:.74rem;color:var(--red, #7E2820);margin-top:6px;font-weight:700;">'+sub+'</div></div>';
       }
       function siljangSmallLine(text){ return '<div style="font-size:var(--fs-1);color:var(--dim);padding:3px 0;">'+text+'</div>'; }
       function siljangTimeStr(){ var d=new Date(); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
@@ -9187,11 +9187,11 @@ function crTab(btn, panelId) {
     <div style="margin-top:14px;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;max-width:720px;">
       <div style="font-size:var(--fs-2);font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px">📢 현재 채용공고 현황 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:500">· 공고중 <span id="ps-openings-count">5</span>건</span></div>
       <div id="ps-openings-list" style="display:flex;flex-direction:column;gap:7px;margin-top:12px">
-        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">운영부 사원 (리셉션·정규직)</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">운영부</span></div>
-        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">주차관리 · 발렛파킹</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">시설부</span></div>
-        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">사내이사 수행기사</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">관리부</span></div>
-        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">남자사우나 주임</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">지원부</span></div>
-        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">오전 골프 프로</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">강습부</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">운영부 사원 (리셉션·정규직)</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">운영부</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">주차관리 · 발렛파킹</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">시설부</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">사내이사 수행기사</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">관리부</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">남자사우나 주임</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">지원부</span></div>
+        <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)"><span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span><span style="font-weight:600;color:var(--text)">오전 골프 프로</span><span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">강습부</span></div>
       </div>
     </div>
 
@@ -9221,7 +9221,7 @@ function crTab(btn, panelId) {
     <div style="margin-top:14px;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;max-width:720px;">
       <div style="font-size:var(--fs-2);font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px">📂 고용 형태 분포 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:500">· 재직 <span id="ps-emp-total">70</span>명</span></div>
       <div style="display:flex;height:22px;border-radius:7px;overflow:hidden;margin-top:13px;border:1px solid var(--border)">
-        <div id="ps-bar-free" style="width:64.3%;background:#7c9cc4;display:flex;align-items:center;justify-content:center;font-size:var(--fs-1);font-weight:700;color:#201F1D">파트너 <span id="ps-pct-free">64</span>%</div>
+        <div id="ps-bar-free" style="width:64.3%;background:#E6ECF4;display:flex;align-items:center;justify-content:center;font-size:var(--fs-1);font-weight:700;color:#201F1D">파트너 <span id="ps-pct-free">64</span>%</div>
         <div id="ps-bar-full" style="width:35.7%;background:#F5F1EA;display:flex;align-items:center;justify-content:center;font-size:var(--fs-1);font-weight:700;color:#201F1D">정규직 <span id="ps-pct-full">36</span>%</div>
       </div>
       <div style="display:flex;gap:18px;margin-top:11px;font-size:var(--fs-2);color:var(--text)">
@@ -9258,7 +9258,7 @@ function crTab(btn, panelId) {
           if(lc){
             lc.innerHTML=d.openingsList.map(function(o){
               return '<div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;font-size:var(--fs-2)">'+
-                '<span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2e7d46;border:1px solid #2e7d4640">공고중</span>'+
+                '<span style="flex:0 0 auto;font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:20px;background:#2e7d4615;color:#2B7341;border:1px solid #2e7d4640">공고중</span>'+
                 '<span style="font-weight:600;color:var(--text)">'+psEsc(o&&o.title)+'</span>'+
                 '<span style="margin-left:auto;font-size:var(--fs-1);color:var(--dim)">'+psEsc(o&&o.dept)+'</span></div>';
             }).join('');
@@ -9459,7 +9459,7 @@ function crTab(btn, panelId) {
         <span style="display:block;font-size:var(--fs-4);font-weight:800;">자율 작업 현황 보드 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">(자율로 한 일 + 돌아가는 자동화 — 두 축 통합)</span></span>
         <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">🔴 상시 자율 체계 · 📊 성과 요약 · 🕘 처리 이력(무엇을 자율로 했나) · 🖥️ 시스템 현황 · 🤖 자동화 건강 점수판 · 📸 M5 인스타그램 발행 파이프라인(잘 도나)까지 전부 이 보드 하나에 모여 있습니다. <code style="font-size:var(--fs-1);">status/</code> 로그 직독.</span>
       </span>
-      <span style="font-size:var(--fs-3);font-weight:800;color:#0c1a10;background:#E9F7F2;border-radius:8px;padding:9px 16px;white-space:nowrap;">자율 작업 현황 보드 열기 →</span>
+      <span style="font-size:var(--fs-3);font-weight:800;color:#201F1D;background:#E9F7F2;border-radius:8px;padding:9px 16px;white-space:nowrap;">자율 작업 현황 보드 열기 →</span>
     </a>
     <!-- ══ /자율 작업 현황 진입 ══ -->
 
@@ -11065,11 +11065,11 @@ function crTab(btn, panelId) {
     }
 
     var CAT_COLORS = {
-      '개인':        'background:#B79F8A;color:#221F20;',
+      '개인':        'background:#F1EDE9;color:#221F20;',
       '업무':        'background:#EAF6EA;color:#201F1D;',
       '결재':        'background:#F7F1E9;color:#201F1D;',
       '기획':        'background:#EEE9F7;color:#201F1D;',
-      '인사·파트너': 'background:#e85555;color:#201F1D;',
+      '인사·파트너': 'background:#F5E5E5;color:#201F1D;',
       '회의':        'background:#E9EEF7;color:#201F1D;',
       '기타':        'background:#FFFFFF;color:#201F1D;'
     };
@@ -11196,7 +11196,7 @@ function crTab(btn, panelId) {
         var c = catOf(t);
         return '<span style="display:inline-block;' + (CAT_COLORS[c] || CAT_COLORS['업무']) + 'font-size:var(--fs-1);font-weight:600;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">' + gm1Esc(c) + '</span>';
       }
-      var SSOT_BADGE = '<span style="display:inline-block;background:rgba(126,87,194,0.15);color:#4C2E80;font-size:var(--fs-1);font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">SSOT</span>';
+      var SSOT_BADGE = '<span style="display:inline-block;background:rgba(126,87,194,0.15);color:#452A74;font-size:var(--fs-1);font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;">SSOT</span>';
 
       // ── 수동 today 항목 + SSOT 항목 병합 (id 기반 dedup · 상태는 SSOT 우선) ──
       //   2026-06-02: dedup 키를 _sheetsId 기반으로 강화 — 동명 항목이라도 다른 id면 별개 카드 유지.
@@ -11317,7 +11317,7 @@ function crTab(btn, panelId) {
         tb += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
         tb += '<button type="button" id="gm1-share-list" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
         tb += '<button type="button" id="gm1-cal-toggle" onclick="var w=document.getElementById(\'gm1-cal-wrap\');var l=document.getElementById(\'gm1-list\');if(w){var s=w.style.display===\'none\';w.style.display=s?\'block\':\'none\';if(l)l.style.display=s?\'none\':\'\';this.style.background=s?\'var(--accent)\':\'var(--bg)\';this.style.color=s?\'#fff\':\'var(--text)\';this.textContent=s?\'📋 목록 보기\':\'🗓️ 캘린더\';if(s){var t=document.getElementById(\'gm1-todo-section\');if(t)t.open=true;}}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">🗓️ 캘린더</button>';
-        tb += '<a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#A37229;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
+        tb += '<a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#7E5820;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
         tb += '</div>';
         tb += '</div>'; // 도구바 박스 끝
         toolbarEl.innerHTML = tb;
@@ -11330,7 +11330,7 @@ function crTab(btn, panelId) {
 
       // ★큐 원본+미러 둘 다 fetch 실패 — "0건"이 진짜 0이 아니라 로드 실패임을 명시(빈 화면/위장 0 금지, 2026-07-24)
       if (gm1QueueFetchFailed) {
-        html += '<div style="background:rgba(220,38,38,0.14);border:1px solid rgba(220,38,38,0.45);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#A33229;font-weight:700;font-size:var(--fs-2);">⚠️ 항로 큐를 불러오지 못했습니다(원본·미러 모두 실패) — 아래 목록이 비어 보여도 실제 0건이 아닐 수 있습니다. 새로고침해 주세요.</div>';
+        html += '<div style="background:rgba(220,38,38,0.14);border:1px solid rgba(220,38,38,0.45);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#7E2720;font-weight:700;font-size:var(--fs-2);">⚠️ 항로 큐를 불러오지 못했습니다(원본·미러 모두 실패) — 아래 목록이 비어 보여도 실제 0건이 아닐 수 있습니다. 새로고침해 주세요.</div>';
       }
 
       // ── 🔴 결재 포인터(GM 결재 차례 + 진행중 건수·SSOT 링크) 삭제 — GM 개인 판으로 정리(GM 지시 2026-08-07 · 배453) ──
@@ -11374,7 +11374,7 @@ function crTab(btn, panelId) {
         if (ownerStr && !hasClevelId(t.title)) {
           ownerStr.split(',').forEach(function(o){
             o = o.trim();
-            if (o) html += '<span class="gm1-chip" style="background:rgba(91,159,213,0.13);color:#2A6DA2;">' + gm1Esc(o) + '</span>';
+            if (o) html += '<span class="gm1-chip" style="background:rgba(91,159,213,0.13);color:#21547D;">' + gm1Esc(o) + '</span>';
           });
         }
         // 날짜 chip (클릭=일정변경)
@@ -11387,7 +11387,7 @@ function crTab(btn, panelId) {
         if (t.approval || t.budgetCat) {
           var apr = String(t.approval || '').trim();
           if (apr) {
-            html += '<span class="gm1-chip" style="background:rgba(224,179,65,0.14);color:var(--yellow,#A38129);font-weight:700;">🧾 결재 요청</span>';
+            html += '<span class="gm1-chip" style="background:rgba(224,179,65,0.14);color:var(--yellow,#7E6420);font-weight:700;">🧾 결재 요청</span>';
           }
         }
         // SSOT 뱃지
@@ -11525,7 +11525,7 @@ function crTab(btn, panelId) {
         return '<div class="gm1-wait-line" style="border-bottom:1px dashed var(--border);">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
           '<span style="min-width:0;"><span title="' + gm1Esc(_s.tier) + '" style="margin-right:3px;">' + _s.icon + '</span>' +
-          '<span style="display:inline-block;background:rgba(140,166,214,0.16);color:#2E4B80;font-size:var(--fs-1);font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⚓ 대기</span>' +
+          '<span style="display:inline-block;background:rgba(140,166,214,0.16);color:#2A4474;font-size:var(--fs-1);font-weight:600;padding:2px 7px;border-radius:4px;margin:0 5px;">⚓ 대기</span>' +
           '<span style="color:var(--text);font-weight:500;">' + gm1Esc(t.title) + '</span>' + _b + (t.ssotAuto ? '<span class="gm1-tag-faint">' + catChip(t) + SSOT_BADGE + '</span>' : '') + '</span>' +
           '<span style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' + _gm1WhenBadgeHtml(t) +
           (t.queueSource ? '' : '<button class="todo-act-btn today-act" data-id="' + gm1Esc(t.id) + '" data-action="restore" title="진행 중으로 시작" style="font-size:var(--fs-1);padding:2px 8px;flex-shrink:0;">▶ 시작</button>') +
@@ -11547,13 +11547,13 @@ function crTab(btn, panelId) {
           return _gm1WaitAge(a).localeCompare(_gm1WaitAge(b)) || String(a.title||'').localeCompare(String(b.title||''));
         });
         var s = '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">';
-        s += '<div style="font-size:var(--fs-2);font-weight:700;color:#2E4B80;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">— 오래 기다린 것부터</span></div>';
+        s += '<div style="font-size:var(--fs-2);font-weight:700;color:#2A4474;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">— 오래 기다린 것부터</span></div>';
         // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
         // ── ⚓ 정박 포인터도 삭제(GM 지시 2026-08-07) — 자율현황이 정본이라 여기선 안 센다.
         list.slice(0, GM1_WAIT_OPEN).forEach(function(t){ s += _gm1WaitLineHtml(t); });
         var rest = list.slice(GM1_WAIT_OPEN);
         if (rest.length) {
-          s += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:var(--fs-2);font-weight:600;color:#2E4B80;padding:4px 0;">▼ 나머지 ' + rest.length + '건 보기</summary><div style="margin-top:4px;">';
+          s += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:var(--fs-2);font-weight:600;color:#2A4474;padding:4px 0;">▼ 나머지 ' + rest.length + '건 보기</summary><div style="margin-top:4px;">';
           rest.forEach(function(t){ s += _gm1WaitLineHtml(t); });
           s += '</div></details>';
         }
@@ -11734,7 +11734,7 @@ function crTab(btn, panelId) {
 
           var dayNum = document.createElement('div');
           dayNum.style.cssText = 'font-size:var(--fs-2);font-weight:700;margin-bottom:3px;' +
-            (col === 0 ? 'color:#A32929;' : col === 6 ? 'color:#2952A3;' : '') +
+            (col === 0 ? 'color:#7E2020;' : col === 6 ? 'color:#20407E;' : '') +
             (cell.dateStr === td ? 'background:var(--accent);color:#201F1D;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;' : '');
           dayNum.textContent = cell.day;
           tdEl.appendChild(dayNum);
@@ -12833,7 +12833,7 @@ function crTab(btn, panelId) {
         +'<div style="font-size:var(--fs-1);color:var(--dim);margin:2px 0 8px;">완료율</div>'+'<div style="height:7px;border-radius:99px;background:var(--gray-bg);overflow:hidden;"><i style="display:block;height:100%;border-radius:99px;width:'+kpi.pct+'%;background:'+pctColor+';"></i></div>'
         +'<div style="margin-top:8px;font-size:var(--fs-1);display:flex;gap:8px;flex-wrap:wrap;">'
         +'<span style="color:var(--dim);">총 '+kpi.total+'</span>'
-        +'<span style="color:#347A42;font-weight:600;">완료 '+kpi.done+'</span>'
+        +'<span style="color:#2F6F3C;font-weight:600;">완료 '+kpi.done+'</span>'
         +'<span style="color:'+undoneColor+';font-weight:600;">미완료 '+kpi.undone+'</span>'
         +'</div>'
         +'</div>';
@@ -13069,11 +13069,11 @@ function crTab(btn, panelId) {
       var bi=boardInfo||{roundCount:0,draftHasData:false,issues:[]};
       var issueCount=bi.issues.length;
       var topColor=issueCount>0?'#ED5B3F':(fKpi.pct>=90?'#6abf7b':fKpi.pct>=60?'#e6c84e':'#ED5B3F');
-      var nextChip=bi.draftHasData?(' · <span style="color:var(--yellow,#A38B29);">'+(bi.roundCount+1)+'회 작성중</span>'):'';
+      var nextChip=bi.draftHasData?(' · <span style="color:var(--yellow,#7E6C20);">'+(bi.roundCount+1)+'회 작성중</span>'):'';
       // ranges 미로드(조회 실패)면 수치기준 이상은 판정 자체를 안 했다는 뜻 — "이상 없음"으로 위장하지 않고 정직 표기(계약 §4).
       var issueLine=issueCount>0
-        ? '<span style="color:#A33C29;font-weight:700;">⚠️ 이상 '+issueCount+'건</span>'
-        : (ranges ? '<span style="color:#347A42;font-weight:700;">이상 없음</span>' : '<span style="color:var(--dim);">기준 불러오는 중…</span>');
+        ? '<span style="color:#7E2F20;font-weight:700;">⚠️ 이상 '+issueCount+'건</span>'
+        : (ranges ? '<span style="color:#2F6F3C;font-weight:700;">이상 없음</span>' : '<span style="color:var(--dim);">기준 불러오는 중…</span>');
       var issueTitle='';
       if(issueCount>0){
         issueTitle=bi.issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');
@@ -13141,8 +13141,8 @@ function crTab(btn, panelId) {
       var issueCount=issues.length;
       var topColor = issueCount>0?'#ED5B3F':(gKpi.pct>=90?'#6abf7b':gKpi.pct>=60?'#e6c84e':'#ED5B3F');
       var issueLine = issueCount>0
-        ? '<span style="color:#A33C29;font-weight:700;">⚠️ 이슈 '+issueCount+'건</span>'
-        : '<span style="color:#347A42;font-weight:700;">이슈 없음</span>';
+        ? '<span style="color:#7E2F20;font-weight:700;">⚠️ 이슈 '+issueCount+'건</span>'
+        : '<span style="color:#2F6F3C;font-weight:700;">이슈 없음</span>';
       var issueTitle='';
       if(issueCount>0){
         issueTitle=issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');

@@ -29,7 +29,7 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+       color:var(--text); background:var(--bg); line-height:1.75; font-size:var(--fs-3);
        -webkit-font-smoothing:antialiased;}
 
   .topbar{display:flex; align-items:center; gap:22px; padding:0 40px; height:58px;
@@ -37,19 +37,19 @@
           background:var(--paper); border-bottom:1px solid var(--border);}
   .topbar .brand{display:flex; align-items:center; color:var(--text);}
   .topbar .brand svg{height:16px; width:auto; display:block;}  /* 브랜드 자산 정본 = erp/brand/ (배932·952) */
-  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
-  .topbar .who{margin-left:auto; font-size:13.5px; color:var(--text-soft);}
-  .topbar .who .role{display:inline-block; font-size:11.5px; font-weight:600;
+  .topbar .brand .sub{font-size:var(--fs-2); color:var(--dim); font-weight:400; margin-left:8px;}
+  .topbar .who{margin-left:auto; font-size:var(--fs-3); color:var(--text-soft);}
+  .topbar .who .role{display:inline-block; font-size:var(--fs-1); font-weight:600;
                      padding:2px 9px; border-radius:20px; background:var(--accent);
                      color:#fff; margin-left:7px;}
-  .topbar a.logout{font-size:13px; color:var(--dim); text-decoration:none; margin-left:16px;}
+  .topbar a.logout{font-size:var(--fs-2); color:var(--dim); text-decoration:none; margin-left:16px;}
   .topbar a.logout:hover{color:var(--accent-hover);}
 
   .main{max-width:1100px; padding:40px 40px 80px;}
-  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
+  h2{font-size:var(--fs-6); font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
   [role=tabpanel] > h2:first-child{margin-top:0;}
-  .meta{font-size:13px; color:var(--dim); margin-bottom:30px;}
-  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
+  .meta{font-size:var(--fs-2); color:var(--dim); margin-bottom:30px;}
+  h3{font-size:var(--fs-4); font-weight:700; margin:44px 0 14px; padding-bottom:8px;
      border-bottom:2px solid var(--gray-bg);}
 
   .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
@@ -57,9 +57,9 @@
        border-radius:12px; padding:20px 22px; text-decoration:none; color:inherit;
        transition:border-color 0.12s, background 0.12s;}
   .mod:hover{border-color:var(--accent); background:var(--accent-bg); box-shadow:0 4px 14px rgba(34,31,32,.07);}
-  .mod .name{font-size:17px; font-weight:700; margin-bottom:6px;}
-  .mod .desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
-  .mod .owner{font-size:12.5px; color:var(--dim); margin-top:12px;
+  .mod .name{font-size:var(--fs-4); font-weight:700; margin-bottom:6px;}
+  .mod .desc{font-size:var(--fs-3); color:var(--text-soft); line-height:1.65;}
+  .mod .owner{font-size:var(--fs-2); color:var(--dim); margin-top:12px;
               border-top:1px dashed var(--border-strong); padding-top:9px;}
   /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
   .mod.locked{opacity:0.4;}
@@ -68,12 +68,12 @@
 
   .find{width:100%; max-width:420px; padding:10px 14px; margin-bottom:6px;
         background:var(--paper); border:1px solid var(--border-strong); border-radius:8px;
-        color:var(--text); font-size:14px; font-family:inherit;}
+        color:var(--text); font-size:var(--fs-3); font-family:inherit;}
   .find:focus{outline:none; border-color:var(--accent);}
   .find::placeholder{color:var(--dim-soft);}
-  h3 .n{font-size:13px; font-weight:400; color:var(--dim); margin-left:8px;}
+  h3 .n{font-size:var(--fs-2); font-weight:400; color:var(--dim); margin-left:8px;}
 
-  .msg{color:var(--dim); font-size:14px;}
+  .msg{color:var(--dim); font-size:var(--fs-3);}
 
   /* 탭 = 최상단 상단바 안 (GM 지시 2026-09-08 — 본문에 있던 것을 위로 올렸다) */
   .tabs{display:flex; gap:2px; height:100%; overflow-x:auto; scrollbar-width:none;}
@@ -85,15 +85,15 @@
   .tabs button[aria-selected=true]{color:var(--text); border-bottom-color:var(--accent);}
   .tabs button:focus-visible{outline:2px solid var(--accent); outline-offset:-6px; border-radius:8px;}
   .dl .mod .owner::before{content:"내려받기 · ";}
-  .note{font-size:13px; color:var(--dim); background:var(--gray-bg);
+  .note{font-size:var(--fs-2); color:var(--dim); background:var(--gray-bg);
         border-left:2px solid var(--border-strong); padding:10px 14px; border-radius:6px; margin-bottom:20px;}
   .note a{color:var(--accent-hover);}
   /* 운영 축 — 오늘 카드 수만 센다(배1135 4단계). 가동·비용 신호는 자동화 잇기 뒤에 붙인다. */
   .ops{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-bottom:16px;
        padding:10px 14px; background:var(--gray-bg); border:1px solid var(--border);
-       border-radius:8px; font-size:13px; color:var(--text-soft);}
+       border-radius:8px; font-size:var(--fs-2); color:var(--text-soft);}
   .ops b{color:var(--text); font-weight:700;}
-  .ops .hint{width:100%; font-size:12px; color:var(--dim);}
+  .ops .hint{width:100%; font-size:var(--fs-2); color:var(--dim);}
   /* 권한관리 끼워넣기 — 서버가 내주는 관리자 화면을 이 자리에 그대로 띄운다 */
   /* 관리자 화면은 넓은 콘솔이다 — 모듈 목록용 1100px 틀에 가두지 않고 창 폭을 다 쓴다.
      .main 은 왼쪽 정렬(좌우 여백 40px)이라 이 폭이 화면에 정확히 들어맞는다. */
@@ -106,6 +106,7 @@
              border-radius:12px; background:var(--paper); display:block;}
   @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
 </style>
+<link rel="stylesheet" href="../assets/wp-ui.css">
 </head>
 <body>
 

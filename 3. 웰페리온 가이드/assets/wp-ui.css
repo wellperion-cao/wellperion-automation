@@ -1,0 +1,102 @@
+@import "../erp/brand/tokens.css";
+
+/* ============================================================
+   웰페리온 ERP 화면 공통 UI 언어 (단일 출처)
+   위치: 3. 웰페리온 가이드/assets/wp-ui.css
+   정본: 이 파일 하나. 각 화면은 <link>로 가리키기만 한다(복사 금지).
+
+   왜 있나 — 2026-09-09 GM 지시.
+   "뭔가 불편한데 왜 그런지를 모르겠어."
+   실측 결과 원인은 디자인이 아니라 언어의 부재였다. 화면 5장이
+   공통 토큰 없이 각자 px 를 직접 박아 써서, 한 화면 안에
+   글자 크기가 9~48종, 배경색이 최대 49종까지 쓰였다.
+   그래서 같은 회사 화면으로 읽히지 않는다.
+
+   기준선 = erp/index.html (밝은 종이 톤). 나머지를 여기에 맞춘다.
+
+   담는 것 3가지
+   1) 색 단계   — 배경 3 · 글자 3 (색이 뜻을 지닌 값은 건드리지 않는다)
+   2) 글자 단계 — 본문 5 + 표제 1
+   3) 터치 크기 — 모바일에서 누르는 것은 최소 44px
+
+   쓰는 법: font-size 는 var(--fs-1..6), 중성 색은 var(--paper) 계열을
+   쓴다. 상태를 뜻하는 색(빨강=경보 · 초록=완료 등)은 토큰으로 바꾸지
+   않는다 — 뜻이 사라진다.
+   ============================================================ */
+
+:root{
+  /* 배경 3단계 (밝은 종이 톤) */
+  --surface: #FFFFFF;   /* 카드·표 안쪽 */
+  /* --paper: #F4F0EB;     화면 바탕 — tokens.css 정본 */
+  --line:    #E3DCD3;   /* 경계선·구분선 */
+
+  /* 글자 3단계 */
+  /* --ink: #221F20;      본문 — tokens.css 정본 */
+  --ink-2:  #5C554F;    /* 보조 설명 */
+  --ink-3:  #8C837B;    /* 흐린 라벨·단위 */
+
+  /* 글자 크기 6단계 */
+  --fs-1: 11px;    /* 라벨·단위 */
+  --fs-2: 12.5px;  /* 표 안 본문 */
+  --fs-3: 14px;    /* 본문 */
+  --fs-4: 17px;    /* 소제목 */
+  --fs-5: 22px;    /* 제목 */
+  --fs-6: 26px;    /* 화면 표제 */
+
+  /* 손가락으로 누르는 최소 크기 */
+  --tap: 44px;
+}
+
+/* --- 제목 위계 ---------------------------------------------
+   본문 대비 제목이 제목으로 보이게. 화면이 자기 값을 가진 곳은
+   그 값이 이긴다(여기서는 덮어쓰지 않는다). */
+h1{ font-size: var(--fs-6); line-height:1.25; }
+h2{ font-size: var(--fs-5); line-height:1.3; }
+h3{ font-size: var(--fs-4); line-height:1.35; }
+h4{ font-size: var(--fs-3); line-height:1.4; }
+h1,h2,h3,h4{ color: var(--ink); font-weight:700; }
+
+/* --- 모바일 터치 크기 --------------------------------------
+   누르는 것만 키운다. 글 안의 링크는 건드리지 않는다 —
+   줄 높이가 벌어져 문단이 깨진다. */
+@media (max-width: 768px){
+  button,
+  select,
+  input[type="button"], input[type="submit"], input[type="reset"],
+  [role="button"],
+  a.btn, .btn, .button, .tab, .chip, .pill,
+  nav a, .nav a, .tabs a, .menu a{
+    min-height: var(--tap);
+    min-width: var(--tap);
+  }
+  /* 세로 가운데 정렬 — 높이만 키우고 글자가 위에 붙는 것 방지 */
+  button, a.btn, .btn, .button, .tab, nav a, .nav a, .tabs a, .menu a{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 표 안 링크는 줄 자체를 눌러지게 — 문단 링크는 제외 */
+  td a, th a{
+    display: inline-block;
+    min-height: var(--tap);
+    line-height: var(--tap);
+  }
+
+  /* 체크칸·입력칸이 가장 작다 — GM업무 화면 실측 316개가 높이 13px 였다 */
+  input[type="checkbox"], input[type="radio"]{
+    width: 22px;
+    height: 22px;
+  }
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]){
+    min-height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  input[type="text"], input[type="number"], input[type="date"],
+  input[type="search"], input[type="tel"], input[type="email"],
+  textarea, select{
+    min-height: var(--tap);
+  }
+}

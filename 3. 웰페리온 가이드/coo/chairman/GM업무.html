@@ -47,7 +47,7 @@
 
   .bar{width:297mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
   .bar button, .bar a{
-    font-family:var(--font);font-size:13px;font-weight:600;
+    font-family:var(--font);font-size:var(--fs-2);font-weight:600;
     padding:8px 16px;border:1px solid rgba(255,255,255,.45);
     background:rgba(255,255,255,.14);color:#fff;cursor:pointer;
     text-decoration:none;border-radius:2px;transition:.15s;
@@ -55,13 +55,13 @@
   .bar button:hover, .bar a:hover{background:#fff;color:var(--deep);}
 
   .hd{border-bottom:3px solid var(--deep);padding-bottom:10px;margin-bottom:8px;}
-  .brand{font-size:10px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
-  .hd h1{font-family:var(--font-serif);font-size:27px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
-  .hd .sub{font-size:14px;color:var(--grey);margin:0 0 12px;}
-  .meta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:12.5px;}
-  .meta b{color:var(--grey);font-weight:600;font-size:11px;letter-spacing:.08em;margin-right:6px;}
+  .brand{font-size:var(--fs-1);font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-family:var(--font-serif);font-size:var(--fs-6);font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
+  .hd .sub{font-size:var(--fs-3);color:var(--grey);margin:0 0 12px;}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:var(--fs-2);}
+  .meta b{color:var(--grey);font-weight:600;font-size:var(--fs-1);letter-spacing:.08em;margin-right:6px;}
 
-  .lede{font-size:13.5px;line-height:1.65;color:var(--ink);margin:14px 0 18px;
+  .lede{font-size:var(--fs-3);line-height:1.65;color:var(--ink);margin:14px 0 18px;
         padding:11px 14px;background:var(--steam);border-left:3px solid var(--mid);}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;align-items:start;}
@@ -73,10 +73,10 @@
   .grpbox>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:10px;
     padding-bottom:6px;margin-bottom:12px;border-bottom:2px solid var(--ink,#1b1b1b);}
   .grpbox>summary::-webkit-details-marker{display:none;}
-  .grpbox>summary::before{content:'▾';font-size:12px;color:var(--grey);transform:translateY(-1px);}
+  .grpbox>summary::before{content:'▾';font-size:var(--fs-2);color:var(--grey);transform:translateY(-1px);}
   .grpbox:not([open])>summary::before{content:'▸';}
-  .grpbox>summary b{font-family:var(--font-serif);font-size:17px;font-weight:800;letter-spacing:-.02em;margin-right:auto;}
-  .grpbox>summary span{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.02em;
+  .grpbox>summary b{font-family:var(--font-serif);font-size:var(--fs-4);font-weight:800;letter-spacing:-.02em;margin-right:auto;}
+  .grpbox>summary span{font-size:var(--fs-1);font-weight:700;color:var(--ink-3);letter-spacing:.02em;
     background:var(--paper-2);border-radius:99px;padding:2px 10px;}
   .grpin{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;align-items:start;}
 
@@ -99,48 +99,48 @@
      "각 제목을 길게 보여주고, 우측 아래에 진행 /기한 등이 있어야해 // 제목이 띄어쓰기로 내려가니까 불편해").
      종전은 제목과 배지를 한 줄에 좌우로 놓아, 2열 카드 폭에서 제목이 배지에 밀려 두세 줄로 꺾였다. */
   .top{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin-bottom:3px;}
-  .top h2{font-family:var(--font-serif);font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
+  .top h2{font-family:var(--font-serif);font-size:var(--fs-4);font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
-  .top h2 .cat{font-size:12.5px;font-weight:600;color:var(--grey);letter-spacing:.01em;}
-  .top .when{font-size:12px;font-weight:600;color:var(--mid);white-space:nowrap;}
+  .top h2 .cat{font-size:var(--fs-2);font-weight:600;color:var(--grey);letter-spacing:.01em;}
+  .top .when{font-size:var(--fs-2);font-weight:600;color:var(--mid);white-space:nowrap;}
 
-  .item p.body{font-size:13px;line-height:1.66;margin:0 0 9px;}
+  .item p.body{font-size:var(--fs-2);line-height:1.66;margin:0 0 9px;}
   /* 내용 전문 — 줄바꿈·기호 그대로 살려 읽는다(GM 2026-08-06 "아무 내용이 없다" 지적 대응) */
   /* 링크 줄 — 팔레트 안(브라스·steam)으로 통일 */
-  .item .doc-link{display:inline-block;margin:8px 8px 0 0;font-size:12px;font-weight:700;color:var(--brass);
+  .item .doc-link{display:inline-block;margin:8px 8px 0 0;font-size:var(--fs-2);font-weight:700;color:var(--brass);
                   text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--steam);}
   .item strong{font-weight:700;}
 
-  dl{margin:0;font-size:12.5px;line-height:1.6;}
+  dl{margin:0;font-size:var(--fs-2);line-height:1.6;}
   dl div{display:flex;gap:10px;margin-bottom:4px;}
   dl div:last-child{margin-bottom:0;}
-  dt{flex:0 0 62px;font-weight:600;color:var(--grey);font-size:11.5px;padding-top:1px;}
+  dt{flex:0 0 62px;font-weight:600;color:var(--grey);font-size:var(--fs-1);padding-top:1px;}
   dd{margin:0;flex:1;}
 
   .note{margin-top:9px;padding:9px 13px;background:var(--alert-bg);
-        border:1px solid #E5D1BC;font-size:12.5px;line-height:1.6;color:#5E3418;}
+        border:1px solid #E5D1BC;font-size:var(--fs-2);line-height:1.6;color:#5E3418;}
   .note b{color:var(--alert);font-weight:700;}
 
-  .rep-empty{font-size:13px;color:var(--grey);padding:14px 0;}
+  .rep-empty{font-size:var(--fs-2);color:var(--grey);padding:14px 0;}
 
   /* 경영 보고건 표(회장님·대표님) 액션 버튼·완료 배지 — 대표님_지시사항.html과 같은 값으로 이식
      (GM 지적 2026-08-11 "가독성" — 이 페이지에 정의가 없어 무늬 없는 맨 버튼으로 보이던 것). */
-  .ebtn{font-family:var(--font);font-size:12px;font-weight:700;padding:6px 14px;border-radius:2px;cursor:pointer;
+  .ebtn{font-family:var(--font);font-size:var(--fs-2);font-weight:700;padding:6px 14px;border-radius:2px;cursor:pointer;
         background:var(--deep);color:#fff;border:0;}
   .ebtn:hover{background:var(--mid);}
   .ebtn:disabled{background:var(--line);color:var(--grey);cursor:not-allowed;}
-  .done-badge{font-size:11.5px;font-weight:700;color:#1f7a3d;}
-  .sum td .cat{font-size:11.5px;font-weight:500;color:var(--grey);}
+  .done-badge{font-size:var(--fs-1);font-weight:700;color:#1f7a3d;}
+  .sum td .cat{font-size:var(--fs-1);font-weight:500;color:var(--grey);}
 
   .grp{margin:20px 0 10px;padding:7px 13px;background:var(--deep);color:#fff;
        display:flex;justify-content:space-between;align-items:baseline;gap:14px;
        break-inside:avoid;break-after:avoid;page-break-after:avoid;}
-  .grp h2{font-size:15.5px;font-weight:800;letter-spacing:.02em;margin:0;}
-  .grp .cnt{font-size:11.5px;font-weight:600;color:#C9D2CC;white-space:nowrap;}
+  .grp h2{font-size:var(--fs-3);font-weight:800;letter-spacing:.02em;margin:0;}
+  .grp .cnt{font-size:var(--fs-1);font-weight:600;color:#C9D2CC;white-space:nowrap;}
 
   .sum{margin-top:8px;border:2px solid var(--deep);padding:8px 14px;}
-  .sum h3{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
-  .sum table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .sum h3{font-size:var(--fs-1);font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
+  .sum table{width:100%;border-collapse:collapse;font-size:var(--fs-2);}
   .sum td{padding:3px 4px;border-bottom:1px solid var(--line);vertical-align:top;}
   .sum tr:last-child td{border-bottom:none;}
   .sum td:first-child{width:22px;font-weight:800;color:var(--brass);}
@@ -162,31 +162,31 @@
   /* 담당 칸 — 96px 였을 때 「이경연 실장 + 윤병현AM」이 「이경연 실장 + 윤」에서 잘렸다(2026-09-01 웰리가
      20건 담당을 채우고 나서 실측). 두 사람이 붙는 건이 많아 폭을 넓힌다. */
   .sum td.mgr{width:168px;}
-  .sum td.mgr input.mgr-inp{width:100%;font-family:var(--font);font-size:12px;padding:3px 5px;
+  .sum td.mgr input.mgr-inp{width:100%;font-family:var(--font);font-size:var(--fs-2);padding:3px 5px;
     border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink);}
   .sum td.mgr input.mgr-inp:disabled{background:var(--steam);color:var(--grey);}
   .sum td.mgr input.mgr-inp:focus{outline:2px solid var(--mid);outline-offset:0;}
 
   .ft{border-top:1px solid var(--line);margin-top:8px;padding-top:5px;
-      display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
+      display:flex;justify-content:space-between;font-size:var(--fs-1);color:var(--grey);}
 
   /* -- 토글 3줄 (2026-08-06 GM 지시 "1페이지에 토글라인으로") -- */
   .tgl-nav{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap;}
-  .tgl-nav a{font-size:12.5px;font-weight:700;text-decoration:none;color:var(--mid);
+  .tgl-nav a{font-size:var(--fs-2);font-weight:700;text-decoration:none;color:var(--mid);
              border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
   .sec{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden;}
   /* 이 3개 섹션(경영 보고건·GM 진행건·완료건)이 맨 위에 이어 붙어 요약 띠 역할도 겸한다 —
      각자 접고 펼 수 있는 실제 섹션이면서, 접힌 채로도 건수가 큼직하게 보인다(GM 지시 2026-09-03). */
   .sec > summary{list-style:none;cursor:pointer;padding:11px 16px;background:var(--ink);color:#fff;
-                 font-family:var(--font-serif);font-size:15.5px;font-weight:800;letter-spacing:.02em;
+                 font-family:var(--font-serif);font-size:var(--fs-3);font-weight:800;letter-spacing:.02em;
                  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
                  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .sec > summary::-webkit-details-marker{display:none;}
-  .sec > summary .ic{font-family:var(--font);font-size:17px;}
-  .sec > summary .cnt{font-family:var(--font);margin-left:auto;font-size:14px;font-weight:800;color:#fff;
+  .sec > summary .ic{font-family:var(--font);font-size:var(--fs-4);}
+  .sec > summary .cnt{font-family:var(--font);margin-left:auto;font-size:var(--fs-3);font-weight:800;color:#fff;
     white-space:nowrap;background:rgba(255,255,255,.14);border-radius:99px;padding:3px 12px;}
   /* 섹션 액션 — 세 섹션 같은 자리(헤더 우측)에 같은 모양으로 (GM 2026-08-06 일관성 지시) */
-  .sec > summary .sec-act{font-family:var(--font);font-size:11.5px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
+  .sec > summary .sec-act{font-family:var(--font);font-size:var(--fs-1);font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
     border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:3px 11px;margin-left:10px;}
   .sec > summary .sec-act:hover{background:#fff;color:var(--ink);}
   .sec > summary .sec-act:disabled{opacity:.45;cursor:default;}
@@ -199,10 +199,10 @@
      지금 화면을 그대로 펼쳐 보여주는 것이라 인쇄본과 보이는 것이 같다. */
   .mapbar{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;align-items:center;gap:8px;
     padding:9px 14px;background:#12281C;color:#fff;box-shadow:0 3px 14px rgba(0,0,0,.28);
-    font-size:12.5px;font-weight:700;}
+    font-size:var(--fs-2);font-weight:700;}
   .mapbar.on{display:flex;}
   .mapbar .t{margin-right:auto;letter-spacing:-.01em;}
-  .mapbar button{font-family:inherit;font-size:12px;font-weight:700;color:#fff;cursor:pointer;
+  .mapbar button{font-family:inherit;font-size:var(--fs-2);font-weight:700;color:#fff;cursor:pointer;
     background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:5px 13px;}
   .mapbar button:hover{background:rgba(255,255,255,.22);}
   .mapbar button.x{border-color:rgba(255,255,255,.28);background:transparent;}
@@ -211,60 +211,60 @@
   .sec-body{padding:12px 14px 14px;}
   .sub-h{display:flex;align-items:baseline;gap:10px;border-bottom:1.5px solid var(--deep);
          padding-bottom:4px;margin-bottom:7px;}
-  .sub-h .who{font-size:13.5px;font-weight:800;color:var(--deep);letter-spacing:-.01em;}
-  .sub-h .cnt3{font-size:11.5px;font-weight:700;color:var(--grey);margin-left:auto;}
-  .repbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px;}
+  .sub-h .who{font-size:var(--fs-3);font-weight:800;color:var(--deep);letter-spacing:-.01em;}
+  .sub-h .cnt3{font-size:var(--fs-1);font-weight:700;color:var(--grey);margin-left:auto;}
+  .repbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-2);}
   .repbar .cnt2{font-weight:700;color:var(--mid);}
-  .repbar .rbtn{font-family:var(--font);font-size:12.5px;font-weight:700;padding:6px 14px;cursor:pointer;
+  .repbar .rbtn{font-family:var(--font);font-size:var(--fs-2);font-weight:700;padding:6px 14px;cursor:pointer;
                 border:1px solid var(--deep);background:var(--deep);color:#fff;border-radius:2px;}
   .repbar .rbtn:disabled{opacity:.4;cursor:default;}
-  .repbar .rnote{font-size:11.5px;color:var(--grey);}
-  .repbar .rstatus{font-size:11.5px;font-weight:700;color:var(--brass);}
-  .digest{display:none;white-space:pre-wrap;font-size:11.5px;line-height:1.6;background:#fafafa;
+  .repbar .rnote{font-size:var(--fs-1);color:var(--grey);}
+  .repbar .rstatus{font-size:var(--fs-1);font-weight:700;color:var(--brass);}
+  .digest{display:none;white-space:pre-wrap;font-size:var(--fs-1);line-height:1.6;background:#fafafa;
           border:1px solid var(--line);padding:10px 12px;margin:0 0 10px;max-height:260px;overflow:auto;}
   /* 내용 구조화 — 통짜로 쏟지 않고 소제목/불릿으로 끊는다 (GM 2026-08-06 "가독성 챙겨줘") */
   /* 오늘 일정 띠 (2026-08-25) — 섹션이 아니라 머리띠다. 접히지 않고 항상 맨 위에 보인다. */
   .today-sched{border:1px solid var(--line);border-left:3px solid var(--brass);background:var(--steam);
-               border-radius:4px;padding:9px 13px;margin:0 0 12px;font-size:14px;line-height:1.65;}
+               border-radius:4px;padding:9px 13px;margin:0 0 12px;font-size:var(--fs-3);line-height:1.65;}
   .today-sched b{color:var(--deep);font-weight:700;}
   .today-sched .ts-row{display:flex;gap:9px;align-items:baseline;padding:2px 0;}
   .today-sched .ts-time{color:var(--brass);font-weight:700;font-variant-numeric:tabular-nums;
                         min-width:44px;flex:none;}
-  .today-sched .ts-who{color:var(--grey);font-size:13px;}
+  .today-sched .ts-who{color:var(--grey);font-size:var(--fs-2);}
   .today-sched .ts-none{color:var(--grey);}
   .nb{margin:9px 0 0;padding:11px 13px;border:1px solid var(--line);background:#FBFCFB;
       overflow-wrap:anywhere;word-break:break-word;max-height:40vh;overflow-y:auto;}
-  .nb h4{font-size:12.5px;font-weight:800;color:var(--deep);margin:11px 0 5px;letter-spacing:-.01em;
+  .nb h4{font-size:var(--fs-2);font-weight:800;color:var(--deep);margin:11px 0 5px;letter-spacing:-.01em;
          border-left:3px solid var(--brass);padding-left:7px;}
   .nb h4:first-child{margin-top:0;}
   .nb ul{margin:0 0 6px;padding-left:17px;}
-  .nb li{font-size:12.5px;line-height:1.62;margin-bottom:3px;}
-  .nb p{font-size:12.5px;line-height:1.62;margin:0 0 6px;}
+  .nb li{font-size:var(--fs-2);line-height:1.62;margin-bottom:3px;}
+  .nb p{font-size:var(--fs-2);line-height:1.62;margin:0 0 6px;}
   .nb .todo{list-style:none;padding-left:2px;}
   .nb .todo li:before{content:"\25A1  ";color:var(--brass);font-weight:800;}
   .nb .lead{font-weight:700;color:var(--deep);}
   /* ── 카드 위계·진행바·접힘 (2026-08-06 재정리) ── */
-  .top h2{font-size:16px;}
+  .top h2{font-size:var(--fs-4);}
   .badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
   /* 상태 = 작은 pill(GM 지시 2026-09-03 "상태가 왼쪽 색 스트라이프+pill 로 먼저 읽히게") */
-  .st{font-size:11px;font-weight:800;letter-spacing:.02em;border-radius:99px;padding:2px 9px;background:var(--paper-2);}
+  .st{font-size:var(--fs-1);font-weight:800;letter-spacing:.02em;border-radius:99px;padding:2px 9px;background:var(--paper-2);}
   .st.on{color:var(--mid);background:rgba(90,82,76,.10);}
   .st.plan{color:var(--ink-3);}
   .st.carry{color:#8A6F52;background:rgba(183,159,138,.18);}
-  .pct{font-size:12.5px;font-weight:800;color:var(--brass);}
+  .pct{font-size:var(--fs-2);font-weight:800;color:var(--brass);}
   /* 기한 배지 — 목록에 만료일이 안 보인다는 GM 지적(2026-08-24) 대응. 새 색 안 씀 — 지난 기한만
      기존 주의색(--alert)으로, 나머지는 --mid. */
-  .badges .due{font-size:11.5px;font-weight:700;color:var(--mid);}
+  .badges .due{font-size:var(--fs-1);font-weight:700;color:var(--mid);}
   .badges .due.overdue{color:var(--alert);}
   .pbar{height:5px;border-radius:99px;overflow:hidden;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .pbar > i{display:block;height:100%;background:var(--mid);border-radius:inherit;}
-  .lead-p{font-size:13px;line-height:1.6;margin:0 0 8px;}
+  .lead-p{font-size:var(--fs-2);line-height:1.6;margin:0 0 8px;}
   /* 할 일 체크박스(舊 next-box 자리 재사용, 2026-08-06 GM 지시 "체크할 수 있게") — □→☑ 클릭 체크 */
   .chk-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
-  .chk-box .nh{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
+  .chk-box .nh{font-size:var(--fs-1);font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
   .chk-box .nh .gm-check-cnt{color:var(--brass);font-weight:700;margin-left:6px;letter-spacing:0;}
   .chk-box ul{margin:0;padding-left:2px;list-style:none;}
-  .chk-box li{font-size:12.5px;line-height:1.55;margin-bottom:3px;}
+  .chk-box li{font-size:var(--fs-2);line-height:1.55;margin-bottom:3px;}
   .chk-box label{display:flex;gap:6px;align-items:baseline;cursor:pointer;}
   .chk-box input[type="checkbox"]{margin:0;cursor:pointer;}
   .chk-box input[type="checkbox"]:checked ~ span.ctx{color:var(--grey);text-decoration:line-through;}
@@ -272,28 +272,28 @@
      ★2026-08-25 재지시로 카드번호 접두를 뗐다("위에 01이 있으니 아래 체크리스트에는 번호만").
      카드 안에서는 카드 번호가 이미 제목 옆에 있어 「01-1」 이 같은 값을 두 번 읽게 만든다.
      카드를 벗어나 인용할 때만 「1번 카드 3번」 처럼 두 값을 붙여 부른다. */
-  .chk-box .cno{color:var(--brass);font-weight:800;font-size:11.5px;font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto;}
+  .chk-box .cno{color:var(--brass);font-weight:800;font-size:var(--fs-1);font-variant-numeric:tabular-nums;white-space:nowrap;flex:0 0 auto;}
   .chk-box input[type="checkbox"]:checked ~ .cno{color:var(--grey);}
   @media print{ .chk-box input[type="checkbox"]{-webkit-appearance:checkbox;} }
   /* 카드 제목 옆 작은 아이콘 링크 — 큰 「…보기 →」 버튼 대체(GM 2026-08-06 "너무 정신없다") */
-  .top h2 .ic-link{font-size:13px;text-decoration:none;margin-left:5px;vertical-align:middle;}
+  .top h2 .ic-link{font-size:var(--fs-2);text-decoration:none;margin-left:5px;vertical-align:middle;}
   @media print{ .top h2 .ic-link{display:none;} }
   /* 찾기 한 줄은 뺐다 (GM 지시 2026-09-02 "컨트롤F 누르면 되니까").
      2026-09-01 에 넣은 이유는 카드가 접혀 있어 브라우저 Ctrl+F 가 못 잡았기 때문인데,
      오늘 카드를 항상 펴 두면서 그 이유가 없어졌다 — 안 쓰는 장치는 지운다(약속 L21). */
-  .chkcnt{font-size:11.5px;font-weight:700;color:var(--mid);}
-  .pendcnt{font-size:11.5px;font-weight:800;color:var(--brass);white-space:nowrap;}
+  .chkcnt{font-size:var(--fs-1);font-weight:700;color:var(--mid);}
+  .pendcnt{font-size:var(--fs-1);font-weight:800;color:var(--brass);white-space:nowrap;}
   /* ★카드 접기 (GM 지시 2026-09-01 가독성) — .item 이 <details> 가 되고 머리줄이 <summary> 다.
      접힌 화면 = 번호·제목·분류·상태·진척·남은 개수·기한 한 줄. 펼치면 종전 내용 그대로. */
   details.item > summary.cardhead{list-style:none;cursor:pointer;position:relative;padding-right:18px;}
   details.item > summary.cardhead::-webkit-details-marker{display:none;}
-  details.item > summary.cardhead:after{content:"▾";position:absolute;right:0;top:2px;color:var(--grey);font-size:12px;}
+  details.item > summary.cardhead:after{content:"▾";position:absolute;right:0;top:2px;color:var(--grey);font-size:var(--fs-2);}
   details.item[open] > summary.cardhead:after{content:"▴";}
   details.item > summary.cardhead:hover h2{color:var(--brass);}
   details.item[open]{background:var(--pick);padding-left:10px;padding-right:10px;margin-left:-10px;margin-right:-10px;}
   /* 끝난 할 일 접기 — 취소선만 그은 줄이 화면을 채우던 것을 안쪽으로 넣는다 */
   details.donechk{margin-top:5px;}
-  details.donechk > summary{list-style:none;cursor:pointer;font-size:11px;font-weight:800;color:var(--grey);letter-spacing:.02em;}
+  details.donechk > summary{list-style:none;cursor:pointer;font-size:var(--fs-1);font-weight:800;color:var(--grey);letter-spacing:.02em;}
   details.donechk > summary::-webkit-details-marker{display:none;}
   details.donechk > summary:after{content:" ▾";}
   details.donechk[open] > summary:after{content:" ▴";}
@@ -301,7 +301,7 @@
   @media print{ details.item[open]{background:none;padding-left:0;padding-right:0;margin-left:0;margin-right:0;}
                 details.item > summary.cardhead:after{display:none;} }
   details.fold{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;}
-  details.fold > summary{list-style:none;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--mid);letter-spacing:.02em;}
+  details.fold > summary{list-style:none;cursor:pointer;font-size:var(--fs-1);font-weight:800;color:var(--mid);letter-spacing:.02em;}
   details.fold > summary::-webkit-details-marker{display:none;}
   details.fold > summary:after{content:" ▾";color:var(--grey);}
   details.fold[open] > summary:after{content:" ▴";}
@@ -324,7 +324,7 @@
   }
 
   /* ── ② 각 건 소속 배지 · GM 업무로 링크 (2026-08-06 GM 지시) — 표 각 행에 소속을 보인다 ── */
-  .dept-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
+  .dept-badge{font-size:var(--fs-1);font-weight:700;padding:2px 8px;border-radius:99px;
               background:var(--steam);color:var(--brass);white-space:nowrap;}
 
   /* ── A3 인쇄 버튼은 「김남욱 GM 업무 진행건」 토글 제목줄로 옮겼다(GM 지시 2026-08-24
@@ -348,10 +348,11 @@
    실무진·GM 이 화면을 열었을 때 물어볼 상대가 바로 보이게 하는 것이 목적이다. */
 .ai-owner{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
   margin-left:10px;padding:3px 9px;border-radius:100px;
-  font-size:11.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  font-size:var(--fs-1);font-weight:800;letter-spacing:.02em;white-space:nowrap;
   background:rgba(143,112,41,.12);color:#8F7029;border:1px solid rgba(143,112,41,.35);}
 @media print{ .ai-owner{border-color:#999;color:#555;background:none;} }
 </style>
+<link rel="stylesheet" href="../../assets/wp-ui.css">
 </head>
 <body>
 
@@ -420,21 +421,21 @@
            대기 건은 위·완료 건은 아래로 정렬해서 그린다(GM 지시 2026-08-10, 판정 로직 복제 없음). 전체
            대기·완료 합계는 위 「📋 경영 보고건」 옆 배지(id="rep-total")에 표시된다. -->
       <!-- 진척률 출처 고지(GM 확정 2026-08-11 "약간의 색깔 및 %로") — 실측 수치 아님을 과대표기 없이 밝힌다. -->
-      <div style="font-size:11px;color:var(--grey);margin:0 0 8px;">% ·막대는 상태 문구를 단계로 읽어 산출한 값입니다(실측 진척률 아님) — 아래 회장님·대표님 표 공통</div>
+      <div style="font-size:var(--fs-1);color:var(--grey);margin:0 0 8px;">% ·막대는 상태 문구를 단계로 읽어 산출한 값입니다(실측 진척률 아님) — 아래 회장님·대표님 표 공통</div>
 
-      <div class="sub-h"><span class="who">👑 회장님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
+      <div class="sub-h"><span class="who">👑 회장님</span><span style="font-size:var(--fs-1);color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
       <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 회장님 목록 정본은 이 시트가 아니라
            별도 하드코딩 배열(_chairman_items.js)이다. 어디서 오는지 화면에 밝혀 대표님 목록과 헷갈리지 않게 한다. -->
-      <div style="font-size:11.5px;color:var(--grey);margin:2px 0 6px;">회장님께 <b>아직 보고하지 않은 건</b>만 표시합니다 — 보고를 마치면 목록에서 내려가고, 진행은 아래 GM 업무 목표에서 이어 봅니다 · 보고 이력·상세 = 회장님 지시사항 페이지</div>
+      <div style="font-size:var(--fs-1);color:var(--grey);margin:2px 0 6px;">회장님께 <b>아직 보고하지 않은 건</b>만 표시합니다 — 보고를 마치면 목록에서 내려가고, 진행은 아래 GM 업무 목표에서 이어 봅니다 · 보고 이력·상세 = 회장님 지시사항 페이지</div>
       <div class="sum">
         <table><tbody id="chairman-sum-body"></tbody></table>
       </div>
 
-      <div class="sub-h" style="margin-top:14px;"><span class="who">🤵 대표님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">기한 순</span><span class="cnt3" id="owner-grp-cnt">불러오는 중…</span></div>
+      <div class="sub-h" style="margin-top:14px;"><span class="who">🤵 대표님</span><span style="font-size:var(--fs-1);color:var(--grey);font-weight:600;">기한 순</span><span class="cnt3" id="owner-grp-cnt">불러오는 중…</span></div>
       <!-- ★ 분류 기준 명시(GM 2026-08-08) — 업무&결재 SSOT 중 담당=김남욱 + 내용칸에 '대표님 보고건' 표식이
            붙은 건만 여기 들어온다. 같은 시트의 다른 김남욱 건(표식 없음)은 여기 없다 — 삭제된 게 아니라 애초에
            대표님 보고 대상이 아니라는 뜻(기준 = 표식 유무). -->
-      <div style="font-size:11.5px;color:var(--grey);margin:2px 0 6px;">업무&결재 SSOT 중 담당 김남욱 + '대표님 보고건' 표식이 붙은 건만 · 표식 없는 김남욱 건은 대상 아님(누락 아님)</div>
+      <div style="font-size:var(--fs-1);color:var(--grey);margin:2px 0 6px;">업무&결재 SSOT 중 담당 김남욱 + '대표님 보고건' 표식이 붙은 건만 · 표식 없는 김남욱 건은 대상 아님(누락 아님)</div>
       <!-- 「보고 문안 복사」 버튼·안내문은 헤더 우측으로 이동(GM 2026-08-06) — 여기는 결과(건수·상태)만 남긴다 -->
       <div class="repbar">
         <span class="cnt2" id="owner-count">불러오는 중…</span>
@@ -478,7 +479,7 @@
       <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
            밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
            인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
-      <div style="font-size:11.5px;color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
+      <div style="font-size:var(--fs-1);color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
       <div class="sum">
         <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
@@ -1085,7 +1086,7 @@
       names.forEach(function (c) {
         // 묶음은 토글이되 펴 둔 채로 연다 — 접고 싶을 때만 GM 이 접는다(GM 지시 2026-09-02).
         var inner = [];
-        sumOut.push('<tr class="grp-row"><td colspan="5" style="padding:16px 0 5px;font-weight:800;font-size:15px;">'
+        sumOut.push('<tr class="grp-row"><td colspan="5" style="padding:16px 0 5px;font-weight:800;font-size:var(--fs-3);">'
                     + esc(c) + grpAiHtml(c) + ' <span class="cat">' + buckets[c].length + '건</span></td></tr>');
         buckets[c].forEach(function (o) {
           inner.push(cardHtml(o, seq));
