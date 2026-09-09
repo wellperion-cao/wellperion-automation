@@ -1324,6 +1324,27 @@ def call_brain(prompt: str) -> tuple[str | None, str | None]:
     return run_claude(prompt, label="ops-daily-digest")
 
 
+def _normalize_category(raw) -> str:
+    """LLM이 프롬프트의 '[5] 시설 및 환경' 같은 보기를 그대로 안 돌려주고 번호만
+    돌려주는 경우가 있다(9/8·9/9 원장에서 category='5'·'7' 로 깨진 채 SSOT까지 넘어간 것
+    실측 확인 · CEO 배1152 업무루프 진단). 저장 직전 한 곳에서 정규화한다."""
+    s = str(raw or "").strip()
+    if not s:
+        return ""
+    labels = [c.split("]", 1)[1].strip() for c in _CATEGORY_CHOICES]
+    if s in labels:
+        return s
+    m = re.fullmatch(r"\[?(\d)\]?", s)
+    if m:
+        idx = int(m.group(1)) - 1
+        if 0 <= idx < len(labels):
+            return labels[idx]
+    for label in labels:
+        if label in s:
+            return label
+    return ""
+
+
 def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
     """claude 응답에서 {"message","issues","schedules"} JSON 파싱.
     실패 시 원문을 메시지로, issues·schedules=[] (정직 강등)."""
@@ -1337,6 +1358,9 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
         issues = data.get("issues") or []
         if not isinstance(issues, list):
             issues = []
+        for it in issues:
+            if isinstance(it, dict) and "category" in it:
+                it["category"] = _normalize_category(it.get("category"))
         schedules = data.get("schedules") or []
         if not isinstance(schedules, list):
             schedules = []
