@@ -88,6 +88,19 @@
   .entry .name{font-size:15.5px; font-weight:700; margin-bottom:4px;}
   .entry .desc{font-size:12.5px; color:var(--dim);}
 
+  /* 구조 문서 접기 — 콘솔의 본문은 「지금 어떤가」다. 설명서는 접어 두되 지우지 않는다. */
+  details.doc{margin-top:44px; border:1px solid var(--border); border-radius:12px;
+              background:var(--paper); padding:0 20px;}
+  details.doc > summary{cursor:pointer; list-style:none; padding:16px 0; font-size:15.5px;
+                        font-weight:700; min-height:44px; display:flex; align-items:center;
+                        flex-wrap:wrap; gap:4px 8px;}
+  details.doc > summary::-webkit-details-marker{display:none;}
+  details.doc > summary::before{content:"▸"; color:var(--dim); margin-right:8px;}
+  details.doc[open] > summary::before{content:"▾";}
+  details.doc > summary .n{font-size:12.5px; font-weight:400; color:var(--dim);}
+  details.doc[open]{padding-bottom:24px;}
+  details.doc h3:first-of-type{margin-top:8px;}
+
   .foot{margin-top:50px; padding-top:16px; border-top:1px solid var(--border);
         font-size:12px; color:var(--dim-soft);}
   @media(max-width:640px){
@@ -108,9 +121,55 @@
 
 <div class="main">
 
-  <h2>이 시스템이 무엇인가</h2>
-  <div class="meta">이 ERP는 실행 화면 <b>114장</b> · 자동화 모듈 <b>31개</b> · AI C-Level 역할 <b>8개</b>로 구성된 업무 플랫폼입니다.</div>
-  <p class="lead">여기서 모듈·권한·비용·가동을 연다. 아래 설명과 표는 이 시스템이 어떻게 짜여 있는지 알아야 할 때만 보면 된다.</p>
+  <h2>파트너사</h2>
+  <div class="meta">이 ERP를 가져다 쓰는 회사입니다. 지금 <b>1곳</b>.</div>
+
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th>파트너사</th><th>들어온 날</th><th>관리자 화면</th><th>직원 화면</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="item">웰페리온 <span class="n">1호</span></td>
+        <td>2026-09</td>
+        <td class="path"><a href="/erp/">/erp/</a></td>
+        <td class="path"><a href="/">/</a></td>
+        <td>쓰는 중</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <p class="lead">파트너사가 늘면 이 표에 줄이 늡니다. 회사마다 다른 값(브랜드·용어·조직·채널)만 갈아 끼우고 뼈대는 그대로 씁니다.</p>
+
+  <h3>관리 입구 <span class="n">누르면 그 화면이 열린다</span></h3>
+  <div class="entries">
+    <a class="entry" href="/erp/">
+      <div class="name" id="n-screens">화면 —장</div>
+      <div class="desc">파트너사가 쓰는 실행 화면</div>
+    </a>
+    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
+      <div class="name">자동화 가동</div>
+      <div class="desc">오늘도 돌고 있는지 · 조용히 죽지 않았는지</div>
+    </a>
+    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
+      <div class="name">이번 달 AI 비용</div>
+      <div class="desc">얼마 썼는지</div>
+    </a>
+    <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
+      <div class="name">권한</div>
+      <div class="desc">누가 들어올 수 있는지</div>
+    </a>
+    <a class="entry" href="#downloads">
+      <div class="name">다운로드</div>
+      <div class="desc">설치·도구 파일</div>
+    </a>
+  </div>
+  <script>
+  /* 화면 수는 세어서 적지 않는다 — 손으로 적으면 낡는다(2026-09-09 실측: 화면 114 로 적혀 있었으나 실제 127).
+     erp/modules.json 이 정본이고 scripts/erp_modules_build.py 가 화면 파일에서 자동으로 만든다. */
+  fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+    var n = (d.modules || []).length;
+    if (n) document.getElementById('n-screens').textContent = '화면 ' + n + '장';
+  }).catch(function(){ document.getElementById('n-screens').textContent = '화면'; });
+  </script>
 
   <!-- 이용자 3층 — GM 확정 2026-09-09. 주소가 곧 층이다. 아래 「구성 3갈래(표준·자산·운영)」와 뜻이 다르다. -->
   <h3>이용자 3층 <span class="n">주소가 곧 층이다</span></h3>
@@ -138,35 +197,6 @@
     </div>
   </div>
 
-  <h3>관리 입구 <span class="n">누르면 그 화면이 열린다</span></h3>
-  <div class="entries">
-    <a class="entry" href="/erp/">
-      <div class="name">파트너사 관리자 화면 ↓</div>
-      <div class="desc">그 회사 관리자가 보는 층 — 모듈·문서함·비용·권한</div>
-    </a>
-    <a class="entry" href="/">
-      <div class="name">파트너사 직원 화면 ↓↓</div>
-      <div class="desc">그 회사 직원이 매일 쓰는 층 — 허용된 화면만</div>
-    </a>
-    <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
-      <div class="name">권한관리</div>
-      <div class="desc">누가 이 시스템에 들어올 수 있는지</div>
-    </a>
-    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
-      <div class="name">토큰 사용량</div>
-      <div class="desc">이번 달 AI 비용</div>
-    </a>
-    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
-      <div class="name">자율현황</div>
-      <div class="desc">자동화가 오늘도 돌고 있는지</div>
-    </a>
-    <a class="entry" href="../index.html">
-      <div class="name">다운로드</div>
-      <div class="desc">설치·도구 파일 (ERP 홈 → 다운로드 탭)</div>
-    </a>
-  </div>
-
-
   <h3>다운로드 <span class="n">설치·도구 파일 — 회사 관리자 자리(GM 확정 2026-09-09)</span></h3>
   <p class="lead">여기 있는 것은 설치·도구 파일이다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라 화면에서 본다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남는다.</p>
   <div class="entries" id="downloads"><div class="desc">불러오는 중…</div></div>
@@ -188,6 +218,11 @@
   });
   </script>
 
+  <!-- 구조 문서 — 접어 둔다. 관리 콘솔의 본문은 「지금 어떤가」이지 설명서가 아니다(GM 지적 2026-09-09
+       「이렇게밖에 못 만드는건가? 전체 리뉴얼 필요할듯」). 지우지 않고 접는다 — 파트너사를 늘릴 때 쓰는 자료다. -->
+  <details class="doc">
+    <summary>구조 문서 <span class="n">파트너사를 늘릴 때 여는 것 — 두 겹 구조 · 구성 3갈래 · 설정값 20건 · 뼈대 16건</span></summary>
+
   <h3>두 겹 구조 <span class="n">파는 회사 / 쓰는 회사</span></h3>
   <p class="lead">이 시스템은 두 겹입니다. 위 겹은 이 ERP를 만들어 파는 회사(플랫폼)이고, 아래 겹은 이 ERP를 가져다 쓰는 회사(파트너사)입니다. 회사가 바뀌어도 그대로 쓰는 뼈대는 플랫폼이 소유하고, 파트너사마다 다른 값(브랜드·용어·조직·채널)은 파트너사 자리에 따로 둡니다. 지금 등록된 파트너사는 웰페리온 1곳(1호)입니다 — 파트너사가 늘면 아래 「파트너사 설정값」 표에 회사별로 줄이 늡니다.</p>
   <div class="split-note">
@@ -195,7 +230,7 @@
     <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP를 가져다 쓰는 회사. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
   </div>
 
-  <h3>3층 구성도</h3>
+  <h3>구성 3갈래 <span class="n">표준 · 자산 · 운영 — 위 「이용자 3층」과 뜻이 다르다</span></h3>
   <div class="layers">
     <div class="layer">
       <div class="tag">표준</div>
@@ -272,6 +307,8 @@
     </tbody>
   </table></div>
 
+
+  </details>
 
   <div class="foot">숫자는 2026-09-09 기준 실측(erp/modules.json·status/module_registry.json·ssot/kpi.json·status/heartbeats/). 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
 
