@@ -35,7 +35,7 @@ REM self-report, folding the result into the auto-review verdict (a render
 REM mismatch -> ambiguous -> park). Default behavior (unset) = trust the
 REM session's WELLY_VERIFY report only. Rollback (1-line): comment out the
 REM "set RUNNER_RENDER_VERIFY=1" line below.
-cd /d C:\Users\jjky0\welperion-automation
+cd /d %USERPROFILE%\welperion-automation
 set PYTHONIOENCODING=utf-8
 set RUNNER_LIVE=1
 set RUNNER_PING_LIVE=1

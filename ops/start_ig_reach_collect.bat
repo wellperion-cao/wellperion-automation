@@ -16,7 +16,7 @@ REM Launched headless via launchers\ig_reach_collect_hidden.vbs
 REM ASCII ONLY - no Korean in this .bat (CP949 breaks Korean paths).
 REM ============================================================
 
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PYTHONIOENCODING=utf-8
 set PY=C:\Python314\python.exe
 set SCRIPT=%ROOT%\scripts\ig_reach_collector.py

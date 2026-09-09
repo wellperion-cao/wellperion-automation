@@ -19,7 +19,7 @@ if %errorlevel% NEQ 0 (
 )
 echo [OK] Running elevated. Repointing IG-0730 to ig\ ...
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p='C:\Users\jjky0\welperion-automation\ig\start_ig_series_producer.bat'; $a=New-ScheduledTaskAction -Execute $p; try { Set-ScheduledTask -TaskName 'Wellperion-IG-Series-Produce-0730' -Action $a -ErrorAction Stop | Out-Null; Write-Host '  OK: repointed.' } catch { Write-Host ('  FAIL: '+$_.Exception.Message) }; $x=(Get-ScheduledTask -TaskName 'Wellperion-IG-Series-Produce-0730').Actions[0]; Write-Host ('  now exec = '+$x.Execute)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p='%USERPROFILE%\welperion-automation\ig\start_ig_series_producer.bat'; $a=New-ScheduledTaskAction -Execute $p; try { Set-ScheduledTask -TaskName 'Wellperion-IG-Series-Produce-0730' -Action $a -ErrorAction Stop | Out-Null; Write-Host '  OK: repointed.' } catch { Write-Host ('  FAIL: '+$_.Exception.Message) }; $x=(Get-ScheduledTask -TaskName 'Wellperion-IG-Series-Produce-0730').Actions[0]; Write-Host ('  now exec = '+$x.Execute)"
 echo.
 echo Done. The 'now exec' line above should end with \ig\start_ig_series_producer.bat
 pause

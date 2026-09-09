@@ -18,7 +18,7 @@ REM RUN AS ADMINISTRATOR (right-click -> Run as administrator).
 REM ASCII only (no Korean - CP949 encoding safety).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\launchers\ig_reach_collect_hidden.vbs
 SET TASK_NAME=Wellperion-IG-Reach-Collect-0945
 SET RUN_USER=%USERDOMAIN%\%USERNAME%

@@ -18,7 +18,7 @@ REM RUN AS ADMINISTRATOR (right click -> Run as administrator).
 REM ASCII only (no encoding issues).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\start_ig_publish_dispatcher.bat
 SET TASK_NAME=Wellperion-IG-Publish-0730
 SET RUN_USER=%USERDOMAIN%\%USERNAME%

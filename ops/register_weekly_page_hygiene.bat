@@ -24,7 +24,7 @@ REM RUN AS ADMINISTRATOR (right-click -> Run as administrator).
 REM ASCII only (no Korean - CP949 encoding safety).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\launchers\weekly_page_hygiene_hidden.vbs
 SET TASK_NAME=Wellperion-Weekly-Page-Hygiene-Sun-0900
 SET RUN_USER=%USERDOMAIN%\%USERNAME%

@@ -5,7 +5,7 @@ REM  CEO Verify Watcher launcher (0단계 인프라)
 REM  git push 감지 → [DONE] 이중신호 → 2층 검증 → ceo_log + 텔레그램
 REM  ONLOGON 예약작업으로 상시 가동. 종료는 PC 종료 시 자동.
 
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PY=%ROOT%\wellperion-agents\venv\Scripts\python.exe
 set SCRIPT=%ROOT%\wellperion-agents\scripts\ceo_verify_watcher.py
 set LOGDIR=%ROOT%\logs

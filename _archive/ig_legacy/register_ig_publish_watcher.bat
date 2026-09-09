@@ -9,7 +9,7 @@ REM -> updates queue + commit/push + telegram report.
 REM ASCII only (no encoding issues).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\start_ig_publish_watcher.bat
 SET TASK_NAME=Wellperion-IG-Publish-Watcher
 

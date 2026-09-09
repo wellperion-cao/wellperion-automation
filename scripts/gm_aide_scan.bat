@@ -8,7 +8,7 @@ REM 안 만들고(약속 L21) 이미 06:30 도는 이 배치에 한 줄만 얹�
 REM Step 1: refresh status\gm_profile.md (spec = daily refresh, was stale since 2026-07-02).
 REM Step 2: scan observation ledger + task queue + refreshed GM profile for capture events,
 REM registers irreversible/gated captures as [GM Aide Proposal] PENDING ships in status\_queue.json.
-cd /d C:\Users\jjky0\welperion-automation
+cd /d %USERPROFILE%\welperion-automation
 set PYTHONIOENCODING=utf-8
 C:\Python314\python.exe -u scripts\gm_observation_seed.py >> logs\gm_observation_seed.log 2>&1
 C:\Python314\python.exe -u scripts\gm_profile_builder.py >> logs\gm_profile_builder.log 2>&1

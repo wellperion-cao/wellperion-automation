@@ -19,7 +19,7 @@ REM Launched headless via launchers\engagement_collect_hidden.vbs
 REM ASCII ONLY - no Korean in this .bat (CP949 breaks Korean paths).
 REM ============================================================
 
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PYTHONIOENCODING=utf-8
 set PY=%ROOT%\.venv\Scripts\python.exe
 set SCRIPT=%ROOT%\scripts\engagement_collector.py

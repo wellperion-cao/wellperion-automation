@@ -15,7 +15,7 @@ REM with /IT (interactive).
 REM ASCII only (Korean comments break cmd on CP949 Windows).
 REM ============================================================
 
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PYTHONIOENCODING=utf-8
 set PY=%ROOT%\.venv\Scripts\python.exe
 set SCRIPT=%ROOT%\scripts\ig_series_producer.py

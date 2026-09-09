@@ -25,7 +25,7 @@ REM RUN AS ADMINISTRATOR (right-click -> Run as administrator).
 REM ASCII only (no Korean - CP949 encoding safety).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\launchers\member_expiry_alert_hidden.vbs
 SET TASK_NAME=Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000
 SET RUN_USER=%USERDOMAIN%\%USERNAME%

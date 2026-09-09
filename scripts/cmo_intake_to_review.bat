@@ -18,7 +18,7 @@ REM gate that already exists). Concurrent runs are safe: scripts\.publish.lock
 REM serializes publishing, and the watcher only touches items GM has approved.
 setlocal
 set PYTHONIOENCODING=utf-8
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PY=C:\Python314\python.exe
 if not exist "%PY%" set PY=python
 cd /d "%ROOT%"

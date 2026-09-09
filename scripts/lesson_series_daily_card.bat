@@ -5,7 +5,7 @@ REM Sends today's scheduled L-series review card only. NEVER approves or publish
 REM (publish stays 100% gated on GM's manual telegram approval tap).
 setlocal
 set PYTHONIOENCODING=utf-8
-set ROOT=C:\Users\jjky0\welperion-automation
+set ROOT=%USERPROFILE%\welperion-automation
 set PY=C:\Python314\python.exe
 if not exist "%PY%" set PY=python
 cd /d "%ROOT%"

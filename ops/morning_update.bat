@@ -12,8 +12,8 @@ REM    (2) 트리거가 매일 05:40 고정이었는데 그 시각엔 PC 가 꺼
 REM        작업이 뜨지 못했다(Last Result 0x80070520 = 로그온 세션 없음). 등록 2026-05-29 이후
 REM        정규 실행 로그 0건 — 한 번도 안 돌았다. 로그온 3분 뒤 실행으로 변경.
 
-set "LOGFILE=C:\Users\jjky0\welperion-automation\logs\morning_update.log"
-if not exist "C:\Users\jjky0\welperion-automation\logs" mkdir "C:\Users\jjky0\welperion-automation\logs"
+set "LOGFILE=%USERPROFILE%\welperion-automation\logs\morning_update.log"
+if not exist "%USERPROFILE%\welperion-automation\logs" mkdir "%USERPROFILE%\welperion-automation\logs"
 
 >>"%LOGFILE%" echo.
 >>"%LOGFILE%" echo ========================================================

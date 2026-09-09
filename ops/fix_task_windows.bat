@@ -15,4 +15,4 @@ if %errorlevel% neq 0 (
   exit /b
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\jjky0\welperion-automation\scripts\fix_task_windows.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%USERPROFILE%\welperion-automation\scripts\fix_task_windows.ps1"

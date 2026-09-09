@@ -22,7 +22,7 @@ REM RUN AS ADMINISTRATOR (right-click -> Run as administrator).
 REM ASCII only (no Korean - CP949 encoding safety).
 REM ============================================================
 
-SET ROOT=C:\Users\jjky0\welperion-automation
+SET ROOT=%USERPROFILE%\welperion-automation
 SET LAUNCHER=%ROOT%\launchers\kakao_collect_evening_hidden.vbs
 SET TASK_NAME=Wellperion-Kakao-Collect-Evening-1830
 SET RUN_USER=%USERDOMAIN%\%USERNAME%
