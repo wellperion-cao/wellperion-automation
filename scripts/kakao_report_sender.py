@@ -700,6 +700,37 @@ def _ensure_chat_tab(main_hwnd: int, max_presses: int = 3) -> bool:
     return _current_main_tab(main_hwnd) == "chat"
 
 
+def clear_main_search(main_hwnd: int) -> bool:
+    """메인창 통합검색에 남은 검색어를 지워 채팅 목록 화면으로 되돌린다.
+
+    GM 지적 2026-09-09 — 방 창은 닫히는데 메인창이 검색 결과 화면에 머물러 있었다.
+    GM 이 손으로 하실 때는 Escape 두 번(검색 닫기 + 방 닫기)이지만, 여기서는 메인창에
+    Escape 를 보내지 않는다. 메인창의 Escape 는 검색이 안 떠 있을 때 카톡을 트레이로
+    숨겨 다음 발신을 통째로 막는다(기존 실측 함정 · _ensure_chat_tab 주석). 대신 검색
+    입력칸의 글자만 지운다 — 검색어가 비면 결과 화면이 사라지고 채팅 목록으로 돌아가므로
+    사람이 Escape 로 얻는 것과 결과가 같으면서 트레이 위험이 없다.
+
+    Ctrl+A 는 이 앱에서 「친구 추가」 다이얼로그를 여는 전역 단축키라 쓰지 않는다.
+    실패해도 발신 결과에 영향을 주지 않는다(best-effort).
+    """
+    try:
+        edit_hwnd = _find_visible_search_edit(main_hwnd)
+        if not edit_hwnd:
+            return False
+        edit = Desktop(backend="win32").window(handle=edit_hwnd)
+        edit.click_input()
+        time.sleep(0.15)
+        edit.type_keys("{END}", pause=0.05)
+        edit.type_keys("+{HOME}", pause=0.05)
+        edit.type_keys("{DELETE}", pause=0.05)
+        time.sleep(0.2)
+        log("[카톡] 통합검색 되돌림(검색어 지움)")
+        return True
+    except Exception as exc:
+        log(f"[카톡] 통합검색 되돌리기 실패(무시): {exc}")
+        return False
+
+
 def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
     """카톡 메인창 검색으로 room_name을 찾아 자동으로 열고 그 채팅방 창을 반환한다.
 
@@ -774,6 +805,9 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
         for hwnd, title, cls in _enum_visible_top_level_windows():
             if cls == KAKAO_ROOM_WINDOW_CLASS and _title_key(title) == _title_key(room_name):
                 room_win = Desktop(backend="uia").window(handle=hwnd)
+                # 방이 열린 그 자리에서 검색 상태를 되돌린다 — 방 창을 닫아도 메인창이
+                # 검색 결과 화면에 남아 있으면 GM 화면에 그대로 보인다(GM 지적 2026-09-09).
+                clear_main_search(main_hwnd)
                 focus_window(room_win, room_name)
                 return room_win
         time.sleep(0.4)
