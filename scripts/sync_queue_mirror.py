@@ -58,6 +58,10 @@ SYNC_PAIRS = [
     ("status/geo_watch.json",            "3. 웰페리온 가이드/status/geo_watch.json"),
     # 토큰 사용량 (2026-09-09): cto/automation/토큰 사용량.html 이 발행루트에서 직독한다.
     ("status/token_usage.json",          "3. 웰페리온 가이드/status/token_usage.json"),
+    # 화면 열람 흔적 (2026-09-09 · 시모 배1180): 플랫폼 관리 콘솔이 「한 번이라도 열린 화면 N/M」을
+    # 이 원장에서 읽는다 — 손으로 적은 숫자를 화면에 두지 않기 위해서다. 원장은 매일 07:40
+    # page_score_extract.py --ping 이 새로 뜬다(collected_at 칸이 신선도).
+    ("status/page_ping.json",            "3. 웰페리온 가이드/status/page_ping.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지
