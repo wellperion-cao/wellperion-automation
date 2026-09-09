@@ -24,6 +24,23 @@ ACCOUNTS_LOG = REPO / "status" / "token_usage_accounts.jsonl"
 KST = timezone(timedelta(hours=9))
 KEEP_DAYS = 30
 
+# 단가표 — 출처 = Anthropic 공개 단가 · 기준일 2026-06-24 · 값이 바뀌면 이 표만 고친다.
+# 백만 토큰당 USD(input/output). cache_read 는 claude-fable-5-1 만 확인됨(다른 모델·
+# cache_creation 전체는 단가 미확인 — 값을 추정해 채우지 않고 "단가 미상"으로 뺀다).
+PRICE_TABLE = {
+    "claude-fable-5-1":  {"input": 10.00, "output": 50.00, "cache_read": 0.25},
+    "claude-fable-5":    {"input": 10.00, "output": 50.00},
+    "claude-opus-5":     {"input": 5.00, "output": 25.00},
+    "claude-opus-4-8":   {"input": 5.00, "output": 25.00},
+    "claude-opus-4-7":   {"input": 5.00, "output": 25.00},
+    "claude-opus-4-6":   {"input": 5.00, "output": 25.00},
+    "claude-sonnet-5":   {"input": 2.00, "output": 10.00},
+    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
+    "claude-haiku-4-5":  {"input": 1.00, "output": 5.00},
+    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00},  # 로그 실측 id(날짜접미 포함) — 같은 모델, 값 동일
+}
+USD_KRW = 1400  # 환율 고정(GM 지시 2026-09-09) — 실시간 조회 안 함(외부 호출 금지)
+
 
 def kst_date(ts_str):
     """ISO8601 타임스탬프(대개 UTC 'Z') → KST 날짜 문자열. 못 읽으면 None."""
@@ -162,6 +179,58 @@ def account_summary():
     return counts
 
 
+def cost_for_bucket(model, b):
+    """모델·버킷(input/cache_creation/cache_read/output) → (원화, 단가있는토큰수, 단가미상토큰수).
+    단가표에 없는 모델은 전체가 단가미상. 있는 모델도 cache_creation·
+    (fable-5-1 외) cache_read 는 단가미상으로 뺀다(0원 아님)."""
+    price = PRICE_TABLE.get(model)
+    total = b["input"] + b["cache_creation"] + b["cache_read"] + b["output"]
+    if not price:
+        return 0.0, 0, total
+    usd = (b["input"] * price["input"] + b["output"] * price["output"]) / 1_000_000
+    priced = b["input"] + b["output"]
+    unpriced = b["cache_creation"]
+    cache_read_price = price.get("cache_read")
+    if cache_read_price is not None:
+        usd += b["cache_read"] * cache_read_price / 1_000_000
+        priced += b["cache_read"]
+    else:
+        unpriced += b["cache_read"]
+    return usd * USD_KRW, priced, unpriced
+
+
+def sum_model_buckets(days_out, day_filter):
+    """days_out(day->model->bucket) 중 day_filter 통과 날짜만 모델별로 합산."""
+    result = {}
+    for day, models in days_out.items():
+        if not day_filter(day):
+            continue
+        for model, b in models.items():
+            acc = result.setdefault(model, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0})
+            for k in ("input", "cache_creation", "cache_read", "output"):
+                acc[k] += b[k]
+    return result
+
+
+def price_summary(model_buckets):
+    total_krw = 0.0
+    priced_tokens = 0
+    unpriced_tokens = 0
+    by_model = {}
+    for model, b in model_buckets.items():
+        krw, p_tok, u_tok = cost_for_bucket(model, b)
+        total_krw += krw
+        priced_tokens += p_tok
+        unpriced_tokens += u_tok
+        by_model[model] = {"krw": round(krw), "priced_tokens": p_tok, "unpriced_tokens": u_tok}
+    total_tok = priced_tokens + unpriced_tokens
+    pct = round(unpriced_tokens / total_tok * 100, 1) if total_tok else 0.0
+    return {
+        "krw": round(total_krw), "priced_tokens": priced_tokens,
+        "unpriced_tokens": unpriced_tokens, "unpriced_pct": pct, "by_model": by_model,
+    }
+
+
 def main():
     today = datetime.now(KST).strftime("%Y-%m-%d")
     cutoff = (datetime.now(KST) - timedelta(days=KEEP_DAYS - 1)).strftime("%Y-%m-%d")
@@ -233,6 +302,12 @@ def main():
         for p, b in proj_totals.items()
     }
 
+    today_date = datetime.now(KST).date()
+    month_start = today_date.replace(day=1).isoformat()
+    last7_start = (today_date - timedelta(days=6)).isoformat()
+    prev7_start = (today_date - timedelta(days=13)).isoformat()
+    prev7_end = (today_date - timedelta(days=7)).isoformat()
+
     out = {
         "generated_at": datetime.now(KST).isoformat(),
         "range": {"from": cutoff, "to": today},
@@ -243,6 +318,16 @@ def main():
             "current": current_account(),
             "tracked_since": "2026-09-09",
             "sessions_by_account": account_summary(),
+        },
+        "pricing": {
+            "usd_krw": USD_KRW,
+            "usd_krw_note": "환율 1,400원 고정 · 실시간 조회 안 함",
+            "price_table_note": "출처 = Anthropic 공개 단가 · 기준일 2026-06-24 · 값이 바뀌면 PRICE_TABLE 만 고친다",
+            "unpriced_note": "단가 미상 모델·캐시생성 전체·(fable-5-1 외) 캐시읽기는 0원이 아니라 '단가 미상 토큰'으로 뺀다",
+            "this_month": price_summary(sum_model_buckets(days_out, lambda d: d >= month_start)),
+            "last_7d": price_summary(sum_model_buckets(days_out, lambda d: d >= last7_start)),
+            "prev_7d": price_summary(sum_model_buckets(days_out, lambda d: prev7_start <= d <= prev7_end)),
+            "by_model": price_summary(sum_model_buckets(days_out, lambda d: True))["by_model"],
         },
     }
     with open(OUT_PATH, "w", encoding="utf-8") as f:
@@ -259,4 +344,9 @@ if __name__ == "__main__":
         for _m, _b in _models.items():
             for _k in ("input", "cache_creation", "cache_read", "output", "sessions"):
                 assert _b[_k] >= 0, "음수 발견: %s/%s/%s" % (_day, _m, _k)
+    for _period in ("this_month", "last_7d", "prev_7d"):
+        _p = _d["pricing"][_period]
+        assert _p["krw"] >= 0, "%s krw 음수" % _period
+        assert 0 <= _p["unpriced_pct"] <= 100, "%s unpriced_pct 범위 밖: %s" % (_period, _p["unpriced_pct"])
+        assert _p["priced_tokens"] + _p["unpriced_tokens"] >= 0
     print("자기검사 통과")
