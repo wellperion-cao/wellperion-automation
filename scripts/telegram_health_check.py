@@ -397,10 +397,28 @@ def _check_reception_lost() -> list[str]:
         d = r.json()
         pb = d.get('pushback') or {}
         failed, unpushed = pb.get('failed') or 0, pb.get('unpushed') or 0
-        if failed > 0 or unpushed >= 5:
+        # ★2026-09-09 GM 지적 수리 — 종전 조건(unpushed >= 5)은 되밀기 주기 사이의 정상
+        # 대기열을 실패로 불렀다. 실측: 11:31 「시트 되밀기 실패 — 실패 0건 · 미반영 5건」이
+        # 나갔고 11:32 되밀기로 0 이 됐다. 문구도 '실패 0건'이라 스스로 모순이었다.
+        # 진짜 문제는 둘뿐이다 — ①실패가 있다 ②쌓였는데 되밀기가 한동안 안 돈다.
+        stale = False
+        last = str(pb.get('last_pushed_at') or '')
+        if unpushed and last:
+            try:
+                from datetime import datetime
+                stale = (datetime.now() - datetime.fromisoformat(last)).total_seconds() > 1800
+            except Exception:
+                stale = True          # 시각을 못 읽으면 안전측(경보)
+        elif unpushed:
+            stale = True              # 쌓였는데 되민 적이 없다
+        if failed > 0:
             issues.append(
-                f"시트 되밀기 실패 — 실패 {failed}건 · 미반영 {unpushed}건 (시트에 못 간 점검·접수 데이터 존재). "
+                f"시트 되밀기 실패 {failed}건 — 시트에 못 간 점검·접수 데이터가 있습니다. "
                 "되돌리려면 서버 origin_switch.json write_check 를 dual 로"
+            )
+        elif stale:
+            issues.append(
+                f"시트 되밀기 멈춤 — 미반영 {unpushed}건이 30분 넘게 시트로 안 넘어갔습니다"
             )
     except Exception as e:
         issues.append(f"시트 되밀기 상태 조회 실패 — {str(e)[:60]}")
