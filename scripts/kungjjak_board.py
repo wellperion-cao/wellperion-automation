@@ -518,7 +518,11 @@ def _dedup_rows(rows: list[dict]) -> list[dict]:
         ship = _row_ship_no(r)
         w = _norm(r['got'])
         for g in groups:
-            if ship and ship == _row_ship_no(g[0]):
+            gw0 = _norm(g[0]['got'])
+            # 배 번호가 같아도 지시 문구가 한 낱말도 안 겹치면 다른 지시다 — 하루에 같은 배를
+            #   건드리는 지시가 둘 올 수 있다(2026-09-09 실측: 부팅 지시와 '묶어줘' 지시가
+            #   둘 다 배920 을 가리켜 한 줄로 합쳐지며 GM 지시 하나가 표에서 사라졌다).
+            if ship and ship == _row_ship_no(g[0]) and (not w or not gw0 or (w & gw0)):
                 g.append(r)
                 break
             gw = _norm(g[0]['got'])
@@ -551,9 +555,14 @@ def _render_table(by: dict, day: str) -> None:
         #     ("…소급분 소요를 고쳤다")이 그 낱말 때문에 소급으로 오판됐다. 실시간 처리
         #     2건이 '소급'으로 찍혔다 — 자유 낱말 스캔은 본문을 자세히 쓸수록 오탐한다.
         #   ▸그래서 소급으로 남길 때는 detail 끝에 '· 시각 추정'을 붙이는 것을 표식으로 삼는다.
-        backfilled = any('시각 추정' in str(e.get('detail') or '') for e in ev)
+        # '소급' 도 같은 뜻이다 — 미드턴 지시처럼 자동 접수 훅을 안 타는 경로는 접수를 나중에
+        #   남길 수밖에 없고, 그때 0분이라 적으면 '순식간에 했다'로 읽힌다(2026-09-09 시우).
+        backfilled = any(('시각 추정' in str(e.get('detail') or ''))
+                         or ('소급' in str(e.get('detail') or '')) for e in ev)
 
-        got = str(ev[0].get('event') or '').strip()
+        # 접수 줄(warn)이 있으면 그것이 '접수한 것'이다 — 파일 순서로 첫 줄을 집으면 완료를
+        #   나중에 소급 접수한 건에서 내 완료 문구가 GM 지시 자리에 앉는다(2026-09-09 실측).
+        got = str((warns[0] if warns else ev[0]).get('event') or '').strip()
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
         # 자동종결(close_gm_refs)이 근처 커밋을 못 찾으면 "⚠️ 자동종결 — …별도 완료 기록
         # 없음" 을 그대로 detail 에 남긴다 — 우리 사정을 설명하는 내부 문구지 GM 이 읽을
