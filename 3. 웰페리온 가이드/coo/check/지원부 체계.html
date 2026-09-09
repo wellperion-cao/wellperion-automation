@@ -7101,7 +7101,9 @@ function wpLdyMarkTodo(){
     if (wpLdyIn(m.id, d) === null) miss = true;
   });
   var btn = document.getElementById('wpLdyTabBtn');
-  if (btn) btn.innerHTML = '🧺 린넨 관리' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
+  // 자물쇠는 여기서도 붙인다 — 이 함수가 탭 이름을 통째로 다시 쓰기 때문에, 마크업에만 넣어 두면
+  // 첫 렌더 뒤 사라진다(GM 지적 2026-09-09 "잠금 이모지도 추가해줄래").
+  if (btn) btn.innerHTML = '🧺 린넨 관리 🔒' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
 }
 /* ⚠ 2026-09-04 이후 화면에서 부르지 않는 함수 — 「📝 오늘 점검」 섹션이 없다(입고는 ①에서 적는다). */
 function wpLdyRenderToday(){
