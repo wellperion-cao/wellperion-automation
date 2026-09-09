@@ -4,22 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>웰페리온 ERP — 플랫폼 관리 콘솔</title>
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="../brand/tenant-wellperion.css">
 <style>
-  /* 색 토큰 = erp/index.html :root 그대로 복제 (GM 지시 — 새 디자인 체계를 옆에 만들지 않는다) */
-  :root{
-    --bg:#F4F0EB; --paper:#fff; --text:#221F20; --text-soft:#4A423C;
-    --dim:#6E655C; --dim-soft:#9C938A;
-    --accent:#63BBA0; --accent-hover:#3F9B80; --accent-bg:rgba(99,187,160,0.12);
-    --border:rgba(34,31,32,0.12); --border-strong:rgba(34,31,32,0.26); --gray-bg:#FBF9F6;
-  }
-  @media(prefers-color-scheme:dark){
-    :root:not([data-theme=light]){
-      --bg:#221F20; --paper:#2a2725; --text:#F4F0EB; --text-soft:#CFC8C1;
-      --dim:#AAA098; --dim-soft:#7E766E;
-      --accent:#63BBA0; --accent-hover:#8ED6BF; --accent-bg:rgba(99,187,160,0.16);
-      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#302c2a;
-    }
-  }
   html{color-scheme:light dark;}
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -62,6 +49,8 @@
   @media(max-width:820px){ .layers{grid-template-columns:1fr;} }
 
   /* 표 — 고유값·뼈대 원장 */
+  .tbl-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;
+            max-width:100%; min-width:0;}   /* 부모가 grid/flex 면 min-width:0 이 없으면 상자가 안 줄어 표가 밖으로 나온다 */
   table.reg{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:8px;}
   table.reg th{text-align:left; font-weight:700; color:var(--dim); font-size:12px;
                padding:8px 10px; border-bottom:1px solid var(--border-strong);}
@@ -86,7 +75,7 @@
         font-size:12px; color:var(--dim-soft);}
   @media(max-width:640px){
     .topbar{padding:0 18px;} .main{padding:26px 18px 60px;}
-    table.reg{display:block; overflow-x:auto;}
+    table.reg{min-width:520px;}   /* 좁은 화면에선 상자가 가로로 스크롤된다 */
   }
 </style>
 </head>
@@ -134,7 +123,7 @@
 
   <h3>회사 고유값 자리 <span class="n">웰페리온에만 해당하는 값 20건 — 값은 각 파일이 정본, 여기는 위치만</span></h3>
   <p class="lead">다른 회사가 이 시스템을 쓰려면 아래 20건을 자기 값으로 갈아 끼웁니다. 판정 근거 = <code>status/briefs/CEO-2026-09-09-뼈대-우리값-판정표.md</code>.</p>
-  <table class="reg">
+  <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>무엇이 담겼나</th></tr></thead>
     <tbody>
       <tr><td colspan="3" class="grp">ssot/ 설정값 (11)</td></tr>
@@ -154,10 +143,10 @@
       <tr><td colspan="3" class="grp">wellperion-agents/.claude/agents/ (8)</td></tr>
       <tr><td class="item">ai-ceo.md 외 7종</td><td class="path">wellperion-agents/.claude/agents/ai-*.md</td><td class="note">닉네임(웰리·시뽀·시로·시모·시우·시포·시토·시보)·실제 협업 리듬</td></tr>
     </tbody>
-  </table>
+  </table></div>
 
   <h3>뼈대 자리 <span class="n">회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
-  <table class="reg">
+  <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>왜 뼈대인가</th></tr></thead>
     <tbody>
       <tr><td colspan="3" class="grp">ssot/ 엔진·틀 (11)</td></tr>
@@ -179,7 +168,7 @@
       <tr><td class="item">wellperion-gm-report</td><td class="path">.claude/skills/wellperion-gm-report/</td><td class="note">8요소 표 등 보고 절차는 회사 무관</td></tr>
       <tr><td class="item">welly-gm-a3-report</td><td class="path">.claude/skills/welly-gm-a3-report/</td><td class="note">A3 색상표·5단 구조·검증 5종은 규격 무관</td></tr>
     </tbody>
-  </table>
+  </table></div>
 
   <h3>관리 입구</h3>
   <div class="entries">

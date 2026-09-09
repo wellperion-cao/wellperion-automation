@@ -1,0 +1,63 @@
+/* 웰페리온 테넌트 색 토큰 v1
+   위치: erp/brand/tenant-wellperion.css
+   정본: 이 파일. 다른 회사(테넌트)라면 이 파일 하나를 교체한다.
+
+   사용법: wp-ui.css(뼈대) 다음에 이 파일을 <link> 한다.
+   뼈대(wp-ui.css) = 간격·글꼴크기·터치크기 — 회사가 바뀌어도 동일
+   테넌트(이 파일) = 색·브랜드 — 회사마다 교체
+
+   WCAG 대비비 (배경 #F4F0EB 기준)
+   --text  #221F20 : 14.41:1  AA/AAA 통과
+   --dim   #6E655C :  4.67:1  AA 통과(본문), AAA 미달
+   --accent #63BBA0:  2.72:1  텍스트 금지, 장식·아이콘 전용 */
+
+:root {
+  /* 화면 바탕·카드 */
+  --bg:           #F4F0EB;   /* 페이지 바탕 */
+  --paper:        #FFFFFF;   /* 카드·상단바·표 안쪽 */
+  --gray-bg:      #FBF9F6;   /* 중간 강조 배경 */
+  --surface:      #FFFFFF;   /* 카드 내부 (wp-ui.css 이관) */
+
+  /* 글자 */
+  --text:         #221F20;   /* 본문 */
+  --text-soft:    #4A423C;   /* 보조 본문 */
+  --dim:          #6E655C;   /* 흐린 설명 */
+  --dim-soft:     #9C938A;   /* 더 흐린 */
+  --ink:          #221F20;   /* tokens.css 호환 */
+  --ink-2:        #5C554F;   /* wp-ui.css 이관 */
+  --ink-3:        #8C837B;   /* wp-ui.css 이관 */
+  --accent-text:  #8F7659;   /* 큰 글자 강조 전용 */
+
+  /* 선 */
+  --line:         #E3DCD3;   /* 구분선 (wp-ui.css 이관) */
+  --border:       rgba(34,31,32,0.12);
+  --border-strong:rgba(34,31,32,0.26);
+  --beige:        #B79F8A;   /* 장식 전용 — 텍스트 금지 */
+
+  /* 강조 */
+  --accent:       #63BBA0;
+  --accent-hover: #3F9B80;
+  --accent-bg:    rgba(99,187,160,0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) {
+    --bg:           #221F20;
+    --paper:        #2a2725;
+    --gray-bg:      #302c2a;
+    --surface:      #2a2725;
+    --text:         #F4F0EB;
+    --text-soft:    #CFC8C1;
+    --dim:          #AAA098;
+    --dim-soft:     #7E766E;
+    --ink:          #F4F0EB;
+    --ink-2:        #CFC8C1;
+    --ink-3:        #AAA098;
+    --line:         rgba(255,255,255,0.12);
+    --border:       rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.24);
+    --accent:       #63BBA0;
+    --accent-hover: #8ED6BF;
+    --accent-bg:    rgba(99,187,160,0.16);
+  }
+}
