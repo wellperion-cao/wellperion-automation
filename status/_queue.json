@@ -1945,5 +1945,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-09"
+  },
+  {
+    "task_id": "CTO-2026-09-09-종합접수처-습득물-서버-원본-전환을-막는-것은-표본",
+    "clevel": "cto",
+    "title": "[시토] 종합접수처·습득물 서버 원본 전환을 막는 것은 표본 부족 — 하루 1건 합성 검증으로 3일 무결 실증 (시우 요청 · GM 지시 2026-09-09)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-09",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-09-09] [시우 실측 2026-09-09 11:4x · GM 지시 「종합접수처·습득물 AWS 이관 빨리」] 막고 있는 것은 실패가 아니라 표본이다.\n· 이관 진척 61% · 서버 원본 2/9 · 종합접수처는 아직 dual.\n· 서버 reconcile 실측 — reception 무결연속 1일(마지막 실패 09-04) · reg_delete 0일(마지막 실패 09-04) · lf_delete 0일(마지막 실패 09-04, 그 뒤 사례 자체가 없음) · lf_handover 1일.\n· 전환 판정 기준은 3일 무결인데, 접수가 09-06~09-09 나흘째 0건이라 무결의 증거가 쌓이지 않는다. reconcile 이 「행이 있었던 날만 센다」로 세기 때문에, 조용하면 영원히 3일이 안 된다.\n· 09-04 실패 셋은 같은 날 습득물 먹통(배976) 줄기이고 그 뒤 실패는 0이다. 즉 지금 남은 건 실증뿐이다.\n· 기존 selftest 경로는 기록만 하고 GAS 로 안 넘겨(api_intake.py 주석) 시트 대조 증거가 못 된다.\n\n요청: 종합접수처 3갈래(reception · reg_delete · lf_delete)에 하루 1건 합성 검증을 넣어 서버·시트 왕복 무결을 실제로 만들어 달라. 사람 눈에 보이는 접수 목록에는 섞이지 않게 (selftest 처럼 격리하되 GAS 전달은 태워야 대조가 된다). 3일 차면 그때 GM 결재로 서버 원본 전환.\n종합접수처 화면·워드프레스는 시우가 쥐고 있고(GM 09-05), 이 배는 서버 API 쪽만 요청한다.",
+    "next": "reception·reg_delete·lf_delete 일일 합성 검증 배선 → 3일 무결 뒤 시우에게 회신(전환 결재는 GM)",
+    "depends_on": "",
+    "ship_no": 11419,
+    "short_no": 1166,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-09"
   }
 ]
