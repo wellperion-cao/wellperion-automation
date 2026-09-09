@@ -11117,8 +11117,10 @@ function _loadHoldIntake(force) {
   if (_holdIntakeLoading) return;
   if (_holdIntakeLoaded && !force) { _renderHoldIntake(); return; }
   _holdIntakeLoading = true;
-  fetch(GAS_URL + '?action=member_hold_intake_list' + _wpKeyParam())
-    .then(function(r){ return r.json(); })
+  // ★2026-09-09 배1050 — ERP 도메인은 서버 미러(/api/reception/hold) 먼저, 실패·6분 내 쓰기면 종전 GAS.
+  //   응답 모양은 GAS member_hold_intake_list 와 같다(api_reception._rows 가 시트 행 JSON 을 그대로 돌려줌 + done).
+  var _hiGas = function(){ return fetch(GAS_URL + '?action=member_hold_intake_list' + _wpKeyParam()).then(function(r){ return r.json(); }); };
+  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/reception/hold').catch(function(e){ console.warn('[휴회접수] API 실패 → GAS 폴백:', e && e.message); return _hiGas(); }) : _hiGas())
     .then(function(d){ if (d && d.ok) { _holdIntake = d.data || []; _holdIntakeLoaded = true; } })
     .catch(function(){ _noteLoadFail('휴회 접수'); })
     .then(function(){ _holdIntakeLoading = false; _renderHoldIntake(); });
