@@ -162,13 +162,30 @@
       <div class="desc">설치·도구 파일</div>
     </a>
   </div>
+  <p class="lead" id="ping-line" hidden></p>
+
   <script>
-  /* 화면 수는 세어서 적지 않는다 — 손으로 적으면 낡는다(2026-09-09 실측: 화면 114 로 적혀 있었으나 실제 127).
+  /* 숫자는 세어서 적지 않는다 — 손으로 적으면 낡는다(2026-09-09 실측: 화면 114 로 적혀 있었으나 실제 127).
      erp/modules.json 이 정본이고 scripts/erp_modules_build.py 가 화면 파일에서 자동으로 만든다. */
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var n = (d.modules || []).length;
     if (n) document.getElementById('n-screens').textContent = '화면 ' + n + '장';
   }).catch(function(){ document.getElementById('n-screens').textContent = '화면'; });
+
+  /* 화면 열람 — status/page_ping.json 거울(시토 961b5a7f9). 하루 한 번 07:40 에 새로 뜨는 스냅샷이다.
+     분모(count)도 읽는다 — 채점 대상이 늘면 분모가 같이 늘어야 한다.
+     이 원장은 마지막 열람 시각 하나만 남긴다(경합 방지). 그래서 「지난 7일」 같은 기간은 못 만든다 —
+     127장 전체·기간별은 page_ping 이 서버 원장으로 옮겨간 뒤에 붙인다(시토 GAS 정리 잔여 6곳 중 하나). */
+  fetch('/status/page_ping.json', {cache:'no-store'}).then(function(r){
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }).then(function(d){
+    if (!d || !d.count) return;
+    var el = document.getElementById('ping-line');
+    el.textContent = '화면 열람 — 채점 대상 ' + d.count + '장 중 ' + d.opened_count +
+                     '장이 한 번이라도 열렸습니다. ' + (d.collected_at || '') + ' 기준.';
+    el.hidden = false;
+  }).catch(function(){ /* 아직 배포 전이면 404 다. 없는 줄로 두지 빈 줄을 남기지 않는다. */ });
   </script>
 
   <!-- 이용자 3층 — GM 확정 2026-09-09. 주소가 곧 층이다. 아래 「구성 3갈래(표준·자산·운영)」와 뜻이 다르다. -->
