@@ -2087,8 +2087,12 @@ async function loadParkingRevenue(){
   var statusEl=document.getElementById('pkStatus');
   var kpiEl=document.getElementById('pkKpiRow');
   var subEl=document.getElementById('pkSubline');
+  if(statusEl){ statusEl.textContent='불러오는 중...'; statusEl.style.color='var(--dim)'; }
   try{
-    var r=await fetch(PARKING_REVENUE_URL+'?t='+Date.now(),{cache:'no-store'});
+    // 배1145(2026-09-09 시토) — 네트워크가 응답 없이 멈추면(hang) 예전엔 "불러오는 중..."에서 영원히
+    // 멈췄다. 15초 타임아웃으로 반드시 성공/실패 중 하나로 끝나게 한다.
+    var r=await Promise.race([fetch(PARKING_REVENUE_URL+'?t='+Date.now(),{cache:'no-store'}), new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); },15000); })]);
+    if(!r.ok) throw new Error('http '+r.status);
     var d=await r.json();
     if(!d || d.status!=='정상') throw new Error('not normal');
     PK_LOADED=true;
@@ -2104,7 +2108,10 @@ async function loadParkingRevenue(){
     if(subEl) subEl.textContent='기간 '+periodLabel+' · 갱신 '+(d.갱신시각||'')+' · 수집 '+(d.수집일수||0)+'일';
   }catch(e){
     PK_LOADED=false;
-    if(statusEl){ statusEl.textContent='주차 매출 데이터 없음/수집 실패'; statusEl.style.color='var(--dim)'; }
+    if(statusEl){
+      statusEl.textContent=(e&&e.message==='not normal')?'이번 달 주차 매출 집계가 아직 없습니다.':'주차 매출을 불러오지 못했습니다 — 새로고침 후에도 같으면 알려 주세요.';
+      statusEl.style.color=(e&&e.message==='not normal')?'var(--dim)':'var(--red)';
+    }
     if(kpiEl) kpiEl.innerHTML='';
     if(subEl) subEl.textContent='';
   }
