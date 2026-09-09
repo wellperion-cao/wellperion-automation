@@ -81,6 +81,25 @@ def ref_sort_key(ref: str):
     return (f'{m.group(1)}-{m.group(2)}-{m.group(3)}', int(m.group(4)), ref)
 
 
+_KST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def _ts(v):
+    """원장 시각 문자열 → 시간대가 항상 붙은 datetime.
+
+    원장에 시간대 없는 줄이 한 줄이라도 섞이면 뺄셈이 터져 그날 표가 통째로 안 나온다
+    (2026-09-09 실측: 소급 접수를 '2026-09-09T12:30:00' 로 남겼더니 쿵짝표가 죽었다).
+    같은 PC 에서 KST 로 남기는 기록이라 시간대가 없으면 KST 로 본다 — 뺄셈마다 막지 말고
+    시각을 만드는 이 한 곳에서 통일한다."""
+    if not v:
+        return None
+    try:
+        d = datetime.datetime.fromisoformat(str(v))
+    except Exception:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=_KST)
+
+
 def _dur(start: datetime.datetime, end: datetime.datetime) -> str:
     m = int((end - start).total_seconds() // 60)
     return f'{m}분' if m < 60 else f'{m // 60}시간{m % 60}분'
@@ -388,8 +407,8 @@ def emit(day: str) -> int:
             warns = [e for e in ev if e.get('result') == 'warn']
             oks = [e for e in ev if e.get('result') == 'ok']
             start = warns[0] if warns else (oks[0] if oks else None)
-            st = datetime.datetime.fromisoformat(start['ts']) if start else None
-            en = datetime.datetime.fromisoformat(oks[-1]['ts']) if oks else None
+            st = _ts(start['ts']) if start else None
+            en = _ts(oks[-1]['ts']) if oks else None
             mins = int((en - st).total_seconds() // 60) if st and en else None
             did = str(oks[-1].get('detail') or '').strip() if oks else ''
             got = str(ev[0].get('event') or '').strip()
@@ -545,8 +564,8 @@ def _render_table(by: dict, day: str) -> None:
         warns = [e for e in ev if e.get('result') == 'warn']
         oks = [e for e in ev if e.get('result') == 'ok']
         start = warns[0] if warns else (oks[0] if oks else None)
-        st = datetime.datetime.fromisoformat(start['ts']) if start else None
-        en = datetime.datetime.fromisoformat(oks[-1]['ts']) if oks else None
+        st = _ts(start['ts']) if start else None
+        en = _ts(oks[-1]['ts']) if oks else None
 
         # 소급 기록은 소요를 계산하지 않는다 — 접수 ts 가 실제로 지시받은 시각이 아니라
         # 나중에 몰아 적은 시각이라 0분으로 찍히고, 그 0분이 '즉시 처리'로 읽힌다.
