@@ -8,7 +8,7 @@
 # ============================================================
 $ErrorActionPreference = 'Stop'
 $wscript = "$env:WINDIR\System32\wscript.exe"
-$L = "C:\Users\jjky0\welperion-automation\launchers"
+$L = "$env:USERPROFILE\welperion-automation\launchers"
 
 function Set-Hidden($task, $vbs) {
   $vbsPath = Join-Path $L $vbs

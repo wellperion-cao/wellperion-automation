@@ -1,6 +1,6 @@
 # IG 폴링 감시기 영구 비활성 + 상주 프로세스 종료 (관리자 권한 실행)
 # 발행 엔진 스크립트(ig_review_publish_watcher.py)는 보존 — 봇이 --once로 on-demand 호출.
-$log = "C:\Users\jjky0\welperion-automation\logs\ig_watcher_disable.log"
+$log = "$env:USERPROFILE\welperion-automation\logs\ig_watcher_disable.log"
 $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 "=== $ts IG 폴링 감시기 비활성 ===" | Out-File -FilePath $log -Encoding utf8
 

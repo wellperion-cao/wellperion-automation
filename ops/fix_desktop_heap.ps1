@@ -5,7 +5,7 @@
 # 발효 = 재부팅 1회. 가역 = logs\desktop_heap_SharedSection_backup.txt 로 복구.
 $ErrorActionPreference = 'Stop'
 $key = 'HKLM:\System\CurrentControlSet\Control\Session Manager\SubSystems'
-$bak = 'C:\Users\jjky0\welperion-automation\logs\desktop_heap_SharedSection_backup.txt'
+$bak = "$env:USERPROFILE\welperion-automation\logs\desktop_heap_SharedSection_backup.txt"
 
 try {
   $old = (Get-ItemProperty -Path $key -Name Windows).Windows

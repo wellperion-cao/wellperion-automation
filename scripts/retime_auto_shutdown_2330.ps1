@@ -7,7 +7,7 @@
 #       → 본 스크립트를 '관리자 권한 PowerShell'에서 1회 실행하면 끝.
 #
 # 실행법 (관리자 PowerShell):
-#   powershell -ExecutionPolicy Bypass -File "C:\Users\jjky0\welperion-automation\scripts\retime_auto_shutdown_2330.ps1"
+#   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\welperion-automation\scripts\retime_auto_shutdown_2330.ps1"
 #   또는 파일 우클릭 → 'PowerShell로 실행'(관리자) 후 권한 상승.
 
 $ErrorActionPreference = 'Stop'
