@@ -1,0 +1,91 @@
+{
+  "_이 파일은": "새로 맡는 업체 하나의 마케팅 자동화 설정입니다. 빈칸을 채워 검증기에 넣으면 셋업이 시작됩니다.",
+  "_채우는 법": "모르는 칸은 비워 두세요. 지어내지 마세요 — 검증기가 '아직 못 받은 것'으로 따로 세어 줍니다. null 은 '아직 못 받음', \"\" 는 '해당 없음'입니다.",
+  "_같은 업체를 상담봇에도 올렸다면": "server/counselbot/tenants/{업체번호}_{이름}.json 이 이미 있습니다. 상호·주소·전화·채널은 거기서 그대로 가져오세요. 두 번 묻지 않습니다.",
+
+  "tenant": {
+    "_안내": "업체를 가리키는 이름표. id 는 폴더·주소에 그대로 쓰이니 영문 소문자와 밑줄만 씁니다.",
+    "id": null,
+    "name": null,
+    "name_en": null,
+    "type": null,
+    "onboarded_at": null,
+    "owner_contact": {
+      "_안내": "대표님 또는 담당자. 승인·확인을 여기로 여쭙습니다.",
+      "name": null,
+      "channel": null,
+      "note": null
+    }
+  },
+
+  "brand": {
+    "_안내": "만들어 내보내는 모든 그림·글이 이 값을 따릅니다. 색은 #RRGGBB 여섯 자리로 적습니다.",
+    "one_liner": null,
+    "tone": null,
+    "positioning": null,
+    "colors": {
+      "primary": null,
+      "accent": null,
+      "background": null
+    },
+    "logo_file": null,
+    "font": null
+  },
+
+  "terms": {
+    "_안내": "업체가 대외에 쓰지 않기로 한 말과, 대신 쓰는 말. 우리 쪽 실측으로는 이 칸이 비면 옛 문구가 콘텐츠마다 되살아납니다.",
+    "forbidden": [
+      {
+        "term": null,
+        "replace": null,
+        "note": null
+      }
+    ],
+    "always_use": []
+  },
+
+  "channels": {
+    "_안내": "발행할 곳. 계정 주소만 적습니다. ★비밀번호·토큰은 이 파일에 절대 적지 마세요 — 이 꾸러미는 사람 손을 여러 번 거칩니다.",
+    "_로그인": "각 채널 로그인은 셋업 뒤 브라우저 프로필에 사람이 한 번 직접 합니다(안내 4단계).",
+    "instagram": null,
+    "naver_blog": null,
+    "naver_cafe": null,
+    "naver_place": null,
+    "kakao_channel": null,
+    "danggn": null,
+    "facebook": null,
+    "homepage": null
+  },
+
+  "cadence": {
+    "_안내": "얼마나 자주 내보낼지. 사람이 승인하는 시각을 업체 근무 시간 안에 둡니다.",
+    "posts_per_week": null,
+    "days": [],
+    "publish_time": null,
+    "approval_channel": null,
+    "daily_send_cap": 6
+  },
+
+  "cta": {
+    "_안내": "콘텐츠 끝에 붙는 다음 걸음. 이게 없으면 노출만 늘고 문의가 안 늡니다.",
+    "inquiry_url": null,
+    "reservation_url": null,
+    "phone": null,
+    "utm_source_prefix": null
+  },
+
+  "kpi": {
+    "_안내": "시작 시점의 숫자. 나중에 '늘었다'고 말하려면 오늘 값이 있어야 합니다. 모르면 비워 두고 첫 달을 기준선으로 삼습니다.",
+    "baseline_month": null,
+    "inquiries_per_month": null,
+    "main_inflow_channel": null,
+    "goal": null
+  },
+
+  "aws": {
+    "_안내": "돌아가는 곳. 업체 폴더와 공개 주소는 셋업이 만들어 줍니다. 값은 셋업이 채우니 비워 두세요.",
+    "site_dir": null,
+    "public_url": null,
+    "deployed_at": null
+  }
+}
