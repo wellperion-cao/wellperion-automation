@@ -81,10 +81,22 @@ def close_schedule(event_id: str, dry: bool) -> dict:
 
 
 # ── GM업무 · 결재 SSOT (같은 업무 SSOT 행) ───────────────────────────────────
+# ★GM 지시 2026-09-09 — "GM업무가 업무SSOT에 업로드하는건 절대 안되. 내가 지시를 하면 그 업무를
+#   중간관리자+실무진들이 업무 SSOT에 올려서 결재SSOT 나까지 오게해야해."
+#   그래서 이 도구는 더 이상 업무 SSOT 행을 만들지 않는다. 등록은 지시를 받은 사람이 직접 한다 —
+#   AI 가 대신 올리면 주인 없는 행이 쌓이고(2026-08-18 규칙과 같은 줄기), 결재가 GM 에게 올라오는
+#   길도 사람 손을 안 거친 채 열린다. 전사일정·월간운영계획(GM업무 카드)·진척 덧붙이기는 그대로 둔다.
+#   되돌리려면 GM 채팅 지시 한 줄이 있어야 한다(이 상수를 코드에서 임의로 바꾸지 않는다).
+TODO_UPLOAD_BLOCKED = True
+
+
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
              owner: str = GM_OWNER) -> dict:
-    """owner 기본 = 김남욱 GM. ★실무진이 실행하는 건은 --assignee 로 그 사람을 담당에 넣는다 — 담당이 GM 이면
-    GM업무 화면에 GM 이 할 일로 뜬다(GM 지적 2026-09-05 "다 김남욱GM 이라고 해놓으면 내가 해야하는거 아냐?")."""
+    """owner 기본 = 김남욱 GM. ★2026-09-09 부터 이 길은 막혀 있다(위 TODO_UPLOAD_BLOCKED 주석).
+    막힌 이유를 그대로 돌려주어 호출부가 사람에게 보여 준다."""
+    if TODO_UPLOAD_BLOCKED:
+        return {"ok": False, "blocked": True,
+                "reason": "업무 SSOT 등록은 AI 가 하지 않는다(GM 지시 2026-09-09) — 지시를 받은 실무진이 직접 올린다"}
     import ops_daily_digest as o
     params = {"action": "todo_add", "title": title, "category": category, "owner": owner or GM_OWNER,
               "startDate": _today().isoformat(), "endDate": due, "content": content,
@@ -238,13 +250,16 @@ def main() -> int:
     due = a.due or a.date or (_today() + _dt.timedelta(days=7)).isoformat()
     r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry) if a.date else None
     r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=a.assignee)
+    if r_todo.get("blocked"):
+        # 막힌 것은 실패가 아니라 규칙이다 — 사람이 무엇을 해야 하는지 한 줄로 알린다.
+        print("🚫 업무 SSOT 등록은 하지 않았습니다 — 지시를 받은 실무진이 직접 올립니다(GM 지시 2026-09-09).")
     r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
                         a.check, False, dry) if a.plan else None
     print(f"🧭 4면 — 전사일정 {_mark(r_evt)}{(' ' + r_evt.get('id', '')) if r_evt and r_evt.get('ok') else ''}"
           f" · GM업무 {_mark(r_todo)} {r_todo.get('id', '')}"
           f" · 결재 {'✔ ' + a.approval if a.approval else '—'}"
           f" · 월간계획 {_mark(r_plan)}{(' ' + a.plan) if a.plan else ''}")
-    return 0 if r_todo.get("ok") else 1
+    return 0 if (r_todo.get("ok") or r_todo.get("blocked")) else 1
 
 
 if __name__ == "__main__":
