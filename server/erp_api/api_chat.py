@@ -43,7 +43,7 @@ except ImportError:
 
 router = APIRouter(prefix="/api/chat")
 
-TENANTS = {"1_wellperion", "2_dietcamp", "3_spogym"}   # 배1036 요청④ — 스포짐 폴더는 비어 있어도(FAQ 0) 라우트는 연다
+TENANTS = {"1_wellperion", "2_dietcamp", "3_gocheokgolf"}   # 3번은 고척 QA골프(GM 2026-09-09 「스포짐이 부장님거야」로 교체) — FAQ 0 이어도 라우트는 연다
 FAQ_DIR = os.environ.get("ERP_FAQ_DIR", "/srv/erp/faq")
 SEED_FAQ_DIR = os.path.join(_HERE, "seed_faq")   # /srv/erp/faq 에 없을 때 폴백 — 개발 PC 자체점검용(검수 L4)
 LOG_PATH = os.environ.get("ERP_CHAT_LOG", "/srv/erp/chat_log.jsonl")
@@ -206,7 +206,7 @@ def _best_match(q: str, faq: list):
 
 def _fallback_text(tenant: str, meta: dict) -> str:
     """못 답할 때 문구 — 테넌트 페르소나(identity.counselor_persona.handoff)가 있으면 그걸 쓴다(사람 상담원
-    말투 · 배1036 GM 지시). 없으면 옛 고정 문구 + 예약 링크(스포짐처럼 페르소나 미수령인 테넌트 폴백)."""
+    말투 · 배1036 GM 지시). 없으면 옛 고정 문구 + 예약 링크(페르소나 미수령인 테넌트 폴백)."""
     persona = _persona_of(tenant)
     handoff = persona.get("handoff")
     if handoff:
@@ -644,7 +644,7 @@ def _grounded(text: str, source: str) -> bool:
 
 def _today_hours_line(tenant: str) -> str:
     """오늘 운영 상태 한 줄(코드 계산 · 모델 없음) — 배1036 GM⑥·설계 §3-1⑦. facts.hours 없는 테넌트
-    (다캠·스포짐 지금)는 빈 문자열 — 호출부가 핸드오프로 넘어간다. 휴관 판정은 scripts/close_days.is_closed
+    (프로필에 시간이 없는 테넌트)는 빈 문자열 — 호출부가 핸드오프로 넘어간다. 휴관 판정은 scripts/close_days.is_closed
     그대로 재사용(기존 지원부 체계.html getDayInfo 와 같은 2·4째 일요일 규칙 · 새로 안 만든다)."""
     hours = (_load_profile(tenant).get("facts") or {}).get("hours")
     if not isinstance(hours, dict) or not hours.get("weekday") or _is_closed_day is None:
@@ -749,7 +749,7 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
         if preset.get("tone"):
             preset_line += " 말투 지침 — %s." % preset["tone"]
     service_concept = (prof.get("identity") or {}).get("service_concept") or ""
-    sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null(스포짐)이면 생략(배1036 GM 추가①)
+    sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null 이면 생략(배1036 GM 추가①)
     sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
     today_line = _today_hours_line(tenant)
     return (
@@ -853,7 +853,7 @@ def profile(tenant: str, full: bool = False):
     out = {
         "ok": True, "tenant": tenant, "name": name,
         # persona = 진짜 상담원처럼(배1036 GM · 시보 커밋 21bfe89f3) — name·greeting·handoff·typing_ms·emoji.
-        # 미수령(스포짐)이면 이름은 테넌트 이름으로 폴백, 인사말 없음(고객 화면이 정중히 생략).
+        # 미수령이면 이름은 테넌트 이름으로 폴백, 인사말 없음(고객 화면이 정중히 생략).
         "persona": {"name": persona.get("name") or name, "greeting": _v(persona.get("greeting")),
                     "handoff": _v(persona.get("handoff")), "typing_ms": persona.get("typing_ms") or 0,
                     "emoji": persona.get("emoji") or ""},
