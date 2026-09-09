@@ -101,6 +101,9 @@
   #adm-frame{width:100%; height:calc(100vh - 260px); min-height:560px; border:1px solid var(--border);
              border-radius:12px; background:var(--paper); display:block;}
   @media(max-width:640px){ #pane-adm{width:auto;} }
+  /* 사용량 탭 — 화면 하나를 그대로 끼워 띄운다(권한관리와 같은 방식). 탭으로 격상(GM 2026-09-09). */
+  #use-frame{width:100%; height:calc(100vh - 260px); min-height:560px; border:1px solid var(--border);
+             border-radius:12px; background:var(--paper); display:block;}
   @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
 </style>
 </head>
@@ -111,6 +114,7 @@
   <div class="tabs" role="tablist">
     <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">실행 모듈</button>
     <button id="tab-doc" role="tab" aria-selected="false" aria-controls="pane-doc">문서함</button>
+    <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">사용량</button>
     <button id="tab-dl"  role="tab" aria-selected="false" aria-controls="pane-dl">다운로드</button>
     <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
   </div>
@@ -132,6 +136,12 @@
     <div class="meta">읽는 것 — 안내 · 초안 · 보고서 · 가이드.</div>
     <input class="find" id="find-doc" type="search" placeholder="문서 이름으로 찾기" autocomplete="off">
     <div id="sections-doc"><div class="msg">불러오는 중…</div></div>
+  </div>
+
+  <div id="pane-use" role="tabpanel" hidden>
+    <h2>사용량</h2>
+    <div class="meta">AI 가 하루·주 단위로 얼마나 일했는지와, 어떤 일에 어떤 모델을 쓰는지 기준.</div>
+    <iframe id="use-frame" title="토큰 사용량" src="about:blank"></iframe>
   </div>
 
   <div id="pane-dl" role="tabpanel" hidden>
@@ -268,8 +278,8 @@ function loadDownloads(){
 }
 
 // 2-2) 탭 전환 — 다운로드 판은 처음 열 때 한 번만 읽는다.
-var dlLoaded = false, admLoaded = false;
-var TABS = ['mod', 'doc', 'dl', 'adm'];
+var dlLoaded = false, admLoaded = false, useLoaded = false;
+var TABS = ['mod', 'doc', 'use', 'dl', 'adm'];
 function showTab(which){
   TABS.forEach(function(k){
     var on = (k === which);
@@ -277,6 +287,8 @@ function showTab(which){
     document.getElementById('pane-' + k).hidden = !on;
   });
   if (which === 'dl' && !dlLoaded) { dlLoaded = true; loadDownloads(); }
+  // 사용량 판도 처음 열 때 한 번만 불러온다.
+  if (which === 'use' && !useLoaded) { useLoaded = true; document.getElementById('use-frame').src = '../cto/automation/토큰 사용량.html'; }
   // 관리자 화면은 서버가 내준다 — 처음 열 때 한 번만 불러온다(매번 다시 안 부른다).
   if (which === 'adm' && !admLoaded) { admLoaded = true; document.getElementById('adm-frame').src = '/auth/admin'; }
 }

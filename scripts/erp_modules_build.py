@@ -128,6 +128,10 @@ APPGROUP_IDS = {
             "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],
 }
 APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함"]
+
+# 탭으로 격상된 화면 — 카드 목록에서 뺀다(GM 지시 2026-09-09 「토큰 사용량은 하나의 탭으로
+# 관리되어야 할 정도로 중요한 맥락이야, 모듈에서 격상시켜줘」). 카드와 탭 양쪽에 두면 중복이다.
+TAB_PROMOTED = {"cto-automation-토큰-사용량"}
 APPGROUP_OF = {mid: g for g, ids in APPGROUP_IDS.items() for mid in ids}
 
 # 옛 용어 자동 차단(CLAUDE.md §0 브랜드 용어 + ssot/canon_values.json 2026-09-05 확정) — 카드 이름에서만 치환.
@@ -341,6 +345,8 @@ def build():
         core = CORE.get(rel)
         mid = core["id"] if core else make_id(role, rel)
         name = core["name"] if core else names.get(mid, title)
+        if mid in TAB_PROMOTED:      # 탭으로 올라간 화면은 카드로 그리지 않는다
+            return
         items.append({
             "id": mid,
             "core": bool(core),
