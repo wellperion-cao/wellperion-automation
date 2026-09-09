@@ -482,7 +482,14 @@ def collect_automation_health():
             "items": items,
         }
     except Exception as e:
-        return {"summary": f"집계 중 (오류: {e})", "total": 0,
+        # 오류 문구만으로는 어느 줄인지 모른다 — 2026-09-09 새벽부터 이 함수가
+        # "'NoneType' object has no attribute 'split'" 만 반복해 찍었는데, 같은 코드를
+        # 손으로 돌리면 정상이라 재현이 안 됐다(상주 스케줄러 안에서만 난다).
+        # 그래서 실패 지점(줄번호)을 같이 남긴다. 다음 주기가 스스로 위치를 알려 준다.
+        import traceback
+        tb = traceback.extract_tb(sys.exc_info()[2])
+        where = f" @{tb[-1].name}:{tb[-1].lineno}" if tb else ""
+        return {"summary": f"집계 중 (오류: {e}{where})", "total": 0,
                 "healthy": 0, "rate": 0, "items": []}
 
 
