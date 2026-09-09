@@ -42,7 +42,12 @@ FORMS = {
     "inquiry":    {"ledger": "intake_log", "ok": ("200",), "mirror": "inquiries"},
     "instructor": {"ledger": "intake_log", "ok": ("200",), "mirror": None},
     "sunday":     {"ledger": "intake_log", "ok": ("200",), "mirror": None},
-    "reception":  {"ledger": "intake_log", "ok": ("200",), "mirror": "reception_items"},
+    # 접수(reception)는 이 대조에서 뺐다 (2026-09-09 시토·시우). 배984(GM 지시 2026-09-05)로 접수는
+    # 서버 원장에 직접 적고 시트에는 신규분을 안 넘긴다 — 시트 도달을 증거로 삼는 이 대조가 그 영역에서는
+    # 영원히 '도달 못 증명'만 낸다. 못 재는 것을 계속 재는 척하면 계측기가 매일 거짓 신호를 준다(오늘
+    # 그 신호가 「접수 0건」·「표본 부족」 두 번의 오판을 만들었다). 대신 시우가 15분 점검에 서버 원장
+    # 기준 계측을 붙였다 — 통로 살아있나(OPTIONS+POST) · 접수가 실제로 들어오나(원장 최신 접수일).
+    # ▸되살릴 때 = 시트가 다시 신규 접수를 받게 되면 이 줄을 되돌린다.
     "write":      {"ledger": "write_log",  "ok": ("ok",),  "mirror": None},
 }
 # 문의 폼 category → 미러(inquiries) 유형. 여기 없는 category 는 시트 라우팅 자체가 없다.
@@ -225,6 +230,22 @@ MEMBER_OWNER_FIELDS = ("PT 담당자", "골프 담당자", "P.L 담당자", "스
 MEMBER_HOLD_FIELD = "휴회접수상태"
 
 
+def _member_no_by_phone(conn, db, phone):
+    """전화번호로 회원번호를 찾는다. 못 찾으면 None(종전대로 대조 불가로 센다).
+
+    뒤 4자리로만 찾지 않는다 — 4자리는 겹치는 사람이 나온다. 숫자만 남긴 전체 번호가
+    같은 회원이 **정확히 한 명일 때만** 돌려준다. 두 명 이상이면 누구인지 못 정하므로 None.
+    """
+    digits = re.sub(r"\D", "", str(phone or ""))
+    if len(digits) < 10:
+        return None
+    rows = conn.execute(
+        "SELECT member_no FROM members WHERE tenant_id=%s AND scope='valid'"
+        " AND regexp_replace(COALESCE(phone,''), '[^0-9]', '', 'g') = %s"
+        " GROUP BY member_no LIMIT 2", (db.TENANT, digits)).fetchall()
+    return rows[0]["member_no"] if len(rows) == 1 else None
+
+
 def _reconcile_member_col_writes(conn, db, since, action, value_key, gas_field_for):
     """member_owner_save·member_hold_transition 공통 뼈대 — write_log 에 적힌 (member_no, 값) 을 그 시각
     **이후** 처음 돈 sync_members 배치의 members.data JSON 같은 칸 값과 대조한다(시포 스펙 §3 검증 방법
@@ -239,6 +260,12 @@ def _reconcile_member_col_writes(conn, db, since, action, value_key, gas_field_f
     for r in rows:
         p = r["payload"] or {}
         no, value = p.get("_member_no"), p.get(value_key)
+        if not no:
+            # 회원번호를 안 실은 쓰기 — 화면이 전화번호(keyPhone)를 열쇠로 보내는 경우가 있다.
+            # 종전에는 그런 행을 전부 '시트 도달 증명 못 함'으로 세어 무결 스트릭을 끊었는데,
+            # 실측해 보니 gas_status 는 ok 이고 열쇠도 멀쩡한 정상 쓰기였다(2026-09-06 회원 수정 6건).
+            # 잴 수 있는 열쇠가 있는데 못 잰 것이라, 미러에서 전화로 회원번호를 찾아 같은 대조를 이어간다.
+            no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
         gas_field = gas_field_for(p)
         day = str(r["at"])[:10]
         d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
@@ -297,6 +324,16 @@ def reconcile_member_active_writes(conn, db, since):
     for r in rows:
         p = r["payload"] or {}
         no, saved = p.get("_member_no"), p.get("_saved") or {}
+        if not no:
+            # 회원번호를 안 실은 쓰기 — 화면이 전화번호를 열쇠로 보낸 경우. 미러에서 찾아 이어간다.
+            no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
+        if not saved:
+            # `_saved`(그 쓰기가 실제로 바꾼 칸 목록)는 배1054 부터 실린다. 그 전 형식으로 적힌 행은
+            # **무엇을 바꿨는지 자체를 모른다** — 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이
+            # 바뀐 날 이전이 통째로 실패가 되어 무결 스트릭이 영영 안 찬다(실측 2026-09-09: 회원 수정
+            # 09-04·06·07 의 56건이 전부 이 부류였고 gas_status 는 모두 ok 였다). 시트 도달을 못 따진
+            # 행은 날짜 버킷을 아예 건드리지 않는다 — 행 0 인 날과 같게 건너뛴다(끊지도, 세지도 않는다).
+            continue
         day = str(r["at"])[:10]
         d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
         d["server"] += 1
@@ -336,6 +373,16 @@ def reconcile_member_hold_approve_writes(conn, db, since):
     for r in rows:
         p = r["payload"] or {}
         no, saved = p.get("_member_no"), p.get("_saved") or {}
+        if not no:
+            # 회원번호를 안 실은 쓰기 — 화면이 전화번호를 열쇠로 보낸 경우. 미러에서 찾아 이어간다.
+            no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
+        if not saved:
+            # `_saved`(그 쓰기가 실제로 바꾼 칸 목록)는 배1054 부터 실린다. 그 전 형식으로 적힌 행은
+            # **무엇을 바꿨는지 자체를 모른다** — 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이
+            # 바뀐 날 이전이 통째로 실패가 되어 무결 스트릭이 영영 안 찬다(실측 2026-09-09: 회원 수정
+            # 09-04·06·07 의 56건이 전부 이 부류였고 gas_status 는 모두 ok 였다). 시트 도달을 못 따진
+            # 행은 날짜 버킷을 아예 건드리지 않는다 — 행 0 인 날과 같게 건너뛴다(끊지도, 세지도 않는다).
+            continue
         day = str(r["at"])[:10]
         d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
         d["server"] += 1
@@ -582,6 +629,11 @@ def selftest():
         _MC2(wl4, [json.dumps({"재등록상담\n날짜": "2026-09-10"}, ensure_ascii=False)]), _DB, "2026-09-01")
     assert days9["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days9
     assert not bad9
+
+    # 옛 형식(_saved 없음) 쓰기는 '못 잰 것'이지 '틀린 것'이 아니다 — 날짜를 아예 안 만든다(2026-09-09).
+    wl4b = [{"at": "2026-09-01 12:00:00", "payload": {"_member_no": "M00030", "col": "주소", "value": "서울시"}}]
+    days9b, bad9b = reconcile_member_active_writes(_MC2(wl4b, []), _DB, "2026-09-01")
+    assert days9b == {} and not bad9b, (days9b, bad9b)
 
     # member_hold_approve(4단계 배1054) 대조 — reject 행(decision!='approve')은 SQL WHERE 로 이미 빠지므로
     # _MC2 에는 approve 행만 들어온다(reject 는 write_log 에 decision='reject' 로 남아 이 쿼리에 안 잡힌다).
