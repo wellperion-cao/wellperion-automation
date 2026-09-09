@@ -141,6 +141,39 @@ def _gas_key(action):
     return None
 
 
+# GAS 라우터가 action 칸이 비었을 때만 내는 답. 본문이 doPost 에 닿았으면 action 은 항상 있다 —
+# 2026-09-09 실측: 모르는 action 을 보내면 GAS 는 「알 수 없는 action: …」이라 답한다(즉 본문을 봤다).
+# 그러니 이 답이 오면 본문이 GAS 에 닿지 않은 것이고, 시트엔 아무것도 안 써졌다 → 다시 보내도 중복이 아니다.
+BODY_NEVER_ARRIVED = "action 필수"
+
+
+def body_never_arrived(data):
+    """GAS 가 '본문을 못 봤다'고 답했나 — 그때만 다시 보내도 안전하다(쓰인 게 없다)."""
+    return isinstance(data, dict) and str(data.get("error") or "").strip() == BODY_NEVER_ARRIVED
+
+
+class _HopRecorder(urllib.request.HTTPRedirectHandler):
+    """리다이렉트로 지나간 자리를 적어 둔다 — 거부당한 쓰기가 '본문이 틀린 것'인지 '본문이 도착도 못 한 것'인지
+    다음번엔 가릴 수 있게(2026-09-09 시토).
+
+    urllib 는 302 를 만나면 POST 를 GET 으로 바꾸고 본문을 버린다. Apps Script 표준 흐름
+    (POST /exec → 302 → googleusercontent 의 출력)에서는 그게 맞다. 그런데 그 302 가 다시 /exec 을
+    가리키면 doPost 대신 doGet 이 빈 손으로 돌아 GAS 가 「action 필수」라 답한다 — 화면엔 '잘못 보냈다'로
+    보이지만 실제로는 본문이 GAS 에 닿지도 않은 것이다(2026-09-07 21:26~21:54 회원 7건 · 09-08 강습 1건,
+    실무진이 28분간 같은 칸을 손으로 다시 눌렀다).
+
+    지금은 자리만 남기고 동작은 안 바꾼다 — doPost 가 이미 돌았는지 모르는 채 자동 재시도로 돌리면
+    결재·회원 쓰기가 두 번 들어간다. 다음 발생 때 _hops 를 보고 정하면 된다.
+    """
+
+    def __init__(self, hops):
+        self.hops = hops
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        self.hops.append("%s→%s" % (code, str(newurl).split("?")[0]))
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
     """GAS 에 같은 본문을 POST. 302 는 urllib 가 GET 으로 따라간다(본문 없이 — GAS 표준 흐름). 반환 dict, 실패 시 예외."""
     url = os.environ.get(url_key, "")
@@ -151,10 +184,19 @@ def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
     body = gas_key.sign_body(url_key, body)
     req = urllib.request.Request(url, data=body, method="POST",
                                  headers={"Content-Type": "text/plain;charset=utf-8", "User-Agent": "wellperion-erp-api"})
-    with urllib.request.urlopen(req, timeout=FORWARD_TIMEOUT) as r:
-        data = json.loads(r.read().decode("utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError("GAS 응답이 객체가 아님")
+    for attempt in (1, 2):
+        hops = []
+        with urllib.request.build_opener(_HopRecorder(hops)).open(req, timeout=FORWARD_TIMEOUT) as r:
+            final = r.geturl()
+            data = json.loads(r.read().decode("utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("GAS 응답이 객체가 아님")
+        if resp_ok(data):
+            return data
+        if attempt == 1 and body_never_arrived(data):
+            continue          # 본문이 안 닿은 것 — 아무것도 안 써졌으니 한 번 더 보낸다(중복 위험 없음)
+        # 거부당한 것만 자취를 싣는다 — 원장(gas_response)에 남아 다음 조사 때 첫 줄이 된다.
+        return dict(data, _hops=hops[:3], _final=str(final).split("?")[0], _tries=attempt)
     return data
 
 
@@ -266,6 +308,11 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert resp_ok({"success": False}) is False
     assert resp_ok({}) is True                                 # 둘 다 없으면 성공으로 친다
     assert resp_ok("not-a-dict") is True
+    # 본문 미도달 판정 — 이것만 재전송 대상이다(GAS 가 본문을 봤으면 다시 보내면 두 줄이 된다).
+    assert body_never_arrived({"ok": False, "error": "action 필수"}) is True
+    assert body_never_arrived({"ok": False, "error": "알 수 없는 action: x"}) is False   # 본문은 닿았다
+    assert body_never_arrived({"ok": False, "error": "archive-not-found"}) is False
+    assert body_never_arrived({"ok": True}) is False and body_never_arrived("x") is False
     assert _gas_key("reg_update") == "RECEPTION_EXEC_URL"
     assert _gas_key("lf_submit") == "RECEPTION_EXEC_URL"
     assert _gas_key("hold_complete") == "RECEPTION_EXEC_URL"

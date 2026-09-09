@@ -11,6 +11,7 @@ server 모드(origin_switch.py)에서 화면은 서버 원장에만 적고 즉�
                  손을 뗄 때 raw_body 도 지운다 — 사진·서명 base64·성함·연락처를 영영 이고 있지 않게(배 960 M1)
   200 인데 JSON 이 아니면  GAS 가 아니라 구글이 답한 것(로그인 안내 HTML) — 시트엔 없다. 되민 것으로 치지 않고 재시도한다(H3)
   GAS 가 거부하면(ok:false) 되민 것으로 치되 gas-error 로 남긴다 — 재시도해도 같은 답이고, 시트엔 안 들어갔으니 사람이 봐야 한다
+                 예외 = 「action 필수」(본문이 GAS 에 닿지도 않은 것) — 쓰인 게 없으니 재시도한다(api_write.body_never_arrived)
   둘 다              /srv/erp/status/pushback_failed.json + GET /api/intake/health 의 pushback.failed 에 뜬다
   거울               되민 쓰기가 거울(sync_*)을 더럽히면 배치 끝에 해당 동기화를 1회 돌린다(api_write 의 MIRROR_SYNC 그대로)
 
@@ -27,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api_intake import FORMS, PUSH_MAX_TRIES, gas_forward  # noqa: E402  — 전달·상한은 이중기록 때와 같은 것을 쓴다
 from api_reception_ops import write_gas_key as _rc_gas_key  # noqa: E402
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
-from api_write import MIRROR_SYNC, _SYNC_ARGS, _gas_key, resp_ok  # noqa: E402  — 배 1067: judge 와 api_write 가 같은 판정 함수
+from api_write import MIRROR_SYNC, _SYNC_ARGS, _gas_key, body_never_arrived, resp_ok  # noqa: E402  — 배 1067: judge 와 api_write 가 같은 판정 함수
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BATCH = 100                       # 1분에 이만큼씩 — 밀려도 다음 분이 이어 받는다
@@ -66,6 +67,10 @@ def judge(table, status, resp):
     except (ValueError, TypeError):
         return "push-error:not-json", False
     if not resp_ok(data):
+        if body_never_arrived(data):
+            # GAS 가 본문을 못 봤다 = 시트에 아무것도 안 써졌다(api_write.BODY_NEVER_ARRIVED 실측 근거).
+            # 사람이 볼 gas-error 로 닫지 않고 되밀기 대기에 남긴다 — 다음 분에 다시 보내도 중복이 아니다.
+            return "push-error:body-lost", False
         # 접수ID가 시트에 없음(배984 이후 신규건 · 시트 동결) — GAS 에 reg_append 가 없어 새로 넣을 수 없다.
         # 원장(서버)엔 이미 반영됐으니 사람이 볼 gas-error 대신 sheet-missing 으로만 표시(배1090·INC-056).
         if "찾을 수 없습니다" in str(data.get("error") or ""):
@@ -216,6 +221,10 @@ def selftest():
     # 재시도가 남은 실패는 gas_status 를 건드리지 않는다 — 건드리면 UNPUSHED(gas_status='queued')에서 빠져
     # 다음 분에 다시 안 집힌다(2026-09-09 실사고: 4행이 시트에 안 들어간 채 실패 목록엔 0 으로 보였다).
     assert "gas_status" not in _Conn.sql[-1], _Conn.sql[-1]
+    # 본문 미도달은 되밀기 대기에 남긴다(재시도) · GAS 가 본문을 보고 거부한 것은 사람 자리로 보낸다(종결).
+    assert judge("write_log", "200", '{"ok":false,"error":"action 필수"}') == ("push-error:body-lost", False)
+    assert judge("write_log", "200", '{"ok":false,"error":"알 수 없는 action: x"}') == ("gas-error", True)
+    assert judge("write_log", "200", '{"ok":true}') == ("ok", True)
     print("selftest ok")
     return 0
 
