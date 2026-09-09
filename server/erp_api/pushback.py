@@ -97,8 +97,13 @@ def push_row(conn, table, row):
             conn.execute("UPDATE %s SET gas_status=%%s, gas_response=%%s, push_tries=push_tries+1,"
                          " raw_body=NULL WHERE id=%%s" % table, (new_status, stored, row["id"]))
         else:
-            conn.execute("UPDATE %s SET gas_status=%%s, gas_response=%%s, push_tries=push_tries+1 WHERE id=%%s" % table,
-                         (new_status, stored, row["id"]))
+            # 아직 재시도가 남았다 — gas_status 는 'queued' 그대로 둔다. 오류는 gas_response 에만 적는다.
+            # 2026-09-09 실측 수리: 여기서 gas_status 를 오류값(push-error:500 등)으로 덮어쓰고 있었는데,
+            # 다음 분에 다시 집는 조건(UNPUSHED)이 gas_status='queued' 라 첫 실패에 대기열에서 빠졌다.
+            # PUSH_MAX_TRIES=5 는 한 번도 돌지 않았고, 사람이 보는 실패 목록(FAILED)은 push_tries>=5 를
+            # 조건으로 해서 그 행들을 영영 못 봤다 — 09-07~09-08 4행이 시트에 안 들어간 채 count 0 이었다.
+            conn.execute("UPDATE %s SET gas_response=%%s, push_tries=push_tries+1 WHERE id=%%s" % table,
+                         (stored, row["id"]))
     return pushed
 
 
@@ -208,6 +213,9 @@ def selftest():
     assert push_row(_Conn(), "intake_log", row) is False and "raw_body=NULL" in _Conn.sql[-1]
     row["push_tries"] = 0
     assert push_row(_Conn(), "intake_log", row) is False and "raw_body" not in _Conn.sql[-1]  # 재시도 남았으면 보관
+    # 재시도가 남은 실패는 gas_status 를 건드리지 않는다 — 건드리면 UNPUSHED(gas_status='queued')에서 빠져
+    # 다음 분에 다시 안 집힌다(2026-09-09 실사고: 4행이 시트에 안 들어간 채 실패 목록엔 0 으로 보였다).
+    assert "gas_status" not in _Conn.sql[-1], _Conn.sql[-1]
     print("selftest ok")
     return 0
 

@@ -456,6 +456,33 @@ def reconcile_member_archive_restore_writes(conn, db, since):
     return days, unmatched
 
 
+def _area_rollup(writes_by_action, today):
+    """액션별 행을 origin_switch 영역으로 합쳐 영역 단위 자격을 잰다.
+
+    전환 스위치의 단위가 영역(write_todo·write_proc…)이라 자격도 같은 단위여야 한다. 액션별로만 재면
+    한 해 두어 번 쓰는 액션(notice_delete 1건 등)이 '최근 3건 연속' 문턱을 영영 못 넘어 그 영역 전체를
+    붙잡는다. 목적지(GAS URL)가 같으면 같은 스위치로 켜지고 꺼지므로 합치는 것이 맞다.
+    """
+    from api_write import _gas_key  # noqa: PLC0415 — selftest 는 서버 모듈 없이 돌아야 한다
+    import origin_switch  # noqa: PLC0415
+
+    merged = {}
+    for action, rows in writes_by_action.items():
+        area = origin_switch.WRITE_AREA.get(_gas_key(action))
+        if not area:                      # 목적지를 못 정하는 액션(오타·폐기)은 영역에 안 싣는다
+            continue
+        merged.setdefault(area, []).extend(rows)
+    out = {}
+    for area, rows in merged.items():
+        days, na = reconcile_by_action(sorted(rows, key=lambda r: str(r[0])))
+        summary = summarize_form(days, today, na)
+        summary["mode"] = origin_switch.mode(area)
+        summary["actions"] = sorted({a for a, rs in writes_by_action.items()
+                                     if origin_switch.WRITE_AREA.get(_gas_key(a)) == area})
+        out[area] = summary
+    return out
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
     now = kst_now()
@@ -485,6 +512,7 @@ def main():
     for action, rows in writes_by_action.items():
         wdays, na = reconcile_by_action(rows)
         by_form[action] = summarize_form(wdays, today_d, na)
+    by_area = _area_rollup(writes_by_action, today_d)
     result = {
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "window_days": WINDOW_DAYS,
@@ -496,6 +524,12 @@ def main():
         "by_form": by_form,
         "by_form_note": "폼(action)별 분리 스트릭 — write 합산본(forms.write) 대신 액션별로 본다. "
                         "not_applicable(sheet-missing)=원천이 이미 서버로 넘어간 표라 대조 실패로 안 센다.",
+        "by_area": by_area,
+        "by_area_note": "영역(origin_switch 스위치 단위)별 스트릭. 전환은 액션 하나가 아니라 영역 하나를 통째로 "
+                        "켜는 것이라 자격도 같은 단위로 잰다 — 액션별로만 재면 한 해 두어 번 쓰는 액션이 "
+                        "'표본 3건 미만'으로 영영 자격을 못 얻어, 그 영역 전체가 무결한데도 전환이 막힌다 "
+                        "(2026-09-09 실측: write_todo 41행 전부 무결인데 11갈래 중 4갈래만 자격). "
+                        "액션별(by_form)은 어디가 깨졌는지 짚는 진단용으로 그대로 둔다.",
         "unmatched_samples": unmatched[:20],
     }
     os.makedirs(STATUS_DIR, exist_ok=True)
