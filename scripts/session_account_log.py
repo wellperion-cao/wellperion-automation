@@ -9,7 +9,12 @@
     그래서 세션이 시작되는 그 순간에 (세션id ↔ 계정) 짝을 한 줄 적어 둔다.
 
 무엇을: status/token_usage_accounts.jsonl 에 append 전용으로 한 줄.
-    {"ts", "session_id", "account", "model", "cwd", "source"}
+    {"sessionId", "account", "first_seen", "ts", "model", "cwd", "source"}
+
+    ★키 이름은 집계기(scripts/token_usage.py)가 읽는 것과 같아야 한다 — 그쪽은
+    sessionId / account / first_seen 세 개를 본다. 다른 이름으로 적으면 집계기가
+    이 줄을 못 알아보고 같은 세션을 **자기가 도는 시점의 계정으로 다시 append**
+    한다. 그러면 계정이 틀리게 붙는다 — 이 배가 없애려던 바로 그 오류다.
 
 원칙:
   - **append 만 한다.** 같은 파일을 웰리 쪽 집계(scripts/token_usage.py)도 읽으므로
@@ -74,13 +79,22 @@ def main() -> int:
         payload = {}
 
     session_id = str(payload.get("session_id") or "")
+    if not session_id:
+        # 세션 번호가 없으면 어느 대화에 붙일지 알 수 없다 — 적으면 집계기가 빈
+        # 번호를 '아는 세션'으로 기억해 버린다. 쓰지 않고, 왜 못 썼는지만 남긴다.
+        sys.stderr.write("session_account_log: session_id 없음 — 기록 안 함\n")
+        return 0
     if _already_logged(session_id):
         return 0
 
+    now = datetime.now(KST)
     row = {
-        "ts": datetime.now(KST).isoformat(timespec="seconds"),
-        "session_id": session_id,
+        # 앞 세 개 = 집계기(token_usage.py)가 읽는 키. 이름을 바꾸지 않는다.
+        "sessionId": session_id,
         "account": _current_account(),
+        "first_seen": now.strftime("%Y-%m-%d"),
+        # 아래는 덤. 집계기는 안 보지만 나중에 사람이 볼 때 쓸모가 있다.
+        "ts": now.isoformat(timespec="seconds"),
         "model": str(payload.get("model") or ""),
         "cwd": str(payload.get("cwd") or os.getcwd()),
         "source": str(payload.get("source") or ""),

@@ -21,9 +21,11 @@ set "SCRIPT=%WORK%\wellperion-agents\scripts\ceo_morning_pipeline.py"
 set "LOGDIR=%WORK%\wellperion-agents\logs"
 
 REM --- token account log (bae 1147) ---
-REM Record which login account this session runs under (one line, append only).
-REM Reads the SessionStart JSON from stdin. Never blocks or fails session start.
-if exist "%PY%" "%PY%" "%WORK%\scripts\session_account_log.py" 2>nul
+REM Moved out of this batch on 2026-09-09. Going through cmd.exe the SessionStart
+REM JSON never reached python's stdin, so every row came out with an empty
+REM sessionId and nothing usable was ever written. The hook now calls
+REM scripts/session_account_log.py directly from .claude/settings.local.json,
+REM which hands stdin straight to python. Do not add it back here.
 
 if not exist "%PY%" exit /b 0
 if not exist "%SCRIPT%" exit /b 0
