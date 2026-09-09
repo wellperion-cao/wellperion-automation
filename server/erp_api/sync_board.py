@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
+from sync_inquiries import db, gas_fetch, load_env  # noqa: E402  — 같은 env·같은 DB·같은 재시도 규칙
 
 BOARD_KEYS = (
     "GM_TASK_OWNERS", "CHAIRMAN_REPORTED", "OPS_POLICY_BOARD", "OPS_GUIDE_BOARD",
@@ -37,17 +37,8 @@ def gas_board(key, timeout=60):
     if not url:
         raise SystemExit("CHECK_GAS_URL 없음 — /srv/erp/api.env 를 확인")
     q = {"action": "board", "key": key, "_pv": int(time.time())}
-    req = urllib.request.Request(url + "?" + urllib.parse.urlencode(q), headers={"User-Agent": "wellperion-erp-api"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        print("[warn] %s 조회 실패: %s: %s" % (key, type(e).__name__, str(e)[:120]))
-        return None
-    if not isinstance(data, dict) or not data.get("ok"):
-        print("[warn] %s 응답 ok=false" % key)
-        return None
-    return data
+    # 재시도 규칙은 sync_inquiries 한 곳(2026-09-10 시토)
+    return gas_fetch(url, q, timeout=timeout, label=key)
 
 
 def put(conn, key, data, now):

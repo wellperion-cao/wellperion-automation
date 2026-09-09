@@ -337,15 +337,7 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
     # ★사람이 고친 칸은 같은 날 다시 덮어쓰지 않는다(GM 지시 2026-08-23 · 배749).
     # 실장이 손으로 넣은 LOSS 사유가 재실행 때 지워지던 경로가 여기다.
     if (seen.get(cell) or {}).get("day") == today:
-        resp = gas_get(url, {"token": token, "cell": cell, "file": file_id}, timeout=30,
-                       label=f"{cell} 현재값")
-        current = None
-        if resp is not None:
-            try:
-                data = resp.json()
-                current = data.get("value") if data.get("ok") else None
-            except Exception:
-                current = None
+        current = _read_cell(url, token, cell, file_id)
         if _human_edited(seen[cell], current, today):
             return {"ok": True, "skipped": "human-edit", "cell": cell,
                     "note": f"{cell} 은 사람이 고쳐 두었습니다 — 덮어쓰지 않았습니다"}
@@ -353,12 +345,41 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
     body = json.dumps({"token": token, "cell": cell, "text": text, "file": file_id}).encode("utf-8")
     req = urllib.request.Request(url, data=body,
                                  headers={"Content-Type": "text/plain"}, method="POST")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        res = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            res = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        res = {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+
+    # ★응답이 실패라고 해서 안 써진 것은 아니다 (2026-09-10 시토).
+    #   실측: 웹앱이 POST 에 302 를 돌려주면 파이썬이 그 다음 요청을 본문 없는 GET 으로 낮춘다
+    #   (표준 동작). 그러면 웹앱은 토큰 없는 요청을 보고 "unauthorized" 를 돌려주는데,
+    #   정작 시트 칸에는 값이 이미 들어가 있다. 09-10 08:00 I16 이 딱 이 경우였다 —
+    #   칸은 9/10 내용으로 멀쩡했는데 업무보고방에는 "👉 시포 확인 필요" 가 나갔다.
+    #   그래서 실패로 보일 때는 칸을 되읽어 확인한다. 진짜 안 들어갔을 때만 실패다.
+    if not res.get("ok"):
+        wrote = _read_cell(url, token, cell, file_id)
+        if wrote is not None and wrote.strip() == text.strip():
+            res = {"ok": True, "cell": cell, "recovered": True,
+                   "note": "응답은 못 받았지만 시트 칸을 되읽어 확인함 — 정상 기입"}
+
     if res.get("ok"):
         seen[cell] = {"day": today, "text": text}
         LAST_WRITE.write_text(json.dumps(seen, ensure_ascii=False, indent=1), encoding="utf-8")
     return res
+
+
+def _read_cell(url: str, token: str, cell: str, file_id: str) -> str | None:
+    """그 칸의 현재 값 한 번 읽기. 못 읽으면 None(지어내지 않는다)."""
+    resp = gas_get(url, {"token": token, "cell": cell, "file": file_id}, timeout=30,
+                   label=f"{cell} 되읽기")
+    if resp is None:
+        return None
+    try:
+        data = resp.json()
+    except Exception:
+        return None
+    return data.get("value") if data.get("ok") else None
 
 
 def _alert_if_bad(cell: str, res: dict) -> None:

@@ -22,7 +22,7 @@ import urllib.request
 from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
+from sync_inquiries import db, gas_fetch, load_env  # noqa: E402  — 같은 env·같은 DB·같은 재시도 규칙
 
 DEPTS = ("facility", "support", "parking")
 BACKFILL_DAYS = 30
@@ -39,17 +39,8 @@ def gas_get(params, require_ok=True, timeout=60):
     if not url:
         raise SystemExit("CHECK_GAS_URL 없음 — /srv/erp/api.env 를 확인")
     q = dict(params, _pv=int(time.time()))
-    req = urllib.request.Request(url + "?" + urllib.parse.urlencode(q), headers={"User-Agent": "wellperion-erp-api"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        print("[warn] %s 조회 실패: %s: %s" % (params, type(e).__name__, str(e)[:120]))
-        return None
-    if not isinstance(data, dict) or (require_ok and not data.get("ok")):
-        print("[warn] %s 응답 ok=false" % (params,))
-        return None
-    return data
+    # 재시도 규칙은 sync_inquiries 한 곳(2026-09-10 시토) — 점검 GAS 404 가 가장 잦았다(로그 364회)
+    return gas_fetch(url, q, timeout=timeout, label=str(params), require_ok=require_ok)
 
 
 def day_sources(dept, d):

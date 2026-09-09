@@ -19,7 +19,7 @@ import urllib.parse
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
+from sync_inquiries import db, gas_fetch, load_env  # noqa: E402  — 같은 env·같은 DB·같은 재시도 규칙
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 무동작.
 
 
@@ -31,17 +31,7 @@ def gas_get(url_key, action, params=None, timeout=90):
     q = {"action": action}
     q.update(params or {})
     q = gas_key.sign_params(url_key, q)   # lf_list 는 GATED — 스위치가 켜지면 열쇠가 있어야 통과한다
-    req = urllib.request.Request(url + "?" + urllib.parse.urlencode(q), headers={"User-Agent": "wellperion-erp-api"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception as e:
-        print("[warn] %s 조회 실패: %s: %s" % (action, type(e).__name__, str(e)[:120]))
-        return None
-    if not data.get("ok"):
-        print("[warn] %s 응답 ok=false" % action)
-        return None
-    return data
+    return gas_fetch(url, q, timeout=timeout, label=action)   # 재시도 규칙은 sync_inquiries 한 곳(2026-09-10 시토)
 
 
 def js_hash(s):
