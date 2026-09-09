@@ -188,7 +188,9 @@ function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
 // 2) 모듈 카드 — modules.json 은 scripts/erp_modules_build.py 가 화면 파일에서 자동 생성한다.
 //    여기서는 group(핵심 → 닉네임) 순서대로 섹션을 나눠 그리기만 한다.
 function loadModules(role, allowedIds){
-  return fetch('modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+  /* 절대경로다 — 이 화면은 /erp/ 와 루트(/) 두 주소에서 같이 뜬다(배1151). 상대경로로 두면
+     루트에서 /modules.json 을 찾아 404 가 나고 모듈 목록이 통째로 빈다. */
+  return fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('sections');
     var rootDoc = document.getElementById('sections-doc');
     root.innerHTML = ''; rootDoc.innerHTML = '';
@@ -263,7 +265,7 @@ function loadModules(role, allowedIds){
 //      ★회사 자료는 여기 올리지 않는다. 이 파일들이 놓인 /erp/launchers/ 는 로그인 없이 열리는
 //        공개 통로라, 카드를 감춰도 주소를 아는 사람은 그냥 받는다 — 화면 숨김은 잠금이 아니다.
 function loadDownloads(){
-  return fetch('downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+  return fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('downloads');
     var grid = document.createElement('div');
     grid.className = 'modules';
