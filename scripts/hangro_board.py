@@ -827,9 +827,14 @@ def _open_days(item: dict) -> int | None:
 #   지금까지 웰리에게만 걸려 있던 규칙을 역할과 무관하게(약속 L01) 여기 한 곳에 얹는다. ──
 def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     """role이 다른 역할에게 띄운 배 중 아직 열려 있는(답 없는) 것. 오래된 순.
-    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다.
     기준=_open_days(배를 넘긴 날부터, 배540) — _stall_days(마지막 기록일)를 쓰면
-    메모 한 줄만 붙어도 날짜가 초기화돼 실제로 오래 답 없는 배가 목록에서 빠진다."""
+    메모 한 줄만 붙어도 날짜가 초기화돼 실제로 오래 답 없는 배가 목록에서 빠진다.
+
+    ★2026-09-09 GM 지적("항상 진행 마무리가 잘 안되는 것 같아") 수리 — 종전에는
+    1일 미만(오늘 넘긴 배)을 뺐다. 그런데 넘긴 그날이 답을 못 받은 채 세션이 끝나는
+    바로 그 날이다. 실측: 시우가 그날 넘긴 배 1150·1162 두 척이 같은 날 아침 보드에
+    한 줄도 안 떴다. 넘긴 날부터 내 화면에 남겨야 그날 안에 회수된다 — 이 목록은
+    넘긴 날에만 늘어나므로 매일 뜨는 잡음이 아니다."""
     role = (role or "").strip().lower()
     if not role:
         return []
@@ -837,8 +842,7 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     out = [it for it in items
            if it.get("_from") == role
            and str(it.get("owner", "")).lower() != role
-           and str(it.get("status", "")).upper() in open_status
-           and (_open_days(it) or 0) >= 1]
+           and str(it.get("status", "")).upper() in open_status]
     return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
