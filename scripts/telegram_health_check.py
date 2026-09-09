@@ -426,7 +426,18 @@ def _check_reception_lost() -> list[str]:
         #   평일 기준 2일 넘게 새 접수가 없으면 한 줄 띄운다 — 판정은 사람이 한다.
         try:
             from datetime import datetime, date, timedelta
-            last_rc = (((d.get('forms') or {}).get('reception') or {}).get('last') or '')
+            # ★2026-09-09 오후 수리 — 종전엔 /api/intake/health 의 forms.reception.last 를 봤다.
+            # 그 값의 원장은 intake_log 인데, 09-07 에 제출 통로를 /api/reception/submit 으로
+            # 옮긴 뒤 그 경로는 intake_log 를 안 쓴다. 그래서 그 값은 09-05 에 굳어 있고
+            # 이 경보는 매일 울리는 거짓 신호가 된다. 실제 원장(reception_items)을 본다.
+            last_rc = ''
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from collectors.ops_shared import server_reception_rows
+                srv = server_reception_rows() or []
+                last_rc = max((str(x.get('createdAt') or '') for x in srv), default='')
+            except Exception:
+                last_rc = (((d.get('forms') or {}).get('reception') or {}).get('last') or '')
             if last_rc:
                 last_day = datetime.fromisoformat(last_rc).date()
                 gap = sum(1 for i in range(1, (date.today() - last_day).days + 1)
