@@ -79,7 +79,7 @@ td.num,th.num{text-align:right;}
     <div class="header-top">
       <div>
         <h1>💳 토큰 사용량 <span class="badge">AI 시토</span></h1>
-        <div class="sub">AI CTO (시토) · 클로드 모델별·날짜별 토큰 사용량 · GM 질문 2026-09-09</div>
+        <div class="sub">AI CTO (시토) · 사용량 + 모델 지정 규칙 · GM 질문 2026-09-09</div>
       </div>
       <div class="header-actions">
         <a href="../../자율현황.html" class="action-btn">← 자율현황(T2)</a>
@@ -120,6 +120,32 @@ td.num,th.num{text-align:right;}
   <div class="card">
     <div class="card-title"><span>👤 계정별</span></div>
     <div id="acctBody" class="dim">불러오는 중…</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>🧭 모델 지정 규칙</span><span class="dim" style="font-size:11px;font-weight:400;">GM 확정 2026-09-09</span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>일의 성격</th><th>쓰는 모델</th></tr></thead>
+      <tbody>
+        <tr><td>어려운 기획·설계 · 판단 · 보안</td><td><b>Fable 5.1</b> <span class="dim">(최상위)</span></td></tr>
+        <tr><td>기획·설계·판단·보안 건의 이행 · 정리 정돈</td><td><b>Opus 5</b></td></tr>
+        <tr><td>단순 작업 · 읽어오는 것</td><td><b>Sonnet 5</b></td></tr>
+        <tr><td>가벼운 조회 · 송부</td><td>Haiku 4.5</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="card-title" style="margin-top:16px;"><span>지금 실제로 어떻게 지정되나</span><span class="dim" style="font-size:11px;font-weight:400;">웰리 실측 2026-09-09</span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>자리</th><th>지금 값</th><th>어떻게 정해지나</th></tr></thead>
+      <tbody>
+        <tr><td>C-Level 창 8석</td><td>Fable 5.1</td><td>Start-AI *.bat 의 --model 로 고정</td></tr>
+        <tr><td>무인 자동 러너</td><td>Sonnet 4.6</td><td>welly_auto_runner.py 안 고정값</td></tr>
+        <tr><td>자동화 스크립트 기본</td><td>Sonnet 5 → Haiku 4.5</td><td>scripts/model_router.py MODEL_FALLBACK_CHAIN</td></tr>
+        <tr><td>자동화 스크립트 판단 3본</td><td>Fable 5.1 → Sonnet 5 → Haiku 4.5</td><td>같은 파일 JUDGMENT_CHAIN (주간 자기검토 · GM 프로필 · 학습 제안)</td></tr>
+        <tr><td>서브에이전트 위임</td><td>그때그때 세션이 지정</td><td><b>코드 강제 없음</b> — 문서 규칙만 있어 지켜질 때만 지켜진다</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><b>지금은 난이도를 보고 자동으로 고르는 장치가 없다. 자리마다 고정값이고, 서브에이전트만 그때그때 사람이 정한다.</b></div>
   </div>
 
 </div>
