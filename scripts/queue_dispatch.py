@@ -127,11 +127,26 @@ def _strip_role_tag(s: str) -> str:
     return re.sub(r"^\[[^\]]*\]\s*", "", s or "")
 
 
+def _as_no(v):
+    """배번호를 숫자로. 문자로 적혀 있어도 읽고, 못 읽으면 0."""
+    if isinstance(v, bool):
+        return 0
+    if isinstance(v, int):
+        return v
+    try:
+        return int(str(v).strip())
+    except (TypeError, ValueError):
+        return 0
+
+
 def build_ship(args, queue):
     today = args.date or _dt.date.today().isoformat()
     role = args.to.lower()
     nick = ROLES[role]
-    nos = [x.get("ship_no") or 0 for x in queue if isinstance(x, dict)]
+    # 배번호가 문자로 적힌 행이 하나만 있어도 max() 가 죽어 **모든 역할의 배 발행이 멈춘다**
+    # (2026-09-09 실측: '11433' 한 줄 때문에 TypeError · 큐 도구 전체 정지). 숫자로 읽고,
+    # 못 읽는 값은 0 으로 본다 — 남이 잘못 적은 한 줄이 도구를 세우게 두지 않는다.
+    nos = [_as_no(x.get("ship_no")) for x in queue if isinstance(x, dict)]
     ship_no = (max(nos) + 1) if nos else 1
     # 이미 쓰는 번호면 비켜 간다. max+1 만으로는 보관함에서 되살린 배·다른 경로가 복사해 넣은
     # 번호와 부딪힐 수 있다 — 2026-08-11 실측: 배39(진행중)와 배535(대기)가 같은 9640 을 써서
