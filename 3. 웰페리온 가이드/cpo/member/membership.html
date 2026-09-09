@@ -4726,8 +4726,7 @@ function loadInquiryDash(){
     // 채워져 있으면 그대로 재사용하고, 아직 로딩 전(또는 실패)이면 기존처럼 자체 fetch로 폴백(정보손실 0).
     if (dbRows && dbRows.length) { _compute(dbRows); return; }
     if (GAS_URL === GAS_PLACEHOLDER) { _compute(dbRows || []); return; }   // 백엔드 미연동 폴백(값 과소 가능)
-    fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
-      .then(function(r){ return r.json(); })
+    _inquiryListFetch()   // ★2026-09-09 배1050 — 문의DB 읽기 관문 재사용(서버 미러 우선·GAS 폴백)
       .then(function(d){ _compute((d && d.data) || []); })
       .catch(function(){
         _mdashRawInq = null;   // 실패=측정불가(전환율도 '–'), 채널 실패표기
