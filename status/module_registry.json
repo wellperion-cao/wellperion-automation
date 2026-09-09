@@ -568,12 +568,13 @@
         "ref": "status/monthly_ops_plan.json"
       },
       "notify_spec": {
-        "daily": false,
+        "daily": true,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
         "bot_id": null
       },
+      "_cadence_note": "[2026-09-09 시토·INC-057] daily=true 로 켠 이유는 발신용이 아니라 침묵감지용 — monthly_ops_sync.py 가 매일 07:00 이 파일을 갱신하는 일일 파이프라인인데도 이 셋이 전부 false 라서 module_silence_detector.judge_module() 이 이 모듈을 절대 'silent' 로 판정할 수 없었다(9일 크래시를 못 잡은 진짜 원인). bot_id=null 이라 module_reporter.py 실발신은 그대로 게이트로 막혀 있다(회귀 없음).",
       "front_card": {
         "window": "O1",
         "anchor": "o1-module-hub"
