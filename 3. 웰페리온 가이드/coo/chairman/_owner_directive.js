@@ -248,6 +248,7 @@
   // 채운다 — 지어내지 않는다, 안 채우면 계속 빈칸. 저장은 체크박스 즉시저장과 같은 방식(포커스를
   // 벗어나면 최신 보드를 다시 읽어 내 값 하나만 얹어 저장 — 남의 입력을 덮어쓰지 않는다).
   var OWNER_BOARD_KEY = 'GM_TASK_OWNERS';
+  var lastOwnerSaveError = '';   // 서버가 준 거부 사유(권한 없음 등)를 그대로 사람에게 보여 주려고 든다
   var taskOwners = {};
   // ★2026-09-04 시토 — 담당 보드가 이 GAS(CH_BOARD_URL) 하나에 얹혀 있어, 응답이 느린 날(실측 3.7~24초)
   // 위 8초 타임아웃에 걸려 담당 칸 71개가 통째로 빈 화면이 됐다(GM 지적). 시설부 체계.html _chkRead 와
@@ -276,8 +277,23 @@
       inp.value = taskOwners[inp.getAttribute('data-mgr-id')] || '';
     });
   }
+  /* 담당 이름 후보 — 3라인 명단(GM 지시 2026-09-09 "중간관리자들이 각 팀원 담당자 정할 수 있게").
+     ★이건 잠금이 아니라 오타 방지·고르기 편의다. 실제 권한 판정은 서버 저장 관문에 붙는다
+     (시토 배1182 — 개인 계정 발급 뒤 발효). 목록에 없는 이름도 손으로 칠 수 있다. */
+  var OWNER_CHOICES = ['김남욱 GM', '이경연 실장', '이정헌 소장', '나우열M',
+                       '최준용M', '임정은M', '윤병현AM', '백승화 사원',
+                       '김종현 차장', '박호균 과장', '김훈 주임', '박남일 주임', '천진석 주임',
+                       '김유정 주임', '이연희 반장', '우춘화 주임', '양상규 고문'];
+  function ensureOwnerDatalist() {
+    if (document.getElementById('mgr-name-list')) return;
+    var dl = document.createElement('datalist');
+    dl.id = 'mgr-name-list';
+    dl.innerHTML = OWNER_CHOICES.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+    document.body.appendChild(dl);
+  }
   function ownerCellHtml(id) {
-    return '<input type="text" class="mgr-inp" data-mgr-id="' + esc(id) + '" value="' + esc(taskOwners[id] || '') + '" placeholder="담당">';
+    ensureOwnerDatalist();
+    return '<input type="text" class="mgr-inp" list="mgr-name-list" data-mgr-id="' + esc(id) + '" value="' + esc(taskOwners[id] || '') + '" placeholder="담당">';
   }
   // 저장 직전 읽기만은 서버 미러를 쓰지 않는다 (배 960 H2 · 2026-09-04). 미러는 5분 주기라 그 사이 옆자리에서
   // 채운 담당 칸이 아직 안 들어와 있다 — 그 낡은 표에 내 값 하나를 얹어 통째로 저장하면 남의 입력이 지워진다.
@@ -290,6 +306,7 @@
       fresh[id] = value;
       // 쓰기 관문(_assets/erp_write.js · 배1070 2026-09-05 시우) — ERP 도메인이면 서버 /api/write(이중기록), 아니면 종전 GAS.
       return window.erpCheckPost(CH_BOARD_URL, { action: 'saveBoard', key: OWNER_BOARD_KEY, board: fresh }).then(function (r) { return r.json(); }).then(function (res) {
+        lastOwnerSaveError = (res && res.ok) ? '' : String((res && res.error) || '');
         taskOwners = fresh;
         // 저장 성공 시 서버 미러도 그 키만 즉시 다시 떠오게 한다(5분 주기를 안 기다리고 반영) — best-effort,
         // 실패해도 다음 cron(5분)이 채운다. GitHub Pages(ERP_API_ON=false)는 호출 자체를 안 한다.
@@ -308,7 +325,7 @@
     inp.disabled = true;
     saveTaskOwner(id, inp.value.trim()).then(function (ok) {
       inp.disabled = false;
-      if (!ok) alert('담당 저장 실패 — 다시 시도해 주세요.');
+      if (!ok) alert(lastOwnerSaveError || '담당 저장 실패 — 다시 시도해 주세요.');
     }).catch(function () {
       inp.disabled = false;
       alert('담당 저장 실패 — 다시 시도해 주세요.');
