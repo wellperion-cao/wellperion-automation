@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 ERP — 플랫폼 관리 콘솔</title>
+<style>
+  /* 색 토큰 = erp/index.html :root 그대로 복제 (GM 지시 — 새 디자인 체계를 옆에 만들지 않는다) */
+  :root{
+    --bg:#F4F0EB; --paper:#fff; --text:#221F20; --text-soft:#4A423C;
+    --dim:#6E655C; --dim-soft:#9C938A;
+    --accent:#63BBA0; --accent-hover:#3F9B80; --accent-bg:rgba(99,187,160,0.12);
+    --border:rgba(34,31,32,0.12); --border-strong:rgba(34,31,32,0.26); --gray-bg:#FBF9F6;
+  }
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme=light]){
+      --bg:#221F20; --paper:#2a2725; --text:#F4F0EB; --text-soft:#CFC8C1;
+      --dim:#AAA098; --dim-soft:#7E766E;
+      --accent:#63BBA0; --accent-hover:#8ED6BF; --accent-bg:rgba(99,187,160,0.16);
+      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#302c2a;
+    }
+  }
+  html{color-scheme:light dark;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+       -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+
+  .topbar{display:flex; align-items:center; gap:14px; padding:0 40px; height:58px;
+          position:sticky; top:0; z-index:20;
+          background:var(--paper); border-bottom:1px solid var(--border);}
+  .topbar .brand{display:flex; align-items:center; color:var(--text);}
+  .topbar .brand svg{height:16px; width:auto; display:block;}
+  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
+  .topbar .console{font-size:13.5px; font-weight:600; color:var(--text-soft); margin-left:2px;
+                    padding-left:14px; border-left:1px solid var(--border);}
+  .topbar a.home{margin-left:auto; font-size:13px; color:var(--dim); text-decoration:none;}
+  .topbar a.home:hover{color:var(--accent-hover);}
+
+  .main{max-width:1100px; padding:40px 40px 80px; margin:0 auto;}
+  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px;}
+  .meta{font-size:13.5px; color:var(--dim); margin-bottom:6px;}
+  .meta b{color:var(--text-soft);}
+  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
+     border-bottom:2px solid var(--gray-bg);}
+  h3 .n{font-size:12.5px; font-weight:400; color:var(--dim); margin-left:8px;}
+  p.lead{font-size:14px; color:var(--text-soft); margin-bottom:18px; max-width:760px;}
+
+  /* 3층 구성도 */
+  .layers{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px;}
+  .layer{background:var(--paper); border:1px solid var(--border); border-radius:12px;
+         padding:18px 20px; border-top:4px solid var(--accent);}
+  .layer .tag{font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--accent-hover);
+              text-transform:uppercase; margin-bottom:4px;}
+  .layer .name{font-size:18px; font-weight:700; margin-bottom:8px;}
+  .layer .desc{font-size:13px; color:var(--dim); margin-bottom:14px; line-height:1.6;}
+  .layer .stat{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline;
+               gap:2px 10px; padding:8px 0; border-top:1px dashed var(--border-strong); font-size:13px;}
+  .layer .stat:first-of-type{border-top:none;}
+  .layer .stat .k{color:var(--text-soft); min-width:0;}
+  .layer .stat .v{font-weight:700; color:var(--text); text-align:right; min-width:0; word-break:break-word;}
+  @media(max-width:820px){ .layers{grid-template-columns:1fr;} }
+
+  /* 표 — 고유값·뼈대 원장 */
+  table.reg{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:8px;}
+  table.reg th{text-align:left; font-weight:700; color:var(--dim); font-size:12px;
+               padding:8px 10px; border-bottom:1px solid var(--border-strong);}
+  table.reg td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  table.reg td.item{font-weight:600; white-space:nowrap;}
+  table.reg td.path{color:var(--text-soft); font-family:ui-monospace,Consolas,monospace; font-size:12.5px;
+                    word-break:break-all;}
+  table.reg td.note{color:var(--dim); font-size:12.5px;}
+  .grp{font-size:12px; font-weight:700; color:var(--accent-hover); margin:16px 0 4px;}
+  .grp:first-child{margin-top:0;}
+
+  /* 관리 입구 카드 4개 */
+  .entries{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
+  .entry{display:block; background:var(--paper); border:1px solid var(--border);
+         border-radius:12px; padding:18px 20px; text-decoration:none; color:inherit;
+         min-height:44px; transition:border-color .12s, background .12s;}
+  .entry:hover{border-color:var(--accent); background:var(--accent-bg);}
+  .entry .name{font-size:15.5px; font-weight:700; margin-bottom:4px;}
+  .entry .desc{font-size:12.5px; color:var(--dim);}
+
+  .foot{margin-top:50px; padding-top:16px; border-top:1px solid var(--border);
+        font-size:12px; color:var(--dim-soft);}
+  @media(max-width:640px){
+    .topbar{padding:0 18px;} .main{padding:26px 18px 60px;}
+    table.reg{display:block; overflow-x:auto;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand" aria-label="웰페리온 ERP"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108.7954 17.5240" height="20" role="img" aria-hidden="true"><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,96.8257,43.6787)" d="M0 0-3.093 5.825 .208 12.412H-1.778L-4.214 7.871-6.597 12.412H-8.731L-5.319 5.821-8.288-.041-14.694 12.412H-16.902L-8.271-3.912-4.197 3.954-.035-3.89 8.62 12.412H6.316Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,117.7407,42.6162)" d="M0 0-2.349 7.471H-3.277L-5.625 .004-8.025 7.47-9.046 7.471-6.261-1.094-4.967-1.096-2.813 5.929-.672-1.096 .621-1.094 3.419 7.471 2.399 7.47Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,122.3008,43.71)" d="M0 0H5.357V.776H.981V3.928H5.211V4.705H.981V7.788H5.357V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,130.3896,35.1455)" d="M0 0H-.981V-8.564H4.059V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,136.5166,35.1455)" d="M0 0H-.981V-8.564H4.058V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,147.4697,38.5273)" d="M0 0C-.151-.258-.361-.46-.635-.607-.857-.722-1.104-.81-1.378-.867-1.653-.925-2.063-.954-2.611-.954H-4.296V2.605H-3.036-2.718-2.399C-2.108 2.605-1.855 2.591-1.643 2.564-1.431 2.537-1.214 2.486-.993 2.409-.18 2.115 .224 1.584 .224 .814 .224 .529 .15 .257 0 0M-.078 2.917C-.45 3.126-.826 3.255-1.206 3.306-1.587 3.355-2.086 3.382-2.705 3.382H-5.277V-5.185H-4.296V-1.73H-2.452C-1.895-1.73-1.45-1.699-1.112-1.637-.652-1.552-.252-1.398 .094-1.173 .835-.695 1.207-.034 1.207 .808 1.207 1.743 .779 2.446-.078 2.917" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,150.0439,43.71)" d="M0 0H5.356V.776H.979V3.928H5.21V4.705H.979V7.788H5.356V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,163.793,37.938)" d="M0 0C0 .517-.129 .981-.39 1.391-.65 1.8-1.027 2.128-1.523 2.375-1.912 2.568-2.305 2.685-2.704 2.728-3.103 2.77-3.637 2.793-4.309 2.793H-6.643V-5.772H-5.66V2.016H-4.109C-3.632 2.016-3.215 1.991-2.855 1.946-2.498 1.899-2.178 1.79-1.895 1.616-1.611 1.442-1.389 1.217-1.225 .943-1.062 .669-.98 .381-.98 .081-.98-.314-1.09-.662-1.311-.963-1.532-1.265-1.846-1.496-2.253-1.659-2.536-1.767-2.8-1.832-3.05-1.856-3.296-1.878-3.654-1.891-4.122-1.891H-4.388-4.679L-1.353-5.772-.127-5.771-2.886-2.572C-2.092-2.572-1.411-2.316-.846-1.807-.281-1.298 0-.696 0 0" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,0,80)" d="M165.201 36.29H166.181V44.854H165.201Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,175.9219,41.9678)" d="M0 0C-.818-.707-1.806-1.061-2.964-1.061-4.096-1.061-5.079-.71-5.914-.012-6.751 .686-7.168 1.524-7.168 2.504-7.168 3.515-6.759 4.374-5.939 5.079-5.123 5.785-4.131 6.138-2.964 6.138-1.831 6.138-.85 5.791-.02 5.096 .812 4.401 1.227 3.561 1.227 2.573 1.227 1.564 .819 .704 0 0M.663 5.682C-.366 6.534-1.58 6.961-2.977 6.961-4.409 6.961-5.629 6.529-6.638 5.665-7.646 4.8-8.149 3.746-8.149 2.504-8.149 1.285-7.634 .249-6.604-.604-5.573-1.456-4.364-1.883-2.977-1.883-1.544-1.883-.321-1.448 .69-.579 1.7 .287 2.208 1.339 2.208 2.573 2.208 3.794 1.692 4.829 .663 5.682" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,186.5371,35.1455)" d="M0 0V-7.119L-5.494-.004-6.816 0V-8.564H-5.836V-1.033L0-8.564H.982V0Z" fill="currentColor"/></svg><span class="sub">ERP</span></div>
+  <span class="console">플랫폼 관리 콘솔</span>
+  <a class="home" href="../index.html">← 업무 홈으로</a>
+</div>
+
+<div class="main">
+
+  <h2>이 시스템이 무엇인가</h2>
+  <div class="meta">웰페리온 ERP는 실행 화면 <b>114장</b> · 자동화 모듈 <b>31개</b> · AI C-Level 역할 <b>8개</b>로 구성된 사내 업무 플랫폼입니다.</div>
+  <p class="lead">업무 홈(<code>/</code>)이 매일 쓰는 화면을 모아 보여준다면, 이 콘솔(<code>/admin/</code>)은 그 화면·자동화·회사 고유값을 한자리에서 통제하는 곳입니다. 삼성SDS REAL Summit 2026 발표의 표준·자산·운영 3대축을 그대로 가져와 구성했습니다.</p>
+
+  <h3>3층 구성도</h3>
+  <div class="layers">
+    <div class="layer">
+      <div class="tag">표준</div>
+      <div class="name">공통 인터페이스·규격</div>
+      <div class="desc">모든 화면·자동화가 지켜야 하는 카드 규격과 용어 규칙입니다.</div>
+      <div class="stat"><span class="k">모듈 카드 규격</span><span class="v">한 줄 설명·주인·경로 3칸</span></div>
+      <div class="stat"><span class="k">브랜드 용어 규칙</span><span class="v">ssot/brand.json</span></div>
+      <div class="stat"><span class="k">금지어·대체어 목록</span><span class="v">ssot/forbidden_terms.json</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">자산</div>
+      <div class="name">쌓아서 재사용하는 것</div>
+      <div class="desc">화면 카드 원장과 자동화 등록부, 그 둘을 잇는 연결고리입니다.</div>
+      <div class="stat"><span class="k">화면 카드</span><span class="v">114개</span></div>
+      <div class="stat"><span class="k">자동화 모듈</span><span class="v">31개</span></div>
+      <div class="stat"><span class="k">화면↔자동화 연결(screen_id)</span><span class="v">29 / 31</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">운영</div>
+      <div class="name">품질·안전·비용 관측</div>
+      <div class="desc">자동화가 어제 돌았는지, 조용히 죽지 않았는지, 토큰을 얼마나 썼는지 봅니다.</div>
+      <div class="stat"><span class="k">자동화 심장박동 감시</span><span class="v">25개</span></div>
+      <div class="stat"><span class="k">토큰 사용량</span><span class="v">아래 입구 참조</span></div>
+      <div class="stat"><span class="k">자율현황</span><span class="v">아래 입구 참조</span></div>
+    </div>
+  </div>
+
+  <h3>회사 고유값 자리 <span class="n">웰페리온에만 해당하는 값 20건 — 값은 각 파일이 정본, 여기는 위치만</span></h3>
+  <p class="lead">다른 회사가 이 시스템을 쓰려면 아래 20건을 자기 값으로 갈아 끼웁니다. 판정 근거 = <code>status/briefs/CEO-2026-09-09-뼈대-우리값-판정표.md</code>.</p>
+  <table class="reg">
+    <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>무엇이 담겼나</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" class="grp">ssot/ 설정값 (11)</td></tr>
+      <tr><td class="item">brand.json</td><td class="path">ssot/brand.json</td><td class="note">웰페리온 브랜드 용어·컬러·계정</td></tr>
+      <tr><td class="item">canon_values.json</td><td class="path">ssot/canon_values.json</td><td class="note">포지셔닝·금지어 등 GM 확정값</td></tr>
+      <tr><td class="item">decision_contracts.json</td><td class="path">ssot/decision_contracts.json</td><td class="note">웰페리온 결정 이력(계약 스키마는 뼈대)</td></tr>
+      <tr><td class="item">forbidden_terms.json</td><td class="path">ssot/forbidden_terms.json</td><td class="note">웰페리온 금지어·대체어 목록</td></tr>
+      <tr><td class="item">incident_baseline.json</td><td class="path">ssot/incident_baseline.json</td><td class="note">웰페리온 실사고 재발방지 기준선</td></tr>
+      <tr><td class="item">incidents.json</td><td class="path">ssot/incidents.json</td><td class="note">웰페리온 실제 사고 기록</td></tr>
+      <tr><td class="item">kpi.json</td><td class="path">ssot/kpi.json</td><td class="note">웰페리온 역할·KPI 실측값</td></tr>
+      <tr><td class="item">ownership_map.json</td><td class="path">ssot/ownership_map.json</td><td class="note">C레벨 소유·역할 실제 매핑</td></tr>
+      <tr><td class="item">publish_channels.json</td><td class="path">ssot/publish_channels.json</td><td class="note">웰페리온 실제 발행 채널·계정</td></tr>
+      <tr><td class="item">sheet_columns.json</td><td class="path">ssot/sheet_columns.json</td><td class="note">웰페리온 구글시트 칸 계약</td></tr>
+      <tr><td class="item">약속.json</td><td class="path">ssot/약속.json</td><td class="note">웰페리온 결정·경위 기록</td></tr>
+      <tr><td colspan="3" class="grp">.claude/skills/ (1)</td></tr>
+      <tr><td class="item">wellperion-brand</td><td class="path">.claude/skills/wellperion-brand/</td><td class="note">IG 계정명·컬러 팔레트·금지 용어</td></tr>
+      <tr><td colspan="3" class="grp">wellperion-agents/.claude/agents/ (8)</td></tr>
+      <tr><td class="item">ai-ceo.md 외 7종</td><td class="path">wellperion-agents/.claude/agents/ai-*.md</td><td class="note">닉네임(웰리·시뽀·시로·시모·시우·시포·시토·시보)·실제 협업 리듬</td></tr>
+    </tbody>
+  </table>
+
+  <h3>뼈대 자리 <span class="n">회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
+  <table class="reg">
+    <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>왜 뼈대인가</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" class="grp">ssot/ 엔진·틀 (11)</td></tr>
+      <tr><td class="item">CONSTITUTION.md</td><td class="path">ssot/CONSTITUTION.md</td><td class="note">진실단일화·재발방지 원칙 자체는 회사 무관</td></tr>
+      <tr><td class="item">canon.py</td><td class="path">ssot/canon.py</td><td class="note">canon_values.json만 갈아끼우면 재사용</td></tr>
+      <tr><td class="item">dashboard.html</td><td class="path">ssot/dashboard.html</td><td class="note">incidents.json만 갈아끼우면 재사용되는 뷰어 셸</td></tr>
+      <tr><td class="item">divergence_scan.py</td><td class="path">ssot/divergence_scan.py</td><td class="note">코드-문서 정합성 스캐너, 알고리즘 범용</td></tr>
+      <tr><td class="item">enforcement.py</td><td class="path">ssot/enforcement.py</td><td class="note">룰 강제 엔진, 룰은 값 파일에서 읽음</td></tr>
+      <tr><td class="item">enforcement_mode.json</td><td class="path">ssot/enforcement_mode.json</td><td class="note">off/warn/block 스위치 — 값은 테넌트가 고름</td></tr>
+      <tr><td class="item">forbidden_scan.py</td><td class="path">ssot/forbidden_scan.py</td><td class="note">forbidden_terms.json만 갈아끼우면 재사용</td></tr>
+      <tr><td class="item">incident_regression_monitor.py</td><td class="path">ssot/incident_regression_monitor.py</td><td class="note">재발 감지 엔진, 알고리즘 범용</td></tr>
+      <tr><td class="item">precommit_incident_guard.py</td><td class="path">ssot/precommit_incident_guard.py</td><td class="note">커밋 전 가드 훅, git 로직 범용</td></tr>
+      <tr><td class="item">publish_verify_pending.py</td><td class="path">ssot/publish_verify_pending.py</td><td class="note">발행 검증 큐 엔진, 로직 범용</td></tr>
+      <tr><td class="item">welly_boot_guard.py</td><td class="path">ssot/welly_boot_guard.py</td><td class="note">부팅 가드 로직은 회사 무관</td></tr>
+      <tr><td colspan="3" class="grp">.claude/skills/ (5)</td></tr>
+      <tr><td class="item">graphify</td><td class="path">.claude/skills/graphify/</td><td class="note">완전 범용 코드 그래프 툴</td></tr>
+      <tr><td class="item">hwp</td><td class="path">.claude/skills/hwp/</td><td class="note">완전 범용 HWP 파서</td></tr>
+      <tr><td class="item">wellperion-boot</td><td class="path">.claude/skills/wellperion-boot/</td><td class="note">완료 3요건 등 절차는 회사 무관</td></tr>
+      <tr><td class="item">wellperion-gm-report</td><td class="path">.claude/skills/wellperion-gm-report/</td><td class="note">8요소 표 등 보고 절차는 회사 무관</td></tr>
+      <tr><td class="item">welly-gm-a3-report</td><td class="path">.claude/skills/welly-gm-a3-report/</td><td class="note">A3 색상표·5단 구조·검증 5종은 규격 무관</td></tr>
+    </tbody>
+  </table>
+
+  <h3>관리 입구</h3>
+  <div class="entries">
+    <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
+      <div class="name">권한관리</div>
+      <div class="desc">누가 이 시스템에 들어올 수 있는지</div>
+    </a>
+    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
+      <div class="name">토큰 사용량</div>
+      <div class="desc">이번 달 AI 비용</div>
+    </a>
+    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
+      <div class="name">자율현황</div>
+      <div class="desc">자동화가 오늘도 돌고 있는지</div>
+    </a>
+    <a class="entry" href="../index.html">
+      <div class="name">다운로드</div>
+      <div class="desc">설치·도구 파일 (ERP 홈 → 다운로드 탭)</div>
+    </a>
+  </div>
+
+  <div class="foot">숫자는 2026-09-09 기준 실측(erp/modules.json·status/module_registry.json·ssot/kpi.json·status/heartbeats/). 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
+
+</div>
+</body>
+</html>
