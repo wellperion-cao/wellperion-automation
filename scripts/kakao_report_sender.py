@@ -1067,6 +1067,17 @@ AUTO_PIPELINE_SENDERS = {
 }
 SENDER_WELLY = "웰리"
 
+# ── 시우(COO) 직접 발신 허용 (GM 지시 2026-09-09) ──────────────────────────
+# GM 원문: "이런것들은 이제 시우도 챙겨줘 웰리혼자서만 챙기니까 놓치는 것 같아" /
+# "아니면 웰리한테서 이 내용은 시우가 다 주관하게 받아오던가".
+# 종전 규칙(2026-08-18 "시우는 재고 웰리가 보낸다")을 GM 이 여기서 바꿨다. 그날의 이유는
+# 중복 발신이었는데, 그 뒤 발신 관문이 하나로 모이고 회신 매칭이 붙어 겹칠 자리가 줄었다.
+# 반대로 웰리 한 사람에 묶어 두니 시우 도메인 건이 웰리 대기줄에서 멈췄다(2026-09-09
+# 화분 공지·업무 SSOT 등록 요청 둘 다 발송 전에 걸림).
+# ★방은 시우 도메인 셋만 연다 — ★부서장(강습 6팀)은 시우 소관이 아니라 그대로 웰리다.
+SENDER_COO = "시우"
+COO_ROOMS = {"★중간관리자", "★운영부", "★운영+시설+지원+주차"}
+
 # 테스트 꼬리표 — 사람 방 절대 금지(2026-08-29 실사고 후속: 10:42 ★운영부에 테스트 발신
 # + 10:43 정정문 두 통이 실무진에게 나갔다). 테스트는 업무보고방(--test 재경로)으로만 —
 # GM 확정 규칙. 화이트리스트·웰리 표기와 무관하게 이 꼬리표가 붙으면 사람 방은 막는다.
@@ -1075,12 +1086,14 @@ _TEST_SENDER_RE = re.compile(r"테스트|test|tmp|샘플|smoke", re.IGNORECASE)
 
 def _sender_gate_ok(room_name: str, sender: str) -> bool:
     """사람 방(HUMAN_APPROVAL_ROOMS)이 아니면 발신 주체와 무관하게 항상 통과.
-    사람 방이면 웰리 본인이거나 이미 화이트리스트에 오른 자동 발송일 때만 통과.
-    테스트 꼬리표(_TEST_SENDER_RE)는 어떤 경우에도 사람 방 불가."""
+    사람 방이면 웰리 본인, 시우(자기 도메인 방 셋만), 또는 이미 화이트리스트에 오른
+    자동 발송일 때만 통과. 테스트 꼬리표(_TEST_SENDER_RE)는 어떤 경우에도 사람 방 불가."""
     if room_name not in HUMAN_APPROVAL_ROOMS:
         return True
     if _TEST_SENDER_RE.search(sender or ""):
         return False
+    if sender == SENDER_COO:
+        return room_name in COO_ROOMS
     return sender == SENDER_WELLY or sender in AUTO_PIPELINE_SENDERS
 
 
@@ -1098,6 +1111,11 @@ def _selfcheck_sender_gate() -> None:
     assert _sender_gate_ok("★운영+시설+지원+주차", "점검접수정리") is True
     assert _sender_gate_ok("★운영+시설+지원+주차", "접수전달") is True
     assert _sender_gate_ok("★부서장", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
+    # 시우 직접 발신(GM 지시 2026-09-09) — 자기 도메인 방 셋만 열리고 ★부서장은 그대로 막힌다.
+    for room in COO_ROOMS:
+        assert _sender_gate_ok(room, "시우") is True, f"{room} — 시우 도메인 방은 통과해야 한다"
+    assert _sender_gate_ok("★부서장", "시우") is False, "강습 방은 시우 소관이 아니다 — 웰리 몫"
+    assert _sender_gate_ok("★관리부", "시우") is True, "사람 방 밖은 주체 무관 통과"
     # 테스트 태그는 사람 방으로 못 간다(2026-08-29 실사고 후속) — 웰리 표기가 섞여도 금지.
     for room in ("★중간관리자", "★운영부", "★부서장", "★운영+시설+지원+주차"):
         for tag in ("테스트", "웰리테스트", "smoke-test", "tmp발신", "샘플카드"):
