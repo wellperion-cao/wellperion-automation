@@ -479,6 +479,28 @@ def scan_due_hygiene() -> list:
             rows.append(("⑫지시미체크", f"[{o.get('id')}] {text[:40]}",
                          o.get("owner") or "", f"GM 지시 미체크{days}"))
 
+    # ⑬연동어긋남 — GM업무·전사일정·업무SSOT 가 서로 어긋난 자리(GM 지시 2026-09-09
+    # 「GM업무 + 중간관리자업무 + 전사일정 + 업무&결재SSOT 잘 연동해줘 이거 정말 중요한거야」).
+    # 판정은 gm_surfaces_sync.diff() 한 곳이 한다 — 여기서 규칙을 다시 짜지 않는다(약속 L21).
+    # 표엔 건수와 앞 몇 건만 올린다(20건짜리 갈래가 있어 통째로 실으면 표가 죽는다).
+    try:
+        import gm_surfaces_sync as _sync  # noqa: PLC0415
+        import schedule_ssot as _sch      # noqa: PLC0415
+        _plan = read_json(MONTHLY_PLAN_FILE, {})
+        _res = _sync.diff(_plan, (_sch.load().get("items") or []), _sync.fetch_owners(), _sync.fetch_todo_rows())
+        _gap = len(_res["add"]) + len(_res["fix"]) + len(_res["drop"])
+        if _gap:
+            rows.append(("⑬연동어긋남", "전사일정 짝", "",
+                         f"추가 {len(_res['add'])} · 고침 {len(_res['fix'])} · 삭제 {len(_res['drop'])}"
+                         " — python scripts/gm_surfaces_sync.py --apply"))
+        for _kind in ("담당없음", "SSOT행없음", "결재만있음"):
+            _hit = [n for n in _res["notes"] if n[0] == _kind]
+            if _hit:
+                rows.append(("⑬연동어긋남", f"{_kind} {len(_hit)}건",
+                             "", " / ".join(x[2][:18] for x in _hit[:3])))
+    except Exception as _e:  # noqa: BLE001 — 대조가 막혀도 나머지 위생 점검은 계속 돈다
+        rows.append(("⑬연동어긋남", "대조 실패", "", f"{type(_e).__name__}"))
+
     sched = read_json(SCHEDULE_SSOT_FILE, {})
     sched_items = sched.get("items") or []
     for it in sched_items:
@@ -509,10 +531,13 @@ def scan_due_hygiene() -> list:
         _o = None
     if _o is not None:
         seen_pairs = set()
-        for i, a in enumerate(sched_items):
+        # GM업무 짝(gmwork-*)은 일부러 카드와 같은 제목으로 세운 줄이다(2026-09-09 연동) — 중복이 아니다.
+        # 빼지 않으면 카드를 세울 때마다 「닮은 제목」이 한 쌍씩 늘어 표가 그것만으로 찬다(실측 10 → 29쌍).
+        dup_pool = [x for x in sched_items if not str(x.get("id") or "").startswith("gmwork-")]
+        for i, a in enumerate(dup_pool):
             if not str(a.get("next_due") or "").strip():
                 continue  # 날짜 없는 건끼리는 '같은 날'이 아니다(실측 오탐: 골프팀↔스쿼시팀 대청소)
-            for b in sched_items[i + 1:]:
+            for b in dup_pool[i + 1:]:
                 dup_name = _o._schedule_is_dup(a.get("name") or "", str(a.get("next_due") or ""), [b])
                 if not dup_name:
                     continue
