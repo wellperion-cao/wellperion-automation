@@ -44,6 +44,13 @@
                      color:#fff; margin-left:7px;}
   .topbar a.logout{font-size:var(--fs-2); color:var(--dim); text-decoration:none; margin-left:16px;}
   .topbar a.logout:hover{color:var(--accent-hover);}
+  /* 지금 어느 층에 있는지 — 회사 관리자(/erp/admin/) · 파트너사 관리자 · 파트너사 직원 (GM 지시 2026-09-09).
+     같은 주소가 두 층을 겸하므로 이름표는 역할로 정한다. 위층으로 가는 길은 관리자에게만 보인다. */
+  .topbar .layer{font-size:var(--fs-1); font-weight:600; color:var(--text-soft);
+                 padding:3px 10px; border-radius:20px; background:var(--gray-bg);
+                 border:1px solid var(--border); white-space:nowrap;}
+  .topbar a.up{font-size:var(--fs-2); color:var(--dim); text-decoration:none; white-space:nowrap;}
+  .topbar a.up:hover{color:var(--accent-hover);}
 
   .main{max-width:1100px; padding:40px 40px 80px;}
   h2{font-size:var(--fs-6); font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
@@ -118,6 +125,8 @@
     <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">토큰 사용량</button>
     <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
   </div>
+  <span class="layer" id="layer" hidden></span>
+  <a class="up" id="up-admin" href="/erp/admin/" hidden>회사 관리자 콘솔 ↑</a>
   <div class="who" id="who">확인 중…</div>
   <a class="logout" id="logout" href="/auth/logout" hidden>로그아웃</a>
 </div>
@@ -166,15 +175,42 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   // 관리자에게만 「권한관리」 탭을 띄운다. ★이건 보기 편하라고 감추는 것일 뿐 잠금이 아니다 —
   //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
   if (me.role === 'admin') document.getElementById('tab-adm').hidden = false;
+  setLayer(me.role);
   return loadModules(me.role, me.allowed_ids || null);
 }).catch(function(e){
   // 로컬에서 파일로 열면 /auth/me 가 없다 — 튕기지 않고 권한 없는 상태로 그려 둔다.
   document.getElementById('who').textContent = '로그인 확인 불가';
+  setLayer(null);
   loadModules(null, null);
 });
 
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* 층 구조 (GM 확정 2026-09-09)
+     /erp/admin/  회사 관리자      — 플랫폼을 파는 우리
+     /erp/        파트너사 관리자  — 그 회사의 관리자
+     /            파트너사 직원    — 그 회사의 직원
+   이 파일 하나가 아래 두 층을 겸한다. 층은 주소로 가른다 — 역할로 가르면 직원이 /erp/ 를 열었을 때
+   관리자 화면이 되고, 관리자가 / 를 열었을 때 직원 화면이 돼 주소와 화면이 어긋난다.
+   비용·권한처럼 관리자 것인 탭은 위층에서만 보인다. 위층으로 가는 링크는 보기 편하라고 감출 뿐
+   잠금이 아니다 — 실제 차단은 서버가 한다(/auth/admin 은 관리자 아니면 403). */
+function setLayer(role){
+  var isManager = /^\/erp(\/|$)/.test(location.pathname);
+  var el = document.getElementById('layer');
+  el.textContent = isManager ? '파트너사 관리자' : '파트너사 직원';
+  el.hidden = false;
+
+  var up = document.getElementById('up-admin');
+  if (isManager) {
+    if (role === 'admin') { up.href = '/erp/admin/'; up.textContent = '회사 관리자 콘솔 ↑'; up.hidden = false; }
+  } else {
+    // 직원 층 — 비용·권한 탭은 이 층의 것이 아니다
+    document.getElementById('tab-use').hidden = true;
+    document.getElementById('tab-adm').hidden = true;
+    if (role === 'admin') { up.href = '/erp/'; up.textContent = '파트너사 관리자 화면 ↑'; up.hidden = false; }
+  }
+}
 
 // 2) 모듈 카드 — modules.json 은 scripts/erp_modules_build.py 가 화면 파일에서 자동 생성한다.
 //    여기서는 group(핵심 → 닉네임) 순서대로 섹션을 나눠 그리기만 한다.
