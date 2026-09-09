@@ -3459,8 +3459,9 @@ function vendorSubmitAddForm(){
   }
   // 페이지 로드 시 1회 — fcheck_ranges_get(공개 GET). 실패해도 조용히 판정 없음 유지(경보 0), 재시도·폴백 없음.
   function fcLoadRanges(){
-    return fetch(API_URL+'?action=fcheck_ranges_get',{redirect:'follow'})
-      .then(function(r){return r.json();})
+    /* AWS 이관(배 11430 · 2026-09-09 시토 거울 개통) — ERP 도메인이면 서버 거울 먼저, 실패하면 종전 GAS.
+       거울은 같은 점검 GAS 를 떠 온 것이라 응답 모양({ok, ranges:[…]})이 같다. */
+    return _chkRead('/api/misc/ops/fcheck_ranges_get', '?action=fcheck_ranges_get', '점검기준표')
       .then(function(j){
         if(j && j.ok && Array.isArray(j.ranges)){
           FC_RANGE_ROWS=j.ranges.map(function(r){ r._rid=fcRangeRowGenId(); return r; });
