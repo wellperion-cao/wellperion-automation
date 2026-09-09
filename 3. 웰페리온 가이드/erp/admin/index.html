@@ -169,7 +169,10 @@
      erp/modules.json 이 정본이고 scripts/erp_modules_build.py 가 화면 파일에서 자동으로 만든다. */
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var n = (d.modules || []).length;
-    if (n) document.getElementById('n-screens').textContent = '화면 ' + n + '장';
+    if (!n) return;
+    document.getElementById('n-screens').textContent = '화면 ' + n + '장';
+    var c = document.getElementById('n-cards');   // 접기 안 「구성 3갈래」도 같은 값을 읽는다
+    if (c) c.textContent = n + '개';
   }).catch(function(){ document.getElementById('n-screens').textContent = '화면'; });
 
   /* 화면 열람 — status/page_ping.json 거울(시토 961b5a7f9). 하루 한 번 07:40 에 새로 뜨는 스냅샷이다.
@@ -261,15 +264,15 @@
       <div class="tag">자산</div>
       <div class="name">쌓아서 재사용하는 것</div>
       <div class="desc">화면 카드 원장과 자동화 등록부, 그 둘을 잇는 연결고리입니다.</div>
-      <div class="stat"><span class="k">화면 카드</span><span class="v">114개</span></div>
-      <div class="stat"><span class="k">자동화 모듈</span><span class="v">31개</span></div>
-      <div class="stat"><span class="k">화면↔자동화 연결(screen_id)</span><span class="v">29 / 31</span></div>
+      <div class="stat"><span class="k">화면 카드</span><span class="v" id="n-cards">—</span></div>
+      <div class="stat"><span class="k">자동화 모듈</span><span class="v">자율현황 참조</span></div>
+      <div class="stat"><span class="k">화면↔자동화 연결</span><span class="v">자율현황 참조</span></div>
     </div>
     <div class="layer">
       <div class="tag">운영</div>
       <div class="name">품질·안전·비용 관측</div>
       <div class="desc">자동화가 어제 돌았는지, 조용히 죽지 않았는지, 토큰을 얼마나 썼는지 봅니다.</div>
-      <div class="stat"><span class="k">자동화 심장박동 감시</span><span class="v">25개</span></div>
+      <div class="stat"><span class="k">자동화 심장박동 감시</span><span class="v">자율현황 참조</span></div>
       <div class="stat"><span class="k">토큰 사용량</span><span class="v">아래 입구 참조</span></div>
       <div class="stat"><span class="k">자율현황</span><span class="v">아래 입구 참조</span></div>
     </div>
@@ -327,7 +330,7 @@
 
   </details>
 
-  <div class="foot">숫자는 2026-09-09 기준 실측(erp/modules.json·status/module_registry.json·ssot/kpi.json·status/heartbeats/). 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
+  <div class="foot">화면 수는 erp/modules.json 을, 화면 열람은 status/page_ping.json 을 열 때마다 읽습니다 — 손으로 적은 숫자가 아닙니다. 자동화 가동·비용은 자율현황과 토큰 사용량 화면에서 봅니다. 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
 
 </div>
 </body>
