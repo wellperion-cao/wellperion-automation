@@ -399,7 +399,7 @@ def main() -> int:
     print("  다음    : %s" % s["next"])
     if s.get("must_finish_on"):
         print("  🎯 반드시 끝낼 것 : %s" % s["must_finish_on"])
-    print("  기록    : status/_queue.json  (커밋·푸시하면 받는 쪽 항로에 뜹니다)")
+    print("  기록    : status/_queue.json  (저장·배포하면 받는 쪽 항로에 뜹니다)")
     _print_session_hint(s["clevel"], disp, s["title"])
     return 0
 

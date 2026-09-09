@@ -39,7 +39,7 @@ NICK = {'ceo': '웰리', 'cto': '시토', 'cmo': '시모', 'cpo': '시포',
 # 헤더는 여기서만 만든다. 칸 수·이름이 바뀌면 아래 _selfcheck()가 바로 깨진다
 # (2026-08-13 build_task_rows/_render_task_table 이라는 별도 경로가 몰래 생겨 5칸이
 # 6칸으로 벌어졌던 사고 재발 방지 · 배658).
-TABLE_COLUMNS = ['#', '접수한 것', '한 것', '상태·소요', '저장·업로드']
+TABLE_COLUMNS = ['#', '접수한 것', '한 것', '상태·소요', '저장·배포']
 
 
 def _pushed(sha: str) -> bool:
@@ -269,7 +269,7 @@ def upload_state(detail: str, has_done: bool, role: str | None = None,
         shas = _role_commits(role, start, end or start)
     for s in shas:
         if _pushed(s):
-            return f'✅ 올림 ({s[:9]})'
+            return f'✅ 배포 ({s[:9]})'
     if shas:
         return f'⚠️ 저장만 ({shas[0][:9]})'
     if not has_done:

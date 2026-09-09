@@ -762,7 +762,7 @@ def main() -> int:
     if normalize_status(args.status) == "DONE" and not (args.artifact_url and args.artifact_url.strip()):
         print("=" * 60, file=sys.stderr)
         print("[완료 거부] 완료(DONE)에는 증거 URL이 필수입니다 — 4요건 중 ④증거 누락.", file=sys.stderr)
-        print("  → 완료의 단일 정의(4요건): ①커밋 [DONE][clevel][task_id] ②status DONE", file=sys.stderr)
+        print("  → 완료의 단일 정의(4요건): ①저장 [DONE][clevel][task_id] ②status DONE", file=sys.stderr)
         print("     ③증거(--artifact-url). 빠지면 완료 아님.", file=sys.stderr)
         print("     ※'다음'은 더 이상 필수가 아니다 — 안 적으면 종결이다(GM 지시 2026-08-19).", file=sys.stderr)
         print('  → 증거 URL을 첨부하세요: --artifact-url "<스크린샷/로그/라이브확인 링크>"', file=sys.stderr)
