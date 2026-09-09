@@ -537,7 +537,7 @@ table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weig
 table.a3l-grid td.a3l-shade{background:#faf7f3!important}
 /* 한 장 = A4 가로 인쇄 영역(210−5×2). 표가 남은 높이를 다 먹어 하단 여백선에 닿는다 —
    장마다 행 높이를 손으로 맞추지 않는다(브라우저가 행에 균등 배분한다 · GM 2026-09-04). */
-.a3l-page{height:199mm;display:flex;flex-direction:column;page-break-after:always;break-after:page}
+.a3l-page{height:190mm;display:flex;flex-direction:column;page-break-after:always;break-after:page}
 .a3l-page:last-child{page-break-after:auto;break-after:auto}
 .a3l-page>table{flex:1 1 auto}
 .a3l-page-cap{font-size:13px;font-weight:800;color:#2a2018;margin:0 0 5px}
@@ -7112,7 +7112,7 @@ function wpLdyBuildSheets(lang){
     return '<div class="a3l-page"><div class="a3l-cap2"><b>' + title + '</b>'
       + '<span>' + org + ' · ' + meta + ' · ' + sign + '</span></div>'
       + '<table class="a3l-grid a3l-month">'
-      + '<colgroup><col style="width:' + (en ? 104 : 92) + 'px">'
+      + '<colgroup><col style="width:' + (en ? 118 : 106) + 'px">'
       + new Array(items.length * subs.length + 1).join('<col>')
       + (tail ? '<col style="width:120px">' : '') + '</colgroup>'
       + wpLdyGridHead(rowLabel, subs, tail, en)
@@ -7204,7 +7204,7 @@ function printA4Laundry(lang){
     styleTag.id = 'a3-ldy-page-style';
     document.head.appendChild(styleTag);
   }
-  styleTag.textContent = '@media print{ @page{ size:A4 landscape; margin:5mm; } }';
+  styleTag.textContent = '@media print{ @page{ size:A4 landscape; margin:10mm 5mm; } }';
   window.print();
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
