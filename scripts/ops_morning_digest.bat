@@ -27,6 +27,14 @@ REM   Rollback = re-add the --room-key foursplit / dept lines (this commit).
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
 "%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key mgr >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
+REM 2026-09-09 (GM 2026-09-06, ship1088): foursplit(4-dept staff room) is back - export + issue
+REM   extract only (no digest, no send). The 08-20 removal blamed the room; measured 09-09 the
+REM   export succeeds (683KB) once a leftover save dialog is closed - it was a stuck window.
+REM   Extract writes status/ops_room_issues.json + a COO brief. Rollback = drop these four lines.
+"%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key foursplit >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% kakao_export_foursplit
+"%PY%" "%ROOT%\scripts\ops_room_issue_extract.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% ops_room_issue_extract
 REM 2026-08-25 (GM): the hourly manager-room listener was removed; its work runs here once a
 REM   morning instead. GM: "오전에만 하고, 어제 중간관리자 정리하는 것처럼만 진행하면 안될까?
 REM   그때 웰리 불렀던 내용이 있으면 같이 정리해주면 좋을 것 같아."

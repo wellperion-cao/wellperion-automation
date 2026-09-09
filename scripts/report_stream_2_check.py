@@ -85,6 +85,25 @@ def _check_section(today: str) -> str:
     return _check_section_and_filled(today)[0]
 
 
+def _issue_block(section_text: str) -> str:
+    """이슈사항 — 오늘 짚어야 할 줄만 뽑아 맨 위로 올린다 (GM 지시 2026-09-09).
+
+    본문은 그대로 두고 요약만 앞세운다 — 아래로 내려가야 보이던 짚을 점·미제출 조·주차
+    미제출을 받는 사람이 첫 화면에서 보게 하려는 것. 새로 조회하지 않고 이미 만든 절
+    문자열에서 고른다(약속 L01). 뽑을 줄이 없으면 빈 문자열 — 없음을 지어내지 않는다.
+    """
+    picks: list[str] = []
+    for ln in section_text.split("\n"):
+        t = ln.strip()
+        if t.startswith(("❗", "⛔")):
+            picks.append("▪ " + t.lstrip("❗⛔ ").strip())
+        elif t.startswith("🅿") and ("제출 없음" in t or "이슈" in t) and "이슈사항: 없음" not in t:
+            picks.append("▪ " + t.lstrip("🅿 ").strip())
+    if not picks:
+        return ""
+    return "❗ 이슈사항\n" + "\n".join(picks[:6])
+
+
 def build_digest(today: str | None = None) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -95,7 +114,8 @@ def build_digest(today: str | None = None) -> str:
     )
     section, filled = _check_section_and_filled(today)
     praise = _praise_block(section, filled)
-    top = f"{header}\n\n{praise}\n" if praise else f"{header}\n\n"
+    issues = _issue_block(section)
+    top = "\n\n".join(x.strip() for x in (header, praise, issues) if x) + "\n\n"
     # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 본문에서 빼고 run()에서 별도 메시지로 발송
     return f"{top}{section}"
 
@@ -262,109 +282,18 @@ def _praise_block(section_text: str, filled: dict | None = None) -> str:
     return "\n".join(["🏆 오늘 수고하신 곳"] + praise) + "\n"
 
 
-# ── 카카오 ★운영+시설+지원+주차 압축본 (2026-08-18 GM 결정 · 배670) ────────────────
-# 텔레그램(build_digest)은 전문 그대로 유지, 카카오만 800자 상한으로 줄인다. 회차별
-# 일지·측정값 20줄 등 기록성 데이터는 뺀다 — 점검 화면(체계 페이지)이 원본을 갖고 있으니
-# 카톡엔 이상치·완료율·반복미완료만. 데이터는 support_check_summary 절 함수를 그대로
-# 불러써서 재조회하지 않는다(약속 L01) — _check_section이 이미 하는 조회를 두 번 안 한다.
+# ── 카카오 ★운영+시설+지원+주차 저녁 통 (2026-09-09 GM 지시) ─────────────────────
+# GM: "운영+시설+지원+주차 하루의 마무리 보면 텔레그램이랑 다르네? 텔레그램이랑 같게 해주고,
+#      맨 위에 오늘 수고하신 곳 + 이슈사항 먼저 올려주고 나머진 같게 해줘."
+# 그래서 800자 압축본(2026-08-18 배670)을 접고 텔레그램 전문과 같은 본문을 쓴다. 맨 위 두
+# 블록(수고하신 곳·이슈사항)은 build_digest 가 이미 앞세우므로 여기서 다시 만들지 않는다 —
+# 제목 세 줄만 떼어 낸다(보내는 쪽이 제 제목·서명을 따로 붙인다).
+# 되돌리기 = 이 함수를 옛 압축본으로 되돌린다(git 이력 · 배670 판).
 def build_kakao_digest(today: str | None = None) -> str:
-    """🏗 시설·🛠 지원·🔁 반복미완료·🅿 주차 압축 4줄. 회차별 일지·측정값은 링크로 뺀다."""
-    import support_check_summary as _scs
-    today = today or datetime.now().strftime("%Y-%m-%d")
-
-    fac_lines, fac_f = _scs.build_facility_section(today)
-    sup_data = _scs.fetch_gas({"action": "today_live", "dept": "support", "date": today})
-    sup_lines, sup_f = _scs.build_support_section(today, data=sup_data)
-    par_lines, par_f = _scs.build_parking_section(today)
-
-    def _pick(lines: list[str], *prefixes: str) -> str:
-        return next((ln.strip() for ln in lines if ln.strip().startswith(prefixes)), "")
-
-    out: list[str] = []
-    # ★2026-08-31 GM 재지적("가독성 생각 안 하고 보낼거야? 많이 이야기하는데도 안 되네").
-    #   종전 판은 부서마다 한 줄에 몰아 넣고 항목을 ' · ' 로 이어 붙였다 — 한 줄이 화면 서너 줄로
-    #   접혀 덩어리로 보인다. 실무진 전달문 표준(gm-report 스킬 §4-2-2)이 정한 모양으로 바꾼다:
-    #     · 제목 줄만 훑어도 뜻이 통하게 — 부서 + 한눈 숫자
-    #     · 상세는 다음 줄, 들여쓰기 3칸
-    #     · 한 줄에 한 가지 (' · ' 로 여러 건 잇지 않는다)
-    #     · 빈 줄은 쓰지 않는다 (카톡은 빈 줄이 화면을 3배로 늘린다)
-    #     · 링크는 그 부서 블록 안에 한 줄, 맨 끝에 상대가 할 일 한 줄
-    #   숫자는 각 build_*_section 이 이미 만든 값을 그대로 옮긴다 — 여기서 다시 계산하지 않는다.
-    IND = "   "
-
-    def _sub(text: str) -> None:
-        """상세 한 줄 — 들여쓰기 3칸. 빈 값이면 아무것도 안 넣는다."""
-        t = str(text or "").strip()
-        if t:
-            out.append(IND + t)
-
-    # 🏆 수고 인정 — 3부서 규칙은 _praise_block 그대로 재사용. 부서별로 한 줄씩 세운다.
-    filled = {**fac_f, **sup_f, **par_f}
-    praise = _praise_block("\n".join(fac_lines + sup_lines + par_lines), filled)
-    if praise:
-        bits = []
-        for ln in praise.split("\n")[1:]:
-            if not ln.strip():
-                continue
-            t = re.sub(r"\s*고생하셨습니다\.?$", "", ln.lstrip("▪").strip())
-            t = re.sub(r"^(\S+)\s*—\s*", r"\1 ", t)
-            bits.append(t)
-        if bits:
-            out.append("🏆 오늘 잘된 것 — 고생하셨습니다")
-            for b in bits:
-                _sub(b)
-
-    # 🛠 지원부 — 제목 줄에 종일 완료율, 그 아래는 ✅ 제출한 조 / ⛔ 미제출 조 두 묶음.
-    #   ★2026-09-03 GM("하루의 마무리에서는 오늘 점검 현황들 가독성 + 직관적으로 전달하는거
-    #   아녔어?"). 종전 판은 '짚을 점' 문장을 쪼개 조마다 ❗ 를 붙여, 94% 채운 조와 0% 조가
-    #   같은 기호로 다섯 줄 나열됐다(실측 9/2 통) — 어디가 됐고 어디가 안 됐는지 한 번에 안 보였다.
-    #   숫자는 support 절 원본 줄(_groups)에서 그대로 읽는다 — 다시 계산하지 않는다.
-    if sup_lines:
-        out.append(sup_lines[0])
-        done_g, miss_g = [], []
-        for zone in ("남성구역", "여성구역"):
-            for g, dn, t in _groups(sup_lines, zone):
-                (done_g if dn > 0 else miss_g).append(f"{zone[:2]} {g} {dn}/{t}")
-        if done_g:
-            _sub("✅ 제출 — " + " · ".join(done_g))
-        if miss_g:
-            _sub("⛔ 미점검 — " + " · ".join(miss_g))
-            # ★GM 2026-09-03 "미제출 조는 점검해달라고 해야겠지?" — 0/N 은 제출만 빠진 게 아니라
-            #   점검 기록 자체가 없는 것이다. '제출만 누르라'고 쓰면 안 한 점검을 한 것으로 만든다.
-            _sub("👉 미점검 조는 점검하시고 [제출]까지 눌러 주세요")
-            _sub(f"📎 지원부 체계 {_page_url('지원부 체계')}")
-            _sub("「점검(남)/(여)」 탭 · 비밀번호 필요")
-
-    # 🔁 반복 미완료 — 원장 기반, 최근 7일 반복만(1회성 특이점 제외)
-    rec = _scs.recurring_issue_lines(today, max_items=3)
-    if rec:
-        out.append("🔁 자주 빠지는 항목 — 최근 7일")
-        for ln in rec[1:]:
-            # 제목 줄이 이미 '최근 7일' 이라고 말한다 — 줄마다 반복하면 같은 말이 네 번 나온다.
-            _sub(re.sub(r"\s*최근 7일 中\s*", " ", ln.strip().lstrip("· ")).strip())
-
-    # 🏗 시설부 — 회차·이상 유무 head 1줄(이미 "🏗 시설부 현황 …" 이모지 포함) + 특이사항만.
-    # 회차별 일지·측정값은 뺀다.
-    if fac_lines:
-        out.append(fac_lines[0])
-    fac_note = _pick(fac_lines, "📝 특이사항:", "❗ 기준이탈")
-    if fac_note:
-        _sub("📝 " + fac_note.split(":", 1)[-1].strip())
-        # 시설점검 탭은 PIN 없음 — 해시 딥링크가 바로 먹힌다(위 지원부와 차이).
-        _sub(f"📎 시설부 체계 {_page_url('시설부 체계')}#fcheck")
-
-    if par_lines:
-        # 원본 줄 끝에 주소가 통째로 박혀 있다. 그 주소는 공백이 인코딩돼 있지 않아 카톡이
-        # 공백에서 링크를 끊는다(2026-08-08 GM "링크가 짤려서 404" 와 같은 부류) — 게다가
-        # 바로 아래 📎 줄과 같은 페이지라 두 번 나온다. 본문에서는 떼고 📎 한 줄만 남긴다.
-        # 주소 안에 인코딩 안 된 공백이 있어 \S+ 로는 끝까지 못 지운다(그 공백이 바로 링크가
-        # 끊기는 지점이다) — 주소가 시작되는 자리부터 줄 끝까지 통째로 지운다.
-        head = re.sub(r"\s*[—-]\s*https?://.*$", "", par_lines[0]).rstrip(" —-")
-        out.append(head)
-        if not re.search(r"이슈사항:\s*없음", par_lines[0]):
-            _sub(f"📎 주차관리부 체계 {_page_url('주차관리부 체계')}#manual")
-
-    return "\n".join(out)
+    """텔레그램 전문과 같은 본문 — 제목 세 줄만 뺀다."""
+    full = build_digest(today)
+    _head, sep, body = full.partition("\n\n")
+    return body if sep else full
 
 
 def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:

@@ -810,6 +810,33 @@ def _score_migration(rows, origin_modes):
     return scores, server_hits
 
 
+# 대조가 3일 무결이 됐는데 스위치가 아직 dual 인 영역 — 사람이 켜야 하는 순간을 화면이 먼저 말한다.
+#   (2026-09-09 시우 배1070) 종전엔 서버 대조 파일을 아무 화면도 읽지 않아, 조건이 차도 아무도 몰랐다.
+#   새 화면·새 예약을 만들지 않는다(약속 L21) — 이미 매일 도는 이 줄에 얹는다.
+_SWITCH_WATCH = {"write_schedule": ("save_schedule", "add", "delete"),
+                 "write_proc": ("status",)}
+
+
+def _switch_ready(origin_modes: dict) -> list:
+    """dual 인데 관련 액션이 전부 3일 무결이면 그 영역 이름을 돌려준다. 못 재면 빈 목록."""
+    try:
+        pem = str(Path.home() / ".aws" / "wellperion-sito.pem")
+        r = subprocess.run(
+            ["ssh", "-i", pem, "ec2-user@15.164.151.105",
+             "curl -s http://127.0.0.1:8001/api/intake/reconcile"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=40)
+        by_form = (json.loads(r.stdout) or {}).get("by_form") or {}
+    except Exception:
+        return []
+    out = []
+    for area, actions in _SWITCH_WATCH.items():
+        if origin_modes.get(area) != "dual":
+            continue
+        seen = [by_form[a] for a in actions if a in by_form and by_form[a].get("total")]
+        if seen and all(int(x.get("streak_ok_days") or 0) >= 3 for x in seen):
+            out.append(area)
+    return out
+
 def collect_migration_status():
     """배 960 GAS→AWS 이전 진척률 — §2 표(①②)와 서버 origin_switch(③)를 대조해 한 행으로 낸다
     (레인 M · 2026-09-04). 파싱이 깨지거나 서버에 못 닿으면 값을 지어내지 않고 '못 잼'으로 떨어진다."""
@@ -828,7 +855,7 @@ def collect_migration_status():
         pem = str(Path.home() / ".aws" / "wellperion-sito.pem")
         r = subprocess.run(
             ["ssh", "-i", pem, "ec2-user@15.164.151.105", "curl -s http://127.0.0.1:8001/api/intake/health"],
-            capture_output=True, text=True, timeout=40)
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=40)
         origin_modes = json.loads(r.stdout).get("origin_mode") or {}
         origin_ok = bool(origin_modes)
     except Exception:
@@ -843,6 +870,9 @@ def collect_migration_status():
         nxt = f"{m.group(2)} {m.group(1).strip()}"
 
     detail = f"약 {pct}% · 서버 원본 {server_hits}/9 · 다음 {nxt}"
+    ready = _switch_ready(origin_modes)
+    if ready:
+        detail += " · 전환 준비됨 " + ", ".join(ready)
     if not origin_ok:
         detail += " · 원본전환 확인 못 잼(ssh)"
     state = "완료" if pct >= 100 else ("불명" if not rows else "진행")
