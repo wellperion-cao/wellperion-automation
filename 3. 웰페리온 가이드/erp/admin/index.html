@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>(가칭) ERP비즈니스 — 플랫폼 관리 콘솔</title>
+<title>(가칭) ERP플랫폼관리 — 플랫폼 관리 콘솔</title>
 <link rel="stylesheet" href="../../assets/wp-ui.css">
 <!-- 파일명에 tenant-wellperion 이 박혀 있다 — 지금은 파트너사가 1곳이라 그대로 쓴다.
      파트너사가 늘면 이 파일을 테넌트별로 쪼갠다(파일명은 바꾸지 않는다 — 다른 화면이 참조할 수 있음). -->
@@ -19,9 +19,13 @@
      강조색(브랜드 에메랄드)과 로고는 그대로 둔다. 아래 값만 tenant 파일 위에 덮는다.
      실측 근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md §2-2. */
   :root{
-    --bg:#F4F5F6; --paper:#fff; --text:#181A1C; --text-soft:#3F4448;
+    /* 회사 관리자는 파트너사 화면과 한눈에 갈려야 한다 (GM 지시 2026-09-10 「바탕색은 다르게」).
+       파트너사 = 밝은 무채색(#F4F5F6) · 회사 관리자 = 한 단 짙은 청회색 바탕 + 짙은 상단바.
+       상위 콘솔의 상단바를 짙게 두는 것은 AWS·GCP·M365 가 같이 쓰는 방식이다. */
+    --bg:#E9ECEF; --paper:#fff; --text:#181A1C; --text-soft:#3F4448;
     --dim:#6B7176; --dim-soft:#9AA0A5;
-    --border:rgba(20,22,25,0.10); --border-strong:rgba(20,22,25,0.20); --gray-bg:#FAFAFB;
+    --border:rgba(20,22,25,0.12); --border-strong:rgba(20,22,25,0.22); --gray-bg:#F5F7F8;
+    --topbar-bg:#232A31; --topbar-text:#E8ECEF; --topbar-dim:#9BA5AE;
   }
   html{color-scheme:light;}
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -33,27 +37,27 @@
 
   .topbar{display:flex; align-items:center; gap:12px; padding:0 16px; height:48px;
           position:sticky; top:0; z-index:30; overflow:hidden;
-          background:var(--paper); border-bottom:1px solid var(--border);}
+          background:var(--topbar-bg); border-bottom:1px solid var(--topbar-bg);}
   /* 좁은 화면에서 이름들이 줄바꿈되며 상단바 높이(48px)를 위아래로 넘쳐, 바로 아래 메뉴의
      첫 항목이 상단바에 덮여 눌리지 않았다(390px 실측 2026-09-10). 줄바꿈을 막는다. */
   .topbar > *{white-space:nowrap; flex-shrink:0;}
-  .topbar .brand{display:flex; align-items:baseline; color:var(--text);}
+  .topbar .brand{display:flex; align-items:baseline; color:var(--topbar-text);}
   .topbar .brand .platform-name{font-size:14.5px; font-weight:700;}
   .topbar .brand .tag-temp{font-size:11px; font-weight:600; color:var(--accent-hover); margin-left:4px;}
-  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
-  .topbar .console{font-size:13.5px; font-weight:600; color:var(--text-soft); margin-left:2px;
-                    padding-left:14px; border-left:1px solid var(--border);}
+  .topbar .brand .sub{font-size:12px; color:var(--topbar-dim); font-weight:400; margin-left:8px;}
+  .topbar .console{font-size:13px; font-weight:600; color:var(--topbar-dim); margin-left:2px;
+                    padding-left:12px; border-left:1px solid rgba(255,255,255,0.16);}
   /* 지금 어느 층인지 — 아래 두 층(파트너사 관리자·파트너사 직원)과 같은 모양의 이름표 (GM 지시 2026-09-09) */
-  .topbar .layer{font-size:11px; font-weight:600; color:var(--text-soft);
-                 padding:3px 10px; border-radius:20px; background:var(--gray-bg);
-                 border:1px solid var(--border); white-space:nowrap;}
-  .topbar .crumb{font-size:13px; font-weight:600; color:var(--text);
-                  padding-left:12px; border-left:1px solid var(--border);}
+  .topbar .layer{font-size:11px; font-weight:600; color:#0F1418;
+                 padding:3px 10px; border-radius:20px; background:var(--accent);
+                 border:1px solid var(--accent); white-space:nowrap;}
+  .topbar .crumb{font-size:13px; font-weight:600; color:var(--topbar-text);
+                  padding-left:12px; border-left:1px solid rgba(255,255,255,0.16);}
   .topbar .tenant-badge{display:flex; align-items:center; gap:6px; margin-left:auto;
-                         font-size:12px; color:var(--dim);}
-  .topbar .tenant-badge svg{height:13px; width:auto; display:block; color:var(--text-soft);}
-  .topbar a.home{margin-left:14px; font-size:13px; color:var(--dim); text-decoration:none;}
-  .topbar a.home:hover{color:var(--accent-hover);}
+                         font-size:12px; color:var(--topbar-dim);}
+  .topbar .tenant-badge svg{height:13px; width:auto; display:block; color:var(--topbar-dim);}
+  .topbar a.home{margin-left:14px; font-size:13px; color:var(--topbar-dim); text-decoration:none;}
+  .topbar a.home:hover{color:var(--accent);}
 
   /* 좌측 메뉴 + 본문 (GM 지시 2026-09-10 「좌측 메뉴 사이드바·상단바를 효율적이고 직관적으로」).
      종전엔 상단바 하나 아래로 여섯 덩어리가 한 장에 죽 이어져, 무엇이 어디 있는지 끝까지
@@ -175,7 +179,7 @@
 <body>
 
 <div class="topbar">
-  <div class="brand" aria-label="ERP비즈니스(가칭)"><span class="platform-name">ERP비즈니스<span class="tag-temp">(가칭)</span></span><span class="sub">ERP</span></div>
+  <div class="brand" aria-label="ERP플랫폼관리(가칭)"><span class="platform-name">ERP플랫폼관리<span class="tag-temp">(가칭)</span></span><span class="sub">ERP</span></div>
   <span class="console">플랫폼 관리 콘솔</span>
   <span class="layer">회사 관리자</span>
   <span class="crumb" id="crumb">파트너사</span>
@@ -327,7 +331,7 @@
   <h3>두 겹 구조 <span class="n">파는 회사 / 쓰는 회사</span></h3>
   <p class="lead">이 시스템은 두 겹입니다. 위 겹은 이 ERP를 만들어 파는 회사(플랫폼)이고, 아래 겹은 이 ERP를 가져다 쓰는 회사(파트너사)입니다. 회사가 바뀌어도 그대로 쓰는 뼈대는 플랫폼이 소유하고, 파트너사마다 다른 값(브랜드·용어·조직·채널)은 파트너사 자리에 따로 둡니다. 지금 등록된 파트너사는 웰페리온 1곳(1호)입니다 — 파트너사가 늘면 아래 「파트너사 설정값」 표에 회사별로 줄이 늡니다.</p>
   <div class="split-note">
-    <div class="half"><b>플랫폼 · (가칭) ERP비즈니스</b>ERP를 만들어 파는 회사. 뼈대(엔진·규격·부팅 절차)의 주인이며 파트너사가 몇이 되든 하나입니다. 정식 상호는 미정 — GM 확정 필요.</div>
+    <div class="half"><b>플랫폼 · (가칭) ERP플랫폼관리</b>ERP를 만들어 파는 회사. 뼈대(엔진·규격·부팅 절차)의 주인이며 파트너사가 몇이 되든 하나입니다. 정식 상호는 미정 — GM 확정 필요.</div>
     <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP를 가져다 쓰는 회사. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
   </div>
 
@@ -383,7 +387,7 @@
     </tbody>
   </table></div>
 
-  <h3>뼈대 자리 <span class="n">플랫폼((가칭) ERP비즈니스) 소유 — 회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
+  <h3>뼈대 자리 <span class="n">플랫폼((가칭) ERP플랫폼관리) 소유 — 회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
   <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>왜 뼈대인가</th></tr></thead>
     <tbody>
