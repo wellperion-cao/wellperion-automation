@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
-"""매출보고서 서버 판 렌더 (읽기 전용 · 배1061 · 시토 · 2026-09-05 · 시포 22칸 정의 짝).
+"""매출보고서 22칸 계산 (읽기 전용 · 배1061 · 시토 · 2026-09-05 · 시포 22칸 정의 짝).
+
+★정본 병합(GM 지시 2026-09-10) — 「매출 및 회원 현황보고」 화면
+(3. 웰페리온 가이드/coo/report/매출회원현황보고.html)이 정본이다. 이 파일의 build_report()·
+compute_overrides() 는 그 화면이 API_report(/api/report/sales_report_cells)로 그대로 가져다 쓰는
+**단일 계산**이라 값이 두 벌로 갈리지 않는다(약속 L01) — 화면의 「🖥 서버 판 반영」 배지가 이 함수의
+결과를 그대로 보여준다. render_png()·sales_report_server_send.py 가 업무보고방에 매일 보내는 그림은
+그 화면의 **요약본**이다(화면 자체를 찍은 스크린샷이 아니다 — 서버에 브라우저 자동화(playwright)가
+설치돼 있지 않아 실제 화면을 캡처할 수 없다. ponytail: 요약 이미지로 대신함, 픽셀 그대로 필요하면
+서버에 playwright+chromium 설치 후 scripts/report_page_capture.py 로 교체).
 
 원칙 = 기존 경로(시트 → GAS → 09:00 텔레그램 · 09:30 카톡 3방) 무접촉. 이 모듈은 이미 5분마다
 sync_sales.py 가 떠 둔 deptrep/dump 시트 미러(H2:S21)를 그대로 읽어 22칸 대부분은 그 값 그대로
@@ -249,7 +258,7 @@ def render_png(report, out_path):
     img = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(img)
     y = pad
-    d.text((pad, y), report["report_title"] + " (서버 판)", font=title_f, fill=(20, 20, 20))
+    d.text((pad, y), report["report_title"] + " — 매출 및 회원 현황보고 요약", font=title_f, fill=(20, 20, 20))
     y += 44
     d.text((pad, y), "구분", font=head_f, fill=(90, 90, 90))
     d.text((pad + 440, y), "금일", font=head_f, fill=(90, 90, 90))
@@ -270,7 +279,7 @@ def render_png(report, out_path):
         d.text((pad, y), label.split("\n")[0], font=body_f, fill=(30, 30, 30))
         d.text((pad + 440, y), str(v).split("\n")[0].strip(), font=body_f, fill=(30, 30, 30))
     y += row_h + 16
-    d.text((pad, y), "서버 판(병행) · 기준일 %s · 시트 미러 %s" % (report["ref_date"], report["synced_at"] or ""),
+    d.text((pad, y), "정본 = 매출 및 회원 현황보고 화면 · 기준일 %s · 시트 미러 %s" % (report["ref_date"], report["synced_at"] or ""),
            font=small_f, fill=(150, 150, 150))
     img = img.crop((0, 0, W, min(H, y + 40)))
     out_path = Path(out_path)

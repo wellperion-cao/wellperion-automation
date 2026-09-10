@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""매출보고서 서버 판 — 09:20 KST 업무보고방(8254867551) 병행 발송 (배1061 · 시토 · 2026-09-05).
+"""매출보고서 요약 — 09:20 KST 업무보고방(8254867551) 발송 (배1061 · 시토 · 2026-09-05).
+
+★정본 병합(GM 지시 2026-09-10) — 정본은 「매출 및 회원 현황보고」 화면(erp.wellperion.com/coo/
+report/매출회원현황보고.html)이다. 여기서 보내는 사진은 그 화면과 같은 계산(sales_report_render.
+build_report — 화면도 /api/report/sales_report_cells 로 같은 함수를 부른다)의 요약본이지, 별도
+"서버 판"이 아니다. 캡션에 화면 링크를 달아 어느 쪽이 정본인지 항상 밝힌다.
 
 원칙 = 기존 경로(시트 → GAS → 09:00 텔레그램 · 09:30 카톡 3방 · generate_sales_report_image.py)
 무접촉. 이 스크립트 하나만 sales_report_render 가 그린 표를 업무보고방 한 곳에만 sendPhoto +
@@ -70,7 +75,8 @@ def main():
         return 1
 
     png = render.render_png(report, OUT_PNG)
-    caption = "서버 판(병행) · 기준일 %s · 22칸 대조 %d/%d 일치" % (report["ref_date"], report["matched"], report["total"])
+    caption = ("매출 및 회원 현황보고 요약 · 정본 https://erp.wellperion.com/coo/report/매출회원현황보고.html"
+               " · 기준일 %s · 22칸 대조 %d/%d 일치" % (report["ref_date"], report["matched"], report["total"]))
     if report["mismatches"]:
         caption += " · 불일치: " + ", ".join(report["mismatches"])
 
