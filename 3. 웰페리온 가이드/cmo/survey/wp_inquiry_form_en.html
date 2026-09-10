@@ -206,7 +206,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
       <div class="hero-inner">
         <p class="eyebrow">Wellperion</p>
         <p class="slogan-en">A Day, Well Completed.</p>
-        <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
+        <p class="slogan-kr">A members-only sports club in Hannam</p>
         <div class="divider-coral"></div>
         <p class="hero-desc">More than a place to work out.<br>A space that becomes part of your daily routine &mdash;<br>setting the standard for your health and completing your day.</p>
         <p class="hero-capacity">Wellperion is limited to <b>1,000 members</b><br>to keep the space calm and uncrowded.</p>
@@ -242,6 +242,20 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
           <span class="tc-en">Youth Lesson</span>
           <span class="tc-kr">Youth Lesson Inquiry<span class="arrow">&rarr;</span></span>
           <span class="tc-desc">Swimming &middot; Gymnastics &middot; Golf &middot; Squash &middot; Musical</span>
+        </a>
+
+        <a class="type-card" href="#" data-cat="rental">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span>
+          <span class="tc-en">Venue Rental</span>
+          <span class="tc-kr">Venue Rental Inquiry<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Pool &middot; Studio &middot; Lounge &middot; Golf Zone &middot; Squash Court</span>
+        </a>
+
+        <a class="type-card" href="#" data-cat="business">
+          <span class="cat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><line x1="3" y1="12.5" x2="21" y2="12.5"/></svg></span>
+          <span class="tc-en">Business</span>
+          <span class="tc-kr">Business Partnership<span class="arrow">&rarr;</span></span>
+          <span class="tc-desc">Collaboration &middot; Tenancy &middot; B2B Benefits &middot; Content &middot; Supply</span>
         </a>
       </div>
 
@@ -296,7 +310,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
       <div class="hero-inner">
         <p class="eyebrow">Wellperion</p>
         <p class="slogan-en">A Day, Well Completed.</p>
-        <p class="slogan-kr">A premium lifestyle sports club in Hannam</p>
+        <p class="slogan-kr">A members-only sports club in Hannam</p>
         <div class="divider-coral"></div>
         <h1 id="heroTitle">Inquiry</h1>
         <p class="hero-desc"><span id="heroSubLine1">We&rsquo;ll help you with membership, tours, and lessons.</span><br>Leave your details and our team will reach out to you shortly.</p>
@@ -423,6 +437,31 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
         { key:'channel', label:'How Did You Hear About Us?', type:'select', ph:'Please select', opts:CHANNELS },
         { key:'message', label:'Additional Comments', type:'textarea', opt:true, ph:'Feel free to share anything you would like to ask.' }
       ]
+    },
+    /* 2026-09-10 신설 — 영문 폼이 받는 문의가 3종뿐이라 외국인 회원·업체가 공간 대관과 제휴를
+       국문 폼으로 넘어가 넣어야 했다. 칸 이름(key)은 국문 폼과 같게 둔다 — 접수 쪽이 같은 칸으로 받는다. */
+    rental: {
+      purpose: 'Venue rental inquiry response and quotation',
+      fields: [
+        { key:'name',    label:'Name',    type:'text', ph:'Please enter your full name', req:true },
+        { key:'phone',   label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'space',   label:'Space', type:'multi', opts:['Swimming Pool','Studio','Lounge','Golf Zone','Squash Court','Sauna','Entire Facility'] },
+        { key:'purpose', label:'Purpose', type:'select', ph:'Please select', opts:['Event','Filming','Seminar','Workshop','Gathering'] },
+        { key:'wishDate',label:'Preferred Date', type:'date', opt:true },
+        { key:'headcount',label:'Expected Attendance', type:'text', opt:true, ph:'e.g. 30 people' },
+        { key:'message', label:'Details', type:'textarea', opt:true, ph:'Feel free to describe the event in detail.' }
+      ]
+    },
+    business: {
+      purpose: 'Business partnership inquiry response and review',
+      fields: [
+        { key:'company',     label:'Company', type:'text', ph:'Please enter your company name', req:true },
+        { key:'contactName', label:'Contact Person', type:'text', ph:'Full name', req:true },
+        { key:'phone',       label:'Mobile Phone', type:'tel', ph:'010-1234-5678', req:true },
+        { key:'partnerType', label:'Partnership Type', type:'select', ph:'Please select', opts:['Collaboration','Tenancy','B2B Employee Benefits','Content Partnership','Product Supply','Investment Partnership'] },
+        { key:'docLink',     label:'Deck / Company Profile Link', type:'text', opt:true, ph:'https://…' },
+        { key:'proposal',    label:'Proposal', type:'textarea', ph:'Feel free to describe your proposal.' }
+      ]
     }
   };
 
@@ -440,10 +479,20 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
       lead:"Professional lessons for your child's first steps — from swimming, golf and squash to gymnastics, parent-child swimming and English musical.",
       tags:['WSC Swimming','WSC Golf','WSC Squash','WSC Gymnastics & Trampoline','WSC P.T','WSC Pilates','Parent-Child Swimming','English Musical'],
       note:'A range of specialized programs rarely found elsewhere are also available.'
+    },
+    rental: {
+      lead:'The pool, studio, lounge, golf zone and squash court are available for events, filming, seminars and gatherings.',
+      tags:['Swimming Pool','Studio','Lounge','Golf Zone','Squash Court','Sauna','Entire Facility'],
+      note:'Availability and pricing are confirmed after we review your date and headcount.'
+    },
+    business: {
+      lead:'Collaborations, tenancy, employee-benefit programs, content partnerships and product supply.',
+      tags:['Collaboration','Tenancy','B2B Employee Benefits','Content Partnership','Product Supply','Investment Partnership'],
+      note:'Please share a deck or company profile link — it helps us review faster.'
     }
   };
 
-  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry' };
+  var CAT_TITLES = { membership:'Membership Inquiry', adult:'Adult Lesson Inquiry', youth:'Youth Lesson Inquiry', rental:'Venue Rental Inquiry', business:'Business Partnership Inquiry' };
 
   var AGE_POLICY_HTML =
     '<details class="g-age-policy"><summary>Enrollment age guide</summary>' +
