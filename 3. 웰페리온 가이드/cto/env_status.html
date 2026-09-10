@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환경 3벌 현황 — AI CTO</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#221F20;--paper:#272422;--paper-raised:#2e2b28;
+  --text:#f0ece7;--dim:#7d7b74;--dim-mid:#9e9b93;
+  --accent:#B79F8A;--accent-bright:#c9b49e;--accent-bg:rgba(183,159,138,0.10);--accent-border:rgba(183,159,138,0.25);
+  --border:#38322e;--border-subtle:rgba(56,50,46,0.6);
+  --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);--green-border:rgba(106,191,123,0.3);
+  --red:#ED5B3F;--red-bg:rgba(237,91,63,0.12);--red-border:rgba(237,91,63,0.3);
+  --yellow:#e6c84e;--yellow-bg:rgba(230,200,78,0.12);--yellow-border:rgba(230,200,78,0.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:14px;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+.header{background:linear-gradient(180deg,#2f2b28 0%,#272422 100%);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.header h1{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
+.header .sub{font-size:12px;color:var(--dim-mid);}
+.badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);}
+.content{padding:20px 24px 40px;margin:0;}
+
+.cards3{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.envcard{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;min-width:220px;flex:1;}
+.envcard .nm{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.envcard .ds{font-size:12px;color:var(--dim-mid);margin-bottom:10px;}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--dim);}
+.dot.ok{background:var(--green);box-shadow:0 0 6px var(--green-border);}
+.dot.bad{background:var(--red);box-shadow:0 0 6px var(--red-border);}
+.envcard .rows{font-size:22px;font-weight:800;color:var(--accent-bright);}
+.envcard .rows-lb{font-size:11px;color:var(--dim-mid);}
+.envcard a.go{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--accent-bright);border:1px solid var(--accent-border);background:var(--accent-bg);padding:5px 12px;border-radius:8px;text-decoration:none;}
+.envcard a.go:hover{background:var(--accent-border);}
+
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;}
+.card-title{font-size:14px;font-weight:700;color:var(--accent-bright);margin-bottom:8px;display:flex;align-items:baseline;gap:8px;}
+.card-title .stag{font-size:11.5px;font-weight:400;color:var(--dim-mid);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--paper-raised);color:var(--dim-mid);font-weight:600;padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+td.area{white-space:nowrap;font-weight:700;}
+
+.st{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;border:1px solid;white-space:nowrap;}
+.st-ok{color:var(--green);background:var(--green-bg);border-color:var(--green-border);}
+.st-bad{color:var(--red);background:var(--red-bg);border-color:var(--red-border);}
+.st-out{color:var(--yellow);background:var(--yellow-bg);border-color:var(--yellow-border);}
+.st-none{color:var(--dim);background:var(--paper-raised);border-color:var(--border);}
+
+.foot{font-size:12px;color:var(--dim-mid);padding:10px 0 20px;}
+.err{color:var(--red);font-size:13px;padding:10px 0;}
+
+@media (max-width:640px){
+  .content{padding:14px 14px 28px;}
+  .cards3{gap:8px;}
+  .envcard{min-width:0;padding:12px 14px;}
+  table{font-size:12px;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌍 서비스 환경 3벌 현황 <span class="badge">AI 시토</span></h1>
+  <div class="sub" id="subline">알파(반복개발) · 베타(배포전시험) · 라이브(실서비스) — 지금 이 화면을 열 때마다 서버에 직접 물어본다</div>
+</div>
+
+<div class="content">
+
+  <div class="cards3" id="envCards">
+    <div class="envcard"><div class="nm"><span class="dot"></span>확인 중…</div></div>
+    <div class="envcard"><div class="nm"><span class="dot"></span>확인 중…</div></div>
+    <div class="envcard"><div class="nm"><span class="dot"></span>확인 중…</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">환경별 비교<span class="stag">상태는 지금 이 순간 서버 응답 · 나머지는 최근 확인값(status/env_status.json)</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>환경</th><th>상태</th><th>마지막 배포</th><th>회원 자료 건수</th><th>자료가 섞이지 않는 증거</th><th>밖으로 나가는 주소</th><th>이동</th>
+        </tr></thead>
+        <tbody id="rowsBody"><tr><td colspan="7" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot" id="footNote">읽는 곳 = /api/health · /alpha/api/health · /beta/api/health (각 환경 실제 응답) + status/env_status.json(포트·DB·배포시각)</div>
+
+</div>
+
+<script id="seed" type="application/json">{
+  "updated_at_kst": "2026-09-10 09:40",
+  "envs": [
+    {"id":"live","label":"라이브","desc":"실제 서비스 중 — 회원·실무진이 지금 쓰는 화면","port":8001,"db":"erp (Postgres)","health_url":"/api/health","last_deploy_kst":"2026-09-09 20:29:37","external_outbound":true,"external_note":"구글시트·카카오톡·텔레그램 등 15곳으로 실제로 나간다","goto":"/erp/index.html"},
+    {"id":"beta","label":"베타","desc":"배포 전 시험 — 여기서 저장해도 진짜 시트·카톡엔 안 나간다","port":8002,"db":"erp_beta (Postgres, 라이브와 별도)","health_url":"/beta/api/health","last_deploy_kst":"2026-09-09 20:47:11","external_outbound":false,"external_note":"구글시트로 나가는 주소를 환경파일에서 아예 뺐다","goto":"/erp/index.html?erpenv=beta"},
+    {"id":"alpha","label":"알파","desc":"반복 개발 — 코드를 자주 바꿔보는 자리","port":8003,"db":"erp_alpha (Postgres, 라이브와 별도)","health_url":"/alpha/api/health","last_deploy_kst":"2026-09-09 20:47:01","external_outbound":false,"external_note":"구글시트로 나가는 주소를 환경파일에서 아예 뺐다","goto":"/erp/index.html?erpenv=alpha"}
+  ]
+}</script>
+<script>
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+}); }
+
+function loadSeed(){
+  try{
+    var el = document.getElementById('seed');
+    var txt = el && el.textContent.trim();
+    return txt ? JSON.parse(txt) : null;
+  }catch(e){ return null; }
+}
+
+function cardHtml(env, live){
+  var dotCls = live === null ? '' : (live.ok ? 'ok' : 'bad');
+  var rowsTxt = live === null ? '확인 중…' : (live.ok ? (live.rows + '건') : '응답 없음');
+  return '<div class="envcard">' +
+    '<div class="nm"><span class="dot ' + dotCls + '"></span>' + esc(env.label) + '</div>' +
+    '<div class="ds">' + esc(env.desc) + '</div>' +
+    '<div class="rows">' + esc(rowsTxt) + '</div>' +
+    '<div class="rows-lb">회원 자료 건수(' + esc(env.health_url) + ')</div>' +
+    '<a class="go" href="' + esc(env.goto) + '">여기를 눌러 ' + esc(env.label) + ' 화면으로 →</a>' +
+  '</div>';
+}
+
+function rowHtml(env, live){
+  var stCls = live === null ? 'st-none' : (live.ok ? 'st-ok' : 'st-bad');
+  var stTxt = live === null ? '확인 중' : (live.ok ? '살아 있음' : '응답 없음');
+  var rowsTxt = live === null ? '확인 중…' : (live.ok ? (live.rows + '건') : '—');
+  var outCls = env.external_outbound ? 'st-out' : 'st-none';
+  var outTxt = env.external_outbound ? '🌐 있음' : '🚫 없음';
+  return '<tr>' +
+    '<td class="area">' + esc(env.label) + '</td>' +
+    '<td><span class="st ' + stCls + '">' + esc(stTxt) + '</span></td>' +
+    '<td>' + esc(env.last_deploy_kst) + '</td>' +
+    '<td>' + esc(rowsTxt) + '</td>' +
+    '<td>' + esc(env.db) + '</td>' +
+    '<td><span class="st ' + outCls + '">' + esc(outTxt) + '</span> ' + esc(env.external_note) + '</td>' +
+    '<td><a class="go" style="margin-top:0;" href="' + esc(env.goto) + '">이동 →</a></td>' +
+  '</tr>';
+}
+
+function checkHealth(env){
+  return fetch(env.health_url + '?cb=' + Date.now(), {cache:'no-store', credentials:'same-origin'})
+    .then(function(r){ if(!r.ok) return {ok:false, rows:0}; return r.json(); })
+    .then(function(d){ return {ok: !!d.ok, rows: d.rows || 0}; })
+    .catch(function(){ return {ok:false, rows:0}; });
+}
+
+function render(data){
+  var envs = data.envs || [];
+  document.getElementById('subline').textContent =
+    '알파(반복개발) · 베타(배포전시험) · 라이브(실서비스) — 최근 확인 ' + (data.updated_at_kst || '');
+
+  document.getElementById('envCards').innerHTML = envs.map(function(e){ return cardHtml(e, null); }).join('');
+  document.getElementById('rowsBody').innerHTML = envs.map(function(e){ return rowHtml(e, null); }).join('');
+
+  Promise.all(envs.map(checkHealth)).then(function(results){
+    document.getElementById('envCards').innerHTML = envs.map(function(e,i){ return cardHtml(e, results[i]); }).join('');
+    document.getElementById('rowsBody').innerHTML = envs.map(function(e,i){ return rowHtml(e, results[i]); }).join('');
+  });
+}
+
+fetch('../status/env_status.json?cb=' + Date.now(), {cache:'no-store'})
+  .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+  .then(render)
+  .catch(function(){
+    var seed = loadSeed();
+    if(seed){ render(seed); }
+    else { document.getElementById('rowsBody').innerHTML = '<tr><td colspan="7" class="err">원천을 못 읽음</td></tr>'; }
+  });
+</script>
+<script src="../_assets/page_ping.js" defer></script>
+</body>
+</html>

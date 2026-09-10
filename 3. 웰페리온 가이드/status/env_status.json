@@ -1,0 +1,42 @@
+{
+  "_doc": "환경 3벌(알파·베타·라이브) 정적 사실 — 배1183 시토. 실시간 값(살아있나·자료 건수)은 cto/env_status.html 이 /api/health·/alpha/api/health·/beta/api/health 를 직접 열어 잰다. 이 파일은 자주 안 바뀌는 것만: 포트·DB·외부주소 유무·마지막 배포 시각. 재배포하면 그 환경의 last_deploy_kst 만 고친다.",
+  "updated_at_kst": "2026-09-10 09:40",
+  "envs": [
+    {
+      "id": "live",
+      "label": "라이브",
+      "desc": "실제 서비스 중 — 회원·실무진이 지금 쓰는 화면",
+      "port": 8001,
+      "db": "erp (Postgres)",
+      "health_url": "/api/health",
+      "last_deploy_kst": "2026-09-09 20:29:37",
+      "external_outbound": true,
+      "external_note": "구글시트·카카오톡·텔레그램 등 15곳으로 실제로 나간다(api.env 의 GAS_URL·TG_BOT_TOKEN 등)",
+      "goto": "/erp/index.html"
+    },
+    {
+      "id": "beta",
+      "label": "베타",
+      "desc": "배포 전 시험 — 여기서 저장해도 진짜 시트·카톡엔 안 나간다",
+      "port": 8002,
+      "db": "erp_beta (Postgres, 라이브와 별도)",
+      "health_url": "/beta/api/health",
+      "last_deploy_kst": "2026-09-09 20:47:11",
+      "external_outbound": false,
+      "external_note": "구글시트로 나가는 주소를 환경파일에서 아예 뺐다 — 되밀기도 없다",
+      "goto": "/erp/index.html?erpenv=beta"
+    },
+    {
+      "id": "alpha",
+      "label": "알파",
+      "desc": "반복 개발 — 코드를 자주 바꿔보는 자리",
+      "port": 8003,
+      "db": "erp_alpha (Postgres, 라이브와 별도)",
+      "health_url": "/alpha/api/health",
+      "last_deploy_kst": "2026-09-09 20:47:01",
+      "external_outbound": false,
+      "external_note": "구글시트로 나가는 주소를 환경파일에서 아예 뺐다 — 되밀기도 없다",
+      "goto": "/erp/index.html?erpenv=alpha"
+    }
+  ]
+}
