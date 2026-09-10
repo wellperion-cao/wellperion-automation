@@ -289,7 +289,12 @@
     var list = d.downloads || [];
     if (!list.length) { root.innerHTML = '<div class="desc">받을 파일이 없다.</div>'; return; }
     root.innerHTML = list.map(function(x){
-      return '<a class="entry" href="' + (x.href || x.path || '#') + '">'
+      /* downloads.json 항목은 `file` 칸에 경로를 적는다(그 파일 _규칙 참조). 이 줄이 href·path 만
+         찾고 있어 항목 전부가 href="#" 로 그려졌다 — 눌러도 안 받아졌다(2026-09-10 실측·수리).
+         경로는 /erp/ 기준 상대(예: launchers/AI서포트.bat)라 앞에 /erp/ 를 붙인다. */
+      var href = x.file || x.href || x.path || '';
+      if (href && !/^(https?:|\/)/.test(href)) href = '/erp/' + href;
+      return '<a class="entry" href="' + (href || '#') + '" download>'
            + '<div class="name">' + (x.name || x.title || '이름 없음') + '</div>'
            + '<div class="desc">' + (x.desc || '') + '</div></a>';
     }).join('');
