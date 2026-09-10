@@ -1,0 +1,253 @@
+<!-- 2026-08-07 GM 지시로 워드프레스(회사 도메인) 사본 발행: (워드프레스 사본 없음 — 사내 화면만)
+     원본 = 이 파일 하나. 워드프레스 사본은 만들지 않는다(사내 화면 전용). -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 셀렉트 — 진공 스팀다리미 구매현황</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<script src="../../_assets/erp_write.js"></script>
+<!--
+  진공 스팀다리미 구매 신청 열람·상태변경 화면(GM 지시 2026-09-10 「웰페리온 셀렉트것을 똑같게」).
+  · 형식 정본 = coo/reception/lost_found_gallery.html — 같은 CSS 변수·레이아웃 패턴을 그대로 재사용한다.
+  · 입장 방식(GM 지시 2026-08-07) = 사내 게이트(_assets/gate.js) 재사용. 비밀번호 1회 입력 → sessionStorage 세션 유지
+    → 같은 브라우저에서 다시 열면 안 물어본다. 틀린 비밀번호 안내도 gate.js 커튼이 그대로 처리한다.
+  · 게이트 통과 시 gate.js 가 전역에 심어두는 window.WELP_GATE_PW(게이트 비밀번호)를 그대로 백엔드 조회·쓰기 코드로 쓴다 —
+    코드를 담을 별도 저장소를 새로 만들지 않는다(기존 게이트와 같은 자리 = sessionStorage).
+  · 백엔드(.deploy-funnel-v2/Survey.js): action=steamiron_list — 접속코드 필요(ScriptProperties STEAMIRON_ACCESS_CODE,
+    미설정이면 항상 거부). 응답 rows: id/name/qty/method/pay/wantDate/address/status, stats: pendingPay/paid/done/qtySum. 연락처는 서버가 담지 않고 성함은 첫 글자만(오넛티와 같은 규칙).
+    연락처는 서버가 아예 담아 보내지 않는다. 성함은 서버가 이미 첫 글자만 보낸다(예: 김○○) — 화면에서 추가로 가리지 않는다.
+  · 상태 변경: action=steamiron_status_update — 같은 접속코드로 게이트. 드롭다운 선택 → 즉시 저장(별도 저장버튼 없음).
+    상태 4종(접수="결제대기"·확정·대기="대기순번"·취소) — id(접수번호) 기준으로 서버가 행을 찾는다. 실패 시 alert로 알림.
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 44px}
+
+.brand{text-align:center;margin-bottom:8px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.brand h1{font-size:clamp(20px,5vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.ai-owner{display:inline-block;margin-left:10px;padding:3px 11px;border-radius:999px;
+  background:#14304E;color:#fff;font-size:12px;font-weight:800;letter-spacing:.4px;
+  vertical-align:middle;white-space:nowrap;}
+.brand p{font-size:13.5px;color:#777}
+.gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 22px;max-width:320px}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+
+/* ── 요약 타일 ── */
+.summary{display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.summary.show{display:grid}
+.stile{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center}
+.stile .v{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.stile .l{font-size:12px;color:var(--dim);margin-top:4px;font-weight:600}
+.stile.hi .v{color:var(--accent)}
+
+/* ── 목록 테이블 ── */
+.list-wrap{display:none}
+.list-wrap.show{display:block}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--paper);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+table.otbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+table.otbl th{background:var(--accent-bg);color:var(--text);font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.otbl td{padding:11px 12px;border-bottom:1px solid var(--border);word-break:break-word}
+table.otbl tr:last-child td{border-bottom:none}
+.stat-badge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px}
+.stat-badge.confirm{color:var(--green);background:var(--green-bg)}
+.stat-badge.pending{color:#8a5a00;background:#fdf0d5}
+.stat-badge.wait{color:var(--dim);background:var(--bg);border:1px solid var(--border)}
+.stat-sel{font-size:12.5px;font-weight:700;border-radius:20px;padding:4px 8px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-family:inherit}
+.stat-sel:disabled{opacity:.5}
+
+.state-msg{padding:40px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+.info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 인쇄 (문의현황.html 의 인쇄 규칙과 같은 형태 — 화면 전용 요소 숨김·배경 단순화) ── */
+@media print{
+  body{background:#fff !important}
+  body *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .info-note{display:none !important}
+  .tbl-scroll{overflow-x:visible;border:none;border-radius:0;box-shadow:none}
+  table.otbl{min-width:0}
+  table.otbl tr{break-inside:avoid;page-break-inside:avoid}
+  .stile{box-shadow:none}
+  /* 상태 드롭다운(화면용 컨트롤) — 값은 남기고 컨트롤 장식만 제거 */
+  .stat-sel{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:0}
+}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">진공 스팀다리미 접수현황</p>
+    <h1>WELLPERION SELECT X WELLPERION <span class="ai-owner">AI 시포</span></h1>
+    <p>웰페리온과 웰페리온 셀렉트 진공 스팀다리미 프로젝트 접수 현황입니다.</p>
+    <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+  </div>
+
+  <div class="state-msg" id="loadMsg">불러오는 중…</div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="list-wrap" id="listWrap">
+    <div class="tbl-scroll">
+      <table class="otbl">
+        <thead><tr><th>접수번호</th><th>성함</th><th>수량</th><th>수령방법</th><th>결제방법</th><th>희망수령일</th><th>배송지</th><th>상태</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="info-note">상태는 드롭다운에서 선택하면 바로 저장됩니다. 접수 내용(수량·연락처 등) 수정·문의는 웰페리온 담당자에게 연락해 주세요.<br>하루의 완성, 웰페리온</p>
+</div>
+
+<script>
+(function(){
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+
+  function $(id){ return document.getElementById(id); }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // 상태 4종 — 스팀다리미는 리셉션 결제·수령이 기본이고 택배는 선택이다(GM 정정 2026-09-07 배896).
+  var STATUS_OPTIONS = [
+    { v: '접수', l: '결제대기' },
+    { v: '결제완료', l: '결제완료' },
+    { v: '수령완료', l: '수령·발송 완료' },
+    { v: '취소', l: '취소' }
+  ];
+
+  function _statSelect(id, st){
+    st = String(st||'').trim();
+    var opts = STATUS_OPTIONS.map(function(o){
+      return '<option value="'+_esc(o.v)+'"'+(o.v===st?' selected':'')+'>'+_esc(o.l)+'</option>';
+    }).join('');
+    // st가 4종 밖의 값이면(예상밖 데이터) 원본 그대로 추가해 조용히 사라지지 않게 함
+    if(st && STATUS_OPTIONS.every(function(o){return o.v!==st;})) opts += '<option value="'+_esc(st)+'" selected>'+_esc(st)+'</option>';
+    // data-prev = 현재 상태 — 첫 변경이 실패해도 원래 값으로 되돌릴 수 있게 심어 둔다.
+    return '<select class="stat-sel" data-id="'+_esc(id)+'" data-prev="'+_esc(st)+'">'+opts+'</select>';
+  }
+
+  // 오넛티는 500세트 한정이라 「남은 수량·달성률」 칸이 있었다. 스팀다리미는 한정 수량이 정해진 바 없어
+  // 그 두 칸을 두지 않는다 — 없는 목표를 지어내면 화면이 거짓말을 한다(약속 L05).
+  function _renderSummary(stats){
+    var total = (stats.pendingPay||0) + (stats.paid||0) + (stats.done||0);
+    var tiles = [
+      { v: total, l: '총 신청' },
+      { v: stats.pendingPay||0, l: '결제대기' },
+      { v: stats.paid||0, l: '결제완료' },
+      { v: stats.done||0, l: '수령·발송 완료', hi:true },
+      { v: (stats.qtySum!=null? stats.qtySum : '-'), l: '신청 수량 합계', hi:true }
+    ];
+    $('summary').innerHTML = tiles.map(function(t){
+      return '<div class="stile'+(t.hi?' hi':'')+'"><div class="v">'+_esc(t.v)+'</div><div class="l">'+_esc(t.l)+'</div></div>';
+    }).join('');
+    $('summary').className = 'summary show';
+  }
+
+  function _renderRows(rows){
+    if(!rows.length){
+      $('tbody').innerHTML = '<tr><td colspan="8"><div class="state-msg">접수 내역이 없습니다.</div></td></tr>';
+    } else {
+      $('tbody').innerHTML = rows.map(function(r){
+        return '<tr><td>'+_esc(r.id)+'</td><td>'+_esc(r.name)+'</td><td>'+_esc(r.qty)+'</td><td>'+_esc(r.method)+'</td>'+
+          '<td>'+_esc(r.pay)+'</td><td>'+_esc(r.wantDate)+'</td><td>'+_esc(r.address)+'</td>'+
+          '<td>'+_statSelect(r.id, r.status)+'</td></tr>';
+      }).join('');
+      Array.prototype.forEach.call($('tbody').querySelectorAll('.stat-sel'), function(sel){
+        sel.addEventListener('change', function(){ saveStatus(sel); });
+      });
+    }
+    $('listWrap').className = 'list-wrap show';
+  }
+
+  // 드롭다운 선택 → 즉시 저장. 실패하면 alert로 알리고 원래 값으로 되돌린다(조용히 성공한 척 안 함).
+  function saveStatus(sel){
+    var id = sel.getAttribute('data-id');
+    var newVal = sel.value;
+    var prevVal = sel.getAttribute('data-prev') || newVal;
+    sel.disabled = true;
+    var _p = { action: 'steamiron_status_update', code: window.WELP_GATE_PW, id: id, status: newVal };
+    // ★2026-09-09 배1050 — 쓰기 도장. 서버 거울(5분 주기)이 방금 바꿈 건을 아직 모르는 동안만 목록을 GAS 로 읽는다.
+    try { localStorage.setItem('steamiron_wrote_at', String(Date.now())); } catch (e) {}
+    // 쓰기 관문(_assets/erp_write.js · 배1084) — ERP 도메인이면 서버 /api/write(이중기록) 뒤 GAS, 아니면 종전 GAS 직행. 응답 모양 동일.
+    (window.erpFunnelCall ? erpFunnelCall(GAS_URL, _p) : fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(_p)
+    }).then(function(r){ return r.json(); }))
+    .then(function(d){
+      sel.disabled = false;
+      if(!d || !d.ok){
+        alert('저장 실패: ' + ((d && d.error) || '알 수 없는 오류') + '\n다시 시도해 주세요.');
+        sel.value = prevVal;
+        return;
+      }
+      sel.setAttribute('data-prev', newVal);
+    })
+    .catch(function(){
+      sel.disabled = false;
+      alert('네트워크 오류로 저장하지 못했습니다. 다시 시도해 주세요.');
+      sel.value = prevVal;
+    });
+  }
+
+  function setMsg(text){
+    $('loadMsg').style.display = 'block';
+    $('loadMsg').textContent = text;
+    $('summary').className = 'summary';
+    $('listWrap').className = 'list-wrap';
+  }
+
+  // 입장 게이트(gate.js)를 이미 통과할 때 쓴 비밀번호를 그대로 조회 코드로 쓴다 — 화면에 코드 입력칸을 따로 두지 않는다.
+  function load(code){
+    setMsg('불러오는 중…');
+    // ★2026-09-09 배1050 — ERP 도메인은 서버 거울(/api/misc/funnel/steamiron_list) 먼저,
+    //   실패하면 종전 GAS. 거울은 서버가 접속코드를 쥐고 떠온다 — 브라우저가 코드를 들고 GAS 로 가지 않는다.
+    var _otGas = function(){
+      return fetch(GAS_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'steamiron_list', code: code })
+      }).then(function(r){ return r.json(); });
+    };
+    var _otApiOn = /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname);
+    try { if (Date.now() - Number(localStorage.getItem('steamiron_wrote_at') || 0) < 6 * 60 * 1000) _otApiOn = false; } catch (e) {}
+    (_otApiOn ? fetch('/api/misc/funnel/steamiron_list')
+        .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[오넋티 접수] API 실패 → GAS 폴백:', e && e.message); return _otGas(); })
+      : _otGas())
+    .then(function(d){
+      if(!d || !d.ok){
+        setMsg((d && d.error) || '조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      $('loadMsg').style.display = 'none';
+      _renderSummary(d.stats||{});
+      _renderRows(Array.isArray(d.rows)?d.rows:[]);
+    })
+    .catch(function(){
+      setMsg('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+    });
+  }
+
+  // ── 게이트 통과 후 앱 시작 (상품기획.html 과 같은 패턴) ──────────────
+  window.startApp = function(){ load(window.WELP_GATE_PW); };
+  // 게이트 없이 바로 로드된 경우(이미 통과된 세션)
+  try { if (sessionStorage.getItem('welp_gate_ok') === '1') load(window.WELP_GATE_PW); } catch(e){}
+})();
+</script>
+<script defer src="../../_assets/page_ping.js"></script>
+</body>
+</html>
