@@ -410,8 +410,13 @@ def build_morning_kakao(today: str | None = None) -> str:
             day -= timedelta(days=1)
         return n
 
-    miss = [(z, g, t, _sauna_missed(z, g)) for z in ("남성구역", "여성구역")
-            for g, dn, t in _groups(sup_yest, z) if t and dn == 0]
+    yest_groups = [(z, g, dn, t) for z in ("남성구역", "여성구역")
+                   for g, dn, t in _groups(sup_yest, z)]
+    if not yest_groups:
+        # 어제 실적을 못 읽었다 — 「어제 다 채웠다」로 읽히지 않게 그 사실을 그대로 적는다
+        # (2026-09-10 실측: 같은 통을 두 번 렌더했는데 한 번은 이 절이 통째로 빠졌다).
+        out.append("⚠️ 어제 실적을 못 불러왔습니다 — 지원부 체계 화면에서 직접 확인해 주세요")
+    miss = [(z, g, t, _sauna_missed(z, g)) for z, g, dn, t in yest_groups if t and dn == 0]
     miss.sort(key=lambda m: not m[3])   # 사우나 포함이 먼저
     if miss:
         out.append("⚠️ 어제 못 채운 것 — 오늘 먼저")
