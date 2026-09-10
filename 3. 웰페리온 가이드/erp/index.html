@@ -144,25 +144,22 @@
                  padding-left:12px; border-left:1px solid var(--border);}
   .topbar .spacer{margin-left:auto;}
   .dl .mod .owner::before{content:"내려받기 · ";}
-  .note{font-size:13px; color:var(--dim); background:var(--gray-bg);
-        border-left:2px solid var(--border-strong); padding:10px 14px; border-radius:6px; margin-bottom:20px;}
+  /* 화면에 상주하는 설명문 대신 접힌 한 줄 (벤치마킹 §5-18) */
+  .tip{font-size:12px; color:var(--dim); margin-bottom:8px;}
+  .tip > summary{cursor:pointer; list-style:none; color:var(--text-soft); font-weight:600;}
+  .tip > summary::-webkit-details-marker{display:none;}
+  .tip > summary::before{content:"▸ "; color:var(--dim);}
+  .tip[open] > summary::before{content:"▾ ";}
+  .tip a{color:var(--accent-hover);}
+  .note{font-size:12.5px; color:var(--dim); background:var(--gray-bg);
+        border-left:2px solid var(--border-strong); padding:8px 12px; border-radius:4px; margin-bottom:12px;}
   .note a{color:var(--accent-hover);}
-  /* 운영 축 — 오늘 카드 수만 센다(배1135 4단계). 가동·비용 신호는 자동화 잇기 뒤에 붙인다. */
-  .ops{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-bottom:16px;
-       padding:10px 14px; background:var(--gray-bg); border:1px solid var(--border);
-       border-radius:8px; font-size:13px; color:var(--text-soft);}
-  .ops b{color:var(--text); font-weight:700;}
-  .ops .hint{width:100%; font-size:12px; color:var(--dim);}
-  /* 권한관리 끼워넣기 — 서버가 내주는 관리자 화면을 이 자리에 그대로 띄운다 */
-  /* 관리자 화면은 넓은 콘솔이다 — 모듈 목록용 1100px 틀에 가두지 않고 창 폭을 다 쓴다.
-     .main 은 왼쪽 정렬(좌우 여백 40px)이라 이 폭이 화면에 정확히 들어맞는다. */
-  #pane-adm{width:calc(100vw - 80px);}
-  #adm-frame{width:100%; height:calc(100vh - 260px); min-height:560px; border:1px solid var(--border);
-             border-radius:12px; background:var(--paper); display:block;}
-  @media(max-width:640px){ #pane-adm{width:auto;} }
-  /* 사용량 탭 — 화면 하나를 그대로 끼워 띄운다(권한관리와 같은 방식). 탭으로 격상(GM 2026-09-09). */
-  #use-frame{width:100%; height:calc(100vh - 150px); min-height:560px; border:1px solid var(--border);
-             border-radius:12px; background:var(--paper); display:block;}
+  /* 권한·비용은 다른 화면을 이 자리에 그대로 끼워 띄운다.
+     ★2026-09-10 수리 — 권한 판에 width:calc(100vw - 80px) 이 박혀 있었다. 왼쪽 메뉴가 없던
+     시절의 값이라 240px 메뉴가 생긴 뒤로 화면이 오른쪽으로 176px 밀려 잘렸다(실측).
+     이제 폭을 지정하지 않는다 — 본문이 이미 메뉴 오른쪽 전부를 쓴다. */
+  #adm-frame, #use-frame{width:100%; height:calc(100vh - 132px); min-height:520px;
+             border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
   @media(max-width:900px){
     /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 240px 를 세로로 두면 본문이 화면 밖으로 밀린다 */
     .shell{grid-template-columns:1fr;}
@@ -230,10 +227,9 @@
   </div>
 
   <div id="pane-adm" role="tabpanel" hidden>
-    <h2>권한관리</h2>
-    <div class="meta">관리자 전용.</div>
-    <div class="note">누구에게 어떤 화면을 열어줄지 정하는 곳입니다. <b>로그인과 별개인 관리자 비밀번호</b>를 한 번 더 넣습니다(30분).
-      아래가 비어 보이면 <a href="/auth/admin" target="_blank" rel="noopener">새 창으로 열기</a>.</div>
+    <details class="tip"><summary>권한 · 관리자 비밀번호를 한 번 더 넣습니다</summary>
+      누구에게 어떤 화면을 열어줄지 정하는 곳입니다. 로그인과 별개인 관리자 비밀번호를 30분마다 한 번 더 넣습니다.
+      아래가 비어 보이면 <a href="/auth/admin" target="_blank" rel="noopener">새 창으로 열기</a>.</details>
     <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
   </div>
 </div>
