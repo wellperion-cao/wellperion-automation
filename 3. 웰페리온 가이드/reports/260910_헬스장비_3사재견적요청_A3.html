@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>헬스장비 재견적 요청 — 공통 사양서 (업체 공유용 A3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; --grey:#5C666F; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .spacer{ flex:1; } .bar .note{ font-size:11.5px; opacity:.8; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:22px 28px 14px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:7px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:13.5px; color:var(--navy); letter-spacing:6px; margin-bottom:3px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:26px; letter-spacing:-.8px; line-height:1.15; }
+  .title small{ font-size:14.5px; font-weight:600; color:var(--grey); letter-spacing:-.3px; margin-left:8px; }
+  .meta{ margin-left:auto; text-align:right; font-size:11px; line-height:1.6; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  .lead{ margin-top:9px; font-size:12.6px; line-height:1.6; color:#2C363F; }
+  .lead b{ color:var(--navy); font-weight:700; }
+
+  .row{ margin-top:10px; display:flex; gap:10px; align-items:flex-start; }
+  .card{ border:1px solid var(--line); border-top:3px solid var(--navy); display:flex; flex-direction:column; min-height:0; }
+  .card > h3{ background:var(--navy-bg); color:var(--navy); font-size:12.5px; font-weight:700;
+    padding:5px 11px; border-bottom:1px solid var(--line); }
+  .card > h3 em{ font-style:normal; font-weight:500; color:var(--grey); font-size:11px; }
+  .card .bd{ padding:8px 12px; flex:1; overflow:auto; }
+  .card.fill{ border-top-color:var(--warn); } .card.fill > h3{ color:var(--warn); background:#FAF5EC; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ border:1px solid var(--line); padding:4px 8px; font-size:11.6px; line-height:1.35; }
+  thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:11.5px; }
+  td.k{ background:#F6F8FA; font-weight:500; }
+  tr.grp td{ background:var(--navy-bg); color:var(--navy); font-weight:700; font-size:11px; }
+  .ctr{ text-align:center; }
+  .blank{ color:var(--grey); }
+  .blank::after{ content:"( 기재 )"; }
+
+  .band{ margin-top:10px; background:var(--navy); color:#fff; padding:11px 18px; display:flex; align-items:center; gap:20px; }
+  .band .h{ font-family:'Noto Serif KR',serif; font-size:17px; font-weight:700; white-space:nowrap; letter-spacing:-.5px; }
+  .band .t{ font-size:12.6px; line-height:1.55; }
+  .band .t b{ color:#FFD98A; font-weight:700; }
+
+  .reply{ margin-top:9px; display:flex; align-items:center; gap:14px; border:1.5px dashed var(--warn); background:#FDFBF6; padding:8px 14px; }
+  .reply .l{ font-size:12.5px; font-weight:700; color:var(--warn); white-space:nowrap; }
+  .reply .v{ flex:1; border-bottom:1px solid var(--grey); height:18px; }
+  .reply .s{ font-size:11px; color:var(--grey); white-space:nowrap; }
+
+  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px;
+    display:flex; gap:22px; font-size:10.3px; line-height:1.45; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>헬스장비 재견적 요청 — 공통 사양서 (업체 공유용 A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="spacer"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">헬스장비 재견적 요청 — 공통 사양서<small>— 3개 업체 모두에 같은 목록을 드립니다</small></div>
+    </div>
+    <div class="meta">
+      주식회사 웰페리온 · 서울 용산구 서빙고로 413 · <b>3,000평</b><br>
+      작성 <b>경영지원부 김남욱 총괄매니저</b> · 2026. 09. 10.<br>
+      대상 <b>헬스존(B1) 장비 교체 — 공통 조건 재견적</b> · 문서번호 <b>WP-GM-260910-01</b>
+    </div>
+  </div>
+
+  <div class="lead">
+    웰페리온은 서울 한남동에 있는 약 3,000평 규모의 <b>정원제 스포츠클럽</b>입니다. 수영·P.T·필라테스·골프·스쿼시·발레·바레 강습과 사우나·스파를 회원제로 운영하며, 투어와 상담은 예약제입니다.<br>
+    지금까지 귀사를 포함한 3개 업체로부터 서로 다른 대수·구성으로 견적을 받아 <b>총액 비교가 어려운 상태</b>였습니다. 그래서 세 견적을 성격별로 묶어 <b>같은 목록 1장</b>으로 정리했습니다 — 이 목록에 <b>같은 조건으로 다시 견적</b>을 부탁드립니다. 헬스존 배경 자료(회원 구성·현재 장비·회원 목소리)는 별도 문서(<b>WP-GM-260821-03</b>)로 이미 전달드렸습니다.
+  </div>
+
+  <div class="row">
+    <div class="card" style="flex:1.55">
+      <h3>① 우리가 원하는 구성 <em>— 지금까지 받은 세 견적을 성격별로 묶었습니다 · 업체명·금액 없음</em></h3>
+      <div class="bd">
+        <table>
+          <thead><tr><th style="width:280px">품목</th><th style="width:110px" class="ctr">확정 대수</th><th style="width:150px" class="ctr">참고 범위(기존 견적)</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="4">I. 유산소 (CARDIO)</td></tr>
+            <tr><td>트레드밀(러닝머신)</td><td class="ctr"></td><td class="ctr">15~20대</td><td></td></tr>
+            <tr><td>바이크(업라이트)</td><td class="ctr"></td><td class="ctr">2~3대</td><td></td></tr>
+            <tr><td>바이크(리컴번트)</td><td class="ctr"></td><td class="ctr">3대</td><td>3개 사 동일 대수 제안</td></tr>
+            <tr><td>일립티컬 · 크로스트레이너</td><td class="ctr"></td><td class="ctr">2~3대</td><td></td></tr>
+            <tr><td>클라임밀 · 스텝밀</td><td class="ctr"></td><td class="ctr">3대</td><td>3개 사 동일 대수 제안</td></tr>
+            <tr><td>로잉머신</td><td class="ctr"></td><td class="ctr">2대</td><td>3개 사 동일 대수 제안</td></tr>
+            <tr><td>고강도 인터벌형 카디오 장비</td><td class="ctr"></td><td class="ctr">2대</td><td>세부 기종은 사별로 다름</td></tr>
+            <tr class="grp"><td colspan="4">II. 근력 (STRENGTH)</td></tr>
+            <tr><td>선택형 근력머신 (체스트프레스·숄더프레스·랫풀다운·레그프레스 등, 스테이션당 1대)</td><td class="ctr"></td><td class="ctr">15~16종</td><td>스테이션 구성은 사별로 다름</td></tr>
+            <tr><td>프리웨이트 · 랙 · 벤치류 (스쿼트랙·스미스머신·인클라인/디클라인 벤치 등, 종류당 1대)</td><td class="ctr"></td><td class="ctr">10~15종</td><td></td></tr>
+            <tr class="grp"><td colspan="4">III. 기타</td></tr>
+            <tr><td>체성분분석기 등 평가장비</td><td class="ctr"></td><td class="ctr">-</td><td>1개 사만 제안 — 필요 여부 별도 검토</td></tr>
+            <tr><td>특수 퍼포먼스 장비(케이블크로스오버·듀얼풀리 등)</td><td class="ctr"></td><td class="ctr">-</td><td>1~2개 사만 제안</td></tr>
+            <tr><td>소프트웨어 · 콘텐츠 라이선스(제조사 프로그램)</td><td class="ctr"></td><td class="ctr">-</td><td>1개 사만 제안 — 있으면 별도 기재</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card fill" style="flex:1">
+      <h3>② 아래를 채워 회신해 주십시오 <em>— 빈 칸입니다</em></h3>
+      <div class="bd">
+        <table>
+          <tbody>
+            <tr><td class="k" style="width:130px">대당 단가</td><td class="blank"></td></tr>
+            <tr><td class="k">합계</td><td class="blank"></td></tr>
+            <tr><td class="k">납기</td><td class="blank"></td></tr>
+            <tr><td class="k">무상 보증 기간</td><td class="blank"></td></tr>
+            <tr><td class="k">결제 조건</td><td class="blank"></td></tr>
+            <tr><td class="k">견적 유효기간</td><td class="blank"></td></tr>
+            <tr><td class="k">부가세(VAT) 포함 여부</td><td class="blank"></td></tr>
+            <tr><td class="k">설치 · 철거 포함 여부</td><td class="blank"></td></tr>
+            <tr><td class="k">A/S 방식</td><td class="blank"></td></tr>
+          </tbody>
+        </table>
+        <div class="reply" style="margin-top:10px">
+          <div class="l">회신 기한</div>
+          <div class="v"></div>
+          <div class="s">위 날짜까지 이 문서 그대로 채워 회신 부탁드립니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="h">이 자료를 드리는 이유</div>
+    <div class="t">
+      같은 조건에서 비교하기 위해 <b>검토 중인 업체 모두에 같은 목록</b>을 드립니다. ①의 확정 대수는 저희가 채운 뒤 다시 전달드리거나, 채워진 그대로 받으실 수 있습니다 — <b>참고 범위 안에서 귀사 견해를 자유롭게 반영</b>해 주셔도 됩니다.
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>금액 표기</b> — 이 문서에는 어떤 금액도 들어 있지 않습니다. 대당 단가·합계 등 모든 금액은 ②의 빈 칸에 귀사가 채워 회신해 주시기 바랍니다.</div>
+    <div><b>참고 범위 출처</b> — 지금까지 받은 세 업체 견적을 품목 성격별로 묶어 대수 범위만 적었습니다. 업체명·구체 모델·금액은 넣지 않았습니다.</div>
+    <div><b>문의</b> — 주식회사 웰페리온 경영지원부 김남욱 총괄매니저 · 대표 02-6261-1200 · 서울 용산구 서빙고로 413.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '웰페리온_헬스장비_재견적요청_260910.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
