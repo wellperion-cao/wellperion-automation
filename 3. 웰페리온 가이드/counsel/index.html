@@ -50,10 +50,34 @@ footer a{color:var(--accent-text)}
 <script>
 (function(){
 "use strict";
-// 경로 → 테넌트. 이 표에 없는 경로는 웰페리온으로 떨어진다 — 테넌트 폴더 이름을 바꾸면 여기도 같이 바꾼다.
-// (2026-09-09 스포짐→고척골프 개명 때 이 줄을 안 고쳐 /gocheokgolf/counsel/ 손님이 웰페리온 안내를 받았다.)
+// ═══ 파트너사 구분 — 두 값이 일치할 때만 답한다 (GM 지시 2026-09-10 「근본적으로 선 그어놔줘」) ═══
+// 왜 이렇게까지 하나: 2026-09-09 스포짐→고척골프 개명 때 아래 표를 안 고쳤고, 표에 없는 경로가 조용히
+// 웰페리온으로 떨어져 **고척 손님이 웰페리온 상담실 인사와 웰페리온 운영시간을 받았다.** 화면만 남의
+// 업체를 부르는 사고라 서버 지표로는 전혀 안 보였다. 파트너사가 늘수록 이런 섞임의 대가가 커진다.
+//
+// 그래서 기본값을 없앤다. 판정은 두 갈래가 서로를 검사한다:
+//   ① BAKED — 배포할 때 render_counsel_page.py 가 이 파일 사본마다 그 업체 값으로 갈아 끼운다.
+//   ② 경로 표 — 지금 열린 주소가 어느 업체 자리인지.
+// 둘이 다르거나 표에 없으면 **아무 업체도 고르지 않고 화면에 그대로 알린다.** 상담 API 는 부르지 않는다.
+// 남의 답을 내주느니 안 여는 쪽이 낫다. 이름을 바꾸거나 업체를 늘릴 때 여기를 안 고치면 그 자리에서
+// 눈에 보이게 멈춘다(조용히 남의 이름을 다는 종전 동작이 사고의 뿌리였다).
+// ★?t= 로 업체를 바꿔 여는 길도 없앴다 — 어느 주소에서든 남의 업체 답을 띄울 수 있는 통로였다.
+// 이 파일 자체(웰페리온이 쓰는 원본)는 표시가 그대로 남아 있고, 사본은 렌더러가 업체 값으로 갈아 끼운다.
+// 표시만 걷어내면 원본은 1_wellperion, 사본은 그 업체 값이 된다 — 두 경우 다 아래 대조가 성립한다.
+var BAKED_TENANT = "<!--TENANT-->1_wellperion<!--/TENANT-->".replace(/<!--\/?TENANT-->/g, "");
 var TENANT_BY_PATH = {"/counsel/":"1_wellperion","/dietcamp/counsel/":"2_dietcamp","/gocheokgolf/counsel/":"3_gocheokgolf"};
-var tenant = TENANT_BY_PATH[location.pathname] || new URLSearchParams(location.search).get("t") || "1_wellperion";
+var pathTenant = TENANT_BY_PATH[location.pathname] || null;
+var tenant = (pathTenant && pathTenant === BAKED_TENANT) ? pathTenant : null;
+if (!tenant) {
+  document.getElementById("greet").textContent =
+    "이 주소에 연결된 상담 센터를 확인하지 못했습니다. 잠시 뒤 다시 열어 주세요.";
+  document.getElementById("askForm").style.display = "none";
+  document.getElementById("chips").style.display = "none";
+  // 콘솔에만 원인을 남긴다 — 손님 화면에 내부 이름을 띄우지 않는다.
+  if (window.console) console.error("[상담] 업체 판정 불일치 — 경로 " + location.pathname +
+    " 표=" + pathTenant + " / 배포본=" + BAKED_TENANT);
+  return;
+}
 var API = "/api/chat/" + tenant;
 var log = document.getElementById("log");
 var reservationUrl = "";
