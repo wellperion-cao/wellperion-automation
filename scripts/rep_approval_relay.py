@@ -30,7 +30,10 @@ GM업무 반영 — 서명 행 자체는 이미 GM업무.html 🤵 대표님 표
   ① GM 서명(GM싸인 칸) 도 같은 회차에 — 대표님·GM 둘 다 있으면 한 통에 두 절(🤵 대표님 / 👤 GM).
      지문 notified_gm{id:날짜}. 발신 이름은 "대표결재전달" 그대로(같은 성격).
   ③ 업무 SSOT 신규 행(생성일=오늘 KST · 생성자≠AI) → 「📝 오늘 올라온 업무 N건」 12:00·17:05.
-     지문 notified_new{id:날짜}. 발신 이름 "업무등록묶음"(주석=OFF).
+     지문 notified_new{id:날짜}. 발신 이름 "업무등록묶음".
+     ▸2026-09-10 GM: "직원들이 업무 SSOT 올리면 알림 띄울 수 있어? 운영부방에?" — 이 축만 ★운영부 방에도
+       같은 통을 보낸다(ROOM_OPS). 순서는 ★중간관리자 먼저이고, 커서는 그쪽이 성공했을 때만 닫는다 —
+       ★운영부 발신이 실패해도 같은 건이 중간관리자 방으로 두 번 가지 않는다. ①②④ 축은 종전대로 중간관리자 방만.
   ④ 저녁 점수판 — 17:05 합본 맨 아래 「📊 오늘 업무 마감 — 완료 N건 / 목표 3」. 발신은 합본
      (중간관리자알림합본·live)에 얹히므로 SCOREBOARD_ON 플래그로 막아 둔다(GM 승인 후 True).
   ② 미배정 잔량 한 줄은 send_ops_digest(07:50 아침 통)·ceo_morning_pipeline(08:00 항로 꼬리)에 있다.
@@ -41,6 +44,7 @@ import argparse
 import re
 import subprocess
 import sys
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -54,6 +58,9 @@ from module_heartbeat import last_heartbeat, record_heartbeat  # noqa: E402
 
 HEARTBEAT_ID = "rep-approval-relay"
 ROOM = "★중간관리자"
+# ★운영부 — 신규 업무 알림만 이 방에도 간다(GM 2026-09-10). 결재 전달·점수판은 종전대로 중간관리자 방만.
+ROOM_OPS = "★운영부"
+SEND_STAGGER_SECONDS = 6        # 두 방 알림이 같은 초에 겹치지 않게(send_ops_digest 와 같은 간격)
 SENDER = "대표결재전달"          # kakao_report_sender.AUTO_PIPELINE_SENDERS 에 넣어야 사람 방 통과
 SENDER_NEW = "업무등록묶음"      # ③ 신규 업무 묶음 — 같은 집합에 주석(OFF) 상태
 SCOREBOARD_ON = True            # ④ 점수판 — GM 승인 2026-09-03 "추천 진행" 으로 켬(17:05 합본 꼬리)
@@ -306,10 +313,17 @@ def run_new_rows(send: bool = False, dry_run: bool = False) -> int:
         print(f"── 미리보기 ({len(msg.splitlines())}줄) ──\n{msg}")
     if not new or not send:
         return 0
-    if send_via_gate(msg, dry_run, SENDER_NEW) and not dry_run:
+    ok = send_via_gate(msg, dry_run, SENDER_NEW)
+    if ok and not dry_run:
+        # ★운영부 방에도 같은 통 (GM 2026-09-10 "직원들이 업무 SSOT 올리면 알림 띄울 수 있어? 운영부방에?").
+        #   중간관리자 방이 먼저다 — 그쪽이 성공했을 때만 커서를 닫으므로, 운영부 발신이 실패해도
+        #   같은 건이 다음 회차에 중간관리자 방으로 또 가지는 않는다(중복 방지 유지).
+        time.sleep(SEND_STAGGER_SECONDS)
+        if not send_via_gate(msg, dry_run, SENDER_NEW, room=ROOM_OPS):
+            print(f"[work-intake] {ROOM_OPS} 발신 실패 — {ROOM} 은 나갔습니다(이번 건은 그 방에만).")
         for r in new:
             notified[str(r.get("id")).strip()] = today
-        _save_notified("notified_new", notified, f"{ROOM} 신규 업무 알림 {len(new)}건 ({today})")
+        _save_notified("notified_new", notified, f"신규 업무 알림 {len(new)}건 ({today})")
     return 0
 
 
@@ -333,10 +347,10 @@ def scoreboard_section(rows: list[dict], today: str | None = None) -> str:
             f"   이번 주 완료 {len(week)}건 · 빈 날 {empty}일")
 
 
-def send_via_gate(text: str, dry_run: bool, sender: str = SENDER) -> bool:
+def send_via_gate(text: str, dry_run: bool, sender: str = SENDER, room: str = ROOM) -> bool:
     """kakao_report_sender.py 관문 호출. 실제 전송이 로그로 확인될 때만 True."""
     cmd = [sys.executable, str(SCRIPTS_DIR / "kakao_report_sender.py"),
-           "--message", text, "--only-room", ROOM, "--sender", sender]
+           "--message", text, "--only-room", room, "--sender", sender]
     if dry_run:
         cmd.append("--dry-run")
     proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
