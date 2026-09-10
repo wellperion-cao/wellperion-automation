@@ -292,8 +292,16 @@ def _is_test_session(session_id) -> bool:
 
 
 def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
-         session_id: str = None):
+         session_id: str = None, outcome: str = None, body_keys: list = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
+    if outcome:
+        # 배1074④(시보 요청 2026-09-10) — 문답이 아닌 결말을 이름 붙여 남긴다. 지금 쓰는 값은 하나:
+        #   invalid_request = 본문 형식이 어긋나 질문이 빈 문자열로 들어옴(질문 키가 q 가 아니었다).
+        # 이 행은 stats 의 분모(total)와 미답 목록에서 빠진다 — 손님 문답이 아니기 때문이다.
+        row["outcome"] = outcome
+    if body_keys:
+        # 무엇이 왔는지는 남기되 값은 안 남긴다 — 남의 클라이언트가 잘못 붙었을 때 어느 키를 보냈는지만 본다.
+        row["body_keys"] = body_keys
     if type_id:
         row["type_id"] = type_id   # 배1074③ — 공통 질문 유형 태깅
     if needs_facts:
@@ -335,6 +343,13 @@ async def chat(tenant: str, request: Request):
         # 빈 입력은 문답으로 세지 않는다(2026-09-09 시토 · 시보 실측) — 엔터만 친 것을 미답으로
         # 적으면 자력 답변률 분모가 흐려진다. 실제로 웰페리온·다캠 양쪽에 q="" 가 1건씩 쌓여 있었다.
         # 금지어(_forbidden_hit)는 그대로 기록한다 — 그건 무엇을 묻는지가 값진 신호다.
+        # ★2026-09-10(시보 요청) — 세지는 않되 **흔적은 남긴다.** 종전엔 이 갈래만 로그를 통째로 건너뛰어,
+        #   본문 형식이 어긋난 요청(질문 키가 q 가 아닌 클라이언트)이 조용히 핸드오프되고 지표에 0으로 보였다.
+        #   실제로 09-10 에 그 함정에 그대로 빠져 8문이 통째로 샜다. 파는 물건이라 남의 개발자가 붙일 일이
+        #   실제로 생기므로, 그때 우리가 "손님이 새고 있다"를 볼 수 있어야 한다.
+        #   질문 내용은 없으니 안 남기고, 어떤 키를 보냈는지만 남긴다(값 없음 · 개인정보 없음).
+        _log(tenant, "", False, None, session_id=session_id, outcome="invalid_request",
+             body_keys=sorted(str(k)[:24] for k in (body or {}).keys())[:10])
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
@@ -397,6 +412,8 @@ def unanswered(tenant: str, days: int = 7, gaps: bool = False):
                     continue
                 if row.get("tenant") != tenant or _is_test_session(row.get("session_id")):
                     continue
+                if row.get("outcome") == "invalid_request":
+                    continue   # 질문이 빈 행이라 학습거리가 없다 — 아침 승격 목록에 올리지 않는다(배1074④)
                 if row.get("answered") and not (gaps and row.get("needs_facts")):
                     continue   # gaps=1 이면 답은 했어도 needs_facts 남은 행은 그대로 내려간다
                 try:
@@ -486,7 +503,7 @@ def stats(tenant: str, days: int = 30):
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
-    total = answered = 0
+    total = answered = invalid = 0
     unanswered_count: dict = {}
     try:
         # ponytail: 전량 스캔(회전 전 세대 .1 은 안 봄) — 관리자 화면이 여는 통계라 자주 안 불리고,
@@ -505,6 +522,9 @@ def stats(tenant: str, days: int = 30):
                     continue
                 if ts < cutoff:
                     continue
+                if row.get("outcome") == "invalid_request":
+                    invalid += 1   # 손님 문답이 아니다 — 분모에서 빼고 따로 센다(배1074④)
+                    continue
                 total += 1
                 if row.get("answered"):
                     answered += 1
@@ -516,6 +536,8 @@ def stats(tenant: str, days: int = 30):
     top_unanswered = sorted(unanswered_count.items(), key=lambda kv: -kv[1])[:10]
     return {"ok": True, "tenant": tenant, "days": days, "total": total, "answered": answered,
             "answer_ratio": round(answered / total, 3) if total else None,
+            # 손님 문답이 아니라 잘못 붙은 클라이언트가 낸 요청 수 — 0 이 아니면 어딘가에서 손님이 새고 있다(배1074④)
+            "invalid_requests": invalid,
             "top_unanswered": [{"q": q, "count": c} for q, c in top_unanswered]}
 
 
@@ -947,7 +969,11 @@ def _selfcheck() -> None:
     assert not _is_hours_question("운영 시간은 어떻게 되나요")     # 상태말만 — 일반 FAQ(f04) 몫, 가로채면 안 됨
     today_line = _today_hours_line("1_wellperion")
     assert today_line and ("휴관" in today_line), today_line   # 1_wellperion 은 facts.hours 있음 — 항상 한 줄 나온다
-    assert _today_hours_line("2_dietcamp") == "", "다캠은 facts.hours 없음 — 빈 문자열이어야 핸드오프로 넘어간다"
+    # ★2026-09-10 시토 — 종전엔 "다캠은 facts.hours 없음"을 단정해 뒀는데 그 사이 다캠 정본에 값이 채워져
+    #   자체점검이 깨져 있었다(내 변경 전 HEAD 에서도 같은 자리에서 깨졌다 — 실측). 검증하려던 것은
+    #   「값이 없으면 빈 문자열을 돌려 핸드오프로 넘어간다」이지 특정 업체의 자료 상태가 아니다.
+    #   그래서 자료를 안 타는 이름(없는 업체)으로 바꿔 규칙 자체를 검증한다 — 정본이 채워져도 안 깨진다.
+    assert _today_hours_line("_no_such_tenant_") == "", "facts.hours 가 없으면 빈 문자열이어야 핸드오프로 넘어간다"
     assert not _grounded("100원 할인해드려요", "이 문서엔 숫자가 전혀 없습니다")   # 근거 밖 숫자 → 탈락
     assert _grounded("06:00부터 22:30까지 운영해요", "평일 06:00~22:30 운영")      # 근거 안 숫자만 → 통과
 
@@ -998,8 +1024,10 @@ def _selfcheck() -> None:
     assert _needs_facts_missing({"facts": {"parking": "무료 30대"}}, "parking") == []
     # 실측으로 잡은 버그 — "_note" 처럼 밑줄로 시작하는 메타 칸이 옆의 진짜 빈 칸(parking)을 가리면 안 된다.
     assert _fact_present({"facts": {"parking": None, "_note": "미수령 — 안내 문구"}}, "facts.parking") is False
-    real_dc = _load_profile("2_dietcamp")
-    assert _needs_facts_missing(real_dc, "parking") == ["facts.parking"], "다캠 facts.parking 은 null 이어야 함"
+    # ★2026-09-10 시토 — 여기 있던 「다캠 facts.parking 은 null 이어야 함」을 지웠다. 업체 정본이 채워지면
+    #   자동으로 깨지는 단정이라(위 hours 자리와 같은 사고 · 내 변경 전 HEAD 에서도 깨져 있었다) 자체점검이
+    #   자료 관리 상태를 감시하는 꼴이 됐다. 검증하려던 규칙 자체는 바로 위 두 줄이 가짜 자료로 이미 덮는다.
+    assert _needs_facts_missing(_load_profile("_no_such_tenant_"), "parking") == ["facts.parking"]
 
     # 시보 요청② — 테스트 세션 접두어는 집계 제외 판정용(GM 07-18 규칙).
     assert _is_test_session("test-abc123") is True
