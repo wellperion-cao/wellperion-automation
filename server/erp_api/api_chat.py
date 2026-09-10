@@ -175,6 +175,24 @@ def _output_unsafe(text: str) -> bool:
     return any(w in text for w in MEDICAL_WORDS) or any(w in text for w in OUTPUT_UNSAFE_WORDS)
 
 
+# 금액 관문(guards_common no_price + 그 exception · GM 승인 2026-09-10) — 답에 금액꼴이 있으면 막는다.
+# 유일한 예외 = 그 업체 프로필 allowed_prices[].value 와 **글자 그대로 같은** 금액(대표가 문서로 허락한 것).
+# 반올림·단위 환산("9만원")·표기 변형("99000원")은 예외가 아니다 — 느슨하게 풀면 이 예외의 뜻이 사라진다.
+_MONEY_RE = re.compile(r"\d[\d,.]*\s*(?:만|천|억)?\s*원")
+
+
+def _price_check(text: str, allowed_prices: list):
+    """(막을까, 통과 근거|None). allowed_prices[].value 와 정확히 일치하는 부분만 지운 뒤에도
+    금액꼴이 남으면 막는다. 목록이 비면 지울 것이 없으니 금액은 전부 막힌다(종전 규칙 그대로)."""
+    rest, used = text or "", []
+    for it in (allowed_prices or []):
+        value = str((it or {}).get("value") or "")
+        if value and value in rest:
+            rest = rest.replace(value, "")
+            used.append(str(it.get("item") or value))
+    return bool(_MONEY_RE.search(rest)), (" · ".join(used) or None)
+
+
 def _best_match(q: str, faq: list):
     """(faq_item|None, score) — 정규화 뒤 overlap coefficient(짧은 쪽 bigram 수 기준).
     교집합 2-gram 2개 이상 AND 비율 0.5 이상만 매칭 후보 — 어미 한두 글자만 겹쳐 확신 있게
@@ -292,8 +310,12 @@ def _is_test_session(session_id) -> bool:
 
 
 def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
-         session_id: str = None, outcome: str = None, body_keys: list = None):
+         session_id: str = None, outcome: str = None, body_keys: list = None, allowed_price: str = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
+    if allowed_price:
+        # 답에 금액이 실려 나갔다 — 어느 허락 항목 덕인지 남긴다(GM 승인 2026-09-10 no_price.exception).
+        # 대표가 허락을 거두면 이 칸으로 어떤 답이 나갔는지 되짚는다.
+        row["allowed_price"] = allowed_price
     if outcome:
         # 배1074④(시보 요청 2026-09-10) — 문답이 아닌 결말을 이름 붙여 남긴다. 지금 쓰는 값은 하나:
         #   invalid_request = 본문 형식이 어긋나 질문이 빈 문자열로 들어옴(질문 키가 q 가 아니었다).
@@ -359,9 +381,9 @@ async def chat(tenant: str, request: Request):
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
-    text, status = (None, "error") if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
+    text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
-        _log(tenant, q, True, None, type_id, missing, session_id)
+        _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
@@ -774,15 +796,25 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
     sales_style = (prof.get("identity") or {}).get("sales_style") or ""   # null 이면 생략(배1036 GM 추가①)
     sales_line = (" 세일즈 결(업체별) — %s" % sales_style) if sales_style else ""
     today_line = _today_hours_line(tenant)
+    # 대표가 「말해도 된다」고 허락한 금액만 예외로 말할 수 있다(guards_common no_price.exception · GM 승인 2026-09-10).
+    # 목록이 비면 이 구역 자체가 없다 — 프롬프트가 종전과 한 글자도 다르지 않다(웰페리온·다캠 무변화).
+    allowed_prices = prof.get("allowed_prices") or []
+    allowed_block = ""
+    if allowed_prices:
+        allowed_block = (
+            "\n\n[말해도 되는 금액 — 위 '금액 숫자는 말하지 않습니다' 규칙의 유일한 예외]\n"
+            + "\n".join("- %s = %s" % (it.get("item", ""), it.get("value", "")) for it in allowed_prices)
+            + "\n이 금액은 **적힌 문자열 그대로만** 말합니다(반올림·단위 환산·다른 표기 금지). "
+              "여기 없는 금액·할인·특가는 종전대로 말하지 않고 상담으로 넘깁니다.")
     return (
         "%s 당신은 '%s' 상담원입니다(%s).%s%s 이모지는 '%s' 수준으로 씁니다. "
         "아래 [업체 정본]·[FAQ]에 적힌 사실·상품·규정만 사실로 말하세요 — 없는 것은 지어내지 말고 "
         "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
         "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이). "
         "이 화면은 카카오톡 대화창처럼 평문만 보입니다 — 마크다운 금지(**굵게**·목록 기호·제목 기호 쓰지 않는다).\n\n"
-        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s%s"
+        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s%s%s"
         % (_CONCIERGE_PRINCIPLES, name, service_concept, preset_line, sales_line, tone, handoff, today_line or "미확인",
-           json.dumps(prof, ensure_ascii=False), faq_lines, _shared_prompt_sections())
+           json.dumps(prof, ensure_ascii=False), faq_lines, _shared_prompt_sections(), allowed_block)
     )
 
 
@@ -806,14 +838,16 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
 
 
 def _concierge_answer(tenant: str, q: str, session_id: str):
-    """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status).
+    """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status, 허용금액근거|None).
     status: 'ok'(그대로 응답) · 'invalid'(출력검사 탈락 → 호출부가 핸드오프) ·
     'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥).
+    셋째 값 = 답에 실린 금액이 allowed_prices 의 어느 항목 덕에 통과했는지(로그용 · 대표가 허락을 거두면
+    되돌릴 근거). 금액이 없으면 None.
     주 모델(Opus 4.6) 오류·첫 글자 3초 초과·한도(429)면 대체(Sonnet 4.6)로 자동 전환한다 — 둘 다
     실패해야 비로소 백업(문장겹침 매칭)으로 내려간다(GM 확정 3단 — 이 함수가 위 두 단만 맡는다)."""
     client = _anthropic_client()
     if not client:
-        return None, "error"
+        return None, "error", None
     persona = _persona_of(tenant)
     prof = _load_profile(tenant)
     system_text = _concierge_system_block(tenant, prof, persona)
@@ -835,11 +869,12 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
                 _tg_alert_bedrock_once("⚠️ 상담봇 주엔진·대체 모두 실패 — FAQ 백업으로 전환 중. %s: %s"
                                         % (type(e).__name__, str(e)[:200]))
     if text is None:
-        return None, "error"
-    if not text or _output_unsafe(text) or not _grounded(text, system_text):
-        return None, "invalid"
+        return None, "error", None
+    price_blocked, allowed_price = _price_check(text, prof.get("allowed_prices"))
+    if not text or _output_unsafe(text) or price_blocked or not _grounded(text, system_text):
+        return None, "invalid", None
     _session_append(session_id, q, text)
-    return text, "ok"
+    return text, "ok", allowed_price
 
 
 @router.options("/{tenant}/profile")
@@ -991,11 +1026,24 @@ def _selfcheck() -> None:
     assert _output_unsafe("이번 달만 특별히 할인해 드릴게요") is True
     assert not _grounded("월 15만원이에요", "정본 안에 이 금액은 없습니다")
     assert _grounded("오전 8시부터 오후 8시까지예요", "평일 08:00~20:00 운영")   # 앞자리 0 표기차 오탐 수리
+
+    # 금액 예외(GM 승인 2026-09-10) — 대표가 허락한 금액만, 글자 그대로일 때만 통과한다.
+    gocheok_allowed = _load_profile("3_gocheokgolf").get("allowed_prices") or []
+    assert gocheok_allowed and gocheok_allowed[0].get("value") == "99,000원", gocheok_allowed
+    blocked, why = _price_check("레슨 2회 + 일주일 체험권은 99,000원이에요", gocheok_allowed)
+    assert blocked is False and why, (blocked, why)               # ① 정확히 일치 → 통과 + 근거 남음
+    for variant in ("9만원이에요", "약 10만원이에요", "99000원 할인해 드려요"):
+        assert _price_check(variant, gocheok_allowed)[0] is True, variant   # ② 변형 3종은 예외 아님 → 차단
+    assert _price_check("99,000원이에요", [])[0] is True            # ③ 목록 빈 테넌트는 종전대로 차단
+    assert _price_check("99,000원이에요", None)[0] is True          #    칸 자체가 없어도 같다
+    assert _price_check("평일 06:00~22:30 운영이에요", [])[0] is False   # ④ 금액 아닌 숫자는 안 막는다(오탐 방지)
+    for t in ("1_wellperion", "2_dietcamp"):
+        assert not (_load_profile(t).get("allowed_prices") or []), "%s 는 허락 목록이 없어야 한다(회귀 0)" % t
     global _ANTHROPIC_CLIENT
     saved = _ANTHROPIC_CLIENT
     _ANTHROPIC_CLIENT = (None, True)   # 강제로 "키 없음(시도 완료)" 상태 — 폴백 경로 결정적 검증
-    text, status = _concierge_answer("1_wellperion", "테스트 질문", "")
-    assert text is None and status == "error", (text, status)
+    text, status, allowed_price = _concierge_answer("1_wellperion", "테스트 질문", "")
+    assert text is None and status == "error" and allowed_price is None, (text, status, allowed_price)
     _ANTHROPIC_CLIENT = saved
 
     # 배1036 GM 3중 가드 — ① 일일 한도(가짜 테넌트 키로 실 카운터 안 건드림).
