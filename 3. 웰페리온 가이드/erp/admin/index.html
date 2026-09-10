@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>(가칭) ERP플랫폼관리 — 플랫폼 관리 콘솔</title>
+<title>ERP플랫폼관리 — 플랫폼 관리 콘솔</title>
 <link rel="stylesheet" href="../../assets/wp-ui.css">
 <!-- 파일명에 tenant-wellperion 이 박혀 있다 — 지금은 파트너사가 1곳이라 그대로 쓴다.
      파트너사가 늘면 이 파일을 테넌트별로 쪼갠다(파일명은 바꾸지 않는다 — 다른 화면이 참조할 수 있음). -->
@@ -43,7 +43,6 @@
   .topbar > *{white-space:nowrap; flex-shrink:0;}
   .topbar .brand{display:flex; align-items:baseline; color:var(--topbar-text);}
   .topbar .brand .platform-name{font-size:14.5px; font-weight:700;}
-  .topbar .brand .tag-temp{font-size:11px; font-weight:600; color:var(--accent-hover); margin-left:4px;}
   .topbar .brand .sub{font-size:12px; color:var(--topbar-dim); font-weight:400; margin-left:8px;}
   .topbar .console{font-size:13px; font-weight:600; color:var(--topbar-dim); margin-left:2px;
                     padding-left:12px; border-left:1px solid rgba(255,255,255,0.16);}
@@ -83,6 +82,7 @@
   .st.ok{color:#1B7F5F; background:rgba(27,127,95,.10);}
   .st.bad{color:#B4322A; background:rgba(180,50,42,.10);}
   .st.wait{color:#6B7176; background:rgba(107,113,118,.10);}
+  .st.go{color:var(--accent-hover); background:var(--accent-bg);}
   /* AI 운영 가이드는 이 자리에 그대로 끼워 띄운다(권한·비용과 같은 방식) */
   #guide-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
                border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
@@ -122,6 +122,8 @@
   .layer .stat:first-of-type{border-top:none;}
   .layer .stat .k{color:var(--text-soft); min-width:0;}
   .layer .stat .v{font-weight:700; color:var(--text); text-align:right; min-width:0; word-break:break-word;}
+  .layers.four{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:1100px){ .layers.four{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:820px){ .layers{grid-template-columns:1fr;} }
 
   /* 표 — 고유값·뼈대 원장 */
@@ -195,7 +197,7 @@
   @media(max-width:640px){
     .topbar{padding:0 18px; gap:10px;} .main{padding:24px 18px 60px;}
     /* 폰 폭에 다 못 넣는다 — 남기는 것은 「어느 층인지·지금 어느 영역인지·나가는 길」 셋 */
-    .topbar .console, .topbar .brand .sub, .topbar .brand .tag-temp{display:none;}
+    .topbar .console, .topbar .brand .sub{display:none;}
     .topbar .brand{margin-right:auto;}
     table.reg{min-width:520px;}   /* 좁은 화면에선 상자가 가로로 스크롤된다 */
   }
@@ -204,7 +206,7 @@
 <body>
 
 <div class="topbar">
-  <div class="brand" aria-label="ERP플랫폼관리(가칭)"><span class="platform-name">ERP플랫폼관리<span class="tag-temp">(가칭)</span></span><span class="sub">ERP</span></div>
+  <div class="brand" aria-label="ERP플랫폼관리"><span class="platform-name">ERP플랫폼관리</span><span class="sub">ERP</span></div>
   <span class="layer">회사 관리자</span>
   <span class="crumb" id="crumb">파트너사</span>
 </div>
@@ -216,8 +218,10 @@
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
+  <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
+  <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
   <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
 </nav>
@@ -321,6 +325,94 @@
   <div id="downloads"><div class="desc">불러오는 중…</div></div>
 </section>
 
+<section class="panel" data-panel="migration" hidden>
+  <h2>이관</h2>
+  <div class="meta" id="mig-meta">파트너사 화면에 얹혀 있는 <b>플랫폼 것</b>을 이 콘솔로 가져옵니다</div>
+  <details class="tip"><summary>무엇을 플랫폼 것으로 보나</summary>
+    <div class="in">잣대는 하나입니다 — <b>파트너사 직원·관리자가 그것을 볼 이유가 있나.</b>
+    없으면 파는 쪽(플랫폼) 살림이라 이 콘솔로 옵니다. AI 가 스스로 도는 현황, 발신 장치,
+    서버 환경, 파는 상품의 설계도, 다른 고객사 자료가 여기 해당합니다.
+    목록은 <code>erp/admin/migration.json</code> 한 곳에 적습니다 — 화면은 고치지 않습니다.</div></details>
+  <div id="mig-body"><div class="desc">불러오는 중…</div></div>
+</section>
+
+<section class="panel" data-panel="standard" hidden>
+  <h2>모듈 기준</h2>
+  <div class="meta">카드 하나가 <b>모듈</b>이 되려면 아래 다섯을 모두 채웁니다 · 하나라도 비면 모듈이 아니라 화면·문서·임시입니다</div>
+  <details class="tip"><summary>이 기준을 왜 두나</summary>
+    <div class="in">파트너사 첫 화면에 카드가 42장 깔려 있는데, 그 안에는 매일 일이 도는 자리와
+    한 번 보고 마는 문서가 섞여 있습니다. 섞여 있으면 새 파트너사에 무엇을 켜 줘야 하는지,
+    무엇에 값을 매길 수 있는지 정할 수 없습니다. 그래서 <b>파는 단위</b>를 여기서 정의합니다.</div></details>
+
+  <h3>다섯 조건 <span class="n">다섯을 다 채우면 모듈</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:14%">조건</th><th style="width:46%">뜻</th><th>못 채우면</th></tr></thead>
+    <tbody>
+      <tr><td class="item">① 주인</td><td>책임지는 역할이 한 명으로 정해져 있다</td><td class="note">주인 없는 화면 — 아무도 안 고친다</td></tr>
+      <tr><td class="item">② 원장</td><td>읽고 쓰는 자료 원본이 하나로 정해져 있다</td><td class="note">원장이 없으면 문서다</td></tr>
+      <tr><td class="item">③ 처리</td><td>사람이 그 화면에서 상태를 바꾼다(등록·승인·완료)</td><td class="note">보기만 하면 보고서다</td></tr>
+      <tr><td class="item">④ 반복</td><td>매주·매달 다시 열린다</td><td class="note">한 번 쓰고 마는 것은 임시다</td></tr>
+      <tr><td class="item">⑤ 이식</td><td>회사 이름·사람 이름만 갈아 끼우면 다른 파트너사도 쓴다</td><td class="note">우리 사정에만 있는 것은 우리 화면이다</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>네 등급 <span class="n">카드는 이 넷 중 하나다</span></h3>
+  <div class="layers four">
+    <div class="layer">
+      <div class="tag">모듈</div>
+      <div class="name">파는 단위</div>
+      <div class="desc">다섯 조건을 다 채운 것. 새 파트너사에 켜고 끄는 단위이고, 값을 매기는 단위입니다.</div>
+      <div class="stat"><span class="k">지금</span><span class="v">15개</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">화면</div>
+      <div class="name">모듈 안 한 장</div>
+      <div class="desc">모듈에 딸린 낱장입니다. 혼자 서지 않습니다 — 첫 화면에는 모듈 이름으로 한 칸만 나와야 합니다.</div>
+      <div class="stat"><span class="k">지금</span><span class="v">32장</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">문서·도구</div>
+      <div class="name">읽거나 한 번 쓰는 것</div>
+      <div class="desc">가이드·보고서·서식·만들어 주는 도구. 원장이 없거나 상태를 바꾸지 않습니다.</div>
+      <div class="stat"><span class="k">지금</span><span class="v">9장 + 문서함 89장</span></div>
+    </div>
+    <div class="layer">
+      <div class="tag">임시</div>
+      <div class="name">그때만 쓰는 것</div>
+      <div class="desc">행사·캠페인처럼 끝나면 안 여는 것. 끝나면 카드에서 내립니다.</div>
+      <div class="stat"><span class="k">지금</span><span class="v">1장</span></div>
+    </div>
+  </div>
+
+  <h3>지금 판정 <span class="n">파트너사 실행 화면 42장을 이 기준으로 셌다 — 2026-09-10</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:22%">모듈 (15)</th><th style="width:10%">화면</th><th>딸린 화면</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3" class="grp">파트너사 것 (12)</td></tr>
+      <tr><td class="item">회원</td><td>3</td><td class="note">회원 · 강습 회원 · 재등록</td></tr>
+      <tr><td class="item">문의</td><td>1</td><td class="note">문의</td></tr>
+      <tr><td class="item">점검</td><td>1</td><td class="note">시설 점검 · 고장 접수</td></tr>
+      <tr><td class="item">일정</td><td>1</td><td class="note">전사 일정</td></tr>
+      <tr><td class="item">업무·결재</td><td>2</td><td class="note">업무 현황 · 결재 현황</td></tr>
+      <tr><td class="item">라커</td><td>1</td><td class="note">라커</td></tr>
+      <tr><td class="item">분실물</td><td>3</td><td class="note">습득물 접수 · 처분 · 현황</td></tr>
+      <tr><td class="item">인사</td><td>6</td><td class="note">스케줄보드 · 휴무 · 휴무(모바일) · 개인 캘린더 · 온보딩 체크인 · 자가성찰</td></tr>
+      <tr><td class="item">재무</td><td>4</td><td class="note">구매요청 · 매출 · 지출 · 매출/지출</td></tr>
+      <tr><td class="item">콘텐츠</td><td>3</td><td class="note">AI 시리즈 보드 · 콘텐츠 접수 · 콘텐츠 문의</td></tr>
+      <tr><td class="item">경영 보고</td><td>3</td><td class="note">GM 업무 · 대표님 보고건 · 회장님 보고건</td></tr>
+      <tr><td class="item">월간 운영계획</td><td>1</td><td class="note">월간 운영계획</td></tr>
+      <tr><td colspan="3" class="grp">플랫폼 것 (3) — 「이관」 판으로 옮긴다</td></tr>
+      <tr><td class="item">자율 가동</td><td>1</td><td class="note">자율현황</td></tr>
+      <tr><td class="item">발신</td><td>1</td><td class="note">카톡 전송 관리</td></tr>
+      <tr><td class="item">상담봇</td><td>1</td><td class="note">상담봇 관리</td></tr>
+      <tr><td colspan="3" class="grp">모듈이 아닌 것 (10)</td></tr>
+      <tr><td class="item">문서·도구 9</td><td>—</td><td class="note">부서 체계 3 · 거래업체 · 브로제이 업무분장 · 프로필월 · ERP 가이드 · 마케팅 월간보고서 · 개인계정 기록</td></tr>
+      <tr><td class="item">임시 1</td><td>—</td><td class="note">오넛티 접수(추석 행사) — 끝나면 내린다</td></tr>
+    </tbody>
+  </table></div>
+  <p class="lead">읽는 법 — 카드는 42장이지만 <b>실제 모듈은 15개</b>입니다. 낱장을 모듈 아래로 접으면 파트너사 첫 화면은 <b>12칸</b>이 됩니다. 새 파트너사에 켜 주는 단위도, 값을 매기는 단위도 그 12칸입니다.</p>
+</section>
+
 <section class="panel" data-panel="guide" hidden>
   <iframe id="guide-frame" title="AI C-Level 운영 가이드" src="about:blank"></iframe>
 </section>
@@ -358,7 +450,7 @@
     <div class="in">회사가 바뀌어도 그대로 쓰는 뼈대는 위 겹(플랫폼)이 갖고, 회사마다 다른 값은 아래 겹(파트너사)에 둡니다.
     이렇게 갈라 두면 파트너사를 늘릴 때 아래 겹만 새로 채우면 됩니다.</div></details>
   <div class="split-note">
-    <div class="half"><b>플랫폼 · (가칭) ERP플랫폼관리</b>ERP 를 만들어 파는 회사입니다. 뼈대(엔진·규격·부팅 절차)의 주인이며, 파트너사가 몇이 되든 하나입니다. 정식 상호는 아직 정하지 않았습니다.</div>
+    <div class="half"><b>플랫폼 · ERP플랫폼관리</b>ERP 를 만들어 파는 회사입니다. 뼈대(엔진·규격·부팅 절차)의 주인이며, 파트너사가 몇이 되든 하나입니다. 법인 상호(사업자등록)는 이 이름과 별개로 나중에 정합니다.</div>
     <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP 를 가져다 쓰는 회사입니다. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
   </div>
 
@@ -414,7 +506,7 @@
     </tbody>
   </table></div>
 
-  <h3>뼈대 자리 <span class="n">플랫폼((가칭) ERP플랫폼관리) 소유 — 회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
+  <h3>뼈대 자리 <span class="n">플랫폼(ERP플랫폼관리) 소유 — 회사가 바뀌어도 그대로 쓰는 것 16건</span></h3>
   <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>왜 뼈대인가</th></tr></thead>
     <tbody>
@@ -597,6 +689,44 @@
   }).catch(function(){
     document.getElementById('downloads').innerHTML =
       '<div class="desc">받을 파일 목록을 불러오지 못했다.</div>';
+  });
+  </script>
+
+  <script>
+  /* 이관 판 — 목록은 erp/admin/migration.json 한 곳만 보고 그린다. 항목이 늘어도 이 화면은 안 고친다. */
+  fetch('/erp/admin/migration.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+    var list = d.items || [];
+    var done = list.filter(function(x){ return x.state === 'done'; });
+    var left = list.filter(function(x){ return x.state !== 'done'; });
+    var badge = document.getElementById('b-mig');
+    if (badge) badge.textContent = left.length;
+    var meta = document.getElementById('mig-meta');
+    if (meta) meta.innerHTML = '옮길 것 <b>' + left.length + '건</b> · 옮긴 것 ' + done.length
+                             + '건 — 잣대는 「파트너사가 볼 이유가 있나」 하나입니다';
+    function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function pill(st){
+      if (st === 'done') return '<span class="st ok">옮김</span>';
+      if (st === 'doing') return '<span class="st go">옮기는 중</span>';
+      return '<span class="st wait">대기</span>';
+    }
+    function rows(items){
+      return items.map(function(x){
+        return '<tr><td class="item">' + esc(x.name) + '</td>'
+             + '<td class="note">' + esc(x.was) + '</td>'
+             + '<td class="note">' + esc(x.why) + '</td>'
+             + '<td>' + pill(x.state) + '</td></tr>';
+      }).join('');
+    }
+    var head = '<thead><tr><th style="width:22%">무엇</th><th style="width:24%">지금 자리</th>'
+             + '<th>왜 플랫폼 것인가</th><th style="width:9%">상태</th></tr></thead>';
+    document.getElementById('mig-body').innerHTML =
+        '<div class="tbl-wrap"><table class="reg">' + head + '<tbody>'
+      + '<tr><td colspan="4" class="grp">옮겨야 하는 것 (' + left.length + ')</td></tr>' + rows(left)
+      + '<tr><td colspan="4" class="grp">이미 옮긴 것 (' + done.length + ')</td></tr>' + rows(done)
+      + '</tbody></table></div>';
+  }).catch(function(){
+    document.getElementById('mig-body').innerHTML = '<div class="desc">이관 목록을 불러오지 못했다.</div>';
   });
   </script>
 
