@@ -10,19 +10,23 @@
      "권한관리가 더 밝아서 보기 좋다". 종전엔 가이드 허브의 어두운 :root 를 썼는데, 권한관리 화면을
      이 안에 끼워 띄우게 되면서 한 화면에 밝은 판과 어두운 판이 같이 뜨는 것도 함께 해소된다.
      강조색 = 브랜드 시그니처 에메랄드 #63BBA0 (브랜드 기반 문서 · GM 지시). 종전 베이지 #B79F8A 대체. */
+  /* 바탕은 무채색 (GM 확정 2026-09-10 · 두 판을 나란히 보고 고르셨다).
+     세일즈포스 #f3f3f3 · SAP #f5f6f7 · Odoo 흰색 — 어느 제품도 채도 있는 바탕을 쓰지 않는다.
+     채도가 있으면 「문서」로 읽힌다. 강조색(브랜드 에메랄드)과 로고는 그대로 둔다.
+     실측 근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md §2-2. */
   :root{
-    --bg:#F4F0EB; --paper:#fff; --text:#221F20; --text-soft:#4A423C;
-    --dim:#6E655C; --dim-soft:#9C938A;
+    --bg:#F4F5F6; --paper:#fff; --text:#181A1C; --text-soft:#3F4448;
+    --dim:#6B7176; --dim-soft:#9AA0A5;
     --accent:#63BBA0; --accent-hover:#3F9B80; --accent-bg:rgba(99,187,160,0.12);
-    --border:rgba(34,31,32,0.12); --border-strong:rgba(34,31,32,0.26); --gray-bg:#FBF9F6;
+    --border:rgba(20,22,25,0.10); --border-strong:rgba(20,22,25,0.20); --gray-bg:#FAFAFB;
   }
   /* 보는 사람이 다크 모드면 같이 어두워진다 — 끼워 띄우는 권한관리 화면이 그렇게 동작하므로 짝을 맞춘다 */
   @media(prefers-color-scheme:dark){
     :root:not([data-theme=light]){
-      --bg:#221F20; --paper:#2a2725; --text:#F4F0EB; --text-soft:#CFC8C1;
-      --dim:#AAA098; --dim-soft:#7E766E;
+      --bg:#1A1C1E; --paper:#232629; --text:#EDEFF1; --text-soft:#C6CACE;
+      --dim:#9AA0A5; --dim-soft:#767C81;
       --accent:#63BBA0; --accent-hover:#8ED6BF; --accent-bg:rgba(99,187,160,0.16);
-      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#302c2a;
+      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#2A2D30;
     }
   }
   html{color-scheme:light dark;}
@@ -85,7 +89,7 @@
      종전엔 타일 하나가 170px 높이라 42장이 4.2화면이었다(실측 2026-09-10). */
   .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:8px;}
   .mod{display:block; background:var(--paper); border:1px solid var(--border);
-       border-radius:6px; padding:8px 12px; text-decoration:none; color:inherit;
+       border-radius:4px; padding:8px 12px; text-decoration:none; color:inherit;
        transition:border-color 0.12s, background 0.12s;}
   .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
   .mod .name{font-size:13.5px; font-weight:700; margin-bottom:2px;
@@ -100,7 +104,7 @@
   .mod.locked .owner::after{content:" · 권한 없음"; color:var(--dim-soft);}
 
   .find{width:260px; height:28px; padding:0 10px; margin:0;
-        background:var(--gray-bg); border:1px solid var(--border); border-radius:6px;
+        background:var(--gray-bg); border:1px solid var(--border); border-radius:4px;
         color:var(--text); font-size:12.5px; font-family:inherit;}
   .find:focus{outline:none; border-color:var(--accent);}
   .find::placeholder{color:var(--dim-soft);}
@@ -113,7 +117,7 @@
      페이지가 아니라 그 상자가 돼, 머리행이 표 시작보다 48px 아래에 붙고 첫 줄이 그 뒤로 숨는다
      (2026-09-10 실측). 열 3개는 말줄임으로 들어가므로 가로 스크롤이 필요 없다. */
   .tbl-wrap{max-width:100%; min-width:0;
-            border:1px solid var(--border); border-radius:6px; background:var(--paper);}
+            border:1px solid var(--border); border-radius:4px; background:var(--paper);}
   /* border-collapse:collapse 에서는 머리행 고정(sticky)이 먹지 않는다 — separate 로 두고
      칸 사이 간격을 0 으로 만든 뒤, 칸 경계선은 각 칸의 아래 테두리로 그린다. */
   table.tbl{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; table-layout:fixed;}
