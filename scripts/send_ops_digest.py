@@ -1772,6 +1772,45 @@ def _todays_assignees(items: list, today=None) -> list:
     return names
 
 
+FOUR_DEPT_ROOM = "★운영+시설+지원+주차"
+
+
+def _room_blind_assignee_items(items: list, today=None, days: int = 1) -> list:
+    """담당이 ★중간관리자·★운영부 어느 방에도 없는 사람인 오늘·내일 건.
+
+    ★2026-09-10 GM 지적 — "이런것들 놓치지 않게 해줘". 일정 통은 ★중간관리자·★운영부 두 방으로만
+      간다(2026-09-01 GM). 그런데 지원부 반장(이연희·박남일)과 주차 고문(양상규)은 그 두 방에
+      없다 — 그분들이 담당인 일정은 아무에게도 안 갔다. 실제로 9/11 화분 물 주기(지원부 여)와
+      주차 일일점검 안내(양상규 고문)를 GM 이 직접 챙겨 카톡을 보내게 됐다.
+    ▸목록을 통째로 4부서 방에 다시 뿌리지 않는다 — 그건 2026-09-01 에 안 먹혀서 끊은 방식이다.
+      그 방에만 있는 사람이 담당인 건만 골라 한 줄씩 보낸다.
+    ▸명단 정본 = ssot/kpi.json `_부서반장_2026_08_26` (약속 L01 · 이름을 여기 복제하지 않는다).
+    """
+    today = today or date.today()
+    try:
+        kpi = json.loads((ROOT / "ssot" / "kpi.json").read_text(encoding="utf-8"))
+        depts = (kpi.get("_부서반장_2026_08_26") or {}).get("depts") or {}
+    except Exception:  # noqa: BLE001 — 명단을 못 읽으면 조용히 아무도 안 부른다(오발신 금지)
+        return []
+    # 두 방(★중간관리자·★운영부)에 앉아 있는 사람은 이미 통을 받는다 — 그 밖의 담당만 고른다.
+    in_rooms = {"이경연 실장", "이정헌 소장", "나우열M"}
+    blind = {n for n in depts.values() if n and n not in in_rooms}
+    if not blind:
+        return []
+    out = []
+    for it in items:
+        d = it.get("date")
+        if not d or not (today <= d <= today + timedelta(days=days)):
+            continue
+        who = str(it.get("assignee") or "")
+        # 담당을 이름으로 적은 건과 "지원부 여 주임"처럼 부서로만 적은 건 둘 다 잡는다 —
+        # 후자도 그 부서 반장이 받는 자리라 두 방에는 안 뜬다.
+        dept = str(it.get("dept") or "")
+        if any(n in who for n in blind) or any(d in (dept or who) for d in ("지원부", "주차관리부")):
+            out.append(it)
+    return out
+
+
 def _build_schedule_block(items: list, today=None, show_all: bool = False) -> str:
     """📅 다가오는 일정 블록. items 는 이미 부서/관리자 갈래로 걸러진 목록.
 
@@ -2953,6 +2992,24 @@ def send_schedule_pings() -> None:
             log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
             if proc.returncode == 0 and "DONE" in out:
                 sent_any = True
+        # 두 방 어디에도 안 앉은 담당(지원부 반장·주차 고문)의 오늘·내일 건만 4부서 방으로 한 줄씩.
+        blind = _room_blind_assignee_items(items)
+        if blind:
+            lines = ["📅 내일까지 예정된 담당 건입니다"]
+            for it in blind:
+                _d = it.get("date")
+                # %-m 은 Windows strftime 이 못 읽는다 — 손으로 만든다.
+                _when = "오늘" if _d == date.today() else (f"{_d.month}/{_d.day}" if hasattr(_d, "month") else str(_d))
+                _t = str(it.get("time") or "").strip()
+                lines.append(f"▪ {it.get('name')} — {_when}{(' ' + _t) if _t else ''}")
+                lines.append(f"   담당 {it.get('assignee')}")
+            lines.append("👉 마치시면 이 방에 「완료」 한 줄만 남겨 주세요")
+            time.sleep(SEND_STAGGER_SECONDS)
+            cmd = [sys.executable, str(SENDER), "--message", "\n".join(lines),
+                   "--only-room", FOUR_DEPT_ROOM, "--sender", "아침정리다이제스트"]
+            log(f"[sched] 담당 직통 발송 → {FOUR_DEPT_ROOM} · {len(blind)}건")
+            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            log(f"[sched] rc={proc.returncode}")
     if sent_any:
         from module_heartbeat import record_heartbeat
         record_heartbeat(_SCHED_PING_HEARTBEAT_ID, detail="📅 다가오는 일정 통 발송",
