@@ -50,7 +50,9 @@ footer a{color:var(--accent-text)}
 <script>
 (function(){
 "use strict";
-var TENANT_BY_PATH = {"/counsel/":"1_wellperion","/dietcamp/counsel/":"2_dietcamp","/spogym/counsel/":"3_spogym"};
+// 경로 → 테넌트. 이 표에 없는 경로는 웰페리온으로 떨어진다 — 테넌트 폴더 이름을 바꾸면 여기도 같이 바꾼다.
+// (2026-09-09 스포짐→고척골프 개명 때 이 줄을 안 고쳐 /gocheokgolf/counsel/ 손님이 웰페리온 안내를 받았다.)
+var TENANT_BY_PATH = {"/counsel/":"1_wellperion","/dietcamp/counsel/":"2_dietcamp","/gocheokgolf/counsel/":"3_gocheokgolf"};
 var tenant = TENANT_BY_PATH[location.pathname] || new URLSearchParams(location.search).get("t") || "1_wellperion";
 var API = "/api/chat/" + tenant;
 var log = document.getElementById("log");
