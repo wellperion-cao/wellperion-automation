@@ -152,8 +152,9 @@
     "work_type": "update",
     "staff_message": "실장님 — 회원 문자 자동 안내 2가지만: ①접수 진행이 바뀔 때 어느 시점에 문자 보낼지(접수 즉시 / 처리 시작 / 완료) ②리셉션에 문자 받은 회원이 전화로 주로 뭘 물으시는지\n   (정은M께는) 휴회 확정 문자에 휴회 기간(시작~끝) 넣어도 되는지 · 안 되는 경우 한 줄\n   👉 이 방에 한 줄씩. 급하지 않습니다 — 이달 중 켭니다",
     "must_finish_on": "",
-    "updated_at": "2026-09-10",
-    "staff_to": "이경연 실장"
+    "updated_at": "2026-09-11",
+    "staff_to": "이경연 실장",
+    "runner_claimed_at": "2026-09-10T22:30:01Z"
   },
   {
     "task_id": "CTO-2026-09-02-문자-자동-연동-구현-딜라이브-API-GM-지시-2",
@@ -749,7 +750,9 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-09"
+    "updated_at": "2026-09-09",
+    "aide_interview_needed": true,
+    "aide_interview_reason": "접근법이 여러 개(어느 방향인지 결정 필요)"
   },
   {
     "task_id": "CTO-2026-09-08-웰리-모듈-GAS-액션-서버-API-이전-순서-웰리",
@@ -1136,7 +1139,9 @@
     "processed_at": "2026-09-09",
     "artifact": "https://wellperion-cao.github.io/welperion-automation/home/",
     "saw": "라이브·새 홈 FAQ 14→18쌍(+4) 수영·골프·스쿼시·체조 종목별 추가. JSON-LD·HTML 동기화. 커밋 6c13ea10c",
-    "terminal": true
+    "terminal": true,
+    "aide_interview_needed": true,
+    "aide_interview_reason": "스코프 결정·판단이 필요(러너가 대신 정하면 안 되는 것)"
   },
   {
     "task_id": "COO-2026-09-09-화면-3장이-아직-GAS-를-직접-부른다-서버-라우",
@@ -1614,7 +1619,7 @@
     "task_id": "CPO-2026-09-10-상담봇이-못-답하는-회원-정책-4가지-환불-강사-공",
     "clevel": "cpo",
     "title": "[시포] 상담봇이 못 답하는 회원 정책 4가지 — 환불·강사 공개·소개 혜택·불만 접수",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-10",
     "from": "cbo",
@@ -1629,7 +1634,12 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-10"
+    "updated_at": "2026-09-11",
+    "runner_claimed_at": "2026-09-10T22:30:01Z",
+    "processed_at": "2026-09-11",
+    "artifact": "server/counselbot/tenants/1_wellperion.json@6651ae5ef",
+    "saw": "상담봇 웰페리온 정책 4종(환불·강사공개·소개·불만) 추가 완료",
+    "terminal": true
   },
   {
     "ship_no": 12512,
@@ -1753,5 +1763,26 @@
     "next": "",
     "created_at": "2026-09-10T23:15:57+09:00",
     "updated_at": "2026-09-10T23:15:57+09:00"
+  },
+  {
+    "task_id": "CEO-2026-09-11-중간관리자-방-호출-웰페리온-시설부-이정헌-소장님-",
+    "clevel": "ceo",
+    "title": "[웰리] ★중간관리자 방 호출 — 웰페리온 시설부 이정헌 소장님: #170 했다  #174했다",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-11",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-09-11] [카톡 호출 자동 접수] ★중간관리자 방 · 2026-09-10 오후 3:29 · 웰페리온 시설부 이정헌 소장님\n\n#170 했다  #174했다\n\n▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n▸사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 GM 승인을 먼저 받는다(GM 확정 2026-08-21).",
+    "next": "내용 확인 → 간단한 답은 바로 회신, 판단이 들어가면 GM 승인 후 회신",
+    "depends_on": "",
+    "ship_no": 12521,
+    "short_no": 2521,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-11"
   }
 ]
