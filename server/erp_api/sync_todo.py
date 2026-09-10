@@ -81,11 +81,26 @@ def is_staff(owner):
     return any(x.strip() in STAFF for x in _s(owner).split(","))
 
 
-def replace_all(conn, rows, now):
-    """두 표를 diff 삭제(이 배치에 없는 id 만) + upsert 로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
-    호출부가 '조회 성공 + 행 있음'을 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해).
-    [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 였던 것을 upsert 로 바꿨다 — 서버가 이 표에 직접 쓰면
-    그 id 가 이번 배치에도 있는 한 사라지지 않는다."""
+_TODO_UPSERT = (
+    "INSERT INTO todo_items (tenant_id,id,title,category,dept,owner,status,creator,created,modified,"
+    "start_date,end_date,done_date,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, category=EXCLUDED.category,"
+    " dept=EXCLUDED.dept, owner=EXCLUDED.owner, status=EXCLUDED.status, creator=EXCLUDED.creator,"
+    " created=EXCLUDED.created, modified=EXCLUDED.modified, start_date=EXCLUDED.start_date,"
+    " end_date=EXCLUDED.end_date, done_date=EXCLUDED.done_date, data=EXCLUDED.data,"
+    " synced_at=EXCLUDED.synced_at")
+_APPR_UPSERT = (
+    "INSERT INTO approvals (tenant_id,id,title,owner,approvers,appr_status,sign_head,sign_gm,sign_ceo,"
+    "completed_at,created,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, owner=EXCLUDED.owner,"
+    " approvers=EXCLUDED.approvers, appr_status=EXCLUDED.appr_status, sign_head=EXCLUDED.sign_head,"
+    " sign_gm=EXCLUDED.sign_gm, sign_ceo=EXCLUDED.sign_ceo, completed_at=EXCLUDED.completed_at,"
+    " created=EXCLUDED.created, data=EXCLUDED.data, synced_at=EXCLUDED.synced_at")
+
+
+def _row_tuples(rows, now):
+    """GAS 행 → 두 표의 칸 값. 어느 칸에 무엇을 넣는지 정하는 자리는 여기 하나뿐이다
+    (replace_all 과 upsert_rows·mirror_patch.py 가 같이 쓴다 — 같은 규칙을 두 번 적지 않는다)."""
     todos, apprs = [], []
     for r in rows:
         key = _s(r.get("id"))
@@ -99,6 +114,35 @@ def replace_all(conn, rows, now):
             apprs.append((db.TENANT, key, _s(r.get("업무명")), _s(r.get("담당자")), _s(r.get("결재요청")),
                           _s(r.get("결재상태")), _s(r.get("부서장싸인")), _s(r.get("GM싸인")), _s(r.get("대표싸인")),
                           _s(r.get("결재완료시각")), created_of(r), data, now))
+    return todos, apprs
+
+
+def _upsert(conn, todos, apprs):
+    """두 표 upsert — 커밋 경계(with conn)는 부른 쪽이 잡는다."""
+    conn.executemany(_TODO_UPSERT, todos)
+    conn.executemany(_APPR_UPSERT, apprs)
+
+
+def upsert_rows(conn, rows, now):
+    """행 몇 개만 갈아끼운다(전량 교체 아님) — server 모드 쓰기가 거울을 그 자리에서 고칠 때(mirror_patch.py).
+    결재요청이 비워진 행은 approvals 에서 뺀다 — 여기선 replace_all 의 diff 삭제가 안 돌기 때문이다
+    (반려·결재리셋이 그 경우다: 행은 남고 결재만 사라진다)."""
+    todos, apprs = _row_tuples(rows, now)
+    keep = set(a[1] for a in apprs)
+    drop = [t[1] for t in todos if t[1] not in keep]
+    with conn:
+        if drop:
+            conn.execute("DELETE FROM approvals WHERE tenant_id=%s AND id = ANY(%s)", (db.TENANT, drop))
+        _upsert(conn, todos, apprs)
+    return len(todos), len(apprs)
+
+
+def replace_all(conn, rows, now):
+    """두 표를 diff 삭제(이 배치에 없는 id 만) + upsert 로 갈아끼운다 — 시트가 정본이라 미러는 원천과 같아야 한다.
+    호출부가 '조회 성공 + 행 있음'을 확인한 뒤에만 부른다(빈 값으로 지우지 않기 위해).
+    [2026-09-05 시토 · 배1039-A] 통째 DELETE→INSERT 였던 것을 upsert 로 바꿨다 — 서버가 이 표에 직접 쓰면
+    그 id 가 이번 배치에도 있는 한 사라지지 않는다."""
+    todos, apprs = _row_tuples(rows, now)
     todo_ids = [t[1] for t in todos]
     appr_ids = [a[1] for a in apprs]
     with conn:
@@ -110,21 +154,7 @@ def replace_all(conn, rows, now):
             conn.execute("DELETE FROM approvals WHERE tenant_id=%s AND id <> ALL(%s)", (db.TENANT, appr_ids))
         else:
             conn.execute("DELETE FROM approvals WHERE tenant_id=%s", (db.TENANT,))
-        conn.executemany(
-            "INSERT INTO todo_items (tenant_id,id,title,category,dept,owner,status,creator,created,modified,"
-            "start_date,end_date,done_date,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, category=EXCLUDED.category,"
-            " dept=EXCLUDED.dept, owner=EXCLUDED.owner, status=EXCLUDED.status, creator=EXCLUDED.creator,"
-            " created=EXCLUDED.created, modified=EXCLUDED.modified, start_date=EXCLUDED.start_date,"
-            " end_date=EXCLUDED.end_date, done_date=EXCLUDED.done_date, data=EXCLUDED.data,"
-            " synced_at=EXCLUDED.synced_at", todos)
-        conn.executemany(
-            "INSERT INTO approvals (tenant_id,id,title,owner,approvers,appr_status,sign_head,sign_gm,sign_ceo,"
-            "completed_at,created,data,synced_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            " ON CONFLICT (tenant_id,id) DO UPDATE SET title=EXCLUDED.title, owner=EXCLUDED.owner,"
-            " approvers=EXCLUDED.approvers, appr_status=EXCLUDED.appr_status, sign_head=EXCLUDED.sign_head,"
-            " sign_gm=EXCLUDED.sign_gm, sign_ceo=EXCLUDED.sign_ceo, completed_at=EXCLUDED.completed_at,"
-            " created=EXCLUDED.created, data=EXCLUDED.data, synced_at=EXCLUDED.synced_at", apprs)
+        _upsert(conn, todos, apprs)
     return len(todos), len(apprs)
 
 

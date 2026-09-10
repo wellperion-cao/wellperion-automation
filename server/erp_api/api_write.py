@@ -34,6 +34,7 @@ from api_intake import redact_blobs  # noqa: E402  — 사진·서명 base64 는
 # 리셉션 업무·라커관리(배 960 #9i) — 액션 이름(update·append)이 흔해 접두사로 못 가른다. 목적지 판정 정본은 그 파일.
 from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key  # noqa: E402
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
+import mirror_patch  # noqa: E402  — server 모드 업무·결재 쓰기를 거울(todo_items)에 그 자리에서 반영
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 router = APIRouter()
@@ -154,6 +155,9 @@ def _gas_key(action):
 #   없는 값을 안 주는 것이 틀린 값을 주는 것보다 낫다. 그래서 logId 라는 다른 이름으로만 준다 —
 #   화면은 undefined 를 받고 그 자리에서 눈에 띄게 멈춘다(조용히 틀리지 않는다).
 #   success 를 ok 와 함께 싣는 이유: 점검 화면 몇 곳이 d.success 만 본다(주차관리부는 그것 하나로 실패 판정).
+#   ※예외 하나(2026-09-10 시토): 업무 쓰기(_TODO_WRITES)에서 **부른 쪽이 방금 보낸 그 업무 id 를 그대로 메아리치는 것**
+#     은 허용한다 — 위 금지는 「서버가 만든 write_log 행번호」를 id 라 부르는 것에 대한 것이고, 이건 서버가 만든 값이
+#     아니라 화면이 준 값을 되돌려주는 것이라 뜻이 같다. 이 한 줄로 업무 수정 뒤 첨부 업로드(todo_upload)가 산다.
 BODY_NEVER_ARRIVED = "action 필수"
 
 
@@ -165,6 +169,7 @@ NO_SERVER_ACTIONS = {
     "unlock_round": "제출잠금 해제 비밀번호를 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다",
     "todo_upload": "첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 그 주소를 만들 수 없고, 없으면 첨부가 통째로 사라진다",
     "save_schedule": "동시편집 판번호(rev)를 GAS 가 매긴다 — 없으면 다음 저장이 전부 막히거나 충돌 감지가 죽는다",
+    "todo_add": "새 업무 번호를 GAS 가 매긴다 — 화면이 그 번호로 첨부를 올리는데(업무 현황 SSOT.html 3237줄 `if (filesToUpload.length > 0 && res.id)`) 서버 원본이면 번호가 없어 첨부가 말없이 사라진다",
 }
 
 
@@ -445,8 +450,18 @@ async def write(request: Request):
         return server_ok(log_id, test=True)
     if server_mode:
         # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
+        # 그 1분 동안 화면이 저장 전 값을 보여 실무진이 다시 저장하는 것(중복 행)을 막으려고, 업무·결재 거울은
+        # 여기서 그 자리에서 고친다 — 시트는 안 건드린다. 이 반영이 틀려도 곧 sync_todo.py 가 GAS 판으로
+        # 전량을 덮어써 스스로 낫는다. 그래서 실패해도 저장을 막지 않는다(conn.close() 전에 해야 한다).
+        try:
+            mirror_patch.apply(conn, action, payload)
+        except Exception:
+            pass
         conn.close()
         extra = {}
+        # 부른 쪽이 준 업무 id 를 그대로 메아리친다(위 150줄 주석의 예외) — 화면이 이 id 로 첨부를 올린다.
+        if action in _TODO_WRITES and str(payload.get("id") or "").strip():
+            extra["id"] = payload["id"]
         if proc_no is not None:
             extra["no"] = proc_no
         if asset_labels is not None:
@@ -555,11 +570,16 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
     _C.row = {"id": 7, "gas_response": None}
-    for _a in ("unlock_round", "todo_upload", "save_schedule"):
+    for _a in ("unlock_round", "todo_upload", "save_schedule", "todo_add"):
         assert _a in NO_SERVER_ACTIONS, "%s 를 서버 원본으로 보내면 사람에게 거짓말이 된다" % _a
         assert _gas_key(_a) is not None, "%s 는 목적지 표에 있어야 dual 로 돌아간다" % _a
     assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
+    # 부른 쪽이 준 업무 id 메아리(2026-09-10) — 서버가 만든 값이 아니라 화면이 준 값이다.
+    assert server_ok(9, mode="server", id="TODO-1")["id"] == "TODO-1"
+    # 거울 즉시 반영(mirror_patch) — server 모드로 갈 수 있는 업무 쓰기는 전부 반영되거나, 못 하는 이유가 적혀 있어야 한다.
+    for _a in _TODO_WRITES:
+        assert _a in mirror_patch.HANDLERS or _a in NO_SERVER_ACTIONS or _a in mirror_patch.NO_MIRROR, _a
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
 
     # 담당 지정 권한(배1182) — GM_TASK_OWNERS saveBoard 판정. 가짜 conn: SELECT 대상(users·board_cache)로 갈라 응답.
