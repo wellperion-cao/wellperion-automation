@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>FAQ 통합 파이프라인 v1.0 — 센터 FAQ → 공통 유형층 → 마케팅·상담봇·센터 AX</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#101418;--navy:#14304E;--navy-bg:#EDF1F6;--line:#E3E7EB;--dim:#5C666F;--good:#146B4F;--warn:#96601A;--bad:#9E2A2A}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+header{border-bottom:3px solid var(--navy);padding-bottom:12px;margin-bottom:12px}
+.brand{font-size:12px;letter-spacing:4px;color:var(--navy);font-weight:700}
+h1{font-size:24px;font-weight:900;margin-top:4px;line-height:1.35}
+.meta{font-size:13px;color:var(--dim);margin-top:6px}
+h2{font-size:19px;color:var(--navy);margin:28px 0 10px;padding-left:10px;border-left:5px solid var(--navy)}
+.note{font-size:13px;color:var(--dim);margin:6px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+th,td{border:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+th{background:var(--navy-bg);color:var(--navy);font-size:13px}
+code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
+.steps{counter-reset:s;list-style:none}
+.steps li{position:relative;padding-left:32px;margin-bottom:7px;font-size:14.5px}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:2px;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:22px}
+.dir{background:var(--navy);color:#fff;padding:14px 18px;border-radius:6px;margin:14px 0 20px;font-size:15.5px;line-height:1.7}
+.dir b{color:#FFD86B}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{border:1px solid var(--line);border-top:4px solid var(--navy);padding:14px 16px;border-radius:6px}
+.card h3{font-size:16px;margin-bottom:8px;color:var(--navy)}
+.mock{background:#F7F9FB;border:1px dashed #B8C2CC;border-radius:6px;padding:12px;font-family:'Noto Sans KR',monospace;font-size:13px;line-height:1.55;white-space:pre-wrap}
+.foot{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;font-size:12.5px;color:var(--dim)}
+.bad{color:var(--bad);font-weight:700}
+.good{color:var(--good);font-weight:700}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}h1{font-size:20px}}
+@media print{.wrap{padding:0}@page{size:A3 landscape;margin:10mm}}
+</style>
+</head><body><div class="wrap">
+<header><div class="brand">WELLPERION · AI CBO 시보 · FAQ 통합 파이프라인</div>
+<h1>FAQ 통합 파이프라인 v1.0 — 센터 FAQ 를 채워 공통 유형층으로 가공·통합, 마케팅·상담봇·센터 AX 3곳에 쓴다</h1>
+<div class="meta">2026-09-10 · GM 지시 "시보의 역할은 각 센터 FAQ 를 채워서 그 FAQ 를 가공 및 통합시키는 역할까지 해줘, 이 부분은 ERP 비즈니스 페이지에 기록해서 모듈화까지 해줘. FAQ 를 통해서 마케팅 자동화 + 상담봇 + 센터 AX 에 활용할 수 있어야 해" · 정본 = 이 문서(GM 열람) · 데이터 정본 = <code>server/counselbot/shared/question_types.json</code>(유형 원장) · <code>status/faq_hub.json</code>(계량, <code>scripts/faq_hub.py</code> 산출) · 모듈 등록 = <code>status/module_registry.json</code> <code>cbo-faq-hub</code> · <code>cbo-partner-morning-agent</code></div></header>
+
+<h2>1. 왜 이 층이 있나</h2>
+<div class="dir">센터마다 FAQ 를 따로 쌓으면 같은 질문을 센터 수만큼 다시 만든다. 손님 질문은 센터가 달라도 <b>유형이 같다</b>(주차·환불·초보·통증·가격). 공통 유형 원장에 붙여 두면 <b>한 센터에서 새 유형이 나올 때 전 센터 상담봇이 같이 좋아진다</b> — 이것이 월 구독으로 파는 근거다.</div>
+
+<h2>2. 3층 구조 (근거 = <code>server/counselbot/shared/question_types.json</code>)</h2>
+<table><tr><th style="width:14%">층</th><th>무엇이 들어가나</th></tr>
+<tr><td>① 사실층(센터 FAQ)</td><td>센터별 <code>faq.json</code> — 상호·주소·시간·주차·상품·규정 등 업체 고유 사실 값. 센터마다 다른 값이 그대로 들어간다</td></tr>
+<tr><td>② 공통 유형층(원장)</td><td><code>type_id</code>(유형) + <code>answer_skeleton</code>(답 뼈대 — <code>{facts.*}</code> 자리에 센터 값이 들어간다) + <code>needs_facts</code>(필요한 사실 칸). 지금 21유형 등재. 값이 아니라 <b>틀</b>만 있어 센터 간 공유 가능</td></tr>
+<tr><td>③ 경험층</td><td>손님 미답 질문 → 파트너 방 아침 1문 → 대표 답 → 사실층·원장 승격. 이렇게 원장이 자란다</td></tr>
+</table>
+<div class="note"><code>never_here</code>(원장에 절대 안 넣는 것, 정본 그대로) — 고객 이름·연락처·대화 원문, 업체 고유 사실 값(가격·시간·주소·강사명), 업체 대표가 비공개로 답한 내용.</div>
+
+<h2>3. 지금 계량값 (2026-09-10 09:55 기준 · <code>status/faq_hub.json</code>)</h2>
+<table><tr><th>센터</th><th>FAQ 문항수</th><th>덮은 유형수</th><th>빈 유형수</th><th>유형에 안 붙는 문항</th></tr>
+<tr><td>1 웰페리온</td><td>14</td><td>7</td><td>14</td><td>0</td></tr>
+<tr><td>2 다이어트캠프</td><td>15</td><td>10</td><td>11</td><td>1</td></tr>
+<tr><td>3 고척 gdr QA 골프존</td><td>10</td><td>8</td><td>13</td><td>1</td></tr>
+</table>
+<div class="note">등재 유형 전체 = 21. <b class="bad">전 센터가 비어 있는 유형(상품의 구멍) 8개</b> = refund(환불) · trial_flow(체험 안내) · trainer_who(강사 소개) · age_fit(연령 적합) · contact_human(사람 연결) · referral_family(소개·가족 혜택) · complaint(불만 접수) · hesitation(망설임 대응).</div>
+<div class="note"><b>통합층이 첫날 실제로 한 일</b> — 고척「타석이 몇 개예요」와 웰페리온「규모는 어느 정도인가요?」가 기존 유형에 안 붙어 <code>scale_capacity</code>(규모·설비) 한 유형을 늘렸다(두 센터 이상에서 나온 것만 승격한다). 영문 응대·부대시설·등록 절차는 유형을 늘리지 않고 한글 예시만 보강해 붙게 했다. 결과 = 유형에 안 붙는 문항 웰페리온 4→0 · 고척 2→1, 전 센터 구멍 9→8개. <b>한 센터에서 나온 유형이 전 센터 상담봇을 같이 올린다는 것이 실제로 확인된 자리다.</b></div>
+<div class="note">계량 = <code>scripts/faq_hub.py</code> 재실행으로 갱신.</div>
+
+<h2>4. 쓰는 곳 셋</h2>
+<table><tr><th>쓰는 곳</th><th>어떻게 쓰나</th></tr>
+<tr><td>① 상담봇</td><td>빈 유형이 곧 못 답하는 자리 — 위 8개 유형은 3센터 상담봇 모두 지금 "확인해서 알려드릴게요"로 넘어간다</td></tr>
+<tr><td>② 마케팅 자동화</td><td>커버리지 높은 유형(hours_today·location_route·facility·walkin_reserve = 3센터 전원 커버)이 콘텐츠 주제 — 블로그·인스타 소재로 우선 가공</td></tr>
+<tr><td>③ 센터 AX 제안</td><td>그 센터만 빈 유형이 우리가 팔 것 — 예: 1 웰페리온은 parking·price_ask·refund 등 14개가 비어 제안 여지가 가장 크다</td></tr>
+</table>
+
+<h2>5. 회로 — 어떻게 채워지나</h2>
+<div class="note">근거 = <code>status/module_registry.json</code> <code>cbo-partner-morning-agent</code>·<code>cbo-faq-hub</code> · 방 목록 = <code>status/kakao_agent/rooms.json</code>.</div>
+<ol class="steps">
+<li>매일 07:00 파트너 센터 방(다이어트캠프 이승기 대표님 · ★조재오부장님)으로 카톡 1통 — 실행체 <code>scripts/diet_camp_agent.py</code>(예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신)</li>
+<li>물을 것 = 그 센터 빈칸 목록(<code>_받을것.md</code>) + FAQ 통합층이 재준 빈 유형(<code>cbo-faq-hub</code>) + 상담봇 미답 중 하나</li>
+<li>새 말씀이 있으면 답장, 없으면 못 받은 값 하나만 여쭙는다(하루 1문항)</li>
+<li>답이 오면 그 센터 사실층에 채우고, 2개 센터 이상에서 같은 유형이 나오면 공통 유형 원장에 한 줄 추가 → 전 센터 상담봇이 다음 답부터 동시 업그레이드</li>
+</ol>
+
+<h2>6. 센터 3곳 현황</h2>
+<table><tr><th>센터</th><th>FAQ 경로</th></tr>
+<tr><td>1 웰페리온</td><td><code>server/erp_api/seed_faq/1_wellperion.json</code></td></tr>
+<tr><td>2 다이어트캠프</td><td><code>2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json</code></td></tr>
+<tr><td>3 고척 gdr QA 골프존</td><td><code>2. 브랜드_자료/11_고척골프_조재오부장님/07_FAQ/faq.json</code></td></tr>
+</table>
+<div class="note">가격·전화번호·주소 같은 업체 사실값은 이 페이지에 옮기지 않는다 — 센터 정본(<code>server/counselbot/tenants/*.json</code>)이 따로 있다.</div>
+
+<h2>7. 안 하는 것</h2>
+<ul class="steps">
+<li>고객 개인정보 — 어떤 경우에도 이 층·이 페이지에 없다</li>
+<li>업체 비공개 값·계좌·계정 정보 — 없다</li>
+<li>요금·공급가 숫자 — GM 결재 사항이라 이 페이지에 적지 않는다</li>
+</ul>
+
+<div class="foot">정본 = 이 문서 · 유형 원장 = server/counselbot/shared/question_types.json · 계량 = status/faq_hub.json(scripts/faq_hub.py) · 모듈 = status/module_registry.json cbo-faq-hub · cbo-partner-morning-agent — AI 시보 · 2026-09-10 · v1.0</div>
+</div></body></html>

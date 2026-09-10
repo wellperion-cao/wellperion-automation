@@ -652,6 +652,15 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     if not blog_id:
         blog_id = await _resolve_blog_id(page)
         print(f"[INFO] 로그인한 계정의 블로그: {blog_id}")
+        # 파트너 계정 자리로 돌면서 웰페리온 블로그가 잡히면 여기서 멈춘다.
+        # 2026-09-10 실측: 조재오 부장님 자리(WP_TENANT=jo)의 쿠키가 웰페리온 세션이었다.
+        # 그 세션이 살아 있었다면 부장님 글이 웰페리온 블로그로 올라갔다 — 그것이 최악이다.
+        _t = (os.environ.get("WP_TENANT") or "").strip()
+        if _t and blog_id == DEFAULT_BLOG_ID:
+            raise RuntimeError(
+                f"파트너 계정 자리(WP_TENANT={_t})인데 로그인된 블로그가 웰페리온({blog_id})이다 — "
+                f"그 자리 쿠키가 웰페리온 것이거나 만료됐다. 파트너 글이 웰페리온 블로그로 갈 수 있어 "
+                f"쓰기 전에 멈춘다. WP_TENANT={_t} 로 --mode setup 을 돌려 그 계정으로 다시 로그인하라")
     write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id)
     print(f"[INFO] 글쓰기 진입: {write_url}")
     await page.goto(write_url, wait_until="domcontentloaded", timeout=30_000)

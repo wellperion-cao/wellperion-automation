@@ -1145,6 +1145,38 @@
       },
       "reversible": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cbo-gocheok-blog-daily",
+      "sellable": "sellable",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "파트너 센터 블로그 매일 07:00 임시저장 — 그 센터 글쓰기 규칙(blog_style.json · 사장님 자작 글에서 뽑은 것)을 학습해 주제 하나를 골라 본문을 쓰고, 발행하지 않고 임시저장까지만 해 둔다(발행 버튼은 사장님이 직접 · 부장님 확인 2026-09-09 12번). 검사 4종을 코드로 통과해야 올라간다 — 푸터 정본 일치 · 허가된 금액 하나만 · 필수 태그 · 웰페리온 문구 혼입 0 · 본문 2,000자 이상. 회로 = scripts/gocheok_blog_daily.py · 예약작업 Wellperion-Gocheok-Blog-0700. GM 지시 2026-09-10.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/gocheok_blog_daily.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "검사에 걸리거나 로그인 세션이 없으면 한 글자도 올리지 않고 실패 사유를 GM 업무보고방에 알린다",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured"
     }
   ],
   "_removed": [
