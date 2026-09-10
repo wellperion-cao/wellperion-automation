@@ -678,12 +678,27 @@ def run(month: str | None, apply: bool) -> None:
     #   됐다. 2026-08-13 소장님 회신 4건이 화면에만 들어가고 파일은 빈칸이라, 다음날 아침
     #   보고가 "회신 0건 지속"이라고 GM 께 잘못 나갔다.
     #   드라이런에서도 내려받는다 — 읽어서 로컬을 최신으로 맞추는 것은 라이브를 바꾸지 않는다.
+    #   ★실패는 조용히 넘기지 않는다 (2026-09-10). 09-01~09-09 는 이 함수 자체가 위쪽 크래시로
+    #   도달조차 못 했고, 09-10 07:00 에 처음 도달했더니 TimeoutError 였는데 print 한 줄로 끝나
+    #   아무 데도 안 걸렸다. 전사일정이 열흘째 라이브에서 안 내려오는 동안 로컬 파일은 굳어 있었다.
+    #   새 감시 장치를 만들지 않고 이미 쓰는 발신 관문 한 곳으로 1줄만 올린다(약속 L21).
+    def _schedule_pull_alert(reason: str) -> None:
+        try:
+            from notify.telegram_send import send  # noqa: PLC0415
+            send(f"⚠ 전사일정 라이브 내려받기 실패 — {reason}\n"
+                 f"   로컬 status/schedule_ssot.json 이 낡은 값에 굳는다 · 담당 웰리")
+        except Exception:  # noqa: BLE001
+            pass  # 경보 실패가 본 작업을 멈추면 안 된다
+
     try:
         from schedule_ssot import pull_from_live  # noqa: PLC0415
         r = pull_from_live()
         print(f"\n[전사일정 내려받기] {r}")
+        if isinstance(r, dict) and not r.get("ok"):
+            _schedule_pull_alert(str(r.get("reason", "사유 없음")))
     except Exception as e:  # noqa: BLE001
         print(f"\n[전사일정 내려받기] 실패({type(e).__name__}: {e}) — 월간 반영에는 영향 없음")
+        _schedule_pull_alert(f"{type(e).__name__}: {e}")
 
 
 # ── 진척과 상태가 서로 다른 말을 하는 목표 적발 (2026-07-27) ─────────────────

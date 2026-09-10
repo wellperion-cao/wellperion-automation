@@ -154,8 +154,11 @@ def pull_from_live(path=CAL_PATH) -> dict:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
 
+    # timeout 25→60 (2026-09-10). 일정이 162건에서 242건으로 늘면서 조회가 실측 23.5초까지
+    # 길어졌다 — 한계 25초와 1.5초 차이라, 아침 예약이 겹치는 07:00 에는 넘겨 TimeoutError 가
+    # 났다(09-10 07:00 실측). 실패해도 print 만 하고 넘어가는 자리라 아무 경보도 울리지 않는다.
     try:
-        with urllib.request.urlopen(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=25) as r:
+        with urllib.request.urlopen(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=60) as r:
             res = json.loads(r.read())
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "reason": f"라이브 조회 실패({type(e).__name__}) — 파일 무변경"}
