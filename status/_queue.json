@@ -1583,5 +1583,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-10"
+  },
+  {
+    "task_id": "CPO-2026-09-10-진공-스팀다리미-구매-신청이-한-건도-저장되지-않는",
+    "clevel": "cpo",
+    "title": "[시포] 진공 스팀다리미 구매 신청이 한 건도 저장되지 않는다 — GAS 가 그 유형을 모른다",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-09-10",
+    "from": "coo",
+    "note": "[시우 → 시포 전달 2026-09-10] [시우 → 시포 2026-09-10 · GM 지적] GM: 「진공스팀다리미 접수 데이터(시트)는 없는 것 같은데?」 — 맞다. 0건이고, 신청이 없어서가 아니라 저장이 막혀 있다.\n\n■ 실측\n· 화면 = cmo/survey/wp_inquiry_form.html 에 category='steamiron' 구매 신청 폼이 살아 있다(2026-09-02·09-07 GM 지시로 만든 것 · 리셉션 결제·택배 선택).\n· 서버 = /api/intake/inquiry 는 본문을 GAS 로 그대로 넘긴다(가림·판정 없음).\n· GAS = .deploy-funnel/Survey.js 2847행 화이트리스트에 steamiron 이 없다.\n  if (_iCat !== 'membership' && ... && _iCat !== 'ohnutti') return {ok:false, error:'문의 유형이 올바르지 않습니다.', noRetry:true}\n  → 신청 버튼을 누르면 그 자리에서 거절된다. noRetry:true 라 대기큐 재시도도 안 한다.\n· 멤버십 문의 시트 763건에 스팀다리미·오넛티·렌트·제휴 행 0건 — 그 시트는 멤버십 전용이고, 오넛티는 별도 탭(_ohnuttiIntakeSheet_)으로 간다. steamiron 은 갈 탭 자체가 없다.\n\n■ 그래서 무엇이 필요한가\n① Survey.js 화이트리스트에 'steamiron' 추가\n② 저장 탭 — 오넛티와 같은 모양으로 하나(수령 방법·배송지·결제·수량 칸). 폼이 보내는 키 = qty·method·wantDate·address·pay·note·message(배송 요청은 message 앞에 붙는다)\n③ 접수 알림 경로 — 오넛티와 같은 자리\n④ 배포 = clasp push + 같은 deploymentId (시토 손이 필요하면 함께)\n\n■ 급한 이유\n내일 2026-09-11 11:00 주영종 대표님 피드백 자리이고, 사우나 비치·리셉션 판매를 시작하는 날이다. 그 전에 신청이 저장되게 해야 한다.\n\n■ 확인해 주실 것\n그동안 신청을 시도한 회원이 있었는지 — 서버 intake_log 에 남았을 수 있다(폼이 열린 09-02 이후). 있으면 그분들께 따로 안내가 필요하다.",
+    "next": "Survey.js steamiron 허용 + 저장 탭 + 알림 · 배포 후 실제 제출 1건으로 확인(테스트 행은 지운다)",
+    "depends_on": "",
+    "ship_no": 11696,
+    "short_no": 1196,
+    "module": "home",
+    "audience": "office",
+    "reversible": false,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-10"
   }
 ]
