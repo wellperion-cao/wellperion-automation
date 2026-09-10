@@ -14400,7 +14400,7 @@ var WriteBuffer = (function(){
                 if (res.ok) {
                   if (bi.rev !== _bSentRev) { bi.nextTry = 0; }
                   else if (res.saved && typeof res.saved === 'object' && _verifySavedInline(bi, res.saved)) { /* 인라인 대조 종결 */ }
-                  else { scheduleVerify(bi); }
+                  else { bi._srvMode = res.mode || data.mode; scheduleVerify(bi); }
                 } else if (res.error === 'rowkey-not-found' && bi.payload && bi.payload.rowKey && bi.payload.keyPhone && !bi.rekeyTried) {
                   bi.rekeyTried = true; delete bi.payload.rowKey; bi.parked = false; bi.nextTry = 0;
                   showToast('저장 다시 시도 중…', '');
@@ -14444,7 +14444,7 @@ var WriteBuffer = (function(){
              값이 같으면 그것으로 대조 끝, 다르면 조용한 거부이므로 즉시 '값 다름'으로 알린다.
              saved 가 없는 옛 배포·다른 액션은 종전 재조회 경로로 그대로 떨어진다(회귀 0). */
           else if (data.saved && typeof data.saved === 'object' && _verifySavedInline(item, data.saved)) { /* 인라인 대조로 종결 */ }
-          else { scheduleVerify(item); }   // ★저장 확인(read-back) — 큐 제거는 대조 뒤로 미룬다(아래 정의)
+          else { item._srvMode = data.mode; scheduleVerify(item); }   // ★저장 확인(read-back) — 큐 제거는 대조 뒤로 미룬다(아래 정의)
         } else if (data && data.error === 'rowkey-not-found' &&
                    item.payload && item.payload.rowKey && item.payload.keyPhone && !item.rekeyTried) {
           /* ★배579 근본 수리 (GM 지시 2026-08-12·착수 2026-08-14) — '저장했는데 사라진다'의 뿌리.
@@ -14924,6 +14924,12 @@ var WriteBuffer = (function(){
   // 저장 성공(data.ok) 직후 호출 — 큐에서 바로 안 지우고 대조 배치에 넣는다. 같은 목록(listKey) 대상 저장이
   // 300ms 안에 연달아 성공하면 재조회 1회로 묶인다(연속 저장 시 전체 재조회 반복 방지 — 오늘 개선한 로딩속도 보존).
   function scheduleVerify(item) {
+    /* ★2026-09-10 시포 — 서버가 원장으로 받았다고 표시(mode:"server")를 실어 보내면 그것으로 끝낸다.
+       문의류를 서버 원천으로 켜면 서버는 자기 원장에 적은 뒤 바로 답하고, 구글 시트에는 되밀기(최대 1분)
+       뒤에 값이 닿는다. 그런데 아래 대조는 **구글을 읽는다** — 그 사이엔 옛값이 돌아와, 정상 저장을
+       「값 다름」으로 알리게 된다. 서버가 이미 원장에 적었으니 대조할 대상이 시트가 아니다.
+       표시가 없는 응답(지금까지의 구글 원천·옛 배포)은 아래 종전 경로로 그대로 간다 — 회귀 0. */
+    if (item._srvMode === 'server') { _remove(item.id); showToast('저장', 'ok'); return; }
     var key = _verifyListKeyOf(item);
     if (!key || !item.overlay) {
       /* ★probing(판독 불가 확인용)은 여기서 성공 처리하면 안 된다 — 대조할 값이 없어 '들어갔는지'를
