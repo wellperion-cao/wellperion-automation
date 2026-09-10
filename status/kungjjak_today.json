@@ -332,12 +332,6 @@
       ],
       "work": [
         {
-          "time": "09:15",
-          "area": "작업",
-          "event": "ERP 화면 카드가 바탕색으로 칠해지던 것 — 색 정본을 tenant 파일로 (GM 지적 2026-09-10)",
-          "detail": "커밋 a1410a53d · 배 11401"
-        },
-        {
           "time": "09:28",
           "area": "작업",
           "event": "전사일정 라이브 내려받기가 열흘째 멈춰 있던 것 — 타임아웃 25초→60초 + 실패 경보 (GM 지시 2026-09-10)",
@@ -510,6 +504,12 @@
           "area": "작업",
           "event": "부팅 화면이 「해소」를 잘라 버리던 것 수리 + 점수 갱신 규칙 (시모 실측 2026-09-10)",
           "detail": "커밋 6f7ee12e9 · 배 11401"
+        },
+        {
+          "time": "23:07",
+          "area": "작업",
+          "event": "아침 통 — 어제 실적을 못 읽으면 그 사실을 적는다 (2026-09-10 실측)",
+          "detail": "커밋 5a75bbf52 · 배 11401"
         }
       ],
       "count": 27,
@@ -733,13 +733,13 @@
           "ref": "GM-20260910-2022",
           "no": "22",
           "got": "구분 잘해야해 파트너사들간에 혼잡이 생기면 안되, 근본적으로 선그어놔줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "23:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "23:08",
+          "minutes": 7,
+          "upload": "✅ 배포 (c30d87378)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -823,28 +823,13 @@
         }
       ],
       "count": 18,
-      "done": 17,
-      "open": 1,
+      "done": 18,
+      "open": 0,
       "avg_minutes": 4,
       "work_count": 13,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260910-2022",
-          "no": "22",
-          "got": "구분 잘해야해 파트너사들간에 혼잡이 생기면 안되, 근본적으로 선그어놔줘",
-          "did": "",
-          "start": "23:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1037,13 +1022,19 @@
           "area": "작업",
           "event": "영문 문의폼에 공간 대관·비즈니스 제휴 2종 신설 + 옛 포지셔닝 문구 교체",
           "detail": "커밋 78906a2b0 · 배 11425"
+        },
+        {
+          "time": "23:08",
+          "area": "screen",
+          "event": "en_inquiry_live_inject",
+          "detail": "영문 문의 라이브(/en/inquiry/)에 2종 신설 반영 — 도중 모드 혼동으로 옛 판 되돌림, cutover 로 4분 만에 복구 · 접수처 재잠금"
         }
       ],
       "count": 6,
       "done": 5,
       "open": 1,
       "avg_minutes": 5,
-      "work_count": 19,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1059,7 +1050,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 10
         }
       ],
       "repeats": []
@@ -1640,6 +1631,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260910-9017",
+          "no": "17",
+          "got": "골프장 관련 블로그작업할때 사진이랑 내용을 필드를 나가서 골프를 치는 내용과 매일매일 가성비 좋은 필드를 소개해주고, 거기에 대한 재미와 즐거운 추억이라는 본질적인 내용들을 글로 담아보는건 어떨까?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "23:04",
+          "end": "23:06",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260910-CBO-1",
           "no": "-1",
           "got": "GM 지시 접수 — 고척골프 00~07 셋업·정보 수집·상담봇 가공",
@@ -1702,8 +1705,8 @@
           "detail": "커밋 66c4f2c75 · 배 11305"
         }
       ],
-      "count": 16,
-      "done": 16,
+      "count": 17,
+      "done": 17,
       "open": 0,
       "avg_minutes": 6,
       "work_count": 6,
