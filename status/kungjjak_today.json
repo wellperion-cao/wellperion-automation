@@ -676,18 +676,6 @@
           "evidence": "✅있음"
         },
         {
-          "ref": "GM-20260910-2016",
-          "no": "16",
-          "got": "그럼 진척률 오늘 목표는?",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
-          "start": "19:24",
-          "end": "19:24",
-          "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "⚠️없음"
-        },
-        {
           "ref": "GM-20260910-2017",
           "no": "17",
           "got": "병렬로 진행해주고, AWS 이관 현황을 이렇게 보면 모를 것 같고, GM업무에다가 진척률만 라이브로 볼 수 있게 해줄래?",
@@ -708,6 +696,18 @@
           "end": "22:06",
           "minutes": 12,
           "upload": "✅ 배포 (5fc61a065)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260910-2021",
+          "no": "21",
+          "got": "그럼 오늘 종료하기까지 최대한 AWS 배포로 서버만으로 할 수 있도록 셋업 해보자, 내일까지 마무리하고싶어",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "22:24",
+          "end": "22:30",
+          "minutes": 5,
+          "upload": "✅ 배포 (cc0301821)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -789,7 +789,7 @@
       "count": 17,
       "done": 17,
       "open": 0,
-      "avg_minutes": 3,
+      "avg_minutes": 4,
       "work_count": 12,
       "missed": [],
       "unclosed": [],
@@ -1018,6 +1018,18 @@
           "upload": "✅ 배포 (078539245)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260910-4009",
+          "no": "09",
+          "got": "다른 문제는 없나? 서버에서 회원관련된 모듈들이 문제없는지 체크해줘",
+          "did": "",
+          "start": "22:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1034,14 +1046,29 @@
           "detail": "커밋 ecffeaf07 · 배 11331"
         }
       ],
-      "count": 6,
+      "count": 7,
       "done": 6,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 2,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260910-4009",
+          "no": "09",
+          "got": "다른 문제는 없나? 서버에서 회원관련된 모듈들이 문제없는지 체크해줘",
+          "did": "",
+          "start": "22:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 5
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -1259,7 +1286,7 @@
           "start": "22:17",
           "end": "22:21",
           "minutes": 3,
-          "upload": "✅ 배포 (1a0f1273d)",
+          "upload": "✅ 배포 (8cdc6996f)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1271,7 +1298,7 @@
           "start": "22:21",
           "end": "22:22",
           "minutes": 1,
-          "upload": "✅ 배포 (1a0f1273d)",
+          "upload": "✅ 배포 (8cdc6996f)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1312,13 +1339,19 @@
           "area": "작업",
           "event": "chore(coo): 목차 담당 후보를 부서 명단으로 — 운영부 6 · 시설부 3",
           "detail": "커밋 1a0f1273d · 배 11438"
+        },
+        {
+          "time": "22:31",
+          "area": "실무진피드백",
+          "event": "종합접수처 상태변경 뒤 목록 조회 실패 수리(FB260909-223633)",
+          "detail": "원인=쓰기 도장 6분 GAS 우회 · 도장 제거 후 배포(라이브 실측) · 접수처 잠금 GM 승인 해제→재잠금 · 피드백 처리완료 회신 + 4부서 방 1통 · 안 끝난 피드백 0건"
         }
       ],
       "count": 20,
       "done": 19,
       "open": 1,
       "avg_minutes": 2,
-      "work_count": 4,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1334,7 +1367,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 6
         }
       ],
       "repeats": []
@@ -1463,6 +1496,30 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260910-9012",
+          "no": "12",
+          "got": "그리고 우리 상담봇 관련해서 진척률이?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "22:26",
+          "end": "22:27",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260910-9013",
+          "no": "13",
+          "got": "상담봇 관련해서 풀로 진행해줘 기획설계가 추가보완이 필요하면 Fable5.1로 진행하고, 기획설계 외 작업들은 지금대로 모델 역할에 맞게끔 활용해서 진행하자",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "22:27",
+          "end": "22:30",
+          "minutes": 3,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260910-CBO-1",
           "no": "-1",
           "got": "GM 지시 접수 — 고척골프 00~07 셋업·정보 수집·상담봇 가공",
@@ -1519,10 +1576,10 @@
           "detail": "커밋 ef4fda3c0 · 배 11305"
         }
       ],
-      "count": 12,
-      "done": 12,
+      "count": 14,
+      "done": 14,
       "open": 0,
-      "avg_minutes": 8,
+      "avg_minutes": 7,
       "work_count": 5,
       "missed": [],
       "unclosed": [],
