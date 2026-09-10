@@ -1646,5 +1646,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-10"
+  },
+  {
+    "task_id": "CTO-2026-09-10-회원번호를-매기는-길이-둘이다-서버를-안-거치는-G",
+    "clevel": "cto",
+    "title": "[시토] 회원번호를 매기는 길이 둘이다 — 서버를 안 거치는 GAS 전용 경로(member_inquiry_update)부터 정리",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-09-10",
+    "from": "cto",
+    "note": "[시토 2026-09-10 · 기다리는 쪽: 이걸 정리하기 전에 회원 쓰기를 서버 원천으로 켜면 실제로 두 사람이 같은 회원번호를 받는다 — 회원 이관(남은 25%p)의 마지막 관문] 실측 2026-09-10 (배1195 ③ 회원번호 서버 채번 중 드러남). 무슨 일: GAS 의 _memberActiveUpsert_ 호출부가 3곳인데 그중 member_inquiry_update(문의 화면에서 진행상황을 SUC 로 바꿔 저장할 때 · CRM 화면)는 서버를 아예 안 거치는 순수 GAS 경로다. 오늘 만든 서버 채번(member_no_seq · _next_member_no)은 이 경로에 안 닿는다. 지금(dual)은 매 요청을 그 자리에서 GAS 로 넘기므로 경합 창이 GAS 자체 동시실행 창과 같아 새 위험이 없다. ★그러나 write_member 를 server 로 켜면 서버가 매긴 번호가 되밀기로 시트에 도달하기까지 최대 1분이 비고, 그 사이 이 GAS 전용 경로가 같은 번호를 독립으로 매길 수 있다 — 실제 사람 둘이 같은 회원번호를 받는다. 회원번호는 사람에게 붙는 번호라 되돌리기가 가장 비싸다. 오늘까지 된 것: 서버 채번 구현·배포 완료(시작값 M01750 — 서버 미러 4scope 전수 최댓값과 GAS 자체 계산이 정확히 일치해 교차검증됨 · 다음 실채번 M01752) · 자체점검 통과 · write_member 는 dual 그대로.",
+    "next": "member_inquiry_update 를 포함해 _memberActiveUpsert_ 를 부르는 경로를 전수로 세고, 서버를 안 거치는 것들을 ①서버 관문(/api/write)으로 흡수하거나 ②그 경로에서는 채번을 막고 서버 번호만 쓰게 한다. 전수 확인이 끝나고 '회원번호를 매기는 곳이 서버 한 곳'이 된 뒤에만 write_member 를 server 로 켠다. 켜기 전 마지막 확인 = 문의 화면에서 SUC 로 바꿔 저장했을 때와 회원 등록 화면에서 새로 넣었을 때가 같은 번호 체계로 이어지는지 실제로 한 건씩.",
+    "depends_on": "1195",
+    "ship_no": 11699,
+    "short_no": 1199,
+    "module": "home",
+    "audience": null,
+    "reversible": null,
+    "work_type": null,
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-10"
   }
 ]
