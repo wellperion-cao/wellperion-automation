@@ -84,13 +84,17 @@
   .grp{font-size:12px; font-weight:700; color:var(--accent-hover); margin:16px 0 4px;}
   .grp:first-child{margin-top:0;}
 
-  /* 관리 입구 카드 4개 */
+  /* 관리 입구 카드 5개 — 이름+한줄설명뿐이던 것에 실측값을 얹는다(GM 지적 2026-09-10
+     「관리할 숫자가 화면에 없다」). 값은 .num, 못 읽는 칸은 대시(placeholder)로 정직하게 비운다. */
   .entries{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
   .entry{display:block; background:var(--paper); border:1px solid var(--border);
          border-radius:12px; padding:18px 20px; text-decoration:none; color:inherit;
          min-height:44px; transition:border-color .12s, background .12s;}
   .entry:hover{border-color:var(--accent); background:var(--accent-bg);}
-  .entry .name{font-size:15.5px; font-weight:700; margin-bottom:4px;}
+  .entry .num{font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-bottom:4px;}
+  .entry .num .unit{font-size:13px; font-weight:600; color:var(--dim); margin-left:3px;}
+  .entry .num.placeholder{color:var(--dim);}
+  .entry .name{font-size:14px; font-weight:700; color:var(--text-soft); margin-bottom:4px;}
   .entry .desc{font-size:12.5px; color:var(--dim);}
 
   /* 구조 문서 접기 — 콘솔의 본문은 「지금 어떤가」다. 설명서는 접어 두되 지우지 않는다. */
@@ -147,22 +151,27 @@
   <h3>관리 입구 <span class="n">누르면 그 화면이 열린다</span></h3>
   <div class="entries">
     <a class="entry" href="/erp/">
-      <div class="name" id="n-screens">화면 —장</div>
+      <div class="num placeholder" id="n-screens">—</div>
+      <div class="name">화면</div>
       <div class="desc">파트너사가 쓰는 실행 화면</div>
     </a>
     <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
+      <div class="num placeholder" id="n-auto">—</div>
       <div class="name">자동화 가동</div>
-      <div class="desc">오늘도 돌고 있는지 · 조용히 죽지 않았는지</div>
+      <div class="desc" id="n-auto-desc">오늘도 돌고 있는지 · 조용히 죽지 않았는지</div>
     </a>
     <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
+      <div class="num placeholder" id="n-cost">—</div>
       <div class="name">이번 달 AI 비용</div>
-      <div class="desc">얼마 썼는지</div>
+      <div class="desc" id="n-cost-desc">얼마 썼는지</div>
     </a>
     <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
+      <div class="num placeholder">—</div>
       <div class="name">권한</div>
-      <div class="desc">누가 들어올 수 있는지</div>
+      <div class="desc">누가 들어올 수 있는지 — 값은 콘솔에서 직접 확인(여기선 못 읽음)</div>
     </a>
     <a class="entry" href="#downloads">
+      <div class="num placeholder" id="n-dl">—</div>
       <div class="name">다운로드</div>
       <div class="desc">설치·도구 파일</div>
     </a>
@@ -178,10 +187,45 @@
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var n = (d.modules || []).length;
     if (!n) return;
-    document.getElementById('n-screens').textContent = '화면 ' + n + '장';
+    var el = document.getElementById('n-screens');
+    el.textContent = ''; el.classList.remove('placeholder');
+    el.innerHTML = n + '<span class="unit">장</span>';
     var c = document.getElementById('n-cards');   // 접기 안 「구성 3갈래」도 같은 값을 읽는다
     if (c) c.textContent = n + '개';
-  }).catch(function(){ document.getElementById('n-screens').textContent = '화면'; });
+  }).catch(function(){});
+
+  /* 자동화 가동 카드 — status/module_registry.json 은 저장소 최상위(웹루트 밖)라 이 화면에서
+     바로 못 읽는다. 자율현황.html 이 쓰는 같은 방식(같은 서버 사본 우선 → 없으면 GitHub raw)을
+     그대로 재사용한다(새 방식을 만들지 않는다). */
+  (function(){
+    var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+    function get(path){
+      var local = (location.hostname === 'erp.wellperion.com')
+        ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        : Promise.reject(0);
+      return local.catch(function(){ return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
+    }
+    get('status/module_registry.json').then(function(d){
+      var mods = (d && d.modules) || [];
+      if (!mods.length) return;
+      var on = mods.filter(function(m){ return m && m.enabled === true; }).length;
+      var el = document.getElementById('n-auto');
+      el.classList.remove('placeholder');
+      el.innerHTML = on + '<span class="unit">개 가동</span>';
+      document.getElementById('n-auto-desc').textContent = '전체 ' + mods.length + '개 중 ' + on + '개 가동 중';
+    }).catch(function(){});
+  })();
+
+  /* 이번 달 AI 비용 — status/token_usage.json billing 블록(정액 요금, GM 지시 2026-09-10).
+     토큰을 얼마 쓰든 매달 나가는 돈은 이 금액뿐이라 desc 문구도 「얼마 썼는지」에서 고친다. */
+  fetch('/status/token_usage.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+    var b = d && d.billing;
+    if (!b || !b.krw_month_fixed) return;
+    var el = document.getElementById('n-cost');
+    el.classList.remove('placeholder');
+    el.innerHTML = Math.round(b.krw_month_fixed / 10000) + '<span class="unit">만원</span>';
+    document.getElementById('n-cost-desc').textContent = '정액 $' + b.usd_month_fixed + '/월 — 사용량 무관';
+  }).catch(function(){});
 
   /* 화면 열람 — status/page_ping.json 거울(시토 961b5a7f9). 하루 한 번 07:40 에 새로 뜨는 스냅샷이다.
      분모(count)도 읽는다 — 채점 대상이 늘면 분모가 같이 늘어야 한다.
@@ -287,6 +331,8 @@
   fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('downloads');
     var list = d.downloads || [];
+    var numEl = document.getElementById('n-dl');
+    if (list.length && numEl) { numEl.classList.remove('placeholder'); numEl.innerHTML = list.length + '<span class="unit">개</span>'; }
     if (!list.length) { root.innerHTML = '<div class="desc">받을 파일이 없다.</div>'; return; }
     root.innerHTML = list.map(function(x){
       /* downloads.json 항목은 `file` 칸에 경로를 적는다(그 파일 _규칙 참조). 이 줄이 href·path 만
