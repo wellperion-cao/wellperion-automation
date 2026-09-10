@@ -310,7 +310,7 @@
 <section class="panel" data-panel="downloads" hidden>
   <h3>다운로드 <span class="n">설치·도구 파일 — 회사 관리자 자리(GM 확정 2026-09-09)</span></h3>
   <p class="lead">여기 있는 것은 설치·도구 파일이다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라 화면에서 본다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남는다.</p>
-  <div class="entries" id="downloads"><div class="desc">불러오는 중…</div></div>
+  <div id="downloads"><div class="desc">불러오는 중…</div></div>
 </section>
 
 <section class="panel" data-panel="docs" hidden>
@@ -516,7 +516,18 @@
   </script>
   <script>
   /* 목록은 erp/downloads.json 한 곳만 보고 그린다 — 파일을 늘려도 이 화면은 안 고친다.
-     모듈 홈에 있던 다운로드 탭을 여기로 옮겼다(GM 2026-09-09: 「회사 관리자에 다운로드가 있어야 해」). */
+     모듈 홈에 있던 다운로드 탭을 여기로 옮겼다(GM 2026-09-09: 「회사 관리자에 다운로드가 있어야 해」).
+     step·needs_ai 두 칸으로 1단계(AI 먼저)·2단계(그 위에 도구 얹기) 두 묶음으로 가른다
+     (GM 2026-09-10: 「순서를 AI 셋업부터 하고 가이드도 있으면」 — downloads.json _규칙 참조). */
+  function entryCard(x){
+    var href = x.file || x.href || x.path || '';
+    if (href && !/^(https?:|\/)/.test(href)) href = '/erp/' + href;
+    var need = x.needs_ai ? '<div class="grp" style="margin:0 0 4px">⚠ AI 설치가 먼저 필요합니다</div>' : '';
+    return '<a class="entry" href="' + (href || '#') + '" download>'
+         + need
+         + '<div class="name">' + (x.name || x.title || '이름 없음') + '</div>'
+         + '<div class="desc">' + (x.desc || '') + '</div></a>';
+  }
   fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('downloads');
     var list = d.downloads || [];
@@ -525,16 +536,18 @@
     var badge = document.getElementById('b-dl');
     if (badge && list.length) badge.textContent = list.length;
     if (!list.length) { root.innerHTML = '<div class="desc">받을 파일이 없다.</div>'; return; }
-    root.innerHTML = list.map(function(x){
-      /* downloads.json 항목은 `file` 칸에 경로를 적는다(그 파일 _규칙 참조). 이 줄이 href·path 만
-         찾고 있어 항목 전부가 href="#" 로 그려졌다 — 눌러도 안 받아졌다(2026-09-10 실측·수리).
-         경로는 /erp/ 기준 상대(예: launchers/AI서포트.bat)라 앞에 /erp/ 를 붙인다. */
-      var href = x.file || x.href || x.path || '';
-      if (href && !/^(https?:|\/)/.test(href)) href = '/erp/' + href;
-      return '<a class="entry" href="' + (href || '#') + '" download>'
-           + '<div class="name">' + (x.name || x.title || '이름 없음') + '</div>'
-           + '<div class="desc">' + (x.desc || '') + '</div></a>';
-    }).join('');
+    var step1 = list.filter(function(x){ return x.step !== 2; });
+    var step2 = list.filter(function(x){ return x.step === 2; });
+    var html = '';
+    if (step1.length) {
+      html += '<div class="grp">1단계 — AI 먼저 (둘 중 하나만 받으면 됩니다)</div>'
+            + '<div class="entries">' + step1.map(entryCard).join('') + '</div>';
+    }
+    if (step2.length) {
+      html += '<div class="grp">2단계 — 그 위에 도구 얹기</div>'
+            + '<div class="entries">' + step2.map(entryCard).join('') + '</div>';
+    }
+    root.innerHTML = html || list.map(entryCard).join('');
   }).catch(function(){
     document.getElementById('downloads').innerHTML =
       '<div class="desc">받을 파일 목록을 불러오지 못했다.</div>';
