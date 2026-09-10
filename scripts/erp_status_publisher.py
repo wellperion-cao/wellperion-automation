@@ -18,6 +18,7 @@ GM은 파일을 못 여니, 이 한 파일이 ERP "🖥️ 시스템 현황" 섹
 값은 사람이 바로 읽는 한국어 plain text 로 채운다(약속 L10/L12).
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -373,6 +374,35 @@ def collect_scheduler_jobs():
     return {"count": len(ids), "items": ids, "note": ""}
 
 
+def _schtasks_dump():
+    """schtasks 전체 목록을 글자로 받는다. 못 받으면 빈 문자열(지어내지 않는다).
+
+    ★파이프(capture_output) 대신 임시 파일로 받는 이유 (2026-09-10 시토 · 실측):
+      이 발행기는 상주 스케줄러가 출력을 버리며(DEVNULL) 띄우는 자식 프로세스로 돈다.
+      그 안에서는 `subprocess.run(..., capture_output=True).stdout` 이 None 으로 돌아왔다 —
+      09-09 새벽부터 자동화 건강판이 "'NoneType' object has no attribute 'split'" 만 찍으며
+      0/0 정상(0%) 이라는 거짓값을 30분마다 발행한 원인이 이것이다(같은 파일의 다른 함수는
+      `r.stdout or ""` 로 감싸 둬 안 죽었을 뿐, 역시 아무것도 못 받고 있었다).
+      손으로 돌리면 멀쩡해 재현이 안 됐다. 파이프를 안 쓰면 이 갈래 자체가 사라진다.
+    """
+    import tempfile
+    path = os.path.join(tempfile.gettempdir(), "wp_schtasks_%d.txt" % os.getpid())
+    try:
+        with open(path, "wb") as fh:
+            subprocess.run(["schtasks", "/query", "/fo", "LIST", "/v"],
+                           stdout=fh, stderr=subprocess.DEVNULL, timeout=30)
+        with open(path, encoding="cp949", errors="replace") as fh:
+            return fh.read()
+    except Exception as e:
+        print("[warn] schtasks 목록 못 받음: %s: %s" % (type(e).__name__, str(e)[:120]))
+        return ""
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
 def collect_automation_health():
     """Task Scheduler Wellperion 작업 → 자동화 건강 집계.
     결과코드 0 = 정상, 0 아님 = 실패, 한 번도 안 돎(1999년 기본값) = 미실행.
@@ -380,18 +410,15 @@ def collect_automation_health():
     """
     NEVER_RUN_YEAR = "1999"  # schtasks 기본값 — 한 번도 안 돎
     try:
-        r = subprocess.run(
-            ["schtasks", "/query", "/fo", "LIST", "/v"],
-            capture_output=True, text=True, timeout=30,
-        )
-        if r.returncode != 0 and not r.stdout:
+        out = _schtasks_dump()
+        if not out:
             return {"summary": "집계 중 (schtasks 조회 실패)", "total": 0,
                     "healthy": 0, "rate": 0, "items": []}
 
         # 블록 분리 (각 작업은 '호스트 이름:' 행으로 시작)
         blocks = []
         cur = []
-        for line in r.stdout.split("\n"):
+        for line in out.split("\n"):
             s = line.strip()
             if s.startswith("호스트 이름:") or s.startswith("Host Name:"):
                 if cur:
