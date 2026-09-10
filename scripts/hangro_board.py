@@ -1646,6 +1646,23 @@ def _kpi_slice(role_slug: str) -> str:
             "※ 역할분담 결정 경위 등 전체는 ssot/kpi.json 파일 자체를 여세요.")
 
 
+def _note_head(note: str, width: int = 52) -> str:
+    """감점 사유를 한 줄로 줄이되 「해소·정상·수정 확인」 조각은 잘라 버리지 않는다.
+
+    왜 (2026-09-10 시모 실측): note 끝에 「감점 사유 둘 다 해소」가 적혀 있는데 앞 52자만
+    보여 주니 화면에는 옛 결함 문구만 떴다. 잘린 문구를 현재 사실로 읽는 것이 이 원장에서
+    같은 날 두 번 난 오판의 모양이다. 해소를 말하는 조각이 있으면 그 조각을 함께 낸다."""
+    note = (note or "").strip()
+    head = note[:width]
+    if len(note) <= width:
+        return head
+    tail_words = ("해소", "정상", "수정 확인", "확인함", "고쳤", "아니다")
+    for piece in reversed([x.strip() for x in note.replace("·", "|").split("|") if x.strip()]):
+        if any(w in piece for w in tail_words) and note.find(piece) >= width:
+            return f"{head}… ▸{piece[:40]}"
+    return head + "…"
+
+
 def _checked_ago(page: dict) -> str:
     """감점 사유를 마지막으로 화면에서 확인한 날이 며칠 전인지 — 없으면 「확인 없음」.
 
@@ -1690,7 +1707,7 @@ def _page_score_slice(role_slug: str) -> str:
         return (f"\n📉 내 화면 완성도 — {len(mine)}개 전부 85% 이상. "
                 "(정본 = status/page_score.json 손 관리 · 재채점은 이 파일을 직접 고친다, "
                 "배641 · 구 원천 GM업무.html #sec-erp-score 는 08-15 삭제됨)")
-    lines = [f"  {p['score']:3}%  {p['name']} {_checked_ago(p)} — {p['note'][:52]}" for p in low]
+    lines = [f"  {p['score']:3}%  {p['name']} {_checked_ago(p)} — {_note_head(p.get('note', ''))}" for p in low]
     return (f"\n📉 내 화면 완성도 낮은 순 {len(low)}개 (전체 {len(mine)}개 중 85% 미만)\n"
             + "\n".join(lines)
             + "\n※ 이 줄이 오늘 볼 것이다. 〔확인 없음〕·〔N일 전〕은 그 감점 사유가 지금도 "
