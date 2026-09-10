@@ -144,9 +144,1458 @@
       "summary": "feat(cto): 부서 기본 모듈 초안을 데이터로 — 콘솔에서 GM 이 수정·저장 (배1026 · GM 2026-09-07)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
       "requester": "safe_commit_cli",
       "created_at": "2026-09-07 16:54",
-      "status": "approved",
+      "status": "pushed",
       "decided_at": "2026-09-07 16:54",
+      "decided_by": "Namuk KIM(8254867551)",
+      "note": "배포 완료 17:1x(복원 시 conflict 로 남아 있던 옛값 정정)"
+    },
+    {
+      "id": "PL-20260907-11",
+      "sha": "eebf1a41a",
+      "branch": "lock/PL-20260907-11",
+      "paths": [
+        "server/erp_auth/admin.html"
+      ],
+      "summary": "fix(cto): 권한 관리 콘솔 — 좌측 정렬·폭 최대, 사람 표 크기(GM 2026-09-07) · 라이브엔 PL-16 배포에 실려 이미 반영",
+      "requester": "cto",
+      "created_at": "2026-09-07 18:07",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:13",
+      "decided_by": "Namuk KIM(8254867551)",
+      "note": "복원 행 — 라이브는 이미 반영(17:27) · 저장소 정본 정리용 · 내용이 master 에 이미 있음(11=PL-16 배포분 · 21=b394dfe00/df090141a) → 스위퍼 충돌은 무해, pushed 처리"
+    },
+    {
+      "id": "PL-20260907-12",
+      "sha": "e42130fce",
+      "branch": "lock/PL-20260907-12",
+      "paths": [
+        "server/erp_auth/app.py",
+        "server/erp_auth/admin.html"
+      ],
+      "summary": "feat(cto): ERP 로그인 네이버·카카오 계정 추가",
+      "requester": "cto",
+      "created_at": "2026-09-07 17:03",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:03",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-13",
+      "sha": "",
+      "branch": "lock/PL-20260907-13",
+      "paths": [
+        "server/erp_auth/account_perms.json"
+      ],
+      "summary": "시포: 강습 계정 member 모듈 추가(배1107)",
+      "requester": "cpo",
+      "created_at": "2026-09-07 17:05",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:05",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-14",
+      "sha": "28780e65f",
+      "branch": "lock/PL-20260907-14",
+      "paths": [
+        "server/erp_api/sync_misc.py"
+      ],
+      "summary": "feat(cto): 공지 목록 읽기 서버 미러(notice_list) (배1113)",
+      "requester": "cto",
+      "created_at": "2026-09-07 17:2x",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:2x",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-16",
+      "sha": "e2b0f1398",
+      "branch": "lock/PL-20260907-16",
+      "paths": [
+        "server/erp_auth/admin.html"
+      ],
+      "summary": "시모: 콘솔 사람 행 모듈 카드 펼침 + 부서 추천 카드",
+      "requester": "cmo",
+      "created_at": "2026-09-07 17:25",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:25",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-17",
+      "sha": "f55bad2d5",
+      "branch": "lock/PL-20260907-17",
+      "paths": [
+        "server/deploy_auth.sh"
+      ],
+      "summary": "chore(cto): auth 배포 관문에 권한 대조 추가(시포 요청)",
+      "requester": "cto",
+      "created_at": "2026-09-07 17:3x",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:3x",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-18",
+      "sha": "3734298eb",
+      "branch": "lock/PL-20260907-18",
+      "paths": [
+        "server/erp_auth/app.py"
+      ],
+      "summary": "feat(cto): 로그인 소셜 아이콘화 + 아이디 가입 인사 대조 (배1114)",
+      "requester": "cto",
+      "created_at": "2026-09-07 17:3x",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:3x",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-19",
+      "sha": "12d70751a",
+      "branch": "lock/PL-20260907-19",
+      "paths": [
+        "3. 웰페리온 가이드/coo/notice/notice_template.html"
+      ],
+      "summary": "시우: 공지 목록 서버 우선 배선(배1070)",
+      "requester": "coo",
+      "created_at": "2026-09-07 17:31",
+      "status": "pushed",
+      "decided_at": "2026-09-07 17:31",
+      "decided_by": "GM(복원)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-20",
+      "sha": "38727bd00",
+      "branch": "lock/PL-20260907-20",
+      "paths": [
+        "server/deploy_dietcamp.sh"
+      ],
+      "summary": "다캠 배포 스크립트에 새 정적 페이지 3장 + dc.css 추가 (배 892)",
+      "requester": "cbo",
+      "created_at": "2026-09-07 18:0x",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:3x",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07 18:3x 지시 소급)",
+      "note": "2026-09-07 18:1x 공유 트리 rebase 사고로 유실된 행을 시토가 복원"
+    },
+    {
+      "id": "PL-20260907-21",
+      "sha": "129ee4e6f",
+      "branch": "lock/PL-20260907-21",
+      "paths": [
+        "3. 웰페리온 가이드/wellperion_guide(main).html",
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "사후 승인 요청(시토) — ① 게시판 3키 읽기 서버 우선+GAS 폴백(배1039 · md5 3키 일치) ② 이중기록 대조 스트릭 폼별 분리(시우 실측 · PL-21 과 같은 내용). 자물쇠 글롭 구멍(발행루트 바로 아래 html 미매치)으로 카드 없이 master 에 실렸음 → 구멍 고침 · 이 두 파일 푸시에 GM 승인 필요. 반려 시 revert 커밋. ※방금 나간 'PL-20260907-12' 카드는 번호 오류 — 무시",
+      "requester": "cto",
+      "created_at": "2026-09-07 18:11",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:13",
+      "decided_by": "Namuk KIM(8254867551)",
+      "note": "사후 승인 통합 요청 — main.html(배1039) + reconcile_dual_write.py(lock/PL-21 a9ca521f6 와 동일 내용) · 승인 즉시 시토가 push · 스위퍼 cherry-pick 은 no-op · 내용이 master 에 이미 있음(11=PL-16 배포분 · 21=b394dfe00/df090141a) → 스위퍼 충돌은 무해, pushed 처리"
+    },
+    {
+      "id": "PL-20260907-23",
+      "sha": "174e60de88052c7f0feec2097546f9379203e659",
+      "branch": "lock/PL-20260907-23",
+      "paths": [
+        "server/common/schema.sql",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "fix(cto): 회원 담당자(owner_*) 5칸 정합 수리 — 시트 갱신 매번 재정렬 + 서버쓰기 행만 예외 (배1054 · 시포 실측)\n\n원인: schema.sql 의 owner_* 1회성 백필(WHERE IS NULL)만 있고 sync_members.py 5분 갱신 열 목록엔\nowner_*가 없어(서버쓰기 값 보호 의도) data(JSON)와 owner_* 컬럼이 최초 배포 스냅샷에 고정돼 벌어짐\n— valid 991행 중 owner_pt 846행 불일치(시포 실측).\n수정: sync_members.py 에 OWNER_COLS·sync_owner_cols() 신설 — 매 sync 마다 owner_* 를 data JSON 으로\n재정렬하되 write_log 의 member_owner_save 성공행(회원번호,필드)은 예외로 안 덮는다. 불일치 남으면\n_tell_gm() 재사용해 업무보고방 경보(sync_todo.staff_parity 와 같은 모양). selftest 에 예외/비예외\n양쪽 assert 추가 — 서버 tenant='selftest' 로 실측 통과(운영 미배포). schema.sql 은 주석만 정정.\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-07 18:07",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:13",
+      "decided_by": "Namuk KIM(8254867551)",
+      "note": "원래 PL-11 번호로 잘못 발급(승인 기록 유실 중 번호 충돌) → 23 으로 재발급 · 카드 재발송 · 스위퍼 cherry-pick 충돌 → 시토가 통합 트리에서 손으로 얹어 푸시 · master cadb631a6 도착 18:18"
+    },
+    {
+      "id": "PL-20260907-24",
+      "sha": "e045a2742e182e1358455516028f485d2cf33efe",
+      "branch": "lock/PL-20260907-24",
+      "paths": [
+        "server/erp_api/api_reception.py"
+      ],
+      "summary": "feat(cto): 종합접수처 유사건 조회 GET /api/reception/similar — 최근 60일 같은 분류·부서 유사도(배1120 · 시우 요청)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "cto",
+      "created_at": "2026-09-07 18:37",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:37",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260907-25",
+      "sha": "33eb9a5e9e78eb651389ae5f5824d51f2782234e",
+      "branch": "lock/PL-20260907-25",
+      "paths": [
+        "server/erp_api/reception-public.nginx.conf"
+      ],
+      "summary": "feat(cto): 종합접수처 유사건 조회 공개 통로 nginx 규칙(/api/reception/similar · submit 과 같은 존) (배1120)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VVatbpk3dKRJLuBzXVTPbj",
+      "requester": "cto",
+      "created_at": "2026-09-07 18:38",
+      "status": "pushed",
+      "decided_at": "2026-09-07 18:38",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-01",
+      "sha": "47d3fb0aad7bd4bb83393281d7d07015188b43c0",
+      "branch": "lock/PL-20260908-01",
+      "paths": [
+        "server/erp_chro/erp-chro.service"
+      ],
+      "summary": "fix(cto): erp-chro 유닛에 ConditionPathExists 추가 — 앱 없는 빈 폴더 재시작 루프 차단 (배1093) · 배1105 교착 실측 0건 닫음",
+      "requester": "cto",
+      "created_at": "2026-09-08 06:01",
+      "status": "pushed",
+      "decided_at": "2026-09-08 06:01",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-02",
+      "sha": "5ce0e26b26766607ee81b9b71f9401aacc6f1ca4",
+      "branch": "lock/PL-20260908-02",
+      "paths": [
+        "server/erp_api/public-assets.nginx.conf"
+      ],
+      "summary": "feat(cto): ERP 공개 자산 통로 /public/·/erp/launchers/ 로그인 없이 서빙(nginx erp-locations/public-assets.conf) + AI서포트 런처가 ERP 에서 CLAUDE.md 받도록 (배1115 ② · GM 2026-09-07)",
+      "requester": "cto",
+      "created_at": "2026-09-08 08:08",
+      "status": "pushed",
+      "decided_at": "2026-09-08 08:08",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-03",
+      "sha": "dcf0a07f3285a33688728b0575f9b0d2dea8bc09",
+      "branch": "lock/PL-20260908-03",
+      "paths": [
+        "server/common/schema.sql",
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "feat(cto): 회원 쓰기 2단계 member_hold_transition 서버 라우트 — fail-closed·휴회 6칸·change_log·시트 write-through (배1054)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 11:40",
+      "status": "pushed",
+      "decided_at": "2026-09-08 11:40",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-04",
+      "sha": "53494d8d428434482464616004fba4bf1f18585c",
+      "branch": "lock/PL-20260908-04",
+      "paths": [
+        "server/common/db.py",
+        "server/common/schema.sql",
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "fix(cto): 회원 쓰기 2단계 검토 수리 — selftest 판별기 keyPhone·GAS 거부 시 ok=False 되돌림·hold_status 시트 동기화·전화 다중 매칭 거부·staff 기록·커넥션 누수 (배1054 검토)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 12:00",
+      "status": "pushed",
+      "decided_at": "2026-09-08 12:00",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-05",
+      "sha": "c473b6c7fc9e4fb019347693c9aae70425cec7c0",
+      "branch": "lock/PL-20260908-05",
+      "paths": [
+        "server/common/schema.sql",
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "feat(cto): 회원 쓰기 3단계 member_active_update 서버 라우트 — rowIndex+rowKey→member_no 변환층·같은 칸 같은 조건·change_log·시트 write-through·대조 편입 (배1054)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 12:24",
+      "status": "pushed",
+      "decided_at": "2026-09-08 12:24",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-06",
+      "sha": "fb1f52bbc33ef3b2b6f53cc9dcd6f5fe886f404a",
+      "branch": "lock/PL-20260908-06",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html"
+      ],
+      "summary": "feat(cpo): 회원 쓰기 2단계 — member_hold_transition 배선 to /api/members/write (배1054)\n\n_writeUrl 분기를 {member_owner_save, member_hold_transition} 집합 조회로 확장.\n휴회 완료 처리가 GAS 직행 대신 서버 라우트로 라우팅되어\n06:10 reconcile member_hold_transition 버킷이 1/1부터 계수 가능.\n\nCo-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01VXU2K3Rd1oemGiF6E2mE6L",
+      "requester": "cpo",
+      "created_at": "2026-09-08 12:31",
+      "status": "pushed",
+      "decided_at": "2026-09-08 12:31",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-07",
+      "sha": "24c3d94d2f3662be2ba2c752e1974ee99af6f365",
+      "branch": "lock/PL-20260908-07",
+      "paths": [
+        "server/common/schema.sql",
+        "server/deploy_api.sh",
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "fix(cto): 회원 쓰기 3단계 검토 수리 13건 — sync 예외 gas_status=ok·배포 init_schema·값 변경 시만 예외·saved 되읽기·GAS pass-through·예약 파싱·대조 키 정규화·열쇠 칸 차단 (배1054 검토)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 12:43",
+      "status": "pushed",
+      "decided_at": "2026-09-08 12:43",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-08",
+      "sha": "6b92283efae9afbbb5180aeb033c6b8cec79f777",
+      "branch": "lock/PL-20260908-08",
+      "paths": [
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "feat(cto): 회원 쓰기 4단계 member_hold_approve 서버 라우트 — 접수상태 재검사 멱등 가드·휴회 6칸·같은 칸 같은 조건·대조 편입 (배1054)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 13:03",
+      "status": "pushed",
+      "decided_at": "2026-09-08 13:03",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-09",
+      "sha": "1257f82637c599425c239bc7216b628858345dcf",
+      "branch": "lock/PL-20260908-09",
+      "paths": [
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "feat(cto): 회원 쓰기 6단계 member_archive_restore 서버 라우트 — scope UPDATE 만(새 채번 없음·옛 번호 유지)·같은 칸 같은 조건·selftest 실측 (배1054)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 13:30",
+      "status": "pushed",
+      "decided_at": "2026-09-08 13:30",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-10",
+      "sha": "84fed64f72e764c22238d37d7e1eab3aff397b6c",
+      "branch": "lock/PL-20260908-10",
+      "paths": [
+        "server/erp_api/api_members_write.py",
+        "server/erp_api/reconcile_dual_write.py",
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "fix(cto): 회원 쓰기 6단계 검토 수리 — dryRun 선행 게이트·개월 계산 GAS 동일·sync 예외·data 초기화·배치 중 신규 행 보호·PK 충돌·연타 no-op·대조 강화 (배1054 검토)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 13:56",
+      "status": "pushed",
+      "decided_at": "2026-09-08 13:56",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-11",
+      "sha": "928ec9b7d8cef6bb9787d5d9340d33c25e745e4f",
+      "branch": "lock/PL-20260908-11",
+      "paths": [
+        "server/erp_api/api_members_write.py"
+      ],
+      "summary": "fix(cto): 회원 쓰기 6단계 검토 경미 2건 — idem 재전송 가드·경로 A/B 자체점검 추가 (배1054 검토)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 14:06",
+      "status": "pushed",
+      "decided_at": "2026-09-08 14:06",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-12",
+      "sha": "506af72ed8d3311c7310a9dffec179e5e879a5c7",
+      "branch": "lock/PL-20260908-12",
+      "paths": [
+        "server/erp_pg/erp-pg-backup.sh"
+      ],
+      "summary": "feat(cto): 서버 DB 백업 복원 리허설 — 일요일 자동 검증(임시 DB)·수동 실증 완료 (GM 2026-09-08 데이터 유실 방지)\n\nerp-pg-backup.sh: 업로드 직후·삭제 전 로컬 덤프로 매주 일요일 임시 DB(erp_restore_test)\n복원 → 8개 표 행수 카운트 → 즉시 삭제. 실패해도 백업 자체는 이미 올라갔으므로 exit 0 유지.\nS3 읽기 권한은 추가하지 않는다 — 백업 역할의 s3:PutObject 전용 설계(랜섬웨어/유출 방어)를\n그대로 보존하고, 백업 스크립트가 이미 로컬에 만드는 덤프 파일로 검증한다.\n\n오늘 수동 실증: 실 DB(erp) 즉시 pg_dump → 임시 DB 복원 → members/reception_items/\nhold_items/todo_items/inquiries/member_change_log/write_log/sync_meta 8개 표 전부\n실 DB와 정확히 일치(1748/147/154/229/2573/0/429/33) → dropdb 확인.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01EVuZZezWSTXTXwc68wnyAw",
+      "requester": "cto",
+      "created_at": "2026-09-08 16:40",
+      "status": "pushed",
+      "decided_at": "2026-09-08 16:40",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-13",
+      "sha": "16b7e83523cb90de9300225e98e139ed910a29e4",
+      "branch": "lock/PL-20260908-13",
+      "paths": [
+        "3. 웰페리온 가이드/reports/260908_ERP관리자_AX재구조_A3.html"
+      ],
+      "summary": "feat(ceo): ERP 관리자 AX 재구조 설계 A3 — 3축·모듈/문서 기준·구독 (배1135 · GM 지시 2026-09-08)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01HJhno7jbp1ZfDAyg9wdHtJ",
+      "requester": "ceo",
+      "created_at": "2026-09-08 18:56",
+      "status": "pushed",
+      "decided_at": "2026-09-08 18:56",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-14",
+      "sha": "e004952441978ba6ffe2ff4a9d45dfedb3112a43",
+      "branch": "lock/PL-20260908-14",
+      "paths": [
+        "3. 웰페리온 가이드/reports/260908_ERP관리자_AX재구조_A3.html"
+      ],
+      "summary": "fix(ceo): AX 재구조 A3 정정 — 두 원장 이미 연결(screen_id 로 잇는다) · tenant_id 기반 (배1135 · 시토 실측 반영)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01HJhno7jbp1ZfDAyg9wdHtJ",
+      "requester": "ceo",
+      "created_at": "2026-09-08 18:58",
+      "status": "pushed",
+      "decided_at": "2026-09-08 18:58",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-15",
+      "sha": "d4ab9b4a6ee6b0c93f502dc362515df3a3c62bdb",
+      "branch": "lock/PL-20260908-15",
+      "paths": [
+        "3. 웰페리온 가이드/reports/260908_ERP관리자_AX재구조_A3.html"
+      ],
+      "summary": "fix(ceo): AX 재구조 A3 — 판정 기준을 GM 기준(한 줄 설명)으로 교체, 모듈 41/문서 65 (배1135)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01HJhno7jbp1ZfDAyg9wdHtJ",
+      "requester": "ceo",
+      "created_at": "2026-09-08 19:20",
+      "status": "pushed",
+      "decided_at": "2026-09-08 19:20",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-16",
+      "sha": "71a94166b65f71ad91c97f972e9f578dfd178d77",
+      "branch": "lock/PL-20260908-16",
+      "paths": [
+        "server/erp_api/api_reception_ops.py",
+        "server/erp_api/erp-api.service"
+      ],
+      "summary": "fix(cto): 접수 API 굶음 수리 — uvicorn 워커 2개 + 리셉션 업무 GAS 전달 타임아웃 55초→20초 (실무진 신고 FB260908-220704 · 종합접수처 조회 40초+ → 0.03초)",
+      "requester": "cto",
+      "created_at": "2026-09-08 22:19",
+      "status": "pushed",
+      "decided_at": "2026-09-08 22:19",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260908-17",
+      "sha": "1ac5e7ff5def15e65658dd6334a0da0350a7a1c7",
+      "branch": "lock/PL-20260908-17",
+      "paths": [
+        "server/erp_api/api_reception_ops.py"
+      ],
+      "summary": "fix(cto): 리셉션 업무 GAS 전달 라우트를 동기 def 로 — async 안 동기 urllib 대기가 이벤트 루프를 막아 같은 워커 요청이 전부 굶던 근본 원인 (FB260908-220704)",
+      "requester": "cto",
+      "created_at": "2026-09-08 22:22",
+      "status": "pushed",
+      "decided_at": "2026-09-08 22:22",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-01",
+      "sha": "6f73a3e3e314104886cef9552c07acb1555f61f0",
+      "branch": "lock/PL-20260909-01",
+      "paths": [
+        "server/erp_api/public-assets.nginx.conf"
+      ],
+      "summary": "feat(cto): ERP 공개 경로 /public/ 보안 강화(noindex·autoindex off) + 회장님 보고 PNG 자리·절차 설계 (배1115 ②)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01S8K43oUC6EknXwEdoTyjhq",
+      "requester": "cto",
+      "created_at": "2026-09-09 08:55",
+      "status": "pushed",
+      "decided_at": "2026-09-09 08:55",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-02",
+      "sha": "70a76485080ddf66e530d8ec7c82d9542be46ddb",
+      "branch": "lock/PL-20260909-02",
+      "paths": [
+        "scripts/sync_queue_mirror.py"
+      ],
+      "summary": "feat(ceo): 토큰 사용량 화면 — 모델별·일별·주별 집계 (GM 질문 2026-09-09)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_015dyArnjEfFn4Le5qd7MMLL",
+      "requester": "ceo",
+      "created_at": "2026-09-09 09:24",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:24",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-03",
+      "sha": "099d9337ffb1f82824c94591d034bfa6926b6f60",
+      "branch": "lock/PL-20260909-03",
+      "paths": [
+        "ssot/forbidden_terms.json"
+      ],
+      "summary": "fix(cmo): 옛 포지셔닝 「프리미엄 라이프스타일 클럽」 뿌리 제거 + 금지어 검사기 신설 (배1118 후속·배923)\n\n페이스북 커버를 고치고 새 홈 첫 화면을 열어 보니 같은 문구가 그대로 있었다.\n찾아 보니 브랜드 가이드가 그 말을 '올바른 외부 톤'으로 가르치고 있었고,\nCTA 카드 생성기에도 박혀 있었다. 그래서 발행문마다 되살아났다\n(블로그·카페 본문 15곳에 남아 있다).\n\n뿌리 = 금지어 검사가 한 번도 돈 적이 없다.\nssot/forbidden_terms.json 머리말은 'forbidden_scan.py 가 읽어 탐지한다'고 적어 두었지만\n그 파일이 아예 없었다. 가리키는 곳이 빈 죽은 포인터였다.\n\n고친 것\n- 금지어 검사기 신설(scripts/forbidden_scan.py) — 낱말은 SSOT 에서만 읽는다. 자가점검 포함\n- 검사 범위 확대 — 종전 instagram/** 뿐이라 정작 손님이 보는 웹페이지를 안 봤다.\n  home·public·cmo/survey 추가\n- 금지어 추가 — Premium Lifestyle Club · 프리미엄 라이프스타일 (2026-09-05 GM 확정 정원제 스포츠클럽)\n- 새 홈 KO/EN 히어로 문구 = Members-only Sports Club\n- 브랜드 가이드 6곳 · CTA 카드 생성기 1곳 = 정원제 스포츠클럽\n\n남은 것: 영문 문의 폼 2장(wp_inquiry_form_en·public/en/inquiry)에도 같은 문구가 있으나\n종합접수처 잠금(GM 전용) 경로라 손대지 않고 되돌렸다 — GM 「접수처 잠금 해제」 후 반영한다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01AKkzUxNFUEhB3ALVDs5iqX",
+      "requester": "cmo",
+      "created_at": "2026-09-09 09:33",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:33",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-04",
+      "sha": "7d0e2d17c506c0ab7a898f9c7945a2b8677d7fa5",
+      "branch": "lock/PL-20260909-04",
+      "paths": [
+        "server/erp_api/api_chat.py"
+      ],
+      "summary": "fix(cto): 상담봇 빈 입력을 문답으로 세지 않는다 — 자력 답변률 분모 흐려짐(시보 실측 2026-09-09)",
+      "requester": "cto",
+      "created_at": "2026-09-09 09:43",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:43",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-05",
+      "sha": "9bc1c084165efd764aa05387bf24a412c0464f21",
+      "branch": "lock/PL-20260909-05",
+      "paths": [
+        "ssot/약속.json"
+      ],
+      "summary": "feat(cto): GM·실무진 화면 용어 커밋·푸시 → 저장·배포 통일 (GM 2026-09-09)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01S8K43oUC6EknXwEdoTyjhq",
+      "requester": "cto",
+      "created_at": "2026-09-09 09:44",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:44",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-06",
+      "sha": "c8bd516e44ac802e82093caa051813019d8b1833",
+      "branch": "lock/PL-20260909-06",
+      "paths": [
+        "ssot/약속.json"
+      ],
+      "summary": "docs(cto): 약속 L17 「기계작업(검증·커밋·패치)」→「검증·저장·패치」 — 남은 사람 말 한 곳 (GM 2026-09-09 용어)",
+      "requester": "cto",
+      "created_at": "2026-09-09 09:47",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:47",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-07",
+      "sha": "c623874469aa795a9aecfd62aeb28f1bffe4899e",
+      "branch": "lock/PL-20260909-07",
+      "paths": [
+        "server/erp_auth/erp.nginx.conf"
+      ],
+      "summary": "feat(cto): ERP 첫 화면 주소 루트로 · /erp/ 301 유지 (배1151)\n\n로그인 성공 뒤 착지는 app.py next 기본값(이미 \"/\")이 정한다 — 실제 걸림돌은\nnginx 가 루트 요청에 옛 index.html(구 wellperion_guide 리다이렉트 스텁)을\n내주던 것. location = / 를 추가해 auth_request 는 그대로 두고 erp/index.html\n을 루트에서 서빙하게 했다. /erp·/erp/ 는 exact match 301 로 루트에 보내고,\n/erp/launchers/…·modules.json 등 하위 경로는 그대로 살아있다(09-07 스텁 삭제\n사고 재발 방지). 서버 반영은 하지 않음 — 설계·저장까지.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01S8K43oUC6EknXwEdoTyjhq [지연 재시도]",
+      "requester": "cto",
+      "created_at": "2026-09-09 09:52",
+      "status": "conflict",
+      "decided_at": "2026-09-09 09:52",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-08",
+      "sha": "8d5f212c96dd9aec0807c6956d01f408babbcbbf",
+      "branch": "lock/PL-20260909-08",
+      "paths": [
+        "server/erp_auth/erp.nginx.conf"
+      ],
+      "summary": "feat(cto): ERP 첫 화면 주소 루트로 · /erp/ 301 유지 (배1151)\n\n로그인 성공 뒤 착지는 app.py next 기본값(이미 \"/\")이 정한다 — 실제 걸림돌은\nnginx 가 루트 요청에 옛 index.html(구 wellperion_guide 리다이렉트 스텁)을\n내주던 것. location = / 를 추가해 auth_request 는 그대로 두고 erp/index.html\n을 루트에서 서빙하게 했다. /erp·/erp/ 는 exact match 301 로 루트에 보내고,\n/erp/launchers/…·modules.json 등 하위 경로는 그대로 살아있다(09-07 스텁 삭제\n사고 재발 방지). 서버 반영은 하지 않음 — 설계·저장까지.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01S8K43oUC6EknXwEdoTyjhq",
+      "requester": "cto",
+      "created_at": "2026-09-09 09:52",
+      "status": "pushed",
+      "decided_at": "2026-09-09 09:52",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-09",
+      "sha": "22a423d0907d8a33874b86b4d6b1e17211fbd933",
+      "branch": "lock/PL-20260909-09",
+      "paths": [
+        "ssot/자율화규약.md"
+      ],
+      "summary": "docs(ceo): 자율화규약 §2 중복 조항 삭제 — 자가점검 정본은 wellperion-boot §2-1 (배1148 1단계)",
+      "requester": "ceo",
+      "created_at": "2026-09-09 10:31",
+      "status": "pushed",
+      "decided_at": "2026-09-09 10:31",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-10",
+      "sha": "5c112fa80f0e74f53ed1cfd368df996c7409713a",
+      "branch": "lock/PL-20260909-10",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "3. 웰페리온 가이드/cpo/member/renewal.html"
+      ],
+      "summary": "feat(cpo): 회원 화면 GAS 직행 2곳 서버 우선 — 휴회 접수 목록(/api/reception/hold)·재등록 명단 저장(/api/members/write) (배1050)",
+      "requester": "cpo",
+      "created_at": "2026-09-09 10:35",
+      "status": "conflict",
+      "decided_at": "2026-09-09 10:35",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-11",
+      "sha": "f1c6817a1a20a231ac7b0c2626e69c8145d83277",
+      "branch": "lock/PL-20260909-11",
+      "paths": [
+        "ssot/tenant.json"
+      ],
+      "summary": "@ feat(ceo): ERP 제품화 ②뼈대/우리값 가르기 박제 + 보고표 정본 1곳화 (배1148)",
+      "requester": "ceo",
+      "created_at": "2026-09-09 10:36",
+      "status": "pushed",
+      "decided_at": "2026-09-09 10:36",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-12",
+      "sha": "a9b19bfc4a5c502ffa0a0d443d5f946a72d245d2",
+      "branch": "lock/PL-20260909-12",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "3. 웰페리온 가이드/cpo/member/renewal.html"
+      ],
+      "summary": "feat(cpo): 회원 화면 GAS 직행 2곳 서버 우선 — 휴회 접수 목록(/api/reception/hold)·재등록 명단 저장(/api/members/wr",
+      "requester": "cpo",
+      "created_at": "2026-09-09 10:36",
+      "status": "pushed",
+      "decided_at": "2026-09-09 10:36",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-13",
+      "sha": "257db4a85843f200137fdaf759c5259e7a9ff9fa",
+      "branch": "lock/PL-20260909-13",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "3. 웰페리온 가이드/cpo/product/상품기획.html"
+      ],
+      "summary": "feat(cpo): 회원관리·상품기획 마지막 GAS 직행 읽기 5종을 서버 거울로 — 변경이력·유형채널·렌트비즈2·상품기획 (배1050)",
+      "requester": "cpo",
+      "created_at": "2026-09-09 10:47",
+      "status": "pushed",
+      "decided_at": "2026-09-09 10:47",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-14",
+      "sha": "0e4050c70c5b5d84577788f5c5967f9979bea9fe",
+      "branch": "lock/PL-20260909-14",
+      "paths": [
+        "server/erp_api/api_funnel.py",
+        "server/erp_api/sync_funnel.py",
+        "server/erp_api/sync_misc.py"
+      ],
+      "summary": "feat(cpo): 서버 거울 등록부 확장 — 퍼널 4액션(변경이력·유형채널·렌트비즈2)·업무 GAS product_plan_list + 5분 갱신 일감 (배1050 · 배포=시토 scp)",
+      "requester": "cpo",
+      "created_at": "2026-09-09 10:47",
+      "status": "pushed",
+      "decided_at": "2026-09-09 10:47",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-15",
+      "sha": "dc4091dfc2a60cb374602a861d3a1047972457de",
+      "branch": "lock/PL-20260909-15",
+      "paths": [
+        "ssot/model_routing.json"
+      ],
+      "summary": "[시토] 모델을 표 한 곳에서 고른다 — 배치가 읽어 가고, 루틴에 비싼 모델은 막는다\n\nGM 지시 2026-09-09: \"부팅 배치가 뜰 때마다 fable 로 고정되는 것 같은데, 지금\nopus5 로 고정해놨는데 계속 opus5 로 고정되는거지? 그리고 작업 및 업무별 역할에\n따른 모델 설정이 필요해\"\n\n실측: 안 됐다. Start-AI 배치 8개가 각각 --model claude-fable-5-1 을 넘기고\n있었고 명령줄 지정이 GM 의 /model 저장값을 덮는다. 그래서 opus5 를 골라도 다음\n창은 fable 로 떴다.\n\n바꾼 것:\n1. ssot/model_routing.json 신설 — 세션·서브에이전트·API 스크립트 세 자리에\n   흩어져 서로 어긋나던 모델 지정을 한 표로 모았다(약속 L01).\n2. scripts/model_for.py — 그 표를 한 줄로 답해 주는 조회기.\n3. 배치 8개가 모델 이름을 박는 대신 이 조회기를 읽는다. 모델을 바꾸려면 표의\n   세션.현재값 한 줄만 고치면 8창이 함께 따라온다. 조회 실패 시 opus 로 떨어져\n   부팅이 멈추지 않는다.\n4. scripts/agent_model_guard.py — 루틴 낱말이 뚜렷한 위임에 opus·fable 을\n   지정하면 PreToolUse 에서 막는다. 2026-09-05 에 서브에이전트 13회 중 7회를\n   루틴에 opus 로 띄운 일이 있었고 규칙이 문서로만 있어 안 지켜졌다(약속 L02).\n   판단 낱말이 섞이면 통과하고, 애매하면 지시문에 「모델판단필요」로 밝힌다.\n5. CLAUDE.md §4 를 그 표를 가리키는 인덱스로 바꿨다.\n\n09-07 커밋 cce696b93(8석 전부 Fable 복귀)을 되돌리는 것이 아니라, 그때 정한\n'8석을 한 값으로 통일한다'는 구조를 지키면서 그 값을 한 곳으로 옮긴 것이다.\n\n검수: 표 조회 opus 반환, 배치 두 줄을 실제 .bat 으로 만들어 실행해 모델을 받는\n것 확인. 가드 자체검사 6가지 통과, 루틴+opus 실제 차단 exit 2 확인.\n\n⚠️ 전역값이 opus[1m] 이면 한 세션이 200K 토큰을 넘긴 뒤로는 두 배로 계산된다.\n표와 CLAUDE.md 에 경고를 남겼다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 11:27",
+      "status": "pushed",
+      "decided_at": "2026-09-09 11:27",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-16",
+      "sha": "d477faabb6c89303dfcdb1d2507fd0e41604cffe",
+      "branch": "lock/PL-20260909-16",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "3. 웰페리온 가이드/cpo/member/실무진피드백.html",
+        "3. 웰페리온 가이드/cpo/member/오넛티_접수현황.html",
+        "server/erp_api/sync_misc.py"
+      ],
+      "summary": "feat(cpo): GAS 직행 마무리 — 실무진피드백·오넛티 조회를 서버 거울로(열쇠는 서버가 쥔다) · 강습 통계/명단/금일등록 3곳 미러 우선",
+      "requester": "cpo",
+      "created_at": "2026-09-09 11:30",
+      "status": "pushed",
+      "decided_at": "2026-09-09 11:30",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-17",
+      "sha": "1cf7c861f8e9fe0296424f15d6fa13fdfd1e1286",
+      "branch": "lock/PL-20260909-17",
+      "paths": [
+        "server/deploy_gocheokgolf.sh",
+        "server/erp_api/gocheokgolf.nginx.conf"
+      ],
+      "summary": "feat(cbo): 고척골프 라인을 AWS 로 — /gocheokgolf/ 공개 배포 + 학습용 client.json 서버 적재, 초안 페이지 가독 개편 (GM 지시 2026-09-09)",
+      "requester": "cbo",
+      "created_at": "2026-09-09 11:59",
+      "status": "pushed",
+      "decided_at": "2026-09-09 11:59",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-18",
+      "sha": "9369850125da63a5f63ae3352d3cf1e1f7f156df",
+      "branch": "lock/PL-20260909-18",
+      "paths": [
+        "server/erp_api/sync_funnel.py"
+      ],
+      "summary": "퍼널 거울 동기화 — 무거운 액션만 15분 주기로 분리(실측 기반)\n\n21개 일감을 5분마다 몰아치며 funnel_conversion_detail 이 61.17초로 유일하게 60초\n읽기 상한에 걸려 간헐 실패했다(서버 실측, 나머지 20개는 1.7~11.4초). 크론 줄은 그대로\n5분 하나 두고, 파일 안에서 MIN_INTERVAL(action→최소 간격)로 이 액션만 건너뛴다\n(직전 funnel_cache.synced_at 대조). 15분 주기라 60초 상한도 90초로 여유를 줬다.\n건너뜀은 실패 목록과 분리해 로그에 남는다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-09 12:12",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:16",
       "decided_by": "Namuk KIM(8254867551)"
+    },
+    {
+      "id": "PL-20260909-19",
+      "sha": "e0b0ec9ea9059e634868a3a787d7f6cf2bca9022",
+      "branch": "lock/PL-20260909-19",
+      "paths": [
+        "server/erp_api/sync_funnel.py"
+      ],
+      "summary": "[시토] 퍼널 거울 동기화 타임아웃 없애기 — 무거운 액션 하나만 15분 주기로\n\n시포 관측(2026-09-09): 5분마다 21개를 도는데 매 회 1~2개가 구글 앱스스크립트\n읽기 지연으로 실패하고 그 액션만 5~10분 옛값으로 남는다.\n\n서버에서 21개를 개별로 재 본 결과 원인은 하나였다. funnel_conversion_detail 이\n61.17초로 읽기 상한 60초를 아슬하게 넘긴다. 나머지 20개는 1.7~11.4초라 여유가\n있고, 랩 전체도 161초라 5분 주기가 겹치는 문제도 아니었다.\n\n그 액션 하나만 15분 간격으로 내렸다. 크론은 5분 하나 그대로 두고 파일 안에서\n직전 조회 시각을 대조해 간격이 안 지났으면 건너뛴다. 건너뜀은 실패와 따로\n로그에 남는다. 15분 주기가 됐으니 이 액션의 읽기 상한만 90초로 늘렸다 —\n다른 19개는 60초 그대로다.\n\n계속 자라는 목록이라 5분마다 새로 덮어야 한다고 주석에 적힌 액션들\n(type_channel_breakdown·rentbiz_*·member_log_list)은 건드리지 않았다.\n\n검수: 서버에 임시 사본을 올려 실제 DB 로 자체검사 통과 확인 후 임시 파일 삭제.\n건너뜀 판정 케이스도 자체검사에 넣었다.\n\nlock/PL-20260909-18 로 먼저 갈라졌던 같은 변경을 요청자 표기를 붙여 다시 올린다\n— 커밋 제목에 요청자가 없으면 자물쇠 관문이 GM 카드를 띄우고 멈춘다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:13",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:13",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-20",
+      "sha": "7e5d816a3bdee8e04c17c545cb08603455138f86",
+      "branch": "lock/PL-20260909-20",
+      "paths": [
+        "server/common/db.py",
+        "server/erp_api/api_reception.py"
+      ],
+      "summary": "[시토] 자동 검증용 행을 사람 목록에서만 뺀다 — 접수·습득물·보류 읽기 한 곳에서 (배1166 1단계)\n\n시우 요청 2026-09-09. 접수처 서버 원본 전환이 3일 무결을 못 채우는 이유가 품질이\n아니라 표본이다 — 나흘째 접수 0건이라 대조할 행 자체가 없다(시우 실측: 유입 로그\n없음·폼 정상, 막힌 게 아니라 안 들어온 것). 그래서 하루 1건 합성 검증을 넣기로\n했고, 그 앞에 필터가 먼저 살아 있어야 한다.\n\n순서를 지키는 이유: 2026-07-20 에 검증용 행을 라이브 시트에 넣고 정리하다 실제\n고객 문의 2건이 지워진 일이 있다. 필터 없이 합성부터 켜면 실무진 목록에 가짜\n접수가 뜬다.\n\n자리 = 읽기 API 한 곳. 시우가 짚은 대로 화면이 아니라 서버에서 거른다. 접수처\n화면 폴더는 지금 잠겨 있어(reception_freeze) 못 고치고, 화면에서 거르면 접수\n목록·습득물 목록 두 곳을 따로 손봐야 한다. board·lost·hold 셋이 전부 _rows 를\n지나므로 거기 한 줄이면 끝난다.\n\n판정은 자체선언 태그만 본다(db.is_verification_row 신설). 이미 있는\nis_test_payload 를 그대로 쓰지 않은 이유가 있다 — 그쪽은 더미 연락처까지 함께\n보는데, 그러면 이름 없이 접수된 진짜 워크인 기록이 목록에서 사라진다. 검증 행이\n하나 보이는 것보다 실제 접수 하나가 안 보이는 쪽이 훨씬 나쁘다. 태그 낱말\n목록(_TEST_TAG_RE)은 한 벌을 같이 쓴다.\n\n미러 표에는 그대로 남으므로 서버↔시트 대조는 종전대로 그 행을 센다 — 화면에서만\n안 보이는 것이다.\n\n지금 `[자동검증]` 태그가 붙은 행은 0건이라 화면 변화는 없다. 켠 채로 올린다.\n\n검수: 판정 7가지 대조 실패 0. 태그 있으면 뺌 · 이름 없는 더미 전화는 안 뺌 ·\n\"테스트 후 결정\" 같은 실제 상담 메모는 안 뺌.\n\n함께: 레인 지시문에 커밋 제목 요청자 표기를 적으라는 줄을 부팅 스킬에 박았다.\n오늘 server/** 레인 하나가 제목에 요청자가 없어 자물쇠에서 멈췄다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:15",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:15",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-21",
+      "sha": "1a08d6d190e77df8c3029e08dbc94f6632237745",
+      "branch": "lock/PL-20260909-21",
+      "paths": [
+        "server/common/db.py"
+      ],
+      "summary": "[시토] 배관점검 표식을 테스트 태그와 가른다 — 안 그러면 무결 스트릭을 거꾸로 끊는다 (배1166)\n\n시우가 표식으로 지정한 `[자동검증]` 을 쓰면 안 된다는 것을 코드에서 확인했다.\n\n그 태그는 `_TEST_TAG_RE` 에 들어 있고, api_intake 가 그걸 보면 gas_status 를\n'test' 로 찍고 **GAS 전달을 건너뛴 채 바로 응답**한다(api_intake.py 123·134행).\nsync_reception 도 같은 판정으로 미러에서 뺀다(90·96행). 그러면 서버 원장에만 행이\n남고 시트에는 안 간다. reconcile 은 그 행을 '시트 도달 못 증명' = mismatch 로\n세므로, 무결 사흘을 쌓으려던 합성 검증이 **오히려 그날을 실패로 만든다.**\n\n그래서 표식을 갈랐다. `[배관점검]` 은 테스트 태그가 아니다 — 진짜 접수와 똑같이\nGAS 를 타고 미러까지 들어가 대조의 증거가 된다. 사람 목록에서만 빠진다.\n\n두 태그가 묻는 질문이 다르다는 것을 주석에 못 박았다.\n  _TEST_TAG_RE  → \"GAS 로 내보내도 되나\" (안 보낸다)\n  _PROBE_TAG_RE → \"사람 목록에 보여도 되나\" (안 보인다 · GAS 는 탄다)\nis_verification_row 는 둘 다 숨기고, is_test_payload 는 앞엣것만 막는다.\n\n검수: 6가지 경우 대조 실패 0. 배관점검=숨김·GAS통과 / 자동검증·테스트=숨김·GAS차단\n/ 실명+더미전화=안숨김 / 이름없는 더미전화=안숨김(사람 목록에서 사라지면 안 된다)\n/ \"테스트 후 결정\" 상담 메모=안숨김.\n\n아직 합성 쓰기는 켜지 않았다. 이 표식이 라이브에 올라간 뒤 1건만 넣는다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:19",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:19",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-22",
+      "sha": "0cd45d8026a2859913d23f18189d6353a30b6b20",
+      "branch": "lock/PL-20260909-22",
+      "paths": [
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "[시토] 거래가 드문 갈래도 전환할 수 있게 — 3일 무결 옆에 '최근 3건 무결' 규칙\n\nGM 지시 2026-09-09 「막히는 것들을 방법을 찾아서 원하는 결과를 얻어내라」.\n\n■ 무엇이 원리상 막혀 있었나\n서버 원본 전환 조건이 '3일 연속 무결' 하나였다. 그런데 그 3일은 행이 있었던 날만\n센다. 강사 접수·일요일 접수·회원 보류 3종처럼 한 달에 몇 건인 기능은 사흘치\n거래가 영영 안 쌓여 **이 규칙으로는 절대 전환되지 않는다.** 실측 2026-09-09:\n그 부류 5갈래가 전부 streak=0 이고 대조한 날도 0일이다. 기다린다고 될 일이\n아니었다 — 거래가 없다는 것과 품질이 나쁘다는 것을 한 자로 재고 있었다.\n\n■ 어떻게 뚫었나\n거래가 드문 갈래(대조 창에서 행이 있던 날이 3일 미만)에는 시간 대신 건수로 잰다.\n최근 접수 3건이 연속 무결이면 그 배관은 증명된 것으로 본다. 잣대를 느슨하게 한\n게 아니라, 잴 수 없던 것을 잴 수 있게 바꾼 것이다.\n\n거래가 잦은 갈래는 종전 3일 규칙 그대로다 — 날이 3일 이상 쌓인 갈래는 드문\n규칙을 타지 않는다.\n\n■ 사람이 판단할 근거를 남긴다\nby_form 에 qualified·qualified_by·recent_ok_rows 를 함께 낸다. 어느 규칙으로\n통과했는지가 보여야 전환 상신 때 GM 이 그걸 보고 정할 수 있다. 「최근 3건 무결」로\n통과한 갈래는 그 문장이 그대로 찍힌다.\n\n■ 검수\n자체점검 통과. 새로 넣은 경계값 6가지 — 이틀뿐인데 3건 무결이면 통과 · 1건뿐이면\n아직 아님 · 최근 날이 실패면 통과 아님 · 잦은 갈래는 3일 규칙 그대로 · 날이\n많으면 드문 규칙을 안 탐 · 건수 세기.\n\n함께: origin_switch 의 reception 표기를 dual → server 로 바로잡았다(서버 파일).\n배984 로 이미 서버 단독인데 dual 로 적혀 있어 오늘 나와 시우가 각각 한 번씩\n오판했다. 왜 바꿨는지 주석을 그 파일에 남겼다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:41",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:41",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-23",
+      "sha": "123d45596f8bcbd3e93c34371812eabc43473f08",
+      "branch": "lock/PL-20260909-23",
+      "paths": [
+        "ssot/tenant.json"
+      ],
+      "summary": "[시토] 정본을 두 층으로 — 위는 ERP 파는 회사, 아래는 파트너사 값\n\nGM 지시 2026-09-09: 「회사 고유값이 웰페리온으로 시작했으니 정본이 되어 버린다.\n이 값을 한 단계 내리고, 위에 ERP 를 서비스로 제공해 주는 회사가 하나 더 들어와야\n한다. 뼈대에는 ERP 를 서비스로 제공하는 회사가, 안에 값들은 파트너사마다 제공해\n주는 설정값들이 있어야 한다.」\n\n종전 판은 층이 하나였다 — tenant_id 가 wellperion 이고 그 아래 값 파일이 달려\n있으니, 웰페리온 값이 곧 이 시스템의 정본으로 읽혔다. 두 번째 회사를 받는 순간\n무엇이 제품이고 무엇이 우리 값인지 다시 못 가린다.\n\nplatform / tenants 두 층으로 갈랐다.\n- platform = ERP 를 만들어 파는 회사. 뼈대 6건의 주인이고 파트너사가 몇이 되든\n  하나다. 이름은 가칭 「ERP 비즈니스 스튜디오」 — GM 이 오늘 세 주소를 정하며\n  erp.studio.com 을 그렇게 부르셨다. 정식 상호는 공식값이라 결재 전까지 가칭으로\n  두고, 화면에 쓸 때 「(가칭)」을 떼지 않는다. 도메인은 아직 미보유다.\n- tenants.wellperion = 1호 파트너사. 갈아끼울 값 파일 13건이 여기 달린다.\n\n웰페리온이 플랫폼 운영사와 같은 사람들이 쓰는 곳이어도 값은 파트너사 자리에 둔다.\n섞으면 다음 회사를 받을 때 또 못 가린다.\n\n이 파일을 코드로 읽는 곳은 없다(문서 네 곳이 가리키기만 한다) — 구조를 바꿔도\n도는 것에 영향 없음을 확인했다.\n\n화면(플랫폼 관리 콘솔)은 레인이 이 구조를 따라가게 고치는 중이다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:49",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:49",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-24",
+      "sha": "4861c6b532e456f865ab92ba2104004c8c734227",
+      "branch": "lock/PL-20260909-24",
+      "paths": [
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "[시토] 계측기가 못 잰 것을 틀린 것으로 세던 것 — 회원 쓰기 옛 형식·접수 갈래 정리\n\nGM 지시 2026-09-09 「막히는 것을 뚫어라」의 이어진 판.\n\n■ 회원 수정 대조 — 열쇠를 못 읽어 실패로 세고 있었다\n실패로 잡힌 56건(09-04·06·07)을 원장에서 직접 열어 보니 전부 gas_status=ok 이고\n전화번호 열쇠도 멀쩡한 정상 쓰기였다. 두 가지가 겹쳐 있었다.\n ① 화면이 회원번호 대신 전화번호를 열쇠로 보낸 쓰기 — 미러에서 전화로 회원번호를\n    찾아 같은 대조를 잇게 했다. 뒤 4자리로 찾지 않는다(겹치는 사람이 나온다) —\n    숫자만 남긴 전체 번호가 정확히 한 명일 때만 쓴다.\n ② `_saved`(그 쓰기가 실제로 바꾼 칸 목록)가 없던 옛 형식 — 무엇을 바꿨는지\n    자체를 모르므로 **못 재는 것이지 틀린 것이 아니다.** 실패로 세면 형식이 바뀐\n    날 이전이 통째로 실패가 되어 무결이 영영 안 찬다. 이제 날짜를 아예 안 만든다.\n\n★ 이걸 고쳐도 회원 수정은 아직 통과가 아니다 — 09-08 에 진짜 불일치 5건이 남아\n있다. 그건 계측기 문제가 아니라 실제 신호라 덮지 않았다. 시포에게 넘긴다.\n\n■ 접수 갈래는 이 대조에서 뺐다 (시우 요청)\n배984(GM 지시 2026-09-05)로 접수는 서버 원장에 직접 적고 시트에 신규분을 안\n넘긴다. 시트 도달을 증거로 삼는 이 대조는 그 영역에서 영원히 '도달 못 증명'만\n낸다. 오늘 그 거짓 신호가 「접수 0건」·「표본 부족」 두 번의 오판을 만들었다.\n대신 시우가 15분 점검에 서버 원장 기준 계측을 붙였다. 시트가 다시 신규 접수를\n받게 되면 이 줄을 되돌린다 — 되살리는 법을 주석에 적어 뒀다.\n\n■ 검수\n자체점검 통과(옛 형식 행이 날짜를 안 만드는 경계값 추가). 서버 실행 결과 갈래\n40 → 39(접수 빠짐), 자격 통과 10 유지.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 12:54",
+      "status": "pushed",
+      "decided_at": "2026-09-09 12:54",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-25",
+      "sha": "afc15e2b788f8d5bb2c1d20229b7c935159e8fa6",
+      "branch": "lock/PL-20260909-25",
+      "paths": [
+        "ssot/tenant.json"
+      ],
+      "summary": "[시토] 플랫폼 가칭을 「ERP비즈니스」로 (GM 2026-09-09)\n\nGM 원문: 「가칭 ERP비즈니스 로 해두고, 모듈까지 같이 팔 수 있는 비즈니스 모델이\n구축이 되면 상호명을 생각해보자. 웰페리온이 백그라운드가 될 거야.」\n\n상호를 지금 억지로 정하지 않는다 — 무엇을 파는 회사인지가 굳은 뒤에 이름을 붙인다.\n그때까지 화면·문서에 「(가칭) ERP비즈니스」로 쓰고 「(가칭)」을 떼지 않는다.\n정할 때가 언제인지(모듈까지 함께 파는 모델이 구축된 시점)와 웰페리온의 자리\n(백그라운드 — 실증 사례이자 1호 파트너사, 파는 회사의 얼굴이 아님)를 정본에 적었다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 13:05",
+      "status": "conflict",
+      "decided_at": "2026-09-09 13:05",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-26",
+      "sha": "fae34ed73ea275ef96f4be5360bb06a3b0329139",
+      "branch": "lock/PL-20260909-26",
+      "paths": [
+        "server/erp_api/clients.nginx.conf"
+      ],
+      "summary": "[시토] 고객사 화면 주소를 한 규칙으로 — /c/{회사}/ (GM 지적 2026-09-09)\n\nGM 원문: 「상담봇이 erp.wellperion.com/dietcamp 는 dietcamp 파트너사인 것 같은데?\n주소명 잘 설정해야할 것 같은데」\n\n지금까지 남의 회사 화면이 /dietcamp/ · /spogym/ · /gocheokgolf/ · /counsel/ 로\n제각각 붙어 있었다. 규칙이 없으니 회사가 늘 때마다 이름을 새로 고민해야 하고,\n무엇보다 우리 화면과 남의 회사 화면이 주소만 봐서는 안 갈린다. 다이어트캠프\n손님에게 웰페리온은 아무 상관 없는 회사인데 주소창에 그 이름이 뜬다.\n\n규칙 = /c/{회사}/ 하나. c = 고객사.\n  우리 것  /  ·  /admin/  ·  /studio/\n  남의 것  /c/{회사}/\n\n★옛 주소는 지우지도, 리다이렉트로 넘기지도 않았다. 같은 폴더를 두 주소가 함께\n연다. 다이어트캠프 페이지에 이미 <script src=\"/dietcamp/chat_widget.html\"> 이\n박혀 있고 그 페이지는 우리가 아니라 그쪽이 들고 있다. 리다이렉트는 대개\n따라가지만 「대개」에 남의 라이브를 걸지 않는다. 참조가 전부 옮겨진 것을 확인한\n뒤에 옛 주소를 닫는다(2026-09-07 실사고 — 옛 주소 스텁을 지워 파트너팀 팀장이\n404 를 봤다).\n\n다음 고객사 = 이 파일에 칸 하나 + /srv/www/{n}_{이름} 폴더. 다른 파일은 안 건드린다.\n\n검수: nginx 문법 통과·재적용. 새 주소와 옛 주소가 같은 파일을 같은 크기로 내주는\n것 확인(위젯 5,063바이트 동일). 로그인 필요한 폴더 목록은 양쪽 다 403 으로 같다.\n\n남은 것(GM 결정 대기): 고척골프·counsel 두 갈래도 같은 규칙으로 옮길지, 그리고\n손님에게 보이는 화면을 그 회사 도메인으로 뺄지(2단계 · 우리 비용 0).\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu [지연 재시도]",
+      "requester": "cto",
+      "created_at": "2026-09-09 13:44",
+      "status": "pushed",
+      "decided_at": "2026-09-09 13:44",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-27",
+      "sha": "c46d5e63f919d226e6b8c5be3686f8df24d1b730",
+      "branch": "lock/PL-20260909-27",
+      "paths": [
+        "server/erp_api/info.nginx.conf"
+      ],
+      "summary": "[시토] 손님 상담 화면 주소를 /info/{회사}/ 로 (GM 확정 2026-09-09)\n\nGM 원문: 「그냥 infobot은 어때? 일단 웰페리온만 erp.wellperion.com/응대bot_wellperion\n이렇게 하면 될듯」 → 낱말 info 확정, bot 은 뺐다.\n\n■ bot 을 뺀 이유\n설계 정본에 「손님 화면에 FAQ·AI·봇 낱말 없음」이 못 박혀 있다(80행·216행). 주소창에\nbot 이 보이면 손님은 들어가기 전에 이미 기계와 말한다는 걸 안다 — 화면에서 걷어낸\n것을 주소가 먼저 말해 버린다. 관리자 화면 쪽은 bot 을 써도 된다.\n\n■ counsel 을 안 쓴 이유\n영어 counsel 은 법률·심리 상담 쪽 낱말이라 손님이 오해한다. 게다가 지금 코드가 두\n낱말로 갈려 있었다 — 화면은 /counsel/, 답변 통로는 /api/chat/. info 로 모은다.\n\n■ 앞서 만든 /c/{회사}/ 규칙은 철회했다\n회사 이름을 먼저 두는 방식이었는데, GM 방식(무슨 서비스인지를 먼저)이 낫다. 나중에\n상담 말고 다른 것을 팔 때 /info/ 옆에 나란히 붙으면 되어 규칙이 안 흔들린다.\n서버에서도 지웠다.\n\n■ 옛 주소는 그대로 살려 뒀다\n/counsel/ · /dietcamp/ · /spogym/ 을 지우지도, 리다이렉트로 넘기지도 않았다. 같은\n폴더를 여러 주소가 함께 연다. 다이어트캠프 페이지에 옛 주소가 박혀 있고 그 페이지는\n그쪽이 들고 있다.\n\n검수: 세 회사 주소가 전부 200 이고 옛 주소와 같은 파일을 같은 크기(8,247바이트)로\n내준다. nginx 문법 통과·재적용.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 15:39",
+      "status": "pushed",
+      "decided_at": "2026-09-09 15:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-28",
+      "sha": "6d467955795b78a62072b2e7866ec4d1016bc87a",
+      "branch": "lock/PL-20260909-28",
+      "paths": [
+        "server/erp_api/pushback.py",
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "[시토] 되밀기 재시도 부활 + 전환 자격을 영역 단위로 (AWS 이관)\n\npushback.py — 실패한 행의 gas_status 를 오류값으로 덮어써서 다시 집는 조건\n(gas_status='queued')에서 빠지고 있었다. 5회 재시도가 한 번도 돌지 않았고,\n사람이 보는 실패 목록은 push_tries>=5 를 조건으로 해 그 행들을 영영 못 봤다.\n09-07~09-08 4행이 시트에 못 들어간 채 실패 0 으로 보였다 — 되밀어 4행 모두 도달.\n\nreconcile_dual_write.py — 전환 스위치 단위는 영역인데 자격은 액션별로만 쟀다.\n한 해 두어 번 쓰는 액션이 표본 3건 문턱을 못 넘어 그 영역 전체를 붙잡았다\n(write_todo 41행 전부 무결인데 11갈래 중 4갈래만 자격). by_area 를 더했다.",
+      "requester": "cto",
+      "created_at": "2026-09-09 16:26",
+      "status": "conflict",
+      "decided_at": "2026-09-09 16:26",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-29",
+      "sha": "c2d5f65317815ff9e4adf2b8073a9fc55a5aac04",
+      "branch": "lock/PL-20260909-29",
+      "paths": [
+        "server/erp_api/api_write.py",
+        "server/erp_api/pushback.py"
+      ],
+      "summary": "[시토] 「action 필수」= 본문 미도달로 판정해 재전송 (AWS 이관)\n\n09-07 저녁 회원 7건 · 09-08 강습 1건이 GAS 로부터 '{ok:false, error:\"action 필수\"}'\n를 받았다. 보낸 본문에는 action 이 멀쩡히 들어 있었다 — 실무진 화면에는 '잘못\n보냈다'로 보여 같은 칸을 28분간 손으로 다시 눌렀다.\n\n실측: 모르는 action 을 보내면 GAS 는 「알 수 없는 action: …」이라 답한다(본문을 봤다는 뜻).\n그러니 「action 필수」는 본문이 doPost 에 닿지도 않은 것이고, 시트엔 아무것도 안 써졌다.\n→ 다시 보내도 중복이 아니다. api_write 는 그 답에 한해 한 번 더 보내고,\n   pushback 은 되밀기 대기에 남긴다(gas-error 로 닫지 않는다).\n\n리다이렉트 자취(_hops·_final)를 거부당한 응답에만 실어 원장에 남긴다 — 정상 흐름은\n302 → script.googleusercontent.com/macros/echo 하나다(실측).",
+      "requester": "cto",
+      "created_at": "2026-09-09 16:32",
+      "status": "pushed",
+      "decided_at": "2026-09-09 16:32",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-30",
+      "sha": "6bae7ee232605d07b0c733030a97f041dcd1f69f",
+      "branch": "lock/PL-20260909-30",
+      "paths": [
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "[시토] 같은 칸을 두 번 고치면 앞 쓰기가 영원히 불일치로 잡히던 것 (배 11427)\n\n시포 진단: M00229 「시작 일자」를 09-08 에 11초 간격으로 두 번 고쳤다. 미러에는 마지막\n값만 남으므로 앞선 쓰기는 시트에 제대로 닿았어도 대조기가 틀렸다고 센다. 데이터 손실은\n없는데 그 2건이 전사 무결 스트릭을 끊고 있었다.\n\n같은 (회원, 칸)을 여러 번 쓴 경우 마지막 쓰기만 대조한다. 덮인 칸은 '틀린 것'이 아니라\n'못 재는 것'이라 세지 않는다(_saved 없는 옛 형식 행과 같은 처리). member_active_update 와\nmember_hold_approve 가 같은 로직을 복사해 두고 있어 한 함수로 합쳤다.\n\n합산본(forms.write)을 전사 streak 계산에서 뺐다 — 액션 40여 개를 한 통에 담아 서로를\n인질로 잡고, sheet-missing(대조 대상 아님) 제외가 이 통에는 안 걸린다(09-08 write 10건 중\n3건이 그것이었다). 결정 단위는 by_form·by_area 다.\n\n대조 출력 끝에 '켤 수 있는 영역' 한 줄을 붙였다 — 사람이 정하는 것이 그것 하나다.\n\n실측: member_active_update 09-08 이 6/8 → 8/8 · 전사 streak 0 → 3.",
+      "requester": "cto",
+      "created_at": "2026-09-09 16:49",
+      "status": "pushed",
+      "decided_at": "2026-09-09 16:49",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-31",
+      "sha": "dcb63a8af023e80b35d7f6dfbc05ec4924902ec2",
+      "branch": "lock/PL-20260909-31",
+      "paths": [
+        "server/erp_api/reconcile_dual_write.py"
+      ],
+      "summary": "[시토] 미리보기(dryRun) 를 실제 쓰기로 세던 것 (AWS 이관 대조)\n\nmember_archive_restore 가 09-08 에 0/1 로 그 갈래 전체를 붙잡고 있었는데, 그 한 건이\ndryRun 미리보기였다. 보관에 없는 전화라 GAS 가 archive-not-found 를 답한 것 — 묻는 말에\n제대로 답한 것이지 데이터가 어긋난 게 아니다. 쓰지도 않은 것을 '시트에 안 들어갔다'로\n세면 계측기가 매일 거짓 신호를 준다.\n\n판정하는 자리(reconcile_by_action)에서 미리보기를 not_applicable 로 뺀다 — 쓰기 동작은\n그대로다(미리보기는 GAS 쪽 preview 를 받아야 하므로 계속 GAS 로 나간다).\n실측: member_archive_restore 0/1 → 0/0 · 제외 1.",
+      "requester": "cto",
+      "created_at": "2026-09-09 17:10",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:10",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-32",
+      "sha": "59e106e4a4fae0dae548a6d1f7272784edab1cda",
+      "branch": "lock/PL-20260909-32",
+      "paths": [
+        "server/erp_api/api_reception.py",
+        "server/erp_api/reception-public.nginx.conf"
+      ],
+      "summary": "[시토] 분실물 공개 조회를 서버로 — 무로그인 라우트 (배 11299)\n\nGM 확인 2026-09-09: \"무로그인 공개읽기 라우트는 맞아, 홈페이지니까\". /api/reception/submit ·\n/api/reception/similar 과 같은 원칙이라 새 결재 자리가 아니었다 — 제가 결재 대기로 잘못 올렸다.\n\nGET /api/reception/lost/public?view=gallery|disposal 을 열었다. GAS _lfGallery/_lfDisposal 의\n칸과 규칙을 그 줄 그대로 옮겼다(게시중 필터 · 습득월 M+2 폐기 코호트 · 전월 습득분만 임박 표시 ·\nconsumable 은 폐기/그 외는 경찰인계). 서버는 원장을 고치지 않는다 — GAS 의 read-time sweep 은\n시트가 정본이고 거울이 5분마다 결과를 받아 오므로, 서버는 같은 규칙을 '걸러내기'로만 적용한다.\n\n공개 응답 칸은 _LF_PUBLIC_FIELDS 로 못 박았다 — 주인성함·주인연락처·수령자연락처·보관위치·\n내부메모·서명URL·등록직원은 코드 경계에서 빠진다(GAS 의 LF_HEADERS vs LF_EXTRA_HEADERS 와 같은 방식).\n\n라이브 실측(무쿠키): 갤러리 37/37 · 폐기임박 27/27 · 처분완료 32/32 — GAS 와 건수·칸·값 전부 일치,\n불일치 0, 민감 칸 유출 0. 직원용 /api/reception/lost·/board 는 그대로 401.\n\n화면 배선은 COO 담당(배 1177).",
+      "requester": "cto",
+      "created_at": "2026-09-09 17:27",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:27",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-33",
+      "sha": "2192de41fdaf697315d7ea948af5e463a11fbe95",
+      "branch": "lock/PL-20260909-33",
+      "paths": [
+        "3. 웰페리온 가이드/coo/check/시설부 체계.html"
+      ],
+      "summary": "시설부 체계 GAS 직행 3곳을 서버 거울 먼저로 (배 11430 · AWS 이관)\n\nGM 지시 2026-09-09 \"AWS 이관건 1순위로 신경써서 작업해줘\". 시토 전수 실측(배 11299)에서\n시우 도메인으로 넘어온 목록 중, 서버 거울이 이미 있는 세 곳을 배선했다.\n\n- 법정점검 빈칸 세기(load_schedule) → /api/misc/schedule/load_schedule\n  이 블록은 페이지 앞쪽이라 아래 ERP_API_ON 이 아직 없다 — 같은 판정을 블록 안에 따로 뒀다.\n- 거래업체 분류(board) → /api/board/{key} · 거래업체 목록(vendor_list) → /api/misc/ops/vendor_list\n  둘 다 이 페이지에 이미 있는 _chkRead() 관문을 쓴다(타임아웃·로그인만료 판정·GAS 폴백 포함).\n\n배선 규칙은 전사_거래업체.html 359·487 과 같다 — ERP 도메인이면 서버 먼저, 실패하면 종전 GAS.\nGAS 예비 경로는 지우지 않는다(GAS 를 끄는 날 한꺼번에 걷는다).\n\n검수: ERP 도메인을 흉내 낸 headless 실측 — 서버 호출 8건에 세 새 경로 모두 포함,\npageerror 0. file:// 로 열면 종전대로 GAS 만 부른다(폴백 정상).\n남은 GAS 직행 = 쓰기 1건 · fcheck_ranges_get(거울 없음 · 시토) · 채용 공개현황(나우열M 관할).\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0191Xc7XJygH2geuvBhpGxne",
+      "requester": "safe_commit_cli",
+      "created_at": "2026-09-09 17:44",
+      "status": "closed",
+      "decided_at": "2026-09-09 17:52",
+      "decided_by": "시우 — PL-20260909-34 로 대체(같은 파일·같은 내용 · 33 은 커밋 제목에 역할이 없어 요청자 unknown 으로 잡힌 중복)"
+    },
+    {
+      "id": "PL-20260909-34",
+      "sha": "779198bc92024cf9ac1a894ba09848b31f050637",
+      "branch": "lock/PL-20260909-34",
+      "paths": [
+        "3. 웰페리온 가이드/coo/check/시설부 체계.html"
+      ],
+      "summary": "[시우] 시설부 체계 GAS 직행 3곳을 서버 거울 먼저로 (배 11430 · AWS 이관)\n\nGM 지시 2026-09-09 \"AWS 이관건 1순위로 신경써서 작업해줘\". 시토 전수 실측(배 11299)에서\n시우 도메인으로 넘어온 목록 중, 서버 거울이 이미 있는 세 곳을 배선했다.\n\n- 법정점검 빈칸 세기(load_schedule) → /api/misc/schedule/load_schedule\n  이 블록은 페이지 앞쪽이라 아래 ERP_API_ON 이 아직 없다 — 같은 판정을 블록 안에 따로 뒀다.\n- 거래업체 분류(board) → /api/board/{key} · 거래업체 목록(vendor_list) → /api/misc/ops/vendor_list\n  둘 다 이 페이지에 이미 있는 _chkRead() 관문을 쓴다(타임아웃·로그인만료 판정·GAS 폴백 포함).\n\n배선 규칙은 전사_거래업체.html 359·487 과 같다 — ERP 도메인이면 서버 먼저, 실패하면 종전 GAS.\nGAS 예비 경로는 지우지 않는다(GAS 를 끄는 날 한꺼번에 걷는다).\n\n검수: ERP 도메인을 흉내 낸 headless 실측 — 서버 호출 8건에 세 새 경로 모두 포함, pageerror 0.\nfile:// 로 열면 종전대로 GAS 만 부른다(폴백 정상).\n남은 GAS 직행 = 쓰기 1건 · fcheck_ranges_get(거울 없음 · 시토) · 채용 공개현황(나우열M 관할).\n\n▸PL-20260909-33 은 같은 내용인데 커밋 제목에 역할이 없어 요청자가 unknown 으로 잡혔다(GM 카드 대기).\n  이 커밋이 그 자리를 대신한다 — 33 은 반려해도 된다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0191Xc7XJygH2geuvBhpGxne",
+      "requester": "coo",
+      "created_at": "2026-09-09 17:44",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:44",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-35",
+      "sha": "850d8e41f7321d9561e708e1004b37aecc301a1c",
+      "branch": "lock/PL-20260909-35",
+      "paths": [
+        "3. 웰페리온 가이드/cpo/member/membership.html",
+        "server/erp_api/api_members_write.py"
+      ],
+      "summary": "[시포] 회원 쓰기 마지막 2종 서버 이관 — member_registered_add·member_registered_remove (배1050)\n\n등록현황 탭은 월별 체크표라 미러에 없어 시트 전용으로 두고(스펙 §2-3 판단) 유효회원만 서버 원장이 맡는다.\nadd = 전화 단독 매칭일 때만 서버가 고친다(0건은 GAS 채번, 2건+는 GAS 도 거부) · 등록회차는 등록일자가\n실제로 바뀔 때만 +1 · 종목명은 거울에서 최다 표기로 정규화(GAS _memberProgramCanon_ 이식).\nremove = 전화 단독 매칭 + 등록회차 1일 때만 삭제하고 삭제 전 행 전체를 이력에 남긴다 · 비밀번호 게이트는\nGAS 가 판정하고 거부하면 _finish 가 되살린다.\n화면 _MEMBER_WRITE_ACTIONS 에 두 액션 배선 · 자체점검 6건 추가.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016VpvBfAz3kyocrmZP44AH6",
+      "requester": "cpo",
+      "created_at": "2026-09-09 17:48",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:48",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-36",
+      "sha": "f483a842809ea2e132e61f72d0a0a1d2557cae52",
+      "branch": "lock/PL-20260909-36",
+      "paths": [
+        "server/erp_api/sync_misc.py"
+      ],
+      "summary": "[시토] 시설부 점검기준 조회 서버 거울 추가 (시우 배1179 문의 1)\n\nfcheck_ranges_get(시설부 「점검기준」 공개 조회)에 서버 거울이 없어 화면이 GAS 로 직행하고\n있었다. vendor_list 와 같은 점검 GAS 라 새 열쇠를 만들지 않고 sync_misc 의 ops 밑에 한 줄 붙였다.\n\n라이브 실측: GET /api/misc/ops/fcheck_ranges_get 이 {ok, ranges:[...]} 를 GAS 와 같은 모양으로\n돌려준다(수영장 pH·유리잔류염소 등). 무쿠키 401 — 종전 /api/ 관문 그대로.",
+      "requester": "coo",
+      "created_at": "2026-09-09 17:50",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:50",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-37",
+      "sha": "65f65461eeb710758dfd736ce9d30834ec2a88a2",
+      "branch": "lock/PL-20260909-37",
+      "paths": [
+        "3. 웰페리온 가이드/coo/check/시설부 체계.html"
+      ],
+      "summary": "[시우] 시설부 점검 기준표도 서버 거울 먼저로 (배 11430 · AWS 이관)\n\n시토가 오늘 연 거울을 배선했다 — GET /api/misc/ops/fcheck_ranges_get (커밋 f483a8428 · 같은 점검 GAS\n라 sync_misc ops 밑에 붙었고 응답 모양 {ok, ranges:[…]} 이 GAS 와 같다).\n이 페이지에 이미 있는 _chkRead() 관문을 그대로 쓴다 — ERP 도메인이면 서버 먼저, 실패하면 종전 GAS.\n\n검수: ERP 도메인을 흉내 낸 headless 실측 — /api/misc/ops/fcheck_ranges_get 로 갔고 거울이 준 기준값이\n기준표에 그려짐 · pageerror 0.\n\n▸채용 공개현황(hiring-status.js)은 배선하지 않는다 — 시토 실측으로 HR 거울 9표가 전부 0건이고\n  (/api/hr/health ok:false · last_migration null) HR 이관은 나우열M 관할이라 AI 가 손대지 않는다.\n  GAS 를 끄는 날까지 지금 배선을 유지한다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_0191Xc7XJygH2geuvBhpGxne",
+      "requester": "coo",
+      "created_at": "2026-09-09 17:51",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:51",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-38",
+      "sha": "d0e38bdaa69f903a5dffd68f172694761ba4ddae",
+      "branch": "lock/PL-20260909-38",
+      "paths": [
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "[시포] 종목명 정규화 갈림 감시 — sync_members 가 서버가 쓴 값과 새로 뜬 거울을 대조 (배1050)\n\n시토 제안(2026-09-09)을 받되 대조 대상을 바꿨다. '거울로 계산한 값 vs 서버 함수 값'은 두 쪽이 같은\n재료라 늘 같게 나와 아무것도 못 잡는다. 대신 서버가 그때 쓴 종목명(member_change_log 등록 추가 이력)과\n방금 시트에서 새로 뜬 거울 값을 맞춘다 — 거울이 낡은 채로 정규화했을 때만 갈린다.\n0 이면 조용하고, 아니면 회원번호를 찍는다. 새 감시기·새 파일 없이 이미 도는 sync 안에 붙였다.\n실측: 실사이클 1,749건 갱신 · 갈림 0건.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016VpvBfAz3kyocrmZP44AH6",
+      "requester": "cpo",
+      "created_at": "2026-09-09 17:53",
+      "status": "pushed",
+      "decided_at": "2026-09-09 17:53",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-39",
+      "sha": "961b5a7f91cc82e00a2e0c935afe4208ba92da1a",
+      "branch": "lock/PL-20260909-39",
+      "paths": [
+        "scripts/sync_queue_mirror.py"
+      ],
+      "summary": "[시토] 화면 열람 원장을 발행루트 거울에 추가 (시모 배1180)\n\n관리 콘솔이 「한 번이라도 열린 화면 N/M」을 원장에서 읽으려면 브라우저가 그 파일에 닿아야 한다.\nstatus/page_ping.json 은 저장소 루트에만 있어 발행 트리(3. 웰페리온 가이드/) 밖이었다 —\n_queue.json·token_usage.json 등 7개가 이미 쓰는 같은 거울 표에 한 줄 더했다.\n\n새 스크립트·새 배선 없다. 원장은 한 벌 그대로고 커밋 때 거울만 따라 간다.\n서빙 주소 = /status/page_ping.json · 지금 값 count 43 · opened_count 40 · collected_at 2026-09-09 07:40.",
+      "requester": "cmo",
+      "created_at": "2026-09-09 18:08",
+      "status": "pushed",
+      "decided_at": "2026-09-09 18:08",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-40",
+      "sha": "8184ad4a954de9a7f7dc0f44ecef70aaccac3ccf",
+      "branch": "lock/PL-20260909-40",
+      "paths": [
+        "3. 웰페리온 가이드/cto/automation/카톡전송관리.html",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 카톡 전송방 등록부 쓰기를 서버 관문으로 (배 11299 GAS 정리)\n\n내 화면·내 관문인데 kakao_rooms_save/delete 두 곳만 GAS 로 직행하고 있었다. 서버 원장에\n안 남으니 이중기록 대조에도 안 잡히고, GAS 를 끄는 날 이 화면이 먼저 죽는다.\n\n· 서버 관문 목적지 표(api_write._gas_key)에 두 액션 추가 — 업무 GAS 와 같은 프로젝트다.\n· 화면 관문(erp_write.js) 쓰기 목록에 추가.\n· 화면은 _roomsPost() 한 곳으로 모았다 — ERP 도메인이면 관문, 그 밖·관문 실패는 종전 GAS 직행.\n  읽기(kakao_rooms_get)는 이미 /api/kakao/rooms 를 먼저 부르고 있어 그대로 뒀다.\n\n실측: 서버 자체점검 통과 · 재기동 뒤 헬스 200 · 화면 인라인 스크립트 문법 0오류.\n남은 「우리가 옮길 것」 6곳 중 2곳이 줄었다.",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:05",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:05",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-41",
+      "sha": "876e4cd53132073c09f42ee59d3170459deb5bcf",
+      "branch": "lock/PL-20260909-41",
+      "paths": [
+        "server/erp_api/sync_brojay.py"
+      ],
+      "summary": "[시토] 브로제이 매출·입장 서버 적재 가동 — 6일 막혀 있던 배 959\n\n시포가 API 사양·키를 받아 넘겼다(배908). 막힘은 「브로제이 쪽 자료 미수령」 하나였고 오늘 풀렸다.\n\n· 환경값 4줄 = 서버 api.env(키는 저장소에 안 둔다). 머리말이 Bearer 가 아니라 API-KEY 라\n  기본값 그대로면 전부 401 이었다 — 그 줄만 바꿨다. 공백 있는 값이라 따옴표로 감쌌다\n  (api.env 는 셸로도 읽혀서, 안 감싸면 이 파일을 source 하는 다른 스크립트가 통째로 깨진다 — 실측했다).\n· 페이지 넘김 추가: 한 날이 여러 장이다. 입장은 200건씩 4장(하루 744건)이라 종전 코드는\n  200건에서 잘렸다. page_index 를 빈 장까지 올려 이어 붙인다.\n  매출은 방식이 달라(pagination.has_next/next_cursor) 커서 이름을 모른다 — has_next 가 true 면\n  **그 날짜를 실패로 돌린다.** 이름을 지어내 반쪽만 저장하느니 안 저장하는 쪽이 낫다.\n· 예약 = 하루 3회(09·15·23:40). 5분 주기는 월 34,000콜로 무료량(10,000)의 세 배다.\n\n실측: 09-08 매출 27 · 입장 744(4장) / 09-09 매출 5 · 입장 618(4장) — 시포 실측치와 일치.\n헬스 ok:true · 실패 0.",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:16",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:16",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-42",
+      "sha": "a17690d55335dce9a2032cf15fc051ec52bd5281",
+      "branch": "lock/PL-20260909-42",
+      "paths": [
+        "server/counselbot/tenants/3_gocheokgolf.json",
+        "server/counselbot/tenants/3_spogym.json",
+        "server/deploy_chat.sh",
+        "server/deploy_counsel_pages.sh",
+        "server/erp_api/api_chat.py",
+        "server/erp_api/counsel-public.nginx.conf",
+        "server/erp_api/info.nginx.conf",
+        "server/erp_api/spogym.nginx.conf"
+      ],
+      "summary": "feat(cbo): 상담봇 3번 테넌트 스포짐 → 고척 QA골프 교체 (GM 지시 2026-09-09) — 프로필·TENANTS·배포 2본·nginx·설계 갱신",
+      "requester": "cbo",
+      "created_at": "2026-09-09 20:27",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:27",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-43",
+      "sha": "cccf4294c6d65c708345fd5792fecbf1a2cab357",
+      "branch": "lock/PL-20260909-43",
+      "paths": [
+        "3. 웰페리온 가이드/erp/admin/index.html",
+        "server/deploy_env.sh",
+        "server/erp_api/app.py",
+        "server/erp_api/erp-api@.service"
+      ],
+      "summary": "feat(cto): 환경 3벌(알파·베타·라이브) 실제 분리 — 손님 없는 비행기 두 대를 세웠다\n\nGM 지시 2026-09-09 「Alpha 반복개발 / Beta 배포전시험 / Real 서비스중 — 이렇게 분리해 둔다」.\n\n세운 것\n · server/deploy_env.sh {alpha|beta} 한 줄로 코드·자료칸·서비스·주소를 통째로 세운다.\n · systemd 템플릿 erp-api@.service (알파 8003 · 베타 8002 · 라이브 8001 그대로).\n · 자료칸 분리 = PostgreSQL erp_alpha / erp_beta (라이브 erp 무접촉).\n · 주소 = /alpha/api/ · /beta/api/ (로그인 관문은 라이브와 동일하게 건다).\n · 알파·베타 환경파일에서 외부 목적지(_URL·_CHAT_ID)를 전부 걷어냈다 — 시험이 진짜\n   구글 시트·카톡방·브로제이에 닿을 길 자체가 없다. 원본 스위치는 default=server 하나.\n · app.py /api/health 에 _env 추가 — 어느 비행기에 말하고 있는지 응답으로 구별된다.\n\n빈 비행기 실측\n · 베타에 member_active_update 한 건 POST → {ok, queued, mode:server, id:1}\n · 베타 write_log 1행 · 라이브 write_log 653행 중 그 값 0건 (라이브 무접촉 확인)\n · 세 포트 health 각각 alpha/beta/live 로 자기 이름을 답한다\n\n화면\n · ERP비즈니스 관리 콘솔(/erp/admin/)에 「환경 3벌」 절 추가 — 세 벌의 주소·자료칸·\n   외부연결을 적고, 상태는 각 환경 health 를 직접 물어서 채운다(손으로 적지 않는다).\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:31",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:31",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-44",
+      "sha": "30b96e02bf607c0ab0e735fde6bbc63200c52def",
+      "branch": "lock/PL-20260909-44",
+      "paths": [
+        "server/counselbot/tenants/3_gocheokgolf.json",
+        "server/counselbot/tenants/3_gocheokgolf_faq_seed.json"
+      ],
+      "summary": "feat(cbo): 고척 QA골프 정본 확정 — 부장님 18문 전항 회신 박제 · 발행 게이트 해제 · 상담봇 FAQ 10문 씨앗 [지연 재시도]",
+      "requester": "cbo",
+      "created_at": "2026-09-09 20:35",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:35",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-45",
+      "sha": "ff0053e3352f4a29dd600fbe6a0125f5369fe288",
+      "branch": "lock/PL-20260909-45",
+      "paths": [
+        "server/counselbot/render_counsel_page.py",
+        "server/counselbot/tenants/1_wellperion.json",
+        "server/deploy_counsel_pages.sh",
+        "server/erp_api/robots.nginx.conf"
+      ],
+      "summary": "fix(cto): erp 도메인에 robots.txt·sitemap.xml 을 세우고 상담 페이지 머리글을 테넌트별로 갈랐다\n\n시모 실측(배1002 GEO): erp.wellperion.com/robots.txt 를 치면 robots 파일이 아니라 로그인 화면\nHTML 이 나왔다. 크롤러는 그것을 「읽을 수 없는 사이트」로 판정한다. 공개 상담 페이지는 열려\n있었는데 아무도 그 문을 못 찾고, 들어와도 제목이 「상담」 한 낱말이었다.\n\n · robots.txt — 공개 상담 셋만 허용하고 나머지는 전부 막는다. 여는 파일이 아니라 좁히는 파일이다.\n · sitemap.xml — 같은 셋. lastmod 는 안 적는다(손으로 적으면 낡는다 · 시모).\n · 상담 페이지 = 세 테넌트가 파일 하나를 나눠 쓴다. 크롤러는 자바스크립트를 안 돌리므로\n   제목·소개가 정적 HTML 에 있어야 하는데 그 값은 테넌트마다 다르다.\n   → 표시(SEO:start·H1·GREET) 안쪽만 프로필 seo 로 갈아 끼우는 렌더러를 두고,\n     프로필에 seo 가 없으면 중립문을 넣는다. 값이 없을 때 남의 이름을 다는 사고를 구조로 막는다.\n   → 웰페리온 seo 채움(문안 시모). 다캠·고척은 중립문 — 그쪽 브랜드 말은 시보 몫이다.\n\n정식 주소는 /counsel/ 하나로 확정. /1_wellperion/counsel/ 는 열지 않는다 — 문이 둘이면 같은 글이\n두 벌로 잡혀 둘 다 값이 깎인다.\n\n검수: robots.txt·sitemap.xml 200(밖에서) · 다캠·고척 상담 200 · 렌더러 자체점검 통과\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:36",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:36",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-46",
+      "sha": "bbf51780fcb6a4011389ecc70d369ab5b68cf28b",
+      "branch": "lock/PL-20260909-46",
+      "paths": [
+        "server/erp_api/api_write.py",
+        "server/erp_api/pushback.py"
+      ],
+      "summary": "feat(cto): 이관 막는 자리 20곳을 재서 화면에 올리고, 서버가 틀린 번호를 주던 것을 끊었다\n\n희만이 조언 그대로 — 의존 항목을 다 적고 서버에 1:1 로 옮긴다. 그 첫 단계인 「다 적기」를 끝냈다.\n판정 기준 하나: 그 화면이 응답에서 ok 말고 다른 칸을 읽는가. 읽으면 아직 못 끊는다.\n\n실측(화면 코드 전수)\n · 지금 당장 끊어도 되는 화면 22곳 · 막힌 자리 20곳\n · 막힌 이유 갈래: 가능 5 · 불가 8 · 판단필요 6 · 이번에 끝낸 것 1\n\n이번에 고친 것 둘\n 1) 서버가 응답에 id 를 담고 있었다. GAS 의 id 는 업무 id·접수번호이고 서버의 id 는 원장 행번호다 —\n    전혀 다른 숫자인데 이름이 같아, 화면 둘이 그것을 접수번호로 믿고 쓰고 있었다.\n    (업무 SSOT = 첨부가 엉뚱한 업무에 붙는다 · 실무진피드백 = 사람에게 틀린 번호를 보여 준다)\n    없는 값을 안 주는 편이 틀린 값을 주는 것보다 낫다 → logId 라는 다른 이름으로만 준다.\n    만드는 자리를 server_ok() 한 곳으로 모으고 자체점검에 「id 를 담으면 안 된다」를 박았다.\n 2) 점검 화면 몇 곳이 d.success 만 본다(주차관리부는 그것 하나로 실패 판정) → success 를 ok 와 함께 싣는다.\n    막힌 자리 20곳 중 한 곳이 이걸로 끝났다.\n\n시험 비행 스위치\n · 주소에 ?erpenv=beta 를 붙이면 그 화면의 쓰기가 베타 서버로 간다(?erpenv=off 로 되돌린다).\n · 시험 환경에서는 GAS 폴백을 막는다 — 폴백이 살아 있으면 손님 없는 비행기가 아니다.\n   단 읽기는 막지 않는다(막으면 시험 화면이 아예 안 뜬다).\n · 화면 맨 위에 빨간 띠 — 실무진이 시험 화면을 라이브로 착각하는 것을 눈으로 막는다.\n\n검수: api_write 자체점검 통과(알파·베타·라이브 3벌) · 베타 쓰기 응답 {ok,success,logId,queued,mode:server}\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:41",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:41",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-47",
+      "sha": "97a8d224689a3c6861fa2b25ebf2705794509731",
+      "branch": "lock/PL-20260909-47",
+      "paths": [
+        "server/counselbot/tenants/2_dietcamp.json",
+        "server/counselbot/tenants/3_gocheokgolf.json"
+      ],
+      "summary": "feat(cbo): 상담봇 다캠·고척 seo 5칸 작성 (시모 요청) — 확인받은 사실만",
+      "requester": "cbo",
+      "created_at": "2026-09-09 20:43",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:43",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-48",
+      "sha": "15f69f92bbbedae1a00fdc6b48bca088fc2ca621",
+      "branch": "lock/PL-20260909-48",
+      "paths": [
+        "server/erp_api/api_visitors.py",
+        "server/erp_api/brojay_transfer_gap.py"
+      ],
+      "summary": "[시포] 일일 입장객 순 방문자 수 서버 이식 + 브로제이 이관 누락 감시 (배908)\n\napi_visitors.py — 운영부 스프레드시트 수식(이경연 실장 09-09 공유)을 그대로 옮겼다. 규칙을 바꾸지 않는다:\n직원(회원명 부서접두·직함접미·이용권 프리랜서) 판정이 먼저, 그다음 (WSC)유소년·(준)준회원·(정)|(단)|(FD)정회원,\n그 외는 제외. 중복 제거 열쇠는 회원명|연락처. 실측 09-08 = 549·37·44 로 시트와 세 칸 모두 0 차이.\nbrojay_transfer_gap.py — 스포피아→브로제이 손 이관이 빠진 날을 매일 09:10 에 센다. 차이는 '틀림'이 아니라\n'아직 안 옮김'이다(브로제이 실결제 10/1 시작). 시트 제목의 날짜로 그날 일자탭이 채워졌는지 먼저 보고 대조한다.\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_016VpvBfAz3kyocrmZP44AH6",
+      "requester": "cpo",
+      "created_at": "2026-09-09 20:45",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:45",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260909-49",
+      "sha": "dca6a9f3b98364be63518476d537e56368964175",
+      "branch": "lock/PL-20260909-49",
+      "paths": [
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "fix(cto): 켜도 사고 안 나게 — 서버 원본으로 절대 안 보내는 동작 셋을 코드에 박았다\n\n영역 스위치는 영역 단위인데, 한 영역 안에 동작이 수십 개다. 영역을 끊을 준비가 됐어도\n그중 몇 개는 결과가 구글 쪽에만 있어서, 서버가 즉시 ok 를 주면 사람에게 거짓말이 된다.\n\nNO_SERVER_ACTIONS 셋 (스위치를 server 로 켜도 이 동작만 종전대로 구글을 탄다)\n · unlock_round  제출잠금 해제 비번을 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다\n                 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다\n · todo_upload   첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 못 만들고, 없으면 첨부가 사라진다\n · save_schedule 동시편집 판번호를 GAS 가 매긴다 — 없으면 다음 저장이 전부 막힌다\n\n이게 붙어서 달라진 것\n · 점검 3부서 = 남은 자리 2곳(둘 다 무해한 표시값 · 시우 배). 비번 구멍은 구조로 막혔다.\n · 전사일정 = 남은 자리 0곳. 스위치를 실수로 켜도 안전하다.\n · 업무·결재 = 첨부는 잠갔고 업무 번호·다음 결재자 둘만 남았다.\n\n자체점검에 셋이 목록에 있고 목적지 표에도 있는지(= dual 로 돌아가는지)를 박았다.\n검수: 알파·베타·라이브 3벌 자체점검 통과 · 라이브 health 200\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01G3fqDyP4bdVRomXKK5qmZu",
+      "requester": "cto",
+      "created_at": "2026-09-09 20:48",
+      "status": "pushed",
+      "decided_at": "2026-09-09 20:48",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-01",
+      "sha": "f5965707875de580bb950f94d576e56c42d52d92",
+      "branch": "lock/PL-20260910-01",
+      "paths": [
+        "server/erp_api/sync_board.py",
+        "server/erp_api/sync_check.py",
+        "server/erp_api/sync_inquiries.py",
+        "server/erp_api/sync_reception.py"
+      ],
+      "summary": "[시토] GAS 일시 실패를 한 번에 포기하지 않는다 — 회원 미러 경보 깜빡임·매출보고 I16 헛경보 근본 수리",
+      "requester": "cto",
+      "created_at": "2026-09-10 08:49",
+      "status": "pushed",
+      "decided_at": "2026-09-10 08:49",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-02",
+      "sha": "79efd92c13923aaf1ae459f2cc3a0fd03d1a2fca",
+      "branch": "lock/PL-20260910-02",
+      "paths": [
+        "3. 웰페리온 가이드/coo/report/매출회원현황보고.html"
+      ],
+      "summary": "[시포] 매출·회원 현황 보고 화면 입장 3칸(N13~N15)을 서버 /api/visitors 로 배선 — 손입력 14칸→11칸 (배1071·908)",
+      "requester": "cpo",
+      "created_at": "2026-09-10 09:17",
+      "status": "pushed",
+      "decided_at": "2026-09-10 09:17",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-03",
+      "sha": "2ef91e4f7f1e16134fc20cc6ced8442992c036f3",
+      "branch": "lock/PL-20260910-03",
+      "paths": [
+        "3. 웰페리온 가이드/cto/env_status.html"
+      ],
+      "summary": "[시토] 환경 3벌 현황 화면 추가(cto/env_status.html) — 알파·베타·라이브 실시간 상태·자료건수·외부주소 한 장",
+      "requester": "cto",
+      "created_at": "2026-09-10 09:29",
+      "status": "pushed",
+      "decided_at": "2026-09-10 09:29",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-04",
+      "sha": "370adeb7f50d657dd8ce9e5f70871e885714b004",
+      "branch": "lock/PL-20260910-04",
+      "paths": [
+        "server/erp_api/sales_report_render.py"
+      ],
+      "summary": "[시토] 매출보고 서버 판 → 매출 및 회원 현황보고 화면 정본 병합 (GM 지시 2026-09-10)\n\n정본 = 3. 웰페리온 가이드/coo/report/매출회원현황보고.html. 그 화면은 이미 /api/report/\nsales_report_cells(=sales_report_render.build_report)로 서버와 같은 계산을 쓴다(약속 L01 —\n값이 두 벌로 갈리지 않는다). 업무보고방 09:20 발송 이미지·캡션의 문구를 \"서버 판(병행)\"\n(별도 보고인 것처럼)에서 \"매출 및 회원 현황보고 요약\"(화면 링크 포함)으로 바꿔 정본이\n화면임을 항상 밝힌다. 서버에 playwright 가 없어 화면 자체를 스크린샷하진 못한다 — 이번엔\n문구·틀만 정본에 맞추고, 픽셀 그대로 필요하면 playwright 설치 후 report_page_capture.py\n로 교체(ponytail 코멘트로 남김).\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01PHrpxMn3u1woDaHMtyCV43",
+      "requester": "cto",
+      "created_at": "2026-09-10 09:32",
+      "status": "pushed",
+      "decided_at": "2026-09-10 09:32",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-05",
+      "sha": "6073e2b296cde41b322b211891016c2687e72292",
+      "branch": "lock/PL-20260910-05",
+      "paths": [
+        "server/erp_chro/chro.nginx.conf"
+      ],
+      "summary": "[시토] 인사 API 길을 라이브로 되돌린다 — 베타 환경이 그 포트를 차지해 조용히 빈 값이 나가던 것\n\nnginx /api/hr/ 가 포트 8002 를 보고 있었다. 그 자리를 쓰던 erp-chro.service 는 09-07 부터\n죽어 있었고, 09-09 환경 3벌(배1183)을 세우며 베타 환경이 8002 를 가져갔다. 결과로 인사 API\n요청이 베타 프로세스(자료칸 erp_beta · 비어 있음)로 들어가 모든 조회가 0건을 돌려주고 있었다.\n\n★사람 피해는 아직 없다 — 화면 74장 전수 확인 결과 /api/hr 를 부르는 화면이 아직 없다(이관 전).\n데이터를 실은 뒤에 발견됐다면 인사 화면 전체가 빈 값으로 보였을 것이다.\n\n- proxy_pass 를 8001(라이브)로. api_hr.py 는 api_*.py 자동 등록으로 이미 라이브 안에 있다.\n- 끝 슬래시를 뺀다 — 붙이면 /api/hr/ 접두가 잘려 라우터 접두(/api/hr)와 어긋나 404 가 된다.\n- 되돌리기 = 서버 /srv/erp/chro.conf.bak-20260910.\n- 배1093(제한 계정)을 되살릴 때는 8002 가 아닌 빈 포트를 고르고 이 파일도 함께 고친다.\n\n확인: nginx -t 통과 · reload · 무쿠키 401(관문 정상) · 서버 안 8001 직접 200.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01PHrpxMn3u1woDaHMtyCV43",
+      "requester": "cto",
+      "created_at": "2026-09-10 09:48",
+      "status": "pushed",
+      "decided_at": "2026-09-10 09:48",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-06",
+      "sha": "acb1f6a5505067748ecbfed15ef4cb9a5f48ca50",
+      "branch": "lock/PL-20260910-06",
+      "paths": [
+        "server/erp_auth/app.py",
+        "server/erp_auth/erp.nginx.conf"
+      ],
+      "summary": "[시토] ERP 사무실 PC 자동 로그인 뼈대 — 기본 꺼짐(배1134)\n\n고정 IP+세션 없음일 때 부서 계정(info@)으로 읽기 전용 자동 로그인하는 경로를 만들었다.\nOFFICE_AUTO_LOGIN_IP 가 비어 있으면(현재 상태) 통째로 안 돈다 — 서버에 이 env 는 안 넣었다.\n자동 세션은 쓰기(POST 등)·인사 폴더(chro-*)를 /auth/check 에서 계정 perms 와 별개로 다시 막는다.\n세션 유지기간 30→90일(GM 지시)도 함께 적용. 카톡 인앱 브라우저는 KAKAOTALK UA 감지해\n외부 브라우저 스킴으로 튄다(page_ping.js, 105개 화면 공통 로드).\n\n서버(15.164.151.105) app.py 배포 + nginx X-Original-Method 헤더 수기 반영 + 재기동 확인 완료.",
+      "requester": "cto",
+      "created_at": "2026-09-10 12:59",
+      "status": "pushed",
+      "decided_at": "2026-09-10 12:59",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-07",
+      "sha": "a0e9060d3f3513fbe60f774250e81bc9c9dd4617",
+      "branch": "lock/PL-20260910-07",
+      "paths": [
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 담당 지정 권한 — 실장·소장은 팀원까지, 나우열M 은 본인만(배1182)\n\nGM_TASK_OWNERS saveBoard 저장 관문(/api/write) 한 곳에 판정 추가.\nX-Erp-User → users.name 대조, 바뀐 칸만 검사(안 바뀐 값은 통과).\nGM(admin)·미등록 계정(개인 계정 발급 전 공용 로그인)은 막지 않는다.",
+      "requester": "cto",
+      "created_at": "2026-09-10 13:04",
+      "status": "pushed",
+      "decided_at": "2026-09-10 13:04",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-08",
+      "sha": "0ea0da6afc1f6d1ecbcc9d34fe8c5b0ad0777bd5",
+      "branch": "lock/PL-20260910-08",
+      "paths": [
+        "server/erp_api/sync_members.py"
+      ],
+      "summary": "[시토] 경보 깜빡임을 줄인다 — 한 회차 실패로는 안 알리고, 접수 점검도 다시 시도한다\n\n오늘 아침 재시도를 넣어 회원 미러 실패가 12퍼센트에서 2퍼센트로 줄었다(오늘 180회차 중\n재시도가 3번 살려냄, 세 번 다 실패는 1번). 그런데 그 1번이 「이상 → 정상 복귀」 두 통으로\nGM 화면에 그대로 나갔다. 옛 미러를 그대로 두는 회차라 사람이 할 일이 없는데 알림만 깜빡였다.\n\n1) 회원 미러 — 시트 조회 실패는 연속 2회(10분)부터 알린다.\n   회원번호 없음·번호 충돌은 일시 오류가 아니라 자료 문제라 종전대로 그 자리에서 알린다.\n   정상으로 돌아오면 연속 횟수도 0으로 되돌린다. 자체점검 3가지 추가.\n\n2) 종합접수처·습득물 15분 점검 — 같은 뿌리였다.\n   구글이 안내문(HTML)을 돌려주면 r.json() 이 \"Expecting value: line 1 column 1\" 로 터지고\n   「지금 안 됩니다 → 회복됐습니다」가 짝으로 나갔다(오늘 두 번). 읽기를 3회까지 다시 시도한다.\n   세 번 다 실패하면 종전처럼 그대로 실패로 올린다 — 값을 지어내지 않는다.\n\n잡음이 잦으면 진짜 고장이 왔을 때 그냥 지나친다. 그래서 알림 문구가 아니라 알리는 조건을 고쳤다.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01PHrpxMn3u1woDaHMtyCV43",
+      "requester": "cto",
+      "created_at": "2026-09-10 14:53",
+      "status": "pushed",
+      "decided_at": "2026-09-10 14:53",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-09",
+      "sha": "f8171068b749a6755cdf60c7e60181c1e4e1a657",
+      "branch": "lock/PL-20260910-09",
+      "paths": [
+        ".deploy-todo/.claspignore"
+      ],
+      "summary": "[시토] 업무·결재 쓰기 게이트 라이브 배포 + AWS 이관 현황판 오늘 실측으로 갱신\n\n배947 ⑤단계 착수(GM \"지금 멈추지말아줘\" 2026-09-10):\n- 라이브 GAS 를 내려받아 대조했더니 게이트 코드가 아직 안 올라가 있었다(설계만 돼 있었다).\n  라이브에만 있는 줄 0 · 저장소가 23줄 앞섬 = 밀어도 잃을 것이 없음을 먼저 확인한 뒤 밀었다.\n- 같은 배포 번호로 재배포(@135) — 화면이 쓰는 주소가 안 바뀐다. 업무 목록 조회 214건 정상 확인.\n- 서버에 공유 열쇠를 넣고 재기동했다. GAS 쪽 속성은 아직 안 켰으므로 지금은 동작 무변경이다.\n- .claspignore 신설 — 이 폴더의 백업 json 까지 라이브로 밀려 없던 파일이 생기는 것을 막는다.\n\n현황판(status/aws_migration.json)을 오늘 실측으로 갱신: 진척 38%(3/8 영역),\n목표 완료 2026-09-26. 데이터 유실 항목을 명시로 추가 — 원천 전환은 시트 행을 지우지 않으며\n서버 자료칸은 새벽 3시 S3 로 매일 백업(30일)된다.\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01PHrpxMn3u1woDaHMtyCV43",
+      "requester": "cto",
+      "created_at": "2026-09-10 18:51",
+      "status": "pushed",
+      "decided_at": "2026-09-10 18:51",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-10",
+      "sha": "b62fd6bfe534e7be6ea8a7e76a614d31c50df0ee",
+      "branch": "lock/PL-20260910-10",
+      "paths": [
+        "3. 웰페리온 가이드/erp/admin/index.html"
+      ],
+      "summary": "feat(cmo): 회사 관리자 화면에 좌측 메뉴 — 한 장 스크롤을 다섯 영역으로\n\nGM 지시 2026-09-10 「좌측 메뉴 사이드바·상단바를 효율적이고 직관적으로」.\n\n종전엔 상단바 하나 아래로 여섯 덩어리(파트너사·관리 입구·이용자 3층·환경 3벌·\n다운로드·구조 문서)가 한 장에 죽 이어져, 무엇이 어디 있는지 끝까지 내려 봐야 알았다.\n왼쪽 기둥에 다섯 영역을 세우고 한 번에 한 영역만 보인다. 주소 끝 #이름이 곧 지금\n보고 있는 영역이라 그 주소를 그대로 즐겨찾기에 넣거나 남에게 보낼 수 있다.\n\n- 상단바: 지금 보고 있는 영역 이름을 띄운다\n- 본문: 가운데 정렬 캡(1100px)을 없애고 좌측 정렬 풀폭으로\n- 입구 카드 5장이 4+1 로 접히던 것을 한 줄로\n- 접혀 있던 구조 문서는 접기 대신 하나의 영역으로\n\n같이 고친 것 — 좁은 화면(390px)에서 상단바 내용이 줄바꿈되며 자기 높이(58px) 밖으로\n넘쳐, 바로 아래 메뉴의 첫 항목이 상단바에 덮여 눌리지 않았다. 줄바꿈을 막고, 폰\n폭에서는 「어느 층인지·지금 어느 영역인지·나가는 길」 셋만 남긴다. 눕힌 메뉴도\nsticky 를 유지해 아래로 내려도 사라지지 않는다.\n\n검수(로컬 http · Chromium 1440px·390px): 다섯 영역 전환 각각 한 영역만 노출·\n상단 표시·주소 동기화 정상 · 가로 넘침 0 · 콘솔 오류 0(환경 3벌의 /api/health 404 는\n정적 서버라 그런 것으로 화면에 「응답 없음」으로 정직하게 표시된다).\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_015JVddhKvFBVV8jx4Amh3uM",
+      "requester": "cmo",
+      "created_at": "2026-09-10 19:02",
+      "status": "pushed",
+      "decided_at": "2026-09-10 19:02",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-11",
+      "sha": "5ff058617fc871c68364dc89dfe9f3dbaab792fd",
+      "branch": "lock/PL-20260910-11",
+      "paths": [
+        ".deploy-procurement/procurement.js",
+        "server/common/schema.sql",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 구매요청 번호 서버 채번(배1195 ①) — proc_no_seq · GAS addItem p.no 수용, 스위치는 off 유지",
+      "requester": "cto",
+      "created_at": "2026-09-10 19:24",
+      "status": "pushed",
+      "decided_at": "2026-09-10 19:24",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-12",
+      "sha": "c29b5102f61ef7d1d4ed725a9af60342c0796e5d",
+      "branch": "lock/PL-20260910-12",
+      "paths": [
+        ".deploy-procurement/procurement.js",
+        "server/common/schema.sql",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 자산 라벨 서버 채번(배1195 ②) — proc_asset_no 연도별 카운터 · GAS assetIssue p.labels 수용, 스위치는 off 유지",
+      "requester": "cto",
+      "created_at": "2026-09-10 19:29",
+      "status": "conflict",
+      "decided_at": "2026-09-10 19:29",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-13",
+      "sha": "39d89aa0bdb6f26e971e7f19f7e1eb8c2e605761",
+      "branch": "lock/PL-20260910-13",
+      "paths": [
+        "3. 웰페리온 가이드/coo/chairman/중간관리자_업무목차.html"
+      ],
+      "summary": "[시우] feat(coo): 중간관리자 업무 목차 — 체크를 공용 보드로 · 업무·결재 SSOT 상태 칸 추가\n\nGM 지적 2026-09-10 \"단순하게 체크로만 할거야? 업무&결재SSOT 관련해서 아무 추적 및 연동 관련된 부분이 어설픈데?\"\n\n실측한 두 구멍:\n· 체크가 localStorage 라 그 브라우저에만 남았다 — 다른 기기로 열거나 다른 사람이 보면 흔적이 없다.\n· SSOT 연동이 제목 유사도로 접힘 목록에 옮기는 단방향뿐이라, 어느 건이 결재까지 갔는지,\n  어느 건이 아직 SSOT 에 없는지 화면에서 안 보였다.\n\n조치:\n· 체크 → 담당 칸이 쓰는 그 공용 보드(GAS saveBoard · 키 MGR_TASK_DONE)에 저장. 새 저장소를\n  만들지 않는다. 저장은 최신 보드를 다시 읽어 내 값만 얹어 남의 체크를 덮지 않고, 실패하면\n  체크를 되돌리고 알린다. 체크 시각이 마우스오버로 보인다.\n· 표에 「업무·결재 SSOT」 칸 신설 — 아직 안 올라간 건은 「SSOT 미등록」.\n· 접힘 목록(SSOT 로 넘어간 것)에 진행 상태 + 결재 배지(결재완료 GM·대표 / 결재대기 라인).\n· 요약 띠에 「SSOT 미등록 N건」 — 실무진이 직접 등록해야 하는 것이 몇 건인지 한눈에.\n\n같이: GM업무 카드 3건 이관(GM 지시) — SVIP 요가 → 나우열M · 회원 서비스 개선·시니어 회원 정책\n→ 이경연 실장. 담당 보드에 기록하고 GM 직접 태그를 떼 GM업무 화면에서 뺐다. 월간운영계획에는\n그대로 남아 진척을 본다. 중간관리자 목차 #232·#233·#234. (원장 파일은 .gitignore 대상이라\n커밋에 담기지 않는다 — 화면 산출물에 반영돼 있다.)\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01GnR5XV5QqmHyVRi9HxKgg5",
+      "requester": "coo",
+      "created_at": "2026-09-10 19:30",
+      "status": "conflict",
+      "decided_at": "2026-09-10 19:30",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-14",
+      "sha": "305dd820ce65390cb4242c037e221334dce92a30",
+      "branch": "lock/PL-20260910-14",
+      "paths": [
+        "server/common/schema.sql",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 자산 라벨 발급 멱등(배1195 ②-보강) — 품의번호별 발급원장(proc_asset_issued) 재조회, 재채번 방지",
+      "requester": "cto",
+      "created_at": "2026-09-10 19:37",
+      "status": "conflict",
+      "decided_at": "2026-09-10 19:37",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-15",
+      "sha": "d440ecc6e",
+      "branch": "lock/PL-20260910-15",
+      "paths": [
+        "server/common/schema.sql",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 자산 라벨 발급 멱등(배1195 ②-보강) — 품의번호별 발급원장(proc_asset_issued) 재조회, 재채번 방지",
+      "requester": "cto",
+      "created_at": "2026-09-10 19:39",
+      "status": "approved",
+      "decided_at": "2026-09-10 19:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-16",
+      "sha": "add50b879",
+      "branch": "lock/PL-20260910-16",
+      "paths": [
+        "3. 웰페리온 가이드/erp/admin/index.html"
+      ],
+      "summary": "[웰리] 카카오톡 전송 = .bat 부팅설정 → 클로드 스킬로 전환, ERP 다운로드에 설치 순서(1단계 AI·2단계 도구) 표시",
+      "requester": "ceo",
+      "created_at": "2026-09-10 19:39",
+      "status": "approved",
+      "decided_at": "2026-09-10 19:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-17",
+      "sha": "39d89aa0b",
+      "branch": "lock/PL-20260910-17",
+      "paths": [
+        "3. 웰페리온 가이드/coo/chairman/중간관리자_업무목차.html"
+      ],
+      "summary": "[시우] feat(coo): 중간관리자 업무 목차 — 체크를 공용 보드로 · 업무·결재 SSOT 상태 칸 추가",
+      "requester": "coo",
+      "created_at": "2026-09-10 19:39",
+      "status": "approved",
+      "decided_at": "2026-09-10 19:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-18",
+      "sha": "c29b5102f",
+      "branch": "lock/PL-20260910-18",
+      "paths": [
+        ".deploy-procurement/procurement.js",
+        "server/common/schema.sql",
+        "server/erp_api/api_write.py"
+      ],
+      "summary": "[시토] 자산 라벨 서버 채번(배1195 ②) — proc_asset_no 연도별 카운터 · GAS assetIssue p.labels 수용, ",
+      "requester": "cto",
+      "created_at": "2026-09-10 19:39",
+      "status": "approved",
+      "decided_at": "2026-09-10 19:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
+    },
+    {
+      "id": "PL-20260910-19",
+      "sha": "c97ec73e7",
+      "branch": "lock/PL-20260910-19",
+      "paths": [
+        "server/counselbot/shared/question_types.json"
+      ],
+      "summary": "feat(cbo): 센터 FAQ 통합층 — 유형별 커버리지·빈칸·새 유형 승격 + 07시 회로에 연결",
+      "requester": "cbo",
+      "created_at": "2026-09-10 19:39",
+      "status": "approved",
+      "decided_at": "2026-09-10 19:39",
+      "decided_by": "auto(AI C-Level · GM 2026-09-07)"
     }
   ]
 }
