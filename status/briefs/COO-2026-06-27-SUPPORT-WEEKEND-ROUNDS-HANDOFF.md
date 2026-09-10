@@ -21,7 +21,7 @@
 ## explore 진단 결론 (코드는 전부 정상)
 - **`_shiftBucket`** (`.deploy-check/지원팀 일일점검.js:2475`): `"오전"→am` · `"마감"/"close"→close` · **나머지(오후 포함)→pm 폴백**.
 - **`_roundBucket`**(2577): 회차값에서 숫자 제거 후 `_shiftBucket`.
-- 점검페이지 `_check_support.js`: `ROUNDS_WEEKEND=[am1, close1]` (pm 없음·정상).
+- 점검페이지 `_archive/_check_support.js`: `ROUNDS_WEEKEND=[am1, close1]` (pm 없음·정상).
 - home `parseGenderKpi`(main.html:10722): `byGender.{g}.{bucket}Total > 0`인 회차만 렌더(정상).
 - **→ 유일한 변수 = 시트(`지원_매뉴얼`, SHEET_ITEMS) 주말 항목의 회차 컬럼(ITEM_ROUNDS_COL=10) 값.** 그게 `pm1`/`오후조`면 오후조로 나옴. **`am1,close1`(또는 `오전조,마감조`)로 바꾸면 코드 무수정으로 통일됨.**
 - 반영 메커니즘 = 시트 직독(별도 sync 없음). 시트 고치면 다음 today_live부터 반영. home은 캐시 주의(no-store는 이미 적용됨, 커밋 af7b6646).
@@ -34,4 +34,4 @@
 ## 정본 위치
 - GAS: `.deploy-check/지원팀 일일점검.js` (scriptId 1FLQAzjq, home exec AKfycbyXw4...)
 - 시트: `지원_매뉴얼` 탭 (GAS 바인딩 스프레드시트)
-- 프론트: `3. 웰페리온 가이드/wellperion_guide(main).html`(home), `_check_support.js`(점검페이지)
+- 프론트: `3. 웰페리온 가이드/wellperion_guide(main).html`(home), `_archive/_check_support.js`(점검페이지)
