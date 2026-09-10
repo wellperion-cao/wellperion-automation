@@ -1,11 +1,4 @@
-/* 색 정본 = tenant-wellperion.css.
-   2026-09-10 교체: 종전엔 tokens.css 를 @import 했는데, 그 파일은 --paper 를 '배경'(#F4F0EB)
-   으로 정의하는 반면 이 시트를 쓰는 화면 5장은 --paper 를 '카드'로 쓴다. 뜻이 반대라
-   카드가 배경색으로 칠해져 바탕과 구분이 사라졌다(GM 지적 2026-09-10 "바탕색이 하얀색으로
-   변경되었네? 눈에 잘 안띄는데?"). tenant-wellperion.css 는 --bg(배경)/--paper(카드)를
-   층으로 나눠 정의하고 tokens.css 의 4개 키(--ink·--accent-text·--beige·--paper)를 전부
-   포함하는 상위 집합이라 잃는 값이 없다. */
-@import "../erp/brand/tenant-wellperion.css";
+@import "../erp/brand/tokens.css";
 
 /* ============================================================
    웰페리온 ERP 화면 공통 UI 언어 (단일 출처)
