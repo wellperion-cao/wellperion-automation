@@ -84,3 +84,19 @@
     else put();
   } catch (e) { /* 안내 띠 실패가 화면을 막지 않는다 */ }
 })();
+
+/* ── 카톡 인앱 브라우저 → 외부 브라우저 (배1134 · 2026-09-10 시토) ──
+   카톡으로 받은 ERP 링크를 누르면 카톡 내장 웹뷰로 열려 로그인 쿠키가 매번 새로 물어보거나
+   파일 저장이 막힌다. 카톡 웹뷰는 User-Agent 에 "KAKAOTALK" 을 남긴다 — 그게 보이면 카톡이
+   공식으로 여는 스킴으로 기본 브라우저를 바로 띄운다.
+   ponytail: 스킴 호출 성공 여부는 JS 로 확인할 방법이 없다(콜백 없음) — 구버전 카톡·일부 iOS 에서
+   안 튀면 그냥 웹뷰에 머문다. 실패를 감지해 안내 문구를 따로 그리는 건 지금 값을 못 한다. */
+(function () {
+  try {
+    if (location.protocol === 'file:') return;
+    if (!/KAKAOTALK/i.test(navigator.userAgent)) return;
+    if (sessionStorage.getItem('wp_kakao_out')) return;   // 스킴이 이 페이지를 다시 그리게 해도 재귀 호출 안 함
+    sessionStorage.setItem('wp_kakao_out', '1');
+    location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+  } catch (e) { /* 실패해도 화면은 카톡 웹뷰에서 그대로 보인다 */ }
+})();

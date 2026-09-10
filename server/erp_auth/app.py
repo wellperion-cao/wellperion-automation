@@ -137,10 +137,15 @@ ACCOUNTS = os.environ.get("ERP_ACCOUNT_PERMS",
                           os.path.join(os.path.dirname(os.path.abspath(__file__)), "account_perms.json"))
 SECRET = os.environ["ERP_JWT_SECRET"]
 COOKIE = "erp_session"
-SESSION_DAYS = 30
+SESSION_DAYS = 90                              # 30→90 (배1134 · GM 「해보자」 2026-09-08)
 KST = timezone(timedelta(hours=9))
 LOCK_AFTER = 5                                 # 연속 실패 허용 횟수
 LOCK_SECS = 600                                # 잠금 시간(10분)
+# 사무실 PC 자동 로그인(배1134 · 기본 꺼짐 — OFFICE_AUTO_LOGIN_IP 가 비어 있으면 이 기능은 통째로 안 돈다).
+# 켜기: /srv/erp/auth.env 에 OFFICE_AUTO_LOGIN_IP=114.207.50.85 (콤마로 여러 개) 추가 → systemctl restart erp-auth.
+# 끄기: 그 줄을 지우거나 비우고 재기동 — 그 순간부터 그 IP 도 다시 로그인 화면을 본다(원래 동작).
+OFFICE_AUTO_LOGIN_IPS = frozenset(ip.strip() for ip in os.environ.get("OFFICE_AUTO_LOGIN_IP", "").split(",") if ip.strip())
+OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
 # 관리자 화면 별도 비밀번호(GM 2026-09-04 "관리자 사이트 비밀번호는 별도로") — 로그인 계정과 무관하게 한 번 더 묻는다.
 # 값은 서버 /srv/erp/auth.env 에만 있다. 비어 있으면 종전대로(관리자 계정이면 바로 열림).
 ADMIN_PW = os.environ.get("ERP_ADMIN_SITE_PW", "")
@@ -304,9 +309,22 @@ def hash_pw(pw: str, salt: Optional[str] = None) -> tuple[str, str]:
 
 
 # ── 세션 ────────────────────────────────────────────────────────────────
-def issue(user) -> str:
+def issue(user, auto: bool = False) -> str:
     exp = int(time.time()) + SESSION_DAYS * 86400
-    return jwt.encode({"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp}, SECRET, algorithm="HS256")
+    claims = {"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp}
+    if auto:
+        claims["auto"] = True    # 사무실 자동 로그인 세션 표시(배1134) — check() 가 이 claim 으로 쓰기·인사 폴더를 막는다
+    return jwt.encode(claims, SECRET, algorithm="HS256")
+
+
+def is_auto_token(token: Optional[str]) -> bool:
+    """세션이 사무실 자동 로그인으로 발급됐나 — current() 의 11개 호출부를 안 건드리려고 토큰을 따로 한 번 더 본다."""
+    if not token:
+        return False
+    try:
+        return bool(jwt.decode(token, SECRET, algorithms=["HS256"]).get("auto"))
+    except jwt.PyJWTError:
+        return False
 
 
 def current(token: Optional[str]):
@@ -568,8 +586,36 @@ def _social_login_buttons(next: str) -> str:
 <div class=soc-row>{''.join(out)}</div></div>"""
 
 
+def office_auto_login(request: Request, next: str) -> Optional[Response]:
+    """사무실 고정 IP 자동 로그인(배1134 · OFFICE_AUTO_LOGIN_IP 비어 있으면 항상 None = 기능 꺼짐).
+    조건: 클라이언트 IP 가 그 목록에 있고, 부서 계정이 살아 있고, 가려던 화면이 인사 폴더가 아니고
+    그 계정이 볼 수 있는 화면일 때만 — 하나라도 아니면 평소대로 로그인 화면을 보여준다(안전한 쪽으로 폴백)."""
+    if not OFFICE_AUTO_LOGIN_IPS:
+        return None
+    ip = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()   # erp.nginx.conf 가 $remote_addr 로 채운다
+    if ip not in OFFICE_AUTO_LOGIN_IPS:
+        return None
+    with db() as c:
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s AND status='active'",
+                      (T, OFFICE_AUTO_LOGIN_ACCOUNT)).fetchone()
+    if not u:
+        return None
+    dest = safe_next(next)
+    m = module_at(dest)
+    if m and (m["id"].startswith("chro-") or not allowed(u, m)):
+        return None
+    r = RedirectResponse(dest, status_code=303)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie(COOKIE, issue(u, auto=True), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+    return r
+
+
 @app.get("/auth/login")
-def login_page(next: str = "/", err: str = "", msg: str = ""):
+def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
+    if not err:
+        auto = office_auto_login(request, next)
+        if auto:
+            return auto
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
     hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
     return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 아이디 또는 회사 이메일로 로그인") + f"""<form method=post action=/auth/login>
@@ -675,6 +721,13 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     m = module_at(request.headers.get("x-original-uri", ""))    # nginx 가 붙인다(erp.nginx.conf) · 없으면 로그인만 본다
     if m and not allowed(u, m):
         raise HTTPException(403)
+    if is_auto_token(erp_session):
+        # 사무실 자동 로그인 세션(배1134) — 계정 perms 와 별개로 조회만 허용. 쓰기(GET/HEAD 아닌 요청)와
+        # 인사 폴더(chro-*)는 이 세션으로 못 연다 — account_perms.json 이 나중에 바뀌어도 여기서 다시 막는다.
+        if (request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD"):
+            raise HTTPException(403)
+        if m and m["id"].startswith("chro-"):
+            raise HTTPException(403)
     return Response(status_code=200, headers={"X-Erp-User": u["email"], "X-Erp-Role": u["role"]})
 
 
@@ -1443,4 +1496,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not hr_match("김철수", "010-9999-8888", roster)      # 재직상태=퇴직이면 불일치
     assert not hr_match("없는사람", "010-0000-0000", roster)    # 명부에 없음
     assert not hr_match("", "", roster)
+    # 사무실 자동 로그인 세션 표시(배1134) — 일반 로그인은 claim 이 없고, 자동 로그인만 auto=true.
+    fake_user = {"id": 1, "email": OFFICE_AUTO_LOGIN_ACCOUNT, "role": "staff"}
+    assert not is_auto_token(issue(fake_user))
+    assert is_auto_token(issue(fake_user, auto=True))
+    assert not is_auto_token(None)
+    assert not is_auto_token("깨진토큰")
     print("self-check ok")
