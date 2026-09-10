@@ -107,7 +107,8 @@
   .item p.body{font-size:var(--fs-2);line-height:1.66;margin:0 0 9px;}
   /* 내용 전문 — 줄바꿈·기호 그대로 살려 읽는다(GM 2026-08-06 "아무 내용이 없다" 지적 대응) */
   /* 링크 줄 — 팔레트 안(브라스·steam)으로 통일 */
-  .item .doc-link{display:inline-block;margin:8px 8px 0 0;font-size:var(--fs-2);font-weight:700;color:var(--brass);
+  /* .item 밖(리더 현황 띠 등)에서도 같은 모양으로 쓰려고 선택자를 넓혔다 — 새 스타일 추가 아님. */
+  .doc-link{display:inline-block;margin:8px 8px 0 0;font-size:var(--fs-2);font-weight:700;color:var(--brass);
                   text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--steam);}
   .item strong{font-weight:700;}
 
@@ -393,6 +394,16 @@
        멈춘 값)이 아니라 업무 현황 SSOT 시트(TODO_API_URL action=todo_list)를 그 자리에서 직접 센다.
        읽기 전용 — 등록·수정 칸 없음, 등록은 담당자 본인이 업무 SSOT에서 한다. -->
   <div id="leaderBand" class="today-sched" hidden></div>
+
+  <!-- ⓪-2b 중간관리자 업무 목차 링크 (GM 지시 2026-09-10 "그리고 GM업무에 붙여줘") — 바로 위
+       「리더 현황」과 같은 세 사람(이경연 실장·이정헌 소장·나우열M)의 열린 건을 번호로 편 화면이다.
+       리더 현황 띠는 통신 실패 시 숨으므로 이 줄은 정적으로 둔다. 기존 .today-sched/.ts-row/.doc-link
+       재사용 — 새 스타일·새 색 없음. -->
+  <div class="today-sched">
+    <div class="ts-row"><b>🧭 중간관리자 업무 목차</b>
+      <span class="ts-who">이경연 실장 · 이정헌 소장 · 나우열M 의 아직 안 끝난 일을 번호로 펼쳐 봅니다 — 번호로 답을 받으시면 됩니다</span>
+      <a class="doc-link" href="중간관리자_업무목차.html" target="_blank" rel="noopener">▸목차 열기</a></div>
+  </div>
 
   <!-- ⓪-3 AI C-Level 역할·방향 토글 (GM 지시 2026-09-05 "GM업무 맨 위에 각 AI C레벨들의 역할 및 방향성을
        기록해두면 보기 편할 것 같아 토글라인으로 — 나는 GM업무만 보니까"). 값은 ssot/kpi.json roles 한 곳
