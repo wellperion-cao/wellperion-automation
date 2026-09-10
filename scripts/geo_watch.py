@@ -285,20 +285,25 @@ def main() -> None:
         cited_today[e] = cited_count
 
     history = []
+    prev_engines: dict = {}
     if OUT_PATH.exists():
         try:
             prev = json.loads(OUT_PATH.read_text(encoding="utf-8"))
             history = prev.get("history", [])
+            prev_engines = prev.get("engines", {})
         except Exception:
             history = []
     history.append({"date": now.strftime("%Y-%m-%d"), "cited": cited_today})
+
+    # 부분 엔진 실행(--engines 로 일부만)이 나머지 엔진의 기존 기준선을 지우지 않도록 병합한다.
+    merged_engines = {**prev_engines, **engines_out}
 
     out = {
         "_doc": "GEO(생성형 검색 최적화) 측정 — AI 검색 8문장에 웰페리온이 인용되는지 주 1회 점검(배1002). "
                 "엔진 4개(claude 웹검색·챗GPT·퍼플렉시티·구글 AI 개요) 브라우저 자동화. "
                 "전환 전엔 cited_count=0 이 정상(기준선).",
         "generated_at_kst": now.strftime("%Y-%m-%d %H:%M"),
-        "engines": engines_out,
+        "engines": merged_engines,
         "history": history,
     }
     OUT_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
