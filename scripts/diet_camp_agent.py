@@ -278,6 +278,27 @@ COMMON_RULES = """
 """
 
 
+def blanks_of(conf: dict) -> list[str]:
+    """그 업체에서 아직 못 받은 값. rooms.json 의 blanks 가 가리키는 표에서 상태가 '미수령'인 줄만 뽑는다.
+
+    손님이 물은 것(bot_gaps) 다음으로 급한 것이 이것이다 — 이 값이 없으면 문서도 상담봇도
+    빈칸인 채로 멈춘다. 파일이 없거나 형식이 다르면 빈 목록(아침 한 통은 그래도 나간다).
+    """
+    rel = conf.get("blanks")
+    if not rel:
+        return []
+    try:
+        out = []
+        for line in (REPO_ROOT / rel).read_text(encoding="utf-8").splitlines():
+            cells = [c.strip() for c in line.split("|")]
+            if len(cells) >= 6 and cells[1].isdigit() and "미수령" in cells[5]:
+                out.append(cells[2])
+        return out
+    except Exception as exc:                        # noqa: BLE001
+        print(f"[agent] 빈칸 목록 읽기 실패(건너뜀): {exc}", file=sys.stderr)
+        return []
+
+
 def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF, gaps: list[str] | None = None) -> str:
     brief = brief + "\n" + COMMON_RULES
     recent = lines[-CONTEXT_LINES:]
@@ -407,7 +428,8 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
         return 0
 
     from model_router import run_claude  # noqa: PLC0415
-    gaps = bot_gaps() if brief == SYSTEM_BRIEF else []   # 다캠 방에서만 — 다른 방은 상담봇 테넌트가 없다
+    tenant = conf.get("tenant") or ("2_dietcamp" if brief == SYSTEM_BRIEF else "")
+    gaps = (bot_gaps(tenant) if tenant else []) + blanks_of(conf)
     draft, used = run_claude(build_prompt(lines, fresh, brief, gaps), label="diet-camp-agent")
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
