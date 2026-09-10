@@ -170,6 +170,11 @@ NO_SERVER_ACTIONS = {
     "todo_upload": "첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 그 주소를 만들 수 없고, 없으면 첨부가 통째로 사라진다",
     "save_schedule": "동시편집 판번호(rev)를 GAS 가 매긴다 — 없으면 다음 저장이 전부 막히거나 충돌 감지가 죽는다",
     "todo_add": "새 업무 번호를 GAS 가 매긴다 — 화면이 그 번호로 첨부를 올리는데(업무 현황 SSOT.html 3237줄 `if (filesToUpload.length > 0 && res.id)`) 서버 원본이면 번호가 없어 첨부가 말없이 사라진다",
+    # ↓ 아래 넷은 배 12504(2026-09-10 밤) 에서 거울 반영을 만들며 드러난 자리다.
+    "todo_sign": "결재 비밀번호(PIN)를 GAS 가 검증한다 — 서버가 즉시 ok 를 주면 틀린 비번으로 누른 결재가 1분 동안 승인된 것처럼 보인다(unlock_round 와 같은 성질)",
+    "todo_opinion": "결재의견도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
+    "todo_opinion_delete": "결재의견 삭제도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
+    "approval_rep_sign_upload": "대표싸인 칸에 들어갈 값이 구글 드라이브 업로드 결과 주소다 — 서버는 그 주소를 만들 수 없다(todo_upload 와 같은 이유)",
 }
 
 
