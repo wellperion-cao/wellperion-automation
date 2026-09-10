@@ -72,6 +72,12 @@ def open_gm_cards(plan: dict) -> list:
     for month in (plan.get("months") or {}).values():
         for o in month.get("objectives") or []:
             if GM_TAG in str(o.get("title") or "") and o.get("status") != "완료":
+                # schedule_hidden — 카드는 열려 있지만 전사일정에는 줄을 두지 않는다.
+                #   GM 이 지운 줄을 이 동기화가 다음 회차에 되살려 이틀 연속 같은 삭제 지시를 받았다
+                #   (CCTV 전체 교체 · 2026-09-09, 2026-09-10). 지우는 자리와 되살리는 자리가 달라
+                #   손으로 지우는 한 영원히 반복된다 — 카드 한 곳에서 끈다.
+                if o.get("schedule_hidden"):
+                    continue
                 out.append(o)
     return out
 
