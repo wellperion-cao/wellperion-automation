@@ -172,16 +172,34 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
             f'<td class="ti">{html.escape(str(it.get("issue") or ""))}'
             f'{f"<span class=cat>{html.escape(cn)}</span>" if cn else ""}</td>'
             f'<td class="due">{html.escape(due)}</td>'
+            f'<td class="ss"><span class="ss-no">SSOT 미등록</span></td>'
             f'{note_td}'
             f'<td class="age {age_cls(age)}">{age}일</td></tr>')
 
 
 HEAD_ROW = ('<tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th>'
-            '<th class="due">기한</th><th>최근 상황</th><th class="age">경과</th></tr>')
+            '<th class="due">기한</th><th class="ss">업무·결재 SSOT</th>'
+            '<th>최근 상황</th><th class="age">경과</th></tr>')
+
+
+def approval_badge(m: dict) -> str:
+    """업무·결재 SSOT 행 하나의 진행·결재 상태를 배지 두 개로. 값이 없으면 안 지어낸다."""
+    st = str(m.get("상태") or "").strip() or "상태없음"
+    ap_req = str(m.get("결재요청") or "").strip()
+    ap_st = str(m.get("결재상태") or "").strip()
+    gm_sign = bool(str(m.get("GM싸인") or "").strip())
+    rep_sign = bool(str(m.get("대표싸인") or "").strip())
+    out = [f'<span class="ss-st">{html.escape(st)}</span>']
+    if ap_st == "결재완료":
+        who = "GM·대표" if (gm_sign and rep_sign) else ("GM" if gm_sign else "")
+        out.append(f'<span class="ss-ap done">결재완료{(" " + who) if who else ""}</span>')
+    elif ap_req:
+        out.append(f'<span class="ss-ap wait">결재대기 {html.escape(ap_req)}</span>')
+    return "".join(out)
 
 
 def table(rows: list[str], empty: str) -> str:
-    body = "\n          ".join(rows) or f'<tr><td colspan="6" class="empty">{empty}</td></tr>'
+    body = "\n          ".join(rows) or f'<tr><td colspan="7" class="empty">{empty}</td></tr>'
     return f'<table>\n          {HEAD_ROW}\n          {body}\n        </table>'
 
 
@@ -256,7 +274,7 @@ def build() -> str:
         moved_rows = "\n        ".join(
             f'<li>#{no} {html.escape(str(it.get("issue") or ""))}'
             f'<span class="mvd">→ SSOT: {html.escape(str(m.get("업무명") or ""))} '
-            f'({html.escape(str(m.get("상태") or "")) or "상태없음"})</span></li>'
+            f'{approval_badge(m)}</span></li>'
             for no, d, it, m in moved_sorted)
         blocks.append(f'''      <div class="blk">
         <details class="grp"><summary>업무 SSOT 로 넘어간 것 <span class="gc">{len(moved)}건</span></summary>
@@ -270,7 +288,8 @@ def build() -> str:
     if not ssot_ok:
         ssot_note = '<span class="b2 fail">⚠ 업무 SSOT 대조 실패 — 겹친 건이 그대로 보일 수 있습니다.</span>'
     elif moved:
-        ssot_note = f'<span class="b2">업무 SSOT 로 넘어간 것 {len(moved)}건은 맨 아래 접힘 목록으로 옮겼습니다.</span>'
+        ssot_note = (f'<span class="b2">업무·결재 SSOT 에 올라간 것 {len(moved)}건은 맨 아래 접힘 목록에 '
+                     f'진행·결재 상태와 함께 있습니다 · <b>SSOT 미등록 {len(shown)}건</b> — 실무진이 직접 등록해야 하는 것입니다.</span>')
 
     top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
     head = " · ".join(f"{n} {c}건" for n, c in counts)
@@ -331,6 +350,14 @@ def build() -> str:
   .grp > summary::before {{ content:"▸ "; color:var(--dim); }}
   .grp[open] > summary::before {{ content:"▾ "; }}
   .grp .gc {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }}
+  .ss {{ white-space:nowrap; }}
+  .ss-no {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
+            background:rgba(237,91,63,0.14); color:#ED5B3F; }}
+  .ss-st {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
+            background:rgba(255,255,255,0.08); color:var(--dim); margin-right:4px; }}
+  .ss-ap {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px; }}
+  .ss-ap.done {{ background:rgba(106,191,123,0.16); color:#6abf7b; }}
+  .ss-ap.wait {{ background:rgba(230,200,78,0.16); color:#e6c84e; }}
   .mvlist {{ list-style:none; padding:2px 14px 10px; }}
   .mvlist li {{ padding:5px 0; font-size:13.5px; border-top:1px solid var(--line); }}
   .mvlist li:first-child {{ border-top:0; }}
@@ -377,14 +404,60 @@ def build() -> str:
   </div>
 </div>
 <script>
-  // 체크 상태는 이 브라우저에만 남긴다(GM 개인 체크용). 원장은 건드리지 않는다.
-  document.querySelectorAll('input[data-k]').forEach(function (b) {{
-    var k = b.dataset.k;
-    try {{ b.checked = localStorage.getItem(k) === '1'; }} catch (e) {{}}
-    if (b.checked) b.closest('tr').classList.add('done');
+  // 체크 상태는 공용 보드에 남긴다(GM 지적 2026-09-10 "아무 추적 및 연동 관련된 부분이 어설픈데?").
+  //   종전엔 localStorage 라 그 브라우저에만 남았다 — 다른 기기로 열거나 다른 사람이 보면
+  //   아무 흔적이 없었다. GM_TASK_OWNERS 담당 칸이 쓰는 그 보드(GAS saveBoard)에 키만 하나
+  //   더 둔다 — 새 저장소를 만들지 않는다(약속 L21). 저장은 최신 보드를 다시 읽어 내 값 하나만
+  //   얹는 방식이라 남의 체크를 덮지 않는다.
+  var BOARD_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  var BOARD_KEY = 'MGR_TASK_DONE';
+  var ERP_API_ON = /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname);
+  var boardCache = {{}};
+  function readBoard() {{
+    var gas = function () {{
+      return fetch(BOARD_URL + '?action=board&key=' + BOARD_KEY, {{cache:'no-store'}})
+        .then(function (r) {{ return r.json(); }});
+    }};
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + BOARD_KEY, {{cache:'no-store'}})
+      .then(function (r) {{ if (!r.ok) throw new Error('api ' + r.status); return r.json(); }})
+      .catch(gas);
+  }}
+  function saveCheck(k, on) {{
+    return readBoard().then(function (j) {{
+      var fresh = (j && j.ok && j.board) ? j.board : {{}};
+      if (on) fresh[k] = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      else delete fresh[k];
+      boardCache = fresh;
+      return fetch(BOARD_URL, {{method:'POST', headers:{{'Content-Type':'text/plain;charset=UTF-8'}},
+                              body: JSON.stringify({{action:'saveBoard', key: BOARD_KEY, board: fresh}}),
+                              redirect:'follow'}}).then(function (r) {{ return r.json(); }});
+    }});
+  }}
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[data-k]'));
+  readBoard().then(function (j) {{
+    boardCache = (j && j.ok && j.board) ? j.board : {{}};
+    boxes.forEach(function (b) {{
+      var when = boardCache[b.dataset.k];
+      if (!when) return;
+      b.checked = true;
+      b.closest('tr').classList.add('done');
+      b.title = '체크 ' + when;
+    }});
+  }}).catch(function (e) {{ console.warn('[목차] 체크 보드 읽기 실패', e && e.message); }});
+  boxes.forEach(function (b) {{
     b.addEventListener('change', function () {{
-      try {{ localStorage.setItem(k, b.checked ? '1' : '0'); }} catch (e) {{}}
-      b.closest('tr').classList.toggle('done', b.checked);
+      var on = b.checked;
+      b.closest('tr').classList.toggle('done', on);
+      b.disabled = true;
+      saveCheck(b.dataset.k, on).then(function (res) {{
+        b.disabled = false;
+        if (!(res && res.ok)) {{ b.checked = !on; b.closest('tr').classList.toggle('done', !on);
+                                alert('체크를 저장하지 못했습니다 — 잠시 뒤 다시 눌러 주세요.'); }}
+      }}).catch(function () {{
+        b.disabled = false; b.checked = !on; b.closest('tr').classList.toggle('done', !on);
+        alert('체크를 저장하지 못했습니다 — 잠시 뒤 다시 눌러 주세요.');
+      }});
     }});
   }});
 </script>
