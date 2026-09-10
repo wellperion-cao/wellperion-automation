@@ -29,12 +29,17 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;
        -webkit-font-smoothing:antialiased;}
+  /* 밀도 = 관리자 콘솔 관행 (실측 근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md).
+     본문 14px(Fiori·Carbon·Odoo·Atlassian 수렴) · 표 13px · 라벨 11px · 간격은 4배수만.
+     종전 15.5px·줄높이 1.75·여백 40px 은 읽는 문서의 값이지 일하는 화면의 값이 아니었다. */
+  :root{--row-h:32px;}
 
-  .topbar{display:flex; align-items:center; gap:22px; padding:0 40px; height:58px;
-          position:sticky; top:0; z-index:20;
+  .topbar{display:flex; align-items:center; gap:12px; padding:0 16px; height:48px;
+          position:sticky; top:0; z-index:30; overflow:hidden;
           background:var(--paper); border-bottom:1px solid var(--border);}
+  .topbar > *{white-space:nowrap; flex-shrink:0;}
   .topbar .brand{display:flex; align-items:center; color:var(--text);}
   .topbar .brand svg{height:16px; width:auto; display:block;}  /* 브랜드 자산 정본 = erp/brand/ (배932·952) */
   .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
@@ -52,45 +57,88 @@
   .topbar a.up{font-size:13px; color:var(--dim); text-decoration:none; white-space:nowrap;}
   .topbar a.up:hover{color:var(--accent-hover);}
 
-  .main{max-width:1100px; padding:40px 40px 80px;}
-  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:4px;}
-  [role=tabpanel] > h2:first-child{margin-top:0;}
-  .meta{font-size:13px; color:var(--dim); margin-bottom:30px;}
-  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
-     border-bottom:2px solid var(--gray-bg);}
+  /* 좌측 고정 메뉴 240px + 본문 — 본문에 폭 제한을 두지 않는다(창을 다 쓴다) */
+  .shell{display:grid; grid-template-columns:240px minmax(0,1fr); align-items:start;}
+  .side{position:sticky; top:48px; align-self:start; height:calc(100vh - 48px); overflow-y:auto;
+        background:var(--paper); border-right:1px solid var(--border); padding:12px 0 24px;}
+  .side .cap{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--dim-soft);
+             padding:12px 16px 4px; text-transform:uppercase;}
+  .side .cap:first-child{padding-top:0;}
+  .side a{display:flex; align-items:center; justify-content:space-between; gap:8px;
+          height:32px; padding:0 16px; border-left:4px solid transparent;
+          font-size:13px; font-weight:500; color:var(--text-soft); text-decoration:none;}
+  .side a:hover{background:var(--gray-bg); color:var(--text);}
+  .side a.on{background:var(--accent-bg); color:var(--accent-hover); font-weight:700;
+             border-left-color:var(--accent);}
+  .side a .b{font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .side a.on .b{color:var(--accent-hover);}
+  .side .sep{height:1px; background:var(--border); margin:8px 16px;}
 
-  .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
+  .main{padding:12px 16px 32px; min-width:0;}
+  h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
+  [role=tabpanel] > h2:first-child{margin-top:0;}
+  .meta{font-size:12.5px; color:var(--dim); margin-bottom:12px;}
+  h3{font-size:13px; font-weight:700; margin:16px 0 8px; padding-bottom:4px;
+     border-bottom:1px solid var(--border);}
+
+  /* 모듈 타일 = 들어가는 문. 설명은 한 줄로 자르고 담당은 같은 줄 끝에 붙인다 —
+     종전엔 타일 하나가 170px 높이라 42장이 4.2화면이었다(실측 2026-09-10). */
+  .modules{display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:8px;}
   .mod{display:block; background:var(--paper); border:1px solid var(--border);
-       border-radius:12px; padding:20px 22px; text-decoration:none; color:inherit;
+       border-radius:6px; padding:8px 12px; text-decoration:none; color:inherit;
        transition:border-color 0.12s, background 0.12s;}
-  .mod:hover{border-color:var(--accent); background:var(--accent-bg); box-shadow:0 4px 14px rgba(34,31,32,.07);}
-  .mod .name{font-size:17px; font-weight:700; margin-bottom:6px;}
-  .mod .desc{font-size:14px; color:var(--text-soft); line-height:1.65;}
-  .mod .owner{font-size:12.5px; color:var(--dim); margin-top:12px;
-              border-top:1px dashed var(--border-strong); padding-top:9px;}
+  .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
+  .mod .name{font-size:13.5px; font-weight:700; margin-bottom:2px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .mod .desc{font-size:12px; color:var(--dim); line-height:1.45;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .mod .owner{font-size:11px; color:var(--dim-soft); margin-top:2px;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
   .mod.locked{opacity:0.4;}
   .mod.locked:hover{border-color:var(--border); background:var(--paper);}
   .mod.locked .owner::after{content:" · 권한 없음"; color:var(--dim-soft);}
 
-  .find{width:100%; max-width:420px; padding:10px 14px; margin-bottom:6px;
-        background:var(--paper); border:1px solid var(--border-strong); border-radius:8px;
-        color:var(--text); font-size:14px; font-family:inherit;}
+  .find{width:260px; height:28px; padding:0 10px; margin:0;
+        background:var(--gray-bg); border:1px solid var(--border); border-radius:6px;
+        color:var(--text); font-size:12.5px; font-family:inherit;}
   .find:focus{outline:none; border-color:var(--accent);}
   .find::placeholder{color:var(--dim-soft);}
   h3 .n{font-size:13px; font-weight:400; color:var(--dim); margin-left:8px;}
 
-  .msg{color:var(--dim); font-size:14px;}
+  .msg{color:var(--dim); font-size:13px;}
 
-  /* 탭 = 최상단 상단바 안 (GM 지시 2026-09-08 — 본문에 있던 것을 위로 올렸다) */
-  .tabs{display:flex; gap:2px; height:100%; overflow-x:auto; scrollbar-width:none;}
-  .tabs::-webkit-scrollbar{display:none;}
-  .tabs button{background:none; border:0; padding:0 14px; height:100%; font:inherit; font-weight:600;
-               white-space:nowrap; color:var(--dim); cursor:pointer;
-               border-bottom:2px solid transparent; margin-bottom:-1px;}
-  .tabs button:hover{color:var(--text);}
-  .tabs button[aria-selected=true]{color:var(--text); border-bottom-color:var(--accent);}
-  .tabs button:focus-visible{outline:2px solid var(--accent); outline-offset:-6px; border-radius:8px;}
+  /* 목록은 표로 — 행 32px(조밀) · 표 안 13px · 머리행 고정 · 셀은 한 줄 말줄임 */
+  /* 가로 스크롤 상자를 두지 않는다 — 상자가 스크롤 컨테이너가 되면 머리행 고정(sticky)의 기준이
+     페이지가 아니라 그 상자가 돼, 머리행이 표 시작보다 48px 아래에 붙고 첫 줄이 그 뒤로 숨는다
+     (2026-09-10 실측). 열 3개는 말줄임으로 들어가므로 가로 스크롤이 필요 없다. */
+  .tbl-wrap{max-width:100%; min-width:0;
+            border:1px solid var(--border); border-radius:6px; background:var(--paper);}
+  /* border-collapse:collapse 에서는 머리행 고정(sticky)이 먹지 않는다 — separate 로 두고
+     칸 사이 간격을 0 으로 만든 뒤, 칸 경계선은 각 칸의 아래 테두리로 그린다. */
+  table.tbl{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; table-layout:fixed;}
+  /* 고정은 th 가 아니라 thead 에 건다 — 이 표(table-layout:fixed)에서는 th 쪽 sticky 가
+     먹지 않아 스크롤하면 머리행이 그대로 올라가 사라졌다(2026-09-10 실측). */
+  table.tbl thead{position:sticky; top:48px; z-index:2;}
+  table.tbl th{height:40px; text-align:left;
+               font-size:13px; font-weight:600; color:var(--text-soft); background:var(--gray-bg);
+               padding:0 12px; border-bottom:1px solid var(--border-strong); white-space:nowrap;}
+  table.tbl td{height:var(--row-h); padding:0 12px; border-bottom:1px solid var(--border);
+               white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  table.tbl tr:last-child td{border-bottom:none;}
+  table.tbl tbody tr:hover{background:var(--accent-bg);}
+  table.tbl td.k{width:28%; font-weight:600;}
+  table.tbl td.k a{color:inherit; text-decoration:none;}
+  table.tbl td.k a:hover{color:var(--accent-hover);}
+  table.tbl td.d{color:var(--dim);}
+  table.tbl td.o{width:16%; color:var(--dim); font-size:12px;}
+  @media(max-width:900px){ :root{--row-h:44px;} table.tbl thead{top:88px;} }
+
+  /* 탭은 좌측 메뉴로 옮겼다(2026-09-10). 상단바가 담는 것은 넷뿐 —
+     제품명 · 지금 어디인지 · 전역 검색 · 사용자. */
+  .topbar .crumb{font-size:13px; font-weight:600; color:var(--text);
+                 padding-left:12px; border-left:1px solid var(--border);}
+  .topbar .spacer{margin-left:auto;}
   .dl .mod .owner::before{content:"내려받기 · ";}
   .note{font-size:13px; color:var(--dim); background:var(--gray-bg);
         border-left:2px solid var(--border-strong); padding:10px 14px; border-radius:6px; margin-bottom:20px;}
@@ -111,38 +159,64 @@
   /* 사용량 탭 — 화면 하나를 그대로 끼워 띄운다(권한관리와 같은 방식). 탭으로 격상(GM 2026-09-09). */
   #use-frame{width:100%; height:calc(100vh - 150px); min-height:560px; border:1px solid var(--border);
              border-radius:12px; background:var(--paper); display:block;}
-  @media(max-width:640px){ .topbar{padding:14px 18px;} .main{padding:26px 18px 60px;} }
+  @media(max-width:900px){
+    /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 240px 를 세로로 두면 본문이 화면 밖으로 밀린다 */
+    .shell{grid-template-columns:1fr;}
+    .side{position:sticky; top:48px; z-index:19; height:auto; display:flex; gap:0;
+          padding:0 8px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+          background:var(--paper); border-right:none; border-bottom:1px solid var(--border);}
+    .side .cap, .side .sep{display:none;}
+    .side #menu-groups{display:contents;}
+    .side #menu-admin{display:contents;}
+    .side a{border-left:none; border-bottom:3px solid transparent; white-space:nowrap;
+            height:40px; padding:0 12px; gap:5px;}
+    .side a.on{border-left-color:transparent; border-bottom-color:var(--accent); background:transparent;}
+  }
+  @media(max-width:640px){
+    .topbar{padding:0 12px; gap:8px;}
+    .topbar .find{width:120px;}
+    .topbar .who, .topbar .crumb{display:none;}
+    .main{padding:12px 12px 40px;}
+    /* 폰에서는 설명 열을 뺀다 — 세 열을 다 넣으면 문서 이름이 네 글자에서 잘린다 */
+    table.tbl td.d, table.tbl th:nth-child(2){display:none;}
+    table.tbl td.k{width:64%;} table.tbl td.o{width:36%;}
+  }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="brand" aria-label="웰페리온 ERP"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108.7954 17.5240" height="20" role="img" aria-hidden="true"><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,96.8257,43.6787)" d="M0 0-3.093 5.825 .208 12.412H-1.778L-4.214 7.871-6.597 12.412H-8.731L-5.319 5.821-8.288-.041-14.694 12.412H-16.902L-8.271-3.912-4.197 3.954-.035-3.89 8.62 12.412H6.316Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,117.7407,42.6162)" d="M0 0-2.349 7.471H-3.277L-5.625 .004-8.025 7.47-9.046 7.471-6.261-1.094-4.967-1.096-2.813 5.929-.672-1.096 .621-1.094 3.419 7.471 2.399 7.47Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,122.3008,43.71)" d="M0 0H5.357V.776H.981V3.928H5.211V4.705H.981V7.788H5.357V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,130.3896,35.1455)" d="M0 0H-.981V-8.564H4.059V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,136.5166,35.1455)" d="M0 0H-.981V-8.564H4.058V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,147.4697,38.5273)" d="M0 0C-.151-.258-.361-.46-.635-.607-.857-.722-1.104-.81-1.378-.867-1.653-.925-2.063-.954-2.611-.954H-4.296V2.605H-3.036-2.718-2.399C-2.108 2.605-1.855 2.591-1.643 2.564-1.431 2.537-1.214 2.486-.993 2.409-.18 2.115 .224 1.584 .224 .814 .224 .529 .15 .257 0 0M-.078 2.917C-.45 3.126-.826 3.255-1.206 3.306-1.587 3.355-2.086 3.382-2.705 3.382H-5.277V-5.185H-4.296V-1.73H-2.452C-1.895-1.73-1.45-1.699-1.112-1.637-.652-1.552-.252-1.398 .094-1.173 .835-.695 1.207-.034 1.207 .808 1.207 1.743 .779 2.446-.078 2.917" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,150.0439,43.71)" d="M0 0H5.356V.776H.979V3.928H5.21V4.705H.979V7.788H5.356V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,163.793,37.938)" d="M0 0C0 .517-.129 .981-.39 1.391-.65 1.8-1.027 2.128-1.523 2.375-1.912 2.568-2.305 2.685-2.704 2.728-3.103 2.77-3.637 2.793-4.309 2.793H-6.643V-5.772H-5.66V2.016H-4.109C-3.632 2.016-3.215 1.991-2.855 1.946-2.498 1.899-2.178 1.79-1.895 1.616-1.611 1.442-1.389 1.217-1.225 .943-1.062 .669-.98 .381-.98 .081-.98-.314-1.09-.662-1.311-.963-1.532-1.265-1.846-1.496-2.253-1.659-2.536-1.767-2.8-1.832-3.05-1.856-3.296-1.878-3.654-1.891-4.122-1.891H-4.388-4.679L-1.353-5.772-.127-5.771-2.886-2.572C-2.092-2.572-1.411-2.316-.846-1.807-.281-1.298 0-.696 0 0" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,0,80)" d="M165.201 36.29H166.181V44.854H165.201Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,175.9219,41.9678)" d="M0 0C-.818-.707-1.806-1.061-2.964-1.061-4.096-1.061-5.079-.71-5.914-.012-6.751 .686-7.168 1.524-7.168 2.504-7.168 3.515-6.759 4.374-5.939 5.079-5.123 5.785-4.131 6.138-2.964 6.138-1.831 6.138-.85 5.791-.02 5.096 .812 4.401 1.227 3.561 1.227 2.573 1.227 1.564 .819 .704 0 0M.663 5.682C-.366 6.534-1.58 6.961-2.977 6.961-4.409 6.961-5.629 6.529-6.638 5.665-7.646 4.8-8.149 3.746-8.149 2.504-8.149 1.285-7.634 .249-6.604-.604-5.573-1.456-4.364-1.883-2.977-1.883-1.544-1.883-.321-1.448 .69-.579 1.7 .287 2.208 1.339 2.208 2.573 2.208 3.794 1.692 4.829 .663 5.682" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,186.5371,35.1455)" d="M0 0V-7.119L-5.494-.004-6.816 0V-8.564H-5.836V-1.033L0-8.564H.982V0Z" fill="currentColor"/></svg><span class="sub">ERP</span></div>
-  <div class="tabs" role="tablist">
-    <button id="tab-mod" role="tab" aria-selected="true" aria-controls="pane-mod">실행 모듈</button>
-    <button id="tab-doc" role="tab" aria-selected="false" aria-controls="pane-doc">문서함</button>
-    <button id="tab-use" role="tab" aria-selected="false" aria-controls="pane-use">토큰 사용량</button>
-    <button id="tab-adm" role="tab" aria-selected="false" aria-controls="pane-adm" hidden>권한관리</button>
-  </div>
   <span class="layer" id="layer" hidden></span>
-  <a class="up" id="up-admin" href="/erp/admin/" hidden>회사 관리자 콘솔 ↑</a>
+  <span class="crumb" id="crumb">모듈</span>
+  <span class="spacer"></span>
+  <input class="find" id="find" type="search" placeholder="화면·문서 이름으로 찾기" autocomplete="off">
   <div class="who" id="who">확인 중…</div>
   <a class="logout" id="logout" href="/auth/logout" hidden>로그아웃</a>
 </div>
 
+<div class="shell">
+
+<nav class="side" aria-label="메뉴">
+  <div class="cap">업무</div>
+  <div id="menu-groups"></div>
+  <a href="#doc" data-go="doc"><span class="t">문서함</span><span class="b" id="b-doc">—</span></a>
+  <div id="menu-admin" hidden>
+    <div class="sep"></div>
+    <div class="cap">관리</div>
+    <a href="#use" data-go="use"><span class="t">비용</span></a>
+    <a href="#adm" data-go="adm"><span class="t">권한</span></a>
+  </div>
+  <div class="sep"></div>
+  <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">회사 관리자 콘솔 ↑</span></a>
+</nav>
+
 <div class="main">
   <div id="pane-mod" role="tabpanel">
-    <h2>실행 모듈</h2>
-    <div class="meta">업무를 굴리는 화면만. 회원 · 운영 · 점검 · 경영 4그룹.</div>
-    <div class="ops" id="ops" hidden></div>
-    <input class="find" id="find" type="search" placeholder="화면 이름으로 찾기" autocomplete="off">
     <div id="sections"><div class="msg">불러오는 중…</div></div>
   </div>
 
   <div id="pane-doc" role="tabpanel" hidden>
-    <h2>문서함</h2>
-    <div class="meta">읽는 것 — 안내 · 초안 · 보고서 · 가이드.</div>
-    <input class="find" id="find-doc" type="search" placeholder="문서 이름으로 찾기" autocomplete="off">
     <div id="sections-doc"><div class="msg">불러오는 중…</div></div>
   </div>
 
@@ -159,6 +233,7 @@
     <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
   </div>
 </div>
+</div><!-- /shell -->
 
 <script>
 // 1) 로그인 확인 — 401 이면 관문으로 보낸다. 서버(nginx 앞단 FastAPI)가 쿠키를 판정한다.
@@ -173,7 +248,7 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   document.getElementById('logout').hidden = false;
   // 관리자에게만 「권한관리」 탭을 띄운다. ★이건 보기 편하라고 감추는 것일 뿐 잠금이 아니다 —
   //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
-  if (me.role === 'admin') document.getElementById('tab-adm').hidden = false;
+  if (me.role === 'admin') document.getElementById('menu-admin').hidden = false;
   setLayer(me.role);
   return loadModules(me.role, me.allowed_ids || null);
 }).catch(function(e){
@@ -205,8 +280,7 @@ function setLayer(role){
     if (role === 'admin') { up.href = '/erp/admin/'; up.textContent = '회사 관리자 콘솔 ↑'; up.hidden = false; }
   } else {
     // 직원 층 — 비용·권한 탭은 이 층의 것이 아니다
-    document.getElementById('tab-use').hidden = true;
-    document.getElementById('tab-adm').hidden = true;
+    document.getElementById('menu-admin').hidden = true;   // 비용·권한은 이 층의 것이 아니다
     if (role === 'admin') { up.href = '/erp/'; up.textContent = '파트너사 관리자 화면 ↑'; up.hidden = false; }
   }
 }
@@ -243,6 +317,21 @@ function loadModules(role, allowedIds){
       bag[g].push(m);
     });
 
+    function docTable(parent, list){
+      var wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
+      var t = document.createElement('table'); t.className = 'tbl';
+      t.innerHTML = '<thead><tr><th>문서</th><th>설명</th><th>담당</th></tr></thead>';
+      var tb = document.createElement('tbody');
+      list.forEach(function(m){
+        var tr = document.createElement('tr');
+        tr.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
+        tr.innerHTML = '<td class="k"><a href="' + esc(m.path) + '">' + esc(m.name) + '</a></td>'
+                     + '<td class="d">' + esc(m.desc || '') + '</td>'
+                     + '<td class="o">' + esc(m.staff || '') + '</td>';
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb); wrap.appendChild(t); parent.appendChild(wrap);
+    }
     function card(m){
       var a = document.createElement('a');
       a.className = 'mod';
@@ -261,55 +350,109 @@ function loadModules(role, allowedIds){
       grid.className = 'modules';
       parent.appendChild(grid);
       list.forEach(function(m){ grid.appendChild(card(m)); });
+      h.dataset.grp = title; grid.dataset.grp = title;   // 좌측 메뉴가 이 이름으로 골라 띄운다
     }
 
     var pinList = PINNED.map(function(_, i){ return pinned[i]; }).filter(Boolean);
     if (pinList.length) section(root, '자주 여는 것', pinList);
     order.forEach(function(g){ section(root, g, bag[g]); });
-    if (docs.length) section(rootDoc, '문서함', docs);
+    if (docs.length) docTable(rootDoc, docs);
 
     // 운영 축 — 지금 몇 장인지만 센다. 가동·비용 3색 신호는 자동화 잇기(시토 1136) 뒤에 붙인다.
-    var execCount = pinList.length;
-    order.forEach(function(g){ execCount += bag[g].length; });
-    var ops = document.getElementById('ops');
-    ops.hidden = false;
-    ops.innerHTML = '<span><b>실행</b> ' + execCount + '개</span>'
-      + '<span><b>문서함</b> ' + docs.length + '개</span>'
-      + order.map(function(g){ return '<span>' + esc(g) + ' ' + bag[g].length + '</span>'; }).join('')
-      + '<div class="hint">가동·비용 신호는 자동화 잇기가 끝난 뒤 붙인다 — 지금은 근거가 없어 그리지 않는다.</div>';
+    // 같은 숫자를 왼쪽 메뉴가 이미 보여준다 — 화면 위에 또 한 줄을 두지 않는다(2026-09-10).
+
+    // 좌측 메뉴 — 그룹은 손으로 적지 않고 방금 그린 것에서 그대로 뽑는다
+    var menu = document.getElementById('menu-groups');
+    menu.innerHTML = '';
+    var groups = [];
+    if (pinList.length) groups.push(['자주 여는 것', pinList.length]);
+    order.forEach(function(g){ groups.push([g, bag[g].length]); });
+    groups.forEach(function(gp){
+      var a = document.createElement('a');
+      a.href = '#' + gp[0]; a.dataset.grp = gp[0];
+      a.innerHTML = '<span class="t">' + esc(gp[0]) + '</span><span class="b">' + gp[1] + '</span>';
+      menu.appendChild(a);
+    });
+    var bdoc = document.getElementById('b-doc');
+    if (bdoc) bdoc.textContent = docs.length;
+    bindMenu();
+    showGroup(groups.length ? groups[0][0] : null);
 
     if (!root.children.length) root.innerHTML = '<div class="msg">실행 화면이 없다.</div>';
     if (!rootDoc.children.length) rootDoc.innerHTML = '<div class="msg">문서가 없다.</div>';
-    filter(); filterDoc();
+    filter();
   }).catch(function(){
     document.getElementById('sections').innerHTML =
       '<div class="msg">모듈 목록(modules.json)을 불러오지 못했다.</div>';
   });
 }
 
-// 2-2) 탭 전환 — 무거운 판(사용량·권한관리)은 처음 열 때 한 번만 읽는다.
+// 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
 var admLoaded = false, useLoaded = false;
-var TABS = ['mod', 'doc', 'use', 'adm'];   // 다운로드는 회사 관리자 콘솔로 옮겼다(GM 2026-09-09)
-function showTab(which){
-  TABS.forEach(function(k){
-    var on = (k === which);
-    document.getElementById('tab-' + k).setAttribute('aria-selected', on);
-    document.getElementById('pane-' + k).hidden = !on;
-  });
-  // 사용량 판도 처음 열 때 한 번만 불러온다.
+var PANES = ['mod', 'doc', 'use', 'adm'];
+
+function showPane(which){
+  PANES.forEach(function(k){ document.getElementById('pane-' + k).hidden = (k !== which); });
   if (which === 'use' && !useLoaded) { useLoaded = true; document.getElementById('use-frame').src = '../cto/automation/토큰 사용량.html'; }
-  // 관리자 화면은 서버가 내준다 — 처음 열 때 한 번만 불러온다(매번 다시 안 부른다).
   if (which === 'adm' && !admLoaded) { admLoaded = true; document.getElementById('adm-frame').src = '/auth/admin'; }
 }
-TABS.forEach(function(k){
-  document.getElementById('tab-' + k).addEventListener('click', function(){ showTab(k); });
-});
 
-// 3) 제목 필터 — 안 남은 섹션은 제목째 감춘다.
-function filterIn(inputId, rootId){
-  var q = document.getElementById(inputId).value.trim().toLowerCase();
+// 모듈 그룹 하나만 띄운다 — 42장을 한 줄로 늘어놓지 않는다.
+// grp 가 null 이면(검색 중) 전부 띄운다.
+function showGroup(grp){
+  showPane('mod');
+  var root = document.getElementById('sections');
+  [].forEach.call(root.children, function(el){
+    if (!el.dataset || !el.dataset.grp) return;
+    el.hidden = (grp !== null && el.dataset.grp !== grp);
+  });
+  mark(grp ? '[data-grp="' + cssq(grp) + '"]' : null, grp || '검색 결과');
+}
+
+function cssq(v){ return String(v).replace(/"/g, '\\"'); }
+
+function mark(sel, label){
+  var links = document.querySelectorAll('.side a[data-grp], .side a[data-go]');
+  [].forEach.call(links, function(a){ a.classList.remove('on'); });
+  if (sel) {
+    var hit = document.querySelector('.side a' + sel);
+    if (hit) hit.classList.add('on');
+  }
+  var crumb = document.getElementById('crumb');
+  if (crumb) crumb.textContent = label;
+}
+
+function bindMenu(){
+  [].forEach.call(document.querySelectorAll('.side a[data-grp]'), function(a){
+    if (a.dataset.bound) return;
+    a.dataset.bound = '1';
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      document.getElementById('find').value = '';
+      filter();
+      showGroup(a.dataset.grp);
+      window.scrollTo(0, 0);
+    });
+  });
+  [].forEach.call(document.querySelectorAll('.side a[data-go]'), function(a){
+    if (a.dataset.bound) return;
+    a.dataset.bound = '1';
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      showPane(a.dataset.go);
+      mark('[data-go="' + a.dataset.go + '"]', a.querySelector('.t').textContent);
+      window.scrollTo(0, 0);
+    });
+  });
+}
+
+// 3) 찾기 — 상단바 한 곳에서 모듈과 문서를 같이 건진다.
+//    글자를 넣는 순간 그룹 칸막이를 걷어 전체에서 찾고, 지우면 원래 그룹으로 돌아온다.
+var lastGroup = null;
+function filterIn(rootId, q){
   var root = document.getElementById(rootId);
-  var kids = root.children, head = null, shown = 0;
+  if (!root) return 0;
+  var kids = root.children, head = null, shown = 0, total = 0;
   for (var i = 0; i < kids.length; i++) {
     var el = kids[i];
     if (el.tagName === 'H3') {
@@ -317,20 +460,37 @@ function filterIn(inputId, rootId){
       head = el; shown = 0;
       continue;
     }
-    for (var j = 0; j < el.children.length; j++) {
-      var card = el.children[j];
-      var hit = !q || card.dataset.find.indexOf(q) >= 0;
-      card.hidden = !hit;
-      if (hit) shown++;
+    // 표(문서함)는 줄 단위로, 타일(모듈)은 칸 단위로 거른다
+    var items = el.classList && el.classList.contains('tbl-wrap')
+      ? el.querySelectorAll('tbody tr') : el.children;
+    for (var j = 0; j < items.length; j++) {
+      var it = items[j];
+      var hit = !q || (it.dataset.find || '').indexOf(q) >= 0;
+      it.hidden = !hit;
+      if (hit) { shown++; total++; }
     }
     el.hidden = !shown;
   }
   if (head) { head.hidden = !shown; head.querySelector('.n').textContent = shown ? shown + '개' : ''; }
+  return total;
 }
-function filter(){ filterIn('find', 'sections'); }
-function filterDoc(){ filterIn('find-doc', 'sections-doc'); }
+
+function filter(){
+  var q = document.getElementById('find').value.trim().toLowerCase();
+  var mods = filterIn('sections', q);
+  var docs = filterIn('sections-doc', q);
+  if (!q) { if (lastGroup) showGroup(lastGroup); return; }
+  /* 검색 중에는 칸막이를 전부 걷는다 — 화면과 문서를 한 자리에서 같이 보여준다.
+     종전엔 걸린 쪽 하나만 띄워, 「문서 1개」라 적어 놓고 그 1개를 못 보여줬다(2026-09-10 실측). */
+  showGroup(null);
+  document.getElementById('pane-doc').hidden = (docs === 0);
+  mark(null, '찾기 — 화면 ' + mods + '개 · 문서 ' + docs + '개');
+}
 document.getElementById('find').addEventListener('input', filter);
-document.getElementById('find-doc').addEventListener('input', filterDoc);
+
+// 그룹을 고르면 기억해 뒀다가 검색을 지웠을 때 그 자리로 돌아온다
+var _showGroup = showGroup;
+showGroup = function(g){ if (g) lastGroup = g; _showGroup(g); };
 </script>
 </body>
 </html>

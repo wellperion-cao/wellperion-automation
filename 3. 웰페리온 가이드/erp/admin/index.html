@@ -17,11 +17,13 @@
   html{color-scheme:light;}
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-       color:var(--text); background:var(--bg); line-height:1.75; font-size:15.5px;
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;
        -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  /* 밀도·치수는 세 층이 같은 값을 쓴다(근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md).
+     상단바 48 · 좌측 메뉴 240 · 메뉴 항목 32 · 본문 14 · 표 13 · 라벨 11 · 간격은 4배수. */
 
-  .topbar{display:flex; align-items:center; gap:14px; padding:0 40px; height:58px;
-          position:sticky; top:0; z-index:20; overflow:hidden;
+  .topbar{display:flex; align-items:center; gap:12px; padding:0 16px; height:48px;
+          position:sticky; top:0; z-index:30; overflow:hidden;
           background:var(--paper); border-bottom:1px solid var(--border);}
   /* 좁은 화면에서 이름들이 줄바꿈되며 상단바 높이(58px)를 위아래로 넘쳐, 바로 아래 메뉴의
      첫 항목이 상단바에 덮여 눌리지 않았다(390px 실측 2026-09-10). 줄바꿈을 막는다. */
@@ -48,32 +50,32 @@
      종전엔 상단바 하나 아래로 여섯 덩어리가 한 장에 죽 이어져, 무엇이 어디 있는지 끝까지
      내려 봐야 알았다. 영역을 다섯으로 갈라 왼쪽에 세우고 한 번에 한 영역만 보인다.
      본문은 좌측 정렬·풀폭 — 가운데 좁게 몰지 않는다(전 화면 공통 규칙). */
-  .shell{display:grid; grid-template-columns:236px minmax(0,1fr); align-items:start;}
-  .side{position:sticky; top:58px; align-self:start; height:calc(100vh - 58px); overflow-y:auto;
-        background:var(--paper); border-right:1px solid var(--border); padding:16px 0 30px;}
-  .side .cap{font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--dim-soft);
-             padding:0 20px 8px;}
-  .side a{display:flex; align-items:center; justify-content:space-between; gap:10px;
-          padding:10px 20px 10px 17px; border-left:3px solid transparent; min-height:44px;
-          font-size:13.5px; font-weight:600; color:var(--text-soft); text-decoration:none;
+  .shell{display:grid; grid-template-columns:240px minmax(0,1fr); align-items:start;}
+  .side{position:sticky; top:48px; align-self:start; height:calc(100vh - 48px); overflow-y:auto;
+        background:var(--paper); border-right:1px solid var(--border); padding:12px 0 24px;}
+  .side .cap{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--dim-soft);
+             padding:0 16px 4px; text-transform:uppercase;}
+  .side a{display:flex; align-items:center; justify-content:space-between; gap:8px;
+          height:32px; padding:0 16px; border-left:4px solid transparent;
+          font-size:13px; font-weight:500; color:var(--text-soft); text-decoration:none;
           transition:background .12s, color .12s, border-color .12s;}
   .side a:hover{background:var(--gray-bg); color:var(--text);}
-  .side a.on{background:var(--accent-bg); color:var(--accent-hover); border-left-color:var(--accent);}
-  .side a .b{font-size:12px; font-weight:700; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .side a.on{background:var(--accent-bg); color:var(--accent-hover); font-weight:700; border-left-color:var(--accent);}
+  .side a .b{font-size:11px; font-weight:700; color:var(--dim); font-variant-numeric:tabular-nums;}
   .side a.on .b{color:var(--accent-hover);}
-  .side .desc{font-size:11.5px; color:var(--dim); line-height:1.5; padding:0 20px 12px 20px; margin-top:-2px;}
-  .side .sep{height:1px; background:var(--border); margin:12px 20px;}
+  .side .desc{font-size:11px; color:var(--dim); line-height:1.45; padding:2px 16px 8px 20px;}
+  .side .sep{height:1px; background:var(--border); margin:8px 16px;}
 
-  .main{padding:34px 40px 80px; min-width:0;}
+  .main{padding:12px 16px 32px; min-width:0;}
   .panel[hidden]{display:none;}
   .panel > h2:first-child, .panel > h3:first-of-type{margin-top:0;}
-  h2{font-size:26px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px;}
-  .meta{font-size:13.5px; color:var(--dim); margin-bottom:6px;}
+  h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
+  .meta{font-size:12.5px; color:var(--dim); margin-bottom:12px;}
   .meta b{color:var(--text-soft);}
-  h3{font-size:17px; font-weight:700; margin:44px 0 14px; padding-bottom:8px;
-     border-bottom:2px solid var(--gray-bg);}
-  h3 .n{font-size:12.5px; font-weight:400; color:var(--dim); margin-left:8px;}
-  p.lead{font-size:14px; color:var(--text-soft); margin-bottom:18px; max-width:760px;}
+  h3{font-size:13px; font-weight:700; margin:20px 0 8px; padding-bottom:4px;
+     border-bottom:1px solid var(--border);}
+  h3 .n{font-size:11px; font-weight:400; color:var(--dim); margin-left:8px;}
+  p.lead{font-size:12.5px; color:var(--dim); margin-bottom:12px; max-width:820px;}
 
   /* 두 겹 구조 설명 */
   .split-note{display:flex; gap:14px; margin-top:10px; padding:16px 20px; border-radius:12px;
@@ -84,14 +86,14 @@
 
   /* 3층 구성도 */
   .layers{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px;}
-  .layer{background:var(--paper); border:1px solid var(--border); border-radius:12px;
-         padding:18px 20px; border-top:4px solid var(--accent);}
+  .layer{background:var(--paper); border:1px solid var(--border); border-radius:6px;
+         padding:12px 16px; border-top:3px solid var(--accent);}
   .layer .tag{font-size:11.5px; font-weight:700; letter-spacing:.04em; color:var(--accent-hover);
               text-transform:uppercase; margin-bottom:4px;}
-  .layer .name{font-size:18px; font-weight:700; margin-bottom:8px;}
-  .layer .desc{font-size:13px; color:var(--dim); margin-bottom:14px; line-height:1.6;}
+  .layer .name{font-size:15px; font-weight:700; margin-bottom:4px;}
+  .layer .desc{font-size:12px; color:var(--dim); margin-bottom:8px; line-height:1.5;}
   .layer .stat{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline;
-               gap:2px 10px; padding:8px 0; border-top:1px dashed var(--border-strong); font-size:13px;}
+               gap:2px 8px; padding:5px 0; border-top:1px dashed var(--border-strong); font-size:12.5px;}
   .layer .stat:first-of-type{border-top:none;}
   .layer .stat .k{color:var(--text-soft); min-width:0;}
   .layer .stat .v{font-weight:700; color:var(--text); text-align:right; min-width:0; word-break:break-word;}
@@ -100,10 +102,11 @@
   /* 표 — 고유값·뼈대 원장 */
   .tbl-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;
             max-width:100%; min-width:0;}   /* 부모가 grid/flex 면 min-width:0 이 없으면 상자가 안 줄어 표가 밖으로 나온다 */
-  table.reg{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:8px;}
-  table.reg th{text-align:left; font-weight:700; color:var(--dim); font-size:12px;
-               padding:8px 10px; border-bottom:1px solid var(--border-strong);}
-  table.reg td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  table.reg{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; margin-bottom:8px;}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); font-size:13px;
+               height:40px; padding:0 12px; background:var(--gray-bg);
+               border-bottom:1px solid var(--border-strong); white-space:nowrap;}
+  table.reg td{height:32px; padding:0 12px; border-bottom:1px solid var(--border); vertical-align:middle;}
   table.reg td.item{font-weight:600; white-space:nowrap;}
   table.reg td.path{color:var(--text-soft); font-family:ui-monospace,Consolas,monospace; font-size:12.5px;
                     word-break:break-all;}
@@ -115,14 +118,14 @@
      「관리할 숫자가 화면에 없다」). 값은 .num, 못 읽는 칸은 대시(placeholder)로 정직하게 비운다. */
   .entries{display:grid; grid-template-columns:repeat(auto-fill,minmax(202px,1fr)); gap:14px;}
   .entry{display:block; background:var(--paper); border:1px solid var(--border);
-         border-radius:12px; padding:18px 20px; text-decoration:none; color:inherit;
+         border-radius:6px; padding:10px 12px; text-decoration:none; color:inherit;
          min-height:44px; transition:border-color .12s, background .12s;}
   .entry:hover{border-color:var(--accent); background:var(--accent-bg);}
-  .entry .num{font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-bottom:4px;}
+  .entry .num{font-size:22px; font-weight:800; letter-spacing:-0.02em; color:var(--text); margin-bottom:2px;}
   .entry .num .unit{font-size:13px; font-weight:600; color:var(--dim); margin-left:3px;}
   .entry .num.placeholder{color:var(--dim);}
-  .entry .name{font-size:14px; font-weight:700; color:var(--text-soft); margin-bottom:4px;}
-  .entry .desc{font-size:12.5px; color:var(--dim);}
+  .entry .name{font-size:13px; font-weight:700; color:var(--text-soft); margin-bottom:2px;}
+  .entry .desc{font-size:11.5px; color:var(--dim); line-height:1.4;}
 
   /* 구조 문서 접기 — 콘솔의 본문은 「지금 어떤가」다. 설명서는 접어 두되 지우지 않는다. */
   details.doc{margin-top:44px; border:1px solid var(--border); border-radius:12px;
@@ -144,7 +147,7 @@
     .shell{grid-template-columns:1fr;}
     /* 눕혀도 sticky 를 유지한다 — static 으로 두면 아래로 조금만 내려도 메뉴가 화면 밖으로
        사라져, 영역을 바꾸려면 매번 맨 위까지 올라가야 한다. */
-    .side{position:sticky; top:58px; z-index:19; height:auto; display:flex; gap:2px; padding:0 8px;
+    .side{position:sticky; top:48px; z-index:19; height:auto; display:flex; gap:2px; padding:0 8px;
           overflow-x:auto; -webkit-overflow-scrolling:touch;
           background:var(--paper); border-right:none; border-bottom:1px solid var(--border);}
     .side .cap, .side .desc, .side .sep{display:none;}
@@ -166,7 +169,7 @@
   <div class="brand" aria-label="ERP비즈니스(가칭)"><span class="platform-name">ERP비즈니스<span class="tag-temp">(가칭)</span></span><span class="sub">ERP</span></div>
   <span class="console">플랫폼 관리 콘솔</span>
   <span class="layer">회사 관리자</span>
-  <span class="crumb" id="crumb">현황</span>
+  <span class="crumb" id="crumb">파트너사</span>
   <span class="tenant-badge" aria-label="1호 파트너사 웰페리온"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108.7954 17.5240" height="20" role="img" aria-hidden="true"><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,96.8257,43.6787)" d="M0 0-3.093 5.825 .208 12.412H-1.778L-4.214 7.871-6.597 12.412H-8.731L-5.319 5.821-8.288-.041-14.694 12.412H-16.902L-8.271-3.912-4.197 3.954-.035-3.89 8.62 12.412H6.316Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,117.7407,42.6162)" d="M0 0-2.349 7.471H-3.277L-5.625 .004-8.025 7.47-9.046 7.471-6.261-1.094-4.967-1.096-2.813 5.929-.672-1.096 .621-1.094 3.419 7.471 2.399 7.47Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,122.3008,43.71)" d="M0 0H5.357V.776H.981V3.928H5.211V4.705H.981V7.788H5.357V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,130.3896,35.1455)" d="M0 0H-.981V-8.564H4.059V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,136.5166,35.1455)" d="M0 0H-.981V-8.564H4.058V-7.788H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,147.4697,38.5273)" d="M0 0C-.151-.258-.361-.46-.635-.607-.857-.722-1.104-.81-1.378-.867-1.653-.925-2.063-.954-2.611-.954H-4.296V2.605H-3.036-2.718-2.399C-2.108 2.605-1.855 2.591-1.643 2.564-1.431 2.537-1.214 2.486-.993 2.409-.18 2.115 .224 1.584 .224 .814 .224 .529 .15 .257 0 0M-.078 2.917C-.45 3.126-.826 3.255-1.206 3.306-1.587 3.355-2.086 3.382-2.705 3.382H-5.277V-5.185H-4.296V-1.73H-2.452C-1.895-1.73-1.45-1.699-1.112-1.637-.652-1.552-.252-1.398 .094-1.173 .835-.695 1.207-.034 1.207 .808 1.207 1.743 .779 2.446-.078 2.917" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,150.0439,43.71)" d="M0 0H5.356V.776H.979V3.928H5.21V4.705H.979V7.788H5.356V8.563H0Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,163.793,37.938)" d="M0 0C0 .517-.129 .981-.39 1.391-.65 1.8-1.027 2.128-1.523 2.375-1.912 2.568-2.305 2.685-2.704 2.728-3.103 2.77-3.637 2.793-4.309 2.793H-6.643V-5.772H-5.66V2.016H-4.109C-3.632 2.016-3.215 1.991-2.855 1.946-2.498 1.899-2.178 1.79-1.895 1.616-1.611 1.442-1.389 1.217-1.225 .943-1.062 .669-.98 .381-.98 .081-.98-.314-1.09-.662-1.311-.963-1.532-1.265-1.846-1.496-2.253-1.659-2.536-1.767-2.8-1.832-3.05-1.856-3.296-1.878-3.654-1.891-4.122-1.891H-4.388-4.679L-1.353-5.772-.127-5.771-2.886-2.572C-2.092-2.572-1.411-2.316-.846-1.807-.281-1.298 0-.696 0 0" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,0,80)" d="M165.201 36.29H166.181V44.854H165.201Z" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,175.9219,41.9678)" d="M0 0C-.818-.707-1.806-1.061-2.964-1.061-4.096-1.061-5.079-.71-5.914-.012-6.751 .686-7.168 1.524-7.168 2.504-7.168 3.515-6.759 4.374-5.939 5.079-5.123 5.785-4.131 6.138-2.964 6.138-1.831 6.138-.85 5.791-.02 5.096 .812 4.401 1.227 3.561 1.227 2.573 1.227 1.564 .819 .704 0 0M.663 5.682C-.366 6.534-1.58 6.961-2.977 6.961-4.409 6.961-5.629 6.529-6.638 5.665-7.646 4.8-8.149 3.746-8.149 2.504-8.149 1.285-7.634 .249-6.604-.604-5.573-1.456-4.364-1.883-2.977-1.883-1.544-1.883-.321-1.448 .69-.579 1.7 .287 2.208 1.339 2.208 2.573 2.208 3.794 1.692 4.829 .663 5.682" fill="currentColor"/><path transform="translate(-79.3237,-30.6667) matrix(1,0,0,-1,186.5371,35.1455)" d="M0 0V-7.119L-5.494-.004-6.816 0V-8.564H-5.836V-1.033L0-8.564H.982V0Z" fill="currentColor"/></svg><span class="tenant-label">1호 파트너사 · 웰페리온</span></span>
   <a class="home" href="/erp/" target="_blank" rel="noopener">파트너사 화면 열기 ↗</a>
 </div>
@@ -175,10 +178,8 @@
 
 <nav class="side" aria-label="관리 영역">
   <div class="cap">관리 영역</div>
-  <a href="#home" data-go="home"><span class="t">현황</span></a>
-  <div class="desc">지금 몇 장이 돌고, 얼마가 나가고, 무엇이 살아 있는지</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b">1</span></a>
-  <div class="desc">이 ERP를 가져다 쓰는 회사와 이용자 3층</div>
+  <div class="desc">쓰는 회사 · 지금 값 · 이용자 3층</div>
   <a href="#envs" data-go="envs"><span class="t">환경 3벌</span><span class="b">3</span></a>
   <div class="desc">알파에서 고치고, 베타에서 태워 보고, 라이브로</div>
   <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
@@ -190,9 +191,10 @@
 
 <div class="main">
 
-<section class="panel" data-panel="home">
-  <h2>현황</h2>
-  <div class="meta">이 콘솔이 관리하는 것들의 지금 값입니다 — 손으로 적은 숫자가 아니라 원장에서 읽습니다. 카드를 누르면 그 화면이 열립니다.</div>
+
+<section class="panel" data-panel="partners">
+  <h2>파트너사</h2>
+  <div class="meta">이 ERP 를 가져다 쓰는 회사입니다. 숫자는 원장에서 읽습니다 — 카드를 누르면 그 화면이 열립니다.</div>
   <div class="entries">
     <a class="entry" href="/erp/" target="_blank" rel="noopener">
       <div class="num placeholder" id="n-screens">—</div>
@@ -221,11 +223,8 @@
     </a>
   </div>
   <p class="lead" id="ping-line" hidden></p>
-</section>
 
-<section class="panel" data-panel="partners" hidden>
-  <h2>파트너사</h2>
-  <div class="meta">이 ERP를 가져다 쓰는 회사입니다. 지금 <b>1곳</b>.</div>
+
 
   <div class="tbl-wrap">
   <table class="reg">
@@ -415,7 +414,7 @@
   var panels = [].slice.call(document.querySelectorAll('.panel'));
   var crumb  = document.getElementById('crumb');
   function show(key, scroll){
-    if (!panels.some(function(p){ return p.dataset.panel === key; })) key = 'home';
+    if (!panels.some(function(p){ return p.dataset.panel === key; })) key = 'partners';
     panels.forEach(function(p){ p.hidden = (p.dataset.panel !== key); });
     links.forEach(function(a){
       var on = (a.dataset.go === key);
@@ -428,8 +427,8 @@
   links.forEach(function(a){
     a.addEventListener('click', function(e){ e.preventDefault(); show(a.dataset.go, true); });
   });
-  window.addEventListener('hashchange', function(){ show(location.hash.slice(1) || 'home', false); });
-  show(location.hash.slice(1) || 'home', false);
+  window.addEventListener('hashchange', function(){ show(location.hash.slice(1) || 'partners', false); });
+  show(location.hash.slice(1) || 'partners', false);
 })();
 </script>
 
