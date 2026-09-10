@@ -201,6 +201,37 @@ def _next_asset_labels(conn, count):
     return ["WP%s %04d" % (yy2, n) for n in range(last - count + 1, last + 1)]
 
 
+def _asset_issue_labels(conn, payload):
+    """자산 라벨 채번+멱등 판정 한 자리(배 1195 ②) — write() 의 server_mode 분기와 자체점검이 같이 부른다.
+    GAS assetIssue() 의 두 관문(수량 1~100·품의번호 필수)과 멱등 규칙(같은 품의번호 재호출 = 재발급 아님)을
+    그대로 잇는다 — proc_asset_issued 원장이 정본. 반환 (labels, already) — 관문을 못 넘으면 None(GAS 가
+    1분 뒤 같은 이유로 거부하게 둔다 — 번호를 미리 안 태운다)."""
+    try:
+        qty = int(str(payload.get("수량") or "0"))
+    except (TypeError, ValueError):
+        qty = 0
+    req_key = str(payload.get("품의번호") or "").strip()
+    if not (1 <= qty <= 100 and req_key):
+        return None
+    hit = conn.execute("SELECT labels FROM proc_asset_issued WHERE tenant_id=%s AND req_key=%s",
+                       (db.TENANT, req_key)).fetchone()
+    if hit:
+        lb = hit["labels"] if isinstance(hit["labels"], list) else json.loads(hit["labels"])
+        return lb, True
+    labels = _next_asset_labels(conn, qty)
+    with conn:
+        conn.execute(
+            "INSERT INTO proc_asset_issued (tenant_id, req_key, labels, issued_at)"
+            " VALUES (%s,%s,%s,%s) ON CONFLICT (tenant_id, req_key) DO NOTHING",
+            (db.TENANT, req_key, json.dumps(labels, ensure_ascii=False), _now_kst()))
+    # 동시에 같은 품의번호가 먼저 들어왔을 수 있다(위 SELECT 뒤 이 INSERT 사이의 틈) — 다시 읽어 이긴 쪽
+    # 값으로 맞춘다. 내가 방금 뽑은 번호가 안 쓰였으면 결번(proc_asset_no 는 이미 그만큼 전진) — 중복보다 낫다.
+    won = conn.execute("SELECT labels FROM proc_asset_issued WHERE tenant_id=%s AND req_key=%s",
+                       (db.TENANT, req_key)).fetchone()
+    labels = won["labels"] if isinstance(won["labels"], list) else json.loads(won["labels"])
+    return labels, False
+
+
 class _HopRecorder(urllib.request.HTTPRedirectHandler):
     """리다이렉트로 지나간 자리를 적어 둔다 — 거부당한 쓰기가 '본문이 틀린 것'인지 '본문이 도착도 못 한 것'인지
     다음번엔 가릴 수 있게(2026-09-09 시토).
@@ -379,18 +410,19 @@ async def write(request: Request):
         payload = dict(payload, no=proc_no)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     elif server_mode and dest == "PROC_GAS_URL" and action == "asset_issue":
-        # 자산 라벨 채번(배 1195 ②) — GAS assetIssue() 와 같은 두 관문(수량 1~100·품의번호 필수)을 먼저 통과시킨다.
-        # 여기서 막으면 번호를 안 쓰니 결번도 안 생긴다 — GAS 가 어차피 같은 이유로 거부할 요청에 번호를 안 태운다.
-        # 걸리면 labels 없이 그대로 queued 로 넘어간다(1분 뒤 GAS 가 bad_qty·no_req_key 로 거부 — 되밀기가 잡는다).
-        try:
-            _qty = int(str(payload.get("수량") or "0"))
-        except (TypeError, ValueError):
-            _qty = 0
-        _req_key = str(payload.get("품의번호") or "").strip()
-        if 1 <= _qty <= 100 and _req_key:
-            asset_labels = _next_asset_labels(conn, _qty)
+        # 자산 라벨 채번+멱등 판정(배 1195 ②) — _asset_issue_labels() 한 곳(자체점검이 같이 쓴다).
+        _r = _asset_issue_labels(conn, payload)
+        if _r is not None:
+            asset_labels, _already = _r
+            if _already:
+                # 같은 품의번호로 이미 발급됨 — GAS 원본과 같은 모양으로 즉시 답하고 write_log 는 새로 안 만든다
+                # (_idem_hit 과 같은 자리 — 재발급이 아니라 재조회다).
+                conn.close()
+                return {"ok": True, "already": True, "labels": asset_labels}
             payload = dict(payload, labels=asset_labels)
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        # _r 이 None(수량 범위 밖·품의번호 없음)이면 번호를 안 태우고 그대로 queued — GAS 가 1분 뒤 bad_qty·
+        # no_req_key 로 거부한다(되밀기가 잡는다). GAS 가 어차피 거부할 요청에 번호를 미리 쓰지 않는다.
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
@@ -609,4 +641,52 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _AssetConn.rows = {}   # 새 연도(행 없음) — INSERT 가 1번부터 새로 시작(연도 경계 리셋을 코드 없이 확인)
     labels_ny = _next_asset_labels(_AssetConn(), 2)
     assert labels_ny == ["WP26 0001", "WP26 0002"], labels_ny
+
+    # 자산 라벨 채번+멱등(배 1195 ②) — _asset_issue_labels() 를 실제 흐름대로: proc_asset_no(연도 카운터) +
+    # proc_asset_issued(품의번호별 원장) 두 표를 흉내 내는 가짜 conn 하나로.
+    class _AssetIssueConn:
+        def __init__(self, year_next):
+            self.year_next = dict(year_next)
+            self.issued = {}
+            self._pending = None
+
+        def execute(self, q, p=None):
+            qs = q.strip()
+            if "proc_asset_issued" in q:
+                if qs.startswith("SELECT"):
+                    val = self.issued.get(p)
+                    self._pending = {"labels": val} if val is not None else None
+                else:   # INSERT ... ON CONFLICT DO NOTHING
+                    tenant, req_key, labels_json, ts = p
+                    self.issued.setdefault((tenant, req_key), json.loads(labels_json))
+                    self._pending = None
+                return self
+            assert "proc_asset_no" in q, q
+            year, count = p
+            self.year_next[year] = self.year_next.get(year, 0) + count
+            self._pending = (self.year_next[year],)
+            return self
+
+        def fetchone(self):
+            return self._pending
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    _cur_year = int(time.strftime("%Y", time.gmtime(time.time() + 9 * 3600)))
+    aic = _AssetIssueConn({_cur_year: 3})   # 2026-09-10 실측 seed 흉내
+    r1 = _asset_issue_labels(aic, {"수량": 2, "품의번호": "PR-1"})
+    assert r1 is not None and r1[1] is False and len(r1[0]) == 2, r1   # 신규 발급 — already=False
+    r1b = _asset_issue_labels(aic, {"수량": 2, "품의번호": "PR-1"})    # 같은 품의번호 재호출
+    assert r1b[0] == r1[0] and r1b[1] is True, r1b            # 같은 라벨 그대로, already=True — 새로 안 뽑는다
+    r2 = _asset_issue_labels(aic, {"수량": 3, "품의번호": "PR-2"})
+    assert r2[1] is False and len(r2[0]) == 3, r2
+    assert len(set(r1[0] + r2[0])) == 5, "품의번호가 다른데 라벨이 겹쳤다"   # 겹침 없음
+    assert aic.year_next[_cur_year] == 8, "재조회가 번호를 또 소비했다"      # already 경로는 카운터를 안 건드린다
+    assert _asset_issue_labels(aic, {"수량": 0, "품의번호": "PR-3"}) is None    # 수량 0 — 관문 통과 못함
+    assert _asset_issue_labels(aic, {"수량": 101, "품의번호": "PR-3"}) is None  # 상한 초과
+    assert _asset_issue_labels(aic, {"수량": 5, "품의번호": ""}) is None        # 품의번호 없음
     print("자체점검 통과")

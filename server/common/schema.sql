@@ -204,6 +204,17 @@ CREATE TABLE IF NOT EXISTS proc_asset_no (
   year INTEGER PRIMARY KEY,
   next INTEGER NOT NULL DEFAULT 0
 );
+
+-- 자산 라벨 품의번호별 발급 원장(배 1195 ② · 2026-09-10). GAS assetIssue() 의 멱등 규칙(같은 품의번호로 또 부르면
+-- 새로 안 만들고 기존 라벨을 그대로 돌려준다 · 394~406행)을 서버가 잇는다 — 이게 없으면 서버가 채번만 하고
+-- "이미 발급됐나"를 몰라 같은 물건에 라벨이 두 벌(번호는 안 겹쳐도 뜻이 겹치는) 생긴다.
+CREATE TABLE IF NOT EXISTS proc_asset_issued (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  req_key   TEXT NOT NULL,
+  labels    JSONB NOT NULL,
+  issued_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, req_key)
+);
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;
