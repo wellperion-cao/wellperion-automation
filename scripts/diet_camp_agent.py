@@ -360,6 +360,13 @@ def _send(body: str, room: str = ROOM) -> bool:
         [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
         cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
     out = (p.stdout or "").strip()
+    # 발신기 출력을 통째로 남긴다 — 마지막 한 줄만 남기면 '왜 안 나갔나'가 사라진다.
+    # 2026-09-11(배 2522): 07:00 통이 안 나갔는데 남은 기록이 'DONE …' 한 줄뿐이라 원인을 못 쟀다.
+    for line in out.splitlines():
+        print(f"[sender] {line}")
+    err = (p.stderr or "").strip()
+    if err:
+        print(f"[sender:stderr] {err[:2000]}")
     print(f"[agent] 발신 rc={p.returncode} · {out.splitlines()[-1] if out else '(출력없음)'}")
     return p.returncode == 0 and "DONE" in out
 

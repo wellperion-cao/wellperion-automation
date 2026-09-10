@@ -9,7 +9,10 @@ _RETAIN_DAYS = 30
 
 def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', channel='telegram'):
     """channel: 'telegram'(기본) → logs/telegram_sent-*.log / 'kakao' → logs/kakao_sent-*.log.
-    배99(2026-07-25): 카톡도 하루 단위로 셀 수 있게 같은 관문 로거를 채널만 나눠 재사용(L21)."""
+    배99(2026-07-25): 카톡도 하루 단위로 셀 수 있게 같은 관문 로거를 채널만 나눠 재사용(L21).
+
+    반환 True=줄을 남겼다 / False=못 남겼다. 발신 자체는 여전히 막지 않지만(예외를 삼킨다),
+    호출측이 '기록 없는 성공'을 성공이라 적지 않게 결과를 돌려준다(배 2522, 2026-09-11)."""
     try:
         os.makedirs(_LOG_DIR, exist_ok=True)
         now = datetime.datetime.now()
@@ -22,8 +25,9 @@ def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', cha
         with open(path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(rec, ensure_ascii=False) + '\n')
         _cleanup(now)
+        return True
     except Exception:
-        pass
+        return False
 
 # ── 전역 발송 페이싱 (프로세스 간) — 텔레그램 429 플러드 근본차단 (2026-07-16 CMO 배1198) ──
 # 여러 루틴이 한 봇 토큰으로 발송 → 버스트 시 429(연장 페널티까지). 파일락 + 마지막 발송 시각으로

@@ -1559,7 +1559,7 @@ try:
     from tg_outbound_log import log_outbound as _log_outbound
 except Exception:
     def _log_outbound(*a, **k):
-        pass
+        return False  # 로거가 없으면 증거도 없다 — 호출측이 성공이라 적지 않게 한다
 
 DEDUP_LEDGER_PATH = ROOT / "status" / "kakao_dedup_ledger.json"
 DEDUP_WINDOW_SEC = float(os.environ.get("KAKAO_DEDUP_WINDOW_SEC", 7200))  # 2시간(22:30↔23:00류 30분 간격을 넉넉히 덮음)
@@ -1945,8 +1945,13 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         screenshot(room_win, room_name, "message_sent")
         log(f"[{room_name}] 텍스트 전송 완료")
         record_dedup_sent(room_name, text=text)
-        _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
-                      ok=True, kind="message", channel="kakao")
+        if not _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
+                             ok=True, kind="message", channel="kakao"):
+            # 로그에 줄이 없으면 성공이 아니다(배 2522) — 기록 없이 '전송 완료'를 반환하던 자리.
+            # 바로 위 record_dedup_sent 가 이미 원장에 남아 2시간 안 재발송은 중복 가드가 막는다.
+            raise RuntimeError(
+                f"[{room_name}] 보냈다는 기록을 logs/kakao_sent-*.log 에 남기지 못했다 — "
+                f"기록이 없으면 나갔는지 셀 수 없어 성공으로 적지 않는다")
         return True, ""
     finally:
         # 성공이든 예외든 방 창은 닫는다(GM 지시 2026-09-09) — close_room_window 자체가
@@ -2046,9 +2051,14 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
         record_dedup_sent(room_name, text=caption, image_path=image_path)
         # 로그는 실제로 나간 것만 적는다 — 캡션이 못 갔는데 image+caption 으로 적으면
         # 어떤 감시기도 그 누락을 못 잡는다(오늘 사고의 실제 원인).
-        _log_outbound(caption if caption_sent else "", chat_id=room_name,
-                      source="kakao_report_sender.image", ok=True,
-                      kind="image+caption" if caption_sent else "image", channel="kakao")
+        if not _log_outbound(caption if caption_sent else "", chat_id=room_name,
+                             source="kakao_report_sender.image", ok=True,
+                             kind="image+caption" if caption_sent else "image", channel="kakao"):
+            # 로그에 줄이 없으면 성공이 아니다(배 2522) — 바로 위 record_dedup_sent 가 이미
+            # 원장에 남아 2시간 안 재발송은 중복 가드가 막는다.
+            raise RuntimeError(
+                f"[{room_name}] 보냈다는 기록을 logs/kakao_sent-*.log 에 남기지 못했다 — "
+                f"기록이 없으면 나갔는지 셀 수 없어 성공으로 적지 않는다")
         return True, ""
     finally:
         # 성공이든 예외든 방 창은 닫는다(GM 지시 2026-09-09) — close_room_window 자체가
@@ -2313,6 +2323,35 @@ def _selftest() -> None:
         assert "원인 불명" in _failure_reason([("★관리부", "ZeroDivisionError")])
         print("SELFTEST OK: 발신 실패 사유 분류 정상")
 
+        # ⑥-b 카톡 GUI 단일 점유(배 2522) — 같은 초에 뜬 두 프로세스 중 하나만 화면을 잡는다.
+        _holder = subprocess.Popen(
+            [sys.executable, "-c",
+             "import sys; sys.path.insert(0, r'%s')\n"
+             "import kakao_report_sender as K\n"
+             "assert K.acquire_gui_lock(5)\n"
+             "print('HELD', flush=True)\n"
+             "import time; time.sleep(6)\n" % str(Path(__file__).resolve().parent)],
+            stdout=subprocess.PIPE, text=True)
+        assert _holder.stdout.readline().strip() == "HELD"
+        assert acquire_gui_lock(3) is False, "두 번째 프로세스가 같은 화면을 함께 잡았다"
+        _holder.wait()
+        assert acquire_gui_lock(5) is True, "앞 발신이 끝났는데 락을 못 잡는다"
+        print("SELFTEST OK: 카톡 GUI 단일 점유 — 두 프로세스 중 하나만 잡는다")
+
+        # ⑥-c 기록 없는 성공 금지(배 2522) — 로거가 실패를 False 로 알려야 호출측이 막을 수 있다.
+        from tg_outbound_log import log_outbound as _lo
+        assert _lo("t", chat_id="자체점검", source="selftest", channel="kakao") is True
+        _tmp = sys.modules["tg_outbound_log"]
+        _keep, _tmp._LOG_DIR = _tmp._LOG_DIR, "Z:\\없는경로\\절대없음"
+        try:
+            assert _lo("t", chat_id="자체점검", source="selftest", channel="kakao") is False
+        finally:
+            _tmp._LOG_DIR = _keep
+        _p = ROOT / "logs" / ("kakao_sent-%s.log" % datetime.now().strftime("%Y-%m-%d"))
+        _p.write_text("".join(l for l in _p.read_text(encoding="utf-8").splitlines(keepends=True)
+                              if '"source": "selftest"' not in l), encoding="utf-8")
+        print("SELFTEST OK: 발신 기록 실패는 False 로 돌아온다(성공이라 안 적는다)")
+
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
         #    사고가 나면 안 된다.
@@ -2336,6 +2375,43 @@ def _selftest() -> None:
             tmp_dir.rmdir()
         except Exception:
             pass
+
+
+# ── 카톡 GUI 단일 점유 (배 2522, 2026-09-11) ────────────────────────────────
+# 예약작업 두 개가 같은 초에 뜨면(07:00 고척블로그 · 다이어트캠프) 카카오톡 PC 앱 한 화면을
+# 두 프로세스가 함께 잡는다 — 창 고르기·붙여넣기·Enter 가 서로 뒤엉킨다. 발신 관문이 이 파일
+# 하나뿐이라 여기 한 곳에서 프로세스 간 직렬화하면 전량 막힌다(약속 L21 — 새 장치를 만들지 않는다).
+_GUI_LOCK_PATH = ROOT / "logs" / ".kakao_gui.lock"
+_GUI_LOCK_WAIT_SEC = float(os.environ.get("KAKAO_GUI_LOCK_WAIT_SEC", 900))
+_gui_lock_handle = None  # 프로세스가 끝날 때까지 들고 있는다 — 닫으면 락이 풀린다
+
+
+def acquire_gui_lock(wait_sec: float = _GUI_LOCK_WAIT_SEC) -> bool:
+    """다른 카톡 발신 프로세스가 화면을 놓을 때까지 기다린다. 시간 안에 못 잡으면 False."""
+    global _gui_lock_handle
+    try:
+        _GUI_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _gui_lock_handle = open(_GUI_LOCK_PATH, "a+b")
+        import msvcrt
+    except Exception as exc:  # 락을 못 쓰는 환경 — 발신 자체를 막지는 않는다
+        log(f"[gui-lock] 잠금 준비 실패({exc}) — 직렬화 없이 진행")
+        return True
+    deadline = time.time() + wait_sec
+    waited = False
+    while True:
+        try:
+            _gui_lock_handle.seek(0)
+            msvcrt.locking(_gui_lock_handle.fileno(), msvcrt.LK_NBLCK, 1)
+            if waited:
+                log("[gui-lock] 앞 발신이 끝나 이어서 진행")
+            return True
+        except OSError:
+            if time.time() >= deadline:
+                return False
+            if not waited:
+                log(f"[gui-lock] 다른 카톡 발신이 도는 중 — 최대 {int(wait_sec)}초 기다린다")
+                waited = True
+            time.sleep(2.0)
 
 
 def main() -> int:
@@ -2421,6 +2497,9 @@ def main() -> int:
     rooms = load_rooms(cfg, args.only_room)
     if not rooms:
         print("BLOCKED: 전송 대상 방이 없음 (kakao_rooms.json 확인)")
+        return 1
+    if not args.dry_run and not acquire_gui_lock():
+        print(f"BLOCKED: 다른 카톡 발신이 {int(_GUI_LOCK_WAIT_SEC)}초 넘게 화면을 잡고 있어 보내지 못했다")
         return 1
     room_names = [r["name"] for r in rooms]
 
