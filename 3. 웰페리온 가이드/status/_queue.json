@@ -1806,10 +1806,10 @@
     "status": "PENDING",
     "priority": "medium",
     "title": "[시토] 웰페리온 ERP 메인 화면 가로 넘침 — PC 191px · 폰 127px (웰리 2506 인계)",
-    "note": "대상 = 3. 웰페리온 가이드/wellperion_guide(main).html. 시모 실측 · 오늘 관리자 콘솔 개편과 무관하게 전부터 있던 것(직전 판 대조 확인). GM 이 매일 여는 화면이라 표·카드 오른쪽이 잘려 보인다.\n재는 법 = 1440·390 두 폭에서 document.documentElement.scrollWidth - clientWidth. 두 폭 다 0 이 되면 닫는다.\n09-10 밤 로컬 파일로 1차 측정: 390 폭에서 오른쪽으로 넘어간 요소가 여럿이고 ops-detail-grid 안 카드(폭 469px)와 homeReceptionCard 가 눈에 띈다 — 고정폭·min-width 계열로 보인다. 이 줄기부터 본다.\n오늘 밤은 GM 방향(서버만으로 돌아가게 셋업)에 묶여 내일 아침 첫 건으로 잡는다.",
+    "note": "대상 = 3. 웰페리온 가이드/wellperion_guide(main).html. 시모 실측 · 오늘 관리자 콘솔 개편과 무관하게 전부터 있던 것(직전 판 대조 확인). GM 이 매일 여는 화면이라 표·카드 오른쪽이 잘려 보인다.\n재는 법 = 1440·390 두 폭에서 document.documentElement.scrollWidth - clientWidth. 두 폭 다 0 이 되면 닫는다.\n09-10 밤 로컬 파일로 1차 측정: 390 폭에서 오른쪽으로 넘어간 요소가 여럿이고 ops-detail-grid 안 카드(폭 469px)와 homeReceptionCard 가 눈에 띈다 — 고정폭·min-width 계열로 보인다. 이 줄기부터 본다.\n오늘 밤은 GM 방향(서버만으로 돌아가게 셋업)에 묶여 내일 아침 첫 건으로 잡는다.\n[09-10 22:3x 웰리] 시모가 같은 파일 색 작업을 끝내 저장·배포했다(6f9dbbd8d). 내일 시작 전에 최신 판을 먼저 받고 그 위에서 고친다 — 색만 바뀌었고 넘침 수치는 그대로라는 실측 회신을 받았다(PC 191px·폰 127px).",
     "next": "",
     "created_at": "2026-09-10T22:28:02+09:00",
-    "updated_at": "2026-09-10T22:28:02+09:00"
+    "updated_at": "2026-09-10T22:33:51+09:00"
   },
   {
     "task_id": "CTO-2026-09-10-상담봇-3업체-손님-화면에서-실제로-답하는지-판정하",
@@ -1909,6 +1909,27 @@
     "audience": "ai",
     "reversible": true,
     "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-10"
+  },
+  {
+    "task_id": "COO-2026-09-10-서버-쓰기-실패-14건-접수-REG-UPDATE-가",
+    "clevel": "coo",
+    "title": "[시우] 서버 쓰기 실패 14건 — 접수 reg_update 가 접수ID 를 못 찾음 (RECEPTION-xxx · 최근 7일)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-10",
+    "from": "cpo",
+    "note": "[시포 → 시우 전달 2026-09-10] 시포가 GM 지시로 서버 회원 모듈을 점검하다 회원 아닌 것 하나가 같이 걸려 넘긴다(2026-09-10 22:3x). 시토 서버 실측: 최근 7일 write_log 실패 중 최다가 reg_update / sheet-missing 14건이고 사유는 전부 '해당 접수ID를 찾을 수 없습니다: RECEPTION-xxx'. 회원 쓰기 5종은 실패 0 이라 회원 도메인은 아니다. 종합접수처 상태 갱신이 시트에서 그 행을 못 찾고 있다는 뜻 — 행이 지워졌는지, 접수ID 규칙이 바뀌었는지 시우가 봐야 한다. 실측은 시토에게 요청하면 서버에서 바로 재 준다.",
+    "next": "실패 14건의 접수ID 를 뽑아 시트에 그 행이 실재하는지 대조",
+    "depends_on": "",
+    "ship_no": 12514,
+    "short_no": 2514,
+    "module": "home",
+    "audience": null,
+    "reversible": null,
+    "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-10"
