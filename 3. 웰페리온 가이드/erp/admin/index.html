@@ -136,6 +136,9 @@
   table.reg td.path{color:var(--text-soft); font-family:ui-monospace,Consolas,monospace; font-size:12.5px;
                     word-break:break-all;}
   table.reg td.note{color:var(--dim); font-size:12.5px;}
+  table.reg a{color:var(--accent-hover); text-decoration:none; font-weight:600;}
+  table.reg a:hover{text-decoration:underline;}
+  table.reg a .n{color:var(--dim); font-weight:400; font-size:11.5px; margin-left:6px;}
   .grp{font-size:12px; font-weight:700; color:var(--accent-hover); margin:16px 0 4px;}
   .grp:first-child{margin-top:0;}
 
@@ -202,7 +205,6 @@
 
 <div class="topbar">
   <div class="brand" aria-label="ERP플랫폼관리(가칭)"><span class="platform-name">ERP플랫폼관리<span class="tag-temp">(가칭)</span></span><span class="sub">ERP</span></div>
-  <span class="console">플랫폼 관리 콘솔</span>
   <span class="layer">회사 관리자</span>
   <span class="crumb" id="crumb">파트너사</span>
 </div>
@@ -275,8 +277,9 @@
 <section class="panel" data-panel="envs" hidden>
   <!-- 환경 3벌 — GM 지시 2026-09-09 「상용 서비스는 이렇게 분리해 둔다」. 실제로 세워 둔 것이지 계획이 아니다.
        세운 방법 = server/deploy_env.sh {alpha|beta} · 유닛 erp-api@.service · 라이브는 종전 deploy_api.sh 그대로. -->
-  <h3>환경 3벌 <span class="n">고칠 땐 알파에서 · 태우기 전엔 베타에서 · 손님은 라이브에만</span></h3>
-  <details class="tip"><summary>세 벌을 왜 나눠 두었나</summary>날고 있는 비행기를 고치지 않습니다. 같은 비행기를 한 대 더 만들어 <b>손님 없이 이착륙</b>해 본 뒤 손님을 옮겨 태웁니다. 세 벌은 <b>코드도 자료도 완전히 별개</b>이고, 알파·베타에는 <b>밖으로 나가는 주소(구글 시트·카톡방·브로제이)를 아예 주지 않았습니다</b> — 그래서 거기서 무슨 시험을 해도 실무진 시트에는 한 줄도 안 적힙니다.</details>
+  <h2>환경</h2>
+  <div class="meta">세 벌 · 고칠 땐 <b>알파</b>에서 · 태우기 전엔 <b>베타</b>에서 · 손님은 <b>라이브</b>에만</div>
+  <details class="tip"><summary>세 벌을 왜 나눠 두었나</summary><div class="in">날고 있는 비행기를 고치지 않습니다. 같은 비행기를 한 대 더 만들어 <b>손님 없이 이착륙</b>해 본 뒤 손님을 옮겨 태웁니다. 세 벌은 <b>코드도 자료도 완전히 별개</b>이고, 알파·베타에는 <b>밖으로 나가는 주소(구글 시트·카톡방·브로제이)를 아예 주지 않았습니다</b> — 그래서 거기서 무슨 시험을 해도 실무진 시트에는 한 줄도 안 적힙니다.</div></details>
   <div class="layers">
     <div class="layer">
       <div class="tag">알파</div>
@@ -310,8 +313,11 @@
 </section>
 
 <section class="panel" data-panel="downloads" hidden>
-  <h3>다운로드 <span class="n">설치·도구 파일 — 회사 관리자 자리(GM 확정 2026-09-09)</span></h3>
-  <p class="lead">여기 있는 것은 설치·도구 파일이다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라 화면에서 본다 — 한 번 내려받은 파일은 권한을 거둬도 그 PC 에 그대로 남는다.</p>
+  <h2>다운로드</h2>
+  <div class="meta"><b>AI 를 먼저 깔고</b> 그 위에 도구를 얹습니다 · 아래 순서대로 받으시면 됩니다</div>
+  <details class="tip"><summary>회사 자료는 왜 여기 없나</summary>
+    <div class="in">여기 있는 것은 설치·도구 파일뿐입니다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라
+    화면에서 봅니다 — 한 번 내려받은 파일은 나중에 권한을 거둬도 그 PC 에 그대로 남습니다.</div></details>
   <div id="downloads"><div class="desc">불러오는 중…</div></div>
 </section>
 
@@ -322,36 +328,38 @@
 <section class="panel" data-panel="docs" hidden>
   <h2>구조 문서</h2>
   <div class="meta">파트너사를 늘릴 때 여는 자료 — 이용자 3층 · 두 겹 구조 · 구성 3갈래 · 설정값 20건 · 뼈대 16건</div>
-<h3>이용자 3층 <span class="n">주소가 곧 층이다</span></h3>
+  <h3>이용자 3층 <span class="n">주소가 곧 층이다</span></h3>
   <div class="layers">
     <div class="layer">
       <div class="tag">1층</div>
       <div class="name">회사 관리자</div>
-      <div class="desc">플랫폼을 파는 우리. 파트너사를 늘리고, 권한·비용·가동을 본다.</div>
+      <div class="desc">플랫폼을 파는 우리 자리입니다. 파트너사를 늘리고 권한·비용·가동을 봅니다.</div>
       <div class="stat"><span class="k">주소</span><span class="v">erp.wellperion.com<b>/erp/admin/</b></span></div>
       <div class="stat"><span class="k">여기</span><span class="v">지금 이 화면</span></div>
     </div>
     <div class="layer">
       <div class="tag">2층</div>
       <div class="name">파트너사 관리자</div>
-      <div class="desc">그 회사의 관리자. 자기 회사 직원의 권한과 비용을 본다.</div>
+      <div class="desc">그 회사의 관리자입니다. 자기 회사 직원의 권한과 비용을 봅니다.</div>
       <div class="stat"><span class="k">주소</span><span class="v">erp.wellperion.com<b>/erp/</b></span></div>
       <div class="stat"><span class="k">보이는 것</span><span class="v">모듈·문서함·비용·권한</span></div>
     </div>
     <div class="layer">
       <div class="tag">3층</div>
       <div class="name">파트너사 직원</div>
-      <div class="desc">그 회사의 직원. 자기에게 허용된 화면만 쓴다.</div>
+      <div class="desc">그 회사의 직원입니다. 자기에게 허용된 화면만 씁니다.</div>
       <div class="stat"><span class="k">주소</span><span class="v">erp.wellperion.com <b>(첫 화면)</b></span></div>
       <div class="stat"><span class="k">보이는 것</span><span class="v">모듈·문서함</span></div>
     </div>
   </div>
 
   <h3>두 겹 구조 <span class="n">파는 회사 / 쓰는 회사</span></h3>
-  <p class="lead">이 시스템은 두 겹입니다. 위 겹은 이 ERP를 만들어 파는 회사(플랫폼)이고, 아래 겹은 이 ERP를 가져다 쓰는 회사(파트너사)입니다. 회사가 바뀌어도 그대로 쓰는 뼈대는 플랫폼이 소유하고, 파트너사마다 다른 값(브랜드·용어·조직·채널)은 파트너사 자리에 따로 둡니다. 지금 등록된 파트너사는 웰페리온 1곳(1호)입니다 — 파트너사가 늘면 아래 「파트너사 설정값」 표에 회사별로 줄이 늡니다.</p>
+  <details class="tip"><summary>두 겹으로 나눈 이유</summary>
+    <div class="in">회사가 바뀌어도 그대로 쓰는 뼈대는 위 겹(플랫폼)이 갖고, 회사마다 다른 값은 아래 겹(파트너사)에 둡니다.
+    이렇게 갈라 두면 파트너사를 늘릴 때 아래 겹만 새로 채우면 됩니다.</div></details>
   <div class="split-note">
-    <div class="half"><b>플랫폼 · (가칭) ERP플랫폼관리</b>ERP를 만들어 파는 회사. 뼈대(엔진·규격·부팅 절차)의 주인이며 파트너사가 몇이 되든 하나입니다. 정식 상호는 미정 — GM 확정 필요.</div>
-    <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP를 가져다 쓰는 회사. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
+    <div class="half"><b>플랫폼 · (가칭) ERP플랫폼관리</b>ERP 를 만들어 파는 회사입니다. 뼈대(엔진·규격·부팅 절차)의 주인이며, 파트너사가 몇이 되든 하나입니다. 정식 상호는 아직 정하지 않았습니다.</div>
+    <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP 를 가져다 쓰는 회사입니다. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
   </div>
 
   <h3>구성 3갈래 <span class="n">표준 · 자산 · 운영 — 위 「이용자 3층」과 뜻이 다르다</span></h3>
@@ -383,7 +391,7 @@
   </div>
 
   <h3>파트너사 설정값 <span class="n">1호 파트너사 웰페리온 값 20건 — 값은 각 파일이 정본, 여기는 위치만</span></h3>
-  <p class="lead">파트너사가 새로 들어오면 아래 20건을 자기 값으로 갈아 끼웁니다. 지금은 웰페리온(1호) 하나뿐입니다. 판정 근거 = <code>status/briefs/CEO-2026-09-09-뼈대-우리값-판정표.md</code>.</p>
+  <p class="lead">새 파트너사가 들어오면 아래 20건만 자기 값으로 갈아 끼웁니다 · 지금은 웰페리온(1호) 하나뿐입니다.</p>
   <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:26%">항목</th><th style="width:44%">위치</th><th>무엇이 담겼나</th></tr></thead>
     <tbody>
@@ -433,7 +441,7 @@
 
 </section>
 
-  <div class="foot">화면 수는 erp/modules.json 을, 화면 열람은 status/page_ping.json 을 열 때마다 읽습니다 — 손으로 적은 숫자가 아닙니다. 자동화 가동·비용은 자율현황과 토큰 사용량 화면에서 봅니다. 이 화면은 보여주기 전용 — 편집·저장 기능이 없습니다.</div>
+  <div class="foot">숫자는 화면을 열 때마다 원장에서 읽습니다 — 손으로 적은 값이 아닙니다. 이 화면은 보기 전용입니다.</div>
 
 </div><!-- /main -->
 </div><!-- /shell -->
