@@ -25,6 +25,7 @@ import datetime as dt
 from datetime import timezone
 import functools
 import io
+import datetime as _dt
 import json
 import os
 import re
@@ -1645,6 +1646,25 @@ def _kpi_slice(role_slug: str) -> str:
             "※ 역할분담 결정 경위 등 전체는 ssot/kpi.json 파일 자체를 여세요.")
 
 
+def _checked_ago(page: dict) -> str:
+    """감점 사유를 마지막으로 화면에서 확인한 날이 며칠 전인지 — 없으면 「확인 없음」.
+
+    왜 (2026-09-10): 고쳐진 화면의 옛 감점 사유를 현재 사실로 옮겨 보고하는 사고가 같은
+    화면에서 두 번 났다. 자동 재검사기를 새로 만드는 대신(약속 L21) 날짜만 같이 찍는다 —
+    「93일 전 확인」이 붙어 있으면 그 줄을 그대로 옮기지 않는다."""
+    raw = str(page.get("checked_at") or "").strip()
+    if not raw:
+        return "〔확인 없음〕"
+    try:
+        d = _dt.date.fromisoformat(raw[:10])
+    except ValueError:
+        return "〔확인 없음〕"
+    days = (_dt.date.today() - d).days
+    if days <= 0:
+        return "〔오늘 확인〕"
+    return f"〔{days}일 전 확인〕"
+
+
 def _page_score_slice(role_slug: str) -> str:
     """status/page_score.json → 내 소유 화면 중 점수 낮은 것 5개 (배478 · GM 지시 2026-08-08).
 
@@ -1670,11 +1690,12 @@ def _page_score_slice(role_slug: str) -> str:
         return (f"\n📉 내 화면 완성도 — {len(mine)}개 전부 85% 이상. "
                 "(정본 = status/page_score.json 손 관리 · 재채점은 이 파일을 직접 고친다, "
                 "배641 · 구 원천 GM업무.html #sec-erp-score 는 08-15 삭제됨)")
-    lines = [f"  {p['score']:3}%  {p['name']} — {p['note'][:52]}" for p in low]
+    lines = [f"  {p['score']:3}%  {p['name']} {_checked_ago(p)} — {p['note'][:52]}" for p in low]
     return (f"\n📉 내 화면 완성도 낮은 순 {len(low)}개 (전체 {len(mine)}개 중 85% 미만)\n"
             + "\n".join(lines)
-            + "\n※ 이 줄이 오늘 볼 것이다. 정본 = status/page_score.json 손 관리 · "
-              "재채점은 이 파일을 직접 고친다(배641)")
+            + "\n※ 이 줄이 오늘 볼 것이다. 〔확인 없음〕·〔N일 전〕은 그 감점 사유가 지금도 "
+              "사실이라는 뜻이 아니다 — 옮겨 적기 전에 화면을 연다(2026-09-10 실사고). "
+              "정본 = status/page_score.json 손 관리 · 재채점은 이 파일을 직접 고친다(배641)")
 
 
 def _reception_watch_slice(role_slug: str) -> str:
