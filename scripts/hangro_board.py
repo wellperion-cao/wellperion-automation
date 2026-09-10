@@ -765,6 +765,12 @@ def _stall_tag(item: dict, days: int | None = None) -> str:
         tag = f"{d}일째🟠웰리"
     else:
         tag = f"{d}일째🟡담당"
+    # 보류(GM·담당이 일부러 멈춘 배)를 방치와 갈라 보인다 — 2026-09-10.
+    #   목록에서 빼지는 않는다: 09-05 에 GM 이 「보류 12일이나」로 지적한 대로, 숨기면 조용히
+    #   묻힌다. 대신 꼬리표를 앞에 붙여 GM 이 '멈춘 것'과 '기다리는 것'을 한눈에 가른다.
+    #   실사고: 배923(새 홈 초안)이 GM 보류인데 status 가 PENDING 이라 7일째 방치로 읽혔다.
+    if str(item.get("status") or "") in {"ON_HOLD", "보류"}:
+        tag = f"⚓보류·{tag}"
     quiet = _stall_days(item) or 0
     return f"{tag}·기록{quiet}일전" if quiet >= _STALL_MIN_DAYS else tag
 
