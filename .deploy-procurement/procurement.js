@@ -199,11 +199,17 @@ function addItem(p){
                 p.가격||"", p.목적||"", p.승인자||"", p.비고||"", "", "품의",
                 "", "", "", p.항목1||"", p.항목2||"" ]); // 13승인날짜 14배송 15증빙 16항목1 17항목2
   var row = s.getLastRow();
-  // 고정 일련번호(신규부터) — 25열에 저장, 행 삭제돼도 불변
-  var lr0 = s.getLastRow();
-  var nos = s.getRange(FIRST_ROW, 25, Math.max(1, lr0 - FIRST_ROW + 1), 1).getValues();
-  var mx = 0; for (var k=0;k<nos.length;k++){ var x=parseInt(String(nos[k][0]).replace(/[^0-9]/g,''),10); if(x>mx) mx=x; }
-  var no = mx + 1;
+  // 고정 일련번호(신규부터) — 25열에 저장, 행 삭제돼도 불변.
+  // p.no 가 오면(배 1195 ① 서버 채번 전환 — 되밀기가 서버 PostgreSQL 이 매긴 번호를 그대로 실어 보낸다) 그 번호를
+  // 그대로 쓴다 — mx+1 을 다시 계산하지 않는다(두 채번기가 서로 다른 번호를 매기면 시트·서버가 어긋난다).
+  // p.no 가 없으면(dual 모드·기존 호출) 종전대로 시트 자체 최댓값+1.
+  var noFromServer = parseInt(String(p.no||"").replace(/[^0-9]/g,''),10);
+  var no = noFromServer || (function(){
+    var lr0 = s.getLastRow();
+    var nos = s.getRange(FIRST_ROW, 25, Math.max(1, lr0 - FIRST_ROW + 1), 1).getValues();
+    var mx = 0; for (var k=0;k<nos.length;k++){ var x=parseInt(String(nos[k][0]).replace(/[^0-9]/g,''),10); if(x>mx) mx=x; }
+    return mx + 1;
+  })();
   s.getRange(row, 25).setValue(no);
   if (p.구매날짜) s.getRange(row, 26).setValue(p.구매날짜); // 구매(예정)날짜 — 새 행 26열에만 기록(기존·회계열 무관, 2026-07-08)
   var shipAmt = Math.round(parseFloat(String(p.배송비==null?"":p.배송비).replace(/[^0-9.\-]/g,"")) || 0); // 소수점 반올림·음수는 아래 >0 가드로 차단(검증 발견 수정 2026-07-14)

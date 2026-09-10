@@ -190,6 +190,12 @@ ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFA
 -- 이어받아 배포 시 1회 seed(SELECT setval)한다 — 접수ID·습득ID 번호가 끊기지 않는다. 이후 서버가 유일한 발급자.
 CREATE SEQUENCE IF NOT EXISTS reception_seq;
 CREATE SEQUENCE IF NOT EXISTS lost_found_seq;
+
+-- 구매요청 번호 서버 채번 (배 1195 ① · 2026-09-10 시토). GAS addItem() 의 채번 규칙(지출품의 시트 25열 전체
+-- 최댓값+1·정수·접두사 없음)을 그대로 잇는다 — 위 두 시퀀스와 같은 자리. 배포 시 SELECT setval('proc_no_seq', <시트
+-- 실측 최댓값>) 로 1회 seed(2026-09-10 실측 130 — active 20건 max 130 + done 92건 max 107, 전체 최댓값 130).
+-- write_proc 스위치가 server 로 켜지기 전까지는 호출되지 않는다(아직 dual — api_write.py 참고).
+CREATE SEQUENCE IF NOT EXISTS proc_no_seq;
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;

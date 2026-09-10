@@ -180,6 +180,13 @@ def body_never_arrived(data):
     return isinstance(data, dict) and str(data.get("error") or "").strip() == BODY_NEVER_ARRIVED
 
 
+def _next_proc_no(conn):
+    """구매요청 번호 채번(배 1195 ①) — proc_no_seq(schema.sql). reception_seq·lost_found_seq(배984)와
+    같은 자리: PostgreSQL SEQUENCE 는 잠금 없이 동시호출해도 절대 같은 값을 두 번 안 준다(트랜잭션이
+    롤백돼도 값은 반환 안 됨 — 결번은 나도 중복은 안 난다. FOR UPDATE 잠금보다 이쪽이 이 코드베이스 정본)."""
+    return conn.execute("SELECT nextval('proc_no_seq')").fetchone()[0]
+
+
 class _HopRecorder(urllib.request.HTTPRedirectHandler):
     """리다이렉트로 지나간 자리를 적어 둔다 — 거부당한 쓰기가 '본문이 틀린 것'인지 '본문이 도착도 못 한 것'인지
     다음번엔 가릴 수 있게(2026-09-09 시토).
@@ -347,6 +354,15 @@ async def write(request: Request):
     area = origin_switch.WRITE_AREA.get(dest)
     server_mode = (bool(area) and origin_switch.mode(area) == "server" and not is_test
                    and action not in NO_SERVER_ACTIONS)   # 스위치 한 줄 — 재시작 없이 갈린다
+    proc_no = None
+    if server_mode and action == "add" and dest == "PROC_GAS_URL":
+        # 구매요청 번호 서버 채번(배 1195 ①) — GAS addItem() 규칙(열25 최댓값+1)을 서버가 잇는다.
+        # payload·raw_body 에 no 를 실어 두면 되밀기(pushback.py)가 그대로 GAS 로 넘기고, GAS 는 그 번호를
+        # 그대로 쓴다(procurement.js addItem 수정 — p.no 있으면 자체 채번을 건너뛴다). 새 칸 없이 기존
+        # raw_body 왕복 하나로 끝난다.
+        proc_no = _next_proc_no(conn)
+        payload = dict(payload, no=proc_no)
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
@@ -360,7 +376,8 @@ async def write(request: Request):
     if server_mode:
         # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
         conn.close()
-        return server_ok(log_id, queued=True, mode="server")
+        extra = {"no": proc_no} if proc_no is not None else {}
+        return server_ok(log_id, queued=True, mode="server", **extra)
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
         resp = _gas_forward(body, dest)
@@ -511,4 +528,26 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert ok                                                 # 3라인 리더가 아닌 계정 — 이 규칙 대상이 아니다, 막지 않는다
     ok, why = _owner_write_check(_OwnerConn(None, _BOARD_NOW), "unknown@wellperion.com", {"t1": "아무개나"})
     assert ok                                                 # 미등록 계정(개인 계정 발급 전) — 막지 않는다
+
+    # 구매요청 번호 채번(배 1195 ①) — 가짜 시퀀스 conn: nextval 호출마다 1씩 올라간 값을 준다(중복 불가 흉내).
+    class _SeqConn:
+        n = 130   # 2026-09-10 실측 시트 최댓값(active 20건+done 326건 전수 스캔) — 배포 seed 값과 같아야 한다
+
+        def execute(self, q, p=None):
+            assert "nextval" in q and "proc_no_seq" in q
+            _SeqConn.n += 1
+            self._v = _SeqConn.n
+            return self
+
+        def fetchone(self):
+            return (self._v,)
+
+    seen = set()
+    for _ in range(5):
+        n = _next_proc_no(_SeqConn())
+        assert n not in seen, "같은 번호가 두 번 나왔다"   # 서버 채번 자체점검 핵심 — 중복 불가
+        seen.add(n)
+    assert sorted(seen) == list(range(131, 136)), seen        # 130 다음부터 1씩 순서대로
+    assert server_ok(9, queued=True, mode="server", no=131) == {
+        "ok": True, "success": True, "logId": 9, "queued": True, "mode": "server", "no": 131}
     print("자체점검 통과")
