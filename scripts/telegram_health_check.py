@@ -22,6 +22,7 @@ import glob
 import json
 import os
 import sys
+import time
 
 import requests
 
@@ -346,13 +347,32 @@ _RC_PAGES = [  # (이름, 주소, 본문에 반드시 있어야 하는 표식) �
 _RC_STATE = os.path.join(_ROOT_DIR, 'status', 'heartbeats', 'coo-reception-health.json')
 
 
+def _gas_read(url: str, params: dict, tries: int = 3, timeout: int = 40):
+    """GAS 읽기 한 번 — 일시 실패는 다시 시도한다. 끝내 실패하면 마지막 예외를 올린다.
+
+    ★왜 (2026-09-10 시토): 구글 앱스스크립트는 멀쩡한 요청에도 가끔 404·리다이렉트 안내문(HTML)을
+      돌려준다. 그러면 r.json() 이 "Expecting value: line 1 column 1 (char 0)" 로 터지고,
+      15분 점검이 「지금 안 됩니다 → 회복됐습니다」를 짝으로 내보내 GM 화면이 깜빡인다
+      (2026-09-10 실측: 같은 문구로 두 번). 서버 쪽 미러 동기화에는 같은 날 같은 재시도를 넣었다.
+      값을 지어내지는 않는다 — 세 번 다 실패하면 종전처럼 그대로 실패로 올린다.
+    """
+    last = None
+    for attempt in range(1, tries + 1):
+        try:
+            return requests.get(url, params=params, timeout=timeout).json()
+        except Exception as exc:            # HTML 응답·타임아웃·연결 끊김 모두 여기로 온다
+            last = exc
+            if attempt < tries:
+                time.sleep(2 * attempt)     # 2초 · 4초
+    raise last
+
+
 def _check_reception_lost() -> list[str]:
     issues: list[str] = []
     # ① 접수 GAS — 진단·공개 갤러리·접수 현황 3종 읽기(회원 화면이 실제로 부르는 것)
     for name, action, key in (('접수 GAS 진단', 'diag', None), ('습득물 갤러리', 'lf_gallery', 'data'), ('접수 현황판', 'reg_board', 'data')):
         try:
-            r = requests.get(_RC_GAS, params={'action': action}, timeout=40)
-            d = r.json()
+            d = _gas_read(_RC_GAS, {'action': action})
             if not d.get('ok'):
                 issues.append(f"{name} 응답 ok=false — {str(d.get('error') or d)[:80]} (GAS 승인·스코프 끊김 의심)")
             elif key and not isinstance(d.get(key), list):

@@ -212,9 +212,27 @@ def _tell_gm(text):
         return False   # 알림 실패가 동기화를 막지 않는다
 
 
+# 시트 조회 실패는 한 회차만으로 알리지 않는다 (2026-09-10 시토).
+#   구글이 가끔 멀쩡한 요청에도 404 를 돌려준다 — 재시도(gas_fetch 3회)가 대부분 살려내지만,
+#   드물게 세 번 다 실패한다. 그 한 회차는 옛 미러를 그대로 두므로 사람이 할 일이 없는데,
+#   경보만 「이상 → 정상 복귀」로 두 통 나가 GM 화면을 깜빡이게 했다(오늘 실측 23통).
+#   잡음이 잦으면 진짜 고장이 왔을 때 그냥 지나친다 — 그래서 연속 2회(=10분)부터 알린다.
+#   회원번호 없음·번호 충돌은 일시 오류가 아니라 자료 문제라 종전대로 즉시 알린다.
+FAIL_STREAK_TO_ALERT = 2
+
+
 def alert_on_change(conn, failed, unnumbered, collided):
     """상태가 '나쁨'으로 바뀌거나 나쁨의 내용이 달라질 때만 보낸다. 5분마다 같은 말을 반복하지 않고,
     나쁨 → 정상으로 돌아오면 복구 한 줄. 지문은 sync_meta 에 남긴다. 반환 = 보낸 문구(없으면 None)."""
+    streak = int(db.meta_get(conn, "members_fail_streak") or 0)
+    streak = streak + 1 if failed else 0
+    with conn:
+        db.meta_set(conn, "members_fail_streak", str(streak))
+    if failed and streak < FAIL_STREAK_TO_ALERT:
+        print("[quiet] 시트 조회 실패 %s — %d회째, 연속 %d회부터 알린다(옛 미러 유지 중)"
+              % (",".join(failed), streak, FAIL_STREAK_TO_ALERT))
+        failed = []          # 이번 회차는 없던 일로 — 지문·경보 모두 종전 상태를 유지한다
+
     fp = "f=%s|u=%d|c=%d" % (",".join(failed), unnumbered, collided)
     bad = bool(failed) or unnumbered > 0 or collided > 0
     prev = db.meta_get(conn, "members_alert_fp") or ""
@@ -302,10 +320,15 @@ def selftest():
         assert classify_overlaps(conn) == (1, 0), "이름+전화가 다르면 충돌"
         # 경보 — 같은 상태는 한 번만, 바뀌면 다시, 정상 복귀는 한 줄
         assert alert_on_change(conn, [], 0, 0) is None, "처음부터 정상이면 조용"
-        m1 = alert_on_change(conn, ["valid"], 2, 0); assert m1 and "조회 실패" in m1 and "2명" in m1
+        # 조회 실패는 한 회차만으로 알리지 않는다(2026-09-10) — 자료 문제(번호 없음)는 그 자리에서 알린다
+        m0 = alert_on_change(conn, ["valid"], 2, 0)
+        assert m0 and "2명" in m0 and "조회 실패" not in m0, "첫 실패 회차엔 조회 실패 줄을 빼고 알린다"
+        m1 = alert_on_change(conn, ["valid"], 2, 0)
+        assert m1 and "조회 실패" in m1, "연속 2회째부터 조회 실패를 알린다"
         assert alert_on_change(conn, ["valid"], 2, 0) is None, "같은 이상은 반복하지 않는다"
         assert "충돌 1건" in alert_on_change(conn, ["valid"], 2, 1), "이상 내용이 바뀌면 다시 보낸다"
         assert "복귀" in alert_on_change(conn, [], 0, 0)
+        assert (db.meta_get(conn, "members_fail_streak") or "0") == "0", "정상으로 돌아오면 연속 횟수도 0"
         # owner_* 정합 — 시트가 이기되, 서버가 실제로 쓴 (회원번호,필드)는 안 덮는다(배1054)
         owner_rows = [
             {"회원번호": "M00003", "회원명": "황금성", "휴대폰 번호": "010-3333-3333", "PT 담당자": "최동오"},
