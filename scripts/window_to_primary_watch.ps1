@@ -1,10 +1,17 @@
-# window_to_primary_watch.ps1 — 새로 뜨는 창을 주 모니터로 옮기는 상주 감시 (GM 지시 2026-09-07).
-# 왜: 크롬·카카오톡·파워셸 등 어떤 앱이든 새 창은 그 앱이 마지막으로 있던 모니터에 뜬다.
-#     GM PC 는 서브 모니터(왼쪽 · X<0)에 창이 쌓여 매번 손으로 옮겼다. 앱마다 고치는 대신
-#     '처음 나타난 창'만 주 모니터로 옮긴다 — GM 이 일부러 서브로 끌어다 둔 창은 건드리지 않는다.
-# 실행: powershell -NoProfile -WindowStyle Hidden -File scripts/window_to_primary_watch.ps1
-# 등록: 예약작업 Wellperion-Window-To-Primary (로그온 시) — scripts/open_primary.ps1 과 짝.
-# 끄기: 그 예약작업 끝내기(schtasks /end) 또는 powershell 프로세스 종료.
+﻿# window_to_primary_watch.ps1 - 새로 뜨는 창을 주 모니터로 옮기는 상주 감시.
+#
+# 2026-09-10 부터 끈다 (GM 지적: "왜 카카오톡 채팅창 열면 위치가 변경되는거지?").
+#   이 감시는 '새로 나타난 창'이면 무엇이든 옮긴다. GM 이 손으로 연 카카오톡 대화창도
+#   새 창이라 그대로 끌려왔다 - 2026-09-10 하루에만 19번(logs/window_to_primary.log).
+#   GM 이 09-07 에 부탁한 것은 'AI 가 띄운 창'을 주 모니터로였고, 그 일은 이미
+#   scripts/open_primary.ps1 한 관문이 한다. 이 감시는 그 위에 얹은 두 번째 장치라 끈다
+#   (약속 L21 - 장치는 늘리지 않는다).
+#
+#   되살리려면: launchers/window_to_primary_hidden.vbs 를 시작프로그램 폴더에 다시 넣는다.
+#   지금 꺼 둔 자리 = 시작 메뉴 Programs 폴더의 window_to_primary_hidden.vbs.off
+#   되살릴 때는 카카오톡 창을 건너뛰는 조건을 먼저 넣어라 - 안 그러면 같은 지적이 다시 나온다.
+#
+# 아래는 종전 내용 그대로 둔다(되살릴 때 쓴다).
 
 Add-Type -Namespace W -Name Win -MemberDefinition @'
 public delegate bool EnumProc(IntPtr h, IntPtr l);
