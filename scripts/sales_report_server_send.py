@@ -58,6 +58,22 @@ def write_cells(narrative):
         print("[I20·I21] %s 기입 %s" % (cell, "ok" if res.get("ok") else res))
 
 
+def _try_page_capture():
+    """playwright 캡처 시도. 실패(미설치·자체점검 불통과)하면 None 반환 → render_png 폴백."""
+    try:
+        import report_page_capture as cap
+        code, msg = cap.capture()
+        if code == 0:
+            print("[capture] 화면 캡처 성공 → %s" % msg)
+            return msg
+        print("[capture] 캡처 실패 → render_png 폴백: %s" % msg)
+    except ImportError:
+        pass   # playwright 미설치 — 정상 폴백
+    except Exception as e:
+        print("[capture] 예외 → render_png 폴백: %s" % e)
+    return None
+
+
 def main():
     if "--write-cells" in sys.argv:            # 08:05 cron — 발송 없이 I20·I21 시트 기입만
         render.load_env()
@@ -74,7 +90,11 @@ def main():
         print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
         return 1
 
-    png = render.render_png(report, OUT_PNG)
+    # 화면 캡처 우선(playwright 설치 시) — 화면이 자동보고 원본(배1071 Phase②)
+    # playwright 없거나 캡처 실패하면 render_png(Pillow 요약표) 폴백
+    png = _try_page_capture()
+    if not png:
+        png = render.render_png(report, OUT_PNG)
     caption = ("매출 및 회원 현황보고 요약 · 정본 https://erp.wellperion.com/coo/report/매출회원현황보고.html"
                " · 기준일 %s · 22칸 대조 %d/%d 일치" % (report["ref_date"], report["matched"], report["total"]))
     if report["mismatches"]:

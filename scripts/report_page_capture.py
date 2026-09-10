@@ -30,7 +30,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-URL = ("https://wellperion-cao.github.io/wellperion-automation/coo/report/"
+# ERP 도메인 기준 — ERP_API_ON=true 가 되어 서버 API 먼저 시도, nginx 인증 없으면 GAS 폴백.
+# 화면 자체 점검(__REPORT_READY.ok)이 통과하면 캡처 허용.
+URL = ("https://erp.wellperion.com/coo/report/"
        "%EB%A7%A4%EC%B6%9C%ED%9A%8C%EC%9B%90%ED%98%84%ED%99%A9%EB%B3%B4%EA%B3%A0.html")
 
 # A3 가로 = 1587x1123px(.page 와 같은 값). 화면 폭이 이보다 좁으면 브라우저가 줄여 그리므로 고정한다.
