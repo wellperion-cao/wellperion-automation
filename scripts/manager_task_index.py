@@ -12,9 +12,15 @@ GM 이 화면에서 체크한 것은 그 브라우저에만 남는다(localStora
   · 담당 미정 건은 성격별 <details> 묶음
 
 갱신: python scripts/manager_task_index.py   (매일 아침 정리 뒤 다시 돌리면 최신)
+
+업무 SSOT 와 안 겹치게(나우열M 지적 2026-09-10 "직원들은 SSOT 와 너가 준 페이지 두 개를
+중복으로 확인하는 비효율적인 상황"): 렌더 때마다 업무 SSOT(GAS todo_list)를 읽어 제목이
+닮은 건은 사람별 표에서 빼고 맨 아래 접힘 목록("업무 SSOT 로 넘어간 것")으로 옮긴다.
+SSOT 조회가 실패하면 대조 없이 종전대로 렌더하고 화면에 실패를 적는다.
 """
 from __future__ import annotations
 
+import difflib
 import html
 import json
 from datetime import date, datetime
@@ -74,6 +80,44 @@ def days_since(d: str) -> int:
         return (date.today() - datetime.strptime(d[:10], "%Y-%m-%d").date()).days
     except Exception:
         return 0
+
+
+def fetch_ssot_rows() -> list | None:
+    """업무 SSOT(GAS todo_list) 전체 행 — 이 목차와 겹치는 건을 가려낼 때만 쓴다(읽기 전용).
+    gmkey 없이 부르면 GM 행이 통째로 빠진다(2026-09-07 실측) — 반드시 넣는다.
+    조회 실패(느림·타임아웃)면 None — 호출부가 '대조 없이 종전대로'로 처리한다."""
+    try:
+        from collectors.ops_shared import SSOT_API_URL, gas_get
+    except Exception:
+        return None
+    resp = gas_get(SSOT_API_URL, params={"action": "todo_list", "include_gm": "1", "gmkey": "1531"},
+                    timeout=90, label="manager_task_index")
+    if resp is None:
+        return None
+    try:
+        data = resp.json()
+        rows = data.get("data") or data.get("rows") or []
+        return rows if isinstance(rows, list) else None
+    except Exception:
+        return None
+
+
+def _title_key(t: str) -> str:
+    """한글·영문·숫자만 남기고 앞 24자 — 웰리 실측(09-10)과 같은 대조 기준."""
+    return "".join(ch for ch in str(t or "") if ch.isalnum())[:24]
+
+
+def find_ssot_match(issue: str, ssot_rows: list) -> dict | None:
+    """제목이 0.62 이상 닮은 SSOT 행 하나. 완료·폐기 여부는 안 가린다 — 끝난 건도 목차에
+    남아 있으면 안 된다(GM 지시)."""
+    key = _title_key(issue)
+    if not key:
+        return None
+    for r in ssot_rows:
+        rk = _title_key(r.get("업무명"))
+        if rk and difflib.SequenceMatcher(None, key, rk).ratio() >= 0.62:
+            return r
+    return None
 
 
 def cat_name(it: dict) -> str:
@@ -159,6 +203,20 @@ def top_html(items: list[tuple[int, str, dict, str]]) -> str:
 def build() -> str:
     seen = latest_by_no()
     opens = {n: v for n, v in seen.items() if str(v[1].get("status", "")).lower() not in DONE}
+
+    ssot_rows = fetch_ssot_rows()
+    ssot_ok = ssot_rows is not None
+    moved: list[tuple[int, str, dict, dict]] = []  # (no, date, it, ssot_row) — 업무 SSOT 로 넘어간 것
+    if ssot_ok:
+        remain = {}
+        for n, (d, it) in opens.items():
+            m = find_ssot_match(str(it.get("issue") or ""), ssot_rows)
+            if m:
+                moved.append((n, d, it, m))
+            else:
+                remain[n] = (d, it)
+        opens = remain
+
     blocks = []
     counts = []
     shown: list[tuple[int, str, dict, str]] = []
@@ -192,6 +250,27 @@ def build() -> str:
         {groups_html or '<div class="empty" style="padding:10px 14px;">없음</div>'}
         </div>
       </div>''')
+
+    if moved:
+        moved_sorted = sorted(moved, key=lambda x: x[0])
+        moved_rows = "\n        ".join(
+            f'<li>#{no} {html.escape(str(it.get("issue") or ""))}'
+            f'<span class="mvd">→ SSOT: {html.escape(str(m.get("업무명") or ""))} '
+            f'({html.escape(str(m.get("상태") or "")) or "상태없음"})</span></li>'
+            for no, d, it, m in moved_sorted)
+        blocks.append(f'''      <div class="blk">
+        <details class="grp"><summary>업무 SSOT 로 넘어간 것 <span class="gc">{len(moved)}건</span></summary>
+        <ul class="mvlist">
+        {moved_rows}
+        </ul>
+        </details>
+      </div>''')
+
+    ssot_note = ""
+    if not ssot_ok:
+        ssot_note = '<span class="b2 fail">⚠ 업무 SSOT 대조 실패 — 겹친 건이 그대로 보일 수 있습니다.</span>'
+    elif moved:
+        ssot_note = f'<span class="b2">업무 SSOT 로 넘어간 것 {len(moved)}건은 맨 아래 접힘 목록으로 옮겼습니다.</span>'
 
     top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
     head = " · ".join(f"{n} {c}건" for n, c in counts)
@@ -252,6 +331,11 @@ def build() -> str:
   .grp > summary::before {{ content:"▸ "; color:var(--dim); }}
   .grp[open] > summary::before {{ content:"▾ "; }}
   .grp .gc {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }}
+  .mvlist {{ list-style:none; padding:2px 14px 10px; }}
+  .mvlist li {{ padding:5px 0; font-size:13.5px; border-top:1px solid var(--line); }}
+  .mvlist li:first-child {{ border-top:0; }}
+  .mvd {{ display:block; color:var(--dim); font-size:12.5px; margin-top:2px; }}
+  .bar .fail {{ color:#FFD37A; }}
   .foot {{ margin-top:16px; color:var(--dim); font-size:13px; line-height:1.8; }}
   @media (max-width:640px) {{
     body {{ padding:16px 10px 50px; }}
@@ -275,7 +359,8 @@ def build() -> str:
     회신은 번호로 받습니다 — 「#번호 + 했다/진행중/언제」 한 줄.<br>
     체크는 GM 화면에만 남습니다(이 브라우저). 원장 상태는 실무진 회신이 오면 바뀝니다.</div>
   <div class="bar">기준 {date.today().isoformat()} · 열린 {total}건 · 가장 오래된 것 {oldest}일 · 14일 넘게 답 없는 것 {stale}건
-    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건</span></div>
+    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건</span>
+    {ssot_note}</div>
 
   <div class="top">
     <h2>🔺 먼저 볼 것 <span class="why">사람 상관없이 오래 묵은 순 5건 — 여기부터 답을 받으세요</span></h2>

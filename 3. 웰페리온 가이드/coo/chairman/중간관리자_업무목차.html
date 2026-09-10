@@ -50,6 +50,11 @@
   .grp > summary::before { content:"▸ "; color:var(--dim); }
   .grp[open] > summary::before { content:"▾ "; }
   .grp .gc { font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }
+  .mvlist { list-style:none; padding:2px 14px 10px; }
+  .mvlist li { padding:5px 0; font-size:13.5px; border-top:1px solid var(--line); }
+  .mvlist li:first-child { border-top:0; }
+  .mvd { display:block; color:var(--dim); font-size:12.5px; margin-top:2px; }
+  .bar .fail { color:#FFD37A; }
   .foot { margin-top:16px; color:var(--dim); font-size:13px; line-height:1.8; }
   @media (max-width:640px) {
     body { padding:16px 10px 50px; }
@@ -72,8 +77,9 @@
   <div class="lede">이경연 실장 · 이정헌 소장 · 나우열M 세 사람의 <b>열린 업무</b>를 번호순으로 편 목차입니다.
     회신은 번호로 받습니다 — 「#번호 + 했다/진행중/언제」 한 줄.<br>
     체크는 GM 화면에만 남습니다(이 브라우저). 원장 상태는 실무진 회신이 오면 바뀝니다.</div>
-  <div class="bar">기준 2026-09-10 · 열린 77건 · 가장 오래된 것 31일 · 14일 넘게 답 없는 것 45건
-    <span class="b2">이경연 실장 12건 · 이정헌 소장 7건 · 나우열M 18건 · 담당 미정 40건</span></div>
+  <div class="bar">기준 2026-09-10 · 열린 72건 · 가장 오래된 것 31일 · 14일 넘게 답 없는 것 45건
+    <span class="b2">이경연 실장 10건 · 이정헌 소장 6건 · 나우열M 16건 · 담당 미정 40건</span>
+    <span class="b2">업무 SSOT 로 넘어간 것 6건은 맨 아래 접힘 목록으로 옮겼습니다.</span></div>
 
   <div class="top">
     <h2>🔺 먼저 볼 것 <span class="why">사람 상관없이 오래 묵은 순 5건 — 여기부터 답을 받으세요</span></h2>
@@ -85,7 +91,7 @@
   </div>
 
       <div class="blk">
-        <h2>이경연 실장 <span class="sub">운영부 · ★중간관리자 방 · 열린 건 12건</span></h2>
+        <h2>이경연 실장 <span class="sub">운영부 · ★중간관리자 방 · 열린 건 10건</span></h2>
         <table>
           <tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th><th class="due">기한</th><th>최근 상황</th><th class="age">경과</th></tr>
           <tr data-no="129"><td class="ck"><input type="checkbox" data-k="mgr-129"></td><td class="no">#129</td><td class="ti">환불기준 개정 5가지(계약서 규정·결재란·상담실 게시물·요금 인상안·서비스 정리)<span class=cat>운영 정책</span></td><td class="due">—</td><td class="note" title="GM 14:21 지시 — 순서·기한은 실장 재량 · 회신: #129 환불기준 개정 5가지(계약서 규정·결재란·상담실 게시물·요금 인상안·서비 · 회신: #129 환불기준 개정 5가지(계약서 규정·결재란·상담실 게시물·요금 인상안·서비 · 회신: #129 환불기준 개정 5가지(계약서 규정·결재란·상담실 게시물·요금 인상안·서비">GM 14:21 지시 — 순서·기한은 실장 재량 · 회신: #129 환불…</td><td class="age old">27일</td></tr>
@@ -96,14 +102,12 @@
           <tr data-no="191"><td class="ck"><input type="checkbox" data-k="mgr-191"></td><td class="no">#191</td><td class="ti">스팀다리미 회원 판매(웰페리온 셀렉트 1호) 운영담당 지정<span class=cat>회원·CS</span></td><td class="due">—</td><td class="note" title="GM이 이경연 실장에게 담당자 지정 요청 — 성함 회신 대기 · 회신: #191 스팀다리미 회원 판매(웰페리온 셀렉트 1호) 운영담당 지정 — 9/9 · 회신: #191 스팀다리미 회원 판매(웰페리온 셀렉트 1호) 운영담당 지정 — 9/9 · 회신: #191 스팀다리미 회원 판매(웰페리온 셀렉트 1호) 운영담당 지정 — 9/9">GM이 이경연 실장에게 담당자 지정 요청 — 성함 회신 대기 · 회신:…</td><td class="age ">6일</td></tr>
           <tr data-no="194"><td class="ck"><input type="checkbox" data-k="mgr-194"></td><td class="no">#194</td><td class="ti">안마의자 4대 설치 1개월 결과보고 SSOT 등록<span class=cat>매출·영업</span></td><td class="due">2026-10-05</td><td class="note" title="이용 건수·매출·수익배분액·목표 대비, GM 직접 평가 · 회신: #194 안마의자 4대 설치 1개월 결과보고 SSOT 등록 · 회신: #194 안마의자 4대 설치 1개월 결과보고 SSOT 등록 · 회신: #194 안마의자 4대 설치 1개월 결과보고 SSOT 등록">이용 건수·매출·수익배분액·목표 대비, GM 직접 평가 · 회신: #19…</td><td class="age ">6일</td></tr>
           <tr data-no="202"><td class="ck"><input type="checkbox" data-k="mgr-202"></td><td class="no">#202</td><td class="ti">분리수거장 현수막·가이드 부착<span class=cat>시설·환경</span></td><td class="due">2026-09-30</td><td class="note" title="GM 08:00 마감 9/11→9/30 연장, 게시 완료 시 사진 요청">GM 08:00 마감 9/11→9/30 연장, 게시 완료 시 사진 요청</td><td class="age ">2일</td></tr>
-          <tr data-no="208"><td class="ck"><input type="checkbox" data-k="mgr-208"></td><td class="no">#208</td><td class="ti">회원권 요금인상안 최종본 보고<span class=cat>매출 및 영업</span></td><td class="due">2026-09-10</td><td class="note" title="목요일 실장 보고 → 금요일 대표·회장 최종결정 일정">목요일 실장 보고 → 금요일 대표·회장 최종결정 일정</td><td class="age ">3일</td></tr>
           <tr data-no="224"><td class="ck"><input type="checkbox" data-k="mgr-224"></td><td class="no">#224</td><td class="ti">홈페이지 자주 묻는 질문 취합<span class=cat>회원·CS</span></td><td class="due">2026-09-12</td><td class="note" title="GM 13:45·16:35 지시, 운영부 의견 모아 시트(F열) 채우기, 20문항 시트 제공">GM 13:45·16:35 지시, 운영부 의견 모아 시트(F열) 채우기,…</td><td class="age ">1일</td></tr>
           <tr data-no="225"><td class="ck"><input type="checkbox" data-k="mgr-225"></td><td class="no">#225</td><td class="ti">상가(1F·B1) 관리 담당 최준용M 단독 전환 전달<span class=cat>시설 및 환경</span></td><td class="due">—</td><td class="note" title="GM 16:27 지시, 방에 없는 최준용M께 전달 필요">GM 16:27 지시, 방에 없는 최준용M께 전달 필요</td><td class="age ">1일</td></tr>
-          <tr data-no="229"><td class="ck"><input type="checkbox" data-k="mgr-229"></td><td class="no">#229</td><td class="ti">CCTV 모니터 추가 설치 — 카페·야외테라스 방통 공간(수영장·체조·스쿼시 3개소)<span class=cat>시설·환경</span></td><td class="due">—</td><td class="note" title="대표님 결재 완료 2026-09-09 · 9/10 16:00 CCTV 93대 계약 미팅에서 GM 이 업체와 확인 · 실장·소장 공동 | 대표님 의견 2026-09-10: 수영장 CCTV 증설(#231 · 소장)과 함께 본다">대표님 결재 완료 2026-09-09 · 9/10 16:00 CCTV 9…</td><td class="age ">0일</td></tr>
         </table>
       </div>
       <div class="blk">
-        <h2>이정헌 소장 <span class="sub">시설부 · ★중간관리자 방 · 열린 건 7건</span></h2>
+        <h2>이정헌 소장 <span class="sub">시설부 · ★중간관리자 방 · 열린 건 6건</span></h2>
         <table>
           <tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th><th class="due">기한</th><th>최근 상황</th><th class="age">경과</th></tr>
           <tr data-no="149"><td class="ck"><input type="checkbox" data-k="mgr-149"></td><td class="no">#149</td><td class="ti">수영장 타일 사이 오염 부분 청소 가능 여부<span class=cat>시설 및 환경</span></td><td class="due">—</td><td class="note" title="접수 97 · 다음 대청소 전 부분 청소 확인 · 회신: 이정헌 소장 13:17 &quot;#149 진행중(휴관일에 실리콘작업하기로 정함)&quot; · 회신: #149 수영장 타일 사이 오염 부분 청소 가능 여부 — 9/12 · 회신: #149 수영장 타일 사이 오염 부분 청소 가능 여부 — 9/12 · 회신: #149 진행중(휴관일에 실리콘작업하기로 정함) · 회신: #149 수영장 타일 사이 오염 부분 청소 가능 여부 — 9/12 · 회신: #149 진행중(휴관일에 실리콘작업하기로 정함)">접수 97 · 다음 대청소 전 부분 청소 확인 · 회신: 이정헌 소장 1…</td><td class="age old">20일</td></tr>
@@ -111,12 +115,11 @@
           <tr data-no="170"><td class="ck"><input type="checkbox" data-k="mgr-170"></td><td class="no">#170</td><td class="ti">사우나 좌식 샤워기 헤드 파손 잦음 — 다른 모델 변경 검토<span class=cat>시설·환경</span></td><td class="due">—</td><td class="note" title="이정헌 소장 16:33 보고 · 회신: #170 사우나 좌식 샤워기 헤드 파손 잦음 — 다른 모델 변경 검토 — 9/12 · 회신: #170 사우나 좌식 샤워기 헤드 파손 잦음 — 다른 모델 변경 검토 — 9/12 · 회신: #170 사우나 좌식 샤워기 헤드 파손 잦음 — 다른 모델 변경 검토 — 9/12">이정헌 소장 16:33 보고 · 회신: #170 사우나 좌식 샤워기 헤드…</td><td class="age old">14일</td></tr>
           <tr data-no="218"><td class="ck"><input type="checkbox" data-k="mgr-218"></td><td class="no">#218</td><td class="ti">ERP 자동로그인 준비 — 사무실/회원 와이파이 회선 확인용 IP 회신<span class=cat>IT·자동화</span></td><td class="due">—</td><td class="note" title="GM 16:30 요청, 회신 대기">GM 16:30 요청, 회신 대기</td><td class="age ">2일</td></tr>
           <tr data-no="226"><td class="ck"><input type="checkbox" data-k="mgr-226"></td><td class="no">#226</td><td class="ti">자체 방역·방제 토요일 정기화 첫 회차<span class=cat>시설 및 환경</span></td><td class="due">2026-09-12</td><td class="note" title="9/12 습식 배수구 라인, 세스코 약품·매뉴얼 준비 완료">9/12 습식 배수구 라인, 세스코 약품·매뉴얼 준비 완료</td><td class="age ">1일</td></tr>
-          <tr data-no="228"><td class="ck"><input type="checkbox" data-k="mgr-228"></td><td class="no">#228</td><td class="ti">골프 빔프로젝터 클리닝 16대 — 성실케어 일정 잡고 진행 (램프 탄 타석 번호 회신)<span class=cat>시설·환경</span></td><td class="due">—</td><td class="note" title="대표님 결재 완료 2026-09-09 · 1,971,200원(VAT포함) · 성실케어 김재훈 본부장 010-3297-9866 · 견적 260909-04">대표님 결재 완료 2026-09-09 · 1,971,200원(VAT포함)…</td><td class="age ">0일</td></tr>
           <tr data-no="231"><td class="ck"><input type="checkbox" data-k="mgr-231"></td><td class="no">#231</td><td class="ti">수영장 CCTV 1~2대 증설 — 카페 모니터로 유소년 부모님이 더 넓게 보게 (대표님 의견)<span class=cat>시설·환경</span></td><td class="due">—</td><td class="note" title="대표님 의견 2026-09-10 · 지금 수영장 CCTV 2대 · 9/10 16:00 CCTV 93대 계약 미팅에서 증설 대수·위치·추가 비용 확인 · #229 카페 모니터 설치와 짝">대표님 의견 2026-09-10 · 지금 수영장 CCTV 2대 · 9/1…</td><td class="age ">0일</td></tr>
         </table>
       </div>
       <div class="blk">
-        <h2>나우열M <span class="sub">인사·파트너 · 텔레그램 업무관리 방 · 열린 건 18건</span></h2>
+        <h2>나우열M <span class="sub">인사·파트너 · 텔레그램 업무관리 방 · 열린 건 16건</span></h2>
         <table>
           <tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th><th class="due">기한</th><th>최근 상황</th><th class="age">경과</th></tr>
           <tr data-no="114"><td class="ck"><input type="checkbox" data-k="mgr-114"></td><td class="no">#114</td><td class="ti">브로제이 권한 계정발급·급여세팅(이번주 중 한 팀 먼저)<span class=cat>파트너팀</span></td><td class="due">—</td><td class="note" title="나우열M이 아이디 생성 구조로 진행, 오늘 14시 교육 전 로그인 확인 필요">나우열M이 아이디 생성 구조로 진행, 오늘 14시 교육 전 로그인 확인…</td><td class="age old">30일</td></tr>
@@ -133,10 +136,8 @@
           <tr data-no="177"><td class="ck"><input type="checkbox" data-k="mgr-177"></td><td class="no">#177</td><td class="ti">매출현황에 주차·뮤지컬 매출 포함 반영<span class=cat>매출 및 영업</span></td><td class="due">—</td><td class="note" title="GM 확정 8/28 기준, 나우열M께 반영 요청">GM 확정 8/28 기준, 나우열M께 반영 요청</td><td class="age warn">10일</td></tr>
           <tr data-no="186"><td class="ck"><input type="checkbox" data-k="mgr-186"></td><td class="no">#186</td><td class="ti">업무 현황 SSOT 안내문 &#x27;업무판&#x27; 2곳 문구 정리(업무 SSOT/결재 SSOT로 통일)<span class=cat>IT·자동화</span></td><td class="due">—</td><td class="note" title="나우열M 18:21 — CHRO에 확인 요청함, 안내문 2곳 수정 남음">나우열M 18:21 — CHRO에 확인 요청함, 안내문 2곳 수정 남음</td><td class="age warn">8일</td></tr>
           <tr data-no="195"><td class="ck"><input type="checkbox" data-k="mgr-195"></td><td class="no">#195</td><td class="ti">안마의자 1개월 목표 설정·회신<span class=cat>매출·영업</span></td><td class="due">2026-09-11</td><td class="note" title="나우열M·윤병현AM이 이용 건수 또는 수익배분액 중 하나로 숫자 하나 정해 회신">나우열M·윤병현AM이 이용 건수 또는 수익배분액 중 하나로 숫자 하나 정…</td><td class="age ">6일</td></tr>
-          <tr data-no="201"><td class="ck"><input type="checkbox" data-k="mgr-201"></td><td class="no">#201</td><td class="ti">잡코리아 기업정보 소개문구 공식표기 교체</td><td class="due">—</td><td class="note" title="회사소개 문장·업종·주소·전화 통일, 피트니스·프라이빗멤버십·레슨 표현 금지 | 9/8 수정 예정(9/7 회신)">회사소개 문장·업종·주소·전화 통일, 피트니스·프라이빗멤버십·레슨 표현…</td><td class="age ">5일</td></tr>
           <tr data-no="219"><td class="ck"><input type="checkbox" data-k="mgr-219"></td><td class="no">#219</td><td class="ti">안마의자 추가설치 무이자할부 협의(브로제이)</td><td class="due">—</td><td class="note" title="나우열M 16:44 문의 예정">나우열M 16:44 문의 예정</td><td class="age ">2일</td></tr>
           <tr data-no="220"><td class="ck"><input type="checkbox" data-k="mgr-220"></td><td class="no">#220</td><td class="ti">브로제이 API 연동(페이롤 자동화)<span class=cat>IT·자동화</span></td><td class="due">—</td><td class="note" title="GM 자료 전달, 나우열M 내일 문의 예정">GM 자료 전달, 나우열M 내일 문의 예정</td><td class="age ">2일</td></tr>
-          <tr data-no="230"><td class="ck"><input type="checkbox" data-k="mgr-230"></td><td class="no">#230</td><td class="ti">SVIP 요가 클래스 1:1 — 생크몽드 회차당 공간 이용료 협상<span class=cat>매출·영업</span></td><td class="due">—</td><td class="note" title="대표님 결재 완료 2026-09-09 · 요금 1회 143,000원 검토 중(확정 전) · 이용료 나오면 요금 확정">대표님 결재 완료 2026-09-09 · 요금 1회 143,000원 검토…</td><td class="age ">0일</td></tr>
         </table>
       </div>
       <div class="blk">
@@ -208,6 +209,18 @@
         </table>
         </details>
         </div>
+      </div>
+      <div class="blk">
+        <details class="grp"><summary>업무 SSOT 로 넘어간 것 <span class="gc">6건</span></summary>
+        <ul class="mvlist">
+        <li>#188 상가 출입 안내보드(102동) 실측·견적<span class="mvd">→ SSOT: 상가 출입 안내보드(102동 엘리베이터 앞) 설치 — 실측·아파트 협의·견적 (진행중)</span></li>
+        <li>#201 잡코리아 기업정보 소개문구 공식표기 교체<span class="mvd">→ SSOT: 잡코리아 기업정보 소개 문구 교체 (공식 표기 통일) (진행중)</span></li>
+        <li>#208 회원권 요금인상안 최종본 보고<span class="mvd">→ SSOT: 회원권 요금 인상안 최종본 — 이경연 실장 + 운영부 의논 → GM 보고 (목 9/10) (진행중)</span></li>
+        <li>#228 골프 빔프로젝터 클리닝 16대 — 성실케어 일정 잡고 진행 (램프 탄 타석 번호 회신)<span class="mvd">→ SSOT: 골프 빔프로젝터 클리닝 + 램프 AS·교체 (성실케어) (완료)</span></li>
+        <li>#229 CCTV 모니터 추가 설치 — 카페·야외테라스 방통 공간(수영장·체조·스쿼시 3개소)<span class="mvd">→ SSOT: [결재] CCTV 모니터 추가 설치 — 카페 · 야외테라스 입구 방통 공간 (완료)</span></li>
+        <li>#230 SVIP 요가 클래스 1:1 — 생크몽드 회차당 공간 이용료 협상<span class="mvd">→ SSOT: [결재] SVIP 요가 클래스 1:1 — 생크몽드 공간 이용료 협상 · 1회 143,000원 검토 (최도희 선생님 30회) (완료)</span></li>
+        </ul>
+        </details>
       </div>
   <div class="foot">
     <b>이 목록은 무엇인가</b><br>
