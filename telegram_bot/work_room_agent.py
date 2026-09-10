@@ -516,6 +516,29 @@ def _kpi_24h_registration(rows: "list[dict] | None" = None) -> "tuple[int, int, 
     return ok, matched, unregistered
 
 
+def _count_ledger_open() -> int:
+    """★중간관리자 원장(MGR_LEDGER)에서 나우열M 담당 열린 건 수를 센다.
+    # ponytail: 매 호출마다 파일 읽음 — 07:50 회차 1회뿐이라 캐싱 불필요.
+    진단 카드 4(배1141) — '진짜 0'과 '수집 끊긴 0'을 구분."""
+    sod = _sod()
+    if sod is None:
+        return 0
+    try:
+        ledger = json.loads(sod.MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log.error(f"[work_room] 원장 읽기 실패: {exc}")
+        return 0
+    who = sod.NAWOOL_WHO
+    return sum(
+        1
+        for entry in ledger if isinstance(entry, dict)
+        for it in (entry.get("issues") or [])
+        if isinstance(it, dict)
+        and str(it.get("status") or "") == "open"
+        and str(it.get("owner") or "").strip() == who
+    )
+
+
 def build_gm_room_digest(rows: "list[dict] | None" = None) -> str:
     """§8 ⑤ GM 개인 봇방 07:50 통에 실릴 완전판 본문 — 「업무관리 진행 N건 · 승인 대기 M건」
     요약 + §4-1 24h 등록 KPI + 진행·미등록 상세. send_ops_digest.py 의 preview_mgr_brief/
@@ -527,7 +550,8 @@ def build_gm_room_digest(rows: "list[dict] | None" = None) -> str:
     pending = _load_pending()
     ok, matched, kpi_unreg = _kpi_24h_registration(rows)
     pct = round(ok / matched * 100) if matched else 100
-    summary = (f"업무관리 진행 {len(progress)}건 · 승인 대기 {len(pending)}건\n"
+    ledger_open = _count_ledger_open()
+    summary = (f"업무관리 진행 {len(progress)}건 · 승인 대기 {len(pending)}건 · 원장 열린 {ledger_open}건\n"
                f"전달→등록 24h 이내 {ok}/{matched}({pct}%) · 미등록 {kpi_unreg}건")
     detail = _render_tracking_lines(progress, unregistered)
     return summary + ("\n\n" + detail if detail else "")
