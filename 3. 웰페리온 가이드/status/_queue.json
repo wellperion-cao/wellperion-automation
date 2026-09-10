@@ -1735,13 +1735,13 @@
     "short_no": 2504,
     "clevel": "cto",
     "owner": "cto",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "high",
     "title": "[시토] 업무·결재 서버 원천 — 걸림돌 셋 수리 후 전환",
-    "note": "09-10 밤 호출부 전수 조사 결과(호출자 22곳 중 응답값 사용 3곳). 전환 전 셋을 푼다.\n① 업무 현황 SSOT 화면 읽기를 서버로(ERP_API_ON) — 서버·구글 대조 185=185, 차이 0건 실측 완료. 그 화면은 AI 수정 금지 도메인(담당 나우열M)이라 GM 승인 뒤에만 적용. 수정본은 세션 임시폴더 todo_read_server.patch 에 있고 되돌리기는 그 한 줄을 false 로.\n② 첨부 — 업무 현황 SSOT.html 3237줄 `if (filesToUpload.length > 0 && res.id)`. 서버 원천이면 res.id 가 안 와서 첨부가 말없이 사라진다(화면은 '완료'라 뜬다). 화면을 `res.id || editId` 로 고치면 수정건은 풀리고 새 업무만 남는다 — 또는 todo_add 를 NO_SERVER_ACTIONS 에 넣어 dual 로 고정.\n③ 서버 쓰기가 거울(todo_items)을 그 자리에서 같이 고치게 한다. 지금은 되밀기(1분)+거울 동기화를 기다려 저장한 것이 화면에 안 보이고, 실무진이 다시 저장할 수 있다. 접수처(api_reception.update)가 같은 모양의 선례.\n무해 판정 둘: 에디터 이미지(res.url)는 todo_upload 가 이미 NO_SERVER 라 영향 없음 · 결재 팡파레(res.next)는 축하 문구만 틀리고 실제 상태는 재조회로 맞다.\n전환 기준: write_todo 대조 무결 연속 6일·qualified=true 로 이미 통과 상태.",
+    "note": "09-10 밤 호출부 전수 조사 결과(호출자 22곳 중 응답값 사용 3곳). 전환 전 셋을 푼다.\n① 업무 현황 SSOT 화면 읽기를 서버로(ERP_API_ON) — 서버·구글 대조 185=185, 차이 0건 실측 완료. 그 화면은 AI 수정 금지 도메인(담당 나우열M)이라 GM 승인 뒤에만 적용. 수정본은 세션 임시폴더 todo_read_server.patch 에 있고 되돌리기는 그 한 줄을 false 로.\n② 첨부 — 업무 현황 SSOT.html 3237줄 `if (filesToUpload.length > 0 && res.id)`. 서버 원천이면 res.id 가 안 와서 첨부가 말없이 사라진다(화면은 '완료'라 뜬다). 화면을 `res.id || editId` 로 고치면 수정건은 풀리고 새 업무만 남는다 — 또는 todo_add 를 NO_SERVER_ACTIONS 에 넣어 dual 로 고정.\n③ 서버 쓰기가 거울(todo_items)을 그 자리에서 같이 고치게 한다. 지금은 되밀기(1분)+거울 동기화를 기다려 저장한 것이 화면에 안 보이고, 실무진이 다시 저장할 수 있다. 접수처(api_reception.update)가 같은 모양의 선례.\n무해 판정 둘: 에디터 이미지(res.url)는 todo_upload 가 이미 NO_SERVER 라 영향 없음 · 결재 팡파레(res.next)는 축하 문구만 틀리고 실제 상태는 재조회로 맞다.\n전환 기준: write_todo 대조 무결 연속 6일·qualified=true 로 이미 통과 상태.\n[09-10 22:4x 진행] 거울 즉시 반영을 만들어 서버까지 올렸다(mirror_patch.py 409줄 · 커밋 8ac846955). GAS _processTodoAction 의 10개 액션을 같은 뜻으로 옮겼고, 칸 뽑는 규칙은 sync_todo._row_tuples 한 곳을 재사용한다. 서버에서 실제 표로 한 번 돌려 값이 바뀌는 것과, 그 뒤 sync_todo 재실행으로 원본 값이 되돌아오는 것(스스로 낫는 성질)을 실측했다 — 대조 185=185.\n그 과정에서 켜기 전에 막아야 할 자리 넷을 찾아 NO_SERVER_ACTIONS 에 넣었다(커밋 f59c0d9e7): todo_sign·todo_opinion·todo_opinion_delete 는 결재 PIN 을 GAS 가 검증하는데 서버가 즉시 ok 를 주면 틀린 비번 결재가 1분간 승인처럼 보인다. approval_rep_sign_upload 는 대표싸인 값이 드라이브 업로드 주소라 서버가 만들 수 없다. 넷 다 dual 고정 — 근본 수리(서버가 PIN 먼저 검증)는 별건.\n남은 것 = ①업무 현황 SSOT 화면 읽기를 서버로(GM 승인 대기 · 수정본 준비됨) ②그 뒤 스위치 server 로 ③화면에서 저장 한 번 해 보고 바로 보이는지 확인. 되돌리기는 스위치 한 줄.",
     "next": "",
     "created_at": "2026-09-10T22:19:15+09:00",
-    "updated_at": "2026-09-10T22:19:15+09:00"
+    "updated_at": "2026-09-10T22:41:21+09:00"
   },
   {
     "ship_no": 12505,
