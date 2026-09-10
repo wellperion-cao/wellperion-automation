@@ -1081,6 +1081,70 @@
         "anchor": "전사_일정.html",
         "card": null
       }
+    },
+    {
+      "id": "cbo-faq-hub",
+      "sellable": "sellable",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "센터 FAQ 통합층 — 업체마다 따로 쌓이는 FAQ 를 공통 질문 유형 원장(20유형)에 붙여 ①유형별 커버리지 ②센터별 빈칸(아침 질문 재료) ③새 유형 후보를 낸다. GM 지시 2026-09-10 「각 센터 FAQ 를 채워 가공·통합하고 마케팅 자동화·상담봇·센터 AX 세 곳에 쓴다」. 계량 = scripts/faq_hub.py, 산출 = status/faq_hub.json. 한 센터에서 새 유형이 나오면 원장 한 줄이 늘고 전 센터 상담봇이 같이 좋아지는 구조가 판매 근거다(구독).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/faq_hub.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "bot_id": ""
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "scripts/faq_hub.py 는 모델을 쓰지 않는다 — 낱말 겹침으로만 유형을 붙인다(사람이 언제든 재실행)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured"
+    },
+    {
+      "id": "cbo-partner-morning-agent",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "파트너 센터 아침 1통 — 매일 07:00 에 그 센터 방(다이어트캠프 이승기 대표님·★조재오부장님)으로 카톡 한 통. 새 말씀이 있으면 답장, 없거나 답장이 필요 없는 말씀이면 아직 못 받은 값 하나를 여쭙는다. 물어볼 것 = 그 센터 빈칸 목록(_받을것.md) + FAQ 통합층이 재 준 빈 유형(cbo-faq-hub) + 상담봇 미답. 회로 = scripts/diet_camp_agent.py(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신). 실행체는 시토가 만든 것을 그대로 쓰고 내용(무엇을 여쭙나)만 시보가 갖는다.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/kakao_agent/rooms.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "모델이 초안을 못 내면 한 통도 안 나간다(지어내지 않는다) — 사람이 같은 방에 직접 쓸 수 있다",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured"
     }
   ],
   "_removed": [

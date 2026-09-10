@@ -284,18 +284,38 @@ def blanks_of(conf: dict) -> list[str]:
     손님이 물은 것(bot_gaps) 다음으로 급한 것이 이것이다 — 이 값이 없으면 문서도 상담봇도
     빈칸인 채로 멈춘다. 파일이 없거나 형식이 다르면 빈 목록(아침 한 통은 그래도 나간다).
     """
+    out: list[str] = []
     rel = conf.get("blanks")
-    if not rel:
+    if rel:
+        try:
+            for line in (REPO_ROOT / rel).read_text(encoding="utf-8").splitlines():
+                cells = [c.strip() for c in line.split("|")]
+                if len(cells) >= 6 and cells[1].isdigit() and "미수령" in cells[5]:
+                    out.append(cells[2])
+        except Exception as exc:                    # noqa: BLE001
+            print(f"[agent] 빈칸 목록 읽기 실패(건너뜀): {exc}", file=sys.stderr)
+    out += faq_blanks(conf.get("tenant") or "")
+    return out
+
+
+def faq_blanks(tenant: str, cap: int = 6) -> list[str]:
+    """그 센터 FAQ 가 아직 못 덮은 공통 질문 유형을 손님 말투로 돌려준다(GM 지시 2026-09-10).
+
+    손님이 어느 센터에서나 묻는 유형 20개 중 이 센터에 답이 없는 것 —
+    그게 상담봇이 못 답하는 자리이고, 그대로 아침에 여쭐 것이 된다.
+    계량은 scripts/faq_hub.py 가 status/faq_hub.json 에 미리 써 둔다(여기서 다시 세지 않는다).
+    """
+    if not tenant:
         return []
     try:
-        out = []
-        for line in (REPO_ROOT / rel).read_text(encoding="utf-8").splitlines():
-            cells = [c.strip() for c in line.split("|")]
-            if len(cells) >= 6 and cells[1].isdigit() and "미수령" in cells[5]:
-                out.append(cells[2])
-        return out
+        hub = json.loads((REPO_ROOT / "status/faq_hub.json").read_text(encoding="utf-8"))
+        types = json.loads((REPO_ROOT / "server/counselbot/shared/question_types.json")
+                           .read_text(encoding="utf-8"))["types"]
+        say = {t["type_id"]: (t.get("examples") or [t["type_id"]])[0] for t in types}
+        missing = ((hub.get("centers") or {}).get(tenant) or {}).get("missing") or []
+        return [f"손님이 「{say.get(m, m)}」라고 물으면 드릴 답" for m in missing[:cap]]
     except Exception as exc:                        # noqa: BLE001
-        print(f"[agent] 빈칸 목록 읽기 실패(건너뜀): {exc}", file=sys.stderr)
+        print(f"[agent] FAQ 빈칸 조회 실패(건너뜀): {exc}", file=sys.stderr)
         return []
 
 
@@ -440,6 +460,16 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     if why == "SKIP" and asking:
         print("[agent] 모델이 아침 질문을 안 냈다(SKIP) — 오늘은 건너뜀", file=sys.stderr)
         return 0
+    if why == "SKIP" and gaps and not reply_only and st.get("asked_date") != today:
+        # 답장이 필요 없는 말씀(감사 인사 등)이어도 못 받은 값이 남아 있으면 그중 하나를 여쭙는다.
+        # GM 지시 2026-09-10 — 매일 07시에 한 칸씩 채워 나가는 것이 이 방의 일이다.
+        print("[agent] 답장은 필요 없지만 못 받은 값이 남았다 — 아침 질문으로 하나 여쭙는다")
+        asking = True
+        partner_text = "(못 받은 값 하나 — 답장은 불필요한 말씀이었다)"
+        draft, used = run_claude(build_prompt(lines, [], brief, gaps), label="diet-camp-agent")
+        draft = (draft or "").strip()
+        why = guard(draft) if draft else "SKIP"
+
     if why == "SKIP":
         print("[agent] 답장이 필요 없는 말씀 — 넘어간다")
         st["last_handled"] = marker
