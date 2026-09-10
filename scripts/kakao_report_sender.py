@@ -1343,6 +1343,37 @@ def normalize_ai_sender(text: str) -> str:
     return out
 
 
+FOUR_DEPT_ROOM_NAME = "★운영+시설+지원+주차"
+_SHIFTS_RE = "오전|오후|마감|야간"
+
+
+def shorten_shift_labels(text: str) -> str:
+    """「남성구역 오전조」 → 「오전(남)」. 4부서 합본방 글에만 건다 (GM 지시 2026-09-10).
+
+    그 방 글은 회차·구역 이름이 줄마다 반복돼 정작 숫자가 눈에 안 들어왔다
+    (실측 2026-09-10 저녁 통: 「남성구역 오전조 25/26(96%), 남성구역 오후조 14/15(93%), …」).
+    회차를 앞에 두고 구역을 괄호 한 글자로 줄이면 같은 사실이 절반 길이로 읽힌다.
+
+    ★원문은 안 고친다. 이 문자열을 정규식으로 읽는 코드가 여럿이라(support_check_summary·
+    report_stream_2_check·kakao_summary_card) 원문을 바꾸면 그쪽이 조용히 빈 값을 낸다.
+    여기는 사람이 읽는 마지막 자리라 안전하다."""
+    out = text
+    # 「남성구역 오전조」·「[남/오전조]」 → 「오전(남)」·「[오전(남)]」
+    out = re.sub(rf"([남여])성구역\s*({_SHIFTS_RE})조", r"\2(\1)", out)
+    out = re.sub(rf"\[([남여])/({_SHIFTS_RE})조\]", r"[\2(\1)]", out)
+    # 남은 「남성구역 53/56」 머리줄 → 「남 53/56」, 남은 「오전조 25/26」 → 「오전 25/26」
+    out = re.sub(r"([남여])성구역", r"\1", out)
+    out = re.sub(rf"({_SHIFTS_RE})조", r"\1", out)
+    # 잔글씨 다듬기 — 읽는 데 걸리는 것만
+    out = out.replace("최근 7일 中", "최근 7일 중")
+    lines = []
+    for ln in out.split("\n"):
+        if "짚을 점" in ln:
+            ln = ln.replace(", ", " · ")      # 쉼표로 이어 붙은 나열은 가운뎃점이 훑기 쉽다
+        lines.append(ln)
+    return "\n".join(lines)
+
+
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
     _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
@@ -1355,7 +1386,12 @@ def build_caption(room: dict, base_caption: str) -> str:
         text = _fix_avg_for_chairman(text)
     out = encode_url_spaces(normalize_ai_sender(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}"))))
     # 회장님 방은 회사 구글 계정 로그인이 없으니 옛 주소 그대로 둔다.
-    return out if room.get("name") == CHAIRMAN_ROOM_NAME else to_erp_links(out)
+    if room.get("name") == CHAIRMAN_ROOM_NAME:
+        return out
+    out = to_erp_links(out)
+    if _room_core_key(str(room.get("name") or "")) == _room_core_key(FOUR_DEPT_ROOM_NAME):
+        out = shorten_shift_labels(out)
+    return out
 
 
 # ══════════════════════════════════════════════════════════════════════════

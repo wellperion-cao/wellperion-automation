@@ -337,14 +337,20 @@ def build_morning_kakao(today: str | None = None) -> str:
     fac_yest, _ = _scs.build_facility_section(yest)
 
     # ── 🎯 오늘 채울 것 — 조별 '예정' 건수(분모)만. 07:40 엔 실적이 아직 없다.
-    out.append("🎯 오늘 채울 것")
-    for zone in ("남성구역", "여성구역"):
-        gs = _groups(sup_today, zone)
-        if gs:
-            out.append(IND + f"지원부 {zone} — " + " · ".join(
-                f"{g.replace('조', '')} {t}" for g, _dn, t in gs))
-    out.append(IND + "시설부 — 정기 회차대로")
-    out.append(IND + "주차부 — 일일점검 1건")
+    # 회차를 앞세우고 구역을 괄호 한 글자로 (GM 지시 2026-09-10 「오전(남) 오후(남) 마감(남)」).
+    # 구역별 두 줄이던 것을 회차별 세 줄로 돌려 남·여 숫자가 세로로 줄 맞게 한다 — 어느 조가
+    # 몇 건인지 훑는 것이 이 절의 목적이라, 구역보다 회차가 앞에 오는 것이 맞다.
+    out.append("🎯 오늘 채울 것 — 지원부")
+    plan: dict[str, dict[str, int]] = {}
+    for zone, gk in (("남성구역", "남"), ("여성구역", "여")):
+        for g, _dn, t in _groups(sup_today, zone):
+            plan.setdefault(g.replace("조", ""), {})[gk] = t
+    for shift in ("오전", "오후", "마감", "야간"):
+        cell = plan.get(shift)
+        if cell:
+            out.append(IND + f"{shift} " + " ".join(
+                f"({gk}){cell[gk]}" for gk in ("남", "여") if gk in cell))
+    out.append(IND + "시설부 정기 회차대로 · 주차부 일일점검 1건")
     # 안 닫힌 접수 건수는 여기 싣지 않는다 — GM 2026-09-03 "종합접수처 전체는 중간관리자방에만,
     # 4부서방은 점검 + 새 접수 즉시만". 잔량은 07:40 ★중간관리자 통이 전문으로 갖는다.
 
@@ -363,7 +369,8 @@ def build_morning_kakao(today: str | None = None) -> str:
                    for g, dn, t in _groups(sup_yest, z) if t and dn == t]
     if done_groups:
         good.append("✅ 조가 끝나기 전에 [제출]까지 누른 것")
-        good.append("어제 " + " · ".join(f"{z[:2]} {g} {t}/{t}" for z, g, t in done_groups[:2]))
+        good.append("어제 " + " · ".join(
+            f"{g.replace('조', '')}({z[0]}) {t}/{t}" for z, g, t in done_groups[:2]))
     if good:
         # 제목 줄(이모지로 시작)은 3칸, 그 상세는 6칸 — 제목만 훑어도 뜻이 통하게
         # (실무진 전달문 표준 · wellperion-gm-report 스킬 §4-2-2).
@@ -412,14 +419,21 @@ def build_morning_kakao(today: str | None = None) -> str:
             tag = ""
             if sauna:
                 streak = _sauna_streak(g)
-                tag = f" — 사우나 {streak}일째 미체크" if streak >= 2 else " — 사우나 포함"
-            out.append(IND + f"{z} {g} 0/{t}{tag}")
+                tag = f" · 사우나 {streak}일째" if streak >= 2 else " · 사우나 포함"
+            out.append(IND + f"{g.replace('조', '')}({z[0]}) 0/{t}{tag}")
 
     # ── 🔁 계속 빠지는 항목 — 오늘 조회분(최근 7일 누적)을 그대로 옮긴다.
     rep = [ln.strip() for ln in sup_today if ln.strip().startswith("·")][:3]
     if rep:
         out.append("🔁 계속 빠지는 항목 — 이번엔 챙겨 주세요")
-        out.extend(IND + r.lstrip("· ") for r in rep)
+        for r in rep:
+            line = r.lstrip("· ").replace("'", "")
+            line = re.sub(r"최근 7일 中 (\d+)일 미완료", r"7일 중 \1일 빠짐", line)
+            # 회차를 맨 앞으로 — 위 두 절(오전(남)·마감(여))과 같은 차례로 훑히게 한다.
+            m = re.match(r"^(.*?)\s*\((오전|오후|마감|야간)조?\)\s*(.*)$", line)
+            if m:
+                line = f"{m.group(2)} {m.group(1)} — {m.group(3)}"
+            out.append(IND + line)
 
     out.append(f"📎 지원부 체계 {_page_url('지원부 체계')}")
     out.append(f"📎 종합접수처 {_RECEPTION_BOARD_URL}")
