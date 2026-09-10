@@ -76,12 +76,54 @@ def offenders(assistant_text, user_text):
     return [w for w in BANNED if w in assistant_text and w not in user_text]
 
 
+# ── 표 밖 줄글 (GM 지시 2026-09-10) ───────────────────────────────────────────────
+#   GM 원문: "표로 안보여주고 또 이상하게 정리해주네, 이상하게 정리해주는 구조를 삭제할 순 없나?"
+#   약속 L18 은 이미 「표가 본문 · 표 밖 줄글은 표로 못 담는 것만」인데, 문서로만 있어서
+#   계속 새어 나갔다(같은 지적 반복). 그래서 낱말 검사와 같은 자리에서 줄 수를 센다.
+#   허용 = 표 위 상태 결론 1줄 + 맨 끝 기록위치 1줄 + 판단 이유 2줄 = 4줄.
+#   막지 않는다. 경고만 낸다(이 파일의 다른 검사와 같은 규칙).
+PROSE_LIMIT = 4
+
+
+def prose_lines(assistant_text):
+    """표·목록·제목·코드를 뺀 '줄글' 줄만 센다. 표가 없는 답(코드 설명 등)은 대상 밖 — 빈 목록."""
+    lines, in_code, out, has_table = assistant_text.splitlines(), False, [], False
+    for ln in lines:
+        s = ln.strip()
+        if s.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or not s:
+            continue
+        if s.startswith("|"):
+            has_table = True
+            continue
+        if s.startswith(("#", ">", "-", "*", "·", "▪")) or s[:2].rstrip(".").isdigit():
+            continue      # 제목·인용·목록은 줄글이 아니다(한눈에 읽힌다)
+        out.append(s)
+    return out if has_table else []
+
+
+def prose_offense(assistant_text):
+    """줄글이 허용치를 넘었으면 (넘은 줄 수, 예시 한 줄). 아니면 None."""
+    ps = prose_lines(assistant_text)
+    if len(ps) <= PROSE_LIMIT:
+        return None
+    longest = max(ps, key=len)
+    return len(ps), (longest[:60] + "…" if len(longest) > 60 else longest)
+
+
 def main():
     if "--selftest" in sys.argv:
         assert offenders("기록 = 커밋 961b5a7f9", "") == ["커밋"]
         assert offenders("기록 = 커밋 961b5a7f9", "커밋 이야기하네") == []      # GM 이 먼저 쓴 낱말
         assert offenders("저장·배포 완료", "") == []
         assert offenders("master 로 올렸다", "") == ["master"]
+        table = "| 📌 GM 요청 | 무엇 |\n|---|---|\n| ✅ 반영 | 했다 |"
+        assert prose_offense("결론 한 줄\n" + table + "\n기록 = 저장·배포 완료") is None
+        assert prose_offense(table + "\n" + "\n".join("줄글%d 입니다." % i for i in range(6)))[0] == 6
+        assert prose_offense("표 없는 답인데 줄글이 다섯 줄이다.\n" * 6) is None   # 표 없는 답은 대상 밖
+        assert prose_offense(table + "\n- 목록은 줄글이 아니다\n" * 9) is None
         a, u = last_messages(os.devnull)
         assert (a, u) == ("", "")                                            # 못 읽어도 안 죽는다
         print("selftest ok")
@@ -103,6 +145,13 @@ def main():
             "[GM 화면 낱말] 방금 답에 내부 낱말이 나갔다: %s\n"
             "  GM 지시(2026-09-09) = 저장·배포로 통일. 도구 문구는 이미 그렇게 찍는다(시우 327adba89).\n"
             "  고칠 것: %s\n" % (", ".join(bad), fix))
+    long_prose = prose_offense(assistant)
+    if long_prose:
+        n, sample = long_prose
+        sys.stderr.write(
+            "[GM 화면 줄글] 방금 답에 표 밖 줄글이 %d줄 나갔다(허용 %d줄).\n"
+            "  GM 지시(2026-09-10) = 표가 본문. 표로 담을 수 있는 말은 표 안으로 옮긴다.\n"
+            "  본보기: %s\n" % (n, PROSE_LIMIT, sample))
     return 0
 
 
