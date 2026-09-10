@@ -33,6 +33,38 @@ _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membe
 _LINK_LESSON = _LINK + "?manage=lesson"
 
 
+def _loss_stamped_before_report(today: str) -> list:
+    """오늘 09:30 보고 전에 LOSS일자가 찍힌 기록을 돌려준다(없으면 빈 목록).
+
+    GM 확정(2026-09-02 · 2026-09-10 재확인): LOSS일자는 **밤 23시에만** 찍는다.
+    09:30 에 회장님·부서장 방으로 매출보고가 나가는데 그 전에 찍히면 보고에 실린
+    회원수와 시트 회원수가 갈린다. 기록하는 자리는 앱스스크립트 밤 도장 한 곳뿐이고,
+    그 도장은 회원 변경 이력을 남기지 않는다 — 그래서 **이력에 걸리는 LOSS일자 기록은
+    전부 화면·사람 경유 쓰기**이고, 그중 09:30 이전 것이 규칙 위반이다.
+
+    2026-09-10 실사고: 멤버십 「종료」 탭이 열릴 때마다 빈 LOSS일자를 스스로 채워
+    저장하고 있었다(09:12 강창구 건). 그 저장 경로는 없앴지만, 다른 경로로 같은 일이
+    다시 생기는 것을 사람이 눈으로 잡을 수는 없다 — 그래서 매일 여기서 센다.
+    """
+    data = cpo_report._gas_get("member_log_list")
+    if not data or not isinstance(data.get("data"), list):
+        return []
+    from datetime import datetime as _dt, timedelta as _td   # noqa: PLC0415
+    hits = []
+    for r in data["data"]:
+        if "LOSS" not in str(r.get("field") or ""):
+            continue
+        try:   # 이력의 at 은 UTC — 한국 시각으로 옮겨 본다
+            kst = _dt.strptime(str(r.get("at"))[:19], "%Y-%m-%dT%H:%M:%S") + _td(hours=9)
+        except Exception:
+            continue
+        if kst.strftime("%Y-%m-%d") != today or (kst.hour, kst.minute) >= (9, 30):
+            continue
+        hits.append({"시각": kst.strftime("%H:%M"), "회원": r.get("member"),
+                     "계정": r.get("staff"), "화면": r.get("screen")})
+    return hits
+
+
 def collect(module=None) -> dict:
     """표준 payload 반환. cpo_report.py 의 fetch_member_inquiries + 라이프사이클
     분류기(미컨택·오늘예약·이탈위험)를 그대로 재사용한다."""
@@ -66,7 +98,11 @@ def collect(module=None) -> dict:
     # 하루 지나도 안 들어간 것만 여기서 한 줄로 모아 본다(건별 알림 없음).
     suc_missing = cpo_report.suc_missing_from_member_list(rows)
 
+    # 보고(09:30) 전에 LOSS일자가 찍혔는지 — 찍혔으면 그날 보고 회원수가 시트와 갈린다.
+    loss_early = _loss_stamped_before_report(today)
+
     metrics = [
+        {"label": "보고 전(09:30) LOSS일자 기재", "value": len(loss_early)},
         {"label": "오늘 신규 문의", "value": len(today_new)},
         {"label": "미컨택(연락기록 0건)", "value": len(uncontacted)},
         {"label": "오늘 상담·체험 예약", "value": len(todays_res)},
@@ -84,7 +120,17 @@ def collect(module=None) -> dict:
         {"label": "강습 진행상태 빈칸(최근 60일)",
          "value": lesson_blank["recent"] if lesson_blank else "미측정"},
     ]
-    summary = (
+    summary = ""
+    if loss_early:
+        who = " · ".join(
+            f"{h['시각']} {h['회원']}({h['계정']})" for h in loss_early[:3]
+        )
+        summary += (
+            f"🚨 보고 전 LOSS일자 기재 {len(loss_early)}건 — {who}"
+            + (" 외" if len(loss_early) > 3 else "")
+            + " · 로스일자는 밤 23시에만 찍는다(GM 확정) · "
+        )
+    summary += (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
         f"오늘예약 {len(todays_res)}건 · LOSS 예방 대상(추정) {len(churn_cands)}건"
         + (" · 👉 후속 연락 필요" if churn_cands else "")
