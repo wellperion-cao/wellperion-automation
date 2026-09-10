@@ -196,6 +196,14 @@ CREATE SEQUENCE IF NOT EXISTS lost_found_seq;
 -- 실측 최댓값>) 로 1회 seed(2026-09-10 실측 130 — active 20건 max 130 + done 92건 max 107, 전체 최댓값 130).
 -- write_proc 스위치가 server 로 켜지기 전까지는 호출되지 않는다(아직 dual — api_write.py 참고).
 CREATE SEQUENCE IF NOT EXISTS proc_no_seq;
+
+-- 자산 라벨 채번 (배 1195 ② · 2026-09-10 시토). GAS assetIssue() 형식(WP{연도2자리} {4자리})·연도가 바뀌면
+-- 1부터 다시 매기는 규칙을 그대로 잇는다 — 연도별 한 행. next = 그 해 마지막으로 발급한 일련번호.
+-- 배포 시 올해 행을 시트 실측 최댓값으로 1회 seed(2026-09-10 실측 2026년=3 — 라벨 2장뿐이나 결번 있어 최댓값 3).
+CREATE TABLE IF NOT EXISTS proc_asset_no (
+  year INTEGER PRIMARY KEY,
+  next INTEGER NOT NULL DEFAULT 0
+);
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;

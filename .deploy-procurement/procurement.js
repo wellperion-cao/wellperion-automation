@@ -410,21 +410,27 @@ function assetIssue(p){
     var yy4 = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy");
     var pre = "WP" + yy2 + " ";
     var preOld = "WP-" + yy4 + "-";
-    var mx = 0;
-    rows.forEach(function(r){
-      var n = 0;
-      if (r.라벨.indexOf(pre) === 0) n = parseInt(r.라벨.slice(pre.length), 10);
-      else if (r.라벨.indexOf(preOld) === 0) n = parseInt(r.라벨.slice(preOld.length), 10); // 구형 라벨도 번호는 이어받는다
-      if (n > mx) mx = n;
-    });
-    var 취득일 = String(p.취득일||"") || today();
-    var vals = [], labels = [];
-    for (var i = 1; i <= n; i++){
-      var lb = pre + ("0000" + (mx + i)).slice(-4);
-      labels.push(lb);
-      vals.push([ lb, p.품명||"", p.분류||"비품", p.부서||"", p.위치||"", p.관리자||"",
-                  취득일, 품의, p.단가||"", "", "", "사용중", p.비고||"" ]);
+    // 서버 채번(배 1195 ② — 되밀기가 서버 PostgreSQL 이 매긴 라벨 배열을 그대로 실어 보낸다) 이 오면 그대로 쓴다 —
+    // 개수(n)와 안 맞으면 못 믿는 값이니 버리고 종전대로 자체 채번한다(두 채번기가 서로 다른 값을 매기면 안 된다).
+    var labels = Array.isArray(p.labels) && p.labels.length === n
+      ? p.labels.map(function(x){ return String(x); })
+      : null;
+    if (!labels){
+      var mx = 0;
+      rows.forEach(function(r){
+        var mm = 0;
+        if (r.라벨.indexOf(pre) === 0) mm = parseInt(r.라벨.slice(pre.length), 10);
+        else if (r.라벨.indexOf(preOld) === 0) mm = parseInt(r.라벨.slice(preOld.length), 10); // 구형 라벨도 번호는 이어받는다
+        if (mm > mx) mx = mm;
+      });
+      labels = [];
+      for (var i = 1; i <= n; i++) labels.push(pre + ("0000" + (mx + i)).slice(-4));
     }
+    var 취득일 = String(p.취득일||"") || today();
+    var vals = labels.map(function(lb){
+      return [ lb, p.품명||"", p.분류||"비품", p.부서||"", p.위치||"", p.관리자||"",
+               취득일, 품의, p.단가||"", "", "", "사용중", p.비고||"" ];
+    });
     s.getRange(s.getLastRow() + 1, 1, vals.length, ASSET_COLS).setValues(vals);
     return out({ ok:true, labels: labels });
   } finally { if (locked){ try { lock.releaseLock(); } catch(e2){} } }

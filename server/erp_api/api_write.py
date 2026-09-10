@@ -187,6 +187,20 @@ def _next_proc_no(conn):
     return conn.execute("SELECT nextval('proc_no_seq')").fetchone()[0]
 
 
+def _next_asset_labels(conn, count):
+    """자산 라벨 채번(배 1195 ②) — proc_asset_no(schema.sql). GAS assetIssue() 형식(WP{yy2} {4자리}·연도가
+    바뀌면 1부터 다시)을 그대로 잇는다. SEQUENCE 는 연도마다 새로 만들 수 없어(리셋을 매년 코드로 챙겨야 함)
+    연도별 카운터 행(INSERT...ON CONFLICT DO UPDATE 한 문장)을 쓴다 — 그 한 문장 자체가 원자적이라 동시호출도
+    겹치지 않고, 새 연도는 행이 없어 INSERT 가 그대로 그 해 1번부터 시작한다(연도 경계에 손댈 코드가 없다)."""
+    year = int(time.strftime("%Y", time.gmtime(time.time() + 9 * 3600)))
+    yy2 = "%02d" % (year % 100)
+    last = conn.execute(
+        "INSERT INTO proc_asset_no (year, next) VALUES (%s, %s)"
+        " ON CONFLICT (year) DO UPDATE SET next = proc_asset_no.next + EXCLUDED.next"
+        " RETURNING next", (year, count)).fetchone()[0]
+    return ["WP%s %04d" % (yy2, n) for n in range(last - count + 1, last + 1)]
+
+
 class _HopRecorder(urllib.request.HTTPRedirectHandler):
     """리다이렉트로 지나간 자리를 적어 둔다 — 거부당한 쓰기가 '본문이 틀린 것'인지 '본문이 도착도 못 한 것'인지
     다음번엔 가릴 수 있게(2026-09-09 시토).
@@ -355,7 +369,8 @@ async def write(request: Request):
     server_mode = (bool(area) and origin_switch.mode(area) == "server" and not is_test
                    and action not in NO_SERVER_ACTIONS)   # 스위치 한 줄 — 재시작 없이 갈린다
     proc_no = None
-    if server_mode and action == "add" and dest == "PROC_GAS_URL":
+    asset_labels = None
+    if server_mode and dest == "PROC_GAS_URL" and action == "add":
         # 구매요청 번호 서버 채번(배 1195 ①) — GAS addItem() 규칙(열25 최댓값+1)을 서버가 잇는다.
         # payload·raw_body 에 no 를 실어 두면 되밀기(pushback.py)가 그대로 GAS 로 넘기고, GAS 는 그 번호를
         # 그대로 쓴다(procurement.js addItem 수정 — p.no 있으면 자체 채번을 건너뛴다). 새 칸 없이 기존
@@ -363,6 +378,19 @@ async def write(request: Request):
         proc_no = _next_proc_no(conn)
         payload = dict(payload, no=proc_no)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    elif server_mode and dest == "PROC_GAS_URL" and action == "asset_issue":
+        # 자산 라벨 채번(배 1195 ②) — GAS assetIssue() 와 같은 두 관문(수량 1~100·품의번호 필수)을 먼저 통과시킨다.
+        # 여기서 막으면 번호를 안 쓰니 결번도 안 생긴다 — GAS 가 어차피 같은 이유로 거부할 요청에 번호를 안 태운다.
+        # 걸리면 labels 없이 그대로 queued 로 넘어간다(1분 뒤 GAS 가 bad_qty·no_req_key 로 거부 — 되밀기가 잡는다).
+        try:
+            _qty = int(str(payload.get("수량") or "0"))
+        except (TypeError, ValueError):
+            _qty = 0
+        _req_key = str(payload.get("품의번호") or "").strip()
+        if 1 <= _qty <= 100 and _req_key:
+            asset_labels = _next_asset_labels(conn, _qty)
+            payload = dict(payload, labels=asset_labels)
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
@@ -376,7 +404,11 @@ async def write(request: Request):
     if server_mode:
         # 서버 원본 — GAS 왕복을 안 기다린다. 시트는 pushback.py(1분)가 채우고 거울도 그때 다시 뜬다.
         conn.close()
-        extra = {"no": proc_no} if proc_no is not None else {}
+        extra = {}
+        if proc_no is not None:
+            extra["no"] = proc_no
+        if asset_labels is not None:
+            extra["labels"] = asset_labels
         return server_ok(log_id, queued=True, mode="server", **extra)
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
@@ -550,4 +582,31 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert sorted(seen) == list(range(131, 136)), seen        # 130 다음부터 1씩 순서대로
     assert server_ok(9, queued=True, mode="server", no=131) == {
         "ok": True, "success": True, "logId": 9, "queued": True, "mode": "server", "no": 131}
+
+    # 자산 라벨 채번(배 1195 ②) — 가짜 연도별 카운터 conn: INSERT...ON CONFLICT 문 하나만 받는다(원자적 채번 흉내).
+    class _AssetConn:
+        rows = {}   # {year: next} — 배포 seed(2026:3) 를 흉내
+
+        def execute(self, q, p=None):
+            assert "proc_asset_no" in q and "ON CONFLICT" in q
+            year, count = p
+            _AssetConn.rows[year] = _AssetConn.rows.get(year, 0) + count
+            self._v = _AssetConn.rows[year]
+            return self
+
+        def fetchone(self):
+            return (self._v,)
+
+    _AssetConn.rows = {2026: 3}   # 2026-09-10 실측(라벨 2장·결번 있어 최댓값 3)
+    labels1 = _next_asset_labels(_AssetConn(), 2)
+    assert labels1 == ["WP26 0004", "WP26 0005"], labels1     # 3 다음부터 이어받는다
+    labels2 = _next_asset_labels(_AssetConn(), 1)
+    assert labels2 == ["WP26 0006"], labels2                  # 두 번째 호출도 이어서(겹침 없음)
+    assert len(set(labels1 + labels2)) == 3, "라벨이 겹쳤다"
+    labels3 = _next_asset_labels(_AssetConn(), 3)
+    assert labels3 == ["WP26 0007", "WP26 0008", "WP26 0009"], labels3   # 계속 이어감
+    assert len(labels3) == 3, "요청 수량과 발급 개수가 다르다"
+    _AssetConn.rows = {}   # 새 연도(행 없음) — INSERT 가 1번부터 새로 시작(연도 경계 리셋을 코드 없이 확인)
+    labels_ny = _next_asset_labels(_AssetConn(), 2)
+    assert labels_ny == ["WP26 0001", "WP26 0002"], labels_ny
     print("자체점검 통과")
