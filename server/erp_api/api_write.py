@@ -228,6 +228,49 @@ def _gas_forward(body, url_key="FUNNEL_EXEC_URL"):
     return data
 
 
+# 담당 지정 권한 표 (배1182 · 2026-09-09 GM 지시 "각 담당자를 중간관리자들은 설정할 수 있게 해줘,
+#   나우열M는 본인만 해야하는데, 다른 관리자들은 각 팀원들 담당자 정할 수 있도록"). GM_TASK_OWNERS 보드
+#   (coo/chairman 담당 칸 · saveBoard) 저장 관문 여기 한 곳에서만 판정한다 — 화면(erp_write.js·
+#   _owner_directive.js)은 이 규칙을 베끼지 않는다(약속 L01). 정본 = ssot/ownership_map.json 부서_리더.부서
+#   (사람이 바뀌면 그 파일이 먼저 바뀐다) — server/** 는 ssot/ 없이 단독 배포돼(scp) sync_todo.STAFF 와
+#   같은 방식으로 값을 여기 사본으로 둔다.
+TASK_OWNER_TEAMS = {
+    "이경연 실장": ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원"],
+    "이정헌 소장": ["이정헌 소장", "김종현 차장", "박호균 과장"],
+    "나우열M": ["나우열M"],
+}
+
+
+def _owner_write_check(conn, user_email, board):
+    """GM_TASK_OWNERS 담당 칸 저장 권한 — 이경연 실장·이정헌 소장은 본인 팀원까지, 나우열M 은 본인만
+    바꿀 수 있다. GM(role=admin)·아직 개인 계정이 없어 이름이 안 갈리는 계정(사무실 공용 로그인 등)은
+    막지 않는다 — 판정이 애매하면 통과시키는 쪽이 안전하다(배1182 note). 반환: (허용여부, 거부 사유)."""
+    if not user_email or not isinstance(board, dict):
+        return True, ""
+    row = conn.execute("SELECT name, role FROM users WHERE tenant_id=%s AND email=%s",
+                       (db.TENANT, user_email.strip().lower())).fetchone()
+    if not row or row["role"] == "admin":
+        return True, ""   # GM·미등록 계정 — 전부 허용
+    actor_key = (row["name"] or "").replace(" ", "")
+    leader, members = None, None
+    for l, m in TASK_OWNER_TEAMS.items():
+        if l.replace(" ", "") == actor_key:
+            leader, members = l, m
+            break
+    if leader is None:
+        return True, ""   # 실장·소장·나우열M 그 누구도 아님 — 이 규칙 대상이 아니다
+    allowed = {m.replace(" ", "") for m in members}
+    prev = conn.execute("SELECT data FROM board_cache WHERE tenant_id=%s AND key='GM_TASK_OWNERS'",
+                        (db.TENANT,)).fetchone()
+    before = (json.loads(prev["data"]).get("board") or {}) if prev else {}
+    for task_id, owner in board.items():
+        if before.get(task_id, "") == (owner or ""):
+            continue   # 안 바뀐 칸 — 이 사람이 건드린 게 아니다
+        if (owner or "").replace(" ", "") not in allowed:
+            return False, "%s 님은 %s 만 담당으로 지정할 수 있습니다." % (leader, "·".join(members))
+    return True, ""
+
+
 IDEM_WINDOW_MIN = 10      # 같은 열쇠를 이 시간 안에 다시 받으면 중복 요청으로 본다
 
 
@@ -288,6 +331,12 @@ async def write(request: Request):
         conn = db.connect()
     except db.Error as e:
         return {"ok": False, "error": "server-forward-failed", "detail": "DB 열기 실패: %s" % e, "noRetry": False}
+    if action == "saveBoard" and str(payload.get("key") or "") == "GM_TASK_OWNERS":
+        owner_ok, owner_reason = _owner_write_check(conn, user, payload.get("board"))
+        if not owner_ok:
+            conn.close()
+            return JSONResponse(status_code=403, content={
+                "ok": False, "error": "owner-forbidden", "detail": owner_reason, "noRetry": True})
     prev = _idem_hit(conn, user, payload)   # 응답만 유실돼 같은 열쇠로 다시 온 요청 — GAS 를 두 번 치지 않는다
     if prev is not None:
         conn.close()
@@ -421,4 +470,45 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
+
+    # 담당 지정 권한(배1182) — GM_TASK_OWNERS saveBoard 판정. 가짜 conn: SELECT 대상(users·board_cache)로 갈라 응답.
+    class _OwnerConn:
+        def __init__(self, user_row, board_data):
+            self.user_row, self.board_data = user_row, board_data
+
+        def execute(self, q, p=None):
+            self._q = q
+            return self
+
+        def fetchone(self):
+            if "FROM users" in self._q:
+                return self.user_row
+            if "FROM board_cache" in self._q:
+                return {"data": json.dumps({"ok": True, "board": self.board_data}, ensure_ascii=False)}
+            return None
+
+    _BOARD_NOW = {"t1": "이경연 실장", "t2": "김남욱 GM"}
+    _sil = {"name": "이경연 실장", "role": "staff"}
+    ok, why = _owner_write_check(_OwnerConn(_sil, _BOARD_NOW), "leekyungyeon@wellperion.com",
+                                 {"t1": "최준용M", "t2": "김남욱 GM"})
+    assert ok and why == "", why                              # 실장이 본인 팀원(최준용M)으로 바꾼다 — 허용
+    ok, why = _owner_write_check(_OwnerConn(_sil, _BOARD_NOW), "leekyungyeon@wellperion.com",
+                                 {"t1": "김종현 차장", "t2": "김남욱 GM"})
+    assert not ok and "이경연 실장" in why                        # 남의 팀(시설부)으로 바꾼다 — 거부
+    ok, why = _owner_write_check(_OwnerConn(_sil, _BOARD_NOW), "leekyungyeon@wellperion.com",
+                                 {"t1": "이경연 실장", "t2": "김남욱 GM"})
+    assert ok                                                 # 안 바뀐 칸은 검사 대상이 아니다
+    _naw = {"name": "나우열M", "role": "staff"}
+    ok, why = _owner_write_check(_OwnerConn(_naw, _BOARD_NOW), "nawoolm@wellperion.com", {"t1": "최준용M"})
+    assert not ok                                             # 나우열M 은 본인만 지정 가능
+    ok, why = _owner_write_check(_OwnerConn(_naw, _BOARD_NOW), "nawoolm@wellperion.com", {"t1": "나우열M"})
+    assert ok
+    _gm = {"name": "GM", "role": "admin"}
+    ok, why = _owner_write_check(_OwnerConn(_gm, _BOARD_NOW), "cao@wellperion.com", {"t1": "아무개나"})
+    assert ok                                                 # GM(admin) 은 전부 지정 가능
+    _unknown = {"name": "홍길동 매니저", "role": "staff"}
+    ok, why = _owner_write_check(_OwnerConn(_unknown, _BOARD_NOW), "hong@wellperion.com", {"t1": "아무개나"})
+    assert ok                                                 # 3라인 리더가 아닌 계정 — 이 규칙 대상이 아니다, 막지 않는다
+    ok, why = _owner_write_check(_OwnerConn(None, _BOARD_NOW), "unknown@wellperion.com", {"t1": "아무개나"})
+    assert ok                                                 # 미등록 계정(개인 계정 발급 전) — 막지 않는다
     print("자체점검 통과")
