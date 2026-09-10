@@ -1,21 +1,27 @@
 # -*- coding: utf-8 -*-
-"""gm_handoff.py — GM 이 웰리에게 넘긴 한 건을 세 화면(전사일정·GM업무·결재 SSOT)에 한 번에 올린다.
+"""gm_handoff.py — GM 이 웰리에게 넘긴 한 건을 전사일정·월간계획 카드에 한 번에 올린다.
+
+이 관문이 실제로 닿는 면(약속 L23·L26 · 2026-09-10 진단 카드 6 으로 이름을 GM 어휘에 맞춰 다시 씀)
+  ① 전사일정 — 담당·날짜 (동작)
+  ② 월간계획 카드 — 진척률 (--plan 이 있을 때만 동작)
+  ③ 업무&결재SSOT — **막혀 있다**(아래 TODO_UPLOAD_BLOCKED). GM업무와 결재는 두 면이 아니라
+     같은 업무 SSOT 한 행의 두 칸이다. 등록은 지시받은 실무진이 직접 한다.
+  ④ 중간관리자 통 — **이 관문에 없다.** GM 전달건이 실장·소장·나우열M 에게 닿는 경로는
+     send_ops_digest 쪽이고 여기서 부르지 않는다. 있는 척하지 않고 「없음」으로 찍는다.
 
 배경(GM 2026-09-04): "웰리한테 전달하면 웰리는 전사일정·GM업무·결재SSOT까지 서포트가 절실해."
   그동안은 세 화면을 건마다 손으로 따로 올려 하나씩 빠졌다(딜라이브 = 일정만, 테크노짐 = 결재만).
   이 한 줄이 관문이다 — GM 전달건은 이 명령으로만 올린다(약속 L21 · 새 저장소 없음, 기존 세 길 재사용).
-
-세 화면의 역할(약속 L23·L26) — 전사일정 = 담당·날짜 / GM업무(업무 SSOT) = 실행·체크리스트 /
-결재 SSOT = 같은 업무 SSOT 행에 결재요청 칸이 채워진 것 / 월간운영계획 = 진척률(카드가 있을 때만 연결).
 
 쓰는 법
   등록:  python scripts/gm_handoff.py --title "…" --content "…" [--date 2026-09-09 --time 14:00]
              [--approval "GM,대표님"] [--category "[7] IT·시스템·자동화"] [--due 2026-09-11]
              [--plan 2026-08-24 --check "□ 로 추가할 체크 한 줄"] [--assignee "김남욱 GM"] [--dry-run]
   완료:  python scripts/gm_handoff.py --done --todo-id TODO-… [--event-id evt-…] [--plan 2026-08-24 --check "☑ 로 바꿀 체크 원문"] [--dry-run]
-  결과 마지막 줄 = 🧭 4면 표기(전사일정 · GM업무 · 결재 · 월간계획) — GM 보고 표 기록위치 줄에 그대로 붙인다.
+  결과 마지막 줄 = 🧭 4면 표기(전사일정 · 월간계획 카드 · 업무&결재SSOT(막힘) · 중간관리자 통(없음))
+             — GM 보고 표 기록위치 줄에 그대로 붙인다.
 
-# ponytail: 세 화면을 순서대로 부르는 얇은 묶음 — 실패한 면은 그대로 알리고 나머지는 계속 간다(반쪽 성공을 숨기지 않는다).
+# ponytail: 면들을 순서대로 부르는 얇은 묶음 — 실패한 면은 그대로 알리고 나머지는 계속 간다(반쪽 성공을 숨기지 않는다).
 """
 from __future__ import annotations
 
@@ -205,7 +211,7 @@ def _mark(res: dict) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="GM 전달건 → 전사일정·GM업무·결재 SSOT 한 번에")
+    ap = argparse.ArgumentParser(description="GM 전달건 → 전사일정·월간계획 카드 한 번에 (업무&결재SSOT 는 막힘 · 중간관리자 통은 이 관문에 없음)")
     ap.add_argument("--title")
     ap.add_argument("--content", default="")
     ap.add_argument("--date", help="있으면 전사일정에도 올린다 (YYYY-MM-DD)")
@@ -216,7 +222,7 @@ def main() -> int:
     ap.add_argument("--approval", default="", help="결재 라인. 금액·계약·발주면 'GM,대표님'")
     ap.add_argument("--plan", help="월간운영계획 카드 id (있을 때만)")
     ap.add_argument("--check", default="", help="카드에 얹을 체크 한 줄(등록) / ☑ 로 바꿀 체크 원문(--done)")
-    ap.add_argument("--done", action="store_true", help="완료 모드 — 세 면을 같이 닫는다")
+    ap.add_argument("--done", action="store_true", help="완료 모드 — 전사일정·월간계획 카드·업무&결재SSOT 를 같이 닫는다")
     ap.add_argument("--append", metavar="LINE", help="GM업무 --todo-id 행 내용 끝에 진척 한 줄 덧붙임(날짜 자동)")
     ap.add_argument("--todo-id")
     ap.add_argument("--event-id")
@@ -236,7 +242,8 @@ def main() -> int:
         r_todo = close_todo(a.todo_id, dry) if a.todo_id else None
         r_evt = close_schedule(a.event_id, dry) if a.event_id else None
         r_plan = touch_plan(a.plan, f"완료 — GM업무 {a.todo_id or ''}", a.check, True, dry) if a.plan else None
-        print(f"🧭 4면(완료) — 전사일정 {_mark(r_evt)} · GM업무 {_mark(r_todo)} · 월간계획 {_mark(r_plan)}")
+        print(f"🧭 4면(완료) — 전사일정 {_mark(r_evt)} · 월간계획 카드 {_mark(r_plan)}"
+              f" · 업무&결재SSOT {_mark(r_todo)} · 중간관리자 통 —(이 관문에 없음)")
         return 0
 
     if not a.title:
@@ -255,10 +262,15 @@ def main() -> int:
         print("🚫 업무 SSOT 등록은 하지 않았습니다 — 지시를 받은 실무진이 직접 올립니다(GM 지시 2026-09-09).")
     r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
                         a.check, False, dry) if a.plan else None
+    # GM업무·결재는 두 면이 아니라 업무 SSOT 한 행의 두 칸이라 한 칸으로 찍는다(진단 카드 6).
+    ssot = ("🚫 막힘 — 실무진 직접 등록" + (f"(결재 {a.approval} 미기재)" if a.approval else "")
+            if r_todo.get("blocked")
+            else f"{_mark(r_todo)} {r_todo.get('id', '')}"
+                 + (f" · 결재 {a.approval}" if a.approval else ""))
     print(f"🧭 4면 — 전사일정 {_mark(r_evt)}{(' ' + r_evt.get('id', '')) if r_evt and r_evt.get('ok') else ''}"
-          f" · GM업무 {_mark(r_todo)} {r_todo.get('id', '')}"
-          f" · 결재 {'✔ ' + a.approval if a.approval else '—'}"
-          f" · 월간계획 {_mark(r_plan)}{(' ' + a.plan) if a.plan else ''}")
+          f" · 월간계획 카드 {_mark(r_plan)}{(' ' + a.plan) if a.plan else ''}"
+          f" · 업무&결재SSOT {ssot}"
+          f" · 중간관리자 통 —(이 관문에 없음)")
     return 0 if (r_todo.get("ok") or r_todo.get("blocked")) else 1
 
 

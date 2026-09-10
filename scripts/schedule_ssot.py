@@ -147,6 +147,7 @@ def pull_from_live(path=CAL_PATH) -> dict:
     새 스크립트·새 예약을 만들지 않는다(약속 L21): 이 파일을 소유한 모듈에 함수 하나만 얹고,
       매일 도는 monthly_ops_sync 끝에서 부른다.
     """
+    import time  # noqa: PLC0415
     import urllib.request  # noqa: PLC0415 — 읽기 경로에서만 쓴다
     try:
         from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
@@ -157,11 +158,27 @@ def pull_from_live(path=CAL_PATH) -> dict:
     # timeout 25→60 (2026-09-10). 일정이 162건에서 242건으로 늘면서 조회가 실측 23.5초까지
     # 길어졌다 — 한계 25초와 1.5초 차이라, 아침 예약이 겹치는 07:00 에는 넘겨 TimeoutError 가
     # 났다(09-10 07:00 실측). 실패해도 print 만 하고 넘어가는 자리라 아무 경보도 울리지 않는다.
-    try:
-        with urllib.request.urlopen(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=60) as r:
-            res = json.loads(r.read())
-    except Exception as e:  # noqa: BLE001
-        return {"ok": False, "reason": f"라이브 조회 실패({type(e).__name__}) — 파일 무변경"}
+    #
+    # 재시도 3회·백오프 2s·4s (2026-09-10) — monthly_ops_sync._get_json_retry 와 같은 패턴이다.
+    # 09-10 07:00 같은 실행에서 몇 초 앞선 sync_schedule 조회는 성공했는데 이쪽만 TimeoutError
+    # 로 굳었다. 갈린 것은 재시도 유무였다(그쪽 3회 · 이쪽 1회). 그 함수를 import 하지 않고
+    # 같은 모양으로 짧게 인라인한다 — monthly_ops_sync 가 이 모듈을 import 하므로 순환이 된다.
+    # 실패 사유에 경과 초를 함께 적는다 — 「느려서인가 한 번 튕겨서인가」를 로그로 가르기 위해서다.
+    t0 = time.monotonic()
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=60) as r:
+                res = json.loads(r.read())
+            break
+        except Exception as e:  # noqa: BLE001
+            last_exc = e
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
+    else:
+        return {"ok": False,
+                "reason": f"라이브 조회 실패({type(last_exc).__name__}, "
+                          f"{time.monotonic() - t0:.1f}초, 3회 시도) — 파일 무변경"}
     live = res.get("data") if isinstance(res, dict) and res.get("ok") else None
     if not isinstance(live, dict) or not isinstance(live.get("items"), list):
         return {"ok": False, "reason": "라이브 응답이 비정상 — 파일 무변경"}

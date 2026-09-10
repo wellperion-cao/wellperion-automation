@@ -2095,6 +2095,9 @@ def send_gm_room_digest() -> bool:
         log(f"[gm-room] work_room_agent 요약 생성 실패 — 생략: {exc}")
         return True
     if not text:
+        # 「안 보냈다」와 「보낼 게 없었다」가 로그에서 갈리게 한 줄 남긴다(2026-09-10 진단 카드 4 —
+        # 오늘 로그에 [gm-room] 이 한 줄도 없어 둘을 구분할 수 없었다). 발신 동작은 그대로다.
+        log("[gm-room] 보낼 내용 없음 — 발신 생략")
         return True
     from notify.telegram_send import send as _tg_send  # noqa: PLC0415
     return _tg_send(_wra._GM_CHAT_ID, "📋 업무관리 요약(§8)\n\n" + text)
