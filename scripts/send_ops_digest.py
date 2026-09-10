@@ -979,7 +979,10 @@ def _reply_rare_words(human_lines: "list[dict]", max_count: int = REPLY_RARE_MAX
     return {w for w, c in freq.items() if c <= max_count}
 
 
-_OWN_BROADCAST_MARKERS = (RELAY_SIGNOFF, "🧾 확인 부탁드릴 것", "🌅 하루의 시작")
+# 2026-09-07 GM 계정 발신 번호공고문은 서명·헤더가 없어 기존 표식 셋을 다 비껴갔다
+# (#148·#174·#199 거짓 종결 실측 2026-09-11).
+_OWN_BROADCAST_MARKERS = (RELAY_SIGNOFF, "🧾 확인 부탁드릴 것", "🌅 하루의 시작",
+                          "「#번호 + 했다 / 진행중 / 언제」 한 줄이면 됩니다")
 
 
 def _is_own_broadcast(msg: str) -> bool:
@@ -1281,6 +1284,14 @@ def _selfcheck_sync_ledger_replies() -> None:
     assert _is_own_broadcast(own_broadcast_msg), "헤더+서명 있는 우리 통은 우리 발신으로 걸러야 함"
     assert not _is_own_broadcast("#132 했다(정상작동 됨.) #133 했다, #163 했다"), \
         "사람이 번호로 답한 회신을 우리 발신으로 오판하면 안 됨"
+    # ③ 2026-09-07 18:34 GM 계정 번호공고문 — 서명·"🧾 확인 부탁드릴 것" 헤더가 없어
+    # 예시로 박힌 "#148 했다" footer 가 사람 회신으로 읽혀 #148·#174·#199 가 거짓 종결됐다
+    # (실측 2026-09-11). footer 문구만으로도 우리 발신으로 걸러야 한다.
+    announce_msg = ("앞으로 각 건에 번호를 붙여 드립니다 … #120 … #199\n"
+                     "👉 회신·보고는 「#번호 + 했다 / 진행중 / 언제」 한 줄이면 됩니다(예: #148 했다). "
+                     "그 번호로 진행을 체크하고, 답 온 건은 목록에서 빠집니다.")
+    assert _is_own_broadcast(announce_msg), \
+        "번호공고문 footer 도 우리 발신으로 걸러야 함(#148·#174·#199 거짓 종결 실측)"
 
     fake_lines = [
         {"date": "2026-09-07", "time": "10:00", "msg": "#101 완료했습니다"},
