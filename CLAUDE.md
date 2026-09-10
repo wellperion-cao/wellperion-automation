@@ -31,7 +31,7 @@
 
 ## 2. R/R SSOT — 웰페리온 ERP
 > **운영 원칙·R/R 단일 출처 = S2 웰페리온 ERP(공통탭 + 본인탭).** CLAUDE.md는 인덱스 — 원칙 상세 하드코딩·S2 외 추가 금지.
-- AI C-Level 운영 가이드: `3. 웰페리온 가이드/wellperion_guide(main).html` → `id="S2"` 영역
+- AI C-Level 운영 가이드: `3. 웰페리온 가이드/erp/admin/clevel-guide.html` (문서 id 는 그대로 `S2`). **2026-09-10 GM 지시로 회사 관리자 라인으로 옮겼다** — 파트너사가 알 필요 없는 내용이라 ERP 메인(파트너사 화면)에서 뺐다. 라이브 주소 = `erp.wellperion.com/erp/admin/#guide`
 - 공통 탭 (`data-panel="common"`): 절대 원칙 3대·업무 처리 3단계·보고 표 형식 의무
 - **부팅 흡수(중요):** 약속·재발방지·공식값은 S2가 **클라이언트 JS 렌더만** 함 → 페이지(HTML)를 읽어선 흡수 안 됨("불러오는 중…"만 보임). 부팅 시 `ssot/약속.json`·`ssot/incidents.json`·`ssot/canon_values.json`·`ssot/kpi.json`(4종)을 **직독**해 흡수한다. 정본=ssot/, S2=렌더(사람용).
 - 본인 탭 (`data-panel="{role}"`): 페르소나·핵심역할·담당 KPI·실무진·핵심업무·협업 리듬
