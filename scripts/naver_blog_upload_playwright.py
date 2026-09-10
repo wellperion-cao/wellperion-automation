@@ -736,10 +736,22 @@ async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> No
     await page.wait_for_timeout(800)
 
     # 본문 textContent 안전판 검증
+    #
+    # 2026-09-10: 본문이 화면에 다 들어갔는데도 「길이 7」로 실패했다. 타이핑하면 단락이 여러 개로
+    # 늘어나는데 body_loc 은 그중 첫 단락만 가리켜, 첫 줄 글자만 세고 있었다. 본문 영역 전체를 센다.
     try:
-        body_text = (await body_loc.inner_text()) or ""
-        if len(body_text.strip()) < min(10, len(post.body)):
-            raise RuntimeError(f"본문 입력 검증 실패 — textContent 길이 {len(body_text.strip())} (큐 누적 의심)")
+        body_text = await target.evaluate(
+            """() => Array.from(document.querySelectorAll('.se-component.se-text'))
+                 .filter(el => !el.closest('.se-section-documentTitle'))
+                 .map(el => el.innerText || '').join('
+')"""
+        ) or ""
+        if not body_text.strip():                       # 전체가 비면 첫 단락이라도 본다(폴백)
+            body_text = (await body_loc.inner_text()) or ""
+        need = max(10, int(len(post.body) * 0.5))       # 절반 이상 들어갔으면 통과(이모지·줄바꿈 차이 감안)
+        if len(body_text.strip()) < need:
+            raise RuntimeError(
+                f"본문 입력 검증 실패 — 본문 영역에서 센 글자 {len(body_text.strip())} / 입력 {len(post.body)}")
     except RuntimeError:
         raise
     except Exception:
