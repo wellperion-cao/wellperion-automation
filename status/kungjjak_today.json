@@ -225,13 +225,13 @@
           "ref": "GM-20260910-1021",
           "no": "21",
           "got": "모듈을 다운로드받아서 설치하면 내가 작동하는것처럼 작동되게 하면안되? 그 부분에 대한 가이드라인도 필요해",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "18:58",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:00",
+          "minutes": 2,
+          "upload": "✅ 배포 (ed311e6f8)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -393,28 +393,13 @@
         }
       ],
       "count": 19,
-      "done": 18,
-      "open": 1,
+      "done": 19,
+      "open": 0,
       "avg_minutes": 4,
       "work_count": 26,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260910-1021",
-          "no": "21",
-          "got": "모듈을 다운로드받아서 설치하면 내가 작동하는것처럼 작동되게 하면안되? 그 부분에 대한 가이드라인도 필요해",
-          "did": "",
-          "start": "18:58",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -536,16 +521,40 @@
           "start": "18:40",
           "end": "18:51",
           "minutes": 10,
-          "upload": "기록만",
+          "upload": "✅ 배포 (4fa2a2eb4)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260910-2012",
           "no": "12",
           "got": "https://erp.wellperion.com/cto/env_status.html 이것도 그렇고, https://erp.wellperion.com/cto/aws_migration.html 이것도 그렇고, 조금 ER…",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "18:58",
+          "end": "19:02",
+          "minutes": 4,
+          "upload": "✅ 배포 (4fa2a2eb4)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260910-2013",
+          "no": "13",
+          "got": "erp/admin에서 파트너사 앞에 식별자칸 넣어서 1호 별도로 넣어줘 그리고 erp 누르면 새창에서 뜨게해줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:03",
+          "end": "19:03",
+          "minutes": 0,
+          "upload": "✅ 배포 (4fa2a2eb4)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260910-2014",
+          "no": "14",
+          "got": "관리자화면이랑 직원화면도 너무하네 경로 / 이게 뭐야",
+          "did": "",
+          "start": "19:03",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -607,29 +616,35 @@
           "area": "작업",
           "event": "자동화 건강판이 하루 반 동안 거짓 0% 를 찍던 원인 수리 — 파이프 대신 파일로 받는다",
           "detail": "커밋 fe87192ad · 배 11370"
+        },
+        {
+          "time": "19:02",
+          "area": "작업",
+          "event": "AWS 이관 현황·환경 3벌 화면을 ERP 메뉴 앞자리로 — 문서함에 묻혀 있었다",
+          "detail": "커밋 95e1951ee · 배 11370"
         }
       ],
-      "count": 11,
-      "done": 10,
+      "count": 13,
+      "done": 12,
       "open": 1,
-      "avg_minutes": 4,
-      "work_count": 9,
+      "avg_minutes": 3,
+      "work_count": 10,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260910-2012",
-          "no": "12",
-          "got": "https://erp.wellperion.com/cto/env_status.html 이것도 그렇고, https://erp.wellperion.com/cto/aws_migration.html 이것도 그렇고, 조금 ER…",
+          "ref": "GM-20260910-2014",
+          "no": "14",
+          "got": "관리자화면이랑 직원화면도 너무하네 경로 / 이게 뭐야",
           "did": "",
-          "start": "18:58",
+          "start": "19:03",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 1
         }
       ],
       "repeats": []
@@ -668,13 +683,25 @@
           "area": "queue",
           "event": "ship_close",
           "detail": "배 924 병합 종결 — 923 으로 합쳐 놓고 안 닫혀 있던 것 · 배 923 은 GM 보류(360 촬영 대기)라 ON_HOLD 로 정정"
+        },
+        {
+          "time": "19:02",
+          "area": "작업",
+          "event": "회사 관리자 화면에 좌측 메뉴 — 한 장 스크롤을 다섯 영역으로",
+          "detail": "커밋 b62fd6bfe · 배 11425"
+        },
+        {
+          "time": "19:02",
+          "area": "screen",
+          "event": "admin_console_sidebar",
+          "detail": "회사 관리자 화면 좌측 메뉴 5영역 재편 + 좁은 화면 상단바 넘침 수리 — 저장·배포 완료"
         }
       ],
       "count": 1,
       "done": 0,
       "open": 1,
       "avg_minutes": null,
-      "work_count": 3,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -690,7 +717,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 11
+          "waited": 15
         }
       ],
       "repeats": []
@@ -762,8 +789,32 @@
           "ref": "GM-20260910-5007",
           "no": "07",
           "got": "이런것들 놓치지 않게 해줘",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "18:59",
+          "end": "19:00",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260910-5008",
+          "no": "08",
+          "got": "내일 주차 일일점검 제출도 고문님에게 전달해야하네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:00",
+          "end": "19:01",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260910-5009",
+          "no": "09",
+          "got": "CCTV 100대 계약건 대표님에게 결재SSOT 보고 안드렸으면 정리해서 결재SSOT로 올려주고, 아니면 구두상으로 내일 보고드려서 계약 진행할 수 있게 준비해줘",
+          "did": "",
+          "start": "19:01",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -779,27 +830,27 @@
           "detail": "커밋 0bb396eb9 · 배 11438"
         }
       ],
-      "count": 6,
-      "done": 5,
+      "count": 8,
+      "done": 7,
       "open": 1,
-      "avg_minutes": 4,
+      "avg_minutes": 2,
       "work_count": 1,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260910-5007",
-          "no": "07",
-          "got": "이런것들 놓치지 않게 해줘",
+          "ref": "GM-20260910-5009",
+          "no": "09",
+          "got": "CCTV 100대 계약건 대표님에게 결재SSOT 보고 안드렸으면 정리해서 결재SSOT로 올려주고, 아니면 구두상으로 내일 보고드려서 계약 진행할 수 있게 준비해줘",
           "did": "",
-          "start": "18:59",
+          "start": "19:01",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 3
         }
       ],
       "repeats": []
