@@ -7942,7 +7942,14 @@ function _activeCacheSelfTest() {
   return ok;
 }
 
-// FB260904-115742: ended 탭 로드 시 LOSS일자 빈 행에 종료일자+1 자동 기입
+/* FB260904-115742: ended 탭 로드 시 LOSS일자 빈 행에 종료일자+1 을 채운다.
+   ★2026-09-10 시포 — 채우기만 하고 **저장하지 않는다**(WriteBuffer 제거).
+   왜: LOSS일자를 실제로 기록하는 자리는 밤 23시 자동 도장 한 곳뿐이다(GM 지시 2026-09-02 ·
+   매일 09:30 회장님·부서장 방 보고가 나간 뒤에 찍어야 보고 회원수와 시트가 안 갈린다).
+   그런데 이 화면이 따로 저장까지 하고 있어, 담당이 아침에 「종료」 탭을 여는 순간 그 시각으로
+   기록돼 규칙이 두 곳으로 갈렸다(2026-09-10 09:12 강창구 건 — 시트 이력에 로그인 계정으로 남아
+   사람이 넣은 것처럼 보였다). 화면은 「이 날짜로 찍힐 예정」을 보여 주는 역할만 한다 —
+   빈칸이 보이던 원래 불편(FB260904-115742)은 그대로 해결된 채로 남는다. */
 function _autoFillLossDate() {
   var lossCol = _capCol(_activeHeaders, 'LOSS일자');
   var endCol  = _capCol(_activeHeaders, '종료일자');
@@ -7954,13 +7961,7 @@ function _autoFillLossDate() {
     var yr = m[1].length === 2 ? '20' + m[1] : m[1];
     var d = new Date(Number(yr), Number(m[2]) - 1, Number(m[3]) + 1);
     var lv = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-    row[lossCol] = lv;
-    var kp = row['휴대폰 번호'] || row['휴대폰'] || '';
-    var ov = {}; ov[lossCol] = lv;
-    WriteBuffer.enqueue(
-      { action: 'member_active_update', rowIndex: row.rowIndex, col: lossCol, value: lv, keyPhone: kp, rowKey: row.rowKey || '' },
-      { scope: 'ended', phoneKey: kp, fieldset: 'cell:' + lossCol, label: 'LOSS일자(자동)', who: 'system', overlay: ov }
-    );
+    row[lossCol] = lv;   // 화면 표시만 — 기록은 밤 23시 자동 도장이 한다(위 주석)
   });
 }
 
