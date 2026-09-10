@@ -59,8 +59,11 @@
   window.fetch = function (url, opts) {
     try {
       var u = String((url && url.url) || url || "");
-      // 쓰기 도장(배 922) — 이 페이지의 GAS 쓰기는 전부 POST 다. 6분 동안 서버 미러 대신 GAS 를 읽게 한다(_rcFetch).
-      if (opts && /^post$/i.test(opts.method || "")) { try { localStorage.setItem("wlp_rc_wrote_at", String(Date.now())); } catch (e) {} }
+      // 쓰기 도장(배 922) 폐지 — 2026-09-10 시우, 최준용M 신고 FB260909-223633.
+      //   도장의 전제였던 "쓰기는 시트로 가고 서버 미러가 5분 늦다"가 사라졌다. 지금은 쓰기(reg_update)가
+      //   /api/reception/update 로 서버 원장을 직접 갱신하고 _server_edited 표식이 동기화 되덮기를 막는다(배1039-C·1090).
+      //   그래서 쓰기 직후 최신인 쪽은 서버이고, 도장은 오히려 6분 동안 동결된 시트를 읽게 만들어
+      //   목록 불러오기 실패·지연을 만들었다. 도장을 찍지 않으므로 _rcFetch 는 항상 서버를 먼저 본다.
 
       // ★쓰기 이중기록(배 960 #4b · 2026-09-04 시토). ERP 도메인에서만 GAS 쓰기(POST)를 서버 관문 /api/write 로 돌린다 —
       //   서버가 write_log 에 먼저 적고 같은 본문을 접수 GAS 로 그대로 넘겨 시트도 지금처럼 쌓는다(응답 모양 무변경).
@@ -687,7 +690,8 @@ if(!ERP_API_ON){
 function _rcFetch(apiPath, gasUrl){
   var gas = function(){ return fetch(gasUrl, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }); };
   if(!ERP_API_ON) return gas();
-  try{ if(Date.now() - Number(localStorage.getItem('wlp_rc_wrote_at') || 0) < 6 * 60 * 1000) return gas(); }catch(e){}
+  /* 옛 쓰기 도장(wlp_rc_wrote_at) 분기 삭제 — 위 관문 주석 참조(2026-09-10 · FB260909-223633).
+     이미 도장이 찍힌 브라우저가 있어도 읽는 곳이 없으니 그대로 서버를 본다. */
   return fetch(apiPath, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('api ' + r.status); return r.json(); })
     .catch(function(e){ console.warn('[종합접수처] API 실패 → GAS 폴백:', apiPath, e && e.message); return gas(); });
 }
