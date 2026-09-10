@@ -23,6 +23,7 @@ from __future__ import annotations
 import difflib
 import html
 import json
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -167,19 +168,56 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
     cn = cat_name(it)
     note_td = (f'<td class="note" title="{html.escape(note)}">{html.escape(short(note))}</td>'
                if note else '<td class="note">—</td>')
+    ss = ('<span class="ss-rc">접수처에서 닫음</span>' if is_reception_item(it)
+          else '<span class="ss-no">SSOT 미등록</span>')
+    who = html.escape(str(it.get("owner") or "").strip())
     return (f'<tr data-no="{no}"><td class="ck"><input type="checkbox" data-k="mgr-{no}"></td>'
             f'<td class="no">#{no}</td>'
             f'<td class="ti">{html.escape(str(it.get("issue") or ""))}'
             f'{f"<span class=cat>{html.escape(cn)}</span>" if cn else ""}</td>'
+            f'<td class="own"><input class="own-inp" list="mgr-name-list" data-o="{no}" '
+            f'value="{who}" placeholder="담당"></td>'
             f'<td class="due">{html.escape(due)}</td>'
-            f'<td class="ss"><span class="ss-no">SSOT 미등록</span></td>'
+            f'<td class="ss">{ss}</td>'
             f'{note_td}'
             f'<td class="age {age_cls(age)}">{age}일</td></tr>')
 
 
 HEAD_ROW = ('<tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th>'
-            '<th class="due">기한</th><th class="ss">업무·결재 SSOT</th>'
+            '<th class="own">담당</th><th class="due">기한</th><th class="ss">업무·결재 SSOT</th>'
             '<th>최근 상황</th><th class="age">경과</th></tr>')
+
+
+# 종합접수처에서 들어와 접수처에서 닫는 건 — 업무 SSOT 에 올릴 것이 아니다(GM 2026-09-10
+#   "종합접수처까지 내용이 다 올라가있는데, 이것을 SSOT에 올리는건 아닌 것 같아").
+#   접수는 접수번호로 열리고 그 화면에서 닫힌다. 여기서는 「접수처에서 닫음」으로만 표시하고
+#   「SSOT 미등록」 셈에서 뺀다 — 안 그러면 실무진이 같은 건을 두 곳에 올리게 된다.
+_RECEPTION_MARK = re.compile(r"접수\s*\d+|RECEPTION-\d+|접수ID|FB\d{6}|종합접수처")
+_RECEPTION_WORDS = ("컴플레인", "분실물", "미끄러", "고장", "청결", "매너", "자리 부족")
+
+
+def is_reception_item(it: dict) -> bool:
+    text = f'{it.get("issue") or ""} {it.get("note") or ""}'
+    if _RECEPTION_MARK.search(text):
+        return True
+    return any(w in text for w in _RECEPTION_WORDS)
+
+
+OWNER_BOARD_KEY = "MGR_TASK_OWNER"      # 목차에서 GM 이 지정한 담당(공용 보드) — 체크(MGR_TASK_DONE)와 같은 보드
+BOARD_URL = ("https://script.google.com/macros/s/"
+             "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec")
+
+
+def fetch_owner_board() -> dict:
+    """목차 화면에서 지정한 담당 — 다음 갱신 때 원장 owner 빈칸을 이 값으로 채운다.
+    조회 실패면 빈 dict(담당 지정이 없던 것과 같게 — 지어내지 않는다)."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"{BOARD_URL}?action=board&key={OWNER_BOARD_KEY}", timeout=30) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        return d.get("board") or {} if d.get("ok") else {}
+    except Exception:
+        return {}
 
 
 def approval_badge(m: dict) -> str:
@@ -199,7 +237,7 @@ def approval_badge(m: dict) -> str:
 
 
 def table(rows: list[str], empty: str) -> str:
-    body = "\n          ".join(rows) or f'<tr><td colspan="7" class="empty">{empty}</td></tr>'
+    body = "\n          ".join(rows) or f'<tr><td colspan="8" class="empty">{empty}</td></tr>'
     return f'<table>\n          {HEAD_ROW}\n          {body}\n        </table>'
 
 
@@ -221,6 +259,16 @@ def top_html(items: list[tuple[int, str, dict, str]]) -> str:
 def build() -> str:
     seen = latest_by_no()
     opens = {n: v for n, v in seen.items() if str(v[1].get("status", "")).lower() not in DONE}
+
+    # 목차 화면에서 GM 이 지정한 담당을 원장 빈칸에 채운다(GM 2026-09-10 "SSOT 등록건은 담당자도
+    #   설정할 수 있어야해"). 원장에 이미 사람이 적혀 있으면 그 값이 먼저다 — 화면 입력이 실무진
+    #   회신으로 들어온 담당을 덮지 않는다.
+    owner_board = fetch_owner_board()
+    if owner_board:
+        for n, (d, it) in opens.items():
+            picked = str(owner_board.get(f"mgr-{n}") or "").strip()
+            if picked and not str(it.get("owner") or "").strip():
+                it["owner"] = picked
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
@@ -288,8 +336,10 @@ def build() -> str:
     if not ssot_ok:
         ssot_note = '<span class="b2 fail">⚠ 업무 SSOT 대조 실패 — 겹친 건이 그대로 보일 수 있습니다.</span>'
     elif moved:
+        _rc = sum(1 for _, _, _it, _ in shown if is_reception_item(_it))
         ssot_note = (f'<span class="b2">업무·결재 SSOT 에 올라간 것 {len(moved)}건은 맨 아래 접힘 목록에 '
-                     f'진행·결재 상태와 함께 있습니다 · <b>SSOT 미등록 {len(shown)}건</b> — 실무진이 직접 등록해야 하는 것입니다.</span>')
+                     f'진행·결재 상태와 함께 있습니다 · <b>SSOT 미등록 {len(shown) - _rc}건</b> — 업무 SSOT 에 올려야 하는 것 · '
+                     f'접수처에서 닫는 건 {_rc}건은 그 화면에서 처리합니다(SSOT 등록 대상 아님).</span>')
 
     top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
     head = " · ".join(f"{n} {c}건" for n, c in counts)
@@ -350,6 +400,13 @@ def build() -> str:
   .grp > summary::before {{ content:"▸ "; color:var(--dim); }}
   .grp[open] > summary::before {{ content:"▾ "; }}
   .grp .gc {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }}
+  .own {{ white-space:nowrap; }}
+  .own-inp {{ width:92px; padding:3px 6px; border:1px solid var(--line); border-radius:6px;
+              background:transparent; color:inherit; font:inherit; font-size:12.5px; }}
+  .own-inp:focus {{ outline:2px solid rgba(183,159,138,0.5); }}
+  .own-inp.saved {{ border-color:#6abf7b; }}
+  .ss-rc {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
+            background:rgba(255,255,255,0.08); color:var(--dim); }}
   .ss {{ white-space:nowrap; }}
   .ss-no {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
             background:rgba(237,91,63,0.14); color:#ED5B3F; }}
@@ -445,6 +502,60 @@ def build() -> str:
       b.title = '체크 ' + when;
     }});
   }}).catch(function (e) {{ console.warn('[목차] 체크 보드 읽기 실패', e && e.message); }});
+  // ── 담당 지정 (GM 2026-09-10 "SSOT 등록건은 담당자도 설정할 수 있어야해") ──────────────
+  //   저장 자리 = 같은 공용 보드의 다른 키(MGR_TASK_OWNER). 체크와 같은 방식이라 새 저장소가 없다.
+  //   다음 갱신(manager_task_index.py)이 이 값을 읽어 원장 담당 빈칸을 채우고 사람별 표로 옮긴다.
+  var OWNER_KEY = 'MGR_TASK_OWNER';
+  var OWNER_CHOICES = ['이경연 실장', '이정헌 소장', '나우열M', '최준용M', '임정은M',
+                       '윤병현AM', '백승화 사원', '이연희 반장', '박남일 반장', '양상규 고문', '김남욱 GM'];
+  (function () {{
+    if (document.getElementById('mgr-name-list')) return;
+    var dl = document.createElement('datalist'); dl.id = 'mgr-name-list';
+    dl.innerHTML = OWNER_CHOICES.map(function (n) {{ return '<option value="' + n + '">'; }}).join('');
+    document.body.appendChild(dl);
+  }})();
+  function readOwnerBoard() {{
+    var gas = function () {{
+      return fetch(BOARD_URL + '?action=board&key=' + OWNER_KEY, {{cache:'no-store'}})
+        .then(function (r) {{ return r.json(); }});
+    }};
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + OWNER_KEY, {{cache:'no-store'}})
+      .then(function (r) {{ if (!r.ok) throw new Error('api ' + r.status); return r.json(); }})
+      .catch(gas);
+  }}
+  var owns = Array.prototype.slice.call(document.querySelectorAll('input[data-o]'));
+  readOwnerBoard().then(function (j) {{
+    var b = (j && j.ok && j.board) ? j.board : {{}};
+    owns.forEach(function (inp) {{
+      var v = b['mgr-' + inp.dataset.o];
+      if (v && !inp.value) inp.value = v;      // 원장에 이미 사람이 있으면 그 값을 덮지 않는다
+    }});
+  }}).catch(function (e) {{ console.warn('[목차] 담당 보드 읽기 실패', e && e.message); }});
+  owns.forEach(function (inp) {{
+    var before = inp.value;
+    inp.addEventListener('blur', function () {{
+      var v = inp.value.trim();
+      if (v === before) return;
+      inp.disabled = true;
+      readOwnerBoard().then(function (j) {{
+        var fresh = (j && j.ok && j.board) ? j.board : {{}};
+        if (v) fresh['mgr-' + inp.dataset.o] = v; else delete fresh['mgr-' + inp.dataset.o];
+        return fetch(BOARD_URL, {{method:'POST', headers:{{'Content-Type':'text/plain;charset=UTF-8'}},
+                                body: JSON.stringify({{action:'saveBoard', key: OWNER_KEY, board: fresh}}),
+                                redirect:'follow'}}).then(function (r) {{ return r.json(); }});
+      }}).then(function (res) {{
+        inp.disabled = false;
+        if (res && res.ok) {{ before = v; inp.classList.add('saved');
+                             setTimeout(function () {{ inp.classList.remove('saved'); }}, 1500); }}
+        else {{ inp.value = before; alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.'); }}
+      }}).catch(function () {{
+        inp.disabled = false; inp.value = before;
+        alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.');
+      }});
+    }});
+  }});
+
   boxes.forEach(function (b) {{
     b.addEventListener('change', function () {{
       var on = b.checked;
