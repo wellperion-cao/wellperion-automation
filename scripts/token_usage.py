@@ -168,6 +168,15 @@ KNOWN_ACCOUNTS = [
     "lessons@wellperion.com",
 ]
 
+# 실제 청구액 — 계정별 고정 정액 구독료(USD/월). GM 지시 2026-09-10.
+# 토큰을 API 정가로 환산한 금액(pricing.*.krw)은 "많이 쓰면 이만큼 손해"가 아니다 —
+# 실제로 나가는 돈은 이 정액뿐이라 많이 쓸수록 이득이다. 두 값을 혼동하지 않도록 화면에 나란히 낸다.
+SUBSCRIPTION_USD = {
+    "cao@wellperion.com": 200,
+    "info@wellperion.com": 200,
+    "lessons@wellperion.com": 100,
+}
+
 
 def account_summary():
     counts = {a: 0 for a in KNOWN_ACCOUNTS}
@@ -340,6 +349,12 @@ def main():
             "current": current_account(),
             "tracked_since": "2026-09-09",
             "sessions_by_account": account_summary(),
+        },
+        "billing": {
+            "usd_month_fixed": sum(SUBSCRIPTION_USD.values()),
+            "krw_month_fixed": round(sum(SUBSCRIPTION_USD.values()) * USD_KRW),
+            "accounts_usd": SUBSCRIPTION_USD,
+            "note": "Claude 구독은 계정별 고정 정액이다(GM 지시 2026-09-10) — 토큰을 얼마나 쓰든 매달 나가는 돈은 이 금액뿐이다.",
         },
         "pricing": {
             "usd_krw": USD_KRW,

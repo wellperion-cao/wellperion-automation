@@ -130,9 +130,16 @@ details.fold .fold-body{padding:0 20px 18px;}
 
 <div class="content">
 
+  <!-- ⓪ 실제 청구 vs 정가 환산 — GM 이 제일 먼저 봐야 할 돈 얘기(GM 지시 2026-09-10) -->
+  <div class="card">
+    <div class="card-title"><span>이번 달 돈 — 실제로 나가는 돈 vs 토큰을 정가로 사면</span></div>
+    <div class="stat-grid" id="billingGrid"><div class="dim">불러오는 중…</div></div>
+    <div class="note" id="billingNote"></div>
+  </div>
+
   <!-- ① 이번 달 얼마 · ② 늘었나 줄었나 -->
   <div class="card">
-    <div class="card-title"><span>이번 달 쓴 양</span><span id="rangeNote" class="dim" style="font-size:11px;font-weight:400;">불러오는 중…</span></div>
+    <div class="card-title"><span>이번 달 쓴 양(토큰)</span><span id="rangeNote" class="dim" style="font-size:11px;font-weight:400;">불러오는 중…</span></div>
     <div class="hero" id="heroBox"><div class="dim">불러오는 중…</div></div>
     <div class="note" id="heroNote"></div>
   </div>
@@ -229,7 +236,31 @@ details.fold .fold-body{padding:0 20px 18px;}
         '<div class="dim">데이터를 불러오지 못했습니다 (' + esc(e.message) + ')</div>';
     });
 
+  function fmtUsd(n){ return '$' + (n||0).toLocaleString('en-US'); }
+
+  function renderBilling(d){
+    var billing = d.billing || {};
+    var thisMonthKrw = (((d.pricing || {}).this_month) || {}).krw || 0;
+    var accts = billing.accounts_usd || {};
+    var acctLine = Object.keys(accts).map(function(k){ return k.split('@')[0] + ' $' + accts[k]; }).join(' · ');
+    document.getElementById('billingGrid').innerHTML =
+      '<div class="stat-tile">'
+      + '<div class="stat-label">실제 청구 — 고정 구독료</div>'
+      + '<div class="stat-value">' + fmtUsd(billing.usd_month_fixed) + '<span style="font-size:12px;color:var(--dim-mid);font-weight:600;"> /월</span></div>'
+      + '<div class="stat-sub">' + esc(acctLine) + (billing.krw_month_fixed ? ' · 약 ' + fmtWon(billing.krw_month_fixed) : '') + '</div>'
+      + '</div>'
+      + '<div class="stat-tile">'
+      + '<div class="stat-label">정가 환산 — 이 토큰을 API 정가로 샀다면</div>'
+      + '<div class="stat-value">' + fmtWon(thisMonthKrw) + '</div>'
+      + '<div class="stat-sub">이번 달 누적 · 참고용(청구액 아님)</div>'
+      + '</div>';
+    document.getElementById('billingNote').innerHTML =
+      '<b>매달 실제로 나가는 돈은 위 고정 구독료(월 $' + (billing.usd_month_fixed||0) + ')뿐입니다.</b> '
+      + '오른쪽 「정가 환산」은 같은 양을 정가로 낱개 구매했다면 얼마였을지 보여주는 참고 숫자 — 정액제라 이 숫자가 클수록 구독을 잘 활용하고 있다는 뜻입니다.';
+  }
+
   function render(d){
+    renderBilling(d);
     var days = d.days || {};
     var dates = Object.keys(days).sort(); // 오름차순
     document.getElementById('rangeNote').textContent = (d.range ? (d.range.from + ' ~ ' + d.range.to) : '') + ' · 최근 ' + dates.length + '일';
