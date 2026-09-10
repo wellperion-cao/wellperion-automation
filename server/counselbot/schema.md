@@ -9,14 +9,16 @@
 |---|---|---|---|---|
 | `tenant` | `id` · `name` · `name_en` · `type`(스포츠클럽·PT센터·필라테스…) | 업체 식별 | 시보 | 대표 확인 |
 | `identity` | `one_liner`(한 줄) · `philosophy` · `tone`(어투 규칙) · `service_concept`(공통 = 「컨시어지」 호텔급 서비스 마인드 · GM 09-05 · 원칙 7 = 설계 §3-2) · `sales_style`(업체별 세일즈 결 — 공통 세일즈 원칙 5 = 설계 §3-3) · `counselor_persona`{name·greeting·handoff·typing_ms·emoji}(★GM 2026-09-05: 고객 화면은 FAQ·봇 느낌이 아니라 **진짜 상담원과 대화하는 느낌** — 사람 말투·이모지·「답변 중…」 표시 · 'FAQ'·'AI'·'초안' 낱말은 고객 화면에 안 보임) | 봇의 말투와 자기소개 — 브랜드가이드 §1·§2 에서 온다 | 시보 초안 → 대표 | 대표 확인 |
-| `facts` | `address` · `hours`{weekday·weekend·holiday·closed_rules[](예 "매월 둘째·넷째 일요일")·closed_dates[]} · `phone` · `parking` · `capacity` · `founded` | 사실 정보 — 검색·AI 검색(GEO)이 같은 문장으로 읽어야 함 | 대표 | 대표 확인 필수 |
+| `facts` | `address` · `hours`{weekday·weekend·holiday·closed_rules[](예 "매월 둘째·넷째 일요일")·closed_dates[]} · `phone` · `parking` · `capacity` · `founded` · `first_visit_flow`(첫 방문 진행 순서 — 상담·상태 확인 등 · v1.1 2026-09-10 신설 — 질문 유형 원장이 요구하는데 자리가 없던 칸) | 사실 정보 — 검색·AI 검색(GEO)이 같은 문장으로 읽어야 함 | 대표 | 대표 확인 필수 |
 | `channels` | `reservation_url`(상담 예약 링크 · 봇이 못 답할 때 보내는 곳) · `kakao` · `instagram` · `blog` · `naver_place` | 손님을 넘길 곳 | 대표 | 링크 실제 열림 확인 |
 | `offerings[]` | `name` · `who`(누구에게) · `what`(무엇을) · `how`(진행 방식) · `price_policy`(금액 대신 "상담 시 안내" 등 문장) | 상품·프로그램 | 시보(원자료) → 대표 | 대표 확인 |
-| `policies[]` | `topic`(연기·휴회·환불·양도·예약·노쇼…) · `text`(문장) | 규정 — 금액·법적 판단은 넣지 않는다 | 대표 | 대표 확인 필수 |
+| `policies[]` | `topic`(연기·휴회·환불·양도·예약·노쇼·미성년·소개…) · `text`(문장) — topic 에 `미성년`·`소개`·`환불` 세 가지도 쓰인다(question_types.json needs_facts 참조) | 규정 — 금액·법적 판단은 넣지 않는다 | 대표 | 대표 확인 필수 |
 | `faq[]` | `id` · `q` · `a` · `alt[]`(같은 뜻 다른 표현) · `source`(근거 파일/답변 날짜) · `verified`(대표 확인) · `updated` | 상담봇이 답하는 유일한 근거 | 시보 초안 → 대표 → 미답 학습 | `verified:false` 는 위젯에 「초안」 표시 |
 | `guards` | `forbidden_topics[]`(금액·의료·계약…) · `medical_words[]` · `handoff_text`(못 답할 때 문장) | 지어내기·위험 답 차단 — 코드가 읽는다 | 시보(공통 기본값) · 업체별 추가 | 시토 selfcheck |
+| `staff` | `public_summary`(손님에게 말해도 되는 강사 소개 한 줄 · 이름 없이도 가능) · `disclose_policy`(성함·경력 공개 가부 · 대표 확인 필수) · `contact_hours`(문의에 사람이 답하는 시간대) · `complaint_owner`(불만 접수를 받는 담당) — v1.1 2026-09-10 신설 — 질문 유형 원장이 요구하는데 자리가 없던 칸 | 강사·연락·불만 응대 | 업체 대표(아침 1문) | 대표 확인 없으면 빈칸 |
 | `learning` | `unanswered_days` · `question_bank[]`(대표께 여쭐 것) · `ask_channel`(카톡 방 이름) · `ask_time` | 못 답한 질문을 대표께 되돌리는 회로 | 시보 | 발신 로그 |
 | `kpi` | `baseline`(도입 첫 주 · 월 문의 수 등) · `metric`("봇 자력 답변 비율/월") · `target` | 건별 KPI 1개 | 시보 ↔ 대표 합의 | 월 보고 |
+| `handoff_sla`(최상위 칸) | 넘긴 뒤 언제까지 연락하나 — 공통 기본값 「다음 영업일 안」 · v1.1 2026-09-10 신설 — 질문 유형 원장이 요구하는데 자리가 없던 칸 | 넘김 시점 약속 | 대표(값) · 시보(공통 기본값) | 대표 확인 없으면 공통 기본값 |
 | `meta` | `version` · `updated` · `owner_ai`("시보") · `status`(수집중·초안·대표확인·라이브) | 판·상태 | 시보 | — |
 
 **정본화 절차(모든 업체 동일)**

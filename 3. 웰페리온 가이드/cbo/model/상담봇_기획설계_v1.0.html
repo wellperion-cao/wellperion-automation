@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>상담봇 — 전체 기획 설계 v1.0 (3업체 · 고객 페이지 · 관리자 페이지)</title>
+<title>상담봇 — 전체 기획 설계 v1.1 (3업체 · 고객 페이지 · 관리자 페이지)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -32,8 +32,8 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 </style>
 </head><body><div class="wrap">
 <header><div class="brand">WELLPERION · AI CBO 시보 · 신규사업 ② 상담봇</div>
-<h1>상담봇 — 전체 기획 설계 v1.0: 센터마다 "묻고 바로 답 받는 페이지" 하나 + 관리자 페이지 하나</h1>
-<div class="meta">2026-09-05 · GM 지시 "채팅봇 → 상담봇 비즈니스화 · 3업체(1 웰페리온 · 2 다이어트캠프 · 3 고척 QA골프) 정보 습득→정형화→정본화 · 전체 기획 꼼꼼히 · 시모 MVP UI/UX 아티팩트 · 제일 중요한 건 상담봇을 페이지로, 관리자 페이지 별도, 고객이 간단히 묻고 빠르게 답 받게 셋업 마무리" · 정본 = 이 문서(GM 열람) · 데이터 정본 = server/counselbot/</div></header>
+<h1>상담봇 — 전체 기획 설계 v1.1: 센터마다 "묻고 바로 답 받는 페이지" 하나 + 관리자 페이지 하나</h1>
+<div class="meta">2026-09-05 · GM 지시 "채팅봇 → 상담봇 비즈니스화 · 3업체(1 웰페리온 · 2 다이어트캠프 · 3 고척 QA골프) 정보 습득→정형화→정본화 · 전체 기획 꼼꼼히 · 시모 MVP UI/UX 아티팩트 · 제일 중요한 건 상담봇을 페이지로, 관리자 페이지 별도, 고객이 간단히 묻고 빠르게 답 받게 셋업 마무리" · 정본 = 이 문서(GM 열람) · 데이터 정본 = server/counselbot/ · <b>v1.1 2026-09-10</b> 실측 구멍 보완(§3③ · §3-5 · §3-6 · §4⑤ · §6 · §8-1)</div></header>
 
 <div class="dir"><b>방향(GM · 09-05 추가)</b> — <b>FAQ 느낌이 아니라 진짜 상담원과 대화하는 느낌</b>. AI 느낌 없이, 사람이 직접 답하듯 이모지를 쓰는 말투 😊 고객 화면에는 「FAQ」「AI」「초안/확정」「봇」 같은 낱말이 보이지 않는다(그건 관리자 화면 몫). 답이 없을 때도 "확인해서 알려드릴게요 🙏 예약 남겨 주시면 연락드려요"처럼 사람이 말하듯 넘긴다. 지어내지 않는다는 원칙은 그대로 — 말투만 사람, 근거는 정본.</div>
 <div class="dir"><b>방향(GM)</b> — 상담봇은 위젯이 아니라 <b>센터마다 독립 페이지</b>다. 손님은 링크 하나로 들어와 <b>묻고 3초 안에 답</b>을 받고, 못 답하면 상담 예약으로 넘어간다. 업체는 <b>관리자 페이지</b>에서 FAQ 를 고치고 못 답한 질문에 한 줄 답을 달면 그게 다음 답이 된다. 세 업체가 <b>같은 틀(정본 스키마)</b>을 쓰고, 웰페리온이 1호 테넌트로 먼저 쓴다. 지어내는 답은 코드로 막는다.</div>
@@ -82,7 +82,7 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <ol class="steps">
 <li><b>주소 하나</b> — <code>erp.wellperion.com/{n}_{센터}/</code> 또는 <code>/dietcamp/</code> 처럼 센터 폴더의 <code>index.html</code>(= 상담봇 페이지). QR·프로필 링크·플레이스에 이 주소 하나만 건다</li>
 <li><b>첫 화면에서 바로</b> — 로그인·이름·전화 없음. <b>중심은 자유 대화 입력</b>(눌러서 답을 뽑는 구조 아님 · GM 09-05). 제안 칩은 처음 한 번 살짝 보이는 보조</li>
-<li><b>답은 FAQ 근거로만</b> — 매칭 실패·금지어(금액·의료)는 고정 문구 + [상담 예약]. 지어낸 문장 0</li>
+<li><b>답은 정본 근거로만</b> — 정본에 없으면 넘긴다. <b>넘김은 실패가 아니라 설계된 동작</b>(§3-5) — 창구·연락 시점·손님이 남길 것 세 가지가 항상 붙는다. 지어낸 문장 0</li>
 <li><b>상담원 말투</b> — 답 문장은 정본 FAQ 지만 <b>사람이 채팅하듯</b>(인사·공감·이모지·"~해요" 체) 쓴다. 「답변 중 ●●●」 0.9초 뒤 표시. 초안/확정은 <b>관리자 화면에서만</b> 본다(고객 화면 배지 없음 · GM 09-05)</li>
 <li><b>👍👎 한 번</b> — 답마다 도움 여부 1클릭(저장 = 질문·faq_id·👍👎 만 · 개인정보 0). 👎 는 관리자 미답 목록 옆 「다시 볼 답」으로</li>
 <li><b>AEO 자산</b> — 같은 페이지에 FAQPage 구조화 데이터(JSON-LD) 심음 → AI 검색이 인용. 브랜드가이드 §3 과 한 재료</li></ol></div></div>
@@ -151,6 +151,35 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>④ 전 지점 적용</td><td>프롬프트 공통부가 원장을 읽으므로 다음 답부터 전 지점 동시 업그레이드 — 배포 없음</td></tr></table>
 <div class="note">정본 = <code>server/counselbot/schema.md</code> 「정본 3층 + 공통 학습층」 · 프리셋/금지어/유형 원장 = <code>server/counselbot/shared/</code> 3파일. 코드 배선(프롬프트 공통부가 3파일을 읽기 · 금지어 합집합 · 유형 집계)은 시토에게 배로 넘긴다. 관리자 페이지 §4 에 「컨셉 선택」·「금지어 추가」 두 칸이 필요하다(시모 §9 요구에 추가).</div>
 
+<h2>3-5. 넘김(핸드오프)은 실패가 아니라 설계된 동작 — 실측 미답 상위가 말해 주는 것 (v1.1 · 2026-09-10)</h2>
+<div class="dir">실측(2026-09-10 시보 · 30일) — 웰페리온 미답 상위 = 「지금 카드로 결제하고 싶어요 얼마인가요」16회 · 「오늘 저녁 메뉴 추천해 주세요」11회 · 「주차 되나요」3회 · 「오늘 날씨」3회. 1위는 정본이 비어서가 아니라 설계상 봇이 말하지 않기로 한 것(금액)이고, 2·4위는 우리 업과 무관한 것, 3위만 진짜 정본 빈칸(웰페리온 parking 미수령)이다. 지금은 셋이 전부 같은 「미답」 한 칸에 쌓인다 — 로그가 answered 참/거짓 두 값만 남기기 때문(api_chat.py _log). 그래서 미답 목록도 KPI 도 이 셋을 못 가른다.</div>
+<table><tr><th>갈래(outcome)</th><th>예</th><th>봇이 하는 것</th><th>미답 목록</th><th>KPI 분모</th></tr>
+<tr><td>① gap 정본 빈칸</td><td>주차 되나요(웰페리온 parking 없음)</td><td>확인 후 연락 + 창구</td><td>「채울 칸」 목록 → 아침 1문</td><td>포함(실패로 센다)</td></tr>
+<tr><td>② policy 설계상 사람 몫</td><td>결제·얼마·환불 계산·의료 판단</td><td>구조만 말하고 사람 창구로 넘긴다 = 리드</td><td>「연락 필요」 목록(당일)</td><td>제외 · 별도 지표(넘김 성공률)</td></tr>
+<tr><td>③ off_topic 업과 무관</td><td>저녁 메뉴·오늘 날씨</td><td>한 문장으로 받아넘기고 우리 이야기로 돌아온다(막지 않는다)</td><td>안 올린다</td><td>제외</td></tr>
+<tr><td>④ invalid 출력검사 탈락</td><td>모델이 근거 밖 숫자를 씀</td><td>답 폐기 + 넘김(§3-1④)</td><td>「채울 칸」에 유형만</td><td>포함(실패로 센다)</td></tr></table>
+<div class="note">금액 질문 결론 — 금액을 넣는 것이 답이 아니다. ① 금액은 GM 결재·대표 확인값이고 공통 금지어 no_price 가 코드로 지운다 — 고척 정본이 체험권 금액 안내를 허용해 두었어도 같은 파일 guards 와 공통 phrases 가 출력검사에서 그 답을 버린다(모순 · GM 이 정할 것). ② 「결제하고 싶다」는 정보 질문이 아니라 구매 의사 = 가장 뜨거운 리드. 이 손님에게 필요한 건 숫자 한 줄이 아니라 오늘 안에 사람이 연락하는 것. ③ 금액은 상품·기간마다 달라 상담 없이는 어차피 안 끝난다. → 답 = 넘기는 것 자체를 잘 하는 것.</div>
+<table><tr><th>넘김이 설계된 동작이 되려면</th><th>정본 칸</th><th>지금 상태(3센터)</th><th>채우는 사람</th></tr>
+<tr><td>① 창구(어디로)</td><td>channels.reservation_url → 없으면 phone → kakao</td><td>웰 예약폼 ○ · 다캠 플레이스 ○ · 고척 reservation_url 없음(전화만)</td><td>시보(고척 부장님께 링크 하나)</td></tr>
+<tr><td>② 시점 약속(언제)</td><td>staff.contact_hours + handoff_sla(예 "영업시간 내" · "다음 영업일 오전") — 스키마에 staff 구역이 없어 v1.1 에 신설</td><td>3센터 전부 없음</td><td>대표 답(아침 1문) · 공통 기본값 "다음 영업일 안"</td></tr>
+<tr><td>③ 손님이 남기는 것(무엇)</td><td>채팅에서는 안 받는다(no_pii). 넘김 답 안에서 상품·희망 시간대만 되묻고 예약 링크로 보낸다</td><td>웰·다캠 폼 ○ · 고척 × → 전화 탭</td><td>시보</td></tr>
+<tr><td>④ 사람에게 도달</td><td>policy 건은 다음 아침 카톡 1통에 「어제 연락 필요 N건」 한 줄(기존 07:00 회로 재사용 · 0원) · 웰페리온은 시포 문의 원장</td><td>회로 있음(다캠·고척) · 줄 없음</td><td>시보</td></tr>
+<tr><td>⑤ 성공을 잰다</td><td>넘김 답에서 [예약]·[전화] 탭 = feedback API 한 값(reservation_click)</td><td>POST feedback 미구현(§5)</td><td>시토</td></tr></table>
+<div class="note">무관 질문 결론 — 막지 않는다. 컨시어지는 "안 됩니다"로 끝내지 않는다(§3-2 ③) — 그러나 지어내지도 않는다(날씨·메뉴는 정본 밖). 규칙 = 한 문장으로 받아넘기고(정보 아님 · 태도만) 우리 이야기로 되돌린다. 예: 날씨 → "날씨는 제가 볼 수 없지만 실내라 상관없이 운영해요 😊 오늘 {hours_today} 열려 있어요" · 메뉴 → "메뉴 추천은 제 전문이 아니에요 😊 운동 쪽으로 궁금하신 건 뭐든 말씀 주세요". 기록은 off_topic · 미답 목록·KPI 밖. 「저녁 메뉴」11회가 한 사람의 시험인지 실손님인지 = 시토 배 2509 판정 대기 — 판정과 무관하게 규칙은 같다. 오늘 시보가 무세션으로 물은 8문이 전부 넘김이었던 원인도 같은 배에서 판정한다(여기서 단정하지 않는다).</div>
+
+<h2>3-6. 전 센터 구멍 8유형 — 공통층에 둘 것과 업체에 둘 것 (v1.1 · 2026-09-10)</h2>
+<div class="dir">실측 — FAQ 통합 커버리지 21유형 중 세 센터 모두 빈 유형 8 = refund · trial_flow · trainer_who · age_fit · contact_human · referral_family · complaint · hesitation. 이 여덟은 사실값이 아니라 태도·절차다. 그런데 원장이 요구하는 칸(staff.* · facts.first_visit_flow · complaint_sla)이 스키마 11구역에 자리가 없다 — 구멍의 절반은 대표가 답을 안 준 것이 아니라 답을 넣을 칸이 없는 것. 갈래 = 공통층 = 뼈대 + 「값 없을 때 기본 문장」(태도만 · 숫자·이름·시간 값 0 · never_here 그대로) · 업체층 = 값 칸. 기본 문장이 있는 유형은 셋업 첫날부터 답한다.</div>
+<table><tr><th>유형</th><th>성격</th><th>공통층(뼈대 + 빈값 기본 문장)</th><th>업체 값(칸 · 확인)</th><th>첫날 답</th></tr>
+<tr><td>hesitation 망설임</td><td>태도</td><td>기본 문장 ○ — "충분히 고민하셔도 돼요 · 체험 한 번 보고 정하셔도 좋아요"(sales_style 은 3센터 다 있음)</td><td>offerings[trial] 있으면 붙임</td><td>○</td></tr>
+<tr><td>contact_human 사람 연결</td><td>절차</td><td>기본 문장 ○ — 창구는 channels 에 이미 있음</td><td>staff.contact_hours(신설)</td><td>○(시점 약속은 값 뒤)</td></tr>
+<tr><td>complaint 불만</td><td>태도+절차</td><td>기본 문장 ○ — 사과 + 담당자 연락 + 창구 · handoff_sla 공통 기본값 "다음 영업일 안"</td><td>staff.complaint_owner · 업체 sla</td><td>○</td></tr>
+<tr><td>age_fit 연령</td><td>태도</td><td>기본 문장 ○ — "연령보다 목표·상태를 먼저 봐요 → 첫 상담에서"</td><td>offerings[].who(있음) · policies[미성년](없음)</td><td>○(미성년 규정은 값 뒤)</td></tr>
+<tr><td>trial_flow 체험 안내</td><td>절차</td><td>기본 문장 ○ — "첫 방문은 상담·상태 확인부터 · 예약으로" · 체험 상품은 3센터 offerings 에 이미 있음(태깅만)</td><td>facts.first_visit_flow(신설)</td><td>○</td></tr>
+<tr><td>refund 환불</td><td>규정(법 경계)</td><td>뼈대만 · 빈값 = policy 넘김("규정은 담당자가 계약 기준으로 직접") — no_legal</td><td>policies[환불] 대표 확인 필수</td><td>× → 넘김(실패 아님)</td></tr>
+<tr><td>trainer_who 강사</td><td>사실(개인정보 경계)</td><td>뼈대만 · 빈값 = "담당은 첫 상담에서 목표에 맞춰 정해요"(이름 없음)</td><td>staff.public_summary · staff.disclose_policy(이름 공개 여부 · 대표 확인)</td><td>△ 이름 없는 답만</td></tr>
+<tr><td>referral_family 소개·가족</td><td>규정(혜택=금액 인접)</td><td>뼈대만 · 빈값 = "소개·가족 등록 상담 가능 · 혜택은 상담에서"</td><td>policies[소개] 대표 확인</td><td>△</td></tr></table>
+<div class="note">정리 — 공통 기본 문장으로 첫날 답하는 것 5(hesitation·contact_human·complaint·age_fit·trial_flow) · 업체 값이 와야 하는 것 3(refund·trainer_who·referral_family). 스키마 v1.1 추가 칸 = staff{public_summary·disclose_policy·contact_hours·complaint_owner} · facts.first_visit_flow · handoff_sla · policies topic 미성년·소개·환불. 원장 추가 필드 = skeleton_when_empty(기본 문장) 하나. 정본 = schema.md·question_types.json(시보) · 코드 배선 = 시토.</div>
+
 <h2>4. 관리자 페이지 — 업체마다 하나(로그인 뒤)</h2>
 <div class="grid2">
 <div class="card"><h3>화면 뼈대</h3>
@@ -171,7 +200,7 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <li><b>미답 → FAQ 승격 한 동작</b> — 미답 질문 옆에 답 한 줄 쓰고 저장하면 faq[] 에 들어가고(verified=true · source=관리자) 즉시 반영</li>
 <li><b>FAQ 편집 = 정본 파일 편집</b> — 저장 = 서버 faq.json 갱신 + 저장소 정본으로 되밀기(시토 · 정본 한 곳 유지)</li>
 <li><b>금액·의료 낱말 경고</b> — 답에 숫자+원·치료·완치 등이 들어가면 저장 전 경고(막지는 않음 · 대표 판단)</li>
-<li><b>통계는 로그에서</b> — chat_log.jsonl 만 읽는다(이름·전화 없음). 건별 KPI = 자력 답변 비율/월</li>
+<li><b>통계는 로그에서</b> — chat_log.jsonl 만 읽는다(이름·전화 없음). 행마다 <code>outcome</code> 5값(answered·gap·policy·off_topic·invalid) · 건별 KPI = §6 정의 하나. <b>미답 목록은 둘로 갈린다</b> — 「채울 칸」(gap·invalid → 아침 1문) · 「연락 필요」(policy → 리드 · 당일 확인)</li>
 <li><b>아침 질문 연결</b> — 미답 상위 1개를 그 업체 학습 채널(카톡 방)의 다음 아침 질문으로(다캠은 이미 도는 회로 재사용)</li></ol></div></div>
 
 <h2>5. 구조 — 한 서버 · 테넌트 폴더 · 공통 코드</h2>
@@ -186,8 +215,9 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <h2>6. KPI 2층 · 요금 · 결재선</h2>
 <table><tr><th>층</th><th>숫자</th><th>기준선 · 목표</th></tr>
 <tr><td>① 상위 — 확장 건수</td><td>유료 도입 센터 수</td><td>0 → 1(다캠) → 2(고척 QA골프) · 웰페리온은 자체 테넌트라 안 센다</td></tr>
-<tr><td>② 건별 — 상담봇 고유</td><td><b>봇이 FAQ 근거로 자력 답한 질문 비율 / 월</b></td><td>도입 첫 주 실측 = 기준선 · 첫 달 50% · 셋째 달 80%(제안)</td></tr>
-<tr><td>관리 지표</td><td>FAQ 문항 수 · 미답 수 · 👎 비율 · 봇 경유 상담 예약 클릭</td><td>주간 관리자 화면</td></tr>
+<tr><td>② 건별 — 상담봇 고유(v1.1 정의)</td><td><b>자력 답변율 = answered ÷ (answered + gap + invalid) / 월</b> — 분모 = 「정본으로 답할 수 있어야 하는 질문」. policy(금액·의료·계약·개인정보 = 설계상 사람 몫)·off_topic(업과 무관)은 분모에서 뺀다</td><td>지금 실측 71.3%(웰)·83.3%(다캠)·100%(고척)는 전체 질문 대비라 새 정의와 비교 불가 → outcome 필드가 붙은 뒤 첫 주 실측 = 기준선 · 목표 숫자는 기준선 뒤(§8-1 3주차)</td></tr>
+<tr><td>관리 지표</td><td>FAQ 문항 수 · 「채울 칸」 수 · 「연락 필요」 수 · 👎 비율 · <b>넘김 성공률</b>(policy·gap 건 중 [예약]·[전화] 탭 비율)</td><td>주간 관리자 화면</td></tr>
+<tr><td>판매 단위(v1.1)</td><td colspan="2"><b>센터 1곳 = 구독 1개</b>, 안에 네 가지가 한 묶음: ① 고객 상담 페이지(주소 하나) ② 관리자 페이지(정본 편집 · 미답 두 목록 · 통계) ③ 학습 회로(아침 1문 · 미답→정본 승격) ④ 공통 학습층 접근권(유형 원장 · 기본 문장 · 금지어 — 전 센터 동시 업그레이드). <b>쪼개 팔지 않는다</b> — ②③ 없이 ①만 팔면 정본이 안 자라 첫 달 뒤 답이 낡고, ④가 없으면 구독이 아니라 1회 셋업이다. 업체 소유 = 자기 사실층·FAQ(내보내기 가능) · 우리 소유 = 공통층. 셋업(온보딩 인터뷰 1회 · 정본 채우기)은 구독 시작 조건 — 포함/별도는 요금 설계 때(GM 결재)</td></tr>
 <tr><td>요금</td><td colspan="2">미산정 — 공급가부터(답변 호출 원가 + 서버 몫/테넌트 + 아침 학습 1통 + 관리자 페이지 유지). 다캠 첫 달 실측 뒤 설계 → <b>GM 결재</b>. 그 전 대표님께 숫자 없음</td></tr>
 <tr><td>결재선</td><td colspan="2">자율 = 수집·정본·초안·자체 시험 · 페이지 제작 / GM 결재 = 요금 · 대외 금액 · 카카오 채널 API(💰) · 새 인증 체계 · 고척 QA골프 요금 제안(첫 접촉은 GM 이 이미 텄다)</td></tr></table>
 
@@ -210,6 +240,14 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <tr><td>7~8주</td><td>학습 회로 자동화(미답→아침 질문→FAQ 초안) 3업체 공통 · 👍👎 반영</td><td>시보·시토</td><td>미답 수 주간 감소</td></tr>
 <tr><td>9~12주</td><td>다캠 첫 달 실측 → 요금 설계(공급가) → GM 결재 → 유료 전환 제안 · 고척 QA골프 파일럿</td><td>시보 → GM</td><td>유료 도입 1곳</td></tr></table>
 
+<h2>8-1. 다음 3주(09-10~09-30) — 「팔 수 있는 상태」까지 (v1.1)</h2>
+<div class="note">§8 의 2~4주 칸은 이 절이 대체한다. 팔 수 있는 상태 = 세 센터 모두 (a) 넘김이 창구·시점 약속과 함께 나가고 (b) 새 정의 KPI 기준선 숫자가 있고 (c) 전 센터 구멍 0.</div>
+<table><tr><th>주</th><th>하는 것</th><th>담당</th><th>완료 판정(무엇을 재나)</th></tr>
+<tr><td>1주 09-10~16</td><td>로그 outcome 5값 + stats 응답에 outcome별 건수 · 미답 목록 두 갈래(채울 칸/연락 필요) · 공통 기본 문장 5유형 원장 등재(skeleton_when_empty) · 스키마 v1.1 칸 신설(staff · first_visit_flow · handoff_sla)</td><td>시토(코드) · 시보(원장·스키마)</td><td>counselbot_test.py 로 「저녁 메뉴」→off_topic · 「얼마인가요」→policy · 「주차」(웰)→gap 로 찍힌 로그 3줄 · stats JSON 에 outcome 키 5개 · faq_hub.py holes 8→3</td></tr>
+<tr><td>2주 09-17~23</td><td>넘김 창구 3센터 완비(고척 예약 링크 또는 전화 카드) · 시점 약속 값(contact_hours·handoff_sla) 대표 답 · 아침 카톡에 「연락 필요 N건」 줄 · feedback API(예약·전화 탭)</td><td>시보(값·통) · 시토(API)</td><td>테스트 세션으로 3센터 policy 질문 1건씩 → 답에 창구+시점 문장 포함 3/3 · 아침 통 발신 로그에 리드 줄 1회 · feedback 로그 1건</td></tr>
+<tr><td>3주 09-24~30</td><td>업체 값 3유형(환불·강사·소개) 다캠·고척 회신 → 구멍 0 · 새 정의 KPI 첫 주 기준선 3센터 · 시토 배 2509 실사용 판정 반영 · 웰페리온 시험 세트 재실행</td><td>시보</td><td>faq_hub.py holes = [] · stats 새 정의 비율 숫자 3개 · 시험 세트 통과율 1줄</td></tr>
+<tr><td>3주 밖</td><td colspan="3">요금(GM 결재 · §6) · 카카오 채널 API(💰) · 금액 예외 허용 여부(GM) · 관리자 통계 그래프 · 온보딩 폼(§9 C) · 영어 외 언어</td></tr></table>
+
 <h2>9. 시모에게 넘기는 것 — MVP UI/UX 아티팩트 요구</h2>
 <div class="note"><b>추가(09-05 §3-4):</b> 관리자 페이지에 ① 상담원 컨셉 선택(프리셋 4카드 + 직접 쓰기) ② 금지어 — 공통 10규칙은 읽기 전용으로 보이고, 업체 추가분만 편집 ③ 「비어 있는 사실 칸」 목록(미답이 어느 칸 때문인지).</div>
 <table><tr><th>화면</th><th>꼭 들어갈 것</th><th>제약</th></tr>
@@ -231,5 +269,6 @@ code{background:#F3F5F7;padding:1px 5px;border-radius:3px;font-size:13px}
 <div class="dir"><b>GM 원칙(09-05) — 정보를 쌓는 데는 돈이 안 든다.</b> 학습 4길(정본 채우기·아침 카톡 질문·시험 세트·미답 승격) = 전부 0원(사람 답 + Max 구독 도구). Bedrock 과금은 <b>진짜 손님이 라이브 창에서 물을 때만</b>. 그래서 자체 시험·내부 확인·톤 점검은 라이브 창이 아니라 <code>counselbot_test.py</code>(0원)로 한다 — 라이브 창은 손님용.</div>
 <div class="note">첫 실측(09-05 · Max · Opus 4.8 CLI): 다캠 "허리가 아픈데 운동해도 되나요" 13.9초 · 컨시어지 톤 OK / 웰페리온 "환불 되나요" → 원장 참조. 다음 = 월요일 세트 전체 1회 돌려 통과율 기준선.</div>
 
-<div class="foot">정본 = 이 문서 · 데이터 정본 = server/counselbot/(schema.md · onboarding_checklist.md · tenants/) · 모델 = aeo_chatbot_v0.1(상담봇 명칭 반영) · 배 = 시보 1017(우산) · 1027(다캠 FAQ) · 시모 1035(MVP UI/UX) · 시토 1036(API·페이지) · G1 비즈니스 업무 1건 — AI 시보 · 2026-09-05</div>
+<div class="note"><b>갱신 이력</b> — 2026-09-10 v1.1(AI 시보): 30일 실측(미답 상위 · 커버리지 21유형 · 전 센터 구멍 8)을 근거로 §3③ · §3-5(넘김 설계 · 무관 질문) · §3-6(구멍 8 갈래) · §4⑤ · §6(KPI 분모 · 판매 단위) · §8-1(3주) 교체·신설. 09-05 v1.0 본문은 그대로.</div>
+<div class="foot">정본 = 이 문서 · 데이터 정본 = server/counselbot/(schema.md · onboarding_checklist.md · tenants/) · 모델 = aeo_chatbot_v0.1(상담봇 명칭 반영) · 배 = 시보 1017(우산) · 1027(다캠 FAQ) · 시모 1035(MVP UI/UX) · 시토 1036(API·페이지) · G1 비즈니스 업무 1건 — AI 시보 · 2026-09-05 · v1.1 2026-09-10</div>
 </div></body></html>
