@@ -506,8 +506,12 @@ def build() -> str:
   //   저장 자리 = 같은 공용 보드의 다른 키(MGR_TASK_OWNER). 체크와 같은 방식이라 새 저장소가 없다.
   //   다음 갱신(manager_task_index.py)이 이 값을 읽어 원장 담당 빈칸을 채우고 사람별 표로 옮긴다.
   var OWNER_KEY = 'MGR_TASK_OWNER';
-  var OWNER_CHOICES = ['이경연 실장', '이정헌 소장', '나우열M', '최준용M', '임정은M',
-                       '윤병현AM', '백승화 사원', '이연희 반장', '박남일 반장', '양상규 고문', '김남욱 GM'];
+  // 담당 후보 — 부서 순서대로(GM 지시 2026-09-10). 운영부 6 · 시설부 3 · 그 밖.
+  var OWNER_CHOICES = [
+    '이경연 실장', '최준용M', '임정은M', '윤병현AM', '백승화 사원', '진수아 사원',   // 운영부
+    '이정헌 소장', '김종현 차장', '박호균 과장',                                    // 시설부
+    '나우열M', '이연희 반장', '박남일 반장', '양상규 고문', '김남욱 GM'              // 그 밖
+  ];
   (function () {{
     if (document.getElementById('mgr-name-list')) return;
     var dl = document.createElement('datalist'); dl.id = 'mgr-name-list';
