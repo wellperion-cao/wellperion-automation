@@ -197,6 +197,14 @@ CREATE SEQUENCE IF NOT EXISTS lost_found_seq;
 -- write_proc 스위치가 server 로 켜지기 전까지는 호출되지 않는다(아직 dual — api_write.py 참고).
 CREATE SEQUENCE IF NOT EXISTS proc_no_seq;
 
+-- 회원번호 서버 채번 (배 1195 ③ · 2026-09-10 시토). GAS member_registry_build() 규칙(유효회원+법인현황+
+-- LOSS보관 3탭 전체 최댓값+1 · M+5자리 zero-pad · 결번은 나도 중복은 없음)을 그대로 잇는다. 배포 시
+-- SELECT setval('member_no_seq', <실측 최댓값>) 로 1회 seed(2026-09-10 실측 1750 — 서버 미러 members
+-- 1,749행 4scope[valid·archive·ended·corp] 전수 최댓값과 GAS 자체 member_registry_build dryRun 응답이
+-- 둘 다 M01750 로 일치). member_registered_add 의 '전화 0건(새 회원)' 경로에서만 쓴다 — 다른 신규 유효회원
+-- 생성 경로(member_inquiry_update 등)는 여전히 GAS 가 직접 매긴다(api_members_write.py 머리말 참고).
+CREATE SEQUENCE IF NOT EXISTS member_no_seq;
+
 -- 자산 라벨 채번 (배 1195 ② · 2026-09-10 시토). GAS assetIssue() 형식(WP{연도2자리} {4자리})·연도가 바뀌면
 -- 1부터 다시 매기는 규칙을 그대로 잇는다 — 연도별 한 행. next = 그 해 마지막으로 발급한 일련번호.
 -- 배포 시 올해 행을 시트 실측 최댓값으로 1회 seed(2026-09-10 실측 2026년=3 — 라벨 2장뿐이나 결번 있어 최댓값 3).

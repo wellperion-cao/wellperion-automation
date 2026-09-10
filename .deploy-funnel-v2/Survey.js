@@ -2807,6 +2807,8 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var clsI  = _idx('등록분류');
   var seqI  = _idx('등록회차');
   var lckI  = _idx('락커');
+  var noI   = _idx('회원번호');   // 회원번호 서버 채번(배1195③ · 2026-09-10 시토) — opts.memberNo 있으면 새 행에 그대로 쓴다.
+                                  // 없으면 종전대로 비워 두고 member_registry_build(2922행 자동호출)가 나중에 채운다.
   if (nmI < 0 || phI < 0) return;  // 필수 칸 없음 — 시트 구조사고 방지(칸 자동생성 안 함)
   function _put(row, ci, v) { if (ci >= 0 && v !== undefined && v !== null && String(v) !== '') sh.getRange(row, ci + 1).setValue(v); }
   // 시작일자는 등록일자와 다를 수 있다(계약일 ≠ 이용 시작일 — 실측 다수). opts.startDate 우선.
@@ -2908,6 +2910,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   if (clsI >= 0 && opts.regClass) newRow[clsI] = opts.regClass;
   if (lckI >= 0 && opts.locker)   newRow[lckI] = opts.locker;
   if (seqI >= 0) newRow[seqI] = 1;   // 새 행 = 첫 등록
+  if (noI >= 0 && opts.memberNo) newRow[noI] = opts.memberNo;   // 배1195③ — 서버가 미리 채번했으면 그 번호를 쓴다
   sh.appendRow(newRow);
   // 전화·등록일자는 appendRow 직후 텍스트서식(@)을 강제해 다시 쓴다 — 숫자로만 보이는 문자열을 Sheets가
   // 자동으로 숫자로 바꾸며 010 앞자리 0이 사라지는 사고 실측(2026-08-01, 정지원 등 3건 · 복구는 member_active_phone_fix).
@@ -9037,7 +9040,8 @@ function _hasRealReply_(memo) {
       //   화면에서 직접 등록한 회원은 나이 칸이 늘 비어 있었다 — 이 경로가 나이를 안 받아서다.
       //   유효회원 upsert 는 이미 opts.age 를 쓸 줄 안다(칸 배선 있음). 값을 안 보내면 종전 그대로.
       var _mauR = _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths,
-                                       { age: String(body.age || '').trim() });
+                                       { age: String(body.age || '').trim(),
+                                         memberNo: String(body.member_no || '').trim() });  // 배1195③ 서버 채번 인계
       if (_mauR && _mauR.ok === false) _mauErr = _mauR.error || 'activeUpsert 거부';
     } catch (e) { _mauErr = String(e); }
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.

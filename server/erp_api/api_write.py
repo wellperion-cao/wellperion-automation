@@ -201,6 +201,16 @@ def _next_asset_labels(conn, count):
     return ["WP%s %04d" % (yy2, n) for n in range(last - count + 1, last + 1)]
 
 
+def _next_member_no(conn):
+    """회원번호 서버 채번(배 1195 ③) — member_no_seq(schema.sql). proc_no_seq 와 같은 자리(SEQUENCE 는
+    잠금 없이 동시호출해도 같은 값을 두 번 안 준다). GAS member_registry_build 형식(M+5자리 zero-pad)으로
+    감싼다. ⚠️ 유효회원 신규 행은 이 함수를 거치지 않는 다른 GAS 액션(member_inquiry_update 등)도 만든다
+    — 그 경로는 여전히 GAS 가 독립적으로 채번하므로, 이 함수는 api_members_write.py 의 member_registered_add
+    '전화 0건(새 회원)' 단일 경로에서만 쓴다(다른 곳에 재사용하려면 그 경로들의 채번 주체부터 정리해야 한다)."""
+    n = conn.execute("SELECT nextval('member_no_seq')").fetchone()[0]
+    return "M%05d" % n
+
+
 def _asset_issue_labels(conn, payload):
     """자산 라벨 채번+멱등 판정 한 자리(배 1195 ②) — write() 의 server_mode 분기와 자체점검이 같이 부른다.
     GAS assetIssue() 의 두 관문(수량 1~100·품의번호 필수)과 멱등 규칙(같은 품의번호 재호출 = 재발급 아님)을
@@ -614,6 +624,26 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert sorted(seen) == list(range(131, 136)), seen        # 130 다음부터 1씩 순서대로
     assert server_ok(9, queued=True, mode="server", no=131) == {
         "ok": True, "success": True, "logId": 9, "queued": True, "mode": "server", "no": 131}
+
+    # 회원번호 서버 채번(배 1195 ③) — 같은 가짜 시퀀스 conn 재사용, 시작값만 실측(1750)으로.
+    class _MemberSeqConn:
+        n = 1750   # 2026-09-10 실측(서버 미러 1,749행 4scope 전수 최댓값 = GAS member_registry_build dryRun 응답)
+
+        def execute(self, q, p=None):
+            assert "nextval" in q and "member_no_seq" in q
+            _MemberSeqConn.n += 1
+            self._v = _MemberSeqConn.n
+            return self
+
+        def fetchone(self):
+            return (self._v,)
+
+    seen_m = set()
+    for _ in range(5):
+        no = _next_member_no(_MemberSeqConn())
+        assert no not in seen_m, "같은 회원번호가 두 번 나왔다"
+        seen_m.add(no)
+    assert sorted(seen_m) == ["M01751", "M01752", "M01753", "M01754", "M01755"], seen_m   # 1750 다음부터 M+5자리
 
     # 자산 라벨 채번(배 1195 ②) — 가짜 연도별 카운터 conn: INSERT...ON CONFLICT 문 하나만 받는다(원자적 채번 흉내).
     class _AssetConn:

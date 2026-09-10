@@ -13,10 +13,11 @@ member_registered_add(직접등록 · 5단계) · member_registered_remove(되�
 
 행 찾기 — member_registered_add·member_registered_remove: 전화 정규화 한 열쇠. 두 액션이 건드리는 탭은
 둘('26년 등록현황' + 유효회원)인데 등록현황은 월별 체크표라 미러에 없다 — 시트 전용으로 두고(시포 스펙
-§2-3 판단) 서버는 유효회원만 맡는다. add 는 전화가 정확히 1건일 때만 서버가 고친다(0건=새 회원이라
-회원번호 채번이 필요한데 번호는 GAS registry_build 몫이다 · 2건+=GAS 도 phone-ambiguous 로 거부한다 —
-둘 다 그대로 GAS 로 넘긴다). remove 는 GAS 와 같은 조건(전화 단독 매칭 + 등록회차 1)일 때만 행을 지우고,
-지우기 전에 행 전체를 이력에 남긴다 — 비밀번호 게이트는 GAS 가 판정하고 거부하면 _finish 가 되살린다.
+§2-3 판단) 서버는 유효회원만 맡는다. add 는 전화가 정확히 1건일 때만 행을 고친다(0건=새 회원 — 행은
+여전히 GAS 가 만들지만 회원번호만 서버가 미리 채번해 되밀기 본문에 싣는다(배1195③ · 아래 함수 docstring
+참고) · 2건+=GAS 도 phone-ambiguous 로 거부한다 — 그대로 GAS 로 넘기고 번호도 안 태운다). remove 는 GAS 와
+같은 조건(전화 단독 매칭 + 등록회차 1)일 때만 행을 지우고, 지우기 전에 행 전체를 이력에 남긴다 —
+비밀번호 게이트는 GAS 가 판정하고 거부하면 _finish 가 되살린다.
 
 행 찾기 — member_archive_restore(_handle_member_archive_restore): GAS 원본(Survey.js L9892~10024)은
 보관 행을 삭제하고 유효회원에 새 행을 append 한다(회원번호는 인계). 서버는 미러 열쇠가 (member_no,scope)
@@ -1072,12 +1073,19 @@ def _handle_member_registered_add(payload, raw_body, user):
     두 탭 중 서버가 맡는 것은 유효회원뿐이다. '26년 등록현황'은 월별 체크표라 미러에 없고 시트 전용으로
     둔다(시포 스펙 §2-3 판단) — GAS write-through 가 그대로 갱신한다.
 
-    행 찾기 = 전화 정규화. 서버가 손대는 경우는 **전화가 정확히 1건 잡힐 때뿐**이다.
-      · 0건(새 회원) = 서버가 행을 만들지 않는다. 회원번호는 GAS member_registry_build 가 채번하고
-        미러 열쇠가 (member_no, scope) 라서, 서버가 번호를 지어내면 다음 배치와 충돌한다 — GAS 로 넘기고
-        5분 뒤 sync 가 그 행을 싣는다(member_active_update 의 passThrough 와 같은 이유).
+    행 찾기 = 전화 정규화. 서버가 행을 만드는 경우는 없다 — 그건 여전히 GAS 몫이다.
+      · 0건(새 회원) = 회원번호만 서버가 채번(member_no_seq · 배1195③)해 되밀기 본문에 싣는다. GAS
+        _memberActiveUpsert_ 가 그 번호를 받으면 새 행에 그대로 쓰고(.deploy-funnel-v2/Survey.js 동반
+        수정 — noI/opts.memberNo), 없으면 종전처럼 member_registry_build 가 스스로 매긴다(하위호환).
+        ⚠️ 유효회원 신규 행이 생기는 경로가 이거 하나가 아니다 — member_inquiry_update(문의→SUC 전환)
+        등 다른 GAS 액션도 같은 _memberActiveUpsert_ 를 거쳐 서버를 거치지 않고 독립적으로 채번한다.
+        write_member 가 dual(이 함수 끝 _finish 가 매 호출 동기 write-through)인 동안은 그 창이 GAS
+        자체 동시실행 창과 같은 크기라 새 위험을 안 늘리지만, 나중에 write_member 를 server(비동기
+        pushback, 최대 1분 지연)로 켜면 그 다른 채널들과 번호가 겹칠 창이 커진다 — 켜기 전에 그 채널들도
+        같이 정리해야 한다(시토 2026-09-10 배1195③ 보고).
       · 2건+(가족 공유 전화) = GAS 도 phone-ambiguous 로 거부한다(L2834 · 이때 등록현황 upsert 와 텔레그램은
-        이미 나간 뒤다). 서버가 먼저 거부하면 등록현황이 안 갱신돼 결과가 달라지므로 그대로 넘긴다.
+        이미 나간 뒤다). 서버가 먼저 거부하면 등록현황이 안 갱신돼 결과가 달라지므로 그대로 넘긴다 —
+        어차피 거부될 걸 알므로 번호는 안 태운다.
     등록회차 = 등록일자가 실제로 바뀔 때만 +1(GAS L2870~2873 판정 그대로 — 분류 글자가 아니라 날짜로 가른다).
     담당자는 GAS 와 같이 항상 MEMBER_DEFAULT_OWNER 로 덮는다(opts.owner 고정 · L2785)."""
     from datetime import datetime, timedelta   # noqa: PLC0415 — 이 함수 하나만 쓴다(다른 핸들러 관례 그대로)
@@ -1109,7 +1117,19 @@ def _handle_member_registered_add(payload, raw_body, user):
                 "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s"
                 " ORDER BY member_no FOR UPDATE", (tenant, phone)).fetchall()
             payload_log = dict(payload)
-            if len(rows) != 1:
+            if len(rows) == 0:
+                # 새 회원(배1195③) — 회원번호만 서버가 미리 채번해 되밀기 본문에 싣는다. 행 자체는
+                # 여전히 GAS 가 만든다(위 docstring 불변식 그대로). is_test 는 GAS 를 안 타므로(_finish)
+                # 번호를 안 태운다 — 테스트 행이 실번호를 먹지 않는다.
+                minted = None if is_test else api_write._next_member_no(conn)
+                if minted:
+                    payload = dict(payload, member_no=minted)
+                    raw_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                    payload_log["_member_no"] = minted   # 대조 전용(reconcile_dual_write.py) — 위 branch 와 같은 관례
+                extra = {"passThrough": True, "activeMatched": 0}
+                if minted:
+                    extra["member_no"] = minted
+            elif len(rows) != 1:
                 extra = {"passThrough": True, "activeMatched": len(rows)}
             else:
                 cur = dict(rows[0])
@@ -1787,15 +1807,60 @@ def _run_reg(handler, payload, conn):
 
 
 def _selftest_registered_add_passthrough():
-    """전화가 0건(새 회원)·2건+(가족 공유)면 서버는 회원 원장을 안 건드리고 GAS 로 넘긴다 —
-    회원번호 채번은 GAS registry_build 몫이고, 2건+는 GAS 도 거부하되 등록현황 갱신은 이미 끝난 뒤다."""
+    """전화가 0건(새 회원)·2건+(가족 공유)면 서버는 회원 원장을 안 건드리고 GAS 로 넘긴다. is_test 태그가
+    있어 채번 자체를 안 태우므로(아래 새 회원 채번 테스트는 별도) 0건이어도 member_no 가 안 실린다 —
+    2건+는 GAS 도 거부하되 등록현황 갱신은 이미 끝난 뒤다."""
     for actives in ([], [{"member_no": "M1"}, {"member_no": "M2"}]):
         conn = _FakeRegConn(actives=actives)
         out = _run_reg(_handle_member_registered_add,
                        {"name": "[테스트] 등록추가", "phone": "010-1111-2222", "months": 3}, conn)
         assert out["ok"] is True and out.get("passThrough") is True, out
         assert out["gas_status"] == "skipped-test", out
+        assert "member_no" not in out, out          # is_test — 채번 자체를 건너뛴다
         assert not any("UPDATE members" in s for s, _ in conn.executed), conn.executed
+        assert not any("nextval" in s for s, _ in conn.executed), conn.executed
+
+
+def _selftest_registered_add_new_member_mints_number():
+    """전화 0건(진짜 새 회원)이고 테스트 태그가 없으면 서버가 회원번호를 채번(member_no_seq)해 되밀기
+    본문에 싣는다(배1195③) — GAS 로 나가는 body 에 실제로 실리는지, 응답에도 실리는지 확인한다."""
+    class _FakeSeqConn(_FakeRegConn):
+        n = 1750   # 2026-09-10 실측 최댓값과 같은 시작점
+
+        def execute(self, sql, args=()):
+            if "nextval" in sql and "member_no_seq" in sql:
+                self.executed.append((sql, args))
+                _FakeSeqConn.n += 1
+                return _FakeArchiveCur(one=[_FakeSeqConn.n])
+            return super().execute(sql, args)
+
+    conn = _FakeSeqConn(actives=[])
+    sent = {}
+    orig_forward = api_write._gas_forward
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": (
+        sent.update(json.loads(body.decode("utf-8"))), {"ok": True})[1]
+    try:
+        out = _run_reg(_handle_member_registered_add,
+                       {"name": "등록추가", "phone": "010-1111-2222", "months": 3}, conn)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out["ok"] is True and out["passThrough"] is True and out["member_no"] == "M01751", out
+    assert sent.get("member_no") == "M01751", sent   # 되밀기 본문에 실제로 실렸는지 — GAS 는 이 값을 쓴다
+    assert sent.get("phone") == "010-1111-2222" and sent.get("months") == 3, sent   # 나머지 필드는 그대로
+
+    # 같은 전화가 2건+(가족 공유)면 번호를 아예 안 태운다 — 낭비 방지(GAS 도 어차피 거부).
+    conn2 = _FakeSeqConn(actives=[{"member_no": "M1"}, {"member_no": "M2"}])
+    sent2 = {}
+    api_write._gas_forward = lambda body, url_key="FUNNEL_EXEC_URL": (
+        sent2.update(json.loads(body.decode("utf-8"))), {"ok": True})[1]
+    try:
+        out2 = _run_reg(_handle_member_registered_add,
+                        {"name": "등록추가", "phone": "010-1111-2222", "months": 3}, conn2)
+    finally:
+        api_write._gas_forward = orig_forward
+    assert out2["ok"] is True and out2["activeMatched"] == 2 and "member_no" not in out2, out2
+    assert "member_no" not in sent2, sent2
+    assert not any("nextval" in s for s, _ in conn2.executed), conn2.executed
 
 
 def _selftest_registered_add_reg_seq_and_period():
@@ -1959,6 +2024,7 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     # member_registered_add·member_registered_remove(5·7단계 · 배1050)
     _selftest_program_canon()
     _selftest_registered_add_passthrough()
+    _selftest_registered_add_new_member_mints_number()
     _selftest_registered_add_reg_seq_and_period()
     _selftest_registered_add_same_date_is_idempotent()
     _selftest_registered_remove_sole_and_seq1()
