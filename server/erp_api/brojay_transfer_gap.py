@@ -15,7 +15,10 @@
   ② 팀별   시트 칸(수영·P.T·골프·스쿼시·체조·P.L·뮤지컬·GXE) vs 브로제이 매출분류(sales_tag_name) 합
   칸↔분류 이름이 다르면 짝을 못 짓는다 — 못 지은 것은 지어내지 않고 'unmapped' 로 남긴다.
 
-결과: /srv/erp/status/brojay_transfer_gap.json  (한 줄 요약 stdout)
+결과: /srv/erp/status/brojay_transfer_gap.json        (가장 최근 1회 · 읽는 쪽이 이 이름을 쓴다)
+      /srv/erp/status/brojay_transfer_gap_history.jsonl (하루 한 줄씩 쌓임 · 최근 120회 보관)
+      ★쌓기를 더한 이유(2026-09-10 시포 요청) — 종전엔 최신 1회만 덮어써서 추세를 못 봤다.
+        이 감시기는 09-08 미이관 1,208,480원을 사람보다 먼저 짚은 장치라, 어제 하루만 보이면 값이 반으로 준다.
 실행: python3 /srv/erp/api/brojay_transfer_gap.py [YYYY-MM-DD]
 자체점검: python3 brojay_transfer_gap.py --selftest   (네트워크·DB 없음 — 금액 파싱·판정만)
 """
@@ -29,6 +32,8 @@ from datetime import date, datetime, timedelta, timezone
 KST = timezone(timedelta(hours=9))
 BASE = "http://127.0.0.1:8001"
 OUT = os.environ.get("ERP_STATUS_DIR", "/srv/erp/status") + "/brojay_transfer_gap.json"
+HIST = os.environ.get("ERP_STATUS_DIR", "/srv/erp/status") + "/brojay_transfer_gap_history.jsonl"
+HIST_KEEP = 120   # 넉 달치 — 파일 한 줄이 200바이트 안쪽이라 통째로 읽어 잘라도 가볍다
 
 # 시트 칸 → 브로제이 매출분류(sales_tag_name). 실측으로 확인된 짝만 적는다(2026-09-08 대조).
 # 회원권(I6)·옵션(I7)은 분류 하나에 대응하지 않는다(운영부 태그에 락커가 섞인다) — 총액으로만 본다.
@@ -121,6 +126,38 @@ def line(o):
         o["date"], format(o["total_diff"], ","), " · ".join(names) or "분류 미상")
 
 
+def trim_history(lines, keep=HIST_KEEP):
+    """같은 날짜가 다시 돌면 옛 줄을 버리고 새 줄만 남긴다(손으로 다시 돌린 날이 두 줄이 되지 않게).
+    그 뒤 최근 keep 줄만 남긴다. 순수 함수 — 파일을 안 만진다."""
+    seen, out = set(), []
+    for ln in reversed(lines):          # 뒤에서부터 = 최근 것이 이긴다
+        try:
+            day = (json.loads(ln) or {}).get("date")
+        except ValueError:
+            continue                    # 깨진 줄은 버린다
+        if day in seen:
+            continue
+        seen.add(day)
+        out.append(ln)
+    out.reverse()
+    return out[-keep:]
+
+
+def append_history(result):
+    """오늘 결과를 이력 파일에 한 줄로 쌓는다. 실패해도 본 결과 파일 쓰기를 막지 않는다."""
+    try:
+        try:
+            with open(HIST, encoding="utf-8") as f:
+                lines = [ln.strip() for ln in f if ln.strip()]
+        except OSError:
+            lines = []
+        lines.append(json.dumps(result, ensure_ascii=False))
+        with open(HIST, "w", encoding="utf-8") as f:
+            f.write("\n".join(trim_history(lines)) + "\n")
+    except OSError as e:
+        print("[warn] 이력 파일 못 씀: %s" % e)
+
+
 def selftest():
     assert won("  18,108,480 ") == 18108480
     assert won("- 130,000 ") == -130000        # 시트는 환불을 앞 대시로 적는다
@@ -135,6 +172,12 @@ def selftest():
     assert _title_day("📅 26년 9월 8일 매출 및 운영사항 보고", "2026-09-09") == "2026-09-08"
     assert _title_day("📅 26년 9월 9일 매출 및 운영사항 보고", "2026-09-09") == "2026-09-09"
     assert _title_day("", "2026-09-09") is None and _title_day("26년 13월 40일", "2026-09-09") is None
+    # 이력 쌓기 — 같은 날 재실행은 한 줄로 합쳐지고, 최근 것만 남는다
+    j = lambda d, t=0: json.dumps({"date": d, "total_diff": t}, ensure_ascii=False)
+    assert trim_history([j("2026-09-08"), j("2026-09-09")]) == [j("2026-09-08"), j("2026-09-09")]
+    assert trim_history([j("2026-09-08", 1), j("2026-09-08", 2)]) == [j("2026-09-08", 2)], "같은 날 재실행은 나중 것만"
+    assert trim_history([j("2026-09-07"), "깨진줄", j("2026-09-08")]) == [j("2026-09-07"), j("2026-09-08")]
+    assert trim_history([j("2026-09-0%d" % i) for i in (1, 2, 3)], keep=2) == [j("2026-09-02"), j("2026-09-03")]
     print("selftest ok")
 
 
@@ -149,6 +192,7 @@ if __name__ == "__main__":
         os.makedirs(os.path.dirname(OUT), exist_ok=True)
         with open(OUT, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=1)
+        append_history(result)
     except OSError as e:
         print("[warn] 결과 파일 못 씀: %s" % e)
     print(line(result))
