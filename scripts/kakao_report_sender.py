@@ -424,6 +424,34 @@ def _enum_visible_top_level_windows() -> list[tuple[int, str, str]]:
     return result
 
 
+def _chat_room_windows() -> list[tuple[int, str]]:
+    """카톡 채팅방 창 목록 [(hwnd, 제목)] — 공지 「상세보기」 창은 빼고 준다.
+
+    ★2026-09-11 실사고(★운영부 아침 통이 이틀 연속 방에 안 들어감): 방의 공지를 펼친
+    「상세보기」 창은 제목이 방 이름 그대로("★운영부")이고 클래스도 채팅방과 같은
+    EVA_Window_Dblclk 라, 제목·클래스만으로는 채팅방과 구분되지 않는다. 그래서
+    발신기가 그 창을 방으로 골랐고, 글이 채팅 입력칸이 아니라 공지 댓글칸(오른쪽 아래
+    노란 「등록」 버튼)에 들어갔는데 로그에는 ok=true 로 찍혔다.
+
+    실측 차이(2026-09-11 GM PC): 공지 창에만 자식 창 MoimContentWnd·MoimPostWnd 가
+    있고, 채팅방 창에는 대화 목록 EVA_VH_ListControl_Dblclk 가 있다. 자식 창 이름으로
+    가른다. 자식을 못 읽으면 채팅방으로 두고 넘어간다 — 그건 send_enter 의 전송 확인이
+    받아 낸다(둘 다 실패해야 사고가 되게 겹쳐 둔다)."""
+    out: list[tuple[int, str]] = []
+    for hwnd, title, cls in _enum_visible_top_level_windows():
+        if cls != KAKAO_ROOM_WINDOW_CLASS:
+            continue
+        kids: list[str] = []
+        try:
+            win32gui.EnumChildWindows(hwnd, lambda c, acc: acc.append(win32gui.GetWindowText(c)), kids)
+        except Exception:
+            pass
+        if any(k.startswith("Moim") for k in kids):
+            continue  # 공지 상세보기 창 — 채팅방이 아니다
+        out.append((hwnd, title))
+    return out
+
+
 def find_room_window(room_name: str, timeout: float = 3.0):
     """열려 있는 카톡 채팅방 창을 제목 완전일치로 탐색(주 경로 — 실측 기반).
 
@@ -433,8 +461,7 @@ def find_room_window(room_name: str, timeout: float = 3.0):
     (그 방이 카톡에서 열려 있지 않다는 뜻 — GM이 먼저 방을 열어둬야 함)."""
     deadline = time.time() + timeout
     while True:
-        rooms = [(h, t) for h, t, c in _enum_visible_top_level_windows()
-                 if c == KAKAO_ROOM_WINDOW_CLASS]
+        rooms = _chat_room_windows()  # 공지 「상세보기」 창은 여기서 이미 빠진다
         for hwnd, title in rooms:
             if _title_key(title) == _title_key(room_name):
                 return Desktop(backend="uia").window(handle=hwnd)
@@ -802,8 +829,8 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
     # 새 채팅방 창이 뜰 때까지 폴링(주 경로와 동일하게 창-제목 완전일치로 확인)
     deadline = time.time() + timeout
     while time.time() < deadline:
-        for hwnd, title, cls in _enum_visible_top_level_windows():
-            if cls == KAKAO_ROOM_WINDOW_CLASS and _title_key(title) == _title_key(room_name):
+        for hwnd, title in _chat_room_windows():  # 공지 「상세보기」 창 제외(제목이 같다)
+            if _title_key(title) == _title_key(room_name):
                 room_win = Desktop(backend="uia").window(handle=hwnd)
                 # 방이 열린 그 자리에서 검색 상태를 되돌린다 — 방 창을 닫아도 메인창이
                 # 검색 결과 화면에 남아 있으면 GM 화면에 그대로 보인다(GM 지적 2026-09-09).
@@ -878,8 +905,41 @@ def cancel_clipboard_popup(popup, room_name: str) -> None:
         log(f"[{room_name}] 클립보드 팝업 취소(Escape) 실패(무시): {exc}")
 
 
-def send_enter(input_box) -> None:
+# 입력칸이 비어 있을 때 보여 주는 자리표시자(실측 2026-09-11) — 글이 아니라 안내문이다.
+#   채팅 입력칸 "메시지 입력" / 공지 댓글칸 "댓글을 남겨보세요."
+_INPUT_PLACEHOLDERS = {"메시지 입력", "댓글을 남겨보세요."}
+
+
+def _input_box_text(input_box) -> str | None:
+    """입력칸에 지금 들어 있는 글. 빈 칸은 ""·못 읽으면 None(=판정 불가).
+
+    둘을 뭉개면 안 된다 — 못 읽은 것을 "빈 칸"으로 읽으면 거짓 성공이 다시 통과한다."""
+    try:
+        text = (input_box.window_text() or "").strip()
+    except Exception:
+        return None
+    return "" if text in _INPUT_PLACEHOLDERS else text
+
+
+def send_enter(input_box) -> bool:
+    """Enter 로 보내고 「정말 나갔나」까지 확인한다. 반환 True = 나간 것을 확인함.
+
+    ★2026-09-11 실사고: 공지 「상세보기」 창이 방으로 잡혀 글이 공지 댓글칸에 들어갔다.
+    거기서 Enter 는 줄바꿈일 뿐이라 글이 그대로 남는데도 ok=true 로 찍혔고, 어떤 감시기도
+    못 잡아 GM 이 이틀 뒤 발견했다. 채팅으로 나갔으면 입력칸이 비고, 안 나갔으면 글이
+    그대로 남는다 — 그 차이 하나로 거짓 성공을 없앤다.
+
+    확인 못 하면 False 다(성공으로 치지 않는다). 붙여넣은 글이 애초에 없던 호출
+    (이미지 팝업 없는 구버전 폴백)은 판정 대상이 아니라 True 로 둔다."""
+    before = _input_box_text(input_box)
     input_box.type_keys("{ENTER}", pause=0.1)
+    if before == "":
+        return True
+    time.sleep(0.6)
+    after = _input_box_text(input_box)
+    if before is None or after is None:
+        return False  # 입력칸을 못 읽었다 = 나갔는지 확인 못 했다
+    return before[:30] not in after
 
 
 def clear_input(input_box) -> None:
@@ -1870,8 +1930,18 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
             log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
             return True, ""
 
-        send_enter(input_box)
+        sent = send_enter(input_box)
         time.sleep(0.5)
+        if not sent:
+            # 나갔는지 확인 못 했으면 성공이라 적지 않는다(2026-09-11 공지창 사고).
+            # 예외로 올려 호출측 실패 경로(BLOCKED·업무보고방 통보·rc=1)를 그대로 태운다.
+            shot = screenshot(room_win, room_name, "send_unconfirmed")
+            _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
+                          ok=False, kind="message", channel="kakao")
+            raise RuntimeError(
+                f"[{room_name}] 전송 확인 실패 — Enter 뒤에도 글이 입력칸에 그대로 남아 있다"
+                f"(채팅칸이 아닌 공지 상세보기 댓글칸 등에 들어갔을 수 있다). 증거 {shot}"
+            )
         screenshot(room_win, room_name, "message_sent")
         log(f"[{room_name}] 텍스트 전송 완료")
         record_dedup_sent(room_name, text=text)
@@ -1958,9 +2028,12 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
                 if not typed:
                     log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/3")
                     continue
-                send_enter(input_box)
+                caption_sent = send_enter(input_box)  # 나간 것을 확인해야 True
                 time.sleep(0.5)
-                caption_sent = True
+                if not caption_sent:
+                    log(f"[{room_name}] 캡션이 나간 것을 확인 못 했다(입력칸에 글이 남음) "
+                        f"— 재시도 {attempt + 1}/3")
+                    continue
                 break
             if not caption_sent:
                 log(f"[{room_name}] ⚠️ 사진은 갔으나 설명 글을 못 보냈다 — 사람이 직접 보내야 한다")
@@ -2193,6 +2266,20 @@ def _selftest() -> None:
         print("  [전량 실패] ok=False, 4개 방 전부 False — 통과")
 
         print("SELFTEST OK: write_status 전량성공/부분실패/재발송병합/전량실패 정상")
+
+        # ④-2 입력칸 판정(2026-09-11 공지 상세보기 창 사고) — 자리표시자를 '글'로,
+        #     못 읽은 것을 '빈 칸'으로 읽으면 거짓 성공이 다시 통과한다.
+        class _FakeBox:
+            def __init__(self, t): self._t = t
+            def window_text(self):
+                if isinstance(self._t, Exception):
+                    raise self._t
+                return self._t
+        assert _input_box_text(_FakeBox("메시지 입력")) == "", "빈 채팅칸 자리표시자를 글로 읽었다"
+        assert _input_box_text(_FakeBox("댓글을 남겨보세요.")) == "", "빈 공지칸 자리표시자를 글로 읽었다"
+        assert _input_box_text(_FakeBox("  보낼 글  ")) == "보낼 글"
+        assert _input_box_text(_FakeBox(RuntimeError("창 닫힘"))) is None, "못 읽은 것을 빈 칸으로 읽었다"
+        print("  [입력칸 판정] 자리표시자=빈칸 · 읽기실패=판정불가(None) — 통과")
 
         # ⑤ 보류 사유 분리 + 요약문구 정확성(2026-08-10 사고 재발 방지) — 회장님 방이
         # 새내용게이트로 보류됐는데 "중복 발신 가드로 스킵"·"4/4개 방 성공"으로 잘못
