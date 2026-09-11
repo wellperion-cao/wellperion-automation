@@ -48,6 +48,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .month-bar select{font-size:14px;font-weight:700;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer}
 .btn{padding:8px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+/* 점검 시작·점검자 두 칸 — 지원부 .submitter-bar-split 과 같은 모양(상단 배치 · GM 지적 2026-09-11) */
+.submitter-bar-split{gap:0;padding:0;flex-wrap:wrap}
+.submitter-bar-split .sb-half{flex:1 1 260px;display:flex;align-items:center;gap:10px;padding:12px 16px}
+.submitter-bar-split .sb-half+.sb-half{border-left:1px solid var(--border)}
+.submitter-bar-split .sb-half label{flex:0 0 auto}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
 .submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
 .progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
@@ -795,7 +800,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="manual-body" style="display:block;">
       <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
-        일일 <span id="parkChecklistDailyN"></span>항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 <span id="parkChecklistWeeklyN"></span>항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+        일일 <span id="parkChecklistDailyN"></span>항목 = 체크 후 [일일 점검 제출]로 저장합니다(지원부·시설부와 같은 점검 GAS). 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
       </p>
       <!-- 날짜 이동(GM 지시 2026-09-11) — 지원부 date-bar 와 같은 자리·같은 구성. PARK_DATE 단일 소스. -->
       <div class="date-bar" id="parkDateBar">
@@ -804,26 +809,31 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button type="button" class="btn" onclick="setParkDateToday()">오늘</button>
         <button type="button" class="btn" onclick="moveParkDate(1)">&gt;</button>
       </div>
+      <!-- 점검 시작·점검자 = 날짜 바 바로 아래(GM 지적 2026-09-11 「지원부는 상단인데 주차는 하단」).
+           지원부 .submitter-bar-split 과 같은 자리·같은 순서다. 제출 버튼만 항목 아래에 둔다 —
+           점검을 시작하고 이름을 적는 것은 들어오자마자 하는 일이고, 제출은 다 체크한 뒤에 하는 일이라 자리가 다르다.
+           ★지원부와 다른 점: timerGatePassed 같은 제출 게이트를 걸지 않는다. 타이머를 안 눌러도 제출은 되고
+           startedAt·finishedAt·durationMin 만 빈칸으로 나간다. 게이트를 안 거는 것은 시우 판단이다(GM 지시 아님). -->
+      <div class="submitter-bar submitter-bar-split" style="margin-bottom:12px;">
+        <div class="sb-half">
+          <button type="button" class="timer-btn" id="parkTimerBtn" onclick="toggleParkTimer()">▶ 점검 시작</button>
+          <button type="button" class="timer-reset-btn" id="parkTimerReset" style="display:none" onclick="resetParkTimer()">↺ 재측정</button>
+          <span id="parkTimerTime" style="font-size:13px;color:var(--dim);">--:--</span>
+        </div>
+        <div class="sb-half">
+          <label>점검자</label>
+          <input type="text" id="parkingInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+        </div>
+      </div>
       <!-- 진행률 = 지원부 .shift-divider 자리의 .progress 카드(같은 paper 카드 계열) -->
       <div class="progress" style="margin-bottom:12px;">
         <div class="progress-text" style="justify-content:flex-start;gap:10px;align-items:center;"><span id="parkingProgressText">오늘 0/-</span><button type="button" class="util-btn print-btn" style="padding:2px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button></div>
         <div class="progress-bar"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
       </div>
-      <!-- 일일·주간 카드 2장이 이 그리드 안에 렌더된다(renderParkingDailyCheck). 주간 정적 표는 제거 — 사본 없이 PARK_CHECKLIST.weekly 단일 출처. -->
+      <!-- 일일 점검 카드가 이 자리에 렌더된다(renderParkingDailyCheck). 주간 점검은 폐지 — GM 2026-09-11. -->
       <div id="parkingDailyCheckBody"></div>
-      <!-- 점검 타이머(GM 지시 2026-09-11) — 지원부 timer-btn 과 같은 동작(시작▶/완료■/재측정↺).
-           ★지원부와 다른 점: timerGatePassed 같은 제출 게이트를 걸지 않는다 — 주차 일일점검은 배선 후 지금까지
-           제출 0건(8월 0/58·9월 0/22 실측)이라 조건을 더 얹으면 더 안 쓰게 된다. 안 눌러도 제출은 그대로 되고
-           startedAt·finishedAt·durationMin 만 빈칸으로 나간다. 게이트를 안 거는 것은 시우 판단이다(GM 지시 아님).
-           9/18 제출이 실제로 돌기 시작하면 게이트를 켤지 다시 본다. -->
-      <div class="submitter-bar" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
-        <button type="button" class="timer-btn" id="parkTimerBtn" onclick="toggleParkTimer()">▶ 점검 시작</button>
-        <button type="button" class="timer-reset-btn" id="parkTimerReset" style="display:none" onclick="resetParkTimer()">↺ 재측정</button>
-        <span id="parkTimerTime" style="font-size:13px;color:var(--dim);">--:--</span>
-      </div>
-      <div class="submitter-bar" style="margin-top:8px;">
-        <label>점검자</label>
-        <input type="text" id="parkingInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+      <!-- 제출 버튼만 항목 아래에 둔다 — 타이머·점검자는 위 날짜 바 아래로 올렸다(GM 지적 2026-09-11). -->
+      <div class="submitter-bar" style="margin-top:12px;">
         <button type="button" class="submit-btn primary" style="flex:none;max-width:180px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
         <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
       </div>
@@ -1929,15 +1939,11 @@ const PARK_CHECKLIST = {
     { t:'접점 소독(오픈 전) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'am1'    },
     { t:'접점 소독(마감 후) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'close1' }
   ],
-  weekly: [
-    '소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부',
-    '비상구 유도등 점등·피난통로 적치물·비상벨',
-    '발렛 동선·안전표지 점검',
-    // 마스크는 뺐다 — 직원 개별구매라 회사가 셀 재고가 없다(이경연 실장 회신 2026-08-25,
-    // GM 확정 같은 날). 묶어 두면 매주 없는 것을 세게 된다.
-    '손소독제 재고 확인 — 모자라면 접수처에 남겨 주세요',
-    '계절 대비(여름 배수·겨울 제설)'
-  ]
+  /* 주간 점검(weekly) 폐지 — GM 2026-09-11 「주간점검은 의미가 없을듯」.
+     체크도 제출도 안 되는 목록이라 화면만 차지하고 기록이 남지 않았다.
+     내용이 사라진 것은 아니다 — 소방·비상구·CCTV는 매뉴얼 pm_safety, 요일별 집중은 pm_weekly,
+     발렛 동선은 가이드 탭, 계절 대비는 구역별 관리 기준(pg_zone)에 그대로 있다.
+     단 하나 「손소독제 재고 확인」은 다른 곳에 없다 — 필요하면 전사일정에 주기 일정으로 올린다(GM 판단). */
 };
 
 /* ═══════════════════════════════════════════
@@ -2018,10 +2024,7 @@ function printA3ParkingChecklist(){
         html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(it.name)+'</div></div>';
       });
     });
-    html+='<div class="a3-col-head" style="margin-top:6px;">주간 점검</div>';
-    PARK_CHECKLIST.weekly.forEach(function(t){
-      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
-    });
+    /* 주간 점검 절 제거 (GM 2026-09-11) — 화면에서 뺀 것을 인쇄본에만 남기면 두 벌이 된다. */
     html+='<div class="a3m-note">운영 원칙 — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br>건강 — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</div>';
     host.innerHTML=html;
   }
@@ -2280,7 +2283,6 @@ function renderParkingDailyCheck(){
   const rounds=parkRoundsFor(PARK_DATE);
   const rows=parkItemsOfRound(PARK_ROUND);
   const dN=document.getElementById('parkChecklistDailyN'); if(dN) dN.textContent=PARK_ITEMS.length;
-  const wN=document.getElementById('parkChecklistWeeklyN'); if(wN) wN.textContent=PARK_CHECKLIST.weekly.length;
   const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='이번 조 0/'+rows.length;
   const body=document.getElementById('parkingDailyCheckBody');
   if(!body) return;
@@ -2298,11 +2300,6 @@ function renderParkingDailyCheck(){
       +'<input class="extra-input tip-field" id="ptip_'+it.id+'" placeholder="노하우/개선 의견...">'
       +'</div>';
   }
-  function weeklyItemHtml(t){
-    const nd=nameDetail(t);
-    return '<div class="item"><div class="item-row"><input type="checkbox" disabled title="주간 점검은 육안 확인용 — 제출 대상이 아닙니다"><label>'+escapeHTML(nd.name)+'</label></div>'
-      +(nd.detail?'<div class="item-detail">'+escapeHTML(nd.detail)+'</div>':'')+'</div>';
-  }
   /* 조 선택 바 — 지원부 round-bar 와 같은 자리·같은 뜻. 조마다 몇 항목인지 함께 보인다. */
   let bar='<div class="park-round-bar">';
   rounds.forEach(function(rd){
@@ -2313,15 +2310,14 @@ function renderParkingDailyCheck(){
   });
   bar+='</div>';
   let daily=''; rows.forEach(function(it){ daily+=dailyItemHtml(it); });
-  let weekly=''; PARK_CHECKLIST.weekly.forEach(function(t){ weekly+=weeklyItemHtml(t); });
   const rd=parkRoundDef(PARK_ROUND,PARK_DATE);
+  /* 주간 점검 블록 제거 (GM 2026-09-11 「주간점검은 의미가 없을듯」).
+     체크가 안 되는 목록이라 매일 화면 절반을 차지하면서 아무 기록도 남기지 않았다.
+     그 안에 있던 소방·비상구·CCTV·요일별 집중 점검은 매뉴얼 카드(pm_safety·pg_zone·pm_weekly)에 그대로 있다. */
   body.innerHTML= bar
     +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검 · '+escapeHTML(rd.name)+' '+escapeHTML(rd.time)+'</span>'
       +'<span class="cat-badge pending" id="parkDailyBadge">0/'+rows.length+'</span></div>'
-      +'<div class="cat-body open">'+daily+'</div></div>'
-    +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">주간 점검 <span style="font-size:11px;font-weight:600;color:var(--dim);">· 육안 확인용</span></span>'
-      +'<span class="cat-badge pending">'+PARK_CHECKLIST.weekly.length+'항목</span></div>'
-      +'<div class="cat-body open">'+weekly+'</div></div>';
+      +'<div class="cat-body open">'+daily+'</div></div>';
   renderParkTimerUI();
 }
 /* 조 전환 — 다시 그리고 그 조의 서버 상태(체크·제출도장)를 불러온다. */
@@ -2385,7 +2381,7 @@ function resetParkTimer(){
    점검 항목 관리 화면(GM 지시 2026-09-11) — requireEditAuth 재사용(새 인증 없음). 조회는 게이트 없음,
    이 섹션을 열 때(=편집 시작)만 비밀번호를 묻는다. 저장은 saveItems 전체 재기록(지원부와 같다) —
    PARK_ITEMS 를 그대로 실어 보내므로 순서가 곧 order, id 는 화면에서 바꾸지 않는다(항목 추가만 새 id 발급).
-   주간 점검(PARK_CHECKLIST.weekly)은 육안 확인용 그대로 — 이 편집기 대상이 아니다. ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════ */
 function parkItemsAdminToggle(h){
   const body=h.nextElementSibling;
   const willOpen=!(body && body.classList.contains('open'));
