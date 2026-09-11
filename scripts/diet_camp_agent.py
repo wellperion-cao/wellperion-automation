@@ -535,14 +535,17 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     fact = blog_fact(conf)
     if fact:
         brief += "\n\n★오늘의 사실(지어내지 말고 이대로 따른다): " + fact
+    # 저장소 밖에서 부른다 — 이 프로젝트의 CLAUDE.md·훅(「[형식 고정] 8요소 표」)이 붙으면
+    # 카톡 발송문 자리에 GM 업무 보고 표가 섞여 나온다(2026-09-11 실측 · 고척 블로그와 같은 함정).
+    import tempfile  # noqa: PLC0415
     draft, used = run_claude(build_prompt(lines, fresh, brief, gaps, evening=evening),
-                             label="diet-camp-agent")
+                             label="diet-camp-agent", cwd=tempfile.gettempdir())
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
         return 0
     draft = draft.strip()
 
-    why = guard(draft)
+    why = guard(draft) if not evening else None   # 하루의 마무리는 답장 판정 대상이 아니다(알리는 통)
     if why == "SKIP" and asking:
         print("[agent] 모델이 아침 질문을 안 냈다(SKIP) — 오늘은 건너뜀", file=sys.stderr)
         return 0
@@ -552,7 +555,8 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
         print("[agent] 답장은 필요 없지만 못 받은 값이 남았다 — 아침 질문으로 하나 여쭙는다")
         asking = True
         partner_text = "(못 받은 값 하나 — 답장은 불필요한 말씀이었다)"
-        draft, used = run_claude(build_prompt(lines, [], brief, gaps), label="diet-camp-agent")
+        draft, used = run_claude(build_prompt(lines, [], brief, gaps),
+                                 label="diet-camp-agent", cwd=tempfile.gettempdir())
         draft = (draft or "").strip()
         why = guard(draft) if draft else "SKIP"
 
