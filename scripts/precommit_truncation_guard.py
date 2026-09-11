@@ -24,6 +24,7 @@ precommit_truncation_guard.py — 커밋 전 truncation(대량 라인 유실) �
   ※ exit 1 = 차단(truncation 감지). exit 0 = 통과(정상/에러 fail-open).
 """
 
+import os
 import subprocess
 import sys
 
@@ -235,9 +236,21 @@ def staged_blob(path_bytes):
     return out
 
 
+# 의도한 삭제·되돌림을 위한 정식 통로 (시토 2026-09-11 · 웰리 요청).
+# 종전에는 이 가드에 빠져나갈 길이 `git commit --no-verify` 뿐이었다 — 그건 다른 가드까지 함께
+# 끄는 것이라 「가드를 우회하지 않는다」는 규칙과 정면으로 부딪힌다. 기능표지 가드의
+# WP_ALLOW_FEATURE_LOSS 와 같은 결로, **파일 이름을 적어 그 파일만** 통과시킨다.
+#   WP_ALLOW_TRUNCATION="a.html,b.md" python scripts/safe_commit.py -m "..." -- <경로>
+# 이름을 적는 행위 자체가 「보고 넘긴다」는 기록이 된다(전체 우회와 다른 점).
+def _truncation_allowed() -> set:
+    raw = os.environ.get("WP_ALLOW_TRUNCATION", "")
+    return {s.strip() for s in raw.split(",") if s.strip()}
+
+
 def main():
     import time
     files = staged_files()
+    allow = _truncation_allowed()
     violations = []
     recent_hits = []   # (경로, 지워지는 최근 줄 수)
     now = int(time.time())
@@ -272,6 +285,10 @@ def main():
 
             ratio = dropped / head_lines
             if over_threshold(disp, head_lines, dropped):
+                # 이름을 적어 허락한 파일은 통과 — 파일 이름이나 경로 끝이 맞으면 된다.
+                if disp in allow or os.path.basename(disp) in allow:
+                    sys.stderr.write("[truncation-guard] 허락된 삭제로 통과: %s\n" % disp)
+                    continue
                 violations.append((disp, head_lines, new_lines, dropped, ratio))
         except Exception:
             # 개별 파일 처리 실패 → 그 파일만 건너뜀(fail-open).
@@ -343,8 +360,11 @@ def main():
         sys.stderr.write(
             "------------------------------------------------------------\n"
             "  stale 사본 덮어쓰기로 인한 유실일 수 있습니다. 확인하세요.\n"
-            "  의도적 대량 삭제라면 우회:  git commit --no-verify\n"
+            "  의도한 삭제·되돌림이면 그 파일 이름을 적어 통과시킵니다(파일 단위 · 전체 우회 아님):\n"
+            "      WP_ALLOW_TRUNCATION=\"%s\" python scripts/safe_commit.py -m \"...\" -- <경로>\n"
+            "  여러 개면 쉼표로 잇습니다. --no-verify 는 쓰지 마세요 — 다른 가드까지 함께 꺼집니다.\n"
             "============================================================\n"
+            % ",".join(disp for disp, *_ in violations)
         )
         log_guard_decision(
             "truncation", "BLOCK",
