@@ -177,10 +177,23 @@ def _today_export(room: str) -> Path | None:
     저장은 아침 06:30 한 번뿐이다. 그 뒤로 도는 통(07:00 하루의 시작 · 21:00 하루의 마무리)은
     그날 파일을 다시 읽기만 한다. 카톡 창이 뜨고 저장 창이 뜨는 일이 하루 세 번에서 한 번으로 준다.
     """
+    # 폴더·파일 이름 규칙은 내보내기 도구(kakao_export_chat._resolve_out_path)와 같아야 한다 —
+    # 공백을 뺀 이름이다. 2026-09-11: 여기서 방 이름을 그대로 써 「다이어트캠프 이승기 대표님」
+    # 폴더를 찾다 못 찾고 매번 새로 저장했다(고척은 이름에 공백이 없어 우연히 맞았다).
+    folder = room.replace(" ", "")
     now = datetime.now()
-    f = (REPO_ROOT / "1. AI자료_아카이브" / "11_카카오톡" / room / now.strftime("%Y-%m")
-         / ("%s_auto_%s.txt" % (room, now.strftime("%Y%m%d"))))
+    f = (REPO_ROOT / "1. AI자료_아카이브" / "11_카카오톡" / folder / now.strftime("%Y-%m")
+         / ("%s_auto_%s.txt" % (folder, now.strftime("%Y%m%d"))))
     return f if f.exists() else None
+
+
+def _latest_export(room: str) -> Path | None:
+    """그 방의 가장 최근 저장분. 예약된 통은 오늘 것이 없어도 새로 저장하지 않는다 —
+    저장은 06:30 한 번뿐이라는 GM 지시(2026-09-11)를 코드에서 지킨다."""
+    folder = room.replace(" ", "")
+    base = REPO_ROOT / "1. AI자료_아카이브" / "11_카카오톡" / folder
+    files = sorted(base.glob("*/*_auto_*.txt")) if base.exists() else []
+    return files[-1] if files else None
 
 
 def _export_chat(room: str = ROOM, force: bool = False) -> str | None:
@@ -194,6 +207,11 @@ def _export_chat(room: str = ROOM, force: bool = False) -> str | None:
         if today is not None:
             print(f"[agent] {room} — 오늘 저장분을 다시 읽는다(새로 저장하지 않음): {today.name}")
             return today.read_text(encoding="utf-8", errors="replace")
+        last = _latest_export(room)
+        if last is not None:
+            print(f"[agent] {room} — 오늘 저장분이 없다. 마지막 저장분을 읽는다"
+                  f"(새로 저장하지 않음): {last.name}")
+            return last.read_text(encoding="utf-8", errors="replace")
     try:
         r = subprocess.run(
             [sys.executable, str(EXPORTER), "--room", room],
