@@ -785,27 +785,32 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
         return RedirectResponse("/auth/signup?msg=아이디는 영문 소문자·숫자·.·_ 4~20자로 입력해 주세요", status_code=303)
     mark = "회사 계정"
     if not is_company:
+        # 명부를 못 읽으면 되돌려 보내지 않고 접수한다 — 승인은 GM 이 한다(GM 지시 2026-09-11
+        # 「서버 저장은되었지? 그걸로 가입신청 넣어주고 내가 승인할게」).
+        # 게이트가 사라지는 게 아니다: 명부를 읽을 수 있으면 종전대로 이름을 대조하고,
+        # 명부가 죽었을 때만 「명부 확인 안 됨」 표시를 달아 GM 판단으로 넘긴다.
+        # 명부가 살아나면 자동으로 원래 규칙으로 돌아온다.
+        roster, why = None, ""
         if not hr_hub_pw():
-            # 조용히 막히지 않게 GM 께 알린다(2026-09-11) — 이 문구만 보면 신청자도 우리도
-            # 무엇을 해야 하는지 모른다. 실제로 GM 신청이 여기서 막혔는데 아무 기록도 안 남았다.
-            tell_gm("🔐 ERP 가입 신청이 막혔습니다 — 인사 명부 대조용 비밀번호가 서버에 없습니다.\n"
+            why = "인사 명부 대조용 비밀번호가 서버에 없습니다"
+        else:
+            try:
+                roster = hr_roster()
+            except Exception as exc:
+                why = str(exc)[:120] or type(exc).__name__
+        if roster is None:
+            mark = "⚠️ 명부 확인 안 됨"
+            tell_gm(f"🔐 ERP 가입 신청 — ⚠️ 명부 확인 안 됨, 직접 확인 후 승인해 주세요.\n"
                     f"신청자 {name} ({uid} · {dept})\n"
-                    "한 번만 넣어 주시면 열립니다: https://erp.wellperion.com/auth/admin/hr_check")
-            return RedirectResponse(
-                "/auth/signup?msg=가입 신청 대조 준비 중입니다 — GM 께 알렸습니다. 잠시 뒤 다시 신청해 주세요",
-                status_code=303)
-        try:
-            roster = hr_roster()
-        except Exception as exc:
-            tell_gm(f"🔐 ERP 가입 신청 — 인사 명부를 못 읽었습니다({type(exc).__name__}).\n"
-                    f"신청자 {name} ({uid} · {dept})\n"
-                    "확인: https://erp.wellperion.com/auth/admin/hr_check")
-            return RedirectResponse("/auth/signup?msg=인사 정보 확인이 잠시 안 됩니다. 잠시 뒤 다시", status_code=303)
-        if not hr_match(name, phone, roster):
+                    f"사유: {why}\n"
+                    "승인: https://erp.wellperion.com/auth/admin\n"
+                    "명부 열기: https://erp.wellperion.com/auth/admin/hr_check")
+        elif not hr_match(name, phone, roster):
             return RedirectResponse(
                 "/auth/signup?msg=인사 명부에 그 이름이 없습니다. 인사 등록된 이름 그대로 적어 주세요",
                 status_code=303)
-        mark = "인사 대조 ✅(이름)"
+        else:
+            mark = "인사 대조 ✅(이름)"
     salt, h = hash_pw(password)
     status, approved_at = ("active", now()) if is_company else ("pending", None)
     perms = {"dept": dept, "phone": _digits(phone), "groups": [], "modules": dept_modules(dept), "deny": []}
@@ -820,7 +825,7 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
         tell_gm(f"🔐 ERP 가입 — {name} ({uid} · {dept} · {mark} · 자동 활성)")
         return RedirectResponse("/auth/signup?msg=가입됐습니다. 바로 로그인할 수 있습니다", status_code=303)
     tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid} · {dept} · {mark})\n승인: https://erp.wellperion.com/auth/admin")
-    return RedirectResponse("/auth/signup?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
+    return RedirectResponse("/auth/signup?msg=접수됐습니다 · GM 승인 뒤 로그인하실 수 있습니다", status_code=303)
 
 
 @app.post("/auth/logout")
