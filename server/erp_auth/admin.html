@@ -78,6 +78,7 @@ tr:last-child td{border-bottom:0}
 tbody tr.sel{background:var(--accent-soft)}
 tbody tr[data-uid]{cursor:pointer}
 tbody tr[data-uid]:hover{background:var(--paper-2)}
+.rank-sel{padding:1px 6px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);line-height:18px;max-width:9em}
 .tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;line-height:18px}
 .tag.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
 .tag.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
@@ -380,10 +381,18 @@ function render(){
   ].map(([t,v,l,c])=>`<button class="stat ${c}" data-${t[0]==='#'?'scroll':'go'}="${t}"><div class="v num">${v}</div><div class="l">${l}</div></button>`).join('');
   renderPendingStrip(pend); renderPending(blk); renderPeople(); renderDepts(); renderScreens(); renderSocial(); renderHistory();
 }
+/* 승인 전에 직급을 고치는 칸(배2539 · GM 2026-09-11). 목록 정본 = ssot/ranks.json 을 서버가 준 S.ranks.
+   고른 값은 승인 누를 때 함께 보낸다 — 따로 저장 버튼을 두지 않는다(누르는 곳이 둘이면 한쪽이 잊힌다). */
+function rankSelect(u){
+  const list=S.ranks||[], cur=rank(u);
+  if(!list.length) return cur?`<span class="tag">${esc(cur)}</span>`:'';
+  return `<select class="rank-sel" data-rank-for="${u.id}" title="직급">${
+    ['<option value="">직급 없음</option>'].concat(list.map(r=>`<option value="${esc(r)}"${r===cur?' selected':''}>${esc(r)}</option>`)).join('')}</select>`;
+}
 function renderPendingStrip(pend){
   // 항상 맨 위 · 한 줄 승인/반려(배1026 2026-09-07 · GM "정리 끝나면 가입 안내") — 탭과 무관하게 보인다.
   $('#pend-strip-body').innerHTML=pend.length?pend.map(u=>`<tr><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td>
-    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'}${rank(u)?` <span class="tag">${esc(rank(u))}${tierKo(u)?' · '+tierKo(u):''}</span>`:''}</td><td><small>${esc(u.created_at||'')}</small></td>
+    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'} ${rankSelect(u)}</td><td><small>${esc(u.created_at||'')}</small></td>
     <td><div class="acts"><button class="btn ok sm" data-act="approve" data-uid="${u.id}">승인</button><button class="btn danger sm" data-act="block" data-uid="${u.id}">반려</button></div></td></tr>`).join('')
     :'<tr><td colspan="4" class="empty">대기 없음</td></tr>';
 }
@@ -593,7 +602,8 @@ document.addEventListener('click',async e=>{
   if(t.hasAttribute('data-save')){ const u=S.users.find(x=>x.id===sel); const body=draft.base==='기본(핵심만)'?{reset:1}:{g:draft.groups,m:draft.modules,d:draft.deny}; if(await post(`/auth/admin/${u.id}/perms`,body)){ toast(u.name+' 권한을 저장했습니다'); draft=null; await load(); } return; }
   if(t.dataset.undo){ if(await post(`/auth/admin/undo/${t.dataset.undo}`)){ toast('되돌렸습니다'); await load(); } return; }
   if(t.dataset.act){ const uid=+t.dataset.uid, a=t.dataset.act; if(a==='delete'&&!confirm(`${t.dataset.name} 계정을 지웁니다. 되돌릴 수 없습니다.`)) return;
-    if(await post(a==='lock'?`/auth/admin/${uid}/lock`:`/auth/admin/${uid}/${a}`)){ toast({approve:'승인했습니다',block:'차단했습니다',delete:'지웠습니다',toggle_role:'역할을 바꿨습니다',lock:'잠금 상태를 바꿨습니다'}[a]); draft=null; await load(); } return; }
+    const rs=a==='approve'?document.querySelector(`select[data-rank-for="${uid}"]`):null;
+    if(await post(a==='lock'?`/auth/admin/${uid}/lock`:`/auth/admin/${uid}/${a}`, rs?{rank:rs.value}:undefined)){ toast({approve:'승인했습니다',block:'차단했습니다',delete:'지웠습니다',toggle_role:'역할을 바꿨습니다',lock:'잠금 상태를 바꿨습니다'}[a]); draft=null; await load(); } return; }
   if(t.matches('tr[data-uid]')){ const id=+t.dataset.uid; xp=xp===id?null:id; sel=id; draft=null; go('people'); renderPeople(); return; }
 });
 $('#q').addEventListener('input',e=>{ q=e.target.value; renderPeople(); renderScreens(); });

@@ -1345,6 +1345,7 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
         "dept_modules": dept_presets(),          # 부서 → 모듈id 전체 목록(공통+전용 이미 합침) · 데이터 파일 있으면 그게 정본
         "common_modules": [],                    # ponytail: 공통/전용 구분은 이제 dept_presets 안에 이미 합쳐 들어간다(배1026)
         "exception_ids": list(EXCEPTION_ONLY_IDS),
+        "ranks": rank_names(),                 # 승인 화면 직급 드롭다운(배2539) — 정본은 ssot/ranks.json 하나
         "social": {p: bool(social_creds(p)[0]) for p in SOCIAL},   # 값은 안 준다 — 설정됨/비어있음만(키 유출 방지)
         "history": [{
             "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
@@ -1542,8 +1543,8 @@ def toggle_lock(uid: int, erp_session: Optional[str] = Cookie(default=None), erp
 
 
 @app.post("/auth/admin/{uid}/{action}")
-def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(default=None),
-                 erp_admin: Optional[str] = Cookie(default=None)):
+async def admin_action(uid: int, action: str, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                       erp_admin: Optional[str] = Cookie(default=None)):
     me = admin_only(erp_session, erp_admin)
     if action not in ("approve", "block", "toggle_role", "delete"):
         raise HTTPException(400)
@@ -1562,10 +1563,43 @@ def admin_action(uid: int, action: str, erp_session: Optional[str] = Cookie(defa
                 c.execute("UPDATE users SET role=%s WHERE tenant_id=%s AND id=%s",
                           ("staff" if row["role"] == "admin" else "admin", T, uid))
         return RedirectResponse("/auth/admin", status_code=303)
+    if action == "approve":
+        # 승인자가 직급을 마지막으로 고친다(배2539 · GM 2026-09-11). 신청자가 고른 값은 자기 신고일 뿐이고,
+        # 리더급/팀원급으로 보이는 화면이 갈리므로 교정 지점이 승인자여야 한다. 안 고르면 신청 값 그대로 간다.
+        _approve_rank(uid, await _body_rank(request), me["email"])
     with db() as c:
         c.execute("UPDATE users SET status=%s, approved_at=%s WHERE tenant_id=%s AND id=%s AND role!='admin'",
                   ("active" if action == "approve" else "blocked", now() if action == "approve" else None, T, uid))
     return RedirectResponse("/auth/admin", status_code=303)
+
+
+async def _body_rank(request: Request) -> str:
+    """요청 본문의 rank 값. 화면은 폼(urlencoded)으로 보낸다 — 다른 동작(차단·삭제)은 본문 없이 오므로 빈 문자열."""
+    try:
+        return str((await request.form()).get("rank") or "").strip()
+    except Exception:
+        return ""
+
+
+def _approve_rank(uid: int, rank: str, by: str) -> None:
+    """직급을 바꾸면 층(tier)과 팀원급 제외 화면(deny)도 같이 따라간다 — 세 값을 따로 고치면 어긋난다."""
+    if not rank or rank not in rank_names():
+        return
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    if not row:
+        return
+    try:
+        p = json.loads(row["perms"]) if row["perms"] else {}
+    except ValueError:
+        p = {}
+    if not isinstance(p, dict):
+        p = {}
+    if p.get("rank") == rank:
+        return
+    tier = rank_tier(rank)
+    p["rank"], p["tier"], p["deny"] = rank, tier, tier_deny(tier)
+    _set_perms(uid, p, by)
 
 
 init()
@@ -1635,6 +1669,13 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert _social_identity("kakao", {"id": 123, "kakao_account": {"email": "B@Test.com",
                              "profile": {"nickname": "닉네임"}}}) == ("b@test.com", "닉네임")
     assert set(SOCIAL) == {"naver", "kakao"}
+    # 승인 화면 직급 교정(배2539) — 직급을 고치면 층·제외 화면이 함께 따라와야 한다.
+    # 세 값이 갈라지면 팀원급이 리더급 화면을 보게 된다.
+    assert "팀장" in rank_names() and rank_tier("팀장") == "leader"
+    assert tier_deny(rank_tier("팀장")) == []
+    assert rank_tier("사원") == "member"
+    assert tier_deny(rank_tier("사원")) == list(ranks_raw().get("member_deny") or [])
+    assert rank_tier("없는직급") == "member"      # 모르는 값은 좁은 쪽으로
     # 아이디 가입 규칙(배1108 후속) — 영문 소문자·숫자·.·_ 4~20자.
     assert valid_username("hong.gd01")
     assert not valid_username("Hong.GD")            # 대문자 금지
