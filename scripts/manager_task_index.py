@@ -20,9 +20,11 @@ SSOT 조회가 실패하면 대조 없이 종전대로 렌더하고 화면에 �
 """
 from __future__ import annotations
 
+import argparse
 import difflib
 import html
 import json
+import os
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -161,6 +163,28 @@ def age_cls(age: int) -> str:
     return "old" if age >= 14 else ("warn" if age >= 7 else "")
 
 
+# 담당 후보 — 부서 순서대로(GM 지시 2026-09-10). 운영부 6 · 시설부 3 · 그 밖 5.
+#   2026-09-11 GM 지적("담당칸에 각 부서장이 담당자 배정까지도 할 수 있게 드랍다운 항목에")으로
+#   이 목록을 JS 에서 파이썬으로 옮겼다 — 담당칸이 datalist(입력칸 자동완성)라 칸에 이름이 이미
+#   있으면 눌러도 목록이 안 펼쳐졌다. 이제 <select> 로 서버에서 찍는다.
+OWNER_CHOICES = [
+    "이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원",   # 운영부
+    "이정헌 소장", "김종현 차장", "박호균 과장",                                    # 시설부
+    "나우열M", "이연희 반장", "박남일 반장", "양상규 고문", "김남욱 GM",            # 그 밖
+]
+
+
+def owner_select(no: int, who: str) -> str:
+    """담당 드롭다운. 원장 값이 후보에 없는 이름이면 그 이름을 옵션으로 더해 선택 상태로 둔다
+    (값을 잃지 않게). 저장 자리는 종전과 같은 공용 보드 MGR_TASK_OWNER 다."""
+    opts = ['<option value="">— 미지정 —</option>']
+    opts += [f'<option value="{html.escape(n)}"{" selected" if n == who else ""}>{html.escape(n)}</option>'
+             for n in OWNER_CHOICES]
+    if who and who not in OWNER_CHOICES:
+        opts.append(f'<option value="{html.escape(who)}" selected>{html.escape(who)}</option>')
+    return f'<select class="own-sel" data-o="{no}">{"".join(opts)}</select>'
+
+
 def row_html(no: int, seen_date: str, it: dict) -> str:
     age = days_since(seen_date)
     due = str(it.get("due") or "").strip() or "—"
@@ -170,13 +194,12 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
                if note else '<td class="note">—</td>')
     ss = ('<span class="ss-rc">접수처에서 닫음</span>' if is_reception_item(it)
           else '<span class="ss-no">SSOT 미등록</span>')
-    who = html.escape(str(it.get("owner") or "").strip())
+    who = str(it.get("owner") or "").strip()      # owner_select 가 escape 한다
     return (f'<tr data-no="{no}"><td class="ck"><input type="checkbox" data-k="mgr-{no}"></td>'
             f'<td class="no">#{no}</td>'
             f'<td class="ti">{html.escape(str(it.get("issue") or ""))}'
             f'{f"<span class=cat>{html.escape(cn)}</span>" if cn else ""}</td>'
-            f'<td class="own"><input class="own-inp" list="mgr-name-list" data-o="{no}" '
-            f'value="{who}" placeholder="담당"></td>'
+            f'<td class="own">{owner_select(no, who)}</td>'
             f'<td class="due">{html.escape(due)}</td>'
             f'<td class="ss">{ss}</td>'
             f'{note_td}'
@@ -218,6 +241,101 @@ def fetch_owner_board() -> dict:
         return d.get("board") or {} if d.get("ok") else {}
     except Exception:
         return {}
+
+
+# ── ② 화면 청소 (GM 2026-09-11 "쓸데없는게 너무 많던데") ────────────────────────────────
+#   원장 status 는 건드리지 않는다 — 사람이 답한 증거 없이 닫는 것은 금지. 화면에서만 가른다.
+def find_dups(opens: dict[int, tuple[str, dict]]) -> dict[int, int]:
+    """같은 일이 번호만 달리 두 줄로 있는 것 — {접을 옛 번호: 살릴 새 번호}.
+    판정 근거 두 가지뿐: ① 제목이 다른 열린 번호를 (#NNN) 으로 가리킨다(사람이 손으로
+    이어 적은 건) ② 제목 앞 24자가 0.72 이상 닮았다. 날짜가 뒤인 쪽을 살린다."""
+    out: dict[int, int] = {}
+
+    def mark(a: int, b: int) -> None:
+        old, new = (a, b) if opens[a][0] <= opens[b][0] else (b, a)
+        if old not in out and new not in out:
+            out[old] = new
+
+    for n, (_d, it) in opens.items():
+        for m in re.finditer(r"[(（]#(\d+)[)）]", str(it.get("issue") or "")):
+            t = int(m.group(1))
+            if t != n and t in opens:
+                mark(t, n)
+    keys = sorted(opens)
+    for i, n1 in enumerate(keys):
+        for n2 in keys[i + 1:]:
+            k1, k2 = _title_key(opens[n1][1].get("issue")), _title_key(opens[n2][1].get("issue"))
+            if k1 and k2 and difflib.SequenceMatcher(None, k1, k2).ratio() >= 0.72:
+                mark(n1, n2)
+    return out
+
+
+# ── ③ 원장 note 청소 (GM 2026-09-11) ─────────────────────────────────────────────────
+#   우리가 방에 보낸 공고문이 회신으로 잘못 쌓였다. 사람이 쓴 회신은 절대 안 지운다.
+_OUR_NOTICE = ("한 줄이면 됩니다",            # 공고문 예시 문구
+               "그 번호로 진행을 체크하고")    # 같은 공고문의 뒷부분(예시 괄호가 잘려 들어온 조각)
+
+
+def is_our_echo(frag: str, issue: str) -> bool:
+    """이 note 조각이 우리 발신인가. 「회신: #번호 + 그 건 자기 제목」도 우리 공고문이다 —
+    사람은 자기가 답하는 건의 제목을 그대로 되풀이하지 않는다."""
+    if any(w in frag for w in _OUR_NOTICE):
+        return True
+    m = re.match(r"회신:\s*#\d+\s+(.+)$", frag.strip(), re.S)
+    if not m:
+        return False
+    title = _title_key(issue)
+    return len(title) >= 10 and _title_key(m.group(1)).startswith(title[:10])
+
+
+def clean_notes(dry: bool = True) -> int:
+    """원장 note 에서 우리 발신 조각과 똑같이 겹친 조각을 걷어낸다. 고치는 유일한 원장 항목."""
+    rows = json.loads(LEDGER.read_text(encoding="utf-8"))
+    hit = 0
+    for e in rows:
+        for it in e.get("issues") or []:
+            note = str(it.get("note") or "")
+            if not note:
+                continue
+            issue = str(it.get("issue") or "")
+            kept, dropped, saw = [], [], set()
+            for f in (p.strip() for p in note.split(" · ")):
+                if not f:
+                    continue
+                if is_our_echo(f, issue) or f in saw:
+                    dropped.append(f)
+                    continue
+                saw.add(f)
+                kept.append(f)
+            if not dropped:
+                continue
+            hit += 1
+            print(f'#{it.get("no")} {e.get("date")} {issue}')
+            for f in dropped:
+                print("   − " + f.replace("\n", " ")[:96])
+            print("   ⇒ " + (" · ".join(kept).replace("\n", " ")[:130] or "(빈 값)"))
+            if not dry:
+                it["note"] = " · ".join(kept)
+    if not dry:
+        tmp = LEDGER.with_suffix(".tmp")
+        tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(tmp, LEDGER)
+    print(f"[clean-notes] {'(미리보기) ' if dry else ''}{hit}건")
+    return hit
+
+
+def selfcheck() -> None:
+    t = "수영장 타일 사이 오염 부분 청소 가능 여부"
+    assert is_our_echo(f"회신: #149 {t} — 9/12", t)
+    assert is_our_echo("회신: #174 키즈락커\n👉 회신·보고는 「#번호 + 했다」 한 줄이면 됩니다(예:", "키즈락커 짤순이")
+    assert not is_our_echo('회신: 이정헌 소장 13:17 "#149 진행중(휴관일에 실리콘작업하기로 정함)"', t)
+    assert not is_our_echo("회신: #149 진행중(휴관일에 실리콘작업하기로 정함)", t)
+    assert not is_our_echo("회신: #163 했다", "에스컬레이터 정밀진단 소견서·견적서 접수(#163)")
+    o = {1: ("2026-09-01", {"issue": "회원 접수 4건 처리 방향 미정"}),
+         2: ("2026-09-07", {"issue": "회원 접수 4건 처리방향 미정(#1)"}),
+         3: ("2026-09-05", {"issue": "에스컬레이터 견적"})}
+    assert find_dups(o) == {1: 2}, find_dups(o)
+    print("[selfcheck] 담당 드롭다운·중복 판정·note 청소 판정 OK")
 
 
 def approval_badge(m: dict) -> str:
@@ -283,6 +401,12 @@ def build() -> str:
                 remain[n] = (d, it)
         opens = remain
 
+    # ② 열린 목록에서 가를 것 둘 — 원장은 그대로 두고 화면에서만 접는다.
+    dup_of = find_dups(opens)
+    aside_dup = [(n, *opens.pop(n)) for n in sorted(dup_of)]
+    aside_rc = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
+                                                   if is_reception_item(it))]
+
     blocks = []
     counts = []
     shown: list[tuple[int, str, dict, str]] = []
@@ -332,14 +456,35 @@ def build() -> str:
         </details>
       </div>''')
 
+    if aside_rc:
+        blocks.append(f'''      <div class="blk">
+        <details class="grp"><summary>다른 곳에서 닫힌 것 <span class="gc">{len(aside_rc)}건</span>
+          <span class="gw">종합접수처에서 열리고 그 화면에서 닫는 건 — 여기서 하실 일은 없습니다</span></summary>
+        {table([row_html(n, d, it) for n, d, it in aside_rc], "없음")}
+        </details>
+      </div>''')
+
+    if aside_dup:
+        dup_rows = "\n        ".join(
+            f'<li>#{n} {html.escape(str(it.get("issue") or ""))}'
+            f'<span class="mvd">→ 같은 건이 <b>#{dup_of[n]}</b> 로 새로 잡혀 있습니다(날짜가 뒤인 쪽을 살렸습니다)</span></li>'
+            for n, d, it in aside_dup)
+        blocks.append(f'''      <div class="blk">
+        <details class="grp"><summary>중복 — 새 번호로 이어진 것 <span class="gc">{len(aside_dup)}건</span>
+          <span class="gw">원장 상태는 그대로입니다 · 화면에서만 내렸습니다</span></summary>
+        <ul class="mvlist">
+        {dup_rows}
+        </ul>
+        </details>
+      </div>''')
+
     ssot_note = ""
     if not ssot_ok:
         ssot_note = '<span class="b2 fail">⚠ 업무 SSOT 대조 실패 — 겹친 건이 그대로 보일 수 있습니다.</span>'
     elif moved:
-        _rc = sum(1 for _, _, _it, _ in shown if is_reception_item(_it))
-        ssot_note = (f'<span class="b2">업무·결재 SSOT 에 올라간 것 {len(moved)}건은 맨 아래 접힘 목록에 '
-                     f'진행·결재 상태와 함께 있습니다 · <b>SSOT 미등록 {len(shown) - _rc}건</b> — 업무 SSOT 에 올려야 하는 것 · '
-                     f'접수처에서 닫는 건 {_rc}건은 그 화면에서 처리합니다(SSOT 등록 대상 아님).</span>')
+        ssot_note = (f'<span class="b2">업무·결재 SSOT 에 올라간 것 {len(moved)}건 · 다른 곳에서 닫힌 것 '
+                     f'{len(aside_rc)}건 · 중복 {len(aside_dup)}건은 맨 아래 접힘 목록으로 내렸습니다 · '
+                     f'<b>여기 남은 {len(shown)}건이 업무 SSOT 에 올려야 하는 것</b>입니다.</span>')
 
     top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
     head = " · ".join(f"{n} {c}건" for n, c in counts)
@@ -400,11 +545,12 @@ def build() -> str:
   .grp > summary::before {{ content:"▸ "; color:var(--dim); }}
   .grp[open] > summary::before {{ content:"▾ "; }}
   .grp .gc {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }}
+  .grp .gw {{ font-weight:400; color:var(--dim); font-size:12.5px; margin-left:6px; }}
   .own {{ white-space:nowrap; }}
-  .own-inp {{ width:92px; padding:3px 6px; border:1px solid var(--line); border-radius:6px;
-              background:transparent; color:inherit; font:inherit; font-size:12.5px; }}
-  .own-inp:focus {{ outline:2px solid rgba(183,159,138,0.5); }}
-  .own-inp.saved {{ border-color:#6abf7b; }}
+  .own-sel {{ max-width:118px; padding:3px 4px; border:1px solid var(--line); border-radius:6px;
+              background:#fff; color:inherit; font:inherit; font-size:12.5px; }}
+  .own-sel:focus {{ outline:2px solid rgba(183,159,138,0.5); }}
+  .own-sel.saved {{ border-color:#6abf7b; }}
   .ss-rc {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
             background:rgba(255,255,255,0.08); color:var(--dim); }}
   .ss {{ white-space:nowrap; }}
@@ -505,19 +651,10 @@ def build() -> str:
   // ── 담당 지정 (GM 2026-09-10 "SSOT 등록건은 담당자도 설정할 수 있어야해") ──────────────
   //   저장 자리 = 같은 공용 보드의 다른 키(MGR_TASK_OWNER). 체크와 같은 방식이라 새 저장소가 없다.
   //   다음 갱신(manager_task_index.py)이 이 값을 읽어 원장 담당 빈칸을 채우고 사람별 표로 옮긴다.
+  //   칸은 <select> 다(GM 2026-09-11 "드랍다운 항목에 넣어달라고 했는데") — 종전 datalist 는
+  //   칸에 이름이 이미 있으면 목록이 안 펼쳐져 드롭다운으로 보이지 않았다. 후보 14명은
+  //   파이썬(OWNER_CHOICES)이 서버에서 찍는다.
   var OWNER_KEY = 'MGR_TASK_OWNER';
-  // 담당 후보 — 부서 순서대로(GM 지시 2026-09-10). 운영부 6 · 시설부 3 · 그 밖.
-  var OWNER_CHOICES = [
-    '이경연 실장', '최준용M', '임정은M', '윤병현AM', '백승화 사원', '진수아 사원',   // 운영부
-    '이정헌 소장', '김종현 차장', '박호균 과장',                                    // 시설부
-    '나우열M', '이연희 반장', '박남일 반장', '양상규 고문', '김남욱 GM'              // 그 밖
-  ];
-  (function () {{
-    if (document.getElementById('mgr-name-list')) return;
-    var dl = document.createElement('datalist'); dl.id = 'mgr-name-list';
-    dl.innerHTML = OWNER_CHOICES.map(function (n) {{ return '<option value="' + n + '">'; }}).join('');
-    document.body.appendChild(dl);
-  }})();
   function readOwnerBoard() {{
     var gas = function () {{
       return fetch(BOARD_URL + '?action=board&key=' + OWNER_KEY, {{cache:'no-store'}})
@@ -528,19 +665,25 @@ def build() -> str:
       .then(function (r) {{ if (!r.ok) throw new Error('api ' + r.status); return r.json(); }})
       .catch(gas);
   }}
-  var owns = Array.prototype.slice.call(document.querySelectorAll('input[data-o]'));
+  var owns = Array.prototype.slice.call(document.querySelectorAll('select[data-o]'));
   readOwnerBoard().then(function (j) {{
     var b = (j && j.ok && j.board) ? j.board : {{}};
     owns.forEach(function (inp) {{
       var v = b['mgr-' + inp.dataset.o];
-      if (v && !inp.value) inp.value = v;      // 원장에 이미 사람이 있으면 그 값을 덮지 않는다
+      if (!v || inp.value) return;             // 원장에 이미 사람이 있으면 그 값을 덮지 않는다
+      if (!inp.querySelector('option[value="' + v.replace(/"/g, '&quot;') + '"]')) {{
+        var o = document.createElement('option'); o.value = v; o.textContent = v; inp.appendChild(o);
+      }}
+      inp.value = v;
+      before[inp.dataset.o] = v;
     }});
   }}).catch(function (e) {{ console.warn('[목차] 담당 보드 읽기 실패', e && e.message); }});
+  var before = {{}};
+  owns.forEach(function (inp) {{ before[inp.dataset.o] = inp.value; }});
   owns.forEach(function (inp) {{
-    var before = inp.value;
-    inp.addEventListener('blur', function () {{
-      var v = inp.value.trim();
-      if (v === before) return;
+    inp.addEventListener('change', function () {{
+      var v = inp.value.trim(), was = before[inp.dataset.o];
+      if (v === was) return;
       inp.disabled = true;
       readOwnerBoard().then(function (j) {{
         var fresh = (j && j.ok && j.board) ? j.board : {{}};
@@ -550,11 +693,11 @@ def build() -> str:
                                 redirect:'follow'}}).then(function (r) {{ return r.json(); }});
       }}).then(function (res) {{
         inp.disabled = false;
-        if (res && res.ok) {{ before = v; inp.classList.add('saved');
+        if (res && res.ok) {{ before[inp.dataset.o] = v; inp.classList.add('saved');
                              setTimeout(function () {{ inp.classList.remove('saved'); }}, 1500); }}
-        else {{ inp.value = before; alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.'); }}
+        else {{ inp.value = was; alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.'); }}
       }}).catch(function () {{
-        inp.disabled = false; inp.value = before;
+        inp.disabled = false; inp.value = was;
         alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.');
       }});
     }});
@@ -582,5 +725,16 @@ def build() -> str:
 
 
 if __name__ == "__main__":
-    OUT.write_text(build(), encoding="utf-8")
-    print(f"[manager_task_index] {OUT.relative_to(ROOT)} · {OUT.stat().st_size:,} bytes")
+    ap = argparse.ArgumentParser(description="중간관리자 업무 목차 렌더")
+    ap.add_argument("--clean-notes", action="store_true",
+                    help="원장 note 에서 우리 발신 조각·똑같이 겹친 조각을 걷어낸다(원장을 고침)")
+    ap.add_argument("--dry", action="store_true", help="--clean-notes 미리보기 — 파일은 안 고침")
+    ap.add_argument("--selfcheck", action="store_true", help="판정 규칙 자가검사")
+    args = ap.parse_args()
+    if args.selfcheck:
+        selfcheck()
+    elif args.clean_notes:
+        clean_notes(dry=args.dry)
+    else:
+        OUT.write_text(build(), encoding="utf-8")
+        print(f"[manager_task_index] {OUT.relative_to(ROOT)} · {OUT.stat().st_size:,} bytes")

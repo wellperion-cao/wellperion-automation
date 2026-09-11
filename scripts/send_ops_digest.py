@@ -3159,6 +3159,17 @@ def main() -> int:
         except Exception as exc:
             log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
+        # 중간관리자 업무 목차 화면 재생성 — 07:50 통이 원장(MGR_LEDGER)에 회신을 반영한 '뒤'라야
+        # 화면이 그 반영분을 담는다. 2026-09-11 실측: 원장엔 새 건이 들어갔는데 화면은 9/10
+        # 22:22 판 그대로였다(재생성이 아무 데도 안 걸려 있어 GM 이 옛 화면을 봤다). 실패해도
+        # 통 발송을 막지 않는다 — 로그 한 줄만 남기고 다음 회차에 다시 만든다.
+        try:
+            import manager_task_index
+            manager_task_index.OUT.write_text(manager_task_index.build(), encoding="utf-8")
+            log(f"[mgr] 업무 목차 화면 재생성 — {manager_task_index.OUT.name}")
+        except Exception as exc:
+            log(f"[mgr] 업무 목차 재생성 예외(무시): {type(exc).__name__}: {exc}")
+
         _sleep_until(*MORNING_SEND_TIMES["★부서장"])
         if ovd_ready:
             try:
