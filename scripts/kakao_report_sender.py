@@ -885,15 +885,28 @@ def find_clipboard_popup(timeout: float = 2.0):
     return None
 
 
-def confirm_clipboard_popup(popup, room_name: str) -> None:
+def confirm_clipboard_popup(popup, room_name: str, wait: float = 6.0) -> bool:
     """팝업 캡션칸에서 Enter로 전송 확정(실측 확인: "전송" 버튼은 UIA로 못 찾아
-    캡션칸 Enter가 유일하게 접근 가능한 트리거)."""
+    캡션칸 Enter가 유일하게 접근 가능한 트리거). 반환 True = 팝업이 실제로 닫힌 것을 확인함.
+
+    ★2026-09-11 실사고(배 2528): ★운영부 09:31 회차에서 Enter 를 쳤는데 팝업이 안 닫혔다.
+    그 뒤 코드는 팝업이 사라진 줄 알고 진행했고, 캡션 붙여넣기가 방 입력칸이 아니라 팝업
+    캡션칸(50자 한도)에 두 번 겹쳐 들어갔다 — 사진도 글도 안 나갔는데 ok=true 로 찍혔고,
+    그 거짓 기록이 중복 가드까지 물려 재발송도 막았다. 그래서 여기서 '닫혔나'를 확인한다.
+    """
     edits = popup.descendants(control_type="Edit")
     target = edits[0] if edits else popup
     target.click_input()
     time.sleep(0.1)
     target.type_keys("{ENTER}", pause=0.1)
-    log(f"[{room_name}] 클립보드 팝업 전송 확정(Enter)")
+    deadline = time.time() + wait
+    while time.time() < deadline:
+        time.sleep(0.3)
+        if find_clipboard_popup(timeout=0.2) is None:
+            log(f"[{room_name}] 클립보드 팝업 전송 확정(Enter) — 팝업 닫힘 확인")
+            return True
+    log(f"[{room_name}] ⛔ Enter 를 쳤는데 클립보드 팝업이 {wait:.0f}초가 지나도 그대로 있다 — 전송 안 됨")
+    return False
 
 
 def cancel_clipboard_popup(popup, room_name: str) -> None:
@@ -2004,7 +2017,17 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
             return True, ""
 
         if popup is not None:
-            confirm_clipboard_popup(popup, room_name)  # 이미지 전송(팝업 캡션칸 Enter)
+            # 팝업이 닫힌 것까지 확인해야 사진이 나간 것이다(배 2528). 안 닫혔으면 여기서 멈춘다 —
+            # 그대로 진행하면 뒤따르는 캡션 붙여넣기가 방 입력칸이 아니라 팝업 캡션칸(50자 한도)에
+            # 들어가 겹치고, 아무것도 안 나갔는데 성공으로 적힌다.
+            if not confirm_clipboard_popup(popup, room_name):
+                shot = screenshot(room_win, room_name, "popup_stuck")
+                cancel_clipboard_popup(popup, room_name)   # 남은 팝업을 닫아 다음 방을 막지 않는다
+                _log_outbound("", chat_id=room_name, source="kakao_report_sender.image",
+                              ok=False, kind="image", channel="kakao")
+                raise RuntimeError(
+                    f"[{room_name}] 사진 전송창이 Enter 뒤에도 열린 채 남아 있다 — 사진이 안 나갔다."
+                    f" 증거 {shot}")
         else:
             send_enter(input_box)  # 팝업 없는 구버전 카톡 폴백 — 입력창에서 바로 전송
         time.sleep(1.0)
@@ -2351,6 +2374,24 @@ def _selftest() -> None:
         _p.write_text("".join(l for l in _p.read_text(encoding="utf-8").splitlines(keepends=True)
                               if '"source": "selftest"' not in l), encoding="utf-8")
         print("SELFTEST OK: 발신 기록 실패는 False 로 돌아온다(성공이라 안 적는다)")
+
+        # ⑥-d 사진 전송창이 닫힌 것까지 확인한다(배 2528) — 안 닫히면 False 여야 한다.
+        class _FakeEdit:
+            def click_input(self): pass
+            def type_keys(self, *a, **k): pass
+
+        class _FakePopup:
+            def descendants(self, **k): return [_FakeEdit()]
+
+        _real_find = find_clipboard_popup
+        try:
+            globals()["find_clipboard_popup"] = lambda timeout=2.0: None          # 닫혔다
+            assert confirm_clipboard_popup(_FakePopup(), "자체점검", wait=1.0) is True
+            globals()["find_clipboard_popup"] = lambda timeout=2.0: _FakePopup()  # 안 닫혔다
+            assert confirm_clipboard_popup(_FakePopup(), "자체점검", wait=1.0) is False
+        finally:
+            globals()["find_clipboard_popup"] = _real_find
+        print("SELFTEST OK: 사진 전송창이 남아 있으면 전송 확정을 실패로 돌려준다")
 
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
