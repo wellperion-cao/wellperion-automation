@@ -124,6 +124,19 @@ async def step1_header_inject(page) -> str:
 
 
 async def step2_robots(page) -> str:
+    """★2026-09-11 실측 — 이 단계는 지금 이 사이트에서 돌 수 없다.
+    Yoast(wpseo) 파일 편집기 주소를 여는데, 라이브에 설치된 플러그인 목록에 SEO 플러그인이
+    하나도 없다(Salient·WPML·Contact Form 7·kboard 등뿐). 그래서 늘 「textarea 못 찾음」으로 끝난다.
+    게다가 main() 이 이 함수를 부르지도 않고 있었다 — 9/5부터 아무 일도 안 하고 있었던 셈이다.
+
+    지금 라이브 robots.txt = 워드프레스가 파일 없이 만들어 내는 기본값이고, 그 안 사이트맵 줄이
+    http://wellperion.com/ko/wp-sitemap.xml (404) 를 가리킨다. 실제로 열리는 것은 /sitemap_index.xml 이다.
+
+    고치는 길은 둘뿐이고 둘 다 GM 손이다.
+      ① 웹 루트에 robots.txt 파일을 올린다 — 올릴 내용 = 3. 웰페리온 가이드/home/robots.txt
+      ② 코드 스니펫 플러그인을 깔아 robots_txt 필터를 건다
+    같은 자리에 llms.txt 도 함께 올린다 — 3. 웰페리온 가이드/home/llms.txt
+    """
     await page.goto(WP_ADMIN_URL + "admin.php?page=wpseo_tools&tool=file-editor", wait_until="networkidle", timeout=45000)
     await page.wait_for_timeout(1500)
     create_link = page.locator("a:has-text('create one here'), button:has-text('create one here')")
@@ -188,6 +201,12 @@ async def main():
         results["header_inject"] = await step1_header_inject(page)
     except Exception as e:
         results["header_inject"] = f"ERROR: {e}"
+    # step2_robots 는 만들어 놓고 부르지 않고 있었다(2026-09-11 실측). 그래서 라이브 robots.txt 에는
+    # AI 크롤러 허용 줄이 없고, 사이트맵 줄이 /ko/wp-sitemap.xml(404)를 가리킨 채였다.
+    try:
+        results["robots"] = await step2_robots(page)
+    except Exception as e:
+        results["robots"] = f"ERROR: {e}"
     try:
         results["home_meta"] = await step3_home_meta(page)
     except Exception as e:
