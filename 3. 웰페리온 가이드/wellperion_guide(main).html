@@ -547,7 +547,7 @@
           </div>
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
           <div style="display:grid;gap:8px;align-content:start;">
-            <div style="font-size:var(--fs-1);font-weight:800;color:var(--warm);">✍️ 결재</div>
+            <div style="font-size:var(--fs-1);font-weight:800;color:#FFFFFF;">✍️ 결재</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
               <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">총</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
               <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">대기</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
@@ -1366,22 +1366,22 @@
             var isDone = function(r){ return (r['상태'] || r['status']) === '완료'; };
             var mDone = catMonthRows.filter(isDone).length;
             var tDone = catRows.filter(isDone).length;   // 누적 완료 — 2026-08-26 GM 요청으로 추가
-            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;">'
-              + '<div style="font-size:var(--fs-1);color:var(--dim);margin-bottom:1px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
+            html += '<div style="background:#221F20;border:1px solid #221F20;border-radius:8px;padding:6px 4px;text-align:center;">'
+              + '<div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:1px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
               // ★2026-08-26 GM 지시 — 한 칸에 네 숫자를 위아래로 나눈다.
               //   윗줄(큰글자) = 이번달 접수 / 이번달 완료 · 아랫줄(작은글자) = 누적 접수 / 누적 완료.
               //   GM 원문: "이번달 기준 완료도 알려줘 아래칸에 누적 및 누적완료건도 알려주고".
               //   ▸접수는 주황, 완료는 초록으로 색을 고정한다 — 카드 상단 3칸(접수·처리중·완료)과 같은 색이라
               //     위아래로 훑을 때 같은 뜻이 같은 색으로 읽힌다.
               + '<div style="line-height:1;white-space:nowrap;">'
-              +   '<span style="font-size:var(--fs-4);font-weight:800;color:var(--orange,#ED5B3F);">' + mNew + '</span>'
-              +   '<span style="font-size:var(--fs-1);color:var(--dim);margin:0 2px;">/</span>'
-              +   '<span style="font-size:var(--fs-3);font-weight:800;color:var(--grow,#8F7659);">' + mDone + '</span>'
+              +   '<span style="font-size:var(--fs-4);font-weight:800;color:#FFFFFF;">' + mNew + '</span>'
+              +   '<span style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin:0 2px;">/</span>'
+              +   '<span style="font-size:var(--fs-3);font-weight:800;color:#FFFFFF;">' + mDone + '</span>'
               + '</div>'
               /* [2026-08-28 GM 지시] 칸을 낮춘다 — '이번달 접수/완료' 라벨 줄은 위 안내문이 이미
                  같은 말을 하므로 뺐다. 누적은 한 줄로 붙인다(맨 위 3칸을 줄인 방식과 같게). */
-              + '<div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">'
-              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b>·<b style="color:var(--grow,#8F7659);">' + tDone + '</b></div>'
+              + '<div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">'
+              +   '누적 <b style="color:#FFFFFF;">' + catRows.length + '</b>·<b style="color:#FFFFFF;">' + tDone + '</b></div>'
               + '</div>';
           });
           grid.innerHTML = html;
