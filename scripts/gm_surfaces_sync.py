@@ -67,6 +67,23 @@ def similar(a: str, b: str) -> bool:
     return a in b or b in a or a[:8] == b[:8]
 
 
+CLOSED_HINTS = ("완료", "종결", "취소", "폐기")
+
+
+def closed_statuses(plan: dict) -> set:
+    """완료·종결 계열 상태값 — 지어내지 않고 계획 파일의 status_enum 에서 고른다."""
+    return {s for s in (str(x) for x in (plan.get("status_enum") or []))
+            if any(h in s for h in CLOSED_HINTS)} or {"완료"}
+
+
+def find_objective(plan: dict, cid: str) -> "dict | None":
+    for month in (plan.get("months") or {}).values():
+        for o in month.get("objectives") or []:
+            if str(o.get("id")) == cid:
+                return o
+    return None
+
+
 def open_gm_cards(plan: dict) -> list:
     out = []
     for month in (plan.get("months") or {}).values():
@@ -151,9 +168,30 @@ def diff(plan: dict, items: list, owners: dict, todo_rows: list, today=None) -> 
         if todo_rows and not any(similar(title, r.get("업무명")) for r in todo_rows):
             notes.append(("SSOT행없음", cid, title))
 
+    # 지우기 전에 카드를 직접 열어 본다 — 제목에 (GM 직접) 태그가 빠진 카드가 cards 에 안 들어와
+    # 「닫혔다」로 판정돼 살아 있는 GM업무 3건이 전사일정에서 사라졌다(2026-09-11). 상태를 보고 가른다.
+    closed = closed_statuses(plan)
+    card_ids = {str(c.get("id")) for c in cards}
     for sid in by_sid:
-        if sid not in want:
-            drop.append(sid)              # 카드가 닫혔거나 기한이 멀어졌다 — 일정에서 뺀다
+        if sid in want:
+            continue
+        cid = sid[len("gmwork-"):]
+        if cid in card_ids:
+            drop.append(sid)              # 카드는 봤다 — 기한이 없거나 멀어 일정에서 뺀다
+            continue
+        o = find_objective(plan, cid)
+        if o and str(o.get("status") or "") not in closed and not o.get("schedule_hidden"):
+            notes.append(("태그빠짐", cid, str(o.get("title") or "")))   # 살아 있다 — 안 지운다
+            continue
+        drop.append(sid)                  # 카드가 없거나 닫혔다 — 일정에서 뺀다
+
+    # 같은 카드가 mop-* · gmwork-* 두 줄로 오른 건 (고치는 건 시우 배1190 — 여기선 세기만 한다)
+    sched_ids = {str(it.get("id")) for it in items}
+    for sid in sched_ids:
+        cid = sid[len("gmwork-"):] if sid.startswith("gmwork-") else None
+        if cid and "mop-" + cid in sched_ids:
+            o = find_objective(plan, cid)
+            notes.append(("중복두줄", cid, str((o or {}).get("title") or "")))
 
     # 결재 대기(대표싸인 PENDING)인데 카드에 안 붙은 행
     for r in todo_rows:
@@ -187,7 +225,7 @@ def apply_to_schedule(want: dict, add: list, fix: list, drop: list) -> dict:
 
 def render(res: dict) -> str:
     lines = [f"🔗 네 화면 대조 — 일정 추가 {len(res['add'])} · 고침 {len(res['fix'])} · 삭제 {len(res['drop'])}"]
-    for kind in ("담당없음", "기한없음", "SSOT행없음", "결재만있음"):
+    for kind in ("담당없음", "기한없음", "SSOT행없음", "결재만있음", "태그빠짐", "중복두줄"):
         hit = [n for n in res["notes"] if n[0] == kind]
         if hit:
             lines.append(f"· {kind} {len(hit)}건 — " + " / ".join(x[2][:22] for x in hit[:4])
@@ -197,12 +235,15 @@ def render(res: dict) -> str:
 
 def _selftest() -> None:
     today = _dt.date(2026, 9, 9)
-    plan = {"months": {"2026-09": {"objectives": [
+    plan = {"status_enum": ["계획", "진행", "완료", "이월"], "months": {"2026-09": {"objectives": [
         {"id": "A", "title": "가 카드 (GM 직접)", "status": "진행", "due": "2026-09-30", "dept": "운영부"},
         {"id": "B", "title": "나 카드 (GM 직접)", "status": "진행", "due": ""},
         {"id": "C", "title": "다 카드 (GM 직접)", "status": "완료", "due": "2026-09-30"},
+        {"id": "D", "title": "라 카드", "status": "진행", "due": "2026-09-30"},   # 태그만 빠진 살아 있는 카드
     ]}}}
     items = [{"id": "gmwork-A", "next_due": "2026-09-20", "assignee": ""},
+             {"id": "mop-A", "next_due": "2026-09-30", "assignee": ""},
+             {"id": "gmwork-D", "next_due": "2026-09-30", "assignee": ""},
              {"id": "gmwork-C", "next_due": "2026-09-30", "assignee": "이경연 실장"}]
     owners = {"A": "이경연 실장"}
     rows = [{"업무명": "가 카드", "id": "T1", "대표싸인": ""},
@@ -211,7 +252,10 @@ def _selftest() -> None:
     assert r["add"] == [], r["add"]                                   # A 는 이미 있다
     assert ("gmwork-A", "날짜", "2026-09-20", "2026-09-30") in r["fix"], r["fix"]
     assert ("gmwork-A", "담당", "", "이경연 실장") in r["fix"], r["fix"]
-    assert r["drop"] == ["gmwork-C"], r["drop"]                       # 완료 카드의 짝은 뺀다
+    assert r["drop"] == ["gmwork-C"], r["drop"]                       # 완료 카드의 짝만 뺀다
+    assert "gmwork-D" not in r["drop"], r["drop"]                     # 태그만 빠진 살아 있는 카드는 안 지운다
+    assert ("태그빠짐", "D", "라 카드") in r["notes"], r["notes"]
+    assert ("중복두줄", "A", "가 카드 (GM 직접)") in r["notes"], r["notes"]
     kinds = {n[0] for n in r["notes"]}
     assert "기한없음" in kinds and "결재만있음" in kinds, r["notes"]
     assert "SSOT행없음" not in {n[0] for n in r["notes"] if n[1] == "A"}, r["notes"]
