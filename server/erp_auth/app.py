@@ -217,17 +217,24 @@ def _digits(s) -> str:
 
 
 def hr_match(name: str, phone: str, roster: list) -> bool:
-    """이름 공백제거 완전일치 + 연락처 숫자만 완전일치 — 인사 허브 index.html isAlreadyHiredEmpByPhone_ 과 같은 원칙.
-    이름만 맞고 전화가 다르면 불일치(동명이인 보호), 재직 상태가 퇴직·퇴사면 불일치. 순수 함수 —
-    명부(roster)를 인자로 받으므로 자가점검에서 가짜 리스트를 넣어 테스트할 수 있다."""
-    name_key, phone_key = "".join(str(name or "").split()), _digits(phone)
-    if not name_key or not phone_key:
+    """이름만 본다 — 명부에 그 이름이 있고 재직이면 통과(GM 지시 2026-09-11 「이름만 대조해줘, 이름만 맞으면되」).
+
+    ▸경위: 2026-09-07 GM 「인사정보랑 크로스체크」로 시작할 때는 이름+연락처 둘 다 맞아야 했다.
+      2026-09-11 GM 이 이름만으로 좁혔다 — 다음에 「왜 연락처를 안 보나」 하지 않게 여기 적어 둔다.
+      phone 인자는 그대로 받는다(승인 화면에서 GM 이 보실 값이라 계속 저장한다) — 통과 여부만 안 가린다.
+    ▸비교: 양쪽 공백을 다 턴 뒤, 명부 이름이 신청 이름 안에 들어 있으면 통과한다 —
+      신청은 「홍길동 매니저」처럼 직함이 붙어 오는데 명부는 「홍길동」이라 완전일치로는 못 잡는다.
+      단 명부 이름이 두 글자 이상일 때만 그렇게 본다(한 글자가 아무 이름에나 들어맞는 것 차단).
+    ▸퇴직·퇴사는 종전대로 불일치. 순수 함수 — 자가점검에서 가짜 명부를 넣어 검증한다.
+    """
+    name_key = "".join(str(name or "").split())
+    if not name_key:
         return False
     for row in roster:
-        row_name = row.get("성명") or row.get("이름") or ""
-        if "".join(str(row_name).split()) != name_key:
+        row_name = "".join(str(row.get("성명") or row.get("이름") or "").split())
+        if not row_name:
             continue
-        if _digits(row.get("연락처")) != phone_key:
+        if row_name != name_key and not (len(row_name) >= 2 and row_name in name_key):
             continue
         status = row.get("재직 상태") or row.get("재직상태") or ""
         if "퇴직" in status or "퇴사" in status:
@@ -705,7 +712,7 @@ placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
 <label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
 <label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
-<button>신청</button><div class=foot><p>이름·연락처는 인사 등록 정보와 대조됩니다. 신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
+<button>신청</button><div class=foot><p>이름이 인사 등록 정보에 있는지만 대조합니다. 신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
 <p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>
 """ + SIGNUP_JS + """""")
 
@@ -740,9 +747,9 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
             return RedirectResponse("/auth/signup?msg=인사 정보 확인이 잠시 안 됩니다. 잠시 뒤 다시", status_code=303)
         if not hr_match(name, phone, roster):
             return RedirectResponse(
-                "/auth/signup?msg=인사 정보와 이름·연락처가 일치하지 않습니다. 인사 등록된 이름·휴대폰 번호 그대로 입력해 주세요",
+                "/auth/signup?msg=인사 명부에 그 이름이 없습니다. 인사 등록된 이름 그대로 적어 주세요",
                 status_code=303)
-        mark = "인사 대조 ✅"
+        mark = "인사 대조 ✅(이름)"
     salt, h = hash_pw(password)
     status, approved_at = ("active", now()) if is_company else ("pending", None)
     perms = {"dept": dept, "phone": _digits(phone), "groups": [], "modules": dept_modules(dept), "deny": []}
@@ -1546,11 +1553,15 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
         {"이름": "김철수", "연락처": "01099998888", "재직상태": "퇴직"},
         {"성명": "이영희", "연락처": "010-0000-1111", "재직 상태": "재직"},
     ]
-    assert hr_match("홍길동", "010-1234-5678", roster)          # 공백·하이픈 무시하고 일치
-    assert not hr_match("홍길동", "010-9999-9999", roster)      # 이름 맞아도 전화 다르면 불일치(동명이인 보호)
+    assert hr_match("홍길동", "010-1234-5678", roster)          # 이름 공백 무시하고 일치
+    assert hr_match("홍길동", "", roster)                        # ★이름만 맞으면 통과(GM 2026-09-11)
+    assert hr_match("홍길동 매니저", "", roster)                 # 직함이 붙어 와도 통과
+    assert hr_match("홍길동", "010-9999-9999", roster)          # 전화가 달라도 이름이 맞으면 통과
     assert not hr_match("김철수", "010-9999-8888", roster)      # 재직상태=퇴직이면 불일치
-    assert not hr_match("없는사람", "010-0000-0000", roster)    # 명부에 없음
+    assert not hr_match("없는사람", "010-0000-0000", roster)    # ★이름이 명부에 없으면 막힌다
     assert not hr_match("", "", roster)
+    # 한 글자 이름이 남의 이름 안에 들어맞아 통과하는 것 차단
+    assert not hr_match("홍길동", "", [{"성명": "홍", "재직 상태": "재직"}])
     # 사무실 자동 로그인 세션 표시(배1134) — 일반 로그인은 claim 이 없고, 자동 로그인만 auto=true.
     fake_user = {"id": 1, "email": OFFICE_AUTO_LOGIN_ACCOUNT, "role": "staff"}
     assert not is_auto_token(issue(fake_user))
