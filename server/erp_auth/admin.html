@@ -313,7 +313,14 @@ tr.xp .mcards{position:sticky;left:0}  /* 너비는 JS 가 표 스크롤 영역 
 <script>
 (function(){
 'use strict';
-const APPGROUPS=['회원','운영','점검','경영','문서함'];
+/* 권한 묶음 = 업무영역(배2540 · GM 2026-09-11) — 파트너사 직원 화면 /home 좌측 메뉴와 같은 낱말이다.
+   종전 묶음(회원·운영·점검·경영·문서함)은 메뉴에 없는 이름이라 권한을 줄 때 메뉴에서 본 것을 못 찾았다.
+   값은 modules.json 의 group(=role 에서 파생) 그대로다 — 여기에 목록을 또 적지 않는다. */
+const AREAS=['마케팅 관리','회원 관리','운영 관리','인사&파트너 관리','매출&지출 관리','ERP 플랫폼'];
+/* 경영진 전용 — 부서 기본 추천에서 뺀다. 종전엔 appgroup==='경영' 으로 걸렀는데 그 축이 권한에서 빠지면서
+   같은 뜻을 id 로 적는다(개인 예외 5건은 EXCEPTION_ONLY_IDS 가 이미 거른다). */
+const MGMT_ONLY=['ceo-wellperion-guide-main','cmo-funnel-월간마케팅보고서',
+                 'coo-chairman-대표님-지시사항','coo-chairman-회장님-지시사항','cfo-finance-지출품의'];
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MOCK=new URLSearchParams(location.search).get('mock')==='1';
@@ -332,8 +339,8 @@ function allowed(u,m,p){
   const g=p.groups||[];
   return g.includes(m.group)||(g.includes('핵심')&&!!m.core);
 }
-const cnt=(u,g,p)=>S.modules.filter(m=>(m.appgroup||'문서함')===g&&allowed(u,m,p)).length;
-const tot=g=>S.modules.filter(m=>(m.appgroup||'문서함')===g).length;
+const cnt=(u,g,p)=>S.modules.filter(m=>!m.doc&&m.group===g&&allowed(u,m,p)).length;
+const tot=g=>S.modules.filter(m=>!m.doc&&m.group===g).length;
 const statusKo={active:'사용 중',pending:'승인 대기',blocked:'차단'};
 const statusCls={active:'ok',pending:'warn',blocked:'bad'};
 const dept=u=>(perms(u)||{}).dept||u.dept||'';
@@ -415,7 +422,7 @@ function renderPeople(){
   $('#people-body').innerHTML=list.length?list.map(u=>{const p=perms(u);const seen=u.role==='admin'?n:S.modules.filter(m=>allowed(u,m,p)).length;
     return `<tr data-uid="${u.id}" class="${sel===u.id||xp===u.id?'sel':''}"><td class="who"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
     <td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}</td><td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span></td>
-    ${APPGROUPS.map(g=>{const c=u.role==='admin'?tot(g):cnt(u,g,p),t=tot(g);return `<td><div class="bar ${c===t?'full':c?'':'none'}" style="--w:${t?Math.round(c/t*100):0}%" title="${g} ${c}/${t}"><i></i><span class="num">${c}/${t}</span></div></td>`;}).join('')}
+    ${AREAS.map(g=>{const c=u.role==='admin'?tot(g):cnt(u,g,p),t=tot(g);return `<td><div class="bar ${c===t?'full':c?'':'none'}" style="--w:${t?Math.round(c/t*100):0}%" title="${g} ${c}/${t}"><i></i><span class="num">${c}/${t}</span></div></td>`;}).join('')}
     <td class="num"><b>${seen}</b><small style="color:var(--ink-soft)">/${n}</small></td></tr>${xp===u.id?`<tr class="xp"><td colspan="9">${personCards(u,p)}</td></tr>`:''}`;}).join(''):'<tr><td colspan="9" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
   cardsWidth(); renderDrawer();
 }
@@ -424,8 +431,8 @@ window.addEventListener('resize',cardsWidth);
 /* ── 모듈카드(배1075) — 누른 사람 행 아래 그룹 5장: 화면 이름·한 줄 뜻, 보이면 ✓진하게 / 안 보이면 옅게 ── */
 function screenLi(m,on){ return `<li class="${on?'on':''}">${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x" style="color:var(--warn);font-size:11px;margin-left:4px">개인 예외</span>':''}${m.desc?`<small>${esc(m.desc)}</small>`:''}</li>`; }
 function personCards(u,p){
-  return `<div class="mcards">${APPGROUPS.map(g=>{
-    const ms=S.modules.filter(m=>(m.appgroup||'문서함')===g), on=ms.filter(m=>allowed(u,m,p));
+  return `<div class="mcards">${AREAS.map(g=>{
+    const ms=S.modules.filter(m=>!m.doc&&m.group===g), on=ms.filter(m=>allowed(u,m,p));
     const list=`<ul>${ms.map(m=>screenLi(m,allowed(u,m,p))).join('')}</ul>`;
     const doc=g==='문서함';
     return `<div class="mc${doc?' wide':''}"><h4>${esc(g)}<span class="c"><b class="num">${on.length}</b>/${ms.length} 보임</span></h4>${doc?`<details><summary>문서 ${ms.length}개 펼치기</summary>${list}</details>`:list}</div>`;
@@ -435,7 +442,7 @@ function renderDrawer(){
   const d=$('#drawer'); const u=S.users.find(x=>x.id===sel); if(!u){ d.hidden=true; return; } d.hidden=false;
   if(!draft||draft.uid!==u.id){ const p=perms(u); draft={uid:u.id,groups:[...(p?.groups||[])],modules:[...(p?.modules||[])],deny:[...(p?.deny||[])],all:!!p?.all,dept:p?.dept||'',locked:!!p?.locked,base:p?'개별 설정':'기본(핵심만)'}; }
   const p=draftPerms(); const n=S.modules.length; const seen=u.role==='admin'?n:S.modules.filter(m=>allowed(u,m,p)).length;
-  const groups=[...new Set(S.modules.map(m=>m.appgroup||'문서함'))];
+  const groups=AREAS;
   const ro=u.role==='admin'||u.fixed_perms;
   d.innerHTML=`<div class="hd"><div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">${esc(u.name)}</h3><button class="btn sm" data-close>닫기</button></div><small>${esc(u.email)}${u.google?' · 구글 로그인':''}</small></div>
   <div class="bd">
@@ -451,7 +458,7 @@ function renderDrawer(){
       ${u.role!=='admin'&&u.status!=='active'&&!isMe(u)?`<button class="btn danger sm" data-act="delete" data-uid="${u.id}" data-name="${esc(u.name)}">삭제</button>`:''}</div>
     ${ro?'':`<div class="sec-title">부서 기본으로 한 번에</div><div class="preset-row">${Object.keys(S.dept_modules||{}).map(k=>`<button class="btn sm" data-preset="${esc(k)}">${esc(k)}</button>`).join('')}<button class="btn sm" data-reset>핵심만</button></div>
     <div class="sec-title">화면별 조정 <span style="font-weight:500;letter-spacing:0;text-transform:none">— 기본 / 허용 / 거부 (거부가 이깁니다)</span></div>
-    ${groups.map(g=>{const ms=S.modules.filter(m=>(m.appgroup||'문서함')===g);const on=ms.filter(m=>allowed(u,m,p)).length;
+    ${groups.map(g=>{const ms=S.modules.filter(m=>!m.doc&&m.group===g);const on=ms.filter(m=>allowed(u,m,p)).length;
       return `<details class="grp"${on&&on<ms.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${on}</b>/${ms.length} 보임</span></summary>
       ${ms.map(m=>{const st=draft.deny.includes(m.id)?'deny':draft.modules.includes(m.id)?'allow':'base';const vis=allowed(u,m,p);
         return `<div class="mod"><div class="nm">${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}<small>${esc(m.group)} · ${esc(m.staff||'')}${vis?' · <b style="color:var(--ok)">보임</b>':' · 안 보임'}</small></div>
@@ -477,7 +484,7 @@ function renderDeptMatrix(){
   const depts=Object.keys(DP.presets||{});
   const groups=APPGROUPS.filter(g=>g!=='문서함');
   $('#dept-matrix').innerHTML=groups.map(g=>{
-    const ms=S.modules.filter(m=>(m.appgroup||'문서함')===g);
+    const ms=S.modules.filter(m=>!m.doc&&m.group===g);
     if(!ms.length) return '';
     return `<details class="grp" open><summary><span class="n">${esc(g)}</span><span class="c">${ms.length}개 화면</span></summary>
     <div class="tw"><table class="mx"><thead><tr><th>화면</th>${depts.map(d=>`<th style="text-align:center">${esc(d)}</th>`).join('')}</tr></thead><tbody>
@@ -499,22 +506,22 @@ const REC={
 function recCommon(){ const ls=Object.values(DP.code_draft||{}); return ls.length?ls[0].filter(id=>ls.every(l=>l.includes(id))):[]; }
 function recIds(d){
   const r=REC[d]||{}, own=`coo-check-${d}-체계`, common=recCommon();
-  const hit=m=>{ if((m.appgroup||'문서함')==='문서함'||S.exception_ids.includes(m.id)) return false;
+  const hit=m=>{ if(m.doc||S.exception_ids.includes(m.id)) return false;
     if(m.id===own) return true; if(/^coo-check-.+-체계$/.test(m.id)) return false;
     if((r.ids||[]).includes(m.id)) return true;
-    if(m.appgroup==='경영'&&d!=='경영지원') return false;
+    if(MGMT_ONLY.includes(m.id)&&d!=='경영지원') return false;
     return (r.staff||[]).some(s=>(m.staff||'').includes(s)); };
   return [...new Set([...common,...S.modules.filter(hit).map(m=>m.id)])];
 }
 function renderDeptRec(){
-  const byId=Object.fromEntries(S.modules.map(m=>[m.id,m])), common=recCommon(), groups=APPGROUPS.filter(g=>g!=='문서함');
+  const byId=Object.fromEntries(S.modules.map(m=>[m.id,m])), common=recCommon(), groups=AREAS;
   $('#dept-rec').innerHTML=Object.keys(DP.presets||{}).map(d=>{
     const ids=recIds(d), cur=dpDraft[d]||new Set(), add=ids.filter(id=>!cur.has(id)), del=[...cur].filter(id=>!ids.includes(id));
     const nm=l=>l.map(id=>(byId[id]||{name:id}).name).join(' · ');
     const own=ids.filter(id=>!common.includes(id));
     return `<div class="mc"><h4>${esc(d)}<span class="c">추천 <b class="num">${ids.length}</b> 화면</span></h4>
     <p class="why">${esc((REC[d]||{}).why||'근거 없음 — 공통만')}</p>
-    ${groups.map(g=>{const l=own.filter(id=>(byId[id]||{}).appgroup===g); return l.length?`<div class="grp-line"><b>${esc(g)} ${l.length}</b><span>${esc(nm(l))}</span></div>`:'';}).join('')}
+    ${groups.map(g=>{const l=own.filter(id=>(byId[id]||{}).group===g); return l.length?`<div class="grp-line"><b>${esc(g)} ${l.length}</b><span>${esc(nm(l))}</span></div>`:'';}).join('')}
     <div class="grp-line"><b>공통 ${common.length}</b><span>종합접수처·업무·결재 현황·전사 일정·휴무 등(전 부서 같음)</span></div>
     <div class="diff">지금 표와 ${add.length||del.length?`<span class="tag ok" title="${esc(nm(add))}">${add.length}</span><span class="tag bad" title="${esc(nm(del))}">${del.length}</span>`:'<span class="tag">같음</span>'}
       <button class="btn sm pri" data-rec="${esc(d)}" ${add.length||del.length?'':'disabled'}>이 추천으로 부서 기본 채우기</button></div>
@@ -553,14 +560,14 @@ function renderScreens(){
   $('#screen-presets').innerHTML=Object.keys(dm).map(k=>`<button class="btn sm" data-dept-preset="${esc(k)}">${esc(k)}</button>`).join('')||'<span class="empty">부서 없음</span>';
   const qq=q.trim().toLowerCase(); const act=S.users.filter(u=>u.status==='active');
   const match=m=>!qq||(m.name+' '+m.group+' '+(m.staff||'')).toLowerCase().includes(qq);
-  const core=APPGROUPS.filter(g=>g!=='문서함').map(g=>{
-    const all=S.modules.filter(m=>(m.appgroup||'문서함')===g), list=all.filter(match);
+  const core=AREAS.map(g=>{
+    const all=S.modules.filter(m=>!m.doc&&m.group===g), list=all.filter(match);
     return `<details class="grp"${qq&&list.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${list.length}</b>/${all.length} 화면</span></summary>
     ${list.map(m=>{const v=act.filter(u=>allowed(u,m));
       return `<details class="scrrow"><summary><span>${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
       <div class="chips">${v.length?v.map(u=>`<span class="tag" title="${esc(dept(u)||'')}">${esc(u.name)}</span>`).join(''):'<span class="tag">아무도 못 봅니다</span>'}</div></details>`;}).join('')||'<div class="empty">검색 결과 없음</div>'}
     </details>`;}).join('');
-  const docAll=S.modules.filter(m=>(m.appgroup||'문서함')==='문서함'), docList=docAll.filter(match);
+  const docAll=S.modules.filter(m=>m.doc), docList=docAll.filter(match);
   const doc=`<details class="grp"><summary><span class="n">문서함</span><span class="c">${docList.length}개 문서 · 안내·초안·보고서 — 화면별 개별 관리 없음(부서+전사 공개 · 페이지 이동 정리는 별도 건)</span></summary></details>`;
   $('#screen-groups').innerHTML=core+doc;
 }
@@ -625,7 +632,7 @@ STATE_SHAPE — GET /auth/admin/api/state (관리자 쿠키 필요 · 없으면 
              "created_at":"2026-09-05 10:11","approved_at":"2026-09-05 10:20","google":true,
              "perms":{"dept":"운영부","groups":[],"modules":["member"],"deny":[],"all":false,"locked":false} | null,
              "fixed_perms": {…account_perms.json 항목…} | null }],
-  "modules": [ …erp/modules.json 카드 그대로(id·name·desc·group·appgroup·core·role·staff·path)… ],
+  "modules": [ …erp/modules.json 카드 그대로(id·name·desc·group(업무영역)·doc(문서 여부)·appgroup(앱 셸 전용)·core·role·staff·path)… ],
   "dept_modules": {"운영부":[…id…], …},        ← app.py dept_presets()(부서별 전체 목록 · 데이터 파일 있으면 그게 정본)
   "common_modules": [],                        ← 배1026부터 dept_modules 안에 이미 합쳐 들어간다(더 안 씀)
   "exception_ids": […id…],                    ← app.py EXCEPTION_ONLY_IDS

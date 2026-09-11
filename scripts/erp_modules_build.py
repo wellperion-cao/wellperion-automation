@@ -132,6 +132,23 @@ APPGROUP_IDS = {
 }
 APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함", "상담봇"]
 
+# ── 권한 묶음 = 업무영역 (배2540 · GM 2026-09-11 「메뉴를 5분류로 바꿨으니 권한도 단순화될 것 같다」) ──
+# 권한 화면에서 묶음을 고를 때 보이는 이름을 파트너사 직원 화면(/home) 좌측 메뉴와 같은 낱말로 맞춘다.
+# 값은 role 에서 뽑는다 — 사람이 따로 적는 목록을 만들지 않는다(목록이 둘이면 한쪽이 낡는다).
+# 종전 group 칸은 AI 닉네임(시우·시로…)이었는데 role 과 8:8 로 완전히 같은 축이라 정보가 0이었다.
+# 그 자리를 업무영역 이름으로 바꾼다 — 권한 판정(app.py allowed)은 이 칸을 그대로 보므로 코드가 안 바뀐다.
+# ★appgroup 은 남는다. 그건 ERP 모듈 홈(erp/index.html)의 카드 묶음이고 GM 이 따로 순서를 준 축이다
+#   (2026-09-11 「상담봇을 메뉴 맨 아래에」). 두 축은 쓰는 화면이 달라 합치지 않는다.
+AREA_OF = {
+    "cmo": "마케팅 관리",
+    "cpo": "회원 관리",
+    "coo": "운영 관리",
+    "chro": "인사&파트너 관리",
+    "cfo": "매출&지출 관리",
+}
+AREA_ETC = "ERP 플랫폼"          # 파트너사 메뉴 밖 — ceo·gm·cto·cbo
+AREA_ORDER = ["마케팅 관리", "회원 관리", "운영 관리", "인사&파트너 관리", "매출&지출 관리", AREA_ETC]
+
 # 탭으로 격상된 화면 — 카드 목록에서 뺀다(GM 지시 2026-09-09 「토큰 사용량은 하나의 탭으로
 # 관리되어야 할 정도로 중요한 맥락이야, 모듈에서 격상시켜줘」). 카드와 탭 양쪽에 두면 중복이다.
 TAB_PROMOTED = {"cto-automation-토큰-사용량"}
@@ -353,8 +370,9 @@ def build():
         items.append({
             "id": mid,
             "core": bool(core),
-            "group": nick_of.get(role, role),
-            "appgroup": APPGROUP_OF.get(mid, "문서함"),   # 앱 셸 표시 그룹(배1026) — 권한 판정(group)과 별개
+            "group": AREA_OF.get(role, AREA_ETC),         # 권한 묶음 = 업무영역(배2540) — /home 좌측 메뉴와 같은 이름
+            "appgroup": APPGROUP_OF.get(mid, "문서함"),   # 앱 셸(erp/index.html) 카드 묶음 — 권한과 별개 축
+            "doc": mid not in APPGROUP_OF,                # 읽는 문서다 = 화면별 개별 권한 관리를 안 한다
             "role": role,
             "name": clean_name(name),                     # 옛 용어 자동 차단
             # 사람이 적어 둔 설명(경로 → 파일명)이 먼저다. 자동화 등록부의 feature 첫 조각은
@@ -465,9 +483,10 @@ def main():
     for m in items:
         counts[m["group"]] = counts.get(m["group"], 0) + 1
     print("[erp-modules] %s (%d건 · %s)" % (OUT_REL, len(items), "변경" if changed else "변경 없음"))
-    for _role, nick in ROLE_ORDER:
-        if counts.get(nick):
-            print("  %-4s %3d" % (nick, counts[nick]))
+    for area in AREA_ORDER:
+        if counts.get(area):
+            print("  %-12s %3d" % (area, counts[area]))
+    print("  %-12s %3d" % ("문서(개별관리X)", sum(1 for m in items if m["doc"])))
     print("  핵심 %d · 없는 경로 %d" % (sum(1 for m in items if m["core"]), len(bad)))
     for b in bad:
         print("  없음:", b)
