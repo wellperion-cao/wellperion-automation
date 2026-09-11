@@ -399,11 +399,13 @@
   <nav class="nav">
     <a data-toggle="cmo-nav2" data-id="M1" data-has-sub="true"><span class="num">1</span><span class="label">마케팅 관리<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cmo-nav2">
-      <a data-id="S0">🏢 회사소개 · 전략 로드맵</a>
+      <a data-id="M0">🏢 회사소개 · 전략 로드맵</a>
       <a href="cmo/brand/브랜드가이드.html" target="_blank">🎨 브랜드 가이드</a>
       <a href="cmo/intake/instructor_intake.html" target="_blank">🎬 콘텐츠 접수</a>
       <a data-id="M1">📂 콘텐츠 제작 · 검수·발행</a>
-      <a href="cmo/survey/wp_inquiry_form.html" target="_blank">📝 문의 폼</a>
+      <!-- 문의 폼 = 손님이 실제로 보는 문의 화면. cmo/survey/wp_inquiry_form.html 은 워드프레스에
+           심는 조각이라 그것만 열면 「문의 유형을 문의 페이지에서 선택해 주세요」 한 줄만 뜬다. -->
+      <a href="public/ko/inquiry.html" target="_blank">📝 문의 폼</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-id="P1" data-has-sub="true"><span class="num">2</span><span class="label">회원 관리<span class="tag">임정은M</span></span></a>
@@ -1646,8 +1648,8 @@
     </div>
   </article>
 
-  <article class="doc" id="S0">
-    <div class="doc-header"><h2><span class="g-id">S0</span>회사소개서 &amp; 전략 로드맵</h2><div class="meta">v4.0 · 2026-07 · 전략 로드맵이 축 · 통합 소개서(가로·세로 인쇄) · 직원과 외부가 같이 보는 한 장</div></div>
+  <article class="doc" id="M0">
+    <div class="doc-header"><h2><span class="g-id">M0</span>회사소개서 &amp; 전략 로드맵</h2><div class="meta">v4.0 · 2026-07 · 전략 로드맵이 축 · 통합 소개서(가로·세로 인쇄) · 직원과 외부가 같이 보는 한 장</div></div>
     <p class="lead">웰페리온은 2017년 한남동에서 시작한 <strong>3,000평 규모의 프리미엄 라이프스타일 클럽</strong>입니다. 운동과 회복을 한 공간·한 멤버십·한 동선 안에 담아, 회원 한 사람의 건강한 하루를 완성합니다. 이 페이지는 <strong>회사소개서와 전략 로드맵의 진입점</strong>이며, 직원과 외부가 같은 내용을 봅니다.</p>
 
     <!-- 문서 진입 카드 (2026-07-23 개편 · 통합 소개서 주력) -->
@@ -1768,7 +1770,7 @@
         var st=items.filter(function(x){return !/^Q/i.test(String(x.stage));});
         // 단계 표를 따로 그리지 않는다(2026-08-18 GM 지적 — 아래 토글 01~06 과 제목·내용이 겹쳤다).
         // 대신 실측 상태·진척만 그 토글 제목 옆에 배지로 붙인다 — 정보는 그대로, 화면만 한 벌.
-        var toggles=document.querySelectorAll('#S0 details.toggle > summary');
+        var toggles=document.querySelectorAll('#M0 details.toggle > summary');
         st.forEach(function(x,i){
           var p=(typeof x.progress==='number')?x.progress:null;
           var s=String(x.status||'');
@@ -7248,7 +7250,7 @@ function crTab(btn, panelId) {
 
   // 옛 주소(#g10 등) → 식별자(#S2) 하위호환 안전망. 표면(메뉴·URL·문서 id)은 전부 식별자로 단일화 (2026-06-13 GM B안)
   const LEGACY_TO_ID = {
-    'g9':'S0','update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
+    'g9':'M0','S0':'M0','update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
     'gcoo-check':'O1','ghome':'M1','g14':'M1',   // gcoo-reenroll(O3) 제거 → 아래 외부 이관 리다이렉트로 처리
     'gcmo-print':'M1','gcmo-funnel':'M2','cmo-publish':'M1','g16':'T1','g19':'T2',
     'M3':'M1',  // 2026-07-09: M3(검수·발행) → M1로 병합 (죽은 링크 방지 안전망)
