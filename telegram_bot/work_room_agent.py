@@ -5,14 +5,17 @@ bot.py handle_message() 의 그룹 수신 지점(_log_group_message 바로 다�
 사람·CHRO 발화만 상대하고, 봇·GM 본인 발화는 건드리지 않는다(그룹 무응답 원칙 배1065 유지 — 이
 에이전트는 자동응답 금지 원칙과 별개로, GM 계정(telegram_user_send)으로만 밖에 말한다).
 
+★GM 봇방(_escalate) 통지는 실패일 때만 나간다(GM 지시 2026-09-11 「텔레그램 업무보고봇에
+나우열M 관련된 부분은 안보내줘도되」). 잘 된 일은 그 방 회신과 배에만 남는다 — 실패까지 같이
+끄면 조용한 실패가 되므로 발신 실패·등록 확인 실패 세 줄은 그대로 둔다.
+
 분류 3종(classify):
   done            — 「반영했습니다」「완료」「등록했습니다」「처리했습니다」류 → 어느 배인지
-                     scripts/send_ops_digest._reply_match 재사용으로 찾아 그 배 DONE(mutate_queue)
-                     + GM 개인 봇방 1줄.
+                     scripts/send_ops_digest._reply_match 재사용으로 찾아 그 배 DONE(mutate_queue).
   question        — 물음표·「확인 부탁」류 → 정본(ssot/canon_values.json values[])에서 답 나오면
-                     GM 계정으로 짧게 답, 안 나오면 GM 개인 봇방에 카드.
+                     GM 계정으로 짧게 답, 안 나오면 웰리 배로 넘긴다.
   register_confirm — 「등록했습니다 TODO-…」류(TODO 번호 포함) → /api/todo(todo_list) 대조 →
-                     있으면 배 note 「SSOT 등록 확인」, 없으면 GM 개인 봇방 1줄.
+                     있으면 배 note 「SSOT 등록 확인」, 없으면 GM 봇방에 실패 1줄.
 
 발신(승인 카드): staff_to=나우열M · note 에 '업무관리 발송' 마커가 없는 열린 배 →
 CHRO 규격(scripts/notify/telegram_user_send.render_chro_task) 렌더 → GM 개인 봇방에
@@ -419,7 +422,7 @@ async def _scan_todo_tracking(ctx) -> None:
             title = str(ship.get("title") or "")
             line = f"[SSOT 완료 확인 {now}] {todo_id}"
             await asyncio.to_thread(_close_ship, ship.get("task_id"), line)
-            await _escalate(ctx, f"✅ 나우열M 반영(SSOT 완료 확인) — {title}")
+            # GM 봇방 통지 없음 — 잘 된 일은 안 알린다(GM 지시 2026-09-11). 배가 닫힌 것으로 남는다.
 
 
 def _tracking_data(rows: "list[dict] | None" = None) -> "tuple[list[str], list[str]]":
@@ -582,7 +585,7 @@ async def _handle_done(text: str, ctx) -> None:
     title = str(ship.get("title") or "")
     line = f"[업무관리 회신 {now}] {text[:40]}"
     await asyncio.to_thread(_close_ship, task_id, line)
-    await _escalate(ctx, f"✅ 나우열M 반영 — {title}")
+    # GM 봇방 통지 없음 — 같은 말이 그 방에도 봇방에도 있어 두 번 돌았다(GM 지시 2026-09-11).
 
 
 async def _handle_register_confirm(text: str, ctx) -> None:
@@ -633,7 +636,7 @@ async def _handle_call(text: str, ctx) -> None:
         return
 
     await asyncio.to_thread(_dispatch_call_ship, text)
-    await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]}\n↳ 받았다고 답했고 웰리 배로 넘겼습니다")
+    # GM 봇방 통지 없음 — 오늘 9번 갔다(GM 지시 2026-09-11). 실제 일(방 회신 + 웰리 배)은 위 줄이 한다.
 
     # 질문이면 정본에서 답이 나오는지까지 이어서 본다 — 받았다는 말로 끝내지 않는다.
     if kind == "question" and rest:
@@ -671,7 +674,9 @@ async def _handle_question(text: str, ctx) -> None:
         if not ok:
             await _escalate(ctx, f"❓ 업무관리 질문 — {text[:200]} → 답 필요(발신 실패 — 상한·세션 확인)")
     else:
-        await _escalate(ctx, f"❓ 업무관리 질문 — {text[:200]} → 답 필요")
+        # 정본에 답이 없으면 GM 봇방을 부르지 않고 웰리 배로 넘긴다(GM 지시 2026-09-11).
+        # 알리기를 없애는 것이지 일을 없애는 게 아니다 — 배가 없으면 그 질문이 조용히 사라진다.
+        await asyncio.to_thread(_dispatch_call_ship, text)
 
 
 async def handle_group_message(update, ctx) -> None:
