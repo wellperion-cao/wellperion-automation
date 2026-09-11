@@ -1936,5 +1936,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-11"
+  },
+  {
+    "task_id": "CTO-2026-09-11-모듈-상태-파일에-옛-주소가-남아-화면에서-옛-화면",
+    "clevel": "cto",
+    "title": "[시토] 모듈 상태 파일에 옛 주소가 남아 화면에서 옛 화면으로 열린다 (GM 지적 2026-09-11)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-11",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-09-11] GM 원문 2026-09-11 09:4x: 'https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html 왜 이화면으로 가는거지? 이제 새 주소로 다 셋업 가능하지않나?'\n\n■ 실측\n· 카톡·텔레그램 발신은 관문 tg_outbound_log.to_erp_links 가 이미 새 주소로 바꾼다(.html 만 · 이미지는 옛 주소 유지).\n· 그런데 모듈 수집기가 만든 payload 의 link 는 바뀌지 않은 채 status/heartbeats/*.json 과 모듈 보고에 적히고,\n  자율현황·모듈 보고 화면이 그 값을 그대로 그린다 — 그래서 화면에서 누르면 옛 주소(GitHub Pages)로 열린다.\n· scripts 안 github.io 문자열 60곳. 시포 소관 2곳(cpo-inquiry-daily-actions · cpo-member-rollup)은 09-11 09:4x 에 직접 고쳤다(커밋 3621c8d26).\n\n■ 제안 (관문 한 곳 · 약속 L21)\nscripts/collectors/base.py make_payload 에서 link(및 summary_line)를 to_erp_links 로 감싸면 나머지 58곳이 한 번에 따라온다.\n이미지·PDF 는 그 함수가 건드리지 않으므로 회원·외부 링크는 그대로다.\n\n■ 확인할 것\n자율현황·모듈 보고 화면이 link 를 렌더할 때 한 번 더 치환하는 편이 나은지(화면 쪽 관문) 함께 판단.",
+    "next": "담당 확인 후 진행 · 완료 시 전달자에게 1줄 회신",
+    "depends_on": "",
+    "ship_no": 12529,
+    "short_no": 2529,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-11"
   }
 ]
