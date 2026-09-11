@@ -215,26 +215,37 @@
 
   /* [6장] 전용 — 표 한 장이 중심이라 크게 */
   #sheet6 .title{ font-size:26px; }
-  #sheet6 .ask .q{ font-size:14.2px; }
-  #sheet6 .ask .d{ font-size:12.2px; line-height:1.42; }
-  #sheet6 .ask .it{ padding:7px 14px; }
-  #sheet6 .main{ margin-top:8px; padding:5px 10px 6px; }
-  #sheet6 .main h3{ font-size:15.4px; }
-  #sheet6 .main .lead{ font-size:13px; line-height:1.4; padding:5px 9px; margin:4px 0 6px; }
-  #sheet6 .main table td,#sheet6 .main table th{ font-size:13px; line-height:1.4; padding:6px 9px; }
-  #sheet6 .main thead th{ height:34px; font-size:13.4px; }
-  #sheet6 .main thead th .sub{ font-size:11.4px; }
-  #sheet6 .main td.k{ font-size:14px; }
-  #sheet6 .main .est{ font-size:11.4px; }
-  #sheet6 .duo{ margin-top:10px; }
-  #sheet6 .box{ padding:6px 11px 5px; }
-  #sheet6 .box h3{ font-size:15px; margin-bottom:6px; }
-  #sheet6 .box .lead{ font-size:12.8px; line-height:1.42; padding:5px 8px; margin-bottom:8px; }
-  #sheet6 .box li{ font-size:13px; line-height:1.48; margin-bottom:8px; padding-left:24px; }
-  #sheet6 .box li.n::before{ width:18px; height:18px; line-height:18px; font-size:12px; top:1px; }
-  #sheet6 table.mini td{ font-size:12.8px; line-height:1.44; padding:5px 8px; }
-  #sheet6 table.mini td.k{ width:40px; font-size:13px; }
-  #sheet6 .foot{ font-size:10.2px; line-height:1.42; }
+  #sheet6 .ask .q{ font-size:13.2px; }
+  #sheet6 .ask .d{ font-size:11.4px; line-height:1.34; }
+  #sheet6 .ask .it{ padding:4px 12px; }
+  #sheet6 .main{ margin-top:5px; padding:3px 10px 4px; }
+  #sheet6 .main h3{ font-size:14px; }
+  #sheet6 .main .lead{ font-size:11.6px; line-height:1.3; padding:3px 8px; margin:2px 0 3px; }
+  #sheet6 .main table td,#sheet6 .main table th{ font-size:11.7px; line-height:1.26; padding:2px 7px; }
+  #sheet6 .main thead th{ height:28px; font-size:12px; }
+  #sheet6 .main thead th .sub{ font-size:10.4px; }
+  #sheet6 .main td.k{ font-size:12.4px; }
+  #sheet6 .main .est{ font-size:10.6px; }
+  #sheet6 .duo{ margin-top:5px; }
+  #sheet6 .box{ padding:4px 10px 4px; }
+  #sheet6 .box h3{ font-size:13.4px; margin-bottom:3px; }
+  #sheet6 .box .lead{ font-size:11.5px; line-height:1.32; padding:3px 7px; margin-bottom:4px; }
+  #sheet6 .box li{ font-size:11.8px; line-height:1.34; margin-bottom:4px; padding-left:22px; }
+  #sheet6 .box li.n::before{ width:16px; height:16px; line-height:16px; font-size:11px; top:1px; }
+  #sheet6 table.mini td{ font-size:11.6px; line-height:1.32; padding:2px 7px; }
+
+  /* [6장] 9/11 운영부 미팅 확정칸 — 비어 있는 것이 비어 보이게 */
+  #gate911{ border-top-color:var(--bad); margin-top:6px; padding:4px 10px 5px; }
+  #gate911 h3{ color:var(--bad); font-size:14.6px; }
+  #gate911 table td,#gate911 table th{ font-size:12.2px; line-height:1.28; padding:2px 8px; }
+  #gate911 thead th{ height:24px; font-size:12.4px; }
+  #gate911 tbody td{ height:23px; }
+  #gate911 td.k{ font-size:12.4px; }
+  #gate911 .est{ font-size:11.4px; }
+  #gate911 td.blank{ background:repeating-linear-gradient(45deg,#F2F4F6,#F2F4F6 7px,#E8EBEF 7px,#E8EBEF 14px);
+    color:#9E2A2A; font-weight:700; text-align:center; letter-spacing:.3px; }
+  #sheet6 table.mini td.k{ width:34px; font-size:11.8px; }
+  #sheet6 .foot{ font-size:9.4px; line-height:1.34; }
   #sheet6 .duo .box{ flex:1; }
   #sheet6 .duo .box.w{ flex:1.45; }
 </style>
@@ -242,7 +253,7 @@
 <body>
 
 <div class="bar">
-  <b>회원권 요금 변경 및 준비 — 제안 (A3 6장 : 요금 · 시장 · 강습 · 공간 · 회원 · 실행) · 3차 갱신 2026-09-07</b>
+  <b>회원권 요금 변경 및 준비 — 제안 (A3 6장 : 요금 · 시장 · 강습 · 공간 · 회원 · 실행) · 4차 갱신 2026-09-11 · 최종본</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -259,8 +270,8 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">결정</b> 회장님 · 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-01</b> · <b>1단계</b><br>
-      유효회원 <b>994명</b> · 70세 이상 <b>124명(12.4%)</b> · 시행 <b>27년 2월</b><br><span style="color:#96601A; font-weight:700;">실행·빈틈 = 6장</span>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-01</b> · <b>1단계</b><br>
+      유효회원 <b>994명</b> · 70세 이상 <b>124명(12.4%)</b> · 시행 <b>27년 2월</b><br><span style="color:#9E2A2A; font-weight:700;">9/11 운영부 미팅 확정값 미수령 — 6장에 빈칸</span>
     </div>
   </div>
 
@@ -379,7 +390,7 @@
         <tr class="grp"><td colspan="6">시 설 — 공 간 · 비 품 · 견적이 필요한 것</td></tr>
         <tr class="sum"><td class="ctr strong">4</td><td class="k strong">사우나 가운 · 린넨 상시 비치</td><td class="bad">6개사 전부 있고 <b>우리만 없다</b></td><td>가운 · 타월 상시 비치 + 세탁 순환 체계</td><td><b>소</b> <span class="est">소모품·세탁 운영비</span></td><td class="ctr good strong">10월 <span class="est">안내 전</span></td></tr>
         <tr class="sum"><td class="ctr strong">5</td><td class="k strong">남성 세신</td><td class="bad">우리는 여성만 · 타사는 대부분 남녀 운영</td><td>세신사 채용 또는 외주 — <b>가장 자주 나오는 회원 요구</b></td><td><b>중</b> <span class="est">인건비 미산정</span></td><td class="ctr good strong">11월</td></tr>
-        <tr class="sum"><td class="ctr strong">6</td><td class="k strong">GYM 장비 보강 — 바이크 2종 <span class="est">3사 비교 중</span></td><td>입식 · 좌식 바이크 도입 예정 <span class="est">(GM 확인 2026-09-01)</span></td><td><b>테크노짐</b> 입식 1,218만 · 좌식 1,260만 = 정가 2,478만 → <b>30% 할인 1,735만</b> <span class="est">(853·882만 · 절감 743만)</span> · <b>라이프피트니스</b> 09-01 견적 접수(금액 미수령) · <b>매트릭스</b> 09-04 현장 방문 완료 → 견적 09-07주 수령 예정</td><td class="bad strong">1,735만 <span class="est">테크노짐 할인가 · 3사 비교 후 확정</span></td><td class="ctr">3사 견적 취합<br><span class="est">GM 결재 후 도입</span></td></tr>
+        <tr class="sum"><td class="ctr strong">6</td><td class="k strong">GYM 장비 보강 — 바이크 2종 <span class="est">3사 비교 중</span></td><td>입식 · 좌식 바이크 도입 예정 <span class="est">(GM 확인 2026-09-01)</span></td><td><b>테크노짐</b> 입식 1,218만 · 좌식 1,260만 = 정가 2,478만 → <b>30% 할인 1,735만</b> <span class="est">(853·882만 · 절감 743만)</span> · <b>Life Fitness</b> 09-01 견적 접수(금액 미수령) · <b>매트릭스</b> 09-04 현장 방문 완료 → 견적 09-07주 수령 예정</td><td class="bad strong">1,735만 <span class="est">테크노짐 할인가 · 3사 비교 후 확정</span></td><td class="ctr">3사 견적 취합<br><span class="est">GM 결재 후 도입</span></td></tr>
         <tr class="grp"><td colspan="6">S V I P — 최 상 위 회 원 전 용 · 인 상 과 동 시 에 시 작 한 다</td></tr>
         <tr class="sum"><td class="ctr bad strong">7</td><td class="k strong">발렛 · 컨시어지 · 전용 시간대</td><td class="bad">반얀트리·차움 수준의 응대가 <b>우리에겐 없다</b> · 정원 마감이라 예약 경쟁이 곧 불만이 된다</td><td><b>노블레스+골프 116명</b> 대상 — 발렛 · 예약 우선 배정 · 개인 라커 셋업 · 골프 타석과 웰니스 스튜디오 <b>우선 예약 창</b> <span class="est">(기존 인력·공간 · 발렛만 외주)</span></td><td><b>소</b> <span class="est">발렛 외주비만 미산정</span></td><td class="ctr bad strong">27년 2월 <span class="est">인상과 동시</span></td></tr>
       </tbody>
@@ -434,7 +445,7 @@
   <div class="foot">
     <div><b>본 문서의 성격</b> — <b>제안이며 확정안이 아닙니다.</b> 최종 결정은 <b>회장님·대표님</b>, 결정 후 요금표 수정과 공표는 <b>김남욱 GM</b>이 진행합니다.<br><b>수치 근거</b> — 등급별 인원(268·322·289·116=995명)은 08-31 원장 집계, 09-01 유효회원 994명. LOSS 24건·갱신 임박 59명·상담 1건은 09-01 실측, 만기 인원(9월 66·10월 72·11월 76·12월 76)은 만기회원 보고서 실측, 합계 368명은 원장(279+89) 기준이라 월별 합 379와 11명 차입니다(6장 구멍 1). 시나리오 996명은 6장 ① 원장 기준입니다. 입회비 연 2.28억·강습 +5% 연 2.06억은 <b>(추정)</b>.</div>
     <div><b>요금 표기</b> — 모든 금액은 <b>부가세 포함 실청구액</b>입니다. <b>공급가를 10만원 단위로 끊어</b> 공급가·부가세·청구액이 모두 정수로 떨어집니다. 예) 노블레스+골프 = 450만 + 45만 = <b>495만</b>. 본전선은 정확히 LOSS 20.1%입니다. 연매출은 인원 × 등급가 단순 합이며 중도 해지·양도 미반영 <b>(추정)</b>, LOSS율 20%는 <b>(가정)</b>입니다.</div>
-    <div><b>장비·못 채운 칸</b> — 바이크 금액은 GM 확인 견적(2026-09-01)이며 <b>테크노짐 30% 할인 적용가 1,735만</b>은 정가 2,478만 기준 산출값입니다. <b>라이프피트니스 견적 금액은 미수령 · 매트릭스는 09-04 현장 방문 완료 후 09-07주 견적 예정</b>이며 도입·결제는 <b>3사 비교 후 GM 결재</b>로 확정합니다. 그 밖의 시설 강화 비용은 견적 전이라 소·중·대 감각치 <b>(추정)</b>, 9월 견적 후 재보고합니다. 70세 이상 124명은 원장 998명 기준(12.4%)이라 시점이 다릅니다. <b>인적 서비스는 실사 시트에 비교 항목이 없어</b> 사람 축은 내부 실측입니다. 시장 가격·입회 연령은 <b>2장</b>에 있습니다.</div>
+    <div><b>장비·못 채운 칸</b> — 바이크 금액은 GM 확인 견적(2026-09-01)이며 <b>테크노짐 30% 할인 적용가 1,735만</b>은 정가 2,478만 기준 산출값입니다. <b>Life Fitness 견적 금액은 미수령 · 매트릭스는 09-04 현장 방문 완료 후 09-07주 견적 예정</b>이며 도입·결제는 <b>3사 비교 후 GM 결재</b>로 확정합니다. 그 밖의 시설 강화 비용은 견적 전이라 소·중·대 감각치 <b>(추정)</b>, 9월 견적 후 재보고합니다. 70세 이상 124명은 원장 998명 기준(12.4%)이라 시점이 다릅니다. <b>인적 서비스는 실사 시트에 비교 항목이 없어</b> 사람 축은 내부 실측입니다. 시장 가격·입회 연령은 <b>2장</b>에 있습니다.</div>
   </div>
 
 </div>
@@ -448,7 +459,7 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">결정</b> 회장님 · 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-02</b><br>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-02</b><br>
       비교 대상 <b>6개사</b> · 실사 시트 확보 <b>2026-08-31</b> · <b>1장(인상안)의 근거 자료</b>
     </div>
   </div>
@@ -576,7 +587,7 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">결정</b> 회장님 · 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-03</b><br>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-03</b><br>
       강습 매출 <b>월 3억 4,310만</b>(회원권 월 2.84억보다 크다) · 시행 <b>27년 2월</b> 회원권과 동시 · <b>9/3 회장님 오찬 안건</b>
     </div>
   </div>
@@ -745,7 +756,7 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">관장·결정</b> 전응준 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-04</b><br>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-04</b><br>
       <b>요금 인상 준비 작업 — 공간 축</b> · <b>관장 전응준 대표님</b> · 완료 목표 <b>27년 1월</b> · <b>9/3 박수철 대표 현장 확인</b>
     </div>
   </div>
@@ -839,7 +850,7 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">결정</b> 회장님 · 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-05</b><br>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-05</b><br>
       1~4장이 <b>회사가 할 일</b>이라면 이 장은 <b>회원이 받을 것</b> — <b>12월 안내문의 뼈대</b>다 · 누가 언제 하나는 <b>6장</b>
     </div>
   </div>
@@ -961,7 +972,7 @@
     </div>
     <div class="meta">
       <b style="color:#96601A;">제안</b> AI 시포 · <b>보고</b> 김남욱 GM · <b style="color:#9E2A2A;">결정</b> 회장님 · 대표님<br>
-      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">3차 갱신 2026-09-07</b> · 문서번호 <b>WP-GM-260901-06</b><br>
+      보고일 <b>2026. 09. 01.</b> · <b style="color:#96601A;">4차 갱신 2026-09-11 · 최종본</b> · 문서번호 <b>WP-GM-260901-06</b><br>
       1~4장이 <b>무엇을 할까</b>, 5장이 <b>회원이 받을 것</b>이라면 이 장은 <b>누가 언제 하나</b>다
     </div>
   </div>
@@ -984,6 +995,27 @@
     </div>
   </div>
 
+  <!-- 9/11 운영부 미팅 확정칸 — 값이 안 왔으므로 비워 둔다 -->
+  <div class="main" id="gate911">
+    <h3>9/11 운영부 미팅 확정 <span class="est" style="color:#9E2A2A;">— 이 칸은 지금 비어 있습니다. 미팅 확정값을 받지 못해 지어내지 않았습니다</span></h3>
+    <table>
+      <thead>
+        <tr>
+          <th class="k" style="width:236px;">최종 결정 전에 채워야 할 칸</th>
+          <th style="width:520px;">지금까지 확정된 것 <span class="sub">본 문서 1~6장 근거</span></th>
+          <th>9/11(금) 10:00 운영부 미팅 <span class="sub">김남욱 GM · 이경연 실장</span> 확정값</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="sum"><td class="k bad strong">미팅 확정 사항 전체</td><td class="est">9/10 실장 최종본은 GM 이 문서로 받았고 <b>대면 브리핑은 아직</b>이다 <span class="est">(GM 기록 2026-09-10)</span></td><td class="blank">GM 확인 필요 — 미팅 확정값 미수령</td></tr>
+        <tr><td class="k">등급별 차등 인상 여부</td><td class="est">1장 인상안은 <b>전 등급 25% 안팎 일괄</b>(23.8~26.2%)로 제안한 상태</td><td class="blank">미정</td></tr>
+        <tr><td class="k">강습 요금 동반 인상 여부</td><td class="est">⑤ 전략 카드 4번 — 9/3 회장님 오찬 안건이었으나 <b>결과 기록이 없다</b></td><td class="blank">미정</td></tr>
+        <tr><td class="k">인상일에 걸치는<br>회원 갱신가 기준</td><td class="est">27년 1월 만기까지 <b>368명 현행가 갱신</b>만 확정 — 인상일 당일에 걸치는 건의 기준은 없다</td><td class="blank">미정</td></tr>
+        <tr><td class="k">법인 단가 정합 적용 시점</td><td class="est">5인 10% · 10인 이상 15% 상한 · 회사 한 곳 20구좌 · 임직원+가족(부모 세대까지 · 1인당 2명) · 등급 전체 개방 · <b>정원 1,000석과 별도로 센다</b> <span class="est">(GM 확정 2026-09-03)</span> — <b>인상 후에도 이 상한을 그대로 둘지, 계약 중인 법인에 언제부터 적용할지는 없다</b></td><td class="blank">미정</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="main">
     <h3>월 단위 실행 표 — 9월 ~ 27년 2월 · 조직별 <span class="est" style="color:#96601A;">한 줄 = 한 달 · 한 칸 = 한 조직 · 담당 없는 일은 ⚠ 빈틈</span></h3>
     <div class="lead"><b>지금 위치(09-07 실측)</b> — 준비 26건 중 완료 <b>7</b> · 담당·기한 미정 <b>19+7</b> · 10월 만기 69명 컨택 <b>0</b> · 바이크 견적 3사 중 <b>2사</b> 확보 · 회원 설문 <b>형식·담당 미정</b></div>
@@ -1000,7 +1032,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr class="sum"><td class="k bad strong">9월</td><td><b>9/10</b> 실장+운영부 최종본 → <b>9/12 대표님·회장님 최종 결정</b> · <b>회원 설문 형식 결정</b>(고급 접수 폼 / A4 양면)</td><td>준비 26건 <b>담당·기한 회신</b> · 갱신 담당제 가동(10월 만기 69명 컨택 0 → <b>1차 접촉</b>) · 문자 자동 안내 문구 확인</td><td>사우나 정비 <b>7건</b> 담당·기한 · 가운·린넨 수량</td><td>강습 동반 인상 여부 확인 <span class="est">(9/3 오찬 결과 기록 없음)</span> · 법인 단가 상한 정합</td><td>바이크 3사 비교 A3 → 결재 <span class="est">(매트릭스 견적 수령 시)</span> · <b>설문 초안 1장</b>(문항 뼈대 5) · 공간 요구사항 문서</td><td class="bad">담당·기한 미정 <b>19+7건</b> · 오찬 결과 미기록 · <b>설문 형식·담당 미정</b></td></tr>
+        <tr class="sum"><td class="k bad strong">9월</td><td><b>9/10</b> 실장 최종본 GM 수령(대면 브리핑 미실시) · <b>9/11 10:00 운영부 미팅</b> → <b>대표님·회장님 최종 결정</b> · <b>회원 설문 형식 결정</b>(고급 접수 폼 / A4 양면)</td><td>준비 26건 <b>담당·기한 회신</b> · 갱신 담당제 가동(10월 만기 69명 컨택 0 → <b>1차 접촉</b>) · 문자 자동 안내 문구 확인</td><td>사우나 정비 <b>7건</b> 담당·기한 · 가운·린넨 수량</td><td>강습 동반 인상 여부 확인 <span class="est">(9/3 오찬 결과 기록 없음)</span> · 법인 단가 상한 정합</td><td>바이크 3사 비교 A3 → 결재 <span class="est">(매트릭스 견적 수령 시)</span> · <b>설문 초안 1장</b>(문항 뼈대 5) · 공간 요구사항 문서</td><td class="bad"><b>9/11 미팅 확정값 미수령</b> · 담당·기한 미정 <b>19+7건</b> · 오찬 결과 미기록 · <b>설문 형식·담당 미정</b></td></tr>
         <tr class="sum"><td class="k strong">10월</td><td><b>설문 결과 → 5장 확정 · 서비스 순위 재정렬</b> · 락커 요금 시점 · 조기 갱신 허용 여부</td><td><b>설문 배포·회수</b>(리셉션·라커 · 회원 전원) · 가운·린넨 시행(안내 전) · 응대 문구 확정·<b>교육 1회차</b> · 11월 만기 <b>76명</b> 접촉</td><td>공간 공사 일정 확정 <span class="est">(인상 전 배치 가능한지)</span> · 사우나 안전 설비 견적</td><td>강습 요금 동반 인상 설계</td><td>「무엇이 나아졌나」 1장 초안 · 갱신 컨택 수 <b>매주 표</b></td><td class="bad">공간 공사비 · 세신 인건비 미산정</td></tr>
         <tr class="sum"><td class="k strong">11월</td><td>입회비 신설 · 70세 이상 방식 <b>채택/보류</b></td><td><b>설문 결과 회원 회신</b>(무엇을 반영했는지 한 장) · 남성 세신 · 체력 점검 가동 · 12월 만기 <b>76명</b> 접촉</td><td>안전 설비 시공</td><td>계약서 최종 문구 <b>법무 검토</b> · 강사 배분 정률/고정 확인</td><td>SVIP 설계 1장 · 안내문 최종 <span class="est">(설문 반영)</span></td><td class="bad">법무 검토 담당 미정</td></tr>
         <tr class="sum"><td class="k bad strong">12월</td><td><b>사전 안내 발송 승인</b></td><td>사전 안내(인상 + 좋아진 것 동봉 · <b>설문 결과 반영본</b>) · 응대 리허설 · 1월 만기 <b>89명</b> 현행가 갱신 접촉</td><td>밸류업 항목 <b>완료 점검</b></td><td>강습 안내</td><td>갱신 현황 주간 표 · 대외 문구 검수</td><td class="ctr">—</td></tr>
@@ -1038,7 +1070,7 @@
   </div>
 
   <div class="foot">
-    <div><b>본 문서의 성격</b> — <b>제안이며 확정안이 아닙니다.</b> 결정은 <b>회장님·대표님</b>, 결정 후 수정·공표는 <b>김남욱 GM</b>입니다. 본 장은 1~5장의 실행 계획을 <b>월 단위 × 조직 표로 다시 짠 것(2차 갱신 2026-09-07 · 3차 갱신에서 회원 설문 흐름 추가)</b>이며, 진행 수치(준비 26건 · 완료 7 · 담당 미정 19+7 · 10월 만기 컨택 0 · 바이크 견적 2사)는 <b>09-07 실측</b>입니다. 투자 합계와 순증은 견적 회수 후 채워 재보고합니다.</div>
+    <div><b>본 문서의 성격</b> — <b>제안이며 확정안이 아닙니다.</b> 결정은 <b>회장님·대표님</b>, 결정 후 수정·공표는 <b>김남욱 GM</b>입니다. 본 장은 1~5장의 실행 계획을 <b>월 단위 × 조직 표로 다시 짠 것(2·3차 갱신 2026-09-07 · 4차 갱신 2026-09-11 에서 「9/11 운영부 미팅 확정」 칸 신설)</b>이며, 진행 수치(준비 26건 · 완료 7 · 담당 미정 19+7 · 10월 만기 컨택 0 · 바이크 견적 2사)는 <b>09-07 실측</b>입니다. 투자 합계와 순증은 견적 회수 후 채워 재보고합니다.</div>
     <div><b>① 27년 매출 산출</b> — 회원 원장(2026-09-01 · 996명) 전원을 등급·만기월로 놓고 만기 전 현행가·만기 후 신요금을 월할 합산한 값입니다(27년 38.07억 · 신요금 전환 907명 · 28년 1월 89명). LOSS 없음 · 만기 즉시 갱신 · 등급 유지 · 비표준 137명 표준 청구액을 가정한 <b>(추정)</b>이며, 만기 인원(9월~27년 1월 368명 · 10월 69명은 09-07 재집계)은 원장 종료일자 집계입니다. 1장 등급 집계(2026-08-31 · 995명)와는 <b>시점 차 1명</b>입니다.</div>
     <div><b>② 강습 회사 귀속분 · 담당 표기</b> — 팀별 지급율은 재무 부문별 손익 원장(2026년 1~8월 누계) 실측 <b>가중 56.7%</b>이며, 배분이 <b>고정급</b>이면 회사 귀속은 43.3%보다 커집니다(정률/고정 확인 = 11월 파트너·인사 열). 표의 조직 열은 <b>3라인 조직(운영부 · 시설·지원부 · 파트너·인사)</b> 기준이고, 「빈틈」 열의 담당 미정 19+7건은 준비 26건 중 담당·기한이 비어 있는 건과 사우나 정비 7건입니다.</div>
   </div>
