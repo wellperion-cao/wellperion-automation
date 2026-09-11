@@ -1,1334 +1,1334 @@
 {
- "_doc": "모듈 단일 등록부(SSOT). 전 C레벨 공유 — 각 도메인은 자기 모듈만 등록(헌법 원리1). 웰리가 스키마 계약 관리. 화면·알림·자율이 이 한 곳을 읽는다. 제품화 가능 설계(단일 테넌트=웰페리온 now, 모듈 단위라 테넌트 축 확장 여지).",
- "_schema": {
-  "id": "고유 식별자",
-  "owner_role": "담당 C-Level 역할(cto 등)",
-  "owner_nick": "담당 C-Level 닉네임(시토 등)",
-  "feature": "특징 기능(무엇을 하는 모듈인지)",
-  "data_source": "{kind: gas|json|sheet, ref: 경로/식별자} — 가리킬 뿐 복사 금지",
-  "notify_spec": "{daily, weekly, monthly, channel, bot_id, notify_wired?} 알림 규격 — notify_wired:false = channel/bot_id 미배선(백그라운드 인프라·잡은 가동하되 외부 알림 미발송), 생략시 channel+bot_id 유효성으로 판단",
-  "front_card": "{window, anchor} 프론트 렌더 위치",
-  "autonomy": "auto|semi|mech|propose|manual 자율수준",
-  "ai_free_fallback": "AI 없이도 이 모듈이 어떻게 도는지",
-  "feedback": "{enabled, audience, entries} 실무진 피드백 칸",
-  "reversible": "가역 여부(bool) — 자율 완료 게이트",
-  "sellable": "internal|sellable|selling 판매 가능 단계(기본 internal) — 배1136"
- },
- "modules": [
-  {
-   "id": "cto-automation-health",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음). [2026-07-24 웰리 승인 병합 34→26] 등록부 3건을 이 항목으로 흡수(코드·스크립트·게이트는 그대로 존치, 등록부 표기만 통합·비파괴) — ①`cto-module-silence-detector`: 등록부 전 모듈 신선도 감시(scan_registry/silent_modules) — self_health_watchdog §1 이 그대로 재사용해 09:10 다이제스트에 매일 실린다(재수집 아님). 독자 run_detector()/--live 발신경로는 2026-08-10 시토 은퇴 확정(같은 방에 중복이라 'GM go 대기'가 아니라 이미 대체된 것이었음 — self_health_watchdog 선례와 동일 사유, 다시 켜지 마라) ②`cto-gas-version-monitor`: GAS 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 배포버전 조회, scripts/gas_version_monitor.py, 200 하드리밋 조기경고, 13시 telegram_health_check 편승 ③`cto-self-health-watchdog`: scripts/self_health_watchdog.py 애그리게이터 — 위 2건+erp_status.json+page_hygiene 제안서를 읽어 하루 1통 이상요약으로 조립하는 엔진. 2026-08-08 게이트(SELF_HEALTH_WATCHDOG_LIVE) 코드에서 삭제·독자발신 은퇴, build_digest()만 살아 cto-automation-health 09:10 다이제스트가 재사용 중(실측 status/self_health_watchdog_log.jsonl 08-08·08-09·08-10 sent:true). ④`cpo-sheet-contract-check`[2026-08-04 흡수·배 병합확대]: 시트 칸 계약 점검기(문의·회원·강습 6시트 헤더/값규칙 대조, ssot/sheet_columns.json 정본) — 07-24부터 §5 편입 제안 계류였던 것을 _라인분담_2026_08_04(백엔드 건=시토 직접 처리, ssot/kpi.json) 근거로 매듭. 실행체는 그대로(매일 07:50 daily_scheduler 직결·module_reporter 미경유·notify_wired false) — 발신·주기·목적지 무변경, 등록부 표기만 통합. 원 항목 스냅샷=_removed.",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/erp_status.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "AI관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "예약작업이 사람 세션 없이 상시 가동·30분 갱신",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "serves": "ours"
+  "_doc": "모듈 단일 등록부(SSOT). 전 C레벨 공유 — 각 도메인은 자기 모듈만 등록(헌법 원리1). 웰리가 스키마 계약 관리. 화면·알림·자율이 이 한 곳을 읽는다. 제품화 가능 설계(단일 테넌트=웰페리온 now, 모듈 단위라 테넌트 축 확장 여지).",
+  "_schema": {
+    "id": "고유 식별자",
+    "owner_role": "담당 C-Level 역할(cto 등)",
+    "owner_nick": "담당 C-Level 닉네임(시토 등)",
+    "feature": "특징 기능(무엇을 하는 모듈인지)",
+    "data_source": "{kind: gas|json|sheet, ref: 경로/식별자} — 가리킬 뿐 복사 금지",
+    "notify_spec": "{daily, weekly, monthly, channel, bot_id, notify_wired?} 알림 규격 — notify_wired:false = channel/bot_id 미배선(백그라운드 인프라·잡은 가동하되 외부 알림 미발송), 생략시 channel+bot_id 유효성으로 판단",
+    "front_card": "{window, anchor} 프론트 렌더 위치",
+    "autonomy": "auto|semi|mech|propose|manual 자율수준",
+    "ai_free_fallback": "AI 없이도 이 모듈이 어떻게 도는지",
+    "feedback": "{enabled, audience, entries} 실무진 피드백 칸",
+    "reversible": "가역 여부(bool) — 자율 완료 게이트",
+    "sellable": "internal|sellable|selling 판매 가능 단계(기본 internal) — 배1136"
   },
-  {
-   "id": "cto-weekly-self-review",
-   "sellable": "internal",
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "주간 AI 자기정리·학습 — Before/After 카드 자체발신(일요일 10:30)",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/self_review_log.jsonl"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "propose",
-   "ai_free_fallback": "일 10:30 예약작업이 무인 가동 — 병합·갱신은 자율(스냅샷 가역), 삭제·실발송은 GM 승인 게이트 뒤",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "cto-ops-morning-digest",
-   "sellable": "internal",
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "★운영부 아침 운영 다이제스트 — 매일 07:30, 어제 방 내용·오늘 챙길 것·업무·문의·종합접수를 자동 정리해 발송(승인 게이트)",
-   "data_source": {
-    "kind": "json",
-    "ref": "1. AI자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "내보내기(kakao_export_chat)·다이제스트 생성 파이프 무인(예약 07:30 Wellperion-Ops-Morning-Digest-0730 + 21:30 수집 1회 Wellperion-Ops-Kakao-Export-2130, 주말 19:30 · 배988 · 임정은M 마감 공유를 저녁 통이 읽게). 문의·종합접수·예약·업무 숫자=결정론적 실측, 어제 방 대화 요약만 Claude. 방 전송은 GM 승인 게이트(라이브=GM go+구성원 고지)=오발송 0. [2026-07-21 병합 배9420 #2] 아침/밤 다이제스트 공용 수집층 scripts/collectors/ops_shared.py로 GAS URL·gas_get·시각유틸 단일화(동작보존·라이브 전후 바이트동일 검증). 종합접수 수집 통합은 아침(전체미해결)·밤(당일createdAt) 집합이 실제 달라 보류",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cto-kakao-sales-report",
-   "sellable": "internal",
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "카톡 매출·운영 보고 — 매일 09:30 매출 이미지를 카톡 3방(회장님·관리부·운영부)에 무인 발송(휴관일 인지)",
-   "data_source": {
-    "kind": "sheet",
-    "ref": "매출보고 '보고' 탭 H2:S21 시트 export + status/kakao_last_send.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "kakao",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "시트 export→이미지→카톡 PC앱 UI 자동전송, AI 세션 불요. 킬스위치 status/kakao_auto_send.json",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cto-kakao-check-share",
-   "sellable": "internal",
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차 방(둘 다 daily_scheduler.py 22:30/평일·20:00 주말 단일 크론 경유, KAKAO_GO_STREAM2 게이트)에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3). ★2026-07-24(배10008): 같은 렌더 결과를 카톡 같은 방에 23:00 별도 예약작업(kakao_daily_check_share.py)으로 다시 발송하던 중복 경로를 삭제 — 22:30/20:00 단일 발송(텔레그램+카톡 둘 다 유지)만 남김(GM 지시). kakao_report_sender.py 에 중복발신 가드(방+내용 서명, 2시간 창) 신설.",
-   "data_source": {
-    "kind": "gas",
-    "_ref_주석": "2026-08-04 시토(모듈 정리) — 침묵감지 unmeasurable 은 사각지대인 줄 알고 두는 상태로 명시(coo-notice 전례). 발신 실행체=daily_scheduler 크론이라 모듈 전용 로컬 아티팩트가 없다. 후보였던 status/kakao_dedup_ledger.json(2시간 창 프루닝)·logs/kakao_sent-*.log 는 매출보고 등 전 카톡 발신이 공유해 mtime 을 빌리면 이 모듈이 죽어도 'ok'(배125 빌린 신호 함정). 전용 하트비트 신설은 L21 위반이라 안 함.",
-    "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실) — ★모듈 전용 로컬 아티팩트 없음·침묵감지 사각 인지"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "kakao+telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "공용 렌더(support_check_summary.py)→ daily_scheduler 크론(주말 20:00/평일 22:30) 단일 실행에서 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차(kakao_report_sender.py 경유, 중복발신 가드 내장) 둘 다 발송. AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-content-pipeline",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "콘텐츠 허브 — 기반→제작→검수→발행→성과→환류 한 흐름(M1 단일화). 제작/검수대기/발행완료 카운트 + 콘텐츠→문의 채널별 성과. AI 없이 자체 가동(검수·발행·성과=도구)·제품화(기반 교체)",
-   "data_source": {
-    "kind": "json",
-    "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json"
-   },
-   "notify_spec": {
-    "_bot_id_주석": "2026-08-05(시토) 업무관리→AI관리 였던 것을 2026-08-15(GM 지시 '5통을 1통으로') 되돌린다 — 발행 소식은 GM이 직접 보는 업무 내용이지 AI 내부 모듈현황이 아니었다. module_reporter.py 가 이 모듈을 개별발송하지 않고 cpo-inquiry-daily-actions와 묶어 GM 업무관리방에 「🧭 아침 보고」 한 통으로 보낸다(GM_DAILY_BUNDLE_MODULES). 어제 발행 0건이면 콘텐츠 섹션 자체를 뺀다(변화 없으면 침묵).",
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "M1",
-    "anchor": "m1-review"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "review_queue.json 상태전이를 사람이 직접 조작·집계 가능(AI 불요)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-marketing-funnel",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "마케팅 퍼널·채널 성과 — 채널별 문의·전환율(정직 꼬리표)",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/kpi_values.json"
-   },
-   "notify_spec": {
-    "_bot_id_주석": "2026-08-05(시토, GM 지적) — GM_DM(업무보고방)에서 자동화현황방(AI진행현황방)으로 정정. cmo-content-pipeline과 같은 사유(모듈 현황 보고 · 승인건 아님).",
-    "daily": false,
-    "weekly": true,
-    "monthly": true,
-    "channel": "telegram",
-    "bot_id": "AI관리"
-   },
-   "front_card": {
-    "window": "M1",
-    "anchor": "m1-dash",
-    "card": "cmo-funnel-콘텐츠문의현황"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "kpi_collector.py가 일2회 자동집계(사람/AI 세션 불요)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-case-series-dispatch",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 07:30 재고 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행. 평일 트랙은 2026-07-27 종결 마커로 중단, 현재는 주말(토·일) GM 트랙만 가동(정상 발효)",
-   "data_source": {
-    "kind": "json",
-    "_ref_주석": "배125(2026-07-27) — 옛 ref 는 review_queue.json 을 겹쳐 적어, 이 모듈이 휴면해도 남(AI하루 카드·발행)이 그 파일을 건드리면 항상 'ok' 로 떴다(거짓 안심). 이 모듈만 쓰는 자기 산출물 = 재고표 1개로 좁힌다.",
-    "ref": "instagram/_실전사례_2주플랜.md"
-   },
-   "notify_spec": {
-    "_cadence_주석": "배125 — daily→weekly. 평일 트랙 종결로 이제 주말에만 산출물이 나온다. daily(30h)로 두면 평일마다 거짓 경보가 난다. bot_id=null 이라 발송 게이트는 닫힌 채이며 이 변경으로 새 발신은 생기지 않는다(감지 주기만 바로잡음).",
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "예약작업이 평일 07:30 무인 가동 — 재고 대본(instagram/namuk.wellperion/ 06~09 슬라이드+caption) 순차 선정·검수카드 발송은 자동, 실발행은 GM 텔레그램 [✅승인] 게이트 뒤. 재고 소진 시 발송 대상 0으로 자연 종료",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-publish-digest",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
-   "data_source": {
-    "kind": "json",
-    "_ref_주석": "배125(2026-07-27) — .py 는 감지기가 신호로 안 쓴다(코드 수정≠가동 결과). 이 모듈의 자기 산출물 = 발신 원장 하나로 좁힌다.",
-    "ref": "scripts/.publish_digest_sent.json"
-   },
-   "notify_spec": {
-    "_cadence_주석": "배125 — 주기 미선언이라 'active_no_cadence'(판정 보류)로 빠져 67시간 침묵이 감지되지 않았다(2026-07-24~27 발행 4건에 디제스트 0건). 발행은 주 수회 있으므로 weekly(216h) 무신호면 확실한 고장. bot_id '문의·컨택·등록 알림' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "문의관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "발행 감시기(--once) 런 종료 시 자동 호출 — 토큰 .env 직접 로드·멱등 원장(.publish_digest_sent.json)으로 1콘텐츠 1회 보장, 토큰 없으면 [ERROR] 로그(조용한 실패 없음). AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-eval-feedback-loop",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "【반응루프 층2 — 주간 종합·기획 반영】⑤ 평가 환류 자동화. 층1(cmo-reaction-loop)이 만든 편별 판정을 §5로 받아, 이번 주 공식 발행분·문의→전환(funnel GAS)·신규 등록과 함께 한 장으로 묶어 Top/Bottom 정성 판정 + 다음 편 제안을 낸다. 실행체=scripts/weekly_marketing_feedback.py(예약작업 Wellperion-CMO-Weekly-Marketing-Feedback, 월 09:00 라이브 · --mode daily 일일카드는 Wellperion-CMO-Daily-Marketing-2100). ※층1과 중복 아님 — 층1=편별 측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
-   "data_source": {
-    "kind": "json",
-    "_ref_주석": "배125(2026-07-27) — 옛 ref 는 입력(review_queue·GAS·층1 성적표)을 전부 겹쳐 적어 review_queue.json mtime 이 채택됐다. 남이 그 파일을 건드리면 이 루프가 안 돌아도 'ok'. 이 모듈이 직접 낳는 산출물 = 주간 브리프 하나로 좁힌다. (입력 계보는 feature 에 그대로 남는다)",
-    "ref": "status/briefs/CMO-weekly-feedback-{date}.md"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": null,
-    "bot_id": null,
-    "notify_wired": false
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "propose",
-   "ai_free_fallback": "발행 원장(review_queue.json)·문의 전환 GAS·층1 성적표 JSON을 그대로 표로 렌더 — 판정 슬롯은 사람이 채우는 빈칸(자동 채움 금지). AI 없이도 브리프 생성됨. 실측 축적 후 v2 자동채점.",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": [
-     {
-      "date": "2026-07-23",
-      "by": "시모",
-      "kind": "decision",
-      "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
-      "text": "시토 중복 제기(#4)에 대한 결론 = 통합 아님, 층분리 확정. 근거: ①두 모듈 모두 실행 코드·예약작업이 실재(층2=weekly_marketing_feedback.py/Wellperion-CMO-Weekly-Marketing-Feedback, 층1=reaction_scorecard.py/IG-Reach-Collect-0945 편승) ②층1이 생산자·층2가 소비자(weekly_marketing_feedback.py:419 _fmt_reaction_scorecard_section이 층1 산출 JSON을 §5로 읽음) — 병합하면 '편별 측정'과 '주간 기획 결정'이 한 파일에 섞여 되레 퇴행 ③중복처럼 보인 진짜 원인은 코드가 아니라 본 등록부의 잘못된 data_source였음(ig_engagement_ledger.json은 개인 namuk 계정 전용이라 weekly_marketing_feedback.py:494에서 의도적으로 제외 중인데 등록부는 그걸 주 데이터원으로 표기) → 등록부 값 정정으로 해소. 스키마 무변경."
-     }
-    ]
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-reaction-loop",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "【반응루프 층1 — 편별 측정·판정】발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력. 매일 09:45 IG 도달 수집(예약작업 Wellperion-IG-Reach-Collect-0945)에 편승 실행 · 관찰 모드 2026-08-20까지(판정·기록은 하되 알림 억제). 산출 성적표는 층2(cmo-eval-feedback-loop) 주간 브리프 §5와 M1 페이지가 소비한다. ※층2와 중복 아님 — 층1=측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
-   "data_source": {
-    "kind": "json",
-    "_ref_주석": "배125(2026-07-27) — 옛 ref 는 경로 뒤에 설명 문구가 공백으로 붙어, 감지기가 경로를 뒤에서부터 줄이다 'status' 디렉터리로 떨어져 무관한 형제파일(module_report_log.jsonl) mtime 을 빌려 썼다. 성적표가 몇 달 멈춰도 영원히 'ok' 로 뜨는 자기지시 함정(감지기 소스 _resolve_segment 주석이 경고한 바로 그 케이스). 순수 경로 하나만 남긴다.",
-    "ref": "status/cmo_reaction_scorecard.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리",
-    "notify_wired": true
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "propose",
-   "ai_free_fallback": "IG 도달(09:45)·당근/블로그 RSS(09:30) 자동수집 결과를 사람이 review_queue.json·engagement_feed.json에서 직접 대조해 저조 편을 눈으로 판별 가능",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm",
-    "entries": [
-     {
-      "date": "2026-07-23",
-      "by": "시모",
-      "kind": "decision",
-      "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
-      "text": "시토 중복 제기(#4) 결론 = 층분리 확정(통합 아님). 본 모듈은 층1(편별 측정·판정) 정본이며 cmo-eval-feedback-loop(층2)는 본 모듈 산출을 §5로 소비하는 주간 종합·기획 층이다. 둘 다 실행 코드·예약작업 실재 — 폐기 대상 없음. 상세 근거는 층2 엔트리 feedback.entries 동일 일자 기록 참조. 스키마 무변경."
-     }
-    ]
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-autonomy-brain",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "CMO 자율화 두뇌(레퍼런스) — M3→M1 병합·모듈별 자동보고 뼈대(채널 자격증명 웹등록·자동로그인 로드맵, 타 C-Level 복제 템플릿)",
-   "data_source": {
-    "kind": "doc",
-    "ref": "docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "채널·검수·발행·제작 단일흐름 라이브 가동 중(M1), 모듈별 자동보고는 등록부 배선까지 완료·발효는 웰리 전사 텔레그램 통합정책(방 배정·bot_id) 대기",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "coo-check-status",
-   "sellable": "internal",
-   "owner_role": "coo",
-   "owner_nick": "시우",
-   "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황). [2026-07-24 웰리 승인 병합 34→26] `cto-check-gas`(점검 GAS 파이프 — CHECK_API weekly/monthly 집계, 12시 점검관리방 발송) 흡수 — 같은 CHECK_API·같은 자동화현황방 파이프라인. daily는 이미 이 모듈과 중복이라 2026-07-22에 꺼졌고 monthly만 잔존해 있던 것을 이 항목의 notify_spec.monthly로 편입(daily가 우선 판정이라 module_silence_detector.py::expected_max_silence_hours 침묵감지 로직 영향 없음 확인). ★2026-08-03 GM 확정 주간 보고 축 — 시설·지원·주차관리부 체계를 **점검 현황 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 점검 현황은 카톡 ★운영+시설+지원+주차(2026-08-19 GM 카톡방 정리 — ★관리부가 이 방으로 합병돼 없어졌다) · 종합접수처는 카톡 ★운영+시설+지원+주차. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
-   "data_source": {
-    "kind": "gas",
-    "ref": "CHECK_API weekly&dept=facility / today_live&dept=support / monthly(구 cto-check-gas 흡수) / weekly&dept=ops·parking(운영부·주차부 — 입력·스냅샷 경로 가동 확인 2026-09-01, kpi_collector 주간 측정 · 월간 제출률 분기 GAS 배선 완료 2026-09-05 @175 · monthly_report&dept=ops expected_rounds 응답 ok) + status/heartbeats/coo-check-status.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": true,
-    "monthly": true,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "o1-module-hub"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "GAS가 시트에서 자동 집계, 08시 통합보고 합류·이상 즉시 알림(등록부 구동)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "coo-work-approval",
-   "sellable": "internal",
-   "owner_role": "coo",
-   "owner_nick": "시우",
-   "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과 ★2026-08-03 GM 확정 주간 보고 축 — 업무 SSOT + 종합접수처를 **월간 운영계획 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 카톡 ★운영부(업무·결재 SSOT). ▸단계: 구조가 확정될 때까지는 텔레그램 GM 업무보고방으로만 보내며 다듬고, 확정 후 카톡으로 옮긴다 — GM: 한 번에 많은 양이 넘어가면 정리가 안 된다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
-   "data_source": {
-    "kind": "gas",
-    "ref": "TODO_API action=todo_list (클라 산식) + status/heartbeats/coo-work-approval.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "o1-module-hub"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "GAS 시트가 업무·결재 원장을 상시 보유, 클라이언트가 실시간 집계",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "coo-reception",
-   "sellable": "internal",
-   "owner_role": "coo",
-   "owner_nick": "시우",
-   "feature": "종합접수처 — VOC 6종(분실물·시설물고장·청결·칭찬·쓴소리·컴플레인) 접수·처리 현황과 SLA 초과 적체. 실무진 = 최준용M·윤병현AM(2026-08-13 이경연 실장 전달 기준). ★2026-08-13 GM 지시로 시우 소유 모듈로 독립 — 그 전까지 자기 항목 없이 coo-work-approval feature 안에 한 줄로만 있었고, 발송기는 시토가 만든 채 등록부에 안 잡혀 있었다. ▸발송 목적지(GM 확정 2026-08-03) = 카톡 ★운영+시설+지원+주차. 확정 전까지는 텔레그램 GM 업무보고방에서 다듬는다.",
-   "data_source": {
-    "kind": "gas+file",
-    "ref": "REG GAS(reg_dashboard / reg_board / reg_scoreboard / lf_list) + 3. 웰페리온 가이드/coo/reception/종합접수처_현황.html + status/heartbeats/coo-reception-health.json(15분 상시 점검 · 예약작업 Wellperion-Reception-Health-15m · 2026-09-05 시우)"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": true,
-    "monthly": false,
-    "channel": "kakao",
-    "bot_id": "★ 운영+시설+지원+주차"
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "o1-module-hub"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "GAS가 접수 시트에서 자동 집계·SLA 초과분 산출 — 스크립트 1회 실행이면 현황 재생성(AI 없이 동작)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "note": "발송기 = scripts/report_stream_2b_reception.py (스트림 #2b · 시토 작성 · 파일은 그대로 두고 소유만 시우로 옮겼다 — 파일을 옮기면 호출부가 깨진다). 카테고리·SLA 정본 = apps_script_voc.js REG_CATEGORIES. 칭찬은 slaHours=null 이라 적체 집계에서 제외. 점검(시설·지원·주차)과는 방을 나눠 단독 발송한다(GM 2026-07-22 지시로 점검현황방 병합을 되돌린 이력).",
-   "enabled": true,
-   "serves": "partner"
-  },
-  {
-   "id": "coo-schedule-ssot",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/schedule_ssot.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "전사_일정.html",
-    "card": "coo-check-전사-일정"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "schedule_ssot.json을 사람이 전사_일정.html 편집모드로 직접 관리, schedule_ssot.py가 기한 도래분 선별. AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "unmeasured",
-   "_owner_note": "[소유 이관 2026-08-15 · GM 지시] 전사일정·월간운영계획을 웰리(CEO)가 함께 보며 현장업무 중심으로 셋팅한다. GM 원문: 전사일정 지금은 웰리가 많이 쓰고 있고 … 웰리쪽으로 넘겨서 월간계획이랑 같이해서 현장업무 중심으로 셋팅. ▸id 접두(coo-)는 그대로 둔다 — 바꾸면 소비자 배선이 끊긴다(변경은 시토 백엔드 건). ▸[2026-08-16 웰리] owner_role 은 08-15 이관 때 ceo 로 바꿨는데 owner_nick 이 시우로 남아 화면·보고에 옛 담당이 뜨고 있었다 — 웰리로 맞췄다. id 접두(coo-)는 배선 때문에 그대로 둔다.",
-   "serves": "partner"
-  },
-  {
-   "id": "coo-monthly-ops",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT. objective.due 있는 목표는 monthly_ops_sync.py(기존 일일 파이프라인)가 전사일정 GAS(coo-schedule-ssot)에 mop-{id}로 멱등 등록(GM 지시 2026-08-03·약속 L23 — 복제 아닌 1회 연동)",
-   "data_source": {
-    "kind": "worklog",
-    "ref": "worklog:월간계획 + status/monthly_ops_plan.json",
-    "_ref_주석": "2026-09-09 교체 — 종전 ref 는 status/monthly_ops_plan.json 하나였다. 그 파일은 monthly_ops_sync 의 출력이면서 동시에 사람이 손으로 고치는 입력이라, 동기화가 09-01~09-09 9일 연속 AttributeError 로 죽는 동안에도 손편집 때문에 mtime 이 매일 새것이었고 침묵 감지기가 통과시켰다. worklog:월간계획 은 그 스크립트가 실제로 끝났을 때만 줄이 쌓이므로 오인이 안 생긴다."
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "_cadence_note": "[2026-09-09 시토·INC-057] daily=true 로 켠 이유는 발신용이 아니라 침묵감지용 — monthly_ops_sync.py 가 매일 07:00 이 파일을 갱신하는 일일 파이프라인인데도 이 셋이 전부 false 라서 module_silence_detector.judge_module() 이 이 모듈을 절대 'silent' 로 판정할 수 없었다(9일 크래시를 못 잡은 진짜 원인). bot_id=null 이라 module_reporter.py 실발신은 그대로 게이트로 막혀 있다(회귀 없음).",
-   "front_card": {
-    "window": "O1",
-    "anchor": "o1-module-hub"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "월간운영계획.html·전사회의.html이 monthly_ops_plan.json·sales_targets.json을 직접 렌더 — GM·부서장이 화면서 직접 열람, AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "_owner_note": "[소유 이관 2026-08-15 · GM 지시] 전사일정·월간운영계획을 웰리(CEO)가 함께 보며 현장업무 중심으로 셋팅한다. GM 원문: 전사일정 지금은 웰리가 많이 쓰고 있고 … 웰리쪽으로 넘겨서 월간계획이랑 같이해서 현장업무 중심으로 셋팅. ▸id 접두(coo-)는 그대로 둔다 — 바꾸면 소비자 배선이 끊긴다(변경은 시토 백엔드 건). ▸[2026-08-16 웰리] owner_role 은 08-15 이관 때 ceo 로 바꿨는데 owner_nick 이 시우로 남아 화면·보고에 옛 담당이 뜨고 있었다 — 웰리로 맞췄다. id 접두(coo-)는 배선 때문에 그대로 둔다.",
-   "serves": "partner"
-  },
-  {
-   "id": "coo-notice",
-   "sellable": "internal",
-   "owner_role": "coo",
-   "owner_nick": "시우",
-   "feature": "공지·안내문 서식 생성·저장 — 인쇄용 공지 템플릿(공용 GAS 저장목록)",
-   "data_source": {
-    "kind": "gas",
-    "_ref_주석": "배134(2026-07-27) — 시모 배125(a557506b5) 방식 그대로 적용. 옛 ref 는 원격 API 설명 산문이라 로컬 아티팩트가 하나도 잡히지 않아 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실사용 여부와 무관하게 이 모듈은 구조적으로 로컬 흔적을 남길 수 없다 — 저장/조회/삭제 전부 공유 GAS Web App(notice_list/notice_save/notice_delete) 직접 호출이며(3. 웰페리온 가이드/coo/notice/notice_template.html), coo_registry.fetch_notice_status 도 매번 라이브 HTTP 조회만 하고 로컬 캐시를 쓰지 않는다(파일 확인 완료). .verify_screenshots/notice_*.png 는 수동 QA 스크린샷(scripts/verify_notice_wysiwyg.py, 비정기 수동실행)이라 가동 신호로 채택 불가(코드 수정/수동테스트≠가동 결과, chro-gmail-job-title-fetch 항목과 동일 원칙). ★원격 전용·로컬 감지 불가 — 사각지대인 줄 알고 두는 상태로 명시(지어내지 않음).",
-    "ref": "TODO_API action=notice_list (저장 공지 목록) — ★원격 전용·로컬 감지 불가"
-   },
-   "notify_spec": {
-    "_cadence_주석": "배134 — 켜지 않음. bot_id=null 은 status/telegram_rooms.json 어떤 키에도 해소되지 않아(미해소) 켜도 안전(module_reporter 발신 0 유지)하지만, judge_module 은 로컬 아티팩트를 못 찾으면 cadence 값과 무관하게 무조건 unmeasurable 을 반환한다(코드 확인: last_dt is None 분기가 cadence 체크보다 먼저 단락). 이 모듈은 구조적으로 로컬 아티팩트가 영원히 없으므로 daily/weekly 를 켜도 판정은 그대로 unmeasurable — 의미 없는 선언을 남기지 않는다.",
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "o1-module-hub"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "실무진이 템플릿 화면서 공지문 직접 작성·저장(공유 GAS), AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cpo-inquiry-daily-actions",
-   "sellable": "internal",
-   "owner_role": "cpo",
-   "owner_nick": "시포",
-   "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
-   "data_source": {
-    "kind": "gas",
-    "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-inquiry-daily-actions.json"
-   },
-   "notify_spec": {
-    "_bot_id_주석": "2026-08-05(시토) 업무관리→AI관리 였던 것을 2026-08-15(GM 지시 '5통을 1통으로') 되돌린다 — 문의는 GM이 직접 챙기는 업무이지 AI 내부 모듈현황이 아니었다. module_reporter.py 가 이 모듈을 개별발송하지 않고 cmo-content-pipeline과 묶어 GM 업무관리방에 「🧭 아침 보고」 한 통으로 보낸다(GM_DAILY_BUNDLE_MODULES).",
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "문의회원",
-    "anchor": "cpoReportStatusLine"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
-   "feedback": {
-    "enabled": true,
-    "audience": "clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "estimated",
-   "serves": "partner"
-  },
-  {
-   "id": "cpo-member-rollup",
-   "sellable": "internal",
-   "owner_role": "cpo",
-   "owner_nick": "시포",
-   "feature": "회원 현황 롤업(신규문의·문의→가입 전환율·이탈·예약활성) ★2026-08-03 GM 확정 주간 보고 축 — **멤버십 회원관리 기준**으로 매주 월요일 매출·회원 정리 보고(매출·시포). weekly 는 이미 가동 중 — 기준만 재정의. ▸최종 목적지(GM 확정 2026-08-03) = 카톡 ★운영부(멤버십 회원관리 기준). 매출·지출은 별도로 카톡 ★부서장 방에 공유. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
-   "data_source": {
-    "kind": "gas",
-    "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-member-rollup.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": true,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "문의회원",
-    "anchor": "cpoReportStatusLine"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
-   "feedback": {
-    "enabled": true,
-    "audience": "clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "estimated",
-   "serves": "partner"
-  },
-  {
-   "id": "cpo-inquiry-snapshot",
-   "sellable": "internal",
-   "owner_role": "cpo",
-   "owner_nick": "시포",
-   "feature": "문의 스냅샷 자동 발행(멤버십·성인강습·유소년 원장 3분 주기 캐시). [2026-08-04 흡수·배 병합확대] `cpo-staff-feedback-watch`(실무진 피드백 감시 — 접수 즉시 시포 배 생성, scripts/collectors/cpo_staff_feedback_watch.py) 흡수 — 07-25부터 이미 같은 cpo_inquiry_snapshot.bat 3분 슬롯에서 함께 실행돼 온 한 파이프라인(등록부만 둘). 실행체·코드 무변경, 둘 다 notify none 이라 발신 변화 0. 접수 알림은 GAS staff_feedback_submit 이 업무보고방으로 보내는 것 그대로(여기서 안 보냄, 중복 발신 금지 유지). 근거=_라인분담_2026_08_04(백엔드 건=시토 직접 처리). 원 항목 스냅샷=_removed.",
-   "data_source": {
-    "kind": "gas",
-    "ref": "Survey.js member_inquiry_list/lesson_inquiry_list → status/inquiry_snapshot_member.json·inquiry_snapshot_lesson.json + status/heartbeats/cpo-inquiry-snapshot.json + status/heartbeats/cpo-staff-feedback-watch.json(흡수분 — 같은 bat 두 스텝의 하트비트 2개 모두 유지)"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "none",
-    "notify_wired": false
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "cpo-live-strip"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "화면이 구글시트를 매번 왕복하지 않고 이 스냅샷을 읽어 즉시 표시",
-   "feedback": {
-    "enabled": true,
-    "audience": "clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "note": "2026-07-25 시포 등록(배1) — 등록부에 없어 가동 신호를 보여줄 자리가 없었고, 그래서 회차마다 커밋이 완료-배를 낳아 G1을 도배했다(GM 07-24 지적). 가동 신호는 하트비트·자율현황 카드로 옮기고 배 생성은 중단.",
-   "serves": "partner"
-  },
-  {
-   "id": "cto-weekly-page-hygiene",
-   "sellable": "internal",
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "주간 페이지 위생 자동화 — 하위모델 전수감사→죽은코드(A) grep-0 게이트 통과 시 자동삭제·나머지(B/C/D)는 정리안 제안, 매주 일요일 09:00",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/page_hygiene_proposal_{date}.md"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "AI관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "semi",
-   "ai_free_fallback": "예약 Wellperion-Weekly-Page-Hygiene-Sun-0900이 무인 감사·제안서 생성·텔레그램 요약까지 수행. 카테고리 A 자동삭제만 게이트 PAGE_HYGIENE_APPLY(기본 OFF)+grep-0/snippet고유/파싱무결성 3중 게이트 뒤 — B/C/D는 항상 GM 승인 대기",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "ceo-gm-aide",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신). [2026-07-24 웰리 승인 병합 34→26] `cto-aide-gap-detector`(자율 틈 감지기 — 정체/재개가능 배 감시, 재개=자율태그·정체=surface, 게이트 AIDE_RESUMABLE_APPLY) 흡수 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 파이프라인이라 코드 변경 없이 등록부만 통합(2026-07-22 표기정리 배9421 #3에서 예고된 정리를 실행).",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거. CEO(웰리) 소유 두뇌 모듈이라 executor(CTO 소관 작업)는 collector 신설 안 함 — 콘텐츠 있는 daily 알림이 필요하면 웰리 승인·설계 필요(보고만, 미실행).",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "chro-gmail-job-title-fetch",
-   "sellable": "internal",
-   "owner_role": "chro",
-   "owner_nick": "시로",
-   "feature": "Gmail 공고명 자동취득(미확인) — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재 주장(7/16 가동 주장, 이 저장소에서 실측 불가)",
-   "data_source": {
-    "kind": "gas",
-    "ref": "cao GAS 웰페리온_잡코리아_공고명취득(30분 트리거)→공고명 manifest — ★원격 전용·로컬 감지 불가(이 저장소에 clasp 배포·코드·산출물 흔적 0건인 것이 정상). 2026-07-27 GM 확인: 시로(나우열M) 채용 업무에서 실사용 중 — 흔적 0건을 근거로 enabled=false 로 내렸던 판단을 GM 지적으로 철회하고 되살림. 로컬 신호가 없으므로 침묵 감지 대상에서 제외된 상태로 두는 것이 맞다(사각지대인 줄 알고 두는 것)."
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": null,
-    "bot_id": null,
-    "notify_wired": false
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "sec-chro-autonomy"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "2026-07-27 하향(시로): 2026-07-20 INC-025 1차 확인에 이어 2회차 전수 재검색(clasp 설정 6개 폴더 전부·스크립트·로그·매니페스트·산출물) 전부 0건, 로컬 Windows 예약작업(schtasks) 33개 Wellperion-* 항목 중에도 gmail/잡코리아/공고 관련 0건. 이 세션은 외부 계정·GAS·Gmail 접속이 금지되어 cao 개인 Google 계정 원격 재확인은 여전히 불가(2차 연속 미확인). 실재 근거가 두 번의 조사에서 모두 전무한 채 enabled=true 로 방치하는 것은 약속 L21('꺼둔 것은 남기지 않는다') 위반이므로 enabled=false 로 내림. 추후 cao Google 계정에서 Apps Script 트리거 실가동이 직접 확인되면 재활성 검토. INC-025 참조.",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cmo-content-intake",
-   "sellable": "internal",
-   "owner_role": "cmo",
-   "owner_nick": "시모",
-   "feature": "강사·직원 콘텐츠 접수건 자동 수집 → 검수큐 등록 + GM 카드 발송 (별도 화면 없이 GM께 찾아옴)",
-   "data_source": {
-    "kind": "gas",
-    "_ref_주석": "배125(2026-07-27) — 옛 ref 는 GAS→스크립트→큐 흐름을 산문으로만 적어 로컬 아티팩트가 하나도 잡히지 않았고, 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실제로는 15분마다 정상 가동 중이었다 = 잘 돌 때 못 보면 멈출 때도 못 본다. 폴러가 매 실행 남기는 자기 로그를 신호로 쓴다(GAS 원격 소스는 mtime 이 없어 로컬 신호가 유일한 감지 지점). 흐름 계보는 feature·ai_free_fallback 에 남는다.",
-    "_screen_주석": "배935(2026-09-03) — ERP 앱 셸 모듈 카드 설명이 공란이던 것을 채운다. 이 자동화가 강사·직원이 실제로 여는 접수 화면 = cmo/intake/instructor_intake.html(erp_modules_build.py 가 이 필드에서 파일명을 찾아 카드 desc 로 쓴다).",
-    "ref": "logs/cmo_intake_to_review.log"
-   },
-   "notify_spec": {
-    "_cadence_주석": "배125 — 주기 미선언이라 ref 를 고쳐도 여전히 판정 보류였다. 15분 폴러이므로 daily(30h) 무신호면 확실한 정지. bot_id 'GM 업무보고봇' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "Wellperion-CMO-Content-Intake-15min 예약작업(15분)→launchers/cmo_intake_to_review_hidden.vbs. 멱등(.intake_card_sent.json)으로 재발송 0, 토큰 미설정이면 안내 후 정상 종료(조용한 실패 없음). AI 세션 불요",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cpo-unassigned-nudge",
-   "sellable": "internal",
-   "owner_role": "cpo",
-   "owner_nick": "시포",
-   "feature": "문의 담당 배정 독려 + 24시간 미컨택 SLA 경보 + 60일 무응답 회전 안내 (GM 지시 2026-07-23·2026-08-05 \"무조건 철저하게 관리\"). 실제 가동 중이었으나 등록부에 없어 감시망 밖이던 것을 2026-08-08 등록.",
-   "data_source": {
-    "kind": "script",
-    "ref": "scripts/unassigned_nudge.py (판정은 report_stream_1_impl 재사용) + status/heartbeats/cpo-unassigned-nudge.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "kakao",
-    "bot_id": "★부서장"
-   },
-   "front_card": {
-    "window": "문의회원",
-    "anchor": "cpoReportStatusLine"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "담당자가 문의 화면에서 미배정·미컨택을 눈으로 확인",
-   "feedback": {
-    "enabled": true,
-    "audience": "clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cto-gm-day-pipeline",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "GM 하루 파이프라인 — 전사일정·GM업무·업무SSOT 김남욱 담당·회장님 보고건을 「하루」 방 표면 하나로 묶고(08:00 아침 브리핑·20:30 저녁 정리), 시각이 있는 GM 일정을 30분 전에 알린다(상주 스케줄러 5분 주기). GM업무 화면 맨 위 「오늘 일정」 띠도 이 배선의 표면이다. ★데이터는 소유하지 않는다 — 전사일정은 coo-schedule-ssot, GM업무 진행건은 월간운영계획이 정본이며 여기서는 가리키기만 한다(약속 L01).",
-   "data_source": {
-    "kind": "gas",
-    "ref": "전사일정 GAS(load_schedule) + status/monthly_ops_plan.json + 회장님 보고건 — 복사 없이 참조만"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "AI 세션 없이 돈다 — 상주 daily_scheduler 가 08:00 브리핑·20:30 정리·30분 전 리마인드를 발신하고, GM업무·전사일정 화면은 GAS 를 직접 읽는다. 카톡 발화에서 일정을 뽑아내는 다리(ops_daily_digest.bridge_to_schedule)만 판독이 필요해 AI 부재 시 사람이 화면에서 직접 등록한다. ▸실측 근거(2026-08-25 시토): 30분 전 알림은 2026-08-24 13:36 실제 발신됨(베네뎀 화상채팅 14:05 건) — 등록만 되고 한 번도 안 울린 장치가 아니다.",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "cto-kpi-crosscheck",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "home 카드 숫자 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천, 화면 DOM 안 읽음). GM 물음 2026-08-26 '이제 home에 있는 데이터를 믿어도 되는거지?' 에 대한 장치. 그날 하루에만 기준이 어긋난 곳이 3군데 나왔고(유형별 큰숫자가 누적 / 상단 3칸이 전체 기준 / 시설부 안전 카테고리가 이름 변경으로 두 줄) 전부 GM 이 먼저 발견하셨다 — 공통점이 '한 카드 안에서 기준이 둘로 갈렸다' 라 합만 봐도 잡힌다. ★새 스크립트·새 예약작업을 만들지 않았다(약속 L21): 계산은 erp_status_publisher 30분 주기에 얹고, 표출은 hangro_board 시토 부팅 슬라이스가 결과 파일을 표로 그리기만 한다(판정 로직 복제 0).",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/home_kpi_crosscheck.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null,
-    "_note": "[2026-09-09·INC-057] 이 모듈은 애초 data_source가 kind/ref 표준이 아니라 type/path로 등록돼 module_silence_detector가 로컬 아티팩트를 아예 못 찾고(ref 없음) 조용히 unmeasurable로 새고 있었다 — 침묵감지 자체가 안 걸리는 스키마 사각지대였다(등록부 상 유일한 두 사례, cto-diet-camp-agent와 함께 발견). 표준화하며 실제 편승 주기(30분)에 맞춰 daily=true 선언. bot_id=null 유지(발신 게이트 무관)."
-   },
-   "schedule": "30분(erp_status_publisher 편승)",
-   "surface": "시토 부팅 화면 「🔢 화면 숫자 정합」 — 어긋난 것만 표로",
-   "since": "2026-08-26",
-   "serves": "ours"
-  },
-  {
-   "id": "cto-diet-camp-agent",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "다이어트캠프 이승기 대표님 대화 에이전트 — 방을 읽어 새 말씀이 있으면 답장 1통, 없으면 아침 질문 1통(하루 1회 · GM 지시 2026-09-03 \"계속 질문해 대표님 생각을 끌어내라\"). 목적=다캠 브랜드 기준을 대표님 생각으로 채우기(설문 8문항은 09-02 수령 완료). 시보가 09-03 브리프·아침질문·--send-at 반영. 수신=kakao_export_chat / 작성=model_router / 발신=kakao_report_sender / 통보=telegram_notifier. 새 관문 없음(약속 L21). 안전장치=하루 6통 상한·10줄 상한·돈/계약 표현 차단(걸리면 발신 대신 GM 보고)·enabled 스위치. 종전 07시 원고 릴레이(daily_scheduler.run_diet_camp_morning)는 같은 날 일시정지했다 — 이 에이전트가 2주 무사고로 돌면 그 블록을 삭제한다(2026-09-16 판정).",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/diet_camp_agent.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null,
-    "_note": "[2026-09-09·INC-057] type/path 비표준 스키마라 module_silence_detector가 로컬 아티팩트를 못 찾아 조용히 unmeasurable로 새고 있었다(cto-kpi-crosscheck와 함께 발견된 두 사례). 표준화하며 실제 06:50/07:00 매일 가동에 맞춰 daily=true 선언. bot_id=null 유지."
-   },
-   "schedule": "매일 06:50 대화 저장·초안 → 07:00 발신 1통 (GM 지시 2026-09-03 · 종전 07:00 1회 · 그 전 2시간마다 7회)",
-   "entrypoint": "scripts/diet_camp_agent.py",
-   "created": "2026-09-02",
-   "note": "GM 지시 2026-09-02 — 이승기대표님이랑 소통할 수 있는 AI 에이전트를 만들어야할 것 같은데?",
-   "serves": "ours"
-  },
-  {
-   "id": "cto-geo-watch",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cto",
-   "owner_nick": "시토",
-   "feature": "GEO(생성형 검색 최적화) 측정기 — AI 검색 8문장(한남동 스포츠클럽·용산 프라이빗 멤버십 스포츠클럽·한남동 수영 레슨·한남동 골프 연습장·한남동 스쿼시·용산 키즈 체조 수업·한남동 헬스 PT·hannam sports club membership)에 claude 웹검색으로 물어 웰페리온 인용 여부·순위·인용 문장을 주 1회 기록(배971). 전환 전엔 낮은 인용 수가 정상 — 이건 기준선. 챗GPT·퍼플렉시티는 API 키 없어 미구현(engines_pending 표기만). 기준선(2026-09-05) cited_count=2/8.",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/geo_watch.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null,
-    "notify_wired": false
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-automation"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "예약작업(Wellperion-CTO-GEO-Watch-Weekly, 매주 월 07:10)이 사람 세션 없이 무인 실행",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "entrypoint": "scripts/geo_watch.py",
-   "created": "2026-09-05",
-   "serves": "partner"
-  },
-  {
-   "id": "ceo-3line-weekly",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "3라인 주간 리포트 초안 — 매주 월 07:00 업무보고방에 §7 양식(전결 처리·회장님 판단 필요·지적사항 처리·다음 주 예정) 초안 발신 → GM 검수 → 회장님 발송은 웰리 손. 정본 docs/3라인_직책체계_20260831.md §7 · 스크립트 scripts/weekly_report_draft.py(배860) · 배선 시토 1127(2026-09-08 · 발신기 telegram_send · 예약 Wellperion-Weekly-Report-Draft-Mon-0700). 첫 실발신 2026-09-08 11:46 (message_id 10494).",
-   "data_source": {
-    "kind": "log",
-    "ref": "logs/telegram_sent-YYYY-MM-DD.log (📋 주간 리포트 초안 줄)"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "8254867551",
-    "notify_wired": true
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-autonomy"
-   },
-   "autonomy": "auto",
-   "ai_free_fallback": "예약작업 Wellperion-Weekly-Report-Draft-Mon-0700 무인 가동. 회장님 자동 발송 없음 — GM 검수 뒤 웰리가 보낸다.",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm",
-    "entries": []
-   },
-   "reversible": true,
-   "enabled": true,
-   "honesty_default": "measured",
-   "serves": "partner"
-  },
-  {
-   "id": "ceo-work-loop",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "GM 업무 루프 5단계 — GM업무 등록 → 중간관리자 인계 → 업무 SSOT 체크 → GM업무 체크 → 일일·주간·월간 보고. GM 지시 2026-09-02(배895)로 세운 루프이고, 2026-09-09 GM 이 「루프가 잘 안 되는 것 같다」고 지적해 전 단계를 실측한 뒤 등록했다. ★이 항목은 지도다 — 단계마다 심장박동이 다른 곳에 있어 한 신호로는 못 잡는다. ①GM업무 등록 = 업무·결재 SSOT GAS 원장(원격 · 로컬 흔적 없음 · coo-work-approval) ②중간관리자 인계 = ops_daily_digest 가 쌓는 방 원장 _digest_ledger.json(매일) ③업무 SSOT 체크 = ②와 같은 파이프(07:50 담당별 번호 통) ④GM업무 체크 = monthly_ops_sync(매일 07:00) · 신호 worklog:월간계획 ← 9일 죽었던 자리 ⑤보고 = 일일 07:50·08:00 / 주간 월 07:00(ceo-3line-weekly) / 월간은 아직 없음(시토 1141). ★진짜 사고 원인은 크래시가 아니라 9일 동안 아무 경보도 없었다는 것이다 — 예약 결과코드가 0 으로 찍혀 감시가 통과시켰다(INC-021 과 같은 종류). 산출물 신선도 감시 = 시토 배 1158.",
-   "data_source": {
-    "kind": "worklog",
-    "ref": "worklog:월간계획",
-    "_ref_주석": "가장 약한 고리 하나만 건다. 여러 단계를 ' + ' 로 이어 붙이면 감지기가 그중 가장 최신 시각을 취하므로, 한 단계가 죽어도 다른 단계가 신선해서 통과한다 — 이번 사고와 똑같은 오판정이 된다. 나머지 단계는 각자의 모듈(coo-work-approval · coo-monthly-ops · ceo-3line-weekly)이 따로 감시한다."
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "G1",
-    "anchor": "GM업무.html",
-    "card": null
-   },
-   "docs": "status/briefs/CEO-2026-09-09-업무루프-끊긴자리-진단.md",
-   "serves": "partner"
-  },
-  {
-   "id": "ceo-weekly-schedule-notice",
-   "sellable": "internal",
-   "owner_role": "ceo",
-   "owner_nick": "웰리",
-   "feature": "주간 일정 공유 — 매주 월 08:10 이번 주(월~토) 전사일정을 카톡 ★관리부·★운영부 두 방에 같은 글로. GM 지시 2026-09-09(「1주씩 · 토요일까지 · 운영부방과 같게」). ★중간관리자 방은 관리부와 멤버가 겹쳐 뺐고 나우열M 은 텔레그램 업무관리 방으로 따로 받는다. 주 중간에 돌리면 오늘부터 토요일까지만 낸다 — 지나간 날을 다시 보내지 않는다. 스크립트 scripts/weekly_schedule_notice.py · 예약 Wellperion-Weekly-Schedule-Notice-Mon-0810 · 발신 관문은 kakao_report_sender 하나.",
-   "data_source": {
-    "kind": "log",
-    "ref": "logs/kakao_sent-{date}.log"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": true,
-    "monthly": false,
-    "channel": "kakao",
-    "bot_id": null
-   },
-   "front_card": {
-    "window": "O1",
-    "anchor": "전사_일정.html",
-    "card": null
-   },
-   "serves": "partner"
-  },
-  {
-   "id": "cbo-faq-hub",
-   "sellable": "sellable",
-   "enabled": true,
-   "owner_role": "cbo",
-   "owner_nick": "시보",
-   "feature": "센터 FAQ 통합층 — 업체마다 따로 쌓이는 FAQ 를 공통 질문 유형 원장(20유형)에 붙여 ①유형별 커버리지 ②센터별 빈칸(아침 질문 재료) ③새 유형 후보를 낸다. GM 지시 2026-09-10 「각 센터 FAQ 를 채워 가공·통합하고 마케팅 자동화·상담봇·센터 AX 세 곳에 쓴다」. 계량 = scripts/faq_hub.py, 산출 = status/faq_hub.json. 한 센터에서 새 유형이 나오면 원장 한 줄이 늘고 전 센터 상담봇이 같이 좋아지는 구조가 판매 근거다(구독).",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/faq_hub.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "none",
-    "bot_id": ""
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-business"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "scripts/faq_hub.py 는 모델을 쓰지 않는다 — 낱말 겹침으로만 유형을 붙인다(사람이 언제든 재실행)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "cbo-partner-morning-agent",
-   "sellable": "internal",
-   "enabled": true,
-   "owner_role": "cbo",
-   "owner_nick": "시보",
-   "feature": "파트너 센터 아침 1통 — 매일 07:00 에 그 센터 방(다이어트캠프 이승기 대표님·★조재오부장님)으로 카톡 한 통. 새 말씀이 있으면 답장, 없거나 답장이 필요 없는 말씀이면 아직 못 받은 값 하나를 여쭙는다. 물어볼 것 = 그 센터 빈칸 목록(_받을것.md) + FAQ 통합층이 재 준 빈 유형(cbo-faq-hub) + 상담봇 미답. 회로 = scripts/diet_camp_agent.py(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신). 실행체는 시토가 만든 것을 그대로 쓰고 내용(무엇을 여쭙나)만 시보가 갖는다.",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/kakao_agent/rooms.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-business"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "모델이 초안을 못 내면 한 통도 안 나간다(지어내지 않는다) — 사람이 같은 방에 직접 쓸 수 있다",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "cbo-gocheok-blog-daily",
-   "sellable": "sellable",
-   "enabled": true,
-   "owner_role": "cbo",
-   "owner_nick": "시보",
-   "feature": "파트너 센터 블로그 매일 06:30 임시저장(2026-09-11 07:00 에서 당김 — 06:50 아침 카톡이 그날 결과를 읽고 말하게 하려면 블로그가 먼저 끝나야 한다) — 그 센터 글쓰기 규칙(blog_style.json · 사장님 자작 글에서 뽑은 것)을 학습해 주제 하나를 골라 본문을 쓰고, 발행하지 않고 임시저장까지만 해 둔다(발행 버튼은 사장님이 직접 · 부장님 확인 2026-09-09 12번). 검사 4종을 코드로 통과해야 올라간다 — 푸터 정본 일치 · 허가된 금액 하나만 · 필수 태그 · 웰페리온 문구 혼입 0 · 본문 2,000자 이상. 회로 = scripts/gocheok_blog_daily.py · 예약작업 Wellperion-Gocheok-Blog-0700. GM 지시 2026-09-10.",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/gocheok_blog_daily.json"
-   },
-   "notify_spec": {
-    "daily": true,
-    "weekly": false,
-    "monthly": false,
-    "channel": "telegram",
-    "bot_id": "업무관리"
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-business"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "검사에 걸리거나 로그인 세션이 없으면 한 글자도 올리지 않고 실패 사유를 GM 업무보고방에 알린다",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  },
-  {
-   "id": "cbo-counsel-questions",
-   "sellable": "sellable",
-   "enabled": true,
-   "owner_role": "cbo",
-   "owner_nick": "시보",
-   "feature": "상담봇 질문 원장·가공 — 손님이 상담 페이지에서 던진 질문을 매일 서버에서 긁어 저장소 원장에 합집합으로 쌓고(삭제 0), 센터별·날짜별·많이 물은 것·못 답한 이유 빈칸으로 가공한다. GM 지시 2026-09-11 「질문하는 것들 다 저장하고 가공해줘 정말 중요한거야」. 질문은 서버 파일 한 벌에만 있어 회전·장애 때 통째로 사라졌고, 조회도 미답 50건에서 잘렸다 — 전량 통로(GET /api/chat/{tenant}/log · 시토 배2533②)를 붙여 답한 질문까지 받는다. 쌓인 질문이 FAQ·정본의 다음 빈칸을 정하므로 답변율을 올리는 재료가 된다(구독 상품의 학습층).",
-   "data_source": {
-    "kind": "json",
-    "ref": "status/counsel_questions_summary.json"
-   },
-   "notify_spec": {
-    "daily": false,
-    "weekly": false,
-    "monthly": false,
-    "channel": "none",
-    "bot_id": ""
-   },
-   "front_card": {
-    "window": "자율현황",
-    "anchor": "layer-business"
-   },
-   "autonomy": "mech",
-   "ai_free_fallback": "scripts/counsel_questions.py 는 모델을 쓰지 않는다 — 서버에서 받아 세고 묶기만 한다(예약 Wellperion-Counsel-Questions-2210 매일 22:10 · 언제든 손으로 재실행)",
-   "feedback": {
-    "enabled": true,
-    "audience": "gm+clevel",
-    "entries": []
-   },
-   "reversible": true,
-   "honesty_default": "measured",
-   "serves": "ours"
-  }
- ],
- "_removed": [
-  {
-   "id": "cpo-sheet-contract-check",
-   "removed_at": "2026-08-04",
-   "by": "시토",
-   "absorbed_into": "cto-automation-health",
-   "why": "GM 지시(2026-08-04 '확대개선 병합') — 07-24 웰리 병합 때부터 §5 편입 제안 계류(도메인 소유주 동의 대기)였던 것을 _라인분담_2026_08_04(ssot/kpi.json — 백엔드 건은 담당 무관 시토 직접 처리)로 매듭. 실행체 무변경: 매일 07:50 daily_scheduler 직결·module_reporter 미경유(notify_wired false)라 등록부 제거로 발신·주기·목적지 아무것도 안 바뀜. 침묵감지도 이 항목은 cadence 미선언이라 원래 판정 보류(잃는 경보 0).",
-   "restore": "되살리려면 snapshot 을 modules 로 옮기면 된다 — 단 07:50 잡·collectors/cpo_sheet_contract.py 는 그대로 살아 있으므로 기능 복구가 아니라 등록부 표기 복구일 뿐이다.",
-   "snapshot": {
-    "id": "cpo-sheet-contract-check",
-    "owner_role": "cpo",
-    "owner_nick": "시포",
-    "feature": "시트 칸 계약 점검기 — 문의·회원·강습 6개 시트 헤더/값 규칙/시트관계 대조(재발방지 A안 0단계, 2026-07-20 GM 확정)",
-    "data_source": {
-     "kind": "json",
-     "ref": "ssot/sheet_columns.json"
+  "modules": [
+    {
+      "id": "cto-automation-health",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음). [2026-07-24 웰리 승인 병합 34→26] 등록부 3건을 이 항목으로 흡수(코드·스크립트·게이트는 그대로 존치, 등록부 표기만 통합·비파괴) — ①`cto-module-silence-detector`: 등록부 전 모듈 신선도 감시(scan_registry/silent_modules) — self_health_watchdog §1 이 그대로 재사용해 09:10 다이제스트에 매일 실린다(재수집 아님). 독자 run_detector()/--live 발신경로는 2026-08-10 시토 은퇴 확정(같은 방에 중복이라 'GM go 대기'가 아니라 이미 대체된 것이었음 — self_health_watchdog 선례와 동일 사유, 다시 켜지 마라) ②`cto-gas-version-monitor`: GAS 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 배포버전 조회, scripts/gas_version_monitor.py, 200 하드리밋 조기경고, 13시 telegram_health_check 편승 ③`cto-self-health-watchdog`: scripts/self_health_watchdog.py 애그리게이터 — 위 2건+erp_status.json+page_hygiene 제안서를 읽어 하루 1통 이상요약으로 조립하는 엔진. 2026-08-08 게이트(SELF_HEALTH_WATCHDOG_LIVE) 코드에서 삭제·독자발신 은퇴, build_digest()만 살아 cto-automation-health 09:10 다이제스트가 재사용 중(실측 status/self_health_watchdog_log.jsonl 08-08·08-09·08-10 sent:true). ④`cpo-sheet-contract-check`[2026-08-04 흡수·배 병합확대]: 시트 칸 계약 점검기(문의·회원·강습 6시트 헤더/값규칙 대조, ssot/sheet_columns.json 정본) — 07-24부터 §5 편입 제안 계류였던 것을 _라인분담_2026_08_04(백엔드 건=시토 직접 처리, ssot/kpi.json) 근거로 매듭. 실행체는 그대로(매일 07:50 daily_scheduler 직결·module_reporter 미경유·notify_wired false) — 발신·주기·목적지 무변경, 등록부 표기만 통합. 원 항목 스냅샷=_removed.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/erp_status.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "AI관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "예약작업이 사람 세션 없이 상시 가동·30분 갱신",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "serves": "ours"
     },
-    "notify_spec": {
-     "daily": false,
-     "weekly": false,
-     "monthly": false,
-     "channel": "telegram",
-     "bot_id": 8254867551,
-     "notify_wired": false
+    {
+      "id": "cto-weekly-self-review",
+      "sellable": "internal",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 AI 자기정리·학습 — Before/After 카드 자체발신(일요일 10:30)",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/self_review_log.jsonl"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "propose",
+      "ai_free_fallback": "일 10:30 예약작업이 무인 가동 — 병합·갱신은 자율(스냅샷 가역), 삭제·실발송은 GM 승인 게이트 뒤",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "ours"
     },
-    "front_card": {
-     "window": "자율현황",
-     "anchor": "cpo-live-strip"
+    {
+      "id": "cto-ops-morning-digest",
+      "sellable": "internal",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "★운영부 아침 운영 다이제스트 — 매일 07:30, 어제 방 내용·오늘 챙길 것·업무·문의·종합접수를 자동 정리해 발송(승인 게이트)",
+      "data_source": {
+        "kind": "json",
+        "ref": "1. AI자료_아카이브/11_카카오톡/★운영부/ (gitignore·비추적: 대화 원문·요약·원장·대기)"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "내보내기(kakao_export_chat)·다이제스트 생성 파이프 무인(예약 07:30 Wellperion-Ops-Morning-Digest-0730 + 21:30 수집 1회 Wellperion-Ops-Kakao-Export-2130, 주말 19:30 · 배988 · 임정은M 마감 공유를 저녁 통이 읽게). 문의·종합접수·예약·업무 숫자=결정론적 실측, 어제 방 대화 요약만 Claude. 방 전송은 GM 승인 게이트(라이브=GM go+구성원 고지)=오발송 0. [2026-07-21 병합 배9420 #2] 아침/밤 다이제스트 공용 수집층 scripts/collectors/ops_shared.py로 GAS URL·gas_get·시각유틸 단일화(동작보존·라이브 전후 바이트동일 검증). 종합접수 수집 통합은 아침(전체미해결)·밤(당일createdAt) 집합이 실제 달라 보류",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "autonomy": "mech",
-    "ai_free_fallback": "매일 07:50 예약작업(daily_scheduler.py 직결, module_reporter 미경유)이 무인 대조 — 정상이면 완전 침묵, 어긋남만 지문(sheet+col+유형) dedup 후 1회 업무보고방 알림",
-    "feedback": {
-     "enabled": true,
-     "audience": "gm+clevel",
-     "entries": []
+    {
+      "id": "cto-kakao-sales-report",
+      "sellable": "internal",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "카톡 매출·운영 보고 — 매일 09:30 매출 이미지를 카톡 3방(회장님·관리부·운영부)에 무인 발송(휴관일 인지)",
+      "data_source": {
+        "kind": "sheet",
+        "ref": "매출보고 '보고' 탭 H2:S21 시트 export + status/kakao_last_send.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "시트 export→이미지→카톡 PC앱 UI 자동전송, AI 세션 불요. 킬스위치 status/kakao_auto_send.json",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "reversible": true,
-    "enabled": true,
-    "honesty_default": "measured"
-   }
-  },
-  {
-   "id": "cpo-staff-feedback-watch",
-   "removed_at": "2026-08-04",
-   "by": "시토",
-   "absorbed_into": "cpo-inquiry-snapshot",
-   "why": "GM 지시(2026-08-04 '확대개선 병합') — 07-25부터 이미 같은 cpo_inquiry_snapshot.bat 3분 슬롯의 두 번째 스텝으로 함께 실행돼 온 한 파이프라인인데 등록부만 둘이었다. 코드·bat·하트비트 전부 무변경(collectors/cpo_staff_feedback_watch.py 그대로 가동), 둘 다 notify none 이라 발신 변화 0. 하트비트 2개는 흡수 항목 data_source 에 모두 유지. 근거=_라인분담_2026_08_04.",
-   "restore": "되살리려면 snapshot 을 modules 로 옮기면 된다 — bat·collector 는 그대로라 등록부 표기 복구일 뿐이다.",
-   "snapshot": {
-    "id": "cpo-staff-feedback-watch",
-    "owner_role": "cpo",
-    "owner_nick": "시포",
-    "feature": "실무진 피드백 감시 — 접수되면 즉시 시포 배로 올려 방치 0",
-    "data_source": {
-     "kind": "gas",
-     "ref": "Survey.js staff_feedback_list ('실무진 피드백' 탭) → status/_queue.json + status/heartbeats/cpo-staff-feedback-watch.json"
+    {
+      "id": "cto-kakao-check-share",
+      "sellable": "internal",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "🌙 점검 현황 통일 발송 — 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차 방(둘 다 daily_scheduler.py 22:30/평일·20:00 주말 단일 크론 경유, KAKAO_GO_STREAM2 게이트)에 시설·지원·주차 3섹션 핵심요약을 공용 모듈(support_check_summary.py)로 동일 포맷 무인 발송. 주말 회차 정합(오후조 유령행 제거)·남녀 구역 분리·미점검 회차 전부 짚기·시설 작업일지·반복이슈 승격. 2026-07-19 GM go 라이브 발효(v3). ★2026-07-24(배10008): 같은 렌더 결과를 카톡 같은 방에 23:00 별도 예약작업(kakao_daily_check_share.py)으로 다시 발송하던 중복 경로를 삭제 — 22:30/20:00 단일 발송(텔레그램+카톡 둘 다 유지)만 남김(GM 지시). kakao_report_sender.py 에 중복발신 가드(방+내용 서명, 2시간 창) 신설.",
+      "data_source": {
+        "kind": "gas",
+        "_ref_주석": "2026-08-04 시토(모듈 정리) — 침묵감지 unmeasurable 은 사각지대인 줄 알고 두는 상태로 명시(coo-notice 전례). 발신 실행체=daily_scheduler 크론이라 모듈 전용 로컬 아티팩트가 없다. 후보였던 status/kakao_dedup_ledger.json(2시간 창 프루닝)·logs/kakao_sent-*.log 는 매출보고 등 전 카톡 발신이 공유해 mtime 을 빌리면 이 모듈이 죽어도 'ok'(배125 빌린 신호 함정). 전용 하트비트 신설은 L21 위반이라 안 함.",
+        "ref": "점검 GAS(today_live 지원·board+monthly 시설·weekly 주차) + 공용 렌더 scripts/support_check_summary.py(텔레그램·카톡 단일 진실) — ★모듈 전용 로컬 아티팩트 없음·침묵감지 사각 인지"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao+telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "공용 렌더(support_check_summary.py)→ daily_scheduler 크론(주말 20:00/평일 22:30) 단일 실행에서 텔레그램 점검관리방 + 카톡 ★운영+시설+지원+주차(kakao_report_sender.py 경유, 중복발신 가드 내장) 둘 다 발송. AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "notify_spec": {
-     "daily": false,
-     "weekly": false,
-     "monthly": false,
-     "channel": "none",
-     "notify_wired": false,
-     "note": "접수 알림은 GAS staff_feedback_submit 이 이미 업무보고방으로 보낸다 — 여기서 또 보내지 않는다(중복 발신 금지)."
+    {
+      "id": "cmo-content-pipeline",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "콘텐츠 허브 — 기반→제작→검수→발행→성과→환류 한 흐름(M1 단일화). 제작/검수대기/발행완료 카운트 + 콘텐츠→문의 채널별 성과. AI 없이 자체 가동(검수·발행·성과=도구)·제품화(기반 교체)",
+      "data_source": {
+        "kind": "json",
+        "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json"
+      },
+      "notify_spec": {
+        "_bot_id_주석": "2026-08-05(시토) 업무관리→AI관리 였던 것을 2026-08-15(GM 지시 '5통을 1통으로') 되돌린다 — 발행 소식은 GM이 직접 보는 업무 내용이지 AI 내부 모듈현황이 아니었다. module_reporter.py 가 이 모듈을 개별발송하지 않고 cpo-inquiry-daily-actions와 묶어 GM 업무관리방에 「🧭 아침 보고」 한 통으로 보낸다(GM_DAILY_BUNDLE_MODULES). 어제 발행 0건이면 콘텐츠 섹션 자체를 뺀다(변화 없으면 침묵).",
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "M1",
+        "anchor": "m1-review"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "review_queue.json 상태전이를 사람이 직접 조작·집계 가능(AI 불요)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "front_card": {
-     "window": "자율현황",
-     "anchor": "cpo-live-strip"
+    {
+      "id": "cmo-marketing-funnel",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "마케팅 퍼널·채널 성과 — 채널별 문의·전환율(정직 꼬리표)",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/kpi_values.json"
+      },
+      "notify_spec": {
+        "_bot_id_주석": "2026-08-05(시토, GM 지적) — GM_DM(업무보고방)에서 자동화현황방(AI진행현황방)으로 정정. cmo-content-pipeline과 같은 사유(모듈 현황 보고 · 승인건 아님).",
+        "daily": false,
+        "weekly": true,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "AI관리"
+      },
+      "front_card": {
+        "window": "M1",
+        "anchor": "m1-dash",
+        "card": "cmo-funnel-콘텐츠문의현황"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "kpi_collector.py가 일2회 자동집계(사람/AI 세션 불요)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "autonomy": "mech",
-    "ai_free_fallback": "피드백이 시트에 남고 텔레그램 알림이 가므로, 이 모듈이 멈춰도 접수 자체는 유실되지 않는다(배로 안 올라올 뿐).",
-    "feedback": {
-     "enabled": true,
-     "audience": "gm+clevel",
-     "entries": []
+    {
+      "id": "cmo-case-series-dispatch",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 07:30 재고 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행. 평일 트랙은 2026-07-27 종결 마커로 중단, 현재는 주말(토·일) GM 트랙만 가동(정상 발효)",
+      "data_source": {
+        "kind": "json",
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 review_queue.json 을 겹쳐 적어, 이 모듈이 휴면해도 남(AI하루 카드·발행)이 그 파일을 건드리면 항상 'ok' 로 떴다(거짓 안심). 이 모듈만 쓰는 자기 산출물 = 재고표 1개로 좁힌다.",
+        "ref": "instagram/_실전사례_2주플랜.md"
+      },
+      "notify_spec": {
+        "_cadence_주석": "배125 — daily→weekly. 평일 트랙 종결로 이제 주말에만 산출물이 나온다. daily(30h)로 두면 평일마다 거짓 경보가 난다. bot_id=null 이라 발송 게이트는 닫힌 채이며 이 변경으로 새 발신은 생기지 않는다(감지 주기만 바로잡음).",
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "예약작업이 평일 07:30 무인 가동 — 재고 대본(instagram/namuk.wellperion/ 06~09 슬라이드+caption) 순차 선정·검수카드 발송은 자동, 실발행은 GM 텔레그램 [✅승인] 게이트 뒤. 재고 소진 시 발송 대상 0으로 자연 종료",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
     },
-    "reversible": true,
-    "enabled": true,
-    "honesty_default": "measured",
-    "note": "2026-07-25 GM 지시 \"이건은 발생할때마다 체크해서 해줄순없나\" → 3분 주기 cpo_inquiry_snapshot.bat 에 얹어 함께 실행(새 예약작업 만들지 않음). 대조키=접수ID, 활성 큐+아카이브 양쪽 대조로 한 피드백=한 배."
-   }
-  }
- ]
+    {
+      "id": "cmo-publish-digest",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
+      "data_source": {
+        "kind": "json",
+        "_ref_주석": "배125(2026-07-27) — .py 는 감지기가 신호로 안 쓴다(코드 수정≠가동 결과). 이 모듈의 자기 산출물 = 발신 원장 하나로 좁힌다.",
+        "ref": "scripts/.publish_digest_sent.json"
+      },
+      "notify_spec": {
+        "_cadence_주석": "배125 — 주기 미선언이라 'active_no_cadence'(판정 보류)로 빠져 67시간 침묵이 감지되지 않았다(2026-07-24~27 발행 4건에 디제스트 0건). 발행은 주 수회 있으므로 weekly(216h) 무신호면 확실한 고장. bot_id '문의·컨택·등록 알림' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "문의관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "발행 감시기(--once) 런 종료 시 자동 호출 — 토큰 .env 직접 로드·멱등 원장(.publish_digest_sent.json)으로 1콘텐츠 1회 보장, 토큰 없으면 [ERROR] 로그(조용한 실패 없음). AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cmo-eval-feedback-loop",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "【반응루프 층2 — 주간 종합·기획 반영】⑤ 평가 환류 자동화. 층1(cmo-reaction-loop)이 만든 편별 판정을 §5로 받아, 이번 주 공식 발행분·문의→전환(funnel GAS)·신규 등록과 함께 한 장으로 묶어 Top/Bottom 정성 판정 + 다음 편 제안을 낸다. 실행체=scripts/weekly_marketing_feedback.py(예약작업 Wellperion-CMO-Weekly-Marketing-Feedback, 월 09:00 라이브 · --mode daily 일일카드는 Wellperion-CMO-Daily-Marketing-2100). ※층1과 중복 아님 — 층1=편별 측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
+      "data_source": {
+        "kind": "json",
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 입력(review_queue·GAS·층1 성적표)을 전부 겹쳐 적어 review_queue.json mtime 이 채택됐다. 남이 그 파일을 건드리면 이 루프가 안 돌아도 'ok'. 이 모듈이 직접 낳는 산출물 = 주간 브리프 하나로 좁힌다. (입력 계보는 feature 에 그대로 남는다)",
+        "ref": "status/briefs/CMO-weekly-feedback-{date}.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "propose",
+      "ai_free_fallback": "발행 원장(review_queue.json)·문의 전환 GAS·층1 성적표 JSON을 그대로 표로 렌더 — 판정 슬롯은 사람이 채우는 빈칸(자동 채움 금지). AI 없이도 브리프 생성됨. 실측 축적 후 v2 자동채점.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": [
+          {
+            "date": "2026-07-23",
+            "by": "시모",
+            "kind": "decision",
+            "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
+            "text": "시토 중복 제기(#4)에 대한 결론 = 통합 아님, 층분리 확정. 근거: ①두 모듈 모두 실행 코드·예약작업이 실재(층2=weekly_marketing_feedback.py/Wellperion-CMO-Weekly-Marketing-Feedback, 층1=reaction_scorecard.py/IG-Reach-Collect-0945 편승) ②층1이 생산자·층2가 소비자(weekly_marketing_feedback.py:419 _fmt_reaction_scorecard_section이 층1 산출 JSON을 §5로 읽음) — 병합하면 '편별 측정'과 '주간 기획 결정'이 한 파일에 섞여 되레 퇴행 ③중복처럼 보인 진짜 원인은 코드가 아니라 본 등록부의 잘못된 data_source였음(ig_engagement_ledger.json은 개인 namuk 계정 전용이라 weekly_marketing_feedback.py:494에서 의도적으로 제외 중인데 등록부는 그걸 주 데이터원으로 표기) → 등록부 값 정정으로 해소. 스키마 무변경."
+          }
+        ]
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cmo-reaction-loop",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "【반응루프 층1 — 편별 측정·판정】발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력. 매일 09:45 IG 도달 수집(예약작업 Wellperion-IG-Reach-Collect-0945)에 편승 실행 · 관찰 모드 2026-08-20까지(판정·기록은 하되 알림 억제). 산출 성적표는 층2(cmo-eval-feedback-loop) 주간 브리프 §5와 M1 페이지가 소비한다. ※층2와 중복 아님 — 층1=측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
+      "data_source": {
+        "kind": "json",
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 경로 뒤에 설명 문구가 공백으로 붙어, 감지기가 경로를 뒤에서부터 줄이다 'status' 디렉터리로 떨어져 무관한 형제파일(module_report_log.jsonl) mtime 을 빌려 썼다. 성적표가 몇 달 멈춰도 영원히 'ok' 로 뜨는 자기지시 함정(감지기 소스 _resolve_segment 주석이 경고한 바로 그 케이스). 순수 경로 하나만 남긴다.",
+        "ref": "status/cmo_reaction_scorecard.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리",
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "propose",
+      "ai_free_fallback": "IG 도달(09:45)·당근/블로그 RSS(09:30) 자동수집 결과를 사람이 review_queue.json·engagement_feed.json에서 직접 대조해 저조 편을 눈으로 판별 가능",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": [
+          {
+            "date": "2026-07-23",
+            "by": "시모",
+            "kind": "decision",
+            "ref": "ship 9422 / status/briefs/시토_모듈병합_제기_20260721.md #4 / status/briefs/시모_반응루프_층분리_회신_20260723.md",
+            "text": "시토 중복 제기(#4) 결론 = 층분리 확정(통합 아님). 본 모듈은 층1(편별 측정·판정) 정본이며 cmo-eval-feedback-loop(층2)는 본 모듈 산출을 §5로 소비하는 주간 종합·기획 층이다. 둘 다 실행 코드·예약작업 실재 — 폐기 대상 없음. 상세 근거는 층2 엔트리 feedback.entries 동일 일자 기록 참조. 스키마 무변경."
+          }
+        ]
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cmo-autonomy-brain",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "CMO 자율화 두뇌(레퍼런스) — M3→M1 병합·모듈별 자동보고 뼈대(채널 자격증명 웹등록·자동로그인 로드맵, 타 C-Level 복제 템플릿)",
+      "data_source": {
+        "kind": "doc",
+        "ref": "docs/superpowers/specs/2026-07-09-clevel-autonomy-shared-platform-design.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "채널·검수·발행·제작 단일흐름 라이브 가동 중(M1), 모듈별 자동보고는 등록부 배선까지 완료·발효는 웰리 전사 텔레그램 통합정책(방 배정·bot_id) 대기",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "coo-check-status",
+      "sellable": "internal",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황). [2026-07-24 웰리 승인 병합 34→26] `cto-check-gas`(점검 GAS 파이프 — CHECK_API weekly/monthly 집계, 12시 점검관리방 발송) 흡수 — 같은 CHECK_API·같은 자동화현황방 파이프라인. daily는 이미 이 모듈과 중복이라 2026-07-22에 꺼졌고 monthly만 잔존해 있던 것을 이 항목의 notify_spec.monthly로 편입(daily가 우선 판정이라 module_silence_detector.py::expected_max_silence_hours 침묵감지 로직 영향 없음 확인). ★2026-08-03 GM 확정 주간 보고 축 — 시설·지원·주차관리부 체계를 **점검 현황 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 점검 현황은 카톡 ★운영+시설+지원+주차(2026-08-19 GM 카톡방 정리 — ★관리부가 이 방으로 합병돼 없어졌다) · 종합접수처는 카톡 ★운영+시설+지원+주차. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
+      "data_source": {
+        "kind": "gas",
+        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support / monthly(구 cto-check-gas 흡수) / weekly&dept=ops·parking(운영부·주차부 — 입력·스냅샷 경로 가동 확인 2026-09-01, kpi_collector 주간 측정 · 월간 제출률 분기 GAS 배선 완료 2026-09-05 @175 · monthly_report&dept=ops expected_rounds 응답 ok) + status/heartbeats/coo-check-status.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": true,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "GAS가 시트에서 자동 집계, 08시 통합보고 합류·이상 즉시 알림(등록부 구동)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "coo-work-approval",
+      "sellable": "internal",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과 ★2026-08-03 GM 확정 주간 보고 축 — 업무 SSOT + 종합접수처를 **월간 운영계획 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 카톡 ★운영부(업무·결재 SSOT). ▸단계: 구조가 확정될 때까지는 텔레그램 GM 업무보고방으로만 보내며 다듬고, 확정 후 카톡으로 옮긴다 — GM: 한 번에 많은 양이 넘어가면 정리가 안 된다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
+      "data_source": {
+        "kind": "gas",
+        "ref": "TODO_API action=todo_list (클라 산식) + status/heartbeats/coo-work-approval.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "GAS 시트가 업무·결재 원장을 상시 보유, 클라이언트가 실시간 집계",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "coo-reception",
+      "sellable": "internal",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "종합접수처 — VOC 6종(분실물·시설물고장·청결·칭찬·쓴소리·컴플레인) 접수·처리 현황과 SLA 초과 적체. 실무진 = 최준용M·윤병현AM(2026-08-13 이경연 실장 전달 기준). ★2026-08-13 GM 지시로 시우 소유 모듈로 독립 — 그 전까지 자기 항목 없이 coo-work-approval feature 안에 한 줄로만 있었고, 발송기는 시토가 만든 채 등록부에 안 잡혀 있었다. ▸발송 목적지(GM 확정 2026-08-03) = 카톡 ★운영+시설+지원+주차. 확정 전까지는 텔레그램 GM 업무보고방에서 다듬는다.",
+      "data_source": {
+        "kind": "gas+file",
+        "ref": "REG GAS(reg_dashboard / reg_board / reg_scoreboard / lf_list) + 3. 웰페리온 가이드/coo/reception/종합접수처_현황.html + status/heartbeats/coo-reception-health.json(15분 상시 점검 · 예약작업 Wellperion-Reception-Health-15m · 2026-09-05 시우)"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": true,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": "★ 운영+시설+지원+주차"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "GAS가 접수 시트에서 자동 집계·SLA 초과분 산출 — 스크립트 1회 실행이면 현황 재생성(AI 없이 동작)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "note": "발송기 = scripts/report_stream_2b_reception.py (스트림 #2b · 시토 작성 · 파일은 그대로 두고 소유만 시우로 옮겼다 — 파일을 옮기면 호출부가 깨진다). 카테고리·SLA 정본 = apps_script_voc.js REG_CATEGORIES. 칭찬은 slaHours=null 이라 적체 집계에서 제외. 점검(시설·지원·주차)과는 방을 나눠 단독 발송한다(GM 2026-07-22 지시로 점검현황방 병합을 되돌린 이력).",
+      "enabled": true,
+      "serves": "partner"
+    },
+    {
+      "id": "coo-schedule-ssot",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/schedule_ssot.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "전사_일정.html",
+        "card": "coo-check-전사-일정"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "schedule_ssot.json을 사람이 전사_일정.html 편집모드로 직접 관리, schedule_ssot.py가 기한 도래분 선별. AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "unmeasured",
+      "_owner_note": "[소유 이관 2026-08-15 · GM 지시] 전사일정·월간운영계획을 웰리(CEO)가 함께 보며 현장업무 중심으로 셋팅한다. GM 원문: 전사일정 지금은 웰리가 많이 쓰고 있고 … 웰리쪽으로 넘겨서 월간계획이랑 같이해서 현장업무 중심으로 셋팅. ▸id 접두(coo-)는 그대로 둔다 — 바꾸면 소비자 배선이 끊긴다(변경은 시토 백엔드 건). ▸[2026-08-16 웰리] owner_role 은 08-15 이관 때 ceo 로 바꿨는데 owner_nick 이 시우로 남아 화면·보고에 옛 담당이 뜨고 있었다 — 웰리로 맞췄다. id 접두(coo-)는 배선 때문에 그대로 둔다.",
+      "serves": "partner"
+    },
+    {
+      "id": "coo-monthly-ops",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT. objective.due 있는 목표는 monthly_ops_sync.py(기존 일일 파이프라인)가 전사일정 GAS(coo-schedule-ssot)에 mop-{id}로 멱등 등록(GM 지시 2026-08-03·약속 L23 — 복제 아닌 1회 연동)",
+      "data_source": {
+        "kind": "worklog",
+        "ref": "worklog:월간계획 + status/monthly_ops_plan.json",
+        "_ref_주석": "2026-09-09 교체 — 종전 ref 는 status/monthly_ops_plan.json 하나였다. 그 파일은 monthly_ops_sync 의 출력이면서 동시에 사람이 손으로 고치는 입력이라, 동기화가 09-01~09-09 9일 연속 AttributeError 로 죽는 동안에도 손편집 때문에 mtime 이 매일 새것이었고 침묵 감지기가 통과시켰다. worklog:월간계획 은 그 스크립트가 실제로 끝났을 때만 줄이 쌓이므로 오인이 안 생긴다."
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "_cadence_note": "[2026-09-09 시토·INC-057] daily=true 로 켠 이유는 발신용이 아니라 침묵감지용 — monthly_ops_sync.py 가 매일 07:00 이 파일을 갱신하는 일일 파이프라인인데도 이 셋이 전부 false 라서 module_silence_detector.judge_module() 이 이 모듈을 절대 'silent' 로 판정할 수 없었다(9일 크래시를 못 잡은 진짜 원인). bot_id=null 이라 module_reporter.py 실발신은 그대로 게이트로 막혀 있다(회귀 없음).",
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "월간운영계획.html·전사회의.html이 monthly_ops_plan.json·sales_targets.json을 직접 렌더 — GM·부서장이 화면서 직접 열람, AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "_owner_note": "[소유 이관 2026-08-15 · GM 지시] 전사일정·월간운영계획을 웰리(CEO)가 함께 보며 현장업무 중심으로 셋팅한다. GM 원문: 전사일정 지금은 웰리가 많이 쓰고 있고 … 웰리쪽으로 넘겨서 월간계획이랑 같이해서 현장업무 중심으로 셋팅. ▸id 접두(coo-)는 그대로 둔다 — 바꾸면 소비자 배선이 끊긴다(변경은 시토 백엔드 건). ▸[2026-08-16 웰리] owner_role 은 08-15 이관 때 ceo 로 바꿨는데 owner_nick 이 시우로 남아 화면·보고에 옛 담당이 뜨고 있었다 — 웰리로 맞췄다. id 접두(coo-)는 배선 때문에 그대로 둔다.",
+      "serves": "partner"
+    },
+    {
+      "id": "coo-notice",
+      "sellable": "internal",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "공지·안내문 서식 생성·저장 — 인쇄용 공지 템플릿(공용 GAS 저장목록)",
+      "data_source": {
+        "kind": "gas",
+        "_ref_주석": "배134(2026-07-27) — 시모 배125(a557506b5) 방식 그대로 적용. 옛 ref 는 원격 API 설명 산문이라 로컬 아티팩트가 하나도 잡히지 않아 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실사용 여부와 무관하게 이 모듈은 구조적으로 로컬 흔적을 남길 수 없다 — 저장/조회/삭제 전부 공유 GAS Web App(notice_list/notice_save/notice_delete) 직접 호출이며(3. 웰페리온 가이드/coo/notice/notice_template.html), coo_registry.fetch_notice_status 도 매번 라이브 HTTP 조회만 하고 로컬 캐시를 쓰지 않는다(파일 확인 완료). .verify_screenshots/notice_*.png 는 수동 QA 스크린샷(scripts/verify_notice_wysiwyg.py, 비정기 수동실행)이라 가동 신호로 채택 불가(코드 수정/수동테스트≠가동 결과, chro-gmail-job-title-fetch 항목과 동일 원칙). ★원격 전용·로컬 감지 불가 — 사각지대인 줄 알고 두는 상태로 명시(지어내지 않음).",
+        "ref": "TODO_API action=notice_list (저장 공지 목록) — ★원격 전용·로컬 감지 불가"
+      },
+      "notify_spec": {
+        "_cadence_주석": "배134 — 켜지 않음. bot_id=null 은 status/telegram_rooms.json 어떤 키에도 해소되지 않아(미해소) 켜도 안전(module_reporter 발신 0 유지)하지만, judge_module 은 로컬 아티팩트를 못 찾으면 cadence 값과 무관하게 무조건 unmeasurable 을 반환한다(코드 확인: last_dt is None 분기가 cadence 체크보다 먼저 단락). 이 모듈은 구조적으로 로컬 아티팩트가 영원히 없으므로 daily/weekly 를 켜도 판정은 그대로 unmeasurable — 의미 없는 선언을 남기지 않는다.",
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "실무진이 템플릿 화면서 공지문 직접 작성·저장(공유 GAS), AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cpo-inquiry-daily-actions",
+      "sellable": "internal",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-inquiry-daily-actions.json"
+      },
+      "notify_spec": {
+        "_bot_id_주석": "2026-08-05(시토) 업무관리→AI관리 였던 것을 2026-08-15(GM 지시 '5통을 1통으로') 되돌린다 — 문의는 GM이 직접 챙기는 업무이지 AI 내부 모듈현황이 아니었다. module_reporter.py 가 이 모듈을 개별발송하지 않고 cmo-content-pipeline과 묶어 GM 업무관리방에 「🧭 아침 보고」 한 통으로 보낸다(GM_DAILY_BUNDLE_MODULES).",
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "estimated",
+      "serves": "partner"
+    },
+    {
+      "id": "cpo-member-rollup",
+      "sellable": "internal",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "회원 현황 롤업(신규문의·문의→가입 전환율·이탈·예약활성) ★2026-08-03 GM 확정 주간 보고 축 — **멤버십 회원관리 기준**으로 매주 월요일 매출·회원 정리 보고(매출·시포). weekly 는 이미 가동 중 — 기준만 재정의. ▸최종 목적지(GM 확정 2026-08-03) = 카톡 ★운영부(멤버십 회원관리 기준). 매출·지출은 별도로 카톡 ★부서장 방에 공유. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/cpo_today_stats/cpo_churn_stats + status/heartbeats/cpo-member-rollup.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": true,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "상담사가 문의회원 화면서 라이프사이클 CRUD·집계 자동",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "estimated",
+      "serves": "partner"
+    },
+    {
+      "id": "cpo-inquiry-snapshot",
+      "sellable": "internal",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 스냅샷 자동 발행(멤버십·성인강습·유소년 원장 3분 주기 캐시). [2026-08-04 흡수·배 병합확대] `cpo-staff-feedback-watch`(실무진 피드백 감시 — 접수 즉시 시포 배 생성, scripts/collectors/cpo_staff_feedback_watch.py) 흡수 — 07-25부터 이미 같은 cpo_inquiry_snapshot.bat 3분 슬롯에서 함께 실행돼 온 한 파이프라인(등록부만 둘). 실행체·코드 무변경, 둘 다 notify none 이라 발신 변화 0. 접수 알림은 GAS staff_feedback_submit 이 업무보고방으로 보내는 것 그대로(여기서 안 보냄, 중복 발신 금지 유지). 근거=_라인분담_2026_08_04(백엔드 건=시토 직접 처리). 원 항목 스냅샷=_removed.",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/lesson_inquiry_list → status/inquiry_snapshot_member.json·inquiry_snapshot_lesson.json + status/heartbeats/cpo-inquiry-snapshot.json + status/heartbeats/cpo-staff-feedback-watch.json(흡수분 — 같은 bat 두 스텝의 하트비트 2개 모두 유지)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "cpo-live-strip"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "화면이 구글시트를 매번 왕복하지 않고 이 스냅샷을 읽어 즉시 표시",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "note": "2026-07-25 시포 등록(배1) — 등록부에 없어 가동 신호를 보여줄 자리가 없었고, 그래서 회차마다 커밋이 완료-배를 낳아 G1을 도배했다(GM 07-24 지적). 가동 신호는 하트비트·자율현황 카드로 옮기고 배 생성은 중단.",
+      "serves": "partner"
+    },
+    {
+      "id": "cto-weekly-page-hygiene",
+      "sellable": "internal",
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "주간 페이지 위생 자동화 — 하위모델 전수감사→죽은코드(A) grep-0 게이트 통과 시 자동삭제·나머지(B/C/D)는 정리안 제안, 매주 일요일 09:00",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/page_hygiene_proposal_{date}.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "AI관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "semi",
+      "ai_free_fallback": "예약 Wellperion-Weekly-Page-Hygiene-Sun-0900이 무인 감사·제안서 생성·텔레그램 요약까지 수행. 카테고리 A 자동삭제만 게이트 PAGE_HYGIENE_APPLY(기본 OFF)+grep-0/snippet고유/파싱무결성 3중 게이트 뒤 — B/C/D는 항상 GM 승인 대기",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "ceo-gm-aide",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신). [2026-07-24 웰리 승인 병합 34→26] `cto-aide-gap-detector`(자율 틈 감지기 — 정체/재개가능 배 감시, 재개=자율태그·정체=surface, 게이트 AIDE_RESUMABLE_APPLY) 흡수 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 파이프라인이라 코드 변경 없이 등록부만 통합(2026-07-22 표기정리 배9421 #3에서 예고된 정리를 실행).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/gm_aide_scan_log.jsonl + status/gm_profile.md"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거. CEO(웰리) 소유 두뇌 모듈이라 executor(CTO 소관 작업)는 collector 신설 안 함 — 콘텐츠 있는 daily 알림이 필요하면 웰리 승인·설계 필요(보고만, 미실행).",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "chro-gmail-job-title-fetch",
+      "sellable": "internal",
+      "owner_role": "chro",
+      "owner_nick": "시로",
+      "feature": "Gmail 공고명 자동취득(미확인) — 잡코리아 지원안내 메일에서 공고명 자동 수집→지원자-공고 배정 근거 적재 주장(7/16 가동 주장, 이 저장소에서 실측 불가)",
+      "data_source": {
+        "kind": "gas",
+        "ref": "cao GAS 웰페리온_잡코리아_공고명취득(30분 트리거)→공고명 manifest — ★원격 전용·로컬 감지 불가(이 저장소에 clasp 배포·코드·산출물 흔적 0건인 것이 정상). 2026-07-27 GM 확인: 시로(나우열M) 채용 업무에서 실사용 중 — 흔적 0건을 근거로 enabled=false 로 내렸던 판단을 GM 지적으로 철회하고 되살림. 로컬 신호가 없으므로 침묵 감지 대상에서 제외된 상태로 두는 것이 맞다(사각지대인 줄 알고 두는 것)."
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": null,
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-chro-autonomy"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "2026-07-27 하향(시로): 2026-07-20 INC-025 1차 확인에 이어 2회차 전수 재검색(clasp 설정 6개 폴더 전부·스크립트·로그·매니페스트·산출물) 전부 0건, 로컬 Windows 예약작업(schtasks) 33개 Wellperion-* 항목 중에도 gmail/잡코리아/공고 관련 0건. 이 세션은 외부 계정·GAS·Gmail 접속이 금지되어 cao 개인 Google 계정 원격 재확인은 여전히 불가(2차 연속 미확인). 실재 근거가 두 번의 조사에서 모두 전무한 채 enabled=true 로 방치하는 것은 약속 L21('꺼둔 것은 남기지 않는다') 위반이므로 enabled=false 로 내림. 추후 cao Google 계정에서 Apps Script 트리거 실가동이 직접 확인되면 재활성 검토. INC-025 참조.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cmo-content-intake",
+      "sellable": "internal",
+      "owner_role": "cmo",
+      "owner_nick": "시모",
+      "feature": "강사·직원 콘텐츠 접수건 자동 수집 → 검수큐 등록 + GM 카드 발송 (별도 화면 없이 GM께 찾아옴)",
+      "data_source": {
+        "kind": "gas",
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 GAS→스크립트→큐 흐름을 산문으로만 적어 로컬 아티팩트가 하나도 잡히지 않았고, 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실제로는 15분마다 정상 가동 중이었다 = 잘 돌 때 못 보면 멈출 때도 못 본다. 폴러가 매 실행 남기는 자기 로그를 신호로 쓴다(GAS 원격 소스는 mtime 이 없어 로컬 신호가 유일한 감지 지점). 흐름 계보는 feature·ai_free_fallback 에 남는다.",
+        "_screen_주석": "배935(2026-09-03) — ERP 앱 셸 모듈 카드 설명이 공란이던 것을 채운다. 이 자동화가 강사·직원이 실제로 여는 접수 화면 = cmo/intake/instructor_intake.html(erp_modules_build.py 가 이 필드에서 파일명을 찾아 카드 desc 로 쓴다).",
+        "ref": "logs/cmo_intake_to_review.log"
+      },
+      "notify_spec": {
+        "_cadence_주석": "배125 — 주기 미선언이라 ref 를 고쳐도 여전히 판정 보류였다. 15분 폴러이므로 daily(30h) 무신호면 확실한 정지. bot_id 'GM 업무보고봇' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "Wellperion-CMO-Content-Intake-15min 예약작업(15분)→launchers/cmo_intake_to_review_hidden.vbs. 멱등(.intake_card_sent.json)으로 재발송 0, 토큰 미설정이면 안내 후 정상 종료(조용한 실패 없음). AI 세션 불요",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cpo-unassigned-nudge",
+      "sellable": "internal",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 담당 배정 독려 + 24시간 미컨택 SLA 경보 + 60일 무응답 회전 안내 (GM 지시 2026-07-23·2026-08-05 \"무조건 철저하게 관리\"). 실제 가동 중이었으나 등록부에 없어 감시망 밖이던 것을 2026-08-08 등록.",
+      "data_source": {
+        "kind": "script",
+        "ref": "scripts/unassigned_nudge.py (판정은 report_stream_1_impl 재사용) + status/heartbeats/cpo-unassigned-nudge.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": "★부서장"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "담당자가 문의 화면에서 미배정·미컨택을 눈으로 확인",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cto-gm-day-pipeline",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GM 하루 파이프라인 — 전사일정·GM업무·업무SSOT 김남욱 담당·회장님 보고건을 「하루」 방 표면 하나로 묶고(08:00 아침 브리핑·20:30 저녁 정리), 시각이 있는 GM 일정을 30분 전에 알린다(상주 스케줄러 5분 주기). GM업무 화면 맨 위 「오늘 일정」 띠도 이 배선의 표면이다. ★데이터는 소유하지 않는다 — 전사일정은 coo-schedule-ssot, GM업무 진행건은 월간운영계획이 정본이며 여기서는 가리키기만 한다(약속 L01).",
+      "data_source": {
+        "kind": "gas",
+        "ref": "전사일정 GAS(load_schedule) + status/monthly_ops_plan.json + 회장님 보고건 — 복사 없이 참조만"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "AI 세션 없이 돈다 — 상주 daily_scheduler 가 08:00 브리핑·20:30 정리·30분 전 리마인드를 발신하고, GM업무·전사일정 화면은 GAS 를 직접 읽는다. 카톡 발화에서 일정을 뽑아내는 다리(ops_daily_digest.bridge_to_schedule)만 판독이 필요해 AI 부재 시 사람이 화면에서 직접 등록한다. ▸실측 근거(2026-08-25 시토): 30분 전 알림은 2026-08-24 13:36 실제 발신됨(베네뎀 화상채팅 14:05 건) — 등록만 되고 한 번도 안 울린 장치가 아니다.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "cto-kpi-crosscheck",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "home 카드 숫자 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천, 화면 DOM 안 읽음). GM 물음 2026-08-26 '이제 home에 있는 데이터를 믿어도 되는거지?' 에 대한 장치. 그날 하루에만 기준이 어긋난 곳이 3군데 나왔고(유형별 큰숫자가 누적 / 상단 3칸이 전체 기준 / 시설부 안전 카테고리가 이름 변경으로 두 줄) 전부 GM 이 먼저 발견하셨다 — 공통점이 '한 카드 안에서 기준이 둘로 갈렸다' 라 합만 봐도 잡힌다. ★새 스크립트·새 예약작업을 만들지 않았다(약속 L21): 계산은 erp_status_publisher 30분 주기에 얹고, 표출은 hangro_board 시토 부팅 슬라이스가 결과 파일을 표로 그리기만 한다(판정 로직 복제 0).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/home_kpi_crosscheck.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "_note": "[2026-09-09·INC-057] 이 모듈은 애초 data_source가 kind/ref 표준이 아니라 type/path로 등록돼 module_silence_detector가 로컬 아티팩트를 아예 못 찾고(ref 없음) 조용히 unmeasurable로 새고 있었다 — 침묵감지 자체가 안 걸리는 스키마 사각지대였다(등록부 상 유일한 두 사례, cto-diet-camp-agent와 함께 발견). 표준화하며 실제 편승 주기(30분)에 맞춰 daily=true 선언. bot_id=null 유지(발신 게이트 무관)."
+      },
+      "schedule": "30분(erp_status_publisher 편승)",
+      "surface": "시토 부팅 화면 「🔢 화면 숫자 정합」 — 어긋난 것만 표로",
+      "since": "2026-08-26",
+      "serves": "ours"
+    },
+    {
+      "id": "cto-diet-camp-agent",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "다이어트캠프 이승기 대표님 대화 에이전트 — 방을 읽어 새 말씀이 있으면 답장 1통, 없으면 아침 질문 1통(하루 1회 · GM 지시 2026-09-03 \"계속 질문해 대표님 생각을 끌어내라\"). 목적=다캠 브랜드 기준을 대표님 생각으로 채우기(설문 8문항은 09-02 수령 완료). 시보가 09-03 브리프·아침질문·--send-at 반영. 수신=kakao_export_chat / 작성=model_router / 발신=kakao_report_sender / 통보=telegram_notifier. 새 관문 없음(약속 L21). 안전장치=하루 6통 상한·10줄 상한·돈/계약 표현 차단(걸리면 발신 대신 GM 보고)·enabled 스위치. 종전 07시 원고 릴레이(daily_scheduler.run_diet_camp_morning)는 같은 날 일시정지했다 — 이 에이전트가 2주 무사고로 돌면 그 블록을 삭제한다(2026-09-16 판정).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/diet_camp_agent.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "_note": "[2026-09-09·INC-057] type/path 비표준 스키마라 module_silence_detector가 로컬 아티팩트를 못 찾아 조용히 unmeasurable로 새고 있었다(cto-kpi-crosscheck와 함께 발견된 두 사례). 표준화하며 실제 06:50/07:00 매일 가동에 맞춰 daily=true 선언. bot_id=null 유지."
+      },
+      "schedule": "매일 06:50 대화 저장·초안 → 07:00 발신 1통 (GM 지시 2026-09-03 · 종전 07:00 1회 · 그 전 2시간마다 7회)",
+      "entrypoint": "scripts/diet_camp_agent.py",
+      "created": "2026-09-02",
+      "note": "GM 지시 2026-09-02 — 이승기대표님이랑 소통할 수 있는 AI 에이전트를 만들어야할 것 같은데?",
+      "serves": "ours"
+    },
+    {
+      "id": "cto-geo-watch",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GEO(생성형 검색 최적화) 측정기 — AI 검색 8문장(한남동 스포츠클럽·용산 프라이빗 멤버십 스포츠클럽·한남동 수영 레슨·한남동 골프 연습장·한남동 스쿼시·용산 키즈 체조 수업·한남동 헬스 PT·hannam sports club membership)에 claude 웹검색으로 물어 웰페리온 인용 여부·순위·인용 문장을 주 1회 기록(배971). 전환 전엔 낮은 인용 수가 정상 — 이건 기준선. 챗GPT·퍼플렉시티는 API 키 없어 미구현(engines_pending 표기만). 기준선(2026-09-05) cited_count=2/8.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/geo_watch.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null,
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "예약작업(Wellperion-CTO-GEO-Watch-Weekly, 매주 월 07:10)이 사람 세션 없이 무인 실행",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "entrypoint": "scripts/geo_watch.py",
+      "created": "2026-09-05",
+      "serves": "partner"
+    },
+    {
+      "id": "ceo-3line-weekly",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "3라인 주간 리포트 초안 — 매주 월 07:00 업무보고방에 §7 양식(전결 처리·회장님 판단 필요·지적사항 처리·다음 주 예정) 초안 발신 → GM 검수 → 회장님 발송은 웰리 손. 정본 docs/3라인_직책체계_20260831.md §7 · 스크립트 scripts/weekly_report_draft.py(배860) · 배선 시토 1127(2026-09-08 · 발신기 telegram_send · 예약 Wellperion-Weekly-Report-Draft-Mon-0700). 첫 실발신 2026-09-08 11:46 (message_id 10494).",
+      "data_source": {
+        "kind": "log",
+        "ref": "logs/telegram_sent-YYYY-MM-DD.log (📋 주간 리포트 초안 줄)"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "8254867551",
+        "notify_wired": true
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-autonomy"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "예약작업 Wellperion-Weekly-Report-Draft-Mon-0700 무인 가동. 회장님 자동 발송 없음 — GM 검수 뒤 웰리가 보낸다.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "serves": "partner"
+    },
+    {
+      "id": "ceo-work-loop",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "GM 업무 루프 5단계 — GM업무 등록 → 중간관리자 인계 → 업무 SSOT 체크 → GM업무 체크 → 일일·주간·월간 보고. GM 지시 2026-09-02(배895)로 세운 루프이고, 2026-09-09 GM 이 「루프가 잘 안 되는 것 같다」고 지적해 전 단계를 실측한 뒤 등록했다. ★이 항목은 지도다 — 단계마다 심장박동이 다른 곳에 있어 한 신호로는 못 잡는다. ①GM업무 등록 = 업무·결재 SSOT GAS 원장(원격 · 로컬 흔적 없음 · coo-work-approval) ②중간관리자 인계 = ops_daily_digest 가 쌓는 방 원장 _digest_ledger.json(매일) ③업무 SSOT 체크 = ②와 같은 파이프(07:50 담당별 번호 통) ④GM업무 체크 = monthly_ops_sync(매일 07:00) · 신호 worklog:월간계획 ← 9일 죽었던 자리 ⑤보고 = 일일 07:50·08:00 / 주간 월 07:00(ceo-3line-weekly) / 월간은 아직 없음(시토 1141). ★진짜 사고 원인은 크래시가 아니라 9일 동안 아무 경보도 없었다는 것이다 — 예약 결과코드가 0 으로 찍혀 감시가 통과시켰다(INC-021 과 같은 종류). 산출물 신선도 감시 = 시토 배 1158.",
+      "data_source": {
+        "kind": "worklog",
+        "ref": "worklog:월간계획",
+        "_ref_주석": "가장 약한 고리 하나만 건다. 여러 단계를 ' + ' 로 이어 붙이면 감지기가 그중 가장 최신 시각을 취하므로, 한 단계가 죽어도 다른 단계가 신선해서 통과한다 — 이번 사고와 똑같은 오판정이 된다. 나머지 단계는 각자의 모듈(coo-work-approval · coo-monthly-ops · ceo-3line-weekly)이 따로 감시한다."
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "G1",
+        "anchor": "GM업무.html",
+        "card": null
+      },
+      "docs": "status/briefs/CEO-2026-09-09-업무루프-끊긴자리-진단.md",
+      "serves": "partner"
+    },
+    {
+      "id": "ceo-weekly-schedule-notice",
+      "sellable": "internal",
+      "owner_role": "ceo",
+      "owner_nick": "웰리",
+      "feature": "주간 일정 공유 — 매주 월 08:10 이번 주(월~토) 전사일정을 카톡 ★관리부·★운영부 두 방에 같은 글로. GM 지시 2026-09-09(「1주씩 · 토요일까지 · 운영부방과 같게」). ★중간관리자 방은 관리부와 멤버가 겹쳐 뺐고 나우열M 은 텔레그램 업무관리 방으로 따로 받는다. 주 중간에 돌리면 오늘부터 토요일까지만 낸다 — 지나간 날을 다시 보내지 않는다. 스크립트 scripts/weekly_schedule_notice.py · 예약 Wellperion-Weekly-Schedule-Notice-Mon-0810 · 발신 관문은 kakao_report_sender 하나.",
+      "data_source": {
+        "kind": "log",
+        "ref": "logs/kakao_sent-{date}.log"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": true,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "전사_일정.html",
+        "card": null
+      },
+      "serves": "partner"
+    },
+    {
+      "id": "cbo-faq-hub",
+      "sellable": "sellable",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "센터 FAQ 통합층 — 업체마다 따로 쌓이는 FAQ 를 공통 질문 유형 원장(20유형)에 붙여 ①유형별 커버리지 ②센터별 빈칸(아침 질문 재료) ③새 유형 후보를 낸다. GM 지시 2026-09-10 「각 센터 FAQ 를 채워 가공·통합하고 마케팅 자동화·상담봇·센터 AX 세 곳에 쓴다」. 계량 = scripts/faq_hub.py, 산출 = status/faq_hub.json. 한 센터에서 새 유형이 나오면 원장 한 줄이 늘고 전 센터 상담봇이 같이 좋아지는 구조가 판매 근거다(구독).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/faq_hub.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "bot_id": ""
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "scripts/faq_hub.py 는 모델을 쓰지 않는다 — 낱말 겹침으로만 유형을 붙인다(사람이 언제든 재실행)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "cbo-partner-morning-agent",
+      "sellable": "internal",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "파트너 센터 아침 1통 — 매일 07:00 에 그 센터 방(다이어트캠프 이승기 대표님·★조재오부장님)으로 카톡 한 통. 새 말씀이 있으면 답장, 없거나 답장이 필요 없는 말씀이면 아직 못 받은 값 하나를 여쭙는다. 물어볼 것 = 그 센터 빈칸 목록(_받을것.md) + FAQ 통합층이 재 준 빈 유형(cbo-faq-hub) + 상담봇 미답. 회로 = scripts/diet_camp_agent.py(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신). 실행체는 시토가 만든 것을 그대로 쓰고 내용(무엇을 여쭙나)만 시보가 갖는다.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/kakao_agent/rooms.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "모델이 초안을 못 내면 한 통도 안 나간다(지어내지 않는다) — 사람이 같은 방에 직접 쓸 수 있다",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "cbo-gocheok-blog-daily",
+      "sellable": "sellable",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "파트너 센터 블로그 매일 06:30 임시저장(2026-09-11 07:00 에서 당김 — 06:50 아침 카톡이 그날 결과를 읽고 말하게 하려면 블로그가 먼저 끝나야 한다) — 그 센터 글쓰기 규칙(blog_style.json · 사장님 자작 글에서 뽑은 것)을 학습해 주제 하나를 골라 본문을 쓰고, 발행하지 않고 임시저장까지만 해 둔다(발행 버튼은 사장님이 직접 · 부장님 확인 2026-09-09 12번). 검사 4종을 코드로 통과해야 올라간다 — 푸터 정본 일치 · 허가된 금액 하나만 · 필수 태그 · 웰페리온 문구 혼입 0 · 본문 2,000자 이상. 회로 = scripts/gocheok_blog_daily.py · 예약작업 Wellperion-Gocheok-Blog-0700. GM 지시 2026-09-10.",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/gocheok_blog_daily.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": "업무관리"
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "검사에 걸리거나 로그인 세션이 없으면 한 글자도 올리지 않고 실패 사유를 GM 업무보고방에 알린다",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    },
+    {
+      "id": "cbo-counsel-questions",
+      "sellable": "sellable",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "상담봇 질문 원장·가공 — 손님이 상담 페이지에서 던진 질문을 매일 서버에서 긁어 저장소 원장에 합집합으로 쌓고(삭제 0), 센터별·날짜별·많이 물은 것·못 답한 이유 빈칸으로 가공한다. GM 지시 2026-09-11 「질문하는 것들 다 저장하고 가공해줘 정말 중요한거야」. 질문은 서버 파일 한 벌에만 있어 회전·장애 때 통째로 사라졌고, 조회도 미답 50건에서 잘렸다 — 전량 통로(GET /api/chat/{tenant}/log · 시토 배2533②)를 붙여 답한 질문까지 받는다. 쌓인 질문이 FAQ·정본의 다음 빈칸을 정하므로 답변율을 올리는 재료가 된다(구독 상품의 학습층).",
+      "data_source": {
+        "kind": "json",
+        "ref": "status/counsel_questions_summary.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "bot_id": ""
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "scripts/counsel_questions.py 는 모델을 쓰지 않는다 — 서버에서 받아 세고 묶기만 한다(예약 Wellperion-Counsel-Questions-2210 매일 22:10 · 언제든 손으로 재실행)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "serves": "ours"
+    }
+  ],
+  "_removed": [
+    {
+      "id": "cpo-sheet-contract-check",
+      "removed_at": "2026-08-04",
+      "by": "시토",
+      "absorbed_into": "cto-automation-health",
+      "why": "GM 지시(2026-08-04 '확대개선 병합') — 07-24 웰리 병합 때부터 §5 편입 제안 계류(도메인 소유주 동의 대기)였던 것을 _라인분담_2026_08_04(ssot/kpi.json — 백엔드 건은 담당 무관 시토 직접 처리)로 매듭. 실행체 무변경: 매일 07:50 daily_scheduler 직결·module_reporter 미경유(notify_wired false)라 등록부 제거로 발신·주기·목적지 아무것도 안 바뀜. 침묵감지도 이 항목은 cadence 미선언이라 원래 판정 보류(잃는 경보 0).",
+      "restore": "되살리려면 snapshot 을 modules 로 옮기면 된다 — 단 07:50 잡·collectors/cpo_sheet_contract.py 는 그대로 살아 있으므로 기능 복구가 아니라 등록부 표기 복구일 뿐이다.",
+      "snapshot": {
+        "id": "cpo-sheet-contract-check",
+        "owner_role": "cpo",
+        "owner_nick": "시포",
+        "feature": "시트 칸 계약 점검기 — 문의·회원·강습 6개 시트 헤더/값 규칙/시트관계 대조(재발방지 A안 0단계, 2026-07-20 GM 확정)",
+        "data_source": {
+          "kind": "json",
+          "ref": "ssot/sheet_columns.json"
+        },
+        "notify_spec": {
+          "daily": false,
+          "weekly": false,
+          "monthly": false,
+          "channel": "telegram",
+          "bot_id": 8254867551,
+          "notify_wired": false
+        },
+        "front_card": {
+          "window": "자율현황",
+          "anchor": "cpo-live-strip"
+        },
+        "autonomy": "mech",
+        "ai_free_fallback": "매일 07:50 예약작업(daily_scheduler.py 직결, module_reporter 미경유)이 무인 대조 — 정상이면 완전 침묵, 어긋남만 지문(sheet+col+유형) dedup 후 1회 업무보고방 알림",
+        "feedback": {
+          "enabled": true,
+          "audience": "gm+clevel",
+          "entries": []
+        },
+        "reversible": true,
+        "enabled": true,
+        "honesty_default": "measured"
+      }
+    },
+    {
+      "id": "cpo-staff-feedback-watch",
+      "removed_at": "2026-08-04",
+      "by": "시토",
+      "absorbed_into": "cpo-inquiry-snapshot",
+      "why": "GM 지시(2026-08-04 '확대개선 병합') — 07-25부터 이미 같은 cpo_inquiry_snapshot.bat 3분 슬롯의 두 번째 스텝으로 함께 실행돼 온 한 파이프라인인데 등록부만 둘이었다. 코드·bat·하트비트 전부 무변경(collectors/cpo_staff_feedback_watch.py 그대로 가동), 둘 다 notify none 이라 발신 변화 0. 하트비트 2개는 흡수 항목 data_source 에 모두 유지. 근거=_라인분담_2026_08_04.",
+      "restore": "되살리려면 snapshot 을 modules 로 옮기면 된다 — bat·collector 는 그대로라 등록부 표기 복구일 뿐이다.",
+      "snapshot": {
+        "id": "cpo-staff-feedback-watch",
+        "owner_role": "cpo",
+        "owner_nick": "시포",
+        "feature": "실무진 피드백 감시 — 접수되면 즉시 시포 배로 올려 방치 0",
+        "data_source": {
+          "kind": "gas",
+          "ref": "Survey.js staff_feedback_list ('실무진 피드백' 탭) → status/_queue.json + status/heartbeats/cpo-staff-feedback-watch.json"
+        },
+        "notify_spec": {
+          "daily": false,
+          "weekly": false,
+          "monthly": false,
+          "channel": "none",
+          "notify_wired": false,
+          "note": "접수 알림은 GAS staff_feedback_submit 이 이미 업무보고방으로 보낸다 — 여기서 또 보내지 않는다(중복 발신 금지)."
+        },
+        "front_card": {
+          "window": "자율현황",
+          "anchor": "cpo-live-strip"
+        },
+        "autonomy": "mech",
+        "ai_free_fallback": "피드백이 시트에 남고 텔레그램 알림이 가므로, 이 모듈이 멈춰도 접수 자체는 유실되지 않는다(배로 안 올라올 뿐).",
+        "feedback": {
+          "enabled": true,
+          "audience": "gm+clevel",
+          "entries": []
+        },
+        "reversible": true,
+        "enabled": true,
+        "honesty_default": "measured",
+        "note": "2026-07-25 GM 지시 \"이건은 발생할때마다 체크해서 해줄순없나\" → 3분 주기 cpo_inquiry_snapshot.bat 에 얹어 함께 실행(새 예약작업 만들지 않음). 대조키=접수ID, 활성 큐+아카이브 양쪽 대조로 한 피드백=한 배."
+      }
+    }
+  ]
 }

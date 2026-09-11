@@ -45,6 +45,29 @@ def _stage_faq_dir() -> str:
     return str(d)
 
 
+
+def _verdict(api_chat, text: str, system: str, tenant: str) -> str:
+    """라이브(api_chat.chat)가 답에 거는 검사와 **같은 조합**으로 판정한다.
+
+    2026-09-11 실측: 여기만 질문용 관문 `_forbidden_hit` 를 답에 걸고 있어, 정상 답
+    (「주차 안내는 확인해서 도와드릴게요」·「스파는 전화로 안내드릴게요」)이 「검사 탈락」으로
+    찍혔다. api_chat 은 같은 실수를 이미 고쳐 `_output_unsafe` 를 쓰는데(그 함수 주석에 경위가
+    남아 있다) 시험기만 옛 방식이라, 시험 결과를 보고 구멍을 잘못 짚게 된다.
+    라이브 판정 = not text or _output_unsafe or price_blocked or not _grounded.
+    """
+    if not text:
+        return "빈 응답"
+    prof = api_chat._load_profile(tenant)
+    price_blocked, _ = api_chat._price_check(text, prof.get("allowed_prices"))
+    if api_chat._output_unsafe(text):
+        return "검사 탈락→핸드오프(위험 문구)"
+    if price_blocked:
+        return "검사 탈락→핸드오프(허락 안 된 금액)"
+    if not api_chat._grounded(text, system):
+        return "검사 탈락→핸드오프(정본에 없는 숫자)"
+    return "OK"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("question", nargs="?", help="손님 질문 1개")
@@ -82,7 +105,7 @@ def main() -> int:
         text, used = run_claude(prompt, models=[a.model] if a.model else None, label="counselbot-test")
         dt = time.time() - t0
         text = (text or "").strip()
-        verdict = "OK" if text and not api_chat._forbidden_hit(text) and api_chat._grounded(text, system) else "검사 탈락→핸드오프"
+        verdict = _verdict(api_chat, text, system, a.tenant)
         rid = time.strftime("%Y%m%d%H%M%S") + "-" + str(abs(hash(q)) % 10000)
         TESTS.mkdir(parents=True, exist_ok=True)
         with LOG.open("a", encoding="utf-8") as f:   # 테스트 데이터 = 자산(GM 09-05) — 문답 전부 남긴다
