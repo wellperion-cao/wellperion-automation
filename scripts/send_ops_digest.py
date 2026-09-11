@@ -40,7 +40,7 @@ import re
 import subprocess
 import sys
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -289,13 +289,40 @@ def _weekly_active_rows(rows: list) -> list:
             and str(r.get("id", ""))]
 
 
+KST_TZ = timezone(timedelta(hours=9))
+
+
 def _parse_ymd(s):
-    """업무 시트 날짜칸(YYYY-MM-DD 또는 ISO datetime) → date. 실패 시 None."""
+    """업무 시트 날짜칸 → 한국 날짜. 실패 시 None.
+
+    ★시간대를 안 보면 하루가 당겨진다(실사고 2026-09-11). 시트 원본은
+    `2026-09-13T15:00:00.000Z` 처럼 세계표준시로 온다 — 한국시간으로는 9/14 00:00 인데
+    앞 10자만 자르면 9/13 으로 읽힌다. 그 탓에 기한이 오늘인 「필라테스팀 점검」이
+    「기한 지남」으로 나우열M께 나갔고 본인이 「14일로 잘 들어가있어」로 잡아 주셨다.
+    그래서 끝에 Z 나 ±오프셋이 붙은 값은 한국시간으로 옮긴 뒤 날짜를 뗀다.
+    순수 `YYYY-MM-DD` 는 그 자체가 한국 날짜이므로 그대로 쓴다."""
     from datetime import date as _date
+    t = str(s or "").strip()
+    if not t:
+        return None
     try:
-        return _date.fromisoformat(str(s or "")[:10])
+        iso = t[:-1] + "+00:00" if t.endswith("Z") else t
+        dt = datetime.fromisoformat(iso)
+        if dt.tzinfo is not None:
+            return dt.astimezone(KST_TZ).date()
+    except ValueError:
+        pass
+    try:
+        return _date.fromisoformat(t[:10])
     except Exception:
         return None
+
+
+def _ymd(s) -> str:
+    """_parse_ymd 의 문자열 판 — 'YYYY-MM-DD' 또는 빈 문자열. 날짜를 문자열로 비교하는
+    자리(수정일·종료일 대조)가 같은 시간대 규칙을 쓰게 한다."""
+    d = _parse_ymd(s)
+    return d.isoformat() if d else ""
 
 
 def build_weekly_report_draft(rows: list, today_str: str) -> str:
@@ -523,6 +550,35 @@ def build_gm_work_section(by_person: dict, skip: "set | None" = None) -> str:
     head = f"🧭 GM업무 — 담당 몫 {sum(len(b) - 1 for b in blocks)}건"
     tail = "👉 진행 상황은 건마다 한 줄(했다 / 진행중 / 언제)로 답해 주시면 됩니다."
     return "\n".join([head] + [l for b in blocks for l in b] + [tail])
+
+
+def _selfcheck_parse_ymd() -> None:
+    """시간대 보정(실사고 2026-09-11). 이 케이스가 되돌아오면 기한이 하루씩 당겨진다."""
+    from datetime import date as _date
+    assert _parse_ymd("2026-09-13T15:00:00.000Z") == _date(2026, 9, 14), "UTC 15시 = 한국 다음날 0시"
+    assert _parse_ymd("2026-09-13T14:59:00Z") == _date(2026, 9, 13)
+    assert _parse_ymd("2026-09-14T00:00:00+09:00") == _date(2026, 9, 14)
+    assert _parse_ymd("2026-09-14") == _date(2026, 9, 14), "순수 날짜는 그 자체가 한국 날짜"
+    assert _parse_ymd("") is None and _parse_ymd(None) is None
+    assert _ymd("2026-09-13T15:00:00.000Z") == "2026-09-14"
+    assert _ymd("아무거나") == ""
+    print("[selfcheck] _parse_ymd 시간대 보정 OK (7케이스)")
+
+
+def _selfcheck_done_filter() -> None:
+    """끝난 건은 다시 묻지 않는다 + 한 줄 요약에서 0건인 사람은 뺀다(배2541 후속)."""
+    rows = [{"상태": "완료", "수정일": "2026-09-11T05:40", "담당자": "이경연 실장", "업무명": "라커 정리"},
+            {"상태": "완료", "수정일": "2026-09-10T15:00:00.000Z", "담당자": "이정헌 소장", "업무명": "보일러"},
+            {"상태": "진행중", "수정일": "2026-09-11T07:00", "담당자": "이정헌 소장", "업무명": "안 끝난 일"}]
+    dm = done_titles_by_person(rows, ("2026-09-11", "2026-09-12"))
+    assert dm == {"이경연 실장": ["라커 정리"], "이정헌 소장": ["보일러"]}, dm   # UTC 15시는 11일로 읽힌다
+    items = [{"who": "이경연 실장", "ask": "#1 라커 정리 — 9/10"},
+             {"who": "이경연 실장", "ask": "#2 남은 일 — 9/10"}]
+    assert [i["ask"] for i in drop_done_items(items, dm)] == ["#2 남은 일 — 9/10"]
+    assert drop_done_items(items, {}) == items
+    assert done_line(dm, ["이경연 실장", "없는사람"], "어제 끝내신 것") == "✅ 어제 끝내신 것 — 이경연 실장 1건"
+    assert done_line({}, ["이경연 실장"], "어제 끝내신 것") == ""
+    print("[selfcheck] done 필터·한 줄 요약 OK (5케이스)")
 
 
 def _selfcheck_gm_work_section() -> None:
@@ -796,7 +852,20 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     # ★GM 지시 2026-09-05(배1062) — 나우열M 몫은 이 카톡 통에서 빼서 텔레그램으로 옮긴다.
     nawool_relay, relay_items = _split_by_who(relay_items, NAWOOL_WHO)
     nawool_nudge, nudge_items = _split_by_who(nudge_items, NAWOOL_WHO)
+    # ★끝난 건은 묻지 않는다(배2541 후속 2026-09-11). 대상일과 그 다음 날(=보내는 날)에
+    # 업무 SSOT 에서 완료된 것을 양쪽 목록에서 뺀다 — 사람을 가리지 않는다.
+    _next_day = (datetime.strptime(target_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+    _done_map = done_titles_by_person(rows, (target_date, _next_day))
+    relay_items = drop_done_items(relay_items, _done_map)
+    nudge_items = drop_done_items(nudge_items, _done_map)
+    nawool_relay = drop_done_items(nawool_relay, _done_map)
+    nawool_nudge = drop_done_items(nawool_nudge, _done_map)
     nawool_message = build_nawool_telegram_message(nawool_relay + nawool_nudge)
+    # ✅ 한 줄 — 남은 것을 묻기 전에 하신 일을 먼저 센다. 0건인 사람은 줄에서 뺀다.
+    # 이 방을 읽는 사람만 센다 — 그 방에 없는 사람 건수를 실으면 남의 일이 섞여 안 읽힌다.
+    _dl = done_line(_done_map, [w for w in _NUDGE_MEMBERS if w != NAWOOL_WHO], "어제 끝내신 것")
+    if _dl:
+        parts.append(_dl)
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
@@ -808,7 +877,8 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     if gm_section:
         parts.append(gm_section)
     nawool_message = build_nawool_telegram_message(
-        nawool_relay + nawool_nudge + gm_by_person.get(NAWOOL_WHO, []))
+        nawool_relay + nawool_nudge
+        + drop_done_items(gm_by_person.get(NAWOOL_WHO, []), _done_map))
 
     # ⏳ 배정 기다리는 것 — 통 맨 위 한 줄(GM 승인 2026-09-03 · 배정 마감 1영업일). 0건이면 줄 없음.
     today = date.today().isoformat()
@@ -836,6 +906,56 @@ def _mark_mgr_sent(target_date: str) -> None:
                      extra={"state": {"date": target_date}})
 
 
+def done_titles_by_person(rows: list, days: "tuple") -> dict:
+    """{담당자: [그 날짜에 끝낸 업무명]} — 업무 SSOT 기준(배2541 후속 2026-09-11).
+
+    판정 = 상태 '완료' + 수정일이 days 안. 완료일 칸은 기한이 적혀 있어 그날 손댄 것을
+    못 잡는다(실측 2026-09-11: 나우열M 6건 중 5건이 완료일=어제였다)."""
+    out: dict = {}
+    for r in rows or []:
+        if str(r.get("상태") or "").strip() != "완료":
+            continue
+        if _ymd(r.get("수정일")) not in days:
+            continue
+        who = str(r.get("담당자") or "").strip()
+        title = str(r.get("업무명") or "").strip()
+        if who and title:
+            out.setdefault(who, []).append(title)
+    return out
+
+
+def drop_done_items(items: list, done_map: dict) -> list:
+    """이미 끝난 건은 「확인 부탁드릴 것」에서 뺀다 — 07:50·12:10 둘 다 이 한 곳을 지난다.
+
+    원장(_digest_ledger)과 업무 SSOT 는 서로 다른 원장이라 한쪽이 닫혀도 다른 쪽은 열린 채
+    남는다(실측 2026-09-11: 잡코리아 건이 SSOT 에선 완료인데 낮 통이 #201 로 다시 물었다).
+    사람을 가리지 않는다 — 같은 사고가 실장·소장 통에서도 난다."""
+    if not items or not done_map:
+        return items
+    kept = []
+    for it in items:
+        who = str(it.get("who") or "")
+        ask = str(it.get("ask") or "")
+        titles = [t for w, ts in done_map.items() if w and (w in who or who in w) for t in ts]
+        if any(t and t in ask for t in titles):
+            continue
+        kept.append(it)
+    return kept
+
+
+def done_line(done_map: dict, who_list: list, label: str) -> str:
+    """「✅ 어제 끝내신 것 — 이경연 실장 2건 · 이정헌 소장 1건」 한 줄. 0건인 사람은 뺀다.
+
+    제목은 안 단다 — 통이 길어지면 정작 물어야 할 남은 건이 안 읽힌다(웰리 판단 2026-09-11).
+    0건을 찍으면 독촉으로 읽히므로 그 사람은 줄에서 통째로 뺀다."""
+    bits = []
+    for who in who_list:
+        n = len(done_map.get(who) or [])
+        if n:
+            bits.append(f"{who} {n}건")
+    return f"✅ {label} — " + " · ".join(bits) if bits else ""
+
+
 def nawool_done_today(rows: list, today: str) -> list:
     """오늘 나우열M 이 끝낸 업무 제목들(업무 SSOT 기준 · 배2541 후속 2026-09-11).
 
@@ -850,7 +970,7 @@ def nawool_done_today(rows: list, today: str) -> list:
             continue
         if NAWOOL_WHO not in str(r.get("담당자") or ""):
             continue
-        if str(r.get("수정일") or "").strip()[:10] != today:
+        if _ymd(r.get("수정일")) != today:
             continue
         title = str(r.get("업무명") or "").strip()
         if title:
@@ -1519,7 +1639,7 @@ def build_weekly_unresolved_table(todo_rows: list, today: str) -> str:
                 age = (date.fromisoformat(today) - date.fromisoformat(dm.group(1))).days
             except Exception:
                 age = 0
-        due = str(r.get("종료일", "") or "")[:10]
+        due = _ymd(r.get("종료일"))          # 시간대 보정(_parse_ymd) — 앞 10자를 그냥 자르면 하루 당겨진다
         overdue = bool(due) and due < today
         st = stats.setdefault(member, [0, 0, 0])
         st[0] += 1
@@ -3216,7 +3336,16 @@ def main() -> int:
     ap.add_argument("--why", default="", help="--resolve 사유(선택)")
     ap.add_argument("--nawool-noon", action="store_true",
                     help="평일 12:10 나우열M 낮 미회신 통(배2541) — 같은 날 두 번 안 보낸다")
+    ap.add_argument("--selfcheck", action="store_true",
+                    help="네트워크 없이 도는 자가점검(날짜 시간대·끝난 건 필터 등)")
     args = ap.parse_args()
+
+    if args.selfcheck:
+        _selfcheck_parse_ymd()
+        _selfcheck_done_filter()
+        _selfcheck_gm_work_section()
+        _selfcheck_reply_match()
+        return 0
 
     if args.nudge_review:
         return nudge_review()
