@@ -785,32 +785,13 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
         return RedirectResponse("/auth/signup?msg=아이디는 영문 소문자·숫자·.·_ 4~20자로 입력해 주세요", status_code=303)
     mark = "회사 계정"
     if not is_company:
-        # 명부를 못 읽으면 되돌려 보내지 않고 접수한다 — 승인은 GM 이 한다(GM 지시 2026-09-11
-        # 「서버 저장은되었지? 그걸로 가입신청 넣어주고 내가 승인할게」).
-        # 게이트가 사라지는 게 아니다: 명부를 읽을 수 있으면 종전대로 이름을 대조하고,
-        # 명부가 죽었을 때만 「명부 확인 안 됨」 표시를 달아 GM 판단으로 넘긴다.
-        # 명부가 살아나면 자동으로 원래 규칙으로 돌아온다.
-        roster, why = None, ""
-        if not hr_hub_pw():
-            why = "인사 명부 대조용 비밀번호가 서버에 없습니다"
-        else:
-            try:
-                roster = hr_roster()
-            except Exception as exc:
-                why = str(exc)[:120] or type(exc).__name__
-        if roster is None:
-            mark = "⚠️ 명부 확인 안 됨"
-            tell_gm(f"🔐 ERP 가입 신청 — ⚠️ 명부 확인 안 됨, 직접 확인 후 승인해 주세요.\n"
-                    f"신청자 {name} ({uid} · {dept})\n"
-                    f"사유: {why}\n"
-                    "승인: https://erp.wellperion.com/auth/admin\n"
-                    "명부 열기: https://erp.wellperion.com/auth/admin/hr_check")
-        elif not hr_match(name, phone, roster):
-            return RedirectResponse(
-                "/auth/signup?msg=인사 명부에 그 이름이 없습니다. 인사 등록된 이름 그대로 적어 주세요",
-                status_code=303)
-        else:
-            mark = "인사 대조 ✅(이름)"
+        # ★가입에서 인사 명부 대조를 뺀다 (GM 지시 2026-09-11 「그냥 내가 승인하냐 안하냐로
+        #   구분해줘 명부 체크하는것 하지말고」). 누구나 신청할 수 있고, 계정이 사는 것은 GM 승인
+        #   하나로만 정해진다. 「명부 확인 안 됨」 같은 표시도 안 붙인다 — 표시가 있으면 GM 이 그걸
+        #   판단 근거로 오해한다. 승인 화면이 보여 주는 이름·연락처·부서가 이제 유일한 판단 근거다.
+        #   ▸경위: 09-07 「인사정보 크로스체크」로 시작 → 09-11 오전 이름만 → 09-11 낮 대조 폐지.
+        #   ▸hr_check 화면·hr_match·hr_roster 는 남겨 둔다(가입 경로에서만 안 쓴다).
+        mark = "GM 승인 대기"
     salt, h = hash_pw(password)
     status, approved_at = ("active", now()) if is_company else ("pending", None)
     perms = {"dept": dept, "phone": _digits(phone), "groups": [], "modules": dept_modules(dept), "deny": []}
@@ -824,7 +805,9 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
     if is_company:
         tell_gm(f"🔐 ERP 가입 — {name} ({uid} · {dept} · {mark} · 자동 활성)")
         return RedirectResponse("/auth/signup?msg=가입됐습니다. 바로 로그인할 수 있습니다", status_code=303)
-    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid} · {dept} · {mark})\n승인: https://erp.wellperion.com/auth/admin")
+    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid} · {dept})\n"
+            f"연락처 {phone.strip()}\n"
+            "승인하시면 그때부터 로그인됩니다: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/signup?msg=접수됐습니다 · GM 승인 뒤 로그인하실 수 있습니다", status_code=303)
 
 
