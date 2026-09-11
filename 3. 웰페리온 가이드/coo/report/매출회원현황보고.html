@@ -837,7 +837,8 @@ function renderChart(d){
     s.push('<rect x="' + x + '" y="' + y + '" width="' + (bw*0.56) + '" height="' + h +
            '" fill="' + (m.partial ? '#8FA6BC' : '#14304E') + '" rx="2"/>');
     s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="' +
-           (m.partial ? '#48525B' : '#14304E') + '">' + eok(m.value) + (m.partial ? ' 집계중' : '') + '</text>');
+           (m.partial ? '#48525B' : '#14304E') + '">' + eok(m.value) +
+           (m.partial ? ' ' + (m.partialLabel || '집계중') : '') + '</text>');
   });
   // 누적 선
   var pts = [];
@@ -914,7 +915,7 @@ function load(){
       // '26년 매출 분석' AV열은 마감된 달만 값을 갖기 때문에, 이번 달은 항상 빈 막대로 남아 있었다.
       // 날짜별·월별 보기를 눌러야만 채워지던 것을 기본 로드에서도 채워 준다 — 값은 보고탭 J4
       // (기준일까지의 이번 달 누적) 그대로이고, 마감된 달 값은 syncChartPartial 이 덮지 않는다.
-      syncChartPartial(RAW.cells.J4);
+      syncChartPartial(RAW.cells.J4, _yestLabel());
       document.getElementById('readat').textContent = (d.at || '—') + (d.ssName ? ' · ' + d.ssName : '');
       // 웹앱이 이번 달 파일을 못 찾고 옛 파일을 열었으면 그 사실을 맨 위에 띄운다(2026-09-03).
       // 숫자는 멀쩡해 보여도 지난달 파일 값이다 — 조용히 넘어가면 GM 이 잡는다.
@@ -935,7 +936,7 @@ function load(){
   var p3 = miscFetch('todo', 'sales_monthly')
     // 그래프가 보고시트보다 늦게 도착하면 위에서 부른 syncChartPartial 이 아직 RAW.chart 를 못 본다 —
     // 여기서 한 번 더 부른다(둘 중 늦게 끝난 쪽이 채운다. 같은 값이라 두 번 불려도 결과는 같다).
-    .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); if (RAW.cells) syncChartPartial(RAW.cells.J4); } })
+    .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel()); } })
     .catch(function(){ // 「불러오는 중…」이 영영 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
       document.getElementById('gauge').innerHTML =
         '<div style="font-size:11.5px;color:var(--bad)">월별 매출을 못 읽었습니다 — [↻ 새로고침]을 눌러 주세요.</div>';
@@ -1071,12 +1072,20 @@ function ymd(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2)
 /* 그래프 「집계중」 막대 — 기본은 어제 「보고」탭 J4 인데, 오늘 일자탭을 읽으면 그 J4(오늘까지
    월 누적)로 맞춘다. 한 화면에서 이번 달 값이 둘로 갈리던 것(막대 0.3억 · 표 0.5억)을 없앤다.
    집계가 끝난 달 값은 절대 덮지 않는다 — 값은 시트 칸 그대로다. */
-function syncChartPartial(j4raw){
+function syncChartPartial(j4raw, asOfLabel){
   if (!RAW.chart || !RAW.chart.months) return;
   var cm = RAW.chart.months[new Date().getMonth()];
   var v = num(j4raw);
-  if (cm && v > 0 && (cm.value == null || cm.partial)) { cm.value = v; cm.partial = true; renderChart(RAW.chart); }
+  if (cm && v > 0 && (cm.value == null || cm.partial)) {
+    cm.value = v; cm.partial = true;
+    // 「집계중」이라 적으면 지금도 숫자가 움직이는 것처럼 읽힌다 — 실제로는 기준일까지 확정된 누적이다.
+    // 그래서 꼬리표를 기준일로 적는다(GM 지적 2026-09-11).
+    cm.partialLabel = asOfLabel || '';
+    renderChart(RAW.chart);
+  }
 }
+function _yestLabel(){ var y = new Date(Date.now() - 86400000); return (y.getMonth()+1) + '/' + y.getDate() + '까지'; }
+function _todayLabel(){ var t = new Date(); return (t.getMonth()+1) + '/' + t.getDate() + '까지'; }
 document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
 
 // 일자탭 계약 명단 — 회원권(A~G) · 강습(H~N) 두 블록 모두 열 순서가 같다(담당·회원·종목·금액·방법·분류·경로).
@@ -1110,14 +1119,62 @@ function contractListHTML(title, rows){
     (restN > 0 ? '<div class="fnote">외 ' + restN + '건</div>' : '') + '</div>';
 }
 
-// 일자탭 매출 표 — 항목별 표가 없어 회원권/강습권/총매출 3줄 + 그날 계약 명단으로 바꿔 그린다.
+/* 일자탭에는 항목별 매출 표가 없다 — 그래서 그날 계약 명단의 종목·금액을 직접 합쳐
+   회원권·옵션·팀별로 나눈다(GM 지시 2026-09-11).
+   분류 규칙은 9/10 자 값으로 「보고」탭 I6~I15 와 1원 단위까지 맞는 것을 확인하고 정했다:
+     · 옵션   = 종목에 '라카' 또는 '일일입장' (골프라카 78만 + 일일입장 11만 = 89만 = I7)
+     · 회원권 = 회원권 블록의 나머지 (962.5만 = I6)
+     · 팀     = 강습 블록 종목의 낱말로 가른다. 어느 팀도 아닌 것(예 루프·발레)은 '기타'로
+               따로 세운다 — 보고탭도 그 건을 팀에 넣지 않아 억지로 끼우면 값이 어긋난다. */
+var DAY_OPT_RE = /라카|일일입장/;
+var DAY_TEAM_RULES = [
+  ['수영팀', /수영/], ['P.T팀', /P\.?T/i], ['골프팀', /골프/], ['스쿼시팀', /스쿼시/],
+  ['체조팀', /체조|트램폴린/], ['P.L팀(필라테스)', /필라테스|P\.?L/i],
+  ['뮤지컬팀', /뮤지컬/], ['GXE팀(파트너)', /GXE|파트너/i]
+];
+function _won(n){ return '₩ ' + (n || 0).toLocaleString('ko-KR'); }
+function daySplit(c){
+  var mem = readContracts(c, ['A','B','C','D','E','F','G']);
+  var les = readContracts(c, ['H','I','J','K','L','M','N']);
+  var out = { membership:0, option:0, teams:{}, etc:0 };
+  DAY_TEAM_RULES.forEach(function(t){ out.teams[t[0]] = 0; });
+  mem.forEach(function(x){
+    if (DAY_OPT_RE.test(x.sport)) out.option += x.amount; else out.membership += x.amount;
+  });
+  les.forEach(function(x){
+    for (var i = 0; i < DAY_TEAM_RULES.length; i++) {
+      if (DAY_TEAM_RULES[i][1].test(x.sport)) { out.teams[DAY_TEAM_RULES[i][0]] += x.amount; return; }
+    }
+    out.etc += x.amount;
+  });
+  return out;
+}
 function renderDaySales(c, dayLabel){
   setSalesHead(['보고 항목', dayLabel + ' 매출', '이번 달 누적', '이번 달 목표', '달성률']);
-  var rows = [['회원권', c.C3, c.C4], ['강습권', c.F3, c.F4], ['총 매출', c.J3, c.J4]];
+  var s = daySplit(c);
+  var rows = [
+    ['회원권', _won(s.membership), '–'],
+    ['옵션 (골프라카·일일입장)', _won(s.option), '–'],
+    ['멤버십 소계', c.C3, c.C4]
+  ];
+  DAY_TEAM_RULES.forEach(function(t){ rows.push([t[0], _won(s.teams[t[0]]), '–']); });
+  if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–']);
+  rows.push(['강습 소계', c.F3, c.F4]);
+  rows.push(['총 매출', c.J3, c.J4]);
+  var lastIdx = rows.length - 1;
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
-    return '<tr' + (i === 2 ? ' class="sum"' : '') + '><td>' + r[0] + '</td><td>' + esc(r[1] || '–') +
+    var isSub = (r[0] === '멤버십 소계' || r[0] === '강습 소계');
+    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td' +
+      (isSub ? ' style="font-weight:700"' : '') + '>' + r[0] + '</td><td>' + esc(r[1] || '–') +
       '</td><td>' + esc(r[2] || '–') + '</td><td>–</td><td>–</td></tr>';
   }).join('');
+  // 나눈 값이 시트 소계와 어긋나면 조용히 넘기지 않는다 — 분류 규칙이 못 따라간 종목이 생겼다는 뜻이다.
+  var gapM = (s.membership + s.option) - num(c.C3);
+  var gapL = Object.keys(s.teams).reduce(function(a, k){ return a + s.teams[k]; }, 0) + s.etc - num(c.F3);
+  if (gapM || gapL) document.getElementById('err').innerHTML +=
+    '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn)">' +
+    '항목별로 나눈 합이 시트 소계와 다릅니다 — 회원권 ' + _won(gapM) + ' · 강습 ' + _won(gapL) +
+    ' (새 종목 이름이 생겼을 수 있습니다)</div>';
   // 계약 명단은 2페이지 「문의 · 등록 상세」로 옮겼다(GM 지시 2026-09-03 — 1페이지 매출 표 안에
   // 두면 등록 상세와 같은 내용이 두 장에 겹쳐 보인다). 여기서는 그리지 않고 넘기기만 한다.
   renderP2Contract(c, dayLabel);
@@ -1240,7 +1297,7 @@ function onDatePick(silent){
       // 세 조각 중 뒷조각이 빠지면 21행 아래 계약이 명단에서 조용히 사라진다 — 그 사실을 밝힌다.
       if (!parts[1] || !parts[2]) e.innerHTML += '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn);">' +
         '계약 명단 일부(21행 아래)를 못 읽었습니다 — 명단이 합계보다 적을 수 있습니다. [↻ 새로고침]을 눌러 주세요.</div>';
-      if (isToday) syncChartPartial(c.J4);   // 그래프 「집계중」 막대도 오늘까지 누적으로 맞춘다
+      if (isToday) syncChartPartial(c.J4, _todayLabel());   // 그래프 「집계중」 막대도 오늘까지 누적으로 맞춘다
     })
     .catch(function(err){
       if (req !== _dayReq) return;
@@ -1262,7 +1319,7 @@ function toggleMonth(){
     .catch(function(){ return null; })
     .then(function(todayCells){
       renderMonthSales(RAW.chart, todayCells);
-      if (todayCells) syncChartPartial(todayCells.J4);
+      if (todayCells) syncChartPartial(todayCells.J4, _todayLabel());
       if (todayCells) {
         var hl = document.getElementById('headline').children;
         hl[0].querySelector('.v').textContent = todayCells.J3 || '—';
