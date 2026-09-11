@@ -149,6 +149,29 @@ AREA_OF = {
 AREA_ETC = "ERP 플랫폼"          # 파트너사 메뉴 밖 — ceo·gm·cto·cbo
 AREA_ORDER = ["마케팅 관리", "회원 관리", "운영 관리", "인사&파트너 관리", "매출&지출 관리", AREA_ETC]
 
+# ── 파트너사 목록에서 빼는 화면 (배2540 · 시모 판정 2026-09-11) ───────────────
+# 왜: 09-11 에 손으로 21건을 지워 목록을 133 → 112 로 줄였는데, 이 생성기는 그걸 모른다.
+#     가이드 폴더 .html 이 한 장이라도 같이 저장되면 pre-commit 훅이 목록을 통째로 다시 만들어
+#     지운 것이 전부 되살아난다. 손으로 지우는 대신 여기 규칙으로 뺀다(약속 L01 — 목록은 한 곳).
+# ★id 가 아니라 경로로 적는다 — cbo·cto 아래에 화면을 새로 만들어도 여기를 안 고쳐도 된다.
+# ★빼는 것은 '파트너사 모듈 목록'에서다. 없애는 게 아니다 — 회사 관리자(erp/admin/)에는 그대로 있다.
+PLATFORM_ONLY_PREFIXES = (
+    "cbo/",          # 파는 쪽 자료(상담봇·다이어트캠프·고척골프) — 파트너사가 볼 이유가 없다
+    "cto/",          # 이관 현황·환경 3벌·운영 가이드·카톡 전송
+    "cmo/sunday/",   # 어떤 하루 — 개인 계정 트랙(2026-09-11 이관)
+)
+PLATFORM_ONLY_FILES = ("자율현황.html",)   # AI 살림 — 파트너사 화면이 아니다
+# cto/ 를 통째로 빼면 시설부가 쓰는 설비 사양서까지 사라진다(실측 2026-09-11: 수영장 출입게이트
+# 사양서 1건이 110 으로 빠졌다). 파트너사 실무진이 보는 시설 자료는 남긴다.
+PLATFORM_ONLY_KEEP = ("cto/facility/",)
+
+
+def is_platform_only(rel: str) -> bool:
+    r = rel.replace("\\", "/")
+    if r.startswith(PLATFORM_ONLY_KEEP):
+        return False
+    return r.startswith(PLATFORM_ONLY_PREFIXES) or r in PLATFORM_ONLY_FILES
+
 # 탭으로 격상된 화면 — 카드 목록에서 뺀다(GM 지시 2026-09-09 「토큰 사용량은 하나의 탭으로
 # 관리되어야 할 정도로 중요한 맥락이야, 모듈에서 격상시켜줘」). 카드와 탭 양쪽에 두면 중복이다.
 TAB_PROMOTED = {"cto-automation-토큰-사용량"}
@@ -357,6 +380,8 @@ def build():
         # ROOT_PAGES 는 사람이 골라 적은 목록이라 is_screen 판정을 건너뛴다.
         # (공지 서식은 파일명이 _template 이라 조각으로 걸러지는데, 실제로는 실무진이 여는 화면이다.)
         if rel in seen or (rel not in ROOT_PAGES and not is_screen(rel)):
+            return
+        if is_platform_only(rel):     # 파트너사 목록에서만 뺀다(회사 관리자 화면엔 그대로 있다)
             return
         title = page_title(os.path.join(GUIDE, rel))
         if not title:
