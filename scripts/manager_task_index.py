@@ -479,13 +479,20 @@ def build() -> str:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
-    moved: list[tuple[int, str, dict, dict]] = []  # (no, date, it, ssot_row) — 업무 SSOT 로 넘어간 것
+    moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
+        # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
+        by_id = {str(r.get("id")): r for r in ssot_rows if r.get("id")}
         remain = {}
         for n, (d, it) in opens.items():
-            m = find_ssot_match(str(it.get("issue") or ""), ssot_rows)
+            todo_id = str(it.get("todo_id") or "").strip()
+            m = by_id.get(todo_id) if todo_id else None
+            matched_by = "id" if m else ""
+            if not m:
+                m = find_ssot_match(str(it.get("issue") or ""), ssot_rows)
+                matched_by = "title" if m else ""
             if m:
-                moved.append((n, d, it, m))
+                moved.append((n, d, it, m, matched_by))
             else:
                 remain[n] = (d, it)
         opens = remain
@@ -552,9 +559,11 @@ def build() -> str:
         moved_sorted = sorted(moved, key=lambda x: x[0])
         moved_rows = "\n        ".join(
             f'<li>#{no} {html.escape(str(it.get("issue") or ""))}'
-            f'<span class="mvd">→ SSOT: {html.escape(str(m.get("업무명") or ""))} '
-            f'{approval_badge(m)}</span></li>'
-            for no, d, it, m in moved_sorted)
+            f'<span class="mvd">→ <a class="mvd-link" href="../todo/업무 현황 SSOT.html" target="_blank">'
+            f'SSOT: {html.escape(str(m.get("업무명") or ""))}</a> '
+            f'{approval_badge(m)}'
+            f'<span class="mvd-id">{"id로 연결" if matched_by == "id" else "제목으로 연결"}</span></span></li>'
+            for no, d, it, m, matched_by in moved_sorted)
         blocks.append(f'''      <div class="blk">
         <details class="grp"><summary>업무 SSOT 로 넘어간 것 <span class="gc">{len(moved)}건</span></summary>
         <ul class="mvlist">
@@ -703,6 +712,8 @@ def build() -> str:
   .mvlist li {{ padding:5px 0; font-size:13.5px; border-top:1px solid var(--line); }}
   .mvlist li:first-child {{ border-top:0; }}
   .mvd {{ display:block; color:var(--dim); font-size:12.5px; margin-top:2px; }}
+  .mvd-link {{ color:inherit; text-decoration:underline dotted; }}
+  .mvd-id {{ color:#888; font-size:.85em; margin-left:.4em; }}
   .bar .fail {{ color:#FFD37A; }}
   .foot {{ margin-top:16px; color:var(--dim); font-size:13px; line-height:1.8; }}
   @media (max-width:640px) {{

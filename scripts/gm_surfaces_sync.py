@@ -100,6 +100,20 @@ def open_gm_cards(plan: dict) -> list:
     return out
 
 
+ROLE_NICK = {"ceo": "AI 웰리", "coo": "AI 시우", "cto": "AI 시토", "cmo": "AI 시모",
+             "cpo": "AI 시포", "cbo": "AI 시보", "cfo": "AI 시뽀", "chro": "AI 시로"}
+
+
+def card_owner(card: dict) -> str:
+    """카드의 owner 칸을 사람 이름으로 편다 — 역할 코드(ceo·coo…)는 닉네임, 「김남욱GM」은 「김남욱 GM」."""
+    raw = str(card.get("owner") or "").strip()
+    if not raw:
+        return ""
+    if raw.lower() in ROLE_NICK:
+        return ROLE_NICK[raw.lower()]
+    return re.sub(r"^김남욱\s*GM$", "김남욱 GM", raw)
+
+
 def fetch_owners() -> dict:
     import urllib.request
     try:
@@ -146,7 +160,13 @@ def diff(plan: dict, items: list, owners: dict, todo_rows: list, today=None) -> 
 
     for c in cards:
         cid = str(c.get("id"))
-        who = str(owners.get(cid, "") or "").strip()
+        # 담당 = ①GM 이 화면 보드에서 고른 값 → ②전사일정 줄에 이미 적힌 담당(사람이 손으로 넣은 값 —
+        #   나우열M·이정헌 소장 등) → ③카드의 owner 칸. 보드에 3건뿐이라 「담당없음 20건」이 매일
+        #   헛경보였고(2026-09-11 실측), 카드 owner 는 역할 코드(ceo)라 일정 줄의 사람 이름을 덮으면 안 된다.
+        cur0 = by_sid.get("gmwork-" + cid)
+        who = (str(owners.get(cid, "") or "").strip()
+               or str((cur0 or {}).get("assignee") or "").strip()
+               or card_owner(c))
         due = _date(c.get("due"))
         title = str(c.get("title") or "").replace(GM_TAG, "").strip()
         if not who:

@@ -509,6 +509,13 @@ def sync_schedule(objs: list, live: bool) -> None:
     for o in due_objs:
         item = _schedule_item_from_objective(o)
         mid = item["id"]
+        # (GM 직접) 카드의 일정 짝은 gm_surfaces_sync 가 gmwork-<id> 로 든다 — 같은 카드를 여기서
+        # mop-<id> 로 또 올리면 두 줄이 된다(2026-09-11 실측 5건 · 시우 배1190). 그쪽 줄이 있으면
+        # 이쪽 줄은 안 만들고, 남아 있던 옛 mop 줄은 거둔다.
+        if ("gmwork-" + mid[len("mop-"):]) in by_id:
+            if by_id.pop(mid, None) is not None:
+                changed += 1
+            continue
         if mid not in by_id and item["next_due"] in manual_by_due:
             skipped.append((o.get("title"), item["next_due"], manual_by_due[item["next_due"]]))
             continue
