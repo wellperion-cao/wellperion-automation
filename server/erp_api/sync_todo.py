@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import time
+from datetime import datetime, timedelta
 import urllib.parse
 import urllib.request
 
@@ -64,12 +65,28 @@ def _s(v):
     return str(v if v is not None else "").strip()
 
 
+def _kst_date(v):
+    """GAS 가 내려주는 ISO UTC 시각을 KST 날짜로. 앞 10자를 자르면 하루 이른 날이 들어간다.
+
+    시트의 날짜 칸은 KST 자정으로 저장되어 '2026-09-14T15:00:00.000Z'(= KST 9/15 00:00)로 내려온다.
+    종전처럼 [:10] 을 쓰면 9/14 가 미러에 박혀, 매출보고 I20·I21 이 「9/15 마감」을
+    「~9/14 기한 지남」으로 찍었다(GM 지적 2026-09-11 · 업무 현황 SSOT 화면은 이미 kstDateStr 로 고쳐져 있었다).
+    시각이 붙지 않은 값('2026-09-15')은 그대로 둔다."""
+    s = _s(v)
+    if not s or "T" not in s:
+        return s[:10]
+    try:
+        return (datetime.strptime(s[:19], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=9)).strftime("%Y-%m-%d")
+    except ValueError:
+        return s[:10]
+
+
 def status_of(r):
     return _s(r.get("상태")) or "진행중"          # 화면 getStatus 와 같다 — 빈칸은 진행중
 
 
 def created_of(r):
-    return _s(r.get("생성일"))[:10]              # 화면 getCreated 와 같다 — 앞 10자
+    return _kst_date(r.get("생성일"))            # 화면 getCreated 와 같다 — KST 날짜
 
 
 def dept_of(r):
@@ -109,7 +126,7 @@ def _row_tuples(rows, now):
         data = json.dumps(r, ensure_ascii=False)
         todos.append((db.TENANT, key, _s(r.get("업무명")), _s(r.get("카테고리")), dept_of(r), _s(r.get("담당자")),
                       status_of(r), _s(r.get("생성자")), created_of(r), _s(r.get("수정일")),
-                      _s(r.get("시작일"))[:10], _s(r.get("종료일"))[:10], _s(r.get("완료일"))[:10], data, now))
+                      _kst_date(r.get("시작일")), _kst_date(r.get("종료일")), _kst_date(r.get("완료일")), data, now))
         if _s(r.get("결재요청")):
             apprs.append((db.TENANT, key, _s(r.get("업무명")), _s(r.get("담당자")), _s(r.get("결재요청")),
                           _s(r.get("결재상태")), _s(r.get("부서장싸인")), _s(r.get("GM싸인")), _s(r.get("대표싸인")),
@@ -197,6 +214,11 @@ def main():
 
 
 def selftest():
+    # 날짜 변환 — 하루 밀림이 다시 생기면 여기서 먼저 터진다(DB 없이도 도는 부분).
+    assert _kst_date("2026-09-14T15:00:00.000Z") == "2026-09-15"   # KST 자정 저장분
+    assert _kst_date("2026-09-11T05:40:05.000Z") == "2026-09-11"   # 한낮 시각은 그대로
+    assert _kst_date("2026-09-15") == "2026-09-15"                 # 시각 없는 값
+    assert _kst_date("") == "" and _kst_date(None) == ""
     db.TENANT = "selftest"                      # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
     conn = db.connect()
     db.init_schema(conn)
