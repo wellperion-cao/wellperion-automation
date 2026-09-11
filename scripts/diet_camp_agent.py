@@ -170,8 +170,30 @@ def _save_state(st: dict, path: Path = STATE_PATH) -> None:
     path.write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def _export_chat(room: str = ROOM) -> str | None:
-    """그 방 대화만 내보내 텍스트로 돌려준다. 실패하면 None(그날은 조용히 넘어간다)."""
+def _today_export(room: str) -> Path | None:
+    """오늘 이미 뽑아 둔 그 방 대화 파일. 없으면 None.
+
+    GM 지시 2026-09-11: 「중간에 대화내용 저장하는건 너무 자주하니까 나도 정신이하나도없어」 —
+    저장은 아침 06:30 한 번뿐이다. 그 뒤로 도는 통(07:00 하루의 시작 · 21:00 하루의 마무리)은
+    그날 파일을 다시 읽기만 한다. 카톡 창이 뜨고 저장 창이 뜨는 일이 하루 세 번에서 한 번으로 준다.
+    """
+    now = datetime.now()
+    f = (REPO_ROOT / "1. AI자료_아카이브" / "11_카카오톡" / room / now.strftime("%Y-%m")
+         / ("%s_auto_%s.txt" % (room, now.strftime("%Y%m%d"))))
+    return f if f.exists() else None
+
+
+def _export_chat(room: str = ROOM, force: bool = False) -> str | None:
+    """그 방 대화만 내보내 텍스트로 돌려준다. 실패하면 None(그날은 조용히 넘어간다).
+
+    오늘 파일이 이미 있으면 새로 뽑지 않고 그것을 읽는다(위 _today_export 주석 참조).
+    force=True 는 사람이 손으로 부를 때만 — 예약된 통은 절대 새로 뽑지 않는다.
+    """
+    if not force:
+        today = _today_export(room)
+        if today is not None:
+            print(f"[agent] {room} — 오늘 저장분을 다시 읽는다(새로 저장하지 않음): {today.name}")
+            return today.read_text(encoding="utf-8", errors="replace")
     try:
         r = subprocess.run(
             [sys.executable, str(EXPORTER), "--room", room],
@@ -357,13 +379,25 @@ def faq_blanks(tenant: str, cap: int = 6) -> list[str]:
         return []
 
 
-def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF, gaps: list[str] | None = None) -> str:
+def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF,
+                 gaps: list[str] | None = None, evening: bool = False) -> str:
     brief = brief + "\n" + COMMON_RULES
     recent = lines[-CONTEXT_LINES:]
     convo = "\n".join(f"[{ln['who']}] {ln['text']}" for ln in recent if ln["text"])
     if gaps:
         brief += ("\n\n★손님이 상담 페이지에서 실제로 물었는데 우리가 답을 못 받아 둔 것(최우선으로 여쭙는다 · 최근 대화에서 이미 여쭌 것은 빼고):\n"
                   + "\n".join(f"  · {g}" for g in gaps))
+    if evening:
+        # 「하루의 마무리」 — 오늘 우리가 한 것을 알리고 끝낸다(GM 지시 2026-09-11).
+        # 묻지 않는다. 하루에 두 번 묻는 방이 되면 상대가 지친다.
+        parts = [brief, "",
+                 "── 오늘 오간 말 (오래된 것 위) ──", convo, "",
+                 "── 하루의 마무리 한 통을 써라 ──",
+                 "오늘 우리가 그 사장님을 위해 한 일을 담담히 알린다. 위 「오늘의 사실」에 적힌 것만 쓴다 — "
+                 "한 일이 없으면 없다고 쓰지 말고 내일 할 것 한 줄로 대신한다. "
+                 "새 질문을 하지 않는다(묻는 것은 아침 한 통뿐이다). "
+                 "마지막 줄은 편히 쉬시라는 인사 한 줄. 본문만 출력한다."]
+        return chr(10).join(parts)
     if not fresh:
         # 말씀 없는 아침 — 먼저 보내는 질문 1통(GM 지시 2026-09-03)
         return (f"{brief}\n\n"
@@ -454,7 +488,7 @@ def _wait_until(hhmm: str) -> None:
 
 
 def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = False,
-        send_at: str = "") -> int:
+        send_at: str = "", evening: bool = False) -> int:
     conf = conf or {"room": ROOM, "state": STATE_PATH}
     room = conf["room"]
     brief = brief_of(conf)
@@ -476,7 +510,10 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     lines = parse_lines(text)
     fresh = new_from_partner(lines, st.get("last_handled", ""))
     asking = not fresh                                 # 말씀 없는 아침 = 먼저 질문 1통
-    if asking and (reply_only or st.get("asked_date") == today):
+    if evening and st.get("evening_date") == today:
+        print(f"[agent] {room} — 오늘 하루의 마무리는 이미 나갔다")
+        return 0
+    if (not evening) and asking and (reply_only or st.get("asked_date") == today):
         print(f"[agent] {room} — 새 말씀 없음, 오늘 아침 질문은 "
               f"{'안 보낸다(--reply-only)' if reply_only else '이미 나갔다'}")
         return 0
@@ -498,7 +535,8 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     fact = blog_fact(conf)
     if fact:
         brief += "\n\n★오늘의 사실(지어내지 말고 이대로 따른다): " + fact
-    draft, used = run_claude(build_prompt(lines, fresh, brief, gaps), label="diet-camp-agent")
+    draft, used = run_claude(build_prompt(lines, fresh, brief, gaps, evening=evening),
+                             label="diet-camp-agent")
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
         return 0
@@ -540,14 +578,17 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     if _send(draft, room):
         st["sent_today"] += 1
         st["last_handled"] = marker
-        if asking:
+        if evening:
+            st["evening_date"] = today          # 하루의 마무리는 하루 한 통
+        elif asking:
             st["asked_date"] = today
         st.setdefault("history", []).append(
             {"at": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": used,
              "partner": partner_text[:120], "reply": draft})
         st["history"] = st["history"][-30:]
         _save_state(st, conf["state"])
-        _tell_gm(f"🤖 카톡 에이전트({room}) {'아침 질문' if asking else '답장'} 1통\n"
+        _kind = "하루의 마무리" if evening else ("하루의 시작" if asking else "답장")
+        _tell_gm(f"🤖 카톡 에이전트({room}) {_kind} 1통\n"
                  f"대표님: {partner_text[:60]}\n보낸 말: {draft.splitlines()[0][:60]}")
         return 0
     _tell_gm(f"🤖 카톡 에이전트({room}) — 답장 발신에 실패했습니다. 카톡 창을 확인해 주세요.")
@@ -612,6 +653,8 @@ def main() -> int:
     ap.add_argument("--list-rooms", action="store_true", help="도는 방 목록만 찍는다")
     ap.add_argument("--reply-only", action="store_true",
                     help="말씀 없는 아침에도 질문을 보내지 않는다(종전 동작)")
+    ap.add_argument("--evening", action="store_true",
+                    help="「하루의 마무리」 한 통 — 오늘 한 것을 알리고 묻지 않는다(GM 지시 2026-09-11)")
     ap.add_argument("--send-at", default="", metavar="HH:MM",
                     help="초안을 만든 뒤 이 시각까지 기다렸다 보낸다(예 07:00 — 저장은 그 전에)")
     args = ap.parse_args()
@@ -632,7 +675,8 @@ def main() -> int:
     rc = 0
     for conf in todo:
         one = (init_marker(conf) if args.init
-               else run(conf, dry_run=args.dry_run, reply_only=args.reply_only, send_at=args.send_at))
+               else run(conf, dry_run=args.dry_run, reply_only=args.reply_only,
+                        send_at=args.send_at, evening=args.evening))
         rc = one or rc
     return rc
 
