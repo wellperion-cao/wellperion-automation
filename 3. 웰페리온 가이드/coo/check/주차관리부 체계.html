@@ -814,7 +814,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- 점검 타이머(GM 지시 2026-09-11) — 지원부 timer-btn 과 같은 동작(시작▶/완료■/재측정↺).
            ★지원부와 다른 점: timerGatePassed 같은 제출 게이트를 걸지 않는다 — 주차 일일점검은 배선 후 지금까지
            제출 0건(8월 0/58·9월 0/22 실측)이라 조건을 더 얹으면 더 안 쓰게 된다. 안 눌러도 제출은 그대로 되고
-           startedAt·finishedAt·durationMin 만 빈칸으로 나간다(GM 지시). -->
+           startedAt·finishedAt·durationMin 만 빈칸으로 나간다. 게이트를 안 거는 것은 시우 판단이다(GM 지시 아님).
+           9/18 제출이 실제로 돌기 시작하면 게이트를 켤지 다시 본다. -->
       <div class="submitter-bar" style="margin-top:12px;gap:10px;flex-wrap:wrap;">
         <button type="button" class="timer-btn" id="parkTimerBtn" onclick="toggleParkTimer()">▶ 점검 시작</button>
         <button type="button" class="timer-reset-btn" id="parkTimerReset" style="display:none" onclick="resetParkTimer()">↺ 재측정</button>
@@ -2350,7 +2351,7 @@ function onParkCheck(){
    점검 타이머(GM 지시 2026-09-11) — 지원부 toggleCheckTimer/_timerDuration 과 같은 상태머신
    (idle→running(시작)→done(완료·소요분), 재측정은 resetParkTimer 로만). 세션 메모리만 — 서버 영속은
    범위 밖(새로고침하면 리셋). 날짜+조 별로 키를 갈라 날짜 이동 시 남의 시간이 섞이지 않게 한다.
-   ★제출 게이트 없음(지원부 timerGatePassed 미적용, GM 지시) — 주차 일일점검은 배선 후 지금까지
+   ★제출 게이트 없음(지원부 timerGatePassed 미적용 · 시우 판단 2026-09-11 — GM 지시가 아니다) — 주차 일일점검은 배선 후 지금까지
    제출 0건(8월 0/58·9월 0/22 실측)이라 조건을 더 얹으면 더 안 쓰게 된다. 안 눌러도 제출은 그대로 되고
    startedAt·finishedAt·durationMin 만 빈칸으로 나간다. ═══════════════════════════════════════════ */
 const PARK_TIMER={};
