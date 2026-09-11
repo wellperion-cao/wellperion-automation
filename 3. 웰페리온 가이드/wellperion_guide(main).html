@@ -18,10 +18,10 @@
     /* 운영부 매뉴얼 이관 콘텐츠용 색(원본 운영부 체계.html :root 값 그대로, 2026-08-29) */
     --green:#8F7659; --green-bg:rgba(183,159,138,0.12);
     --red:#ED5B3F; --red-bg:rgba(237,91,63,0.12);
-    --yellow:#8F7659; --yellow-bg:rgba(230,200,78,0.12);
+    --yellow:#8F7659; --yellow-bg:rgba(183,159,138,0.12);
     --blue:#6B655F; --blue-bg:rgba(170,160,152,0.12);
     --purple:#6B655F; --purple-bg:rgba(170,160,152,0.12);
-    --orange:#ED5B3F; --orange-bg:rgba(230,148,78,0.12);
+    --orange:#ED5B3F; --orange-bg:rgba(237,91,63,0.12);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
@@ -208,7 +208,7 @@
   .gm1-action-btn:hover{opacity:0.8;}
   .gm1-action-btn.edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);}
   .gm1-action-btn.done{background:var(--green-bg);color:var(--green);border-color:rgba(183,159,138,0.3);}
-  .gm1-action-btn.hold{background:var(--orange-bg,rgba(230,148,78,0.14));color:var(--orange,#ED5B3F);border-color:rgba(230,148,78,0.3);}
+  .gm1-action-btn.hold{background:var(--orange-bg,rgba(237,91,63,0.14));color:var(--orange,#ED5B3F);border-color:rgba(237,91,63,0.3);}
   .gm1-action-btn.del{background:transparent;color:var(--dim);border-color:var(--border);}
   .gm1-action-btn.del:hover{color:var(--warm);border-color:var(--warm);opacity:1;}
   /* task-actions 하단 버튼 줄 */
@@ -648,7 +648,7 @@
         <div style="display:grid;gap:8px;align-content:start;">
         <div style="font-size:var(--fs-1);font-weight:800;color:var(--accent);">🙋 이번달 접수 흐름</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
+          <div style="background:var(--orange-bg,rgba(237,91,63,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:var(--fs-1);color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocNewMonth" style="font-size:var(--fs-6);font-weight:800;color:var(--orange,#ED5B3F);line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);">(미처리 <b id="kpiVocNew" style="font-weight:700;color:var(--orange,#ED5B3F);">—</b>)</span></div>
             <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
@@ -3181,8 +3181,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
           function effectBadge(ef){
             if(ef==='효과있음') return '<span style="background:rgba(183,159,138,0.15);color:#8F7659;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">✅ 효과있음</span>';
-            if(ef==='효과없음') return '<span style="background:rgba(220,38,38,0.12);color:#ED5B3F;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">효과없음</span>';
-            return '<span style="background:rgba(107,114,128,0.15);color:#6B655F;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">⏳ 미확인</span>';
+            if(ef==='효과없음') return '<span style="background:rgba(237,91,63,0.12);color:#ED5B3F;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">효과없음</span>';
+            return '<span style="background:rgba(170,160,152,0.15);color:#6B655F;font-weight:700;border-radius:99px;padding:2px 10px;font-size:var(--fs-2);">⏳ 미확인</span>';
           }
           fetch(LP_URL + '?_=' + Date.now(), {cache:'no-store'})
             .then(function(r){ return r.ok ? r.json() : null; })
@@ -5018,7 +5018,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     .manual-body .src-tag.sheet{background:var(--green-bg);color:var(--green)}
     .manual-body .src-tag.empty{background:var(--yellow-bg);color:var(--yellow)}
     .manual-body .src-tag.ai{background:var(--purple-bg);color:var(--purple)}
-    .manual-body .placeholder-note{background:var(--yellow-bg);border:1px solid rgba(230,200,78,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:var(--fs-2);color:var(--text);line-height:1.6}
+    .manual-body .placeholder-note{background:var(--yellow-bg);border:1px solid rgba(183,159,138,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:var(--fs-2);color:var(--text);line-height:1.6}
     .manual-body .ai-note{background:var(--purple-bg);border:1px solid rgba(170,160,152,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:var(--fs-2);color:var(--text);line-height:1.6}
     .board-intro{font-size:var(--fs-2);color:var(--dim);margin:2px 0 12px;line-height:1.5}
     .rpt-intro{color:var(--dim);font-size:var(--fs-2);margin-bottom:10px}
@@ -9087,7 +9087,7 @@ function crTab(btn, panelId) {
         tb += '<button type="button" id="gm1-share-report" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">📋 보고용</button>';
         tb += '<button type="button" id="gm1-share-list" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">🔗 공유용</button>';
         tb += '<button type="button" id="gm1-cal-toggle" onclick="var w=document.getElementById(\'gm1-cal-wrap\');var l=document.getElementById(\'gm1-list\');if(w){var s=w.style.display===\'none\';w.style.display=s?\'block\':\'none\';if(l)l.style.display=s?\'none\':\'\';this.style.background=s?\'var(--accent)\':\'var(--bg)\';this.style.color=s?\'#fff\':\'var(--text)\';this.textContent=s?\'📋 목록 보기\':\'🗓️ 캘린더\';if(s){var t=document.getElementById(\'gm1-todo-section\');if(t)t.open=true;}}" style="background:var(--bg);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit;">🗓️ 캘린더</button>';
-        tb += '<a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(232,163,61,0.12);color:#8F7659;border:1px solid rgba(232,163,61,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
+        tb += '<a href="coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html" target="_blank" style="background:rgba(183,159,138,0.12);color:#8F7659;border:1px solid rgba(183,159,138,0.3);padding:5px 12px;border-radius:8px;font-size:var(--fs-2);font-weight:600;text-decoration:none;margin-left:auto;">✍️ 결재 현황 SSOT →</a>';
         tb += '</div>';
         tb += '</div>'; // 도구바 박스 끝
         toolbarEl.innerHTML = tb;
@@ -9100,7 +9100,7 @@ function crTab(btn, panelId) {
 
       // ★큐 원본+미러 둘 다 fetch 실패 — "0건"이 진짜 0이 아니라 로드 실패임을 명시(빈 화면/위장 0 금지, 2026-07-24)
       if (gm1QueueFetchFailed) {
-        html += '<div style="background:rgba(220,38,38,0.14);border:1px solid rgba(220,38,38,0.45);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#ED5B3F;font-weight:700;font-size:var(--fs-2);">⚠️ 항로 큐를 불러오지 못했습니다(원본·미러 모두 실패) — 아래 목록이 비어 보여도 실제 0건이 아닐 수 있습니다. 새로고침해 주세요.</div>';
+        html += '<div style="background:rgba(237,91,63,0.14);border:1px solid rgba(237,91,63,0.45);border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#ED5B3F;font-weight:700;font-size:var(--fs-2);">⚠️ 항로 큐를 불러오지 못했습니다(원본·미러 모두 실패) — 아래 목록이 비어 보여도 실제 0건이 아닐 수 있습니다. 새로고침해 주세요.</div>';
       }
 
       // ── 🔴 결재 포인터(GM 결재 차례 + 진행중 건수·SSOT 링크) 삭제 — GM 개인 판으로 정리(GM 지시 2026-08-07 · 배453) ──
@@ -9157,7 +9157,7 @@ function crTab(btn, panelId) {
         if (t.approval || t.budgetCat) {
           var apr = String(t.approval || '').trim();
           if (apr) {
-            html += '<span class="gm1-chip" style="background:rgba(224,179,65,0.14);color:var(--yellow,#8F7659);font-weight:700;">🧾 결재 요청</span>';
+            html += '<span class="gm1-chip" style="background:rgba(183,159,138,0.14);color:var(--yellow,#8F7659);font-weight:700;">🧾 결재 요청</span>';
           }
         }
         // SSOT 뱃지
@@ -9269,8 +9269,8 @@ function crTab(btn, panelId) {
       // ── 📅 '언제' 배지 — 대기 배의 예정 시점을 note/next(=description)·제목에서 추출해 한눈 스캔. 없으면 배지 생략(표현 전용·데이터 무변경 2026-07-18) ──
       function _gm1WhenBadge(t){
         var s = String(t.description || '') + ' ' + String(t.title || '');
-        if (/막힘|차단|blocked|의존\s*대기|보류\s*대기/i.test(s)) return { e:'⛔', t:'막힘', c:'#B79F8A', bg:'rgba(192,72,63,0.12)' };
-        if (/GM\s*(액션|지시|승인|결재|회신|답변|확인|결정)|GM\s*게이트/i.test(s)) return { e:'👉', t:'GM 액션', c:'#B79F8A', bg:'rgba(232,163,61,0.12)' };
+        if (/막힘|차단|blocked|의존\s*대기|보류\s*대기/i.test(s)) return { e:'⛔', t:'막힘', c:'#B79F8A', bg:'rgba(237,91,63,0.12)' };
+        if (/GM\s*(액션|지시|승인|결재|회신|답변|확인|결정)|GM\s*게이트/i.test(s)) return { e:'👉', t:'GM 액션', c:'#B79F8A', bg:'rgba(183,159,138,0.12)' };
         if (/내일/.test(s)) return { e:'🗓️', t:'내일', c:'#EFEBE6', bg:'rgba(170,160,152,0.14)' };
         // 날짜만 잡는다 — 앞뒤에 다른 숫자가 붙어 있으면 날짜가 아니다. 달 1~12·일 1~31 범위도 함께 검사.
         // (2026-07-30 실측: '버전 상한(188/200)' 에서 '88/20' 을 뜯어내 G1 에 「📅 88/20」이라는
