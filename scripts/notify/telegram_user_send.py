@@ -195,24 +195,41 @@ def send_as_gm(chat_id, text: str) -> bool:
 WORK_ROOM_CHAT_ID = -5492623600  # 텔레그램 「업무관리」 그룹(GM·나우열M·봇 · GM 확정 2026-09-05)
 
 
-def render_chro_task(name: str, owner: str, start: str, end: str, content: str) -> str:
+def render_chro_task(name: str, owner: str, start: str, end: str, content: str, no=None) -> str:
     """업무지시 규격(GM 확정 2026-09-05) — 첫 줄 「CHRO야」 고정. 나우열M 쪽 CHRO(AI)가 이 첫마디로
-    업무지시를 인식해 업무 SSOT 에 바로 등록한다. 줄 순서·라벨은 바꾸지 않는다."""
-    vals = {"업무명": name, "담당자": owner, "시작일": start, "종료일": end, "내용": content}
+    업무지시를 인식해 업무 SSOT 에 바로 등록한다. 줄 순서·라벨은 바꾸지 않는다.
+
+    업무명 앞 번호(라벨) = 나우열M 요청 2026-09-11 「업무명 앞에 번호(라벨링) 필수로 넣어」.
+    번호가 있어야 업무 SSOT 행과 중간관리자 원장(#101~)이 같은 이름으로 이어진다 — 없으면
+    제목 유사도로 맞춰야 해서 완료 회신이 엉뚱한 건에 붙는다. 번호 없이도 보낼 수는 있지만
+    그때는 경고를 남긴다(막으면 원장에 없는 새 건을 아예 못 올린다)."""
+    label = f"[#{str(no).lstrip('#').strip()}] " if str(no or "").strip() else ""
+    if not label:
+        print("[chro-task] ⚠ 업무명 앞 번호 없음 — 원장 번호를 넣어야 회신이 정확히 붙는다"
+              "(나우열M 요청 2026-09-11)", file=sys.stderr)
+    vals = {"업무명": label + str(name or "").strip(), "담당자": owner,
+            "시작일": start, "종료일": end, "내용": content}
     empty = [k for k, v in vals.items() if not str(v or "").strip()]
     if empty:
         raise ValueError(f"업무지시 빈 값: {', '.join(empty)}")
+    if not str(name or "").strip():
+        raise ValueError("업무지시 빈 값: 업무명")
     return "CHRO야\n" + "\n".join(f"{k} : {str(v).strip()}" for k, v in vals.items())
 
 
-def send_chro_task(name, owner, start, end, content, chat_id=WORK_ROOM_CHAT_ID) -> bool:
-    return send_as_gm(chat_id, render_chro_task(name, owner, start, end, content))
+def send_chro_task(name, owner, start, end, content, chat_id=WORK_ROOM_CHAT_ID, no=None) -> bool:
+    return send_as_gm(chat_id, render_chro_task(name, owner, start, end, content, no=no))
 
 
 def _selfcheck():
     import tempfile
     t = render_chro_task("테스트", "나우열M", "2026-09-08", "2026-09-12", "내용")
     assert t.splitlines()[0] == "CHRO야" and t.splitlines()[1] == "업무명 : 테스트", t
+    # 업무명 앞 번호(나우열M 2026-09-11) — 주면 붙고, # 를 겹쳐 써도 하나만 남는다.
+    n1 = render_chro_task("테스트", "나우열M", "2026-09-08", "2026-09-12", "내용", no=201)
+    assert n1.splitlines()[1] == "업무명 : [#201] 테스트", n1
+    n2 = render_chro_task("테스트", "나우열M", "2026-09-08", "2026-09-12", "내용", no="#201")
+    assert n2.splitlines()[1] == "업무명 : [#201] 테스트", n2
     try:
         render_chro_task("", "x", "y", "z", "w"); raise AssertionError("빈 값 통과")
     except ValueError:
@@ -239,12 +256,13 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--selfcheck", action="store_true")
     ap.add_argument("--chro-task", action="store_true", help="업무지시 규격(CHRO야/업무명/담당자/시작일/종료일/내용)으로 발송 · 기본 chat=업무관리")
+    ap.add_argument("--no", dest="task_no", help="업무명 앞에 붙일 원장 번호(#201 등 · 나우열M 요청 2026-09-11)")
     ap.add_argument("--name"); ap.add_argument("--owner"); ap.add_argument("--start"); ap.add_argument("--end"); ap.add_argument("--content")
     args = ap.parse_args()
 
     if args.chro_task:
         try:
-            text = render_chro_task(args.name, args.owner, args.start, args.end, args.content)
+            text = render_chro_task(args.name, args.owner, args.start, args.end, args.content, no=args.task_no)
         except ValueError as ex:
             print(f"[오류] {ex}"); sys.exit(2)
         chat = args.chat or str(WORK_ROOM_CHAT_ID)
