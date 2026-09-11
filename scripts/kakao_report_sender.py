@@ -968,6 +968,56 @@ _MODIFIER_KEYS = ("ctrl", "shift", "alt", "win", "ctrlleft", "ctrlright",
                   "shiftleft", "shiftright", "altleft", "altright", "winleft", "winright")
 
 
+def _cursor_pos():
+    """지금 커서 자리 — 윈도 API 로 읽는다(pyautogui 는 구석에서 예외를 던진다)."""
+    import ctypes
+    pt = ctypes.wintypes.POINT() if hasattr(ctypes, "wintypes") else None
+    if pt is None:
+        import ctypes.wintypes
+        pt = ctypes.wintypes.POINT()
+    ctypes.windll.user32.GetCursorPos(ctypes.byref(pt))
+    return (pt.x, pt.y)
+
+
+def _set_cursor(x: int, y: int) -> None:
+    import ctypes
+    ctypes.windll.user32.SetCursorPos(int(x), int(y))
+
+
+def park_cursor():
+    """발신 전에 마우스 커서를 안전한 자리로 옮긴다. 원래 자리를 돌려준다(끝나면 되돌린다).
+
+    ★2026-09-11 실사고: ★중간관리자 발신이 세 번 연속 BLOCKED —
+    「PyAutoGUI fail-safe triggered from mouse moving to a corner of the screen」.
+    화면은 켜져 있었고 커서 자리 때문이었다. 커서를 옮기고 같은 명령을 다시 돌리니 바로 나갔다.
+    ▸안전장치(FAILSAFE)는 끄지 않는다 — 폭주할 때 사람이 마우스로 멈출 유일한 수단이다.
+      끄는 대신 시작할 때 커서를 가운데로 비켜 놓는다.
+    ▸pyautogui 는 주 모니터만 본다(실측: size 3440x1440 · 가상 화면은 -1920~3440).
+      그래서 보조 모니터에 있던 커서도 이 좌표계에서는 구석으로 읽힐 수 있다.
+    ▸옮길 때 pyautogui 를 쓰지 않는다 — 커서가 이미 구석에 있으면 pyautogui 는 어떤 호출이든
+      그 자리에서 예외를 던진다(그게 안전장치다). 그래서 커서만 윈도 API(SetCursorPos)로 옮긴다.
+      안전장치를 끄는 것이 아니라, 장치가 반응할 자리에서 커서를 비켜 놓는 것이다.
+    """
+    try:
+        before = _cursor_pos()
+        w, h = pyautogui.size()
+        _set_cursor(w // 2, h // 2)
+        return before
+    except Exception as exc:
+        log(f"[cursor] 커서 옮기기 실패(무시): {exc}")
+        return None
+
+
+def restore_cursor(pos) -> None:
+    """사람이 쓰던 자리로 커서를 되돌린다 — 자리를 뺏지 않는다. best-effort."""
+    if not pos:
+        return
+    try:
+        _set_cursor(int(pos[0]), int(pos[1]))
+    except Exception:
+        pass
+
+
 def release_modifiers() -> None:
     """Ctrl·Shift·Alt·Win 을 강제로 놓는다 (배 2530).
 
@@ -1840,7 +1890,13 @@ def _failure_reason(failures: list) -> str:
     #   업무보고방에 실렸다(12:27 실측). 실패가 아니라 정해진 대기다 — 그렇게 적는다.
     if "승인_필요" in blob or "보류:" in blob:
         return "발신 게이트에서 승인 대기로 보류됐습니다 — 실패가 아니라 승인 뒤 나갑니다"
-    if "no active desktop" in blob or "fail-safe" in blob or "failsafe" in blob:
+    # 2026-09-11 정정 — 둘을 뭉뚱그려 「화면이 잠겨 있다」고 적어 왔는데 사실이 아니었다.
+    # 그날 화면은 켜져 있었고 마우스 커서 자리 때문에 pyautogui 안전장치가 멈춘 것이었다.
+    # 틀린 원인을 GM 께 알리면 엉뚱한 데를 보시게 된다 — 둘을 갈라 적는다.
+    if "fail-safe" in blob or "failsafe" in blob:
+        return ("마우스 커서가 화면 구석에 있어 자동 조작이 스스로 멈췄습니다"
+                "(폭주 방지 장치 · 화면 잠김 아님)")
+    if "no active desktop" in blob:
         return "PC 화면이 잠겨 있어 카톡 창을 조작하지 못했습니다(세션 잠금·화면보호기)"
     if "elementnotenabled" in blob:
         return "카톡 창이 입력을 받지 않는 상태였습니다(다른 창·대화상자에 가림)"
@@ -2482,6 +2538,20 @@ def _selftest() -> None:
         assert not _down, "지금 눌린 수식키: %s" % _down
         print("SELFTEST OK: 붙여넣기는 Ctrl+V 먼저·바로 놓음 · 지금 눌린 수식키 0개")
 
+        # ⑥-g 커서 비켜 놓기(2026-09-11 fail-safe 사고) — 구석에 둬도 가운데로 옮겨지고,
+        #     끝나면 원래 자리로 돌아온다. 안전장치 자체는 켜진 채여야 한다.
+        assert pyautogui.FAILSAFE, "폭주 방지 장치를 끄면 안 된다 — 커서를 옮기는 쪽으로 푼다"
+        _w, _h = pyautogui.size()
+        _set_cursor(0, 0)                              # 구석에 일부러 둔다(윈도 API — pyautogui 는 여기서 예외)
+        _was = park_cursor()
+        _now = _cursor_pos()
+        assert abs(_now[0] - _w // 2) < 5 and abs(_now[1] - _h // 2) < 5, _now
+        assert _was == (0, 0), _was
+        restore_cursor(_was)
+        assert _cursor_pos() == (0, 0), _cursor_pos()
+        _set_cursor(_w // 2, _h // 2)                  # 자체점검이 커서를 구석에 두고 끝내지 않게
+        print("SELFTEST OK: 커서가 구석이면 가운데로 비켜 놓고 끝나면 되돌린다")
+
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
         #    사고가 나면 안 된다.
@@ -2774,7 +2844,9 @@ if __name__ == "__main__":
     # 어떻게 끝나든 수식키를 놓고 나간다(배 2530) — 눌린 채 남은 Ctrl 이 GM 의 다음 휠 한 번에
     # 카카오톡·터미널을 통째로 확대시킨다. 시작할 때도 한 번 놓아 앞 실행의 잔재를 안 물려받는다.
     release_modifiers()
+    _cursor_was = park_cursor()          # 커서가 구석에 있으면 안전장치가 발신을 통째로 멈춘다(배 2530 후속)
     try:
         sys.exit(main())
     finally:
         release_modifiers()
+        restore_cursor(_cursor_was)      # 사람이 쓰던 자리로 되돌린다
