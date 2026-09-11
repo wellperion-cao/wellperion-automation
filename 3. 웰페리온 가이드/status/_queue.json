@@ -2450,5 +2450,26 @@
     "updated_at": "2026-09-11",
     "completed_at": "2026-09-11T16:51:57+09:00",
     "processed_at": "2026-09-11"
+  },
+  {
+    "task_id": "CTO-2026-09-11-쓰기-원천을-전부-우리-서버로-남은-5영역-순차-전",
+    "clevel": "cto",
+    "title": "[시토] 쓰기 원천을 전부 우리 서버로 — 남은 5영역 순차 전환 (GM 지시 2026-09-11)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-11",
+    "from": "cto",
+    "note": "[시토 2026-09-11 · 기다리는 쪽: GM 지시 2026-09-11 「쓰기도 우리서버로 옮기자」] GM 원문 「구글에서 우리 서버로 옮기기 10개 다 할 수 있지? 쓰기도 우리서버로 옮기자」. 실측 2026-09-11 18:40: origin_switch 6영역 중 server=3(inquiry·write_check·write_proc) · dual=5. reconcile_dual_write streak=1, 전환 자격 1/6(write_reception 만). 막는 것은 우리 서버가 아니라 구글 쪽 실패 — 최근 7일 write_log 실패 38건(gas-error 25·forward-failed 10·push-error 3)이 전부 GAS 응답 실패·시간초과·302. dual 이 불안정한 이유 자체가 전환해야 할 이유다. 순서(하루 한 영역·당일 10분 뒤 unpushed 0 + 다음날 대조): 1 write_reception 2 write_todo 3 write_schedule 4 write_member 5 instructor·sunday 폼. 되돌리기 = origin_switch.json 한 줄 dual. 매출·지출 원장(sales)·GAS 축소는 그 뒤.",
+    "next": "월요일 09:00 write_reception 전환 후 당일 검증",
+    "depends_on": "",
+    "ship_no": 12553,
+    "short_no": 2553,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-11"
   }
 ]
