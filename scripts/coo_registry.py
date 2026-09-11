@@ -16,7 +16,10 @@ NOTIFY_KEYS = ["daily", "weekly", "monthly", "channel", "bot_id"]
 
 # 점검 GAS 파이프 접속 정보 — data_source.ref는 포인터일 뿐, fetch 설정은 소비자가 보유(계약 §3).
 CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
-CHECK_QUERIES = {"facility": "action=weekly&dept=facility", "support": "action=today_live&dept=support"}
+# 주차(parking)는 2026-09-11 부터 제출을 시작했다(전사일정 park-check-start · GM 확정).
+# today_live 는 GAS 가 support 전용으로 막아 놨으므로 시설과 같은 weekly 경로로 읽는다.
+CHECK_QUERIES = {"facility": "action=weekly&dept=facility", "support": "action=today_live&dept=support",
+                 "parking": "action=weekly&dept=parking"}
 
 # 업무·결재 SSOT 접속 정보 — 서버 사전집계 없음, 클라이언트 산식 복제(계약 §3).
 TODO_API = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
@@ -140,8 +143,10 @@ def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
         return f"({done}/{t}건)" if t else "(대상 0건)"
     _s_label = ("지원(어제 " + "/".join(p.lstrip("0") or "0" for p in support_date[5:].split("-")) + ")"
                 if support_date else "지원")   # "9/2" — "09/02" 로 안 남긴다
+    p_pct = depts.get("parking", {}).get("pct")
     display = (f"시설 {f_pct if f_pct is not None else '-'}%{_frac(depts.get('facility', {}))}"
-               f" · {_s_label} {s_pct if s_pct is not None else '-'}%{_frac(depts.get('support', {}))}")
+               f" · {_s_label} {s_pct if s_pct is not None else '-'}%{_frac(depts.get('support', {}))}"
+               f" · 주차 {p_pct if p_pct is not None else '-'}%{_frac(depts.get('parking', {}))}")
     metrics = {f"{dept}_pct": d["pct"] for dept, d in depts.items()}
     return {"depts": depts, "anomaly": bool(reasons), "reasons": reasons, "tag": "measured",
             "display": display, "metrics": metrics}

@@ -45,10 +45,13 @@ import coo_registry  # noqa: E402 — fetch_check_status() 재사용(중복 복�
 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#O1"
 
-_DEPT_LABEL = {"facility": "시설", "support": "지원"}
+_DEPT_LABEL = {"facility": "시설", "support": "지원", "parking": "주차"}
 # ★조회 범위가 서로 다르다 — 같은 줄에 나란히 놓으면 같은 기준처럼 보이니 각자 밝힌다.
 #   시설=weekly 응답에서 오늘 행만 골라 씀(없으면 마지막 행 폴백) / 지원=today_live 그대로.
-_DEPT_SOURCE_NOTE = {"facility": "일자별 집계 중 오늘 행", "support": "실시간 조회"}
+_DEPT_SOURCE_NOTE = {"facility": "일자별 집계 중 오늘 행", "support": "실시간 조회",
+                     "parking": "일자별 집계 중 오늘 행"}
+# 주차는 2026-09-11 부터 제출을 시작했다(전사일정 park-check-start · GM 확정). 그 전 날짜의 0 은
+# 미제출이 아니라 시작 전이다 — weekly 폴백으로 옛 날짜가 잡히면 _dept_line 이 그 날짜를 그대로 드러낸다.
 
 
 def _dept_line(dept_key: str, d: dict, today: str = "") -> str:
