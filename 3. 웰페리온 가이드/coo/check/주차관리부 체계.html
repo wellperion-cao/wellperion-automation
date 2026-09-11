@@ -2044,19 +2044,22 @@ const PARK_CHECKLIST = {
      과거 제출 기록이 itemId 로 붙어 있어 순서를 밀면 다른 항목으로 읽힌다.
      화면·인쇄는 이 배열을 직접 보지 않는다 — PARK_ITEMS(서버 마스터 또는 이 시드) 단일 출처로 본다. */
   daily: [
-    // 2026-09-11 GM — '배수구 막힘·이물질 제거'를 따로 두지 않고 화장실 줄에 합쳤다.
-    //   주차장 바닥 배수구(지하 침수 방지)는 성격이 달라 '바닥 청결' 안내에 함께 적는다.
-    { t:'바닥 청결',            d:'지상·지하 전체 · 오염·기름때 제거 · 배수구 이물질',   r:'am1'    },
-    { t:'통행로 정리',          d:'적치물 치우기 · 쓰레기 수거',                        r:'am1'    },
-    { t:'화장실',               d:'청결 · 비품(화장지·손세정제) · 악취 · 조명 · 배수구 막힘',  r:'am1'    },
-    { t:'주차선·표시선',        d:'지워짐·흐림 여부',                                   r:'am1'    },
-    { t:'조명',                 d:'점등 상태 · 사각지대 밝기',                          r:'close1' },
-    { t:'차단기·정산기',        d:'정상 작동 확인',                                     r:'am1'    },
-    { t:'CCTV',                 d:'화면 이상 · 녹화 정상',                              r:'close1' },
-    // 감염병 예방 — GM 지시 2026-08-25. 새 점검표를 만들지 않고 지금 도는 청소·점검 동선에 얹는다.
-    // 2026-08-28 — '오픈 전·마감 후' 한 줄이던 것을 조가 갈리며 두 줄로 나눴다.
-    { t:'접점 소독(오픈 전)',   d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',        r:'am1'    },
-    { t:'접점 소독(마감 후)',   d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',        r:'close1' }
+    // 2026-09-11 GM 확인 — 항목 14개(오전 8·마감 6). id 는 서버 마스터와 같게 두고 재사용하지 않는다
+    //   (지운 p3 는 과거 제출 기록이 그 번호로 남아 있다).
+    { id:'p1',  t:'바닥 청결',          d:'지상·지하 전체 · 오염·기름때 제거 · 배수구 이물질',       r:'am1'    },
+    { id:'p2',  t:'통행로 정리',        d:'적치물 치우기 · 쓰레기 수거',                             r:'am1'    },
+    { id:'p4',  t:'화장실',             d:'청결 · 비품(화장지·손세정제) · 악취 · 조명 · 배수구 막힘', r:'am1'    },
+    { id:'p5',  t:'주차선·표시선',      d:'지워짐·흐림 여부',                                        r:'am1'    },
+    { id:'p7',  t:'차단기·정산기',      d:'정상 작동 확인 · 카드 결제 정상',                         r:'am1'    },
+    { id:'p11', t:'번호인식 카메라',    d:'렌즈 오염 닦기 · 번호 인식 상태',                         r:'am1'    },
+    { id:'p12', t:'환기 설비',          d:'1층 주차장 · 가동음 · 매연·악취',                         r:'am1'    },
+    { id:'p9',  t:'접점 소독(오픈 전)', d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',             r:'am1'    },
+    { id:'p6',  t:'조명',               d:'점등 상태 · 사각지대 밝기',                               r:'close1' },
+    { id:'p8',  t:'CCTV',               d:'화면 이상 · 녹화 정상',                                   r:'close1' },
+    { id:'p13', t:'우선구역 단속',      d:'장애인·여성우선·전기차 구역 불법 점유',                   r:'close1' },
+    { id:'p14', t:'불법·이중주차 계도', d:'통행로 막는 차 · 반복 차량 기록',                         r:'close1' },
+    { id:'p15', t:'소화기·비상구',      d:'위치·수량 · 통로 가림 여부 · 유도등 점등',                r:'close1' },
+    { id:'p10', t:'접점 소독(마감 후)', d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',             r:'close1' }
   ],
   /* 주간 점검(weekly) 폐지 — GM 2026-09-11 「주간점검은 의미가 없을듯」.
      체크도 제출도 안 되는 목록이라 화면만 차지하고 기록이 남지 않았다.
@@ -2071,7 +2074,7 @@ const PARK_CHECKLIST = {
    모델은 지원부보다 단순: {id, name, r(조 1개), cat}. 지원부는 rounds(다중)·gender·slot·sched 까지 쓰지만
    주차는 성별 구분이 없고 조도 둘뿐이라 그 필드들을 그대로 흉내내지 않는다(YAGNI).
    ═══════════════════════════════════════════ */
-let PARK_ITEMS = PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
+let PARK_ITEMS = PARK_CHECKLIST.daily.map(function(it,i){ return { id:it.id||('p'+(i+1)), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
 function parkNextItemId(){
   let max=0;
   PARK_ITEMS.forEach(function(it){ const m=/^p(\d+)$/.exec(it.id||''); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
@@ -2094,7 +2097,7 @@ function parkItemToSheet(it, idx){
    되돌리는 법: saveItems 는 그 dept 만 전체 재기록이라, items:[] 로 다시 보내면 parking 항목이 전부 비워진다
    (타 부서 행은 보존된다) — 되돌릴 땐 이 방법이 아니라 시트에서 parking 행을 직접 복원한다. */
 async function seedParkItemsToServer(){
-  const seed=PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
+  const seed=PARK_CHECKLIST.daily.map(function(it,i){ return { id:it.id||('p'+(i+1)), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
   try{
     await erpCheckPost(API_URL,{action:'saveItems',dept:'parking',items:seed.map(parkItemToSheet)});
   }catch(e){
