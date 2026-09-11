@@ -223,4 +223,18 @@ if [ -z "$SKIP_TENANT_COLOR_GUARD" ]; then
   fi
 fi
 
+# ── ⑨ 색 정본을 물린 화면이 다시 제 색을 적는 것 차단 (GM 지시 2026-09-11) ──
+# GM: "디자인 관련해서 통일되게 할순없나? 이 부분에 대해서 디테일이 너무약하네"
+# 화면이 정본(erp/brand/*.css)을 <link> 해 놓고 그 안에서 --bg/--text/--accent 를 또 적으면
+# 정본을 고쳐도 그 화면만 안 따라온다 — 2026-09-09 업무 현황 SSOT 가 그렇게 혼자 베이지로 떴다.
+# 인쇄용(@media print) 재정의는 뜻이 달라 검사에서 뺀다 — 그래서 bash grep 이 아니라 파이썬으로 센다.
+# 우회: git commit --no-verify 또는 env SKIP_BRAND_TOKEN_GUARD=1
+if [ -z "$SKIP_BRAND_TOKEN_GUARD" ]; then
+  BRAND_GUARD="$REPO_ROOT/scripts/brand_token_guard.py"
+  if [ -f "$BRAND_GUARD" ] && [ -n "$PYBIN0" ]; then
+    PYTHONUTF8=1 "$PYBIN0" "$BRAND_GUARD"
+    [ "$?" -eq 1 ] && exit 1
+  fi
+fi
+
 exit 0
