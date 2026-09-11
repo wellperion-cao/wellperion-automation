@@ -1281,12 +1281,6 @@
       ],
       "work": [
         {
-          "time": "09:10",
-          "area": "작업",
-          "event": "아침 첫 창이 Claude 를 갈아끼우는 1분 동안 다른 창이 죽던 것",
-          "detail": "커밋 fcc396c87 · 배 12522"
-        },
-        {
           "time": "09:32",
           "area": "작업",
           "event": "회장님 보고 사진 ERP 공개 자리 반영 — 웰페리온_일일보고_20260910.png (배1115)",
@@ -1459,6 +1453,12 @@
           "area": "작업",
           "event": "업무관리 방 발송 상한 30→120 · 상한 때문에 못 보낸 건 실패 알림을 안 띄운다",
           "detail": "커밋 f966d07f0 · 배 12528"
+        },
+        {
+          "time": "19:51",
+          "area": "상담봇",
+          "event": "배2533② 상담 문답 전량 조회 통로 + 답 본문 기록",
+          "detail": "GET /api/chat/{tenant}/log 신설(days·limit·offset·include_test · 로그인 뒤). 회전본(.타임스탬프)까지 읽어 과거가 조회 불가로 변하는 구멍을 막았다. _log 에 a(답 본문) 칸 추가 — 질문과 같은 마스킹, 2000자 상한, 핸드오프 안내문은 안 남김. 테스트 세션은 지우지 않고 is_test 로 표시. 라이브 실측: 전체 168건 · 최신순 페이지·next_offset 정상 · 무쿠키 401. 저장 1e5db1700 · scp+nginx reload 완료."
         }
       ],
       "count": 37,
@@ -1929,6 +1929,18 @@
           "upload": "✅ 배포 (90ac3baaf)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-3046",
+          "no": "46",
+          "got": "지금 문서함에 모듈이랑 저장파일들이랑 헷갈리는데, 구분 명확히해서 정리해줄래?",
+          "did": "",
+          "start": "19:52",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2095,14 +2107,29 @@
           "detail": "커밋 18a9a2337 · 배 11425"
         }
       ],
-      "count": 38,
+      "count": 39,
       "done": 38,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 27,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-3046",
+          "no": "46",
+          "got": "지금 문서함에 모듈이랑 저장파일들이랑 헷갈리는데, 구분 명확히해서 정리해줄래?",
+          "did": "",
+          "start": "19:52",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": [
         {
           "count": 2,
@@ -2765,13 +2792,25 @@
           "ref": "GM-20260911-9007",
           "no": "07",
           "got": "https://erp.wellperion.com/counsel/ 여기에 질문하는 것들 다 저장하고 가공해줘 정말 중요한거야",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "19:47",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:50",
+          "minutes": 2,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-9008",
+          "no": "08",
+          "got": "상담봇 다양한 질문 하면 데이터 가공해서 답변 성능 향상시켜줘, 나중에는 상담자 컨셉까지 입혀서 말투나 톤까지 변경할 수 있을것이고, 추가적으로 웰리 캐릭터 만들어서 캐릭터가 상담할 수 있도록 생각하고 있음",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "19:50",
+          "end": "19:52",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2788,29 +2827,14 @@
           "detail": "커밋 08558145a · 배 11305"
         }
       ],
-      "count": 7,
-      "done": 6,
-      "open": 1,
-      "avg_minutes": 5,
+      "count": 8,
+      "done": 8,
+      "open": 0,
+      "avg_minutes": 4,
       "work_count": 2,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-9007",
-          "no": "07",
-          "got": "https://erp.wellperion.com/counsel/ 여기에 질문하는 것들 다 저장하고 가공해줘 정말 중요한거야",
-          "did": "",
-          "start": "19:47",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
