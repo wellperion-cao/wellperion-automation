@@ -252,8 +252,16 @@ def _hr_roster_fetch() -> list:
     req = urllib.request.Request(HR_HUB_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"})
     with urllib.request.urlopen(req, timeout=20) as r:
         data = json.loads(r.read().decode("utf-8"))
+    # ★거절을 빈 명부로 삼키지 않는다(2026-09-11 실사고). 비밀번호가 틀리면 인사 허브는 HTTP 200 에
+    #   {"ok":false,"error":"unauthorized"} 를 담아 준다. 종전에는 results 가 없으니 [] 가 돼
+    #   "명부 0명" 이 되고, 가입 신청은 전부 「이름이 명부에 없습니다」로 막혔다 — 비밀번호가 틀렸다는
+    #   말은 어디에도 안 나왔다. GM 이 값을 넣고도 계속 막힌 것이 이 자리다.
+    if isinstance(data, dict) and data.get("ok") is False:
+        raise RuntimeError(str(data.get("message") or data.get("error") or "인사 허브가 거절했습니다"))
     rows = data.get("results") if isinstance(data, dict) else data
-    return rows or []
+    if not rows:
+        raise RuntimeError("인사 허브가 명부를 0명으로 돌려줬습니다 — 비밀번호나 응답 형식을 확인해 주세요")
+    return rows
 
 
 def hr_roster() -> list:
