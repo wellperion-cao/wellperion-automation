@@ -1065,7 +1065,10 @@ async function startReqOnly(){
   document.getElementById("app").style.display="block";
   document.title="📦 구매진행·비품관리 · 웰페리온"; // 직원용 페이지 탭 이름(2026-09-11 배2542 후속)
   var fav=document.getElementById("favicon"); if(fav) fav.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛒</text></svg>"; // 지구본→장바구니
-  TABS=[{id:"request",label:"🛒 구매요청"},{id:"progress",label:"📦 구매진행"},{id:"supply",label:"🗄 비품관리"}]; renderNav();
+  // 구매요청 탭 제거(2026-09-11 · 나우열M 요청 「구매요청 탭도 놓치지 말고」 · GM 지시로 그대로 반영).
+  // 구매요청·승인·반려는 지출품의 화면 한 곳이다 — 여기 남겨 두면 같은 일을 두 곳에서 하게 된다.
+  // renderReq()·REQ_ACTIVE 는 지우지 않는다 — 구매진행 탭이 같은 목록을 읽는다.
+  TABS=[{id:"progress",label:"📦 구매진행"},{id:"supply",label:"🗄 비품관리"}]; renderNav();
   // 진행·비품 탭은 첫 진입 시 지연 로드(구매요청 첫 화면 속도 유지) — renderNav의 onclick과 별개 리스너라 둘 다 동작
   document.querySelectorAll("#nav .tab").forEach(function(b){b.addEventListener("click",function(){
     if(b.dataset.p==="progress")loadProgress();
