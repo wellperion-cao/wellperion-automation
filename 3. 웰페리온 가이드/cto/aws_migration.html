@@ -125,7 +125,7 @@ td.area{white-space:nowrap;font-weight:700;}
 <script id="seed" type="application/json">{
   "_doc": "AWS 이관 전체 현황 정본. 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
   "updated_at": "2026-09-07T06:46:32Z",
-  "updated_at_kst": "2026-09-07 15:46",
+  "updated_at_kst": "2026-09-11 21:00",
   "summary": {
     "progress_pct": 52,
     "origin_switched": "0/9",
@@ -155,11 +155,11 @@ td.area{white-space:nowrap;font-weight:700;}
     {
       "area": "문의 폼 3종(inquiry·instructor·sunday)",
       "who_uses": "홈페이지 방문자(작성) · 리셉션 · 임정은M(처리)",
-      "stage": "거울",
-      "switch_date": "유입 3일 무결 확보 시 — 빠르면 09-10(목)",
+      "stage": "원천 전환",
+      "switch_date": "09-11(금)",
       "owner": "시모",
       "staff_change": "없음(폼 화면·접수 안내 동일) · 접수번호 형식 변화 없음 확인 뒤",
-      "note": "스위치 dual → server (시트는 되밀기) · 09-07 현재 3일 연속 유입 0건이라 증거 미확보",
+      "note": "스위치 dual → server (시트는 되밀기) · 09-07 현재 3일 연속 유입 0건이라 증거 미확보 · 2026-09-11 19:40 · origin_switch inquiry·instructor·sunday = server",
       "updated": "2026-09-07"
     },
     {
@@ -175,42 +175,48 @@ td.area{white-space:nowrap;font-weight:700;}
     {
       "area": "업무·결재 SSOT 쓰기(write_todo)",
       "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "거울",
+      "stage": "원천 전환",
       "switch_date": "09-11(금)",
       "owner": "시우",
       "staff_change": "없음(화면 동일) · 나우열M 통보 필수",
-      "note": "dual → server · 읽기는 이미 서버(12화면+월간운영계획)",
+      "note": "dual → server · 읽기는 이미 서버(12화면+월간운영계획) · 2026-09-11 19:40 · write_todo = server",
       "updated": "2026-09-07"
     },
     {
       "area": "전사일정 쓰기(write_schedule)",
       "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "거울",
+      "stage": "원천 전환",
       "switch_date": "09-11(금)",
       "owner": "시우",
       "staff_change": "없음",
-      "note": "dual → server · 웰리 중복 정리(216→207) 끝난 뒤 · 읽기는 check API 편입 완료",
+      "note": "dual → server · 웰리 중복 정리(216→207) 끝난 뒤 · 읽기는 check API 편입 완료 · 2026-09-11 19:40 · write_schedule = server",
       "updated": "2026-09-07"
     },
     {
       "area": "월간운영계획·GM업무 보드",
       "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "거울",
-      "switch_date": "#5·#6 와 함께(09-11)",
+      "stage": "원천 전환",
+      "switch_date": "09-11(금)",
       "owner": "시우",
       "staff_change": "없음",
-      "note": "읽기 = 이미 서버(todo/api) · 쓰기 = 업무·결재 SSOT 와 같은 관문",
+      "note": "읽기 = 이미 서버(todo/api) · 쓰기 = 업무·결재 SSOT 와 같은 관문 · 업무·전사일정 쓰기와 같은 통로 — 그 둘이 server 라 같이 넘어감",
       "updated": "2026-09-07"
     },
     {
       "area": "점검 3부서 쓰기(write_check)",
       "who_uses": "4부서 조별 담당(키오스크·폰에서 제출) · 반장·팀장(제출 확인) · GM(08:00 통 보고)",
-      "stage": "거울",
-      "switch_date": "09-12(토) 이후",
+      "stage": "원천 전환",
+      "switch_date": "09-11(금)",
       "owner": "시우",
       "staff_change": "없음",
-      "note": "dual → server · 읽기는 서버(운영부 화면 28장) · 지금은 GAS+6분 GAS 읽기",
+      "note": "dual → server · 읽기는 서버(운영부 화면 28장) · 지금은 GAS+6분 GAS 읽기 · write_check = server(09-10 이전 전환)",
       "updated": "2026-09-07"
+    },
+    {
+      "area": "접수 쓰기(write_reception)",
+      "stage": "원천 전환",
+      "switch_date": "09-11(금)",
+      "note": "2026-09-11 19:40 · write_reception = server. 표에 줄이 없어 새로 넣었다(전환은 됐는데 안 보였다)."
     },
     {
       "area": "매출·지출 원장(sales)",
