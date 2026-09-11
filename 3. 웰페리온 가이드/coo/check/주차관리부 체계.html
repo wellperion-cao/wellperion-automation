@@ -28,9 +28,27 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 #tab-guide,#tab-policy,#tab-mplan,#tab-onb,#tab-check{max-width:none;margin-left:0;margin-right:0}
-/* 점검 카드 그리드 — 지원부 #checklistM/#checklistF 와 같은 반응형 그리드(같은 시각 언어). GM 지적 2026-08-25 */
-#parkingDailyCheckBody{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+/* 점검 카드 — 주간 점검을 폐지하며 카드가 한 장이 됐다(GM 2026-09-11). 두 칸 그리드로 두면
+   조 선택 바가 왼쪽 한 칸만 차지하고 오른쪽이 통째로 비어 화면이 지원부와 달라 보인다(실측 스크린샷).
+   한 장이므로 전체 폭으로 쓴다. */
+#parkingDailyCheckBody{display:block}
 #parkingDailyCheckBody > .category{margin-bottom:0}
+/* 이슈·노하우 안내 카드 — 지원부 .guide-cards 와 같은 모양(무엇을 적는 칸인지 먼저 알려 준다) */
+.guide-cards{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.guide-card{flex:1 1 260px;border-radius:10px;padding:12px 14px;border:1px solid}
+.guide-card.issue-guide{background:var(--red-bg);border-color:rgba(237,91,63,0.3)}
+.guide-card.tip-guide{background:var(--purple-bg);border-color:rgba(167,139,218,0.3)}
+.guide-card .guide-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.guide-card.issue-guide .guide-title{color:var(--red)}
+.guide-card.tip-guide .guide-title{color:var(--purple)}
+.guide-card .guide-desc{font-size:12.5px;color:var(--dim);line-height:1.5}
+/* 제출 바 — 지원부처럼 화면 아래에 붙여 둔다. 항목을 끝까지 내려도 제출 버튼이 늘 보인다. */
+.park-submit-bar{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;align-items:center;justify-content:center;z-index:10}
+@media print{.park-submit-bar{display:none!important}}
+/* 요일 칩 — 주차는 주말에 마감조 시각이 18시에서 15시로 바뀐다. 어느 요일을 보고 있는지 먼저 보인다. */
+.dow-chip{display:inline-block;font-size:14px;font-weight:800;padding:5px 12px;border-radius:999px;line-height:1;letter-spacing:0.02em}
+.dow-chip.weekday{background:var(--green-bg);color:var(--green)}
+.dow-chip.weekend{background:var(--orange-bg);color:var(--orange)}
 /* ── 온보딩 탭(화면) — A3 온보딩 인쇄본과 같은 구성(직원구성·발렛동선·응대상황표·가이드요지).
    a3m-* 마크업(a3mZoneHTML) 재사용, 화면용 다크 테마 스타일만 별도 정의(인쇄 스타일과 무간섭). ── */
 #tab-onb .a3m-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
@@ -842,6 +860,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button type="button" class="btn" onclick="moveParkDate(-1)">&lt;</button>
         <button type="button" class="btn" onclick="setParkDateToday()">오늘</button>
         <button type="button" class="btn" onclick="moveParkDate(1)">&gt;</button>
+        <span class="dow-chip" id="parkDowChip">·</span>
       </div>
       <!-- 점검 시작·점검자 = 날짜 바 바로 아래(GM 지적 2026-09-11 「지원부는 상단인데 주차는 하단」).
            지원부 .submitter-bar-split 과 같은 자리·같은 순서다. 제출 버튼만 항목 아래에 둔다 —
@@ -864,11 +883,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div class="progress-text" style="justify-content:flex-start;gap:10px;align-items:center;"><span id="parkingProgressText">오늘 0/-</span><button type="button" class="util-btn print-btn" style="padding:2px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button></div>
         <div class="progress-bar"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
       </div>
+      <!-- 이슈·노하우가 무엇을 적는 칸인지 먼저 알려 준다 — 지원부 점검과 같은 자리·같은 문구(GM 지적 2026-09-11). -->
+      <div class="guide-cards">
+        <div class="guide-card issue-guide">
+          <div class="guide-title">이슈</div>
+          <div class="guide-desc">고장, 부족, 이상 등 문제가 발생했을 때 기록</div>
+        </div>
+        <div class="guide-card tip-guide">
+          <div class="guide-title">노하우</div>
+          <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
+        </div>
+      </div>
       <!-- 일일 점검 카드가 이 자리에 렌더된다(renderParkingDailyCheck). 주간 점검은 폐지 — GM 2026-09-11. -->
       <div id="parkingDailyCheckBody"></div>
-      <!-- 제출 버튼만 항목 아래에 둔다 — 타이머·점검자는 위 날짜 바 아래로 올렸다(GM 지적 2026-09-11). -->
-      <div class="submitter-bar" style="margin-top:12px;">
-        <button type="button" class="submit-btn primary" style="flex:none;max-width:180px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
+      <!-- 제출 버튼은 화면 아래에 붙인다 — 지원부와 같다(GM 지적 2026-09-11 「왜 다른 것 같지?」).
+           항목을 끝까지 내려도 제출 버튼이 늘 보인다. 타이머·점검자는 위 날짜 바 아래에 있다. -->
+      <div class="park-submit-bar">
+        <button type="button" class="submit-btn primary" style="max-width:220px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
         <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
       </div>
       <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br><b style="color:var(--accent);">건강</b> — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</p>
@@ -1938,6 +1969,16 @@ var PARK_ROUND = parkAutoRound(PARK_DATE);
 function renderParkDateBar(){
   const el=document.getElementById('parkDateInput');
   if(el){ el.max=parkTodayStr(); el.value=PARK_DATE; }
+  /* 요일 칩 — 지원부와 같은 자리. 주차는 주말에 마감조가 18시에서 15시로 바뀌므로
+     어느 요일을 보고 있는지가 조 시간과 직결된다(GM 지적 2026-09-11). */
+  const chip=document.getElementById('parkDowChip');
+  if(chip){
+    const d=new Date(PARK_DATE+'T00:00:00');
+    const NAMES=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    const w=d.getDay(), weekend=(w===0||w===6);
+    chip.textContent=NAMES[w]+' · '+(weekend?'주말':'평일');
+    chip.className='dow-chip '+(weekend?'weekend':'weekday');
+  }
 }
 function setParkDate(ds){
   if(!ds) return;
