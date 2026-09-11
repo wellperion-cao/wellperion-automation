@@ -13,6 +13,21 @@ pg_dump "$ERP_DB_URL" | gzip > "$F"
 aws s3 cp --only-show-errors "$F" "s3://wellperion-erp-backup/erp/$(basename "$F")" --region ap-northeast-2
 echo "$(date '+%F %T') 백업 완료 erp/$(basename "$F") $(stat -c %s "$F")B"
 
+# 상담봇 문답 기록도 같이 올린다 (2026-09-11 · GM 「AWS에 저장시켜두는거지?」).
+# 이 기록은 DB 가 아니라 디스크 파일(/srv/erp/chat_log.jsonl + 회전본)이라 위 pg_dump 에 안 들어간다 —
+# 이 줄이 없으면 인스턴스가 죽는 순간 손님 질문이 통째로 사라진다. 회전본까지 한 덩어리로 묶는다.
+# 실패해도 DB 백업은 이미 끝났으므로 스크립트를 멈추지 않는다.
+C=/tmp/chat-$(TZ=Asia/Seoul date +%Y%m%d-%H%M).tar.gz
+if ls /srv/erp/chat_log.jsonl* /srv/erp/chat_feedback.jsonl* >/dev/null 2>&1; then
+  if tar -czf "$C" -C /srv/erp $(cd /srv/erp && ls chat_log.jsonl* chat_feedback.jsonl* 2>/dev/null) \
+     && aws s3 cp --only-show-errors "$C" "s3://wellperion-erp-backup/chat/$(basename "$C")" --region ap-northeast-2; then
+    echo "$(date '+%F %T') 상담기록 백업 완료 chat/$(basename "$C") $(stat -c %s "$C")B"
+  else
+    echo "$(date '+%F %T') 상담기록 백업 실패 — 다음 회차 재시도"
+  fi
+  rm -f "$C"
+fi
+
 if [ "$(TZ=Asia/Seoul date +%u)" = "7" ]; then
   T0=$(date +%s)
   TABLES="members reception_items hold_items todo_items inquiries member_change_log write_log sync_meta"
