@@ -56,7 +56,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .header .sub{font-size:var(--fs-2);color:var(--dim);margin-top:2px}
 .header-right{display:flex;gap:6px;margin-left:auto;align-items:center;flex-wrap:wrap}
 .user-select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:var(--fs-2);font-family:inherit;font-weight:600;cursor:pointer}
-.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-1);font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
+.sheet-link{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-1);font-weight:600;padding:4px 10px;border-radius:8px;background:var(--accent-bg);color:var(--text);border:1px solid rgba(183,159,138,0.3);text-decoration:none;white-space:nowrap;cursor:pointer;transition:background 0.15s}
 .sheet-link:hover{background:rgba(183,159,138,0.22)}
 .sheet-link svg{width:12px;height:12px;fill:currentColor;flex-shrink:0}
 
@@ -98,9 +98,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    기존 인라인 방식 그대로 둔다. */
 .ls-row{font-size:var(--fs-3);padding:2px 0}
 .ls-row.ls-span2{grid-column:1/-1;display:flex;align-items:center;gap:9px;min-width:0}
-.ls-rank{min-width:23px;height:23px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-2);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ls-rank{min-width:23px;height:23px;border-radius:50%;background:var(--accent-bg);color:var(--text);font-size:var(--fs-2);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ls-name{font-weight:700;color:var(--text);white-space:nowrap}
-.ls-pt{font-weight:800;color:var(--accent);white-space:nowrap;font-size:var(--fs-4)}
+.ls-pt{font-weight:800;color:var(--text);white-space:nowrap;font-size:var(--fs-4)}
 .ls-detail{font-size:var(--fs-2);color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ls-note{font-size:var(--fs-2);color:var(--dim);font-style:italic}
 /* 사람 1명 = 1행, 모든 행이 같은 grid-template-columns → 완료/진행/보류/완료율/지연(또는 볼륨/품질/완료/점수)이
@@ -115,7 +115,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-fld{font-size:var(--fs-3);color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;min-width:0}
 .ls-fld b{color:var(--text);font-weight:800;font-size:var(--fs-3)}
 .ls-fld.late-hot{color:var(--red);font-weight:800}
-.ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:var(--fs-4)}
+.ls-fld.eval-total{color:var(--text);font-weight:800;font-size:var(--fs-4)}
 /* 미채점N 배지 — 행 높이 유지 수리(2026-08-25 매니저 지적). 예전엔 <br>로 완료 칸 안에 줄바꿈해
    넣어서, 배지가 있는 사람 행만 다른 행보다 키가 커져 칼럼 줄맞춤이 흔들렸다. 지금은 문서
    흐름에서 완전히 빼는 절대배치 코너 배지로 바꿔 — 배지 유무와 무관하게 모든 행이 항상 같은
@@ -139,9 +139,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .filter-row{display:flex;gap:4px;flex-wrap:nowrap;margin-bottom:6px;min-width:max-content}
 .filter-row:last-child{margin-bottom:0}
 .filter-btn{padding:6px 12px;font-size:var(--fs-2);font-weight:600;color:var(--dim);background:none;border:1px solid transparent;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:all 0.15s}
-.filter-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
+.filter-btn.active{background:var(--accent-bg);color:var(--text);border-color:rgba(183,159,138,0.3)}
 .filter-btn:hover{background:var(--accent-bg)}
-.filter-btn.approval-filter.active{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.filter-btn.approval-filter.active{background:var(--accent-bg);color:var(--text);border-color:rgba(237,91,63,0.45)}
 /* 담당자 색상 칩(범례+필터). 비활성=살짝 흐리게, 활성=진하게+링 강조 (2026-06-02 GM) */
 .owner-chip-btn{opacity:0.62;font-weight:700;box-shadow:none}
 .owner-chip-btn:hover{opacity:0.85}
@@ -151,12 +151,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .view-toggle-btn{padding:6px 12px;font-size:var(--fs-2);font-weight:700;color:var(--dim);background:var(--paper);border:none;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s}
 .view-toggle-btn+.view-toggle-btn{border-left:1px solid var(--border)}
 .view-toggle-btn.active{background:var(--accent);color:#201F1D}
-.view-toggle-btn:hover:not(.active){background:var(--accent-bg);color:var(--accent)}
+.view-toggle-btn:hover:not(.active){background:var(--accent-bg);color:var(--text)}
 /* 캘린더 뷰 (G1 패턴 이식) */
 #calendarView{display:none;padding:4px 2px 20px}
 .cal-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .cal-nav-btn{padding:6px 14px;font-size:var(--fs-2);font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--text);border:1px solid var(--border)}
-.cal-nav-btn:hover{background:var(--accent-bg);color:var(--accent)}
+.cal-nav-btn:hover{background:var(--accent-bg);color:var(--text)}
 .cal-month-label{font-size:var(--fs-4);font-weight:700;min-width:120px;text-align:center}
 .cal-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .cal-table th{padding:7px 4px;text-align:center;font-size:var(--fs-2);font-weight:700;color:var(--dim)}
@@ -166,8 +166,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cal-badge:hover{filter:brightness(1.15)}
 /* 여러 날 걸친 업무(스팬)의 시작일 아닌 연속 칸 — 매일 제목이 반복 도배되는 문제 완화, 얇은 막대로 압축 (GM 지적 2026-07-18) */
 .cal-badge-span{height:6px;min-height:6px;padding:0;margin-bottom:3px;border-radius:3px;opacity:0.6;overflow:hidden}
-.share-btn{padding:6px 12px;font-size:var(--fs-2);font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;margin-left:auto;flex-shrink:0;transition:all 0.15s}
-.share-btn:hover{background:rgba(91,159,213,0.22)}
+.share-btn{padding:6px 12px;font-size:var(--fs-2);font-weight:600;color:var(--blue);background:var(--blue-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;margin-left:auto;flex-shrink:0;transition:all 0.15s}
+.share-btn:hover{background:rgba(183,159,138,0.22)}
 .deeplink-highlight{box-shadow:0 0 0 2px var(--accent),0 0 14px rgba(183,159,138,0.55)!important;border-radius:12px;transition:box-shadow 0.3s}
 
 /* ── Content ── */
@@ -186,7 +186,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background 0.1s}
 .cat-header:hover{background:var(--accent-bg)}
 .cat-title{font-size:var(--fs-3);font-weight:700}
-.cat-count{font-size:var(--fs-1);padding:2px 8px;border-radius:10px;font-weight:600;background:var(--accent-bg);color:var(--accent)}
+.cat-count{font-size:var(--fs-1);padding:2px 8px;border-radius:10px;font-weight:600;background:var(--accent-bg);color:var(--text)}
 .cat-arrow{font-size:var(--fs-2);color:var(--dim);transition:transform 0.2s;margin-left:8px}
 .cat-arrow.open{transform:rotate(90deg)}
 .cat-body{border-top:1px solid var(--border);display:none}
@@ -257,18 +257,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .task-title{font-size:var(--fs-3);font-weight:700;margin-bottom:6px;word-break:break-word;background:rgba(34,31,32,0.06);color:var(--text);padding:6px 10px;border-radius:7px}
 /* 제목칸 배경 = 마감(D-day) 기준 색. 평상시 중립, 임박할수록 노랑→베이지→빨강 (2026-06-05 GM) */
 .task-card.is-due-soon .task-title{background:var(--yellow-bg);color:var(--yellow)}
-.task-card.is-due-warn .task-title{background:var(--accent-bg);color:var(--accent)}
+.task-card.is-due-warn .task-title{background:var(--accent-bg);color:var(--text)}
 .task-card.is-overdue .task-title{background:var(--red-bg);color:var(--red)}
 .task-card.is-due-today .task-title{background:var(--red-bg);color:var(--red)}
 .task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .chip{display:inline-flex;align-items:center;font-size:var(--fs-1);font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
 .chip.owner{background:var(--blue-bg);color:var(--blue)}
-.chip.date-chip{background:var(--accent-bg);color:var(--accent);cursor:pointer}
+.chip.date-chip{background:var(--accent-bg);color:var(--text);cursor:pointer}
 .chip.date-chip:hover{background:rgba(183,159,138,0.25)}
 .chip.overdue{background:var(--red-bg);color:var(--red);font-weight:700}
-.chip.due-today{background:var(--red-bg);color:var(--red);font-weight:700;animation:pulse-due 1.6s ease-in-out infinite}
+.chip.due-today{background:var(--red-bg);color:var(--red);font-weight:700}
 .chip.due-soon{background:var(--yellow-bg);color:var(--yellow);font-weight:700}
-.chip.due-warn{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.chip.due-warn{background:var(--accent-bg);color:var(--text);font-weight:600}
 .chip.due-ok{background:var(--green-bg);color:var(--green)}
 @keyframes pulse-due{0%,100%{opacity:1}50%{opacity:0.55}}
 .task-card.is-due-soon{border-left:3px solid var(--yellow)}
@@ -277,20 +277,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .task-card.is-due-today{border-left:3px solid var(--red);background:rgba(237,91,63,0.06)}
 .chip.approval{background:var(--purple-bg);color:var(--purple)}
 .chip.link-chip{background:var(--green-bg);color:var(--green);cursor:pointer;text-decoration:none}
-.chip.link-chip:hover{background:rgba(106,191,123,0.22)}
+.chip.link-chip:hover{background:rgba(183,159,138,0.22)}
 .task-content{font-size:var(--fs-2);color:var(--dim);line-height:1.5;white-space:pre-line;margin-bottom:6px}
 .task-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .action-btn{font-size:var(--fs-2);padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;transition:opacity 0.15s;white-space:nowrap}
 .action-btn:hover{opacity:0.8}
-.action-btn.edit{background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3)}
-.action-btn.done{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3)}
-.action-btn.delete{background:var(--red-bg);color:var(--red);border-color:rgba(237,91,63,0.3)}
+.action-btn.edit{background:var(--accent-bg);color:var(--text);border-color:rgba(183,159,138,0.3)}
+.action-btn.done{background:var(--green-bg);color:var(--green);border-color:rgba(183,159,138,0.3)}
+.action-btn.delete{background:var(--accent-bg);color:var(--text);border-color:rgba(237,91,63,0.45)}
 
 /* ── Modal ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
 .modal{background:var(--paper);border:1px solid var(--border);border-radius:16px;width:100%;max-width:1280px;max-height:90vh;overflow-y:auto;padding:24px 20px}/* 편집칸 좌우 2배(640→1280) GM 2026-06-16 */
-.modal h2{font-size:var(--fs-4);font-weight:700;margin-bottom:16px;color:var(--accent)}
+.modal h2{font-size:var(--fs-4);font-weight:700;margin-bottom:16px;color:var(--text)}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:var(--fs-2);font-weight:600;color:var(--dim);margin-bottom:4px}
 .field input[type=text],.field input[type=url],.field input[type=date],.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:var(--fs-3);font-family:inherit;resize:vertical}
@@ -300,16 +300,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .field-row .field{flex:1}
 .checkbox-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
 .checkbox-group label{display:flex;align-items:center;gap:4px;font-size:var(--fs-2);cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
-.checkbox-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(91,159,213,0.3);color:var(--blue)}
+.checkbox-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(183,159,138,0.3);color:var(--blue)}
 .checkbox-group input[type=checkbox]{accent-color:var(--blue);cursor:pointer}
 .radio-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
 .radio-group label{display:flex;align-items:center;gap:4px;font-size:var(--fs-2);cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
-.radio-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(91,159,213,0.3);color:var(--blue)}
+.radio-group label:has(input:checked){background:var(--blue-bg);border-color:rgba(183,159,138,0.3);color:var(--blue)}
 .radio-group input[type=radio]{accent-color:var(--blue);cursor:pointer}
-.chip.collab{background:rgba(91,159,213,0.07);color:var(--dim);border:1px solid rgba(91,159,213,0.2)}
+.chip.collab{background:rgba(183,159,138,0.07);color:var(--dim);border:1px solid rgba(183,159,138,0.2)}
 .approval-group{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
 .approval-group label{display:flex;align-items:center;gap:4px;font-size:var(--fs-2);cursor:pointer;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);transition:all 0.15s;user-select:none}
-.approval-group label:has(input:checked){background:var(--purple-bg);border-color:rgba(167,139,218,0.3);color:var(--purple)}
+.approval-group label:has(input:checked){background:var(--purple-bg);border-color:rgba(183,159,138,0.3);color:var(--purple)}
 .approval-group input[type=checkbox]{accent-color:var(--purple);cursor:pointer}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .modal-btn{padding:10px 20px;border-radius:8px;font-size:var(--fs-2);font-weight:700;cursor:pointer;font-family:inherit;border:1px solid;transition:opacity 0.15s}
@@ -334,7 +334,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .done-card .task-title{color:var(--text);font-weight:700}
 /* 완료/내용 토글 (선긋기 해제·내용 열람 — 2026-06-01 GM) */
 .detail-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
-.detail-toggle:hover{color:var(--accent)}
+.detail-toggle:hover{color:var(--text)}
 .detail-toggle .arrow{display:inline-block;transition:transform 0.15s;font-size:var(--fs-1)}
 .detail-toggle.open .arrow{transform:rotate(90deg)}
 .detail-body{display:none}
@@ -351,12 +351,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dashboard-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .dashboard-overlay.show{display:flex}
 .dashboard-panel{background:var(--paper);border:1px solid var(--border);border-radius:16px;width:100%;max-width:700px;margin:40px auto;padding:28px 24px}
-.dashboard-panel h2{font-size:var(--fs-4);font-weight:700;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.dashboard-panel h2{font-size:var(--fs-4);font-weight:700;color:var(--text);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
 .dashboard-panel h2 .close-dash{background:none;border:none;color:var(--dim);font-size:var(--fs-5);cursor:pointer;padding:4px 8px}
 .dashboard-panel h3{font-size:var(--fs-3);font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .dash-table{width:100%;border-collapse:collapse;font-size:var(--fs-2);margin:8px 0 16px}
 .dash-table th,.dash-table td{padding:8px 10px;text-align:left;border:1px solid var(--border)}
-.dash-table th{background:var(--bg);font-weight:700;color:var(--accent);font-size:var(--fs-2)}
+.dash-table th{background:var(--bg);font-weight:700;color:var(--text);font-size:var(--fs-2)}
 .dash-table td{vertical-align:middle}
 .dash-bar-wrap{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;min-width:60px}
 .dash-bar{height:100%;border-radius:8px;transition:width 0.3s}
@@ -368,10 +368,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dash-bar.purple{background:var(--purple)}
 .dash-stat-row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
 .dash-stat-card{flex:1;min-width:100px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
-.dash-stat-card .num{font-size:var(--fs-5);font-weight:700;color:var(--accent)}
+.dash-stat-card .num{font-size:var(--fs-5);font-weight:700;color:var(--text)}
 .dash-stat-card .label{font-size:var(--fs-1);color:var(--dim);margin-top:2px}
 .dash-print-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:var(--fs-2);font-weight:600;cursor:pointer;font-family:inherit}
-.dash-print-btn:hover{border-color:var(--accent);color:var(--accent)}
+.dash-print-btn:hover{border-color:var(--accent);color:var(--text)}
 
 /* ── Print ── */
 @media print{
@@ -527,14 +527,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>웰페리온 업무 현황 SSOT</h1>
     <div class="header-right">
-      <a class="sheet-link" href="결재 현황 SSOT.html" onclick="ssotShowApproval();return false;" style="background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.3);">
+      <a class="sheet-link" href="결재 현황 SSOT.html" onclick="ssotShowApproval();return false;" style="background:var(--green-bg);color:var(--green);border-color:rgba(183,159,138,0.3);">
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         결재 현황 SSOT
       </a>
       <!-- 운영 기준(정본) — 등록·결재·점수·일정·보류·정체·담당표기 한 장 (2026-07-23 시우 신설).
            기존 doc_guide.html(기획안·결과보고 서식)은 어디서도 링크되지 않은 고아 페이지였어서
            운영 기준 페이지 안에서 함께 걸어 찾을 수 있게 했다. -->
-      <a class="sheet-link" href="업무·결재 운영 기준.html" style="background:var(--yellow-bg);color:var(--yellow);border-color:rgba(224,179,65,0.3);">
+      <a class="sheet-link" href="업무·결재 운영 기준.html" style="background:var(--yellow-bg);color:var(--yellow);border-color:rgba(183,159,138,0.3);">
         <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
         운영 기준
       </a>
@@ -676,7 +676,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>업무 본문 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:400;">(한 줄 요약 — 자세한 건 아래 내용 섹션)</span></label>
       <textarea id="fContent" placeholder="이 업무의 한 줄 요약" style="min-height:240px;"></textarea>
     </div>
-    <div class="field" id="fDocField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
+    <div class="field" id="fDocField" style="background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(183,159,138,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
         <span>📝 문서 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:400;">(양식 선택 → 작성 · 예산 포함)</span></span>
         <span style="display:flex;gap:6px;align-items:center;">
@@ -687,14 +687,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="docEditorArea">
         <div id="docFormTabs" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
           <button type="button" class="tpl-btn" id="docTabPlain" onclick="selectDocForm('plain')" style="padding:7px 14px;font-size:var(--fs-2);">⬜ 일반양식</button>
-          <button type="button" class="tpl-btn" id="docTabPlan" onclick="selectDocForm('plan')" style="padding:7px 14px;font-size:var(--fs-2);color:var(--blue);border-color:rgba(91,159,213,0.4);">📄 기획안</button>
-          <button type="button" class="tpl-btn" id="docTabResult" onclick="selectDocForm('result')" style="padding:7px 14px;font-size:var(--fs-2);color:var(--purple);border-color:rgba(167,139,218,0.4);">🎯 결과보고</button>
+          <button type="button" class="tpl-btn" id="docTabPlan" onclick="selectDocForm('plan')" style="padding:7px 14px;font-size:var(--fs-2);color:var(--blue);border-color:rgba(183,159,138,0.4);">📄 기획안</button>
+          <button type="button" class="tpl-btn" id="docTabResult" onclick="selectDocForm('result')" style="padding:7px 14px;font-size:var(--fs-2);color:var(--purple);border-color:rgba(183,159,138,0.4);">🎯 결과보고</button>
           <span style="font-size:var(--fs-1);color:var(--dim);align-self:center;">같은 탭을 한 번 더 누르면 서식을 새로 깔 수 있어요</span>
         </div>
         <div class="se-wrap" id="docPlanWrap"><textarea id="fPlan" placeholder="일반양식 — 자유롭게 작성 (기획안 탭을 누르면 서식이 깔립니다)" style="min-height:350px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
         <div class="se-wrap" id="docResultWrap" style="display:none;"><textarea id="fResult" placeholder="결과보고 — 최종 결과·산출물·달성도·교훈" style="min-height:260px;line-height:1.6;background:var(--paper);border:1px solid var(--border);"></textarea></div>
       </div>
-      <div style="margin-top:12px;background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(106,191,123,0.3);">
+      <div style="margin-top:12px;background:var(--green-bg);padding:12px 14px;border-radius:8px;border:1px solid rgba(183,159,138,0.3);">
         <label style="display:flex;align-items:center;justify-content:space-between;color:var(--green);font-weight:700;">
           <span>💰 예산 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:400;">(결제 권한 기준 v2.0 자동 라우팅)</span></span>
         </label>
@@ -716,7 +716,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div id="budgetRouteHint" style="font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.5;"></div>
       </div>
     </div>
-    <div class="field" id="fMeetingField" style="display:none;background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(91,159,213,0.35);">
+    <div class="field" id="fMeetingField" style="display:none;background:var(--blue-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(183,159,138,0.35);">
       <label style="display:flex;align-items:center;justify-content:space-between;color:var(--blue);font-weight:700;margin-bottom:8px;">
         <span>📋 회의 내용 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:400;">(참석자별 정리 — 담당자·협조 담당자 선택 시 칸 자동 생성)</span></span>
         <span id="fMeetingLockBadge" style="font-size:var(--fs-1);color:var(--dim);font-weight:500;"></span>
@@ -724,12 +724,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div id="fMeetingNotes"></div>
     </div>
     <div class="field" style="background:var(--accent-bg);padding:14px 16px;border-radius:10px;border:1px solid rgba(183,159,138,0.35);">
-      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--accent);font-weight:700;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;color:var(--text);font-weight:700;margin-bottom:8px;">
         <span>📅 진척 로그 <span style="font-size:var(--fs-1);color:var(--dim);font-weight:400;">(매일 누적 — 보고 자동 연계)</span></span>
       </label>
       <div id="progressLogList" style="margin-bottom:10px;"></div>
       <div style="background:var(--bg);border:1px dashed rgba(183,159,138,0.4);border-radius:8px;padding:12px;">
-        <div style="font-size:var(--fs-2);font-weight:700;color:var(--accent);margin-bottom:8px;">＋ 새 진척 추가</div>
+        <div style="font-size:var(--fs-2);font-weight:700;color:var(--text);margin-bottom:8px;">＋ 새 진척 추가</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <label style="font-size:var(--fs-2);color:var(--dim);font-weight:600;flex-shrink:0;">날짜</label>
           <input type="date" id="progressLogDate" style="background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:var(--fs-2);font-family:inherit;">
@@ -762,7 +762,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <label><input type="checkbox" value="나우열M" onclick="warnApprovalCheck(this)">나우열M(파트너)</label>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--border);padding-top:8px;">
-          <span style="font-size:var(--fs-1);color:var(--accent);font-weight:700;min-width:60px;">결재</span>
+          <span style="font-size:var(--fs-1);color:var(--text);font-weight:700;min-width:60px;">결재</span>
           <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
           <span style="font-size:var(--fs-1);color:var(--dim);">· 대표님 최종결재는 결재현황 SSOT에서 자동 처리</span>
         </div>
@@ -834,16 +834,18 @@ const CATEGORIES = [
   '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의'
 ];
 
+/* 카테고리 칸도 같은 이유로 한 가지 색이다 — 번호와 이름이 이미 구별을 해 준다. */
+const CAT_CHIP = {bg:'var(--accent-bg)', color:'var(--text)'};
 const CAT_COLORS = {
-  '[1] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},
-  '[2] 인사':          {bg:'var(--purple-bg)', color:'var(--purple)'},
-  '[3] 파트너팀':      {bg:'var(--accent-bg)', color:'var(--accent)'},
-  '[4] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
-  '[5] 시설 및 환경':  {bg:'var(--green-bg)',  color:'var(--green)'},
-  '[6] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
-  '[7] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
-  '[8] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'},
-  '[9] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'}
+  '[1] 매출 및 영업':    CAT_CHIP,
+  '[2] 인사':            CAT_CHIP,
+  '[3] 파트너팀':        CAT_CHIP,
+  '[4] 운영 정책':       CAT_CHIP,
+  '[5] 시설 및 환경':    CAT_CHIP,
+  '[6] 회원·CS':         CAT_CHIP,
+  '[7] IT·시스템·자동화': CAT_CHIP,
+  '[8] 교육·조직문화':   CAT_CHIP,
+  '[9] 회의':            CAT_CHIP
 };
 
 /* field mapping: API 한글 → 영문 */
@@ -859,14 +861,20 @@ const FIELD_MAP = {
 function isApprPending(t) { return String(t.approval || '').trim() && t['결재상태'] !== '결재완료' && !/반려/.test(String(t['결재상태'] || '')); }
 
 /* 담당자별 이름 배경색 (사람마다 고유색) */
+/* 담당자 이름은 사람마다 색을 달리하지 않는다 — 전부 같은 조용한 칸 하나로 본다
+   (GM 지시 2026-09-11 「담당자명 색이랑 버튼 색들 요란하게 안했으면 좋겠어」).
+   이름은 글자로 이미 구별된다. 색까지 일곱 갈래로 나누면 화면이 떠들썩해지고,
+   그중 베이지·코럴은 작은 글자로 읽기도 어렵다(베이지는 브랜드가이드에서 텍스트 금지).
+   칸을 그리는 자리가 세 곳(카드 칩·범례 버튼·달력 배지)이라 값은 여기 한 곳에만 둔다. */
+const OWNER_CHIP = {bg:'var(--accent-bg)', color:'var(--text)'};
 const OWNER_COLORS = {
-  '이경연 실장': {bg:'var(--blue-bg)',   color:'var(--blue)'},
-  '이정헌 소장': {bg:'var(--green-bg)',  color:'var(--green)'},
-  '나우열M':     {bg:'var(--purple-bg)', color:'var(--purple)'},
-  '최준용M':     {bg:'var(--accent-bg)', color:'var(--accent)'},
-  '임정은M':     {bg:'var(--red-bg)',    color:'var(--red)'},
-  '윤병현AM':    {bg:'var(--yellow-bg)', color:'var(--yellow)'},
-  '백승화 사원': {bg:'var(--orange-bg)', color:'var(--orange)'}
+  '이경연 실장': OWNER_CHIP,
+  '이정헌 소장': OWNER_CHIP,
+  '나우열M':     OWNER_CHIP,
+  '최준용M':     OWNER_CHIP,
+  '임정은M':     OWNER_CHIP,
+  '윤병현AM':    OWNER_CHIP,
+  '백승화 사원': OWNER_CHIP
 };
 /* 카테고리 → 부서장 매핑 (결재선 1단계 자동 지정, 2026-06-10 GM 확정 9분류).
    인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
@@ -968,7 +976,7 @@ function buildFilters() {
   html += '<button class="filter-btn owner-chip-btn' + (activeOwnerFilter === '전체' ? ' active' : '') + '" onclick="setOwnerFilter(\'전체\',this)">전체</button>';
   MEMBERS.forEach(m => {
     const cnt = ownerCount[m] || 0;
-    const oc = OWNER_COLORS[m] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+    const oc = OWNER_COLORS[m] || { bg: 'var(--accent-bg)', color: 'var(--text)' };
     const isOn = activeOwnerFilter === m;
     const label = esc(m) + (cnt > 0 ? ' (' + cnt + ')' : '');
     // 색칩 스타일: 배경=담당자색bg, 글자/테두리=담당자색. 활성 시 ring 강조(.active)
@@ -987,10 +995,10 @@ function buildFilters() {
     html += '<option value="' + opt + '"' + (activeSortBy === opt ? ' selected' : '') + '>' + opt + (opt === '최신순' ? ' ▼' : '') + '</option>';
   });
   html += '</select>';
-  html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">업무 현황 대시보드</button>';
+  html += '<button class="share-btn" onclick="openDashboard()" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(183,159,138,0.3);">업무 현황 대시보드</button>';
   // 인쇄 버튼 — 캘린더 뷰에서만 노출(캘린더 한 장 맞춤 인쇄). 트렐로(칸반)는 전체 인쇄 삭제(GM 확정 2026-07-18).
   if (currentView === 'calendar') {
-    html += '<button class="share-btn" data-po-trigger onclick="printTasksCalendar()" style="background:var(--accent-bg);color:var(--accent);border-color:rgba(183,159,138,0.3);">인쇄</button>';
+    html += '<button class="share-btn" data-po-trigger onclick="printTasksCalendar()" style="background:var(--accent-bg);color:var(--text);border-color:rgba(183,159,138,0.3);">인쇄</button>';
   }
   // 툴바 '🔗 링크'(화면 전체 공유) 제거 — 2026-06-05 GM
   html += '</div>';
@@ -1348,7 +1356,7 @@ function renderTasks() {
          비어 있는 건 = 왜 멈췄는지 아무도 모르는 건 → 눈에 띄게 남겨 채우도록 유도. */
       html += '<div class="hold-why">' + holdWhyHtml(t) + '</div>';
       html += '</div></div>';
-      html += '<button class="action-btn" onclick="restoreTask(\''+escAttr(t.id)+'\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">복원</button>';
+      html += '<button class="action-btn" onclick="restoreTask(\''+escAttr(t.id)+'\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--blue-bg);color:var(--blue);border-color:rgba(183,159,138,0.3);">복원</button>';
       html += '</div></div>';
     });
   }
@@ -1493,7 +1501,7 @@ function renderCalendar() {
           const owner1 = String(ev.owner || '').split(',')[0].trim();
           const oc = OWNER_COLORS[owner1];
           const cc = CAT_COLORS[ev.category];
-          const sty = oc || cc || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+          const sty = oc || cc || { bg: 'var(--accent-bg)', color: 'var(--text)' };
           const isDone = ev.status === '완료';
           badge.style.background = sty.bg;
           badge.style.color = sty.color;
@@ -1529,7 +1537,7 @@ function renderCalendar() {
       uh += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
       undated.forEach(t => {
         const owner1 = String(t.owner || '').split(',')[0].trim();
-        const oc = OWNER_COLORS[owner1] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+        const oc = OWNER_COLORS[owner1] || { bg: 'var(--accent-bg)', color: 'var(--text)' };
         uh += '<span class="cal-badge" style="background:' + oc.bg + ';color:' + oc.color + ';padding:3px 8px;" onclick="openEditModal(\'' + escAttr(t.id) + '\')">' + esc(t.title) + '</span>';
       });
       uh += '</div>';
@@ -1590,7 +1598,7 @@ function filterDone(done) {
 
 function renderCatGroup(cat, tasks, startIdx) {
   const label = cat || '미분류';
-  const colors = CAT_COLORS[cat] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+  const colors = CAT_COLORS[cat] || { bg: 'var(--accent-bg)', color: 'var(--text)' };
   let html = '<div class="cat-group"><div class="cat-accordion">';
   html += '<div class="cat-header" onclick="toggleCat(this)" style="border-left:3px solid ' + colors.color + '">';
   html += '<span class="cat-title">' + esc(label) + '</span>';
@@ -1630,7 +1638,7 @@ function renderTaskCard(t, idx) {
 
   // 제목줄: 번호 + 토글 화살표 + 제목(전체폭) — 액션 버튼은 카드 하단 별도 줄 (결재 현황 SSOT 구조 통일, 2026-05-31 GM)
   html += '<div class="task-summary" style="display:flex;align-items:flex-start;gap:8px;">';
-  html += '<span style="font-size:var(--fs-1);font-weight:700;color:var(--accent);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;padding-top:2px;">#' + String(idx).padStart(3, '0') + '</span>';
+  html += '<span style="font-size:var(--fs-1);font-weight:700;color:var(--text);min-width:34px;text-align:center;flex-shrink:0;letter-spacing:0.02em;padding-top:2px;">#' + String(idx).padStart(3, '0') + '</span>';
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:var(--fs-1);color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
   html += '<div class="wide-row">';  // 업무명 + 담당·상태·날짜·결재 가로 한 줄 (2026-06-02 GM 확정)
@@ -1761,7 +1769,7 @@ function renderTaskCard(t, idx) {
   //   완료·삭제는 결재 흐름이 어긋나므로 그대로 결재 현황에서만 처리한다.
   const _apprDone = String(t['결재상태'] || '') === '결재완료';
   if (String(t.approval || '').trim() && !/반려/.test(String(t['결재상태'] || ''))) {
-    html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
+    html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(183,159,138,0.3);">🖨 보고서</button>';
     if (!_apprDone) html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);">편집</button>';
     html += '<span style="font-size:var(--fs-1);color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 ' +
       (_apprDone ? '결재 완료 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리'
@@ -1769,7 +1777,7 @@ function renderTaskCard(t, idx) {
   } else {
     html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);">편집</button>';
     html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);">완료</button>';
-    html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--orange-bg);color:var(--orange);border-color:rgba(230,148,78,0.3);">보류</button>';
+    html += '<button class="action-btn" onclick="event.stopPropagation();holdTask(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:var(--orange-bg);color:var(--orange);border-color:rgba(183,159,138,0.3);">보류</button>';
     html += '<button class="action-btn" onclick="event.stopPropagation();deleteTaskWithAuth(\'' + escAttr(t.id) + '\',\'' + escAttr(t.title || '') + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:transparent;color:var(--dim);border-color:var(--border);">삭제</button>';
   }
   html += '</div>'; // task-actions
@@ -1785,20 +1793,20 @@ function renderTaskCard(t, idx) {
   }
 
   if (parsed.plan) {
-    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;">';
     html += '<div style="font-size:var(--fs-2);font-weight:700;color:var(--blue);margin-bottom:4px;">📋 내용</div>';
     html += docBodyHtml(parsed.plan, t.id, 'plan') + '</div>';
   }
 
   if (parsed.result) {
-    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;">';
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--purple-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;">';
     html += '<div style="font-size:var(--fs-2);font-weight:700;color:var(--purple);margin-bottom:4px;">🎯 결과보고</div>';
     html += docBodyHtml(parsed.result, t.id, 'result') + '</div>';
   }
 
   if (parsed.budget) {
     const approvers = routeApproval(parsed.budget.category, parsed.budget.amount);
-    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(106,191,123,0.3);border-radius:8px;">';
+    html += '<div style="margin-top:10px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;">';
     html += '<div style="font-size:var(--fs-2);font-weight:700;color:var(--green);margin-bottom:4px;">💰 예산</div>';
     html += '<div style="font-size:var(--fs-3);font-weight:700;color:var(--text);">' + esc(parsed.budget.category) + ' · ' + formatKRW(parsed.budget.amount) + '</div>';
     html += '<div style="font-size:var(--fs-2);color:var(--dim);margin-top:4px;">결재 라인: ';
@@ -1812,11 +1820,11 @@ function renderTaskCard(t, idx) {
 
   if (parsed.logs.length) {
     html += '<div style="margin-top:10px;">';
-    html += '<div style="font-size:var(--fs-2);font-weight:700;color:var(--accent);margin-bottom:6px;">📅 진척 로그 (' + parsed.logs.length + '건)</div>';
+    html += '<div style="font-size:var(--fs-2);font-weight:700;color:var(--text);margin-bottom:6px;">📅 진척 로그 (' + parsed.logs.length + '건)</div>';
     const recent = parsed.logs.slice(0, 5);
     recent.forEach(log => {
       html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:4px;">';
-      html += '<span style="font-size:var(--fs-2);font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(log.date) + '</span>';
+      html += '<span style="font-size:var(--fs-2);font-weight:700;color:var(--text);min-width:88px;flex-shrink:0;">' + esc(log.date) + '</span>';
       html += '<span style="flex:1;font-size:var(--fs-2);line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;">' + esc(log.text) + '</span>';
       html += '</div>';
     });
@@ -1879,7 +1887,7 @@ function renderDoneCard(t) {
     p.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
   }
   if (t.category) {
-    const colors = CAT_COLORS[t.category] || { bg: 'var(--accent-bg)', color: 'var(--accent)' };
+    const colors = CAT_COLORS[t.category] || { bg: 'var(--accent-bg)', color: 'var(--text)' };
     html += '<span class="chip" style="background:' + colors.bg + ';color:' + colors.color + '">' + esc(t.category) + '</span>';
   }
   if (t.updatedAt) {
@@ -1889,7 +1897,7 @@ function renderDoneCard(t) {
   // 액션: 링크 · 보고서 (🔗 개선·복원 — 2026-06-05 GM)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
-  html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
+  html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(183,159,138,0.3);">🖨 보고서</button>';
   html += '</div></div>';
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
@@ -1898,12 +1906,12 @@ function renderDoneCard(t) {
     html += '<div class="detail-toggle" onclick="toggleDetail(this)" style="font-size:var(--fs-1);color:var(--dim);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);"><span class="arrow">&#9654;</span> ' + lbl + '</div>';
     html += '<div class="detail-body" style="margin-top:8px;">';
     if (p.body) html += '<div style="font-size:var(--fs-2);white-space:pre-wrap;line-height:1.55;color:var(--text);">' + esc(p.body) + '</div>';
-    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:var(--fs-2);font-weight:700;margin-bottom:3px;">📋 내용</div>' + docBodyHtml(p.plan, t.id, 'plan') + '</div>';
+    if (p.plan) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--blue-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;"><div style="color:var(--blue);font-size:var(--fs-2);font-weight:700;margin-bottom:3px;">📋 내용</div>' + docBodyHtml(p.plan, t.id, 'plan') + '</div>';
     if (p.logs && p.logs.length) {
-      html += '<div style="margin-top:8px;font-size:var(--fs-2);font-weight:700;color:var(--accent);">📅 진척 로그</div>';
-      p.logs.forEach(l => { html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0;"><span style="font-size:var(--fs-2);font-weight:700;color:var(--accent);min-width:88px;flex-shrink:0;">' + esc(l.date) + '</span><span style="flex:1;font-size:var(--fs-2);line-height:1.45;white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</span></div>'; });
+      html += '<div style="margin-top:8px;font-size:var(--fs-2);font-weight:700;color:var(--text);">📅 진척 로그</div>';
+      p.logs.forEach(l => { html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin:6px 0;"><span style="font-size:var(--fs-2);font-weight:700;color:var(--text);min-width:88px;flex-shrink:0;">' + esc(l.date) + '</span><span style="flex:1;font-size:var(--fs-2);line-height:1.45;white-space:pre-wrap;word-break:break-word;">' + esc(l.text) + '</span></div>'; });
     }
-    if (p.result) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:8px;"><div style="color:var(--purple);font-size:var(--fs-2);font-weight:700;margin-bottom:3px;">🎯 결과보고</div>' + docBodyHtml(p.result, t.id, 'result') + '</div>';
+    if (p.result) html += '<div style="margin-top:8px;padding:8px 10px;background:var(--purple-bg);border:1px solid rgba(183,159,138,0.3);border-radius:8px;"><div style="color:var(--purple);font-size:var(--fs-2);font-weight:700;margin-bottom:3px;">🎯 결과보고</div>' + docBodyHtml(p.result, t.id, 'result') + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -2213,7 +2221,7 @@ function renderProgressList() {
   let h = '';
   modalLogsCache.forEach((log, i) => {
     h += '<div class="progress-row" style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-left:3px solid var(--accent);background:var(--accent-bg);border-radius:6px;margin-bottom:6px;">';
-    h += '<span style="font-size:var(--fs-2);font-weight:700;color:var(--accent);min-width:90px;flex-shrink:0;">' + esc(log.date) + '</span>';
+    h += '<span style="font-size:var(--fs-2);font-weight:700;color:var(--text);min-width:90px;flex-shrink:0;">' + esc(log.date) + '</span>';
     h += '<span style="flex:1;font-size:var(--fs-2);line-height:1.5;color:var(--text);word-break:break-word;white-space:pre-wrap;">' + esc(log.text) + '</span>';
     h += '<button type="button" onclick="removeProgressLog(' + i + ')" style="font-size:var(--fs-1);padding:2px 8px;border:1px solid var(--border);background:var(--paper);color:var(--dim);border-radius:6px;cursor:pointer;flex-shrink:0;">삭제</button>';
     h += '</div>';
@@ -2645,11 +2653,11 @@ function setDocLock(which, locked) {
 /* ── 웰페리온 결재 문서 서식 템플릿 ── */
 function _docBrandHeader() {
   // 결재란 삭제 (2026-07-15 나우열M 지시) — 결재란은 인쇄/결재 화면에서 자동 부착됨
-  return '<p style="margin:0 0 10px;font-size:var(--fs-1);color:#6B4E33"><strong>WELLPERION</strong> <span style="color:#6B655F;margin-left:10px">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</span></p>';
+  return '<p style="margin:0 0 10px;font-size:var(--fs-1);color:#221F20"><strong>WELLPERION</strong> <span style="color:#6B655F;margin-left:10px">주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽</span></p>';
 }
 function _docTitleBlock(txt) {
   return '<h1 style="text-align:center;font-size:var(--fs-6);margin:18px 0 4px;color:#1a1815;border-bottom:3px double #E1DBD4;padding-bottom:14px">' + txt + '</h1>'
-    + '<p style="text-align:center;margin:0 0 14px;color:#6B4E33;font-size:var(--fs-2)">◆</p>';
+    + '<p style="text-align:center;margin:0 0 14px;color:#221F20;font-size:var(--fs-2)">◆</p>';
 }
 function _docSection(txt) {
   return '<h2 style="background-color:#f5f2ee;border-left:6px solid #B79F8A;padding:8px 14px;font-size:var(--fs-4);margin-top:30px;color:#1a1815">' + txt + '</h2>';
@@ -2685,7 +2693,7 @@ function buildDocTemplate(mode) {
       + '<table><tbody><tr>' + _docTh('항목','160px') + _docTh('금액') + _docTh('비고') + '</tr>'
       + '<tr><td><br></td><td style="text-align:right"><br></td><td><br></td></tr>'
       + '<tr><td style="text-align:center;background-color:#f5f2ee"><strong>합계</strong></td><td style="text-align:right;background-color:#f5f2ee"><strong>0 원</strong></td><td style="background-color:#f5f2ee"><br></td></tr></tbody></table>'
-      + '<p style="color:#6B4E33;font-size:var(--fs-2)">※ 예산 결재 라인은 아래 💰 예산 항목과 연동됩니다.</p>'
+      + '<p style="color:#221F20;font-size:var(--fs-2)">※ 예산 결재 라인은 아래 💰 예산 항목과 연동됩니다.</p>'
       + _DOC_FOOT;
   }
   return _docBrandHeader() + _docTitleBlock('결 과 보 고')
@@ -2693,7 +2701,7 @@ function buildDocTemplate(mode) {
     + _docInfoRow('업무명', title) + _docInfoRow('작성자', owner) + _docInfoRow('보고일', today) + _docInfoRow('수행 기간', period)
     + '</tbody></table>'
     + '<table style="margin-top:18px"><tbody><tr>'
-    + '<td style="width:110px;background-color:#F0ECE8;color:#6B4E33;text-align:center;vertical-align:middle"><strong>핵심 요약</strong></td>'
+    + '<td style="width:110px;background-color:#F0ECE8;color:#221F20;text-align:center;vertical-align:middle"><strong>핵심 요약</strong></td>'
     + '<td style="background-color:#f5f2ee;padding:12px 14px;color:#6B655F">결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.</td>'
     + '</tr></tbody></table>'
     + _docSection('1. 개요') + _DOC_PLACEHOLDER
@@ -3125,7 +3133,7 @@ function renderExistingFiles(id) {
     _modalFileUrls.map((u, i) =>
       '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">' +
         '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" class="chip link-chip" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📎 첨부 ' + (i + 1) + '</a>' +
-        '<button type="button" onclick="removeAttachment(\'' + escAttr(id) + '\',' + i + ')" style="border:1px solid var(--red);color:var(--red);background:var(--red-bg);border-radius:6px;font-size:var(--fs-1);padding:3px 8px;cursor:pointer;flex-shrink:0;">삭제</button>' +
+        '<button type="button" onclick="removeAttachment(\'' + escAttr(id) + '\',' + i + ')" style="border:1px solid rgba(237,91,63,0.45);color:var(--text);background:var(--accent-bg);border-radius:6px;font-size:var(--fs-1);padding:3px 8px;cursor:pointer;flex-shrink:0;">삭제</button>' +
       '</div>'
     ).join('');
 }
@@ -3854,7 +3862,7 @@ function printResultReport(taskId, override) {
   var rejectHtml = '';
   if (parsed.rejections && parsed.rejections.length) {
     var rejRows = parsed.rejections.map(function(r){
-      return '<tr><td style="width:120px;color:#7E2820;">' + esc(r.meta) + '</td><td style="color:#7E2820;white-space:pre-wrap;">' + esc(r.reason) + '</td></tr>';
+      return '<tr><td style="width:120px;color:#ED5B3F;">' + esc(r.meta) + '</td><td style="color:#ED5B3F;white-space:pre-wrap;">' + esc(r.reason) + '</td></tr>';
     }).join('');
     rejectHtml = '<div class="rr-section-title">⛔ 반려 사유</div>'
       + '<table class="rr-log-table"><tbody>' + rejRows + '</tbody></table>';
