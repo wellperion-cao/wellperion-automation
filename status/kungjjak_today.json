@@ -848,12 +848,6 @@
       ],
       "work": [
         {
-          "time": "12:43",
-          "area": "작업",
-          "event": "회원권 요금 변경 건 이경연 실장 이관 (GM 지시 2026-09-11)",
-          "detail": "커밋 5d3c7ce6f · 배 11401"
-        },
-        {
           "time": "12:46",
           "area": "작업",
           "event": "이관된 GM업무 카드는 「태그빠짐」 경고에서 빼고 집계로 — 상시 경고가 진짜 사고를 묻는다",
@@ -1026,6 +1020,12 @@
           "area": "작업",
           "event": "품의 승인·반려를 서버 경유 한 줄로 — 원장에 남고 실패하면 되밀기가 재시도 (웰리 요청 2026-09-11)",
           "detail": "커밋 f5d2612dc1 · 배 11401"
+        },
+        {
+          "time": "21:23",
+          "area": "업무관리 방",
+          "event": "나우열M 「선택 기준」 질문 답",
+          "detail": "업무 SSOT 자동 추출 기준(인사·파트너팀 진행중·보류 전부 + 매출·운영정책 30일 내)·회장님 보고 I20·I21 원천임을 GM 계정으로 21:23 발신 · 배2568 종결"
         }
       ],
       "count": 70,
@@ -1048,7 +1048,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 6
         }
       ],
       "repeats": [
@@ -1556,6 +1556,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-2053",
+          "no": "53",
+          "got": "매출지출 원장 관련해서 우열M건 아니면 바로 진행현재 매출시트보고건만 안건드려지면 서버건은 작업해도될듯",
+          "did": "",
+          "start": "21:22",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1740,14 +1752,29 @@
           "detail": "①모듈 붙이기 실패 격리 — app.py 자동등록 루프를 try/except 로 감싸 인사 하나가 죽어도 접수·업무·문의폼은 산다. 빠진 모듈은 /api/health 의 failed_modules 로 드러난다(지금 {} = 정상). ②읽기 전용 계정 분리 — DB 역할 erp_ro 신설(SELECT 만, 기본권한 포함), db.env 에 ERP_DB_URL_RO 추가, db.connect(readonly=True) 가 그 계정으로 붙는다. 실측: 조회 9건 OK · CREATE TABLE·UPDATE 둘 다 InsufficientPrivilege 로 거부. RO 없는 환경은 종전 세션 읽기전용으로 물러남. ③erp-chro.service 휴면 원인 = 실행 계정 chro 에 uvicorn 이 없어 41,421회 재시작 실패 후 app.py 소멸로 조건 미충족. 포트 8002 는 이미 erp-api@beta 가 쓴다(되살리면 충돌). 시토 실행 구조면 계정 자체가 불필요 — disable 로 꺼 두고 존치 여부는 웰리·GM 판단. 저장 f12f7618b · scp+재기동 완료."
         }
       ],
-      "count": 41,
+      "count": 42,
       "done": 41,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-2053",
+          "no": "53",
+          "got": "매출지출 원장 관련해서 우열M건 아니면 바로 진행현재 매출시트보고건만 안건드려지면 서버건은 작업해도될듯",
+          "did": "",
+          "start": "21:22",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 4
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -2268,15 +2295,33 @@
           "upload": "✅ 배포 (90564df7c)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-3054",
+          "no": "54",
+          "got": "방학특강은 이제 애들 방학이 끝나서 종료했지",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "21:23",
+          "end": "21:23",
+          "minutes": 0,
+          "upload": "✅ 배포 (64d5142d5)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-3055",
+          "no": "55",
+          "got": "위 작업들 최고모델로 해도 좋으니, 꼭 마무리까지 작업 다 해줘 멈추지말고",
+          "did": "",
+          "start": "21:23",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "09:12",
-          "area": "작업",
-          "event": "파트너사 가이드 색을 웰페리온 베이지 라인으로 되돌림 — ERP 플랫폼 색 오적용 복구 (GM 지적 2026-09-11)",
-          "detail": "커밋 41222b1e7 · 배 11425"
-        },
         {
           "time": "09:32",
           "area": "작업",
@@ -2450,16 +2495,37 @@
           "area": "작업",
           "event": "SEO — 라이브 robots 를 못 고치는 진짜 이유를 실측해 박고, 올릴 파일 두 벌을 준비했다",
           "detail": "커밋 a72bdf7f76 · 배 11425"
+        },
+        {
+          "time": "21:25",
+          "area": "작업",
+          "event": "FAQ 27번째 — 방학 특강 종료 (GM 확인 2026-09-11)",
+          "detail": "커밋 729b60dc7e · 배 11425"
         }
       ],
-      "count": 43,
-      "done": 43,
-      "open": 0,
+      "count": 45,
+      "done": 44,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-3055",
+          "no": "55",
+          "got": "위 작업들 최고모델로 해도 좋으니, 꼭 마무리까지 작업 다 해줘 멈추지말고",
+          "did": "",
+          "start": "21:23",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": [
         {
           "count": 2,
@@ -2778,13 +2844,13 @@
           "ref": "GM-20260911-4028",
           "no": "28",
           "got": "루프 발레를 왜 뮤지컬팀으로 통일하는거야? GXE로 넣어줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "21:16",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "21:22",
+          "minutes": 5,
+          "upload": "✅ 배포 (307b2d9ae)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2859,31 +2925,22 @@
           "area": "공통",
           "event": "강습 신규·재등록 숫자 칸맞춤 + 루프·발레를 뮤지컬팀으로 통일 · 누적 열을 보고탭 하나로 (GM 지적 2026-09-11)",
           "detail": "커밋 0cfdfd8c32 · 배 12523"
+        },
+        {
+          "time": "21:22",
+          "area": "공통",
+          "event": "루프·발레를 GXE팀으로 (GM 확정 2026-09-11) · 강습 신규·재등록도 같은 규칙으로 다시 세어 팀 이름 통일",
+          "detail": "커밋 5f700d47aa · 배 12523"
         }
       ],
       "count": 26,
-      "done": 25,
-      "open": 1,
+      "done": 26,
+      "open": 0,
       "avg_minutes": 1,
-      "work_count": 12,
+      "work_count": 13,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-4028",
-          "no": "28",
-          "got": "루프 발레를 왜 뮤지컬팀으로 통일하는거야? GXE로 넣어줘",
-          "did": "",
-          "start": "21:16",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "coo": {
@@ -3522,6 +3579,30 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-9016",
+          "no": "16",
+          "got": "지금 문제 없는거지? 정리하고, 나 퇴근한다?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "21:25",
+          "end": "21:26",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-9017",
+          "no": "17",
+          "got": "지금도 이승기대표님 카톡방 대화내용저장하는데? 지금 30분동안 3번인가 4번한듯",
+          "did": "",
+          "start": "21:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -3574,14 +3655,29 @@
           "detail": "커밋 d849d8c202 · 배 11305"
         }
       ],
-      "count": 15,
-      "done": 15,
-      "open": 0,
+      "count": 17,
+      "done": 16,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 8,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-9017",
+          "no": "17",
+          "got": "지금도 이승기대표님 카톡방 대화내용저장하는데? 지금 30분동안 3번인가 4번한듯",
+          "did": "",
+          "start": "21:26",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     }
   },
