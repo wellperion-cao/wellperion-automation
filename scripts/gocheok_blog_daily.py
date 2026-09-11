@@ -47,9 +47,14 @@ sys.path.insert(0, str(ROOT / "scripts"))
 def log(msg: str) -> None:
     line = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
     print(line)
-    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_FILE.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
+    # 2026-09-11: 로그 파일이 다른 프로세스에 잡혀 PermissionError 가 나 스크립트가 통째로
+    # 죽었다 — 그 바람에 실패 기록조차 status 파일에 남지 않았다. 로그는 부수적이다.
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError as exc:
+        print(f"[WARN] 로그 기록 실패(무시): {exc}")
 
 
 def notify(msg: str) -> None:

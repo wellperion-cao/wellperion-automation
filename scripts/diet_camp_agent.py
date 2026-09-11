@@ -133,7 +133,10 @@ def rooms() -> list[dict]:
             continue
         state = r.get("state") or (STATE_PATH if name == ROOM
                                    else ROOMS_PATH.parent / f"{_slug(name)}.json")
-        out.append({"room": name, "brief": r.get("brief"), "state": Path(state)})
+        # rooms.json 에 적은 나머지 칸(tenant·blanks·blog_state …)을 버리지 않는다 —
+        # 2026-09-11 실측: 여기서 세 칸만 골라 담는 바람에 고척 방의 tenant·blanks 가
+        # 통째로 없는 값이 돼, 어제 세운 빈칸 회수 회로가 그 방에서는 한 번도 돌지 않았다.
+        out.append({**r, "room": name, "brief": r.get("brief"), "state": Path(state)})
     return out
 
 
@@ -276,6 +279,32 @@ COMMON_RULES = """
   예: 「사진 주신 덕분에 표지가 잡혔습니다. 나머지는 저희가 맞춰 두겠습니다.」
   예: 「9월 마무리로 바쁘실 텐데, 문구 쪽은 저희가 들고 있겠습니다.」
 """
+
+
+def blog_fact(conf: dict) -> str:
+    """오늘 그 업체 블로그 임시저장이 실제로 됐는지 한 줄로 돌려준다(GM 지시 2026-09-11).
+
+    2026-09-11 실측: 07:00 통이 「오늘 블로그 글도 임시저장해 두었습니다」라고 나갔는데
+    그 시각 블로그 자동화는 아직 돌지도 않았고(06:50 통 → 07:00 블로그), 그날 임시저장은
+    부장님 네이버 세션 만료로 실패했다. 결과를 모르는 채 됐다고 적은 것이다(약속 L05).
+    이 줄을 프롬프트에 넣어, 성공한 날에만 임시저장 얘기를 꺼내게 한다.
+    """
+    rel = conf.get("blog_state")
+    if not rel:
+        return ""
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        runs = json.loads((REPO_ROOT / rel).read_text(encoding="utf-8")).get("runs") or []
+    except Exception as exc:                        # noqa: BLE001
+        print(f"[agent] 블로그 상태 읽기 실패(건너뜀): {exc}", file=sys.stderr)
+        return "오늘 블로그 임시저장 결과를 확인하지 못했다 — 임시저장 얘기는 꺼내지 않는다."
+    todays = [r for r in runs if str(r.get("date", "")).startswith(today)]
+    if any(r.get("result") == "ok" for r in todays):
+        return "오늘 블로그 글 한 편이 실제로 임시저장됐다 — 보시고 발행만 누르시면 된다고 적어도 된다."
+    if todays:
+        return ("오늘 블로그 임시저장이 실패했다 — 임시저장 얘기는 꺼내지 않는다. "
+                "이미 고치는 중이므로 부장님께 숙제를 드리지 않는다.")
+    return "오늘 블로그 임시저장이 아직 안 됐다 — 임시저장 얘기는 꺼내지 않는다."
 
 
 def blanks_of(conf: dict) -> list[str]:
@@ -457,6 +486,9 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     from model_router import run_claude  # noqa: PLC0415
     tenant = conf.get("tenant") or ("2_dietcamp" if brief == SYSTEM_BRIEF else "")
     gaps = (bot_gaps(tenant) if tenant else []) + blanks_of(conf)
+    fact = blog_fact(conf)
+    if fact:
+        brief += "\n\n★오늘의 사실(지어내지 말고 이대로 따른다): " + fact
     draft, used = run_claude(build_prompt(lines, fresh, brief, gaps), label="diet-camp-agent")
     if draft is None:
         print("[agent] 초안 생성 실패 — 이번 회차 건너뜀(다음 주기에 다시 시도)", file=sys.stderr)
@@ -551,7 +583,10 @@ def _selfcheck() -> None:
     rs = rooms()
     assert rs and rs[0]["room"] == ROOM, rs
     assert rs[0]["state"] == STATE_PATH, rs[0]
-    assert brief_of(rs[0]) == SYSTEM_BRIEF
+    # rooms.json 첫 방(다캠)은 2026-09 부터 브리프 파일을 갖는다 — 코드 안 SYSTEM_BRIEF 와
+    # 같기를 요구하던 옛 단정은 그때 이미 틀렸다. 지금 볼 것은 "그 방 브리프가 읽히는가" 다.
+    assert (brief_of(rs[0]) or "").strip(), rs[0]
+    assert blog_fact({}) == "", "blog_state 가 없는 방엔 사실 줄을 붙이지 않는다"
     # 브리프 없는 새 방은 건너뛴다 — 남의 방 브리프로 대신 보내지 않는다
     assert brief_of({"room": "다른 클럽", "brief": None}) is None
     assert _slug("★중간관리자 방") == "중간관리자_방", _slug("★중간관리자 방")
