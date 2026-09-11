@@ -312,6 +312,35 @@ CREATE TABLE IF NOT EXISTS misc_cache (
   PRIMARY KEY (tenant_id, gas, action, params)
 );
 
+-- 지출품의(구매요청) 원장 — 시트 미러 (sync_proc.py · api_proc.py · 2026-09-11 시토 · AWS 이관 매출·지출 단계).
+-- sales_cache 와 다르다: 저건 GAS 집계 응답을 통째로 담는 캐시고, 이건 행 하나가 품의 하나인 원장이다.
+-- 왜 필요했나: 품의 목록을 GAS 로 물으면 326행·1.29MB·37초가 걸리고(2026-09-11 실측) 그중 1.1MB 가
+-- 이미지 base64 다. 그 무게 때문에 큰 응답이 리다이렉트 왕복에서 끊겨 목록이 빈 손으로 오는 날이 있었다.
+-- row = 시트 행번호(정본 열쇠 · GAS status 액션이 쓰는 바로 그 값) · no = 품의번호(빈 값인 행이 많다).
+-- 칸 이름을 우리가 새로 짓지 않는다 — 시트 머리글 그대로 data 에 싣고, 거르는 데 쓰는 몇 개만 컬럼으로 뺀다.
+-- src = 이 행이 어느 목록에서 왔나(active=진행중 · all=지난 이력). 두 목록은 겹치지 않는다 —
+--   2026-09-11 실측: all 은 시트 행 3~374(326건), active 는 375~395(21건)이고 상태값도 서로 다른 말을 쓴다
+--   (all = 승인·완료·미승인·캔슬·반려 / active = 정산·검토). 그래서 우리가 상태로 가르지 않고 GAS 가 가른
+--   그대로 담는다 — 우리 기준을 새로 지으면 화면이 보는 목록과 어긋난다(INC-055 와 같은 실수).
+CREATE TABLE IF NOT EXISTS proc_items (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  row       INTEGER NOT NULL,
+  src       TEXT NOT NULL DEFAULT 'all',
+  no        TEXT NOT NULL DEFAULT '',
+  ymd       TEXT NOT NULL DEFAULT '',
+  requester TEXT NOT NULL DEFAULT '',
+  dept      TEXT NOT NULL DEFAULT '',
+  item      TEXT NOT NULL DEFAULT '',
+  status    TEXT NOT NULL DEFAULT '',
+  price     BIGINT NOT NULL DEFAULT 0,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, row)
+);
+ALTER TABLE proc_items ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'all';
+CREATE INDEX IF NOT EXISTS ix_proc_src ON proc_items (tenant_id, src);
+CREATE INDEX IF NOT EXISTS ix_proc_no ON proc_items (tenant_id, no);
+
 -- 문의 유입 경로 칸 (배 925 · status/briefs/CMO-유입경로-발행원장-정의서-20260903.md 표 A · 2026-09-05).
 -- channel_code 11종(6종 채널+5종 특수값, unknown=기록없음) + post_id(publish_ledger 참조, 없으면 NULL).
 -- 기존 문의 행은 DEFAULT 'unknown'이 그대로 채운다(GM 확정: 소급 안 채움 = unknown 명시값으로 채움).

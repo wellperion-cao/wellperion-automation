@@ -47,18 +47,25 @@ def _ssh(script: str) -> str:
 
 
 def find_row(no: int) -> "dict | None":
-    """품의 번호(#N) → 그 행. 목록은 GAS 가 정본이라 거기서 찾는다(서버 미러에는 품의 표가 없다)."""
-    script = (
-        "import os,json,urllib.request,urllib.parse\n"
-        "url=os.environ['PROC_GAS_URL']\n"
-        "pw=os.environ.get('GATE_PW','wellperion!@1202')\n"
-        "b=urllib.parse.urlencode({'action':'list','mode':'active','password':pw}).encode()\n"
-        "d=json.loads(urllib.request.urlopen(urllib.request.Request(url,data=b),timeout=40).read())\n"
-        "rows=[x for x in (d.get('data') or []) if str(x.get('번호'))==%r]\n"
-        "print(json.dumps(rows[0] if rows else None,ensure_ascii=False))\n" % str(no)
-    )
-    wrapped = ("import os\nexec(open('/tmp/_pa.py').read())" if False else script)
-    txt = _ssh("import os\n" + _env_preamble() + wrapped)
+    """품의 번호(#N) → 그 행. 우리 서버 원장(proc_items · sync_proc.py)에서 찾는다.
+
+    2026-09-11 까지는 GAS 목록을 직접 물었다. 그 조회가 실측 40.5초였고 응답이 1.29MB라 리다이렉트
+    왕복에서 끊겨 빈 손으로 오는 날이 있었다 — 같은 날 서버 원장으로 옮기고 0.04초가 됐다(행 내용은 전수 일치).
+    원장이 비어 있으면(동기화 전) 종전대로 GAS 에 직접 묻는다 — 도구가 멈추지는 않는다."""
+    q = "import json,urllib.request,urllib.parse\n" \
+        "u='http://127.0.0.1:8001/api/proc/list?'+urllib.parse.urlencode({'mode':'active','no':%r,'images':'0'})\n" \
+        "try:\n" \
+        "    d=json.loads(urllib.request.urlopen(u,timeout=30).read())\n" \
+        "    rows=d.get('data') or []\n" \
+        "except Exception:\n" \
+        "    rows=[]\n" \
+        "if not rows:\n" \
+        "    pw=os.environ.get('GATE_PW') or os.environ.get('SALES_GATE_PW','')\n" \
+        "    b=urllib.parse.urlencode({'action':'list','mode':'active','password':pw}).encode()\n" \
+        "    d=json.loads(urllib.request.urlopen(urllib.request.Request(os.environ['PROC_GAS_URL'],data=b),timeout=90).read())\n" \
+        "    rows=[x for x in (d.get('data') or []) if str(x.get('번호'))==%r]\n" \
+        "print(json.dumps(rows[0] if rows else None,ensure_ascii=False))\n" % (str(no), str(no))
+    txt = _ssh("import os\n" + _env_preamble() + q)
     try:
         return json.loads(txt.splitlines()[-1])
     except Exception:
