@@ -158,11 +158,14 @@
   .band{height:184px;margin-top:11px;display:flex;gap:13px;}
 
   /* 강습 신규·재등록 — 팀별 두 칸(신규/재등록) */
-  .ls{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 26px;}
-  .ls .lsb{display:flex;align-items:baseline;gap:6px;font-size:11.6px;
+  /* 4칸 × 2줄 = 8팀 고정. 줄마다 종목 칸 너비를 같게 둬야 아래윗줄 숫자가 세로로 맞는다
+     (GM 지적 2026-09-11 「뮤지컬팀이 위 줄과 정렬이 안 맞는다」). */
+  .ls{display:grid;grid-template-columns:repeat(4,1fr);gap:3px 16px;}
+  .ls .lsb{display:grid;grid-template-columns:58px 1fr;align-items:baseline;gap:6px;font-size:11.4px;
     border-bottom:1px dotted var(--line);padding:2px 0;}
-  .ls .lsn{color:#3C464F;font-weight:700;}
-  .ls .lsv{margin-left:auto;font-variant-numeric:tabular-nums;}
+  .ls .lsn{color:#3C464F;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ls .lsv{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .ls .lsb.zero{opacity:.45;}
   .ls .lsv b{font-size:12.6px;}
   .lstitle{font-size:10.6px;font-weight:800;color:var(--navy);letter-spacing:.5px;
     border-top:1px solid var(--line);margin-top:9px;padding-top:7px;}
@@ -787,13 +790,17 @@ function renderLesson(d){
   var el = document.getElementById('lesson'); if (!el) return;
   var t = (d && d.total) || {}, teams = (d && d.teams) || {};
   function money(n){ return (n || 0).toLocaleString('ko-KR') + '원'; }
-  var names = Object.keys(teams).sort(function(a, b){
-    return ((teams[b]['신규']||{}).amount||0) + ((teams[b]['재등록']||{}).amount||0)
-         - ((teams[a]['신규']||{}).amount||0) - ((teams[a]['재등록']||{}).amount||0); });
+  /* 8팀을 매출 표와 같은 순서로 항상 다 적는다 — 그날 등록이 없는 팀을 빼면 칸이 들쭉날쭉해지고
+     「어느 팀이 0인지」도 안 보인다(GM 지적 2026-09-11). 0인 팀은 흐리게만 둔다. */
+  var FIXED = ['수영팀','P.T팀','골프팀','스쿼시팀','체조팀','P.L팀','뮤지컬팀','GXE팀'];
+  var names = FIXED.slice();
+  Object.keys(teams).forEach(function(nm){ if (names.indexOf(nm) < 0) names.push(nm); });
   var rows = names.map(function(nm){
-    var n = teams[nm]['신규'] || { count:0, amount:0 }, r = teams[nm]['재등록'] || { count:0, amount:0 };
-    return '<div class="lsb"><span class="lsn">' + esc(nm) + '</span>' +
-           '<span class="lsv">신규 <b>' + n.count + '명</b> · 재등록 <b>' + r.count + '명</b></span></div>';
+    var t2 = teams[nm] || {};
+    var n = t2['신규'] || { count:0 }, r = t2['재등록'] || { count:0 };
+    var zero = !(n.count || r.count);
+    return '<div class="lsb' + (zero ? ' zero' : '') + '"><span class="lsn" title="' + esc(nm) + '">' + esc(nm) + '</span>' +
+           '<span class="lsv">신규 <b>' + (n.count||0) + '</b> · 재등록 <b>' + (r.count||0) + '</b></span></div>';
   }).join('');
   el.innerHTML =
     '<div class="lstitle">강습 — 새로 온 분인가 이어가는 분인가</div>' +
