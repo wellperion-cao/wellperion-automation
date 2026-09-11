@@ -768,7 +768,7 @@ placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
 <label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
 <label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
-<button>신청</button><div class=foot><p>이름이 인사 등록 정보에 있는지만 대조합니다. 신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
+<button>신청</button><div class=foot><p>신청하면 GM 께 알림이 갑니다. <b>GM 이 승인해야</b> 그 계정으로 로그인할 수 있습니다. 이름·연락처·부서는 GM 이 보고 판단하는 값이니 정확히 적어 주세요.</p>
 <p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>
 """ + SIGNUP_JS + """""")
 
@@ -1406,7 +1406,8 @@ def _save_social_keys(out: dict) -> None:
 def admin_hr_check_page(msg: str = "", err: str = "", erp_session: Optional[str] = Cookie(default=None),
                         erp_admin: Optional[str] = Cookie(default=None)):
     admin_only(erp_session, erp_admin, "/auth/admin/hr_check")
-    state = "설정됨" if hr_hub_pw() else "비어 있음 — 아이디 가입 신청이 전부 막힙니다"
+    # 2026-09-11 GM 지시로 가입 경로에서는 명부를 안 본다 — 이 값이 비어도 가입은 안 막힌다.
+    state = "설정됨" if hr_hub_pw() else "비어 있음 (가입 신청과는 무관 — 명부를 쓰는 다른 자리용)"
     return page("인사 허브 대조", head("가입 신청 이름·연락처 대조 · 관리자 전용") + f"""
 {'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <form method=post action=/auth/admin/hr_check>
