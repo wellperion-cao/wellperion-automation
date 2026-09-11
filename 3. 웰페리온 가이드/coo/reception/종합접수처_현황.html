@@ -376,6 +376,18 @@ input[id^="m_"] { font-size:16px; }
   .col-body{max-height:none!important;overflow:visible!important}
   .card{border:1px solid #ccc!important;break-inside:avoid;background:#fff!important}
 }
+/* 가이드만 A3 한 장으로 인쇄 (GM 지시 2026-09-11) — body.guide-print 일 때만 발효.
+   본문 인쇄(@page A4)와 섞이지 않게 이 블록은 가이드 모달만 남기고 나머지를 숨긴다. */
+@media print {
+  body.guide-print{ }
+  body.guide-print > *:not(#guideBack){display:none!important}
+  body.guide-print #guideBack{position:static!important;display:block!important;background:#fff!important;padding:0!important}
+  body.guide-print #guideBack .modal{max-width:none!important;width:100%!important;box-shadow:none!important;border:0!important;padding:0!important;max-height:none!important;overflow:visible!important}
+  body.guide-print #guideA3Btn,body.guide-print #guidePngBtn{display:none!important}
+  body.guide-print .guide-body{font-size:12px;line-height:1.55}
+  body.guide-print .guide-body h3{break-after:avoid}
+  body.guide-print .guide-body table,body.guide-print .guide-body .guide-mistake{break-inside:avoid}
+}
 /* ── 모바일 반응형 ── */
 @media (max-width:720px) {
   .header{padding:10px 12px}
@@ -476,8 +488,16 @@ input[id^="m_"] { font-size:16px; }
   <div class="modal" style="max-width:920px;padding:28px 32px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
       <h2 style="margin:0;font-size:22px">📖 종합접수처 가이드</h2>
-      <button type="button" onclick="closeGuide()" aria-label="닫기"
-        style="background:none;border:0;color:var(--dim);font-size:26px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+      <!-- 가이드 내려받기 2종 (GM 지시 2026-09-11 「가이드는 항상 .png 다운 or A3 다운로드 되게끔」).
+           A3 = 인쇄 대화상자에서 PDF 로 저장하면 A3 한 장 · PNG = 화면 그대로 그림 파일 한 장. -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <button type="button" id="guideA3Btn" onclick="printGuideA3()"
+          style="background:var(--paper);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer">🖨 A3</button>
+        <button type="button" id="guidePngBtn" onclick="downloadGuidePng()"
+          style="background:var(--paper);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer">🖼 PNG</button>
+        <button type="button" onclick="closeGuide()" aria-label="닫기"
+          style="background:none;border:0;color:var(--dim);font-size:26px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+      </div>
     </div>
     <div class="msub" style="margin-bottom:16px;font-size:13px">이 화면을 처음 쓰시는 분도 아래만 읽으면 바로 움직일 수 있습니다.</div>
     <div class="guide-body">
@@ -798,7 +818,11 @@ var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령
 var _holdItems = [];  // member_hold_intake_list → 휴회 매핑(읽기 전용·8번째 카드). 승인/반려는 회원 관리 화면 전용.
 var _curCat = '';
 var _curDept = '';
-var _curMonth = '';
+/* 기본은 이번 달 (GM 지시 2026-09-11 「항상 이번달을 기본으로 셋팅해줘, 항상 전체를 보여주네」).
+   전체를 기본으로 두면 몇 달치가 한 화면에 쌓여 오늘 볼 것이 묻힌다.
+   지난달 것은 월 칩에서 그 달을 누르거나 [전체]를 누르면 그대로 보인다. */
+function _thisMonth(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+var _curMonth = _thisMonth();
 var _curSearch = '';
 var _loading = false;
 
@@ -891,6 +915,10 @@ function _renderChips(){
   var months = {};
   _allItems.forEach(function(r){ var ym = _monthOf(r); if(ym) months[ym] = (months[ym]||0) + 1; });
   var monthKeys = Object.keys(months).sort().reverse();
+  /* 이번 달 건이 아직 0 이어도 칩은 띄운다 — 기본이 이번 달인데 칩이 없으면
+     어느 달을 보고 있는지 화면에 안 남는다(GM 지시 2026-09-11). 0 을 0 으로 정직하게 보인다. */
+  var _tm = _thisMonth();
+  if(monthKeys.indexOf(_tm) < 0){ monthKeys.unshift(_tm); months[_tm] = months[_tm] || 0; }
   var mh = '<button class="chip' + (_curMonth===''?' active':'') + '" onclick="setMonth(\'\')">전체</button>';
   monthKeys.forEach(function(ym){
     mh += '<button class="chip' + (_curMonth===ym?' active':'') + '" onclick="setMonth(\'' + ym + '\')">' + _esc(_monthLabel(ym)) + ' (' + months[ym] + ')</button>';
@@ -1496,6 +1524,60 @@ $('modalBack').addEventListener('click', function(e){ if(e.target===this) closeM
 /* ── 📖 가이드 모달 (GM 지시 2026-08-15) ── 정적 내용이라 서버 조회 없이 열고 닫기만. */
 function openGuide(){ $('guideBack').classList.add('show'); }
 function closeGuide(){ $('guideBack').classList.remove('show'); }
+
+/* ── 가이드 내려받기 2종 (GM 지시 2026-09-11) ──
+   A3 = 가이드 모달만 A3 한 장으로 인쇄한다. 인쇄 대화상자에서 「PDF 로 저장」을 고르면 파일로 남는다.
+        본문 인쇄 규칙(@page A4)과 섞이지 않게 body 에 guide-print 를 잠깐 붙였다 뗀다.
+   PNG = 화면에 보이는 가이드를 그림 파일 한 장으로 내려받는다. html2canvas 는 처음 누를 때만
+        가져온다(채용 화면 downloadPageAsJpg 와 같은 방식 · 새 의존성 아님). */
+function printGuideA3(){
+  /* 용지 크기는 @page 로만 바꿀 수 있는데 @page 는 본문 클래스로 갈리지 않는다 —
+     그래서 인쇄 직전에 A3 규칙을 담은 style 을 잠깐 넣었다 뺀다. */
+  var st = document.createElement('style');
+  st.id = 'guideA3Page';
+  st.textContent = '@media print{@page{size:A3;margin:10mm}}';
+  document.head.appendChild(st);
+  document.body.classList.add('guide-print');
+  window.print();
+  document.body.classList.remove('guide-print');
+  var old = document.getElementById('guideA3Page');
+  if(old) old.remove();
+}
+function downloadGuidePng(){
+  var btn = $('guidePngBtn');
+  if(!btn || btn.disabled) return;
+  var label = btn.innerHTML;
+  function capture(){
+    btn.disabled = true; btn.innerHTML = '만드는 중…';
+    var target = $('guideBack').querySelector('.modal');
+    window.html2canvas(target, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
+      scale: 2,
+      useCORS: true,
+      /* 내려받기 버튼 자신은 그림에 넣지 않는다 */
+      ignoreElements: function(el){ return el && (el.id === 'guidePngBtn' || el.id === 'guideA3Btn'); }
+    }).then(function(canvas){
+      var a = document.createElement('a');
+      a.download = '종합접수처_가이드_' + new Date().toISOString().slice(0,10) + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      btn.disabled = false; btn.innerHTML = label;
+    }).catch(function(e){
+      btn.disabled = false; btn.innerHTML = label;
+      alert('그림 파일을 만들지 못했습니다 — 대신 [A3] 로 인쇄해 주세요.\n' + ((e && e.message) || e));
+    });
+  }
+  if(window.html2canvas){ capture(); return; }
+  btn.disabled = true; btn.innerHTML = '준비 중…';
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload = function(){ btn.disabled = false; btn.innerHTML = label; capture(); };
+  s.onerror = function(){
+    btn.disabled = false; btn.innerHTML = label;
+    alert('그림 만들기 도구를 불러오지 못했습니다 — 대신 [A3] 로 인쇄해 주세요.');
+  };
+  document.head.appendChild(s);
+}
 $('guideBack').addEventListener('click', function(e){ if(e.target===this) closeGuide(); });
 
 /* ── 🧳 이번 달 정리 모달 (GM 지시 2026-08-15) ── lfCycleBody 는 lfLoad()가 이미 채워 둔다.
