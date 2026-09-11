@@ -621,13 +621,13 @@
           "ref": "GM-20260911-1055",
           "no": "55",
           "got": "나우열M 업무보고봇 호출 계속 들어오는데?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:37",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:41",
+          "minutes": 4,
+          "upload": "✅ 배포 (9fa5c6a68)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -813,28 +813,13 @@
         }
       ],
       "count": 52,
-      "done": 51,
-      "open": 1,
+      "done": 52,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-1055",
-          "no": "55",
-          "got": "나우열M 업무보고봇 호출 계속 들어오는데?",
-          "did": "",
-          "start": "19:37",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -1296,12 +1281,6 @@
       ],
       "work": [
         {
-          "time": "08:51",
-          "area": "작업",
-          "event": "카톡 발신 관문 단일 점유 + 기록 없는 성공 금지 (배 2522)",
-          "detail": "커밋 5eaf8ff36 · 배 12510"
-        },
-        {
           "time": "09:10",
           "area": "작업",
           "event": "아침 첫 창이 Claude 를 갈아끼우는 1분 동안 다른 창이 죽던 것",
@@ -1474,6 +1453,12 @@
           "area": "저장소",
           "event": "자체 표류 9건 복구 — 디스크가 저장소보다 옛 판이던 것",
           "detail": "9개 전부 디스크가 HEAD 보다 옛 판이었다(가장 심한 것: server/erp_api/api_hr.py 19,617바이트 vs 저장소 87,639바이트 · 요금변경 A3 636바이트 vs 110,453바이트 — 디스크는 빈 껍데기였다). 저장소 판으로 되돌리고 줄끝까지 맞춰 9개 전부 HEAD 와 일치 확인. 원인 후보 = 2026-09-06 13:16 에 남은 stash@{0}(그날 ea6797001 이 서버 4파일을 새 판으로 올렸는데, 그 직전 옛 판이 autostash 로 stash 됐다가 pop 되며 디스크를 되돌린 것으로 보인다). 그 stash 는 남의 미커밋 작업(카톡 발신기·접수 블록 등 15파일)이 섞여 있어 지우지 않았다 — GM 판단 건."
+        },
+        {
+          "time": "19:39",
+          "area": "작업",
+          "event": "업무관리 방 발송 상한 30→120 · 상한 때문에 못 보낸 건 실패 알림을 안 띄운다",
+          "detail": "커밋 f966d07f0 · 배 12528"
         }
       ],
       "count": 37,
@@ -1929,7 +1914,7 @@
           "start": "19:37",
           "end": "19:38",
           "minutes": 1,
-          "upload": "기록만",
+          "upload": "✅ 배포 (90ac3baaf)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1937,13 +1922,13 @@
           "ref": "GM-20260911-3045",
           "no": "45",
           "got": "https://erp.wellperion.com/erp/ 지금 문서함을 보는데, 어떤 가이드라인이나 보고나 이런 자료들이 있어야하는 것 같은데, 중복되는 것도 많고, 원래 이게 기획 및 설계 의도가 맞는건가?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:38",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:42",
+          "minutes": 3,
+          "upload": "✅ 배포 (90ac3baaf)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2102,31 +2087,22 @@
           "area": "작업",
           "event": "권한을 오른쪽 자리에 띄운다 (GM 지시 2026-09-11)",
           "detail": "커밋 470316bd0 · 배 11425"
+        },
+        {
+          "time": "19:42",
+          "area": "작업",
+          "event": "문서함을 기준 문서·보고 자료로 가름 (GM 지적 2026-09-11)",
+          "detail": "커밋 18a9a2337 · 배 11425"
         }
       ],
       "count": 38,
-      "done": 37,
-      "open": 1,
+      "done": 38,
+      "open": 0,
       "avg_minutes": 2,
-      "work_count": 26,
+      "work_count": 27,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-3045",
-          "no": "45",
-          "got": "https://erp.wellperion.com/erp/ 지금 문서함을 보는데, 어떤 가이드라인이나 보고나 이런 자료들이 있어야하는 것 같은데, 중복되는 것도 많고, 원래 이게 기획 및 설계 의도가 맞는건가?",
-          "did": "",
-          "start": "19:38",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -2554,18 +2530,6 @@
           "evidence": "⚠️없음"
         },
         {
-          "ref": "GM-20260911-5022",
-          "no": "22",
-          "got": "업무 SSOT에서",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
-          "start": "18:49",
-          "end": "18:49",
-          "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "⚠️없음"
-        },
-        {
           "ref": "GM-20260911-5023",
           "no": "23",
           "got": "그리고 이 내용을 최준용M에게도 개인톡 보내줘 ★웰페리온 운영부 최준용 매니저님",
@@ -2588,6 +2552,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-5025",
+          "no": "25",
+          "got": "중간관리자 업무 목차에 운영부는 멤버십+옵션 매출만 측정해줘",
+          "did": "운영부=멤버십+옵션(2.75억 대비 9,686만) · 나우열M=파트너팀 전체 GXE 포함(3.605억 대비 8,817만). 상가 SSOT 3행 최준용M 담당·이름 통일. 소통채널 행은 없어 만들지 않음.",
+          "start": "19:34",
+          "end": "19:42",
+          "minutes": 7,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2692,13 +2668,19 @@
           "area": "작업",
           "event": "중간관리자 업무 목차 — 상가 건 중복 줄 정리 반영 (GM 지시 2026-09-11)",
           "detail": "커밋 c4b506fde · 배 12534"
+        },
+        {
+          "time": "19:42",
+          "area": "작업",
+          "event": "중간관리자 업무 목차 — 매출 측정 범위를 사람별로 가른다 + 상가 4묶음 SSOT 정리",
+          "detail": "커밋 d57a23ed0 · 배 12534"
         }
       ],
       "count": 24,
       "done": 24,
       "open": 0,
       "avg_minutes": 26,
-      "work_count": 17,
+      "work_count": 18,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2771,13 +2753,13 @@
           "ref": "GM-20260911-9006",
           "no": "06",
           "got": "이거 보니까 상담봇 출시해도 돈 안들거 같은데?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:39",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:41",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2795,28 +2777,13 @@
         }
       ],
       "count": 6,
-      "done": 5,
-      "open": 1,
+      "done": 6,
+      "open": 0,
       "avg_minutes": 5,
       "work_count": 2,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-9006",
-          "no": "06",
-          "got": "이거 보니까 상담봇 출시해도 돈 안들거 같은데?",
-          "did": "",
-          "start": "19:39",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
