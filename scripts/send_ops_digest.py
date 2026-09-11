@@ -836,6 +836,54 @@ def _mark_mgr_sent(target_date: str) -> None:
                      extra={"state": {"date": target_date}})
 
 
+def nawool_done_today(rows: list, today: str) -> list:
+    """오늘 나우열M 이 끝낸 업무 제목들(업무 SSOT 기준 · 배2541 후속 2026-09-11).
+
+    왜: 낮 통이 「남은 것」만 물으니 그날 하신 일이 하나도 안 보였다. 나우열M 원문 —
+    「그거말고도 오늘 올린게 더 있는데 하루에 3개씩만 확인하는거야?」. 한 일을 먼저 세고
+    그 다음에 남은 것을 묻는다.
+    판정 = 상태 '완료' + 담당자에 나우열M + 수정일이 오늘. 완료일 칸은 기한이 적혀 있어
+    오늘 손댄 것을 못 잡는다(실측 2026-09-11: 6건 중 5건이 완료일=어제였다)."""
+    out = []
+    for r in rows or []:
+        if str(r.get("상태") or "").strip() != "완료":
+            continue
+        if NAWOOL_WHO not in str(r.get("담당자") or ""):
+            continue
+        if str(r.get("수정일") or "").strip()[:10] != today:
+            continue
+        title = str(r.get("업무명") or "").strip()
+        if title:
+            out.append(title)
+    return out
+
+
+def _drop_done_lines(nawool_msg: str, done_titles: list) -> str:
+    """오늘 끝난 것이 「확인 부탁드릴 것」에 또 실리지 않게 뺀다 — 머리 건수도 같이 고친다.
+
+    원장(_digest_ledger)과 업무 SSOT 는 서로 다른 원장이라 한쪽이 닫혀도 다른 쪽은 열린 채
+    남는다(실측 2026-09-11: 잡코리아 건이 SSOT 에선 완료인데 낮 통이 #201 로 다시 물었다)."""
+    if not nawool_msg or not done_titles:
+        return nawool_msg
+    lines = nawool_msg.split("\n")
+    kept, dropped = [], 0
+    for ln in lines:
+        if ln.startswith("▪") and any(t and t in ln for t in done_titles):
+            dropped += 1
+            continue
+        kept.append(ln)
+    if not dropped:
+        return nawool_msg
+    remain = sum(1 for ln in kept if ln.startswith("▪"))
+    if remain == 0:
+        return ""
+    for i, ln in enumerate(kept):
+        if ln.startswith("🧾"):
+            kept[i] = f"🧾 확인 부탁드릴 것 {remain}건 — {NAWOOL_WHO}"
+            break
+    return "\n".join(kept)
+
+
 NOON_HEARTBEAT_ID = "ops-digest-nawool-noon"
 
 
@@ -882,13 +930,28 @@ def send_nawool_noon(dry: bool = False) -> int:
         log(f"[noon] 원장 번호 매칭 예외(무시): {type(exc).__name__}: {exc}")
 
     _msg, _cur, _hits, nawool_msg = build_mgr_daily_brief(rows, today)
-    if not nawool_msg:
+    done_titles = nawool_done_today(rows, today)
+    nawool_msg = _drop_done_lines(nawool_msg, done_titles)
+    if not nawool_msg and not done_titles:
         log("[noon] 나우열M 몫 0건 — 발송 생략")
         record_heartbeat(NOON_HEARTBEAT_ID, detail="0건 — 발송 없음",
                          extra={"state": {"date": today}})
         return 0
 
-    body = "🕛 낮 확인 — 아직 회신 없는 것만 모았습니다.\n" + nawool_msg
+    # 한 일을 먼저, 남은 것을 그 다음에. 한쪽이 비면 그 절만 빠진다.
+    parts = ["🕛 낮 확인"]
+    if done_titles:
+        parts.append(f"✅ 오늘 끝내신 것 {len(done_titles)}건")
+        for t in done_titles[:ASKS_PER_PERSON_CAP]:
+            parts.append(f"▪ {t}")
+        extra = len(done_titles) - ASKS_PER_PERSON_CAP
+        if extra > 0:
+            parts.append(f"외 {extra}건")
+    if nawool_msg:
+        parts.append(nawool_msg)
+    else:
+        parts.append("남은 것 없습니다 — 고맙습니다.")
+    body = "\n".join(parts)
     try:
         sys.path.insert(0, str(ROOT / "scripts"))
         from notify.telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID  # noqa: F401
