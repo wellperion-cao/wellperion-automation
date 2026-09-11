@@ -914,8 +914,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <input type="text" id="parkingInspector" class="park-inspector-input" placeholder="점검자 이름 입력" autocomplete="off">
         </div>
       </div>
-      <!-- 진행률 카드 삭제 (GM 지시 2026-09-11) — 같은 숫자가 조 버튼 안에 들어갔다. 새로고침 버튼은 날짜 바로 옮겼다. -->
-      <!-- 이슈·노하우가 무엇을 적는 칸인지 먼저 알려 준다 — 지원부 점검과 같은 자리·같은 문구(GM 지적 2026-09-11). -->
+      <!-- 순서 = 조 선택 → 이슈·노하우 안내 → 진행률 → 항목 (GM 지시 2026-09-11).
+           조 버튼이 이 자리에 렌더된다(renderParkingDailyCheck). 종전엔 항목 묶음 안에 들어 있었다. -->
+      <div id="parkRoundBarHost"></div>
+      <!-- 이슈·노하우가 무엇을 적는 칸인지 먼저 알려 준다 — 지원부 점검과 같은 문구. -->
       <div class="guide-cards">
         <div class="guide-card issue-guide">
           <div class="guide-title">이슈</div>
@@ -926,7 +928,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <div class="guide-desc">더 효율적인 방법, 개선 아이디어를 공유</div>
         </div>
       </div>
-      <!-- 일일 점검 카드가 이 자리에 렌더된다(renderParkingDailyCheck). 주간 점검은 폐지 — GM 2026-09-11. -->
+      <!-- 진행률 — GM 지시 2026-09-11 로 이슈·노하우 아래에 되살렸다. 조 버튼의 숫자는 그 조가 몇 개인지,
+           이 막대는 지금 어디까지 왔는지를 보인다. -->
+      <div class="progress" style="margin-bottom:12px;">
+        <div class="progress-text" style="justify-content:flex-start;gap:10px;align-items:center;"><span id="parkingProgressText">이번 조 0/-</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
+      </div>
+      <!-- 일일 점검 항목이 이 자리에 렌더된다. 주간 점검은 폐지 — GM 2026-09-11. -->
       <div id="parkingDailyCheckBody"></div>
       <!-- 제출 버튼은 화면 아래에 붙인다 — 지원부와 같다(GM 지적 2026-09-11 「왜 다른 것 같지?」).
            항목을 끝까지 내려도 제출 버튼이 늘 보인다. 타이머·점검자는 위 날짜 바 아래에 있다. -->
@@ -2597,15 +2605,20 @@ function renderParkingDailyCheck(){
       +'<span class="prs-sub'+(PARK_SUBMITTED[rd.baseShift]?' done':'')+'" id="prsSub_'+rd.key+'">'+_sub+'</span></button>';
   });
   bar+='</div>';
+  /* 조 버튼은 항목 묶음 밖(이슈·노하우 안내 위)에 그린다 — GM 지시 2026-09-11 순서. */
+  const barHost=document.getElementById('parkRoundBarHost');
+  if(barHost) barHost.innerHTML=bar;
   let daily=''; rows.forEach(function(it){ daily+=dailyItemHtml(it); });
   const rd=parkRoundDef(PARK_ROUND,PARK_DATE);
   /* 주간 점검 블록 제거 (GM 2026-09-11 「주간점검은 의미가 없을듯」).
      체크가 안 되는 목록이라 매일 화면 절반을 차지하면서 아무 기록도 남기지 않았다.
      그 안에 있던 소방·비상구·CCTV·요일별 집중 점검은 매뉴얼 카드(pm_safety·pg_zone·pm_weekly)에 그대로 있다. */
-  body.innerHTML= bar
-    +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검 · '+escapeHTML(rd.name)+' '+escapeHTML(rd.time)+'</span>'
+  body.innerHTML= '<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검 · '+escapeHTML(rd.name)+' '+escapeHTML(rd.time)+'</span>'
       +'<span class="cat-badge pending" id="parkDailyBadge">0/'+rows.length+'</span></div>'
       +'<div class="cat-body open">'+daily+'</div></div>';
+  /* 진행률 막대 초기값 — 다시 그린 직후엔 체크가 전부 풀린 상태다. 서버 값은 loadParkingCheckState 가 덮는다. */
+  const _pt=document.getElementById('parkingProgressText'); if(_pt) _pt.textContent='이번 조 0/'+rows.length;
+  const _pf=document.getElementById('parkingProgressFill'); if(_pf) _pf.style.width='0%';
   renderParkTimerUI();
 }
 /* 조 전환 — 다시 그리고 그 조의 서버 상태(체크·제출도장)를 불러온다. */
@@ -2625,9 +2638,11 @@ function onParkCheck(){
     if(cb.checked) done++;
     const row=cb.closest('.item'); if(row) row.classList.toggle('checked',cb.checked);
   });
-  /* 진행 숫자는 조 버튼 안으로 들어갔다(진행률 카드 폐지 · GM 2026-09-11). */
+  /* 조 버튼 숫자와 진행률 막대를 함께 갱신한다(GM 지시 2026-09-11 로 막대를 되살렸다). */
   const _sub=document.getElementById('prsSub_'+PARK_ROUND);
   if(_sub) _sub.textContent = PARK_SUBMITTED[parkRoundDef(PARK_ROUND,PARK_DATE).baseShift] ? '제출완료' : done+'/'+total;
+  const _fill=document.getElementById('parkingProgressFill'); if(_fill) _fill.style.width=(total?Math.round(done/total*100):0)+'%';
+  const _text=document.getElementById('parkingProgressText'); if(_text) _text.textContent='이번 조 '+done+'/'+total;
   const badge=document.getElementById('parkDailyBadge');
   if(badge){ badge.textContent=done===total?'완료':done+'/'+total; badge.className='cat-badge '+(done===total?'done':'pending'); }
 }
@@ -2745,6 +2760,10 @@ async function loadParkingCheckState(){
     PARK_SUBMITTED.am=!!_ledSub.am; PARK_SUBMITTED.pm=!!_ledSub.pm;
     const _subEl=document.getElementById('prsSub_'+PARK_ROUND);
     if(_subEl) _subEl.textContent = PARK_SUBMITTED[_sh] ? '제출완료' : doneHere+'/'+total;
+    const _fillEl=document.getElementById('parkingProgressFill');
+    const _textEl=document.getElementById('parkingProgressText');
+    if(_fillEl) _fillEl.style.width=(total?Math.round(doneHere/total*100):0)+'%';
+    if(_textEl) _textEl.textContent='이번 조 '+doneHere+'/'+total;
     parkRoundsFor(date).forEach(function(_rd){
       if(_rd.key===PARK_ROUND) return;
       const el=document.getElementById('prsSub_'+_rd.key);
