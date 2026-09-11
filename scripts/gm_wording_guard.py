@@ -157,6 +157,16 @@ def format_offense(assistant_text):
         return ("[GM 답변 형식] 8요소 표가 두 장이다(📌 %d개) — 한 턴에 한 장이다.\n"
                 "  보조 표는 8요소 표 아래 최대 1장(목록·비교처럼 표로만 담기는 것)이고, 📌 는 붙이지 않는다.\n"
                 % assistant_text.count("📌")) + FORMAT_HINT
+    # 검사 C — 한 요소를 여러 줄로 늘리지 않는다(GM 지적 2026-09-11 「표 완전 최악이네」).
+    #   8요소 표는 8행이다. 실측을 네 줄, 반영을 세 줄로 쪼개면 표가 11행이 되고 구조가 무너져
+    #   어느 것이 결론인지 안 보인다. 할 말이 많으면 칸 안에서 줄이고 나머지는 보조 표로 내린다.
+    dup = [("%s %s" % (m, n), assistant_text.count(m)) for m, n in EIGHT
+           if assistant_text.count(m) > 1]
+    if dup:
+        return ("[GM 답변 형식] 같은 요소가 여러 줄이다 — %s\n"
+                "  8요소 표는 8행 고정이다. 한 요소 = 한 줄. 내용이 많으면 그 칸 안에서 줄여 쓰고,\n"
+                "  목록이 필요하면 표 아래 보조 표 한 장으로 내린다.\n"
+                % ", ".join("%s %d줄" % (k, v) for k, v in dup)) + FORMAT_HINT
     return None
 
 
