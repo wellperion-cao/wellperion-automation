@@ -9,7 +9,9 @@
    WCAG 대비비 (배경 #F4F0EB 기준)
    --text  #221F20 : 14.41:1  AA/AAA 통과
    --dim   #6E655C :  4.67:1  AA 통과(본문), AAA 미달
-   --accent #63BBA0:  2.72:1  텍스트 금지, 장식·아이콘 전용 */
+   --accent #B79F8A:  2.22:1  텍스트 금지, 버튼 바탕·선·아이콘 전용(그 위 글자는 #221F20)
+   ※ 에메랄드(#63BBA0)는 개인 계정 트랙 전용이라 공식 화면에 쓰지 않는다 —
+     브랜드가이드 §08 「공식 계정 시각물에 에메랄드를 쓰지 않는다」 (GM 지적 2026-09-11) */
 
 :root {
   /* 화면 바탕·카드 */
@@ -36,9 +38,9 @@
   --beige:        #B79F8A;   /* 장식 전용 — 텍스트 금지 */
 
   /* 강조 */
-  --accent:       #63BBA0;
-  --accent-hover: #3F9B80;
-  --accent-bg:    rgba(99,187,160,0.12);
+  --accent:       #B79F8A;   /* 공식 팔레트 베이지 — 브랜드가이드 §03·§08 */
+  --accent-hover: #8F7659;
+  --accent-bg:    rgba(183,159,138,0.16);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,8 +60,8 @@
     --line:         rgba(255,255,255,0.12);
     --border:       rgba(255,255,255,0.10);
     --border-strong:rgba(255,255,255,0.24);
-    --accent:       #63BBA0;
-    --accent-hover: #8ED6BF;
-    --accent-bg:    rgba(99,187,160,0.16);
+    --accent:       #B79F8A;
+    --accent-hover: #D4B89E;
+    --accent-bg:    rgba(183,159,138,0.18);
   }
 }
