@@ -1006,7 +1006,12 @@ def paste_text(input_box, text: str) -> None:
     pyperclip.copy(text)
     time.sleep(0.1)
     try:
-        for way in ("wm_paste", "set_text", "ctrl_v"):
+        # ★순서를 되돌렸다(2026-09-11 12:0x · GM 「자꾸 카톡발송 실패가 뜨는데?」).
+        #   WM_PASTE 는 글은 넣었는데 그 뒤 Enter 가 안 먹어 ★중간관리자 12:00 통이 입력칸에
+        #   그대로 남았다(증거 kakao_send_★중간관리자_send_unconfirmed_20260911_120019.png).
+        #   화면 확대는 다시 볼 수 있지만 발송이 멈추면 안 된다 — 검증된 Ctrl+V 를 먼저 쓰고,
+        #   누른 직후 그 자리에서 수식키를 놓아 눌린 채 남는 창을 없앤다.
+        for way in ("ctrl_v", "wm_paste", "set_text"):
             if way == "wm_paste":
                 hwnd = getattr(input_box, "handle", 0)
                 if not hwnd:
@@ -1018,13 +1023,12 @@ def paste_text(input_box, text: str) -> None:
                 except Exception:
                     continue
             else:
-                log("[paste] WM_PASTE·set_edit_text 둘 다 안 먹어 Ctrl+V 로 넘어간다")
                 input_box.type_keys("^v", pause=0.1)
                 release_modifiers()          # 떼는 신호가 다른 창으로 갔을 수 있다 — 그 자리에서 놓는다
             time.sleep(0.3)
             if _input_box_text(input_box):   # 빈 칸·못 읽음이 아니면 들어간 것
-                if way != "wm_paste":
-                    log("[paste] %s 로 들어갔다" % way)
+                if way != "ctrl_v":
+                    log("[paste] Ctrl+V 가 안 먹어 %s 로 들어갔다" % way)
                 return
     finally:
         if prev is not None:
@@ -2466,14 +2470,17 @@ def _selftest() -> None:
         # ⑥-f 붙여넣기가 Ctrl 없는 길을 먼저 쓰는가(배 2530 재발) + 지금 눌린 수식키 0개인가.
         import inspect as _inspect
         _src = _inspect.getsource(paste_text)
-        # 설명글에도 같은 낱말이 나오므로 실행되는 줄(win32con.·input_box.)로 순서를 본다
-        assert _src.index("win32con.WM_PASTE") < _src.index('input_box.type_keys'), "Ctrl+V 가 먼저 나오면 안 된다"
-        assert "release_modifiers()" in _src, "Ctrl+V 폴백 뒤에 놓는 줄이 있어야 한다"
+        # 2026-09-11 12:0x — 순서를 되돌렸다. WM_PASTE 는 글은 넣는데 그 뒤 Enter 가 안 먹어
+        # 실제 발송이 실패했다. 검증된 Ctrl+V 를 먼저 쓰되, 누른 그 줄 바로 다음에 놓아야 한다.
+        _lines = [l.strip() for l in _src.splitlines()]
+        _i = next(i for i, l in enumerate(_lines) if l.startswith('input_box.type_keys("^v"'))
+        assert _lines[_i + 1].startswith("release_modifiers()"), "Ctrl+V 바로 다음 줄에서 놓아야 한다"
+        assert '("ctrl_v", "wm_paste", "set_text")' in _src, "Ctrl+V 가 첫 순서여야 한다"
         import ctypes as _ct
         _down = [n for k, n in ((0x11, "Ctrl"), (0x10, "Shift"), (0x12, "Alt"), (0x5B, "Win"))
                  if _ct.windll.user32.GetAsyncKeyState(k) & 0x8000]
         assert not _down, "지금 눌린 수식키: %s" % _down
-        print("SELFTEST OK: 붙여넣기는 WM_PASTE 먼저 · 지금 눌린 수식키 0개")
+        print("SELFTEST OK: 붙여넣기는 Ctrl+V 먼저·바로 놓음 · 지금 눌린 수식키 0개")
 
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
