@@ -185,6 +185,63 @@ def owner_select(no: int, who: str) -> str:
     return f'<select class="own-sel" data-o="{no}">{"".join(opts)}</select>'
 
 
+def _fmt_amt(v, unit: str) -> str:
+    """금액은 억·만 단위로 접어 읽는다 — 0 이 여덟 개면 사람이 못 읽는다."""
+    try:
+        n = int(v)
+    except Exception:
+        return f"{v}{unit}"
+    if unit != "원":
+        return f"{n:,}{unit}"
+    if n >= 100000000:
+        eok, rest = divmod(n, 100000000)
+        man = rest // 10000
+        return f"{eok}억" + (f" {man:,}만" if man else "")
+    return f"{n // 10000:,}만" if n >= 10000 else f"{n:,}원"
+
+
+def progress_cell(it: dict) -> str:
+    """목표가 적힌 항목만 진척을 보인다(GM 지시 2026-09-11 「9월 매출 목표 … 진척율도 보여주면 좋을듯」).
+    목표가 없으면 빈 칸 — 없는 숫자를 지어 채우지 않는다."""
+    tgt = it.get("target")
+    if not tgt:
+        return '<td class="pg">—</td>'
+    cur = it.get("current") or 0
+    unit = str(it.get("unit") or "")
+    try:
+        pct = max(0, min(100, round(int(cur) / int(tgt) * 100)))
+    except Exception:
+        return '<td class="pg">—</td>'
+    cls = "pg-ok" if pct >= 80 else ("pg-mid" if pct >= 40 else "pg-low")
+    return (f'<td class="pg" title="{_fmt_amt(cur, unit)} / {_fmt_amt(tgt, unit)}">'
+            f'<div class="bar"><i class="{cls}" style="width:{pct}%"></i></div>'
+            f'<span class="pgn">{pct}%</span>'
+            f'<span class="pgt">{_fmt_amt(cur, unit)} / {_fmt_amt(tgt, unit)}</span></td>')
+
+
+def fill_sales_current(seen: dict) -> None:
+    """매출 책임 줄의 현재값을 이번 달 실측으로 채운다 — 손으로 적으면 하루 만에 낡는다.
+    값을 못 가져오면 아무것도 바꾸지 않는다(0 으로 덮지 않는다 · 지어 채우지 않는다).
+    출처는 아침 통이 쓰는 그 경로 하나다(sales_month · 새 경로를 만들지 않는다 · 약속 L21)."""
+    rows = [it for _n, (_d, it) in seen.items()
+            if it.get("target") and str(it.get("unit") or "") == "원"]
+    if not rows:
+        return
+    try:
+        import ops_daily_digest as o
+        resp = o._gas_get(o.PROC_EXEC_URL,
+                          {"action": "sales_month", "password": o._proc_password()},
+                          timeout=60, label="manager_task_index 매출")
+        data = resp.json() if resp is not None else {}
+        total = (data.get("total") or [None] * 12)[date.today().month - 1] if data.get("ok") else None
+        if total is None:
+            return
+        for it in rows:
+            it["current"] = int(total)
+    except Exception:
+        return
+
+
 def row_html(no: int, seen_date: str, it: dict) -> str:
     age = days_since(seen_date)
     due = str(it.get("due") or "").strip() or "—"
@@ -195,19 +252,25 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
     ss = ('<span class="ss-rc">접수처에서 닫음</span>' if is_reception_item(it)
           else '<span class="ss-no">SSOT 미등록</span>')
     who = str(it.get("owner") or "").strip()      # owner_select 가 escape 한다
+    # 함께 하는 사람(with)은 리드와 한 칸에 두되 눈으로 갈린다 — GM 지시 2026-09-11
+    #   「담당자 구분 확실하게」. 리드가 책임지고, 함께는 같이 한다.
+    helper = str(it.get("with") or "").strip()
+    helper_html = f'<div class="with">함께 {html.escape(helper)}</div>' if helper else ""
     return (f'<tr data-no="{no}"><td class="ck"><input type="checkbox" data-k="mgr-{no}"></td>'
             f'<td class="no">#{no}</td>'
             f'<td class="ti">{html.escape(str(it.get("issue") or ""))}'
             f'{f"<span class=cat>{html.escape(cn)}</span>" if cn else ""}</td>'
-            f'<td class="own">{owner_select(no, who)}</td>'
+            f'<td class="own">{owner_select(no, who)}{helper_html}</td>'
             f'<td class="due">{html.escape(due)}</td>'
+            f'{progress_cell(it)}'
             f'<td class="ss">{ss}</td>'
             f'{note_td}'
             f'<td class="age {age_cls(age)}">{age}일</td></tr>')
 
 
 HEAD_ROW = ('<tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th>'
-            '<th class="own">담당</th><th class="due">기한</th><th class="ss">업무·결재 SSOT</th>'
+            '<th class="own">담당</th><th class="due">기한</th><th class="pg">진척</th>'
+            '<th class="ss">업무·결재 SSOT</th>'
             '<th>최근 상황</th><th class="age">경과</th></tr>')
 
 
@@ -392,6 +455,7 @@ def top_html(items: list[tuple[int, str, dict, str]]) -> str:
 
 def build() -> str:
     seen = latest_by_no()
+    fill_sales_current(seen)
     opens = {n: v for n, v in seen.items() if str(v[1].get("status", "")).lower() not in DONE}
 
     # 목차 화면에서 GM 이 지정한 담당을 원장 빈칸에 채운다(GM 2026-09-10 "SSOT 등록건은 담당자도
@@ -491,10 +555,22 @@ def build() -> str:
       </div>''')
 
     if aside_rt:
+        # 책임은 사람별로 갈라 보인다(GM 지시 2026-09-11 「이경연 실장뿐이 아니라 이정헌 소장,
+        #   나우열M 도 지정해줘」·「상시책임보단 책임 으로 단일로」). 한 덩어리로 두면 누가 무엇을
+        #   책임지는지가 안 보인다 — 이름이 먼저고 그 아래 자기 줄이다.
+        by_who: dict[str, list] = {}
+        for n, d, it in aside_rt:
+            by_who.setdefault(str(it.get("owner") or "담당 미정").strip() or "담당 미정", []).append((n, d, it))
+        order = [m[0] for m in MANAGERS]
+        names = [w for w in order if w in by_who] + [w for w in by_who if w not in order]
+        inner = "\n        ".join(
+            f'<h3 class="rsp">{html.escape(w)} <span class="gc">{len(by_who[w])}건</span></h3>\n        '
+            + table([row_html(n, d, it) for n, d, it in by_who[w]], "없음")
+            for w in names)
         blocks.insert(0, f'''      <div class="blk">
-        <h2>상시 책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · {len(aside_rt)}건 ·
+        <h2>책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · {len(aside_rt)}건 ·
           이 줄은 완료로 닫지 않습니다 — 아래 「업무」와 구분해 주십시오</span></h2>
-        {table([row_html(n, d, it) for n, d, it in aside_rt], "없음")}
+        {inner}
       </div>''')
 
     if aside_rc:
@@ -563,6 +639,18 @@ def build() -> str:
   td.age.warn {{ color:var(--warn); font-weight:700; }}
   td.age.old {{ color:var(--bad); font-weight:900; }}
   td.note {{ color:var(--dim); }}
+  /* 진척 칸·함께 하는 사람·책임 사람머리 (GM 지시 2026-09-11) */
+  td.pg, th.pg {{ width:132px; }}
+  td.pg .bar {{ height:6px; border-radius:3px; background:var(--line); overflow:hidden; }}
+  td.pg .bar i {{ display:block; height:100%; }}
+  td.pg .pg-low {{ background:var(--bad); }}
+  td.pg .pg-mid {{ background:var(--warn); }}
+  td.pg .pg-ok {{ background:#2e7d32; }}
+  td.pg .pgn {{ font-size:11.5px; font-weight:800; margin-right:6px; }}
+  td.pg .pgt {{ font-size:11px; color:var(--dim); }}
+  td.own .with {{ font-size:11.5px; color:var(--dim); margin-top:3px; }}
+  h3.rsp {{ margin:16px 0 6px; font-size:14px; font-weight:800; }}
+  h3.rsp .gc {{ font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }}
   .cat {{ display:inline-block; margin-left:6px; font-size:11.5px; color:var(--dim); border:1px solid var(--line); padding:0 5px; }}
   tr.done td.ti {{ text-decoration:line-through; color:var(--dim); }}
   .empty {{ color:var(--dim); }}
