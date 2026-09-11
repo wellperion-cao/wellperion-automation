@@ -55,7 +55,10 @@ from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch 로직 재사용(중복 복사 금지)
 from module_reporter import REPORT_LOG_PATH, _last_metrics  # noqa: E402 — 지난주 대비용 로그 재사용(새 파일 금지)
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
+# ★2026-09-11 시포 — 화면에 남는 링크는 새 주소(ERP)로. 카톡·텔레그램 발신은 관문
+#   (tg_outbound_log.to_erp_links)이 이미 바꿔 주지만, 이 값은 모듈 상태 파일에
+#   그대로 적혀 자율현황·모듈 보고 화면에 옛 주소로 뜬다(GM 지적 2026-09-11).
+_LINK = "https://erp.wellperion.com/cpo/member/membership.html"
 _MODULE_ID = "cpo-member-rollup"
 
 _TYPO_MAP = {"맴버십": "멤버십", "멥버십": "멤버십"}

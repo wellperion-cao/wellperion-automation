@@ -27,7 +27,10 @@ if _SCRIPTS_DIR not in sys.path:
 from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch·분류 로직 재사용(중복 복사 금지)
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
+# ★2026-09-11 시포 — 화면에 남는 링크는 새 주소(ERP)로. 카톡·텔레그램 발신은 관문
+#   (tg_outbound_log.to_erp_links)이 이미 바꿔 주지만, 이 값은 모듈 상태 파일에
+#   그대로 적혀 자율현황·모듈 보고 화면에 옛 주소로 뜬다(GM 지적 2026-09-11).
+_LINK = "https://erp.wellperion.com/cpo/member/membership.html"
 # 강습은 같은 페이지의 다른 관리 그룹(?manage=lesson)으로 들어가야 한다 — 기본 링크는 멤버십으로 열려서
 # 강습 미응대를 안내하면서 멤버십 화면을 띄우는 어긋남이 있었다(2026-07-23 GM 지적).
 _LINK_LESSON = _LINK + "?manage=lesson"
