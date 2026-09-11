@@ -297,6 +297,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dash-stat-card{flex:1;min-width:80px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
 .dash-stat-card .num{font-size:24px;font-weight:700;color:var(--accent)}
 .dash-stat-card .label{font-size:11px;color:var(--dim);margin-top:2px}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 16px}
+.dash-table th,.dash-table td{padding:8px 10px;text-align:left;border:1px solid var(--border)}
+.dash-table th{background:var(--bg);font-weight:700;color:var(--accent);font-size:12px}
+.dash-table td{vertical-align:middle}
 .dash-section-title{font-size:15px;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 /* ── Header utility buttons ── */
 .header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -644,7 +648,37 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <label for="mpMonthSelect">월 선택</label>
     <select id="mpMonthSelect" onchange="mpOnMonthChange()"></select>
   </div>
-  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">🎯 이달 핵심과제</div>
+
+  <!-- ── ✅ 점검 현황(월간) — monthly_report(action=monthly_report&dept=parking) 라이브 대시보드
+       (지원부 체계.html 「📊 월간 지원부 현황·계획·보고」 탭 본보기 · GM 지시 2026-09-11)
+       주차는 구역 구분이 없고(byZone 은 항상 zone='m' 1행) 성별 구분도 없어 지원부의 구역별 표·남녀 제출량
+       비교는 만들지 않는다. 제출률 분모는 서버 expected_rounds(그 달 1일부터 셈) 대신 화면에서
+       PARK_CHECK_START 부터 다시 센다 — 주차 점검은 이번 달 중간(9/11)에 시작했다.
+       이달 핵심과제·도달율·주차 실결제 매출보다 위에 둔다 — 점검이 먼저 보이는 게 맞다(GM 지시). ── -->
+  <div class="dash-section-title" style="font-size:17px;font-weight:800;margin-top:2px;">✅ 점검 현황(월간)</div>
+  <div id="pmStatus"></div>
+  <div id="pmKpiRow"></div>
+
+  <div class="dash-section-title">일별 추이 — 완료율 · 이슈</div>
+  <div id="pmDailyView" style="padding:6px 0;"></div>
+
+  <div class="dash-section-title">조별 현황</div>
+  <div id="pmShiftView"></div>
+
+  <div class="dash-section-title">점검자별 현황</div>
+  <div id="pmInspectorView"></div>
+
+  <div class="dash-section-title">이슈</div>
+  <div id="pmIssuesSummary"></div>
+  <details id="pmIssuesDetails" style="margin:4px 0 16px;">
+    <summary style="cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;">이슈 원문 보기</summary>
+    <div id="pmIssuesList" style="margin-top:8px;"></div>
+  </details>
+
+  <div class="dash-section-title">개선 시사점</div>
+  <div id="pmImprovements"></div>
+
+  <div class="dash-section-title">🎯 이달 핵심과제</div>
   <div id="mpCards"></div>
   <div style="font-size:11px;color:var(--dim);margin:4px 0 20px;">정본 = 월간운영계획 · 이 화면은 자동 반영(읽기 전용)</div>
 
@@ -935,7 +969,7 @@ function switchTab(tab){
     el.classList.toggle('hidden', el.id!=='tab-'+tab);
   });
   if(tab==='onb'){ if(typeof renderOnboardingTab==='function') renderOnboardingTab(); }
-  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
+  if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); if(typeof loadParkMonthlyReport==='function') loadParkMonthlyReport(); }
 }
 /* 해시 딥링크(예 …#manual) → 로드 시 해당 탭 자동 열기(지원부·시설부 체계와 동일 패턴 · 밤 하루 정리 링크가 청결·점검 체크리스트로 바로 가도록 · 배670 후속 2026-08-20). */
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h==='check') openParkingChecklist(); else if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
@@ -2220,6 +2254,175 @@ async function loadMonthlyPlanTab(monthKey){
   }catch(e){
     if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
   }
+}
+
+/* ═══════════════════════════════════════════
+   ✅ 점검 현황(월간) — monthly_report(action=monthly_report&dept=parking) 라이브 대시보드
+   (지원부 체계.html renderMr* 계열 본보기 · GM 지시 2026-09-11)
+   주차는 구역(zone) 구분이 없고(byZone 은 항상 zone='m' 1행) 성별 구분도 없어 지원부의 구역별 표·
+   남녀 제출량 비교(mrSubmitBreakdown)는 만들지 않는다. 조회는 기존 관문 _chkRead 그대로 쓴다
+   (ERP 도메인이면 서버 미러 /api/check/parking/monthly 먼저 · 아니면 GAS monthly_report).
+   ═══════════════════════════════════════════ */
+const PARK_CHECK_START='2026-09-11'; // 전사일정 park-check-start · GM 확정 — 시작일이 바뀌면 이 한 줄만 고친다
+function pmPctColor(p){ p=Number(p)||0; return p>=90?'var(--green)':p>=60?'var(--yellow)':'var(--red)'; }
+/* GAS _isClosedDay_(.deploy-check/지원팀 일일점검.js, 읽기만 함)와 같은 규칙 — 2·4주 일요일 휴관. */
+function pmIsClosedDay(y,mo,d){
+  const dt=new Date(y,mo-1,d);
+  if(dt.getDay()!==0) return false;
+  const nth=Math.ceil(d/7);
+  return nth===2||nth===4;
+}
+/* 서버 expected_rounds 는 그 달 1일부터 센 값이라 이번 달(9월)엔 틀리다 — 주차 점검은
+   PARK_CHECK_START 부터 시작했다. 시작월이면 그 날부터, 아니면 1일부터 — 오늘까지 휴관일 제외
+   하루 2조(오전조·마감조)로 다시 센다. */
+function pmExpectedRounds(month){
+  const p=month.split('-'); const y=Number(p[0]), mo=Number(p[1]);
+  if(!y||!mo) return 0;
+  const daysInMonth=new Date(y,mo,0).getDate();
+  const todayStr=parkTodayStr();
+  const fromDay=(month===PARK_CHECK_START.slice(0,7))?Number(PARK_CHECK_START.slice(8,10)):1;
+  let total=0;
+  for(let d=fromDay; d<=daysInMonth; d++){
+    const ymd=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    if(ymd>todayStr) break;
+    if(pmIsClosedDay(y,mo,d)) continue;
+    total+=2;
+  }
+  return total;
+}
+function pmDefaultMonth(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+async function fetchParkMonthlyReport(month){
+  const j=await _chkRead('/api/check/parking/monthly?month='+encodeURIComponent(month), '?action=monthly_report&dept=parking&month='+encodeURIComponent(month), '주차 월간리포트');
+  if(!j || j.ok===false) throw new Error('monthly_report 응답 오류');
+  return j;
+}
+async function loadParkMonthlyReport(){
+  const month=pmDefaultMonth();
+  const statusEl=document.getElementById('pmStatus');
+  if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--dim);font-size:13px;">불러오는 중...</div>';
+  try{
+    const data=await fetchParkMonthlyReport(month);
+    const noData=(((data.monthTotals||{}).sessionCount)||0)===0 && (data.dailySeries||[]).length===0;
+    if(statusEl) statusEl.innerHTML=noData?'<div style="text-align:center;padding:12px 0;color:var(--dim);font-size:13px;">이번 달 제출 없음</div>':'';
+    renderPmKpi(data,month);
+    renderPmDaily(data);
+    renderPmShift(data);
+    renderPmInspector(data);
+    renderPmIssues(data);
+    renderPmImprovements(data);
+  }catch(e){
+    if(statusEl) statusEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--red);font-size:13px;">'+(e&&e.authExpired?'로그인이 풀렸습니다 — 다시 로그인해 주세요.':'점검 현황을 불러오지 못했습니다 — 새로고침 후에도 같으면 알려 주세요.')+'</div>';
+    ['pmKpiRow','pmDailyView','pmShiftView','pmInspectorView','pmIssuesSummary','pmIssuesList','pmImprovements'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=''; });
+  }
+}
+function renderPmKpi(data,month){
+  const el=document.getElementById('pmKpiRow');
+  if(!el) return;
+  const t=data.monthTotals||{};
+  const submitted=Number(data.submitted_rounds!=null?data.submitted_rounds:(t.sessionCount||0));
+  const expected=pmExpectedRounds(month);
+  const submitPct=expected?Math.round(submitted/expected*100):null;
+  const noData=(t.sessionCount||0)===0 && t.avgPct==null;
+  const pct=(t.avgPct!=null?t.avgPct:0);
+  el.innerHTML =
+    '<div class="dash-stat-row">'
+    +'<div class="dash-stat-card"><div class="num">'+submitted+'</div><div class="label">제출 회차</div></div>'
+    +'<div class="dash-stat-card"><div class="num">'+expected+'</div><div class="label">예정 회차</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+(submitPct==null?'var(--dim)':pmPctColor(submitPct))+'">'+(submitPct==null?'—':submitPct+'%')+'</div><div class="label">제출률</div></div>'
+    +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">점검한 날</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+(noData?'var(--dim)':pmPctColor(pct))+'">'+(noData?'—':pct+'%')+'</div><div class="label">평균 완료율</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:var(--red)">'+(t.issueCount||0)+'</div><div class="label">이슈 건수</div></div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 10px;">9/11 시작 기준 — 예정 회차는 '+PARK_CHECK_START+'부터 오늘까지 휴관일(2·4주 일요일) 제외 하루 2조로 계산</div>';
+}
+function renderPmDaily(data){
+  const el=document.getElementById('pmDailyView');
+  if(!el) return;
+  const series=data.dailySeries||[];
+  if(series.length===0){ el.innerHTML='<div style="padding:14px;text-align:center;color:var(--dim);font-size:13px;">일별 데이터 없음</div>'; return; }
+  let html='<div style="display:flex;align-items:flex-end;gap:5px;height:120px;padding:6px 0 4px;overflow-x:auto;">';
+  series.forEach(function(d){
+    const pct=Number(d.pct)||0;
+    const barH=Math.max(Math.round((pct/100)*80),2);
+    const dateLabel=(d.date||'').slice(8,10);
+    html+='<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:22px;">'
+      +'<div style="font-size:9px;font-weight:700;color:'+pmPctColor(pct)+';">'+pct+'%</div>'
+      +'<div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;">'
+      +'<div style="width:14px;height:'+barH+'px;border-radius:3px 3px 0 0;background:var(--accent);min-height:2px;" title="'+escapeHTML(d.date+' '+pct+'% ('+d.sumDone+'/'+d.sumTotal+') 이슈 '+(d.issueCount||0)+'건')+'"></div>'
+      +'</div>'
+      +'<div style="font-size:9px;color:var(--dim);text-align:center;">'+dateLabel+(d.issueCount?'<br><span style="color:var(--red);">!'+d.issueCount+'</span>':'')+'</div>'
+      +'</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+/* 조별 현황 — am→오전조 · pm→마감조(주차는 오후조가 없다). 응답에 없는 조는 0·「제출 없음」을 그대로 보인다. */
+function renderPmShift(data){
+  const el=document.getElementById('pmShiftView');
+  if(!el) return;
+  const rows=data.byShift||[];
+  const byKey={};
+  rows.forEach(function(r){ byKey[String(r.shift)]=r; });
+  const order=[['am','오전조'],['pm','마감조']];
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>조</th><th>세션</th><th>완료율</th><th>이슈</th></tr>';
+  order.forEach(function(o){
+    const r=byKey[o[0]];
+    if(r){
+      html+='<tr><td>'+o[1]+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+pmPctColor(r.pct)+';font-weight:700;">'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>';
+    }else{
+      html+='<tr><td>'+o[1]+'</td><td>0</td><td style="color:var(--dim);">제출 없음</td><td>0</td></tr>';
+    }
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+function renderPmInspector(data){
+  const el=document.getElementById('pmInspectorView');
+  if(!el) return;
+  const rows=data.byInspector||[];
+  if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">점검자별 데이터 없음</div>'; return; }
+  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>제출 세션</th><th>평균 완료율</th></tr>';
+  rows.forEach(function(r){
+    html+='<tr><td>'+escapeHTML(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+pmPctColor(r.avgPct)+';font-weight:700;">'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>';
+  });
+  html+='</table></div>';
+  el.innerHTML=html;
+}
+function renderPmIssues(data){
+  const sumEl=document.getElementById('pmIssuesSummary');
+  const listEl=document.getElementById('pmIssuesList');
+  const detailsEl=document.getElementById('pmIssuesDetails');
+  const issues=data.issues||{total:0,list:[]};
+  if(sumEl){
+    sumEl.innerHTML=(issues.total||0)===0
+      ? '<div style="padding:8px 0;color:var(--dim);font-size:12.5px;">이슈 없음</div>'
+      : '<div style="font-size:13px;"><b>이슈 누적 '+(issues.total||0)+'건</b></div>';
+  }
+  if(detailsEl){
+    const summaryEl=detailsEl.querySelector('summary');
+    if(summaryEl) summaryEl.textContent='이슈 원문 보기 ('+(issues.total||0)+'건)';
+  }
+  if(listEl){
+    const list=issues.list||[];
+    if(list.length===0){ listEl.innerHTML='<div style="padding:8px;color:var(--dim);font-size:13px;">이슈 없음</div>'; return; }
+    let html='';
+    list.forEach(function(iss){
+      html+='<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px;"><span style="color:var(--dim);">['+escapeHTML(iss.date)+' '+escapeHTML(iss.shift)+' '+escapeHTML(iss.inspector)+']</span> '+escapeHTML(iss.text)+'</div>';
+    });
+    listEl.innerHTML=html;
+  }
+}
+/* 개선 시사점 — '구역' 문구가 든 건 뺀다(주차는 구역 구분이 없어 지원부용 문구가 그대로 섞여 나온다). */
+function renderPmImprovements(data){
+  const el=document.getElementById('pmImprovements');
+  if(!el) return;
+  const arr=(data.improvements||[]).filter(function(txt){ return String(txt||'').indexOf('구역')<0; });
+  if(arr.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">개선 시사점 없음</div>'; return; }
+  let html='';
+  arr.forEach(function(txt){
+    html+='<div class="admin-card" style="padding:10px 14px;margin-bottom:8px;font-size:13px;">· '+escapeHTML(txt)+'</div>';
+  });
+  el.innerHTML=html;
 }
 
 /* ── ✅ 주차 실적(월간) — status/parking_revenue.json 직독 (크롤러 매일 07:00 발행 · 실결제 payAmt 기준) ── */
