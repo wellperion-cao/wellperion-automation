@@ -138,8 +138,6 @@
      ★2026-09-10 수리 — 권한 판에 width:calc(100vw - 80px) 이 박혀 있었다. 왼쪽 메뉴가 없던
      시절의 값이라 240px 메뉴가 생긴 뒤로 화면이 오른쪽으로 176px 밀려 잘렸다(실측).
      이제 폭을 지정하지 않는다 — 본문이 이미 메뉴 오른쪽 전부를 쓴다. */
-  #adm-frame, #use-frame{width:100%; height:calc(100vh - 132px); min-height:520px;
-             border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
   @media(max-width:900px){
     /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 240px 를 세로로 두면 본문이 화면 밖으로 밀린다 */
     .shell{grid-template-columns:1fr;}
@@ -185,8 +183,8 @@
   <div id="menu-admin" hidden>
     <div class="sep"></div>
     <div class="cap">관리</div>
-    <a href="#use" data-go="use"><span class="t">비용</span></a>
-    <a href="#adm" data-go="adm"><span class="t">권한</span></a>
+    <a href="../cto/automation/토큰 사용량.html"><span class="t">비용</span></a>
+    <a href="/auth/admin"><span class="t">권한</span></a>
   </div>
   <div class="sep"></div>
   <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">회사 관리자 콘솔 ↑</span></a>
@@ -201,17 +199,6 @@
     <div id="sections-doc"><div class="msg">불러오는 중…</div></div>
   </div>
 
-  <div id="pane-use" role="tabpanel" hidden>
-    <!-- 제목·설명을 여기 두지 않는다 — 끼워 띄우는 페이지가 자기 제목을 이미 갖고 있어 두 번 나온다(GM 지적 2026-09-09). -->
-    <iframe id="use-frame" title="토큰 사용량" src="about:blank"></iframe>
-  </div>
-
-  <div id="pane-adm" role="tabpanel" hidden>
-    <details class="tip"><summary>권한 · 관리자 비밀번호를 한 번 더 넣습니다</summary>
-      누구에게 어떤 화면을 열어줄지 정하는 곳입니다. 로그인과 별개인 관리자 비밀번호를 30분마다 한 번 더 넣습니다.
-      아래가 비어 보이면 <a href="/auth/admin" target="_blank" rel="noopener">새 창으로 열기</a>.</details>
-    <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
-  </div>
 </div>
 </div><!-- /shell -->
 
@@ -369,13 +356,10 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var admLoaded = false, useLoaded = false;
-var PANES = ['mod', 'doc', 'use', 'adm'];
+var PANES = ['mod', 'doc'];   // 비용·권한은 그 화면으로 바로 간다(끼워 띄우지 않는다 · GM 2026-09-11)
 
 function showPane(which){
   PANES.forEach(function(k){ document.getElementById('pane-' + k).hidden = (k !== which); });
-  if (which === 'use' && !useLoaded) { useLoaded = true; document.getElementById('use-frame').src = '../cto/automation/토큰 사용량.html'; }
-  if (which === 'adm' && !admLoaded) { admLoaded = true; document.getElementById('adm-frame').src = '/auth/admin'; }
 }
 
 // 모듈 그룹 하나만 띄운다 — 42장을 한 줄로 늘어놓지 않는다.
