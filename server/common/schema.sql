@@ -481,6 +481,15 @@ UPDATE members SET end_reason_memo  = COALESCE(end_reason_memo,  data::jsonb->>'
 --   · 모든 표에 tenant_id(기본 'wellperion') — 조회는 전부 tenant_id 로 거른다.
 --   · 시트 1행 = DB 1행인 표는 UNIQUE (tenant_id, legacy_tab, legacy_row) 를 갖는다.
 --     적재를 이 열쇠로 upsert 해서 migrate_hr.py 를 몇 번 돌려도 같은 결과가 되게(멱등) 만든다.
+--   · ⚠️ 단 표마다 적재 열쇠가 다를 수 있고 정본은 각 표의 UNIQUE 제약이다 — 위 (탭, 행번호)를 전 탭에
+--     일률 적용하지 않는다. 머리말이 그 한 줄만 적어 둔 탓에 적재 도구가 전 탭에 (탭, 행번호)를 하드코딩했고,
+--     예외인 휴무는 예외라는 사실 자체가 문서에 없었다. 표별 적재 열쇠 목록(정본은 각 표의 UNIQUE):
+--       기본     = (탭, 행번호)   현재근무자·퇴사자·지원자·채용공고·인사평가·온보딩·퇴사처리·블랙리스트·근무변경·개인일정·자동화로그
+--       휴무     = (성명, 날짜)   hr.leave_entry — 5,603행 실측 중복 0쌍이라 이쪽이 사실상 열쇠다
+--       연차원장 = (성명, 연도)   hr.leave_ledger
+--       공휴일   = (날짜)         hr.holiday — 기본키 자체가 (tenant_id, holiday_date)
+--     ★(탭, 행번호)가 유일 열쇠가 아닌 표에도 그 조합의 '유일하지 않은' 보조 인덱스는 둔다 — 행번호로 되짚는
+--       조회(rNN 역인덱스 채우기·전수 대조)에 쓴다. 유일로 만들면 중복행 보존 관행과 충돌하므로 유일이 아니어야 한다.
 --   · data JSONB = 시트 원본 레코드 통째. 화면(chro/hub/index.html)이 지금 GAS 응답의 한글 칸 이름을 그대로 읽으므로
 --     ①읽기 미러 단계에서는 이 칸을 그대로 돌려주면 화면 수정이 0 이 된다(다른 ERP 미러 표와 같은 방식).
 --     ★⑤단계(GAS 끄기) 뒤에는 정규화 칸이 정본이고 data 는 지워도 된다 — 그때까지의 다리다.
@@ -776,6 +785,9 @@ CREATE INDEX IF NOT EXISTS ix_hr_blacklist_name ON hr.hire_blacklist (tenant_id,
 --   해석 칸을 추측으로 채우지 않는다. 판정이 끝나면 raw_value 를 다시 읽어 해석 칸만 채우면 된다.
 -- 유니크: (성명, 날짜)가 사실상 열쇠다(5,603행 실측 중복 0쌍). employee_id 는 NULL 이 섞이므로(고아 11명)
 --   유니크는 이름 기준으로 건다 — 그래야 FK 정합 여부와 무관하게 중복행이 구조적으로 불가능해진다.
+-- ★이 표가 머리말 '기본 열쇠 = (탭, 행번호)'의 예외다(머리말 표별 적재 열쇠 목록 참고). 유일 제약은
+--   (성명, 날짜) 그대로 두고, (탭, 행번호)는 아래 '유일하지 않은' 보조 인덱스로만 둔다 — 행번호로 되짚는
+--   조회(rNN 역인덱스 채우기·전수 대조)에 쓰기 위한 것이고, 유일로 만들면 중복행 보존 관행과 충돌한다.
 CREATE TABLE IF NOT EXISTS hr.leave_entry (
   leave_id        BIGSERIAL PRIMARY KEY,
   tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
@@ -799,6 +811,8 @@ CREATE TABLE IF NOT EXISTS hr.leave_entry (
 );
 CREATE INDEX IF NOT EXISTS ix_hr_leave_emp_date ON hr.leave_entry (tenant_id, employee_id, work_date);
 CREATE INDEX IF NOT EXISTS ix_hr_leave_date     ON hr.leave_entry (tenant_id, work_date);
+-- (탭, 행번호) 되짚기용 보조 인덱스 — ⛔ 유일이 아니다(위 ★ 참고). 유일 제약은 (성명, 날짜) 하나뿐이다.
+CREATE INDEX IF NOT EXISTS ix_hr_leave_legacy   ON hr.leave_entry (tenant_id, legacy_tab, legacy_row);
 
 -- ── 13. 연차원장 ────────────────────────────────────────────────────────────────────────────────
 -- ★공란은 '미확정'이다 — 0 으로 채우지 않는다(0 으로 채우면 잔여 연차가 조용히 틀린다). 그래서 전부 NULL 허용.
@@ -969,6 +983,35 @@ CREATE TABLE IF NOT EXISTS hr.migration_step (
   at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ix_hr_migstep_run ON hr.migration_step (run_id, at);
+
+-- ── 22. 조회 기록(열람 원장) ────────────────────────────────────────────────────────────────────
+-- 인사·문의·회원·업무 어느 도메인에도 '열람' 기록이 없다 — 남는 것은 쓰기 원장뿐이고, 관문 접근 로그도
+-- 저장소 설정에 지시자가 없다. 시범 전환 시점부터는 원문이 서버에서 나가므로 그 전에 기록 자리가 있어야 한다.
+-- 관문이 로그인 이메일을 상류로 넘기고 있어(erp_api/api.nginx.conf) '누가'는 이미 확보돼 있다.
+-- ⛔ 행 내용·개인정보 값은 담지 않는다. 남기는 것은 '누가·언제·어느 열쇠를·마스킹 여부'까지다.
+--    (params 에도 상한·시작위치·기간·테스트 포함 여부 같은 요청 파라미터만 넣는다 — 조회 결과는 넣지 않는다.)
+-- ⚠️ 배포 준비물: 서버 DB 계정에 이 표의 INSERT 권한이 필요하다. 읽기 라우트는 읽기 전용 세션으로 열기 때문에
+--    같은 연결로는 못 쓰고, 기록 전용 쓰기 연결을 짧게 열고 닫는다(api_hr.py).
+-- ⚠️ 보존기간은 미정이다 — 파기·보유기간 정책이 법적 검토 지점이라 표만 만들고 삭제 배치는 넣지 않는다.
+--    나중에 기존 정리 스크립트(prune_track.py 계열)와 같은 방식으로 붙일 수 있게 시각 인덱스만 미리 둔다.
+CREATE TABLE IF NOT EXISTS hr.access_log (
+  access_id       BIGSERIAL PRIMARY KEY,
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  occurred_at     TIMESTAMPTZ NOT NULL DEFAULT now(),      -- 시간대 포함 — 서버가 UTC 여도 뒤에 맞춰 읽을 수 있다
+  user_email      TEXT,                                    -- [PII] 관문이 넘긴 로그인 이메일(화면이 보낸 이름이 아니다)
+  role            TEXT,                                    -- 판정 역할 admin · viewer (헤더 원문이 아니라 판정 결과)
+  db_key          TEXT,                                    -- 조회 열쇠 emp·appl·leave·autolog…
+  route           TEXT,                                    -- 'GET /api/hr/{db}' · 'POST /api/hr/read'
+  response_status TEXT,                                    -- ok · scope-blocked · unknown-db · bad-date · db-error …
+  row_count       INTEGER,                                 -- 반환 행수(내용은 담지 않는다)
+  masked          BOOLEAN,                                 -- ★봉투의 masked 와 같은 값 — 사후 '누가 원문을 봤나' 대조의 근거
+  params          JSONB,                                   -- 상한·시작위치·기간·테스트 포함 여부만
+  deny_reason     TEXT,
+  client_ip       TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_hr_acclog_at   ON hr.access_log (tenant_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS ix_hr_acclog_user ON hr.access_log (tenant_id, user_email, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS ix_hr_acclog_key  ON hr.access_log (tenant_id, db_key, occurred_at DESC);
 
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- 2단계 조이기(hardening) — 지금은 '일부러' 걸지 않은 제약 목록.
