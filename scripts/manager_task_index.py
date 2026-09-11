@@ -226,6 +226,22 @@ def is_reception_item(it: dict) -> bool:
     return any(w in text for w in _RECEPTION_WORDS)
 
 
+# 업무 구분 (GM 2026-09-11 「중간관리자 업무에 종합접수처 등의 내용까지 업무화 시켜놨던데,
+#   업무구분이 명확해야할 것 같아」). 낱말 추측보다 원장의 kind 값이 먼저다 — 추측은 kind 가
+#   없을 때만 쓴다. 값을 두 곳에 두지 않으려고 판정은 이 함수 하나만 쓴다.
+#     routine   = 끝나지 않는 상시 책임(주간 점검·접수 마무리·점검 이행·SSOT 갱신)
+#     reception = 종합접수처에서 열려 그 화면에서 닫히는 건
+#     task      = 기한이 있고 끝나면 닫히는 일 — 이것만이 「업무」다
+KINDS = ("routine", "reception", "task")
+
+
+def kind_of(it: dict) -> str:
+    k = str(it.get("kind") or "").strip().lower()
+    if k in KINDS:
+        return k
+    return "reception" if is_reception_item(it) else "task"
+
+
 OWNER_BOARD_KEY = "MGR_TASK_OWNER"      # 목차에서 GM 이 지정한 담당(공용 보드) — 체크(MGR_TASK_DONE)와 같은 보드
 BOARD_URL = ("https://script.google.com/macros/s/"
              "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec")
@@ -401,11 +417,13 @@ def build() -> str:
                 remain[n] = (d, it)
         opens = remain
 
-    # ② 열린 목록에서 가를 것 둘 — 원장은 그대로 두고 화면에서만 접는다.
+    # ② 열린 목록에서 가를 것 셋 — 원장은 그대로 두고 화면에서만 가른다.
     dup_of = find_dups(opens)
     aside_dup = [(n, *opens.pop(n)) for n in sorted(dup_of)]
+    aside_rt = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
+                                                   if kind_of(it) == "routine")]
     aside_rc = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
-                                                   if is_reception_item(it))]
+                                                   if kind_of(it) == "reception")]
 
     blocks = []
     counts = []
@@ -454,6 +472,13 @@ def build() -> str:
         {moved_rows}
         </ul>
         </details>
+      </div>''')
+
+    if aside_rt:
+        blocks.insert(0, f'''      <div class="blk">
+        <h2>상시 책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · {len(aside_rt)}건 ·
+          이 줄은 완료로 닫지 않습니다 — 아래 「업무」와 구분해 주십시오</span></h2>
+        {table([row_html(n, d, it) for n, d, it in aside_rt], "없음")}
       </div>''')
 
     if aside_rc:
