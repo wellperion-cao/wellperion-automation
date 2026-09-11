@@ -160,8 +160,10 @@ def format_offense(assistant_text):
     # 검사 C — 한 요소를 여러 줄로 늘리지 않는다(GM 지적 2026-09-11 「표 완전 최악이네」).
     #   8요소 표는 8행이다. 실측을 네 줄, 반영을 세 줄로 쪼개면 표가 11행이 되고 구조가 무너져
     #   어느 것이 결론인지 안 보인다. 할 말이 많으면 칸 안에서 줄이고 나머지는 보조 표로 내린다.
-    dup = [("%s %s" % (m, n), assistant_text.count(m)) for m, n in EIGHT
-           if assistant_text.count(m) > 1]
+    #   표 안 줄(| 로 시작)만 센다 — 맨 위 상태 결론 줄의 ✅·⏳ 는 규칙이 허용하는 자리다.
+    rows = [s for s in body if s.startswith("|")]
+    dup = [("%s %s" % (m, n), sum(s.count(m) for s in rows)) for m, n in EIGHT
+           if sum(s.count(m) for s in rows) > 1]
     if dup:
         return ("[GM 답변 형식] 같은 요소가 여러 줄이다 — %s\n"
                 "  8요소 표는 8행 고정이다. 한 요소 = 한 줄. 내용이 많으면 그 칸 안에서 줄여 쓰고,\n"
