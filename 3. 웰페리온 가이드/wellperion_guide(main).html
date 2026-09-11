@@ -7318,7 +7318,7 @@ function crTab(btn, panelId) {
       mainLinks.forEach(l => l.classList.remove('active'));
       document.querySelectorAll('.nav > a[data-toggle]').forEach(t => t.classList.toggle('active', t === link && willOpen));
       const hubId = link.getAttribute('data-id');
-      if (hubId) { activateDoc(hubId, null); location.hash = hubId; }
+      if (hubId) { activateDoc(hubId, null); setHash(hubId); }
     });
   });
 
@@ -7336,7 +7336,7 @@ function crTab(btn, panelId) {
       document.querySelectorAll('.nav > a[data-toggle]').forEach(t => t.classList.remove('active'));
       link.classList.add('active');
       activateDoc(id, null);
-      if (pubId) location.hash = pubId;   // URL = 식별자 (2026-06-01 GM)
+      if (pubId) setHash(pubId);   // URL = 식별자 (2026-06-01 GM)
     });
   });
 
@@ -7359,7 +7359,7 @@ function crTab(btn, panelId) {
         t.classList.toggle('active', t.getAttribute('data-toggle') === parentNavId);
       });
       activateDoc(id, tab);
-      if (pubId) location.hash = tab ? (pubId + '/' + tab) : pubId;   // URL = 식별자(+탭) (2026-06-01 GM)
+      if (pubId) setHash(tab ? (pubId + '/' + tab) : pubId);   // URL = 식별자(+탭) (2026-06-01 GM)
     });
   });
 
@@ -7376,6 +7376,21 @@ function crTab(btn, panelId) {
       if (curDoc && curDoc.id) { history.replaceState(null, '', '#' + curDoc.id + '/' + tabName); }
     });
   });
+
+  // 홈은 주소를 깨끗하게 둔다 — /home#home 이 아니라 /home (GM 지시 2026-09-11).
+  // 홈은 아무 해시도 없을 때의 기본 화면이라, 해시를 적어 두면 같은 곳을 두 가지 주소로 부르게 된다.
+  // replaceState 라 뒤로가기 기록이 늘지 않고 화면도 안 튄다.
+  function setHash(v) {
+    if (!v || v === 'home') {
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      return;
+    }
+    location.hash = v;
+  }
+  // 이미 #home 이 붙은 북마크로 들어와도 주소를 정리한다.
+  if ((location.hash || '').replace(/^#/, '') === 'home') {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
 
   // 해시 딥링크 — #S2/ceo 처럼 "#문서/탭" 으로 직접 진입 (예: 운영 기본값 SSOT)
   function applyHashDeepLink() {
