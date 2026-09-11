@@ -201,13 +201,13 @@ tr.xp .mcards{position:sticky;left:0}  /* 너비는 JS 가 표 스크롤 영역 
 </head>
 <body>
 <header class="top"><div class="top-in">
-  <a class="brand" href="/erp/">WELLPERION<small>권한 관리</small></a>
+  <a class="brand" id="brandLink" href="/erp/">WELLPERION<small>권한 관리</small></a>
   <nav class="tabs" role="tablist" aria-label="권한 관리 화면">
     <button class="tab" role="tab" data-tab="pending">차단·잠금<b id="n-pending">0</b></button>
     <button class="tab" role="tab" data-tab="people" aria-selected="true">사람<b id="n-people">0</b></button>
     <button class="tab" role="tab" data-tab="depts">부서 기본</button>
     <button class="tab" role="tab" data-tab="screens">화면<b id="n-screens">0</b></button>
-    <button class="tab" role="tab" data-tab="push">커밋·푸시 승인<b id="n-push">0</b></button>
+    <button class="tab" role="tab" data-tab="push">배포 승인<b id="n-push">0</b></button>
     <button class="tab" role="tab" data-tab="history">이력</button>
   </nav>
   <span class="sp"></span>
@@ -289,10 +289,10 @@ tr.xp .mcards{position:sticky;left:0}  /* 너비는 JS 가 표 스크롤 영역 
     </div>
   </section>
 
-  <!-- 커밋·푸시 승인 -->
+  <!-- 배포 승인 -->
   <section class="panel" id="p-push" role="tabpanel">
     <div class="card">
-      <h2>🔒 커밋·푸시 승인 현황</h2>
+      <h2>🔒 배포 승인 현황</h2>
       <p class="sub">AWS 최신버전 외 수정·데이터 이관 커밋은 GM 승인 전엔 배포되지 않습니다. 이 표는 현황만 — <b>승인·반려는 GM 개인 봇방 카드([✅ 승인]/[⛔ 반려])에서만</b> 처리됩니다.</p>
       <div class="tw"><table><thead><tr><th>요청 시각</th><th>요청 역할</th><th>경로</th><th>요약</th><th>상태</th><th>결정자 · 시각</th></tr></thead><tbody id="push-body"></tbody></table></div>
     </div>
@@ -620,5 +620,11 @@ STATE_SHAPE — GET /auth/admin/api/state (관리자 쿠키 필요 · 없으면 
   "history": [{"id":31,"uid":7,"name":"홍길동","changed_by":"ceo@wellperion.com","changed_at":"2026-09-05 11:02","before":"{…}","after":"{…}"}]
 }
 -->
+<script>
+// 파트너사 관리자 화면이 이 화면을 안에 끼워 띄운다(GM 지적 2026-09-11).
+// 그때는 바깥에 이미 상단바가 있어 이 줄이 두 번 보이고, 눌러도 안쪽에 화면이 또 떴다.
+// 끼워진 경우에만 감춘다 — 주소로 바로 열면 그대로 보인다.
+try{ if (window.self !== window.top) { document.getElementById('brandLink').hidden = true; } }catch(e){}
+</script>
 </body>
 </html>
