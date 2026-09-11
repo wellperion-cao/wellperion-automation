@@ -220,7 +220,7 @@ tr.xp .mcards{position:sticky;left:0}  /* 너비는 JS 가 표 스크롤 영역 
   <div class="card" id="pend-strip-card">
     <h2>승인 대기</h2>
     <p class="sub">한 줄 승인/반려. 승인하면 신청한 부서 기본 화면이 바로 열립니다.</p>
-    <div class="tw"><table><thead><tr><th>이름</th><th>부서</th><th>신청 시각</th><th></th></tr></thead><tbody id="pend-strip-body"></tbody></table></div>
+    <div class="tw"><table><thead><tr><th>이름</th><th>부서·직급</th><th>신청 시각</th><th></th></tr></thead><tbody id="pend-strip-body"></tbody></table></div>
   </div>
   <div class="stat-row" id="stats"></div>
 
@@ -336,6 +336,9 @@ const tot=g=>S.modules.filter(m=>(m.appgroup||'문서함')===g).length;
 const statusKo={active:'사용 중',pending:'승인 대기',blocked:'차단'};
 const statusCls={active:'ok',pending:'warn',blocked:'bad'};
 const dept=u=>(perms(u)||{}).dept||u.dept||'';
+/* 직급·층 — 승인 판단 근거다(GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해」). */
+const rank=u=>(perms(u)||{}).rank||'';
+const tierKo=u=>((perms(u)||{}).tier==='leader'?'리더급':((perms(u)||{}).tier?'팀원급':''));
 const locked=u=>!!(u.perms&&u.perms.locked);
 const isMe=u=>S.me&&u.id===S.me.id;
 
@@ -380,7 +383,7 @@ function render(){
 function renderPendingStrip(pend){
   // 항상 맨 위 · 한 줄 승인/반려(배1026 2026-09-07 · GM "정리 끝나면 가입 안내") — 탭과 무관하게 보인다.
   $('#pend-strip-body').innerHTML=pend.length?pend.map(u=>`<tr><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td>
-    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'}</td><td><small>${esc(u.created_at||'')}</small></td>
+    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'}${rank(u)?` <span class="tag">${esc(rank(u))}${tierKo(u)?' · '+tierKo(u):''}</span>`:''}</td><td><small>${esc(u.created_at||'')}</small></td>
     <td><div class="acts"><button class="btn ok sm" data-act="approve" data-uid="${u.id}">승인</button><button class="btn danger sm" data-act="block" data-uid="${u.id}">반려</button></div></td></tr>`).join('')
     :'<tr><td colspan="4" class="empty">대기 없음</td></tr>';
 }

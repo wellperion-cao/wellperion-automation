@@ -122,6 +122,48 @@ def dept_modules(dept: str) -> list:
     return dept_presets().get(dept, [])
 
 
+# ── 직급 → 권한 층 (GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해, 그래서 직급도 받아야해」) ──
+# 정본 = ssot/ranks.json 한 곳. 화면·코드에 직급 이름을 박지 않는다(약속 L01).
+# 서버는 /srv/erp/repo(매분 내려받는 저장소 체크아웃)를, 로컬은 이 저장소를 본다.
+_RANKS_PATHS = ("/srv/erp/repo/ssot/ranks.json",
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                             "ssot", "ranks.json"))
+_RANKS: tuple = (None, None)
+
+
+def ranks_raw() -> dict:
+    """ranks.json 그대로. 못 읽으면 빈 dict — 직급 칸이 비어도 가입 자체는 막지 않는다."""
+    global _RANKS
+    for p in _RANKS_PATHS:
+        try:
+            mt = os.stat(p).st_mtime
+        except OSError:
+            continue
+        if _RANKS[0] != (p, mt):
+            with open(p, encoding="utf-8") as f:
+                _RANKS = ((p, mt), json.load(f))
+        return _RANKS[1] or {}
+    return {}
+
+
+def rank_names() -> list:
+    return [str(r.get("name") or "").strip() for r in (ranks_raw().get("ranks") or []) if r.get("name")]
+
+
+def rank_tier(rank: str) -> str:
+    """그 직급이 리더급인가 팀원급인가. 모르는 값이면 member(좁은 쪽) — 안전한 쪽으로 떨어뜨린다."""
+    key = str(rank or "").strip()
+    for r in (ranks_raw().get("ranks") or []):
+        if str(r.get("name") or "").strip() == key:
+            return "leader" if r.get("tier") == "leader" else "member"
+    return "member"
+
+
+def tier_deny(tier: str) -> list:
+    """팀원급에서 빼는 화면 — 층에 한 번만 적고 부서마다 복제하지 않는다."""
+    return [] if tier == "leader" else list(ranks_raw().get("member_deny") or [])
+
+
 # 개인 예외 3건(GM 확정 2026-09-05 §3) — 부서 템플릿·groups·all 매칭으로는 절대 안 열린다.
 # GM 이 관리자 화면에서 그 사람에게만 modules 로 콕 집어 켜야 보인다(월간운영계획=이경연 실장·GM업무=김남욱 GM·
 # 인사재무/채용=나우열M). 매출회원보고·자율현황·카톡전송관리도 경영진 전용이라 같은 방식으로 묶는다.
@@ -760,6 +802,8 @@ SIGNUP_JS = r"""
 @app.get("/auth/signup")
 def signup_page(msg: str = ""):
     dept_opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
+    # 직급 목록은 ssot/ranks.json 에서 읽는다 — 화면에 이름을 박지 않는다.
+    rank_opts = "".join(f"<option value='{escape(r)}'>{escape(r)}</option>" for r in rank_names())
     return page("웰페리온 ERP 가입 신청", head("직원용 업무 화면 · 가입 신청") + f"""<form method=post action=/auth/signup>
 <h1>가입 신청</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 <label>아이디<input id=uid name=username autocomplete=username maxlength=40
@@ -768,6 +812,7 @@ placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
 <label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
 <label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
+<label>직급<select name=rank required><option value="">선택</option>{rank_opts}</select></label>
 <button>신청</button><div class=foot><p>신청하면 GM 께 알림이 갑니다. <b>GM 이 승인해야</b> 그 계정으로 로그인할 수 있습니다. 이름·연락처·부서는 GM 이 보고 판단하는 값이니 정확히 적어 주세요.</p>
 <p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>
 """ + SIGNUP_JS + """""")
@@ -775,7 +820,7 @@ placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 
 @app.post("/auth/signup")
 def signup(name: str = Form(...), username: str = Form(...), password: str = Form(...),
-           phone: str = Form(...), dept: str = Form(...)):
+           phone: str = Form(...), dept: str = Form(...), rank: str = Form("")):
     name = name.strip()
     uid = "".join(username.split()).lower()
     is_company = uid.endswith("@" + GOOGLE_HD)             # 이메일 형태로 넣으면 종전 구글 회사계정과 같이 자동 활성
@@ -794,7 +839,10 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
         mark = "GM 승인 대기"
     salt, h = hash_pw(password)
     status, approved_at = ("active", now()) if is_company else ("pending", None)
-    perms = {"dept": dept, "phone": _digits(phone), "groups": [], "modules": dept_modules(dept), "deny": []}
+    # 부서 화면에서 팀원급이 못 보는 것을 뺀다(GM 지시 2026-09-11) — 빼는 목록은 층에 한 번만 적혀 있다.
+    tier = rank_tier(rank)
+    perms = {"dept": dept, "rank": rank.strip(), "tier": tier, "phone": _digits(phone),
+             "groups": [], "modules": dept_modules(dept), "deny": tier_deny(tier)}
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) "
@@ -805,7 +853,8 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
     if is_company:
         tell_gm(f"🔐 ERP 가입 — {name} ({uid} · {dept} · {mark} · 자동 활성)")
         return RedirectResponse("/auth/signup?msg=가입됐습니다. 바로 로그인할 수 있습니다", status_code=303)
-    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid} · {dept})\n"
+    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid})\n"
+            f"{dept} · {rank.strip() or '직급 미기재'} ({'리더급' if tier == 'leader' else '팀원급'})\n"
             f"연락처 {phone.strip()}\n"
             "승인하시면 그때부터 로그인됩니다: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/signup?msg=접수됐습니다 · GM 승인 뒤 로그인하실 수 있습니다", status_code=303)
