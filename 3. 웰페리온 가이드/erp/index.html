@@ -5,30 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>웰페리온 ERP</title>
 <link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
+<link rel="stylesheet" href="brand/tenant-wellperion.css">
 <style>
-  /* 색 = 권한관리·로그인 화면과 같은 토큰(밝은 종이 톤 · 다크 자동) — GM 지시 2026-09-08
-     "권한관리가 더 밝아서 보기 좋다". 종전엔 가이드 허브의 어두운 :root 를 썼는데, 권한관리 화면을
-     이 안에 끼워 띄우게 되면서 한 화면에 밝은 판과 어두운 판이 같이 뜨는 것도 함께 해소된다.
-     강조색 = 브랜드 시그니처 에메랄드 #63BBA0 (브랜드 기반 문서 · GM 지시). 종전 베이지 #B79F8A 대체. */
-  /* 바탕은 무채색 (GM 확정 2026-09-10 · 두 판을 나란히 보고 고르셨다).
-     세일즈포스 #f3f3f3 · SAP #f5f6f7 · Odoo 흰색 — 어느 제품도 채도 있는 바탕을 쓰지 않는다.
-     채도가 있으면 「문서」로 읽힌다. 강조색(브랜드 에메랄드)과 로고는 그대로 둔다.
-     실측 근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md §2-2. */
-  :root{
-    --bg:#F4F5F6; --paper:#fff; --text:#181A1C; --text-soft:#3F4448;
-    --dim:#6B7176; --dim-soft:#9AA0A5;
-    --accent:#63BBA0; --accent-hover:#3F9B80; --accent-bg:rgba(99,187,160,0.12);
-    --border:rgba(20,22,25,0.10); --border-strong:rgba(20,22,25,0.20); --gray-bg:#FAFAFB;
-  }
-  /* 보는 사람이 다크 모드면 같이 어두워진다 — 끼워 띄우는 권한관리 화면이 그렇게 동작하므로 짝을 맞춘다 */
-  @media(prefers-color-scheme:dark){
-    :root:not([data-theme=light]){
-      --bg:#1A1C1E; --paper:#232629; --text:#EDEFF1; --text-soft:#C6CACE;
-      --dim:#9AA0A5; --dim-soft:#767C81;
-      --accent:#63BBA0; --accent-hover:#8ED6BF; --accent-bg:rgba(99,187,160,0.16);
-      --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.24); --gray-bg:#2A2D30;
-    }
-  }
+  /* 색 정본 = brand/tenant-wellperion.css (GM 지시 2026-09-11 · 파트너사 관리자·직원 화면 브랜드컬러 통일).
+     색 토큰(--bg·--paper·--text·--accent·--border 등)은 그 파일이 준다 — 여기서 다시 선언하지 않는다. */
   html{color-scheme:light dark;}
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
