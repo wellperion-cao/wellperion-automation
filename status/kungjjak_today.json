@@ -1277,6 +1277,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-2048",
+          "no": "48",
+          "got": "AWS에 저장시켜두는거지?",
+          "did": "",
+          "start": "19:54",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1461,14 +1473,29 @@
           "detail": "GET /api/chat/{tenant}/log 신설(days·limit·offset·include_test · 로그인 뒤). 회전본(.타임스탬프)까지 읽어 과거가 조회 불가로 변하는 구멍을 막았다. _log 에 a(답 본문) 칸 추가 — 질문과 같은 마스킹, 2000자 상한, 핸드오프 안내문은 안 남김. 테스트 세션은 지우지 않고 is_test 로 표시. 라이브 실측: 전체 168건 · 최신순 페이지·next_offset 정상 · 무쿠키 401. 저장 1e5db1700 · scp+nginx reload 완료."
         }
       ],
-      "count": 37,
+      "count": 38,
       "done": 37,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-2048",
+          "no": "48",
+          "got": "AWS에 저장시켜두는거지?",
+          "did": "",
+          "start": "19:54",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -2127,7 +2154,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 3
         }
       ],
       "repeats": [
