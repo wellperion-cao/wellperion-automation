@@ -141,8 +141,32 @@
           "ref": "GM-20260911-1012",
           "no": "12",
           "got": "GM업무 + 중간관리자 업무 + 전사일정 + 업무&결재SSOT 3가지 연동건 관련 및 보완 개선해야할 것 없어?",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "09:58",
+          "end": "10:01",
+          "minutes": 3,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-1013",
+          "no": "13",
+          "got": "담당미정도 내용이 구체적이지도 않고, 바로 처리된 것들도 꽤 많은데, 다 기록되어있어서 의미없는 데이터가 많은듯",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:01",
+          "end": "10:03",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-1014",
+          "no": "14",
+          "got": "#219 완료된건 병현AM 진행완료 -> #195 진행중인데 기한이 1개월 뒤니까 9월 11일이 아닐텐데? 설치날짜(9.4) 이후 1개월이야",
+          "did": "",
+          "start": "10:03",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -170,27 +194,27 @@
           "detail": "커밋 145610b30 · 배 11401"
         }
       ],
-      "count": 12,
-      "done": 11,
+      "count": 14,
+      "done": 13,
       "open": 1,
-      "avg_minutes": 4,
+      "avg_minutes": 3,
       "work_count": 3,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260911-1012",
-          "no": "12",
-          "got": "GM업무 + 중간관리자 업무 + 전사일정 + 업무&결재SSOT 3가지 연동건 관련 및 보완 개선해야할 것 없어?",
+          "ref": "GM-20260911-1014",
+          "no": "14",
+          "got": "#219 완료된건 병현AM 진행완료 -> #195 진행중인데 기한이 1개월 뒤니까 9월 11일이 아닐텐데? 설치날짜(9.4) 이후 1개월이야",
           "did": "",
-          "start": "09:58",
+          "start": "10:03",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 1
         }
       ],
       "repeats": []
@@ -322,13 +346,13 @@
           "ref": "GM-20260911-2018",
           "no": "18",
           "got": "ERP플랫폼관리에서 파트너사에 자동화 가동이 자율 작업 현황인 것 같은데, 이 부분을 ERP플랫폼 관리가 하는거랑 구분이 되어야해, 웰페리온이 34개나 하고 있진 않을 것 같은데",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:56",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:02",
+          "minutes": 5,
+          "upload": "✅ 배포 (275ef7922)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -373,31 +397,22 @@
           "area": "작업",
           "event": "카톡 자동화가 Ctrl 을 놓지 못한 채 끝나면 GM 화면이 확대되던 것 (배 2530)",
           "detail": "커밋 98d68c5c5 · 배 12528"
+        },
+        {
+          "time": "10:01",
+          "area": "작업",
+          "event": "파트너사 자동화 가동 34개가 실제로는 우리 것까지 센 숫자였다 (GM 지적 2026-09-11)",
+          "detail": "커밋 b1a02bdb7 · 배 12528"
         }
       ],
       "count": 11,
-      "done": 10,
-      "open": 1,
-      "avg_minutes": 0,
-      "work_count": 7,
+      "done": 11,
+      "open": 0,
+      "avg_minutes": 1,
+      "work_count": 8,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-2018",
-          "no": "18",
-          "got": "ERP플랫폼관리에서 파트너사에 자동화 가동이 자율 작업 현황인 것 같은데, 이 부분을 ERP플랫폼 관리가 하는거랑 구분이 되어야해, 웰페리온이 34개나 하고 있진 않을 것 같은데",
-          "did": "",
-          "start": "09:56",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -755,13 +770,13 @@
           "ref": "GM-20260911-9001",
           "no": "01",
           "got": "상담봇 각각 파트너사별로 만들어서 진행해주고, 1차 상담봇을 일단 웰페리온ERP(직원 페이지)으로 만들자 메뉴 맨 아래에 상담봇을 만들어서 거기에 상담 내역 + FAQ 등을 하위메뉴로 넣어서 셋팅하자 -> 당연히 웰…",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:49",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:02",
+          "minutes": 12,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -773,28 +788,13 @@
         }
       ],
       "count": 1,
-      "done": 0,
-      "open": 1,
-      "avg_minutes": null,
+      "done": 1,
+      "open": 0,
+      "avg_minutes": 12,
       "work_count": 1,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-9001",
-          "no": "01",
-          "got": "상담봇 각각 파트너사별로 만들어서 진행해주고, 1차 상담봇을 일단 웰페리온ERP(직원 페이지)으로 만들자 메뉴 맨 아래에 상담봇을 만들어서 거기에 상담 내역 + FAQ 등을 하위메뉴로 넣어서 셋팅하자 -> 당연히 웰…",
-          "did": "",
-          "start": "09:49",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 12
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
