@@ -138,6 +138,8 @@
      ★2026-09-10 수리 — 권한 판에 width:calc(100vw - 80px) 이 박혀 있었다. 왼쪽 메뉴가 없던
      시절의 값이라 240px 메뉴가 생긴 뒤로 화면이 오른쪽으로 176px 밀려 잘렸다(실측).
      이제 폭을 지정하지 않는다 — 본문이 이미 메뉴 오른쪽 전부를 쓴다. */
+  #adm-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px;
+             border:0; background:var(--paper); border-radius:6px;}
   @media(max-width:900px){
     /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 240px 를 세로로 두면 본문이 화면 밖으로 밀린다 */
     .shell{grid-template-columns:1fr;}
@@ -183,7 +185,7 @@
   <div id="menu-admin" hidden>
     <div class="sep"></div>
     <div class="cap">관리</div>
-    <a href="/auth/admin"><span class="t">권한</span></a>
+    <a href="#adm" data-go="adm"><span class="t">권한</span></a>
   </div>
   <div class="sep"></div>
   <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">회사 관리자 콘솔 ↑</span></a>
@@ -196,6 +198,14 @@
 
   <div id="pane-doc" role="tabpanel" hidden>
     <div id="sections-doc"><div class="msg">불러오는 중…</div></div>
+  </div>
+
+  <!-- 권한 판 — /auth/admin 화면을 이 자리에 그대로 끼워 띄운다
+       (GM 지시 2026-09-11 「권한 누르면 다른 페이지로 넘어가는게 아니라 우측 페이지에 나타나야해」).
+       그 화면은 iframe 안일 때 자기 머리표를 감추게 해 뒀다 — 머리표가 둘로 보이던 것은 막혀 있다.
+       처음 누를 때 한 번만 읽는다(src 를 그때 넣는다) — 안 누르면 아예 안 불러온다. -->
+  <div id="pane-adm" role="tabpanel" hidden>
+    <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
   </div>
 
 </div>
@@ -355,9 +365,14 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var PANES = ['mod', 'doc'];   // 비용·권한은 그 화면으로 바로 간다(끼워 띄우지 않는다 · GM 2026-09-11)
+var PANES = ['mod', 'doc', 'adm'];   // 권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11)
 
 function showPane(which){
+  // 권한 판은 처음 열 때만 읽는다 — 안 여는 사람에겐 통신이 0이다.
+  if (which === 'adm') {
+    var f = document.getElementById('adm-frame');
+    if (f && f.getAttribute('src') === 'about:blank') f.setAttribute('src', '/auth/admin');
+  }
   PANES.forEach(function(k){ document.getElementById('pane-' + k).hidden = (k !== which); });
 }
 
