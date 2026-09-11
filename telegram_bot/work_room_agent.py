@@ -603,26 +603,91 @@ async def _handle_register_confirm(text: str, ctx) -> None:
         await asyncio.to_thread(_append_ship_note, ship.get("task_id"), f"SSOT 등록 확인 — {title} ({todo_id})")
 
 
-async def _handle_call(text: str, ctx) -> None:
-    """이름을 불렸을 때: ①먼저 받았다고 답한다 ②무엇으로 알아들었는지 한 줄 ③웰리 배로 넘긴다.
+_NO_IN_TEXT = re.compile(r"#\s*(\d{2,4})")
+_STATUS_WORDS = ("어떻게", "됐", "상태", "완료", "진행", "끝났", "뭐야", "뭐지", "언제")
 
-    답을 못 해도 받았다는 말은 즉시 나가야 한다 — 사람은 답이 늦은 것보다 무응답을 나쁘게 본다.
-    실제 처리는 웰리 몫이라 여기서 배로 띄우고, GM 봇방에도 한 줄 남긴다."""
+
+def _ledger_issue(no: int) -> "dict | None":
+    """중간관리자 원장에서 번호로 한 건. 최신 날짜 회차부터 본다(같은 번호는 같은 건이다)."""
+    sod = _sod()
+    if sod is None:
+        return None
+    try:
+        rounds = json.loads(sod.MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if isinstance(rounds, dict):
+        rounds = [rounds]
+    for rd in sorted(rounds, key=lambda r: str(r.get("date") or ""), reverse=True):
+        for it in (rd.get("issues") or []):
+            if str(it.get("no") or "") == str(no):
+                return it
+    return None
+
+
+def _todo_rows_for(q: str) -> list:
+    """업무 SSOT 에서 질문에 담긴 낱말로 찾은 행들(최대 3). 네 글자 이상 조각만 쓴다 —
+    짧은 조각은 아무거나 걸려 엉뚱한 답을 만든다."""
+    sod = _sod()
+    if sod is None:
+        return []
+    try:
+        rows = sod._fetch_todo_rows()
+    except Exception:
+        return []
+    words = [w for w in re.split(r"[\s,·]+", q) if len(w) >= 4]
+    hits = []
+    for r in rows:
+        name = str(r.get("업무명") or "")
+        if name and any(w in name for w in words):
+            hits.append(r)
+    return hits[:3]
+
+
+def answer_from_ledgers(text: str) -> "str | None":
+    """정본에서 그대로 읽어 답할 수 있는 물음만 답한다(배2559 · GM 「바로 양방향 소통」).
+
+    답이 조금이라도 애매하면 None 을 돌려 웰리 배로 넘긴다 — 지어내지 않는 것이 속도보다 먼저다.
+    새 엔진을 만들지 않는다: 원장 두 곳(중간관리자 원장 · 업무 SSOT)을 읽어 그대로 옮겨 적을 뿐이다."""
+    t = (text or "").strip()
+    if not t:
+        return None
+    m = _NO_IN_TEXT.search(t)
+    if m:
+        it = _ledger_issue(int(m.group(1)))
+        if it:
+            st = "끝남" if str(it.get("status")) in ("resolved", "done") else "아직 열려 있음"
+            line = f"#{m.group(1)} {it.get('issue')} — {st}"
+            if it.get("note"):
+                line += "\n(" + str(it.get("note")) + ")"
+            return line
+        return f"#{m.group(1)} 는 제 원장에 없습니다. 번호를 다시 확인해 주시겠어요?"
+    if not any(w in t for w in _STATUS_WORDS):
+        return None                      # 상태를 묻는 말이 아니면 조회 답이 아니다
+    rows = _todo_rows_for(t)
+    if len(rows) != 1:
+        return None                      # 못 찾았거나 여럿이면 사람이 본다
+    r = rows[0]
+    return (str(r.get("업무명")) + "\n상태 " + str(r.get("상태"))
+            + " · 담당 " + (str(r.get("담당자")) or "미정")
+            + " · 기한 " + (str(r.get("종료일") or "")[:10] or "없음"))
+
+
+async def _handle_call(text: str, ctx) -> None:
+    """이름을 불렸을 때 — 정본에서 읽어 답할 수 있으면 그 자리에서 답하고, 아니면 웰리 배로 넘긴다.
+
+    2026-09-11 두 번 바뀌었다. 처음엔 「받았습니다」 접수 확인을 먼저 보냈는데 GM 이
+    「이거 리마인드 없애줘 그냥 답만 보내줘」라고 해서 그 문구를 없앴다. 빈말 대신 답이 나가야 한다.
+    지어내지 않는 것이 속도보다 먼저다 — 조회로 확실히 답할 수 있는 것만 답하고 나머지는 넘긴다."""
     import asyncio
     rest = _CALL_RE.sub("", text or "").strip()
-    kind = classify(rest) if rest else "other"
-    read_as = {
-        "register_confirm": "등록 확인",
-        "done": "완료 회신",
-        "question": "질문",
-        "call": "호출",
-        "other": "요청",
-    }[kind]
-    head = rest.splitlines()[0][:60] if rest else ""
-    reply = f"네, 받았습니다. {read_as}으로 읽었습니다"
-    if head:
-        reply += f" — 「{head}」"
-    reply += "\n확인해서 오늘 안에 답 드리겠습니다."
+    # 접수 확인 문구는 없앴다(GM 지시 2026-09-11 「받았습니다. 이거 리마인드 없애줘 그냥 답만 보내줘」).
+    # 대신 정본에서 그대로 읽어 답할 수 있으면 그 자리에서 답한다 — 그게 GM 이 원한 「답」이다.
+    reply = await asyncio.to_thread(answer_from_ledgers, rest or text)
+    if not reply:
+        # 조회로 못 푸는 물음 = 사람 판단이 필요하다. 빈말을 보내지 않고 웰리 배로만 넘긴다.
+        await asyncio.to_thread(_dispatch_call_ship, text)
+        return
 
     try:
         from notify.telegram_user_send import send_as_gm
@@ -641,12 +706,9 @@ async def _handle_call(text: str, ctx) -> None:
             await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신 실패 · 세션 확인)")
         return
 
-    await asyncio.to_thread(_dispatch_call_ship, text)
-    # GM 봇방 통지 없음 — 오늘 9번 갔다(GM 지시 2026-09-11). 실제 일(방 회신 + 웰리 배)은 위 줄이 한다.
-
-    # 질문이면 정본에서 답이 나오는지까지 이어서 본다 — 받았다는 말로 끝내지 않는다.
-    if kind == "question" and rest:
-        await _handle_question(rest, ctx)
+    # 여기까지 왔으면 원장에서 읽어 답을 이미 보냈다 — 배를 띄우지 않는다.
+    # 띄우면 이미 끝난 물음이 웰리 항로에 남아 「답 없는 건」으로 보인다.
+    log.info("[work_room] 호출 즉답 — %s", (text or "")[:60])
 
 
 def _dispatch_call_ship(text: str) -> None:
