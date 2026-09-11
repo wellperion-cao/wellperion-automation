@@ -9748,7 +9748,10 @@ function _wireActiveDblclick(){
     var td = e.target.closest('td');
     if (!td) return;
     var col = td.dataset.col;
-    if (!col) return;                         // 편집 불가 컬럼(휴대폰 번호 등 data-col 없음)
+    if (!col) {
+      if (_activeScope === 'corp') showToast('법인 현황은 읽기 전용입니다 — 수정은 유효회원 탭에서', 'err');
+      return;
+    }
     if (td.dataset.editing) return;           // 이미 편집 중
     var tr = td.closest('tr');
     if (!tr) return;
