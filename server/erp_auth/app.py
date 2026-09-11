@@ -479,6 +479,9 @@ STYLE = (
     ".box.wide{max-width:860px}"
     "h1{margin:0 0 18px;font-size:20px;font-weight:700;letter-spacing:-.01em}"
     "label{display:block;margin:0 0 14px;font-size:13px;font-weight:600;color:var(--ink-soft)}"
+    # 「로그인 상태 유지」 — 체크칸은 한 줄로 눕힌다(다른 칸처럼 위아래로 벌어지면 입력칸처럼 보인다)
+    "label.keep{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;cursor:pointer}"
+    "label.keep input{width:auto;margin:0;accent-color:var(--accent)}"
     "input,select{display:block;width:100%;margin-top:6px;padding:11px 12px;font:inherit;color:var(--ink);background:var(--paper);"
     "border:1px solid var(--line-strong);border-radius:8px}"
     "input::placeholder{color:var(--ink-soft);opacity:.7}"
@@ -631,6 +634,48 @@ def office_auto_login(request: Request, next: str) -> Optional[Response]:
     return r
 
 
+def _keep_max_age(keep) -> Optional[int]:
+    """「로그인 상태 유지」 = 90일 쿠키 / 끄면 max_age 없음(브라우저 닫으면 로그아웃).
+
+    GM 지시 2026-09-11 「로그인화면에서 자동로그인 기능 넣어줘」. 쿠키는 이미 90일이었는데
+    화면에 그렇게 적힌 데가 없어 없는 기능으로 보였다 — 체크칸으로 보이게 하고, 끌 수도 있게 했다.
+    ⚠️ 배1134(사무실 IP 무인 자동 로그인)와 다른 것이다. 그건 로그인 없이 들어가는 것이고
+    회원 와이파이 확인 전엔 안 켠다. 이건 사람이 한 번 로그인한 뒤 오래 유지되는 것뿐이다.
+    """
+    return SESSION_DAYS * 86400 if str(keep or "").strip() else None
+
+
+LOGIN_JS = r"""
+<script>
+(function(){
+  var keep = document.getElementById('keep'), id = document.querySelector('input[name=email]');
+  var hint = document.getElementById('keephint');
+  /* 아이디만 기억한다 — 비밀번호는 우리가 저장하지 않고 브라우저에 맡긴다. */
+  try {
+    var last = localStorage.getItem('erp_last_id');
+    if (id && last && !id.value) { id.value = last; }
+    var k = localStorage.getItem('erp_keep');
+    if (keep && k === '0') keep.checked = false;
+  } catch (e) {}
+  function sync(){
+    if (!keep) return;
+    try { localStorage.setItem('erp_keep', keep.checked ? '1' : '0'); } catch (e) {}
+    /* 구글·네이버·카카오도 같은 값을 따르게 — 콜백이 이 쿠키를 본다. */
+    document.cookie = 'erp_keep=' + (keep.checked ? '1' : '0') + '; path=/auth; max-age=600; samesite=lax';
+    if (hint) hint.textContent = keep.checked
+      ? '이 브라우저에서 90일 동안 로그인 상태로 둡니다'
+      : '브라우저를 닫으면 로그아웃됩니다';
+  }
+  if (keep) { keep.addEventListener('change', sync); sync(); }
+  var form = id && id.form;
+  if (form) form.addEventListener('submit', function(){
+    try { localStorage.setItem('erp_last_id', (id.value || '').trim()); } catch (e) {}
+  });
+})();
+</script>
+"""
+
+
 @app.get("/auth/login")
 def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
     if not err:
@@ -646,14 +691,17 @@ def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
 <h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}{hint}
 <label>아이디 또는 이메일<input name=email type=text autocomplete=username placeholder="아이디 또는 이름@wellperion.com" required autofocus></label>
 <label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
+<label class=keep><input type=checkbox id=keep name=keep value=1 checked> 로그인 상태 유지</label>
+<p class=hint id=keephint>이 브라우저에서 {SESSION_DAYS}일 동안 로그인 상태로 둡니다</p>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
 {_social_login_buttons(next)}
 <div class=foot><p><b>개인 구글 계정(gmail 등)으로도 됩니다.</b> 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
-<p>구글 계정이 없으면 <a href=/auth/signup>아이디로 가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
+<p>구글 계정이 없으면 <a href=/auth/signup>아이디로 가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""" + LOGIN_JS)
 
 
 @app.post("/auth/login")
-def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("/")):
+def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("/"),
+          keep: str = Form("")):
     email = email.strip().lower()
     count, locked_until = FAILS.get(email, (0, 0.0))
     if locked_until > time.time():
@@ -670,7 +718,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
     r = RedirectResponse(safe_next(next), status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
-    r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+    r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(keep), httponly=True, samesite="lax", path="/", secure=https)
     return r
 
 
@@ -962,7 +1010,7 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         return RedirectResponse(f"/auth/google/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
     r = RedirectResponse(nxt, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
-    r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+    r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
     return r
 
 
@@ -1120,7 +1168,7 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
             return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
         r = RedirectResponse(nxt, status_code=303)
         https = request.headers.get("x-forwarded-proto") == "https"
-        r.set_cookie(COOKIE, issue(u), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
+        r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
         return r
     reg = jwt.encode({"e": email, "n": name, "p": provider, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
     return RedirectResponse(f"/auth/social/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
