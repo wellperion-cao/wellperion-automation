@@ -247,12 +247,21 @@ function stageBadge(stage){
 
 function render(d){
   document.getElementById('subline').textContent = '정본 = status/aws_migration.json · 갱신 ' + (d.updated_at_kst || d.updated_at || '');
-  var s = d.summary || {};
-  document.getElementById('statProgress').textContent = (s.progress_pct != null ? s.progress_pct + '%' : '—');
-  document.getElementById('statOrigin').textContent = s.origin_switched || '—';
-  document.getElementById('statNext').textContent = s.next || '—';
-
   var rows = d.rows || [];
+  /* 맨 위 숫자는 아래 표에서 그 자리에서 센다(2026-09-11 수리).
+     전에는 summary 칸에 손으로 적은 값을 그대로 띄웠는데, 표는 09-11 까지 갔는데 숫자는
+     09-08(52% · 원천 0/9)에 멈춰 있었다. 손으로 적는 값은 반드시 낡는다 — 세는 쪽으로 바꾼다. */
+  var nOrigin = rows.filter(function(r){ return r.stage === '원천 전환'; }).length;
+  var nMirror = rows.filter(function(r){ return r.stage === '거울'; }).length;
+  var nTotal  = rows.length;
+  var nNot    = nTotal - nOrigin - nMirror;
+  document.getElementById('statProgress').textContent =
+    nTotal ? (Math.round(nOrigin / nTotal * 100) + '%') : '—';
+  document.getElementById('statOrigin').textContent =
+    nTotal ? (nOrigin + '/' + nTotal + ' (거울 ' + nMirror + ' · 시작 전 ' + nNot + ')') : '—';
+  var nextRow = rows.filter(function(r){ return r.stage !== '원천 전환'; })[0];
+  document.getElementById('statNext').textContent =
+    nextRow ? ((nextRow.area || nextRow.name || '') + (nextRow.switch_date ? ' — ' + nextRow.switch_date : '')) : '남은 것 없음';
   var body = document.getElementById('rowsBody');
   if(!rows.length){ body.innerHTML = '<tr><td colspan="8" class="dim">등록된 영역이 없습니다.</td></tr>'; return; }
   body.innerHTML = rows.map(function(r){
