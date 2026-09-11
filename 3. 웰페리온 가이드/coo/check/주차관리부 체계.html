@@ -71,6 +71,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submitter-bar-split .sb-half{flex:1 1 260px;display:flex;align-items:center;gap:10px;padding:12px 16px}
 .submitter-bar-split .sb-half+.sb-half{border-left:1px solid var(--border)}
 .submitter-bar-split .sb-half label{flex:0 0 auto}
+/* 점검자 입력칸 — 인라인 style 로 두면 모바일 규칙이 못 이겨 16px 로 못 올린다(자동확대 발생). */
+.park-inspector-input{flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:16px;font-family:inherit;font-weight:600}
 .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
 .submitter-bar select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600}
 .progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
@@ -371,6 +373,28 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .dash-stat-card{min-width:70px;padding:8px 6px}
   .dash-stat-card .num{font-size:18px}
 }
+/* ── 모바일 (GM 지시 2026-09-11 「모바일 친화적으로」) — 실측 390px 에서 잡은 것만 고친다.
+   ① 헤더 바로가기 4개가 한 줄을 넘겨 페이지가 가로로 58px 밀렸다 → 줄바꿈 허용.
+   ② 입력칸 글자가 16px 미만이면 아이폰이 칸을 누를 때마다 화면을 확대한다 → 16px 로 올린다.
+   ③ 제출 바가 두 줄이 될 수 있어 본문 아래 여백을 넉넉히 둔다. ── */
+@media(max-width:560px){
+  .sheet-links{flex-wrap:wrap;justify-content:flex-end;margin-left:0;width:100%;gap:5px}
+  .header{flex-wrap:wrap}
+  .content{padding:14px 14px 180px}
+  #parkDateInput{font-size:16px}
+  #tab-check .extra-input{font-size:16px}
+  .park-submit-bar{padding:10px 14px;flex-wrap:wrap}
+  .park-submit-bar .submit-btn{max-width:none;flex:1 1 100%}
+  .date-bar{flex-wrap:wrap;gap:6px}
+  .submitter-bar-split .sb-half+.sb-half{border-left:0;border-top:1px solid var(--border)}
+  .park-round-bar{gap:6px}
+  .guide-cards{gap:8px}
+  .guide-card{flex:1 1 100%;padding:10px 12px}
+  /* 항목명 옆에 이슈·노하우 버튼이 붙으면 이름이 두세 줄로 접힌다 — 버튼을 아랫줄로 내린다. */
+  #tab-check .item-row{flex-wrap:wrap}
+  #tab-check .item-row label{flex:1 1 100%}
+  #tab-check .item-row .tiny-btn{flex:0 0 auto;margin-top:6px}
+}
 /* 규정 탭 — 정기회의+근무휴게 같은 행: 좁은 화면에서 세로 전환 */
 @media(max-width:860px){
   #tab-policy .board-fullwidth{flex-direction:column!important;}
@@ -497,6 +521,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="header-top">
     <h1>주차관리부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.1 · 2026-08-18</span> <span id="dayType"></span></h1>
     <div class="sheet-links">
+      <!-- 월간 현황 바로가기 — 지원부 헤더와 같은 자리·같은 색(GM 2026-09-11 「왜 다른 것 같지?」) -->
+      <a class="sheet-link" onclick="switchTab('mplan')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        월간 현황·계획·보고
+      </a>
       <a class="sheet-link" href="전사_일정.html?dept=주차관리부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
         전사 일정
@@ -847,13 +876,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
        지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
   <div class="manual-section" id="parkChecklistSec" style="margin-top:0;">
-    <div class="manual-header" style="cursor:default;">
-      <h3>🧹 주차장 청결·점검 체크리스트</h3>
-    </div>
+    <!-- 제목 칸 삭제 (GM 지시 2026-09-11) — 탭 이름이 이미 「일일점검」이라 같은 말을 두 번 했다.
+         지원부 점검 탭도 제목 없이 바로 날짜 바로 시작한다. 안내문 한 줄은 항목 수를 세어 보이므로 남긴다. -->
     <div class="manual-body" style="display:block;">
-      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
-        일일 <span id="parkChecklistDailyN"></span>항목 = 체크 후 [일일 점검 제출]로 저장합니다(지원부·시설부와 같은 점검 GAS). 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
-      </p>
+      <!-- 안내문 삭제 (GM 지시 2026-09-11) — 항목 수는 조 버튼에 이미 적혀 있고, 저장 방법은 제출 버튼이 말한다.
+           지원부 점검 탭도 설명 없이 바로 날짜 바로 시작한다. -->
       <!-- 날짜 이동(GM 지시 2026-09-11) — 지원부 date-bar 와 같은 자리·같은 구성. PARK_DATE 단일 소스. -->
       <div class="date-bar" id="parkDateBar">
         <input type="date" id="parkDateInput" onchange="setParkDate(this.value)" title="점검 날짜 변경">
@@ -875,7 +902,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         </div>
         <div class="sb-half">
           <label>점검자</label>
-          <input type="text" id="parkingInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+          <input type="text" id="parkingInspector" class="park-inspector-input" placeholder="점검자 이름 입력" autocomplete="off">
         </div>
       </div>
       <!-- 진행률 = 지원부 .shift-divider 자리의 .progress 카드(같은 paper 카드 계열) -->
@@ -902,7 +929,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button type="button" class="submit-btn primary" style="max-width:220px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
         <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
       </div>
-      <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br><b style="color:var(--accent);">건강</b> — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</p>
+      <!-- 운영 원칙·건강 문구 삭제 (GM 2026-09-11 「디테일도 같이」) — 같은 글이 매뉴얼 카드
+           「복장·용모」·「주차관리인 청결관리」에 이미 있다. 현장에 붙이는 A3 인쇄본에는 그대로 남는다. -->
       <!-- 점검 항목 관리(GM 지시 2026-09-11) — 항목 추가·수정·삭제. requireEditAuth 재사용(새 인증 없음).
            조회는 게이트 없음 — 이 섹션을 열 때만(=편집 시작) 게이트가 뜬다. -->
       <div class="manual-section" id="parkItemsAdminSec" style="margin-top:12px;">
