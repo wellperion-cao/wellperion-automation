@@ -968,6 +968,39 @@ _MODIFIER_KEYS = ("ctrl", "shift", "alt", "win", "ctrlleft", "ctrlright",
                   "shiftleft", "shiftright", "altleft", "altright", "winleft", "winright")
 
 
+def clear_foreground_staging() -> int:
+    """창 앞으로 띄우기를 반복하다 남는 투명 덮개 창을 걷어낸다. 걷어낸 개수를 돌려준다.
+
+    ★2026-09-11 실사고(GM 「마우스가 아예 안먹히네」): 윈도 내부 창 클래스 ForegroundStaging 이
+    **주 모니터 전체(0,0,3440,1440)를 덮은 최상위 창으로 남아** 마우스 입력을 통째로 먹고 있었다.
+    눈에는 아무것도 안 보이는데 클릭이 어디에도 안 닿는다. 이 창은 창을 앞으로 띄울 때 잠깐
+    생겼다 사라지는 것인데, 우리 발신기가 방 창을 반복해서 앞으로 띄우다 보면 가끔 남는다.
+    숨기는 것은 안전하다 — 원래 잠깐 있다 사라지는 임시 창이다.
+    """
+    import ctypes
+    import ctypes.wintypes as wt
+    u = ctypes.windll.user32
+    proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wt.HWND, wt.LPARAM)
+    hits = []
+
+    def _cb(h, _l):
+        buf = ctypes.create_unicode_buffer(64)
+        u.GetClassNameW(h, buf, 64)
+        if buf.value == "ForegroundStaging" and u.IsWindowVisible(h):
+            hits.append(h)
+        return True
+
+    try:
+        u.EnumWindows(proc(_cb), 0)
+        for h in hits:
+            u.ShowWindow(h, 0)      # SW_HIDE
+        if hits:
+            log("[cleanup] 화면을 덮고 있던 임시 창 %d개를 걷어냈다(마우스 먹통 방지)" % len(hits))
+    except Exception as exc:
+        log(f"[cleanup] 덮개 창 정리 실패(무시): {exc}")
+    return len(hits)
+
+
 def _cursor_pos():
     """지금 커서 자리 — 윈도 API 로 읽는다(pyautogui 는 구석에서 예외를 던진다)."""
     import ctypes
@@ -2849,4 +2882,5 @@ if __name__ == "__main__":
         sys.exit(main())
     finally:
         release_modifiers()
+        clear_foreground_staging()       # 화면을 덮은 채 남은 임시 창 걷어내기(마우스 먹통 방지)
         restore_cursor(_cursor_was)      # 사람이 쓰던 자리로 되돌린다
