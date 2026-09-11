@@ -786,7 +786,10 @@ function scoreLoad(period){
       if(d === _scoreTimedOut){ box.innerHTML = '<span class="score-empty">점수를 불러오지 못했습니다.</span>'; return; }
       var board = (d && d.board) || [];
       if(!board.length){
-        box.innerHTML = '<span class="score-empty">아직 점수가 없습니다. 접수하거나 처리를 끝내면 쌓입니다.</span>';
+        /* 이번 달이 0건인 것과 아예 기록이 없는 것은 다르다 — 달 초에는 [전체]로 가는 길을 알려 준다. */
+        box.innerHTML = (period === 'month' || period === 'week')
+          ? '<span class="score-empty">' + (period === 'month' ? '이번 달' : '이번 주') + '은 아직 0건입니다 — 위 [전체]를 누르면 누적 점수가 보입니다.</span>'
+          : '<span class="score-empty">아직 점수가 없습니다. 접수하거나 처리를 끝내면 쌓입니다.</span>';
         return;
       }
       box.innerHTML = board.map(function(x){
@@ -1832,10 +1835,11 @@ _wireBoard();
 regLoad();
 lfLoad();
 holdLoad();
-/* 기본 탭 = 전체. 2026-08-03 웰리 — '이번 달'이 기본이라 매달 1~3일에는 완료 0건이라 점수판이 항상
-   빈칸으로 열렸다(8/3 실측: month·week 0건 / all 36건). GM 원칙 "정직 표기가 아무것도 안 보여주기가
-   되면 안 된다" — 탭은 그대로 두고 처음 보이는 화면만 바꾼다. */
-scoreLoad('all');
+/* 기본 탭 = 이번 달 (GM 지시 2026-09-11 「새로고침이나 새로 페이지 들어올때 접수 처리 점수판 이번달을 기본으로」).
+   종전에는 탭은 '이번 달'에 켜져 있는데 실제로 부르는 값은 전체였다 — 보이는 것과 고른 것이 달랐다.
+   ▸2026-08-03 에 전체로 바꿨던 이유 = 매달 1~3일에는 이번 달 완료가 0건이라 빈칸으로 열렸다.
+     그건 지우지 않고 문구로 푼다 — 0건이면 아래 scoreLoad 가 「이번 달은 아직 0건 · [전체]를 누르면 누적이 보입니다」로 안내한다. */
+scoreLoad('month');
 loadStaffSuggest();
 </script>
 
