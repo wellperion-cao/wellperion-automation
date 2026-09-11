@@ -31,10 +31,17 @@ if errorlevel 1 (
   REM  retried (log: 30 failures). Wait up to 60s for the npm registry before updating.
   powershell -NoProfile -Command "for($i=0;$i -lt 6;$i++){ if(npm view @anthropic-ai/claude-code version 2>$null){exit 0}; Start-Sleep 10 }; exit 1"
   if errorlevel 1 echo [%DATE% %TIME%] npm registry not reachable after 60s - update will likely fail >> "%UPDLOG%"
+  REM  Update-in-progress marker (CTO 2026-09-11). During this ~1 minute the npm shim
+  REM  already points at the new path while the 220MB bin\claude.exe is not unpacked yet,
+  REM  so another role window calling claude dies with "is not recognized as a cmdlet"
+  REM  (measured 2026-09-11 05:55:46; GM reported it). Other windows wait on this marker
+  REM  in ops\wait_claude_ready.bat.
+  echo %DATE% %TIME% > "%WORK%\logs\.claude_updating"
   call claude update >> "%UPDLOG%" 2>&1
   call claude plugin marketplace update omc >> "%UPDLOG%" 2>&1
   call claude plugin update oh-my-claudecode@omc >> "%UPDLOG%" 2>&1
   for /f "tokens=*" %%v in ('claude --version 2^>nul') do echo [%DATE% %TIME%] now -^> %%v >> "%UPDLOG%"
+  del /q "%WORK%\logs\.claude_updating" 2>nul
 ) else (
   echo [%DATE% %TIME%] claude session active - update SKIPPED >> "%UPDLOG%"
 )
