@@ -1,8 +1,6 @@
 <!-- 이 화면 = 「새 구매 품의」 신청 + 내 품의 현황(실무진 전용 진입). 원본 = 3. 웰페리온 가이드/cfo/finance/매출지출현황.html
      (?req=1 모드 구매요청 탭)에서 신청·현황 부분만 옮겼다 — 재무 현황(매출·지출·인건비·손익) 데이터·fetch는 없다.
-     ★2026-09-11 되돌림(배2542 · GM 승인 「우열M 요청대로 해줘」): 승인·반려를 이 화면으로 다시 넣었다.
-     2026-09-06 에 뺐던 이유는 원본 화면과 겹치지 않게였는데, 올린 사람이 자기 건 상태를 못 보는
-     불편이 더 컸다. 승인은 승인담당자별 비밀번호로 가른다(_appr_pw.js). 권한 모듈 id = cfo-finance-지출품의(account_perms.json). 배1095 · GM 지시 2026-09-06. -->
+     승인·반려는 여기 없음(원본 화면·승인자 전용). 권한 모듈 id = cfo-finance-지출품의(account_perms.json). 배1095 · GM 지시 2026-09-06. -->
 <!DOCTYPE html><html lang="ko"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -165,7 +163,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
 <header><div class="hd-inner">
   <button class="hd-btn" onclick="location.reload()">↻ 새로고침</button>
   <div class="brand"><span class="mark">Wellperion</span><h1>구매요청</h1></div>
-  <div class="hd-sub">웰페리온 직원용 · 품의 제출 → 내 품의 현황 확인 → 승인·반려(승인담당자 비밀번호)</div>
+  <div class="hd-sub">웰페리온 직원용 · 품의 제출 → 내 품의 현황 확인 (승인·반려는 부서장 결재 화면에서 진행)</div>
 </div></header>
 
 <main class="wrap" id="app">
@@ -206,10 +204,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   <div id="reqSort" class="team-chips" style="display:none;margin-bottom:8px;align-items:center;gap:6px"></div>
   <div id="capBar" class="cap-bar"><span>🖨 출력할 건을 체크하세요 — <b>체크한 순서대로</b> 나열되어 인쇄됩니다</span><span id="capHint" style="color:var(--ink-soft)">선택 0건</span><button class="cap-btn" id="capPrintBtn" disabled>🖨 선택 출력</button><button class="cap-clear" id="capClearBtn">선택 해제</button></div>
   <div class="tbl-wrap"><table id="reqTbl"></table></div>
-  <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 승인·반려는 승인담당자 비밀번호를 넣으면 이 화면에서 바로 됩니다.
-    <!-- 2026-09-11 GM 지시로 메뉴의 「품의 승인」을 없앴다(승인은 이 화면 한 곳). 그 화면에 함께 있던
-         구매진행·비품관리는 살아 있어야 하므로 들어가는 자리를 여기로 옮긴다. -->
-    <a href="매출지출현황.html?req=1" target="_blank" rel="noopener" style="margin-left:8px;font-weight:700;white-space:nowrap">📦 구매진행·비품관리 →</a></div>
+  <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태는 부서장 처리에 따라 실시간 반영됩니다. 승인·반려는 여기서 할 수 없습니다.</div>
 
   </div>
 </main>
@@ -219,10 +214,9 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
 
 <footer>
   <div>© WELLPERION 경영지원부 · 구매요청(품의) — 전 직원용</div>
-  <div style="margin-top:5px">재무 현황(집행·정산·월 마감)은 경영지원부 화면에서 봅니다</div>
+  <div style="margin-top:5px">승인·반려·재무 현황은 담당 부서장·경영지원부 화면에서 처리합니다</div>
 </footer>
 
-<script src="_appr_pw.js"></script>          <!-- 승인 비밀번호 한 곳(배2542) -->
 <script src="../../_assets/erp_write.js"></script>
 <script>
 "use strict";
@@ -551,13 +545,7 @@ function renderReqTbl(){
     var st=r.상태||"품의",act="";
     if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else if(st==="반려")act='<span style="color:var(--red);font-size:12px;font-weight:700">반려됨</span>';
-    else{
-      /* 승인·반려를 여기서 한다(배2542 · GM 승인 2026-09-11 「우열M 요청대로」).
-         2026-09-06 에는 이 화면에서 뺐었는데, 올린 사람이 자기 건이 어디까지 갔는지 못 보는
-         불편이 더 컸다. 나우열M 원문 = 「원래 하나로 있었고 승인담당자별로 비밀번호를 설정해줬었어」. */
-      if(st==="품의"||st==="승인")act='<button class="reqOk" data-row="'+r.row+'" style="font-size:12px;padding:3px 9px;cursor:pointer;border:1px solid #3c7a4a;border-radius:6px;background:#3c7a4a;color:#fff;font-weight:700">승인</button> ';
-      act+='<button class="reqNo" data-row="'+r.row+'" style="font-size:12px;padding:3px 9px;cursor:pointer;border:1px solid #b14238;border-radius:6px;background:#fff;color:#b14238;font-weight:700">반려</button>';
-    }
+    else act='<span class="chip '+(stc[st]||"wait")+'">처리 대기</span>';
     act+=' <button class="reqDel" data-row="'+r.row+'" data-no="'+escapeHtml(r.번호||"")+'" data-item="'+escapeHtml(r.물품||"")+'" title="시트에서 삭제(내가 잘못 제출한 경우)" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
     var attq=function(u){return String(u==null?"":u).replace(/"/g,"&quot;");};
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+attq(r.이미지)+'" class="'+tc+'" title="첨부사진 — 클릭하면 확대" onclick="openLightbox(this.src)" loading="lazy">':'';
@@ -574,35 +562,9 @@ function renderReqTbl(){
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
   document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b,b.dataset.no,b.dataset.item);};});
-  document.querySelectorAll(".reqOk").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"검토");};});
-  document.querySelectorAll(".reqNo").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려");};});
   document.querySelectorAll(".capCk").forEach(function(b){b.onchange=function(){toggleCap(b.dataset.row);};});
   updateCapBar();
 }
-/* 승인·반려 처리 (배2542). 비밀번호는 _appr_pw.js 한 곳에서 온다.
-   ⚠️ 비밀번호는 사람을 확인하지 않는다 — 오조작 잠금이다. 누가 승인했는지는 시트의
-   「승인자」 칸, 언제는 GAS 가 검토 전환 때 찍는 「승인날짜」 칸이 남긴다.
-   실무진 ERP 개인 계정이 깔리면 계정 권한으로 옮긴다. */
-async function doAct(row,next){
-  var rows=REQ_ACTIVE.concat(REQ_DONE);
-  var need=apprPwFor(next,row,rows);
-  var it=rows.filter(function(x){return String(x.row)===String(row);})[0];
-  var who=(next==="검토"&&it&&it.승인자)?String(it.승인자)+" ":"부서장 ";
-  var pw=prompt((next==="반려"?"반려":"승인")+" 처리 — "+who+"비밀번호를 입력하세요");
-  if(pw===null)return;
-  if(String(pw).trim()!==need){alert("비밀번호가 올바르지 않습니다");return;}
-  var prev=it?it.상태:null;
-  if(it){it.상태=next;renderReqTbl();}
-  reqToast("✔ "+(next==="반려"?"반려":"승인")+" 처리했습니다");
-  procCall("status",{row:row,status:next}).then(function(d){
-    if(d&&d.ok){writeReqCache();loadReq();return;}
-    throw 0;
-  }).catch(function(){
-    if(it&&prev!==null){it.상태=prev;renderReqTbl();}
-    reqToast("⚠️ 저장되지 않았습니다 — 다시 시도해주세요",1);
-  });
-}
-
 var _delBusy=false;
 async function delReq(row,btn,no,item){
   if(_delBusy){reqToast("이전 삭제를 처리하는 중입니다 — 목록이 갱신된 뒤 다시 눌러주세요",1);return;}
