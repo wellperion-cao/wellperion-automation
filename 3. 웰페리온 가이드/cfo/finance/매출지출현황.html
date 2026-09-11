@@ -1063,7 +1063,7 @@ async function startApp(){
 // 직원용 구매요청 전용 모드 (?req=1) — 재무 데이터·차트 미로드, 구매요청 탭만
 async function startReqOnly(){
   document.getElementById("app").style.display="block";
-  document.title="🛒 구매요청 · 웰페리온"; // 직원용 페이지 탭 이름
+  document.title="📦 구매진행·비품관리 · 웰페리온"; // 직원용 페이지 탭 이름(2026-09-11 배2542 후속)
   var fav=document.getElementById("favicon"); if(fav) fav.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛒</text></svg>"; // 지구본→장바구니
   TABS=[{id:"request",label:"🛒 구매요청"},{id:"progress",label:"📦 구매진행"},{id:"supply",label:"🗄 비품관리"}]; renderNav();
   // 진행·비품 탭은 첫 진입 시 지연 로드(구매요청 첫 화면 속도 유지) — renderNav의 onclick과 별개 리스너라 둘 다 동작
@@ -1071,13 +1071,18 @@ async function startReqOnly(){
     if(b.dataset.p==="progress")loadProgress();
     else if(b.dataset.p==="supply")loadSupply();
   });});
-  var h1=document.querySelector(".brand h1"); if(h1) h1.textContent="구매요청";
-  var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 직원용 · 구매요청 → 진행 확인 → 비품 관리까지 한 화면";
+  var h1=document.querySelector(".brand h1"); if(h1) h1.textContent="구매진행·비품관리";
+  var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 직원용 · 구매 진행 확인 · 비품 관리 · 승인·반려는 「구매요청」 화면에서 합니다";
   var sm=document.getElementById("syncMeta"); if(sm) sm.textContent="";
   document.getElementById("loading").style.display="none";
   document.getElementById("content").style.display="block";
-  document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel==="request");});
+  // 2026-09-11(배2542 후속 · GM 지시): 승인·반려는 지출품의(구매요청) 화면으로 일원화했다.
+  // 승인이 두 곳에 있는 것처럼 보이지 않게 이 화면은 「구매진행」부터 연다 — 탭은 그대로 살아 있다.
+  var first="progress";
+  document.querySelectorAll("#nav .tab").forEach(function(b){b.classList.toggle("active",b.dataset.p===first);});
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.dataset.panel===first);});
   renderReq();
+  loadProgress();
 }
 
 function renderKpi(){
