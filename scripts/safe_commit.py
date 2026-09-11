@@ -1349,8 +1349,35 @@ def feedback_reply_from(message: str, today: str) -> str:
             if head else f"[{today} 처리완료] 요청하신 내용을 반영했습니다.")
 
 
+# ── 접수ID가 적혔다는 이유만으로 닫지 않는다 (2026-09-11 실사고 · 시우 실측 · 배2527) ──
+# 사고: 원인만 찾아 담당에게 넘긴 커밋에 "무엇에 대한 커밋인지" 밝히려고 접수ID를 적었더니
+# 신고자 화면에 「[2026-09-11 처리완료] …」 가 떴다. 회원은 여전히 못 고치는데 신고자는
+# 처리완료를 보면 다시 신고하지 않는다 — 고장이 조용히 닫힌다. 이 관문은 모든 커밋이 지나므로
+# 진단·중간기록·넘김 커밋 전부가 같은 위험을 갖고 있었다.
+# 판정은 새로 짜지 않는다(약속 L21): 그 접수ID에 연결된 배가 실제로 끝났을 때만 닫는다.
+# 안 끝났으면 아무 단계도 쓰지 않는다 — 진행 단계 문구 금지(2026-07-28 GM)를 그대로 따르고,
+# 배가 DONE 이 되면 3분 주기 감시기(cpo_staff_feedback_watch.sync_feedback_status)가 회신한다.
+def _feedback_ship_closed(fid: str, ships: list) -> bool:
+    """접수ID에 연결된 배가 끝났나(DONE·MERGED). feedback_id 필드가 정본이고, 옛 배는
+    note·title 안 문자열도 인정한다(_has_tracked_followup 과 같은 관용). 연결된 배가
+    하나도 없으면 끝났는지 확인할 길이 없으므로 False — 닫지 않는다."""
+    sys.path.insert(0, str(_SCRIPTS_DIR / "collectors"))
+    from cpo_staff_feedback_watch import _DRIFT_EXEMPT_STATUSES  # type: ignore
+    linked, by_field = [], []
+    for s in ships:
+        if not isinstance(s, dict):
+            continue
+        if str(s.get("feedback_id") or "").strip() == fid:
+            by_field.append(s)
+            linked.append(s)
+        elif fid in (str(s.get("note") or "") + " " + str(s.get("title") or "")):
+            linked.append(s)
+    return any(str(s.get("status") or "") in _DRIFT_EXEMPT_STATUSES
+               for s in (by_field or linked))
+
+
 def _reply_to_feedback_in_message(message: str) -> None:
-    """커밋 메시지에 접수ID가 있으면 그 피드백을 처리완료로 닫고 회신을 채운다.
+    """커밋 메시지에 접수ID가 있고 그 배가 끝났으면 피드백을 처리완료로 닫고 회신을 채운다.
     실패해도 커밋·push 를 되돌리지 않는다(fail-open — 회신 실패가 배포를 막으면 안 된다)."""
     ids = feedback_ids_in(message)
     if not ids:
@@ -1358,11 +1385,25 @@ def _reply_to_feedback_in_message(message: str) -> None:
     try:
         sys.path.insert(0, str(_SCRIPTS_DIR / "collectors"))
         from cpo_staff_feedback_watch import push_feedback_updates  # type: ignore
+        from queue_lock import load_queue  # type: ignore
+        try:
+            archive = json.loads(
+                (ROOT / "status" / "_queue_archive.json").read_text(encoding="utf-8"))
+        except Exception:
+            archive = []
+        ships = list(load_queue() or []) + list(archive or [])
+        closed = [i for i in ids if _feedback_ship_closed(i, ships)]
+        waiting = [i for i in ids if i not in closed]
+        if waiting:
+            print(f"[피드백 회신 보류] {', '.join(waiting)} — 연결된 배가 아직 안 끝났습니다. "
+                  "'처리완료'로 닫지 않습니다(배가 끝나면 감시기가 회신합니다).")
+        if not closed:
+            return
         today = datetime.now().strftime("%Y-%m-%d")
         memo = feedback_reply_from(message, today)
         _, err = push_feedback_updates(
-            [{"id": i, "status": "처리완료", "memo": memo} for i in ids])
-        print(f"[피드백 회신] {', '.join(ids)} — " + ("실패: " + err if err else "처리완료로 닫음"))
+            [{"id": i, "status": "처리완료", "memo": memo} for i in closed])
+        print(f"[피드백 회신] {', '.join(closed)} — " + ("실패: " + err if err else "처리완료로 닫음"))
     except Exception as exc:
         print(f"[WARN] 피드백 회신 건너뜀: {type(exc).__name__}: {exc}")
 
@@ -1440,8 +1481,22 @@ def main() -> int:
     return 0 if res["ok"] else 1
 
 
+def _feedback_close_selfcheck() -> None:
+    """접수ID가 적혔다고 닫히지 않는지 — 배 상태로만 닫힌다(2026-09-11 사고 재발방지)."""
+    fid = "FB260911-090516"
+    ships = [{"feedback_id": fid, "status": "IN_PROGRESS", "task_id": "T1"},
+             {"note": f"[관련] {fid} 원인만 찾아 넘김", "status": "DONE", "task_id": "T2"}]
+    assert not _feedback_ship_closed(fid, ships)       # 담당 배가 안 끝남 — 닫히면 안 됨
+    assert not _feedback_ship_closed(fid, [])          # 연결된 배 없음 — 확인 불가, 안 닫음
+    ships[0]["status"] = "DONE"
+    assert _feedback_ship_closed(fid, ships)           # 담당 배가 끝남 — 닫아도 됨
+    assert _feedback_ship_closed(fid, [{"note": fid, "status": "MERGED", "task_id": "T3"}])
+    print("[selfcheck] 피드백 닫기 조건(배 종결) OK")
+
+
 if __name__ == "__main__":
     if "--selfcheck" in sys.argv:
         _feature_marker_loss_selfcheck()
+        _feedback_close_selfcheck()
         raise SystemExit(0)
     raise SystemExit(main())
