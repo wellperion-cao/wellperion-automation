@@ -183,7 +183,6 @@
   <div id="menu-admin" hidden>
     <div class="sep"></div>
     <div class="cap">관리</div>
-    <a href="../cto/automation/토큰 사용량.html"><span class="t">비용</span></a>
     <a href="/auth/admin"><span class="t">권한</span></a>
   </div>
   <div class="sep"></div>
@@ -272,7 +271,7 @@ function loadModules(role, allowedIds){
     //   스크롤 7.1화면(6,345px) 아래에 묻혀 있었다(회원 카드는 0.5화면). 목록 차례가
     //   부서 순서라 자주 쓰는 것일수록 아래로 갔다. 여기 적힌 것만 맨 위 한 줄로 올린다.
     var PINNED = ['coo-chairman-gm업무', 'coo-todo-업무-현황-ssot', 'coo-todo-결재-현황-ssot',
-                  'member', 'inquiry', 'check', 'cto-자율현황'];
+                  'member', 'inquiry', 'check'];
     var order = [], bag = {}, docs = [], pinned = {};
     (d.modules || []).forEach(function(m){
       var g = m.appgroup || '문서함';   // 회원·운영·점검·경영·문서함 5그룹(배1026 · 2026-09-05)
