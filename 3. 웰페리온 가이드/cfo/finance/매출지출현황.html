@@ -481,6 +481,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   <div style="margin-top:5px">매출=회원권+강습 / 지출=강사 인건비+운영부+구매성 · 정규직 일부·임대료 미포함</div>
 </footer>
 
+<script src="_appr_pw.js"></script>          <!-- 승인 비밀번호 한 곳(배2542) -->
 <script src="../../_assets/erp_write.js"></script>
 <script>
 "use strict";
@@ -1738,20 +1739,12 @@ function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border
      반려                 : 1202 (별도 지시 없어 기존 유지)
    ⚠ 이 확인은 화면(브라우저)에서만 이뤄진다. 서버는 공통 접근키만 보므로 권한 통제가 아니라
      '실수 방지 잠금' 수준이다 — 서버 검증은 매니저 판단으로 후속 안건. */
-var APPR_PW={"김남욱":"1531"};   // 승인자 이름에 이 문자열이 포함되면 해당 비번
-var APPR_PW_DEFAULT="1202";
-function apprPwFor(next,row){
-  if(next==="정산")return "1202!";                 // 검토완료
-  if(next==="완료"||next==="반려")return "1202";
-  var it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
-  var who=String((it&&it.승인자)||"");
-  for(var k in APPR_PW){if(who.indexOf(k)>=0)return APPR_PW[k];}
-  return APPR_PW_DEFAULT;
-}
+/* 비밀번호·판정은 _appr_pw.js 한 곳 (배2542) — 지출품의.html 과 같은 값을 두 번 적지 않는다. */
+function apprPwForRow(next,row){return apprPwFor(next,row,REQ_ACTIVE.concat(REQ_DONE));}
 async function doAct(row,next,needPw,btn){
   if(needPw){
     var _a=(next==="반려")?"반려":(next==="정산")?"검토완료":(next==="완료")?"최종확인":"승인";
-    var _need=apprPwFor(next,row);
+    var _need=apprPwForRow(next,row);
     var _it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
     var _who=(next==="검토"&&_it&&_it.승인자)?String(_it.승인자):""; // 승인 단계만 담당자 명시
     var pw=prompt(_a+" 처리 — "+(_who?(_who+" "):"부서장 ")+"비밀번호를 입력하세요");
