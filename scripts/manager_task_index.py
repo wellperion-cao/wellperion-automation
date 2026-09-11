@@ -539,7 +539,7 @@ def build() -> str:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>중간관리자 업무 목차 — 웰페리온 GM업무</title>
+<title>중간관리자 업무</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
 <style>
   * {{ box-sizing:border-box; margin:0; padding:0; }}

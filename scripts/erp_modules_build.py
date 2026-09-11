@@ -120,7 +120,7 @@ APPGROUP_IDS = {
             "chro-hub-calendar", "cmo-series-ai시리즈보드"],
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-chairman-gm업무", "gm-월간운영계획",
+    "경영": ["coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차", "gm-월간운영계획",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
