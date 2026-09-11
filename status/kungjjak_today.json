@@ -405,8 +405,20 @@
           "ref": "GM-20260911-1035",
           "no": "35",
           "got": "근데 사무실PC 자동로그인해서 뭐해?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "13:15",
+          "end": "13:18",
+          "minutes": 2,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-1036",
+          "no": "36",
+          "got": "현재 브로제이 스피드게이트+턴게이트 견적은 받았고, 현장방문 요청했어, 현재 지방이라 월요일에 통화해서 일정 약속준다고했어, 원래 오늘 게이트 설치건으로 이정헌 소장님, 박민서 팀장님이랑 현장보고 의견 들을려고했는데…",
+          "did": "",
+          "start": "13:18",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -482,8 +494,8 @@
           "detail": "커밋 3c4500a99 · 배 11401"
         }
       ],
-      "count": 34,
-      "done": 33,
+      "count": 35,
+      "done": 34,
       "open": 1,
       "avg_minutes": 3,
       "work_count": 11,
@@ -491,11 +503,11 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260911-1035",
-          "no": "35",
-          "got": "근데 사무실PC 자동로그인해서 뭐해?",
+          "ref": "GM-20260911-1036",
+          "no": "36",
+          "got": "현재 브로제이 스피드게이트+턴게이트 견적은 받았고, 현장방문 요청했어, 현재 지방이라 월요일에 통화해서 일정 약속준다고했어, 원래 오늘 게이트 설치건으로 이정헌 소장님, 박민서 팀장님이랑 현장보고 의견 들을려고했는데…",
           "did": "",
-          "start": "13:15",
+          "start": "13:18",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -838,13 +850,25 @@
           "area": "ERP로그인",
           "event": "배2539 ERP 가입 승인 화면 직급 고치는 칸 추가",
           "detail": "승인 대기 줄에 직급 드롭다운(ssot/ranks.json 정본) + 승인 시 rank·tier·deny 동시 갱신. scp+재시작 완료, 서버 self-check ok. 부수로 auth 배포를 막던 account_perms_check 가드 분리. 미검증: pending 0건이라 실제 승인 1건 왕복."
+        },
+        {
+          "time": "13:18",
+          "area": "ERP권한",
+          "event": "배2540 ERP 메뉴 5분류 재편에 따른 모듈 권한 단순화 점검",
+          "detail": "실측: 권한은 role 로 안 갈린다(묶음 방식은 계정 7개 중 1개만 사용). group 칸은 role 과 8:8 중복, appgroup 은 새 메뉴와 이름 어긋남, 권한 화면 묶음 이름도 메뉴와 다름. 단순화안(축 하나로 합치기·group 삭제·문서함은 플래그로) 시모에게 회신."
+        },
+        {
+          "time": "13:18",
+          "area": "ERP로그인",
+          "event": "배1134 사무실 PC 자동 로그인 — GM 판단으로 접음",
+          "detail": "개인 계정 방향으로 가므로 공용 무인 로그인 목적 소멸. OFFICE_AUTO_LOGIN_IP 빈 값 유지·코드 보존."
         }
       ],
       "count": 19,
       "done": 19,
       "open": 0,
       "avg_minutes": 1,
-      "work_count": 15,
+      "work_count": 17,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1217,13 +1241,13 @@
           "ref": "GM-20260911-3036",
           "no": "36",
           "got": "이렇게 되었을 시 아마 모듈 권한도 단순화 될 것 같아 시토한테 체크 시켜줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "13:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "13:17",
+          "minutes": 2,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -1340,31 +1364,22 @@
           "area": "작업",
           "event": "결재 라벨·유형별 칸도 흰색으로 (GM 지시 2026-09-11)",
           "detail": "커밋 92e79b209 · 배 11425"
+        },
+        {
+          "time": "13:16",
+          "area": "작업",
+          "event": "ERP 메뉴를 업무영역 5분류로 재편 · 어떤 하루는 플랫폼으로 (GM 지시 2026-09-11)",
+          "detail": "커밋 03bceee6f · 배 11425"
         }
       ],
       "count": 31,
-      "done": 30,
-      "open": 1,
+      "done": 31,
+      "open": 0,
       "avg_minutes": 1,
-      "work_count": 19,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-3036",
-          "no": "36",
-          "got": "이렇게 되었을 시 아마 모듈 권한도 단순화 될 것 같아 시토한테 체크 시켜줘",
-          "did": "",
-          "start": "13:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -1735,25 +1750,25 @@
           "ref": "GM-20260911-5017",
           "no": "17",
           "got": "점검 현황들만 좀 개선해줘 배수구 막힘 이물질제거 이런건 점검 내역은 없어도되, 그리고 지상 지하 바닥 청결이 아니라, 그냥 바닥 청결로 해도되, 그리고 각 점검 제목과 안내(가이드 등의 내용도 같이 있어야할 것 같…",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "조 버튼을 이슈·노하우 위로 올리고 진행률 막대를 그 아래에 되살렸다. 두 숫자의 뜻을 갈라 중복이 안 되게 했다.",
           "start": "12:57",
-          "end": "13:02",
-          "minutes": 4,
-          "upload": "기록만",
+          "end": "13:16",
+          "minutes": 19,
+          "upload": "✅ 배포 (10efce6e0)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260911-5018",
           "no": "18",
           "got": "오전조/마감조 칸을 이슈/노하우 위로, 방금 삭제함 진척박스는 이슈/노하우 아래에 복구",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "13:13",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "13:17",
+          "minutes": 3,
+          "upload": "✅ 배포 (10efce6e0)",
+          "open": false,
+          "evidence": "🔁재확인"
         }
       ],
       "work": [
@@ -1834,31 +1849,22 @@
           "area": "작업",
           "event": "주차 점검 — 조 버튼에 진행 표시 통합, 항목을 제목과 안내로 분리 (GM 지시 2026-09-11)",
           "detail": "커밋 0df31d6ba · 배 12534"
+        },
+        {
+          "time": "13:16",
+          "area": "작업",
+          "event": "주차 점검 — 조 버튼을 이슈·노하우 위로, 진행률 막대를 그 아래에 복구 (GM 지시 2026-09-11)",
+          "detail": "커밋 e7f2cb8f9 · 배 12534"
         }
       ],
       "count": 18,
-      "done": 17,
-      "open": 1,
+      "done": 18,
+      "open": 0,
       "avg_minutes": 14,
-      "work_count": 13,
+      "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-5018",
-          "no": "18",
-          "got": "오전조/마감조 칸을 이슈/노하우 위로, 방금 삭제함 진척박스는 이슈/노하우 아래에 복구",
-          "did": "",
-          "start": "13:13",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
