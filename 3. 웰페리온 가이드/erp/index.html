@@ -255,6 +255,9 @@ function setLayer(role){
   if (isManager) {
     // 회사 관리자 콘솔로 올라가는 줄은 두지 않는다 (GM 지시 2026-09-11) —
     // 파트너사가 보는 화면에 파는 회사 쪽 문이 보일 자리가 아니다. 주소로는 그대로 들어간다.
+    // 대신 아래층(직원 화면)으로 내려가는 줄은 둔다 — 같은 회사 안이고, 관리자가 직원이 보는
+    // 화면을 확인할 일이 잦은데 여태 주소를 손으로 쳐야 했다.
+    up.href = '/home'; up.textContent = '파트너사 직원 화면 ↓'; up.hidden = false;
   } else {
     // 직원 층 — 비용·권한 탭은 이 층의 것이 아니다
     document.getElementById('menu-admin').hidden = true;   // 비용·권한은 이 층의 것이 아니다
@@ -343,7 +346,8 @@ function loadModules(role, allowedIds){
       list.forEach(function(m){
         var tr = document.createElement('tr');
         tr.dataset.find = (m.name + ' ' + (m.desc || '') + ' ' + (m.staff || '')).toLowerCase();
-        tr.innerHTML = '<td class="k"><a href="' + esc(m.path) + '">' + esc(m.name) + '</a></td>'
+        // 읽는 것은 새 창으로 연다 — 읽고 닫으면 문서함 자리와 찾던 낱말이 그대로 남는다.
+        tr.innerHTML = '<td class="k"><a target="_blank" rel="noopener" href="' + esc(m.path) + '">' + esc(m.name) + '</a></td>'
                      + '<td class="d">' + esc(m.desc || '') + '</td>'
                      + '<td class="o">' + esc(m.staff || '') + '</td>';
         tb.appendChild(tr);
@@ -411,7 +415,7 @@ function loadModules(role, allowedIds){
       menu.appendChild(a);
     });
     var bdoc = document.getElementById('b-doc');
-    if (bdoc) bdoc.textContent = docs.length;
+    if (bdoc) bdoc.textContent = docs.length + files.length;   // 문서 + 저장 파일 (가른 뒤 한쪽만 세고 있었다)
     bindMenu();
     showGroup(groups.length ? groups[0][0] : null);
 
@@ -518,12 +522,24 @@ function filter(){
   var q = document.getElementById('find').value.trim().toLowerCase();
   var mods = filterIn('sections', q);
   var docs = filterIn('sections-doc', q);
+  var noneEl = document.getElementById('find-none');
+  if (noneEl) noneEl.hidden = true;
   if (!q) { if (lastGroup) showGroup(lastGroup); return; }
   /* 검색 중에는 칸막이를 전부 걷는다 — 화면과 문서를 한 자리에서 같이 보여준다.
      종전엔 걸린 쪽 하나만 띄워, 「문서 1개」라 적어 놓고 그 1개를 못 보여줬다(2026-09-10 실측). */
   showGroup(null);
   document.getElementById('pane-doc').hidden = (docs === 0);
-  mark(null, '찾기 — 화면 ' + mods + '개 · 문서 ' + docs + '개');
+  mark(null, '찾기 — 화면 ' + mods + '개 · 문서·파일 ' + docs + '개');
+  // 하나도 안 걸리면 빈 화면이 된다 — 찾는 말이 없는 건지 화면이 고장난 건지 알 수가 없다.
+  var none = document.getElementById('find-none');
+  if (!none) {
+    none = document.createElement('div');
+    none.id = 'find-none';
+    none.className = 'msg';
+    document.getElementById('pane-mod').appendChild(none);
+  }
+  none.textContent = '「' + document.getElementById('find').value.trim() + '」로 찾은 것이 없다. 다른 말로 찾아 보세요.';
+  none.hidden = (mods + docs) > 0;
 }
 document.getElementById('find').addEventListener('input', filter);
 
