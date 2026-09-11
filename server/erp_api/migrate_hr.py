@@ -1235,7 +1235,9 @@ def run(args):
     except RunLockBusy:
         locked_out = True
     except Exception as e:                              # noqa: BLE001 — 어떤 실패든 흔적을 남기고 끝낸다
-        failed.append("%s 에서 예외: %s: %s" % (last_step, type(e).__name__, str(e)[:160]))
+        # ⛔ str(e) 금지 — DB 예외(PostgreSQL DETAIL 등)에 행 값(성명·생년월일 등)이 실려 있을 수 있고,
+        #   이 값은 note(DB)·report(JSON)·stdout 세 군데로 그대로 흘러간다. 종류 이름만(api_hr.py _log_exc와 동일 원칙).
+        failed.append("%s 에서 예외: %s" % (last_step, type(e).__name__))
     finally:
         status = "locked" if locked_out else ("ok" if not failed else "failed")
         # 실행 기록 비고 = 원천이 원문이었는지 마스킹본이었는지 + 경고 건수 + 실패 사유(C-08 — 사후 대조용).
