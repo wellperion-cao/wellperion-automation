@@ -825,13 +825,13 @@
           "ref": "GM-20260911-1073",
           "no": "73",
           "got": "품의 올린 #133, #129, #128 승인해줘",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "21:04",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "21:07",
+          "minutes": 2,
+          "upload": "✅ 배포 (1ad8d55ef)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1017,28 +1017,13 @@
         }
       ],
       "count": 69,
-      "done": 68,
-      "open": 1,
+      "done": 69,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-1073",
-          "no": "73",
-          "got": "품의 올린 #133, #129, #128 승인해줘",
-          "did": "",
-          "start": "21:04",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -1524,12 +1509,6 @@
       ],
       "work": [
         {
-          "time": "11:50",
-          "area": "작업",
-          "event": "카톡 붙여넣기를 Ctrl 안 쓰는 길로 바꿨다 (배 2530 재발 · GM 3번째 지적 2026-09-11)",
-          "detail": "커밋 96fae1d22 · 배 12528"
-        },
-        {
           "time": "12:07",
           "area": "작업",
           "event": "붙여넣기 순서를 Ctrl+V 먼저로 되돌렸다 — WM_PASTE 가 전송을 막았다 (GM 신고 2026-09-11 12:0x)",
@@ -1702,6 +1681,12 @@
           "area": "작업",
           "event": "AWS 이관 표를 실제 전환 상태로 갱신 — 오늘 넘긴 5영역이 표에 안 반영돼 있었다",
           "detail": "커밋 7438052862 · 배 12528"
+        },
+        {
+          "time": "21:05",
+          "area": "인사이관",
+          "event": "배2566 서버 선결 3건",
+          "detail": "①모듈 붙이기 실패 격리 — app.py 자동등록 루프를 try/except 로 감싸 인사 하나가 죽어도 접수·업무·문의폼은 산다. 빠진 모듈은 /api/health 의 failed_modules 로 드러난다(지금 {} = 정상). ②읽기 전용 계정 분리 — DB 역할 erp_ro 신설(SELECT 만, 기본권한 포함), db.env 에 ERP_DB_URL_RO 추가, db.connect(readonly=True) 가 그 계정으로 붙는다. 실측: 조회 9건 OK · CREATE TABLE·UPDATE 둘 다 InsufficientPrivilege 로 거부. RO 없는 환경은 종전 세션 읽기전용으로 물러남. ③erp-chro.service 휴면 원인 = 실행 계정 chro 에 uvicorn 이 없어 41,421회 재시작 실패 후 app.py 소멸로 조건 미충족. 포트 8002 는 이미 erp-api@beta 가 쓴다(되살리면 충돌). 시토 실행 구조면 계정 자체가 불필요 — disable 로 꺼 두고 존치 여부는 웰리·GM 판단. 저장 f12f7618b · scp+재기동 완료."
         }
       ],
       "count": 39,
@@ -2680,7 +2665,7 @@
           "start": "20:57",
           "end": "20:59",
           "minutes": 1,
-          "upload": "✅ 배포 (eb18fac39)",
+          "upload": "✅ 배포 (2321cc48e)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2692,9 +2677,33 @@
           "start": "20:59",
           "end": "21:02",
           "minutes": 2,
-          "upload": "✅ 배포 (eb18fac39)",
+          "upload": "✅ 배포 (2321cc48e)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-4025",
+          "no": "25",
+          "got": "강습 신규 재등록 칸맞춤좀 해주면 안되? 디테일한 부분까지도 잡아줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "21:07",
+          "end": "21:08",
+          "minutes": 0,
+          "upload": "✅ 배포 (2321cc48e)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-4026",
+          "no": "26",
+          "got": "9월 10일 기준으로 매출보고시트랑 매출 및 회원 현황보고 매출액이 다른데? 132,000원 차액이 있네? 기타 강습 (팀 미분류) 주차 때문인가?",
+          "did": "",
+          "start": "21:08",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2765,14 +2774,29 @@
           "detail": "커밋 8361f55ac8 · 배 12523"
         }
       ],
-      "count": 22,
-      "done": 22,
-      "open": 0,
+      "count": 24,
+      "done": 23,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 11,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-4026",
+          "no": "26",
+          "got": "9월 10일 기준으로 매출보고시트랑 매출 및 회원 현황보고 매출액이 다른데? 132,000원 차액이 있네? 기타 강습 (팀 미분류) 주차 때문인가?",
+          "did": "",
+          "start": "21:08",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -3077,6 +3101,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-5028",
+          "no": "28",
+          "got": "칭찬사원제도 목록에서 내림 + 나우열M 전달",
+          "did": "TODO-20260526191513510 완료 처리(전 부서 상시 운영으로 전환). 텔레그램 업무관리방에 진행 점검·개선사항 정리 요청 발송(GM 계정). 되돌림 자료 status/backups/chingchan_ssot_20260911_2105.json.",
+          "start": "21:06",
+          "end": "21:06",
+          "minutes": 0,
+          "upload": "발송 (저장 대상 아님)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -3195,10 +3231,10 @@
           "detail": "커밋 d21d3e710f · 배 12534"
         }
       ],
-      "count": 25,
-      "done": 25,
+      "count": 26,
+      "done": 26,
       "open": 0,
-      "avg_minutes": 25,
+      "avg_minutes": 24,
       "work_count": 19,
       "missed": [],
       "unclosed": [],
@@ -3363,6 +3399,18 @@
           "upload": "✅ 배포 (d5617de35)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-9014",
+          "no": "14",
+          "got": "지금 이승기대표님, 조재오부장님 카카오톡 대화내용 저장을 아침 6시30분에 한번해서 정리하고, 7시에 작업할 내용이랑 물어볼 것들 물어보고(하루의 시작 으로) // 저녁에 하루의 마무리로해서 오늘 한 것들에 대해서 …",
+          "did": "",
+          "start": "21:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -3403,14 +3451,29 @@
           "detail": "커밋 3167e13350 · 배 11305"
         }
       ],
-      "count": 13,
+      "count": 14,
       "done": 13,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 6,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-9014",
+          "no": "14",
+          "got": "지금 이승기대표님, 조재오부장님 카카오톡 대화내용 저장을 아침 6시30분에 한번해서 정리하고, 7시에 작업할 내용이랑 물어볼 것들 물어보고(하루의 시작 으로) // 저녁에 하루의 마무리로해서 오늘 한 것들에 대해서 …",
+          "did": "",
+          "start": "21:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     }
   },
