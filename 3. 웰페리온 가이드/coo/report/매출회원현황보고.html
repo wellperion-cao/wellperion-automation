@@ -368,6 +368,7 @@
 
   <div class="foot">
     <div><b>이 보고서가 보는 것</b> — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.</div>
+    <div id="accGapNote">두 장부 대조 — 불러오는 중…</div>
     <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
   </div>
 
@@ -1217,6 +1218,16 @@ function renderDaySales(c, dayLabel){
       '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
   // 나눈 값이 시트 소계와 어긋나면 조용히 넘기지 않는다 — 분류 규칙이 못 따라간 종목이 생겼다는 뜻이다.
+  /* 두 장부의 이번 달 누적이 어긋나면 그 자리에서 밝힌다 — 「보고」탭 팀별 누적은 사람이 채우는
+     칸이라 일자탭 계약 합계와 갈릴 수 있다(2026-09-11 실측 440,475원 · 종목 칸에 팀 이름이 없는
+     계약을 사람이 임의로 팀에 배분한 것이 원인). 안 밝히면 GM 이 두 화면을 대조해야 안다. */
+  var accGap = num(RP.J4) - num(c.J4);
+  var _gapEl = document.getElementById('accGapNote');
+  if (_gapEl) _gapEl.innerHTML = accGap
+    ? '<b style="color:var(--warn)">⚠ 이번 달 누적이 두 곳에서 다릅니다</b> — 보고탭 ' + esc((RP.J4||'').trim()) +
+      ' · 일자탭 계약 합계 ' + esc((c.J4||'').trim()) + ' · 차이 <b>' + _won(accGap) +
+      '</b> (보고탭 팀별 누적은 손입력 칸이라 계약 명단과 갈립니다)'
+    : '<b>이번 달 누적</b> — 보고탭과 일자탭 계약 합계가 같습니다.';
   var gapM = (s.membership + s.option) - num(c.C3);
   var gapL = Object.keys(s.teams).reduce(function(a, k){ return a + s.teams[k]; }, 0) + s.etc - num(c.F3);
   if (gapM || gapL) document.getElementById('err').innerHTML +=
