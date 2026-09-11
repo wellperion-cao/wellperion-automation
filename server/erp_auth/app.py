@@ -618,14 +618,17 @@ def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
             return auto
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
     hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
-    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 아이디 또는 회사 이메일로 로그인") + f"""<form method=post action=/auth/login>
+    # 머리글에 개인 계정을 적어 둔다(GM 지시 2026-09-11 "개인계정 가입하는 것도 열어놔줘").
+    # 흐름은 2026-09-05 부터 이미 열려 있었는데(개인 구글 = 이름·부서 확인 → GM 승인),
+    # 화면 문구가 「아이디 또는 회사 이메일」 이라 닫힌 것처럼 읽혔다.
+    return page("웰페리온 ERP 로그인", head("직원용 업무 화면 · 아이디 · 회사 이메일 · 개인 구글 계정으로 로그인") + f"""<form method=post action=/auth/login>
 <h1>로그인</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}{hint}
 <label>아이디 또는 이메일<input name=email type=text autocomplete=username placeholder="아이디 또는 이름@wellperion.com" required autofocus></label>
 <label>비밀번호<span class=pw><input name=password type=password autocomplete=current-password required>""" + TOGGLE + f"""</span></label>
 <input type=hidden name=next value="{escape(next)}"><button>로그인</button>
 {_social_login_buttons(next)}
-<div class=foot><p>구글 로그인이 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
-<p>계정이 없으면 <a href=/auth/signup>가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
+<div class=foot><p><b>개인 구글 계정(gmail 등)으로도 됩니다.</b> 처음이면 이름·부서만 알려주세요 — 승인은 GM 이 합니다.</p>
+<p>구글 계정이 없으면 <a href=/auth/signup>아이디로 가입 신청</a> · 비밀번호를 잊으셨으면 GM 께 말씀해 주세요.</p></div></form>""")
 
 
 @app.post("/auth/login")
