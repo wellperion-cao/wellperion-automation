@@ -553,7 +553,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
        실측: 체크 항목 9개·제출 버튼 모두 정상 동작했고 PIN 게이트도 없었다. 못 찾으신 원인은 이름 불일치였다 —
        안내문과 제출 버튼은 '일일 점검'인데 탭만 '주차점검'이라 그 이름을 찾다가 없다고 보신 것.
        버튼(일일 점검 제출)과 같은 낱말로 맞춘다. -->
-  <button class="tab" onclick="switchTab('check')">🧹 일일점검</button>
+  <!-- 2026-09-11 GM 지시 — 이름 '점검' · 이모지 📋. 빗자루(🧹)는 청소를 뜻해 이 탭이 청소 목록으로
+       읽혔는데 실제로는 차단기·정산기·CCTV·소독까지 보는 점검이다. 지원부 탭('점검(남)')과 낱말도 같아진다. -->
+  <button class="tab" onclick="switchTab('check')">📋 점검</button>
   <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
   <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
@@ -568,7 +570,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button onclick="printA3ParkingOnboarding();closeAllDropdowns()">A3 온보딩</button>
         <button onclick="printA3ParkingCS();closeAllDropdowns()">A3 응대 상황표</button>
         <button onclick="printA3ParkingSupply();closeAllDropdowns()">A3 비품 현황</button>
-        <button onclick="printA3ParkingChecklist();closeAllDropdowns()">A3 주차장 청결·점검표</button>
+        <button onclick="printA3ParkingChecklist();closeAllDropdowns()">A3 점검표</button>
         <hr style="border:none;border-top:1px dashed rgba(183,159,138,0.3);margin:4px 8px;">
         <button onclick="window.print();closeAllDropdowns()">현재 화면 그대로 인쇄</button>
       </div>
@@ -867,13 +869,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ══ 「🎓 온보딩」 탭 — A3 온보딩 인쇄본과 같은 구성을 화면에 렌더 (2026-08-18 GM 지시 · 인쇄 묶음=탭 정리).
      내용 사본 없음 — printA3ParkingOnboarding와 동일한 buildOnboardingGridHTML()이 직원구성(PARKING_TABLES.staff)·
      응대상황표(cs)·발렛동선(PARK_GUIDE_DATA pg_valet)·가이드요지(A3_GUIDELINE) 라이브 값을 조립. 탭 열 때마다 재렌더. ══ -->
-<!-- ── 🧹 주차점검 탭 (GM 지적 2026-08-25 "설마 매뉴얼·점검 맨아래에 있는 점검라인이야?") ──
+<!-- ── 📋 점검 탭 (GM 지적 2026-08-25 "설마 매뉴얼·점검 맨아래에 있는 점검라인이야?") ──
      지원부는 점검(남)·점검(여), 시설부는 🔧 시설점검이 각각 독립 탭인데 주차부만
      매뉴얼 탭 안 세 번째 아코디언에 접혀 있었다 — 2클릭에 스크롤까지 해야 보였고,
      그래서 2026-08-18 제출 배선을 연 뒤로 제출이 0건이었다. 다른 두 부서와 같은 모양으로 꺼낸다.
      탭 id 를 check 로 둔 이유 = 기존 #check 딥링크가 그대로 이 탭을 연다(배선 추가 없음). ── -->
 <div id="tab-check" class="content hidden">
-  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
+  <!-- ── 📋 주차 점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
        지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
   <div class="manual-section" id="parkChecklistSec" style="margin-top:0;">
     <!-- 제목 칸 삭제 (GM 지시 2026-09-11) — 탭 이름이 이미 「일일점검」이라 같은 말을 두 번 했다.
@@ -1010,7 +1012,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="a3ponb-host"></div>
 </div>
 
-<!-- ══ A3 주차장 청결·점검표 인쇄 전용 컨테이너 (화면 숨김 · 정적 체크리스트 — 지원부 점검 GAS 미연동) ══ -->
+<!-- ══ A3 주차 점검표 인쇄 전용 컨테이너 (화면 숨김 · 정적 체크리스트 — 지원부 점검 GAS 미연동) ══ -->
 <div id="a3-pchk-print">
   <div id="a3-pchk-host"></div>
 </div>
@@ -2116,7 +2118,7 @@ async function loadParkItemsFromServer(){
 function printA3ParkingChecklist(){
   const host=document.getElementById('a3-pchk-host');
   if(host){
-    let html='<div class="a3-print-header">주차장 청결·점검 체크리스트 <span style="font-size:9px;font-weight:600;color:#8a7a6c;">[AI 초안 — GM 검토]</span></div>';
+    let html='<div class="a3-print-header">주차 점검표 <span style="font-size:9px;font-weight:600;color:#8a7a6c;">[AI 초안 — GM 검토]</span></div>';
     /* 인쇄본도 조로 묶어 낸다 — 종이로 들고 도는 사람이 '지금 내가 도는 조'만 보면 되게.
        항목 출처 = PARK_ITEMS(서버 마스터가 있으면 그것, 없으면 PARK_CHECKLIST 시드) — 사본 없음. */
     PARK_ROUNDS_WEEKDAY.forEach(function(rd){
