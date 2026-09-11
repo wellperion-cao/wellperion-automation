@@ -142,6 +142,7 @@ def run_claude(
     timeout: int = _PER_MODEL_TIMEOUT,
     label: str = "",
     extra_args: list[str] | None = None,
+    cwd: str | None = None,
 ) -> tuple[str | None, str | None]:
     """claude CLI(claude -p --model X)를 재시도 정책 v2에 따라 호출.
 
@@ -183,6 +184,10 @@ def run_claude(
                     encoding="utf-8",
                     errors="replace",
                     timeout=timeout,
+                    # 저장소 밖에서 부르면 이 프로젝트의 CLAUDE.md·훅이 안 붙는다.
+                    # 2026-09-11 실측: 고척 블로그 본문 자리에 「[형식 고정] 8요소 표」 훅이
+                    # 붙어 블로그 글 대신 업무 보고 표가 4번 연속 나왔다(프롬프트로는 못 이긴다).
+                    cwd=cwd,
                 )
             except subprocess.TimeoutExpired:
                 last_err = f"타임아웃({timeout}s)"

@@ -38,6 +38,10 @@ LOG_FILE = ROOT / "logs" / "gocheok_blog_daily.log"
 UPLOADER = ROOT / "scripts" / "naver_blog_upload_playwright.py"
 
 TENANT = "jo"
+# 이 글에 나오면 안 되는 우리 쪽 낱말. 프롬프트와 검사가 같은 목록을 본다 —
+# 2026-09-11: 프롬프트는 「웰페리온」 하나만 금지했는데 검사는 셋을 막아,
+# 모델이 「정원제 스포츠클럽」을 써서 3,447자 글이 통째로 버려졌다.
+BANNED_OURS = ("웰페리온", "wellperion", "정원제 스포츠클럽", "정원제스포츠클럽")
 MIN_LEN = 2000
 ALLOWED_AMOUNT = 99000
 
@@ -99,6 +103,11 @@ def build_prompt(topic: str, style: dict) -> str:
     return f"""너는 고척 gdr QA 골프존(고척동 gdr QA 골프아카데미) 조재오 부장님 명의로 네이버 블로그
 글을 쓴다. 아래 규칙을 그대로 지켜 오늘 주제로 본문을 써라.
 
+# 출력 형태 — 이것부터 지켜라
+손님이 읽는 블로그 글 본문만 쓴다. 업무 보고가 아니다.
+표(|---|)·체크리스트 보고·작업 요약·「위 본문 그대로 쓰시면 됩니다」 같은 말을 쓰지 마라.
+2026-09-11 실측: 이 자리에서 블로그 글 대신 업무 보고 표가 나와 글이 통째로 버려졌다.
+
 # 오늘 주제
 {topic}
 
@@ -124,7 +133,8 @@ def build_prompt(topic: str, style: dict) -> str:
 # 하지 말 것
 - 푸터(주소·주차·운영시간·전화) 쓰지 마라 — 코드가 따로 붙인다
 - 해시태그 쓰지 마라 — 코드가 따로 붙인다
-- "웰페리온" 이름·문구를 쓰지 마라 — 이 글은 고척골프(조재오부장님) 계정 글이다
+- 이 글은 고척 gdr QA 골프존 한 곳의 글이다. 다른 회사·브랜드의 이름이나 그 회사가 쓰는
+  소개 표현을 한 번도 쓰지 마라 — 우리 연습장 이야기만 쓴다
 - 99,000원 외의 금액을 쓰지 마라
 - 등록·결제를 재촉하지 마라
 
@@ -159,8 +169,12 @@ def run_checks(body: str, style: dict) -> list[str]:
             errs.append(f"허용 안 된 금액 발견: {a.strip()}")
     if "#고척골프" not in body:
         errs.append("#고척골프 태그 없음")
-    if re.search(r"웰페리온|wellperion|정원제\s*스포츠클럽", body, re.IGNORECASE):
-        errs.append("웰페리온 문구/브랜드 혼입")
+    if "|---|" in body.replace(" ", "") or "GM요청" in body or "더나았을방법" in body:
+        errs.append("블로그 글이 아니라 업무 보고 표가 왔다")
+    low = body.lower()
+    hit = [w for w in BANNED_OURS if w.lower() in low]
+    if hit:
+        errs.append("우리 쪽 낱말 혼입: " + ", ".join(hit))
     if len(body) < MIN_LEN:
         errs.append(f"본문 {len(body)}자 — {MIN_LEN}자 미만")
     return errs
@@ -218,7 +232,10 @@ def main() -> int:
 
     from model_router import run_claude
     prompt = build_prompt(topic, style)
-    llm_body, used_model = run_claude(prompt, label="gocheok-blog-daily")
+    # 저장소 밖에서 부른다 — 이 프로젝트의 CLAUDE.md·훅(「[형식 고정] 8요소 표」)이 붙으면
+    # 블로그 본문 자리에 업무 보고 표가 나온다(2026-09-11 실측, 4회 연속). 프롬프트로는 못 이긴다.
+    llm_body, used_model = run_claude(prompt, label="gocheok-blog-daily",
+                                      cwd=tempfile.gettempdir())
     if not llm_body:
         msg = f"고척골프 블로그 실패 — 모델 호출 실패(주제: {topic})"
         log(msg)
@@ -230,7 +247,14 @@ def main() -> int:
     errs = run_checks(body, style)
     if errs:
         reason = "; ".join(errs)
-        msg = f"고척골프 블로그 실패 — 검사 불통과({reason}) 주제: {topic}"
+        fail_path = ROOT / "status" / "drafts" / ("고척블로그_불통과_%s.md" % datetime.now().strftime("%Y%m%d_%H%M%S"))
+        try:
+            fail_path.parent.mkdir(parents=True, exist_ok=True)
+            fail_path.write_text("# %s\n\n<!-- 불통과 사유: %s -->\n\n%s" % (topic, reason, body), encoding="utf-8")
+        except OSError:
+            fail_path = None
+        msg = ("고척골프 블로그 실패 — 검사 불통과(%s) 주제: %s" % (reason, topic)
+               + (" · 본문 %s" % fail_path.name if fail_path else ""))
         log(msg)
         notify(msg)
         _record_run(state, topic, "fail", reason, len(body), used_model)
