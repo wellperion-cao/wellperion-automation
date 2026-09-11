@@ -439,6 +439,22 @@ def build() -> str:
         {table([row_html(n, d, it) for n, d, it in mine], "열린 건 없음")}
       </div>''')
 
+    # ★MANAGERS 밖 담당(예: 최준용M)도 반드시 어딘가에 보인다 — 2026-09-11 사고: 상가 4건 담당을
+    #   최준용M 으로 바꾸자 사람별 블록(3인)에도, 담당 미정(빈칸)에도 안 걸려 화면에서 통째로
+    #   사라졌다(GM 「업무SSOT에서 분리수거장 시안물 부착 업무가 사라졌어요」). 이름을 늘리는 대신
+    #   「그 밖의 담당」 한 자리를 두어, 앞으로 어떤 이름이 와도 사라지지 않게 한다.
+    mgr_names = {m[0] for m in MANAGERS}
+    others = sorted(((n, d, it) for n, (d, it) in opens.items()
+                     if str(it.get("owner") or "").strip()
+                     and str(it.get("owner") or "").strip() not in mgr_names), key=lambda x: x[0])
+    if others:
+        shown += [(n, d, it, str(it.get("owner") or "").strip()) for n, d, it in others]
+        blocks.append(f'''      <div class="blk">
+        <h2>그 밖의 담당 <span class="sub">위 세 분이 아닌 분께 배정된 것 · {len(others)}건 ·
+          그 방에 안 계신 분이면 실장·소장을 거쳐 전달됩니다</span></h2>
+        {table([row_html(n, d, it) for n, d, it in others], "없음")}
+      </div>''')
+
     unassigned = sorted(((n, d, it) for n, (d, it) in opens.items()
                          if not str(it.get("owner") or "").strip()), key=lambda x: x[0])
     shown += [(n, d, it, "담당 미정") for n, d, it in unassigned]
