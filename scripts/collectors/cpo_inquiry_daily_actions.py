@@ -33,6 +33,49 @@ _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membe
 _LINK_LESSON = _LINK + "?manage=lesson"
 
 
+def _loss_not_stamped(today: str) -> list:
+    """종료일이 이틀 넘게 지났는데 LOSS일자가 아직 빈칸인 종료회원 목록.
+
+    왜 이틀이냐: 자동 도장은 '잔여일이 음수'가 된 뒤에 찍는다. 종료 당일은 잔여일 0
+    (만료일까지 유효)이라 대상이 아니고, 그 다음 날 밤 23시에 종료일+1 로 찍힌다.
+    그래서 하루 비어 있는 것은 정상이고, 이틀이 넘게 비어 있으면 도장이 안 돈 것이다.
+
+    2026-09-11: 위 _loss_stamped_before_report 는 '너무 일찍 찍힌 것'만 센다 —
+    화면·사람 경유 쓰기만 이력에 남기 때문이다. 밤 도장이 아예 멈추면 이력에 아무
+    기록도 안 남아 그 감시기는 영원히 0건을 낸다. 안 찍힌 쪽은 여기서 센다.
+
+    원천 = status/member_ended_snapshot.json (cpo_inquiry_snapshot.py 가 3분마다 갱신).
+    """
+    from datetime import datetime as _dt, timedelta as _td   # noqa: PLC0415
+    snap = os.path.join(_PROJECT_ROOT, "status", "member_ended_snapshot.json")
+    try:
+        with open(snap, encoding="utf-8") as fh:
+            rows = (json.load(fh) or {}).get("rows") or []
+    except Exception:
+        return []
+    try:
+        cutoff = (_dt.strptime(today, "%Y-%m-%d") - _td(days=2)).strftime("%Y-%m-%d")
+    except Exception:
+        return []
+
+    def _cell(row, want):
+        for k, v in row.items():
+            if want in str(k).replace(" ", "").replace(chr(10), ""):
+                return str(v or "").strip()
+        return ""
+
+    hits = []
+    for r in rows:
+        if not isinstance(r, dict) or not _cell(r, "회원명"):
+            continue
+        end = _cell(r, "종료일자").replace(".", "-")
+        if not end or _cell(r, "LOSS일자"):
+            continue
+        if end <= cutoff:
+            hits.append({"회원": _cell(r, "회원명"), "종료일자": end})
+    return hits
+
+
 def _loss_stamped_before_report(today: str) -> list:
     """오늘 09:30 보고 전에 LOSS일자가 찍힌 기록을 돌려준다(없으면 빈 목록).
 
@@ -100,9 +143,12 @@ def collect(module=None) -> dict:
 
     # 보고(09:30) 전에 LOSS일자가 찍혔는지 — 찍혔으면 그날 보고 회원수가 시트와 갈린다.
     loss_early = _loss_stamped_before_report(today)
+    # 반대쪽 — 밤 23시 도장이 멈춰 아예 안 찍힌 것(이력에 안 남아 위 감시기는 못 본다).
+    loss_missing = _loss_not_stamped(today)
 
     metrics = [
         {"label": "보고 전(09:30) LOSS일자 기재", "value": len(loss_early)},
+        {"label": "LOSS일자 안 찍힘(종료 이틀 지남)", "value": len(loss_missing)},
         {"label": "오늘 신규 문의", "value": len(today_new)},
         {"label": "미컨택(연락기록 0건)", "value": len(uncontacted)},
         {"label": "오늘 상담·체험 예약", "value": len(todays_res)},
@@ -121,6 +167,13 @@ def collect(module=None) -> dict:
          "value": lesson_blank["recent"] if lesson_blank else "미측정"},
     ]
     summary = ""
+    if loss_missing:
+        who_m = " · ".join(f"{h['회원']}(종료 {h['종료일자']})" for h in loss_missing[:3])
+        summary += (
+            f"🚨 LOSS일자 안 찍힘 {len(loss_missing)}건 — {who_m}"
+            + (" 외" if len(loss_missing) > 3 else "")
+            + " · 밤 23시 자동 도장이 멈춘 것으로 본다 · "
+        )
     if loss_early:
         who = " · ".join(
             f"{h['시각']} {h['회원']}({h['계정']})" for h in loss_early[:3]

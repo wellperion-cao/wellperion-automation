@@ -7962,6 +7962,7 @@ function _autoFillLossDate() {
     var d = new Date(Number(yr), Number(m[2]) - 1, Number(m[3]) + 1);
     var lv = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     row[lossCol] = lv;   // 화면 표시만 — 기록은 밤 23시 자동 도장이 한다(위 주석)
+    row.__lossPlanned = 1;   // 저장된 값이 아니라 '찍힐 예정'임을 셀 렌더가 알아보게 한다(2026-09-11 시포)
   });
 }
 
@@ -9210,6 +9211,14 @@ function _activeRowHtml(row, displayCols) {
         var _dv = String(_cv == null ? '' : _cv).trim();
         var _dm = _dv.match(/^(\d{2})(\d{2})([-.\/])(\d{1,2})\3(\d{1,2})/);
         if (_dm) _dv = _dm[2] + '-' + ('0' + _dm[4]).slice(-2) + '-' + ('0' + _dm[5]).slice(-2);
+        /* LOSS일자 예정값은 저장된 값과 눈으로 구분되게 한다 (GM 지적 2026-09-11 "로스가 지금 시간에 반영이 되었는데").
+           _autoFillLossDate 가 채운 값은 아직 시트에 없다 — 밤 23시 자동 도장이 찍는다. 그런데 검은 글씨로
+           똑같이 보여서 기록된 것으로 읽혔다. 회색 + '예정'으로만 바꾼다(값·정렬·필터는 그대로). */
+        if (row.__lossPlanned && /LOSS/.test(h)) {
+          return void (html += '<td style="white-space:nowrap;min-width:92px;text-align:center;color:var(--dim);font-style:italic"' + editAttr +
+            ' data-raw="' + esc(row[h] == null ? '' : row[h]) + '"' +
+            ' title="아직 기록 전입니다 — 오늘 밤 23시에 이 날짜로 찍힙니다">' + esc(_dv || '—') + ' 예정</td>');
+        }
         return void (html += '<td style="white-space:nowrap;min-width:92px;text-align:center"' + editAttr + '>' + esc(_dv || '—') + '</td>');
       }
       // 종목 표기 정리(GM 지시 2026-08-03) — 화면에서만 다듬는다. 시트 원본 값은 손대지 않는다.
@@ -9776,6 +9785,8 @@ function _wireActiveDblclick(){
       }
       // 로컬 _activeRows 갱신
       if (r) r[col] = newVal;
+      // 사람이 LOSS일자를 직접 넣었으면 더는 '예정'이 아니다 — 예정 표시를 뗀다(2026-09-11 시포).
+      if (r && /LOSS/.test(String(col))) delete r.__lossPlanned;
       var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
       // ★등록일자 편집 시 rowKey 즉시 갱신(2026-08-05 시포 — INC: 동기화 실패 연쇄 근본수리).
       //   등록일자는 rowKey 지문의 ts 재료다. 이 칸을 바꾼 뒤 시작일자·종료일자를 편집하면
