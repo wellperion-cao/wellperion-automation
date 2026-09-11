@@ -7966,15 +7966,32 @@ function _autoFillLossDate() {
   });
 }
 
+/* 법인 유효 인원 - 잔여일이 음수인 행(계약 만료)은 빼고 센다. 집계(cpo_today_stats)와 같은 잣대.
+   잔여일이 비었거나 숫자가 아니면 센다(빼지 않는다) - 값이 없다고 만료로 단정하지 않는다. */
+function _corpValidCount(rows) {
+  var remCol = _capCol(_activeHeaders, '잔여일');
+  if (!remCol) return rows.length;
+  var n = 0;
+  rows.forEach(function(row) {
+    var v = parseInt(String(row[remCol] == null ? '' : row[remCol]).replace(/[^\-0-9]/g, ''), 10);
+    if (isNaN(v) || v >= 0) n++;
+  });
+  return n;
+}
+
 function _activeApplyData(headers, rows) {
   _activeHeaders = headers || [];
   _activeRows    = rows    || [];
   _activeLoaded  = true;
-  // 법인 명단 로드 완료 시 집계를 실측값으로 동기화(cpo_today_stats 집계와 ±1 오차 해소 — 배798 감사)
+  /* 법인 명단 로드 완료 시 집계를 실측값으로 동기화(cpo_today_stats 집계와 +-1 오차 해소 - 배798 감사)
+     ★2026-09-11 시포 - 행 수가 아니라 '기간이 안 지난 행'만 센다 (GM 확인 "법인 지금 31명이 맞는 것 같은데").
+     법인 시트에 만료된 행이 남아 있으면(서태창님 종료 2026-07-21) 행 수는 32, 집계는 31이 되어
+     법인 탭을 여는 순간 화면 합계가 1025에서 1026으로 튀었다. 집계와 같은 잣대로 세어 한 숫자만 보이게 한다. */
   if (_activeScope === 'corp' && _cpoStats && rows && rows.length) {
-    _cpoStats.memberCorp = rows.length;
-    _setTxt('dMemCorp', rows.length);
-    _setTxt('dMemActive', (Number(_cpoStats.memberActive) || 0) + rows.length);
+    var _corpN = _corpValidCount(rows);
+    _cpoStats.memberCorp = _corpN;
+    _setTxt('dMemCorp', _corpN);
+    _setTxt('dMemActive', (Number(_cpoStats.memberActive) || 0) + _corpN);
   }
   _liMemberPhoneCache_ = null;  // 회원목록 변경 → 강습문의 배지 캐시 무효화(FB260824-202030)
   try { ['adult','youth'].forEach(function(_lt){ var _ls=_lessonState[_lt]; if(_ls&&_ls.loaded&&(_ls.rows||[]).length){lessonRender(_lt);lessonLossRender(_lt);lessonWaitRender(_lt);} }); } catch(_le){}
