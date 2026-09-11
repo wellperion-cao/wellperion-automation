@@ -257,7 +257,8 @@ function setLayer(role){
 
   var up = document.getElementById('up-admin');
   if (isManager) {
-    if (role === 'admin') { up.href = '/erp/admin/'; up.textContent = '회사 관리자 콘솔 ↑'; up.hidden = false; }
+    // 회사 관리자 콘솔로 올라가는 줄은 두지 않는다 (GM 지시 2026-09-11) —
+    // 파트너사가 보는 화면에 파는 회사 쪽 문이 보일 자리가 아니다. 주소로는 그대로 들어간다.
   } else {
     // 직원 층 — 비용·권한 탭은 이 층의 것이 아니다
     document.getElementById('menu-admin').hidden = true;   // 비용·권한은 이 층의 것이 아니다
