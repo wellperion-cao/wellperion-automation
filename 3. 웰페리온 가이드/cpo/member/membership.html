@@ -7754,7 +7754,7 @@ function _activeGapBaseRows() {
 }
 function _activeBaseRows() {
   if (_activeGapFilter) return _activeGapFilterApply(_activeGapBaseRows());
-  return _actPeriodFilter(_activeRegClassFilterApply(_activeTypeFilterApply(_activeStartFilterApply(_activeRows))));
+  return _corpExpiredFilterApply(_actPeriodFilter(_activeRegClassFilterApply(_activeTypeFilterApply(_activeStartFilterApply(_activeRows)))));
 }
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
@@ -7977,6 +7977,17 @@ function _corpValidCount(rows) {
     if (isNaN(v) || v >= 0) n++;
   });
   return n;
+}
+/* 법인 명단 표에서 만료 행 제거 - _corpValidCount와 같은 잣대(집계=표 인원 일치).
+   FB260911-125304 이경연 "종료일 7월 21일·LOSS일자 적혀 있는데 법인 명단에 그대로 계십니다" */
+function _corpExpiredFilterApply(rows) {
+  if (_activeScope !== 'corp') return rows;
+  var remCol = _capCol(_activeHeaders, '잔여일');
+  if (!remCol) return rows;
+  return rows.filter(function(row) {
+    var v = parseInt(String(row[remCol] == null ? '' : row[remCol]).replace(/[^\-0-9]/g, ''), 10);
+    return isNaN(v) || v >= 0;
+  });
 }
 
 function _activeApplyData(headers, rows) {
