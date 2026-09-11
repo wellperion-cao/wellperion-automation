@@ -325,5 +325,23 @@ def main() -> int:
     return 1
 
 
+def _release_modifiers() -> None:
+    """어떻게 끝나든 Ctrl·Shift·Alt·Win 을 놓는다 (배 2530).
+
+    여기도 Ctrl+S 를 '누름 → 키 → 놓음' 으로 꽂는다. 중간에 끊기면 Ctrl 이 눌린 채 남고,
+    그 뒤 GM 이 휠을 굴리면 화면이 통째로 확대된다. 정본은 kakao_report_sender 한 곳이라
+    거기서 가져다 쓴다(약속 L21 — 같은 일을 하는 함수를 새로 만들지 않는다).
+    """
+    try:
+        from kakao_report_sender import release_modifiers
+        release_modifiers()
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    _release_modifiers()
+    try:
+        sys.exit(main())
+    finally:
+        _release_modifiers()

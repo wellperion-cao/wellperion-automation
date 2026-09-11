@@ -963,6 +963,27 @@ def clear_input(input_box) -> None:
         pass
 
 
+_MODIFIER_KEYS = ("ctrl", "shift", "alt", "win", "ctrlleft", "ctrlright",
+                  "shiftleft", "shiftright", "altleft", "altright", "winleft", "winright")
+
+
+def release_modifiers() -> None:
+    """Ctrl·Shift·Alt·Win 을 강제로 놓는다 (배 2530).
+
+    이 발신기는 곳곳에서 '누름 → 키 → 놓음' 구조(type_keys("^v")·hotkey("ctrl","tab"))를 쓴다.
+    그 사이에서 프로세스가 끊기면 놓기가 실행되지 않아 Ctrl 이 시스템에 눌린 채 남고,
+    그 뒤 GM 이 휠을 굴리면 카카오톡·터미널이 통째로 확대된다(2026-09-11 실측 — 오늘 이
+    발신기가 중복 가드·화면 잠금 대기·전송창 멈춤으로 여러 번 중간에 끊겼다).
+    시작할 때 한 번(앞 실행의 잔재를 안 물려받게), 끝날 때 한 번(어떻게 끝나든) 부른다.
+    best-effort — 실패가 발신을 막지 않는다.
+    """
+    for key in _MODIFIER_KEYS:
+        try:
+            pyautogui.keyUp(key)
+        except Exception:
+            pass
+
+
 def paste_text(input_box, text: str) -> None:
     """캡션은 한글 포함 → type_keys 대신 클립보드 경유 붙여넣기(IME 조합 문제 회피)."""
     prev = None
@@ -2393,6 +2414,23 @@ def _selftest() -> None:
             globals()["find_clipboard_popup"] = _real_find
         print("SELFTEST OK: 사진 전송창이 남아 있으면 전송 확정을 실패로 돌려준다")
 
+        # ⑥-e 수식키 강제 해제(배 2530) — 한 키가 실패해도 나머지를 끝까지 놓아야 한다.
+        _released, _real_keyup = [], pyautogui.keyUp
+        def _fake_keyup(k):
+            if k == "shift":
+                raise RuntimeError("이 키만 실패")
+            _released.append(k)
+        pyautogui.keyUp = _fake_keyup
+        try:
+            release_modifiers()
+        finally:
+            pyautogui.keyUp = _real_keyup
+        assert "ctrl" in _released and "win" in _released, _released
+        assert len(_released) == len(_MODIFIER_KEYS) - 1, _released
+        # 진짜로도 한 번 놓아 둔다 — 이 자체점검이 키를 눌린 채 남기지 않게.
+        release_modifiers()
+        print("SELFTEST OK: 수식키를 끝까지 놓는다(한 키가 실패해도 멈추지 않는다)")
+
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
         #    사고가 나면 안 된다.
@@ -2682,4 +2720,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # 어떻게 끝나든 수식키를 놓고 나간다(배 2530) — 눌린 채 남은 Ctrl 이 GM 의 다음 휠 한 번에
+    # 카카오톡·터미널을 통째로 확대시킨다. 시작할 때도 한 번 놓아 앞 실행의 잔재를 안 물려받는다.
+    release_modifiers()
+    try:
+        sys.exit(main())
+    finally:
+        release_modifiers()
