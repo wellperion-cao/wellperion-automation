@@ -1358,7 +1358,7 @@ if (window.matchMedia) {
 <script>
 (function(){
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-  var RS_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/cmo_reaction_scorecard.json';
+  var RS_URL='/repo/status/cmo_reaction_scorecard.json';
   var wrap=document.getElementById('reaction-scorecard-wrap');
   if(!wrap) return;
   function fmtBlog(sig){ // 블로그 조회수는 네이버 로그인 필요 — 구조적으로 항상 측정불가(GM 명시 요구)

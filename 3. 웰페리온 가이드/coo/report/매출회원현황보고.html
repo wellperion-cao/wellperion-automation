@@ -938,7 +938,7 @@ function load(){
   /* 연 지출 — 서버 미러(/api/misc)가 서기 전까지 GAS home_kpi 가 20초를 먹는다(시포 실측 2026-09-04). 같은 값을
      erp_status_publisher 가 30분마다 status/home_kpi_snapshot.json 에 써 두므로 그걸 먼저 읽고(0.3초), 못 읽을 때만
      종전 경로(서버 → GAS). 회원 화면의 스냅샷 가속층과 같은 방식·같은 원천(raw GitHub). */
-  var p4 = fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/home_kpi_snapshot.json?cb=' + Date.now())
+  var p4 = fetch('/repo/status/home_kpi_snapshot.json?cb=' + Date.now())
     .then(function(r){ return r.json(); })
     .then(function(s){
       var d = s && s.data;
@@ -1290,7 +1290,7 @@ function p2fetch(action, qs){
 
 /* 오늘 챙길 것 — 문의 쪽 세 숫자는 회원관리 ERP 가 아니라 매일 아침 도는 시포 집계에 있다.
    그 집계 결과 파일을 원격에서 그대로 읽는다(값을 여기서 다시 세지 않는다 · 약속 L01). */
-var ACT_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/heartbeats/cpo-inquiry-daily-actions.json';
+var ACT_URL = '/repo/status/heartbeats/cpo-inquiry-daily-actions.json';
 
 function p2num(n){ return (n == null || isNaN(n)) ? '–' : n.toLocaleString('ko-KR'); }
 

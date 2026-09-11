@@ -2204,7 +2204,7 @@ initParkingTables();
 var MP_DEPT = '주차';
 var PRAC_ID = 'lee-jh';
 var OWNER_LABEL = '이정헌 소장 (통합관리)';
-var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var PLAN_URL = '/repo/status/monthly_ops_plan.json';
 var MP_LOADED = false;
 var MP_PLAN_DATA = null;
 var MP_CURRENT_KEY = null;
@@ -2497,7 +2497,7 @@ function renderPmImprovements(data){
 }
 
 /* ── ✅ 주차 실적(월간) — status/parking_revenue.json 직독 (크롤러 매일 07:00 발행 · 실결제 payAmt 기준) ── */
-var PARKING_REVENUE_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue.json';
+var PARKING_REVENUE_URL = '/repo/status/parking_revenue.json';
 var PK_LOADED = false;
 function pkWon(n){ return '₩'+Number(n||0).toLocaleString('ko-KR'); }
 function pkFmtDate(ymd){

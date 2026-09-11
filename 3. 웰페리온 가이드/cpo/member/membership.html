@@ -3461,7 +3461,7 @@ function _wpKeyParam(){ try { var t = (localStorage.getItem('wp_access_token')||
    (유실 0 게이트 ①). 스냅샷 fetch 자체가 실패해도 조용히 폴백(캐시 없으면 기존 스피너) — 사용자
    토스트 없음, console.warn만(비필수 가속층 실패는 소음 아님). 설계:
    docs/superpowers/specs/2026-07-16-문의읽기-서버스냅샷-design.md · job: scripts/cpo_inquiry_snapshot.py */
-var _SNAP_RAW_BASE_ = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/';
+var _SNAP_RAW_BASE_ = '/repo/status/';
 var _snapMemberPromise_ = null, _snapLessonPromise_ = null;
 function _snapFetchJson_(url) {
   return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
@@ -15057,7 +15057,7 @@ function esc(s) {
      status/kakao_last_send.json 패턴(카톡전송관리.html)과 동일하게 raw.githubusercontent 공개 조회. -->
 <script>
 (function(){
-  var RAW_BASE_CPO = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var RAW_BASE_CPO = '/repo/';
   var ROOM_LABEL = { daily: '문의알림방', weekly: 'GM채널', monthly: 'GM채널' };
   var KIND_LABEL = { daily: '일', weekly: '주', monthly: '월' };
 

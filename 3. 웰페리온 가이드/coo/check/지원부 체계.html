@@ -9574,7 +9574,7 @@ function printA3Onboarding(){
 var MP_DEPT = '지원부';
 var PRAC_ID = 'lee-jh';
 var OWNER_LABEL = '이정헌 소장 (시설·지원·주차 통합관리)';
-var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var PLAN_URL = '/repo/status/monthly_ops_plan.json';
 var MP_LOADED = false;
 var MP_STATUS_STYLE = {
   '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},
@@ -9686,7 +9686,7 @@ async function loadMonthlyPlanTab(){
      (scripts/check_incomplete_detector.py detect_dead_items — 같은 규칙).
    자동 삭제 없음 — 사람이 판단할 목록만 보인다. 후보 0건이면 카드 자체를 숨긴다.
    ═══════════════════════════════════════════ */
-var WP_DEAD_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/check_incomplete_ledger.json';
+var WP_DEAD_URL = '/repo/status/check_incomplete_ledger.json';
 var WP_DEAD_SHIFT = {am:'오전조', pm:'오후조', close:'마감조', night:'야간조'};
 var WP_DEAD_LOADED = false;
 async function wpDeadItemsLoad(){

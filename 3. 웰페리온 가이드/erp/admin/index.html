@@ -643,7 +643,7 @@
      바로 못 읽는다. 자율현황.html 이 쓰는 같은 방식(같은 서버 사본 우선 → 없으면 GitHub raw)을
      그대로 재사용한다(새 방식을 만들지 않는다). */
   (function(){
-    var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+    var RAW = '/repo/';
     function get(path){
       var local = (location.hostname === 'erp.wellperion.com')
         ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })

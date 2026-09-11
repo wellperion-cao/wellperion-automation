@@ -700,7 +700,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      라이브가 안 되면 예전 시드로 물러선다(숫자가 0이 되는 것보다 낫다). 0건이면 안내 자체를 감춘다. */
   (function(){
     var LIVE = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec?action=load_schedule&cb=';
-    var SEED = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=';
+    var SEED = '/repo/status/schedule_ssot.json?cb=';
     function countBlank(items){
       return (items||[]).filter(function(it){
         return it && it.type === '정기점검' && String(it.dept||'').indexOf('시설') >= 0 && !String(it.last_done||'').trim();
@@ -4441,7 +4441,7 @@ async function printA3FacilityMonthly(monthArg){
 var MP_DEPT = '시설';
 var PRAC_ID = 'lee-jh';
 var OWNER_LABEL = '이정헌 소장';
-var PLAN_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+var PLAN_URL = '/repo/status/monthly_ops_plan.json';
 var MP_LOADED = false;
 var MP_STATUS_STYLE = {
   '계획': {color:'var(--dim)', bg:'rgba(140,139,131,0.14)'},

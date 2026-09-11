@@ -319,7 +319,7 @@
   </details>
   <script>
   (function(){
-    var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+    var RAW = '/repo/';
     function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function get(path){ // erp 도메인이면 같은 서버 사본(1분 동기) 먼저, 없으면 GitHub raw — 큐 라이브 지연 5분→1분(GM 2026-09-05)
       var local = (location.hostname === 'erp.wellperion.com') ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }) : Promise.reject(0);
@@ -378,7 +378,7 @@
 
   <script>
   (function(){
-    var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+    var RAW = '/repo/';
     function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function get(path){ // erp 도메인이면 같은 서버 사본(1분 동기) 먼저, 없으면 GitHub raw — 큐 라이브 지연 5분→1분(GM 2026-09-05)
       var local = (location.hostname === 'erp.wellperion.com') ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }) : Promise.reject(0);
@@ -477,7 +477,7 @@
 <script>
 (function(){
   var GAS_URL  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-  var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var RAW_BASE = '/repo/';
 
   var esc = function(s){
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

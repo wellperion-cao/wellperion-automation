@@ -250,7 +250,7 @@ function rtMemberList(scope){
   return page(null).then(all=>({ok:true,scope,data:all,count:all.length,_source:'sheet-mirror'}))
     .catch(e=>{console.warn('[재등록] API 실패 → GAS 폴백:',e&&e.message);return gas();});
 }
-const RENEWAL_SUMMARY_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/member_expiry_summary.json';
+const RENEWAL_SUMMARY_URL='/repo/status/member_expiry_summary.json';
 const RT_END_KEY='종료\n일자',RT_OWNER_KEY='담당자',RT_NAME_KEY='회원명',RT_CDATE_KEY='재등록상담 날짜',RT_CNOTE_KEY='재등록상담 내용';
 const RT_CONTACT_STATUS_KEY='컨택상태'; // 미컨택·컨택중·컨택완
 const RT_NOREG_REASON_KEY='미등록사유';
