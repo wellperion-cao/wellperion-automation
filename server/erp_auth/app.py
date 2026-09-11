@@ -659,19 +659,55 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
     return r
 
 
+SIGNUP_JS = r"""
+<script>
+/* 아이디 칸 — 서버가 이미 하는 정리(공백 제거·소문자)를 화면에서도 한다(GM 막힘 2026-09-11).
+   종전에는 pattern 으로만 막아서, 자동완성이 넣은 앞뒤 공백·대문자·폭 없는 공백 하나에
+   브라우저가 「요청한 형식과 일치시키세요」를 띄웠다 — 무엇을 고쳐야 하는지 알 수 없는 문구다.
+   회사 이메일(@wellperion.com)도 서버는 받아 주는데 옛 pattern 이 @ 를 막고 있었다. */
+(function(){
+  var el = document.getElementById('uid');
+  if (!el) return;
+  var ID = /^[a-z0-9._]{4,20}$/, MAIL = /^[a-z0-9._%+-]+@wellperion[.]com$/;
+  var JUNK = /[\s\u200b-\u200d\ufeff]/g;   // 눈에 안 보이는 공백까지 턴다(정규식 그대로 — 문자열로 쓰면 역슬래시가 한 겹 벗겨진다)
+  function clean(v){
+    return String(v || '').replace(JUNK, '').toLowerCase();
+  }
+  function check(){
+    var v = clean(el.value);
+    if (el.value !== v) el.value = v;                 // 붙여넣기·자동완성 값도 그 자리에서 정리
+    if (!v) { el.setCustomValidity('아이디를 입력해 주세요'); return; }
+    if (ID.test(v) || MAIL.test(v)) { el.setCustomValidity(''); return; }
+    if (v.length < 4) { el.setCustomValidity('아이디가 짧습니다 — 4자 이상으로 적어 주세요'); return; }
+    if (v.length > 20) { el.setCustomValidity('아이디가 깁니다 — 20자 안으로 적어 주세요'); return; }
+    var bad = v.replace(/[a-z0-9._]/g, '');
+    el.setCustomValidity(bad
+      ? '아이디에 쓸 수 없는 글자가 있습니다: ' + bad.split('').join(' ') + ' — 영문 소문자·숫자·마침표·밑줄만 됩니다'
+      : '아이디 형식을 확인해 주세요');
+  }
+  el.addEventListener('input', check);
+  el.addEventListener('blur', check);
+  el.form.addEventListener('submit', check);
+  check();
+})();
+</script>
+"""
+
+
 @app.get("/auth/signup")
 def signup_page(msg: str = ""):
     dept_opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
     return page("웰페리온 ERP 가입 신청", head("직원용 업무 화면 · 가입 신청") + f"""<form method=post action=/auth/signup>
 <h1>가입 신청</h1>{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
-<label>아이디<input name=username autocomplete=username minlength=4 maxlength=20 pattern="[a-z0-9._]{{4,20}}"
-title="영문 소문자·숫자·.·_ 4~20자" placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
+<label>아이디<input id=uid name=username autocomplete=username maxlength=40
+placeholder="영문 소문자·숫자·.·_ 4~20자" required></label>
 <label>비밀번호<input name=password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
 <label>이름<input name=name placeholder="직함 포함, 예: 홍길동 매니저" autocomplete=name required></label>
 <label>연락처<input name=phone type=tel autocomplete=tel placeholder="010-0000-0000" required></label>
 <label>부서<select name=dept required><option value="">선택</option>{dept_opts}</select></label>
 <button>신청</button><div class=foot><p>이름·연락처는 인사 등록 정보와 대조됩니다. 신청하면 GM 께 알림이 가고, 승인되면 그 계정으로 로그인할 수 있습니다.</p>
-<p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>""")
+<p>이미 계정이 있으면 <a href=/auth/login>로그인</a></p></div></form>
+""" + SIGNUP_JS + """""")
 
 
 @app.post("/auth/signup")
