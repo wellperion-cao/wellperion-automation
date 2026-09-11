@@ -361,7 +361,6 @@
 
   <div class="foot">
     <div><b>이 보고서가 보는 것</b> — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.</div>
-    <div><b>부서별 진행 사항</b> — 팀별 운영 현황·시설·지원·주차·인사&amp;파트너팀·핵심 보고는 <b>월간운영계획</b>의 「전 부서 보고 사항」에서 봅니다(같은 시트를 읽습니다).</div>
     <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
   </div>
 
@@ -392,6 +391,12 @@
 
   <div class="body">
     <div class="col">
+      <!-- 오늘 등록 내역 — 왼쪽 멤버십 · 오른쪽 강습(GM 지시 2026-09-11). 원천은 그날 일자탭
+           (「2026년 N월 매출 보고」 파일의 1~31 탭)이고, 기본 진입은 오늘 탭을 읽는다. -->
+      <div class="sec">
+        <h2 id="p2memh">오늘 등록 — 멤버십</h2>
+        <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
       <div class="sec">
         <h2>오늘 · 이번 달 움직임</h2>
         <div class="bd" id="p2today"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -412,8 +417,8 @@
 
     <div class="col">
       <div class="sec">
-        <h2>계약 명단 — 회원권 · 강습</h2>
-        <div class="bd" id="p2contract"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
+        <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec">
         <h2>문의에서 가입까지</h2>
@@ -906,6 +911,8 @@ function load(){
   document.getElementById('audit').className = 'audit wait';
   document.getElementById('audit').innerHTML = '자체 점검 중…';
 
+  loadTodayContracts();   // 2페이지 오늘 등록 내역 — 보고탭과 별개로 오늘 일자탭을 읽는다
+
   var p1 = drGet('dump')
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
@@ -1101,7 +1108,7 @@ function readContracts(c, cols){
     if (!staff || !member) continue;
     rows.push({ staff: staff || '–', member: member || '–', sport: c[cols[2]+r] || '–',
                 amount: num(c[cols[3]+r]), amountRaw: String(c[cols[3]+r] || '–').trim(),
-                type: c[cols[5]+r] || '–' });
+                type: c[cols[5]+r] || '–', route: String(c[cols[6]+r] || '').trim() });
   }
   rows.sort(function(a, b){ return b.amount - a.amount; });
   return rows;
@@ -1180,13 +1187,39 @@ function renderDaySales(c, dayLabel){
   renderP2Contract(c, dayLabel);
 }
 
-/* 계약 명단 — 회원권 · 강습. 원천은 보고 시트 일자탭이고, 1페이지 매출 표에서 옮겨 왔다. */
+/* 등록 내역 — 왼쪽 멤버십 · 오른쪽 강습(성인·유소년). 원천은 그 날짜의 일자탭이다.
+   성인·유소년은 강습 블록의 '등록경로' 칸으로 가른다(정회원·비회원=성인 / 유소년=유소년). */
 function renderP2Contract(c, dayLabel){
-  var el = document.getElementById('p2contract'); if (!el) return;
-  el.innerHTML = '<div style="display:flex;gap:18px">' +
-    contractListHTML('회원권 계약 (' + dayLabel + ')', readContracts(c, ['A','B','C','D','E','F','G'])) +
-    contractListHTML('강습 계약 (' + dayLabel + ')', readContracts(c, ['H','I','J','K','L','M','N'])) +
-  '</div>';
+  var mem = document.getElementById('p2mem'), les = document.getElementById('p2les');
+  var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh');
+  if (h1) h1.textContent = dayLabel + ' 등록 — 멤버십';
+  if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (성인 · 유소년)';
+  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', readContracts(c, ['A','B','C','D','E','F','G']));
+  if (les) {
+    var rows = readContracts(c, ['H','I','J','K','L','M','N']);
+    var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
+    var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
+    les.innerHTML = '<div style="display:flex;gap:14px">' +
+      contractListHTML('성인 (' + adult.length + '건)', adult) +
+      contractListHTML('유소년 (' + kid.length + '건)', kid) + '</div>';
+  }
+}
+
+/* 기본 진입에서도 오늘 등록 내역이 뜨게 오늘 일자탭을 따로 읽는다(GM 지시 2026-09-11).
+   종전에는 날짜별 보기를 눌러야만 채워져, 기본 화면에서는 「불러오는 중…」이 그대로 남았다. */
+function loadTodayContracts(){
+  var t = new Date(), day = t.getDate();
+  var seg = function(range){
+    return drGet('dump', '&sheet=' + day + '&range=' + range)
+      .then(function(d){ return (d && d.ok) ? (d.cells || {}) : null; }).catch(function(){ return null; });
+  };
+  Promise.all([seg('A1:S20'), seg('A21:N45'), seg('A46:N60')]).then(function(parts){
+    if (VIEW_MODE !== 'default') return;   // 그 사이 GM 이 다른 날짜를 골랐으면 덮지 않는다
+    if (!parts[0]) return;
+    var c = {};
+    parts.forEach(function(p){ if (p) { for (var k in p) c[k] = p[k]; } });
+    renderP2Contract(c, '오늘 ' + (t.getMonth()+1) + '월 ' + day + '일');
+  });
 }
 
 // 월별 표 — sales_monthly(months[])를 그대로 옮긴다. 이번 달만 오늘 일자탭 J4(월 누적)로 정확한 값을 쓴다.
