@@ -561,13 +561,13 @@
           "ref": "GM-20260911-1049",
           "no": "49",
           "got": "GM업무01 제휴수익 프로젝트 -> 중간관리자 업무에 2개로 분류해줘, 나우열M에게 오넛티는 윤병현AM + 백승화사원 / 바디프렌드는 나우열M + 윤병현AM 으로 배정해주고 넘겨줘 그리고 중간관리자 업무목차도 GM업…",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "18:56",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:03",
+          "minutes": 7,
+          "upload": "✅ 배포 (f097cae76)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -732,31 +732,22 @@
           "area": "작업",
           "event": "중간관리자 업무 분류를 생성기에 박음 — 손 편집이 되돌아가던 것",
           "detail": "커밋 e64007f7b · 배 11401"
+        },
+        {
+          "time": "19:03",
+          "area": "작업",
+          "event": "중간관리자 업무 — 책임 3인 분리·리드/함께·진척률 + 제휴수익 2건 이관",
+          "detail": "커밋 25015de9e · 배 11401"
         }
       ],
       "count": 47,
-      "done": 46,
-      "open": 1,
+      "done": 47,
+      "open": 0,
       "avg_minutes": 3,
-      "work_count": 27,
+      "work_count": 28,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-1049",
-          "no": "49",
-          "got": "GM업무01 제휴수익 프로젝트 -> 중간관리자 업무에 2개로 분류해줘, 나우열M에게 오넛티는 윤병현AM + 백승화사원 / 바디프렌드는 나우열M + 윤병현AM 으로 배정해주고 넘겨줘 그리고 중간관리자 업무목차도 GM업…",
-          "did": "",
-          "start": "18:56",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -1166,15 +1157,33 @@
           "upload": "✅ 배포 (e1382b2de)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-2044",
+          "no": "44",
+          "got": "끝까지 미확인못해?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:02",
+          "end": "19:03",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-2045",
+          "no": "45",
+          "got": "[2026-09-11 오후 4:52] 업무보고봇: ⚠️ [자체 표류] 이 PC 디스크 파일 8개가 origin 이 아니라 이 PC 자신의 HEAD(이미 커밋된 기록)보다도 옛 버전입니다 — pull 을 해도 안 풀립…",
+          "did": "",
+          "start": "19:03",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "08:34",
-          "area": "작업",
-          "event": "build_gm_room_digest — 원장 열린 건 카운트 추가(배1141)",
-          "detail": "커밋 27994c06c · 배 12510"
-        },
         {
           "time": "08:51",
           "area": "작업",
@@ -1348,16 +1357,37 @@
           "area": "작업",
           "event": "업무관리 방 통지 — 잘 된 일은 GM 봇방에 안 보낸다 (GM 지시 2026-09-11)",
           "detail": "커밋 52a87b166 · 배 12528"
+        },
+        {
+          "time": "19:05",
+          "area": "저장소",
+          "event": "자체 표류 9건 복구 — 디스크가 저장소보다 옛 판이던 것",
+          "detail": "9개 전부 디스크가 HEAD 보다 옛 판이었다(가장 심한 것: server/erp_api/api_hr.py 19,617바이트 vs 저장소 87,639바이트 · 요금변경 A3 636바이트 vs 110,453바이트 — 디스크는 빈 껍데기였다). 저장소 판으로 되돌리고 줄끝까지 맞춰 9개 전부 HEAD 와 일치 확인. 원인 후보 = 2026-09-06 13:16 에 남은 stash@{0}(그날 ea6797001 이 서버 4파일을 새 판으로 올렸는데, 그 직전 옛 판이 autostash 로 stash 됐다가 pop 되며 디스크를 되돌린 것으로 보인다). 그 stash 는 남의 미커밋 작업(카톡 발신기·접수 블록 등 15파일)이 섞여 있어 지우지 않았다 — GM 판단 건."
         }
       ],
-      "count": 33,
-      "done": 33,
-      "open": 0,
+      "count": 35,
+      "done": 34,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-2045",
+          "no": "45",
+          "got": "[2026-09-11 오후 4:52] 업무보고봇: ⚠️ [자체 표류] 이 PC 디스크 파일 8개가 origin 이 아니라 이 PC 자신의 HEAD(이미 커밋된 기록)보다도 옛 버전입니다 — pull 을 해도 안 풀립…",
+          "did": "",
+          "start": "19:03",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -1770,6 +1800,30 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-3042",
+          "no": "42",
+          "got": "디자인 관련해서 통일되게 할순없나? 이 부분에 대해서 디테일이 너무약하네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:01",
+          "end": "19:02",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-3043",
+          "no": "43",
+          "got": "결재현황처럼 부담스럽지 않으면서 색상을 좀 넣어줄수는 없어?",
+          "did": "",
+          "start": "19:02",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1918,14 +1972,29 @@
           "detail": "커밋 ad7e4942e · 배 11425"
         }
       ],
-      "count": 34,
-      "done": 34,
-      "open": 0,
+      "count": 36,
+      "done": 35,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 24,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-3043",
+          "no": "43",
+          "got": "결재현황처럼 부담스럽지 않으면서 색상을 좀 넣어줄수는 없어?",
+          "did": "",
+          "start": "19:02",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": [
         {
           "count": 2,
