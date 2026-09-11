@@ -601,14 +601,21 @@
         : Promise.reject(0);
       return local.catch(function(){ return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
     }
+    /* 이 카드는 파트너사 줄에 있다 — 파트너사 운영을 돌리는 자동화만 센다(GM 지시 2026-09-11).
+       종전에는 등록부 전체를 세어 34개로 찍혔는데, 그 안에는 우리가 ERP 를 돌리려고 쓰는 것
+       (자동화 건강판·페이지 위생·AI 자기정리)과 다른 업체 건(상담봇·고척골프 블로그)이 섞여 있었다.
+       가르는 칸 = 등록부의 serves (partner = 멈추면 웰페리온 실무진·회원이 불편 / ours = 우리만 불편). */
     get('status/module_registry.json').then(function(d){
       var mods = (d && d.modules) || [];
       if (!mods.length) return;
-      var on = mods.filter(function(m){ return m && m.enabled === true; }).length;
+      var on = mods.filter(function(m){ return m && m.enabled === true; });
+      var partner = on.filter(function(m){ return m.serves !== 'ours'; }).length;
+      var ours = on.length - partner;
       var el = document.getElementById('n-auto');
       el.classList.remove('placeholder');
-      el.innerHTML = on + '<span class="unit">개 가동</span>';
-      document.getElementById('n-auto-desc').textContent = '전체 ' + mods.length + '개 중 ' + on + '개 가동 중';
+      el.innerHTML = partner + '<span class="unit">개 가동</span>';
+      document.getElementById('n-auto-desc').textContent =
+        '파트너사 운영 ' + partner + '개 · 우리가 ERP 를 돌리는 것 ' + ours + '개는 따로 셉니다';
     }).catch(function(){});
   })();
 

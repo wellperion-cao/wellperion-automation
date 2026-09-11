@@ -23,6 +23,13 @@
 | `reversible` | bool | 가역=자율 완료 가능 | (신규) |
 | `enabled` | bool | 모듈 활성 여부 | enabled |
 | `honesty_default` | str | measured·estimated·unmeasured (정직 배지 기본) | honesty_default |
+| `serves` | str | `partner`=파트너사 운영을 돌린다 · `ours`=우리가 ERP·신규사업을 돌리려고 쓴다 | (2026-09-11 신규) |
+
+> `serves` 는 **누가 쓰나**를 가른다 — 판정 한 줄: *이게 멈추면 파트너사 실무진·회원이 불편한가.*
+> `sellable`(internal·sellable) 과 축이 다르다(그쪽은 **다른 파트너사에 팔 수 있나**). 둘을 섞지 않는다.
+> 도입 이유 = ERP 플랫폼 관리 콘솔의 파트너사 줄이 등록부 전체를 세어 34개로 찍혀, 우리가 ERP 를
+> 돌리려고 쓰는 것과 다른 업체 건까지 파트너사가 하는 일처럼 보였다(GM 지적 2026-09-11).
+> 비파괴 추가 — 이 칸을 안 읽는 소비자는 종전 그대로 돈다.
 
 - **소비자는 자기 필드만 읽는다(관대).** `module_reporter.py`는 `notify_spec`·`data_source`·`honesty_default`·`enabled`를, 화면은 `front_card`·`autonomy`·`ai_free_fallback`를, 자율 루프는 `reversible`·`owner_role`를 읽는다. 서로의 필드를 파괴하지 않는다.
 
