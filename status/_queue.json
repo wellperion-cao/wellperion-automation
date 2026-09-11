@@ -2129,11 +2129,11 @@
     "task_id": "CTO-2026-09-11-ERP-가입-승인-화면에-직급-고치는-칸-추가",
     "clevel": "cto",
     "title": "[시토] ERP 가입 승인 화면에 직급 고치는 칸 추가",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-11",
     "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-09-11] GM 지시 2026-09-11: GM 계정 직급 표시는 완료됐고, 이제 승인 화면(관리자 가입신청 목록)에서 승인자가 신청자의 직급을 고칠 수 있게 한다. 지금은 신청자가 고른 직급을 그대로 받는데, 팀장/팀원 권한이 갈리므로 승인자가 마지막에 바로잡을 수 있어야 한다. 직급 목록 정본 = ssot/ranks.json(리더급 9 · 팀원급 5). 파일 = server/erp_auth/app.py 승인 화면(hr_check 관리자 화면 부근) — sparse-checkout 밖이라 저장·푸시만으로는 반영 안 되고 scp+재시작까지가 배포다.",
+    "note": "[웰리 → 시토 전달 2026-09-11] GM 지시 2026-09-11: GM 계정 직급 표시는 완료됐고, 이제 승인 화면(관리자 가입신청 목록)에서 승인자가 신청자의 직급을 고칠 수 있게 한다. 지금은 신청자가 고른 직급을 그대로 받는데, 팀장/팀원 권한이 갈리므로 승인자가 마지막에 바로잡을 수 있어야 한다. 직급 목록 정본 = ssot/ranks.json(리더급 9 · 팀원급 5). 파일 = server/erp_auth/app.py 승인 화면(hr_check 관리자 화면 부근) — sparse-checkout 밖이라 저장·푸시만으로는 반영 안 되고 scp+재시작까지가 배포다.\n[2026-09-11 시토 완료] 승인 화면 직급 드롭다운 배포 완료. app.py: 관리자 상태 API 가 ssot/ranks.json 목록(ranks)을 내려주고, 승인 POST 가 rank 를 받아 perms 의 rank·tier·deny 세 값을 한 번에 갱신(_approve_rank). 안 고르면 신청 값 유지. admin.html: 승인 대기 줄의 직급 태그를 드롭다운으로 교체, [승인] 누를 때 함께 전송(저장 버튼 분리 안 함). 자가점검 3줄 추가(직급-층-제외화면 연동). scp+재시작 완료, 서버에서 app.py self-check ok. 저장 c3ccbc6bf. 부수: deploy_auth.sh 앞단 account_perms_check.py 가 deny 쪽 유령 id 까지 치명으로 봐 auth 배포가 통째로 막혀 있던 것을 경고로 분리(저장 a0bcf0daa). 확인 못 한 것: 현재 pending 계정 0건이라 실제 승인 1건 왕복은 미검증 - 다음 실제 신청 때 확인한다.",
     "next": "승인 목록 각 행의 직급 자리를 드롭다운(ssot/ranks.json 14개)으로 바꾸고, 승인 처리 시 고른 값으로 저장. 배포 뒤 GM 계정으로 한 건 실제 승인해 직급이 바뀌는지 확인.",
     "depends_on": "",
     "ship_no": 12539,
@@ -2144,6 +2144,7 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-11"
+    "updated_at": "2026-09-11",
+    "completed_at": "2026-09-11T13:08:14+09:00"
   }
 ]
