@@ -632,7 +632,13 @@ async def _handle_call(text: str, ctx) -> None:
         return
     ok = await asyncio.to_thread(send_as_gm, WORK_ROOM_CHAT_ID, reply)
     if not ok:
-        await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신 실패 · 상한·세션 확인)")
+        # 오늘 상한에 닿아 못 보낸 것이면 알리지 않는다 — 사유가 하나뿐이라 부를 때마다 같은 줄이
+        # GM 봇방에 쌓인다(2026-09-11 실측). 상한 자체는 발신기가 그날 한 줄로 이미 알린다.
+        from notify.telegram_user_send import cap_reached
+        if await asyncio.to_thread(cap_reached):
+            log.warning("[work_room] 오늘 발송 상한 — 호출에 답 못 함(알림 생략)")
+        else:
+            await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신 실패 · 세션 확인)")
         return
 
     await asyncio.to_thread(_dispatch_call_ship, text)
@@ -672,7 +678,11 @@ async def _handle_question(text: str, ctx) -> None:
             return
         ok = await asyncio.to_thread(send_as_gm, WORK_ROOM_CHAT_ID, answer)
         if not ok:
-            await _escalate(ctx, f"❓ 업무관리 질문 — {text[:200]} → 답 필요(발신 실패 — 상한·세션 확인)")
+            from notify.telegram_user_send import cap_reached
+            if await asyncio.to_thread(cap_reached):
+                log.warning("[work_room] 오늘 발송 상한 — 질문에 답 못 함(알림 생략)")
+            else:
+                await _escalate(ctx, f"❓ 업무관리 질문 — {text[:200]} → 답 필요(발신 실패 — 세션 확인)")
     else:
         # 정본에 답이 없으면 GM 봇방을 부르지 않고 웰리 배로 넘긴다(GM 지시 2026-09-11).
         # 알리기를 없애는 것이지 일을 없애는 게 아니다 — 배가 없으면 그 질문이 조용히 사라진다.

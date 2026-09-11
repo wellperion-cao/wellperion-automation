@@ -30,7 +30,11 @@ _SESSION_NAME = str(ROOT / "telegram_bot" / "gm_user")  # telethon 이 .session 
 _SESSION_FILE = ROOT / "telegram_bot" / "gm_user.session"
 REQUIRED = ("TG_USER_API_ID", "TG_USER_API_HASH", "TG_USER_PHONE")
 SOURCE = "telegram_user_send"
-_DAILY_CAP = 30
+# 하루 상한 — 폭주(같은 글 반복 발신)를 막는 장치이지 정상 운영을 막는 장치가 아니다.
+# 2026-09-11 실측: 자동 통 + 나우열M 왕복이 겹쳐 19:1x 에 30통을 채웠고, 그 뒤 그분이 부를 때마다
+# 답이 안 나가고 실패 알림만 GM 봇방으로 갔다(GM: 「나우열M 업무보고봇 호출 계속 들어오는데?」).
+# 그날 30통은 정상 부하였다 — 네 배로 올린다. 폭주는 이 숫자가 아니라 같은 글 반복으로 잡는다.
+_DAILY_CAP = 120
 _AI_SIGNS = ("[AI 웰리]", "AI 시토", "AI 시모", "AI 시우", "AI 시포", "AI 시뽀", "AI 시로", "AI 시보", "AI CEO")
 
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -179,13 +183,51 @@ def _try_send(cfg, chat_id, text) -> bool:
         return False
 
 
+def cap_reached() -> bool:
+    """오늘 상한에 닿았나. 부르는 쪽이 「보낼 수 없는 상태」와 「보내다 실패」를 가르는 데 쓴다 —
+    상한은 사유가 하나뿐이라 매번 알릴 일이 아니다(같은 실패가 열 번 오면 알림이 아니라 소음이다)."""
+    return _today_sent_count() >= _DAILY_CAP
+
+
+_CAP_MARK = ROOT / "logs" / ".tg_user_cap_notified"
+
+
+def _notify_cap_once() -> None:
+    """상한에 닿은 날 GM 봇방에 한 줄만. 같은 날 두 번째부터는 조용히 지나간다."""
+    today = f"{datetime.date.today():%Y-%m-%d}"
+    try:
+        if _CAP_MARK.exists() and _CAP_MARK.read_text(encoding="utf-8").strip() == today:
+            return
+    except Exception:
+        pass
+    try:
+        import urllib.request
+        cfg = _parse_env_file(_ENV_FILE)
+        token, chat = cfg.get("TELEGRAM_BOT_TOKEN"), cfg.get("TG_CHAT_ID") or "8254867551"
+        if token:
+            body = json.dumps({"chat_id": chat,
+                               "text": f"📮 오늘 업무관리 방 발송 상한({_DAILY_CAP}통)에 닿았습니다 — "
+                                       "이후 그 방으로 나가는 답이 자정까지 멈춥니다."}).encode()
+            req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
+                                         data=body, headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=8)
+    except Exception:
+        pass
+    try:
+        _CAP_MARK.parent.mkdir(parents=True, exist_ok=True)
+        _CAP_MARK.write_text(today, encoding="utf-8")
+    except Exception:
+        pass
+
+
 def send_as_gm(chat_id, text: str) -> bool:
     """다른 파이썬 코드에서 호출. 성공 True."""
     cfg, code = _prepare(text)
     if cfg is None:
         return False
-    if _today_sent_count() >= _DAILY_CAP:
+    if cap_reached():
         print(f"[상한] 오늘 {_DAILY_CAP}통 발송 완료 — 더 못 보냄")
+        _notify_cap_once()
         return False
     ok = _try_send(cfg, chat_id, text)
     log_outbound(text, chat_id=chat_id, source=SOURCE, ok=ok, kind="sendMessage")
