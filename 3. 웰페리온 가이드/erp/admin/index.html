@@ -611,7 +611,9 @@
     });
     if (key === 'guide') {
       var gf = document.getElementById('guide-frame');
-      if (gf && gf.src.indexOf('clevel-guide') < 0) gf.src = 'clevel-guide.html?embed=1';
+      // 절대 경로로 적는다(2026-09-11 실사고). 이 화면 주소는 끝 슬래시가 없는 /erp/admin 이라
+      // 상대 경로가 한 단계 위(/erp/)로 풀려 /erp/clevel-guide.html 을 찾다 404 가 났다.
+      if (gf && gf.src.indexOf('clevel-guide') < 0) gf.src = '/erp/admin/clevel-guide.html?embed=1';
     }
     if (location.hash.slice(1) !== key) history.replaceState(null, '', '#' + key);
     if (scroll) window.scrollTo(0, 0);
