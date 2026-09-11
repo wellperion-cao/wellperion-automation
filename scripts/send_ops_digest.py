@@ -862,7 +862,26 @@ def send_nawool_noon(dry: bool = False) -> int:
         log(f"[noon] 오늘({today}) 이미 보냄 — 생략")
         return 0
 
-    _msg, _cur, _hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), today)
+    # ★회신부터 반영하고 나서 본문을 만든다(2026-09-11 실사고). 처음엔 이 두 줄이 없어서
+    # 오늘 14:40 에 이미 답한 건을 12:10 통이 「미회신」으로 다시 물었고, 나우열M 이
+    # 「바로 위에 남겼잖아」라고 했다. 07:50 회차(send_mgr_brief)도 같은 이유로 본문 조립
+    # 전에 이 둘을 돌린다 — 낮 회차만 건너뛰면 그 사이 회신이 통째로 안 보인다.
+    rows = _fetch_todo_rows()
+    try:
+        touched = sync_ssot_replies(today, rows)
+        if touched:
+            log(f"[noon] SSOT 행 {len(touched)}건에 회신 반영")
+    except Exception as exc:
+        log(f"[noon] SSOT 회신 반영 예외(무시): {type(exc).__name__}: {exc}")
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+        no_touched = sync_ledger_replies(today, ledger)
+        if no_touched:
+            log(f"[noon] 원장 이슈 {len(no_touched)}건에 번호 회신 반영")
+    except Exception as exc:
+        log(f"[noon] 원장 번호 매칭 예외(무시): {type(exc).__name__}: {exc}")
+
+    _msg, _cur, _hits, nawool_msg = build_mgr_daily_brief(rows, today)
     if not nawool_msg:
         log("[noon] 나우열M 몫 0건 — 발송 생략")
         record_heartbeat(NOON_HEARTBEAT_ID, detail="0건 — 발송 없음",
