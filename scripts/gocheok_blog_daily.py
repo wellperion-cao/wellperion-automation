@@ -210,6 +210,29 @@ def run_upload(title: str, body: str, style: dict, mode: str) -> tuple[int, str]
             pass
 
 
+
+def tell_owner(topic: str) -> None:
+    """글이 올라가면 그 자리에서 부장님 방에 한 줄 알린다(GM 지시 2026-09-11 「부장님 방에도 항상 보내줘」).
+
+    아침 통(06:50)이 대신 알리게 두지 않는다 — 글은 06:30 에 올라가고, 부장님은 올라간 그때
+    바로 아시는 편이 낫다. 발신 관문은 종전대로 kakao_report_sender 하나다(새 발신기 만들지 않는다).
+    """
+    text = ("조재오 부장님, 웰페리온 AI입니다." + chr(10) +
+            "오늘 블로그 글 임시저장해 두었습니다." + chr(10) +
+            "1️⃣ 제목 — %s" % topic + chr(10) +
+            "2️⃣ 사진 배치만 보시고 발행 눌러 주시면 됩니다" + chr(10) +
+            "👉 고치고 싶은 문장이 있으면 그 줄만 알려 주시면 바꾸겠습니다.")
+    try:
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_report_sender.py"),
+                            "--message", text, "--only-room", "★조재오부장님", "--sender", "웰리"],
+                           cwd=str(ROOT), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=900)
+        ok = r.returncode == 0 and "DONE" in (r.stdout or "")
+        log("부장님 방 알림 %s" % ("보냄" if ok else "실패 — " + (r.stdout or r.stderr or "")[-200:]))
+    except Exception as exc:                    # noqa: BLE001
+        log("부장님 방 알림 실패(무시): %s" % exc)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="본문만 만들고 브라우저를 열지 않는다")
@@ -275,6 +298,7 @@ def main() -> int:
         state.setdefault("used_topics", []).append(topic)
         _record_run(state, topic, "ok", "", len(body), used_model)
         save_state(state)
+        tell_owner(topic)
         return 0
 
     # 실패 사유는 지어내지 않는다 — 업로더가 찍은 [ERROR] 줄을 그대로 실어 보낸다.
