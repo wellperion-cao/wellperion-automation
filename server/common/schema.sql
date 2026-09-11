@@ -508,17 +508,29 @@ UPDATE members SET end_reason_memo  = COALESCE(end_reason_memo,  data::jsonb->>'
 --
 -- 규약(기존 ERP 표와 같게 맞춘 것):
 --   · 모든 표에 tenant_id(기본 'wellperion') — 조회는 전부 tenant_id 로 거른다.
---   · 시트 1행 = DB 1행인 표는 UNIQUE (tenant_id, legacy_tab, legacy_row) 를 갖는다.
---     적재를 이 열쇠로 upsert 해서 migrate_hr.py 를 몇 번 돌려도 같은 결과가 되게(멱등) 만든다.
---   · ⚠️ 단 표마다 적재 열쇠가 다를 수 있고 정본은 각 표의 UNIQUE 제약이다 — 위 (탭, 행번호)를 전 탭에
+--   · 시트 1행 = DB 1행인 표는 ★살아 있는 행(vanished_at IS NULL) 사이에서★ (tenant_id, legacy_tab, legacy_row) 가
+--     유일하다 — 표 수준 UNIQUE 가 아니라 부분 유일 인덱스(ux_hr_*_live · WHERE vanished_at IS NULL)다(aws2 §0.2 · 2026-09-11).
+--     적재는 이 인덱스로 upsert(ON CONFLICT (...) WHERE vanished_at IS NULL) 해서 migrate_hr.py 를 몇 번 돌려도
+--     같은 결과가 되게(멱등) 만든다. 술어를 뺀 ON CONFLICT 는 '해당 제약 없음' 오류로 그 탭이 롤백된다.
+--   · 원천(시트 응답)에서 사라진 행은 지우지 않고 vanished_at(배치 시각)·vanish_reason·vanished_run_id 로 닫는다.
+--     같은 행번호에 다른 사람·다른 내용이 오면(퇴사 슬롯 재사용 · 실삭제로 아래 행이 올라옴) 옛 행을
+--     identity-changed 로 닫고 새 행을 만든다 — PK 는 '시트 슬롯'이 아니라 사람·내용에 고정된다. 닫힌 행은 역사이고
+--     되살리지 않는다(같은 열쇠가 다시 나타나면 새 행). 읽기·upsert·역인덱스·전수 대조의 기본 필터 = vanished_at IS NULL.
+--   · ⚠️ 단 표마다 적재 열쇠가 다를 수 있고 정본은 각 표의 부분 유일 인덱스다 — 위 (탭, 행번호)를 전 탭에
 --     일률 적용하지 않는다. 머리말이 그 한 줄만 적어 둔 탓에 적재 도구가 전 탭에 (탭, 행번호)를 하드코딩했고,
---     예외인 휴무는 예외라는 사실 자체가 문서에 없었다. 표별 적재 열쇠 목록(정본은 각 표의 UNIQUE):
+--     예외인 휴무는 예외라는 사실 자체가 문서에 없었다. 표별 적재 열쇠 목록(정본은 각 표의 ux_hr_*_live):
 --       기본     = (탭, 행번호)   현재근무자·퇴사자·지원자·채용공고·인사평가·온보딩·퇴사처리·블랙리스트·근무변경·개인일정·자동화로그
 --       휴무     = (성명, 날짜)   hr.leave_entry — 5,603행 실측 중복 0쌍이라 이쪽이 사실상 열쇠다
 --       연차원장 = (성명, 연도)   hr.leave_ledger
 --       공휴일   = (날짜)         hr.holiday — 기본키 자체가 (tenant_id, holiday_date)
 --     ★(탭, 행번호)가 유일 열쇠가 아닌 표에도 그 조합의 '유일하지 않은' 보조 인덱스는 둔다 — 행번호로 되짚는
 --       조회(rNN 역인덱스 채우기·전수 대조)에 쓴다. 유일로 만들면 중복행 보존 관행과 충돌하므로 유일이 아니어야 한다.
+--       (부분 유일 인덱스가 붙은 8표에도 같은 조합의 비유일 인덱스 ix_hr_*_legacy 를 두어 닫힌 행까지 되짚는다.)
+--   · 기존 서버 표에는 각 CREATE TABLE 뒤의 ALTER TABLE ADD COLUMN IF NOT EXISTS / DROP CONSTRAINT IF EXISTS /
+--     CREATE [UNIQUE] INDEX IF NOT EXISTS 가 무손실로 얹힌다(신규 설치는 본문만으로 같은 결과). 이 파일의 mtime 이
+--     바뀌면 init_schema() 를 부르는 모든 서비스가 다음 호출에 파일 전체를 다시 실행한다 — 그것이 곧 마이그레이션
+--     트리거다. ⚠️ DROP CONSTRAINT·ALTER 는 그 표의 소유자 역할이어야 통한다(서버 실물 소유자는 CTO 확인 · aws2 §F-1).
+--     한 번 되돌린 뒤 이 변경을 또 되돌리려면 erp_api/rollback_hr.sql 6절(사람이 psql 로 실행).
 --   · data JSONB = 시트 원본 레코드 통째. 화면(chro/hub/index.html)이 지금 GAS 응답의 한글 칸 이름을 그대로 읽으므로
 --     ①읽기 미러 단계에서는 이 칸을 그대로 돌려주면 화면 수정이 0 이 된다(다른 ERP 미러 표와 같은 방식).
 --     ★⑤단계(GAS 끄기) 뒤에는 정규화 칸이 정본이고 data 는 지워도 된다 — 그때까지의 다리다.
@@ -573,6 +585,8 @@ CREATE TABLE IF NOT EXISTS hr.department (
 -- ★현행 하네스의 '인사현황 시트 행 고정'(삽입·삭제 금지 · 퇴사=행 유지·값만 비움) 규칙은 시트 행번호를 외부 수식이
 --   참조하기 때문에 있었다. 여기서는 퇴사 = status 전이 + resign_date 기입이고 행을 비우지 않는다.
 --   ⚠️ 그 하네스 규칙의 폐기는 외부 수식·페이롤 링크 이관이 끝난 뒤다(이 표를 만든 것만으로 폐기되지 않는다).
+-- ★그 규칙 때문에 현행 시트는 퇴사=값만 비움·입사=빈 슬롯 재사용이다 → 같은 행번호에 다른 사람이 온다. 여기서는
+--   성명이 신원(identity)이라 옛 행을 identity-changed 로 닫고 새 employee_id 를 준다(머리말 규약 · aws2 §A-2).
 CREATE TABLE IF NOT EXISTS hr.employee (
   employee_id     BIGSERIAL PRIMARY KEY,
   tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
@@ -596,10 +610,19 @@ CREATE TABLE IF NOT EXISTS hr.employee (
   is_test         BOOLEAN NOT NULL DEFAULT FALSE,
   data            JSONB,                                -- 시트 원본 레코드(①단계 화면 호환용)
   synced_at       TIMESTAMPTZ,
+  vanished_at     TIMESTAMPTZ,                          -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id BIGINT,                               -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 기존 서버 표에 무손실로 얹는 이행(멱등) — 표 수준 UNIQUE → 살아 있는 행 부분 유일 인덱스(머리말 규약).
+ALTER TABLE hr.employee ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.employee ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.employee ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.employee DROP CONSTRAINT IF EXISTS employee_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_emp_legacy_live ON hr.employee (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_emp_legacy ON hr.employee (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_emp_status ON hr.employee (tenant_id, status, dept_id);
 CREATE INDEX IF NOT EXISTS ix_hr_emp_person ON hr.employee (tenant_id, person_id);
 CREATE INDEX IF NOT EXISTS ix_hr_emp_name   ON hr.employee (tenant_id, person_name_raw);
@@ -625,10 +648,18 @@ CREATE TABLE IF NOT EXISTS hr.job_posting (
   is_test       BOOLEAN NOT NULL DEFAULT FALSE,
   data          JSONB,
   synced_at     TIMESTAMPTZ,
+  vanished_at   TIMESTAMPTZ,                            -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id BIGINT,                               -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE hr.job_posting ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.job_posting ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.job_posting ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.job_posting DROP CONSTRAINT IF EXISTS job_posting_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_posting_legacy_live ON hr.job_posting (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_posting_legacy ON hr.job_posting (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_posting_status ON hr.job_posting (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_hr_posting_title  ON hr.job_posting (tenant_id, title);
 
@@ -657,10 +688,18 @@ CREATE TABLE IF NOT EXISTS hr.applicant (
   is_test          BOOLEAN NOT NULL DEFAULT FALSE,
   data             JSONB,
   synced_at        TIMESTAMPTZ,
+  vanished_at      TIMESTAMPTZ,                         -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason    TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id  BIGINT,                              -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.applicant DROP CONSTRAINT IF EXISTS applicant_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_appl_legacy_live ON hr.applicant (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_appl_legacy ON hr.applicant (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_appl_stage   ON hr.applicant (tenant_id, stage);
 CREATE INDEX IF NOT EXISTS ix_hr_appl_posting ON hr.applicant (tenant_id, posting_id);
 CREATE INDEX IF NOT EXISTS ix_hr_appl_applied ON hr.applicant (tenant_id, applied_at);
@@ -723,10 +762,21 @@ CREATE TABLE IF NOT EXISTS hr.evaluation (
   is_test             BOOLEAN NOT NULL DEFAULT FALSE,
   data                JSONB,
   synced_at           TIMESTAMPTZ,
+  vanished_at         TIMESTAMPTZ,                      -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason       TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id     BIGINT,                           -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 실삭제 탭(GAS 가 행을 지우면 아래 행이 올라온다) — 열쇠는 행번호 그대로 두고 내용 지문(대상자·평가자·평가명·기간)으로
+-- 신원을 고정한다(aws2 §A-3). 지문이 바뀐 행번호는 옛 행을 identity-changed 로 닫고 새 eval_id 를 준다 — 남의 내용이
+-- 같은 eval_id 에 덮이는 일이 구조적으로 불가능해진다(비용 = 삭제 지점 아래 PK 재발급 · 1단계는 _id 를 열쇠로 안 쓴다).
+ALTER TABLE hr.evaluation ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.evaluation ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.evaluation ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.evaluation DROP CONSTRAINT IF EXISTS evaluation_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_eval_legacy_live ON hr.evaluation (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_eval_legacy ON hr.evaluation (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_eval_subject ON hr.evaluation (tenant_id, subject_person_id, period_start);
 CREATE INDEX IF NOT EXISTS ix_hr_eval_name    ON hr.evaluation (tenant_id, subject_name_raw);
 
@@ -752,10 +802,20 @@ CREATE TABLE IF NOT EXISTS hr.onboarding_item (
   is_test           BOOLEAN NOT NULL DEFAULT FALSE,
   data              JSONB,
   synced_at         TIMESTAMPTZ,
+  vanished_at       TIMESTAMPTZ,                        -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason     TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id   BIGINT,                             -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 실삭제 탭 — 인사평가와 같은 결정(행번호 열쇠 유지 + 내용 지문 대상자·트랙·주차·항목으로 신원 고정 · aws2 §A-3).
+-- 내용 열쇠로 UNIQUE 를 바꾸지 않는 이유 = 위 ⚠️ 그대로(중복행 실재 → 내용 열쇠면 preflight 가 실제 행을 버린다).
+ALTER TABLE hr.onboarding_item ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.onboarding_item ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.onboarding_item ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.onboarding_item DROP CONSTRAINT IF EXISTS onboarding_item_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_onbo_legacy_live ON hr.onboarding_item (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_onbo_legacy ON hr.onboarding_item (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_onbo_emp  ON hr.onboarding_item (tenant_id, employee_id, week_no);
 CREATE INDEX IF NOT EXISTS ix_hr_onbo_dup  ON hr.onboarding_item (tenant_id, employee_name_raw, track, week_no);
 
@@ -777,10 +837,18 @@ CREATE TABLE IF NOT EXISTS hr.resignation (
   is_test           BOOLEAN NOT NULL DEFAULT FALSE,
   data              JSONB,
   synced_at         TIMESTAMPTZ,
+  vanished_at       TIMESTAMPTZ,                        -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason     TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id   BIGINT,                             -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE hr.resignation ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.resignation ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.resignation ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.resignation DROP CONSTRAINT IF EXISTS resignation_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_resign_legacy_live ON hr.resignation (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_resign_legacy ON hr.resignation (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_resign_emp ON hr.resignation (tenant_id, employee_id);
 
 -- ── 11. 채용 블랙리스트 ─────────────────────────────────────────────────────────────────────────
@@ -801,10 +869,18 @@ CREATE TABLE IF NOT EXISTS hr.hire_blacklist (
   is_test       BOOLEAN NOT NULL DEFAULT FALSE,
   data          JSONB,
   synced_at     TIMESTAMPTZ,
+  vanished_at   TIMESTAMPTZ,                            -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id BIGINT,                               -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE hr.hire_blacklist ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.hire_blacklist ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.hire_blacklist ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.hire_blacklist DROP CONSTRAINT IF EXISTS hire_blacklist_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_blacklist_legacy_live ON hr.hire_blacklist (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_blacklist_legacy ON hr.hire_blacklist (tenant_id, legacy_tab, legacy_row);
 CREATE INDEX IF NOT EXISTS ix_hr_blacklist_name ON hr.hire_blacklist (tenant_id, name);
 
 -- ── 12. 휴무 ────────────────────────────────────────────────────────────────────────────────────
@@ -814,9 +890,10 @@ CREATE INDEX IF NOT EXISTS ix_hr_blacklist_name ON hr.hire_blacklist (tenant_id,
 --   해석 칸을 추측으로 채우지 않는다. 판정이 끝나면 raw_value 를 다시 읽어 해석 칸만 채우면 된다.
 -- 유니크: (성명, 날짜)가 사실상 열쇠다(5,603행 실측 중복 0쌍). employee_id 는 NULL 이 섞이므로(고아 11명)
 --   유니크는 이름 기준으로 건다 — 그래야 FK 정합 여부와 무관하게 중복행이 구조적으로 불가능해진다.
--- ★이 표가 머리말 '기본 열쇠 = (탭, 행번호)'의 예외다(머리말 표별 적재 열쇠 목록 참고). 유일 제약은
---   (성명, 날짜) 그대로 두고, (탭, 행번호)는 아래 '유일하지 않은' 보조 인덱스로만 둔다 — 행번호로 되짚는
---   조회(rNN 역인덱스 채우기·전수 대조)에 쓰기 위한 것이고, 유일로 만들면 중복행 보존 관행과 충돌한다.
+-- ★이 표가 머리말 '기본 열쇠 = (탭, 행번호)'의 예외다(머리말 표별 적재 열쇠 목록 참고). 살아 있는 행 유일 인덱스는
+--   (성명, 날짜) 그대로 두고(ux_hr_leave_name_date_live), (탭, 행번호)는 아래 '유일하지 않은' 보조 인덱스로만 둔다 —
+--   행번호로 되짚는 조회(rNN 역인덱스 채우기·전수 대조)에 쓰기 위한 것이고, 유일로 만들면 중복행 보존 관행과 충돌한다.
+-- ★현행 GAS handleSetLeave_ 는 값이 비면 휴무 행을 물리 삭제한다 — 그래서 이 표가 소실 표시(vanished_at)의 첫 수혜자다.
 CREATE TABLE IF NOT EXISTS hr.leave_entry (
   leave_id        BIGSERIAL PRIMARY KEY,
   tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
@@ -834,14 +911,44 @@ CREATE TABLE IF NOT EXISTS hr.leave_entry (
   legacy_row      INTEGER,
   is_test         BOOLEAN NOT NULL DEFAULT FALSE,
   synced_at       TIMESTAMPTZ,
+  vanished_at     TIMESTAMPTZ,                          -- 원천에서 사라졌다고 판정된 배치 시각 — NULL = 살아 있는 행
+  vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id BIGINT,                               -- 닫은 적재 실행(hr.migration_run.run_id 값 · FK 는 걸지 않는다)
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, person_name_raw, work_date)
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE hr.leave_entry ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.leave_entry ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.leave_entry ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.leave_entry DROP CONSTRAINT IF EXISTS leave_entry_tenant_id_person_name_raw_work_date_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_leave_name_date_live ON hr.leave_entry (tenant_id, person_name_raw, work_date) WHERE vanished_at IS NULL;
 CREATE INDEX IF NOT EXISTS ix_hr_leave_emp_date ON hr.leave_entry (tenant_id, employee_id, work_date);
 CREATE INDEX IF NOT EXISTS ix_hr_leave_date     ON hr.leave_entry (tenant_id, work_date);
--- (탭, 행번호) 되짚기용 보조 인덱스 — ⛔ 유일이 아니다(위 ★ 참고). 유일 제약은 (성명, 날짜) 하나뿐이다.
+-- (탭, 행번호) 되짚기용 보조 인덱스 — ⛔ 유일이 아니다(위 ★ 참고). 살아 있는 행 유일 인덱스는 (성명, 날짜) 하나뿐이다.
 CREATE INDEX IF NOT EXISTS ix_hr_leave_legacy   ON hr.leave_entry (tenant_id, legacy_tab, legacy_row);
+
+-- ── 12-1. 옛 표 수준 UNIQUE 정리(이름이 기본값과 다른 경우 대비) ─────────────────────────────────
+-- 위 8표의 DROP CONSTRAINT IF EXISTS 는 PostgreSQL 기본 이름만 안다. 서버 실물의 제약 이름이 다를 가능성(과거 수동
+-- 생성 등)에 대비해 '칸 집합'으로 한 번 더 찾아 지운다. 부분 유일 인덱스(ux_hr_*_live)는 제약이 아니라 인덱스라
+-- 여기 걸리지 않는다. 남는 것이 없으면 아무 일도 하지 않는다(멱등). ⛔ 리터럴 백분율 기호 금지 규약은 DO 블록 안도 같다.
+DO $$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN
+    SELECT c.conname, cl.relname
+      FROM pg_constraint c
+      JOIN pg_class cl ON cl.oid = c.conrelid
+      JOIN pg_namespace n ON n.oid = cl.relnamespace
+     WHERE n.nspname = 'hr' AND c.contype = 'u'
+       AND cl.relname IN ('employee', 'job_posting', 'applicant', 'evaluation',
+                          'onboarding_item', 'resignation', 'hire_blacklist', 'leave_entry')
+       AND (SELECT array_agg(a.attname::text ORDER BY array_position(c.conkey, a.attnum))
+              FROM pg_attribute a WHERE a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey))
+           IN (ARRAY['tenant_id', 'legacy_tab', 'legacy_row'], ARRAY['tenant_id', 'person_name_raw', 'work_date'])
+  LOOP
+    EXECUTE 'ALTER TABLE hr.' || quote_ident(r.relname) || ' DROP CONSTRAINT IF EXISTS ' || quote_ident(r.conname);
+  END LOOP;
+END $$;
 
 -- ── 13. 연차원장 ────────────────────────────────────────────────────────────────────────────────
 -- ★공란은 '미확정'이다 — 0 으로 채우지 않는다(0 으로 채우면 잔여 연차가 조용히 틀린다). 그래서 전부 NULL 허용.
@@ -985,6 +1092,9 @@ CREATE INDEX IF NOT EXISTS ix_hr_legacy_target ON hr.legacy_row_map (tenant_id, 
 -- ── 20-21. 이관 진행 기록 ───────────────────────────────────────────────────────────────────────
 -- migrate_hr.py 가 어디까지 갔는지 남기는 자리. '부분 적재 상태로 조용히 끝남'을 막는 장치다 —
 -- 끝나지 않은 실행은 status='running' 으로 남고, 실패는 'failed' 로 남는다. 성공만 'ok'.
+-- 'aborted' = 강제 종료 등으로 running 인 채 남은 run 을 다음 apply 실행이 닫은 것(aborted_by_run 에 닫은 run 의 id).
+-- apply 는 세션 advisory lock(HR_RUN_LOCK_KEY = 11050002 · common/db.py 의 DDL 락 11050001 과 다른 값)으로 단일 실행.
+-- 읽기 API 봉투의 as_of = 마지막 mode='apply' AND status='ok' run 의 finished_at (aws2 §0.3).
 CREATE TABLE IF NOT EXISTS hr.migration_run (
   run_id      BIGSERIAL PRIMARY KEY,
   tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
@@ -993,8 +1103,14 @@ CREATE TABLE IF NOT EXISTS hr.migration_run (
   finished_at TIMESTAMPTZ,
   status      TEXT NOT NULL DEFAULT 'running' CHECK (status IN ('running', 'ok', 'failed', 'aborted')),
   note        TEXT,
-  host        TEXT
+  host        TEXT,
+  batch_at    TIMESTAMPTZ,                              -- 그 실행의 배치 기준 시각(첫 fetch 전에 1회 채취) — 소실 판정·synced_at 의 기준
+  warnings    INTEGER NOT NULL DEFAULT 0,               -- 경고(건너뜀·잉여·소실·신원변경·고아) 누계 — failed 가 아니다
+  aborted_by_run BIGINT                                 -- running 으로 남아 있던 이 run 을 닫은 새 run 의 id
 );
+ALTER TABLE hr.migration_run ADD COLUMN IF NOT EXISTS batch_at       TIMESTAMPTZ;
+ALTER TABLE hr.migration_run ADD COLUMN IF NOT EXISTS warnings       INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE hr.migration_run ADD COLUMN IF NOT EXISTS aborted_by_run BIGINT;
 CREATE TABLE IF NOT EXISTS hr.migration_step (
   step_id    BIGSERIAL PRIMARY KEY,
   run_id     BIGINT NOT NULL REFERENCES hr.migration_run(run_id) ON DELETE CASCADE,
@@ -1054,4 +1170,7 @@ CREATE INDEX IF NOT EXISTS ix_hr_acclog_key  ON hr.access_log (tenant_id, db_key
 --   · hr.evaluation.total_score                  → CHECK 0~100 · bonus_points 상한 클램프
 --   · hr.automation_log.actor_code               → SET NOT NULL (공통 셀프체크 6 을 DB 제약으로 승격)
 --   · 각 표 data JSONB                           → ⑤단계(GAS 끄기) 뒤 DROP COLUMN (정규화 칸이 정본이 된 다음)
+--   · vanished 행(vanished_at IS NOT NULL) 보존 기간·물리 삭제 정책 → 법적 검토 지점(개인정보 보유기간 · 퇴사자 정보
+--     보존 연한). 지금은 물리 삭제 없음 · 수치 미정(aws2 §F-4). 실삭제 탭(온보딩·평가)의 내용 열쇠 승격은 2단계 쓰기
+--     API 가 _id 를 받기 시작하기 전에 먼저 한다(aws2 §F-5).
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
