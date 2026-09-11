@@ -4134,11 +4134,17 @@ def main():
     logger.info("ig_publish_verify_sweep 등록 완료 (30분 주기) — 발행검증대기→발행완료 자동")
 
     # ── ERP 시스템 현황 발행 (30분 주기) — 서버 상태를 ERP가 읽게 push — CTO 2026-06-16 ──
+    # timeout 150→240(2026-09-11 시토 · 배1186): 발행기 안에서 도는 외부호출(GAS 5회×60s
+    #   kpi_crosscheck 포함·SSH 2회×40s·schtasks/powershell 등)을 다 더하면 원래도 150s를
+    #   넘을 수 있는 설계였다. 실측: 09-10 21:27~09-11 08:26 사이 5회 연속으로 정확히
+    #   ~150.03초에서 강제종료(logs/scheduler.log) — GAS/SSH가 느려진 구간에 내부 호출들이
+    #   150s 예산을 초과해 죽었다. 안 끝나면 다음 회차가 회복하니 무제한 대기는 아니되,
+    #   실제 발행이 끝날 시간은 준다.
     def _publish_erp_status():
         try:
             subprocess.run(
                 [sys.executable, "scripts/erp_status_publisher.py", "--push"],
-                cwd=str(BASE.parent), timeout=150,
+                cwd=str(BASE.parent), timeout=240,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             )
             logger.info("erp_status_publisher 실행 완료 (시스템 현황 ERP 발행)")

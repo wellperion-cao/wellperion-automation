@@ -306,17 +306,32 @@ def _live_task_names():
     권위 있는 현행 목록 = Get-ScheduledTask(모던 CIM API). 삭제됐지만 legacy schtasks 뷰에
     남는 손상/고아(orphaned) 등록 = 유령. 유령은 이 집합에 없으므로 걷어낼 수 있다.
     조회 실패 시 None → 호출부는 필터를 적용하지 않는다(안전: 멀쩡한 작업 오삭제 방지).
+
+    ★파이프 대신 임시 파일로 받는다(2026-09-11 시토) — `_schtasks_dump()`가 2026-09-10 이미
+      진단한 것과 같은 자리다: 상주 스케줄러가 DEVNULL로 띄우는 자식 프로세스 안에서는
+      `subprocess.run(..., capture_output=True).stdout`이 못 미덥다. 그 함수만 고치고 이
+      쌍둥이는 그대로 둬 다음날(09-11) 자동화 건강판이 다시 0/0으로 떨어졌다 — 같은 패턴은
+      같은 자리를 전부 고친다.
     """
+    import tempfile
+    path = os.path.join(tempfile.gettempdir(), "wp_livetasks_%d.txt" % os.getpid())
     try:
-        r = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command",
-             "Get-ScheduledTask | Select-Object -ExpandProperty TaskName"],
-            capture_output=True, text=True, timeout=30,
-        )
-        names = {ln.strip().lower() for ln in (r.stdout or "").splitlines() if ln.strip()}
+        with open(path, "wb") as fh:
+            subprocess.run(
+                ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                 "Get-ScheduledTask | Select-Object -ExpandProperty TaskName"],
+                stdout=fh, stderr=subprocess.DEVNULL, timeout=30,
+            )
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            names = {ln.strip().lower() for ln in fh.read().splitlines() if ln.strip()}
         return names or None
     except Exception:
         return None
+    finally:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def collect_archive_summary():
@@ -497,8 +512,17 @@ def collect_automation_health():
                      if it["name"].split("\\")[-1].lower() in live]
 
         total = len(items)
+        # ★0건은 실제 값이 아니라 수집 실패다(2026-09-11 시토) — 웰페리온 작업은 항상
+        #   40여 개가 등록돼 있어 total==0 이 진짜로 나올 수 없다. 그런데도 이 경로(블록은
+        #   파싱됐지만 wellperion 매칭 0건, 또는 live 필터가 전부 걷어냄)로 "자동화 0/0
+        #   정상 (0%)" 가 실제 발행됐다(07:56 커밋) — 화면에서 "0%=전부 고장"으로 읽혀
+        #   거짓 경보가 된다. 못 잰 것과 진짜 0을 갈라 위의 schtasks 조회 실패 문구와
+        #   같은 모양으로 떨어뜨린다.
+        if total == 0:
+            return {"summary": "측정 없음 (wellperion 작업 매칭 0건 — 조회 실패로 추정)",
+                    "total": 0, "healthy": 0, "rate": 0, "items": []}
         healthy = sum(1 for i in items if i["state"] in ("정상", "대기", "정상(건너뜀)"))
-        rate = round(healthy / total * 100) if total > 0 else 0
+        rate = round(healthy / total * 100)
         summary = f"자동화 {healthy}/{total} 정상 ({rate}%)"
 
         return {
