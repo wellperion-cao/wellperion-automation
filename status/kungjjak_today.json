@@ -628,6 +628,42 @@
           "upload": "✅ 배포 (9fa5c6a68)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-1056",
+          "no": "56",
+          "got": "나우열M이 진행 및 요청하는 것들은 중요보안건 아니면 다 반영해줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "19:56",
+          "end": "19:57",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-1057",
+          "no": "57",
+          "got": "매출&지출 관리에서 품의 승인 삭제",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "19:57",
+          "end": "19:58",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
+        },
+        {
+          "ref": "GM-20260911-1058",
+          "no": "58",
+          "got": "그리고 이번주 일요일에 빔프로젝트 클리닝 작업 9시부터 진행하는건 전사일정+중간관리자 이정헌 소장 업무로 추가해주고, 4부서방에 전달해줘",
+          "did": "",
+          "start": "19:58",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -812,14 +848,29 @@
           "detail": "커밋 d47844613 · 배 11401"
         }
       ],
-      "count": 52,
-      "done": 52,
-      "open": 0,
+      "count": 55,
+      "done": 54,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260911-1058",
+          "no": "58",
+          "got": "그리고 이번주 일요일에 빔프로젝트 클리닝 작업 9시부터 진행하는건 전사일정+중간관리자 이정헌 소장 업무로 추가해주고, 4부서방에 전달해줘",
+          "did": "",
+          "start": "19:58",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": [
         {
           "count": 2,
@@ -1282,8 +1333,20 @@
           "ref": "GM-20260911-2048",
           "no": "48",
           "got": "AWS에 저장시켜두는거지?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:54",
+          "end": "19:55",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260911-2049",
+          "no": "49",
+          "got": "가공을 하고 저장시킬 수 있어? 가공기준이랑 가공방법에 대해서는 ERP플랫폼에 상담봇에 정리해주고, 상담봇은 너무 봇같은데, 사람이 상담해주는 것처럼 나중에 웰리 캐릭터 만들어서 캐릭터가 상담할 수 있도록 생각하고 …",
+          "did": "",
+          "start": "19:57",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1292,18 +1355,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:32",
-          "area": "작업",
-          "event": "회장님 보고 사진 ERP 공개 자리 반영 — 웰페리온_일일보고_20260910.png (배1115)",
-          "detail": "커밋 0fa933233 · 배 12522"
-        },
-        {
-          "time": "09:39",
-          "area": "작업",
-          "event": "사진 전송창이 안 닫혔는데 성공으로 적히던 것 (배 2528)",
-          "detail": "커밋 add9d16a5 · 배 12522"
-        },
         {
           "time": "09:41",
           "area": "작업",
@@ -1471,10 +1522,22 @@
           "area": "상담봇",
           "event": "배2533② 상담 문답 전량 조회 통로 + 답 본문 기록",
           "detail": "GET /api/chat/{tenant}/log 신설(days·limit·offset·include_test · 로그인 뒤). 회전본(.타임스탬프)까지 읽어 과거가 조회 불가로 변하는 구멍을 막았다. _log 에 a(답 본문) 칸 추가 — 질문과 같은 마스킹, 2000자 상한, 핸드오프 안내문은 안 남김. 테스트 세션은 지우지 않고 is_test 로 표시. 라이브 실측: 전체 168건 · 최신순 페이지·next_offset 정상 · 무쿠키 401. 저장 1e5db1700 · scp+nginx reload 완료."
+        },
+        {
+          "time": "19:57",
+          "area": "작업",
+          "event": "승인이 두 곳에 보이던 것 정리 — 그 화면은 구매진행·비품관리로 (배2542 후속 · GM 지시)",
+          "detail": "커밋 35af1a196 · 배 12528"
+        },
+        {
+          "time": "19:59",
+          "area": "작업",
+          "event": "매출&지출 관리에서 품의 승인 메뉴 삭제 — 구매진행·비품관리는 구매요청 화면에서 연다 (GM 지시 2026-09-11)",
+          "detail": "커밋 b839dd46e · 배 12528"
         }
       ],
-      "count": 38,
-      "done": 37,
+      "count": 39,
+      "done": 38,
       "open": 1,
       "avg_minutes": 1,
       "work_count": 30,
@@ -1482,18 +1545,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260911-2048",
-          "no": "48",
-          "got": "AWS에 저장시켜두는거지?",
+          "ref": "GM-20260911-2049",
+          "no": "49",
+          "got": "가공을 하고 저장시킬 수 있어? 가공기준이랑 가공방법에 대해서는 ERP플랫폼에 상담봇에 정리해주고, 상담봇은 너무 봇같은데, 사람이 상담해주는 것처럼 나중에 웰리 캐릭터 만들어서 캐릭터가 상담할 수 있도록 생각하고 …",
           "did": "",
-          "start": "19:54",
+          "start": "19:57",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 2
         }
       ],
       "repeats": []
@@ -1961,13 +2024,13 @@
           "ref": "GM-20260911-3046",
           "no": "46",
           "got": "지금 문서함에 모듈이랑 저장파일들이랑 헷갈리는데, 구분 명확히해서 정리해줄래?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "19:52",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:57",
+          "minutes": 4,
+          "upload": "✅ 배포 (e382c1aa2)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2132,31 +2195,22 @@
           "area": "작업",
           "event": "문서함을 기준 문서·보고 자료로 가름 (GM 지적 2026-09-11)",
           "detail": "커밋 18a9a2337 · 배 11425"
+        },
+        {
+          "time": "19:57",
+          "area": "작업",
+          "event": "모듈·문서·저장 파일 셋을 갈랐다 (GM 지시 2026-09-11)",
+          "detail": "커밋 b4b6a77f1 · 배 11425"
         }
       ],
       "count": 39,
-      "done": 38,
-      "open": 1,
+      "done": 39,
+      "open": 0,
       "avg_minutes": 2,
-      "work_count": 27,
+      "work_count": 28,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260911-3046",
-          "no": "46",
-          "got": "지금 문서함에 모듈이랑 저장파일들이랑 헷갈리는데, 구분 명확히해서 정리해줄래?",
-          "did": "",
-          "start": "19:52",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -2278,6 +2332,18 @@
           "upload": "✅ 배포 (2c1a5347e)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260911-4011",
+          "no": "11",
+          "got": "오늘 매출보고서 서버판 마무리다 된거야?",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "19:57",
+          "end": "19:59",
+          "minutes": 2,
+          "upload": "✅ 배포 (645269148)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2318,8 +2384,8 @@
           "detail": "커밋 f51aa2b7f · 배 12523"
         }
       ],
-      "count": 9,
-      "done": 9,
+      "count": 10,
+      "done": 10,
       "open": 0,
       "avg_minutes": 1,
       "work_count": 6,
@@ -2852,13 +2918,19 @@
           "area": "작업",
           "event": "부장님 회신 박제 — 홈페이지 없음·스포짐 체인 소속 · 상담 페이지 답신",
           "detail": "커밋 08558145a · 배 11305"
+        },
+        {
+          "time": "19:57",
+          "area": "작업",
+          "event": "시험기 판정을 라이브와 같게 — 정상 답이 「검사 탈락」으로 찍히던 것",
+          "detail": "커밋 56505be21 · 배 11305"
         }
       ],
       "count": 8,
       "done": 8,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 2,
+      "work_count": 3,
       "missed": [],
       "unclosed": [],
       "just": [],
