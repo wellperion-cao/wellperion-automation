@@ -55,6 +55,8 @@ def health():
         "last_failed": meta.get("last_failed") or "",
         "_source": SOURCE,
         "_env": ENV_NAME,
+        # 붙이기에 실패한 모듈 — 비어 있어야 정상이다(배2566). 값이 있으면 그 도메인만 죽어 있다.
+        "failed_modules": FAILED_MODULES,
     }
 
 
@@ -217,8 +219,19 @@ from members_report import router as _mr; app.include_router(_mr)  # noqa: E402,
 
 # 모듈별 라우터 자동 등록 — 같은 폴더의 api_*.py 에 `router` 가 있으면 붙인다(2026-09-03 시토).
 #   접수·점검·업무 SSOT 처럼 도메인마다 파일 하나씩 두고, 이 파일(app.py)은 손대지 않는다(레인 충돌 방지).
-import glob as _glob, importlib as _il, os as _os  # noqa: E402
+import glob as _glob, importlib as _il, os as _os, traceback as _tb  # noqa: E402
+#   ★한 모듈이 죽어도 나머지는 산다(배2566 · 2026-09-11). 전에는 여기서 감싸지 않아서 인사(api_hr)
+#   하나가 임포트에 실패하면 접수·업무 SSOT·문의 폼까지 서버가 통째로 안 떴다 — 한 도메인의 사고가
+#   전 도메인 정지가 되는 구조였다. 실패한 모듈은 그 라우트만 빠지고, 어느 것이 빠졌는지는
+#   /api/health 의 failed_modules 로 드러난다(조용히 없어지지 않게).
+FAILED_MODULES = {}
 for _f in sorted(_glob.glob(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "api_*.py"))):
-    _m = _il.import_module(_os.path.basename(_f)[:-3])
-    if hasattr(_m, "router"):
-        app.include_router(_m.router)
+    _name = _os.path.basename(_f)[:-3]
+    try:
+        _m = _il.import_module(_name)
+        if hasattr(_m, "router"):
+            app.include_router(_m.router)
+    except Exception as _e:
+        FAILED_MODULES[_name] = "%s: %s" % (type(_e).__name__, str(_e)[:200])
+        print("[app] 모듈 %s 붙이기 실패 — 그 라우트만 빠집니다: %s" % (_name, _e), flush=True)
+        print(_tb.format_exc(), flush=True)

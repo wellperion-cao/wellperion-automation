@@ -91,17 +91,17 @@ def is_test_payload(payload):
     return False
 
 
-def _url():
-    url = os.environ.get("ERP_DB_URL")
+def _url(key="ERP_DB_URL"):
+    url = os.environ.get(key)
     if not url:
         try:
             with open(ENV_FILE, encoding="utf-8") as f:
                 for line in f:
-                    if line.startswith("ERP_DB_URL="):
+                    if line.startswith(key + "="):
                         url = line.split("=", 1)[1].strip().strip('"').strip("'")
         except OSError:
             pass
-    if not url:
+    if not url and key == "ERP_DB_URL":
         raise RuntimeError("ERP_DB_URL 없음 — 환경변수 또는 %s 를 확인" % ENV_FILE)
     return url
 
@@ -130,8 +130,19 @@ class Conn:
 
 
 def connect(readonly=False):
-    raw = psycopg2.connect(_url())
-    if readonly:                        # 읽기 전용 API 는 미러를 못 건드리게 세션에 못을 박는다
+    """readonly=True 면 쓰기 권한이 아예 없는 계정(ERP_DB_URL_RO)으로 붙는다(배2566 · 2026-09-11).
+
+    전에는 같은(쓰기 되는) 계정으로 붙고 세션에만 읽기 전용을 걸었다 — 코드 한 줄이 빠지면 그대로
+    쓰기가 된다. 이제 인사처럼 읽기만 하는 자리는 계정 자체가 SELECT 밖에 못 한다.
+    RO 계정이 없는 환경(알파·베타·옛 서버)에서는 종전대로 세션 읽기 전용으로 물러난다 —
+    계정이 없다고 조회가 멈추면 안 된다."""
+    url = _url()
+    if readonly:
+        ro = _url("ERP_DB_URL_RO")
+        if ro:
+            url = ro
+    raw = psycopg2.connect(url)
+    if readonly:                        # 계정이 막고, 세션이 한 번 더 막는다(이중)
         raw.set_session(readonly=True)
     return Conn(raw)
 
