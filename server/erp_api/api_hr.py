@@ -82,6 +82,21 @@ app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문�
       두 칸에 다 걸고, 정적 표본이 아니라 ERROR_CODES 전체를 돌려 검사한다(자체점검).
     ★동적 문구도 같은 위험이다 — DB 예외 원문에 서버 lc_messages 가 한국어면 '권한'이 섞인다.
       그래서 바깥으로 나가는 문구는 전부 고정 문장이고, 예외는 종류 이름만 서버 로그에 남긴다.
+  ★인사 화면 모듈 열람권 게이트(2026-09-11 · 결함 6 전반) — 열쇠 단위 차단만으로는 '인사 화면이 잠긴 계정이
+    주소만 알고 API 를 직접 부른다'가 그대로 남는다(뷰어 허용 열쇠인 현재근무자·휴무의 74명 명부가 이메일·비고까지
+    나간다 = P-03 '매니저 전용' 과 충돌). VIEWER_DENY_DBS 에 emp·leave 를 넣지 않는 이유 = 넣으면 허브 열람권이
+    있는 정상 뷰어의 근무표·명부까지 죽고 문제의 본질은 그대로다. 대신 이 라우터가 관문의 기존 /auth/check 를
+    화면 경로(HR_GATE_URI · 기본 /chro/hub/index.html = modules.json chro-hub-index)를 X-Original-URI 에 붙여
+    대신 불러 '그 화면을 열 수 있는 계정인가'로 판정한다(_gate). 관문(erp_auth)·nginx 의 permission 코드는
+    손대지 않는다. 판정 = 200 통과 · 401/403 거부(scope-blocked · gate-deny) · 그 외·예외 = 닫힘(gate-unavailable
+    503 · 캐시하지 않음). 관리자(HR_ADMIN_EMAILS)도 게이트를 지난다 — 목록에 있어도 화면 열람권이 없으면
+    API 도 없다(실패 방향 안전). 사무실 자동 로그인 세션은 관문이 chro-* 모듈을 막으므로 자동으로 걸린다.
+    /health 는 게이트를 타지 않는다(개인정보 없음). 되돌리기 = HR_GATE_MODE=off 한 줄(재배포 불요).
+
+살아 있는 행·신선도(2026-09-11 · 결함 2·5): 적재기가 원천에서 사라진 행을 지우지 않고 vanished_at 으로 닫으므로
+  읽기는 살아 있는 행(vanished_at IS NULL)만 기본 반환한다. include_vanished=1 은 관리자 응답에서만 받고
+  그때만 각 행에 _vanished_at·_vanish_reason 이 덧붙는다. 봉투에는 as_of(마지막 성공 apply run 의 finished_at)·
+  as_of_run_id 가 항상 실려 소비자가 이 미러의 신선도를 안다(없으면 null · 오류 봉투에는 싣지 않는다).
 
 조회 기록: hr.access_log 에 '누가·언제·어느 열쇠를·마스킹 여부'만 남긴다(행 내용·개인정보 값은 담지 않는다).
   읽기 라우트는 읽기 전용 세션으로 DB 를 열기 때문에 같은 연결로는 기록을 쓸 수 없다 — 쓰기 연결을 짧게 열고 닫는다.
@@ -139,6 +154,9 @@ app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문�
      /health 의 birth_source.employee_birth_date_rows 가 그 건수다. 임직원 원천의 '생일'이 월-일 두
      조각이면 날짜 변환기를 통과하지 못해 0 에 가깝게 나오고, 그러면 컷오버 후 그 두 칸이 빈다
      (허브의 화면단 대체 경로도 주민번호 칸이 사라져 같이 막힌다). 0 이면 어느 칸에서 가져올지 확정해야 한다.
+  7) HR_GATE_* 기본값 확인 — 관문 내부 주소(HR_AUTH_CHECK_URL · 기본 127.0.0.1:8000 /auth/check)와 게이트 화면
+     경로(HR_GATE_URI)가 서버 실물(erp-auth.service 포트 · modules.json)과 같은지 1회. 5)의 러너 계정을 관리자
+     목록에 넣는 안이 채택되면 그 계정에 허브 모듈 허용도 같이 줘야 게이트를 지난다.
 
 테스트/더미 행: 쓰기 관문과 같은 판정(common/db.py is_test_payload) 결과가 is_test 칸에 들어 있다 —
   읽기는 기본으로 뺀다(?include_test=1 이면 포함). 새 판정 함수를 만들지 않는다(회신 §3).
@@ -147,10 +165,14 @@ app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문�
 """
 import datetime
 import decimal
+import hashlib
 import json
 import os
 import re
 import sys
+import time
+import urllib.error
+import urllib.request
 from typing import Optional
 
 from fastapi import APIRouter, Query, Request
@@ -170,31 +192,38 @@ router = APIRouter(prefix="/api/hr")
 #   ★autolog 만 최신 120행 — 러너가 전송 타임아웃 때 '최신 120행·6분 창에 그 기록이 있는가'로 성패를
 #     되판정하는데 서버에 이 읽기 열쇠가 없어 검증 요청이 갈 곳이 없었다. 라우트를 먼저 열어 두면
 #     적재가 붙는 즉시 동작한다(적재 전에는 0행이 정상 — 헬스가 '고장'과 구분해 보여 준다).
+#   vanish = 그 표에 vanished_at 칸이 있어 '살아 있는 행'(vanished_at IS NULL)만 기본 반환하는가(aws2 §0.1).
+#     ★autolog 만 False — 자동화로그는 적재 범위 밖이라 스키마가 그 칸을 만들지 않는다.
 DBS = {
     "emp":        {"table": "hr.employee",    "pk": "employee_id",   "where": "status <> '퇴사'",
-                   "order": "dept_name_raw NULLS LAST, legacy_row",  "label": "현재근무자", "limit": 0},
+                   "order": "dept_name_raw NULLS LAST, legacy_row",  "label": "현재근무자", "limit": 0, "vanish": True},
     "exitroster": {"table": "hr.employee",    "pk": "employee_id",   "where": "status = '퇴사'",
-                   "order": "resign_date DESC NULLS LAST, legacy_row", "label": "퇴사자 명부", "limit": 0},
+                   "order": "resign_date DESC NULLS LAST, legacy_row", "label": "퇴사자 명부", "limit": 0, "vanish": True},
     "exit":       {"table": "hr.resignation", "pk": "resignation_id", "where": "",
-                   "order": "last_work_date DESC NULLS LAST, legacy_row", "label": "퇴사처리", "limit": 0},
+                   "order": "last_work_date DESC NULLS LAST, legacy_row", "label": "퇴사처리", "limit": 0, "vanish": True},
     "appl":       {"table": "hr.applicant",   "pk": "applicant_id",  "where": "",
-                   "order": "applied_at DESC NULLS LAST, legacy_row", "label": "지원자", "limit": 0},
+                   "order": "applied_at DESC NULLS LAST, legacy_row", "label": "지원자", "limit": 0, "vanish": True},
     "hire":       {"table": "hr.job_posting", "pk": "posting_id",    "where": "",
-                   "order": "start_date DESC NULLS LAST, legacy_row", "label": "채용공고", "limit": 0},
+                   "order": "start_date DESC NULLS LAST, legacy_row", "label": "채용공고", "limit": 0, "vanish": True},
     "eval":       {"table": "hr.evaluation",  "pk": "eval_id",       "where": "",
-                   "order": "period_start DESC NULLS LAST, legacy_row", "label": "인사평가", "limit": 0},
+                   "order": "period_start DESC NULLS LAST, legacy_row", "label": "인사평가", "limit": 0, "vanish": True},
     "onbo":       {"table": "hr.onboarding_item", "pk": "item_id",   "where": "",
-                   "order": "employee_name_raw, week_no NULLS LAST, legacy_row", "label": "입사·온보딩", "limit": 0},
+                   "order": "employee_name_raw, week_no NULLS LAST, legacy_row", "label": "입사·온보딩", "limit": 0,
+                   "vanish": True},
     "blacklist":  {"table": "hr.hire_blacklist",  "pk": "blacklist_id", "where": "",
-                   "order": "registered_at DESC NULLS LAST, legacy_row", "label": "채용블랙리스트", "limit": 0},
+                   "order": "registered_at DESC NULLS LAST, legacy_row", "label": "채용블랙리스트", "limit": 0,
+                   "vanish": True},
     "leave":      {"table": "hr.leave_entry", "pk": "leave_id",      "where": "",
-                   "order": "work_date, person_name_raw", "label": "휴무", "limit": 0},
+                   "order": "work_date, person_name_raw", "label": "휴무", "limit": 0, "vanish": True},
     "autolog":    {"table": "hr.automation_log", "pk": "log_id",     "where": "",
-                   "order": "occurred_at DESC, log_id DESC", "label": "자동화로그", "limit": 120},
+                   "order": "occurred_at DESC, log_id DESC", "label": "자동화로그", "limit": 120, "vanish": False},
 }
 # 행 봉투에서 감추는 내부 칸 — data 원본이 없을 때 정규화 칸으로 행을 만들 때만 쓴다.
 #   ★birth_date 는 여기서 감추고 _birth_date 로 옮겨 둔다 — 2층(_apply_birth)이 역할에 따라 파생·삭제한다.
-_HIDDEN = ("tenant_id", "data", "is_test", "created_at", "updated_at", "synced_at", "legacy_tab", "birth_date")
+#   ★vanished 3칸은 감춘다 — include_vanished 응답에서만 row_out 이 _vanished_at·_vanish_reason 으로 덧붙인다.
+_HIDDEN = ("tenant_id", "data", "is_test", "created_at", "updated_at", "synced_at", "legacy_tab", "birth_date",
+           "vanished_at", "vanish_reason", "vanished_run_id")
+_LIVE_PRED = "vanished_at IS NULL"          # '살아 있는 행' 술어 — 조회·행수 집계가 같은 문자열을 쓴다(aws2 §0.1)
 
 # ── 신원·권한 ──────────────────────────────────────────────────────────────────────────────────
 ROLE_ADMIN = "admin"
@@ -202,15 +231,36 @@ ROLE_VIEWER = "viewer"
 ENV_ADMIN_EMAILS = "HR_ADMIN_EMAILS"            # 쉼표 구분 · 기본 빈 목록 ⛔ 실값을 코드·주석·보고서에 두지 않는다
 ENV_TRUST_ROLE_HEADER = "HR_TRUST_ROLE_HEADER"  # 기본 꺼짐 — 관문 두 줄이 실제 배포되고 1회 확인한 뒤에만 켠다
 ENV_STATUS_MODE = "HR_HTTP_STATUS_MODE"         # 'http'(기본 · 오류에 실제 상태코드) · 'compat'(되돌리기 · 항상 200)
+# 인사 화면 모듈 열람권 게이트(aws2 §0.4 · §B-5) — 값은 서버 api.env 에만 둔다.
+ENV_GATE_MODE = "HR_GATE_MODE"                  # 'module'(기본 · 게이트 켬) · 'off'(되돌리기 · 재배포 불요)
+ENV_AUTH_CHECK_URL = "HR_AUTH_CHECK_URL"        # 관문 내부 주소(erp_auth /auth/check · erp-auth.service 포트 8000 실측)
+ENV_GATE_URI = "HR_GATE_URI"                    # 게이트가 대신 물어볼 화면 경로(modules.json chro-hub-index)
+ENV_GATE_CACHE_SEC = "HR_GATE_CACHE_SEC"        # 게이트 판정 캐시 초
+GATE_MODE_DEFAULT = "module"
+AUTH_CHECK_URL_DEFAULT = "http://127.0.0.1:8000/auth/check"
+GATE_URI_DEFAULT = "/chro/hub/index.html"
+GATE_CACHE_SEC_DEFAULT = 60
+GATE_TIMEOUT_SEC = 2                            # 관문 호출 시간 상한 — 넘으면 닫힘(gate-unavailable)
+_GATE_CACHE_MAX = 1024                          # 캐시 항목 상한 — 넘치면 가장 오래된 것부터 버린다
+_GATE_COOKIE = "erp_session"                    # 관문 세션 쿠키 이름(erp_auth COOKIE 와 같은 값 · 값은 읽되 기록하지 않는다)
+_GATE_COOKIE_RE = re.compile(r"(?:^|;\s*)" + _GATE_COOKIE + r"=([^;]*)")
+_GATE_CACHE = {}                                # {sha256(세션값): (만료 시각, 판정)} — 프로세스 안에서만
+_GATE_DENY_STATUSES = (401, 403)                # 관문 /auth/check 의 거부 두 값(로그인 필요 · 모듈 불허) → deny
+#   ⚠️ 이 숫자는 관문 응답을 '읽는' 자리다 — 이 API 가 바깥으로 '내보내는' 상태코드에는 여전히 401 을 쓰지 않는다.
 
 # 오류 코드 고정 목록 — 러너·화면이 열쇠로 삼는 자리다(배포 준비물 4). 새 코드를 늘리면 여기에도 넣는다.
 #   ⚠️ 자체점검이 이 목록 전체를 돌며 코드·문구에 허브 게이트 금지어가 없는지 본다 —
 #      게이트는 message 가 아니라 error 코드 칸을 정규식으로 훑으므로(실측) 코드 이름 자체가 검사 대상이다.
+#   ★gate-unavailable(503) = 열람 판정 장치(관문)가 응답하지 않아 닫힌 경우. 게이트 '거부'는 새 코드가 아니라
+#     기존 scope-blocked(403 · deny_reason=gate-deny)를 재사용한다.
 ERROR_CODES = ("bad-payload", "bad-param", "unknown-db", "scope-blocked", "bad-date",
-               "db-unavailable", "db-error", "audit-unavailable")
+               "db-unavailable", "db-error", "audit-unavailable", "gate-unavailable")
 # 바깥으로 나가는 고정 문구 — 예외 원문을 잇지 않는다(표·칸 이름·값 조각·접속 대상·DSN 조각 노출 방지).
 MSG_DB_UNAVAILABLE = "자료 저장소에 연결하지 못했습니다."
 MSG_DB_ERROR = "자료를 읽는 중 오류가 발생했습니다."
+MSG_GATE_UNAVAILABLE = "열람 판정 장치가 응답하지 않아 이 요청은 처리하지 않았습니다."
+MSG_SCOPE_BLOCKED = "이 계정으로 열람할 수 있는 범위가 아닌 자료입니다."
+MSG_VANISHED_ADMIN_ONLY = "요청 값 include_vanished 은(는) 관리자 열람에서만 쓸 수 있습니다."
 _AUDIT_STR_MAX = 64                             # 조회 기록에 남기는 문자열 값의 일괄 상한(안전망)
 
 # 뷰어가 못 여는 열쇠 — 한 곳에 모은다(최종 목록은 매니저 확인 대상).
@@ -221,7 +271,13 @@ _AUDIT_STR_MAX = 64                             # 조회 기록에 남기는 문
 #      ★러너가 뷰어 신원으로 되판정을 부르면 이 항목에 막힌다 → 남은 길은 러너 계정을 관리자 목록에
 #        넣는 것뿐이다(열되 실명만 가리는 절충은 러너의 완전일치 대조를 깨서 못 쓴다 — 배포 준비물 5).
 #        1단계에서는 되판정이 여전히 현행 GAS 로 가므로 막힌 채로 깨지는 것이 없다.
+#   ★emp·leave 는 이 목록에 넣지 않는다(2026-09-11 aws2 §B-5 결정) — 넣으면 허브 열람권이 있는 정상 뷰어의
+#      근무표·명부까지 죽는다. '인사 화면이 잠긴 계정의 직접 호출'은 모듈 열람권 게이트(_gate)가 막는다.
 VIEWER_DENY_DBS = ("appl", "hire", "blacklist", "onbo", "eval", "exitroster", "exit", "autolog")
+# 뷰어 응답에서 통째로 빼는 칸(1층 · aws2 §B-3) — 2층이 빼는 생년월일·나이 두 키에 더해 bday·생일·재직기간과
+#   '생년'·'생일' 낱말이 든 칸 전부. 관리자 응답은 그대로(재직기간 등은 관리자 화면이 쓴다).
+VIEWER_DROP_KEYS = ("생년월일", "나이", "bday", "생일", "재직기간")
+_VIEWER_DROP_WORDS = ("생년", "생일")
 
 # ── 마스킹 패턴 ────────────────────────────────────────────────────────────────────────────────
 #   현행 GAS maskPiiForViewer_ 와 같은 판별 — 값의 '형식'만 본다(칸 이름이 뭐라 적혀 있든 걸린다).
@@ -316,6 +372,91 @@ def _client_ip(request):
         return fwd[:_AUDIT_STR_MAX]
     host = getattr(getattr(request, "client", None), "host", None)
     return host[:_AUDIT_STR_MAX] if isinstance(host, str) else host
+
+
+# ── 인사 화면 모듈 열람권 게이트 (aws2 §B-5 · erp_auth 무수정) ──────────────────────────────────
+#   관문의 기존 /auth/check 를 화면 경로를 붙여 대신 부른다 — 관문 코드가 이미 갖고 있는 모듈 판정
+#   (module_at → allowed · 자동 로그인 세션의 chro-* 차단)을 그대로 빌린다. nginx 가 proxy_pass 로 Cookie 헤더를
+#   상류(8001)에 그대로 넘기므로 이 라우터가 읽을 수 있다(관문 location 이 같은 값을 쓴다).
+def _gate_mode():
+    return (os.environ.get(ENV_GATE_MODE) or GATE_MODE_DEFAULT).strip().lower()
+
+
+def _gate_uri():
+    return (os.environ.get(ENV_GATE_URI) or GATE_URI_DEFAULT).strip() or GATE_URI_DEFAULT
+
+
+def _gate_cache_sec():
+    n, bad = _parse_int(os.environ.get(ENV_GATE_CACHE_SEC), 0, 86400, GATE_CACHE_SEC_DEFAULT)
+    return GATE_CACHE_SEC_DEFAULT if bad else n
+
+
+def _gate_fetch(url, headers):
+    """관문 호출 1회 → HTTP 상태코드(정수). 4xx·5xx 도 상태코드로 돌려주고, 연결·시간 초과 등은 예외로 올린다.
+    ★자체점검이 이 함수만 바꿔 끼워 200/거부/예외 세 경우를 검사한다 — 호출부(_gate)에 urllib 을 직접 두지 않는다."""
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=GATE_TIMEOUT_SEC) as resp:
+            return int(resp.status)
+    except urllib.error.HTTPError as e:
+        return int(e.code)
+
+
+def _gate_cache_get(k, now):
+    hit = _GATE_CACHE.get(k)
+    if hit is None:
+        return None
+    if hit[0] <= now:
+        _GATE_CACHE.pop(k, None)
+        return None
+    return hit[1]
+
+
+def _gate_cache_put(k, verdict, now):
+    ttl = _gate_cache_sec()
+    if ttl <= 0:
+        return
+    while len(_GATE_CACHE) >= _GATE_CACHE_MAX:          # 가장 오래된 항목부터(삽입 순서 보존) 버린다
+        try:
+            _GATE_CACHE.pop(next(iter(_GATE_CACHE)))
+        except StopIteration:
+            break
+    _GATE_CACHE[k] = (now + ttl, verdict)
+
+
+def _gate(request):
+    """→ 'ok' | 'deny' | 'unavailable'.
+    1) HR_GATE_MODE=off 면 통과(되돌리기 손잡이).  2) 세션 쿠키 조각이 없으면 거부.
+    3) 캐시(열쇠 = 세션값의 sha256 · TTL HR_GATE_CACHE_SEC) 적중이면 그 판정.
+    4) 관문 GET — Cookie 원문 · X-Original-URI=<HR_GATE_URI> · X-Original-Method=GET · 2초.
+       200 → ok / 거부 상태(4xx 중 관문이 쓰는 두 값) → deny / 그 외 상태·예외 → unavailable(캐시하지 않음).
+    ⛔ 세션값은 해시로만 다루고 어디에도 남기지 않는다. 예외는 종류 이름만 서버 로그에."""
+    if _gate_mode() == "off":
+        return "ok"
+    cookie = request.headers.get("cookie") or ""
+    m = _GATE_COOKIE_RE.search(cookie)
+    if not m or not m.group(1).strip():
+        return "deny"
+    k = hashlib.sha256(m.group(1).strip().encode("utf-8")).hexdigest()
+    now = time.time()
+    cached = _gate_cache_get(k, now)
+    if cached is not None:
+        return cached
+    url = (os.environ.get(ENV_AUTH_CHECK_URL) or AUTH_CHECK_URL_DEFAULT).strip() or AUTH_CHECK_URL_DEFAULT
+    headers = {"Cookie": cookie, "X-Original-URI": _gate_uri(), "X-Original-Method": "GET"}
+    try:
+        status = _gate_fetch(url, headers)
+    except Exception as e:                        # 연결 거부·시간 초과·URL 오류 등 — 닫힘(실패 방향 안전)
+        _log_exc("gate/fetch", e)
+        return "unavailable"
+    if status == 200:
+        verdict = "ok"
+    elif status in _GATE_DENY_STATUSES:           # 관문이 쓰는 두 거부값(로그인 필요 · 모듈 불허)
+        verdict = "deny"
+    else:
+        return "unavailable"
+    _gate_cache_put(k, verdict, now)
+    return verdict
 
 
 def jsonable(v):
@@ -424,9 +565,21 @@ def _contaminated_rescue(row):
     return phone, birth
 
 
+def _is_viewer_drop_key(k):
+    """뷰어 응답에서 통째로 빼는 칸인가 — VIEWER_DROP_KEYS 에 있거나 이름에 '생년'·'생일' 낱말이 든 칸(aws2 §B-3).
+    ★1층(뷰어 전용) 소관이다 — 관리자 응답은 그대로 두고, 2층(_apply_birth)의 두 pop 은 순서 계약대로 유지한다."""
+    s = str(k if k is not None else "").strip()
+    if not s:
+        return False
+    if s in VIEWER_DROP_KEYS:
+        return True
+    return any(w in s for w in _VIEWER_DROP_WORDS)
+
+
 def _mask_value(v):
     """행 전체를 재귀 순회 — 정규화 칸 · 원본 레코드(data JSONB 통째) · 중첩 값이 전부 같은 순회 대상이다.
-    적재가 떨어뜨리는 것은 칸 이름 3종뿐이라 메모·비고·면담 내용·평가 피드백 본문까지 훑어야 한다."""
+    적재가 떨어뜨리는 것은 칸 이름 3종뿐이라 메모·비고·면담 내용·평가 피드백 본문까지 훑어야 한다.
+    ★생년·생일·재직기간 계열 칸은 이 층(뷰어 전용)에서 통째로 뺀다 — 중첩(data 원본)까지 같은 규칙."""
     if isinstance(v, str):
         return _mask_text(v)
     if isinstance(v, list):
@@ -434,7 +587,7 @@ def _mask_value(v):
     if isinstance(v, dict):
         out = {}
         for k in v:
-            if _is_pii_key(k):
+            if _is_pii_key(k) or _is_viewer_drop_key(k):
                 continue                       # 통째 제거 — 마스킹한 이름으로 되살리지 않는다
             out[k] = _mask_value(v[k])
         return out
@@ -505,10 +658,11 @@ def _apply_birth(rows, role):
     return rows
 
 
-def row_out(r, key, pk):
+def row_out(r, key, pk, include_vanished=False):
     """행 1개 → 화면이 받던 모양.
     data(시트 원본 레코드)가 있으면 그것을 그대로 준다 — 한글 칸 이름을 여기서 지어내지 않기 위한 선택이다.
-    ⑤단계(GAS 끄기) 뒤 data 를 지우면 정규화 칸으로 자동 전환된다(그때 화면 어댑터를 ③단계에서 이미 바꿔 둔다)."""
+    ⑤단계(GAS 끄기) 뒤 data 를 지우면 정규화 칸으로 자동 전환된다(그때 화면 어댑터를 ③단계에서 이미 바꿔 둔다).
+    ★include_vanished 응답(관리자 전용)에서만 _vanished_at(ISO)·_vanish_reason 을 덧붙인다 — 그 외엔 싣지 않는다."""
     keys = list(r.keys())
     src = r["data"] if "data" in keys else None
     if isinstance(src, str):                      # 드라이버 설정에 따라 문자열로 올 수 있다
@@ -523,18 +677,22 @@ def row_out(r, key, pk):
     d["_source"] = SOURCE
     if "birth_date" in keys:                      # 2층이 소비하고 지운다 — 어느 역할의 응답에도 이 키는 남지 않는다
         d["_birth_date"] = jsonable(r["birth_date"])
+    if include_vanished and "vanished_at" in keys:
+        d["_vanished_at"] = jsonable(r["vanished_at"])
+        d["_vanish_reason"] = r["vanish_reason"] if "vanish_reason" in keys else None
     return d
 
 
-def envelope(key, rows, total, truncated=False, role=ROLE_VIEWER, masked=True):
+def envelope(key, rows, total, truncated=False, role=ROLE_VIEWER, masked=True, as_of=None, as_of_run_id=None):
     """{ok, data} = ERP 표준 봉투(회신 §1-4) + results = 현행 화면 extractResults 호환. 같은 배열 하나를 두 이름으로.
     ★role 은 항상 싣는다 — 허브 로그인 게이트가 역할 칸이 없으면 그 자체를 인증 실패로 처리하고(index.html 5580행),
       블랙리스트 적재·생년월일 표시가 역할 값 admin 에 걸려 있다.
     ★masked 는 '1층(뷰어 정책)이 걸렸는가'를 뜻한다 — 0층은 역할과 무관하게 늘 걸리므로 masked=false 가
-      '아무것도 안 가렸다'는 뜻이 아니다. 조회 기록에 남기는 값과 같은 값이다(사후 대조용)."""
+      '아무것도 안 가렸다'는 뜻이 아니다. 조회 기록에 남기는 값과 같은 값이다(사후 대조용).
+    ★as_of·as_of_run_id 는 항상 싣는다(없으면 null) — 마지막 성공 apply run 의 finished_at·run_id(aws2 §0.3 · 결함 5)."""
     return {"ok": True, "db": key, "count": len(rows), "total": total,
             "results": rows, "data": rows, "truncated": truncated,
-            "role": role, "masked": masked, "_source": SOURCE}
+            "role": role, "masked": masked, "as_of": as_of, "as_of_run_id": as_of_run_id, "_source": SOURCE}
 
 
 def error_envelope(code, message, key=None, role=ROLE_VIEWER, masked=True):
@@ -623,13 +781,27 @@ def _audit_clip(v):
     return v
 
 
-def _fetch(key, limit, offset, include_test, date_from, date_to):
+_AS_OF_SQL = ("SELECT run_id, finished_at, batch_at FROM hr.migration_run"
+              " WHERE tenant_id=%s AND mode='apply' AND status='ok' ORDER BY run_id DESC LIMIT 1")
+
+
+def _as_of(conn):
+    """마지막 성공 apply run → (as_of ISO 문자열 또는 None, run_id 또는 None, batch_at 또는 None). 봉투·health 가 같이 쓴다."""
+    r = conn.execute(_AS_OF_SQL, (db.TENANT,)).fetchone()
+    if r is None:
+        return None, None, None
+    return jsonable(r["finished_at"]), r["run_id"], jsonable(r["batch_at"])
+
+
+def _fetch(key, limit, offset, include_test, date_from, date_to, include_vanished=False):
     spec = DBS[key]
     where, args = ["tenant_id = %s"], [db.TENANT]
     if spec["where"]:
         where.append(spec["where"])
     if not include_test:
         where.append("is_test = FALSE")
+    if spec["vanish"] and not include_vanished:   # 살아 있는 행만 — 원천에서 사라진 행은 닫혀 있을 뿐 지워지지 않는다
+        where.append(_LIVE_PRED)
     if key == "leave":                            # 휴무만 기간 좁히기 — 5,603행을 매번 다 보낼 이유가 없다
         if date_from:
             where.append("work_date >= %s")
@@ -646,15 +818,16 @@ def _fetch(key, limit, offset, include_test, date_from, date_to):
             total = conn.execute("SELECT COUNT(*) FROM %s WHERE %s" % (spec["table"], w), args).fetchone()[0]
             rs = conn.execute("SELECT * FROM %s WHERE %s ORDER BY %s LIMIT %%s OFFSET %%s"
                               % (spec["table"], w, spec["order"]), args + [cap, offset]).fetchall()
+            as_of, as_of_run_id, _ = _as_of(conn)  # 같은 연결에서 — 행과 신선도 표시가 한 스냅샷이다
     finally:
         try:
             conn.close()
         except Exception:
             pass
-    rows = [row_out(r, key, spec["pk"]) for r in rs]
+    rows = [row_out(r, key, spec["pk"], include_vanished) for r in rs]
     # cap = '실제로 적용된 상한'. 요청값이 아니라 이 값을 봉투에 싣는다 — 요청값을 믿고 페이지를 넘기는
     #   호출자가 어긋난다(예: autolog 는 요청 0 이어도 실제로는 120행만 나간다).
-    return rows, total, (total > offset + len(rows)), cap
+    return rows, total, (total > offset + len(rows)), cap, as_of, as_of_run_id
 
 
 def _audit_write(entry):
@@ -688,9 +861,11 @@ def _audit_write(entry):
 
 
 def _serve(request, key, route, limit=0, offset=0, include_test=False,
-           date_from=None, date_to=None, reject=None):
+           date_from=None, date_to=None, reject=None, include_vanished=False):
     """두 읽기 라우트가 지나는 단 하나의 통로.
-    신원 판별 → 파라미터 검사 → 열쇠 검사 → 조회 → 마스킹(2층→0층→1층) → 조회 기록 → 봉투 조립.
+    신원 판별 → 본문 거절 → 모듈 열람권 게이트 → 열쇠 검사 → 파라미터 검사 → 조회 → 마스킹(2층→0층→1층) → 조회 기록 → 봉투 조립.
+    ★게이트(_gate)는 열쇠 검사보다 앞이다 — 인사 화면이 잠긴 계정에는 어느 열쇠가 있는지조차 알려 주지 않는다.
+      관리자(by_email)도 지난다(목록에 있어도 화면 열람권이 없으면 API 도 없다 — 실패 방향 안전).
     ★limit·offset·include_test 는 문자열로 받아 여기서 정수·참거짓으로 바꾼다 — 라우트 서명에 제약을 걸면
       FastAPI 요청 검증이 먼저 돌아 ok·role 칸 없는 422 가 봉투를 건너뛰고 그대로 나간다.
     ★앱 전역 미들웨어를 쓰지 않는 이유: 그건 공용 진입 파일(app.py)을 고쳐야 하는데 그 파일은
@@ -703,13 +878,16 @@ def _serve(request, key, route, limit=0, offset=0, include_test=False,
     lim, bad_lim = _parse_int(limit, 0, MAX_ROWS)
     off, bad_off = _parse_int(offset, 0, None)
     inc, bad_inc = _parse_bool(include_test)
+    inc_van, bad_van = _parse_bool(include_vanished)
     bad_param = (("limit", bad_lim) if bad_lim else
                  ("offset", bad_off) if bad_off else
-                 ("include_test", bad_inc) if bad_inc else None)
+                 ("include_test", bad_inc) if bad_inc else
+                 ("include_vanished", bad_van) if bad_van else None)
     date_ok = _valid_date(date_from) and _valid_date(date_to)
     # ⛔ 조회 기록에는 '검증을 통과한 값'만 담는다 — 미지 열쇠·형식 오류 값이 검사 전에 원장으로 새지 않게.
     params = {"limit": lim if not bad_lim else "invalid", "offset": off if not bad_off else "invalid",
               "include_test": inc if not bad_inc else "invalid",
+              "include_vanished": inc_van if not bad_van else "invalid",
               "from": (date_from if date_ok else "invalid"), "to": (date_to if date_ok else "invalid")}
     rec = {"email": ident["email"], "role": role,
            "db_key": (key if key in DBS else "unknown"),   # DBS 에 있는 열쇠일 때만 그 값을 싣는다
@@ -723,6 +901,12 @@ def _serve(request, key, route, limit=0, offset=0, include_test=False,
 
     if reject:                                    # 라우트가 본문조차 못 읽은 경우 — DB 에 닿기 전에 되돌린다
         return deny(reject[0], reject[1], 400, reject[0])
+    gate = _gate(request)                         # 인사 화면 모듈 열람권 — 관문 /auth/check 를 화면 경로로 대신 묻는다
+    if gate == "deny":
+        # ⚠️ 문구에 '권한'·'비밀번호'·unauthorized 를 쓰지 않는다 — 허브 게이트가 그 낱말을 훑어 세션을 지운다.
+        return deny("scope-blocked", MSG_SCOPE_BLOCKED, 403, "gate-deny")
+    if gate != "ok":                              # 판정 장치가 응답하지 않음 — 닫힘(원문이 나가는 쪽으로 열지 않는다)
+        return deny("gate-unavailable", MSG_GATE_UNAVAILABLE, 503, "gate-unavailable")
     if key not in DBS:
         return deny("unknown-db",
                     "알 수 없는 db 열쇠입니다: %s (가능: %s)" % (str(key)[:40], ", ".join(sorted(DBS))),
@@ -734,11 +918,13 @@ def _serve(request, key, route, limit=0, offset=0, include_test=False,
                     403, "viewer-deny")
     if bad_param:
         return deny("bad-param", "요청 값 %s 이(가) 올바르지 않습니다 — %s." % bad_param, 400, "bad-param")
+    if inc_van and role == ROLE_VIEWER:           # 닫힌 행(퇴사자 등 역사)은 관리자 열람에서만
+        return deny("bad-param", MSG_VANISHED_ADMIN_ONLY, 400, "bad-param")
     if not date_ok:
         return deny("bad-date", "기간은 YYYY-MM-DD 형식으로 보내 주세요.", 400, "bad-date")
 
     try:
-        rows, total, truncated, cap = _fetch(key, lim, off, inc, date_from, date_to)
+        rows, total, truncated, cap, as_of, as_of_run_id = _fetch(key, lim, off, inc, date_from, date_to, inc_van)
     except DbUnavailable as e:
         _log_exc("fetch/open %s" % key, e)
         rec.update({"response_status": "db-unavailable", "row_count": 0, "deny_reason": "db-unavailable"})
@@ -764,7 +950,7 @@ def _serve(request, key, route, limit=0, offset=0, include_test=False,
         return JSONResponse(error_envelope("audit-unavailable",
                                            "조회 기록 장치가 응답하지 않아 이 요청은 처리하지 않았습니다.",
                                            key, role, masked), status_code=_status(503))
-    out = envelope(key, rows, total, truncated, role, masked)
+    out = envelope(key, rows, total, truncated, role, masked, as_of, as_of_run_id)
     out["limit"] = cap                            # 요청값이 아니라 '실제로 적용된 상한'
     out["offset"] = off
     return out
@@ -778,7 +964,9 @@ def health():
              "trust_role_header": _trust_role_header(),
              "status_mode": (os.environ.get(ENV_STATUS_MODE) or "http").strip().lower(),
              "viewer_denied_dbs": list(VIEWER_DENY_DBS),
-             "mask_email": MASK_EMAIL}
+             "mask_email": MASK_EMAIL,
+             "gate_mode": _gate_mode(),            # 모듈 열람권 게이트 상태 — 관문 주소·쿠키 값은 싣지 않는다
+             "gate_uri": _gate_uri()}
     try:
         conn = db.connect(readonly=True)
     except db.Error as e:                          # ⛔ 예외 원문을 본문에 싣지 않는다 — 서버 로그에만
@@ -787,14 +975,28 @@ def health():
                 "identity": ident, "_source": SOURCE}
     try:
         with conn:
-            rows, rows_test = {}, {}
+            rows, rows_test, rows_vanished = {}, {}, {}
             for key, spec in DBS.items():
                 w = "tenant_id=%s" + ((" AND " + spec["where"]) if spec["where"] else "")
-                r = conn.execute("SELECT COUNT(*) AS n, COUNT(*) FILTER (WHERE is_test) AS t"
-                                 " FROM %s WHERE %s" % (spec["table"], w), (db.TENANT,)).fetchone()
-                rows[key], rows_test[key] = r["n"], r["t"]
+                if spec["vanish"]:                 # rows = 살아 있는 행수 · rows_vanished = 닫힌 행수(따로)
+                    r = conn.execute("SELECT COUNT(*) FILTER (WHERE %s) AS n,"
+                                     " COUNT(*) FILTER (WHERE is_test AND %s) AS t,"
+                                     " COUNT(*) FILTER (WHERE vanished_at IS NOT NULL) AS v"
+                                     " FROM %s WHERE %s" % (_LIVE_PRED, _LIVE_PRED, spec["table"], w),
+                                     (db.TENANT,)).fetchone()
+                    rows[key], rows_test[key], rows_vanished[key] = r["n"], r["t"], r["v"]
+                else:                              # autolog — vanished 칸이 없다(적재 범위 밖) → 0 고정
+                    r = conn.execute("SELECT COUNT(*) AS n, COUNT(*) FILTER (WHERE is_test) AS t"
+                                     " FROM %s WHERE %s" % (spec["table"], w), (db.TENANT,)).fetchone()
+                    rows[key], rows_test[key], rows_vanished[key] = r["n"], r["t"], 0
             run = conn.execute("SELECT run_id, mode, status, started_at, finished_at, note FROM hr.migration_run"
                                " WHERE tenant_id=%s ORDER BY run_id DESC LIMIT 1", (db.TENANT,)).fetchone()
+            # 미완 run 은 '최신 1건'이 아니라 running 인 것 전부를 본다(결함 4) — 강제 종료로 남은 run 이
+            #   그 뒤의 정상 run 에 가려지지 않게. 적재기의 다음 apply 가 aborted 로 닫을 때까지 여기 보인다.
+            running_runs = [x["run_id"] for x in conn.execute(
+                "SELECT run_id FROM hr.migration_run WHERE tenant_id=%s AND status='running' ORDER BY run_id",
+                (db.TENANT,)).fetchall()]
+            ok_at, ok_run_id, ok_batch_at = _as_of(conn)   # 봉투 as_of 와 같은 질의
             # 2층 파생 입력이 실제로 채워져 있는지(배포 준비물 6) — 0 에 가까우면 관리자 화면의
             # 생년월일·나이 칸이 컷오버 후 빈다. 값이 아니라 건수만 센다.
             bd = conn.execute("SELECT COUNT(*) AS n FROM hr.employee"
@@ -830,8 +1032,12 @@ def health():
                 c2.close()
             except Exception:
                 pass
-    return {"ok": sum(rows.values()) > 0, "rows": rows, "rows_test": rows_test,
-            "last_migration": last, "stale_run": bool(last and last["status"] == "running"),
+    last_ok = None
+    if ok_run_id is not None:
+        last_ok = {"run_id": ok_run_id, "finished_at": ok_at, "batch_at": ok_batch_at}
+    return {"ok": sum(rows.values()) > 0, "rows": rows, "rows_test": rows_test, "rows_vanished": rows_vanished,
+            "last_migration": last, "last_ok_run": last_ok,
+            "running_runs": running_runs, "stale_run": len(running_runs) > 0,
             "identity": ident, "access_log": access,
             # 2층 생년 파생의 입력이 실제로 있는가(배포 준비물 6) — 0 이면 관리자 화면 두 칸이 빈다.
             "birth_source": {"employee_birth_date_rows": bd["n"], "derivable": bd["n"] > 0},
@@ -848,14 +1054,16 @@ async def read(request: Request):
     ★본문 정리 말고는 아무 일도 하지 않는다 — 판별·조회·마스킹·기록·봉투는 전부 공통 통로 안에서 한 순서로 일어난다."""
     bad = None
     key = ""
+    inc_van = None
     try:
         payload = json.loads((await request.body()).decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
         key = str(payload.get("db") or "").strip()
+        inc_van = payload.get("include_vanished")    # 관리자 전용 — 검사·거절은 공통 통로 안에서
     except Exception:
         bad = ("bad-payload", "요청 본문을 읽지 못했습니다. {\"db\":\"appl\"} 모양으로 보내 주세요.")
-    return _serve(request, key, "POST /api/hr/read", reject=bad)
+    return _serve(request, key, "POST /api/hr/read", reject=bad, include_vanished=inc_van)
 
 
 @router.get("/{db_key}")
@@ -872,9 +1080,11 @@ def read_get(
     include_test: Optional[str] = Query(None),    # 테스트/더미 행 포함 여부(기본 제외 · 1/true 둘 다 받는다)
     date_from: Optional[str] = Query(None, alias="from"),   # 휴무 전용 — work_date 하한(YYYY-MM-DD)
     date_to: Optional[str] = Query(None, alias="to"),       # 휴무 전용 — work_date 상한
+    include_vanished: Optional[str] = Query(None),  # 닫힌 행(원천에서 사라진 행) 포함 — 관리자 응답에서만
 ):
     return _serve(request, db_key, "GET /api/hr/{db}", limit=limit, offset=offset,
-                  include_test=include_test, date_from=date_from, date_to=date_to)
+                  include_test=include_test, date_from=date_from, date_to=date_to,
+                  include_vanished=include_vanished)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -924,8 +1134,17 @@ def selftest():
         "db-unavailable": MSG_DB_UNAVAILABLE,
         "db-error": MSG_DB_ERROR,
         "audit-unavailable": "조회 기록 장치가 응답하지 않아 이 요청은 처리하지 않았습니다.",
+        "gate-unavailable": MSG_GATE_UNAVAILABLE,
     }
     assert set(_sample_msgs) == set(ERROR_CODES), "새 오류 코드는 ERROR_CODES 와 이 표에 같이 올린다"
+    # 살아 있는 행 플래그 — autolog 만 예외(적재 범위 밖 · vanished 칸 없음)
+    assert all("vanish" in s for s in DBS.values())
+    assert set(k for k, s in DBS.items() if s["vanish"]) == set(DBS) - {"autolog"}
+    assert all(c in _HIDDEN for c in ("vanished_at", "vanish_reason", "vanished_run_id"))
+    # 봉투 — as_of·as_of_run_id 는 항상 실리고 기본은 null
+    assert "as_of" in e and e["as_of"] is None and "as_of_run_id" in e and e["as_of_run_id"] is None
+    assert envelope("emp", [], 0, as_of="2026-09-11 03:00:00", as_of_run_id=7)["as_of_run_id"] == 7
+    assert "as_of" not in error_envelope("db-error", MSG_DB_ERROR, "emp"), "오류 봉투에는 싣지 않는다"
     _banned = re.compile(r"unauthorized|권한|비밀번호", re.I)
     for _code in ERROR_CODES:
         env = error_envelope(_code, _sample_msgs[_code], "appl")
@@ -956,6 +1175,15 @@ def selftest():
           "birth_date": datetime.date(1990, 1, 1)}
     o4 = row_out(r4, "emp", "employee_id")
     assert "birth_date" not in o4 and o4["_birth_date"] == "1990-01-01"
+    # 닫힌 행 표시 — include_vanished 응답에서만 _vanished_at·_vanish_reason 이 덧붙고 원래 칸은 감춘다
+    r5 = {"employee_id": 2, "legacy_row": 9, "person_name_raw": "홍길동",
+          "vanished_at": datetime.datetime(2026, 9, 11, 3, 0), "vanish_reason": "absent-from-source",
+          "vanished_run_id": 12}
+    o5 = row_out(r5, "emp", "employee_id")
+    assert "_vanished_at" not in o5 and "vanished_at" not in o5 and "vanished_run_id" not in o5
+    o5v = row_out(r5, "emp", "employee_id", include_vanished=True)
+    assert o5v["_vanished_at"] == "2026-09-11 03:00:00" and o5v["_vanish_reason"] == "absent-from-source"
+    assert "vanished_at" not in o5v and "vanished_run_id" not in o5v
 
     # ── 0층 상시 층 — 역할과 무관하게 걸린다(관리자 응답에도). 연락처는 여기 소관이 아니다 ──────
     assert _baseline_text("900101-1234567") == MASK_RRN_TOKEN
@@ -1020,6 +1248,21 @@ def selftest():
     m = _mask_value(nested)
     assert "주민번호" not in m and m["성명"] == "홍길동"
     assert m["메모"]["본문"].endswith(MASK_PHONE_TOKEN) and m["메모"]["목록"][0] == MASK_RRN_TOKEN
+    # 뷰어 응답 키 제거(aws2 §B-3) — bday·생일·재직기간과 '생년'·'생일' 낱말 칸은 1층이 통째로 뺀다(중첩 포함)
+    assert _is_viewer_drop_key("bday") and _is_viewer_drop_key("생일") and _is_viewer_drop_key("재직기간")
+    assert _is_viewer_drop_key("생년월일") and _is_viewer_drop_key("나이") and _is_viewer_drop_key("생년(주민)")
+    assert not _is_viewer_drop_key("성명") and not _is_viewer_drop_key("연락처") and not _is_viewer_drop_key("")
+    _vd = [{"bday": "01-01", "생일": "1월 1일", "재직기간": "3년", "성명": "홍길동",
+            "data": {"생일": "1월 1일", "비고": "x"}}]
+    _apply_birth(_vd, ROLE_VIEWER)
+    _apply_baseline(_vd)
+    _apply_mask(_vd)
+    assert "bday" not in _vd[0] and "생일" not in _vd[0] and "재직기간" not in _vd[0], "뷰어 행에서 세 키 제거"
+    assert _vd[0]["성명"] == "홍길동" and "생일" not in _vd[0]["data"] and _vd[0]["data"]["비고"] == "x"
+    _ad = [{"bday": "01-01", "재직기간": "3년", "성명": "홍길동"}]
+    _apply_birth(_ad, ROLE_ADMIN)
+    _apply_baseline(_ad)                                     # 관리자 응답은 1층을 안 타므로 그대로
+    assert _ad[0]["재직기간"] == "3년" and _ad[0]["bday"] == "01-01", "관리자 행은 재직기간 유지"
     # 제자리 치환 — 봉투의 results·data 가 같은 배열이므로 한 번으로 두 이름 모두에 반영돼야 한다
     rows = [{"메모": "010-1234-5678"}]
     env2 = envelope("emp", rows, 1)
@@ -1067,10 +1310,87 @@ def selftest():
                 os.environ.pop(name, None)
             else:
                 os.environ[name] = val
-    # 뷰어 거부 목록 — 허용은 현재근무자·휴무 둘뿐이다
+    # 뷰어 거부 목록 — 허용은 현재근무자·휴무 둘뿐이다(emp·leave 는 게이트가 지킨다 · aws2 §B-5)
     assert set(VIEWER_DENY_DBS) <= set(DBS)
     assert set(DBS) - set(VIEWER_DENY_DBS) == {"emp", "leave"}
     assert _valid_date("2026-09-05") and _valid_date(None) and not _valid_date("2026/09/05x")
+
+    # ── 모듈 열람권 게이트 — 관문 호출부(_gate_fetch)만 바꿔 끼워 200/거부/예외·캐시·off 를 본다 ──────
+    _calls = []
+
+    def _fake_fetch(status_or_exc):
+        def f(url, headers):
+            _calls.append((url, dict(headers)))
+            if isinstance(status_or_exc, Exception):
+                raise status_or_exc
+            return status_or_exc
+        return f
+    _saved_gate = (os.environ.get(ENV_GATE_MODE), os.environ.get(ENV_GATE_URI),
+                   os.environ.get(ENV_GATE_CACHE_SEC), os.environ.get(ENV_AUTH_CHECK_URL))
+    _real_fetch = globals()["_gate_fetch"]
+    _GATE_CACHE.clear()
+    try:
+        for _n in (ENV_GATE_MODE, ENV_GATE_URI, ENV_GATE_CACHE_SEC, ENV_AUTH_CHECK_URL):
+            os.environ.pop(_n, None)
+        _ck = {"cookie": "a=1; erp_session=tok-abc; b=2"}
+        assert _gate(_Req({})) == "deny", "세션 쿠키 조각이 없으면 관문을 부르지 않고 거부"
+        assert _gate(_Req({"cookie": "a=1; erp_session=; b=2"})) == "deny"
+        assert not _calls
+        globals()["_gate_fetch"] = _fake_fetch(200)
+        assert _gate(_Req(_ck)) == "ok"
+        assert _calls[-1][0] == AUTH_CHECK_URL_DEFAULT
+        assert _calls[-1][1]["X-Original-URI"] == GATE_URI_DEFAULT and _calls[-1][1]["X-Original-Method"] == "GET"
+        assert _calls[-1][1]["Cookie"] == _ck["cookie"], "Cookie 헤더는 원문 그대로 관문에 넘긴다"
+        globals()["_gate_fetch"] = _fake_fetch(403)
+        assert _gate(_Req(_ck)) == "ok" and len(_calls) == 1, "캐시 적중 — 관문을 다시 부르지 않는다"
+        _GATE_CACHE.clear()
+        assert _gate(_Req(_ck)) == "deny" and len(_calls) == 2
+        assert _gate(_Req(_ck)) == "deny" and len(_calls) == 2, "거부도 캐시된다"
+        _GATE_CACHE.clear()
+        globals()["_gate_fetch"] = _fake_fetch(_GATE_DENY_STATUSES[0])
+        assert _gate(_Req(_ck)) == "deny", "로그인 필요 응답도 거부"
+        _GATE_CACHE.clear()
+        globals()["_gate_fetch"] = _fake_fetch(500)
+        assert _gate(_Req(_ck)) == "unavailable" and not _GATE_CACHE, "그 외 상태는 닫힘 · 캐시하지 않는다"
+        globals()["_gate_fetch"] = _fake_fetch(OSError("connection refused"))
+        assert _gate(_Req(_ck)) == "unavailable" and not _GATE_CACHE, "예외도 닫힘 · 캐시하지 않는다"
+        # 캐시 열쇠는 세션값의 해시 — 원문이 캐시에 남지 않는다
+        globals()["_gate_fetch"] = _fake_fetch(200)
+        assert _gate(_Req(_ck)) == "ok"
+        assert "tok-abc" not in json.dumps(list(_GATE_CACHE.keys()))
+        # 캐시 상한 — 넘치면 가장 오래된 것부터 버린다
+        for _i in range(_GATE_CACHE_MAX + 5):
+            _gate(_Req({"cookie": "erp_session=t%d" % _i}))
+        assert len(_GATE_CACHE) == _GATE_CACHE_MAX
+        # TTL 0 이면 캐시하지 않는다
+        _GATE_CACHE.clear()
+        os.environ[ENV_GATE_CACHE_SEC] = "0"
+        assert _gate(_Req(_ck)) == "ok" and not _GATE_CACHE
+        os.environ[ENV_GATE_CACHE_SEC] = "abc"
+        assert _gate_cache_sec() == GATE_CACHE_SEC_DEFAULT, "잘못된 값이면 기본값"
+        os.environ.pop(ENV_GATE_CACHE_SEC, None)
+        # 환경변수로 화면 경로·관문 주소를 바꾸면 그대로 실린다
+        _GATE_CACHE.clear()
+        os.environ[ENV_GATE_URI] = "/chro/hub/schedule.html"
+        os.environ[ENV_AUTH_CHECK_URL] = "http://127.0.0.1:8000/auth/check?x=1"
+        assert _gate(_Req(_ck)) == "ok" and _calls[-1][1]["X-Original-URI"] == "/chro/hub/schedule.html"
+        assert _calls[-1][0].endswith("?x=1")
+        # 되돌리기 손잡이 — off 면 쿠키가 없어도 관문을 부르지 않고 통과
+        _ncalls = len(_calls)
+        os.environ[ENV_GATE_MODE] = " OFF "
+        assert _gate(_Req({})) == "ok" and len(_calls) == _ncalls
+        os.environ[ENV_GATE_MODE] = "module"
+        assert _gate(_Req({})) == "deny"
+        os.environ[ENV_GATE_MODE] = "zzz"
+        assert _gate(_Req({})) == "deny", "알 수 없는 값은 게이트를 켠 쪽(닫힘)으로 붙는다"
+    finally:
+        globals()["_gate_fetch"] = _real_fetch
+        _GATE_CACHE.clear()
+        for name, val in zip((ENV_GATE_MODE, ENV_GATE_URI, ENV_GATE_CACHE_SEC, ENV_AUTH_CHECK_URL), _saved_gate):
+            if val is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = val
     # ── 오류가 프론트·러너의 '실제' 판정 기준에 걸리는가(2026-09-06 감사 지적 8) ────────────────
     #   두 소비자의 판정식을 그대로 옮겨 와, 표본 몇 개가 아니라 ERROR_CODES 전체를 돌린다.
     #   허브 = 조회 함수가 `if(!r.ok) throw` 다(index.html queryDB 실측) → 오류는 비200 이어야 잡힌다.
@@ -1083,7 +1403,8 @@ def selftest():
     #     curl 이 4xx·5xx 에도 종료코드 0 을 내는 사각과 무관하게 산다.
     _HTTP_BY_CODE = {"bad-payload": 400, "bad-param": 400, "bad-date": 400,
                      "unknown-db": 404, "scope-blocked": 403,
-                     "db-unavailable": 503, "db-error": 503, "audit-unavailable": 503}
+                     "db-unavailable": 503, "db-error": 503, "audit-unavailable": 503,
+                     "gate-unavailable": 503}
     assert set(_HTTP_BY_CODE) == set(ERROR_CODES), "새 오류 코드는 이 상태코드 표에도 같이 올린다"
 
     def _hub_catches(status):
@@ -1144,7 +1465,7 @@ def selftest():
         body = code.split(marker, 1)[1].split("\n@router.", 1)[0].split("\n# ═", 1)[0]
         assert "_serve(" in body, marker + " 는 공통 통로를 지나야 한다"
         for bypass in ("_fetch(", "envelope(", "_apply_mask(", "_apply_baseline(", "_apply_birth(",
-                       "_audit_write(", "_identify("):
+                       "_audit_write(", "_identify(", "_gate("):
             assert bypass not in body, marker + " 가 공통 통로를 우회한다: " + bypass
     # 라우트 서명에 프레임워크 요청 검증 제약이 없어야 한다 — 있으면 그 검증이 본문보다 먼저 돌아
     #   ok 칸도 role 칸도 없는 422 가 봉투를 건너뛰고 나간다.
@@ -1161,6 +1482,12 @@ def selftest():
     assert _sv.index("_apply_birth(rows, role)") < _sv.index("_apply_baseline(rows)") \
         < _sv.index("_apply_mask(rows)"), "0층을 먼저 태우면 2층 파생 입력이 지워진다"
     assert "if masked:\n        _apply_mask(rows)" in _sv, "1층만 뷰어 분기 안에 있다(0층은 상시)"
+    # 모듈 열람권 게이트는 조회보다 앞이고 열쇠 검사보다도 앞이다(잠긴 계정에는 열쇠 목록조차 안 준다)
+    assert "_gate(" in _sv and _sv.index("_gate(") < _sv.index("_fetch("), "게이트가 조회보다 앞이어야 한다"
+    assert _sv.index("_gate(") < _sv.index("key not in DBS"), "게이트가 열쇠 검사보다 앞이어야 한다"
+    assert '"gate-deny"' in _sv and '"gate-unavailable"' in _sv
+    # 닫힌 행 포함은 관리자 열람에서만 — 뷰어 요청은 조회 전에 되돌린다
+    assert "inc_van and role == ROLE_VIEWER" in _sv and _sv.index("inc_van and role == ROLE_VIEWER") < _sv.index("_fetch(")
     # 오염 헤더 구제는 두 층 안에만 있어야 한다 — 공통 통로가 따로 부르면 순서 계약이 두 곳으로 갈라진다
     assert "_contaminated_rescue(" not in _sv, "구제는 층 안에서만 한다(공통 통로에서 따로 부르지 않는다)"
     # 오류 상태코드로 401 을 쓰지 않는다 — 허브가 401 을 '비밀번호 오류'로 읽고 세션을 지운 뒤
