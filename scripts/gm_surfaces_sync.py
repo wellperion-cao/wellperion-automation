@@ -68,6 +68,7 @@ def similar(a: str, b: str) -> bool:
 
 
 CLOSED_HINTS = ("완료", "종결", "취소", "폐기")
+TRANSFER_RE = re.compile(r"▶\[[^\]]*이관[^\]]*\]")  # 이관 표시 — 태그가 빠진 게 아니라 이관돼서 뗀 것
 
 
 def closed_statuses(plan: dict) -> set:
@@ -181,7 +182,10 @@ def diff(plan: dict, items: list, owners: dict, todo_rows: list, today=None) -> 
             continue
         o = find_objective(plan, cid)
         if o and str(o.get("status") or "") not in closed and not o.get("schedule_hidden"):
-            notes.append(("태그빠짐", cid, str(o.get("title") or "")))   # 살아 있다 — 안 지운다
+            if TRANSFER_RE.search(str(o.get("progress_note") or "")):
+                notes.append(("이관됨", cid, str(o.get("title") or "")))     # 정상 이관 — 경고 아님
+            else:
+                notes.append(("태그빠짐", cid, str(o.get("title") or "")))   # 살아 있다 — 안 지운다
             continue
         drop.append(sid)                  # 카드가 없거나 닫혔다 — 일정에서 뺀다
 
@@ -225,7 +229,7 @@ def apply_to_schedule(want: dict, add: list, fix: list, drop: list) -> dict:
 
 def render(res: dict) -> str:
     lines = [f"🔗 네 화면 대조 — 일정 추가 {len(res['add'])} · 고침 {len(res['fix'])} · 삭제 {len(res['drop'])}"]
-    for kind in ("담당없음", "기한없음", "SSOT행없음", "결재만있음", "태그빠짐", "중복두줄"):
+    for kind in ("담당없음", "기한없음", "SSOT행없음", "결재만있음", "태그빠짐", "이관됨", "중복두줄"):
         hit = [n for n in res["notes"] if n[0] == kind]
         if hit:
             lines.append(f"· {kind} {len(hit)}건 — " + " / ".join(x[2][:22] for x in hit[:4])
@@ -240,10 +244,13 @@ def _selftest() -> None:
         {"id": "B", "title": "나 카드 (GM 직접)", "status": "진행", "due": ""},
         {"id": "C", "title": "다 카드 (GM 직접)", "status": "완료", "due": "2026-09-30"},
         {"id": "D", "title": "라 카드", "status": "진행", "due": "2026-09-30"},   # 태그만 빠진 살아 있는 카드
+        {"id": "E", "title": "마 카드", "status": "진행", "due": "2026-09-30",
+         "progress_note": "▶[이관 2026-09-10 · GM 지시] 중간관리자 업무로 이관."},  # 이관돼 태그를 뗀 카드
     ]}}}
     items = [{"id": "gmwork-A", "next_due": "2026-09-20", "assignee": ""},
              {"id": "mop-A", "next_due": "2026-09-30", "assignee": ""},
              {"id": "gmwork-D", "next_due": "2026-09-30", "assignee": ""},
+             {"id": "gmwork-E", "next_due": "2026-09-30", "assignee": ""},
              {"id": "gmwork-C", "next_due": "2026-09-30", "assignee": "이경연 실장"}]
     owners = {"A": "이경연 실장"}
     rows = [{"업무명": "가 카드", "id": "T1", "대표싸인": ""},
@@ -255,6 +262,9 @@ def _selftest() -> None:
     assert r["drop"] == ["gmwork-C"], r["drop"]                       # 완료 카드의 짝만 뺀다
     assert "gmwork-D" not in r["drop"], r["drop"]                     # 태그만 빠진 살아 있는 카드는 안 지운다
     assert ("태그빠짐", "D", "라 카드") in r["notes"], r["notes"]
+    assert "gmwork-E" not in r["drop"], r["drop"]                     # 이관된 카드도 안 지운다
+    assert ("이관됨", "E", "마 카드") in r["notes"], r["notes"]
+    assert ("태그빠짐", "E", "마 카드") not in r["notes"], r["notes"]
     assert ("중복두줄", "A", "가 카드 (GM 직접)") in r["notes"], r["notes"]
     kinds = {n[0] for n in r["notes"]}
     assert "기한없음" in kinds and "결재만있음" in kinds, r["notes"]
