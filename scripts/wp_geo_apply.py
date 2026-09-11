@@ -124,26 +124,26 @@ async def step1_header_inject(page) -> str:
 
 
 async def step2_robots(page) -> str:
-    """★2026-09-11 실측 — 이 단계는 지금 이 사이트에서 돌 수 없다.
-    Yoast(wpseo) 파일 편집기 주소를 여는데, 라이브에 설치된 플러그인 목록에 SEO 플러그인이
-    하나도 없다(Salient·WPML·Contact Form 7·kboard 등뿐). 그래서 늘 「textarea 못 찾음」으로 끝난다.
-    게다가 main() 이 이 함수를 부르지도 않고 있었다 — 9/5부터 아무 일도 안 하고 있었던 셈이다.
+    """라이브 robots.txt 를 우리 판으로 바꾼다 (2026-09-11 실제로 성공한 절차).
 
-    지금 라이브 robots.txt = 워드프레스가 파일 없이 만들어 내는 기본값이고, 그 안 사이트맵 줄이
-    http://wellperion.com/ko/wp-sitemap.xml (404) 를 가리킨다. 실제로 열리는 것은 /sitemap_index.xml 이다.
-
-    고치는 길은 둘뿐이고 둘 다 GM 손이다.
-      ① 웹 루트에 robots.txt 파일을 올린다 — 올릴 내용 = 3. 웰페리온 가이드/home/robots.txt
-      ② 코드 스니펫 플러그인을 깔아 robots_txt 필터를 건다
-    같은 자리에 llms.txt 도 함께 올린다 — 3. 웰페리온 가이드/home/llms.txt
+    함정 둘 — 둘 다 여기서 겪고 고쳤다.
+      ① main() 이 이 함수를 부르지 않고 있었다(9/5~9/11). 지금은 부른다.
+      ② 파일이 아직 없을 때 Yoast 는 편집칸을 안 보여 주고 「Create robots.txt file」 버튼만 낸다.
+         그 버튼 이름은 create_robots 이고, 누른 뒤 **페이지를 다시 열어야** 편집칸(robotsnew)이 생긴다.
+         눌러 놓고 같은 화면에서 찾으면 「textarea 못 찾음」으로 끝난다.
+    .htaccess 칸(htaccessnew)은 같은 화면에 나란히 있다 — 이름으로만 고른다. 잘못 건드리면 사이트가 죽는다.
     """
     await page.goto(WP_ADMIN_URL + "admin.php?page=wpseo_tools&tool=file-editor", wait_until="networkidle", timeout=45000)
     await page.wait_for_timeout(1500)
-    create_link = page.locator("a:has-text('create one here'), button:has-text('create one here')")
-    if await create_link.count():
-        await create_link.first.click()
-        await page.wait_for_timeout(1500)
-    ta = page.locator("textarea#robotstxt, textarea[name='robotstxt']")
+    mk = page.locator("input[name='create_robots']")
+    if await mk.count():
+        await mk.first.click()                      # 파일부터 만든다
+        await page.wait_for_load_state("domcontentloaded")
+        await page.wait_for_timeout(2500)
+        await page.goto(WP_ADMIN_URL + "admin.php?page=wpseo_tools&tool=file-editor",
+                        wait_until="domcontentloaded", timeout=45000)
+        await page.wait_for_timeout(2500)           # 다시 열어야 편집칸이 생긴다
+    ta = page.locator("textarea[name='robotsnew'], textarea#robotstxt, textarea[name='robotstxt']")
     if await ta.count() == 0:
         # 텍스트영역이 여러개면 robots 라벨과 가장 가까운 것을 폭넓게 탐색
         all_ta = await page.locator("textarea").all()
@@ -157,7 +157,7 @@ async def step2_robots(page) -> str:
         await ta.fill(ROBOTS_TXT)
     else:
         await ta.first.fill(ROBOTS_TXT)
-    save_btn = page.locator("button:has-text('Save changes to robots.txt'), input[value*='Save']").first
+    save_btn = page.locator("input[name='submitrobots']").first   # .htaccess 저장 버튼과 헷갈리지 않게 이름으로만
     if await save_btn.count():
         await save_btn.click()
         await page.wait_for_timeout(1500)
