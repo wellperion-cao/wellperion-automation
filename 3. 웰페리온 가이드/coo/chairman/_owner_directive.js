@@ -180,11 +180,11 @@
   var chReported = {};   // 조회 실패 시 {} — 전부 '보고 대기'로 보여 문안에서 빠지는 일이 없게 한다.
   // 배포(GitHub Pages) 반영이 늦으면 같은 파일을 저장소 raw 에서 한 번 더 찾는다 — 못 읽은 채로 그리면
   // 이미 보고한 건이 다시 '보고 대기'로 올라가 문안에 섞인다(GM 2026-08-06 가 막으라고 한 바로 그 상태).
-  var RAW_STATE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/' + encodeURI(CH_STATE_PATH);
+  var RAW_STATE = '/repo/' + encodeURI(CH_STATE_PATH);
   // 대표님 결재 완료 건을 ★중간관리자 방에 전달한 기록(scripts/rep_approval_relay.py 지문 · GM 지시
   // 2026-09-03 "GM업무에도 반영"). notified{id: 'YYYY-MM-DD'} 만 읽어 「📨 중간관리자 전달 M/D」 배지를
   // 단다 — 'seed-…' 같은 기준선 표식은 날짜가 아니라 배지가 안 붙는다. 못 읽으면 배지만 없다.
-  var RAW_RELAY = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/heartbeats/rep-approval-relay.json';
+  var RAW_RELAY = '/repo/status/heartbeats/rep-approval-relay.json';
   var relayed = {};
   function relayBadge(it) {
     var d = fmtNoYear(relayed[it.id]);

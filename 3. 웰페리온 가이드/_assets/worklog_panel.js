@@ -69,8 +69,8 @@
   if(window.__wlpWorklogPanel) return;   // 중복 include 가드
   window.__wlpWorklogPanel = true;
 
-  var WORKLOG_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/worklog.jsonl';
-  var GAPS_URL    = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/worklog_gaps.json';
+  var WORKLOG_URL = '/repo/status/worklog.jsonl';
+  var GAPS_URL    = '/repo/status/worklog_gaps.json';
   var SEV_ORDER   = { high: 0, mid: 1, low: 2 };
   var RESULT_ICON = { ok: '✅', warn: '⚠️', fail: '❌' };
   var DAY_MS = 24 * 60 * 60 * 1000;

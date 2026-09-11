@@ -16,7 +16,7 @@
  *   · HTML 에 이미 적혀 있는 값은 원장이 없을 때 그대로 남는다(연결 실패가 화면을 비우지 않게).
  */
 (function () {
-  var LEDGER = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_report_ledger.json';
+  var LEDGER = '/repo/status/monthly_report_ledger.json';
 
   function monthParam() {
     var m = new URLSearchParams(location.search).get('m');
