@@ -91,12 +91,18 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cat-badge.done{background:var(--green-bg);color:var(--green)}
 .cat-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
 /* 조(회차) 선택 바 — 지원부 round-bar 와 같은 자리·같은 뜻(GM 지시 2026-08-28). 주차부는 2조라 반씩 나눠 찬다. */
+/* 조 버튼 — 한 줄로 눕혀 높이를 줄이고, 종전 「이번 조 n/n」 진행 칸을 이 안으로 옮겼다
+   (GM 지시 2026-09-11 「오전조·마감조만 위아래 사이즈 작게 해서 이번 조 7/7 칸과 교체」).
+   지원부 .round-seg 와 같은 가로 배치다. */
 .park-round-bar{display:flex;gap:8px;margin-bottom:12px}
-.park-round-seg{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;border:1px solid var(--border);background:var(--paper);border-radius:10px;cursor:pointer;font-family:inherit;color:var(--text)}
+.park-round-seg{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border:1px solid var(--border);background:var(--paper);border-radius:10px;cursor:pointer;font-family:inherit;color:var(--text);line-height:1.15;white-space:nowrap}
 .park-round-seg .prs-name{font-size:13px;font-weight:700}
 .park-round-seg .prs-time{font-size:11px;font-weight:600;color:var(--dim)}
+.park-round-seg .prs-sub{font-size:11px;font-weight:800;color:var(--accent)}
+.park-round-seg .prs-sub.done{color:var(--green)}
 .park-round-seg.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .park-round-seg.active .prs-time{color:rgba(255,255,255,0.85)}
+.park-round-seg.active .prs-sub{color:#fff}
 /* 날짜 이동 바 — 지원부 .date-bar 그대로 이식(GM 지시 2026-09-11) */
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
@@ -890,6 +896,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button type="button" class="btn" onclick="setParkDateToday()">오늘</button>
         <button type="button" class="btn" onclick="moveParkDate(1)">&gt;</button>
         <span class="dow-chip" id="parkDowChip">·</span>
+        <button type="button" class="util-btn print-btn" style="padding:4px 10px;margin-left:auto;" onclick="loadParkingCheckState()" title="다시 불러오기">🔄</button>
       </div>
       <!-- 점검 시작·점검자 = 날짜 바 바로 아래(GM 지적 2026-09-11 「지원부는 상단인데 주차는 하단」).
            지원부 .submitter-bar-split 과 같은 자리·같은 순서다. 제출 버튼만 항목 아래에 둔다 —
@@ -907,11 +914,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <input type="text" id="parkingInspector" class="park-inspector-input" placeholder="점검자 이름 입력" autocomplete="off">
         </div>
       </div>
-      <!-- 진행률 = 지원부 .shift-divider 자리의 .progress 카드(같은 paper 카드 계열) -->
-      <div class="progress" style="margin-bottom:12px;">
-        <div class="progress-text" style="justify-content:flex-start;gap:10px;align-items:center;"><span id="parkingProgressText">오늘 0/-</span><button type="button" class="util-btn print-btn" style="padding:2px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button></div>
-        <div class="progress-bar"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
-      </div>
+      <!-- 진행률 카드 삭제 (GM 지시 2026-09-11) — 같은 숫자가 조 버튼 안에 들어갔다. 새로고침 버튼은 날짜 바로 옮겼다. -->
       <!-- 이슈·노하우가 무엇을 적는 칸인지 먼저 알려 준다 — 지원부 점검과 같은 자리·같은 문구(GM 지적 2026-09-11). -->
       <div class="guide-cards">
         <div class="guide-card issue-guide">
@@ -1996,6 +1999,9 @@ function parkFmtDate(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padSt
 function parkTodayStr(){ return parkFmtDate(new Date()); }
 let PARK_DATE = parkTodayStr();
 var PARK_ROUND = parkAutoRound(PARK_DATE);
+/* 조별 제출 도장 — 조 버튼에 '제출완료'를 보이려고 둔다. loadParkingCheckState 가 서버 원장에서 채운다.
+   종전에는 지금 고른 조만 알 수 있어 다른 조가 냈는지 화면에 안 보였다. */
+var PARK_SUBMITTED = {am:false, pm:false};
 function renderParkDateBar(){
   const el=document.getElementById('parkDateInput');
   if(el){ el.max=parkTodayStr(); el.value=PARK_DATE; }
@@ -2030,19 +2036,18 @@ const PARK_CHECKLIST = {
      과거 제출 기록이 itemId 로 붙어 있어 순서를 밀면 다른 항목으로 읽힌다.
      화면·인쇄는 이 배열을 직접 보지 않는다 — PARK_ITEMS(서버 마스터 또는 이 시드) 단일 출처로 본다. */
   daily: [
-    { t:'지상·지하 바닥 청결 — 오염·기름때 제거',                        r:'am1'    },
-    { t:'통행로 적치물 정리 / 쓰레기 수거',                               r:'am1'    },
-    { t:'배수구 막힘·이물질 제거',                                        r:'am1'    },
-    { t:'주차장 화장실 청결·비품(화장지·손세정제)·악취·조명',             r:'am1'    },
-    { t:'주차선·표시선 식별 상태',                                        r:'am1'    },
-    { t:'조명 점등·사각지대 조도',                                        r:'close1' },
-    { t:'차단기·정산기 정상 작동',                                        r:'am1'    },
-    { t:'CCTV 화면 이상·녹화 정상',                                       r:'close1' },
+    { t:'바닥 청결',            d:'지상·지하 전체 · 오염·기름때 제거',                  r:'am1'    },
+    { t:'통행로 정리',          d:'적치물 치우기 · 쓰레기 수거',                        r:'am1'    },
+    { t:'배수구 막힘·이물질 제거', d:'',                                                r:'am1'    },
+    { t:'화장실',               d:'청결 · 비품(화장지·손세정제) · 악취 · 조명',          r:'am1'    },
+    { t:'주차선·표시선',        d:'지워짐·흐림 여부',                                   r:'am1'    },
+    { t:'조명',                 d:'점등 상태 · 사각지대 밝기',                          r:'close1' },
+    { t:'차단기·정산기',        d:'정상 작동 확인',                                     r:'am1'    },
+    { t:'CCTV',                 d:'화면 이상 · 녹화 정상',                              r:'close1' },
     // 감염병 예방 — GM 지시 2026-08-25. 새 점검표를 만들지 않고 지금 도는 청소·점검 동선에 얹는다.
-    // 주차관리인이 청결관리를 겸하므로 접점 소독만 일일에, 비품 재고는 주간에 둔다(지원부 G-2·G-4와 같은 결).
-    // 2026-08-28 — '오픈 전·마감 후' 한 줄이던 것을 조가 갈리며 두 줄로 나눴다(같은 조에 두면 마감 소독이 오전에 체크된다).
-    { t:'접점 소독(오픈 전) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'am1'    },
-    { t:'접점 소독(마감 후) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'close1' }
+    // 2026-08-28 — '오픈 전·마감 후' 한 줄이던 것을 조가 갈리며 두 줄로 나눴다.
+    { t:'접점 소독(오픈 전)',   d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',        r:'am1'    },
+    { t:'접점 소독(마감 후)',   d:'정산기 버튼 · 차단기 조작부 · 화장실 손잡이',        r:'close1' }
   ],
   /* 주간 점검(weekly) 폐지 — GM 2026-09-11 「주간점검은 의미가 없을듯」.
      체크도 제출도 안 되는 목록이라 화면만 차지하고 기록이 남지 않았다.
@@ -2057,7 +2062,7 @@ const PARK_CHECKLIST = {
    모델은 지원부보다 단순: {id, name, r(조 1개), cat}. 지원부는 rounds(다중)·gender·slot·sched 까지 쓰지만
    주차는 성별 구분이 없고 조도 둘뿐이라 그 필드들을 그대로 흉내내지 않는다(YAGNI).
    ═══════════════════════════════════════════ */
-let PARK_ITEMS = PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, r:it.r, cat:'일일' }; });
+let PARK_ITEMS = PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
 function parkNextItemId(){
   let max=0;
   PARK_ITEMS.forEach(function(it){ const m=/^p(\d+)$/.exec(it.id||''); if(m){ const n=parseInt(m[1],10); if(n>max) max=n; } });
@@ -2066,17 +2071,21 @@ function parkNextItemId(){
 /* 서버 행 → 화면 모델. rounds 는 서버가 이미 영어코드(am1/close1)로 돌려준다(GAS _roundsToEnglish) — 콤마 있어도 첫 값만 쓴다(주차는 항목당 조 1개). */
 function parkItemFromSheet(row){
   const rs=String(row&&row.rounds||'').split(',')[0].trim();
-  return { id:String(row&&row.id||''), name:String(row&&row.name||''), r:(rs==='am1'||rs==='close1')?rs:'am1', cat:String(row&&row.cat||'일일') };
+  /* detail(안내)을 시트 칸에서 그대로 읽는다 — 종전에는 name 안의 ' — ' 뒤를 안내로 쪼개 썼다.
+     제목과 안내를 따로 두라는 GM 지시(2026-09-11)에 맞춰 칸을 나눈다. 옛 행(안내가 name 에 붙은 것)은
+     아래 nameDetail 이 그대로 쪼개 주므로 섞여 있어도 화면은 깨지지 않는다. */
+  return { id:String(row&&row.id||''), name:String(row&&row.name||''), detail:String(row&&row.detail||''),
+           r:(rs==='am1'||rs==='close1')?rs:'am1', cat:String(row&&row.cat||'일일') };
 }
 /* 화면 모델 → 시트 저장 계약 필드(지원부 itemToSheet 와 같은 모양 · gender='all' 고정 — 주차는 성별 구분 없음). */
 function parkItemToSheet(it, idx){
-  return { id:it.id, cat:it.cat||'일일', name:it.name||'', detail:'', gender:'all', order:idx+1, type:'check', fields:'', rounds:it.r||'am1', sched:'' };
+  return { id:it.id, cat:it.cat||'일일', name:it.name||'', detail:it.detail||'', gender:'all', order:idx+1, type:'check', fields:'', rounds:it.r||'am1', sched:'' };
 }
 /* 서버에 parking 항목을 최초 1회 시드(0개일 때만 · 조회 성공을 확인한 뒤 호출된다 — loadParkItemsFromServer 참고).
    되돌리는 법: saveItems 는 그 dept 만 전체 재기록이라, items:[] 로 다시 보내면 parking 항목이 전부 비워진다
    (타 부서 행은 보존된다) — 되돌릴 땐 이 방법이 아니라 시트에서 parking 행을 직접 복원한다. */
 async function seedParkItemsToServer(){
-  const seed=PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, r:it.r, cat:'일일' }; });
+  const seed=PARK_CHECKLIST.daily.map(function(it,i){ return { id:'p'+(i+1), name:it.t, detail:it.d||'', r:it.r, cat:'일일' }; });
   try{
     await erpCheckPost(API_URL,{action:'saveItems',dept:'parking',items:seed.map(parkItemToSheet)});
   }catch(e){
@@ -2557,14 +2566,15 @@ function renderParkingDailyCheck(){
   const rounds=parkRoundsFor(PARK_DATE);
   const rows=parkItemsOfRound(PARK_ROUND);
   const dN=document.getElementById('parkChecklistDailyN'); if(dN) dN.textContent=PARK_ITEMS.length;
-  const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='이번 조 0/'+rows.length;
   const body=document.getElementById('parkingDailyCheckBody');
   if(!body) return;
   /* 항목명 ' — ' 뒤는 상세 설명으로 내린다(지원부 item-detail 과 같은 구성). */
   function nameDetail(t){ const p=String(t).split(' — '); return {name:p[0], detail:p.slice(1).join(' — ')}; }
   /* 일일 항목 1행 — 체크박스+이슈/노하우 버튼·입력칸(지원부 item-btns/extra-input 그대로 재사용). */
   function dailyItemHtml(it){
-    const nd=nameDetail(it.name);
+    /* 안내는 detail 칸을 먼저 쓰고, 없으면 옛 방식(name 안의 ' — ' 뒤)으로 떨어진다. */
+    const nd0=nameDetail(it.name);
+    const nd={ name:nd0.name, detail:(it.detail||nd0.detail||'') };
     return '<div class="item"><div class="item-row">'
       +'<input type="checkbox" id="pchk_'+it.id+'" onchange="onParkCheck()"><label for="pchk_'+it.id+'">'+escapeHTML(nd.name)+'</label>'
       +'<div class="item-btns"><button type="button" class="tiny-btn issue" title="발견한 이슈를 적으면 이 점검(회차)에 기록·보관됩니다." onclick="togX(\'piss_'+it.id+'\')">이슈</button><button type="button" class="tiny-btn tip" onclick="togX(\'ptip_'+it.id+'\')">노하우</button></div>'
@@ -2578,9 +2588,13 @@ function renderParkingDailyCheck(){
   let bar='<div class="park-round-bar">';
   rounds.forEach(function(rd){
     const n=parkItemsOfRound(rd.key).length;
+    /* 진행 표시(prs-sub) — 지금 고른 조는 체크 수, 다른 조는 제출됐으면 '제출완료' 아니면 항목 수.
+       종전 「이번 조 n/n」 칸이 하던 일을 여기서 한다(GM 지시 2026-09-11). */
+    const _sub=(rd.key===PARK_ROUND) ? '0/'+n : (PARK_SUBMITTED[rd.baseShift] ? '제출완료' : n+'항목');
     bar+='<button type="button" class="park-round-seg'+(rd.key===PARK_ROUND?' active':'')+'" onclick="switchParkRound(\''+rd.key+'\')">'
       +'<span class="prs-name">'+escapeHTML(rd.name)+'</span>'
-      +'<span class="prs-time">'+escapeHTML(rd.time)+' · '+n+'항목</span></button>';
+      +'<span class="prs-time">'+escapeHTML(rd.time)+'</span>'
+      +'<span class="prs-sub'+(PARK_SUBMITTED[rd.baseShift]?' done':'')+'" id="prsSub_'+rd.key+'">'+_sub+'</span></button>';
   });
   bar+='</div>';
   let daily=''; rows.forEach(function(it){ daily+=dailyItemHtml(it); });
@@ -2611,8 +2625,9 @@ function onParkCheck(){
     if(cb.checked) done++;
     const row=cb.closest('.item'); if(row) row.classList.toggle('checked',cb.checked);
   });
-  const fill=document.getElementById('parkingProgressFill'); if(fill) fill.style.width=(total?Math.round(done/total*100):0)+'%';
-  const text=document.getElementById('parkingProgressText'); if(text) text.textContent='이번 조 '+done+'/'+total;
+  /* 진행 숫자는 조 버튼 안으로 들어갔다(진행률 카드 폐지 · GM 2026-09-11). */
+  const _sub=document.getElementById('prsSub_'+PARK_ROUND);
+  if(_sub) _sub.textContent = PARK_SUBMITTED[parkRoundDef(PARK_ROUND,PARK_DATE).baseShift] ? '제출완료' : done+'/'+total;
   const badge=document.getElementById('parkDailyBadge');
   if(badge){ badge.textContent=done===total?'완료':done+'/'+total; badge.className='cat-badge '+(done===total?'done':'pending'); }
 }
@@ -2716,8 +2731,6 @@ async function parkItemsSaveToServer(){
    함께 복원한다(지원부 roundCheckMeta 와 같은 자리). ── */
 async function loadParkingCheckState(){
   const date=PARK_DATE;
-  const fillEl=document.getElementById('parkingProgressFill');
-  const textEl=document.getElementById('parkingProgressText');
   const rows=parkItemsOfRound(PARK_ROUND);
   const total=rows.length;
   const _rdef=parkRoundDef(PARK_ROUND,date);
@@ -2728,8 +2741,18 @@ async function loadParkingCheckState(){
     const doneIds=Object.keys((j&&j.checkedLedger&&j.checkedLedger.c)||{}).filter(function(k){ return j.checkedLedger.c[k]; });
     /* 진행률은 이번 조 항목만 센다 — 전체로 세면 다른 조가 낸 체크까지 섞여 늘 100% 가까이 보인다. */
     const doneHere=rows.filter(function(it){ return doneIds.indexOf(it.id)>=0; }).length;
-    if(fillEl) fillEl.style.width=(total?Math.round(doneHere/total*100):0)+'%';
-    if(textEl) textEl.textContent='이번 조 '+doneHere+'/'+total;
+    const _ledSub=(j&&j.checkedLedger&&j.checkedLedger.sub)||{};
+    PARK_SUBMITTED.am=!!_ledSub.am; PARK_SUBMITTED.pm=!!_ledSub.pm;
+    const _subEl=document.getElementById('prsSub_'+PARK_ROUND);
+    if(_subEl) _subEl.textContent = PARK_SUBMITTED[_sh] ? '제출완료' : doneHere+'/'+total;
+    parkRoundsFor(date).forEach(function(_rd){
+      if(_rd.key===PARK_ROUND) return;
+      const el=document.getElementById('prsSub_'+_rd.key);
+      if(el){
+        el.textContent = PARK_SUBMITTED[_rd.baseShift] ? '제출완료' : parkItemsOfRound(_rd.key).length+'항목';
+        el.classList.toggle('done', !!PARK_SUBMITTED[_rd.baseShift]);
+      }
+    });
     /* 이슈·노하우 복원 — led.cr['<round>_<itemId>'].iss/tip (지원부와 같은 원장 자리). */
     const cr=(j&&j.checkedLedger&&j.checkedLedger.cr)||{};
     rows.forEach(function(it){
@@ -2768,7 +2791,10 @@ async function loadParkingCheckState(){
       if(btn){ btn.disabled=false; btn.textContent='일일 점검 제출'; btn.classList.remove('submitted'); }
       if(stat){ stat.textContent=_rdef.name+' '+_rdef.time+' — 아직 제출 전'; stat.style.color='var(--dim)'; }
     }
-  }catch(e){ if(textEl) textEl.textContent = e&&e.authExpired ? '로그인이 풀렸습니다 — 새로고침해 주세요' : '진행률 조회 실패'; }
+  }catch(e){
+    const st=document.getElementById('parkingSubmitStatus');
+    if(st){ st.textContent=(e&&e.authExpired)?'로그인이 풀렸습니다 — 새로고침해 주세요':'점검 기록을 불러오지 못했습니다'; st.style.color='var(--red)'; }
+  }
 }
 
 /* 관리자 PIN 제출잠금 해제 — 지원부와 같은 백엔드 액션(unlock_round)·같은 PIN.
