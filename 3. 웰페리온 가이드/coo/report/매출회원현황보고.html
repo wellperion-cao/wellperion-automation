@@ -71,6 +71,8 @@
     font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   th{font-size:10.5px;color:#48525B;font-weight:700;background:#F6F8FA;}
   th:first-child,td:first-child{text-align:left;}
+  /* 매출 표는 항목이 12줄까지 늘어 기본 26px 로는 칸을 넘는다(GM 지적 2026-09-11). 이 표만 줄인다. */
+  #sales-table th,#sales-table td{height:23px;}
   tr.sum td{background:#F0F3F7;font-weight:800;font-size:12.5px;}
   td.rate{font-weight:700;}
   .r-hi{color:var(--good);} .r-mid{color:var(--warn);} .r-lo{color:var(--bad);}
@@ -156,7 +158,7 @@
   .band{height:184px;margin-top:11px;display:flex;gap:13px;}
 
   /* 강습 신규·재등록 — 팀별 두 칸(신규/재등록) */
-  .ls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 26px;}
+  .ls{display:grid;grid-template-columns:repeat(3,1fr);gap:3px 26px;}
   .ls .lsb{display:flex;align-items:baseline;gap:6px;font-size:11.6px;
     border-bottom:1px dotted var(--line);padding:2px 0;}
   .ls .lsn{color:#3C464F;font-weight:700;}
@@ -301,10 +303,8 @@
     </div>
 
     <div class="col">
-      <!-- 날짜·월 보기에서만 보인다 — 회원 쪽은 일자탭에 값이 없어 기준이 섞인다는 사실을 숨기지 않는다. -->
-      <div class="fnote" id="memberDateNote" style="display:none;margin:0 0 2px;">⚠ 선택한 날짜 기준은 <b>매출 표·계약 명단뿐</b>입니다 — 회원·등록/환불·강습 칸은 <b>어제(보고 시트) 기준</b>입니다.</div>
       <div class="sec">
-        <h2>회원 구성 — 오늘 몇 분이 회원인가</h2>
+        <h2>회원 구성 — 어제 기준 몇 분이 회원인가</h2>
         <div class="bd" id="memberMix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
         <!-- 서버 판(배1061·1063) — 회원 5칸을 서버 회원 원장으로 다시 세어 시트와 22칸 대조. 업무보고방 09:20 병행 발송과 같은 계산. -->
         <div class="fnote" id="serverCmp" style="display:none;margin:4px 0 0;"></div>
@@ -652,7 +652,6 @@ function renderSheet(c){
   // 그 날짜를 유지한다(GM 지적 2026-09-02 "새로고침하면 다시 8월 1일 기준으로 전환되네").
   VIEW_MODE = 'default';
   setSalesHead(['보고 항목', '어제 매출', '이번 달 누적', '이번 달 목표', '달성률']);
-  var mdn = document.getElementById('memberDateNote'); if (mdn) mdn.style.display = 'none';
   var hl0 = document.getElementById('headline').children;
   hl0[0].style.opacity = hl0[1].style.opacity = '';
   hl0[0].querySelector('.t').textContent = '어제 매출';    // 날짜 보기가 바꿔 둔 칸 제목 원복
@@ -911,7 +910,7 @@ function load(){
   document.getElementById('audit').className = 'audit wait';
   document.getElementById('audit').innerHTML = '자체 점검 중…';
 
-  loadTodayContracts();   // 2페이지 오늘 등록 내역 — 보고탭과 별개로 오늘 일자탭을 읽는다
+  loadTodayContracts();   // 2페이지 등록 내역 — 보고탭과 별개로 어제 일자탭을 읽는다
 
   var p1 = drGet('dump')
     .then(function(d){
@@ -1159,21 +1158,30 @@ function daySplit(c){
 function renderDaySales(c, dayLabel){
   setSalesHead(['보고 항목', dayLabel + ' 매출', '이번 달 누적', '이번 달 목표', '달성률']);
   var s = daySplit(c);
+  /* 줄 수를 「보고」탭 표(11줄)와 같게 맞춘다 — 소계 줄을 넣었더니 표가 칸을 넘어
+     아래 칸을 밀어냈다(GM 지적 2026-09-11 「선 넘어간 듯」). 소계는 회원권+옵션·팀 합으로
+     바로 읽히므로 줄로 두지 않는다. */
+  /* 이번 달 누적·목표·달성률은 「보고」탭의 같은 줄 값을 그대로 가져다 쓴다 — 일자탭에는 그날 값만
+     있어 비워 두면 세 칸이 통째로 '–' 가 된다(줄 순서가 회원권6·옵션7·팀8~15 로 같다). */
+  var RP = RAW.cells || {};
+  function accCells(sheetRow){
+    if (!sheetRow) return ['–', '–', '–'];
+    return [RP['J'+sheetRow] || '–', RP['K'+sheetRow] || '–', RP['L'+sheetRow] || '–'];
+  }
   var rows = [
-    ['회원권', _won(s.membership), '–'],
-    ['옵션 (골프라카·일일입장)', _won(s.option), '–'],
-    ['멤버십 소계', c.C3, c.C4]
+    ['회원권', _won(s.membership)].concat(accCells(6)),
+    ['옵션 (골프라카·일일입장)', _won(s.option)].concat(accCells(7))
   ];
-  DAY_TEAM_RULES.forEach(function(t){ rows.push([t[0], _won(s.teams[t[0]]), '–']); });
-  if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–']);
-  rows.push(['강습 소계', c.F3, c.F4]);
-  rows.push(['총 매출', c.J3, c.J4]);
+  DAY_TEAM_RULES.forEach(function(t, i){ rows.push([t[0], _won(s.teams[t[0]])].concat(accCells(8 + i))); });
+  if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–', '–', '–']);
+  rows.push(['총 매출', c.J3, c.J4].concat(accCells(4).slice(1)));
   var lastIdx = rows.length - 1;
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
-    var isSub = (r[0] === '멤버십 소계' || r[0] === '강습 소계');
-    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td' +
-      (isSub ? ' style="font-weight:700"' : '') + '>' + r[0] + '</td><td>' + esc(r[1] || '–') +
-      '</td><td>' + esc(r[2] || '–') + '</td><td>–</td><td>–</td></tr>';
+    var bar = rateClass(r[4]) ? '<span class="rb" style="width:' +
+      Math.min(100, parseFloat(String(r[4]).replace('%','')) || 0) + '%"></span>' : '';
+    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td>' + r[0] + '</td><td>' + esc(r[1] || '–') +
+      '</td><td>' + esc(r[2] || '–') + '</td><td>' + esc(r[3] || '–') +
+      '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
   // 나눈 값이 시트 소계와 어긋나면 조용히 넘기지 않는다 — 분류 규칙이 못 따라간 종목이 생겼다는 뜻이다.
   var gapM = (s.membership + s.option) - num(c.C3);
@@ -1205,10 +1213,10 @@ function renderP2Contract(c, dayLabel){
   }
 }
 
-/* 기본 진입에서도 오늘 등록 내역이 뜨게 오늘 일자탭을 따로 읽는다(GM 지시 2026-09-11).
+/* 기본 진입에서도 등록 내역이 뜨게 어제 일자탭을 따로 읽는다(GM 지시 2026-09-11).
    종전에는 날짜별 보기를 눌러야만 채워져, 기본 화면에서는 「불러오는 중…」이 그대로 남았다. */
 function loadTodayContracts(){
-  var t = new Date(), day = t.getDate();
+  var t = new Date(Date.now() - 86400000), day = t.getDate();   // 기준 = 어제(GM 지시 2026-09-11)
   var seg = function(range){
     return drGet('dump', '&sheet=' + day + '&range=' + range)
       .then(function(d){ return (d && d.ok) ? (d.cells || {}) : null; }).catch(function(){ return null; });
@@ -1218,7 +1226,7 @@ function loadTodayContracts(){
     if (!parts[0]) return;
     var c = {};
     parts.forEach(function(p){ if (p) { for (var k in p) c[k] = p[k]; } });
-    renderP2Contract(c, '오늘 ' + (t.getMonth()+1) + '월 ' + day + '일');
+    renderP2Contract(c, (t.getMonth()+1) + '월 ' + day + '일');
   });
 }
 
@@ -1255,22 +1263,23 @@ function resetToDefault(){
   VIEW_MODE = 'default';
   _setUrlView('default');
   if (RAW.cells) renderSheet(RAW.cells);   // renderSheet 가 헤드라인·표·회원안내문구까지 전부 되돌린다
-  // 기본 보기 = 오늘 일자탭(기본 진입과 동일). 「보고」탭은 어제로 고정이라 그대로 두면 하루 늦다.
-  document.getElementById('dpick').value = ymd(new Date());
+  // 기본 보기 = 어제 일자탭(기본 진입과 동일 · GM 지시 2026-09-11 「기준은 어제다」).
+  document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
   onDatePick(true);
 }
 
 /* 주소에 남은 보기를 다시 적용한다. load() 가 시트 기본(어제)으로 그린 뒤 마지막에 부른다.
-   ★주소에 아무것도 없으면 오늘 일자탭으로 연다(GM 지시 2026-09-02 "새로고침하면 오늘 일자
-   기준으로 전환되어야"). 시트 「보고」탭은 어제 하루로 고정돼 있어 그대로 두면 항상 하루 늦다 —
-   일자탭은 실무진이 계약을 적는 즉시 채워지므로 오늘 탭이 지금 가장 최신이다.
+   ★주소에 아무것도 없으면 어제 일자탭으로 연다(GM 지시 2026-09-11 「자꾸 기준을 금일로 보네,
+   어제로 보라니까」 — 2026-09-02 의 '오늘 기준' 지시를 대체한다). 보고는 어제 하루를 마감해
+   보는 것이고, 오늘 값은 아직 마감 전이라 기준이 될 수 없다. 오늘 값이 필요하면 날짜를 오늘로
+   고르면 되고, 그때는 칸 제목이 「오늘 매출 (집계 중)」으로 바뀐다.
    ▸자체 점검(09:30 발송 판정)은 계속 RAW.cells = 어제 기준으로만 돌아 흔들리지 않는다. */
 function applyUrlView(){
   var m = /[?&]d=(\d{4}-\d{2}-\d{2})/.exec(location.search);
   if (m) { document.getElementById('dpick').value = m[1]; onDatePick(); return; }
   if (/[?&]m=1/.test(location.search)) { toggleMonth(); return; }
-  document.getElementById('dpick').value = ymd(new Date());
-  onDatePick(true);   // 기본 진입 — 주소에 날짜를 남기지 않는다(남기면 내일 열 때 오늘 날짜에 묶인다)
+  document.getElementById('dpick').value = ymd(new Date(Date.now() - 86400000));
+  onDatePick(true);   // 기본 진입 — 주소에 날짜를 남기지 않는다(남기면 내일 열 때 그 날짜에 묶인다)
 }
 
 function onDatePick(silent){
@@ -1295,7 +1304,6 @@ function onDatePick(silent){
     else if (mdiff === 1) staleMsg = '이 날짜 기록은 이미 이번 달(' + (today.getMonth() + 1) + '월 ' + day + '일) 값으로 덮어써졌습니다 — 아래 값은 이번 달 것입니다.';
     else                  staleMsg = '일자탭에는 이번 달과 아직 안 덮인 지난달 날짜만 남습니다 — 이 날짜 기록은 조회할 수 없습니다.';
   }
-  document.getElementById('memberDateNote').style.display = '';
   var e = document.getElementById('err'); e.innerHTML = '';
   var req = ++_dayReq;   // 응답 순서 가드 — 날짜를 연달아 바꾸면 느린 옛 응답이 새 화면을 덮는다
   // 계약 명단은 한 번에 못 읽는다 — 이 조회는 한 번에 400칸까지고, 일자탭의 계약 줄은
@@ -1345,7 +1353,6 @@ function toggleMonth(){
   _setUrlView('month');
   document.getElementById('dmonth').textContent = '↩ 날짜별로 보기';
   document.getElementById('asof').textContent = '이번 달 전체';
-  document.getElementById('memberDateNote').style.display = '';
   var today = new Date();
   drGet('dump', '&sheet=' + today.getDate() + '&range=A1:S20')
     .then(function(d){ return (d && d.ok) ? d.cells : null; })
