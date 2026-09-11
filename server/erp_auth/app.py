@@ -681,10 +681,20 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
     mark = "회사 계정"
     if not is_company:
         if not hr_hub_pw():
-            return RedirectResponse("/auth/signup?msg=가입 신청 대조 준비 중 — 경영지원에 문의", status_code=303)
+            # 조용히 막히지 않게 GM 께 알린다(2026-09-11) — 이 문구만 보면 신청자도 우리도
+            # 무엇을 해야 하는지 모른다. 실제로 GM 신청이 여기서 막혔는데 아무 기록도 안 남았다.
+            tell_gm("🔐 ERP 가입 신청이 막혔습니다 — 인사 명부 대조용 비밀번호가 서버에 없습니다.\n"
+                    f"신청자 {name} ({uid} · {dept})\n"
+                    "한 번만 넣어 주시면 열립니다: https://erp.wellperion.com/auth/admin/hr_check")
+            return RedirectResponse(
+                "/auth/signup?msg=가입 신청 대조 준비 중입니다 — GM 께 알렸습니다. 잠시 뒤 다시 신청해 주세요",
+                status_code=303)
         try:
             roster = hr_roster()
-        except Exception:
+        except Exception as exc:
+            tell_gm(f"🔐 ERP 가입 신청 — 인사 명부를 못 읽었습니다({type(exc).__name__}).\n"
+                    f"신청자 {name} ({uid} · {dept})\n"
+                    "확인: https://erp.wellperion.com/auth/admin/hr_check")
             return RedirectResponse("/auth/signup?msg=인사 정보 확인이 잠시 안 됩니다. 잠시 뒤 다시", status_code=303)
         if not hr_match(name, phone, roster):
             return RedirectResponse(
