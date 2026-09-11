@@ -222,7 +222,13 @@ def progress_cell(it: dict) -> str:
 def fill_sales_current(seen: dict) -> None:
     """매출 책임 줄의 현재값을 이번 달 실측으로 채운다 — 손으로 적으면 하루 만에 낡는다.
     값을 못 가져오면 아무것도 바꾸지 않는다(0 으로 덮지 않는다 · 지어 채우지 않는다).
-    출처는 아침 통이 쓰는 그 경로 하나다(sales_month · 새 경로를 만들지 않는다 · 약속 L21)."""
+    출처는 아침 통이 쓰는 그 경로 하나다(sales_month · 새 경로를 만들지 않는다 · 약속 L21).
+
+    사람마다 재는 범위가 다르다(GM 지시 2026-09-11). 항목의 sales_bucket 이 어느 통을 볼지 정한다:
+      member  = 멤버십 회원권 + 옵션 (운영부 · 이경연 실장)
+      lessons = 파트너팀 전체 (나우열M · GXE 포함 · 뮤지컬도 이 통에 들어 있다)
+      total   = 전사 합계 (버킷을 안 적은 옛 항목의 기본값 — 종전 동작 그대로)
+    sales_month 응답이 이미 member·lessons·total 셋으로 갈라 주므로 새 집계를 만들지 않는다."""
     rows = [it for _n, (_d, it) in seen.items()
             if it.get("target") and str(it.get("unit") or "") == "원"]
     if not rows:
@@ -233,11 +239,14 @@ def fill_sales_current(seen: dict) -> None:
                           {"action": "sales_month", "password": o._proc_password()},
                           timeout=60, label="manager_task_index 매출")
         data = resp.json() if resp is not None else {}
-        total = (data.get("total") or [None] * 12)[date.today().month - 1] if data.get("ok") else None
-        if total is None:
+        if not data.get("ok"):
             return
+        mi = date.today().month - 1
         for it in rows:
-            it["current"] = int(total)
+            bucket = str(it.get("sales_bucket") or "total")
+            cur = (data.get(bucket) or [None] * 12)[mi]
+            if cur is not None:
+                it["current"] = int(cur)
     except Exception:
         return
 
