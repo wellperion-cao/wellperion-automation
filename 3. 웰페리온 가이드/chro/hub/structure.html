@@ -368,7 +368,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@86, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@87, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -986,8 +986,8 @@
   <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
   <div class="grid">
     <div class="item">
-      <div class="item-head"><h3>Apps Script 백엔드 (@86 · 라이브, 2026-08-26 배포)</h3></div>
-      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정). <b>@81(2026-08-04 배포)</b> = 입사확정 중복가드(동일 지원자 재확정 클릭 차단, forceRegister:true로 의도된 재등록만 통과) + 온보딩 기본항목 8→6 축소 + update-applicant에 <b>합류 가능일(첫 출근 예정일)</b> 저장 매핑 신설. <b>@82(2026-08-05 배포)</b> = 무비밀번호 <code>hr-schedule-feed</code> 신설(익명 일정 피드, 실명 · 연락처 구조적 제외 5필드 고정 응답) — 기존 코드 무변경 순수 추가. <b>@84(2026-08-25 배포)</b> = 개인 캘린더 <code>cal-add/list/update/delete</code> 4종 신설(개인일정 탭, id 단위 upsert). <b>@86(2026-08-26 배포)</b> = 개인일정에 완료 열 + 전사등재 정보 5열(등재담당자 · 등재분류 · 등재부서 · 등재시각 · 등재메모, 화이트리스트 안전처리) 추가·헤더 마이그레이션 보정(ensureSchemaHeader_) — 신규 액션 없이 기존 4종 계약만 확장, personalcal 스키마 13→18열.</p>
+      <div class="item-head"><h3>Apps Script 백엔드 (@87 · 라이브, 2026-09-11 배포)</h3></div>
+      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정). <b>@81(2026-08-04 배포)</b> = 입사확정 중복가드(동일 지원자 재확정 클릭 차단, forceRegister:true로 의도된 재등록만 통과) + 온보딩 기본항목 8→6 축소 + update-applicant에 <b>합류 가능일(첫 출근 예정일)</b> 저장 매핑 신설. <b>@82(2026-08-05 배포)</b> = 무비밀번호 <code>hr-schedule-feed</code> 신설(익명 일정 피드, 실명 · 연락처 구조적 제외 5필드 고정 응답) — 기존 코드 무변경 순수 추가. <b>@84(2026-08-25 배포)</b> = 개인 캘린더 <code>cal-add/list/update/delete</code> 4종 신설(개인일정 탭, id 단위 upsert). <b>@86(2026-08-26 배포)</b> = 개인일정에 완료 열 + 전사등재 정보 5열(등재담당자 · 등재분류 · 등재부서 · 등재시각 · 등재메모, 화이트리스트 안전처리) 추가·헤더 마이그레이션 보정(ensureSchemaHeader_) — 신규 액션 없이 기존 4종 계약만 확장, personalcal 스키마 13→18열. <b>@87(2026-09-11 배포)</b> = <b>mirror 읽기 전용 등급</b> 신설 — Script Properties 슬롯 <code>HR_MIRROR_PASSWORD</code>(16자 이상)에 값이 설정되면 그 비밀번호로 읽기 시 서버 미러 동기화 전용 role이 활성화됩니다(원문 읽기만 허용, 쓰기 전체 · exitroster · autolog는 거부) — 슬롯 미설정이면 등급 비활성, 기존 admin/viewer 동작은 무변경.</p>
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">
