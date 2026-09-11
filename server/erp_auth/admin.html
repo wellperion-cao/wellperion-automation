@@ -79,6 +79,8 @@ tbody tr.sel{background:var(--accent-soft)}
 tbody tr[data-uid]{cursor:pointer}
 tbody tr[data-uid]:hover{background:var(--paper-2)}
 .rank-sel{padding:1px 6px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);line-height:18px;max-width:9em}
+.mod .nm a,.scrrow summary a,td a,li a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
+.mod .nm a:hover,.scrrow summary a:hover,td a:hover,li a:hover{text-decoration-color:currentColor}
 .tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;line-height:18px}
 .tag.ok{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
 .tag.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
@@ -343,6 +345,19 @@ const cnt=(u,g,p)=>S.modules.filter(m=>!m.doc&&m.group===g&&allowed(u,m,p)).leng
 const tot=g=>S.modules.filter(m=>!m.doc&&m.group===g).length;
 const statusKo={active:'사용 중',pending:'승인 대기',blocked:'차단'};
 const statusCls={active:'ok',pending:'warn',blocked:'bad'};
+/* 화면 이름을 눌러 그 화면으로 간다(GM 지시 2026-09-11 「제목 클릭하면 링크 넘어가게」).
+   modules.json 의 path 는 `../coo/…` 상대경로다 — 이 화면은 /auth/admin 이라 그대로 쓰면 깨진다.
+   erp.wellperion.com 기준 절대경로로 바꾸는 자리는 여기 하나뿐이다.
+   새 탭으로 연다 — 이 화면이 닫히면 하던 권한 작업이 날아간다. */
+const scrHref=m=>{
+  // 맨 앞 슬래시도 턴다 — 안 털면 '//coo/…' 가 되어 브라우저가 다른 사이트로 읽는다(실측 2026-09-11).
+  const p=String((m&&m.path)||'').replace(/^(\.\.\/)+/,'').replace(/^\/+/,'');
+  return p?('/'+p):'';
+};
+const scrName=m=>{
+  const h=scrHref(m), n=esc((m&&m.name)||'');
+  return h?`<a href="${esc(h)}" target="_blank" rel="noopener">${n}</a>`:n;
+};
 const dept=u=>(perms(u)||{}).dept||u.dept||'';
 /* 직급·층 — 승인 판단 근거다(GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해」). */
 const rank=u=>(perms(u)||{}).rank||'';
@@ -429,7 +444,7 @@ function renderPeople(){
 function cardsWidth(){ const tw=$('#people-table').parentElement; $$('tr.xp .mcards').forEach(e=>e.style.width=tw.clientWidth+'px'); }
 window.addEventListener('resize',cardsWidth);
 /* ── 모듈카드(배1075) — 누른 사람 행 아래 그룹 5장: 화면 이름·한 줄 뜻, 보이면 ✓진하게 / 안 보이면 옅게 ── */
-function screenLi(m,on){ return `<li class="${on?'on':''}">${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x" style="color:var(--warn);font-size:11px;margin-left:4px">개인 예외</span>':''}${m.desc?`<small>${esc(m.desc)}</small>`:''}</li>`; }
+function screenLi(m,on){ return `<li class="${on?'on':''}">${scrName(m)}${S.exception_ids.includes(m.id)?'<span class="x" style="color:var(--warn);font-size:11px;margin-left:4px">개인 예외</span>':''}${m.desc?`<small>${esc(m.desc)}</small>`:''}</li>`; }
 function personCards(u,p){
   return `<div class="mcards">${AREAS.map(g=>{
     const ms=S.modules.filter(m=>!m.doc&&m.group===g), on=ms.filter(m=>allowed(u,m,p));
@@ -461,7 +476,7 @@ function renderDrawer(){
     ${groups.map(g=>{const ms=S.modules.filter(m=>!m.doc&&m.group===g);const on=ms.filter(m=>allowed(u,m,p)).length;
       return `<details class="grp"${on&&on<ms.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${on}</b>/${ms.length} 보임</span></summary>
       ${ms.map(m=>{const st=draft.deny.includes(m.id)?'deny':draft.modules.includes(m.id)?'allow':'base';const vis=allowed(u,m,p);
-        return `<div class="mod"><div class="nm">${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}<small>${esc(m.group)} · ${esc(m.staff||'')}${vis?' · <b style="color:var(--ok)">보임</b>':' · 안 보임'}</small></div>
+        return `<div class="mod"><div class="nm">${scrName(m)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}<small>${esc(m.group)} · ${esc(m.staff||'')}${vis?' · <b style="color:var(--ok)">보임</b>':' · 안 보임'}</small></div>
         <div class="seg" data-mid="${esc(m.id)}"><button class="base" aria-pressed="${st==='base'}" data-st="base">기본</button><button class="allow" aria-pressed="${st==='allow'}" data-st="allow">허용</button><button class="deny" aria-pressed="${st==='deny'}" data-st="deny">거부</button></div></div>`;}).join('')}</details>`;}).join('')}`}
   </div>
   ${ro?'':`<div class="save-bar"><span class="msg" id="dirty-msg">${dirty()?'저장하지 않은 변경이 있습니다':'저장된 상태와 같습니다'}</span><button class="btn" data-close>취소</button><button class="btn pri" data-save ${dirty()?'':'disabled'}>저장</button></div>`}`;
@@ -488,7 +503,7 @@ function renderDeptMatrix(){
     if(!ms.length) return '';
     return `<details class="grp" open><summary><span class="n">${esc(g)}</span><span class="c">${ms.length}개 화면</span></summary>
     <div class="tw"><table class="mx"><thead><tr><th>화면</th>${depts.map(d=>`<th style="text-align:center">${esc(d)}</th>`).join('')}</tr></thead><tbody>
-    ${ms.map(m=>`<tr><td>${esc(m.name)}</td>${depts.map(d=>`<td class="cell"><input type="checkbox" data-dm="${esc(d)}|${esc(m.id)}"${dpDraft[d].has(m.id)?' checked':''}></td>`).join('')}</tr>`).join('')}
+    ${ms.map(m=>`<tr><td>${scrName(m)}</td>${depts.map(d=>`<td class="cell"><input type="checkbox" data-dm="${esc(d)}|${esc(m.id)}"${dpDraft[d].has(m.id)?' checked':''}></td>`).join('')}</tr>`).join('')}
     </tbody></table></div></details>`;
   }).join('');
   renderDeptRec(); deptBarSync();
@@ -564,7 +579,7 @@ function renderScreens(){
     const all=S.modules.filter(m=>!m.doc&&m.group===g), list=all.filter(match);
     return `<details class="grp"${qq&&list.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${list.length}</b>/${all.length} 화면</span></summary>
     ${list.map(m=>{const v=act.filter(u=>allowed(u,m));
-      return `<details class="scrrow"><summary><span>${esc(m.name)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
+      return `<details class="scrrow"><summary><span>${scrName(m)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
       <div class="chips">${v.length?v.map(u=>`<span class="tag" title="${esc(dept(u)||'')}">${esc(u.name)}</span>`).join(''):'<span class="tag">아무도 못 봅니다</span>'}</div></details>`;}).join('')||'<div class="empty">검색 결과 없음</div>'}
     </details>`;}).join('');
   const docAll=S.modules.filter(m=>m.doc), docList=docAll.filter(match);
