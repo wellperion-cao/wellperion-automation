@@ -247,20 +247,6 @@
       "sellable": "internal"
     },
     {
-      "id": "cbo-counsel-admin",
-      "core": false,
-      "group": "시보",
-      "appgroup": "운영",
-      "role": "cbo",
-      "name": "상담봇 관리",
-      "desc": "상담봇의 못 답한 질문·FAQ·업체 정보·이용 통계를 확인하고 관리한다.",
-      "path": "../cbo/counsel_admin.html",
-      "staff": "김남욱 GM",
-      "screen_id": "cbo-counsel-admin",
-      "automation": [],
-      "sellable": "internal"
-    },
-    {
       "id": "chro-hub-onboarding-self",
       "core": false,
       "group": "시로",
@@ -519,6 +505,9 @@
       "staff": "김남욱 GM",
       "screen_id": "cto-자율현황",
       "automation": [
+        "cbo-faq-hub",
+        "cbo-gocheok-blog-daily",
+        "cbo-partner-morning-agent",
         "ceo-3line-weekly",
         "ceo-gm-aide",
         "chro-gmail-job-title-fetch",
@@ -538,7 +527,7 @@
         "cto-weekly-page-hygiene",
         "cto-weekly-self-review"
       ],
-      "sellable": "internal"
+      "sellable": "sellable"
     },
     {
       "id": "cto-automation-카톡전송관리",
@@ -779,16 +768,16 @@
       "sellable": "internal"
     },
     {
-      "id": "coo-chairman-260909-gym바이크-3사견적비교-a3",
+      "id": "coo-chairman-260909-gym바이크-3사비교-a3",
       "core": false,
       "group": "시우",
       "appgroup": "문서함",
       "role": "coo",
-      "name": "GYM 바이크 3사 제품·견적 비교 — 웰페리온 A3 보고서",
+      "name": "GYM 바이크 3사 비교 (입식·좌식) — 웰페리온 A3",
       "desc": "",
-      "path": "../coo/chairman/260909_GYM바이크_3사견적비교_A3.html",
+      "path": "../coo/chairman/260909_GYM바이크_3사비교_A3.html",
       "staff": "최준용M · 윤병현AM",
-      "screen_id": "coo-chairman-260909-gym바이크-3사견적비교-a3",
+      "screen_id": "coo-chairman-260909-gym바이크-3사비교-a3",
       "automation": [],
       "sellable": "internal"
     },
@@ -1157,6 +1146,20 @@
       "sellable": "internal"
     },
     {
+      "id": "coo-product-스팀다리미-구매현황",
+      "core": false,
+      "group": "시우",
+      "appgroup": "문서함",
+      "role": "coo",
+      "name": "웰페리온 셀렉트 — 진공 스팀다리미 구매현황",
+      "desc": "",
+      "path": "../coo/product/스팀다리미_구매현황.html",
+      "staff": "최준용M · 윤병현AM",
+      "screen_id": "coo-product-스팀다리미-구매현황",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
       "id": "coo-reception-lost-found-guide",
       "core": false,
       "group": "시우",
@@ -1209,6 +1212,20 @@
       "path": "../coo/check/주차장_이용안내_공지문.html",
       "staff": "최준용M · 윤병현AM",
       "screen_id": "coo-check-주차장-이용안내-공지문",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
+      "id": "coo-chairman-중간관리자-업무목차",
+      "core": false,
+      "group": "시우",
+      "appgroup": "문서함",
+      "role": "coo",
+      "name": "중간관리자 업무 목차 — 웰페리온 GM업무",
+      "desc": "",
+      "path": "../coo/chairman/중간관리자_업무목차.html",
+      "staff": "최준용M · 윤병현AM",
+      "screen_id": "coo-chairman-중간관리자-업무목차",
       "automation": [],
       "sellable": "internal"
     },
@@ -1384,27 +1401,13 @@
       "id": "cto-aws-migration",
       "core": false,
       "group": "시토",
-      "appgroup": "경영",
+      "appgroup": "문서함",
       "role": "cto",
-      "name": "AWS 이관 현황",
-      "desc": "구글 시트에서 회사 서버로 옮기는 진척과 영역별 전환 일정을 한 화면에서 본다.",
+      "name": "AWS 이관 전체 현황 — AI CTO",
+      "desc": "GAS→AWS 서버 전환 진척과 영역별 전환 일정을 따라간다.",
       "path": "../cto/aws_migration.html",
       "staff": "김남욱 GM",
       "screen_id": "cto-aws-migration",
-      "automation": [],
-      "sellable": "internal"
-    },
-    {
-      "id": "cto-env-status",
-      "core": false,
-      "group": "시토",
-      "appgroup": "경영",
-      "role": "cto",
-      "name": "환경 3벌 현황",
-      "desc": "알파·베타·라이브 세 환경이 살아있는지, 자료가 섞이지 않는지 한 화면에서 본다.",
-      "path": "../cto/env_status.html",
-      "staff": "김남욱 GM",
-      "screen_id": "cto-env-status",
       "automation": [],
       "sellable": "internal"
     },
@@ -1437,12 +1440,40 @@
       "sellable": "internal"
     },
     {
+      "id": "cto-env-status",
+      "core": false,
+      "group": "시토",
+      "appgroup": "문서함",
+      "role": "cto",
+      "name": "환경 3벌 현황 — AI CTO",
+      "desc": "",
+      "path": "../cto/env_status.html",
+      "staff": "김남욱 GM",
+      "screen_id": "cto-env-status",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
+      "id": "cbo-model-faq통합-파이프라인-v1-0",
+      "core": false,
+      "group": "시보",
+      "appgroup": "문서함",
+      "role": "cbo",
+      "name": "FAQ 통합 파이프라인 v1.0 — 센터 FAQ → 공통 유형층 → 마케팅·상담봇·센터 AX",
+      "desc": "",
+      "path": "../cbo/model/FAQ통합_파이프라인_v1.0.html",
+      "staff": "김남욱 GM",
+      "screen_id": "cbo-model-faq통합-파이프라인-v1-0",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
       "id": "cbo-gocheokgolf-drafts-v0-1",
       "core": false,
       "group": "시보",
       "appgroup": "문서함",
       "role": "cbo",
-      "name": "고척 gdr QA 골프존 — 블로그·인스타그램 초안 v0.3",
+      "name": "고척 gdr QA 골프존 — 블로그·인스타그램 초안 v0.7",
       "desc": "",
       "path": "../cbo/gocheokgolf/drafts_v0.1.html",
       "staff": "김남욱 GM",
@@ -1554,7 +1585,7 @@
       "group": "시보",
       "appgroup": "문서함",
       "role": "cbo",
-      "name": "상담봇 — 전체 기획 설계 v1.0 (3업체 · 고객 페이지 · 관리자 페이지)",
+      "name": "상담봇 — 전체 기획 설계 v1.1 (3업체 · 고객 페이지 · 관리자 페이지)",
       "desc": "상담봇(3업체·고객 페이지·관리자 페이지) 전체 기획 설계를 소개한다.",
       "path": "../cbo/model/상담봇_기획설계_v1.0.html",
       "staff": "김남욱 GM",
@@ -1825,6 +1856,48 @@
       "path": "../gm/GM_교육.html",
       "staff": "김남욱 GM",
       "screen_id": "gm-gm-교육",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
+      "id": "cbo-counsel-faq",
+      "core": false,
+      "group": "시보",
+      "appgroup": "상담봇",
+      "role": "cbo",
+      "name": "FAQ",
+      "desc": "",
+      "path": "../cbo/counsel_faq.html",
+      "staff": "김남욱 GM",
+      "screen_id": "cbo-counsel-faq",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
+      "id": "cbo-counsel-log",
+      "core": false,
+      "group": "시보",
+      "appgroup": "상담봇",
+      "role": "cbo",
+      "name": "상담 내역",
+      "desc": "",
+      "path": "../cbo/counsel_log.html",
+      "staff": "김남욱 GM",
+      "screen_id": "cbo-counsel-log",
+      "automation": [],
+      "sellable": "internal"
+    },
+    {
+      "id": "cbo-counsel-admin",
+      "core": false,
+      "group": "시보",
+      "appgroup": "상담봇",
+      "role": "cbo",
+      "name": "상담봇",
+      "desc": "상담봇의 못 답한 질문·FAQ·업체 정보·이용 통계를 확인하고 관리한다.",
+      "path": "../cbo/counsel_admin.html",
+      "staff": "김남욱 GM",
+      "screen_id": "cbo-counsel-admin",
       "automation": [],
       "sellable": "internal"
     }

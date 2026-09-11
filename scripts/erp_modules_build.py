@@ -116,7 +116,7 @@ APPGROUP_IDS = {
             "coo-brojay-브로제이-업무분장",
             "coo-notice-게시물-프로필월",
             "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave",
-            "cbo-counsel-admin", "chro-hub-onboarding-self", "chro-hub-onboarding",
+            "chro-hub-onboarding-self", "chro-hub-onboarding",
             "chro-hub-calendar", "cmo-series-ai시리즈보드"],
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
@@ -126,8 +126,11 @@ APPGROUP_IDS = {
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
             "cmo-funnel-월간마케팅보고서", "coo-chairman-대표님-지시사항",
             "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],
+    # GM 지시 2026-09-11 「메뉴 맨 아래에 상담봇을 만들어서 거기에 상담 내역 + FAQ 등을 하위메뉴로」.
+    # 앱 셸의 하위 메뉴 = 그 그룹 안의 카드다 — 그룹 하나를 맨 아래에 세우고 화면 셋을 담는다.
+    "상담봇": ["cbo-counsel-admin", "cbo-counsel-log", "cbo-counsel-faq"],
 }
-APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함"]
+APPGROUP_ORDER = ["회원", "운영", "점검", "경영", "문서함", "상담봇"]
 
 # 탭으로 격상된 화면 — 카드 목록에서 뺀다(GM 지시 2026-09-09 「토큰 사용량은 하나의 탭으로
 # 관리되어야 할 정도로 중요한 맥락이야, 모듈에서 격상시켜줘」). 카드와 탭 양쪽에 두면 중복이다.

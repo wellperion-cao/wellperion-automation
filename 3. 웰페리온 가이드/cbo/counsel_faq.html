@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAQ</title>
+<link rel="stylesheet" href="../erp/brand/tokens.css">
+<link rel="stylesheet" href="counsel.css">
+</head><body>
+<div class="wrap">
+<h1>FAQ</h1>
+<p class="sub" id="subline">불러오는 중…</p>
+<div class="tabs" id="tabs"></div>
+<div class="subnav" id="subnav"></div>
+
+<section><h2>못 답한 질문 (최근 7일)</h2>
+  <p class="muted">답을 한 줄 넣고 올리면 그다음부터 봇이 그 답을 씁니다.</p>
+  <table><thead><tr><th>질문</th><th>횟수</th><th>답</th><th></th></tr></thead><tbody id="unansweredBody"></tbody></table>
+  <p class="muted" id="unansweredEmpty" hidden>최근 7일 못 답한 질문 없음.</p>
+</section>
+
+<section><h2>FAQ 표</h2>
+  <table><thead><tr><th>질문</th><th>답</th><th>같은 뜻 표현(쉼표로 구분)</th><th>확정</th><th></th></tr></thead><tbody id="faqBody"></tbody></table>
+  <div class="row-add">
+    <input type="text" id="newQ" placeholder="새 질문">
+    <input type="text" id="newA" placeholder="새 답">
+    <button id="addBtn">+추가</button>
+  </div>
+  <p class="warn" id="warnMsg" hidden></p>
+</section>
+</div>
+
+<script src="counsel.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = Counsel.esc, j = Counsel.j;
+
+  Counsel.start("counsel_faq.html", function (ctx) {
+    function savefaq(payload, onOk) {
+      j(ctx.api + "/faq", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (d) {
+        var w = document.getElementById("warnMsg");
+        if (d.warn && d.warn.length) {
+          w.hidden = false;
+          w.textContent = "낱말 확인: " + d.warn.join(", ") + " (저장은 됐습니다 · 대표 판단)";
+        } else { w.hidden = true; }
+        if (onOk) onOk(d);
+      }).catch(function () { alert("저장 실패 — 다시 시도해 주세요"); });
+    }
+
+    function loadUnanswered() {
+      j(ctx.api + "/unanswered?days=7").then(function (d) {
+        var counts = {};
+        (d.questions || []).forEach(function (row) {
+          var q = row.q || row;
+          counts[q] = (counts[q] || 0) + 1;
+        });
+        var keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+        var body = document.getElementById("unansweredBody");
+        body.innerHTML = "";
+        document.getElementById("unansweredEmpty").hidden = keys.length > 0;
+        keys.forEach(function (q) {
+          var tr = document.createElement("tr");
+          tr.innerHTML = '<td>' + esc(q) + '</td><td>' + counts[q] + '</td>' +
+            '<td><input type="text" placeholder="답 입력"></td>' +
+            '<td><button class="promote">FAQ 로 올리기</button></td>';
+          tr.querySelector(".promote").onclick = function () {
+            var a = tr.querySelector("input").value.trim();
+            if (!a) return;
+            savefaq({ q: q, a: a, verified: true, source: "관리자(못 답한 질문 승격)" }, function () {
+              tr.remove(); loadFaq();
+            });
+          };
+          body.appendChild(tr);
+        });
+      }).catch(function () {
+        document.getElementById("unansweredEmpty").hidden = false;
+        document.getElementById("unansweredEmpty").textContent =
+          "못 답한 질문을 불러오지 못했습니다(로그인이 풀렸을 수 있습니다).";
+      });
+    }
+
+    function loadFaq() {
+      j(ctx.api + "/profile?full=1").then(function (p) {
+        var body = document.getElementById("faqBody");
+        body.innerHTML = "";
+        (p.faq || []).forEach(function (it) {
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td><textarea data-f="q">' + esc(it.q) + '</textarea></td>' +
+            '<td><textarea data-f="a">' + esc(it.a) + '</textarea></td>' +
+            '<td><input type="text" data-f="alt" value="' + esc((it.alt || []).join(", ")) + '"></td>' +
+            '<td><span class="tag ' + (it.verified ? "on" : "") + '">' + (it.verified ? "확정" : "초안") +
+            '</span><br><label><input type="checkbox" data-f="verified" ' + (it.verified ? "checked" : "") + '> 확정</label></td>' +
+            '<td><button class="save">저장</button></td>';
+          tr.querySelector(".save").onclick = function () {
+            savefaq({
+              id: it.id,
+              q: tr.querySelector('[data-f=q]').value.trim(),
+              a: tr.querySelector('[data-f=a]').value.trim(),
+              alt: tr.querySelector('[data-f=alt]').value.split(",").map(function (s) { return s.trim(); }).filter(Boolean),
+              verified: tr.querySelector('[data-f=verified]').checked
+            }, function () { loadFaq(); });
+          };
+          body.appendChild(tr);
+        });
+        document.getElementById("subline").textContent =
+          p.name + " · FAQ " + p.faq_count + "개 (확정 " + p.verified_count + ")";
+      }).catch(function () {
+        document.getElementById("subline").textContent =
+          ctx.cur.name + " · FAQ 를 불러오지 못했습니다(로그인이 풀렸을 수 있습니다)";
+      });
+    }
+
+    document.getElementById("addBtn").onclick = function () {
+      var q = document.getElementById("newQ").value.trim();
+      var a = document.getElementById("newA").value.trim();
+      if (!q || !a) return;
+      savefaq({ q: q, a: a, verified: true, source: "관리자" }, function () {
+        document.getElementById("newQ").value = "";
+        document.getElementById("newA").value = "";
+        loadFaq();
+      });
+    };
+
+    loadUnanswered();
+    loadFaq();
+  });
+})();
+</script>
+</body></html>

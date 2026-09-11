@@ -1,0 +1,23 @@
+{
+  "_doc": "상담봇 화면 셋(상담봇·상담 내역·FAQ)이 공통으로 읽는 업체 목록. 값의 정본은 server/counselbot/tenants/{id}.json 이고 여기는 화면이 쓰는 이름·주소만 옮겨 적은 목록이다. 세 화면이 각자 목록을 들고 있다가 하나가 낡는 것을 막으려고 한 곳으로 모았다(2026-09-11 실측: counsel_admin.html 이 없어진 3_spogym 을 가리키고 있었다). 서버가 업체 목록 API 를 내면 이 파일 대신 그것을 읽는다.",
+  "tenants": [
+    {
+      "id": "1_wellperion",
+      "name": "웰페리온",
+      "role": "1호 · 우리 것(자체 시험)",
+      "page": "/counsel/"
+    },
+    {
+      "id": "2_dietcamp",
+      "name": "다이어트캠프",
+      "role": "파트너 · 이승기 대표님",
+      "page": "/dietcamp/counsel/"
+    },
+    {
+      "id": "3_gocheokgolf",
+      "name": "고척 gdr QA 골프존",
+      "role": "파트너 · 조재오 부장님",
+      "page": "/gocheokgolf/counsel/"
+    }
+  ]
+}

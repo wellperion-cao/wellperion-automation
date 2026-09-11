@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상담 내역</title>
+<link rel="stylesheet" href="../erp/brand/tokens.css">
+<link rel="stylesheet" href="counsel.css">
+</head><body>
+<div class="wrap">
+<h1>상담 내역</h1>
+<p class="sub" id="subline">불러오는 중…</p>
+<div class="tabs" id="tabs"></div>
+<div class="subnav" id="subnav"></div>
+
+<div class="filters">
+  <label class="muted">기간
+    <select id="days">
+      <option value="1">오늘</option>
+      <option value="7" selected>최근 7일</option>
+      <option value="30">최근 30일</option>
+    </select>
+  </label>
+  <label class="muted">보기
+    <select id="only">
+      <option value="all">전체</option>
+      <option value="no">못 답한 것만</option>
+    </select>
+  </label>
+  <button class="sec" id="reload">다시 불러오기</button>
+</div>
+
+<section><h2>손님이 물은 것</h2>
+  <p class="muted">전화번호·이메일은 기록 단계에서 지워집니다 — 화면에는 남지 않습니다.</p>
+  <table><thead><tr><th>시각</th><th>질문</th><th>답</th><th>결과</th></tr></thead><tbody id="rows"></tbody></table>
+  <p class="muted" id="empty" hidden></p>
+</section>
+</div>
+
+<script src="counsel.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = Counsel.esc, j = Counsel.j;
+
+  Counsel.start("counsel_log.html", function (ctx) {
+    document.getElementById("subline").textContent = ctx.cur.name + " · " + ctx.cur.role;
+
+    function show(rows, note) {
+      var only = document.getElementById("only").value;
+      if (only === "no") rows = rows.filter(function (r) { return !r.answered; });
+      var body = document.getElementById("rows");
+      body.innerHTML = rows.map(function (r) {
+        return '<tr><td>' + esc((r.ts || "").replace("T", " ").slice(5, 16)) + '</td>' +
+          '<td>' + esc(r.q) + '</td>' +
+          '<td>' + (r.a ? esc(r.a) : '<span class="muted">기록 없음</span>') + '</td>' +
+          '<td><span class="tag ' + (r.answered ? "on" : "no") + '">' +
+          (r.answered ? "답함" : "못 답함") + '</span></td></tr>';
+      }).join("");
+      var e = document.getElementById("empty");
+      e.hidden = !(note || !rows.length);
+      e.textContent = note || (rows.length ? "" : "이 기간에 들어온 질문이 없습니다.");
+    }
+
+    function load() {
+      var days = document.getElementById("days").value;
+      // 전체 내역 통로. 없으면 못 답한 질문만이라도 보여 주고, 없다는 사실을 그대로 적는다.
+      j(ctx.api + "/log?days=" + days + "&limit=300")
+        .then(function (d) { show(d.rows || [], null); })
+        .catch(function () {
+          j(ctx.api + "/unanswered?days=" + days).then(function (d) {
+            var rows = (d.questions || []).map(function (row) {
+              return { ts: row.ts, q: row.q || row, a: "", answered: false };
+            });
+            show(rows, "지금은 못 답한 질문만 보입니다 — 손님 질문과 봇 답을 함께 보는 통로는 아직 서버에 없습니다(요청해 둠).");
+          }).catch(function () {
+            show([], "내역을 불러오지 못했습니다(로그인이 풀렸을 수 있습니다).");
+          });
+        });
+    }
+
+    document.getElementById("days").onchange = load;
+    document.getElementById("only").onchange = load;
+    document.getElementById("reload").onclick = load;
+    load();
+  });
+})();
+</script>
+</body></html>
