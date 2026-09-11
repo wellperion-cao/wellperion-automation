@@ -71,9 +71,17 @@ _TODO_MATCH_RE = re.compile(r"\[TODO 매칭[^\]]*\][^\n]*?→\s*(TODO-\d+)")
 KST = timezone(timedelta(hours=9))
 
 
+# 사람이 이름을 부르는 첫마디(배2541 · 2026-09-11). 나우열M 이 「웰리야」로 네 번 불렀는데
+# 받는 갈래가 없어 전부 무응답이었다 — 무응답이 가장 나쁘다. 부르면 먼저 답하고 나서 처리한다.
+# 뒤에 조사가 붙으면(「웰리한테」·「웰리가」) 부른 게 아니라 그냥 언급이다 — 경계를 본다.
+_CALL_RE = re.compile(r"^\s*(웰리야|윌리야|웰리님|웰리)(?=$|[\s,.!?~、])[\s,.!?~]*")
+
+
 def classify(text: str) -> str:
-    """분류 우선순위: TODO 번호가 있으면 등록확인이 완료·회신보다 더 구체적인 신호다."""
+    """분류 우선순위: 이름을 부르면 그게 먼저다(답부터 해야 한다). 그 다음 TODO 번호."""
     t = text or ""
+    if _CALL_RE.match(t):
+        return "call"
     if _TODO_ID_RE.search(t):
         return "register_confirm"
     if any(w in t for w in _DONE_WORDS):
@@ -592,6 +600,63 @@ async def _handle_register_confirm(text: str, ctx) -> None:
         await asyncio.to_thread(_append_ship_note, ship.get("task_id"), f"SSOT 등록 확인 — {title} ({todo_id})")
 
 
+async def _handle_call(text: str, ctx) -> None:
+    """이름을 불렸을 때: ①먼저 받았다고 답한다 ②무엇으로 알아들었는지 한 줄 ③웰리 배로 넘긴다.
+
+    답을 못 해도 받았다는 말은 즉시 나가야 한다 — 사람은 답이 늦은 것보다 무응답을 나쁘게 본다.
+    실제 처리는 웰리 몫이라 여기서 배로 띄우고, GM 봇방에도 한 줄 남긴다."""
+    import asyncio
+    rest = _CALL_RE.sub("", text or "").strip()
+    kind = classify(rest) if rest else "other"
+    read_as = {
+        "register_confirm": "등록 확인",
+        "done": "완료 회신",
+        "question": "질문",
+        "call": "호출",
+        "other": "요청",
+    }[kind]
+    head = rest.splitlines()[0][:60] if rest else ""
+    reply = f"네, 받았습니다. {read_as}으로 읽었습니다"
+    if head:
+        reply += f" — 「{head}」"
+    reply += "\n확인해서 오늘 안에 답 드리겠습니다."
+
+    try:
+        from notify.telegram_user_send import send_as_gm
+    except Exception as exc:
+        log.error(f"[work_room] telegram_user_send 임포트 실패: {exc}")
+        await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신기 미가용)")
+        return
+    ok = await asyncio.to_thread(send_as_gm, WORK_ROOM_CHAT_ID, reply)
+    if not ok:
+        await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신 실패 · 상한·세션 확인)")
+        return
+
+    await asyncio.to_thread(_dispatch_call_ship, text)
+    await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]}\n↳ 받았다고 답했고 웰리 배로 넘겼습니다")
+
+    # 질문이면 정본에서 답이 나오는지까지 이어서 본다 — 받았다는 말로 끝내지 않는다.
+    if kind == "question" and rest:
+        await _handle_question(rest, ctx)
+
+
+def _dispatch_call_ship(text: str) -> None:
+    """웰리 앞으로 배 한 척. 같은 제목이면 queue_dispatch 의 중복 가드가 막는다."""
+    import subprocess
+    head = (text or "").strip().splitlines()[0][:40]
+    try:
+        subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "queue_dispatch.py"),
+             "--to", "ceo", "--sender", "cto",
+             "--title", f"[업무관리] 나우열M 호출 — {head}",
+             "--note", f"업무관리 방 원문: {text[:500]}\n받았다는 답은 이미 나갔다. 실제 답·처리가 남았다.",
+             "--next", "그 방에 결과 한 줄로 답한다",
+             "--audience", "office", "--reversible", "yes", "--work-type", "update"],
+            cwd=str(REPO_ROOT), capture_output=True, timeout=60)
+    except Exception as exc:
+        log.error(f"[work_room] 호출 배 생성 실패: {exc}")
+
+
 async def _handle_question(text: str, ctx) -> None:
     import asyncio
     answer = await asyncio.to_thread(answer_from_canon, text)
@@ -625,7 +690,9 @@ async def handle_group_message(update, ctx) -> None:
 
     kind = classify(text)
     try:
-        if kind == "register_confirm":
+        if kind == "call":
+            await _handle_call(text, ctx)
+        elif kind == "register_confirm":
             await _handle_register_confirm(text, ctx)
         elif kind == "done":
             await _handle_done(text, ctx)
@@ -719,7 +786,14 @@ def _selfcheck() -> None:
     assert classify("이 문구 맞나요?") == "question"
     assert classify("네 알겠습니다 진행할게요") == "other"
     assert classify("완료했습니다 TODO-999") == "register_confirm", "TODO 번호가 있으면 완료보다 등록확인 우선"
-    print("[selfcheck] classify OK (6케이스)")
+    # 호출(배2541) — 이름을 부르면 다른 무엇보다 먼저 잡혀야 한다. 무응답이 가장 나쁘다.
+    assert classify("웰리야") == "call"
+    assert classify("웰리야 이거 확인 부탁드립니다") == "call"
+    assert classify("웰리야, 등록했습니다 TODO-123") == "call", "부르면 TODO 번호보다 호출이 먼저"
+    assert classify("윌리야 이것 좀") == "call"
+    assert classify("웰리한테 반영했습니다") == "done", "이름이 첫마디 조사에 붙은 것은 호출이 아니다"
+    assert _CALL_RE.sub("", "웰리야, 이거 맞나요?").strip() == "이거 맞나요?"
+    print("[selfcheck] classify OK (12케이스)")
 
 
 if __name__ == "__main__":

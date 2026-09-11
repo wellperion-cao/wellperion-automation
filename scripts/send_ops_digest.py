@@ -836,6 +836,60 @@ def _mark_mgr_sent(target_date: str) -> None:
                      extra={"state": {"date": target_date}})
 
 
+NOON_HEARTBEAT_ID = "ops-digest-nawool-noon"
+
+
+def send_nawool_noon(dry: bool = False) -> int:
+    """평일 12:10 — 나우열M 몫 미회신 목록 한 통(배2541 · 나우열M 요청 2026-09-11).
+
+    왜 따로 도나: 07:50 회차는 카톡 ★중간관리자 통이 중심이고, 나우열M 몫은 GM 개인 봇방
+    요약으로만 나간다. 정작 본인 방에는 아침 한 번 말고는 아무것도 안 가서 낮에 밀린 것을
+    본인이 못 본다. 낮 한 번 더 같은 목록을 그 방으로 준다.
+
+    ★본문은 새로 만들지 않는다 — 07:50 이 쓰는 build_mgr_daily_brief 의 나우열M 몫을 그대로
+    쓴다(약속 L21). 미리보기와 같은 경로라 방·SSOT 를 건드리지 않는다.
+    ★발신은 GM 계정 한 경로(telegram_user_send)뿐이다(GM 결정 2026-09-05 · 배1068).
+    ★같은 날 두 번 보내지 않는다 — 하트비트 날짜로 막는다.
+    """
+    from module_heartbeat import last_heartbeat, record_heartbeat
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    if datetime.now().weekday() >= 5:
+        log("[noon] 주말 — 생략")
+        return 0
+    rec = last_heartbeat(NOON_HEARTBEAT_ID)
+    if rec and (rec.get("state") or {}).get("date") == today:
+        log(f"[noon] 오늘({today}) 이미 보냄 — 생략")
+        return 0
+
+    _msg, _cur, _hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), today)
+    if not nawool_msg:
+        log("[noon] 나우열M 몫 0건 — 발송 생략")
+        record_heartbeat(NOON_HEARTBEAT_ID, detail="0건 — 발송 없음",
+                         extra={"state": {"date": today}})
+        return 0
+
+    body = "🕛 낮 확인 — 아직 회신 없는 것만 모았습니다.\n" + nawool_msg
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from notify.telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID  # noqa: F401
+    except Exception:
+        from notify.telegram_user_send import send_as_gm
+        WORK_ROOM_CHAT_ID = -5492623600
+    if dry:
+        log(f"[noon] --dry-run — 발송 안 함({len(body)}자)")
+        print(body)
+        return 0
+    ok = send_as_gm(WORK_ROOM_CHAT_ID, body)
+    if not ok:
+        log("[noon] 발송 실패 — 다음 회차 재시도(하트비트 안 찍음)")
+        return 1
+    record_heartbeat(NOON_HEARTBEAT_ID, detail=f"낮 미회신 통 발송 — {len(body)}자",
+                     extra={"state": {"date": today}})
+    log("[noon] 발송 완료")
+    return 0
+
+
 def preview_mgr_brief() -> int:
     """★중간관리자 결정거리 요약 미리보기 — 방에 손 안 댐(발신·상태기록 없음)."""
     target_date = ""
@@ -3078,6 +3132,8 @@ def main() -> int:
     ap.add_argument("--resolve", action="append", metavar="제목조각",
                     help="원장에서 이 조각을 포함하는 열린 이슈를 resolved 로 닫는다(여러 번 지정 가능)")
     ap.add_argument("--why", default="", help="--resolve 사유(선택)")
+    ap.add_argument("--nawool-noon", action="store_true",
+                    help="평일 12:10 나우열M 낮 미회신 통(배2541) — 같은 날 두 번 안 보낸다")
     args = ap.parse_args()
 
     if args.nudge_review:
@@ -3091,6 +3147,10 @@ def main() -> int:
 
     if args.mgr_preview:
         return preview_mgr_brief()
+
+    # 낮 회차(배2541)는 아침 회차와 완전히 별개다 — 킬스위치·아침 중복방지를 타지 않는다.
+    if args.nawool_noon:
+        return send_nawool_noon(dry=args.dry_run)
 
     if not args.force and not kill_switch_enabled():
         log(f"킬스위치 OFF({KILL_SWITCH}) — 발송 생략")
