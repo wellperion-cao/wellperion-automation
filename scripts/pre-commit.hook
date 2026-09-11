@@ -210,4 +210,17 @@ if [ -f "$SECRET_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ⑧ 파트너사 가이드에 ERP 플랫폼 색이 들어오는 것 차단 (GM 지적 2026-09-11 · 2회째) ──
+# 웹페리온(파트너사) 화면 색 = 베이지 라인(erp/brand/tenant-wellperion.css).
+# ERP 플랫폼 라인 색(에메랄블루 #0E9488 · 바탕 #F4F5F6)을 이 파일에 넣지 않는다.
+# 우회: git commit --no-verify 또는 env SKIP_TENANT_COLOR_GUARD=1
+if [ -z "$SKIP_TENANT_COLOR_GUARD" ]; then
+  BADCOLOR=$(git diff --cached -U0 -- "3. 웰페리온 가이드/wellperion_guide(main).html"     | grep -E "^\+" | grep -icE "0E9488|0B7A70|#F4F5F6")
+  if [ "$BADCOLOR" -gt 0 ] 2>/dev/null; then
+    echo "[tenant-color-guard][BLOCK] 파트너사 가이드에 ERP 플랫폼 색($BADCOLOR줄)이 들어왔다."
+    echo "  웹페리온 화면 색 정본 = 3. 웰페리온 가이드/erp/brand/tenant-wellperion.css (베이지 라인)"
+    exit 1
+  fi
+fi
+
 exit 0
