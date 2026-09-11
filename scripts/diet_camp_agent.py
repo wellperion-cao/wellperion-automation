@@ -243,9 +243,18 @@ GAP_LABEL = {   # 상담봇 needs_facts 경로 → 대표님께 여쭐 말(GM 20
 }
 
 
+# 상담봇을 손님에게 여는 센터. GM 확정 2026-09-11 「상담봇은 웰페리온만 FAQ 채워서 진행이 되어야해」 —
+# 파트너 센터 봇은 아직 손님에게 여는 단계가 아니므로 그 방 아침 통이 상담 페이지를 꺼내면 안 된다.
+# 브리프 문장만으로 막지 않고 여기서 끊는다(읽히지 않은 규칙은 없는 규칙이다).
+COUNSELBOT_LIVE_TENANTS = {"1_wellperion"}
+
+
 def bot_gaps(tenant: str = "2_dietcamp", days: int = 7) -> list[str]:
     """상담 페이지에서 손님이 실제로 물었는데 정본 칸이 비어 못 답한 것(needs_facts)을 서버 미답 목록에서 뽑는다.
-    이게 아침 질문의 최우선이다 — 손님이 이미 물은 것보다 급한 빈칸은 없다. 로그인·서버 실패 = 빈 목록(fail-open)."""
+    이게 아침 질문의 최우선이다 — 손님이 이미 물은 것보다 급한 빈칸은 없다. 로그인·서버 실패 = 빈 목록(fail-open).
+    단 손님에게 열지 않은 센터는 빈 목록이다 — 안 연 봇의 미답을 대표님께 여쭐 일이 없다."""
+    if tenant not in COUNSELBOT_LIVE_TENANTS:
+        return []
     try:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         import erp_live_audit as e                  # 로그인 헬퍼 재사용(약속 L21)
