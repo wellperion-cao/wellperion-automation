@@ -1147,25 +1147,40 @@ function contractListHTML(title, rows){
 var DAY_OPT_RE = /라카|일일입장/;
 var DAY_TEAM_RULES = [
   ['수영팀', /수영/], ['P.T팀', /P\.?T/i], ['골프팀', /골프/], ['스쿼시팀', /스쿼시/],
-  ['체조팀', /체조|트램폴린/], ['P.L팀(필라테스)', /필라테스|P\.?L/i],
-  /* 루프·발레는 강습 신규·재등록 집계(시트 GAS)가 뮤지컬팀으로 묶는다 — 같은 화면에서 한 건이
-     두 이름으로 보이지 않게 여기서도 같이 묶는다(GM 지적 2026-09-11 132,000원 차액). */
-  ['뮤지컬팀', /뮤지컬|루프|발레/], ['GXE팀(파트너)', /GXE|파트너/i]
+  ['체조팀', /체조|트램폴린/], ['P.L팀', /필라테스|P\.?L/i],
+  /* 루프·발레는 GXE(파트너팀) 이다(GM 확정 2026-09-11). 시트 GAS 집계는 이걸 뮤지컬팀으로
+     묶어 보내므로, 아래 강습 신규·재등록 줄도 이 규칙으로 다시 세어 화면 안에서 이름이 갈리지 않게 한다. */
+  ['뮤지컬팀', /뮤지컬/], ['GXE팀', /GXE|파트너|루프|발레/i]
 ];
 function _won(n){ return '₩ ' + (n || 0).toLocaleString('ko-KR'); }
+/* 팀 이름은 한 벌만 쓴다(강습 줄·시트 집계와 같아야 한 팀이 두 줄로 안 나온다). 매출 표에서만 풀어 적는다. */
+var TEAM_LABEL = { 'P.L팀': 'P.L팀(필라테스)', 'GXE팀': 'GXE팀(파트너)' };
 function daySplit(c){
   var mem = readContracts(c, ['A','B','C','D','E','F','G']);
   var les = readContracts(c, ['H','I','J','K','L','M','N']);
-  var out = { membership:0, option:0, teams:{}, etc:0 };
+  var out = { membership:0, option:0, teams:{}, etc:0, lesTotal:{}, lesTeams:{} };
   DAY_TEAM_RULES.forEach(function(t){ out.teams[t[0]] = 0; });
   mem.forEach(function(x){
     if (DAY_OPT_RE.test(x.sport)) out.option += x.amount; else out.membership += x.amount;
   });
+  /* 신규·재등록은 등록분류 칸을 그대로 센다 — 양도·환불은 그 둘이 아니라 자연히 빠진다.
+     이렇게 세면 시트 GAS 집계와 건수·금액이 같고(9/10 실측: 신규 3·297,000 / 재등록 24·13,113,000),
+     팀 이름만 우리 규칙(루프·발레=GXE)을 따른다. */
+  function bump(bag, key, amt){
+    if (!bag[key]) bag[key] = { count:0, amount:0 };
+    bag[key].count++; bag[key].amount += amt;
+  }
   les.forEach(function(x){
+    var team = null;
     for (var i = 0; i < DAY_TEAM_RULES.length; i++) {
-      if (DAY_TEAM_RULES[i][1].test(x.sport)) { out.teams[DAY_TEAM_RULES[i][0]] += x.amount; return; }
+      if (DAY_TEAM_RULES[i][1].test(x.sport)) { team = DAY_TEAM_RULES[i][0]; break; }
     }
-    out.etc += x.amount;
+    if (team) out.teams[team] += x.amount; else out.etc += x.amount;
+    var kind = String(x.type || '').replace(/\s/g, '');
+    if (kind !== '신규' && kind !== '재등록') return;
+    bump(out.lesTotal, kind, x.amount);
+    if (!out.lesTeams[team || '기타']) out.lesTeams[team || '기타'] = {};
+    bump(out.lesTeams[team || '기타'], kind, x.amount);
   });
   return out;
 }
@@ -1186,7 +1201,9 @@ function renderDaySales(c, dayLabel){
     ['회원권', _won(s.membership)].concat(accCells(6)),
     ['옵션 (골프라카·일일입장)', _won(s.option)].concat(accCells(7))
   ];
-  DAY_TEAM_RULES.forEach(function(t, i){ rows.push([t[0], _won(s.teams[t[0]])].concat(accCells(8 + i))); });
+  DAY_TEAM_RULES.forEach(function(t, i){
+    rows.push([TEAM_LABEL[t[0]] || t[0], _won(s.teams[t[0]])].concat(accCells(8 + i)));
+  });
   if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–', '–', '–']);
   /* 누적 열은 전부 「보고」탭 값으로 통일한다 — 총 매출만 일자탭 누적을 쓰면 줄 합과 총합이
      서로 다른 장부가 돼 화면 안에서 어긋난다(GM 지적 2026-09-11 440,475 차액). */
@@ -1208,6 +1225,8 @@ function renderDaySales(c, dayLabel){
     ' (새 종목 이름이 생겼을 수 있습니다)</div>';
   // 계약 명단은 2페이지 「문의 · 등록 상세」로 옮겼다(GM 지시 2026-09-03 — 1페이지 매출 표 안에
   // 두면 등록 상세와 같은 내용이 두 장에 겹쳐 보인다). 여기서는 그리지 않고 넘기기만 한다.
+  // 강습 신규·재등록 줄도 같은 규칙으로 다시 그린다 — 시트 GAS 집계와 팀 이름이 갈리지 않게.
+  renderLesson({ total: s.lesTotal, teams: s.lesTeams });
   renderP2Contract(c, dayLabel);
 }
 
