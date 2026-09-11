@@ -22,14 +22,35 @@ REQUIRED_KEYS = ("title", "summary_line", "metrics", "honesty_tag", "link")
 HONESTY_TAGS = ("측정", "부분", "미측정", "표본부족")
 
 
+def _erp(text):
+    """업무 화면 링크를 ERP 새 주소로 바꾼다(옛 주소로 열리는 것 차단 · 배 2529).
+
+    정본은 tg_outbound_log.to_erp_links 하나다 — 카톡·텔레그램 본문이 이미 그 함수를 지난다.
+    수집기 payload 의 link·summary_line 은 그 관문을 안 지나 옛 주소가 status/heartbeats/*.json
+    에 그대로 적혔고, 화면이 그 값을 읽어 옛 화면으로 열었다(GM 지적 2026-09-11).
+    이미지·PDF 주소는 그 함수가 안 건드린다 — 회원·외부가 여는 링크는 그대로 간다.
+    """
+    try:
+        from tg_outbound_log import to_erp_links
+    except Exception:
+        try:
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            from tg_outbound_log import to_erp_links
+        except Exception:
+            return str(text or "")   # 못 불러오면 종전 값 그대로 — 수집을 막지 않는다
+    return to_erp_links(text)
+
+
 def make_payload(title, summary_line, metrics=None, honesty_tag="측정", link=""):
     """표준 payload를 조립한다(누락 필드 방어)."""
     return {
         "title": str(title),
-        "summary_line": str(summary_line),
+        "summary_line": _erp(summary_line),
         "metrics": list(metrics) if metrics else [],
         "honesty_tag": honesty_tag if honesty_tag in HONESTY_TAGS else "미측정",
-        "link": str(link or ""),
+        "link": _erp(link or ""),
     }
 
 
@@ -64,3 +85,25 @@ def validate_payload(payload) -> list:
         )
 
     return violations
+
+
+def demo():
+    """배 2529 확인 — 업무 화면 링크는 ERP 새 주소로, 이미지는 옛 주소 그대로."""
+    old = "https://wellperion-cao.github.io/wellperion-automation/"
+    p = make_payload(
+        "제목",
+        f"자세히 {old}coo/check/전사_일정.html 보세요",
+        link=old + "cpo/member/membership.html?manage=lesson",
+    )
+    assert p["link"] == "https://erp.wellperion.com/cpo/member/membership.html?manage=lesson", p["link"]
+    assert "erp.wellperion.com/coo/check/전사_일정.html" in p["summary_line"], p["summary_line"]
+
+    q = make_payload("제목", "시안", link=old + "reports/현수막.png")
+    assert q["link"] == old + "reports/현수막.png", q["link"]   # 이미지는 로그인 벽 뒤로 넣지 않는다
+
+    assert validate_payload(p) == []
+    print("[selfcheck] make_payload 링크 치환 OK")
+
+
+if __name__ == "__main__":
+    demo()
