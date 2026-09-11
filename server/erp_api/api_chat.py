@@ -834,6 +834,17 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
             if first_char_t is None:
                 first_char_t = time.time()
             chunks.append(text)
+        # 토큰 사용량을 남긴다(2026-09-11 · 시보 질문 「캐시가 실제로 먹나」).
+        # 스트리밍이라 지금까지 아무 데도 안 남았다 — 값이 없으면 비용을 셀 수가 없다.
+        # cache_read 가 0 이면 질문마다 시스템 프롬프트 전체를 새로 계산하고 있다는 뜻이다.
+        try:
+            u = stream.get_final_message().usage
+            print("[concierge-usage] model=%s in=%s out=%s cache_write=%s cache_read=%s"
+                  % (model, getattr(u, "input_tokens", None), getattr(u, "output_tokens", None),
+                     getattr(u, "cache_creation_input_tokens", None),
+                     getattr(u, "cache_read_input_tokens", None)), flush=True)
+        except Exception as e:
+            print("[concierge-usage] 사용량 못 읽음: %s" % type(e).__name__, flush=True)
     return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None)
 
 
