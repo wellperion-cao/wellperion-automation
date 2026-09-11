@@ -723,6 +723,7 @@ def _ensure_chat_tab(main_hwnd: int, max_presses: int = 3) -> bool:
         if _current_main_tab(main_hwnd) == "chat":
             return True
         pyautogui.hotkey("ctrl", "tab")
+        release_modifiers()     # 탭 전환은 Ctrl 말고 다른 길이 없다 — 누른 직후 그 자리에서 놓는다(배 2530)
         time.sleep(0.5)
     return _current_main_tab(main_hwnd) == "chat"
 
@@ -985,7 +986,18 @@ def release_modifiers() -> None:
 
 
 def paste_text(input_box, text: str) -> None:
-    """캡션은 한글 포함 → type_keys 대신 클립보드 경유 붙여넣기(IME 조합 문제 회피)."""
+    """캡션은 한글 포함 → 클립보드 경유 붙여넣기(IME 조합 문제 회피).
+
+    ★Ctrl 을 쓰지 않는 길을 먼저 쓴다(배 2530 재발 · GM 「계속 화면 커지게 만드는데 왜그러는거야?」).
+    종전에는 type_keys("^v") — Ctrl 을 눌렀다 떼는 동작이다. 그 사이 창 포커스가 옮겨 가면
+    떼는 신호가 다른 창으로 가고, 그 앱에서는 Ctrl 이 눌린 채 남는다. 그 상태에서 휠을 굴리면
+    화면이 통째로 확대된다. 우리 프로세스가 안 죽어도 나므로, 끝에 한 번 놓는 가드로는 못 막는다.
+
+    순서: ①창에 WM_PASTE 를 직접 보낸다(키 입력이 아니라 메시지 — 수식키를 안 쓴다)
+          ②안 먹으면 set_edit_text 로 값을 직접 넣는다
+          ③둘 다 안 먹을 때만 종전 Ctrl+V, 그리고 곧바로 수식키를 놓는다.
+    각 단계 뒤 입력칸을 읽어 실제로 들어갔는지 확인한다 — 들어갔으면 거기서 멈춘다.
+    """
     prev = None
     try:
         prev = pyperclip.paste()
@@ -993,13 +1005,33 @@ def paste_text(input_box, text: str) -> None:
         pass
     pyperclip.copy(text)
     time.sleep(0.1)
-    input_box.type_keys("^v", pause=0.1)
-    time.sleep(0.3)
-    if prev is not None:
-        try:
-            pyperclip.copy(prev)
-        except Exception:
-            pass
+    try:
+        for way in ("wm_paste", "set_text", "ctrl_v"):
+            if way == "wm_paste":
+                hwnd = getattr(input_box, "handle", 0)
+                if not hwnd:
+                    continue
+                win32gui.SendMessage(hwnd, win32con.WM_PASTE, 0, 0)
+            elif way == "set_text":
+                try:
+                    input_box.set_edit_text(text)
+                except Exception:
+                    continue
+            else:
+                log("[paste] WM_PASTE·set_edit_text 둘 다 안 먹어 Ctrl+V 로 넘어간다")
+                input_box.type_keys("^v", pause=0.1)
+                release_modifiers()          # 떼는 신호가 다른 창으로 갔을 수 있다 — 그 자리에서 놓는다
+            time.sleep(0.3)
+            if _input_box_text(input_box):   # 빈 칸·못 읽음이 아니면 들어간 것
+                if way != "wm_paste":
+                    log("[paste] %s 로 들어갔다" % way)
+                return
+    finally:
+        if prev is not None:
+            try:
+                pyperclip.copy(prev)
+            except Exception:
+                pass
 
 
 def screenshot(room_win, room_name: str, tag: str) -> Path:
@@ -2430,6 +2462,18 @@ def _selftest() -> None:
         # 진짜로도 한 번 놓아 둔다 — 이 자체점검이 키를 눌린 채 남기지 않게.
         release_modifiers()
         print("SELFTEST OK: 수식키를 끝까지 놓는다(한 키가 실패해도 멈추지 않는다)")
+
+        # ⑥-f 붙여넣기가 Ctrl 없는 길을 먼저 쓰는가(배 2530 재발) + 지금 눌린 수식키 0개인가.
+        import inspect as _inspect
+        _src = _inspect.getsource(paste_text)
+        # 설명글에도 같은 낱말이 나오므로 실행되는 줄(win32con.·input_box.)로 순서를 본다
+        assert _src.index("win32con.WM_PASTE") < _src.index('input_box.type_keys'), "Ctrl+V 가 먼저 나오면 안 된다"
+        assert "release_modifiers()" in _src, "Ctrl+V 폴백 뒤에 놓는 줄이 있어야 한다"
+        import ctypes as _ct
+        _down = [n for k, n in ((0x11, "Ctrl"), (0x10, "Shift"), (0x12, "Alt"), (0x5B, "Win"))
+                 if _ct.windll.user32.GetAsyncKeyState(k) & 0x8000]
+        assert not _down, "지금 눌린 수식키: %s" % _down
+        print("SELFTEST OK: 붙여넣기는 WM_PASTE 먼저 · 지금 눌린 수식키 0개")
 
         # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
         #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
