@@ -310,8 +310,14 @@ def _is_test_session(session_id) -> bool:
 
 
 def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
-         session_id: str = None, outcome: str = None, body_keys: list = None, allowed_price: str = None):
+         session_id: str = None, outcome: str = None, body_keys: list = None, allowed_price: str = None,
+         answer: str = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
+    if answer:
+        # 손님에게 실제로 나간 답(배2533② · GM 지시 2026-09-11 「질문하는 것들 다 저장하고 가공해줘」).
+        # 질문만 있고 답이 없으면 「그 답이 맞았나」를 나중에 못 본다. 질문과 같은 마스킹을 건다 —
+        # 답이 손님 전화번호를 되읊을 수 있다. 핸드오프 안내문(fallback)은 매번 같은 글이라 안 남긴다.
+        row["a"] = _mask_pii(answer)[:2000]
     if allowed_price:
         # 답에 금액이 실려 나갔다 — 어느 허락 항목 덕인지 남긴다(GM 승인 2026-09-10 no_price.exception).
         # 대표가 허락을 거두면 이 칸으로 어떤 답이 나갔는지 되짚는다.
@@ -383,7 +389,7 @@ async def chat(tenant: str, request: Request):
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
     text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
     if status == "ok":
-        _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price)
+        _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
@@ -393,17 +399,78 @@ async def chat(tenant: str, request: Request):
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
-            _log(tenant, q, True, "today_hours", type_id, missing, session_id)
+            _log(tenant, q, True, "today_hours", type_id, missing, session_id, answer=today_line)
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
-                _log(tenant, q, True, item.get("id"), type_id, missing, session_id)
+                _log(tenant, q, True, item.get("id"), type_id, missing, session_id, answer=item.get("a", ""))
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
                 _log(tenant, q, False, None, type_id, missing, session_id)
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
+
+
+def _log_generations() -> list:
+    """현재 로그 + 회전본(.타임스탬프) 전부, 오래된 것부터. 회전본을 안 읽으면 과거가 통째로 조회 불가가
+    된다(시보 지적 2026-09-11 ③ — 지금은 양이 작아 안 아프지만 손님이 오면 바로 아프다)."""
+    d = os.path.dirname(LOG_PATH) or "."
+    base = os.path.basename(LOG_PATH)
+    try:
+        names = [n for n in os.listdir(d) if n == base or n.startswith(base + ".")]
+    except OSError:
+        return []
+    # 회전본 이름 = <base>.20260911193000 → 이름순이 곧 시간순. 현재 파일이 가장 최신이라 맨 뒤.
+    rotated = sorted(n for n in names if n != base)
+    return [os.path.join(d, n) for n in rotated] + ([LOG_PATH] if base in names else [])
+
+
+@router.get("/{tenant}/log")
+def chat_log(tenant: str, days: int = 30, limit: int = 500, offset: int = 0, include_test: bool = True):
+    """상담 문답 전량 조회 — 답한 것 포함(배2533② · GM 지시 2026-09-11 「다 저장하고 가공해줘」).
+
+    /unanswered 는 미답만·꼬리 300KB 라 손님이 실제로 무엇을 물었는지의 대부분이 안 나왔다. 이 통로는
+    회전본까지 읽고 답 본문(a)도 같이 준다. 최신순으로 offset·limit 로 넘긴다.
+    테스트 세션은 지우지 않고 is_test 로 표시만 한다(GM 「테스트 데이터=자산」) — include_test=0 이면 뺀다.
+    """
+    if tenant not in TENANTS:
+        raise HTTPException(404, "모르는 센터: %s" % tenant)
+    cutoff = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)).isoformat()
+    rows = []
+    for path in _log_generations():
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        r = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if r.get("tenant") != tenant or r.get("outcome") == "invalid_request":
+                        continue
+                    if str(r.get("ts") or "") < cutoff:
+                        continue
+                    is_test = _is_test_session(r.get("session_id"))
+                    if is_test and not include_test:
+                        continue
+                    rows.append({"ts": r.get("ts"), "q": r.get("q"), "a": r.get("a"),
+                                 "answered": bool(r.get("answered")), "faq_id": r.get("faq_id"),
+                                 "type_id": r.get("type_id"), "needs_facts": r.get("needs_facts"),
+                                 "session_id": r.get("session_id"), "is_test": is_test})
+        except OSError:
+            continue
+    rows.sort(key=lambda x: str(x.get("ts") or ""), reverse=True)
+    total = len(rows)
+    limit = max(1, min(int(limit), 2000))
+    offset = max(0, int(offset))
+    page = rows[offset:offset + limit]
+    return {"ok": True, "tenant": tenant, "days": days, "total": total,
+            "offset": offset, "limit": limit,
+            "next_offset": (offset + limit) if offset + limit < total else None,
+            "rows": page}
 
 
 @router.get("/{tenant}/unanswered")
