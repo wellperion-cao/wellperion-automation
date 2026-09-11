@@ -558,8 +558,23 @@ async def run_setup() -> int:
         print(f"[WARN] 기존 세션 비우기 실패(무시): {e}")
     page = await context.new_page()
     await page.goto(NAVER_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
+
+    # 아이디·비밀번호가 환경변수로 오면 먼저 넣어 본다(2026-09-11). 파트너 계정 세션이 만료될 때마다
+    # 사람을 부르면 그날 글이 통째로 밀린다 — 자동 입력이 막히면(로봇 확인·기기 인증) 창은 그대로 열려
+    # 있으니 사람이 이어받으면 된다. 값은 저장소에 두지 않는다 — 부를 때만 환경변수로 넘긴다.
+    nid, npw = os.environ.get("NAVER_ID"), os.environ.get("NAVER_PW")
+    if nid and npw:
+        try:
+            await page.fill("#id", nid)
+            await page.fill("#pw", npw)
+            await page.click("button[type=submit]")
+            await page.wait_for_timeout(4000)
+            print("[INFO] 아이디·비밀번호 자동 입력 — 확인 절차가 뜨면 사람이 이어받으면 된다.")
+        except Exception as e:
+            print(f"[WARN] 자동 입력 실패({type(e).__name__}) — 손으로 로그인하세요: {e}")
+
     print("[INFO] 브라우저에서 네이버 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")
-    print("[INFO] (Enter 불필요. 최대 5분 대기, 로그인 끝나면 자동 마무리)")
+    print("[INFO] (Enter 불필요. 최대 15분 대기, 로그인 끝나면 자동 마무리)")
 
     def _has_naver_session(cookies):
         return any(
