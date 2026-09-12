@@ -2283,6 +2283,10 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     for it in items:
         by_who.setdefault(it["who"], []).append(it)
 
+    # ★2026-09-13 시토(배2579 · 웰리 판정) — 머리줄 건수는 실제 열린 건수다. 종전엔 사람당
+    #   상한을 적용한 뒤 세어(shown_total) 「9건」처럼 실제보다 적게 나갔다. 실무진이 그 숫자로
+    #   자기 몫을 셀 수 없다. 접힌 몫은 아래 「외 N건」 줄이 따로 말한다.
+    total_open = len(items)
     shown_total = sum(min(len(g), ASKS_PER_PERSON_CAP) for g in by_who.values())
     blocks = []
     for who, group in by_who.items():
@@ -2308,16 +2312,23 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
         #   "외 N건 — 링크" 한 줄이 이미 센다). 실장·소장 2명이면 각 3건.
         budget = ASKS_SECTION_CAP - 1
         per = max(1, (budget - len(by_who)) // len(by_who))
+        # ★2026-09-13 시토(배2578 뒷정리 · 웰리 실측) — 사람당 몫(per)이 배 전달문보다 적으면
+        #   전달문이 잘린다(실장: 전달문 4건 · per 3 → 배1011 이 접혔다). 접힘 링크 화면에는
+        #   전달문이 없으므로 잘린 전달문은 볼 방법이 사라진다. 전달문은 전부 싣고, 남는
+        #   자리에만 원장 #번호를 채운다. 상한을 올리지 않는다.
         body, shown_so_far = [], 0
         for who, group in by_who.items():
+            relay_g = [it for it in group if it["_relay"]]
+            nudge_g = [it for it in group if not it["_relay"]]
+            take = relay_g + nudge_g[:max(0, per - len(relay_g))]
             body.append(f"▪ {who}")
-            body += [f"   {it['ask']}" for it in group[:per]]
-            shown_so_far += min(len(group), per)
+            body += [f"   {it['ask']}" for it in take]
+            shown_so_far += len(take)
         folded = True
 
-    lines = [f"🧾 확인 부탁드릴 것 {shown_total}건"] + body
+    lines = [f"🧾 확인 부탁드릴 것 {total_open}건"] + body
     if folded:
-        lines.append(f"외 {shown_total - shown_so_far}건 — {ASKS_SECTION_LINK}")
+        lines.append(f"외 {total_open - shown_so_far}건 — {ASKS_SECTION_LINK}")
     lines.append("👉 번호(#숫자) 있는 건은 회신에 그 번호 + 했다/진행중/언제로, 없는 건은 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
@@ -3525,6 +3536,14 @@ def _send_ops_room(args) -> int:
             # ★중간관리자 발송은 여기(성공 분기 안)에 있다가 main() 끝의 send_mgr_brief()
             # 호출로 나갔다(2026-08-15 — ★운영부 실패·기발송이 mgr 재시도를 삼키던 것 수리).
         print(f"DONE: 다이제스트 발송 완료 — {TARGET_ROOM}")
+        return 0
+    # ★2026-09-13 시토 — 「BLOCKED: 전량 중복/보류 스킵」은 실패가 아니라 보낼 것이 없는 것이다.
+    #   ★운영부는 이경연 실장 한 사람을 거치게 돼 있어(약속 L24) 이 경로가 매일 via_manager 로
+    #   비어서 돌아온다. 그런데 이것을 rc=1 로 올려 예약작업(Wellperion-Ops-Morning-Digest-0730)이
+    #   08-30 이후 거의 매일 빨간불이었다 — 늘 빨간불이면 진짜 실패가 나도 아무도 못 가른다.
+    #   진짜 발송 오류(rc!=0 이면서 BLOCKED 아님)는 그대로 1 로 남는다.
+    if "BLOCKED:" in out:
+        print(f"SKIP: 보낼 것 없음 — {tail}")
         return 0
     print(f"FAILED: 발송 실패(rc={proc.returncode}) — {tail}")
     return 1

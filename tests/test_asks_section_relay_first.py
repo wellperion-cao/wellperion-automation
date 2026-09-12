@@ -28,6 +28,23 @@ def test_relay_stays_inline_when_section_folds():
         assert it["ask"] in out, f"배 전달문이 접혔다: {it['ask']}"
 
 
+def test_relay_never_truncated_by_per_person_budget():
+    # 사람당 몫(per)보다 배 전달문이 많아도 전달문은 전부 실린다(접힘 링크 화면에 없으므로).
+    nudge = [_mk("이경연 실장", f"#10{i} 원장건 {i}", "2026-01-01") for i in range(6)]
+    nudge += [_mk("이정헌 소장", f"#20{i} 원장건 {i}", "2026-01-02") for i in range(6)]
+    relay = [_mk("이경연 실장", f"전달문 {i}", "2026-09-05") for i in range(4)]
+    out = d.build_asks_section(relay, nudge)
+    for it in relay:
+        assert it["ask"] in out, f"배 전달문이 잘렸다: {it['ask']}"
+
+
+def test_header_counts_real_open_items():
+    relay = [_mk("이경연 실장", "전달문 A", "2026-09-05")]
+    nudge = [_mk("이경연 실장", f"#10{i} 원장건 {i}", "2026-01-01") for i in range(10)]
+    out = d.build_asks_section(relay, nudge)
+    assert out.splitlines()[0] == "🧾 확인 부탁드릴 것 11건", out.splitlines()[0]
+
+
 def test_no_fold_keeps_everything():
     relay = [_mk("이경연 실장", "전달문 A", "2026-09-05")]
     nudge = [_mk("이경연 실장", "#101 원장건", "2026-01-01")]
@@ -37,5 +54,7 @@ def test_no_fold_keeps_everything():
 
 if __name__ == "__main__":
     test_relay_stays_inline_when_section_folds()
+    test_relay_never_truncated_by_per_person_budget()
+    test_header_counts_real_open_items()
     test_no_fold_keeps_everything()
     print("ok")
