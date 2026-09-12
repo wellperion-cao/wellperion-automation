@@ -61,7 +61,7 @@
   @media screen and (min-width:1200px){
     /* 업무&결재 | 문의&등록 | 종합접수처 를 3열로. 인라인 스타일을 이기려면 !important 가 필요하다
        (아래 모바일 규칙이 이미 같은 방식을 쓴다). */
-    .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,1fr)!important;}
+    .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
     .main:has(#home.active) .ops-detail-grid>div:first-child{grid-column:auto!important;}
     .main:has(#home.active) .wa-block-grid{grid-template-columns:1fr!important;gap:10px!important;}
     /* 슬로건(좌)·ERP 설명(우) — 위아래 끝을 맞춘다(GM 지시 2026-08-27). 종전에는 각자
@@ -367,8 +367,10 @@
     .kpi-grid-ceo{grid-template-columns:1fr;}
   }
   /* ── /KPI 대시보드 v1 ──────────────────────────────────────── */
-  @media(max-width:600px){.ops-detail-grid{grid-template-columns:1fr !important;}}
+  @media(max-width:965px){.ops-detail-grid{grid-template-columns:minmax(0,1fr) !important;}}
   @media(max-width:600px){.wa-block-grid{grid-template-columns:1fr !important;gap:12px;}}
+  .ops-detail-grid>*{min-width:0;}
+  .wa-block-grid>*{min-width:0;}
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
 <link rel="stylesheet" href="assets/wp-ui.css">
@@ -533,7 +535,7 @@
 
     <div style="font-size:var(--fs-1);color:var(--dim);line-height:1.5;margin:-8px 0 14px;">※ 지출 = 인건비+구매성 기준(임대료·관리비 등 미포함 시 실제 순이익률은 더 낮을 수 있음) · 예산=매출 월목표×70%(순이익 30% 목표 기준)</div>
 
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;" class="ops-detail-grid">
 
       <!-- 업무&결재 현황 (통합) — 콜아웃 프레임 제거 후 운영현황상세/일일점검과 동일한 섹션헤더+풀폭 배치. SSOT pill 색=월간운영계획보고 링크와 통일(초록 그라디언트). 2026-07-15 시토(CTO). 우측 SSOT 진입점 = 업무 SSOT+결재 SSOT 2개 pill → 맨 우측 '업무&결재 SSOT' 1개(S3 통합 페이지 진입)로 병합. 2026-07-18 시토(CTO) GM 지시. 데이터바인딩 id·onclick 로직 무변경(칩 통합·라벨만 변경). -->
       <div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;">
@@ -549,7 +551,7 @@
           <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
           <div style="display:grid;gap:8px;align-content:start;">
             <div style="font-size:var(--fs-1);font-weight:800;color:var(--text);">📋 업무</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayActive">—</span> · 전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayDone">—</span> · 전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
@@ -559,7 +561,7 @@
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
           <div style="display:grid;gap:8px;align-content:start;">
             <div style="font-size:var(--fs-1);font-weight:800;color:#FFFFFF;">✍️ 결재</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
               <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">총</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
               <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">대기</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
               <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayDone">—</span> · 전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
@@ -642,7 +644,7 @@
              현황 보드(O1)는 왼쪽 메뉴로 가고, 회원 접수 폼은 회원이 쓰는 주소라 이 화면에 둘 자리가 아니다. -->
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:var(--fs-4);flex-shrink:0;">🙋</span>
-          <div><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">6유형 접수 관리 · AI COO(시우)</div></div>
+          <div style="min-width:0;"><div style="font-weight:800;font-size:var(--fs-4);letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:var(--fs-1);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">6유형 접수 관리 · AI COO(시우)</div></div>
           <a href="coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-2);font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
         </div>
         <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
@@ -680,7 +682,7 @@
              두 카드의 타일이 같이 늘어나 세로가 어긋나지 않는다. -->
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);flex:1;display:flex;flex-direction:column;">
           <div style="font-size:var(--fs-1);color:var(--dim);font-weight:700;margin-bottom:4px;">유형별 · 위=이번달 접수/완료 · 아래=누적 접수/완료</div>
-          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
+          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;">
             <div style="grid-column:1/-1;text-align:center;font-size:var(--fs-1);color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
