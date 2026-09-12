@@ -41,11 +41,15 @@ $S "cd $R/common && ERP_DB_ENV=$R/db.env python3 -c 'import db; c=db.connect(); 
 echo "[3/6] 환경파일 — 밖으로 나가는 주소는 안 준다"
 # 라이브 api.env 에서 외부 목적지(…_URL · …_CHAT_ID)만 걷어내고 나머지 설정은 그대로 물려준다.
 # 걷어내는 이유: 하나라도 남으면 시험 요청이 진짜 구글 시트·진짜 카톡방에 닿는다. 그 순간 빈 비행기가 아니다.
+# ★ERP_API_ENV 도 같이 박는다(2026-09-12 실측) — api_misc.py 가 뜰 때 부르는 load_env() 는 이 변수가 없으면
+#   기본값 /srv/erp/api.env(라이브)를 읽어 os.environ 에 라이브 GAS 주소를 통째로 넣는다. 그래서 이 줄이 없던
+#   동안 beta 의 dual 액션이 진짜 업무 SSOT 시트에 행을 만들었다(시험 행 1건 즉시 삭제). 빈 비행기가 아니었다.
 $S "umask 077; { \
       echo 'ERP_ENV=$ENV'; \
       echo 'ERP_PORT=$PORT'; \
       echo 'ERP_DB_ENV=$R/db.env'; \
       echo 'ERP_ORIGIN_SWITCH=$R/status/origin_switch.json'; \
+      echo 'ERP_API_ENV=$R/api.env'; \
       grep -v -E '^[A-Z0-9_]*(_URL|_CHAT_ID)=' /srv/erp/api.env; \
     } > $R/api.env"
 $S "if [ ! -f $R/status/origin_switch.json ]; then printf '%s\n' '{' '  \"_\": \"빈 비행기 — 서버가 유일 원본. 이 환경엔 구글 시트로 나가는 주소가 없어서 되밀기도 없다.\",' '  \"default\": \"server\"' '}' > $R/status/origin_switch.json; echo '원본 스위치 새로 만듦'; else echo '원본 스위치 이미 있음 — 그대로 둔다'; fi"
