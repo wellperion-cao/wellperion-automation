@@ -1324,14 +1324,19 @@
   //    운영보고=최소 월간 기준(GM 지시 2026-07-06 — 舊 get_today_summary 오늘치에서 전환). 조회 실패=null(가짜값 없음) ──
   function readCheckMonthly(monKey){
     // 점검 GAS(monthly_report)는 콜드 응답이 ~12초 → 25초 타임아웃 방어(무한 'loading' 방지, 초과=null 정직).
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/check/{dept}/monthly 먼저(sync_check.py 미러 · 응답 모양 동일), 실패(404 등)하면 종전 GAS.
     var cb = Date.now();
-    var sup = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + cb, {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    var sup = apiFirst('/api/check/support/monthly?month=' + encodeURIComponent(monKey), function(){
+      return fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + cb, {redirect:'follow', cache:'no-store'})
+        .then(function(r){ return r.json(); });
+    }, '점검월간-지원부')
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
     // 시설부 월간(dept=facility·배406) — home과 동일 CHECK_GAS. 시설점검은 입력률+이상건수 지표(완료율 아님·metric map). 데이터 없는 달=null(정직).
-    var fac = fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=facility&_cb=' + cb, {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    var fac = apiFirst('/api/check/facility/monthly?month=' + encodeURIComponent(monKey), function(){
+      return fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=facility&_cb=' + cb, {redirect:'follow', cache:'no-store'})
+        .then(function(r){ return r.json(); });
+    }, '점검월간-시설부')
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
     var live = Promise.all([sup, fac]).then(function(arr){
@@ -1372,9 +1377,18 @@
   function _todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
   function readCheckDaily(){
     var today = _todayStr();
-    return fetch(CHECK_GAS + '?action=today_live&dept=support&date=' + encodeURIComponent(today) + '&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/check/support/today 먼저(today_live 가 res.today_live 에 중첩됨),
+    //   실패·미러없음(404)이면 종전 GAS(today_live 는 최상위 total/done). 두 모양을 다 받아본다.
+    var gas = function(){
+      return fetch(CHECK_GAS + '?action=today_live&dept=support&date=' + encodeURIComponent(today) + '&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
+        .then(function(r){ return r.json(); });
+    };
+    return apiFirst('/api/check/support/today?date=' + encodeURIComponent(today), gas, '오늘점검')
       .then(function(d){
+        var tl = d && d.today_live;
+        if(tl && typeof tl.total === 'number'){
+          return {total:tl.total, done:(typeof tl.done === 'number' ? tl.done : 0)};
+        }
         if(d && d.ok !== false && typeof d.total === 'number'){
           return {total:d.total, done:(typeof d.done === 'number' ? d.done : 0)};
         }
@@ -1393,8 +1407,11 @@
   // ── 종합접수처 VOC 접수 현황 — coo/reception/종합접수처_현황.html과 동일 GAS·액션(reg_board). 응답 필드(name/contact)는 서버가 이미 마스킹하지만
   //    이 페이지는 그마저도 사용하지 않는다(카테고리·부서·상태 집계만 — content 등 자유서술 텍스트에 회원 실명이 섞일 수 있어 절대 미노출). 실패=null ──
   function readVocBoard(){
-    return fetch(REG_API + '?action=reg_board&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/reception/board 먼저(reg_board 와 같은 모양 {ok,count,data}), 실패하면 종전 GAS.
+    return apiFirst('/api/reception/board', function(){
+      return fetch(REG_API + '?action=reg_board&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
+        .then(function(r){ return r.json(); });
+    }, '종합접수처')
       .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
       .catch(function(){ return null; });
   }
@@ -1462,8 +1479,12 @@
   var HOME_KPI_SNAPSHOT_URL = '/repo/status/home_kpi_snapshot.json';
   var OWNER_DIRECTIVE_SNAPSHOT_URL = '/repo/status/owner_directive_snapshot.json';
   function readHomeSales(){
-    return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
-      .then(function(r){ return r.json(); })
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/misc/todo/home_kpi 먼저(GAS 응답 모양 그대로), 실패하면 종전 GAS.
+    var gas = function(){
+      return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
+        .then(function(r){ return r.json(); });
+    };
+    return apiFirst('/api/misc/todo/home_kpi', gas, '홈매출')
       .then(function(res){
         if(res && res.ok && res.sales && typeof res.sales.month === 'number') return res.sales.month;
         var curMonth = res && res.sales && res.sales.curMonth;
@@ -1586,8 +1607,12 @@
   }
   // ── 매출(센터전체) 정본 = 「26년 매출 분석」 GAS(action=sales_monthly). CFO 매출현황이 표시하는 '매출'과 동일 소스(회원권+강습+기타·주차). 실패=null → 부서합 폴백 ──
   function readSalesTruth(){
-    return fetch(GAS_URL + '?action=sales_monthly&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/misc/todo/sales_monthly 먼저(GAS 응답 모양 그대로), 실패하면 종전 GAS.
+    var gas = function(){
+      return fetch(GAS_URL + '?action=sales_monthly&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
+        .then(function(r){ return r.json(); });
+    };
+    return apiFirst('/api/misc/todo/sales_monthly', gas, '센터매출정본')
       .then(function(res){
         if(res && res.ok && res.months && res.months.length){
           var arr = new Array(12).fill(null);
