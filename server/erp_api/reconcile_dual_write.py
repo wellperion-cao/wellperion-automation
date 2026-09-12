@@ -250,8 +250,10 @@ def _member_no_by_phone(conn, db, phone):
     digits = re.sub(r"\D", "", str(phone or ""))
     if len(digits) < 10:
         return None
+    # scope 로 한정하지 않는다 — 회원이 ended 등으로 archive 로 전환된 뒤에도 전화로는 찾혀야 한다
+    # (2026-09-12 진단 M00239: valid 한정이 전환된 회원을 못 찾아 대조 불가로 셌다).
     rows = conn.execute(
-        "SELECT member_no FROM members WHERE tenant_id=%s AND scope='valid'"
+        "SELECT member_no FROM members WHERE tenant_id=%s"
         " AND regexp_replace(COALESCE(phone,''), '[^0-9]', '', 'g') = %s"
         " GROUP BY member_no LIMIT 2", (db.TENANT, digits)).fetchall()
     return rows[0]["member_no"] if len(rows) == 1 else None
@@ -263,11 +265,15 @@ def _reconcile_member_col_writes(conn, db, since, action, value_key, gas_field_f
     그대로). 아직 그 시각 이후 배치가 한 번도 안 돈 회원번호는 mismatch 로 센다(시트 도달 증명 전이라 무결이
     아니다). gas_field_for(payload)가 None 이면(화이트리스트 밖 등) 대조 불가로 mismatch.
     반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양이라 streak_ok_days
-    가 그대로 먹는다."""
+    가 그대로 먹는다.
+
+    ★같은 (회원, 칸) 을 여러 번 쓴 경우 마지막 쓰기만 대조한다(_reconcile_member_multifield_writes 와 같은
+    dedup · 2026-09-12 진단). 미러에는 마지막 값만 남으므로 앞선 쓰기는 시트에 제대로 닿았어도 영원히
+    불일치로 잡힌다(실측 M01149: 09-09 17:43:38 행이 31초 뒤 정정 행에 덮여 매번 불일치로 세어졌다)."""
     rows = conn.execute(
         "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action=%s"
         " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, action, since)).fetchall()
-    days, unmatched = {}, []
+    prepared = []
     for r in rows:
         p = r["payload"] or {}
         no, value = p.get("_member_no"), p.get(value_key)
@@ -278,15 +284,27 @@ def _reconcile_member_col_writes(conn, db, since, action, value_key, gas_field_f
             # 잴 수 있는 열쇠가 있는데 못 잰 것이라, 미러에서 전화로 회원번호를 찾아 같은 대조를 이어간다.
             no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
         gas_field = gas_field_for(p)
-        day = str(r["at"])[:10]
+        prepared.append((r["at"], no, gas_field, value, p))
+
+    # (회원, 칸)마다 마지막으로 쓴 행이 몇 번째인지 — rows 는 at 오름차순이라 뒤에 온 것이 마지막이다.
+    last_at = {}
+    for i, (at, no, gas_field, value, p) in enumerate(prepared):
+        if no and gas_field:
+            last_at[(no, gas_field)] = i
+
+    days, unmatched = {}, []
+    for i, (at, no, gas_field, value, p) in enumerate(prepared):
+        if no and gas_field and last_at.get((no, gas_field)) != i:
+            continue   # 이 칸이 나중 쓰기에 덮였다 — 못 재는 행(틀린 것이 아니다)
+        day = str(at)[:10]
         d = days.setdefault(day, {"server": 0, "sheet": 0, "mismatch": 0, "ok": True})
         d["server"] += 1
         hit = False
         if gas_field and no:
             row = conn.execute(
                 "SELECT data::jsonb->>%s AS v FROM members WHERE tenant_id=%s AND member_no=%s"
-                " AND scope='valid' AND synced_at > %s ORDER BY synced_at LIMIT 1",
-                (gas_field, db.TENANT, no, r["at"])).fetchone()
+                " AND synced_at > %s ORDER BY synced_at LIMIT 1",
+                (gas_field, db.TENANT, no, at)).fetchone()
             hit = bool(row) and (row["v"] or "") == (value or "")
         if hit:
             d["sheet"] += 1
@@ -294,7 +312,7 @@ def _reconcile_member_col_writes(conn, db, since, action, value_key, gas_field_f
             d["mismatch"] += 1
             d["ok"] = False
             if len(unmatched) < 20:
-                unmatched.append({"date": day, "at": r["at"], "member_no": no, "field": p.get("field") or gas_field, "form": action})
+                unmatched.append({"date": day, "at": at, "member_no": no, "field": p.get("field") or gas_field, "form": action})
     return days, unmatched
 
 
@@ -335,6 +353,11 @@ def _reconcile_member_multifield_writes(conn, db, rows, form):
       날짜 버킷을 아예 건드리지 않는다(_saved 없는 옛 형식 행과 같은 처리).
 
     반환 = ({날짜: {server,sheet,mismatch,ok}}, 표본 20건) — reconcile() 출력과 같은 모양.
+
+    ★payload._saved 는 화면이 '저장을 시도한' 칸 전부다 — 그중 GAS 가 실제로 시트에 쓴 칸은
+    gas_response.cols(GAS 응답 · Survey.js 의 `cols: _auWrote`)뿐이고 나머지는 파생·지연 반영이라
+    다음 배치에 값이 달라 보여도 불일치가 아니다(2026-09-12 진단 M00240: 다음날 배치에서 4칸 다 일치).
+    gas_response.cols 가 있으면 그 칸만 비교하고, 없는 옛 행은 종전대로 _saved 전체를 비교한다.
     """
     prepared = []
     for r in rows:
@@ -343,6 +366,16 @@ def _reconcile_member_multifield_writes(conn, db, rows, form):
         if not no:
             # 회원번호를 안 실은 쓰기 — 화면이 전화번호를 열쇠로 보낸 경우. 미러에서 찾아 이어간다.
             no = _member_no_by_phone(conn, db, p.get("keyPhone") or p.get("phone"))
+        gas_resp = r.get("gas_response") if hasattr(r, "get") else None
+        if isinstance(gas_resp, str):
+            try:
+                gas_resp = json.loads(gas_resp)
+            except Exception:
+                gas_resp = None
+        cols = gas_resp.get("cols") if isinstance(gas_resp, dict) else None
+        if cols is not None:
+            cols_norm = {_norm_mirror_key(c) for c in cols}
+            saved = {f: v for f, v in saved.items() if _norm_mirror_key(f) in cols_norm}
         if not saved:
             # `_saved` 는 배1054 부터 실린다. 그 전 형식으로 적힌 행은 **무엇을 바꿨는지 자체를 모른다** —
             # 못 재는 것이지 틀린 것이 아니다. 실패로 세면 형식이 바뀐 날 이전이 통째로 실패가 되어 무결
@@ -368,7 +401,7 @@ def _reconcile_member_multifield_writes(conn, db, rows, form):
         hit = False
         if no:
             row = conn.execute(
-                "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'"
+                "SELECT data FROM members WHERE tenant_id=%s AND member_no=%s"
                 " AND synced_at > %s ORDER BY synced_at LIMIT 1",
                 (db.TENANT, no, at)).fetchone()
             if row:
@@ -392,7 +425,7 @@ def _reconcile_member_multifield_writes(conn, db, rows, form):
 def reconcile_member_active_writes(conn, db, since):
     """member_active_update(3단계 · 배1054) 서버 쓰기 전수 대조 — 다중칸 공통 뼈대를 쓴다."""
     rows = conn.execute(
-        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
+        "SELECT at, payload, gas_response FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
         " AND gas_status='ok' AND at >= %s ORDER BY at", (db.TENANT, since)).fetchall()
     return _reconcile_member_multifield_writes(conn, db, rows, "member_active_update")
 
@@ -401,7 +434,7 @@ def reconcile_member_hold_approve_writes(conn, db, since):
     """member_hold_approve(4단계 · 배1054) — 같은 다중칸 대조. reject 행(회원 원장 무변경 · _member_no
     자체가 없다)은 SQL 에서 뺀다 — approve 만 members 미러와 대조할 재료가 있다."""
     rows = conn.execute(
-        "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_hold_approve'"
+        "SELECT at, payload, gas_response FROM write_log WHERE tenant_id=%s AND action='member_hold_approve'"
         " AND gas_status='ok' AND payload->>'decision'='approve' AND at >= %s ORDER BY at",
         (db.TENANT, since)).fetchall()
     return _reconcile_member_multifield_writes(conn, db, rows, "member_hold_approve")
@@ -587,11 +620,13 @@ def selftest():
 
     # member_owner_save 서버 대조(배1050) — write_log 값 ↔ members.data JSON 같은 칸, 실 DB 없이 가짜 conn 으로.
     class _MC:
-        """execute() 호출 순서 고정: write_log 조회 1회 → 행마다 members.data 조회 1회. 실제 SQL 은 안 본다."""
+        """execute() 호출 순서 고정: write_log 조회 1회 → 행마다 members.data 조회 1회. sqls 에 SQL 문자열을 쌓아
+        scope 한정을 뺐는지(2026-09-12) 대조기 자체가 검증할 수 있게 한다."""
         def __init__(self, write_rows, member_rows):
-            self.write_rows, self.member_rows, self.i = write_rows, member_rows, 0
+            self.write_rows, self.member_rows, self.i, self.sqls = write_rows, member_rows, 0, []
 
         def execute(self, sql, args=None):
+            self.sqls.append(sql)
             if "FROM write_log" in sql:
                 self._cur = list(self.write_rows)
                 return self
@@ -618,13 +653,26 @@ def selftest():
         {"at": "2026-09-01 12:00:00", "payload": {"field": "P.L 담당자", "value": "이영희", "_member_no": "M00003"}},
     ]
     # M00001: 다음 배치 값이 같음(적중) · M00002: 다음 배치 값이 다름(불일치) · M00003: 아직 배치가 안 돎(불일치)
-    days5, bad5 = reconcile_member_owner_writes(_MC(wl, ["홍길동", "김영수", None]), _DB, "2026-09-01")
+    mc5 = _MC(wl, ["홍길동", "김영수", None])
+    days5, bad5 = reconcile_member_owner_writes(mc5, _DB, "2026-09-01")
     assert days5["2026-09-01"] == {"server": 3, "sheet": 1, "mismatch": 2, "ok": False}, days5
     assert {b["member_no"] for b in bad5} == {"M00002", "M00003"}, bad5
+    # scope='valid' 한정을 뺐다(2026-09-12 진단 M00239) — archive 로 전환된 회원도 찾혀야 한다
+    assert not any("scope='valid'" in s for s in mc5.sqls), mc5.sqls
     # member_no 를 못 실은 옛 요청(v1 전) = 대조 못 함 → mismatch
     days6, _ = reconcile_member_owner_writes(
         _MC([{"at": "2026-09-02 09:00:00", "payload": {"field": "수영 담당자", "value": "박민서"}}], []), _DB, "2026-09-01")
     assert days6["2026-09-02"]["mismatch"] == 1, days6
+
+    # ★같은 (회원, 칸)을 두 번 쓴 경우 마지막 쓰기만 대조한다(2026-09-12 진단 M01149) — 앞선 쓰기는
+    # 덮여 못 재는 것이지 틀린 것이 아니므로 서버 카운트에도 안 잡힌다.
+    wl7 = [
+        {"at": "2026-09-01 09:00:00", "payload": {"field": "PT 담당자", "value": "옛값", "_member_no": "M00060"}},
+        {"at": "2026-09-01 09:00:31", "payload": {"field": "PT 담당자", "value": "새값", "_member_no": "M00060"}},
+    ]
+    days12, bad12 = reconcile_member_owner_writes(_MC(wl7, ["새값"]), _DB, "2026-09-01")
+    assert days12["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days12
+    assert not bad12
 
     # member_hold_transition 서버 대조(배1054 2단계) — write_log 값(status) ↔ members.data JSON '휴회접수상태'.
     wl2 = [
@@ -647,9 +695,10 @@ def selftest():
 
     class _MC2:
         def __init__(self, write_rows, member_rows):
-            self.write_rows, self.member_rows, self.i = write_rows, member_rows, 0
+            self.write_rows, self.member_rows, self.i, self.sqls = write_rows, member_rows, 0, []
 
         def execute(self, sql, args=None):
+            self.sqls.append(sql)
             if "FROM write_log" in sql:
                 self._cur = list(self.write_rows)
                 return self
@@ -666,12 +715,22 @@ def selftest():
         {"at": "2026-09-01 11:00:00",
          "payload": {"_member_no": "M00021", "_saved": {"주소": "부산시", "비고": "메모"}}},
     ]
-    days8, bad8 = reconcile_member_active_writes(
-        _MC2(wl3, [json.dumps({"주소": "서울시", "비고": "메모"}, ensure_ascii=False),
-                   json.dumps({"주소": "대구시", "비고": "메모"}, ensure_ascii=False)]),
-        _DB, "2026-09-01")
+    mc8 = _MC2(wl3, [json.dumps({"주소": "서울시", "비고": "메모"}, ensure_ascii=False),
+                     json.dumps({"주소": "대구시", "비고": "메모"}, ensure_ascii=False)])
+    days8, bad8 = reconcile_member_active_writes(mc8, _DB, "2026-09-01")
     assert days8["2026-09-01"] == {"server": 2, "sheet": 1, "mismatch": 1, "ok": False}, days8
     assert {b["member_no"] for b in bad8} == {"M00021"}, bad8
+    assert not any("scope='valid'" in s for s in mc8.sqls), mc8.sqls   # 2026-09-12 진단 M00239
+
+    # ★gas_response.cols 가 있으면 GAS 가 실제로 쓴 칸만 대조한다(2026-09-12 진단 M00240) — _saved 에
+    # 있어도 cols 밖 칸(파생·지연 반영)이 다음 배치와 달라도 불일치로 안 잡는다.
+    wl8 = [{"at": "2026-09-01 14:00:00", "payload": {"_member_no": "M00070",
+                                                     "_saved": {"주소": "서울시", "비고": "메모"}},
+            "gas_response": {"ok": True, "cols": ["주소"]}}]
+    days_gr, bad_gr = reconcile_member_active_writes(
+        _MC2(wl8, [json.dumps({"주소": "서울시", "비고": "완전히다른값"}, ensure_ascii=False)]), _DB, "2026-09-01")
+    assert days_gr["2026-09-01"] == {"server": 1, "sheet": 1, "mismatch": 0, "ok": True}, days_gr
+    assert not bad_gr
 
     # 대조 키 정규화(배1054 검토⑤) — 미러 data JSON 헤더에 줄바꿈이 섞여도 같은 칸으로 맞춰 대조한다.
     wl4 = [{"at": "2026-09-01 12:00:00", "payload": {"_member_no": "M00030", "_saved": {"재등록상담 날짜": "2026-09-10"}}}]
