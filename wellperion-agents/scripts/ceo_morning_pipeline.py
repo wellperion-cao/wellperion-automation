@@ -1946,6 +1946,9 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
     _now = datetime.now()
     if is_closed(_now):
         notice = build_holiday_notice(_now, _now)
+        # 2026-09-13 웰리 — 문구는 매출보고(대상일=어제) 용이라 "이었습니다"인데, 08:00 에 오늘 것을
+        # 보내면 어제 보고가 빠진 것처럼 읽힌다(GM "오늘 매출보고는 해주는거지?"). 시제만 오늘로 맞춘다.
+        notice = "오늘 " + notice.replace("휴관일이었습니다.", "휴관일입니다.", 1)
         print(f"[HOLIDAY] 오늘({_now.strftime('%Y-%m-%d')})은 휴관일 — "
               f"08:00 항로 보고를 휴관 안내문으로 대체: {notice!r}")
         # ★2026-08-13(배518 근본수리) — 이 분기는 today_marker() 파일을 안 써서
