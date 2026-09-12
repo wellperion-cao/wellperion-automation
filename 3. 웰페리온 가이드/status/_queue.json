@@ -504,12 +504,12 @@
     "task_id": "CTO-2026-09-05-인사-데이터-AWS-이관-서버-준비-회신-접속-대행",
     "clevel": "cto",
     "title": "[시토] 인사 데이터 AWS 이관 — 서버 준비 회신(접속 대행·PostgreSQL hr 스키마·경로 /chro·API FastAPI·사양 유지) + 배포 대행 (CHRO 요청 2026-09-05)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-05",
     "from": "cto",
     "note": "[시토 2026-09-05 · 기다리는 쪽: CHRO(나우열M) 인사 데이터 AWS 이관 사전 요청 4건 회신 대기] CHRO 사전 요청 4건+사양 판단 회신 = status/briefs/CTO-2026-09-05-인사데이터-AWS이관-서버준비-회신.md. 사실 정정: ERP 는 Python FastAPI+PostgreSQL 17(php/MariaDB 는 서버 WP 사본용). 한 것: PostgreSQL hr 스키마 생성(실측). 회신: ①접속=CTO 배치 대행(SSH 키 시토 전용) ②DB=같은 인스턴스 hr 스키마·백업 새벽3시 S3 자동 포함 ③경로=erp.wellperion.com/chro/hub/… 그대로·API /api/hr/*·인증=기존 관문+modules.json 시로 그룹+배1026 나우열M 개인 예외 ④스택=FastAPI+PostgreSQL 확정 ⑤사양=t3.small 유지(가용 1.26GB·부하 0.4·기준선 박음). 다음 = CHRO 가 schema.sql hr 표 + api_hr.py 초안 커밋하면 시토가 배포·실측. 시로 도메인 실무(데이터 내용)는 나우열M — 시토는 서버·배포만. | [시토 2026-09-10 06:2x 실측] 막힌 곳 하나만 남았다. ①CHRO 몫(schema.sql hr 표 + api_hr.py)은 09-06 에 들어왔다 ②서버 배포 끝 — hr 스키마 표 21개 실재(전부 0건) ③라이브 /api/hr/health 응답(401=로그인 관문 정상 · 라우트 살아 있음) ④적재기 migrate_hr.py 서버 배치됨 ⑤시토가 /srv/erp/api.env 에 HR_GAS_URL 넣음(인사 GAS /exec · 화면과 같은 주소). ⛔남은 것 = HR_GAS_PASSWORD 하나 — 인사 화면이 사람에게 받는 「웰페리온 관리자 비밀번호」다. 저장소에 없고 있어서도 안 되는 값이라 GM 께 받아 서버 api.env 에만 넣는다. 받으면 그날 --dry-run 전수 대조(적재 없음)→리포트→매니저 확인 뒤 --apply. | [시토 2026-09-10 09:2x · GM 지시 '우열M 전달해서 받아'] 텔레그램 업무관리 방(-5492623600)에 GM 계정으로 요청 발신 완료 — 막힌 것은 인사 화면 「웰페리온 관리자 비밀번호」 1건뿐이고, 받으면 --dry-run 전수 대조(적재 없음)부터 돌려 결과표를 드린 뒤 매니저 확인 받고 --apply 한다고 안내함. 주민번호는 읽지도 옮기지도 않는다는 것도 함께 적음. | [시토 실측·수리 2026-09-10 09:5x · 배1183 레인이 찾음] 인사 API 길이 엉뚱한 곳으로 가고 있었다 — nginx /api/hr/ 가 포트 8002 를 보는데, 그 자리를 쓰던 erp-chro.service 는 09-07 부터 죽어 있었고 09-09 환경 3벌(배1183)에서 베타 환경이 8002 를 차지했다. 그래서 인사 API 요청이 조용히 베타 프로세스(자료칸 erp_beta · 비어 있음)로 들어갔다. ★사람 피해는 아직 0 — 화면 74장 전수 확인 결과 /api/hr 를 부르는 화면이 아직 없다(이관 전이라). 데이터를 실었더라면 그날 전부 0건으로 보였을 것이다. 수리 = chro.nginx.conf 를 라이브(8001)로 되돌림(api_hr.py 는 api_*.py 자동 등록으로 이미 8001 안에 있다) · proxy_pass 끝 슬래시 제거(라우터 접두 /api/hr 보존) · nginx -t 통과·reload·무쿠키 401·서버안 8001 직접 200 실측. 되돌리기 = /srv/erp/chro.conf.bak-20260910. 배1093(나우열M 전용 제한 계정)을 되살릴 때는 8002 가 아닌 빈 포트를 골라 이 파일도 함께 고친다.",
-    "next": "CHRO 가 hr 표·api_hr.py 초안 커밋 → 시토 배포·실측",
+    "next": "데이터 적재 배 신규 등록 — HR_GAS_PASSWORD 수신 후 migrate_hr.py --dry-run 전수 대조 → 리포트 → 매니저 확인 → --apply",
     "depends_on": "",
     "ship_no": 11297,
     "short_no": 1037,
@@ -520,7 +520,10 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-12",
-    "runner_claimed_at": "2026-09-12T06:30:02Z"
+    "runner_claimed_at": "2026-09-12T06:30:02Z",
+    "processed_at": "2026-09-12",
+    "artifact": "server/erp_api/api_hr.py, server/erp_api/migrate_hr.py, server/erp_chro/chro.nginx.conf (커밋 99893e1454)",
+    "saw": "서버 준비·배포 대행 완료. /api/hr/→8001 라우팅 확정. 자체검증(api_hr --selftest, migrate_hr --selftest) 통과. 워킹트리 낡은 사본(03f46d5f7 되돌림 시도)은 safe_commit 차단 — GM 확인 후 처리 필요."
   },
   {
     "task_id": "CTO-2026-09-05-AWS-전면-서버-원천-거울-8표를-원천으로-시포-",
@@ -2091,5 +2094,23 @@
     "processed_at": "2026-09-12",
     "artifact": "https://wellperion-cao.github.io/welperion-automation/cpo/member/membership.html",
     "terminal": true
+  },
+  {
+    "task_id": "NEXT-20260912-153450",
+    "clevel": "cto",
+    "title": "[시토] 데이터 적재 배 신규 등록 — HR_GAS_PASSWORD 수신 후 migrate_hr.py --dry-run 전수 대조 → 리포트 → 매니저 확인 → --apply",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "depends_on": "CTO-2026-09-05-인사-데이터-AWS-이관-서버-준비-회신-접속-대행",
+    "from": "cto",
+    "origin": "bridge",
+    "enqueued_at": "2026-09-12T06:34:50Z",
+    "note": "[브릿지 자동 등록 2026-09-12] 배 '인사 데이터 AWS 이관 — 서버 준비 회신(접속 대행·PostgreSQL hr 스키마·경로 /chro·API FastAPI·사양 유지) + 배포 대행 (CHRO 요청 2026-09-05)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시토.\n▶할 일: 데이터 적재 배 신규 등록 — HR_GAS_PASSWORD 수신 후 migrate_hr.py --dry-run 전수 대조 → 리포트 → 매니저 확인 → --apply\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: 서버 준비·배포 대행 완료. /api/hr/→8001 라우팅 확정. 자체검증(api_hr --selftest, migrate_hr --selftest) 통과. 워킹트리 낡은 사본(03f46d5f7 되돌림 시도)은 safe_commit 차단 — GM 확인 후 처리 필요.",
+    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "ship_no": 12572,
+    "short_no": 2577,
+    "audience": "office",
+    "reversible": true,
+    "updated_at": "2026-09-12"
   }
 ]
