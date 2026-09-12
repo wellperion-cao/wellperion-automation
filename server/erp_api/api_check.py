@@ -106,6 +106,17 @@ def monthly(dept: str, month: Optional[str] = None):
     return dict(data, synced_at=at, _source=SOURCE)
 
 
+@router.get("/{dept}/weekly")
+def weekly(dept: str):
+    """최근 7일 완료율(GAS handleWeekly 응답 그대로) — sync_check.py 가 지원부·주차만 채운다(시설은 GAS 도 안 센다)."""
+    conn = _conn()
+    with closing(conn):
+        data, at = _get(conn, _dept(dept), "weekly", "-")
+    if data is None:
+        raise HTTPException(404, "미러에 없는 주간: %s" % dept)
+    return dict(data, synced_at=at, _source=SOURCE)
+
+
 # ── 자체점검 ──────────────────────────────────────────────────────────────
 
 def selftest():
@@ -116,7 +127,8 @@ def selftest():
             ("support", "ledger", d + "|m", {"date": d, "rows": [1], "checkedLedger": {}}),
             ("support", "today_live", d, {"ok": True, "total": 30, "done": 12}),
             ("parking", "ledger", d + "|m", {"date": d, "rows": []}),
-            ("support", "monthly", d[:7], {"ok": True, "dept": "support", "issues": {"list": []}})]
+            ("support", "monthly", d[:7], {"ok": True, "dept": "support", "issues": {"list": []}}),
+            ("support", "weekly", "-", {"ok": True, "dept": "support", "data": [{"date": d, "total": 10, "done": 8, "pct": 80}]})]
     try:
         with c:
             c.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))
@@ -128,14 +140,15 @@ def selftest():
         assert set(s["ledger"]) == {"m"} and s["today_live"]["done"] == 12, s
         assert today("parking")["ledger"]["m"]["rows"] == []
         assert monthly("support")["dept"] == "support"
-        for fn, args in ((today, ("facility", "1999-01-01")), (monthly, ("facility", d[:7])), (today, ("nope",))):
+        assert weekly("support")["data"][0]["pct"] == 80
+        for fn, args in ((today, ("facility", "1999-01-01")), (monthly, ("facility", d[:7])), (weekly, ("facility",)), (today, ("nope",))):
             try:
                 fn(*args)
                 raise AssertionError("404 이어야: %s" % (args,))
             except HTTPException as e:
                 assert e.status_code == 404
         h = health()
-        assert h["facility_today_sessions"] == 2 and h["rows"] == 5, h
+        assert h["facility_today_sessions"] == 2 and h["rows"] == 6, h
     finally:
         with c:
             c.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))
