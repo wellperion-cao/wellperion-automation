@@ -455,10 +455,12 @@ def collect_automation_health():
             return ""
 
         items = []
+        n_named = 0
         for block in blocks:
             name = _field(block, "작업 이름:", "Task Name:")
             if not name:
                 continue
+            n_named += 1
             # 작업명에 wellperion(대소문자 무관) 포함된 것만
             if "wellperion" not in name.lower():
                 continue
@@ -506,6 +508,7 @@ def collect_automation_health():
 
         # 유령 배제: 삭제됐지만 legacy schtasks 뷰에 남은 손상/고아 등록을 걷어낸다.
         # 라이브 존재하는 작업만 발행(권위 목록=Get-ScheduledTask). 조회 실패 시 필터 미적용(안전).
+        n_matched = len(items)
         live = _live_task_names()
         if live is not None:
             items = [it for it in items
@@ -519,8 +522,17 @@ def collect_automation_health():
         #   거짓 경보가 된다. 못 잰 것과 진짜 0을 갈라 위의 schtasks 조회 실패 문구와
         #   같은 모양으로 떨어뜨린다.
         if total == 0:
+            # ★어느 자리에서 0이 됐는지 함께 남긴다(2026-09-13 시토 · 배1186).
+            #   09-11 에 오류 문구가 "매칭 0건"으로 바뀌었지만 그것만으로는 셋 중 어디인지
+            #   모른다 — ①schtasks 글자를 못 받았나 ②이름 필드를 못 읽었나(글자깨짐)
+            #   ③live 필터가 전부 걷어냈나. 손으로 돌리면 45건이 잡히고 상주 스케줄러
+            #   안에서만 0이라 재현이 안 되므로, 다음 30분 주기가 스스로 자리를 알려 준다.
             return {"summary": "측정 없음 (wellperion 작업 매칭 0건 — 조회 실패로 추정)",
-                    "total": 0, "healthy": 0, "rate": 0, "items": []}
+                    "total": 0, "healthy": 0, "rate": 0, "items": [],
+                    "diag": {"dump_len": len(out), "blocks": len(blocks),
+                             "named": n_named, "matched": n_matched,
+                             "live_n": (len(live) if live else live),
+                             "head": out[:60].replace(chr(10), " ")}}
         healthy = sum(1 for i in items if i["state"] in ("정상", "대기", "정상(건너뜀)"))
         rate = round(healthy / total * 100)
         summary = f"자동화 {healthy}/{total} 정상 ({rate}%)"
