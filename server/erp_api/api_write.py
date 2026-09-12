@@ -168,14 +168,22 @@ BODY_NEVER_ARRIVED = "action 필수"
 NO_SERVER_ACTIONS = {
     "unlock_round": "제출잠금 해제 비밀번호를 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다",
     "todo_upload": "첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 그 주소를 만들 수 없고, 없으면 첨부가 통째로 사라진다",
-    "save_schedule": "동시편집 판번호(rev)를 GAS 가 매긴다 — 없으면 다음 저장이 전부 막히거나 충돌 감지가 죽는다",
-    "todo_add": "새 업무 번호를 GAS 가 매긴다 — 화면이 그 번호로 첨부를 올리는데(업무 현황 SSOT.html 3237줄 `if (filesToUpload.length > 0 && res.id)`) 서버 원본이면 번호가 없어 첨부가 말없이 사라진다",
     # ↓ 아래 넷은 배 12504(2026-09-10 밤) 에서 거울 반영을 만들며 드러난 자리다.
     "todo_sign": "결재 비밀번호(PIN)를 GAS 가 검증한다 — 서버가 즉시 ok 를 주면 틀린 비번으로 누른 결재가 1분 동안 승인된 것처럼 보인다(unlock_round 와 같은 성질)",
     "todo_opinion": "결재의견도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
     "todo_opinion_delete": "결재의견 삭제도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
     "approval_rep_sign_upload": "대표싸인 칸에 들어갈 값이 구글 드라이브 업로드 결과 주소다 — 서버는 그 주소를 만들 수 없다(todo_upload 와 같은 이유)",
 }
+
+# ★서버 원본으로 가려면 **다른 액션도 함께** 서버여야 하는 자리 (배 1195 ④ · 2026-09-12 시토).
+#   todo_add: 번호는 이제 서버가 매긴다(_next_todo_id) — 위 NO_SERVER_ACTIONS 에서 뺀 이유다. 그런데 화면은
+#   저장 응답의 업무 id 로 곧바로 todo_upload 를 부르고, todo_upload 는 아직 GAS 직행이다. GAS 는 그 id 의
+#   시트 행을 못 찾으면 파일만 드라이브에 올리고 ok 를 돌려준다(업무&결재 현황.js 3143줄 — rowNum > 0 일 때만
+#   파일URL 을 적는다). server 모드에서 시트 행은 1분 뒤 되밀기 때 생기므로 그 사이 첨부가 말없이 사라진다.
+#   번호 문제는 풀렸고 순서 문제가 남았다 — 그러니 todo_upload 가 NO_SERVER_ACTIONS 에서 빠지는 날
+#   이 줄도 같이 없어진다(그때 mirror_patch 에 todo_add 행 추가 반영도 함께 만든다). 주석이 아니라 코드로
+#   묶어 둔다 — 스위치를 켜는 사람이 이 주석을 읽을 거라 기대하지 않는다.
+SERVER_NEEDS = {"todo_add": ("todo_upload",)}
 
 
 def server_ok(log_id, **extra):
@@ -250,6 +258,85 @@ def _asset_issue_labels(conn, payload):
                        (db.TENANT, req_key)).fetchone()
     labels = won["labels"] if isinstance(won["labels"], list) else json.loads(won["labels"])
     return labels, False
+
+
+def _next_todo_id():
+    """새 업무 id 서버 채번(배 1195 ④) — GAS _genId()(업무&결재 현황.js 224줄)와 똑같은 형식
+    TODO-yyyyMMddHHmmssSSS(KST).
+
+    ★왜 시퀀스도 새 표도 없나: 이 id 는 순번이 아니라 시각 문자열이다. 구매요청 번호(최댓값+1)와 달리
+      두 채번기가 같은 규칙으로 각자 매겨도 서로 어긋날 값이 없다 — 이어 갈 seed 도 필요 없다.
+    겹칠 조건은 같은 밀리초에 들어온 두 요청뿐이고, 그건 GAS 원본과 똑같은 조건이다(정확도 무변).
+    """
+    t = time.time() + 9 * 3600
+    return "TODO-%s%03d" % (time.strftime("%Y%m%d%H%M%S", time.gmtime(t)), int(t * 1000) % 1000)
+
+
+# 전사일정 급감 거부 문턱 — GAS saveSchedule_ 의 SCHEDULE_SHRINK_GUARD(전사_일정.js 93줄)와 같은 값이어야 한다.
+_SCHEDULE_SHRINK_GUARD = 0.7
+
+
+def _schedule_judge(conn, payload):
+    """전사일정 저장 — 판번호(rev) 채번과 동시편집 충돌 판정을 서버가 한다(배 1195 ④ · 2026-09-12 시토).
+
+    서버가 아는 「지금 판」 = misc_cache(schedule/load_schedule) — 화면이 load 때 읽는 바로 그 값이라
+    rev 도 items 도 이미 여기 있다. 새 표를 만들지 않는 이유다(구매요청은 시트 최댓값을 이을 자리가 서버에
+    없어 시퀀스를 팠지만, 여기는 판 전체가 이미 서버에 있다).
+    판정 규칙은 GAS saveSchedule_(전사_일정.js 144줄~)을 그대로 옮긴 것 — 문구까지 같게 둔다(화면이 그 문구를
+    사람에게 그대로 보여 준다). 되밀기 때 GAS 가 같은 검사를 한 번 더 하지만, 그때는 같은 판을 보므로 같은 답이다.
+
+    반환: 새 rev(str)  |  거부 응답(dict · 화면이 이미 아는 모양)  |  None = 거울에 판이 없다(판정 불가 → dual)
+    """
+    data = payload.get("data")
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        return {"ok": False, "error": "items 배열이 없는 JSON은 저장할 수 없습니다."}
+    row = conn.execute("SELECT data FROM misc_cache WHERE tenant_id=%s AND gas='schedule'"
+                       " AND action='load_schedule' AND params=''", (db.TENANT,)).fetchone()
+    if not row:
+        return None                      # 아직 한 번도 안 떠온 거울 — 지금 판을 모르면 충돌 판정을 할 수 없다
+    try:
+        cur = row["data"] if isinstance(row["data"], dict) else json.loads(row["data"])
+    except ValueError:
+        return None
+    prev = cur.get("data") if isinstance(cur.get("data"), dict) else {}
+    prev_items = prev.get("items") if isinstance(prev.get("items"), list) else []
+    server_rev = str(cur.get("rev") or "")
+    force = payload.get("force") is True
+    # ① 급감 거부 — 실수·경합으로 목록이 통째로 밀려나는 것을 막는다(GAS 와 같은 규칙).
+    if len(prev_items) >= 5 and len(data["items"]) < int(len(prev_items) * _SCHEDULE_SHRINK_GUARD) and not force:
+        return {"ok": False,
+                "error": "항목이 %d건에서 %d건으로 크게 줄어 저장을 막았습니다. "
+                         "다른 기기에서 연 화면이 덮어쓰는 중일 수 있습니다 — 새로고침 후 다시 시도하세요."
+                         % (len(prev_items), len(data["items"])),
+                "prevCount": len(prev_items), "newCount": len(data["items"])}
+    base_rev = None if payload.get("baseRev") is None else str(payload.get("baseRev"))
+    # ② 판번호 대조 — 내가 읽은 뒤 남이 저장했으면 덮어쓰지 않는다(배783 · 실사고 2026-08-25).
+    if base_rev is not None and server_rev and base_rev != server_rev and not force:
+        return {"ok": False, "error": "stale-rev",
+                "message": "이 화면을 연 뒤에 다른 곳에서 일정이 저장됐습니다. 최신본을 받아 합친 뒤 다시 저장하세요.",
+                "serverRev": server_rev, "baseRev": base_rev, "data": prev or None}
+    # ③ rev 를 안 보내는 옛 호출부: 항목이 사라지는 저장만 막는다(늘거나 그대로면 통과 — 회귀 0).
+    if base_rev is None and not force:
+        keep = set(str(it.get("id")) for it in data["items"] if isinstance(it, dict) and it.get("id"))
+        dropped = [it for it in prev_items
+                   if isinstance(it, dict) and it.get("id") and str(it["id"]) not in keep]
+        if dropped:
+            return {"ok": False, "error": "silent-drop",
+                    "message": "이번 저장에서 %d건이 사라집니다. 다른 곳에서 저장한 항목을 덮어쓰는 중일 수 있어 막았습니다 — "
+                               "새로고침 후 다시 시도하세요." % len(dropped),
+                    "droppedIds": [str(it["id"]) for it in dropped][:20]}
+    return "%s#%d" % (_now_kst(), len(data["items"]))
+
+
+def _schedule_mirror(conn, data, rev):
+    """서버가 방금 받은 판을 거울(misc_cache)에 그 자리에서 반영 — mirror_patch 가 업무 거울에 하는 것과 같은 일.
+    이게 없으면 되밀기 전 1분 동안 화면이 옛 판·옛 rev 를 읽어, 다음 저장이 제 판번호를 stale 로 오판한다.
+    틀려도 sync_misc.py 가 GAS 판으로 덮어써 스스로 낫는다(그래서 실패가 저장을 막으면 안 된다)."""
+    with conn:
+        conn.execute("UPDATE misc_cache SET data=%s, synced_at=%s WHERE tenant_id=%s AND gas='schedule'"
+                     " AND action='load_schedule' AND params=''",
+                     (json.dumps({"ok": True, "data": data, "rev": rev}, ensure_ascii=False),
+                      _now_kst(), db.TENANT))
 
 
 class _HopRecorder(urllib.request.HTTPRedirectHandler):
@@ -418,9 +505,12 @@ async def write(request: Request):
     is_test = db.is_test_payload(payload)
     area = origin_switch.WRITE_AREA.get(dest)
     server_mode = (bool(area) and origin_switch.mode(area) == "server" and not is_test
-                   and action not in NO_SERVER_ACTIONS)   # 스위치 한 줄 — 재시작 없이 갈린다
+                   and action not in NO_SERVER_ACTIONS
+                   # 짝이 아직 GAS 에 남아 있으면 이 액션도 못 간다(SERVER_NEEDS 주석 참고)
+                   and not any(d in NO_SERVER_ACTIONS for d in SERVER_NEEDS.get(action, ())))
     proc_no = None
     asset_labels = None
+    sched_rev = None
     if server_mode and dest == "PROC_GAS_URL" and action == "add":
         # 구매요청 번호 서버 채번(배 1195 ①) — GAS addItem() 규칙(열25 최댓값+1)을 서버가 잇는다.
         # payload·raw_body 에 no 를 실어 두면 되밀기(pushback.py)가 그대로 GAS 로 넘기고, GAS 는 그 번호를
@@ -443,6 +533,26 @@ async def write(request: Request):
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         # _r 이 None(수량 범위 밖·품의번호 없음)이면 번호를 안 태우고 그대로 queued — GAS 가 1분 뒤 bad_qty·
         # no_req_key 로 거부한다(되밀기가 잡는다). GAS 가 어차피 거부할 요청에 번호를 미리 쓰지 않는다.
+    elif server_mode and action == "todo_add":
+        # 새 업무 id 서버 채번(배 1195 ④) — GAS _genId() 와 같은 형식으로 서버가 매겨 payload 에 싣는다.
+        # 되밀기(pushback.py)가 raw_body 를 그대로 넘기고 GAS 는 그 id 를 그대로 쓴다(구매요청 p.no 와 같은 방식).
+        # ★들어온 id 가 있어도 덮어쓴다: G1(wellperion_guide 8558줄)이 제 개인할일 id 를 실어 보내는데
+        #   GAS 는 그것을 지금도 무시하고 제 id 를 매긴다 — 그 무시를 서버가 그대로 잇는 것이다(동작 무변).
+        payload = dict(payload, id=_next_todo_id())
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    elif server_mode and action == "save_schedule":
+        # 전사일정 판번호(rev) 서버 채번 + 충돌 판정(배 1195 ④). 거부는 여기서 끝낸다 — 거부한 저장을
+        # 원장에 queued 로 남기면 1분 뒤 GAS 에 그대로 들어가 버린다.
+        _j = _schedule_judge(conn, payload)
+        if isinstance(_j, dict):
+            conn.close()
+            return _j
+        if _j is None:
+            server_mode = False      # 거울에 지금 판이 없다 — 판정을 못 하니 종전대로 GAS 가 한다
+        else:
+            sched_rev = _j
+            payload = dict(payload, rev=sched_rev)
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     with conn:
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
@@ -460,6 +570,8 @@ async def write(request: Request):
         # 전량을 덮어써 스스로 낫는다. 그래서 실패해도 저장을 막지 않는다(conn.close() 전에 해야 한다).
         try:
             mirror_patch.apply(conn, action, payload)
+            if sched_rev is not None:
+                _schedule_mirror(conn, payload.get("data"), sched_rev)
         except Exception:
             pass
         conn.close()
@@ -471,6 +583,11 @@ async def write(request: Request):
             extra["no"] = proc_no
         if asset_labels is not None:
             extra["labels"] = asset_labels
+        if sched_rev is not None:
+            # rev·count 는 GAS saveSchedule_ 응답과 같은 이름·같은 뜻이다(서버가 매긴 그 판번호를 GAS 가 그대로
+            # 쓴다) — 그래서 같은 이름으로 준다. 화면은 이 값을 다음 저장의 baseRev 로 보낸다.
+            extra["rev"] = sched_rev
+            extra["count"] = len(payload["data"]["items"])
         return server_ok(log_id, queued=True, mode="server", **extra)
     try:
         # 리셉션 업무·라커관리는 본문 모양으로만 갈린다(배 960 #9i) — 나머지는 종전 액션 접두사 표.
@@ -575,16 +692,20 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
     _C.row = {"id": 7, "gas_response": None}
-    for _a in ("unlock_round", "todo_upload", "save_schedule", "todo_add"):
+    for _a in ("unlock_round", "todo_upload"):
         assert _a in NO_SERVER_ACTIONS, "%s 를 서버 원본으로 보내면 사람에게 거짓말이 된다" % _a
+    for _a in tuple(NO_SERVER_ACTIONS) + tuple(SERVER_NEEDS) + ("save_schedule", "todo_add"):
         assert _gas_key(_a) is not None, "%s 는 목적지 표에 있어야 dual 로 돌아간다" % _a
+    # 짝 규칙(SERVER_NEEDS) — 짝이 NO_SERVER_ACTIONS 를 떠나면 이 줄도 함께 지워야 한다는 것을 코드로 묶는다.
+    assert SERVER_NEEDS["todo_add"] == ("todo_upload",) and "todo_upload" in NO_SERVER_ACTIONS
     assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     # 부른 쪽이 준 업무 id 메아리(2026-09-10) — 서버가 만든 값이 아니라 화면이 준 값이다.
     assert server_ok(9, mode="server", id="TODO-1")["id"] == "TODO-1"
     # 거울 즉시 반영(mirror_patch) — server 모드로 갈 수 있는 업무 쓰기는 전부 반영되거나, 못 하는 이유가 적혀 있어야 한다.
     for _a in _TODO_WRITES:
-        assert _a in mirror_patch.HANDLERS or _a in NO_SERVER_ACTIONS or _a in mirror_patch.NO_MIRROR, _a
+        assert (_a in mirror_patch.HANDLERS or _a in NO_SERVER_ACTIONS or _a in mirror_patch.NO_MIRROR
+                or _a in SERVER_NEEDS), _a   # todo_add 는 SERVER_NEEDS 로 막혀 있다 — 풀리는 날 거울 반영도 같이 만든다
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
 
     # 담당 지정 권한(배1182) — GM_TASK_OWNERS saveBoard 판정. 가짜 conn: SELECT 대상(users·board_cache)로 갈라 응답.
@@ -744,4 +865,58 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _asset_issue_labels(aic, {"수량": 0, "품의번호": "PR-3"}) is None    # 수량 0 — 관문 통과 못함
     assert _asset_issue_labels(aic, {"수량": 101, "품의번호": "PR-3"}) is None  # 상한 초과
     assert _asset_issue_labels(aic, {"수량": 5, "품의번호": ""}) is None        # 품의번호 없음
+
+    # 새 업무 id 서버 채번(배 1195 ④) — GAS _genId() 형식 그대로. 시퀀스가 아니라 시각 문자열이다.
+    import re as _re
+    _tid = _next_todo_id()
+    assert _re.match(r"^TODO-\d{17}$", _tid), _tid            # TODO- + yyyyMMddHHmmss(14) + SSS(3)
+    assert _tid[5:9] >= "2026"                                 # KST 연도 — UTC 로 찍으면 날짜가 하루 어긋난다
+    assert len(set(_next_todo_id() for _ in range(3))) >= 1     # 같은 밀리초면 같다 — GAS 원본과 같은 성질
+    # 서버가 매긴 id 는 화면이 기대하는 이름(id)으로 나간다 — 뜻이 같아서다(GAS 응답 id 도 그 업무의 id).
+    assert server_ok(9, queued=True, mode="server", id=_tid)["id"] == _tid
+
+    # 전사일정 판번호(rev) 채번·충돌 판정(배 1195 ④) — 가짜 conn 하나로 misc_cache 한 행을 흉내.
+    class _SchedConn:
+        def __init__(self, cur):
+            self.cur = cur
+
+        def execute(self, q, p=None):
+            if q.lstrip().startswith("UPDATE"):
+                self.cur = json.loads(p[0])
+                self._v = None
+            else:
+                assert "misc_cache" in q and "load_schedule" in q, q
+                self._v = {"data": json.dumps(self.cur, ensure_ascii=False)} if self.cur else None
+            return self
+
+        def fetchone(self):
+            return self._v
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def _items(n, start=1):
+        return [{"id": "S%d" % i, "name": "일정%d" % i} for i in range(start, start + n)]
+
+    _cur = {"ok": True, "data": {"items": _items(10)}, "rev": "2026-09-12 09:00:00#10"}
+    _c = _SchedConn(_cur)
+    _rev = _schedule_judge(_c, {"data": {"items": _items(11)}, "baseRev": "2026-09-12 09:00:00#10"})
+    assert isinstance(_rev, str) and _rev.endswith("#11"), _rev          # 판번호 = 저장시각#건수(GAS 와 같은 모양)
+    assert _schedule_judge(_c, {"data": {"items": _items(11)}, "baseRev": "옛판"})["error"] == "stale-rev"
+    assert _schedule_judge(_c, {"data": {"items": _items(11)}, "baseRev": "옛판"})["serverRev"] == _cur["rev"]
+    assert _schedule_judge(_c, {"data": {"items": _items(11)}, "baseRev": "옛판", "force": True} ).endswith("#11")
+    assert _schedule_judge(_c, {"data": {"items": _items(6)}, "baseRev": _cur["rev"]})["prevCount"] == 10  # 급감 거부(10→6 < 7)
+    assert _schedule_judge(_c, {"data": {"items": _items(7)}, "baseRev": _cur["rev"]}).endswith("#7")      # 7 은 통과
+    assert _schedule_judge(_c, {"data": {"items": _items(9, 2)}})["error"] == "silent-drop"   # baseRev 없음+사라짐
+    assert _schedule_judge(_c, {"data": {"items": _items(10)}}).endswith("#10")               # baseRev 없음+안 사라짐
+    assert _schedule_judge(_c, {"data": {"items": "배열아님"}})["ok"] is False
+    assert _schedule_judge(_SchedConn(None), {"data": {"items": _items(3)}}) is None          # 거울 없음 = 판정 불가
+    # 거울 반영 — 다음 load 가 새 판·새 rev 를 본다(이게 없으면 1분 동안 제 저장을 stale 로 오판한다).
+    _schedule_mirror(_c, {"items": _items(11)}, _rev)
+    assert _c.cur["rev"] == _rev and len(_c.cur["data"]["items"]) == 11 and _c.cur["ok"] is True
+    assert _schedule_judge(_c, {"data": {"items": _items(12)}, "baseRev": _rev}).endswith("#12")   # 새 판이 기준이 됐다
+
     print("자체점검 통과")
