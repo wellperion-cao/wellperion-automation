@@ -540,6 +540,13 @@ def main():
     # 다 섞어 서로의 실패에 인질로 잡힌다(시우 실측 2026-09-07). by_form 은 액션별로 갈라 따로 센다.
     by_form = {name: summarize_form(days, today_d) for name, days in out_forms.items() if name != "write"}
     for action, rows in writes_by_action.items():
+        # ★2026-09-13 시토 — 회원 폼(member_owner_save·member_active_update 등)은 위에서
+        #   서버·시트 다중칸 값대조로 이미 쟀다. 여기서 같은 키를 write_log 의 gas_status
+        #   단순대조로 덮으면 더 약한 판정이 강한 판정을 지운다 — dual_write_reconcile.json
+        #   의 by_form.member_active_update 가 원본 forms.member_active_update 와 다른
+        #   숫자를 보여 온 원인이 이것이다(전환 자격은 by_form 을 본다).
+        if action in by_form:
+            continue
         wdays, na = reconcile_by_action(rows)
         by_form[action] = summarize_form(wdays, today_d, na)
     by_area = _area_rollup(writes_by_action, today_d)
@@ -837,6 +844,21 @@ def selftest():
     # sheet-missing 행뿐인 날은 행 0 인 날과 같게 건너뛴다(날짜 버킷 자체가 안 생긴다)
     d_na_only, na_only = reconcile_by_action([("2026-09-06T10:00:00", {}, "sheet-missing")])
     assert d_na_only == {} and na_only == 1
+    # by_form 덮어쓰기 방지(2026-09-13) — 회원 폼 키는 값대조 결과가 살아남아야 한다.
+    out_forms_t = {"member_active_update": {"2026-09-07": {"server": 2, "sheet": 2,
+                                                            "mismatch": 0, "ok": True}}}
+    writes_by_action_t = {"member_active_update": [("2026-09-07T10:00:00", {}, "push-error:404")],
+                          "reg_update": [("2026-09-07T10:00:00", {}, "ok")]}
+    by_form_t = {n: summarize_form(d, tomorrow) for n, d in out_forms_t.items()}
+    for action, rows in writes_by_action_t.items():
+        if action in by_form_t:
+            continue
+        wd, na = reconcile_by_action(rows)
+        by_form_t[action] = summarize_form(wd, tomorrow, na)
+    assert by_form_t["member_active_update"]["total"] == 2, by_form_t["member_active_update"]
+    assert by_form_t["member_active_update"]["last_fail"] in (None, ""), by_form_t["member_active_update"]
+    assert "reg_update" in by_form_t                                   # 회원 폼 아닌 액션은 그대로 실린다
+
     print("selftest ok")
     return 0
 
