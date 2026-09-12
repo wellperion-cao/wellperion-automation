@@ -31,6 +31,10 @@ SSH_KEY = str(Path.home() / ".aws" / "wellperion-sito.pem")
 SSH_HOST = "15.164.151.105"
 SSH_USER = "ec2-user"
 REMOTE_REPO = "/srv/erp/www"
+# 매분 `git pull` 이 도는 서버 작업사본은 www 가 아니라 repo 다(크론 실측 2026-09-13).
+# www 는 그 결과를 받는 정적 사본이라 pull 로그가 없다.
+SERVER_REPO = "/srv/erp/repo"
+SERVER_REPO_LAG_MAX = 20   # 배1192 — 이만큼 벌어지면 사람에게 알린다
 # G1 이 쓰는 업무·결재 SSOT (todo_list GAS) — wellperion_guide(main).html 의 TODO_API_URL 과 동일
 SSOT_API_URL = (
     "https://script.google.com/macros/s/"
@@ -354,6 +358,55 @@ def check_server_cron_dryrun() -> tuple[str, bool, str]:
     return name, True, "--dry-run 으로 헛도는 예약작업 없음"
 
 
+def _judge_repo_lag(lag: int | None, fail_lines: int) -> tuple[bool, str]:
+    """서버 사본 지연 판정 — ssh 없이도 시험할 수 있게 판정만 떼어 둔다."""
+    if fail_lines > 0:
+        return False, f"오늘 내려받기 실패 {fail_lines}줄 — 서버가 옛 코드로 돌고 있을 수 있다"
+    if lag is None:
+        return True, "확인 불가(서버 HEAD 를 로컬에서 못 찾음 — fetch 필요)"
+    if lag >= SERVER_REPO_LAG_MAX:
+        return False, f"서버 사본이 {lag} 커밋 뒤처짐 — 매분 내려받기 멈춤 의심"
+    return True, f"서버 사본 {lag} 커밋 차 · 오늘 실패 0"
+
+
+def check_server_repo_lag() -> tuple[str, bool, str]:
+    """서버가 코드를 못 받고 있으면 알리는 자리 (배1192).
+
+    왜 보나 — 2026-09-10 에 서버 /srv/erp/repo 가 36 커밋 뒤처진 채 그 옛 코드로 크론이
+    계속 돌았다. 크론의 폴백이 실패 출력을 전부 버려 어떤 화면·경보도 그것을 알리지
+    않았고, 사람이 우연히 발견했다. 지금은 실패가 logs/git_pull.log 에 남지만 그 로그를
+    아무도 읽지 않는다 — 여기서 읽는다(새 장치를 만들지 않는다, 약속 L21).
+    서버가 스스로 아는 origin/master 는 pull 이 죽으면 같이 묵으므로, 지연은 **로컬이
+    fetch 한 origin/master** 와 대조해서 잰다.
+    """
+    name = "서버 코드 내려받기"
+    today = time.strftime("%Y-%m-%d")
+    rc, out, err = _ssh_run(
+        f"git -C {SERVER_REPO} rev-parse HEAD; "
+        f"grep -c '내려받기 실패' {SERVER_REPO}/logs/git_pull.log 2>/dev/null | head -1; "
+        f"grep -c '^{today}.*내려받기 실패' {SERVER_REPO}/logs/git_pull.log 2>/dev/null | head -1"
+    )
+    lines = [l.strip() for l in (out or "").splitlines() if l.strip()]
+    if rc != 0 or not lines:
+        return name, True, f"확인 불가(서버 접속 실패) — {(err or str(rc)).strip()[:60]}"
+    head = lines[0]
+    fail_today = int(lines[2]) if len(lines) > 2 and lines[2].isdigit() else 0
+
+    lag: int | None = None
+    try:
+        r = subprocess.run(
+            ["git", "rev-list", "--count", f"{head}..{REMOTE}/{BRANCH}"], cwd=str(ROOT),
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+        )
+        if r.returncode == 0:
+            lag = int((r.stdout or "0").strip() or "0")
+    except Exception:
+        lag = None
+
+    ok, detail = _judge_repo_lag(lag, fail_today)
+    return name, ok, detail
+
+
 def check_member_canon_drift() -> tuple[str, bool, str]:
     """회원 종목명 정규화가 GAS 와 갈렸나 (시포 커밋 d0e38bdaa · 2026-09-09).
 
@@ -457,6 +510,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_unpushed,
         check_server_pushback,
         check_server_cron_dryrun,
+        check_server_repo_lag,
         check_member_canon_drift,
         check_kpi_freshness,
         check_page_score_stale_ship_refs,
@@ -475,6 +529,16 @@ if __name__ == "__main__":
     import sys
 
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+    if "--selftest" in sys.argv:
+        # 판정이 실제로 걸리는지 — 감시 장치가 한 번도 안 울리는 부류를 막는 최소 확인.
+        assert _judge_repo_lag(0, 0)[0] is True
+        assert _judge_repo_lag(SERVER_REPO_LAG_MAX, 0)[0] is False
+        assert _judge_repo_lag(0, 1)[0] is False          # 실패 줄이 있으면 지연 0 이어도 경보
+        assert _judge_repo_lag(None, 0)[0] is True        # 못 재면 단정하지 않는다
+        print("selftest ok")
+        sys.exit(0)
+
     rows = check_bridges()
     ok_n = sum(1 for _, ok, _ in rows if ok)
     print(f"연동 다리 {ok_n}/{len(rows)} ✅")
