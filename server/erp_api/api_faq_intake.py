@@ -115,13 +115,13 @@ if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp:
         os.environ["ERP_FAQ_INTAKE_DIR"] = tmp
 
-        # GET — 씨앗 폴백
+        # GET — 씨앗 폴백(실제 SEED_DIR 를 건드리지 않도록 라이브 경로에 직접 씀)
         seed_data = {"tenant": "1_wellperion", "items": [
             {"no": 1, "q": "test q", "a": "", "by": "", "note": "", "locked": False, "updated": "2026-09-11"},
             {"no": 2, "q": "locked q", "a": "기존답", "by": "admin", "note": "", "locked": True, "updated": "2026-09-11"},
         ]}
-        Path(SEED_DIR).mkdir(parents=True, exist_ok=True)
-        (Path(SEED_DIR) / "1_wellperion.json").write_text(json.dumps(seed_data, ensure_ascii=False), "utf-8")
+        Path(tmp).mkdir(parents=True, exist_ok=True)
+        (Path(tmp) / "1_wellperion.json").write_text(json.dumps(seed_data, ensure_ascii=False), "utf-8")
 
         result = _load("1_wellperion")
         assert len(result["items"]) == 2, "GET: 항목 수 오류"
