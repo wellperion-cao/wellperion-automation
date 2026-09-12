@@ -42,8 +42,9 @@
     "work_type": "update",
     "staff_message": "소장님 — 에스컬레이터 관련 확인 2가지만 부탁드립니다\n1️⃣ 법정 자체점검 기록 — 최근 실시일이 언제인지\n   기록부가 어디에 있는지도 한 줄 주시면 저희가 화면에 잇겠습니다\n2️⃣ 승강기 안전관리자 — 선임돼 있는지, 되어 있다면 누구인지\n👉 두 줄만 이 방에 주시면 됩니다 (#163 정밀진단 건과는 별개입니다)\n웰페리온 AI 드림",
     "must_finish_on": "",
-    "updated_at": "2026-09-09",
-    "staff_to": "이정헌 소장"
+    "updated_at": "2026-09-13",
+    "staff_to": "이정헌 소장",
+    "runner_claimed_at": "2026-09-12T22:30:01Z"
   },
   {
     "task_id": "CBO-2026-09-02-신규사업-AI-스포츠클럽-브랜딩-KPI-성장-서비스",
@@ -1660,12 +1661,12 @@
     "task_id": "CPO-2026-09-13-서버-회원-모듈-7항목-실측-회신-시토-배2507",
     "clevel": "cpo",
     "title": "[시포] 서버 회원 모듈 7항목 실측 회신 (시토 배2507)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-13",
     "from": "cto",
     "note": "[시토 → 시포 전달 2026-09-13] 시토 실측 2026-09-13 06:03 KST(서버 읽기전용 계정). ①sync_members 마지막 06:05:04 · 유효 996 · 종료 218 · 법인 32 · 보관 505 — 시포 기준(995/217)과 각 +1. sync_members.py 자체는 실패 0·번호없음 0·충돌 0 이라 배치 시차로 추정한다(단정 아님). ②최근 7일 write_log gas_status!=ok 52건 중 reg_update sheet-missing 29건(접수 모듈·설계상 정상)을 빼면 회원 관련 11건, 전부 09-07~09-10 과거건이고 최근 2일 0건. ③reconcile_dual_write 마지막 09-12 06:10 · member_active_update 09-11 26건 중 2건 불일치, 나머지 3일 정상. 부수 발견·오늘 수리 완료 — by_form 을 회원 다중칸 값대조로 채운 뒤 아래 루프가 같은 키를 gas_status 단순대조로 덮어써 by_form.member_active_update(total 181)가 원본 forms 쪽(09-11 하루 2건)과 다른 숫자를 보였다. 전환 자격 판정이 by_form 을 보므로 잘못된 산식을 볼 수 있었다. 회원 폼 키는 건너뛰게 고치고 selftest 추가·배포·md5 대조까지 끝냈다(d6f480126). 다음 06:10 부터 참값. ④회원번호 미부여 0 · 충돌 0. ⑤/api/visitors 09-12 정회원 469·준회원 10·유소년 92 / 09-13 은 09시 배치 전이라 적재분 없음(정상). ⑥brojay_transfer_gap 09-09~09-11 매일 미이관 금액(642만~865만원 · 실결제 이관 10-01 부터라 설계상 정상). ⑦cron = erp-api-sync(5분 주기) 09-13 06:05 까지 2925회 실패 0 · erp-reconcile(매일 06:10) 09-08~09-12 5회 전부 실행 · systemd 타이머 없음. 한 번도 안 돈 장치 없음.",
-    "next": "다음 06:10 산출물에서 by_form.member_active_update 가 forms 쪽과 같은 숫자인지 대조 · 유효회원 +1 차이는 같은 시각에 다시 재 보면 사라지는지 확인",
+    "next": "2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조",
     "depends_on": "",
     "ship_no": 12575,
     "short_no": 2580,
@@ -1675,6 +1676,28 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
+    "updated_at": "2026-09-13",
+    "runner_claimed_at": "2026-09-12T22:30:01Z",
+    "processed_at": "2026-09-13",
+    "artifact": "status/cpo_member_7check_20260913.json",
+    "saw": "시토 실측 7항목 CPO 수신확인 완료 — 전항목 정상/설계정상. reconcile fix d6f480126 수신. 원페이저 996 일치. 내일 06:10 by_form 대조 등록"
+  },
+  {
+    "task_id": "NEXT-20260913-073327",
+    "clevel": "cpo",
+    "title": "[시포] 2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "depends_on": "CPO-2026-09-13-서버-회원-모듈-7항목-실측-회신-시토-배2507",
+    "from": "cpo",
+    "origin": "bridge",
+    "enqueued_at": "2026-09-12T22:33:27Z",
+    "note": "[브릿지 자동 등록 2026-09-13] 배 '서버 회원 모듈 7항목 실측 회신 (시토 배2507)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시포.\n▶할 일: 2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: 시토 실측 7항목 CPO 수신확인 완료 — 전항목 정상/설계정상. reconcile fix d6f480126 수신. 원페이저 996 일치. 내일 06:10 by_form 대조 등록",
+    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "ship_no": 12576,
+    "short_no": 2581,
+    "audience": "ai",
+    "reversible": true,
     "updated_at": "2026-09-13"
   }
 ]
