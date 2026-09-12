@@ -2266,7 +2266,16 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     접는다. 사람이 여럿이면 섹션 전체가 부풀 수 있어(09-06 실측 127줄) 사람줄+건줄 합계가
     ASKS_SECTION_CAP을 넘는 시점부터는 남은 사람·건을 통째로 "외 N건 — 링크" 한 줄로 접는다
     (배1085)."""
-    items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
+    # ★2026-09-13 시토(배2578 · 웰리 실측) — 정렬이 접수일 하나뿐이라 원장 #번호 건이
+    #   앞자리를 채우면 배 전달문이 뒤로 밀려 "외 N건 — 링크"로 접혔다. 그런데 그 링크는
+    #   결재 현황 SSOT 화면이라 배 전달문은 거기에 없다 — 실무진이 접힌 질문을 볼 길이
+    #   없어 배900 질문이 09-05~09-12 여드레 중 이틀만 실제로 나갔다(kakao_sent 로그 대조).
+    #   고침 = 배 전달문을 사람당 앞자리에 먼저 앉힌다. 원장 #번호는 접혀도 링크 화면에서
+    #   볼 수 있으므로 그쪽부터 접는다. 새 화면·새 통은 만들지 않는다(약속 L21).
+    items = sorted(
+        [dict(x, _relay=True) for x in relay_items] + [dict(x, _relay=False) for x in nudge_items],
+        key=lambda x: (not x["_relay"], x.get("date") or "9999-99-99"),
+    )
     if not items:
         return ""
 
