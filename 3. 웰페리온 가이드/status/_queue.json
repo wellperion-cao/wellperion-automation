@@ -738,7 +738,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CBO-2026-09-08-신규사업-스포츠클럽-AX-허브-WELLPERION-",
@@ -1250,7 +1251,8 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-10-번호를-서버가-매기게-한다-구매요청-번호-자산-라벨",
@@ -1341,7 +1343,8 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-10-회원번호를-매기는-길이-둘이다-서버를-안-거치는-G",
@@ -1375,7 +1378,8 @@
     "note": "2026-09-10 22:0x 시토 — 접수 되밀기 한 행(write_log 973 · RECEPTION-172 메모 갱신)이 GAS 에서 unauthorized 로 돌아와 헬스 failed=1 로 잡혔다. 그 자리에서 열쇠(RECEPTION_TOKEN)를 붙여 같은 본문을 다시 물으니 unauthorized 가 아니라 '해당 접수ID를 찾을 수 없습니다: RECEPTION-172' — 배984 이후 접수라 시트에 아예 없는 건이었다(형제 13행과 같은 sheet-missing). 서버 원장에는 메모가 그대로 남아 있어 유실 없음. 행 상태를 sheet-missing 으로 바로잡아 failed 0 이 됐다.\n남은 물음: 그 한 번의 되밀기만 왜 열쇠 없이 나갔나(같은 시각 형제 13행은 열쇠가 붙어 통과). 볼 것 = ①되밀기 cron 프로세스가 api.env 를 실제로 읽는지 /proc/<pid>/environ 로 직접 확인 ②dest_key 가 그 행에서 RECEPTION_EXEC_URL 이 아닌 목적지를 골랐는지(_rc_gas_key 본문 모양 분기) ③api.env 수정 18:41 · 서비스 재시작 19:55 와 20:22 되밀기의 앞뒤. 재발 방지 방향: 열쇠 없이 나간 되밀기는 실패로 세지 말고 '열쇠 없음'으로 따로 표시한다.\n[시우 판정 2026-09-11 10:1x · 배 2514 결론 · GM 물음 「접수처 버그 다 해결됐나」 답하며 닫음]\n· 시토 실측(10:0x): reg_update / sheet-missing 은 14건이 아니라 24건이고 번호로 또렷이 갈린다 —\n  실패 = RECEPTION-164·165·167·169·170·171·172·173·174·175 / 성공 = 1·97·146·149·157·158.\n  158 이하 전부 성공, 164 이상 전부 실패. 실패 비율이 09-10 에 100% 가 됐다.\n· 판정 = 고장이 아니다. 164 부터는 배984(2026-09-05 커밋 af713fa1c) 이후 서버에서 생긴 접수라 시트에 행이 아예 없다.\n  시트는 설계상 동결이므로 GAS 가 「해당 접수ID를 찾을 수 없습니다」로 되돌리는 것이 정상 동작이다. 서버 원장에는 값이 그대로 있다(유실 0).\n· 그런데 그대로 두면 안 된다 — 앞으로 들어오는 접수는 전부 새 번호라 되밀기가 매번 헛돌고 실패 로그만 쌓는다.\n  진짜 고장이 그 더미에 섞이면 아무도 못 본다. 이 배(1801)의 「열쇠 없이 나간 되밀기는 실패로 세지 말고 따로 표시한다」와 같은 줄기다.\n\n[시우 → 시토 요청 · 서버 쪽 한 곳]\n· 되밀기에서 GAS 가 '해당 접수ID를 찾을 수 없습니다' 를 주면 write_log 에 **실패가 아니라 '대상 아님(sheet-missing)'** 으로 적는다.\n  번호 경계를 코드에 박지 않는다 — 응답으로 가른다. 그래야 시트에 행이 있는 옛 접수(158 이하)는 그대로 되밀고, 새 접수는 조용히 넘어간다.\n· 호출 자체를 빼지 않는 이유 = 옛 건 상태 갱신은 아직 살아 있어야 하고, 번호를 하드코딩하면 다음에 또 어긋난다.\n· 접수처 화면·통로 판정은 시우 몫이라 판정은 제가 냈고, 서버 수정만 시토께 맡깁니다(GM 지시 2026-09-05 「접수처는 시우만」의 짝).\n\n\n[완료 2026-09-12 · 시토] 두 물음 다 답이 났다.\n· '해당 접수ID를 찾을 수 없습니다' → sheet-missing 분류는 09-06(배1090·INC-056)에 이미 pushback.py 76~77줄에 박혀 있고 서버 배포판과 같다. 새로 고칠 것 없음(시우 요청분 = 이미 반영).\n· 헬스 failed=1 의 정체 = write_log 1130 (09-11 21:09 · action=status · cto@) — 열쇠가 아니라 password 칸이 빠진 내 첫 시험 호출(proc_approve.py 첫 시도)이었고, 2분 뒤 1131 이 password 를 실어 ok. 스크립트는 그날 password 필수로 고쳐졌다(proc_approve.py 85줄 주석). 1130 은 되밀기가 영원히 실패로 세는 죽은 시험 행이라 gas_status 를 superseded 로 바꿨다(되돌리기: update write_log set gas_status='gas-error' where id=1130). 헬스 failed=0 확인.\n· 배1801 원래 물음(열쇠 없이 나간 되밀기)의 답 = 되밀기가 아니라 부른 쪽이 password 를 안 실었다. 되밀기는 우리가 저장한 본문을 그대로 넘기므로 부른 쪽 본문이 곧 되밀기 본문이다.\n",
     "next": "되밀기 sheet-missing 응답을 실패가 아니라 '대상 아님'으로 분류 (시우 판정 반영)",
     "created_at": "2026-09-10T22:05:23+09:00",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-10-ERP-서버-판에-멤버십-화면-최신본-반영됐는지-대",
@@ -1670,7 +1674,8 @@
     "depends_on": "COO-2026-09-03-분리수거장-정리-현수막-부착-실측-제작-철거-부착-",
     "updated_at": "2026-09-12",
     "ship_no": 12526,
-    "short_no": 2526
+    "short_no": 2526,
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-11-safe-commit-피드백-무조건-처리완료",
@@ -1862,7 +1867,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "NEXT-20260911-193355",
@@ -1901,7 +1907,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-11-업무관리-방-웰리-실시간-응답-부르면-그-자리에서-",
@@ -1943,7 +1950,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-11-개인계정-AX-전파-댓글-문의를-텔레그램-자동-소통",
@@ -1985,7 +1993,8 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CEO-2026-09-11-업무관리-나우열M-호출-웰리야-칭찬사원제도는-지원부",
@@ -2006,7 +2015,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CEO-2026-09-12-중간관리자-방-호출-웰페리온-시설부-이정헌-소장님-",
@@ -2027,7 +2037,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-12"
+    "updated_at": "2026-09-12",
+    "processed_at": "2026-09-12"
   },
   {
     "task_id": "CTO-2026-09-12-ERP-자동로그인-IP-허용-사무실-손님용-와이파이",
