@@ -66,37 +66,53 @@ def _glob_match(path: str, pattern: str) -> bool:
     )
 
 
+def _marker_rules(lock: dict) -> list[tuple[str, list[str]]]:
+    """마커 규칙 = (glob, 바뀐 줄에 있으면 잠그는 문자열들). 새 키 marker_rules 가 정본이고,
+    옛 html_glob/html_origin_markers 한 쌍은 규칙 하나로 접어 읽는다(파일이 옛 모양이어도 동작)."""
+    rules = [(r.get("glob") or "", list(r.get("markers") or []))
+             for r in (lock.get("marker_rules") or []) if isinstance(r, dict)]
+    if lock.get("html_glob"):
+        rules.append((lock["html_glob"], list(lock.get("html_origin_markers") or [])))
+    return [(g, m) for g, m in rules if g]
+
+
 def judge(changed_paths: list[str], root: Path | None = None, get_diff=None,
           lock: dict | None = None) -> list[str]:
     """changed_paths(이번 커밋/푸시로 바뀐 경로 전부, 상태 무관) 중 잠금에 걸리는 것만.
 
-    get_diff: callable(path) -> 유니파이드 diff 텍스트(옵션). html_glob 예외 판정에만 쓴다
-    — 화면 문구 수정까지 잠그면 실무진 화면이 멈추므로(설계 §2), 원천 전환 마커가 그 diff
-    에 추가/삭제되는 커밋만 잠근다. get_diff 를 안 주면 확인 불가 = 안전하게 잠근다(fail-safe).
+    ★범위(GM 2026-09-12 「외부에서 서버에 접근하는 것들만 알기 위해서 승인요청을 받으려고 한 것」):
+    잠그는 것은 밖에서 우리 서버로 들어오는 문 — nginx·로그인 관문 설정(paths)과, 서버 코드 diff 에
+    공개 통로 표지(CORS·무로그인 · marker_rules)가 새로 들어오거나 빠지는 커밋뿐이다. 그 밖의 서버
+    코드·이관 스크립트·화면 배선은 승인 없이 저장·배포한다(종전 넓은 잠금은 카드 홍수를 냈다).
+
+    get_diff: callable(path) -> 유니파이드 diff 텍스트(옵션). 마커 규칙 판정에만 쓴다 — 마커가
+    diff 에 추가/삭제되는 커밋만 잠근다. get_diff 를 안 주면 확인 불가 = 안전하게 잠근다(fail-safe).
     """
     lock = lock if lock is not None else load_lock()
     if not is_locked(lock):
         return []
     lock_globs = lock.get("paths") or []
     allow_globs = lock.get("allow_globs") or []
-    html_glob = lock.get("html_glob") or ""
-    markers = lock.get("html_origin_markers") or []
+    rules = _marker_rules(lock)
     hits: list[str] = []
     for p in changed_paths:
         if any(_glob_match(p, g) for g in allow_globs):
             continue
-        if html_glob and _glob_match(p, html_glob):
+        if any(_glob_match(p, g) for g in lock_globs):
+            hits.append(p)
+            continue
+        for glob_, markers in rules:
+            if not _glob_match(p, glob_):
+                continue
             if get_diff is None:
                 hits.append(p)
-                continue
+                break
             text = get_diff(p) or ""
             changed_lines = [ln for ln in text.splitlines()
                               if ln[:1] in "+-" and ln[:3] not in ("+++", "---")]
             if any(m in ln for ln in changed_lines for m in markers):
                 hits.append(p)
-            continue
-        if any(_glob_match(p, g) for g in lock_globs):
-            hits.append(p)
+            break
     return sorted(set(hits))
 
 
@@ -176,6 +192,19 @@ def make_request(paths: list[str], sha: str, summary: str, requester: str,
     # 않으므로 동시 요청 경합 위험은 낮게 잡았다. 부딪히면 queue_lock 을 재사용해 감쌀 것.
     """
     now = now or datetime.now(KST)
+    with _approvals_lock():
+        return _make_request_locked(paths, sha, summary, requester, now)
+
+
+def _approvals_lock():
+    """승인 원장 read-modify-write 임계구역 — 2026-09-12 실사고: 레인 여러 개가 같은 분에 safe_commit 을
+    돌려 두 세션이 push_approvals.json 을 동시에 써 파일 꼬리가 깨지고(JSON Extra data) 행 하나가
+    유실됐다. 새 락 파일을 만들지 않고 저장소 GitLock 을 이름만 달리 재사용한다(약속 L21)."""
+    from git_lock import GitLock  # 같은 scripts/ 폴더 · 지연 import(선택 의존)
+    return GitLock("push-approvals", ROOT)
+
+
+def _make_request_locked(paths, sha, summary, requester, now) -> dict:
     d = load_approvals()
     req_id = _next_id(d, now)
     # GM 지시 2026-09-07 18:3x: AI C-Level(웰리·시토·시우·시모·시포·시보) 요청은 카드 없이 자동 승인 —
@@ -299,7 +328,17 @@ def _selftest() -> None:
     # locked=False 면 전부 통과
     off = dict(lock, locked=False)
     assert judge(["server/erp_api/main.py"], lock=off) == []
-    print("[selftest] push_lock.judge OK (9케이스)")
+    # 2026-09-12 GM 범위 축소 — 서버 코드는 공개 통로 표지가 diff 에 들어올 때만 잠근다
+    narrow = {"locked": True, "paths": ["server/**/*.conf", "server/erp_auth/**"],
+              "marker_rules": [{"glob": "server/**/*.py", "markers": ["Access-Control-Allow-Origin", "무로그인"]}]}
+    cors = lambda p: '+CORS = {"Access-Control-Allow-Origin": "*"}\n'
+    plain = lambda p: "+    x = 1\n"
+    assert judge(["server/erp_api/api_x.py"], lock=narrow, get_diff=cors) == ["server/erp_api/api_x.py"]
+    assert judge(["server/erp_api/api_x.py"], lock=narrow, get_diff=plain) == []
+    assert judge(["server/erp_api/api_x.py"], lock=narrow) == ["server/erp_api/api_x.py"]   # diff 못 보면 잠근다
+    assert judge(["server/erp_api/api.nginx.conf", "server/erp_api/reconcile_dual_write.py",
+                  "3. 웰페리온 가이드/월간운영계획.html"], lock=narrow, get_diff=plain) == ["server/erp_api/api.nginx.conf"]
+    print("[selftest] push_lock.judge OK (13케이스)")
 
 
 _PUSH_TARGET_REF = "refs/heads/master"

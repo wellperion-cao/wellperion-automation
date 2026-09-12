@@ -6,35 +6,24 @@
   "by": "GM 지시 2026-09-07 10:3x — 시토 배1098 구현",
   "unlocked_by": "",
   "paths": [
-    "server/**",
-    "scripts/sync_*.py",
-    "scripts/pushback*.py",
-    "server/erp_api/reconcile_*.py",
-    "scripts/origin_switch*",
-    "status/origin_switch*.json",
-    "scripts/*migrat*.py",
-    "scripts/*import*.py",
-    ".deploy-*/**",
-    "ssot/**"
+    "server/**/*.conf",
+    "server/erp_auth/**"
   ],
-  "allow_globs": [
-    "ssot/incidents.json"
-  ],
-  "html_glob": "3. 웰페리온 가이드/**/*.html",
-  "html_origin_markers": [
-    "script.google.com/macros",
-    "/api/",
-    "apiFirst",
-    "ERP_API_ON"
-  ],
+  "allow_globs": [],
   "_설계 정본": "status/briefs/CTO-2026-09-07-배1098-자물쇠라인-설계.md §2·§7",
-  "auto_approve_requesters": [
-    "ceo",
-    "cto",
-    "coo",
-    "cmo",
-    "cpo",
-    "cbo"
+  "auto_approve_requesters": [],
+  "_자동승인": "GM 지시 2026-09-07 18:3x — 웰리·시토·시우·시모·시포·시보(AI C-Level) 요청은 카드 없이 자동 승인·푸시. 시로·시뽀·그 밖(사람·다른 PC·서버 직접 접근) 요청은 종전대로 GM 카드 승인 뒤에만 master 로 간다.",
+  "_범위_2026_09_12": "GM 지시 2026-09-12 「지금 다 텔레그램 승인요청하는데 그냥 해도 되. 외부에서 서버에 접근하는 것들만 알기 위해서 승인요청을 받으려고 하는 거였어」 — 잠금 = 밖에서 우리 서버로 들어오는 문만: nginx·로그인 관문 설정(paths) + 서버 코드 diff 에 공개 통로 표지(CORS·무로그인)가 들어오거나 빠지는 커밋(marker_rules). 종전 넓은 잠금(server/** 전체·이관 스크립트·ssot·.deploy-*·화면 배선 마커)은 폐지. 그 밖은 승인 없이 저장·배포.",
+  "marker_rules": [
+    {
+      "glob": "server/**/*.py",
+      "markers": [
+        "Access-Control-Allow-Origin",
+        "allow_origins",
+        "CORSMiddleware",
+        "무로그인"
+      ]
+    }
   ],
-  "_자동승인": "GM 지시 2026-09-07 18:3x — 웰리·시토·시우·시모·시포·시보(AI C-Level) 요청은 카드 없이 자동 승인·푸시. 시로·시뽀·그 밖(사람·다른 PC·서버 직접 접근) 요청은 종전대로 GM 카드 승인 뒤에만 master 로 간다."
+  "_auto_approve_주석": "2026-09-12 시토: 잠금이 외부 접근 건만 남았으므로 그 건은 누가 올리든 GM 카드(자동승인 없음). 명단은 비운다 — GM 이 고친다."
 }
