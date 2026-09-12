@@ -9230,7 +9230,7 @@ function _activeRowHtml(row, displayCols) {
       //   전: overflow:hidden + text-overflow:ellipsis → 마우스를 올려야 전체가 보였다("글자들이 다 짤린다").
       //   후: 폭 안에서 여러 줄로 접힌다. 단어 중간에서 끊기지 않게 keep-all.
       var leftStyle = narrowW ? ('text-align:left;max-width:' + narrowW + 'px;white-space:normal;word-break:keep-all;') : '';
-      var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
+      var editAttr = !isPhone ? ' data-col="' + esc(h) + '"' : '';   // FB260912-133406: corp 스코프도 인라인 편집 허용(저장=pass-through GAS)
       var _cv = row[h] != null ? row[h] : '—';
       /* 일자 칸(GM 지시 2026-08-03) — ③좁아서 읽기 불편하던 것을 넓히고 ④'2026-'을 '26-'으로 줄인다.
          Contact 5칸을 뺀 자리를 여기에 쓴다. 표시만 바꾸고 저장 값은 네 자리 연도 그대로다
@@ -9760,7 +9760,7 @@ function _wireActiveDblclick(){
     if (!td) return;
     var col = td.dataset.col;
     if (!col) {
-      if (_activeScope === 'corp') showToast('법인 현황은 읽기 전용입니다 — 수정은 유효회원 탭에서', 'err');
+      /* 휴대폰·특수 액션 칸은 corp 포함 전 스코프에서 수정 불가 */
       return;
     }
     if (td.dataset.editing) return;           // 이미 편집 중
