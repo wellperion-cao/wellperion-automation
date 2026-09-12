@@ -267,6 +267,10 @@ def _next_todo_id():
     ★왜 시퀀스도 새 표도 없나: 이 id 는 순번이 아니라 시각 문자열이다. 구매요청 번호(최댓값+1)와 달리
       두 채번기가 같은 규칙으로 각자 매겨도 서로 어긋날 값이 없다 — 이어 갈 seed 도 필요 없다.
     겹칠 조건은 같은 밀리초에 들어온 두 요청뿐이고, 그건 GAS 원본과 똑같은 조건이다(정확도 무변).
+
+    ⚠️ 2026-09-12 현재 GAS 쪽(업무&결재 현황.js todo_add 가 body.id 를 받는 한 줄)은 아직 라이브가 아니다 —
+      그 파일은 나우열M 도메인이라 AI 가 못 올린다(safe_commit CHRO 도메인 차단). 지금은 SERVER_NEEDS 가
+      todo_add 를 server 로 안 보내므로 이 함수가 불리지 않는다. SERVER_NEEDS 를 풀기 전에 GAS 부터 올린다.
     """
     t = time.time() + 9 * 3600
     return "TODO-%s%03d" % (time.strftime("%Y%m%d%H%M%S", time.gmtime(t)), int(t * 1000) % 1000)
