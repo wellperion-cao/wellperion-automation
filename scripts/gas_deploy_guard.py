@@ -261,9 +261,12 @@ def _fetch_count_for(script_id: str, local_dir: str) -> tuple[int | None, str]:
     count = None
     source = 'unknown'
     if access_token:
-        count = gvm._fetch_version_count(script_id, access_token)
-        if count is not None:
-            source = 'api'
+        # _fetch_version_count 는 (남은 버전 수, 최고 버전 번호) 튜플이다 — 여기선 앞의 것만 쓴다.
+        # (2026-09-12 실측 수리: 튜플을 그대로 count 에 담아 _decide 가 tuple >= int 로 터졌다 — 관문이
+        #  통째로 막혀 모든 GAS 배포가 raw clasp 우회로 샐 뻔했다.)
+        fetched = gvm._fetch_version_count(script_id, access_token)
+        if fetched is not None:
+            count, source = fetched[0], 'api'
     if count is None:
         count = gvm._clasp_fallback(local_dir)
         if count is not None:
