@@ -38,8 +38,25 @@ if hasattr(sys.stdout, "buffer"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROLES = ["ceo", "cfo", "chro", "cmo", "coo", "cpo", "cto", "cbo"]
-NICK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
-        "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
+_NICK_FALLBACK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
+                  "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
+
+
+def _load_nicks() -> dict:
+    """ssot/ownership_map.json > roles[].{title,nick} — title.lower()=role key.
+    새 파트너사 도입 시 ownership_map.json 만 바꾸면 부팅 슬라이스 닉네임이 자동으로 따라온다.
+    파일이 없거나 파싱 실패면 위 fallback 을 쓴다(ponytail: 뼈대 파일 하드코딩 제거)."""
+    path = _REPO / "ssot" / "ownership_map.json"
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+        return {r["title"].lower(): r["nick"]
+                for r in d.get("roles", [])
+                if r.get("title") and r.get("nick")}
+    except Exception:
+        return {}
+
+
+NICK = {r: (_load_nicks() or _NICK_FALLBACK).get(r, r) for r in ROLES}
 
 # ponytail: incidents.json엔 role 필드가 없다 — watch_globs 경로 문자열에 역할 도메인
 # 힌트가 들어있는지 substring 매치로 근사한다(완벽한 귀속 아님·과대매칭 가능 → 아래서

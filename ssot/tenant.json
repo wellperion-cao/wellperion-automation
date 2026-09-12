@@ -30,6 +30,43 @@
     "_상호_정하는_때": "모듈까지 함께 파는 비즈니스 모델이 구축된 시점 (GM 2026-09-09)",
     "_웰페리온의_자리": "백그라운드 — 실증 사례이자 1호 파트너사. 파는 회사의 얼굴이 아니다."
   },
+  "new_tenant_onboarding": {
+    "_": "새 파트너사 도입 시 채워야 할 것의 지도. 값을 여기에 쓰지 않는다 — 아래 경로 파일에 쓴다(약속 L01). 빈 양식 = launchers/운영가이드팩.md",
+    "단계": [
+      {
+        "seq": 1,
+        "이름": "필수 — 반드시 바꿔야 한다",
+        "항목": [
+          {"파일": "ssot/canon_values.json",    "채울_것": "회사명·주소·전화·포지셔닝·미션·공식링크·봇 이름"},
+          {"파일": "ssot/brand.json",            "채울_것": "브랜드 색상 코드·폰트·SNS 계정"},
+          {"파일": "ssot/ownership_map.json",    "채울_것": "C-Level 별 닉네임·담당 화면"},
+          {"파일": "ssot/publish_channels.json", "채울_것": "카카오톡 채팅방 ID·텔레그램 봇 토큰·채널 Chat ID"},
+          {"파일": "ssot/forbidden_terms.json",  "채울_것": "회사 고유 금지어·대체어 목록"},
+          {"파일": "wellperion-agents/.claude/agents/ai-*.md", "채울_것": "C-Level 페르소나 7종(회사명·도메인·실무진 이름)"}
+        ]
+      },
+      {
+        "seq": 2,
+        "이름": "권장 — 운영 품질에 영향",
+        "항목": [
+          {"파일": "ssot/kpi.json",              "채울_것": "C-Level 별 KPI 목표값·실무진 이름·역할"},
+          {"파일": "ssot/sheet_columns.json",    "채울_것": "회원·문의·점검 Google Sheets 열 이름"},
+          {"파일": "ssot/decision_contracts.json","채울_것": "주요 결정 이력·버전 계약"},
+          {"파일": "ssot/자율화규약.md",           "채울_것": "권한 분기 조건(자율 가능 범위)"},
+          {"파일": ".claude/skills/wellperion-brand/SKILL.md", "채울_것": "브랜드 제작 규격 상세"}
+        ]
+      },
+      {
+        "seq": 3,
+        "이름": "검증 — 채운 뒤 실행",
+        "commands": [
+          "python ssot/forbidden_scan.py",
+          "python ssot/divergence_scan.py",
+          "python scripts/boot_pack.py --selftest"
+        ]
+      }
+    ]
+  },
   "tenants": {
     "_": "이 ERP 를 쓰는 회사들. 회사가 늘면 여기 한 벌씩 는다.",
     "_기본": "wellperion",
