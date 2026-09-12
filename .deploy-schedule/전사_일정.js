@@ -209,7 +209,10 @@ function saveSchedule_(body) {
   }
 
   propSet_(props, SCHEDULE_PROP, JSON.stringify(data));
-  var newRev = nowStr + '#' + data.items.length;   // 판번호 = 저장시각+건수(사람이 읽어도 뜻이 보인다)
+  // 판번호 = 저장시각+건수(사람이 읽어도 뜻이 보인다).
+  // 서버 채번(배 1195 ④ — 되밀기가 서버가 매긴 판번호를 실어 보낸다) 이 오면 그대로 쓴다:
+  // 서버와 시트가 같은 판번호를 봐야 다음 저장의 baseRev 대조가 선다. 안 오면 종전대로 여기서 매긴다.
+  var newRev = String(body.rev || '') || (nowStr + '#' + data.items.length);
   props.setProperty(SCHEDULE_REV_PROP, newRev);
   // ※ 캘린더 반영은 여기서 부르지 않는다 — 웹앱 배포본이 캘린더 권한을 새로 받아야 하고,
   //    승인 전에는 저장 자체가 막힌다(저장이 본업이다). 시간 트리거가 1시간마다 따라잡는다.
