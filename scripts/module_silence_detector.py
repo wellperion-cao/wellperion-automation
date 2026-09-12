@@ -237,7 +237,9 @@ def _worklog_signal(area: str, root: Path):
                     continue
                 if str(row.get("area") or "") != area:
                     continue
-                if str(row.get("result") or "") != "ok":
+                if str(row.get("result") or "") not in ("ok", "warn"):
+                    # warn = 정상 실행이지만 변경 없음(갱신 목표 없음 등) — 신선도 인정
+                    # 에러·크래시(worklog 줄 자체 없음)와 구분됨
                     continue
                 ts = str(row.get("ts") or "")
                 if not ts:
