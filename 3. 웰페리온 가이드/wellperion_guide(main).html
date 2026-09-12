@@ -729,15 +729,25 @@
         열쇠 유무로 캐시 키를 가른다 — 섞으면 GM 개인 업무가 새거나 사라진다.
      실패하면 캐시를 비워 다음 시도가 다시 부르게 한다(실패를 영원히 캐시하지 않음). */
   window.__todoListCache = window.__todoListCache || {};
+  // ★읽기 원천 전환(배1039 · 2026-09-12) — ERP 도메인에서 /api/todo 먼저(같은 담당자 가림 규칙 · GM 열쇠 그대로 통과),
+  //   실패하면 종전 GAS(action=todo_list). GitHub Pages 는 ERP_API_ON=false 라 종전 그대로.
+  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+  function apiFirst(path, gasFn, tag){
+    if (!ERP_API_ON) return gasFn();
+    return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+  }
   window.fetchTodoListShared = function(gmkey){
     var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
     var key = gmkey ? ('gm:' + gmkey) : 'plain';
     var c = window.__todoListCache;
     if (c[key]) return c[key];
-    var url = TODO_API_URL + '?action=todo_list&_=' + Date.now()
-      + (gmkey ? ('&include_gm=1&gmkey=' + encodeURIComponent(gmkey)) : '');
-    var p = fetch(url, { redirect:'follow' })
-      .then(function(r){ return r.json(); })
+    var qs = gmkey ? ('&include_gm=1&gmkey=' + encodeURIComponent(gmkey)) : '';
+    var gas = function(){
+      return fetch(TODO_API_URL + '?action=todo_list&_=' + Date.now() + qs, { redirect:'follow' })
+        .then(function(r){ return r.json(); });
+    };
+    var p = apiFirst('/api/todo?limit=1000' + qs, gas, '업무SSOT공유')
       .catch(function(e){ c[key] = null; throw e; });
     c[key] = p;
     return p;
@@ -755,6 +765,13 @@
     var SURVEY_URL   = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
     var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
     var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/misc/todo/{home_kpi,sales_monthly} 먼저(GAS 응답 모양 그대로), 실패하면 종전 GAS.
+    var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+    function apiFirst(path, gasFn, tag){
+      if (!ERP_API_ON) return gasFn();
+      return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+    }
 
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
     // 업무·결재 조회 실패 표시 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
@@ -959,10 +976,20 @@
     //   scope 미지정=연도 스코프)으로 통일 — gviz 어댑터 전량 제거(사문화 대비 원본은 git 이력으로 롤백 가능).
     (function loadLessonInqKpi(){
       var SURVEY_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+      // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/lesson/stats 먼저(lesson_stats 응답 그대로 미러), 실패하면 종전 GAS.
+      var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+      function apiFirst(path, gasFn, tag){
+        if (!ERP_API_ON) return gasFn();
+        return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+          .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+      }
       function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
       function fetchStats(type) {
-        return fetch(SURVEY_URL + '?action=lesson_stats&type=' + encodeURIComponent(type) + '&_pv=' + Date.now(), { redirect:'follow' })
-          .then(function(r){ return r.json(); })
+        var gas = function(){
+          return fetch(SURVEY_URL + '?action=lesson_stats&type=' + encodeURIComponent(type) + '&_pv=' + Date.now(), { redirect:'follow' })
+            .then(function(r){ return r.json(); });
+        };
+        return apiFirst('/api/lesson/stats?type=' + encodeURIComponent(type) + '&scope=year', gas, '강습문의-' + type)
           .then(function(d){
             if (!d || !d.ok) throw new Error('lesson_stats 실패');
             return { total: d.total || 0, month: d.thisMonth || 0 };
@@ -1312,10 +1339,14 @@
         }).catch(function(){ /* 스냅샷 실패해도 라이브 대기로 자연 폴백 */ });
       }
       Promise.all([
-        fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
+        apiFirst('/api/misc/todo/home_kpi', function(){
+          return fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); });
+        }, '홈매출KPI'),
         fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
         /* 당월 미마감 시 마지막 마감월 표시용(2026-08-01 GM 지적) — home_kpi와 병렬, 실패해도 조용히 폴백 */
-        fetch(BASE + '?action=sales_monthly&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+        apiFirst('/api/misc/todo/sales_monthly', function(){
+          return fetch(BASE + '?action=sales_monthly&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); });
+        }, '센터매출정본').catch(function(){ return null; }),
         /* 당월 진행중 누적(monthInProgress)은 GAS home_kpi가 아니라 서버 스냅샷에만 실려 온다
            (2026-08-03) — 라이브가 스냅샷을 덮어써도 당월 숫자가 사라지지 않도록 같이 읽는다. */
         fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
@@ -1333,6 +1364,13 @@
   // 공개 reg_board GET(무키·마스킹·집계) → 접수/처리중/완료 카운트. voc_list(키 게이트)에 의존하지 않음. 실패 시 "—" 유지.
   (function loadVocKpi(){
     var RECEPTION_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/reception/board 먼저(reg_board 와 같은 모양 {ok,count,data}), 실패하면 종전 GAS.
+    var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+    function apiFirst(path, gasFn, tag){
+      if (!ERP_API_ON) return gasFn();
+      return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+    }
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
     function curYM(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
     // 접수일시 필드(reg_board 원본 영문키=createdAt) 기준 이번달 판정 — 완료(처리)일자 필드는 데이터원에 없어
@@ -1413,8 +1451,10 @@
         _vocGrid.textContent = '종합접수처를 아직 불러오는 중입니다 — 응답이 늦습니다';
       }
     }, 20000);
-    fetch(RECEPTION_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
-      .then(function(r){ return r.json(); })
+    apiFirst('/api/reception/board', function(){
+      return fetch(RECEPTION_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
+        .then(function(r){ return r.json(); });
+    }, '종합접수처KPI')
       .then(function(d){
         _vocDone = true; clearTimeout(_vocSlow);
         if(d && d.ok){ try { localStorage.setItem('wp_reg_board_cache', JSON.stringify(d)); } catch(_e){} }
@@ -4621,6 +4661,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       // 운영부 실무진 명단 — 운영부 모듈 카드(todo_list 필터)와 1층 관리기준 점검(업무 마감 넘김 축)이
       // 같은 기준을 쓴다(약속 L01 — 값 복제 금지). 정본 = ssot/kpi.json roles.coo.staff + _부서반장.
       var OPS_STAFF = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
+      // ★읽기 원천 전환(배1039 · 2026-09-12) — ERP 도메인에서 서버 미러 먼저, 실패(404 포함)하면 종전 GAS.
+      //   jget 과 같은 실패=null 관례 유지(throw 없이 null 반환) — 이 IIFE 카드들은 전부 null 을 '측정없음'으로 그린다.
+      var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+      function apiFirstJ(path, gasFn, tag){
+        if (!ERP_API_ON) return gasFn();
+        return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+          .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+      }
       /* 카드 1장 = 모듈 1개. 구성은 GM 확정(2026-07-25 딥인터뷰): **큰 숫자(대표값) + 작은 경고(볼 일)**.
          경고가 없으면 회색 정보 한 줄로 떨어뜨린다(빈 줄을 두지 않는다 — 카드 높이가 들쭉날쭉해짐).
          ★가짜 숫자 금지: 값이 없으면 '—' + '아직 측정 없음'. 0%로 떨어뜨리지 않는다. */
@@ -4730,7 +4778,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           paint();
         });
 
-        withTimeout(jget(CHECK_API+"?action=today_live&dept=support&_pv="+pv).then(pickToday).catch(function(){return null;}), 8000, null).then(function(supportRow){
+        withTimeout(apiFirstJ('/api/check/support/today', function(){
+          return jget(CHECK_API+"?action=today_live&dept=support&_pv="+pv);
+        }, '오늘점검-지원부').then(function(d){ return (d && d.today_live) ? d.today_live : d; }).then(pickToday).catch(function(){return null;}), 8000, null).then(function(supportRow){
           var byGender = supportRow && supportRow.byGender;
           S.mRow = byGender && byGender.m ? byGender.m : null; S.mPct = S.mRow ? pctOf(S.mRow) : null;
           S.wRow = byGender && byGender.f ? byGender.f : null; S.wPct = S.wRow ? pctOf(S.wRow) : null;
@@ -4758,7 +4808,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         });
 
         // 공지 — 저장 건수 + 최근 공지 제목·경과일(30일 초과면 경고색)
-        withTimeout(jget(TODO_API+"?action=notice_list&_pv="+pv), 8000, null).then(function(notice){
+        withTimeout(apiFirstJ('/api/misc/todo/notice_list', function(){
+          return jget(TODO_API+"?action=notice_list&_pv="+pv);
+        }, '공지목록'), 8000, null).then(function(notice){
           var nrows = notice && (notice.data||notice.notices);
           if(Array.isArray(nrows)){
             S.noticeTotal = nrows.length+'건';
@@ -4780,7 +4832,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
            올라가 있어 주소만 알면 누구나 그 응답을 받는다. reg_board 는 같은 행을 이름·연락처만
            가려서 주므로(_regMask · 키·필드 동일) 화면 숫자는 그대로다. GAS 접근 게이트(TOKEN_ENFORCE)를
            켤 때 이 호출이 브라우저에서 나가 열쇠를 못 넣는 문제도 함께 사라진다. */
-        withTimeout(jget(RECEPTION_API+"?action=reg_board&_pv="+pv), 8000, null).then(function(reception){
+        withTimeout(apiFirstJ('/api/reception/board', function(){
+          return jget(RECEPTION_API+"?action=reg_board&_pv="+pv);
+        }, '종합접수처-카드'), 8000, null).then(function(reception){
           var rrows = reception && (reception.data||reception.rows);
           if(Array.isArray(rrows)){
             var DONE = {'완료':1,'처리완료':1,'해결':1};
@@ -4798,7 +4852,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
         /* 운영부 — 실무진(최준용M·윤병현AM·이경연 실장) 담당 업무 중 완료 아닌 것.
            ★종합접수처와 겹치지 않게 '업무 SSOT' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
-        withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, null).then(function(todo){
+        withTimeout(apiFirstJ('/api/todo?limit=1000', function(){
+          return jget(TODO_API+"?action=todo_list&_pv="+pv);
+        }, '업무SSOT-운영부카드'), 8000, null).then(function(todo){
           var trows = todo && todo.data;
           if(Array.isArray(trows)){
             var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]; });
@@ -4845,7 +4901,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var missing = [];
         var P = {
           kakao: withTimeout(siljangJget(RAW_BASE+"status/kakao_last_send.json?_pv="+pv), 8000, undefined),
-          todo: withTimeout(siljangJget(TODO_API+"?action=todo_list&_pv="+pv), 8000, undefined),
+          todo: withTimeout(apiFirstJ('/api/todo?limit=1000', function(){
+            return siljangJget(TODO_API+"?action=todo_list&_pv="+pv);
+          }, '업무SSOT-실장요약'), 8000, undefined),
           reception: withTimeout(siljangJget(RAW_BASE+"status/reception_watch.json?_pv="+pv), 8000, undefined),
           daily: withTimeout(siljangGetText(RAW_BASE+"status/coo_daily.jsonl?_pv="+pv), 8000, undefined)
         };
@@ -5507,7 +5565,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           goodLines = goodLines.slice(0,3); // 최대 3줄
           goodEl.innerHTML = goodLines.length ? ('<div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);margin-bottom:2px;">👏 잘 되고 있는 것</div>' + goodLines.join('')) : '';
         });
-        withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, undefined).then(function(todo){
+        withTimeout((ERP_API_ON ? fetch('/api/todo?limit=1000').then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+              .catch(function(e){ console.warn('[업무SSOT-주간보고] API 실패 → GAS 폴백:', e && e.message); return jget(TODO_API+"?action=todo_list&_pv="+pv); })
+            : jget(TODO_API+"?action=todo_list&_pv="+pv)), 8000, undefined).then(function(todo){
           var trows = todo && todo.data;
           if(!Array.isArray(trows)){ tableEl.innerHTML = '<div style="font-size:var(--fs-2);color:var(--dim);">업무 SSOT를 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
           var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]; })
@@ -10594,6 +10654,13 @@ function crTab(btn, panelId) {
   // ── home KPI (라이브) ───────────────────
   (function(){
     var CHECK_API = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';   // 현재 배포(@56) — 옛 @9는 스냅샷 집계 없어 오늘 0/0 반환→home '안뜸' 원인. GM 2026-06-16 시우.
+    // ★읽기 원천 전환(배1039 · 2026-09-12) — /api/check/{dept}/today 먼저(today_live·board 미러), 실패하면 종전 GAS.
+    var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+    function apiFirst(path, gasFn, tag){
+      if (!ERP_API_ON) return gasFn();
+      return fetch(path).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
+    }
     var FACILITY_URL = 'coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
     var SUPPORT_URL  = 'coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
     var PARKING_URL  = 'coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
@@ -11030,10 +11097,15 @@ function crTab(btn, panelId) {
       }
       // facility=weekly(스냅샷·무회귀 유지) / support=today_live(서버 실시간 단일값 — 대시보드와 동일). 2026-06-16 시우.
       var fP=fetch(CHECK_API+'?action=weekly&dept=facility&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-      var sP=fetch(CHECK_API+'?action=today_live&dept=support&date='+encodeURIComponent(today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+      var sP=apiFirst('/api/check/support/today?date='+encodeURIComponent(today), function(){
+        return fetch(CHECK_API+'?action=today_live&dept=support&date='+encodeURIComponent(today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();});
+      }, '오늘점검-홈KPI').then(function(d){ return (d && d.today_live) ? d.today_live : d; }).then(pickToday).catch(function(){return null;});
       // facility board blob(action=board&key=FACILITY_CHECK_<date>) — 시설부 체계.html이 제출마다 누적하는 회차 원본(submissions[])·현재 작성중 draft(rounds).
       // GAS 수정 없이 기존 action=board 그대로 재사용(가산만, weekly 집계 무변경 — 완료율/지원부 회귀 0). GM go 2026-07-14 시우.
-      var bP=fetch(CHECK_API+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(function(res){ return (res&&res.ok!==false)?res.board:null; }).catch(function(){return null;});
+      // ★읽기 원천 전환(배1039) — /api/check/facility/today 가 같은 board blob 을 res.board 에 그대로 담아 준다.
+      var bP=apiFirst('/api/check/facility/today?date='+encodeURIComponent(today), function(){
+        return fetch(CHECK_API+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();});
+      }, '시설부오늘보드').then(function(res){ return (res&&res.ok!==false)?res.board:null; }).catch(function(){return null;});
       // fcheck_ranges_get(계약서 §3) — 배포 전엔 반드시 실패(catch→null)하는 게 정상. 실패해도 나머지 카드는 그대로 동작해야 한다(계약 §4).
       var rP=fetchFacilityRanges();
       // 주차관리부 — 시설부와 같은 weekly 형식(2026-08-28 GM 지시로 카드 추가). 실패해도 나머지 카드는 그대로 뜬다.
