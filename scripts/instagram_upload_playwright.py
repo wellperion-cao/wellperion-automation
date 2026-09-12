@@ -1870,13 +1870,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--account",
-        default=DEFAULT_ACCOUNT,
+        default=None,
         help=(
             f"인스타그램 계정 식별자 (기본: {DEFAULT_ACCOUNT}). "
             "프로필 경로: profiles/instagram/{account}. "
             "예: --account wellperion"
         ),
     )
+    parser.add_argument("--tenant", default="wellperion", help="업체 설정 ID (scripts/tenants/{id}.json)")
     parser.add_argument(
         "--content-folder",
         default=None,
@@ -1921,6 +1922,10 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    from tenant_loader import load_tenant as _lt
+    _tcfg = _lt(args.tenant)
+    if args.account is None:
+        args.account = _tcfg["instagram_account"]
 
     if args.mode == "selftest":
         _selftest_normalize_ig_ratio()

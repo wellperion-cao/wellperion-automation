@@ -1735,12 +1735,19 @@ def parse_args() -> argparse.Namespace:
             "(백그라운드 실행 — stdin 없음, asyncio.sleep 방식)"
         ),
     )
+    parser.add_argument("--tenant", default="wellperion", help="업체 설정 ID (scripts/tenants/{id}.json)")
     return parser.parse_args()
 
 
 def main() -> int:
     import asyncio
+    global DANGGN_BIZ_ACCOUNT_ID, DANGGN_BIZ_URL, GOOGLE_LOGIN_EMAIL
     args = parse_args()
+    from tenant_loader import load_tenant as _lt
+    _tcfg = _lt(args.tenant)
+    DANGGN_BIZ_ACCOUNT_ID = _tcfg["danggn_biz_account_id"]
+    DANGGN_BIZ_URL = f"https://bizprofile.daangn.com/biz_accounts/{DANGGN_BIZ_ACCOUNT_ID}/manager/home/"
+    GOOGLE_LOGIN_EMAIL = _tcfg["danggn_google_login_email"]
     if args.mode == "dryrun":
         return run_dryrun(args)
     if args.mode == "setup":

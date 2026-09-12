@@ -1463,7 +1463,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--campaign", default=None, help="UTM campaign 슬러그 (미지정 시 생략·하위호환)")
     parser.add_argument("--image-dir", dest="image_dir", default=None, help="이미지 폴더")
     parser.add_argument("--image-glob", dest="image_glob", default="cafe_*.jpg", help="이미지 파일명 패턴")
-    parser.add_argument("--menuid", type=int, default=DEFAULT_MENU_ID, help=f"카페 게시판 menuid (기본 {DEFAULT_MENU_ID}=웰페리온)")
+    parser.add_argument("--menuid", type=int, default=None, help=f"카페 게시판 menuid (기본 {DEFAULT_MENU_ID}=웰페리온)")
     parser.add_argument(
         "--sticker-count", dest="sticker_count", type=int, default=STICKER_COUNT_DEFAULT,
         help=f"본문에 삽입할 스티커 개수 (기본 {STICKER_COUNT_DEFAULT}, 0이면 생략)",
@@ -1472,12 +1472,24 @@ def parse_args() -> argparse.Namespace:
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",
     )
+    parser.add_argument("--tenant", default="wellperion", help="업체 설정 ID (scripts/tenants/{id}.json)")
     return parser.parse_args()
 
 
 def main() -> int:
     import asyncio
+    global CAFE_NAME, CAFE_CLUB_ID, DEFAULT_MENU_ID, BOARD_TARGET_TEXT, PREFIX_TARGET_TEXT, LINK_CARD_CTA_URL
     args = parse_args()
+    from tenant_loader import load_tenant as _lt
+    _tcfg = _lt(args.tenant)
+    CAFE_NAME = _tcfg["naver_cafe_name"]
+    CAFE_CLUB_ID = _tcfg["naver_cafe_club_id"]
+    DEFAULT_MENU_ID = _tcfg["naver_cafe_menu_id"]
+    BOARD_TARGET_TEXT = _tcfg["naver_cafe_board_text"]
+    PREFIX_TARGET_TEXT = _tcfg["naver_cafe_prefix_text"]
+    LINK_CARD_CTA_URL = _tcfg["inquiry_url"]
+    if args.menuid is None:
+        args.menuid = DEFAULT_MENU_ID
     if args.mode == "dryrun":
         return run_dryrun(args)
     if args.mode == "setup":

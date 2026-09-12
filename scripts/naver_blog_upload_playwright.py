@@ -1714,12 +1714,18 @@ def parse_args() -> argparse.Namespace:
         "--i-am-sure", dest="i_am_sure", action="store_true",
         help="publish 모드 GM go 가드 해제 플래그 (실 발행)",
     )
+    parser.add_argument("--tenant", default="wellperion", help="업체 설정 ID (scripts/tenants/{id}.json)")
     return parser.parse_args()
 
 
 def main() -> int:
     import asyncio
+    global DEFAULT_BLOG_ID, LINK_CARD_CTA_URL
     args = parse_args()
+    from tenant_loader import load_tenant as _lt
+    _tcfg = _lt(args.tenant)
+    DEFAULT_BLOG_ID = _tcfg["naver_blog_id"]
+    LINK_CARD_CTA_URL = _tcfg["inquiry_url"]
     if args.mode == "dryrun":
         return run_dryrun(args)
     if args.mode == "setup":

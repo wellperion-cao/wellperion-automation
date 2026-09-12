@@ -80,7 +80,9 @@ for _stream_name in ("stdout", "stderr"):
             pass
 
 ROOT = Path.home() / "welperion-automation"
-REVIEW_DIR = ROOT / "3. 웰페리온 가이드" / "cmo" / "review"
+_tenant_review_rel = os.environ.get("WELLPERION_TENANT_REVIEW_DIR") or "3. 웰페리온 가이드/cmo/review"
+REVIEW_DIR = ROOT / _tenant_review_rel
+_TENANT_MAIN_ACCOUNT: str = os.environ.get("WELLPERION_TENANT_MAIN_ACCOUNT", "wellperion")
 REVIEW_QUEUE_PATH = REVIEW_DIR / "review_queue.json"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
@@ -325,7 +327,7 @@ def _auto_register_channel_siblings(
     실패해도 IG 등록은 이미 끝났으므로 죽지 않는다(호출부에서 예외 격리 — best-effort).
     반환: 실제 upsert 된 형제 id 리스트(승인 카드 그룹핑용, 비어있으면 형제 없음/해당無).
     """
-    if account != "wellperion":
+    if account != _TENANT_MAIN_ACCOUNT:
         return []  # 개인계정 — 멀티채널 대상 아님(조용히 건너뜀)
 
     try:
@@ -521,7 +523,7 @@ def register_publish(
         # 사고: 본문이 없어 (b2) 형제 자동등록이 조용히 건너뛰었던 근본원인 봉합).
         # ★ 등록 로직은 손대지 않음 — 이 단계는 "본문 파일 생성"만, (b2)가 존재 확인·등록 담당.
         # 실패해도 IG 등록은 이미 끝났으므로 죽지 않음(best-effort).
-        if account == "wellperion":
+        if account == _TENANT_MAIN_ACCOUNT:
             try:
                 from generate_channel_copy import generate_and_write_channel_copy
                 generate_and_write_channel_copy(content_folder, title, ig_caption_text=caption)
