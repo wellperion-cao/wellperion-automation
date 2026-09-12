@@ -1172,10 +1172,20 @@
   var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
   /* 서버 거울 먼저, 실패하면 종전 GAS — 매출·접수 공용(배 960 게이트 레인 2026-09-04 시토).
      GitHub Pages 에선 ERP_API_ON 이 false 라 종전 GAS 직행 그대로다. */
-  function apiFirst(path, gasFn, tag){
+  // ★검토 지적 수리(배1039 · 2026-09-12) — sync cron 이 멈춰도 미러 표가 그대로 남아있으면 200 을 계속 준다.
+  //   synced_at(또는 _synced_at)이 maxMin 분보다 오래됐으면 신선하지 않다고 본다 — validate 가 throw 하면 catch 가 GAS 로 폴백.
+  //   칸이 없는 라우트(예: /api/reception/board)는 검사 생략.
+  function _apiStale(ts, maxMin){
+    if (!ts) return true;
+    var t = Date.parse(String(ts).replace(' ', 'T') + '+09:00');
+    if (isNaN(t)) return true;
+    return (Date.now() - t) > (maxMin || 30) * 60000;
+  }
+  function apiFirst(path, gasFn, tag, validate){
     if (!ERP_API_ON) return gasFn();
     return fetch(path)
       .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+      .then(function(d){ if (validate) validate(d); return d; })
       .catch(function(e){ console.warn('[' + tag + '] API 실패 → GAS 폴백:', e && e.message); return gasFn(); });
   }
   function salesRead(gas, action, gasFn, tag){
@@ -1329,14 +1339,14 @@
     var sup = apiFirst('/api/check/support/monthly?month=' + encodeURIComponent(monKey), function(){
       return fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=support&_cb=' + cb, {redirect:'follow', cache:'no-store'})
         .then(function(r){ return r.json(); });
-    }, '점검월간-지원부')
+    }, '점검월간-지원부', function(d){ if (_apiStale(d && d.synced_at)) throw new Error('stale'); })
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
     // 시설부 월간(dept=facility·배406) — home과 동일 CHECK_GAS. 시설점검은 입력률+이상건수 지표(완료율 아님·metric map). 데이터 없는 달=null(정직).
     var fac = apiFirst('/api/check/facility/monthly?month=' + encodeURIComponent(monKey), function(){
       return fetch(CHECK_GAS + '?action=monthly_report&month=' + encodeURIComponent(monKey) + '&dept=facility&_cb=' + cb, {redirect:'follow', cache:'no-store'})
         .then(function(r){ return r.json(); });
-    }, '점검월간-시설부')
+    }, '점검월간-시설부', function(d){ if (_apiStale(d && d.synced_at)) throw new Error('stale'); })
       .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
     var live = Promise.all([sup, fac]).then(function(arr){
@@ -1383,7 +1393,13 @@
       return fetch(CHECK_GAS + '?action=today_live&dept=support&date=' + encodeURIComponent(today) + '&_cb=' + Date.now(), {redirect:'follow', cache:'no-store'})
         .then(function(r){ return r.json(); });
     };
-    return apiFirst('/api/check/support/today?date=' + encodeURIComponent(today), gas, '오늘점검')
+    // ★검토 지적 ① 과 같은 본질(배1039 · 2026-09-12 발견·같이 수리) — today_live 유무·신선도 판정을
+    //   apiFirst 의 fetch 체인 안(validate)에 둔다. 밖에서 걸러내면(기존 코드) API 가 200+today_live:null 을
+    //   줄 때 GAS 를 못 부르고 조용히 null 을 반환했다.
+    return apiFirst('/api/check/support/today?date=' + encodeURIComponent(today), gas, '오늘점검', function(d){
+        if (!d || !d.today_live) throw new Error('today_live 없음');
+        if (_apiStale(d.synced_at)) throw new Error('stale');
+      })
       .then(function(d){
         var tl = d && d.today_live;
         if(tl && typeof tl.total === 'number'){
@@ -1484,7 +1500,7 @@
       return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
         .then(function(r){ return r.json(); });
     };
-    return apiFirst('/api/misc/todo/home_kpi', gas, '홈매출')
+    return apiFirst('/api/misc/todo/home_kpi', gas, '홈매출', function(d){ if (_apiStale(d && d._synced_at)) throw new Error('stale'); })
       .then(function(res){
         if(res && res.ok && res.sales && typeof res.sales.month === 'number') return res.sales.month;
         var curMonth = res && res.sales && res.sales.curMonth;
@@ -1612,7 +1628,7 @@
       return fetch(GAS_URL + '?action=sales_monthly&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
         .then(function(r){ return r.json(); });
     };
-    return apiFirst('/api/misc/todo/sales_monthly', gas, '센터매출정본')
+    return apiFirst('/api/misc/todo/sales_monthly', gas, '센터매출정본', function(d){ if (_apiStale(d && d._synced_at)) throw new Error('stale'); })
       .then(function(res){
         if(res && res.ok && res.months && res.months.length){
           var arr = new Array(12).fill(null);
