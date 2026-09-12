@@ -176,8 +176,8 @@
 </div>
 
 <script>
-const BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/";
-const QUEUE_URL = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json";
+const BASE = "./";
+const QUEUE_URL = "../3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cmo/review/review_queue.json";
 
 async function fetchJSON(url) {
   const res = await fetch(url + "?t=" + Date.now(), {cache: "no-store"});
