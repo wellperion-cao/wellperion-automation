@@ -45,6 +45,15 @@ def test_header_counts_real_open_items():
     assert out.splitlines()[0] == "🧾 확인 부탁드릴 것 11건", out.splitlines()[0]
 
 
+def test_send_skip_mark_only_matches_the_empty_case():
+    # 「보낼 것 없음」만 정상 종료(rc=0). 진짜 실패 BLOCKED 는 그대로 실패로 남아야 한다.
+    assert d.SEND_SKIP_MARK in "BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {'★운영부': 'via_manager'}"
+    for real_fail in ("BLOCKED: 2개 방 실패",
+                      "BLOCKED: 다른 카톡 발신이 화면을 잡고 있어 보내지 못했다",
+                      "BLOCKED: 전송 대상 방이 없음(kakao_rooms.json)"):
+        assert d.SEND_SKIP_MARK not in real_fail, real_fail
+
+
 def test_no_fold_keeps_everything():
     relay = [_mk("이경연 실장", "전달문 A", "2026-09-05")]
     nudge = [_mk("이경연 실장", "#101 원장건", "2026-01-01")]
@@ -56,5 +65,6 @@ if __name__ == "__main__":
     test_relay_stays_inline_when_section_folds()
     test_relay_never_truncated_by_per_person_budget()
     test_header_counts_real_open_items()
+    test_send_skip_mark_only_matches_the_empty_case()
     test_no_fold_keeps_everything()
     print("ok")

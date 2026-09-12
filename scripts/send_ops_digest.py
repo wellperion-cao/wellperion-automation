@@ -2258,6 +2258,10 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str, str]":
             "\n".join(_cap_line(l, ASKS_TITLE_CAP) for l in detail))
 
 
+# 보낼 것이 없어 돌아오는 유일한 문구 — 이 한 줄만 정상 종료로 친다(웰리 실측 2026-09-13).
+SEND_SKIP_MARK = "BLOCKED: 전량 중복/보류 스킵"
+
+
 def build_asks_section(relay_items: list, nudge_items: list) -> str:
     """배 전달(relay)·회신 부탁(nudge) 항목을 사람별로 묶어 보여준다(GM 확정 2026-09-05 ·
     배1057 "담당자별로 한 번에"). 형식 = wellperion-gm-report 스킬 §4-2-2 「★한눈에 읽히게」
@@ -3542,7 +3546,10 @@ def _send_ops_room(args) -> int:
     #   비어서 돌아온다. 그런데 이것을 rc=1 로 올려 예약작업(Wellperion-Ops-Morning-Digest-0730)이
     #   08-30 이후 거의 매일 빨간불이었다 — 늘 빨간불이면 진짜 실패가 나도 아무도 못 가른다.
     #   진짜 발송 오류(rc!=0 이면서 BLOCKED 아님)는 그대로 1 로 남는다.
-    if "BLOCKED:" in out:
+    #   ★조건은 그 한 줄로 좁힌다(웰리 실측 2026-09-13) — kakao_report_sender 는 「N개 방 실패」
+    #   「다른 카톡 발신이 화면을 잡고 있다」「전송 대상 방이 없음」 같은 진짜 실패도 BLOCKED 로
+    #   낸다. 넓게 잡으면 늘 빨간불이던 것이 이번엔 진짜 실패가 초록에 묻히는 쪽으로 뒤집힌다.
+    if SEND_SKIP_MARK in out:
         print(f"SKIP: 보낼 것 없음 — {tail}")
         return 0
     print(f"FAILED: 발송 실패(rc={proc.returncode}) — {tail}")
