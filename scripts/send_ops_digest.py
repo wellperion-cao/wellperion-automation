@@ -2205,7 +2205,7 @@ def _selfcheck_schedule_block() -> None:
 #   남은 인원·건은 "외 N건 — 링크" 한 줄로 접는다. 전체 통 40줄 안은 build_mgr_daily_brief
 #   dry-run 실측으로 판정(코드로 자르지 않음 — 8/29 GM 결정 "줄을 접지 말고 건수를 줄여라").
 ASKS_SECTION_CAP = 10  # 섹션 전체(사람줄+건줄) 상한 — 넘으면 "외 N건 — 링크" 한 줄로 접는다
-ASKS_SECTION_LINK = "https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html"
+ASKS_SECTION_LINK = "https://erp.wellperion.com/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html"
 ASKS_PER_PERSON_CAP = 5  # 사람당 이 이상은 "외 N건 · 화면"으로 접는다(총량은 안 자름)
 ASKS_TITLE_CAP = 60  # 건당 제목 1줄 60자 안에서 자른다(종전 0=안 자름 · 09-06 override)
 ASKS_HOW_CAP = 0    # 0 = 안 자름. 종전 60자
@@ -2983,7 +2983,7 @@ def _ovd_mark_sent() -> None:
 #     정보가 없다(같은 규칙). 대신 접수 날짜를 적는다 — 오래된 순 정렬은 그대로다.
 _OVD_LIST_CAP = 0            # 0 = 전부 펼침(GM 지시 2026-08-30). 종전 8건
 _OVD_CONTENT_CAP = 0         # 0 = 안 자름(GM 지시 2026-08-30). 종전 24자
-_OVD_BOARD_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
+_OVD_BOARD_URL = ("https://erp.wellperion.com/"
                   "coo/reception/종합접수처_현황.html")
 
 
@@ -3213,7 +3213,7 @@ def _send_ovd_room(room: str) -> bool:
 # 아침 통(접수·정리)에 끼워 붙이던 일정 칸을 독립된 짧은 통으로 뺐다. 부서 소관→4부서방 /
 # 관리자 건→★중간관리자(같은 일정이 두 방에 안 겹치는 배타 분류는 _is_dept_schedule_item 그대로).
 # 7일 안에 일정이 없으면 그 방 통 자체를 안 보낸다. 쿼리 없는 전사일정 링크를 맨 끝에 한 줄.
-_SCHEDULE_PAGE_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
+_SCHEDULE_PAGE_URL = ("https://erp.wellperion.com/"
                       "coo/check/전사_일정.html")
 _SCHED_PING_HEARTBEAT_ID = "morning-schedule-ping"
 
