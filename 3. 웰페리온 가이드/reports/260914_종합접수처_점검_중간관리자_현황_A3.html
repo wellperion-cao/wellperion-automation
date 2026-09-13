@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>종합접수처·점검·중간관리자 현황 — 2026-09-14 (A3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; --grey:#5C666F; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .spacer{ flex:1; } .bar .note{ font-size:11.5px; opacity:.8; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:22px 28px 14px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:7px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:13.5px; color:var(--navy); letter-spacing:6px; margin-bottom:3px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .title small{ font-size:16px; font-weight:600; color:var(--grey); letter-spacing:-.3px; margin-left:8px; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.7; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  .band{ margin-top:13px; background:var(--navy); color:#fff; padding:14px 22px; display:flex; align-items:center; gap:34px; }
+  .band .h{ font-family:'Noto Serif KR',serif; font-size:17px; font-weight:700; white-space:nowrap; letter-spacing:-.3px; }
+  .band .item{ font-size:15px; line-height:1.4; }
+  .band .item b{ color:#FFD98A; font-weight:700; font-size:17px; }
+
+  .cols{ margin-top:20px; display:flex; gap:18px; flex:1; min-height:0; }
+  .col{ flex:1; display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .colhead{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:20px; color:var(--navy);
+    border-bottom:2px solid var(--navy); padding-bottom:8px; }
+
+  .stats{ display:flex; gap:10px; }
+  .stat{ flex:1; border:1px solid var(--line); border-top:4px solid var(--navy); padding:18px 9px; text-align:center; }
+  .stat .n{ font-size:32px; font-weight:900; color:var(--navy); line-height:1.15; }
+  .stat .n small{ font-size:15px; font-weight:700; }
+  .stat .l{ font-size:13px; color:var(--grey); margin-top:6px; line-height:1.3; }
+  .stat.warn{ border-top-color:var(--warn); } .stat.warn .n{ color:var(--warn); }
+  .stat.bad{ border-top-color:var(--bad); } .stat.bad .n{ color:var(--bad); }
+
+  .badges{ display:flex; flex-wrap:wrap; gap:7px; font-size:13px; }
+  .badges span{ background:var(--navy-bg); color:var(--navy); border-radius:3px; padding:5px 10px; font-weight:500; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ border:1px solid var(--line); padding:11px 9px; font-size:13.5px; line-height:1.35; }
+  thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:13px; }
+  td.k{ background:#F6F8FA; font-weight:500; white-space:nowrap; }
+  .ctr{ text-align:center; }
+  .warn-t{ color:var(--warn); font-weight:700; } .bad-t{ color:var(--bad); font-weight:700; }
+
+  .note{ font-size:13.5px; line-height:1.75; color:#2C363F; }
+  .note b{ color:var(--navy); }
+
+  .foot{ margin-top:14px; border-top:1px solid var(--line); padding-top:10px;
+    font-size:12.5px; line-height:1.6; color:#48525B; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>종합접수처·점검·중간관리자 현황 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="spacer"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">종합접수처 · 점검 · 중간관리자 현황<small>— 오늘의 운영 스냅샷</small></div>
+    </div>
+    <div class="meta">
+      주식회사 웰페리온 · 서울 용산구 서빙고로 413<br>
+      작성 <b>AI 웰리</b> · 2026. 09. 14. 08:36 기준<br>
+      대상 <b>운영 현황 정기 보고</b> · 문서번호 <b>WP-GM-260914-01</b>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="h">오늘의 한 줄</div>
+    <div class="item">종합접수처 열린 건 <b>32건</b> · 1일 이상 경과 <b>31건</b></div>
+    <div class="item">점검 제출률(지원부) <b>0%</b> · 오전조 진행 중</div>
+    <div class="item">중간관리자 확인요청 대기 <b>28건</b> · 최장 <b>35일</b></div>
+  </div>
+
+  <div class="cols">
+
+    <!-- ① 종합접수처 -->
+    <div class="col">
+      <div class="colhead">① 종합접수처 현황</div>
+      <div class="stats">
+        <div class="stat bad"><div class="n">32</div><div class="l">열린 접수(미해결)</div></div>
+        <div class="stat bad"><div class="n">31</div><div class="l">1일↑ 경과</div></div>
+        <div class="stat"><div class="n">1<small>/0</small></div><div class="l">오늘 신규/마감</div></div>
+      </div>
+      <div class="badges">
+        <span>운영부 27</span><span>지원부(여) 3</span><span>시설부 1</span><span>P.T팀 1</span>
+      </div>
+      <table style="table-layout:fixed; font-size:12.3px">
+        <colgroup><col style="width:118px"><col style="width:58px"><col style="width:52px"><col style="width:50px"><col style="width:46px"><col></colgroup>
+        <thead><tr><th>번호</th><th>분류</th><th>부서</th><th>담당</th><th class="ctr">경과</th><th>제목</th></tr></thead>
+        <tbody>
+          <tr><td>RECEPTION-21</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">68일</td><td>파랑색 보석 은색 목걸이</td></tr>
+          <tr><td>RECEPTION-29</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">66일</td><td>민트색 owala 보온병, 로비에서 발견</td></tr>
+          <tr><td>RECEPTION-27</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">66일</td><td>금색귀걸이, 54번 여자 라카에서 발견</td></tr>
+          <tr><td>RECEPTION-35</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">63일</td><td>얇은 큐빅 팔찌, 리셉션 서랍에 보관중</td></tr>
+          <tr><td>RECEPTION-32</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">63일</td><td>Thermos 보온병 블루 색상</td></tr>
+          <tr><td>RECEPTION-43</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">62일</td><td>검정색 장우산, 신발장 앞에 뒀는데 분실</td></tr>
+          <tr><td>RECEPTION-39</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">62일</td><td>금색 귀찌 링 두 개(연결고리 없음)</td></tr>
+          <tr><td>RECEPTION-47</td><td>분실물</td><td>운영부</td><td>미배정</td><td class="ctr bad-t">61일</td><td>금테</td></tr>
+        </tbody>
+      </table>
+      <div class="note">오래된 순 상위 8건 전부 <b>분실물(운영부)</b> — 습득물 보관 후 담당 미배정 상태로 방치.</div>
+    </div>
+
+    <!-- ② 점검 현황 -->
+    <div class="col">
+      <div class="colhead">② 점검 현황</div>
+      <div class="stats">
+        <div class="stat"><div class="n">2회차</div><div class="l">시설부 · 이상 0건</div></div>
+        <div class="stat bad"><div class="n">0%</div><div class="l">지원부 0/115</div></div>
+        <div class="stat warn"><div class="n">09/12</div><div class="l">주차부 최근 제출</div></div>
+      </div>
+      <table>
+        <thead><tr><th class="k">구역·회차</th><th class="ctr">현황</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td class="k">시설부</td><td class="ctr">2회차</td><td>이상 없음 · 회차별 일지 정상</td></tr>
+          <tr><td class="k">지원부 남 오전조</td><td class="ctr">0/28</td><td class="warn-t">진행 중(마감 전)</td></tr>
+          <tr><td class="k">지원부 남 오후조</td><td class="ctr">0/15</td><td>아직 시작 전</td></tr>
+          <tr><td class="k">지원부 남 마감조</td><td class="ctr">0/15</td><td>아직 시작 전</td></tr>
+          <tr><td class="k">지원부 여 오전조</td><td class="ctr">0/27</td><td class="warn-t">진행 중(마감 전)</td></tr>
+          <tr><td class="k">지원부 여 오후조</td><td class="ctr">0/16</td><td>아직 시작 전</td></tr>
+          <tr><td class="k">지원부 여 마감조</td><td class="ctr">0/14</td><td>아직 시작 전</td></tr>
+          <tr><td class="k">주차부</td><td class="ctr bad-t">미제출</td><td class="bad-t">마지막 제출 09/12(2일째)</td></tr>
+        </tbody>
+      </table>
+      <div class="note">반복 미체크 항목(최근 7일) <b>0건</b>. 점검 미완 누적 원장 — 열린 날짜 <b class="bad-t">30일치</b>, 최장 <b class="bad-t">33일</b>(가장 오래된 항목 08/12).</div>
+    </div>
+
+    <!-- ③ 중간관리자 업무 -->
+    <div class="col">
+      <div class="colhead">③ 중간관리자 업무</div>
+      <div class="stats">
+        <div class="stat bad"><div class="n">28</div><div class="l">확인요청 대기(3인 합)</div></div>
+        <div class="stat bad"><div class="n">35일</div><div class="l">최장 경과</div></div>
+        <div class="stat"><div class="n">18</div><div class="l">SSOT 진행중(3인 합)</div></div>
+      </div>
+      <table>
+        <thead><tr><th class="k">담당자</th><th class="ctr">확인요청</th><th class="ctr">최장</th><th class="ctr">SSOT 진행중</th><th class="ctr">보류</th><th class="ctr">이번주 기한</th></tr></thead>
+        <tbody>
+          <tr><td class="k">이경연 실장</td><td class="ctr">15건</td><td class="ctr bad-t">35일</td><td class="ctr">10</td><td class="ctr">0</td><td class="ctr">0</td></tr>
+          <tr><td class="k">이정헌 소장<sup>*</sup></td><td class="ctr">5건</td><td class="ctr bad-t">35일</td><td class="ctr">0</td><td class="ctr">0</td><td class="ctr">0</td></tr>
+          <tr><td class="k">나우열M</td><td class="ctr">8건</td><td class="ctr bad-t">32일</td><td class="ctr">8</td><td class="ctr">0</td><td class="ctr">3</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <b>이경연 실장</b> 가장 오래된 건: 사우나 이용 매너 컴플레인(35일) · 분실물(목걸이)(35일)<br>
+        <b>이정헌 소장</b> 가장 오래된 건: 여자 건식사우나 앞 미끄러움 안전건(35일) · 공기청정기 청결 이슈(35일)<br>
+        <b>나우열M</b> 가장 오래된 건: 브로제이 직원등록+당일 강습매출마감 수기입력(32일)<br>
+        <sup>*</sup>소장 SSOT 진행중 = 점검·시설부 접수 관련 건만(그 밖 업무는 소장 몫 아님 — 실측 0건).
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <b>데이터 시각</b> 2026-09-14 08:36 KST 조회 기준.
+    <b>원천</b> 종합접수처=서버 원장(RECEPTION_EXEC_URL reg_list) · 점검=점검 GAS(지원부·시설부·주차부) · 확인요청=중간관리자 원장(MGR_LEDGER) · 업무 SSOT=GAS todo_list(담당자 칸 기준 집계, GM 행 제외).
+    수집 스크립트 재실행 시 값이 갱신될 수 있음 — 재발행 전 재조회 권장.
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '웰페리온_종합접수처_점검_중간관리자_현황_260914.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
