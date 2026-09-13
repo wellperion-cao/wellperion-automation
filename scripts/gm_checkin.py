@@ -791,7 +791,15 @@ def _fetch_gm_direct_objectives(day: str) -> list | None:
     try:
         data = json.loads(MONTHLY_PLAN.read_text(encoding='utf-8'))
         objs = ((data.get('months') or {}).get(day[:7]) or {}).get('objectives') or []
-        return [o for o in objs if '(GM 직접)' in str(o.get('title', ''))]
+        picked = [o for o in objs if '(GM 직접)' in str(o.get('title', ''))]
+        # progress 는 화면 편집값이라 문자열('0')이 섞여 들어온다 — 읽는 쪽에서 숫자로 맞춘다.
+        # (2026-09-14 시토: 정렬 key 가 -'0' 로 터져 저녁 정리 통이 08-15 이후 22회 조용히 실패)
+        for o in picked:
+            try:
+                o['progress'] = int(float(str(o.get('progress') or 0).strip().rstrip('%')))
+            except ValueError:
+                o['progress'] = 0
+        return picked
     except Exception:
         return None
 

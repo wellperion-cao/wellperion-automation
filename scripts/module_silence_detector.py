@@ -259,6 +259,37 @@ def _worklog_signal(area: str, root: Path):
     return latest, f"worklog area={area} 마지막 성공"
 
 
+def _tgsend_signal(sources: str, root: Path):
+    """'tgsend:a,b' → 그 발신 source 들의 마지막 성공 중 **가장 오래된** 시각.
+    매일 짝으로 나가야 하는 통은 최신값(max)으로 보면 한쪽이 죽어도 가려진다
+    (2026-09-14 시토 실측: 저녁 정리가 08-15 이후 22회 조용히 실패하는 동안
+     아침 브리핑이 매일 나가 모듈은 계속 'ok' 로 보였다). 새 원장을 만들지 않고
+    이미 쌓이는 발신 로그(logs/telegram_sent-*.log)를 그대로 읽는다."""
+    want = [x.strip() for x in sources.split(",") if x.strip()]
+    if not want:
+        return None
+    last: dict = {}
+    for f in sorted(glob_mod.glob(str(root / "logs" / "telegram_sent-*.log")))[-21:]:
+        try:
+            fh = open(f, encoding="utf-8")
+        except OSError:
+            continue
+        with fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                src = rec.get("source")
+                if src in want and rec.get("ok"):
+                    dt = _parse_ts(rec.get("ts"))
+                    if dt and dt > last.get(src, dt - timedelta(seconds=1)):
+                        last[src] = dt
+    if len(last) != len(want):
+        return None                      # 한 번도 안 나간 source 가 있으면 판정불가로 둔다
+    return min(last.values()), f"발신 로그 마지막 성공({'·'.join(want)} 중 가장 오래된 것)"
+
+
 def _resolve_segment(seg: str, root: Path):
     """ref 한 조각(paren 제거 전) → 유효 신호 후보 (datetime, method) 또는 None.
     - '{date}' 등 플레이스홀더 → glob 패턴으로 최신 매치 탐색
@@ -273,6 +304,9 @@ def _resolve_segment(seg: str, root: Path):
 
     if seg.startswith("worklog:"):
         return _worklog_signal(seg.split(":", 1)[1].strip(), root)
+
+    if seg.startswith("tgsend:"):
+        return _tgsend_signal(seg.split(":", 1)[1].strip(), root)
 
     if "{" in seg and "}" in seg:
         pattern = re.sub(r"\{[^}]*\}", "*", seg)

@@ -3477,7 +3477,12 @@ def _haru_work_off(now: "datetime | None" = None) -> bool:
     ★_is_rest_day 자체에 안 얹은 이유: 그 함수는 전사 카톡 하루 일과 정리의 20:00/22:30
     게이트도 갈라서, GM 개인 휴가가 실무진 발신 시각까지 바꿔 버린다 — 범위 밖 부작용."""
     now = now or datetime.now()
-    if _is_rest_day(now.date()):
+    # ★_is_rest_day 를 쓰지 않는다 — 그 함수는 토·일을 함께 묶는 카톡 발신시각 판정이라,
+    #   여기에 쓰면 토요일 업무 통(08:00 브리핑·20:00 마무리)이 통째로 죽는다.
+    #   실측 2026-09-14 시토: 09-05·09-12 토요일 두 날 모두 '휴무일'로 건너뛰었는데,
+    #   같은 토요일 GM 지시 접수는 769건·7건이었다(cron 도 mon-sat 로 걸려 있다).
+    import close_days as _cd
+    if now.weekday() == 6 or _cd.is_closed(now.date()):
         return True
     try:
         import gm_checkin as _ck

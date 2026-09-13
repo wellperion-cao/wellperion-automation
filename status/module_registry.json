@@ -922,8 +922,9 @@
       "owner_nick": "시토",
       "feature": "GM 하루 파이프라인 — 전사일정·GM업무·업무SSOT 김남욱 담당·회장님 보고건을 「하루」 방 표면 하나로 묶고(08:00 아침 브리핑·20:30 저녁 정리), 시각이 있는 GM 일정을 30분 전에 알린다(상주 스케줄러 5분 주기). GM업무 화면 맨 위 「오늘 일정」 띠도 이 배선의 표면이다. ★데이터는 소유하지 않는다 — 전사일정은 coo-schedule-ssot, GM업무 진행건은 월간운영계획이 정본이며 여기서는 가리키기만 한다(약속 L01).",
       "data_source": {
-        "kind": "gas",
-        "ref": "전사일정 GAS(load_schedule) + status/monthly_ops_plan.json + 회장님 보고건 — 복사 없이 참조만"
+        "kind": "log",
+        "ref": "tgsend:gm_morning_brief,gm_evening_recap",
+        "note": "이 모듈의 신호는 '실제로 나갔나' 하나다. 전사일정 GAS·monthly_ops_plan.json 은 남의 데이터라 신호로 쓰면 발신이 죽어도 ok 로 보인다 — 2026-09-14 시토(저녁 정리 22회 조용한 실패를 한 달간 못 잡았다)."
       },
       "notify_spec": {
         "daily": true,
