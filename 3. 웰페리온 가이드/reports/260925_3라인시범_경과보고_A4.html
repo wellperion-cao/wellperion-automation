@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3라인 전결 시범 경과 보고 (9/1~9/25) — 웰페리온 A4 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root{
+  --ink:#101418; --navy:#14304E; --navy-2:#0E2439; --navy-bg:#EDF1F6;
+  --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --gray:#8A939B;
+  --line:#E3E7EB; --dim:#5C666F;
+}
+html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+  -webkit-print-color-adjust:exact; print-color-adjust:exact; word-break:keep-all; }
+
+.bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+  display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+  font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+.bar b{ font-weight:700; letter-spacing:-.2px; }
+.bar .sp{ flex:1; }
+.bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+  background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+.bar button:hover{ background:#DCE4EE; }
+.bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+.bar .draft{ font-size:11px; background:#96601A; color:#fff; padding:3px 8px; border-radius:3px; }
+@media print { .bar{ display:none !important; } html,body{ background:#fff; }
+  .page{ margin:0 !important; box-shadow:none !important; } }
+
+.page{ width:794px; min-height:1123px; background:#fff; margin:66px auto 30px; padding:34px 42px 26px;
+  display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); }
+
+.head{ border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
+.brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:12px; color:var(--navy);
+  letter-spacing:5px; margin-bottom:3px; }
+.headrow{ display:flex; align-items:flex-end; }
+.title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:22px; letter-spacing:-.7px; line-height:1.2; }
+.meta{ margin-left:auto; text-align:right; font-size:10.5px; line-height:1.55; color:#3C464F; }
+.meta b{ color:var(--ink); font-weight:700; }
+
+.dir{ margin-top:12px; background:var(--navy); color:#fff; padding:8px 15px 9px; font-size:12px; line-height:1.55; }
+.dir b{ letter-spacing:1px; }
+.dir span{ opacity:.85; }
+
+.kpi-row{ margin-top:12px; display:flex; gap:10px; }
+.kpi{ flex:1; border:1px solid var(--line); background:#F6F8FA; padding:8px 10px; text-align:center; }
+.kpi .t{ font-size:10px; color:var(--dim); font-weight:700; letter-spacing:.5px; margin-bottom:4px; }
+.kpi .v{ font-size:20px; font-weight:900; color:var(--navy); }
+.kpi .src{ font-size:9.5px; color:var(--gray); margin-top:2px; }
+.kpi .blank{ color:#B9C4CE; }
+
+.sec-h{ margin-top:14px; font-size:13.2px; font-weight:700; color:var(--navy); letter-spacing:-.2px;
+  border-bottom:1.5px solid var(--navy); padding-bottom:3px; margin-bottom:6px;
+  display:flex; align-items:baseline; }
+.sec-h .hint{ margin-left:auto; font-size:10px; font-weight:400; color:var(--dim); }
+
+table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+th,td{ border:1px solid var(--line); padding:5px 8px; font-size:11.5px; line-height:1.42; vertical-align:top; }
+thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:11.2px; border-color:#2A4763; text-align:center; }
+td.k{ background:#F6F8FA; font-weight:700; font-size:11.2px; color:var(--navy); text-align:center; }
+td.ctr{ text-align:center; }
+td.good{ background:#EDF7F3; color:var(--good); font-weight:700; text-align:center; }
+td.blank{ color:#B9C4CE; text-align:center; }
+td.warn{ color:var(--warn); font-weight:700; }
+td ul{ list-style:none; }
+td ul li{ padding:1.5px 0 1.5px 11px; position:relative; }
+td ul li::before{ content:'·'; position:absolute; left:0; color:var(--dim); }
+
+.note-box{ margin-top:8px; font-size:10.5px; color:var(--dim); line-height:1.55;
+  border-left:3px solid var(--warn); padding:5px 8px; background:#FDF8F0; }
+.note-box b{ color:var(--warn); }
+
+.ask-box{ margin-top:8px; border:1px dashed #D0A468; background:#FDF8F0; padding:7px 12px; font-size:11.2px; line-height:1.55; color:#48525B; }
+.ask-box b{ color:var(--warn); }
+.ask-box li{ margin-left:14px; list-style:disc; }
+
+.rec-blk{ margin-top:8px; background:var(--navy-bg); border-left:4px solid var(--navy); padding:8px 12px; font-size:11.5px; line-height:1.55; }
+.rec-blk b{ color:var(--navy); font-weight:700; }
+
+.foot{ margin-top:auto; padding-top:10px; border-top:1px solid var(--line); font-size:9.8px; color:var(--gray); line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>3라인 전결 시범 경과 보고 — 9/1~9/25</b>
+  <span class="note">문서번호 WP-GM-260925-01</span>
+  <span class="draft">초안 · GM 검수 후 회장님 전달</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A4 인쇄</button>
+</div>
+
+<div class="page">
+  <div class="head">
+    <div class="brand">WELLPERION</div>
+    <div class="headrow">
+      <div class="title">3라인 전결 시범 경과 보고 <span style="font-size:14px;font-weight:600;color:var(--dim);">— 9/1 ~ 9/25 · 3.5주</span></div>
+      <div class="meta">
+        작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님</b><br>
+        보고일 <b>2026. 09. 25.</b> · 문서번호 <b>WP-GM-260925-01</b><br>
+        근거 <span style="color:var(--dim);">WP-GM-260908-01(전결범위표) · 업무결재 SSOT · 주간 리포트</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dir">
+    <b>목적</b> — <span>사람이 아니라 직책 기준으로 설계한다. 수행자가 바뀌어도 자리와 기준은 남는다.</span><br>
+    <span style="opacity:.75;font-size:11px;">이 보고는 9/1 시범 착수 이후 3.5주 경과를 정리한 중간 결과입니다. 최종 결과는 9/30 별도 보고로 드립니다.</span>
+  </div>
+
+  <!-- KPI 요약 -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="t">전결 처리</div>
+      <div class="v blank">—</div>
+      <div class="src">출처: 업무결재 SSOT<br>(9/25 실측으로 채움)</div>
+    </div>
+    <div class="kpi">
+      <div class="t">GM 에스컬레이션</div>
+      <div class="v blank">—</div>
+      <div class="src">출처: 주간 리포트 합산<br>(9/25 실측으로 채움)</div>
+    </div>
+    <div class="kpi">
+      <div class="t">주간 리포트 발송</div>
+      <div class="v">3</div>
+      <div class="src">9/7 · 9/14 · 9/21(예정)<br>매주 월 07:00 자동 초안</div>
+    </div>
+    <div class="kpi">
+      <div class="t">시범 기간</div>
+      <div class="v">25일</div>
+      <div class="src">9/1 착수 → 9/30 결과보고<br>전결범위 WP-GM-260908-01</div>
+    </div>
+  </div>
+
+  <!-- 주별 전결 실적 -->
+  <div class="sec-h">① 주별 전결 처리 현황 <span class="hint">출처: 업무결재 SSOT · 9/25 실측으로 채움</span></div>
+  <table>
+    <colgroup><col style="width:13%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col style="width:30%"></colgroup>
+    <thead><tr><th>주차</th><th>운영부 리더<br>이경연 실장</th><th>시설부 소장<br>이정헌 소장</th><th>GM 직접 처리</th><th>주요 안건</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="k">1주<br><span style="font-size:9.5px;font-weight:400;color:var(--dim)">9/1~9/7</span></td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td style="font-size:10.8px;">
+          <ul>
+            <li>전결표 A4 3장 배포 (9/8)</li>
+            <li>주간 리포트 첫 발송 (9/7)</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="k">2주<br><span style="font-size:9.5px;font-weight:400;color:var(--dim)">9/8~9/14</span></td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="good">확인 중</td>
+        <td style="font-size:10.8px;">
+          <ul>
+            <li>결재: SVIP 요가 1:1 (143만원)</li>
+            <li>결재: CCTV 100대 교체 (월80만)</li>
+            <li>결재: 유리문 교체 (38.5만원)</li>
+            <li>결재: 선베드 2대 설치</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="k">3주<br><span style="font-size:9.5px;font-weight:400;color:var(--dim)">9/15~9/21</span></td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="blank" style="font-size:10.8px;">9/25 실측으로 채움</td>
+      </tr>
+      <tr>
+        <td class="k">3.5주<br><span style="font-size:9.5px;font-weight:400;color:var(--dim)">9/22~9/25</span></td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="blank">— 건</td>
+        <td class="blank" style="font-size:10.8px;">9/25 실측으로 채움</td>
+      </tr>
+      <tr style="background:#F6F8FA;">
+        <td class="k" style="font-weight:900;">합계</td>
+        <td class="blank" style="font-weight:700; text-align:center;">— 건</td>
+        <td class="blank" style="font-weight:700; text-align:center;">— 건</td>
+        <td class="blank" style="font-weight:700; text-align:center;">— 건</td>
+        <td class="blank" style="font-size:10.8px;">9/25 실측 후 집계</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 운영 이슈 -->
+  <div class="sec-h">② 운영 이슈 및 조정 <span class="hint">시범 중 발견된 사항</span></div>
+  <table>
+    <colgroup><col style="width:22%"><col style="width:42%"><col style="width:36%"></colgroup>
+    <thead><tr><th>항목</th><th>내용</th><th>처리 현황</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="k">전결범위표 배포</td>
+        <td>3개 직책 A4 1장씩 (WP-GM-260908-01)<br><span style="font-size:10.2px;color:var(--dim)">직무정의·전결범위·에스컬레이션 기준 포함</span></td>
+        <td class="good">배포 완료 9/8</td>
+      </tr>
+      <tr>
+        <td class="k">주간 리포트<br>발신 시작</td>
+        <td>매주 월 07:00 초안 자동 생성 → GM 검수 → 회장님 발송<br><span style="font-size:10.2px;color:var(--dim)">원천: ①GM업무 완료 ②결재 대기 ③회장님 지시 원장 ④전사일정</span></td>
+        <td class="good">9/7 첫 발송<br>9/14 2차 초안 생성</td>
+      </tr>
+      <tr>
+        <td class="k">에스컬레이터<br>법정 자체점검</td>
+        <td>법정 자체점검 기록 소재·안전관리자 선임 여부 확인 필요<br><span style="font-size:10.2px;color:var(--dim)">시설부 소장 확인 요청 중 (#163 정밀진단 건과 별개)</span></td>
+        <td class="warn">소장 답변 대기 중</td>
+      </tr>
+      <tr>
+        <td class="k">전결 금액 상한</td>
+        <td>전결표 금액 칸 일부 비워둠(회장님 확정 필요)<br><span style="font-size:10.2px;color:var(--dim)">WP-GM-260908-01 §금액 상한 칸</span></td>
+        <td class="blank">GM·회장님 확정 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 10월 권고 -->
+  <div class="sec-h">③ 10월 권고사항</div>
+  <div class="rec-blk">
+    <b>전결 시범 결과에 따른 10월 권고</b> — 9/30 최종 집계 이후 확정. 아래는 현 방향 초안.<br>
+    ▪ 범위 유지 또는 확대 — 9월 에스컬레이션 빈도가 낮으면 금액 상한 상향 건의<br>
+    ▪ 에스컬레이터 안전관리 — 자체점검 기록 체계화 (시설부 소장 전결 범위 안에 포함)<br>
+    ▪ 분기 1회 전결 결과 회장님 보고 정례화 (다음 = 12/31)
+  </div>
+
+  <div class="ask-box">
+    <b>▲ GM 검수 전 확인 사항</b><br>
+    <ul>
+      <li>전결 건수 실측 칸(—)을 9/25 전에 채워 주세요 (업무결재 SSOT 또는 주간 리포트 합산)</li>
+      <li>전결범위표 금액 상한 칸 (WP-GM-260908-01) — 회장님 기입 여부 확인</li>
+      <li>에스컬레이터 소장 답변이 오면 ② 처리 현황 칸 업데이트</li>
+      <li>10월 권고 방향이 맞으면 그대로, 수정하실 내용이 있으면 알려 주세요</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    작성 AI 웰리 · 2026-09-14 초안 · GM 검수 후 회장님 전달 · 문서번호 WP-GM-260925-01 · 정본 근거 WP-GM-260908-01
+  </div>
+</div>
+
+</body>
+</html>
