@@ -522,7 +522,10 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     if st.get("sent_date") != today:
         st["sent_date"], st["sent_today"] = today, 0
 
-    text = _export_chat(room)
+    # 저녁 통은 대화를 새로 뽑는다. 아침 06:50 저장분을 다시 읽으면 낮에 온 말씀이 안 보인다
+    # (2026-09-13 실측: 대표님이 12:20~12:31 에 8건을 주셨는데 21:00 통이 06:50 파일을 읽어
+    #  "답 주시는 대로 반영하겠습니다"로 나갔다 — 이미 다 주신 뒤였다).
+    text = _export_chat(room, force=evening)
     if text is None:
         return 0                                   # 못 읽은 날은 조용히 — 지어내지 않는다
     lines = parse_lines(text)
@@ -567,10 +570,16 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     if why == "SKIP" and asking:
         print("[agent] 모델이 아침 질문을 안 냈다(SKIP) — 오늘은 건너뜀", file=sys.stderr)
         return 0
-    if why == "SKIP" and gaps and not reply_only and st.get("asked_date") != today:
+    if why and (not evening) and gaps and not reply_only and st.get("asked_date") != today:
         # 답장이 필요 없는 말씀(감사 인사 등)이어도 못 받은 값이 남아 있으면 그중 하나를 여쭙는다.
         # GM 지시 2026-09-10 — 매일 07시에 한 칸씩 채워 나가는 것이 이 방의 일이다.
-        print("[agent] 답장은 필요 없지만 못 받은 값이 남았다 — 아침 질문으로 하나 여쭙는다")
+        # ★가드에 막힌 초안(돈·계약 표현 등)도 여기로 온다 — 막혔다고 그 아침을 통째로 비우지 않는다.
+        #   2026-09-14 실측: 대표님 답 8건에 맞춘 답장에 '계약'이 들어가 막혔고, 카톡엔 아무것도
+        #   안 나가고 텔레그램 알림만 갔다. 막힌 초안은 아래에서 GM 께 그대로 올린다.
+        if why != "SKIP":
+            _tell_gm(f"🤖 카톡 에이전트({room}) — 초안이 가드에 막혔습니다({why}). "
+                     f"대신 못 받은 값 하나를 여쭙는 통을 보냅니다.\n막힌 초안: {draft[:400]}")
+        print(f"[agent] 초안을 못 보낸다({why}) — 못 받은 값 하나를 아침 질문으로 대신 여쭙는다")
         asking = True
         partner_text = "(못 받은 값 하나 — 답장은 불필요한 말씀이었다)"
         draft, used = run_claude(build_prompt(lines, [], brief, gaps),
