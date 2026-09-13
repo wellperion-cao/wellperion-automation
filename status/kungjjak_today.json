@@ -9,11 +9,11 @@
           "ref": "GM-20260913-1001",
           "no": "01",
           "got": "9/13(일)은 휴관일이었습니다. 화요일에 월요일분부터 이어서 매출·운영사항 보고드리겠습니다.",
-          "did": "오늘 09:30=9/12(토) 이미지 보고 정상 · 내일 09:30=휴관 안내문 · 화요일 09:30 에 월요일분 · 08:00 문구를 오늘 시제로 고침(ceo_morning_pipeline)",
+          "did": ".claude/settings.local.json SessionStart 훅 제거 + scripts/morning_pipeline_session_hook.cmd 삭제 · 08:00 예약작업(Wellperion-CEO-Morning-Brief-0800-Live)만 남음",
           "start": "08:02",
-          "end": "08:10",
-          "minutes": 7,
-          "upload": "✅ 배포 (58a35776c)",
+          "end": "10:38",
+          "minutes": 156,
+          "upload": "✅ 배포 (42025efce)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -30,13 +30,19 @@
           "area": "작업",
           "event": "휴관일 08:00 항로 대체 문구를 오늘 시제로 — 「9/13(일)은 휴관일이었습니다」가 매출보고 누락처럼 읽힘(GM 2026-09-13)",
           "detail": "커밋 0fde0b9ddf · 배 11401"
+        },
+        {
+          "time": "10:38",
+          "area": "작업",
+          "event": "항로 보고 세션 훅 제거 — 08:00 예약작업 하나만 보낸다(GM 결정 2026-09-13 · 매일 05:5x·08:00 이중 발신 실측)",
+          "detail": "커밋 1788da8dd4 · 배 11401"
         }
       ],
       "count": 1,
       "done": 1,
       "open": 0,
-      "avg_minutes": 7,
-      "work_count": 2,
+      "avg_minutes": 156,
+      "work_count": 3,
       "missed": [],
       "unclosed": [],
       "just": [],
