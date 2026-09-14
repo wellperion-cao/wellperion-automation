@@ -442,12 +442,169 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     blocks = []
     for person in RESP_PEOPLE:
         tbl = resp_table(person, rows_def[person], ev)
+        extra = chief_detail_blocks(ssot_rows, objs) if person == "이경연 실장" else ""
         blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
-                       f'{tbl}\n      </div>')
+                       f'{tbl}\n{extra}      </div>')
     return f'''  <section class="resp">
     <h2>👤 책임 항목 — 4인</h2>
 {chr(10).join(blocks)}
   </section>'''
+
+
+# ═══ 실장 건별 목록 3종(GM 지시 2026-09-14 "종합접수처 건·업무SSOT 건·점검현황 건별로 보고") ═══
+#   책임 표(요약 한 줄)로는 뭐가 몇 건인지만 보이고 "그래서 뭔데"가 안 보인다는 지적 —
+#   이경연 실장 표 바로 아래 건별 목록 3개를 편다. 원천은 이미 있는 함수가 쓰는 것 그대로
+#   (접수 GAS reg_list·업무 SSOT todo_list·월간운영계획) — 새 원장을 만들지 않는다(약속 L21).
+
+def _reception_handler(r: dict) -> str:
+    hc = r.get("handlerCanon") or []
+    h = str(hc[0]) if hc else str(r.get("handler") or "").strip()
+    return h or "미배정"
+
+
+def reception_ops_detail() -> "tuple[list, list] | tuple[None, None]":
+    """운영부 열린 건(분실물 제외) + 분실물 목록. 조회 실패면 (None, None)."""
+    try:
+        from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_rows
+        resp = gas_get(RECEPTION_EXEC_URL, params={"action": "reg_list"}, timeout=20,
+                       label="manager_task_index 접수 건별")
+        if resp is None:
+            return None, None
+        data = resp.json()
+        if not data.get("ok"):
+            return None, None
+        rows = reception_rows(data.get("data", []))
+    except Exception:
+        return None, None
+    mine = [r for r in rows if str(r.get("dept") or "") == "운영부" and str(r.get("status") or "") != "완료"]
+    lost = [r for r in mine if "분실물" in str(r.get("category") or "")]
+    rest = [r for r in mine if "분실물" not in str(r.get("category") or "")]
+    return rest, lost
+
+
+def reception_detail_html() -> str:
+    from collectors.ops_shared import reception_elapsed_days
+    rest, lost = reception_ops_detail()
+    if rest is None:
+        return ('<details open class="grp"><summary>① 종합접수처(운영부) '
+                 f'<span class="gc">{_NO_MEASURE}</span></summary>'
+                 f'<div class="empty" style="padding:8px 14px;">{_NO_MEASURE}(접수처 조회 실패)</div>'
+                 '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div></details>')
+    now = datetime.now()
+    rest_sorted = sorted(rest, key=lambda r: -reception_elapsed_days(r, now))
+    rows = []
+    for r in rest_sorted:
+        age = reception_elapsed_days(r, now)
+        content = str(r.get("content") or "").strip()
+        memo_on = "있음" if str(r.get("memo") or "").strip() else "—"
+        rows.append(f'<tr><td>#{html.escape(str(r.get("regId") or "—"))}</td>'
+                    f'<td>{html.escape(str(r.get("category") or "—"))}</td>'
+                    f'<td>{html.escape(_reception_handler(r))}</td>'
+                    f'<td class="age {age_cls(age)}">{age}일</td>'
+                    f'<td title="{html.escape(content)}">{html.escape(short(content) if content else "—")}</td>'
+                    f'<td>{memo_on}</td></tr>')
+    body = "\n        ".join(rows) or '<tr><td colspan="6" class="empty">열린 건 없음</td></tr>'
+    lost_line = ""
+    if lost:
+        lage = max((reception_elapsed_days(r, now) for r in lost), default=0)
+        lost_line = f'<div class="sub-note">분실물 {len(lost)}건(담당 미배정 · 최장 {lage}일)</div>'
+    return (f'<details open class="grp"><summary>① 종합접수처(운영부) <span class="gc">{len(rest)}건</span></summary>'
+            '<table><tr><th>번호</th><th>분류</th><th>담당</th><th>경과</th><th>제목</th><th>처리메모</th></tr>'
+            f'{body}</table>{lost_line}'
+            '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div></details>')
+
+
+def ssot_ops_detail_rows(rows: "list | None") -> "list | None":
+    """운영부 전원(OPS_DEPT_STAFF) 진행중·보류 행 — 담당자 순 · 그 안에서 기한 지난 순."""
+    if rows is None:
+        return None
+    mine = [r for r in rows if str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF
+            and str(r.get("상태") or "") in ("진행중", "보류")]
+    today = date.today()
+
+    def overdue(r: dict) -> int:
+        d = _parse_ymd(r.get("종료일"))
+        return (today - d).days if d else -1
+
+    order = {n: i for i, n in enumerate(OPS_DEPT_STAFF)}
+    mine.sort(key=lambda r: (order.get(str(r.get("담당자") or "").strip(), 99), -overdue(r)))
+    return mine
+
+
+def ssot_detail_html(ssot_rows: "list | None") -> str:
+    mine = ssot_ops_detail_rows(ssot_rows)
+    if mine is None:
+        return ('<details open class="grp"><summary>② 업무·결재 SSOT(운영부 전원) '
+                 f'<span class="gc">{_NO_MEASURE}</span></summary>'
+                 f'<div class="empty" style="padding:8px 14px;">{_NO_MEASURE}(업무 SSOT 조회 실패)</div>'
+                 '<div class="sub-note">닫는 곳: 업무 현황 SSOT 화면 상태·종료일</div></details>')
+    today = date.today()
+    rows = []
+    for r in mine:
+        d = _parse_ymd(r.get("종료일"))
+        due_disp = d.isoformat() if d else (str(r.get("종료일") or "").strip()[:10] or "—")
+        od = (today - d).days if d else None
+        od_td = f'<td class="age old">{od}일</td>' if od and od > 0 else '<td>—</td>'
+        title = str(r.get("업무명") or "").strip()
+        ap = str(r.get("결재요청") or "").strip() or "—"
+        rows.append(f'<tr><td>{html.escape(str(r.get("담당자") or "—"))}</td>'
+                    f'<td title="{html.escape(title)}">{html.escape(short(title) if title else "—")}</td>'
+                    f'<td>{html.escape(due_disp)}</td>'
+                    f'{od_td}'
+                    f'<td>{html.escape(ap)}</td></tr>')
+    body = "\n        ".join(rows) or '<tr><td colspan="5" class="empty">진행중·보류 없음</td></tr>'
+    return (f'<details open class="grp"><summary>② 업무·결재 SSOT(운영부 전원) <span class="gc">{len(mine)}건</span></summary>'
+            '<table><tr><th>담당</th><th>업무명</th><th>종료일</th><th>기한지남</th><th>결재요청</th></tr>'
+            f'{body}</table>'
+            '<div class="sub-note">닫는 곳: 업무 현황 SSOT 화면 상태·종료일</div></details>')
+
+
+_CHK_BODY_RE = re.compile(r"^\s*□\s*\d*\)?\s*(.+)$")
+_OWNER_TAG_RE = re.compile(r"담당:\s*([^·\n]+)")
+_DUE_TAG_RE = re.compile(r"기한:\s*([^·\n]+)")
+
+
+def parse_unchecked(note: str) -> list[str]:
+    """progress_note 안 미완(□) 체크 줄만 — 완료(☑)는 뺀다."""
+    return [ln.strip() for ln in str(note or "").split("\n") if ln.strip().startswith("□")]
+
+
+def check_ops_detail_rows(objs: list) -> list[tuple[str, str]]:
+    """(카드명, 체크줄) — 담당 이경연 실장 또는 dept 에 '운영부'가 든 카드의 미완 체크 전부."""
+    cards = [o for o in objs
+             if str(o.get("owner") or "").strip() == "이경연 실장" or "운영부" in str(o.get("dept") or "")]
+    out = []
+    for o in cards:
+        title = str(o.get("title") or "").strip()
+        for ln in parse_unchecked(o.get("progress_note")):
+            out.append((title, ln))
+    return out
+
+
+def check_detail_html(objs: list) -> str:
+    pairs = check_ops_detail_rows(objs)
+    rows = []
+    for title, ln in pairs:
+        body = _CHK_BODY_RE.sub(r"\1", ln)
+        m_owner = _OWNER_TAG_RE.search(ln)
+        has_owner = bool(m_owner) and m_owner.group(1).strip() not in ("", "(미정)")
+        m_due = _DUE_TAG_RE.search(ln)
+        has_due = bool(m_due) and m_due.group(1).strip() not in ("", "(미정)")
+        rows.append(f'<tr><td title="{html.escape(title)}">{html.escape(short(title) if title else "—")}</td>'
+                    f'<td title="{html.escape(body)}">{html.escape(short(body))}</td>'
+                    f'<td>{"있음" if has_owner else "—"}</td>'
+                    f'<td>{"있음" if has_due else "—"}</td></tr>')
+    body_html = "\n        ".join(rows) or '<tr><td colspan="4" class="empty">미완 체크 없음</td></tr>'
+    return (f'<details open class="grp"><summary>③ 점검 현황(운영부) <span class="gc">{len(pairs)}건</span></summary>'
+            '<table><tr><th>카드</th><th>체크</th><th>담당표기</th><th>완료예정일</th></tr>'
+            f'{body_html}</table>'
+            '<div class="sub-note">닫는 곳: GM업무 화면 체크</div></details>')
+
+
+def chief_detail_blocks(ssot_rows: "list | None", objs: list) -> str:
+    return (f'        {reception_detail_html()}\n'
+            f'        {ssot_detail_html(ssot_rows)}\n'
+            f'        {check_detail_html(objs)}\n')
 
 
 def _title_key(t: str) -> str:
@@ -1010,7 +1167,7 @@ def build() -> str:
   * {{ box-sizing:border-box; margin:0; padding:0; }}
   :root {{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --line:#E3E7EB; --dim:#6B7683; --warn:#96601A; --bad:#9E2A2A; }}
   body {{ font-family:'Noto Sans KR',sans-serif; color:var(--ink); background:#F4F6F8; padding:22px 18px 60px; }}
-  .wrap {{ max-width:1180px; margin:0 auto; }}
+  .wrap {{ max-width:100%; margin:0; }}
   h1 {{ font-family:'Noto Serif KR',serif; font-size:27px; letter-spacing:-.6px; }}
   .lede {{ margin-top:6px; color:var(--dim); font-size:14px; line-height:1.7; }}
   .bar {{ margin-top:14px; background:var(--navy); color:#fff; padding:10px 14px; font-size:14px; font-weight:700; line-height:1.6; }}
@@ -1079,6 +1236,8 @@ def build() -> str:
   .grp[open] > summary::before {{ content:"▾ "; }}
   .grp .gc {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:6px; }}
   .grp .gw {{ font-weight:400; color:var(--dim); font-size:12.5px; margin-left:6px; }}
+  /* 실장 건별 목록 3종(GM 지시 2026-09-14) — .grp details 재사용, 맨 아래 안내줄만 추가 */
+  .sub-note {{ padding:6px 14px 10px; font-size:12.5px; color:var(--dim); border-top:1px solid var(--line); }}
   .own {{ white-space:nowrap; }}
   .own-sel {{ max-width:118px; padding:3px 4px; border:1px solid var(--line); border-radius:6px;
               background:#fff; color:inherit; font:inherit; font-size:12.5px; }}
