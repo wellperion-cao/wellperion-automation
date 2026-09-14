@@ -1409,9 +1409,14 @@ function _procListSrv(extra){
     .then(function(j){ if(!(j&&j.ok&&j.data))throw new Error("응답 모양 불일치"); return j; });
 }
 function _srvListable(action,extra){
+  /* 🔴 2026-09-14 긴급 차단 — 매니저 실사용 신고: 화면엔 #137·신규 테스트가 보이는데
+     GAS 원장(시트)엔 #135·#136 뿐이었다(CFO 직접 조회 확인). 서버 읽기와 시트가 갈라진
+     상태라 화면이 시트에 없는 행을 대상으로 승인·반려·삭제를 시도하고 전부 실패한다.
+     원인 규명 전까지 읽기를 종전 GAS 로 되돌린다. 코드는 남겨둔다 — 원인 해소 후 false 를 지우면 복귀. */
+  if(true)return false;
   return action==="list"&&ERP_READ_ON&&extra&&(extra.mode==="active"||extra.mode==="done");
 }
-var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,proc_summary:1};   // 읽기 전용 집계 = 서버 거울 있음
+var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};   /* proc_summary 는 2026-09-14 긴급 차단과 함께 GAS 로 복귀 */   // 읽기 전용 집계 = 서버 거울 있음
 /* 거울 게이트웨이가 액션마다 다르다 — proc_summary 는 api_sales.py 의 proc 쪽에 있다(salesops 아님).
    2026-09-14: 서버 통로는 이미 있었고 화면만 안 붙어 있었다. 실패 시 종전 GAS 폴백은 _salesRead 가 처리. */
 var MIRROR_GAS={proc_summary:"proc"};
