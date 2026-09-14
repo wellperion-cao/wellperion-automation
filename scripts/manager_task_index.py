@@ -1043,6 +1043,8 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
               f'target="_blank" rel="noopener">SSOT 열기</a>')
     elif is_reception_item(it):
         ss = '<span class="ss-rc">접수처에서 닫음</span>'
+    elif kind_of(it) == "reply":
+        ss = '<span class="ss-rc">회신으로 닫힘</span>'
     else:
         ss = '<span class="ss-no">SSOT 미등록</span>'
     who = str(it.get("owner") or "").strip()      # owner_select 가 escape 한다
@@ -1089,7 +1091,10 @@ def is_reception_item(it: dict) -> bool:
 #     routine   = 끝나지 않는 상시 책임(주간 점검·접수 마무리·점검 이행·SSOT 갱신)
 #     reception = 종합접수처에서 열려 그 화면에서 닫히는 건
 #     task      = 기한이 있고 끝나면 닫히는 일 — 이것만이 「업무」다
-KINDS = ("routine", "reception", "task")
+#     reply     = 방에 물은 것·확인 요청 — 한 줄 답이 오면 닫히는 「회신 소통건」. 업무 SSOT 에 올릴 것이
+#                 아니다(GM 2026-09-14 「업무 SSOT 에 올릴 건과 회신건은 많이 구분이 되어야」 · 「회신건들은
+#                 최종 체크하고 삭제」) — 사람 목차에서 빼고 맨 아래 접힌 기록으로만 둔다.
+KINDS = ("routine", "reception", "task", "reply")
 
 
 def kind_of(it: dict) -> str:
@@ -1299,6 +1304,8 @@ def build() -> str:
                                                    if kind_of(it) == "routine")]
     aside_rc = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if kind_of(it) == "reception")]
+    aside_reply = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
+                                                      if kind_of(it) == "reply")]
     # AI 판정 건(owner="AI …")은 사람 목차에서 빼고 한 줄로만 보인다(GM 지시 2026-09-14).
     ai_items = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if is_ai_owner(it.get("owner")))]
@@ -1348,7 +1355,9 @@ def build() -> str:
                 inner = "\n        ".join(
                     f'<h3 class="rsp">{html.escape(p)} <span class="gc">{len(rows)}건</span></h3>\n        '
                     + table([row_html(n, d, it) for n, d, it in sorted(rows)], "없음")
-                    for p, rows in team_groups.items())
+                    # 사람 순서 = 명단(OPS_TEAM·FACILITY_TEAM) 순서 — GM 지시 2026-09-14
+                    #   「최준용M - 임정은M - 윤병현AM - 백승화 사원 - 진수아 사원 이 순으로」.
+                    for p, rows in ((p, team_groups[p]) for p in team[0] if p in team_groups))
             else:
                 inner = '<div class="empty" style="padding:8px 14px;">없음</div>'
             team_html = (f'\n        <details open class="grp"><summary>{team_lead} {team_title} '
@@ -1434,6 +1443,25 @@ def build() -> str:
         <h2>책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · {len(aside_rt)}건 ·
           이 줄은 완료로 닫지 않습니다 — 아래 「업무」와 구분해 주십시오</span></h2>
         {inner}
+      </div>''')
+
+    if aside_reply:
+        # 회신 소통건 — 업무가 아니라 답을 기다리는 물음. 사람 목차에서 뺐고(GM 2026-09-14 「업무 SSOT 건만
+        #   챙겨줘 · 회신건들은 최종 체크하고 삭제」), 따로 모아 달라는 지시(같은 날 「회신 소통건으로 따로
+        #   정리」)대로 맨 아래 접힌 기록 한 곳에만 둔다. 답이 오면 원장이 닫힌다.
+        by_who_r: dict[str, list] = {}
+        for n, d, it in aside_reply:
+            by_who_r.setdefault(str(it.get("owner") or "담당 미정").strip() or "담당 미정", []).append((n, d, it))
+        order_r = [m[0] for m in MANAGERS] + OPS_TEAM + FACILITY_TEAM
+        names_r = [w for w in order_r if w in by_who_r] + [w for w in by_who_r if w not in order_r]
+        inner_r = "\n        ".join(
+            f'<h3 class="rsp">{html.escape(w)} <span class="gc">{len(by_who_r[w])}건</span></h3>\n        '
+            + table([row_html(n, d, it) for n, d, it in by_who_r[w]], "없음")
+            for w in names_r)
+        blocks.append(f'''      <div class="blk">
+        <details class="grp"><summary>회신 소통건 — 업무 아님 · 한 줄 답이 오면 닫힘 <span class="gc">{len(aside_reply)}건</span></summary>
+        {inner_r}
+        </details>
       </div>''')
 
     # 닫힌 것·중복 접힘 목록은 화면에서 뺐다 (GM 지적 2026-09-14 「닫은건들은 왜 보이는거야?」).
