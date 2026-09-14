@@ -8,7 +8,7 @@
 
 경로 가드(precommit_nawoolm_domain_guard.py)는 나우열M 라인 폴더만 본다 — 공용 파일(ERP 메인·모듈 목록 등)은
 누구나 고치는 곳이라 경로로는 못 막는다. 그래서 이 가드는 경로가 아니라 **줄**을 본다:
-  staged 삭제 줄(`git diff --cached -U0` 의 '-') 가운데, 최근 14일 안에 나우열M(author 나우열) 커밋이
+  staged 삭제 줄(`git diff --cached -U0` 의 '-') 가운데, 최근 30일 안에 나우열M(author 나우열) 커밋이
   **추가한 줄**과 글자 그대로 같은 줄이 있으면 커밋을 막는다.
   (같은 파일 안에서만 대조 · 공백만 다른 줄은 같은 줄 · 20자 미만 짧은 줄은 뺀다 — `</div>` 같은 줄로 헛경보 금지)
 
@@ -36,7 +36,7 @@ from precommit_nawoolm_domain_guard import _staged_paths, _commit_message  # noq
 
 ROOT = os.path.dirname(_SCRIPTS_DIR)
 AUTHOR = "나우열"
-SINCE = "14.days"
+SINCE = "30.days"   # 낡은 사본이 2주 넘게 묵은 경우까지(세션 재시작 전 사본)
 MIN_LEN = 20          # 이보다 짧은 줄은 대조하지 않는다(`</div>`·`}` 류 헛경보 방지)
 
 
@@ -64,7 +64,7 @@ def removed_lines(cwd, path, rev=None):
 
 
 def nawoolm_added_lines(cwd, path, before=None):
-    """최근 14일 나우열M 커밋이 이 파일에 추가한 줄 → {줄: 'sha 제목'}. before = --audit 때 그 커밋 이전만."""
+    """최근 30일 나우열M 커밋이 이 파일에 추가한 줄 → {줄: 'sha 제목'}. before = --audit 때 그 커밋 이전만."""
     args = ["log", "--author=" + AUTHOR, "--since=" + SINCE, "-p", "-U0", "--no-color",
             "--format=@@commit %h %s"]
     if before:
