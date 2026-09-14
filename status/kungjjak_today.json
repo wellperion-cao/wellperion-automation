@@ -812,12 +812,6 @@
       ],
       "work": [
         {
-          "time": "13:57",
-          "area": "작업",
-          "event": "/api/proc/list 에 from·to 기간 필터 — GAS 날짜 칸 그대로 · mode=done 37초 조회를 서버로 [나우열M 요청 2026-09-14]",
-          "detail": "커밋 f5b32d4c84 · 배 11401"
-        },
-        {
           "time": "13:58",
           "area": "업무관리방",
           "event": "나우열M 2차 요청 결과 회신 — from·to 필터 배포(13:56) · 자산·비품 통로 없음",
@@ -990,6 +984,12 @@
           "area": "작업",
           "event": "GM 전달건 4면 연동 — gm_handoff 가 GM 본인 건에 GM업무 카드(월간운영계획)를 자동 생성 · 오늘 GM 건 2장 카드 등록(간판 9/22 · 매출보고 서버판 10/1) (GM 상시 지시 2026-0",
           "detail": "커밋 9b5a8e0a7a · 배 11401"
+        },
+        {
+          "time": "18:03",
+          "area": "작업",
+          "event": "ERP 홈 업무&결재 현황 카드 — 칸 4개 한 줄(칸 폭 69px)을 2×2 로 세워 숫자·오늘/전체 줄 넘침 수리 (GM 지적 2026-09-14 「숫자 다 선 넘었네」)",
+          "detail": "커밋 456a305206 · 배 11401"
         }
       ],
       "count": 67,
@@ -1297,25 +1297,25 @@
           "ref": "GM-20260914-2036",
           "no": "36",
           "got": "88%밖에 안되? 오늘 다 마무리해 멈추지말고, 일단 나우열M라인도 이번만은 다 진행시켜서 우열M한테 진행현황 전달해",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "17:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "18:01",
+          "minutes": 6,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260914-aws-100",
           "no": "00",
           "got": "GM 지시: 오늘 100% 요구 → 접수처 잠금 풀고 5장 오늘 · 나우열M 에게 「다 넘긴다」 전달 · GM 18시 퇴근",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "인사 화면 레인 중단 지시 · 방 발신 웰리 d3 한 줄기로 · 인사 적재는 GM 카드 결정대로 나우열M 실행 · 시토는 접수처 5장만 계속 · lessons 1줄",
           "start": "17:52",
-          "end": "17:54",
-          "minutes": 1,
+          "end": "18:01",
+          "minutes": 8,
           "upload": "기록만",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260914-aws-3",
@@ -1528,31 +1528,22 @@
           "area": "작업",
           "event": "종합접수처 화면 5장 서버우선+구글예비 전환 — 습득물 갤러리·폐기·워드프레스 임베드 3종, 서버 /api/reception/lost·lookup public 우선 조회·실패시 GAS 폴백",
           "detail": "커밋 63b8e7da32 · 배 12528"
+        },
+        {
+          "time": "18:03",
+          "area": "서버",
+          "event": "업무 현황 SSOT 저장 413(1.35MB) 수리 — /auth/check 본문 한도 10m",
+          "detail": "라이브 erp.conf 패치·reload · 1.4MB POST 200 실측 · 저장소 동기 · 배12619"
         }
       ],
       "count": 31,
-      "done": 30,
-      "open": 1,
+      "done": 31,
+      "open": 0,
       "avg_minutes": 7,
-      "work_count": 25,
+      "work_count": 26,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-2036",
-          "no": "36",
-          "got": "88%밖에 안되? 오늘 다 마무리해 멈추지말고, 일단 나우열M라인도 이번만은 다 진행시켜서 우열M한테 진행현황 전달해",
-          "did": "",
-          "start": "17:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1701,6 +1692,18 @@
           "upload": "✅ 배포 (8670fd40a)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260914-3013",
+          "no": "13",
+          "got": "웰페리온의 하루가 컨셉이나 이런것들이 다 개인것들이라 각 회사 건들은 리뉴얼 필요할듯?",
+          "did": "",
+          "start": "18:01",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1885,14 +1888,29 @@
           "detail": "저장 397a145a25·8bc70c775 · 점검기 신설 · 첫 실측 139장 중 0장 · 승인 전에는 반영 안 함"
         }
       ],
-      "count": 12,
+      "count": 13,
       "done": 12,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 10,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260914-3013",
+          "no": "13",
+          "got": "웰페리온의 하루가 컨셉이나 이런것들이 다 개인것들이라 각 회사 건들은 리뉴얼 필요할듯?",
+          "did": "",
+          "start": "18:01",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -3066,9 +3084,9 @@
           "start": "17:49",
           "end": "17:56",
           "minutes": 6,
-          "upload": "기록만",
+          "upload": "✅ 배포 (1bdcf69f0)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260914-9031",
@@ -3078,7 +3096,7 @@
           "start": "17:56",
           "end": "17:56",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (1bdcf69f0)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -3185,13 +3203,19 @@
           "area": "작업",
           "event": "다캠 손님 화면 3장 서버 배포 — 배포 스크립트에 홈·문의폼·현황폼 추가 · 대표님께 오늘 작업 정리 전달",
           "detail": "커밋 929383d1a3 · 배 11305"
+        },
+        {
+          "time": "18:03",
+          "area": "작업",
+          "event": "다캠 문의 관리 화면(대표님 전용 · 전체 목록·상태 변경) · 손님용 내 문의현황 제거(GM 지시 — 다캠엔 필요 없다) · 서버 배포",
+          "detail": "커밋 684177c7e9 · 배 11305"
         }
       ],
       "count": 31,
       "done": 30,
       "open": 1,
       "avg_minutes": 4,
-      "work_count": 15,
+      "work_count": 16,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -3207,7 +3231,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
