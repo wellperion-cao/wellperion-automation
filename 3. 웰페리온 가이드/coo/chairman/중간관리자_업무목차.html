@@ -146,33 +146,6 @@
           <tr><td class="ri">결재 처리</td><td class="rc">결재요청 대기 건수 · 평균 대기일 3일 안</td><td class="rp bad">결재 대기 2건 · 평균 대기 8일(생성일 기준)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">주간 미팅</td><td class="rc">매주 화요일 15:00 고정 · 안건 = 이 화면 진행 체크</td><td class="rp">미수집(참석·안건 기록 원장 없음)</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
-        <details class="grp" id="gm-docs" hidden><summary>📄 보고 문서 <span class="gc" id="gm-docs-cnt">—</span></summary>
-        <table><tr><th style="width:340px">문서</th><th>설명</th></tr><tbody id="gm-docs-body"></tbody></table>
-        <div class="sub-note">여는 곳: GM업무 화면 📄 보고 문서 — 같은 목록입니다</div></details>
-        <script>
-        (function(){
-          var wrap = document.getElementById('gm-docs'), body = document.getElementById('gm-docs-body'),
-              cnt = document.getElementById('gm-docs-cnt');
-          fetch('/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; })
-          .then(function(me){
-            if (!me || me.role !== 'admin') return;          // 실장·소장 화면엔 안 보인다
-            return fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); })
-              .then(function(d){
-                var rows = (d.modules || []).filter(function(m){
-                  return m.appgroup === '문서함' && /\/chairman\//.test(m.path || ''); });
-                if (!rows.length) return;
-                rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });
-                cnt.textContent = rows.length + '장';
-                body.innerHTML = rows.map(function(m){
-                  var f = String(m.path || '').split('/').pop();
-                  return '<tr><td><a href="' + f + '" target="_blank" rel="noopener">' +
-                         (m.name || f) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
-                }).join('');
-                wrap.hidden = false; wrap.open = true;
-              });
-          }).catch(function(){});      // 로컬 파일로 열면 /auth/me 가 없다 — 조용히 접어 둔다
-        })();
-        </script>
       </div>
       <div class="rp-person">
         <h3>이경연 실장</h3>
