@@ -1026,8 +1026,11 @@
     fetch('/status/token_usage.json?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
       var billing = d.billing || {};
       var accts = billing.accounts_usd || {};
+      var acc = d.accounts || {};
+      var remoteLine = ' · 다른 PC 분 <b>' + ((acc.remote_hosts || []).length) + '대</b> 합산'
+        + (acc.remote_error ? ' · <span style="color:#B23B3B">⚠ ' + acc.remote_error + '</span>' : '');
       document.getElementById('tok-billing-line').innerHTML =
-        '이번 달 정액 요금 <b>' + fmtUsd(billing.usd_month_fixed) + '/월</b> · 계정 <b>' + Object.keys(accts).length + '개</b>';
+        '이번 달 정액 요금 <b>' + fmtUsd(billing.usd_month_fixed) + '/월</b> · 계정 <b>' + Object.keys(accts).length + '개</b>' + remoteLine;
       document.getElementById('tok-cache-note').textContent = d.cache_read_note || '';
 
       var ba = (d.accounts || {}).by_account || {};

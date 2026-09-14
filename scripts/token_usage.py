@@ -26,7 +26,7 @@ CACHE_PATH = REPO / "status" / "token_usage_file_cache.json"
 ACCOUNTS_LOG = REPO / "status" / "token_usage_accounts.jsonl"
 
 # 원격 PC 판 토큰 수집기(GM 지시 2026-09-14) — 다른 계정 PC(info@·lessons@)가 자기 사용량을
-# 서버에 올리면(token_usage_push.py) 여기서 읽어 by_account 에 합친다. 열쇠 없으면 조용히 건너뛴다.
+# 서버에 올리면(token_usage_push.py) 여기서 읽어 by_account 에 합친다. 열쇠 없으면 remote_error 에 남긴다(화면 표시).
 TOKEN_PUSH_KEY_FILE = Path.home() / ".claude" / "token_push.key"
 REMOTE_URL = "https://erp.wellperion.com/api/token_usage/remote"
 
@@ -451,6 +451,9 @@ def main():
                                       key=lambda x: x.get("cost_usd", 0), reverse=True)[:8]
         except Exception as e:
             remote_error = "%s: %s" % (type(e).__name__, str(e)[:150])
+    else:
+        # 조용히 건너뛰지 않는다(나우열M 쪽 요청 2026-09-14 15:27) — 화면에 이 줄이 뜨면 원인 = 이 PC 열쇠 없음.
+        remote_error = "열쇠 없음(%s) — 다른 PC 사용량을 안 합쳤다" % TOKEN_PUSH_KEY_FILE
 
     today_date = datetime.now(KST).date()
     month_start = today_date.replace(day=1).isoformat()

@@ -28,7 +28,8 @@ param(
   [string]$ConfigZip = "",
   [string]$RepoUrl   = "https://github.com/wellperion-cao/wellperion-automation.git",
   [switch]$SkipWinget,
-  [switch]$SkipVenv
+  [switch]$SkipVenv,
+  [switch]$OnlyTokenPush   # 7단계(토큰 수집기)만 — 이미 설치된 PC 에서 열쇠·예약작업만 다시 잡을 때
 )
 $ErrorActionPreference = 'Continue'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
@@ -74,6 +75,34 @@ function Winget-Install([string]$id, [string]$override = "") {
   Log ("winget " + ($wa -join ' '))
   & winget @wa 2>&1 | Tee-Object -FilePath $Log -Append | Out-Null
   return $LASTEXITCODE
+}
+
+function Install-TokenPush {
+  # §7 본체 — 단독 실행(-OnlyTokenPush)과 전체 설치 둘 다 이 함수 하나를 부른다(나우열M 쪽 요청 2026-09-14).
+  Step "7/7 토큰 수집기 (예약작업 Wellperion-Token-Push)"
+  $keyFile = Join-Path $ClaudeDir 'token_push.key'
+  if (-not (Test-Path $keyFile)) {
+    $k = Read-Host '토큰 수집기 열쇠(시토에게 받음, 없으면 그냥 엔터)'
+    if ($k) { [IO.File]::WriteAllText($keyFile, $k, (New-Object Text.UTF8Encoding $false)); Log "열쇠 저장: $keyFile" }
+  }
+  if ((Test-Path $keyFile) -and (Test-Path $Py) -and (Test-Path (Join-Path $Work 'scripts\token_usage_push.py'))) {
+    $pushScript = Join-Path $Work 'scripts\token_usage_push.py'
+    $action  = New-ScheduledTaskAction -Execute $Py -Argument "`"$pushScript`"" -WorkingDirectory $Work
+    $trig1   = New-ScheduledTaskTrigger -Daily -At 23:30
+    $trig2   = New-ScheduledTaskTrigger -AtLogOn
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable   # 노트북·전원 조건으로 안 돌던 것 해제
+    Register-ScheduledTask -TaskName 'Wellperion-Token-Push' -Action $action -Trigger @($trig1, $trig2) -Settings $settings -Force | Out-Null
+    Log "예약작업 Wellperion-Token-Push 등록(매일 23:30 + 로그온 시)"
+    Note '토큰 수집기' '등록됨 (Wellperion-Token-Push)'
+  } else {
+    Note '토큰 수집기' '열쇠 없음 - 수집기 미등록'
+  }
+}
+
+if ($OnlyTokenPush) {
+  Install-TokenPush
+  Write-Host "토큰 수집기만 설정했다 - 확인: Get-ScheduledTask Wellperion-Token-Push"
+  exit 0
 }
 
 # ═══ 1. 기반 도구 ═══════════════════════════════════════════════════════════
@@ -248,23 +277,7 @@ if ((Test-Path $Py) -and (Test-Path (Join-Path $Work 'scripts\ensure_statusline.
 Note 'settings.local.json' $(if (Test-Path $local) { '있음' } else { '없음' })
 
 # ═══ 7. 토큰 수집기 (AI 토큰 현황 · GM 지시 2026-09-14) ══════════════════════
-Step "7/7 토큰 수집기 (예약작업 Wellperion-Token-Push)"
-$keyFile = Join-Path $ClaudeDir 'token_push.key'
-if (-not (Test-Path $keyFile)) {
-  $k = Read-Host '토큰 수집기 열쇠(시토에게 받음, 없으면 그냥 엔터)'
-  if ($k) { [IO.File]::WriteAllText($keyFile, $k, (New-Object Text.UTF8Encoding $false)); Log "열쇠 저장: $keyFile" }
-}
-if ((Test-Path $keyFile) -and (Test-Path $Py) -and (Test-Path (Join-Path $Work 'scripts\token_usage_push.py'))) {
-  $pushScript = Join-Path $Work 'scripts\token_usage_push.py'
-  $action  = New-ScheduledTaskAction -Execute $Py -Argument "`"$pushScript`"" -WorkingDirectory $Work
-  $trig1   = New-ScheduledTaskTrigger -Daily -At 23:30
-  $trig2   = New-ScheduledTaskTrigger -AtLogOn
-  Register-ScheduledTask -TaskName 'Wellperion-Token-Push' -Action $action -Trigger @($trig1, $trig2) -Force | Out-Null
-  Log "예약작업 Wellperion-Token-Push 등록(매일 23:30 + 로그온 시)"
-  Note '토큰 수집기' '등록됨 (Wellperion-Token-Push)'
-} else {
-  Note '토큰 수집기' '열쇠 없음 - 수집기 미등록'
-}
+Install-TokenPush
 
 # ═══ 점검표 ════════════════════════════════════════════════════════════════
 Write-Host ""

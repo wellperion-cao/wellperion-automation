@@ -18,6 +18,26 @@ from datetime import datetime, timedelta
 import token_usage as tu
 
 PUSH_URL = "https://erp.wellperion.com/api/token_usage/push"
+# 작업폴더 라벨 = 회사 저장소만 이름을 쓰고 나머지는 「기타」(나우열M 쪽 요청 2026-09-14 · 개인 폴더 이름이 서버에 안 남게)
+ALLOWED_PROJECTS = ("welperion-automation", "wellperion-automation", "wellperion-agents")
+LOG_FILE = tu.TOKEN_PUSH_KEY_FILE.with_name("token_push.log")
+
+
+def _log(line):
+    """실패 시 로그 1줄(예약작업은 화면이 없다) — 같은 폴더 token_push.log."""
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write("%s %s\n" % (datetime.now(tu.KST).strftime("%Y-%m-%d %H:%M:%S"), line))
+    except Exception:
+        pass
+
+
+def where_label_of(parsed):
+    nick = tu.ROLE_NICK.get(parsed.get("role"))
+    if nick:
+        return nick
+    proj = str(parsed.get("project") or "")
+    return next((a for a in ALLOWED_PROJECTS if a in proj), "기타")
 
 
 def build_summary():
@@ -30,7 +50,7 @@ def build_summary():
     files = sorted(tu.PROJECTS_DIR.rglob("*.jsonl")) if tu.PROJECTS_DIR.exists() else []
     for path in files:
         parsed = tu.parse_file(path)
-        where_label = tu.ROLE_NICK.get(parsed.get("role"), parsed.get("project", "unknown"))
+        where_label = where_label_of(parsed)
         session_id = path.stem
         for day, models in parsed.get("days", {}).items():
             if day < cutoff:
@@ -63,10 +83,21 @@ def build_summary():
     }
 
 
+def _selfcheck():
+    assert where_label_of({"role": "cto", "project": "C--Users-x-welperion-automation"}) == "시토"
+    assert where_label_of({"role": None, "project": "C--Users-x-welperion-automation"}) == "welperion-automation"
+    assert where_label_of({"role": None, "project": "C--Users-x-my-private"}) == "기타"
+    print("selfcheck ok")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="전송 없이 페이로드 크기·세션 수만 출력")
+    ap.add_argument("--selfcheck", action="store_true")
     args = ap.parse_args()
+    if args.selfcheck:
+        _selfcheck()
+        return 0
 
     payload = build_summary()
     assert payload["sessions"] >= 0 and payload["cost_usd"] >= 0, "집계값 음수"
@@ -81,6 +112,7 @@ def main():
     key = tu.read_push_key()
     if not key:
         sys.stderr.write("열쇠 없음 - %s 또는 환경변수 ERP_TOKEN_PUSH_KEY\n" % tu.TOKEN_PUSH_KEY_FILE)
+        _log("실패 열쇠 없음 %s" % tu.TOKEN_PUSH_KEY_FILE)
         return 1
 
     req = urllib.request.Request(
@@ -93,6 +125,7 @@ def main():
             r.read()
     except Exception as e:  # noqa: BLE001 — 실패 사유를 그대로 한 줄에
         sys.stderr.write("전송 실패: %s: %s\n" % (type(e).__name__, e))
+        _log("실패 전송 %s: %s" % (type(e).__name__, str(e)[:120]))
         return 1
 
     print("전송 완료 account=%s host=%s sessions=%d" % (payload["account"], payload["host"], payload["sessions"]))
