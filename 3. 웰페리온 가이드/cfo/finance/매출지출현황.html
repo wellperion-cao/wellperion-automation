@@ -1774,13 +1774,22 @@ async function doAct(row,next,needPw,btn){
   var prev=item?item.상태:null;
   if(item){item.상태=next;renderReqTbl();}
   reqToast("✔ "+((next==="반려")?"반려":next)+" 처리했습니다");
-  procCall("status",{row:row,status:next}).then(function(d){
-    if(d&&d.ok){writeReqCache();loadReq();return;}
-    throw 0;
-  }).catch(function(){
+  /* ★재시도(2026-09-14 매니저 실사용 신고: #134 승인 시 두 번 실패 후 3번째에 성공).
+     목록(loadReq)엔 2026-08-04 에 이미 같은 재시도가 들어갔는데 정작 쓰기엔 없어서,
+     콜드 스타트·302 경합에 걸리면 한 번 만에 포기하고 상태를 되돌렸다 — 사용자 눈엔
+     "승인했는데 품의로 돌아온다"로 보인다. 상태 쓰기는 같은 값을 다시 써도 결과가 같아
+     (멱등) 재시도가 안전하다. 5회·최대 약 12초 시도 후에도 실패해야 되돌린다. */
+  (async function(){
+    var delays=[0,900,2000,3500,6000];
+    for(var a=0;a<delays.length;a++){
+      if(delays[a])await new Promise(function(rs){setTimeout(rs,delays[a]);});
+      var d=null;
+      try{ d=await procCall("status",{row:row,status:next}); }catch(e){ d=null; }
+      if(d&&d.ok){ writeReqCache(); loadReq(); return; }
+    }
     if(item&&prev!==null){item.상태=prev;renderReqTbl();}
     reqToast("⚠️ 저장되지 않았습니다 — 다시 시도해주세요",1);
-  });
+  })();
 }
 
 /* ═══════════════════════════════════════════════════════════════
