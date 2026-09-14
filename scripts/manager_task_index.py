@@ -118,6 +118,9 @@ OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM",
 # 중간관리자 목차 개편(GM 지시 2026-09-14 "실장이 운영부 담당자들 업무들까지 체크해야") —
 #   실장·소장 라인 밑에 팀원 담당 건을 묶어 넣는다. 본인(실장·소장) 이름은 뺀다.
 OPS_TEAM = [s for s in OPS_DEPT_STAFF if s != "이경연 실장"]
+# 종합접수처·점검 내역 「전달 대상」 기본값(GM 지시 2026-09-14) — 처리 담당(자)이 비어 있을 때만 쓴다.
+DEPT_DEFAULT_HANDLER = {"운영부": "이경연 실장", "지원부": "이연희 반장",
+                        "시설부": "이정헌 소장", "P.T팀": "팀장"}
 FACILITY_TEAM = ["김종현 차장", "박호균 과장", "양상규 고문"]  # 시설부·주차 — 지원부 인원이 생기면 여기 추가
 
 
@@ -379,18 +382,27 @@ RESP_HEAD = ('<tr><th class="ri">항목</th><th class="rc">기준(어떻게 평�
 
 
 def resp_table(person: str, rows_def: list, ev: dict) -> str:
+    """행별 detail_fn(5번째 자리)이 있으면 그 행을 토글로 만든다 — 클릭하면 바로 아래 tr 에
+    내역이 펼쳐진다(GM 지시 2026-09-14 "종합접수처 내역들은 토글로 열면은 내역볼 수 있게").
+    새 상태 저장소는 안 만든다 — 펼침 여부는 화면에서만(기본 접힘), 원장은 그대로."""
     trs = []
     for entry in rows_def:
         item, crit, fn = entry[0], entry[1], entry[2]
         raw = entry[3] if len(entry) > 3 else False  # True = fn 이 이미 안전한 진척 막대 HTML 을 낸다
+        detail_fn = entry[4] if len(entry) > 4 else None
         text, bad = fn()
         good, fix = eval_cell(ev, person, item)
         cls = "rp bad" if bad else "rp"
-        trs.append(f'<tr><td class="ri">{html.escape(item)}</td>'
+        item_cell = (f'<span class="rp-arrow">▸</span> {html.escape(item)}' if detail_fn
+                     else html.escape(item))
+        tr_open = '<tr class="rp-toggle">' if detail_fn else '<tr>'
+        trs.append(f'{tr_open}<td class="ri">{item_cell}</td>'
                    f'<td class="rc">{html.escape(crit)}</td>'
                    f'<td class="{cls}">{text if raw else html.escape(text)}</td>'
                    f'<td class="rg">{html.escape(good)}</td>'
                    f'<td class="rf">{html.escape(fix)}</td></tr>')
+        if detail_fn:
+            trs.append(f'<tr class="rp-detail" hidden><td colspan="5">{detail_fn()}</td></tr>')
     return (f'<table class="resp-tb">\n          {RESP_HEAD}\n          '
             + "\n          ".join(trs) + '\n        </table>')
 
@@ -413,10 +425,10 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
         ],
         "이경연 실장": [
             ("종합접수처(운영부)", "1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0",
-             lambda: reception_dept_cell("운영부")),
+             lambda: reception_dept_cell("운영부"), False, reception_toggle_detail_html),
             ("점검 현황(운영부)", "요금 변경 준비·사우나 정비 체크리스트 진행률"
                              "(월간운영계획 체크 중 담당 이경연/운영부)",
-             lambda: objective_progress_cell(_ops_dept_cards(objs))),
+             lambda: objective_progress_cell(_ops_dept_cards(objs)), False, lambda: check_detail_html(objs)),
             ("업무·결재 SSOT(운영부 전원)", "주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산",
              lambda: ssot_week_cell(ssot_rows)),
             ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
@@ -454,7 +466,7 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     for person in RESP_PEOPLE:
         tbl = resp_table(person, rows_def[person], ev)
         if person == "이경연 실장":
-            extra = chief_detail_blocks(ssot_rows, objs)
+            extra = chief_detail_blocks(ssot_rows)
         else:
             extra = ""
         # 📄 보고 문서 선반은 이 화면에 두지 않는다 (GM 지시 2026-09-14 「보고문서 관련해서는
@@ -478,6 +490,21 @@ def _reception_handler(r: dict) -> str:
     return h or "미배정"
 
 
+def _reception_reporter(r: dict) -> str:
+    """접수자 — 원장(reg_list)의 reporter 칸 그대로(회원이 적은 접수는 '회원')."""
+    return str(r.get("reporter") or "").strip() or "—"
+
+
+def _reception_deliver_to(r: dict, dept: str) -> str:
+    """전달 대상 — 처리자가 있으면 그 사람, 비면 부서 기본값(GM 지시 2026-09-14).
+    담당 미배정 집계(reception_dept_cell)는 그대로 _reception_handler 를 쓴다 — 여긴 표시용."""
+    h = _reception_handler(r)
+    if h != "미배정":
+        return h
+    default = DEPT_DEFAULT_HANDLER.get(dept)
+    return f"{default}(기본)" if default else "미배정"
+
+
 def reception_dept_detail(dept: str = "운영부") -> "tuple[list, list] | tuple[None, None]":
     """부서 열린 건(분실물 제외) + 분실물 목록 — 진척 칸(reception_dept_cell)과 건별 목록①이
     같은 함수를 쓴다(원천 이중화 금지). 조회 실패면 (None, None)."""
@@ -499,14 +526,15 @@ def reception_dept_detail(dept: str = "운영부") -> "tuple[list, list] | tuple
     return rest, lost
 
 
-def reception_detail_html() -> str:
+def reception_toggle_detail_html() -> str:
+    """책임 표 「종합접수처(운영부)」 행을 클릭하면 펼쳐지는 내역 — 접수자·전달 대상 칸
+    포함(GM 지시 2026-09-14 "누가 접수했고, 누구에게 전달해야하는지도 정리가 되면"). 원천은
+    reception_dept_detail 그대로(진척 칸과 같은 필터 · 약속 L21)."""
     from collectors.ops_shared import reception_elapsed_days
     rest, lost = reception_dept_detail("운영부")
     if rest is None:
-        return ('<details open class="grp"><summary>① 종합접수처(운영부) '
-                 f'<span class="gc">{_NO_MEASURE}</span></summary>'
-                 f'<div class="empty" style="padding:8px 14px;">{_NO_MEASURE}(접수처 조회 실패)</div>'
-                 '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div></details>')
+        return (f'<div class="empty" style="padding:8px 14px;">{_NO_MEASURE}(접수처 조회 실패)</div>'
+                 '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div>')
     now = datetime.now()
     rest_sorted = sorted(rest, key=lambda r: -reception_elapsed_days(r, now))
     rows = []
@@ -516,19 +544,20 @@ def reception_detail_html() -> str:
         memo_on = "있음" if str(r.get("memo") or "").strip() else "—"
         rows.append(f'<tr><td>#{html.escape(str(r.get("regId") or "—"))}</td>'
                     f'<td>{html.escape(str(r.get("category") or "—"))}</td>'
-                    f'<td>{html.escape(_reception_handler(r))}</td>'
+                    f'<td>{html.escape(_reception_reporter(r))}</td>'
+                    f'<td>{html.escape(_reception_deliver_to(r, "운영부"))}</td>'
                     f'<td class="age {age_cls(age)}">{age}일</td>'
                     f'<td title="{html.escape(content)}">{html.escape(short(content) if content else "—")}</td>'
                     f'<td>{memo_on}</td></tr>')
-    body = "\n        ".join(rows) or '<tr><td colspan="6" class="empty">열린 건 없음</td></tr>'
+    body = "\n        ".join(rows) or '<tr><td colspan="7" class="empty">열린 건 없음</td></tr>'
     lost_line = ""
     if lost:
         lage = max((reception_elapsed_days(r, now) for r in lost), default=0)
         lost_line = f'<div class="sub-note">분실물 {len(lost)}건(담당 미배정 · 최장 {lage}일)</div>'
-    return (f'<details open class="grp"><summary>① 종합접수처(운영부) <span class="gc">{len(rest)}건</span></summary>'
-            '<table><tr><th>번호</th><th>분류</th><th>담당</th><th>경과</th><th>제목</th><th>처리메모</th></tr>'
+    return ('<table><tr><th>번호</th><th>분류</th><th>접수자</th><th>전달 대상</th><th>경과</th>'
+            '<th>제목</th><th>처리메모</th></tr>'
             f'{body}</table>{lost_line}'
-            '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div></details>')
+            '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div>')
 
 
 def ssot_ops_detail_rows(rows: "list | None") -> "list | None":
@@ -666,7 +695,33 @@ def check_ops_detail_rows(objs: list) -> list[tuple[dict, str]]:
     return out
 
 
+def _check_owner_text(o: dict, ln: str) -> str:
+    """체크 담당 — 체크 줄 「담당:」 표기가 먼저, 없으면 카드 담당, 그것도 없으면 담당 없음."""
+    m = _OWNER_TAG_RE.search(ln)
+    v = m.group(1).strip() if m else ""
+    if v and v != "(미정)":
+        return v
+    v2 = str(o.get("owner") or "").strip()
+    return v2 or "담당 없음"
+
+
+def _check_due_text(ln: str) -> str:
+    m = _DUE_TAG_RE.search(ln)
+    v = m.group(1).strip() if m else ""
+    return v if v and v != "(미정)" else "—"
+
+
+def _check_deliver_to(owner_text: str) -> str:
+    """전달 대상 — 담당 표기가 운영부 실무진이면 그 사람, 아니면 운영부 카드 기본값(이경연 실장)."""
+    if owner_text in OPS_DEPT_STAFF:
+        return owner_text
+    default = DEPT_DEFAULT_HANDLER["운영부"]
+    return f"{default}(기본)"
+
+
 def check_detail_html(objs: list) -> str:
+    """책임 표 「점검 현황(운영부)」 행을 클릭하면 펼쳐지는 내역 — 체크 담당·전달 대상 칸
+    포함(GM 지시 2026-09-14). 원천은 check_ops_detail_rows 그대로(진척 칸과 같은 필터)."""
     pairs = check_ops_detail_rows(objs)
     rows = []
     for o, ln in pairs:
@@ -677,25 +732,22 @@ def check_detail_html(objs: list) -> str:
                 f'rel="noopener" title="{html.escape(title)}">{disp}</a>' if oid
                 else f'<span title="{html.escape(title)}">{disp}</span>')
         body = _CHK_BODY_RE.sub(r"\1", ln)
-        m_owner = _OWNER_TAG_RE.search(ln)
-        has_owner = bool(m_owner) and m_owner.group(1).strip() not in ("", "(미정)")
-        m_due = _DUE_TAG_RE.search(ln)
-        has_due = bool(m_due) and m_due.group(1).strip() not in ("", "(미정)")
+        owner_text = _check_owner_text(o, ln)
         rows.append(f'<tr><td class="ti">{card}{objective_docs_html(o)}</td>'
                     f'<td title="{html.escape(body)}">{html.escape(short(body))}</td>'
-                    f'<td>{"있음" if has_owner else "—"}</td>'
-                    f'<td>{"있음" if has_due else "—"}</td></tr>')
-    body_html = "\n        ".join(rows) or '<tr><td colspan="4" class="empty">미완 체크 없음</td></tr>'
-    return (f'<details open class="grp"><summary>③ 점검 현황(운영부) <span class="gc">{len(pairs)}건</span></summary>'
-            '<table><tr><th>카드</th><th>체크</th><th>담당표기</th><th>완료예정일</th></tr>'
+                    f'<td>{html.escape(owner_text)}</td>'
+                    f'<td>{html.escape(_check_deliver_to(owner_text))}</td>'
+                    f'<td>{html.escape(_check_due_text(ln))}</td></tr>')
+    body_html = "\n        ".join(rows) or '<tr><td colspan="5" class="empty">미완 체크 없음</td></tr>'
+    return ('<table><tr><th>카드</th><th>체크</th><th>체크 담당</th><th>전달 대상</th><th>완료예정일</th></tr>'
             f'{body_html}</table>'
-            '<div class="sub-note">닫는 곳: GM업무 화면 체크</div></details>')
+            '<div class="sub-note">닫는 곳: GM업무 화면 체크</div>')
 
 
-def chief_detail_blocks(ssot_rows: "list | None", objs: list) -> str:
-    return (f'        {reception_detail_html()}\n'
-            f'        {ssot_detail_html(ssot_rows)}\n'
-            f'        {check_detail_html(objs)}\n')
+def chief_detail_blocks(ssot_rows: "list | None") -> str:
+    """② 업무·결재 SSOT 목록만 — ①접수·③점검은 2026-09-14부터 책임 표 행 토글 안으로 옮겼다
+    (GM 지적 "둘로 두지 않는다")."""
+    return f'        {ssot_detail_html(ssot_rows)}\n'
 
 
 def _title_key(t: str) -> str:
@@ -1341,6 +1393,12 @@ def build() -> str:
   table.resp-tb td.rp.bad {{ color:var(--bad); font-weight:700; }}
   table.resp-tb th.rg, table.resp-tb td.rg,
   table.resp-tb th.rf, table.resp-tb td.rf {{ width:17.5%; font-size:13px; }}
+  /* 실장 행 토글 — 종합접수처·점검 현황 행을 누르면 바로 아래 tr 에 내역(GM 지시 2026-09-14) */
+  tr.rp-toggle {{ cursor:pointer; }}
+  tr.rp-toggle:hover {{ background:var(--navy-bg); }}
+  tr.rp-toggle .rp-arrow {{ color:var(--dim); }}
+  tr.rp-detail td {{ padding:0; background:#FAFBFC; }}
+  tr.rp-detail table {{ margin:0; }}
   table {{ width:100%; border-collapse:collapse; font-size:14px; }}
   th, td {{ padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; text-align:left; }}
   th {{ background:#FAFBFC; font-size:12.5px; color:var(--dim); font-weight:700; }}
@@ -1573,6 +1631,17 @@ def build() -> str:
         b.disabled = false; b.checked = !on; b.closest('tr').classList.toggle('done', !on);
         alert('체크를 저장하지 못했습니다 — 잠시 뒤 다시 눌러 주세요.');
       }});
+    }});
+  }});
+
+  // 종합접수처·점검 현황 행 토글(GM 지시 2026-09-14) — 기본 접힘, 클릭한 행 바로 다음 tr 이 내역.
+  document.querySelectorAll('tr.rp-toggle').forEach(function (tr) {{
+    tr.addEventListener('click', function () {{
+      var det = tr.nextElementSibling;
+      if (!det || !det.classList.contains('rp-detail')) return;
+      var opening = det.hidden;
+      det.hidden = !opening;
+      tr.querySelector('.rp-arrow').textContent = opening ? '▾' : '▸';
     }});
   }});
 </script>
