@@ -206,6 +206,16 @@
     font-size:10.6px;line-height:1.5;color:#48525B;display:flex;gap:22px;}
   .foot div{flex:1;}
   .foot b{color:var(--ink);}
+
+  /* 브랜드 띠 — 매일 나가는 보고라 우리가 무엇을 하는 곳이고 지금 무엇에 집중하는지가
+     같이 보이게 한다(GM 지시 2026-09-14). 세 장 아래에 같은 줄로 들어간다. */
+  .bband{margin-top:8px;border-top:2px solid var(--ink);padding-top:6px;
+    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    font-size:11px;line-height:1.5;color:#48525B;}
+  .bband .sl{font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:.01em;}
+  .bband .pos{color:#6B7680;}
+  .bband .fc{margin-left:auto;text-align:right;}
+  .bband .fc b{color:var(--ink);}
   .err{background:#FBEDED;border:1.5px solid var(--bad);color:var(--bad);padding:7px 13px;
     font-size:12.5px;font-weight:700;margin-top:10px;}
 
@@ -428,6 +438,17 @@
     <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
   </div>
 
+  <!-- 브랜드 띠(세 장 공통) — GM 지시 2026-09-14 「우리가 지금 집중하는 것, 슬로건도 계속 나오게」.
+       문구 정본: 슬로건·포지셔닝 = ssot/canon_values.json(slogan_kr·positioning_kr · 이 폴더는
+       그 값의 allow_globs 안이다) · 미션 = CLAUDE.md 회사 정보 · 지금 집중 = status/
+       monthly_ops_plan.json 의 half_year_review(headline·directions 3축). 원천이 바뀌면 세 장을
+       같이 고친다(같은 줄이 세 번 들어간다 — 장마다 따로 쓰지 않는다). -->
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
+  </div>
+
 </div>
 
 <div class="page" id="sheet2">
@@ -491,6 +512,12 @@
 
   <div class="audit wait" id="audit2">자체 점검 중…</div>
 
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
+  </div>
+
 </div>
 
 <!-- 3면 — 운영 현황 (GM 지시 2026-09-14 「매출 & 회원 현황보고에 현재 매출보고처럼 운영관련된
@@ -546,6 +573,12 @@
   <div class="foot">
     <div><b>이 장이 보는 것</b> — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 운영 현황 칸과 업무 SSOT입니다. 값을 여기서 다시 계산하지 않습니다.</div>
+  </div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
   </div>
 
 </div>
