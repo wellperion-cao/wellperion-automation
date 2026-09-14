@@ -524,6 +524,14 @@ function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c)
 /* '1,026명' · ' 3,400,000 ' → 숫자. 막대 길이를 그릴 때만 쓴다(화면에 찍는 값은 시트 문자열 그대로). */
 function num(v){ var n = parseInt(String(v == null ? '' : v).replace(/[^0-9-]/g, ''), 10);
   return isNaN(n) ? 0 : n; }
+/* 시트 회계 서식은 숫자 0 을 「-」로 그린다. 그 「-」가 화면에 그대로 오면 같은 표 안에서 ₩0 과
+   섞여 「안 적힌 날」처럼 읽힌다(GM 지적 2026-09-14 · 시우 실측: 보고탭 I4 는 =sum(I6:I15) 이고
+   그 합이 0 이라 「-」다 — 달성률이 0.0% 로 계산되는 것이 숫자 0 이라는 증거다).
+   칸 자체를 못 받은 경우는 여기 오지 않는다 — 그 전에 조회 실패로 갈린다. */
+function cellMoney(v){
+  var t = String(v == null ? '' : v).trim();
+  return /[0-9]/.test(t) ? t : '₩ 0';   // 「₩ -」·「-」·빈칸 — 숫자가 하나도 없으면 0 원이다
+}
 function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(n)) return '';
   return n >= 100 ? 'r-hi' : (n >= 70 ? 'r-mid' : 'r-lo'); }
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
@@ -798,7 +806,7 @@ function renderSheet(c){
                s.textContent = sub; }
     else if (s) { s.remove(); }
   }
-  setHl(0, (c.I4 || '').trim(), '전날 하루');
+  setHl(0, cellMoney(c.I4), '전날 하루');
   setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
@@ -1234,7 +1242,7 @@ function renderDaySales(c, dayLabel){
   if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–', '–', '–']);
   /* 누적 열은 전부 「보고」탭 값으로 통일한다 — 총 매출만 일자탭 누적을 쓰면 줄 합과 총합이
      서로 다른 장부가 돼 화면 안에서 어긋난다(GM 지적 2026-09-11 440,475 차액). */
-  rows.push(['총 매출', c.J3].concat(accCells(4)));
+  rows.push(['총 매출', cellMoney(c.J3)].concat(accCells(4)));
   var lastIdx = rows.length - 1;
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
     var bar = rateClass(r[4]) ? '<span class="rb" style="width:' +
@@ -1398,7 +1406,7 @@ function onDatePick(silent){
         (mdiff === 1 && !tabHasCur ? ' (지난달 탭 기록)' : '') + (ok ? '' : ' — 표시 주의');
       renderDaySales(c, dayLabel);
       var hl = document.getElementById('headline').children;
-      hl[0].querySelector('.v').textContent = c.J3 || '—';
+      hl[0].querySelector('.v').textContent = cellMoney(c.J3);
       hl[1].querySelector('.v').textContent = c.J4 || '—';
       // 칸 제목도 같이 바꾼다 — 「어제 매출」이라 적힌 칸에 오늘 값이 들어가면 제목이 거짓말이 된다.
       hl[0].querySelector('.t').textContent = isToday ? '오늘 매출 (집계 중)' : dayLabel + ' 매출';
@@ -1434,7 +1442,7 @@ function toggleMonth(){
       if (todayCells) syncChartPartial(todayCells.J4, _todayLabel());
       if (todayCells) {
         var hl = document.getElementById('headline').children;
-        hl[0].querySelector('.v').textContent = todayCells.J3 || '—';
+        hl[0].querySelector('.v').textContent = cellMoney(todayCells.J3);
         hl[1].querySelector('.v').textContent = todayCells.J4 || '—';
         hl[0].querySelector('.t').textContent = '오늘 매출 (집계 중)';   // 오늘 값이므로 칸 제목도 맞춘다
       }
