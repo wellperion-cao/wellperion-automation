@@ -223,6 +223,19 @@ CREATE TABLE IF NOT EXISTS proc_asset_issued (
   issued_at TEXT NOT NULL,
   PRIMARY KEY (tenant_id, req_key)
 );
+-- 결재 비밀번호(PIN) 원장 (배 AWS-마무리 · 2026-09-14 시토). GAS 스크립트 속성(APPROVAL_PIN_GM 등)에만 있던
+-- 값을 서버가 갖는다 — 그래야 todo_sign·todo_opinion·todo_opinion_delete 가 GAS 왕복 없이 즉시 판정된다.
+-- name = GAS 속성 이름 그대로(APPROVAL_PIN_GM · _OPS · _FAC · _PARTNER) — 번역표를 두지 않으려고 같은 낱말을 쓴다.
+-- 평문은 어디에도 안 남는다: 저장은 sha256(salt + pin) 뿐이고 등록은 서버 안 CLI(approval_pin.py --set)로만 한다.
+-- 행이 없는 이름은 '서버가 모르는 비번' — 그때는 종전대로 GAS 가 검증한다(approval_pin.check 의 defer).
+CREATE TABLE IF NOT EXISTS approval_pins (
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  name       TEXT NOT NULL,
+  salt       TEXT NOT NULL,
+  pin_hash   TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, name)
+);
 ALTER TABLE intake_log ADD COLUMN IF NOT EXISTS raw_body   TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS pushed_at  TEXT;
 ALTER TABLE write_log  ADD COLUMN IF NOT EXISTS push_tries INTEGER NOT NULL DEFAULT 0;
