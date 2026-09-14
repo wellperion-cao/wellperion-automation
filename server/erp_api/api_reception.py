@@ -24,6 +24,9 @@
   GET  /api/reception/health           행 수·마지막 동기화
   GET  /api/reception/similar          유사건 조회(배1120·시우 요청) — dept+text 필수, category 선택, days(60)·limit(5)
     최근 days 일·같은 dept(+category) 안에서 difflib·토큰 유사도 0.5 이상 상위 limit 개. 무인증(제출 전 폼 호출).
+  GET  /api/reception/lookup/public    reg_lookup 대체(배 2026-09-14 종합접수처 5장 서버우선) — 무인증·전화+이름
+    2차확인, GAS _regLookup 과 같은 칸만(regId·category·createdAt·status·content·memberReply). 워드프레스
+    전화번호 조회 블록(wp_lookup_block[_en].html)이 GAS 대신 부르는 자리. rate-limit 은 nginx intake 존이 맡는다.
   POST /api/reception/submit           reg_submit 대체(공개·무인증 — nginx erp-locations 에서 auth 제외) · 종합접수처 6종 폼
   POST /api/reception/lost             lf_submit 대체(로그인 뒤 · 습득물 등록 — 사진 필수)
   POST /api/reception/update           reg_update 대체(배 1039-C · 2026-09-05) — 서버 원장 직접 갱신, GAS 는 그 자리에서
@@ -455,6 +458,32 @@ def lost_public(view: str = Query("gallery")):
     upcoming.sort(key=lambda r: str(r.get("foundId") or ""))
     disposed.sort(key=lambda r: str(r.get("disposedAt") or ""), reverse=True)
     return JSONResponse({"ok": True, "upcoming": upcoming, "disposed": disposed, "_source": SOURCE}, headers=CORS)
+
+
+# 회원 셀프 조회(reg_lookup) 공개 응답 칸 — GAS _regLookup 과 같다. 처리메모·담당·처리자·연락처·사진은
+# 여기 없으니 응답에 절대 안 실린다(코드로 못 박는 것 자체가 노출 차단·_LF_PUBLIC_FIELDS 와 같은 방식).
+_REG_LOOKUP_FIELDS = ("regId", "category", "createdAt", "status", "content", "memberReply")
+
+
+@router.get("/lookup/public")
+def lookup_public(phone: str = Query(""), name: str = Query("")):
+    """reg_lookup 대체 — 무인증 · 전화+이름이 둘 다 맞는 행만 반환(GAS _regLookup 과 같은 매칭 규칙)."""
+    p = re.sub(r"\D", "", phone or "")
+    n = re.sub(r"\s", "", name or "")
+    if not p or not n:
+        return JSONResponse({"ok": False, "error": "이름과 전화번호를 모두 입력해 주세요."}, headers=CORS)
+    conn = _open()
+    with conn:
+        rows = _rows(conn, "reception_items", "created_at DESC, reg_id")
+    out = []
+    for d in rows:
+        rc = re.sub(r"\D", "", str(d.get("contact") or ""))
+        rn = re.sub(r"\s", "", str(d.get("name") or ""))
+        if rc != p or rn != n:
+            continue
+        out.append({k: (d.get(k) or "") for k in _REG_LOOKUP_FIELDS})
+    out.sort(key=lambda r: str(r.get("createdAt") or ""), reverse=True)
+    return JSONResponse({"ok": True, "count": len(out), "data": out, "_source": SOURCE}, headers=CORS)
 
 
 @router.get("/hold")
@@ -1037,6 +1066,10 @@ def selftest():
                 "staffNames": ["홍길동", "김철수"], "_source": SOURCE}, d
     d2 = _dashboard_response("all", [], None, None)   # 거울이 아직 없을 때 폴백
     assert d2["scoreboard"] == {"ok": True, "period": "all", "since": "", "board": []} and d2["staffNames"] == [], d2
+
+    # reg_lookup 대체(2026-09-14 종합접수처 5장 서버우선) — GAS _regLookup 응답 칸과 1:1, 정규화 규칙도 동일
+    assert _REG_LOOKUP_FIELDS == ("regId", "category", "createdAt", "status", "content", "memberReply")
+    assert re.sub(r"\D", "", "010-1234-5678") == "01012345678" and re.sub(r"\s", "", "홍 길동") == "홍길동"
 
     import tempfile
     global UPLOAD_DIR
