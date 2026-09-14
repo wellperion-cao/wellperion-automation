@@ -1337,19 +1337,19 @@
           "start": "18:09",
           "end": "18:10",
           "minutes": 1,
-          "upload": "기록만",
+          "upload": "✅ 배포 (2d3c785e7)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260914-aws-100",
           "no": "00",
           "got": "GM 지시: 오늘 100% 요구 → 접수처 잠금 풀고 5장 오늘 · 나우열M 에게 「다 넘긴다」 전달 · GM 18시 퇴근",
-          "did": "index.html 은 다른 레인 폭 변경 2줄만 남김 · 점검 js 삭제 · 나우열M 라인은 그쪽 CHRO 진행 · 레인 보고: 채용 6장은 공개 폼이라 서버 라우트 없음 · schedule·onboarding·office 는 db 열쇠 아닌 별도 동작(인사 API 확장 필요) — 나우열M 라인 참고용",
+          "did": "api_guide 배포·nginx 문(열쇠) · GM 세션 저장 시험 1건 → 적용기 반영 1건 · 예약작업 Wellperion-Guide-Edits-Apply(10분)·Wellperion-GAS-Dep-Scan(매시) · 구글만 19장 전부 나우열M 라인",
           "start": "17:52",
-          "end": "18:06",
-          "minutes": 14,
-          "upload": "기록만",
+          "end": "18:20",
+          "minutes": 27,
+          "upload": "✅ 배포 (2d3c785e7)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1415,18 +1415,6 @@
         }
       ],
       "work": [
-        {
-          "time": "06:04",
-          "area": "작업",
-          "event": "GM 하루 통 조용한 실패 수리 — 저녁 정리 22회 미발신·토요일 통째 결번",
-          "detail": "커밋 ff10b0e553 · 배 12528"
-        },
-        {
-          "time": "06:07",
-          "area": "모듈점검",
-          "event": "GM 하루 통 조용한 실패 수리",
-          "detail": "저녁 정리 20:00 통 08-15 이후 22회 미발신(progress 문자열 TypeError) 수리 · 토요일 결번(휴무 오판) 수리 · 침묵감지 신호를 발신 로그로 교체 · 스케줄러 재기동 확인 · 저장·배포 ff10b0e55"
-        },
         {
           "time": "08:34",
           "area": "작업",
@@ -1576,13 +1564,43 @@
           "area": "권한",
           "event": "배12586 중간관리자 업무 목차 권한 — 이정헌 소장 계정 열기",
           "detail": "실장 info@ 200 · 나우열 jjky0123 200 · 소장 supas 403→모듈 추가→200 (실제 세션·nginx 경유 실측)"
+        },
+        {
+          "time": "18:18",
+          "area": "작업",
+          "event": "자동화 건강판 0% — schtasks 라벨이 프로세스마다 한글/영문으로 갈려 블록 분리 실패(영문 철자 HostName·TaskName 미대응) · 라벨 정규화로 두 갈래 수용 + 자가검사 (배11439)",
+          "detail": "커밋 0995d17113 · 배 12579"
+        },
+        {
+          "time": "18:19",
+          "area": "작업",
+          "event": "ERP 메인 가로 넘침 0 — 원인 2곳(매출·지출 스트립 grid-template-columns 1fr→minmax(0,1fr)) (배12508)",
+          "detail": "커밋 a2f1aa492e · 배 12579"
+        },
+        {
+          "time": "18:20",
+          "area": "작업",
+          "event": "구글 의존 실측을 매시 예약작업으로 저장·배포(gas_dependency_publish.py)",
+          "detail": "커밋 1a9d926116 · 배 12579"
+        },
+        {
+          "time": "18:22",
+          "area": "화면",
+          "event": "배12508 ERP 메인 가로 넘침 0 — 그리드 minmax 6줄",
+          "detail": "라이브 /home 390폭 0 · 1440폭 0 실측"
+        },
+        {
+          "time": "18:22",
+          "area": "자동화",
+          "event": "배11439 자동화 건강판 0% 원인 수리 — schtasks 라벨 한/영 정규화",
+          "detail": "원인 확정(HostName: 철자) · 두 환경 46건 · 다음 30분 주기 값 확인 예정"
         }
       ],
       "count": 32,
       "done": 32,
       "open": 0,
       "avg_minutes": 7,
-      "work_count": 27,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2776,13 +2794,19 @@
           "area": "작업",
           "event": "2면 등록을 맨 위로·문의는 오늘 기준만 · 유입경로 한 줄 · 3면에 휴관일 표기 (GM 지시 2026-09-14)",
           "detail": "커밋 d2fd16d71c · 배 12532"
+        },
+        {
+          "time": "18:19",
+          "area": "작업",
+          "event": "상가 출입 안내보드 시안을 눈으로 볼 수 있게 그림으로 남긴다 · 안내물 4종 남은 것 실측 기록",
+          "detail": "커밋 ca209409be · 배 12532"
         }
       ],
       "count": 30,
       "done": 30,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 24,
+      "work_count": 25,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -3278,13 +3302,19 @@
           "area": "작업",
           "event": "문의 관리 화면 다시 — 웰페리온 멤버십 회원관리 뼈대(현황 카드·분류 칩·목록 표)로 가볍게 · 종전 admin.html 삭제",
           "detail": "커밋 3445ec6d8d · 배 11305"
+        },
+        {
+          "time": "18:19",
+          "area": "작업",
+          "event": "상담봇을 첫 구독 상품으로 — 자산 원장에 본체 신설·구독 네 조각 selling 지정 · sellable 세 값 뜻 정의(설계 6-1)",
+          "detail": "커밋 185f53a20e · 배 11305"
         }
       ],
       "count": 32,
       "done": 32,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 17,
+      "work_count": 18,
       "missed": [],
       "unclosed": [],
       "just": [],
