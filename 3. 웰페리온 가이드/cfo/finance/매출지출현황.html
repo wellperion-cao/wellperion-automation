@@ -504,6 +504,30 @@ function _salesRead(gas,q,gasFn,tag){   // 거울 먼저 · 실패하면 종전 
   return fetch(path).then(function(r){if(!r.ok)throw new Error("api "+r.status);return r.json();})
     .catch(function(e){console.warn("["+tag+"] API 실패 → GAS 폴백:",e&&e.message);return gasFn();});
 }
+/* ── 시트 거울 통로 (3차 이관 · 시토 배 12615 · 2026-09-14 18:48 서버 반영) ─────────────────────
+   구글 시트를 브라우저가 gviz 로 직접 읽던 자리를 서버 거울(5분 cron)로 돌린다. 응답 모양은 gviz JSON 과
+   같은 {table:{cols,rows}} 라 파서는 그대로다. ERP 도메인에서만 서버 우선, 실패·401·비ERP 는 종전 gviz 폴백.
+   비품 원장(SUPPLY_SRV)은 지원부 화면과 보드를 공유해 시우 확인 뒤 열린다 — 빈 값이면 종전 GAS 직행. */
+var SHEET_API={labor:"/api/sales/sheet/labor", deptpnl:"/api/sales/sheet/expense"};
+var ASSET_API="/api/proc/assets";      // asset_list 거울 — {ok,count,data} (GAS 모양 동일 · 발급·삭제·수정 즉시 반영)
+var SUPPLY_SRV="";                      // 비품 보드 거울 — 보류(시우 확인 뒤 주소 기입)
+var SRC_META={};                        // 소스 표시용(🟢서버 거울 / 🟡구글 gviz)
+async function _gvizRead(key,gvizUrl,tag){
+  var path=ERP_API_ON&&SHEET_API[key];
+  if(path){
+    try{
+      var r=await fetch(path,{cache:"no-store",credentials:"same-origin"});
+      if(!r.ok)throw new Error("api "+r.status);
+      var j=await r.json();
+      if(!(j&&j.table&&j.table.rows))throw new Error("응답 모양 불일치");
+      SRC_META[key]="🟢서버 거울"+(j._synced_at?"("+j._synced_at+")":"");
+      return j;
+    }catch(e){console.warn("["+tag+"] 서버 거울 실패 → gviz 폴백:",e&&e.message);}
+  }
+  var r2=await fetch(gvizUrl,{cache:"no-store"});var t=await r2.text();
+  SRC_META[key]="🟡구글 gviz";
+  return JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));
+}
 var SHEET_ID="1uAmZXX0GbiDImORxEwnDFm4_C-r0W43s-_tV_cPq9lE";
 var GVIZ="https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:json";
 /* ★2026-07-16 gviz 숨김행 감사(문의회원 426건 누락 후속) — 인건비 GVIZ 실측 대조 완료.
@@ -579,8 +603,7 @@ function newChart(id,cfg){if(_charts[id])_charts[id].destroy();_charts[id]=new C
 
 async function loadData(){
   try{
-    var r=await fetch(GVIZ,{cache:"no-store"});var t=await r.text();
-    var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));var rows=json.table.rows||[];
+    var json=await _gvizRead("labor",GVIZ,"인건비마스터");var rows=json.table.rows||[];   // 서버 거울 우선(3차 이관) · 실패 시 gviz
     var labMap={},oper=Array(12).fill(0),inst=[],found=false;
     rows.forEach(function(row){var c=row.c||[];var dept=c[0]&&c[0].v,name=c[1]&&c[1].v;
       if(!dept||!name)return;if(String(name).indexOf("소계")>=0||String(dept).indexOf("전체")>=0)return;
@@ -682,8 +705,7 @@ function dpV(c){return (c&&typeof c.v==="number")?c.v:null;}
 function dpTxt(c){return (c&&c.v!=null)?String(c.v).trim():"";}
 async function loadDeptPnl(){
   try{
-    var r=await fetch(DEPT_PNL_GVIZ,{cache:"no-store"});var t=await r.text();
-    var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));
+    var json=await _gvizRead("deptpnl",DEPT_PNL_GVIZ,"부서별손익");   // 서버 거울 우선(3차 이관) · 실패 시 gviz
     var cols=json.table.cols||[],rows=json.table.rows||[],grid=[];
     var lab=cols.map(function(c){return {v:(c&&c.label)?c.label:null};});
     if(lab.some(function(c){return c.v&&String(c.v).trim();}))grid.push(lab);
@@ -2149,7 +2171,13 @@ function closeInb(){_inbRow=null;document.getElementById("inbOv").style.display=
    라벨번호 = WP-{취득연도}-{4자리 일련}, 채번은 백엔드(LockService)에서만.       */
 async function loadAssets(force){
   if(_astLoaded&&!force)return ASSET_ROWS;
-  try{var d=await procCall("asset_list",{});ASSET_ROWS=(d&&d.ok&&d.data)||[];_astLoaded=true;}
+  var d=null;
+  if(ERP_API_ON&&ASSET_API){   // 자산 원장 서버 거울(3차 이관) — GAS asset_list 와 같은 {ok,count,data}
+    try{var r=await fetch(ASSET_API,{cache:"no-store",credentials:"same-origin"});
+      if(r.ok){var j=await r.json();if(j&&j.ok&&j.data)d=j;}
+    }catch(e){console.warn("[자산대장] 서버 거울 실패 → GAS 폴백:",e&&e.message);}
+  }
+  try{if(!d)d=await procCall("asset_list",{});ASSET_ROWS=(d&&d.ok&&d.data)||[];_astLoaded=true;}
   catch(e){ASSET_ROWS=[];}
   return ASSET_ROWS;
 }
