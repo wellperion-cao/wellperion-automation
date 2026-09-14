@@ -627,6 +627,14 @@ function runAudit(){
   add('fail', '회원·입장객 빈칸 없음', blanks.length === 0,
       blanks.length ? blanks.length + '칸이 비어 있습니다(0 인지 못 읽은 것인지 모릅니다)' : '');
 
+  /* ⑤-2 원천이 하루 빠진 것 — 위 ⑤는 빈칸만 잡고 「0」은 못 잡는다. 일자탭 방문객 블록이 통째로
+     안 채워진 날은 세 칸이 모두 0 으로 와서, 화면도 09:30 그림도 조용히 「0 명」을 보고한다.
+     실측 2026-09-14(시우): 9/11 454·12·36 · 9/12 469·10·92 인데 9/13 만 0·0·0 — 그날 운영부
+     입력이 빠진 것이다. 휴관일이면 0 이 맞을 수 있으니 치명이 아니라 주의로 둔다. */
+  var visitAllZero = VISIT_ROWS.every(function(r){ return num(c['N' + r]) === 0; });
+  add('warn', '입장 인원 0 아님', !visitAllZero,
+      '멤버십·준회원·유소년 세 칸이 모두 0 입니다 — 그날 일자탭 방문객 칸이 안 채워졌을 수 있습니다');
+
   // ⑥ 컨택·로스자 칸의 기준일
   var ct = _mdOf(c.I16), ls = _mdOf(c.I18);
   add('fail', '컨택 칸 최신', !!ct && (_sameMD(ct, now) || _sameMD(ct, tmr)),
