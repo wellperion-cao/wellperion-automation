@@ -121,10 +121,17 @@
     font-variant-numeric:tabular-nums;}
   /* 값이 없는 칸 — 빈 상자만 남기지 않고 없다는 사실을 한 줄로 말한다. */
   .emptynote{color:#98A1A9;font-size:11.4px;}
+  /* 휴관일 안내 — 0 이 이상이 아니라는 것을 그 자리에서 말한다. */
+  .closednote{background:#F4F7FA;border-left:3px solid var(--navy);padding:5px 9px;margin-bottom:7px;
+    font-size:11.4px;line-height:1.5;color:#3C464F;}
+  .closednote b{color:var(--navy);}
 
   /* 2면 맨 아래 띠(강습 종목별·유입 경로) — 그날 일이 아니라 누적이라 자리를 줄여 얇게 깐다
      (GM 지시 2026-09-14 「종목 및 유입경로는 별도로 축소」). 폭을 다 쓰므로 막대는 더 길다. */
   .lesson-strip .bd{padding:6px 11px 7px;}
+  /* 이름표는 한 줄로 길게 — 「네이버 검색·플레이스」가 세 줄로 접히면서 줄 높이를 밀어 올렸다
+     (GM 지시 2026-09-14 「유입경로도 띄어쓰기 하지말고 길쭉하게 한 줄로」). */
+  .lesson-strip .vrow .vl2{width:auto;min-width:118px;white-space:nowrap;}
   .lesson-strip .vrow{padding:1.5px 0;font-size:11.4px;gap:8px;}
   .lesson-strip .vrow .vbar{height:9px;}
   .lesson-strip .vrow .vn{font-size:12px;width:46px;}
@@ -495,30 +502,14 @@
        1페이지에 매출 및 회원 현황보고에 있으니". 뺀 것 넷 — ①오늘·이번 달 움직임(1페이지 「회원 드나듦」과
        같은 숫자) ②이달 등록 내역(기준일 등록만 본다) ③회원 구성 상세(1페이지 「회원 구성」과 중복)
        ④이탈·갱신 임박(위 「오늘 챙길 것」 갱신 임박 칸이 같은 명단을 이미 보여 준다). -->
-  <!-- ★2026-09-14 GM 지시로 이 장을 「문의 띠 → 등록 띠 → 종목·유입 경로(축소)」 세 단으로 다시
-       세웠다. 원문: "등록하는 사람이 은근히 많아서 멤버십 좌측 / 강습(성인&유소년) 우측으로 해야하고,
-       종목 및 유입경로는 별도로 축소해서 체크해봐야할 것 같은데?" 종전에는 등록 두 칸이 오른쪽 열에
-       위아래로 눌려 있어 등록이 많은 날 이름이 잘렸다. -->
-  <div class="body" style="flex:1.18;">
-    <div class="col">
-      <!-- 문의 상세 내역 — 이 장의 「문의」 쪽 본문이다. 이름·종목·상품이 한 줄에 들어가야 해서
-           넓은 왼쪽 칸에 둔다(GM 지시 2026-09-14). -->
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의 상세 내역 — 최근 문의 · 아직 안 챙긴 분 먼저</h2>
-        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-    </div>
-  </div>
-
+  <!-- ★2026-09-14 GM 지시로 이 장을 「등록 띠 → 문의 띠 → 종목·유입 경로(축소)」 세 단으로 세웠다.
+       원문 ①"등록하는 사람이 은근히 많아서 멤버십 좌측 / 강습(성인&유소년) 우측으로 해야하고,
+       종목 및 유입경로는 별도로 축소해서 체크해봐야할 것 같은데?" ②"문의 상세 내역은 오늘 기준으로만
+       하고 … 멤버십 + 강습 등록건이랑 교체해야할듯, 등록건이 더 많을 거야" — 그래서 등록을 맨 위 큰
+       자리에 두고 문의를 아래로 내렸다. -->
   <!-- 등록 띠 — 기준일 하루치. 왼쪽 멤버십(등록이 더 많아 넓은 칸) · 오른쪽 강습.
        원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
-  <div class="body" id="p2regband" style="flex:1;margin-top:11px;">
+  <div class="body" id="p2regband" style="flex:1.35;">
     <div class="col">
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2memh">오늘 등록 — 멤버십</h2>
@@ -529,6 +520,23 @@
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
         <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="body" id="p2inqband" style="flex:1;margin-top:11px;">
+    <div class="col">
+      <!-- 문의 상세 내역 — 오늘 들어온 문의와 아직 연락 못 한 분. 이름·종목·상품이 한 줄에
+           들어가야 해서 넓은 왼쪽 칸에 둔다. -->
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의 상세 내역 — 오늘 문의 · 아직 안 챙긴 분 먼저</h2>
+        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
@@ -1472,6 +1480,16 @@ function renderPage3(c){
       if (open) out += '</div>';
       el.innerHTML = out;
     }
+    /* 휴관일이면 그 사실을 이 장에도 적는다 — 점검 0/0·0/86 이 「아무도 안 했다」로 읽히면 안 된다
+       (GM 지시 2026-09-14 「운영현황 관련해서는 13일 휴관일이라는 것 등은 챙겨줘야해」).
+       휴관 정본 = ssot/closed_days.json — 1면과 같은 판정을 쓴다. */
+    var _y3 = new Date(Date.now() - 86400000);
+    if (isClosedDay(_y3)) {
+      var _md3 = (_y3.getMonth() + 1) + '/' + _y3.getDate();
+      if (head) head.textContent += ' · 휴관일';
+      el.innerHTML = '<div class="closednote">' + _md3 + ' 은 <b>휴관일</b>입니다(' + esc(closedReason(_y3)) +
+        ') — 아래 점검이 0 인 것은 문을 닫았기 때문이고, 빠뜨린 것이 아닙니다.</div>' + el.innerHTML;
+    }
   }
   [['p3hr', c.I20, '인사·파트너팀 진행사항이 없습니다'],
    ['p3work', c.I21, '핵심 보고·진행현황이 없습니다']].forEach(function(g){
@@ -2086,14 +2104,21 @@ function renderP2Inq(d){
   if (!d || !d.data) { el.innerHTML = '<div class="err">문의 목록을 못 읽었습니다 — 문의 시트 조회 실패</div>'; return; }
   var rows = d.data.filter(function(r){ return r.name; });
   rows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+  /* 오늘 들어온 문의 + 아직 연락 안 한 분만 본다(GM 지시 2026-09-14 「문의 상세 내역은 오늘
+     기준으로만 하고, 아직 안 챙긴 분도 체크해준 건 좋아」). 종전에는 최신순 15건이라 7월 문의가
+     매일 같은 자리에 떠 있었다. */
+  var _n = new Date(), _p = function(v){ return (v < 10 ? '0' : '') + v; };
+  var todayKey = _n.getFullYear() + '-' + _p(_n.getMonth() + 1) + '-' + _p(_n.getDate());
   var open = rows.filter(inqOpenUncontacted);
-  var rest = rows.filter(function(r){ return !inqOpenUncontacted(r); });
-  var show = open.concat(rest).slice(0, 15);
+  var today = rows.filter(function(r){
+    return !inqOpenUncontacted(r) && String(r.timestamp || '').substring(0, 10) === todayKey;
+  });
+  var show = open.concat(today).slice(0, 15);
   if (!show.length) { el.innerHTML = '<div class="mrow"><span class="lb">문의가 없습니다</span></div>'; return; }
   el.innerHTML =
     '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">전체 <b>' + p2num(rows.length) +
       '건</b> · 아직 연락 안 한 분 <b class="' + (open.length ? 'inq-open' : '') + '">' + p2num(open.length) + '명</b>' +
-      ' · 아래 ' + show.length + '건 (안 챙긴 분 먼저 · 그다음 최신순)' +
+      ' · 아래 ' + show.length + '건 (안 챙긴 분 먼저 · 그다음 오늘 문의 ' + today.length + '건)' +
       ' <a href="../../cpo/member/membership.html" target="_blank" rel="noopener" ' +
       'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">문의 회원관리 열기</a></div>' +
     '<div class="inqlist">' + show.map(function(r){
