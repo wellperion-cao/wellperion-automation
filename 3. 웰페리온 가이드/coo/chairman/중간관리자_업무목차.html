@@ -9,7 +9,7 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   :root { --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --line:#E3E7EB; --dim:#6B7683; --warn:#96601A; --bad:#9E2A2A; }
   body { font-family:'Noto Sans KR',sans-serif; color:var(--ink); background:#F4F6F8; padding:22px 18px 60px; }
-  .wrap { max-width:100%; margin:0; }
+  .wrap { max-width:1180px; margin:0 auto; }
   h1 { font-family:'Noto Serif KR',serif; font-size:27px; letter-spacing:-.6px; }
   .lede { margin-top:6px; color:var(--dim); font-size:14px; line-height:1.7; }
   .bar { margin-top:14px; background:var(--navy); color:#fff; padding:10px 14px; font-size:14px; font-weight:700; line-height:1.6; }
@@ -41,13 +41,16 @@
   td.note { color:var(--dim); }
   /* 진척 칸·함께 하는 사람·책임 사람머리 (GM 지시 2026-09-11) */
   td.pg, th.pg { width:132px; }
-  td.pg .bar { height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
-  td.pg .bar i { display:block; height:100%; }
-  td.pg .pg-low { background:var(--bad); }
-  td.pg .pg-mid { background:var(--warn); }
-  td.pg .pg-ok { background:#2e7d32; }
-  td.pg .pgn { font-size:11.5px; font-weight:800; margin-right:6px; }
-  td.pg .pgt { font-size:11px; color:var(--dim); }
+  .pg .bar { height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+  .pg .bar i { display:block; height:100%; }
+  .pg .pg-low { background:var(--bad); }
+  .pg .pg-mid { background:var(--warn); }
+  .pg .pg-ok { background:#2e7d32; }
+  .pg .pgn { font-size:11.5px; font-weight:800; margin-right:6px; }
+  .pg .pgt { font-size:11px; color:var(--dim); }
+  /* 👤 책임 항목 표 안 매출 진척(span.pg) — td.pg(#132px 고정폭) 재사용, 이 칸은 폭 자유 */
+  td.rp .pg { display:block; }
+  td.rp .pg .pgt { display:block; margin-top:3px; }
   td.own .with { font-size:11.5px; color:var(--dim); margin-top:3px; }
   h3.rsp { margin:16px 0 6px; font-size:14px; font-weight:800; }
   h3.rsp .gc { font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }
@@ -139,10 +142,11 @@
         <h3>이경연 실장</h3>
         <table class="resp-tb">
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
-          <tr><td class="ri">종합접수처(운영부)</td><td class="rc">1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0</td><td class="rp bad">열린 27건 · 7일↑ 25건 · 전사 미배정 1건 · 1영업일 첫처리=미수집</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">종합접수처(운영부)</td><td class="rc">1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0</td><td class="rp">미수집(접수처 조회 실패)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">점검 현황(운영부)</td><td class="rc">요금 변경 준비·사우나 정비 체크리스트 진행률(월간운영계획 체크 중 담당 이경연/운영부)</td><td class="rp">카드 1건 · 체크 7/29(24%) · 기한 지난 것 0건</td><td class="rg">—</td><td class="rf">FAQ 취합 9/12 기한 — 보고 없음</td></tr>
           <tr><td class="ri">업무·결재 SSOT(운영부 전원)</td><td class="rc">주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산</td><td class="rp bad">이번 주 완료 0건(기준 15) · 결재대기 1건 · 대상행 101건</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">결재 SSOT 제출</td><td class="rc">기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)</td><td class="rp bad">결재요청 칸: 미제출(빈칸) · 상태 진행중</td><td class="rg">—</td><td class="rf">멤버십 개편 기획안 — 미팅 9/11 끝·첨부 받음·결재 SSOT 미제출</td></tr>
+          <tr><td class="ri">매출(회원권+옵션)</td><td class="rc">월 매출목표 대비 달성률 · 옵션 포함</td><td class="rp">현재 1억 1,282만 · 목표 미등록(월간운영계획 미연결)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">확인요청 회신</td><td class="rc">번호 회신율 · 최장 경과일</td><td class="rp bad">회신율 10/27(37%) · 최장경과 35일 · 35일↑ 2건</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
       </div>
@@ -163,7 +167,7 @@
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
           <tr><td class="ri">인사(CHRO) — 업무·결재 SSOT 운영</td><td class="rc">진행중·보류·기한 지난 행 정리 · 중복 행 0</td><td class="rp bad">진행중 8건 · 보류 0건 · 기한 지난 것 1건 · 중복 1건 · 전체 82건</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">매출·지출(CFO) — 체계·시스템 구축</td><td class="rc">매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도</td><td class="rp">미수집(자동 집계 원장 없음)</td><td class="rg">—</td><td class="rf">—</td></tr>
-          <tr><td class="ri">파트너팀 매출 관리</td><td class="rc">강습팀 매출 = 파트너팀 매출로 관리 · 옵션·수기 분리</td><td class="rp">미수집(자동 집계 원장 없음)</td><td class="rg">—</td><td class="rf">매출보고 8건 현황 회신 대기(9/11 요청)</td></tr>
+          <tr><td class="ri">파트너팀 매출 관리</td><td class="rc">월 매출목표 대비 달성률 · 파트너팀=강습 전체</td><td class="rp">현재 1억 662만 · 목표 미등록(월간운영계획 미연결)</td><td class="rg">—</td><td class="rf">매출보고 8건 현황 회신 대기(9/11 요청)</td></tr>
           <tr><td class="ri">확인요청 회신</td><td class="rc">번호 회신율 · 최장 경과일</td><td class="rp">회신율 27/35(77%) · 최장경과 32일 · 35일↑ 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
       </div>

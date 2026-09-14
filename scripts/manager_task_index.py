@@ -148,6 +148,19 @@ def load_month_objectives() -> list:
         return []
 
 
+def load_dept_target(dept_key: str) -> "int | None":
+    """부서 매출목표(status/monthly_ops_plan.json quarters.depts.{dept_key}.metric.target).
+    등록 안 돼 있으면(null) None — 지어내지 않는다(GM 지시 2026-09-14)."""
+    try:
+        d = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
+        q = d.get("quarters") or {}
+        dep = ((q.get(q.get("current")) or {}).get("depts") or {}).get(dept_key) or {}
+        tgt = (dep.get("metric") or {}).get("target")
+        return int(tgt) if isinstance(tgt, (int, float)) else None
+    except Exception:
+        return None
+
+
 def _obj_filter(objs: list, owner: str = "") -> list:
     return [o for o in objs if _norm(o.get("owner")) == _norm(owner)]
 
@@ -350,20 +363,22 @@ RESP_HEAD = ('<tr><th class="ri">항목</th><th class="rc">기준(어떻게 평�
 
 def resp_table(person: str, rows_def: list, ev: dict) -> str:
     trs = []
-    for item, crit, fn in rows_def:
+    for entry in rows_def:
+        item, crit, fn = entry[0], entry[1], entry[2]
+        raw = entry[3] if len(entry) > 3 else False  # True = fn 이 이미 안전한 진척 막대 HTML 을 낸다
         text, bad = fn()
         good, fix = eval_cell(ev, person, item)
         cls = "rp bad" if bad else "rp"
         trs.append(f'<tr><td class="ri">{html.escape(item)}</td>'
                    f'<td class="rc">{html.escape(crit)}</td>'
-                   f'<td class="{cls}">{html.escape(text)}</td>'
+                   f'<td class="{cls}">{text if raw else html.escape(text)}</td>'
                    f'<td class="rg">{html.escape(good)}</td>'
                    f'<td class="rf">{html.escape(fix)}</td></tr>')
     return (f'<table class="resp-tb">\n          {RESP_HEAD}\n          '
             + "\n          ".join(trs) + '\n        </table>')
 
 
-def resp_section(seen: dict, ssot_rows: "list | None") -> str:
+def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> str:
     ev = load_eval()
     objs = load_month_objectives()
     mgr_names = ["이경연 실장", "이정헌 소장", "나우열M"]
@@ -389,6 +404,8 @@ def resp_section(seen: dict, ssot_rows: "list | None") -> str:
              lambda: ssot_week_cell(ssot_rows)),
             ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
              lambda: approval_submit_cell(ssot_rows)),
+            ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
+             lambda: sales_bucket_cell(sales_data, "member", "ops"), True),
             ("확인요청 회신", "번호 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "이경연 실장")),
         ],
@@ -409,8 +426,8 @@ def resp_section(seen: dict, ssot_rows: "list | None") -> str:
              lambda: chro_ssot_cell(ssot_rows)),
             ("매출·지출(CFO) — 체계·시스템 구축", "매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도",
              lambda: _no_measure_cell("자동 집계 원장 없음")),
-            ("파트너팀 매출 관리", "강습팀 매출 = 파트너팀 매출로 관리 · 옵션·수기 분리",
-             lambda: _no_measure_cell("자동 집계 원장 없음")),
+            ("파트너팀 매출 관리", "월 매출목표 대비 달성률 · 파트너팀=강습 전체",
+             lambda: sales_bucket_cell(sales_data, "lessons", "mgmt"), True),
             ("확인요청 회신", "번호 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "나우열M")),
         ],
@@ -550,11 +567,12 @@ def fill_sales_current(seen: dict) -> None:
       member  = 멤버십 회원권 + 옵션 (운영부 · 이경연 실장)
       lessons = 파트너팀 전체 (나우열M · GXE 포함 · 뮤지컬도 이 통에 들어 있다)
       total   = 전사 합계 (버킷을 안 적은 옛 항목의 기본값 — 종전 동작 그대로)
-    sales_month 응답이 이미 member·lessons·total 셋으로 갈라 주므로 새 집계를 만들지 않는다."""
+    sales_month 응답이 이미 member·lessons·total 셋으로 갈라 주므로 새 집계를 만들지 않는다.
+
+    올려 준 data(member·lessons·total)는 호출부가 👤 책임 항목 매출 진척 칸에도 그대로 돌려 쓴다
+    (같은 통을 두 번 부르지 않는다 — 약속 L21) — 조회 실패면 None."""
     rows = [it for _n, (_d, it) in seen.items()
             if it.get("target") and str(it.get("unit") or "") == "원"]
-    if not rows:
-        return
     try:
         import ops_daily_digest as o
         resp = o._gas_get(o.PROC_EXEC_URL,
@@ -562,15 +580,39 @@ def fill_sales_current(seen: dict) -> None:
                           timeout=60, label="manager_task_index 매출")
         data = resp.json() if resp is not None else {}
         if not data.get("ok"):
-            return
+            return None
         mi = date.today().month - 1
         for it in rows:
             bucket = str(it.get("sales_bucket") or "total")
             cur = (data.get(bucket) or [None] * 12)[mi]
             if cur is not None:
                 it["current"] = int(cur)
+        return data
     except Exception:
-        return
+        return None
+
+
+def sales_bucket_cell(sales_data: "dict | None", bucket: str, dept_key: str) -> tuple[str, bool]:
+    """월 매출 실측 진척 — sales_month 의 bucket(member/lessons) 값 · 목표는
+    status/monthly_ops_plan.json 부서 metric.target 에 등록된 것만 쓴다. 등록 안 됐으면
+    '목표 미등록'만 적고 %·막대는 안 켠다(지어내지 않는다 · GM 지시 2026-09-14)."""
+    if not sales_data:
+        return f"{_NO_MEASURE}(매출 조회 실패)", False
+    mi = date.today().month - 1
+    cur = (sales_data.get(bucket) or [None] * 12)[mi]
+    if cur is None:
+        return f"{_NO_MEASURE}(매출 자료 없음)", False
+    cur = int(cur)
+    target = load_dept_target(dept_key)
+    if not target:
+        return f"현재 {_fmt_amt(cur, '원')} · 목표 미등록(월간운영계획 미연결)", False
+    pct = max(0, min(100, round(cur / target * 100)))
+    cls = "pg-ok" if pct >= 80 else ("pg-mid" if pct >= 40 else "pg-low")
+    bar = (f'<span class="pg"><span class="bar"><i class="{cls}" style="width:{pct}%"></i></span>'
+           f'<span class="pgn">{pct}%</span> '
+           f'<span class="pgt">현재 {html.escape(_fmt_amt(cur, "원"))} / 목표 {html.escape(_fmt_amt(target, "원"))}'
+           f' · 달성 {pct}%</span></span>')
+    return bar, False
 
 
 def row_html(no: int, seen_date: str, it: dict) -> str:
@@ -786,7 +828,7 @@ def top_html(items: list[tuple[int, str, dict, str]]) -> str:
 
 def build() -> str:
     seen = latest_by_no()
-    fill_sales_current(seen)
+    sales_data = fill_sales_current(seen)
     opens = {n: v for n, v in seen.items() if str(v[1].get("status", "")).lower() not in DONE}
 
     # 목차 화면에서 GM 이 지정한 담당을 원장 빈칸에 채운다(GM 2026-09-10 "SSOT 등록건은 담당자도
@@ -801,7 +843,7 @@ def build() -> str:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
-    resp_html = resp_section(seen, ssot_rows)   # 👤 책임 항목 4인 — seen(원장 전체)·ssot_rows(원본) 그대로 넘긴다
+    resp_html = resp_section(seen, ssot_rows, sales_data)   # 👤 책임 항목 4인 — seen·ssot_rows·매출 원자료 그대로 넘긴다
     moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
         # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
@@ -994,13 +1036,16 @@ def build() -> str:
   td.note {{ color:var(--dim); }}
   /* 진척 칸·함께 하는 사람·책임 사람머리 (GM 지시 2026-09-11) */
   td.pg, th.pg {{ width:132px; }}
-  td.pg .bar {{ height:6px; border-radius:3px; background:var(--line); overflow:hidden; }}
-  td.pg .bar i {{ display:block; height:100%; }}
-  td.pg .pg-low {{ background:var(--bad); }}
-  td.pg .pg-mid {{ background:var(--warn); }}
-  td.pg .pg-ok {{ background:#2e7d32; }}
-  td.pg .pgn {{ font-size:11.5px; font-weight:800; margin-right:6px; }}
-  td.pg .pgt {{ font-size:11px; color:var(--dim); }}
+  .pg .bar {{ height:6px; border-radius:3px; background:var(--line); overflow:hidden; }}
+  .pg .bar i {{ display:block; height:100%; }}
+  .pg .pg-low {{ background:var(--bad); }}
+  .pg .pg-mid {{ background:var(--warn); }}
+  .pg .pg-ok {{ background:#2e7d32; }}
+  .pg .pgn {{ font-size:11.5px; font-weight:800; margin-right:6px; }}
+  .pg .pgt {{ font-size:11px; color:var(--dim); }}
+  /* 👤 책임 항목 표 안 매출 진척(span.pg) — td.pg(#132px 고정폭) 재사용, 이 칸은 폭 자유 */
+  td.rp .pg {{ display:block; }}
+  td.rp .pg .pgt {{ display:block; margin-top:3px; }}
   td.own .with {{ font-size:11.5px; color:var(--dim); margin-top:3px; }}
   h3.rsp {{ margin:16px 0 6px; font-size:14px; font-weight:800; }}
   h3.rsp .gc {{ font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }}
