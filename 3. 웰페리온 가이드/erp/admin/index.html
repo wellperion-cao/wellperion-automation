@@ -82,6 +82,8 @@
   .st.ok{color:#1B7F5F; background:rgba(27,127,95,.10);}
   .st.bad{color:#B4322A; background:rgba(180,50,42,.10);}
   .st.wait{color:#6B7176; background:rgba(107,113,118,.10);}
+  /* warn 은 화면 4곳이 이미 쓰고 있었는데 정의가 없어 색 없이 떴다(2026-09-14 실측) */
+  .st.warn{color:#9A6500; background:rgba(154,101,0,.10);}
   .st.go{color:var(--accent-hover); background:var(--accent-bg);}
   /* AI 운영 가이드는 이 자리에 그대로 끼워 띄운다(권한·비용과 같은 방식) */
   #guide-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
@@ -216,6 +218,7 @@
 <nav class="side" aria-label="관리 영역">
   <div class="cap">운영</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
+  <a href="#products" data-go="products"><span class="t">파트너 산출물</span><span class="b">3</span></a>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
   <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
@@ -228,7 +231,6 @@
   <div class="desc">따로 쓸 수 있는 앱 — 화면과 CLI 에서 돈다</div>
   <a href="../../cto/automation/카톡전송관리.html"><span class="t">카톡 전송</span></a>
   <a href="../../cbo/counsel_admin.html"><span class="t">상담봇</span></a>
-  <a href="../../cbo/partners.html"><span class="t">파트너 산출물</span></a>
   <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
@@ -305,6 +307,74 @@
   <details class="tip"><summary>파트너사를 늘리면 무엇이 달라지나</summary>
     <div class="in">이 표에 줄이 한 줄 늡니다. 회사마다 다른 값(브랜드·용어·조직·채널)만 갈아 끼우고
     뼈대는 그대로 씁니다 — 갈아 끼우는 목록 20건은 <b>자료 ▸ 구조 문서</b>에 있습니다.</div></details>
+</section>
+
+<!-- 파트너 산출물 — 밖의 업체에 만들어 준 것. 플랫폼을 파는 자리라 여기 둔다(GM 지시 2026-09-14
+     「이런 부분은 ERP플랫폼관리에 따로 넣어두면 안되나?」). 종전 cbo/partners.html 은 지웠다. -->
+<section class="panel" data-panel="products" hidden>
+  <h2>파트너 산출물</h2>
+  <div class="meta">밖의 업체에 만들어 준 것 · <b>임시 주소는 깃허브</b>, 제 자리는 이 서버입니다</div>
+
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th>업체</th><th>산출물</th><th>지금 자리</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="item"><b>2호</b> 다이어트캠프</td>
+        <td class="item">홈페이지</td>
+        <td class="path"><a href="https://wellperion-cao.github.io/wellperion-automation/dietcamp/" target="_blank" rel="noopener">보기 <span class="n">임시 · 깃허브</span></a></td>
+        <td><span class="st warn">임시본 · 검색 차단</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">브랜드가이드</td>
+        <td class="path"><a href="../../cbo/dietcamp/brand.html" target="_blank" rel="noopener">보기</a></td>
+        <td><span class="st ok">있음</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">회사소개서</td>
+        <td class="path"><a href="../../cbo/dietcamp/intro.html" target="_blank" rel="noopener">보기</a></td>
+        <td><span class="st ok">있음</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">전략 구상안</td>
+        <td class="path"><a href="../../cbo/dietcamp/strategy.html" target="_blank" rel="noopener">보기</a></td>
+        <td><span class="st warn">파견 답변 미반영</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">상담봇</td>
+        <td class="path"><a href="/dietcamp/counsel/" target="_blank" rel="noopener">손님 화면 <span class="n">erp.wellperion.com/dietcamp/counsel/</span></a></td>
+        <td><span class="st ok">돌고 있음</span></td>
+      </tr>
+      <tr>
+        <td class="item"><b>3호</b> 고척 gdr QA 골프존</td>
+        <td class="item">홈페이지</td>
+        <td class="path">—</td>
+        <td><span class="st warn">아직 없음</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">블로그 자동 발행</td>
+        <td class="path">매일 06:30</td>
+        <td><span class="st warn">9/12~14 3일 연속 실패</span></td>
+      </tr>
+      <tr>
+        <td class="item"></td><td class="item">상담봇</td>
+        <td class="path"><a href="/gocheokgolf/counsel/" target="_blank" rel="noopener">손님 화면 <span class="n">erp.wellperion.com/gocheokgolf/counsel/</span></a></td>
+        <td><span class="st ok">돌고 있음</span></td>
+      </tr>
+      <tr>
+        <td class="item"><b>1호</b> 웰페리온</td>
+        <td class="item">상담봇 · 확장 모델</td>
+        <td class="path"><a href="/counsel/" target="_blank" rel="noopener">손님 화면</a> · <a href="../../cbo/counsel_admin.html" target="_blank" rel="noopener">관리</a></td>
+        <td><span class="st ok">돌고 있음</span></td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <details class="tip"><summary>왜 깃허브 주소가 섞여 있나</summary>
+    <div class="in">깃허브는 <b>임시 자리</b>입니다. 만들자마자 눈으로 보려고 쓰는 곳이고, 손님에게 내보내는
+    자리가 아닙니다. 손님이 보는 것(홈페이지·상담봇)은 이 서버(erp.wellperion.com)로 옮깁니다 —
+    상담봇은 이미 옮겨져 있고, 다이어트캠프 홈페이지는 옮기는 중입니다. 업체가 자기 도메인을 갖게 되면
+    그쪽으로 다시 옮깁니다.</div></details>
 </section>
 
 <section class="panel" data-panel="envs" hidden>
