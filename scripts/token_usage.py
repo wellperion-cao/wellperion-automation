@@ -11,6 +11,7 @@ GM 질문 2026-09-09.
 """
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -67,10 +68,20 @@ def empty_bucket():
             "cache_read": 0, "output": 0, "sessions": []}
 
 
+# 세션이 어느 AI C-Level 인지 — 첫 사용자 메시지 안에 그 역할의 정의 파일 경로나 --role/--clevel 플래그가
+# 박혀 있으면 잡힌다(GM 지시 2026-09-14 · CLAUDE.md §1 닉네임 표). 못 잡으면 폴더 이름을 그대로 쓴다.
+ROLE_NICK = {
+    "ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
+    "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보",
+}
+ROLE_RE = re.compile(r'ai-(ceo|cfo|chro|cmo|coo|cpo|cto|cbo)\.md|--(?:role|clevel)[= ]"?(ceo|cfo|chro|cmo|coo|cpo|cto|cbo)"?', re.I)
+
+
 def parse_file(path):
-    """jsonl 한 파일 → {day: {model: bucket}}, project 이름."""
+    """jsonl 한 파일 → {day: {model: bucket}}, project 이름, role(잡히면)."""
     days = {}
     project = "unknown"
+    role = None
     sess_seen = {}  # day -> set(sessionId), bucket 안 sessions 중복 방지용
     try:
         with open(path, encoding="utf-8", errors="replace") as f:
@@ -78,6 +89,10 @@ def parse_file(path):
                 line = line.strip()
                 if not line:
                     continue
+                if role is None:
+                    m = ROLE_RE.search(line)
+                    if m:
+                        role = (m.group(1) or m.group(2)).lower()
                 try:
                     rec = json.loads(line)
                 except Exception:
@@ -112,7 +127,7 @@ def parse_file(path):
                         bucket["sessions"].append(sid)
     except Exception:
         pass
-    return {"days": days, "project": project}
+    return {"days": days, "project": project, "role": role}
 
 
 def load_cache():
@@ -268,6 +283,24 @@ def main():
     proj_totals = {}  # project -> bucket(sets)
     sessions_today = set()
 
+    # 계정별 집계(GM 지시 2026-09-14) — session_id(=파일명) → 계정 매핑을 먼저 읽는다.
+    # 09-09 이전 세션은 이 로그에 없다 — 그런 세션은 전부 "미상(09-09 이전)" 한 계정으로 묶는다.
+    session_account = {}
+    if ACCOUNTS_LOG.exists():
+        with open(ACCOUNTS_LOG, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    session_account[rec["sessionId"]] = rec["account"]
+                except Exception:
+                    continue
+    UNKNOWN_ACCOUNT = "미상(09-09 이전)"
+    acct_totals = {}  # account -> {input,cache_creation,cache_read,output,cost_usd,sessions:set}
+    acct_proj = {}     # (account, project) -> {sessions:set, output, cost_usd} — "어디에 많이 썼나"
+
     for path in files:
         key = str(path)
         try:
@@ -276,17 +309,32 @@ def main():
             continue
         sig = "%d:%d" % (int(st.st_mtime), st.st_size)
         cached = cache.get(key)
-        if cached and cached.get("sig") == sig:
+        # "role" 이 없는 옛 캐시(스키마 변경 전)는 무효 처리 — 다시 파싱해 역할을 잡는다
+        if cached and cached.get("sig") == sig and "role" in cached.get("data", {}):
             parsed = cached["data"]
         else:
             parsed = parse_file(path)
         new_cache[key] = {"sig": sig, "data": parsed}
 
         project = parsed.get("project", "unknown")
+        where_label = ROLE_NICK.get(parsed.get("role"), project)  # 역할이 잡히면 폴더 대신 닉네임
+        session_id = path.stem  # 파일명 = 세션ID(실측 2026-09-14) — sessionId 필드를 다시 파싱할 필요가 없다
+        account = session_account.get(session_id, UNKNOWN_ACCOUNT)
         for day, models in parsed.get("days", {}).items():
             if day < cutoff:
                 continue
             for model, b in models.items():
+                # 옛 파일캐시 잔존분 방어(신규 필드 없음) — 아래 merged_days 쪽과 같은 이유로 .get() 을 쓴다
+                b_safe = dict(b, cache_creation_5m=b.get("cache_creation_5m", 0), cache_creation_1h=b.get("cache_creation_1h", 0))
+                krw, _, _ = cost_for_bucket(model, b_safe)
+                usd = krw / USD_KRW
+                at = acct_totals.setdefault(account, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "cost_usd": 0.0, "sessions": set()})
+                at["input"] += b["input"]; at["cache_creation"] += b["cache_creation"]
+                at["cache_read"] += b["cache_read"]; at["output"] += b["output"]
+                at["cost_usd"] += usd; at["sessions"].add(session_id)
+                ap = acct_proj.setdefault((account, where_label), {"sessions": set(), "output": 0, "cost_usd": 0.0})
+                ap["sessions"].add(session_id); ap["output"] += b["output"]; ap["cost_usd"] += usd
+
                 mb = merged_days.setdefault(day, {}).setdefault(model, {"input": 0, "cache_creation": 0, "cache_creation_5m": 0, "cache_creation_1h": 0, "cache_read": 0, "output": 0, "sessions": set()})
                 mb["input"] += b["input"]
                 mb["cache_creation"] += b["cache_creation"]
@@ -333,6 +381,24 @@ def main():
         for p, b in proj_totals.items()
     }
 
+    by_account = {}
+    for account, at in acct_totals.items():
+        projs = sorted(
+            ((proj, ap) for (acc, proj), ap in acct_proj.items() if acc == account),
+            key=lambda x: x[1]["cost_usd"], reverse=True,
+        )
+        where = [
+            {"project": proj, "sessions": len(ap["sessions"]), "output": ap["output"], "cost_usd": round(ap["cost_usd"], 2)}
+            for proj, ap in projs[:8]
+        ]
+        by_account[account] = {
+            "input": at["input"], "cache_creation": at["cache_creation"],
+            "cache_read": at["cache_read"], "output": at["output"],
+            "cost_usd": round(at["cost_usd"], 2), "sessions": len(at["sessions"]), "where": where,
+        }
+    for a in KNOWN_ACCOUNTS:  # 기록이 아직 없는 계정도 줄을 세운다(GM 지시 2026-09-09 관례 그대로)
+        by_account.setdefault(a, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "cost_usd": 0.0, "sessions": 0, "where": []})
+
     today_date = datetime.now(KST).date()
     month_start = today_date.replace(day=1).isoformat()
     last7_start = (today_date - timedelta(days=6)).isoformat()
@@ -349,6 +415,7 @@ def main():
             "current": current_account(),
             "tracked_since": "2026-09-09",
             "sessions_by_account": account_summary(),
+            "by_account": by_account,
         },
         "billing": {
             "usd_month_fixed": sum(SUBSCRIPTION_USD.values()),

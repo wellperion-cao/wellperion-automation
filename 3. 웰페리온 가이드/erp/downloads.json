@@ -1,6 +1,6 @@
 {
   "_doc": "ERP 모듈홈 「다운로드」 탭 목록. ★회사 자료(회원·매출·인사·점검 원장)는 여기에 올리지 않는다 — 설치·도구 파일만. 이 폴더(/erp/launchers/)는 로그인 없이 열리는 공개 통로라, 비밀값이 든 파일을 올리면 그대로 새어 나간다.",
-  "_규칙": "항목 추가 = 파일을 erp/launchers/ 에 두고 여기에 한 줄 적는다. 화면(index.html)은 고치지 않는다. step = 설치 순서(1=AI 먼저 · 2=그 위에 얹는 도구). needs_ai = 2단계 항목이 1단계(AI PC 설치 꾸러미 또는 AI 서포트 — 둘 중 하나) 를 먼저 요구하면 true.",
+  "_규칙": "항목 추가 = 파일을 erp/launchers/ 에 두고 여기에 한 줄 적는다. 화면(index.html)은 고치지 않는다. step = 설치 순서(1=AI 먼저 · 2=그 위에 얹는 도구). needs_ai = 2단계 항목이 1단계(AI PC 설치 꾸러미 또는 AI 서포트 — 둘 중 하나) 를 먼저 요구하면 true. module = 이 파일이 켜는 모듈 이름(어느 모듈인지 판단이 안 서면 '공통').",
   "downloads": [
     {
       "id": "home-pc-setup",
@@ -9,7 +9,8 @@
       "file": "launchers/집PC설치.bat",
       "for": "C-Level · 관리자",
       "step": 1,
-      "needs_ai": false
+      "needs_ai": false,
+      "module": "공통"
     },
     {
       "id": "ai-support",
@@ -18,7 +19,8 @@
       "file": "launchers/AI서포트.bat",
       "for": "실무진 공통",
       "step": 1,
-      "needs_ai": false
+      "needs_ai": false,
+      "module": "공통"
     },
     {
       "id": "marketing-automation-kit",
@@ -27,7 +29,8 @@
       "file": "launchers/마케팅자동화_셋업킷.zip",
       "for": "C-Level · 영업",
       "step": 2,
-      "needs_ai": true
+      "needs_ai": true,
+      "module": "마케팅 자동화"
     },
     {
       "id": "guide-pack",
@@ -36,7 +39,8 @@
       "file": "launchers/운영가이드팩.md",
       "for": "플랫폼 운영자 · 신규 파트너사",
       "step": 1,
-      "needs_ai": false
+      "needs_ai": false,
+      "module": "공통"
     },
     {
       "id": "kakao-send-module",
@@ -45,7 +49,8 @@
       "file": "launchers/카카오톡전송_모듈.zip",
       "for": "C-Level · 관리자",
       "step": 2,
-      "needs_ai": true
+      "needs_ai": true,
+      "module": "카톡 전송"
     }
   ]
 }

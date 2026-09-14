@@ -222,9 +222,12 @@
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
   <a href="../../자율현황.html"><span class="t">자율현황</span></a>
+  <a href="#tokens" data-go="tokens"><span class="t">AI 토큰 현황</span></a>
+  <div class="sep"></div>
+  <div class="cap">모듈</div>
+  <div class="desc">따로 쓸 수 있는 앱 — 화면과 CLI 에서 돈다</div>
   <a href="../../cto/automation/카톡전송관리.html"><span class="t">카톡 전송</span></a>
   <a href="../../cbo/counsel_admin.html"><span class="t">상담봇</span></a>
-  <a href="../../cto/automation/토큰 사용량.html"><span class="t">AI 비용</span></a>
   <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
@@ -251,10 +254,10 @@
       <div class="name">자동화 가동</div>
       <div class="desc" id="n-auto-desc">오늘도 돌고 있는지 · 조용히 죽지 않았는지</div>
     </a>
-    <a class="entry" href="../../cto/automation/토큰 사용량.html" target="_blank" rel="noopener">
+    <a class="entry" href="#tokens" data-go="tokens">
       <div class="num placeholder" id="n-cost">—</div>
-      <div class="name">이번 달 AI 비용</div>
-      <div class="desc" id="n-cost-desc">얼마 썼는지</div>
+      <div class="name">AI 토큰 현황</div>
+      <div class="desc" id="n-cost-desc">얼마 썼는지 · 어디에 많이 썼는지</div>
     </a>
     <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
       <div class="num placeholder">—</div>
@@ -341,9 +344,23 @@
   <p class="lead">올라가는 방향은 <b>알파 → 베타 → 라이브</b> 한 방향뿐입니다.</p>
 </section>
 
+<section class="panel" data-panel="tokens" hidden>
+  <!-- cto/automation/토큰 사용량.html 을 새 페이지로 열지 않고 이 안에 병합한다(GM 지시 2026-09-14).
+       그 화면은 지우지 않는다 — 원천은 같은 status/token_usage.json 이다. -->
+  <h2>AI 토큰 현황</h2>
+  <div class="meta" id="tok-billing-line">불러오는 중…</div>
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th>계정</th><th>세션</th><th>출력 토큰</th><th>캐시 읽기</th><th>비용<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">정가 환산(실제 청구는 위 정액)</span></th><th>어디에 많이 썼나 (상위 3 · 역할·폴더)</th></tr></thead>
+    <tbody id="tok-acct-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <p class="tip" id="tok-cache-note"></p>
+  <div id="tok-acct-detail"></div>
+</section>
+
 <section class="panel" data-panel="downloads" hidden>
-  <h2>다운로드</h2>
-  <div class="meta"><b>AI 를 먼저 깔고</b> 그 위에 도구를 얹습니다 · 아래 순서대로 받으시면 됩니다</div>
+  <h2>모듈 활성화 셋팅</h2>
+  <div class="meta">모듈이 켜지려면 필요한 설치·설정입니다 · <b>AI 를 먼저 깔고</b> 그 위에 모듈별 도구를 얹습니다</div>
   <details class="tip"><summary>회사 자료는 왜 여기 없나</summary>
     <div class="in">여기 있는 것은 설치·도구 파일뿐입니다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라
     화면에서 봅니다 — 한 번 내려받은 파일은 나중에 권한을 거둬도 그 PC 에 그대로 남습니다.</div></details>
@@ -598,13 +615,14 @@
 /* 왼쪽 메뉴 = 영역 전환. 주소 끝의 #이름이 곧 지금 보고 있는 영역이라
    그 주소를 그대로 즐겨찾기에 넣거나 남에게 보낼 수 있다. */
 (function(){
-  var links  = [].slice.call(document.querySelectorAll('.side a[data-go]'));
+  var navLinks = [].slice.call(document.querySelectorAll('.side a[data-go]'));
+  var goLinks  = [].slice.call(document.querySelectorAll('a[data-go]'));  // 좌측 메뉴 + 카드에서 오는 이동 전부
   var panels = [].slice.call(document.querySelectorAll('.panel'));
   var crumb  = document.getElementById('crumb');
   function show(key, scroll){
     if (!panels.some(function(p){ return p.dataset.panel === key; })) key = 'partners';
     panels.forEach(function(p){ p.hidden = (p.dataset.panel !== key); });
-    links.forEach(function(a){
+    navLinks.forEach(function(a){
       var on = (a.dataset.go === key);
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
@@ -618,7 +636,7 @@
     if (location.hash.slice(1) !== key) history.replaceState(null, '', '#' + key);
     if (scroll) window.scrollTo(0, 0);
   }
-  links.forEach(function(a){
+  goLinks.forEach(function(a){
     a.addEventListener('click', function(e){ e.preventDefault(); show(a.dataset.go, true); });
   });
   window.addEventListener('hashchange', function(){ show(location.hash.slice(1) || 'partners', false); });
@@ -739,18 +757,20 @@
     var badge = document.getElementById('b-dl');
     if (badge && list.length) badge.textContent = list.length;
     if (!list.length) { root.innerHTML = '<div class="desc">받을 파일이 없다.</div>'; return; }
-    var step1 = list.filter(function(x){ return x.step !== 2; });
-    var step2 = list.filter(function(x){ return x.step === 2; });
-    var html = '';
-    if (step1.length) {
-      html += '<div class="grp">1단계 — AI 먼저 (둘 중 하나만 받으면 됩니다)</div>'
-            + '<div class="entries">' + step1.map(entryCard).join('') + '</div>';
-    }
-    if (step2.length) {
-      html += '<div class="grp">2단계 — 그 위에 도구 얹기</div>'
-            + '<div class="entries">' + step2.map(entryCard).join('') + '</div>';
-    }
-    root.innerHTML = html || list.map(entryCard).join('');
+    // 모듈별로 묶는다(GM 지시 2026-09-14) — 공통(어느 모듈에도 안 딸린 것)을 맨 위에 둔다.
+    var groups = {}; var order = [];
+    list.forEach(function(x){
+      var m = x.module || '공통';
+      if (!groups[m]) { groups[m] = []; order.push(m); }
+      groups[m].push(x);
+    });
+    order.sort(function(a, b){ return (a === '공통' ? -1 : b === '공통' ? 1 : 0); });
+    root.innerHTML = order.map(function(m){
+      var sub = (m === '공통') ? '어느 모듈에도 딸리지 않는 공통 설치입니다' : '이 모듈을 켜려면 아래를 설치·설정합니다';
+      return '<div class="grp">' + m + '</div>'
+           + '<p class="lead" style="margin-top:-4px">' + sub + '</p>'
+           + '<div class="entries">' + groups[m].map(entryCard).join('') + '</div>';
+    }).join('');
   }).catch(function(){
     document.getElementById('downloads').innerHTML =
       '<div class="desc">받을 파일 목록을 불러오지 못했다.</div>';
@@ -793,6 +813,59 @@
   }).catch(function(){
     document.getElementById('mig-body').innerHTML = '<div class="desc">이관 목록을 불러오지 못했다.</div>';
   });
+  </script>
+
+  <script>
+  /* AI 토큰 현황 — cto/automation/토큰 사용량.html 을 새로 열지 않고 이 화면 안에 병합한다.
+     원천은 그 화면과 같은 status/token_usage.json 의 accounts.by_account(scripts/token_usage.py 산출). */
+  (function(){
+    function fmtNum(n){ return (n||0).toLocaleString('ko-KR'); }
+    function fmtTok(n){ n = n||0; if (n >= 1e6) return (n/1e6).toFixed(1) + 'M'; if (n >= 1e3) return Math.round(n/1e3) + 'k'; return String(n); }
+    function fmtUsd(n){ return '$' + (n||0).toLocaleString('en-US', {maximumFractionDigits:2}); }
+
+    fetch('/status/token_usage.json?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
+      var billing = d.billing || {};
+      var accts = billing.accounts_usd || {};
+      document.getElementById('tok-billing-line').innerHTML =
+        '이번 달 정액 요금 <b>' + fmtUsd(billing.usd_month_fixed) + '/월</b> · 계정 <b>' + Object.keys(accts).length + '개</b>';
+      document.getElementById('tok-cache-note').textContent = d.cache_read_note || '';
+
+      var ba = (d.accounts || {}).by_account || {};
+      var keys = Object.keys(ba).sort(function(a, b){
+        if (a.indexOf('미상') === 0) return 1;
+        if (b.indexOf('미상') === 0) return -1;
+        return (ba[b].cost_usd || 0) - (ba[a].cost_usd || 0);
+      });
+      document.getElementById('tok-acct-rows').innerHTML = keys.map(function(k){
+        var v = ba[k] || {};
+        var where = (v.where || []).slice(0, 3).map(function(w){
+          return w.project + ' · ' + w.sessions + '세션 · ' + fmtUsd(w.cost_usd);
+        }).join(' · ');
+        return '<tr><td class="item">' + k + '</td>'
+             + '<td>' + fmtNum(v.sessions) + '</td>'
+             + '<td>' + fmtTok(v.output) + '</td>'
+             + '<td>' + fmtTok(v.cache_read) + '</td>'
+             + '<td>' + fmtUsd(v.cost_usd) + '</td>'
+             + '<td class="note">' + (where || '—') + '</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="note">데이터 없음</td></tr>';
+
+      document.getElementById('tok-acct-detail').innerHTML = keys.map(function(k){
+        var items = (ba[k] || {}).where || [];
+        if (!items.length) return '';
+        var body = items.map(function(w){
+          return '<tr><td class="item">' + w.project + '</td><td>' + fmtNum(w.sessions) + '</td>'
+               + '<td>' + fmtTok(w.output) + '</td><td>' + fmtUsd(w.cost_usd) + '</td></tr>';
+        }).join('');
+        return '<details class="tip"><summary>' + k + ' — 어디에 많이 썼나 상위 ' + items.length + '곳</summary>'
+             + '<div class="in"><div class="tbl-wrap"><table class="reg">'
+             + '<thead><tr><th>어디에(역할·폴더)</th><th>세션</th><th>출력</th><th>비용 · 정가환산</th></tr></thead>'
+             + '<tbody>' + body + '</tbody></table></div></div></details>';
+      }).join('');
+    }).catch(function(){
+      document.getElementById('tok-billing-line').textContent = '불러오지 못했다.';
+      document.getElementById('tok-acct-rows').innerHTML = '<tr><td colspan="6" class="note">불러오지 못했다.</td></tr>';
+    });
+  })();
   </script>
 
 </body>
