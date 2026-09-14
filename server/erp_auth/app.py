@@ -848,6 +848,10 @@ def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
 def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("/"),
           keep: str = Form("")):
     email = email.strip().lower()
+    if len(FAILS) > 2000:                                   # 무작위 아이디로 채워 메모리가 늘지 않게 — 만료된 잠금·오래된 실패부터 턴다
+        cut = time.time() - LOCK_SECS
+        for k in [k for k, (_, until) in FAILS.items() if until < cut]:
+            FAILS.pop(k, None)
     count, locked_until = FAILS.get(email, (0, 0.0))
     if locked_until > time.time():
         wait_min = max(1, int((locked_until - time.time()) // 60) + 1)
@@ -1177,16 +1181,19 @@ def _finish_page(t: str, next: str, err: str, action: str) -> Response:
         return RedirectResponse(f"/auth/login?err={e}", status_code=303)
     label = SOCIAL.get(claims.get("p", "google"), {}).get("label", "구글")
     opts = "".join(f"<option value='{escape(d)}'>{escape(d)}</option>" for d in DEPTS)
-    return page("가입 완료", head(f"{label} 로그인 확인 · 이름과 부서만 알려주세요") + f"""<form method=post action={action}>
+    rank_opts = "".join(f"<option value='{escape(r)}'>{escape(r)}</option>" for r in rank_names())
+    # 직급도 받는다(2026-09-14 점검 높음 12번) — 아이디 가입(signup)과 같은 층(팀장/팀원) 규칙이 소셜 가입에도 걸리게.
+    return page("가입 완료", head(f"{label} 로그인 확인 · 이름·부서·직급만 알려주세요") + f"""<form method=post action={action}>
 <h1>가입 완료</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
 <p class=hint>{escape(claims['e'])} 계정으로 계속합니다.</p>
 <label>이름<input name=name value="{escape(claims['n'])}" placeholder="직함 포함, 예: 홍길동 매니저" required></label>
 <label>부서<select name=dept required><option value=''>선택하세요</option>{opts}</select></label>
+<label>직급<select name=rank required><option value=''>선택하세요</option>{rank_opts}</select></label>
 <input type=hidden name=t value="{escape(t)}"><input type=hidden name=next value="{escape(next)}">
 <button>신청</button><div class=foot><p>신청하면 GM 께 알림이 가고, 승인되면 부서 화면으로 로그인할 수 있습니다.</p></div></form>""")
 
 
-def _finish_submit(name: str, dept: str, t: str, next: str, action: str) -> Response:
+def _finish_submit(name: str, dept: str, t: str, next: str, action: str, rank: str = "") -> Response:
     try:
         claims = _finish_claims(t)
     except ValueError as e:
@@ -1195,7 +1202,9 @@ def _finish_submit(name: str, dept: str, t: str, next: str, action: str) -> Resp
         return RedirectResponse(f"{action}?t={t}&next={urllib.parse.quote(next, safe='')}&err=부서를 선택하세요", status_code=303)
     email, salt_pw = claims["e"], secrets.token_urlsafe(32)     # 소셜 전용 계정 — 비밀번호 로그인은 못 쓴다
     salt, h = hash_pw(salt_pw)
-    perms = json.dumps({"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, ensure_ascii=False)
+    tier = rank_tier(rank)                                      # 모르는 값·빈 값 = 팀원급(좁은 쪽) — signup 과 같은 규칙
+    perms = json.dumps({"dept": dept, "rank": rank.strip(), "tier": tier, "groups": [],
+                        "modules": dept_modules(dept), "deny": tier_deny(tier)}, ensure_ascii=False)
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
@@ -1214,8 +1223,8 @@ def google_finish_page(t: str = "", next: str = "/", err: str = ""):
 
 
 @app.post("/auth/google/finish")
-def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
-    return _finish_submit(name, dept, t, next, "/auth/google/finish")
+def google_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/"), rank: str = Form("")):
+    return _finish_submit(name, dept, t, next, "/auth/google/finish", rank)
 
 
 @app.get("/auth/social/finish")
@@ -1224,8 +1233,8 @@ def social_finish_page(t: str = "", next: str = "/", err: str = ""):
 
 
 @app.post("/auth/social/finish")
-def social_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/")):
-    return _finish_submit(name, dept, t, next, "/auth/social/finish")
+def social_finish(name: str = Form(...), dept: str = Form(...), t: str = Form(...), next: str = Form("/"), rank: str = Form("")):
+    return _finish_submit(name, dept, t, next, "/auth/social/finish", rank)
 
 
 # ── 네이버·카카오 로그인 ────────────────────────────────────────────────
@@ -1626,10 +1635,20 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
         dept = form["preset"]
         _set_perms(uid, {"dept": dept, "groups": [], "modules": dept_modules(dept), "deny": []}, me["email"])
         return RedirectResponse(f"/auth/admin?msg={dept} 부서 기본을 넣었습니다", status_code=303)
-    perms = None if form.get("reset") else {
-        "groups": [g for g in form.getlist("g") if g in GROUPS],
-        "modules": [m for m in form.getlist("m") if m in ids],
-        "deny": [m for m in form.getlist("d") if m in ids]}
+    # ★가입 때 적힌 부서·직급·층·연락처·잠금은 남긴다(2026-09-14 점검 높음 11번) — 종전엔 세 칸짜리 새 dict 로
+    #   통째 덮어써 저장 한 번에 부서가 「미분류」가 되고 「부서 기본 한 번에」에서 영영 빠지고 잠금도 풀렸다.
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    keep = {k: v for k, v in _row_perms(row).items() if k in ("dept", "rank", "tier", "phone", "locked")} if row else {}
+    if form.get("reset"):
+        # 「기본(핵심만)」 = 매일 쓰는 화면만. perms 가 None 이면 allowed() 가 core 만 여는데, 신원 칸을 남기려면
+        # dict 여야 하므로 같은 뜻인 groups=["핵심"] 로 적는다(allowed(): 핵심 그룹 = core 모듈 전부).
+        perms = {**keep, "groups": ["핵심"], "modules": [], "deny": []} if keep else None
+    else:
+        perms = {**keep,
+                 "groups": [g for g in form.getlist("g") if g in GROUPS],
+                 "modules": [m for m in form.getlist("m") if m in ids],
+                 "deny": [m for m in form.getlist("d") if m in ids]}
     _set_perms(uid, perms, me["email"])
     return RedirectResponse("/auth/admin?msg=저장됐습니다", status_code=303)
 
