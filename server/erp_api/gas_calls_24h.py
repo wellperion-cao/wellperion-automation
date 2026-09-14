@@ -7,7 +7,7 @@ AWS 이관 표(cto/aws_migration.html)의 삭제 조건 둘째 항목을 실측�
                       이것이 0 이어야 구글을 지울 수 있다.
   · pushback_24h    = 서버 원장에 적은 뒤 시트 사본을 맞추려고 되민 건수(gas_status ok). 사본 유지용이라
                       구글을 지우는 날 같이 끄는 것이지 「의존」이 아니다.
-출력 = /srv/erp/www/3. 웰페리온 가이드/status/gas_calls_24h.json (git 미러 안의 미추적 파일 — pull 이 지우지 않는다).
+출력 = /srv/erp/www/status/gas_calls_24h.json (www = repo/3. 웰페리온 가이드 심볼릭링크) (git 미러 안의 미추적 파일 — pull 이 지우지 않는다).
 크론 = /etc/cron.d/erp-gas-calls (매시 5분). write_log.at 은 KST 문자열(YYYY-MM-DD HH:MM)이라 문자열 비교로 자른다.
 """
 import json
@@ -19,7 +19,7 @@ sys.path.insert(0, "/srv/erp/common")
 sys.path.insert(0, "/srv/erp/api")
 import db  # noqa: E402
 
-OUT = os.environ.get("ERP_GAS_CALLS_OUT", "/srv/erp/www/3. 웰페리온 가이드/status/gas_calls_24h.json")
+OUT = os.environ.get("ERP_GAS_CALLS_OUT", "/srv/erp/www/status/gas_calls_24h.json")
 KST = timezone(timedelta(hours=9))
 
 
