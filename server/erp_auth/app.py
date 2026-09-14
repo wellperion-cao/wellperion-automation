@@ -497,8 +497,12 @@ def allowed_ids(user) -> list:
 # 종전 check() 는 module_at() 이 None 이면 로그인만 보고 200 을 냈다. 그래서 카드에 안 실은 것 — /api/ 전부,
 # /repo/(저장소 통째), /reports/(실명 인사평가 A3), /erp/admin/(회사 관리자 콘솔), /회사문서/, 회원·문의 스냅샷 —
 # 이 로그인한 아무 계정(파트너사 포함)에게 다 열렸다. 「카드에 안 싣는다」가 「권한을 안 본다」가 돼 있던 자리.
-ADMIN_ONLY_PREFIXES = ("/repo/", "/reports/", "/회사문서/", "/erp/admin/", "/1. AI자료_아카이브/", "/gm/",
+ADMIN_ONLY_PREFIXES = ("/reports/", "/회사문서/", "/erp/admin/", "/1. AI자료_아카이브/", "/gm/",
                        "/wellperion-agents/", "/scripts/", "/logs/", "/ops/", "/telegram_bot/", "/qa_screenshots/", "/ig/")
+# /repo/ = 저장소 통째(repo-data.nginx.conf alias). 화면 17장이 /repo/status/*.json·/repo/ssot/*.json 을 읽으므로(배1193)
+# 통째로 막지 않고 안쪽 경로에 같은 규칙을 적용한다 — status·ssot·가이드 폴더만 열고 나머지(scripts·logs·아카이브…)는 관리자만.
+REPO_OPEN_PREFIXES = ("/status/", "/ssot/")
+GUIDE_DIR = "/3. 웰페리온 가이드"
 # 회원·문의 개인정보가 든 status 파일 = 회원 관리(member) 카드가 있어야 읽는다.
 MEMBER_DATA_RE = re.compile(r"^/status/(member_|inquiry_snapshot|counsel_questions|cpo_member_)")
 # 읽기 API 접두 → 그 자료를 그리는 카드들. 그중 하나라도 허용돼야 API 도 열린다(2026-09-14 화면 전수 grep 으로 만든 표).
@@ -542,6 +546,16 @@ def path_allowed(user, path: str) -> bool:
     """카드 목록 밖 경로를 이 계정이 열어도 되나. 관리자=전부. 판정 순서 = 관리자 전용 접두 → 회원 자료 → API → 화면 → 자산."""
     if user["role"] == "admin":
         return True
+    if path == "/repo" or path.startswith("/repo/"):
+        inner = path[len("/repo"):] or "/"
+        if inner.startswith(GUIDE_DIR + "/"):                    # 저장소 안의 화면 폴더 = 서빙 경로와 같은 규칙
+            inner = inner[len(GUIDE_DIR):]
+            modules()
+            m = _MODS[2].get(inner)
+            return allowed(user, m) if m else path_allowed(user, inner)
+        if inner.startswith(REPO_OPEN_PREFIXES):
+            return path_allowed(user, inner)                     # 회원 자료(MEMBER_DATA_RE) 규칙이 그대로 걸린다
+        return False
     # uri_path 의 normpath 가 끝 슬래시를 떼므로('/erp/admin/'→'/erp/admin') 폴더 자체 요청도 접두에 걸리게 한 번 더 붙여 본다
     if path.startswith(ADMIN_ONLY_PREFIXES) or (path + "/").startswith(ADMIN_ONLY_PREFIXES):
         return False
@@ -1704,7 +1718,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     # 카드 밖 경로 권한(2026-09-14 점검 · 치명 2·3번) — 관리자 전용 접두·회원 자료·API·폴더 화면
     _adm = {"role": "admin", "email": "a@x", "perms": None}
     _stf = {"role": "staff", "email": "s@x", "perms": json.dumps({"modules": ["cpo-member-lesson"], "groups": [], "deny": []})}
-    assert path_allowed(_adm, "/repo/status/_queue.json") and not path_allowed(_stf, "/repo/status/_queue.json")
+    assert path_allowed(_adm, "/repo/scripts/x.py") and not path_allowed(_stf, "/repo/scripts/x.py")
+    assert path_allowed(_stf, "/repo/status/monthly_ops_plan.json") and path_allowed(_stf, "/repo/ssot/kpi.json")   # 화면이 읽는 데이터
+    assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
+    assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
     assert not path_allowed(_stf, "/reports/x.html") and not path_allowed(_stf, "/erp/admin/") and not path_allowed(_stf, "/api/members")
     assert not path_allowed(_stf, uri_path("/erp/admin/")) and not path_allowed(_stf, uri_path("/repo/"))   # 폴더 요청(끝 슬래시 떼임)
     assert not path_allowed(_stf, uri_path("/chro/hub/")) and path_allowed(_stf, uri_path("/cpo/member/"))  # 폴더 = 같은 폴더 카드로
