@@ -87,8 +87,11 @@ _CHECK_GAS_ACTIONS = _CHECK_WRITES + ("save_insp_memo", "fcheck_ranges_save", "v
 _PROC_GAS_ACTIONS = ("add", "delete", "status", "photo",
                      "asset_update", "asset_label", "asset_issue", "asset_del")
 # 구매성 지출 집계 거울(proc/proc_summary · 레인 E)은 품의가 늘거나 상태가 바뀌면 바로 옛값이 된다.
-#   자산대장(asset_*)은 거울이 없다 — 헛돌지 않게 뺀다.
 _PROC_MIRROR_WRITES = ("add", "delete", "status", "photo")
+# 품의 행 원장 거울(proc_items · sync_proc.py)도 같은 네 액션 + 자산대장(asset_*)에서 즉시 다시 뜬다
+#   (나우열M 요청 2026-09-14 · 시토 대행 웰리). sync_sales.py 는 집계(proc/proc_summary)만 알고 행은 모른다 —
+#   두 스크립트가 서로 다른 표를 채우므로 나란히 돈다(MIRROR_SYNC 값이 리스트면 둘 다 예약).
+_PROC_ITEMS_MIRROR_WRITES = _PROC_MIRROR_WRITES + tuple(a for a in _PROC_GAS_ACTIONS if a.startswith("asset_"))
 # 회원·문의 GAS(FUNNEL_EXEC_URL)로 보낼 액션 전수 — 시포 화면(cpo/**/*.html)이 실제로 관문에 보내는 것 그대로.
 #   종전에는 표 어디에도 없는 액션이 조용히 이 GAS 로 흘렀다(오타·남의 도메인 액션까지) — 배 960 M3.
 #   위 네 줄(회원·문의)에 없는 나머지 = 직원피드백(사진 제외)·오누띠·쓰기실패 보고. 늘어나면 화면과 여기를 같이 고친다.
@@ -104,7 +107,8 @@ MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
 MIRROR_SYNC.update({a: "sync_reception.py" for a in _RECEPTION_WRITES})
 MIRROR_SYNC.update({a: "sync_todo.py" for a in _TODO_WRITES})
 MIRROR_SYNC.update({a: "sync_check.py" for a in _CHECK_WRITES})
-MIRROR_SYNC.update({a: "sync_sales.py" for a in _PROC_MIRROR_WRITES})
+MIRROR_SYNC.update({a: ["sync_sales.py", "sync_proc.py"] for a in _PROC_MIRROR_WRITES})
+MIRROR_SYNC.update({a: "sync_proc.py" for a in _PROC_ITEMS_MIRROR_WRITES if a not in _PROC_MIRROR_WRITES})
 # 전사일정 거울(misc_cache schedule/load_schedule · 배990)은 sync_misc.py 가 5분마다 다시 뜬다 — 저장 직후는
 # 옛값. save_schedule 도 다른 영역처럼 여기 한 줄만 추가(배 1039-B · 2026-09-05) — 인자 없이 3개 소형 GAS를
 # 통째로 다시 뜬다(가벼움 · _SYNC_ARGS 미지정 = main() 전체 실행).
@@ -748,7 +752,9 @@ def _write_sync(headers, body):
                      (status, json.dumps(resp, ensure_ascii=False)[:20000], log_id))
     conn.close()
     if status == "ok" and action in MIRROR_SYNC:
-        _schedule_sync(MIRROR_SYNC[action])
+        scripts = MIRROR_SYNC[action]
+        for s in (scripts if isinstance(scripts, list) else [scripts]):   # 값이 리스트면 거울 여럿을 모두 예약
+            _schedule_sync(s)
     if status == "ok":
         _rc_forget(payload)   # 리셉션 업무·라커 실패대비 정본은 쓰기 직후 버린다(낡은 값 금지 · 배 960 #9i)
     return resp
@@ -797,8 +803,13 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert _gas_key("list") is None and _gas_key("asset_list") is None      # 읽기는 관문에 안 온다 — 표에 없으면 400
     assert _gas_key("reg_delete") == "RECEPTION_EXEC_URL" and _gas_key("todo_add") == "TODO_GAS_URL"  # 접두사 표가 먼저다
     assert _gas_key("save") == "CHECK_GAS_URL" and _gas_key("member_registered_add") == "FUNNEL_EXEC_URL"
-    assert MIRROR_SYNC["status"] == "sync_sales.py" and _SYNC_ARGS["sync_sales.py"] == ["--only", "proc/proc_summary"]
-    assert "asset_issue" not in MIRROR_SYNC and "asset_del" not in MIRROR_SYNC   # 자산대장은 거울이 없다
+    assert MIRROR_SYNC["status"] == ["sync_sales.py", "sync_proc.py"] and _SYNC_ARGS["sync_sales.py"] == ["--only", "proc/proc_summary"]
+    # 배 1216 · 2026-09-14(나우열M 요청) — proc_items 행 원장도 ok 직후 sync_proc.py 로 즉시 다시 뜬다(집계와 별개 거울).
+    assert MIRROR_SYNC["add"] == ["sync_sales.py", "sync_proc.py"] and MIRROR_SYNC["photo"] == ["sync_sales.py", "sync_proc.py"]
+    assert MIRROR_SYNC["asset_issue"] == "sync_proc.py" and MIRROR_SYNC["asset_del"] == "sync_proc.py"   # 자산도 이제 거울이 있다
+    assert MIRROR_SYNC["asset_update"] == "sync_proc.py" and MIRROR_SYNC["asset_label"] == "sync_proc.py"
+    assert "sync_proc.py" not in _SYNC_ARGS                              # 인자 없음 = main() 전체 실행(active+all)
+    assert MIRROR_SYNC["member_active_update"] == "sync_members.py"      # 리스트 정규화가 다른 영역을 안 건드린다
     # 리셉션 업무·라커(배 960 #9i) — 액션만 보면 전부 FUNNEL 로 샌다. 본문 판정이 먼저 서야 한다.
     assert _rc_gas_key("update", {"tab": "키관리", "row": 2, "col": 7}) == "RCOPS_GAS_URL"
     assert _rc_gas_key("append", {"tab": "시재금입출내역", "values": []}) == "RCOPS_GAS_URL"
