@@ -271,6 +271,7 @@
   <div class="sep"></div>
   <div class="cap">자료</div>
   <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
+  <a href="#ui" data-go="ui"><span class="t">화면 UI 표준</span><span class="b" id="b-ui">—</span></a>
   <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
   <a href="#platform-docs" data-go="platform-docs"><span class="t">플랫폼 문서</span></a>
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
@@ -662,6 +663,52 @@
     감시 쪽 정본은 자동화 등록부(<code>status/module_registry.json</code>)이고, 파는 쪽 정본은 이 판입니다.</div></details>
 </section>
 
+<!-- ═══ 화면 UI 표준 (GM 지시 2026-09-14 「UI/UX 표준화를 표로 정리하고, 승인나면 전체 반영」)
+     규격 자체는 파일이 정본이다 — assets/wp-ui.css(간격·글자) · erp/brand/tenant-wellperion.css(색).
+     이 표는 그 규격을 사람 말로 옮기고, 지금 몇 장이 지키는지를 실측값으로 보인다
+     (status/ui_standard.json · scripts/ui_standard_check.py 가 잰다). 숫자를 손으로 적지 않는다. ═══ -->
+<section class="panel" data-panel="ui" hidden>
+  <h2>화면 UI 표준</h2>
+  <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 다섯을 모두 채웁니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
+  <details class="tip"><summary>이 표준을 왜 두나</summary>
+    <div class="in">화면마다 글자 크기와 색을 따로 박아 써서 같은 회사 화면으로 읽히지 않습니다.
+    실측하면 한 화면 안에 글자 크기가 30종, 색이 101종까지 쓰인 곳이 있습니다.
+    디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.</div></details>
+
+  <h3>다섯 가지 <span class="n">다섯을 다 채우면 지킨다</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:16%">항목</th><th style="width:40%">기준</th><th style="width:24%">왜</th><th>지금</th></tr></thead>
+    <tbody>
+      <tr><td class="item">① 공통 규격</td><td><code>assets/wp-ui.css</code> 를 링크한다</td><td class="note">간격·글자 단계를 한 곳에서 받는다</td><td id="ui-r1">—</td></tr>
+      <tr><td class="item">② 글자 단계</td><td>화면이 직접 박은 글자 크기 <b>6종 이하</b></td><td class="note">본문 5 + 표제 1 이면 충분하다</td><td id="ui-r2">—</td></tr>
+      <tr><td class="item">③ 색 단계</td><td>직접 박은 색 <b>12종 이하</b></td><td class="note">색은 브랜드 파일이 준다</td><td id="ui-r3">—</td></tr>
+      <tr><td class="item">④ 모바일 폭</td><td>화면 폭에 맞추는 줄이 있다</td><td class="note">없으면 폰이 데스크톱 폭으로 그린다</td><td id="ui-r4">—</td></tr>
+      <tr><td class="item">⑤ 좌측 정렬</td><td>본문에 폭 제한이 없다(창을 다 쓴다)</td><td class="note">GM 상시 지시 2026-07-02</td><td id="ui-r5">—</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>지금 어디까지 <span class="n" id="ui-when"></span></h3>
+  <div class="pills">
+    <a class="pi" href="#ui"><b id="ui-pass">—</b><span>다섯 가지를 다 지키는 화면</span></a>
+    <a class="pi" href="#ui"><b id="ui-total">—</b><span>재고 있는 화면</span></a>
+  </div>
+  <div class="tbl-wrap" style="margin-top:10px;"><table class="reg">
+    <thead><tr><th style="width:46%">안 지키는 화면</th><th style="width:14%">글자</th><th style="width:14%">색</th><th>빠진 것</th></tr></thead>
+    <tbody id="ui-rows"><tr><td colspan="4" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="meta" id="ui-more"></div>
+
+  <h3>승인 <span class="n">승인하면 안 지키는 화면부터 이 규격으로 맞춥니다</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:16%">상태</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td class="item">지금</td><td id="ui-approve-state">—</td></tr>
+      <tr><td class="item">승인 방법</td><td class="note">GM 이 이 표를 보고 「UI 표준 승인」이라고 한 마디 주시면 시모가 <code>status/ui_standard.json</code> 에 승인일을 적고 반영을 시작합니다. 화면이 많아 한 번에 바꾸지 않고 <b>많이 어긋난 화면부터</b> 나눠 갑니다.</td></tr>
+      <tr><td class="item">되돌리기</td><td class="note">화면마다 저장 이력이 남습니다. 한 화면씩 직전 판으로 되돌릴 수 있습니다.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
 <section class="panel" data-panel="guide" hidden>
   <iframe id="guide-frame" title="AI C-Level 운영 가이드" src="about:blank"></iframe>
 </section>
@@ -950,6 +997,65 @@
          + '<div class="name">' + (x.name || x.title || '이름 없음') + '</div>'
          + '<div class="desc">' + (x.desc || '') + '</div></a>';
   }
+  /* ═══ 화면 UI 표준 — 숫자는 실측 파일에서 읽는다(손으로 적지 않는다) ═══
+     원천 = status/ui_standard.json (scripts/ui_standard_check.py --저장 이 만든다) */
+  fetch('/status/ui_standard.json?_=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var n = d.화면수 || 0, 항목 = d.항목별 || {};
+      function 칸(id, v){
+        var e = document.getElementById(id);
+        if (!e) return;
+        var 나쁨 = n && v * 2 < n;                      // 절반도 못 지키면 눈에 띄게
+        e.innerHTML = '<span class="st ' + (v === n ? 'ok' : (나쁨 ? 'bad' : 'warn')) + '">'
+                    + v + ' / ' + n + '</span>';
+      }
+      칸('ui-r1', 항목.공통규격 || 0); 칸('ui-r2', 항목.글자단계 || 0);
+      칸('ui-r3', 항목.색단계 || 0);   칸('ui-r4', 항목.모바일폭 || 0);
+      칸('ui-r5', 항목.폭최대 || 0);
+
+      var 지킴 = d.지킴수 || 0;
+      var p1 = document.getElementById('ui-pass'); if (p1) p1.textContent = 지킴 + ' / ' + n;
+      var p2 = document.getElementById('ui-total'); if (p2) p2.textContent = n;
+      var b = document.getElementById('b-ui'); if (b) b.textContent = 지킴 + '/' + n;
+      var w = document.getElementById('ui-when');
+      if (w && d['잰 때']) w.textContent = '실측 ' + String(d['잰 때']).slice(0, 16).replace('T', ' ');
+
+      var 기준 = d.기준 || {글자단계: 6, 색단계: 12};
+      function 빠진것(r){
+        var x = [];
+        if (!r.공통규격) x.push('공통 규격');
+        if (r.글자단계 > 기준.글자단계) x.push('글자');
+        if (r.색단계 > 기준.색단계) x.push('색');
+        if (!r.모바일폭) x.push('모바일 폭');
+        if (!r.폭최대) x.push('좌측 정렬');
+        return x.join(' · ');
+      }
+      var 안지킴 = (d.화면 || []).filter(function(r){ return !r.지킴; })
+                    .sort(function(a, b2){ return b2.글자단계 - a.글자단계; });
+      var 보일것 = 안지킴.slice(0, 15);
+      var tb = document.getElementById('ui-rows');
+      if (tb) tb.innerHTML = 보일것.length
+        ? 보일것.map(function(r){
+            return '<tr><td class="item">' + r.화면 + '</td><td>' + r.글자단계 + '종</td>'
+                 + '<td>' + r.색단계 + '종</td><td class="note">' + 빠진것(r) + '</td></tr>';
+          }).join('')
+        : '<tr><td colspan="4" class="note">모두 지키고 있습니다.</td></tr>';
+      var more = document.getElementById('ui-more');
+      if (more) more.textContent = 안지킴.length > 보일것.length
+        ? '많이 어긋난 순 15장만 띄웁니다 — 전체 ' + 안지킴.length + '장.' : '';
+
+      var st = document.getElementById('ui-approve-state');
+      if (st) st.innerHTML = d.승인
+        ? '<span class="st ok">승인됨 ' + (d.승인일 || '') + '</span> · 반영 ' + (d.반영 || '시작 전')
+        : '<span class="st wait">승인 전</span> — 승인 전에는 아무 화면도 바꾸지 않습니다';
+    })
+    .catch(function(){
+      var tb = document.getElementById('ui-rows');
+      if (tb) tb.innerHTML = '<tr><td colspan="4" class="note">실측 파일을 못 읽었습니다 — '
+                           + 'python scripts/ui_standard_check.py --저장 을 한 번 돌리면 채워집니다.</td></tr>';
+    });
+
   fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('downloads');
     var list = d.downloads || [];
