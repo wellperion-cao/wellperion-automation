@@ -57,10 +57,11 @@
     border-bottom:1px solid var(--line);}
   .sign .b{height:34px;}
 
-  .body{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;gap:13px;margin-top:12px;flex:1;min-height:0;}
-  .col{display:flex;flex-direction:column;gap:11px;min-height:0;}
-  /* 오른쪽 상단 래퍼 — 회원구성·드나듦·컨택/로스자를 row1 한 셀에 세로로 쌓는다. row2는 「어제 다녀가신 분」이 차지해 왼쪽 「매출 현황」과 같은 행에 놓인다. */
-  .col-right-top{display:flex;flex-direction:column;gap:11px;min-height:0;}
+  /* 두 칸을 가로로 놓고, 칸 안은 세로 흐름이다. 칸마다 마지막 상자가 남은 높이를 먹어 아래
+     끝선이 맞는다. 종전 2행 격자는 1행 높이를 오른쪽 칸이 정해 2행에 154px 만 남겼고, 305px 가
+     필요한 매출 현황 표가 팀 절반부터 잘렸다(2026-09-14 실측). */
+  .body{display:flex;gap:13px;margin-top:12px;flex:1;min-height:0;}
+  .col{flex:1;display:flex;flex-direction:column;gap:11px;min-height:0;}
   /* overflow:hidden — 내용이 넘치면 칸 안에서 잘리게 한다. 이게 없으면 넘친 명단이 아래 칸 위로
      겹쳐 그려진다(GM 지적 2026-09-02 "회원권 계약건도 칸 넘어가고"). */
   .sec{border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden;}
@@ -384,7 +385,8 @@
   </div>
 
   <div class="body">
-    <!-- row 1 / col 1 — 등록·재등록·환불 -->
+    <!-- 왼쪽 칸 — 등록·재등록·환불(내용만큼) + 매출 현황(남은 높이 전부) -->
+    <div class="col" style="flex:1.32;">
     <!-- ③화면 직관화(GM 읽는 순서 2026-09-05): 어제 돈 → 이달 순으로 배치 -->
     <div class="sec">
       <h2>등록 · 재등록 · 환불 — 어제 돈이 어디서 들어오고 나갔나</h2>
@@ -395,9 +397,19 @@
       </div>
     </div>
 
-    <!-- row 1 / col 2 — 오른쪽 상단 칸들을 한 래퍼에 묶어 같은 그리드 행에 놓는다.
-         row2 에 「어제 다녀가신 분」이 오고, 왼쪽 row2 「매출 현황」과 머리·끝선이 일치한다. -->
-    <div class="col-right-top">
+    <!-- 왼쪽 칸 둘째 상자 — 매출 현황. 표 11줄이 다 보이도록 남은 높이를 전부 먹는다. -->
+    <div class="sec" style="flex:1;min-height:0;">
+      <h2>매출 현황</h2>
+      <table id="sales-table">
+        <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
+        <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
+        <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+    </div>
+
+    <!-- 오른쪽 칸 — 회원 구성 · 드나듦 · 컨택/로스자 · 어제 다녀가신 분(남은 높이 전부) -->
+    <div class="col">
       <div class="sec">
         <h2>회원 구성 — 어제 기준 몇 분이 회원인가</h2>
         <div class="bd" id="memberMix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -420,22 +432,12 @@
           <div class="bd"><pre class="txt" id="loss">—</pre></div>
         </div>
       </div>
-    </div>
 
-    <!-- row 2 / col 1 — 매출 현황 (1fr 행 전체를 채운다) -->
-    <div class="sec" style="min-height:0;">
-      <h2>매출 현황</h2>
-      <table id="sales-table">
-        <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
-        <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
-        <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- row 2 / col 2 — 어제 다녀가신 분 (같은 1fr 행 — 매출 현황과 머리·끝선 일치) -->
-    <div class="sec" style="min-height:0;">
+      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분 -->
+    <div class="sec" style="flex:1;min-height:0;">
       <h2>어제 다녀가신 분</h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    </div>
     </div>
   </div>
 
@@ -2131,13 +2133,30 @@ function parseActions(d){
   };
 }
 
+/* 위 카드가 쓰는 두 수를 문의 원장에서 센다 — 아래 상세 내역과 같은 판정·같은 원장이라
+   두 자리 숫자가 어긋날 수 없다. 원장을 못 읽었으면 0 이 아니라 null 로 둔다. */
+function p2TodayKey(){
+  var n = new Date(), z = function(v){ return (v < 10 ? '0' : '') + v; };
+  return n.getFullYear() + '-' + z(n.getMonth() + 1) + '-' + z(n.getDate());
+}
+function p2InqGauge(){
+  var key = p2TodayKey();
+  function rows(d){ return (d && d.ok && d.data) ? d.data.filter(function(r){ return r.name; }) : null; }
+  function today(rs){ return rs.filter(function(r){ return String(r.timestamp || '').substring(0, 10) === key; }).length; }
+  var mem = rows(RAW2.__inq), les = rows(RAW2.__les);
+  return {
+    open : mem ? mem.filter(inqOpenUncontacted).length : null,
+    mem  : mem ? today(mem) : 0,
+    les  : les ? today(les) : 0,
+    today: (mem || les) ? (mem ? today(mem) : 0) + (les ? today(les) : 0) : null
+  };
+}
+
 function renderP2Todo(c, t, act){
   var el = document.getElementById('p2todo'); if (!el) return;
   var soon   = (c && c.renewSoon || []).filter(function(x){ return x.rem <= 7; });
   var urgent = soon.filter(function(x){ return x.rem <= 3; });
-  var mark = act ? (act.stale ? ' <span class="stale">어제 값</span>' : '') : '';
-  var when = act ? ('<div class="ts">' + esc(act.at) + ' 집계' + '</div>')
-    : ('<div class="ts">' + (RAW2.__actionsSkip ? 'ERP 화면에서만 보입니다' : '집계 파일을 못 읽었습니다') + '</div>');
+  var g = p2InqGauge();
   function box(label, value, note, sub, bad){
     return '<div class="tb' + (bad ? ' urgent' : '') + '">' +
       '<div class="tl">' + label + '</div>' +
@@ -2153,12 +2172,15 @@ function renderP2Todo(c, t, act){
         '', urgent.length > 0) +
     box('이번 달 나가신 분', (t && t.monthLoss != null) ? t.monthLoss + '명' : '–',
         '사유 확인 필요', '<div class="ts">오늘 ' + ((t && t.todayLoss != null) ? t.todayLoss : '–') + '명</div>', false) +
-    box('후속 연락 필요한 문의', (act && act.noContact != null) ? act.noContact + '건' + mark : '–',
-        '아직 컨택 기록이 없는 문의' +
-          ((act && act.lossPrev != null) ? ' · 이탈 예방 대상 ' + act.lossPrev + '명' : ''),
-        when, false) +
-    box('오늘 예약', (act && act.todayResv != null) ? act.todayResv + '건' + mark : '–',
-        '오늘 방문 예정', when, false);
+    box('후속 연락 필요한 문의', (g.open != null) ? g.open + '명' : '–',
+        (g.open == null) ? '문의 원장을 못 읽었습니다'
+          : '아직 컨택 기록이 없는 분 — 아래 상세에 먼저 싣습니다' +
+            ((act && act.lossPrev != null) ? ' · 이탈 예방 대상 ' + act.lossPrev + '명' : ''),
+        '<div class="ts">멤버십 문의 원장 기준</div>', g.open > 0) +
+    box('오늘 들어온 문의', (g.today != null) ? g.today + '건' : '–',
+        (g.today == null) ? '문의 원장을 못 읽었습니다'
+          : '멤버십 ' + g.mem + '건 · 강습 ' + g.les + '건',
+        '<div class="ts">두 문의 원장 기준</div>', false);
 }
 
 /* 문의에서 가입까지 — 사람이 적은 진행상태 칸을 그대로 센다. 없는 단계를 지어내지 않는다.
