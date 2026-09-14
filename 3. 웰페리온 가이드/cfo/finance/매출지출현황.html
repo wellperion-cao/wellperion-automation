@@ -1409,14 +1409,15 @@ function _procListSrv(extra){
     .then(function(j){ if(!(j&&j.ok&&j.data))throw new Error("응답 모양 불일치"); return j; });
 }
 function _srvListable(action,extra){
-  /* 🔴 2026-09-14 긴급 차단 — 매니저 실사용 신고: 화면엔 #137·신규 테스트가 보이는데
-     GAS 원장(시트)엔 #135·#136 뿐이었다(CFO 직접 조회 확인). 서버 읽기와 시트가 갈라진
-     상태라 화면이 시트에 없는 행을 대상으로 승인·반려·삭제를 시도하고 전부 실패한다.
-     원인 규명 전까지 읽기를 종전 GAS 로 되돌린다. 코드는 남겨둔다 — 원인 해소 후 false 를 지우면 복귀. */
-  if(true)return false;
+  /* 2026-09-14 14:06 긴급 차단 → 같은 날 해제(매니저 지시 "cfo 탭 전부 서버 이관").
+     차단 사유였던 「화면 #137 vs 시트 #135·#136 갈림」의 원인 두 가지가 모두 해소됐다:
+       ① 서버 되밀기(pushback.py)가 MIRROR_SYNC 리스트 값에서 TypeError 로 죽어 13:46~14:04 거울(proc_items)이
+          안 갱신됨 — 시토 대행·웰리 수리(커밋 e8aa79018 14:17 · sync_scripts() + assert).
+       ② 화면 로컬 캐시(procReqCache.v1)가 조회 실패를 가려 유령 행이 남음 — 캐시 v2·실패 상시경고·실패 후 재조회(커밋 1aaa22f80).
+     실패·401·비ERP 도메인은 종전대로 GAS 폴백(_rawCall). 다시 갈라지면 아래 return 앞에 `return false;` 한 줄로 즉시 복귀. */
   return action==="list"&&ERP_READ_ON&&extra&&(extra.mode==="active"||extra.mode==="done");
 }
-var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};   /* proc_summary 는 2026-09-14 긴급 차단과 함께 GAS 로 복귀 */   // 읽기 전용 집계 = 서버 거울 있음
+var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,proc_summary:1};   // 읽기 전용 집계 = 서버 거울 있음 (proc_summary 2026-09-14 복원 — 위 _srvListable 주석과 같은 사유)
 /* 거울 게이트웨이가 액션마다 다르다 — proc_summary 는 api_sales.py 의 proc 쪽에 있다(salesops 아님).
    2026-09-14: 서버 통로는 이미 있었고 화면만 안 붙어 있었다. 실패 시 종전 GAS 폴백은 _salesRead 가 처리. */
 var MIRROR_GAS={proc_summary:"proc"};
