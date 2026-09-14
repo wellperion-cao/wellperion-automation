@@ -38,6 +38,15 @@ ROOT = os.path.dirname(_SCRIPTS_DIR)
 AUTHOR = "나우열"
 SINCE = "30.days"   # 낡은 사본이 2주 넘게 묵은 경우까지(세션 재시작 전 사본)
 MIN_LEN = 20          # 이보다 짧은 줄은 대조하지 않는다(`</div>`·`}` 류 헛경보 방지)
+# 기계가 통째로 다시 쓰는 상태 파일은 대조하지 않는다 — 큐·원장·로그는 줄 단위 「덮어쓰기」가 정상 동작이라
+#   누가 넣은 줄이든 다음 저장에서 사라진다(2026-09-14 17:48 실측: status/_queue.json 저장이 이 가드에 막혔다).
+SKIP_SUFFIX = (".json", ".jsonl", ".log")
+SKIP_PREFIX = ("status/", "3. 웰페리온 가이드/status/", "logs/")
+
+
+def is_state_file(path):
+    p = path.replace("\\", "/")
+    return p.endswith(SKIP_SUFFIX) and p.startswith(SKIP_PREFIX)
 
 
 def _git(args, cwd):
@@ -84,6 +93,8 @@ def nawoolm_added_lines(cwd, path, before=None):
 def find_hits(cwd, paths, rev=None):
     hits = []
     for p in paths:
+        if is_state_file(p):
+            continue
         rem = removed_lines(cwd, p, rev)
         if not rem:
             continue
@@ -174,6 +185,8 @@ def selftest():
         g("add", ".")
         assert find_hits(d, ["main.html"]) == []
         assert _nawoolm_request_marker("복구 [나우열M 요청 2026-09-14]") is not None
+    assert is_state_file("status/_queue.json") and is_state_file("3. 웰페리온 가이드/status/token_usage.json") and is_state_file("logs/x.log")
+    assert not is_state_file("scripts/a.py") and not is_state_file("status/briefs/x.md") and not is_state_file("3. 웰페리온 가이드/cfo/finance/x.html")
     os.environ["GIT_COMMITTER_NAME"] = "나우열"      # 나우열M 본인 저장은 판정 없이 통과
     try:
         assert main([]) == 0
