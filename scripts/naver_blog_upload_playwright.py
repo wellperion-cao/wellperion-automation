@@ -647,34 +647,46 @@ async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
 # -----------------------------------------------------------------
 # 글쓰기 진입 + 제목·본문·이미지 입력 (draft·publish 공용 본체)
 # -----------------------------------------------------------------
-async def _resolve_blog_id(page) -> str:
-    """지금 로그인한 사람의 블로그 아이디를 직접 물어본다.
+async def _resolve_blog_id(page) -> str | None:
+    """지금 로그인한 사람의 블로그 아이디를 직접 물어본다. 못 읽으면 None.
+
     2026-09-09: 아이디가 'wellperion' 으로 박혀 있어, 파트너 계정으로 로그인하고도
-    웰페리온 블로그에 쓰려 해 본문 입력이 통째로 실패했다. 계정이 바뀌면 블로그도 바뀐다."""
+    웰페리온 블로그에 쓰려 해 본문 입력이 통째로 실패했다. 계정이 바뀌면 블로그도 바뀐다.
+    2026-09-14: 못 읽었을 때 'wellperion' 을 돌려주던 것이 더 나쁜 문제를 만들었다 —
+    로그인이 풀린 상태가 「웰페리온으로 로그인됨」으로 보고돼 고척 발행이 3일(9/12~14) 연속
+    실패하는 동안 진짜 원인(세션 만료)이 가려졌다. 모르면 모른다고 말한다."""
     try:
         await page.goto("https://blog.naver.com/MyBlog.naver",
                         wait_until="domcontentloaded", timeout=20_000)
         await page.wait_for_timeout(1200)
-        m = re.search(r"blog\.naver\.com/([A-Za-z0-9_-]{3,})", page.url or "")
+        url = page.url or ""
+        m = re.search(r"blog\.naver\.com/([A-Za-z0-9_-]{3,})", url)
         if m and m.group(1) not in ("MyBlog", "section", "PostList"):
             return m.group(1)
+        print(f"[WARN] 블로그 아이디를 못 읽었다 — 로그인이 풀렸을 수 있다(현재 주소 {url[:120]})")
     except Exception as e:
-        print(f"[WARN] 블로그 아이디 자동 확인 실패({type(e).__name__}) — 기본값을 쓴다")
-    return DEFAULT_BLOG_ID
+        print(f"[WARN] 블로그 아이디 자동 확인 실패({type(e).__name__})")
+    return None
 
 
 async def _enter_write_and_fill(page, post: BlogPost, blog_id: str | None) -> None:
     if not blog_id:
         blog_id = await _resolve_blog_id(page)
+        _t = (os.environ.get("WP_TENANT") or "").strip()
+        # 두 경우를 갈라 말한다 — 섞으면 원인을 못 찾는다(2026-09-14 고척 3일 연속 실패).
+        if blog_id is None:
+            raise RuntimeError(
+                f"로그인이 풀렸다 — 블로그 아이디를 못 읽었다"
+                f"{f'(계정 자리 WP_TENANT={_t})' if _t else '(웰페리온 자리)'}. "
+                f"{f'WP_TENANT={_t} ' if _t else ''}--mode setup 을 돌려 그 계정으로 다시 로그인하라")
         print(f"[INFO] 로그인한 계정의 블로그: {blog_id}")
         # 파트너 계정 자리로 돌면서 웰페리온 블로그가 잡히면 여기서 멈춘다.
         # 2026-09-10 실측: 조재오 부장님 자리(WP_TENANT=jo)의 쿠키가 웰페리온 세션이었다.
         # 그 세션이 살아 있었다면 부장님 글이 웰페리온 블로그로 올라갔다 — 그것이 최악이다.
-        _t = (os.environ.get("WP_TENANT") or "").strip()
         if _t and blog_id == DEFAULT_BLOG_ID:
             raise RuntimeError(
-                f"파트너 계정 자리(WP_TENANT={_t})인데 로그인된 블로그가 웰페리온({blog_id})이다 — "
-                f"그 자리 쿠키가 웰페리온 것이거나 만료됐다. 파트너 글이 웰페리온 블로그로 갈 수 있어 "
+                f"파트너 계정 자리(WP_TENANT={_t})인데 웰페리온 계정({blog_id})으로 로그인돼 있다 — "
+                f"그 자리 쿠키가 웰페리온 것이다. 파트너 글이 웰페리온 블로그로 갈 수 있어 "
                 f"쓰기 전에 멈춘다. WP_TENANT={_t} 로 --mode setup 을 돌려 그 계정으로 다시 로그인하라")
     write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=blog_id)
     print(f"[INFO] 글쓰기 진입: {write_url}")
