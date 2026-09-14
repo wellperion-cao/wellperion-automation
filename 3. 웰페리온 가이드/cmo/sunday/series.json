@@ -71,7 +71,37 @@
      "variant": "grid4"
     }
    ],
-   "enabled": false
+   "enabled": true,
+   "_켠 날": "2026-09-14 GM 지시 「각 센터마다 공식계정으로 진행」"
+  },
+  {
+   "key": "고척골프의 하루",
+   "name": "고척골프의 하루",
+   "tag": "#고척골프",
+   "slug": "고척골프의하루",
+   "account": "gocheok_qa_golf",
+   "channel": "인스타그램 (gocheok_qa_golf)",
+   "aka": [],
+   "brief": "고척 gdr QA 골프 아카데미 공식 계정 기록. 정중하고 편한 존댓말로 쓰고 단정하지 않는다. 팔지 않는다 — 오늘 한 번 더 서 보는 사람의 자리를 보여 준다. 회원 얼굴은 담지 않는다. 결·말투의 출처 = 상담봇 프로필 3_gocheokgolf.",
+   "concepts": [
+    {
+     "key": "기본",
+     "label": "기본 — 사진 1장이 슬라이드 1장",
+     "variant": ""
+    },
+    {
+     "key": "네컷스트립",
+     "label": "네컷 스트립 — 인생네컷처럼 4장을 한 장에",
+     "variant": "strip4"
+    },
+    {
+     "key": "네컷그리드",
+     "label": "네컷 그리드 — 4장 격자 + 그날 문장",
+     "variant": "grid4"
+    }
+   ],
+   "enabled": false,
+   "_켜기 전 남은 것": "이 계정으로 이 PC 에서 인스타 로그인 1회 — python scripts/instagram_upload_playwright.py --mode setup --account gocheok_qa_golf"
   }
  ],
  "_사람을 늘리려면": [
@@ -80,5 +110,11 @@
   "3. 승인을 그 사람이 하려면 review_chat 에 그 사람 텔레그램 방 id 를 적는다(비우면 GM 업무보고방).",
   "4. 그 사람이 접수 화면을 열 수 있어야 한다 — 권한 원장(server/erp_auth/account_perms.json)에 그 화면을 더한다.",
   "코드는 고치지 않는다. 화면 목록·뒷단·발행 폴더가 이 파일을 읽는다."
- ]
+ ],
+ "_센터 트랙": {
+  "_": "GM 지시 2026-09-14 — 각 센터는 자기 공식 계정으로 올린다. 개인 계정 트랙(어떤 하루)은 그대로 둔다.",
+  "1_wellperion": "웰페리온의 하루 · @wellperion · 켬",
+  "3_gocheokgolf": "고척골프의 하루 · @gocheok_qa_golf · 로그인 1회 뒤 켠다",
+  "2_dietcamp": "아직 없음 — 인스타 계정을 못 받았다(상담봇 프로필 channels.instagram 미수령). 받으면 칸을 만든다."
+ }
 }

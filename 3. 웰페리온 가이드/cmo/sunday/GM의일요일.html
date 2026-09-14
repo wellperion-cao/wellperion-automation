@@ -111,6 +111,26 @@
   .hide{display:none;}
   details{border-top:1px solid #EEE9DF;padding-top:12px;}
   details summary{cursor:pointer;font-size:13px;color:#8A8377;}
+
+  /* 검수 칸 (GM 지시 2026-09-14) — 올린 자리에서 보고 바로 승인한다 */
+  .rv-it{display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid rgba(0,0,0,.08);}
+  .rv-it:first-child{border-top:0;}
+  .rv-th{width:56px; height:70px; object-fit:cover; border-radius:6px; flex-shrink:0;
+         background:rgba(0,0,0,.06);}
+  .rv-tx{min-width:0; flex:1;}
+  .rv-t{font-weight:700; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rv-s{font-size:12px; opacity:.7; margin-top:2px;}
+  .rv-btns{display:flex; gap:6px; flex-shrink:0;}
+  .rv-btns button{font-family:inherit; font-size:12.5px; font-weight:700; padding:7px 14px;
+                  border-radius:6px; cursor:pointer; border:1px solid rgba(0,0,0,.15);}
+  .rv-btns button:disabled{opacity:.5; cursor:default;}
+  .rv-ok{background:#221F20; color:#fff; border-color:#221F20;}
+  .rv-no{background:transparent;}
+  @media(max-width:520px){
+    .rv-it{flex-wrap:wrap;}
+    .rv-btns{width:100%; }
+    .rv-btns button{flex:1;}
+  }
 </style>
 </head>
 <body>
@@ -252,7 +272,7 @@
       <div class="note" id="whenNote"></div>
 
       <button class="cta" id="sendBtn">텔레그램으로 검수 요청</button>
-      <div class="note">공식 계정(@wellperion)에는 올라가지 않습니다. 개인 계정 전용 모듈입니다.</div>
+      <div class="note">고른 트랙의 계정으로만 올라갑니다 — 위 「발행 계정」에 적힌 곳입니다. 다른 계정에는 올라가지 않습니다.</div>
       <div class="err hide" id="errBox"></div>
     </div>
 
@@ -273,6 +293,17 @@
       <div class="s">사진·문장이 드라이브와 접수 시트에 저장됐습니다. 검수 카드는 <b>바로 오지 않습니다 — 보통 5분, 늦어도 20분 안</b>에 업무보고방으로 갑니다(15분마다 도는 접수 처리 + 슬라이드 만드는 시간). 승인 전까지는 발행되지 않습니다.</div>
     </div>
 
+  </div>
+
+  <!-- ═══ 검수 — 올린 자리에서 보고 바로 승인한다 (GM 지시 2026-09-14
+       「승인은 그 페이지에서 보고 하는게 제일 좋지않나?」)
+       종전에는 텔레그램 카드에서만 승인했다. 같은 승인 통로(GAS review_set_status)를
+       이 자리로 가져온다 — 다른 화면으로 타고 넘어가게 하지 않는다(GM 2026-07-18).
+       텔레그램 카드는 그대로 살아 있다. 어느 쪽에서 눌러도 같은 곳(검수 큐)이 바뀐다. ═══ -->
+  <div class="card" id="rvSec" style="display:none;">
+    <div class="step"><div class="num">7</div><div class="step-t">검수 <span id="rv_sub"></span></div></div>
+    <div id="rv_list"></div>
+    <div class="note" id="rv_note" style="margin-top:8px;"></div>
   </div>
 </div>
 
@@ -616,7 +647,7 @@
     $('whenNote').textContent = (scheduled && d)
       ? '👉 검수 카드에서 승인하시면 ' + whenKo(d) + ' 오전 7:30 에 인스타그램에 올라갑니다.'
       : scheduled ? '날짜를 고르시면 그날 오전 7:30 에 올라갑니다.'
-                  : '👉 검수 카드에서 승인하시는 즉시 인스타그램에 올라갑니다.';
+                  : '👉 승인하시는 즉시 인스타그램에 올라갑니다 — 아래 검수 칸에서도, 텔레그램 카드에서도 됩니다.';
   }
   function whenKo(d){
     var t = d.split('-');
@@ -749,6 +780,132 @@
     }
   };
 
+})();
+</script>
+
+<script>
+/* ═══ 검수 — 올린 자리에서 보고 바로 승인 (GM 지시 2026-09-14) ═══════════════
+   GM: "승인은 그 페이지에서 보고 하는게 제일 좋지않나?"
+
+   새 통로를 만들지 않는다. M1 검수 목록이 쓰던 그 승인 통로(GAS review_set_status)를
+   이 자리로 가져올 뿐이다 — 승인이 커밋되면 GAS 가 봇에 발행 신호를 보내고, 텔레그램
+   카드에서 누른 것과 똑같이 발행된다. 어느 쪽에서 눌러도 바뀌는 곳은 검수 큐 한 곳이다.
+
+   보이는 범위: 지금 고른 트랙(계정)의 최근 건만. 남의 트랙은 여기 안 나온다 —
+   사람마다 자기 것을 자기가 승인한다. */
+(function(){
+  var QUEUE = '../review/review_queue.json';
+  var sec = document.getElementById('rvSec');
+  if (!sec) return;
+
+  function esc(t){ return String(t == null ? '' : t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  /* 지금 화면이 고른 트랙의 계정. 접수 폼의 시리즈 선택을 그대로 따른다. */
+  function nowAccount(){
+    var el = document.getElementById('k_account');
+    var t = (el && el.textContent || '').replace(/[@()]/g,'').split(' ')[0].trim();
+    return t || 'namuk.wellperion';
+  }
+
+  /* 아직 사람 손이 남은 건만 위로 올린다 — 끝난 것은 회색 한 줄. */
+  function pending(st){ return !st || st === '검수대기'; }
+  function label(st){
+    if (!st || st === '검수대기') return '검수 대기';
+    if (st === '승인' || st === 'approved') return '승인됨 · 발행 진행 중';
+    if (st === '반려' || st === 'rejected') return '반려됨';
+    if (st === '발행완료') return '발행 완료';
+    if (st === '발행검증대기') return '발행 확인 중';
+    if (st === '발행실패') return '발행 실패';
+    return st;
+  }
+
+  function relay(id, decision){
+    var base = (window.WP_CMO_API && window.WP_CMO_API.review) || '';
+    if (!base) return Promise.reject(new Error('승인 통로 주소가 없습니다'));
+    var qs = 'action=review_set_status&id=' + encodeURIComponent(id)
+           + '&status=' + encodeURIComponent(decision === 'approve' ? '승인' : '반려') + '&key=';
+    return fetch(base + '?' + qs, {redirect:'follow'}).then(function(r){ return r.json(); });
+  }
+
+  function row(it){
+    var st = it.status || '';
+    var 남음 = pending(st);
+    var 미리보기 = it.preview || (it.slides && it.slides[0]) || '';
+    return '<div class="rv-it" data-id="' + esc(it.id) + '">'
+      + (미리보기 ? '<img class="rv-th" src="../../' + esc(미리보기) + '" alt="" loading="lazy">'
+                  : '<div class="rv-th"></div>')
+      + '<div class="rv-tx">'
+      +   '<div class="rv-t">' + esc(it.title || '(제목 없음)') + '</div>'
+      +   '<div class="rv-s">' + esc(label(st)) + '</div>'
+      + '</div>'
+      + (남음
+          ? '<div class="rv-btns">'
+            + '<button type="button" class="rv-ok" data-act="approve">승인</button>'
+            + '<button type="button" class="rv-no" data-act="reject">반려</button>'
+            + '</div>'
+          : '')
+      + '</div>';
+  }
+
+  function draw(items){
+    var acct = nowAccount();
+    var 내것 = items.filter(function(x){ return (x.account || '') === acct; });
+    내것.sort(function(a,b){
+      return String(b.enqueued_at || b.id || '').localeCompare(String(a.enqueued_at || a.id || ''));
+    });
+    var 남은것 = 내것.filter(function(x){ return pending(x.status); });
+    var 최근 = 내것.slice(0, 5);
+    var 보일것 = 남은것.length ? 남은것.concat(최근.filter(function(x){ return !pending(x.status); })).slice(0, 5) : 최근;
+
+    document.getElementById('rv_sub').textContent =
+      남은것.length ? '(' + 남은것.length + '건 기다리는 중)' : '(기다리는 건 없습니다)';
+    document.getElementById('rv_list').innerHTML =
+      보일것.length ? 보일것.map(row).join('')
+                   : '<div class="note">아직 올린 것이 없습니다.</div>';
+    // 지난 건은 그림 파일이 이미 지워졌을 수 있다 — 깨진 그림 아이콘 대신 빈 칸으로 둔다
+    [].forEach.call(document.querySelectorAll('#rv_list img.rv-th'), function(img){
+      img.addEventListener('error', function(){
+        var box = document.createElement('div');
+        box.className = 'rv-th';
+        if (img.parentNode) img.parentNode.replaceChild(box, img);
+      });
+    });
+    document.getElementById('rv_note').innerHTML =
+      '승인하면 바로 발행됩니다. 텔레그램 카드에서 눌러도 같습니다 — 어느 쪽이든 한 번만 누르면 됩니다.';
+    sec.style.display = '';
+  }
+
+  function load(){
+    fetch(QUEUE + '?_=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ draw(Array.isArray(d) ? d : (d.items || [])); })
+      .catch(function(){ sec.style.display = 'none'; });   // 못 읽으면 조용히 감춘다
+  }
+
+  document.addEventListener('click', function(ev){
+    var btn = ev.target.closest && ev.target.closest('.rv-btns button');
+    if (!btn) return;
+    var box = btn.closest('.rv-it');
+    var id = box && box.getAttribute('data-id');
+    if (!id) return;
+    var act = btn.getAttribute('data-act');
+    if (act === 'reject' && !confirm('반려하면 이 건은 발행되지 않습니다. 반려할까요?')) return;
+    var btns = box.querySelectorAll('button');
+    for (var i=0;i<btns.length;i++) btns[i].disabled = true;
+    btn.textContent = '보내는 중…';
+    relay(id, act).then(function(res){
+      if (!res || res.ok !== true) throw new Error((res && res.error) || '실패');
+      load();
+    }).catch(function(e){
+      box.querySelector('.rv-s').textContent = '보내지 못했습니다 — ' + e.message;
+      for (var i=0;i<btns.length;i++) btns[i].disabled = false;
+      btn.textContent = act === 'approve' ? '승인' : '반려';
+    });
+  });
+
+  load();
+  setInterval(load, 60000);   // 검수 카드가 만들어지기까지 5~20분 — 화면을 열어 둔 채 기다릴 수 있게
 })();
 </script>
 <script defer src="../../_assets/page_ping.js"></script>

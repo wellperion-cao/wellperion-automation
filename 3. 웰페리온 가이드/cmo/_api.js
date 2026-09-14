@@ -7,7 +7,11 @@ window.WP_CMO_API = {
   //   되돌리기 = 아래 두 줄을 intakeGas 값으로. 본문·헤더(text/plain JSON)는 종전 그대로.
   intake: "https://erp.wellperion.com/api/intake/instructor",
   intakeSunday: "https://erp.wellperion.com/api/intake/sunday",
-  intakeGas: "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec"
+  intakeGas: "https://script.google.com/macros/s/AKfycbz4wWhqICMQZR3F9bQc-7_LsDDA9Ywb-g-Q-6BNwjvqiw1EwAT_U94nEjUsf-Uor8uH/exec",
+  // 검수 승인·반려 통로 — action=review_set_status&id=&status=승인|반려&key=
+  // 승인이 커밋되면 GAS 가 봇에 발행 신호를 보낸다(_signalM1Publish). M1 검수 목록이 쓰던 주소
+  // 그대로다 — 어느 화면에서 눌러도 같은 곳(검수 큐)이 바뀐다(약속 L01).
+  review: "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 };
 
 // ★API 먼저·GAS 폴백 (시토 배922 _chkRead 와 같은 모양 · 배960). ERP 도메인에서만 서버 거울 /api/funnel?<같은 쿼리> 를
