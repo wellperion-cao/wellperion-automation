@@ -188,6 +188,11 @@ LOCK_SECS = 600                                # 잠금 시간(10분)
 # 끄기: 그 줄을 지우거나 비우고 재기동 — 그 순간부터 그 IP 도 다시 로그인 화면을 본다(원래 동작).
 OFFICE_AUTO_LOGIN_IPS = frozenset(ip.strip() for ip in os.environ.get("OFFICE_AUTO_LOGIN_IP", "").split(",") if ip.strip())
 OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
+# 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
+AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
+                                 "cpo-member-실무진피드백", "cpo-member-오넛티-접수현황"})
+# 그 카드들이 쓰는 읽기 API 도 같이 막는다 — 화면만 막고 API 를 열어 두면 주소로 자료를 그대로 받는다.
+AUTO_LOGIN_DENY_API = ("/api/members", "/api/inquiries", "/api/lesson/", "/api/hr/")
 # 관리자 화면 별도 비밀번호(GM 2026-09-04 "관리자 사이트 비밀번호는 별도로") — 로그인 계정과 무관하게 한 번 더 묻는다.
 # 값은 서버 /srv/erp/auth.env 에만 있다. 비어 있으면 종전대로(관리자 계정이면 바로 열림).
 ADMIN_PW = os.environ.get("ERP_ADMIN_SITE_PW", "")
@@ -591,6 +596,11 @@ def _api_need(path: str) -> Optional[set]:
         if path.startswith(prefix) and (best is None or len(prefix) > len(best[0])):
             best = (prefix, need)
     return best[1] if best else None
+
+
+def _auto_denies_api(path: str) -> bool:
+    """자동 로그인 세션이 못 부르는 읽기 API 인가(배 2574 · 순수함수·테스트용)."""
+    return path.startswith(AUTO_LOGIN_DENY_API)
 
 
 def is_platform_path(path: str) -> bool:
@@ -1059,6 +1069,11 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
         if (request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD"):
             raise HTTPException(403)
         if m and m["id"].startswith("chro-"):
+            raise HTTPException(403)
+        # 개인정보 화면·자료도 이 세션으로는 안 연다(배 2574 · 2026-09-15). 사무실 회선과 손님용 와이파이의
+        # 공인 IP 가 같다는 소장 회신(2026-09-11) 때문이다 — IP 만으로 여는 세션은 손님 단말에도 열린다.
+        # 그 자료를 보려면 평소대로 로그인한다(자동 세션이 아니면 이 블록을 안 탄다).
+        if (m and m["id"] in AUTO_LOGIN_DENY_IDS) or MEMBER_DATA_RE.match(path) or _auto_denies_api(path):
             raise HTTPException(403)
     headers = {"X-Erp-User": u["email"], "X-Erp-Role": u["role"]}
     if path.startswith("/api/"):
@@ -1909,6 +1924,11 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert is_platform_path("/자율현황.html") and is_platform_path("/repo/3. 웰페리온 가이드/자율현황.html")
     assert is_platform_path("/cbo/dietcamp/") and is_platform_path(uri_path("/erp/admin/"))
     assert not is_platform_path("/cpo/member/membership.html") and not is_platform_path("/cto/automation/index.html")
+    # 자동 로그인 세션이 못 여는 자리(배 2574) — 손님용 와이파이가 사무실과 같은 공인 IP 라서.
+    assert _auto_denies_api("/api/members") and _auto_denies_api("/api/inquiries/list") and _auto_denies_api("/api/hr/x")
+    assert not _auto_denies_api("/api/check/list") and not _auto_denies_api("/api/todo")
+    assert "member" in AUTO_LOGIN_DENY_IDS and "inquiry" in AUTO_LOGIN_DENY_IDS
+    assert MEMBER_DATA_RE.match("/status/member_active_snapshot.json")
     assert path_allowed(_stf, "/repo/status/monthly_ops_plan.json") and path_allowed(_stf, "/repo/ssot/kpi.json")   # 화면이 읽는 데이터
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
     assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
