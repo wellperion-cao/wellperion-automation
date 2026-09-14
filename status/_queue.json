@@ -1045,11 +1045,11 @@
     "task_id": "CTO-2026-09-10-자동화-건강판이-09-09-새벽부터-0-만-찍는다-",
     "clevel": "cto",
     "title": "[시토] 자동화 건강판이 09-09 새벽부터 0%만 찍는다 — 상주 스케줄러 안에서만 나는 오류",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-10",
     "from": "cto",
-    "note": "[시토 2026-09-10 · 기다리는 쪽: GM·웰리가 자율현황 화면에서 「자동화 0/0 정상 (0%)」 거짓값을 09-09 새벽부터 보고 있다] 실측 2026-09-10 06:1x. status/erp_status.json automation_health.summary = \"집계 중 (오류: 'NoneType' object has no attribute 'split')\", total/healthy/rate 모두 0. 저장 이력 대조: 09-08 23:57 마지막 정상(37/40 92%) → 09-09 06:27 부터 계속 오류. 그 사이 erp_status_publisher.py·daily_scheduler.py 코드 변경 없음(git 확인) — GM PC 09-09 재부팅(DPC_WATCHDOG) 뒤 상주 스케줄러가 다시 뜬 시점과 겹친다. 손으로 같은 함수를 돌리면 정상(콘솔 있음·없음(pythonw)·출력 DEVNULL 모두 41건 집계 성공) — 재현이 스케줄러 프로세스 안에서만 된다. 한 것: collect_automation_health 의 except 가 실패 줄번호까지 남기게 고쳤다(scripts/erp_status_publisher.py). 다음 30분 주기가 스스로 위치를 알려 준다. [시토 2026-09-13] 09-11 수리 뒤 문구가 '측정 없음 (wellperion 작업 매칭 0건)'으로 바뀌었고 09-11 14:56~09-13 05:56 30분 주기 전 회차가 같은 값이다(결정적 실패·간헐 아님). 오늘 손으로 재면 45건 잡히고 40/45 89%. 콘솔 없는 pythonw 자식(stdout/stderr/stdin=DEVNULL·CREATE_NO_WINDOW)으로 상주 스케줄러 조건을 흉내내도 45건 정상 — 환경 차이가 아직 안 잡혔다. 발행 주체는 예약작업이 아니라 상주 스케줄러(telegram_bot/daily_scheduler.py _publish_erp_status · 30분 주기 · timeout 240 · sys.executable). 오늘 한 것 = total==0 반환에 diag(dump_len·blocks·named·matched·live_n·head)를 붙였다 — 셋 중 어디서 0이 됐는지(글자를 못 받았나·이름 필드를 못 읽었나·live 필터가 걷어냈나) 다음 30분 주기가 스스로 알려 준다. 저장·배포 b7b079d5a.",
+    "note": "[시토 2026-09-10 · 기다리는 쪽: GM·웰리가 자율현황 화면에서 「자동화 0/0 정상 (0%)」 거짓값을 09-09 새벽부터 보고 있다] 실측 2026-09-10 06:1x. status/erp_status.json automation_health.summary = \"집계 중 (오류: 'NoneType' object has no attribute 'split')\", total/healthy/rate 모두 0. 저장 이력 대조: 09-08 23:57 마지막 정상(37/40 92%) → 09-09 06:27 부터 계속 오류. 그 사이 erp_status_publisher.py·daily_scheduler.py 코드 변경 없음(git 확인) — GM PC 09-09 재부팅(DPC_WATCHDOG) 뒤 상주 스케줄러가 다시 뜬 시점과 겹친다. 손으로 같은 함수를 돌리면 정상(콘솔 있음·없음(pythonw)·출력 DEVNULL 모두 41건 집계 성공) — 재현이 스케줄러 프로세스 안에서만 된다. 한 것: collect_automation_health 의 except 가 실패 줄번호까지 남기게 고쳤다(scripts/erp_status_publisher.py). 다음 30분 주기가 스스로 위치를 알려 준다. [시토 2026-09-13] 09-11 수리 뒤 문구가 '측정 없음 (wellperion 작업 매칭 0건)'으로 바뀌었고 09-11 14:56~09-13 05:56 30분 주기 전 회차가 같은 값이다(결정적 실패·간헐 아님). 오늘 손으로 재면 45건 잡히고 40/45 89%. 콘솔 없는 pythonw 자식(stdout/stderr/stdin=DEVNULL·CREATE_NO_WINDOW)으로 상주 스케줄러 조건을 흉내내도 45건 정상 — 환경 차이가 아직 안 잡혔다. 발행 주체는 예약작업이 아니라 상주 스케줄러(telegram_bot/daily_scheduler.py _publish_erp_status · 30분 주기 · timeout 240 · sys.executable). 오늘 한 것 = total==0 반환에 diag(dump_len·blocks·named·matched·live_n·head)를 붙였다 — 셋 중 어디서 0이 됐는지(글자를 못 받았나·이름 필드를 못 읽었나·live 필터가 걷어냈나) 다음 30분 주기가 스스로 알려 준다. 저장·배포 b7b079d5a.\n[시토 2026-09-14 18:21 완료] 원인(확정) = schtasks 출력 라벨이 프로세스마다 한글/영문으로 갈리는데 파서의 영문 철자(Host Name:)가 실제(HostName:)와 달라 상주 스케줄러 자식(영문 갈래)에서 0건 → 라벨 정규화(공백 뗀 소문자) · 두 환경 46건 · 자가검사 tests/test_automation_health_locale.py · 재기동 불필요(매 주기 새 자식) · 다음 30분 주기 값으로 최종 확인 (0995d1711)",
     "next": "다음 30분 발행분의 automation_health.diag 를 읽고 0 이 난 자리를 짚는다.",
     "depends_on": "",
     "ship_no": 11439,
@@ -1060,7 +1060,9 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-14"
+    "updated_at": "2026-09-14",
+    "terminal": true,
+    "processed_at": "2026-09-14T18:22+09:00"
   },
   {
     "task_id": "CTO-2026-09-10-번호를-서버가-매기게-한다-구매요청-번호-자산-라벨",
@@ -1143,13 +1145,15 @@
     "short_no": 2508,
     "clevel": "cto",
     "owner": "cto",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "medium",
     "title": "[시토] 웰페리온 ERP 메인 화면 가로 넘침 — PC 191px · 폰 127px (웰리 2506 인계)",
-    "note": "대상 = 3. 웰페리온 가이드/wellperion_guide(main).html. 시모 실측 · 오늘 관리자 콘솔 개편과 무관하게 전부터 있던 것(직전 판 대조 확인). GM 이 매일 여는 화면이라 표·카드 오른쪽이 잘려 보인다.\n재는 법 = 1440·390 두 폭에서 document.documentElement.scrollWidth - clientWidth. 두 폭 다 0 이 되면 닫는다.\n09-10 밤 로컬 파일로 1차 측정: 390 폭에서 오른쪽으로 넘어간 요소가 여럿이고 ops-detail-grid 안 카드(폭 469px)와 homeReceptionCard 가 눈에 띈다 — 고정폭·min-width 계열로 보인다. 이 줄기부터 본다.\n오늘 밤은 GM 방향(서버만으로 돌아가게 셋업)에 묶여 내일 아침 첫 건으로 잡는다.\n[09-10 22:3x 웰리] 시모가 같은 파일 색 작업을 끝내 저장·배포했다(6f9dbbd8d). 내일 시작 전에 최신 판을 먼저 받고 그 위에서 고친다 — 색만 바뀌었고 넘침 수치는 그대로라는 실측 회신을 받았다(PC 191px·폰 127px).",
+    "note": "대상 = 3. 웰페리온 가이드/wellperion_guide(main).html. 시모 실측 · 오늘 관리자 콘솔 개편과 무관하게 전부터 있던 것(직전 판 대조 확인). GM 이 매일 여는 화면이라 표·카드 오른쪽이 잘려 보인다.\n재는 법 = 1440·390 두 폭에서 document.documentElement.scrollWidth - clientWidth. 두 폭 다 0 이 되면 닫는다.\n09-10 밤 로컬 파일로 1차 측정: 390 폭에서 오른쪽으로 넘어간 요소가 여럿이고 ops-detail-grid 안 카드(폭 469px)와 homeReceptionCard 가 눈에 띈다 — 고정폭·min-width 계열로 보인다. 이 줄기부터 본다.\n오늘 밤은 GM 방향(서버만으로 돌아가게 셋업)에 묶여 내일 아침 첫 건으로 잡는다.\n[09-10 22:3x 웰리] 시모가 같은 파일 색 작업을 끝내 저장·배포했다(6f9dbbd8d). 내일 시작 전에 최신 판을 먼저 받고 그 위에서 고친다 — 색만 바뀌었고 넘침 수치는 그대로라는 실측 회신을 받았다(PC 191px·폰 127px).\n[시토 2026-09-14 18:21 완료] 원인 = 매출·지출 그리드 3곳이 1fr 만 써 트랙 최소폭이 콘텐츠로 잡힘 → minmax(0,1fr)·min-width:0 6줄 · 라이브(/home) 실측 390폭 0px · 1440폭 0px (a2f1aa492e)",
     "next": "",
     "created_at": "2026-09-10T22:28:02+09:00",
-    "updated_at": "2026-09-10T22:33:51+09:00"
+    "updated_at": "2026-09-10T22:33:51+09:00",
+    "terminal": true,
+    "processed_at": "2026-09-14T18:22+09:00"
   },
   {
     "ship_no": 12510,
