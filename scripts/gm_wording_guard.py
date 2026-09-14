@@ -38,7 +38,12 @@ BANNED = {
 
 
 def last_messages(transcript_path):
-    """(마지막 assistant 글, 마지막 user 글). 못 읽으면 ('', '')."""
+    """(이번 턴 assistant 글, 이번 턴 user 글). 못 읽으면 ('', '').
+
+    Stop 훅 타이밍 버그 방어: 역순으로 읽어 user 가 assistant 보다 먼저
+    나오면 현재 응답이 아직 transcript 에 기록되지 않은 것 → ('', '') 반환.
+    직전 턴 assistant 를 잘못 읽어 오탐(false positive)이 나는 것을 막는다.
+    """
     assistant, user = "", ""
     try:
         with open(transcript_path, encoding="utf-8") as f:
@@ -63,6 +68,9 @@ def last_messages(transcript_path):
             text = "\n".join(c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text")
         if not text.strip():
             continue
+        # user 가 assistant 보다 먼저 나오면 현재 응답이 아직 미기록 상태
+        if role == "user" and not assistant:
+            return "", ""
         if role == "assistant" and not assistant:
             assistant = text
         elif role == "user" and not user:
@@ -185,6 +193,26 @@ def main():
         assert prose_offense(table + "\n- 목록은 줄글이 아니다\n" * 9) is None
         a, u = last_messages(os.devnull)
         assert (a, u) == ("", "")                                            # 못 읽어도 안 죽는다
+        # Stop 훅 타이밍 버그: user 가 먼저 있고 assistant 가 없으면 미기록 상태 → ('', '')
+        import tempfile
+        def _make_transcript(*roles_texts):
+            lines = []
+            for role, text in roles_texts:
+                lines.append(json.dumps({"message": {"role": role, "content": text}}))
+            tf = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8")
+            tf.write("\n".join(lines))
+            tf.close()
+            return tf.name
+        # 정상: user → assistant 순(역순 스캔 시 assistant 먼저 발견)
+        normal = _make_transcript(("user", "지시"), ("assistant", "8요소표"))
+        a, u = last_messages(normal)
+        assert a == "8요소표" and u == "지시", "정상 케이스 실패"
+        os.unlink(normal)
+        # 버그 케이스: assistant 가 아직 없고 user 만 있음(현재 응답 미기록)
+        late = _make_transcript(("user", "이번턴지시"))
+        a, u = last_messages(late)
+        assert (a, u) == ("", ""), "타이밍 버그 케이스 실패 — user 먼저면 빈 값이어야 한다"
+        os.unlink(late)
         full = ("| 📌 GM 요청 | 무엇 |\n|---|---|\n| 🔍 실측 | 쟀다 |\n| ✅ 반영 | 했다 |\n"
                 "| 🔎 검수 | 봤다 |\n| 📤 배포 | 올렸다 |\n| ⏱ 소요 | 3분 |\n| 💡 더 나았을 방법 | 없다 |")
         assert format_offense(full) is None                                  # 8요소 다 있으면 통과
