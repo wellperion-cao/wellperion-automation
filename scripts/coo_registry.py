@@ -126,6 +126,11 @@ def _closed_day(day: str) -> bool:
                          .read_text(encoding="utf-8"))
     except Exception:
         cfg = {}
+    # 읽는 차례(파일 _read_order) — 앞의 것이 뒤의 것을 이긴다.
+    #   ① open_override = 정기 휴관이지만 그날은 연다(2026-09-27 · GM 지시 2026-09-14)
+    #   ② extra = 임시 휴관(추석 9/24~26)  ③ rule = 정기 규칙
+    if any(str(e.get("date")) == day for e in (cfg.get("open_override") or [])):
+        return False
     if any(str(e.get("date")) == day for e in (cfg.get("extra") or [])):
         return True
     if f"{m:02d}-{dd:02d}" in set((cfg.get("rule") or {}).get("fixed") or ["01-01"]):
