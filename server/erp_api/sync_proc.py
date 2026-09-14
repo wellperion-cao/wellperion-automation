@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""지출품의(구매요청) 시트 → 서버 PostgreSQL 원장 (읽기 전용 단방향) — AWS 이관 「매출·지출 원장」 단계.
+"""지출품의(구매요청)·자산대장 시트 → 서버 PostgreSQL 원장 (읽기 전용 단방향) — AWS 이관 「매출·지출 원장」 단계.
 
 sync_reception.py 와 같은 규칙이다. 화면이 이미 부르는 읽기 액션(list, mode=all)을 그대로 부르고
 행 하나를 행 하나로 옮긴다 — 시트·GAS 는 한 줄도 쓰지 않는다.
@@ -12,6 +12,10 @@ sales_cache(sync_sales.py)와 무엇이 다른가: 저건 GAS 집계 응답을 �
 돌아오는 날이 있었다(2026-09-11 21:0x 4회 연속). 원장이 서버에 있으면 그 조회가 로컬 SQL 이 된다.
 
 ★건드리지 않는 것: 매출 시트 보고(09:00·09:30 발송 배관)와 CFO 화면(나우열M 소관). 이 파일은 배관만 놓는다.
+
+자산대장(2026-09-14 시토 · 배12615 CFO 요청서3 §3): GAS asset_list → proc_assets 표. 새 파일을 안 만든 이유 —
+api_write.py MIRROR_SYNC 가 asset_issue·asset_del·asset_update·asset_label 뒤 이미 "sync_proc.py"(이 파일)를
+예약해 둬서(3초 디바운스), main() 에 한 단계만 얹으면 그 관문을 그대로 탄다(품의 add·status 뒤 즉시 반영과 같은 값).
 
 실행: python3 /srv/erp/api/sync_proc.py   (cron 10분 · /etc/cron.d/erp-proc-sync)
       python3 sync_proc.py --once        — cron 없이 한 번
@@ -100,10 +104,60 @@ def upsert(conn, rows, now, src="all"):
     return n, deleted
 
 
+# 자산대장 — 컬럼으로 빼는 칸도 거르는 데 쓰는 것만(GAS assetRows_ 머리글 그대로 data 에 남는다).
+ASSET_COLS = (("label", "라벨"), ("item", "품명"), ("req_no", "품의번호"), ("status", "상태"))
+
+
+def gas_asset_list(timeout=60):
+    """자산대장 전체 1회(assetList — 필터 없이 부른다). 성공 시 행 목록, 실패 시 None(지어내지 않는다)."""
+    url = os.environ.get("PROC_GAS_URL", "")
+    if not url:
+        raise SystemExit("PROC_GAS_URL 없음 — /srv/erp/api.env 를 확인")
+    body = urllib.parse.urlencode({"action": "asset_list", "password": os.environ.get("SALES_GATE_PW", "")}).encode()
+    try:
+        req = urllib.request.Request(url, data=body, headers={"User-Agent": "wellperion-erp-api"})
+        d = json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8"))
+    except Exception as e:
+        print("[warn] 자산대장 조회 실패: %s: %s" % (type(e).__name__, str(e)[:160]))
+        return None
+    if not isinstance(d, dict) or not d.get("ok") or not isinstance(d.get("data"), list):
+        print("[warn] 자산대장 응답이 ok 가 아니다: %s" % str(d)[:160])
+        return None
+    return d["data"]
+
+
+def upsert_assets(conn, rows, now):
+    """행 하나 = 라벨 하나. 열쇠 = 시트 행번호(row) — upsert() 와 같은 규칙(유령 행은 이번 회차에 없으면 지운다).
+
+    GAS assetDel 이 행을 실제로 지워 아래 행 번호가 밀린다 — 그래도 매 회차 전량을 이 규칙으로 다시 담기
+    때문에 문제없다(proc_items 도 같은 전제)."""
+    n = 0
+    row_nums = []
+    with conn:
+        for r in rows:
+            try:
+                row = int(r.get("row"))
+            except (TypeError, ValueError):
+                continue
+            row_nums.append(row)
+            vals = [str(r.get(col) or "").strip() for _, col in ASSET_COLS]
+            conn.execute(
+                "INSERT INTO proc_assets (tenant_id,row,label,item,req_no,status,data,synced_at)"
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
+                " ON CONFLICT (tenant_id,row) DO UPDATE SET label=EXCLUDED.label, item=EXCLUDED.item,"
+                " req_no=EXCLUDED.req_no, status=EXCLUDED.status, data=EXCLUDED.data, synced_at=EXCLUDED.synced_at",
+                tuple([db.TENANT, row] + vals + [json.dumps(r, ensure_ascii=False), now]))
+            n += 1
+        deleted = conn.execute(
+            "DELETE FROM proc_assets WHERE tenant_id=%s AND row <> ALL(%s)",
+            (db.TENANT, row_nums)).rowcount if row_nums else 0
+    return n, deleted
+
+
 def main():
     load_env()
     conn = db.connect()
-    db.init_schema(conn)                      # 멱등 — proc_items 표가 없으면 만든다
+    db.init_schema(conn)                      # 멱등 — proc_items·proc_assets 표가 없으면 만든다
     now = _kst_now()
     done, deleted, failed = {}, {}, []
     for src in ("active", "all"):              # 두 목록은 겹치지 않는다 — 둘 다 받아야 원장이 온전해진다
@@ -119,6 +173,15 @@ def main():
             failed.append(src)
             continue
         done[src], deleted[src] = upsert(conn, rows, now, src)
+    arows = gas_asset_list()
+    if arows is None:
+        failed.append("asset")
+    elif not arows:
+        cur = conn.execute("SELECT COUNT(*) FROM proc_assets WHERE tenant_id=%s", (db.TENANT,)).fetchone()[0]
+        print("[keep] asset — 원천 0건 응답, 원장 %d행 유지(조회 이상 의심)" % cur)
+        failed.append("asset")
+    else:
+        done["asset"], deleted["asset"] = upsert_assets(conn, arows, now)
     with conn:
         if done:
             db.meta_set(conn, "proc_last_sync", now)
@@ -136,6 +199,7 @@ def selftest():
     try:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
+            conn.execute("DELETE FROM proc_assets WHERE tenant_id=%s", (db.TENANT,))
         assert _price(101700) == 101700 and _price("101,700") == 101700 and _price("") == 0 and _price("싯가") == 0
         base = {"row": 375, "번호": "128", "날짜": "2026. 9. 1", "요청자": "탕청소", "소속": "시설",
                 "물품": "락풍 3개", "상태": "정산", "가격": "101,700", "이미지": "data:image/jpeg;base64,AAA"}
@@ -158,9 +222,25 @@ def selftest():
         n = conn.execute("SELECT COUNT(*) FROM proc_items WHERE tenant_id=%s AND src='active'",
                          (db.TENANT,)).fetchone()[0]
         assert n == 1, "src 로 두 목록이 갈린다 — active 에는 375 만 남는다"
+        # 자산대장 — GAS assetRows_ 그대로 온 행(라벨·품명·품의번호·상태 + row).
+        albase = {"row": 2, "라벨": "WP26 0001", "품명": "노트북", "분류": "비품", "부서": "시설",
+                  "위치": "1층", "관리자": "이가나", "취득일": "2026-09-01", "품의번호": "PR-1",
+                  "부착": True, "부착일": "2026-09-02", "상태": "사용중"}
+        assert upsert_assets(conn, [albase, dict(albase, row=3, 라벨="WP26 0002", 부착=False)], "t0") == (2, 0)
+        r = conn.execute("SELECT * FROM proc_assets WHERE tenant_id=%s AND row=2", (db.TENANT,)).fetchone()
+        assert r["label"] == "WP26 0001" and r["req_no"] == "PR-1" and r["status"] == "사용중", dict(r)
+        assert json.loads(r["data"])["관리자"] == "이가나", "원본 칸은 통째로 남는다"
+        n, adel = upsert_assets(conn, [dict(albase, 상태="불용")], "t1")   # row 3 이 이번 회차에 없다
+        assert n == 1 and adel == 1, "row 3 이 유령 행으로 지워진다"
+        r = conn.execute("SELECT status FROM proc_assets WHERE tenant_id=%s AND row=2", (db.TENANT,)).fetchone()
+        assert r["status"] == "불용", dict(r)
+        assert conn.execute("SELECT 1 FROM proc_assets WHERE tenant_id=%s AND row=3",
+                            (db.TENANT,)).fetchone() is None, "지워진 유령 행이 남아 있다"
+        assert upsert_assets(conn, [{"품명": "row 없는 줄"}], "t1") == (0, 0), "row 없는 줄은 안 담고, 빈 배치라 지우지도 않는다"
     finally:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
+            conn.execute("DELETE FROM proc_assets WHERE tenant_id=%s", (db.TENANT,))
         conn.close()
     print("selftest ok")
     return 0
