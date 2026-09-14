@@ -228,6 +228,13 @@
   .inqrow .ich{width:62px;flex:none;font-size:9.5px;color:#7A838B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .inqrow .ipg{flex:1;min-width:0;font-size:9.5px;color:#48525B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .inq-open{color:var(--warn);}
+  /* 강습 팀별 운영 현황 — 팀 하나가 한 덩어리. 시트가 쓰는 [머리말] 구조를 그대로 보인다. */
+  .tmgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 11px;}
+  .tmbox{border-top:2px solid var(--navy);padding-top:3px;}
+  .tmbox .tn{font-size:11px;font-weight:800;color:var(--navy);margin-bottom:2px;}
+  .tmbox .tl{font-size:9.5px;font-weight:800;color:#7A838B;margin-top:3px;}
+  .tmbox .ti{font-size:10px;color:#3D464F;line-height:1.4;padding-left:8px;text-indent:-8px;}
+  .tmbox .tnone{font-size:10px;color:#9AA4AD;}
   /* 3면 운영 현황 — 소제목 + 항목. 시트가 쓰는 그 구조를 그대로 보인다. */
   .opsgrp{margin-bottom:7px;}
   .opsgrp:last-child{margin-bottom:0;}
@@ -507,9 +514,15 @@
 
   <div class="body">
     <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
+      <div class="sec">
         <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차</h2>
         <div class="bd" id="p3ops"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <!-- 강습 팀별 운영 현황 — 각 팀이 적는 이번 달 미션·기대치·리스크. 시트 판 보고에서는
+           칸 높이에 눌려 아래가 잘려 나가던 자리다(2026-09-14 A·B 비교 실측). -->
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>강습 팀별 운영 현황 — 이번 달 미션 · 기대치 · 리스크</h2>
+        <div class="bd" id="p3teams"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="col">
@@ -1316,6 +1329,30 @@ function loadP3Work(){
     });
 }
 
+/* 강습 팀별 운영 현황 — 보고탭 O열(팀 이름)·P열(내용) 쌍 여섯. 값은 1면이 이미 읽은 것을 쓴다.
+   본문은 「[이번달 미션] …」처럼 대괄호 머리말로 나뉘어 있다. 그 구조를 그대로 보이되, 머리말
+   줄은 작게, 항목 줄은 그대로 둔다. 시트에 없는 팀은 지어내지 않고 그 자리를 비운다. */
+var P3_TEAM_CELLS = [['O3', 'P3'], ['O6', 'P6'], ['O9', 'P9'], ['O12', 'P12'], ['O16', 'P16'], ['O18', 'P18']];
+
+function renderP3Teams(c){
+  var el = document.getElementById('p3teams'); if (!el) return;
+  var boxes = P3_TEAM_CELLS.map(function(pair){
+    var name = String(c[pair[0]] || '').split(/\r?\n/)[0].trim();
+    if (!name) return '';
+    var body = p3Lines(c[pair[1]]);
+    var inner = body.length ? body.map(function(ln){
+      var t = ln.trim();
+      return /^\[/.test(t)
+        ? '<div class="tl">' + esc(t.replace(/^\[|\]\s*/g, ' ').trim()) + '</div>'
+        : '<div class="ti">' + esc(t.replace(/^[-·•]\s*/, '· ')) + '</div>';
+    }).join('') : '<div class="tnone">아직 안 적혔습니다</div>';
+    return '<div class="tmbox"><div class="tn">' + esc(name) + '</div>' + inner + '</div>';
+  }).filter(Boolean);
+  el.innerHTML = boxes.length
+    ? '<div class="tmgrid">' + boxes.join('') + '</div>'
+    : '<div class="mrow"><span class="lb">팀별 운영 현황 칸이 비어 있습니다</span></div>';
+}
+
 function renderPage3(c){
   var now = new Date();
   var ops = p3Lines(c.P20);
@@ -1365,6 +1402,7 @@ function renderPage3(c){
         '<span class="wo">' + esc(w.owner) + '</span></div>';
     }).join('') + (more ? '<div class="wmore">' + esc(more) + '</div>' : '');
   });
+  renderP3Teams(c);
   loadP3Work();
   var at = new Date().toTimeString().substring(0, 5);
   var r3 = document.getElementById('readat3'); if (r3) r3.textContent = at;
@@ -1372,13 +1410,14 @@ function renderPage3(c){
   if (!ops.length) missed.push('운영 현황(P20)');
   if (!p3Lines(c.I20).length) missed.push('인사·파트너팀(I20)');
   if (!p3Lines(c.I21).length) missed.push('핵심 보고(I21)');
+  if (!P3_TEAM_CELLS.some(function(x){ return String(c[x[0]] || '').trim(); })) missed.push('강습 팀별 운영 현황(O·P열)');
   var a3 = document.getElementById('audit3'); if (!a3) return;
   if (missed.length) {
     a3.className = 'audit bad';
-    a3.innerHTML = '<b>빈 칸 ' + missed.length + '/3</b> · ' + esc(missed.join(' · ')) + ' 가 비어 있습니다';
+    a3.innerHTML = '<b>빈 칸 ' + missed.length + '/4</b> · ' + esc(missed.join(' · ')) + ' 가 비어 있습니다';
   } else {
     a3.className = 'audit ok';
-    a3.innerHTML = '<b>자체 점검 3/3 통과</b> — 운영 현황·인사/파트너팀·핵심 보고를 ' + at + ' 에 확인했습니다';
+    a3.innerHTML = '<b>자체 점검 4/4 통과</b> — 운영 현황·인사/파트너팀·핵심 보고·팀별 현황을 ' + at + ' 에 확인했습니다';
   }
 }
 
