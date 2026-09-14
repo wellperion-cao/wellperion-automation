@@ -518,7 +518,7 @@
 
   <!-- 등록 띠 — 기준일 하루치. 왼쪽 멤버십(등록이 더 많아 넓은 칸) · 오른쪽 강습.
        원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
-  <div class="body" style="flex:1;margin-top:11px;">
+  <div class="body" id="p2regband" style="flex:1;margin-top:11px;">
     <div class="col">
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2memh">오늘 등록 — 멤버십</h2>
@@ -1756,9 +1756,15 @@ function renderP2Contract(c, dayLabel){
   var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh');
   if (h1) h1.textContent = dayLabel + ' 등록 — 멤버십';
   if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (성인 · 유소년)';
-  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', readContracts(c, ['A','B','C','D','E','F','G']));
+  var memRows = readContracts(c, ['A','B','C','D','E','F','G']);
+  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows);
   if (les) {
     var rows = readContracts(c, ['H','I','J','K','L','M','N']);
+    /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
+       그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
+       (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
+    var band = document.getElementById('p2regband');
+    if (band) band.style.flex = (memRows.length + rows.length) ? '1' : '0.42';
     var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
     var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
     les.innerHTML = '<div style="display:flex;gap:14px">' +
