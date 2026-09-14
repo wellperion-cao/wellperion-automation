@@ -418,6 +418,27 @@ def _schtasks_dump():
             pass
 
 
+# ── schtasks 라벨(언어 무관) ────────────────────────────────────────────────
+# 같은 명령인데 프로세스마다 라벨 언어가 갈린다(2026-09-14 시토 실측).
+#   · 손 실행(python 자식)        → "호스트 이름:" "작업 이름:"  (한글)
+#   · 상주 스케줄러 자식 / PowerShell → "HostName:" "TaskName:"   (영문, 공백 없음)
+# 09-09 새벽부터 자동화 건강판이 0%("매칭 0건")로 찍힌 원인이 이것이다 —
+# 종전 코드의 영문 대체값 "Host Name:"/"Task Name:" 은 실제 출력에 없는 철자라
+# 영문 갈래에서 블록이 하나도 안 쪼개지고(blocks=1) 이름 필드가 0건이 됐다.
+# 값(날짜)은 두 갈래 다 'YYYY-MM-DD ...' 형식이라 그대로 쓴다.
+# 라벨을 공백 뗀 소문자로 정규화해 두 갈래를 한 번에 받는다.
+_L_HOST = ("호스트이름", "hostname")
+_L_TASK = ("작업이름", "taskname")
+_L_LAST_RESULT = ("마지막결과", "lastresult")
+_L_LAST_RUN = ("마지막실행시간", "lastruntime")
+_L_NEXT_RUN = ("다음실행시간", "nextruntime")
+
+
+def _schtasks_label(line):
+    """schtasks LIST 한 줄의 라벨 → 공백 뗀 소문자. 콜론 없으면 줄 전체가 라벨이 된다."""
+    return line.split(":", 1)[0].strip().replace(" ", "").replace("　", "").lower()
+
+
 def collect_automation_health():
     """Task Scheduler Wellperion 작업 → 자동화 건강 집계.
     결과코드 0 = 정상, 0 아님 = 실패, 한 번도 안 돎(1999년 기본값) = 미실행.
@@ -430,12 +451,11 @@ def collect_automation_health():
             return {"summary": "집계 중 (schtasks 조회 실패)", "total": 0,
                     "healthy": 0, "rate": 0, "items": []}
 
-        # 블록 분리 (각 작업은 '호스트 이름:' 행으로 시작)
+        # 블록 분리 (각 작업은 '호스트 이름:'/'HostName:' 행으로 시작)
         blocks = []
         cur = []
         for line in out.split("\n"):
-            s = line.strip()
-            if s.startswith("호스트 이름:") or s.startswith("Host Name:"):
+            if _schtasks_label(line) in _L_HOST:
                 if cur:
                     blocks.append("\n".join(cur))
                 cur = [line]
@@ -444,20 +464,19 @@ def collect_automation_health():
         if cur:
             blocks.append("\n".join(cur))
 
-        def _field(block, *keys):
-            """블록에서 첫 매칭 필드 값 추출."""
+        def _field(block, labels):
+            """블록에서 첫 매칭 필드 값 추출(라벨 대조 = 공백 뗀 소문자)."""
             for line in block.split("\n"):
-                for key in keys:
-                    if key in line:
-                        parts = line.split(":", 1)
-                        if len(parts) == 2:
-                            return parts[1].strip()
+                if _schtasks_label(line) in labels:
+                    parts = line.split(":", 1)
+                    if len(parts) == 2:
+                        return parts[1].strip()
             return ""
 
         items = []
         n_named = 0
         for block in blocks:
-            name = _field(block, "작업 이름:", "Task Name:")
+            name = _field(block, _L_TASK)
             if not name:
                 continue
             n_named += 1
@@ -465,9 +484,9 @@ def collect_automation_health():
             if "wellperion" not in name.lower():
                 continue
 
-            last_result_raw = _field(block, "마지막 결과:", "Last Result:")
-            last_run = _field(block, "마지막 실행 시간:", "Last Run Time:")
-            next_run = _field(block, "다음 실행 시간:", "Next Run Time:")
+            last_result_raw = _field(block, _L_LAST_RESULT)
+            last_run = _field(block, _L_LAST_RUN)
+            next_run = _field(block, _L_NEXT_RUN)
 
             # 분류
             if not last_result_raw:
