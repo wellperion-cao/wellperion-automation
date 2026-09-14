@@ -54,8 +54,9 @@ set "WELLPERION_ROLE=cto"
 REM -- 세션 모델은 표 한 곳에서 읽는다 (GM 지시 2026-09-09) --
 REM    ssot/model_routing.json 의 세션.현재값. 배치에 모델 이름을 박아 두면 GM 이
 REM    /model 로 바꿔도 명령줄이 덮어써서 다음 창이 옛 모델로 뜬다(2026-09-09 실측).
+REM    2026-09-15 GM 지시 — 이 역할은 항상 Fable 5.1 로 뜬다. 값은 표의 「세션.역할별」에 있다.
 set "WP_MODEL="
-for /f "usebackq delims=" %%m in (`C:\Python314\python.exe scripts\model_for.py session`) do set "WP_MODEL=%%m"
+for /f "usebackq delims=" %%m in (`C:\Python314\python.exe scripts\model_for.py session cto`) do set "WP_MODEL=%%m"
 if not defined WP_MODEL set "WP_MODEL=opus"
 
 REM -- Wait out an in-flight `claude update` before launching (CTO 2026-09-11)

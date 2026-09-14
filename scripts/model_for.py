@@ -8,7 +8,7 @@
     (약속 L01 — 한 곳만 본다).
 
 쓰는 법:
-    python scripts/model_for.py session     → 세션 모델 이름 한 줄
+    python scripts/model_for.py session [역할]  → 세션 모델 이름 한 줄(역할별 값이 있으면 그것)
     python scripts/model_for.py subagent 집계해줘   → 그 일에 맞는 등급 한 줄
 
 값을 못 읽으면 안전한 기본값을 낸다 — 부팅이 모델 이름을 못 받아 멈추면 안 된다.
@@ -31,8 +31,17 @@ def _table() -> dict:
         return {}
 
 
-def session_model() -> str:
-    v = str(((_table().get("세션") or {}).get("현재값") or "")).strip()
+def session_model(role: str = "") -> str:
+    """역할이 표의 「역할별」에 있으면 그 모델, 없으면 현재값.
+
+    GM 지시 2026-09-15: 웰리(ceo)·시토(cto)는 항상 Fable 5.1 로 뜬다. 나머지 역할은
+    종전대로 현재값(GM 이 /model 로 고르는 값 하나)을 따른다."""
+    sess = _table().get("세션") or {}
+    by_role = sess.get("역할별") or {}
+    v = str(by_role.get((role or "").lower().strip()) or "").strip()
+    if v:
+        return v
+    v = str(sess.get("현재값") or "").strip()
     return v or SESSION_FALLBACK
 
 
@@ -52,12 +61,15 @@ def main(argv: list[str]) -> int:
     if what == "subagent":
         print(subagent_tier(" ".join(argv[2:])))
     else:
-        print(session_model())
+        print(session_model(argv[2] if len(argv) > 2 else ""))
     return 0
 
 
 def _selfcheck() -> None:
     assert session_model(), "세션 모델이 비었다"
+    assert session_model("ceo") == "claude-fable-5-1", "웰리 세션은 Fable 5.1 이어야 한다(GM 2026-09-15)"
+    assert session_model("cto") == "claude-fable-5-1", "시토 세션은 Fable 5.1 이어야 한다(GM 2026-09-15)"
+    assert session_model("cmo") == session_model(), "역할별 값이 없는 역할은 현재값을 따라야 한다"
     assert subagent_tier("로그를 조회해줘") == "haiku"
     assert subagent_tier("이 파일을 수정해줘") == "sonnet"
     assert subagent_tier("장애 원인을 진단해줘") == "opus"
