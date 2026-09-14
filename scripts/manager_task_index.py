@@ -225,27 +225,19 @@ def ledger_reply_cell_all(seen: dict, owners: list) -> tuple[str, bool]:
 
 
 def reception_dept_cell(dept: str) -> tuple[str, bool]:
-    """종합접수처 부서별 열린·7일↑·전사 미배정 — 1영업일 첫처리는 첫처리 시각 필드가
-    없어 잴 수 없다(지어내지 않는다)."""
-    try:
-        from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days, reception_rows
-        resp = gas_get(RECEPTION_EXEC_URL, params={"action": "reg_list"}, timeout=20,
-                       label="manager_task_index 접수")
-        if resp is None:
-            return f"{_NO_MEASURE}(접수처 조회 실패)", False
-        data = resp.json()
-        if not data.get("ok"):
-            return f"{_NO_MEASURE}(접수처 조회 실패)", False
-        rows = reception_rows(data.get("data", []))
-    except Exception:
+    """종합접수처 부서별 열린·7일↑·담당 미배정 — 건별 목록①과 같은 필터(분실물 제외)로 센다
+    (GM 지적 2026-09-14 — 목록은 5건인데 칸은 27건으로 분실물이 섞여 있었다).
+    1영업일 첫처리는 첫처리 시각 필드가 없어 잴 수 없다(지어내지 않는다·기준 칸에만 남긴다)."""
+    from collectors.ops_shared import reception_elapsed_days
+    rest, lost = reception_dept_detail(dept)
+    if rest is None:
         return f"{_NO_MEASURE}(접수처 조회 실패)", False
-    mine = [r for r in rows if str(r.get("dept") or "") == dept]
-    opens = [r for r in mine if str(r.get("status") or "") != "완료"]
     now = datetime.now()
-    stale = sum(1 for r in opens if reception_elapsed_days(r, now) >= 7)
-    unassigned = sum(1 for r in rows if not str(r.get("dept") or "").strip())
-    text = (f"열린 {len(opens)}건 · 7일↑ {stale}건 · 전사 미배정 {unassigned}건 · "
-            f"1영업일 첫처리={_NO_MEASURE}")
+    stale = sum(1 for r in rest if reception_elapsed_days(r, now) >= 7)
+    unassigned = sum(1 for r in rest if _reception_handler(r) == "미배정")
+    text = f"열린 {len(rest)}건 · 7일↑ {stale}건 · 담당 미배정 {unassigned}건({dept})"
+    if lost:
+        text += f" · 분실물 보관 {len(lost)}건 별도"
     return text, stale > 0
 
 
@@ -300,22 +292,36 @@ def ssot_pending_cell(rows: "list | None") -> tuple[str, bool]:
 
 
 def ssot_week_cell(rows: "list | None") -> tuple[str, bool]:
-    """업무·결재 SSOT(운영부 전원) — 이번 주(월~일) 완료 건수(기준 15) · 결재대기."""
+    """업무·결재 SSOT(운영부 전원) — 진행중·보류(건별 목록②와 같은 수) · 지난주/이번 주 완료(기준 15) ·
+    기한 지난 · 결재대기. 「대상행」(완료 행까지 센 수라 뜻 없음) 대신 목록②와 같은 원천으로 센다
+    (GM 지적 2026-09-14 — 월요일 아침에 「이번 주 0」만 보이면 오해)."""
     if rows is None:
         return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
     today = date.today()
     monday = today - timedelta(days=today.weekday())
     sunday = monday + timedelta(days=6)
+    last_monday = monday - timedelta(days=7)
+    last_sunday = monday - timedelta(days=1)
     mine = [r for r in rows if str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
-    done_week = 0
-    for r in mine:
-        if str(r.get("상태") or "") in SSOT_DONE:
-            cd = _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
-            if cd and monday <= cd <= sunday:
-                done_week += 1
+
+    def done_between(start: date, end: date) -> int:
+        n = 0
+        for r in mine:
+            if str(r.get("상태") or "") in SSOT_DONE:
+                cd = _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
+                if cd and start <= cd <= end:
+                    n += 1
+        return n
+
+    done_last = done_between(last_monday, last_sunday)
+    done_week = done_between(monday, sunday)
+    open_rows = ssot_ops_detail_rows(rows) or []
+    overdue = sum(1 for r in open_rows if (d := _parse_ymd(r.get("종료일"))) and d < today)
     pend = sum(1 for r in mine if str(r.get("결재요청") or "").strip() and str(r.get("결재상태") or "") != "결재완료")
-    text = f"이번 주 완료 {done_week}건(기준 15) · 결재대기 {pend}건 · 대상행 {len(mine)}건"
-    return text, done_week < 15
+    md = lambda d: f"{d.month}/{d.day}"
+    text = (f"진행중·보류 {len(open_rows)}건 · 지난주({md(last_monday)}~{md(last_sunday)}) 완료 {done_last}/15 · "
+            f"이번 주 완료 {done_week}/15 · 기한 지난 {overdue}건 · 결재대기 {pend}건")
+    return text, done_week < 15 or overdue > 0
 
 
 def find_ssot_row(rows: "list | None", title_contains: str, owner: str = "") -> dict | None:
@@ -410,7 +416,7 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
              lambda: reception_dept_cell("운영부")),
             ("점검 현황(운영부)", "요금 변경 준비·사우나 정비 체크리스트 진행률"
                              "(월간운영계획 체크 중 담당 이경연/운영부)",
-             lambda: objective_progress_cell(_obj_filter(objs, "이경연 실장"))),
+             lambda: objective_progress_cell(_ops_dept_cards(objs))),
             ("업무·결재 SSOT(운영부 전원)", "주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산",
              lambda: ssot_week_cell(ssot_rows)),
             ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
@@ -449,10 +455,10 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
         tbl = resp_table(person, rows_def[person], ev)
         if person == "이경연 실장":
             extra = chief_detail_blocks(ssot_rows, objs)
-        elif person == "김남욱 GM":
-            extra = f'        {GM_DOC_SHELF}\n'
         else:
             extra = ""
+        # 📄 보고 문서 선반은 이 화면에 두지 않는다 (GM 지시 2026-09-14 「보고문서 관련해서는
+        # GM업무로 이관해, 중복이네」). 같은 목록이 GM업무 화면에 이미 있다 — 한 곳만 둔다(약속 L01).
         blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
                        f'{tbl}\n{extra}      </div>')
     return f'''  <section class="resp">
@@ -472,8 +478,9 @@ def _reception_handler(r: dict) -> str:
     return h or "미배정"
 
 
-def reception_ops_detail() -> "tuple[list, list] | tuple[None, None]":
-    """운영부 열린 건(분실물 제외) + 분실물 목록. 조회 실패면 (None, None)."""
+def reception_dept_detail(dept: str = "운영부") -> "tuple[list, list] | tuple[None, None]":
+    """부서 열린 건(분실물 제외) + 분실물 목록 — 진척 칸(reception_dept_cell)과 건별 목록①이
+    같은 함수를 쓴다(원천 이중화 금지). 조회 실패면 (None, None)."""
     try:
         from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_rows
         resp = gas_get(RECEPTION_EXEC_URL, params={"action": "reg_list"}, timeout=20,
@@ -486,7 +493,7 @@ def reception_ops_detail() -> "tuple[list, list] | tuple[None, None]":
         rows = reception_rows(data.get("data", []))
     except Exception:
         return None, None
-    mine = [r for r in rows if str(r.get("dept") or "") == "운영부" and str(r.get("status") or "") != "완료"]
+    mine = [r for r in rows if str(r.get("dept") or "") == dept and str(r.get("status") or "") != "완료"]
     lost = [r for r in mine if "분실물" in str(r.get("category") or "")]
     rest = [r for r in mine if "분실물" not in str(r.get("category") or "")]
     return rest, lost
@@ -494,7 +501,7 @@ def reception_ops_detail() -> "tuple[list, list] | tuple[None, None]":
 
 def reception_detail_html() -> str:
     from collectors.ops_shared import reception_elapsed_days
-    rest, lost = reception_ops_detail()
+    rest, lost = reception_dept_detail("운영부")
     if rest is None:
         return ('<details open class="grp"><summary>① 종합접수처(운영부) '
                  f'<span class="gc">{_NO_MEASURE}</span></summary>'
@@ -604,39 +611,6 @@ def objective_docs_html(o: dict) -> str:
     return f'<div class="dcs">{" ".join(out)}</div>' if out else ""
 
 
-# 📄 보고 문서 선반 — GM업무 화면이 쓰는 그 원천(erp/modules.json 문서함 · /chairman/)을 읽어
-#   같은 모양으로 그린다. 목록을 여기 적지 않는다(약속 L01).
-#   회장님 오찬·평가 A3 는 실장·소장이 볼 것이 아니라 /auth/me 의 role 이 admin 일 때만 편다 —
-#   이건 보기 편하라고 감추는 것이고, 실제 차단은 관문이 카드 권한으로 한다.
-GM_DOC_SHELF = """<details class="grp" id="gm-docs" hidden><summary>📄 보고 문서 <span class="gc" id="gm-docs-cnt">—</span></summary>
-        <table><tr><th style="width:340px">문서</th><th>설명</th></tr><tbody id="gm-docs-body"></tbody></table>
-        <div class="sub-note">여는 곳: GM업무 화면 📄 보고 문서 — 같은 목록입니다</div></details>
-        <script>
-        (function(){
-          var wrap = document.getElementById('gm-docs'), body = document.getElementById('gm-docs-body'),
-              cnt = document.getElementById('gm-docs-cnt');
-          fetch('/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; })
-          .then(function(me){
-            if (!me || me.role !== 'admin') return;          // 실장·소장 화면엔 안 보인다
-            return fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); })
-              .then(function(d){
-                var rows = (d.modules || []).filter(function(m){
-                  return m.appgroup === '문서함' && /\\/chairman\\//.test(m.path || ''); });
-                if (!rows.length) return;
-                rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });
-                cnt.textContent = rows.length + '장';
-                body.innerHTML = rows.map(function(m){
-                  var f = String(m.path || '').split('/').pop();
-                  return '<tr><td><a href="' + f + '" target="_blank" rel="noopener">' +
-                         (m.name || f) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
-                }).join('');
-                wrap.hidden = false; wrap.open = true;
-              });
-          }).catch(function(){});      // 로컬 파일로 열면 /auth/me 가 없다 — 조용히 접어 둔다
-        })();
-        </script>"""
-
-
 def ssot_detail_html(ssot_rows: "list | None") -> str:
     mine = ssot_ops_detail_rows(ssot_rows)
     if mine is None:
@@ -674,11 +648,17 @@ def parse_unchecked(note: str) -> list[str]:
     return [ln.strip() for ln in str(note or "").split("\n") if ln.strip().startswith("□")]
 
 
+def _ops_dept_cards(objs: list) -> list:
+    """담당 이경연 실장 또는 dept 에 '운영부'가 든 카드 — 점검 현황 진척 칸과 건별 목록③이
+    같은 필터를 쓴다(GM 지적 2026-09-14 — 칸은 카드 1건, 목록은 5건으로 어긋났었다)."""
+    return [o for o in objs
+            if str(o.get("owner") or "").strip() == "이경연 실장" or "운영부" in str(o.get("dept") or "")]
+
+
 def check_ops_detail_rows(objs: list) -> list[tuple[dict, str]]:
-    """(카드, 체크줄) — 담당 이경연 실장 또는 dept 에 '운영부'가 든 카드의 미완 체크 전부.
+    """(카드, 체크줄) — _ops_dept_cards 카드의 미완 체크 전부.
     카드 dict 를 그대로 돌려준다 — 카드 id(GM업무 딥링크)와 docs(자료 링크)가 필요하다."""
-    cards = [o for o in objs
-             if str(o.get("owner") or "").strip() == "이경연 실장" or "운영부" in str(o.get("dept") or "")]
+    cards = _ops_dept_cards(objs)
     out = []
     for o in cards:
         for ln in parse_unchecked(o.get("progress_note")):
