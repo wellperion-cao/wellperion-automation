@@ -211,6 +211,43 @@ def _strip_paren(s: str) -> str:
     return re.sub(r"\([^)]*\)", "", s).strip()
 
 
+# ── 원천 종류 판정(INC-021 3회째) — 설정·씨앗 파일은 결과 증거가 아니다 ──────
+# 문제: 방 목록(rooms.json)·GAS 로컬 씨앗(schedule_ssot.json) 같은 "설정" 파일은
+# 사람이 손으로 고치거나 애초에 거의 안 바뀌는데, 그 mtime을 "모듈이 방금
+# 돌았다"는 증거로 쓰면 모듈이 죽어도 파일이 그대로라 계속 "정상"으로 오판정한다
+# (2026-09-14 실측: cbo-partner-morning-agent·coo-schedule-ssot). 결과 증거로
+# 인정하는 것 = 로그(logs/*.log)·worklog.jsonl 이벤트·생성기가 쓰는 산출물
+# (status/*.json 중 CONFIG_OR_SEED_BASENAMES 제외) 뿐이다. 파일을 열지 않는
+# 순수 함수 — 이름·경로 패턴만 본다(등록부 ref 문자열 자체를 판정 대상으로 씀).
+CONFIG_OR_SEED_BASENAMES = {
+    "rooms.json",          # status/kakao_agent/rooms.json — 방 목록(설정)
+    "schedule_ssot.json",  # 전사일정 GAS 원천의 로컬 씨앗(사람 손편집·GAS가 원본)
+}
+_CONFIG_OR_SEED_PATH_HINTS = ("_registry.json", "/tenants/")
+
+
+def is_evidence_source(ref_str: str) -> bool:
+    """등록부 ref 세그먼트(경로 문자열) → 결과 증거로 쓸 수 있나.
+    설정·씨앗 파일이면 False(mtime을 증거로 쓰지 않는다)."""
+    norm = ref_str.replace("\\", "/")
+    if os.path.basename(norm) in CONFIG_OR_SEED_BASENAMES:
+        return False
+    return not any(hint in norm for hint in _CONFIG_OR_SEED_PATH_HINTS)
+
+
+def _self_check_is_evidence_source():
+    """배12579 자기검사 — 정상 사례(로그·worklog·일반 산출물) vs 설정·씨앗 파일."""
+    assert is_evidence_source("logs/diet_camp_agent.log") is True
+    assert is_evidence_source("logs/partner_evening_wrap.log") is True
+    assert is_evidence_source("status/heartbeats/morning-schedule-ping.json") is True
+    assert is_evidence_source("status/kakao_agent/rooms.json") is False
+    assert is_evidence_source("status/schedule_ssot.json") is False
+    assert is_evidence_source("status/module_registry.json") is False  # *_registry.json
+
+
+_self_check_is_evidence_source()
+
+
 def _worklog_signal(area: str, root: Path):
     """status/worklog.jsonl 에서 그 area 의 마지막 성공(result=ok) 시각.
 
@@ -361,9 +398,15 @@ def resolve_last_activity(module: dict, root: Path = PROJECT_ROOT, now=None):
     best_dt = None
     best_method = None
     tried = []
+    config_only = []
     for seg in segments:
+        clean = _strip_paren(seg).strip()
+        # worklog:/tgsend: 는 경로가 아니라 신호 지시자 — 판정 대상에서 제외
+        if clean and not clean.startswith(("worklog:", "tgsend:")) and not is_evidence_source(clean):
+            config_only.append(clean)
+            continue
         result = _resolve_segment(seg, root)
-        tried.append(_strip_paren(seg).strip())
+        tried.append(clean)
         if result is None:
             continue
         dt, method = result
@@ -373,6 +416,8 @@ def resolve_last_activity(module: dict, root: Path = PROJECT_ROOT, now=None):
             best_dt, best_method = dt, method
 
     if best_dt is None:
+        if config_only and not tried:
+            return None, "unresolvable", f"원천이 설정 파일 — 등록부 ref 고칠 것({config_only})"
         return None, "unresolvable", f"로컬 아티팩트 없음(시도: {tried})"
     return best_dt, best_method, ""
 
