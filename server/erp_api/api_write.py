@@ -16,6 +16,8 @@ GAS 에 못 닿거나 응답이 JSON 이 아니면 {ok:false, error:'server-forw
 거울 즉시 반영: 회원·문의 쓰기가 ok 면 sync_members / sync_inquiries 전체 동기화를 뒤에서 1회 돌린다(5분 지연 소멸).
 nginx 가 앞에서 auth_request 로 로그인 쿠키를 검사하고 X-Erp-User 를 넘긴다(api.nginx.conf).
 """
+import base64
+import hashlib
 import json
 import os
 import subprocess
@@ -36,6 +38,8 @@ from api_intake import redact_blobs  # noqa: E402  — 사진·서명 base64 는
 from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key  # noqa: E402
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
 import mirror_patch  # noqa: E402  — server 모드 업무·결재 쓰기를 거울(todo_items)에 그 자리에서 반영
+import api_reception as _rc  # noqa: E402  — 첨부 저장 자리·총량 상한은 접수 사진(배 984)과 같은 곳을 그대로 쓴다
+import approval_pin  # noqa: E402  — 결재 PIN 서버 검증(todo_sign·todo_opinion·todo_opinion_delete)
 from write_perm import WRITE_MODULES, write_allowed  # noqa: E402  — 쓰기 권한 표(배1112 · api_reception_ops 와 공유)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -169,13 +173,19 @@ BODY_NEVER_ARRIVED = "action 필수"
 #   영역을 끊을 준비가 됐어도 이 몇 개는 남겨 둬야 한다. 여기 있으면 dual 로 돌아 종전과 똑같이 동작한다.
 NO_SERVER_ACTIONS = {
     "unlock_round": "제출잠금 해제 비밀번호를 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다",
-    "todo_upload": "첨부 주소가 구글 드라이브 업로드 결과다 — 서버는 그 주소를 만들 수 없고, 없으면 첨부가 통째로 사라진다",
-    # ↓ 아래 넷은 배 12504(2026-09-10 밤) 에서 거울 반영을 만들며 드러난 자리다.
-    "todo_sign": "결재 비밀번호(PIN)를 GAS 가 검증한다 — 서버가 즉시 ok 를 주면 틀린 비번으로 누른 결재가 1분 동안 승인된 것처럼 보인다(unlock_round 와 같은 성질)",
-    "todo_opinion": "결재의견도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
-    "todo_opinion_delete": "결재의견 삭제도 같은 PIN 관문 뒤에 있다 — 위와 같은 이유",
-    "approval_rep_sign_upload": "대표싸인 칸에 들어갈 값이 구글 드라이브 업로드 결과 주소다 — 서버는 그 주소를 만들 수 없다(todo_upload 와 같은 이유)",
 }
+# ★2026-09-14 시토 — 종전 여기 있던 여섯 중 다섯이 나갔다. 나간 이유와 각자의 새 관문:
+#   · todo_sign · todo_opinion · todo_opinion_delete → approval_pin.py 가 서버에서 PIN 을 대조한다.
+#       그 이름의 PIN 행이 서버에 없으면 approval_pin.check 가 DEFER 를 주고 아래에서 server_mode 를 끈다
+#       = 종전과 같이 GAS 가 판정한다. 즉 PIN 을 넣기 전까지 동작이 한 톨도 안 바뀐다.
+#   · todo_upload · approval_rep_sign_upload → 서버가 파일을 갖고 주소를 만든다(_save_todo_upload).
+#       켜는 조건은 api.env 의 ERP_TODO_UPLOAD=1 — nginx 가 /uploads/todo/ 를 로그인 뒤에서 내주도록
+#       배포된 뒤에만 켠다. 안 켜져 있으면 todo_upload_on() 이 False 라 종전대로 드라이브로 간다.
+#   · unlock_round 만 남았다 — 이건 PIN 문제가 아니라 원장 문제다. 제출잠금 원장(led.sub/subAt)이 GAS
+#       스크립트 속성에 있고 점검 화면 2장(지원부·주차관리부 체계)이 그 원장을 GAS 에서 읽는다
+#       (두 화면 모두 ERP_API_ON=false). 서버가 잠금을 풀어도 화면은 GAS 속성을 계속 보므로 「눌렀는데
+#       아무 일도 안 일어난다」가 된다. 잠금 원장을 옮기려면 점검 원장의 읽기부터 서버로 와야 한다 —
+#       그건 점검 영역의 배지 이 배가 아니다. 그래서 PIN 만 서버로 옮기지 않고 통째로 GAS 에 둔다.
 
 # ★서버 원본으로 가려면 **다른 액션도 함께** 서버여야 하는 자리 (배 1195 ④ · 2026-09-12 시토).
 #   todo_add: 번호는 이제 서버가 매긴다(_next_todo_id) — 위 NO_SERVER_ACTIONS 에서 뺀 이유다. 그런데 화면은
@@ -186,6 +196,99 @@ NO_SERVER_ACTIONS = {
 #   이 줄도 같이 없어진다(그때 mirror_patch 에 todo_add 행 추가 반영도 함께 만든다). 주석이 아니라 코드로
 #   묶어 둔다 — 스위치를 켜는 사람이 이 주석을 읽을 거라 기대하지 않는다.
 SERVER_NEEDS = {"todo_add": ("todo_upload",)}
+
+# 첨부를 서버가 맡는 두 동작 — 켜지기 전에는 여전히 GAS 로 간다.
+UPLOAD_ACTIONS = ("todo_upload", "approval_rep_sign_upload")
+
+
+def todo_upload_on():
+    """첨부 서버 저장 스위치 — api.env 의 ERP_TODO_UPLOAD=1 일 때만 켜진다.
+    nginx 가 /uploads/todo/ 를 로그인 뒤에서 내주도록 배포되기 전에 켜면 첨부는 저장되지만 아무도 못 연다.
+    그래서 코드가 아니라 배포하는 사람이 켠다(reception-public.nginx.conf 의 /uploads/todo/ 블록)."""
+    return os.environ.get("ERP_TODO_UPLOAD", "").strip() == "1"
+
+
+def goes_to_gas(action):
+    """이 동작은 스위치가 server 여도 아직 GAS 가 해야 하나 — 판정을 한 자리에 모은다.
+    SERVER_NEEDS 의 '짝이 아직 GAS 인가' 판정도 같은 함수를 쓴다(두 곳이 어긋나지 않게)."""
+    return action in NO_SERVER_ACTIONS or (action in UPLOAD_ACTIONS and not todo_upload_on())
+
+
+# 첨부 확장자는 mimeType 표에서만 나온다 — fileName 을 믿으면 .html/.svg 가 ERP 오리진에 저장돼 저장 XSS
+# 통로가 된다(접수 사진 검수 C3 와 같은 자리). 표에 없는 형식은 .bin 으로 받는다 — 브라우저가 실행하지 않고
+# 내려받으므로 안전하고, 첨부가 통째로 사라지는 것보다 낫다(드라이브는 아무 형식이나 받아 줬다).
+UPLOAD_EXT = {
+    "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+    "application/pdf": ".pdf",
+    "application/haansofthwp": ".hwp", "application/x-hwp": ".hwp", "application/hwp+zip": ".hwpx",
+    "application/msword": ".doc", "application/vnd.ms-excel": ".xls", "application/vnd.ms-powerpoint": ".ppt",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "text/plain": ".txt", "text/csv": ".csv", "application/zip": ".zip",
+}
+UPLOAD_SUBDIR = "todo"
+
+
+def save_todo_file(b64, mime):
+    r"""첨부 base64 → 서버 디스크. 돌려주는 값은 화면이 그대로 쓰는 주소, 실패하면 ''.
+
+    ⚠️ 파일 이름 길이를 함부로 늘리지 마라. 업무 현황 SSOT 의 driveImgUrl() 이 주소에서 [-\w]{25,} 를 찾아
+       구글 이미지 주소로 바꿔치기한다 — 한 토막이라도 25자를 넘으면 서버 주소가 엉뚱한 구글 주소로 둔갑한다.
+       sha256 앞 24자는 그 아래라 그대로 지나간다(자체점검이 이 조건을 지킨다)."""
+    if not b64:
+        return ""
+    ext = UPLOAD_EXT.get(str(mime or "").split(";")[0].strip().lower(), ".bin")
+    try:
+        raw = base64.b64decode(str(b64).split(",", 1)[1] if str(b64).startswith("data:") else b64, validate=False)
+    except Exception:
+        return ""
+    if not raw:
+        return ""
+    if _rc._upload_dir_usage() + len(raw) > _rc.UPLOAD_QUOTA_BYTES:   # 접수 사진과 같은 총량 상한을 함께 쓴다
+        return ""
+    name = hashlib.sha256(raw).hexdigest()[:24] + ext
+    month = time.strftime("%Y%m", time.gmtime(time.time() + 9 * 3600))
+    d = os.path.join(_rc.UPLOAD_DIR, UPLOAD_SUBDIR, month)
+    try:
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, name), "wb") as f:
+            f.write(raw)
+    except OSError:
+        return ""
+    return "%s/%s/%s/%s" % (_rc.UPLOAD_URL_BASE, UPLOAD_SUBDIR, month, name)
+
+
+def upload_as_update(conn, action, payload):
+    """첨부 2동작을 「파일은 서버가 갖고 시트에는 주소만 적는」 todo_update 로 갈아끼운다.
+
+    왜 갈아끼우나: GAS todo_upload 는 본문의 base64 를 드라이브에 올린 뒤 그 주소를 칸에 적는다. 그대로
+    되밀면 같은 파일이 드라이브에 한 벌 더 생기고 시트에는 서버 주소가 아니라 드라이브 주소가 남는다.
+    todo_update 는 어떤 칸이든 값을 그대로 적어 주므로(GAS 2848줄) 새 GAS 코드 없이 주소만 넣을 수 있다.
+    덤으로 되밀 본문에서 base64 가 빠져 원장(raw_body)에 파일이 통째로 눕지 않는다.
+
+    돌려주는 값 (새 payload, 주소) · 못 하면 (None, '') → 부른 쪽이 종전대로 GAS 에 맡긴다."""
+    item_id = str(payload.get("id") or "").strip()
+    if not item_id:
+        return None, ""          # id 없는 업로드(에디터 그림 넣기)는 적을 칸이 없다 — GAS 가 주소만 만들어 준다
+    record = approval_pin.mirror_record(conn, item_id)
+    if action == "approval_rep_sign_upload":
+        # GAS 와 같은 관문(3143줄 부근) — GM 결재완료 건만 대표 서명본을 받는다. 거울에 행이 없거나
+        # 결재완료가 아니면 서버가 지어내지 않고 GAS 에 맡긴다(GAS 가 같은 문구로 거절한다).
+        if not record or str(record.get("결재상태") or "").strip() != "결재완료":
+            return None, ""
+        col = "대표싸인"
+    else:
+        col = "파일URL"
+    url = save_todo_file(payload.get("file") or payload.get("base64"), payload.get("mimeType"))
+    if not url:
+        return None, ""          # 저장 실패·총량 초과 — 조용히 잃지 않고 종전 경로로 보낸다
+    value = url
+    if col == "파일URL":
+        # GAS 와 같이 줄바꿈으로 덧붙인다. 거울에 행이 없으면(방금 만든 업무) 이 파일이 첫 첨부다.
+        prev = str((record or {}).get("파일URL") or "").strip()
+        value = (prev + "\n" + url) if prev else url
+    return {"action": "todo_update", "id": item_id, col: value, "idem": payload.get("idem")}, url
 
 
 def server_ok(log_id, **extra):
@@ -525,12 +628,31 @@ def _write_sync(headers, body):
     is_test = db.is_test_payload(payload)
     area = origin_switch.WRITE_AREA.get(dest)
     server_mode = (bool(area) and origin_switch.mode(area) == "server" and not is_test
-                   and action not in NO_SERVER_ACTIONS
+                   and not goes_to_gas(action)
                    # 짝이 아직 GAS 에 남아 있으면 이 액션도 못 간다(SERVER_NEEDS 주석 참고)
-                   and not any(d in NO_SERVER_ACTIONS for d in SERVER_NEEDS.get(action, ())))
+                   and not any(goes_to_gas(d) for d in SERVER_NEEDS.get(action, ())))
     proc_no = None
     asset_labels = None
     sched_rev = None
+    upload_url = None
+    mirror_action = action     # 거울에 반영할 때 쓰는 이름 — 첨부는 아래에서 todo_update 로 갈린다
+    if server_mode and action in approval_pin.ACTIONS:
+        # 결재 PIN — 서버가 대조한다. 이 자리는 원장에 한 줄도 적기 전이다(틀린 비번은 아무것도 안 남긴다).
+        verdict = approval_pin.check(conn, action, payload)
+        if verdict is approval_pin.DEFER:
+            server_mode = False      # 서버가 그 비번을 모른다 — 종전대로 GAS 가 판정하고 시트에 쓴다
+        elif verdict is not None:
+            conn.close()
+            return verdict           # 비번 불일치 — GAS 와 같은 문구, 같은 자리에서 끝낸다
+    if server_mode and action in UPLOAD_ACTIONS:
+        # 첨부 — 파일은 서버가 갖고, 시트에는 그 주소만 적는 todo_update 로 갈아끼운다.
+        new_payload, upload_url = upload_as_update(conn, action, payload)
+        if new_payload is None:
+            server_mode = False      # 저장 못 했거나 서버가 판정할 수 없는 건 — 종전대로 드라이브로 간다
+            upload_url = None
+        else:
+            payload, mirror_action = new_payload, "todo_update"
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     if server_mode and dest == "PROC_GAS_URL" and action == "add":
         # 구매요청 번호 서버 채번(배 1195 ①) — GAS addItem() 규칙(열25 최댓값+1)을 서버가 잇는다.
         # payload·raw_body 에 no 를 실어 두면 되밀기(pushback.py)가 그대로 GAS 로 넘기고, GAS 는 그 번호를
@@ -589,7 +711,7 @@ def _write_sync(headers, body):
         # 여기서 그 자리에서 고친다 — 시트는 안 건드린다. 이 반영이 틀려도 곧 sync_todo.py 가 GAS 판으로
         # 전량을 덮어써 스스로 낫는다. 그래서 실패해도 저장을 막지 않는다(conn.close() 전에 해야 한다).
         try:
-            mirror_patch.apply(conn, action, payload)
+            mirror_patch.apply(conn, mirror_action, payload)
             if sched_rev is not None:
                 _schedule_mirror(conn, payload.get("data"), sched_rev)
         except Exception:
@@ -599,6 +721,11 @@ def _write_sync(headers, body):
         # 부른 쪽이 준 업무 id 를 그대로 메아리친다(위 150줄 주석의 예외) — 화면이 이 id 로 첨부를 올린다.
         if action in _TODO_WRITES and str(payload.get("id") or "").strip():
             extra["id"] = payload["id"]
+        if upload_url is not None:
+            # 화면이 읽는 칸 이름 그대로 — 업무 첨부는 res.url, 대표 서명본은 res.url·res.repSign(GAS 응답과 같다).
+            extra["url"] = upload_url
+            if action == "approval_rep_sign_upload":
+                extra["repSign"] = upload_url
         if proc_no is not None:
             extra["no"] = proc_no
         if asset_labels is not None:
@@ -720,12 +847,50 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     _C.row = {"id": 7, "gas_response": '{"ok":true,"id":42}'}                       # 드라이버가 문자열로 줄 때도
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"}) == {"ok": True, "id": 42}
     _C.row = {"id": 7, "gas_response": None}
-    for _a in ("unlock_round", "todo_upload"):
-        assert _a in NO_SERVER_ACTIONS, "%s 를 서버 원본으로 보내면 사람에게 거짓말이 된다" % _a
+
+    import re
+    import shutil
+    import tempfile
+
+    class _MirrorConn:
+        """거울(todo_items) 한 표만 흉내내는 가짜 conn — approval_pin.mirror_record 가 읽는 그 한 문장만 받는다."""
+
+        def __init__(self, tables):
+            self.tables = tables
+            self._row = None
+
+        def execute(self, q, p=None):
+            assert "todo_items" in q, q
+            row = self.tables["todo_items"].get(p[1])
+            self._row = {"data": json.dumps(row, ensure_ascii=False)} if row else None
+            return self
+
+        def fetchone(self):
+            return self._row
+
+    assert "unlock_round" in NO_SERVER_ACTIONS, "잠금 원장이 GAS 속성에 있는 한 서버가 풀면 화면은 계속 잠긴 채다"
     for _a in tuple(NO_SERVER_ACTIONS) + tuple(SERVER_NEEDS) + ("save_schedule", "todo_add"):
         assert _gas_key(_a) is not None, "%s 는 목적지 표에 있어야 dual 로 돌아간다" % _a
-    # 짝 규칙(SERVER_NEEDS) — 짝이 NO_SERVER_ACTIONS 를 떠나면 이 줄도 함께 지워야 한다는 것을 코드로 묶는다.
-    assert SERVER_NEEDS["todo_add"] == ("todo_upload",) and "todo_upload" in NO_SERVER_ACTIONS
+    # 짝 규칙(SERVER_NEEDS) — 첨부가 아직 GAS 면 todo_add 도 서버로 못 간다(첨부가 말없이 사라진다).
+    #   종전엔 NO_SERVER_ACTIONS 로만 판정했는데 이제 첨부는 스위치(ERP_TODO_UPLOAD)로 갈리므로 같은 함수로 본다.
+    assert SERVER_NEEDS["todo_add"] == ("todo_upload",)
+    _saved_env = os.environ.get("ERP_TODO_UPLOAD")
+    try:
+        os.environ["ERP_TODO_UPLOAD"] = ""      # 첨부가 아직 드라이브면 todo_add 도 막힌다
+        assert goes_to_gas("todo_upload") and goes_to_gas("approval_rep_sign_upload")
+        assert any(goes_to_gas(d) for d in SERVER_NEEDS["todo_add"])
+        os.environ["ERP_TODO_UPLOAD"] = "1"     # 켜면 둘 다 서버로 가고 todo_add 의 짝도 풀린다
+        assert not goes_to_gas("todo_upload") and not goes_to_gas("approval_rep_sign_upload")
+        assert not any(goes_to_gas(d) for d in SERVER_NEEDS["todo_add"])
+        assert goes_to_gas("unlock_round"), "unlock_round 는 어떤 스위치로도 안 풀린다(잠금 원장이 GAS 에 있다)"
+        # PIN 3동작은 스위치가 아니라 서버에 그 PIN 행이 있느냐로 갈린다 — 여기서는 늘 통과다.
+        for _a in approval_pin.ACTIONS:
+            assert not goes_to_gas(_a), _a
+    finally:
+        if _saved_env is None:
+            os.environ.pop("ERP_TODO_UPLOAD", None)
+        else:
+            os.environ["ERP_TODO_UPLOAD"] = _saved_env
     assert "id" not in server_ok(9, mode="server"), "서버 응답에 id 를 담으면 화면이 접수번호로 오해한다"
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     # 부른 쪽이 준 업무 id 메아리(2026-09-10) — 서버가 만든 값이 아니라 화면이 준 값이다.
@@ -733,7 +898,37 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     # 거울 즉시 반영(mirror_patch) — server 모드로 갈 수 있는 업무 쓰기는 전부 반영되거나, 못 하는 이유가 적혀 있어야 한다.
     for _a in _TODO_WRITES:
         assert (_a in mirror_patch.HANDLERS or _a in NO_SERVER_ACTIONS or _a in mirror_patch.NO_MIRROR
-                or _a in SERVER_NEEDS), _a   # todo_add 는 SERVER_NEEDS 로 막혀 있다 — 풀리는 날 거울 반영도 같이 만든다
+                or _a in UPLOAD_ACTIONS), _a   # 첨부 2동작은 todo_update 로 갈아끼워 그 이름으로 반영된다
+    # 첨부 갈아끼우기 — 파일은 서버가 갖고 시트에는 주소만 적는다(되밀 본문에 base64 가 안 실린다).
+    assert save_todo_file("", "image/jpeg") == "", "빈 본문은 저장하지 않는다"
+    _tmpdir = tempfile.mkdtemp()
+    _saved_dir, _rc.UPLOAD_DIR = _rc.UPLOAD_DIR, _tmpdir
+    try:
+        _u = save_todo_file(base64.b64encode(b"%PDF-1.4 x").decode(), "application/pdf")
+        assert _u.startswith("/uploads/todo/") and _u.endswith(".pdf"), _u
+        # 업무 현황 SSOT driveImgUrl() 이 [-\w]{25,} 를 구글 주소로 바꿔친다 — 한 토막도 25자를 넘으면 안 된다.
+        assert max(len(_seg) for _seg in re.split(r"[^-\w]+", _u) if _seg) < 25, _u
+        # 표에 없는 형식은 .bin — .html/.svg 가 ERP 오리진에 저장되는 길을 막는다(검수 C3 와 같은 이유)
+        assert save_todo_file(base64.b64encode(b"<svg/>").decode(), "image/svg+xml").endswith(".bin")
+        assert save_todo_file(base64.b64encode(b"<h1>x").decode(), "text/html").endswith(".bin")
+        # 대표 서명본은 GM 결재완료 건만 — 아니면 서버가 안 맡고 GAS 가 같은 문구로 거절한다(GAS 관문 보존)
+        _rec = {"todo_items": {"T1": {"id": "T1", "결재상태": "대기", "파일URL": ""}}}
+        assert upload_as_update(_MirrorConn(_rec), "approval_rep_sign_upload",
+                               {"id": "T1", "file": "eA==", "mimeType": "application/pdf"}) == (None, "")
+        _rec["todo_items"]["T1"]["결재상태"] = "결재완료"
+        _p, _url = upload_as_update(_MirrorConn(_rec), "approval_rep_sign_upload",
+                                    {"id": "T1", "file": "eA==", "mimeType": "application/pdf"})
+        assert _p["action"] == "todo_update" and _p["대표싸인"] == _url and "file" not in _p, _p
+        # 첨부는 기존 파일URL 뒤에 줄바꿈으로 덧붙인다(GAS todo_upload 와 같다)
+        _rec["todo_items"]["T1"]["파일URL"] = "https://drive.google.com/old"
+        _p2, _url2 = upload_as_update(_MirrorConn(_rec), "todo_upload",
+                                      {"id": "T1", "base64": "eQ==", "mimeType": "image/png"})
+        assert _p2["파일URL"] == "https://drive.google.com/old\n" + _url2, _p2
+        # id 없는 업로드(에디터 그림)는 적을 칸이 없다 — 종전대로 GAS 가 주소를 만든다
+        assert upload_as_update(_MirrorConn(_rec), "todo_upload", {"base64": "eQ=="}) == (None, "")
+    finally:
+        _rc.UPLOAD_DIR = _saved_dir
+        shutil.rmtree(_tmpdir, ignore_errors=True)
     assert _idem_hit(_C(), "a@b.c", {"idem": "u1"})["queued"] is True                # 아직 진행 중 = 두 번 쓰지 않는다
 
     # 담당 지정 권한(배1182) — GM_TASK_OWNERS saveBoard 판정. 가짜 conn: SELECT 대상(users·board_cache)로 갈라 응답.

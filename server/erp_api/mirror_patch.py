@@ -36,9 +36,8 @@ FIELD_ALIAS = {"title": "업무명", "name": "업무명", "category": "카테고
                "approval": "결재요청", "link": "링크", "fileUrl": "파일URL", "creator": "생성자",
                "difficulty": "난이도", "sizeScore": "규모점수"}
 # 서버가 거울에 못 옮기는 쓰기 — 값을 지어내지 않고 1분 뒤 sync 에 맡긴다(api_write 자체점검이 이 표를 본다).
-NO_MIRROR = {
-    "approval_rep_sign_upload": "대표싸인 칸에 들어갈 값이 구글 드라이브 업로드 결과 주소다 — 서버는 그 주소를 모른다",
-}
+NO_MIRROR = {}   # 2026-09-14 시토 — 비었다. 종전 여기 있던 approval_rep_sign_upload 는 서버가 파일을 갖게 되면서
+                 # api_write 가 todo_update 로 갈아끼워 보내므로 그 이름으로 정상 반영된다.
 _SIGN_COL = {"부서장": "부서장싸인", "GM": "GM싸인"}
 _MID = ("이경연 실장", "이정헌 소장", "나우열M")
 # GAS _buildApprovalRoute(865줄) 의 예산 마커 — 결재요청이 비어도 이게 있으면 결재선이 선다.
@@ -126,7 +125,8 @@ def _done(data, p, now):
 
 def _sign(data, p, now):
     """GAS todo_sign(2901줄) — 승인은 싸인 칸 + 다음 결재자 유무로 결재상태, 반려는 싸인·결재요청 초기화.
-    ⚠️ PIN 검증은 여기서 하지 않는다(GAS 가 되밀기 때 검증한다) — 거울은 GAS 판정에 1분 뒤 맞춰진다."""
+    ⚠️ PIN 검증은 여기서 하지 않는다 — 여기 오기 전에 api_write 가 approval_pin.check 로 이미 걸렀다
+       (그 비번을 서버가 모르면 애초에 server 모드로 안 오고 GAS 가 검증한다)."""
     role, decision = _s(p.get("role")), _s(p.get("decision"))
     signer = _s(p.get("signer")) or role
     col = _SIGN_COL.get(role)
@@ -203,6 +203,25 @@ def _rep_cancel(data, p, now):
     data["대표싸인"] = ""
 
 
+def _add_row(payload, now):
+    """GAS todo_add(2793줄) 가 새 행에 채우는 값 그대로 — 거울에 넣을 한 행을 만든다.
+
+    id 는 서버가 매긴 것(api_write._next_todo_id)이 payload 에 실려 온다. 이 반영이 없으면 새 업무가
+    거울에 5분간 없어, 화면이 서버 읽기로 바뀐 뒤 「저장했는데 목록에 없다」가 된다 — 그리고 저장 직후
+    곧바로 부르는 첨부(todo_upload)가 붙일 행을 못 찾는다."""
+    p = _mapped(payload)
+    data = dict((h, "") for h in HEADERS)
+    for h in HEADERS:
+        if _s(p.get(h)):
+            data[h] = p[h]
+    data["id"] = _s(p.get("id"))
+    data["시작일"] = _s(p.get("시작일")) or now[:10]      # GAS 기본값 _today()
+    data["상태"] = _s(p.get("상태")) or "진행중"          # GAS 기본값
+    data["생성일"] = data["수정일"] = now
+    data["결재상태"] = "대기" if _s(p.get("결재요청")) else ""
+    return data
+
+
 HANDLERS = {
     "todo_update": _update,
     "todo_done": _done,
@@ -214,8 +233,10 @@ HANDLERS = {
     "todo_remove_file": _remove_file,
     "approval_rep_escalate": _rep_escalate,
     "approval_rep_cancel": _rep_cancel,
+    "todo_add": None,             # 새 행 — apply() 가 직접 처리한다(고칠 기존 data 가 없다)
 }
-# todo_add 는 여기 없다 — 새 업무 id 를 GAS 가 매기므로 server 모드 자체에서 빠진다(api_write.NO_SERVER_ACTIONS).
+# 첨부 2동작(todo_upload·approval_rep_sign_upload)은 여기 없다 — api_write 가 그 둘을 todo_update 로
+# 갈아끼운 뒤 그 이름으로 반영한다(파일은 서버가 갖고 시트 칸에는 주소만 들어간다).
 
 
 def apply(conn, action, payload):
@@ -226,6 +247,9 @@ def apply(conn, action, payload):
     tid = _s((payload or {}).get("id"))
     if not tid:
         return False
+    if action == "todo_add":
+        sync_todo.upsert_rows(conn, [_add_row(payload, _now())], _now())
+        return True
     if action == "todo_delete":
         with conn:
             conn.execute("DELETE FROM todo_items WHERE tenant_id=%s AND id=%s", (db.TENANT, tid))
@@ -290,8 +314,18 @@ if __name__ == "__main__":   # python3 mirror_patch.py — DB·서버 없이 액
         return _Conn([r])
 
     # ① 모르는 액션·id 없음·거울에 없는 행 = 조용히 False (예외 없음)
-    assert apply(_fresh(), "todo_add", {"id": "TODO-1"}) is False
     assert apply(_fresh(), "drop_table", {"id": "TODO-1"}) is False
+    assert apply(_fresh(), "todo_add", {}) is False          # id 없는 추가는 거울에 못 넣는다
+
+    # ①-2 todo_add — 새 행이 그 자리에서 거울에 선다(없으면 새 업무가 5분간 화면에서 안 보인다)
+    c = _fresh()
+    assert apply(c, "todo_add", {"id": "TODO-9", "title": "새 업무", "결재요청": "이경연 실장"}) is True
+    _new = json.loads(c.todos["TODO-9"])
+    assert _new["업무명"] == "새 업무" and _new["상태"] == "진행중" and _new["결재상태"] == "대기", _new
+    assert _new["시작일"] == _now()[:10] and _new["생성일"] == _new["수정일"], _new
+    c = _fresh()
+    assert apply(c, "todo_add", {"id": "TODO-8", "title": "결재 없는 업무"}) is True
+    assert json.loads(c.todos["TODO-8"])["결재상태"] == "", "결재요청이 없으면 결재상태도 비어 있다"
     assert apply(_fresh(), "todo_done", {}) is False
     assert apply(_fresh(), "todo_done", {"id": "TODO-없음"}) is False
 
@@ -399,8 +433,11 @@ if __name__ == "__main__":   # python3 mirror_patch.py — DB·서버 없이 액
     assert apply(c, "approval_rep_cancel", {"id": "TODO-1"}) is True
     assert c.row("TODO-1")["대표싸인"] == ""
 
-    # ⑬ 서버가 값을 만들 수 없는 쓰기는 손대지 않는다(주소를 지어내지 않는다)
-    assert "approval_rep_sign_upload" in NO_MIRROR and "approval_rep_sign_upload" not in HANDLERS
+    # ⑬ 첨부 2동작은 이 이름으로 오지 않는다 — api_write 가 todo_update 로 갈아끼워 보낸다(파일은 서버가 갖는다).
+    #    NO_MIRROR 가 비었다는 것 = 서버가 값을 못 만들어 손 놓는 업무 쓰기가 이제 없다는 뜻이다.
+    for _a in ("todo_upload", "approval_rep_sign_upload"):
+        assert _a not in HANDLERS and _a not in NO_MIRROR, _a
+    assert NO_MIRROR == {}
 
     # ⑭ 거울 행의 파생 칸(부서·상태·완료일)은 sync_todo 규칙 그대로 다시 뽑힌다 — 두 곳이 어긋나면 안 된다
     todos, apprs = sync_todo._row_tuples([_fresh().row("TODO-1")], "t")
