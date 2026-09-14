@@ -636,7 +636,7 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">담당별 매출<span class="ai-owner">AI 시포</span></div>
+      <div class="title">강습 담당별 매출<span class="ai-owner">AI 시포</span></div>
     </div>
     <div class="meta">
       매출 및 회원 현황 보고 <b>4 / 4</b><br>
@@ -649,11 +649,8 @@
 
   <div class="body">
     <div class="col">
-      <div class="sec">
-        <h2 id="p4memh">회원권 · 옵션 — 담당별</h2>
-        <div class="bd" id="p4mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <!-- 강습 담당은 서른 줄이 넘어 한 칸에 다 넣으면 왼쪽이 비고 오른쪽만 길어진다. 반씩 나눠 싣는다. -->
+      <!-- 회원권·옵션 담당 블록은 뺐다(GM 지시 2026-09-14 「회원권 옵션은 빼줘, 그냥 강습만 있으면 되」).
+           그 값은 1면 매출 현황 표에 이미 있다. 강습 담당은 서른 줄이 넘어 반씩 나눠 싣는다. -->
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p4lesh">강습 — 담당별</h2>
         <div class="bd" id="p4les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -670,7 +667,7 @@
   <div class="audit wait" id="audit4">자체 점검 중…</div>
 
   <div class="foot">
-    <div><b>이 장이 보는 것</b> — 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 왼쪽이 그날(금일), 오른쪽이 누적입니다.</div>
+    <div><b>이 장이 보는 것</b> — 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 왼쪽이 그날(금일), 오른쪽이 누적입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다.</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
@@ -1620,28 +1617,24 @@ function p4Table(heads, rows){
 }
 
 function renderPage4(c, dayLabel){
-  var mem = p4Rows(c, 8, 12), les = p4Rows(c, 16, 62);
-  var h1 = document.getElementById('p4memh'), h2 = document.getElementById('p4lesh');
-  if (h1) h1.textContent = (dayLabel || '') + ' 회원권 · 옵션 — 담당별';
+  var les = p4Rows(c, 16, 62);
+  var h2 = document.getElementById('p4lesh');
   if (h2) h2.textContent = (dayLabel || '') + ' 강습 — 담당별';
-  var e1 = document.getElementById('p4mem'), e2 = document.getElementById('p4les'),
-      e3 = document.getElementById('p4les2');
-  /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P7~S7 · P15~S15). 없으면 빈 칸으로 둔다. */
-  var memHead = ['P7', 'Q7', 'R7', 'S7'].map(function(k){ return String(c[k] || '').trim(); });
+  var e2 = document.getElementById('p4les'), e3 = document.getElementById('p4les2');
+  /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
-  if (e1) e1.innerHTML = p4Table(memHead, mem);
   var half = Math.ceil(les.length / 2);
   if (e2) e2.innerHTML = p4Table(lesHead, les.slice(0, half));
   if (e3) e3.innerHTML = p4Table(lesHead, les.slice(half));
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
   var a4 = document.getElementById('audit4'); if (!a4) return;
-  if (!mem.length || !les.length) {
+  if (!les.length) {
     a4.className = 'audit bad';
-    a4.innerHTML = '<b>담당 줄을 못 읽었습니다</b> · 회원권 ' + mem.length + '줄 · 강습 ' + les.length + '줄';
+    a4.innerHTML = '<b>강습 담당 줄을 못 읽었습니다</b>';
   } else {
     a4.className = 'audit ok';
-    a4.innerHTML = '<b>자체 점검 2/2 통과</b> — 회원권 ' + mem.length + '줄 · 강습 ' + les.length + '줄을 ' + at + ' 에 확인했습니다';
+    a4.innerHTML = '<b>자체 점검 통과</b> — 강습 담당 ' + les.length + '줄을 ' + at + ' 에 확인했습니다';
   }
 }
 
