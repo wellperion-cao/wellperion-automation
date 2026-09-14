@@ -907,6 +907,14 @@ function runAudit(){
   add('fail', '로스자 칸 최신', !!ls && _sameMD(ls, yst),
       ls ? (ls.m + '/' + ls.d + ' 기준 — 어제가 아닙니다') : '날짜가 없습니다');
 
+  /* ⑥-2 맨 위 네 칸 — 2026-09-14 실사고: 렌더가 없는 이름(yst)을 불러 도중에 멈추는 바람에
+     「목표 달성률」·「총 회원수」가 「—」인 채로 매일 보고 사진에 찍혀 나갔는데, 이 점검은
+     14/14 통과라고 말하고 있었다. 화면 맨 위가 비면 그건 실패다. */
+  var hlEmpty = Array.prototype.filter.call(document.getElementById('headline').children, function(b){
+    return !String(b.querySelector('.v').textContent || '').replace(/[—–-]/g, '').trim();
+  }).map(function(b){ return b.querySelector('.t').textContent; });
+  add('fail', '맨 위 네 칸 채워짐', hlEmpty.length === 0, hlEmpty.join(' · ') + ' 이 비어 있습니다');
+
   // ⑦ 강습 신규·재등록 — 도착 여부 + 팀별 금액이 매출표와 맞는가(환불 있는 팀은 그만큼 차이 난다)
   var LT = { '수영팀':8, 'P.T팀':9, '골프팀':10, '스쿼시팀':11, '체조팀':12, 'P.L팀':13,
              '뮤지컬팀':14, 'GXE(파트너팀)':15 };
@@ -1079,7 +1087,10 @@ function renderSheet(c){
                s.textContent = sub; }
     else if (s) { s.remove(); }
   }
-  setHl(0, cellMoney(c.I4), isClosedDay(yst) ? ('휴관일 — ' + closedReason(yst)) : '전날 하루');
+  // ★ yst → _yst (2026-09-14 실측). 이 줄이 없는 이름을 부르는 바람에 renderSheet 가 여기서
+  //    멈췄고, 뒤따르는 목표 달성률·총 회원수·금일 예상 컨택·로스자·컨택 칸 제목이 통째로 처음
+  //    상태(「—」)로 남아 매일 그대로 보고 사진에 찍혔다. 어제 날짜는 위에서 _yst 로 잡아 둔다.
+  setHl(0, cellMoney(c.I4), isClosedDay(_yst) ? ('휴관일 — ' + closedReason(_yst)) : '전날 하루');
   setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
