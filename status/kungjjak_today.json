@@ -778,12 +778,6 @@
         {
           "time": "13:03",
           "area": "업무관리방",
-          "event": "CHRO 업무지시 발신: 구매물품 검토 승인 처리 — 구매요청 화면 검토 대기 건",
-          "detail": "GM 원문: GM 원문 2026-09-14 13:0x: 「구매물품 관련 검토 승인 및 info@ 계정 / lessons@ 계정 토큰 사용량 값 확인할 수 있도록 진행건 전달해서 반영까지 마무리해줘 우열M에게 요청」 · 「https://erp.wellperion.com/erp/admin#tokens 여기에 다 뜨도록」"
-        },
-        {
-          "time": "13:03",
-          "area": "업무관리방",
           "event": "CHRO 업무지시 발신: info@·lessons@ 계정 토큰 사용량을 ERP 관리자 AI 토큰 현황(admin#tokens)에 뜨게",
           "detail": "GM 원문: GM 원문 2026-09-14 13:0x: 「구매물품 관련 검토 승인 및 info@ 계정 / lessons@ 계정 토큰 사용량 값 확인할 수 있도록 진행건 전달해서 반영까지 마무리해줘 우열M에게 요청」 · 「https://erp.wellperion.com/erp/admin#tokens 여기에 다 뜨도록」"
         },
@@ -954,6 +948,12 @@
           "area": "인사 이관",
           "event": "나우열M 17:23 인사 16장 9/22 전환 계획 접수 → 시토 배 12603 메모·다음 갱신 · 방 회신",
           "detail": "적재 dry-run 요청서 9/15 오전 예정 · 쓰기 거울 먼저"
+        },
+        {
+          "time": "17:47",
+          "area": "인사 이관",
+          "event": "CHRO [시토 요청 ①-a] 인사 서버 파일 5종 최신판 재배치·권한·스키마·재기동 — 됨 17:47 · 방 회신",
+          "detail": "시토 대행 · 원인 = 13:08 더티 작업트리 통째 scp"
         }
       ],
       "count": 64,
@@ -1584,6 +1584,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260914-3012",
+          "no": "12",
+          "got": "나는 시모가 우리 전체 페이지 디자인 UI/UX 표준화를 만들어서 ERP플랫폼 관리에 표준화를 표로 잘 정리해주고, 그 표가 승인나면 전체적인 페이지에 반영이 되는걸 희망해",
+          "did": "",
+          "start": "17:47",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1756,14 +1768,29 @@
           "detail": "커밋 f7c79a8b82 · 배 11425"
         }
       ],
-      "count": 11,
+      "count": 12,
       "done": 11,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 10,
       "work_count": 28,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260914-3012",
+          "no": "12",
+          "got": "나는 시모가 우리 전체 페이지 디자인 UI/UX 표준화를 만들어서 ERP플랫폼 관리에 표준화를 표로 잘 정리해주고, 그 표가 승인나면 전체적인 페이지에 반영이 되는걸 희망해",
+          "did": "",
+          "start": "17:47",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -2390,6 +2417,18 @@
           "upload": "✅ 배포 (8d363f5cd)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260914-5029",
+          "no": "29",
+          "got": "지금 AWS 넘어가면서 이슈되는 것들은 없지?",
+          "did": "",
+          "start": "17:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2538,14 +2577,29 @@
           "detail": "커밋 d2fd16d71c · 배 12532"
         }
       ],
-      "count": 27,
+      "count": 28,
       "done": 27,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 4,
       "work_count": 24,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260914-5029",
+          "no": "29",
+          "got": "지금 AWS 넘어가면서 이슈되는 것들은 없지?",
+          "did": "",
+          "start": "17:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -2855,13 +2909,13 @@
           "ref": "GM-20260914-9027",
           "no": "27",
           "got": "상담봇 내역은 그냥 서버에만 저장시키고, 무조건 문의폼을 가지고 문의를 할 수 있도록 CTA라인으로 넣으면 되겠구나, 따로 채팅창없애고",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "17:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "17:49",
+          "minutes": 4,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2942,31 +2996,22 @@
           "area": "작업",
           "event": "다캠 블로그 첫 글 임시저장 — 「허리가 아픈데 운동해도 되나요」(손님이 4번 물은 질문)",
           "detail": "커밋 54c9b8f8fe · 배 11305"
+        },
+        {
+          "time": "17:47",
+          "area": "작업",
+          "event": "다캠 손님 문의를 문의 폼 한 곳으로(GM 지시) — 홈 채팅창 제거·CTA 를 폼으로",
+          "detail": "커밋 5a5b7bfc47 · 배 11305"
         }
       ],
       "count": 26,
-      "done": 25,
-      "open": 1,
+      "done": 26,
+      "open": 0,
       "avg_minutes": 4,
-      "work_count": 13,
+      "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-9027",
-          "no": "27",
-          "got": "상담봇 내역은 그냥 서버에만 저장시키고, 무조건 문의폼을 가지고 문의를 할 수 있도록 CTA라인으로 넣으면 되겠구나, 따로 채팅창없애고",
-          "did": "",
-          "start": "17:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
