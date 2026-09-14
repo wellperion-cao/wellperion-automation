@@ -37,6 +37,7 @@ from safe_commit import (  # noqa: E402
     _path_matches_any,
     _nawoolm_request_marker,
     _domain_guard_log,
+    _committer_is_nawoolm,
 )
 
 ROOT = os.path.dirname(_SCRIPTS_DIR)
@@ -94,6 +95,10 @@ def main(argv=None):
         return 0
 
     hit_paths = [p for p, _ in hits]
+    if _committer_is_nawoolm():       # 나우열M PC(user.name 나우열) = 자기 라인 — 통과(CHRO 요청 2026-09-14)
+        _domain_guard_log("nawoolm_domain_precommit_self", hit_paths, ROOT)
+        print(f"[INFO] 나우열M 본인 저장 — pre-commit 나우열M 라인 가드 통과: {', '.join(hit_paths)}")
+        return 0
     marker = _nawoolm_request_marker(_commit_message(explicit_message))
     if marker:
         _domain_guard_log("nawoolm_domain_precommit_marker", hit_paths, ROOT)
@@ -144,7 +149,13 @@ def _selftest() -> None:
     # ④ chro 밖 파일은 통과
     assert main(["--paths", "scripts/some_unrelated_tool.py", "--message", "그냥 수정"]) == 0, \
         "④ 무관 파일이 막혔다"
-    print("[selftest] nawoolm_domain_guard 4케이스 OK")
+    # ⑤ 나우열M 본인(user.name 나우열) 저장은 마커 없이 통과 — 나우열M PC 의 CHRO·CFO 세션 전부
+    os.environ["GIT_COMMITTER_NAME"] = "나우열"
+    try:
+        assert main(["--paths", cfo_path, "--message", "그냥 수정"]) == 0, "⑤ 나우열M 본인 저장이 막혔다"
+    finally:
+        os.environ.pop("GIT_COMMITTER_NAME", None)
+    print("[selftest] nawoolm_domain_guard 5케이스 OK")
 
 
 if __name__ == "__main__":

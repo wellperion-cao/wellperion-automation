@@ -210,6 +210,33 @@ if [ -f "$SECRET_GUARD" ] && [ -n "$PYBIN" ]; then
   fi
 fi
 
+# ── ⑦-2 나우열M 라인(CHRO·CFO) 절대 접촉 금지 가드 (GM 지시 2026-09-14) ──────────
+# staged 경로가 나우열M 라인(인사·재무 화면·서버코드·큐 폴더)에 걸리면 커밋 차단(exit 1).
+# 정본·판정 = scripts/safe_commit.py CHRO_DOMAIN_PATHS·CFO_DOMAIN_PATHS(이 가드가 그대로
+# import). 우회 env 없음(WP_DOMAIN_FORCE 는 2026-09-14 GM 지시로 폐지) — 유일한 통과는
+# 커밋 메시지 [나우열M 요청 YYYY-MM-DD] 마커(safe_commit 경유일 때만 정확히 읽힘,
+# 스크립트 상단 docstring 참조). 가드 오류/파이썬 없음 = fail-open(통과).
+NAWOOLM_DOMAIN_GUARD="$REPO_ROOT/scripts/precommit_nawoolm_domain_guard.py"
+if [ -f "$NAWOOLM_DOMAIN_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$NAWOOLM_DOMAIN_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
+# ── ⑦-3 나우열M 최근 줄 삭제 차단 가드 (공용 파일 낡은 사본 덮어쓰기 · 2026-09-14 웰리) ──────
+# staged 삭제 줄이 최근 14일 나우열M(author 나우열) 커밋이 추가한 줄과 같으면 커밋 차단(exit 1).
+# 경로 가드(⑦-2)가 못 보는 공용 파일(ERP 메인 등)을 줄 단위로 지킨다 — 2026-09-14 14:08 시모 커밋이
+# 낡은 main.html 사본으로 나우열M 의 구매요청 메뉴 통합을 되돌린 사고 재발 방지.
+# 통과 = 커밋 메시지 [나우열M 요청 YYYY-MM-DD] 마커뿐. 가드 오류/파이썬 없음 = fail-open(통과).
+NAWOOLM_REGRESSION_GUARD="$REPO_ROOT/scripts/precommit_nawoolm_regression_guard.py"
+if [ -f "$NAWOOLM_REGRESSION_GUARD" ] && [ -n "$PYBIN" ]; then
+  PYTHONUTF8=1 "$PYBIN" "$NAWOOLM_REGRESSION_GUARD"
+  if [ "$?" -eq 1 ]; then
+    exit 1
+  fi
+fi
+
 # ── ⑧ 파트너사 가이드에 ERP 플랫폼 색이 들어오는 것 차단 (GM 지적 2026-09-11 · 2회째) ──
 # 웹페리온(파트너사) 화면 색 = 베이지 라인(erp/brand/tenant-wellperion.css).
 # ERP 플랫폼 라인 색(에메랄블루 #0E9488 · 바탕 #F4F5F6)을 이 파일에 넣지 않는다.

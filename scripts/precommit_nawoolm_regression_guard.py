@@ -31,7 +31,7 @@ _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from safe_commit import _nawoolm_request_marker  # noqa: E402
+from safe_commit import _nawoolm_request_marker, _committer_is_nawoolm  # noqa: E402
 from precommit_nawoolm_domain_guard import _staged_paths, _commit_message  # noqa: E402
 
 ROOT = os.path.dirname(_SCRIPTS_DIR)
@@ -133,6 +133,8 @@ def main(argv=None):
     if "--message" in argv:
         i = argv.index("--message")
         explicit_message = argv[i + 1] if i + 1 < len(argv) else ""
+    if _committer_is_nawoolm():       # 나우열M PC = 모든 세션이 「나우열」로 저장 — 자기 줄은 자기가 지운다(통과)
+        return 0
     try:
         hits = find_hits(ROOT, _staged_paths(explicit_paths))
     except Exception as e:  # noqa: BLE001 — 가드 오류 = fail-open
@@ -172,6 +174,11 @@ def selftest():
         g("add", ".")
         assert find_hits(d, ["main.html"]) == []
         assert _nawoolm_request_marker("복구 [나우열M 요청 2026-09-14]") is not None
+    os.environ["GIT_COMMITTER_NAME"] = "나우열"      # 나우열M 본인 저장은 판정 없이 통과
+    try:
+        assert main([]) == 0
+    finally:
+        os.environ.pop("GIT_COMMITTER_NAME", None)
     print("selftest ok")
     return 0
 

@@ -206,6 +206,21 @@ DOMAIN_MODIFY_RULES = (
 _NAWOOLM_MARKER_RE = re.compile(r"\[나우열M 요청 (\d{4}-\d{2}-\d{2})\]")
 
 
+def _committer_is_nawoolm() -> bool:
+    """이 저장을 하는 사람이 나우열M 본인인가 — 나우열M PC 는 모든 세션(CHRO·CFO 포함)이 user.name 「나우열」로
+    저장한다(CHRO 통보 2026-09-14 14:43). 자기 라인은 자기 것이니 도메인 가드·줄 삭제 가드 모두 통과시킨다.
+    판정 = env GIT_COMMITTER_NAME/GIT_AUTHOR_NAME(있으면) > git config user.name."""
+    import os as _os
+    name = _os.environ.get("GIT_COMMITTER_NAME") or _os.environ.get("GIT_AUTHOR_NAME")
+    if not name:
+        try:
+            name = subprocess.run(["git", "config", "user.name"], capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=10).stdout.strip()
+        except Exception:
+            name = ""
+    return "나우열" in (name or "")
+
+
 def _nawoolm_request_marker(commit_message: str) -> str | None:
     """커밋 메시지에서 `[나우열M 요청 YYYY-MM-DD]` 마커를 찾아 유효하면 그 문자열을 돌려준다."""
     if not commit_message:
@@ -234,6 +249,10 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
     """
     hits = sorted({path for _, path in diff_pairs if _path_matches_any(path, domain_paths)})
     if not hits:
+        return None
+    if _committer_is_nawoolm():
+        _domain_guard_log(f"{role_label}_nawoolm_self", hits, str(root))
+        print(f"[INFO] 나우열M 본인 저장 — {role_label} 도메인 가드 통과: {', '.join(hits)}")
         return None
     marker = _nawoolm_request_marker(commit_message)
     if marker:
