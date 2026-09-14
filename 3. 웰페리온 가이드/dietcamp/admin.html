@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문의 관리 | 다이어트캠프</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{ --green:#4E7432; --green-mid:#63914a; --green-light:#f1f6ed; --ink:#0B0B0D;
+       --body:#333; --muted:#777; --line:#dfe5da; --white:#fff; --bg:#f6f7f4; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+     color:var(--body);background:var(--bg);line-height:1.6;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+.head{background:var(--green);color:#fff}
+.head .wrap{padding-block:26px 22px;display:flex;flex-wrap:wrap;align-items:baseline;gap:12px}
+.head h1{font-size:20px;font-weight:900}
+.head .sub{font-size:13px;opacity:.9}
+.head .who{margin-left:auto;font-size:12px;opacity:.85}
+
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+       margin:22px 0 16px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer}
+.tile.on{border-color:var(--green);background:var(--green-light)}
+.tile .n{font-size:26px;font-weight:900;color:var(--ink);line-height:1.1}
+.tile .t{font-size:12px;color:var(--muted);margin-top:3px}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.bar input{flex:1;min-width:180px;font:inherit;font-size:14px;background:#fff;
+           border:1px solid var(--line);border-radius:999px;padding:10px 16px}
+.bar input:focus{outline:none;border-color:var(--green)}
+.bar .cnt{font-size:12px;color:var(--muted)}
+
+.list{display:grid;gap:10px}
+.row{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);
+     border-radius:12px;padding:14px 16px}
+.row.접수{border-left-color:#9A6500}
+.row.확인중{border-left-color:#2F6FB0}
+.row.연락드림{border-left-color:var(--green)}
+.row.완료{border-left-color:#1B7F5F;opacity:.72}
+.r1{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.r1 .nm{font-size:15px;font-weight:700;color:var(--ink)}
+.r1 .tp{font-size:12px;color:var(--green);background:var(--green-light);border-radius:999px;padding:2px 10px}
+.r1 .at{margin-left:auto;font-size:12px;color:var(--muted)}
+.r2{font-size:14px;margin-top:6px}
+.r2 a{color:var(--green);font-weight:700}
+.memo{font-size:14px;color:var(--body);margin-top:6px;white-space:pre-wrap}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.acts button{font:inherit;font-size:12px;font-weight:600;color:var(--muted);background:#fff;
+             border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.acts button.on{border-color:var(--green);background:var(--green);color:#fff}
+.acts button:hover{border-color:var(--green);color:var(--green)}
+.acts button.on:hover{color:#fff}
+.empty{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:30px;
+       text-align:center;color:var(--muted);font-size:14px}
+.note{font-size:12px;color:var(--muted);margin:18px 0 40px;line-height:1.6}
+.gate{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;margin:26px 0 40px}
+.gate b{display:block;color:var(--ink);margin-bottom:8px;font-size:15px}
+.gate p{font-size:13px;color:var(--muted);margin-bottom:5px}
+@media (prefers-color-scheme:dark){
+  :root{--white:#141414;--bg:#101210;--body:#e6e6e6;--ink:#f2f2f2;--line:#2e332b;--muted:#9a9a9a;--green-light:#1c2718}
+  .tile,.row,.empty,.gate,.bar input,.acts button{background:#171a16}
+}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="wrap">
+    <h1>문의 관리</h1>
+    <span class="sub">다이어트캠프에 들어온 문의 전부</span>
+    <span class="who">대표님 전용 화면</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="성함·연락처·내용으로 찾기">
+    <span class="cnt" id="cnt"></span>
+  </div>
+
+  <div class="list" id="list">
+    <div class="empty">불러오는 중…</div>
+  </div>
+
+  <!-- 아직 서버 통로가 없다(2026-09-14). 접수·조회·상태변경 API 가 열리면 아래 세 주소만 채우면 붙는다.
+       이 화면은 대표님만 보셔야 하므로 보호는 서버가 한다 — 화면에 비밀번호를 두지 않는다. -->
+  <p class="note">· 손님이 문의 폼에 남긴 내용이 최신순으로 쌓입니다.<br>
+  · 상태를 누르면 바뀌고, 손님은 본인 문의 현황 화면에서 그 상태를 봅니다.<br>
+  · 연락처를 누르면 바로 전화가 걸립니다.</p>
+
+</div>
+
+<script>
+(function(){
+  var LIST_URL = "";     // 전체 목록 (대표님 인증 필요)
+  var STATUS_URL = "";   // 상태 바꾸기
+  var STATES = ['접수','확인중','연락드림','완료'];
+  var rows = [], filter = '', keyword = '';
+  var list = document.getElementById('list'), tiles = document.getElementById('tiles');
+  var cnt = document.getElementById('cnt');
+
+  function esc(s){ return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function shown(){
+    return rows.filter(function(r){
+      if (filter && (r.status || '접수') !== filter) return false;
+      if (!keyword) return true;
+      var hay = [r.name, r.phone, r.topic, r.memo].join(' ').toLowerCase();
+      return hay.indexOf(keyword.toLowerCase()) >= 0;
+    });
+  }
+
+  function drawTiles(){
+    var all = rows.length;
+    var html = '<div class="tile' + (filter ? '' : ' on') + '" data-s=""><div class="n">'
+             + all + '</div><div class="t">전체</div></div>';
+    STATES.forEach(function(s){
+      var n = rows.filter(function(r){ return (r.status || '접수') === s; }).length;
+      html += '<div class="tile' + (filter === s ? ' on' : '') + '" data-s="' + s + '">'
+            + '<div class="n">' + n + '</div><div class="t">' + s + '</div></div>';
+    });
+    tiles.innerHTML = html;
+    [].forEach.call(tiles.querySelectorAll('.tile'), function(t){
+      t.onclick = function(){ filter = t.dataset.s; drawTiles(); draw(); };
+    });
+  }
+
+  function draw(){
+    var rs = shown();
+    cnt.textContent = rs.length + '건';
+    if (!rs.length){ list.innerHTML = '<div class="empty">해당하는 문의가 없습니다.</div>'; return; }
+    list.innerHTML = rs.map(function(r, i){
+      var st = r.status || '접수';
+      return '<div class="row ' + st + '">'
+        + '<div class="r1"><span class="nm">' + esc(r.name) + '</span>'
+        + '<span class="tp">' + esc(r.topic || '문의') + '</span>'
+        + '<span class="at">' + esc(r.at || '') + '</span></div>'
+        + '<div class="r2"><a href="tel:' + esc(r.phone) + '">' + esc(r.phone) + '</a>'
+        + (r.when ? ' · ' + esc(r.when) : '') + '</div>'
+        + (r.memo ? '<div class="memo">' + esc(r.memo) + '</div>' : '')
+        + '<div class="acts">' + STATES.map(function(s){
+            return '<button data-i="' + i + '" data-s="' + s + '"'
+                 + (st === s ? ' class="on"' : '') + '>' + s + '</button>'; }).join('')
+        + '</div></div>';
+    }).join('');
+    [].forEach.call(list.querySelectorAll('.acts button'), function(b){
+      b.onclick = function(){ setStatus(rs[+b.dataset.i], b.dataset.s); };
+    });
+  }
+
+  function setStatus(row, s){
+    if (!STATUS_URL){ alert('상태 바꾸기는 통로가 열린 뒤에 됩니다.'); return; }
+    fetch(STATUS_URL, {method:'POST', headers:{'Content-Type':'application/json'},
+                       credentials:'include',
+                       body:JSON.stringify({tenant:'2_dietcamp', id:row.id, status:s})})
+      .then(function(r){ if(!r.ok) throw 0; row.status = s; drawTiles(); draw(); })
+      .catch(function(){ alert('상태를 바꾸지 못했습니다. 잠시 뒤 다시 눌러 주세요.'); });
+  }
+
+  document.getElementById('q').addEventListener('input', function(){
+    keyword = this.value.trim(); draw();
+  });
+
+  if (!LIST_URL){
+    list.innerHTML = '<div class="gate"><b>아직 문의를 받는 통로가 열리지 않았습니다</b>'
+      + '<p>손님이 보는 문의 폼과 현황 화면은 이미 열려 있습니다. 들어온 문의가 이 화면에 쌓이는 것은 통로가 연결된 다음입니다.</p>'
+      + '<p>연결되면 이 화면에서 전부 보시고 상태를 바꾸실 수 있습니다.</p></div>';
+    tiles.innerHTML = ''; cnt.textContent = '';
+    return;
+  }
+  fetch(LIST_URL + '?tenant=2_dietcamp', {cache:'no-store', credentials:'include'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ rows = (d && d.items) || []; drawTiles(); draw(); })
+    .catch(function(){
+      list.innerHTML = '<div class="empty">지금 목록을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.</div>';
+    });
+})();
+</script>
+
+</body>
+</html>

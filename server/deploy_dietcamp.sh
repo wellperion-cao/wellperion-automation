@@ -14,10 +14,11 @@ TMP="$(mktemp -d)"
 for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy}.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거(서버엔 없는 경로)
 done
-# 손님이 보는 세 장 — 홈·문의 폼·문의 현황 (2026-09-14 · GM 지시로 문의를 폼 한 곳으로 모았다).
+# 손님이 보는 두 장(홈·문의 폼) + 대표님이 보는 한 장(문의 관리).
+# 손님용 「내 문의 현황」은 2026-09-14 GM 지시로 뺐다 — 다캠에는 필요 없다.
 # 이 셋은 cbo/dietcamp(내부 열람)가 아니라 공개 폴더 "3. 웰페리온 가이드/dietcamp/" 에 있다.
 PUB="3. 웰페리온 가이드/dietcamp"
-for f in "$PUB"/{index,inquiry,status}.html; do
+for f in "$PUB"/{index,inquiry,admin}.html; do
   [ -f "$f" ] && grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"
 done
 $S "sudo mkdir -p /srv/www/2_dietcamp/img && sudo chown -R ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
