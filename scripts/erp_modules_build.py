@@ -112,7 +112,7 @@ APPGROUP_IDS = {
             "coo-reception-lost-found-gallery", "coo-reception-lost-found-disposal",
             "coo-리셉션-업무-라커관리-index",
             "coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot",
-            "cmo-upload-마케팅자동업로드", "cmo-funnel-콘텐츠문의현황",
+            "cmo-funnel-콘텐츠문의현황",
             "coo-brojay-브로제이-업무분장",
             "coo-notice-게시물-프로필월",
             "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave",
@@ -159,6 +159,7 @@ PLATFORM_ONLY_PREFIXES = (
     "cbo/",          # 파는 쪽 자료(상담봇·다이어트캠프·고척골프) — 파트너사가 볼 이유가 없다
     "cto/",          # 이관 현황·환경 3벌·운영 가이드·카톡 전송
     "cmo/sunday/",   # 어떤 하루 — 개인 계정 트랙(2026-09-11 이관)
+    "cmo/upload/",   # 마케팅 자동업로드 — 센터 공식 계정 발행(파는 쪽 · GM 2026-09-14)
 )
 PLATFORM_ONLY_FILES = ("자율현황.html",)   # AI 살림 — 파트너사 화면이 아니다
 # cto/ 를 통째로 빼면 시설부가 쓰는 설비 사양서까지 사라진다(실측 2026-09-11: 수영장 출입게이트
@@ -473,8 +474,7 @@ MODULE_BUNDLES = [
                      "chro-hub-calendar", "chro-hub-onboarding", "chro-hub-onboarding-self"]),
     ("재무",        ["cfo-finance-지출품의", "cfo-finance-매출현황",
                      "cfo-finance-지출현황", "cfo-finance-매출지출현황"]),
-    ("콘텐츠",      ["cmo-upload-마케팅자동업로드", "cmo-series-ai시리즈보드",
-                     "cmo-funnel-콘텐츠문의현황"]),
+    ("콘텐츠",      ["cmo-series-ai시리즈보드", "cmo-funnel-콘텐츠문의현황"]),
     ("경영 보고",   ["coo-chairman-gm업무", "coo-chairman-대표님-지시사항",
                      "coo-chairman-회장님-지시사항", "coo-chairman-중간관리자-업무목차"]),
     ("월간 운영계획", ["gm-월간운영계획"]),
