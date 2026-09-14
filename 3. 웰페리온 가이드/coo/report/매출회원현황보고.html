@@ -117,6 +117,17 @@
   .vrow .vbar i{display:block;height:100%;background:var(--navy);}
   .vrow .vn{width:44px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
 
+  /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
+  .dayrows{display:flex;flex-direction:column;gap:3px;}
+  .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
+  .dayrow .dd{width:46px;flex:none;color:#48525B;font-variant-numeric:tabular-nums;}
+  .dayrow .db{flex:1;min-width:0;height:15px;background:#EDF1F5;border-radius:2px;position:relative;}
+  .dayrow .db i{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:2px;}
+  .dayrow .dv{width:82px;flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);}
+  .dayrow.today .dd{font-weight:800;color:var(--navy);}
+  .dayrow.zero .dv{color:var(--warn);}
+  .daysum{display:flex;gap:14px;font-size:10.5px;color:#7A838B;padding-top:5px;margin-top:4px;border-top:1px solid var(--line);}
+  .daysum b{color:var(--navy);font-variant-numeric:tabular-nums;}
   /* 연 단위 4칸 */
   .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px;}
   /* min-width:0 — 1fr 격자 칸은 내용이 길면 스스로 안 줄어들어 오른쪽 칸이 잘린다
@@ -377,24 +388,23 @@
     </div>
   </div>
 
-  <!-- 연간 추이 — 2026-08-28 GM 지적("그래프가 잘 보이지도 않는다")으로 왼쪽 칸에서 빼
-       아래 전폭 띠로 옮겼다. 폭이 두 배가 되어 글자·막대가 그만큼 커진다. -->
+  <!-- 아래 띠 = 일 단위 · 월 단위 (GM 지시 2026-09-14 「연단위로 정리하니까 너무 정리가 안되어서,
+       일/월 단위로 재정립해줘」). 연 목표·연 지출은 이 보고가 볼 것이 아니다 — 매일 보는 것은
+       어제 하루와 이번 달이다. -->
   <div class="band">
     <div class="sec" style="width:472px;flex:none;">
-      <h2>연 단위 (2026) — 올해 지금까지 어디까지 왔나</h2>
+      <h2 id="dayh">일 단위 — 최근 며칠 하루 매출</h2>
       <div class="bd">
-        <div id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
-        <div class="yr" id="yearly"></div>
+        <div class="dayrows" id="days"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="sec" style="flex:1;min-width:0;">
-      <h2>연간 매출 추이 (올해) — 월 매출 막대 · 누적 선</h2>
-      <div class="lg">
-        <span><i style="background:#14304E"></i>월 매출 (왼쪽 눈금)</span>
-        <span><i style="background:#146B4F"></i>누적 (오른쪽 눈금)</span>
+      <h2>월 단위 — 이번 달 성적과 월별 흐름</h2>
+      <div class="bd" style="padding-bottom:2px;">
+        <div class="yr" id="yearly"></div>
       </div>
-      <div class="chartwrap">
-        <svg id="chart" viewBox="0 0 1020 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
+      <div class="chartwrap" style="height:108px;">
+        <svg id="chart" viewBox="0 0 1020 150" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
       </div>
     </div>
   </div>
@@ -598,25 +608,89 @@ function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(
   return n >= 100 ? 'r-hi' : (n >= 70 ? 'r-mid' : 'r-lo'); }
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
 
-/* 연 단위 4칸 — 두 조회(월별 매출 · ERP 지출)가 따로 도착하므로 도착하는 대로 다시 그린다. */
-var YEAR_STATE = { acc:0, accFull:0, filled:0, partial:false, left:0, need:0, target:0, expense:null, expenseAt:'' };
+/* 월 단위 4칸 — 이번 달 성적. 연 목표·연 지출은 뺐다(GM 2026-09-14). 값은 종전과 같은 조회를
+   쓰되 셈을 이번 달 기준으로 바꾼다. 남은 날은 이번 달 말일까지, 하루 필요액은 남은 목표 ÷ 남은 날. */
+var YEAR_STATE = { acc:0, accFull:0, filled:0, partial:false, left:0, need:0, target:0, expense:null, expenseAt:'',
+                   monthValue:0, monthTarget:0, prevValue:null };
 function paintYearly(){
   var el = document.getElementById('yearly'); if (!el) return;
   var s = YEAR_STATE;
-  if (!s.filled) { el.innerHTML = ''; return; }
-  var avg = (s.accFull || s.acc) / s.filled;
+  if (!s.filled && !s.monthValue) { el.innerHTML = ''; return; }
+  var now = new Date();
+  var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  var base = now.getDate() - 1;                       // 기준일 = 어제
+  if (base < 1) base = 1;
+  var leftDays = Math.max(0, lastDay - base);
+  var mt = s.monthTarget || 0, mv = s.monthValue || 0;
+  var rate = mt ? (mv / mt * 100) : null;
+  var remain = Math.max(0, mt - mv);
   function box(l, v, sub){
     return '<div class="yb"><div class="yl">' + l + '</div><div class="yv">' + v + '</div>' +
            (sub ? '<div class="ys">' + sub + '</div>' : '') + '</div>';
   }
+  var prevTxt = (s.prevValue == null) ? '지난달 값 없음'
+    : ('지난달 ' + eok(s.prevValue) + (s.prevValue ? ' 대비 ' + (mv / s.prevValue * 100).toFixed(0) + '%' : ''));
   el.innerHTML =
-    box('연 매출 (누적)', eok(s.acc), s.filled + '개월' + (s.partial ? '+이번 달분' : '치')) +
-    box('연 지출 (누적)', s.expense == null ? '–' : eok(s.expense),
-        s.expense == null ? 'ERP 집계 조회 실패' : 'ERP 집계 ' + String(s.expenseAt || '').substring(5)) +
-    box('월 평균 매출', eok(avg), '집계 끝난 ' + s.filled + '개월 평균') +
-    box('남은 달 월 필요액', s.left > 0 ? eok(s.need) : '—',
-        s.left > 0 ? eok(Math.max(0, s.target - s.acc)) + ' ÷ ' + s.left + '개월'
-                   : '올해 12개월 모두 집계됨');
+    box('이번 달 매출', mv ? eok(mv) : '–', base + '일까지 누적') +
+    box('이번 달 목표', mt ? eok(mt) : '–', prevTxt) +
+    box('달성률', rate == null ? '–' : rate.toFixed(1) + '%',
+        mt ? '남은 목표 ' + eok(remain) : '월 목표 없음') +
+    box('남은 날 하루 필요액', (leftDays > 0 && mt) ? _won(Math.round(remain / leftDays)) : '—',
+        leftDays > 0 ? ('남은 ' + leftDays + '일 · 말일 ' + lastDay + '일') : '이번 달 마감');
+}
+
+/* ══ 일 단위 — 최근 7일 하루 매출 ══
+   일별 값은 일자탭에만 있다(보고탭·월 집계 탭에는 날짜별이 없다 — 2026-09-14 실측). 그래서 기준일부터
+   거슬러 7일치 탭의 총매출 칸 하나(J3)만 읽는다. GAS 를 한꺼번에 쏘면 일부 응답을 떨구므로 **직렬**로
+   부른다. 이달 1일보다 앞서가면 멈춘다 — 지난달 탭은 이미 다음 달 값으로 덮여 있어 읽으면 거짓이 된다. */
+var DAY_N = 3;   // 조회 수 = 날짜 수 × 2(파일 해석 포함). 3일이면 흐름이 보이면서 구글 부하도 감당된다.
+function loadDaily(){
+  var el = document.getElementById('days'); if (!el) return;
+  var base = new Date(Date.now() - 86400000);          // 기준일 = 어제
+  var days = [];
+  for (var i = 0; i < DAY_N; i++) {
+    var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
+    if (d.getMonth() !== base.getMonth()) break;       // 이달 1일에서 멈춘다
+    days.push(d);
+  }
+  days.reverse();
+  /* 읽는 칸은 총매출 하나(J3)뿐이지만 날짜 수만큼 조회가 늘어난다. 한꺼번에 쏘면 구글이 일부를
+     떨구고 본 보고까지 같이 죽는다(2026-09-14 실측 — 7일치 동시 호출에 1면 전체가 404 로 비었다).
+     그래서 ①본 보고가 다 그려진 뒤에 ②한 건씩 차례로 부른다. 이 칸이 늦거나 비어도 발송 판정
+     (window.__REPORT_READY)에는 들어가지 않는다 — 보고를 막지 않는다. */
+  var vals = [];
+  function step(i){
+    if (i >= days.length) { paintDaily(days, vals); return; }
+    drGet('dump', '&sheet=' + days[i].getDate() + '&range=J3:J3')
+      .then(function(r){ vals.push((r && r.ok && r.cells) ? num(r.cells.J3) : null); })
+      .catch(function(){ vals.push(null); })
+      .then(function(){ step(i + 1); });
+  }
+  step(0);
+}
+
+function paintDaily(days, vals){
+  var el = document.getElementById('days'); if (!el) return;
+  var got = vals.filter(function(v){ return v != null; });
+  if (!got.length) { el.innerHTML = '<div class="err">일별 매출을 못 읽었습니다 — 일자탭 조회 실패</div>'; return; }
+  var max = Math.max.apply(null, got.concat([1]));
+  var sum = got.reduce(function(a, v){ return a + v; }, 0);
+  var W = ['일', '월', '화', '수', '목', '금', '토'];
+  var rows = days.map(function(d, i) {
+    var v = vals[i];
+    var label = (d.getMonth() + 1) + '/' + d.getDate() + '(' + W[d.getDay()] + ')';
+    var last = (i === days.length - 1);
+    return '<div class="dayrow' + (last ? ' today' : '') + (v === 0 ? ' zero' : '') + '">' +
+      '<span class="dd">' + label + '</span>' +
+      '<span class="db">' + (v == null ? '' : '<i style="width:' + Math.max(v / max * 100, v ? 2 : 0) + '%"></i>') + '</span>' +
+      '<span class="dv">' + (v == null ? '못 읽음' : _won(v)) + '</span></div>';
+  }).join('');
+  var h = document.getElementById('dayh');
+  if (h) h.textContent = '일 단위 — 최근 ' + days.length + '일 하루 매출';
+  el.innerHTML = rows +
+    '<div class="daysum"><span>합계 <b>' + _won(sum) + '</b></span>' +
+    '<span>하루 평균 <b>' + _won(Math.round(sum / got.length)) + '</b></span>' +
+    '<span>가장 많은 날 <b>' + _won(max) + '</b></span></div>';
 }
 
 /* ══ 자체 점검 (GM 지시 2026-08-28 — "자동보고를 하는 거라 구조적으로 신뢰가 100%가 되어야") ══
@@ -926,7 +1000,7 @@ function renderLesson(d){
           : '<div class="fnote">어제 강습 등록 건이 없습니다.</div>');
 }
 
-/* 연간 추이 — 월 매출 막대 + 누적 선 + 연 목표선. 외부 라이브러리 없이 SVG 로 그린다. */
+/* 월별 매출 막대 — 막대 하나가 한 달. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
   var W = 1020, H = 180, L = 70, R = 62, T = 18, B = 28;
   var months = (d && d.months) || [];
@@ -947,12 +1021,8 @@ function renderChart(d){
     s.push('<text x="' + (L-8) + '" y="' + (y+4) + '" text-anchor="end" font-size="12" fill="#7A838B">' +
            eok(maxV * g / 3) + '</text>');
   }
-  // 오른쪽 축(누적) 눈금 — 막대와 선은 축이 다르다. 축을 안 적으면 선이 막대보다 낮아 보여 오해한다.
-  for (var g2 = 1; g2 <= 3; g2++) {
-    var y2 = T + ih - (ih * g2 / 3);
-    s.push('<text x="' + (W-R+6) + '" y="' + (y2+4) + '" font-size="12" fill="#146B4F">' +
-           eok(maxC * g2 / 3) + '</text>');
-  }
+  /* 오른쪽 축(연 누적)은 뺐다 — 이 띠는 월 단위로 재정립했다(GM 2026-09-14). 막대 하나가 한 달이고,
+     축이 하나뿐이라 눈이 바로 붙는다. */
   // 월 막대 — 이번 달(집계 중)은 옅은 색으로 갈라 그린다. 지난달 값과 같은 무게로 보이면 안 된다.
   months.forEach(function(m, i){
     if (m.value == null) return;
@@ -963,16 +1033,6 @@ function renderChart(d){
            (m.partial ? '#48525B' : '#14304E') + '">' + eok(m.value) +
            (m.partial ? ' ' + (m.partialLabel || '집계중') : '') + '</text>');
   });
-  // 누적 선
-  var pts = [];
-  cum.forEach(function(v, i){
-    if (v == null) return;
-    pts.push((L + bw*i + bw*0.5) + ',' + (T + ih - ih * (v / maxC)));
-  });
-  if (pts.length > 1) s.push('<polyline points="' + pts.join(' ') +
-    '" fill="none" stroke="#146B4F" stroke-width="2.2"/>');
-  pts.forEach(function(p){ var xy = p.split(',');
-    s.push('<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="2.6" fill="#146B4F"/>'); });
   // 월 라벨
   for (var i = 0; i < 12; i++) {
     s.push('<text x="' + (L + bw*i + bw*0.5) + '" y="' + (H-8) + '" text-anchor="middle" font-size="12.5" fill="#48525B">' +
@@ -991,6 +1051,14 @@ function renderChart(d){
   YEAR_STATE.partial = months.some(function(m){ return m.partial && m.value != null; });
   YEAR_STATE.left = left; YEAR_STATE.need = need;
   YEAR_STATE.target = (d && d.yearTarget) || 0;
+  /* 이번 달 4칸용 값 — 월 목표는 연 목표를 12로 나눈 값이 아니라 「보고」탭의 이번 달 목표(K4)를
+     쓴다. 두 값이 갈리면 화면 안에서 같은 목표가 두 숫자로 읽힌다. */
+  var _curM = new Date().getMonth() + 1;
+  var _cm = months[_curM - 1], _pm = months[_curM - 2];
+  YEAR_STATE.monthValue = (_cm && _cm.value != null) ? _cm.value : 0;
+  YEAR_STATE.prevValue = (_pm && _pm.value != null) ? _pm.value : null;
+  YEAR_STATE.monthTarget = (RAW.cells ? num(RAW.cells.K4) : 0) ||
+    (((d && d.yearTarget) || 0) ? Math.round(((d && d.yearTarget) || 0) / 12) : 0);
   paintYearly();
 
   // 연 목표 진행 — 막대 그래프와 축이 달라 선으로 겹치면 오해한다. 따로 한 줄로 보인다.
@@ -998,7 +1066,7 @@ function renderChart(d){
   if (tgt) {
     var pct = done / tgt * 100;
     var col = pct >= 100 ? '#146B4F' : (pct >= 60 ? '#14304E' : '#96601A');
-    document.getElementById('gauge').innerHTML =
+    var _g = document.getElementById('gauge'); if (_g) _g.innerHTML =
       '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">' +
         '<b style="font-size:21px;color:' + col + '">' + pct.toFixed(1) + '%</b>' +
         '<span style="font-size:12px;color:#48525B">누적 <b>' + eok(done) + '</b> / 연 목표 <b>' + eok(tgt) + '</b></span>' +
@@ -1063,7 +1131,7 @@ function load(){
     // 여기서 한 번 더 부른다(둘 중 늦게 끝난 쪽이 채운다. 같은 값이라 두 번 불려도 결과는 같다).
     .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel()); } })
     .catch(function(){ // 「불러오는 중…」이 영영 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
-      document.getElementById('gauge').innerHTML =
+      var _g = document.getElementById('gauge'); if (_g) _g.innerHTML =
         '<div style="font-size:11.5px;color:var(--bad)">월별 매출을 못 읽었습니다 — [↻ 새로고침]을 눌러 주세요.</div>';
     });
 
@@ -1104,6 +1172,7 @@ function load(){
       }
     }
     runAudit(); applyUrlView(); applyServerPanel();
+    setTimeout(loadDaily, 1500);   // 본 보고 조회가 다 끝난 뒤에 시작한다
     try { renderPage3(RAW.cells || {}); } catch (ex) {
       var e3 = document.getElementById('err3');
       if (e3) e3.innerHTML = '<div class="err">3면 그리기 실패 — ' + esc(ex.message) + '</div>';
