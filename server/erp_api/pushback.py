@@ -119,6 +119,18 @@ def _now_kst():
     return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() + 9 * 3600))
 
 
+def sync_scripts(action):
+    """MIRROR_SYNC 값은 문자열 하나 또는 리스트(구매요청 add·delete·status·photo = sync_sales + sync_proc,
+    2026-09-14 13:09 부터) — 어느 쪽이든 스크립트 이름 목록으로 편다.
+    2026-09-14 13:46~14:04 실사고: 리스트 값을 set.add 에 그대로 넣어 TypeError 로 되밀기가 죽었고,
+    그 배치의 거울 갱신이 전부 빠져 구매요청 서버 거울(proc_items)이 10분 cron 까지 낡은 채 남았다
+    (나우열M 신고 「서버로 넘기니까 비밀번호·품의가 안 돌아간다」 · [나우열M 요청 2026-09-14])."""
+    scripts = MIRROR_SYNC.get(action)
+    if not scripts:
+        return []
+    return list(scripts) if isinstance(scripts, (list, tuple)) else [scripts]
+
+
 def run(conn, limit=BATCH):
     """되밀 행을 훑는다. 반환 {pushed, failed, syncs}.
 
@@ -132,7 +144,7 @@ def run(conn, limit=BATCH):
             if push_row(conn, table, row):
                 out["pushed"] += 1
                 if table == "write_log" and row["action"] in MIRROR_SYNC:
-                    out["syncs"].add(MIRROR_SYNC[row["action"]])
+                    out["syncs"].update(sync_scripts(row["action"]))
             else:
                 out["failed"] += 1
     for script in out["syncs"]:      # 되민 쓰기가 시트를 바꿨으니 거울을 다시 뜬다(5분 cron 을 기다리지 않게)
@@ -270,6 +282,10 @@ def selftest():
     lock = _acquire_lock()
     assert lock is not None   # 못 잡음(None)은 이미 잡혀 있을 때뿐 — 첫 시도는 항상 얻는다
     _release_lock(lock)
+    # MIRROR_SYNC 값이 리스트인 액션(구매요청)도 set 에 들어간다 — 2026-09-14 TypeError 재발 방지.
+    assert sync_scripts("status") == ["sync_sales.py", "sync_proc.py"], sync_scripts("status")
+    assert sync_scripts("todo_update") == ["sync_todo.py"] and sync_scripts("없는액션") == []
+    _s = set(); _s.update(sync_scripts("delete")); _s.update(sync_scripts("add")); assert _s == {"sync_sales.py", "sync_proc.py"}
     print("selftest ok")
     return 0
 
