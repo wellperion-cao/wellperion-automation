@@ -14104,6 +14104,12 @@ function apiPost(payload) {
   //   ★상한 60초(2026-07-30 재조정) — 30초로 뒀더니 실측 단일 요청이 31.7초까지 걸린 사례가 있어
   //   정상 응답을 끊을 위험이 있었다. 무한 대기만 막으면 되므로 넉넉히 잡는다.
   var _to = _ac ? setTimeout(function(){ try { _ac.abort(); } catch (e) {} }, 60000) : null;
+  // ★중복 저장 가드(배1112) — 응답만 유실돼 화면이 같은 요청을 다시 보내도 서버(api_write._idem_hit)가
+  //   같은 응답을 그대로 돌려준다(GAS 재전송 없음). _assets/erp_write.js gwPost 와 같은 방식.
+  if (payload && !payload.idem) {
+    payload.idem = 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    try { if (window.crypto && window.crypto.randomUUID) payload.idem = window.crypto.randomUUID(); } catch (e) {}
+  }
   var _body = JSON.stringify(payload);
   function _send(url, strict) {
     return fetch(url, {
@@ -14113,7 +14119,7 @@ function apiPost(payload) {
       body: _body,
       signal: _ac ? _ac.signal : undefined
     }).then(function(r){
-      if (strict && !r.ok) throw new Error('api ' + r.status);   // 미로그인(401)·서버 장애(5xx)
+      if (strict && !r.ok) { var e = new Error('api ' + r.status); e.status = r.status; throw e; }   // 미로그인(401)·허용안됨(403)·서버 장애(5xx)
       return r.text().then(function(txt){
         var data;
         try { data = JSON.parse(txt); }
@@ -14136,7 +14142,15 @@ function apiPost(payload) {
   var _p = !ERP_API_ON ? _gas()
     : _send(_writeUrl, true)
         .then(function(d){ return (d && d.error === 'server-forward-failed') ? _gas() : d; })
-        .catch(function(e){ if (_ac && _ac.signal.aborted) throw e; console.warn('[쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message); return _gas(); });
+        .catch(function(e){
+          if (_ac && _ac.signal.aborted) throw e;
+          // 401(미로그인)은 로그인으로, 403(허용 안 된 화면)은 폴백 없이 던진다(배1112) — 폴백하면
+          // 서버가 막은 쓰기가 GAS 직접 경로로 새 나가 관문이 무의미해진다.
+          if (e && e.status === 401) { try { location.href = '/auth/login?next=' + encodeURIComponent(location.pathname); } catch (_e) {} throw e; }
+          if (e && e.status === 403) throw e;
+          console.warn('[쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
+          return _gas();
+        });
   return _p.then(function(d){ if (_to) clearTimeout(_to); return d; })
            .catch(function(e){ if (_to) clearTimeout(_to); throw e; });
 }

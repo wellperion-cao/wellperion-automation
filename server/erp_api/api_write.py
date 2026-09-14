@@ -26,6 +26,7 @@ import urllib.request
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import origin_switch  # noqa: E402  — 영역별 dual/server 스위치(배 960 레인 J)
@@ -35,6 +36,7 @@ from api_intake import redact_blobs  # noqa: E402  — 사진·서명 base64 는
 from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key  # noqa: E402
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
 import mirror_patch  # noqa: E402  — server 모드 업무·결재 쓰기를 거울(todo_items)에 그 자리에서 반영
+from write_perm import WRITE_MODULES, write_allowed  # noqa: E402  — 쓰기 권한 표(배1112 · api_reception_ops 와 공유)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 router = APIRouter()
@@ -477,19 +479,33 @@ def _schedule_sync(script):
 
 @router.post("/api/write")
 async def write(request: Request):
+    """수신만 여기서 — 나머지(DB·GAS 왕복 최대 55초)는 동기라 threadpool 로 돌린다(배1112).
+    async def 안에서 동기 I/O 로 55초씩 대기하면 이벤트 루프가 막혀 같은 워커의 다른 요청이 전부 굶는다
+    (api_reception_ops.py 97줄 실사고 FB260908-220704 와 같은 자리 · api_intake.py 147줄과 같은 처방)."""
     body = await request.body()
+    headers = dict(request.headers)
+    return await run_in_threadpool(_write_sync, headers, body)
+
+
+def _write_sync(headers, body):
     try:
         payload = json.loads(body.decode("utf-8"))
         action = str(payload["action"])
     except Exception:
         return {"ok": False, "error": "bad-payload", "detail": "JSON 객체에 action 이 있어야 합니다", "noRetry": True}
-    user = request.headers.get("x-erp-user", "")
+    user = headers.get("x-erp-user", "")
     # 목적지 판정은 아래 전달과 같은 순서로 — 리셉션 업무·라커(#9i)는 스위치 이름이 없어 늘 dual 이다.
     dest = _rc_gas_key(action, payload) or _gas_key(action)
     if dest is None:      # 표에 없는 액션 — 엉뚱한 GAS 로 흘려보내지 않는다(배 960 M3)
         return JSONResponse(status_code=400, content={
             "ok": False, "error": "unknown-action", "noRetry": True,
             "detail": "관문 목적지 표에 없는 액션입니다: %s" % action[:60]})
+    # saveBoard(공용 보드 · GM_TASK_OWNERS 등 여러 화면이 공유)는 write_perm 표로 안 가른다(write_perm.py 머리말).
+    #   GM_TASK_OWNERS 자체 권한(_owner_write_check)은 아래에서 그대로 돈다.
+    if action != "saveBoard" and not write_allowed(headers, dest):
+        return JSONResponse(status_code=403, content={
+            "ok": False, "error": "forbidden", "noRetry": True,
+            "detail": "이 계정에 허용되지 않은 화면의 저장입니다"})
     try:
         conn = db.connect()
     except db.Error as e:
@@ -672,6 +688,14 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     for _a in ("reg_update", "todo_add", "save", "save_schedule", "add", "member_owner_save"):
         assert _gas_key(_a) in origin_switch.WRITE_AREA, _a
     assert set(origin_switch.WRITE_AREA.values()) <= set(origin_switch.NAMES)
+    # 쓰기 권한 표(배1112) — 목적지마다 표가 있고, saveBoard(공용 보드)가 가리키는 CHECK_GAS_URL 도
+    # 표에는 있다(그래서 write() 가 action 단계에서 따로 건너뛴다 — write_allowed 만으론 못 가른다).
+    for _dest in ("RECEPTION_EXEC_URL", "TODO_GAS_URL", "CHECK_GAS_URL", "SCHEDULE_GAS_URL",
+                  "PROC_GAS_URL", "FUNNEL_EXEC_URL", "INSTRUCTOR_GAS_URL", "RCOPS_GAS_URL", "LOCKER_GAS_URL"):
+        assert _dest in WRITE_MODULES, _dest
+    assert _gas_key("saveBoard") == "CHECK_GAS_URL"
+    assert write_allowed({"x-erp-allowed": "*"}, "CHECK_GAS_URL") is True
+    assert write_allowed({}, "CHECK_GAS_URL") is False   # 관문 반영된 서버에서 허용목록 없이 오면 거부
     # 표에 없는 액션은 목적지를 지어내지 않는다(배 960 M3) — 시포 화면이 실제로 보내는 회원·문의 액션은 전부 있어야 한다.
     for _a in ("member_owner_save", "member_inquiry_delete", "lesson_inquiry_update",
                "staff_feedback_submit", "ohnutti_team_list", "client_write_fail"):

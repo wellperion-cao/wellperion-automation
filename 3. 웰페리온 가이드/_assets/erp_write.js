@@ -72,8 +72,21 @@
   var WRITE = /^(todo_(add|update|delete|done|sign|reset|opinion|opinion_delete|upload|remove_file|orphan_cleanup)|approval_rep_(escalate|sign_upload|cancel)|notice_(save|delete)|product_plan_(save|delete)|kakao_rooms_(save|delete))$/;
 
   function _json(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
     return r.json();
+  }
+
+  /* 관문 실패 공통 처리(배1112) — 401(미로그인)은 로그인 화면으로 보내고, 403(허용 안 된 화면의 쓰기)은
+     GAS 폴백 없이 그대로 던진다(폴백하면 서버가 막은 쓰기가 GAS 직접 경로로 새 나가 관문이 무의미해진다).
+     그 외(5xx·네트워크 오류)만 종전처럼 GAS 로 폴백한다. */
+  function _gateFallback(e, gas, label) {
+    if (e && e.status === 401) {
+      try { location.href = '/auth/login?next=' + encodeURIComponent(location.pathname); } catch (_e) {}
+      throw e;
+    }
+    if (e && e.status === 403) throw e;
+    console.warn('[' + label + '] /api/write 실패 → GAS 폴백:', e && e.message);
+    return gas();
   }
 
   /* 관문 POST 하나 — 요청마다 idem 열쇠(uuid)를 본문에 실어 보낸다 (배 960 M7 · 2026-09-04).
@@ -121,10 +134,7 @@
     if (!ERP_ON || !params || !WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
-      .catch(function (e) {
-        console.warn('[업무쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
-        return gas();
-      });
+      .catch(function (e) { return _gateFallback(e, gas, '업무쓰기관문'); });
   }
 
   /* ── 점검 3부서·전사일정 쓰기 관문 (배 960 #5b) ────────────────────────────────────────────
@@ -150,7 +160,7 @@
     }, params, function (a) { return CHECK_WRITE.test(a); });
     if (!ERP_ON || !params || !CHECK_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
       // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .json() 할 수 있어야 한다.
       return r.clone().json().then(function (d) {
         if (d && d.error === 'server-forward-failed') return gas();
@@ -160,10 +170,7 @@
         }
         return r;
       });
-    }).catch(function (e) {
-      console.warn('[점검쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
-      return gas();
-    });
+    }).catch(function (e) { return _gateFallback(e, gas, '점검쓰기관문'); });
   }
 
   /* ── 구매요청·자산대장 쓰기 관문 (배 960 #H · CFO 매출지출현황) ───────────────────────────
@@ -191,10 +198,7 @@
     if (!ERP_ON || !params || !PROC_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
-      .catch(function (e) {
-        console.warn('[구매쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
-        return gas();
-      });
+      .catch(function (e) { return _gateFallback(e, gas, '구매쓰기관문'); });
   }
 
   /* ── 리셉션 업무·라커관리 관문 (배 960 #9i) ───────────────────────────────────────────────
@@ -221,9 +225,9 @@
     }, payload, function (a) { return RC_WRITE.test(a); });
     if (!ERP_ON || !payload || !(payload.tab || payload.db)) return gas();
     var isWrite = RC_WRITE.test(String(payload.action || ''));
-    var fail = function () { return { via: 'gas', stale: null }; };   // 관문을 못 씀 — 종전 경로로
+    var fail = function (r) { return { via: 'gas', stale: null, status: r && r.status }; };   // 관문을 못 씀 — 종전 경로로
     return gwPost(isWrite ? '/api/write' : '/api/reception-ops', payload).then(function (r) {
-      if (!r.ok) return fail();                                       // 401(미로그인)·5xx
+      if (!r.ok) return fail(r);                                      // 401(미로그인)·403(허용안됨)·5xx
       // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .text()/.json() 할 수 있어야 한다.
       return r.clone().json().then(function (d) {
         return (d && d.error === 'server-forward-failed')
@@ -232,6 +236,13 @@
       }, fail);
     }, fail).then(function (v) {
       if (v.via === 'gateway') return v.r;
+      // 쓰기(update·append)만 401·403 을 특별 취급한다(배1112) — GAS 로 폴백하면 서버가 막은 쓰기가
+      // 그대로 시트에 들어가 관문이 무의미해진다. 읽기는 종전대로 GAS 직접 경로·정상본 폴백을 그대로 둔다.
+      if (isWrite && v.status === 401) {
+        try { location.href = '/auth/login?next=' + encodeURIComponent(location.pathname); } catch (_e) {}
+        throw new Error('unauthorized');
+      }
+      if (isWrite && v.status === 403) throw new Error('forbidden');
       return gas().catch(function (e) {
         if (!isWrite && v.stale) {
           console.warn('[리셉션관문] 서버·GAS 둘 다 실패 → 서버 마지막 정상본 표시');
@@ -264,10 +275,7 @@
     if (!ERP_ON || !params || !FUNNEL_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
       .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
-      .catch(function (e) {
-        console.warn('[오누띠·피드백쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
-        return gas();
-      });
+      .catch(function (e) { return _gateFallback(e, gas, '오누띠·피드백쓰기관문'); });
   }
 
   w.erpTodoCall = erpTodoCall;

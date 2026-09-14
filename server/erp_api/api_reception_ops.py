@@ -30,7 +30,10 @@ import sys
 import time
 import urllib.request
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Request
+from fastapi.responses import JSONResponse
+
+from write_perm import write_allowed  # noqa: E402  — 쓰기 권한 표(배1112 · api_write.py 와 공유, 순환수입 피함)
 
 SOURCE = "server-last-good"
 FORWARD_TIMEOUT = 20          # 화면 폴링 주기(30초)보다 짧게 — 55초였을 때 요청이 겹쳐 쌓여 서버 전체가 굶었다
@@ -99,7 +102,7 @@ def _failed(detail, t, payload):
 #   — 종합접수처 조회(습득물·컴플레인·청결)가 40초 넘게 대기하다 "불러오지 못했다" 팝업이 났다.
 #   동기 def 면 FastAPI 가 threadpool 로 돌려 루프가 살아 있다. 여기에 await 를 다시 넣지 마라.
 @router.post("/api/reception-ops")
-def reception_ops(body: bytes = Body(b"")):
+def reception_ops(request: Request, body: bytes = Body(b"")):
     try:
         payload = json.loads(body.decode("utf-8"))
     except Exception:
@@ -108,6 +111,10 @@ def reception_ops(body: bytes = Body(b"")):
     if not t:
         return {"ok": False, "error": "bad-payload",
                 "detail": "tab(리셉션 업무) 또는 db(라커관리)가 있어야 합니다", "noRetry": True}
+    if not write_allowed(dict(request.headers), t[0]):
+        return JSONResponse(status_code=403, content={
+            "ok": False, "error": "forbidden", "noRetry": True,
+            "detail": "이 계정에 허용되지 않은 화면의 저장입니다"})
     if write_gas_key(payload.get("action", ""), payload):
         # 쓰기가 이리 오면 write_log 이중기록이 빠진다. 화면이 관문을 잘못 고른 것 — 조용히 흘려보내지 않는다.
         return {"ok": False, "error": "bad-payload", "detail": "쓰기는 /api/write 로", "noRetry": True}
@@ -138,6 +145,11 @@ def health():
 
 
 def selftest():
+    # 쓰기 권한 표(배1112) — target() 이 돌려주는 두 키가 실제로 write_perm 표에 있어야 관문이 먹는다.
+    assert write_allowed({"x-erp-allowed": "*"}, "RCOPS_GAS_URL") is True
+    assert write_allowed({}, "RCOPS_GAS_URL") is False
+    assert write_allowed({"x-erp-allowed": "coo-리셉션-업무-index"}, "RCOPS_GAS_URL") is True
+    assert write_allowed({"x-erp-allowed": "coo-리셉션-업무-index"}, "LOCKER_GAS_URL") is False
     assert target({"tab": "키관리", "action": "read"}) == ("RCOPS_GAS_URL", "키관리")
     assert target({"db": "men", "password": "x"}) == ("LOCKER_GAS_URL", "men")
     # 라커 쓰기는 db·_sheet_row 를 같이 싣는다 — db 판정이 먼저라 라커 GAS 로 간다.

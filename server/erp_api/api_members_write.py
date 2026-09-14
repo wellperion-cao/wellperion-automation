@@ -72,6 +72,7 @@ import sys
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리
@@ -1257,19 +1258,29 @@ def _handle_member_registered_remove(payload, raw_body, user):
 
 @router.post("/write")
 async def members_write(request: Request):
+    """수신만 여기서 — 나머지(DB·GAS 왕복 최대 55초)는 동기라 threadpool 로 돌린다(배1112 · api_write.write 와 같은 처방)."""
     body = await request.body()
+    headers = dict(request.headers)
+    return await run_in_threadpool(_members_write_sync, headers, body)
+
+
+def _members_write_sync(headers, body):
     try:
         payload = json.loads(body.decode("utf-8"))
         action = str(payload["action"])
     except Exception:
         return {"ok": False, "error": "bad-payload", "detail": "JSON 객체에 action 이 있어야 합니다", "noRetry": True}
+    if not api_write.write_allowed(headers, "FUNNEL_EXEC_URL"):
+        return JSONResponse(status_code=403, content={
+            "ok": False, "error": "forbidden", "noRetry": True,
+            "detail": "이 계정에 허용되지 않은 화면의 저장입니다"})
     if action not in _IMPLEMENTED:
         return JSONResponse(status_code=501, content={
             "ok": False, "error": "not-implemented", "noRetry": False,
             "detail": "회원 쓰기 서버 이관은 아직 %s 를 처리하지 않습니다. "
                       "%s 는 GAS 경로(/api/write)를 쓰세요." % (", ".join(_IMPLEMENTED), action[:60])})
 
-    user = request.headers.get("x-erp-user", "")
+    user = headers.get("x-erp-user", "")
     try:
         idem_conn = db.connect()
     except db.Error as e:
@@ -1940,6 +1951,11 @@ def _selftest_registered_remove_needs_password():
 
 
 if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스킹·직원표기·상태검증 자체점검(서버·DB 없이)
+    # 쓰기 권한(배1112) — 회원 쓰기는 전부 FUNNEL_EXEC_URL 표로 가른다.
+    assert api_write.write_allowed({"x-erp-allowed": "*"}, "FUNNEL_EXEC_URL") is True
+    assert api_write.write_allowed({"x-erp-allowed": "member"}, "FUNNEL_EXEC_URL") is True
+    assert api_write.write_allowed({"x-erp-allowed": "check"}, "FUNNEL_EXEC_URL") is False
+    assert api_write.write_allowed({}, "FUNNEL_EXEC_URL") is False
     assert FIELD_TO_COL["PT 담당자"] == "owner_pt" and FIELD_TO_COL["수영 담당자"] == "owner_swim"
     assert len(FIELD_TO_COL) == 5
     assert set(_IMPLEMENTED) == {"member_owner_save", "member_hold_transition", "member_active_update",
