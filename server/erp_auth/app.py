@@ -503,6 +503,10 @@ ADMIN_ONLY_PREFIXES = ("/reports/", "/회사문서/", "/erp/admin/", "/1. AI자�
 # 통째로 막지 않고 안쪽 경로에 같은 규칙을 적용한다 — status·ssot·가이드 폴더만 열고 나머지(scripts·logs·아카이브…)는 관리자만.
 REPO_OPEN_PREFIXES = ("/status/", "/ssot/")
 GUIDE_DIR = "/3. 웰페리온 가이드"
+# ERP 플랫폼관리(/erp/admin/ · 플랫폼을 파는 우리 자리)는 관리자 등급이어도 회사 계정 관리자만 연다(GM 결정 2026-09-14 —
+# 개인 아이디 namuk87·jjky0123 은 관리자 등급이라 열렸다). 회사 관리자 콘솔(/auth/admin)은 종전대로 관리자 등급 전부.
+PLATFORM_ADMINS = frozenset(e.strip().lower() for e in os.environ.get("ERP_PLATFORM_ADMINS", "cao@wellperion.com").split(",") if e.strip())
+PLATFORM_PREFIX = "/erp/admin/"
 # 회원·문의 개인정보가 든 status 파일 = 회원 관리(member) 카드가 있어야 읽는다.
 MEMBER_DATA_RE = re.compile(r"^/status/(member_|inquiry_snapshot|counsel_questions|cpo_member_)")
 # 읽기 API 접두 → 그 자료를 그리는 카드들. 그중 하나라도 허용돼야 API 도 열린다(2026-09-14 화면 전수 grep 으로 만든 표).
@@ -543,7 +547,9 @@ def _api_need(path: str) -> Optional[set]:
 
 
 def path_allowed(user, path: str) -> bool:
-    """카드 목록 밖 경로를 이 계정이 열어도 되나. 관리자=전부. 판정 순서 = 관리자 전용 접두 → 회원 자료 → API → 화면 → 자산."""
+    """카드 목록 밖 경로를 이 계정이 열어도 되나. 관리자=전부(플랫폼관리만 예외). 판정 순서 = 플랫폼관리 → 관리자 전용 접두 → 회원 자료 → API → 화면 → 자산."""
+    if path.startswith(PLATFORM_PREFIX) or path == PLATFORM_PREFIX.rstrip("/"):
+        return (user["email"] or "").lower() in PLATFORM_ADMINS
     if user["role"] == "admin":
         return True
     if path == "/repo" or path.startswith("/repo/"):
@@ -1719,6 +1725,12 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     _adm = {"role": "admin", "email": "a@x", "perms": None}
     _stf = {"role": "staff", "email": "s@x", "perms": json.dumps({"modules": ["cpo-member-lesson"], "groups": [], "deny": []})}
     assert path_allowed(_adm, "/repo/scripts/x.py") and not path_allowed(_stf, "/repo/scripts/x.py")
+    # 플랫폼관리 = 회사 계정 관리자만(GM 2026-09-14) — 관리자 등급이라도 개인 아이디는 못 연다
+    _adm_personal = {"role": "admin", "email": "namuk87", "perms": None}
+    _adm_company = {"role": "admin", "email": "cao@wellperion.com", "perms": None}
+    assert path_allowed(_adm_company, uri_path("/erp/admin/")) and path_allowed(_adm_company, "/erp/admin/index.html")
+    assert not path_allowed(_adm_personal, uri_path("/erp/admin/")) and not path_allowed(_adm_personal, "/erp/admin/clevel-guide.html")
+    assert path_allowed(_adm_personal, "/repo/scripts/x.py")      # 그 밖은 관리자 등급 그대로
     assert path_allowed(_stf, "/repo/status/monthly_ops_plan.json") and path_allowed(_stf, "/repo/ssot/kpi.json")   # 화면이 읽는 데이터
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
     assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
