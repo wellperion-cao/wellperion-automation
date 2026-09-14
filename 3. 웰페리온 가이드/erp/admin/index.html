@@ -110,6 +110,16 @@
   .pwait.pbad{color:#B4322A;}
   .ppre{font-size:12px; color:#8A9096; margin:0 0 12px; line-height:1.55;}
   span.pi{cursor:default;}
+  .pi span a{color:#2F6FB0; text-decoration:underline;}
+  /* 계정 자리 — 비밀번호는 담지 않는다. 이 주소는 공개라 적어 두면 누구나 본다. 아이디만 가렸다 보인다. */
+  .acctbox{border:1px solid var(--line,#E3E5E8); border-radius:12px; padding:16px; background:#fff; margin-bottom:18px;}
+  .accthead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;}
+  .acctbtn{font:inherit; font-size:12px; font-weight:600; color:#2F6FB0; background:#EEF3F8;
+           border:1px solid #D6E2EE; border-radius:999px; padding:5px 14px; cursor:pointer;}
+  .acctbtn:hover{background:#E3EDF7;}
+  .acctnote{font-size:12px; color:#9A6500; background:rgba(154,101,0,.08); border-radius:8px;
+            padding:8px 10px; margin-bottom:12px; line-height:1.5;}
+  .acctid{font-family:ui-monospace,Consolas,monospace; letter-spacing:.06em;}
   .st.go{color:var(--accent-hover); background:var(--accent-bg);}
   /* AI 운영 가이드는 이 자리에 그대로 끼워 띄운다(권한·비용과 같은 방식) */
   #guide-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
@@ -383,47 +393,72 @@
     업체 홈페이지를 만들 때 사진 자리에 이 둘러보기를 넣으면 글보다 먼저 읽힙니다.</div></details>
 
   <h3 style="margin:30px 0 4px;font-size:15px">파트너사별 진행 — 한 눈에</h3>
-  <div class="ppre">파트너사가 들어오면 <b>같은 여섯 칸</b>을 같은 순서로 채웁니다. 1호(웰페리온)가 기준판이고,
-  새 파트너사는 그 판을 그대로 복제해 씁니다 — 칸을 빼거나 더하지 않습니다.</div>
+  <div class="ppre">파트너사가 들어오면 <b>같은 여덟 칸</b>을 같은 순서로 채웁니다. 1호(웰페리온)가 기준판이고,
+  새 파트너사는 그 판을 그대로 복제해 씁니다 — 칸을 빼거나 더하지 않습니다.
+  <b>자력 답변</b> = 손님 질문 중 봇이 사람 손 없이 끝까지 답한 비율입니다.</div>
   <div class="pgrid">
 
     <div class="pcard">
       <div class="ph"><span class="pno">1호</span><b>웰페리온</b><span class="pwho">우리 것 · 기준판</span></div>
-      <div class="pbar"><i style="width:100%"></i></div><div class="ppct">여섯 칸 모두 있음</div>
-      <a class="pi ok" href="http://wellperion.com/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>라이브 · wellperion.com</span></a>
+      <div class="pbar"><i style="width:100%"></i></div><div class="ppct">여덟 칸 모두 있음</div>
+      <a class="pi ok" href="http://wellperion.com/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>라이브 wellperion.com · <a href="../../home/tour/" target="_blank" rel="noopener">걸어 다니는 둘러보기</a> 포함</span></a>
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/1.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%ED%9A%8C%EC%82%AC%EC%86%8C%EA%B0%9C%EC%84%9C_v2.19.html" target="_blank" rel="noopener"><b>2 회사소개서</b><span>v2.19</span></a>
       <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>3 브랜드가이드</b><span>색 · 로고 · 서체 · 말투 · 금지어</span></a>
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/2.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%EC%A0%84%EB%9E%B5%EB%A1%9C%EB%93%9C%EB%A7%B5_%EB%B3%B4%EA%B3%A0%EC%84%9C_v1.4_A3.html" target="_blank" rel="noopener"><b>4 운영전략</b><span>전략로드맵 v1.4</span></a>
-      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담봇</b><span>돌고 있음 · 자력 답변 77%</span></a>
-      <a class="pi ok" href="../../home/tour/" target="_blank" rel="noopener"><b>6 둘러보기</b><span>걸어 다니는 화면 · 파트너사에 그대로 셋업</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문) · <a href="../../cbo/counsel_faq.html" target="_blank" rel="noopener">FAQ 관리</a></span></a>
+      <a class="pi ok" href="http://wellperion.com/llms.txt" target="_blank" rel="noopener"><b>6 검색 노출 셋팅</b><span>사람 검색(SEO) · AI 검색(GEO) · 즉답(AEO) — robots · sitemap · llms.txt 다 있음</span></a>
+      <a class="pi ok" href="../../cmo/funnel/%EC%BD%98%ED%85%90%EC%B8%A0%EB%AC%B8%EC%9D%98%ED%98%84%ED%99%A9.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그·인스타·카페·당근 자동 발행 돌고 있음</span></a>
+      <a class="pi ok" href="#acct" data-acct="1"><b>8 계정</b><span>발행·상담봇이 쓰는 계정 자리 — 누르면 아이디가 보입니다</span></a>
       <div class="pwait">기준판이라 빈 칸이 없어야 합니다. 새 파트너사는 여기를 복제합니다.</div>
     </div>
 
     <div class="pcard">
       <div class="ph"><span class="pno">2호</span><b>다이어트캠프</b><span class="pwho">이승기 대표님</span></div>
-      <div class="pbar"><i style="width:67%"></i></div><div class="ppct">여섯 칸 중 네 칸</div>
-      <a class="pi warn" href="https://wellperion-cao.github.io/wellperion-automation/dietcamp/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>임시 주소 · 검색 차단 · 사진 자리 비어 있음</span></a>
+      <div class="pbar"><i style="width:44%"></i></div><div class="ppct">여덟 칸 중 세 칸 반</div>
+      <a class="pi warn" href="https://wellperion-cao.github.io/wellperion-automation/dietcamp/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>임시 주소 · 검색 차단 · 사진 자리 비어 있음 · 둘러보기 촬영 전</span></a>
       <a class="pi warn" href="../../cbo/dietcamp/intro.html" target="_blank" rel="noopener"><b>2 회사소개서</b><span>v0.3 · 손님용 9절은 홈으로, 동행자용으로 다시 짠다</span></a>
       <a class="pi ok" href="../../cbo/dietcamp/brand.html" target="_blank" rel="noopener"><b>3 브랜드가이드</b><span>v0.3 · 로고 파일만 미수령</span></a>
       <a class="pi ok" href="../../cbo/dietcamp/strategy.html" target="_blank" rel="noopener"><b>4 운영전략</b><span>v0.2 · 90일 계획까지</span></a>
-      <a class="pi ok" href="https://erp.wellperion.com/dietcamp/counsel/" target="_blank" rel="noopener"><b>5 상담봇</b><span>돌고 있음 · 자력 답변 84%</span></a>
-      <span class="pi none"><b>6 둘러보기</b><span>촬영 전</span></span>
-      <div class="pwait">기다리는 것 — 로고 · 사진 3~5장 · 연혁 · 마케팅 자동화 시작 여부</div>
+      <a class="pi ok" href="https://erp.wellperion.com/dietcamp/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 6건(웰페리온은 28건) · 자력 답변 84%(38문 중 32문)</span></a>
+      <span class="pi none"><b>6 검색 노출 셋팅</b><span>아직 없음 — robots · sitemap · llms.txt 셋 다 미설치</span></span>
+      <span class="pi none"><b>7 마케팅 자동 셋업</b><span>시작 여부를 대표님께 여쭌 상태(9/14)</span></span>
+      <span class="pi none"><b>8 계정</b><span>블로그 계정 미수령</span></span>
+      <div class="pwait">기다리는 것 — 로고 · 사진 3~5장 · 연혁 · 블로그 계정 · 마케팅 자동화 시작 여부</div>
     </div>
 
     <div class="pcard">
       <div class="ph"><span class="pno">3호</span><b>고척 gdr QA 골프존</b><span class="pwho">조재오 부장님</span></div>
-      <div class="pbar"><i style="width:17%"></i></div><div class="ppct">여섯 칸 중 한 칸</div>
-      <span class="pi none"><b>1 홈페이지</b><span>아직 없음</span></span>
+      <div class="pbar"><i style="width:19%"></i></div><div class="ppct">여덟 칸 중 한 칸 반</div>
+      <span class="pi none"><b>1 홈페이지</b><span>아직 없음 · 둘러보기 촬영 전</span></span>
       <span class="pi none"><b>2 회사소개서</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
       <span class="pi none"><b>3 브랜드가이드</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
       <span class="pi none"><b>4 운영전략</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
-      <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>5 상담봇</b><span>돌고 있음 · 자력 답변 100%(9건)</span></a>
-      <span class="pi none"><b>6 둘러보기</b><span>촬영 전</span></span>
-      <div class="pwait pbad">막힌 것 — 블로그 자동 발행이 9/12~14 3일 연속 실패. 부장님 계정 로그인이 풀렸다(다시 로그인은 사람 손)</div>
+      <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>자력 답변 100%(9문 중 9문 · 아직 표본이 적다)</span></a>
+      <span class="pi none"><b>6 검색 노출 셋팅</b><span>아직 없음 — robots · sitemap · llms.txt 셋 다 미설치</span></span>
+      <a class="pi bad" href="../../cbo/gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그 자동 발행 있으나 9/12~14 3일 연속 실패</span></a>
+      <a class="pi warn" href="#acct" data-acct="3"><b>8 계정</b><span>블로그·인스타 계정 자리 있음 · 로그인이 풀려 다시 로그인 필요</span></a>
+      <div class="pwait pbad">막힌 것 — 부장님 계정 로그인이 풀렸다. 다시 로그인은 사람 손이라 창을 띄워 직접 해야 합니다.</div>
       <div class="pwait">기다리는 것 — 코치 경력 · 정규 요금 구조 · 문의가 오면 누가 답하는가</div>
     </div>
 
+  </div>
+
+  <div id="acct" class="acctbox" hidden>
+    <div class="accthead"><b>계정 자리</b>
+      <button type="button" id="acct-toggle" class="acctbtn">아이디 보기</button></div>
+    <div class="acctnote">비밀번호는 이 화면에 담지 않습니다 — 이 주소는 공개 주소라 적어 두면 누구나 볼 수 있습니다.
+      로그인은 각 계정 자리에서 사람이 한 번 직접 합니다.</div>
+    <div class="tbl-wrap"><table class="reg">
+      <thead><tr><th>파트너사</th><th>어디</th><th>아이디</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td class="item">1호 웰페리온</td><td>네이버 블로그</td><td class="acctid" data-id="wellperion">••••••••</td><td><span class="st ok">로그인 살아 있음</span></td></tr>
+        <tr><td class="item">1호 웰페리온</td><td>인스타그램 · 카페 · 당근</td><td class="acctid" data-id="웰페리온 공식 계정">••••••••</td><td><span class="st ok">로그인 살아 있음</span></td></tr>
+        <tr><td class="item">2호 다이어트캠프</td><td>블로그</td><td class="acctid" data-id="(미수령)">••••••••</td><td><span class="st warn">계정 못 받음</span></td></tr>
+        <tr><td class="item">2호 다이어트캠프</td><td>인스타그램</td><td class="acctid" data-id="dietcamp_pt">••••••••</td><td><span class="st warn">아이디만 받음 · 로그인 안 함</span></td></tr>
+        <tr><td class="item">3호 고척 골프</td><td>네이버 블로그</td><td class="acctid" data-id="spogym21qa">••••••••</td><td><span class="st bad">로그인 풀림 — 다시 로그인 필요</span></td></tr>
+        <tr><td class="item">3호 고척 골프</td><td>인스타그램</td><td class="acctid" data-id="(자리만 만듦)">••••••••</td><td><span class="st wait">로그인 전</span></td></tr>
+      </tbody>
+    </table></div>
   </div>
 
   <details class="tip"><summary>왜 깃허브 주소가 섞여 있나</summary>
@@ -470,6 +505,33 @@
     </div>
   </div>
   <p class="lead">올라가는 방향은 <b>알파 → 베타 → 라이브</b> 한 방향뿐입니다.</p>
+  <!-- 플랫폼 환경 정본 — 서버·개발 언어·DB·연동 전부(GM 지시 2026-09-14). 값은 ssot/platform_env.json 한 곳에만 있다.
+       같은 파일의 partner=true 항목만 ERP관리(파트너사 관리자) ▸개발 환경 에 보인다 — 여기는 전부 보인다. -->
+  <h3 style="margin:22px 0 6px;font-size:14px;">플랫폼 환경 정본</h3>
+  <div class="meta">서버 · 언어 · DB · 배포 · 연동 · 비밀값 자리 — 정본 = <code>ssot/platform_env.json</code> · 갱신 <span id="env-ssot-date">—</span> · <b>P</b> 표시 = 파트너사 관리자에게도 보이는 줄</div>
+  <div id="env-ssot" class="layers" style="margin-top:8px;">불러오는 중…</div>
+  <script>
+  /* 플랫폼 환경 정본 — ssot/platform_env.json 을 카드 여러 장으로 편다(환경 3벌 카드와 같은 모양).
+     서버 사본(/ssot/) 먼저, 없으면 /repo/ — 이 화면의 다른 자리와 같은 방식. */
+  (function(){
+    var box = document.getElementById('env-ssot');
+    function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function get(path){
+      return fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .catch(function(){ return fetch('/repo/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }); });
+    }
+    get('ssot/platform_env.json').then(function(d){
+      document.getElementById('env-ssot-date').textContent = d.updated || '—';
+      box.innerHTML = (d.sections || []).map(function(s){
+        return '<div class="layer"><div class="tag">' + esc(s.title) + '</div>'
+          + (s.items || []).map(function(it){
+              return '<div class="stat"><span class="k">' + esc(it.k) + (it.partner ? ' <b title="파트너사 관리자에게도 보임">P</b>' : '') + '</span><span class="v">' + esc(it.v) + '</span></div>';
+            }).join('')
+          + '</div>';
+      }).join('') || '<div class="layer">정본에 항목이 없습니다.</div>';
+    }).catch(function(){ box.innerHTML = '<div class="layer">정본(ssot/platform_env.json)을 못 읽었습니다 — 서버에서 열어야 보입니다.</div>'; });
+  })();
+  </script>
 </section>
 
 <section class="panel" data-panel="tokens" hidden>
@@ -993,6 +1055,29 @@
       document.getElementById('tok-billing-line').textContent = '불러오지 못했다.';
       document.getElementById('tok-acct-rows').innerHTML = '<tr><td colspan="6" class="note">불러오지 못했다.</td></tr>';
     });
+  })();
+
+  // 계정 칸 — 아이디 가리기/보이기. 비밀번호는 담지 않는다(공개 주소).
+  (function(){
+    var box = document.getElementById('acct');
+    var btn = document.getElementById('acct-toggle');
+    if (!box || !btn) return;
+    var shown = false;
+    function render(){
+      [].forEach.call(document.querySelectorAll('.acctid'), function(td){
+        td.textContent = shown ? (td.dataset.id || '—') : '••••••••';
+      });
+      btn.textContent = shown ? '아이디 가리기' : '아이디 보기';
+    }
+    btn.addEventListener('click', function(){ shown = !shown; render(); });
+    [].forEach.call(document.querySelectorAll('a[data-acct]'), function(a){
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        box.hidden = false;
+        box.scrollIntoView({behavior:'smooth', block:'center'});
+      });
+    });
+    render();
   })();
   </script>
 
