@@ -1,325 +1,325 @@
 {
-  "_doc": "AWS 이관 전체 현황 정본(발행루트 안 — 화면이 ../status/ 로 직접 읽는다 · 2026-09-07 17:4x 이전 위치 status/aws_migration.json 폐지). 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
-  "updated_at": "2026-09-14T12:31+09:00",
-  "updated_at_kst": "2026-09-14 12:31",
-  "summary": {
-    "progress_pct": 82,
-    "origin_switched": "7/8 영역 (문의 · 종합접수처 · 점검 쓰기 · 구매·자산 · 업무·결재 쓰기 · 전사일정 · 회원) — 09-11 저녁 GM 지시로 남은 스위치를 한 번에 server 로",
-    "next": "① 업무·결재 화면 읽기 2장 ERP_API_ON 켜기(나우열M 소관 · GM 승인 한 줄) ② 예외 6동작(결재 PIN 검증 4 · 드라이브 업로드 2)을 서버로 — PIN 원장·파일 저장소를 서버에 두는 설계 필요 ③ 그 뒤 구글 호출 0 실측 → GAS 삭제(GM 결재)",
-    "today": "09-14 실측: 서버 스위치 파일 = 문의 3폼·쓰기 6영역 전부 server(reception 열쇠는 옛 통로라 뜻 없음) · 표가 09-10 22:35 판(50%)에 멈춰 있어 실제 상태로 다시 적었다",
-    "gm_todo": "① 문자 문안 4건 확인 ② 딜라이브 API 등록 ③ 네이버·카카오 키 ④ 회원 와이파이 IP 확인 ⑤ GEO 월1회 사람 확인 여부",
-    "auto_approve": "09-07 18:3x GM: AI C-Level 자물쇠 요청 자동 승인 · 시로·시뽀·사람·다른 PC 만 GM 카드",
-    "data_loss": "없음 — 원천 전환은 시트 행을 지우지 않는다(새 행이 시트에 안 갈 뿐). 서버 자료칸은 새벽 3시 S3 로 매일 백업(30일 보관).",
-    "finish_target": "2026-09-19(금) 화면 읽기 2장 · 예외 6동작은 설계 뒤 별도 일정 · GAS 삭제는 호출 0 실측 뒤",
-    "blocked_today": "없음 — 남은 것은 사람 승인(화면 2장)과 설계(예외 6동작)",
-    "root_blocker": "남은 구글 의존 둘 = 결재 비밀번호(PIN) 검증·잠금 원장이 구글 속성에 있다 · 첨부 파일이 구글 드라이브에 올라간다. 서버에 PIN 원장과 파일 저장소를 두면 끝난다",
-    "today_target": "88% (7/8 영역 + 지출품의) · 100% = 화면 읽기 2장 + 예외 6동작 + 매출 원천(나우열M 소관이라 이관 범위 밖일 수 있음 · GM 판정)",
-    "numbering_progress": "(09-10 기록 · 해결됨) 번호를 서버가 매기게 하기(배1195) — ①구매요청 번호 완료 ②자산 라벨 완료(연도별·재발급 방지) ③회원번호 채번 완료(M01752부터 · 시작값은 서버 미러 전수 최댓값과 구글 자체 계산이 정확히 일치해 교차…",
-    "open_check": "되밀기 미전송 0건 유지 확인(/api/intake/health pushback.unpushed) · 예외 6동작이 구글로 가는지 write_log 로 주 1회 확인",
-    "member_blocker": "(09-10 기록 · 해결됨) 회원은 09-10 밤 조사로 그림이 바뀌었다. 회원 쓰기 7종(등록·상태변경·보류·보관복귀 등)은 origin_switch 를 아예 안 탄다 — 화면이 /api/members/write 로 따로 보내고 그 통로는 언…",
-    "areas_8": "8 영역 = ①문의 폼 ②종합접수처 ③점검 쓰기 ④구매·자산 ⑤업무·결재 ⑥전사일정 ⑦회원 쓰기 ⑧매출·지출. ①~⑦ 원천 전환 + ⑧ 지출품의 완료 = 88%",
-    "todo_area_blockers": "(09-10 기록 · 해결됨) 업무·결재를 서버 원천으로 켜려면 셋(09-10 밤 호출부 전수 조사 · 호출자 22곳 중 응답값을 쓰는 곳은 3곳뿐). ①업무 현황 SSOT 화면이 아직 구글에서 목록을 읽는다(ERP_API_ON=false · 0…"
+ "_doc": "AWS 이관 전체 현황 정본(발행루트 안 — 화면이 ../status/ 로 직접 읽는다 · 2026-09-07 17:4x 이전 위치 status/aws_migration.json 폐지). 씨앗 = status/briefs/CTO-2026-09-07-AWS-전환-일정표.md(표) + status/erp_status.json(GAS→AWS 이관 줄) + status/briefs/CEO-2026-09-03-AWS이관-실무진안내.md(표1). 시토가 전환마다 rows[].stage·switch_date·updated 갱신. 화면 = cto/aws_migration.html.",
+ "updated_at": "2026-09-14T13:05+09:00",
+ "updated_at_kst": "2026-09-14 13:05",
+ "summary": {
+  "progress_pct": 92,
+  "origin_switched": "7/8 영역 (문의 · 종합접수처 · 점검 쓰기 · 구매·자산 · 업무·결재 쓰기 · 전사일정 · 회원) — 09-11 저녁 GM 지시로 남은 스위치를 한 번에 server 로",
+  "next": "① 업무 현황 SSOT 의 ERP_API_ON=true 한 줄 — 근거는 다 섰고 나우열M·GM 승인만 남았다(AI 가 못 고치는 파일) ② 서버에서 /api/todo 의 gmkey 실측 → 맞으면 결재 현황 SSOT 도 켬 ③ 서버에 결재 PIN 4개 등록(approval_pin.py --set) → 그 순간부터 서버가 검증 ④ nginx /uploads/todo/ 배포 후 api.env ERP_TODO_UPLOAD=1 → 첨부가 서버로 ⑤ unlock_round 는 점검 원장 이관 배로 분리 ⑥ 그 뒤 구글 호출 0 실측 → GAS 삭제(GM 결재)",
+  "today": "09-14 오후: 예외 6동작 중 5동작의 서버 코드를 넣었다(PIN 3 · 첨부 2 — 값·스위치 전까지 종전 동작) · unlock_round 는 원장 소재 때문에 점검 영역 배로 분리했다 · 업무 현황 SSOT 읽기는 근거를 다 세웠으나 그 화면이 나우열M 소관이라 AI 가 못 켠다(가드가 막았고 강행하지 않았다)",
+  "gm_todo": "① 문자 문안 4건 확인 ② 딜라이브 API 등록 ③ 네이버·카카오 키 ④ 회원 와이파이 IP 확인 ⑤ GEO 월1회 사람 확인 여부",
+  "auto_approve": "09-07 18:3x GM: AI C-Level 자물쇠 요청 자동 승인 · 시로·시뽀·사람·다른 PC 만 GM 카드",
+  "data_loss": "없음 — 원천 전환은 시트 행을 지우지 않는다(새 행이 시트에 안 갈 뿐). 서버 자료칸은 새벽 3시 S3 로 매일 백업(30일 보관).",
+  "finish_target": "2026-09-19(금) 결재 화면 읽기·PIN 등록·첨부 스위치까지 · unlock_round 는 점검 원장 이관과 같은 배로(별도 일정) · GAS 삭제는 호출 0 실측 뒤",
+  "blocked_today": "①업무 현황 SSOT 읽기 — 나우열M 소관 파일이라 AI 수정 차단(승인 필요 · 한 줄) ②결재 현황 SSOT 읽기 — 서버 GM_TODO_KEY 실측 대기(시토) ③server/common/schema.sql — 작업트리 사본이 나우열M 의 09-11 커밋(HR 부분 유일 인덱스 183줄)을 되돌린 낡은 판이라 결재 PIN 표(approval_pins) DDL 을 그 파일에 커밋하지 못했다. 그 파일 소유 레인이 정리한 뒤 14줄을 얹어야 한다",
+  "root_blocker": "남은 구글 의존 셋. ①읽기 화면 2장 = 사람 승인(나우열M)과 서버 실측 한 줄 ②PIN·첨부 = 서버에 값·스위치를 넣는 일(코드는 끝) ③unlock_round = 점검 제출잠금 원장이 GAS 속성에 있고 점검 화면 2장이 그것을 구글에서 읽는다 — 원장을 옮기려면 점검 읽기부터 옮겨야 한다",
+  "today_target": "92% — 예외 5동작 코드 완료 · 100% = 읽기 화면 2장 + PIN 등록 + 첨부 스위치 + unlock_round(점검 배)",
+  "numbering_progress": "(09-10 기록 · 해결됨) 번호를 서버가 매기게 하기(배1195) — ①구매요청 번호 완료 ②자산 라벨 완료(연도별·재발급 방지) ③회원번호 채번 완료(M01752부터 · 시작값은 서버 미러 전수 최댓값과 구글 자체 계산이 정확히 일치해 교차…",
+  "open_check": "되밀기 미전송 0건 유지 확인(/api/intake/health pushback.unpushed) · PIN 등록 뒤 첫 결재 1건이 서버 판정으로 통과하는지 write_log 로 확인 · 첨부 스위치를 켠 뒤 첫 첨부 1건이 /uploads/todo/ 에서 로그인 상태로 열리는지 확인",
+  "member_blocker": "(09-10 기록 · 해결됨) 회원은 09-10 밤 조사로 그림이 바뀌었다. 회원 쓰기 7종(등록·상태변경·보류·보관복귀 등)은 origin_switch 를 아예 안 탄다 — 화면이 /api/members/write 로 따로 보내고 그 통로는 언…",
+  "areas_8": "8 영역 = ①문의 폼 ②종합접수처 ③점검 쓰기 ④구매·자산 ⑤업무·결재 ⑥전사일정 ⑦회원 쓰기 ⑧매출·지출. ①~⑦ 원천 전환 + ⑧ 지출품의 완료 = 88%",
+  "todo_area_blockers": "(09-10 기록 · 해결됨) 업무·결재를 서버 원천으로 켜려면 셋(09-10 밤 호출부 전수 조사 · 호출자 22곳 중 응답값을 쓰는 곳은 3곳뿐). ①업무 현황 SSOT 화면이 아직 구글에서 목록을 읽는다(ERP_API_ON=false · 0…"
+ },
+ "rows": [
+  {
+   "area": "종합접수처(접수·습득물·휴회 · coo/reception)",
+   "who_uses": "리셉션 · 4부서 반장·팀장 · 회원(QR)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-05 (완료)",
+   "owner": "시우(+시토)",
+   "staff_change": "없음 — 단, 9/5 이후 접수는 구글 시트에 안 보임(ERP 에서만 확인)",
+   "note": "접수 원본 시트 = 09-05 이전 기록 조회용 · 이후 접수·처리는 ERP 종합접수처에서만(시트에 새 행 안 감 · 상태·메모만 되밀림 · 유실 아님 · 백업 S3 일일 pg_dump) — 배1106 · GM 실측 09-07",
+   "updated": "2026-09-07"
   },
-  "rows": [
-    {
-      "area": "종합접수처(접수·습득물·휴회 · coo/reception)",
-      "who_uses": "리셉션 · 4부서 반장·팀장 · 회원(QR)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-05 (완료)",
-      "owner": "시우(+시토)",
-      "staff_change": "없음 — 단, 9/5 이후 접수는 구글 시트에 안 보임(ERP 에서만 확인)",
-      "note": "접수 원본 시트 = 09-05 이전 기록 조회용 · 이후 접수·처리는 ERP 종합접수처에서만(시트에 새 행 안 감 · 상태·메모만 되밀림 · 유실 아님 · 백업 S3 일일 pg_dump) — 배1106 · GM 실측 09-07",
-      "updated": "2026-09-07"
-    },
-    {
-      "area": "main.html 공지·가이드·매뉴얼 보드 3키",
-      "who_uses": "",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-08 (완료 · GAS 폴백 유지)",
-      "owner": "",
-      "staff_change": "없음(같은 화면·읽기만)",
-      "note": "읽기 → /api/board(구글 폴백 유지) · 읽기 → /api/board (GAS 폴백 유지) · 09-05 첫 미러(1일차) → 09-08 3일 조건 충족 · 09-07 미러 3일차 도달 → 09-07 야간 선적용(레인) · GAS 폴백 유지 · md5 대조(3키 board 필드, GAS↔서버 실측 2026-09-07 17:4x) = OPS_POLICY_BOARD·OPS_GUIDE_BOARD·OPS_MANUAL_BOARD 3건 전부 일치(유실 0)",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "시우 28장 읽기(coo/ 화면)",
-      "who_uses": "",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-08 (완료 · 리셉션 업무·라커관리 2장은 09-04 배960 에서 이미 서버 관문 · 09-08 재실측 확인). GAS 완전 은퇴는 9탭·3락커 DB 미러 신설 = GM 결재",
-      "owner": "시우",
-      "staff_change": "없음(입력칸·링크 동일)",
-      "note": "28장 전부 서버 관문 통과 · 읽기 → 서버 우선+GAS 폴백, 쉬운 것부터 하루 3~5장 · 09-07 공지 목록 거울 라이브(시우가 화면 배선 중) · 09-07 야간 파트너팀 체계·매출회원현황보고 2장 시우에게 요청 · 09-07 18:0x 시우 재확인: 파트너팀 체계·매출회원현황보고 2장은 이미 서버 우선 라이브(배960·985·943·1071) → 완료 2장 · 남은 GAS 직행 = 파트너팀 체계 SALES_CSV(시트 CSV 직접 읽기 1곳 · 서버 미러 라우트 시토 판단) · 리셉션 업무·라커관리(라우트 없음 · 로드맵 #10)",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "문의 폼 3종(inquiry·instructor·sunday)",
-      "who_uses": "홈페이지 방문자(작성) · 리셉션 · 임정은M(처리)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료)",
-      "owner": "시모",
-      "staff_change": "없음(폼 화면·접수 안내 동일) · 접수번호 형식 변화 없음 확인 뒤",
-      "note": "스위치 inquiry·instructor·sunday = server · 시트는 되밀기(1분)로 따라간다 · 새 문의는 서버 원장이 원본",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "회원 쓰기 7종",
-      "who_uses": "임정은M(멤버십·강습 등록·상태 변경·LOSS 처리) · 이경연 실장(조회·정정) · 파트너팀(강습 배정 조회)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료)",
-      "owner": "시포·시토",
-      "staff_change": "없음(같은 화면 · 저장 8.5초→1초 빨라짐)",
-      "note": "문의류 5종 스위치 server · 회원 쓰기 7종은 서버 원장+구글 즉시 전달(스위치 무관) · write_member = server · 회원번호 채번은 서버(M01752~ · 09-10) · 등록·상태변경 등 7종은 /api/members/write 로 서버 원장에 적고 그 자리에서 구글로 넘긴다",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "업무·결재 SSOT 쓰기(write_todo)",
-      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료 · 6동작 예외)",
-      "owner": "시우",
-      "staff_change": "없음(화면 동일) · 나우열M 통보 필수",
-      "note": "쓰기 server · 읽기 화면 2장은 아직 구글(ERP_API_ON=false · 켜는 중) · 예외 6동작(결재 PIN 검증 4·드라이브 업로드 2)은 구글 · write_todo = server · 업무 id 서버 채번(09-12) · 예외 6동작(결재 PIN 검증 todo_sign·todo_opinion·todo_opinion_delete·unlock_round · 드라이브 업로드 todo_upload·approval_rep_sign_upload)은 구글이 계속 처리 · 업무 현황·결재 현황 SSOT 화면 읽기 = ERP_API_ON=false(나우열M 소관 · GM 승인 대기)",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "전사일정 쓰기(write_schedule)",
-      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료)",
-      "owner": "시우",
-      "staff_change": "없음",
-      "note": "write_schedule = server · 판번호(rev)를 서버가 매기고 구글이 그대로 씀(09-12)",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "월간운영계획·GM업무 보드",
-      "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료)",
-      "owner": "시우",
-      "staff_change": "없음",
-      "note": "읽기 = 서버 우선+구글 폴백(09-12 배1039) · 쓰기 = 업무·결재와 같은 관문(write_todo = server)",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "점검 3부서 쓰기(write_check)",
-      "who_uses": "4부서 조별 담당(키오스크·폰에서 제출) · 반장·팀장(제출 확인) · GM(08:00 통 보고)",
-      "stage": "원천 전환",
-      "switch_date": "2026-09-11 (완료)",
-      "owner": "시우",
-      "staff_change": "없음",
-      "note": "write_check = server · 운영부 화면 28장 읽기 서버 · 09-14 시우 점검 3부서 화면 3자리 이관 마무리",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "매출·지출 원장(sales)",
-      "who_uses": "나우열M",
-      "stage": "거울",
-      "switch_date": "2026-09-11 (지출품의) · 매출 = 나우열M 소관",
-      "owner": "나우열M",
-      "staff_change": "있음 가능(지출품의 화면 링크 유지 시 없음) — 안내 대상 후보",
-      "note": "지출품의 = 서버 표(09-11 · 347건) · 매출 = 거울 읽기(구글 원천 그대로 · CFO 화면은 나우열M 소관) · 지출품의 원장 347건 서버 표(조회 40.5초→0.07초) · 구매요청 번호·자산 라벨 서버 채번(09-10) · 매출보고 화면은 CFO 화면이라 AI 가 고치지 않는다 — 옮기는 것은 여기까지",
-      "updated": "2026-09-14"
-    },
-    {
-      "area": "GAS 축소·삭제(forms·지출현황·트리거)",
-      "who_uses": "",
-      "stage": "시트 축소",
-      "switch_date": "호출 0 실측 뒤 · GM 결재",
-      "owner": "GM",
-      "staff_change": "없음",
-      "note": "남은 구글 호출 = 예외 6동작(PIN·업로드) + 업무·결재 화면 읽기 2장 + 매출 거울 원천 · 이것이 0이 될 때 삭제",
-      "updated": "2026-09-14"
-    }
-  ],
-  "blockers_doc": "서버만 쓰게 끊으면 깨지는 자리 전수 — 화면 코드를 열어 잰 것이다(2026-09-09 시토). 판정 기준 하나: 그 화면이 응답에서 ok 말고 다른 칸을 읽는가. 읽으면 아직 못 끊는다. 「가능」 = 서버가 그 값을 대신 매길 수 있다 / 「불가」 = 구글 쪽에서만 나오는 값(Drive 주소·판번호·비번 검증) / 「판단필요」 = 서버가 채번을 넘겨받아야 하는 것 — GM·시토 결정거리. 「구조로 잠금」 = 영역 스위치를 server 로 켜도 그 동작만 종전대로 구글을 타게 코드에 박은 것 — 실수로 켜도 사고가 안 난다.",
-  "blockers": [
-    {
-      "screen": "업무 현황 SSOT",
-      "action": "todo_upload",
-      "field": "url",
-      "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 첨부가 사라지는 일이 안 생긴다",
-      "can": "구조로 잠금"
-    },
-    {
-      "screen": "업무 현황 SSOT",
-      "action": "todo_add",
-      "field": "id",
-      "effect": "첨부가 엉뚱한 업무에 붙는다(서버 id 는 뜻이 다른 숫자) — 2026-09-09 서버가 id 이름을 안 쓰게 고쳐 조용한 오염은 막았다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "결재 현황 SSOT",
-      "action": "todo_sign",
-      "field": "next",
-      "effect": "중간 결재인데 「결재 완료」 축하가 뜬다",
-      "can": "가능"
-    },
-    {
-      "screen": "매출지출현황",
-      "action": "add",
-      "field": "no",
-      "effect": "품의번호가 안 나온다(영수증에 적을 번호)",
-      "can": "판단필요"
-    },
-    {
-      "screen": "매출지출현황",
-      "action": "add",
-      "field": "instant",
-      "effect": "최저가 안내 문구가 사라진다(등록은 됨)",
-      "can": "불가"
-    },
-    {
-      "screen": "매출지출현황",
-      "action": "asset_issue",
-      "field": "labels",
-      "effect": "라벨 번호를 못 보여 준다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "매출지출현황",
-      "action": "asset_del",
-      "field": "blocked·deleted",
-      "effect": "부착 라벨 거부 안내가 없고 화면에서 행이 안 지워진다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "전사 일정",
-      "action": "save_schedule",
-      "field": "rev·serverRev·count",
-      "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 판번호가 없어 저장이 막히는 일이 안 생긴다",
-      "can": "구조로 잠금"
-    },
-    {
-      "screen": "주차관리부 체계",
-      "action": "save",
-      "field": "success",
-      "effect": "저장이 되는데 100% 실패로 보인다 — 2026-09-09 서버가 success 를 같이 실어 해결",
-      "can": "가능(끝)"
-    },
-    {
-      "screen": "지원부 체계",
-      "action": "save",
-      "field": "ledgerOk",
-      "effect": "상태동기화 지연 안내가 사라진다(저장 판정엔 무영향)",
-      "can": "가능"
-    },
-    {
-      "screen": "시설부 체계",
-      "action": "fcheck_ranges_save",
-      "field": "count",
-      "effect": "저장 행수 표시가 화면 값으로 대체된다 — 무해",
-      "can": "가능"
-    },
-    {
-      "screen": "리셉션 업무",
-      "action": "append",
-      "field": "newRow",
-      "effect": "토스트가 「기록됨 · undefined행」",
-      "can": "가능"
-    },
-    {
-      "screen": "리셉션 업무",
-      "action": "update",
-      "field": "error(unauthorized·formula_cell)",
-      "effect": "쓰기 비번이 틀려도 저장된 것처럼 보인다",
-      "can": "불가"
-    },
-    {
-      "screen": "리셉션 업무",
-      "action": "update",
-      "field": "before·after·via",
-      "effect": "로컬 수정로그가 빈칸",
-      "can": "불가"
-    },
-    {
-      "screen": "라커관리",
-      "action": "update",
-      "field": "error(unauthorized)",
-      "effect": "틀린 비번이 성공으로 보인다",
-      "can": "불가"
-    },
-    {
-      "screen": "실무진피드백",
-      "action": "staff_feedback_submit",
-      "field": "id",
-      "effect": "접수번호가 안 나오고 사진 첨부 단계를 건너뛴다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "실무진피드백",
-      "action": "staff_feedback_photo",
-      "field": "err",
-      "effect": "실패 사유가 「알 수 없는 오류」",
-      "can": "가능"
-    },
-    {
-      "screen": "멤버십 회원관리",
-      "action": "member_inquiry_* (WriteBuffer)",
-      "field": "saved",
-      "effect": "저장마다 전체 재조회 — 실측 9.1초 느려진다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "멤버십 회원관리",
-      "action": "member_inquiry_* (WriteBuffer)",
-      "field": "error(rowkey-not-found 등 4종)",
-      "effect": "지문 재채번 재시도가 죽어 저장 유실이 조용히 남는다",
-      "can": "불가"
-    },
-    {
-      "screen": "멤버십 회원관리",
-      "action": "lesson_inquiry_add",
-      "field": "error(lesson-add-duplicate)",
-      "effect": "중복 확인 뒤 강제 재전송 흐름이 사라진다",
-      "can": "판단필요"
-    },
-    {
-      "screen": "지원부 체계(라운드 잠금해제)",
-      "action": "unlock_round",
-      "field": "비번 검증",
-      "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 틀린 비번이 통과하는 일이 안 생긴다",
-      "can": "구조로 잠금"
-    }
-  ],
-  "blockers_free": 22,
-  "blockers_area": [
-    {
-      "area": "점검 3부서 (write_check)",
-      "left": "2",
-      "what": "라운드 잠금해제 비번 구멍은 서버 쪽에서 구조로 막았다(스위치를 켜도 그 동작만 종전대로 구글을 탄다). 남은 둘은 무해한 표시값이라 화면에서 폴백만 두면 끝난다 — 시우 배.",
-      "near": "가장 가깝다"
-    },
-    {
-      "area": "오누띠·실무진피드백 (write_member)",
-      "left": "1",
-      "what": "실무진피드백 접수번호 하나. 서버가 번호를 매기기로 하면 그날 끊긴다.",
-      "near": "두 번째"
-    },
-    {
-      "area": "전사 일정 (write_schedule)",
-      "left": "0",
-      "what": "이 영역의 유일한 동작(save_schedule)을 서버 원본에서 구조로 뺐다 — 판번호를 서버가 넘겨받기 전까지 스위치를 켜도 안전하다.",
-      "near": "구조로 잠금"
-    },
-    {
-      "area": "업무·결재 SSOT (write_todo)",
-      "left": "2",
-      "what": "첨부(구글 드라이브)는 구조로 잠갔다. 남은 둘 = 업무 번호 채번, 다음 결재자.",
-      "near": "무겁다"
-    },
-    {
-      "area": "구매·자산 (write_proc)",
-      "left": "4",
-      "what": "품의번호·라벨번호·삭제 거부 목록·최저가 안내. 번호 두 종을 서버가 매기기로 하면 둘이 준다.",
-      "near": "무겁다"
-    },
-    {
-      "area": "종합접수처 (write_reception)",
-      "left": "0",
-      "what": "실사용 접수는 이미 서버 전용 통로(/api/reception/submit)로 옮겨 끝났다. 이 스위치가 가리키는 옛 통로는 아무도 안 부른다.",
-      "near": "이미 끝남"
-    }
-  ],
-  "blockers_area_doc": "영역별로 묶어 보면 어디부터 끊을지가 갈린다 — 한 영역은 그 안 화면이 전부 풀려야 끊긴다."
+  {
+   "area": "main.html 공지·가이드·매뉴얼 보드 3키",
+   "who_uses": "",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-08 (완료 · GAS 폴백 유지)",
+   "owner": "",
+   "staff_change": "없음(같은 화면·읽기만)",
+   "note": "읽기 → /api/board(구글 폴백 유지) · 읽기 → /api/board (GAS 폴백 유지) · 09-05 첫 미러(1일차) → 09-08 3일 조건 충족 · 09-07 미러 3일차 도달 → 09-07 야간 선적용(레인) · GAS 폴백 유지 · md5 대조(3키 board 필드, GAS↔서버 실측 2026-09-07 17:4x) = OPS_POLICY_BOARD·OPS_GUIDE_BOARD·OPS_MANUAL_BOARD 3건 전부 일치(유실 0)",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "시우 28장 읽기(coo/ 화면)",
+   "who_uses": "",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-08 (완료 · 리셉션 업무·라커관리 2장은 09-04 배960 에서 이미 서버 관문 · 09-08 재실측 확인). GAS 완전 은퇴는 9탭·3락커 DB 미러 신설 = GM 결재",
+   "owner": "시우",
+   "staff_change": "없음(입력칸·링크 동일)",
+   "note": "28장 전부 서버 관문 통과 · 읽기 → 서버 우선+GAS 폴백, 쉬운 것부터 하루 3~5장 · 09-07 공지 목록 거울 라이브(시우가 화면 배선 중) · 09-07 야간 파트너팀 체계·매출회원현황보고 2장 시우에게 요청 · 09-07 18:0x 시우 재확인: 파트너팀 체계·매출회원현황보고 2장은 이미 서버 우선 라이브(배960·985·943·1071) → 완료 2장 · 남은 GAS 직행 = 파트너팀 체계 SALES_CSV(시트 CSV 직접 읽기 1곳 · 서버 미러 라우트 시토 판단) · 리셉션 업무·라커관리(라우트 없음 · 로드맵 #10)",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "문의 폼 3종(inquiry·instructor·sunday)",
+   "who_uses": "홈페이지 방문자(작성) · 리셉션 · 임정은M(처리)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료)",
+   "owner": "시모",
+   "staff_change": "없음(폼 화면·접수 안내 동일) · 접수번호 형식 변화 없음 확인 뒤",
+   "note": "스위치 inquiry·instructor·sunday = server · 시트는 되밀기(1분)로 따라간다 · 새 문의는 서버 원장이 원본",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "회원 쓰기 7종",
+   "who_uses": "임정은M(멤버십·강습 등록·상태 변경·LOSS 처리) · 이경연 실장(조회·정정) · 파트너팀(강습 배정 조회)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료)",
+   "owner": "시포·시토",
+   "staff_change": "없음(같은 화면 · 저장 8.5초→1초 빨라짐)",
+   "note": "문의류 5종 스위치 server · 회원 쓰기 7종은 서버 원장+구글 즉시 전달(스위치 무관) · write_member = server · 회원번호 채번은 서버(M01752~ · 09-10) · 등록·상태변경 등 7종은 /api/members/write 로 서버 원장에 적고 그 자리에서 구글로 넘긴다",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "업무·결재 SSOT 쓰기(write_todo)",
+   "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료 · 남은 예외 1동작)",
+   "owner": "시우·시토",
+   "staff_change": "없음(화면 동일) · 나우열M 통보 필수",
+   "note": "쓰기 server · 업무 id 서버 채번(09-12) · 09-14: 예외 6동작 중 5동작의 서버 코드를 넣었다 — 결재 PIN 3동작(todo_sign·todo_opinion·todo_opinion_delete)은 서버가 대조하고(approval_pin.py · 그 PIN 행이 없으면 종전대로 구글), 첨부 2동작(todo_upload·approval_rep_sign_upload)은 서버가 파일을 갖고 시트엔 주소만 적는다(스위치 ERP_TODO_UPLOAD). 둘 다 값·스위치를 넣기 전까지 동작은 종전 그대로다. 남은 1동작 = unlock_round — PIN 이 아니라 원장 문제다(제출잠금 원장이 GAS 속성이고 점검 화면 2장이 그 원장을 구글에서 읽는다) → 점검 영역 배로 분리. 읽기 화면 2장은 둘 다 아직 ERP_API_ON=false — 업무 현황 SSOT 는 서버 읽기 근거가 다 섰지만(09-06 INC-055 원인 제거 + 정합 감시 + 칸 대조 완료) 그 파일이 나우열M 소관이라 AI 가 못 고친다(safe_commit CHRO 도메인 가드 · GM 확정 2026-08-05) · 결재 현황 SSOT 는 서버 GM_TODO_KEY 실측 대기",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "전사일정 쓰기(write_schedule)",
+   "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료)",
+   "owner": "시우",
+   "staff_change": "없음",
+   "note": "write_schedule = server · 판번호(rev)를 서버가 매기고 구글이 그대로 씀(09-12)",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "월간운영계획·GM업무 보드",
+   "who_uses": "중간관리자(업무 올림·담당 지정) · 부서장(1단계 결재) · GM(최종 결재)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료)",
+   "owner": "시우",
+   "staff_change": "없음",
+   "note": "읽기 = 서버 우선+구글 폴백(09-12 배1039) · 쓰기 = 업무·결재와 같은 관문(write_todo = server)",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "점검 3부서 쓰기(write_check)",
+   "who_uses": "4부서 조별 담당(키오스크·폰에서 제출) · 반장·팀장(제출 확인) · GM(08:00 통 보고)",
+   "stage": "원천 전환",
+   "switch_date": "2026-09-11 (완료)",
+   "owner": "시우",
+   "staff_change": "없음",
+   "note": "write_check = server · 운영부 화면 28장 읽기 서버 · 09-14 시우 점검 3부서 화면 3자리 이관 마무리",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "매출·지출 원장(sales)",
+   "who_uses": "나우열M",
+   "stage": "거울",
+   "switch_date": "2026-09-11 (지출품의) · 매출 = 나우열M 소관",
+   "owner": "나우열M",
+   "staff_change": "있음 가능(지출품의 화면 링크 유지 시 없음) — 안내 대상 후보",
+   "note": "지출품의 = 서버 표(09-11 · 347건) · 매출 = 거울 읽기(구글 원천 그대로 · CFO 화면은 나우열M 소관) · 지출품의 원장 347건 서버 표(조회 40.5초→0.07초) · 구매요청 번호·자산 라벨 서버 채번(09-10) · 매출보고 화면은 CFO 화면이라 AI 가 고치지 않는다 — 옮기는 것은 여기까지",
+   "updated": "2026-09-14"
+  },
+  {
+   "area": "GAS 축소·삭제(forms·지출현황·트리거)",
+   "who_uses": "",
+   "stage": "시트 축소",
+   "switch_date": "호출 0 실측 뒤 · GM 결재",
+   "owner": "GM",
+   "staff_change": "없음",
+   "note": "남은 구글 호출 = ①unlock_round(점검 제출잠금 원장) ②결재 현황 SSOT 화면 읽기 1장 ③매출 거울 원천 · ④PIN 등록·첨부 스위치를 켜기 전까지는 결재 PIN 3동작·첨부 2동작도 구글로 간다(코드는 09-14 준비 완료) · 이것이 0이 될 때 삭제",
+   "updated": "2026-09-14"
+  }
+ ],
+ "blockers_doc": "서버만 쓰게 끊으면 깨지는 자리 전수 — 화면 코드를 열어 잰 것이다(2026-09-09 시토). 판정 기준 하나: 그 화면이 응답에서 ok 말고 다른 칸을 읽는가. 읽으면 아직 못 끊는다. 「가능」 = 서버가 그 값을 대신 매길 수 있다 / 「불가」 = 구글 쪽에서만 나오는 값(Drive 주소·판번호·비번 검증) / 「판단필요」 = 서버가 채번을 넘겨받아야 하는 것 — GM·시토 결정거리. 「구조로 잠금」 = 영역 스위치를 server 로 켜도 그 동작만 종전대로 구글을 타게 코드에 박은 것 — 실수로 켜도 사고가 안 난다.",
+ "blockers": [
+  {
+   "screen": "업무 현황 SSOT",
+   "action": "todo_upload",
+   "field": "url",
+   "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 첨부가 사라지는 일이 안 생긴다",
+   "can": "구조로 잠금"
+  },
+  {
+   "screen": "업무 현황 SSOT",
+   "action": "todo_add",
+   "field": "id",
+   "effect": "첨부가 엉뚱한 업무에 붙는다(서버 id 는 뜻이 다른 숫자) — 2026-09-09 서버가 id 이름을 안 쓰게 고쳐 조용한 오염은 막았다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "결재 현황 SSOT",
+   "action": "todo_sign",
+   "field": "next",
+   "effect": "중간 결재인데 「결재 완료」 축하가 뜬다",
+   "can": "가능"
+  },
+  {
+   "screen": "매출지출현황",
+   "action": "add",
+   "field": "no",
+   "effect": "품의번호가 안 나온다(영수증에 적을 번호)",
+   "can": "판단필요"
+  },
+  {
+   "screen": "매출지출현황",
+   "action": "add",
+   "field": "instant",
+   "effect": "최저가 안내 문구가 사라진다(등록은 됨)",
+   "can": "불가"
+  },
+  {
+   "screen": "매출지출현황",
+   "action": "asset_issue",
+   "field": "labels",
+   "effect": "라벨 번호를 못 보여 준다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "매출지출현황",
+   "action": "asset_del",
+   "field": "blocked·deleted",
+   "effect": "부착 라벨 거부 안내가 없고 화면에서 행이 안 지워진다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "전사 일정",
+   "action": "save_schedule",
+   "field": "rev·serverRev·count",
+   "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 판번호가 없어 저장이 막히는 일이 안 생긴다",
+   "can": "구조로 잠금"
+  },
+  {
+   "screen": "주차관리부 체계",
+   "action": "save",
+   "field": "success",
+   "effect": "저장이 되는데 100% 실패로 보인다 — 2026-09-09 서버가 success 를 같이 실어 해결",
+   "can": "가능(끝)"
+  },
+  {
+   "screen": "지원부 체계",
+   "action": "save",
+   "field": "ledgerOk",
+   "effect": "상태동기화 지연 안내가 사라진다(저장 판정엔 무영향)",
+   "can": "가능"
+  },
+  {
+   "screen": "시설부 체계",
+   "action": "fcheck_ranges_save",
+   "field": "count",
+   "effect": "저장 행수 표시가 화면 값으로 대체된다 — 무해",
+   "can": "가능"
+  },
+  {
+   "screen": "리셉션 업무",
+   "action": "append",
+   "field": "newRow",
+   "effect": "토스트가 「기록됨 · undefined행」",
+   "can": "가능"
+  },
+  {
+   "screen": "리셉션 업무",
+   "action": "update",
+   "field": "error(unauthorized·formula_cell)",
+   "effect": "쓰기 비번이 틀려도 저장된 것처럼 보인다",
+   "can": "불가"
+  },
+  {
+   "screen": "리셉션 업무",
+   "action": "update",
+   "field": "before·after·via",
+   "effect": "로컬 수정로그가 빈칸",
+   "can": "불가"
+  },
+  {
+   "screen": "라커관리",
+   "action": "update",
+   "field": "error(unauthorized)",
+   "effect": "틀린 비번이 성공으로 보인다",
+   "can": "불가"
+  },
+  {
+   "screen": "실무진피드백",
+   "action": "staff_feedback_submit",
+   "field": "id",
+   "effect": "접수번호가 안 나오고 사진 첨부 단계를 건너뛴다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "실무진피드백",
+   "action": "staff_feedback_photo",
+   "field": "err",
+   "effect": "실패 사유가 「알 수 없는 오류」",
+   "can": "가능"
+  },
+  {
+   "screen": "멤버십 회원관리",
+   "action": "member_inquiry_* (WriteBuffer)",
+   "field": "saved",
+   "effect": "저장마다 전체 재조회 — 실측 9.1초 느려진다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "멤버십 회원관리",
+   "action": "member_inquiry_* (WriteBuffer)",
+   "field": "error(rowkey-not-found 등 4종)",
+   "effect": "지문 재채번 재시도가 죽어 저장 유실이 조용히 남는다",
+   "can": "불가"
+  },
+  {
+   "screen": "멤버십 회원관리",
+   "action": "lesson_inquiry_add",
+   "field": "error(lesson-add-duplicate)",
+   "effect": "중복 확인 뒤 강제 재전송 흐름이 사라진다",
+   "can": "판단필요"
+  },
+  {
+   "screen": "지원부 체계(라운드 잠금해제)",
+   "action": "unlock_round",
+   "field": "비번 검증",
+   "effect": "스위치를 켜도 이 동작만 종전대로 구글을 탄다 — 틀린 비번이 통과하는 일이 안 생긴다",
+   "can": "구조로 잠금"
+  }
+ ],
+ "blockers_free": 22,
+ "blockers_area": [
+  {
+   "area": "점검 3부서 (write_check)",
+   "left": "2",
+   "what": "라운드 잠금해제 비번 구멍은 서버 쪽에서 구조로 막았다(스위치를 켜도 그 동작만 종전대로 구글을 탄다). 남은 둘은 무해한 표시값이라 화면에서 폴백만 두면 끝난다 — 시우 배.",
+   "near": "가장 가깝다"
+  },
+  {
+   "area": "오누띠·실무진피드백 (write_member)",
+   "left": "1",
+   "what": "실무진피드백 접수번호 하나. 서버가 번호를 매기기로 하면 그날 끊긴다.",
+   "near": "두 번째"
+  },
+  {
+   "area": "전사 일정 (write_schedule)",
+   "left": "0",
+   "what": "이 영역의 유일한 동작(save_schedule)을 서버 원본에서 구조로 뺐다 — 판번호를 서버가 넘겨받기 전까지 스위치를 켜도 안전하다.",
+   "near": "구조로 잠금"
+  },
+  {
+   "area": "업무·결재 SSOT (write_todo)",
+   "left": "2",
+   "what": "첨부(구글 드라이브)는 구조로 잠갔다. 남은 둘 = 업무 번호 채번, 다음 결재자.",
+   "near": "무겁다"
+  },
+  {
+   "area": "구매·자산 (write_proc)",
+   "left": "4",
+   "what": "품의번호·라벨번호·삭제 거부 목록·최저가 안내. 번호 두 종을 서버가 매기기로 하면 둘이 준다.",
+   "near": "무겁다"
+  },
+  {
+   "area": "종합접수처 (write_reception)",
+   "left": "0",
+   "what": "실사용 접수는 이미 서버 전용 통로(/api/reception/submit)로 옮겨 끝났다. 이 스위치가 가리키는 옛 통로는 아무도 안 부른다.",
+   "near": "이미 끝남"
+  }
+ ],
+ "blockers_area_doc": "영역별로 묶어 보면 어디부터 끊을지가 갈린다 — 한 영역은 그 안 화면이 전부 풀려야 끊긴다."
 }
