@@ -728,12 +728,6 @@
       ],
       "work": [
         {
-          "time": "11:26",
-          "area": "작업",
-          "event": "SVIP 요가 A3 4차 — 정산 박스 침범 수리 · 스파권 비용 예측(정가 18만) · 대표님 소통 요약 (GM 지시 2026-09-14)",
-          "detail": "커밋 368a27488a · 배 11401"
-        },
-        {
           "time": "11:37",
           "area": "작업",
           "event": "SVIP 요가 A3 5차 — 회원 청구 합계 3안(권고 537만) · 수익 구조 · SVIP 만족도 설계 (GM 지시 2026-09-14)",
@@ -906,6 +900,12 @@
           "area": "작업",
           "event": "매출 및 회원 현황 보고 서버판 — 매일 09:00 업무보고방에 1~3면 사진(GM PC 예약작업) · 서버는 09:02 22칸 대조 한 줄 · 숫자만 요약표 폴백 폐지 (GM 지시 2026-09-14)",
           "detail": "커밋 ef198b557d · 배 11401"
+        },
+        {
+          "time": "16:09",
+          "area": "구매요청 이관",
+          "event": "나우열M 16:06 「구매요청 테스트 제출 안 보임」 실측 답 — 물품 「테스트」 → 시험 건 격리(정상) · 되밀기 정상",
+          "detail": "write_log 1341·1349 gas_status=test"
         }
       ],
       "count": 60,
@@ -928,7 +928,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 8
         }
       ],
       "repeats": []
@@ -1004,18 +1004,6 @@
           "start": "10:13",
           "end": "10:14",
           "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "⚠️없음"
-        },
-        {
-          "ref": "GM-20260914-2008",
-          "no": "08",
-          "got": "병렬로 수리해줘",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
-          "start": "10:14",
-          "end": "10:17",
-          "minutes": 3,
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
@@ -1153,16 +1141,40 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260914-2027",
+          "no": "27",
+          "got": "거울이랑 인사 구글 삭제 3가지다 병렬로 진행하되, 나우열M 라인은 완료했다고 하던데 아니면 다시 전달해줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "16:04",
+          "end": "16:09",
+          "minutes": 4,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
+        },
+        {
+          "ref": "GM-20260914-2028",
+          "no": "28",
+          "got": "결재 PIN 4개 숫자?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:09",
+          "end": "16:10",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260914-aws-3",
           "no": "-3",
           "got": "GM 지시: 거울·인사·구글삭제 3건 병렬 · 나우열M 라인 미완이면 다시 전달",
-          "did": "",
+          "did": "라이브·베타 각 4행(해시만) · 베타 시험: 틀린 PIN 거부 문구 그대로 · 맞는 PIN mode=server ok · 실장·소장·나우열M 옛 PIN 은 결재 서명에 더 안 통함(GM 안내 필요)",
           "start": "16:05",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:11",
+          "minutes": 5,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
         },
         {
           "ref": "GM-20260914-aws-finish",
@@ -1329,29 +1341,14 @@
           "detail": "커밋 dd80015afe · 배 12528"
         }
       ],
-      "count": 23,
-      "done": 22,
-      "open": 1,
+      "count": 24,
+      "done": 24,
+      "open": 0,
       "avg_minutes": 5,
       "work_count": 19,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-aws-3",
-          "no": "-3",
-          "got": "GM 지시: 거울·인사·구글삭제 3건 병렬 · 나우열M 라인 미완이면 다시 전달",
-          "did": "",
-          "start": "16:05",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1469,13 +1466,13 @@
           "ref": "GM-20260914-3010",
           "no": "10",
           "got": "다캠은 왜 안만들어줘?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:07",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:12",
+          "minutes": 5,
+          "upload": "✅ 배포 (9f10d0aa1)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1622,31 +1619,28 @@
           "area": "마케팅 자동업로드",
           "event": "모듈 신설 — 개인(어떤 하루)과 회사용을 트랙으로 가름 (GM 지시)",
           "detail": "저장 88a8865ed4 · 서버 반영 실측 · 회사판/개인판 렌더 확인 · ERP 홈 콘텐츠 칸 등록"
+        },
+        {
+          "time": "16:12",
+          "area": "작업",
+          "event": "다이어트캠프 트랙 자리 신설 — 계정 받는 날 한 줄만 채우면 켜진다 (GM 물음 2026-09-14)",
+          "detail": "커밋 9e0e0642ab · 배 11425"
+        },
+        {
+          "time": "16:12",
+          "area": "마케팅 자동업로드",
+          "event": "다이어트캠프 트랙 자리 신설 (GM 물음 「다캠은 왜 안만들어줘?」)",
+          "detail": "저장 9e0e0642ab · 서버 반영 실측 · 계정 미수령이라 꺼 둠 · 트랙 4개"
         }
       ],
       "count": 10,
-      "done": 9,
-      "open": 1,
+      "done": 10,
+      "open": 0,
       "avg_minutes": 11,
-      "work_count": 24,
+      "work_count": 26,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-3010",
-          "no": "10",
-          "got": "다캠은 왜 안만들어줘?",
-          "did": "",
-          "start": "16:07",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
