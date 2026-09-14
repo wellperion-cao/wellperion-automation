@@ -512,6 +512,17 @@
   // 읽기에 실패해도 접수는 막지 않는다. 기본 시리즈 하나로 그대로 동작한다.
   var SERIES = [{ key:'어떤 하루', name:'어떤 하루', account:'namuk.wellperion' }];
 
+  /* 회사판(#marketing) 옷 — 글자만 바꾼다. 동작·뒷단은 개인판과 같다. */
+  function 회사판으로(){
+    document.title = '마케팅 자동업로드 — 웰페리온';
+    /* 큰 제목은 건드리지 않는다 — 그 자리는 고른 트랙 이름이 들어가고(paintSeries),
+       회사판에서는 그게 곧 어느 계정으로 나가는지를 말한다. */
+    var eb = document.querySelector('.eyebrow');
+    if (eb) eb.textContent = 'WELLPERION · MARKETING';
+    var app = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (app) app.setAttribute('content', '마케팅 업로드');
+  }
+
   function currentSeries(){
     var v = $('f_series').value;
     for (var i=0;i<SERIES.length;i++) if (SERIES[i].key === v) return SERIES[i];
@@ -548,7 +559,20 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         var rows = (j.series || []).filter(function(s){ return s.enabled !== false; });
+        /* 쓰임을 둘로 가른다 (GM 지시 2026-09-14 「어떤 하루는 개인 용도로 그냥 두고,
+           마케팅 자동업로드 모듈로 하나 더」).
+             주소 끝에 #marketing → 회사·센터 공식 계정 트랙만
+             그 밖(기본)         → 개인 계정 트랙만
+           화면 파일은 한 벌이다. 두 벌로 복사하면 한쪽만 고쳐져 서로 어긋난다
+           (GM 「중복이나 무의미한건 항상 지워」). 같은 엔진이 옷만 갈아입는다. */
+        var 회사판 = /marketing/i.test(location.hash || '');
+        var 갈린것 = rows.filter(function(s){
+          var 개인 = (s.account || '').indexOf('namuk') >= 0;
+          return 회사판 ? !개인 : 개인;
+        });
+        if (갈린것.length) rows = 갈린것;      // 한쪽이 비면 거르지 않는다(빈 화면 금지)
         if (rows.length) SERIES = rows;
+        if (회사판) 회사판으로();
       })
       .catch(function(){ /* 기본 시리즈로 그대로 간다 */ })
       .then(function(){
