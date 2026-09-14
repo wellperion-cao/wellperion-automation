@@ -148,15 +148,21 @@ def load_month_objectives() -> list:
         return []
 
 
-def load_dept_target(dept_key: str) -> "int | None":
-    """부서 매출목표(status/monthly_ops_plan.json quarters.depts.{dept_key}.metric.target).
-    등록 안 돼 있으면(null) None — 지어내지 않는다(GM 지시 2026-09-14)."""
+def load_sales_target(bucket: str) -> "int | None":
+    """부서 매출목표 정본 = status/sales_targets.json teams(GM 결재 2026-07-03·재확정 2026-08-24).
+    member=멤버십 회원권+옵션(팀 key membership) · lessons=파트너팀 전체(멤버십 제외 전 팀 합, GXE·뮤지컬 포함).
+    monthly_ops_plan.json 의 부서 metric.target 은 미연결(null)이라 여기서 안 쓴다 — 등록 안 됐으면
+    None(지어내지 않는다 · GM 지시 2026-09-14)."""
     try:
-        d = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
-        q = d.get("quarters") or {}
-        dep = ((q.get(q.get("current")) or {}).get("depts") or {}).get(dept_key) or {}
-        tgt = (dep.get("metric") or {}).get("target")
-        return int(tgt) if isinstance(tgt, (int, float)) else None
+        d = json.loads((ROOT / "status" / "sales_targets.json").read_text(encoding="utf-8"))
+        teams = {t.get("key"): t.get("target") for t in d.get("teams") or []}
+        if bucket == "member":
+            v = teams.get("membership")
+            return int(v) if isinstance(v, (int, float)) else None
+        if bucket == "lessons":
+            others = [v for k, v in teams.items() if k != "membership" and isinstance(v, (int, float))]
+            return int(sum(others)) if others else None
+        return None
     except Exception:
         return None
 
@@ -405,7 +411,7 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
             ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
              lambda: approval_submit_cell(ssot_rows)),
             ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
-             lambda: sales_bucket_cell(sales_data, "member", "ops"), True),
+             lambda: sales_bucket_cell(sales_data, "member"), True),
             ("확인요청 회신", "번호 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "이경연 실장")),
         ],
@@ -427,7 +433,7 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
             ("매출·지출(CFO) — 체계·시스템 구축", "매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도",
              lambda: _no_measure_cell("자동 집계 원장 없음")),
             ("파트너팀 매출 관리", "월 매출목표 대비 달성률 · 파트너팀=강습 전체",
-             lambda: sales_bucket_cell(sales_data, "lessons", "mgmt"), True),
+             lambda: sales_bucket_cell(sales_data, "lessons"), True),
             ("확인요청 회신", "번호 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "나우열M")),
         ],
@@ -592,9 +598,9 @@ def fill_sales_current(seen: dict) -> None:
         return None
 
 
-def sales_bucket_cell(sales_data: "dict | None", bucket: str, dept_key: str) -> tuple[str, bool]:
+def sales_bucket_cell(sales_data: "dict | None", bucket: str) -> tuple[str, bool]:
     """월 매출 실측 진척 — sales_month 의 bucket(member/lessons) 값 · 목표는
-    status/monthly_ops_plan.json 부서 metric.target 에 등록된 것만 쓴다. 등록 안 됐으면
+    status/sales_targets.json(정본) 에 등록된 것만 쓴다. 등록 안 됐으면
     '목표 미등록'만 적고 %·막대는 안 켠다(지어내지 않는다 · GM 지시 2026-09-14)."""
     if not sales_data:
         return f"{_NO_MEASURE}(매출 조회 실패)", False
@@ -603,9 +609,9 @@ def sales_bucket_cell(sales_data: "dict | None", bucket: str, dept_key: str) -> 
     if cur is None:
         return f"{_NO_MEASURE}(매출 자료 없음)", False
     cur = int(cur)
-    target = load_dept_target(dept_key)
+    target = load_sales_target(bucket)
     if not target:
-        return f"현재 {_fmt_amt(cur, '원')} · 목표 미등록(월간운영계획 미연결)", False
+        return f"현재 {_fmt_amt(cur, '원')} · 목표 미등록(status/sales_targets.json 미확인)", False
     pct = max(0, min(100, round(cur / target * 100)))
     cls = "pg-ok" if pct >= 80 else ("pg-mid" if pct >= 40 else "pg-low")
     bar = (f'<span class="pg"><span class="bar"><i class="{cls}" style="width:{pct}%"></i></span>'
