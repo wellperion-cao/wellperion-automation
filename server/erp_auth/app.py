@@ -430,14 +430,19 @@ def accounts() -> dict:
     return _ACCTS[1]
 
 
-def module_at(uri: str) -> Optional[dict]:
-    """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
-    modules()
+def uri_path(uri: str) -> str:
+    """X-Original-URI → 정규화한 경로('/'로 시작 · 쿼리 없음 · 퍼센트 해제 · '..' 정리). module_at·path_allowed 가 같이 쓴다."""
     # 선행 슬래시를 1개로 강제 — posixpath.normpath 는 '//x' 를 보존해 '//cpo/…' 요청이 모듈 조회를 빗나가게 했다
     # (권한 판정 우회 · 2026-09-05 검수 C4). nginx 는 merge_slashes 로 파일은 정상으로 내주므로 여기서 맞춘다.
     # urlsplit 을 쓰지 않는다 — '//cpo/x' 는 urlsplit 이 '//cpo' 를 호스트로 먹어 path 가 '/x' 가 된다(실측 2026-09-05).
     raw = uri.split("?", 1)[0].split("#", 1)[0]
-    path = "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
+    return "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
+
+
+def module_at(uri: str) -> Optional[dict]:
+    """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
+    modules()
+    path = uri_path(uri)
     if path in _MODS[2]:
         return _MODS[2][path]
     if path.endswith(".html"):
@@ -486,6 +491,83 @@ def allowed(user, module: dict) -> bool:
 
 def allowed_ids(user) -> list:
     return [m["id"] for m in modules() if allowed(user, m)]
+
+
+# ── 카드 목록(modules.json) 밖 경로의 권한 (2026-09-14 배포 전 점검 · 치명 2·3번) ─────────────────
+# 종전 check() 는 module_at() 이 None 이면 로그인만 보고 200 을 냈다. 그래서 카드에 안 실은 것 — /api/ 전부,
+# /repo/(저장소 통째), /reports/(실명 인사평가 A3), /erp/admin/(회사 관리자 콘솔), /회사문서/, 회원·문의 스냅샷 —
+# 이 로그인한 아무 계정(파트너사 포함)에게 다 열렸다. 「카드에 안 싣는다」가 「권한을 안 본다」가 돼 있던 자리.
+ADMIN_ONLY_PREFIXES = ("/repo/", "/reports/", "/회사문서/", "/erp/admin/", "/1. AI자료_아카이브/", "/gm/",
+                       "/wellperion-agents/", "/scripts/", "/logs/", "/ops/", "/telegram_bot/", "/qa_screenshots/", "/ig/")
+# 회원·문의 개인정보가 든 status 파일 = 회원 관리(member) 카드가 있어야 읽는다.
+MEMBER_DATA_RE = re.compile(r"^/status/(member_|inquiry_snapshot|counsel_questions|cpo_member_)")
+# 읽기 API 접두 → 그 자료를 그리는 카드들. 그중 하나라도 허용돼야 API 도 열린다(2026-09-14 화면 전수 grep 으로 만든 표).
+# /api/write·/api/members/write 는 본문의 action 으로 갈리므로 상류(api_write.write_allowed)가 X-Erp-Allowed 헤더로 판정한다.
+# /api/board 는 페이지 공용 보드(로그인 전용 그대로).
+API_MODULES = {
+    "/api/members": {"member", "cpo-member-renewal", "ceo-wellperion-guide-main"},
+    "/api/inquiries": {"member", "inquiry", "ceo-wellperion-guide-main"},
+    "/api/report/": {"member", "coo-report-매출회원현황보고"},
+    "/api/lesson/": {"member", "cpo-member-lesson", "ceo-wellperion-guide-main"},
+    "/api/hr/": {"chro-hub-index", "chro-recruiting-index"},
+    "/api/todo": {"coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot", "coo-chairman-gm업무", "coo-check-파트너팀-체계",
+                  "ceo-wellperion-guide-main", "gm-월간운영계획"},
+    "/api/proc/": {"cfo-finance-매출지출현황", "cfo-finance-지출품의"},
+    "/api/sales/": {"cfo-finance-매출지출현황", "cfo-finance-매출현황", "cfo-finance-지출현황", "coo-check-파트너팀-체계",
+                    "coo-report-매출회원현황보고", "gm-월간운영계획"},
+    "/api/check/": {"check", "coo-check-운영부-체계", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
+                    "coo-check-파트너팀-체계", "ceo-wellperion-guide-main", "gm-월간운영계획"},
+    "/api/reception/": {"coo-reception-종합접수처-현황", "coo-reception-lost-found-register",
+                        "coo-reception-lost-found-disposal", "coo-reception-lost-found-gallery",
+                        "ceo-wellperion-guide-main", "gm-월간운영계획"},
+    "/api/reception-ops": {"coo-리셉션-업무-index", "coo-리셉션-업무-라커관리-index"},
+    "/api/brojay/": {"coo-report-매출회원현황보고"},
+    "/api/visitors": {"coo-report-매출회원현황보고"},
+    "/api/chat/": set(),            # 상담봇 관리 API(log·unanswered·faq·stats) = 관리자만(빈 집합 = 아무 카드도 안 연다)
+    "/api/faq-intake/": set(),
+    "/api/track/": {"cmo-funnel-콘텐츠문의현황"},
+}
+
+
+def _api_need(path: str) -> Optional[set]:
+    """가장 긴 접두로 매칭. 표에 없으면 None(로그인 전용)."""
+    best = None
+    for prefix, need in API_MODULES.items():
+        if path.startswith(prefix) and (best is None or len(prefix) > len(best[0])):
+            best = (prefix, need)
+    return best[1] if best else None
+
+
+def path_allowed(user, path: str) -> bool:
+    """카드 목록 밖 경로를 이 계정이 열어도 되나. 관리자=전부. 판정 순서 = 관리자 전용 접두 → 회원 자료 → API → 화면 → 자산."""
+    if user["role"] == "admin":
+        return True
+    # uri_path 의 normpath 가 끝 슬래시를 떼므로('/erp/admin/'→'/erp/admin') 폴더 자체 요청도 접두에 걸리게 한 번 더 붙여 본다
+    if path.startswith(ADMIN_ONLY_PREFIXES) or (path + "/").startswith(ADMIN_ONLY_PREFIXES):
+        return False
+    if MEMBER_DATA_RE.match(path):
+        return "member" in allowed_ids(user)
+    if path.startswith("/api/"):
+        need = _api_need(path)
+        return True if need is None else bool(need & set(allowed_ids(user)))
+    last = path.rsplit("/", 1)[-1]
+    if path.endswith(".html") or "." not in last:                # 화면 또는 폴더(index.html) — 확장자 없는 경로는 페이지로 본다
+        # 카드에 없는 화면 — 같은 최상위 폴더에 허용된 카드가 하나라도 있어야 열린다(폴더 = 부서 도메인).
+        # 루트 낱장(자율현황·항해지도 등)은 폴더가 없어 관리자만.
+        top = "/" + path.strip("/").split("/")[0] + "/"
+        if top == "/erp/" or path == "/":
+            return True                                    # 모듈 홈(erp/index.html) — /erp/admin/ 은 위에서 이미 막혔다
+        modules()
+        folder = [m for p, m in _MODS[2].items() if p.startswith(top)]
+        return any(allowed(user, m) for m in folder)
+    return True                                            # css·js·이미지·페이지가 읽는 데이터 파일
+
+
+def allowed_header(user) -> str:
+    """상류 API 에 넘기는 X-Erp-Allowed 값 — 관리자 '*', 아니면 허용 모듈 id 를 퍼센트 인코딩해 쉼표로(헤더는 latin-1 만 받는다)."""
+    if user["role"] == "admin":
+        return "*"
+    return ",".join(urllib.parse.quote(i, safe="") for i in allowed_ids(user))
 
 
 def tell_gm(text: str) -> None:
@@ -610,8 +692,9 @@ def page(title: str, body: str) -> HTMLResponse:
 
 
 def safe_next(next: str, default: str = "/") -> str:
-    """로그인 뒤 돌아갈 주소 검증 — '/' 로 시작하되 '//도메인' 오픈 리다이렉트는 막는다(2026-09-05 검수 M2)."""
-    return next if next.startswith("/") and not next.startswith("//") else default
+    """로그인 뒤 돌아갈 주소 검증 — '/' 로 시작하되 '//도메인' 오픈 리다이렉트는 막는다(2026-09-05 검수 M2).
+    역슬래시도 막는다(2026-09-14 점검) — 브라우저는 '/\\evil.com' 의 '\\' 를 '/' 로 읽어 밖으로 튄다."""
+    return next if next.startswith("/") and not next.startswith("//") and "\\" not in next else default
 
 
 # 인라인 SVG 로고(외부 이미지 금지 · GM 2026-09-07) — 44px 원형 아이콘 안에 넣는다.
@@ -823,22 +906,24 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
            phone: str = Form(...), dept: str = Form(...), rank: str = Form("")):
     name = name.strip()
     uid = "".join(username.split()).lower()
-    is_company = uid.endswith("@" + GOOGLE_HD)             # 이메일 형태로 넣으면 종전 구글 회사계정과 같이 자동 활성
     if dept not in DEPTS:
         return RedirectResponse("/auth/signup?msg=부서를 선택해 주세요", status_code=303)
-    if not is_company and not valid_username(uid):
-        return RedirectResponse("/auth/signup?msg=아이디는 영문 소문자·숫자·.·_ 4~20자로 입력해 주세요", status_code=303)
-    mark = "회사 계정"
-    if not is_company:
-        # ★가입에서 인사 명부 대조를 뺀다 (GM 지시 2026-09-11 「그냥 내가 승인하냐 안하냐로
-        #   구분해줘 명부 체크하는것 하지말고」). 누구나 신청할 수 있고, 계정이 사는 것은 GM 승인
-        #   하나로만 정해진다. 「명부 확인 안 됨」 같은 표시도 안 붙인다 — 표시가 있으면 GM 이 그걸
-        #   판단 근거로 오해한다. 승인 화면이 보여 주는 이름·연락처·부서가 이제 유일한 판단 근거다.
-        #   ▸경위: 09-07 「인사정보 크로스체크」로 시작 → 09-11 오전 이름만 → 09-11 낮 대조 폐지.
-        #   ▸hr_check 화면·hr_match·hr_roster 는 남겨 둔다(가입 경로에서만 안 쓴다).
-        mark = "GM 승인 대기"
+    # ★회사 이메일 형태(x@wellperion.com)로 자동 활성하던 갈래를 없앴다(2026-09-14 배포 전 점검 · 치명 1번).
+    #   메일함 소유를 한 단계도 확인하지 않아 인터넷의 누구나 회사 주소를 적고 즉시 활성 계정을 얻었고,
+    #   아직 구글로 안 들어온 직원 주소를 선점할 수도 있었다. 회사 계정은 구글 로그인(소유가 증명됨)으로만.
+    if not valid_username(uid):
+        return RedirectResponse("/auth/signup?msg=아이디는 영문 소문자·숫자·.·_ 4~20자로 입력해 주세요 "
+                                "(회사 이메일은 로그인 화면의 구글 로그인을 쓰세요)", status_code=303)
+    if len(password) < 8:
+        return RedirectResponse("/auth/signup?msg=비밀번호는 8자 이상이어야 합니다", status_code=303)
+    # ★가입에서 인사 명부 대조를 뺀다 (GM 지시 2026-09-11 「그냥 내가 승인하냐 안하냐로
+    #   구분해줘 명부 체크하는것 하지말고」). 누구나 신청할 수 있고, 계정이 사는 것은 GM 승인
+    #   하나로만 정해진다. 「명부 확인 안 됨」 같은 표시도 안 붙인다 — 표시가 있으면 GM 이 그걸
+    #   판단 근거로 오해한다. 승인 화면이 보여 주는 이름·연락처·부서가 이제 유일한 판단 근거다.
+    #   ▸경위: 09-07 「인사정보 크로스체크」로 시작 → 09-11 오전 이름만 → 09-11 낮 대조 폐지.
+    #   ▸hr_check 화면·hr_match·hr_roster 는 남겨 둔다(가입 경로에서만 안 쓴다).
     salt, h = hash_pw(password)
-    status, approved_at = ("active", now()) if is_company else ("pending", None)
+    status, approved_at = "pending", None
     # 부서 화면에서 팀원급이 못 보는 것을 뺀다(GM 지시 2026-09-11) — 빼는 목록은 층에 한 번만 적혀 있다.
     tier = rank_tier(rank)
     perms = {"dept": dept, "rank": rank.strip(), "tier": tier, "phone": _digits(phone),
@@ -850,9 +935,6 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
                       (T, uid, name, salt, h, "staff", status, now(), approved_at, json.dumps(perms, ensure_ascii=False)))
     except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 있는 아이디입니다", status_code=303)
-    if is_company:
-        tell_gm(f"🔐 ERP 가입 — {name} ({uid} · {dept} · {mark} · 자동 활성)")
-        return RedirectResponse("/auth/signup?msg=가입됐습니다. 바로 로그인할 수 있습니다", status_code=303)
     tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid})\n"
             f"{dept} · {rank.strip() or '직급 미기재'} ({'리더급' if tier == 'leader' else '팀원급'})\n"
             f"연락처 {phone.strip()}\n"
@@ -873,8 +955,12 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     u = current(erp_session)
     if not u:
         raise HTTPException(401)
-    m = module_at(request.headers.get("x-original-uri", ""))    # nginx 가 붙인다(erp.nginx.conf) · 없으면 로그인만 본다
+    uri = request.headers.get("x-original-uri", "")             # nginx 가 붙인다(erp.nginx.conf)
+    m = module_at(uri)
     if m and not allowed(u, m):
+        raise HTTPException(403)
+    path = uri_path(uri)
+    if not m and not path_allowed(u, path):                       # 카드 밖 경로(API·/repo/·보고서·관리자 콘솔…)
         raise HTTPException(403)
     if is_auto_token(erp_session):
         # 사무실 자동 로그인 세션(배1134) — 계정 perms 와 별개로 조회만 허용. 쓰기(GET/HEAD 아닌 요청)와
@@ -883,7 +969,10 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
             raise HTTPException(403)
         if m and m["id"].startswith("chro-"):
             raise HTTPException(403)
-    return Response(status_code=200, headers={"X-Erp-User": u["email"], "X-Erp-Role": u["role"]})
+    headers = {"X-Erp-User": u["email"], "X-Erp-Role": u["role"]}
+    if path.startswith("/api/"):
+        headers["X-Erp-Allowed"] = allowed_header(u)              # 쓰기 관문(api_write)이 action 별 카드 권한을 이걸로 판정
+    return Response(status_code=200, headers=headers)
 
 
 @app.get("/auth/me")
@@ -1611,6 +1700,18 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert safe_next("//evil.example") == "/"                 # '/' 로 시작하지만 '//' 는 외부 도메인으로 튄다
     assert safe_next("evil.example") == "/"                    # '/' 로 시작 안 함
     assert safe_next("//evil.example", "/auth/admin") == "/auth/admin"
+    assert safe_next("/\\evil.example") == "/"                # 브라우저는 '\' 를 '/' 로 읽는다(2026-09-14 점검)
+    # 카드 밖 경로 권한(2026-09-14 점검 · 치명 2·3번) — 관리자 전용 접두·회원 자료·API·폴더 화면
+    _adm = {"role": "admin", "email": "a@x", "perms": None}
+    _stf = {"role": "staff", "email": "s@x", "perms": json.dumps({"modules": ["cpo-member-lesson"], "groups": [], "deny": []})}
+    assert path_allowed(_adm, "/repo/status/_queue.json") and not path_allowed(_stf, "/repo/status/_queue.json")
+    assert not path_allowed(_stf, "/reports/x.html") and not path_allowed(_stf, "/erp/admin/") and not path_allowed(_stf, "/api/members")
+    assert not path_allowed(_stf, uri_path("/erp/admin/")) and not path_allowed(_stf, uri_path("/repo/"))   # 폴더 요청(끝 슬래시 떼임)
+    assert not path_allowed(_stf, uri_path("/chro/hub/")) and path_allowed(_stf, uri_path("/cpo/member/"))  # 폴더 = 같은 폴더 카드로
+    assert path_allowed(_stf, "/api/lesson/members") and path_allowed(_stf, "/api/write") and path_allowed(_stf, "/erp/")
+    assert not path_allowed(_stf, "/status/member_active_snapshot.json") and path_allowed(_stf, "/status/monthly_ops_plan.json")
+    assert allowed_header(_adm) == "*" and "cpo-member-lesson" in allowed_header(_stf)
+    assert not valid_username("x@wellperion.com")               # 회사 이메일 형태 자동 활성 갈래는 없앴다(치명 1번)
     # 폴더 index.html 모듈 권한 판정(2026-09-05 검수 H2) — /chro/hub 든 /chro/hub/ 든 같은 모듈로 잡혀야 한다.
     # MODULES 를 없는 경로로 돌려 modules()의 os.stat 이 항상 실패하게 만든다 — 그래야 실제
     # /srv/erp/www/erp/modules.json 이 있는 서버에서도 이 임시 _MODS 가 재로딩으로 덮이지 않는다.
