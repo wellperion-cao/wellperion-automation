@@ -92,8 +92,15 @@ CHECKLIST_ITEM = re.compile(r"^[□☑✅⬜]\s*\S")
 # 끝난 줄 판정 — 이 글자로 시작하면 완료다(정본 = GM업무 화면 extractTodos 의 U+2611).
 CHECK_DONE_MARKS = ("☑", "✅")
 # 체크 줄 끝의 담당 태그 — 「[담당: 이경연 실장 (회신 9/5)]」. 없으면 담당 미정이다(빈 태그를 미리 붙이지 않는다).
-OWNER_MARK = re.compile(r"\[담당:\s*([^\]]+?)\s*\]")
+# 2026-09-15 웰리: 두 표기를 한 가지 문법으로만 찾아 매일 76건을 헛되이 「빈칸」으로 올렸다.
+#   실제 파일 관행은 "— 담당: 이름 · 기한: 2026-09-20" 평문인데, 여기는 대괄호·물결표 꼴만 인정했다.
+#   실측(09-15): 담당없음 57건 중 50건, 완료예정일없음 93건 중 26건이 값이 있는데 포맷이 달라 잡힌 것.
+#   2026-09-11 「담당없음 20건」 헛경보와 같은 부류다 — 그때는 원천을 한 곳만 봤고, 이번엔 표기 문법을 하나만 봤다.
+#   값을 지어내지 않는다 — 이미 적혀 있는 값을 읽을 뿐이다.
+OWNER_MARK = re.compile(r"\[담당:\s*([^\]]+?)\s*\]|담당\s*[:：]\s*(?!\(?미정)\S+")
 DUE_MARK = re.compile(r"\(~\s*(\d{1,2})/(\d{1,2})\s*\)")  # 체크 항목 완료예정일 표기(GM 확정 2026-08-24) — "(~9/5)" "(~09/05)"
+# 평문 기한 표기 — "기한: 2026-09-20" · "기한: 9/20". (미정)·빈값은 값으로 치지 않는다.
+DUE_MARK_PLAIN = re.compile(r"기한\s*[:：]\s*(?:\d{4}-)?(\d{1,2})[-/](\d{1,2})")
 
 LONG_PENDING_DAYS = 30
 
@@ -429,10 +436,10 @@ def scan_due_hygiene() -> list:
         for l in items:
             if l.startswith(CHECK_DONE_MARKS):
                 continue  # 끝난 항목엔 예정일을 요구 안 함
-            m = DUE_MARK.search(l)
+            m = DUE_MARK.search(l) or DUE_MARK_PLAIN.search(l)
             if not m:
                 rows.append(("⑥완료예정일없음", f"[{o.get('id')}] {l[:40]}",
-                             o.get("owner") or "", "체크 항목에 (~M/D) 표기 없음"))
+                             o.get("owner") or "", "체크 항목에 완료예정일 표기 없음"))
                 continue
             try:
                 due_date = datetime(TODAY.year, int(m.group(1)), int(m.group(2))).date()
@@ -449,7 +456,7 @@ def scan_due_hygiene() -> list:
                 if l.startswith(CHECK_DONE_MARKS) or OWNER_MARK.search(l):
                     continue
                 rows.append(("⑧담당없음", f"[{o.get('id')}] {l[:40]}",
-                             o.get("owner") or "", "체크 항목에 [담당: …] 표기 없음"))
+                             o.get("owner") or "", "체크 항목에 담당 표기 없음"))
 
     # ⑫지시미체크 — GM 지시 2026-09-09 "GM업무 페이지에서 지시한 내용들도 놓치지않게 체크할 수 있게".
     # GM 이 화면을 보며 준 지시는 그날 코드·보드에만 반영되고 카드에는 흔적이 안 남아, 다음에 화면을
