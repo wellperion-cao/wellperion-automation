@@ -424,6 +424,16 @@ function appendRow(it, el){
     // 줄 클릭은 편집을 여는 동작이라, 링크만 눌렀을 땐 편집이 안 열리게 클릭을 멈춰 둔다.
     var evTxt=(it.evidence&&(""+it.evidence).trim())
       ? '<div class="rvendor"><a href="'+esc((""+it.evidence).trim())+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎 증빙 보기</a></div>' : "";
+    // 열쇠 링크 — gm_handoff 가 심어 둔 todo_id·plan_id 가 있을 때만 뜬다(GM 지시 2026-09-14
+    // "GM업무/전사일정/중간관리자/업무&결재SSOT 연동"). 일정에서 그 일의 원본 행·카드로 바로 건너간다.
+    // 증빙 링크(evTxt)와 같은 규칙 — 새 탭, 링크만 눌렀을 땐 편집 패널이 안 열리게 클릭을 멈춘다.
+    var keyTxt="";
+    if(it.todo_id||it.plan_id){
+      var ks=[];
+      if(it.todo_id)ks.push('<a href="../todo/업무 현황 SSOT.html?item='+encodeURIComponent(it.todo_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸업무</a>');
+      if(it.plan_id)ks.push('<a href="../chairman/GM업무.html#gm-'+encodeURIComponent(it.plan_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸GM업무</a>');
+      keyTxt='<div class="rvendor">🔗 '+ks.join(' · ')+'</div>';
+    }
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
     // 담당자는 note 가 있어도 항상 보인다 (GM 지시 2026-08-25 "담당자 설정할 수 있게 해줘").
     // 종전엔 note 가 있으면 note 만 보여 줘, 설명을 적어 둔 건일수록 담당이 화면에서 사라졌다.
@@ -441,7 +451,7 @@ function appendRow(it, el){
     if(comp.date)r.setAttribute("data-due",fmtDate(comp.date));
     var srcTag=(it.source==="monthly_ops")?'<span class="tag" style="border-color:var(--accent);color:var(--accent)" title="월간운영계획 목표에서 자동 연동">🎯 운영계획</span>':"";
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
-      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+evTxt+'</div>'+
+      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+evTxt+keyTxt+'</div>'+
       '<div class="rdept">'+esc(it.dept)+'</div>'+
       '<div class="rd">'+(isEvent?"":"다음 ")+'<b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">'+tailTxt+'</span></div>'+
       '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정",done:"완료"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';

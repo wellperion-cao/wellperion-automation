@@ -17,6 +17,8 @@
   등록:  python scripts/gm_handoff.py --title "…" --content "…" [--date 2026-09-09 --time 14:00]
              [--approval "GM,대표님"] [--category "[7] IT·시스템·자동화"] [--due 2026-09-11]
              [--plan 2026-08-24 --check "□ 로 추가할 체크 한 줄"] [--assignee "김남욱 GM"] [--dry-run]
+             [--todo-id TODO-…]  ← 실무진이 이미 올린 업무 SSOT 행이 있으면 같이 준다. --todo-id·--plan 은
+             전사일정 item 의 todo_id·plan_id 칸이 되어, 전사일정 카드에 「업무」·「GM업무」 링크로 뜬다.
   완료:  python scripts/gm_handoff.py --done --todo-id TODO-… [--event-id evt-…] [--plan 2026-08-24 --check "☑ 로 바꿀 체크 원문"] [--dry-run]
   결과 마지막 줄 = 🧭 4면 표기(전사일정 · 월간계획 카드 · 업무&결재SSOT(막힘) · 중간관리자 통(없음))
              — GM 보고 표 기록위치 줄에 그대로 붙인다.
@@ -44,7 +46,8 @@ def _today() -> _dt.date:
 
 
 # ── 전사일정 ────────────────────────────────────────────────────────────────
-def add_schedule(title: str, date: str, time: str, assignee: str, note: str, dry: bool) -> dict:
+def add_schedule(title: str, date: str, time: str, assignee: str, note: str, dry: bool,
+                 todo_id: str = "", plan_id: str = "") -> dict:
     import schedule_ssot as S
     import ops_daily_digest as o
     slug = "".join(ch for ch in title if ch.isalnum())[:24]
@@ -52,7 +55,12 @@ def add_schedule(title: str, date: str, time: str, assignee: str, note: str, dry
             "category": "meeting", "dept": "경영지원부", "cycle": "", "cycle_confirmed": False,
             "period_months": None, "legal_basis": "", "assignee": assignee, "last_done": "",
             "next_due": date, "time": time or "", "evidence": "", "applies": "있음", "vendor_id": "",
-            "repeat": "", "source": f"GM 지시 {_today().isoformat()} (gm_handoff)", "note": note}
+            "repeat": "", "source": f"GM 지시 {_today().isoformat()} (gm_handoff)", "note": note,
+            # 열쇠 두 칸 — 전사일정 카드에서 업무 SSOT 행·GM업무 카드로 바로 건너가는 링크의 재료다.
+            # GAS saveSchedule_ 은 item 을 JSON 통째로 속성창에 넣고(전사_일정.js:211 propSet_),
+            # 화면도 읽어 온 객체를 그 자리에서 고쳐 통째로 되돌려 보낸다(전사_일정.html:701,831).
+            # 그래서 모르는 칸도 왕복에서 안 지워진다 — source·note 에 끼워 넣는 우회가 필요 없다.
+            "todo_id": todo_id or "", "plan_id": plan_id or ""}
     # GM 지시 2026-09-07 "전사일정에 중복되는 것들이 보이는데 한번씩 정리해줘"(오늘 9쌍 손 병합 실측)
     # — 카톡 다리(_schedule_is_dup)에만 있던 중복 관문을 사람 경로에도 재사용해 건다. --dry 도 같은 판정.
     items = S.load().get("items") or []
@@ -62,6 +70,7 @@ def add_schedule(title: str, date: str, time: str, assignee: str, note: str, dry
         print(f"[일정] 중복 — 기존 '{dup_name}' 그대로 씀")
         return {"ok": True, "dup": True, "id": (hit or {}).get("id"), "name": dup_name}
     if dry:
+        print("[일정·미리보기] " + json.dumps(item, ensure_ascii=False))
         return {"ok": True, "dry": True, "id": item["id"]}
     S.pull_from_live()
     res = S.add_event(item)
@@ -224,7 +233,7 @@ def main() -> int:
     ap.add_argument("--check", default="", help="카드에 얹을 체크 한 줄(등록) / ☑ 로 바꿀 체크 원문(--done)")
     ap.add_argument("--done", action="store_true", help="완료 모드 — 전사일정·월간계획 카드·업무&결재SSOT 를 같이 닫는다")
     ap.add_argument("--append", metavar="LINE", help="GM업무 --todo-id 행 내용 끝에 진척 한 줄 덧붙임(날짜 자동)")
-    ap.add_argument("--todo-id")
+    ap.add_argument("--todo-id", help="업무 SSOT 행 id — 등록 때 주면 전사일정 카드에서 그 행으로 가는 링크가 생긴다")
     ap.add_argument("--event-id")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
@@ -255,7 +264,8 @@ def main() -> int:
                   f" 갱신은 --append LINE --todo-id {dup.get('id')}, 정말 다른 건이면 --force")
             return 2
     due = a.due or a.date or (_today() + _dt.timedelta(days=7)).isoformat()
-    r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry) if a.date else None
+    r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry,
+                         todo_id=a.todo_id or "", plan_id=a.plan or "") if a.date else None
     r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=a.assignee)
     if r_todo.get("blocked"):
         # 막힌 것은 실패가 아니라 규칙이다 — 사람이 무엇을 해야 하는지 한 줄로 알린다.
