@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 문의 현황 | 다이어트캠프</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{ --green:#4E7432; --green-mid:#63914a; --green-light:#f1f6ed; --ink:#0B0B0D;
+       --body:#333; --muted:#777; --line:#dfe5da; --white:#fff; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+     color:var(--body);background:var(--white);line-height:1.7;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:640px;margin:0 auto;padding:0 24px}
+.top{background:var(--green);color:#fff}
+.top .wrap{padding-block:52px 44px}
+.eyebrow{font-family:"Archivo Black",sans-serif;font-size:11px;letter-spacing:.32em;
+         text-transform:uppercase;opacity:.9;margin-bottom:16px}
+h1{font-size:clamp(26px,5.4vw,36px);line-height:1.25;font-weight:900;margin-bottom:12px}
+.top p{font-size:15px;opacity:.95}
+form{padding-block:40px 10px}
+.field{margin-bottom:20px}
+label{display:block;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:7px}
+input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:#fff;
+      border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+input:focus{outline:none;border-color:var(--green)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.btn{width:100%;font:inherit;font-size:16px;font-weight:700;color:#fff;background:var(--green);
+     border:0;border-radius:999px;padding:16px;cursor:pointer}
+.btn:hover{background:var(--green-mid)}
+.note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+.result{padding-block:8px 24px}
+.card{border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;
+      padding:16px;margin-bottom:12px}
+.card .when{font-size:12px;color:var(--muted)}
+.card .what{font-size:15px;font-weight:700;color:var(--ink);margin:4px 0 8px}
+.card .memo{font-size:14px;color:var(--body)}
+.badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:3px 11px;
+       background:var(--green-light);color:var(--green);margin-bottom:6px}
+.badge.wait{background:#f3f4f2;color:#6b7176}
+.badge.done{background:#e8f3ea;color:#1B7F5F}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:22px;text-align:center;
+       color:var(--muted);font-size:14px}
+.alt{margin-top:24px;padding-top:20px;border-top:1px solid var(--line);font-size:14px}
+.alt b{display:block;color:var(--ink);margin-bottom:8px}
+.alt a{color:var(--green);font-weight:700;text-decoration:underline}
+.alt p{margin-bottom:5px}
+footer{background:#0B0B0D;color:#ddd}
+footer .wrap{padding-block:26px}
+footer p{font-size:13px;margin:3px 0}
+footer a{color:#9ec98a}
+@media (prefers-color-scheme:dark){
+  :root{--white:#141414;--body:#e6e6e6;--ink:#f2f2f2;--line:#2e332b;--muted:#9a9a9a;--green-light:#1c2718}
+  input{background:#1c1c1c}
+}
+</style>
+</head>
+<body>
+
+<section class="top">
+  <div class="wrap">
+    <p class="eyebrow">DIET CAMP</p>
+    <h1>내 문의 현황</h1>
+    <p>문의하실 때 적으신 성함과 연락처로 진행 상태를 확인하실 수 있습니다.</p>
+  </div>
+</section>
+
+<div class="wrap">
+<form id="lk" novalidate>
+  <div class="field">
+    <label for="name">성함</label>
+    <input type="text" id="name" name="name" autocomplete="name">
+  </div>
+  <div class="field">
+    <label for="phone">연락처</label>
+    <input type="tel" id="phone" name="phone" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000">
+    <p class="hint">본인 확인에만 쓰고 따로 저장하지 않습니다.</p>
+  </div>
+  <button class="btn" type="submit">내 문의 조회하기</button>
+  <p class="note">· 본인이 남기신 문의만 보입니다. 담당자 메모 같은 내부 기록은 나오지 않습니다.<br>
+  · 여러 사람이 쓰는 기기라면 확인 후 창을 닫아 주세요.</p>
+</form>
+
+<div class="result" id="result" hidden></div>
+
+<!-- 조회 통로가 아직 열리지 않았다(2026-09-14). 서버에 업체 문의 접수·조회 API 가 생기면
+     아래 LOOKUP_URL 한 곳만 채우면 붙는다. 폼 제출 쪽(inquiry.html)과 같은 짝이다. -->
+<div class="alt">
+  <b>바로 확인이 급하시면</b>
+  <p>📞 <a href="tel:02-6941-0701">02-6941-0701</a></p>
+  <p>✍️ <a href="inquiry.html">새로 문의 남기기</a></p>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p><strong>다이어트캠프 DIET CAMP</strong></p>
+    <p>은평로 23, DC백화점 3층 · <a href="tel:02-6941-0701">02-6941-0701</a></p>
+    <p>평일 09:00~23:00 · 토요일 09:00~16:00 · 일요일·공휴일 휴무</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var LOOKUP_URL = "";   // 서버 조회 API 가 열리면 여기만 채운다
+  var f = document.getElementById('lk');
+  var phone = document.getElementById('phone');
+  var box = document.getElementById('result');
+  var STATE = {접수:'wait', 확인중:'', 연락드림:'', 완료:'done'};
+
+  phone.addEventListener('input', function(){
+    var v = this.value.replace(/\D/g,'').slice(0,11);
+    this.value = v.length > 7 ? v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7)
+               : v.length > 3 ? v.slice(0,3)+'-'+v.slice(3) : v;
+  });
+
+  function esc(s){ return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function render(name, rows){
+    if (!rows || !rows.length){
+      box.innerHTML = '<div class="empty">' + esc(name) + ' 님으로 남기신 문의를 찾지 못했습니다.<br>'
+                    + '다른 번호로 남기셨다면 그 번호로 다시 조회해 주세요.</div>';
+    } else {
+      box.innerHTML = rows.map(function(r){
+        var cls = STATE[r.status] == null ? '' : STATE[r.status];
+        return '<div class="card">'
+          + '<span class="badge ' + cls + '">' + esc(r.status || '접수') + '</span>'
+          + '<div class="when">' + esc(r.at || '') + '</div>'
+          + '<div class="what">' + esc(r.topic || '문의') + '</div>'
+          + (r.memo ? '<div class="memo">' + esc(r.memo) + '</div>' : '')
+          + (r.reply ? '<div class="memo" style="margin-top:8px;color:var(--green)">↳ '
+                     + esc(r.reply) + '</div>' : '')
+          + '</div>';
+      }).join('');
+    }
+    box.hidden = false;
+    box.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  f.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var name = f.name.value.trim(), tel = phone.value.trim();
+    if (!name) { alert('성함을 적어 주세요.'); f.name.focus(); return; }
+    if (tel.replace(/\D/g,'').length < 10) { alert('연락처를 다시 확인해 주세요.'); phone.focus(); return; }
+    if (!LOOKUP_URL) {
+      alert('조회 준비 중입니다. 02-6941-0701 로 전화 주시면 바로 확인해 드리겠습니다.');
+      return;
+    }
+    fetch(LOOKUP_URL + '?tenant=2_dietcamp&name=' + encodeURIComponent(name)
+          + '&phone=' + encodeURIComponent(tel), {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){ render(name, (d && d.items) || []); })
+      .catch(function(){ alert('지금 조회가 어렵습니다. 02-6941-0701 로 연락 주시면 바로 확인해 드리겠습니다.'); });
+  });
+})();
+</script>
+
+</body>
+</html>
