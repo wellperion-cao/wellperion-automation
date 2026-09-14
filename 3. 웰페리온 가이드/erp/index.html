@@ -231,6 +231,7 @@
     <a href="#usage" data-go="usage"><span class="t">사용 현황</span></a>
     <a href="#health" data-go="health"><span class="t">가동 현황</span></a>
     <a href="#cfg" data-go="cfg"><span class="t">회사 설정값</span></a>
+    <a href="#dev" data-go="dev"><span class="t">개발 환경</span></a>
   </div>
   <div class="sep"></div>
   <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">회사 관리자 콘솔 ↑</span></a>
@@ -284,6 +285,14 @@
     <div class="note">읽기 전용이다. 고치려면 시토(시스템)에게 값과 이유를 넘긴다 —
       이 값들은 화면·문서·자동화가 같이 읽으므로 한 곳만 고치면 나머지가 어긋난다.</div>
     <div id="cfg-body"><div class="msg">불러오는 중…</div></div>
+  </div>
+
+  <!-- 개발 환경 — 플랫폼관리 ▸환경 의 정본(ssot/platform_env.json) 가운데 파트너사 관리자에게 보여도 되는
+       줄(partner=true)만 편다(GM 지시 2026-09-14 「보안 걱정 안 들게끔」). 주소·내부 경로·열쇠 자리는 정본에서 partner=false 다. -->
+  <div id="pane-dev" role="tabpanel" hidden>
+    <h2>개발 환경</h2>
+    <div class="meta" id="dev-lead">불러오는 중…</div>
+    <div id="dev-body"><div class="msg">불러오는 중…</div></div>
   </div>
 
 </div>
@@ -584,10 +593,10 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'health', 'cfg'];
+var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'health', 'cfg', 'dev'];
 // 계정·권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11 「다른 페이지로 넘어가는게 아니라
 // 우측 페이지에 나타나야해」) — 나머지 관리 판은 이 화면이 직접 그린다.
-var LOADER = {mods: loadMods, usage: loadUsage, health: loadHealth, cfg: loadCfg};
+var LOADER = {mods: loadMods, usage: loadUsage, health: loadHealth, cfg: loadCfg, dev: loadDev};
 var loadedPane = {};
 
 function showPane(which){
@@ -781,6 +790,21 @@ function loadCfg(){
     paneFail('cfg-body', e);
     document.getElementById('cfg-who').textContent = '';
   });
+}
+
+/* 개발 환경 — 정본 ssot/platform_env.json 에서 partner=true 줄만. 정본이 바뀌면 여기도 같이 바뀐다(값을 박지 않는다). */
+function loadDev(){
+  repoGet('ssot/platform_env.json').then(function(d){
+    document.getElementById('dev-lead').textContent =
+      (d.partner_lead || '') + (d.updated ? ' (정본 갱신 ' + d.updated + ')' : '');
+    var html = (d.sections || []).map(function(s){
+      var rows = (s.items || []).filter(function(it){ return it.partner === true; }).map(function(it){
+        return '<tr><td class="k">' + esc(it.k) + '</td><td>' + esc(it.v) + '</td></tr>';
+      }).join('');
+      return rows ? '<h3>' + esc(s.title) + '</h3>' + tbl(['항목', '내용'], rows) : '';
+    }).join('');
+    document.getElementById('dev-body').innerHTML = html || '<div class="msg">보여 줄 항목이 없다.</div>';
+  }).catch(function(e){ paneFail('dev-body', e); document.getElementById('dev-lead').textContent = ''; });
 }
 
 // 모듈 그룹 하나만 띄운다 — 42장을 한 줄로 늘어놓지 않는다.

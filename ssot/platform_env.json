@@ -1,0 +1,105 @@
+{
+  "_doc": "ERP 플랫폼 개발·운영 환경 정본(SSOT). GM 지시 2026-09-14 「환경 메뉴에 서버·개발언어·DB 등 필요한 내용을 정본으로 셋업」. 읽는 화면 둘 — ERP플랫폼관리 ▸환경(/erp/admin/ · 전부) · ERP관리 파트너사 관리자 ▸개발 환경(/erp/ 관리 층 · partner=true 항목만). 값은 2026-09-14 서버에서 직접 잰 것이다(os-release·nginx -v·psql --version·systemctl·cron). 이 저장소는 공개라 비밀값(열쇠·비밀번호·토큰)은 어디에도 적지 않는다 — 그런 값은 서버 /srv/erp/*.env 에만 있다. 바뀌면 이 파일만 고친다(화면에 값을 박지 않는다).",
+  "updated": "2026-09-14",
+  "partner_lead": "파트너사 관리자께 보이는 범위입니다 — 서버 주소·내부 경로·열쇠는 뺐고, 자료가 어디에 어떻게 보관되는지만 적었습니다.",
+  "sections": [
+    {
+      "id": "hosting",
+      "title": "서버(호스팅)",
+      "items": [
+        {"k": "클라우드", "v": "AWS(아마존) · 서울 리전", "partner": true},
+        {"k": "서버 종류", "v": "EC2 1대 · 메모리 2GB · 디스크 20GB(사용 28%)", "partner": false},
+        {"k": "운영체제", "v": "Amazon Linux 2023", "partner": true},
+        {"k": "고정 주소", "v": "탄력 IP 1개(server/deploy_*.sh 의 HOST) · 접속은 개인키(pem)로만", "partner": false},
+        {"k": "서비스 주소", "v": "https://erp.wellperion.com (HTTPS 만 · 평문 80 은 전부 HTTPS 로 보냄)", "partner": true},
+        {"k": "서버 접근", "v": "AI CTO(시토) 1인 · 비밀번호 로그인 없음", "partner": true}
+      ]
+    },
+    {
+      "id": "web",
+      "title": "웹 서버·보안",
+      "items": [
+        {"k": "웹 서버", "v": "nginx 1.30", "partner": true},
+        {"k": "인증서", "v": "Let's Encrypt · 자동 갱신(certbot) · HSTS 1년", "partner": true},
+        {"k": "로그인 관문", "v": "모든 화면·API 가 로그인 관문(auth_request)을 지난다 · 쿠키는 서버 서명 토큰", "partner": true},
+        {"k": "권한", "v": "모듈 카드별 허용 목록(modules.json) · 회사 관리자 / 플랫폼 관리자 층 분리", "partner": true},
+        {"k": "속도 제한", "v": "로그인·가입 분당 30회 · 공개 접수 분당 20회(IP 기준)", "partner": true},
+        {"k": "공개 경로", "v": "/public/(분실물 등록·공개 PNG) · /api/intake/(접수 폼) 만 로그인 없이 · 나머지 전부 잠김", "partner": false}
+      ]
+    },
+    {
+      "id": "app",
+      "title": "응용(개발 언어)",
+      "items": [
+        {"k": "서버 언어", "v": "Python 3.9 · FastAPI(uvicorn)", "partner": true},
+        {"k": "서버 프로세스", "v": "erp-auth(로그인 관문 :8000) · erp-api(라이브 :8001 · 워커 2) · erp-api@beta(:8002) · erp-api@alpha(:8003)", "partner": false},
+        {"k": "화면", "v": "HTML + JavaScript(프레임워크 없음 · 빌드 없음) · 정적 파일", "partner": true},
+        {"k": "GM PC 자동화", "v": "Python 3.14 · Windows 예약작업(아침 통·보고·발행) · 텔레그램 봇", "partner": false},
+        {"k": "AI", "v": "Claude(Anthropic) — C-Level 8역할 세션 · 상담봇 · 계정별 토큰 현황은 플랫폼관리 ▸AI 토큰 현황", "partner": true}
+      ]
+    },
+    {
+      "id": "db",
+      "title": "데이터베이스",
+      "items": [
+        {"k": "DB", "v": "PostgreSQL 17", "partner": true},
+        {"k": "자료칸", "v": "erp(라이브) · erp_beta · erp_alpha — 세 벌 완전 별개", "partner": false},
+        {"k": "회사 분리", "v": "모든 표에 tenant 열 · 파트너사 자료는 회사별로 갈린다", "partner": true},
+        {"k": "백업", "v": "매일 03:00 전체 백업 → AWS S3 · 30일 보관", "partner": true},
+        {"k": "첨부·사진", "v": "/srv/erp/uploads (용량 상한 2GB · 토큰 링크)", "partner": false},
+        {"k": "접속", "v": "서버 안에서만(127.0.0.1) · 밖으로 열린 DB 포트 없음", "partner": true}
+      ]
+    },
+    {
+      "id": "envs",
+      "title": "환경 3벌",
+      "items": [
+        {"k": "알파", "v": "/alpha/api/ · erp_alpha · 반복 개발 · 밖으로 안 나감", "partner": false},
+        {"k": "베타", "v": "/beta/api/ · erp_beta · 배포 전 시험 · 서버가 유일 원본", "partner": false},
+        {"k": "라이브", "v": "/api/ · erp · 실무진·회원이 쓰는 자리", "partner": false},
+        {"k": "올리는 방향", "v": "알파 → 베타 → 라이브 한 방향 · 고치는 것은 라이브에서 하지 않는다", "partner": true}
+      ]
+    },
+    {
+      "id": "code",
+      "title": "코드·배포",
+      "items": [
+        {"k": "저장소", "v": "GitHub(wellperion-cao/wellperion-automation) · 공개 · 비밀값 없음", "partner": false},
+        {"k": "화면 배포", "v": "서버가 매분 저장소를 내려받아(git pull) 정적 화면을 곧바로 서빙", "partner": true},
+        {"k": "서버 코드 배포", "v": "server/deploy_*.sh(scp + systemctl restart) · 밖에서 들어오는 문이 바뀌면 GM 승인 카드(자물쇠)", "partner": false},
+        {"k": "변경 이력", "v": "모든 변경은 커밋으로 남는다 · 되돌리기 가능", "partner": true}
+      ]
+    },
+    {
+      "id": "integrations",
+      "title": "연동",
+      "items": [
+        {"k": "구글 Apps Script", "v": "옛 원본(시트) · 서버 원천으로 이관 88%(2026-09-14) · 남은 것 = 화면 읽기 2장·결재 PIN·드라이브 첨부", "partner": false},
+        {"k": "텔레그램", "v": "보고·승인 봇(@namuki_report_bot) · 업무관리 방", "partner": false},
+        {"k": "카카오", "v": "실무진 방 발신(카톡 발신기 모듈)", "partner": true},
+        {"k": "브로제이", "v": "회원 관리 SW 연동(하루 3회 동기화)", "partner": false},
+        {"k": "인스타그램", "v": "도달 수집 API(주 1회 토큰 갱신)", "partner": false},
+        {"k": "모듈 간", "v": "모든 화면은 서버 API 하나로 · 화면끼리 직접 부르지 않는다", "partner": true}
+      ]
+    },
+    {
+      "id": "ops",
+      "title": "감시·운영",
+      "items": [
+        {"k": "동기화", "v": "시트 거울 5분 주기(문의·회원·게시판·점검) · 되밀기 1분", "partner": false},
+        {"k": "감시", "v": "모듈 침묵 감지기 · 자동화 건강판 · /api/health(환경마다)", "partner": true},
+        {"k": "로그", "v": "/srv/erp/*.log · 쓰기 원장(write_log) 30일 · 접속 로그", "partner": false},
+        {"k": "장애 대응", "v": "되돌리기 = 스위치 파일 한 줄(dual) 또는 직전 커밋 · 사고는 ssot/incidents.json 에 등록", "partner": true}
+      ]
+    },
+    {
+      "id": "secrets",
+      "title": "비밀값 두는 곳",
+      "items": [
+        {"k": "서버", "v": "/srv/erp/auth.env · api.env · db.env (권한 600 · 저장소 밖)", "partner": false},
+        {"k": "GM PC", "v": "telegram_bot/.env · ~/.claude (전부 .gitignore)", "partner": false},
+        {"k": "원칙", "v": "비밀값은 코드·저장소·화면에 없다 · 서버 환경파일에만", "partner": true}
+      ]
+    }
+  ]
+}
