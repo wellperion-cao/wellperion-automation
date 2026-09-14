@@ -2505,5 +2505,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-14"
+  },
+  {
+    "task_id": "CTO-2026-09-14-업무-현황-SSOT-저장이-서버-문-앞에서-413-",
+    "clevel": "cto",
+    "title": "[시토] 업무 현황 SSOT 저장이 서버 문 앞에서 413 으로 잘린다 — nginx 업로드 한도 기본 1MB, 화면은 1.35MB 를 올린다",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-14",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-09-14] 실측 2026-09-14 (시우). 서버 nginx error.log: 'client intended to send too large body: 1347738 bytes ... request: POST /api/write ... subrequest: /auth/check' 뒤이어 'auth request unexpected status: 413' → 화면에는 500 으로 보인다. 두 번 찍혔다 — 13:27:13·13:31:01 KST(로그 04:27·04:31 UTC), referrer 는 둘 다 coo/todo/업무 현황 SSOT.html. 같은 시각 erp-api 는 정상 200 을 찍고 있어 앱 문제가 아니라 문(nginx) 문제다. 원인 한 문장: erp.wellperion.com server 블록에 client_max_body_size 가 없어 기본 1MB 인데, 업무 현황 SSOT 저장이 목록 전체 1.35MB 를 한 번에 올린다(wp.conf 에만 64M 이 있고 erp.conf 에는 없다). 오늘이 처음이다 — error.log 에 같은 문구 2건뿐. 시각이 13:20 '업무·결재 SSOT 를 서버 읽기(ERP_API_ON=true)로 전환' 요청 직후라, 그 전환을 켜고 저장을 눌러 본 사람의 저장이 실제로 실패했을 수 있다.",
+    "next": "erp.conf 의 erp.wellperion.com server 블록에 client_max_body_size 를 올린다(최소 8M 권장 · /auth/check 는 proxy_pass_request_body off 라 본문을 안 받으므로 한도만 올리면 된다). server/**/*.conf 는 자물쇠 대상이지만 auto_approve_requesters 에 cto 가 있어 시토는 카드 없이 진행 가능. 반영 뒤 업무 현황 SSOT 화면에서 실제 저장 한 번을 눌러 200 을 확인하고, 13:27·13:31 에 실패한 저장이 있었는지(그 사람 화면 값이 남았는지) 함께 확인해 알려 달라.",
+    "depends_on": "",
+    "ship_no": 12619,
+    "short_no": 2625,
+    "module": "home",
+    "audience": null,
+    "reversible": null,
+    "work_type": null,
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-14"
   }
 ]
