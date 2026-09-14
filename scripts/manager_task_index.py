@@ -115,6 +115,10 @@ RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우�
 _NO_MEASURE = "미수집"
 SSOT_DONE = {"완료", "폐기", "완료됨"}
 OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원", "이지영 사원"]
+# 중간관리자 목차 개편(GM 지시 2026-09-14 "실장이 운영부 담당자들 업무들까지 체크해야") —
+#   실장·소장 라인 밑에 팀원 담당 건을 묶어 넣는다. 본인(실장·소장) 이름은 뺀다.
+OPS_TEAM = [s for s in OPS_DEPT_STAFF if s != "이경연 실장"]
+FACILITY_TEAM = ["김종현 차장", "박호균 과장", "양상규 고문"]  # 시설부·주차 — 지원부 인원이 생기면 여기 추가
 
 
 def load_eval() -> dict:
@@ -794,6 +798,11 @@ def owner_select(no: int, who: str) -> str:
     return f'<select class="own-sel" data-o="{no}">{"".join(opts)}</select>'
 
 
+def is_ai_owner(owner) -> bool:
+    """담당이 사람이 아니라 AI 판정 건 — 사람 목차에서 빼고 「AI 처리 건」 한 줄로만 보인다."""
+    return str(owner or "").strip().startswith("AI ")
+
+
 def _fmt_amt(v, unit: str) -> str:
     """금액은 억·만 단위로 접어 읽는다 — 0 이 여덟 개면 사람이 못 읽는다."""
     try:
@@ -1140,42 +1149,91 @@ def build() -> str:
                 remain[n] = (d, it)
         opens = remain
 
-    # ② 열린 목록에서 가를 것 셋 — 원장은 그대로 두고 화면에서만 가른다.
+    # ② 열린 목록에서 가를 것 넷 — 원장은 그대로 두고 화면에서만 가른다.
     dup_of = find_dups(opens)
     aside_dup = [(n, *opens.pop(n)) for n in sorted(dup_of)]
     aside_rt = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if kind_of(it) == "routine")]
     aside_rc = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if kind_of(it) == "reception")]
+    # AI 판정 건(owner="AI …")은 사람 목차에서 빼고 한 줄로만 보인다(GM 지시 2026-09-14).
+    ai_items = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
+                                                   if is_ai_owner(it.get("owner")))]
+
+    def ssot_missing(it: dict) -> bool:
+        return not str(it.get("todo_id") or "").strip() and not is_reception_item(it)
+
+    def pop_team(team: list[str]) -> dict[str, list]:
+        """team 이름이 owner 안에 든 건을 opens 에서 꺼내 사람별로 묶는다("윤병현AM · 백승화 사원"
+        같은 복합 담당도 양쪽 다 걸린다)."""
+        out: dict[str, list] = {}
+        for n in sorted(opens):
+            owner = str(opens[n][1].get("owner") or "").strip()
+            hit = next((p for p in team if p in owner), None)
+            if hit:
+                d, it = opens.pop(n)
+                out.setdefault(hit, []).append((n, d, it))
+        return out
 
     blocks = []
-    counts = []
+    counts = []  # (표시이름, 총건수, SSOT 미등록건수)
     shown: list[tuple[int, str, dict, str]] = []
+
+    # 실장 지시(GM 2026-09-14 "이경연 실장이 운영부 담당자들 업무들까지 체크") — 실장 아래엔
+    #   운영부 팀원 건, 소장 아래엔 시설부(지원부·주차 포함) 팀원 건을 묶어 넣는다. 나우열M 은
+    #   본인 담당(인사·파트너)만이라 팀 묶음이 없다.
+    TEAM_BY_NAME = {"이경연 실장": (OPS_TEAM, "운영부 담당자 건", "실장이 함께 체크하는"),
+                    "이정헌 소장": (FACILITY_TEAM, "시설부 담당자 건", "소장이 함께 체크하는")}
 
     for name, dept, room in MANAGERS:
         mine = sorted(((n, d, it) for n, (d, it) in opens.items()
                        if str(it.get("owner") or "").strip() == name), key=lambda x: x[0])
-        counts.append((name, len(mine)))
-        shown += [(n, d, it, name) for n, d, it in mine]
+        for n, _d, _it in mine:
+            opens.pop(n)
+        team = TEAM_BY_NAME.get(name)
+        team_groups = pop_team(team[0]) if team else {}
+        team_rows = sorted((row for rows in team_groups.values() for row in rows), key=lambda x: x[0])
+
+        person_rows = mine + team_rows
+        shown += [(n, d, it, name) for n, d, it in person_rows]
+        counts.append((name, len(person_rows), sum(1 for _n, _d, it in person_rows if ssot_missing(it))))
+
+        team_html = ""
+        if team:
+            _, team_title, team_lead = team
+            if team_groups:
+                inner = "\n        ".join(
+                    f'<h3 class="rsp">{html.escape(p)} <span class="gc">{len(rows)}건</span></h3>\n        '
+                    + table([row_html(n, d, it) for n, d, it in sorted(rows)], "없음")
+                    for p, rows in team_groups.items())
+            else:
+                inner = '<div class="empty" style="padding:8px 14px;">없음</div>'
+            team_html = (f'\n        <details open class="grp"><summary>{team_lead} {team_title} '
+                         f'<span class="gc">{len(team_rows)}건</span></summary>\n        {inner}\n        </details>')
+
         blocks.append(f'''      <div class="blk">
-        <h2>{html.escape(name)} <span class="sub">{html.escape(dept)} · {html.escape(room)} · 열린 건 {len(mine)}건</span></h2>
-        {table([row_html(n, d, it) for n, d, it in mine], "열린 건 없음")}
+        <h2>{html.escape(name)} <span class="sub">{html.escape(dept)} · {html.escape(room)} · 열린 건 {len(person_rows)}건(본인 {len(mine)}건)</span></h2>
+        {table([row_html(n, d, it) for n, d, it in mine], "열린 건 없음")}{team_html}
       </div>''')
 
-    # ★MANAGERS 밖 담당(예: 최준용M)도 반드시 어딘가에 보인다 — 2026-09-11 사고: 상가 4건 담당을
-    #   최준용M 으로 바꾸자 사람별 블록(3인)에도, 담당 미정(빈칸)에도 안 걸려 화면에서 통째로
-    #   사라졌다(GM 「업무SSOT에서 분리수거장 시안물 부착 업무가 사라졌어요」). 이름을 늘리는 대신
-    #   「그 밖의 담당」 한 자리를 두어, 앞으로 어떤 이름이 와도 사라지지 않게 한다.
-    mgr_names = {m[0] for m in MANAGERS}
-    others = sorted(((n, d, it) for n, (d, it) in opens.items()
-                     if str(it.get("owner") or "").strip()
-                     and str(it.get("owner") or "").strip() not in mgr_names), key=lambda x: x[0])
-    if others:
-        shown += [(n, d, it, str(it.get("owner") or "").strip()) for n, d, it in others]
+    # 실장·소장·나우열M 어느 라인도 아닌 담당만 남으면 여기로(있을 때만) — 2026-09-11 사고
+    #   재발 방지(담당이 있는데 어디에도 안 걸려 화면에서 사라짐)는 그대로 지킨다.
+    line_out = sorted(((n, d, it) for n, (d, it) in opens.items()
+                       if str(it.get("owner") or "").strip()), key=lambda x: x[0])
+    for n, _d, _it in line_out:
+        opens.pop(n)
+    if line_out:
+        shown += [(n, d, it, str(it.get("owner") or "").strip()) for n, d, it in line_out]
         blocks.append(f'''      <div class="blk">
-        <h2>그 밖의 담당 <span class="sub">위 세 분이 아닌 분께 배정된 것 · {len(others)}건 ·
-          그 방에 안 계신 분이면 실장·소장을 거쳐 전달됩니다</span></h2>
-        {table([row_html(n, d, it) for n, d, it in others], "없음")}
+        <h2>라인 밖 <span class="sub">실장·소장·나우열M 어느 라인도 아닌 담당 · {len(line_out)}건</span></h2>
+        {table([row_html(n, d, it) for n, d, it in line_out], "없음")}
+      </div>''')
+
+    if ai_items:
+        ai_line = " · ".join(f'#{n} {html.escape(str(it.get("issue") or ""))}' for n, _d, it in ai_items)
+        blocks.append(f'''      <div class="blk">
+        <h2>AI 처리 건 <span class="sub">사람 일이 아니라 화면 결함 등 — 사람 목차에서 뺐습니다 · {len(ai_items)}건</span></h2>
+        <div style="padding:10px 14px;font-size:13.5px;">{ai_line}</div>
       </div>''')
 
     unassigned = sorted(((n, d, it) for n, (d, it) in opens.items()
@@ -1266,7 +1324,7 @@ def build() -> str:
                      f'<b>여기 남은 {len(shown)}건이 업무 SSOT 에 올려야 하는 것</b>입니다.</span>')
 
     top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
-    head = " · ".join(f"{n} {c}건" for n, c in counts)
+    head = " · ".join(f"{n} {c}건(SSOT 미등록 {m}건)" for n, c, m in counts)
     total = len(shown)
     oldest = max((days_since(d) for _, d, _, _ in shown), default=0)
     # 세 번째 숫자는 「급한 것이 몇 개인가」 — 아래 표의 빨간 경과(14일 이상)와 같은 기준이다.
@@ -1406,7 +1464,7 @@ def build() -> str:
     회신은 번호로 받습니다 — 「#번호 + 했다/진행중/언제」 한 줄.<br>
     체크는 GM 화면에만 남습니다(이 브라우저). 원장 상태는 실무진 회신이 오면 바뀝니다.</div>
   <div class="bar">기준 {date.today().isoformat()} · 열린 {total}건 · 가장 오래된 것 {oldest}일 · 14일 넘게 답 없는 것 {stale}건
-    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건</span>
+    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건 · 진행할 건은 본인이 SSOT 등록</span>
     {ssot_note}</div>
 
 {resp_html}
