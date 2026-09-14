@@ -202,16 +202,39 @@
   .mv6{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
   .vrow2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
   .vrow2 .vcol-h{font-size:10.4px;font-weight:800;color:var(--navy);margin-bottom:3px;}
-  .fndom{margin-bottom:9px;}
+  /* 문의에서 가입까지 — 깔때기. 막대 폭이 인원 비율이라 어디서 좁아지는지가 눈에 먼저 들어온다
+     (GM 지적 2026-09-14 「허접하니까 중요하게 안 느껴지네」로 숫자 나열을 그림으로 바꿨다). */
+  /* 문의 상세 내역 — 아직 연락 안 한 줄은 왼쪽에 붉은 띠. */
+  .inqlist{display:flex;flex-direction:column;}
+  .inqrow{display:flex;align-items:center;gap:7px;font-size:10.5px;padding:2.5px 0 2.5px 5px;
+    border-bottom:1px solid #F0F3F6;border-left:3px solid transparent;}
+  .inqrow:last-child{border-bottom:0;}
+  .inqrow.un{border-left-color:var(--warn);background:#FFFAF3;}
+  .inqrow .id{width:38px;flex:none;color:#7A838B;font-variant-numeric:tabular-nums;}
+  .inqrow .inm{width:58px;flex:none;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inqrow .ist{width:54px;flex:none;font-size:9.5px;color:var(--navy);font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inqrow .ich{width:62px;flex:none;font-size:9.5px;color:#7A838B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inqrow .ipg{flex:1;min-width:0;font-size:9.5px;color:#48525B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inq-open{color:var(--warn);}
+  .fndom{margin-bottom:12px;}
   .fndom:last-child{margin-bottom:0;}
-  .fndom .fnt{font-size:11px;font-weight:800;color:var(--navy);margin-bottom:2px;}
-  .fndom .fnt small{font-weight:400;color:#7A838B;font-size:9.5px;}
-  .fnrow{display:flex;align-items:center;gap:2px;font-size:11px;padding:2px 0;}
-  .fnrow .fnlbl{width:38px;color:#7A838B;font-size:10px;flex:none;}
-  .fnstep{display:flex;flex-direction:column;align-items:center;min-width:32px;}
-  .fnstep b{font-size:13px;font-variant-numeric:tabular-nums;}
-  .fnstep i{font-size:9px;color:#7A838B;font-style:normal;}
-  .fnarr{font-size:9px;color:#8FA6BC;padding:0 1px;white-space:nowrap;}
+  .fndom .fnt{font-size:12px;font-weight:800;color:var(--navy);margin-bottom:5px;display:flex;align-items:baseline;gap:7px;}
+  .fndom .fnt small{font-weight:600;color:#7A838B;font-size:10px;}
+  .fndom .fnt .fnend{margin-left:auto;font-size:10.5px;font-weight:700;color:#7A838B;}
+  .fndom .fnt .fnend b{font-size:13px;color:var(--navy);}
+  .fnstage{display:flex;align-items:center;gap:8px;padding:1.5px 0;}
+  .fnstage .fnnm{width:34px;flex:none;font-size:10.5px;color:#48525B;text-align:right;}
+  .fnstage .fnbar{flex:1;min-width:0;height:19px;background:#EDF1F5;border-radius:3px;position:relative;}
+  .fnstage .fnbar i{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:3px;}
+  .fnstage .fnbar b{position:absolute;left:7px;top:0;line-height:19px;font-size:11.5px;font-weight:800;
+    color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 0 3px rgba(0,0,0,.35);}
+  .fnstage .fnpc{width:40px;flex:none;font-size:10px;color:#7A838B;font-variant-numeric:tabular-nums;}
+  /* 빠진 인원 — 단계 사이. 가장 많이 빠진 구간은 붉게 하고 「여기」를 붙인다. */
+  .fndrop{display:flex;align-items:center;gap:8px;font-size:9.5px;color:#8FA6BC;line-height:1.1;}
+  .fndrop .fnnm{width:34px;flex:none;}
+  .fndrop.worst{color:var(--warn);font-weight:800;}
+  .fndrop .tag{background:var(--warn);color:#fff;border-radius:2px;padding:0 3px;font-weight:800;}
   .rem-bad{color:var(--bad);font-weight:800;}
   .rem-warn{color:var(--warn);font-weight:800;}
   /* 갱신 임박 전원 명단 — 표가 아니라 여러 단으로 흘려서(59명) 세로를 아낀다(GM 지시 09-02). */
@@ -298,7 +321,10 @@
         </div>
       </div>
 
-      <div class="sec">
+      <!-- flex:1 — 왼쪽 마지막 칸이 남은 높이를 채운다. 이게 없으면 왼쪽은 내용만큼만 차고 오른쪽
+           열만 바닥까지 내려가 두 열의 끝선이 어긋난다(GM 지적 2026-09-14 「매출 현황 칸이랑
+           어제 다녀가신 분 칸이랑 안 맞네」). -->
+      <div class="sec" style="flex:1;min-height:0;">
         <h2>매출 현황</h2>
         <table id="sales-table">
           <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
@@ -397,42 +423,36 @@
     <div class="tb"><div class="tl">불러오는 중…</div></div>
   </div>
 
+  <!-- ★2026-09-14 GM 지시로 이 장을 「문의 상세 / 등록 상세」 두 갈래로만 남겼다.
+       원문: "2페이지는 문의 및 등록 상세니까 문의 상세 내역이랑 등록 상세내역만 있으면 될듯 //
+       1페이지에 매출 및 회원 현황보고에 있으니". 뺀 것 넷 — ①오늘·이번 달 움직임(1페이지 「회원 드나듦」과
+       같은 숫자) ②이달 등록 내역(기준일 등록만 본다) ③회원 구성 상세(1페이지 「회원 구성」과 중복)
+       ④이탈·갱신 임박(위 「오늘 챙길 것」 갱신 임박 칸이 같은 명단을 이미 보여 준다). -->
   <div class="body">
     <div class="col">
-      <!-- 오늘 등록 내역 — 왼쪽 멤버십 · 오른쪽 강습(GM 지시 2026-09-11). 원천은 그날 일자탭
-           (「2026년 N월 매출 보고」 파일의 1~31 탭)이고, 기본 진입은 오늘 탭을 읽는다. -->
+      <div class="sec">
+        <h2>문의에서 가입까지 — 어디서 가장 많이 빠지나</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <!-- 문의 상세 내역 — 이 장의 「문의」 쪽 본문이다. 퍼널이 어디서 빠지는지를 말하면
+           이 표가 그래서 지금 누구를 챙겨야 하는지를 말한다(GM 지시 2026-09-14). -->
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의 상세 내역 — 최근 문의 · 아직 안 챙긴 분 먼저</h2>
+        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <!-- 등록 상세 — 기준일 하루치만. 원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
       <div class="sec">
         <h2 id="p2memh">오늘 등록 — 멤버십</h2>
         <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec">
-        <h2>오늘 · 이번 달 움직임</h2>
-        <div class="bd" id="p2today"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <div class="sec">
-        <h2>이달 등록 내역 — 누가 · 언제 · 무슨 구분</h2>
-        <div class="bd" id="p2reg"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <div class="sec">
-        <h2>회원 구성 상세</h2>
-        <div class="bd" id="p2mix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>이탈 · 갱신 임박</h2>
-        <div class="bd" id="p2churn"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-    </div>
-
-    <div class="col">
-      <div class="sec">
         <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
         <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
-      <div class="sec">
-        <h2>문의에서 가입까지</h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <div class="sec">
+      <div class="sec" style="flex:1;min-height:0;">
         <h2>강습 종목별 · 유입 경로 (누적)</h2>
         <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
@@ -476,6 +496,12 @@ function drGet(kind, extra){   // kind='dump'|'lesson' · extra='&sheet=4&range=
       .then(function(r){ return r.json(); });
   };
   if (!ERP_API_ON) return gas();
+  /* ★지난 날짜 일자탭은 거울을 쓰지 않는다 (2026-09-14 시우 실측 · GM 지적 「9월 13일 등록이 비어 있다」).
+     sync_sales.py 는 일자탭을 오늘 날짜 하나만 채우고 서버 sales_cache 에는 만료가 없다 — 그래서 지난 날짜
+     탭은 「그날 마지막으로 찍힌 거울」에서 굳는다. 09:00 쯤 찍혔다면 그 시각엔 계약이 아직 안 적혀 있어
+     빈 값이고, 그 뒤 실무진이 채운 값은 화면에 영영 안 온다. 오늘 탭이 아니면 GAS 로 직행한다. */
+  var daySheet = /[?&]sheet=(\d+)/.exec(extra);
+  if (daySheet && parseInt(daySheet[1], 10) !== new Date().getDate()) return gas();
   return fetch('/api/sales/deptrep/' + kind + (extra ? '?' + extra.replace(/^&/, '') : ''))
     .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
     .catch(function(e){ console.warn('[보고시트] API 실패 → GAS 폴백:', e && e.message); return gas(); });
@@ -1422,14 +1448,14 @@ load();
 /* ══ 2페이지 — 회원·문의 상세. 1페이지 GAS(보고 시트)와 원천이 다른 회원관리 ERP를
    따로 조회한다. 1페이지 변수·함수(esc·num·MIX_COLORS)는 읽기만 하고 건드리지 않는다. ══ */
 var GAS2 = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-var P2_ACTIONS = ['member_active_summary', 'cpo_today_stats', 'cpo_churn_stats', 'stage_funnel', 'lesson_stats'];
+var P2_ACTIONS = ['cpo_today_stats', 'cpo_churn_stats', 'stage_funnel', 'lesson_stats'];
 var RAW2 = {};
 /* 2페이지 읽기 원천 전환(배 943 · 2026-09-03 시토) — ERP 도메인에서만 서버 미러 집계 /api/report/{action}(server/erp_api/
    members_report.py · 신규/재등록 판정은 GAS _isNewRegistration_ 을 그대로 옮긴 한 곳)을 먼저 부르고, 실패하면 GAS 로
    조용히 돌아간다(console 한 줄). GitHub Pages 에선 ERP_API_ON 이 false 라 종전 GAS 그대로.
    stage_funnel·lesson_stats 는 강습·폼 시트가 미러에 없어 어디서든 GAS 다. */
 var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
-var API_ACTIONS = { member_active_summary: 1, cpo_today_stats: 1, cpo_churn_stats: 1, member_registered_list: 1 };
+var API_ACTIONS = { cpo_today_stats: 1, cpo_churn_stats: 1 };
 function p2fetch(action, qs){
   var gas = function(){ return fetch(GAS2 + '?action=' + action + (qs || '') + '&cb=' + Date.now()).then(function(r){ return r.json(); }); };
   if (!ERP_API_ON || !API_ACTIONS[action]) return gas();
@@ -1490,92 +1516,27 @@ function renderP2Todo(c, t, act){
         '오늘 방문 예정', when, false);
 }
 
-function renderP2Today(t){
-  var el = document.getElementById('p2today'); if (!el) return;
-  var items = [
-    ['오늘 문의', t.todayInquiry], ['오늘 등록', t.todayReg], ['오늘 이탈', t.todayLoss],
-    ['이달 문의', t.monthInquiry], ['이달 등록', t.monthReg], ['이달 이탈', t.monthLoss]
-  ];
-  el.innerHTML = '<div class="mv6">' + items.map(function(x){
-    return '<div class="yb"><div class="yl">' + x[0] + '</div><div class="yv">' + p2num(x[1]) + '명</div></div>';
-  }).join('') + '</div>';
-}
+/* 깔때기 한 벌 — 문의 대비 비율로 막대 폭을 주고, 단계 사이에 몇 명이 빠졌는지 적는다.
+   가장 많이 빠진 구간 하나만 붉게 표시한다(= 오늘 손볼 자리). 값은 stage_funnel 그대로 쓴다. */
+var FN_KEYS = ['문의', '응대', '예약', '방문', '가입'];
 
-function renderP2Mix(a, corp){
-  var el = document.getElementById('p2mix'); if (!el) return;
-  var tc = a.typeCounts || {};
-  var items = [['멤버십', tc['멤버십']], ['입주민', tc['입주민']], ['중단기', tc['중단기']],
-    ['보증금', tc['보증금']], ['FAN VIP', tc['FAN VIP']]].filter(function(x){ return x[1]; });
-  var colors = MIX_COLORS.concat(['#8FA6BC', '#C2CEDA']);
-  var sum = items.reduce(function(s, x){ return s + x[1]; }, 0) || 1;
-  el.innerHTML =
-    '<div class="bigrow"><span class="bl">유효 회원 총계</span><span class="bv">' + p2num(a.validTotal) + '명</span></div>' +
-    '<div class="stack">' + items.map(function(x, i){
-      return '<i style="width:' + (x[1] / sum * 100) + '%;background:' + colors[i] + '" title="' + x[0] + '"></i>'; }).join('') + '</div>' +
-    '<div class="chips">' + items.map(function(x, i){
-      return '<span class="chip"><i style="background:' + colors[i] + '"></i>' + x[0] + ' <b>' + p2num(x[1]) + '명</b></span>'; }).join('') +
-      '<span class="chip"><i style="background:#48525B"></i>법인(별도 시트) <b>' + p2num(corp) + '명</b></span></div>' +
-    '<div class="fnote">종료 회원 ' + p2num(a.endedTotal) + '명 · 대기 ' + p2num(a.waitingCount) + '명</div>';
-}
-
-function renderP2Churn(c){
-  var el = document.getElementById('p2churn'); if (!el) return;
-  var all = c.renewSoon || [];   // rem 오름차순 전원 게재(GM 지시 09-02 — 12명 접기 폐지)
-  el.innerHTML =
-    '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' +
-      '누적 이탈 <b>' + p2num(c.lossCount) + '명 (' + c.lossRate + '%)</b> · 이번 달 이탈 <b>' + p2num(c.monthLossCount) +
-      '명 (' + c.monthLossRate + '%)</b> · 갱신 누적 <b>' + p2num(c.renewCount) + '건</b> · 갱신 임박(30일 내) <b>' + all.length + '명</b>' +
-      // 보는 것은 여기로 모았지만 처리(LOSS 관리)는 회원관리 화면에서 한다 — 그 경로를 여기 남긴다.
-      ' <a href="../../cpo/member/membership.html?open=churn" target="_blank" rel="noopener" ' +
-      'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">🚪 LOSS 관리 열기</a></div>' +
-    '<div class="remlist">' + all.map(function(x){
-      var cls = x.rem <= 3 ? 'rem-bad' : (x.rem <= 7 ? 'rem-warn' : '');
-      return '<div class="remrow"><span class="rn">' + esc(x.name) + '</span><b class="' + cls + '">' + x.rem + '일</b></div>';
-    }).join('') + '</div>';
-}
-
-/* 이달 등록 내역 — 카드의 '이달 등록 N명'을 사람 단위로 편다(GM 지시 2026-09-03).
-   ▸신규 판정은 여기서 다시 하지 않는다. 회원관리 ERP 안의 판정 한 곳(_isNewRegistration_)이 이미
-     세어 둔 값(cpo_today_stats.monthReg)을 그대로 쓰고, 재등록은 전체에서 그것을 뺀다(약속 L01).
-     2026-08-06 에 목록과 카드가 각자 세다가 5명·10명으로 갈렸던 그 자리다 — 다시 갈리지 않게 한다.
-   ▸행의 구분 배지는 시트에 적힌 「등록 분류」 글자를 그대로 보인다(신규/재등록/L재등록). */
-function renderP2Reg(d, t){
-  var el = document.getElementById('p2reg'); if (!el) return;
-  // 못 읽은 것을 '0건'으로 보이면 안 된다 — 진짜 0 과 조회 실패를 가른다.
-  if (!d) { el.innerHTML = '<div class="err">이달 등록 내역을 못 읽었습니다 — 회원관리 ERP 조회 실패</div>'; return; }
-  var rows = d.data || [];
-  var total = rows.length;
-  var newCnt = (t && t.monthReg != null) ? t.monthReg : null;
-  var head = '이달 등록 <b>' + p2num(total) + '건</b>' +
-    (newCnt == null ? '' : ' · 신규 <b>' + p2num(newCnt) + '</b> · 재등록 <b>' + p2num(total - newCnt) + '</b>');
-  if (!total) {
-    el.innerHTML = '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' + head + '</div>' +
-      '<div class="mrow"><span class="lb">이번 달 등록이 아직 없습니다</span></div>';
-    return;
-  }
-  el.innerHTML =
-    '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">' + head +
-      ' <a href="../../cpo/member/membership.html" target="_blank" rel="noopener" ' +
-      'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">🧾 멤버십 회원관리 열기</a></div>' +
-    '<div class="reglist">' + rows.map(function(r){
-      var cls = String(r.regClass || '').trim() || '—';
-      var isNew = cls === '신규';
-      return '<div class="regrow">' +
-        '<span class="rd">' + esc(String(r.regDate || '').substring(5)) + '</span>' +
-        '<span class="rnm">' + esc(r.name) + '</span>' +
-        '<span class="rcls ' + (isNew ? 'new' : 're') + '">' + esc(cls) + '</span>' +
-        '<span class="rp" title="' + esc(r.program) + '">' + esc(r.program) + '</span>' +
-      '</div>';
-    }).join('') + '</div>';
-}
-
-function fnStepsHTML(stage, retain){
-  var keys = ['문의', '응대', '예약', '방문', '가입'];
-  return keys.map(function(k, i){
-    var step = '<span class="fnstep"><b>' + p2num(stage[k]) + '</b><i>' + k + '</i></span>';
-    if (i === keys.length - 1) return step;
-    var pct = retain && retain[keys[i + 1]] != null ? retain[keys[i + 1]] + '%' : '';
-    return step + '<span class="fnarr">→' + pct + '</span>';
+function fnFunnelHTML(stage){
+  var base = Number(stage[FN_KEYS[0]]) || 0;
+  if (!base) return '<div class="mrow"><span class="lb">이 기간에 문의가 없습니다</span></div>';
+  var vals = FN_KEYS.map(function(k){ return Number(stage[k]) || 0; });
+  var drops = vals.slice(0, -1).map(function(v, i){ return v - vals[i + 1]; });
+  var worst = drops.indexOf(Math.max.apply(null, drops));
+  if (drops[worst] <= 0) worst = -1;            // 어디서도 안 빠지면 붉은 칸을 만들지 않는다
+  return vals.map(function(v, i){
+    var pct = v / base * 100;
+    var row = '<div class="fnstage"><span class="fnnm">' + FN_KEYS[i] + '</span>' +
+      '<span class="fnbar"><i style="width:' + Math.max(pct, 3) + '%"></i><b>' + p2num(v) + '</b></span>' +
+      '<span class="fnpc">' + (i === 0 ? '' : pct.toFixed(0) + '%') + '</span></div>';
+    if (i === vals.length - 1 || drops[i] <= 0) return row;
+    var keep = vals[i] ? (vals[i + 1] / vals[i] * 100) : 0;
+    return row + '<div class="fndrop' + (i === worst ? ' worst' : '') + '"><span class="fnnm"></span>' +
+      '<span>↓ ' + p2num(drops[i]) + '명 빠짐 · ' + keep.toFixed(0) + '% 남음' +
+      (i === worst ? ' <span class="tag">가장 많이 빠지는 자리</span>' : '') + '</span></div>';
   }).join('');
 }
 
@@ -1583,17 +1544,64 @@ function renderP2Funnel(f){
   var el = document.getElementById('p2funnel'); if (!el) return;
   function dom(name, d){
     if (!d) return '';
-    return '<div class="fndom"><div class="fnt">' + name + ' <small>(비율=누적 전환율)</small></div>' +
-      '<div class="fnrow"><span class="fnlbl">이번 달</span>' + fnStepsHTML(d.month || {}, null) + '</div>' +
-      '<div class="fnrow"><span class="fnlbl">누적</span>' + fnStepsHTML(d.total || {}, d.retain) + '</div></div>';
+    var tot = d.total || {}, mon = d.month || {};
+    var inq = Number(tot[FN_KEYS[0]]) || 0, join = Number(tot[FN_KEYS[4]]) || 0;
+    var rate = inq ? (join / inq * 100).toFixed(1) + '%' : '–';
+    return '<div class="fndom">' +
+      '<div class="fnt">' + name + ' <small>누적 기준</small>' +
+        '<span class="fnend">문의 100명당 가입 <b>' + (inq ? (join / inq * 100).toFixed(0) : '–') + '명</b> · 전환율 ' + rate +
+        ' · 이번 달 문의 <b>' + p2num(Number(mon[FN_KEYS[0]]) || 0) + '</b> → 가입 <b>' + p2num(Number(mon[FN_KEYS[4]]) || 0) + '</b></span></div>' +
+      fnFunnelHTML(tot) + '</div>';
   }
   el.innerHTML = dom('멤버십', f.membership) + dom('강습', f.lesson);
+}
+
+/* 문의 상세 내역 — member_inquiry_list 를 접수일 최신순으로 세우고, 아직 한 번도 연락하지 않은
+   분을 맨 위로 올린다(그분들이 오늘 손이 갈 자리다). 연락처는 싣지 않는다 — 보고서는 읽는 문서이고
+   전화는 회원관리 화면에서 건다. 판정은 여기서 새로 만들지 않고 시트가 적어 둔 값을 그대로 쓴다. */
+/* 이미 끝난 문의(가입 SUC · 이탈 LOSS)는 「챙길 분」이 아니다 — 연락 기록이 없어도 닫힌 건이다.
+   2026-09-14 실측: 이 줄이 없으면 아직 안 챙긴 분 55명 중 대부분이 4~5월 LOSS 건이었다. */
+function inqClosed(r){
+  var st = String(r.status || '').trim().toUpperCase();
+  return st === 'SUC' || st === 'LOSS' || st === '가입' || st === '등록' || st === '취소';
+}
+function inqOpenUncontacted(r){
+  if (inqClosed(r)) return false;
+  if (r.contact1 || r.contact2 || r.contact3) return false;
+  return !(r.reservations && r.reservations.length);
+}
+
+function renderP2Inq(d){
+  var el = document.getElementById('p2inq'); if (!el) return;
+  if (!d || !d.data) { el.innerHTML = '<div class="err">문의 목록을 못 읽었습니다 — 문의 시트 조회 실패</div>'; return; }
+  var rows = d.data.filter(function(r){ return r.name; });
+  rows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+  var open = rows.filter(inqOpenUncontacted);
+  var rest = rows.filter(function(r){ return !inqOpenUncontacted(r); });
+  var show = open.concat(rest).slice(0, 15);
+  if (!show.length) { el.innerHTML = '<div class="mrow"><span class="lb">문의가 없습니다</span></div>'; return; }
+  el.innerHTML =
+    '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">전체 <b>' + p2num(rows.length) +
+      '건</b> · 아직 연락 안 한 분 <b class="' + (open.length ? 'inq-open' : '') + '">' + p2num(open.length) + '명</b>' +
+      ' · 아래는 최근 ' + show.length + '건' +
+      ' <a href="../../cpo/member/membership.html" target="_blank" rel="noopener" ' +
+      'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">🧾 문의 회원관리 열기</a></div>' +
+    '<div class="inqlist">' + show.map(function(r){
+      var un = inqOpenUncontacted(r);
+      return '<div class="inqrow' + (un ? ' un' : '') + '">' +
+        '<span class="id">' + esc(String(r.timestamp || '').substring(5, 10)) + '</span>' +
+        '<span class="inm">' + esc(r.name) + '</span>' +
+        '<span class="ist">' + esc(String(r.status || '—').trim() || '—') + '</span>' +
+        '<span class="ich">' + esc(r.channel || '경로 미상') + '</span>' +
+        '<span class="ipg" title="' + esc(r.program) + '">' + esc(r.program || '') + '</span>' +
+      '</div>';
+    }).join('') + '</div>';
 }
 
 function renderP2Lesson(l){
   var el = document.getElementById('p2lesson'); if (!el) return;
   function bars(list){
-    var top = (list || []).slice(0, 5);   // 명단이 늘어난 만큼 6→5로 줄여 자리를 만든다(GM 지시 09-02)
+    var top = (list || []).slice(0, 8);   // 2026-09-14 — 이달 등록 내역을 뺀 만큼 자리가 생겨 5→8
     var max = Math.max.apply(null, top.map(function(x){ return x.v; }).concat([1]));
     return top.map(function(x){
       return '<div class="vrow"><span class="vl2">' + esc(x.k) + '</span>' +
@@ -1608,10 +1616,11 @@ function renderP2Lesson(l){
 }
 
 function runAudit2(){
-  /* 회원관리 ERP 5개 + 이달 등록 내역 + 아침 문의 집계 파일 1개 = 7개가 다 와야 이 장이 온전하다. */
-  var SRC = P2_ACTIONS.concat(['이달 등록 내역', '오늘 챙길 것(문의 집계)']);
+  /* 회원관리 ERP 4개 + 문의 목록 1개 + 아침 문의 집계 파일 1개 = 6개가 다 와야 이 장이 온전하다.
+     (2026-09-14 GM 지시로 회원 구성·이달 등록 내역을 뺐다 — 그 두 원천도 함께 뺐다.) */
+  var SRC = P2_ACTIONS.concat(['문의 목록', '오늘 챙길 것(문의 집계)']);
   var missed = P2_ACTIONS.filter(function(a){ return !(RAW2[a] && RAW2[a].ok); });
-  if (!(RAW2.__reg && RAW2.__reg.ok)) missed = missed.concat(['이달 등록 내역']);
+  if (!(RAW2.__inq && RAW2.__inq.ok)) missed = missed.concat(['문의 목록']);
   if (!RAW2.__actions) missed = missed.concat(['오늘 챙길 것(문의 집계)']);
   var el = document.getElementById('audit2'); if (!el) return;
   var at = new Date().toTimeString().substring(0, 5);
@@ -1622,7 +1631,7 @@ function runAudit2(){
     var warn = (RAW2.__actions && RAW2.__actions.stale)
       ? ' <span class="w">· 주의 — 문의 집계가 오늘 값이 아닙니다(' + esc(RAW2.__actions.at) + ')</span>' : '';
     el.className = 'audit ok';
-    el.innerHTML = '<b>✅ 자체 점검 ' + (SRC.length - (warn ? 1 : 0)) + '/' + SRC.length + ' 통과</b> — 회원관리 ERP 5개와 이달 등록 내역·아침 문의 집계를 ' + at + ' 에 확인했습니다' + warn;
+    el.innerHTML = '<b>✅ 자체 점검 ' + (SRC.length - (warn ? 1 : 0)) + '/' + SRC.length + ' 통과</b> — 회원관리 ERP 4개와 문의 목록·아침 문의 집계를 ' + at + ' 에 확인했습니다' + warn;
   }
 }
 
@@ -1633,33 +1642,25 @@ function load2(){
       .then(function(d){ RAW2[action] = d; })
       .catch(function(){ RAW2[action] = null; });
   });
-  /* 이달 등록 내역 — 이 액션만 기간(from·to)을 받아야 해서 위 목록 회전과 따로 부른다.
-     기간은 이번 달 1일~말일. 달이 바뀌어도 손이 안 가게 오늘 날짜에서 만든다. */
-  jobs.push((function(){
-    var d = new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
-    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
-    var last = new Date(y, m, 0).getDate();
-    var from = y + '-' + pad(m) + '-01', to = y + '-' + pad(m) + '-' + pad(last);
-    return p2fetch('member_registered_list', '&from=' + from + '&to=' + to)
-      .then(function(d2){ RAW2.__reg = d2; })
-      .catch(function(){ RAW2.__reg = null; });
-  })());
   jobs.push(
     fetch(ACT_URL + '?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(d){ RAW2.__actions = parseActions(d); })
       .catch(function(){ RAW2.__actions = null; })
   );
-  Promise.all(jobs).then(function(){
-    var a = RAW2.member_active_summary, t = RAW2.cpo_today_stats, c = RAW2.cpo_churn_stats,
+  /* 문의 목록(768행)은 무겁다 — 위 4개와 같이 쏘면 GAS 가 일부 응답을 떨군다(2026-09-14 실측:
+     cpo_today_stats·stage_funnel 이 404 로 같이 죽었다). 앞 조회가 끝난 뒤 이어서 한 번만 부른다. */
+  Promise.all(jobs)
+    .then(function(){ return p2fetch('member_inquiry_list')
+      .then(function(d){ RAW2.__inq = d; })
+      .catch(function(){ RAW2.__inq = null; }); })
+    .then(function(){
+    var t = RAW2.cpo_today_stats, c = RAW2.cpo_churn_stats,
         f = RAW2.stage_funnel, l = RAW2.lesson_stats;
     try {
       renderP2Todo(c && c.ok ? c : null, t && t.ok ? t : null, RAW2.__actions);
-      if (t && t.ok) renderP2Today(t);
-      renderP2Reg(RAW2.__reg && RAW2.__reg.ok ? RAW2.__reg : null, t && t.ok ? t : null);
-      if (a && a.ok) renderP2Mix(a, t && t.ok ? t.memberCorp : null);
-      if (c && c.ok) renderP2Churn(c);
       if (f && f.ok) renderP2Funnel(f);
+      renderP2Inq(RAW2.__inq && RAW2.__inq.ok ? RAW2.__inq : null);
       if (l && l.ok) renderP2Lesson(l);
     } catch (ex) {
       document.getElementById('err2').innerHTML = '<div class="err">2페이지 그리기 실패 — ' + esc(ex.message) + '</div>';
