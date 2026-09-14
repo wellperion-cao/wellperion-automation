@@ -558,14 +558,23 @@ def _idem_hit(conn, user, payload):
     if not idem:
         return None
     since = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(time.time() + 9 * 3600 - IDEM_WINDOW_MIN * 60))
-    row = conn.execute("SELECT id, gas_response FROM write_log WHERE tenant_id=%s AND user_email=%s"
+    row = conn.execute("SELECT id, gas_response, gas_status FROM write_log WHERE tenant_id=%s AND user_email=%s"
                        " AND payload->>'idem'=%s AND at >= %s ORDER BY id DESC LIMIT 1",
                        (db.TENANT, user, idem, since)).fetchone()
     if not row:
         return None
+    return _idem_hit_reply(row)
+
+
+def _idem_hit_reply(row):
+    """되받은(idem) 요청에 돌려줄 응답 — 저장된 GAS 응답이 있으면 그것, 없으면 queued(순수함수·테스트용).
+
+    첫 응답이 server 모드였으면 되받은 응답에도 같은 표시를 싣는다(배2510). 이 표시가 빠지면 화면이
+    저장 직후 읽기확인을 구글로 하고, 되밀기(최대 1분) 전이라 옛값을 보고 정상 저장을 '값 다름'으로 경고한다."""
     if row["gas_response"]:
         return row["gas_response"] if isinstance(row["gas_response"], dict) else json.loads(row["gas_response"])
-    return server_ok(row["id"], queued=True, duplicate=True)
+    extra = {"mode": "server"} if dict(row).get("gas_status") == "queued" else {}
+    return server_ok(row["id"], queued=True, duplicate=True, **extra)
 
 
 def _schedule_sync(script):
@@ -914,6 +923,10 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert server_ok(9, mode="server") == {"ok": True, "success": True, "logId": 9, "mode": "server"}
     # 부른 쪽이 준 업무 id 메아리(2026-09-10) — 서버가 만든 값이 아니라 화면이 준 값이다.
     assert server_ok(9, mode="server", id="TODO-1")["id"] == "TODO-1"
+    # 되받은(idem) 응답도 server 모드면 같은 표시를 단다 — 빠지면 화면이 읽기확인을 구글로 한다(배2510).
+    assert _idem_hit_reply({"id": 9, "gas_response": None, "gas_status": "queued"})["mode"] == "server"
+    assert "mode" not in _idem_hit_reply({"id": 9, "gas_response": None, "gas_status": "pending"})
+    assert _idem_hit_reply({"id": 9, "gas_response": {"ok": True}, "gas_status": "ok"}) == {"ok": True}
     # 거울 즉시 반영(mirror_patch) — server 모드로 갈 수 있는 업무 쓰기는 전부 반영되거나, 못 하는 이유가 적혀 있어야 한다.
     for _a in _TODO_WRITES:
         assert (_a in mirror_patch.HANDLERS or _a in NO_SERVER_ACTIONS or _a in mirror_patch.NO_MIRROR
