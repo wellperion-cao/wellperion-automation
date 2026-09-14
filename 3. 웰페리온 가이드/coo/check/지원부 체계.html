@@ -3550,6 +3550,9 @@ async function _postPayload(payload){
       if(j&&j.ledgerOk===false){
         // 시트(진짜 원본)엔 저장됐지만 상태동기화 원장만 실패 — 데이터 유실 아님, 재시도 안내 불필요(약한 안내만).
         if(ind)ind.textContent='저장 완료 (상태 동기화 지연)';
+      }else if(!j||typeof j.ledgerOk==='undefined'){
+        // ledgerOk 칸 자체가 없으면 동기화 여부를 모른다 — 다 됐다고 단정하지 않는다.
+        if(ind)ind.textContent='저장 완료 (곧 반영됩니다)';
       }else{
         if(ind)ind.textContent='저장 완료';
       }

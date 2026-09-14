@@ -4062,7 +4062,7 @@ function vendorSubmitAddForm(){
     erpCheckPost(API_URL,{action:'fcheck_ranges_save',rows:rows,pin:getEditAuthPin()})
       .then(function(r){return r.json();})
       .then(function(j){
-        if(st)st.textContent=(j&&j.ok)?('저장 완료 · '+(j.count!=null?j.count:rows.length)+'행'):'저장 실패';
+        if(st)st.textContent=(j&&j.ok)?('저장 완료 · '+rows.length+'행'):'저장 실패';
         FC_RANGE_MAP=fcRangesToFieldMap(rows);
         fcApplyHints(); fcCheckAll();
       })
