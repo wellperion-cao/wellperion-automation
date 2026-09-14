@@ -422,6 +422,40 @@
       <a class="doc-link" href="중간관리자_업무목차.html" target="_blank" rel="noopener">▸목차 열기</a></div>
   </div>
 
+  <!-- ⓪-2c 보고 문서 선반 (GM 지시 2026-09-14 「회사 주소 로그인 뒤에는 회장님건 삭제하고, GM업무
+       관련된건 다 삭제 — GM업무에서만 볼 수 있게 해줘」). ERP 홈 문서함에서 뺀 회장님·GM업무 문서를
+       이 자리로 옮겨 그린다. 목록을 여기 적지 않는다 — erp/modules.json 한 곳을 읽는다(약속 L01).
+       기본 접힘 — 평소엔 자리만 차지하지 않게. 기존 .sec/.sum 재사용, 새 스타일 없음. -->
+  <details class="sec" id="sec-chairman-docs">
+    <summary><span class="ic">📄</span> 보고 문서 <span class="cnt" id="chdoc-cnt">—</span></summary>
+    <div class="sum" style="padding:8px 14px 12px;">
+      <table><thead><tr><th style="width:340px">문서</th><th>설명</th></tr></thead>
+      <tbody id="chdoc-body"><tr><td colspan="2" class="rep-empty">불러오는 중…</td></tr></tbody></table>
+    </div>
+  </details>
+  <script>
+  /* 문서 목록 = erp/modules.json 의 chairman 문서(appgroup 문서함)만. 빌더가 화면 파일에서 자동 생성하므로
+     새 A3 를 만들면 저장한 다음 날 없이 바로 이 표에 붙는다 — 손으로 줄을 더하지 않는다. */
+  (function(){
+    var body = document.getElementById('chdoc-body'), cnt = document.getElementById('chdoc-cnt');
+    fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){
+      var rows = (d.modules || []).filter(function(m){
+        return m.appgroup === '문서함' && /\/chairman\//.test(m.path || '');
+      });
+      cnt.textContent = rows.length + '장';
+      if (!rows.length) { body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서가 없습니다.</td></tr>'; return; }
+      rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });   // 최신 날짜부터
+      body.innerHTML = rows.map(function(m){
+        var file = String(m.path || '').split('/').pop();
+        return '<tr><td><a href="' + file + '" target="_blank" rel="noopener">' +
+               (m.name || file) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
+      }).join('');
+    }).catch(function(){
+      body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서 목록을 불러오지 못했습니다 — 새로고침</td></tr>';
+    });
+  })();
+  </script>
+
   <!-- ⓪-3 AI C-Level 역할·방향 토글 (GM 지시 2026-09-05 "GM업무 맨 위에 각 AI C레벨들의 역할 및 방향성을
        기록해두면 보기 편할 것 같아 토글라인으로 — 나는 GM업무만 보니까"). 값은 ssot/kpi.json roles 한 곳
        (line=편제 · core_role=역할 · direction=방향 · staff=실무진 · gm_work_groups=GM업무 담당 대분류)을

@@ -296,8 +296,13 @@ function loadModules(role, allowedIds){
     function kindOf(m){
       var path = m.path || '', name = m.name || '';
       if (/\/(home|public)\/(en\/)?index\.html$/.test(path) || /홈페이지/.test(path)) return 'skip';
-      if (/\/chairman\//.test(path) || /[\/_]\d{6}_|[\/_]\d{8}[_.]/.test(path)
-          || /20\d\d-\d\d-\d\d/.test(name)) return 'file';
+      /* 회장님·GM업무 문서는 문서함에 싣지 않는다 (GM 지시 2026-09-14 「회사 주소 로그인 뒤에는
+         회장님건 삭제하고, GM업무 관련된건 다 삭제 — GM업무에서만 볼 수 있게 해줘」).
+         지우는 것이 아니라 자리를 옮기는 것이다 — 같은 목록을 GM업무 화면이 읽어 그린다.
+         ★일하는 화면 4장(GM업무·회장님 지시사항·대표님 지시사항·중간관리자 업무목차)은 appgroup 이
+         '경영'이라 여기까지 오지 않는다(isShelf 가 false) — 카드로 그대로 남는다. */
+      if (/\/chairman\//.test(path)) return 'skip';
+      if (/[\/_]\d{6}_|[\/_]\d{8}[_.]/.test(path) || /20\d\d-\d\d-\d\d/.test(name)) return 'file';
       if (/\/recruiting\/(?!index)/.test(path) || DOCWORD.test(name)) return 'doc';
       return 'mod';
     }
@@ -308,9 +313,15 @@ function loadModules(role, allowedIds){
     // 파는 쪽 화면이 아니다(파는 쪽 것은 이미 플랫폼 콘솔로 옮겼다). 여기서는 사실대로 부른다.
     var GROUP_NAME = { 'ERP 플랫폼': '전사 공통' };
 
+    /* GM 전용 화면 — 홈 카드에 두지 않는다 (GM 지시 2026-09-14 「GM업무에서만 볼 수 있게 해줘」).
+       두 화면은 GM업무 화면 「경영 보고건」 제목줄의 '회장님 A3'·'대표님 A3' 줄로 바로 열린다.
+       ★중간관리자 업무목차는 여기 넣지 않는다 — 실장·소장이 보는 화면이라 홈에 남긴다. */
+    var GM_ONLY_IDS = ['coo-chairman-회장님-지시사항', 'coo-chairman-대표님-지시사항'];
+
     var order = [], bag = {}, docs = [], files = [], pinned = {}, seenDoc = {};
     (d.modules || []).forEach(function(m){
       if (allowedIds && allowedIds.indexOf(m.id) < 0) return;     // 권한 밖 화면은 카드 자체를 안 그린다
+      if (GM_ONLY_IDS.indexOf(m.id) >= 0) return;                 // GM 전용 — GM업무 안에서만 연다
       var isShelf = m.doc === true || m.appgroup === '문서함';
       if (isShelf) {
         var k = kindOf(m);
