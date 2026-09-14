@@ -255,6 +255,7 @@
   <div class="cap">운영</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
   <a href="#products" data-go="products"><span class="t">파트너 산출물</span><span class="b">3</span></a>
+  <a href="#brand" data-go="brand"><span class="t">브랜드 자료</span><span class="b">3</span></a>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
   <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
@@ -267,10 +268,14 @@
   <div class="desc">따로 쓸 수 있는 앱 — 화면과 CLI 에서 돈다</div>
   <a href="../../cto/automation/카톡전송관리.html"><span class="t">카톡 전송</span></a>
   <a href="../../cbo/counsel_admin.html"><span class="t">상담봇</span></a>
-  <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span></a>
+  <!-- 마케팅 자동업로드 — 센터 공식 계정 발행(GM 2026-09-14 「마케팅 전체 파이프라인은
+       ERP플랫폼관리 라인으로」). 파트너사 첫 화면에서는 뺐다 — 파는 쪽 기능이다. -->
+  <a href="../../cmo/upload/마케팅자동업로드.html"><span class="t">마케팅 자동업로드</span></a>
+  <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span><span class="b">개인</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
   <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
+  <a href="#ui" data-go="ui"><span class="t">화면 UI 표준</span><span class="b" id="b-ui">—</span></a>
   <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
   <a href="#platform-docs" data-go="platform-docs"><span class="t">플랫폼 문서</span></a>
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
@@ -480,6 +485,54 @@
 
 </section>
 
+<section class="panel" data-panel="brand" hidden>
+  <h2>브랜드 자료</h2>
+  <div class="meta">파트너사마다 <b>브랜드가이드 화면 + 그 화면을 만든 원자료</b>를 한 자리에 모았습니다 (GM 지시 2026-09-14) ·
+    <b>서버</b> = 이 서버에 있어 바로 열림 · <b>저장소</b> = 원본 파일이 저장소(2. 브랜드_자료 폴더)에만 있어 깃허브로 열림 · 회색 = 아직 못 받음</div>
+  <!-- 원본 폴더(2. 브랜드_자료)는 서버 사본(sparse-checkout) 밖이라 /repo/ 통로로 못 연다 — 그래서 저장소 링크다.
+       서버로 옮기면 링크 앞부분만 /repo/2.%20브랜드_자료/ 로 바꾼다(시토 배 · 사진 폴더는 제외). -->
+  <div class="pgrid">
+
+    <div class="pcard">
+      <div class="ph"><span class="pno">1호</span><b>웰페리온</b><span class="pwho">우리 것 · 기준판</span></div>
+      <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>브랜드가이드 화면</b><span>서버 · 색 · 로고 · 서체 · 말투 · 금지어 — 글·이미지 만드는 사람이 보는 정본</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/241030_%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EB%B8%8C%EB%9E%9C%EB%93%9C%20%EA%B0%80%EC%9D%B4%EB%93%9C%28%EC%B5%9C%EC%A2%85%29.pdf" target="_blank" rel="noopener"><b>브랜드가이드 원본 (2024.10.30 최종)</b><span>저장소 · PDF 1부 · 낱장 PNG 18장 — 디자이너가 만든 원판</span></a>
+      <a class="pi ok" href="/repo/1.%20AI%EC%9E%90%EB%A3%8C_%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C/08_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC/_assets/logo/_README.md" target="_blank" rel="noopener"><b>로고</b><span>서버 · 가로 워드마크 3색(베이지·흰·검정) · W 한 글자 · 스포츠클럽 워드마크 · 원본 ai 2벌 — 새 화면은 base64 말고 이 폴더를 참조</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/watermarks%20logo" target="_blank" rel="noopener"><b>종목 워터마크 로고 13종</b><span>저장소 · 메인 · 골프 · 수영 · 필라테스 · 체조 · PT · 스쿼시 · 스포츠 · BRAD — 종목별 색값이 파일 이름에 있음</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/font" target="_blank" rel="noopener"><b>서체 파일</b><span>저장소 · Pretendard(Medium·SemiBold·Bold) · 고운바탕 Bold — 화면 토큰은 <a href="../brand/tokens.css" target="_blank" rel="noopener">erp/brand/tokens.css</a></span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/01_%EC%8B%9C%EC%84%A4_%EC%82%AC%EC%A7%84" target="_blank" rel="noopener"><b>시설 사진 11장</b><span>저장소 · 원본 + 웹용(10MB 아래) 같은 11장</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/03_%ED%8C%8C%ED%8A%B8%EB%84%88%EA%B0%95%EC%82%AC%20%ED%94%84%EB%A1%9C%ED%95%84%EC%9B%94" target="_blank" rel="noopener"><b>강사 프로필 사진 17장</b><span>저장소 · 골프 4 · 수영 8 · 그 외 — 프로필월·코치 소개에 쓰는 원본</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/" target="_blank" rel="noopener"><b>브로슈어 · 디자인 요청 가이드라인</b><span>저장소 · 웰페리온 브로슈어 · WSC 브로슈어 · 유소년 브로슈어(2023) · 디자인 요청 가이드라인(2024.10.8) — PDF 4부</span></a>
+      <a class="pi ok" href="/repo/ssot/canon_values.json" target="_blank" rel="noopener"><b>공식값 (포지셔닝 · 금지어 · 발신 이름)</b><span>서버 · 「정원제 스포츠클럽」 · 피트니스→스포츠클럽 · 레슨→강습 — 화면과 생성기가 이 파일을 읽는다</span></a>
+      <div class="pwait">빈 칸 없음 — 새 파트너사는 이 아홉 줄을 같은 순서로 채웁니다.</div>
+    </div>
+
+    <div class="pcard">
+      <div class="ph"><span class="pno">2호</span><b>다이어트캠프</b><span class="pwho">이승기 대표님</span></div>
+      <a class="pi ok" href="../../cbo/dietcamp/brand.html" target="_blank" rel="noopener"><b>브랜드가이드 화면 v0.3</b><span>서버 · 한 줄 · 철학(Can·Need·Fun) · 어투 · 쓰는 말/안 쓰는 말 · 사진 규칙 · 검색 셋업</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EB%8B%A4%EC%BA%A0_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>브랜드가이드 원고</b><span>저장소 · 화면의 글 원본(마크다운) · 근거 = 대표님 설문 답변(9/2)</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>대표님 원자료</b><span>저장소 · 브랜드가이드(소통) 답변 · 재활운동 솔루션 pptx · 커리큘럼 가격표 pptx · 사진 58장 · 내부 안내 동영상</span></a>
+      <span class="pi none"><b>로고</b><span>아직 못 받음 — 홈페이지·블로그·상담봇 겉모습을 맞추려면 필요</span></span>
+      <span class="pi none"><b>간판 · 그룹 수업 · 1:1 재활 사진 3~5장</b><span>아직 못 받음(9/8 요청) — 홈페이지 사진 자리가 비어 있음</span></span>
+      <a class="pi ok" href="../../cbo/dietcamp/dc.css" target="_blank" rel="noopener"><b>화면 색·서체 정본</b><span>서버 · 다캠 화면 4장이 같이 쓰는 스타일 한 벌</span></a>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>받을 것 목록</b><span>저장소 · 7건 중 받음 1(블로그 계정) · 못 받음 6 — 아침 카톡은 여기서 한 번에 한 번호만</span></a>
+      <div class="pwait">기다리는 것 — 로고 · 사진 3~5장 · 연혁 · 마케팅 자동화 시작 여부</div>
+    </div>
+
+    <div class="pcard">
+      <div class="ph"><span class="pno">3호</span><b>고척 gdr QA 골프존</b><span class="pwho">조재오 부장님</span></div>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>브랜드가이드 원고 v0.1</b><span>저장소 · 글 원고만(어투 · 쓰는 말 · CTA · 해시태그 · 사진 규칙 · 검색 셋업) · 볼 수 있는 화면은 아직 없음</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>부장님 원자료</b><span>저장소 · 사진 원본 9장 · 선정 8장 · 프로 4분 프로필+3개월 속성반 커리큘럼 6장(9/14 받음) · 기존 블로그 글 100개</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener"><b>블로그 글 스타일 정본</b><span>저장소 · 자동 발행이 읽는 말투·구성 값</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener"><b>사실 정본 (확인된 것 / 안 된 것)</b><span>저장소 · 부장님이 확인해 준 사실만 여기에 · 상담봇 정본과 어긋남 검사 한 줄</span></a>
+      <span class="pi none"><b>로고 · 브랜드 색값</b><span>아직 못 받음 — 필요 여부부터 여쭙는 단계</span></span>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>받을 것 목록</b><span>저장소 · 7건 중 받음 2(코치 원자료 · 정규 요금 구조) · 못 받음 4 · 확인 대기 1</span></a>
+      <div class="pwait">다음 — 원고를 다캠처럼 화면(cbo/gocheokgolf/brand.html)으로 올리면 「3 브랜드가이드」 칸이 찬다</div>
+    </div>
+
+  </div>
+</section>
+
 <section class="panel" data-panel="envs" hidden>
   <!-- 환경 3벌 — GM 지시 2026-09-09 「상용 서비스는 이렇게 분리해 둔다」. 실제로 세워 둔 것이지 계획이 아니다.
        세운 방법 = server/deploy_env.sh {alpha|beta} · 유닛 erp-api@.service · 라이브는 종전 deploy_api.sh 그대로. -->
@@ -660,6 +713,52 @@
     시리즈를 발행하는 것, 문의 퍼널을 세는 것. 카드를 하나로 합쳐도 <b>감시는 셋으로 따로 셉니다</b>.
     한 덩어리로 세면 「둘은 엿새째 멈췄고 하나만 돈다」 같은 차이가 화면에서 사라집니다.
     감시 쪽 정본은 자동화 등록부(<code>status/module_registry.json</code>)이고, 파는 쪽 정본은 이 판입니다.</div></details>
+</section>
+
+<!-- ═══ 화면 UI 표준 (GM 지시 2026-09-14 「UI/UX 표준화를 표로 정리하고, 승인나면 전체 반영」)
+     규격 자체는 파일이 정본이다 — assets/wp-ui.css(간격·글자) · erp/brand/tenant-wellperion.css(색).
+     이 표는 그 규격을 사람 말로 옮기고, 지금 몇 장이 지키는지를 실측값으로 보인다
+     (status/ui_standard.json · scripts/ui_standard_check.py 가 잰다). 숫자를 손으로 적지 않는다. ═══ -->
+<section class="panel" data-panel="ui" hidden>
+  <h2>화면 UI 표준</h2>
+  <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 다섯을 모두 채웁니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
+  <details class="tip"><summary>이 표준을 왜 두나</summary>
+    <div class="in">화면마다 글자 크기와 색을 따로 박아 써서 같은 회사 화면으로 읽히지 않습니다.
+    실측하면 한 화면 안에 글자 크기가 30종, 색이 101종까지 쓰인 곳이 있습니다.
+    디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.</div></details>
+
+  <h3>다섯 가지 <span class="n">다섯을 다 채우면 지킨다</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:16%">항목</th><th style="width:40%">기준</th><th style="width:24%">왜</th><th>지금</th></tr></thead>
+    <tbody>
+      <tr><td class="item">① 공통 규격</td><td><code>assets/wp-ui.css</code> 를 링크한다</td><td class="note">간격·글자 단계를 한 곳에서 받는다</td><td id="ui-r1">—</td></tr>
+      <tr><td class="item">② 글자 단계</td><td>화면이 직접 박은 글자 크기 <b>6종 이하</b></td><td class="note">본문 5 + 표제 1 이면 충분하다</td><td id="ui-r2">—</td></tr>
+      <tr><td class="item">③ 색 단계</td><td>직접 박은 색 <b>12종 이하</b></td><td class="note">색은 브랜드 파일이 준다</td><td id="ui-r3">—</td></tr>
+      <tr><td class="item">④ 모바일 폭</td><td>화면 폭에 맞추는 줄이 있다</td><td class="note">없으면 폰이 데스크톱 폭으로 그린다</td><td id="ui-r4">—</td></tr>
+      <tr><td class="item">⑤ 좌측 정렬</td><td>본문에 폭 제한이 없다(창을 다 쓴다)</td><td class="note">GM 상시 지시 2026-07-02</td><td id="ui-r5">—</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>지금 어디까지 <span class="n" id="ui-when"></span></h3>
+  <div class="pills">
+    <a class="pi" href="#ui"><b id="ui-pass">—</b><span>다섯 가지를 다 지키는 화면</span></a>
+    <a class="pi" href="#ui"><b id="ui-total">—</b><span>재고 있는 화면</span></a>
+  </div>
+  <div class="tbl-wrap" style="margin-top:10px;"><table class="reg">
+    <thead><tr><th style="width:46%">안 지키는 화면</th><th style="width:14%">글자</th><th style="width:14%">색</th><th>빠진 것</th></tr></thead>
+    <tbody id="ui-rows"><tr><td colspan="4" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="meta" id="ui-more"></div>
+
+  <h3>승인 <span class="n">승인하면 안 지키는 화면부터 이 규격으로 맞춥니다</span></h3>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th style="width:16%">상태</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td class="item">지금</td><td id="ui-approve-state">—</td></tr>
+      <tr><td class="item">승인 방법</td><td class="note">GM 이 이 표를 보고 「UI 표준 승인」이라고 한 마디 주시면 시모가 <code>status/ui_standard.json</code> 에 승인일을 적고 반영을 시작합니다. 화면이 많아 한 번에 바꾸지 않고 <b>많이 어긋난 화면부터</b> 나눠 갑니다.</td></tr>
+      <tr><td class="item">되돌리기</td><td class="note">화면마다 저장 이력이 남습니다. 한 화면씩 직전 판으로 되돌릴 수 있습니다.</td></tr>
+    </tbody>
+  </table></div>
 </section>
 
 <section class="panel" data-panel="guide" hidden>
@@ -950,6 +1049,65 @@
          + '<div class="name">' + (x.name || x.title || '이름 없음') + '</div>'
          + '<div class="desc">' + (x.desc || '') + '</div></a>';
   }
+  /* ═══ 화면 UI 표준 — 숫자는 실측 파일에서 읽는다(손으로 적지 않는다) ═══
+     원천 = status/ui_standard.json (scripts/ui_standard_check.py --저장 이 만든다) */
+  fetch('/status/ui_standard.json?_=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var n = d.화면수 || 0, 항목 = d.항목별 || {};
+      function 칸(id, v){
+        var e = document.getElementById(id);
+        if (!e) return;
+        var 나쁨 = n && v * 2 < n;                      // 절반도 못 지키면 눈에 띄게
+        e.innerHTML = '<span class="st ' + (v === n ? 'ok' : (나쁨 ? 'bad' : 'warn')) + '">'
+                    + v + ' / ' + n + '</span>';
+      }
+      칸('ui-r1', 항목.공통규격 || 0); 칸('ui-r2', 항목.글자단계 || 0);
+      칸('ui-r3', 항목.색단계 || 0);   칸('ui-r4', 항목.모바일폭 || 0);
+      칸('ui-r5', 항목.폭최대 || 0);
+
+      var 지킴 = d.지킴수 || 0;
+      var p1 = document.getElementById('ui-pass'); if (p1) p1.textContent = 지킴 + ' / ' + n;
+      var p2 = document.getElementById('ui-total'); if (p2) p2.textContent = n;
+      var b = document.getElementById('b-ui'); if (b) b.textContent = 지킴 + '/' + n;
+      var w = document.getElementById('ui-when');
+      if (w && d['잰 때']) w.textContent = '실측 ' + String(d['잰 때']).slice(0, 16).replace('T', ' ');
+
+      var 기준 = d.기준 || {글자단계: 6, 색단계: 12};
+      function 빠진것(r){
+        var x = [];
+        if (!r.공통규격) x.push('공통 규격');
+        if (r.글자단계 > 기준.글자단계) x.push('글자');
+        if (r.색단계 > 기준.색단계) x.push('색');
+        if (!r.모바일폭) x.push('모바일 폭');
+        if (!r.폭최대) x.push('좌측 정렬');
+        return x.join(' · ');
+      }
+      var 안지킴 = (d.화면 || []).filter(function(r){ return !r.지킴; })
+                    .sort(function(a, b2){ return b2.글자단계 - a.글자단계; });
+      var 보일것 = 안지킴.slice(0, 15);
+      var tb = document.getElementById('ui-rows');
+      if (tb) tb.innerHTML = 보일것.length
+        ? 보일것.map(function(r){
+            return '<tr><td class="item">' + r.화면 + '</td><td>' + r.글자단계 + '종</td>'
+                 + '<td>' + r.색단계 + '종</td><td class="note">' + 빠진것(r) + '</td></tr>';
+          }).join('')
+        : '<tr><td colspan="4" class="note">모두 지키고 있습니다.</td></tr>';
+      var more = document.getElementById('ui-more');
+      if (more) more.textContent = 안지킴.length > 보일것.length
+        ? '많이 어긋난 순 15장만 띄웁니다 — 전체 ' + 안지킴.length + '장.' : '';
+
+      var st = document.getElementById('ui-approve-state');
+      if (st) st.innerHTML = d.승인
+        ? '<span class="st ok">승인됨 ' + (d.승인일 || '') + '</span> · 반영 ' + (d.반영 || '시작 전')
+        : '<span class="st wait">승인 전</span> — 승인 전에는 아무 화면도 바꾸지 않습니다';
+    })
+    .catch(function(){
+      var tb = document.getElementById('ui-rows');
+      if (tb) tb.innerHTML = '<tr><td colspan="4" class="note">실측 파일을 못 읽었습니다 — '
+                           + 'python scripts/ui_standard_check.py --저장 을 한 번 돌리면 채워집니다.</td></tr>';
+    });
+
   fetch('/erp/downloads.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
     var root = document.getElementById('downloads');
     var list = d.downloads || [];

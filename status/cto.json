@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-09-09-밖과-트는-방-저장이-GM-PC-를-뺏는-문제-새-",
-  "last_task_id": "CTO-2026-09-09-밖과-트는-방-저장이-GM-PC-를-뺏는-문제-새-",
+  "task_id": "CTO-2026-09-14-상담봇-한-건에-얼마-드나-서버-로그의-사용량-줄을",
+  "last_task_id": "CTO-2026-09-14-상담봇-한-건에-얼마-드나-서버-로그의-사용량-줄을",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-09-09T00:50:15Z",
+  "last_pushed_at": "2026-09-14T04:40:44Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -1301,12 +1301,124 @@
       "note": "새 메시지가 없으면 카톡 창을 아예 안 연다. 카카오톡이 방마다 두는 로컬 대화 파일의 수정시각만 보고(파일 읽기라 화면 접촉 0회) 전부 조용하면 저장을 통째로 건너뛴다. 실측: 건너뛴 회차 8.6초·포커스 0회(종전 32~60초·화면 뺏김). 새 메시지가 있으면 종전 방식 그대로. 폴더를 못 읽으면 저장하는 쪽으로 기울어(fail-open) 놓치지 않는다. 방↔파일 매핑은 저장이 실제로 돈 회차마다 자동으로 쌓이게 해 뒀다 — 나중에 대상 방만 보게 좁힐 수 있다",
       "updated_at": "2026-09-09T00:50:15Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-10-나우열M-통의-0건이-진짜-0이-아니다-두-통이-서",
+      "title": "build_gm_room_digest summary에 원장 열린 N건 추가 — 배큐(0건)·원장(17건) 두 원천 별도 표시(sha 27994c06c)",
+      "status": "DONE",
+      "note": "build_gm_room_digest summary에 원장 열린 N건 추가 — 배큐(0건)·원장(17건) 두 원천 별도 표시(sha 27994c06c)",
+      "updated_at": "2026-09-10T23:34:15Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-10-내일-아침-첫-구매요청-1건-눈으로-확인-구매-자산",
+      "title": "구매요청 #133(최준용·라탄 선베드·2026-09-11) 시트 도달 확인 — write_proc=server 전환 후 첫 실사람 요청이 서버 채번 그대로 GAS 시트에 기록됨. 자산 라벨 실발급 0건(이상 없음)",
+      "status": "DONE",
+      "note": "구매요청 #133(최준용·라탄 선베드·2026-09-11) 시트 도달 확인 — write_proc=server 전환 후 첫 실사람 요청이 서버 채번 그대로 GAS 시트에 기록됨. 자산 라벨 실발급 0건(이상 없음)",
+      "updated_at": "2026-09-11T22:33:39Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-10-ERP-서버-판에-멤버십-화면-최신본-반영됐는지-대",
+      "title": "LOSS일자(자동) 0건 확인 — 서버 파일 HEAD=origin/master 일치, WriteBuffer 제거 반영됨",
+      "status": "DONE",
+      "note": "LOSS일자(자동) 0건 확인 — 서버 파일 HEAD=origin/master 일치, WriteBuffer 제거 반영됨",
+      "updated_at": "2026-09-11T23:31:23Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-10-웰리-시토-웰페리온-ERP-메인-화면-가로-넘침-P",
+      "title": "ERP 메인 화면 가로 넘침 수정 완료 — PC/태블릿/폰 모두 0px. minmax(0,1fr) + 965px 미디어쿼리 + min-width:0 적용",
+      "status": "DONE",
+      "note": "ERP 메인 화면 가로 넘침 수정 완료 — PC/태블릿/폰 모두 0px. minmax(0,1fr) + 965px 미디어쿼리 + min-width:0 적용",
+      "updated_at": "2026-09-12T00:51:29Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-11-FAQ-답받기-원장-읽기-쓰기-통로-1개-업체별-파",
+      "title": "GET·PUT /api/faq-intake/{tenant} 2개 통로 완성. 잠금·관리자 권한 구현. 서버 30건 실측 완료.",
+      "status": "DONE",
+      "note": "GET·PUT /api/faq-intake/{tenant} 2개 통로 완성. 잠금·관리자 권한 구현. 서버 30건 실측 완료.",
+      "updated_at": "2026-09-12T01:35:38Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-05-인사-데이터-AWS-이관-서버-준비-회신-접속-대행",
+      "title": "서버 준비·배포 대행 완료. /api/hr/→8001 라우팅 확정. 자체검증(api_hr --selftest, migrate_hr --selftest) 통과. 워킹트리 낡은 사본(03f46d5f7 되돌림 시도)은 safe_commit 차단 — GM 확인 후 처리 필요.",
+      "status": "DONE",
+      "note": "서버 준비·배포 대행 완료. /api/hr/→8001 라우팅 확정. 자체검증(api_hr --selftest, migrate_hr --selftest) 통과. 워킹트리 낡은 사본(03f46d5f7 되돌림 시도)은 safe_commit 차단 — GM 확인 후 처리 필요.",
+      "updated_at": "2026-09-12T06:34:50Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-07-ERP-로그인-네이버-카카오-계정-추가-구글과-같은",
+      "title": "네이버·카카오 소셜 로그인 라이브 확인 — 버튼 3개 렌더, /auth/naver→Naver OAuth(client_id=oE16PagavbXdHYl363Eq), /auth/kakao→Kakao OAuth(client_id=54873206ec240f7cdefe997be9c3e69c) 모두 302 정상",
+      "status": "DONE",
+      "note": "네이버·카카오 소셜 로그인 라이브 확인 — 버튼 3개 렌더, /auth/naver→Naver OAuth(client_id=oE16PagavbXdHYl363Eq), /auth/kakao→Kakao OAuth(client_id=54873206ec240f7cdefe997be9c3e69c) 모두 302 정상",
+      "updated_at": "2026-09-13T22:32:37Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-07-깃헙-의존-걷어내기-링크-화면-자산-기본-주소를-E",
+      "title": "send_ops_digest github.io 상수 3개 → ERP 주소 교체 완료 (커밋 a092f7e4b2)",
+      "status": "DONE",
+      "note": "send_ops_digest github.io 상수 3개 → ERP 주소 교체 완료 (커밋 a092f7e4b2)",
+      "updated_at": "2026-09-13T23:34:50Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-09-발행-스크립트-상수-인자화-서버-배포-일반화-시모-",
+      "title": "발행 스크립트 5개 --tenant 인자화 + server/deploy_tenant.sh 범용 배포 스크립트 완성",
+      "status": "DONE",
+      "note": "발행 스크립트 5개 --tenant 인자화 + server/deploy_tenant.sh 범용 배포 스크립트 완성",
+      "updated_at": "2026-09-12T09:39:32Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-09-예약이-성공-인데-산출물이-안-바뀌면-잡는-감시-M",
+      "title": "module_silence_detector warn 결과도 신선도 인정 — 오탐 수정·+48h 재현 테스트 통과(sha=81a73e592)",
+      "status": "DONE",
+      "note": "module_silence_detector warn 결과도 신선도 인정 — 오탐 수정·+48h 재현 테스트 통과(sha=81a73e592)",
+      "updated_at": "2026-09-12T10:34:40Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-09-시우-시토-담당-칸-지정-권한-실장-소장은-팀원까지",
+      "title": "담당 칸 권한 관문 구현 완료 — _owner_write_check + TASK_OWNER_TEAMS 상수, 자체점검 6케이스 통과",
+      "status": "DONE",
+      "note": "담당 칸 권한 관문 구현 완료 — _owner_write_check + TASK_OWNER_TEAMS 상수, 자체점검 6케이스 통과",
+      "updated_at": "2026-09-12T11:31:09Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-10-운영-가이드-테넌트-팩-운영-가이드-받기-다운로드-",
+      "title": "③ tenant.json new_tenant_onboarding 3단계 체크리스트 추가 + boot_pack.py NICK 하드코딩 제거(ownership_map.json 경유) / ④ downloads.json guide-pack 항목 추가 + launchers/운영가이드팩.md 신규 생성",
+      "status": "DONE",
+      "note": "③ tenant.json new_tenant_onboarding 3단계 체크리스트 추가 + boot_pack.py NICK 하드코딩 제거(ownership_map.json 경유) / ④ downloads.json guide-pack 항목 추가 + launchers/운영가이드팩.md 신규 생성",
+      "updated_at": "2026-09-12T12:35:40Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-14-GM-답변-형식-가드가-한-턴-늦게-판정하는-것으로",
+      "title": "gm_wording_guard.py last_messages() 역순 스캔 시 user가 먼저 나오면 미기록 상태로 판정해 ('','') 반환 — selftest ok, 커밋 bde01f8ceb",
+      "status": "DONE",
+      "note": "gm_wording_guard.py last_messages() 역순 스캔 시 user가 먼저 나오면 미기록 상태로 판정해 ('','') 반환 — selftest ok, 커밋 bde01f8ceb",
+      "updated_at": "2026-09-14T00:35:18Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-09-14-상담봇-한-건에-얼마-드나-서버-로그의-사용량-줄을",
+      "title": "counsel_usage.jsonl 기록+/admin/cost 엔드포인트+집계스크립트 구축. Sonnet+캐시기준 건당 17.5원 추정.",
+      "status": "DONE",
+      "note": "counsel_usage.jsonl 기록+/admin/cost 엔드포인트+집계스크립트 구축. Sonnet+캐시기준 건당 17.5원 추정.",
+      "updated_at": "2026-09-14T04:40:44Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "새 메시지가 없으면 카톡 창을 아예 안 연다. 카카오톡이 방마다 두는 로컬 대화 파일의 수정시각만 보고(파일 읽기라 화면 접촉 0회) 전부 조용하면 저장을 통째로 건너뛴다. 실측: 건너뛴 회차 8.6초·포커스 0회(종전 32~60초·화면 뺏김). 새 메시지가 있으면 종전 방식 그대로. 폴더를 못 읽으면 저장하는 쪽으로 기울어(fail-open) 놓치지 않는다. 방↔파일 매핑은 저장이 실제로 돈 회차마다 자동으로 쌓이게 해 뒀다 — 나중에 대상 방만 보게 좁힐 수 있다",
-  "artifact_url": "commit:dcff2b75a",
+  "title": "counsel_usage.jsonl 기록+/admin/cost 엔드포인트+집계스크립트 구축. Sonnet+캐시기준 건당 17.5원 추정.",
+  "artifact_url": "status/counsel_cost.json",
   "commit": "",
-  "note": "새 메시지가 없으면 카톡 창을 아예 안 연다. 카카오톡이 방마다 두는 로컬 대화 파일의 수정시각만 보고(파일 읽기라 화면 접촉 0회) 전부 조용하면 저장을 통째로 건너뛴다. 실측: 건너뛴 회차 8.6초·포커스 0회(종전 32~60초·화면 뺏김). 새 메시지가 있으면 종전 방식 그대로. 폴더를 못 읽으면 저장하는 쪽으로 기울어(fail-open) 놓치지 않는다. 방↔파일 매핑은 저장이 실제로 돈 회차마다 자동으로 쌓이게 해 뒀다 — 나중에 대상 방만 보게 좁힐 수 있다",
-  "updated_at": "2026-09-09T00:50:15Z"
+  "note": "counsel_usage.jsonl 기록+/admin/cost 엔드포인트+집계스크립트 구축. Sonnet+캐시기준 건당 17.5원 추정.",
+  "updated_at": "2026-09-14T04:40:44Z"
 }

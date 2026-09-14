@@ -215,7 +215,7 @@
          장소·날짜·추천은 사진으로 알 수 없으니 여기서만 받는다. 글은 여전히 AI 가 쓴다) -->
     <div class="card">
       <div class="step"><div class="num">4</div><div class="step-t">이번 편 <span>(컨셉 · 슬로건 · 그날 기록)</span></div></div>
-      <div class="note">글은 사진을 보고 만듭니다. 다만 <strong>사진만으로는 알 수 없는 정보</strong>(어디·언제·뭐가 좋았는지)는 여기 적은 만큼만 글에 들어갑니다 — 남들이 따라 해볼 수 있게 알려 주세요. 없으면 비워 두세요, 지어내지 않습니다.</div>
+      <div class="note" id="lab_intro">글은 사진을 보고 만듭니다. 다만 <strong>사진만으로는 알 수 없는 정보</strong>(어디·언제·뭐가 좋았는지)는 여기 적은 만큼만 글에 들어갑니다 — 남들이 따라 해볼 수 있게 알려 주세요. 없으면 비워 두세요, 지어내지 않습니다.</div>
       <div class="f"><div class="f-lab">컨셉</div>
         <select class="fld" id="f_concept">
           <option value="가족과 함께">가족과 함께</option>
@@ -228,23 +228,23 @@
       <div class="f"><div class="f-lab">슬로건 한 줄 <span style="letter-spacing:0;color:#6E675E;">(비워 두면 사진 보고 만듭니다)</span></div>
         <input type="text" class="fld serif" id="f_slogan" style="font-size:15px;"
                placeholder="행복은 특별한 날에 오는 게 아니라, 평범한 하루를 함께 보낼 때 온다."></div>
-      <div class="f"><div class="f-lab">어디</div>
+      <div class="f"><div class="f-lab" id="lab_place">어디</div>
         <input type="text" class="fld" id="f_place" placeholder="예: 남산 둘레길 · 한남동 집 앞"></div>
-      <div class="f"><div class="f-lab">언제</div>
+      <div class="f"><div class="f-lab" id="lab_when">언제</div>
         <input type="date" class="fld" id="f_when"></div>
-      <div class="f"><div class="f-lab">누구와</div>
+      <div class="f"><div class="f-lab" id="lab_with">누구와</div>
         <input type="text" class="fld" id="f_with" placeholder="예: 아내와 아이 둘"></div>
-      <div class="f"><div class="f-lab">뭐가 좋았나</div>
+      <div class="f"><div class="f-lab" id="lab_good">뭐가 좋았나</div>
         <textarea class="fld" id="f_good" rows="2" placeholder="예: 물이 깊지 않아 아이들이 놀기 좋았다"></textarea></div>
-      <div class="f"><div class="f-lab">남에게 추천한다면</div>
+      <div class="f"><div class="f-lab" id="lab_tip">남에게 추천한다면</div>
         <input type="text" class="fld" id="f_tip" placeholder="예: 아침 8시 전에 가면 사람이 없다"></div>
       <details>
         <summary>더 적기 (선택)</summary>
-        <div class="f" style="margin-top:12px;"><div class="f-lab">언제 가면 좋나</div>
+        <div class="f" style="margin-top:12px;"><div class="f-lab" id="lab_time">언제 가면 좋나</div>
           <input type="text" class="fld" id="f_time" placeholder="예: 오전 9시 전 · 주차가 금방 찬다"></div>
-        <div class="f" style="margin-top:12px;"><div class="f-lab">비용·준비물</div>
+        <div class="f" style="margin-top:12px;"><div class="f-lab" id="lab_cost">비용·준비물</div>
           <input type="text" class="fld" id="f_cost" placeholder="예: 주차 5천원 · 돗자리와 아쿠아슈즈 필수"></div>
-        <div class="f" style="margin-top:12px;"><div class="f-lab">다시 간다면</div>
+        <div class="f" style="margin-top:12px;"><div class="f-lab" id="lab_again">다시 간다면</div>
           <input type="text" class="fld" id="f_again" placeholder="예: 다음엔 점심을 싸 갈 것"></div>
       </details>
     </div>
@@ -540,6 +540,37 @@
     $('layoutRow').classList.toggle('hide', list.length < 2);
   }
 
+  /* 「이번 편」 칸을 트랙 양식으로 갈아 끼운다 (GM 지적 2026-09-14
+     「웰페리온의 하루가 컨셉이나 이런것들이 다 개인것들이라 각 회사 건들은 리뉴얼 필요」).
+     개인 트랙은 나들이 기록을 묻고, 회사 트랙은 어느 공간·무엇을 보여 주는지를 묻는다.
+     목록·문구의 정본은 series.json 의 _이번편양식 한 곳이다 — 화면에 박지 않는다. */
+  var 양식들 = null;
+  function paintForm(){
+    if (!양식들) return;
+    var 이름 = currentSeries().이번편 || '개인';
+    var f = 양식들[이름] || 양식들['개인'];
+    if (!f) return;
+
+    var c = $('f_concept');
+    if (c && f.컨셉 && f.컨셉.length) {
+      var 쓰던값 = c.value;
+      c.innerHTML = f.컨셉.map(function(x){
+        return '<option value="' + x + '">' + x + '</option>'; }).join('');
+      if (f.컨셉.indexOf(쓰던값) >= 0) c.value = 쓰던값;   // 같은 컨셉이 있으면 고른 것을 지키다
+    }
+    var sl = $('f_slogan');
+    if (sl && f.슬로건예시) sl.placeholder = f.슬로건예시;
+    var intro = $('lab_intro');
+    if (intro && f.안내) intro.innerHTML = f.안내;
+
+    var 칸 = f.칸 || {};
+    Object.keys(칸).forEach(function(k){
+      var lab = $('lab_' + k), fld = $('f_' + k);
+      if (lab && 칸[k][0]) lab.textContent = 칸[k][0];
+      if (fld && 칸[k].length > 1) fld.placeholder = 칸[k][1] || '';
+    });
+  }
+
   function paintSeries(){
     var s = currentSeries();
     $('h_series').textContent = s.name;
@@ -558,6 +589,7 @@
     fetch('series.json')
       .then(function(r){ return r.json(); })
       .then(function(j){
+        양식들 = j._이번편양식 || null;
         var rows = (j.series || []).filter(function(s){ return s.enabled !== false; });
         /* 쓰임을 둘로 가른다 (GM 지시 2026-09-14 「어떤 하루는 개인 용도로 그냥 두고,
            마케팅 자동업로드 모듈로 하나 더」).
@@ -582,9 +614,10 @@
         }).join('');
         // 고를 게 하나뿐이면 칸을 보이지 않는다 — 안 늘려도 되는 화면은 안 늘린다.
         if (SERIES.length > 1) $('seriesRow').classList.remove('hide');
-        sel.addEventListener('change', function(){ paintSeries(); paintConcepts(); });
+        sel.addEventListener('change', function(){ paintSeries(); paintConcepts(); paintForm(); });
         paintSeries();
         paintConcepts();
+        paintForm();
       });
   })();
 

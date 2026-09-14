@@ -5,6 +5,9 @@
       응답 = {"ok":true,"mode":...,"count":N,"data":[...]}  — 품의 GAS list 와 같은 모양이다.
       화면이 주소만 바꾸면 그대로 읽히게 하려고 칸 이름을 새로 짓지 않았다.
       images=0 이면 이미지 칸을 빈 값으로 지워 보낸다(전량 1.29MB 중 1.1MB 가 이미지다 — 목록만 볼 땐 빼면 빠르다).
+  GET /api/proc/assets[?품의번호=PR-1]   sync_proc.py 가 옮긴 자산대장(배12615 · CFO 요청서3 §3) — GAS
+      asset_list 와 같은 모양 {"ok":true,"count":N,"data":[...]}. 쓰기(asset_issue·asset_label·asset_update·
+      asset_del)는 api_write.py 서버 단독 그대로 — 이 파일은 읽기만 낸다.
   GET /api/proc/health
 
 ★mode 의 뜻은 GAS 가 가른 대로 둔다(우리 기준을 새로 짓지 않는다 — INC-055 와 같은 실수를 피한다).
@@ -49,14 +52,35 @@ def health():
         rows = conn.execute("SELECT src, status, COUNT(*) c FROM proc_items WHERE tenant_id=%s"
                             " GROUP BY src, status", (db.TENANT,)).fetchall()
         last = conn.execute("SELECT MAX(synced_at) s FROM proc_items WHERE tenant_id=%s", (db.TENANT,)).fetchone()
+        n_assets = conn.execute("SELECT COUNT(*) FROM proc_assets WHERE tenant_id=%s", (db.TENANT,)).fetchone()[0]
         meta = dict(conn.execute("SELECT k, v FROM sync_meta WHERE tenant_id=%s AND k LIKE 'proc_last%%'",
                                  (db.TENANT,)).fetchall())
     conn.close()
-    return {"ok": True, "rows": sum(r["c"] for r in rows),
+    return {"ok": True, "rows": sum(r["c"] for r in rows), "asset_rows": n_assets,
             "by_status": {"%s/%s" % (r["src"], r["status"] or "(빈칸)"): r["c"] for r in rows},
             "newest_synced_at": last["s"] if last else None,
             "last_sync_kst": meta.get("proc_last_sync"), "last_failed": meta.get("proc_last_failed") or "",
             "_source": SOURCE}
+
+
+@router.get("/assets")
+def proc_assets(request: Request):
+    q = dict(request.query_params)
+    where, args = ["tenant_id=%s"], [db.TENANT]
+    if q.get("품의번호"):
+        where.append("req_no=%s")
+        args.append(str(q["품의번호"]).strip())
+    conn = db.connect(readonly=True)
+    with conn:
+        rows = conn.execute("SELECT data FROM proc_assets WHERE %s ORDER BY row" % " AND ".join(where),
+                            tuple(args)).fetchall()
+        total = rows and 1 or conn.execute("SELECT COUNT(*) FROM proc_assets WHERE tenant_id=%s",
+                                           (db.TENANT,)).fetchone()[0]
+    conn.close()
+    if not total:
+        raise HTTPException(502, "자산 원장이 비어 있다 — sync_proc.py 를 먼저 돌린다")
+    data = [json.loads(r["data"]) for r in rows]
+    return {"ok": True, "count": len(data), "data": data, "_source": SOURCE}
 
 
 @router.get("/list")
@@ -104,7 +128,7 @@ def proc_list(request: Request):
 # ── 자체점검 ──────────────────────────────────────────────────────────────
 
 def selftest():
-    from sync_proc import upsert
+    from sync_proc import upsert, upsert_assets
     db.TENANT = "selftest"                   # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
     conn = db.connect()
     db.init_schema(conn)
@@ -115,6 +139,7 @@ def selftest():
     try:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
+            conn.execute("DELETE FROM proc_assets WHERE tenant_id=%s", (db.TENANT,))
         upsert(conn, [{"row": 10, "번호": "1", "상태": "승인", "물품": "가", "날짜": "2026. 1. 10", "이미지": "data:image/png;base64,AA"},
                       {"row": 11, "번호": "2", "상태": "완료", "물품": "나", "날짜": "2026. 9. 5", "이미지": ""}], "t0", "all")
         upsert(conn, [{"row": 12, "번호": "", "상태": "검토", "물품": "다", "날짜": "2026. 9. 12", "이미지": "http://x/y.png"}], "t0", "active")
@@ -142,18 +167,32 @@ def selftest():
         assert d["data"][0]["이미지"].startswith("data:"), "기본은 원본 그대로"
         d = proc_list(_Req({"no": "없는번호", "mode": "all"}))   # 원장은 있는데 조건이 안 맞는 것 = 빈 목록
         assert d["count"] == 0 and d["ok"], d
+        # 자산대장(배12615 · CFO 요청서3 §3) — GAS asset_list 와 같은 모양.
+        upsert_assets(conn, [{"row": 2, "라벨": "WP26 0001", "품명": "노트북", "품의번호": "PR-1", "상태": "사용중"},
+                             {"row": 3, "라벨": "WP26 0002", "품명": "모니터", "품의번호": "PR-2", "상태": "사용중"}], "t2")
+        d = proc_assets(_Req({}))
+        assert d["count"] == 2 and [x["라벨"] for x in d["data"]] == ["WP26 0001", "WP26 0002"], d
+        d = proc_assets(_Req({"품의번호": "PR-1"}))
+        assert d["count"] == 1 and d["data"][0]["품명"] == "노트북", d
         h = health()
-        assert h["rows"] == 3 and h["by_status"]["all/승인"] == 1 and h["by_status"]["active/검토"] == 1, h
+        assert h["rows"] == 3 and h["asset_rows"] == 2 and h["by_status"]["all/승인"] == 1 and h["by_status"]["active/검토"] == 1, h
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
+            conn.execute("DELETE FROM proc_assets WHERE tenant_id=%s", (db.TENANT,))
         try:                                                     # 원장이 통째로 비면 502 — 화면이 GAS 로 돌아간다
             proc_list(_Req({"mode": "all"}))
             raise AssertionError("502 이어야 한다")
         except HTTPException as e:
             assert e.status_code == 502
+        try:
+            proc_assets(_Req({}))
+            raise AssertionError("자산도 통째로 비면 502 여야 한다")
+        except HTTPException as e:
+            assert e.status_code == 502
     finally:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
+            conn.execute("DELETE FROM proc_assets WHERE tenant_id=%s", (db.TENANT,))
         conn.close()
     print("selftest ok")
     return 0

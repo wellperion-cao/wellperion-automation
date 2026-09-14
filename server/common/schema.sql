@@ -354,6 +354,23 @@ ALTER TABLE proc_items ADD COLUMN IF NOT EXISTS src TEXT NOT NULL DEFAULT 'all';
 CREATE INDEX IF NOT EXISTS ix_proc_src ON proc_items (tenant_id, src);
 CREATE INDEX IF NOT EXISTS ix_proc_no ON proc_items (tenant_id, no);
 
+-- 자산대장 원장 — 시트 미러 (sync_proc.py upsert_assets · api_proc.py /api/proc/assets · 2026-09-14 시토 ·
+-- 배12615 CFO 요청서3 §3). proc_items 와 같은 규칙: row = 시트 행번호(정본 열쇠) · 칸 이름은 GAS assetRows_
+-- 머리글 그대로 data 에 싣고, 거르는 데 쓰는 4개(라벨·품명·품의번호·상태)만 컬럼으로 뺀다.
+CREATE TABLE IF NOT EXISTS proc_assets (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  row       INTEGER NOT NULL,
+  label     TEXT NOT NULL DEFAULT '',
+  item      TEXT NOT NULL DEFAULT '',
+  req_no    TEXT NOT NULL DEFAULT '',
+  status    TEXT NOT NULL DEFAULT '',
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, row)
+);
+CREATE INDEX IF NOT EXISTS ix_asset_req ON proc_assets (tenant_id, req_no);
+CREATE INDEX IF NOT EXISTS ix_asset_label ON proc_assets (tenant_id, label);
+
 -- 문의 유입 경로 칸 (배 925 · status/briefs/CMO-유입경로-발행원장-정의서-20260903.md 표 A · 2026-09-05).
 -- channel_code 11종(6종 채널+5종 특수값, unknown=기록없음) + post_id(publish_ledger 참조, 없으면 NULL).
 -- 기존 문의 행은 DEFAULT 'unknown'이 그대로 채운다(GM 확정: 소급 안 채움 = unknown 명시값으로 채움).

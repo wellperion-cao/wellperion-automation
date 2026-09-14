@@ -62,6 +62,10 @@ SYNC_PAIRS = [
     # 이 원장에서 읽는다 — 손으로 적은 숫자를 화면에 두지 않기 위해서다. 원장은 매일 07:40
     # page_score_extract.py --ping 이 새로 뜬다(collected_at 칸이 신선도).
     ("status/page_ping.json",            "3. 웰페리온 가이드/status/page_ping.json"),
+    # 화면 UI 표준 (2026-09-14 · GM 지시 「표준화를 표로 정리하고 승인나면 반영」):
+    # 플랫폼 관리 콘솔 「화면 UI 표준」 판이 발행루트에서 직독한다. 규격 자체는 CSS 파일이 정본이고
+    # 이 원장은 「지금 몇 장이 지키는가」 실측값 + 승인 상태다(scripts/ui_standard_check.py --저장).
+    ("status/ui_standard.json",          "3. 웰페리온 가이드/status/ui_standard.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지

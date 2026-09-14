@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상담 문의 | 다이어트캠프</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{ --green:#4E7432; --green-mid:#63914a; --green-light:#f1f6ed; --ink:#0B0B0D;
+       --body:#333; --muted:#777; --line:#dfe5da; --white:#fff; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+     color:var(--body);background:var(--white);line-height:1.7;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:640px;margin:0 auto;padding:0 24px}
+
+.top{background:var(--green);color:#fff}
+.top .wrap{padding-block:52px 44px}
+.eyebrow{font-family:"Archivo Black",sans-serif;font-size:11px;letter-spacing:.32em;
+         text-transform:uppercase;opacity:.9;margin-bottom:16px}
+h1{font-size:clamp(26px,5.4vw,36px);line-height:1.25;font-weight:900;margin-bottom:12px}
+.top p{font-size:15px;opacity:.95}
+
+form{padding-block:40px 24px}
+.field{margin-bottom:22px}
+label{display:block;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:7px}
+label .req{color:#c0392b;margin-left:3px}
+input[type=text],input[type=tel],textarea,select{
+  width:100%;font:inherit;font-size:15px;color:var(--ink);background:#fff;
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--green)}
+textarea{min-height:120px;resize:vertical}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:14px;
+             border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer;margin:0}
+.chips input{accent-color:var(--green)}
+.chips label:has(input:checked){border-color:var(--green);background:var(--green-light);color:var(--green)}
+.agree{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--muted);
+       background:#fafbf9;border:1px solid var(--line);border-radius:10px;padding:13px 14px}
+.agree input{margin-top:3px;accent-color:var(--green)}
+.btn{width:100%;font:inherit;font-size:16px;font-weight:700;color:#fff;background:var(--green);
+     border:0;border-radius:999px;padding:16px;cursor:pointer;margin-top:6px}
+.btn:hover{background:var(--green-mid)}
+.alt{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);font-size:14px}
+.alt b{display:block;color:var(--ink);margin-bottom:8px}
+.alt a{color:var(--green);font-weight:700;text-decoration:underline}
+.alt p{margin-bottom:5px}
+footer{background:#0B0B0D;color:#ddd}
+footer .wrap{padding-block:26px}
+footer p{font-size:13px;margin:3px 0}
+footer a{color:#9ec98a}
+@media (prefers-color-scheme:dark){
+  :root{--white:#141414;--body:#e6e6e6;--ink:#f2f2f2;--line:#2e332b;--muted:#9a9a9a;--green-light:#1c2718}
+  input[type=text],input[type=tel],textarea,select{background:#1c1c1c}
+  .agree{background:#1a1a1a}
+}
+</style>
+</head>
+<body>
+
+<section class="top">
+  <div class="wrap">
+    <p class="eyebrow">DIET CAMP</p>
+    <h1>상담 문의</h1>
+    <p>남겨 주시면 확인하고 연락드립니다. 궁금한 점부터 편하게 적어 주세요.</p>
+  </div>
+</section>
+
+<div class="wrap">
+<form id="inq" novalidate>
+
+  <div class="field">
+    <label for="name">성함<span class="req">*</span></label>
+    <input type="text" id="name" name="name" autocomplete="name" required>
+  </div>
+
+  <div class="field">
+    <label for="phone">연락처<span class="req">*</span></label>
+    <input type="tel" id="phone" name="phone" inputmode="numeric" autocomplete="tel"
+           placeholder="010-0000-0000" required>
+    <p class="hint">확인 후 이 번호로 연락드립니다.</p>
+  </div>
+
+  <div class="field">
+    <label>어떤 것이 궁금하세요<span class="req">*</span></label>
+    <div class="chips">
+      <label><input type="radio" name="topic" value="그룹PT" required> 그룹 PT</label>
+      <label><input type="radio" name="topic" value="개인PT"> 개인 PT</label>
+      <label><input type="radio" name="topic" value="재활운동"> 재활 운동</label>
+      <label><input type="radio" name="topic" value="기타"> 기타</label>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="when">주로 오실 수 있는 시간</label>
+    <select id="when" name="when">
+      <option value="">선택 안 함</option>
+      <option>오전 (09~12시)</option>
+      <option>낮 (12~17시)</option>
+      <option>저녁 (17~23시)</option>
+      <option>주말</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="memo">문의 내용</label>
+    <textarea id="memo" name="memo" placeholder="운동 경험, 불편한 곳, 목표 등 편하게 적어 주세요."></textarea>
+  </div>
+
+  <div class="field">
+    <label class="agree"><input type="checkbox" id="agree" required>
+      <span>상담 연락을 위해 성함과 연락처를 수집·이용하는 데 동의합니다. 상담이 끝나면 파기합니다.</span></label>
+  </div>
+
+  <button class="btn" type="submit">상담 문의 보내기</button>
+</form>
+
+<!-- 손님 문의는 이 폼 한 곳으로 모은다(GM 2026-09-14). 채팅창은 홈에서 뺐고,
+     상담봇은 서버에 남아 내역만 쌓는다. 서버 접수 통로가 열리면 SUBMIT_URL 한 곳만 채우면 된다. -->
+<div class="alt">
+  <b>전화나 예약이 편하시면</b>
+  <p>📞 <a href="tel:02-6941-0701">02-6941-0701</a></p>
+  <p>📅 <a href="https://m.place.naver.com/place/1963780339/home" target="_blank" rel="noopener">네이버로 상담 예약하기</a></p>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p><strong>다이어트캠프 DIET CAMP</strong></p>
+    <p>은평로 23, DC백화점 3층 · <a href="tel:02-6941-0701">02-6941-0701</a></p>
+    <p>평일 09:00~23:00 · 토요일 09:00~16:00 · 일요일·공휴일 휴무</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var SUBMIT_URL = "";   // 서버 접수 API 가 열리면 여기만 채운다
+  var f = document.getElementById('inq');
+  var phone = document.getElementById('phone');
+  phone.addEventListener('input', function(){
+    var v = this.value.replace(/\D/g,'').slice(0,11);
+    this.value = v.length > 7 ? v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7)
+               : v.length > 3 ? v.slice(0,3)+'-'+v.slice(3) : v;
+  });
+  f.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var name = f.name.value.trim(), tel = phone.value.trim();
+    var topic = f.querySelector('input[name=topic]:checked');
+    if (!name)  { alert('성함을 적어 주세요.'); f.name.focus(); return; }
+    if (tel.replace(/\D/g,'').length < 10) { alert('연락처를 다시 확인해 주세요.'); phone.focus(); return; }
+    if (!topic) { alert('궁금하신 것을 하나 골라 주세요.'); return; }
+    if (!document.getElementById('agree').checked) { alert('연락을 위해 동의가 필요합니다.'); return; }
+    var data = {name:name, phone:tel, topic:topic.value,
+                when:f.when.value, memo:f.memo.value.trim(), tenant:'2_dietcamp'};
+    if (!SUBMIT_URL) {
+      // 접수 통로가 아직 안 열렸다. 적으신 내용이 사라지지 않게 이 기기에 담아 두고,
+      // 전화로 바로 이으실 수 있게 안내한다(2026-09-14 — 서버 접수 API 가 열리면 이 블록을 없앤다).
+      try { sessionStorage.setItem('dc_inquiry', JSON.stringify(data)); } catch (e) {}
+      alert('접수 준비 중입니다. 02-6941-0701 로 전화 주시면 바로 상담 도와드리겠습니다.');
+      return;
+    }
+    fetch(SUBMIT_URL, {method:'POST', headers:{'Content-Type':'application/json'},
+                       body:JSON.stringify(data)})
+      .then(function(r){ if(!r.ok) throw 0; alert('접수되었습니다. 확인 후 연락드리겠습니다.'); f.reset(); })
+      .catch(function(){ alert('지금 접수가 어렵습니다. 02-6941-0701 로 연락 주시면 바로 도와드리겠습니다.'); });
+  });
+})();
+</script>
+
+</body>
+</html>

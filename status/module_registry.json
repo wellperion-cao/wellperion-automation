@@ -546,7 +546,8 @@
       "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
       "data_source": {
         "kind": "json",
-        "ref": "status/schedule_ssot.json"
+        "ref": "status/heartbeats/morning-schedule-ping.json",
+        "note": "2026-09-14 시토(INC-021 3차) — 종전 ref(status/schedule_ssot.json)는 GAS 원천의 로컬 씨앗이라 사람이 손편집하거나 GAS가 갱신 안 해도 mtime이 그대로일 수 있어 증거가 아니다. send_ops_digest.py가 매일 이 SSOT를 읽어 쓰는 하트비트(모닝 일정 핑)로 바꿨다 — 생성기가 실제로 쓰는 산출물."
       },
       "notify_spec": {
         "daily": false,
@@ -1118,7 +1119,7 @@
     },
     {
       "id": "cbo-faq-hub",
-      "sellable": "sellable",
+      "sellable": "selling",
       "enabled": true,
       "owner_role": "cbo",
       "owner_nick": "시보",
@@ -1151,14 +1152,15 @@
     },
     {
       "id": "cbo-partner-morning-agent",
-      "sellable": "internal",
+      "sellable": "selling",
       "enabled": true,
       "owner_role": "cbo",
       "owner_nick": "시보",
       "feature": "파트너 센터 아침 1통 — 매일 07:00 에 그 센터 방(다이어트캠프 이승기 대표님·★조재오부장님)으로 카톡 한 통. 새 말씀이 있으면 답장, 없거나 답장이 필요 없는 말씀이면 아직 못 받은 값 하나를 여쭙는다. 물어볼 것 = 그 센터 빈칸 목록(_받을것.md) + FAQ 통합층이 재 준 빈 유형(cbo-faq-hub) + 상담봇 미답. 회로 = scripts/diet_camp_agent.py(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신). 실행체는 시토가 만든 것을 그대로 쓰고 내용(무엇을 여쭙나)만 시보가 갖는다.",
       "data_source": {
-        "kind": "json",
-        "ref": "status/kakao_agent/rooms.json"
+        "kind": "log",
+        "ref": "logs/diet_camp_agent.log + logs/partner_evening_wrap.log",
+        "note": "2026-09-14 시토(INC-021 3차) — 종전 ref(status/kakao_agent/rooms.json)는 방 목록(설정) 파일이라 모듈이 죽어도 안 바뀐다. 실제 실행 로그(06:50 저장·07:00 발신 = diet_camp_agent.log · 21:00 저녁 wrap = partner_evening_wrap.log)로 바꿨다 — 매 실행 끝에 exit=0 줄이 append 되므로 mtime이 진짜 가동 증거."
       },
       "notify_spec": {
         "daily": true,
@@ -1217,7 +1219,7 @@
     },
     {
       "id": "cbo-counsel-questions",
-      "sellable": "sellable",
+      "sellable": "selling",
       "enabled": true,
       "owner_role": "cbo",
       "owner_nick": "시보",
@@ -1247,6 +1249,39 @@
       "reversible": true,
       "honesty_default": "measured",
       "serves": "ours"
+    },
+    {
+      "id": "cbo-counselbot",
+      "sellable": "selling",
+      "enabled": true,
+      "owner_role": "cbo",
+      "owner_nick": "시보",
+      "feature": "상담봇 본체 — 센터 하나가 사는 구독 단위. 손님이 여는 상담 페이지와 업체가 여는 관리자 페이지, 그리고 정본을 학습해 사람처럼 답하는 엔진이 한 벌이다. 2026-09-14 실측: 우리가 파는 첫 상품인데 이 등록부에 본체가 없었다 — 딸린 조각(질문 원장·공통 학습층·아침 1문)만 등록돼 있었다. 판매 단위 정의는 상담봇 기획설계 §6(센터 1곳 = 구독 1개 · 네 가지 한 묶음)이 정본이고 여기는 그 값을 원장에 적는 자리다. 요금은 미산정 — 공급가부터 잡고 GM 결재.",
+      "data_source": {
+        "kind": "json",
+        "ref": "server/counselbot/tenants/"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "bot_id": ""
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-business"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "모델이 막히면 FAQ 2-gram 매칭으로 내려앉고 그마저 안 되면 「확인해서 알려드릴게요」로 사람에게 넘긴다(지어내지 않는다) — server/erp_api/api_chat.py",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": false,
+      "honesty_default": "measured",
+      "serves": "partner"
     }
   ],
   "_removed": [
