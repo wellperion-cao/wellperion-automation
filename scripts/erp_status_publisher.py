@@ -78,6 +78,26 @@ WATCH_TASKS = {
 BENIGN_SKIP_TASKS = ("wellperion-morning-update",)
 BENIGN_SKIP_CODES = {0x800710E0}  # The operator or administrator has refused the request
 
+# 스케줄러가 '결과' 칸에 흘리는 상태값 — 실패가 아니라 지금 상태다. 이걸 실패로 세면 매일 헛경보가 난다.
+TASK_STATE_CODES = {0x41300: "대기", 0x41301: "실행 중", 0x41303: "대기"}
+# 돌던 작업이 강제로 끊긴 코드. PC 자동 종료(23:30)가 그때 돌던 작업을 이렇게 끊는다 —
+# 끊긴 시각이 종료 창 안이면 사고가 아니다. 그 밖의 시각에 끊겼으면 진짜 실패로 둔다(정직 원칙).
+TASK_TERMINATED_CODE = 0x40010004
+SHUTDOWN_WINDOW_HOURS = (23, 0)
+
+
+def _run_hour(last_run: str):
+    """'2026-09-15 오전 12:30:01' 같은 schtasks 문자열에서 24시간제 시(hour). 못 읽으면 None."""
+    m = re.search(r"(오전|오후)?\s*(\d{1,2}):(\d{2})", last_run or "")
+    if not m:
+        return None
+    hour = int(m.group(2))
+    if m.group(1) == "오전" and hour == 12:      # 오전 12시 = 자정
+        hour = 0
+    elif m.group(1) == "오후" and hour != 12:
+        hour += 12
+    return hour
+
 
 def _now_kst():
     return datetime.now(KST)
@@ -507,6 +527,13 @@ def collect_automation_health():
                         state = "대기" if has_real_next_run else "미실행"
                     elif code == 0:
                         state = "정상"
+                    elif (code & 0xFFFFFFFF) in TASK_STATE_CODES:
+                        # 결과가 아니라 상태다(대기·실행 중) — 실패로 세지 않는다.
+                        state = TASK_STATE_CODES[code & 0xFFFFFFFF]
+                    elif ((code & 0xFFFFFFFF) == TASK_TERMINATED_CODE
+                          and _run_hour(last_run) in SHUTDOWN_WINDOW_HOURS):
+                        # PC 자동 종료가 돌던 작업을 끊은 것 — 다음 회차에 다시 돈다.
+                        state = "정상(종료로 중단)"
                     elif (any(t in name.lower() for t in BENIGN_SKIP_TASKS)
                           and (code & 0xFFFFFFFF) in BENIGN_SKIP_CODES):
                         # 정상인데 스케줄러가 비0으로 흘리는 알려진 양성 코드 → 정직 재분류
@@ -1236,6 +1263,14 @@ def _selftest_migration():
     scores2, hits2 = _score_migration(rows, {"write_todo": "server"})
     assert scores2[MIGRATION_AREAS.index(next(a for a in MIGRATION_AREAS if a[0] == "업무·결재"))] == 100
     assert hits2 == 1
+    # 예약작업 결과코드 — '값이 없다'와 '내가 아는 꼴이 아니다'를 가른다(2026-09-15 헛경보 2건).
+    assert _run_hour("2026-09-15 오전 12:30:01") == 0      # 오전 12시 = 자정
+    assert _run_hour("2026-09-14 오후 11:40:00") == 23
+    assert _run_hour("2026-09-14 오전 9:00:01") == 9
+    assert _run_hour("") is None
+    assert 0x41301 in TASK_STATE_CODES and 0x41303 in TASK_STATE_CODES   # 실행 중·대기 = 상태값
+    assert _run_hour("2026-09-15 오전 12:30:01") in SHUTDOWN_WINDOW_HOURS
+    assert _run_hour("2026-09-14 오후 3:00:05") not in SHUTDOWN_WINDOW_HOURS  # 낮에 끊겼으면 진짜 실패
     print("[erp_status] --selftest 통과: 09-04 실측 입력 → 52% · 서버 원본 0/9")
 
 
