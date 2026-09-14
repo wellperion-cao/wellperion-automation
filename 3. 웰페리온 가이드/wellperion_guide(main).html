@@ -64,11 +64,6 @@
     .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
     .main:has(#home.active) .ops-detail-grid>div:first-child{grid-column:auto!important;}
     .main:has(#home.active) .wa-block-grid{grid-template-columns:1fr!important;gap:10px!important;}
-    /* 업무·결재 칸 4개가 한 줄에 서면 칸 폭이 70px 안팎이라 「19 (48%)」·「오늘 3 · 전체 187」이 칸 밖으로
-       넘쳤다(GM 지적 2026-09-14 「숫자 다 선 넘었네」). 2×2 로 세워 칸 폭을 두 배로 준다 — 인라인 repeat(4) 를
-       이기려면 !important. 아래 줄은 좁을 때 두 줄로 접히게 nowrap 을 푼다. */
-    .main:has(#home.active) .wa-block-grid>div>div:nth-child(2){grid-template-columns:repeat(2,minmax(0,1fr))!important;}
-    .main:has(#home.active) .wa-block-grid>div>div:nth-child(2)>div>div:last-child{white-space:normal!important;line-height:1.3;}
     /* 슬로건(좌)·ERP 설명(우) — 위아래 끝을 맞춘다(GM 지시 2026-08-27). 종전에는 각자
        바깥 여백(슬로건 4/22px · 설명 18/8px)을 갖고 가운데 정렬만 해서 두 칸의 위·아래가
        어긋나 보였다. 같은 높이로 늘리고 바깥 여백은 행이 관리한다. */
@@ -393,26 +388,23 @@
   <div class="nav-label">시작하기</div>
   <nav class="nav">
     <a data-id="home" class="active"><span class="num">홈</span><span class="label">홈 · 사용법</span></a>
-    <!-- [2026-09-14 GM 지시] 회사소개·전략 로드맵을 원래 자리인 홈 바로 아래로 되돌렸다.
-         09-11 에 마케팅 관리 안으로 넣었는데, 회사를 소개하는 문서는 마케팅만의 것이 아니라
-         처음 들어온 사람이 가장 먼저 보는 자리다. 문서 id(M0)는 그대로 둔다 — 바꾸면 즐겨찾기가 끊긴다. -->
-    <a data-id="M0"><span class="num">🏢</span><span class="label">회사소개 · 전략 로드맵</span></a>
     <a data-id="S1"><span class="num">📝</span><span class="label">공통 가이드라인</span></a>
     <a data-id="S3"><span class="num">📝</span><span class="label">업무&결재 현황 SSOT</span></a>
   </nav>
 
   <!-- [2026-09-11 GM 지시] 메뉴 이름을 AI 직책(AI CMO 마케팅 …)에서 업무영역(1. 마케팅 관리 …)으로 바꿨다.
        실무진은 자기 일 이름으로 찾지, 담당 AI 이름으로 찾지 않는다. 순서도 GM이 준 1~5 그대로다.
-       「어떤 하루」(개인 계정 기록)는 파트너사 것이 아니라 ERP 플랫폼 것이라 여기서 뺐다.
-       [2026-09-14 GM 지시] 마케팅 관리는 네 칸으로 줄였다 — 브랜드 가이드 · 콘텐츠 제작·검수·발행 ·
-       마케팅 자동업로드 · 문의 폼. 회사소개·전략 로드맵은 위 「시작하기」 홈 아래로 되돌렸다. -->
+       1 마케팅 관리 안에 회사소개·전략 로드맵·브랜드 가이드·콘텐츠 접수·콘텐츠 제작·문의 폼까지 모았다 —
+       콘텐츠가 문의로 닿는 한 줄기가 한 메뉴 안에서 끝나야 한다.
+       「어떤 하루」(개인 계정 기록)는 파트너사 것이 아니라 ERP 플랫폼 것이라 여기서 뺐다. -->
   <div class="nav-label">웰페리온 운영</div>
   <nav class="nav">
     <a data-toggle="cmo-nav2" data-id="M1" data-has-sub="true"><span class="num">1</span><span class="label">마케팅 관리<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cmo-nav2">
+      <a data-id="M0">🏢 회사소개 · 전략 로드맵</a>
       <a href="cmo/brand/브랜드가이드.html" target="_blank">🎨 브랜드 가이드</a>
-      <a data-id="M1">📂 콘텐츠 제작 · 검수·발행</a>
       <a href="cmo/upload/마케팅자동업로드.html" target="_blank">🎬 마케팅 자동업로드</a>
+      <a data-id="M1">📂 콘텐츠 제작 · 검수·발행</a>
       <!-- 문의 폼 = 손님이 실제로 보는 문의 화면. cmo/survey/wp_inquiry_form.html 은 워드프레스에
            심는 조각이라 그것만 열면 「문의 유형을 문의 페이지에서 선택해 주세요」 한 줄만 뜬다. -->
       <a href="public/ko/inquiry.html" target="_blank">📝 문의 폼</a>
@@ -445,7 +437,7 @@
     <div class="sub-nav" data-parent="cfo-nav2">
       <a data-id="F1">🏛️ 재무 허브</a>
       <a href="cfo/finance/매출지출현황.html" target="_blank">💰 운영매출&지출 현황</a>
-      <a href="cfo/finance/매출지출현황.html?req=1" target="_blank">🛒 구매요청</a>
+      <a href="cfo/finance/지출품의.html" target="_blank">🛒 구매요청</a>
     </div>
   </nav>
 
@@ -490,13 +482,13 @@
     <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--text);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:var(--fs-4);font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:var(--fs-1);color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="월간운영계획.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">🗓️ 월간 운영계획·보고 ↗</a><a href="coo/check/전사_일정.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📅 전사 일정 ↗</a><a href="coo/report/매출회원현황보고.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 매출 및 회원 현황 보고 ↗</a></div>
 
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
-    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
       <!-- 매출: 월(좌)/연간(우) 좌우 2열 = 지출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
-      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;min-width:0;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
         <!-- [2026-08-28 GM 지시] 머리줄 「매출」 삭제 — 바로 아래 「월 매출」이 제목을 겸한다. -->
         <!-- 월 | 연간 | 팀별 3열 배치 — [2026-08-28 GM 지시] 접혀 있던 팀별 보기를 카드 오른쪽에 그대로 편다.
              세로를 안 늘리려고 가로를 쓴다. -->
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:10px;margin-top:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:var(--fs-3);font-weight:800;color:var(--text);letter-spacing:-0.01em;">월 매출<span id="salesMonthLabel"></span><span id="heroKpiFreshnessBadge" style="display:none;font-size:var(--fs-1);font-weight:700;color:var(--dim);background:var(--accent-bg,rgba(183,159,138,0.12));border-radius:9px;padding:1px 7px;margin-left:2px;"></span></div>
             <div style="font-size:var(--fs-5);font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
@@ -516,10 +508,10 @@
         </div>
       </div>
       <!-- 지출: 월(좌)/연간(우) 좌우 2열 = 매출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
-      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;min-width:0;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
         <!-- [2026-08-28 GM 지시] 머리줄 「지출」 삭제 — 바로 아래 「월 지출」이 제목을 겸한다. -->
         <!-- 월 | 연간 | 카테고리별 3열 배치 (매출 카드와 동일 구조 · 2026-08-28) -->
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:10px;margin-top:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:var(--fs-3);font-weight:800;color:var(--warm);letter-spacing:-0.01em;">월 지출</div>
             <div style="font-size:var(--fs-5);font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
@@ -2076,7 +2068,7 @@
       </div>
     </div>
 
-    <!-- 📦 콘텐츠 허브 — O1식 박스 링크 그리드 (2026-07-22 GM 지시: M1 단순화 · #m1-dash 인라인 대시보드는 분리했다가 2026-09-14 GM 지시로 cpo/문의현황.html 통합본에 흡수, 강사접수 iframe은 링크 박스로 대체) -->
+    <!-- 📦 콘텐츠 허브 — O1식 박스 링크 그리드 (2026-07-22 GM 지시: M1 단순화 · #m1-dash 인라인 대시보드는 cmo/funnel/콘텐츠문의현황.html로 이관, 강사접수 iframe은 링크 박스로 대체) -->
     <section id="m1-hub" style="margin:18px 0;">
       <a href="cmo/upload/마케팅자동업로드.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:14px 0 12px;padding:16px 20px;background:linear-gradient(135deg,#E9F7F2,#F3EFEC);border:1px solid #D8C9B6;border-radius:14px;text-decoration:none;color:#201F1D;">
         <span style="font-size:var(--fs-6);flex-shrink:0;">🎬</span>
@@ -2086,15 +2078,11 @@
         </span>
         <span style="font-size:var(--fs-2);font-weight:800;color:#201F1D;background:#E9F7F2;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
-      <!-- [2026-09-14 GM 지시] 「콘텐츠 문의 현황」 화면을 지우고 이 자리를 통합본으로 돌렸다.
-           그 화면이 약속한 「발행 → 문의 → 전환」에서 마지막 고리를 이을 방법이 없었다 —
-           문의 원장에 유입 경로가 찍힌 비율이 1% 안쪽이라 어느 발행이 어느 문의를 낳았는지 못 잇는다.
-           문의·등록·전환율 정본은 2026-07-29 에 만들어 08-08 에 기능 이식까지 끝낸 cpo/문의현황.html 이다. -->
-      <a href="cpo/문의현황.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#F3EFEC);border:1px solid #B79F8A;border-radius:14px;text-decoration:none;color:#201F1D;">
+      <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#F2EFEB,#F3EFEC);border:1px solid #B79F8A;border-radius:14px;text-decoration:none;color:#201F1D;">
         <span style="font-size:var(--fs-6);flex-shrink:0;">📊</span>
         <span style="flex:1;">
-          <span style="display:block;font-size:var(--fs-4);font-weight:800;">문의 현황 — 이번 달 문의 · 어디서 왔나 · 몇 명 등록했나</span>
-          <span style="display:block;font-size:var(--fs-2);color:#221F20;margin-top:3px;line-height:1.5;">회원 관리(시포) 쪽 통합 정본. 기간 필터 · 채널별 문의·등록·전환율 · 가입 전환 명단.</span>
+          <span style="display:block;font-size:var(--fs-4);font-weight:800;">콘텐츠 문의 현황 — 채널별 발행·문의·전환</span>
+          <span style="display:block;font-size:var(--fs-2);color:#221F20;margin-top:3px;line-height:1.5;">라이브 대시보드 · 기간 필터 · 채널별 성과 · 인사이트.</span>
         </span>
         <span style="font-size:var(--fs-2);font-weight:800;color:#221F20;background:#F7F2E9;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
@@ -2102,12 +2090,19 @@
 
     <!-- ① 기반 — 회사·전략·브랜드 (2026-07-15 GM 설계: 콘텐츠 방향 연료 · m1-foundation) -->
     <section id="m1-foundation" style="margin:18px 0;">
-      <h3 style="font-size:1.05rem;margin:0 0 4px;"><span class="ico">🧭</span>① 기반 — 브랜드</h3>
-      <!-- [2026-09-14 GM 지시] 회사소개서·전략 로드맵 카드를 여기서 뺐다. 회사를 소개하는 문서는
-           마케팅 화면이 아니라 「시작하기」 홈 아래 회사소개·전략 로드맵 자리에 있다(문서 M0).
-           여기 남는 기반은 콘텐츠를 만들 때 실제로 펴 보는 브랜드 가이드 하나다. -->
-      <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 12px;line-height:1.6;">모든 콘텐츠는 이 기반을 기준으로 만들어집니다. 자동화가 계속 찍혀도 방향이 안 흔들리게 하는 연료.<br>회사소개서·전략 로드맵은 왼쪽 메뉴 <strong>시작하기 → 회사소개 · 전략 로드맵</strong>에 있습니다.</p>
+      <h3 style="font-size:1.05rem;margin:0 0 4px;"><span class="ico">🧭</span>① 기반 — 회사 · 전략 · 브랜드</h3>
+      <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 12px;line-height:1.6;">모든 콘텐츠는 이 기반을 기준으로 만들어집니다. 자동화가 계속 찍혀도 방향이 안 흔들리게 하는 연료.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        <a href="회사문서/1.%20웰페리온_회사소개서_v2.19.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
+          <div style="font-size:1.4rem;margin-bottom:8px;">🏢</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--text);">회사소개서</div>
+          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">우리는 누구인가 · v2.19</div>
+        </a>
+        <a href="회사문서/2.%20웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
+          <div style="font-size:1.4rem;margin-bottom:8px;">📈</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--text);">전략 로드맵</div>
+          <div style="font-size:.8rem;color:var(--dim);margin-top:6px;">누구에게·왜·목표 · v1.4</div>
+        </a>
         <a href="cmo/brand/브랜드가이드.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:14px;padding:20px;background:var(--paper);">
           <div style="font-size:1.4rem;margin-bottom:8px;">🎨</div>
           <div style="font-size:1rem;font-weight:800;color:var(--text);">브랜드 가이드 <span style="font-size:.7rem;font-weight:700;color:var(--text);">통합본</span></div>
@@ -2408,9 +2403,8 @@
     <div style="margin:36px 0 6px;border-top:2px solid var(--accent);padding-top:16px;font-size:1.12rem;font-weight:800;color:var(--text);">⑤ 성과</div>
 
     <!-- 채널별 문의 성과 — M1 요약 (2026-07-24 GM 지시 · 배10046) — 새 대시보드 아님.
-         상세(기간 필터·전환 상세명단·전 유입채널·강습 종목별)의 정본은 cpo/문의현황.html 이다
-         (2026-09-14 GM 지시로 cmo/funnel/콘텐츠문의현황.html 을 지우고 그 통합본으로 모았다).
-         여기는 이번 달 요약만 얹는다.
+         상세(기간 필터·전환 상세명단·전 유입채널·강습 종목별)는 07-22 GM 결정으로 이미 분리된
+         cmo/funnel/콘텐츠문의현황.html 전체 페이지가 정본. 여기는 이번 달 요약만 얹는다.
          데이터 = 같은 실측 소스 재사용(review_queue.json 발행 + funnel_conversion GAS 문의/전환) —
          신규 집계·신규 파일 없음. click_stats 액션은 2026-07-15 GM 결정으로 폐기되어 사용하지 않음.
          도달(reach) = 측정 중(scripts/ig_reach_collector.py → status/ig_reach_ledger.json).
@@ -2418,7 +2412,7 @@
          ※2026-07-25 정정: 여기 '토큰 부재로 미측정'이라 적혀 있었으나 실측 결과 도달은 07-07부터 계속
            쌓이고 있었다(오늘 값 포함). 낡은 서술이 M1 안에서 반응 루프 설명과 정면으로 어긋나던 것을 바로잡음. -->
     <h3 id="m1-perf-summary"><span class="ico">📊</span>채널별 문의 성과 <span style="font-size:var(--fs-2);color:var(--dim);font-weight:400;">— 이번 달 요약 · 라이브</span></h3>
-    <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 12px;line-height:1.6;">콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근)이 데려온 문의 실측 요약입니다. 기간 필터·전환 상세 명단·전 유입채널(콘텐츠 밖 포함)·강습 종목별 문의는 <a href="cpo/문의현황.html" target="_blank" style="color:var(--text);font-weight:600;">문의 현황 전체보기 →</a></p>
+    <p style="font-size:var(--fs-2);color:var(--dim);margin:0 0 12px;line-height:1.6;">콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근)이 데려온 문의 실측 요약입니다. 기간 필터·전환 상세 명단·전 유입채널(콘텐츠 밖 포함)·강습 종목별 문의는 <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--text);font-weight:600;">콘텐츠 문의 현황 전체보기 →</a></p>
     <div class="callout tip" style="margin-bottom:14px;"><strong>도달 = 측정 중</strong> — 인스타 게시물이 몇 명에게 닿았는지는 매일 자동 수집됩니다(<code>scripts/ig_reach_collector.py</code> · 정본 <code>status/ig_reach_ledger.json</code>). 다만 <strong>노출(같은 사람이 여러 번 본 횟수)은 게시물 유형 제약으로 수집되지 않습니다</strong> — 없는 분모를 지어내지 않습니다. 아래 표는 <strong>발행 → 문의 → 전환</strong> 구간의 실측입니다.</div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
@@ -2467,7 +2461,7 @@
         var rq=Array.isArray(res[0])?res[0]:[];
         var fc=(res[1]&&res[1].ok)?res[1]:null;
 
-        // 발행 그룹핑(콘텐츠 단위, published_at 대표일자 기준) — 상세 판정근거 = 이 규칙을 처음 적은 옛 화면(콘텐츠문의현황.html·2026-09-14 삭제)의 저장 이력 참고
+        // 발행 그룹핑(콘텐츠 단위, published_at 대표일자 기준) — 상세 판정근거 = 콘텐츠문의현황.html 주석 참고(같은 규칙 재사용)
         var recognized=rq.filter(function(it){return it&&it.status==='발행완료'&&canon(it.channel);});
         var groups={},order=[];
         recognized.forEach(function(it){
@@ -2572,7 +2566,7 @@
           });
       }).catch(function(){
         var wrap=document.getElementById('m1-perf-table-wrap');
-        if(wrap)wrap.innerHTML='<div style="color:var(--dim);font-size:var(--fs-2);padding:10px 0;">채널별 성과 집계 실패 — <a href="cpo/문의현황.html" target="_blank" style="color:var(--text);">문의 현황 전체보기</a>에서 확인하세요.</div>';
+        if(wrap)wrap.innerHTML='<div style="color:var(--dim);font-size:var(--fs-2);padding:10px 0;">채널별 성과 집계 실패 — <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--text);">콘텐츠 문의 현황 전체보기</a>에서 확인하세요.</div>';
       });
     })();
     </script>
@@ -6653,10 +6647,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <p class="lead">웰페리온 재무의 안내데스크입니다. AI CFO는 <strong>재무 안정성 · 지출 관리 · 운영 효율</strong> 3대 KPI를 담당하며, 대시보드의 모든 수치는 현장 원장(매출 보고·페이롤·지출품의)에서 실시간으로 집계됩니다 — 사람이 옮겨 적는 단계가 없습니다.</p>
 
     <div style="margin:16px 0;display:flex;gap:10px;flex-wrap:wrap;">
-      <!-- 매출현황.html 은 ERP 모듈 바로가기(2026-08-26 삭제)에만 걸려 있던 유일 링크라 여기로 옮겼다 — 유실 0. -->
-      <a href="cfo/finance/매출현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 20px;background:var(--paper);border:1px solid var(--border);color:var(--text);font-size:var(--fs-2);font-weight:700;border-radius:10px;text-decoration:none;">📈 매출현황(구)</a>
+      <!-- 매출현황(구)·지출현황(구)는 2026-09-14 AWS 이관 3차로 은퇴 — 두 화면은 운영매출&지출 현황 안내 페이지로 바뀜(매니저 결정). -->
       <a href="cfo/finance/매출지출현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent);color:#201F1D;font-size:var(--fs-3);font-weight:700;border-radius:10px;text-decoration:none;">💰 운영매출&amp;지출 현황 <span style="font-weight:400;font-size:var(--fs-2);opacity:.85">관리자용 · 비밀번호</span></a>
-      <a href="cfo/finance/매출지출현황.html?req=1" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent-bg);color:var(--text);font-size:var(--fs-3);font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.35);">🛒 구매요청 <span style="font-weight:400;font-size:var(--fs-2);opacity:.85">전 직원 제출 · 승인자 결재 · 자산관리 한 화면</span></a>
+      <a href="cfo/finance/지출품의.html" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:var(--accent-bg);color:var(--text);font-size:var(--fs-3);font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(183,159,138,0.35);">🛒 구매요청 <span style="font-weight:400;font-size:var(--fs-2);opacity:.85">전 직원 제출 · 내 현황 (승인·자산관리는 관리자 화면 구매요청 탭)</span></a>
     </div>
 
     <h3><span class="ico">🛒</span>구매요청(지출품의) 이용 가이드 — 전 직원</h3>
