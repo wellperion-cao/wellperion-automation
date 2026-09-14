@@ -114,9 +114,15 @@ _TAIL = re.compile(r"\s*\(.*$")
 
 
 def norm(s) -> str:
-    """제목 정규화 — 꾸밈말·꼬리(—이후·괄호이후)를 떼고 공백·괄호·기호를 걷어낸 한글/영문/숫자만."""
-    s = _TAIL.sub("", _DECOR.sub("", str(s or "")))
-    return re.sub(r"[^0-9A-Za-z가-힣]+", "", s)
+    """제목 정규화 — 꾸밈말을 떼고 공백·괄호·기호를 걷어낸 한글/영문/숫자만.
+    포함·유사도(ratio) 비교에 쓴다 — 괄호 속 문구도 남겨 둬야 순서 다른 같은 이름을 잡는다."""
+    return re.sub(r"[^0-9A-Za-z가-힣]+", "", _DECOR.sub("", str(s or "")))
+
+
+def norm_exact(s) -> str:
+    """완전일치 전용 정규화 — 꾸밈말에 더해 괄호 꼬리(부제·상세 설명)까지 뗀다(2차 2026-09-14).
+    ratio 비교에는 안 쓴다 — 거기 섞으면 곁가지 항목까지 문턱을 넘겨 엉뚱한 짝이 된다(실측 확인)."""
+    return re.sub(r"[^0-9A-Za-z가-힣]+", "", _TAIL.sub("", _DECOR.sub("", str(s or ""))))
 
 
 def as_date(v):
@@ -157,7 +163,7 @@ def candidates(item_name: str, item_date, pool: list) -> list:
       ratio 닮음    낱말 순서만 다른 같은 이름(포함이 아니다 — 브로제이 SRS 0.947)
       lenr  길이비  후보가 일정 제목의 토막일 뿐인 짝을 거른다(「종합접수처」 0.45 · 「제2회 웰림픽」 0.33)
     """
-    a = norm(item_name)
+    a, ae = norm(item_name), norm_exact(item_name)
     out = []
     if len(a) < MIN_KEY:
         return out
@@ -165,15 +171,16 @@ def candidates(item_name: str, item_date, pool: list) -> list:
         b = c["title_norm"]
         if len(b) < MIN_KEY:
             continue
+        exact = len(ae) >= MIN_KEY and ae == norm_exact(c["title"])
         cont = (a in b) or (b in a)
         ratio = SequenceMatcher(None, a, b).ratio()
-        if not (cont or ratio >= SIM_SOFT):
+        if not (cont or ratio >= SIM_SOFT or exact):
             continue
         lenr = min(len(a), len(b)) / max(len(a), len(b))
-        if lenr < LEN_MIN:
+        if lenr < LEN_MIN and not exact:
             continue  # 후보가 제목의 토막일 뿐 — 판정필요로도 안 올린다(종합접수처류)
         out.append(dict(c, gap=gap_days(item_date, c["span"]), ratio=ratio, cont=cont,
-                        exact=(a == b), lenr=lenr))
+                        exact=exact, lenr=lenr))
     return out
 
 
