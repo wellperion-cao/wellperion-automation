@@ -20,6 +20,7 @@ app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문�
 """
 import json
 import os
+import re
 import sys
 
 from fastapi import APIRouter, HTTPException, Request
@@ -30,6 +31,15 @@ from sync_proc import db, load_env  # noqa: E402  — 같은 env·같은 DB
 SOURCE = "sheet-mirror"
 router = APIRouter(prefix="/api/proc")
 load_env()
+
+_ACTIVE_STATUS = {"품의", "검토", "정산"}  # GAS ACTIVE 상태 — 기간필터 대상 아님(procurement.js listItems)
+_DATE_RE = re.compile(r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})")
+
+
+def _date_num(s):
+    """GAS dateNum() 그대로 — '2026. 9. 14' 같은 날짜 칸을 YYYYMMDD 정수로."""
+    m = _DATE_RE.search(str(s or ""))
+    return (int(m.group(1)) * 10000 + int(m.group(2)) * 100 + int(m.group(3))) if m else 0
 
 
 @router.get("/health")
@@ -74,6 +84,18 @@ def proc_list(request: Request):
     if not total:
         raise HTTPException(502, "품의 원장이 비어 있다 — sync_proc.py 를 먼저 돌린다")
     data = [json.loads(r["data"]) for r in rows]
+    from_n, to_n = _date_num(q.get("from")), _date_num(q.get("to"))
+    if from_n or to_n:  # GAS listItems 의 done 분기 기간필터 그대로 — active 상태는 대상 아님
+        def _in_range(d):
+            if d.get("상태") in _ACTIVE_STATUS:
+                return True
+            dn = _date_num(d.get("날짜"))
+            if from_n and dn < from_n:
+                return False
+            if to_n and dn > to_n:
+                return False
+            return True
+        data = [d for d in data if _in_range(d)]
     if q.get("images") == "0":
         data = [dict(d, 이미지="") for d in data]
     return {"ok": True, "mode": mode, "count": len(data), "data": data, "_source": SOURCE}
@@ -93,11 +115,19 @@ def selftest():
     try:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
-        upsert(conn, [{"row": 10, "번호": "1", "상태": "승인", "물품": "가", "이미지": "data:image/png;base64,AA"},
-                      {"row": 11, "번호": "2", "상태": "완료", "물품": "나", "이미지": ""}], "t0", "all")
-        upsert(conn, [{"row": 12, "번호": "", "상태": "검토", "물품": "다", "이미지": "http://x/y.png"}], "t0", "active")
+        upsert(conn, [{"row": 10, "번호": "1", "상태": "승인", "물품": "가", "날짜": "2026. 1. 10", "이미지": "data:image/png;base64,AA"},
+                      {"row": 11, "번호": "2", "상태": "완료", "물품": "나", "날짜": "2026. 9. 5", "이미지": ""}], "t0", "all")
+        upsert(conn, [{"row": 12, "번호": "", "상태": "검토", "물품": "다", "날짜": "2026. 9. 12", "이미지": "http://x/y.png"}], "t0", "active")
         d = proc_list(_Req({"mode": "all"}))                     # GAS all = 지난 이력만(진행중은 안 낀다)
         assert d["count"] == 2 and [x["물품"] for x in d["data"]] == ["가", "나"], d
+        d = proc_list(_Req({"mode": "all", "from": "2026-09-01", "to": "2026-09-14"}))
+        assert d["count"] == 1 and d["data"][0]["물품"] == "나", d           # 요청서 실측과 같은 조건
+        d = proc_list(_Req({"mode": "all", "from": "2026-01-01"}))          # to 없이 from 만
+        assert d["count"] == 2, d
+        d = proc_list(_Req({"mode": "all", "from": "2099-01-01"}))          # 걸리는 게 없음
+        assert d["count"] == 0, d
+        d = proc_list(_Req({"from": "2026-09-01", "to": "2026-09-14"}))     # active 상태는 기간필터 대상 아님(GAS 그대로)
+        assert d["count"] == 1 and d["data"][0]["물품"] == "다", d
         d = proc_list(_Req({}))                                  # 기본 = active(진행중)
         assert d["count"] == 1 and d["data"][0]["물품"] == "다", d
         d = proc_list(_Req({"mode": "ledger"}))                  # 우리 원장 전체 = 둘의 합
