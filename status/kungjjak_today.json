@@ -21,11 +21,11 @@
           "ref": "GM-20260914-02",
           "no": "02",
           "got": "중간관리자 업무 화면 재구조(책임 4인·평가 기준·진척·잘한/못한) + 3인 요청 정리 → 승인 뒤 중간관리자방 전달 · 화요일 15시 주간미팅 고정 · 중복 SSOT 정리 전달",
-          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "did": "화면 저장·배포 · 실장/소장 카톡 2통·나우열M 텔레그램 1통 발신 ok · 중복 SSOT 2쌍 전달",
           "start": "09:24",
-          "end": "09:27",
-          "minutes": 3,
-          "upload": "기록만",
+          "end": "10:10",
+          "minutes": 45,
+          "upload": "발송 (저장 대상 아님)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -144,13 +144,19 @@
           "area": "작업",
           "event": "260925 3라인 시범 경과보고 삭제 — 보고서 대신 페이지에서 정리 (GM 지시 2026-09-14)",
           "detail": "커밋 996a4c6b1b · 배 11401"
+        },
+        {
+          "time": "10:01",
+          "area": "작업",
+          "event": "중간관리자 화면 — 매출 진척 막대(실장 회원권+옵션 · 파트너팀 강습) 켬 (GM 승인 2026-09-14)",
+          "detail": "커밋 bb06503562 · 배 11401"
         }
       ],
       "count": 9,
       "done": 9,
       "open": 0,
-      "avg_minutes": 4,
-      "work_count": 5,
+      "avg_minutes": 9,
+      "work_count": 6,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -211,13 +217,13 @@
           "ref": "GM-20260914-2006",
           "no": "06",
           "got": "내가 개인계정으로 로그인하니까 ERP플랫폼관리 로그인이 되네?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:06",
+          "minutes": 10,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -244,31 +250,28 @@
           "area": "작업",
           "event": "gm_wording_guard: Stop 훅 타이밍 오탐 수정 — user 먼저면 미기록 상태로 판정해 검사 건너뜀",
           "detail": "커밋 bde01f8ceb · 배 12528"
+        },
+        {
+          "time": "10:03",
+          "area": "ERP최종점검",
+          "event": "배포 전 최종점검 치명 9건 수리·배포",
+          "detail": "가입 자동활성 폐지 · 카드 밖 경로/API 권한 판정(X-Erp-Allowed) · 쓰기 관문 action 권한 · 이벤트루프 차단 제거 · nginx 60초→130초 · 회원 화면 idem · 401/403 GAS 폴백 금지 · 접수 삭제 되밀기·수령 표식 · 되밀기 잠금 · 콘솔 조용한 실패 · 오픈 리다이렉트 — 서버 배포·직원 세션 실측 완료 · 카드 01·03·04 GM 승인·배포"
+        },
+        {
+          "time": "10:03",
+          "area": "ERP플랫폼",
+          "event": "플랫폼관리 페이지 병합 개편 — 모듈 묶음 · 모듈 활성화 셋팅 · AI 토큰 현황(계정별·역할별) 페이지 내 병합",
+          "detail": "b019408cc6 배포 · 라이브 반영 확인"
         }
       ],
       "count": 5,
-      "done": 4,
-      "open": 1,
-      "avg_minutes": 2,
-      "work_count": 4,
+      "done": 5,
+      "open": 0,
+      "avg_minutes": 4,
+      "work_count": 6,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-2006",
-          "no": "06",
-          "got": "내가 개인계정으로 로그인하니까 ERP플랫폼관리 로그인이 되네?",
-          "did": "",
-          "start": "09:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -278,8 +281,20 @@
           "ref": "GM-20260914-3001",
           "no": "01",
           "got": "우리 ERP페이지에서 중간 정렬을 하니까 뭔가 안맞는데, 모바일 or PC 겸용으로해서 페이지 구성좀 해줄래? 가능하면 좌측 정렬 사이즈 최대한으로 하고 화면이 축소되면 그 화면에 맞추는 반응형 페이지로 만들어볼까?",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:42",
+          "end": "10:02",
+          "minutes": 20,
+          "upload": "✅ 배포 (a44fec0cb)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260914-3002",
+          "no": "02",
+          "got": "요청해서 작업하면 될 것 같은데? 협업 가능하잖아?",
+          "did": "",
+          "start": "10:06",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -311,29 +326,101 @@
           "area": "작업",
           "event": "scheduled engagement collect (danggn+blog+ig ledger)",
           "detail": "커밋 ebebd0217f · 배 11425"
+        },
+        {
+          "time": "10:01",
+          "area": "작업",
+          "event": "ERP 화면 좌측 정렬·폭 최대·모바일 반응형 (GM 지시 2026-09-14)",
+          "detail": "커밋 34fed70209 · 배 11425"
+        },
+        {
+          "time": "10:01",
+          "area": "작업",
+          "event": "파트너 산출물 자리 — ERP 회사 관리자 모듈에 한 화면(GM 지시 2026-09-14) · 다캠 홈 디자인은 시모 배2590",
+          "detail": "커밋 318500b7d4 · 배 11425"
+        },
+        {
+          "time": "10:02",
+          "area": "ERP 화면 레이아웃",
+          "event": "좌측 정렬·폭 최대·모바일 반응형 (GM 지시 2026-09-14)",
+          "detail": "화면 24개 수리 · 검사기 scripts/layout_left_full.py 신설 · PC 1440·모바일 390 실측 가로 넘침 0 · 저장·배포 완료"
         }
       ],
-      "count": 1,
-      "done": 0,
+      "count": 2,
+      "done": 1,
       "open": 1,
-      "avg_minutes": null,
-      "work_count": 4,
+      "avg_minutes": 20,
+      "work_count": 7,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260914-3001",
-          "no": "01",
-          "got": "우리 ERP페이지에서 중간 정렬을 하니까 뭔가 안맞는데, 모바일 or PC 겸용으로해서 페이지 구성좀 해줄래? 가능하면 좌측 정렬 사이즈 최대한으로 하고 화면이 축소되면 그 화면에 맞추는 반응형 페이지로 만들어볼까?",
+          "ref": "GM-20260914-3002",
+          "no": "02",
+          "got": "요청해서 작업하면 될 것 같은데? 협업 가능하잖아?",
           "did": "",
-          "start": "09:42",
+          "start": "10:06",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 16
+          "waited": 4
+        }
+      ],
+      "repeats": []
+    },
+    "cpo": {
+      "nick": "시포",
+      "items": [
+        {
+          "ref": "GM-20260914-4001",
+          "no": "01",
+          "got": "지금 매출 & 회원 현황보고 자동화 계속 이야기했는데, 디테일한 부분은 아예 못잡네, 브로제이 API 연동까지 되었으면 어렵지 않아야할 것 같은데 항목값들 한번씩 전체적으로 다 점검해보고, 문제있는 것들 보완해줘 시…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:07",
+          "end": "10:09",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260914-4002",
+          "no": "02",
+          "got": "2페이지 9월 13일자 기준인데, 12일 등록 현황 및 이달 등록 내역을 보여주는건 아닌 것 같아, 그냥 그대로 13일자 멤버십 등록 내역 + 강습(성인+유소년) 등록 내역 이렇게 하면 될 것 같은데? 그리고 문의에…",
+          "did": "",
+          "start": "10:09",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
+      "work": [],
+      "count": 2,
+      "done": 1,
+      "open": 1,
+      "avg_minutes": 1,
+      "work_count": 0,
+      "missed": [],
+      "unclosed": [],
+      "just": [
+        {
+          "ref": "GM-20260914-4002",
+          "no": "02",
+          "got": "2페이지 9월 13일자 기준인데, 12일 등록 현황 및 이달 등록 내역을 보여주는건 아닌 것 같아, 그냥 그대로 13일자 멤버십 등록 내역 + 강습(성인+유소년) 등록 내역 이렇게 하면 될 것 같은데? 그리고 문의에…",
+          "did": "",
+          "start": "10:09",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
         }
       ],
       "repeats": []
@@ -352,6 +439,30 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260914-5002",
+          "no": "02",
+          "got": "2532 매출 및 회원현황보고  12일자도 안맞는데? 합계는 맞는데, 회원권옵션에는 매출 없고, 매출현황에는 잘 나타나 있네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:04",
+          "end": "10:05",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260914-5003",
+          "no": "03",
+          "got": "회장님 문서 30장은 링크를 띄워줘 어디에있다는거야?",
+          "did": "",
+          "start": "10:05",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -380,14 +491,29 @@
           "detail": "커밋 f3d74feedc · 배 12532"
         }
       ],
-      "count": 1,
-      "done": 1,
-      "open": 0,
-      "avg_minutes": 16,
+      "count": 3,
+      "done": 2,
+      "open": 1,
+      "avg_minutes": 8,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260914-5003",
+          "no": "03",
+          "got": "회장님 문서 30장은 링크를 띄워줘 어디에있다는거야?",
+          "did": "",
+          "start": "10:05",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 5
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -433,8 +559,20 @@
           "ref": "GM-20260914-9004",
           "no": "04",
           "got": "이런 산출물들은 ERP에 따로 있어야하고, 디자인 자신없으면 시모한테 부탁해 너무 검은색에 녹색이라 가독성 및 직관성이 떨어지네",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:57",
+          "end": "10:03",
+          "minutes": 5,
+          "upload": "✅ 배포 (ba3df6ca7)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260914-9005",
+          "no": "05",
+          "got": "홈페이지 이렇게 만든다 그러면 욕 엄청 먹을 것 같은데? 적어도 웰페리온 홈페이지 초안이나 회사소개서보단 좋게 나와야할 것 같은데?",
+          "did": "",
+          "start": "10:04",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -456,8 +594,8 @@
           "detail": "커밋 87f0dba874 · 배 11305"
         }
       ],
-      "count": 4,
-      "done": 3,
+      "count": 5,
+      "done": 4,
       "open": 1,
       "avg_minutes": 5,
       "work_count": 2,
@@ -465,18 +603,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260914-9004",
-          "no": "04",
-          "got": "이런 산출물들은 ERP에 따로 있어야하고, 디자인 자신없으면 시모한테 부탁해 너무 검은색에 녹색이라 가독성 및 직관성이 떨어지네",
+          "ref": "GM-20260914-9005",
+          "no": "05",
+          "got": "홈페이지 이렇게 만든다 그러면 욕 엄청 먹을 것 같은데? 적어도 웰페리온 홈페이지 초안이나 회사소개서보단 좋게 나와야할 것 같은데?",
           "did": "",
-          "start": "09:57",
+          "start": "10:04",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 6
         }
       ],
       "repeats": []
