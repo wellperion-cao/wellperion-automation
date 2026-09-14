@@ -1391,20 +1391,25 @@ function apiFor(action){return SALES_ACT[action]?SALES_API:PROC_API;}
    화면 로직은 한 줄도 안 바뀐다. 쓰기가 ok 면 서버가 proc_items 를 즉시 다시 떠서
    제출·승인 직후 목록이 바로 최신이다(종전: GAS 왕복 + cron 10분 거울).
 
-   ⚠️ mode=done 은 아직 GAS 다. 화면이 from/to 로 기간을 거르는데 서버 API 에 그 필터가
-      없다 — 실측(2026-09-14): GAS done 전체 326건, 2026-09-01~14 로 거르면 0건.
-      그대로 서버로 보내면 326건이 잘못 올라온다. 서버에 from/to 가 생기면 그때 옮긴다.
+   mode=done 도 2026-09-14 13:56 이관 완료 — 서버에 from·to 가 붙었다(시토). 화면 done → 서버 all.
 
    실패·미로그인(401)·비ERP 도메인은 전부 종전 GAS 로 조용히 폴백한다 — erp_write.js 와 같은 규칙. */
 var ERP_READ_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 function _procListSrv(extra){
-  var q="mode=active"+((extra&&extra.noimg)?"&images=0":"");
+  /* 화면 mode 는 active/done, 서버는 active/all — done=all 로 옮긴다(시토 확인: GAS all 과 같은 집합).
+     from·to 는 2026-09-14 13:56 서버 반영분. GAS 와 같은 칸(1열 날짜)·같은 정수 비교라 결과가 같다
+     (대조: 무필터 326=326 · 연초~오늘 326 · 9/1~9/14 0=0). 빈 문자열은 안 붙인다 — 서버가 전량을 주게. */
+  var m=((extra&&extra.mode)==="done")?"all":"active";
+  var q="mode="+m;
+  if(extra&&extra.from)q+="&from="+encodeURIComponent(extra.from);
+  if(extra&&extra.to)q+="&to="+encodeURIComponent(extra.to);
+  if(extra&&extra.noimg)q+="&images=0";
   return fetch("/api/proc/list?"+q,{cache:"no-store",credentials:"same-origin"})
     .then(function(r){ if(!r.ok)throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(j){ if(!(j&&j.ok&&j.data))throw new Error("응답 모양 불일치"); return j; });
 }
 function _srvListable(action,extra){
-  return action==="list"&&ERP_READ_ON&&extra&&extra.mode==="active"&&!extra.from&&!extra.to;
+  return action==="list"&&ERP_READ_ON&&extra&&(extra.mode==="active"||extra.mode==="done");
 }
 var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,proc_summary:1};   // 읽기 전용 집계 = 서버 거울 있음
 /* 거울 게이트웨이가 액션마다 다르다 — proc_summary 는 api_sales.py 의 proc 쪽에 있다(salesops 아님).
