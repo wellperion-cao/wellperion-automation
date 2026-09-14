@@ -12,6 +12,7 @@
 """
 import glob
 import json
+import hmac
 import os
 import re
 
@@ -28,7 +29,7 @@ EMAIL_RE = re.compile(r"^[A-Za-z0-9_.+-]+@[A-Za-z0-9-]+\.[A-Za-z0-9-.]+$")
 def _check_key(request: Request):
     want = os.environ.get("ERP_TOKEN_PUSH_KEY")
     got = request.headers.get("x-token-push-key", "")
-    if not want or got != want:
+    if not want or not hmac.compare_digest(got, want):   # 시간차 비교 방지
         raise HTTPException(403, "열쇠 불일치")
 
 
