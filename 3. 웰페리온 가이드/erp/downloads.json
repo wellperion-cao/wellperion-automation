@@ -1,6 +1,6 @@
 {
   "_doc": "ERP 모듈홈 「다운로드」 탭 목록. ★회사 자료(회원·매출·인사·점검 원장)는 여기에 올리지 않는다 — 설치·도구 파일만. 이 폴더(/erp/launchers/)는 로그인 없이 열리는 공개 통로라, 비밀값이 든 파일을 올리면 그대로 새어 나간다.",
-  "_규칙": "항목 추가 = 파일을 erp/launchers/ 에 두고 여기에 한 줄 적는다. 화면(index.html)은 고치지 않는다. step = 설치 순서(1=AI 먼저 · 2=그 위에 얹는 도구). needs_ai = 2단계 항목이 1단계(AI PC 설치 꾸러미 또는 AI 서포트 — 둘 중 하나) 를 먼저 요구하면 true. module = 이 파일이 켜는 모듈 이름(어느 모듈인지 판단이 안 서면 '공통').",
+  "_규칙": "항목 추가 = 파일을 erp/launchers/ 에 두고 여기에 한 줄 적는다. 화면(index.html)은 고치지 않는다. step = 설치 순서(1=AI 먼저 · 2=그 위에 얹는 도구). needs_ai = 2단계 항목이 1단계(AI PC 설치 꾸러미 또는 AI 서포트 — 둘 중 하나) 를 먼저 요구하면 true. module = 이 파일이 켜는 모듈 이름(어느 모듈인지 판단이 안 서면 '공통'). module_id = 이 파일이 붙을 모듈 카드 id(erp/modules.json). 공통 설치물은 비워 둔다.",
   "downloads": [
     {
       "id": "home-pc-setup",
@@ -30,7 +30,8 @@
       "for": "C-Level · 영업",
       "step": 2,
       "needs_ai": true,
-      "module": "마케팅 자동화"
+      "module": "마케팅 자동화",
+      "module_id": "cmo-funnel-월간마케팅보고서"
     },
     {
       "id": "guide-pack",
@@ -50,7 +51,8 @@
       "for": "C-Level · 관리자",
       "step": 2,
       "needs_ai": true,
-      "module": "카톡 전송"
+      "module": "카톡 전송",
+      "module_id": "cto-automation-카톡전송관리"
     }
   ]
 }

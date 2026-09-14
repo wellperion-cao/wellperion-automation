@@ -390,6 +390,20 @@
   .guide-main{padding:12px 16px 40px;}
   html.embed .adminbar{display:none;}
   html.embed .guide-main{padding-top:4px;}
+
+  /* 콘솔(ERP플랫폼관리) 안에 끼워 띄울 때는 그 콘솔의 색을 쓴다 (GM 지적 2026-09-14
+     「이것만 디자인이 별개로 노는 것 같아」).
+     이 화면은 원래 베이지·브라운(읽는 문서 톤)이고 콘솔은 청록(일하는 화면 톤)이라,
+     같은 창 안에서 오른쪽 판만 색이 뒤집혔다. 값은 erp/admin/index.html :root 그대로다 —
+     주소로 직접 열면 원래 문서 톤이 그대로 나온다(두 쓰임을 다 살린다). */
+  html.embed{
+    --bg:#EDF3F3; --paper:#fff; --sidebar:#F4F8F8; --paper-soft:#F4F8F8;
+    --text:#0F1E1E; --text-soft:#3A4A4A; --dim:#657878; --dim-soft:#95A6A6;
+    --accent:#0E9488; --accent-hover:#0A6E66; --accent-bg:rgba(14,148,136,0.10);
+    --accent-line:#0E9488;
+    --border:rgba(12,40,40,0.12); --border-strong:rgba(12,40,40,0.22); --gray-bg:#F4F8F8;
+  }
+  html.embed body{font-size:14px;}
   @media(max-width:640px){ .adminbar{padding:0 12px;} .guide-main{padding:12px 12px 32px;} }
 </style>
 </head>

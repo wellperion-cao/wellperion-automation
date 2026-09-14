@@ -432,7 +432,79 @@ def build():
     items.sort(key=lambda m: (0, core_rank[m["id"]], "") if m["core"]
                else (1, appgroup_rank.get(m["appgroup"], 99), order.get(m["role"], 99), m["name"]))
     missing_automation = attach_asset_ledger(items)
+    attach_bundle(items)
     return items, missing_automation
+
+
+# ── 모듈 한 장으로 묶기 (GM 지시 2026-09-14) ──────────────────────────────
+# GM: "모듈 메뉴칸도 따로 쓸 수 있는 앱 이런건 모듈 페이지 따로 만들어줘 // 그 안에
+#      모듈 다운로드나 모듈 가이드 등을 만들어서 하나의 묶음으로 // 권한까지도 정리"
+# 흩어져 있던 셋(화면·다운로드 파일·가이드 문서)과 권한을 카드 한 장에 붙인다.
+# 새 SSOT 를 만들지 않는다 — 이미 있는 세 파일에서 계산만 한다(약속 L01·L21).
+#   erp/downloads.json(설치 파일) · 같은 modules.json 안의 문서 카드 · account_perms.json(권한 정본)
+
+def attach_bundle(items):
+    _attach_downloads(items)
+    _attach_guides(items)
+    _attach_accounts(items)
+
+
+def _attach_downloads(items):
+    """설치·도구 파일을 그 모듈 카드에 붙인다. 짝은 downloads.json 의 module_id 가 정한다."""
+    dl = read_json("3. 웰페리온 가이드/erp/downloads.json").get("downloads", [])
+    by_mid = {}
+    공통 = []
+    for d in dl:
+        얇게 = {"id": d.get("id"), "name": d.get("name"), "desc": d.get("desc"),
+                "file": d.get("file"), "for": d.get("for"), "step": d.get("step")}
+        mid = d.get("module_id")
+        if mid:
+            by_mid.setdefault(mid, []).append(얇게)
+        elif (d.get("module") or "") == "공통":
+            공통.append(얇게)
+    for m in items:
+        묶음 = list(by_mid.get(m["id"], []))
+        if 묶음:                       # 그 모듈 전용 파일이 있을 때만 공통 설치물을 같이 보인다
+            묶음 += 공통               # (쓰려면 먼저 깔아야 하는 것들이라 같은 자리에 둔다)
+        m["downloads"] = 묶음
+
+
+def _attach_guides(items):
+    """읽는 문서(doc)를 그 문서가 설명하는 화면에 붙인다.
+
+    짝짓는 법은 둘뿐이다 — 문서 id 가 그 모듈 id 로 시작하거나(cpo-member-lesson →
+    cpo-member-lesson-guide), 문서 이름 안에 모듈 이름이 그대로 들어 있거나.
+    어림짐작으로 더 넓히지 않는다 — 엉뚱한 문서가 붙으면 안 붙느니만 못하다.
+    """
+    문서 = [m for m in items if m.get("doc")]
+    앱 = [m for m in items if not m.get("doc")]
+    for m in 앱:
+        붙일것 = []
+        for d in 문서:
+            이름겹침 = len(m["name"]) >= 3 and m["name"] in (d.get("name") or "")
+            if d["id"].startswith(m["id"] + "-") or 이름겹침:
+                붙일것.append({"id": d["id"], "name": d["name"], "path": d["path"]})
+        m["guides"] = 붙일것
+
+
+def _attach_accounts(items):
+    """이 화면을 열 수 있는 계정. 정본 = server/erp_auth/account_perms.json.
+
+    판정은 그 파일이 스스로 적어 둔 규칙 그대로다 —
+    all=전체 허용 · deny=그중 빼는 것(거부 우선) · modules=이 목록만 허용.
+    여기서 규칙을 새로 만들지 않는다(두 곳이 다르게 판정하면 화면이 거짓말을 한다).
+    """
+    perms = read_json("server/erp_auth/account_perms.json").get("accounts", {})
+    for m in items:
+        열수있는계정 = []
+        for 주소, p in perms.items():
+            if p.get("all"):
+                if m["id"] in (p.get("deny") or []):
+                    continue
+                열수있는계정.append(주소)
+            elif m["id"] in (p.get("modules") or []):
+                열수있는계정.append(주소)
+        m["accounts"] = 열수있는계정
 
 
 def write(items):

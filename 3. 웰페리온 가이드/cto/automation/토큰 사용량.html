@@ -382,6 +382,9 @@ details.fold .fold-body{padding:0 20px 18px;}
       // 세 줄짜리 표가 카드 하나를 통째로 먹었다. 쓴 계정만 세우고 안 쓴 계정은 한 줄로 붙인다.
       var used = keys.filter(function(k){ return bySrc[k]; });
       var unused = keys.filter(function(k){ return !bySrc[k]; });
+      // 안 쓰는 계정에 매달 나가는 돈 — 구독료는 billing.accounts_usd 가 정본이다.
+      var perAcct = ((d.billing || {}).accounts_usd) || {};
+      var unusedUsd = unused.reduce(function(s, k){ return s + (perAcct[k] || 0); }, 0);
       acctHtml = '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;">'
         + (used.length
             ? used.map(function(k){
@@ -389,7 +392,17 @@ details.fold .fold-body{padding:0 20px 18px;}
                   + ' <span class="dim">세션 ' + fmt(bySrc[k]) + '</span></div>'; }).join('')
             : '<div class="dim">아직 어느 계정에도 기록이 없다</div>')
         + '</div>'
-        + (unused.length ? '<div class="note">아직 기록 없음: ' + esc(unused.join(' · ')) + '</div>' : '')
+        // 안 쓰는 계정은 "기록 없음" 한 줄로 흘려보내면 안 된다 — 구독료는 매달 그대로 나간다.
+        // GM 물음 2026-09-14 「info랑 lessons는 왜 없어? 로그인 따로 해줘야해?」 에 대한 답을
+        // 화면이 스스로 말하게 한다(물어봐야 아는 화면이면 화면이 아니다).
+        + (unused.length
+            ? '<div class="note" style="margin-top:8px;">'
+              + '안 쓰는 계정 — ' + esc(unused.join(' · '))
+              + (unusedUsd ? ' · 매달 $' + unusedUsd + ' 가 그대로 나간다' : '')
+              + '<br>기록은 <b>그 계정으로 로그인해 대화를 연 세션</b>만 쌓인다. 창 하나는 계정 하나다 —'
+              + ' 나눠 쓰려면 그 계정으로 따로 로그인해 창을 연다(<code>/login</code>).'
+              + '</div>'
+            : '')
         + '<div class="note">' + esc(acc.tracked_since || '') + ' 이전 대화는 계정 구분이 로그에 없어 세지 못한다.</div>';
     }
     document.getElementById('acctBody').innerHTML = acctHtml;

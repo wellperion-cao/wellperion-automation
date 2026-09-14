@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모듈 — 웰페리온 ERP</title>
+<link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
+<link rel="stylesheet" href="brand/tenant-wellperion.css">
+<style>
+  /* 색 정본 = brand/tenant-wellperion.css. 모듈 홈(erp/index.html)과 같은 값을 쓴다 —
+     같은 창에서 오가는 화면이라 톤이 갈리면 다른 시스템처럼 보인다(GM 지적 2026-09-14). */
+  html{color-scheme:light dark;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  [hidden]{display:none !important;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;
+       -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+
+  .topbar{display:flex; align-items:center; gap:12px; padding:0 16px; height:48px;
+          position:sticky; top:0; z-index:30; background:var(--paper);
+          border-bottom:1px solid var(--border);}
+  .topbar .home{font-size:13px; color:var(--dim); text-decoration:none;}
+  .topbar .home:hover{color:var(--accent);}
+  .topbar .crumb{font-weight:600; font-size:13.5px;}
+
+  /* 좌측 정렬 · 폭 최대 (GM 상시 지시 2026-07-02 · scripts/layout_left_full.py 가 검사한다) */
+  .wrap{max-width:100%; margin:0; padding:16px 20px 56px;}
+
+  .head{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
+  h1{font-size:20px; font-weight:700; letter-spacing:-0.01em;}
+  .lede{color:var(--text-soft); margin:4px 0 16px; max-width:100%;}
+  .chip{display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
+        background:var(--accent-bg); color:var(--accent); white-space:nowrap;}
+  .chip.dim{background:var(--gray-bg); color:var(--dim);}
+
+  .open{display:inline-block; margin-bottom:20px; padding:8px 16px; border-radius:8px;
+        background:var(--accent); color:#fff; text-decoration:none; font-weight:600; font-size:13.5px;}
+  .open:hover{background:var(--accent-hover, var(--accent)); opacity:.92;}
+
+  .sec{margin-bottom:20px; background:var(--paper); border:1px solid var(--border);
+       border-radius:12px; padding:14px 16px;}
+  .sec > h2{font-size:13px; font-weight:700; margin-bottom:2px;}
+  .sec > .why{font-size:12px; color:var(--dim); margin-bottom:10px;}
+  .empty{font-size:13px; color:var(--dim);}
+
+  ul.rows{list-style:none;}
+  ul.rows li{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;
+             padding:8px 0; border-top:1px solid var(--border);}
+  ul.rows li:first-child{border-top:0;}
+  ul.rows .nm{font-weight:600;}
+  ul.rows .ds{color:var(--dim); font-size:12.5px;}
+  ul.rows a.go{margin-left:auto; font-size:12.5px; color:var(--accent); text-decoration:none;
+               white-space:nowrap;}
+  ul.rows a.go:hover{text-decoration:underline;}
+
+  .accts{display:flex; flex-wrap:wrap; gap:6px;}
+  .accts .a{font-size:12px; padding:3px 9px; border-radius:6px;
+            background:var(--gray-bg); border:1px solid var(--border);}
+
+  .modlist{display:flex; flex-wrap:wrap; gap:6px;}
+  .modlist a{font-size:12.5px; padding:5px 10px; border-radius:8px; text-decoration:none;
+             background:var(--paper); border:1px solid var(--border);}
+  .modlist a:hover{border-color:var(--accent); color:var(--accent);}
+
+  @media(max-width:640px){
+    .wrap{padding:12px 14px 40px;}
+    ul.rows a.go{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="home" href="index.html">← 모듈 홈</a>
+  <span class="crumb" id="crumb">모듈</span>
+</div>
+
+<div class="wrap">
+  <div id="view"></div>
+</div>
+
+<script>
+/* 모듈 한 장 — 그 모듈의 화면·설치 파일·가이드·권한을 한자리에 모은다(GM 지시 2026-09-14).
+   주소 = module.html#<모듈id>. 모듈마다 파일을 만들지 않는다 — 39장을 따로 두면
+   modules.json 이 바뀔 때마다 39장이 어긋난다. 읽는 곳은 modules.json 하나뿐이고,
+   묶음(downloads·guides·accounts)은 scripts/erp_modules_build.py 가 미리 붙여 둔다. */
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+var view = document.getElementById('view');
+var crumb = document.getElementById('crumb');
+
+function rows(list, render){
+  return '<ul class="rows">' + list.map(render).join('') + '</ul>';
+}
+
+function drawList(mods){
+  crumb.textContent = '모듈';
+  var apps = mods.filter(function(m){ return !m.doc; });
+  view.innerHTML =
+    '<h1>모듈</h1>' +
+    '<p class="lede">모듈 하나를 고르면 그 모듈의 화면·설치 파일·가이드·쓸 수 있는 계정이 한 장에 나옵니다.</p>' +
+    '<div class="modlist">' +
+      apps.map(function(m){
+        return '<a href="#' + encodeURIComponent(m.id) + '">' + esc(m.name) + '</a>';
+      }).join('') +
+    '</div>';
+}
+
+function draw(m, all){
+  crumb.textContent = m.name;
+  document.title = m.name + ' — 웰페리온 ERP 모듈';
+
+  var dls = m.downloads || [];
+  var guides = m.guides || [];
+  var accts = m.accounts || [];
+
+  var html = '';
+  html += '<div class="head"><h1>' + esc(m.name) + '</h1>'
+        + '<span class="chip">' + esc(m.appgroup || m.group || '') + '</span>'
+        + (m.staff ? '<span class="chip dim">담당 ' + esc(m.staff) + '</span>' : '')
+        + '</div>';
+  if (m.desc) html += '<p class="lede">' + esc(m.desc) + '</p>';
+  html += '<a class="open" href="' + esc(m.path) + '">화면 열기</a>';
+
+  html += '<div class="sec"><h2>설치 파일</h2>'
+        + '<p class="why">이 모듈을 쓰려면 내려받아 까는 것. 회사 자료는 여기 올리지 않는다.</p>'
+        + (dls.length
+            ? rows(dls, function(d){
+                return '<li><span class="nm">' + esc(d.name) + '</span>'
+                     + (d.desc ? '<span class="ds">' + esc(d.desc) + '</span>' : '')
+                     + '<a class="go" href="' + esc(d.file) + '" download>내려받기</a></li>';
+              })
+            : '<p class="empty">내려받을 파일이 없습니다 — 화면만 열면 바로 쓰는 모듈입니다.</p>')
+        + '</div>';
+
+  html += '<div class="sec"><h2>가이드</h2>'
+        + '<p class="why">이 모듈을 어떻게 쓰는지 적어 둔 문서.</p>'
+        + (guides.length
+            ? rows(guides, function(g){
+                return '<li><span class="nm">' + esc(g.name) + '</span>'
+                     + '<a class="go" href="' + esc(g.path) + '">열기</a></li>';
+              })
+            : '<p class="empty">아직 가이드 문서가 없습니다.</p>')
+        + '</div>';
+
+  html += '<div class="sec"><h2>권한</h2>'
+        + '<p class="why">이 화면을 열 수 있는 계정. 정본은 서버 권한 원장이고 이 목록은 그것을 그대로 옮긴 것입니다 — 바꾸려면 권한 화면에서 바꿉니다.</p>'
+        + (accts.length
+            ? '<div class="accts">' + accts.map(function(a){
+                return '<span class="a">' + esc(a) + '</span>'; }).join('') + '</div>'
+            : '<p class="empty">권한 원장에 적힌 계정이 없습니다 — 관리자만 열립니다.</p>')
+        + '</div>';
+
+  var others = all.filter(function(x){ return !x.doc && x.id !== m.id; });
+  html += '<div class="sec"><h2>다른 모듈</h2><div class="modlist">'
+        + others.map(function(x){
+            return '<a href="#' + encodeURIComponent(x.id) + '">' + esc(x.name) + '</a>'; }).join('')
+        + '</div></div>';
+
+  view.innerHTML = html;
+}
+
+var MODS = null;
+
+function route(){
+  if (!MODS) return;
+  var id = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+  if (!id) return drawList(MODS);
+  var m = null;
+  for (var i = 0; i < MODS.length; i++) if (MODS[i].id === id) { m = MODS[i]; break; }
+  if (!m){
+    view.innerHTML = '<h1>그런 모듈이 없습니다</h1>'
+      + '<p class="lede">주소의 이름(' + esc(id) + ')에 해당하는 모듈을 찾지 못했습니다.</p>';
+    drawListAfter();
+    return;
+  }
+  draw(m, MODS);
+}
+
+function drawListAfter(){
+  var apps = MODS.filter(function(x){ return !x.doc; });
+  view.innerHTML += '<div class="sec"><h2>모듈 목록</h2><div class="modlist">'
+    + apps.map(function(x){
+        return '<a href="#' + encodeURIComponent(x.id) + '">' + esc(x.name) + '</a>'; }).join('')
+    + '</div></div>';
+}
+
+fetch('modules.json', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){ MODS = d.modules || []; route(); })
+  .catch(function(){
+    view.innerHTML = '<h1>모듈 목록을 못 읽었습니다</h1>'
+      + '<p class="lede">modules.json 을 불러오지 못했습니다. 새로고침해 보시고, 그래도 안 되면 담당에게 알려 주세요.</p>';
+  });
+
+window.addEventListener('hashchange', route);
+</script>
+
+</body>
+</html>
