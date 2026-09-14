@@ -428,7 +428,7 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
              lambda: reception_dept_cell("운영부"), False, reception_toggle_detail_html),
             ("점검 현황(운영부)", "요금 변경 준비·사우나 정비 체크리스트 진행률"
                              "(월간운영계획 체크 중 담당 이경연/운영부)",
-             lambda: objective_progress_cell(_ops_dept_cards(objs)), False, lambda: check_detail_html(objs)),
+             lambda: _ops_progress_cell(objs), False, lambda: check_detail_html(objs)),
             ("업무·결재 SSOT(운영부 전원)", "주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산",
              lambda: ssot_week_cell(ssot_rows)),
             ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
@@ -672,27 +672,11 @@ _OWNER_TAG_RE = re.compile(r"담당:\s*([^·\n]+)")
 _DUE_TAG_RE = re.compile(r"기한:\s*([^·\n]+)")
 
 
-def parse_unchecked(note: str) -> list[str]:
-    """progress_note 안 미완(□) 체크 줄만 — 완료(☑)는 뺀다."""
-    return [ln.strip() for ln in str(note or "").split("\n") if ln.strip().startswith("□")]
-
-
 def _ops_dept_cards(objs: list) -> list:
     """담당 이경연 실장 또는 dept 에 '운영부'가 든 카드 — 점검 현황 진척 칸과 건별 목록③이
     같은 필터를 쓴다(GM 지적 2026-09-14 — 칸은 카드 1건, 목록은 5건으로 어긋났었다)."""
     return [o for o in objs
             if str(o.get("owner") or "").strip() == "이경연 실장" or "운영부" in str(o.get("dept") or "")]
-
-
-def check_ops_detail_rows(objs: list) -> list[tuple[dict, str]]:
-    """(카드, 체크줄) — _ops_dept_cards 카드의 미완 체크 전부.
-    카드 dict 를 그대로 돌려준다 — 카드 id(GM업무 딥링크)와 docs(자료 링크)가 필요하다."""
-    cards = _ops_dept_cards(objs)
-    out = []
-    for o in cards:
-        for ln in parse_unchecked(o.get("progress_note")):
-            out.append((o, ln))
-    return out
 
 
 def _check_owner_text(o: dict, ln: str) -> str:
@@ -703,6 +687,48 @@ def _check_owner_text(o: dict, ln: str) -> str:
         return v
     v2 = str(o.get("owner") or "").strip()
     return v2 or "담당 없음"
+
+
+def _ops_check_lines(objs: list) -> list[tuple[dict, str, bool]]:
+    """(카드, 체크줄, 완료여부) — _ops_dept_cards 카드의 체크 줄(☑·□) 중 담당이 운영부인 것만
+    (GM 지적 2026-09-14 — 카드는 운영부·파트너팀 혼합인데 줄은 cpo·coo·시우·나우열M·김남욱GM 몫이 섞여
+    실장 점검으로 보였다). 담당 판정 = _check_owner_text(줄 「담당:」 우선, 없으면 카드 담당).
+    점검 현황 진척 칸(_ops_progress_cell)·실장 토글 내역(check_ops_detail_rows)이 같은 원천을 쓴다."""
+    out = []
+    for o in _ops_dept_cards(objs):
+        for raw in str(o.get("progress_note") or "").split("\n"):
+            s = raw.strip()
+            done = s.startswith("☑")
+            if not done and not s.startswith("□"):
+                continue
+            owner_text = _check_owner_text(o, s)
+            if owner_text in OPS_DEPT_STAFF or owner_text == "운영부":
+                out.append((o, s, done))
+    return out
+
+
+def check_ops_detail_rows(objs: list) -> list[tuple[dict, str]]:
+    """(카드, 체크줄) — _ops_check_lines 중 미완만.
+    카드 dict 를 그대로 돌려준다 — 카드 id(GM업무 딥링크)와 docs(자료 링크)가 필요하다."""
+    return [(o, ln) for o, ln, done in _ops_check_lines(objs) if not done]
+
+
+def _ops_progress_cell(objs: list) -> tuple[str, bool]:
+    """점검 현황(운영부) 진척 칸 — _ops_check_lines 와 같은 원천(카드 수는 그 줄이 실제로 걸린
+    카드만 · GM 지시 2026-09-14, 진척 칸이 실장 토글 내역과 같은 건수를 내게 한다)."""
+    lines = _ops_check_lines(objs)
+    if not lines:
+        return f"{_NO_MEASURE}(해당 카드 없음)", False
+    cards, seen = [], set()
+    for o, _ln, _done in lines:
+        if id(o) not in seen:
+            seen.add(id(o))
+            cards.append(o)
+    done = sum(1 for _o, _ln, d in lines if d)
+    total = len(lines)
+    over = _overdue_objs(cards)
+    ck = f"체크 {done}/{total}({round(done / total * 100) if total else 0}%)" if total else "체크 항목 없음"
+    return f"카드 {len(cards)}건 · {ck} · 기한 지난 것 {over}건", over > 0
 
 
 def _check_due_text(ln: str) -> str:
