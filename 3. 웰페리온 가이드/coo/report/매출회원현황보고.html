@@ -1798,6 +1798,14 @@ function onDatePick(silent){
       hl[1].querySelector('.t').textContent = '이번 달 누적';
       var s0 = hl[0].querySelector('.s'); if (s0) s0.textContent = dayLabel + ' 매출';
       var s1 = hl[1].querySelector('.s'); if (s1) s1.textContent = dayLabel + '까지 누적';
+      // 3·4칸(목표 달성률·총 회원수)은 날짜와 무관한 이번 달·현재 값인데, 날짜 보기가 0·1칸만
+      // 덮으면서 이 둘이 처음 상태 「—」로 남았다. 2026-09-14 실측: 자동 보고 1면 맨 위 두 칸이
+      // 빈 채로 찍혀 나갔다(아래 표에는 35.94%·1,027명이 그대로 있었다). 보고탭 값으로 채운다.
+      var _rc = (window.RAW && RAW.cells) || null;
+      if (_rc) {
+        if (String(_rc.L4 || '').trim()) hl[2].querySelector('.v').textContent = String(_rc.L4).trim();
+        if (String(_rc.N2 || '').trim()) hl[3].querySelector('.v').textContent = String(_rc.N2).trim();
+      }
       hl[0].style.opacity = hl[1].style.opacity = ok ? '' : '.45';
       if (!ok) e.innerHTML = '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn);">' + staleMsg + '</div>';
       // 세 조각 중 뒷조각이 빠지면 21행 아래 계약이 명단에서 조용히 사라진다 — 그 사실을 밝힌다.
