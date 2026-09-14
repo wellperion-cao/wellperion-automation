@@ -75,7 +75,7 @@ td.area{white-space:nowrap;font-weight:700;}
 <div class="content">
 
   <div class="stats">
-    <div class="stat"><div class="lb">진척</div><div class="vl" id="statProgress">—</div></div>
+    <div class="stat"><div class="lb">구글 없이 뜨는 화면</div><div class="vl" id="statProgress">—</div></div>
     <div class="stat"><div class="lb">구글 의존 화면</div><div class="vl" id="statOrigin" style="font-size:20px;">—</div></div>
     <div class="stat"><div class="lb">다음</div><div class="vl" id="statNext" style="font-size:16px;">—</div></div>
   </div>
@@ -271,8 +271,7 @@ function render(d){
      09-08(52% · 원천 0/9)에 멈춰 있었다. 손으로 적는 값은 반드시 낡는다 — 세는 쪽으로 바꾼다. */
   var nOrigin = rows.filter(function(r){ return r.stage === '원천 전환'; }).length;
   var nTotal  = rows.length;
-  document.getElementById('statProgress').textContent =
-    nTotal ? (Math.round(nOrigin / nTotal * 100) + '%') : '—';
+  // statProgress 는 renderGasDep() 이 실측(구글 없이 뜨는 화면 비율)으로 채운다 — 줄 수 비율은 GM 화면에 띄우지 않는다(2026-09-14).
   // statOrigin 은 아래 renderGasDep() 이 실측(status/gas_dependency.json)으로 채운다.
   // 여기서는 옛 방식(영역 표 줄 수 비율)을 못 읽었을 때만 쓰는 대체값으로 저장해 둔다.
   window._oldRatio = nTotal ? (nOrigin + '/' + nTotal) : '—';
@@ -339,9 +338,10 @@ function renderGasDep(d){
   var both = d.list_both || [];
   var total = d.screens_total || 0;
   var depCount = gasOnly.length + both.length;
-  var ratioSmall = window._oldRatio ? ' <small style="color:var(--dim-mid);font-size:12px;">(옛 줄 수 비율 ' + esc(window._oldRatio) + ')</small>' : '';
+  document.getElementById('statProgress').textContent =
+    total ? (Math.round((total - gasOnly.length) / total * 100) + '%') : '—';
   document.getElementById('statOrigin').innerHTML =
-    depCount + '장(구글만 ' + gasOnly.length + ' · 폴백 ' + both.length + ') / 전체 ' + total + '장' + ratioSmall;
+    depCount + '장(구글만 ' + gasOnly.length + ' · 예비 통로 ' + both.length + ') / 전체 ' + total + '장';
   document.getElementById('gasDepTag').textContent =
     '삭제 조건: 이 목록 0장 + 서버 쪽 구글 판정 0건 · 3일 유지 — 화면 실측 ' + (d.generated_at || '');
   // 서버 쪽 숫자는 서버 크론(gas_calls_24h.py · 매시)이 같은 폴더에 쓴다 — 판정(의존)과 되밀기(사본 유지)를 가른다.
