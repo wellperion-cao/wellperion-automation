@@ -17,6 +17,9 @@ REM   9일 연속 크래시하는 동안 예약작업 결과가 매일 0(성공)
 REM   월간운영계획 진척 칸이 9일간 굳어 있었다(웰리 진단 2026-09-09). 종료코드를 그대로 넘긴다.
 C:\Python314\python.exe scripts\monthly_ops_sync.py --apply >> "%LOGFILE%" 2>&1
 set SYNC_RC=%ERRORLEVEL%
+REM 2026-09-15 (웰리): progress_note 누적기록 방지 — 최신 3블록만 남기고 나머지는
+REM   monthly_ops_plan_이력.md 로 옮긴다. 실패해도 하루 sync 자체는 그대로 살린다(종료코드 미합산).
+C:\Python314\python.exe scripts\trim_progress_notes.py --apply >> "%LOGFILE%" 2>&1
 REM 2026-09-01 (cto, ship 860): weekly chairman-report draft, Mondays only (script self-gates,
 REM   non-Monday runs exit immediately). Piggybacks this daily 07:00 task per promise L21 -
 REM   no new scheduled task. Sends DRAFT to GM report room via telegram_notifier; GM reviews
