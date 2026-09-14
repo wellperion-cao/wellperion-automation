@@ -306,12 +306,26 @@ def main() -> int:
     # 웰페리온 세션이 들어 있던 것)과 다른 곳을 가리켰다.
     err = next((ln.strip() for ln in reversed(out.splitlines()) if "[ERROR]" in ln), "")
     reason = f"업로더 rc={rc}" + (f" · {err[:160]}" if err else "")
-    msg = f"고척골프 블로그 임시저장 실패 — 「{topic}」 {reason}"
+    _record_run(state, topic, "fail", reason, len(body), used_model)
+    # 연속 회차를 앞에 붙인다 — 2026-09-12~14 사흘 연속 실패가 매일 같은 문구로 나가는 바람에
+    # 새 소식인지 어제 것인지 구별되지 않아 아무도 움직이지 않았다.
+    연속 = _fail_streak(state)
+    꼬리 = " · 네이버 재로그인이 필요하다(사람 손)" if 연속 >= 3 else ""
+    msg = f"고척골프 블로그 임시저장 실패({연속}회 연속) — 「{topic}」 {reason}{꼬리}"
     log(msg + "\n" + out)
     notify(msg)
-    _record_run(state, topic, "fail", reason, len(body), used_model)
     save_state(state)
     return 1
+
+
+def _fail_streak(state: dict) -> int:
+    """지금까지 몇 번을 내리 실패했나. 기록을 뒤에서부터 센다."""
+    n = 0
+    for r in reversed(state.get("runs", [])):
+        if r.get("result") != "fail":
+            break
+        n += 1
+    return n
 
 
 def _record_run(state: dict, topic: str, result: str, reason: str, chars: int, model: str | None) -> None:
@@ -349,6 +363,11 @@ def _self_test() -> None:
 
     bad_len = "짧은 글"
     assert any("미만" in e for e in run_checks(bad_len, style))
+
+    f = lambda *rs: _fail_streak({"runs": [{"result": r} for r in rs]})
+    assert f() == 0 and f("ok") == 0, "실패가 없는데 연속 실패로 센다"
+    assert f("fail", "ok", "fail", "fail") == 2, "중간에 성공한 것을 넘어 센다"
+    assert f("fail", "fail", "fail") == 3
 
 
 if __name__ == "__main__":

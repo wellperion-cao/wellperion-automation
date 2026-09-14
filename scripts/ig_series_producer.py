@@ -932,10 +932,17 @@ def run(dry_run: bool, plan_only: bool) -> int:
         # 정상·산출0(로드맵 미채움 지속) 상황은 저신호 — notify_prefs series_exhausted 로 흡수(배10188).
         # 매일 동일문구 반복은 소음일 뿐 액션가능정보 없음(로드맵 §5 행 추가는 수동 편집 — 텔레그램으론 안 풀림).
         # 진짜 오류(로드맵 파싱 실패 등, 위 RoadmapError 분기)는 이 가드와 무관 — 항상 발송.
-        if muted("series_exhausted"):
-            print("[INFO] [무음] series_exhausted 저신호 설정 — 소진 텔레그램 경고 스킵 (notify_prefs.py)")
-        else:
+        # 다만 무음이 영원한 침묵이 되면 안 된다 — 2026-09-14 실측: 로드맵이 2026-07-05 이후
+        # 안 채워져 제작기가 11주 동안 매일 0건으로 돌았는데 아무 데도 알리지 않았다.
+        # 굶은 날수를 세어 주 1회(월요일)만 알린다. 소음은 안 내되 잊히지도 않게.
+        굶은날 = (datetime.now() - datetime.fromtimestamp(ROADMAP.stat().st_mtime)).days
+        if not muted("series_exhausted"):
             telegram("📭 AI 시리즈 기획예정 편 소진(0건) — 로드맵 §5에 '기획예정' 행 추가 필요, 다음 편 자동 제작 중단")
+        elif 굶은날 >= 7 and datetime.now().weekday() == 0:
+            telegram(f"📭 AI 시리즈가 {굶은날}일째 새 편 0건 — 로드맵 '기획예정' 행이 비어 있다. "
+                     f"채우거나, 안 쓸 시리즈면 제작기 예약을 끈다")
+        else:
+            print(f"[INFO] [무음] series_exhausted 저신호 설정 — 소진 경고 스킵 ({굶은날}일째)")
         return 0
 
     prev = prev_published_episode(episodes, nxt["num"])
