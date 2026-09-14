@@ -126,6 +126,8 @@
   .dayrow .dv{width:82px;flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);}
   .dayrow.today .dd{font-weight:800;color:var(--navy);}
   .dayrow.zero .dv{color:var(--warn);}
+  .dayrow.closed .dd, .dayrow.closed .dv{color:#8FA6BC;}
+  .dayrow.closed .db{background:#F5F7F9;}
   .daysum{display:flex;gap:14px;font-size:10.5px;color:#7A838B;padding-top:5px;margin-top:4px;border-top:1px solid var(--line);}
   .daysum b{color:var(--navy);font-variant-numeric:tabular-nums;}
   /* 연 단위 4칸 */
@@ -604,6 +606,34 @@ function cellMoney(v){
   var t = String(v == null ? '' : v).trim();
   return /[0-9]/.test(t) ? t : '₩ 0';   // 「₩ -」·「-」·빈칸 — 숫자가 하나도 없으면 0 원이다
 }
+/* ══ 휴관일 판정 ══
+   정기 = 매월 둘째·넷째 일요일 + 1월 1일(「지원부 체계」 getDayInfo 와 같은 규칙).
+   임시 = 추석·명절 등. 정본 = ssot/closed_days.json — 못 읽으면 정기 규칙만으로 판정한다
+   (임시 휴관을 놓칠 수는 있어도, 규칙이 있는 날을 틀리게 세지는 않는다). */
+var CLOSED_EXTRA = {};   // 'YYYY-MM-DD' → 사유
+function isClosedDay(d){
+  if (!d) return false;
+  var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+  var iso = y + '-' + ('0' + m).slice(-2) + '-' + ('0' + day).slice(-2);
+  if (CLOSED_EXTRA[iso]) return true;
+  if (m === 1 && day === 1) return true;
+  return d.getDay() === 0 && (Math.ceil(day / 7) === 2 || Math.ceil(day / 7) === 4);
+}
+function closedReason(d){
+  if (!d) return '';
+  var iso = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  if (CLOSED_EXTRA[iso]) return CLOSED_EXTRA[iso];
+  if (d.getMonth() === 0 && d.getDate() === 1) return '1월 1일';
+  return '정기 휴관';
+}
+function loadClosedDays(){
+  var url = (ERP_API_ON ? '/repo/ssot/closed_days.json' : '../../../ssot/closed_days.json');
+  return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ (d && d.extra || []).forEach(function(x){ if (x && x.date) CLOSED_EXTRA[x.date] = x.reason || '휴관'; }); })
+    .catch(function(){ /* 못 읽으면 정기 규칙만 쓴다 */ });
+}
+
 function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(n)) return '';
   return n >= 100 ? 'r-hi' : (n >= 70 ? 'r-mid' : 'r-lo'); }
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
@@ -671,25 +701,29 @@ function loadDaily(){
 
 function paintDaily(days, vals){
   var el = document.getElementById('days'); if (!el) return;
+  /* 합계·평균에서 휴관일은 뺀다 — 문 닫은 날을 분모에 넣으면 하루 평균이 억울하게 깎인다. */
+  var open = vals.filter(function(v, i){ return v != null && !isClosedDay(days[i]); });
   var got = vals.filter(function(v){ return v != null; });
   if (!got.length) { el.innerHTML = '<div class="err">일별 매출을 못 읽었습니다 — 일자탭 조회 실패</div>'; return; }
-  var max = Math.max.apply(null, got.concat([1]));
-  var sum = got.reduce(function(a, v){ return a + v; }, 0);
+  var max = Math.max.apply(null, open.concat([1]));
+  var sum = open.reduce(function(a, v){ return a + v; }, 0);
+  var openN = open.length || 1;
   var W = ['일', '월', '화', '수', '목', '금', '토'];
   var rows = days.map(function(d, i) {
     var v = vals[i];
     var label = (d.getMonth() + 1) + '/' + d.getDate() + '(' + W[d.getDay()] + ')';
     var last = (i === days.length - 1);
-    return '<div class="dayrow' + (last ? ' today' : '') + (v === 0 ? ' zero' : '') + '">' +
+    var closed = isClosedDay(d);
+    return '<div class="dayrow' + (last ? ' today' : '') + (closed ? ' closed' : (v === 0 ? ' zero' : '')) + '">' +
       '<span class="dd">' + label + '</span>' +
-      '<span class="db">' + (v == null ? '' : '<i style="width:' + Math.max(v / max * 100, v ? 2 : 0) + '%"></i>') + '</span>' +
-      '<span class="dv">' + (v == null ? '못 읽음' : _won(v)) + '</span></div>';
+      '<span class="db">' + (v == null || closed ? '' : '<i style="width:' + Math.max(v / max * 100, v ? 2 : 0) + '%"></i>') + '</span>' +
+      '<span class="dv">' + (closed ? '휴관' : (v == null ? '못 읽음' : _won(v))) + '</span></div>';
   }).join('');
   var h = document.getElementById('dayh');
   if (h) h.textContent = '일 단위 — 최근 ' + days.length + '일 하루 매출';
   el.innerHTML = rows +
-    '<div class="daysum"><span>합계 <b>' + _won(sum) + '</b></span>' +
-    '<span>하루 평균 <b>' + _won(Math.round(sum / got.length)) + '</b></span>' +
+    '<div class="daysum"><span>연 것 ' + openN + '일 합계 <b>' + _won(sum) + '</b></span>' +
+    '<span>하루 평균 <b>' + _won(Math.round(sum / openN)) + '</b></span>' +
     '<span>가장 많은 날 <b>' + _won(max) + '</b></span></div>';
 }
 
@@ -767,11 +801,19 @@ function runAudit(){
      날은 매출도 입장도 0 으로 와서, 화면도 09:30 그림도 조용히 「0 원 · 0 명」을 보고한다.
      실측 2026-09-14: 9/13(일) 매출 0 원 · 입장 0·0·0 · 지원부 점검 0/86 — 하루가 통째로 비었다
      (9/11 454명 · 9/12 469명이었다). 휴관일이면 0 이 맞을 수 있어 치명이 아니라 주의로 둔다. */
+  /* 휴관일이면 0 이 정상이다 — 주의를 내지 않는다. 2026-09-14 에 둘째 일요일(9/13)을 「입력이
+     빠졌다」고 실장께 확인 요청까지 보냈다. 그날은 문을 닫은 날이었다. */
   var zeroSrc = [];
   if (num(c.I4) === 0) zeroSrc.push('어제 매출');
   if (VISIT_ROWS.every(function(r){ return num(c['N' + r]) === 0; })) zeroSrc.push('입장 인원 세 칸');
-  add('warn', '하루치 입력 빠짐 없음', zeroSrc.length === 0,
-      zeroSrc.join(' · ') + ' 이 0 입니다 — 그날 일자탭이 안 채워졌을 수 있습니다(휴관일이면 0 이 맞습니다)');
+  if (isClosedDay(yst)) {
+    /* 휴관일 — 0 이 정상이므로 점검을 통과로 둔다. 사실은 제목 옆 배지로 알린다(주의로 띄우면
+       뭔가 잘못된 것처럼 읽힌다). */
+    add('warn', '하루치 입력 빠짐 없음', true, '');
+  } else {
+    add('warn', '하루치 입력 빠짐 없음', zeroSrc.length === 0,
+        zeroSrc.join(' · ') + ' 이 0 입니다 — 그날 일자탭이 안 채워졌을 수 있습니다');
+  }
 
   // ⑥ 컨택·로스자 칸의 기준일
   var ct = _mdOf(c.I16), ls = _mdOf(c.I18);
@@ -952,7 +994,7 @@ function renderSheet(c){
                s.textContent = sub; }
     else if (s) { s.remove(); }
   }
-  setHl(0, cellMoney(c.I4), '전날 하루');
+  setHl(0, cellMoney(c.I4), isClosedDay(yst) ? ('휴관일 — ' + closedReason(yst)) : '전날 하루');
   setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
@@ -1171,8 +1213,9 @@ function load(){
         renderChart(RAW.chart);
       }
     }
-    runAudit(); applyUrlView(); applyServerPanel();
-    setTimeout(loadDaily, 1500);   // 본 보고 조회가 다 끝난 뒤에 시작한다
+    loadClosedDays().then(runAudit);   // 휴관일을 알고 나서 0 을 판정한다
+    applyUrlView(); applyServerPanel();
+    setTimeout(function(){ loadClosedDays().then(loadDaily); }, 1500);   // 휴관일을 읽고 나서 그린다
     try { renderPage3(RAW.cells || {}); } catch (ex) {
       var e3 = document.getElementById('err3');
       if (e3) e3.innerHTML = '<div class="err">3면 그리기 실패 — ' + esc(ex.message) + '</div>';
