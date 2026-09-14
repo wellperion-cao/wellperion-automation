@@ -343,7 +343,12 @@ function renderGasDep(d){
   document.getElementById('statOrigin').innerHTML =
     depCount + '장(구글만 ' + gasOnly.length + ' · 폴백 ' + both.length + ') / 전체 ' + total + '장' + ratioSmall;
   document.getElementById('gasDepTag').textContent =
-    '삭제 조건: 이 목록 0장 + 서버 쪽 구글 호출 0건 · 3일 유지 — 실측 ' + (d.generated_at || '');
+    '삭제 조건: 이 목록 0장 + 서버 쪽 구글 판정 0건 · 3일 유지 — 화면 실측 ' + (d.generated_at || '');
+  // 서버 쪽 숫자는 서버 크론(gas_calls_24h.py · 매시)이 같은 폴더에 쓴다 — 판정(의존)과 되밀기(사본 유지)를 가른다.
+  fetch('../status/gas_calls_24h.json?cb=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(g){
+    if (!g) return;
+    document.getElementById('gasDepTag').textContent += ' · 서버 쪽 24시간: 구글 판정 ' + g.gas_judged_24h + '건(' + (g.judged_actions || []).join('·') + ') · 되밀기 ' + g.pushback_24h + '건(사본 유지용 · 삭제 날 같이 끔)';
+  }).catch(function(){});
   var body = document.getElementById('gasDepBody');
   var list = gasOnly.map(function(r){ return {path:r.path, owner:r.owner_line, st:'구글만'}; })
     .concat(both.map(function(r){ return {path:r.path, owner:r.owner_line, st:'폴백'}; }));
