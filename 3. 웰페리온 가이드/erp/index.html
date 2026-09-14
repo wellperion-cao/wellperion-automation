@@ -89,6 +89,10 @@
                    border:1px solid var(--border); white-space:nowrap;}
   .modbox .links a:hover{border-color:var(--accent); color:var(--accent-hover);
                          background:var(--accent-bg);}
+  /* 모듈 안내 링크 — modbox 에서 module.html 로 바로 가는 줄 (GM 지시 2026-09-14) */
+  .modbox .mod-guide-link{display:inline-block;font-size:11px;color:var(--dim);
+                          text-decoration:none;margin-top:4px;}
+  .modbox .mod-guide-link:hover{color:var(--accent-hover);}
   /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
   .mod.locked{opacity:0.4;}
   .mod.locked:hover{border-color:var(--border); background:var(--paper);}
@@ -422,7 +426,8 @@ function loadModules(role, allowedIds){
                     + '<div class="links">' + list.map(function(x){
                         return '<a href="' + esc(x.path) + '">' + esc(x.name) + '</a>'; }).join('')
                     + '</div>'
-                    + (lead.staff ? '<div class="owner">담당 ' + esc(lead.staff) + '</div>' : '');
+                    + (lead.staff ? '<div class="owner">담당 ' + esc(lead.staff) + '</div>' : '')
+                    + '<a class="mod-guide-link" href="module.html#' + encodeURIComponent(lead.id) + '">모듈 안내 →</a>';
       return box;
     }
     /* 한 그룹 안에서 같은 모듈끼리 접는다. 모듈 차례는 대표 화면이 서 있던 자리를 그대로 쓴다. */

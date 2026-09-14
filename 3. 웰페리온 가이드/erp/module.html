@@ -7,8 +7,7 @@
 <link rel="icon" type="image/x-icon" href="../welly_favicon.ico">
 <link rel="stylesheet" href="brand/tenant-wellperion.css">
 <style>
-  /* 색 정본 = brand/tenant-wellperion.css. 모듈 홈(erp/index.html)과 같은 값을 쓴다 —
-     같은 창에서 오가는 화면이라 톤이 갈리면 다른 시스템처럼 보인다(GM 지적 2026-09-14). */
+  /* 색 정본 = brand/tenant-wellperion.css. erp/index.html 과 같은 창에서 오가므로 톤을 맞춘다. */
   html{color-scheme:light dark;}
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}
@@ -24,10 +23,12 @@
   .topbar .home:hover{color:var(--accent);}
   .topbar .crumb{font-weight:600; font-size:13.5px;}
 
-  /* 좌측 정렬 · 폭 최대 (GM 상시 지시 2026-07-02 · scripts/layout_left_full.py 가 검사한다) */
+  /* 좌측 정렬 · 폭 최대 (GM 상시 지시 2026-07-02) */
   .wrap{max-width:100%; margin:0; padding:16px 20px 56px;}
 
-  .head{display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
+  .back{display:inline-block; font-size:13px; color:var(--dim); text-decoration:none; margin-bottom:12px;}
+  .back:hover{color:var(--accent);}
+  .head{display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:4px;}
   h1{font-size:20px; font-weight:700; letter-spacing:-0.01em;}
   .lede{color:var(--text-soft); margin:4px 0 16px; max-width:100%;}
   .chip{display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
@@ -36,11 +37,11 @@
 
   .open{display:inline-block; margin-bottom:20px; padding:8px 16px; border-radius:8px;
         background:var(--accent); color:#fff; text-decoration:none; font-weight:600; font-size:13.5px;}
-  .open:hover{background:var(--accent-hover, var(--accent)); opacity:.92;}
+  .open:hover{opacity:.92;}
 
-  .sec{margin-bottom:20px; background:var(--paper); border:1px solid var(--border);
-       border-radius:12px; padding:14px 16px;}
-  .sec > h2{font-size:13px; font-weight:700; margin-bottom:2px;}
+  .sec{margin-bottom:16px; background:var(--paper); border:1px solid var(--border);
+       border-radius:10px; padding:12px 16px;}
+  .sec > h2{font-size:13px; font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:6px;}
   .sec > .why{font-size:12px; color:var(--dim); margin-bottom:10px;}
   .empty{font-size:13px; color:var(--dim);}
 
@@ -48,23 +49,42 @@
   ul.rows li{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;
              padding:8px 0; border-top:1px solid var(--border);}
   ul.rows li:first-child{border-top:0;}
-  ul.rows .nm{font-weight:600;}
+  ul.rows .nm{font-weight:600; text-decoration:none; color:var(--text);}
+  ul.rows .nm:hover{color:var(--accent);}
   ul.rows .ds{color:var(--dim); font-size:12.5px;}
-  ul.rows a.go{margin-left:auto; font-size:12.5px; color:var(--accent); text-decoration:none;
-               white-space:nowrap;}
+  ul.rows a.go{margin-left:auto; font-size:12.5px; color:var(--accent); text-decoration:none; white-space:nowrap;}
   ul.rows a.go:hover{text-decoration:underline;}
 
   .accts{display:flex; flex-wrap:wrap; gap:6px;}
   .accts .a{font-size:12px; padding:3px 9px; border-radius:6px;
             background:var(--gray-bg); border:1px solid var(--border);}
 
-  .modlist{display:flex; flex-wrap:wrap; gap:6px;}
-  .modlist a{font-size:12.5px; padding:5px 10px; border-radius:8px; text-decoration:none;
-             background:var(--paper); border:1px solid var(--border);}
-  .modlist a:hover{border-color:var(--accent); color:var(--accent);}
+  /* 첫 화면 — 모듈 카드 그리드 (GM 지시 2026-09-14) */
+  .mhome{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-top:16px;}
+  .mc{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:14px 16px;}
+  .mc-head{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;}
+  .mc-name{font-size:15px; font-weight:700; color:var(--text); text-decoration:none; flex-shrink:0;}
+  .mc-name:hover{color:var(--accent);}
+  .mc-cnt{font-size:11px; color:var(--dim); margin-left:auto; white-space:nowrap;}
+  .mc-desc{font-size:12.5px; color:var(--text-soft); margin-bottom:10px; line-height:1.4;}
+  .mc-open{display:inline-block; font-size:12.5px; font-weight:600; padding:5px 12px;
+           border-radius:6px; background:var(--accent); color:#fff; text-decoration:none;}
+  .mc-open:hover{opacity:.9;}
+  .mc-subs{margin-top:8px;}
+  .mc-subs > summary{font-size:12px; font-weight:600; color:var(--dim-soft); cursor:pointer;
+                     list-style:none; padding:2px 0; user-select:none;}
+  .mc-subs > summary::-webkit-details-marker{display:none;}
+  .mc-subs > summary::before{content:"▸ ";}
+  .mc-subs[open] > summary::before{content:"▾ ";}
+  .mc-sub-list{display:flex; flex-wrap:wrap; gap:4px 6px; margin-top:6px;}
+  .mc-sub-list a{font-size:12px; color:var(--text-soft); text-decoration:none;
+                 padding:3px 8px; border-radius:4px; background:var(--gray-bg);
+                 border:1px solid var(--border); white-space:nowrap;}
+  .mc-sub-list a:hover{border-color:var(--accent); color:var(--accent);}
 
   @media(max-width:640px){
     .wrap{padding:12px 14px 40px;}
+    .mhome{grid-template-columns:1fr;}
     ul.rows a.go{margin-left:0;}
   }
 </style>
@@ -81,10 +101,10 @@
 </div>
 
 <script>
-/* 모듈 한 장 — 그 모듈의 화면·설치 파일·가이드·권한을 한자리에 모은다(GM 지시 2026-09-14).
-   주소 = module.html#<모듈id>. 모듈마다 파일을 만들지 않는다 — 39장을 따로 두면
-   modules.json 이 바뀔 때마다 39장이 어긋난다. 읽는 곳은 modules.json 하나뿐이고,
-   묶음(downloads·guides·accounts)은 scripts/erp_modules_build.py 가 미리 붙여 둔다. */
+/* 모듈 안내 (GM 지시 2026-09-14)
+   첫 화면 = module 값으로 묶은 카드 그리드. 카드 안에서 세부 화면을 접어 둔다.
+   주소 = module.html (첫 화면) · module.html#<id> (모듈 한 장).
+   modules.json 한 곳에서 읽는다 — 파일을 모듈마다 따로 두지 않는다. */
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -96,35 +116,116 @@ function rows(list, render){
   return '<ul class="rows">' + list.map(render).join('') + '</ul>';
 }
 
-function drawList(mods){
+/* 첫 화면 — module 값으로 그룹을 잡아 카드를 그린다 */
+function drawHome(mods){
   crumb.textContent = '모듈';
+  document.title = '모듈 — 웰페리온 ERP';
+
   var apps = mods.filter(function(m){ return !m.doc; });
-  view.innerHTML =
-    '<h1>모듈</h1>' +
-    '<p class="lede">모듈 하나를 고르면 그 모듈의 화면·설치 파일·가이드·쓸 수 있는 계정이 한 장에 나옵니다.</p>' +
-    '<div class="modlist">' +
-      apps.map(function(m){
-        return '<a href="#' + encodeURIComponent(m.id) + '">' + esc(m.name) + '</a>';
-      }).join('') +
-    '</div>';
+
+  var order = [], groups = {};
+  apps.forEach(function(m){
+    var k = m.module;
+    if (!k) return;
+    if (!groups[k]) { groups[k] = []; order.push(k); }
+    groups[k].push(m);
+  });
+  /* module_lead 항목이 각 그룹 맨 앞에 오게 정렬 */
+  order.forEach(function(k){
+    groups[k].sort(function(a, b){
+      return (b.module_lead ? 1 : 0) - (a.module_lead ? 1 : 0);
+    });
+  });
+
+  var html = '<h1>모듈</h1>'
+    + '<p class="lede">각 모듈의 메인 화면을 바로 열거나, 세부 화면을 펼쳐 고를 수 있습니다.'
+    + ' 모듈 이름을 누르면 설치 파일·가이드·권한을 한 장에서 봅니다.</p>'
+    + '<div class="mhome">';
+
+  order.forEach(function(k){
+    var list = groups[k];
+    var lead = list[0];
+    var subs = list.slice(1);
+    var dlCount = list.reduce(function(n, x){ return n + ((x.downloads || []).length); }, 0);
+
+    html += '<div class="mc">'
+          + '<div class="mc-head">'
+          + '<a class="mc-name" href="#' + encodeURIComponent(lead.id) + '">' + esc(k) + '</a>';
+    if (lead.appgroup) html += '<span class="chip">' + esc(lead.appgroup) + '</span>';
+    html += '<span class="mc-cnt">화면 ' + list.length
+          + (dlCount ? ' · 설치 ' + dlCount : '') + '</span>'
+          + '</div>';
+    if (lead.desc) html += '<p class="mc-desc">' + esc(lead.desc) + '</p>';
+    html += '<a class="mc-open" href="' + esc(lead.path) + '">화면 열기</a>';
+    if (subs.length) {
+      html += '<details class="mc-subs"><summary>' + subs.length + '개 더</summary>'
+            + '<div class="mc-sub-list">'
+            + subs.map(function(s){
+                return '<a href="' + esc(s.path) + '">' + esc(s.name) + '</a>';
+              }).join('')
+            + '</div></details>';
+    }
+    html += '</div>';
+  });
+
+  /* module 필드 없는 일하는 화면은 기타 섹션으로 */
+  var orphans = apps.filter(function(m){ return !m.module; });
+  if (orphans.length) {
+    html += '</div><div class="sec" style="margin-top:12px"><h2>기타</h2>'
+          + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'
+          + orphans.map(function(m){
+              return '<a href="' + esc(m.path) + '" style="font-size:12.5px;padding:4px 10px;'
+                   + 'border-radius:6px;background:var(--gray-bg);border:1px solid var(--border);'
+                   + 'text-decoration:none;color:var(--text-soft)">' + esc(m.name) + '</a>';
+            }).join('')
+          + '</div></div>';
+  } else {
+    html += '</div>';
+  }
+
+  view.innerHTML = html;
 }
 
+/* 모듈 한 장 — 그 모듈의 화면·설치 파일·가이드·권한을 한자리에 모은다 */
 function draw(m, all){
-  crumb.textContent = m.name;
-  document.title = m.name + ' — 웰페리온 ERP 모듈';
+  var moduleName = m.module || m.name;
+  crumb.textContent = moduleName;
+  document.title = moduleName + ' — 웰페리온 ERP 모듈';
+
+  /* 같은 모듈에 속하는 화면 전체 (module_lead 먼저) */
+  var moduleScreens = m.module
+    ? all.filter(function(x){ return !x.doc && x.module === m.module; })
+    : [m];
+  moduleScreens.sort(function(a, b){
+    return (b.module_lead ? 1 : 0) - (a.module_lead ? 1 : 0);
+  });
 
   var dls = m.downloads || [];
   var guides = m.guides || [];
   var accts = m.accounts || [];
 
-  var html = '';
-  html += '<div class="head"><h1>' + esc(m.name) + '</h1>'
-        + '<span class="chip">' + esc(m.appgroup || m.group || '') + '</span>'
+  var html = '<a class="back" href="#">← 모듈 목록</a>';
+  html += '<div class="head"><h1>' + esc(moduleName) + '</h1>'
+        + (m.appgroup ? '<span class="chip">' + esc(m.appgroup) + '</span>' : '')
         + (m.staff ? '<span class="chip dim">담당 ' + esc(m.staff) + '</span>' : '')
         + '</div>';
   if (m.desc) html += '<p class="lede">' + esc(m.desc) + '</p>';
-  html += '<a class="open" href="' + esc(m.path) + '">화면 열기</a>';
 
+  /* 화면이 여럿이면 목록으로, 하나면 바로 여는 버튼 */
+  if (moduleScreens.length > 1) {
+    html += '<div class="sec"><h2>이 모듈의 화면 <span class="chip dim">' + moduleScreens.length + '</span></h2>'
+          + rows(moduleScreens, function(s){
+              return '<li>'
+                   + '<a class="nm" href="' + esc(s.path) + '">' + esc(s.name) + '</a>'
+                   + (s.desc ? '<span class="ds">' + esc(s.desc) + '</span>' : '')
+                   + '</li>';
+            })
+          + '</div>';
+  } else {
+    html += '<a class="open" href="' + esc(m.path) + '">화면 열기</a>';
+  }
+
+  /* 설치 파일 */
   html += '<div class="sec"><h2>설치 파일</h2>'
         + '<p class="why">이 모듈을 쓰려면 내려받아 까는 것. 회사 자료는 여기 올리지 않는다.</p>'
         + (dls.length
@@ -136,6 +237,7 @@ function draw(m, all){
             : '<p class="empty">내려받을 파일이 없습니다 — 화면만 열면 바로 쓰는 모듈입니다.</p>')
         + '</div>';
 
+  /* 가이드 */
   html += '<div class="sec"><h2>가이드</h2>'
         + '<p class="why">이 모듈을 어떻게 쓰는지 적어 둔 문서.</p>'
         + (guides.length
@@ -146,19 +248,14 @@ function draw(m, all){
             : '<p class="empty">아직 가이드 문서가 없습니다.</p>')
         + '</div>';
 
+  /* 권한 */
   html += '<div class="sec"><h2>권한</h2>'
-        + '<p class="why">이 화면을 열 수 있는 계정. 정본은 서버 권한 원장이고 이 목록은 그것을 그대로 옮긴 것입니다 — 바꾸려면 권한 화면에서 바꿉니다.</p>'
+        + '<p class="why">이 화면을 열 수 있는 계정. 정본은 서버 권한 원장이고 이 목록은 그것을 그대로 옮긴 것입니다.</p>'
         + (accts.length
             ? '<div class="accts">' + accts.map(function(a){
                 return '<span class="a">' + esc(a) + '</span>'; }).join('') + '</div>'
             : '<p class="empty">권한 원장에 적힌 계정이 없습니다 — 관리자만 열립니다.</p>')
         + '</div>';
-
-  var others = all.filter(function(x){ return !x.doc && x.id !== m.id; });
-  html += '<div class="sec"><h2>다른 모듈</h2><div class="modlist">'
-        + others.map(function(x){
-            return '<a href="#' + encodeURIComponent(x.id) + '">' + esc(x.name) + '</a>'; }).join('')
-        + '</div></div>';
 
   view.innerHTML = html;
 }
@@ -168,24 +265,17 @@ var MODS = null;
 function route(){
   if (!MODS) return;
   var id = decodeURIComponent((location.hash || '').replace(/^#/, ''));
-  if (!id) return drawList(MODS);
+  if (!id) return drawHome(MODS);
   var m = null;
   for (var i = 0; i < MODS.length; i++) if (MODS[i].id === id) { m = MODS[i]; break; }
   if (!m){
-    view.innerHTML = '<h1>그런 모듈이 없습니다</h1>'
+    view.innerHTML = '<a class="back" href="#">← 모듈 목록</a>'
+      + '<h1>그런 모듈이 없습니다</h1>'
       + '<p class="lede">주소의 이름(' + esc(id) + ')에 해당하는 모듈을 찾지 못했습니다.</p>';
-    drawListAfter();
+    crumb.textContent = '모듈';
     return;
   }
   draw(m, MODS);
-}
-
-function drawListAfter(){
-  var apps = MODS.filter(function(x){ return !x.doc; });
-  view.innerHTML += '<div class="sec"><h2>모듈 목록</h2><div class="modlist">'
-    + apps.map(function(x){
-        return '<a href="#' + encodeURIComponent(x.id) + '">' + esc(x.name) + '</a>'; }).join('')
-    + '</div></div>';
 }
 
 fetch('modules.json', {cache:'no-store'})
