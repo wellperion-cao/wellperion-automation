@@ -67,6 +67,7 @@
 #   분기를 새로 안 만들고 기존 계약 흐름에 자연히 올라타는 방식.
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import re
@@ -123,40 +124,56 @@ import push_lock  # noqa: E402  (배1098 자물쇠 라인 — 잠금 경로 판�
 # 경로 출처(임의 확장 금지) — ssot/ownership_map.json roles[]:
 #   시로 domain="업무현황 SSOT·결재현황 SSOT" → 실제 파일 2개(폴더는 coo 지만
 #   소유는 시로 — coo/check/* 처럼 folder=owner 가 아니다):
-# 도메인 가드 강행 스위치 — 넘을 도메인 이름을 값으로 넣는다(쉼표로 여러 개).
-# 예: WP_DOMAIN_FORCE=CHRO · WP_DOMAIN_FORCE=CHRO,COO
-_DOMAIN_FORCE_ENV = "WP_DOMAIN_FORCE"
-
-CHRO_DOMAIN_PATHS = frozenset({
+# ★2026-09-14 GM 지시("CHRO + CFO건은 건드리지말고, 나우열M 요청해서 진행하게끔
+#   박제시켜줘 이건 절대 건드리지못하게해줘")로 범위를 파일 몇 개 고정 나열에서
+#   접두사·글롭으로 넓혔다. 종전엔 화면 파일 몇 개만 막고 서버코드·큐 폴더(.deploy-todo/
+#   전체·server/erp_chro/·api_hr*.py 등)는 뚫려 있었다 — 그 구멍을 메운다.
+#   글롭("*" 포함 패턴)은 fnmatch, 나머지는 접두사(startswith)로 판정한다
+#   (§_path_matches_any). 판정 대상 = 추가·수정·삭제·이름변경 전부.
+#   ▸두 상수(CHRO_DOMAIN_PATHS·CFO_DOMAIN_PATHS)를 합치면 나우열M 라인 전체다 —
+#     다른 판정이 "나우열M 라인이냐"만 물을 땐 아래 NAWOOLM_LINE_PREFIXES(합집합)를 쓴다.
+CHRO_DOMAIN_PATHS = (
+    "3. 웰페리온 가이드/chro/",
     "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html",
     "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html",
-    # ★2026-08-10 추가(시토 · GM 지시 "예방 대책"). 아래 2개는 오늘 실측에서
-    #   "이 PC 작업본이 저장소보다 뒤진" 상태로 남아 있었는데 이 목록에 없어
-    #   커밋이 그대로 통과할 수 있었다 — 2026-08-08 사고(cd2e79cae)와 같은 물리경로다.
-    #   ▸chro/hub/index.html = 인사허브 첫 화면(폴더가 chro 라 소유는 명백하다.
-    #     PROTECTED_DELETE_PREFIXES 가 chro/ 접두사로 "삭제"는 이미 막고 있었으나
-    #     "수정"은 안 막았다 — 그 구멍).
-    #   ▸.deploy-todo/업무&결재 현황.js = 위 업무·결재 SSOT 두 화면의 서버코드.
-    #     화면만 막고 그 뒷단을 안 막으면 8/8 처럼 뒷단만 지워진다(실제로 그렇게 났다).
-    #     GAS 배선은 원칙상 시토 소유지만, 이 파일은 시로 화면의 기능 자체를 담고 있어
-    #     예외로 둔다. 시토가 정당하게 고칠 때는 WP_DOMAIN_FORCE=CHRO 로 선언하고 한다.
-    "3. 웰페리온 가이드/chro/hub/index.html",
-    ".deploy-todo/업무&결재 현황.js",
-})
-#   시뽀 domain="운영 매출·지출" → cfo/finance/ 안의 매출·지출 대시보드 3종
-#   (apps_script_expense.js 등 배선 파일은 제외 — COO 와 동일 원칙: 내용 화면은
-#   도메인 소유, GAS 배선은 시토 소유). 매출지출현황.html 은 GM 이 직접 보는
-#   공개 페이지(기억 project_public_pages_gas_password_exposure_accepted)라
-#   차단은 하되 강행 경로(SKIP env)를 안내문에 명시해 GM 요청 수정을 막지 않는다.
-CFO_DOMAIN_PATHS = frozenset({
-    "3. 웰페리온 가이드/cfo/finance/매출지출현황.html",
-    "3. 웰페리온 가이드/cfo/finance/매출현황.html",
-    "3. 웰페리온 가이드/cfo/finance/지출현황.html",
-})
-_CFO_GM_JUDGMENT_NOTE = (
-    "GM 이 직접 보는 공개 화면입니다 — GM 지시로 고치는 경우 강행 스위치로 "
-    "진행하세요(막되 우회로는 열어 둠)."
+    ".deploy-todo/",
+    "server/erp_chro/",
+    "server/erp_api/api_hr*.py",
+    "server/erp_api/migrate_hr.py",
+    "server/erp_api/api_todo*.py",
+    "server/erp_api/sync_todo*.py",
 )
+#   시뽀 domain="운영 매출·지출·구매품의" → cfo/ 전체(화면·GAS 배선 포함) +
+#   .deploy-procurement/ 큐 폴더 + 서버 구매품의 API. 매출지출현황.html 은 GM 이
+#   직접 보는 공개 페이지(기억 project_public_pages_gas_password_exposure_accepted)라
+#   차단은 하되 나우열M 요청 마커로 진행할 수 있음을 안내문에 명시한다.
+# .deploy-expense 로 시작하는 폴더 = 2026-09-14 ls 실측 결과 저장소에 없다(생기면 여기 추가).
+CFO_DOMAIN_PATHS = (
+    "3. 웰페리온 가이드/cfo/",
+    ".deploy-procurement/",
+    "server/erp_api/api_proc*.py",
+)
+NAWOOLM_LINE_PREFIXES = CHRO_DOMAIN_PATHS + CFO_DOMAIN_PATHS
+_CFO_GM_JUDGMENT_NOTE = (
+    "GM 이 직접 보는 공개 화면입니다 — GM 이 직접 고치거나, 나우열M 요청 마커로 진행하세요."
+)
+
+
+def _path_matches_any(path: str, patterns) -> bool:
+    """path 가 patterns(접두사·글롭 혼합) 중 하나에 걸리는지.
+
+    "*" 를 포함한 패턴은 fnmatch(글롭), 그 외는 접두사(startswith)로 본다 —
+    디렉터리 패턴은 반드시 "/" 로 끝나야 한다(안 그러면 "chro" 가 "chrontab/" 같은
+    무관 경로까지 잘못 먹는다 — 위 목록은 전부 "/" 로 끝나거나 파일 전체경로다).
+    """
+    norm = path.replace("\\", "/")
+    for pat in patterns:
+        if "*" in pat:
+            if fnmatch.fnmatch(norm, pat):
+                return True
+        elif norm.startswith(pat):
+            return True
+    return False
 
 # 세 도메인을 한 판정 함수(_domain_modify_violation)로 처리한다(약속 L01 —
 # 같은 관문 안에서 로직도 하나로 합친다. 새 가드 파일·새 함수 난립 금지).
@@ -182,32 +199,46 @@ DOMAIN_MODIFY_RULES = (
 )
 
 
+# ★2026-09-14 GM 지시 — WP_DOMAIN_FORCE 우회를 CHRO·CFO 에서 완전히 없앤다. 유일한
+#   통과 조건은 커밋 메시지 속 마커뿐이다(오늘 이내 날짜 — 미리 박아 두고 매번 쓰는
+#   것 방지). 날짜가 깨졌거나 미래면 무효(None). 다른 도메인 규칙이 WP_DOMAIN_FORCE 를
+#   쓰면 그쪽은 그대로다 — 지금 이 저장소엔 CHRO/CFO 둘뿐이라 실질적으로 폐지와 같다.
+_NAWOOLM_MARKER_RE = re.compile(r"\[나우열M 요청 (\d{4}-\d{2}-\d{2})\]")
+
+
+def _nawoolm_request_marker(commit_message: str) -> str | None:
+    """커밋 메시지에서 `[나우열M 요청 YYYY-MM-DD]` 마커를 찾아 유효하면 그 문자열을 돌려준다."""
+    if not commit_message:
+        return None
+    m = _NAWOOLM_MARKER_RE.search(commit_message)
+    if not m:
+        return None
+    try:
+        marker_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    if marker_date > datetime.now().date():
+        return None  # 미래 날짜 = 무효(상시 통과권 박아두기 방지)
+    return m.group(0)
+
+
 def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
-                              domain_paths: frozenset, room: str,
-                              judgment_note: str | None, root: Path) -> str | None:
-    """도메인 경로가 이번 커밋에 하나라도 걸리면 차단 문구를 만든다(없으면 None).
+                              domain_paths, room: str,
+                              judgment_note: str | None, root: Path,
+                              commit_message: str = "") -> str | None:
+    """도메인 경로(접두사·글롭)가 이번 커밋에 하나라도 걸리면 차단 문구를 만든다(없으면 None).
 
-    강행: env WP_DOMAIN_FORCE 에 **그 역할 이름**을 넣어야 한다(예: WP_DOMAIN_FORCE=CHRO).
+    통과 조건은 딱 하나 — 커밋 메시지에 `[나우열M 요청 YYYY-MM-DD]` 마커(오늘 이내 날짜).
+    WP_DOMAIN_FORCE 우회는 2026-09-14 GM 지시로 폐지했다(§_nawoolm_request_marker 주석).
     로그는 precommit_phantom_delete_guard 의 _log_block 재사용(새 로그 파일 안 만듦).
-
-    ★2026-08-06 시토 — 강행 스위치를 SKIP_PHANTOM_DELETE_GUARD 와 갈랐다.
-      왜: 그 전엔 두 가드가 스위치 하나를 같이 썼다. '지워진 파일 감지'를 끄려고 켠 값이
-      전혀 다른 '남의 도메인 수정 차단'까지 같이 열어 버린다 — 끄려던 것과 열리는 것이
-      다르면 그건 우회로다. 실제로 이날 실행 레인이 인쇄 CSS 를 고치다 막히자 그 값을
-      켜서 시로(나우열M 라인) 도메인 가드를 그 자리에서 통과했다(logs/phantom_delete_guard.jsonl
-      CHRO(시로)_domain_force 2건). 사람·리드가 판단하라고 둔 문을 기계가 눌렀다.
-      이제는 **어느 도메인을 넘는지 이름으로 말해야** 열린다 — 모르고 열리는 일이 없다.
-      스위치 개수는 그대로다(도메인용이 phantom 것을 빌려 쓰던 것을 자기 것으로 옮겼을 뿐).
     """
-    hits = sorted({path for _, path in diff_pairs if path in domain_paths})
+    hits = sorted({path for _, path in diff_pairs if _path_matches_any(path, domain_paths)})
     if not hits:
         return None
-    # role_label 은 "CHRO(시로)" 꼴 — 괄호 앞 영문 토큰만 비교한다(한글 입력 부담 제거).
-    role_token = role_label.split("(")[0].strip().upper()
-    forced = {t.strip().upper() for t in os.environ.get(_DOMAIN_FORCE_ENV, "").split(",") if t.strip()}
-    if role_token in forced:
-        _domain_guard_log(f"{role_label}_domain_force", hits, str(root))
-        print(f"[WARN] {_DOMAIN_FORCE_ENV}={role_token} — {role_label} 도메인 가드 강행 통과: "
+    marker = _nawoolm_request_marker(commit_message)
+    if marker:
+        _domain_guard_log(f"{role_label}_nawoolm_marker", hits, str(root))
+        print(f"[WARN] 나우열M 요청 마커 {marker} — {role_label} 도메인 가드 통과: "
               f"{', '.join(hits)}")
         return None
     extra = f" 외 {len(hits) - 1}건" if len(hits) > 1 else ""
@@ -217,14 +248,15 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
     where = "텔레그램 업무관리 방" if "텔레그램" in room else f"{room} 카톡방"
     ref = ("scripts/notify/telegram_user_send.py · GM 계정 발신"
            if "텔레그램" in room else f"scripts/kakao_rooms.json {room} members 참조")
+    today = datetime.now().date().isoformat()
     return (
         f"{role_label} 도메인 차단: {hits[0]}{extra} — AI가 직접 수정하지 않습니다"
-        f"(GM 확정 2026-08-05). 담당: {contact}. {where}에 담당자 붙여 전달하세요: "
+        f"(GM 확정 2026-09-14, 나우열M 라인 전체). 담당: {contact}. {where}에 담당자 붙여 전달하세요: "
         f"python scripts/queue_dispatch.py --to ceo --title \"[{room_tag} 전달] "
         f"{hits[0]} 수정 필요\" --note \"담당자: {contact} ({ref})\" "
         f"(웰리가 {where}으로 전달)."
-        f" 강행하려면 env {_DOMAIN_FORCE_ENV}={role_token}(그 도메인만 열림·로그 남음)."
-        f" ★강행은 사람·리드가 판단한다 — 막혔다고 자동으로 누르지 마라.{note}"
+        f" 나우열M 이 실제로 요청한 건이면 커밋 제목에 [나우열M 요청 {today}] 를 붙이세요"
+        f"(우회 스위치 없음 — 마커만 통과).{note}"
     )
 
 # ── GAS 사본 축소 차단(2026-08-10 시토 — 커밋 cd2e79cae 사고 재발방지) ──────────
@@ -564,11 +596,12 @@ _HOOK_GUARDS = (
     ("erp_anchor", "precommit_erp_anchor_guard.py"),
     ("sheet_link", "precommit_sheet_link_guard.py"),
     ("reception_freeze", "precommit_reception_freeze_guard.py"),  # GM 지시 2026-09-05 · 접수처 최종본 잠금
+    ("nawoolm_domain", "precommit_nawoolm_domain_guard.py"),  # GM 지시 2026-09-14 · 나우열M 라인 접촉 금지
 )
 
 
-def _run_hook_guards(root: Path, index_path: Path) -> list[str]:
-    """이식된 훅가드 3종을 임시 인덱스 기준으로 실행 — 위반 메시지 목록(비면 통과).
+def _run_hook_guards(root: Path, index_path: Path, message: str = "") -> list[str]:
+    """이식된 훅가드들을 임시 인덱스 기준으로 실행 — 위반 메시지 목록(비면 통과).
 
     각 가드는 내부적으로 `git diff --cached`/`git cat-file -p :path` 로 스테이징
     상태를 읽는다 — 둘 다 GIT_INDEX_FILE 환경변수를 그대로 존중하므로, 이 임시
@@ -583,10 +616,16 @@ def _run_hook_guards(root: Path, index_path: Path) -> list[str]:
       비차단)라 지금은 실질 위험 없음. mode=block 전환 시엔 이 한계부터 반드시
       보완할 것(§2 참고, 이 함수를 다시 고치지 말고 ssot/enforcement.py 쪽에
       commit_message 인자를 받는 진입점을 추가하는 방향).
+    ★2026-09-14 나우열M 라인 가드는 위 enforcement 와 달리 **기본이 차단**이라 같은
+      한계를 그냥 두면 마커로 이미 통과한 정당한 커밋을 여기서 다시 막아버린다
+      (COMMIT_EDITMSG 가 이번 메시지를 못 담아 마커를 못 찾음). 그래서 실제 메시지를
+      env WP_COMMIT_MESSAGE 로 넘긴다 — 이 값을 쓰는 가드만 읽고, 안 쓰는 나머지
+      가드는 그냥 무시한다(기존 가드 영향 없음).
     """
     run_env = dict(os.environ)
     run_env["GIT_INDEX_FILE"] = str(index_path)
     run_env["PYTHONUTF8"] = "1"
+    run_env["WP_COMMIT_MESSAGE"] = message
     violations: list[str] = []
     for label, fname in _HOOK_GUARDS:
         script = _SCRIPTS_DIR / fname
@@ -683,7 +722,8 @@ def _run_producer_hooks(root: Path, index_path: Path, rel_paths: list[str],
     return produced
 
 
-def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: Path) -> list[str]:
+def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: Path,
+                          message: str = "") -> list[str]:
     """commit-tree/update-ref *이전* 선검증(배10009) — 무관 경로 혼입 + 유령 삭제 판정.
 
     ★기존 결함: 이 판정이 update-ref 이후에 돌아 탐지는 해도 이미 만들어진
@@ -717,7 +757,8 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
     #   두 번 뜬다 — GM 지시 "이중 발동 안 하는지 확인").
     protected_deletes = [p for s, p in diff_pairs
                           if s == "D" and any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)
-                          and p not in CFO_DOMAIN_PATHS and p not in CHRO_DOMAIN_PATHS]
+                          and not _path_matches_any(p, CFO_DOMAIN_PATHS)
+                          and not _path_matches_any(p, CHRO_DOMAIN_PATHS)]
     if protected_deletes:
         mixed_domain = any(not any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)
                             for _, p in diff_pairs)
@@ -730,7 +771,8 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
     # 주석 참조). 삭제뿐 아니라 추가·수정도 막는다 — 기본은 항상 차단이고, 사람이
     # 강행할 때만 통과(우회 로그는 _domain_modify_violation 안에서 남긴다).
     for role_label, contact, domain_paths, room, judgment_note in DOMAIN_MODIFY_RULES:
-        v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, room, judgment_note, root)
+        v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, room,
+                                      judgment_note, root, commit_message=message)
         if v:
             violations.append(v)
 
@@ -1143,7 +1185,7 @@ def safe_commit(
                 # 무관 경로 혼입·유령 삭제를 판정한다. 걸리면 커밋 자체를 만들지 않고
                 # 즉시 중단(재시도 안 함 — HEAD 레이스가 아니라 스테이징 내용 자체의
                 # 문제라 재시도해도 그대로 재현된다).
-                violations = _precheck_violations(head_tree, tree, rel_paths, root)
+                violations = _precheck_violations(head_tree, tree, rel_paths, root, message=message)
                 if violations:
                     result["foreign"] = violations
                     result["reason"] = (
@@ -1155,7 +1197,7 @@ def safe_commit(
                 # ②-c 훅가드 이식(2026-07-24) — secret·truncation·enforcement.
                 # 같은 임시 인덱스를 GIT_INDEX_FILE 로 넘겨 스테이징 내용만 정확히
                 # 검사한다. 걸리면 ②-b 와 동일하게 커밋 자체를 만들지 않고 중단.
-                hook_violations = _run_hook_guards(root, index_path)
+                hook_violations = _run_hook_guards(root, index_path, message=message)
                 if hook_violations:
                     result["hook_violations"] = hook_violations
                     result["reason"] = (
@@ -1494,9 +1536,46 @@ def _feedback_close_selfcheck() -> None:
     print("[selfcheck] 피드백 닫기 조건(배 종결) OK")
 
 
+def _nawoolm_domain_selfcheck() -> None:
+    """나우열M 라인(CHRO·CFO) 가드 4케이스(2026-09-14 GM 지시 — safe_commit._domain_modify_violation)."""
+    cfo_path = "3. 웰페리온 가이드/cfo/finance/매출현황.html"
+    other_path = "scripts/some_unrelated_tool.py"
+    today = datetime.now().date().isoformat()
+    pairs = [("M", cfo_path)]
+
+    for k in ("WP_DOMAIN_FORCE",):
+        os.environ.pop(k, None)
+    try:
+        # ① cfo 파일 수정 → 차단
+        v1 = _domain_modify_violation(pairs, "CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS,
+                                       "업무관리(텔레그램)", None, ROOT, commit_message="그냥 수정")
+        assert v1 is not None, "① cfo 파일 수정이 안 막혔다"
+
+        # ② 마커 있으면 통과
+        v2 = _domain_modify_violation(pairs, "CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS,
+                                       "업무관리(텔레그램)", None, ROOT,
+                                       commit_message=f"[나우열M 요청 {today}] 재무 화면 수정")
+        assert v2 is None, "② 마커가 있는데도 막혔다"
+
+        # ③ WP_DOMAIN_FORCE=CFO 로도 차단(우회 폐지 확인)
+        os.environ["WP_DOMAIN_FORCE"] = "CFO"
+        v3 = _domain_modify_violation(pairs, "CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS,
+                                       "업무관리(텔레그램)", None, ROOT, commit_message="그냥 수정")
+        assert v3 is not None, "③ WP_DOMAIN_FORCE 로 우회됐다(폐지됐어야 함)"
+    finally:
+        os.environ.pop("WP_DOMAIN_FORCE", None)
+
+    # ④ chro 밖 파일은 통과
+    v4 = _domain_modify_violation([("M", other_path)], "CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS,
+                                   "업무관리(텔레그램)", None, ROOT, commit_message="그냥 수정")
+    assert v4 is None, "④ 무관 파일이 막혔다"
+    print("[selfcheck] 나우열M 라인 가드 4케이스 OK")
+
+
 if __name__ == "__main__":
     if "--selfcheck" in sys.argv:
         _feature_marker_loss_selfcheck()
         _feedback_close_selfcheck()
+        _nawoolm_domain_selfcheck()
         raise SystemExit(0)
     raise SystemExit(main())
