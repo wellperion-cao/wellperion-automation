@@ -19,6 +19,7 @@
     python 셋업.py                       # 지금 설정이 어디까지 찼는지 본다
     python 셋업.py --설치                # 작업 폴더를 만들고 업체 값을 깐다
     python 셋업.py --설정 다른파일.json   # 다른 설정 파일로
+    python 셋업.py --가져오기 2_dietcamp  # 상담봇 프로필에 이미 있는 칸을 설정 파일 빈칸에 채운다
     python 셋업.py --자가점검            # 이 도구 자체가 제대로 도는지
 """
 from __future__ import annotations
@@ -112,6 +113,60 @@ def 금지어자기모순(설정: dict) -> list[str]:
         for 자리 in ("brand.one_liner", "brand.positioning", "brand.tone")
     )
     return [f"금지어 「{m}」 가 업체 소개문에 그대로 있습니다" for m in 말들 if m.lower() in 글.lower()]
+
+
+# 상담봇 프로필(server/counselbot/tenants/{id}.json)에 이미 있는 칸.
+# 업체가 들어올 때 상담봇 온보딩이 먼저라서, 같은 것을 두 번 묻지 않는다(배1155 실측 14칸).
+상담봇에서 = [
+    ("tenant.id", "tenant.id"),
+    ("tenant.name", "tenant.name"),
+    ("tenant.name_en", "tenant.name_en"),
+    ("tenant.type", "tenant.type"),
+    ("brand.one_liner", "identity.one_liner"),
+    ("brand.tone", "identity.tone"),
+    ("channels.instagram", "channels.instagram"),
+    ("channels.naver_blog", "channels.blog"),
+    ("channels.naver_place", "channels.naver_place"),
+    ("channels.kakao_channel", "channels.kakao"),
+    ("cta.reservation_url", "channels.reservation_url"),
+    ("cta.phone", "facts.phone"),
+    ("kpi.inquiries_per_month", "kpi.baseline.monthly_inquiries"),
+    ("kpi.main_inflow_channel", "kpi.baseline.inquiry_channel"),
+]
+
+상담봇폴더 = HERE.parents[2] / "server" / "counselbot" / "tenants"
+
+
+def 넣기(설정: dict, 경로: str, v) -> None:
+    """'brand.one_liner' 자리에 값을 넣는다. 중간 칸이 없으면 만든다."""
+    조각들 = 경로.split(".")
+    현재 = 설정
+    for 조각 in 조각들[:-1]:
+        현재 = 현재.setdefault(조각, {})
+    현재[조각들[-1]] = v
+
+
+def 가져오기(설정: dict, tid: str) -> list[str]:
+    """상담봇 프로필에서 겹치는 칸을 설정 파일의 **빈칸에만** 채운다.
+
+    사람이 적어 둔 값은 건드리지 않는다. '미수령' 이라고 적힌 칸은 값이 아니라
+    아직 못 받은 것이므로 옮기지 않는다 — 옮기면 빈칸이 아닌 척하게 된다.
+    """
+    파일 = 상담봇폴더 / f"{tid}.json"
+    if not 파일.exists():
+        raise SystemExit(f"상담봇 프로필이 없습니다 → {파일}")
+    프로필 = json.loads(파일.read_text(encoding="utf-8"))
+
+    채운것 = []
+    for 받을자리, 줄자리 in 상담봇에서:
+        if not 비었나(값(설정, 받을자리)):
+            continue
+        v = 값(프로필, 줄자리)
+        if 비었나(v) or (isinstance(v, str) and "미수령" in v):
+            continue
+        넣기(설정, 받을자리, v)
+        채운것.append(f"{받을자리} ← {줄자리}")
+    return 채운것
 
 
 def 점검(설정: dict) -> dict:
@@ -293,7 +348,17 @@ def 자가점검() -> None:
     }
     r3 = 점검(좋은설정)
     assert not r3["빠진필수"] and not r3["형식오류"] and not r3["모순"], r3
-    print("자가점검 OK — 빈칸·형식·자기모순 셋 다 잡는다")
+    # 상담봇 프로필에서 끌어오기 — 빈칸만 채우고, 사람 값과 '미수령' 은 건드리지 않는다
+    if (상담봇폴더 / "2_dietcamp.json").exists():
+        설정 = {"tenant": {"name": "내가 적은 이름"}, "channels": {}}
+        채운것 = 가져오기(설정, "2_dietcamp")
+        assert 값(설정, "tenant.name") == "내가 적은 이름", "사람이 적은 값을 덮어썼다"
+        assert 값(설정, "cta.phone"), "전화가 안 넘어왔다"
+        assert 값(설정, "brand.one_liner"), "소개 한 줄이 안 넘어왔다"
+        assert 비었나(값(설정, "channels.naver_blog")), "'미수령' 을 값으로 옮겼다"
+        assert len(채운것) >= 8, f"넘어온 칸이 너무 적다: {채운것}"
+
+    print("자가점검 OK — 빈칸·형식·자기모순 셋 다 잡는다 · 상담봇 끌어오기도 확인")
 
 
 def main() -> None:
@@ -301,6 +366,7 @@ def main() -> None:
     ap.add_argument("--설정", type=Path, default=기본설정)
     ap.add_argument("--설치", action="store_true")
     ap.add_argument("--자가점검", action="store_true")
+    ap.add_argument("--가져오기", metavar="업체id", help="상담봇 프로필에 이미 있는 칸을 설정 파일 빈칸에 채운다")
     a = ap.parse_args()
 
     if a.자가점검:
@@ -308,6 +374,16 @@ def main() -> None:
         return
 
     설정 = json.loads(a.설정.read_text(encoding="utf-8"))
+
+    if a.가져오기:
+        채운것 = 가져오기(설정, a.가져오기)
+        a.설정.write_text(json.dumps(설정, ensure_ascii=False, indent=2) + chr(10), encoding="utf-8")
+        print()
+        print(f"  상담봇 프로필({a.가져오기})에서 {len(채운것)}칸을 채웠습니다 → {a.설정.name}")
+        for m in 채운것:
+            print(f"     · {m}")
+        print("     (사람이 적어 둔 값과 '미수령' 칸은 그대로 두었습니다)")
+
     결과 = 점검(설정)
     보고(설정, 결과)
     if a.설치:
