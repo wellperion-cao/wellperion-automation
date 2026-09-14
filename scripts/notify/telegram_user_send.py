@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 import datetime
 from pathlib import Path
@@ -39,6 +40,7 @@ _AI_SIGNS = ("[AI 웰리]", "AI 시토", "AI 시모", "AI 시우", "AI 시포", 
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from tg_outbound_log import log_outbound  # noqa: E402 — 기존 발신 로그 관문 재사용
+import worklog  # noqa: E402 — CHRO 업무지시 발신 로그(GM 원문 보관)용
 
 
 def _parse_env_file(path: Path) -> dict:
@@ -259,8 +261,87 @@ def render_chro_task(name: str, owner: str, start: str, end: str, content: str, 
     return "CHRO야\n" + "\n".join(f"{k} : {str(v).strip()}" for k, v in vals.items())
 
 
-def send_chro_task(name, owner, start, end, content, chat_id=WORK_ROOM_CHAT_ID, no=None) -> bool:
-    return send_as_gm(chat_id, render_chro_task(name, owner, start, end, content, no=no))
+def _normalize_task_name(name: str) -> str:
+    """업무명 비교용 정규화 — 앞 「[#N]」 라벨·꼬리 괄호·공백 제거."""
+    s = str(name or "").strip()
+    s = re.sub(r"^\[#\d+\]\s*", "", s)
+    s = re.sub(r"[\(（][^)）]*[\)）]\s*$", "", s)
+    return re.sub(r"\s+", "", s)
+
+
+def _lead_keyword(name: str) -> str:
+    """업무명 첫 낱말들을 공백 없이 이어 6자를 채운 핵심 덩이(예 "SVIP 요가 클래스" → "SVIP요가").
+    앞 라벨은 뺀다 — 낱말만 겹치고 포함 관계는 아닌 두 업무명을 잡는 두 번째 판정 축."""
+    s = str(name or "").strip()
+    s = re.sub(r"^\[#\d+\]\s*", "", s)
+    acc = ""
+    for w in s.split():
+        acc += w
+        if len(acc) >= 6:
+            break
+    return acc
+
+
+def _is_dup(new_name, new_owner, ex_name, ex_owner) -> bool:
+    """중복 의심 순수 판정(네트워크 없음 — selfcheck 용으로 뗐다). 둘 중 하나면 중복 의심:
+      ① 정규화한 업무명이 완전히 같거나, 한쪽(20자 이상)이 다른 쪽에 포함
+      ② 같은 담당자 + 핵심 낱말(첫 6자 이상) 일치 — 포함관계는 아니지만 낱말만 겹치는 경우
+         (2026-09-14 사례: "SVIP 요가 클래스 — 생크몽드 공간·스파권 패키지 계약·정산" vs
+          "SVIP요가 최도희선생님 마케팅 준비" — 담당자 같고 "SVIP요가" 일치)."""
+    new_norm = _normalize_task_name(new_name)
+    ex_norm = _normalize_task_name(ex_name)
+    if not ex_norm:
+        return False
+    if new_norm == ex_norm:
+        return True
+    if len(new_norm) >= 20 and new_norm in ex_norm:
+        return True
+    if len(ex_norm) >= 20 and ex_norm in new_norm:
+        return True
+    new_kw = _lead_keyword(new_name)
+    if (new_kw and len(new_kw) >= 6
+            and str(ex_owner or "").strip() == str(new_owner or "").strip()
+            and new_kw == _lead_keyword(ex_name)):
+        return True
+    return False
+
+
+def _find_ssot_duplicate(name: str, owner: str) -> dict | None:
+    """업무 SSOT(todo_list) 열린 행 중 중복 의심 하나를 돌려준다(없으면 None) — 발신 직전에만 부른다.
+    gmkey 조회 방식 = scripts/gm_handoff.py 의 GM_KEY·todo_list 호출 그대로 재사용(값 복붙 금지)."""
+    from gm_handoff import GM_KEY
+    import ops_daily_digest as o
+    rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1", "gmkey": GM_KEY},
+                      timeout=40, label="chro-task dup").json().get("data") or []
+    for r in rows:
+        if str(r.get("상태") or "") in ("완료", "삭제"):
+            continue
+        if _is_dup(name, owner, r.get("업무명"), r.get("담당자")):
+            return r
+    return None
+
+
+def send_chro_task(name, owner, start, end, content, chat_id=WORK_ROOM_CHAT_ID, no=None,
+                    gm_quote: str = "", force_dup: str = "") -> bool:
+    """gm_quote = GM 이 그 자리에서 낸 지시 원문 — 없으면 거절(나우열M 지적 2026-09-14 · GM 지시
+    "너가 왜 SSOT에 업무를 올려? 전달만 하고 삭제해" · 08-18 규칙 3회째 위반 뒤 박은 가드).
+    force_dup = 중복 의심을 뚫고 보낼 이유(비우면 중복 의심 시 안 뚫린다)."""
+    if not str(gm_quote or "").strip():
+        raise ValueError("CHRO 업무지시는 GM 이 그 자리에서 낸 지시를 옮길 때만 — gm_quote(GM 원문)를 넣어라 "
+                          "· AI 가 정리한 건은 규격 없이 안내문으로 전달만")
+    if not str(force_dup or "").strip():
+        dup = _find_ssot_duplicate(name, owner)
+        if dup:
+            print(f"[중복 의심] 이미 있는 행: {dup.get('id')} {dup.get('업무명')} — "
+                  "그 행에 내용을 보태거나 안내문으로 전달")
+            return False
+    text = render_chro_task(name, owner, start, end, content, no=no)
+    ok = send_as_gm(chat_id, text)
+    worklog.log(role="ceo", area="업무관리방", event=f"CHRO 업무지시 발신: {name}",
+                result="ok" if ok else "fail",
+                detail=f"GM 원문: {str(gm_quote).strip()[:300]}"
+                       + (f" · 중복강행 사유: {str(force_dup).strip()}" if force_dup else ""))
+    return ok
 
 
 def _selfcheck():
@@ -283,6 +364,24 @@ def _selfcheck():
         assert cfg == {"TG_USER_API_ID": "123", "TG_USER_API_HASH": "abc", "TG_USER_PHONE": "+821012345678"}, cfg
     _check_ai_signature("[AI 웰리] 테스트")  # 예외 없이 경고만
     _check_ai_signature("평범한 GM 메시지")
+    # 가드① GM 원문 없이는 거절
+    try:
+        send_chro_task("x", "y", "2026-01-01", "2026-01-02", "c")
+        raise AssertionError("gm_quote 없이 통과됨")
+    except ValueError as ex:
+        assert "gm_quote" in str(ex), ex
+    print("[selfcheck] 가드① OK — gm_quote 없이 부르면 거절: ValueError")
+    # 가드② 중복 의심 — 완전 일치·포함(20자+)·같은 담당자+핵심낱말
+    assert _is_dup("테스트 업무", "나우열M", "테스트 업무", "나우열M") is True  # 완전 일치
+    assert _is_dup("테스트 업무 이십자이상제목붙이기포함검사용텍스트", "나우열M",
+                    "테스트 업무 이십자이상제목붙이기포함검사용텍스트 — 추가설명", "나우열M") is True  # 포함(20자+)
+    # 2026-09-14 실사례: 담당자 같고 낱말만 겹침(포함관계 아님) → 중복 의심으로 잡혀야 한다
+    dup_hit = _is_dup(
+        "SVIP 요가 클래스 — 생크몽드 공간·스파권 패키지 계약·정산", "나우열M",
+        "SVIP요가 최도희선생님 마케팅 준비", "나우열M")
+    assert dup_hit is True, "오늘 사례(SVIP요가)가 중복 의심으로 안 잡힘"
+    print(f"[selfcheck] 가드② OK — 오늘 사례(SVIP요가) 중복 의심 판정: {dup_hit}")
+    assert _is_dup("완전히 다른 업무", "나우열M", "SVIP요가 최도희선생님 마케팅 준비", "최준용M") is False  # 담당자 다르면 통과
     print("[selfcheck] OK")
 
 
@@ -299,15 +398,29 @@ def main():
     ap.add_argument("--selfcheck", action="store_true")
     ap.add_argument("--chro-task", action="store_true", help="업무지시 규격(CHRO야/업무명/담당자/시작일/종료일/내용)으로 발송 · 기본 chat=업무관리")
     ap.add_argument("--no", dest="task_no", help="업무명 앞에 붙일 원장 번호(#201 등 · 나우열M 요청 2026-09-11)")
+    ap.add_argument("--gm-quote", dest="gm_quote",
+                     help="CHRO 업무지시 필수 — GM 이 그 자리에서 낸 지시 원문(없으면 거절 · GM 지시 2026-09-14)")
+    ap.add_argument("--force-dup", dest="force_dup",
+                     help="업무 SSOT 중복 의심 가드를 뚫을 이유(비우면 중복 의심 시 발송 안 함)")
     ap.add_argument("--name"); ap.add_argument("--owner"); ap.add_argument("--start"); ap.add_argument("--end"); ap.add_argument("--content")
     args = ap.parse_args()
 
     if args.chro_task:
+        if not str(args.gm_quote or "").strip():
+            print("[오류] CHRO 업무지시는 GM 이 그 자리에서 낸 지시를 옮길 때만 — --gm-quote(GM 원문)가 필요하다 "
+                  "· AI 가 정리한 건은 규격 없이 안내문으로 전달만")
+            sys.exit(2)
         try:
             text = render_chro_task(args.name, args.owner, args.start, args.end, args.content, no=args.task_no)
         except ValueError as ex:
             print(f"[오류] {ex}"); sys.exit(2)
         chat = args.chat or str(WORK_ROOM_CHAT_ID)
+        if not str(args.force_dup or "").strip():
+            dup = _find_ssot_duplicate(args.name, args.owner)
+            if dup:
+                print(f"[중복 의심] 이미 있는 행: {dup.get('id')} {dup.get('업무명')} — "
+                      "그 행에 내용을 보태거나 안내문으로 전달")
+                sys.exit(6)
         cfg, code = _prepare(text)
         if cfg is None:
             print(text); sys.exit(code)
@@ -317,6 +430,10 @@ def main():
             print(f"[상한] 오늘 {_DAILY_CAP}통 발송 완료"); sys.exit(4)
         ok = _try_send(cfg, chat, text)
         log_outbound(text, chat_id=chat, source=SOURCE, ok=ok, kind="sendMessage")
+        worklog.log(role="ceo", area="업무관리방", event=f"CHRO 업무지시 발신: {args.name}",
+                    result="ok" if ok else "fail",
+                    detail=f"GM 원문: {args.gm_quote.strip()[:300]}"
+                           + (f" · 중복강행 사유: {args.force_dup.strip()}" if args.force_dup else ""))
         sys.exit(0 if ok else 1)
 
     if args.selfcheck:
