@@ -433,6 +433,14 @@ def chro_ssot_cell(rows: "list | None") -> tuple[str, bool]:
     return text, (overdue > 0 or dup > 0)
 
 
+def ops_ssot_cell(rows: "list | None") -> tuple[str, bool]:
+    """업무·결재 SSOT 한 줄 (GM 지시 2026-09-14 「업무&결재 SSOT + 결재 SSOT 제출 + 토글을 하나로」).
+    같은 SSOT 를 두 행으로 나눠 두고 목록은 또 따로 아래에 폈던 것을 한 자리로 모은다."""
+    week_text, week_bad = ssot_week_cell(rows)
+    appr_text, appr_bad = approval_submit_cell(rows)
+    return f"{week_text} · 결재 제출 — {appr_text}", (week_bad or appr_bad)
+
+
 def _no_measure_cell(reason: str) -> tuple[str, bool]:
     return f"{_NO_MEASURE}({reason})", False
 
@@ -485,18 +493,17 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
              lambda: _no_measure_cell("참석·안건 기록 원장 없음")),
         ],
         "이경연 실장": [
+            ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
+             lambda: sales_bucket_cell(sales_data, "member"), True),
             ("종합접수처(운영부)", "1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0",
              lambda: reception_dept_cell("운영부"), False, reception_toggle_detail_html),
             ("점검 현황(운영부)", "요금 변경 준비·사우나 정비 체크리스트 진행률"
                              "(월간운영계획 체크 중 담당 이경연/운영부)",
              lambda: _ops_progress_cell(objs), False, lambda: check_detail_html(objs)),
-            ("업무·결재 SSOT(운영부 전원)", "주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산",
-             lambda: ssot_week_cell(ssot_rows)),
-            ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
-             lambda: approval_submit_cell(ssot_rows)),
-            ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
-             lambda: sales_bucket_cell(sales_data, "member"), True),
-            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+            ("업무·결재 SSOT(운영부 전원)",
+             "주 15건 완료(운영부 전원 합산) + 기획안·보고는 결재요청 칸까지 채워 제출",
+             lambda: ops_ssot_cell(ssot_rows), False, lambda: ssot_detail_html(ssot_rows)),
+            ("소통", "확인요청 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "이경연 실장")),
         ],
         "이정헌 소장": [
@@ -508,17 +515,17 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
              lambda: facility_schedule_cell()),
             ("설비 매뉴얼", "ERP 시설부 체계 등록 N/전체 · 올해 말 마무리 목표",
              lambda: manual_count_cell()),
-            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+            ("소통", "확인요청 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "이정헌 소장")),
         ],
         "나우열M": [
+            ("파트너팀 매출 관리", "월 매출목표 대비 달성률 · 파트너팀=강습 전체",
+             lambda: sales_bucket_cell(sales_data, "lessons"), True),
             ("인사(CHRO) — 업무·결재 SSOT 운영", "진행중·보류·기한 지난 행 정리 · 중복 행 0",
              lambda: chro_ssot_cell(ssot_rows)),
             ("매출·지출(CFO) — 체계·시스템 구축", "매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도",
              lambda: _no_measure_cell("자동 집계 원장 없음")),
-            ("파트너팀 매출 관리", "월 매출목표 대비 달성률 · 파트너팀=강습 전체",
-             lambda: sales_bucket_cell(sales_data, "lessons"), True),
-            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+            ("소통", "확인요청 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "나우열M")),
         ],
     }
@@ -811,16 +818,24 @@ def check_detail_html(objs: list) -> str:
     포함(GM 지시 2026-09-14). 원천은 check_ops_detail_rows 그대로(진척 칸과 같은 필터)."""
     pairs = check_ops_detail_rows(objs)
     rows = []
+    # ★카드 제목은 카드마다 한 번만 (GM 지적 2026-09-14 「카드제목 중복된 값을 저렇게 하는게 있다고?」).
+    #   종전엔 체크 줄마다 같은 제목을 다시 적어, 한 카드에 체크가 일곱이면 제목이 일곱 번 보였다.
+    #   둘째 줄부터 제목 칸을 비운다 — 값이 사라지는 것이 아니라 반복이 사라진다.
+    last_card = None
     for o, ln in pairs:
         title = str(o.get("title") or "").strip()
+        same = (title == last_card)
+        last_card = title
         oid = str(o.get("id") or "").strip()
         disp = html.escape(short(title) if title else "—")
         card = (f'<a href="GM업무.html#gm-{html.escape(oid, quote=True)}" target="_blank" '
                 f'rel="noopener" title="{html.escape(title)}">{disp}</a>' if oid
                 else f'<span title="{html.escape(title)}">{disp}</span>')
+        card_cell = ('<td class="ti ti-cont"></td>' if same
+                     else f'<td class="ti">{card}{objective_docs_html(o)}</td>')
         body = _CHK_BODY_RE.sub(r"\1", ln)
         owner_text = _check_owner_text(o, ln)
-        rows.append(f'<tr><td class="ti">{card}{objective_docs_html(o)}</td>'
+        rows.append(f'<tr>{card_cell}'
                     f'<td title="{html.escape(body)}">{html.escape(short(body))}</td>'
                     f'<td>{html.escape(owner_text)}</td>'
                     f'<td>{html.escape(_check_deliver_to(owner_text))}</td>'
@@ -832,9 +847,9 @@ def check_detail_html(objs: list) -> str:
 
 
 def chief_detail_blocks(ssot_rows: "list | None") -> str:
-    """② 업무·결재 SSOT 목록만 — ①접수·③점검은 2026-09-14부터 책임 표 행 토글 안으로 옮겼다
-    (GM 지적 "둘로 두지 않는다")."""
-    return f'        {ssot_detail_html(ssot_rows)}\n'
+    """더는 아래에 따로 펴지 않는다 — 업무·결재 SSOT 목록은 그 행 토글 안으로 들어갔다
+    (GM 지시 2026-09-14 「하나로 토글 정리해줘」). 호출부는 그대로 두고 빈 문자열을 돌린다."""
+    return ""
 
 
 def _title_key(t: str) -> str:
@@ -1489,7 +1504,12 @@ def build() -> str:
   td.note {{ color:var(--dim); }}
   /* 진척 칸·함께 하는 사람·책임 사람머리 (GM 지시 2026-09-11) */
   td.pg, th.pg {{ width:132px; }}
-  .pg .bar {{ height:6px; border-radius:3px; background:var(--line); overflow:hidden; }}
+  /* ★막대가 찔끔 나오던 것 (GM 지적 2026-09-14 「30%인데 그래프가 찔끔?」).
+     .bar 가 span 이라 기본이 inline 이었다 — inline 은 height·width 가 안 먹어 트랙이
+     내용 폭(=0)으로 접혔고, 그 0 의 30% 라 막대가 점처럼 보였다. 블록으로 펴고 폭을 준다. */
+  .pg {{ display:block; }}
+  .pg .bar {{ display:block; width:100%; min-width:120px; height:8px; margin:0 0 3px;
+             border-radius:4px; background:var(--line); overflow:hidden; }}
   .pg .bar i {{ display:block; height:100%; }}
   .pg .pg-low {{ background:var(--bad); }}
   .pg .pg-mid {{ background:var(--warn); }}
