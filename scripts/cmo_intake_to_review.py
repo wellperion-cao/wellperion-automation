@@ -1082,6 +1082,9 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         "title": f"{series['name']} — " + " ".join(intro.split()),
         "channel": series["channel"],
         "account": series["account"],
+        # 검수 카드가 갈 방 — 트랙마다 승인자가 다를 수 있다(GM 물음 2026-09-14 「나만 개인으로
+        # 활용하고 있는 것 같아서」). series.json 에 review_chat 이 없으면 종전대로 업무보고방이다.
+        "review_chat": series.get("review_chat", ""),
         "folder": folder_rel,
         "slides": slides_rel,
         "caption": caption_full,

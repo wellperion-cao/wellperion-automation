@@ -82,6 +82,20 @@ def _token() -> str:
 TELEGRAM_CHAT_ID: str = _env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env SSOT
 
 
+def _chat_for(item: dict | None = None) -> str:
+    """이 건의 검수 카드가 갈 방.
+
+    왜 갈라야 하나 (GM 물음 2026-09-14 「지금은 나만 개인으로 활용하고 있는 것 같아서」):
+    「어떤 하루」를 사람마다 한 트랙씩 늘리면, 승인도 그 사람이 해야 한다. 카드가 전부
+    한 방으로만 가면 사람이 늘수록 GM 이 남의 사진까지 다 승인하게 된다.
+
+    값은 그 트랙(series.json)의 review_chat 이 정한다. 없으면 종전 그대로 업무보고방이다 —
+    지금 도는 트랙은 아무것도 바뀌지 않는다.
+    """
+    chat = str(((item or {}).get("review_chat") or "")).strip()
+    return chat or TELEGRAM_CHAT_ID
+
+
 def _preview_photo(item: dict) -> Path | None:
     """검수카드에 첨부할 montage 미리보기 로컬 경로.
     preview(배포루트 상대 cmo/review/...) 우선, 없으면 폴더 output/_검수_미리보기_*.png."""
@@ -168,10 +182,11 @@ def _save_msgids(d: dict) -> None:
         pass
 
 
-def _delete_message(token: str, msg_id: int) -> bool:
-    """봇이 보낸 이전 카드 삭제(48시간 내 가능). 실패는 무시(이미 지웠거나 만료)."""
+def _delete_message(token: str, msg_id: int, chat: str = "") -> bool:
+    """봇이 보낸 이전 카드 삭제(48시간 내 가능). 실패는 무시(이미 지웠거나 만료).
+    보낸 방에서 지워야 한다 — 다른 방 id 로 부르면 지워지지 않는다."""
     data = urllib.parse.urlencode(
-        {"chat_id": TELEGRAM_CHAT_ID, "message_id": msg_id}).encode("utf-8")
+        {"chat_id": chat or TELEGRAM_CHAT_ID, "message_id": msg_id}).encode("utf-8")
     req = urllib.request.Request(
         f"https://api.telegram.org/bot{token}/deleteMessage", data=data, method="POST")
     try:
@@ -182,12 +197,13 @@ def _delete_message(token: str, msg_id: int) -> bool:
         return False
 
 
-def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> int | None:
+def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str,
+                    chat: str = "") -> int | None:
     """이미지 없을 때 텍스트 카드 폴백. message_id 반환(실패 None).
     발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
     2026-08-17). full_response=True 로 응답 dict 를 받아 message_id 를 뽑는다."""
     resp = _tg_gateway_send(
-        token, TELEGRAM_CHAT_ID, caption,
+        token, chat or TELEGRAM_CHAT_ID, caption,
         source="send_review_card._send_text_card", kind="sendMessage",
         extra={"parse_mode": "HTML", "disable_web_page_preview": "true",
                "reply_markup": json.dumps(keyboard, ensure_ascii=False)},
@@ -199,12 +215,12 @@ def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> i
 
 
 def _send_photo_card(token: str, caption: str, keyboard: dict,
-                     photo: Path, item_id: str) -> int | None:
+                     photo: Path, item_id: str, chat: str = "") -> int | None:
     """sendPhoto (montage 이미지 + caption + 인라인 버튼). message_id 반환(실패 None).
     발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
     2026-08-17). 업로드 시간은 관문이 파일 크기를 보고 잡는다(tg_outbound_log.send)."""
     resp = _tg_gateway_send(
-        token, TELEGRAM_CHAT_ID, caption,
+        token, chat or TELEGRAM_CHAT_ID, caption,
         source="send_review_card._send_photo_card", kind="sendPhoto", photo=str(photo),
         extra={"parse_mode": "HTML", "reply_markup": json.dumps(keyboard, ensure_ascii=False)},
         timeout=20, full_response=True,
@@ -375,14 +391,15 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
         ]]
     }
 
+    chat = _chat_for(item)          # 그 트랙의 승인자 방(없으면 업무보고방)
     photo = _preview_photo(item)
     if photo is None:
         print(f"[INFO] 미리보기 이미지 없음 — 텍스트 카드 폴백: {item_id}")
-        new_id = _send_text_card(token, caption, keyboard, item_id)
+        new_id = _send_text_card(token, caption, keyboard, item_id, chat)
     else:
-        new_id = _send_photo_card(token, caption, keyboard, photo, item_id)
+        new_id = _send_photo_card(token, caption, keyboard, photo, item_id, chat)
         if new_id is None:  # 이미지 발송 실패 → 텍스트 폴백
-            new_id = _send_text_card(token, caption, keyboard, item_id)
+            new_id = _send_text_card(token, caption, keyboard, item_id, chat)
 
     if new_id is None:
         return False
@@ -391,7 +408,7 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     store = _load_msgids()
     prev_id = (store.get(item_id) or {}).get("msg_id")
     if prev_id and prev_id != new_id:
-        if _delete_message(token, prev_id):
+        if _delete_message(token, prev_id, chat):
             print(f"[INFO] 이전 카드 자동 삭제: {item_id} msg_id={prev_id}")
     store[item_id] = {"msg_id": new_id, "sig": sig, "ts": time.time()}
     _save_msgids(store)
