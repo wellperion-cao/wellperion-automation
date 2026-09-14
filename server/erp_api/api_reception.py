@@ -93,12 +93,16 @@ REG_LOC_DEPT = {
 LF_CATEGORIES = ("consumable", "general", "valuable")
 # apps_script_reception.js LEGACY_RECEPTION_STATUSES 와 같은 값 — 갱신 시 status 는 이 셋만 받는다.
 REG_STATUSES = ("접수", "처리중", "완료")
-# reg_update(GAS·_regUpdate) 가 받던 갱신칸 그대로 — 화면 _update() 가 보내는 필드와 1:1(배 1039-C).
+# reg_update(GAS·_regUpdate) 가 받던 갱신칸 + slaDays(서버 전용 · 2026-09-14) — 화면 _update() 가 보내는
+# 필드와 1:1(배 1039-C). slaDays 는 GAS 가 모르는 칸이라 _reg_update_gas_body 되밀기에서는 뺀다(REG_GAS_SKIP_FIELDS).
 REG_UPDATE_FIELDS = ("memo", "memberReply", "handler", "reporter", "name", "targetStaff",
-                     "dept", "dueDate", "policyFix")
+                     "dept", "dueDate", "policyFix", "slaDays")
+REG_GAS_SKIP_FIELDS = ("slaDays",)   # 서버 원장 전용 칸 — GAS 되밀기 본문에 실으면 GAS 가 모르는 필드라 거부한다
 # 사진 저장 — nginx erp-locations 새 파일이 /uploads/ 를 무인증 정적 서빙한다(배 984). 시트 대신 서버 디스크.
 UPLOAD_DIR = os.environ.get("ERP_UPLOAD_DIR", "/srv/erp/uploads")
 UPLOAD_URL_BASE = "/uploads"
+UPLOAD_QUOTA_BYTES = 2 * 1024 * 1024 * 1024   # 업로드 총량 상한(2GB) — 넘으면 /photo 507 거부(2026-09-14)
+UPLOAD_QUOTA_CACHE_SEC = 60                    # os.walk 총량 재는 캐시 초 — 사진마다 전체 스캔하지 않는다
 # 제출 토큰 게이트(2026-09-05 검수 H3) — 구 GAS _vSubmitGateOk_ 가 보던 것과 같은 값. 폼(reception_block.html /
 # wp_reception_block_en.html)이 이미 이 이름으로 보내던 상수를 그대로 서버 쪽 기본값에도 둔다 — env 로 바꿀 수 있다.
 RECEPTION_SUBMIT_TOKEN = os.environ.get("RECEPTION_SUBMIT_TOKEN", "wlp_voc_7b3f9a2e6c1d4085")
@@ -172,6 +176,12 @@ def _norm_text(s):
     return re.sub(r"\s+", " ", str(s or "")).strip()
 
 
+def _title_snippet(content):
+    """/similar 응답 title — 접수 본문 전문 대신 앞 14자만(무인증 조회가 컴플레인 전문을 노출하지 않게 · 2026-09-14)."""
+    t = _norm_text(content)
+    return (t[:14] + "…") if len(t) > 14 else t
+
+
 def _similarity(a, b):
     """difflib 비율(표기·어순 그대로 비교)과 단어 토큰 Jaccard 비율(어순 달라도 겹치는 낱말 비교) 중 큰 값 —
     새 의존성 없이 두 성격을 함께 본다(/similar). ponytail: 진짜 형태소(명사) 추출이 아니라 단어 토큰이라
@@ -195,6 +205,35 @@ def _add_months(date_str, months):
     last_day = [31, 29 if (y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)) else 28,
                 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
     return "%04d-%02d-%02d" % (y, m, min(d.day, last_day))
+
+
+_upload_size_cache = {"t": 0.0, "bytes": 0}
+
+
+def _upload_dir_usage():
+    """UPLOAD_DIR 총 용량(바이트) — 매 업로드마다 os.walk 전체 스캔은 비싸 UPLOAD_QUOTA_CACHE_SEC 캐시(2026-09-14).
+    ponytail: 프로세스 전역 캐시라 워커가 여럿이면 워커마다 따로 잰다 — 워커 늘리면 공유 캐시(redis 등)로 승격."""
+    now = time.time()
+    if now - _upload_size_cache["t"] < UPLOAD_QUOTA_CACHE_SEC:
+        return _upload_size_cache["bytes"]
+    total = 0
+    for root, _dirs, files in os.walk(UPLOAD_DIR):
+        for fn in files:
+            try:
+                total += os.path.getsize(os.path.join(root, fn))
+            except OSError:
+                pass
+    _upload_size_cache["t"], _upload_size_cache["bytes"] = now, total
+    return total
+
+
+def _clean_sla_days(v):
+    """slaDays 갱신값 정제 — 1~365 정수만 받는다(그 밖은 무시 · 화면 input min=0 이라도 서버는 0 을 안 받는다)."""
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    return n if 1 <= n <= 365 else None
 
 
 def save_photo(photo, file_name, mime, subdir):
@@ -277,6 +316,8 @@ def _reg_update_gas_body(reg_id, category, new_status, payload):
     if new_status:
         body["status"] = new_status
     for k in REG_UPDATE_FIELDS:
+        if k in REG_GAS_SKIP_FIELDS:
+            continue
         if k in payload and payload[k] is not None:
             body[k] = str(payload[k])
     return body
@@ -486,6 +527,8 @@ def similar(category: str = Query(""), dept: str = Query(""), text: str = Query(
     text = text.strip()
     if not dept or not text:
         return JSONResponse({"ok": False, "error": "dept·text 필수"}, status_code=400)
+    if len(text) < 6:   # 낱말 하나로 원장을 훑는 것 차단(무인증 · 2026-09-14)
+        return JSONResponse({"ok": False, "error": "text 는 6자 이상"}, status_code=400)
     cat_label = _cat_resolve(category)
     if cat_label is None:
         return JSONResponse({"ok": False, "error": "알 수 없는 카테고리입니다: %s" % category[:60]}, status_code=400)
@@ -513,8 +556,9 @@ def similar(category: str = Query(""), dept: str = Query(""), text: str = Query(
         content = d.get("content", "")
         score = _similarity(text, content)
         if score >= 0.5:
-            items.append({"id": r["reg_id"], "title": content, "dept": r["dept"], "category": r["category"],
-                         "status": d.get("status") or r["status"], "created_at": r["created_at"],
+            # 본문 전문 대신 앞부분만(무인증 조회 · 2026-09-14 검수) — 화면은 아직 이 응답을 안 쓴다(신규 배선).
+            items.append({"title": _title_snippet(content), "dept": r["dept"], "category": r["category"],
+                         "status": d.get("status") or r["status"], "created_at": str(r["created_at"])[:10],
                          "score": round(score, 3)})
     items.sort(key=lambda x: x["score"], reverse=True)
     return {"ok": True, "items": items[:limit], "_source": "server"}
@@ -698,8 +742,14 @@ def _update(body):
                 return {"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}
             data = json.loads(row["data"])
             for k in REG_UPDATE_FIELDS:
-                if k in payload and payload[k] is not None:
-                    data[k] = str(payload[k])
+                if k not in payload or payload[k] is None:
+                    continue
+                if k == "slaDays":
+                    n = _clean_sla_days(payload[k])
+                    if n is not None:
+                        data[k] = n
+                    continue
+                data[k] = str(payload[k])
             if new_status:
                 data["status"] = new_status
             status = data.get("status") or row["status"]
@@ -915,6 +965,12 @@ def _photo_upload(body):
         payload = json.loads(body.decode("utf-8"))
     except Exception:
         return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
+    # /submit 과 같은 제출 토큰 게이트(2026-09-14) — 지금은 이 주소를 부르는 화면이 없어(grep 확인) 아무도
+    # 안 끊긴다. 화면이 이 경로를 쓰게 되면 /submit 의 t:RECEPTION_SUBMIT_TOKEN 과 같은 방식으로 실어야 한다.
+    if str(payload.get("t") or "") != RECEPTION_SUBMIT_TOKEN:
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+    if _upload_dir_usage() >= UPLOAD_QUOTA_BYTES:   # 저장 전에 총량부터(2026-09-14)
+        return JSONResponse({"ok": False, "error": "storage-full"}, status_code=507)
     photo = payload.get("photo") or payload.get("file") or payload.get("base64") or ""
     if not photo:
         return {"ok": False, "error": "photo 없음"}
@@ -929,7 +985,7 @@ def selftest():
     assert RECEPTION_SUBMIT_TOKEN == "wlp_voc_7b3f9a2e6c1d4085", "폼(reception_block.html) 상수와 어긋남"  # 검수 H3
     assert REG_STATUSES == ("접수", "처리중", "완료"), "GAS LEGACY_RECEPTION_STATUSES 와 어긋남"  # 배 1039-C
     assert set(REG_UPDATE_FIELDS) == {"memo", "memberReply", "handler", "reporter", "name", "targetStaff",
-                                      "dept", "dueDate", "policyFix"}, "GAS _regUpdate 갱신칸과 어긋남"
+                                      "dept", "dueDate", "policyFix", "slaDays"}, "GAS _regUpdate 갱신칸과 어긋남"
     assert dept_for("facility", "헬스장") == "시설부"          # 부서 고정 카테고리는 장소 무관
     assert dept_for("clean", "여자사우나") == "지원부(여)"      # 성별 표기 우선
     assert dept_for("clean", "남자") == "지원부(남)"
@@ -961,6 +1017,16 @@ def selftest():
     assert gb == {"action": "reg_update", "id": "RECEPTION-1", "category": "분실물 접수",
                   "status": "처리중", "memo": "확인중", "handler": "홍길동"}, gb  # REG_UPDATE_FIELDS 밖 칸은 안 실림
     assert "status" not in _reg_update_gas_body("RECEPTION-2", "청결 이슈 접수", "", {"memo": "x"})  # 상태 미변경 시 status 생략
+    gb3 = _reg_update_gas_body("RECEPTION-3", "분실물 접수", "", {"memo": "x", "slaDays": 7})
+    assert "slaDays" not in gb3 and gb3["memo"] == "x", gb3  # 서버 전용 칸(GAS 모름)은 되밀기 본문에서 빠진다(2026-09-14)
+
+    # 유사건 조회 title 은 전문 대신 앞 14자(2026-09-14 검수) — 공개 무인증 응답이 접수 본문을 그대로 안 준다
+    assert _title_snippet("짧은글") == "짧은글"
+    assert _title_snippet("가나다라마바사아자차카타파하거너더러머버서어저") == "가나다라마바사아자차카타파하…"
+
+    # slaDays 갱신값 정제 — 1~365 정수만(그 밖은 무시 · 2026-09-14)
+    assert _clean_sla_days("7") == 7 and _clean_sla_days(7) == 7
+    assert _clean_sla_days(0) is None and _clean_sla_days(366) is None and _clean_sla_days("abc") is None
 
     # reg_dashboard 대체(배1090·INC-056 ④) — GAS 응답 모양과 1:1
     d = _dashboard_response("week", [{"regId": "R1"}],
@@ -986,6 +1052,17 @@ def selftest():
             "mime 표에 없으면 저장 안 함(C3) + subdir 화이트리스트(C2)"
         assert save_photo("", "", "image/jpeg", "reception") == ""          # 사진 없음 = 조용히 빈 문자열
         assert save_photo("not-base64-!!!", "", "image/jpeg", "reception") == ""  # 깨진 값도 예외 없이 빈 문자열
+
+        # 업로드 총량 측정(2026-09-14) — os.walk 합이 맞아야 507 거부 문턱을 믿을 수 있다
+        global UPLOAD_QUOTA_BYTES
+        _upload_size_cache.clear(); _upload_size_cache.update(t=0.0, bytes=0)
+        usage = _upload_dir_usage()
+        assert usage == os.path.getsize(path), usage   # 방금 저장한 jpeg 하나뿐인 디렉터리
+        saved_quota = UPLOAD_QUOTA_BYTES
+        UPLOAD_QUOTA_BYTES = usage - 1
+        _upload_size_cache.clear(); _upload_size_cache.update(t=0.0, bytes=0)
+        assert _upload_dir_usage() >= UPLOAD_QUOTA_BYTES   # 507 거부 조건이 실제로 걸린다
+        UPLOAD_QUOTA_BYTES = saved_quota
     print("selftest ok")
     return 0
 
