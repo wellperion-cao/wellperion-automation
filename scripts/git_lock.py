@@ -95,6 +95,14 @@ class GitLock:
         self._holder_txt = os.path.join(self._lockdir, "holder.txt")
 
     def __enter__(self):
+        # 같은 프로세스 안에서 두 번 잡으면(예: safe_commit 임계구역 안에서 push_lock 승인 원장 락) 자기
+        # 자신을 90초 기다리다 TIMEOUT 이 났다 — 2026-09-12 부터 52회 실측(2026-09-14 시토). 같은 pid 가
+        # 이미 쥔 락은 겹쳐 잡은 것으로 세고(깊이 +1), 바깥이 놓을 때만 디렉터리를 지운다.
+        self._nested = False
+        if self._held_by_me():
+            self._nested = True
+            _log(f"REENTER holder={self.holder}", self._root)
+            return self
         waited = 0.0
         while True:
             try:
@@ -121,9 +129,20 @@ class GitLock:
                 waited += POLL
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if getattr(self, "_nested", False):
+            return False  # 바깥 with 가 놓는다
         shutil.rmtree(self._lockdir, ignore_errors=True)
         _log(f"RELEASED holder={self.holder}", self._root)
         return False  # 예외 전파
+
+    def _held_by_me(self):
+        """holder.txt 의 pid 가 이 프로세스면 True(호스트도 같아야 한다)."""
+        try:
+            with open(self._holder_txt, encoding="utf-8") as f:
+                parts = f.read().strip().split("|")
+            return int(parts[0]) == os.getpid() and parts[1] == socket.gethostname()
+        except Exception:
+            return False
 
     def _is_stale(self):
         """holder.txt 읽어 age>STALE 또는 PID 죽음 → True. 읽기 실패 → False."""
