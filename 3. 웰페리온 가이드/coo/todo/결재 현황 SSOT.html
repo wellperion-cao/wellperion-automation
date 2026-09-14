@@ -449,7 +449,8 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 // ★2026-09-05 배985 — ERP 도메인에서는 서버 미러(/api/todo)를 먼저 읽는다. 이 화면은 GM 담당 결재 건도
 // 봐야 해서(위 include_gm=1&gmkey) 미러 쪽도 같은 쿼리를 그대로 넘긴다 — 서버가 같은 게이트로 판정한다.
 // ★2026-09-06 되돌림 — 같은 서버 미러의 creator 필터로 업무 SSOT가 붕괴해 이 판정만 되돌린다(위 파일과 동일 조치).
-var ERP_API_ON = false;
+// 2026-09-14 서버 읽기 전환(GM 지시 · 나우열M 「진행」 13:53) · 서버 249건=구글 249건 대조 완료 · 되돌리기 = false
+var ERP_API_ON = true;
 
 const CAT_COLORS = {
   '[1] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},

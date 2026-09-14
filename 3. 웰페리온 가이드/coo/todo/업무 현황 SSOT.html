@@ -811,7 +811,8 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 // ★2026-09-06 되돌림 — 서버 미러가 creator까지 걸러 187건 중 167건이 사라지는 장애(GM 행 89%) 유발.
 // 화면이 이미 STAFF_TOKENS로 GM 행을 거르므로 서버 이중 필터는 불필요. 근본 수리(서버 조건 제거)는
 // 권한 밖이라 이 판정만 되돌려 GAS 직접 읽기로 지혈.
-var ERP_API_ON = false;
+// 2026-09-14 서버 읽기 전환(GM 지시 · 나우열M 「진행」 13:53) · 서버 249건=구글 249건 대조 완료 · 되돌리기 = false
+var ERP_API_ON = true;
 function fetchTodoList() {
   var gas = function () {
     return fetch(TODO_API_URL + '?action=todo_list', { redirect: 'follow' })
