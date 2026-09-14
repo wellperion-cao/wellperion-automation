@@ -1302,33 +1302,60 @@ if (location.search.indexOf('embed=1') >= 0) document.documentElement.classList.
             });
             _matrixData.updated_at = new Date().toISOString().slice(0,10);
             var content = JSON.stringify(_matrixData, null, 2);
+            var message = '[GM] C레벨별 카드 3칸 편집 ' + _matrixData.updated_at;
+            var matrixPath = '3. 웰페리온 가이드/coo/bootsetup_matrix.json';
             var btn = document.getElementById('matrix-save-btn');
             if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
-            fetch(GAS_URL, {
+            /* ★저장 통로 = 서버 대기열 우선(2026-09-14 시토 · AWS 이관) — 로그인 쿠키(same-origin)로
+               관리자 판정, 서버가 10분 주기로 실제 커밋한다. 서버가 안 되면(401·403·네트워크)
+               옛 구글(GAS commit_file) 로 조용히 예비한다 — 방금 받은 pin 을 그대로 쓴다. */
+            fetch('/api/guide/commit', {
               method: 'POST',
-              redirect: 'follow',
-              headers: {'Content-Type': 'text/plain;charset=utf-8'},
-              body: JSON.stringify({
-                action: 'commit_file',
-                path: '3. 웰페리온 가이드/coo/bootsetup_matrix.json',
-                content: content,
-                message: '[GM] C레벨별 카드 3칸 편집 ' + _matrixData.updated_at,
-                key: pin
-              })
+              credentials: 'same-origin',
+              headers: {'Content-Type': 'application/json;charset=utf-8'},
+              body: JSON.stringify({ path: matrixPath, content: content, message: message })
             })
-              .then(function(r){ return r.json(); })
+              .then(function(r){ if(!r.ok) throw {gasFallback:true, status:r.status}; return r.json(); })
               .then(function(res){
-                if(res && res.ok){
-                  alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
+                if(res && res.ok && res.queued){
+                  alert('저장 접수 — 10분 안에 반영됩니다.');
                   setEdit(false);
                 } else {
-                  alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
-                  if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+                  throw {gasFallback:true, status:0};
                 }
               })
-              .catch(function(e){
-                alert('저장 오류: ' + e.message);
-                if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+              .catch(function(err){
+                if(!(err && err.gasFallback)){
+                  alert('저장 오류: ' + err.message);
+                  if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+                  return;
+                }
+                fetch(GAS_URL, {
+                  method: 'POST',
+                  redirect: 'follow',
+                  headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                  body: JSON.stringify({
+                    action: 'commit_file',
+                    path: matrixPath,
+                    content: content,
+                    message: message,
+                    key: pin
+                  })
+                })
+                  .then(function(r){ return r.json(); })
+                  .then(function(res){
+                    if(res && res.ok){
+                      alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
+                      setEdit(false);
+                    } else {
+                      alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
+                      if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+                    }
+                  })
+                  .catch(function(e){
+                    alert('저장 오류: ' + e.message);
+                    if(btn){ btn.textContent = '저장'; btn.disabled = false; }
+                  });
               });
           };
 
