@@ -210,3 +210,12 @@ def test_zero_submission_on_closed_day_is_not_anomaly(monkeypatch):
     })
     st = R.fetch_check_status(fetch_fn=fetch, support_date=y)
     assert st["anomaly"] is False
+
+
+def test_open_override_day_is_business_day(monkeypatch):
+    """정기 휴관일이라도 open_override 에 있으면 영업일 — 2026-09-27(넷째 일요일, GM 지시로 운영).
+    이 날을 휴관으로 세면 점검 알림이 안 나가고 그날 점검이 통째로 빈다."""
+    assert R._closed_day("2026-09-27") is False      # open_override 가 정기 규칙을 이긴다
+    assert R._closed_day("2026-09-24") is True       # 추석 임시 휴관
+    assert R._closed_day("2026-09-13") is True       # 둘째 일요일 정기 휴관
+    assert R._closed_day("2026-10-25") is True       # 다음 달 넷째 일요일은 원래대로

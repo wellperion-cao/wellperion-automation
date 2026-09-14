@@ -1897,7 +1897,11 @@ def _is_closed_day(d=None) -> bool:
         from pathlib import Path as _Path
         cfg = _json.loads((_Path(__file__).resolve().parents[1] / "ssot" / "closed_days.json")
                           .read_text(encoding="utf-8"))
-        if any(str(e.get("date")) == d.strftime("%Y-%m-%d") for e in (cfg.get("extra") or [])):
+        iso = d.strftime("%Y-%m-%d")
+        # 읽는 차례 — open_override(그날은 연다) → extra(임시 휴관) → 정기 규칙
+        if any(str(e.get("date")) == iso for e in (cfg.get("open_override") or [])):
+            return False
+        if any(str(e.get("date")) == iso for e in (cfg.get("extra") or [])):
             return True
     except Exception:
         pass                                   # 파일이 없거나 깨져도 아래 규칙으로 계속 판정한다
