@@ -1061,6 +1061,14 @@ def find_dups(opens: dict[int, tuple[str, dict]]) -> dict[int, int]:
     keys = sorted(opens)
     for i, n1 in enumerate(keys):
         for n2 in keys[i + 1:]:
+            # ★담당이 다르면 같은 일이 아니다 (GM 지적 2026-09-14 「중복건들은 다 검토해서」).
+            #   제목만 보던 판정이 「매출보고 임정은M 담당 4건 현황 회신」·「…윤병현AM 담당 2건…」·
+            #   「…나우열M 담당 8건…」 세 사람 건을 한 건으로 접어, 두 사람 일이 화면에서 사라졌다.
+            #   사람이 다르면 할 일도 다르다 — 제목이 닮아도 접지 않는다.
+            o1 = str(opens[n1][1].get("owner") or "").strip()
+            o2 = str(opens[n2][1].get("owner") or "").strip()
+            if o1 and o2 and o1 != o2:
+                continue
             k1, k2 = _title_key(opens[n1][1].get("issue")), _title_key(opens[n2][1].get("issue"))
             if k1 and k2 and difflib.SequenceMatcher(None, k1, k2).ratio() >= 0.72:
                 mark(n1, n2)
@@ -1351,27 +1359,9 @@ def build() -> str:
         {inner}
       </div>''')
 
-    if aside_rc:
-        blocks.append(f'''      <div class="blk">
-        <details class="grp"><summary>다른 곳에서 닫힌 것 <span class="gc">{len(aside_rc)}건</span>
-          <span class="gw">종합접수처에서 열리고 그 화면에서 닫는 건 — 여기서 하실 일은 없습니다</span></summary>
-        {table([row_html(n, d, it) for n, d, it in aside_rc], "없음")}
-        </details>
-      </div>''')
-
-    if aside_dup:
-        dup_rows = "\n        ".join(
-            f'<li>#{n} {html.escape(str(it.get("issue") or ""))}'
-            f'<span class="mvd">→ 같은 건이 <b>#{dup_of[n]}</b> 로 새로 잡혀 있습니다(날짜가 뒤인 쪽을 살렸습니다)</span></li>'
-            for n, d, it in aside_dup)
-        blocks.append(f'''      <div class="blk">
-        <details class="grp"><summary>중복 — 새 번호로 이어진 것 <span class="gc">{len(aside_dup)}건</span>
-          <span class="gw">원장 상태는 그대로입니다 · 화면에서만 내렸습니다</span></summary>
-        <ul class="mvlist">
-        {dup_rows}
-        </ul>
-        </details>
-      </div>''')
+    # 닫힌 것·중복 접힘 목록은 화면에서 뺐다 (GM 지적 2026-09-14 「닫은건들은 왜 보이는거야?」).
+    #   둘 다 「여기서 하실 일은 없습니다」라고 적어 두고도 자리를 차지했다 — 볼 이유가 없으면 안 그린다.
+    #   판정 자체는 그대로 돈다(원장은 안 건드리고, 머리줄 숫자로만 남긴다).
 
     ssot_note = ""
     if not ssot_ok:
