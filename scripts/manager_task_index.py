@@ -441,6 +441,66 @@ def ops_ssot_cell(rows: "list | None") -> tuple[str, bool]:
     return f"{week_text} · 결재 제출 — {appr_text}", (week_bad or appr_bad)
 
 
+def automation_cell(objs: list) -> tuple[str, bool]:
+    """GM 책임 ① 자동화·자율화(ERP+브로제이) — ERP = AWS 이관 표(status/aws_migration.json · 시토 정본)의
+    영역별 전환 완료 수 / 전체, 브로제이 = 이번 달 카드 중 제목·체크에 「브로제이」가 든 카드의 체크 완료율.
+    두 원천 다 있는 값만 적는다 — 없으면 없다고 적는다."""
+    parts, warn = [], False
+    try:
+        d = json.loads((ROOT / "3. 웰페리온 가이드" / "status" / "aws_migration.json").read_text(encoding="utf-8"))
+        rows = d.get("rows") or []
+        done = sum(1 for r in rows if "완료" in str(r.get("switch_date") or ""))
+        pct = round(done / len(rows) * 100) if rows else 0
+        parts.append(f"ERP 서버 이관 {done}/{len(rows)}영역({pct}%)")
+        warn = warn or pct < 100
+    except Exception:
+        parts.append("ERP 이관 표 없음")
+        warn = True
+    bj = [o for o in objs if "브로제이" in f'{o.get("title") or ""} {o.get("progress_note") or ""}']
+    if bj:
+        dn, tot = _checkbox_tally(bj)
+        parts.append(f"브로제이 카드 {len(bj)}장 · 체크 {dn}/{tot}" + (f"({round(dn / tot * 100)}%)" if tot else ""))
+        warn = warn or _overdue_objs(bj) > 0
+    else:
+        parts.append("브로제이 카드 이번 달 없음")
+    return " · ".join(parts), warn
+
+
+def expansion_cell() -> tuple[str, bool]:
+    """GM 책임 ② 비즈니스 확장 — 전략 로드맵 「비즈니스 확장」 항목(status/monthly_ops_plan.json strategy_roadmap)
+    상태·진척 + 시보(CBO) 배(status/_queue.json) 진행·대기·완료 수."""
+    parts = []
+    try:
+        m = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
+        items = (m.get("strategy_roadmap") or {}).get("items") or []
+        ex = [i for i in items if "확장" in str(i.get("title") or "")]
+        for i in ex:
+            parts.append(f"로드맵 「{i.get('title')}」 {i.get('status') or '—'}"
+                         + (f" · 진척 {i.get('progress')}" if i.get("progress") not in (None, "") else ""))
+    except Exception:
+        pass
+    try:
+        q = json.loads((ROOT / "status" / "_queue.json").read_text(encoding="utf-8"))
+        qi = q if isinstance(q, list) else (q.get("items") or q.get("ships") or [])
+        st = [str(it.get("status") or "") for it in qi if it.get("clevel") == "cbo"]
+        parts.append(f"시보 배 진행 {st.count('IN_PROGRESS')} · 대기 {st.count('PENDING')} · 완료 {st.count('DONE')}")
+    except Exception:
+        parts.append("시보 배 조회 실패")
+    return " · ".join(parts) if parts else f"{_NO_MEASURE}(로드맵·배 없음)", False
+
+
+def directive_cell(objs: list) -> tuple[str, bool]:
+    """GM 책임 ③ 회장님·대표님 지시 — 이번 달 카드 중 제목·체크에 「회장님」「대표님」이 든 카드의 체크 완료율과
+    기한 지난 것. 카드가 없으면 잴 수 없다고 적는다(지시를 카드 체크 줄에 「[회장님 지시]」로 적으면 여기서 셈)."""
+    ds = [o for o in objs if any(k in f'{o.get("title") or ""} {o.get("progress_note") or ""}' for k in ("회장님", "대표님"))]
+    if not ds:
+        return f"{_NO_MEASURE}(이번 달 카드에 회장님·대표님 지시 표기 없음 — 카드 체크 줄에 「[회장님 지시]」로 적으면 셉니다)", False
+    dn, tot = _checkbox_tally(ds)
+    over = _overdue_objs(ds)
+    ck = f"체크 {dn}/{tot}({round(dn / tot * 100)}%)" if tot else "체크 항목 없음"
+    return f"지시 카드 {len(ds)}장 · {ck} · 기한 지난 것 {over}건", over > 0
+
+
 def _no_measure_cell(reason: str) -> tuple[str, bool]:
     return f"{_NO_MEASURE}({reason})", False
 
@@ -482,15 +542,15 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     mgr_names = ["이경연 실장", "이정헌 소장", "나우열M"]
 
     rows_def = {
+        # GM 확정 2026-09-14 16:5x 「자동화 및 자율화(ERP+브로제이) 진척율 // 웰페리온 비즈니스 확장건 //
+        #   회장님&대표님 지시 이렇게 3개로만」 — 종전 4개(카드 진척·회신 짝·결재 처리·주간 미팅)는 뺐다.
         "김남욱 GM": [
-            ("GM업무 카드 진척", "월간운영계획 카드 체크 완료율 · 기한 지난 목표 0건",
-             lambda: objective_progress_cell(_obj_filter(objs, "김남욱 GM"))),
-            ("중간관리자 회신 짝", "보낸 확인요청 대비 회신 받은 비율 · 35일 넘긴 건 0",
-             lambda: ledger_reply_cell_all(seen, mgr_names)),
-            ("결재 처리", "결재요청 대기 건수 · 평균 대기일 3일 안",
-             lambda: ssot_pending_cell(ssot_rows)),
-            ("주간 미팅", "매주 화요일 15:00 고정 · 안건 = 이 화면 진행 체크",
-             lambda: _no_measure_cell("참석·안건 기록 원장 없음")),
+            ("자동화·자율화(ERP+브로제이) 진척률", "AWS 이관 표 영역별 완료 · 브로제이 카드 체크 완료율",
+             lambda: automation_cell(objs)),
+            ("웰페리온 비즈니스 확장", "확장 로드맵 항목 상태 · 시보(확장) 배 진행·완료",
+             lambda: expansion_cell()),
+            ("회장님·대표님 지시", "지시 카드 체크 완료율 · 기한 지난 것 0",
+             lambda: directive_cell(objs)),
         ],
         "이경연 실장": [
             ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",

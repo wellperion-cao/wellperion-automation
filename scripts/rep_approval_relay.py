@@ -272,9 +272,12 @@ def run_assign_brief(send: bool = False, dry_run: bool = False) -> int:
 # ── ③ 오늘 올라온 업무(업무 SSOT 신규 행) ────────────────────────────────────
 def pick_new_rows(rows: list[dict], notified: dict[str, str], today: str) -> list[dict]:
     """생성일(KST)=오늘 · 생성자가 AI 가 아닌 행 · 아직 안 알린 것. 생성자 빈칸=사람(페이지 직접 등록)."""
+    # 나우열M 라인(인사·재무) 행은 카톡 방(★중간관리자·★운영부)에 싣지 않는다 — 나우열M 소통은 텔레그램
+    #   업무관리 방 한 곳(웰리·시로·나우열M)뿐이다(GM 2026-09-14 「운영부 카톡방에 우열M 전달을 왜 해? 업무관리방에만」).
     return [r for r in rows
             if _kst_day(r.get("생성일")) == today
             and not _AI_RE.search(str(r.get("생성자") or ""))
+            and "나우열" not in f'{r.get("담당자") or ""} {r.get("생성자") or ""}'
             and str(r.get("id") or "").strip() not in notified]
 
 
