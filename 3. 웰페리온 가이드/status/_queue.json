@@ -1347,7 +1347,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-12",
     "from": "cto",
-    "note": "[시토 → 시포 전달 2026-09-12] 실측 2026-09-12(시토): 2026-09-11 19:1x GM 지시로 write_member 스위치가 server 가 됐다(문의류 5종 member_inquiry_add/update/delete · lesson_inquiry_add/update). 그 뒤 member_inquiry_update 16건 — 서버 저장→시트 되밀기 도착까지 평균 52초·최대 62초(write_log pushed_at−at). 그런데 3. 웰페리온 가이드/cpo/member/membership.html 은 저장 뒤 VERIFY_DEBOUNCE_MS=300(14172줄) 만에 _verifyFetchList(14749줄)가 GAS ?action=member_inquiry_list&nocache=1 로 구글을 직접 읽어 대조하므로, 시트에 아직 안 닿은 정상 저장이 '⚠ 저장 확인 안 됨 — 값 다름'(14932줄) 토스트로 실무진에게 뜬다. 서버 쪽 ①은 이미 돼 있다 — api_write.server_ok 응답에 mode:'server' 가 실린다(server/erp_api/api_write.py server_ok · 자체점검 assert). 화면 쪽 ②만 남았다: 저장 응답 d.mode==='server' 이면 읽기확인(verify 배치 등록)을 건너뛰고 바로 '동기화 완료'로 처리한다(또는 /api 미러를 읽어 대조). 되돌리기 = 그 분기 한 줄 제거. 화면은 시포 소관이라 시토는 손대지 않는다.",
+    "note": "[시토 → 시포 전달 2026-09-12] 실측 2026-09-12(시토): 2026-09-11 19:1x GM 지시로 write_member 스위치가 server 가 됐다(문의류 5종 member_inquiry_add/update/delete · lesson_inquiry_add/update). 그 뒤 member_inquiry_update 16건 — 서버 저장→시트 되밀기 도착까지 평균 52초·최대 62초(write_log pushed_at−at). 그런데 3. 웰페리온 가이드/cpo/member/membership.html 은 저장 뒤 VERIFY_DEBOUNCE_MS=300(14172줄) 만에 _verifyFetchList(14749줄)가 GAS ?action=member_inquiry_list&nocache=1 로 구글을 직접 읽어 대조하므로, 시트에 아직 안 닿은 정상 저장이 '⚠ 저장 확인 안 됨 — 값 다름'(14932줄) 토스트로 실무진에게 뜬다. 서버 쪽 ①은 이미 돼 있다 — api_write.server_ok 응답에 mode:'server' 가 실린다(server/erp_api/api_write.py server_ok · 자체점검 assert). 화면 쪽 ②만 남았다: 저장 응답 d.mode==='server' 이면 읽기확인(verify 배치 등록)을 건너뛰고 바로 '동기화 완료'로 처리한다(또는 /api 미러를 읽어 대조). 되돌리기 = 그 분기 한 줄 제거. 화면은 시포 소관이라 시토는 손대지 않는다.\n[웰리 2026-09-15 08:2x] 서버 조건 두 갈래가 다 섰다 — 시토가 idem 응답 표시를 고쳐 배포했다(커밋 0a97c35a9). server 모드 첫 응답에만 mode=server 가 실리고 같은 열쇠로 되받은 응답에는 빠져 있어, 화면이 옛값을 보고 정상 저장을 「값 다름」으로 경고하던 길이다. 이제 두 갈래 다 같은 표시가 붙는다 — 화면 쪽 작업을 막고 있던 조건은 없어졌다.",
     "next": "membership.html 저장 응답 처리에서 d.mode==='server' 분기 추가 → 라이브에서 문의 1건 수정해 토스트가 '✅ 동기화 완료' 로 뜨는지 확인 → 시토 2510 에 한 줄 회신",
     "depends_on": "",
     "ship_no": 12570,
@@ -1358,7 +1358,7 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "2026-09-14",
-    "updated_at": "2026-09-12",
+    "updated_at": "2026-09-15",
     "aide_interview_needed": true,
     "aide_interview_reason": "접근법이 여러 개(어느 방향인지 결정 필요)"
   },
