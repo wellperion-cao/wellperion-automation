@@ -71,15 +71,18 @@ def upsert(conn, rows, now, src="all"):
 
     src = 어느 목록에서 왔나(active=진행중 · all=지난 이력). 두 목록은 행이 겹치지 않는다(2026-09-11 실측).
 
-    지우지 않는다: 시트에서 행이 사라지는 일은 없고(취소는 상태 '캔슬'), 조회가 한 번 덜 오는 날
-    원장을 깎으면 되살릴 길이 없다. 새 행·바뀐 행만 덮는다."""
+    rows 는 항상 전량(gas_list 가 from/to 없이 부르는 mode=active/all) — 이번 회차에 없는 row 는 시트에서
+    지워진 것이라 같은 src 안에서 지운다(품의 유령 행 수리 · 2026-09-14). ⚠️ from/to 로 범위를 잘라 받는
+    호출(화면 mode=done 같은)을 여기 새로 연결한다면 부분 목록이라 이 삭제를 타면 안 된다 — 지우지 않는다."""
     n = 0
+    row_nums = []
     with conn:
         for r in rows:
             try:
                 row = int(r.get("row"))
             except (TypeError, ValueError):
                 continue                      # row 없는 줄은 원장 열쇠가 없다 — 건너뛴다
+            row_nums.append(row)
             vals = [str(r.get(col) or "").strip() for _, col in COLS]
             conn.execute(
                 "INSERT INTO proc_items (tenant_id,row,src,no,ymd,requester,dept,item,status,price,data,synced_at)"
@@ -90,7 +93,11 @@ def upsert(conn, rows, now, src="all"):
                 tuple([db.TENANT, row, src] + vals + [_price(r.get("가격")),
                                                       json.dumps(r, ensure_ascii=False), now]))
             n += 1
-    return n
+        # row_nums 가 비면 `<> ALL(빈 배열)` 이 항상 참이 되어 그 src 전체가 지워진다 — 반드시 건너뛴다.
+        deleted = conn.execute(
+            "DELETE FROM proc_items WHERE tenant_id=%s AND src=%s AND row <> ALL(%s)",
+            (db.TENANT, src, row_nums)).rowcount if row_nums else 0
+    return n, deleted
 
 
 def main():
@@ -98,7 +105,7 @@ def main():
     conn = db.connect()
     db.init_schema(conn)                      # 멱등 — proc_items 표가 없으면 만든다
     now = _kst_now()
-    done, failed = {}, []
+    done, deleted, failed = {}, {}, []
     for src in ("active", "all"):              # 두 목록은 겹치지 않는다 — 둘 다 받아야 원장이 온전해진다
         rows = gas_list(src)
         if rows is None:
@@ -111,14 +118,14 @@ def main():
             print("[keep] %s — 원천 0건 응답, 원장 %d행 유지(조회 이상 의심)" % (src, cur))
             failed.append(src)
             continue
-        done[src] = upsert(conn, rows, now, src)
+        done[src], deleted[src] = upsert(conn, rows, now, src)
     with conn:
         if done:
             db.meta_set(conn, "proc_last_sync", now)
             db.meta_set(conn, "proc_last_count", json.dumps(done))
         db.meta_set(conn, "proc_last_failed", ",".join(failed))
     conn.close()
-    print("proc sync %s · 원장 반영 %s · 실패 %s" % (now, done or "없음", failed or "없음"))
+    print("proc sync %s · 원장 반영 %s · 유령행 삭제 %s · 실패 %s" % (now, done or "없음", deleted or "없음", failed or "없음"))
     return 1 if failed else 0
 
 
@@ -132,22 +139,25 @@ def selftest():
         assert _price(101700) == 101700 and _price("101,700") == 101700 and _price("") == 0 and _price("싯가") == 0
         base = {"row": 375, "번호": "128", "날짜": "2026. 9. 1", "요청자": "탕청소", "소속": "시설",
                 "물품": "락풍 3개", "상태": "정산", "가격": "101,700", "이미지": "data:image/jpeg;base64,AAA"}
-        assert upsert(conn, [base, dict(base, row=376, 번호="", 상태="검토")], "t0", "active") == 2
-        assert upsert(conn, [dict(base, row=3, 상태="완료")], "t0", "all") == 1
-        assert upsert(conn, [{"물품": "row 없는 줄"}], "t0") == 0, "row 없는 줄은 원장에 안 들어간다"
+        assert upsert(conn, [base, dict(base, row=376, 번호="", 상태="검토")], "t0", "active") == (2, 0)
+        assert upsert(conn, [dict(base, row=3, 상태="완료")], "t0", "all") == (1, 0)
+        assert upsert(conn, [{"물품": "row 없는 줄"}], "t0") == (0, 0), "row 없는 줄은 원장에 안 들어가고, 빈 배치라 지우지도 않는다"
         r = conn.execute("SELECT * FROM proc_items WHERE tenant_id=%s AND row=375", (db.TENANT,)).fetchone()
         assert r["no"] == "128" and r["status"] == "정산" and r["price"] == 101700 and r["item"] == "락풍 3개", dict(r)
         assert r["src"] == "active", dict(r)
         assert json.loads(r["data"])["이미지"].startswith("data:"), "원본 칸은 통째로 남는다"
-        upsert(conn, [dict(base, 상태="완료", 가격=0)], "t1", "active")   # 같은 행이 두 번 들어오면 덮어쓴다
+        n, deleted = upsert(conn, [dict(base, 상태="완료", 가격=0)], "t1", "active")   # 같은 행이 두 번 들어오면 덮어쓴다
+        assert n == 1 and deleted == 1, "row 376 이 이번 회차 active 목록에 없으니 유령 행으로 지워진다"
         r = conn.execute("SELECT status, price, synced_at FROM proc_items WHERE tenant_id=%s AND row=375",
                          (db.TENANT,)).fetchone()
         assert r["status"] == "완료" and r["price"] == 0 and r["synced_at"] == "t1", dict(r)
+        assert conn.execute("SELECT 1 FROM proc_items WHERE tenant_id=%s AND row=376",
+                            (db.TENANT,)).fetchone() is None, "지워진 유령 행이 남아 있다"
         n = conn.execute("SELECT COUNT(*) FROM proc_items WHERE tenant_id=%s", (db.TENANT,)).fetchone()[0]
-        assert n == 3, "행이 늘지 않는다(열쇠 = tenant+row)"
+        assert n == 2, "row 375(active)·row 3(all) 만 남는다"
         n = conn.execute("SELECT COUNT(*) FROM proc_items WHERE tenant_id=%s AND src='active'",
                          (db.TENANT,)).fetchone()[0]
-        assert n == 2, "src 로 두 목록이 갈린다"
+        assert n == 1, "src 로 두 목록이 갈린다 — active 에는 375 만 남는다"
     finally:
         with conn:
             conn.execute("DELETE FROM proc_items WHERE tenant_id=%s", (db.TENANT,))
