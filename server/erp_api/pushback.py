@@ -14,6 +14,8 @@ server 모드(origin_switch.py)에서 화면은 서버 원장에만 적고 즉�
                  예외 = 「action 필수」(본문이 GAS 에 닿지도 않은 것) — 쓰인 게 없으니 재시도한다(api_write.body_never_arrived)
   둘 다              /srv/erp/status/pushback_failed.json + GET /api/intake/health 의 pushback.failed 에 뜬다
   거울               되민 쓰기가 거울(sync_*)을 더럽히면 배치 끝에 해당 동기화를 1회 돌린다(api_write 의 MIRROR_SYNC 그대로)
+  중복 실행          1분 크론이 겹치면 같은 행을 두 번 되민다 — main() 첫머리 파일 잠금(주 방어) +
+                 run() 의 SELECT FOR UPDATE SKIP LOCKED(보조 방어)로 막는다(2026-09-14).
 
 실행:     python3 /srv/erp/api/pushback.py      (cron 1분 · /etc/cron.d/erp-pushback)
 자체점검: python3 pushback.py --selftest        (DB·네트워크 없음 — 판정만)
@@ -118,10 +120,13 @@ def _now_kst():
 
 
 def run(conn, limit=BATCH):
-    """되밀 행을 훑는다. 반환 {pushed, failed, syncs}."""
+    """되밀 행을 훑는다. 반환 {pushed, failed, syncs}.
+
+    FOR UPDATE SKIP LOCKED — 1분 크론이 겹쳐 같은 큐 행을 두 프로세스가 동시에 집는 것 방지(행 선점).
+    주 방어는 main() 의 파일 잠금이고, 이건 그 위의 보조 방어다(배2600대 · 2026-09-09 이중되밀기 재발 방지)."""
     out = {"pushed": 0, "failed": 0, "syncs": set()}
     for table in LEDGERS:
-        rows = conn.execute("SELECT * FROM %s WHERE %s AND push_tries < %%s ORDER BY id LIMIT %%s"
+        rows = conn.execute("SELECT * FROM %s WHERE %s AND push_tries < %%s ORDER BY id LIMIT %%s FOR UPDATE SKIP LOCKED"
                             % (table, UNPUSHED), (PUSH_MAX_TRIES, limit)).fetchall()
         for row in rows:
             if push_row(conn, table, row):
@@ -161,15 +166,50 @@ def write_failed(conn, tenant):
     return len(rows)
 
 
+LOCK_FILE = "/tmp/erp-pushback.lock"
+
+
+def _acquire_lock():
+    """중복 실행 방지 — 1분 크론이 겹쳐도 한 프로세스만 돈다(2026-09-09 이중되밀기 재발 방지 · 주 방어).
+    반환: 잠금 성공 = 파일핸들 · 이미 잡혀 있음 = None(호출부가 조용히 종료) ·
+    fcntl 없는 환경(이 개발기·Windows) = "no-lock"(잠금 없이 통과 — selftest 가 죽지 않게, 서버는 항상 Linux)."""
+    try:
+        import fcntl
+    except ImportError:
+        return "no-lock"
+    fh = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
+def _release_lock(fh):
+    if fh in (None, "no-lock"):
+        return
+    import fcntl
+    fcntl.flock(fh, fcntl.LOCK_UN)
+    fh.close()
+
+
 def main():
     from common import db  # noqa: PLC0415 — selftest 는 DB 없이 돌아야 한다
-    conn = db.connect()
-    out = run(conn)
-    bad = write_failed(conn, db.TENANT)
-    conn.close()
-    if out["pushed"] or out["failed"] or bad:      # 1분마다 도는 cron — 할 일이 없으면 로그를 남기지 않는다
-        print("되밀기 %s · 성공 %d · 실패 %d · 사람이 볼 행 %d" % (_now_kst(), out["pushed"], out["failed"], bad))
-    return 0
+    lock = _acquire_lock()
+    if lock is None:
+        print("되밀기 건너뜀 — 이미 실행 중(락 점유)")
+        return 0
+    try:
+        conn = db.connect()
+        out = run(conn)
+        bad = write_failed(conn, db.TENANT)
+        conn.close()
+        if out["pushed"] or out["failed"] or bad:  # 1분마다 도는 cron — 할 일이 없으면 로그를 남기지 않는다
+            print("되밀기 %s · 성공 %d · 실패 %d · 사람이 볼 행 %d" % (_now_kst(), out["pushed"], out["failed"], bad))
+        return 0
+    finally:
+        _release_lock(lock)
 
 
 def selftest():
@@ -225,6 +265,11 @@ def selftest():
     assert judge("write_log", "200", '{"ok":false,"error":"action 필수"}') == ("push-error:body-lost", False)
     assert judge("write_log", "200", '{"ok":false,"error":"알 수 없는 action: x"}') == ("gas-error", True)
     assert judge("write_log", "200", '{"ok":true}') == ("ok", True)
+
+    # 중복 실행 방지 락 — 이 개발기(Windows)엔 fcntl 이 없어 "no-lock" 폴백, 서버(Linux)에선 실제로 잠근다.
+    lock = _acquire_lock()
+    assert lock is not None   # 못 잡음(None)은 이미 잡혀 있을 때뿐 — 첫 시도는 항상 얻는다
+    _release_lock(lock)
     print("selftest ok")
     return 0
 

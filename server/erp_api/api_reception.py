@@ -11,6 +11,10 @@
     시트는 이 전환 시점 이후로는 서버가 직접 쓰지 않는다(신규 접수분은 동결) — 기존 시트 행(배984 이전)의
     상태·메모 갱신만 /update 가 pushback.py 큐로 되민다(아래 /update 항목 · 배1090 · INC-056).
   app.py 가 같은 폴더의 api_*.py 를 자동 등록한다 — app.py 본문은 건드리지 않는다.
+  쓰기 라우트 8개(submit·lost·update·delete·lost/handover·lost/delete·hold/complete·photo)는 본문만 async 로
+  받고 실제 처리(동기 DB·동기 텔레그램 notify)는 starlette.concurrency.run_in_threadpool 로 돌린다(2026-09-14) —
+  안 그러면 GAS 왕복(최대 55초)·텔레그램(8초) 대기가 이벤트루프를 막아 같은 워커의 다른 요청이 전부 굶는다
+  (api_intake.py:147 과 같은 패턴 · 배 947 종합접수처 조회 실패와 같은 근본원인).
   GET  /api/reception/board            reg_board 와 같음 {ok,count,data} + by_status·by_category
   GET  /api/reception/lost             lf_list 와 같음 {ok,count,data}
   GET  /api/reception/hold             member_hold_intake_list 와 같음 + 행마다 done(hold_done_keys 조인)
@@ -29,10 +33,14 @@
     액션이 없어 새로 넣을 수 없다 — pushback.py 가 그 응답을 gas_status='sheet-missing' 으로만 표시하고
     재시도하지 않는다(원장에는 이미 반영됨 — 시트만 못 따라간다는 뜻).
     화면 배선(종합접수처_현황.html _update() 가 이 주소를 쓰게 바꾸는 것)은 COO 담당 — 여기서는 API만 연다.
-  POST /api/reception/delete           reg_delete 대체(배 1039-D · 2026-09-05) — 서버 원장 직접 삭제, GAS 는 안 부른다.
-    삭제 비밀번호(PIN)는 서버에서도 재검증(GM 2026-07-31 지정) — REG_DELETE_PIN env, 없으면 GAS 기본값과 같은 1200.
+  POST /api/reception/delete           reg_delete 대체(배 1039-D · 2026-09-05) — 서버 원장 직접 삭제, GAS 는 그 자리에서
+    안 부른다. 삭제 비밀번호(PIN)는 서버에서도 재검증(GM 2026-07-31 지정) — REG_DELETE_PIN env, 없으면 GAS 기본값과
+    같은 1200. /update 와 같은 경로로 pushback.py 큐에 reg_delete 를 얹는다(2026-09-14) — 안 얹으면 시트에 남은 행을
+    sync_reception 이 5분 뒤 INSERT 로 되살린다.
   POST /api/reception/lost/handover    lf_handover 대체(배 1039-D) — 습득물 수령 처리(서명 필수·멱등) 서버 원장 직접.
+    /update 와 같은 _server_edited 표식을 남긴다(2026-09-14) — 없으면 5분 동기화가 상태를 '게시중'으로 되돌린다.
   POST /api/reception/lost/delete      lf_delete 대체(배 1039-D) — 습득물 원장 직접 삭제(배포검증 더미 청소용).
+    delete 와 같은 이유로 pushback.py 큐에 lf_delete 를 얹는다(2026-09-14).
   POST /api/reception/hold/complete    hold_complete 대체(배 1039-D) — hold_items.done 직접 갱신(휴회접수 시트 미기록).
     매칭 = phone|start|name 정규화 해시(sync_reception.hold_key 재사용). 한 번 완료되면 되돌리지 않는다(sticky) —
     5분 동기화(sync_reception.replace_hold)도 같이 고쳐 GAS 쪽 값이 없어도 서버 완료 표시를 지우지 않는다.
@@ -52,6 +60,7 @@ import urllib.request
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from api_intake import redact_blobs  # noqa: E402  — write_log.payload 저장 전 blob 축약(다른 관문과 같은 규칙)
@@ -271,6 +280,17 @@ def _reg_update_gas_body(reg_id, category, new_status, payload):
         if k in payload and payload[k] is not None:
             body[k] = str(payload[k])
     return body
+
+
+def _reg_delete_gas_body(reg_id, category, pin):
+    """GAS reg_delete(_regDelete) 가 받는 칸 그대로 재현 — action·id·category·pin(순수함수·테스트용).
+    pin 은 서버가 이미 검증한 값을 그대로 싣는다 — GAS 도 같은 PIN 을 한 번 더 확인한다(GM 2026-07-31 이중검증)."""
+    return {"action": "reg_delete", "id": reg_id, "category": category, "pin": pin}
+
+
+def _lf_delete_gas_body(found_id):
+    """GAS lf_delete(_lfDelete) 가 받는 칸 그대로 재현 — action·id(순수함수·테스트용)."""
+    return {"action": "lf_delete", "id": found_id}
 
 
 def _queue_sheet_pushback(conn, action, gas_body):
@@ -510,19 +530,21 @@ def submit_preflight():
 
 @router.post("/submit")
 async def submit(request: Request):
-    """공개 폼 응답은 어떤 갈래든 CORS 헤더를 단다 — 본문 판정은 _submit 그대로."""
-    resp = await _submit(request)
+    """공개 폼 응답은 어떤 갈래든 CORS 헤더를 단다 — 본문 판정은 _submit 그대로.
+    DB·텔레그램 알림이 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거 · api_intake.py:147 과 같은 패턴)."""
+    body = await request.body()
+    resp = await run_in_threadpool(_submit, body)
     if isinstance(resp, JSONResponse):
         resp.headers.update(CORS)
         return resp
     return JSONResponse(resp, headers=CORS)
 
 
-async def _submit(request: Request):
+def _submit(body):
     """reg_submit 대체 — 종합접수처 6종 폼(분실물·시설고장·청결·칭찬·쓴소리·컴플레인).
     무인증(nginx erp-locations 가 /api/reception/submit 만 auth_request 제외 — 공개 키오스크가 부른다)."""
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -593,9 +615,15 @@ async def _submit(request: Request):
 
 @router.post("/lost")
 async def lost_submit(request: Request):
-    """lf_submit 대체 — 직원 습득물 등록(로그인 뒤 · 사진 필수). GAS 는 더 이상 부르지 않는다(원장=서버 DB)."""
+    """lf_submit 대체 — 직원 습득물 등록(로그인 뒤 · 사진 필수). GAS 는 더 이상 부르지 않는다(원장=서버 DB).
+    DB·텔레그램 알림이 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_lost_submit, body)
+
+
+def _lost_submit(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -640,9 +668,15 @@ async def lost_submit(request: Request):
 @router.post("/update")
 async def update(request: Request):
     """reg_update 대체 — 서버 원장(reception_items) 직접 갱신. 배984 이후 접수건은 시트에 없어 GAS reg_update 가
-    실패하는 갭을 메운다(배 1039-C · 2026-09-05). GAS 는 부르지 않는다 — 시트는 이미 동결된 과거 기록이다."""
+    실패하는 갭을 메운다(배 1039-C · 2026-09-05). GAS 는 부르지 않는다 — 시트는 이미 동결된 과거 기록이다.
+    DB 가 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_update, body)
+
+
+def _update(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -685,10 +719,16 @@ async def update(request: Request):
 
 @router.post("/delete")
 async def delete(request: Request):
-    """reg_delete 대체 — 서버 원장(reception_items) 직접 삭제, GAS 는 부르지 않는다(배 1039-D).
-    삭제 비밀번호는 서버에서도 재검증(GM 2026-07-31 지정) — 화면만 물으면 액션 이름을 아는 누구나 부를 수 있다."""
+    """reg_delete 대체 — 서버 원장(reception_items) 직접 삭제, GAS 는 그 자리에서 부르지 않는다(배 1039-D).
+    삭제 비밀번호는 서버에서도 재검증(GM 2026-07-31 지정) — 화면만 물으면 액션 이름을 아는 누구나 부를 수 있다.
+    DB 가 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_delete, body)
+
+
+def _delete(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -710,6 +750,8 @@ async def delete(request: Request):
             if not row or cat_label is None or (cat_label and row["category"] != cat_label):
                 return JSONResponse({"ok": False, "error": "해당 접수ID를 찾을 수 없습니다: %s" % reg_id}, status_code=404)
             conn.execute("DELETE FROM reception_items WHERE tenant_id=%s AND reg_id=%s", (db.TENANT, reg_id))
+            # ②시트 되밀기(배1090·INC-056 과 같은 경로) — 시트 행이 남으면 sync_reception 이 5분 뒤 INSERT 로 되살린다.
+            _queue_sheet_pushback(conn, "reg_delete", _reg_delete_gas_body(reg_id, row["category"], pin_got))
             return {"ok": True, "id": reg_id, "category": row["category"], "deleted": 1, "message": "접수건이 삭제되었습니다."}
     finally:
         conn.close()
@@ -718,9 +760,15 @@ async def delete(request: Request):
 @router.post("/lost/handover")
 async def lost_handover(request: Request):
     """lf_handover 대체 — 서버 원장(lost_found) 직접 갱신, GAS 는 부르지 않는다(배 1039-D).
-    현장 디지털 서명 수령 → 자동 수령완료(멱등·이미 처리된 건 재수령 거부)."""
+    현장 디지털 서명 수령 → 자동 수령완료(멱등·이미 처리된 건 재수령 거부).
+    DB·텔레그램 알림이 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_lost_handover, body)
+
+
+def _lost_handover(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -765,20 +813,29 @@ async def lost_handover(request: Request):
             keep_loc = str(payload.get("storageLoc") or payload.get("keepLoc") or "").strip()
             if keep_loc:
                 data["keepLoc"] = keep_loc
+            # ★서버 편집 표식(/update 와 같은 규칙) — 없으면 sync_reception 5분 upsert 가 시트 값(게시중)으로 되돌린다.
+            data["_server_edited"] = now
             conn.execute("UPDATE lost_found SET status=%s, data=%s, synced_at=%s WHERE tenant_id=%s AND found_id=%s",
                          ("수령완료", json.dumps(data, ensure_ascii=False), now, db.TENANT, found_id))
-            notify("✅ <b>[습득물 수령완료]</b> %s\n수령자: %s\n담당자: %s\n수령장소: %s\n🕒 %s"
-                  % (found_id, receiver, data["handoverStaff"] or "-", data["handoverLoc"] or "-", now))
-            return {"ok": True, "id": found_id, "status": "수령완료", "signPurgeAt": purge}
+        # notify 는 행 잠금이 풀린(트랜잭션 커밋 뒤) 여기서 — 텔레그램 8초 대기가 DB 잠금을 잡고 있지 않게.
+        notify("✅ <b>[습득물 수령완료]</b> %s\n수령자: %s\n담당자: %s\n수령장소: %s\n🕒 %s"
+              % (found_id, receiver, data["handoverStaff"] or "-", data["handoverLoc"] or "-", now))
+        return {"ok": True, "id": found_id, "status": "수령완료", "signPurgeAt": purge}
     finally:
         conn.close()
 
 
 @router.post("/lost/delete")
 async def lost_delete(request: Request):
-    """lf_delete 대체 — 서버 원장(lost_found) 직접 삭제, GAS 는 부르지 않는다(배 1039-D · 배포검증 더미 청소용)."""
+    """lf_delete 대체 — 서버 원장(lost_found) 직접 삭제, GAS 는 그 자리에서 부르지 않는다(배 1039-D · 배포검증 더미 청소용).
+    DB 가 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_lost_delete, body)
+
+
+def _lost_delete(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -794,6 +851,8 @@ async def lost_delete(request: Request):
             if not row:
                 return JSONResponse({"ok": False, "error": "해당 습득ID를 찾을 수 없습니다: %s" % found_id}, status_code=404)
             conn.execute("DELETE FROM lost_found WHERE tenant_id=%s AND found_id=%s", (db.TENANT, found_id))
+            # ②시트 되밀기(배1090·INC-056 과 같은 경로) — 시트 행이 남으면 sync_reception 이 5분 뒤 INSERT 로 되살린다.
+            _queue_sheet_pushback(conn, "lf_delete", _lf_delete_gas_body(found_id))
             return {"ok": True, "id": found_id, "deleted": 1}
     finally:
         conn.close()
@@ -803,9 +862,16 @@ async def lost_delete(request: Request):
 async def hold_complete(request: Request):
     """hold_complete 대체 — 서버 원장(hold_items) done 직접 갱신, GAS(휴회접수 시트)는 부르지 않는다(배 1039-D).
     매칭 = phone|start|name 정규화 해시(sync_reception.hold_key 재사용 — 5분 동기화와 같은 열쇠).
-    ★한 번 done=True 면 되돌리지 않는다(sticky) — sync_reception.replace_hold 도 같이 고쳤다."""
+    ★한 번 done=True 면 되돌리지 않는다(sticky) — sync_reception.replace_hold 도 같이 고쳤다(그 쪽 prev_done
+    보호로 이미 충분해 여기엔 _server_edited 표식이 필요 없다).
+    DB 가 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_hold_complete, body)
+
+
+def _hold_complete(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
         if not isinstance(payload, dict):
             raise ValueError
     except Exception:
@@ -838,9 +904,15 @@ async def hold_complete(request: Request):
 @router.post("/photo")
 async def photo_upload(request: Request):
     """사진만 저장 — submit/lost 는 내부에서 직접 save_photo() 를 부르므로 이 경로를 안 거친다.
-    다른 화면이 사진만 먼저 올려 URL 을 받아 둘 때 쓰는 단독 통로."""
+    다른 화면이 사진만 먼저 올려 URL 을 받아 둘 때 쓰는 단독 통로.
+    파일 디코딩·디스크 쓰기가 동기라 스레드풀에서 돌린다(이벤트루프 차단 제거)."""
+    body = await request.body()
+    return await run_in_threadpool(_photo_upload, body)
+
+
+def _photo_upload(body):
     try:
-        payload = json.loads((await request.body()).decode("utf-8"))
+        payload = json.loads(body.decode("utf-8"))
     except Exception:
         return JSONResponse({"ok": False, "error": "bad-payload"}, status_code=400)
     photo = payload.get("photo") or payload.get("file") or payload.get("base64") or ""
