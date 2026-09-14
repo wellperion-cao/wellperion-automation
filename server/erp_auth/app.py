@@ -227,6 +227,35 @@ def _social_keys_raw() -> dict:
     return _SOCIAL_KEYS[1]
 
 
+# ── 모듈 배치(ERP관리 층 · GM 구조 2026-09-14: 플랫폼=셋업 → 관리=배치 → 홈=사용) ─────────────────
+# 이 회사에서 끈 모듈 id 목록. 파일 하나(account_perms.json 과 같은 mtime 재읽기 · 저장 즉시 반영).
+# 꺼진 모듈 = 직원에게 카드도 안 보이고 관문(check)도 막는다 · 관리자는 그대로 본다(다시 켜야 하니까).
+MODULE_SWITCH = os.environ.get("ERP_MODULE_SWITCH",
+                               os.path.join(os.path.dirname(os.path.abspath(__file__)), "module_switch.json"))
+_SWITCH: tuple = (None, frozenset())
+
+
+def modules_off() -> frozenset:
+    global _SWITCH
+    try:
+        mt = os.stat(MODULE_SWITCH).st_mtime
+    except OSError:
+        return frozenset()
+    if mt != _SWITCH[0]:
+        with open(MODULE_SWITCH, encoding="utf-8") as f:
+            _SWITCH = (mt, frozenset(json.load(f).get("off") or []))
+    return _SWITCH[1]
+
+
+def _save_modules_off(ids: list, by: str) -> None:
+    tmp = MODULE_SWITCH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"off": sorted(set(ids)), "_updated": {"by": by, "at": now()}}, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, MODULE_SWITCH)
+    global _SWITCH
+    _SWITCH = (None, frozenset())
+
+
 def social_creds(provider: str) -> tuple:
     """(client_id, client_secret) — social_keys.json 이 있으면 그 값이 환경변수보다 우선."""
     file_kv = _social_keys_raw().get(provider) or {}
@@ -330,6 +359,7 @@ def db() -> _db.Conn:
 def init() -> None:
     """표는 common/schema.sql(deploy_db.sh) 이 만든다 — 여기선 첫 관리자만 심는다."""
     with db() as c:
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TEXT")   # 사용 현황(ERP관리 층 · 2026-09-14)
         admin_email = os.environ.get("ERP_ADMIN_EMAIL")
         if admin_email and not c.execute("SELECT 1 FROM users WHERE tenant_id=%s AND email=%s", (T, admin_email)).fetchone():
             salt, h = hash_pw(os.environ["ERP_ADMIN_PW"])
@@ -366,6 +396,15 @@ def hash_pw(pw: str, salt: Optional[str] = None) -> tuple[str, str]:
 
 
 # ── 세션 ────────────────────────────────────────────────────────────────
+def touch_login(uid: int) -> None:
+    """마지막 로그인 시각 — 사용 현황(ERP관리 층)이 읽는다. 로그인 성공 자리 3곳(아이디·구글·네이버/카카오)에서 부른다."""
+    try:
+        with db() as c:
+            c.execute("UPDATE users SET last_login=%s WHERE tenant_id=%s AND id=%s", (now(), T, uid))
+    except Exception:
+        pass                                       # 기록 실패가 로그인을 막지 않는다
+
+
 def issue(user, auto: bool = False) -> str:
     exp = int(time.time()) + SESSION_DAYS * 86400
     claims = {"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp}
@@ -474,6 +513,8 @@ def allowed(user, module: dict) -> bool:
     개인 예외(EXCEPTION_ONLY_IDS)는 groups/all 매칭을 건너뛴다 — modules 로 콕 집어야만 켜진다(배1026 §3)."""
     if user["role"] == "admin":
         return True
+    if module["id"] in modules_off():              # 이 회사에서 끈 모듈(모듈 배치) — 직원은 못 본다
+        return False
     p = perms_of(user)
     if p is None:                                  # 권한을 아직 안 준 계정 = 매일 쓰는 화면(핵심)만
         return bool(module.get("core"))
@@ -865,6 +906,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
     FAILS.pop(email, None)
     if u["status"] != "active":
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+    touch_login(u["id"])
     r = RedirectResponse(safe_next(next), status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(keep), httponly=True, samesite="lax", path="/", secure=https)
@@ -1158,6 +1200,7 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         # 개인 구글 계정, 첫 로그인 — 이름·부서 확인 후 승인 대기로 넘긴다(GM 2026-09-05).
         reg = jwt.encode({"e": email, "n": name, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
         return RedirectResponse(f"/auth/google/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
+    touch_login(u["id"])
     r = RedirectResponse(nxt, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
@@ -1321,6 +1364,7 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
             return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
         if u["status"] != "active":
             return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+        touch_login(u["id"])
         r = RedirectResponse(nxt, status_code=303)
         https = request.headers.get("x-forwarded-proto") == "https"
         r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
@@ -1536,6 +1580,85 @@ async def admin_dept_presets_save(request: Request, erp_session: Optional[str] =
     global _PRESETS
     _PRESETS = (None, None)                     # 강제 재읽기 — 같은 초 안에 두 번 저장돼도 mtime 비교를 건너뛴다
     return RedirectResponse("/auth/admin?msg=부서 기본 표를 저장했습니다#depts", status_code=303)
+
+
+# ── ERP관리 층 API (GM 구조 2026-09-14: 플랫폼=셋업 → 관리=배치 → 홈=사용) — erp/index.html 관리자 층이 부른다 ──
+def _admin_json_gate(erp_session, erp_admin):
+    """관리자 + 관리자 비밀번호 창 안이면 사용자 행, 아니면 401 JSON(화면이 unlock 으로 보낸다)."""
+    u = current(erp_session)
+    if not u or u["role"] != "admin" or (ADMIN_PW and not _admin_unlocked(erp_admin, u["id"])):
+        raise HTTPException(401, "관리자 확인 필요")
+    return u
+
+
+@app.get("/auth/admin/api/modules")
+def admin_api_modules(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    """모듈 배치 — 플랫폼에 셋업된 모듈 전부 + 이 회사에서 끈 것."""
+    _admin_json_gate(erp_session, erp_admin)
+    off = modules_off()
+    return JSONResponse({"modules": [{"id": m["id"], "name": m.get("name") or m["id"], "group": m.get("group") or "",
+                                      "appgroup": m.get("appgroup") or "", "staff": m.get("staff") or "",
+                                      "core": bool(m.get("core")), "off": m["id"] in off} for m in modules()],
+                         "off": sorted(off)})
+
+
+@app.post("/auth/admin/api/modules")
+async def admin_api_modules_save(request: Request, erp_session: Optional[str] = Cookie(default=None),
+                                 erp_admin: Optional[str] = Cookie(default=None)):
+    """끌 모듈 목록 저장(form off=id 여러 개) — 모르는 id 는 버린다. 저장 즉시 직원 카드·관문에 반영."""
+    me = _admin_json_gate(erp_session, erp_admin)
+    form = await request.form()
+    ids = {m["id"] for m in modules()}
+    off = [v for v in form.getlist("off") if v in ids]
+    _save_modules_off(off, me["email"])
+    return JSONResponse({"ok": True, "off": sorted(set(off))})
+
+
+_USAGE_AREAS = (("reg_", "접수"), ("lf_", "접수"), ("voc_", "접수"), ("hold_complete", "접수"),
+                ("todo_", "업무"), ("approval_", "업무"), ("member_inquiry", "문의"), ("lesson_inquiry", "문의"),
+                ("member_", "회원"), ("save_schedule", "일정"), ("snapshot_append", "점검"), ("save", "점검"),
+                ("unlock_round", "점검"), ("asset_", "구매"), ("proc", "구매"), ("add", "구매"))
+
+
+def usage_area(action: str) -> str:
+    """write_log 의 action → 사람이 읽는 영역 이름(접두 표 · 순서가 우선순위)."""
+    a = str(action or "")
+    for prefix, area in _USAGE_AREAS:
+        if a.startswith(prefix):
+            return area
+    return "기타"
+
+
+@app.get("/auth/admin/api/usage")
+def admin_api_usage(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    """사용 현황 — 계정별 마지막 로그인·30일 저장 횟수·많이 쓴 영역 / 영역별 저장·쓴 사람·마지막 저장(서버 원장 write_log)."""
+    _admin_json_gate(erp_session, erp_admin)
+    since = (datetime.now(KST) - timedelta(days=30)).strftime("%Y-%m-%d")
+    with db() as c:
+        users = c.execute("SELECT id, email, name, role, status, last_login FROM users WHERE tenant_id=%s ORDER BY id", (T,)).fetchall()
+        rows = c.execute("SELECT user_email, action, MAX(at) last_at, COUNT(*) n FROM write_log "
+                         "WHERE tenant_id=%s AND at >= %s AND gas_status <> 'test' GROUP BY user_email, action", (T, since)).fetchall()
+    per_user: dict = {}
+    per_area: dict = {}
+    for r in rows:
+        email, area = (r["user_email"] or "").lower(), usage_area(r["action"])
+        u = per_user.setdefault(email, {"writes": 0, "last": "", "areas": {}})
+        u["writes"] += r["n"]; u["last"] = max(u["last"], r["last_at"] or "")
+        u["areas"][area] = u["areas"].get(area, 0) + r["n"]
+        a = per_area.setdefault(area, {"writes": 0, "last": "", "users": set()})
+        a["writes"] += r["n"]; a["last"] = max(a["last"], r["last_at"] or "")
+        if email:
+            a["users"].add(email)
+    out_users = []
+    for x in users:
+        u = per_user.get((x["email"] or "").lower(), {"writes": 0, "last": "", "areas": {}})
+        top = sorted(u["areas"].items(), key=lambda kv: -kv[1])[:3]
+        out_users.append({"email": x["email"], "name": x["name"], "role": x["role"], "status": x["status"],
+                          "last_login": x["last_login"] or "", "writes_30d": u["writes"], "last_write": u["last"],
+                          "areas": [{"area": k, "n": n} for k, n in top]})
+    out_areas = [{"area": k, "writes_30d": v["writes"], "users": len(v["users"]), "last_write": v["last"]}
+                 for k, v in sorted(per_area.items(), key=lambda kv: -kv[1]["writes"])]
+    return JSONResponse({"users": out_users, "areas": out_areas, "since": since})
 
 
 # 소셜 로그인 키(배1108) — 관리자 콘솔 저장. 값은 GET(api/state)으로 절대 안 돌려준다(설정됨/비어있음만).
@@ -1759,6 +1882,17 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert path_allowed(_stf, "/api/lesson/members") and path_allowed(_stf, "/api/write") and path_allowed(_stf, "/erp/")
     assert not path_allowed(_stf, "/status/member_active_snapshot.json") and path_allowed(_stf, "/status/monthly_ops_plan.json")
     assert allowed_header(_adm) == "*" and "cpo-member-lesson" in allowed_header(_stf)
+    # 모듈 배치(2026-09-14) — 끈 모듈은 직원에게 안 열리고 관리자는 그대로 · 영역 이름 표
+    import tempfile
+    _real_switch = MODULE_SWITCH
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as _tf:
+        json.dump({"off": ["check"]}, _tf)
+    MODULE_SWITCH, _SWITCH = _tf.name, (None, frozenset())
+    assert not allowed({**staff_u, "perms": '{"groups":["시우"]}'}, dept_module) and allowed(admin_u, dept_module)
+    MODULE_SWITCH, _SWITCH = _real_switch, (None, frozenset())
+    os.unlink(_tf.name)
+    assert usage_area("todo_add") == "업무" and usage_area("reg_update") == "접수" and usage_area("member_inquiry_add") == "문의"
+    assert usage_area("member_owner_save") == "회원" and usage_area("saveBoard") == "점검" and usage_area("zzz") == "기타"
     assert not valid_username("x@wellperion.com")               # 회사 이메일 형태 자동 활성 갈래는 없앴다(치명 1번)
     # 폴더 index.html 모듈 권한 판정(2026-09-05 검수 H2) — /chro/hub 든 /chro/hub/ 든 같은 모듈로 잡혀야 한다.
     # MODULES 를 없는 경로로 돌려 modules()의 os.stat 이 항상 실패하게 만든다 — 그래야 실제
