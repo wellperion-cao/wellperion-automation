@@ -26,7 +26,7 @@ import html
 import json
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -103,6 +103,328 @@ def fetch_ssot_rows() -> list | None:
         return rows if isinstance(rows, list) else None
     except Exception:
         return None
+
+
+# ═══ 👤 책임 항목 4인(GM 지시 2026-09-14) ═══════════════════════════════════
+#   김남욱 GM·이경연 실장·이정헌 소장·나우열M — 항목마다 기준(고정 문구)·이번 달 실측·
+#   잘한 것/보완할 것(status/manager_eval.json, 사람이 고침). 못 재는 값은 지어내지 않고
+#   미수집 그대로 적는다. 진척이 기준에 못 미치면 그 값만 빨갛게(rp.bad).
+EVAL_PATH = ROOT / "status" / "manager_eval.json"
+RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우열M"]
+_NO_MEASURE = "미수집"
+SSOT_DONE = {"완료", "폐기", "완료됨"}
+OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원", "이지영 사원"]
+
+
+def load_eval() -> dict:
+    try:
+        return json.loads(EVAL_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def eval_cell(ev: dict, person: str, item: str) -> tuple[str, str]:
+    row = (ev.get(person) or {}).get(item) or {}
+    return (str(row.get("good") or "").strip() or "—", str(row.get("fix") or "").strip() or "—")
+
+
+def _norm(s) -> str:
+    return re.sub(r"\s+", "", str(s or ""))
+
+
+def _parse_ymd(s) -> "date | None":
+    try:
+        return datetime.strptime(str(s)[:10], "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def load_month_objectives() -> list:
+    """월간운영계획 이번 달 카드(status/monthly_ops_plan.json). 조회 실패면 빈 목록."""
+    try:
+        d = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
+        return d["months"][date.today().strftime("%Y-%m")].get("objectives") or []
+    except Exception:
+        return []
+
+
+def _obj_filter(objs: list, owner: str = "") -> list:
+    return [o for o in objs if _norm(o.get("owner")) == _norm(owner)]
+
+
+def _checkbox_tally(objs: list) -> tuple[int, int]:
+    """카드 progress_note 안 ☑(끝)·□(안 끝) 체크박스 합계."""
+    done = sum(str(o.get("progress_note") or "").count("☑") for o in objs)
+    todo = sum(str(o.get("progress_note") or "").count("□") for o in objs)
+    return done, done + todo
+
+
+def _overdue_objs(objs: list) -> int:
+    today = date.today()
+    return sum(1 for o in objs
+               if (due := _parse_ymd(o.get("due"))) and due < today and str(o.get("status") or "") != "완료")
+
+
+def objective_progress_cell(objs: list) -> tuple[str, bool]:
+    if not objs:
+        return f"{_NO_MEASURE}(해당 카드 없음)", False
+    done, total = _checkbox_tally(objs)
+    over = _overdue_objs(objs)
+    ck = f"체크 {done}/{total}({round(done / total * 100) if total else 0}%)" if total else "체크 항목 없음"
+    return f"카드 {len(objs)}건 · {ck} · 기한 지난 것 {over}건", over > 0
+
+
+def ledger_reply_cell(seen: dict, owner: str) -> tuple[str, bool]:
+    """확인요청 원장(latest_by_no)에서 사람별 회신율 — 닫힌 건/보낸 건 · 최장경과 · 35일↑."""
+    mine = [(n, d, it) for n, (d, it) in seen.items() if str(it.get("owner") or "").strip() == owner]
+    if not mine:
+        return f"{_NO_MEASURE}(배정 건 없음)", False
+    closed = sum(1 for _n, _d, it in mine if str(it.get("status", "")).lower() in DONE)
+    opens = [(n, d, it) for n, d, it in mine if str(it.get("status", "")).lower() not in DONE]
+    over35 = sum(1 for _n, d, _it in opens if days_since(d) >= 35)
+    max_age = max((days_since(d) for _n, d, _it in opens), default=0)
+    rate = round(closed / len(mine) * 100) if mine else 0
+    text = f"회신율 {closed}/{len(mine)}({rate}%) · 최장경과 {max_age}일 · 35일↑ {over35}건"
+    return text, over35 > 0
+
+
+def ledger_reply_cell_all(seen: dict, owners: list) -> tuple[str, bool]:
+    """세 중간관리자 합산 — GM '중간관리자 회신 짝' 행용."""
+    mine = [(n, d, it) for n, (d, it) in seen.items() if str(it.get("owner") or "").strip() in owners]
+    if not mine:
+        return f"{_NO_MEASURE}(배정 건 없음)", False
+    closed = sum(1 for _n, _d, it in mine if str(it.get("status", "")).lower() in DONE)
+    opens = [(n, d, it) for n, d, it in mine if str(it.get("status", "")).lower() not in DONE]
+    over35 = sum(1 for _n, d, _it in opens if days_since(d) >= 35)
+    rate = round(closed / len(mine) * 100) if mine else 0
+    return f"회신율 {closed}/{len(mine)}({rate}%) · 35일↑ {over35}건 · 대상 {len(mine)}건", over35 > 0
+
+
+def reception_dept_cell(dept: str) -> tuple[str, bool]:
+    """종합접수처 부서별 열린·7일↑·전사 미배정 — 1영업일 첫처리는 첫처리 시각 필드가
+    없어 잴 수 없다(지어내지 않는다)."""
+    try:
+        from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days, reception_rows
+        resp = gas_get(RECEPTION_EXEC_URL, params={"action": "reg_list"}, timeout=20,
+                       label="manager_task_index 접수")
+        if resp is None:
+            return f"{_NO_MEASURE}(접수처 조회 실패)", False
+        data = resp.json()
+        if not data.get("ok"):
+            return f"{_NO_MEASURE}(접수처 조회 실패)", False
+        rows = reception_rows(data.get("data", []))
+    except Exception:
+        return f"{_NO_MEASURE}(접수처 조회 실패)", False
+    mine = [r for r in rows if str(r.get("dept") or "") == dept]
+    opens = [r for r in mine if str(r.get("status") or "") != "완료"]
+    now = datetime.now()
+    stale = sum(1 for r in opens if reception_elapsed_days(r, now) >= 7)
+    unassigned = sum(1 for r in rows if not str(r.get("dept") or "").strip())
+    text = (f"열린 {len(opens)}건 · 7일↑ {stale}건 · 전사 미배정 {unassigned}건 · "
+            f"1영업일 첫처리={_NO_MEASURE}")
+    return text, stale > 0
+
+
+def facility_check_cell() -> tuple[str, bool]:
+    """시설 점검 이행 — 오늘 회차 입력 수·기준이탈 건(support_check_summary 실측)."""
+    try:
+        import support_check_summary as scs
+        lines, filled = scs.build_facility_section(date.today().isoformat())
+    except Exception:
+        return f"{_NO_MEASURE}(점검판 조회 실패)", False
+    if not filled.get("facility_status"):
+        return f"{_NO_MEASURE}(오늘 점검 입력 없음)", False
+    m = re.search(r"현황\s*(\d+)회차", lines[0])
+    sessions = m.group(1) if m else "?"
+    oor = filled.get("facility_outofrange", 0)
+    return f"오늘 {sessions}회차 입력 · 기준이탈 {oor}건(당일)", oor > 0
+
+
+def facility_schedule_cell() -> tuple[str, bool]:
+    """전사일정 시설부 — 이번 달 완료(last_done)·현재 기한초과(next_due) 건수."""
+    try:
+        d = json.loads((ROOT / "status" / "schedule_ssot.json").read_text(encoding="utf-8"))
+    except Exception:
+        return f"{_NO_MEASURE}(전사일정 원장 조회 실패)", False
+    items = [it for it in d.get("items") or [] if it.get("dept") == "시설부"]
+    mp = date.today().strftime("%Y-%m")
+    today = date.today()
+    done_month = sum(1 for it in items if str(it.get("last_done") or "").startswith(mp))
+    overdue = sum(1 for it in items if (due := _parse_ymd(it.get("next_due"))) and due < today)
+    text = (f"이번 달 완료 {done_month}건 · 현재 기한초과 {overdue}건"
+            f"(전체 시설부 {len(items)}건 · 원장 {d.get('updated_at', '?')} 기준)")
+    return text, overdue > 0
+
+
+def manual_count_cell() -> tuple[str, bool]:
+    return f"{_NO_MEASURE}(체계 페이지가 매뉴얼 카드를 JS로 그려 정적으로 못 셈 — 소장 회신 대기)", False
+
+
+def ssot_pending_cell(rows: "list | None") -> tuple[str, bool]:
+    """GM 결재 처리 — 결재요청은 있고 결재상태가 결재완료가 아닌 전체 행."""
+    if rows is None:
+        return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    pend = [r for r in rows if str(r.get("결재요청") or "").strip() and str(r.get("결재상태") or "") != "결재완료"]
+    if not pend:
+        return "결재 대기 0건", False
+    today = date.today()
+    waits = [(today - c).days for r in pend if (c := _parse_ymd(r.get("생성일")))]
+    if waits:
+        avg = round(sum(waits) / len(waits))
+        return f"결재 대기 {len(pend)}건 · 평균 대기 {avg}일(생성일 기준)", avg > 3
+    return f"결재 대기 {len(pend)}건 · 평균 대기일 {_NO_MEASURE}", False
+
+
+def ssot_week_cell(rows: "list | None") -> tuple[str, bool]:
+    """업무·결재 SSOT(운영부 전원) — 이번 주(월~일) 완료 건수(기준 15) · 결재대기."""
+    if rows is None:
+        return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    sunday = monday + timedelta(days=6)
+    mine = [r for r in rows if str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
+    done_week = 0
+    for r in mine:
+        if str(r.get("상태") or "") in SSOT_DONE:
+            cd = _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
+            if cd and monday <= cd <= sunday:
+                done_week += 1
+    pend = sum(1 for r in mine if str(r.get("결재요청") or "").strip() and str(r.get("결재상태") or "") != "결재완료")
+    text = f"이번 주 완료 {done_week}건(기준 15) · 결재대기 {pend}건 · 대상행 {len(mine)}건"
+    return text, done_week < 15
+
+
+def find_ssot_row(rows: "list | None", title_contains: str, owner: str = "") -> dict | None:
+    if not rows:
+        return None
+    for r in rows:
+        if title_contains in str(r.get("업무명") or "") and (not owner or str(r.get("담당자") or "").strip() == owner):
+            return r
+    return None
+
+
+def approval_submit_cell(rows: "list | None") -> tuple[str, bool]:
+    """결재 SSOT 제출 — 멤버십 개편 기획안 행의 결재요청 칸 실측."""
+    if rows is None:
+        return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    r = find_ssot_row(rows, "멤버십", owner="이경연 실장") or find_ssot_row(rows, "멤버십")
+    if r is None:
+        return f"{_NO_MEASURE}(멤버십 개편 기획안 SSOT 행 못 찾음)", True
+    ap = str(r.get("결재요청") or "").strip()
+    return f"결재요청 칸: {ap or '미제출(빈칸)'} · 상태 {r.get('상태') or '-'}", not ap
+
+
+def _dup_count(rows: list) -> int:
+    keys = [k for k in (_title_key(r.get("업무명")) for r in rows) if k]
+    n = 0
+    for i in range(len(keys)):
+        for j in range(i + 1, len(keys)):
+            if difflib.SequenceMatcher(None, keys[i], keys[j]).ratio() >= 0.72:
+                n += 1
+    return n
+
+
+def chro_ssot_cell(rows: "list | None") -> tuple[str, bool]:
+    """인사(CHRO) 업무·결재 SSOT 운영 — 나우열M 담당 행: 진행중·보류·기한 지난 것·중복."""
+    if rows is None:
+        return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    mine = [r for r in rows if str(r.get("담당자") or "").strip() == "나우열M"]
+    today = date.today()
+    ip = sum(1 for r in mine if str(r.get("상태") or "") == "진행중")
+    hold = sum(1 for r in mine if str(r.get("상태") or "") == "보류")
+    overdue = sum(1 for r in mine
+                  if str(r.get("상태") or "") not in SSOT_DONE and (d := _parse_ymd(r.get("종료일"))) and d < today)
+    dup = _dup_count(mine)
+    text = f"진행중 {ip}건 · 보류 {hold}건 · 기한 지난 것 {overdue}건 · 중복 {dup}건 · 전체 {len(mine)}건"
+    return text, (overdue > 0 or dup > 0)
+
+
+def _no_measure_cell(reason: str) -> tuple[str, bool]:
+    return f"{_NO_MEASURE}({reason})", False
+
+
+RESP_HEAD = ('<tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th>'
+             '<th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th>'
+             '<th class="rf">보완할 것</th></tr>')
+
+
+def resp_table(person: str, rows_def: list, ev: dict) -> str:
+    trs = []
+    for item, crit, fn in rows_def:
+        text, bad = fn()
+        good, fix = eval_cell(ev, person, item)
+        cls = "rp bad" if bad else "rp"
+        trs.append(f'<tr><td class="ri">{html.escape(item)}</td>'
+                   f'<td class="rc">{html.escape(crit)}</td>'
+                   f'<td class="{cls}">{html.escape(text)}</td>'
+                   f'<td class="rg">{html.escape(good)}</td>'
+                   f'<td class="rf">{html.escape(fix)}</td></tr>')
+    return (f'<table class="resp-tb">\n          {RESP_HEAD}\n          '
+            + "\n          ".join(trs) + '\n        </table>')
+
+
+def resp_section(seen: dict, ssot_rows: "list | None") -> str:
+    ev = load_eval()
+    objs = load_month_objectives()
+    mgr_names = ["이경연 실장", "이정헌 소장", "나우열M"]
+
+    rows_def = {
+        "김남욱 GM": [
+            ("GM업무 카드 진척", "월간운영계획 카드 체크 완료율 · 기한 지난 목표 0건",
+             lambda: objective_progress_cell(_obj_filter(objs, "김남욱 GM"))),
+            ("중간관리자 회신 짝", "보낸 확인요청 대비 회신 받은 비율 · 35일 넘긴 건 0",
+             lambda: ledger_reply_cell_all(seen, mgr_names)),
+            ("결재 처리", "결재요청 대기 건수 · 평균 대기일 3일 안",
+             lambda: ssot_pending_cell(ssot_rows)),
+            ("주간 미팅", "매주 화요일 15:00 고정 · 안건 = 이 화면 진행 체크",
+             lambda: _no_measure_cell("참석·안건 기록 원장 없음")),
+        ],
+        "이경연 실장": [
+            ("종합접수처(운영부)", "1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0",
+             lambda: reception_dept_cell("운영부")),
+            ("점검 현황(운영부)", "요금 변경 준비·사우나 정비 체크리스트 진행률"
+                             "(월간운영계획 체크 중 담당 이경연/운영부)",
+             lambda: objective_progress_cell(_obj_filter(objs, "이경연 실장"))),
+            ("업무·결재 SSOT(운영부 전원)", "주 15건 완료 기준 — 운영부 직원 전원 담당 행 합산",
+             lambda: ssot_week_cell(ssot_rows)),
+            ("결재 SSOT 제출", "기획안·보고는 결재요청 칸까지 채워 제출(멤버십 개편 기획안)",
+             lambda: approval_submit_cell(ssot_rows)),
+            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+             lambda: ledger_reply_cell(seen, "이경연 실장")),
+        ],
+        "이정헌 소장": [
+            ("시설 점검 이행", "회차별 측정값 입력률 · 기준이탈 건 당일 처리(입력률로 잰다)",
+             lambda: facility_check_cell()),
+            ("종합접수처(시설부)", "시설부 배정 건 7일 안 닫기 · 미배정 0",
+             lambda: reception_dept_cell("시설부")),
+            ("설비·시설 업무 일정", "전사일정 시설부 이번 달 건수 · 완료 · 놓친 건(감점)",
+             lambda: facility_schedule_cell()),
+            ("설비 매뉴얼", "ERP 시설부 체계 등록 N/전체 · 올해 말 마무리 목표",
+             lambda: manual_count_cell()),
+            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+             lambda: ledger_reply_cell(seen, "이정헌 소장")),
+        ],
+        "나우열M": [
+            ("인사(CHRO) — 업무·결재 SSOT 운영", "진행중·보류·기한 지난 행 정리 · 중복 행 0",
+             lambda: chro_ssot_cell(ssot_rows)),
+            ("매출·지출(CFO) — 체계·시스템 구축", "매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도",
+             lambda: _no_measure_cell("자동 집계 원장 없음")),
+            ("파트너팀 매출 관리", "강습팀 매출 = 파트너팀 매출로 관리 · 옵션·수기 분리",
+             lambda: _no_measure_cell("자동 집계 원장 없음")),
+            ("확인요청 회신", "번호 회신율 · 최장 경과일",
+             lambda: ledger_reply_cell(seen, "나우열M")),
+        ],
+    }
+
+    blocks = []
+    for person in RESP_PEOPLE:
+        tbl = resp_table(person, rows_def[person], ev)
+        blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
+                       f'{tbl}\n      </div>')
+    return f'''  <section class="resp">
+    <h2>👤 책임 항목 — 4인</h2>
+{chr(10).join(blocks)}
+  </section>'''
 
 
 def _title_key(t: str) -> str:
@@ -479,6 +801,7 @@ def build() -> str:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
+    resp_html = resp_section(seen, ssot_rows)   # 👤 책임 항목 4인 — seen(원장 전체)·ssot_rows(원본) 그대로 넘긴다
     moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
         # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
@@ -647,6 +970,18 @@ def build() -> str:
   .blk {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
   h2 {{ font-size:16px; padding:10px 14px; background:var(--navy-bg); color:var(--navy); border-bottom:1px solid var(--line); }}
   h2 .sub {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:8px; }}
+  /* 👤 책임 항목 4인(GM 지시 2026-09-14) — .blk·table 결 그대로, 칸 너비만 추가 */
+  section.resp {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
+  section.resp > h2 {{ background:var(--navy); color:#fff; }}
+  .rp-person {{ border-top:1px solid var(--line); }}
+  .rp-person:first-child {{ border-top:0; }}
+  .rp-person h3 {{ padding:9px 14px; font-size:14.5px; color:var(--navy); background:var(--navy-bg); }}
+  table.resp-tb th.ri, table.resp-tb td.ri {{ width:15%; font-weight:700; }}
+  table.resp-tb th.rc, table.resp-tb td.rc {{ width:24%; color:var(--dim); font-size:13px; }}
+  table.resp-tb th.rp, table.resp-tb td.rp {{ width:26%; }}
+  table.resp-tb td.rp.bad {{ color:var(--bad); font-weight:700; }}
+  table.resp-tb th.rg, table.resp-tb td.rg,
+  table.resp-tb th.rf, table.resp-tb td.rf {{ width:17.5%; font-size:13px; }}
   table {{ width:100%; border-collapse:collapse; font-size:14px; }}
   th, td {{ padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; text-align:left; }}
   th {{ background:#FAFBFC; font-size:12.5px; color:var(--dim); font-weight:700; }}
@@ -740,6 +1075,8 @@ def build() -> str:
   <div class="bar">기준 {date.today().isoformat()} · 열린 {total}건 · 가장 오래된 것 {oldest}일 · 14일 넘게 답 없는 것 {stale}건
     <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건</span>
     {ssot_note}</div>
+
+{resp_html}
 
   <div class="top">
     <h2>🔺 먼저 볼 것 <span class="why">사람 상관없이 오래 묵은 순 5건 — 여기부터 답을 받으세요</span></h2>
