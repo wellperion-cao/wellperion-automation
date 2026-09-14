@@ -28,6 +28,7 @@ import os
 import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 # 원장은 방마다 한 벌씩 있다. 이 화면이 보여 주는 세 사람(실장·소장·나우열M)에게 실제로
@@ -442,7 +443,12 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     blocks = []
     for person in RESP_PEOPLE:
         tbl = resp_table(person, rows_def[person], ev)
-        extra = chief_detail_blocks(ssot_rows, objs) if person == "이경연 실장" else ""
+        if person == "이경연 실장":
+            extra = chief_detail_blocks(ssot_rows, objs)
+        elif person == "김남욱 GM":
+            extra = f'        {GM_DOC_SHELF}\n'
+        else:
+            extra = ""
         blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
                        f'{tbl}\n{extra}      </div>')
     return f'''  <section class="resp">
@@ -531,6 +537,102 @@ def ssot_ops_detail_rows(rows: "list | None") -> "list | None":
     return mine
 
 
+# ═══ 문서가 따라다니게 (GM 지시 2026-09-14) ════════════════════════════════════
+#   "GM업무에서 중간관리자 업무로 넘어가면 A3 요약본·폼 등 문서가 다 사라진다."
+#   업무 SSOT 화면은 이미 딥링크를 갖고 있다 — ?item=ID(카드로 이동) · ?doc=ID&which=plan|result
+#   (기획안·결과보고 뷰어). 여기서는 그 주소를 만들어 붙이기만 한다(새 화면·새 원장 0).
+SSOT_PAGE = "../todo/업무 현황 SSOT.html"
+
+
+def doc_urls(r: dict) -> list[str]:
+    """업무 SSOT 행에 붙은 첨부 주소 — 파일URL 칸은 줄바꿈으로 여러 개가 들어온다."""
+    out: list[str] = []
+    for key in ("파일URL", "링크"):
+        for u in str(r.get(key) or "").split("\n"):
+            u = u.strip()
+            if u.startswith("http") and u not in out:
+                out.append(u)
+    return out
+
+
+def ssot_links(r: dict) -> str:
+    """업무 SSOT 행 하나를 문서까지 딸린 한 칸으로. 업무명 = 그 카드로, 📄/🎯 = 문서 뷰어로,
+    📎 = 첨부 주소로. 없는 링크는 만들지 않는다(주소를 지어내지 않는다)."""
+    tid = str(r.get("id") or "").strip()
+    title = str(r.get("업무명") or "").strip()
+    disp = html.escape(short(title) if title else "—")
+    tip = html.escape(title)
+    if tid:
+        q = quote(tid, safe="")
+        head = (f'<a href="{SSOT_PAGE}?item={q}" target="_blank" rel="noopener" title="{tip}">{disp}</a>')
+    else:
+        head = f'<span title="{tip}">{disp}</span>'
+    tail = []
+    body = str(r.get("내용") or "")
+    if tid and "===PLAN===" in body:
+        tail.append(f'<a class="dc" href="{SSOT_PAGE}?doc={q}&amp;which=plan" '
+                    f'target="_blank" rel="noopener">📄 기획안</a>')
+    if tid and "===RESULT===" in body:
+        tail.append(f'<a class="dc" href="{SSOT_PAGE}?doc={q}&amp;which=result" '
+                    f'target="_blank" rel="noopener">🎯 결과보고</a>')
+    for i, u in enumerate(doc_urls(r), 1):
+        tail.append(f'<a class="dc" href="{html.escape(u, quote=True)}" target="_blank" '
+                    f'rel="noopener" title="{html.escape(u)}">📎 첨부{i}</a>')
+    return head + (f'<div class="dcs">{" ".join(tail)}</div>' if tail else "")
+
+
+def objective_docs_html(o: dict) -> str:
+    """월간운영계획 카드에 달린 자료 링크 — GM업무 화면이 읽는 그 칸(docs[]·doc) 그대로.
+    docs 원소는 {label, href} 도 있고 주소 문자열만 있는 것도 있다. 두 화면이 같은 폴더에
+    있어 주소를 바꿀 것이 없다."""
+    raw = list(o.get("docs") or [])
+    if o.get("doc"):
+        raw.append(o["doc"])
+    seen, out = set(), []
+    for d in raw:
+        href = str((d.get("href") if isinstance(d, dict) else d) or "").strip()
+        if not href or href in seen:
+            continue
+        seen.add(href)
+        label = str((d.get("label") if isinstance(d, dict) else "") or "").strip() or href.split("/")[-1]
+        out.append(f'<a class="dc" href="{html.escape(href, quote=True)}" target="_blank" '
+                   f'rel="noopener" title="{html.escape(label)}">📎 {html.escape(short(label, 22))}</a>')
+    return f'<div class="dcs">{" ".join(out)}</div>' if out else ""
+
+
+# 📄 보고 문서 선반 — GM업무 화면이 쓰는 그 원천(erp/modules.json 문서함 · /chairman/)을 읽어
+#   같은 모양으로 그린다. 목록을 여기 적지 않는다(약속 L01).
+#   회장님 오찬·평가 A3 는 실장·소장이 볼 것이 아니라 /auth/me 의 role 이 admin 일 때만 편다 —
+#   이건 보기 편하라고 감추는 것이고, 실제 차단은 관문이 카드 권한으로 한다.
+GM_DOC_SHELF = """<details class="grp" id="gm-docs" hidden><summary>📄 보고 문서 <span class="gc" id="gm-docs-cnt">—</span></summary>
+        <table><tr><th style="width:340px">문서</th><th>설명</th></tr><tbody id="gm-docs-body"></tbody></table>
+        <div class="sub-note">여는 곳: GM업무 화면 📄 보고 문서 — 같은 목록입니다</div></details>
+        <script>
+        (function(){
+          var wrap = document.getElementById('gm-docs'), body = document.getElementById('gm-docs-body'),
+              cnt = document.getElementById('gm-docs-cnt');
+          fetch('/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(me){
+            if (!me || me.role !== 'admin') return;          // 실장·소장 화면엔 안 보인다
+            return fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); })
+              .then(function(d){
+                var rows = (d.modules || []).filter(function(m){
+                  return m.appgroup === '문서함' && /\\/chairman\\//.test(m.path || ''); });
+                if (!rows.length) return;
+                rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });
+                cnt.textContent = rows.length + '장';
+                body.innerHTML = rows.map(function(m){
+                  var f = String(m.path || '').split('/').pop();
+                  return '<tr><td><a href="' + f + '" target="_blank" rel="noopener">' +
+                         (m.name || f) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
+                }).join('');
+                wrap.hidden = false; wrap.open = true;
+              });
+          }).catch(function(){});      // 로컬 파일로 열면 /auth/me 가 없다 — 조용히 접어 둔다
+        })();
+        </script>"""
+
+
 def ssot_detail_html(ssot_rows: "list | None") -> str:
     mine = ssot_ops_detail_rows(ssot_rows)
     if mine is None:
@@ -545,10 +647,9 @@ def ssot_detail_html(ssot_rows: "list | None") -> str:
         due_disp = d.isoformat() if d else (str(r.get("종료일") or "").strip()[:10] or "—")
         od = (today - d).days if d else None
         od_td = f'<td class="age old">{od}일</td>' if od and od > 0 else '<td>—</td>'
-        title = str(r.get("업무명") or "").strip()
         ap = str(r.get("결재요청") or "").strip() or "—"
         rows.append(f'<tr><td>{html.escape(str(r.get("담당자") or "—"))}</td>'
-                    f'<td title="{html.escape(title)}">{html.escape(short(title) if title else "—")}</td>'
+                    f'<td class="ti">{ssot_links(r)}</td>'
                     f'<td>{html.escape(due_disp)}</td>'
                     f'{od_td}'
                     f'<td>{html.escape(ap)}</td></tr>')
@@ -569,28 +670,34 @@ def parse_unchecked(note: str) -> list[str]:
     return [ln.strip() for ln in str(note or "").split("\n") if ln.strip().startswith("□")]
 
 
-def check_ops_detail_rows(objs: list) -> list[tuple[str, str]]:
-    """(카드명, 체크줄) — 담당 이경연 실장 또는 dept 에 '운영부'가 든 카드의 미완 체크 전부."""
+def check_ops_detail_rows(objs: list) -> list[tuple[dict, str]]:
+    """(카드, 체크줄) — 담당 이경연 실장 또는 dept 에 '운영부'가 든 카드의 미완 체크 전부.
+    카드 dict 를 그대로 돌려준다 — 카드 id(GM업무 딥링크)와 docs(자료 링크)가 필요하다."""
     cards = [o for o in objs
              if str(o.get("owner") or "").strip() == "이경연 실장" or "운영부" in str(o.get("dept") or "")]
     out = []
     for o in cards:
-        title = str(o.get("title") or "").strip()
         for ln in parse_unchecked(o.get("progress_note")):
-            out.append((title, ln))
+            out.append((o, ln))
     return out
 
 
 def check_detail_html(objs: list) -> str:
     pairs = check_ops_detail_rows(objs)
     rows = []
-    for title, ln in pairs:
+    for o, ln in pairs:
+        title = str(o.get("title") or "").strip()
+        oid = str(o.get("id") or "").strip()
+        disp = html.escape(short(title) if title else "—")
+        card = (f'<a href="GM업무.html#gm-{html.escape(oid, quote=True)}" target="_blank" '
+                f'rel="noopener" title="{html.escape(title)}">{disp}</a>' if oid
+                else f'<span title="{html.escape(title)}">{disp}</span>')
         body = _CHK_BODY_RE.sub(r"\1", ln)
         m_owner = _OWNER_TAG_RE.search(ln)
         has_owner = bool(m_owner) and m_owner.group(1).strip() not in ("", "(미정)")
         m_due = _DUE_TAG_RE.search(ln)
         has_due = bool(m_due) and m_due.group(1).strip() not in ("", "(미정)")
-        rows.append(f'<tr><td title="{html.escape(title)}">{html.escape(short(title) if title else "—")}</td>'
+        rows.append(f'<tr><td class="ti">{card}{objective_docs_html(o)}</td>'
                     f'<td title="{html.escape(body)}">{html.escape(short(body))}</td>'
                     f'<td>{"있음" if has_owner else "—"}</td>'
                     f'<td>{"있음" if has_due else "—"}</td></tr>')
@@ -785,8 +892,16 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
     cn = cat_name(it)
     note_td = (f'<td class="note" title="{html.escape(note)}">{html.escape(short(note))}</td>'
                if note else '<td class="note">—</td>')
-    ss = ('<span class="ss-rc">접수처에서 닫음</span>' if is_reception_item(it)
-          else '<span class="ss-no">SSOT 미등록</span>')
+    # 원장에 업무 SSOT 열쇠(todo_id)가 있으면 그 카드로 바로 간다 — SSOT 조회가 실패한 날에도
+    #   문서로 가는 길이 끊기지 않는다(GM 지시 2026-09-14).
+    todo_id = str(it.get("todo_id") or "").strip()
+    if todo_id:
+        ss = (f'<a class="ss-link" href="{SSOT_PAGE}?item={quote(todo_id, safe="")}" '
+              f'target="_blank" rel="noopener">SSOT 열기</a>')
+    elif is_reception_item(it):
+        ss = '<span class="ss-rc">접수처에서 닫음</span>'
+    else:
+        ss = '<span class="ss-no">SSOT 미등록</span>'
     who = str(it.get("owner") or "").strip()      # owner_select 가 escape 한다
     # 함께 하는 사람(with)은 리드와 한 칸에 두되 눈으로 갈린다 — GM 지시 2026-09-11
     #   「담당자 구분 확실하게」. 리드가 책임지고, 함께는 같이 한다.
@@ -970,7 +1085,7 @@ def approval_badge(m: dict) -> str:
 
 
 def table(rows: list[str], empty: str) -> str:
-    body = "\n          ".join(rows) or f'<tr><td colspan="8" class="empty">{empty}</td></tr>'
+    body = "\n          ".join(rows) or f'<tr><td colspan="9" class="empty">{empty}</td></tr>'
     return f'<table>\n          {HEAD_ROW}\n          {body}\n        </table>'
 
 
@@ -1087,7 +1202,8 @@ def build() -> str:
         moved_sorted = sorted(moved, key=lambda x: x[0])
         moved_rows = "\n        ".join(
             f'<li>#{no} {html.escape(str(it.get("issue") or ""))}'
-            f'<span class="mvd">→ <a class="mvd-link" href="../todo/업무 현황 SSOT.html" target="_blank">'
+            f'<span class="mvd">→ <a class="mvd-link" target="_blank" rel="noopener"'
+            f' href="{SSOT_PAGE}{("?item=" + quote(str(m.get("id")), safe="")) if m.get("id") else ""}">'
             f'SSOT: {html.escape(str(m.get("업무명") or ""))}</a> '
             f'{approval_badge(m)}'
             f'<span class="mvd-id">{"id로 연결" if matched_by == "id" else "제목으로 연결"}</span></span></li>'
@@ -1248,6 +1364,13 @@ def build() -> str:
   .ss {{ white-space:nowrap; }}
   .ss-no {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
             background:rgba(237,91,63,0.14); color:#ED5B3F; }}
+  .ss-link {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
+              background:rgba(255,255,255,0.08); color:inherit; text-decoration:underline dotted; }}
+  /* 문서 링크 줄 — 업무명·카드명 아래 📄 기획안 · 🎯 결과보고 · 📎 첨부 */
+  .dcs {{ margin-top:3px; display:flex; flex-wrap:wrap; gap:4px; }}
+  .dc {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
+         background:rgba(255,255,255,0.08); color:var(--dim); text-decoration:none; }}
+  .dc:hover {{ color:inherit; text-decoration:underline; }}
   .ss-st {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
             background:rgba(255,255,255,0.08); color:var(--dim); margin-right:4px; }}
   .ss-ap {{ display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px; }}
