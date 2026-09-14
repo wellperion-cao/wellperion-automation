@@ -41,12 +41,27 @@ import sys
     "public/", "public\\",     # 대외 홈(워드프레스 주입 블록)
     "reports/", "reports\\",   # A3·A4 보고서
     "cmo/home", "cmo\\home",   # 새 홈페이지 초안 = 브랜드 지면
+    "/dietcamp/", "\\dietcamp\\",  # 업체 대외 홈 = 그 업체 브랜드 지면(시보 소관)
     "cfo/", "cfo\\",           # CFO 화면은 나우열M 소관 — AI 가 고치지 않는다
-    "chro/", "chro\\",         # 인사(시로) 도메인 — AI 직접 수정 금지(GM 확정 2026-08-05),
-                               # 저장 관문이 막는다. 필요하면 업무관리 방으로 담당자에게 넘긴다
     "/tmp/", "\\tmp\\",
     "_archive", "node_modules",
 )
+
+# 소유자가 따로 있어 AI 가 직접 못 고치는 화면(GM 확정 2026-08-05). 담당 = 나우열M.
+# 목록 정본은 safe_commit.py 의 도메인 가드다 — 여기 베껴 적지 않고 그걸 읽는다.
+# 이 화면이 필요하면 텔레그램 업무관리 방으로 담당자에게 넘긴다.
+def 남의도메인() -> tuple[str, ...]:
+    try:
+        import importlib.util
+        스펙 = importlib.util.spec_from_file_location("_sc", "scripts/safe_commit.py")
+        모듈 = importlib.util.module_from_spec(스펙)
+        스펙.loader.exec_module(모듈)
+        경로 = set()
+        for _역할, _담당, 집합, _방, _메모 in 모듈.DOMAIN_MODIFY_RULES:
+            경로 |= {str(x).replace("\\", "/") for x in 집합}
+        return tuple(경로)
+    except Exception:
+        return ()
 
 # 폭을 최대로 펴야 하는 자리. 카드·이미지·모달에 걸린 폭 캡은 건드리지 않는다.
 컨테이너 = re.compile(
@@ -222,7 +237,7 @@ def 잠긴경로() -> tuple[str, ...]:
 
 def 화면들() -> list[str]:
     나온것 = []
-    잠김 = 잠긴경로()
+    잠김 = 잠긴경로() + 남의도메인()
     for p in glob.glob("3. 웰페리온 가이드/**/*.html", recursive=True):
         정규 = p.replace("\\", "/")
         if any(정규.startswith(x) or 정규 == x for x in 잠김):
