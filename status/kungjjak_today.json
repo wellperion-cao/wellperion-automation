@@ -680,18 +680,6 @@
       ],
       "work": [
         {
-          "time": "10:14",
-          "area": "작업",
-          "event": "중간관리자 화면 — 매출 진척 막대 목표원천 정정(status/sales_targets.json) (GM 승인 2026-09-14)",
-          "detail": "커밋 a758d3c210 · 배 11401"
-        },
-        {
-          "time": "10:22",
-          "area": "작업",
-          "event": "중간관리자 화면 — 실장 건별 목록(접수·업무SSOT·점검) 펼침 (GM 지시 2026-09-14)",
-          "detail": "커밋 581f4192d2 · 배 11401"
-        },
-        {
           "time": "11:03",
           "area": "작업",
           "event": "SVIP 요가 A3 2차 — 생크몽드 공간비·스파권 연계 방향 (GM 지시 2026-09-14)",
@@ -858,6 +846,18 @@
           "area": "토큰 수집기",
           "event": "4건 반영 — 집계 재생성(info@ 709) · 열쇠 없음 경고 · 열쇠 교체+로그인 열쇠 문(/api/token_key) · 수집기 라벨·로그·§7 스위치·전원조건 · 방 회신",
           "detail": "저장 beccf48d8(자물쇠 PL-20260914-14 · GM 승인 대기) · 서버 scp+재기동 15:35"
+        },
+        {
+          "time": "15:45",
+          "area": "작업",
+          "event": "구매요청 거울 즉시 반영 — 서버 원본 쓰기(add·status·delete·photo) ok 자리에서 proc_items 를 GAS 와 같은 뜻으로 고친다 [나우열M 요청 2026-09-14]",
+          "detail": "커밋 f70082e764 · 배 11401"
+        },
+        {
+          "time": "15:45",
+          "area": "구매요청 이관",
+          "event": "mirror_proc.py 신설 + api_write 연결 — 서버 모드 구매요청 쓰기 4종을 proc_items 에 즉시 반영 · 서버 DB 자체점검 통과 · 15:43 반영·재기동 · 방 회신",
+          "detail": "f70082e76 · 시토 배 12603 ① 검수 항목 해소 · 품의번호 키 전환은 후속"
         }
       ],
       "count": 56,
@@ -2005,13 +2005,13 @@
           "ref": "GM-20260914-5021",
           "no": "21",
           "got": "현재 매출 및 회원&운영현황 보고를 자동화 하고 있습니다. 필요한 부분 있으면 의견 주시길 바랍니다.",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "15:43",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:44",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2113,28 +2113,13 @@
         }
       ],
       "count": 20,
-      "done": 19,
-      "open": 1,
+      "done": 20,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 16,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-5021",
-          "no": "21",
-          "got": "현재 매출 및 회원&운영현황 보고를 자동화 하고 있습니다. 필요한 부분 있으면 의견 주시길 바랍니다.",
-          "did": "",
-          "start": "15:43",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
