@@ -73,6 +73,12 @@ def judge(table, status, resp):
             # GAS 가 본문을 못 봤다 = 시트에 아무것도 안 써졌다(api_write.BODY_NEVER_ARRIVED 실측 근거).
             # 사람이 볼 gas-error 로 닫지 않고 되밀기 대기에 남긴다 — 다음 분에 다시 보내도 중복이 아니다.
             return "push-error:body-lost", False
+        # 게이트 거부(unauthorized)는 영구 실패가 아니다 — 열쇠는 그대로인데 답만 달랐다.
+        # 2026-09-14 21:02·21:04 두 행이 unauthorized 로 한 번에 닫혔는데, 같은 열쇠로 만든 같은 본문이
+        # 그 전(12:34)·뒤(2026-09-15 실측 probe)로는 통과했다. 한 번의 거부로 닫으면 시트에 안 들어간 채 끝난다.
+        # 재시도 대상으로 돌린다 — 열쇠가 정말 틀렸으면 5회 뒤 push_tries 로 걸려 사람이 본다.
+        if str(data.get("error") or "") == "unauthorized":
+            return "push-error:unauthorized", False
         # 접수ID가 시트에 없음(배984 이후 신규건 · 시트 동결) — GAS 에 reg_append 가 없어 새로 넣을 수 없다.
         # 원장(서버)엔 이미 반영됐으니 사람이 볼 gas-error 대신 sheet-missing 으로만 표시(배1090·INC-056).
         if "찾을 수 없습니다" in str(data.get("error") or ""):
@@ -276,6 +282,8 @@ def selftest():
     # 본문 미도달은 되밀기 대기에 남긴다(재시도) · GAS 가 본문을 보고 거부한 것은 사람 자리로 보낸다(종결).
     assert judge("write_log", "200", '{"ok":false,"error":"action 필수"}') == ("push-error:body-lost", False)
     assert judge("write_log", "200", '{"ok":false,"error":"알 수 없는 action: x"}') == ("gas-error", True)
+    # 게이트 거부는 재시도 대상 — 한 번 거부로 닫으면 시트에 안 들어간 채 끝난다(2026-09-14 21:0x 2행).
+    assert judge("write_log", "200", '{"ok":false,"error":"unauthorized"}') == ("push-error:unauthorized", False)
     assert judge("write_log", "200", '{"ok":true}') == ("ok", True)
 
     # 중복 실행 방지 락 — 이 개발기(Windows)엔 fcntl 이 없어 "no-lock" 폴백, 서버(Linux)에선 실제로 잠근다.
