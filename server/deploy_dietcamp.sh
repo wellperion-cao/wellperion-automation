@@ -18,7 +18,7 @@ done
 # 손님용 「내 문의 현황」은 2026-09-14 GM 지시로 뺐다 — 다캠에는 필요 없다.
 # 이 셋은 cbo/dietcamp(내부 열람)가 아니라 공개 폴더 "3. 웰페리온 가이드/dietcamp/" 에 있다.
 PUB="3. 웰페리온 가이드/dietcamp"
-for f in "$PUB"/{index,inquiry,admin}.html; do
+for f in "$PUB"/{index,inquiry,manage}.html; do
   [ -f "$f" ] && grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"
 done
 $S "sudo mkdir -p /srv/www/2_dietcamp/img && sudo chown -R ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"

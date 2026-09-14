@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문의 관리 | 다이어트캠프</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!-- 웰페리온 멤버십 회원관리 화면(cpo/member/membership.html?manage=membership)의 뼈대를 그대로 따랐다
+     — 위쪽 현황 카드 줄 → 분류 칩 → 목록 표. 다만 그 화면은 100만 자라 기능을 다 옮기지 않고
+     문의 관리에 필요한 것만 담았다(GM 2026-09-14 「가볍게」). -->
+<style>
+:root{
+  --green:#4E7432; --teal:#2F6FB0; --orange:#9A6500; --gray:#8A9096; --red:#B4322A;
+  --ink:#14171a; --dim:#8A9096; --body:#3a3f43;
+  --paper:#fff; --bg:#f5f6f4; --border:#e2e6e0; --radius:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+     color:var(--body);background:var(--bg);font-size:14px;line-height:1.55;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+
+header{background:var(--paper);border-bottom:1px solid var(--border)}
+header .wrap{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding-block:16px 14px}
+header h1{font-size:19px;font-weight:900;color:var(--ink)}
+header .sub{font-size:12px;color:var(--dim)}
+header .who{margin-left:auto;font-size:12px;color:var(--dim)}
+
+.dash{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:18px 0 16px}
+.dash-card{display:block;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius);
+           padding:14px 16px 15px;position:relative;overflow:hidden;cursor:pointer;
+           transition:border-color .15s,transform .15s}
+.dash-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.dash-card[data-k="new"]::before{background:var(--teal)}
+.dash-card[data-k="wip"]::before{background:var(--orange)}
+.dash-card[data-k="called"]::before{background:var(--green)}
+.dash-card[data-k="done"]::before{background:var(--gray)}
+.dash-card:hover{transform:translateY(-1px);border-color:var(--green)}
+.dash-card.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.dash-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--ink)}
+.dash-dot{width:8px;height:8px;border-radius:50%;background:var(--gray)}
+.dash-card[data-k="new"] .dash-dot{background:var(--teal)}
+.dash-card[data-k="wip"] .dash-dot{background:var(--orange)}
+.dash-card[data-k="called"] .dash-dot{background:var(--green)}
+.dash-line{display:flex;justify-content:space-between;align-items:baseline;margin-top:9px;font-size:12px}
+.dash-k{color:var(--dim)}
+.dash-v b{font-size:22px;font-weight:900;color:var(--ink)}
+.dash-v b.small{font-size:14px}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{font:inherit;font-size:13px;font-weight:600;color:var(--dim);background:var(--paper);
+      border:1px solid var(--border);border-radius:999px;padding:7px 15px;cursor:pointer}
+.chip.on{border-color:var(--green);background:var(--green);color:#fff}
+
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar input{flex:1;min-width:180px;font:inherit;font-size:13px;background:var(--paper);
+           border:1px solid var(--border);border-radius:999px;padding:9px 15px}
+.bar input:focus{outline:none;border-color:var(--green)}
+.bar .cnt{font-size:12px;color:var(--dim)}
+
+.tbl-wrap{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius);
+          overflow-x:auto;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;font-weight:700;color:var(--dim);background:#fafbf9;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.nm{font-weight:700;color:var(--ink);white-space:nowrap}
+td.tel a{color:var(--green);font-weight:600;white-space:nowrap}
+td.memo{color:var(--body);max-width:360px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+    border-radius:999px;padding:3px 10px;white-space:nowrap}
+.st::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.접수{color:var(--teal);background:rgba(47,111,176,.10)}
+.st.확인중{color:var(--orange);background:rgba(154,101,0,.10)}
+.st.연락드림{color:var(--green);background:rgba(78,116,50,.12)}
+.st.완료{color:var(--gray);background:rgba(138,144,150,.12)}
+td.act{white-space:nowrap}
+td.act select{font:inherit;font-size:12px;border:1px solid var(--border);border-radius:8px;
+              padding:5px 8px;background:var(--paper);color:var(--body)}
+.empty{padding:34px;text-align:center;color:var(--dim);font-size:13px}
+.note{font-size:12px;color:var(--dim);margin:0 0 36px;line-height:1.6}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#171a16;--bg:#101210;--border:#2c312a;--ink:#f0f2ee;--body:#dcdfd8;--dim:#949a92}
+  th{background:#1b1f19}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>문의 관리</h1>
+    <span class="sub">다이어트캠프에 들어온 문의</span>
+    <span class="who">대표님 전용</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="dash" id="dash"></div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="성함·연락처·내용으로 찾기">
+    <span class="cnt" id="cnt"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>들어온 때</th><th>성함</th><th>연락처</th><th>분류</th><th>가능 시간</th><th>내용</th><th>상태</th>
+      </tr></thead>
+      <tbody id="rows"><tr><td colspan="7" class="empty">불러오는 중…</td></tr></tbody>
+    </table>
+  </div>
+
+  <p class="note">· 상태를 바꾸면 바로 저장됩니다. · 연락처를 누르면 전화가 걸립니다.</p>
+</div>
+
+<script>
+(function(){
+  var LIST_URL = "";     // 전체 목록 (대표님만)
+  var STATUS_URL = "";   // 상태 바꾸기
+  var STATES = ['접수','확인중','연락드림','완료'];
+  var TOPICS = ['그룹PT','개인PT','재활운동','기타'];
+  var rows = [], fState = '', fTopic = '', kw = '';
+  var $ = function(id){ return document.getElementById(id); };
+
+  function esc(s){ return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function st(r){ return r.status || '접수'; }
+  function isToday(r){ return (r.at || '').slice(0,10) === new Date().toISOString().slice(0,10); }
+
+  function drawDash(){
+    var spec = [['new','접수','🆕 새 문의'],['wip','확인중','👀 확인중'],
+                ['called','연락드림','📞 연락드림'],['done','완료','✅ 완료']];
+    $('dash').innerHTML = spec.map(function(s){
+      var all = rows.filter(function(r){ return st(r) === s[1]; });
+      return '<div class="dash-card' + (fState === s[1] ? ' on' : '') + '" data-k="' + s[0] + '" data-s="' + s[1] + '">'
+        + '<div class="dash-head"><span class="dash-dot"></span>' + s[2] + '</div>'
+        + '<div class="dash-line"><span class="dash-k">전체</span>'
+        + '<span class="dash-v"><b>' + all.length + '</b></span></div>'
+        + '<div class="dash-line"><span class="dash-k">오늘</span>'
+        + '<span class="dash-v"><b class="small">' + all.filter(isToday).length + '</b></span></div></div>';
+    }).join('');
+    [].forEach.call($('dash').children, function(c){
+      c.onclick = function(){ fState = (fState === c.dataset.s) ? '' : c.dataset.s; drawDash(); draw(); };
+    });
+  }
+
+  function drawChips(){
+    var html = '<button class="chip' + (fTopic ? '' : ' on') + '" data-t="">전체</button>';
+    TOPICS.forEach(function(t){
+      html += '<button class="chip' + (fTopic === t ? ' on' : '') + '" data-t="' + t + '">' + t + '</button>';
+    });
+    $('chips').innerHTML = html;
+    [].forEach.call($('chips').children, function(b){
+      b.onclick = function(){ fTopic = b.dataset.t; drawChips(); draw(); };
+    });
+  }
+
+  function shown(){
+    return rows.filter(function(r){
+      if (fState && st(r) !== fState) return false;
+      if (fTopic && (r.topic || '기타') !== fTopic) return false;
+      if (!kw) return true;
+      return [r.name, r.phone, r.topic, r.memo].join(' ').toLowerCase().indexOf(kw.toLowerCase()) >= 0;
+    });
+  }
+
+  function draw(){
+    var rs = shown();
+    $('cnt').textContent = rs.length + '건';
+    if (!rs.length){ $('rows').innerHTML = '<tr><td colspan="7" class="empty">해당하는 문의가 없습니다.</td></tr>'; return; }
+    $('rows').innerHTML = rs.map(function(r, i){
+      return '<tr>'
+        + '<td>' + esc((r.at || '').replace('T',' ').slice(0,16)) + '</td>'
+        + '<td class="nm">' + esc(r.name) + '</td>'
+        + '<td class="tel"><a href="tel:' + esc(r.phone) + '">' + esc(r.phone) + '</a></td>'
+        + '<td>' + esc(r.topic || '기타') + '</td>'
+        + '<td>' + esc(r.when || '—') + '</td>'
+        + '<td class="memo">' + esc(r.memo || '') + '</td>'
+        + '<td class="act"><span class="st ' + st(r) + '">' + st(r) + '</span><br>'
+        + '<select data-i="' + i + '">' + STATES.map(function(s){
+            return '<option' + (st(r) === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')
+        + '</select></td></tr>';
+    }).join('');
+    [].forEach.call($('rows').querySelectorAll('select'), function(sel){
+      sel.onchange = function(){ setStatus(rs[+sel.dataset.i], sel.value); };
+    });
+  }
+
+  function setStatus(row, s){
+    if (!STATUS_URL){ alert('상태 바꾸기는 통로가 열린 뒤에 됩니다.'); draw(); return; }
+    fetch(STATUS_URL, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+                       body:JSON.stringify({tenant:'2_dietcamp', id:row.id, status:s})})
+      .then(function(r){ if(!r.ok) throw 0; row.status = s; drawDash(); draw(); })
+      .catch(function(){ alert('상태를 바꾸지 못했습니다. 잠시 뒤 다시 해 주세요.'); draw(); });
+  }
+
+  $('q').addEventListener('input', function(){ kw = this.value.trim(); draw(); });
+
+  drawChips();
+  if (!LIST_URL){
+    drawDash();
+    $('rows').innerHTML = '<tr><td colspan="7" class="empty">'
+      + '아직 문의를 받는 통로가 열리지 않았습니다.<br>'
+      + '손님이 보는 문의 폼은 이미 열려 있고, 들어온 문의가 여기 쌓이는 것은 통로가 연결된 다음입니다.</td></tr>';
+    $('cnt').textContent = '';
+    return;
+  }
+  fetch(LIST_URL + '?tenant=2_dietcamp', {cache:'no-store', credentials:'include'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ rows = (d && d.items) || []; drawDash(); draw(); })
+    .catch(function(){
+      drawDash();
+      $('rows').innerHTML = '<tr><td colspan="7" class="empty">지금 목록을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.</td></tr>';
+    });
+})();
+</script>
+
+</body>
+</html>
