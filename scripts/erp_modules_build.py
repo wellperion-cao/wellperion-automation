@@ -447,6 +447,64 @@ def attach_bundle(items):
     _attach_downloads(items)
     _attach_guides(items)
     _attach_accounts(items)
+    _attach_module_of(items)
+
+
+# ── 낱장을 모듈 아래로 접는다 (GM 지시 2026-09-14 「중복된 카드들 정리 · 단순화」) ──────
+# 이 판은 erp/admin/index.html 이 2026-09-10 에 실측으로 세운 것이다 — 거기에는 글로만
+# 적혀 있어 첫 화면은 여전히 낱장 39칸이었다. 판정을 코드로 옮겨 화면이 실제로 접히게 한다.
+#
+# 무엇이 한 칸인가: 사람이 "그 일" 이라고 부르는 단위다. 습득물 접수·처분·현황은 세 화면이지만
+# 하는 일은 하나(분실물)다. 세 칸으로 두면 첫 화면에서 무엇이 다른지 매번 읽어야 한다.
+#
+# ★여기 없는 카드는 접지 않는다 — 스스로 한 칸이다(없는 id 를 적어 두면 조용히 사라진다).
+MODULE_BUNDLES = [
+    ("회원",        ["member", "cpo-member-lesson", "cpo-member-renewal",
+                     "cpo-member-오넛티-접수현황"]),
+    ("문의",        ["inquiry"]),
+    ("점검",        ["check"]),
+    ("전사 일정",   ["coo-check-전사-일정"]),
+    ("업무·결재",   ["coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot"]),
+    ("라커",        ["coo-리셉션-업무-라커관리-index"]),
+    ("분실물",      ["coo-reception-lost-found-register",
+                     "coo-reception-lost-found-disposal",
+                     "coo-reception-lost-found-gallery"]),
+    ("인사",        ["chro-hub-schedule", "chro-hub-leave", "chro-hub-schedule-mobile",
+                     "chro-hub-calendar", "chro-hub-onboarding", "chro-hub-onboarding-self"]),
+    ("재무",        ["cfo-finance-지출품의", "cfo-finance-매출현황",
+                     "cfo-finance-지출현황", "cfo-finance-매출지출현황"]),
+    ("콘텐츠",      ["cmo-series-ai시리즈보드", "cmo-intake-instructor-intake",
+                     "cmo-funnel-콘텐츠문의현황"]),
+    ("경영 보고",   ["coo-chairman-gm업무", "coo-chairman-대표님-지시사항",
+                     "coo-chairman-회장님-지시사항", "coo-chairman-중간관리자-업무목차"]),
+    ("월간 운영계획", ["gm-월간운영계획"]),
+]
+
+
+def _attach_module_of(items):
+    """카드마다 어느 모듈에 속하는지, 그 모듈의 대표 화면인지를 적는다.
+
+    module = 첫 화면에 뜨는 칸 이름 · module_lead = 그 칸을 대표해 먼저 열리는 화면.
+    대표는 목록의 맨 앞이다(사람이 가장 자주 여는 것을 앞에 적어 둔다).
+    """
+    속한모듈, 대표 = {}, {}
+    for 이름, ids in MODULE_BUNDLES:
+        for i, mid in enumerate(ids):
+            속한모듈[mid] = 이름
+            if i == 0:
+                대표[mid] = True
+    for m in items:
+        이름 = 속한모듈.get(m["id"])
+        if 이름:
+            m["module"] = 이름
+            m["module_lead"] = bool(대표.get(m["id"]))
+
+
+def check_bundles(items):
+    """판에 적었는데 카드에 없는 id 를 알려 준다 — 오타 하나로 화면이 조용히 빈다."""
+    있는id = {m["id"] for m in items}
+    없는것 = [mid for _이름, ids in MODULE_BUNDLES for mid in ids if mid not in 있는id]
+    return 없는것
 
 
 def _attach_downloads(items):

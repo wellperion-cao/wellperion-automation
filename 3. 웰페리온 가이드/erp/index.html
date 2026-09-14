@@ -78,6 +78,17 @@
              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .mod .owner{font-size:11px; color:var(--dim-soft); margin-top:2px;
               white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  /* 모듈 한 칸 — 같은 일을 하는 화면 여럿을 접은 칸(GM 지시 2026-09-14).
+     딸린 화면은 칸 안에서 바로 고른다 — 한 번 더 들어가게 하지 않는다. */
+  .modbox{cursor:default;}
+  .modbox:hover{border-color:var(--border); background:var(--paper);}
+  .modbox .name .cnt{font-size:11px; font-weight:600; color:var(--dim-soft); margin-left:6px;}
+  .modbox .links{display:flex; flex-wrap:wrap; gap:4px 6px; margin:4px 0 2px;}
+  .modbox .links a{font-size:12px; color:var(--text-soft); text-decoration:none;
+                   padding:2px 7px; border-radius:4px; background:var(--gray-bg);
+                   border:1px solid var(--border); white-space:nowrap;}
+  .modbox .links a:hover{border-color:var(--accent); color:var(--accent-hover);
+                         background:var(--accent-bg);}
   /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
   .mod.locked{opacity:0.4;}
   .mod.locked:hover{border-color:var(--border); background:var(--paper);}
@@ -343,6 +354,15 @@ function loadModules(role, allowedIds){
         }
         // 일하는 화면이면 아래 카드 쪽으로 그대로 내려간다
       }
+      /* 모듈에 안 묶인 일하는 화면은 카드로 두지 않는다 (GM 지시 2026-09-14 「중복된 카드들
+         정리 · 단순화」). 판정은 플랫폼 콘솔이 2026-09-10 에 실측으로 세운 그 판이다 —
+         부서 체계·거래업체·업무분장·프로필월·ERP 가이드·마케팅 월간보고서는 읽는 것이지
+         상태를 바꾸는 자리가 아니다. 지우는 게 아니라 문서함으로 자리를 옮긴다. */
+      if (!m.module) {
+        var key0 = (m.name || '') + '|' + (m.desc || '');
+        if (!seenDoc[key0]) { seenDoc[key0] = 1; docs.push(m); }
+        return;
+      }
       var pi = PINNED.indexOf(m.id);
       if (pi >= 0) { pinned[pi] = m; return; }   // 자주 여는 것은 아래 그룹에 또 그리지 않는다
       // 묶음 이름 = 왼쪽 메뉴와 같은 업무영역(마케팅 관리·회원 관리·…). 옛 이름(회원·운영·점검·경영)은
@@ -383,6 +403,42 @@ function loadModules(role, allowedIds){
                     (m.staff ? '<div class="owner">담당 ' + esc(m.staff) + '</div>' : '');
       return a;
     }
+    /* 모듈 한 칸 — 같은 일을 하는 화면 여럿을 한 칸으로 접는다 (GM 지시 2026-09-14).
+       ★딸린 화면은 다른 페이지로 넘기지 않고 이 칸 안에 그대로 둔다 — 타고 넘어가서 고르는
+       것을 GM 이 싫어한다(2026-07-18). 한 장짜리 모듈은 종전 카드 그대로다. */
+    function moduleCard(name, list){
+      if (list.length === 1) {
+        var one = card(list[0]);
+        if (list[0].module_lead) one.querySelector('.name').textContent = name;
+        return one;
+      }
+      var lead = list[0];
+      var box = document.createElement('div');
+      box.className = 'mod modbox';
+      box.dataset.find = (name + ' ' + list.map(function(x){
+        return x.name + ' ' + (x.desc || '') + ' ' + (x.staff || ''); }).join(' ')).toLowerCase();
+      box.innerHTML = '<div class="name">' + esc(name)
+                    + '<span class="cnt">' + list.length + '</span></div>'
+                    + '<div class="links">' + list.map(function(x){
+                        return '<a href="' + esc(x.path) + '">' + esc(x.name) + '</a>'; }).join('')
+                    + '</div>'
+                    + (lead.staff ? '<div class="owner">담당 ' + esc(lead.staff) + '</div>' : '');
+      return box;
+    }
+    /* 한 그룹 안에서 같은 모듈끼리 접는다. 모듈 차례는 대표 화면이 서 있던 자리를 그대로 쓴다. */
+    function foldModules(list){
+      var 차례 = [], 통 = {};
+      list.forEach(function(m){
+        var k = m.module || m.id;
+        if (!통[k]) { 통[k] = []; 차례.push(k); }
+        통[k].push(m);
+      });
+      return 차례.map(function(k){
+        var xs = 통[k];
+        xs.sort(function(a, b){ return (b.module_lead ? 1 : 0) - (a.module_lead ? 1 : 0); });
+        return {name: xs[0].module || xs[0].name, list: xs};
+      });
+    }
     function section(parent, title, list){
       var h = document.createElement('h3');
       h.innerHTML = esc(title) + '<span class="n"></span>';
@@ -390,7 +446,7 @@ function loadModules(role, allowedIds){
       var grid = document.createElement('div');
       grid.className = 'modules';
       parent.appendChild(grid);
-      list.forEach(function(m){ grid.appendChild(card(m)); });
+      foldModules(list).forEach(function(g){ grid.appendChild(moduleCard(g.name, g.list)); });
       h.dataset.grp = title; grid.dataset.grp = title;   // 좌측 메뉴가 이 이름으로 골라 띄운다
     }
 
@@ -425,8 +481,8 @@ function loadModules(role, allowedIds){
     var menu = document.getElementById('menu-groups');
     menu.innerHTML = '';
     var groups = [];
-    if (pinList.length) groups.push(['자주 여는 것', pinList.length]);
-    order.forEach(function(g){ groups.push([g, bag[g].length]); });
+    if (pinList.length) groups.push(['자주 여는 것', foldModules(pinList).length]);
+    order.forEach(function(g){ groups.push([g, foldModules(bag[g]).length]); });
     groups.forEach(function(gp){
       var a = document.createElement('a');
       a.href = '#' + gp[0]; a.dataset.grp = gp[0];
