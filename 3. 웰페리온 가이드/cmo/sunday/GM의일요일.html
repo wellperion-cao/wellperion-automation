@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>어떤 하루 — 개인계정 기록</title>
+<!-- 폰에서 「홈 화면에 추가」 하면 앱처럼 전체화면으로 열린다 (GM 지시 2026-09-14 「앱용으로 하나」).
+     현장에서 사진을 찍고 그 자리에서 올리는 쓰임이라 주소창·탭이 없는 편이 낫다.
+     설치 파일은 없다 — 주소만 홈 화면에 얹는 방식이라 따로 깔 것이 없다. -->
+<meta name="theme-color" content="#23201C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="어떤 하루">
 <!--
   「어떤 하루」 모듈 (M1 콘텐츠 허브 · 2026-08-05 시모 · 배367)
   ★2026-08-23 GM 확정으로 시리즈 이름이 "GM의 일요일" → "어떤 하루" 로 바뀌었다.
@@ -130,6 +138,22 @@
     .rv-it{flex-wrap:wrap;}
     .rv-btns{width:100%; }
     .rv-btns button{flex:1;}
+  }
+
+  /* ═══ PC 판 — 넓은 화면에서는 두 단으로 흐른다 (GM 지시 2026-09-14 「앱용 하나, PC용 하나」)
+     같은 화면 한 장이 기기에 따라 다른 판으로 선다. 파일을 두 벌 만들지 않는다 —
+     두 벌이면 한쪽만 고쳐져 서로 어긋난다(GM 「중복이나 무의미한건 항상 지워」).
+     폰에서는 지금 그대로 한 줄, PC 에서는 두 단. 카드가 단을 넘어 잘리지 않게 막는다.
+     ▸격자(grid) 로 짜 보고 되돌렸다 — 행 단위로 높이를 맞추느라 카드 사이가 크게 벌어졌다. ═══ */
+  @media(min-width:1000px){
+    .wrap{max-width:100%; margin:0;}          /* 좌측 정렬 · 폭 최대 (GM 상시 2026-07-02) */
+    .head{padding:18px 28px 16px;}
+    .body{display:block; columns:2; column-gap:20px; padding:20px 28px 40px;}
+    .body > *{break-inside:avoid; -webkit-column-break-inside:avoid; margin-bottom:18px;}
+    .cut-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));}
+  }
+  @media(min-width:1700px){
+    .body{columns:3;}                          /* 더 넓으면 세 단 — 스크롤이 줄어든다 */
   }
 </style>
 </head>
