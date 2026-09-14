@@ -548,6 +548,12 @@ GUIDE_DIR = "/3. 웰페리온 가이드"
 # 개인 아이디 namuk87·jjky0123 은 관리자 등급이라 열렸다). 회사 관리자 콘솔(/auth/admin)은 종전대로 관리자 등급 전부.
 PLATFORM_ADMINS = frozenset(e.strip().lower() for e in os.environ.get("ERP_PLATFORM_ADMINS", "cao@wellperion.com").split(",") if e.strip())
 PLATFORM_PREFIX = "/erp/admin/"
+# 플랫폼(파는 쪽) 화면인데 아직 파트너사 경로에 남아 있는 것 — 회사 계정 관리자만 연다(배 2633 · 웰리 실측 2026-09-15).
+# 파일을 먼저 옮기면 기존 즐겨찾기가 깨지므로(2026-09-07 파트너팀 404) 자리 이동 전에 권한으로 먼저 막는다.
+# 회사 관리자 콘솔(/erp/admin/)이 이 경로들을 그대로 가리키므로 회사 계정에서는 링크가 그대로 산다.
+PLATFORM_PATHS = ("/자율현황.html", "/cto/automation/카톡전송관리.html", "/cto/aws_migration.html",
+                  "/cto/env_status.html", "/cto/AWS_ERP_운영가이드.html", "/cbo/counsel_admin.html")
+PLATFORM_PATH_PREFIXES = ("/cbo/model/", "/cbo/dietcamp/", "/cbo/gocheokgolf/")
 # 회원·문의 개인정보가 든 status 파일 = 회원 관리(member) 카드가 있어야 읽는다.
 MEMBER_DATA_RE = re.compile(r"^/status/(member_|inquiry_snapshot|counsel_questions|cpo_member_)")
 # 읽기 API 접두 → 그 자료를 그리는 카드들. 그중 하나라도 허용돼야 API 도 열린다(2026-09-14 화면 전수 grep 으로 만든 표).
@@ -587,9 +593,24 @@ def _api_need(path: str) -> Optional[set]:
     return best[1] if best else None
 
 
+def is_platform_path(path: str) -> bool:
+    """플랫폼(파는 쪽) 자리인가 — 회사 계정 관리자만 여는 경로.
+
+    카드(모듈)가 붙어 있는 화면은 check() 가 path_allowed 를 아예 안 부르므로(카드 권한으로만 판정)
+    이 판정을 따로 떼어 카드 검사보다 먼저 건다. 저장소 경로(/repo/3. 웰페리온 가이드/…)로 우회해도
+    같은 자리에 걸리게 접두를 먼저 벗긴다."""
+    p = path
+    if p.startswith("/repo/") or p == "/repo":
+        p = p[len("/repo"):] or "/"
+    if p.startswith(GUIDE_DIR + "/"):
+        p = p[len(GUIDE_DIR):]
+    return (p.startswith(PLATFORM_PREFIX) or p == PLATFORM_PREFIX.rstrip("/")
+            or p in PLATFORM_PATHS or p.startswith(PLATFORM_PATH_PREFIXES))
+
+
 def path_allowed(user, path: str) -> bool:
     """카드 목록 밖 경로를 이 계정이 열어도 되나. 관리자=전부(플랫폼관리만 예외). 판정 순서 = 플랫폼관리 → 관리자 전용 접두 → 회원 자료 → API → 화면 → 자산."""
-    if path.startswith(PLATFORM_PREFIX) or path == PLATFORM_PREFIX.rstrip("/"):
+    if is_platform_path(path):
         return (user["email"] or "").lower() in PLATFORM_ADMINS
     if user["role"] == "admin":
         return True
@@ -1023,9 +1044,13 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
         raise HTTPException(401)
     uri = request.headers.get("x-original-uri", "")             # nginx 가 붙인다(erp.nginx.conf)
     m = module_at(uri)
+    path = uri_path(uri)
+    # 플랫폼 자리(배 2633)는 카드 검사보다 먼저 — 카드가 붙은 화면은 아래 path_allowed 를 안 타므로
+    # 여기서 막지 않으면 파트너사 관리자 등급 계정이 카드 권한만으로 열린다.
+    if is_platform_path(path) and (u["email"] or "").lower() not in PLATFORM_ADMINS:
+        raise HTTPException(403)
     if m and not allowed(u, m):
         raise HTTPException(403)
-    path = uri_path(uri)
     if not m and not path_allowed(u, path):                       # 카드 밖 경로(API·/repo/·보고서·관리자 콘솔…)
         raise HTTPException(403)
     if is_auto_token(erp_session):
@@ -1873,6 +1898,17 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert path_allowed(_adm_company, uri_path("/erp/admin/")) and path_allowed(_adm_company, "/erp/admin/index.html")
     assert not path_allowed(_adm_personal, uri_path("/erp/admin/")) and not path_allowed(_adm_personal, "/erp/admin/clevel-guide.html")
     assert path_allowed(_adm_personal, "/repo/scripts/x.py")      # 그 밖은 관리자 등급 그대로
+    # 파트너사 경로에 남아 있는 플랫폼 화면(배 2633) — 회사 계정만. 자리 이동 전에 권한으로 먼저 막는다.
+    for _p in ("/자율현황.html", "/cto/aws_migration.html", "/cbo/counsel_admin.html",
+               "/cbo/dietcamp/index.html", "/cbo/gocheokgolf/admin.html", "/cbo/model/x.html"):
+        assert path_allowed(_adm_company, _p), _p
+        assert not path_allowed(_adm_personal, _p), _p
+        assert not path_allowed(_stf, _p), _p
+    assert path_allowed(_adm_personal, "/cto/automation/index.html")   # 같은 폴더의 다른 화면은 그대로 열린다
+    # 카드가 붙은 화면도 걸러야 한다 — check() 가 카드 검사 전에 이 판정을 건다.
+    assert is_platform_path("/자율현황.html") and is_platform_path("/repo/3. 웰페리온 가이드/자율현황.html")
+    assert is_platform_path("/cbo/dietcamp/") and is_platform_path(uri_path("/erp/admin/"))
+    assert not is_platform_path("/cpo/member/membership.html") and not is_platform_path("/cto/automation/index.html")
     assert path_allowed(_stf, "/repo/status/monthly_ops_plan.json") and path_allowed(_stf, "/repo/ssot/kpi.json")   # 화면이 읽는 데이터
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
     assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
@@ -1888,7 +1924,9 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as _tf:
         json.dump({"off": ["check"]}, _tf)
     MODULE_SWITCH, _SWITCH = _tf.name, (None, frozenset())
-    assert not allowed({**staff_u, "perms": '{"groups":["시우"]}'}, dept_module) and allowed(admin_u, dept_module)
+    _chk = {"id": "check", "group": "시우", "core": False}
+    assert not allowed({"role": "staff", "email": "s@x", "perms": '{"groups":["시우"]}'}, _chk)
+    assert allowed({"role": "admin", "email": "cao@wellperion.com", "perms": None}, _chk)
     MODULE_SWITCH, _SWITCH = _real_switch, (None, frozenset())
     os.unlink(_tf.name)
     assert usage_area("todo_add") == "업무" and usage_area("reg_update") == "접수" and usage_area("member_inquiry_add") == "문의"
