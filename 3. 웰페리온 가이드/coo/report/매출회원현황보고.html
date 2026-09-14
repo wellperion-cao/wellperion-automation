@@ -610,18 +610,25 @@ function cellMoney(v){
    정기 = 매월 둘째·넷째 일요일 + 1월 1일(「지원부 체계」 getDayInfo 와 같은 규칙).
    임시 = 추석·명절 등. 정본 = ssot/closed_days.json — 못 읽으면 정기 규칙만으로 판정한다
    (임시 휴관을 놓칠 수는 있어도, 규칙이 있는 날을 틀리게 세지는 않는다). */
-var CLOSED_EXTRA = {};   // 'YYYY-MM-DD' → 사유
+var CLOSED_EXTRA = {};   // 'YYYY-MM-DD' → 사유 (임시 휴관)
+var OPEN_OVERRIDE = {};  // 'YYYY-MM-DD' → 사유 (정기 휴관인데 그날은 연다)
+function _isoOf(d){
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+/* 읽는 차례 = 여는 날(open_override) → 임시 휴관(extra) → 정기 규칙. 앞의 것이 뒤의 것을 이긴다.
+   예: 2026-09-27 은 넷째 일요일이라 정기 휴관이지만, 이번 달만 추석 연휴 휴관으로 대체해 연다
+   (GM 지시 2026-09-14). */
 function isClosedDay(d){
   if (!d) return false;
-  var y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
-  var iso = y + '-' + ('0' + m).slice(-2) + '-' + ('0' + day).slice(-2);
+  var iso = _isoOf(d), m = d.getMonth() + 1, day = d.getDate();
+  if (OPEN_OVERRIDE[iso]) return false;
   if (CLOSED_EXTRA[iso]) return true;
   if (m === 1 && day === 1) return true;
   return d.getDay() === 0 && (Math.ceil(day / 7) === 2 || Math.ceil(day / 7) === 4);
 }
 function closedReason(d){
   if (!d) return '';
-  var iso = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  var iso = _isoOf(d);
   if (CLOSED_EXTRA[iso]) return CLOSED_EXTRA[iso];
   if (d.getMonth() === 0 && d.getDate() === 1) return '1월 1일';
   return '정기 휴관';
@@ -630,7 +637,10 @@ function loadClosedDays(){
   var url = (ERP_API_ON ? '/repo/ssot/closed_days.json' : '../../../ssot/closed_days.json');
   return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
     .then(function(r){ return r.json(); })
-    .then(function(d){ (d && d.extra || []).forEach(function(x){ if (x && x.date) CLOSED_EXTRA[x.date] = x.reason || '휴관'; }); })
+    .then(function(d){
+      (d && d.extra || []).forEach(function(x){ if (x && x.date) CLOSED_EXTRA[x.date] = x.reason || '휴관'; });
+      (d && d.open_override || []).forEach(function(x){ if (x && x.date) OPEN_OVERRIDE[x.date] = x.reason || '정상 운영'; });
+    })
     .catch(function(){ /* 못 읽으면 정기 규칙만 쓴다 */ });
 }
 

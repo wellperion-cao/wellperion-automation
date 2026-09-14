@@ -10,6 +10,7 @@
     "3. 웰페리온 가이드/coo/report/매출회원현황보고.html — 0원·0명 주의 판정과 일 단위 칸",
     "3. 웰페리온 가이드/coo/check/지원부 체계.html getDayInfo — 정기 규칙 원본(같은 규칙을 여기 옮겨 적었다)"
   ],
+  "_read_order": "open_override 를 먼저 본다 → extra → 정기 규칙. 앞의 것이 뒤의 것을 이긴다.",
   "rule": {
     "weekly": "매월 둘째·넷째 일요일",
     "weekly_code": "dow === 0 && (Math.ceil(date / 7) === 2 || Math.ceil(date / 7) === 4)",
@@ -19,5 +20,11 @@
     { "date": "2026-09-24", "reason": "추석 연휴" },
     { "date": "2026-09-25", "reason": "추석 연휴" },
     { "date": "2026-09-26", "reason": "추석 연휴" }
+  ],
+  "open_override": [
+    {
+      "date": "2026-09-27",
+      "reason": "이번 달만 정상 운영 — 넷째 일요일 휴관을 추석 연휴(9/24~26) 휴관으로 대체한다 (GM 지시 2026-09-14)"
+    }
   ]
 }
