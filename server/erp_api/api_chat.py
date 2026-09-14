@@ -47,6 +47,7 @@ TENANTS = {"1_wellperion", "2_dietcamp", "3_gocheokgolf"}   # 3번은 고척 QA�
 FAQ_DIR = os.environ.get("ERP_FAQ_DIR", "/srv/erp/faq")
 SEED_FAQ_DIR = os.path.join(_HERE, "seed_faq")   # /srv/erp/faq 에 없을 때 폴백 — 개발 PC 자체점검용(검수 L4)
 LOG_PATH = os.environ.get("ERP_CHAT_LOG", "/srv/erp/chat_log.jsonl")
+USAGE_LOG_PATH = os.environ.get("ERP_COUNSEL_USAGE_LOG", "/srv/erp/counsel_usage.jsonl")
 LOG_ROTATE_BYTES = 20 * 1024 * 1024   # 검수 M4 — 크기 넘으면 회전(삭제 아님 · 배1036 GM 추가② "테스트 데이터=자산")
 UNANSWERED_TAIL_BYTES = 300 * 1024    # unanswered 는 전량 스캔 대신 로그 꼬리만 본다(검수 M4)
 _PHONE_RE = re.compile(r"0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}")
@@ -630,6 +631,75 @@ def stats(tenant: str, days: int = 30):
             "top_unanswered": [{"q": q, "count": c} for q, c in top_unanswered]}
 
 
+# Bedrock 가격 (원/tok · USD/MTok × 1,400원 기준 · 2026)
+_PRICE_PER_TOK: dict = {
+    "opus":   {"in": 0.021,  "out": 0.105,  "cache_write": 0.02625, "cache_read": 0.0021},
+    "sonnet": {"in": 0.0042, "out": 0.021,  "cache_write": 0.00525, "cache_read": 0.00042},
+}
+
+def _model_key(model: str) -> str:
+    if "opus" in model.lower():
+        return "opus"
+    if "sonnet" in model.lower():
+        return "sonnet"
+    return "sonnet"
+
+def _cost_krw(row: dict) -> float:
+    p = _PRICE_PER_TOK.get(_model_key(row.get("model", "")), _PRICE_PER_TOK["sonnet"])
+    return (row.get("in", 0) * p["in"] + row.get("out", 0) * p["out"]
+            + row.get("cache_write", 0) * p["cache_write"] + row.get("cache_read", 0) * p["cache_read"])
+
+
+@router.get("/admin/cost")
+def admin_cost(days: int = 30, request: Request = None):
+    """테넌트별·모델별 건당 비용 집계 — counsel_usage.jsonl 기반(배CTO-2026-09-14).
+    관리자 전용(X-Erp-Trusted: 1 헤더 필요 — nginx 가 붙여 준다)."""
+    # 신뢰 플래그 없으면 차단(nginx를 통하지 않은 직접 접근 방지)
+    if request and not request.headers.get("x-erp-trusted"):
+        raise HTTPException(403, "관리자 전용")
+    cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
+    buckets: dict = {}  # (tenant, model) → {calls, in, out, cache_write, cache_read, cost_krw}
+    try:
+        with open(USAGE_LOG_PATH, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                try:
+                    ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(
+                        tzinfo=timezone(timedelta(hours=9)))
+                except (KeyError, ValueError):
+                    continue
+                if ts < cutoff:
+                    continue
+                key = (row.get("tenant", "unknown"), _model_key(row.get("model", "")))
+                b = buckets.setdefault(key, {"calls": 0, "in": 0, "out": 0,
+                                             "cache_write": 0, "cache_read": 0, "cost_krw": 0.0})
+                b["calls"] += 1
+                b["in"] += row.get("in", 0)
+                b["out"] += row.get("out", 0)
+                b["cache_write"] += row.get("cache_write", 0)
+                b["cache_read"] += row.get("cache_read", 0)
+                b["cost_krw"] += _cost_krw(row)
+    except OSError:
+        pass
+    result = []
+    for (tenant, model), b in sorted(buckets.items()):
+        calls = b["calls"]
+        result.append({
+            "tenant": tenant, "model": model, "days": days, "calls": calls,
+            "avg_in": round(b["in"] / calls) if calls else 0,
+            "avg_out": round(b["out"] / calls) if calls else 0,
+            "avg_cache_read": round(b["cache_read"] / calls) if calls else 0,
+            "total_cost_krw": round(b["cost_krw"]),
+            "avg_cost_krw": round(b["cost_krw"] / calls, 1) if calls else 0,
+        })
+    return {"ok": True, "days": days, "generated": datetime.now(timezone(timedelta(hours=9))).strftime(
+        "%Y-%m-%dT%H:%M:%S"), "tenants": result,
+        "note": "Bedrock USD/MTok × 1,400원 기준 추정 — 청구서와 대조 필요"}
+
+
 @router.options("/{tenant}/feedback")
 def feedback_preflight(tenant: str):
     return Response(status_code=204, headers=CORS)
@@ -885,7 +955,7 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
     )
 
 
-def _stream_once(client, model: str, system: list, messages: list, read_timeout: float = None):
+def _stream_once(client, model: str, system: list, messages: list, read_timeout: float = None, tenant: str = ""):
     """스트리밍 1회 호출(설계 §3-1② "속시원함" · GM 확정 스트리밍 필수) — 첫 글자까지 걸린 시간을 반환한다.
     read_timeout 을 주면 청크 사이 대기(사실상 첫 글자 대기 포함)가 그 초를 넘길 때 타임아웃 예외를 던진다
     (SDK/httpx 표준 기능 재사용 — 직접 스레드·타이머 안 짠다)."""
@@ -906,10 +976,23 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
         # cache_read 가 0 이면 질문마다 시스템 프롬프트 전체를 새로 계산하고 있다는 뜻이다.
         try:
             u = stream.get_final_message().usage
-            print("[concierge-usage] model=%s in=%s out=%s cache_write=%s cache_read=%s"
-                  % (model, getattr(u, "input_tokens", None), getattr(u, "output_tokens", None),
-                     getattr(u, "cache_creation_input_tokens", None),
-                     getattr(u, "cache_read_input_tokens", None)), flush=True)
+            _in = getattr(u, "input_tokens", 0) or 0
+            _out = getattr(u, "output_tokens", 0) or 0
+            _cw = getattr(u, "cache_creation_input_tokens", 0) or 0
+            _cr = getattr(u, "cache_read_input_tokens", 0) or 0
+            print("[concierge-usage] tenant=%s model=%s in=%s out=%s cache_write=%s cache_read=%s"
+                  % (tenant, model, _in, _out, _cw, _cr), flush=True)
+            # counsel_usage.jsonl 에도 남긴다 — journalctl 대신 파일로 비용을 읽는다(배CTO-2026-09-14).
+            try:
+                ts = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S")
+                row = json.dumps({"ts": ts, "tenant": tenant, "model": model,
+                                  "in": _in, "out": _out, "cache_write": _cw, "cache_read": _cr},
+                                 ensure_ascii=False)
+                os.makedirs(os.path.dirname(USAGE_LOG_PATH) or ".", exist_ok=True)
+                with open(USAGE_LOG_PATH, "a", encoding="utf-8") as uf:
+                    uf.write(row + "\n")
+            except Exception:
+                pass
         except Exception as e:
             print("[concierge-usage] 사용량 못 읽음: %s" % type(e).__name__, flush=True)
     return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None)
@@ -936,7 +1019,7 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
     text = None
     for model, timeout in ((COUNSEL_MODEL_PRIMARY, FIRST_CHAR_TIMEOUT_S), (COUNSEL_MODEL_FALLBACK, None)):
         try:
-            text, first_char_s = _stream_once(client, model, system, messages, read_timeout=timeout)
+            text, first_char_s = _stream_once(client, model, system, messages, read_timeout=timeout, tenant=tenant)
             print("[concierge] tenant=%s model=%s first_char_s=%s" % (tenant, model, first_char_s), flush=True)
             break
         except Exception as e:

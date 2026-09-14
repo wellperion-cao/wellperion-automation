@@ -1,0 +1,17 @@
+{
+  "generated": "2026-09-14T00:00:00",
+  "days": 30,
+  "note": "서버 배포 후 counsel_usage.jsonl 에 데이터가 쌓이면 scripts/counsel_cost_collect.py --write-repo 로 갱신. 과거 데이터는 --backfill 로 journalctl 에서 이관.",
+  "pricing_basis": "Bedrock USD/MTok × 1,400원 추정 — AWS 청구서와 대조 필요",
+  "estimate": {
+    "model": "sonnet-4-6",
+    "cache_hit": true,
+    "avg_cost_krw": 17.5,
+    "breakdown": {
+      "cache_read_28000tok": 11.76,
+      "input_190tok": 0.80,
+      "output_235tok": 4.94
+    }
+  },
+  "tenants": []
+}
