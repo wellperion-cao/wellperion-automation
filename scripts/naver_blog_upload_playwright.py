@@ -1381,6 +1381,11 @@ async def run_draft(args: argparse.Namespace) -> int:
         await context.close()
         await p.stop()
         return 7
+    # 성공한 회차의 쿠키를 다시 저장한다 — 네이버는 접속할 때마다 세션 값을 갈아 주는데,
+    # 종전에는 setup 때 받은 쿠키를 계속 재사용해 그 값이 늙다가 무효화됐다.
+    # 2026-09-14 실측: 고척골프 자리가 9/11 밤 로그인 뒤 다음 날 아침부터 3일 연속 실패했고,
+    # 그동안 쿠키 파일은 9/11 20:41 그대로였다(갱신 0). 매 성공마다 새 값으로 덮어 수명을 잇는다.
+    await _save_cookie_state(context)
     await context.close()
     await p.stop()
     telegram_report(f"네이버 블로그 임시저장 완료\n제목: {post.title}")
@@ -1679,6 +1684,7 @@ async def run_publish(args: argparse.Namespace) -> int:
         await context.close()
         await p.stop()
         return 7
+    await _save_cookie_state(context)   # 성공 회차의 새 세션 값으로 갱신(위 draft 와 같은 이유)
     await context.close()
     await p.stop()
     # 발행 성공 판정 = 공개 글 URL 실측 회수 시에만 (오탐 '발행완료' 방지 — 2026-07-09 GM 설계).
