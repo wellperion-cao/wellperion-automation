@@ -649,15 +649,20 @@
 
   <div class="body">
     <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
+      <div class="sec">
         <h2 id="p4memh">회원권 · 옵션 — 담당별</h2>
         <div class="bd" id="p4mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <!-- 강습 담당은 서른 줄이 넘어 한 칸에 다 넣으면 왼쪽이 비고 오른쪽만 길어진다. 반씩 나눠 싣는다. -->
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p4lesh">강습 — 담당별</h2>
+        <div class="bd" id="p4les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="col">
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p4lesh">강습 — 담당별</h2>
-        <div class="bd" id="p4les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2 id="p4lesh2">강습 — 담당별 (이어서)</h2>
+        <div class="bd" id="p4les2"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
@@ -1615,16 +1620,19 @@ function p4Table(heads, rows){
 }
 
 function renderPage4(c, dayLabel){
-  var mem = p4Rows(c, 8, 12), les = p4Rows(c, 16, 34);
+  var mem = p4Rows(c, 8, 12), les = p4Rows(c, 16, 62);
   var h1 = document.getElementById('p4memh'), h2 = document.getElementById('p4lesh');
   if (h1) h1.textContent = (dayLabel || '') + ' 회원권 · 옵션 — 담당별';
   if (h2) h2.textContent = (dayLabel || '') + ' 강습 — 담당별';
-  var e1 = document.getElementById('p4mem'), e2 = document.getElementById('p4les');
+  var e1 = document.getElementById('p4mem'), e2 = document.getElementById('p4les'),
+      e3 = document.getElementById('p4les2');
   /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P7~S7 · P15~S15). 없으면 빈 칸으로 둔다. */
   var memHead = ['P7', 'Q7', 'R7', 'S7'].map(function(k){ return String(c[k] || '').trim(); });
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
   if (e1) e1.innerHTML = p4Table(memHead, mem);
-  if (e2) e2.innerHTML = p4Table(lesHead, les);
+  var half = Math.ceil(les.length / 2);
+  if (e2) e2.innerHTML = p4Table(lesHead, les.slice(0, half));
+  if (e3) e3.innerHTML = p4Table(lesHead, les.slice(half));
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
   var a4 = document.getElementById('audit4'); if (!a4) return;
@@ -1641,7 +1649,7 @@ function renderPage4(c, dayLabel){
 function loadPage4(){
   var d = new Date(Date.now() - 86400000);
   var label = (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
-  drGet('dump', '&sheet=' + d.getDate() + '&range=O6:U34')
+  drGet('dump', '&sheet=' + d.getDate() + '&range=O6:U62')
     .then(function(r){
       if (!r || !r.ok || !r.cells) throw new Error('일자탭 조회 실패');
       renderPage4(r.cells, label);
