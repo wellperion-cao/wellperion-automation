@@ -18,6 +18,7 @@
     4. Python 의존성(전역 최소) + wellperion-agents\venv (clevel.bat 이 쓴다)
     5. ~\.claude  — 회사 zip 이 있으면 그대로 복원(설정·스킬·플러그인·HUD), 없으면 기본값 + caveman 스킬 + OMC 플러그인
     6. .claude\settings.local.json 훅 3종(PreToolUse·UserPromptSubmit·Stop) + statusline 자가복구
+    7. 토큰 수집기(예약작업 Wellperion-Token-Push, 매일 23:30+로그온 시) — 열쇠 입력 시에만 등록
   하지 않는 것 (집 PC 에서 돌리면 안 된다)
     - 텔레그램 봇·daily_scheduler·예약작업 등록 · Startup 폴더 아침 부팅 바로가기 · telegram_bot\.env 복사
       → 회사 PC 가 상시 가동 중이라 집에서 또 띄우면 getUpdates 409(중복 봇) 가 난다.
@@ -76,7 +77,7 @@ function Winget-Install([string]$id, [string]$override = "") {
 }
 
 # ═══ 1. 기반 도구 ═══════════════════════════════════════════════════════════
-Step "1/6 기반 도구 (Git · Node LTS · Python 3.14 · Windows Terminal)"
+Step "1/7 기반 도구 (Git · Node LTS · Python 3.14 · Windows Terminal)"
 if ($SkipWinget) {
   Log "-SkipWinget: 건너뜀"
 } elseif (-not (Has 'winget')) {
@@ -104,7 +105,7 @@ Note 'python' $(if (Test-Path $Py) { & $Py --version } else { "없음 ($Py)" })
 Note 'wt'     $(if (Has 'wt') { '있음' } else { '없음(Resume-AI.bat 만 영향)' })
 
 # ═══ 2. Claude Code CLI + OMC ══════════════════════════════════════════════
-Step "2/6 Claude Code CLI · OMC (npm 전역)"
+Step "2/7 Claude Code CLI · OMC (npm 전역)"
 if (Has 'npm') {
   Log "npm install -g @anthropic-ai/claude-code@latest"
   npm install -g @anthropic-ai/claude-code@latest 2>&1 | Tee-Object -FilePath $Log -Append | Out-Null
@@ -115,7 +116,7 @@ if (Has 'npm') {
 Note 'claude' $(if (Has 'claude') { (claude --version 2>$null | Select-Object -First 1) } else { '없음' })
 
 # ═══ 3. 저장소 ═════════════════════════════════════════════════════════════
-Step "3/6 저장소 $Work"
+Step "3/7 저장소 $Work"
 if (Has 'git') {
   if (-not (Test-Path (Join-Path $Work '.git'))) {
     Log "git clone $RepoUrl"
@@ -144,7 +145,7 @@ if (Has 'git') {
 Note '저장소' $(if (Test-Path (Join-Path $Work '.git')) { $Work } else { 'clone 실패' })
 
 # ═══ 4. Python 의존성 ══════════════════════════════════════════════════════
-Step "4/6 Python 의존성"
+Step "4/7 Python 의존성"
 if (Test-Path $Py) {
   # 부팅 경로(boot_pack·hangro_board·kungjjak_board·worklog·훅)는 표준 라이브러리만 쓴다.
   # 전역에는 알림·HTTP 최소 세트만. 나머지는 venv.
@@ -162,7 +163,7 @@ if (Test-Path $Py) {
 } else { Log "[경고] $Py 없음 - 건너뜀"; Note 'pip' 'python 없음' }
 
 # ═══ 5. ~\.claude (회사 설정 복원 또는 기본 구성) ══════════════════════════
-Step "5/6 Claude 설정 ($ClaudeDir)"
+Step "5/7 Claude 설정 ($ClaudeDir)"
 New-Item -ItemType Directory -Path $ClaudeDir -Force | Out-Null
 if (-not $ConfigZip) {
   $cands = @(
@@ -230,7 +231,7 @@ else:
 }
 
 # ═══ 6. 저장소 로컬 훅 + statusline ═══════════════════════════════════════
-Step "6/6 .claude\settings.local.json 훅 · statusline"
+Step "6/7 .claude\settings.local.json 훅 · statusline"
 $localDir = Join-Path $Work '.claude'
 $local    = Join-Path $localDir 'settings.local.json'
 $tpl      = Join-Path $Work 'ops\settings.local.template.json'
@@ -245,6 +246,25 @@ if ((Test-Path $Py) -and (Test-Path (Join-Path $Work 'scripts\ensure_statusline.
   Pop-Location
 }
 Note 'settings.local.json' $(if (Test-Path $local) { '있음' } else { '없음' })
+
+# ═══ 7. 토큰 수집기 (AI 토큰 현황 · GM 지시 2026-09-14) ══════════════════════
+Step "7/7 토큰 수집기 (예약작업 Wellperion-Token-Push)"
+$keyFile = Join-Path $ClaudeDir 'token_push.key'
+if (-not (Test-Path $keyFile)) {
+  $k = Read-Host '토큰 수집기 열쇠(시토에게 받음, 없으면 그냥 엔터)'
+  if ($k) { [IO.File]::WriteAllText($keyFile, $k, (New-Object Text.UTF8Encoding $false)); Log "열쇠 저장: $keyFile" }
+}
+if ((Test-Path $keyFile) -and (Test-Path $Py) -and (Test-Path (Join-Path $Work 'scripts\token_usage_push.py'))) {
+  $pushScript = Join-Path $Work 'scripts\token_usage_push.py'
+  $action  = New-ScheduledTaskAction -Execute $Py -Argument "`"$pushScript`"" -WorkingDirectory $Work
+  $trig1   = New-ScheduledTaskTrigger -Daily -At 23:30
+  $trig2   = New-ScheduledTaskTrigger -AtLogOn
+  Register-ScheduledTask -TaskName 'Wellperion-Token-Push' -Action $action -Trigger @($trig1, $trig2) -Force | Out-Null
+  Log "예약작업 Wellperion-Token-Push 등록(매일 23:30 + 로그온 시)"
+  Note '토큰 수집기' '등록됨 (Wellperion-Token-Push)'
+} else {
+  Note '토큰 수집기' '열쇠 없음 - 수집기 미등록'
+}
 
 # ═══ 점검표 ════════════════════════════════════════════════════════════════
 Write-Host ""

@@ -12,6 +12,9 @@ GM 질문 2026-09-09.
 import json
 import os
 import re
+import socket
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -21,6 +24,29 @@ CLAUDE_JSON = Path.home() / ".claude.json"
 OUT_PATH = REPO / "status" / "token_usage.json"
 CACHE_PATH = REPO / "status" / "token_usage_file_cache.json"
 ACCOUNTS_LOG = REPO / "status" / "token_usage_accounts.jsonl"
+
+# 원격 PC 판 토큰 수집기(GM 지시 2026-09-14) — 다른 계정 PC(info@·lessons@)가 자기 사용량을
+# 서버에 올리면(token_usage_push.py) 여기서 읽어 by_account 에 합친다. 열쇠 없으면 조용히 건너뛴다.
+TOKEN_PUSH_KEY_FILE = Path.home() / ".claude" / "token_push.key"
+REMOTE_URL = "https://erp.wellperion.com/api/token_usage/remote"
+
+
+def read_push_key():
+    """토큰 수집기 열쇠 — 파일(%USERPROFILE%\\.claude\\token_push.key) 우선, 없으면 환경변수."""
+    try:
+        with open(TOKEN_PUSH_KEY_FILE, encoding="utf-8") as f:
+            v = f.read().strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    return os.environ.get("ERP_TOKEN_PUSH_KEY") or None
+
+
+def fetch_remote(key):
+    req = urllib.request.Request(REMOTE_URL, headers={"X-Token-Push-Key": key})
+    with urllib.request.urlopen(req, timeout=3) as r:
+        return json.loads(r.read().decode("utf-8"))
 
 KST = timezone(timedelta(hours=9))
 KEEP_DAYS = 30
@@ -399,6 +425,33 @@ def main():
     for a in KNOWN_ACCOUNTS:  # 기록이 아직 없는 계정도 줄을 세운다(GM 지시 2026-09-09 관례 그대로)
         by_account.setdefault(a, {"input": 0, "cache_creation": 0, "cache_read": 0, "output": 0, "cost_usd": 0.0, "sessions": 0, "where": []})
 
+    # 원격 PC 판 병합 — 이 PC 자기 계정+자기 호스트분은 건너뛴다(이중 집계 방지).
+    remote_hosts = []
+    remote_error = None
+    push_key = read_push_key()
+    if push_key:
+        this_account, this_host = current_account(), socket.gethostname()
+        try:
+            remote = fetch_remote(push_key)
+            for fname, payload in remote.items():
+                acc = payload.get("account") or "미상"
+                host = payload.get("host") or "미상"
+                if acc == this_account and host == this_host:
+                    continue
+                remote_hosts.append(fname)
+                rb = by_account.setdefault(acc, {"input": 0, "cache_creation": 0, "cache_read": 0,
+                                                  "output": 0, "cost_usd": 0.0, "sessions": 0, "where": []})
+                rb["input"] += payload.get("input", 0)
+                rb["cache_creation"] += payload.get("cache_creation", 0)
+                rb["cache_read"] += payload.get("cache_read", 0)
+                rb["output"] += payload.get("output", 0)
+                rb["cost_usd"] = round(rb["cost_usd"] + payload.get("cost_usd", 0.0), 2)
+                rb["sessions"] += payload.get("sessions", 0)
+                rb["where"] = sorted(rb["where"] + payload.get("where", []),
+                                      key=lambda x: x.get("cost_usd", 0), reverse=True)[:8]
+        except Exception as e:
+            remote_error = "%s: %s" % (type(e).__name__, str(e)[:150])
+
     today_date = datetime.now(KST).date()
     month_start = today_date.replace(day=1).isoformat()
     last7_start = (today_date - timedelta(days=6)).isoformat()
@@ -416,6 +469,8 @@ def main():
             "tracked_since": "2026-09-09",
             "sessions_by_account": account_summary(),
             "by_account": by_account,
+            "remote_hosts": remote_hosts,
+            **({"remote_error": remote_error} if remote_error else {}),
         },
         "billing": {
             "usd_month_fixed": sum(SUBSCRIPTION_USD.values()),

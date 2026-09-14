@@ -16,6 +16,7 @@
 | 저장소 로컬 훅 | `.claude/settings.local.json` — PreToolUse 셸 첫줄 가드 · UserPromptSubmit 지시 접수(`--recall`) · Stop 다음 배 | git 무시 파일이라 `ops/settings.local.template.json` 에서 생성 |
 | 상태줄 | `scripts/wellperion_hud.mjs` (OMC HUD 래핑) | `ensure_statusline.py` 가 부팅마다 자가복구 |
 | venv | `wellperion-agents\venv` (clevel.bat 이 쓴다) | `ops/requirements_home_pc.txt` 로 생성 |
+| 토큰 수집기 | GM PC 는 `scripts/token_usage.py` 가 직접 집계 | 열쇠 입력 시 예약작업 `Wellperion-Token-Push` 등록(매일 23:30+로그온 시) — `scripts/token_usage_push.py` 가 이 계정 사용량을 서버로 올려 AI 토큰 현황에 합산 |
 
 집 PC 에 **만들지 않는 것**: 텔레그램 봇·`daily_scheduler`·예약작업(`ops/register_*.bat`)·Startup 폴더 아침 부팅 바로가기·`telegram_bot/.env`. 회사 PC 가 상시 가동 중이라 집에서 또 띄우면 봇이 409(중복)로 죽는다. 집 PC 는 **CLI 세션 전용**이다.
 
@@ -43,6 +44,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1
 1. 새 PowerShell 창 → `claude` → `/login` (회사와 같은 계정).
 2. `%USERPROFILE%\welperion-automation\Start-AI CEO.bat` 더블클릭 → 부팅 선언 표·상태줄이 뜨면 끝.
 3. `logs\company_inventory.txt` 와 집 PC 의 `claude plugin list`·`pip list` 를 대조해 빠진 것이 있으면 그것만 추가.
+4. 토큰 수집기 열쇠 입력(시토에게 받음) — 설치 스크립트가 §7 에서 한 번 물어본다.
 
 ## 3. 다시 실행·부분 실행
 - 멱등이다. 몇 번 돌려도 이미 있는 것은 건너뛴다.
@@ -58,6 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\home_pc_setup.ps1
 | 상태줄이 회색 한 줄 | OMC HUD(`~/.claude/hud/omc-hud-cost.mjs`) 가 아직 없음 — OMC 플러그인 첫 실행 뒤 생긴다. 다음 부팅에 `ensure_statusline.py` 가 맞춘다 |
 | `Resume-AI.bat` 이 세션을 못 찾음 | 집 PC 엔 회사 세션 기록이 없다(정상). 새로 부팅하려면 `Start-AI <역할>.bat` |
 | 커밋이 push 안 됨 | git hooks 미설치 — Git Bash 에서 `sh scripts/install_hooks.sh` |
+| AI 토큰 현황에 이 PC 계정이 안 보임 | 열쇠 파일 없음 또는 예약작업 미실행 — 확인 = `python scripts/token_usage_push.py --dry-run` |
 
 ## 4-1. 배포 사본 (ERP 다운로드 탭)
 ERP 가 내주는 폴더는 `3. 웰페리온 가이드/erp/launchers/` 다. 그래서 설치 스크립트 사본이 그곳에도 있다 — **정본은 `ops/home_pc_setup.ps1`**. 스크립트를 고치면 두 곳을 같이 고친다. 목록은 `erp/downloads.json` 한 곳만 고치면 되고 화면(`erp/index.html`)은 손대지 않는다.
