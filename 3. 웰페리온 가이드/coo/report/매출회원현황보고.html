@@ -111,11 +111,16 @@
   .fnote{font-size:10.3px;color:#7A838B;margin-top:5px;line-height:1.45;}
 
   /* 입장객 막대 */
-  .vrow{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.8px;}
-  .vrow .vl2{width:56px;color:#3C464F;}
-  .vrow .vbar{flex:1;height:11px;background:#F0F3F7;border:1px solid var(--line);}
+  /* 값이 작은 날(0명)에는 막대가 안 보이므로 숫자가 읽히는 크기여야 한다 — 2026-09-14 GM 지적
+     「수치 보이지도 않는데 · 1면 우측아래」. 글자·막대를 키우고 숫자 자리를 넓혔다. */
+  .vrow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.4px;}
+  .vrow .vl2{width:60px;color:#3C464F;font-weight:600;}
+  .vrow .vbar{flex:1;height:13px;background:#F0F3F7;border:1px solid var(--line);}
   .vrow .vbar i{display:block;height:100%;background:var(--navy);}
-  .vrow .vn{width:44px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+  .vrow .vn{width:56px;text-align:right;font-size:13.5px;font-weight:800;color:var(--ink);
+    font-variant-numeric:tabular-nums;}
+  /* 값이 없는 칸 — 빈 상자만 남기지 않고 없다는 사실을 한 줄로 말한다. */
+  .emptynote{color:#98A1A9;font-size:11.4px;}
 
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
@@ -389,12 +394,15 @@
         <div class="bd" id="memberFlow"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
-      <div class="sec">
+      <!-- 남은 높이는 이 칸이 먹는다 — 아래 「금일 예상 컨택·로스자」는 대개 비어 있어서, 그쪽에
+           flex 를 주면 오른쪽 열 아래 1/4 이 빈 상자로 남았다(2026-09-14 GM 지적). 컨택 명단이
+           길어지는 날에는 아래가 자라고 이 칸이 줄어든다. -->
+      <div class="sec" style="flex:1;min-height:0;">
         <h2>어제 다녀가신 분</h2>
         <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
-      <div class="two" style="flex:1;min-height:0;">
+      <div class="two">
         <div class="sec">
           <h2 id="t-contact">금일 예상 컨택</h2>
           <div class="bd"><pre class="txt" id="contact">—</pre></div>
@@ -1059,8 +1067,14 @@ function renderSheet(c){
   var rc = rateClass(c.L4);
   hl[2].querySelector('.v').className = 'v ' + rc;
 
-  document.getElementById('contact').textContent = c.I16 || '—';
-  document.getElementById('loss').textContent = c.I18 || '—';
+  // 빈 칸에 「—」만 두면 무슨 뜻인지 모른다 — 없다는 사실을 말로 적는다(GM 지적 2026-09-14).
+  function setTxt(id, val, empty){
+    var el = document.getElementById(id), t = String(val || '').trim();
+    el.textContent = t || empty;
+    el.className = t ? 'txt' : 'txt emptynote';
+  }
+  setTxt('contact', c.I16, '오늘 잡힌 컨택이 없습니다');
+  setTxt('loss', c.I18, '어제 나가신 분이 없습니다');
   if (c.H16) document.getElementById('t-contact').textContent =
     c.H16.replace(/\n/g,' ').replace(/^📝\s*/, '').replace(/\s*\[환불자 내용 기록\]\s*$/, '');
 }
