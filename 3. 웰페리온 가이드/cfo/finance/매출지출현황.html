@@ -1406,7 +1406,10 @@ function _procListSrv(extra){
 function _srvListable(action,extra){
   return action==="list"&&ERP_READ_ON&&extra&&extra.mode==="active"&&!extra.from&&!extra.to;
 }
-var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};   // 읽기 전용 집계 = 서버 거울 있음(쓰기·구매요청은 계속 GAS)
+var MIRROR_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,proc_summary:1};   // 읽기 전용 집계 = 서버 거울 있음
+/* 거울 게이트웨이가 액션마다 다르다 — proc_summary 는 api_sales.py 의 proc 쪽에 있다(salesops 아님).
+   2026-09-14: 서버 통로는 이미 있었고 화면만 안 붙어 있었다. 실패 시 종전 GAS 폴백은 _salesRead 가 처리. */
+var MIRROR_GAS={proc_summary:"proc"};
 function _rawCall(action,extra){
   var post=function(){
     var body=Object.assign({action:action,password:GATE_PW},extra||{});
@@ -1420,7 +1423,7 @@ function _rawCall(action,extra){
       console.warn("[proc/list] 서버 읽기 실패 → GAS 폴백:",e&&e.message); return post(); });
   }
   if(!MIRROR_ACT[action])return post();
-  return _salesRead("salesops","?action="+action,post,"매출집계 "+action);
+  return _salesRead(MIRROR_GAS[action]||"salesops","?action="+action,post,"매출집계 "+action);
 }
 // 무거운 매출 집계(같은 Apps Script)는 직렬 실행 + 구매요청 로딩 중엔 양보 → 구매요청(리스트·사진)이 백엔드를 먼저 잡게(2026-07-08 효율화)
 var HEAVY_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};
@@ -1745,7 +1748,10 @@ async function delReq(row,btn,no,item){
   document.querySelectorAll(".reqDel").forEach(function(b){b.disabled=true;}); // 처리 중 낡은 row 재클릭 차단
   if(btn)btn.textContent="…";
   try{
-    try{await procCall("delete",{row:row});}catch(e){}
+    /* 종전엔 실패를 통째로 삼켰다(catch(e){}) — 안 지워졌는데 지운 줄 알고 넘어간다.
+       2026-09-14 매니저 지시로 결과를 확인하고 실패하면 알린다(목록은 아래에서 어차피 다시 뜬다). */
+    var _dz=null; try{ _dz=await procCall("delete",{row:row}); }catch(e){ _dz=null; }
+    if(!(_dz&&_dz.ok))reqToast("⚠️ 삭제되지 않았습니다 — 목록을 확인해주세요",1);
     if(reqFilter==="완료"||reqFilter==="반려"){var keep=reqFilter;await loadDone();reqFilter=keep;} // loadDone 은 필터를 '완료'로 되돌리므로 원복
     await loadReq(); // 재렌더로 🗑 가 새 row 를 달고 다시 활성화된다
   } finally{_delBusy=false;}
