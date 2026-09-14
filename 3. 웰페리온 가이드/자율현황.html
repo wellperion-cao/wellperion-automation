@@ -292,7 +292,7 @@
        걷었다(감춤이 아니라 삭제 — 약속 L21). ══ -->
 
   <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
-       판정은 담당 구분(audience==='ai') 하나로만 — G1 렌더·아침 텔레그램 보고와 같은 기준이라 세 표면이
+       판정은 담당 구분(audience!=='office') 하나로만(2026-09-15 뒤집음 — 미지정도 AI 살림) — 세 표면이
        자동으로 안 겹치고 안 샌다. 데이터는 아래 「🗂 배 정리」가 받아 둔 _queueAll 재사용(새 fetch 0). ════ -->
   <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">(열린 배 전부 — 북극성으로 가는 오늘의 뱃길 · 🤖 는 AI 내부 살림)</span></h2>
   <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
@@ -635,13 +635,13 @@
     return '⚓ 대기';
   }
 
-  // ★AI 배 판정 단일 기준 (2026-08-03 시토 · GM 지적 "실무 내용 맞나").
-  //   배10510 결정문 = 「G1 은 남기고 **AI 배만** 자율현황으로 이사」. 그런데 구현이 surface 로 갈랐고,
-  //   surface 는 queue_lock 이 모든 큐 항목에 기본으로 찍는 값이라 실무 배까지 다 넘어왔다
-  //   (실측: 열린 배 67척 중 66척 · 그중 50척이 실무 배). 판정을 audience 로 되돌린다.
-  //   미지정은 AI 가 아니다 = G1 에 남는다(안전측 — 분류를 빠뜨린 배가 GM 화면에서 사라지지 않게).
-  //   ★G1 렌더(wellperion_guide(main).html)와 **같은 한 줄**을 써야 두 화면이 안 겹치고 안 새다.
-  function isAiShip(s){ return !!s && s.audience === 'ai'; }
+  // ★AI 배 판정 단일 기준 (2026-09-15 웰리 재수리 · GM 지적 "AI 살림이 GM 일과 섞여 보인다").
+  //   배10510 결정문 = 「G1 은 남기고 **AI 배만** 자율현황으로 이사」. 그런데 audience==='ai' 일치만 보면
+  //   미지정(null) 24척이 그냥 통과해 GM 일처럼 보였다(실측 2026-09-15). G1(main.html)은 2026-08-26
+  //   병합 이후 audience 무관하게 큐 전량을 이 화면에 맡겨 둔 상태라, 미지정을 G1 쪽 안전판으로 볼
+  //   이유도 이제 없다. 그래서 판정을 뒤집는다: audience==='office' 로 **명시된 것만** GM 일, 나머지
+  //   (null 포함)는 전부 AI 내부 살림 — 화면에서 지우지 않고 🤖 꼬리표만 붙인다.
+  function isAiShip(s){ return !!s && s.audience !== 'office'; }
 
   // ═══════════ 🧭 항로 — 열린 배 전부 (G1 이관 · 배10510) ═══════════
   //  ★2026-08-26 GM 확정 — 「🗂 전체 배」와 병합했다.
@@ -713,7 +713,8 @@
             + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
             + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
             + (isAiShip(s) ? ' <span title="AI 내부 살림" style="font-size:var(--fs-1);">🤖</span>' : '')
-            + (staleDays(s) >= 14 ? '<br><span style="font-size:var(--fs-1);color:#7E6020;">' + staleDays(s) + '일째 멈춤</span>' : '')
+            // 정체 꼬리표 — 문구·기준=scripts/hangro_board.py _STALL_MIN_DAYS(3일)·「기록N일전」과 동일(2026-09-15).
+            + (staleDays(s) >= 3 ? '<br><span style="font-size:var(--fs-1);color:#7E6020;">기록' + staleDays(s) + '일전</span>' : '')
             + (sec.key === 'mfOverdue' ? '<br><span style="font-size:var(--fs-1);color:#7E2020;">' + mfDaysLate(s) + '일 지남</span>' : '') + '</td>'
             + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td>'
             + '<td style="text-align:center;">' + trashBtn(s) + '</td></tr>';
