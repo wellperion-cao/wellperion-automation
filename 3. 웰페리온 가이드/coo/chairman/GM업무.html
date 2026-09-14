@@ -1365,7 +1365,11 @@
     var d = new Date();
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
   }
-  function show(html) { box.innerHTML = html; box.hidden = false; }
+  // 띠 끝에 전사일정 화면 링크 고정(GM 지시 2026-09-14) — 기존 doc-link 클래스 재사용, 상태와 무관하게 항상 붙는다.
+  function show(html) {
+    box.innerHTML = html + ' <a class="doc-link" href="../check/전사_일정.html" target="_blank" rel="noopener">▸전사일정</a>';
+    box.hidden = false;
+  }
 
   var today = todayStr();
   // 전사일정 GAS 는 응답이 60KB 라 느릴 때가 있고(실측 1.4~4.5초) 가끔 한 번씩 끊긴다.
@@ -1490,7 +1494,8 @@
           '<span class="due' + (overdue.length ? ' overdue' : '') + '">기한 지남 ' + overdue.length + '건</span>' +
           (oldest ? ' · 가장 오래된 건 「' + esc(oldestTitle) + '」 ' + daysOverdue(oldest.endDate) + '일째' : '') +
           note +
-          '</span> <a class="doc-link" href="../todo/업무 현황 SSOT.html" target="_blank" rel="noopener">▸목록</a></div>';
+          '</span> <a class="doc-link" href="../todo/업무 현황 SSOT.html" target="_blank" rel="noopener">▸목록</a>' +
+          ' <a class="doc-link" href="중간관리자_업무목차.html" target="_blank" rel="noopener">▸목차</a></div>';
       });
       box.innerHTML = '<b>리더 현황</b>' + rows.join('');
       box.hidden = false;
