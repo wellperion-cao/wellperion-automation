@@ -597,6 +597,7 @@ _HOOK_GUARDS = (
     ("sheet_link", "precommit_sheet_link_guard.py"),
     ("reception_freeze", "precommit_reception_freeze_guard.py"),  # GM 지시 2026-09-05 · 접수처 최종본 잠금
     ("nawoolm_domain", "precommit_nawoolm_domain_guard.py"),  # GM 지시 2026-09-14 · 나우열M 라인 접촉 금지
+    ("nawoolm_regression", "precommit_nawoolm_regression_guard.py"),  # 2026-09-14 · 공용 파일 낡은 사본이 나우열M 줄을 지우는 것 차단
 )
 
 
