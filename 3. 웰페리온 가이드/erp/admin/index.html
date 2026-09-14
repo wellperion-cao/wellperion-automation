@@ -444,12 +444,13 @@
   </div>
 
   <h3 style="margin:30px 0 4px;font-size:15px">손님 질문 → 자주 묻는 질문</h3>
-  <div class="ppre">상담봇에 들어온 질문을 그대로 쌓아, 많이 묻는 것과 <b>못 답한 것</b>을 뽑아 냅니다.
+  <div class="ppre">상담봇에 들어온 <b>질문과 답을 함께</b> 쌓아, 많이 묻는 것과 <b>못 답한 것</b>을 뽑아 냅니다.
+  답까지 모인 질문은 그대로 자주 묻는 질문 후보가 됩니다.
   못 답한 질문이 다음에 채울 자주 묻는 질문이 됩니다 — 여기서 늘어난 답이 자력 답변 비율을 올립니다.
   숫자는 매일 다시 셉니다.</div>
   <div class="tbl-wrap"><table class="reg" id="qtbl">
-    <thead><tr><th>파트너사</th><th>들어온 질문</th><th>답한 것</th><th>자력 답변</th><th>못 답한 까닭 (많은 순)</th></tr></thead>
-    <tbody><tr><td colspan="5" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+    <thead><tr><th>파트너사</th><th>들어온 질문</th><th>답한 것</th><th>자력 답변</th><th>답까지 모은 질문</th><th>못 답한 까닭 (많은 순)</th></tr></thead>
+    <tbody><tr><td colspan="6" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
   </table></div>
   <div class="ppre" id="qfoot"></div>
 
@@ -1113,7 +1114,7 @@
     }
     get('status/counsel_questions_summary.json').then(function(d){
       var body = tbl.tBodies[0];
-      if (!d || !d.centers) { body.innerHTML = '<tr><td colspan="5" class="ppct" style="padding:14px 8px">이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.</td></tr>'; return; }
+      if (!d || !d.centers) { body.innerHTML = '<tr><td colspan="6" class="ppct" style="padding:14px 8px">이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.</td></tr>'; return; }
       var rows = '';
       Object.keys(d.centers).forEach(function(k){
         var c = d.centers[k], s = c['서버_집계'] || {};
@@ -1123,7 +1124,9 @@
         rows += '<tr><td class="item">' + (NAME[k] || c['name'] || k) + '</td>'
               + '<td>' + (s['총_질문'] == null ? '—' : s['총_질문'] + '문') + '</td>'
               + '<td>' + (s['답한_것'] == null ? '—' : s['답한_것'] + '문') + '</td>'
-              + '<td><b>' + pct + '</b></td><td>' + why + '</td></tr>';
+              + '<td><b>' + pct + '</b></td>'
+              + '<td>' + (c['답까지_있는_질문'] == null ? '—' : c['답까지_있는_질문'] + '개') + '</td>'
+              + '<td>' + why + '</td></tr>';
       });
       body.innerHTML = rows;
       var f = document.getElementById('qfoot');

@@ -147,6 +147,18 @@ def summarize(stats: dict | None = None) -> dict:
         unans = collections.Counter(r["q"] for r in mine if r.get("q") and not r.get("answered"))
         days = collections.Counter((r.get("ts") or "")[:10] for r in mine if r.get("ts"))
         gaps = collections.Counter(f for r in mine for f in (r.get("needs_facts") or []))
+        # 질문+답 쌍 — 자주 묻는 질문 후보 (GM 지시 2026-09-14 「질문이랑 답들 저장해서 가공해줘」).
+        # 같은 질문이 여러 번 오면 가장 최근 답 하나만 남긴다. 답이 없는 질문은 여기 안 들어간다
+        # (그건 위 「많이 물었는데 못 답한 것」이 이미 센다).
+        pairs: dict = {}
+        for r in sorted(mine, key=lambda x: x.get("ts") or ""):
+            q, a = (r.get("q") or "").strip(), (r.get("a") or "").strip()
+            if not q or not a:
+                continue
+            p = pairs.setdefault(q, {"질문": q, "물은_횟수": 0, "답": "", "마지막": ""})
+            p["물은_횟수"] += 1
+            p["답"], p["마지막"] = a, (r.get("ts") or "")[:16].replace("T", " ")
+        faq_cands = sorted(pairs.values(), key=lambda p: (-p["물은_횟수"], p["질문"]))[:20]
         s = (stats or {}).get(t_id) or {}
         by_tenant[t_id] = {
             "name": name,
@@ -156,6 +168,8 @@ def summarize(stats: dict | None = None) -> dict:
             "많이_물은_것": asked.most_common(15),
             "많이_물었는데_못_답한_것": unans.most_common(15),
             "못_답한_이유_빈칸": gaps.most_common(10),
+            "답까지_있는_질문": len(pairs),
+            "자주_묻는_질문_후보": faq_cands,
             "날짜별": sorted(days.items()),
         }
     out = {
@@ -175,14 +189,15 @@ def summarize(stats: dict | None = None) -> dict:
 
 def render(d: dict) -> str:
     lines = ["## 손님이 상담봇에 물은 것 — %s" % d["generated_at"][:16].replace("T", " "), ""]
-    lines.append("| 센터 | 원장 | 서버 총계 | 답변율 | 많이 물었는데 못 답한 것 |")
-    lines.append("|---|---|---|---|---|")
+    lines.append("| 센터 | 원장 | 서버 총계 | 답변율 | 답까지 모은 질문 | 많이 물었는데 못 답한 것 |")
+    lines.append("|---|---|---|---|---|---|")
     for c in d["centers"].values():
         s = c["서버_집계"]
         top = " · ".join("%s(%d)" % (q, n) for q, n in c["많이_물었는데_못_답한_것"][:3]) or "없음"
         ratio = "%.0f%%" % (s["답변율"] * 100) if s.get("답변율") is not None else "—"
-        lines.append("| %s | %d줄 | %s건 | %s | %s |"
-                     % (c["name"], c["원장에_쌓인_질문"], s.get("총_질문") or "—", ratio, top[:60]))
+        lines.append("| %s | %d줄 | %s건 | %s | %d개 | %s |"
+                     % (c["name"], c["원장에_쌓인_질문"], s.get("총_질문") or "—", ratio,
+                        c.get("답까지_있는_질문", 0), top[:60]))
     return "\n".join(lines)
 
 
