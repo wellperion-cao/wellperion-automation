@@ -314,9 +314,12 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
     $('[data-rname]').textContent = name;
     $('[data-listwrap]').innerHTML = '<div class="loading"><span class="spin"></span>Looking up…</div>';
     show('results');
+    // 서버 우선(2026-09-14 시토) — /api/reception/lookup/public 을 먼저 부르고, 실패하면 종전 GAS(reg_lookup)로.
     var url = REG_API + '?action=reg_lookup&phone=' + encodeURIComponent(phone) + '&name=' + encodeURIComponent(name) + '&_=' + Date.now();
-    fetch(url, {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    var apiUrl = 'https://erp.wellperion.com/api/reception/lookup/public?phone=' + encodeURIComponent(phone) + '&name=' + encodeURIComponent(name) + '&_=' + Date.now();
+    fetch(apiUrl, {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+      .catch(function(e){ console.warn('[lookup-en] API failed → GAS fallback:', e&&e.message); return fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }); })
       .then(function(d){
         btn.disabled = false;
         if(!d || d.ok===false){

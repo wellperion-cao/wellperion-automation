@@ -147,6 +147,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <script>
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  /* 서버 우선(2026-09-14 시토) — 서버 /api/reception/lost/public?view=disposal 을 먼저 읽고, 실패하면
+     종전 GAS(action=lf_disposal)로 조용히 돌아간다. 응답 모양이 GAS 와 같다(api_reception.py lost_public). */
+  function _rcDisposal(){
+    var gas = function(){ return fetch(RECEPTION_API+'?action=lf_disposal&_='+Date.now(), {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }); };
+    return fetch('https://erp.wellperion.com/api/reception/lost/public?view=disposal&_='+Date.now(), {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+      .catch(function(e){ console.warn('[습득물폐기] API 실패 → GAS 폴백:', e&&e.message); return gas(); });
+  }
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
@@ -189,8 +197,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   }
 
   function load(){
-    fetch(RECEPTION_API+'?action=lf_disposal&_='+Date.now(), {redirect:'follow', cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    _rcDisposal()
       .then(function(d){
         if(!d || !d.ok){ throw new Error('bad'); }
         var up=splitUpcomingByCategory(d.upcoming||[]);
