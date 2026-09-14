@@ -14,6 +14,12 @@ TMP="$(mktemp -d)"
 for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy}.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거(서버엔 없는 경로)
 done
+# 손님이 보는 세 장 — 홈·문의 폼·문의 현황 (2026-09-14 · GM 지시로 문의를 폼 한 곳으로 모았다).
+# 이 셋은 cbo/dietcamp(내부 열람)가 아니라 공개 폴더 "3. 웰페리온 가이드/dietcamp/" 에 있다.
+PUB="3. 웰페리온 가이드/dietcamp"
+for f in "$PUB"/{index,inquiry,status}.html; do
+  [ -f "$f" ] && grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"
+done
 $S "sudo mkdir -p /srv/www/2_dietcamp/img && sudo chown -R ec2-user:ec2-user /srv/www/2_dietcamp && [ -e /srv/www/1_wellperion ] || sudo ln -s /srv/erp/www /srv/www/1_wellperion"
 $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
 $SCP "$SRC/dc.css" $HOST:/srv/www/2_dietcamp/dc.css
