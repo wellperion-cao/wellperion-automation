@@ -1883,10 +1883,24 @@ def _fetch_facility_board(today: str) -> dict:
 
 
 def _is_closed_day(d=None) -> bool:
-    """휴관일 = 매월 2·4주 일요일 + 1/1 (프론트 getDayInfo와 동일 규칙)."""
+    """휴관일이면 True. 정기 규칙(2·4주 일요일 + 1/1) + 임시 휴관(추석 등).
+
+    ★임시 휴관을 놓치던 것을 고친다 (GM 2026-09-14 「이번 추석연휴도 24,25,26일 휴관이야」).
+    정본 = ssot/closed_days.json 한 곳(시포가 만들고 소유는 운영). 못 읽으면 정기 규칙만으로
+    판정한다 — 임시 휴관은 놓쳐도 규칙이 있는 날을 틀리게 세지는 않는다.
+    """
     import math
     if d is None:
         d = datetime.now()
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        cfg = _json.loads((_Path(__file__).resolve().parents[1] / "ssot" / "closed_days.json")
+                          .read_text(encoding="utf-8"))
+        if any(str(e.get("date")) == d.strftime("%Y-%m-%d") for e in (cfg.get("extra") or [])):
+            return True
+    except Exception:
+        pass                                   # 파일이 없거나 깨져도 아래 규칙으로 계속 판정한다
     wk = math.ceil(d.day / 7)
     if d.weekday() == 6 and wk in (2, 4):  # 일요일(파이썬 Sun=6) & 2·4주
         return True

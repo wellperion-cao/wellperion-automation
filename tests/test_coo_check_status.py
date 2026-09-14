@@ -176,9 +176,11 @@ def test_fetch_notice_status_empty_list_is_safe():
     assert st["anomaly"] is False
 
 
-def test_zero_submission_on_closed_day_is_anomaly():
-    """마감된 날(어제) 전원 미제출 = 이상. 2026-09-13 지원부 0/86 이 ✅ 로 나간 건."""
-    y = R._kst_yesterday()
+def test_zero_submission_on_closed_day_is_anomaly(monkeypatch):
+    """마감된 날(어제) 전원 미제출 = 이상. 단 휴관일은 뺀다(GM 정정 2026-09-14).
+    어제가 실제로 휴관일일 수 있으므로 영업일 하나(2026-09-12 토)로 고정해서 잰다."""
+    y = "2026-09-12"
+    monkeypatch.setattr(R, "_kst_yesterday", lambda: y)
     fetch = _fake_fetch({
         "dept=facility": {"ok": True, "data": [{"date": "any", "total": 26, "done": 15, "pct": 58}]},
         "dept=support": {"ok": True, "date": y, "total": 86, "done": 0, "pct": 0, "allIssues": []},
@@ -195,4 +197,16 @@ def test_zero_submission_today_is_not_anomaly():
         "dept=support": {"ok": True, "date": R._kst_today(), "total": 86, "done": 0, "pct": 0, "allIssues": []},
     })
     st = R.fetch_check_status(fetch_fn=fetch)
+    assert st["anomaly"] is False
+
+
+def test_zero_submission_on_closed_day_is_not_anomaly(monkeypatch):
+    """휴관일(2026-09-13 둘째 일요일)은 0 이 답이다 — 이상으로 세지 않는다."""
+    y = "2026-09-13"
+    monkeypatch.setattr(R, "_kst_yesterday", lambda: y)
+    fetch = _fake_fetch({
+        "dept=facility": {"ok": True, "data": [{"date": "any", "total": 26, "done": 15, "pct": 58}]},
+        "dept=support": {"ok": True, "date": y, "total": 86, "done": 0, "pct": 0, "allIssues": []},
+    })
+    st = R.fetch_check_status(fetch_fn=fetch, support_date=y)
     assert st["anomaly"] is False
