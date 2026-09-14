@@ -76,6 +76,8 @@ body{
 .placeholder{color:var(--dim);font-style:italic}
 .measure-pending{background:var(--paper2);border:1px solid var(--border);border-left:3px solid var(--accent);
   border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text);line-height:1.7}
+.faq-promote-link{margin-left:auto;font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;white-space:nowrap}
+.faq-promote-link:hover{text-decoration:underline}
 /* ── 가입전환 상세 명단 드릴다운(2026-07-20 GM 지시·배834, 콘텐츠문의현황.html 이식) ── */
 .conv-toggle{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;
   text-decoration:underline;text-underline-offset:2px}
@@ -216,6 +218,28 @@ body{
     <div class="section-title">월별 추이 <span style="font-weight:400;text-transform:none;letter-spacing:0">(올해 1월~이번 달)</span></div>
     <div class="table-scroll" id="trend-wrap"><div class="data-none">불러오는 중…</div></div>
     <div class="foot-note" id="trend-foot"></div>
+  </div>
+
+  <!-- 상담봇 손님 질문 (GM 지시 2026-09-14 · 배CPO-2026-09-14)
+       원장=status/counsel_questions.jsonl · 가공본=status/counsel_questions_summary.json
+       수집기=scripts/counsel_questions.py · 신규 원장·수집기 없음.
+       승격(FAQ 올리기)=../cbo/counsel_faq.html 링크만(기능 재구현 없음).
+       웰페리온(1_wellperion)만 — 파트너사는 ERP플랫폼관리에서 본다. -->
+  <div class="section" id="counsel-bot-section">
+    <div class="section-title">상담봇 손님 질문
+      <span style="font-weight:400;text-transform:none;letter-spacing:0">(못 답한 것 = 채워야 할 자주 묻는 질문)</span>
+      <a href="../cbo/counsel_faq.html" class="faq-promote-link">FAQ 승격 화면 →</a>
+    </div>
+    <div class="kpi-nums" style="margin-bottom:14px">
+      <div class="kpi-num"><div class="n" id="cb-total">—</div><div class="l">총 질문</div></div>
+      <div class="kpi-num"><div class="n" id="cb-answered">—</div><div class="l">답한 것</div></div>
+      <div class="kpi-num"><div class="n" id="cb-rate">—</div><div class="l">답변율</div></div>
+    </div>
+    <div class="section-title" style="margin-top:6px">못 답한 질문
+      <span style="font-weight:400;text-transform:none;letter-spacing:0">(많이 물었는데 답 못 한 순 · FAQ 채울 원재료)</span>
+    </div>
+    <div id="counsel-unanswered-wrap"><div class="data-none">불러오는 중…</div></div>
+    <div class="foot-note" id="counsel-bot-foot"></div>
   </div>
 
 </div>
@@ -779,6 +803,43 @@ _rangeFromTo = monthRange(_navYear, _navMonth);
 _periodLabel = _navYear + '년 ' + _navMonth + '월';
 loadPeriod();
 loadTrend();
+// ── 상담봇 손님 질문 (GM 지시 2026-09-14 · 배CPO-2026-09-14) ──────────────────────────
+// 가공본 경로: 이 파일(3. 웰페리온 가이드/cpo/) 기준 2단계 위 → status/
+var COUNSEL_JSON_PATH = '../../status/counsel_questions_summary.json';
+(function loadCounselBot() {
+  fetch(COUNSEL_JSON_PATH + '?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var wl = d && d.centers && d.centers['1_wellperion'];
+      if (!wl) { document.getElementById('counsel-unanswered-wrap').innerHTML = '<div class="data-none">데이터 없음(1_wellperion 키 누락)</div>'; return; }
+      var sv = wl['서버_집계'] || {};
+      document.getElementById('cb-total').textContent = sv['총_질문'] != null ? sv['총_질문'] : '—';
+      document.getElementById('cb-answered').textContent = sv['답한_것'] != null ? sv['답한_것'] : '—';
+      var rate = sv['답변율'] != null ? Math.round(sv['답변율'] * 100) + '%' : '—';
+      document.getElementById('cb-rate').textContent = rate;
+      var unanswered = wl['많이_물었는데_못_답한_것'] || [];
+      if (!unanswered.length) {
+        document.getElementById('counsel-unanswered-wrap').innerHTML = '<div class="data-none">못 답한 질문 없음 — 모두 답변 완료</div>';
+      } else {
+        var rows = unanswered.map(function(item, i) {
+          return '<tr><td style="color:var(--dim);font-size:11px;text-align:right;padding-right:10px">' + (i+1) + '</td>'
+            + '<td>' + escHtml(item[0]) + '</td>'
+            + '<td style="text-align:right;font-weight:700;color:var(--red)">' + item[1] + '회</td></tr>';
+        }).join('');
+        document.getElementById('counsel-unanswered-wrap').innerHTML =
+          '<div class="table-scroll"><table class="ch-table"><thead><tr>'
+          + '<th style="width:28px">#</th><th>질문</th><th style="text-align:right">횟수</th>'
+          + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+      }
+      var gen = d.generated_at ? d.generated_at.replace('T',' ').substring(0,16) : '알 수 없음';
+      document.getElementById('counsel-bot-foot').textContent =
+        '출처: status/counsel_questions_summary.json · 생성: ' + gen + ' · 웰페리온(1_wellperion)만 · 승격은 오른쪽 링크 →';
+    })
+    .catch(function() {
+      document.getElementById('counsel-unanswered-wrap').innerHTML = '<div class="data-none">가공본 로드 실패 (status/counsel_questions_summary.json)</div>';
+    });
+  function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+})();
 // 자정 자동 새로고침 (항상 켜둔 화면용 — today 가 로드 시각 고정이라 날짜가 바뀌면 reload).
 // 시:분이 0:00 인 순간을 노리지 않고 '로드한 날과 오늘이 다른가'를 본다 — 백그라운드 탭에서
 // setInterval 이 느려지면 0:00 한 순간을 놓쳐 영영 갱신이 안 되기 때문이다.
