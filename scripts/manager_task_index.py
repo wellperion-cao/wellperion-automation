@@ -79,6 +79,67 @@ def latest_by_no() -> dict[int, tuple[str, dict]]:
     return seen
 
 
+def first_seen_by_no() -> dict[int, str]:
+    """번호마다 원장에 처음 실린 날짜 — 「이번 주 새로 뜬 것」을 가리는 데 쓴다."""
+    rows = json.loads(LEDGER.read_text(encoding="utf-8"))
+    first: dict[int, str] = {}
+    for e in rows:
+        for it in e.get("issues") or []:
+            n = it.get("no")
+            if n is None:
+                continue
+            d = str(e.get("date") or "")
+            if n not in first or d < first[n]:
+                first[n] = d
+    return first
+
+
+def week_block(seen: dict) -> str:
+    """이번 주 한 장 (GM 지시 2026-09-14 「1주 단위로 진행된 업무·놓치는 업무도 체크해서 정리」).
+    새 원장을 만들지 않는다 — 이미 있는 확인요청 원장의 날짜만 센다(약속 L21).
+      · 끝난 것 = 최근 7일 안에 닫힌 번호
+      · 새로 뜬 것 = 최근 7일 안에 원장에 처음 실린 번호
+      · 멈춘 것 = 열려 있는데 7일 넘게 원장에 아무 기록이 없는 번호 — 이것이 놓치는 자리다.
+    """
+    first = first_seen_by_no()
+    done, fresh, stuck = [], [], []
+    for n, (d, it) in seen.items():
+        closed = str(it.get("status", "")).lower() in DONE
+        age = days_since(d)
+        if closed and age <= 7:
+            done.append((n, d, it))
+        elif not closed:
+            if days_since(first.get(n, d)) <= 7:
+                fresh.append((n, d, it))
+            elif age > 7:
+                stuck.append((n, d, it))
+    stuck.sort(key=lambda x: days_since(x[1]), reverse=True)
+    done.sort(key=lambda x: x[1], reverse=True)
+    fresh.sort(key=lambda x: x[0], reverse=True)
+
+    def lines(rows, tail):
+        if not rows:
+            return '<div class="wk-none">없음</div>'
+        out = []
+        for n, d, it in rows[:12]:
+            who = html.escape(str(it.get("owner") or "담당 미정").strip() or "담당 미정")
+            ttl = html.escape(short(str(it.get("issue") or ""), 46))
+            out.append(f'<li><b>#{n}</b> {ttl} <span class="wk-who">{who}</span>'
+                       f'<span class="wk-age">{tail(d)}</span></li>')
+        more = f'<li class="wk-none">외 {len(rows) - 12}건</li>' if len(rows) > 12 else ''
+        return f'<ul class="wk-list">{"".join(out)}{more}</ul>'
+
+    return f'''  <section class="week">
+    <h2>이번 주 <span class="sub">최근 7일 · 끝난 것 {len(done)} · 새로 뜬 것 {len(fresh)} ·
+      한 주 넘게 멈춘 것 {len(stuck)}</span></h2>
+    <div class="wk-cols">
+      <div class="wk-col"><h3>🏁 끝난 것</h3>{lines(done, lambda d: f"{d[5:]} 닫힘")}</div>
+      <div class="wk-col"><h3>🆕 새로 뜬 것</h3>{lines(fresh, lambda d: f"{d[5:]} 접수")}</div>
+      <div class="wk-col wk-warn"><h3>⏸ 멈춘 것 — 여기가 놓치는 자리</h3>{lines(stuck, lambda d: f"{days_since(d)}일째")}</div>
+    </div>
+  </section>'''
+
+
 def days_since(d: str) -> int:
     try:
         return (date.today() - datetime.strptime(d[:10], "%Y-%m-%d").date()).days
@@ -1196,7 +1257,8 @@ def build() -> str:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
-    resp_html = resp_section(seen, ssot_rows, sales_data)   # 👤 책임 항목 4인 — seen·ssot_rows·매출 원자료 그대로 넘긴다
+    resp_html = resp_section(seen, ssot_rows, sales_data)
+    week_html = week_block(seen)   # 📅 이번 주 — 끝난 것·새로 뜬 것·멈춘 것(GM 지시 2026-09-14)   # 👤 책임 항목 4인 — seen·ssot_rows·매출 원자료 그대로 넘긴다
     moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
         # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
@@ -1509,6 +1571,19 @@ def build() -> str:
     .blk table {{ min-width:620px; }}
     .top-age {{ flex:0 0 46px; font-size:15px; }}
   }}
+  /* 📅 이번 주 — 세 칸(끝난 것·새로 뜬 것·멈춘 것). 좁아지면 한 줄씩 쌓인다. */
+  .week{{margin:14px 0 18px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}}
+  .week>h2{{margin:0 0 10px;font-size:15px;font-weight:800}}
+  .week .sub{{font-size:11.5px;font-weight:600;color:var(--dim);margin-left:8px}}
+  .wk-cols{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}}
+  .wk-col{{border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}}
+  .wk-col>h3{{margin:0 0 7px;font-size:12.5px;font-weight:800}}
+  .wk-warn{{border-color:#e6b3b3;background:#fff8f8}}
+  .wk-list{{margin:0;padding-left:16px}}
+  .wk-list li{{font-size:12px;line-height:1.65;padding:1px 0}}
+  .wk-who{{color:var(--dim);margin-left:6px}}
+  .wk-age{{color:var(--dim);margin-left:6px;font-variant-numeric:tabular-nums}}
+  .wk-none{{font-size:12px;color:var(--dim);list-style:none;margin-left:-14px}}
 </style>
 </head>
 <body>
@@ -1522,6 +1597,7 @@ def build() -> str:
     {ssot_note}</div>
 
 {resp_html}
+{week_html}
 
   <div class="top">
     <h2>🔺 먼저 볼 것 <span class="why">사람 상관없이 오래 묵은 순 5건 — 여기부터 답을 받으세요</span></h2>
