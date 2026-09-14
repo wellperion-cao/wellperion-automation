@@ -341,17 +341,58 @@ const HOLIDAYS = {
   "2026-10-05":"대체","2026-10-09":"한글날","2026-12-25":"성탄절"
 };
 
-const LS_LEAVE="wp_sched_v3", LS_REQ="wp_req_v3";
-let leave = JSON.parse(localStorage.getItem(LS_LEAVE)||"{}");  // {emp:{date:"휴무코드"|"HH:MM"|"HH:MM HH:MM"}}
+const LS_LEAVE="wp_sched_v4", LS_REQ="wp_req_v3";   // v3→v4: TTL 도입으로 캐시 형식이 바뀌어 구 캐시 폐기(서버 원점 대비)
+const LEAVE_CACHE_TTL_MS=6*60*60*1000;               // 6시간 — 만료 시 빈 표로 시작(캐시 유령 행 방지)
+try{ localStorage.removeItem("wp_sched_v3"); }catch(_){}   // 구 키 정리(있으면 — 조용히 무시)
+const _leaveCache=(()=>{ try{ return JSON.parse(localStorage.getItem(LS_LEAVE)||"null"); }catch(_){ return null; } })();
+let leave = (_leaveCache && typeof _leaveCache.ts==="number" && (Date.now()-_leaveCache.ts)<LEAVE_CACHE_TTL_MS) ? (_leaveCache.rows||{}) : {};  // {emp:{date:"휴무코드"|"HH:MM"|"HH:MM HH:MM"}}
 let reqs  = JSON.parse(localStorage.getItem(LS_REQ)||"[]");
 let cur = new Date(2026,5,1);
 let editMode=false;
-const save=()=>{localStorage.setItem(LS_LEAVE,JSON.stringify(leave));localStorage.setItem(LS_REQ,JSON.stringify(reqs));};
+const save=()=>{localStorage.setItem(LS_LEAVE,JSON.stringify({ts:Date.now(),rows:leave}));localStorage.setItem(LS_REQ,JSON.stringify(reqs));};
 
 /* ===== ERP 백엔드 연동 ===== */
 const EXEC_URL="https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
 let WP_PW=null;            // 부모 허브가 postMessage로 전달하는 관리자 비번
 let erpReady=false;        // db:leave 로드 성공 여부
+
+/* 서버 읽기 원점 분기(2026-09-14 시범 · 배포 시 기본 OFF) — 읽기 전용 래퍼(erpLoad·empLoad) 경계에서만 분기.
+   erpPost·erpSet·erpBulk(쓰기)·submitLogin(비번 검증)은 GAS 고정 — 손대지 않음.
+   설계 정본: drafts/loops/aws_hr0_화면전환설계메모.md */
+const SERVER_READ_ON=false;                 // 킬스위치 — true여야 서버 원점 동작(기본 OFF=배포돼도 종전과 동일)
+const HR_API_BASE="/api/hr";                // 서버 원점일 때만 쓰는 상대경로(erp 도메인이 같은 오리진으로 서빙)
+function isServerHost(){
+  const h=location.hostname;
+  return h==="erp.wellperion.com" || /^\d{1,3}(\.\d{1,3}){3}$/.test(h);  // erp 도메인 또는 서버 IP만(github.io는 항상 false)
+}
+const LS_LASTWRITE="wp_sched_lastwrite";    // erpSet/erpBulk 성공 시각 — 서버 as_of 스테일 판정용(쓰기 자체는 그대로 GAS)
+const markLocalWrite=()=>{ try{ localStorage.setItem(LS_LASTWRITE,String(Date.now())); }catch(_){} };
+/* 서버 db 읽기 1회 시도. 401/403/503/비JSON/빈 결과(results 0행)는 재시도 없이 null → 호출부가 즉시 GAS로 폴백.
+   응답 모양은 api_hr.py envelope 그대로 소비(results=GAS와 같은 봉투 칸) — 칸 이름을 새로 짓지 않는다. */
+async function srvRead(dbKey){
+  if(!(SERVER_READ_ON && isServerHost())) return null;
+  let res;
+  try{ res=await fetch(HR_API_BASE+"/read",{method:"POST",body:JSON.stringify({db:dbKey})}); }
+  catch(_){ srvWarn("네트워크 오류("+dbKey+")"); return null; }
+  if(!res.ok){ srvWarn("서버 응답 "+res.status+"("+dbKey+")"); return null; }   // 401·403·503 포함
+  let j;
+  try{ j=await res.json(); }catch(_){ srvWarn("비JSON 응답("+dbKey+")"); return null; }
+  if(!j||j.ok!==true||!Array.isArray(j.results)){ srvWarn("서버 오류 응답("+dbKey+")"); return null; }
+  if(j.results.length===0){ srvWarn("서버 0행 응답("+dbKey+")"); return null; }  // 적재 전 0행을 정상으로 오인 금지
+  return j;
+}
+/* 상시 경고 띠 — 서버 원점 실패 시에만 나타나고 자동으로 안 사라짐(킬스위치 꺼져 있으면 이 함수는 호출되지 않음) */
+function srvWarn(msg){
+  let b=document.getElementById("srvFallbackBanner");
+  if(!b){
+    b=document.createElement("div"); b.id="srvFallbackBanner";
+    b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:9999;background:#b00020;color:#fff;"
+      +"font-size:12px;text-align:center;padding:4px 8px;";
+    document.body.appendChild(b);
+  }
+  b.textContent="⚠ 서버 읽기 실패 → GAS 폴백: "+msg;
+}
+
 /* CORS: Content-Type 헤더 설정 금지(simple request로 preflight 회피) */
 async function erpPost(payload){
   const res=await fetch(EXEC_URL,{method:"POST",body:JSON.stringify(payload)});
@@ -377,6 +418,24 @@ window.addEventListener("message", e=>{
 async function erpLoad(){
   if(!WP_PW){ setOfflineBadge(true); setErpStatus("오프라인",""); return; }
   setErpStatus("불러오는 중…","var(--blue)");
+  const sv=await srvRead("leave");                 // 킬스위치 OFF·비서버원점이면 항상 null(즉시 아래 GAS 경로로)
+  if(sv){
+    const lastWrite=Number(localStorage.getItem(LS_LASTWRITE)||0);
+    const asOfMs=sv.as_of?new Date(sv.as_of).getTime():NaN;
+    if(!(lastWrite && asOfMs && asOfMs<lastWrite)){    // 서버가 로컬 최종쓰기보다 과거면 스테일 → 폐기·GAS 폴백
+      const next={};
+      sv.results.forEach(row=>{
+        const nm=row["성명"], dt=row["날짜"], val=row["값"];
+        if(!nm||!dt) return;
+        (next[nm]=next[nm]||{})[dt]=val;
+      });
+      leave=next; save();
+      erpReady=true; setOfflineBadge(false); setErpStatus("ERP 동기화됨 ✓(서버)","var(--green)");
+      render(); empLoad();
+      return;
+    }
+    srvWarn("서버 응답이 로컬 최종쓰기보다 오래됨(leave)");
+  }
   try{
     const r=await erpPost({db:"leave",password:WP_PW});
     if(!r||!r.ok||!Array.isArray(r.results)) throw new Error((r&&r.error)||"응답 오류");
@@ -397,26 +456,32 @@ async function erpLoad(){
 /* db:emp 읽기(전용) → 보드 성명별 입사일·고용형태 맵 구축 후 재렌더. 실패해도 휴무표는 정상. */
 async function empLoad(){
   if(!WP_PW) return;
+  const sv=await srvRead("emp");                  // 킬스위치 OFF·비서버원점이면 항상 null(즉시 아래 GAS 경로로)
+  if(sv){ applyEmpRows(sv.results); return; }
   try{
     const r=await erpPost({db:"emp",password:WP_PW});
     if(!r||!r.ok||!Array.isArray(r.results)) return;
-    const byName={};
-    r.results.forEach(row=>{
-      const nm=(row["성명"]||row["이름"]||"").toString().trim(); if(!nm) return;
-      const jd=(row["date:입사일:start"]||row["입사일"]||"").toString().trim();
-      const tp=(row["고용 형태"]||row["고용형태"]||"").toString().trim();
-      byName[nm]={jd,tp};
-    });
-    /* 보드 성명 정규화: (외주)·후행 영문(S/M) 제거 후 emp 성명과 매칭 */
-    const strip=n=>String(n).replace(/\([^)]*\)/g,"").replace(/[A-Za-z]+$/,"").trim();
-    const J={}, T={};
-    ALL_EMP.forEach(n=>{
-      let rec=byName[n]||byName[strip(n)];
-      if(!rec){ const s=strip(n); const k=Object.keys(byName).find(x=>strip(x)===s); if(k)rec=byName[k]; }
-      if(rec){ if(rec.jd)J[n]=rec.jd; if(rec.tp)T[n]=rec.tp; }
-    });
-    EMP_JOIN=J; EMP_TYPE=T; empLoaded=true; render();
+    applyEmpRows(r.results);
   }catch(_){ /* emp 실패 — 연차열 '–' 유지 */ }
+}
+/* db:emp 결과 행 배열 → 보드 성명별 입사일·고용형태 맵 구축 후 재렌더(GAS·서버 공용 — 행 모양은 같다) */
+function applyEmpRows(rows){
+  const byName={};
+  rows.forEach(row=>{
+    const nm=(row["성명"]||row["이름"]||"").toString().trim(); if(!nm) return;
+    const jd=(row["date:입사일:start"]||row["입사일"]||"").toString().trim();
+    const tp=(row["고용 형태"]||row["고용형태"]||"").toString().trim();
+    byName[nm]={jd,tp};
+  });
+  /* 보드 성명 정규화: (외주)·후행 영문(S/M) 제거 후 emp 성명과 매칭 */
+  const strip=n=>String(n).replace(/\([^)]*\)/g,"").replace(/[A-Za-z]+$/,"").trim();
+  const J={}, T={};
+  ALL_EMP.forEach(n=>{
+    let rec=byName[n]||byName[strip(n)];
+    if(!rec){ const s=strip(n); const k=Object.keys(byName).find(x=>strip(x)===s); if(k)rec=byName[k]; }
+    if(rec){ if(rec.jd)J[n]=rec.jd; if(rec.tp)T[n]=rec.tp; }
+  });
+  EMP_JOIN=J; EMP_TYPE=T; empLoaded=true; render();
 }
 /* 단일 셀 서버 반영 (value 빈문자=삭제) */
 async function erpSet(emp,date,value){
@@ -425,6 +490,7 @@ async function erpSet(emp,date,value){
   try{
     const r=await erpPost({action:"set-leave",adminPassword:WP_PW,emp,date,value:value||"",dept:EMP_DEPT[emp]||""});
     if(!r||!r.ok) throw new Error((r&&r.error)||"저장 실패");
+    markLocalWrite();             // 서버 as_of 스테일 판정용 최종쓰기시각 기록(쓰기 자체는 그대로 GAS)
     setErpStatus("ERP 저장됨 ✓","var(--green)");
   }catch(err){ setErpStatus("⚠ 저장 실패","var(--red)"); }
 }
@@ -436,6 +502,7 @@ async function erpBulk(){
     const deptMap={}; ALL_EMP.forEach(n=>deptMap[n]=EMP_DEPT[n]||"");
     const r=await erpPost({action:"set-leave-bulk",adminPassword:WP_PW,data:leave,deptMap});
     if(!r||!r.ok) throw new Error((r&&r.error)||"동기화 실패");
+    markLocalWrite();             // 서버 as_of 스테일 판정용 최종쓰기시각 기록(쓰기 자체는 그대로 GAS)
     setErpStatus("ERP 전체 동기화됨 ✓","var(--green)");
   }catch(err){ setErpStatus("⚠ 동기화 실패","var(--red)"); }
 }
