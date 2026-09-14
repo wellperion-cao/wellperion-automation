@@ -409,7 +409,12 @@ def main() -> int:
     disp = s.get("short_no") if s.get("short_no") is not None else s.get("ship_no")
     print("배를 띄웠습니다 → %s(%s)" % (ROLES[s["clevel"]], s["clevel"]))
     _warn_missing_staff_message(s)
-    print("  배 번호 : %s" % disp)
+    # 2026-09-15 웰리: 큐에는 번호가 두 벌(ship_no · short_no)이라 세션마다 다른 쪽을 부르다
+    #   같은 배를 다른 배로 읽는 일이 있었다(시토 12625 ↔ 웰리 2630). 둘 다 찍는다.
+    if s.get("short_no") is not None and s.get("ship_no") is not None and s["short_no"] != s["ship_no"]:
+        print("  배 번호 : %s   (ship_no %s — 다른 세션과 주고받을 땐 이 번호나 제목으로)" % (disp, s["ship_no"]))
+    else:
+        print("  배 번호 : %s" % disp)
     print("  제목    : %s" % s["title"])
     print("  다음    : %s" % s["next"])
     if s.get("must_finish_on"):
