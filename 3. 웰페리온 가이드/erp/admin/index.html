@@ -401,11 +401,11 @@
     <div class="pcard">
       <div class="ph"><span class="pno">1호</span><b>웰페리온</b><span class="pwho">우리 것 · 기준판</span></div>
       <div class="pbar"><i style="width:100%"></i></div><div class="ppct">여덟 칸 모두 있음</div>
-      <a class="pi ok" href="http://wellperion.com/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>라이브 wellperion.com · <a href="../../home/tour/" target="_blank" rel="noopener">걸어 다니는 둘러보기</a> 포함</span></a>
+      <a class="pi ok" href="http://wellperion.com/" target="_blank" rel="noopener"><b>1 홈페이지</b><span>라이브 wellperion.com · 걸어 다니는 둘러보기 있음</span></a>
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/1.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%ED%9A%8C%EC%82%AC%EC%86%8C%EA%B0%9C%EC%84%9C_v2.19.html" target="_blank" rel="noopener"><b>2 회사소개서</b><span>v2.19</span></a>
       <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>3 브랜드가이드</b><span>색 · 로고 · 서체 · 말투 · 금지어</span></a>
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/2.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%EC%A0%84%EB%9E%B5%EB%A1%9C%EB%93%9C%EB%A7%B5_%EB%B3%B4%EA%B3%A0%EC%84%9C_v1.4_A3.html" target="_blank" rel="noopener"><b>4 운영전략</b><span>전략로드맵 v1.4</span></a>
-      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문) · <a href="../../cbo/counsel_faq.html" target="_blank" rel="noopener">FAQ 관리</a></span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문)</span></a>
       <a class="pi ok" href="http://wellperion.com/llms.txt" target="_blank" rel="noopener"><b>6 검색 노출 셋팅</b><span>사람 검색(SEO) · AI 검색(GEO) · 즉답(AEO) — robots · sitemap · llms.txt 다 있음</span></a>
       <a class="pi ok" href="../../cmo/funnel/%EC%BD%98%ED%85%90%EC%B8%A0%EB%AC%B8%EC%9D%98%ED%98%84%ED%99%A9.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그·인스타·카페·당근 자동 발행 돌고 있음</span></a>
       <a class="pi ok" href="#acct" data-acct="1"><b>8 계정</b><span>발행·상담봇이 쓰는 계정 자리 — 누르면 아이디가 보입니다</span></a>
@@ -442,6 +442,16 @@
     </div>
 
   </div>
+
+  <h3 style="margin:30px 0 4px;font-size:15px">손님 질문 → 자주 묻는 질문</h3>
+  <div class="ppre">상담봇에 들어온 질문을 그대로 쌓아, 많이 묻는 것과 <b>못 답한 것</b>을 뽑아 냅니다.
+  못 답한 질문이 다음에 채울 자주 묻는 질문이 됩니다 — 여기서 늘어난 답이 자력 답변 비율을 올립니다.
+  숫자는 매일 다시 셉니다.</div>
+  <div class="tbl-wrap"><table class="reg" id="qtbl">
+    <thead><tr><th>파트너사</th><th>들어온 질문</th><th>답한 것</th><th>자력 답변</th><th>못 답한 까닭 (많은 순)</th></tr></thead>
+    <tbody><tr><td colspan="5" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="ppre" id="qfoot"></div>
 
   <div id="acct" class="acctbox" hidden>
     <div class="accthead"><b>계정 자리</b>
@@ -1078,6 +1088,44 @@
       });
     });
     render();
+  })();
+
+  // 손님 질문 축적 — 가공본(status/counsel_questions_summary.json) 하나만 읽는다.
+  // 그 파일은 scripts/counsel_questions.py 가 만든다(원장 = status/counsel_questions.jsonl).
+  // 새 원장을 만들지 않는다 — 여기는 보여 주기만 한다.
+  (function(){
+    var tbl = document.getElementById('qtbl');
+    if (!tbl) return;
+    var NAME = {'1_wellperion':'1호 웰페리온','2_dietcamp':'2호 다이어트캠프','3_gocheokgolf':'3호 고척 골프'};
+    var WHY = {'facts.closed_rules':'휴관 규칙','facts.parking':'주차','facts.capacity':'정원',
+               'policies[topic=환불]':'환불 규정','policies[topic=방문]':'방문 규정',
+               'policies[topic=연기]':'연기 규정','policies[topic=양도]':'양도 규정',
+               'policies[topic=미성년]':'미성년 규정'};
+    function get(path){
+      var local = (location.hostname === 'erp.wellperion.com')
+        ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        : Promise.reject(0);
+      return local.catch(function(){ return fetch('/repo/' + path + '?_=' + Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; }); });
+    }
+    get('status/counsel_questions_summary.json').then(function(d){
+      var body = tbl.tBodies[0];
+      if (!d || !d.centers) { body.innerHTML = '<tr><td colspan="5" class="ppct" style="padding:14px 8px">이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.</td></tr>'; return; }
+      var rows = '';
+      Object.keys(d.centers).forEach(function(k){
+        var c = d.centers[k], s = c['서버_집계'] || {};
+        var pct = (s['답변율'] == null) ? '—' : Math.round(s['답변율'] * 100) + '%';
+        var why = (c['못_답한_이유_빈칸'] || []).slice(0, 3).map(function(p){
+          return (WHY[p[0]] || p[0]) + ' ' + p[1] + '건'; }).join(' · ') || '없음';
+        rows += '<tr><td class="item">' + (NAME[k] || c['name'] || k) + '</td>'
+              + '<td>' + (s['총_질문'] == null ? '—' : s['총_질문'] + '문') + '</td>'
+              + '<td>' + (s['답한_것'] == null ? '—' : s['답한_것'] + '문') + '</td>'
+              + '<td><b>' + pct + '</b></td><td>' + why + '</td></tr>';
+      });
+      body.innerHTML = rows;
+      var f = document.getElementById('qfoot');
+      if (f && d.generated_at) f.textContent = '마지막으로 센 때 ' + d.generated_at.slice(0, 16).replace('T', ' ');
+    }).catch(function(){});
   })();
   </script>
 
