@@ -27,8 +27,11 @@ fi
 # (=진짜 삭제가 아니면) 커밋 차단(exit 1). 가장 파괴적인 사고를 막으므로
 # 다른 가드보다 먼저 돈다. 가드 오류/파이썬 없음 = fail-open(통과).
 # 우회: git commit --no-verify 또는 env SKIP_PHANTOM_DELETE_GUARD=1
-if command -v python >/dev/null 2>&1; then
+# `command -v python` 은 스토어 스텁(안 도는 python)도 잡는다 — 실제로 도는지 시험해 고른다(2026-09-14 · 나우열M PC).
+if python -c "import sys" >/dev/null 2>&1; then
   PYBIN0=python
+elif py -3 -c "import sys" >/dev/null 2>&1; then
+  PYBIN0="py -3"
 elif command -v python3 >/dev/null 2>&1; then
   PYBIN0=python3
 else
@@ -49,13 +52,7 @@ fi
 # 가드 스크립트가 없거나 파이썬이 없으면 fail-open(통과).
 GUARD="$REPO_ROOT/scripts/precommit_truncation_guard.py"
 if [ -f "$GUARD" ]; then
-  if command -v python >/dev/null 2>&1; then
-    PYBIN=python
-  elif command -v python3 >/dev/null 2>&1; then
-    PYBIN=python3
-  else
-    PYBIN=""
-  fi
+  PYBIN="$PYBIN0"   # 위에서 실제로 도는 것으로 고른 값 그대로(2026-09-14)
   if [ -n "$PYBIN" ]; then
     # PYTHONUTF8=1 → 한글 경고가 콘솔 코드페이지와 무관하게 출력됨.
     PYTHONUTF8=1 "$PYBIN" "$GUARD"
