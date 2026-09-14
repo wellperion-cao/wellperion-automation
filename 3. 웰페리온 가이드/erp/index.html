@@ -319,7 +319,12 @@ function loadModules(role, allowedIds){
     /* GM 전용 화면 — 홈 카드에 두지 않는다 (GM 지시 2026-09-14 「GM업무에서만 볼 수 있게 해줘」).
        두 화면은 GM업무 화면 「경영 보고건」 제목줄의 '회장님 A3'·'대표님 A3' 줄로 바로 열린다.
        ★중간관리자 업무목차는 여기 넣지 않는다 — 실장·소장이 보는 화면이라 홈에 남긴다. */
-    var GM_ONLY_IDS = ['coo-chairman-회장님-지시사항', 'coo-chairman-대표님-지시사항'];
+    var GM_ONLY_IDS = ['coo-chairman-회장님-지시사항', 'coo-chairman-대표님-지시사항',
+      /* 오넛티 접수 — 회원 관리(CPO) 묶음에서 뺀다. 이 일은 회원 살림이 아니라 운영부가 이끄는
+         한 건이라, 중간관리자 업무 목차에서 윤병현AM·백승화 사원 담당으로 본다
+         (GM 지시 2026-09-14 「cpo 라인으로 넣지 말고 중간관리자 업무에서 리드업무로」).
+         화면·주소는 그대로 살아 있다 — 들어가는 자리만 옮긴 것이다. */
+      'cpo-member-오넛티-접수현황'];
 
     var order = [], bag = {}, docs = [], files = [], pinned = {}, seenDoc = {};
     (d.modules || []).forEach(function(m){
