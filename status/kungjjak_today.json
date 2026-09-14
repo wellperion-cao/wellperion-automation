@@ -705,34 +705,28 @@
           "ref": "GM-20260914-1038",
           "no": "38",
           "got": "대표님 보고건으로 진행",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "16:05",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "16:16",
+          "minutes": 10,
+          "upload": "✅ 배포 (11ca0279f)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260914-SIGN",
           "no": "GN",
           "got": "GM 16:05 「신성미소시티 간판 건 — 용산구청 광고물관리팀 상담(2006년부터·사이즈 적법) · AI 문안 → 의견제출서 9/21~22 접수 · G드라이브 26.9.14 용산구 불법옥외광고물 자료로 A3 요약본+의견제출서+담당자 전달 내용」 접수",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "did": "coo/chairman/260914_신성미소시티_간판_* · 확인 표 = 9/15 통화로 채움",
           "start": "16:05",
-          "end": "16:05",
-          "minutes": 0,
+          "end": "16:15",
+          "minutes": 10,
           "upload": "✅ 배포 (11ca0279f)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "11:37",
-          "area": "작업",
-          "event": "SVIP 요가 A3 5차 — 회원 청구 합계 3안(권고 537만) · 수익 구조 · SVIP 만족도 설계 (GM 지시 2026-09-14)",
-          "detail": "커밋 cb856f0345 · 배 11401"
-        },
         {
           "time": "11:50",
           "area": "작업",
@@ -906,31 +900,22 @@
           "area": "구매요청 이관",
           "event": "나우열M 16:06 「구매요청 테스트 제출 안 보임」 실측 답 — 물품 「테스트」 → 시험 건 격리(정상) · 되밀기 정상",
           "detail": "write_log 1341·1349 gas_status=test"
+        },
+        {
+          "time": "16:15",
+          "area": "작업",
+          "event": "신성미소시티 벽면 간판 — 용산구 이행강제금 사전통지 대응 A3 + 의견제출서 초안 A4 (GM 지시 2026-09-14 · 대표님 보고 건)",
+          "detail": "커밋 0fcd5aeff4 · 배 11401"
         }
       ],
       "count": 60,
-      "done": 59,
-      "open": 1,
+      "done": 60,
+      "open": 0,
       "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260914-1038",
-          "no": "38",
-          "got": "대표님 보고건으로 진행",
-          "did": "",
-          "start": "16:05",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 8
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -1339,13 +1324,25 @@
           "area": "작업",
           "event": "업무 현황·결재 현황 SSOT 목록 읽기를 서버로 전환(ERP_API_ON=true) [나우열M 요청 2026-09-14] — 서버 249건=구글 249건 · 칸 20개 대조 · 되돌리기 = false",
           "detail": "커밋 dd80015afe · 배 12528"
+        },
+        {
+          "time": "16:13",
+          "area": "작업",
+          "event": "구글 의존 실측기 추가 — aws_migration 맨 위 숫자를 줄 수 비율 대신 화면 실측으로 교체",
+          "detail": "커밋 cd8de80eb3 · 배 12528"
+        },
+        {
+          "time": "16:15",
+          "area": "작업",
+          "event": "AWS 이관 표 — 서버 쪽 구글 판정·되밀기 24시간 실측(gas_calls_24h.py · 매시 크론) 을 삭제 조건 줄에 표시",
+          "detail": "커밋 1c0b0c9c68 · 배 12528"
         }
       ],
       "count": 24,
       "done": 24,
       "open": 0,
       "avg_minutes": 5,
-      "work_count": 19,
+      "work_count": 21,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2257,13 +2254,25 @@
           "area": "작업",
           "event": "휴관 판정에 「그날은 연다」를 더한다 — 9/27 영업(GM 지시 2026-09-14)",
           "detail": "커밋 b59e0f0c40 · 배 12532"
+        },
+        {
+          "time": "16:13",
+          "area": "작업",
+          "event": "자동 보고 1면 맨 위 두 칸이 빈 채로 찍히던 것을 고친다 — 날짜 보기가 목표 달성률·총 회원수를 안 채웠다 (2026-09-14 실측)",
+          "detail": "커밋 5406dbc74a · 배 12532"
+        },
+        {
+          "time": "16:16",
+          "area": "작업",
+          "event": "보고 1면 맨 위 두 칸을 보고탭 값 도착 즉시 박는다 — 날짜 보기가 덮고 지나가도 비지 않게",
+          "detail": "커밋 e24c8701c6 · 배 12532"
         }
       ],
       "count": 21,
       "done": 21,
       "open": 0,
       "avg_minutes": 3,
-      "work_count": 16,
+      "work_count": 18,
       "missed": [],
       "unclosed": [],
       "just": [],
