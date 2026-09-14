@@ -213,6 +213,39 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     return {"ok": True}
 
 
+def new_card(title: str, content: str, due: str, dry: bool, category: str = "") -> dict:
+    """GM업무 카드(월간운영계획 이번 달 objectives · 담당 김남욱 GM) 새로 만들기 — GM 본인 건이 --plan 없이
+    들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
+    셋업」). 업무 SSOT 행은 여전히 안 만든다(TODO_UPLOAD_BLOCKED) — GM업무 = 이 카드, 결재 = 사람이 SSOT 에.
+    같은 제목의 카드가 이번 달에 이미 있으면 새로 만들지 않고 그 id 를 돌려준다."""
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    ym = _today().strftime("%Y-%m")
+    month = plan.setdefault("months", {}).setdefault(ym, {})
+    objs = month.setdefault("objectives", [])
+    key = "".join(title.split())[:24]
+    for o in objs:
+        if "".join(str(o.get("title") or "").split())[:24] == key and "김남욱" in str(o.get("owner") or ""):
+            return {"ok": True, "id": o.get("id"), "existing": True}
+    nums = [int(str(o.get("id") or "").rsplit("-", 1)[-1]) for o in objs
+            if str(o.get("id") or "").startswith(ym + "-") and str(o.get("id") or "").rsplit("-", 1)[-1].isdigit()]
+    cid = f"{ym}-{(max(nums) + 1) if nums else 1:02d}"
+    today = _today().isoformat()
+    card = {
+        "id": cid, "initiative_id": "", "owner": GM_OWNER, "dept": "경영지원부", "title": title,
+        "target": content[:300], "metric": "", "status": "진행", "progress": 0, "northstar": "",
+        "progress_note": f"■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}",
+        "honesty": {"level": "manual", "label": "📝 사람값", "basis": "GM 지시 · gm_handoff 생성", "at": today},
+        "due": due or "",
+    }
+    if category:
+        card["category"] = category
+    if dry:
+        return {"ok": True, "dry": True, "id": cid}
+    objs.append(card)
+    PLAN_PATH.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"ok": True, "id": cid}
+
+
 def _mark(res: dict) -> str:
     if not res:
         return "—"
@@ -270,8 +303,15 @@ def main() -> int:
     if r_todo.get("blocked"):
         # 막힌 것은 실패가 아니라 규칙이다 — 사람이 무엇을 해야 하는지 한 줄로 알린다.
         print("🚫 업무 SSOT 등록은 하지 않았습니다 — 지시를 받은 실무진이 직접 올립니다(GM 지시 2026-09-09).")
-    r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
-                        a.check, False, dry) if a.plan else None
+    if a.plan:
+        r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
+                            a.check, False, dry)
+    elif (a.assignee or GM_OWNER) == GM_OWNER:
+        # GM 본인 건인데 카드가 없으면 GM업무 카드를 새로 낸다 — 전사일정만 남고 GM업무 면이 비던 것을 막는다(2026-09-14).
+        r_plan = new_card(a.title, a.content, due, dry, a.category)
+        a.plan = r_plan.get("id", "")
+    else:
+        r_plan = None
     # GM업무·결재는 두 면이 아니라 업무 SSOT 한 행의 두 칸이라 한 칸으로 찍는다(진단 카드 6).
     ssot = ("🚫 막힘 — 실무진 직접 등록" + (f"(결재 {a.approval} 미기재)" if a.approval else "")
             if r_todo.get("blocked")
