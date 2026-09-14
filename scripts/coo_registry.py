@@ -114,6 +114,26 @@ def _issue_text(iss) -> str:
     return str(iss)
 
 
+def _closed_day(day: str) -> bool:
+    """휴관일이면 True — 문 닫은 날의 0 은 이상이 아니다(GM 정정 2026-09-14).
+    정본 = ssot/closed_days.json(정기 규칙 + 임시 휴관). 못 읽으면 정기 규칙만으로 판정한다."""
+    try:
+        y, m, dd = (int(x) for x in day.split("-"))
+    except Exception:
+        return False
+    try:
+        cfg = json.loads((Path(__file__).resolve().parents[1] / "ssot" / "closed_days.json")
+                         .read_text(encoding="utf-8"))
+    except Exception:
+        cfg = {}
+    if any(str(e.get("date")) == day for e in (cfg.get("extra") or [])):
+        return True
+    if f"{m:02d}-{dd:02d}" in set((cfg.get("rule") or {}).get("fixed") or ["01-01"]):
+        return True
+    from calendar import weekday                       # noqa: PLC0415 — 이 판정에서만 쓴다
+    return weekday(y, m, dd) == 6 and (dd + 6) // 7 in (2, 4)   # 둘째·넷째 일요일
+
+
 def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
     """공통 status 계약 반환: {display, anomaly, reasons, tag, metrics} + 기존 depts(하위호환).
     depts[dept]["date"] = 그 값이 실제로 어느 날짜 행인지(2026-08-10 추가 — 집계 범위·판정은
@@ -138,7 +158,7 @@ def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
         #   지원부 0/86 이 08:00 통에 ✅ 로 나갔다 — 2026-09-03 수리는 분모만 붙였고 배지
         #   규칙은 그대로였다. 어제 행만 본다(오늘 행은 아침에 0 이 당연하다).
         # ponytail: 0 건만 잡는다. 낮은 제출률(예 30%)까지 잡으려면 임계를 이 한 곳에 둔다.
-        if total and done == 0 and row.get("date") == _kst_yesterday():
+        if total and done == 0 and row.get("date") == _kst_yesterday()                 and not _closed_day(str(row.get("date"))):
             reasons.append(f"{dept} {row.get('date')} 전원 미제출 (0/{total}건)")
         if pct is None or pct > 100:
             reasons.append(f"{dept} 완료율 이상({pct}% — 100% 초과/미산출)")
