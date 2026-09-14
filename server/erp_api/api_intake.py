@@ -55,6 +55,10 @@ ALLOWED_ACTIONS = {"inquiry": {"intake_submit"}, "instructor": {""}, "sunday": {
                    "reception": {"reg_submit"}, "selftest": None}
 MAX_BODY = 2 * 1024 * 1024
 BLOB_CHARS = 8192             # 이보다 긴 문자열 = 사진·서명 base64 (사람이 쓰는 칸은 이 길이가 안 나온다)
+# 원장(payload)에 평문으로 남기지 않을 칸. 화면이 GAS 판정용으로 실어 보내는 쓰기 비번이 여기 해당한다.
+# 'key' 는 넣지 않는다 — saveBoard 가 보드 식별자로 쓰는 칸이라 가리면 대조가 깨진다.
+# 게이트 열쇠는 보낼 때 본문에만 붙고(gas_key.sign_body) payload 에는 애초에 없다.
+SECRET_FIELDS = {"password", "passwd", "pw", "secret", "token", "srvkey"}
 FORWARD_TIMEOUT = 55          # 폼 fetch 상한보다 짧게
 CORS = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"}   # 폼은 wellperion.com(다른 origin) 에서 text/plain 으로 보낸다
@@ -72,14 +76,24 @@ def _receipt_id():
     return datetime.now(timezone(timedelta(hours=9))).strftime("L%y%m%d-%H%M%S")
 
 
+def _redact_one(k, v):
+    if str(k).lower() in SECRET_FIELDS and isinstance(v, str) and v:
+        return "_secret"
+    if isinstance(v, str) and len(v) > BLOB_CHARS:
+        return {"_redacted": len(v), "_sha256": hashlib.sha256(v.encode("utf-8", "replace")).hexdigest()}
+    return v
+
+
 def redact_blobs(payload):
     """원장에 사진·서명 base64 를 통째로 넣지 않는다 — 길이·sha256 만 남긴다(GAS 로는 원본 본문이 그대로 간다).
-    사진은 GAS 가 Drive 에 올려 URL 을 시트에 적으므로 서버가 원본을 이고 있을 이유가 없다(정의서 A §7 사진)."""
+    사진은 GAS 가 Drive 에 올려 URL 을 시트에 적으므로 서버가 원본을 이고 있을 이유가 없다(정의서 A §7 사진).
+
+    비밀값 칸(SECRET_FIELDS)은 길이와 무관하게 '_secret' 으로 바꾼다 — 시트 쓰기 비번은 8글자라
+    길이 기준(BLOB_CHARS)을 못 넘어 원장에 평문 그대로 쌓였다(2026-09-15 실측 68행).
+    GAS 로 나가는 본문(raw_body)은 이 함수를 안 거치므로 동작은 그대로다."""
     if not isinstance(payload, dict):
         return payload
-    return {k: ({"_redacted": len(v), "_sha256": hashlib.sha256(v.encode("utf-8", "replace")).hexdigest()}
-                if isinstance(v, str) and len(v) > BLOB_CHARS else v)
-            for k, v in payload.items()}
+    return {k: _redact_one(k, v) for k, v in payload.items()}
 
 
 def gas_forward(url, body):

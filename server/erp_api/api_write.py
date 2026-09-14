@@ -827,6 +827,9 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     r = redact_blobs({"action": "lf_submit", "photo": "d" * 9000, "memo": "짧은 메모"})
     assert r["memo"] == "짧은 메모" and r["action"] == "lf_submit"
     assert r["photo"]["_redacted"] == 9000 and len(r["photo"]["_sha256"]) == 64
+    # 비밀값 칸은 길이와 무관하게 가린다 — 쓰기 비번이 원장에 평문으로 쌓였다(2026-09-15 실측 68행).
+    r2 = redact_blobs({"action": "delete", "row": "398", "password": "p@ss1234"})
+    assert r2["password"] == "_secret" and r2["row"] == "398" and r2["action"] == "delete"
     # 스위치(배 960 레인 J) — 모든 목적지에 스위치 이름이 있어야 전환·복귀가 한 줄로 된다.
     for _a in ("reg_update", "todo_add", "save", "save_schedule", "add", "member_owner_save"):
         assert _gas_key(_a) in origin_switch.WRITE_AREA, _a
