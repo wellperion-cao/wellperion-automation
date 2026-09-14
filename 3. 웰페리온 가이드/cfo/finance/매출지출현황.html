@@ -1466,7 +1466,12 @@ async function loadReq(){
     if(d&&d.ok){REQ_ACTIVE=d.data||[];writeReqCache();} // 성공분만 저장본으로 남긴다(실패 시 직전 목록 유지)
   } finally{_reqBusy--;_hvDrain();}
   var m=document.getElementById("reqMsg");
-  if(!(d&&d.ok))reqToast("⚠️ 목록을 불러오지 못했습니다 — 잠시 후 새로고침(F5) 해주세요",1);
+  if(!(d&&d.ok)){
+    /* 2026-09-14: 실패해도 REQ_ACTIVE 가 낡은 캐시로 남아 화면은 멀쩡해 보였다 —
+       토스트는 사라지므로 표 위에 계속 남는 경고를 띄운다. 여기 보이는 건 현재 원장이 아니다. */
+    reqToast("⚠️ 목록을 불러오지 못했습니다 — 잠시 후 새로고침(F5) 해주세요",1);
+    if(m)m.innerHTML='<b style="color:#B3261E">⚠️ 아래 목록은 최신이 아닙니다</b> — 불러오기 실패로 <b>직전 저장본</b>을 보고 계십니다. 승인·반려·삭제가 듣지 않으면 새로고침(F5) 후 다시 시도하세요.';
+  }
   else if(m&&m.textContent.indexOf("직전 목록")>=0)m.textContent=""; // 최신으로 갈아끼웠으니 안내 지움
   renderReqTbl();loadReqPhotos();
 }
@@ -1526,7 +1531,10 @@ function renderReq(){
    백엔드 왕복이 2~3초라 진입할 때마다 빈 표를 보고 기다려야 했다. 직전에 성공한 목록을
    먼저 그려 화면이 바로 뜨게 하고, 서버 응답이 오면 조용히 갈아끼운다(파트너팀 매출과 같은 방식).
    저장 대상은 사진 없는 경량 목록(noimg)뿐이며, 이미 화면에 표시되는 정보라 새로 노출되는 건 없다. */
-var REQ_CACHE_KEY="procReqCache.v1",REQ_CACHE_TTL=24*3600*1000; // 하루 지난 저장본은 안 쓴다(오래된 목록을 현재처럼 보여주지 않기 위해)
+/* v2(2026-09-14) — v1 저장본은 통째로 버린다. 원장에서 지워진 행(#137)이 캐시에 남아
+   화면에 유령처럼 보였고, 그 행에 승인·반려·삭제를 하면 GAS 가 못 찾아 전부 실패했다.
+   TTL 도 24시간 → 2시간. 낡은 목록을 현재처럼 보여주는 창을 좁힌다. */
+var REQ_CACHE_KEY="procReqCache.v2",REQ_CACHE_TTL=2*3600*1000; // 하루 지난 저장본은 안 쓴다(오래된 목록을 현재처럼 보여주지 않기 위해)
 function readReqCache(){
   try{var c=JSON.parse(localStorage.getItem(REQ_CACHE_KEY)||"null");
     if(c&&Array.isArray(c.data)&&c.data.length&&(Date.now()-(c.at||0))<REQ_CACHE_TTL)return c.data;}catch(e){}
@@ -1829,7 +1837,8 @@ async function doAct(row,next,needPw,btn){
       if(d&&d.ok){ writeReqCache(); loadReq(); return; }
     }
     if(item&&prev!==null){item.상태=prev;renderReqTbl();}
-    reqToast("⚠️ 저장되지 않았습니다 — 다시 시도해주세요",1);
+    reqToast("⚠️ 저장되지 않았습니다 — 목록을 다시 불러옵니다",1);
+    loadReq(); // 원장에서 지워진 행(유령)이면 여기서 사라진다 — 2026-09-14
   })();
 }
 
