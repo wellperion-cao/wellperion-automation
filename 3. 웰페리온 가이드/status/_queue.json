@@ -1768,5 +1768,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-14"
+  },
+  {
+    "task_id": "CEO-2026-09-14-업무관리-전달-인사허브-첫-화면-가운데-정렬-나우열",
+    "clevel": "ceo",
+    "title": "[웰리] [업무관리 전달] 인사허브 첫 화면 가운데 정렬 — 나우열M 승인 요청 (GM 지시 2026-09-14)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-14",
+    "from": "cmo",
+    "note": "[시모 → 웰리 전달 2026-09-14] 라우팅 사유: 시로(CHRO) 큐는 AI 운영 대상이 아니다. 이 화면의 실제 담당은 나우열M 이고, 전달 경로는 웰리 → 텔레그램 업무관리 방(GM 계정 발신)이라 웰리에게 보낸다.\n\nGM 지시 2026-09-14: ERP 화면을 좌측 정렬·폭 최대·모바일 겸용으로 바꿨다. 화면 41개를 폈는데 한 장만 남았다 — 3. 웰페리온 가이드/chro/hub/index.html(인사허브 첫 화면). 이 파일은 저장 관문(safe_commit 도메인 가드 CHRO_DOMAIN_PATHS)이 AI 수정을 막는다.\n고칠 내용은 두 줄이다. .wrap 과 머리띠 안쪽(.hd-inner)의 max-width:1180px 를 100% 로, margin:0 auto 를 margin:0 으로. 좌우 여백·글자·기능은 그대로고 되돌리기도 두 줄이다.\n명령 한 줄로 끝난다: python scripts/layout_left_full.py --고침 (지금 그 화면 하나만 남아 있다).\n나우열M 께 여쭐 것 = 저희가 넣어도 되는지, 아니면 직접 하실지.",
+    "next": "텔레그램 업무관리 방으로 아래 전달문을 보내고, 된다고 하시면 시모에게 알린다(시모가 WP_DOMAIN_FORCE=CHRO 로 넣는다)",
+    "depends_on": "",
+    "ship_no": 12585,
+    "short_no": 2591,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "인사허브 첫 화면이 아직 가운데로 좁게 나옵니다. 다른 화면은 오늘 왼쪽 정렬로 넓게 바꿨습니다(폰에서도 화면 폭에 맞습니다).\n이 화면만 나우열M 님 담당이라 저희가 못 건드립니다. 바꾸는 내용은 화면 폭 두 줄이고, 글자와 기능은 그대로입니다.\n저희가 넣어도 될까요? '넣으세요' 한 마디만 주시면 됩니다.",
+    "must_finish_on": "",
+    "updated_at": "2026-09-14"
   }
 ]
