@@ -94,6 +94,9 @@ def load_queue_raw() -> list[dict]:
 _KNOWN_STATUS = {
     "PENDING", "IN_PROGRESS", "ON_HOLD", "DONE", "MERGED", "STANDBY",
     "완료", "진행중", "대기", "보류", "폐기",
+    # 2026-09-15 웰리: precommit_queue_guard.py 는 CANCELLED·EXCLUDED·취소를 이미 닫힌 상태로 알고
+    # 있는데 여기에만 없어, 정상적으로 취소된 배가 매일 「미지 상태값」 경고로 올라왔다.
+    "CANCELLED", "EXCLUDED", "취소",
 }
 
 
