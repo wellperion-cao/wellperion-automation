@@ -122,6 +122,14 @@
   /* 값이 없는 칸 — 빈 상자만 남기지 않고 없다는 사실을 한 줄로 말한다. */
   .emptynote{color:#98A1A9;font-size:11.4px;}
 
+  /* 2면 맨 아래 띠(강습 종목별·유입 경로) — 그날 일이 아니라 누적이라 자리를 줄여 얇게 깐다
+     (GM 지시 2026-09-14 「종목 및 유입경로는 별도로 축소」). 폭을 다 쓰므로 막대는 더 길다. */
+  .lesson-strip .bd{padding:6px 11px 7px;}
+  .lesson-strip .vrow{padding:1.5px 0;font-size:11.4px;gap:8px;}
+  .lesson-strip .vrow .vbar{height:9px;}
+  .lesson-strip .vrow .vn{font-size:12px;width:46px;}
+  .lesson-strip .vrow2{gap:0 26px;}
+
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
   .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
@@ -487,35 +495,48 @@
        1페이지에 매출 및 회원 현황보고에 있으니". 뺀 것 넷 — ①오늘·이번 달 움직임(1페이지 「회원 드나듦」과
        같은 숫자) ②이달 등록 내역(기준일 등록만 본다) ③회원 구성 상세(1페이지 「회원 구성」과 중복)
        ④이탈·갱신 임박(위 「오늘 챙길 것」 갱신 임박 칸이 같은 명단을 이미 보여 준다). -->
-  <div class="body">
+  <!-- ★2026-09-14 GM 지시로 이 장을 「문의 띠 → 등록 띠 → 종목·유입 경로(축소)」 세 단으로 다시
+       세웠다. 원문: "등록하는 사람이 은근히 많아서 멤버십 좌측 / 강습(성인&유소년) 우측으로 해야하고,
+       종목 및 유입경로는 별도로 축소해서 체크해봐야할 것 같은데?" 종전에는 등록 두 칸이 오른쪽 열에
+       위아래로 눌려 있어 등록이 많은 날 이름이 잘렸다. -->
+  <div class="body" style="flex:1.18;">
     <div class="col">
-      <div class="sec">
-        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <!-- 문의 상세 내역 — 이 장의 「문의」 쪽 본문이다. 퍼널이 어디서 빠지는지를 말하면
-           이 표가 그래서 지금 누구를 챙겨야 하는지를 말한다(GM 지시 2026-09-14). -->
+      <!-- 문의 상세 내역 — 이 장의 「문의」 쪽 본문이다. 이름·종목·상품이 한 줄에 들어가야 해서
+           넓은 왼쪽 칸에 둔다(GM 지시 2026-09-14). -->
       <div class="sec" style="flex:1;min-height:0;">
         <h2>문의 상세 내역 — 최근 문의 · 아직 안 챙긴 분 먼저</h2>
         <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
-
     <div class="col">
-      <!-- 등록 상세 — 기준일 하루치만. 원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
-      <div class="sec">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 등록 띠 — 기준일 하루치. 왼쪽 멤버십(등록이 더 많아 넓은 칸) · 오른쪽 강습.
+       원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
+  <div class="body" style="flex:1;margin-top:11px;">
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2memh">오늘 등록 — 멤버십</h2>
         <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
-      <div class="sec">
+    </div>
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
         <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>강습 종목별 · 유입 경로 (누적)</h2>
-        <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
     </div>
+  </div>
+
+  <!-- 종목·유입 경로 — 그날 일이 아니라 누적 흐름이라 맨 아래 얇은 띠로 내렸다(GM 지시 2026-09-14). -->
+  <div class="sec lesson-strip" style="margin-top:11px;">
+    <h2>강습 종목별 · 유입 경로 (누적)</h2>
+    <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
   </div>
 
   <div class="audit wait" id="audit2">자체 점검 중…</div>
@@ -1070,6 +1091,7 @@ function renderSheet(c){
   // 빈 칸에 「—」만 두면 무슨 뜻인지 모른다 — 없다는 사실을 말로 적는다(GM 지적 2026-09-14).
   function setTxt(id, val, empty){
     var el = document.getElementById(id), t = String(val || '').trim();
+    if (/^[-–—]$/.test(t)) t = '';          // 시트가 빈 칸에 줄표를 적어 두기도 한다
     el.textContent = t || empty;
     el.className = t ? 'txt' : 'txt emptynote';
   }
