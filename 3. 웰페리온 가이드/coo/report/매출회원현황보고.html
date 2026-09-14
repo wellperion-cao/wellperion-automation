@@ -1168,6 +1168,15 @@ function load(){
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
       RAW.cells = d.cells || {};
+      // 맨 위 3·4칸(목표 달성률·총 회원수)을 먼저 박아 둔다 — 아래 renderSheet 가 같은 값으로
+      // 다시 그리지만, 날짜 보기가 0·1칸만 덮고 지나가면 이 둘이 처음 상태 「—」로 남아
+      // 09:00 자동 보고 1면 맨 위가 빈 채로 찍혀 나갔다(2026-09-14 실측 · 아래 표에는 있었다).
+      (function(){
+        var hlf = document.getElementById('headline').children;
+        [[2, RAW.cells.L4], [3, RAW.cells.N2]].forEach(function(p){
+          if (String(p[1] || '').trim()) hlf[p[0]].querySelector('.v').textContent = String(p[1]).trim();
+        });
+      })();
       renderSheet(RAW.cells);
       // 이번 달 「집계중」 막대를 기본 화면에서도 채운다(GM 지시 2026-09-11). 연간 추이의 원천인
       // '26년 매출 분석' AV열은 마감된 달만 값을 갖기 때문에, 이번 달은 항상 빈 막대로 남아 있었다.
