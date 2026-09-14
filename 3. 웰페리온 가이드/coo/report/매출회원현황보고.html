@@ -198,12 +198,27 @@
 
   /* ══ 2페이지 — 회원·문의 상세. 기존 스타일(.stack·.chips·.flow·.yr·.vrow·.bigrow)을
      그대로 재사용하고, 여기 쓰는 것만 덧붙인다. ══ */
-  @media print{ #sheet2{ page-break-before:always; } .no-print{ display:none!important; } }
+  @media print{ #sheet2, #sheet3{ page-break-before:always; } .no-print{ display:none!important; } }
   .mv6{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
   .vrow2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
   .vrow2 .vcol-h{font-size:10.4px;font-weight:800;color:var(--navy);margin-bottom:3px;}
   /* 문의에서 가입까지 — 깔때기. 막대 폭이 인원 비율이라 어디서 좁아지는지가 눈에 먼저 들어온다
      (GM 지적 2026-09-14 「허접하니까 중요하게 안 느껴지네」로 숫자 나열을 그림으로 바꿨다). */
+  /* 3면 운영 현황 — 소제목 + 항목. 시트가 쓰는 그 구조를 그대로 보인다. */
+  .opsgrp{margin-bottom:7px;}
+  .opsgrp:last-child{margin-bottom:0;}
+  .opsgrp .oh{font-size:11.5px;font-weight:800;color:var(--navy);padding-bottom:2px;
+    border-bottom:1px solid var(--line);margin-bottom:3px;}
+  .opsgrp .oi{font-size:10.5px;color:#3D464F;line-height:1.45;padding-left:9px;text-indent:-9px;}
+  .wrow{display:flex;align-items:baseline;gap:7px;font-size:10.5px;padding:2.5px 0;
+    border-bottom:1px solid #F0F3F6;}
+  .wrow:last-child{border-bottom:0;}
+  .wrow .wt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wrow .wd{width:52px;flex:none;font-size:9.5px;color:#7A838B;font-variant-numeric:tabular-nums;}
+  .wrow .wo{width:64px;flex:none;font-size:9.5px;color:var(--navy);font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wrow.over .wd{color:var(--warn);font-weight:800;}
+  .wmore{font-size:9.5px;color:#7A838B;padding-top:4px;}
   /* 문의 상세 내역 — 아직 연락 안 한 줄은 왼쪽에 붉은 띠. */
   .inqlist{display:flex;flex-direction:column;}
   .inqrow{display:flex;align-items:center;gap:7px;font-size:10.5px;padding:2.5px 0 2.5px 5px;
@@ -460,6 +475,57 @@
   </div>
 
   <div class="audit wait" id="audit2">자체 점검 중…</div>
+
+</div>
+
+<!-- 3면 — 운영 현황 (GM 지시 2026-09-14 「매출 & 회원 현황보고에 현재 매출보고처럼 운영관련된
+     것도 3page에 한장에 보고해줄 수 있어?」). 09:30 「매출·운영 현황」 통이 글로 보내던 내용을
+     이 장으로 옮겨, 업무보고방에 두 통이 따로 가던 것을 한 통으로 합친다. -->
+<div class="page" id="sheet3">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">운영 현황<span class="ai-owner">AI 시포</span></div>
+    </div>
+    <div class="meta">
+      매출 및 회원 현황 보고 <b>3 / 3</b><br>
+      작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>매출·운영 보고 시트 · 업무 SSOT</b><br>
+      읽은 시각 <b id="readat3">—</b>
+    </div>
+  </div>
+
+  <div id="err3"></div>
+
+  <div class="body">
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차</h2>
+        <div class="bd" id="p3ops"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec">
+        <h2>인사 · 파트너팀 진행사항</h2>
+        <div class="bd" id="p3hr"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>핵심 보고 · 진행현황</h2>
+        <div class="bd" id="p3work"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p3lateh">지연 · 결재 대기</h2>
+        <div class="bd" id="p3late"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="audit wait" id="audit3">자체 점검 중…</div>
+
+  <div class="foot">
+    <div><b>이 장이 보는 것</b> — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.</div>
+    <div><b>원천</b> — 매출·운영 보고 시트의 운영 현황 칸과 업무 SSOT입니다. 값을 여기서 다시 계산하지 않습니다.</div>
+  </div>
 
 </div>
 
@@ -1042,8 +1108,160 @@ function load(){
       }
     }
     runAudit(); applyUrlView(); applyServerPanel();
+    try { renderPage3(RAW.cells || {}); } catch (ex) {
+      var e3 = document.getElementById('err3');
+      if (e3) e3.innerHTML = '<div class="err">3면 그리기 실패 — ' + esc(ex.message) + '</div>';
+    }
   }
   Promise.all([p1, p2, p3, p4]).then(afterAll, afterAll);
+}
+
+/* 3면 — 운영 현황. 시트 칸 셋은 새로 조회하지 않는다(1면이 이미 읽은 값을 그대로 편다).
+   P20 = 운영 현황(시설·지원·주차) · I20 = 인사·파트너팀 · I21 = 핵심 보고.
+   지연·결재 대기만 업무 SSOT 를 한 번 더 부른다 — 주소는 화면이 이미 쓰는 ERP GAS 그대로다. */
+function p3Lines(v){
+  return String(v == null ? '' : v).split(/\r?\n/)
+    .map(function(x){ return x.replace(/\s+$/, ''); })
+    .filter(function(x){ return x.trim(); });
+}
+
+/* 「1. 오넛티 팝업스토어 [~9/19 / 책임: 윤병현AM]」 을 제목·기한·책임으로 가른다. 기한에 슬래시가
+   들어 있어 한 방 정규식은 어긋난다 — 대괄호 안을 통째로 뽑은 뒤 「책임」 글자에서 자른다.
+   모양이 다르면 쪼개지 않고 제목 자리에 그대로 둔다(지어내지 않는다). */
+function p3Work(line){
+  var m = /^\s*(?:[0-9]+\.|[▪·-])?\s*(.+?)\s*\[([^\]]*)\]\s*$/.exec(line);
+  if (!m) return { title: line.replace(/^\s*(?:[0-9]+\.|[▪·-])\s*/, ''), due: '', owner: '' };
+  var inner = m[2], due = inner, owner = '';
+  var k = inner.indexOf('책임');
+  if (k >= 0) {
+    due = inner.slice(0, k).replace(/[\/\s]+$/, '');
+    owner = inner.slice(k).replace(/^책임\s*:?\s*/, '').trim();
+  }
+  return { title: m[1], due: due.replace(/^~\s*/, '').trim(), owner: owner };
+}
+
+function p3Overdue(due, now){
+  var m = /([0-9]{1,2})\s*\/\s*([0-9]{1,2})/.exec(due || '');
+  if (!m) return false;
+  var d = new Date(now.getFullYear(), parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+  return d < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+var TODO_DONE_KO = { '완료': 1, '폐기': 1, 'DONE': 1, '완료됨': 1 };
+var APPROVAL_DONE_KO = { '결재완료': 1, '완료': 1 };
+
+/* 지연·결재 대기 — 09:30 통이 글로 보내던 두 덩어리. 판정 규칙은 그 통(report_stream_3_impl.py)과
+   같은 두 줄이다: 지연 = 종료일 < 오늘 그리고 상태가 완료 계열이 아님 · 결재 대기 = 결재요청이
+   있는데 결재상태가 미완. 규칙을 여기서 새로 만들지 않는다. */
+function loadP3Work(){
+  var el = document.getElementById('p3late'); if (!el) return;
+  fetch(ERP + '?action=todo_list&cb=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.data) throw new Error('업무 SSOT 응답 없음');
+      var now = new Date();
+      var t10 = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
+      var items = d.data.filter(function(x){ return String(x['업무명'] || '').indexOf('�') < 0; });
+      var late = items.filter(function(x){
+        if (TODO_DONE_KO[String(x['상태'] || '').trim()]) return false;
+        var due = String(x['종료일'] || '').substring(0, 10);
+        return due && due < t10;
+      }).sort(function(a, b){ return String(a['종료일'] || '').localeCompare(String(b['종료일'] || '')); });
+      var appr = items.filter(function(x){
+        var req = String(x['결재요청'] || '').trim();
+        return req && !APPROVAL_DONE_KO[String(x['결재상태'] || '').trim()];
+      });
+      var h = document.getElementById('p3lateh');
+      if (h) h.textContent = '지연 ' + late.length + '건 · 결재 대기 ' + appr.length + '건';
+      function row(x, over){
+        var due = String(x['종료일'] || '').substring(5, 10).replace('-', '/');
+        var nm = String(x['업무명'] || '');
+        return '<div class="wrow' + (over ? ' over' : '') + '">' +
+          '<span class="wt" title="' + esc(nm) + '">' + esc(nm) + '</span>' +
+          '<span class="wd">' + esc(due || '기한 없음') + '</span>' +
+          '<span class="wo">' + esc(String(x['담당자'] || '').split(',')[0].trim()) + '</span></div>';
+      }
+      var out = '<div class="lstitle" style="border-top:0;margin-top:0;padding-top:0;">지연 (일정 초과) ' + late.length + '건</div>';
+      out += late.length
+        ? late.slice(0, 12).map(function(x){ return row(x, true); }).join('') +
+          (late.length > 12 ? '<div class="wmore">외 ' + (late.length - 12) + '건</div>' : '')
+        : '<div class="mrow"><span class="lb">지연 건 없음</span></div>';
+      out += '<div class="lstitle">결재 대기 ' + appr.length + '건</div>';
+      out += appr.length
+        ? appr.slice(0, 8).map(function(x){ return row(x, false); }).join('') +
+          (appr.length > 8 ? '<div class="wmore">외 ' + (appr.length - 8) + '건</div>' : '')
+        : '<div class="mrow"><span class="lb">결재 대기 없음</span></div>';
+      el.innerHTML = out;
+    })
+    .catch(function(e){
+      el.innerHTML = '<div class="err">업무 SSOT 를 못 읽었습니다 — ' + esc(e && e.message ? e.message : '조회 실패') + '</div>';
+    });
+}
+
+function renderPage3(c){
+  var now = new Date();
+  var ops = p3Lines(c.P20);
+  var head = document.getElementById('p3oph');
+  var el = document.getElementById('p3ops');
+  if (el) {
+    if (!ops.length) {
+      el.innerHTML = '<div class="err">운영 현황 칸(P20)이 비어 있습니다 — 그날 집계가 아직 안 들어왔습니다</div>';
+    } else {
+      var first = ops[0], body = ops;
+      var dm = /([0-9]{1,2}\/[0-9]{1,2}\s*\([^)]+\))/.exec(first);
+      if (/운영\s*현황/.test(first)) {
+        body = ops.slice(1);
+        if (head && dm) head.textContent = '운영 현황 — 시설 · 지원 · 주차 · ' + dm[1];
+      }
+      var out = '', open = false;
+      body.forEach(function(ln){
+        var t = ln.trim();
+        if (t.indexOf('■') === 0) {
+          if (open) out += '</div>';
+          out += '<div class="opsgrp"><div class="oh">' + esc(t.replace(/^■\s*/, '')) + '</div>';
+          open = true;
+        } else {
+          if (!open) { out += '<div class="opsgrp">'; open = true; }
+          out += '<div class="oi">· ' + esc(t.replace(/^[·\-]\s*/, '')) + '</div>';
+        }
+      });
+      if (open) out += '</div>';
+      el.innerHTML = out;
+    }
+  }
+  [['p3hr', c.I20, '인사·파트너팀 진행사항이 없습니다'],
+   ['p3work', c.I21, '핵심 보고·진행현황이 없습니다']].forEach(function(g){
+    var box = document.getElementById(g[0]); if (!box) return;
+    var rows = p3Lines(g[1]);
+    if (!rows.length) { box.innerHTML = '<div class="mrow"><span class="lb">' + g[2] + '</span></div>'; return; }
+    var more = '';
+    rows = rows.filter(function(ln){
+      if (/^\s*외\s*[0-9]/.test(ln)) { more = ln.trim(); return false; }
+      return true;
+    });
+    box.innerHTML = rows.map(function(ln){
+      var w = p3Work(ln);
+      return '<div class="wrow' + (p3Overdue(w.due, now) ? ' over' : '') + '">' +
+        '<span class="wt" title="' + esc(w.title) + '">' + esc(w.title) + '</span>' +
+        '<span class="wd">' + esc(w.due) + '</span>' +
+        '<span class="wo">' + esc(w.owner) + '</span></div>';
+    }).join('') + (more ? '<div class="wmore">' + esc(more) + '</div>' : '');
+  });
+  loadP3Work();
+  var at = new Date().toTimeString().substring(0, 5);
+  var r3 = document.getElementById('readat3'); if (r3) r3.textContent = at;
+  var missed = [];
+  if (!ops.length) missed.push('운영 현황(P20)');
+  if (!p3Lines(c.I20).length) missed.push('인사·파트너팀(I20)');
+  if (!p3Lines(c.I21).length) missed.push('핵심 보고(I21)');
+  var a3 = document.getElementById('audit3'); if (!a3) return;
+  if (missed.length) {
+    a3.className = 'audit bad';
+    a3.innerHTML = '<b>빈 칸 ' + missed.length + '/3</b> · ' + esc(missed.join(' · ')) + ' 가 비어 있습니다';
+  } else {
+    a3.className = 'audit ok';
+    a3.innerHTML = '<b>자체 점검 3/3 통과</b> — 운영 현황·인사/파트너팀·핵심 보고를 ' + at + ' 에 확인했습니다';
+  }
 }
 
 /* ★서버 판 반영(GM 지시 2026-09-05 · 배1063 시포) — 업무보고방 09:20 「서버 판(병행)」과 같은 계산을 이 화면에도 얹는다.
