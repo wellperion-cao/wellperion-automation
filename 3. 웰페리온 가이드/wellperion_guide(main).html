@@ -487,13 +487,13 @@
     <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--text);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:var(--fs-4);font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:var(--fs-1);color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="월간운영계획.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">🗓️ 월간 운영계획·보고 ↗</a><a href="coo/check/전사_일정.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📅 전사 일정 ↗</a><a href="coo/report/매출회원현황보고.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 매출 및 회원 현황 보고 ↗</a></div>
 
     <!-- 매출·지출 스트립 (home_kpi 연동 — ID 보존) -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px;">
       <!-- 매출: 월(좌)/연간(우) 좌우 2열 = 지출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
-      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;min-width:0;">
         <!-- [2026-08-28 GM 지시] 머리줄 「매출」 삭제 — 바로 아래 「월 매출」이 제목을 겸한다. -->
         <!-- 월 | 연간 | 팀별 3열 배치 — [2026-08-28 GM 지시] 접혀 있던 팀별 보기를 카드 오른쪽에 그대로 편다.
              세로를 안 늘리려고 가로를 쓴다. -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:var(--fs-3);font-weight:800;color:var(--text);letter-spacing:-0.01em;">월 매출<span id="salesMonthLabel"></span><span id="heroKpiFreshnessBadge" style="display:none;font-size:var(--fs-1);font-weight:700;color:var(--dim);background:var(--accent-bg,rgba(183,159,138,0.12));border-radius:9px;padding:1px 7px;margin-left:2px;"></span></div>
             <div style="font-size:var(--fs-5);font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
@@ -513,10 +513,10 @@
         </div>
       </div>
       <!-- 지출: 월(좌)/연간(우) 좌우 2열 = 매출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
-      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
+      <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;min-width:0;">
         <!-- [2026-08-28 GM 지시] 머리줄 「지출」 삭제 — 바로 아래 「월 지출」이 제목을 겸한다. -->
         <!-- 월 | 연간 | 카테고리별 3열 배치 (매출 카드와 동일 구조 · 2026-08-28) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:var(--fs-3);font-weight:800;color:var(--warm);letter-spacing:-0.01em;">월 지출</div>
             <div style="font-size:var(--fs-5);font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
