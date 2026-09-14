@@ -4,9 +4,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import coo_registry as R
 
 
+# 2026-09-11 에 주차(dept=parking)가 CHECK_QUERIES 에 들어왔는데 이 fixture 들이 안 따라와
+# 여기 6건이 "예상 못한 URL" 로 깨져 있었다. 매 케이스에 주차 줄을 적는 대신 기본값을 둔다.
+_DEFAULTS = {"dept=parking": {"ok": True, "total": 0, "done": 0, "pct": 0, "allIssues": []}}
+
+
 def _fake_fetch(mapping):
     def _f(url):
-        for key, resp in mapping.items():
+        for key, resp in {**_DEFAULTS, **mapping}.items():
             if key in url:
                 return resp
         raise AssertionError(f"예상 못한 URL: {url}")
@@ -31,8 +36,8 @@ def test_fetch_check_status_display_field():
         "dept=support": {"ok": True, "total": 50, "done": 46, "pct": 92, "allIssues": []},
     })
     st = R.fetch_check_status(fetch_fn=fetch)
-    assert st["display"] == "시설 58% · 지원 92%"
-    assert st["metrics"] == {"facility_pct": 58, "support_pct": 92}
+    assert st["display"] == "시설 58%(15/26건) · 지원 92%(46/50건) · 주차 0%(대상 0건)"
+    assert st["metrics"] == {"facility_pct": 58, "support_pct": 92, "parking_pct": 0}
 
 
 def test_fetch_check_status_display_shows_dash_when_pct_none():
@@ -41,7 +46,7 @@ def test_fetch_check_status_display_shows_dash_when_pct_none():
         "dept=support": {"ok": True, "total": 50, "done": 46, "pct": 92, "allIssues": []},
     })
     st = R.fetch_check_status(fetch_fn=fetch)
-    assert st["display"] == "시설 -% · 지원 92%"
+    assert st["display"] == "시설 -%(대상 0건) · 지원 92%(46/50건) · 주차 0%(대상 0건)"
 
 
 def test_fetch_detects_pct_overflow_anomaly():
@@ -168,4 +173,26 @@ def test_fetch_notice_status_counts_saved_and_active():
 def test_fetch_notice_status_empty_list_is_safe():
     st = R.fetch_notice_status(fetch_fn=lambda url: {"ok": True, "data": []})
     assert st["display"] == "저장 0건 · 기간중 0건"
+    assert st["anomaly"] is False
+
+
+def test_zero_submission_on_closed_day_is_anomaly():
+    """마감된 날(어제) 전원 미제출 = 이상. 2026-09-13 지원부 0/86 이 ✅ 로 나간 건."""
+    y = R._kst_yesterday()
+    fetch = _fake_fetch({
+        "dept=facility": {"ok": True, "data": [{"date": "any", "total": 26, "done": 15, "pct": 58}]},
+        "dept=support": {"ok": True, "date": y, "total": 86, "done": 0, "pct": 0, "allIssues": []},
+    })
+    st = R.fetch_check_status(fetch_fn=fetch, support_date=y)
+    assert st["anomaly"] is True
+    assert any("전원 미제출" in r for r in st["reasons"])
+
+
+def test_zero_submission_today_is_not_anomaly():
+    """오늘 행 0% 는 아침엔 당연 — 이상 아님."""
+    fetch = _fake_fetch({
+        "dept=facility": {"ok": True, "data": [{"date": "any", "total": 26, "done": 15, "pct": 58}]},
+        "dept=support": {"ok": True, "date": R._kst_today(), "total": 86, "done": 0, "pct": 0, "allIssues": []},
+    })
+    st = R.fetch_check_status(fetch_fn=fetch)
     assert st["anomaly"] is False

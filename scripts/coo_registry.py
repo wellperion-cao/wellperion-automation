@@ -82,6 +82,10 @@ def _kst_today() -> str:
     return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
 
 
+def _kst_yesterday() -> str:
+    return (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
 def _pick_today(resp: dict) -> dict:
     """weekly 응답(data 배열) → KST 오늘 날짜(row['date']==today) 매칭, 없으면 마지막 폴백. today_live 응답 → 그대로."""
     if isinstance(resp.get("data"), list) and resp["data"]:
@@ -130,6 +134,12 @@ def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
         pct = row.get("pct")
         pct = int(pct) if pct is not None else (round(done / total * 100) if total else None)
         depts[dept] = {"pct": pct, "done": done, "total": total, "date": row.get("date")}
+        # ★2026-09-14 시우 — 마감된 날인데 제출이 한 건도 없으면 이상이다. 2026-09-13(일)
+        #   지원부 0/86 이 08:00 통에 ✅ 로 나갔다 — 2026-09-03 수리는 분모만 붙였고 배지
+        #   규칙은 그대로였다. 어제 행만 본다(오늘 행은 아침에 0 이 당연하다).
+        # ponytail: 0 건만 잡는다. 낮은 제출률(예 30%)까지 잡으려면 임계를 이 한 곳에 둔다.
+        if total and done == 0 and row.get("date") == _kst_yesterday():
+            reasons.append(f"{dept} {row.get('date')} 전원 미제출 (0/{total}건)")
         if pct is None or pct > 100:
             reasons.append(f"{dept} 완료율 이상({pct}% — 100% 초과/미산출)")
         for iss in (row.get("allIssues") or []):
