@@ -1083,8 +1083,7 @@ def sales_bucket_cell(sales_data: "dict | None", bucket: str) -> tuple[str, bool
     cls = "pg-ok" if pct >= 80 else ("pg-mid" if pct >= 40 else "pg-low")
     bar = (f'<span class="pg"><span class="bar"><i class="{cls}" style="width:{pct}%"></i></span>'
            f'<span class="pgn">{pct}%</span> '
-           f'<span class="pgt">현재 {html.escape(_fmt_amt(cur, "원"))} / 목표 {html.escape(_fmt_amt(target, "원"))}'
-           f' · 달성 {pct}%</span></span>')
+           f'<span class="pgt">현재 {html.escape(_fmt_amt(cur, "원"))} / 목표 {html.escape(_fmt_amt(target, "원"))}</span></span>')
     return bar, False
 
 
@@ -1595,18 +1594,21 @@ def build() -> str:
   /* ★막대가 찔끔 나오던 것 (GM 지적 2026-09-14 「30%인데 그래프가 찔끔?」).
      .bar 가 span 이라 기본이 inline 이었다 — inline 은 height·width 가 안 먹어 트랙이
      내용 폭(=0)으로 접혔고, 그 0 의 30% 라 막대가 점처럼 보였다. 블록으로 펴고 폭을 준다. */
-  .pg {{ display:block; }}
-  .pg .bar {{ display:block; width:100%; min-width:120px; height:8px; margin:0 0 3px;
-             border-radius:4px; background:var(--line); overflow:hidden; }}
-  .pg .bar i {{ display:block; height:100%; }}
+  /* ★한 줄 + 채움 (GM 지적 2026-09-14 「한 줄로 %랑 같이 · 올 회색이 아니라 41%만큼 색칠」).
+     위 .bar(머리 검정 띠) 규칙의 padding·line-height 가 이 트랙에도 먹어 트랙이 20px 로 부풀고
+     채움(i)은 내용 높이 0 의 100% = 0px 라 안 보였다 — 트랙·채움 높이를 px 로 못 박고 padding 을 지운다. */
+  .pg {{ display:flex; align-items:center; gap:8px; white-space:nowrap; }}
+  .pg .bar {{ display:block; flex:1 1 80px; min-width:60px; max-width:180px; height:8px; padding:0; margin:0;
+             line-height:0; border-radius:4px; background:var(--line); overflow:hidden; }}
+  .pg .bar i {{ display:block; height:8px; }}
   .pg .pg-low {{ background:var(--bad); }}
   .pg .pg-mid {{ background:var(--warn); }}
   .pg .pg-ok {{ background:#2e7d32; }}
   .pg .pgn {{ font-size:11.5px; font-weight:800; margin-right:6px; }}
   .pg .pgt {{ font-size:11px; color:var(--dim); }}
   /* 👤 책임 항목 표 안 매출 진척(span.pg) — td.pg(#132px 고정폭) 재사용, 이 칸은 폭 자유 */
-  td.rp .pg {{ display:block; }}
-  td.rp .pg .pgt {{ display:block; margin-top:3px; }}
+  td.rp .pg {{ display:flex; }}
+  td.rp .pg .pgt {{ display:inline; margin:0; }}
   td.own .with {{ font-size:11.5px; color:var(--dim); margin-top:3px; }}
   h3.rsp {{ margin:16px 0 6px; font-size:14px; font-weight:800; }}
   h3.rsp .gc {{ font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }}

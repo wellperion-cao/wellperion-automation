@@ -50,18 +50,21 @@
   /* ★막대가 찔끔 나오던 것 (GM 지적 2026-09-14 「30%인데 그래프가 찔끔?」).
      .bar 가 span 이라 기본이 inline 이었다 — inline 은 height·width 가 안 먹어 트랙이
      내용 폭(=0)으로 접혔고, 그 0 의 30% 라 막대가 점처럼 보였다. 블록으로 펴고 폭을 준다. */
-  .pg { display:block; }
-  .pg .bar { display:block; width:100%; min-width:120px; height:8px; margin:0 0 3px;
-             border-radius:4px; background:var(--line); overflow:hidden; }
-  .pg .bar i { display:block; height:100%; }
+  /* ★한 줄 + 채움 (GM 지적 2026-09-14 「한 줄로 %랑 같이 · 올 회색이 아니라 41%만큼 색칠」).
+     위 .bar(머리 검정 띠) 규칙의 padding·line-height 가 이 트랙에도 먹어 트랙이 20px 로 부풀고
+     채움(i)은 내용 높이 0 의 100% = 0px 라 안 보였다 — 트랙·채움 높이를 px 로 못 박고 padding 을 지운다. */
+  .pg { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .pg .bar { display:block; flex:1 1 80px; min-width:60px; max-width:180px; height:8px; padding:0; margin:0;
+             line-height:0; border-radius:4px; background:var(--line); overflow:hidden; }
+  .pg .bar i { display:block; height:8px; }
   .pg .pg-low { background:var(--bad); }
   .pg .pg-mid { background:var(--warn); }
   .pg .pg-ok { background:#2e7d32; }
   .pg .pgn { font-size:11.5px; font-weight:800; margin-right:6px; }
   .pg .pgt { font-size:11px; color:var(--dim); }
   /* 👤 책임 항목 표 안 매출 진척(span.pg) — td.pg(#132px 고정폭) 재사용, 이 칸은 폭 자유 */
-  td.rp .pg { display:block; }
-  td.rp .pg .pgt { display:block; margin-top:3px; }
+  td.rp .pg { display:flex; }
+  td.rp .pg .pgt { display:inline; margin:0; }
   td.own .with { font-size:11.5px; color:var(--dim); margin-top:3px; }
   h3.rsp { margin:16px 0 6px; font-size:14px; font-weight:800; }
   h3.rsp .gc { font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }
@@ -174,7 +177,7 @@
         <h3>이경연 실장</h3>
         <table class="resp-tb">
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
-          <tr><td class="ri">매출(회원권+옵션)</td><td class="rc">월 매출목표 대비 달성률 · 옵션 포함</td><td class="rp"><span class="pg"><span class="bar"><i class="pg-mid" style="width:41%"></i></span><span class="pgn">41%</span> <span class="pgt">현재 1억 1,282만 / 목표 2억 7,500만 · 달성 41%</span></span></td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">매출(회원권+옵션)</td><td class="rc">월 매출목표 대비 달성률 · 옵션 포함</td><td class="rp"><span class="pg"><span class="bar"><i class="pg-mid" style="width:41%"></i></span><span class="pgn">41%</span> <span class="pgt">현재 1억 1,282만 / 목표 2억 7,500만</span></span></td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr class="rp-toggle"><td class="ri"><span class="rp-arrow">▸</span> 종합접수처(운영부)</td><td class="rc">1영업일 안 첫 처리 · 7일 안 닫기 · 담당 미배정 0</td><td class="rp bad">열린 4건 · 7일↑ 2건 · 담당 미배정 0건(운영부) · 분실물 보관 22건 별도</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr class="rp-detail" hidden><td colspan="5"><table><tr><th>번호</th><th>분류</th><th>접수자</th><th>전달 대상</th><th>경과</th><th>제목</th><th>처리메모</th></tr><tr><td>#RECEPTION-124</td><td>컴플레인 접수</td><td>회원</td><td>김남욱</td><td class="age old">23일</td><td title="스트레칭 존 앞에 케이블 머신 앵클 스트랩이 없어진지 꽤 되었는데,
 구매를 해주셔야 할 것 같다!
@@ -269,7 +272,7 @@
         <h3>나우열M</h3>
         <table class="resp-tb">
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
-          <tr><td class="ri">파트너팀 매출 관리</td><td class="rc">월 매출목표 대비 달성률 · 파트너팀=강습 전체</td><td class="rp"><span class="pg"><span class="bar"><i class="pg-low" style="width:30%"></i></span><span class="pgn">30%</span> <span class="pgt">현재 1억 662만 / 목표 3억 6,050만 · 달성 30%</span></span></td><td class="rg">—</td><td class="rf">매출보고 8건 현황 회신 대기(9/11 요청)</td></tr>
+          <tr><td class="ri">파트너팀 매출 관리</td><td class="rc">월 매출목표 대비 달성률 · 파트너팀=강습 전체</td><td class="rp"><span class="pg"><span class="bar"><i class="pg-low" style="width:30%"></i></span><span class="pgn">30%</span> <span class="pgt">현재 1억 662만 / 목표 3억 6,050만</span></span></td><td class="rg">—</td><td class="rf">매출보고 8건 현황 회신 대기(9/11 요청)</td></tr>
           <tr><td class="ri">인사(CHRO) — 업무·결재 SSOT 운영</td><td class="rc">진행중·보류·기한 지난 행 정리 · 중복 행 0</td><td class="rp bad">진행중 10건 · 보류 0건 · 기한 지난 것 0건 · 중복 1건 · 전체 85건</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">매출·지출(CFO) — 체계·시스템 구축</td><td class="rc">매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도</td><td class="rp">미수집(자동 집계 원장 없음)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">소통</td><td class="rc">확인요청 회신율 · 최장 경과일</td><td class="rp">회신율 29/37(78%) · 최장경과 32일 · 35일↑ 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
