@@ -76,8 +76,20 @@ td.area{white-space:nowrap;font-weight:700;}
 
   <div class="stats">
     <div class="stat"><div class="lb">진척</div><div class="vl" id="statProgress">—</div></div>
-    <div class="stat"><div class="lb">서버 원천 전환</div><div class="vl" id="statOrigin">—</div></div>
+    <div class="stat"><div class="lb">구글 의존 화면</div><div class="vl" id="statOrigin" style="font-size:20px;">—</div></div>
     <div class="stat"><div class="lb">다음</div><div class="vl" id="statNext" style="font-size:16px;">—</div></div>
+  </div>
+
+  <!-- 구글 의존 실측 — scripts/gas_dependency_scan.py 가 status/gas_dependency.json 을 쓴다.
+       위 statOrigin 숫자와 아래 목록은 전부 이 파일에서 나온다(손으로 세지 않는다). -->
+  <div class="card">
+    <div class="card-title">구글 의존 화면 목록<span class="stag" id="gasDepTag">삭제 조건: 이 목록 0장 + 서버 쪽 구글 호출 0건 · 3일 유지 — 불러오는 중…</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>경로</th><th>라인</th><th>상태</th></tr></thead>
+        <tbody id="gasDepBody"><tr><td colspan="3" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="card">
@@ -258,13 +270,12 @@ function render(d){
      전에는 summary 칸에 손으로 적은 값을 그대로 띄웠는데, 표는 09-11 까지 갔는데 숫자는
      09-08(52% · 원천 0/9)에 멈춰 있었다. 손으로 적는 값은 반드시 낡는다 — 세는 쪽으로 바꾼다. */
   var nOrigin = rows.filter(function(r){ return r.stage === '원천 전환'; }).length;
-  var nMirror = rows.filter(function(r){ return r.stage === '거울'; }).length;
   var nTotal  = rows.length;
-  var nNot    = nTotal - nOrigin - nMirror;
   document.getElementById('statProgress').textContent =
     nTotal ? (Math.round(nOrigin / nTotal * 100) + '%') : '—';
-  document.getElementById('statOrigin').textContent =
-    nTotal ? (nOrigin + '/' + nTotal + ' (거울 ' + nMirror + ' · 시작 전 ' + nNot + ')') : '—';
+  // statOrigin 은 아래 renderGasDep() 이 실측(status/gas_dependency.json)으로 채운다.
+  // 여기서는 옛 방식(영역 표 줄 수 비율)을 못 읽었을 때만 쓰는 대체값으로 저장해 둔다.
+  window._oldRatio = nTotal ? (nOrigin + '/' + nTotal) : '—';
   var nextRow = rows.filter(function(r){ return r.stage !== '원천 전환'; })[0];
   document.getElementById('statNext').textContent =
     nextRow ? ((nextRow.area || nextRow.name || '') + (nextRow.switch_date ? ' — ' + nextRow.switch_date : '')) : '남은 것 없음';
@@ -323,6 +334,30 @@ function renderBlockers(d){
   document.getElementById('blkDoc').textContent = d.blockers_doc || '';
 }
 
+function renderGasDep(d){
+  var gasOnly = d.list_gas_only || [];
+  var both = d.list_both || [];
+  var total = d.screens_total || 0;
+  var depCount = gasOnly.length + both.length;
+  var ratioSmall = window._oldRatio ? ' <small style="color:var(--dim-mid);font-size:12px;">(옛 줄 수 비율 ' + esc(window._oldRatio) + ')</small>' : '';
+  document.getElementById('statOrigin').innerHTML =
+    depCount + '장(구글만 ' + gasOnly.length + ' · 폴백 ' + both.length + ') / 전체 ' + total + '장' + ratioSmall;
+  document.getElementById('gasDepTag').textContent =
+    '삭제 조건: 이 목록 0장 + 서버 쪽 구글 판정 0건 · 3일 유지 — 화면 실측 ' + (d.generated_at || '');
+  // 서버 쪽 숫자는 서버 크론(gas_calls_24h.py · 매시)이 같은 폴더에 쓴다 — 판정(의존)과 되밀기(사본 유지)를 가른다.
+  fetch('../status/gas_calls_24h.json?cb=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(g){
+    if (!g) return;
+    document.getElementById('gasDepTag').textContent += ' · 서버 쪽 24시간: 구글 판정 ' + g.gas_judged_24h + '건(' + (g.judged_actions || []).join('·') + ') · 되밀기 ' + g.pushback_24h + '건(사본 유지용 · 삭제 날 같이 끔)';
+  }).catch(function(){});
+  var body = document.getElementById('gasDepBody');
+  var list = gasOnly.map(function(r){ return {path:r.path, owner:r.owner_line, st:'구글만'}; })
+    .concat(both.map(function(r){ return {path:r.path, owner:r.owner_line, st:'폴백'}; }));
+  if(!list.length){ body.innerHTML = '<tr><td colspan="3" class="dim">구글 의존 화면이 없습니다.</td></tr>'; return; }
+  body.innerHTML = list.map(function(r){
+    return '<tr><td class="area"><code>' + esc(r.path) + '</code></td><td>' + esc(r.owner) + '</td><td>' + esc(r.st) + '</td></tr>';
+  }).join('');
+}
+
 function loadSeed(){
   try{
     var el = document.getElementById('seed');
@@ -339,6 +374,14 @@ fetch('../status/aws_migration.json?cb=' + Date.now(), {cache:'no-store'})
     var seed = loadSeed();
     if(seed){ render(seed); renderAreas(seed); renderBlockers(seed); }
     else { fail('원천을 못 읽음'); }
+  });
+
+fetch('../status/gas_dependency.json?cb=' + Date.now(), {cache:'no-store'})
+  .then(function(r){ if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+  .then(function(d){ renderGasDep(d); })
+  .catch(function(){
+    document.getElementById('statOrigin').textContent = '실측 못 읽음';
+    document.getElementById('gasDepBody').innerHTML = '<tr><td colspan="3" class="err">status/gas_dependency.json 을 못 읽음 — scripts/gas_dependency_scan.py 로 다시 생성</td></tr>';
   });
 </script>
 <script src="../_assets/page_ping.js" defer></script>

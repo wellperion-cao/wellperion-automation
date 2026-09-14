@@ -132,6 +132,7 @@ def _selftest() -> None:
 
     os.environ.pop("WP_COMMIT_MESSAGE", None)
     os.environ.pop("WP_DOMAIN_FORCE", None)
+    os.environ["GIT_COMMITTER_NAME"] = "Wellperion GM"   # 나우열M PC(user.name 나우열)에서도 ①~④ 가 같은 답을 내게 고정(2026-09-14 CFO 발견) · ⑤ 가 끝에 지운다
     try:
         # ① cfo 파일 수정 → 차단
         assert main(["--paths", cfo_path, "--message", "그냥 수정"]) == 1, "① cfo 파일 수정이 안 막혔다"

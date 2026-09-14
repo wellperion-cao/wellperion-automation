@@ -113,12 +113,30 @@ function doGet(e) {
   // 보고 범위 통째 읽기 — ERP 「일일 운영보고」 화면이 시트 캡처 대신 값을 받아 직접 그린다.
   //   (GM 지시 2026-08-28: "운영 현황 상세에 버튼 누르면 지금 나오는 보고시트처럼 정리해서")
   //   읽기 전용이고 범위는 09:30 보고가 찍는 그 범위(H2:S21)로 고정한다 — 시트 다른 곳은 안 준다.
+  /* 탭 목록·gid 조회 (읽기 전용) — 2026-09-14 시포.
+     강습 세션 수를 세려면 강습 스케줄 스프레드시트의 탭을 읽어야 하는데, GM 이 준 것은 gid 뿐이고
+     dump 는 탭 이름만 받는다. 이름을 맞히려 여러 번 두드리는 대신 목록을 한 번에 받는다.
+     값은 주지 않는다 — 이름·gid·행열 수만. */
+  if (p.sheets) {
+    var lsSS = _ss(p.file);
+    return _json({ ok: true, sheets: lsSS.getSheets().map(function(sh){
+      return { name: sh.getName(), gid: sh.getSheetId(), rows: sh.getLastRow(), cols: sh.getLastColumn() };
+    }) });
+  }
+  /* dump 에 gid 를 허용한다 — 사람이 주소창에서 복사해 오는 값이 gid 이기 때문이다.
+     sheet(이름)가 있으면 그쪽이 먼저다(기존 호출부 무영향). */
   if (p.dump) {
     // sheet·range 를 주면 같은 파일의 다른 탭(일자탭 등)도 읽는다 — 읽기 전용이고 400칸으로 막는다.
     // 어느 칸이 어디서 오는지 사람이 시트를 열어 확인해 주던 것을 없애려고 열었다(2026-08-28).
-    var dsh = p.sheet ? _ss(p.file).getSheetByName(p.sheet) : _sheet(p.file);
+    var dsh = null;
+    if (p.sheet) dsh = _ss(p.file).getSheetByName(p.sheet);
+    else if (p.gid) {
+      var gg = String(p.gid);
+      _ss(p.file).getSheets().forEach(function(sh){ if (String(sh.getSheetId()) === gg) dsh = sh; });
+      if (!dsh) return _json({ ok: false, error: 'gid not found: ' + gg });
+    } else dsh = _sheet(p.file);
     if (!dsh) return _json({ ok: false, error: 'sheet not found: ' + p.sheet });
-    var dr = dsh.getRange(p.sheet ? (p.range || 'A1:H20') : DUMP_RANGE);
+    var dr = dsh.getRange((p.sheet || p.gid) ? (p.range || 'A1:H20') : DUMP_RANGE);
     if (dr.getNumRows() * dr.getNumColumns() > 400) return _json({ ok: false, error: 'range too large' });
     var dv = dr.getDisplayValues();
     var dr0 = dr.getRow(), dc0 = dr.getColumn(), cells = {};

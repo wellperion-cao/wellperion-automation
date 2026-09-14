@@ -272,9 +272,12 @@ def run_assign_brief(send: bool = False, dry_run: bool = False) -> int:
 # ── ③ 오늘 올라온 업무(업무 SSOT 신규 행) ────────────────────────────────────
 def pick_new_rows(rows: list[dict], notified: dict[str, str], today: str) -> list[dict]:
     """생성일(KST)=오늘 · 생성자가 AI 가 아닌 행 · 아직 안 알린 것. 생성자 빈칸=사람(페이지 직접 등록)."""
+    # 나우열M 라인(인사·재무) 행은 카톡 방(★중간관리자·★운영부)에 싣지 않는다 — 나우열M 소통은 텔레그램
+    #   업무관리 방 한 곳(웰리·시로·나우열M)뿐이다(GM 2026-09-14 「운영부 카톡방에 우열M 전달을 왜 해? 업무관리방에만」).
     return [r for r in rows
             if _kst_day(r.get("생성일")) == today
             and not _AI_RE.search(str(r.get("생성자") or ""))
+            and "나우열" not in f'{r.get("담당자") or ""} {r.get("생성자") or ""}'
             and str(r.get("id") or "").strip() not in notified]
 
 
@@ -436,7 +439,10 @@ def _selfcheck() -> None:
     assert build_messages([], gm, today="2026-09-03")[0].startswith("📋 9/3 GM 결재 완료 2건\n▪ 을")
     # ③ 신규 등록 — 생성일 KST(UTC 15:00Z = 다음날 00:00 KST)·AI 생성자 제외·지문 제외
     nr = [
-        {"id": "N1", "업무명": "추석 선물", "담당자": "나우열M", "생성자": "", "생성일": "2026-09-02T15:30:00.000Z", "종료일": "2026-09-05T15:00:00.000Z"},
+        {"id": "N1", "업무명": "추석 선물", "담당자": "윤병현AM", "생성자": "", "생성일": "2026-09-02T15:30:00.000Z", "종료일": "2026-09-05T15:00:00.000Z"},
+        # 나우열M 라인 행은 카톡 통에서 뺀다(GM 2026-09-14) — 담당자든 생성자든
+        {"id": "N5", "업무명": "인사 행", "담당자": "나우열M", "생성자": "", "생성일": "2026-09-03T01:00:00.000Z"},
+        {"id": "N6", "업무명": "재무 행", "담당자": "x", "생성자": "나우열M", "생성일": "2026-09-03T01:00:00.000Z"},
         {"id": "N2", "업무명": "AI 배", "담당자": "웰리", "생성자": "AI 웰리", "생성일": "2026-09-03T01:00:00.000Z"},
         {"id": "N3", "업무명": "어제 건", "담당자": "x", "생성자": "김남욱GM", "생성일": "2026-09-02T10:00:00.000Z"},
         {"id": "N4", "업무명": "이미 알림", "담당자": "x", "생성자": "김남욱GM", "생성일": "2026-09-03T01:00:00.000Z"},
@@ -444,7 +450,7 @@ def _selfcheck() -> None:
     picked = pick_new_rows(nr, {"N4": "2026-09-03"}, "2026-09-03")
     assert [r["id"] for r in picked] == ["N1"], picked
     t = build_new_rows_message(picked, "2026-09-03").splitlines()
-    assert t[0] == "📝 9/3 오늘 올라온 업무 1건" and t[1] == "▪ 추석 선물" and t[2] == "   담당 나우열M · 마감 9/6" and t[-1] == SIGNOFF, t
+    assert t[0] == "📝 9/3 오늘 올라온 업무 1건" and t[1] == "▪ 추석 선물" and t[2] == "   담당 윤병현AM · 마감 9/6" and t[-1] == SIGNOFF, t
     assert build_new_rows_message([], "2026-09-03") == ""
     t9 = build_new_rows_message([dict(nr[0], id=f"N{i}") for i in range(9)], "2026-09-03").splitlines()
     assert len(t9) == 10 and t9[7] == "▪ 외 3건", t9

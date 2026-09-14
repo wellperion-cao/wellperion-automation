@@ -111,11 +111,31 @@
   .fnote{font-size:10.3px;color:#7A838B;margin-top:5px;line-height:1.45;}
 
   /* 입장객 막대 */
-  .vrow{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.8px;}
-  .vrow .vl2{width:56px;color:#3C464F;}
-  .vrow .vbar{flex:1;height:11px;background:#F0F3F7;border:1px solid var(--line);}
+  /* 값이 작은 날(0명)에는 막대가 안 보이므로 숫자가 읽히는 크기여야 한다 — 2026-09-14 GM 지적
+     「수치 보이지도 않는데 · 1면 우측아래」. 글자·막대를 키우고 숫자 자리를 넓혔다. */
+  .vrow{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12.4px;}
+  .vrow .vl2{width:60px;color:#3C464F;font-weight:600;}
+  .vrow .vbar{flex:1;height:13px;background:#F0F3F7;border:1px solid var(--line);}
   .vrow .vbar i{display:block;height:100%;background:var(--navy);}
-  .vrow .vn{width:44px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+  .vrow .vn{width:56px;text-align:right;font-size:13.5px;font-weight:800;color:var(--ink);
+    font-variant-numeric:tabular-nums;}
+  /* 값이 없는 칸 — 빈 상자만 남기지 않고 없다는 사실을 한 줄로 말한다. */
+  .emptynote{color:#98A1A9;font-size:11.4px;}
+  /* 휴관일 안내 — 0 이 이상이 아니라는 것을 그 자리에서 말한다. */
+  .closednote{background:#F4F7FA;border-left:3px solid var(--navy);padding:5px 9px;margin-bottom:7px;
+    font-size:11.4px;line-height:1.5;color:#3C464F;}
+  .closednote b{color:var(--navy);}
+
+  /* 2면 맨 아래 띠(강습 종목별·유입 경로) — 그날 일이 아니라 누적이라 자리를 줄여 얇게 깐다
+     (GM 지시 2026-09-14 「종목 및 유입경로는 별도로 축소」). 폭을 다 쓰므로 막대는 더 길다. */
+  .lesson-strip .bd{padding:6px 11px 7px;}
+  /* 이름표는 한 줄로 길게 — 「네이버 검색·플레이스」가 세 줄로 접히면서 줄 높이를 밀어 올렸다
+     (GM 지시 2026-09-14 「유입경로도 띄어쓰기 하지말고 길쭉하게 한 줄로」). */
+  .lesson-strip .vrow .vl2{width:auto;min-width:118px;white-space:nowrap;}
+  .lesson-strip .vrow{padding:1.5px 0;font-size:11.4px;gap:8px;}
+  .lesson-strip .vrow .vbar{height:9px;}
+  .lesson-strip .vrow .vn{font-size:12px;width:46px;}
+  .lesson-strip .vrow2{gap:0 26px;}
 
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
@@ -206,6 +226,16 @@
     font-size:10.6px;line-height:1.5;color:#48525B;display:flex;gap:22px;}
   .foot div{flex:1;}
   .foot b{color:var(--ink);}
+
+  /* 브랜드 띠 — 매일 나가는 보고라 우리가 무엇을 하는 곳이고 지금 무엇에 집중하는지가
+     같이 보이게 한다(GM 지시 2026-09-14). 세 장 아래에 같은 줄로 들어간다. */
+  .bband{margin-top:8px;border-top:2px solid var(--ink);padding-top:6px;
+    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    font-size:11px;line-height:1.5;color:#48525B;}
+  .bband .sl{font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:.01em;}
+  .bband .pos{color:#6B7680;}
+  .bband .fc{margin-left:auto;text-align:right;}
+  .bband .fc b{color:var(--ink);}
   .err{background:#FBEDED;border:1.5px solid var(--bad);color:var(--bad);padding:7px 13px;
     font-size:12.5px;font-weight:700;margin-top:10px;}
 
@@ -379,12 +409,15 @@
         <div class="bd" id="memberFlow"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
-      <div class="sec">
+      <!-- 남은 높이는 이 칸이 먹는다 — 아래 「금일 예상 컨택·로스자」는 대개 비어 있어서, 그쪽에
+           flex 를 주면 오른쪽 열 아래 1/4 이 빈 상자로 남았다(2026-09-14 GM 지적). 컨택 명단이
+           길어지는 날에는 아래가 자라고 이 칸이 줄어든다. -->
+      <div class="sec" style="flex:1;min-height:0;">
         <h2>어제 다녀가신 분</h2>
         <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
-      <div class="two" style="flex:1;min-height:0;">
+      <div class="two">
         <div class="sec">
           <h2 id="t-contact">금일 예상 컨택</h2>
           <div class="bd"><pre class="txt" id="contact">—</pre></div>
@@ -428,6 +461,17 @@
     <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
   </div>
 
+  <!-- 브랜드 띠(세 장 공통) — GM 지시 2026-09-14 「우리가 지금 집중하는 것, 슬로건도 계속 나오게」.
+       문구 정본: 슬로건·포지셔닝 = ssot/canon_values.json(slogan_kr·positioning_kr · 이 폴더는
+       그 값의 allow_globs 안이다) · 미션 = CLAUDE.md 회사 정보 · 지금 집중 = status/
+       monthly_ops_plan.json 의 half_year_review(headline·directions 3축). 원천이 바뀌면 세 장을
+       같이 고친다(같은 줄이 세 번 들어간다 — 장마다 따로 쓰지 않는다). -->
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
+  </div>
+
 </div>
 
 <div class="page" id="sheet2">
@@ -458,38 +502,58 @@
        1페이지에 매출 및 회원 현황보고에 있으니". 뺀 것 넷 — ①오늘·이번 달 움직임(1페이지 「회원 드나듦」과
        같은 숫자) ②이달 등록 내역(기준일 등록만 본다) ③회원 구성 상세(1페이지 「회원 구성」과 중복)
        ④이탈·갱신 임박(위 「오늘 챙길 것」 갱신 임박 칸이 같은 명단을 이미 보여 준다). -->
-  <div class="body">
+  <!-- ★2026-09-14 GM 지시로 이 장을 「등록 띠 → 문의 띠 → 종목·유입 경로(축소)」 세 단으로 세웠다.
+       원문 ①"등록하는 사람이 은근히 많아서 멤버십 좌측 / 강습(성인&유소년) 우측으로 해야하고,
+       종목 및 유입경로는 별도로 축소해서 체크해봐야할 것 같은데?" ②"문의 상세 내역은 오늘 기준으로만
+       하고 … 멤버십 + 강습 등록건이랑 교체해야할듯, 등록건이 더 많을 거야" — 그래서 등록을 맨 위 큰
+       자리에 두고 문의를 아래로 내렸다. -->
+  <!-- 등록 띠 — 기준일 하루치. 왼쪽 멤버십(등록이 더 많아 넓은 칸) · 오른쪽 강습.
+       원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
+  <div class="body" id="p2regband" style="flex:1.35;">
     <div class="col">
-      <div class="sec">
-        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <!-- 문의 상세 내역 — 이 장의 「문의」 쪽 본문이다. 퍼널이 어디서 빠지는지를 말하면
-           이 표가 그래서 지금 누구를 챙겨야 하는지를 말한다(GM 지시 2026-09-14). -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의 상세 내역 — 최근 문의 · 아직 안 챙긴 분 먼저</h2>
-        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-    </div>
-
-    <div class="col">
-      <!-- 등록 상세 — 기준일 하루치만. 원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
-      <div class="sec">
         <h2 id="p2memh">오늘 등록 — 멤버십</h2>
         <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
-      <div class="sec">
+    </div>
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
         <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>강습 종목별 · 유입 경로 (누적)</h2>
-        <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
 
+  <div class="body" id="p2inqband" style="flex:1;margin-top:11px;">
+    <div class="col">
+      <!-- 문의 상세 내역 — 오늘 들어온 문의와 아직 연락 못 한 분. 이름·종목·상품이 한 줄에
+           들어가야 해서 넓은 왼쪽 칸에 둔다. -->
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의 상세 내역 — 오늘 문의 · 아직 안 챙긴 분 먼저</h2>
+        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 종목·유입 경로 — 그날 일이 아니라 누적 흐름이라 맨 아래 얇은 띠로 내렸다(GM 지시 2026-09-14). -->
+  <div class="sec lesson-strip" style="margin-top:11px;">
+    <h2>강습 종목별 · 유입 경로 (누적)</h2>
+    <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+  </div>
+
   <div class="audit wait" id="audit2">자체 점검 중…</div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
+  </div>
 
 </div>
 
@@ -546,6 +610,12 @@
   <div class="foot">
     <div><b>이 장이 보는 것</b> — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 운영 현황 칸과 업무 SSOT입니다. 값을 여기서 다시 계산하지 않습니다.</div>
+  </div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
   </div>
 
 </div>
@@ -845,6 +915,14 @@ function runAudit(){
   add('fail', '로스자 칸 최신', !!ls && _sameMD(ls, yst),
       ls ? (ls.m + '/' + ls.d + ' 기준 — 어제가 아닙니다') : '날짜가 없습니다');
 
+  /* ⑥-2 맨 위 네 칸 — 2026-09-14 실사고: 렌더가 없는 이름(yst)을 불러 도중에 멈추는 바람에
+     「목표 달성률」·「총 회원수」가 「—」인 채로 매일 보고 사진에 찍혀 나갔는데, 이 점검은
+     14/14 통과라고 말하고 있었다. 화면 맨 위가 비면 그건 실패다. */
+  var hlEmpty = Array.prototype.filter.call(document.getElementById('headline').children, function(b){
+    return !String(b.querySelector('.v').textContent || '').replace(/[—–-]/g, '').trim();
+  }).map(function(b){ return b.querySelector('.t').textContent; });
+  add('fail', '맨 위 네 칸 채워짐', hlEmpty.length === 0, hlEmpty.join(' · ') + ' 이 비어 있습니다');
+
   // ⑦ 강습 신규·재등록 — 도착 여부 + 팀별 금액이 매출표와 맞는가(환불 있는 팀은 그만큼 차이 난다)
   var LT = { '수영팀':8, 'P.T팀':9, '골프팀':10, '스쿼시팀':11, '체조팀':12, 'P.L팀':13,
              '뮤지컬팀':14, 'GXE(파트너팀)':15 };
@@ -1017,7 +1095,10 @@ function renderSheet(c){
                s.textContent = sub; }
     else if (s) { s.remove(); }
   }
-  setHl(0, cellMoney(c.I4), isClosedDay(yst) ? ('휴관일 — ' + closedReason(yst)) : '전날 하루');
+  // ★ yst → _yst (2026-09-14 실측). 이 줄이 없는 이름을 부르는 바람에 renderSheet 가 여기서
+  //    멈췄고, 뒤따르는 목표 달성률·총 회원수·금일 예상 컨택·로스자·컨택 칸 제목이 통째로 처음
+  //    상태(「—」)로 남아 매일 그대로 보고 사진에 찍혔다. 어제 날짜는 위에서 _yst 로 잡아 둔다.
+  setHl(0, cellMoney(c.I4), isClosedDay(_yst) ? ('휴관일 — ' + closedReason(_yst)) : '전날 하루');
   setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
@@ -1026,8 +1107,15 @@ function renderSheet(c){
   var rc = rateClass(c.L4);
   hl[2].querySelector('.v').className = 'v ' + rc;
 
-  document.getElementById('contact').textContent = c.I16 || '—';
-  document.getElementById('loss').textContent = c.I18 || '—';
+  // 빈 칸에 「—」만 두면 무슨 뜻인지 모른다 — 없다는 사실을 말로 적는다(GM 지적 2026-09-14).
+  function setTxt(id, val, empty){
+    var el = document.getElementById(id), t = String(val || '').trim();
+    if (/^[-–—]$/.test(t)) t = '';          // 시트가 빈 칸에 줄표를 적어 두기도 한다
+    el.textContent = t || empty;
+    el.className = t ? 'txt' : 'txt emptynote';
+  }
+  setTxt('contact', c.I16, '오늘 잡힌 컨택이 없습니다');
+  setTxt('loss', c.I18, '어제 나가신 분이 없습니다');
   if (c.H16) document.getElementById('t-contact').textContent =
     c.H16.replace(/\n/g,' ').replace(/^📝\s*/, '').replace(/\s*\[환불자 내용 기록\]\s*$/, '');
 }
@@ -1168,6 +1256,15 @@ function load(){
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && d.error) || '응답 형식이 다릅니다');
       RAW.cells = d.cells || {};
+      // 맨 위 3·4칸(목표 달성률·총 회원수)을 먼저 박아 둔다 — 아래 renderSheet 가 같은 값으로
+      // 다시 그리지만, 날짜 보기가 0·1칸만 덮고 지나가면 이 둘이 처음 상태 「—」로 남아
+      // 09:00 자동 보고 1면 맨 위가 빈 채로 찍혀 나갔다(2026-09-14 실측 · 아래 표에는 있었다).
+      (function(){
+        var hlf = document.getElementById('headline').children;
+        [[2, RAW.cells.L4], [3, RAW.cells.N2]].forEach(function(p){
+          if (String(p[1] || '').trim()) hlf[p[0]].querySelector('.v').textContent = String(p[1]).trim();
+        });
+      })();
       renderSheet(RAW.cells);
       // 이번 달 「집계중」 막대를 기본 화면에서도 채운다(GM 지시 2026-09-11). 연간 추이의 원천인
       // '26년 매출 분석' AV열은 마감된 달만 값을 갖기 때문에, 이번 달은 항상 빈 막대로 남아 있었다.
@@ -1382,6 +1479,16 @@ function renderPage3(c){
       });
       if (open) out += '</div>';
       el.innerHTML = out;
+    }
+    /* 휴관일이면 그 사실을 이 장에도 적는다 — 점검 0/0·0/86 이 「아무도 안 했다」로 읽히면 안 된다
+       (GM 지시 2026-09-14 「운영현황 관련해서는 13일 휴관일이라는 것 등은 챙겨줘야해」).
+       휴관 정본 = ssot/closed_days.json — 1면과 같은 판정을 쓴다. */
+    var _y3 = new Date(Date.now() - 86400000);
+    if (isClosedDay(_y3)) {
+      var _md3 = (_y3.getMonth() + 1) + '/' + _y3.getDate();
+      if (head) head.textContent += ' · 휴관일';
+      el.innerHTML = '<div class="closednote">' + _md3 + ' 은 <b>휴관일</b>입니다(' + esc(closedReason(_y3)) +
+        ') — 아래 점검이 0 인 것은 문을 닫았기 때문이고, 빠뜨린 것이 아닙니다.</div>' + el.innerHTML;
     }
   }
   [['p3hr', c.I20, '인사·파트너팀 진행사항이 없습니다'],
@@ -1667,9 +1774,15 @@ function renderP2Contract(c, dayLabel){
   var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh');
   if (h1) h1.textContent = dayLabel + ' 등록 — 멤버십';
   if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (성인 · 유소년)';
-  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', readContracts(c, ['A','B','C','D','E','F','G']));
+  var memRows = readContracts(c, ['A','B','C','D','E','F','G']);
+  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows);
   if (les) {
     var rows = readContracts(c, ['H','I','J','K','L','M','N']);
+    /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
+       그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
+       (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
+    var band = document.getElementById('p2regband');
+    if (band) band.style.flex = (memRows.length + rows.length) ? '1' : '0.42';
     var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
     var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
     les.innerHTML = '<div style="display:flex;gap:14px">' +
@@ -1798,6 +1911,14 @@ function onDatePick(silent){
       hl[1].querySelector('.t').textContent = '이번 달 누적';
       var s0 = hl[0].querySelector('.s'); if (s0) s0.textContent = dayLabel + ' 매출';
       var s1 = hl[1].querySelector('.s'); if (s1) s1.textContent = dayLabel + '까지 누적';
+      // 3·4칸(목표 달성률·총 회원수)은 날짜와 무관한 이번 달·현재 값인데, 날짜 보기가 0·1칸만
+      // 덮으면서 이 둘이 처음 상태 「—」로 남았다. 2026-09-14 실측: 자동 보고 1면 맨 위 두 칸이
+      // 빈 채로 찍혀 나갔다(아래 표에는 35.94%·1,027명이 그대로 있었다). 보고탭 값으로 채운다.
+      var _rc = (window.RAW && RAW.cells) || null;
+      if (_rc) {
+        if (String(_rc.L4 || '').trim()) hl[2].querySelector('.v').textContent = String(_rc.L4).trim();
+        if (String(_rc.N2 || '').trim()) hl[3].querySelector('.v').textContent = String(_rc.N2).trim();
+      }
       hl[0].style.opacity = hl[1].style.opacity = ok ? '' : '.45';
       if (!ok) e.innerHTML = '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn);">' + staleMsg + '</div>';
       // 세 조각 중 뒷조각이 빠지면 21행 아래 계약이 명단에서 조용히 사라진다 — 그 사실을 밝힌다.
@@ -1983,14 +2104,21 @@ function renderP2Inq(d){
   if (!d || !d.data) { el.innerHTML = '<div class="err">문의 목록을 못 읽었습니다 — 문의 시트 조회 실패</div>'; return; }
   var rows = d.data.filter(function(r){ return r.name; });
   rows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+  /* 오늘 들어온 문의 + 아직 연락 안 한 분만 본다(GM 지시 2026-09-14 「문의 상세 내역은 오늘
+     기준으로만 하고, 아직 안 챙긴 분도 체크해준 건 좋아」). 종전에는 최신순 15건이라 7월 문의가
+     매일 같은 자리에 떠 있었다. */
+  var _n = new Date(), _p = function(v){ return (v < 10 ? '0' : '') + v; };
+  var todayKey = _n.getFullYear() + '-' + _p(_n.getMonth() + 1) + '-' + _p(_n.getDate());
   var open = rows.filter(inqOpenUncontacted);
-  var rest = rows.filter(function(r){ return !inqOpenUncontacted(r); });
-  var show = open.concat(rest).slice(0, 15);
+  var today = rows.filter(function(r){
+    return !inqOpenUncontacted(r) && String(r.timestamp || '').substring(0, 10) === todayKey;
+  });
+  var show = open.concat(today).slice(0, 15);
   if (!show.length) { el.innerHTML = '<div class="mrow"><span class="lb">문의가 없습니다</span></div>'; return; }
   el.innerHTML =
     '<div class="fnote" style="margin-top:0;font-size:11px;color:var(--ink)">전체 <b>' + p2num(rows.length) +
       '건</b> · 아직 연락 안 한 분 <b class="' + (open.length ? 'inq-open' : '') + '">' + p2num(open.length) + '명</b>' +
-      ' · 아래 ' + show.length + '건 (안 챙긴 분 먼저 · 그다음 최신순)' +
+      ' · 아래 ' + show.length + '건 (안 챙긴 분 먼저 · 그다음 오늘 문의 ' + today.length + '건)' +
       ' <a href="../../cpo/member/membership.html" target="_blank" rel="noopener" ' +
       'style="font-size:10.5px;font-weight:700;color:var(--navy);text-decoration:underline" class="no-print">문의 회원관리 열기</a></div>' +
     '<div class="inqlist">' + show.map(function(r){

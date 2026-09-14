@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -30,10 +31,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-# ERP 도메인 기준 — ERP_API_ON=true 가 되어 서버 API 먼저 시도, nginx 인증 없으면 GAS 폴백.
-# 화면 자체 점검(__REPORT_READY.ok)이 통과하면 캡처 허용.
-URL = ("https://erp.wellperion.com/coo/report/"
-       "%EB%A7%A4%EC%B6%9C%ED%9A%8C%EC%9B%90%ED%98%84%ED%99%A9%EB%B3%B4%EA%B3%A0.html")
+# 캡처 주소 = GitHub Pages 공개 사본(2026-09-14 실측 · 시포 라인). erp.wellperion.com 판은 로그인 벽이라
+# 봇 브라우저가 열면 로그인 화면만 나오고 __REPORT_READY 가 영영 안 뜬다(GM PC 90초 타임아웃 · 서버 rc=1).
+# 공개 사본은 같은 파일(발행 루트 = 가이드 폴더)이고 GAS 폴백으로 데이터가 채워진다. 바꾸려면 env REPORT_CAPTURE_URL.
+_PAGE = "%EB%A7%A4%EC%B6%9C%ED%9A%8C%EC%9B%90%ED%98%84%ED%99%A9%EB%B3%B4%EA%B3%A0.html"
+URL = os.environ.get("REPORT_CAPTURE_URL") or (
+    "https://wellperion-cao.github.io/wellperion-automation/coo/report/" + _PAGE)
+# 1~3면 = 화면의 .page 세 덩어리(id) — 1면 매출 및 회원 현황 보고 · 2면 문의 등록 상세 · 3면 운영 현황(GM 지시 2026-09-14).
+PAGES3 = ("sheet", "sheet2", "sheet3")
 
 # A3 가로 = 1587x1123px(.page 와 같은 값). 화면 폭이 이보다 좁으면 브라우저가 줄여 그리므로 고정한다.
 VIEWPORT = {"width": 1660, "height": 1260}
@@ -51,7 +56,8 @@ def archive_dir() -> Path:
         return d
 
 
-def capture(check_only: bool = False) -> "tuple[int, str]":
+def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> "tuple[int, str]":
+    """pages 의 요소(id)마다 PNG 한 장. 성공 msg = 경로들을 '|' 로 이은 문자열(1면만이면 경로 하나)."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -84,20 +90,37 @@ def capture(check_only: bool = False) -> "tuple[int, str]":
             browser.close()
             return 0, f"자체 점검 통과({ready.get('checked')}항목){note}"
 
-        out = archive_dir() / f"매출회원현황보고_{datetime.now():%Y%m%d}.png"
-        page.locator("#sheet").screenshot(path=str(out))
+        # READY 뒤에도 늦게 오는 칸(일 단위·두 장부 대조 등)이 「불러오는 중…」으로 남은 채 찍히던 것(2026-09-14 실측)
+        # — 그 글자가 사라질 때까지 최대 60초 더 기다린다. 끝내 남으면 그대로 찍는다(사유는 그림에 보인다).
+        try:
+            page.wait_for_function("() => !document.body.innerText.includes('불러오는 중')", timeout=60_000)
+        except Exception:
+            pass
+
+        outs = []
+        for i, pid in enumerate(pages, start=1):
+            loc = page.locator("#" + pid)
+            if loc.count() == 0:
+                browser.close()
+                return 1, f"화면에 {i}면(#{pid})이 없습니다 — 화면 판이 낡았거나 id 가 바뀜"
+            suffix = "" if len(pages) == 1 else f"_{i}면"
+            out = archive_dir() / f"매출회원현황보고_{datetime.now():%Y%m%d}{suffix}.png"
+            loc.screenshot(path=str(out))
+            if not out.exists() or out.stat().st_size < 50_000:
+                browser.close()
+                return 1, f"{i}면 그림이 만들어지지 않았거나 너무 작습니다"
+            outs.append(str(out.resolve()))
         browser.close()
-        if not out.exists() or out.stat().st_size < 50_000:
-            return 1, "그림이 만들어지지 않았거나 너무 작습니다"
-        return 0, str(out.resolve())
+        return 0, "|".join(outs)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check-only", action="store_true", help="점검 결과만 보고 그림은 만들지 않는다")
+    ap.add_argument("--pages", type=int, default=1, choices=(1, 3), help="1=1면만(종전) · 3=1~3면 각각")
     args = ap.parse_args()
 
-    code, msg = capture(check_only=args.check_only)
+    code, msg = capture(check_only=args.check_only, pages=PAGES3 if args.pages == 3 else ("sheet",))
     if code:
         print(f"FAILED: {msg}")
         return 1

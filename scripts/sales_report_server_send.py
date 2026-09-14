@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""매출보고서 요약 — 09:20 KST 업무보고방(8254867551) 발송 (배1061 · 시토 · 2026-09-05).
+"""매출 및 회원 현황 보고 서버판 — 매일 09:00 업무보고방(8254867551)에 1~3면 사진으로 (배1061 · 시토 · 2026-09-05 → GM 지시 2026-09-14 개편).
+
+★2026-09-14 GM 지시(15:5x): 「서버판은 매일 아침 09:00(기존 09:30 카톡 30분 전) 업무보고방에 · 09:30 은 원래대로 ·
+9월 말까지 신뢰되면 10/1 부터 서버판으로 전환 · 숫자만 나오는 요약표(Pillow 폴백)는 삭제·금지 · 무조건 1~3면
+(매출 및 회원 현황 보고 / 문의 등록 상세 / 운영 현황)으로」.
+  · 그림은 GM PC 에서만 찍을 수 있다(playwright·크롬) — 서버엔 브라우저가 없다(rc=127 실측). 그래서 발송 주체가 갈린다:
+      GM PC 예약작업 Wellperion-SalesReport-Server-0900 (09:00) → 1~3면 사진 3장 (switch mode=gmpc_0900)
+      서버 cron 09:02 → 22칸 대조 한 줄(글)만 — 대조는 서버 DB(sales_cache)에서만 셀 수 있다(--check-line)
+  · 캡처 실패 = 사진 대신 「실패 사유 한 줄」을 같은 방에 보낸다. 요약표 폴백(render.render_png)은 더 이상 안 쓴다.
+  · 캡처 주소·3면 규약 = scripts/report_page_capture.py(PAGES3).
+
 
 ★정본 병합(GM 지시 2026-09-10) — 정본은 「매출 및 회원 현황보고」 화면(erp.wellperion.com/coo/
 report/매출회원현황보고.html)이다. 여기서 보내는 사진은 그 화면과 같은 계산(sales_report_render.
@@ -28,11 +38,73 @@ _DEPLOYED = Path("/srv/erp/api")
 ERP_API_DIR = _DEPLOYED if _DEPLOYED.is_dir() else (ROOT / "server" / "erp_api")
 sys.path.insert(0, str(ERP_API_DIR))
 sys.path.insert(0, str(ROOT / "scripts"))
-import sales_report_render as render  # noqa: E402
+
+
+def _render():
+    """서버 전용 계산기(sales_report_render → sync_sales → DB) — GM PC 엔 DB 드라이버가 없어 필요할 때만 읽는다."""
+    import sales_report_render as render  # noqa: WPS433
+    return render
+
+
 from tg_outbound_log import send as tg_send  # noqa: E402
 
 SWITCH_PATH = ROOT / "status" / "sales_report_server_switch.json"
-OUT_PNG = ROOT / "qa_screenshots" / "sales_report_server_sample.png"
+REPORT_ROOM = "8254867551"        # 업무보고방(@namuki_report_bot) — CLAUDE.md 0장
+SCREEN_URL = "https://erp.wellperion.com/coo/report/매출회원현황보고.html"
+PAGE_TITLES = ("매출 및 회원 현황 보고", "문의 등록 상세", "운영 현황")
+ON_SERVER = _DEPLOYED.is_dir()
+
+
+def _gm_pc_env():
+    """GM PC 실행 — 봇 토큰은 telegram_bot/.env(TELEGRAM_BOT_TOKEN · notify_gm_progress 와 같은 열쇠)."""
+    env = {}
+    try:
+        for line in (ROOT / "telegram_bot" / ".env").read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+    except Exception:
+        pass
+    return env.get("TELEGRAM_BOT_TOKEN", ""), REPORT_ROOM
+
+
+def _ref_date():
+    """보고 기준일 = 어제(KST) — 09:30 카톡 보고와 같은 기준."""
+    from datetime import datetime, timedelta, timezone
+    return (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+def send_three_pages(token, chat, paths, ref_date, note, dry_run=False):
+    """1~3면 사진 3장 — 1면 캡션에 제목·기준일·판 안내, 2·3면은 면 이름만."""
+    head = ("매출 및 회원 현황 보고 · 기준일 %s · 서버판 09:00(병행 · 10/1 전환 예정) · 정본 %s"
+            % (ref_date, SCREEN_URL))
+    caps = ["%s\n1/3 %s%s" % (head, PAGE_TITLES[0], note),
+            "2/3 %s · 기준일 %s" % (PAGE_TITLES[1], ref_date),
+            "3/3 %s · 기준일 %s" % (PAGE_TITLES[2], ref_date)]
+    ok_all, ids = True, []
+    for png, cap in zip(paths, caps):
+        if dry_run:
+            print("[dry-run] %s ← %s" % (cap.replace("\n", " / "), png))
+            continue
+        resp = tg_send(token, chat, cap, source="sales_report_server_send", photo=png, full_response=True)
+        ok = bool(isinstance(resp, dict) and resp.get("ok"))
+        ok_all = ok_all and ok
+        ids.append((resp.get("result") or {}).get("message_id") if isinstance(resp, dict) else None)
+    return ok_all, ids
+
+
+def _capture_pages(n):
+    """n면 캡처 — 실패는 (None, 사유). 요약표 폴백은 없다(GM 지시 2026-09-14)."""
+    try:
+        import report_page_capture as cap
+        code, msg = cap.capture(pages=cap.PAGES3 if n == 3 else ("sheet",))
+    except ImportError:
+        return None, "playwright 미설치"
+    except Exception as e:  # noqa: BLE001
+        return None, "%s: %s" % (type(e).__name__, str(e)[:160])
+    if code:
+        return None, msg
+    return msg.split("|"), ""
 
 
 def _switch_mode():
@@ -58,71 +130,90 @@ def write_cells(narrative):
         print("[I20·I21] %s 기입 %s" % (cell, "ok" if res.get("ok") else res))
 
 
-def _try_page_capture():
-    """playwright 캡처 시도. 실패(미설치·자체점검 불통과)하면 None 반환 → render_png 폴백."""
-    try:
-        import report_page_capture as cap
-        code, msg = cap.capture()
-        if code == 0:
-            print("[capture] 화면 캡처 성공 → %s" % msg)
-            return msg
-        print("[capture] 캡처 실패 → render_png 폴백: %s" % msg)
-    except ImportError:
-        pass   # playwright 미설치 — 정상 폴백
-    except Exception as e:
-        print("[capture] 예외 → render_png 폴백: %s" % e)
-    return None
 
 
 def main():
     if "--write-cells" in sys.argv:            # 08:05 cron — 발송 없이 I20·I21 시트 기입만
+        render = _render()
         render.load_env()
         write_cells(render.compute_narrative(render.datetime.now(render.KST).strftime("%Y-%m-%d")))
         return 0
+    dry_run = "--dry-run" in sys.argv
 
     mode = _switch_mode()
+    if mode == "gmpc_0900" and not ON_SERVER:
+        return gm_pc_0900(dry_run)
+    if mode == "gmpc_0900" and ON_SERVER:
+        return server_check_line(dry_run)
     if mode != "parallel":
-        print("[skip] switch mode=%s (parallel 아님 — 발송 안 함)" % mode)
+        print("[skip] switch mode=%s (parallel·gmpc_0900 아님 — 발송 안 함)" % mode)
         return 0
+    return legacy_parallel(dry_run)
 
-    report = render.build_report()                # 내부에서 load_env() 호출 → TG_BOT_TOKEN 등 os.environ 채워짐
+
+def gm_pc_0900(dry_run):
+    """GM PC 09:00 — 1~3면 사진 3장. 캡처가 안 되면 사진 대신 사유 한 줄."""
+    token, chat = _gm_pc_env()
+    if not token:
+        print("[fail] telegram_bot/.env TELEGRAM_BOT_TOKEN 없음")
+        return 1
+    paths, why = _capture_pages(3)
+    ref_date = _ref_date()
+    if not paths:
+        text = "매출 및 회원 현황 보고 서버판(09:00) — 오늘은 그림을 못 만들었습니다: %s · 09:30 카톡 보고는 그대로 나갑니다" % why
+        print("[fail] " + text)
+        if not dry_run:
+            tg_send(token, chat, text, source="sales_report_server_send", full_response=True)
+        return 1
+    ok, ids = send_three_pages(token, chat, paths, ref_date, "", dry_run=dry_run)
+    print("DONE: ok=%s ids=%s pages=%s" % (ok, ids, paths))
+    return 0 if ok else 1
+
+
+def server_check_line(dry_run):
+    """서버 09:02 — 22칸 대조 결과 한 줄(글). 사진은 GM PC 가 09:00 에 보냈다."""
+    report = _render().build_report()
     if not report:
         print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
         return 1
-
-    # 화면 캡처 우선(playwright 설치 시) — 화면이 자동보고 원본(배1071 Phase②)
-    # playwright 없거나 캡처 실패하면 render_png(Pillow 요약표) 폴백
-    png = _try_page_capture()
-    if not png:
-        png = render.render_png(report, OUT_PNG)
-    caption = ("매출 및 회원 현황보고 요약 · 정본 https://erp.wellperion.com/coo/report/매출회원현황보고.html"
-               " · 기준일 %s · 22칸 대조 %d/%d 일치" % (report["ref_date"], report["matched"], report["total"]))
+    text = "↳ 서버판 22칸 대조 · 기준일 %s · %d/%d 일치" % (report["ref_date"], report["matched"], report["total"])
     if report["mismatches"]:
-        caption += " · 불일치: " + ", ".join(report["mismatches"])
+        text += " · 불일치: " + ", ".join(report["mismatches"])
+    token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
+    if dry_run:
+        print("[dry-run] " + text)
+        return 0
+    if not token or not chat:
+        print("[fail] TG_BOT_TOKEN/TG_CHAT_ID 없음 (api.env 확인)")
+        return 1
+    resp = tg_send(token, chat, text, source="sales_report_server_send", full_response=True)
+    ok = bool(isinstance(resp, dict) and resp.get("ok"))
+    print("DONE: ok=%s · %s" % (ok, text))
+    return 0 if ok else 1
 
-    # I20·I21(배1086) — 캡션 뒤에 붙인다. 텔레그램 sendPhoto 캡션 1024자 한도 넘으면 sendMessage 로 한 통 더.
-    narrative = report.get("narrative") or {}
-    i20, i21 = narrative.get("I20", ""), narrative.get("I21", "")
-    narrative_text = ""
-    if i20:
-        narrative_text += "\n\n【I20 인사&파트너팀 진행 사항】\n" + i20
-    if i21:
-        narrative_text += "\n\n【I21 핵심 보고 및 진행 현황】\n" + i21
-    full_caption = caption + narrative_text
-    send_caption, extra_text = (full_caption, None) if len(full_caption) <= 1024 else (caption, narrative_text.strip())
 
+def legacy_parallel(dry_run):
+    """종전 parallel 모드(한 곳에서 사진+대조) — 브라우저 있는 곳에서만 뜻이 있다. 요약표 폴백은 없앴다."""
+    report = _render().build_report()                # 내부에서 load_env() 호출 → TG_BOT_TOKEN 등 os.environ 채워짐
+    if not report:
+        print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
+        return 1
     token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
     if not token or not chat:
         print("[fail] TG_BOT_TOKEN/TG_CHAT_ID 없음 (api.env 확인)")
         return 1
-
-    resp = tg_send(token, chat, send_caption, source="sales_report_server_send", photo=png, full_response=True)
-    ok = bool(isinstance(resp, dict) and resp.get("ok"))
-    msg_id = (resp.get("result") or {}).get("message_id") if isinstance(resp, dict) else None
-    if extra_text:
-        tg_send(token, chat, extra_text, source="sales_report_server_send", full_response=True)
-
-    print("DONE: ok=%s message_id=%s png=%s · %s" % (ok, msg_id, png, caption))
+    paths, why = _capture_pages(3)
+    note = " · 22칸 대조 %d/%d 일치" % (report["matched"], report["total"])
+    if report["mismatches"]:
+        note += " · 불일치: " + ", ".join(report["mismatches"])
+    if not paths:
+        text = "매출 및 회원 현황 보고 서버판 — 그림을 못 만들었습니다: %s%s" % (why, note)
+        print("[fail] " + text)
+        if not dry_run:
+            tg_send(token, chat, text, source="sales_report_server_send", full_response=True)
+        return 1
+    ok, ids = send_three_pages(token, chat, paths, report["ref_date"], note, dry_run=dry_run)
+    print("DONE: ok=%s ids=%s pages=%s" % (ok, ids, paths))
     return 0 if ok else 1
 
 

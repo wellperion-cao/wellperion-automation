@@ -441,6 +441,66 @@ def ops_ssot_cell(rows: "list | None") -> tuple[str, bool]:
     return f"{week_text} · 결재 제출 — {appr_text}", (week_bad or appr_bad)
 
 
+def automation_cell(objs: list) -> tuple[str, bool]:
+    """GM 책임 ① 자동화·자율화(ERP+브로제이) — ERP = AWS 이관 표(status/aws_migration.json · 시토 정본)의
+    영역별 전환 완료 수 / 전체, 브로제이 = 이번 달 카드 중 제목·체크에 「브로제이」가 든 카드의 체크 완료율.
+    두 원천 다 있는 값만 적는다 — 없으면 없다고 적는다."""
+    parts, warn = [], False
+    try:
+        d = json.loads((ROOT / "3. 웰페리온 가이드" / "status" / "aws_migration.json").read_text(encoding="utf-8"))
+        rows = d.get("rows") or []
+        done = sum(1 for r in rows if "완료" in str(r.get("switch_date") or ""))
+        pct = round(done / len(rows) * 100) if rows else 0
+        parts.append(f"ERP 서버 이관 {done}/{len(rows)}영역({pct}%)")
+        warn = warn or pct < 100
+    except Exception:
+        parts.append("ERP 이관 표 없음")
+        warn = True
+    bj = [o for o in objs if "브로제이" in f'{o.get("title") or ""} {o.get("progress_note") or ""}']
+    if bj:
+        dn, tot = _checkbox_tally(bj)
+        parts.append(f"브로제이 카드 {len(bj)}장 · 체크 {dn}/{tot}" + (f"({round(dn / tot * 100)}%)" if tot else ""))
+        warn = warn or _overdue_objs(bj) > 0
+    else:
+        parts.append("브로제이 카드 이번 달 없음")
+    return " · ".join(parts), warn
+
+
+def expansion_cell() -> tuple[str, bool]:
+    """GM 책임 ② 비즈니스 확장 — 전략 로드맵 「비즈니스 확장」 항목(status/monthly_ops_plan.json strategy_roadmap)
+    상태·진척 + 시보(CBO) 배(status/_queue.json) 진행·대기·완료 수."""
+    parts = []
+    try:
+        m = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
+        items = (m.get("strategy_roadmap") or {}).get("items") or []
+        ex = [i for i in items if "확장" in str(i.get("title") or "")]
+        for i in ex:
+            parts.append(f"로드맵 「{i.get('title')}」 {i.get('status') or '—'}"
+                         + (f" · 진척 {i.get('progress')}" if i.get("progress") not in (None, "") else ""))
+    except Exception:
+        pass
+    try:
+        q = json.loads((ROOT / "status" / "_queue.json").read_text(encoding="utf-8"))
+        qi = q if isinstance(q, list) else (q.get("items") or q.get("ships") or [])
+        st = [str(it.get("status") or "") for it in qi if it.get("clevel") == "cbo"]
+        parts.append(f"시보 배 진행 {st.count('IN_PROGRESS')} · 대기 {st.count('PENDING')} · 완료 {st.count('DONE')}")
+    except Exception:
+        parts.append("시보 배 조회 실패")
+    return " · ".join(parts) if parts else f"{_NO_MEASURE}(로드맵·배 없음)", False
+
+
+def directive_cell(objs: list) -> tuple[str, bool]:
+    """GM 책임 ③ 회장님·대표님 지시 — 이번 달 카드 중 제목·체크에 「회장님」「대표님」이 든 카드의 체크 완료율과
+    기한 지난 것. 카드가 없으면 잴 수 없다고 적는다(지시를 카드 체크 줄에 「[회장님 지시]」로 적으면 여기서 셈)."""
+    ds = [o for o in objs if any(k in f'{o.get("title") or ""} {o.get("progress_note") or ""}' for k in ("회장님", "대표님"))]
+    if not ds:
+        return f"{_NO_MEASURE}(이번 달 카드에 회장님·대표님 지시 표기 없음 — 카드 체크 줄에 「[회장님 지시]」로 적으면 셉니다)", False
+    dn, tot = _checkbox_tally(ds)
+    over = _overdue_objs(ds)
+    ck = f"체크 {dn}/{tot}({round(dn / tot * 100)}%)" if tot else "체크 항목 없음"
+    return f"지시 카드 {len(ds)}장 · {ck} · 기한 지난 것 {over}건", over > 0
+
+
 def _no_measure_cell(reason: str) -> tuple[str, bool]:
     return f"{_NO_MEASURE}({reason})", False
 
@@ -482,15 +542,15 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     mgr_names = ["이경연 실장", "이정헌 소장", "나우열M"]
 
     rows_def = {
+        # GM 확정 2026-09-14 16:5x 「자동화 및 자율화(ERP+브로제이) 진척율 // 웰페리온 비즈니스 확장건 //
+        #   회장님&대표님 지시 이렇게 3개로만」 — 종전 4개(카드 진척·회신 짝·결재 처리·주간 미팅)는 뺐다.
         "김남욱 GM": [
-            ("GM업무 카드 진척", "월간운영계획 카드 체크 완료율 · 기한 지난 목표 0건",
-             lambda: objective_progress_cell(_obj_filter(objs, "김남욱 GM"))),
-            ("중간관리자 회신 짝", "보낸 확인요청 대비 회신 받은 비율 · 35일 넘긴 건 0",
-             lambda: ledger_reply_cell_all(seen, mgr_names)),
-            ("결재 처리", "결재요청 대기 건수 · 평균 대기일 3일 안",
-             lambda: ssot_pending_cell(ssot_rows)),
-            ("주간 미팅", "매주 화요일 15:00 고정 · 안건 = 이 화면 진행 체크",
-             lambda: _no_measure_cell("참석·안건 기록 원장 없음")),
+            ("자동화·자율화(ERP+브로제이) 진척률", "AWS 이관 표 영역별 완료 · 브로제이 카드 체크 완료율",
+             lambda: automation_cell(objs)),
+            ("웰페리온 비즈니스 확장", "확장 로드맵 항목 상태 · 시보(확장) 배 진행·완료",
+             lambda: expansion_cell()),
+            ("회장님·대표님 지시", "지시 카드 체크 완료율 · 기한 지난 것 0",
+             lambda: directive_cell(objs)),
         ],
         "이경연 실장": [
             ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
@@ -1023,8 +1083,7 @@ def sales_bucket_cell(sales_data: "dict | None", bucket: str) -> tuple[str, bool
     cls = "pg-ok" if pct >= 80 else ("pg-mid" if pct >= 40 else "pg-low")
     bar = (f'<span class="pg"><span class="bar"><i class="{cls}" style="width:{pct}%"></i></span>'
            f'<span class="pgn">{pct}%</span> '
-           f'<span class="pgt">현재 {html.escape(_fmt_amt(cur, "원"))} / 목표 {html.escape(_fmt_amt(target, "원"))}'
-           f' · 달성 {pct}%</span></span>')
+           f'<span class="pgt">현재 {html.escape(_fmt_amt(cur, "원"))} / 목표 {html.escape(_fmt_amt(target, "원"))}</span></span>')
     return bar, False
 
 
@@ -1043,6 +1102,8 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
               f'target="_blank" rel="noopener">SSOT 열기</a>')
     elif is_reception_item(it):
         ss = '<span class="ss-rc">접수처에서 닫음</span>'
+    elif kind_of(it) == "reply":
+        ss = '<span class="ss-rc">회신으로 닫힘</span>'
     else:
         ss = '<span class="ss-no">SSOT 미등록</span>'
     who = str(it.get("owner") or "").strip()      # owner_select 가 escape 한다
@@ -1089,7 +1150,10 @@ def is_reception_item(it: dict) -> bool:
 #     routine   = 끝나지 않는 상시 책임(주간 점검·접수 마무리·점검 이행·SSOT 갱신)
 #     reception = 종합접수처에서 열려 그 화면에서 닫히는 건
 #     task      = 기한이 있고 끝나면 닫히는 일 — 이것만이 「업무」다
-KINDS = ("routine", "reception", "task")
+#     reply     = 방에 물은 것·확인 요청 — 한 줄 답이 오면 닫히는 「회신 소통건」. 업무 SSOT 에 올릴 것이
+#                 아니다(GM 2026-09-14 「업무 SSOT 에 올릴 건과 회신건은 많이 구분이 되어야」 · 「회신건들은
+#                 최종 체크하고 삭제」) — 사람 목차에서 빼고 맨 아래 접힌 기록으로만 둔다.
+KINDS = ("routine", "reception", "task", "reply")
 
 
 def kind_of(it: dict) -> str:
@@ -1299,6 +1363,8 @@ def build() -> str:
                                                    if kind_of(it) == "routine")]
     aside_rc = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if kind_of(it) == "reception")]
+    aside_reply = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
+                                                      if kind_of(it) == "reply")]
     # AI 판정 건(owner="AI …")은 사람 목차에서 빼고 한 줄로만 보인다(GM 지시 2026-09-14).
     ai_items = [(n, *opens.pop(n)) for n in sorted(n for n, (_d, it) in opens.items()
                                                    if is_ai_owner(it.get("owner")))]
@@ -1348,7 +1414,9 @@ def build() -> str:
                 inner = "\n        ".join(
                     f'<h3 class="rsp">{html.escape(p)} <span class="gc">{len(rows)}건</span></h3>\n        '
                     + table([row_html(n, d, it) for n, d, it in sorted(rows)], "없음")
-                    for p, rows in team_groups.items())
+                    # 사람 순서 = 명단(OPS_TEAM·FACILITY_TEAM) 순서 — GM 지시 2026-09-14
+                    #   「최준용M - 임정은M - 윤병현AM - 백승화 사원 - 진수아 사원 이 순으로」.
+                    for p, rows in ((p, team_groups[p]) for p in team[0] if p in team_groups))
             else:
                 inner = '<div class="empty" style="padding:8px 14px;">없음</div>'
             team_html = (f'\n        <details open class="grp"><summary>{team_lead} {team_title} '
@@ -1436,6 +1504,25 @@ def build() -> str:
         {inner}
       </div>''')
 
+    if aside_reply:
+        # 회신 소통건 — 업무가 아니라 답을 기다리는 물음. 사람 목차에서 뺐고(GM 2026-09-14 「업무 SSOT 건만
+        #   챙겨줘 · 회신건들은 최종 체크하고 삭제」), 따로 모아 달라는 지시(같은 날 「회신 소통건으로 따로
+        #   정리」)대로 맨 아래 접힌 기록 한 곳에만 둔다. 답이 오면 원장이 닫힌다.
+        by_who_r: dict[str, list] = {}
+        for n, d, it in aside_reply:
+            by_who_r.setdefault(str(it.get("owner") or "담당 미정").strip() or "담당 미정", []).append((n, d, it))
+        order_r = [m[0] for m in MANAGERS] + OPS_TEAM + FACILITY_TEAM
+        names_r = [w for w in order_r if w in by_who_r] + [w for w in by_who_r if w not in order_r]
+        inner_r = "\n        ".join(
+            f'<h3 class="rsp">{html.escape(w)} <span class="gc">{len(by_who_r[w])}건</span></h3>\n        '
+            + table([row_html(n, d, it) for n, d, it in by_who_r[w]], "없음")
+            for w in names_r)
+        blocks.append(f'''      <div class="blk">
+        <details class="grp"><summary>회신 소통건 — 업무 아님 · 한 줄 답이 오면 닫힘 <span class="gc">{len(aside_reply)}건</span></summary>
+        {inner_r}
+        </details>
+      </div>''')
+
     # 닫힌 것·중복 접힘 목록은 화면에서 뺐다 (GM 지적 2026-09-14 「닫은건들은 왜 보이는거야?」).
     #   둘 다 「여기서 하실 일은 없습니다」라고 적어 두고도 자리를 차지했다 — 볼 이유가 없으면 안 그린다.
     #   판정 자체는 그대로 돈다(원장은 안 건드리고, 머리줄 숫자로만 남긴다).
@@ -1507,18 +1594,21 @@ def build() -> str:
   /* ★막대가 찔끔 나오던 것 (GM 지적 2026-09-14 「30%인데 그래프가 찔끔?」).
      .bar 가 span 이라 기본이 inline 이었다 — inline 은 height·width 가 안 먹어 트랙이
      내용 폭(=0)으로 접혔고, 그 0 의 30% 라 막대가 점처럼 보였다. 블록으로 펴고 폭을 준다. */
-  .pg {{ display:block; }}
-  .pg .bar {{ display:block; width:100%; min-width:120px; height:8px; margin:0 0 3px;
-             border-radius:4px; background:var(--line); overflow:hidden; }}
-  .pg .bar i {{ display:block; height:100%; }}
+  /* ★한 줄 + 채움 (GM 지적 2026-09-14 「한 줄로 %랑 같이 · 올 회색이 아니라 41%만큼 색칠」).
+     위 .bar(머리 검정 띠) 규칙의 padding·line-height 가 이 트랙에도 먹어 트랙이 20px 로 부풀고
+     채움(i)은 내용 높이 0 의 100% = 0px 라 안 보였다 — 트랙·채움 높이를 px 로 못 박고 padding 을 지운다. */
+  .pg {{ display:flex; align-items:center; gap:8px; white-space:nowrap; }}
+  .pg .bar {{ display:block; flex:1 1 80px; min-width:60px; max-width:180px; height:8px; padding:0; margin:0;
+             line-height:0; border-radius:4px; background:var(--line); overflow:hidden; }}
+  .pg .bar i {{ display:block; height:8px; }}
   .pg .pg-low {{ background:var(--bad); }}
   .pg .pg-mid {{ background:var(--warn); }}
   .pg .pg-ok {{ background:#2e7d32; }}
   .pg .pgn {{ font-size:11.5px; font-weight:800; margin-right:6px; }}
   .pg .pgt {{ font-size:11px; color:var(--dim); }}
   /* 👤 책임 항목 표 안 매출 진척(span.pg) — td.pg(#132px 고정폭) 재사용, 이 칸은 폭 자유 */
-  td.rp .pg {{ display:block; }}
-  td.rp .pg .pgt {{ display:block; margin-top:3px; }}
+  td.rp .pg {{ display:flex; }}
+  td.rp .pg .pgt {{ display:inline; margin:0; }}
   td.own .with {{ font-size:11.5px; color:var(--dim); margin-top:3px; }}
   h3.rsp {{ margin:16px 0 6px; font-size:14px; font-weight:800; }}
   h3.rsp .gc {{ font-size:12px; font-weight:600; color:var(--dim); margin-left:6px; }}
