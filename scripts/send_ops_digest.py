@@ -885,6 +885,10 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     wline = waiting_assign_line(waiting_assign_items(relay_current, today), waiting_prev_count(today))
     if wline:
         parts.insert(0, wline)
+    # 📞 멤버십 연락 없음 — 통 머리 한 줄(배 2648 · GM 지시 2026-09-15). 0건이면 줄 없음 · 못 읽음이면 줄 없음+로그.
+    mline = membership_uncontacted_line(today)
+    if mline:
+        parts.insert(1 if wline else 0, mline)
 
     # [2026-08-29 GM 결정] 25줄 상한으로 본문을 자르던 것 삭제 — "줄을 접는 게 아니라
     # 안 끝난 건수를 줄여야 한다". 넘쳐도 자르지 않는다(밀린 일이 안 보이게 되는 게 더 나쁘다).
@@ -901,9 +905,15 @@ def _mgr_already_sent(target_date: str) -> bool:
 
 
 def _mark_mgr_sent(target_date: str) -> None:
-    from module_heartbeat import record_heartbeat
+    from module_heartbeat import last_heartbeat, record_heartbeat
+    # membership_log{날짜: 멤버십 연락 없음 건수} — record_heartbeat 가 파일을 통째로 다시 쓰므로 매번 같이 실어야 안 지워진다
+    # (waiting_log 와 같은 규칙 · 배 2648). 최근 14일만 남긴다.
+    log_ = dict((last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}).get("membership_log") or {})
+    if _MEMBERSHIP_TODAY:
+        log_[_MEMBERSHIP_TODAY[0]] = _MEMBERSHIP_TODAY[1]
+    log_ = dict(sorted(log_.items())[-14:])
     record_heartbeat(MGR_DAILY_HEARTBEAT_ID, detail=f"★중간관리자 결정거리 요약 발송 — {target_date}",
-                     extra={"state": {"date": target_date}})
+                     extra={"state": {"date": target_date}, "membership_log": log_})
 
 
 def done_titles_by_person(rows: list, days: "tuple") -> dict:
@@ -2715,6 +2725,55 @@ def waiting_assign_line(items: list, prev_count: "int | None") -> str:
     over = sum(1 for i in items if i["overdue"])
     prev = f" (어제 {prev_count}건)" if prev_count is not None else ""
     return f"⏳ 배정 기다리는 것 {len(items)}건{prev} · 1영업일 넘긴 것 {over}건"
+
+
+_MEMBERSHIP_TODAY: "tuple | None" = None   # (날짜, 건수) — 발송 뒤 _mark_mgr_sent 가 membership_log 에 적는다
+
+
+def membership_uncontacted_line(today: str) -> str:
+    """📞 멤버십 연락 없음 N건 — 신규 a · 컨택중 b (최장 X일) · 어제보다 ±k  (배 2648 · GM 지시 2026-09-15
+    「멤버십 미정인 채로 컨택이 잘 안 되고 체크를 안 하는 것 같은데, 계속 리마인드 시켜줘 중간관리자방에」).
+
+    판정 = 상태가 컨택중·신규·미정·가망 이고 연락 기록(contacts[] 메모)이 하나도 없는 멤버십 문의 —
+    등록완료·이탈종결은 뺀다(판정 부품은 unassigned_nudge·report_stream_1_impl 정본 그대로).
+    ★못 읽음 ≠ 0 — 원장이 빈 응답이면 줄을 비우고 로그에 남긴다. 진짜 0건이면 줄을 뺀다(0건 될 때까지 싣는 것이 목적).
+    어제 건수는 MGR 하트비트 membership_log{날짜: 건수} — 발송 성공 뒤 _mark_mgr_sent 가 오늘 값을 적는다."""
+    global _MEMBERSHIP_TODAY
+    try:
+        import report_stream_1_impl as _s1
+        import unassigned_nudge as _un
+        rows = _s1._fetch_list("member_inquiry_list")
+        if not rows:
+            log("[mgr] 멤버십 문의 원장이 빈 응답 — 못 읽음으로 보고 줄 생략(0건이라 적지 않는다)")
+            return ""
+        now = datetime.now()
+        hit = []
+        for r in rows:
+            st = str(r.get("status", "") or "").strip()
+            if st not in {"컨택중", "신규", "미정", "가망"}:
+                continue
+            if _s1._is_registered(r, True) or _s1._is_loss(r) or _un._has_contact(r):
+                continue
+            ts = str(r.get("timestamp", "") or "")
+            hit.append((st, _un._hours_since_ts(ts, now) if ts else 0.0))
+        _MEMBERSHIP_TODAY = (today, len(hit))
+        if not hit:
+            log("[mgr] 멤버십 연락 없음 0건 — 줄 없음")
+            return ""
+        new = sum(1 for st, _ in hit if st == "신규")
+        longest = max(h for _, h in hit)
+        from module_heartbeat import last_heartbeat
+        log_ = (last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}).get("membership_log") or {}
+        prev_days = [d for d in log_ if d < today]
+        diff = ""
+        if prev_days:
+            delta = len(hit) - int(log_[max(prev_days)])
+            diff = f" · 어제보다 {'+' if delta > 0 else ''}{delta}건" if delta else " · 어제와 같음"
+        return (f"📞 멤버십 연락 없음 {len(hit)}건 — 신규 {new} · 컨택중 {len(hit) - new}"
+                f" (최장 {int(longest // 24)}일){diff}")
+    except Exception as exc:
+        log(f"[mgr] 멤버십 연락 없음 줄 실패 — 줄 생략: {type(exc).__name__}: {exc}")
+        return ""
 
 
 def _migrate_relay_state(state: dict) -> None:
