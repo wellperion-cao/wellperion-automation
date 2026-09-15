@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>파트너사 — 웰페리온 랩스 (B 시안)</title>
+<!-- 2차 UI/UX A/B 의 B 시안(시모 · GM 2026-09-15 「직관·효율이 보이는 개선」).
+     지금 첫 화면(index.html #partners)은 표 → 계정 표 3장 → 온보딩 표로 길게 이어져, 파트너 한 곳의 「어디까지 왔나·다음에 뭘 하나」를
+     보려면 메뉴 4곳을 오간다. B = 파트너 한 곳 = 카드 한 장. 위 한 줄에 전체 숫자, 카드 안에 단계·진행·다음 할 일·바로가기.
+     데이터 = data/partner_onboarding.json(발행본) 그대로 · 채널 활성은 서버(/api/admin/partner-secrets)가 있을 때만(없으면 「서버 연결 전」).
+     GM 이 B 를 고르면 이 골격을 index.html #partners 로 옮긴다(파일 둘로 두지 않는다). -->
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+*{box-sizing:border-box}
+body{padding:18px 20px 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.kpi div{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:var(--pf-radius);padding:12px 14px}
+.kpi b{display:block;font-family:var(--pf-head);font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--pf-pri-dk);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--pf-soft)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.card{background:var(--pf-bg);border:1px solid var(--pf-line);border-radius:var(--pf-radius);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.card .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card .no{font-family:var(--pf-head);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--pf-soft)}
+.card h2{font-family:var(--pf-head);font-size:19px;font-weight:700;margin:2px 0 0;letter-spacing:-.01em}
+.card .who{font-size:13px;color:var(--pf-soft)}
+.bar{height:8px;background:var(--pf-panel-2);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pf-pri);border-radius:999px}
+.row{display:flex;justify-content:space-between;font-size:13px}
+.row b{font-family:var(--pf-head);font-weight:600}
+.mods{display:flex;flex-wrap:wrap;gap:6px}
+.next{background:var(--pf-panel);border-left:3px solid var(--pf-pri);border-radius:6px;padding:10px 12px;font-size:13.5px}
+.next b{display:block;font-family:var(--pf-head);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-soft);margin-bottom:3px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.acts .pf-btn{min-height:40px;padding:0 12px;font-size:13px}
+.add{border:1px dashed var(--pf-pri);background:transparent;align-items:center;justify-content:center;text-align:center;color:var(--pf-soft);min-height:200px}
+.add b{font-family:var(--pf-head);color:var(--pf-pri-dk);font-size:15px;display:block;margin-bottom:6px}
+</style>
+</head>
+<body class="pf-body">
+<div class="top">
+  <div>
+    <div class="pf-lb">Wellperion Labs · 파트너사</div>
+    <h1 class="pf-h1">파트너사 한눈에</h1>
+    <p class="pf-sub" style="margin:0">파트너 한 곳 = 카드 한 장. 어디까지 왔는지 · 다음에 무엇을 하는지 · 바로 갈 곳을 한 화면에.</p>
+  </div>
+  <span class="pf-st ai"><i></i>B 시안 · 실데이터(온보딩 발행본 기준)</span>
+</div>
+
+<div class="kpi" id="kpi"></div>
+<div class="cards" id="cards"></div>
+
+<script>
+(function(){
+  // 파트너 기본값 — 정본은 파트너사 표(index.html)와 같은 값 · 채널 활성은 서버가 있을 때만 채운다
+  var P = [
+    {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['ERP','상담봇','카톡 전송','블로그 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
+    {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
+    {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['상담봇','/info/gocheokgolf/']]}
+  ];
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function draw(ob){
+    var t = (ob && ob.tenants) || {};
+    var totalPending = 0, totalAsked = 0, totalAnswered = 0;
+    P.forEach(function(p){ var x = t[p.key] || {}; p.asked = x.asked||0; p.answered = x.answered||0; p.pending = x.pending||0; totalPending += p.pending; totalAsked += p.asked; totalAnswered += p.answered; });
+    $('kpi').innerHTML = [
+      ['<b>'+P.length+'</b><span>파트너사</span>'],
+      ['<b>'+P.filter(function(p){return p.stage.indexOf('도입')===0}).length+'</b><span>도입(유료 전환 0)</span>'],
+      ['<b>'+totalAnswered+'<small style="font-size:14px;color:var(--pf-soft)"> / '+totalAsked+'</small></b><span>온보딩 답 받은 것</span>'],
+      ['<b>'+totalPending+'</b><span>답 기다리는 질문</span>'],
+      ['<b>—</b><span>채널 활성 · 서버 연결 시</span>']
+    ].map(function(a){return '<div>'+a[0]+'</div>'}).join('');
+    $('cards').innerHTML = P.map(function(p){
+      var pct = p.asked ? Math.round(p.answered*100/p.asked) : 0;
+      var next = p.pending ? '답 없는 질문 '+p.pending+'개 — 카톡 한 통으로 번호 질문 보내기' : (p.asked ? '온보딩 답 다 받음 — 문서 3종·상담봇 정본 갱신 확인' : '온보딩 질문 아직 안 보냄 — 질문은행에서 번호 뽑기');
+      return '<section class="card">'
+        + '<div class="hd"><div><div class="no">'+p.no+' · '+esc(p.key)+'</div><h2>'+esc(p.name)+'</h2><div class="who">'+esc(p.who)+'</div></div>'
+        + '<span class="pf-st '+(p.stage.indexOf('도입')===0?'on':'warn')+'"><i></i>'+esc(p.stage)+'</span></div>'
+        + '<div><div class="row"><span>온보딩 답</span><b>'+p.answered+' / '+p.asked+' · '+pct+'%</b></div><div class="bar" style="margin-top:6px"><i style="width:'+pct+'%"></i></div></div>'
+        + '<div class="row"><span>쓰는 모듈</span></div><div class="mods">'+p.mods.map(function(m){return '<span class="pf-st on"><i></i>'+esc(m)+'</span>'}).join('')+'</div>'
+        + '<div class="row"><span>마케팅 채널 계정</span><b id="ch-'+p.key+'">서버 연결 시 표시</b></div>'
+        + '<div class="next"><b>다음 할 일</b>'+esc(next)+'</div>'
+        + '<div class="acts"><a class="pf-btn p" href="#onboarding-'+p.key+'">온보딩 답 보기</a><a class="pf-btn s" href="#secrets-'+p.key+'">채널 계정</a>'
+        + p.links.map(function(l){return '<a class="pf-btn g" href="'+l[1]+'" target="_blank" rel="noopener">'+esc(l[0])+' ↗</a>'}).join('')+'</div>'
+        + '</section>';
+    }).join('') + '<section class="card add"><div><b>파트너사 추가</b>질문은행에서 번호를 뽑아 첫 한 통을 보내면 여기 카드가 한 장 늡니다.</div></section>';
+    // 채널 활성(서버가 있을 때만)
+    P.forEach(function(p){
+      fetch('/api/admin/partner-secrets/status?tenant='+encodeURIComponent(p.key),{credentials:'same-origin'})
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(j){ var on=(j.channels||[]).filter(function(c){return c.active}).length; var el=$('ch-'+p.key); if(el) el.textContent = on+' / '+(j.channels||[]).length+' 활성'; })
+        .catch(function(){});
+    });
+  }
+  fetch('data/partner_onboarding.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(draw).catch(function(){ draw({}); });
+})();
+</script>
+</body>
+</html>
