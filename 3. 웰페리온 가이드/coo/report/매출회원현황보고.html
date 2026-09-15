@@ -1137,12 +1137,14 @@ function loadBrojayCompare(c){
     var parts = [];
     SALES_ROWS.forEach(function(r){
       if (r === 4 || r === 6 || r === 7) return;
-      var name = String(c['H' + r] || '').trim(); if (!name) return;
-      var t = teams.filter(function(tt){ return tt.brojay_tag && String(tt.name || '').replace(/\(.*$/, '').replace('팀', '') && name.indexOf(String(tt.name || '').replace(/\(.*$/, '').replace('팀', '')) === 0; })[0];
+      /* 시트 줄 이름은 「☑️ 수영팀 매출」·「☑️ GXE(유료G.X)팀」 꼴 — 이모지·「매출」을 벗기고 팀 앞글자로 짝을 짓는다 */
+      var name = String(c['H' + r] || '').replace(/[✅☑️\s]/g, '').replace(/매출$/, '').replace(/\(.*?\)/g, '');
+      if (!name) return;
+      var t = teams.filter(function(tt){ var key = String(tt.name || '').replace(/\(.*$/, '').replace('팀', '').trim(); return tt.brojay_tag && key && name.indexOf(key) === 0; })[0];
       var bv = t ? (byTag[t.brojay_tag] || 0) : null;
       var sv = num(c['I' + r]);
       if (bv == null) return;
-      parts.push(esc(name.replace(/\(.*$/, '')) + ' ' + (bv === sv ? '<span style="color:#146B4F">=</span>' : (bv ? bv.toLocaleString('ko-KR') : '0') + '<span style="color:#7A838B">/' + sv.toLocaleString('ko-KR') + '</span>'));
+      parts.push(esc(name) + ' ' + (bv === sv ? '<span style="color:#146B4F">=</span>' : (bv ? bv.toLocaleString('ko-KR') : '0') + '<span style="color:#7A838B">/' + sv.toLocaleString('ko-KR') + '</span>'));
     });
     var ops = byTag['운영부'] || 0, sheetOps = num(c.I6) + num(c.I7);
     /* 브로제이 적재분은 손 이관이라 그날 마감에 지난 날짜 몫이 함께 들어온다(9/14 실측 2,466만 vs 시트 1,001만) —
