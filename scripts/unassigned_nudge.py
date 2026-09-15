@@ -533,9 +533,11 @@ def collect_sla_violations(now: datetime | None = None) -> list[dict]:
     return out
 
 
-def build_sla_alert_text(violations: list[dict]) -> str:
+def build_sla_alert_text(violations: list[dict], since_note: "str | None" = "8/1 이후 접수분") -> str:
     """카카오 ★부서장 방용 평문(GM 2026-08-05) — 위반 0건이면 빈 문자열(발송 안 함).
-    10줄 안쪽·한 줄에 한 건(접수일시·이름·종목·경과시간·상태)·부탁 조·AI 주체 명시."""
+    10줄 안쪽·한 줄에 한 건(접수일시·이름·종목·경과시간·상태)·부탁 조·AI 주체 명시.
+    since_note = 표제 괄호 문구. collect_sla_violations()(SLA_SINCE_DATE 컷 적용) 결과가
+    아닌 목록을 넘길 땐 실제와 다른 문구가 나가지 않도록 None 으로 끈다(2026-09-16 배 12644)."""
     if not violations:
         return ""
     # 이미 경과시간 내림차순(오래된 순). 0 = 전부(GM 지시 2026-08-30)
@@ -546,7 +548,7 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     # 그 건들에 필요한 것은 배정이 아니라 연락(또는 연락 기록)이다.
     _no_owner = sum(1 for v in violations if not v.get("assigned"))
     _no_contact = len(violations) - _no_owner
-    _head = f"⏰ 24시간 넘긴 문의 {len(violations)}건 (8/1 이후 접수분)"
+    _head = f"⏰ 24시간 넘긴 문의 {len(violations)}건" + (f" ({since_note})" if since_note else "")
     _parts = []
     if _no_owner:
         _parts.append(f"담당 미정 {_no_owner}건")

@@ -3071,6 +3071,11 @@ def _selfcheck_inquiry_contact_section() -> None:
                               {"status": "컨택중", "contacts": []},
                               {"status": "LOSS", "contacts": []}]) \
         == [{"status": "컨택중", "contacts": []}]
+    # 배 12644 후속(2026-09-16) — 8/1 날짜 컷 없이도 7월 접수·미컨택 건은 잡히고 등록완료는 빠진다.
+    _sla_rows = [{"status": "신규", "timestamp": "2026-07-10 09:00:00", "contacts": []},
+                 {"status": "등록완료", "timestamp": "2026-07-11 09:00:00", "contacts": []}]
+    _sla_vs = _membership_sla_violations(_sla_rows, datetime(2026, 9, 16, 12, 0, 0))
+    assert len(_sla_vs) == 1 and _sla_vs[0]["type"] == "멤버십", _sla_vs
     print("[selfcheck] _selfcheck_inquiry_contact_section OK")
 
 
@@ -3452,6 +3457,33 @@ def _lesson_sla_block() -> tuple:
         return "", 0
 
 
+def _membership_sla_violations(rows: list, now: datetime) -> list:
+    """멤버십 미컨택 행(rows) → collect_sla_violations 와 같은 모양의 dict 목록.
+
+    판정 = _uncontacted_rows(중간관리자 📞 줄과 같은 목록) 중 접수 후 24시간
+    (unassigned_nudge.SLA_HOURS) 넘은 것만. 8/1(SLA_SINCE_DATE) 컷은 쓰지 않는다."""
+    import unassigned_nudge as _un
+    out = []
+    for r in _uncontacted_rows(rows):
+        ts = str(r.get("timestamp", "") or "")
+        hours = _un._hours_since_ts(ts, now) if ts else 0.0
+        if hours < _un.SLA_HOURS:
+            continue
+        assigned = _un._is_assigned_owner(r)
+        out.append({
+            "type": "멤버십",
+            "sport": str(r.get("sport", "") or r.get("program", "") or "-").strip() or "-",
+            "name": str(r.get("name", "") or "-").strip() or "-",
+            "date": ts[:16] or "-",
+            "hours": hours,
+            "assigned": assigned,
+            "contacted": False,
+            "reason": "담당 미정" if not assigned else "배정완료·기록없음",
+        })
+    out.sort(key=lambda x: -x["hours"])
+    return out
+
+
 def _membership_sla_block() -> tuple:
     """멤버십 문의 중 24시간 넘게 컨택 기록이 없는 **누적** 목록 → (본문, 건수 | None=못 읽음).
 
@@ -3459,17 +3491,22 @@ def _membership_sla_block() -> tuple:
       리마인드". 아침 07:55 ★부서장 통은 _lesson_sla_block 이 강습만 싣고, 멤버십 몫은 저녁 ★운영부 통의
       변화 게이트 뒤에만 있어 담당 임정은M 이 매일 보는 자리가 없었다(실측: 9/15 멤버십 2건이 어느 통에도 안 실림).
       아침 ★운영부 통(07:45)에 누적 전체를 매일 싣는다 — 강습 절과 같은 규칙(게이트 없음).
+    ★2026-09-16 배 12644 후속 — 종전엔 unassigned_nudge.collect_sla_violations() 를 그대로 썼는데
+      그 함수는 SLA_SINCE_DATE(8/1) 이전 접수분을 통째로 빼 07:45 통이 「0건」으로 나갔다(같은 시각
+      ★중간관리자 통 「📞 멤버십 연락 없음」은 12건). 판정 = _uncontacted_rows(중간관리자 📞 줄과 같은
+      목록) · 8/1 컷 없음 — _membership_sla_violations 로 뺐다.
     ★못 읽음 ≠ 0건(2026-08-06 규칙) — 원장 조회가 빈 응답이면 「0건」이라 적지 않고 절을 비운 채 로그에 남긴다.
     판정·문구는 unassigned_nudge 정본 그대로 — 여기서 다시 만들지 않는다(약속 L01).
     """
     try:
         import unassigned_nudge as _un
         import report_stream_1_impl as _s1
-        if not _s1._fetch_list("member_inquiry_list"):
+        rows = _s1._fetch_list("member_inquiry_list")
+        if not rows:
             log("[ovd] 멤버십 문의 원장이 빈 응답 — 못 읽음으로 보고 절 생략(0건이라 적지 않는다)")
             return "", None
-        vs = [v for v in _un.collect_sla_violations() if v.get("type") == "멤버십"]
-        return _un.build_sla_alert_text(vs), len(vs)
+        vs = _membership_sla_violations(rows, datetime.now())
+        return _un.build_sla_alert_text(vs, since_note=None), len(vs)
     except Exception as exc:
         log(f"[ovd] 멤버십 미컨택 목록 실패 — 절 생략: {type(exc).__name__}: {exc}")
         return "", None
