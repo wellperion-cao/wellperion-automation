@@ -28,11 +28,13 @@ from datetime import date
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
 
-GAS_ENV = {"salesops": "SALES_GAS_URL", "proc": "PROC_GAS_URL", "deptrep": "DEPTREP_GAS_URL"}
+GAS_ENV = {"salesops": "SALES_GAS_URL", "proc": "PROC_GAS_URL", "deptrep": "DEPTREP_GAS_URL",
+           "todo": "TODO_GAS_URL"}     # CFO 매출현황·지출현황이 업무 GAS 에서 읽는 KPI 2종(배12615 · GM 지시 2026-09-15)
 POST_ACTIONS = ("sales_month", "sales_ops", "sales_dept", "labor_time", "proc_summary")   # 게이트 비번 POST 집계
 ACTIONS = {"salesops": ("sales_dept_pub", "sales_instr_pub", "sales_month", "sales_ops", "sales_dept", "labor_time"),
            "proc": ("sales_instr_pub", "proc_summary", "sales_dept"),
-           "deptrep": ("dump", "lesson")}
+           "deptrep": ("dump", "lesson"),
+           "todo": ("home_kpi", "sales_monthly")}
 # 열쇠에서 뺄 쿼리 — 액션 이름·캐시깨기·인증·이번달 파일 id(달마다 바뀌지만 같은 '이번 달 보고'다)
 DROP = ("action", "_pv", "cb", "_cb", "nocache", "token", "password", "file", "dump", "lesson")
 DAY_RANGES = ("A1:S20", "A21:N45", "A46:N60")   # 매출회원현황보고 일자탭 3조각(한 번에 400칸 제한)
