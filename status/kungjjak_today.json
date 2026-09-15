@@ -708,12 +708,6 @@
       ],
       "work": [
         {
-          "time": "06:05",
-          "area": "작업",
-          "event": "fix(cto): 되밀기 게이트 거부(unauthorized)를 영구 실패가 아니라 재시도로 판정",
-          "detail": "커밋 0f68ac9afc · 배 12615"
-        },
-        {
           "time": "08:07",
           "area": "작업",
           "event": "fix(cto): 원장 payload 에 쓰기 비밀번호가 평문으로 쌓이던 것 차단",
@@ -886,6 +880,12 @@
           "area": "작업",
           "event": "자동화 브라우저 창을 화면 밖에 띄운다 — 최대화 창 12개 스크립트 browser_quiet 한 관문 (GM 지시 2026-09-15 · 전체화면 확대 불편)",
           "detail": "커밋 1de457e46b · 배 12644"
+        },
+        {
+          "time": "13:04",
+          "area": "작업",
+          "event": "창 최대화 제거 2차 — 링크 여는 관문 open_primary 는 주 모니터 가운데 70% 창 · 안 걸린 브라우저 스크립트 4개도 화면 밖 관문 (GM 지시 2026-09-15 · 또 전체화면)",
+          "detail": "커밋 412b8b6fb9 · 배 12644"
         }
       ],
       "count": 20,
@@ -1348,6 +1348,30 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260915-9008",
+          "no": "08",
+          "got": "생각해보니 PC에 하는건 PC가 없으면 안되는 거고, 서버 ERP플랫폼관리에 파트너사 메뉴에 안보이게 저장해두고, 내가 보이게 클릭하면 코드 1531 눌러야만 볼 수 있게 해줘 // 개인 PC에는 하지마",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "13:06",
+          "end": "13:06",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260915-9009",
+          "no": "09",
+          "got": "그리고 마케팅 계정 받는건 다 이번 방법대로 저장시켜줘",
+          "did": "",
+          "start": "13:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1406,14 +1430,29 @@
           "detail": "커밋 0036abc70b · 배 11305"
         }
       ],
-      "count": 7,
-      "done": 7,
-      "open": 0,
-      "avg_minutes": 2,
+      "count": 9,
+      "done": 8,
+      "open": 1,
+      "avg_minutes": 1,
       "work_count": 9,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260915-9009",
+          "no": "09",
+          "got": "그리고 마케팅 계정 받는건 다 이번 방법대로 저장시켜줘",
+          "did": "",
+          "start": "13:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     }
   },
