@@ -308,6 +308,9 @@
   .tmbox .tnone{font-size:10px;color:#9AA4AD;}
   /* 4면 담당별 매출 — 왼쪽이 그날, 오른쪽이 누적. 시트가 쓰는 그 배치 그대로. */
   .ptab{width:100%;border-collapse:collapse;font-size:10.5px;}
+  .ptab tr.p4team td{background:#EEF3F7;color:var(--navy);font-weight:800;border-top:2px solid #D5DCE3;}
+  .ptab .p4n{font-weight:600;color:#7A838B;font-size:9.5px;margin-left:4px;}
+  .ptab td.p4who{padding-left:14px;}
   .ptab th{font-size:9.5px;font-weight:700;color:#7A838B;text-align:right;padding:3px 4px;
     border-bottom:1px solid var(--line);white-space:nowrap;}
   .ptab th:first-child{text-align:left;}
@@ -569,24 +572,33 @@
        몇 건이라 한 줄이면 충분하다. -->
   <!-- 등록 띠 — 왼쪽 멤버십 · 오른쪽 강습(팀별). 강습이 하루 20건 넘게 나와 오른쪽을 두 배 넓게 준다
        (GM 지시 2026-09-15). -->
+  <!-- 등록 띠 — 세 줄: 멤버십(좁게) · 강습 성인(팀별) · 강습 유소년(팀별). 강습 22건을 한 칸에 두면 성인·유소년이
+       섞여 길어지고 아래 문의 띠가 잘렸다(GM 지적 2026-09-15 「문의등록 상세는 다 깨지네 · 강습 등록건을 조금 더
+       왼쪽으로 · 성인&유소년 구분해서 총 3줄」). 성인·유소년은 등록경로 칸으로 가른다(renderP2Contract). -->
   <div class="body" id="p2regband" style="display:flex;gap:13px;flex:2.6;">
-    <div class="col" style="flex:none;width:36%;min-width:0;">
+    <div class="col" style="flex:none;width:26%;min-width:0;">
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
         <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
-    <div class="col" style="flex:none;width:calc(64% - 13px);min-width:0;">
+    <div class="col" style="flex:none;width:calc(37% - 13px);min-width:0;">
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2lesh">오늘 등록 — 강습 (팀별)<span class="src">시트 → 서버</span></h2>
+        <h2 id="p2lesh">오늘 등록 — 강습 성인 (팀별)<span class="src">시트 → 서버</span></h2>
         <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col" style="flex:none;width:calc(37% - 13px);min-width:0;">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p2lesyh">오늘 등록 — 강습 유소년 (팀별)<span class="src">시트 → 서버</span></h2>
+        <div class="bd" id="p2lesy"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
 
   <!-- 문의 띠 — 「문의 상세 내역」 칸은 뺐다(GM 지시 2026-09-15). 그 자리를 등록 띠가 쓴다.
        안 챙긴 분은 맨 위 「후속 연락 필요한 문의」 칸이 이미 사람 수로 알려 준다. -->
-  <div class="body" id="p2inqband" style="display:flex;gap:13px;flex:0.44;margin-top:11px;">
+  <div class="body" id="p2inqband" style="display:flex;gap:13px;flex:1.25;margin-top:11px;">
     <div class="col" style="flex:1;">
       <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). -->
       <div class="sec" style="flex:1;min-height:0;">
@@ -713,7 +725,7 @@
   <div class="audit wait" id="audit4">자체 점검 중…</div>
 
   <div class="foot">
-    <div><b>이 장이 보는 것</b> — 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 왼쪽이 그날(금일), 오른쪽이 누적입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다.</div>
+    <div><b>이 장이 보는 것</b> — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 세션(일일·월 누적) 칸은 원천이 정해지면 붙습니다.</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
@@ -1255,6 +1267,36 @@ function renderLesson(d){
           : '<div class="fnote">어제 강습 등록 건이 없습니다.</div>');
 }
 
+/* ★지난 달 값은 「매출 보고」 파일 31탭 J4(월 마감 누적)로 바꿔 읽는다(GM 지적 2026-09-15 「8월 계속 6.0억인데 아니라니까」).
+   sales_monthly 는 '26년 매출 분석' 시트 AV열(나우열M 관리)을 읽는데 보고 파일과 매달 갈린다(실측 2026-09-15:
+   6월 +1,942만 · 7월 +1,127만 · 8월 +2,688만 — 8월 보고 파일 6.25억 vs 매출 분석 5.99억). 이 화면의 매출 정의는
+   09:30 보고와 같은 보고 파일이다. 파일이 없는 달(1·2월)은 종전 값을 둔다. 값은 다시 계산하지 않고 J4 를 그대로 옮긴다. */
+function fixPastMonths(d){
+  var months = (d && d.months) || [];
+  var now = new Date(), y = now.getFullYear(), cur = now.getMonth() + 1;
+  var jobs = [];
+  for (var m = 1; m < cur; m++) (function(m){
+    jobs.push(fetch(ERP + '?action=daily_report_sheet&year=' + y + '&month=' + m + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(f){
+        if (!f || !f.ok || !f.fileId) return null;
+        return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=31&range=J4:J4&file=' + encodeURIComponent(f.fileId) + '&cb=' + Date.now())
+          .then(function(r){ return r.json(); });
+      })
+      .then(function(r){
+        var v = r && r.ok && r.cells ? num(r.cells.J4) : 0;
+        if (v > 0 && months[m - 1]) { months[m - 1].value = v; months[m - 1].src = '보고파일'; }
+      })
+      .catch(function(){ /* 그 달만 종전 값 */ }));
+  })(m);
+  if (!jobs.length) return;
+  Promise.all(jobs).then(function(){
+    renderChart(d);
+    if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel());
+    if (document.getElementById('sales') && /[?&]m=1/.test(location.search)) renderMonthSales(d, RAW.cells);
+  });
+}
+
 /* 월별 매출 막대 — 막대 하나가 한 달. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
   var W = 660, H = 250, L = 56, R = 14, T = 22, B = 26;
@@ -1397,7 +1439,7 @@ function load(){
   var p3 = miscFetch('todo', 'sales_monthly')
     // 그래프가 보고시트보다 늦게 도착하면 위에서 부른 syncChartPartial 이 아직 RAW.chart 를 못 본다 —
     // 여기서 한 번 더 부른다(둘 중 늦게 끝난 쪽이 채운다. 같은 값이라 두 번 불려도 결과는 같다).
-    .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel()); } })
+    .then(function(d){ if (d && d.ok) { RAW.chart = d; renderChart(d); if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel()); fixPastMonths(d); } })
     .catch(function(){ // 「불러오는 중…」이 영영 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
       var _g = document.getElementById('gauge'); if (_g) _g.innerHTML =
         '<div style="font-size:11.5px;color:var(--bad)">월별 매출을 못 읽었습니다 — [↻ 새로고침]을 눌러 주세요.</div>';
@@ -1669,16 +1711,63 @@ function p4Table(heads, rows){
   return '<table class="ptab">' + th + tr + '</table>';
 }
 
+/* 일자탭 O열은 팀 순서로 적혀 있고 각 팀의 첫 줄이 팀 리더다(2026-09-15 실측 · 34줄). 리더 이름이 나오면
+   거기서 새 팀이 시작한다 — 리더 정본은 ssot/kpi.json _팀리더 표(이 화면은 그 파일을 못 읽어 이름을 옮겨 적었다 ·
+   리더가 바뀌면 그 표와 함께 이 줄을 고친다). 뮤지컬·GXE·루프 메소드는 사람이 아니라 팀 이름으로 적힌 줄이다. */
+var P4_TEAM_STARTS = [
+  ['김상식', 'P.T팀'], ['최은지', 'P.L팀'], ['이상훈', '스쿼시팀'], ['김태엽', '골프팀'],
+  ['박민서', '수영팀'], ['이형주', '체조팀'], ['뮤지컬', '뮤지컬팀'], ['GXE', 'GXE팀'], ['루프 메소드', 'GXE팀']
+];
+function p4Teams(rows){
+  var teams = [], cur = null;
+  rows.forEach(function(x){
+    if (x.sum) return;
+    for (var i = 0; i < P4_TEAM_STARTS.length; i++) {
+      if (x.name === P4_TEAM_STARTS[i][0]) {
+        var nm = P4_TEAM_STARTS[i][1];
+        cur = teams.filter(function(t){ return t.name === nm; })[0];
+        if (!cur) { cur = { name: nm, rows: [] }; teams.push(cur); }
+        break;
+      }
+    }
+    if (!cur) { cur = { name: '기타', rows: [] }; teams.push(cur); }
+    cur.rows.push(x);
+  });
+  return teams;
+}
+function p4Num(v){ return parseInt(String(v || '0').replace(/[^0-9\-]/g, ''), 10) || 0; }
+function p4TeamTable(heads, teams){
+  if (!teams.length) return '<div class="mrow"><span class="lb">담당 줄이 없습니다</span></div>';
+  var th = '<tr><th>팀 · 담당</th>' + heads.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') +
+           '<th style="border-left:2px solid #E3E7EB;padding-left:8px">누적</th></tr>';
+  var body = teams.map(function(t){
+    var cols = [0, 1, 2, 3].map(function(i){ return t.rows.reduce(function(a, x){ return a + p4Num(x.cols[i]); }, 0); });
+    var acc = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
+    var solo = t.rows.length === 1 && P4_TEAM_STARTS.some(function(x){ return x[0] === t.rows[0].name && x[0] === x[1].replace('팀', ''); });
+    var head = '<tr class="sum p4team"><td>' + esc(t.name) + (solo ? '' : ' <span class="p4n">' + t.rows.length + '명</span>') + '</td>' +
+      cols.map(function(v){ return '<td class="' + (v ? '' : 'zero') + '">' + v.toLocaleString('ko-KR') + '</td>'; }).join('') +
+      '<td class="acc">' + acc.toLocaleString('ko-KR') + '</td></tr>';
+    return head + t.rows.map(function(x){
+      return '<tr><td class="p4who">' + esc(x.name) + '</td>' +
+        x.cols.map(function(v){ return '<td class="' + (v === '0' ? 'zero' : '') + '">' + esc(v) + '</td>'; }).join('') +
+        '<td class="acc">' + esc(x.acc) + '</td></tr>';
+    }).join('');
+  }).join('');
+  return '<table class="ptab">' + th + body + '</table>';
+}
+
 function renderPage4(c, dayLabel){
-  var les = p4Rows(c, 16, 62);
+  var les = p4Rows(c, 16, 66);   // 63행 루프 메소드까지(2026-09-15 실측 · 종전 62행에서 잘렸다)
   var h2 = document.getElementById('p4lesh');
-  if (h2) h2.textContent = (dayLabel || '') + ' 강습 — 담당별';
+  if (h2) h2.textContent = (dayLabel || '') + ' 강습 — 팀 · 담당별';
   var e2 = document.getElementById('p4les'), e3 = document.getElementById('p4les2');
   /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
-  var half = Math.ceil(les.length / 2);
-  if (e2) e2.innerHTML = p4Table(lesHead, les.slice(0, half));
-  if (e3) e3.innerHTML = p4Table(lesHead, les.slice(half));
+  /* 팀 단위로 두 단에 나눈다 — 한 팀이 단 사이에서 끊기지 않게 줄 수가 반이 넘는 지점에서 자른다. */
+  var teams = p4Teams(les), total = les.length, left = [], right = [], acc = 0;
+  teams.forEach(function(t){ if (acc < total / 2) { left.push(t); acc += t.rows.length + 1; } else { right.push(t); } });
+  if (e2) e2.innerHTML = p4TeamTable(lesHead, left);
+  if (e3) e3.innerHTML = p4TeamTable(lesHead, right);
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
   var a4 = document.getElementById('audit4'); if (!a4) return;
@@ -1687,7 +1776,7 @@ function renderPage4(c, dayLabel){
     a4.innerHTML = '<b>강습 담당 줄을 못 읽었습니다</b>';
   } else {
     a4.className = 'audit ok';
-    a4.innerHTML = '<b>자체 점검 통과</b> — 강습 담당 ' + les.length + '줄을 ' + at + ' 에 확인했습니다';
+    a4.innerHTML = '<b>자체 점검 통과</b> — 강습 담당 ' + les.length + '줄 · ' + teams.length + '팀을 ' + at + ' 에 확인했습니다';
   }
 }
 
@@ -1695,7 +1784,7 @@ function renderPage4(c, dayLabel){
 function loadPage4(){
   var d = new Date(Date.now() - 86400000);
   var label = (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
-  drGet('dump', '&sheet=' + d.getDate() + '&range=O6:U62')
+  drGet('dump', '&sheet=' + d.getDate() + '&range=O6:U66')
     .then(function(r){
       if (!r || !r.ok || !r.cells) throw new Error('일자탭 조회 실패');
       renderPage4(r.cells, label);
@@ -1834,7 +1923,7 @@ function readContracts(c, cols){
 /* 강습 등록 — 팀별 묶음. 팀마다 「신규 n명 · 재등록 m명 · 금액」을 먼저 적고 그 아래 명단을 둔다.
    팀 분류는 매출 표와 같은 규칙(DAY_TEAM_RULES)을 쓴다 — 한 화면에서 팀 이름이 갈리면 안 된다. */
 function lessonTeamHTML(rows){
-  if (!rows.length) return '<div class="fnote">그날 강습 등록이 없습니다.</div>';
+  if (!rows.length) return '<div class="fnote">그날 이 갈래 강습 등록이 없습니다.</div>';
   var isNew = function(t){ return /신규/.test(String(t || '')); };
   var order = DAY_TEAM_RULES.map(function(r){ return r[0]; }).concat(['기타']);
   var byTeam = {};
@@ -2011,20 +2100,26 @@ function renderDaySales(c, dayLabel){
 /* 등록 내역 — 왼쪽 멤버십 · 오른쪽 강습(성인·유소년). 원천은 그 날짜의 일자탭이다.
    성인·유소년은 강습 블록의 '등록경로' 칸으로 가른다(정회원·비회원=성인 / 유소년=유소년). */
 function renderP2Contract(c, dayLabel){
-  var mem = document.getElementById('p2mem'), les = document.getElementById('p2les');
-  var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh');
+  var mem = document.getElementById('p2mem'), les = document.getElementById('p2les'), lesy = document.getElementById('p2lesy');
+  var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh'), h3 = document.getElementById('p2lesyh');
   setSecTitle(h1, dayLabel + ' 등록 — 멤버십');
-  setSecTitle(h2, dayLabel + ' 등록 — 강습 (팀별)');
+  setSecTitle(h2, dayLabel + ' 등록 — 강습 성인 (팀별)');
+  setSecTitle(h3, dayLabel + ' 등록 — 강습 유소년 (팀별)');
   var memRows = readContracts(c, ['A','B','C','D','E','F','G']);
   if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows, 1);   // 한 줄에 하나씩(GM 2026-09-15)
   if (les) {
     var rows = readContracts(c, ['H','I','J','K','L','M','N']);
+    /* 성인·유소년은 등록경로 칸(N열)으로 가른다 — 정회원·비회원=성인, 유소년=유소년. 경로가 빈 줄은 성인으로 둔다. */
+    var youth = rows.filter(function(x){ return /유소년/.test(String(x.route || '') + String(x.sport || '')); });
+    var adult = rows.filter(function(x){ return youth.indexOf(x) < 0; });
     /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
        그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
     var band = document.getElementById('p2regband');
-    if (band) band.style.flex = (memRows.length + rows.length) ? '2.6' : '0.42';
-    les.innerHTML = lessonTeamHTML(rows);
+    var longest = Math.max(memRows.length, adult.length + 6, youth.length + 6);   // 팀·담당 머리줄 몫을 더한다
+    if (band) band.style.flex = (memRows.length + rows.length) ? String(Math.max(1.2, Math.min(2.6, longest / 8))) : '0.42';
+    les.innerHTML = lessonTeamHTML(adult);
+    if (lesy) lesy.innerHTML = lessonTeamHTML(youth);
   }
 }
 
