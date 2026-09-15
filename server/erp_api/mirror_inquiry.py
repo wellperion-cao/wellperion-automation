@@ -54,22 +54,33 @@ def apply(conn, action, payload):
     fields = fields_of(payload)
     if not key or not kind or not fields:
         return False
+    # data 칸은 text(JSON 문자열)다 — jsonb 연산자를 못 쓰니 읽어서 합치고 다시 쓴다(sync_inquiries 와 같은 모양).
+    row = conn.execute("SELECT data FROM inquiries WHERE tenant_id=%s AND type=%s AND row_key=%s",
+                       (db.TENANT, kind, key)).fetchone()
+    if not row:
+        return False       # 거울에 없는 행 — 지어내지 않는다(1~2분 뒤 sync 가 GAS 판으로 채운다)
+    data = row["data"] if isinstance(row["data"], dict) else json.loads(row["data"] or "{}")
+    data.update(fields)
     with conn:
-        cur = conn.execute(
-            "UPDATE inquiries SET data = data || %s::jsonb, status = COALESCE(%s, status), synced_at = %s"
-            " WHERE tenant_id=%s AND type=%s AND row_key=%s",
-            (json.dumps(fields, ensure_ascii=False), fields.get("status"), _now(), db.TENANT, kind, key))
-    return bool(getattr(cur, "rowcount", 0))
+        conn.execute("UPDATE inquiries SET data=%s, status=COALESCE(%s, status), synced_at=%s"
+                     " WHERE tenant_id=%s AND type=%s AND row_key=%s",
+                     (json.dumps(data, ensure_ascii=False), fields.get("status"), _now(), db.TENANT, kind, key))
+    return True
 
 
 if __name__ == "__main__":
     class _Cur:
-        rowcount = 1
+        def __init__(self, row):
+            self._row = row
+        def fetchone(self):
+            return self._row
     class _Conn:
         def __init__(self):
             self.calls = []
         def execute(self, q, p):
-            self.calls.append((q, p)); return _Cur()
+            if q.lstrip().startswith("SELECT"):
+                return _Cur({"data": json.dumps({"name": "김명옥", "status": "옛값", "owner": "x"})} if p[2] != "none" else None)
+            self.calls.append((q, p)); return _Cur(None)
         def __enter__(self):
             return self
         def __exit__(self, *a):
@@ -79,7 +90,9 @@ if __name__ == "__main__":
                                             "rowKey": "20260127|010|김명옥", "staff": "임정은", "reservations": '[{"date":"2026-09-22"}]', "status": "가망"})
     assert ok and len(c.calls) == 1
     q, p = c.calls[0]
-    assert json.loads(p[0]) == {"reservations": [{"date": "2026-09-22"}], "status": "가망"} and p[1] == "가망" and p[3] == db.TENANT and p[4] == "멤버십" and p[5] == "20260127|010|김명옥", p
+    assert json.loads(p[0]) == {"name": "김명옥", "status": "가망", "owner": "x", "reservations": [{"date": "2026-09-22"}]}, p[0]
+    assert p[1] == "가망" and p[3] == db.TENANT and p[4] == "멤버십" and p[5] == "20260127|010|김명옥", p
+    assert apply(c, "member_inquiry_update", {"rowKey": "none", "status": "x"}) is False   # 거울에 없는 행
     assert apply(c, "member_inquiry_update", {"rowKey": "k"}) is False          # 바꿀 칸 없음
     assert apply(c, "member_inquiry_delete", {"rowKey": "k", "status": "x"}) is False   # 모르는 액션
     assert apply(c, "lesson_inquiry_update", {"rowKey": "k", "owner": "임정은"}) is False  # type 없음
