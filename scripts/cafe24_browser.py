@@ -8,6 +8,7 @@
     C:/Python314/python.exe scripts/cafe24_browser.py goto <url> # 임의 화면 캡처·링크 덤프(탐색용)
 """
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import sys
 import time
@@ -25,7 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 def _ctx(p, headed: bool):
     PROFILE.mkdir(parents=True, exist_ok=True)
-    return p.chromium.launch_persistent_context(str(PROFILE), headless=not headed, channel="chrome",
+    return p.chromium.launch_persistent_context(str(PROFILE), headless=not headed, channel="chrome", args=quiet_args(),
                                                viewport={"width": 1400, "height": 1000}, locale="ko-KR")
 
 

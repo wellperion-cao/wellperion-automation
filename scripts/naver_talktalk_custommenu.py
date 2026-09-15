@@ -21,6 +21,7 @@
 #   python scripts\naver_talktalk_custommenu.py --mode setup
 
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import argparse
 import os
@@ -370,7 +371,7 @@ def run_fix_typo(page, *, go: bool) -> int:
 # -----------------------------------------------------------------
 def run_setup(playwright) -> int:
     print("[INFO] setup: 브라우저 열림 — 네이버 로그인 후 Enter 누르세요")
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=False, args=quiet_args())
     ctx = browser.new_context()
     page = ctx.new_page()
     page.goto("https://nid.naver.com/nidlogin.login")
@@ -390,7 +391,7 @@ def make_page(playwright, *, headless: bool):
         print(f"[ERROR] storage_state 없음: {STORAGE_STATE}")
         print("       먼저 python scripts\\naver_talktalk_custommenu.py --mode setup 실행")
         sys.exit(1)
-    browser = playwright.chromium.launch(headless=headless)
+    browser = playwright.chromium.launch(headless=headless, args=quiet_args())
     ctx = browser.new_context(storage_state=str(STORAGE_STATE))
     page = ctx.new_page()
     return browser, page

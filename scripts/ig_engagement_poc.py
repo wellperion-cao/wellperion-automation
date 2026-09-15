@@ -3,6 +3,7 @@
 # 기존 Playwright Persistent Context 세션 재활용 (신규 로그인 없음)
 # 실행: python scripts\ig_engagement_poc.py
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import asyncio
 import json
 import re
@@ -187,7 +188,7 @@ async def collect_engagement():
             headless=False,
             user_agent=FIXED_UA,
             viewport={"width": 1280, "height": 900},
-            args=["--disable-blink-features=AutomationControlled"],
+            args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
         )
         page = ctx.pages[0] if ctx.pages else await ctx.new_page()
 

@@ -15,6 +15,7 @@ IG는 프로필에 최대 3개 게시물 고정 가능. 본 도구로 기존 고
   python scripts/ig_pin_manager.py --mode pin   --account wellperion --url https://www.instagram.com/p/XXXX/
 """
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import argparse
 import asyncio
@@ -55,7 +56,7 @@ async def _launch(account: str, headless: bool):
     ctx = await p.chromium.launch_persistent_context(
         user_data_dir=str(_profile_dir(account)),
         headless=headless,
-        args=["--disable-blink-features=AutomationControlled"],
+        args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
     )
     return p, ctx
 
