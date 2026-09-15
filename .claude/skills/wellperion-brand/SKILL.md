@@ -93,5 +93,6 @@ description: 웰페리온(Wellperion) 시각물·콘텐츠를 만들거나 검�
 | 값 SSOT | `scripts/brand_constants.py` | 색·폰트·로고 경로·`BRAND_PRESETS` |
 | 손글씨 슬라이드(개인계정) | `scripts/render_hand_slides.py` | 종이질감+나눔손글씨 펜/붓, HTML→PNG |
 | 릴스 영상 제작 | `scripts/make_reel.py` | 1080×1920·Ken Burns·CrossFade 0.4초 |
+| 화면 디자인 검수(홈·랜딩·파트너 페이지) | `.venv/Scripts/python.exe scripts/design_audit.py "<html>"` | 디자인 규칙집(`~/.claude/skills/ui-ux-pro-max`)의 순수 HTML 항목 19개를 헤드리스로 잰다 — **화면을 내놓기 전에 먼저 돌려 ⚠️ 0 으로 만든다**(GM 2026-09-15 「시모가 먼저 학습해서 오라」). 색·글꼴은 안 잰다(canon 이 정본) |
 
 콘텐츠 작업 폴더 구조(`instagram/{YYMMDD_명}/`, `output(채널)/` 4종)와 발행 파이프라인 상세는 CLAUDE.md §3-2 이하 및 `3. 웰페리온 가이드/cmo/brand/브랜드가이드.html`(정본 ② — 구 비주얼_스타일_가이드.md 흡수) 참조.
