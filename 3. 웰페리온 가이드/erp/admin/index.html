@@ -383,9 +383,15 @@
       </tr>
     </tbody>
   </table></div>
-  <details class="tip"><summary>파트너사를 늘리면 무엇이 달라지나</summary>
-    <div class="in">이 표에 줄이 한 줄 늡니다. 회사마다 다른 값(브랜드·용어·조직·채널)만 갈아 끼우고
-    뼈대는 그대로 씁니다 — 갈아 끼우는 목록 20건은 <b>자료 ▸ 구조 문서</b>에 있습니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">파트너사를 늘리면 무엇이 달라지나</td><td>이 표에 줄이 한 줄 늡니다. 회사마다 다른 값(브랜드·용어·조직·채널)만 갈아 끼우고 뼈대는 그대로 씁니다 — 갈아 끼우는 목록 20건은 <b>자료 ▸ 구조 문서</b>에 있습니다.</td></tr>
+    </tbody>
+  </table></div>
 
   <!-- 파트너 마케팅 채널 계정 — 서버에만 보관(배 2652 · GM 확정 2026-09-15). 이 파일은 공개 배포 파일이라 값도 코드도 안 넣는다.
        원천 = 서버 비밀 파일 · API /api/admin/partner-secrets(회사 관리자만) · 보기·저장은 결재 GM 코드를 서버가 검사한다. -->
@@ -590,19 +596,18 @@
       </tr>
     </tbody>
   </table></div>
-  <details class="tip"><summary>왜 갈라 두었나</summary>
-    <div class="in">2026-09-14 에 다이어트캠프 네 문서의 절을 전부 세어 봤더니, <b>회사소개서 11절 중 9절이 손님용</b>이었습니다
-    — 공간·수업·프로그램·상품 구성·오시는 길 같은 것입니다. 그건 홈페이지가 할 일이고, 회사소개서는
-    같이 할 사람을 구하는 문서라 방향·하는 일·이익점이 들어가야 합니다. 브랜드가이드와 운영전략은
-    겹침이 없어 그대로 둡니다. 업체가 늘어도 이 네 칸은 같습니다.</div></details>
-  <details class="tip"><summary>둘러보기 — 우리가 찍어서 셋업해 드린다 (GM 방향 2026-09-14)</summary>
-    <div class="in"><b>360° 카메라는 필요 없습니다.</b> 휴대폰 한 대로 동선을 천천히 한 번에 걸으며 찍은 영상(4K·30fps·가로)에서
-    프레임을 뽑아 걸어 다니는 둘러보기를 만듭니다. 한 곳에 <b>10~15분</b> 촬영이면 끝나고, 장비를 새로 살 것이 없습니다.
-    웰페리온에서 쓰는 그대로입니다 — 뷰어 <span class="n">home/tour/</span> · 프레임 만드는 도구 <span class="n">scripts/walk_frames_build.py</span> ·
-    촬영 안내 <a href="../../cmo/home/360촬영가이드.html" target="_blank" rel="noopener">360 촬영 가이드</a>.
-    업체 홈페이지를 만들 때 사진 자리에 이 둘러보기를 넣으면 글보다 먼저 읽힙니다.</div></details>
+  <!-- 원칙·근거는 토글이 아니라 표 한 장으로(GM 2026-09-15 「갑자기 표로 나오다가 토글 Q&A 같은 거라니 — 일관성」). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:22%">원칙</th><th>정리</th><th style="width:34%">근거</th></tr></thead>
+    <tbody>
+      <tr><td class="item">왜 네 칸으로 갈랐나</td><td>회사소개서 = 같이 할 사람을 구하는 문서(방향·하는 일·이익점) · 손님용 내용(공간·수업·상품·오시는 길)은 홈페이지 몫 · 브랜드가이드·운영전략은 겹침 없음 · 업체가 늘어도 네 칸은 같다</td><td class="note">2026-09-14 다이어트캠프 네 문서 절 전수 — 회사소개서 11절 중 9절이 손님용이었다</td></tr>
+      <tr><td class="item">둘러보기 촬영</td><td>360° 카메라 없이 휴대폰 한 대 · 동선을 천천히 한 번 걸으며 4K·30fps·가로 영상 → 프레임을 뽑아 걸어 다니는 둘러보기 · 한 곳 10~15분 · 홈페이지 사진 자리에 넣는다</td><td class="note">GM 방향 2026-09-14 「우리가 찍어서 셋업해 드린다」 · 웰페리온과 같은 도구(뷰어 <span class="n">home/tour/</span> · <span class="n">scripts/walk_frames_build.py</span> · <a href="../../cmo/home/360촬영가이드.html" target="_blank" rel="noopener">360 촬영 가이드</a>)</td></tr>
+      <tr><td class="item">깃허브 주소가 섞인 이유</td><td>깃허브 = 만들자마자 눈으로 보는 임시 자리 · 손님이 보는 것(홈페이지·상담봇)은 이 서버(erp.wellperion.com)로 옮긴다 · 업체가 자기 도메인을 가지면 그쪽으로</td><td class="note">상담봇은 옮겨짐 · 다이어트캠프 홈페이지는 옮기는 중</td></tr>
+    </tbody>
+  </table></div>
 
-  <h3 style="margin:30px 0 4px;font-size:15px">파트너사별 진행 — 한 눈에</h3>
+<h3 style="margin:30px 0 4px;font-size:15px">파트너사별 진행 — 한 눈에</h3>
   <div class="ppre">파트너사가 들어오면 <b>같은 여덟 칸</b>을 같은 순서로 채웁니다. 1호(웰페리온)가 기준판이고,
   새 파트너사는 그 판을 그대로 복제해 씁니다 — 칸을 빼거나 더하지 않습니다.
   <b>자력 답변</b> = 손님 질문 중 봇이 사람 손 없이 끝까지 답한 비율입니다.</div>
@@ -681,13 +686,6 @@
       </tbody>
     </table></div>
   </div>
-
-  <details class="tip"><summary>왜 깃허브 주소가 섞여 있나</summary>
-    <div class="in">깃허브는 <b>임시 자리</b>입니다. 만들자마자 눈으로 보려고 쓰는 곳이고, 손님에게 내보내는
-    자리가 아닙니다. 손님이 보는 것(홈페이지·상담봇)은 이 서버(erp.wellperion.com)로 옮깁니다 —
-    상담봇은 이미 옮겨져 있고, 다이어트캠프 홈페이지는 옮기는 중입니다. 업체가 자기 도메인을 갖게 되면
-    그쪽으로 다시 옮깁니다.</div></details>
-
 </section>
 
 <section class="panel" data-panel="brand" hidden>
@@ -742,7 +740,15 @@
        세운 방법 = server/deploy_env.sh {alpha|beta} · 유닛 erp-api@.service · 라이브는 종전 deploy_api.sh 그대로. -->
   <h2>환경</h2>
   <div class="meta">세 벌 · 고칠 땐 <b>알파</b>에서 · 태우기 전엔 <b>베타</b>에서 · 손님은 <b>라이브</b>에만</div>
-  <details class="tip"><summary>세 벌을 왜 나눠 두었나</summary><div class="in">날고 있는 비행기를 고치지 않습니다. 같은 비행기를 한 대 더 만들어 <b>손님 없이 이착륙</b>해 본 뒤 손님을 옮겨 태웁니다. 세 벌은 <b>코드도 자료도 완전히 별개</b>이고, 알파·베타에는 <b>밖으로 나가는 주소(구글 시트·카톡방·브로제이)를 아예 주지 않았습니다</b> — 그래서 거기서 무슨 시험을 해도 실무진 시트에는 한 줄도 안 적힙니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">세 벌을 왜 나눠 두었나</td><td>날고 있는 비행기를 고치지 않습니다. 같은 비행기를 한 대 더 만들어 <b>손님 없이 이착륙</b>해 본 뒤 손님을 옮겨 태웁니다. 세 벌은 <b>코드도 자료도 완전히 별개</b>이고, 알파·베타에는 <b>밖으로 나가는 주소(구글 시트·카톡방·브로제이)를 아예 주지 않았습니다</b> — 그래서 거기서 무슨 시험을 해도 실무진 시트에는 한 줄도 안 적힙니다.</td></tr>
+    </tbody>
+  </table></div>
   <div class="layers">
     <div class="layer">
       <div class="tag">알파</div>
@@ -865,9 +871,15 @@
 <section class="panel" data-panel="downloads" hidden>
   <h2>모듈 활성화 셋팅</h2>
   <div class="meta">모듈이 켜지려면 필요한 설치·설정입니다 · <b>AI 를 먼저 깔고</b> 그 위에 모듈별 도구를 얹습니다</div>
-  <details class="tip"><summary>회사 자료는 왜 여기 없나</summary>
-    <div class="in">여기 있는 것은 설치·도구 파일뿐입니다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라
-    화면에서 봅니다 — 한 번 내려받은 파일은 나중에 권한을 거둬도 그 PC 에 그대로 남습니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">회사 자료는 왜 여기 없나</td><td>여기 있는 것은 설치·도구 파일뿐입니다. 회원·매출·인사 같은 회사 자료는 내려받는 곳이 아니라 화면에서 봅니다 — 한 번 내려받은 파일은 나중에 권한을 거둬도 그 PC 에 그대로 남습니다.</td></tr>
+    </tbody>
+  </table></div>
   <div id="downloads"><div class="desc">불러오는 중…</div></div>
 </section>
 
@@ -875,10 +887,16 @@
 <section class="panel" data-panel="standard" hidden>
   <h2>모듈 기준</h2>
   <div class="meta">카드 하나가 <b>모듈</b>이 되려면 아래 다섯을 모두 채웁니다 · 하나라도 비면 모듈이 아니라 화면·문서·임시입니다</div>
-  <details class="tip"><summary>이 기준을 왜 두나</summary>
-    <div class="in">파트너사 첫 화면에 카드가 42장 깔려 있는데, 그 안에는 매일 일이 도는 자리와
-    한 번 보고 마는 문서가 섞여 있습니다. 섞여 있으면 새 파트너사에 무엇을 켜 줘야 하는지,
-    무엇에 값을 매길 수 있는지 정할 수 없습니다. 그래서 <b>파는 단위</b>를 여기서 정의합니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">이 기준을 왜 두나</td><td>파트너사 첫 화면에 카드가 42장 깔려 있는데, 그 안에는 매일 일이 도는 자리와 한 번 보고 마는 문서가 섞여 있습니다. 섞여 있으면 새 파트너사에 무엇을 켜 줘야 하는지, 무엇에 값을 매길 수 있는지 정할 수 없습니다. 그래서 <b>파는 단위</b>를 여기서 정의합니다.</td></tr>
+      <tr><td class="item">모듈은 하나인데 자동화는 셋일 수 있다</td><td><b>파는 단위(모듈)</b>와 <b>가동을 지켜보는 단위(자동화)</b>는 층이 다릅니다. 「콘텐츠」는 모듈 한 개지만 뒤에서 도는 자동화는 셋입니다 — 접수에서 검수로 넘기는 것, 시리즈를 발행하는 것, 문의 퍼널을 세는 것. 카드를 하나로 합쳐도 <b>감시는 셋으로 따로 셉니다</b>. 한 덩어리로 세면 「둘은 엿새째 멈췄고 하나만 돈다」 같은 차이가 화면에서 사라집니다. 감시 쪽 정본은 자동화 등록부(<code>status/module_registry.json</code>)이고, 파는 쪽 정본은 이 판입니다.</td></tr>
+    </tbody>
+  </table></div>
 
   <h3>다섯 조건 <span class="n">다섯을 다 채우면 모듈</span></h3>
   <div class="tbl-wrap"><table class="reg">
@@ -947,12 +965,7 @@
     </tbody>
   </table></div>
   <p class="lead">읽는 법 — 카드는 42장이지만 <b>실제 모듈은 15개</b>입니다. 낱장을 모듈 아래로 접으면 파트너사 첫 화면은 <b>12칸</b>이 됩니다. 새 파트너사에 켜 주는 단위도, 값을 매기는 단위도 그 12칸입니다.</p>
-  <details class="tip"><summary>모듈은 하나인데 자동화는 셋일 수 있다</summary>
-    <div class="in"><b>파는 단위(모듈)</b>와 <b>가동을 지켜보는 단위(자동화)</b>는 층이 다릅니다.
-    「콘텐츠」는 모듈 한 개지만 뒤에서 도는 자동화는 셋입니다 — 접수에서 검수로 넘기는 것,
-    시리즈를 발행하는 것, 문의 퍼널을 세는 것. 카드를 하나로 합쳐도 <b>감시는 셋으로 따로 셉니다</b>.
-    한 덩어리로 세면 「둘은 엿새째 멈췄고 하나만 돈다」 같은 차이가 화면에서 사라집니다.
-    감시 쪽 정본은 자동화 등록부(<code>status/module_registry.json</code>)이고, 파는 쪽 정본은 이 판입니다.</div></details>
+
 </section>
 
 <!-- ═══ 화면 UI 표준 (GM 지시 2026-09-14 「UI/UX 표준화를 표로 정리하고, 승인나면 전체 반영」)
@@ -962,11 +975,15 @@
 <section class="panel" data-panel="ui" hidden>
   <h2>화면 UI/UX 표준</h2>
   <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 여섯을 모두 채웁니다 · 규격 다섯은 파일을 읽어 세고, UX 하나는 브라우저로 실제 렌더해 셉니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
-  <details class="tip"><summary>이 표준을 왜 두나</summary>
-    <div class="in">화면마다 글자 크기와 색을 따로 박아 써서 같은 회사 화면으로 읽히지 않습니다.
-    실측하면 한 화면 안에 글자 크기가 30종, 색이 101종까지 쓰인 곳이 있습니다.
-    디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.<br>
-    ⑥ UX 는 2026-09-15 GM 지시(「시모가 성장한 것을 화면 UI/UX 까지 표준화」)로 더했습니다 — 눈으로 열어서는 안 보이는 것(키보드 초점·터치 크기·명암비·이모지 아이콘·반응형 사진·움직임 줄이기)을 디자인 규칙집(UI/UX Pro Max) 기준 19항목으로 잽니다. 색·글꼴은 여기서 안 잽니다 — 브랜드 파일이 정본입니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">이 표준을 왜 두나</td><td>화면마다 글자 크기와 색을 따로 박아 써서 같은 회사 화면으로 읽히지 않습니다. 실측하면 한 화면 안에 글자 크기가 30종, 색이 101종까지 쓰인 곳이 있습니다. 디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.<br> ⑥ UX 는 2026-09-15 GM 지시(「시모가 성장한 것을 화면 UI/UX 까지 표준화」)로 더했습니다 — 눈으로 열어서는 안 보이는 것(키보드 초점·터치 크기·명암비·이모지 아이콘·반응형 사진·움직임 줄이기)을 디자인 규칙집(UI/UX Pro Max) 기준 19항목으로 잽니다. 색·글꼴은 여기서 안 잽니다 — 브랜드 파일이 정본입니다.</td></tr>
+    </tbody>
+  </table></div>
 
   <h3>여섯 가지 <span class="n">여섯을 다 채우면 지킨다</span></h3>
   <div class="tbl-wrap"><table class="reg">
@@ -1066,9 +1083,15 @@
   </div>
 
   <h3>두 겹 구조 <span class="n">파는 회사 / 쓰는 회사</span></h3>
-  <details class="tip"><summary>두 겹으로 나눈 이유</summary>
-    <div class="in">회사가 바뀌어도 그대로 쓰는 뼈대는 위 겹(플랫폼)이 갖고, 회사마다 다른 값은 아래 겹(파트너사)에 둡니다.
-    이렇게 갈라 두면 파트너사를 늘릴 때 아래 겹만 새로 채우면 됩니다.</div></details>
+
+  <!-- 「왜 이렇게 두나」는 토글이 아니라 표(GM 2026-09-15 「일관성 — 표로 나오다가 토글 Q&A」 · 파트너 산출물 판과 같은 모양). -->
+  <div class="tbl-wrap">
+  <table class="reg">
+    <thead><tr><th style="width:26%">원칙</th><th>정리</th></tr></thead>
+    <tbody>
+      <tr><td class="item">두 겹으로 나눈 이유</td><td>회사가 바뀌어도 그대로 쓰는 뼈대는 위 겹(플랫폼)이 갖고, 회사마다 다른 값은 아래 겹(파트너사)에 둡니다. 이렇게 갈라 두면 파트너사를 늘릴 때 아래 겹만 새로 채우면 됩니다.</td></tr>
+    </tbody>
+  </table></div>
   <div class="split-note">
     <div class="half"><b>플랫폼 · 웰페리온 랩스</b>ERP 를 만들어 파는 회사입니다. 뼈대(엔진·규격·부팅 절차)의 주인이며, 파트너사가 몇이 되든 하나입니다. 법인 상호(사업자등록)는 이 이름과 별개로 나중에 정합니다.</div>
     <div class="half"><b>파트너사 · 웰페리온 (1호)</b>이 ERP 를 가져다 쓰는 회사입니다. 브랜드·용어·조직·KPI 등 자기 값만 갈아 끼워 씁니다.</div>
