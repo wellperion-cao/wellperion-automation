@@ -321,6 +321,22 @@ def main() -> int:
 
     style = load_style(args.client)
     fail_name = style["fail_notify_name"]
+    # 같은 업체 실행이 겹치면 글이 두 번 올라간다 — 2026-09-15 14:49·14:50 다캠 「무릎…」 2건(두 프로세스가
+    # 동시에 돌아 둘 다 「오늘 성공 없음」으로 보고 각자 올렸다). 잠금 파일 하나로 한 번에 하나만 돈다.
+    lock = ROOT / "status" / f".{args.client}_blog_daily.lock"
+    try:
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        age = datetime.now().timestamp() - lock.stat().st_mtime
+        if age < 40 * 60:
+            print(f"[INFO] 이미 도는 중({int(age)}초 전 시작) — 건너뜀 · 잠금 {lock.name}")
+            return 0
+        lock.unlink(missing_ok=True)   # 40분 넘은 잠금은 죽은 프로세스가 남긴 것
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    os.write(fd, str(os.getpid()).encode()); os.close(fd)
+    import atexit
+    atexit.register(lambda: lock.unlink(missing_ok=True))
+
     state = load_state(style)
     if _already_ok_today(state):
         log(style, "오늘 이미 임시저장 성공 — 건너뜀")
