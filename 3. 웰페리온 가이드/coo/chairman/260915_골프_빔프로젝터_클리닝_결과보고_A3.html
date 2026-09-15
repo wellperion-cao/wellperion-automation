@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>골프 레이저 프로젝터 클리닝 결과보고 및 대금 집행 요청 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<!--
+  골프 레이저 프로젝터 클리닝 결과보고 A3 — 2026-09-15 웰리 (welly-gm-a3-report 규격 · 260903_브로제이_A3 CSS 승계)
+  원본 = G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&미션 진행(경영지원부)/26.9.4 웰페리온 골프장 빔프로젝트 클리닝 견적/
+  숫자는 견적서·세금계산서 그대로 옮겼고 합산만 웰리가 했다. 추정치는 (추정) 표기.
+-->
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar .note{ font-size:11.5px; opacity:.8; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 22px; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy); letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:26px; letter-spacing:-.8px; line-height:1.2; word-break:keep-all; max-width:920px; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); }
+  .ask{ margin-top:11px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:110px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:10px 15px; border-right:1px solid rgba(255,255,255,.2); display:flex; gap:11px; }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:21px; font-weight:900; opacity:.55; line-height:1; }
+  .ask .q{ font-size:13.5px; font-weight:700; line-height:1.42; letter-spacing:-.2px; }
+  .ask .d{ font-size:11.3px; line-height:1.45; margin-top:4px; opacity:.9; }
+  .main{ margin-top:10px; flex:1; min-height:0; display:flex; gap:14px; }
+  table{ border-collapse:collapse; table-layout:fixed; width:100%; align-self:flex-start; }
+  th,td{ border:1px solid var(--line); padding:5px 9px; font-size:12px; line-height:1.32; vertical-align:middle; }
+  thead th{ height:30px; background:var(--navy); color:#fff; font-weight:700; font-size:12.5px; border-color:#2A4763; text-align:center; }
+  thead th.k{ text-align:left; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:12px; color:var(--navy); }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.c{ text-align:center; }
+  tr.grp td{ background:var(--navy-bg); color:var(--navy); font-weight:700; font-size:11.6px; padding:4px 9px; letter-spacing:-.2px; }
+  tr.sum td{ background:#F1F4F8; font-weight:700; }
+  tr.total td{ background:var(--navy); color:#fff; font-weight:700; font-size:12.5px; border-color:#2A4763; }
+  .good{ color:var(--good); font-weight:700; } .warn{ color:var(--warn); font-weight:700; } .bad{ color:var(--bad); font-weight:700; }
+  .dim{ color:#6B7580; font-weight:400; font-size:10.8px; }
+  .left{ flex:1.06; min-width:0; display:flex; flex-direction:column; gap:9px; }
+  .right{ width:534px; flex:none; display:flex; flex-direction:column; gap:8px; }
+  .sectionlabel{ font-size:11px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:3px; }
+  .photogrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .photogrid figure{ margin:0; border:1px solid var(--line); }
+  .photogrid img{ width:100%; height:112px; object-fit:cover; display:block; background:#eee; }
+  .photogrid figcaption{ font-size:9.6px; line-height:1.28; color:#3C464F; padding:3px 5px 4px; }
+  .box{ border:1px solid var(--line); padding:9px 12px; }
+  .box h3{ font-size:12px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:5px; padding-bottom:4px; border-bottom:1px solid var(--line); }
+  .box li{ font-size:11.6px; line-height:1.42; margin:0 0 5px 14px; }
+  .box li b{ font-weight:700; }
+  .box.rec{ background:var(--navy-bg); border-color:#C9D5E3; flex:1; }
+  .kpi{ display:flex; gap:8px; }
+  .kpi div{ flex:1; border:1px solid var(--line); padding:7px 9px; }
+  .kpi .l{ font-size:10px; color:#5C666F; letter-spacing:.5px; }
+  .kpi .v{ font-size:17px; font-weight:900; color:var(--navy); margin-top:2px; letter-spacing:-.4px; font-variant-numeric:tabular-nums; }
+  .kpi .s{ font-size:10px; color:#5C666F; margin-top:1px; }
+  .foot{ margin-top:7px; border-top:1px solid var(--line); padding-top:6px; display:flex; gap:22px; font-size:10.2px; line-height:1.46; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>골프 레이저 프로젝터 클리닝 — 결과보고 및 대금 집행 요청 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">골프 레이저 프로젝터 클리닝 — 결과보고 및 대금 집행 요청<br><span style="font-size:18px;color:#3C464F">9/13 작업 완료 · 대금 1,936,000원(세금계산서 기준) 9/21 집행 요청</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b> · 업체 <b>성실케어</b> (배진영 · 010-3297-9866)<br>
+      작업일 <b>2026. 09. 13.(일)</b> · 작성일 <b>2026. 09. 15.</b> · 문서번호 <b>WP-GM-260915-05</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it"><div class="n">01</div><div><div class="q">작업 <b>완료</b>(9/13 일요일 · 정기 휴관일 가동) — 레이저 프로젝터 16대 + 키오스크 16대 + 메모리폼부스 16타석 클리닝.</div><div class="d">GDR 7대·QED 8대·QED룸 1대, 총 16대. 성실케어 기술진 현장 분해·클리닝(사진①~⑨).</div></div></div>
+      <div class="it"><div class="n">02</div><div><div class="q">대금 <b>1,936,000원</b>(세금계산서 기준·부가세 포함) <b>9/21(월)</b> 집행 요청 — 관리부 집행 · GM 직접 전달.</div><div class="d">애초 결재액 1,971,200원 대비 <b class="bad">-35,200원</b>. 세금계산서 값을 정본으로 썼다(각주③).</div></div></div>
+      <div class="it"><div class="n">03</div><div><div class="q">램프 소손 타석 <b>무상 A/S</b> 요청 <b class="warn">진행 중</b> — 타석 번호·교체 증빙 확인 대기.</div><div class="d">2026-09-09 결재 행 원문 그대로: 보증 2년 이내(10월 교체분)로 무상 유지보수 요청. 이번 클리닝 견적엔 A/S 미포함.</div></div></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="left">
+      <div>
+        <div class="sectionlabel">① 클리닝 내역 — 세금계산서(2026-09-15 발행) 기준</div>
+        <table>
+          <thead><tr><th class="k" style="width:190px">항목</th><th style="width:110px">규격·수량</th><th style="width:100px">단가</th><th style="width:120px">공급가액</th><th style="width:100px">세액</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td class="k">프로젝터 클리닝</td><td class="c">레이저 16대</td><td class="n">60,000</td><td class="n">960,000</td><td class="n">96,000</td><td class="dim">GDR 7대·QED 8대·QED룸 1대</td></tr>
+            <tr><td class="k">키오스크 클리닝(GDR)</td><td class="c">8대</td><td class="n">30,000</td><td class="n">240,000</td><td class="n">24,000</td><td></td></tr>
+            <tr><td class="k">키오스크 클리닝(QED)</td><td class="c">8대</td><td class="n">30,000</td><td class="n">240,000</td><td class="n">24,000</td><td></td></tr>
+            <tr><td class="k">메모리폼부스 클리닝</td><td class="c">16타석</td><td class="n">20,000</td><td class="n">320,000</td><td class="n">32,000</td><td class="warn">견적서 인쇄액 352,000원과 다름(각주③)</td></tr>
+            <tr class="total"><td class="k" style="background:var(--navy);color:#fff">합계 (부가세 포함 1,936,000원)</td><td class="c">16대·16타석</td><td class="c">—</td><td class="n">1,760,000</td><td class="n">176,000</td><td>승인번호 20260915-10260915-71871067</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="sectionlabel">② 서류</div>
+        <table>
+          <thead><tr><th class="k" style="width:150px">문서</th><th>파일 · 번호</th><th style="width:230px">비고</th></tr></thead>
+          <tbody>
+            <tr><td class="k">견적서(확정)</td><td>260909 GDR 웰페리온 견적서.pdf · 260909-04</td><td class="dim">인하 반영본 · 김재훈 본부장</td></tr>
+            <tr><td class="k">견적서(1차)</td><td>260903 GDR 웰페리온 클리닝 견적서.pdf · 260903-07</td><td class="dim">인하 전 1,952,000원</td></tr>
+            <tr><td class="k">세금계산서</td><td>세금계산서.png · 승인 20260915-10260915-71871067</td><td class="dim">2026-09-15 발행 · 공급가 1,760,000원</td></tr>
+            <tr><td class="k">사업자등록증</td><td>성실케어 사업자등록증.jpg · 등록번호 595-32-01231</td><td class="dim">대표 배진영 · 인천 서구 거록로109번길16</td></tr>
+            <tr><td class="k">통장사본</td><td>성실케어 통장사본.jpg</td><td class="dim">KB국민은행 · 배진영(계좌번호 비공개)</td></tr>
+            <tr><td class="k">담당자 명함</td><td>성실케어 담당자 명함.png</td><td class="warn">정태운 관리부과장(㈜케이피에이치) · 확인 필요(각주④)</td></tr>
+          </tbody>
+        </table>
+        <div class="dim" style="margin-top:3px;font-size:10.3px">경로 — G:/공유 드라이브/0. 경영지원/0. 웰페리온 프로젝트&amp;미션 진행(경영지원부)/26.9.4 웰페리온 골프장 빔프로젝트 클리닝 견적/</div>
+      </div>
+      <div>
+        <div class="sectionlabel">③ 일정</div>
+        <table>
+          <thead><tr><th class="k" style="width:190px">일자</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td class="k">2026-09-09 10:46</td><td>결재 승인(GM · 1,971,200원 기준)</td></tr>
+            <tr><td class="k">2026-09-13(일) 09:00</td><td>작업 실시 — 성실케어(정기 휴관일 가동)</td></tr>
+            <tr><td class="k">2026-09-15</td><td>세금계산서 발행(1,936,000원)</td></tr>
+            <tr class="sum"><td class="k">2026-09-21(월)</td><td>대금 집행 요청 — 1,936,000원(관리부 집행·GM 직접 전달)</td></tr>
+            <tr><td class="k">2027-09(예정)</td><td>다음 회차 — 연 1회 정기 클리닝 고정 지출라인</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="sectionlabel">작업 사진 (9/13 · 성실케어)</div>
+      <div class="photogrid">
+        <figure><img src="260915_클리닝사진/01.jpg" alt="작업 전 GDR 타석 전경"><figcaption>작업 전 GDR 타석 전경 — 프로젝터·스크린·키오스크 열</figcaption></figure>
+        <figure><img src="260915_클리닝사진/02.jpg" alt="프로젝터 다수 대 동시 분해"><figcaption>프로젝터 다수 대 동시 분해 — 기술자 2인 점검</figcaption></figure>
+        <figure><img src="260915_클리닝사진/03.jpg" alt="분해 커버 내부 먼지"><figcaption>분해 커버 내부 — 먼지 낀 상태(청소 전)</figcaption></figure>
+        <figure><img src="260915_클리닝사진/04.jpg" alt="메인보드 엔진부 먼지"><figcaption>메인보드·엔진부 분해 — 먼지 쌓임</figcaption></figure>
+        <figure><img src="260915_클리닝사진/05.jpg" alt="렌즈 프레임 내부 먼지"><figcaption>렌즈·프레임 내부 — 먼지 두껍게 쌓인 상태</figcaption></figure>
+        <figure><img src="260915_클리닝사진/06.jpg" alt="렌즈 배기구 먼지 확인"><figcaption>렌즈 배기구 먼지 뭉치 확인</figcaption></figure>
+        <figure><img src="260915_클리닝사진/07.jpg" alt="내부 배선 방열판 먼지"><figcaption>내부 배선·방열판 — 먼지 낀 상태</figcaption></figure>
+        <figure><img src="260915_클리닝사진/08.jpg" alt="타석 매트 청소"><figcaption>직원이 청소기로 타석 매트·바닥 청소</figcaption></figure>
+        <figure><img src="260915_클리닝사진/09.jpg" alt="청소 완료 후 정돈"><figcaption>청소 완료 후 GDR 타석 열 정돈된 모습</figcaption></figure>
+      </div>
+      <div class="box rec">
+        <h3>웰리 의견</h3>
+        <ul>
+          <li><b>작업 결과</b> — 현장 사진상 프로젝터 내부 먼지 다량 제거 확인. 예방 클리닝 목적은 달성했다(사진①~⑨).</li>
+          <li><b>램프 A/S</b> — 09-09 결재 행 원문대로 무상 유지보수 요청 진행 중. 소손 타석 번호·교체 증빙 확인되면 성실케어에 접수한다.</li>
+          <li><b>정기구독 검토</b> — 예방 클리닝 비용(연 190만원대)이 사후 램프 교체·고장 비용보다 낮다. 연 1회 정기화 근거로 쓴다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>출처</b> — 성실케어 견적서 2부(260903-07·260909-04) · 세금계산서(2026-09-15 발행·승인번호 20260915-10260915-71871067) · 사업자등록증 · 통장사본 · 명함 · 작업 사진 9장(2026-09-13). 결재 SSOT TODO-20260909104231118. 경로 위 서류표 참조. 숫자는 원본 그대로이고 <b>합계만 웰리 합산</b>이다.</div>
+    <div><b>정직 표기</b> — 사진 캡션은 사진에 보이는 것만 적었다. 램프가 소손된 타석은 사진으로 특정되지 않아 <b>「확인 필요」</b>로 둔다. 교체 시점 증빙도 아직 없다.</div>
+    <div><b>③ 금액 차이</b> — 확정 견적(260909-04)은 메모리폼부스 16타석을 352,000원으로 인쇄했으나 16×20,000=320,000원과 맞지 않는다(견적서 자체 계산 오차로 보임). 세금계산서(2026-09-15)는 320,000원으로 계산돼 합계 1,936,000원이다. 본 보고는 <b>세금계산서 값을 정본</b>으로 썼다 — 애초 결재액 1,971,200원 대비 -35,200원. <b>④ 명함</b> — 폴더의 "성실케어 담당자 명함"은 정태운(관리부과장·㈜케이피에이치/EFUN KOREA) 명의로 견적서 담당자 김재훈 본부장과 다른 인물이다 — 확인 필요. <b>차기 보고</b> — 램프 A/S 처리 결과 확인되면 같은 문서번호로 갱신.</div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('sheet'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+    var a = document.createElement('a'); a.download = '260915_골프_빔프로젝터_클리닝_결과보고_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+  });
+};
+</script>
+</body>
+</html>
