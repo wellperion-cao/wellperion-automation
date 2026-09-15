@@ -144,12 +144,24 @@ def _room_id(chat_id):
     """--chat 에 방 이름(status/telegram_rooms.json 키 · 예 '업무관리-나우열M')이 오면 숫자 id 로 푼다.
     2026-09-06 실사고: 이름을 그대로 넘겨 int() 에서 죽고 헬스체크가 '발송 실패 1건'으로 잡았다. 숫자면 그대로."""
     s = str(chat_id).strip()
+    # 2026-09-15 실사고: '업무관리' 키가 telegram_rooms.json 에서는 GM 개인 봇방(=GM 본인 id)이라, GM 계정으로
+    # 보내면 「저장한 메시지」(자기 자신)로 들어갔다(10:17·10:20 두 통). 이 도구의 '업무관리' 는 나우열M 그룹뿐이다.
+    if s in ("업무관리", "업무관리-나우열M", "AtoA"):
+        return WORK_ROOM_CHAT_ID
     if s.lstrip("-").isdigit():
-        return int(s)
-    rooms = json.loads((ROOT / "status" / "telegram_rooms.json").read_text(encoding="utf-8"))
-    if s in rooms and rooms[s]:
-        return int(rooms[s])
-    raise ValueError("알 수 없는 방 이름: %s (status/telegram_rooms.json 키 또는 숫자 chat_id)" % s)
+        rid = int(s)
+    else:
+        rooms = json.loads((ROOT / "status" / "telegram_rooms.json").read_text(encoding="utf-8"))
+        if not (s in rooms and rooms[s]):
+            raise ValueError("알 수 없는 방 이름: %s (status/telegram_rooms.json 키 또는 숫자 chat_id)" % s)
+        rid = int(rooms[s])
+    if rid == GM_SELF_ID:
+        raise ValueError("GM 계정이 자기 자신(id %d)에게 보내면 「저장한 메시지」로 간다 — 나우열M 방은 '업무관리' 또는 %d"
+                         % (GM_SELF_ID, WORK_ROOM_CHAT_ID))
+    return rid
+
+
+GM_SELF_ID = 8254867551   # GM 본인 텔레그램 id(--whoami) — 봇방 chat_id 와 같은 숫자라 헷갈린다
 
 
 async def _resolve_and_send(client, chat_id, text):
@@ -160,6 +172,33 @@ async def _resolve_and_send(client, chat_id, text):
         await client.get_dialogs()  # raw id 캐시 미스 — 대화목록 동기화 후 재시도
         entity = await client.get_entity(int(chat_id))
     await client.send_message(entity, text)
+
+
+async def _rename_async(api_id, api_hash, chat_id, title):
+    """그룹 방 제목 변경(GM 계정 = 방장). 작은 그룹은 messages.EditChatTitle · 슈퍼그룹은 channels.EditTitle."""
+    from telethon import TelegramClient
+    from telethon.tl.functions.messages import EditChatTitleRequest
+    from telethon.tl.functions.channels import EditTitleRequest
+    from telethon.tl.types import Channel
+    client = TelegramClient(_SESSION_NAME, api_id, api_hash)
+    await client.connect()
+    try:
+        if not await client.is_user_authorized():
+            raise RuntimeError("세션 만료/미인증 — --setup 다시 실행 필요")
+        rid = _room_id(chat_id)
+        try:
+            entity = await client.get_entity(rid)
+        except (ValueError, TypeError):
+            await client.get_dialogs()
+            entity = await client.get_entity(rid)
+        if isinstance(entity, Channel):
+            await client(EditTitleRequest(channel=entity, title=title))
+        else:
+            await client(EditChatTitleRequest(chat_id=abs(rid), title=title))
+        entity = await client.get_entity(rid)
+        return getattr(entity, "title", "")
+    finally:
+        await client.disconnect()
 
 
 async def _send_async(api_id, api_hash, chat_id, text):
@@ -353,6 +392,13 @@ def _selfcheck():
     assert n1.splitlines()[1] == "업무명 : [#201] 테스트", n1
     n2 = render_chro_task("테스트", "나우열M", "2026-09-08", "2026-09-12", "내용", no="#201")
     assert n2.splitlines()[1] == "업무명 : [#201] 테스트", n2
+    # 방 이름 해소 — '업무관리' 는 나우열M 그룹이고, GM 본인 id 로는 절대 보내지 않는다(2026-09-15 「저장한 메시지」 사고).
+    assert _room_id("업무관리") == WORK_ROOM_CHAT_ID and _room_id("AtoA") == WORK_ROOM_CHAT_ID
+    assert _room_id(str(WORK_ROOM_CHAT_ID)) == WORK_ROOM_CHAT_ID
+    try:
+        _room_id(str(GM_SELF_ID)); raise AssertionError("GM 본인 id 가 통과했다")
+    except ValueError as ex:
+        assert "저장한 메시지" in str(ex), ex
     try:
         render_chro_task("", "x", "y", "z", "w"); raise AssertionError("빈 값 통과")
     except ValueError:
@@ -396,6 +442,7 @@ def main():
     ap.add_argument("--text", type=str)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--selfcheck", action="store_true")
+    ap.add_argument("--rename", type=str, help="그룹 방 제목 변경(GM 계정=방장) · 기본 chat=업무관리(나우열M 그룹)")
     ap.add_argument("--chro-task", action="store_true", help="업무지시 규격(CHRO야/업무명/담당자/시작일/종료일/내용)으로 발송 · 기본 chat=업무관리")
     ap.add_argument("--no", dest="task_no", help="업무명 앞에 붙일 원장 번호(#201 등 · 나우열M 요청 2026-09-11)")
     ap.add_argument("--gm-quote", dest="gm_quote",
@@ -455,6 +502,17 @@ def main():
         if cfg is None:
             sys.exit(code)
         asyncio.run(_whoami_async(int(cfg["TG_USER_API_ID"]), cfg["TG_USER_API_HASH"]))
+        return
+
+    if args.rename:
+        cfg, code = _prepare("")
+        if cfg is None:
+            sys.exit(code)
+        chat = args.chat or str(WORK_ROOM_CHAT_ID)
+        if args.dry_run:
+            print(f"[dry-run] 제목 변경 안 함 — chat={chat} title={args.rename!r}"); return
+        title = asyncio.run(_rename_async(int(cfg["TG_USER_API_ID"]), cfg["TG_USER_API_HASH"], chat, args.rename))
+        print(f"[OK] 방 제목 → {title!r} (chat={_room_id(chat)})")
         return
 
     if args.send:
