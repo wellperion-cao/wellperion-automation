@@ -9,6 +9,7 @@
   .venv/Scripts/python.exe scripts/design_audit.py "<html 경로 또는 URL>" [--json]
   (여러 장: 경로를 나열)
 출력: 항목 | 값 | 판정(✅/⚠️) 마크다운 표 한 장. exit 0 = 전부 통과, 1 = ⚠️ 있음.
+  --json : 화면마다 {"path","warn":[걸린 항목 이름]} 한 줄(JSON Lines) — scripts/ui_standard_check.py --ux 가 읽는다.
 """
 import json
 import pathlib
@@ -112,6 +113,7 @@ def audit(target: str, browser) -> dict:
                 css += pg.request.get(href).text() if href.startswith("http") else pathlib.Path(unquote(href[8:] if href.startswith("file:///") else href)).read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 pass
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)   # 주석 속 예시(예: ":focus{outline:none}")를 세지 않는다
         r["reducedMotion"] = "prefers-reduced-motion" in css
         r["transitionAll"] = len(re.findall(r"transition\s*:\s*all", css))
         r["slowTransitions"] = sum(1 for d in re.findall(r"(?:transition|animation)[^;{}]*?(\d*\.?\d+)(m?s)", css) if float(d[0]) * (1 if d[1] == "ms" else 1000) > 1000)
@@ -159,9 +161,17 @@ def main(argv):
     with sync_playwright() as pw:
         b = pw.chromium.launch()
         for t in targets:
-            res = audit(t, b)
+            try:
+                res = audit(t, b)
+            except Exception as e:  # 한 장이 못 열려도 나머지는 잰다
+                if as_json:
+                    print(json.dumps({"path": t, "error": str(e)[:120]}, ensure_ascii=False), flush=True)
+                else:
+                    print(f"\n### {t}\n열기 실패: {e}")
+                continue
             if as_json:
-                print(json.dumps({t: res}, ensure_ascii=False)); continue
+                walked = [name for name, _v, mark in rows(res) if mark == "⚠️"]
+                print(json.dumps({"path": t, "warn": walked}, ensure_ascii=False), flush=True); continue
             print(f"\n### {t}\n| 항목 | 값 | 판정 |\n|---|---|---|")
             for name, val, mark in rows(res):
                 bad += mark == "⚠️"

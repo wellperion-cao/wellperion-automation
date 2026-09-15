@@ -92,3 +92,21 @@ h1,h2,h3,h4{ color: var(--ink); font-weight:700; }
     min-height: var(--tap);
   }
 }
+
+/* --- UX 바닥 규칙 -------------------------------------------
+   2026-09-15 GM 「화면 UI/UX 까지 표준화해서 전체적으로 개선되는 모습」.
+   디자인 규칙집(UI/UX Pro Max) 의 순수 HTML 항목 가운데, 화면이 이 파일을
+   링크하기만 하면 저절로 채워지는 것을 여기에 둔다 — 눈에 안 보여서 화면마다
+   빠뜨리던 것들이다. 재는 도구 = scripts/design_audit.py · 전수 = ui_standard_check.py --ux.
+   화면이 자기 값을 가진 곳은 그 값이 이긴다(여기서는 !important 를 쓰지 않는다 —
+   폰 글자 16px 만 예외: 화면들이 body 에 13~15px 를 박아 두어 덮지 않으면 안 먹는다). */
+:is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{ outline: 2px solid currentColor; outline-offset: 3px; }   /* 키보드 초점 표시 — 화면이 :focus{outline:none} 을 박아 둔 곳도 이기게 특이도를 한 칸 올렸다 */
+button, [role="button"], summary, label[for]{ cursor: pointer; }          /* 누르는 것은 손가락 */
+button:disabled{ cursor: not-allowed; }
+img, video{ max-width: 100%; height: auto; }                              /* 가로 넘침 방지 */
+@media (prefers-reduced-motion: reduce){                                  /* 움직임 줄이기 설정 존중 */
+  *, *::before, *::after{ transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 768px){
+  body{ font-size: 16px !important; }                                     /* 폰 본문 글자 바닥 */
+}

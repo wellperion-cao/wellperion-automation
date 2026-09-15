@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="../../erp/admin/platform_brand.css">
 <title>어떤 하루 — 개인계정 기록</title>
 <!-- 폰에서 「홈 화면에 추가」 하면 앱처럼 전체화면으로 열린다 (GM 지시 2026-09-14 「앱용으로 하나」).
      현장에서 사진을 찍고 그 자리에서 올리는 쓰임이라 주소창·탭이 없는 편이 낫다.
      설치 파일은 없다 — 주소만 홈 화면에 얹는 방식이라 따로 깔 것이 없다. -->
-<meta name="theme-color" content="#23201C">
+<meta name="theme-color" content="#0A6E66">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,53 +30,53 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:#EAE6DC;font-family:'Noto Sans KR',sans-serif;color:#23201C;}
-  textarea,input,select,button{font-family:'Noto Sans KR',sans-serif;}
-  textarea:focus,input:focus,select:focus{outline:2px solid #B4552E;outline-offset:-2px;}
-  .wrap{max-width:430px;margin:0 auto;min-height:100vh;background:#F4F1EA;padding-bottom:60px;}
-  .head{padding:22px 20px 18px;background:#23201C;color:#FBF8F2;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5;}
+  body{background:#F3FBF9;font-family:var(--pf-sans);color:#0F3D3A;}
+  textarea,input,select,button{font-family:var(--pf-sans);}
+  textarea:focus,input:focus,select:focus{outline:2px solid #0A6E66;outline-offset:-2px;}
+  .wrap{max-width:430px;margin:0 auto;min-height:100vh;background:#FFFFFF;padding-bottom:60px;}
+  .head{padding:22px 20px 18px;background:#0F3D3A;color:#FFFFFF;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5;}
   .head-top{display:flex;align-items:center;justify-content:space-between;}
-  .eyebrow{font-size:12px;letter-spacing:.24em;color:#A9A29A;}
-  .pill{font-size:12px;padding:5px 10px;border:1px solid #4A443C;border-radius:999px;color:#E4DFD6;}
-  .h1{font-family:'Gowun Batang',serif;font-size:26px;line-height:1.35;}
-  .sub{font-size:13px;line-height:1.7;color:#A9A29A;}
+  .eyebrow{font-size:12px;letter-spacing:.24em;color:#A8D9D1;}
+  .pill{font-size:12px;padding:5px 10px;border:1px solid #2F5F5A;border-radius:999px;color:#CFF5EE;}
+  .h1{font-family:var(--pf-head);font-size:26px;line-height:1.35;}
+  .sub{font-size:13px;line-height:1.7;color:#A8D9D1;}
   .body{padding:20px;display:flex;flex-direction:column;gap:18px;}
-  .card{background:#FFFDF8;border:1px solid #E2DCD0;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .card{background:#FFFFFF;border:1px solid #BFE6DF;padding:18px;display:flex;flex-direction:column;gap:12px;}
   .step{display:flex;align-items:center;gap:10px;}
-  .num{width:22px;height:22px;border-radius:999px;background:#B4552E;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .num{width:22px;height:22px;border-radius:999px;background:#0A6E66;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .step-t{font-size:15px;font-weight:500;}
-  .step-t span{color:#8A8377;font-weight:400;}
-  .drop{border:1px dashed #C9C2B4;background:#F7F4ED;padding:26px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;}
+  .step-t span{color:#4F6B68;font-weight:400;}
+  .drop{border:1px dashed #BFE6DF;background:#F3FBF9;padding:26px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;}
   .drop.row{flex-direction:row;padding:18px 16px;align-items:center;gap:12px;}
-  .drop-hint{font-size:13px;color:#6E675E;text-align:center;line-height:1.6;}
+  .drop-hint{font-size:13px;color:#4F6B68;text-align:center;line-height:1.6;}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .thumb{position:relative;aspect-ratio:1;overflow:hidden;background:#E2DCD0;}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
   .thumb .lab{position:absolute;left:4px;top:4px;font-size:10px;background:rgba(20,18,15,.62);color:#FBF8F2;padding:2px 6px;border-radius:999px;}
   .thumb .del{position:absolute;right:3px;top:3px;width:22px;height:22px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:13px;line-height:1;cursor:pointer;}
-  .note{font-size:12px;line-height:1.7;color:#8A8377;}
-  .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#E2DCD0;border:2px solid #B4552E;cursor:grab;touch-action:none;}
+  .note{font-size:12px;line-height:1.7;color:#4F6B68;}
+  .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#BFE6DF;border:2px solid #0A6E66;cursor:grab;touch-action:none;}
   .cover-one.drag{cursor:grabbing;}
-  .cover-one{background:#23201C;}
+  .cover-one{background:#0F3D3A;}
   .cover-one img{position:absolute;left:0;top:0;transform-origin:0 0;display:block;pointer-events:none;user-select:none;max-width:none;}
   .cover-zoom{display:flex;align-items:center;gap:10px;}
-  .cover-zoom input{flex:1;accent-color:#B4552E;}
-  .cover-zoom .z{font-size:12px;color:#8A8377;white-space:nowrap;}
+  .cover-zoom input{flex:1;accent-color:#0A6E66;}
+  .cover-zoom .z{font-size:12px;color:#4F6B68;white-space:nowrap;}
   .cover-one .hint{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,15,.55);color:#FBF8F2;font-size:11px;line-height:1.6;text-align:center;padding:6px 8px;}
-  .cover-one .lab{position:absolute;left:8px;top:8px;font-size:11px;background:#B4552E;color:#FBF8F2;padding:3px 9px;border-radius:999px;}
+  .cover-one .lab{position:absolute;left:8px;top:8px;font-size:11px;background:#0A6E66;color:#FFFFFF;padding:3px 9px;border-radius:999px;}
   .cover-one .del{position:absolute;right:6px;top:6px;width:26px;height:26px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:15px;line-height:1;cursor:pointer;}
-  .fld{border:1px solid #E2DCD0;background:#fff;padding:12px;font-size:14px;color:#23201C;width:100%;}
+  .fld{border:1px solid #BFE6DF;background:#fff;padding:12px;font-size:14px;color:#0F3D3A;width:100%;}
   .row{display:flex;gap:10px;flex-wrap:wrap;}
   select.fld{padding:11px;}
-  .btn-dark{border:none;background:#23201C;color:#FBF8F2;padding:12px 18px;font-size:14px;cursor:pointer;}
-  .draft{display:flex;flex-direction:column;gap:14px;border-top:1px solid #EEE9DF;padding-top:14px;}
+  .btn-dark{border:none;background:#0F3D3A;color:#FFFFFF;padding:12px 18px;font-size:14px;cursor:pointer;}
+  .draft{display:flex;flex-direction:column;gap:14px;border-top:1px solid #E8F6F3;padding-top:14px;}
   .f{display:flex;flex-direction:column;gap:6px;}
-  .f-lab{font-size:12px;letter-spacing:.14em;color:#8A8377;}
-  .f textarea{border:1px solid #E2DCD0;background:#fff;padding:12px;line-height:1.7;color:#2C2823;resize:vertical;width:100%;}
-  .serif{font-family:'Gowun Batang',serif;}
+  .f-lab{font-size:12px;letter-spacing:.14em;color:#4F6B68;}
+  .f textarea{border:1px solid #BFE6DF;background:#fff;padding:12px;line-height:1.7;color:#2C2823;resize:vertical;width:100%;}
+  .serif{font-family:var(--pf-head);}
   .cuts{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;}
   .cut{flex:0 0 auto;width:168px;height:210px;box-sizing:border-box;}
   .cut-cover{position:relative;background:#23201C;overflow:hidden;}
@@ -82,43 +84,43 @@
   .cut-cover .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,18,15,.5),rgba(20,18,15,.05) 40%,rgba(20,18,15,.75));}
   .cut-cover .in{position:absolute;inset:0;padding:14px;display:flex;flex-direction:column;justify-content:space-between;}
   .cut-cover .tag{font-size:8px;letter-spacing:.24em;color:#FBF8F2;}
-  .cut-cover .ttl{font-family:'Gowun Batang',serif;font-size:15px;line-height:1.4;color:#FBF8F2;white-space:pre-line;}
+  .cut-cover .ttl{font-family:var(--pf-head);font-size:15px;line-height:1.4;color:#FBF8F2;white-space:pre-line;}
   .cut-a{background:#F4F1EA;border:1px solid #E2DCD0;padding:12px 12px 0;display:flex;flex-direction:column;}
   .cut-a .ph{height:130px;background:#E2DCD0;overflow:hidden;}
   .cut-a .ph img{width:100%;height:100%;object-fit:cover;}
-  .cut-a .tx{flex:1;display:flex;align-items:center;font-family:'Gowun Batang',serif;font-size:10px;line-height:1.5;}
+  .cut-a .tx{flex:1;display:flex;align-items:center;font-family:var(--pf-head);font-size:10px;line-height:1.5;}
   .cut-think{background:#23201C;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;}
   .cut-think .bar{width:24px;height:2px;background:#F0B27A;}
-  .cut-think .tx{font-family:'Gowun Batang',serif;font-size:12px;line-height:1.6;color:#FBF8F2;}
+  .cut-think .tx{font-family:var(--pf-head);font-size:12px;line-height:1.6;color:#FBF8F2;}
   .cut-vid{background:#1A1815;display:flex;align-items:center;justify-content:center;}
   .cut-vid .in{text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;}
   .cut-vid .play{width:40px;height:40px;border-radius:999px;border:1px solid #6E675E;display:flex;align-items:center;justify-content:center;color:#FBF8F2;font-size:13px;}
   .cut-vid .cap{font-size:10px;line-height:1.6;color:#A9A29A;}
-  .kv{display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.7;color:#55504A;}
-  .kv>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #EEE9DF;padding-bottom:9px;}
+  .kv{display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.7;color:#3E5B58;}
+  .kv>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #E8F6F3;padding-bottom:9px;}
   .kv>div:last-child{border-bottom:none;padding-bottom:0;}
-  .kv .k{color:#8A8377;white-space:nowrap;}
+  .kv .k{color:#4F6B68;white-space:nowrap;}
   .when{display:flex;gap:8px;}
-  .when-opt{flex:1;border:1px solid #E2DCD0;background:#fff;color:#6E675E;padding:12px;font-size:14px;cursor:pointer;}
-  .when-opt.on{border-color:#B4552E;background:#FBF1EC;color:#B4552E;font-weight:500;}
+  .when-opt{flex:1;border:1px solid #BFE6DF;background:#fff;color:#4F6B68;padding:12px;font-size:14px;cursor:pointer;}
+  .when-opt.on{border-color:#0A6E66;background:#E8F6F3;color:#0A6E66;font-weight:500;}
   .when-date{display:flex;gap:10px;align-items:center;}
-  .cta{border:none;background:#B4552E;color:#FBF8F2;padding:16px;font-size:15px;font-weight:500;cursor:pointer;width:100%;}
-  .cta:disabled{background:#8A8377;cursor:default;}
-  .tg{background:#23201C;padding:18px;display:flex;flex-direction:column;gap:14px;}
+  .cta{border:none;background:#0A6E66;color:#FFFFFF;padding:16px;font-size:15px;font-weight:500;cursor:pointer;width:100%;}
+  .cta:disabled{background:#4F6B68;cursor:default;}
+  .tg{background:#0F3D3A;padding:18px;display:flex;flex-direction:column;gap:14px;}
   .tg-h{font-size:12px;letter-spacing:.2em;color:#F0B27A;}
   .tg-box{background:#2E2A24;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.8;color:#E4DFD6;}
   .tg-box .t{font-weight:500;color:#FBF8F2;}
   .tg-box .d{color:#A9A29A;}
   .tg-act{display:flex;gap:8px;padding-top:4px;}
   .tg-act div{flex:1;text-align:center;border:1px solid #4A443C;padding:10px;color:#A9A29A;font-size:12px;}
-  .ok{background:#EEF1EA;border:1px solid #CBD5C4;padding:18px;display:flex;flex-direction:column;gap:8px;}
+  .ok{background:#CFF5EE;border:1px solid #8FD9CC;padding:18px;display:flex;flex-direction:column;gap:8px;}
   .ok .h{font-size:12px;letter-spacing:.2em;color:#4E6B52;}
-  .ok .m{font-family:'Gowun Batang',serif;font-size:20px;}
-  .ok .s{font-size:13px;line-height:1.8;color:#55504A;}
-  .err{background:#FBEDE8;border:1px solid #E5C3B4;padding:14px;font-size:13px;line-height:1.7;color:#8E3E1E;}
+  .ok .m{font-family:var(--pf-head);font-size:20px;}
+  .ok .s{font-size:13px;line-height:1.8;color:#3E5B58;}
+  .err{background:#FEE2E2;border:1px solid #FCA5A5;padding:14px;font-size:13px;line-height:1.7;color:#B91C1C;}
   .hide{display:none;}
-  details{border-top:1px solid #EEE9DF;padding-top:12px;}
-  details summary{cursor:pointer;font-size:13px;color:#8A8377;}
+  details{border-top:1px solid #E8F6F3;padding-top:12px;}
+  details summary{cursor:pointer;font-size:13px;color:#4F6B68;}
 
   /* 검수 칸 (GM 지시 2026-09-14) — 올린 자리에서 보고 바로 승인한다 */
   .rv-it{display:flex; gap:10px; align-items:center; padding:10px 0; border-top:1px solid rgba(0,0,0,.08);}
@@ -132,7 +134,7 @@
   .rv-btns button{font-family:inherit; font-size:12.5px; font-weight:700; padding:7px 14px;
                   border-radius:6px; cursor:pointer; border:1px solid rgba(0,0,0,.15);}
   .rv-btns button:disabled{opacity:.5; cursor:default;}
-  .rv-ok{background:#221F20; color:#fff; border-color:#221F20;}
+  .rv-ok{background:#0F3D3A; color:#fff; border-color:#0F3D3A;}
   .rv-no{background:transparent;}
   @media(max-width:520px){
     .rv-it{flex-wrap:wrap;}
@@ -162,7 +164,7 @@
 
   <div class="head">
     <div class="head-top">
-      <div class="eyebrow">WELLPERION · PERSONAL</div>
+      <div class="eyebrow">개인 · 어떤 하루</div>
       <div class="pill" id="statusLabel">작성 중</div>
     </div>
     <div style="display:flex;align-items:center;gap:2px;"><div class="h1" id="h_series">어떤 하루</div><span class="ai-owner" style="display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;opacity:.65;white-space:nowrap;">AI 시모</span></div>
@@ -203,11 +205,11 @@
     <div class="card">
       <div class="step"><div class="num">3</div><div class="step-t">영상 <span>(선택 · 사진 뒤 · 마무리 장 앞)</span></div></div>
       <label class="drop row">
-        <div style="font-size:22px;">🎥</div>
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:block;color:#0A6E66"><path d="M3 7a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm13 3 5-3v10l-5-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <div class="drop-hint" style="text-align:left;" id="videoLabel">짧은 영상을 선택하세요 (15~30초)<br><b>세로로 찍은 영상이 좋습니다</b> — 게시물 전체가 세로(4:5)라 가로 영상은 좌우가 잘립니다</div>
         <input type="file" accept="video/*" id="f_video" style="display:none;">
       </label>
-      <div class="note">15~30초 권장. <strong style="color:#B4552E;">큰 영상은 올리면 자동으로 줄여 보냅니다</strong> — 화질은 최대한 살리고, 영상 길이만큼 잠깐 기다리시면 됩니다. 자동 축소가 안 되는 경우에만 아래 링크 칸을 쓰세요.</div>
+      <div class="note">15~30초 권장. <strong style="color:#0A6E66;">큰 영상은 올리면 자동으로 줄여 보냅니다</strong> — 화질은 최대한 살리고, 영상 길이만큼 잠깐 기다리시면 됩니다. 자동 축소가 안 되는 경우에만 아래 링크 칸을 쓰세요.</div>
       <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
     </div>
 
@@ -225,7 +227,7 @@
           <option value="나들이">나들이</option>
           <option value="혼자 정리한 날">혼자 정리한 날</option>
         </select></div>
-      <div class="f"><div class="f-lab">슬로건 한 줄 <span style="letter-spacing:0;color:#6E675E;">(비워 두면 사진 보고 만듭니다)</span></div>
+      <div class="f"><div class="f-lab">슬로건 한 줄 <span style="letter-spacing:0;color:#4F6B68;">(비워 두면 사진 보고 만듭니다)</span></div>
         <input type="text" class="fld serif" id="f_slogan" style="font-size:15px;"
                placeholder="행복은 특별한 날에 오는 게 아니라, 평범한 하루를 함께 보낼 때 온다."></div>
       <div class="f"><div class="f-lab" id="lab_place">어디</div>
@@ -514,11 +516,11 @@
 
   /* 회사판(#marketing) 옷 — 글자만 바꾼다. 동작·뒷단은 개인판과 같다. */
   function 회사판으로(){
-    document.title = '마케팅 자동업로드 — 웰페리온';
+    document.title = '마케팅 자동업로드 — 웰페리온 랩스';
     /* 큰 제목은 건드리지 않는다 — 그 자리는 고른 트랙 이름이 들어가고(paintSeries),
        회사판에서는 그게 곧 어느 계정으로 나가는지를 말한다. */
     var eb = document.querySelector('.eyebrow');
-    if (eb) eb.textContent = 'WELLPERION · MARKETING';
+    if (eb) eb.textContent = '웰페리온 랩스 · 마케팅 자동업로드';
     var app = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (app) app.setAttribute('content', '마케팅 업로드');
   }
@@ -726,9 +728,9 @@
                             : scheduled ? '날짜를 골라 주세요' : '승인 즉시';
     // 승인하면 언제 올라가는지 한 문장으로 — 카드에서도 같은 문장이 나간다.
     $('whenNote').textContent = (scheduled && d)
-      ? '👉 검수 카드에서 승인하시면 ' + whenKo(d) + ' 오전 7:30 에 인스타그램에 올라갑니다.'
+      ? '검수 카드에서 승인하시면 ' + whenKo(d) + ' 오전 7:30 에 인스타그램에 올라갑니다.'
       : scheduled ? '날짜를 고르시면 그날 오전 7:30 에 올라갑니다.'
-                  : '👉 승인하시는 즉시 인스타그램에 올라갑니다 — 아래 검수 칸에서도, 텔레그램 카드에서도 됩니다.';
+                  : '승인하시는 즉시 인스타그램에 올라갑니다 — 아래 검수 칸에서도, 텔레그램 카드에서도 됩니다.';
   }
   function whenKo(d){
     var t = d.split('-');
