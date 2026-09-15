@@ -411,7 +411,7 @@
               return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'"><td class="item">'+cname(c)+'</td>'+
                 '<td class="ps-id">'+esc(it.id_masked)+'</td><td class="ps-pw">'+(it.has_pw?'••••••••':'—')+'</td>'+
                 '<td><span class="st ok">활성</span></td><td>'+esc(it.received_at)+'</td><td class="n">'+esc(it.note||'')+'</td>'+
-                '<td><button class="ps-show">보기</button> <button class="ps-del">삭제</button></td></tr>';
+                '<td><button class="ps-show">보기</button> <button class="ps-edit">수정</button> <button class="ps-del">삭제</button></td></tr>';
             }
             return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'" style="opacity:.55"><td class="item">'+cname(c)+'</td>'+
               '<td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td><td>—</td>'+
@@ -430,6 +430,17 @@
         document.getElementById('ps-tenant').value=tr.dataset.t; sel.value=tr.dataset.c;
         var det=document.getElementById('ps-save').closest('details'); if(det) det.open=true;
         document.getElementById('ps-id').focus();
+      } else if(b.classList.contains('ps-edit')){
+        // 수정 — 코드로 값을 풀어 아래 넣기 칸에 채워 두고, 고쳐서 「서버에 저장」하면 덮어쓴다(GM 만 만진다 · 2026-09-15).
+        var code3=prompt('수정 — 코드를 입력하세요'); if(!code3) return; body.code=code3;
+        fetch(API+'/reveal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
+          if(!d.ok){ alert(d.error||'실패'); return; }
+          document.getElementById('ps-tenant').value=tr.dataset.t; sel.value=tr.dataset.c;
+          document.getElementById('ps-id').value=d.id||''; document.getElementById('ps-pw').value=d.pw||'';
+          document.getElementById('ps-note').value=(tr.querySelector('td.n')||{}).textContent||''; document.getElementById('ps-code').value=code3;
+          var det2=document.getElementById('ps-save').closest('details'); if(det2) det2.open=true;
+          document.getElementById('ps-msg').textContent='수정 중 — 고친 뒤 「서버에 저장」'; document.getElementById('ps-id').focus();
+        });
       } else if(b.classList.contains('ps-show')){
         var code=prompt('코드를 입력하세요'); if(!code) return; body.code=code;
         fetch(API+'/reveal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
