@@ -128,6 +128,28 @@
     return fetch(gasUrl + '?' + qs, { redirect: 'follow' }).then(_json);
   }
 
+  /* ── 읽기 서버 우선 · 안 되면 종전 구글 (배12615 · GM 지시 2026-09-15 「오늘 다 옮긴다 · 안 되면 구글 폴백」) ──
+     serverUrl = '/api/…'(GET · body 를 주면 POST) · gasFn = () => Promise<응답객체>(종전 GAS 호출 그대로).
+     서버가 못 닿거나(401·5xx·네트워크) ok:false 거나, needRows 인데 행이 비어 있으면(적재 전 표) GAS 로 간다 —
+     이름만 서버가 되는 일을 막는다. 응답 모양은 서버가 GAS 와 같게 내므로 화면 코드는 안 바뀐다.
+     ERP 도메인 밖(깃허브 사본 등)에서는 서버를 아예 안 두드린다. */
+  function erpReadFirst(serverUrl, gasFn, opts) {
+    if (!ERP_ON) return gasFn();
+    var o = opts || {};
+    var req = o.body
+      ? fetch(gwPath(serverUrl), { method: 'POST', cache: 'no-store',
+                                   headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(o.body) })
+      : fetch(gwPath(serverUrl), { cache: 'no-store' });
+    return req.then(_json).then(function (d) {
+      var rows = d && (d.rows || d.data || d.items);
+      if (!d || d.ok === false || (o.needRows && Array.isArray(rows) && rows.length === 0)) throw new Error('server-empty');
+      return d;
+    }).catch(function (e) {
+      console.warn('[서버읽기] ' + serverUrl + ' → GAS 폴백:', e && e.message);
+      return gasFn();
+    });
+  }
+
   /* 화면이 부르는 것 하나. 읽기·비ERP 도메인·관문 실패는 전부 종전 GAS 로 간다 — 응답 모양 무변경. */
   function erpTodoCall(gasUrl, params) {
     var gas = noGas(function () { return gasCall(gasUrl, params); }, params, function (a) { return WRITE.test(a); });
@@ -279,6 +301,7 @@
   }
 
   w.erpTodoCall = erpTodoCall;
+  w.erpReadFirst = erpReadFirst;
   w.erpTodoIsWrite = function (action) { return WRITE.test(String(action || '')); };
   w.erpCheckPost = erpCheckPost;
   w.erpCheckIsWrite = function (action) { return CHECK_WRITE.test(String(action || '')); };
