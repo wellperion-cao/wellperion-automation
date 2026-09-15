@@ -368,6 +368,7 @@
   </div>
 </div>
 
+<script src="../../_assets/erp_write.js"></script>
 <script>
 // 리크루팅 정적 페이지 마감 동기 — golfpartner.html과 동일 패턴(런타임 fetch, 실패/미매칭 시 하드코딩 유지).
 (function(){
@@ -376,8 +377,10 @@
     function normKey(s){ return String(s||"").replace(/\s|[()（）]/g,"").toLowerCase(); }
     var pageBucket=document.body.getAttribute("data-jobbucket")||"";
     var pageKey=document.body.getAttribute("data-jobkey")||"";
-    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"public-job-status"})})
-      .then(function(r){return r.json();})
+    erpReadFirst("https://erp.wellperion.com/api/jobs/public", function(){
+      return fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"public-job-status"})})
+        .then(function(r){return r.json();});
+    }, {public:true})
       .then(function(d){
         if(!d||!d.ok||!Array.isArray(d.jobs))return;
         var hit=null;
