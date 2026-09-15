@@ -1210,8 +1210,15 @@ const TRIM_RULES = [
   // ③④ wk·ctx 는 막대([...])만 지우고 퍼센트·남은시간은 남긴다.
   [new RegExp(`(wk:${ANSI})\\[(?:${ANSI}|[#-])*\\]`), '$1'],
   [new RegExp(`(ctx:)\\[(?:${ANSI}|[#-])*\\]`), '$1'],
+  [/(fable:(?:\[[0-9;]*m)*)\[(?:\[[0-9;]*m|[#-])*\]/, '$1'],   // OMC 5.4 fable 한도 — wk 와 같이 막대만 지움
   // ⑤ cost 줄(비용 + 코드 줄 증감) 통째로 — 색 없는 순수 텍스트.
   [/ \| cost:\$[\d.]+(?: \+\d+\/-\d+)?/, ''],
+  // ⑥ OMC 5.4 업데이트 잔소리 — 모델 줄 안 「[Claude#2.1.270] -> 2.1.271 claude update」 와
+  //    별도 줄 「[!] claude 2.1.271 - paste: ! claude update」. 이 줄이 하나 더 생기면 상태줄이
+  //    한 줄 늘어 ctx 칸이 화면 밖으로 밀린다(GM 2026-09-15 「업데이트 때문인가 ctx 가 잘 안 보여」).
+  //    업데이트는 Start-AI CEO.bat 이 부팅 때 한다 — 상태줄에 둘 이유가 없다.
+  [/(?:\[[0-9;]*m)*\s*->\s*[\d.]+\s*claude update(?:\[[0-9;]*m)*/, ''],
+  [/\n?(?:\x1b\[[0-9;]*m)*\[!\]\s*claude [\d.]+[^\n]*claude update(?:\x1b\[[0-9;]*m)*/, ''],
 ];
 function trimOmcStats(raw) {
   let out = String(raw || '');
