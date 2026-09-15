@@ -123,15 +123,27 @@ def _now_utc(now=None):
 
 # ── §1 🔇 침묵 모듈 (module_silence_detector 재사용) ─────────────────────────
 def build_section_silence(now=None):
-    """침묵 판정분만 → 라인 리스트. 없으면 None."""
+    """침묵 판정분만 → 라인 리스트. 없으면 None.
+    ★2026-09-09 INC-057 — declared-cadence 침묵과 주기미선언 침묵을 한 줄에 섞지
+    않는다(섞으면 급한 것이 묻힌다). module_silence_detector 두 함수를 그대로
+    재사용만 하고(재수집 금지) 절만 나눈다."""
     scan = _silence.scan_registry(root=PROJECT_ROOT, now=now)
     silent = _silence.silent_modules(scan)
-    if not silent:
+    silent_nc = _silence.silent_no_cadence_modules(scan)
+    if not silent and not silent_nc:
         return None
-    lines = [f"🔇 침묵 모듈 {len(silent)}건(예상 주기 초과)"]
-    for m in sorted(silent, key=lambda x: -(x.get("silence_hours") or 0)):
-        days = (m.get("silence_hours") or 0) / 24
-        lines.append(f"  · {m['id']} — {days:.1f}일째 조용함(허용 {m.get('cadence')}주기)")
+    lines = []
+    if silent:
+        lines.append(f"🔇 침묵 모듈 {len(silent)}건(예상 주기 초과)")
+        for m in sorted(silent, key=lambda x: -(x.get("silence_hours") or 0)):
+            days = (m.get("silence_hours") or 0) / 24
+            lines.append(f"  · {m['id']} — {days:.1f}일째 조용함(허용 {m.get('cadence')}주기)")
+    if silent_nc:
+        lines.append(f"🔸 주기미선언 장기침묵 {len(silent_nc)}건"
+                      f"(기본기준 {_silence.DEFAULT_NO_CADENCE_MAX_H}h 초과 · 확신도 낮음)")
+        for m in sorted(silent_nc, key=lambda x: -(x.get("silence_hours") or 0)):
+            days = (m.get("silence_hours") or 0) / 24
+            lines.append(f"  · {m['id']} — {days:.1f}일째 조용함")
     return lines
 
 
@@ -349,6 +361,14 @@ def build_section_bridges():
 
 
 # ── 조립·발신 ─────────────────────────────────────────────────────────────
+def _section_migration_wrapup(now=None):
+    try:
+        import aws_wrapup_check
+        return aws_wrapup_check.section(now=now.astimezone(KST) if now else None) or None
+    except Exception as e:  # noqa: BLE001 — 검수기가 죽어도 디제스트는 나간다 · 죽은 사실은 한 줄로
+        return ["🧹 AWS 이관 뒷정리 — 시토", "▪ 검수기 실행 실패 — " + str(e)[:80]]
+
+
 def build_digest(now=None):
     """섹션 조립 → (text|None, sections:dict). 전부 정상이면 text=None."""
     now = _now_utc(now)
@@ -361,6 +381,9 @@ def build_digest(now=None):
         "decision_consistency": build_section_decision_consistency(now=now),
         "telegram": build_section_telegram(),
         "bridges": build_section_bridges(),
+        # AWS 이관 뒷정리(2026-09-15 시토 · GM 「검수·뒷정리 실수 없게 · 제일 중요」) — 이관 현황 화면을 지운 뒤 이 줄이 챙긴다.
+        # 읽기 전용 · 정상이면 빈 목록(침묵). 규칙·자체점검 = scripts/aws_wrapup_check.py.
+        "migration_wrapup": _section_migration_wrapup(now=now),
     }
     active = [v for v in sections.values() if v]
     if not active:
