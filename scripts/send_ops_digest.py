@@ -2759,7 +2759,7 @@ def membership_uncontacted_line(today: str) -> str:
             log("[mgr] 멤버십 문의 원장이 빈 응답 — 못 읽음으로 보고 줄 생략(0건이라 적지 않는다)")
             return ""
         now = datetime.now()
-        hit = []
+        hit, keys = [], []
         for r in rows:
             st = str(r.get("status", "") or "").strip()
             if st not in {"컨택중", "신규", "미정", "가망"}:
@@ -2768,7 +2768,9 @@ def membership_uncontacted_line(today: str) -> str:
                 continue
             ts = str(r.get("timestamp", "") or "")
             hit.append((st, _un._hours_since_ts(ts, now) if ts else 0.0))
+            keys.append(_un._lead_key(r))
         _MEMBERSHIP_TODAY = (today, len(hit))
+        _WATCH_TODAY["member"] = keys
         if not hit:
             log("[mgr] 멤버십 연락 없음 0건 — 줄 없음")
             return ""
@@ -2804,6 +2806,60 @@ _MEMBER_LINK = "https://erp.wellperion.com/cpo/member/membership.html"
 _LESSON_LINK = "https://erp.wellperion.com/cpo/member/lesson.html"
 _LESSON_TODAY = None                # (날짜, 건수) — 발송 뒤 _mark_mgr_sent 가 lesson_log 에 적는다
 
+# ── 움직임 감시 + 문제제기 (GM 결정 2026-09-15 16:0x) ─────────────────────────────
+# GM 원문: "AI가 계속 리마인드 하는데도 체크안하고 진행을 안하면 문제제기를 해야할 것 같아" ·
+#   기준 물음에 「최종 관리자 — 멤버십 운영부 실장 + 파트너팀 나우열M, 관리자 점수 깎는 건 어때」 ·
+#   채널 = 「★중간관리자 방에 직접」 · 「운영부는 중간관리자방 // 나우열M은 텔레그램 AtoA」.
+# 움직임 = 어제 목록에 있던 건이 오늘 목록에서 빠진 수(연락 기록·등록·이탈 종결 어느 것이든).
+#   건수 증감은 새 문의가 들어오면 일해도 안 줄어 척도가 못 된다 — 그래서 건 단위로 잰다.
+# 문제제기 기준 = 3영업일 연속 움직임 0 (시포 판단 · 휴관일은 안 센다). 원장 = 아래 파일 한 곳,
+#   관리자 평가 화면(manager_task_index.inquiry_contact_cell)이 같은 파일을 읽어 감점 표시한다.
+_WATCH = ROOT / "status" / "inquiry_contact_watch.json"
+_WATCH_TODAY: dict = {}             # {"member": [키…], "lesson": [키…]} — 두 줄 함수가 채운다
+_WATCH_KEEP_DAYS = 21
+ESCALATE_BIZ_DAYS = 3
+_LESSON_ESCALATION = ""             # 강습 라인 문제제기 본문 — send_mgr_brief 가 나우열M 텔레그램으로 보낸다
+
+
+def _load_watch() -> dict:
+    try:
+        return json.loads(_WATCH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def watch_update(line: str, keys: list, today: str) -> "tuple[int, int]":
+    """오늘 목록을 원장에 적고 (어제 대비 빠진 건수, 움직임 없는 연속 영업일) 을 돌려준다.
+
+    같은 날 두 번 불러도 결과가 같다 — 어제 = 오늘보다 앞선 마지막 기록일."""
+    w = _load_watch()
+    line_log = dict(w.get(line) or {})
+    prev_days = sorted(d for d in line_log if d < today)
+    prev_keys = set((line_log.get(prev_days[-1]) or {}).get("keys") or []) if prev_days else set()
+    resolved = len(prev_keys - set(keys)) if prev_days else 0
+    line_log[today] = {"keys": sorted(set(keys)), "count": len(set(keys)), "resolved": resolved}
+    line_log = dict(sorted(line_log.items())[-_WATCH_KEEP_DAYS:])
+    w[line] = line_log
+    try:
+        _WATCH.write_text(json.dumps(w, ensure_ascii=False, indent=1), encoding="utf-8")
+    except Exception as exc:
+        log(f"[mgr] 연락 감시 원장 쓰기 실패: {exc}")
+    return resolved, stalled_biz_days(line_log)
+
+
+def stalled_biz_days(line_log: dict) -> int:
+    """최근 기록부터 거꾸로, 움직임(resolved) 0 이 이어진 영업일 수. 첫 기록일은 비교 대상이 없어 안 센다."""
+    from close_days import is_closed
+    days = sorted(line_log)
+    n = 0
+    for d in reversed(days[1:]):
+        rec = line_log[d] or {}
+        if int(rec.get("resolved") or 0) > 0:
+            break
+        if not is_closed(date.fromisoformat(d)):
+            n += 1
+    return n
+
 
 def _uncontacted_rows(rows: list) -> list:
     """연락 기록이 하나도 없는 열린 문의 — 판정 부품은 정본(report_stream_1_impl·unassigned_nudge) 재사용."""
@@ -2828,7 +2884,8 @@ def lesson_uncontacted_line(today: str) -> str:
         if age_h > _LESSON_SNAP_MAX_AGE_H:
             log(f"[mgr] 강습 문의 스냅샷이 {age_h:.0f}시간 낡음 — 못 읽음으로 보고 줄 생략(0건이라 적지 않는다)")
             return ""
-        counts, teams = {}, {}
+        import unassigned_nudge as _un
+        counts, teams, keys = {}, {}, []
         for key, label in (("adult", "성인"), ("youth", "유소년")):
             rows = ((snap.get(key) or {}).get("year") or {}).get("rows") or []
             hit = _uncontacted_rows(rows)
@@ -2836,8 +2893,10 @@ def lesson_uncontacted_line(today: str) -> str:
             for r in hit:
                 t = str(r.get("bucket", "") or "").strip() or "기타"
                 teams[t] = teams.get(t, 0) + 1
+                keys.append(_un._lead_key(r))
         total = sum(counts.values())
         _LESSON_TODAY = (today, total)
+        _WATCH_TODAY["lesson"] = keys
         if not total:
             log("[mgr] 강습 연락 없음 0건 — 줄 없음")
             return ""
@@ -2861,36 +2920,58 @@ def inquiry_contact_section(today: str) -> str:
 
     경로(GM 지시 2026-09-15): 멤버십 = 이경연 실장 -> 임정은M / 강습 = 나우열M -> 각 파트너팀 리더.
     둘 다 중간관리자 방 한 곳에 싣는다 — 방이 갈리면 서로 무엇이 남았는지 못 본다."""
+    global _LESSON_ESCALATION
+    _LESSON_ESCALATION = ""
     mem, les = membership_uncontacted_line(today), lesson_uncontacted_line(today)
     if not mem and not les:
         return ""
     parts = ["📞 문의 회원 연락 — 오늘 체크하실 것"]
+    moved = 0
     if mem:
         parts.append("▪ " + mem.replace("📞 ", "", 1))
         parts.append(f"   이경연 실장님 → 임정은M · 📎 {_MEMBER_LINK}")
+        r, stalled = watch_update("member", _WATCH_TODAY.get("member") or [], today)
+        moved += r
+        if stalled >= ESCALATE_BIZ_DAYS:
+            parts.append(f"   ⚠️ 멤버십 {stalled}영업일째 연락 기록 없음 — 실장님 라인, 관리자 평가에 감점 반영")
     if les:
         parts.append("▪ " + les)
         parts.append(f"   나우열M → 각 파트너팀 리더 · 📎 {_LESSON_LINK}")
-    parts.append(progress_praise_line(mem, les)
+        r, stalled = watch_update("lesson", _WATCH_TODAY.get("lesson") or [], today)
+        moved += r
+        if stalled >= ESCALATE_BIZ_DAYS:
+            _LESSON_ESCALATION = lesson_escalation_text(les, stalled)
+    parts.append(progress_praise_line(moved)
                  or "   연락하신 분은 그 회원 줄 '연락 기록'에 한 줄만 남기시면 이 목록에서 빠집니다")
     return "\n".join(parts)
 
 
-def progress_praise_line(mem: str, les: str) -> str:
-    """어제보다 줄었으면 줄어든 만큼을 먼저 말한다 — 재촉 대신 움직인 숫자를 보여 준다.
+def lesson_escalation_text(les_line: str, stalled: int) -> str:
+    """강습 라인 문제제기 — 나우열M 텔레그램(AtoA) 본문. 카톡 방엔 싣지 않는다(GM 2026-09-14·09-15)."""
+    return (f"⚠️ 강습 문의 연락 — {stalled}영업일째 연락 기록이 한 건도 안 붙었습니다\n"
+            f"▪ {les_line}\n"
+            f"   각 파트너팀 리더께 나눠 주시는 라인이라 관리자 평가(파트너팀)에 감점으로 반영됩니다\n"
+            f"   📎 {_LESSON_LINK}\n"
+            f"👉 팀별로 연락 기록 한 줄씩만 남겨 주시면 다음 날 감점이 풀립니다")
 
-    두 줄에 이미 적힌 '어제보다 -N건' 을 다시 세지 않고 그대로 읽는다(셈하는 자리는 한 곳)."""
-    hits = re.findall(r"어제보다 -(\d+)건", (mem or "") + " " + (les or ""))
-    drop = sum(int(x) for x in hits)
-    if not drop:
+
+def progress_praise_line(moved: int) -> str:
+    """어제 목록에서 빠진 건이 있으면 그 수를 먼저 말한다 — 재촉 대신 움직인 숫자를 보여 준다."""
+    if not moved:
         return ""
-    return f"   🙌 어제 하루에 {drop}건 연락되었습니다 — 연락 기록 한 줄이면 이 목록에서 빠집니다"
+    return f"   🙌 어제 하루에 {moved}건 정리되었습니다 — 연락 기록 한 줄이면 이 목록에서 빠집니다"
 
 
 def _selfcheck_inquiry_contact_section() -> None:
-    assert progress_praise_line("📞 멤버십 연락 없음 3건 — 신규 1 · 컨택중 2 (최장 5일) · 어제보다 -2건", "") \
-        == "   🙌 어제 하루에 2건 연락되었습니다 — 연락 기록 한 줄이면 이 목록에서 빠집니다"
-    assert progress_praise_line("… 어제보다 +1건", "… 어제와 같음") == ""
+    assert progress_praise_line(2).startswith("   🙌 어제 하루에 2건")
+    assert progress_praise_line(0) == ""
+    # 움직임 없는 영업일: 첫 기록일은 안 센다 · resolved>0 에서 끊긴다 · 9/13(둘째 일요일 휴관)은 안 센다
+    lg = {"2026-09-10": {"resolved": 0}, "2026-09-11": {"resolved": 0}, "2026-09-12": {"resolved": 0},
+          "2026-09-13": {"resolved": 0}, "2026-09-14": {"resolved": 0}}
+    assert stalled_biz_days(lg) == 3, stalled_biz_days(lg)
+    lg["2026-09-12"]["resolved"] = 1
+    assert stalled_biz_days(lg) == 1, stalled_biz_days(lg)
+    assert "감점" in lesson_escalation_text("강습 연락 없음 5건", 3)
     assert _uncontacted_rows([{"status": "컨택중", "contacts": [{"note": "통화함"}]},
                               {"status": "컨택중", "contacts": []},
                               {"status": "LOSS", "contacts": []}]) \
@@ -3036,6 +3117,16 @@ def send_mgr_brief() -> None:
     # 「업무관리」 그룹 발송은 껐다(send_nawool_telegram 참고). 나우열M 몫 요약은 이제
     # GM 개인 봇방으로만 나간다(send_gm_room_digest, work_room_agent.build_gm_room_digest).
     nawool_ok = send_nawool_telegram(nawool_msg) if nawool_msg else True  # 항상 True(그룹 무발신)
+    # 강습 문의 연락 문제제기(GM 2026-09-15) — 나우열M 은 텔레그램 AtoA 방(GM 계정 발신 · 카톡 금지).
+    #   실패해도 카톡 통 마킹은 막지 않는다 — 다음 07:50 에 같은 판정이 다시 나온다.
+    if kakao_ok and _LESSON_ESCALATION:
+        try:
+            sys.path.insert(0, str(ROOT / "scripts" / "notify"))
+            from telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID
+            ok = send_as_gm(WORK_ROOM_CHAT_ID, _LESSON_ESCALATION)
+            log(f"[mgr] 강습 연락 문제제기 → 나우열M 텔레그램 {'ok' if ok else '실패'}")
+        except Exception as exc:
+            log(f"[mgr] 강습 연락 문제제기 텔레그램 발송 실패: {type(exc).__name__}: {exc}")
     gm_room_ok = send_gm_room_digest()
     if not gm_room_ok:
         log("[mgr] GM 개인 봇방 §8 요약 발송 실패 — 다음 회차 재시도")

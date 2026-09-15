@@ -510,6 +510,30 @@ def _no_measure_cell(reason: str) -> tuple[str, bool]:
     return f"{_NO_MEASURE}({reason})", False
 
 
+# 문의 회원 연락 — 관리자 평가 항목(GM 결정 2026-09-15 「관리자 점수 깎는 건 어때」).
+#   원장 = status/inquiry_contact_watch.json — 07:50 ★중간관리자 통(send_ops_digest.inquiry_contact_section)이
+#   매일 적는다. 여기서 다시 세지 않는다(약속 L21) · 감점 판정도 그쪽 상수(ESCALATE_BIZ_DAYS)를 쓴다.
+def inquiry_contact_cell(line: str) -> tuple[str, bool]:
+    try:
+        w = json.loads((ROOT / "status" / "inquiry_contact_watch.json").read_text(encoding="utf-8"))
+        from send_ops_digest import stalled_biz_days, ESCALATE_BIZ_DAYS
+    except Exception:
+        return f"{_NO_MEASURE}(연락 감시 원장 없음 — 07:50 통이 첫 기록을 남긴 뒤 켜짐)", False
+    lg = w.get(line) or {}
+    if not lg:
+        return f"{_NO_MEASURE}(연락 감시 원장에 아직 기록 없음)", False
+    last = max(lg)
+    rec = lg[last] or {}
+    mp = date.today().strftime("%Y-%m")
+    moved_month = sum(int((v or {}).get("resolved") or 0) for d, v in lg.items() if d.startswith(mp))
+    stalled = stalled_biz_days(lg)
+    text = (f"연락 없음 {rec.get('count', 0)}건({last[5:].replace('-', '/')}) · 이번 달 정리 {moved_month}건"
+            f" · 움직임 없음 {stalled}영업일")
+    if stalled >= ESCALATE_BIZ_DAYS:
+        text += f" — 감점({ESCALATE_BIZ_DAYS}영업일 이상)"
+    return text, stalled >= ESCALATE_BIZ_DAYS
+
+
 RESP_HEAD = ('<tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th>'
              '<th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th>'
              '<th class="rf">보완할 것</th></tr>')
@@ -647,6 +671,8 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
             ("업무·결재 SSOT(운영부 전원)",
              "주 15건 완료(운영부 전원 합산) + 기획안·보고는 결재요청 칸까지 채워 제출",
              lambda: ops_ssot_cell(ssot_rows), False, lambda: ssot_detail_html(ssot_rows)),
+            ("문의 회원 연락(멤버십)", "임정은M 라인 연락 기록 없는 문의 0 · 3영업일 움직임 없으면 감점",
+             lambda: inquiry_contact_cell("member")),
             ("소통", "확인요청 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "이경연 실장")),
         ],
@@ -669,6 +695,8 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
              lambda: chro_ssot_cell(ssot_rows)),
             ("매출·지출(CFO) — 체계·시스템 구축", "매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도",
              lambda: _no_measure_cell("자동 집계 원장 없음")),
+            ("문의 회원 연락(강습)", "파트너팀 리더 라인 연락 기록 없는 문의 0 · 3영업일 움직임 없으면 감점",
+             lambda: inquiry_contact_cell("lesson")),
             ("소통", "확인요청 회신율 · 최장 경과일",
              lambda: ledger_reply_cell(seen, "나우열M")),
         ],
