@@ -134,12 +134,15 @@
      이름만 서버가 되는 일을 막는다. 응답 모양은 서버가 GAS 와 같게 내므로 화면 코드는 안 바뀐다.
      ERP 도메인 밖(깃허브 사본 등)에서는 서버를 아예 안 두드린다. */
   function erpReadFirst(serverUrl, gasFn, opts) {
-    if (!ERP_ON) return gasFn();
     var o = opts || {};
+    /* opts.public — 로그인 없는 공개 통로(채용 공고 등). 깃허브 사본처럼 ERP 도메인 밖에서도 절대주소로 서버를 먼저 본다.
+       공개 통로는 nginx 가 auth 없이 열고 응답에 CORS 헤더를 단다(종합접수처 공개 통로와 같은 방식). */
+    if (!ERP_ON && !o.public) return gasFn();
+    var url = o.public ? serverUrl : gwPath(serverUrl);
     var req = o.body
-      ? fetch(gwPath(serverUrl), { method: 'POST', cache: 'no-store',
-                                   headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(o.body) })
-      : fetch(gwPath(serverUrl), { cache: 'no-store' });
+      ? fetch(url, { method: 'POST', cache: 'no-store', credentials: o.public ? 'omit' : 'same-origin',
+                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(o.body) })
+      : fetch(url, { cache: 'no-store', credentials: o.public ? 'omit' : 'same-origin' });
     return req.then(_json).then(function (d) {
       var rows = d && (d.rows || d.data || d.items);
       if (!d || d.ok === false || (o.needRows && Array.isArray(rows) && rows.length === 0)) throw new Error('server-empty');
