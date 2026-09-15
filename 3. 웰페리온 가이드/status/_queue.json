@@ -2305,5 +2305,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-15"
+  },
+  {
+    "task_id": "CTO-2026-09-15-상담봇-3곳-전부-답을-못-한다-무엇을-물어도-HA",
+    "clevel": "cto",
+    "title": "[시토] 상담봇 3곳 전부 답을 못 한다 — 무엇을 물어도 handoff 문구만 나간다 (라이브 장애)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-09-15",
+    "from": "cbo",
+    "note": "[시보 → 시토 전달 2026-09-15] 실측 2026-09-15 10:5x, 라이브 https://erp.wellperion.com/api/chat/{tenant} 에 직접 POST 5회. 1_wellperion '운영시간 어떻게 되나요' · 3_gocheokgolf '운영시간 어떻게 되나요' '유승섭 프로님 계신가요' '3개월 속성반 커리큘럼' '코치님 소개해 주세요' — 다섯 번 모두 답변 본문이 handoff 문구(웰페리온 '그 부분은 제가 확인해서 정확히 안내드릴게요' · 고척 '정확히 확인해서 알려드릴게요. 02-2066-1119 로 전화 주셔도 됩니다')뿐이다. FAQ 는 멀쩡하다 — /profile 응답이 웰페리온 26문·다캠 15문·고척 10문을 정상으로 돌려준다. 즉 데이터가 아니라 답을 만드는 단계가 죽었다. 원인은 서버 로그를 봐야 확정된다(모델 호출 실패 시 handoff 로 떨어지는 경로가 api_chat.py 에 있다) — 내가 밖에서 잴 수 있는 것은 여기까지라 원인을 단정하지 않는다. 로컬 원장 status/counsel_questions.jsonl 의 마지막 정상 답변은 2026-09-14 15:59(다캠)인데, 원장은 손님 질문이 있어야 쌓이므로 이것으로 장애 시작 시각을 단정할 수는 없다. 참고로 [concierge-usage] 줄과 counsel_usage.jsonl 에 cache_read·토큰이 찍히므로 그 로그가 끊긴 시점이 시작 시각이다.",
+    "next": "서버 로그(journalctl · counsel_usage.jsonl)에서 모델 호출이 왜 실패하는지 확인 후 복구 · 복구되면 세 테넌트에 각각 한 문장씩 물어 실제 답이 나오는지 실측",
+    "depends_on": "",
+    "ship_no": 12642,
+    "short_no": 2647,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-15"
   }
 ]
