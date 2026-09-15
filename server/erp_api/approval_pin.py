@@ -37,7 +37,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import db  # noqa: E402
 
 # 이 세 동작만 PIN 관문 뒤에 있다(GAS 와 같다). api_write 가 이 목록으로 갈라 부른다.
-ACTIONS = ("todo_sign", "todo_opinion", "todo_opinion_delete")
+ACTIONS = ("todo_sign", "todo_opinion", "todo_opinion_delete", "unlock_round")
+# 점검 제출잠금 해제(unlock_round · 지원부·주차관리부 체계 화면) — GAS 속성 CHECK_UNLOCK_PIN 과 같은 값을 이 이름으로 등록한다
+# (2026-09-15 시토 · GM 「남은 것도 다 이관」). 행이 없으면 종전대로 GAS 가 판정한다(DEFER). 거부 문구는 GAS 와 같은 {ok:false, reason:"PIN"}.
+CHECK_UNLOCK_NAME = "CHECK_UNLOCK_PIN"
 
 # 부서장 실명 → 비번 이름. GAS _MID_PIN 과 같은 표다.
 DEPT_PIN = {"이경연 실장": "APPROVAL_PIN_OPS", "이정헌 소장": "APPROVAL_PIN_FAC", "나우열M": "APPROVAL_PIN_PARTNER"}
@@ -114,6 +117,12 @@ def judge(name, stored, submitted):
 
 def check(conn, action, payload):
     """api_write 가 부르는 자리. None=서버가 맡는다 · DEFER=GAS 에 맡긴다 · dict=즉시 거부."""
+    if action == "unlock_round":
+        stored = load(conn, CHECK_UNLOCK_NAME)
+        if stored is None:
+            return DEFER
+        salt, want = stored
+        return None if hash_pin(salt, payload.get("pin")) == want else {"ok": False, "reason": "PIN"}
     record = mirror_record(conn, payload.get("id"))
     if record is None and action != "todo_opinion_delete":
         return DEFER          # 거울에 그 행이 없으면 부서장을 못 가린다 — 지어내지 않고 GAS 에 맡긴다

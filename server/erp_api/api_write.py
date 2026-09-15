@@ -177,7 +177,8 @@ BODY_NEVER_ARRIVED = "action 필수"
 #   영역 스위치(origin_switch.WRITE_AREA)보다 촘촘한 자리다 — 영역 하나에 동작 수십 개가 붙어 있어서,
 #   영역을 끊을 준비가 됐어도 이 몇 개는 남겨 둬야 한다. 여기 있으면 dual 로 돌아 종전과 똑같이 동작한다.
 NO_SERVER_ACTIONS = {
-    "unlock_round": "제출잠금 해제 비밀번호를 GAS 가 검증하고 잠금 원장도 GAS 속성에 있다 — 서버가 ok 를 주면 틀린 비번도 풀린 것처럼 보인다",
+    # 2026-09-15 시토 — 비었다. unlock_round 도 approval_pin(CHECK_UNLOCK_PIN)이 서버에서 판정하고, 잠금 원장은 되밀기가 GAS 속성에
+    # 그대로 반영해 점검 미러(sync_check)가 5분 안에 따라온다. 서버에 그 PIN 행이 없으면 DEFER 로 종전과 같이 GAS 가 판정한다.
 }
 # ★2026-09-14 시토 — 종전 여기 있던 여섯 중 다섯이 나갔다. 나간 이유와 각자의 새 관문:
 #   · todo_sign · todo_opinion · todo_opinion_delete → approval_pin.py 가 서버에서 PIN 을 대조한다.
@@ -896,7 +897,7 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
         def fetchone(self):
             return self._row
 
-    assert "unlock_round" in NO_SERVER_ACTIONS, "잠금 원장이 GAS 속성에 있는 한 서버가 풀면 화면은 계속 잠긴 채다"
+    assert "unlock_round" not in NO_SERVER_ACTIONS and "unlock_round" in approval_pin.ACTIONS, "잠금 해제 PIN 은 서버(approval_pin)가 판정한다(2026-09-15)"
     for _a in tuple(NO_SERVER_ACTIONS) + tuple(SERVER_NEEDS) + ("save_schedule", "todo_add"):
         assert _gas_key(_a) is not None, "%s 는 목적지 표에 있어야 dual 로 돌아간다" % _a
     # 짝 규칙(SERVER_NEEDS) — 첨부가 아직 GAS 면 todo_add 도 서버로 못 간다(첨부가 말없이 사라진다).
@@ -910,7 +911,7 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
         os.environ["ERP_TODO_UPLOAD"] = "1"     # 켜면 둘 다 서버로 가고 todo_add 의 짝도 풀린다
         assert not goes_to_gas("todo_upload") and not goes_to_gas("approval_rep_sign_upload")
         assert not any(goes_to_gas(d) for d in SERVER_NEEDS["todo_add"])
-        assert goes_to_gas("unlock_round"), "unlock_round 는 어떤 스위치로도 안 풀린다(잠금 원장이 GAS 에 있다)"
+        assert not goes_to_gas("unlock_round"), "unlock_round 는 스위치가 아니라 서버에 CHECK_UNLOCK_PIN 행이 있느냐로 갈린다(2026-09-15)"
         # PIN 3동작은 스위치가 아니라 서버에 그 PIN 행이 있느냐로 갈린다 — 여기서는 늘 통과다.
         for _a in approval_pin.ACTIONS:
             assert not goes_to_gas(_a), _a
