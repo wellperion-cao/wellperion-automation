@@ -122,7 +122,7 @@
   .acctid{font-family:ui-monospace,Consolas,monospace; letter-spacing:.06em;}
   .st.go{color:var(--accent-hover); background:var(--accent-bg);}
   /* AI 운영 가이드는 이 자리에 그대로 끼워 띄운다(권한·비용과 같은 방식) */
-  #guide-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
+  #guide-frame,#view-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
                border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
   .panel[hidden]{display:none;}
   .panel > h2:first-child, .panel > h3:first-of-type{margin-top:0;}
@@ -264,15 +264,15 @@
   <div class="cap">플랫폼 운영</div>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
-  <a href="../../자율현황.html"><span class="t">자율현황</span></a>
+  <a href="#view/auto" data-view="auto"><span class="t">자율현황</span></a>
   <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
   <div class="sep"></div>
   <div class="cap">모듈</div>
-  <a href="../../cto/automation/카톡전송관리.html"><span class="t">카톡 전송</span></a>
-  <a href="../../cbo/counsel_admin.html"><span class="t">상담봇</span></a>
+  <a href="#view/kakao" data-view="kakao"><span class="t">카톡 전송</span></a>
+  <a href="#view/counsel" data-view="counsel"><span class="t">상담봇</span></a>
   <!-- 마케팅 자동업로드 — 센터 공식 계정 발행(GM 2026-09-14 「마케팅 전체 파이프라인은
        ERP플랫폼관리 라인으로」). 파트너사 첫 화면에서는 뺐다 — 파는 쪽 기능이다. -->
-  <a href="../../cmo/upload/마케팅자동업로드.html"><span class="t">마케팅 자동업로드</span></a>
+  <a href="#view/upload" data-view="upload"><span class="t">마케팅 자동업로드</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
   <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
@@ -284,9 +284,9 @@
   <!-- 개인 = GM 본인 것(GM 2026-09-15 「김남욱GM 카드·어떤 하루·개인 아이디어를 맨 아래 따로」).
        아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보). -->
   <div class="cap">개인</div>
-  <a href="/home#G1"><span class="t">김남욱 GM</span></a>
-  <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span></a>
-  <a href="/home#G1/ideas"><span class="t">아이디어</span><span class="b">주간</span></a>
+  <a href="#view/gm" data-view="gm"><span class="t">김남욱 GM</span></a>
+  <a href="#view/sunday" data-view="sunday"><span class="t">어떤 하루</span></a>
+  <a href="#view/ideas" data-view="ideas"><span class="t">아이디어</span><span class="b">주간</span></a>
 </nav>
 
 <div class="main">
@@ -301,7 +301,7 @@
       <div class="name">화면</div>
       <div class="desc">파트너사가 쓰는 실행 화면</div>
     </a>
-    <a class="entry" href="../../자율현황.html" target="_blank" rel="noopener">
+    <a class="entry" href="#view/auto" data-view="auto">
       <div class="num placeholder" id="n-auto">—</div>
       <div class="name">자동화 가동</div>
       <div class="desc" id="n-auto-desc">오늘도 돌고 있는지 · 조용히 죽지 않았는지</div>
@@ -318,17 +318,17 @@
     </a>
     <!-- 직원 화면 메뉴에 있던 기술·자율·GM 세 문서를 이 층으로 옮겼다 (GM 지시 2026-09-11).
          문서 자체는 그대로 있고 들어오는 문만 여기로 바뀐다. -->
-    <a class="entry" href="/home#T1" target="_blank" rel="noopener">
+    <a class="entry" href="#view/t1" data-view="t1">
       <div class="num placeholder">—</div>
       <div class="name">기술 · AI 학습</div>
       <div class="desc">무엇을 어떻게 돌리고 있는지</div>
     </a>
-    <a class="entry" href="/home#T2" target="_blank" rel="noopener">
+    <a class="entry" href="#view/t2" data-view="t2">
       <div class="num placeholder">—</div>
       <div class="name">자율 작업 현황</div>
       <div class="desc">사람 손 없이 도는 것들</div>
     </a>
-    <a class="entry" href="/home#G1" target="_blank" rel="noopener">
+    <a class="entry" href="#view/gm" data-view="gm">
       <div class="num placeholder">—</div>
       <div class="name">김남욱 GM</div>
       <div class="desc">할 일 · 루틴 · 영양 · 목표</div>
@@ -959,6 +959,13 @@
   </table></div>
 </section>
 
+<!-- 바깥 화면 보기 — 플랫폼관리에서는 모듈·개인 화면을 새 창으로 넘기지 않고 오른쪽에 그대로 띄운다
+     (GM 2026-09-15 「ERP플랫폼관리에서는 우측 화면에 보였으면」 · 실사용 ERP 홈은 종전대로 새 페이지). 주소는 #view/이름. -->
+<section class="panel" data-panel="view" hidden>
+  <div class="meta" style="margin-bottom:6px;"><span id="view-title">—</span> · <a id="view-open" href="#" target="_blank" rel="noopener">새 창으로 열기 ↗</a></div>
+  <iframe id="view-frame" title="화면 보기" src="about:blank"></iframe>
+</section>
+
 <section class="panel" data-panel="guide" hidden>
   <iframe id="guide-frame" title="AI C-Level 운영 가이드" src="about:blank"></iframe>
 </section>
@@ -1117,7 +1124,14 @@
   var goLinks  = [].slice.call(document.querySelectorAll('a[data-go]'));  // 좌측 메뉴 + 카드에서 오는 이동 전부
   var panels = [].slice.call(document.querySelectorAll('.panel'));
   var crumb  = document.getElementById('crumb');
+  var viewLinks = [].slice.call(document.querySelectorAll('.side a[data-view]'));
+  var viewCards = [].slice.call(document.querySelectorAll('.main a[data-view]'));
+  // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
+  var VIEWS = { auto:'/자율현황.html', kakao:'/cto/automation/카톡전송관리.html', counsel:'/cbo/counsel_admin.html',
+                upload:'/cmo/upload/마케팅자동업로드.html', gm:'/home?v=g1#G1', t1:'/home?v=t1#T1', t2:'/home?v=t2#T2', sunday:'/cmo/sunday/GM의일요일.html', ideas:'/home?v=ideas#G1/ideas' };
   function show(key, scroll){
+    var viewKey = '';
+    if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
     if (!panels.some(function(p){ return p.dataset.panel === key; })) key = 'partners';
     panels.forEach(function(p){ p.hidden = (p.dataset.panel !== key); });
     navLinks.forEach(function(a){
@@ -1125,6 +1139,26 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
+    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황' };
+    if (key === 'view' && VIEW_NAMES[viewKey]) {
+      if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
+      document.getElementById('view-title').textContent = VIEW_NAMES[viewKey];
+      document.getElementById('view-open').href = VIEWS[viewKey];
+      var vf0 = document.getElementById('view-frame');
+      if (vf0.getAttribute('data-key') !== viewKey) { vf0.src = VIEWS[viewKey]; vf0.setAttribute('data-key', viewKey); }
+    }
+    viewLinks.forEach(function(a){
+      var on = (key === 'view' && a.dataset.view === viewKey);
+      a.classList.toggle('on', on);
+      if (on) {
+        if (crumb) crumb.textContent = a.querySelector('.t').textContent;
+        document.getElementById('view-title').textContent = a.querySelector('.t').textContent;
+        document.getElementById('view-open').href = VIEWS[viewKey];
+        var vf = document.getElementById('view-frame');
+        if (vf.getAttribute('data-key') !== viewKey) { vf.src = VIEWS[viewKey]; vf.setAttribute('data-key', viewKey); }
+      }
+    });
+    if (key === 'view') key = 'view/' + viewKey;
     if (key === 'guide') {
       var gf = document.getElementById('guide-frame');
       // 절대 경로로 적는다(2026-09-11 실사고). 이 화면 주소는 끝 슬래시가 없는 /erp/admin 이라
@@ -1136,6 +1170,9 @@
   }
   goLinks.forEach(function(a){
     a.addEventListener('click', function(e){ e.preventDefault(); show(a.dataset.go, true); });
+  });
+  viewLinks.concat(viewCards).forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); show('view/' + a.dataset.view, true); });
   });
   window.addEventListener('hashchange', function(){ show(location.hash.slice(1) || 'partners', false); });
   show(location.hash.slice(1) || 'partners', false);
