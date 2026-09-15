@@ -126,6 +126,10 @@
   /* AI 운영 가이드는 이 자리에 그대로 끼워 띄운다(권한·비용과 같은 방식) */
   #guide-frame,#view-frame{width:100%; height:calc(100vh - 84px); min-height:520px;
                border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
+  /* 오른쪽 화면은 관리 화면의 한 장처럼 — 테두리·모서리·안쪽 여백 없이(GM 2026-09-15 「블럭페이지 느낌 말고 하나의 페이지처럼」).
+     안쪽 문서는 iframe 안일 때 자기 바깥 여백을 접는다(company_v0.1.html .embedded). */
+  #view-frame{border:0; border-radius:0; background:transparent;}
+  .panel[data-panel="view"]{margin:-12px -16px 0; padding:0;}
   .panel[hidden]{display:none;}
   .panel > h2:first-child, .panel > h3:first-of-type{margin-top:0;}
   h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
@@ -259,7 +263,7 @@
        모듈 = 따로 파는 앱 · 자료 = 기준·문서 · 개인 = GM 본인 것(회사 화면과 섞지 않는다). -->
   <!-- 본 회사 = 파는 쪽(우리) — 파트너사 안에 숨기지 않고 맨 위 자기 묶음(GM 2026-09-15 17:3x 「본회사가 왜 파트너사를 들어가야 나오나」). 정본 = company_v0.1.html(시보). -->
   <div class="cap">웰페리온 랩스</div>
-  <a href="#view/company" data-view="company"><span class="t">본 회사</span></a>
+  <a href="#view/company" data-view="company"><span class="t">회사</span></a>
   <div class="sep"></div>
   <div class="cap">파트너사</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
@@ -1143,7 +1147,7 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황', company:'본 회사' };
+    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황', company:'회사' };
     if (key === 'view' && VIEW_NAMES[viewKey]) {
       if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
       var vf0 = document.getElementById('view-frame');
