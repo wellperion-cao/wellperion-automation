@@ -433,7 +433,32 @@ def build():
                else (1, appgroup_rank.get(m["appgroup"], 99), order.get(m["role"], 99), m["name"]))
     missing_automation = attach_asset_ledger(items)
     attach_bundle(items)
+    attach_kind(items)
     return items, missing_automation
+
+
+# ── 세 층 (GM 지시 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」) ──
+# module = 첫 화면 칸(MODULE_BUNDLES 대표 12) · screen = 그 아래 하위 화면 · doc = 읽는 문서(보고서·A3·가이드).
+# 문서를 목록에서 빼지 않고 kind 로만 가른다 — 서버 관문(server/erp_auth/app.py)이 이 목록의 id 로
+# 권한(account_perms deny·API_MODULES·write_perm)을 판정하므로, 빼면 그 문서들이 카드 밖 경로 규칙
+# (같은 폴더 카드 하나면 열림)으로 떨어져 파트너 계정에 회장님 A3 가 열린다(2026-09-15 실측).
+# 문서를 목록 밖(documents)으로 옮기는 것은 서버가 kind 를 읽게 된 뒤에 한다.
+KIND_ORDER = ("module", "screen", "doc")
+
+
+def kind_of(m):
+    if m.get("module_lead"):
+        return "module"
+    return "doc" if m.get("doc") else "screen"
+
+
+def attach_kind(items):
+    for m in items:
+        m["kind"] = kind_of(m)
+
+
+def kind_counts(items):
+    return {k: sum(1 for m in items if m["kind"] == k) for k in KIND_ORDER}
 
 
 # ── 모듈 한 장으로 묶기 (GM 지시 2026-09-14) ──────────────────────────────
@@ -641,6 +666,8 @@ def main():
         if counts.get(area):
             print("  %-12s %3d" % (area, counts[area]))
     print("  %-12s %3d" % ("문서(개별관리X)", sum(1 for m in items if m["doc"])))
+    kc = kind_counts(items)
+    print("  세 층: 모듈 %d · 화면 %d · 문서 %d" % (kc["module"], kc["screen"], kc["doc"]))
     print("  핵심 %d · 없는 경로 %d" % (sum(1 for m in items if m["core"]), len(bad)))
     for b in bad:
         print("  없음:", b)
@@ -671,6 +698,11 @@ def _selftest():
     assert all("automation" in m and "screen_id" in m and "sellable" in m for m in items), \
         "자산 원장 3칸 누락"
     assert any(m["automation"] for m in items), "automation 이 한 카드에도 안 붙었다"
+    kc = kind_counts(items)
+    assert sum(kc.values()) == len(items), "kind 가 세 층으로 안 갈린 카드가 있다"
+    assert kc["module"] == len(MODULE_BUNDLES), "모듈 수 != 판(MODULE_BUNDLES) 수"
+    assert not [m for m in items if m["kind"] == "doc" and m.get("module")], "문서가 모듈 판에 들어 있다"
+    print("selftest kind:", kc)
     print("selftest OK ·", len(items), "건 · 미매칭 모듈", len(missing_automation))
 
 

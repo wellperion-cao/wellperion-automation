@@ -651,9 +651,20 @@ function loadPending(){
 }
 
 // 모듈 배치 — 켠 것/끈 것을 체크로 고르고 한 번에 저장한다
+// 문서(kind=doc · 보고서·A3·가이드)는 이 목록에 싣지 않는다 — 켜고 끄는 모듈이 아니라 읽는 것이다
+// (GM 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」). 서버 목록엔 kind 가
+// 없어 /erp/modules.json 의 kind 를 같이 읽는다. 숨긴 문서 중 이미 끈 것은 저장 때 그대로 끈 채로 보낸다.
+var HIDDEN_OFF = [];
 function loadMods(){
-  adminGet('/auth/admin/api/modules').then(function(d){
-    var list = d.modules || [], offN = (d.off || []).length;
+  var kinds = fetch('/erp/modules.json', {cache: 'no-store'}).then(function(r){ return r.json(); })
+    .then(function(d){ var k = {}; (d.modules || []).forEach(function(m){ k[m.id] = m.kind; }); return k; })
+    .catch(function(){ return {}; });
+  Promise.all([adminGet('/auth/admin/api/modules'), kinds]).then(function(rs){
+    var d = rs[0], kind = rs[1];
+    var all = d.modules || [];
+    HIDDEN_OFF = all.filter(function(m){ return kind[m.id] === 'doc' && m.off; }).map(function(m){ return m.id; });
+    var list = all.filter(function(m){ return kind[m.id] !== 'doc'; });
+    var offN = list.filter(function(m){ return m.off; }).length;
     var trs = list.map(function(m){
       return '<tr><td class="c"><input type="checkbox" data-id="' + esc(m.id) + '"'
            + (m.off ? '' : ' checked') + ' aria-label="' + esc(m.name) + ' 켜기"></td>'
@@ -677,6 +688,7 @@ function saveMods(){
   [].forEach.call(document.querySelectorAll('#mods-body input[data-id]'), function(c){
     if (!c.checked) body.append('off', c.dataset.id);   // 끈 것만 보낸다(서버 계약)
   });
+  HIDDEN_OFF.forEach(function(id){ body.append('off', id); });   // 목록에 안 보이는 문서 — 끈 상태를 지운다고 켜지면 안 된다
   fetch('/auth/admin/api/modules', {method: 'POST', credentials: 'same-origin',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: body.toString()})
     .then(function(r){
