@@ -307,7 +307,7 @@ def tell_owner(style: dict, topic: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--client", required=True, choices=sorted(CLIENT_DIRS),
-                     help="jo=고척골프 조재오부장님 · dc=다이어트캠프 이승기대표님")
+                     help="jo=고척골프 조재오 지점장님 · dc=다이어트캠프 이승기대표님")
     ap.add_argument("--dry-run", action="store_true", help="본문만 만들고 브라우저를 열지 않는다")
     ap.add_argument("--self-test", action="store_true", help="검사 함수 자가점검")
     ap.add_argument("--no-owner-notice", action="store_true",
