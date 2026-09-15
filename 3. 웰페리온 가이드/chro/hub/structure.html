@@ -259,6 +259,7 @@
   }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
+<script src="../../_assets/erp_write.js"></script>
 </head>
 <body>
 
@@ -857,8 +858,12 @@
   async function loadHonestyBadges(){
     var summaryEl = document.getElementById("hbSummary");
     try{
+      // [추가 2026-09-15 시토 배12615] 읽기 서버 우선(/api/hr/autolog) · 안 되면 종전 구글(GAS) 그대로.
+      var j = await window.erpReadFirst('/api/hr/autolog?limit=600&offset=0', async function(){
       var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
       var j = await res.json();
+      return j;
+      }, {needRows:true});
       if(!j || !j.ok || !Array.isArray(j.results)) throw new Error((j && j.error) || "응답 오류");
       var rows = j.results; // 최신순 정렬 상태로 반환됨
       var counts = { live: 0, delayed: 0, none: 0, ondemand: 0 };
@@ -1177,8 +1182,12 @@
   // 공개 액션 — 비밀번호 전송 없음(관리자 인증 게이트 완전 제거)
   async function algPost_(payload){
     var body = Object.assign({ action: "autolog-list" }, payload);
+    // [추가 2026-09-15 시토 배12615] 읽기 서버 우선(/api/hr/autolog) · 안 되면 종전 구글(GAS) 그대로.
+    var qs = "limit=" + encodeURIComponent(payload.limit || "") + "&offset=" + encodeURIComponent(payload.offset || 0);
+    return await window.erpReadFirst('/api/hr/autolog?' + qs, async function(){
     var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify(body) });
     return await res.json();
+    }, {needRows:true});
   }
 
   function fmtAlgDate_(s){
