@@ -385,7 +385,7 @@ def main() -> int:
         _record_run(style, state, topic, "ok", "", len(body), used_model, relogin_tag)
         save_state(style, state)
         if args.no_owner_notice:
-            log("업체 방 알림 생략(--no-owner-notice)")
+            log(style, "업체 방 알림 생략(--no-owner-notice)")
         else:
             tell_owner(style, topic)
         return 0
