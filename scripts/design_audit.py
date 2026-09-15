@@ -37,7 +37,7 @@ JS = r"""
     .filter(vis).filter(e => { const r = e.getBoundingClientRect(); return r.width < 44 || r.height < 44; })
     .map(e => (e.getAttribute('aria-label') || e.textContent.trim() || e.className || e.tagName).slice(0, 18));
   // 버튼 커서(ux 'cursor-pointer')
-  out.btnNoPointer = [...document.querySelectorAll('button,[role=button]')].filter(vis)
+  out.btnNoPointer = [...document.querySelectorAll('button,[role=button]')].filter(vis).filter(e => !e.disabled)
     .filter(e => getComputedStyle(e).cursor !== 'pointer').length;
   // 아이콘만 있는 버튼에 aria-label(web-interface 1)
   out.iconBtnNoLabel = [...document.querySelectorAll('button,a[href]')].filter(vis)

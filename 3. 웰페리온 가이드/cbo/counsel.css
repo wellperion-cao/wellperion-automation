@@ -2,11 +2,11 @@
 *{box-sizing:border-box}
 body{margin:0;padding:20px 22px 60px;background:var(--paper);color:var(--ink);font:14.5px/1.6 'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',-apple-system,system-ui,sans-serif}
 .wrap{max-width:980px;margin:0 auto}
-h1{font-size:19px;margin:0 0 4px}
+h1{font-size:19px;margin:0 0 4px;font-family:var(--pf-head,inherit)}
 .sub{font-size:12.5px;color:var(--accent-text);margin:0 0 14px}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-.tabs a{padding:6px 12px;border-radius:8px;border:1px solid rgba(34,31,32,.16);text-decoration:none;color:var(--ink);font-size:13px;font-weight:600}
-.tabs a.on{background:var(--ink);color:#fff;border-color:transparent}
+.tabs a{padding:6px 12px;min-height:44px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid rgba(34,31,32,.16);text-decoration:none;color:var(--ink);font-size:13px;font-weight:600}
+.tabs a.on{background:var(--pf-tint,var(--ink));color:var(--pf-pri-dk,#fff);border-color:var(--pf-pri,transparent)}
 .subnav{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid rgba(34,31,32,.12)}
 .subnav a{font-size:13px;color:var(--accent-text);text-decoration:none;font-weight:600}
 .subnav a.on{color:var(--ink);text-decoration:underline}
@@ -21,7 +21,7 @@ th,td{border-bottom:1px solid rgba(34,31,32,.1);padding:6px 8px;text-align:left;
 th{font-size:11.5px;color:var(--accent-text);font-weight:700}
 input[type=text],textarea,select{width:100%;padding:6px 8px;border:1px solid rgba(34,31,32,.2);border-radius:6px;font:inherit;background:#fff;color:inherit}
 textarea{min-height:44px;resize:vertical}
-button{padding:6px 12px;border:0;border-radius:6px;background:var(--ink);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button{padding:6px 12px;min-height:44px;border:0;border-radius:6px;background:var(--pf-pri-dk,var(--ink));color:#fff;font:inherit;font-weight:600;cursor:pointer}
 button.sec{background:transparent;color:var(--ink);border:1px solid rgba(34,31,32,.2)}
 .muted{color:var(--accent-text);font-size:12.5px}
 .row-add{display:grid;grid-template-columns:1fr 1fr 100px;gap:8px;margin-top:10px}

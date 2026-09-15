@@ -3,25 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>마케팅 자동업로드 — 웰페리온</title>
-<meta name="theme-color" content="#23201C">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="마케팅 업로드">
-<!-- 회사·센터 공식 계정에 올리는 자리 (GM 지시 2026-09-14 「마케팅 자동업로드 모듈로 하나 더」).
-     화면은 한 벌이다 — 접수 화면을 회사판(#marketing)으로 연다. 두 벌로 복사하면 한쪽만
-     고쳐져 서로 어긋난다(GM 「중복이나 무의미한건 항상 지워」).
-     개인 기록은 「어떤 하루」가 그대로 맡는다 — 두 모듈은 트랙(계정)으로 갈린다.
-     이 파일이 따로 있는 이유 = ERP 모듈 목록은 화면 파일 단위로 카드를 만든다. -->
+<title>마케팅 자동업로드 — 웰페리온 랩스</title>
+<meta name="theme-color" content="#0A6E66">
+<meta name="robots" content="noindex">
+<!-- 파는 모듈(플랫폼 브랜드 · 웰페리온 랩스). 파트너사를 골라 그 계정 채널로 글을 올린다.
+     2026-09-15 GM: 「마케팅 자동업로드도 웰페리온의 하루로 고정이 되어 있나 보네」 → 개인 앱(GM의일요일#marketing)으로
+     튕기던 스텁을 걷어 내고 파트너사 선택이 있는 독립 화면으로 세웠다(설계 시모 배 2658).
+     서버 배선(시토): data-hook 속성 3개 —
+       partner-channels : GET  /api/partner_secrets/status?tenant={키}  → 채널별 활성/비활성
+       upload-submit    : POST /api/marketing/upload                    → {tenant, channels[], title, body, images[], when}
+       upload-history   : GET  /api/marketing/uploads?tenant={키}       → 최근 발행 목록
+     배선 전엔 「서버 연결 전」 배지가 보인다(가짜 데이터로 채우지 않는다).
+     색·글꼴 = erp/admin/platform_brand.css 한 벌(웰페리온 베이지·코랄 금지). -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="../../erp/admin/platform_brand.css">
 <style>
-  html,body{margin:0;height:100%;background:#EAE6DC;
-            font-family:'Noto Sans KR','Malgun Gothic',system-ui,sans-serif;color:#23201C;}
-  .m{display:flex;align-items:center;justify-content:center;height:100%;font-size:14px;opacity:.7;}
+*{box-sizing:border-box}
+body{padding:18px 20px 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.brand{font-family:var(--pf-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-soft)}
+.brand .dot{color:var(--pf-pri-dk)}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.ch{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ch label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);background:var(--pf-bg);font-size:13.5px;cursor:pointer}
+.ch label.off{opacity:.55;cursor:not-allowed}
+.ch input{width:18px;height:18px;accent-color:var(--pf-pri-dk);margin:0}
+.ch .pf-st{margin-left:auto}
+.f{display:grid;gap:12px}
+.f label.l{font-size:12.5px;font-weight:600;color:var(--pf-soft);display:block;margin-bottom:4px}
+.drop{border:1px dashed var(--pf-pri);border-radius:var(--pf-radius-sm);background:var(--pf-bg);min-height:88px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:var(--pf-soft);padding:12px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.acts .note{font-size:12.5px;color:var(--pf-soft);margin-left:auto}
+.empty{padding:22px 12px;text-align:center;color:var(--pf-soft);font-size:13.5px}
 </style>
-<script>
-  /* replace 로 보낸다 — 뒤로가기가 이 자리로 되돌아와 다시 튕기는 것을 막는다 */
-  location.replace('../sunday/GM의일요일.html#marketing');
-</script>
 </head>
-<body><div class="m">마케팅 자동업로드를 여는 중…</div></body>
+<body class="pf-body">
+
+<div class="top">
+  <div>
+    <div class="brand">Wellperion Labs<span class="dot">.</span> · 마케팅 자동업로드</div>
+    <h1 class="pf-h1">파트너사 채널에 글 올리기</h1>
+    <p class="pf-sub" style="margin:0">파트너사를 고르고, 켜진 채널에 글·사진을 한 번에 임시저장합니다. 실제 발행은 파트너사가 임시저장함에서 확인한 뒤 누릅니다.</p>
+  </div>
+  <span class="pf-st off" id="srv"><i></i>서버 연결 전</span>
+</div>
+
+<div class="pf-tabs" role="tablist" aria-label="파트너사" id="tenants">
+  <button role="tab" aria-selected="true" class="on" data-tenant="wellperion">1호 웰페리온</button>
+  <button role="tab" aria-selected="false" data-tenant="dc">2호 다이어트캠프</button>
+  <button role="tab" aria-selected="false" data-tenant="jo">3호 고척골프</button>
+</div>
+
+<div class="grid" style="margin-top:14px">
+  <section class="pf-card">
+    <div class="pf-lb">채널 — 계정이 서버에 있으면 활성</div>
+    <div class="ch" id="channels" data-hook="partner-channels"></div>
+
+    <div class="pf-lb" style="margin-top:18px">글</div>
+    <form class="f" id="form" data-hook="upload-submit" onsubmit="return false">
+      <div><label class="l" for="title">제목</label><input class="pf-input" id="title" name="title" maxlength="80" placeholder="예) 9월 신규 회원 이벤트 안내"></div>
+      <div><label class="l" for="body">본문</label><textarea class="pf-textarea" id="body" name="body" placeholder="채널마다 길이 규칙이 다르면 서버가 잘라 맞춥니다(블로그 전체 · 인스타 2,200자 · 당근 1,000자)."></textarea></div>
+      <div><label class="l" for="imgs">사진</label><input type="file" id="imgs" name="images" accept="image/*" multiple hidden><div class="drop" id="drop" role="button" tabindex="0" aria-controls="imgs">사진을 끌어다 놓거나 눌러서 고르기<br><span id="imgCount"></span></div></div>
+      <div><label class="l" for="when">올릴 시각</label><input class="pf-input" type="datetime-local" id="when" name="when"></div>
+      <div class="acts">
+        <button class="pf-btn p" type="submit" id="submit">임시저장함으로 보내기</button>
+        <button class="pf-btn s" type="button" id="preview">미리보기</button>
+        <span class="note" id="msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="pf-card">
+    <div class="pf-lb">최근 발행 — <span id="tName">1호 웰페리온</span></div>
+    <table class="pf-table" data-hook="upload-history"><colgroup><col style="width:24%"><col style="width:22%"><col><col style="width:22%"></colgroup>
+      <thead><tr><th>날짜</th><th>채널</th><th>제목</th><th>상태</th></tr></thead>
+      <tbody id="hist"><tr><td colspan="4" class="empty">서버가 연결되면 이 파트너사의 최근 발행이 여기에 뜹니다.</td></tr></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+(function(){
+  // 채널 목록 = 파트너 계정 정본(플랫폼관리 파트너사 표)과 같은 7개 · 순서 고정
+  var CH=[['naver-blog','네이버 블로그'],['naver-cafe','네이버 카페'],['instagram','인스타그램'],['threads','스레드'],['danggn','당근'],['google','구글 비즈니스'],['kakao-channel','카카오톡 채널']];
+  var NAMES={wellperion:'1호 웰페리온',dc:'2호 다이어트캠프',jo:'3호 고척골프'};
+  var tenant='wellperion', active={};
+  var $=function(id){return document.getElementById(id)};
+
+  function renderChannels(){
+    var host=$('channels'); host.innerHTML='';
+    CH.forEach(function(c){
+      var on=!!active[c[0]];
+      var l=document.createElement('label'); l.className=on?'':'off';
+      l.innerHTML='<input type="checkbox" name="channels" value="'+c[0]+'"'+(on?'':' disabled')+'> '+c[1]+'<span class="pf-st '+(on?'on':'off')+'"><i></i>'+(on?'활성':'비활성')+'</span>';
+      host.appendChild(l);
+    });
+  }
+  function load(){
+    $('tName').textContent=NAMES[tenant]; active={}; renderChannels();
+    fetch('/api/partner_secrets/status?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ (j.channels||[]).forEach(function(c){ if(c.active) active[c.channel]=1; }); $('srv').className='pf-st on'; $('srv').innerHTML='<i></i>서버 연결됨'; renderChannels(); })
+      .catch(function(){ /* 배선 전 — 「서버 연결 전」 그대로 */ });
+    fetch('/api/marketing/uploads?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ var rows=(j.items||[]); if(!rows.length) return; $('hist').innerHTML=rows.map(function(x){ return '<tr><td>'+x.date+'</td><td>'+x.channel+'</td><td>'+x.title+'</td><td><span class="pf-st '+(x.status==='ok'?'on':x.status==='fail'?'bad':'warn')+'"><i></i>'+x.status_label+'</span></td></tr>'; }).join(''); })
+      .catch(function(){});
+  }
+  document.querySelectorAll('#tenants [role=tab]').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('#tenants [role=tab]').forEach(function(x){ x.classList.remove('on'); x.setAttribute('aria-selected','false'); });
+      b.classList.add('on'); b.setAttribute('aria-selected','true'); tenant=b.dataset.tenant; load();
+    });
+  });
+  var drop=$('drop'), imgs=$('imgs');
+  drop.addEventListener('click',function(){ imgs.click(); });
+  drop.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); imgs.click(); } });
+  imgs.addEventListener('change',function(){ $('imgCount').textContent=imgs.files.length?imgs.files.length+'장 골랐습니다':''; });
+  $('form').addEventListener('submit',function(){
+    var chs=[].slice.call(document.querySelectorAll('input[name=channels]:checked')).map(function(i){return i.value});
+    if(!chs.length){ $('msg').textContent='켜진 채널을 하나 이상 고르세요.'; return; }
+    if(!$('title').value.trim()){ $('msg').textContent='제목을 적으세요.'; $('title').focus(); return; }
+    var fd=new FormData($('form')); fd.set('tenant',tenant); chs.forEach(function(c){ fd.append('channels',c); });
+    $('submit').disabled=true; $('msg').textContent='보내는 중…';
+    fetch('/api/marketing/upload',{method:'POST',body:fd,credentials:'same-origin'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(){ $('msg').textContent='임시저장함으로 보냈습니다.'; load(); })
+      .catch(function(){ $('msg').textContent='서버가 아직 연결되지 않았습니다 — 배선 뒤 다시 보내세요.'; })
+      .then(function(){ $('submit').disabled=false; });
+  });
+  $('preview').addEventListener('click',function(){ $('msg').textContent='미리보기: 「'+($('title').value||'(제목 없음)')+'」 · '+($('body').value.length)+'자'; });
+  load();
+})();
+</script>
+</body>
 </html>

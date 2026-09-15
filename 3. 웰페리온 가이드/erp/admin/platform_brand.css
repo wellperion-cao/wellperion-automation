@@ -1,0 +1,82 @@
+/* ============================================================
+   웰페리온 랩스(Wellperion Labs) — 플랫폼 브랜드 토큰 · 정본
+   「웰페리온이 만든 센터 자동화 운영 플랫폼」 (GM 확정 2026-09-15)
+   위치: 3. 웰페리온 가이드/erp/admin/platform_brand.css
+   쓰는 곳: 플랫폼관리(/erp/admin/)와 파는 모듈 화면(카톡 전송·상담봇 관리·마케팅 자동업로드).
+   웰페리온 회사 화면(베이지·코랄·Playfair)과 섞지 않는다 — 그쪽 정본은 erp/brand/tokens.css.
+   사람용 설명 = platform_brand_guide.html (이 파일을 읽어 렌더한다 · 값을 두 곳에 두지 않는다).
+
+   팔레트 = 시안 3 「소프트 민트 + 틸」 · 글꼴 = 시안 2 「Pretendard + DM Sans」 (GM 선택 2026-09-15 16:3x)
+   근거 = 디자인 규칙집(UI/UX Pro Max) color 「Teal focus + action」 · typography 「Premium Sans(DM Sans)」
+   ★청록 #0E9488 위 흰 글자는 명암비 3.7 — 채운 버튼·작은 글자엔 진한 청록(--pf-pri-dk)을 쓴다.
+   ============================================================ */
+:root{
+  /* 주색 */
+  --pf-pri:#0E9488;        /* 청록 · 활성 선·아이콘·큰 제목(24px+)·테두리 */
+  --pf-pri-dk:#0A6E66;     /* 진한 청록 · 채운 버튼·강조 글자·링크 (흰 글자 명암비 5.9) */
+  --pf-tint:#CFF5EE;       /* 민트 틴트 · 선택 행·배지 바탕·호버 */
+  /* 행동색(발송·AI 표시·되돌릴 수 없는 버튼) */
+  --pf-acc:#4F46E5;        /* 남색 · 흰 글자 명암비 6.3 */
+  --pf-acc-dk:#3730A3;
+  --pf-acc-tint:#E0E7FF;
+  /* 바탕·글자 */
+  --pf-bg:#FFFFFF;         /* 화면 바탕 */
+  --pf-panel:#F3FBF9;      /* 카드·사이드바 */
+  --pf-panel-2:#E8F6F3;    /* 표 머리·눌린 상태 */
+  --pf-ink:#0F3D3A;        /* 본문 글자 (흰 바탕 명암비 11.9) */
+  --pf-soft:#4F6B68;       /* 보조 글자 (흰 바탕 명암비 5.4 · 패널 위 4.9) */
+  --pf-line:#BFE6DF;       /* 선·테두리 */
+  /* 상태 */
+  --pf-ok:#0A6E66;   --pf-ok-bg:#CFF5EE;
+  --pf-warn:#B45309; --pf-warn-bg:#FEF3C7;
+  --pf-bad:#B91C1C;  --pf-bad-bg:#FEE2E2;
+  /* 글꼴 · 모양 */
+  --pf-sans:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --pf-head:"DM Sans","Pretendard",sans-serif;   /* 영문·숫자·제목 */
+  --pf-mono:ui-monospace,Consolas,monospace;
+  --pf-radius:10px; --pf-radius-sm:8px; --pf-radius-pill:999px;
+
+  /* 옛 이름 호환 — 상담봇 관리 CSS(cbo/counsel.css)가 erp/brand/tokens.css 이름을 쓴다.
+     이 파일을 대신 링크하면 그 이름이 플랫폼 색으로 바뀐다. 새 화면은 --pf-* 만 쓴다. */
+  --paper:var(--pf-bg); --ink:var(--pf-ink); --accent-text:var(--pf-pri-dk); --beige:var(--pf-line);
+}
+
+/* ── 기본 규칙(규칙집 필수 4개) ── */
+:focus-visible{outline:2px solid var(--pf-pri);outline-offset:3px}
+button,[role="button"],summary{cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* 폰에서 본문 글자 바닥 16px(규칙집 'Readable Font Size') — 옛 화면이 body 에 14~15px 를 박아 둔 것을 한 곳에서 덮는다 */
+@media (max-width:768px){body{font-size:16px!important}}
+.pf-ico{display:inline-block;width:1em;height:1em;vertical-align:-.15em}
+
+/* ── 공통 부품(새 화면용 · 클래스 접두 pf-) ── */
+.pf-body{margin:0;background:var(--pf-bg);color:var(--pf-ink);font:15px/1.6 var(--pf-sans);-webkit-font-smoothing:antialiased}
+.pf-h1{font-family:var(--pf-head);font-size:20px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px}
+.pf-sub{font-size:13px;color:var(--pf-soft);margin:0 0 16px}
+.pf-lb{font-family:var(--pf-head);font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-soft);margin:0 0 8px}
+.pf-card{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:var(--pf-radius);padding:16px 18px}
+.pf-btn{font-family:var(--pf-head);font-size:13.5px;font-weight:600;border-radius:var(--pf-radius-sm);padding:0 16px;min-height:44px;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;text-decoration:none;transition:background .2s,color .2s,border-color .2s}
+.pf-btn.p{background:var(--pf-pri-dk);color:#fff}.pf-btn.p:hover{background:var(--pf-pri)}
+.pf-btn.s{background:transparent;color:var(--pf-pri-dk);border-color:var(--pf-pri)}.pf-btn.s:hover{background:var(--pf-tint)}
+.pf-btn.a{background:var(--pf-acc);color:#fff}.pf-btn.a:hover{background:var(--pf-acc-dk)}
+.pf-btn.g{background:var(--pf-bg);color:var(--pf-ink);border-color:var(--pf-line)}.pf-btn.g:hover{background:var(--pf-panel-2)}
+.pf-btn[disabled]{opacity:.5;cursor:not-allowed}
+.pf-input,.pf-select,.pf-textarea{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);background:var(--pf-bg);color:var(--pf-ink);font:inherit}
+.pf-textarea{min-height:120px;resize:vertical}
+.pf-input:focus,.pf-select:focus,.pf-textarea:focus{border-color:var(--pf-pri)}
+.pf-table{width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
+.pf-table th{font-family:var(--pf-head);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--pf-soft);text-align:left;padding:8px 10px;border-bottom:1px solid var(--pf-line);background:var(--pf-panel-2)}
+.pf-table td{padding:10px;border-bottom:1px solid var(--pf-line);vertical-align:middle}
+.pf-table tr:last-child td{border-bottom:0}
+.pf-st{display:inline-flex;align-items:center;gap:6px;font-family:var(--pf-head);font-size:12px;font-weight:600;border-radius:var(--pf-radius-pill);padding:2px 10px}
+.pf-st i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.pf-st.on{background:var(--pf-ok-bg);color:var(--pf-ok)}
+.pf-st.off{background:transparent;border:1px solid var(--pf-line);color:var(--pf-soft)}
+.pf-st.warn{background:var(--pf-warn-bg);color:var(--pf-warn)}
+.pf-st.bad{background:var(--pf-bad-bg);color:var(--pf-bad)}
+.pf-st.ai{background:var(--pf-acc-tint);color:var(--pf-acc-dk)}
+.pf-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.pf-tabs a,.pf-tabs button{font-family:var(--pf-head);font-size:13px;font-weight:600;min-height:44px;padding:0 14px;display:inline-flex;align-items:center;border-radius:var(--pf-radius-sm);border:1px solid var(--pf-line);color:var(--pf-ink);text-decoration:none;background:var(--pf-bg)}
+.pf-tabs .on,.pf-tabs [aria-current="true"]{background:var(--pf-tint);color:var(--pf-pri-dk);border-color:var(--pf-pri)}
+.pf-brand{font-family:var(--pf-head);font-weight:700;letter-spacing:-.01em;color:var(--pf-ink)}
+.pf-brand .dot{color:var(--pf-pri-dk)}
