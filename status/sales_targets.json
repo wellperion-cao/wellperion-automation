@@ -4,18 +4,70 @@
   "monthly_target_total": 660000000,
   "unit": "원(VAT 별도)",
   "fixed_every_month": true,
-  "updated_at": "2026-08-24",
+  "updated_at": "2026-09-15",
   "_배분_미완": "총액 6.6억(GM 확정 2026-08-08)과 아래 teams 합계 6.355억의 차액 2,450만 원은 아직 어느 팀에도 배분되지 않았다. GM이 확정한 것은 총액뿐이고 팀별 목표는 부서 평가 기준이라 지어내지 않는다. 배분이 정해지면 teams 를 고치고 이 칸을 지운다. 그때까지 매출 시트 '보고' 탭 K6:K15 도 6.105억 합계 그대로이며, scripts/kakao_auto_daily_report.py 의 발송 전 대조가 그 차이를 매일 업무보고방 본문에 남긴다.",
   "unallocated_target": 24500000,
   "teams": [
-    { "key": "membership", "name": "멤버십 회원권 + 옵션", "target": 275000000 },
-    { "key": "swim",       "name": "수영팀",             "target": 110000000 },
-    { "key": "pt",         "name": "P.T팀",              "target": 99000000 },
-    { "key": "golf",       "name": "골프팀",             "target": 33000000 },
-    { "key": "squash",     "name": "스쿼시팀",           "target": 33000000 },
-    { "key": "gym",        "name": "체조팀",             "target": 33000000 },
-    { "key": "pilates",    "name": "P.L팀",              "target": 33000000 },
-    { "key": "musical",    "name": "뮤지컬팀",           "target": 16500000 },
-    { "key": "gxe",        "name": "GXE(파트너팀)",      "target": 3000000 }
-  ]
+    {
+      "key": "membership",
+      "name": "운영부(회원권+옵션)",
+      "target": 275000000,
+      "brojay_tag": "운영부"
+    },
+    {
+      "key": "swim",
+      "name": "수영팀",
+      "target": 110000000,
+      "brojay_tag": "수영"
+    },
+    {
+      "key": "pt",
+      "name": "P.T팀",
+      "target": 99000000,
+      "brojay_tag": "PT"
+    },
+    {
+      "key": "golf",
+      "name": "골프팀",
+      "target": 33000000,
+      "brojay_tag": "골프"
+    },
+    {
+      "key": "squash",
+      "name": "스쿼시팀",
+      "target": 33000000,
+      "brojay_tag": "스쿼시"
+    },
+    {
+      "key": "gym",
+      "name": "체조팀",
+      "target": 33000000,
+      "brojay_tag": "체조&트램폴린"
+    },
+    {
+      "key": "pilates",
+      "name": "P.L팀",
+      "target": 33000000,
+      "brojay_tag": "필라테스"
+    },
+    {
+      "key": "musical",
+      "name": "뮤지컬팀",
+      "target": 16500000,
+      "brojay_tag": null
+    },
+    {
+      "key": "gxe",
+      "name": "GXE(파트너팀)",
+      "target": 3000000,
+      "brojay_tag": "유료GX"
+    }
+  ],
+  "_브로제이_태그_매핑": "GM 확정 2026-09-15 — 브로제이 결제 자료의 sales_tag_name 을 이 표의 팀에 그대로 붙인다. 뮤지컬팀은 브로제이에 해당 태그가 없다(2026-09-08~15 결제 162건 중 0건) — 태그가 생기면 brojay_tag 에 적는다. 주차 매출은 브로제이에 없고 목표도 두지 않는다(나오는 매출만 집계 · GM 2026-09-15).",
+  "_매출_정의": "GM 확정 2026-09-15 — 서버 판 매출 = 결제 전액 · 부가세 포함 · 기간 나누지 않음(결제일 그대로). 보고 시트는 부가세를 뺀 값이라 같은 날 숫자가 다르다(9/14 시트 10,005,248 · 서버 24,658,500) — 정의 차이지 오류가 아니다.",
+  "parking": {
+    "name": "주차",
+    "target": null,
+    "_": "목표 없음 — 나오는 매출만 집계(GM 2026-09-15)"
+  }
 }
