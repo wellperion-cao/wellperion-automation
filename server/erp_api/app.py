@@ -186,6 +186,34 @@ def members(
             "rows": [_member_row(r) for r in rows], "_source": SOURCE}
 
 
+@app.get("/api/members/change_log")
+def members_change_log(
+    from_date: Optional[str] = Query(None, alias="from"),
+    to_date: Optional[str] = Query(None, alias="to"),
+):
+    """회원 변경 이력 읽기 — 07:50 통 칭찬 줄 원천 (CTO-2026-09-15-GET-API-MEMBERS-CHANGE-LOG-F).
+    ?from=YYYY-MM-DD&to=YYYY-MM-DD → {ok, count, rows:[{at,staff,screen,field,member_name,phone_masked}]}"""
+    from datetime import date as _date
+    today = _date.today().isoformat()
+    d_from = from_date or today
+    d_to   = to_date   or today
+    try:
+        conn = _conn()
+    except db.Error as e:
+        raise HTTPException(503, "DB 열기 실패: %s" % e)
+    with conn:
+        rows = conn.execute(
+            "SELECT at, staff, screen, field, member_name, phone_masked"
+            " FROM member_change_log"
+            " WHERE tenant_id=%s AND DATE(at)>=%s AND DATE(at)<=%s"
+            " ORDER BY at",
+            (db.TENANT, d_from, d_to),
+        ).fetchall()
+    conn.close()
+    return {"ok": True, "from": d_from, "to": d_to, "count": len(rows),
+            "rows": [dict(r) for r in rows]}
+
+
 @app.get("/api/members/{member_no}")
 def member(member_no: str):
     """회원 한 사람 + 같은 전화·이름의 문의(정의서 2장 규칙: 전화(정규화)+이름 정확 일치만 '확정').
