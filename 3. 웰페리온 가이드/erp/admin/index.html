@@ -410,15 +410,15 @@
             if(it){
               return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'"><td class="item">'+cname(c)+'</td>'+
                 '<td class="ps-id">'+esc(it.id_masked)+'</td><td class="ps-pw">'+(it.has_pw?'••••••••':'—')+'</td>'+
-                '<td><span class="st ok">활성</span></td><td>'+esc(it.received_at)+'</td>'+
+                '<td><span class="st ok">활성</span></td><td>'+esc(it.received_at)+'</td><td class="n">'+esc(it.note||'')+'</td>'+
                 '<td><button class="ps-show">보기</button> <button class="ps-del">삭제</button></td></tr>';
             }
             return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'" style="opacity:.55"><td class="item">'+cname(c)+'</td>'+
-              '<td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td>'+
+              '<td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td><td>—</td>'+
               '<td><button class="ps-put">넣기</button></td></tr>';
           }).join('');
           return '<h4 style="margin:14px 0 4px;font-size:13px">'+tname(t)+'</h4><div class="tbl-wrap"><table class="reg">'+
-            '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
+            '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>메모</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
         }).join('');
       }).catch(function(e){ line.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '목록을 못 읽었습니다('+e+')'; boards.innerHTML=''; });
     }
