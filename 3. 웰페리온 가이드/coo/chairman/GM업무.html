@@ -406,10 +406,10 @@
        판정은 '오늘자 표시'뿐이다 — 누가 담당인지 고르는 판정은 gm_checkin 한 곳에만 둔다. -->
   <div id="todaySched" class="today-sched" hidden></div>
 
-  <!-- ⓪-2 리더 현황 띠 (GM 확정 2026-08-26) — GM 직속 3라인 리더(이경연 실장·이정헌 소장·나우열M)만.
-       실무진(최준용M 등)은 넣지 않는다. 데이터는 monthly_ops_plan.json(사람이 손으로 넣어 08-13 이후
-       멈춘 값)이 아니라 업무 현황 SSOT 시트(TODO_API_URL action=todo_list)를 그 자리에서 직접 센다.
-       읽기 전용 — 등록·수정 칸 없음, 등록은 담당자 본인이 업무 SSOT에서 한다. -->
+  <!-- ⓪-2 리더 현황 띠 — 이번 분기 누적(중간관리자 업무 기준 · GM 지시 2026-09-15 「지금 리더 현황은
+       의미가 없어 — 리더 현황 + 중간관리자 업무목차 병합」). 종전(08-26) 업무 SSOT 미완 건수 집계는 뺐다.
+       원천 = 중간관리자 업무목차 생성기가 매일 07:50 남기는 책임 항목 스냅숏 status/manager_eval_history.json
+       (4인 · 항목 수·실측 이상·보완 건). 읽기 전용 — 원장이 없거나 이번 달 키가 없으면 조용히 숨긴다. -->
   <div id="leaderBand" class="today-sched" hidden></div>
 
   <!-- ⓪-2b 중간관리자 업무 목차 링크 (GM 지시 2026-09-10 "그리고 GM업무에 붙여줘") — 바로 위
@@ -584,9 +584,9 @@
 <script src="../../_assets/erp_write.js"></script>
 <script src="_owner_directive.js"></script>
 <script>
+var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/·ssot/ 정적 파일 뿌리) — 한 곳
 (function () {
   "use strict";
-  var RAW_BASE = '/repo/';
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
   // ★ 체크 즉시 저장(GM 지적 2026-08-07 "체크하고 새로고침하면 사라짐") — 「변경 저장」은 PIN 필요한
@@ -1419,88 +1419,42 @@
     });
 })();
 
-/* ── ⓪-2 리더 현황 띠 (GM 확정 2026-08-26) ────────────────────────────────────────
-   monthly_ops_plan.json의 practitioners[].daily_status는 08-13 이후 갱신이 멈춘 손입력값이라
-   쓰지 않는다. 업무 현황 SSOT.html이 쓰는 그 GAS·그 액션(action=todo_list)을 그대로 불러
-   그 페이지와 같은 방식(FIELD_MAP 한글→영문, status==='완료'가 종결)으로 그 자리에서 센다
-   (새 GAS·새 액션 0 · 약속 L01·L21). 통신 실패·응답 이상이면 조용히 숨긴다 — 에러 문구로
-   채우지 않는다(오늘 일정 띠와 달리 여기는 GM 확정 지시로 실패 시 완전히 숨김). */
+/* ── ⓪-2 리더 현황 띠 — 이번 분기 누적(중간관리자 업무 기준 · GM 지시 2026-09-15) ──────────
+   종전(08-26)엔 업무 SSOT 미완 건수만 셌는데 GM 이 「의미 없다」고 했다. 이제는 중간관리자 업무목차
+   생성기(scripts/manager_task_index.py)가 매일 07:50 남기는 책임 항목 스냅숏 원장
+   status/manager_eval_history.json 의 이번 달 키를 읽어 4인을 한 줄씩 그린다 — 그 화면 「📅 분기 누적」
+   절과 같은 파일 하나가 원천이다(약속 L01). 원장이 없거나 이번 달 키가 없으면 조용히 숨긴다
+   (GM 확정 2026-08-26 유지 — 에러 문구로 채우지 않는다). */
 (function () {
-  var LEADER_TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-  var LEADERS = ['이경연 실장', '이정헌 소장', '나우열M']; // MEMBERS(업무 현황 SSOT.html)와 정확히 일치
   var box = document.getElementById('leaderBand');
   if (!box) return;
-  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/todo, 같은 GAS·같은 include_gm=1 을
-  // 5분마다 떠 둔 것)를 먼저 읽는다. 미러는 원본 GAS 행(한글 칸) 그대로라 아래 매핑은 안 바뀐다.
-  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
-  function loadLeaderTodos() {
-    var gas = function () {
-      return fetch(LEADER_TODO_API_URL + '?action=todo_list&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
-    };
-    if (!ERP_API_ON) return gas();
-    return fetch('/api/todo?limit=1000', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-      .then(function (d) { return { ok: true, data: (d && d.rows) || [] }; })
-      .catch(function (e) { console.warn('[리더현황] API 실패 → GAS 폴백:', e && e.message); return gas(); });
-  }
-
+  var PEOPLE = ['김남욱 GM', '이경연 실장', '이정헌 소장', '나우열M']; // RESP_PEOPLE(manager_task_index.py)과 같다
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
-  function todayMidnight() {
-    var d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-  var today0 = todayMidnight();
-
-  function isOverdue(endDate) {
-    if (!endDate) return false;
-    var d = new Date(String(endDate).slice(0, 10) + 'T23:59:59');
-    return !isNaN(d) && d < new Date();
-  }
-  function daysOverdue(endDate) {
-    var d = new Date(String(endDate).slice(0, 10) + 'T00:00:00');
-    return Math.max(1, Math.round((today0 - d) / 86400000));
-  }
-
-  loadLeaderTodos()
-    .then(function (res) {
-      if (!res || !res.ok || !Array.isArray(res.data)) throw new Error('형식 불일치');
-      var tasks = res.data.map(function (raw) {
-        return {
-          title: raw.title || raw['업무명'] || '',
-          owner: raw.owner || raw['담당자'] || '',
-          status: raw.status || raw['상태'] || '',
-          endDate: raw.endDate || raw['종료일'] || ''
-        };
+  var d = new Date();
+  var ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  fetch(RAW_BASE + 'status/manager_eval_history.json?cb=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (h) {
+      var month = h && h.months && h.months[ym];
+      if (!month) throw new Error('이번 달 스냅숏 없음');
+      var rows = PEOPLE.map(function (name) {
+        var items = month[name] || {};
+        var keys = Object.keys(items);
+        var bad = keys.filter(function (k) { return items[k] && items[k].bad; });
+        var fixN = keys.filter(function (k) { var f = items[k] && items[k].fix; return f && f !== '—'; }).length;
+        return '<div class="ts-row"><b>👤 ' + esc(name) + '</b><span>항목 ' + keys.length + ' · ' +
+          '<span class="due' + (bad.length ? ' overdue' : '') + '">실측 이상 ' + bad.length + '</span> · 보완 ' + fixN + '건' +
+          (bad.length ? ' · ' + esc(bad.slice(0, 3).join(' · ')) : '') +
+          '</span> <a class="doc-link" href="중간관리자_업무목차.html#resp-q" target="_blank" rel="noopener">▸중간관리자 업무목차</a></div>';
       });
-      var rows = LEADERS.map(function (name) {
-        var mine = tasks.filter(function (t) {
-          return t.status !== '완료' && String(t.owner || '').split(',').map(function (s) { return s.trim(); }).indexOf(name) !== -1;
-        });
-        var overdue = mine.filter(function (t) { return isOverdue(t.endDate); })
-          .sort(function (a, b) { return String(a.endDate).slice(0, 10) < String(b.endDate).slice(0, 10) ? -1 : 1; });
-        var oldest = overdue[0];
-        var oldestTitle = oldest ? (String(oldest.title).length > 24 ? String(oldest.title).slice(0, 24) + '…' : oldest.title) : '';
-        // 이정헌 소장은 업무 SSOT 건수가 0에 가까운 것이 정상이다 — 시설 점검·고장 접수는
-        // 업무 SSOT 가 아니라 점검 체계 화면에서 따로 돈다(GM 확정 2026-08-08). 그 사실을 안 적으면
-        // GM 화면에서 0건이 '일이 없다'로 읽힌다.
-        var note = (name === '이정헌 소장' && mine.length === 0)
-          ? ' <span class="due">— 시설 점검·고장 접수는 점검 화면에서 따로 돕니다</span>' : '';
-        return '<div class="ts-row"><b>👤 ' + esc(name) + '</b><span>미완 ' + mine.length + '건 · ' +
-          '<span class="due' + (overdue.length ? ' overdue' : '') + '">기한 지남 ' + overdue.length + '건</span>' +
-          (oldest ? ' · 가장 오래된 건 「' + esc(oldestTitle) + '」 ' + daysOverdue(oldest.endDate) + '일째' : '') +
-          note +
-          '</span> <a class="doc-link" href="../todo/업무 현황 SSOT.html" target="_blank" rel="noopener">▸목록</a>' +
-          ' <a class="doc-link" href="중간관리자_업무목차.html" target="_blank" rel="noopener">▸목차</a></div>';
-      });
-      box.innerHTML = '<b>리더 현황</b>' + rows.join('');
+      box.innerHTML = '<b>리더 현황 — 이번 분기 누적(중간관리자 업무 기준)</b>' + rows.join('');
       box.hidden = false;
     })
-    .catch(function () { /* 통신 실패·응답 이상 — 조용히 숨김 유지(GM 확정 2026-08-26) */ });
+    .catch(function () { /* 원장 없음·이번 달 키 없음·통신 실패 — 조용히 숨김 유지 */ });
 })();
 </script>
 <script>

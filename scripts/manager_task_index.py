@@ -12,6 +12,8 @@ GM 이 화면에서 체크한 것은 그 브라우저에만 남는다(localStora
   · 담당 미정 건은 성격별 <details> 묶음
 
 갱신: python scripts/manager_task_index.py   (매일 아침 정리 뒤 다시 돌리면 최신)
+  · send_ops_digest 07:50 이 매일 build() 를 다시 돌린다 → 책임 항목 실측 스냅숏 원장
+    status/manager_eval_history.json 의 이번 달 키가 매일 자동 갱신된다(분기·연 누적 · GM 지시 2026-09-15).
 
 업무 SSOT 와 안 겹치게(나우열M 지적 2026-09-10 "직원들은 SSOT 와 너가 준 페이지 두 개를
 중복으로 확인하는 비효율적인 상황"): 렌더 때마다 업무 SSOT(GAS todo_list)를 읽어 제목이
@@ -172,6 +174,9 @@ def fetch_ssot_rows() -> list | None:
 #   잘한 것/보완할 것(status/manager_eval.json, 사람이 고침). 못 재는 값은 지어내지 않고
 #   미수집 그대로 적는다. 진척이 기준에 못 미치면 그 값만 빨갛게(rp.bad).
 EVAL_PATH = ROOT / "status" / "manager_eval.json"
+# 책임 항목 실측 스냅숏 원장(GM 지시 2026-09-15 「평가체계를 가지고 계속 자동으로 · 분기 단위로 누적」) —
+#   렌더 때마다 이번 달 키만 덮어쓰고 다른 달은 그대로 둔다. GM업무 「리더 현황」띠도 이 파일을 읽는다.
+HIST_PATH = ROOT / "status" / "manager_eval_history.json"
 RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우열M"]
 _NO_MEASURE = "미수집"
 SSOT_DONE = {"완료", "폐기", "완료됨"}
@@ -510,17 +515,25 @@ RESP_HEAD = ('<tr><th class="ri">항목</th><th class="rc">기준(어떻게 평�
              '<th class="rf">보완할 것</th></tr>')
 
 
-def resp_table(person: str, rows_def: list, ev: dict) -> str:
+def _plain(s: str) -> str:
+    """진척 막대 HTML(raw=True) 행의 실측 칸 → 태그 벗긴 텍스트(원장 저장용)."""
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s))).strip()
+
+
+def resp_table(person: str, rows_def: list, ev: dict) -> tuple[str, dict]:
     """행별 detail_fn(5번째 자리)이 있으면 그 행을 토글로 만든다 — 클릭하면 바로 아래 tr 에
     내역이 펼쳐진다(GM 지시 2026-09-14 "종합접수처 내역들은 토글로 열면은 내역볼 수 있게").
-    새 상태 저장소는 안 만든다 — 펼침 여부는 화면에서만(기본 접힘), 원장은 그대로."""
+    새 상태 저장소는 안 만든다 — 펼침 여부는 화면에서만(기본 접힘), 원장은 그대로.
+    돌려주는 둘째 값 = 이 사람의 실측 스냅숏 {항목: {text, bad, good, fix}} — 표와 원장이 같은 계산을 한 번만 쓴다."""
     trs = []
+    snap: dict = {}
     for entry in rows_def:
         item, crit, fn = entry[0], entry[1], entry[2]
         raw = entry[3] if len(entry) > 3 else False  # True = fn 이 이미 안전한 진척 막대 HTML 을 낸다
         detail_fn = entry[4] if len(entry) > 4 else None
         text, bad = fn()
         good, fix = eval_cell(ev, person, item)
+        snap[item] = {"text": _plain(text) if raw else text, "bad": bool(bad), "good": good, "fix": fix}
         cls = "rp bad" if bad else "rp"
         item_cell = (f'<span class="rp-arrow">▸</span> {html.escape(item)}' if detail_fn
                      else html.escape(item))
@@ -533,7 +546,80 @@ def resp_table(person: str, rows_def: list, ev: dict) -> str:
         if detail_fn:
             trs.append(f'<tr class="rp-detail" hidden><td colspan="5">{detail_fn()}</td></tr>')
     return (f'<table class="resp-tb">\n          {RESP_HEAD}\n          '
-            + "\n          ".join(trs) + '\n        </table>')
+            + "\n          ".join(trs) + '\n        </table>'), snap
+
+
+def save_eval_history(month_snap: dict) -> dict:
+    """이번 달 키만 덮어쓴다(그 달의 최신) · 다른 달 키는 그대로(분기·연 누적). 되돌려주는 값 = 원장 전체."""
+    try:
+        d = json.loads(HIST_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        d = {}
+    months = d.get("months") if isinstance(d.get("months"), dict) else {}
+    months[date.today().strftime("%Y-%m")] = month_snap
+    d = {"_doc": "중간관리자 책임 항목 실측 스냅숏 — manager_task_index.py 가 렌더 때마다 이번 달 키를 덮어쓴다"
+                 "(send_ops_digest 07:50 매일). months[YYYY-MM][사람][항목] = {text 실측, bad 이상, good 잘한 것, fix 보완할 것}."
+                 " GM업무 리더 현황 띠·중간관리자 업무목차 「분기 누적」 절이 읽는다. 손으로 고치지 않는다.",
+         "updated_at": date.today().isoformat(), "months": dict(sorted(months.items()))}
+    HIST_PATH.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    return d
+
+
+def _quarter_of(ym: str) -> tuple[int, int]:
+    y, m = int(ym[:4]), int(ym[5:7])
+    return y, (m - 1) // 3 + 1
+
+
+def _quarter_tables(months: dict, keys: list) -> str:
+    """분기 한 개(달 키 3개) → 사람별 표: 항목 | 달1 | 달2 | 달3 | 분기 잘한 것 | 분기 보완할 것."""
+    head = ('<tr><th class="ri">항목</th>' + "".join(f'<th class="rq">{int(k[5:7])}월</th>' for k in keys)
+            + '<th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>')
+    blocks = []
+    for person in RESP_PEOPLE:
+        items: list[str] = []
+        for k in keys:
+            for it in (months.get(k) or {}).get(person) or {}:
+                if it not in items:
+                    items.append(it)
+        trs = []
+        for it in items:
+            cells, goods, fixes = [], [], []
+            for k in keys:
+                c = ((months.get(k) or {}).get(person) or {}).get(it)
+                if not c:
+                    cells.append('<td class="rq">—</td>')
+                    continue
+                cells.append(f'<td class="{"rq bad" if c.get("bad") else "rq"}">{html.escape(str(c.get("text") or "—"))}</td>')
+                for src, dst in ((c.get("good"), goods), (c.get("fix"), fixes)):
+                    v = str(src or "").strip()
+                    if v and v != "—" and v not in dst:
+                        dst.append(v)
+            trs.append(f'<tr><td class="ri">{html.escape(it)}</td>{"".join(cells)}'
+                       f'<td class="rg">{html.escape(" · ".join(goods) or "—")}</td>'
+                       f'<td class="rf">{html.escape(" · ".join(fixes) or "—")}</td></tr>')
+        if not trs:
+            trs.append(f'<tr><td class="ri">—</td><td class="rq" colspan="{len(keys) + 2}">스냅숏 없음</td></tr>')
+        blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
+                      f'<table class="resp-tb">\n          {head}\n          ' + "\n          ".join(trs)
+                      + '\n        </table>\n      </div>')
+    return "\n".join(blocks)
+
+
+def quarter_section(hist: dict) -> str:
+    """📅 분기 누적 — 이번 분기(오늘 기준) 표 + 지난 분기(원장에 있으면) <details>. GM업무 띠가 #resp-q 로 온다."""
+    months = hist.get("months") or {}
+    today = date.today()
+    y, q = _quarter_of(today.strftime("%Y-%m"))
+    cur = [f"{y}-{m:02d}" for m in range(3 * q - 2, 3 * q + 1)]
+    past = sorted({_quarter_of(k) for k in months if k not in cur}, reverse=True)
+    past_html = "".join(
+        f'\n    <details><summary>{py}년 {pq}분기</summary>\n'
+        f'{_quarter_tables(months, [f"{py}-{mm:02d}" for mm in range(3 * pq - 2, 3 * pq + 1)])}\n    </details>'
+        for py, pq in past)
+    return f'''  <section class="resp-q" id="resp-q">
+    <h2>📅 분기 누적 — 책임 항목 <span class="sub">{y}년 {q}분기 · 달마다 마지막 실측이 남습니다(매일 07:50 자동)</span></h2>
+{_quarter_tables(months, cur)}{past_html}
+  </section>'''
 
 
 def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> str:
@@ -591,8 +677,9 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
     }
 
     blocks = []
+    month_snap: dict = {}
     for person in RESP_PEOPLE:
-        tbl = resp_table(person, rows_def[person], ev)
+        tbl, month_snap[person] = resp_table(person, rows_def[person], ev)
         if person == "이경연 실장":
             extra = chief_detail_blocks(ssot_rows)
         else:
@@ -601,10 +688,12 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
         # GM업무로 이관해, 중복이네」). 같은 목록이 GM업무 화면에 이미 있다 — 한 곳만 둔다(약속 L01).
         blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
                        f'{tbl}\n{extra}      </div>')
+    hist = save_eval_history(month_snap)   # 표를 만든 그 값으로 원장 이번 달 키 갱신(계산 한 번)
     return f'''  <section class="resp">
     <h2>👤 책임 항목 — 4인</h2>
 {chr(10).join(blocks)}
-  </section>'''
+  </section>
+{quarter_section(hist)}'''
 
 
 # ═══ 실장 건별 목록 3종(GM 지시 2026-09-14 "종합접수처 건·업무SSOT 건·점검현황 건별로 보고") ═══
@@ -1562,8 +1651,13 @@ def build() -> str:
   h2 {{ font-size:16px; padding:10px 14px; background:var(--navy-bg); color:var(--navy); border-bottom:1px solid var(--line); }}
   h2 .sub {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:8px; }}
   /* 👤 책임 항목 4인(GM 지시 2026-09-14) — .blk·table 결 그대로, 칸 너비만 추가 */
-  section.resp {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
-  section.resp > h2 {{ background:var(--navy); color:#fff; }}
+  section.resp, section.resp-q {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
+  section.resp > h2, section.resp-q > h2 {{ background:var(--navy); color:#fff; }}
+  /* 📅 분기 누적(GM 지시 2026-09-15) — 같은 .resp-tb, 달 칸(rq)만 추가 */
+  section.resp-q > h2 .sub {{ color:#fff; opacity:.8; }}
+  section.resp-q th.rq, section.resp-q td.rq {{ width:16%; font-size:13px; }}
+  section.resp-q td.rq.bad {{ color:var(--bad); font-weight:700; }}
+  section.resp-q details > summary {{ padding:9px 14px; cursor:pointer; color:var(--navy); font-weight:700; border-top:1px solid var(--line); }}
   .rp-person {{ border-top:1px solid var(--line); }}
   .rp-person:first-child {{ border-top:0; }}
   .rp-person h3 {{ padding:9px 14px; font-size:14.5px; color:var(--navy); background:var(--navy-bg); }}

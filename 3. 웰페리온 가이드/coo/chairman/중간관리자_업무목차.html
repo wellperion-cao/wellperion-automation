@@ -18,8 +18,13 @@
   h2 { font-size:16px; padding:10px 14px; background:var(--navy-bg); color:var(--navy); border-bottom:1px solid var(--line); }
   h2 .sub { font-weight:400; color:var(--dim); font-size:13px; margin-left:8px; }
   /* 👤 책임 항목 4인(GM 지시 2026-09-14) — .blk·table 결 그대로, 칸 너비만 추가 */
-  section.resp { background:#fff; border:1px solid var(--line); margin-top:14px; }
-  section.resp > h2 { background:var(--navy); color:#fff; }
+  section.resp, section.resp-q { background:#fff; border:1px solid var(--line); margin-top:14px; }
+  section.resp > h2, section.resp-q > h2 { background:var(--navy); color:#fff; }
+  /* 📅 분기 누적(GM 지시 2026-09-15) — 같은 .resp-tb, 달 칸(rq)만 추가 */
+  section.resp-q > h2 .sub { color:#fff; opacity:.8; }
+  section.resp-q th.rq, section.resp-q td.rq { width:16%; font-size:13px; }
+  section.resp-q td.rq.bad { color:var(--bad); font-weight:700; }
+  section.resp-q details > summary { padding:9px 14px; cursor:pointer; color:var(--navy); font-weight:700; border-top:1px solid var(--line); }
   .rp-person { border-top:1px solid var(--line); }
   .rp-person:first-child { border-top:0; }
   .rp-person h3 { padding:9px 14px; font-size:14.5px; color:var(--navy); background:var(--navy-bg); }
@@ -193,7 +198,7 @@
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
           <tr><td class="ri">자동화·자율화(ERP+브로제이) 진척률</td><td class="rc">AWS 이관 표 영역별 완료 · 브로제이 카드 체크 완료율</td><td class="rp bad">ERP 서버 이관 9/12영역(75%) · 브로제이 카드 2장 · 체크 4/9(44%)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">웰페리온 비즈니스 확장</td><td class="rc">확장 로드맵 항목 상태 · 시보(확장) 배 진행·완료</td><td class="rp">로드맵 「비즈니스 확장」 예정 · 진척 0 · 시보 배 진행 6 · 대기 1 · 완료 1</td><td class="rg">—</td><td class="rf">—</td></tr>
-          <tr><td class="ri">회장님·대표님 지시</td><td class="rc">지시 카드 체크 완료율 · 기한 지난 것 0</td><td class="rp">지시 카드 15장 · 체크 8/80(10%) · 기한 지난 것 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">회장님·대표님 지시</td><td class="rc">지시 카드 체크 완료율 · 기한 지난 것 0</td><td class="rp">지시 카드 15장 · 체크 13/84(15%) · 기한 지난 것 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
       </div>
       <div class="rp-person">
@@ -229,7 +234,7 @@
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260901094916863" target="_blank" rel="noopener" title="9월 매출목표 및 달성방안">9월 매출목표 및 달성방안</a></td><td>2026-08-31</td><td class="age old">15일</td><td>—</td></tr>
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260907145222163" target="_blank" rel="noopener" title="회원권 요금 인상안 최종본 — 이경연 실장 + 운영부 의논 → GM 보고 (목 9/10)">회원권 요금 인상안 최종본 — 이경연 실장 + 운영부 의논 → GM 보고…</a><div class="dcs"><a class="dc" href="../todo/업무 현황 SSOT.html?doc=TODO-20260907145222163&amp;which=plan" target="_blank" rel="noopener">📄 기획안</a> <a class="dc" href="https://drive.google.com/file/d/1JUKw2d9DEN56yVC58CyyI4aEQPqIw_L1/view?usp=drivesdk" target="_blank" rel="noopener" title="https://drive.google.com/file/d/1JUKw2d9DEN56yVC58CyyI4aEQPqIw_L1/view?usp=drivesdk">📎 첨부1</a> <a class="dc" href="https://drive.google.com/file/d/1rKJhUMq15ctjwpAgasWSysURiALsPPD1/view?usp=drivesdk" target="_blank" rel="noopener" title="https://drive.google.com/file/d/1rKJhUMq15ctjwpAgasWSysURiALsPPD1/view?usp=drivesdk">📎 첨부2</a> <a class="dc" href="https://erp.wellperion.com/coo/chairman/260901_01_요금변경및준비_A3.html" target="_blank" rel="noopener" title="https://erp.wellperion.com/coo/chairman/260901_01_요금변경및준비_A3.html">📎 첨부3</a></div></td><td>2026-09-09</td><td class="age old">6일</td><td>이경연 실장,GM</td></tr>
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260909163211221" target="_blank" rel="noopener" title="홈페이지 자주 묻는 질문 — 운영부 답 채우기 (9/12 회신)">홈페이지 자주 묻는 질문 — 운영부 답 채우기 (9/12 회신)</a></td><td>2026-09-11</td><td class="age old">4일</td><td>이경연 실장</td></tr>
-        <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260914180806072" target="_blank" rel="noopener" title="9월 3주차 회의">9월 3주차 회의</a></td><td>2026-09-14</td><td class="age old">1일</td><td>—</td></tr>
+        <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260914180806072" target="_blank" rel="noopener" title="9월 3주차 회의">9월 3주차 회의</a><div class="dcs"><a class="dc" href="../todo/업무 현황 SSOT.html?doc=TODO-20260914180806072&amp;which=plan" target="_blank" rel="noopener">📄 기획안</a></div></td><td>2026-09-14</td><td class="age old">1일</td><td>—</td></tr>
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260623093017347" target="_blank" rel="noopener" title="환불사유에 따른  분석 및 운영 반영 프로세스 구축">환불사유에 따른  분석 및 운영 반영 프로세스 구축</a><div class="dcs"><a class="dc" href="../todo/업무 현황 SSOT.html?doc=TODO-20260623093017347&amp;which=plan" target="_blank" rel="noopener">📄 기획안</a> <a class="dc" href="https://drive.google.com/file/d/1H6iRiHgrUoP8e2sCjAdlztqiP2YG_wJg/view?usp=drivesdk" target="_blank" rel="noopener" title="https://drive.google.com/file/d/1H6iRiHgrUoP8e2sCjAdlztqiP2YG_wJg/view?usp=drivesdk">📎 첨부1</a></div></td><td>—</td><td>—</td><td>—</td></tr>
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260905143918466" target="_blank" rel="noopener" title="법인·단체 문의 응대 — 상품 설계 A3 응대 표(유형 A·B·C)대로 실행 · 피드백">법인·단체 문의 응대 — 상품 설계 A3 응대 표(유형 A·B·C)대로…</a><div class="dcs"><a class="dc" href="https://erp.wellperion.com/coo/chairman/260903_법인멤버십_상품설계_A3.html" target="_blank" rel="noopener" title="https://erp.wellperion.com/coo/chairman/260903_법인멤버십_상품설계_A3.html">📎 첨부1</a></div></td><td>2026-11-03</td><td>—</td><td>—</td></tr>
         <tr><td>이경연 실장</td><td class="ti"><a href="../todo/업무 현황 SSOT.html?item=TODO-20260602183606821" target="_blank" rel="noopener" title="회원 모니터링 (심사대상회원)">회원 모니터링 (심사대상회원)</a><div class="dcs"><a class="dc" href="../todo/업무 현황 SSOT.html?doc=TODO-20260602183606821&amp;which=result" target="_blank" rel="noopener">🎯 결과보고</a></div></td><td>2026-12-30</td><td>—</td><td>—</td></tr>
@@ -268,9 +273,9 @@
         <h3>이정헌 소장</h3>
         <table class="resp-tb">
           <tr><th class="ri">항목</th><th class="rc">기준(어떻게 평가)</th><th class="rp">이번 달 진척(실측)</th><th class="rg">잘한 것</th><th class="rf">보완할 것</th></tr>
-          <tr><td class="ri">시설 점검 이행</td><td class="rc">회차별 측정값 입력률 · 기준이탈 건 당일 처리(입력률로 잰다)</td><td class="rp">오늘 2회차 입력 · 기준이탈 0건(당일)</td><td class="rg">휴관일 골프장 프로젝트 클리닝 완료(9/14 05:28 보고)</td><td class="rf">탕청소팀 청결 지적 반복(#139 18일) — 개선 없으면 교체 검토(GM 9/14)</td></tr>
+          <tr><td class="ri">시설 점검 이행</td><td class="rc">회차별 측정값 입력률 · 기준이탈 건 당일 처리(입력률로 잰다)</td><td class="rp">오늘 3회차 입력 · 기준이탈 0건(당일)</td><td class="rg">휴관일 골프장 프로젝트 클리닝 완료(9/14 05:28 보고)</td><td class="rf">탕청소팀 청결 지적 반복(#139 18일) — 개선 없으면 교체 검토(GM 9/14)</td></tr>
           <tr><td class="ri">종합접수처(시설부)</td><td class="rc">시설부 배정 건 7일 안 닫기 · 미배정 0</td><td class="rp">열린 1건 · 7일↑ 0건 · 담당 미배정 1건(시설부)</td><td class="rg">—</td><td class="rf">—</td></tr>
-          <tr><td class="ri">설비·시설 업무 일정</td><td class="rc">전사일정 시설부 이번 달 건수 · 완료 · 놓친 건(감점)</td><td class="rp bad">이번 달 완료 1건 · 현재 기한초과 25건(전체 시설부 46건 · 원장 2026-09-14 기준)</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">설비·시설 업무 일정</td><td class="rc">전사일정 시설부 이번 달 건수 · 완료 · 놓친 건(감점)</td><td class="rp bad">이번 달 완료 1건 · 현재 기한초과 25건(전체 시설부 46건 · 원장 2026-09-15 기준)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">설비 매뉴얼</td><td class="rc">ERP 시설부 체계 등록 N/전체 · 올해 말 마무리 목표</td><td class="rp">미수집(체계 페이지가 매뉴얼 카드를 JS로 그려 정적으로 못 셈 — 소장 회신 대기)</td><td class="rg">—</td><td class="rf">전체 매뉴얼 개수 미확인 — 소장 회신 요청</td></tr>
           <tr><td class="ri">소통</td><td class="rc">확인요청 회신율 · 최장 경과일</td><td class="rp bad">회신율 27/30(90%) · 최장경과 36일 · 35일↑ 1건</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
@@ -283,6 +288,50 @@
           <tr><td class="ri">인사(CHRO) — 업무·결재 SSOT 운영</td><td class="rc">진행중·보류·기한 지난 행 정리 · 중복 행 0</td><td class="rp bad">진행중 8건 · 보류 0건 · 기한 지난 것 2건 · 중복 1건 · 전체 85건</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">매출·지출(CFO) — 체계·시스템 구축</td><td class="rc">매출보고 담당 건 회신 · 강습(파트너팀) 매출 마감 정확도</td><td class="rp">미수집(자동 집계 원장 없음)</td><td class="rg">—</td><td class="rf">—</td></tr>
           <tr><td class="ri">소통</td><td class="rc">확인요청 회신율 · 최장 경과일</td><td class="rp">회신율 30/38(79%) · 최장경과 33일 · 35일↑ 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
+        </table>
+      </div>
+  </section>
+  <section class="resp-q" id="resp-q">
+    <h2>📅 분기 누적 — 책임 항목 <span class="sub">2026년 3분기 · 달마다 마지막 실측이 남습니다(매일 07:50 자동)</span></h2>
+      <div class="rp-person">
+        <h3>김남욱 GM</h3>
+        <table class="resp-tb">
+          <tr><th class="ri">항목</th><th class="rq">7월</th><th class="rq">8월</th><th class="rq">9월</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>
+          <tr><td class="ri">자동화·자율화(ERP+브로제이) 진척률</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">ERP 서버 이관 9/12영역(75%) · 브로제이 카드 2장 · 체크 4/9(44%)</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">웰페리온 비즈니스 확장</td><td class="rq">—</td><td class="rq">—</td><td class="rq">로드맵 「비즈니스 확장」 예정 · 진척 0 · 시보 배 진행 6 · 대기 1 · 완료 1</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">회장님·대표님 지시</td><td class="rq">—</td><td class="rq">—</td><td class="rq">지시 카드 15장 · 체크 13/84(15%) · 기한 지난 것 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
+        </table>
+      </div>
+      <div class="rp-person">
+        <h3>이경연 실장</h3>
+        <table class="resp-tb">
+          <tr><th class="ri">항목</th><th class="rq">7월</th><th class="rq">8월</th><th class="rq">9월</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>
+          <tr><td class="ri">매출(회원권+옵션)</td><td class="rq">—</td><td class="rq">—</td><td class="rq">42% 현재 1억 1,632만 / 목표 2억 7,500만</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">종합접수처(운영부)</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">열린 4건 · 7일↑ 3건 · 담당 미배정 0건(운영부) · 분실물 보관 22건 별도</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">점검 현황(운영부)</td><td class="rq">—</td><td class="rq">—</td><td class="rq">카드 3건 · 체크 7/15(47%) · 기한 지난 것 0건</td><td class="rg">—</td><td class="rf">FAQ 취합 9/12 기한 — 보고 없음</td></tr>
+          <tr><td class="ri">업무·결재 SSOT(운영부 전원)</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">진행중·보류 37건 · 지난주(9/7~9/13) 완료 8/15 · 이번 주 완료 1/15 · 기한 지난 11건 · 결재대기 5건 · 결재 제출 — 결재요청 칸: 미제출(빈칸) · 상태 진행중</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">소통</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">회신율 17/27(63%) · 최장경과 36일 · 35일↑ 2건</td><td class="rg">—</td><td class="rf">—</td></tr>
+        </table>
+      </div>
+      <div class="rp-person">
+        <h3>이정헌 소장</h3>
+        <table class="resp-tb">
+          <tr><th class="ri">항목</th><th class="rq">7월</th><th class="rq">8월</th><th class="rq">9월</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>
+          <tr><td class="ri">시설 점검 이행</td><td class="rq">—</td><td class="rq">—</td><td class="rq">오늘 3회차 입력 · 기준이탈 0건(당일)</td><td class="rg">휴관일 골프장 프로젝트 클리닝 완료(9/14 05:28 보고)</td><td class="rf">탕청소팀 청결 지적 반복(#139 18일) — 개선 없으면 교체 검토(GM 9/14)</td></tr>
+          <tr><td class="ri">종합접수처(시설부)</td><td class="rq">—</td><td class="rq">—</td><td class="rq">열린 1건 · 7일↑ 0건 · 담당 미배정 1건(시설부)</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">설비·시설 업무 일정</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">이번 달 완료 1건 · 현재 기한초과 25건(전체 시설부 46건 · 원장 2026-09-15 기준)</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">설비 매뉴얼</td><td class="rq">—</td><td class="rq">—</td><td class="rq">미수집(체계 페이지가 매뉴얼 카드를 JS로 그려 정적으로 못 셈 — 소장 회신 대기)</td><td class="rg">—</td><td class="rf">전체 매뉴얼 개수 미확인 — 소장 회신 요청</td></tr>
+          <tr><td class="ri">소통</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">회신율 27/30(90%) · 최장경과 36일 · 35일↑ 1건</td><td class="rg">—</td><td class="rf">—</td></tr>
+        </table>
+      </div>
+      <div class="rp-person">
+        <h3>나우열M</h3>
+        <table class="resp-tb">
+          <tr><th class="ri">항목</th><th class="rq">7월</th><th class="rq">8월</th><th class="rq">9월</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>
+          <tr><td class="ri">파트너팀 매출 관리</td><td class="rq">—</td><td class="rq">—</td><td class="rq">31% 현재 1억 1,312만 / 목표 3억 6,050만</td><td class="rg">—</td><td class="rf">매출보고 8건 현황 회신 대기(9/11 요청)</td></tr>
+          <tr><td class="ri">인사(CHRO) — 업무·결재 SSOT 운영</td><td class="rq">—</td><td class="rq">—</td><td class="rq bad">진행중 8건 · 보류 0건 · 기한 지난 것 2건 · 중복 1건 · 전체 85건</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">매출·지출(CFO) — 체계·시스템 구축</td><td class="rq">—</td><td class="rq">—</td><td class="rq">미수집(자동 집계 원장 없음)</td><td class="rg">—</td><td class="rf">—</td></tr>
+          <tr><td class="ri">소통</td><td class="rq">—</td><td class="rq">—</td><td class="rq">회신율 30/38(79%) · 최장경과 33일 · 35일↑ 0건</td><td class="rg">—</td><td class="rf">—</td></tr>
         </table>
       </div>
   </section>
