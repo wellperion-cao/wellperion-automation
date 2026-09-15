@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>기존 테크노짐 바이크 6대 — 중고 판매 검토 (웰페리온 A3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  @media print { .page{ page-break-after:always; } .page:last-of-type{ page-break-after:auto; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 방향 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 대상 정보 스트립 */
+  .obj{ margin-top:11px; border:1px solid var(--line); border-left:4px solid var(--navy);
+    background:var(--navy-bg); padding:9px 15px; font-size:12.4px; line-height:1.6; }
+  .obj b{ color:var(--navy); }
+
+  /* ③ 표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>기존 테크노짐 바이크 6대 — 중고 판매 검토 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet1">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">기존 테크노짐 바이크 6대 — 중고 판매 검토<br><span style="font-size:19px;color:#3C464F">시세 실측(2026-09-15) · 매각 대신 활용 방안 검토</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 09. 15.</b> · 문서번호 <b>WP-GM-260915-01</b> · <b>1 / 1</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it"><div class="n">01</div><div><div class="q">중고 판매는 어렵다고 보고 <b>따로 활용하는 방안</b>을 염두에 둔다(GM 결정 2026-09-15).</div><div class="d">동일 모델 매물이 국내 중고 채널에 없어 판매 시세를 확정 짓기 어렵다. 활용처는 아직 정해지지 않았다 — 「활용처 검토 예정」으로만 남긴다.</div></div></div>
+    </div>
+  </div>
+
+  <div class="obj"><b>대상</b> — 2017.12.1 우영(㈜우영웰니스컴퍼니) 구매 · 테크노짐 RECLINE 1000 SP(좌식) 3대 · BIKE 1000 SP(입식) 3대 = 6대. 당시 구매가(GM 기록) <b>대당 3,124,000 / 2,904,000원</b>(GM 기재 순서 그대로 — 좌식·입식 매칭은 GM 확인 전).</div>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th style="width:190px">출처</th><th style="width:330px">조사 내용</th><th style="width:330px">가격 정보</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">시세 조사 근거 — 실측 2026-09-15</td></tr>
+        <tr><td class="k">당근마켓</td><td>테크노짐 바이크·리컴번트·익사이트·싸이클 검색</td><td class="ctr bad">매물 0건</td><td>동일 모델 시세 직접 확인 불가</td></tr>
+        <tr><td class="k">중고나라</td><td>테크노짐 바이크·리컴번트·익사이트·싸이클 검색</td><td class="ctr bad">매물 0건</td><td>동일 모델 시세 직접 확인 불가</td></tr>
+        <tr><td class="k">번개장터</td><td>테크노짐 바이크·리컴번트·익사이트·싸이클 검색</td><td class="ctr bad">매물 0건</td><td>동일 모델 없음 · 테크노짐 다른 바이크는 80만~750만(스핀 150만·스킬바이크 300만·Bike Personal 750만)</td></tr>
+        <tr><td class="k">스포드림 카페<br><span class="est">2017-11-27 · 고양 헬스장 정리</span></td><td>같은 제품군(테크노짐 좌식·입식) 당시 매각 사례</td><td class="ctr">좌식 <b>80만</b>/대 · 입식 <b>70만</b>/대</td><td>당시 이미 중고 · 같은 모델·비슷한 시점이라 시세 근거로 채택(GM 결정)</td></tr>
+        <tr><td class="k">헬스119<br><span class="est">매입·판매 업체 · 031-964-7911</span></td><td>테크노짐 입식(고양 2022.6)·좌식 2대(파주 2022.5) 판매 완료 이력</td><td class="ctr est">가격 비공개</td><td>매입 견적 요청 대상(다음 액션 1번)</td></tr>
+        <tr><td class="k">해외 리퍼 딜러<br><span class="est">usedtechnogym.com</span></td><td>Bike Excite 1000 Unity · Recline Excite 1000 Unity 리퍼 판매가</td><td class="ctr">$1,895 · $2,195</td><td>해외·리퍼 유통 — 국내 매각가와 직접 비교 불가</td></tr>
+        <tr class="grp"><td colspan="4">매각 추정가 — 확정 아님</td></tr>
+        <tr><td class="k">추정(표시 필수)</td><td>9년 사용 상업용 6대 · 업자 매입 vs 직거래</td><td class="ctr"><b>업자매입 대당 30~60만 · 직거래 대당 60~100만</b><br><span class="est">6대 합 200~500만(추정)</span></td><td class="warn">확정은 매입업체(헬스119 등) 실견적으로만 — 지금은 확정 수치 아님</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">동일 모델 매물이 국내 중고 채널(당근·중고나라·번개장터) 어디에도 없다 — 시장 시세 직접 비교 불가.</li>
+        <li class="r2">헬스119 등 매입 사례는 가격이 비공개라 실제 매각가 추정 근거가 약하다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">헬스119(031-964-7911)에 6대 매입 견적 1건 요청.</li>
+        <li class="n">견적 회신되면 표의 추정 칸을 실측 수치로 교체.</li>
+        <li class="n">매각가 확정 전까지 활용처(안) 검토 — 아직 후보 미정, 지어내지 않는다.</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>중고 판매는 시세 확보가 어려워 <b>매각 대신 활용 방안을 우선 검토</b>한다(GM 방향 2026-09-15).</li>
+        <li>활용처는 미정 — 확정되는 대로 별도 보고.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>출처</b> — 당근·중고나라·번개장터 검색(2026-09-15 실측, 0건) · 스포드림 카페 2017-11-27 고양 헬스장 정리 게시글(<span style="word-break:break-all">m.cafe.daum.net/spodream/1gh7/22642</span>) · 헬스119 전화 확인(031-964-7911) · usedtechnogym.com 해외 리퍼 판매가.</div>
+    <div><b>정직 표기</b> — 매각 추정가(대당 30~100만 · 6대 200~500만)는 <b>추정</b>이다. 확정은 매입업체 실견적을 받은 뒤에만 표를 교체한다. 좌식·입식 구매가 매칭은 GM 확인 전이라 GM 기재 순서 그대로 적었다.</div>
+    <div><b>다음</b> — 헬스119 견적 회신 시 이 표 갱신. 신규 바이크 도입 비교(입식·좌식 3사)는 별도 A3(WP-GM-260909-01).</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('sheet1'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+    var a = document.createElement('a'); a.download = '260915_바이크_기존6대_중고판매검토_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+  });
+};
+</script>
+</body>
+</html>
