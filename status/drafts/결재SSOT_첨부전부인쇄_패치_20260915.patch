@@ -1,0 +1,52 @@
+diff --git a/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html b/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html
+index a74d133c4a..275cc74f7f 100644
+--- a/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html	
++++ b/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html	
+@@ -849,22 +849,31 @@ function buildShareUrl() {
+ //   업무 보고서의 헤더·정보표·섹션·푸터 레이아웃을 그대로 쓰되, 결재 고유 요소(결재선·서명란·대표 서명완료)를 보존·강화.
+ // 첨부 인라인 — 이미지면 <img>로 문서에 바로 표시, 아니면 링크. Drive 파일 링크는 표시가능 thumbnail URL로 변환, 실패 시 링크 폴백 (2026-07-02 시토)
+ function buildAttachmentHtml(t) {
+-  var u = String((t && (t['파일URL'] || t.fileUrl || t['링크'])) || '').trim();
+-  if (!u) return '';
+-  var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
+-  var driveId = m ? m[1] : '';
+-  var isImgExt = /\.(jpe?g|png|gif|webp|bmp|heic)(\?|#|$)/i.test(u);
+-  var imgSrc = driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1200') : (isImgExt ? u : '');
+-  var title = '<div class="rr-section-title">첨부</div>';
+-  if (imgSrc) {
+-    // 이미지 로드 실패(권한·비이미지 등) 시 링크로 폴백
+-    return title + '<div class="rr-attach">'
+-      + '<img class="rr-attach-img" src="' + esc(imgSrc) + '" alt="첨부 이미지" '
+-      +   'onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'block\';">'
+-      + '<a class="rr-attach-link" href="' + esc(u) + '" style="display:none">' + esc(u) + '</a>'
+-      + '</div>';
+-  }
+-  return title + '<div class="rr-section-body"><a class="rr-attach-link" href="' + esc(u) + '">' + esc(u) + '</a></div>';
++  // 첨부 전부를 그린다 — 파일URL 칸은 줄바꿈으로 여러 개가 들어온다(2026-09-15 실측: 분리수거장 안내물 11개).
++  // 종전엔 첫 하나만 잡아 실패하면 빈칸이 나갔다(GM: 「인쇄해서 보면 아무것도 없다」). 이미지는 그림, 나머지는 링크.
++  // 링크 칸은 파일URL 이 비었을 때만 쓴다(같은 주소가 두 번 찍히지 않게).
++  var raw = String((t && (t['파일URL'] || t.fileUrl)) || '').trim();
++  if (!raw) raw = String((t && t['링크']) || '').trim();
++  if (!raw) return '';
++  var urls = raw.split(/[\r\n,]+/).map(function (x) { return x.trim(); }).filter(Boolean);
++  var title = '<div class="rr-section-title">첨부 (' + urls.length + ')</div>';
++  var parts = urls.map(function (u, i) {
++    var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
++    var driveId = m ? m[1] : '';
++    var isImgExt = /\.(jpe?g|png|gif|webp|bmp|heic)(\?|#|$)/i.test(u);
++    var imgSrc = driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1200') : (isImgExt ? u : '');
++    var label = (i + 1) + '. ' + u.replace(/^https?:\/\/[^/]+/, '');
++    if (imgSrc) {
++      // 이미지 로드 실패(권한·비이미지 등) 시 링크로 폴백
++      return '<div class="rr-attach">'
++        + '<img class="rr-attach-img" src="' + esc(imgSrc) + '" alt="첨부 ' + (i + 1) + '" '
++        +   'onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'block\';">'
++        + '<a class="rr-attach-link" href="' + esc(u) + '" style="display:none">' + esc(label) + '</a>'
++        + '</div>';
++    }
++    return '<div class="rr-section-body"><a class="rr-attach-link" href="' + esc(u) + '">' + esc(label) + '</a></div>';
++  });
++  return title + parts.join('');
+ }
+ 
+ function buildApprovalPrint(list) {
