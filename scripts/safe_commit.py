@@ -203,7 +203,9 @@ DOMAIN_MODIFY_RULES = (
 #   통과 조건은 커밋 메시지 속 마커뿐이다(오늘 이내 날짜 — 미리 박아 두고 매번 쓰는
 #   것 방지). 날짜가 깨졌거나 미래면 무효(None). 다른 도메인 규칙이 WP_DOMAIN_FORCE 를
 #   쓰면 그쪽은 그대로다 — 지금 이 저장소엔 CHRO/CFO 둘뿐이라 실질적으로 폐지와 같다.
-_NAWOOLM_MARKER_RE = re.compile(r"\[나우열M 요청 (\d{4}-\d{2}-\d{2})\]")
+# 2026-09-15 GM 결정(10:3x 「우열M 전달만 해줘, 오늘 건은 다 옮긴다 … 그리고 진행해줘」): GM 이 그 자리에서 낸 지시로
+#   시토가 나우열M 라인 화면을 옮길 때는 [GM 지시 YYYY-MM-DD] 마커 — 조건은 같다(오늘 이내 날짜 · 업무관리 방에 먼저 알림).
+_NAWOOLM_MARKER_RE = re.compile(r"\[(?:나우열M 요청|GM 지시) (\d{4}-\d{2}-\d{2})\]")
 
 
 def _committer_is_nawoolm() -> bool:
