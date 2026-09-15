@@ -158,6 +158,12 @@
   .daysum{display:flex;gap:14px;font-size:10.5px;color:#7A838B;padding-top:5px;margin-top:4px;border-top:1px solid var(--line);}
   .daysum b{color:var(--navy);font-variant-numeric:tabular-nums;}
   /* 연 단위 4칸 */
+  /* 어제 다녀가신 분 — 세 갈래를 가로 세 칸으로(2026-09-15). 막대 세 줄은 칸 높이를 넘겨
+     마지막 줄(유소년)이 늘 잘렸다. */
+  .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px;}
+  .vgrid .vcell{border:1px solid var(--line);padding:5px 9px 6px;min-width:0;}
+  .vgrid .vcl{font-size:10.3px;color:#48525B;font-weight:700;white-space:nowrap;}
+  .vgrid .vcv{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.5px;margin-top:1px;}
   .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px;}
   /* 월 단위 띠 — 왼쪽 카드 2×2 · 오른쪽 그래프(GM 2026-09-15). 카드 폭을 고정해야 그래프가
      남는 폭을 전부 먹는다. */
@@ -445,7 +451,7 @@
 
       <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분(합계 + 세 줄). 높이를 먼저 잡아 두지 않으면
            위 컨택·로스자 글이 길어진 날 세 줄 중 마지막이 잘린다(2026-09-15 실측). -->
-    <div class="sec" style="flex:none;height:142px;">
+    <div class="sec" style="flex:none;">
       <h2>어제 다녀가신 분</h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -1142,10 +1148,9 @@ function renderSheet(c){
   document.getElementById('visits').innerHTML =
     '<div class="bigrow"><span class="bl">합계 <span style="font-weight:400;color:#7A838B">(세 줄을 더한 값)</span></span>' +
       '<span class="bv">' + visSum + '명</span></div>' +
-    vis.map(function(x){
-      return '<div class="vrow"><span class="vl2">' + esc(x.label) + '</span>' +
-             '<span class="vbar"><i style="width:' + (x.n / visMax * 100) + '%"></i></span>' +
-             '<span class="vn">' + esc(x.raw) + '</span></div>'; }).join('');
+    '<div class="vgrid">' + vis.map(function(x){
+      return '<div class="vcell"><div class="vcl">' + esc(x.label) + '</div>' +
+             '<div class="vcv">' + esc(x.raw) + '</div></div>'; }).join('') + '</div>';
 
   // ── 등록·환불 매출 : 돈이라 왼쪽(매출) 열에 둔다 ──
   document.getElementById('regRev').innerHTML =
