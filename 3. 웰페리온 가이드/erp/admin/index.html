@@ -128,8 +128,8 @@
                border:1px solid var(--border); border-radius:4px; background:var(--paper); display:block;}
   /* 오른쪽 화면은 관리 화면의 한 장처럼 — 테두리·모서리·안쪽 여백 없이(GM 2026-09-15 「블럭페이지 느낌 말고 하나의 페이지처럼」).
      안쪽 문서는 iframe 안일 때 자기 바깥 여백을 접는다(company_v0.1.html .embedded). */
-  #view-frame{border:0; border-radius:0; background:transparent;}
-  .panel[data-panel="view"]{margin:-12px -16px 0; padding:0;}
+  #view-frame{border:0; border-radius:0; background:transparent; height:auto; min-height:60vh; overflow:hidden;}
+  .panel[data-panel="view"]{padding:4px 0 0;}
   .panel[hidden]{display:none;}
   .panel > h2:first-child, .panel > h3:first-of-type{margin-top:0;}
   h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
@@ -1150,10 +1150,24 @@
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
     var VIEW_NAMES = { company:'회사' };
+    // 오른쪽 화면 높이 = 안쪽 문서 높이(같은 도메인이라 읽을 수 있다) — 스크롤바가 페이지 하나만 남는다
+    // (GM 2026-09-15 「페이지 스크롤바가 있고 또 블럭 안에 스크롤바가 있는데」). 못 읽으면(다른 도메인) 화면 높이로 둔다.
+    function fitFrame(f){
+      if (f._fitTimer) { clearInterval(f._fitTimer); f._fitTimer = null; }
+      function apply(){
+        try {
+          var d = f.contentDocument; if (!d || !d.documentElement) return;
+          d.documentElement.style.overflow = 'hidden';
+          var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
+          if (h > 200) f.style.height = (h + 24) + 'px';
+        } catch (e) { f.style.height = 'calc(100vh - 84px)'; }
+      }
+      f.onload = function(){ apply(); f._fitTimer = setInterval(apply, 700); };
+    }
     if (key === 'view' && VIEW_NAMES[viewKey]) {
       if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
       var vf0 = document.getElementById('view-frame');
-      if (vf0.getAttribute('data-key') !== viewKey) { vf0.src = VIEWS[viewKey]; vf0.setAttribute('data-key', viewKey); }
+      if (vf0.getAttribute('data-key') !== viewKey) { vf0.src = VIEWS[viewKey]; vf0.setAttribute('data-key', viewKey); fitFrame(vf0); }
     }
     viewLinks.forEach(function(a){
       var on = (key === 'view' && a.dataset.view === viewKey);
@@ -1161,7 +1175,7 @@
       if (on) {
         if (crumb) crumb.textContent = a.querySelector('.t').textContent;
         var vf = document.getElementById('view-frame');
-        if (vf.getAttribute('data-key') !== viewKey) { vf.src = VIEWS[viewKey]; vf.setAttribute('data-key', viewKey); }
+        if (vf.getAttribute('data-key') !== viewKey) { vf.src = VIEWS[viewKey]; vf.setAttribute('data-key', viewKey); fitFrame(vf); }
       }
     });
     if (key === 'view') key = 'view/' + viewKey;
