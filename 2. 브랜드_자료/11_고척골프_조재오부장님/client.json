@@ -50,7 +50,7 @@
     "blog_id_real": "spogym21qa (네이버 실제 블로그 주소 — 2026-09-10 로그인 세션에서 실측). 「QAGOLFSTUDIO」는 화면에 보이는 프로필 표시명이라 주소로 쓰면 404 다",
     "own_domain": "없음 — 만들 생각도 없다(조재오 지점장님 2026-09-11 13:38 카카오톡 회신 원문: 「1. 홈페이지 없습니다 2. 전체 스포짐 페이지가 있어서 불필요」)",
     "brand_chain": "스포짐(SPOGYM) 체인 소속 — 브랜드 홈페이지 spogym.co.kr 의 센터 안내에 「QA골프 고척점」으로 올라 있다(2026-09-11 실측 · 지점 19곳). 네이버 블로그 주소 spogym21qa 도 같은 줄기다.",
-    "policy_source": "지점장님 2026-09-15 15:35 카카오톡 약관 사진(「환불 휴회규정 다 들어있습니다」) — 사진엔 고객 성명·연락처·카드 영수증이 있어 저장소에 넣지 않는다(.gitignore) · 규정 문장만 옮김 · 설문 v1 27번에서 확인 대기",
+    "policy_source": "지점장님 2026-09-15 15:35 카카오톡 약관 사진(「환불 휴회규정 다 들어있습니다」) — 사진엔 고객 성명·연락처·카드 영수증이 있어 저장소에 넣지 않는다(.gitignore) · 규정 문장만 옮김 · 번호 질문 27번에서 확인 대기",
     "entry_rule": "1일 1회 본인만 3시간 입장 · 수업은 연강 가능",
     "transfer_rule": "12개월권만 신규회원에게 1회 양도 · 수수료 10만 원 · 재양도 불가 · 3·6개월권은 양도 불가",
     "hold_rule": "휴회 = 6개월권 15일 · 12개월권 30일 · 초과 시 1개월 33,000원으로 추가 · 휴회 기간은 양도 기간에서 제외",
@@ -243,7 +243,7 @@
     },
     {
       "at": "2026-09-15T15:5x+09:00",
-      "what": "약관 사진 수령(환불·휴회·양도·단가·수업 유효기간) → facts_confirmed 7칸 · GM 지시 「한 번호씩 말고 다캠처럼 한 번에」 → 셋업 설문 v1(19~50번 · 6블록) https://erp.wellperion.com/gocheokgolf/setup_v1.html · 06:30 블로그 자동화는 서버 계정으로 자동 재로그인 성공(세션 10-15 까지)"
+      "what": "약관 사진 수령(환불·휴회·양도·단가·수업 유효기간) → facts_confirmed 7칸 · GM 지시 「한 번호씩 말고 다캠처럼 한 번에」 → 카톡 번호 질문 19~50번(html 은 GM 지시로 폐기 · 정본 3_gocheokgolf_qa.json · 플랫폼관리 온보딩 표) · 06:30 블로그 자동화는 서버 계정으로 자동 재로그인 성공(세션 10-15 까지)"
     }
   ],
   "photo_reading_errors": {
@@ -483,9 +483,10 @@
     "consistency_check": "C:/Python314/python.exe scripts/client_counselbot_check.py"
   },
   "survey_v1": {
-    "url": "https://erp.wellperion.com/gocheokgolf/setup_v1.html",
-    "numbers": "19~50 (A 브랜드 19~26 · B 상품·규정 27~33 · C 상담·문의 34~38 · D 기준 숫자 39~42 · E 사진·영상 43~46 · F 블로그 체계 47~50)",
-    "rule": "답이 온 번호부터 facts_confirmed → 문서 3종 → 상담봇 정본 순으로 같은 날 반영 · 아침 통은 한 번호씩 묻지 않고 설문 회신 안내만",
-    "sent": "GM 승인 뒤 kakao_report_sender 로 발송 — 발송 전"
+    "how": "카톡 번호 질문 19~50번(html 폐기 · GM 09-15 16:0x)",
+    "canon": "server/counselbot/tenants/3_gocheokgolf_qa.json",
+    "kakao_text": "scripts/partner_onboarding_publish.py --kakao jo",
+    "admin_view": "ERP 플랫폼관리 › 파트너사 › 온보딩 질문·답 누적",
+    "sent": "GM 승인 뒤 발송 — 발송 전"
   }
 }

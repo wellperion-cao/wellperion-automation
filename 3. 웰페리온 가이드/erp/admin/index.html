@@ -387,6 +387,39 @@
       <button id="ps-save">서버에 저장</button>
       <span id="ps-msg"></span>
     </div></details>
+
+  <!-- 온보딩 질문·답 누적 (GM 지시 2026-09-15 「질문·답 자료를 다음 파트너사를 위해 정립 · 플랫폼관리에 누적」).
+       정본 = server/counselbot/question_bank.json(공통 질문은행) + tenants/{t}_qa.json(업체별 답).
+       이 화면은 발행본 data/partner_onboarding.json 만 읽는다 — scripts/partner_onboarding_publish.py 가 만든다. -->
+  <h3 style="margin-top:22px">온보딩 질문·답 누적</h3>
+  <div class="meta" id="po-line">불러오는 중…</div>
+  <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+    <select id="po-tenant"><option value="jo">3호 고척GDR QA 골프존</option><option value="dc">2호 다이어트캠프</option><option value="wellperion">1호 웰페리온</option></select>
+    <label style="font-size:12.5px"><input type="checkbox" id="po-pending"> 답 없는 것만</label>
+  </div>
+  <div id="po-table"><div class="note">불러오는 중…</div></div>
+  <script>
+  (function(){
+    var line=document.getElementById('po-line'), box=document.getElementById('po-table'), sel=document.getElementById('po-tenant'), only=document.getElementById('po-pending'), data=null;
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function draw(){
+      if(!data){return;}
+      var t=data.tenants[sel.value];
+      if(!t){box.innerHTML='<div class="note">이 파트너사는 아직 물은 것이 없습니다</div>';line.textContent='질문은행 '+data.bank_count+'문 · '+data.built_at;return;}
+      line.textContent=t.name+' — 물은 것 '+t.asked+' · 답 '+t.answered+' · 남음 '+t.pending+' · 질문은행 '+data.bank_count+'문 · 발행 '+data.built_at;
+      var rows=t.rows.filter(function(r){return !only.checked||!r.answer;});
+      var h='<table class="reg" style="table-layout:fixed;width:100%"><colgroup><col style="width:44px"><col style="width:52px"><col style="width:120px"><col><col><col style="width:86px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>은행</th><th>영역</th><th>질문</th><th>답</th><th>받은 날</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var a=r.answer?esc(r.answer):'<span class="note">'+(r.known?'저희가 아는 것: '+esc(r.known):'—')+'</span>';
+        h+='<tr><td>'+esc(r.partner_no||'')+'</td><td>'+esc(r.q_id)+'</td><td>'+esc(r.area)+'</td><td>'+esc(r.q)+'</td><td>'+a+'</td><td>'+esc(r.answered_on||'')+'</td></tr>';
+      });
+      box.innerHTML=h+'</tbody></table>';
+    }
+    fetch('data/partner_onboarding.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){data=d;draw();}).catch(function(){line.textContent='발행본을 못 읽었습니다(data/partner_onboarding.json)';box.innerHTML='';});
+    sel.addEventListener('change',draw); only.addEventListener('change',draw);
+  })();
+  </script>
   <script>
   (function(){
     var API='/api/admin/partner-secrets', boards=document.getElementById('ps-boards'), line=document.getElementById('ps-line'), sel=document.getElementById('ps-channel');
