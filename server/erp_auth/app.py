@@ -544,7 +544,8 @@ def allowed_ids(user) -> list:
 # /repo/(저장소 통째), /reports/(실명 인사평가 A3), /erp/admin/(회사 관리자 콘솔), /회사문서/, 회원·문의 스냅샷 —
 # 이 로그인한 아무 계정(파트너사 포함)에게 다 열렸다. 「카드에 안 싣는다」가 「권한을 안 본다」가 돼 있던 자리.
 ADMIN_ONLY_PREFIXES = ("/reports/", "/회사문서/", "/erp/admin/", "/1. AI자료_아카이브/", "/gm/",
-                       "/wellperion-agents/", "/scripts/", "/logs/", "/ops/", "/telegram_bot/", "/qa_screenshots/", "/ig/")
+                       "/wellperion-agents/", "/scripts/", "/logs/", "/ops/", "/telegram_bot/", "/qa_screenshots/", "/ig/",
+                       "/coo/chairman/")   # 보고 문서(kind=doc, 배 12666) — 카드 밖으로 떨어져도 관리자만(카드 4장은 카드 권한이 먼저)
 # /repo/ = 저장소 통째(repo-data.nginx.conf alias). 화면 17장이 /repo/status/*.json·/repo/ssot/*.json 을 읽으므로(배1193)
 # 통째로 막지 않고 안쪽 경로에 같은 규칙을 적용한다 — status·ssot·가이드 폴더만 열고 나머지(scripts·logs·아카이브…)는 관리자만.
 REPO_OPEN_PREFIXES = ("/status/", "/ssot/")
@@ -1638,7 +1639,8 @@ def admin_api_modules(erp_session: Optional[str] = Cookie(default=None), erp_adm
     off = modules_off()
     return JSONResponse({"modules": [{"id": m["id"], "name": m.get("name") or m["id"], "group": m.get("group") or "",
                                       "appgroup": m.get("appgroup") or "", "staff": m.get("staff") or "",
-                                      "core": bool(m.get("core")), "off": m["id"] in off} for m in modules()],
+                                      "core": bool(m.get("core")), "off": m["id"] in off} for m in modules()
+                                     if m.get("kind") != "doc"],   # 보고 문서는 모듈이 아니다(GM 09-15 · 배 12666) — 배치 목록에서 뺀다
                          "off": sorted(off)})
 
 
@@ -1933,6 +1935,8 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
     assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
     assert not path_allowed(_stf, "/reports/x.html") and not path_allowed(_stf, "/erp/admin/") and not path_allowed(_stf, "/api/members")
+    # 보고 문서(kind=doc, 배 12666) — 카드 밖으로 떨어져도 직원은 못 연다 · 관리자는 그대로
+    assert not path_allowed(_stf, "/coo/chairman/x.html") and path_allowed(_adm, "/coo/chairman/x.html")
     assert not path_allowed(_stf, uri_path("/erp/admin/")) and not path_allowed(_stf, uri_path("/repo/"))   # 폴더 요청(끝 슬래시 떼임)
     assert not path_allowed(_stf, uri_path("/chro/hub/")) and path_allowed(_stf, uri_path("/cpo/member/"))  # 폴더 = 같은 폴더 카드로
     assert path_allowed(_stf, "/api/lesson/members") and path_allowed(_stf, "/api/write") and path_allowed(_stf, "/erp/")
