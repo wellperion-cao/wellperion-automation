@@ -213,6 +213,11 @@ def _worklog_evidence_between(since: str, until: str, role: str) -> str:
                 if not det or det.startswith("⚠️"):
                     continue
                 ev = str(d.get("event") or "").strip()
+                # 남의 배 이야기(「시토 배 2648 — …」)는 내 증거가 아니다 — 창이 겹치면 GM 이
+                # 남의 일을 내 일로 읽는다(실측 2026-09-15: 골프팀장 물음에 시토 배가 붙음).
+                if any(ev.startswith(f"{nk} 배") or ev.startswith(f"배 ") for nk in _ROLE_NICK.values()
+                       if nk != _ROLE_NICK.get(role_v, "")):
+                    continue
                 hits.append(f"{ev[:40]} — {det[:60]}" if ev else det[:80])
     except Exception:  # noqa: BLE001
         return ""
