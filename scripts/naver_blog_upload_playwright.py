@@ -560,6 +560,12 @@ async def run_setup() -> int:
     page = await context.new_page()
     await page.goto(NAVER_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
 
+    try:
+        await page.check("input[name=nvlong]", timeout=5_000)   # 로그인 상태 유지 — 안 켜면 세션 쿠키뿐이라 하루 안에 풀린다(2026-09-15 실측)
+        print("[INFO] 「로그인 상태 유지」 켬")
+    except Exception as e:
+        print(f"[WARN] 「로그인 상태 유지」 자동 체크 실패(무시 · 손으로 켜라): {type(e).__name__}")
+
     # 아이디·비밀번호가 환경변수로 오면 먼저 넣어 본다(2026-09-11). 파트너 계정 세션이 만료될 때마다
     # 사람을 부르면 그날 글이 통째로 밀린다 — 자동 입력이 막히면(로봇 확인·기기 인증) 창은 그대로 열려
     # 있으니 사람이 이어받으면 된다. 값은 저장소에 두지 않는다 — 부를 때만 환경변수로 넘긴다.

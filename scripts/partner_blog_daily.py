@@ -26,7 +26,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -94,6 +94,66 @@ def save_state(style: dict, state: dict) -> None:
     sf = state_file(style)
     sf.parent.mkdir(parents=True, exist_ok=True)
     sf.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _already_ok_today(state: dict) -> bool:
+    today = datetime.now().strftime("%Y-%m-%d")
+    return any(r.get("result") == "ok" and r.get("date", "").startswith(today)
+               for r in state.get("runs", []))
+
+
+def _parse_login_env(text: str) -> dict[str, str] | None:
+    """profiles/{tenant}_naver_login.env 두 줄(NAVER_ID=…/NAVER_PW=…) 파서."""
+    vals: dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        vals[k.strip()] = v.strip()
+    nid, npw = vals.get("NAVER_ID"), vals.get("NAVER_PW")
+    if not nid or not npw:
+        return None
+    return {"NAVER_ID": nid, "NAVER_PW": npw}
+
+
+def _read_login_secret(tenant: str) -> dict[str, str] | None:
+    path = ROOT / "profiles" / f"{tenant}_naver_login.env"
+    if not path.exists():
+        return None
+    return _parse_login_env(path.read_text(encoding="utf-8"))
+
+
+def _try_relogin(style: dict, tenant: str) -> str:
+    """세션이 풀린 것으로 판단됐을 때 비밀 파일로 자동 재로그인 시도.
+
+    반환값: "no-secret"(비밀 파일 없음) · "auto-ok"(로그인 성공, 내일까지 버팀) ·
+    "auto-fail"(로그인 시도했지만 실패 또는 확인 절차에 막힘).
+    """
+    secret = _read_login_secret(tenant)
+    if secret is None:
+        return "no-secret"
+    env = dict(os.environ)
+    env["WP_TENANT"] = tenant
+    env.update(secret)
+    log(style, "자동 재로그인 시도 — naver_blog_upload_playwright.py --mode setup")
+    try:
+        r = subprocess.run(
+            [sys.executable, str(UPLOADER), "--mode", "setup"],
+            cwd=str(ROOT), env=env, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=17 * 60,
+        )
+        setup_out = (r.stdout or "") + (r.stderr or "")
+    except subprocess.TimeoutExpired:
+        log(style, "자동 재로그인 실패 — setup 시간초과(17분)")
+        return "auto-fail"
+    tagged = [ln for ln in setup_out.splitlines() if ln.startswith(("[INFO]", "[WARN]", "[ERROR]"))]
+    log(style, "setup 결과:\n" + "\n".join(tagged))
+    check = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_blog_session.py"), "--tenant", tenant],
+        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    return "auto-ok" if check.returncode == 0 else "auto-fail"
 
 
 def pick_topic(style: dict, state: dict) -> str | None:
@@ -235,6 +295,9 @@ def main() -> int:
     style = load_style(args.client)
     fail_name = style["fail_notify_name"]
     state = load_state(style)
+    if _already_ok_today(state):
+        log(style, "오늘 이미 임시저장 성공 — 건너뜀")
+        return 0
     topic = pick_topic(style, state)
     if topic is None:
         msg = f"{fail_name} 블로그 — topic_bank {len(style['topic_bank'])}개 전부 사용함. 주제 추가 필요."
@@ -279,13 +342,20 @@ def main() -> int:
         print(f"[dry-run] 본문 {len(body)}자 · 검사 통과 · 업로더 dryrun rc={rc}")
         return 0 if rc == 0 else 1
 
+    tenant = style["tenant"]
     rc, out = run_upload(title, body, style, mode="draft")
+    relogin_tag: str | None = None
+    if rc != 0 and ("로그인이 풀렸다" in out or "로그인된 블로그가 웰페리온" in out):
+        relogin_tag = _try_relogin(style, tenant)
+        if relogin_tag == "auto-ok":
+            rc, out = run_upload(title, body, style, mode="draft")
+
     if rc == 0:
         msg = f"{fail_name} 블로그 임시저장 성공 — 「{topic}」 {len(body)}자 (모델 {used_model})"
         log(style, msg + "\n" + out)
         notify(msg)
         state.setdefault("used_topics", []).append(topic)
-        _record_run(style, state, topic, "ok", "", len(body), used_model)
+        _record_run(style, state, topic, "ok", "", len(body), used_model, relogin_tag)
         save_state(style, state)
         if args.no_owner_notice:
             log("업체 방 알림 생략(--no-owner-notice)")
@@ -298,16 +368,24 @@ def main() -> int:
     # 웰페리온 세션이 들어 있던 것)과 다른 곳을 가리켰다.
     err = next((ln.strip() for ln in reversed(out.splitlines()) if "[ERROR]" in ln), "")
     reason = f"업로더 rc={rc}" + (f" · {err[:160]}" if err else "")
-    _record_run(style, state, topic, "fail", reason, len(body), used_model)
+    _record_run(style, state, topic, "fail", reason, len(body), used_model, relogin_tag)
     # 연속 회차를 앞에 붙인다 — 2026-09-12~14 사흘 연속 실패가 매일 같은 문구로 나가는 바람에
     # 새 소식인지 어제 것인지 구별되지 않아 아무도 움직이지 않았다.
     연속 = _fail_streak(state)
-    # 로그인이 풀리는 진짜 원인은 「로그인 상태 유지」를 안 켜고 로그인한 것이다(2026-09-15 실측 —
-    # 세 계정 모두 NID_AUT·NID_SES 가 세션 쿠키였다). 그 한 줄을 같이 적지 않으면 재로그인해도
-    # 다음 날 또 풀린다. 재로그인 안내는 1회 실패부터 낸다 — 사흘을 기다릴 이유가 없다.
-    꼬리 = (f" · 네이버 재로그인이 필요하다(사람 손)\n👉 재로그인: ops\\relogin_blog.bat {style['tenant']}"
-            f"\n★로그인 창에서 「로그인 상태 유지」를 켜야 내일도 돕니다"
-            if 연속 >= 1 else "")
+    if relogin_tag == "auto-fail":
+        꼬리 = (f" · 자동 재로그인이 네이버 확인 절차(로봇 확인·기기 인증)에 막혔다"
+                f"\nPC 앞에서 ops\\relogin_blog.bat {tenant} 을 눌러 달라")
+    elif relogin_tag == "no-secret" and 연속 >= 1:
+        꼬리 = (f" · 네이버 재로그인이 필요하다(사람 손)\n👉 재로그인: ops\\relogin_blog.bat {tenant}"
+                f"\n★로그인 창에서 「로그인 상태 유지」를 켜야 내일도 돕니다"
+                f"\n(자동 재로그인 미설정 · ops\\set_blog_login.bat {tenant} 로 한 번 넣어 두면 다음부턴 스스로 로그인한다)")
+    elif 연속 >= 1:
+        # 로그인이 풀리는 진짜 원인은 「로그인 상태 유지」를 안 켜고 로그인한 것이다(2026-09-15 실측 —
+        # 세 계정 모두 NID_AUT·NID_SES 가 세션 쿠키였다). 재로그인 안내는 1회 실패부터 낸다.
+        꼬리 = (f" · 네이버 재로그인이 필요하다(사람 손)\n👉 재로그인: ops\\relogin_blog.bat {tenant}"
+                f"\n★로그인 창에서 「로그인 상태 유지」를 켜야 내일도 돕니다")
+    else:
+        꼬리 = ""
     msg = f"{fail_name} 블로그 임시저장 실패({연속}회 연속) — 「{topic}」 {reason}{꼬리}"
     log(style, msg + "\n" + out)
     notify(msg)
@@ -325,15 +403,19 @@ def _fail_streak(state: dict) -> int:
     return n
 
 
-def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, chars: int, model: str | None) -> None:
-    state.setdefault("runs", []).append({
+def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, chars: int,
+                 model: str | None, relogin: str | None = None) -> None:
+    rec = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "topic": topic,
         "result": result,
         "reason": reason,
         "chars": chars,
         "model": model,
-    })
+    }
+    if relogin is not None:
+        rec["relogin"] = relogin
+    state.setdefault("runs", []).append(rec)
     save_state(style, state)
 
 
@@ -383,6 +465,20 @@ def _self_test() -> None:
     assert f() == 0 and f("ok") == 0, "실패가 없는데 연속 실패로 센다"
     assert f("fail", "ok", "fail", "fail") == 2, "중간에 성공한 것을 넘어 센다"
     assert f("fail", "fail", "fail") == 3
+
+    # ── 오늘 이미 성공했으면 건너뛴다 ──
+    today = datetime.now().strftime("%Y-%m-%d")
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    assert _already_ok_today({"runs": [{"date": f"{today} 09:00:00", "result": "ok"}]})
+    assert not _already_ok_today({"runs": [{"date": f"{yesterday} 09:00:00", "result": "ok"}]}), "어제 ok 를 오늘로 침"
+    assert not _already_ok_today({"runs": [{"date": f"{today} 09:00:00", "result": "fail"}]}), "fail 인데 skip 함"
+    assert not _already_ok_today({"runs": []})
+
+    # ── 비밀 파일 파서: 공백·CRLF 허용, 키 없으면 None ──
+    assert _parse_login_env("NAVER_ID=abc\nNAVER_PW=xyz\n") == {"NAVER_ID": "abc", "NAVER_PW": "xyz"}
+    assert _parse_login_env("NAVER_ID=abc \r\nNAVER_PW= xyz \r\n") == {"NAVER_ID": "abc", "NAVER_PW": "xyz"}
+    assert _parse_login_env("NAVER_ID=abc\n") is None, "비밀번호 없는데 통과함"
+    assert _parse_login_env("") is None
 
 
 if __name__ == "__main__":
