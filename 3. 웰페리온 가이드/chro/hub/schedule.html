@@ -687,7 +687,11 @@ function applyServerMeta(j){
 async function boardPull(){
   for(let attempt=0;attempt<2;attempt++){
     try{
+      // [추가 2026-09-15 시토 배12615] 읽기 서버 우선(/api/board/HR_SCHEDBOARD) · 안 되면 종전 구글(GAS) 그대로.
+      const j=await window.erpReadFirst('/api/board/HR_SCHEDBOARD', async function(){
       const j=await(await fetch(REQ_API+"?action=schedboard-list&_r="+attempt+"_"+Date.now())).json();
+      return j;
+      });
       if(!j||!j.ok||typeof j.data!=="object")throw 0;
       if(!demoMode){schedD=j.data||{};saveS();}
       applyServerMeta(j);

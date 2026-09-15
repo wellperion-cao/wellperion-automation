@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리
 from sync_board import gas_board, put  # noqa: E402  — GAS 호출·저장 로직은 한 곳만(sync_board.py)
+from sync_hrboard import HR_ACTIONS, gas_hr  # noqa: E402  — HR_* 키는 다른 GAS(HR_GAS_URL)·다른 액션이라 별도 호출부(배12615)
 
 SOURCE = "sheet-mirror"
 router = APIRouter(prefix="/api/board")
@@ -57,7 +58,8 @@ def board_get(key: str):
 
 @router.post("/{key}/refresh")
 def board_refresh(key: str):
-    data = gas_board(key)
+    # HR_* 키는 CHECK_GAS_URL(action=board)가 아니라 HR_GAS_URL 의 다른 액션이다(배12615·sync_hrboard.py).
+    data = gas_hr(HR_ACTIONS[key]) if key in HR_ACTIONS else gas_board(key)
     if data is None:
         raise HTTPException(502, "GAS 조회 실패: %s" % key)
     conn = db.connect()

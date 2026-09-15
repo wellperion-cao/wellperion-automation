@@ -217,7 +217,11 @@ async function renderPickList(){
   document.getElementById("hdrSub").textContent = "온보딩 진행중인 직원을 선택하세요";
   document.getElementById("app").innerHTML = `<div class="loading">불러오는 중…</div>`;
   try{
+    // [추가 2026-09-15 시토 배12615] 읽기 서버 우선(/api/board/HR_ONBO_NAMES) · 안 되면 종전 구글(GAS) 그대로.
+    const r = await window.erpReadFirst('/api/board/HR_ONBO_NAMES', async function(){
     const r = await erpPost({ action:"onbo-active-names" });
+    return r;
+    });
     const names = (r && r.ok===true && Array.isArray(r.names)) ? r.names : [];
     if(!names.length){
       document.getElementById("app").innerHTML = `<div class="emp-empty">현재 진행중인 온보딩이 없습니다.</div>`;
