@@ -276,7 +276,8 @@ CREATE TABLE IF NOT EXISTS funnel_cache (
 );
 
 -- 브로제이(외부 CRM) 매출·입장 적재 (sync_brojay.py · api_brojay.py · 배 959 · 2026-09-04).
--- kind = sales(일 매출·계약 건별) · entries(입장) · key = 날짜 YYYY-MM-DD. 응답 JSON 을 통째로 싣는다 —
+-- kind = sales(일 매출·계약 건별) · entries(입장) · sessions(강습 일정·출석 차감 · 배 2663) · key = 날짜 YYYY-MM-DD.
+-- members(회원 명단)·trainers(강사 명단)는 스냅샷 — key = 받은 날, 최신 한 벌만(배 2664). 응답 JSON 을 통째로 싣는다 —
 -- 브로제이가 주는 칸 이름을 우리가 정규화하면 그쪽이 바뀔 때마다 깨진다(lesson_records 와 같은 이유).
 CREATE TABLE IF NOT EXISTS brojay_records (
   tenant_id TEXT NOT NULL DEFAULT 'wellperion',

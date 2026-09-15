@@ -4,6 +4,9 @@
   GET /api/brojay/sales?date=2026-09-03            그날 저장된 브로제이 응답 그대로
   GET /api/brojay/sales?from=&to=                  구간 — [{date, data}] 목록
   GET /api/brojay/entries?date= | ?from=&to=       입장(출입) 같은 모양
+  GET /api/brojay/sessions?date= | ?from=&to= | ?month=YYYY-MM   강습 일정·출석 차감(브로제이 schedules 응답 그대로 · 배 2663)
+  GET /api/brojay/members                          회원 명단 최신 스냅샷(member_id·name·phone_number… · 배 2664) · ?date= 로 특정 날
+  GET /api/brojay/trainers                         강사 명단 최신 스냅샷(trainer_id→name · sessions 의 trainer_ids 해석용)
   GET /api/brojay/health                           kind 별 일수·최근 날짜·마지막 성공/실패
 
 정본은 브로제이 — 응답마다 _source=brojay. 칸 이름은 브로제이가 준 그대로 두고 가공하지 않는다
@@ -21,7 +24,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import db  # noqa: E402
 
 SOURCE = "brojay"
-KINDS = ("sales", "entries")
+KINDS = ("sales", "entries", "sessions", "members", "trainers")
+SNAPSHOT_KINDS = ("members", "trainers")          # 날짜 열쇠가 아니라 「받은 날」 열쇠 · 최신 한 벌만 있다(sync_brojay.prune_snapshots)
 KST = timezone(timedelta(hours=9))
 router = APIRouter(prefix="/api/brojay")
 
@@ -41,6 +45,34 @@ def _range(kind, frm, to):
             " ORDER BY key", (db.TENANT, kind, frm, to)).fetchall()
     conn.close()
     return [{"date": r["key"], "synced_at": r["synced_at"], "data": json.loads(r["data"])} for r in rows]
+
+
+def _month_range(month):
+    """'YYYY-MM' → (첫날, 말일). 모양이 아니면 400."""
+    try:
+        y, m = int(month[:4]), int(month[5:7])
+        assert len(month) == 7 and month[4] == "-" and 1 <= m <= 12
+    except (ValueError, AssertionError):
+        raise HTTPException(400, "month 는 YYYY-MM 모양: %r" % month)
+    first = datetime(y, m, 1)
+    last = (datetime(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1))
+    return first.strftime("%Y-%m-%d"), last.strftime("%Y-%m-%d")
+
+
+def _latest(kind, date):
+    """스냅샷 kind — date 없으면 가장 최근 한 벌."""
+    conn = _conn()
+    with conn:
+        if date:
+            row = conn.execute("SELECT key, data, synced_at FROM brojay_records WHERE tenant_id=%s AND kind=%s AND key=%s",
+                               (db.TENANT, kind, date)).fetchone()
+        else:
+            row = conn.execute("SELECT key, data, synced_at FROM brojay_records WHERE tenant_id=%s AND kind=%s ORDER BY key DESC LIMIT 1",
+                               (db.TENANT, kind)).fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(404, "적재된 %s 없음%s" % (kind, (": " + date) if date else " — sync_brojay 가 아직 한 번도 못 받음"))
+    return {"date": row["key"], "synced_at": row["synced_at"], "data": json.loads(row["data"]), "_source": SOURCE}
 
 
 def _serve(kind, date, frm, to):
@@ -67,6 +99,38 @@ def entries(date: Optional[str] = None, frm: Optional[str] = Query(None, alias="
     return _serve("entries", date, frm, to)
 
 
+@router.get("/sessions")
+def sessions(date: Optional[str] = None, frm: Optional[str] = Query(None, alias="from"), to: Optional[str] = None,
+             month: Optional[str] = None):
+    if month and not date:
+        frm, to = _month_range(month)
+    return _serve("sessions", date, frm, to)
+
+
+@router.get("/members")
+def members(date: Optional[str] = None):
+    return _latest("members", date)
+
+
+@router.get("/trainers")
+def trainers(date: Optional[str] = None):
+    return _latest("trainers", date)
+
+
+def _selfcheck_month():
+    assert _month_range("2026-09") == ("2026-09-01", "2026-09-30")
+    assert _month_range("2026-12") == ("2026-12-01", "2026-12-31")
+    assert _month_range("2028-02") == ("2028-02-01", "2028-02-29")
+    for bad in ("2026-9", "2026-13", "202609", "abcd-ef"):
+        try:
+            _month_range(bad)
+        except HTTPException as e:
+            assert e.status_code == 400
+        else:
+            raise AssertionError("걸렀어야 한다: %r" % bad)
+    print("selfcheck month ok")
+
+
 @router.get("/health")
 def health():
     try:
@@ -91,3 +155,7 @@ def health():
         "detail": "" if total else (failed or "아직 한 번도 적재되지 않음 — 브로제이 API 사양·계정 미수령(배 908)"),
         "_source": SOURCE,
     }
+
+
+if __name__ == "__main__":
+    _selfcheck_month()
