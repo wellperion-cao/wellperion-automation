@@ -2305,6 +2305,20 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     if not items:
         return ""
 
+    # ★쌓이는 구조(GM 지시 2026-09-15 「놓친 것들은 계속 쌓이는 구조로 — 어제 답 안 했다, 그래서 오늘
+    #   이렇게 쌓였다」). 건마다 처음 실은 날부터 며칠째인지 붙이고, 머리줄에 「어제도 답 없던 것 A건 ·
+    #   오늘 새로 B건」을 센다. 종전 「N일째 표기 금지」(§4-2-2)는 이 지시로 바뀐다.
+    today = date.today()
+    carried = 0
+    for it in items:
+        try:
+            days = (today - date.fromisoformat(str(it.get("date") or "")[:10])).days
+        except ValueError:
+            days = 0
+        it["days"] = max(0, days)
+        if it["days"] >= 1:
+            carried += 1
+            it["ask"] = f"({it['days']}일째) " + it["ask"]
     by_who: dict = {}
     for it in items:
         by_who.setdefault(it["who"], []).append(it)
@@ -2352,7 +2366,10 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
             shown_so_far += len(take)
         folded = True
 
-    lines = [f"🧾 확인 부탁드릴 것 {total_open}건"] + body
+    head = f"🧾 확인 부탁드릴 것 {total_open}건"
+    if carried:
+        head += f" — 어제도 답 없던 것 {carried}건 · 오늘 새로 {total_open - carried}건"
+    lines = [head] + body
     if folded:
         lines.append(f"외 {total_open - shown_so_far}건 — {ASKS_SECTION_LINK}")
     lines.append("👉 번호(#숫자) 있는 건은 회신에 그 번호 + 했다/진행중/언제로, 없는 건은 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
@@ -2674,7 +2691,9 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict, 
         # 받는 사람이 배에 적혀 있으면(staff_to) 그것을 쓴다. 안 적힌 배는 종전 그대로다.
         who = str(s.get("staff_to") or "").strip() or contacts[s["clevel"]]
         ask, how, detail = _split_ask_how(_resolve_staff_message(s), who)
-        items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask,
+        # 날짜 = 처음 방에 실은 날(first_sent) — 「어제도 답 없던 것」을 세는 기준(GM 지시 2026-09-15).
+        first = str((current.get(_relay_key(s)) or {}).get("first_sent") or "") or str(s.get("enqueued_at", ""))[:10]
+        items.append({"date": first, "who": who, "ask": ask,
                       "how": how, "detail": detail})
     return items, current, reply_hits
 

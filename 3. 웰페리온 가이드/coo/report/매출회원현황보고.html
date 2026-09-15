@@ -1082,8 +1082,20 @@ function paintAudit(out){
     el.className = 'audit ok';
     el.innerHTML = '<b>✅ 자체 점검 ' + (out.length - warns.length) + '/' + out.length + ' 통과</b> — ' +
       '시트 칸 자리 · 기준일 · 합계 · 빈칸 · 컨택/로스자 날짜 · 강습 대조 · 그래프를 ' + at + ' 에 스스로 확인했습니다' +
+      ' · <b>' + automationProgressText() + '</b>' +
       (warns.length ? ' <span class="w">· 주의 ' + warns.map(function(x){ return esc(x.name) + (x.detail ? '(' + esc(x.detail) + ')' : ''); }).join(' / ') + '</span>' : '');
   }
+}
+
+/* ★자동화 진척률 — 확실한 것만 센다(GM 지시 2026-09-15 「확실하고 명확한 것들만(브로제이→서버) 진척률 체크해서
+   자동화 되게끔 · 지금은 낮아도 된다」). 22칸 중 원천이 브로제이→서버인 칸만 분자다. 시트를 서버가 거울로
+   받아 오는 칸(회원 5칸의 members 표 포함)은 서버에 있어도 시트 원천이라 세지 않는다. 칸이 브로제이 원천으로
+   바뀌면 이 목록에 그 칸을 더한다 — 그것이 유일한 갱신 자리다(매일 09:00 사진에 그대로 찍힌다). */
+var BROJAY_SOURCE_CELLS = ['N13', 'N14', 'N15'];   // 입장 3칸 = 브로제이 출입 기록(api_visitors · 2026-09-09)
+var REPORT_CELL_COUNT = 22;
+function automationProgressText(){
+  var n = BROJAY_SOURCE_CELLS.length;
+  return '브로제이→서버 원천 ' + n + '/' + REPORT_CELL_COUNT + '칸 (' + Math.round(n / REPORT_CELL_COUNT * 100) + '%)';
 }
 
 /* 표 머리글도 보기마다 바꾼다 — 날짜·월 보기에서 「어제 매출」 머리글 밑에 다른 날 값이
