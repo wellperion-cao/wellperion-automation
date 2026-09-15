@@ -20,9 +20,9 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 @media (prefers-reduced-motion:reduce){.hero .hint{animation:none}}
 .track{position:relative;height:calc(var(--frames) * 26px)}
 .stage{position:sticky;top:0;height:100vh;overflow:hidden;background:#0b0b0d}
-.bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(28px) brightness(.45);transform:scale(1.15)}
+.bg{position:absolute;inset:0;width:100%;height:100%;filter:blur(24px) brightness(.45);transform:scale(1.15);image-rendering:auto}
 .frame{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);height:100%;aspect-ratio:9/16;background:#000;box-shadow:0 0 60px rgba(0,0,0,.6)}
-.frame img{width:100%;height:100%;object-fit:cover;display:block}
+.frame canvas{width:100%;height:100%;display:block}
 .cap{position:absolute;left:0;right:0;bottom:0;padding:22px 24px 26px;background:linear-gradient(transparent,rgba(0,0,0,.75));pointer-events:none}
 .cap .n{font-size:12px;letter-spacing:.2em;color:var(--g);font-weight:700}
 .cap h2{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin-top:4px}
@@ -51,8 +51,8 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 
 <div class="track" id="track">
   <div class="stage">
-    <div class="bg" id="bg"></div>
-    <div class="frame"><img id="fr" alt="다이어트캠프 내부"></div>
+    <canvas class="bg" id="bg" width="27" height="48" aria-hidden="true"></canvas>
+    <div class="frame"><canvas id="fr" width="480" height="854" role="img" aria-label="다이어트캠프 내부"></canvas></div>
     <div class="bar"><i id="bar"></i></div>
     <div class="cap"><div class="n" id="capn"></div><h2 id="caph"></h2><p id="capp"></p></div>
     <div class="nav" id="nav"></div>
@@ -98,18 +98,21 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
     for(var i=0;i<N;i++){ var sec=i/FPS, cut=false; for(var c=0;c<CUT.length;c++){ if(sec>=CUT[c][0]&&sec<CUT[c][1]) cut=true; } if(cut) continue;
       var rep=chStart[i]?DWELL:1; for(var r=0;r<rep;r++) SEQ.push(i); } })();
   var track=document.getElementById('track'), fr=document.getElementById('fr'), bg=document.getElementById('bg'), bar=document.getElementById('bar');
+  var fx=fr.getContext('2d'), bx=bg.getContext('2d'), POS={}; SEQ.forEach(function(i,k){ if(POS[i]===undefined) POS[i]=k; });
   var capn=document.getElementById('capn'), caph=document.getElementById('caph'), capp=document.getElementById('capp'), nav=document.getElementById('nav'), load=document.getElementById('load'), pct=document.getElementById('pct');
   document.documentElement.style.setProperty('--frames', SEQ.length);
   var src=function(i){ return DIR+'f_'+String(i+1).padStart(4,'0')+'.jpg'; };
   var cache=new Array(N), loaded=0, cur=-1, curCh=-1;
-  function want(i){ if(cache[i]) return; var im=new Image(); im.onload=function(){ loaded++; if(loaded%10===0||loaded===N) pct.textContent=Math.round(loaded*100/N); if(loaded>=60) load.classList.add('hide'); }; im.src=src(i); cache[i]=im; }
+  function want(i){ if(cache[i]) return; var im=new Image(); im.onload=function(){ loaded++; if(loaded%10===0||loaded===N) pct.textContent=Math.round(loaded*100/N); if(loaded>=60) load.classList.add('hide'); if(i===cur) paint(i); }; im.src=src(i); cache[i]=im; }
+  var bgAt=-99;
+  function paint(i){ var im=cache[i]; if(!im||!im.complete||!im.naturalWidth) return; if(fr.width!==im.naturalWidth){ fr.width=im.naturalWidth; fr.height=im.naturalHeight; } fx.drawImage(im,0,0); if(Math.abs(i-bgAt)>=6){ bgAt=i; bx.drawImage(im,0,0,bg.width,bg.height); } }
   // 앞 60장 먼저, 나머지는 뒤에서 조용히 · 스크롤 자리 근처는 우선
   for(var i=0;i<60;i++) want(i);
   var k=60; (function fill(){ if(k>=N) return; for(var j=0;j<8&&k<N;j++,k++) want(k); setTimeout(fill, 40); })();
   function show(i){
     if(i===cur) return; cur=i; want(i); for(var j=1;j<=6;j++){ if(i+j<N) want(i+j); }
-    fr.src=src(i); bg.style.backgroundImage='url('+src(i)+')';
-    bar.style.width=(SEQ.indexOf(i)*100/(SEQ.length-1))+'%';
+    paint(i);
+    bar.style.width=((POS[i]||0)*100/(SEQ.length-1))+'%';
     var sec=i/FPS, c=0; for(var m=0;m<CH.length;m++){ if(sec>=CH[m][0]) c=m; }
     if(c!==curCh){ curCh=c; capn.textContent=String(c+1).padStart(2,'0')+' / '+CH.length; caph.textContent=CH[c][1]; capp.textContent=CH[c][2];
       Array.prototype.forEach.call(nav.children,function(b,x){ b.classList.toggle('on',x===c); }); }
