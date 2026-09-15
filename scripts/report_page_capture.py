@@ -51,15 +51,16 @@ def _session_token() -> str:
         return ""
 
 
-# ★기본은 아직 공개 사본이다 — 봇 계정에 /coo/report/ 권한이 없어 ERP 판은 /auth/forbidden 으로 막힌다
-# (2026-09-15 실측). 권한이 열리면 env REPORT_CAPTURE_URL 에 _ERP_URL 을 넣는 것만으로 서버 원천으로 바뀐다.
-URL = os.environ.get("REPORT_CAPTURE_URL") or _PAGES_URL
+# ★2026-09-15 18:2x 전환 — GM 결정으로 info@ 계정에 이 화면 권한이 열렸다(시토 배 2638 · 서버 배포 18:18 · 실측 200).
+# 기본 = ERP 판(서버 원천 · 회원 5칸·입장 3칸이 실제 서버 값). 토큰이 없거나 ERP 판이 실패하면 capture() 가
+# 공개 사본으로 한 번 더 시도한다 — 09:00 발송이 멈추지 않게. env REPORT_CAPTURE_URL 은 여전히 최우선.
+URL = os.environ.get("REPORT_CAPTURE_URL") or (_ERP_URL if _session_token() else _PAGES_URL)
 # 1~3면 = 화면의 .page 세 덩어리(id) — 1면 매출 및 회원 현황 보고 · 2면 문의 등록 상세 · 3면 운영 현황(GM 지시 2026-09-14).
 PAGES3 = ("sheet", "sheet2", "sheet3")
 
 # A3 가로 = 1587x1123px(.page 와 같은 값). 화면 폭이 이보다 좁으면 브라우저가 줄여 그리므로 고정한다.
 VIEWPORT = {"width": 1660, "height": 1260}
-READY_TIMEOUT_MS = 90_000        # 구글 앱스스크립트 4개 조회가 다 끝날 때까지(느린 날 대비 넉넉히)
+READY_TIMEOUT_MS = 180_000       # ERP 판은 서버 거울+GAS 를 다 기다려 90초를 넘긴다(2026-09-15 실측 100~110초) — 넉넉히
 
 
 def archive_dir() -> Path:
@@ -74,7 +75,25 @@ def archive_dir() -> Path:
 
 
 def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> "tuple[int, str]":
-    """pages 의 요소(id)마다 PNG 한 장. 성공 msg = 경로들을 '|' 로 이은 문자열(1면만이면 경로 하나)."""
+    """pages 의 요소(id)마다 PNG 한 장. 성공 msg = 경로들을 '|' 로 이은 문자열(1면만이면 경로 하나).
+
+    ERP 판이 실패하면(권한·로그인 벽·서버) 공개 사본으로 한 번 더 찍는다 — 원천은 낮아져도 발송은 나간다.
+    어느 판을 찍었는지 msg 끝에 「· 원천 ERP/공개 사본」으로 붙는다(09:00 캡션·로그가 그대로 싣는다)."""
+    global URL
+    code, msg = _capture_once(check_only, pages)
+    if code == 0:
+        return code, msg + (" · 원천 ERP" if "erp.wellperion.com" in URL else " · 원천 공개 사본")
+    if "erp.wellperion.com" in URL and not os.environ.get("REPORT_CAPTURE_URL"):
+        first = msg
+        URL = _PAGES_URL
+        code, msg = _capture_once(check_only, pages)
+        if code == 0:
+            return code, msg + " · 원천 공개 사본(ERP 판 실패: " + first[:80] + ")"
+        return code, "ERP 판 실패(" + first[:80] + ") · 공개 사본도 실패(" + msg[:80] + ")"
+    return code, msg
+
+
+def _capture_once(check_only: bool, pages: "tuple[str, ...]") -> "tuple[int, str]":
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
