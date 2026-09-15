@@ -17,10 +17,16 @@ def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', cha
         os.makedirs(_LOG_DIR, exist_ok=True)
         now = datetime.datetime.now()
         path = os.path.join(_LOG_DIR, '%s_sent-%s.log' % (channel, now.strftime('%Y-%m-%d')))
+        raw_text = text if isinstance(text, str) else str(text)
+        try:
+            from kakao_room_listen import mask_secrets  # 지연 import — 마스킹 정본 재사용(약속 L21)
+            logged_text = mask_secrets(raw_text)
+        except Exception:
+            logged_text = raw_text  # 마스킹 실패해도 로깅 자체는 막지 않는다(best-effort)
         rec = {
             'ts': now.strftime('%Y-%m-%dT%H:%M:%S'),
             'source': source, 'chat_id': chat_id, 'kind': kind, 'ok': ok,
-            'text': text if isinstance(text, str) else str(text),
+            'text': logged_text,  # 로그 전용 — 실제 발신 본문(raw_text)은 건드리지 않는다(배 12648 · INC-061)
         }
         with open(path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(rec, ensure_ascii=False) + '\n')
@@ -172,6 +178,28 @@ def to_erp_links(text: str) -> str:
     return _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), str(text or ''))
 
 
+def selfcheck_log_outbound_masks_secrets():
+    """log_outbound 가 로그 파일엔 [가림]을 쓰고, 실제 발신 본문(raw_text)은 안 건드리는지
+    — 실값 대신 규칙 모양의 가짜값만 쓴다(배 12648 · INC-061)."""
+    import tempfile
+    global _LOG_DIR
+    orig_dir = _LOG_DIR
+    with tempfile.TemporaryDirectory() as td:
+        _LOG_DIR = td
+        try:
+            fake = "아이디 test123 pw: abcd1234! 확인 부탁드립니다"
+            ok = log_outbound(fake, chat_id=1, source='selfcheck')
+            assert ok, "로깅 자체가 실패"
+            files = glob.glob(os.path.join(td, 'telegram_sent-*.log'))
+            assert files, "로그 파일이 안 생김"
+            body = open(files[0], encoding='utf-8').read()
+            assert "abcd1234" not in body, body
+            assert "[가림]" in body, body
+        finally:
+            _LOG_DIR = orig_dir
+    print('[selfcheck] log_outbound_masks_secrets OK')
+
+
 def selfcheck_to_erp_links():
     old = _OLD_PAGES_BASE
     assert to_erp_links(f"점검 {old}coo/check/전사_일정.html 보세요") ==         "점검 https://erp.wellperion.com/coo/check/전사_일정.html 보세요", "업무 화면은 새 주소로"
@@ -194,10 +222,6 @@ def selfcheck_encode_url_spaces():
     tail = f"{base}cpo/member/lesson.html 에서 확인 부탁드립니다"
     assert encode_url_spaces(tail) == tail, encode_url_spaces(tail)
     print('[selfcheck] encode_url_spaces OK')
-
-
-if __name__ == '__main__':
-    selfcheck_encode_url_spaces()
 
 
 # kind → 텔레그램 API 필드명(제목 텍스트를 담을 자리). sendMessage=text, 그 외는 caption.
@@ -329,3 +353,11 @@ def _cleanup(now):
                 os.remove(p)
     except Exception:
         pass
+
+
+if __name__ == '__main__':
+    # __main__ 은 파일 끝에 둔다 — send()·_cleanup() 등 아래쪽 정의를 부르는 자체점검이
+    # 있어서(log_outbound 가 _cleanup 을 쓴다), 선언 전에 실행되면 NameError 로 조용히
+    # 삼켜진다(배 12648 실측 · log_outbound 의 try/except 가 가려서 안 보였다).
+    selfcheck_encode_url_spaces()
+    selfcheck_log_outbound_masks_secrets()

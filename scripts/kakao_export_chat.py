@@ -184,6 +184,20 @@ def _resolve_out_path(room_name: str, out: str | None, date: str | None) -> Path
     return ARCHIVE_BASE / folder / month / f"{folder}_auto_{day}.txt"
 
 
+def _mask_export_file(path: Path) -> None:
+    """저장된 내보내기 파일을 mask_secrets 로 거른다 — 비밀값이 디스크에 원문으로 매일
+    다시 쌓이지 않게(배 12648 · INC-061). 마스킹 정본은 kakao_room_listen 한 곳(약속 L21)."""
+    try:
+        from kakao_room_listen import mask_secrets  # 지연 import — 순환 import 방지
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        masked = mask_secrets(text)
+        if masked != text:
+            path.write_text(masked, encoding="utf-8")
+            log(f"[export] mask_secrets 적용 — 비밀값처럼 보이는 값을 [가림] 처리")
+    except Exception as e:
+        log(f"[export] mask_secrets 적용 실패(원문이 남아 있을 수 있음): {type(e).__name__}: {e}")
+
+
 def export_room_chat(room_name: str, out_path: Path) -> bool:
     """방 대화를 out_path로 무인 내보내기. 성공=파일 생성·비어있지 않음."""
     import warnings
@@ -266,6 +280,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     size = out_path.stat().st_size if out_path.exists() else 0
     log(f"[export] {'성공' if ok else '실패'} — {out_path} ({size:,} bytes)")
     if ok:
+        _mask_export_file(out_path)
         _warn_if_stale(out_path)
     close_stray_save_dialog()          # 성공 뒤 남는 '대화 내보내기 · 완료되었습니다' 창도 여기서 닫는다(배 시보→시토 2026-09-08)
     s.close_room_window(room, room_name)   # 저장이 끝난 방 창도 닫는다(GM 지시 2026-09-09) — 안 닫으면 방 창이 GM 화면에 쌓인다
@@ -325,6 +340,20 @@ def main() -> int:
     return 1
 
 
+def _selfcheck_mask_export_file() -> None:
+    """_mask_export_file 자체점검 — 실값 대신 규칙 모양의 가짜값만 쓴다(약속 09-15)."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "fake_export.txt"
+        p.write_text("[대표님] [오전 9:00] 아이디 test123 pw: abcd1234! 확인 부탁드립니다", encoding="utf-8")
+        _mask_export_file(p)
+        out = p.read_text(encoding="utf-8")
+        assert "abcd1234" not in out, out
+        assert "[가림]" in out, out
+    print("[selfcheck] _mask_export_file OK")
+
+
 def _release_modifiers() -> None:
     """어떻게 끝나든 Ctrl·Shift·Alt·Win 을 놓는다 (배 2530).
 
@@ -340,6 +369,9 @@ def _release_modifiers() -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
+        _selfcheck_mask_export_file()
+        sys.exit(0)
     _release_modifiers()
     try:
         sys.exit(main())
