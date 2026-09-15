@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 router = APIRouter()
 
 SECRETS_FILE = os.environ.get("PARTNER_SECRETS_FILE", "/srv/erp/partner_secrets.json")
-CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "kakao-channel")   # GM 2026-09-15 스레드·구글 추가 · 화면은 이 순서로 자리를 만든다
+CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "kakao-channel", "parking")   # GM 2026-09-15 스레드·구글 추가 · parking = 주차 관리 서비스(ppark-wall · 배 2668) · 화면은 이 순서로 자리를 만든다
 
 
 def _user(request):

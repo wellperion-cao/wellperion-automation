@@ -443,7 +443,7 @@
   (function(){
     var API='/api/admin/partner-secrets', boards=document.getElementById('ps-boards'), line=document.getElementById('ps-line'), sel=document.getElementById('ps-channel');
     // 채널 키 → 사람이 보는 이름. 목록 자체는 서버(d.channels)가 준다 — 서버에 채널이 늘면 자리가 저절로 생긴다.
-    var CN={'naver-blog':'네이버 블로그','naver-cafe':'네이버 카페','danggn':'당근','instagram':'인스타그램','threads':'스레드(Threads)','google':'구글','kakao-channel':'카카오 채널'};
+    var CN={'naver-blog':'네이버 블로그','naver-cafe':'네이버 카페','danggn':'당근','instagram':'인스타그램','threads':'스레드(Threads)','google':'구글','kakao-channel':'카카오 채널','parking':'주차 관리 서비스(ppark-wall)'};
     function cname(c){ return CN[c] || esc(c); }
     // 파트너 키(jo/dc) → 사람이 보는 이름. 식별자 표·계정 넣기 선택칸과 같은 번호를 쓴다.
     var TN={wellperion:'1호 웰페리온', dc:'2호 다이어트캠프', jo:'3호 고척GDR QA 골프존'};

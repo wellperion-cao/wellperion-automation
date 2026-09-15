@@ -288,6 +288,19 @@ CREATE TABLE IF NOT EXISTS brojay_records (
   PRIMARY KEY (tenant_id, kind, key)
 );
 
+-- 주차 매출 원천(랩스 ppark-wall) 미러 (sync_parking.py · api_parking.py · 배 2668 · GM 지시 2026-09-15).
+-- brojay_records 와 같은 모양(kind/key=날짜/data) — kind='daily' 하나뿐이라 가장 단순한 재사용.
+-- data = {"revenue_krw": 정수|null, "raw": 응답 원문} — 매출 칸 이름이 실측 전이라 revenue_krw 는
+-- env PARKING_REVENUE_FIELD 로 뽑고, 없거나 못 찾으면 null(raw 는 항상 담아 나중에 다시 뽑을 수 있게).
+CREATE TABLE IF NOT EXISTS parking_records (
+  tenant_id TEXT NOT NULL DEFAULT 'wellperion',
+  kind      TEXT NOT NULL,
+  key       TEXT NOT NULL,
+  data      TEXT NOT NULL,
+  synced_at TEXT NOT NULL,
+  PRIMARY KEY (tenant_id, kind, key)
+);
+
 -- 공용 보드(GAS action=board) 미러 (sync_board.py · api_board.py · 배 926 · 2026-09-04).
 -- GM_TASK_OWNERS 등 화면 여러 곳이 쓰는 범용 키-값 저장소를 키별로 통째 미러 — GAS 응답 지연(3.7~24초)이
 -- 화면 타임아웃(8초)에 걸려 담당 칸이 빈 화면이 되던 문제를 없앤다. 목록 = sync_board.py BOARD_KEYS.
