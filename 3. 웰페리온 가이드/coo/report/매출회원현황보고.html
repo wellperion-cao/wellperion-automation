@@ -75,6 +75,11 @@
     display:flex;align-items:baseline;gap:6px;}
   /* 원천 꼬리표 — 그 칸 숫자가 어디서 왔는지(GM 지시 2026-09-15). 서버 자료칸에서 바로 온 값과
      사람이 적는 시트를 거쳐 온 값을 눈으로 가른다. 값을 바꾸지 않는다 — 표시만 한다. */
+  .srct{display:inline-block;margin-left:5px;font-size:8px;font-weight:700;color:#7A838B;border:1px solid #E3E7EB;border-radius:3px;padding:0 3px;line-height:12px;vertical-align:1px;white-space:nowrap;}
+  .srct.bro{color:#14304E;border-color:#C9D6E3;}
+  #sales td:first-child{display:flex;align-items:center;gap:4px;min-width:0;}
+  #sales td:first-child .rn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  #sales td:first-child .srct{flex:none;}
   .src{margin-left:auto;font-size:9.6px;font-weight:700;letter-spacing:0;padding:1px 6px;border-radius:9px;
     border:1px solid var(--line);color:#48525B;background:#fff;white-space:nowrap;}
   .src.srv{color:#146B4F;border-color:#146B4F;}
@@ -308,7 +313,8 @@
   .tmbox .ti{font-size:10px;color:#3D464F;line-height:1.4;padding-left:8px;text-indent:-8px;}
   .tmbox .tnone{font-size:10px;color:#9AA4AD;}
   /* 4면 담당별 매출 — 왼쪽이 그날, 오른쪽이 누적. 시트가 쓰는 그 배치 그대로. */
-  .ptab{width:100%;border-collapse:collapse;font-size:10.5px;}
+  .ptab{width:100%;border-collapse:collapse;font-size:10.2px;}
+  #sheet4 .ptab td, #sheet4 .ptab th{padding-top:1.5px;padding-bottom:1.5px;}
   .ptab tr.p4team td{background:#EEF3F7;color:var(--navy);font-weight:800;border-top:2px solid #D5DCE3;}
   .ptab .p4n{font-weight:600;color:#7A838B;font-size:9.5px;margin-left:4px;}
   .ptab td.p4who{padding-left:14px;}
@@ -518,8 +524,7 @@
   <div class="foot">
     <div><b>이 보고서가 보는 것</b> — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.</div>
     <div id="accGapNote">두 장부 대조 — 불러오는 중…</div>
-    <div id="brojayNote"></div>
-    <div><b>원천</b> — 매출·회원 수치는 보고 시트, 연간 추이는 ERP 월별 매출 집계. 값을 여기서 다시 계산하지 않습니다 — 시트가 바뀌면 새로고침으로 같이 바뀝니다.</div>
+    <div id="brojayNote"><b>원천</b> — 칸마다 붙은 꼬리표 그대로(시트→서버 / 브로제이→서버). 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
   <!-- 브랜드 띠(세 장 공통) — GM 지시 2026-09-14 「우리가 지금 집중하는 것, 슬로건도 계속 나오게」.
@@ -578,36 +583,26 @@
   <!-- 등록 띠 — 세 줄: 멤버십(좁게) · 강습 성인(팀별) · 강습 유소년(팀별). 강습 22건을 한 칸에 두면 성인·유소년이
        섞여 길어지고 아래 문의 띠가 잘렸다(GM 지적 2026-09-15 「문의등록 상세는 다 깨지네 · 강습 등록건을 조금 더
        왼쪽으로 · 성인&유소년 구분해서 총 3줄」). 성인·유소년은 등록경로 칸으로 가른다(renderP2Contract). -->
-  <div class="body" id="p2regband" style="display:flex;gap:13px;flex:2.6;">
-    <div class="col" style="flex:none;width:26%;min-width:0;">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
-        <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+  <!-- 격자 하나: 1행 = 멤버십 · 강습 성인 · 강습 유소년 / 2행 = 「문의에서 가입까지」(멤버십+성인 폭) · 유소년은 두 행을
+       세로로 다 쓴다(GM 지시 2026-09-15 「문의에서 가입까지는 좌우 너무 큰데, 멤버십+강습 성인칸까지만 · 맨 우측
+       유소년 칸은 더 길게」). 유소년이 하루 17건으로 제일 길어 세로를 준다. -->
+  <div id="p2regband" style="display:grid;grid-template-columns:26% 1fr 1fr;grid-template-rows:minmax(0,1fr) auto;gap:11px 13px;flex:1;min-height:0;">
+    <div class="sec" style="grid-column:1;grid-row:1;min-height:0;">
+      <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
+      <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="col" style="flex:none;width:calc(37% - 13px);min-width:0;">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2lesh">오늘 등록 — 강습 성인 (팀별)<span class="src">시트 → 서버</span></h2>
-        <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+    <div class="sec" style="grid-column:2;grid-row:1;min-height:0;">
+      <h2 id="p2lesh">오늘 등록 — 강습 성인 (팀별)<span class="src">시트 → 서버</span></h2>
+      <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="col" style="flex:none;width:calc(37% - 13px);min-width:0;">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2lesyh">오늘 등록 — 강습 유소년 (팀별)<span class="src">시트 → 서버</span></h2>
-        <div class="bd" id="p2lesy"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+    <div class="sec" style="grid-column:3;grid-row:1 / span 2;min-height:0;">
+      <h2 id="p2lesyh">오늘 등록 — 강습 유소년 (팀별)<span class="src">시트 → 서버</span></h2>
+      <div class="bd" id="p2lesy"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-  </div>
-
-  <!-- 문의 띠 — 「문의 상세 내역」 칸은 뺐다(GM 지시 2026-09-15). 그 자리를 등록 띠가 쓴다.
-       안 챙긴 분은 맨 위 「후속 연락 필요한 문의」 칸이 이미 사람 수로 알려 준다. -->
-  <div class="body" id="p2inqband" style="display:flex;gap:13px;flex:1.25;margin-top:11px;">
-    <div class="col" style="flex:1;">
-      <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). -->
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의에서 가입까지 — 원장 진행상태 그대로<span class="src ">시트 → 서버</span></h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+    <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). 「문의 상세 내역」 칸은 뺐다. -->
+    <div class="sec" id="p2inqband" style="grid-column:1 / span 2;grid-row:2;min-height:0;">
+      <h2>문의에서 가입까지 — 원장 진행상태 그대로<span class="src ">시트 → 서버</span></h2>
+      <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
   </div>
 
@@ -649,27 +644,27 @@
   <div class="body">
     <div class="col">
       <div class="sec">
-        <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차</h2>
+        <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차<span class="src">점검·종합접수처 화면 → 시트 P20 → 서버</span></h2>
         <div class="bd" id="p3ops"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <!-- 강습 팀별 운영 현황 — 각 팀이 적는 이번 달 미션·기대치·리스크. 시트 판 보고에서는
            칸 높이에 눌려 아래가 잘려 나가던 자리다(2026-09-14 A·B 비교 실측). -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>강습 팀별 운영 현황 — 이번 달 미션 · 기대치 · 리스크</h2>
+        <h2>강습 팀별 운영 현황 — 이번 달 미션 · 기대치 · 리스크<span class="src">보고탭 O3~P18(손입력) → 서버</span></h2>
         <div class="bd" id="p3teams"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="col">
       <div class="sec">
-        <h2>인사 · 파트너팀 진행사항</h2>
+        <h2>인사 · 파트너팀 진행사항<span class="src">업무·결재 SSOT → 시트 I20 → 서버</span></h2>
         <div class="bd" id="p3hr"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec">
-        <h2>핵심 보고 · 진행현황</h2>
+        <h2>핵심 보고 · 진행현황<span class="src">업무·결재 SSOT → 시트 I21 → 서버</span></h2>
         <div class="bd" id="p3work"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p3lateh">지연 · 결재 대기</h2>
+        <h2 id="p3lateh">지연 · 결재 대기<span class="src">업무·결재 SSOT(구글 직접)</span></h2>
         <div class="bd" id="p3late"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
@@ -713,14 +708,15 @@
       <!-- 회원권·옵션 담당 블록은 뺐다(GM 지시 2026-09-14 「회원권 옵션은 빼줘, 그냥 강습만 있으면 되」).
            그 값은 1면 매출 현황 표에 이미 있다. 강습 담당은 서른 줄이 넘어 반씩 나눠 싣는다. -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p4lesh">강습 — 담당별</h2>
+        <h2 id="p4lesh">강습 — 팀 · 담당별<span class="src">일자탭 O~U(손입력) → 서버 · 세션 = 브로제이 → 서버</span></h2>
         <div class="bd" id="p4les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="col">
+      <!-- 오른쪽은 비워 둔다(GM 지시 2026-09-15 「왼쪽에 다 몰아」) — 세션카드 이관 뒤 팀별 세션 흐름이 들어올 자리. -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p4lesh2">강습 — 담당별 (이어서)</h2>
-        <div class="bd" id="p4les2"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2 id="p4lesh2">팀별 세션 흐름<span class="src">브로제이 → 서버</span></h2>
+        <div class="bd" id="p4les2"><div class="mrow"><span class="lb">세션카드 브로제이 이관 뒤 채워집니다</span></div></div>
       </div>
     </div>
   </div>
@@ -1082,8 +1078,7 @@ function paintAudit(out){
       fails.map(function(x){ return esc(x.name) + (x.detail ? '(' + esc(x.detail) + ')' : ''); }).join(' / ');
   } else {
     el.className = 'audit ok';
-    el.innerHTML = '<b>✅ 자체 점검 ' + (out.length - warns.length) + '/' + out.length + ' 통과</b> — ' +
-      '시트 칸 자리 · 기준일 · 합계 · 빈칸 · 컨택/로스자 날짜 · 강습 대조 · 그래프를 ' + at + ' 에 스스로 확인했습니다' +
+    el.innerHTML = '<b>✅ 자체 점검 ' + (out.length - warns.length) + '/' + out.length + ' 통과</b> — ' + at +
       ' · <b>' + automationProgressText() + '</b>' +
       (warns.length ? ' <span class="w">· 주의 ' + warns.map(function(x){ return esc(x.name) + (x.detail ? '(' + esc(x.detail) + ')' : ''); }).join(' / ') + '</span>' : '');
   }
@@ -1158,6 +1153,12 @@ function loadBrojayCompare(c){
   }).catch(function(){ el.textContent = ''; });
 }
 
+/* 칸 꼬리표 — 원천이 어디인지 칸마다 붙인다. 'sheet' = 시트→서버(서버에 거울로 있어도 시트가 원천) · 'bro' = 브로제이→서버.
+   칸의 원천이 바뀌면 그 칸의 호출만 바꾼다(BROJAY_SOURCE_CELLS 와 같은 뜻 · 두 곳이 어긋나면 안 된다). */
+function srcTag(kind){
+  return kind === 'bro' ? '<span class="srct bro">브로제이→서버</span>' : '<span class="srct">시트→서버</span>';
+}
+
 function renderSheet(c){
   // 날짜·월 보기에서 새로고침하면 기본(어제) 상태로 돌아온다 — 단 주소에 날짜가 적혀 있으면
   // 그 날짜를 유지한다(GM 지적 2026-09-02 "새로고침하면 다시 8월 1일 기준으로 전환되네").
@@ -1191,7 +1192,7 @@ function renderSheet(c){
     var name = c['H' + r]; if (!name) return '';
     var rv = parseFloat(String(c['L'+r] || '').replace('%',''));
     var bar = isNaN(rv) ? '' : '<span class="rb" style="width:' + Math.min(100, rv) + '%"></span>';
-    return '<tr' + (r === 4 ? ' class="sum"' : '') + '><td>' + esc(name) + '</td>' +
+    return '<tr' + (r === 4 ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(name) + '">' + esc(name) + '</span>' + srcTag('sheet') + '</td>' +
       '<td>' + esc(c['I'+r] || '–') + '</td><td>' + esc(c['J'+r] || '–') + '</td>' +
       '<td>' + esc(c['K'+r] || '–') + '</td>' +
       '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + bar + '</td></tr>';
@@ -1204,7 +1205,7 @@ function renderSheet(c){
   }).filter(function(x){ return x.label; });
   var mixSum = mixItems.reduce(function(a, b){ return a + b.n; }, 0) || 1;
   document.getElementById('memberMix').innerHTML =
-    '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + '</span>' +
+    '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + srcTag('sheet') + '</span>' +
       '<span class="bv">' + esc(c.N2 || '–') + '</span></div>' +
     '<div class="stack">' + mixItems.map(function(x){
         return '<i style="width:' + (x.n / mixSum * 100) + '%;background:' + x.color + '" title="' +
@@ -1807,7 +1808,7 @@ function p4TeamTable(heads, teams){
   if (!teams.length) return '<div class="mrow"><span class="lb">담당 줄이 없습니다</span></div>';
   var th = '<tr><th>팀 · 담당</th>' + heads.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') +
            '<th style="border-left:2px solid #E3E7EB;padding-left:8px">누적</th>' +
-           '<th style="border-left:2px solid #E3E7EB;padding-left:8px" title="브로제이 출석 차감 기준">세션 금일</th><th>세션 월누적</th></tr>';
+           '<th style="border-left:2px solid #E3E7EB;padding-left:8px" title="브로제이 출석 차감 기준">금일 세션진행</th><th>월 누적 세션진행</th></tr>';
   var body = teams.map(function(t){
     var cols = [0, 1, 2, 3].map(function(i){ return t.rows.reduce(function(a, x){ return a + p4Num(x.cols[i]); }, 0); });
     var acc = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
@@ -1831,11 +1832,9 @@ function renderPage4(c, dayLabel){
   var e2 = document.getElementById('p4les'), e3 = document.getElementById('p4les2');
   /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
-  /* 팀 단위로 두 단에 나눈다 — 한 팀이 단 사이에서 끊기지 않게 줄 수가 반이 넘는 지점에서 자른다. */
-  var teams = p4Teams(les), total = les.length, left = [], right = [], acc = 0;
-  teams.forEach(function(t){ if (acc < total / 2) { left.push(t); acc += t.rows.length + 1; } else { right.push(t); } });
-  if (e2) e2.innerHTML = p4TeamTable(lesHead, left);
-  if (e3) e3.innerHTML = p4TeamTable(lesHead, right);
+  /* 팀 전부 왼쪽 한 단(GM 지시 2026-09-15). 오른쪽 칸은 세션 흐름 자리로 비워 둔다. */
+  var teams = p4Teams(les);
+  if (e2) e2.innerHTML = p4TeamTable(lesHead, teams);
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
   var a4 = document.getElementById('audit4'); if (!a4) return;
@@ -2180,7 +2179,7 @@ function renderDaySales(c, dayLabel){
   }
   var rows = [
     ['회원권', _won(s.membership)].concat(accCells(6)),
-    ['옵션 (골프라카·일일입장)', _won(s.option)].concat(accCells(7))
+    ['옵션', _won(s.option)].concat(accCells(7))   // 골프라카·일일입장 — 칸이 좁아 이름은 줄이고 뜻은 시트 H7 그대로
   ];
   DAY_TEAM_RULES.forEach(function(t, i){
     rows.push([TEAM_LABEL[t[0]] || t[0], _won(s.teams[t[0]])].concat(accCells(8 + i)));
@@ -2193,7 +2192,7 @@ function renderDaySales(c, dayLabel){
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
     var bar = rateClass(r[4]) ? '<span class="rb" style="width:' +
       Math.min(100, parseFloat(String(r[4]).replace('%','')) || 0) + '%"></span>' : '';
-    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td>' + r[0] + '</td><td>' + esc(r[1] || '–') +
+    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(r[0]) + '">' + r[0] + '</span>' + srcTag('sheet') + '</td><td>' + esc(r[1] || '–') +
       '</td><td>' + esc(r[2] || '–') + '</td><td>' + esc(r[3] || '–') +
       '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
@@ -2239,9 +2238,6 @@ function renderP2Contract(c, dayLabel){
     /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
        그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
-    var band = document.getElementById('p2regband');
-    var longest = Math.max(memRows.length, adult.length + 6, youth.length + 6);   // 팀·담당 머리줄 몫을 더한다
-    if (band) band.style.flex = (memRows.length + rows.length) ? String(Math.max(1.2, Math.min(2.6, longest / 8))) : '0.42';
     les.innerHTML = lessonTeamHTML(adult);
     if (lesy) lesy.innerHTML = lessonTeamHTML(youth);
   }
