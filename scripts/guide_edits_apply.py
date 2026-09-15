@@ -73,6 +73,7 @@ def apply_one(item, dry_run=False):
         [sys.executable, str(REPO / "scripts" / "safe_commit.py"),
          "--holder", "guide-edits", "-m", message, path],
         cwd=str(REPO),
+        **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}),   # 자식 콘솔 창 깜빡임 금지(GM 2026-09-15)
     )
     return res.returncode == 0
 

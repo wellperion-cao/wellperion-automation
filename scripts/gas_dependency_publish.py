@@ -3,9 +3,11 @@
 화면 cto/aws_migration.html 의 맨 위 숫자는 이 파일에서 나오므로, 사람이 손으로 돌리지 않아도 매시 갱신된다.
 자기검사 = 스캔 결과 JSON 이 열리고 화면 수가 0 보다 크다."""
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+_NOWIN = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}   # 자식 콘솔 창 깜빡임 금지(GM 2026-09-15)
 
 ROOT = Path(__file__).resolve().parent.parent
 PY = sys.executable
@@ -15,14 +17,14 @@ COST = [ROOT / "status" / "cost_status.json", ROOT / "3. 웰페리온 가이드"
 
 
 def main():
-    subprocess.run([PY, str(ROOT / "scripts" / "gas_dependency_scan.py")], check=True, cwd=str(ROOT))
-    subprocess.run([PY, str(ROOT / "scripts" / "cost_collect.py")], cwd=str(ROOT))   # 실패해도 의존 실측은 그대로 간다
+    subprocess.run([PY, str(ROOT / "scripts" / "gas_dependency_scan.py")], check=True, cwd=str(ROOT), **_NOWIN)
+    subprocess.run([PY, str(ROOT / "scripts" / "cost_collect.py")], cwd=str(ROOT), **_NOWIN)   # 실패해도 의존 실측은 그대로 간다
     d = json.loads(OUT[0].read_text(encoding="utf-8"))
     assert d.get("screens_total", 0) > 0, "스캔 결과가 비었다"
     msg = "chore(cto): 구글 의존 실측 갱신 — 구글만 %d · 예비 %d · 서버만 %d / %d" % (
         d.get("screens_gas_only", 0), d.get("screens_both", 0), d.get("screens_server_only", 0), d.get("screens_total", 0))
     r = subprocess.run([PY, str(ROOT / "scripts" / "safe_commit.py"), "--holder", "gas-dep-scan", "-m", msg]
-                       + [str(p.relative_to(ROOT)) for p in OUT + [c for c in COST if c.exists()]], cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
+                       + [str(p.relative_to(ROOT)) for p in OUT + [c for c in COST if c.exists()]], cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", **_NOWIN)
     print((r.stdout or "")[-300:])
     return 0
 

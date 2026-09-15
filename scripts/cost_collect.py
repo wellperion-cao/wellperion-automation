@@ -13,9 +13,11 @@
 import datetime as dt
 import json
 import shutil
+import os
 import subprocess
 import sys
 from pathlib import Path
+_NOWIN = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}   # 자식 콘솔 창 깜빡임 금지(GM 2026-09-15)
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = [ROOT / "status" / "cost_status.json", ROOT / "3. 웰페리온 가이드" / "status" / "cost_status.json"]
@@ -33,7 +35,7 @@ def _hf(args):
     exe = shutil.which("higgsfield")
     if not exe:
         raise RuntimeError("higgsfield CLI 없음")
-    r = subprocess.run([exe] + args + ["--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+    r = subprocess.run([exe] + args + ["--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60, **_NOWIN)
     if r.returncode != 0:
         raise RuntimeError((r.stderr or r.stdout).strip()[:200])
     return json.loads(r.stdout)
