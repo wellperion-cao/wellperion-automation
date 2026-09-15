@@ -204,10 +204,26 @@ def _self_health_rows():
     except Exception as e:
         return [{"label": "ERP 이상 신호", "value": f"집계 실패({type(e).__name__}: {str(e)[:60]})"}]
     active = {k: v for k, v in sections.items() if v}
-    if not active:
-        return [{"label": "ERP 이상 신호", "value": "이상 0건 ✅"}]
-    return [{"label": f"이상 신호·{name}", "value": "\n    ".join(lines)}
-            for name, lines in active.items()]
+    rows = ([{"label": "ERP 이상 신호", "value": "이상 0건 ✅"}] if not active else
+            [{"label": f"이상 신호·{name}", "value": "\n    ".join(lines)} for name, lines in active.items()])
+    # AWS 이관 뒷정리는 정상이어도 한 줄 상시 노출(GM 2026-09-15 「알림 잘 나오게끔」) — 이상은 위 섹션이 이미 실었다.
+    if "migration_wrapup" not in active:
+        rows.append({"label": "AWS 이관 뒷정리", "value": _wrapup_normal_line()})
+    return rows
+
+
+def _wrapup_normal_line():
+    """status/aws_wrapup.json(검수기 aws_wrapup_check 가 방금 갱신) → 정상 한 줄."""
+    try:
+        with open(os.path.join(_PROJECT_ROOT, "status", "aws_wrapup.json"), encoding="utf-8") as f:
+            st = json.load(f)
+        n = int(st.get("zero_streak_days") or 0)
+        when = str(st.get("measured_at") or "")[11:16]
+        if st.get("gate_a_reached"):
+            return f"관문 A 도달({st['gate_a_reached']}) · 구글 끄기 진행 중 · 실측 {when}"
+        return f"정상 ✅ · 구글 판정 0건 {n}일째/7 · 다음 관문 = 7일 채우면 구글 끄기 · 실측 {when}"
+    except Exception as e:  # noqa: BLE001
+        return f"검수기 상태 못 읽음({type(e).__name__})"
 
 
 # ── §주간 품질 회귀 delta (module_report_log.jsonl 재사용 — 새 리포트·새 모듈 없음) ──
