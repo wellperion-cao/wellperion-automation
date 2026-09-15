@@ -122,6 +122,7 @@
   .note b{color:var(--alert);font-weight:700;}
 
   .rep-empty{font-size:var(--fs-2);color:var(--grey);padding:14px 0;}
+  .rep-wait td{background:#FFF8E6;color:#7A5A12;}
 
   .sum td .cat{font-size:var(--fs-1);font-weight:500;color:var(--grey);}
 
@@ -1264,25 +1265,45 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     var m = /\d{1,3}(?:,\d{3})+\s*원/.exec(String(r['업무명'] || '') + ' ' + String(r['내용'] || ''));
     return m ? m[0].replace(/\s+/g, '') : '—';
   }
+  // 두 칸의 갈림 = 대표싸인 칸 하나(GM 지시 2026-09-15 「GM 선에서 마무리되는 건 / 대표님까지 올려 마무리되는 건」).
+  //   GM싸인이 찍힌 결재완료 건 전부가 대상이다 — 담당자가 누구든(종전엔 담당 김남욱 건만 세어 실장·최준용M 건이
+  //   어디에도 안 보였다 · GM 「오늘 결재 넘긴 3건을 못 찾겠다」).
+  //   대표싸인 = 실서명(URL·날짜) → 대표님 결재완료 / 'PENDING' → 대표님 결재 대기(같은 칸 위쪽) / 빈칸·'GM종결' → GM 완료건.
+  //   정렬 = 결재 날짜(GM싸인·결재완료시각) 최신 상단.
+  function gmSignDate(r) {
+    var v = String(r['결재완료시각'] || r['GM싸인'] || '').trim();
+    var m = /(\d{4}-\d{2}-\d{2})/.exec(v);
+    if (m) return m[1];
+    var d = v ? new Date(v) : null;
+    return (d && !isNaN(d)) ? d.toISOString().slice(0, 10) : '';
+  }
   function classify(rows) {
-    var gm = [], rep = [];
+    var gm = [], rep = [], wait = [];
     rows.forEach(function (r) {
       if (String(r['업무명'] || '').indexOf('[테스트]') !== -1) return;   // 서식 검증용 행
-      var appr = String(r['결재요청'] || '').trim();
-      if (appr.indexOf('대표님') !== -1) { if (OD.ownerSigned(r)) rep.push(r); return; }   // PENDING·빈칸 = 완료 아님
-      if (String(r['담당자'] || '').indexOf('김남욱') !== -1 && /GM/.test(appr) && String(r['상태'] || '').trim() === '완료') gm.push(r);
+      if (String(r['결재상태'] || '').trim() !== '결재완료') return;      // GM 서명이 끝난 건만
+      var rs = String(r['대표싸인'] || '').trim();
+      if (OD.ownerSigned(r)) { rep.push(r); return; }
+      if (rs.toUpperCase() === 'PENDING') { wait.push(r); return; }
+      gm.push(r);                                                          // 빈칸 · 'GM종결'
     });
-    var byDate = function (a, b) { return (OD.ownerSignDate(b) || '').localeCompare(OD.ownerSignDate(a) || ''); };
-    return { gm: gm.sort(byDate), rep: rep.sort(byDate) };
+    var byRep = function (a, b) { return (OD.ownerSignDate(b) || '').localeCompare(OD.ownerSignDate(a) || ''); };
+    var byGm = function (a, b) { return gmSignDate(b).localeCompare(gmSignDate(a)); };
+    return { gm: gm.sort(byGm), rep: rep.sort(byRep), wait: wait.sort(byGm) };
   }
   function rowHtml(r) {
+    var d = OD.ownerSigned(r) ? OD.ownerSignDate(r) : gmSignDate(r);
     return '<tr><td>' + esc(r['업무명']) + '</td><td>' + esc(amountOf(r)) + '</td><td>' +
-      esc(OD.ownerSignDate(r) || '—') + '</td><td>' + esc(r['담당자'] || '—') + '</td></tr>';
+      esc(d || '—') + '</td><td>' + esc(r['담당자'] || '—') + '</td></tr>';
+  }
+  function waitRowHtml(r) {
+    return '<tr class="rep-wait"><td>🕒 ' + esc(r['업무명']) + '</td><td>' + esc(amountOf(r)) + '</td><td>GM ' +
+      esc(gmSignDate(r) || '—') + ' · 대표님 대기</td><td>' + esc(r['담당자'] || '—') + '</td></tr>';
   }
   function fill(el, list, empty) {
     el.innerHTML = list.length ? list.map(rowHtml).join('') : '<tr><td colspan="4" class="rep-empty">' + empty + '</td></tr>';
   }
-  window.GmApprovalTables = { classify: classify, rowHtml: rowHtml };   // 자가검사(node)가 이 둘만 떼어 돌린다
+  window.GmApprovalTables = { classify: classify, rowHtml: rowHtml, gmSignDate: gmSignDate };   // 자가검사(node)가 이 둘만 떼어 돌린다
   OD.readWorkApproval().then(function (rows) {
     if (!rows) {
       var msg = '<tr><td colspan="4" class="rep-empty">결재 SSOT 를 못 읽었습니다 — 0건이라는 뜻이 아닙니다.</td></tr>';
@@ -1291,8 +1312,10 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     }
     var c = classify(rows);
     fill(elA, c.gm, 'GM 선에서 끝난 결재가 없습니다.');
-    fill(elB, c.rep, '대표님 실서명이 찍힌 결재가 없습니다.');
-    cA.textContent = '결재 ' + c.gm.length + '건'; cB.textContent = c.rep.length + '건';
+    // 대표님 칸 = 대기(PENDING · 위) + 실서명 완료(아래)
+    elB.innerHTML = c.wait.map(waitRowHtml).join('') +
+      (c.rep.length ? c.rep.map(rowHtml).join('') : '<tr><td colspan="4" class="rep-empty">대표님 실서명이 찍힌 결재가 없습니다.</td></tr>');
+    cA.textContent = '결재 ' + c.gm.length + '건'; cB.textContent = c.rep.length + '건' + (c.wait.length ? ' · 대기 ' + c.wait.length : '');
   });
 })();
 
