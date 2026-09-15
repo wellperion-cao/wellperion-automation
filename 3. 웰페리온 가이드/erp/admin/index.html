@@ -261,7 +261,7 @@
   <!-- 메뉴 묶음 5개(GM 2026-09-15 「항목값에 맞는 셋업인지 곰곰이 판단」 · 시토 정리):
        파트너사 = 파는 상대(고객)에 관한 것 · 플랫폼 운영 = 우리 살림(서버·이관·자동화·비용) ·
        모듈 = 따로 파는 앱 · 자료 = 기준·문서 · 개인 = GM 본인 것(회사 화면과 섞지 않는다). -->
-  <!-- 본 회사 = 파는 쪽(우리) — 파트너사 안에 숨기지 않고 맨 위 자기 묶음(GM 2026-09-15 17:3x 「본회사가 왜 파트너사를 들어가야 나오나」). 정본 = company_v0.1.html(시보). -->
+  <!-- 본 회사 = 파는 쪽(우리) — 파트너사 안에 숨기지 않고 맨 위 자기 묶음(GM 2026-09-15 17:3x 「본회사가 왜 파트너사를 들어가야 나오나」). 정본 = company.html(시보 · 소개 단락 + 회사소개서·전략 로드맵 버튼 2 · ERP 홈 M0 와 같은 골격 · GM 2026-09-15 17:4x). -->
   <div class="cap">웰페리온 랩스</div>
   <a href="#view/company" data-view="company"><span class="t">회사</span></a>
   <div class="sep"></div>
@@ -285,7 +285,7 @@
   <div class="sep"></div>
   <div class="cap">자료</div>
   <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
-  <a href="#ui" data-go="ui"><span class="t">화면 UI 표준</span><span class="b" id="b-ui">—</span></a>
+  <a href="#ui" data-go="ui"><span class="t">화면 UI/UX 표준</span><span class="b" id="b-ui">—</span></a>
   <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
   <a href="#platform-docs" data-go="platform-docs"><span class="t">플랫폼 문서</span></a>
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
@@ -919,14 +919,15 @@
      이 표는 그 규격을 사람 말로 옮기고, 지금 몇 장이 지키는지를 실측값으로 보인다
      (status/ui_standard.json · scripts/ui_standard_check.py 가 잰다). 숫자를 손으로 적지 않는다. ═══ -->
 <section class="panel" data-panel="ui" hidden>
-  <h2>화면 UI 표준</h2>
-  <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 다섯을 모두 채웁니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
+  <h2>화면 UI/UX 표준</h2>
+  <div class="meta">화면 한 장이 <b>표준을 지킨다</b>고 하려면 아래 여섯을 모두 채웁니다 · 규격 다섯은 파일을 읽어 세고, UX 하나는 브라우저로 실제 렌더해 셉니다 · 이 표가 승인되면 안 지키는 화면부터 맞춰 갑니다</div>
   <details class="tip"><summary>이 표준을 왜 두나</summary>
     <div class="in">화면마다 글자 크기와 색을 따로 박아 써서 같은 회사 화면으로 읽히지 않습니다.
     실측하면 한 화면 안에 글자 크기가 30종, 색이 101종까지 쓰인 곳이 있습니다.
-    디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.</div></details>
+    디자인 취향의 문제가 아니라 <b>쓰는 말이 없어서</b> 생긴 일이라, 규격을 한 곳에 두고 거기만 고칩니다.<br>
+    ⑥ UX 는 2026-09-15 GM 지시(「시모가 성장한 것을 화면 UI/UX 까지 표준화」)로 더했습니다 — 눈으로 열어서는 안 보이는 것(키보드 초점·터치 크기·명암비·이모지 아이콘·반응형 사진·움직임 줄이기)을 디자인 규칙집(UI/UX Pro Max) 기준 19항목으로 잽니다. 색·글꼴은 여기서 안 잽니다 — 브랜드 파일이 정본입니다.</div></details>
 
-  <h3>다섯 가지 <span class="n">다섯을 다 채우면 지킨다</span></h3>
+  <h3>여섯 가지 <span class="n">여섯을 다 채우면 지킨다</span></h3>
   <div class="tbl-wrap"><table class="reg">
     <thead><tr><th style="width:16%">항목</th><th style="width:40%">기준</th><th style="width:24%">왜</th><th>지금</th></tr></thead>
     <tbody>
@@ -935,17 +936,18 @@
       <tr><td class="item">③ 색 단계</td><td>직접 박은 색 <b>12종 이하</b></td><td class="note">색은 브랜드 파일이 준다</td><td id="ui-r3">—</td></tr>
       <tr><td class="item">④ 모바일 폭</td><td>화면 폭에 맞추는 줄이 있다</td><td class="note">없으면 폰이 데스크톱 폭으로 그린다</td><td id="ui-r4">—</td></tr>
       <tr><td class="item">⑤ 좌측 정렬</td><td>본문에 폭 제한이 없다(창을 다 쓴다)</td><td class="note">GM 상시 지시 2026-07-02</td><td id="ui-r5">—</td></tr>
+      <tr><td class="item">⑥ UX 19항목</td><td>브라우저로 렌더해 <b>걸린 항목 0</b> — 터치 44px · 키보드 초점 · 명암비 4.5 · 이모지 아이콘 0 · 반응형 사진 · 폰 글자 16px · 움직임 줄이기 · 오류 0 …</td><td class="note">디자인 규칙집 기준 · <code>scripts/design_audit.py</code> · GM 2026-09-15</td><td id="ui-r6">—</td></tr>
     </tbody>
   </table></div>
 
   <h3>지금 어디까지 <span class="n" id="ui-when"></span></h3>
   <div class="pills">
-    <a class="pi" href="#ui"><b id="ui-pass">—</b><span>다섯 가지를 다 지키는 화면</span></a>
+    <a class="pi" href="#ui"><b id="ui-pass">—</b><span>여섯 가지를 다 지키는 화면</span></a>
     <a class="pi" href="#ui"><b id="ui-total">—</b><span>재고 있는 화면</span></a>
   </div>
   <div class="tbl-wrap" style="margin-top:10px;"><table class="reg">
-    <thead><tr><th style="width:46%">안 지키는 화면</th><th style="width:14%">글자</th><th style="width:14%">색</th><th>빠진 것</th></tr></thead>
-    <tbody id="ui-rows"><tr><td colspan="4" class="note">불러오는 중…</td></tr></tbody>
+    <thead><tr><th style="width:40%">안 지키는 화면</th><th style="width:10%">글자</th><th style="width:10%">색</th><th style="width:10%">UX 걸림</th><th>빠진 것</th></tr></thead>
+    <tbody id="ui-rows"><tr><td colspan="5" class="note">불러오는 중…</td></tr></tbody>
   </table></div>
   <div class="meta" id="ui-more"></div>
 
@@ -1127,7 +1129,7 @@
   var viewCards = [].slice.call(document.querySelectorAll('.main a[data-view]'));
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/자율현황.html', kakao:'/cto/automation/카톡전송관리.html', counsel:'/cbo/counsel_admin.html',
-                upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html',
+                upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company.html',
                 gm:'/home?embed=1#G1', ideas:'/erp/admin/ideas.html' };
   function show(key, scroll){
     var viewKey = '';
@@ -1310,6 +1312,9 @@
       칸('ui-r1', 항목.공통규격 || 0); 칸('ui-r2', 항목.글자단계 || 0);
       칸('ui-r3', 항목.색단계 || 0);   칸('ui-r4', 항목.모바일폭 || 0);
       칸('ui-r5', 항목.폭최대 || 0);
+      // ⑥ UX 는 잰 화면만 분모로(안 잰 화면을 탈락으로 세지 않는다)
+      (function(){ var e = document.getElementById('ui-r6'); if (!e) return; var m = 항목.UX잼 || 0, v = 항목.UX || 0;
+        e.innerHTML = m ? '<span class="st ' + (v === m ? 'ok' : (v * 2 < m ? 'bad' : 'warn')) + '">' + v + ' / ' + m + '</span>' : '<span class="st wait">아직 안 잼</span>'; })();
 
       var 지킴 = d.지킴수 || 0;
       var p1 = document.getElementById('ui-pass'); if (p1) p1.textContent = 지킴 + ' / ' + n;
@@ -1326,18 +1331,19 @@
         if (r.색단계 > 기준.색단계) x.push('색');
         if (!r.모바일폭) x.push('모바일 폭');
         if (!r.폭최대) x.push('좌측 정렬');
+        if (r.ux걸림 > 0) x.push('UX ' + (r.ux항목 || []).slice(0, 3).map(function(t){ return t.replace(/\(.*$/, ''); }).join('·'));
         return x.join(' · ');
       }
       var 안지킴 = (d.화면 || []).filter(function(r){ return !r.지킴; })
-                    .sort(function(a, b2){ return b2.글자단계 - a.글자단계; });
+                    .sort(function(a, b2){ return (b2.글자단계 + (b2.ux걸림 || 0) * 3) - (a.글자단계 + (a.ux걸림 || 0) * 3); });
       var 보일것 = 안지킴.slice(0, 15);
       var tb = document.getElementById('ui-rows');
       if (tb) tb.innerHTML = 보일것.length
         ? 보일것.map(function(r){
             return '<tr><td class="item">' + r.화면 + '</td><td>' + r.글자단계 + '종</td>'
-                 + '<td>' + r.색단계 + '종</td><td class="note">' + 빠진것(r) + '</td></tr>';
+                 + '<td>' + r.색단계 + '종</td><td>' + (r.ux걸림 == null ? '—' : r.ux걸림 + '건') + '</td><td class="note">' + 빠진것(r) + '</td></tr>';
           }).join('')
-        : '<tr><td colspan="4" class="note">모두 지키고 있습니다.</td></tr>';
+        : '<tr><td colspan="5" class="note">모두 지키고 있습니다.</td></tr>';
       var more = document.getElementById('ui-more');
       if (more) more.textContent = 안지킴.length > 보일것.length
         ? '많이 어긋난 순 15장만 띄웁니다 — 전체 ' + 안지킴.length + '장.' : '';
@@ -1349,7 +1355,7 @@
     })
     .catch(function(){
       var tb = document.getElementById('ui-rows');
-      if (tb) tb.innerHTML = '<tr><td colspan="4" class="note">실측 파일을 못 읽었습니다 — '
+      if (tb) tb.innerHTML = '<tr><td colspan="5" class="note">실측 파일을 못 읽었습니다 — '
                            + 'python scripts/ui_standard_check.py --저장 을 한 번 돌리면 채워집니다.</td></tr>';
     });
 
