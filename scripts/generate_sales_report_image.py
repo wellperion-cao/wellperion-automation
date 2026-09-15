@@ -61,6 +61,46 @@ ENV_PATH = ROOT / "telegram_bot" / ".env"
 # 해석 경로 = 이미 배포된 GAS(.deploy-todo/업무&결재 현황.js, action=daily_report_sheet).
 # ══════════════════════════════════════════════════════════════════════════
 SHEET_RANGE = "H2:S21"
+# 「live」 전환 스위치(배1061 · GM 확정 2026-09-15 = 10/1 전환) — status/sales_report_server_switch.json mode 가 "live" 이면
+# 09:30 카톡 3방 그림의 원천을 시트 캡처 대신 ERP 「매출 및 회원 현황 보고」 화면 1면(report_page_capture)으로 바꾼다.
+# 오케스트레이터(kakao_auto_daily_report.py)는 IMAGE: 규약만 보므로 손대지 않는다 — 원천만 여기서 갈린다.
+# ERP 캡처가 실패하면 시트 경로로 그대로 내려간다(보고가 끊기는 쪽이 제일 나쁘다 · 불일치·실패 = 시트 유지 원칙).
+# ⚠️ 전제 = report_page_capture 가 ERP 판(erp.wellperion.com)을 찍을 권한(배 12633) — 그 전엔 live 를 켜도 공개 사본(시트 값)이 찍힌다.
+SWITCH_PATH = ROOT / "status" / "sales_report_server_switch.json"
+
+
+def live_mode(path: Path = None) -> bool:
+    """mode == "live" 일 때만 True. 파일 없음·깨짐·다른 값 = False(시트 경로)."""
+    try:
+        return json.loads((path or SWITCH_PATH).read_text(encoding="utf-8")).get("mode") == "live"
+    except Exception:
+        return False
+
+
+def capture_live(png_path: Path) -> "tuple[bool, str]":
+    """ERP 화면 1면을 찍어 archive 자리(png_path)에 둔다. (성공, 사유)."""
+    try:
+        import report_page_capture as cap  # noqa: WPS433
+        code, msg = cap.capture(pages=("sheet",))
+    except Exception as exc:  # noqa: BLE001
+        return False, f"{type(exc).__name__}: {exc}"
+    if code:
+        return False, msg
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    png_path.write_bytes(Path(msg).read_bytes())
+    return True, str(png_path)
+
+
+def _selfcheck_live_mode(tmp: Path) -> None:
+    tmp.write_text('{"mode": "live"}', encoding="utf-8")
+    assert live_mode(tmp) is True
+    for body in ('{"mode": "gmpc_0900"}', '{"mode": "parallel"}', '{}', 'not json'):
+        tmp.write_text(body, encoding="utf-8")
+        assert live_mode(tmp) is False, body
+    tmp.unlink()
+    assert live_mode(tmp) is False, "파일 없음 = 시트 경로"
+    print("[selfcheck] live 스위치 OK")
+
 GAS_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 
 
@@ -410,6 +450,7 @@ def main() -> int:
 
     if args.selfcheck:
         _selfcheck_basis_dates()
+        _selfcheck_live_mode(ROOT / "status" / "_selfcheck_switch.tmp.json")
         return 0
 
     if sys.platform != "win32":
@@ -423,6 +464,16 @@ def main() -> int:
         except ValueError:
             print(f"FAILED: --date 형식 오류({args.date}, YYYYMMDD 필요)")
             return 1
+
+    if live_mode():
+        month_dir = get_archive_dir() / target_date.strftime("%Y-%m")
+        ok, why = capture_live(month_dir / target_date.strftime(ARCHIVE_FILENAME_FMT))
+        if ok:
+            log(f"[live] ERP 화면 1면 캡처 → {why}")
+            print(f"IMAGE: {Path(why).resolve()}")
+            return 0
+        log(f"[live] ERP 화면 캡처 실패 — 시트 경로로 내려간다: {why}")
+        send_owner_alert(f"⚠️ 매출보고 live 캡처 실패 — 오늘은 시트 캡처로 나갑니다: {why}")
 
     sheet_id, gid, resolve_fail = resolve_sheet(target_date)
     if resolve_fail:

@@ -170,9 +170,10 @@ def main():
     dry_run = "--dry-run" in sys.argv
 
     mode = _switch_mode()
-    if mode == "gmpc_0900" and not ON_SERVER:
+    # "live"(3방 전환 · 배1061 · 10/1) 도 09:00 업무보고방 사진·09:02 대조 줄은 그대로 간다 — 3방 원천만 바뀐다(generate_sales_report_image.live_mode).
+    if mode in ("gmpc_0900", "live") and not ON_SERVER:
         return gm_pc_0900(dry_run)
-    if mode == "gmpc_0900" and ON_SERVER:
+    if mode in ("gmpc_0900", "live") and ON_SERVER:
         return server_check_line(dry_run)
     if mode != "parallel":
         print("[skip] switch mode=%s (parallel·gmpc_0900 아님 — 발송 안 함)" % mode)
