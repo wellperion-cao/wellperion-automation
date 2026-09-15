@@ -5,7 +5,7 @@
 <style>
 /* 다이어트캠프 둘러보기 — 스크롤로 공간을 걷는 페이지 (GM 2026-09-15 19:3x 「스크롤로 3D 공간을 구경하는 것처럼」).
    원천 = 대표님 내부 안내 영상(1080×1920 · 6분 10초 · 2026-09-15 수령) → 2fps 프레임 740장(tour/frames · 저장소 밖 · 서버에만).
-   다시 만들기: ffmpeg -i 내부안내.mp4 -vf "fps=2,scale=480:-2" -q:v 8 tour/frames/f_%04d.jpg
+   다시 만들기: ffmpeg -i 내부안내.mp4 -vf "fps=2,scale=810:-2" -q:v 4 tour/frames/f_%04d.jpg (2026-09-15 19:4x 화질 올림 · 480→810px)
    3D(가우시안 스플랫)는 2단계 — 같은 영상을 Polycam/Luma 에 올려 나오면 이 페이지의 무대를 그 뷰어로 바꾼다. 배 892 · 시보. */
 :root{--g:#009E63;--ink:#0B0B0D;--paper:#F6F7F5;--soft:#6b7280}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -64,7 +64,7 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 <div class="track" id="track">
   <div class="stage">
     <canvas class="bg" id="bg" width="27" height="48" aria-hidden="true"></canvas>
-    <div class="frame"><canvas id="fr" width="480" height="854" role="img" aria-label="다이어트캠프 내부"></canvas></div>
+    <div class="frame"><canvas id="fr" width="810" height="1440" role="img" aria-label="다이어트캠프 내부"></canvas></div>
     <div class="bar"><i id="bar"></i></div>
     <div class="mark"><img src="img/logo_h.png" alt="다이어트캠프 &amp; PT" loading="lazy"></div>
     <div class="cap" id="cap"><div class="n" id="capn"></div><h2 id="caph"></h2><p id="capp"></p><div class="chips" id="chips"></div><div class="where" id="where"></div></div>
