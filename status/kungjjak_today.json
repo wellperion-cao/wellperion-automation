@@ -594,6 +594,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260915-1075",
+          "no": "75",
+          "got": "GM지시로 우회가 없으면 GM이 뭘 할 수 있는건데?",
+          "did": "",
+          "start": "18:01",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260915-4017",
           "no": "17",
           "got": "문의 회원 연락 — ★중간관리자 방 1회 발송(배 12652 · 시포 전달)",
@@ -788,14 +800,29 @@
           "detail": "시보 세션(76) 17:5x 전달 · 랩스 회사 뷰 company.html 연결 배포 · lane-cto-queue 착수(12633→2664→2663→1061)"
         }
       ],
-      "count": 50,
+      "count": 51,
       "done": 50,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260915-1075",
+          "no": "75",
+          "got": "GM지시로 우회가 없으면 GM이 뭘 할 수 있는건데?",
+          "did": "",
+          "start": "18:01",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -1442,13 +1469,13 @@
           "ref": "GM-20260915-3012",
           "no": "12",
           "got": "화면 UI/UX까지 표준화해서 전체적으로 UI/UX가 개선되는 모습이 나와야해요",
-          "did": "",
+          "did": "화면 UI/UX 표준 ⑥ UX 항목 통합 + 공통 규격(wp-ui.css) UX 바닥 규칙 + 80장 링크 반영 · 어떤 하루 · IG 발행검증 자동 대조 → 발행완료 도장 · 화면 UI/UX 표준 ⑥ UX 항목 통합 + 공통 규격(wp-ui.css — 커밋 ce7f2062d6 · 배 12654",
           "start": "17:53",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "18:04",
+          "minutes": 11,
+          "upload": "✅ 배포 (ce7f2062d)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260915-design-learn",
@@ -1559,31 +1586,28 @@
           "area": "작업",
           "event": "웰페리온 랩스 관리 화면 — 오른쪽 화면 높이를 안쪽 문서에 맞춰 스크롤바 하나만 · 여백 복원 (GM 지시 2026-09-15 17:4x)",
           "detail": "커밋 d9523a4349 · 배 12654"
+        },
+        {
+          "time": "18:02",
+          "area": "작업",
+          "event": "화면 UI/UX 표준 ⑥ UX 항목 통합 + 공통 규격(wp-ui.css) UX 바닥 규칙 + 80장 링크 반영 · 어떤 하루 랩스 재도장(배 2665) · 반영기 ui_standard_apply.py",
+          "detail": "커밋 ce7f2062d6 · 배 12654"
+        },
+        {
+          "time": "18:03",
+          "area": "랩스",
+          "event": "배 2665 어떤 하루 랩스 재도장 완료",
+          "detail": "색 53곳·글꼴·머리 문구 · 검수기 통과 · 저장·배포 ce7f2062d6"
         }
       ],
       "count": 9,
-      "done": 8,
-      "open": 1,
-      "avg_minutes": 3,
-      "work_count": 16,
+      "done": 9,
+      "open": 0,
+      "avg_minutes": 4,
+      "work_count": 18,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260915-3012",
-          "no": "12",
-          "got": "화면 UI/UX까지 표준화해서 전체적으로 UI/UX가 개선되는 모습이 나와야해요",
-          "did": "",
-          "start": "17:53",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 8
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
@@ -2505,12 +2529,6 @@
       ],
       "work": [
         {
-          "time": "13:12",
-          "area": "작업",
-          "event": "파트너 비밀번호 원문 제거 — 다캠 에이전트 자가점검의 실값을 예시값으로, 큐 note(배 1031) 마스킹 (GM 지시 2026-09-15)",
-          "detail": "커밋 49beb9b102 · 배 11305"
-        },
-        {
           "time": "13:13",
           "area": "작업",
           "event": "다캠 에이전트 자가점검 예시값을 마스킹 규칙 모양(글자+숫자+기호)에 맞춤 — 앞 커밋의 예시값이 규칙에 안 걸려 자가점검이 깨졌다",
@@ -2683,6 +2701,12 @@
           "area": "작업",
           "event": "웰페리온 랩스 「회사」 M0 골격 — company.html(소개 단락 + 문서 버튼 2) · 회사소개서 company_intro.html · 전략 로드맵 company_roadmap.html · 옛 company_",
           "detail": "커밋 8d7906ef44 · 배 11305"
+        },
+        {
+          "time": "18:04",
+          "area": "작업",
+          "event": "웰페리온 랩스 회사 소개서 v0.2(밖) · 전략 로드맵 v0.2(안) · 「회사 소개서 & 전략 로드맵」 랜딩 — 별개 개발법인 정체성, 비즈니스 모델 = 파트너 2곳 실측, 영업 6단계·도구·부록 문안 (GM 지",
+          "detail": "커밋 d5931a9634 · 배 11305"
         }
       ],
       "count": 24,
@@ -2705,7 +2729,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
