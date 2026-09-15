@@ -153,7 +153,8 @@ def main(argv=None):
         return 0
     if not hits:
         return 0
-    marker = _nawoolm_request_marker(_commit_message(explicit_message))
+    # [GM 지시] 마커는 여기서 안 통한다(allow_gm=False) — 2026-09-15 10:39 낡은 사본 커밋이 은퇴 화면 2장을 되살린 사고.
+    marker = _nawoolm_request_marker(_commit_message(explicit_message), allow_gm=False)
     _report(hits, marker)
     return 0 if marker else 1
 

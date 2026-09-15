@@ -223,11 +223,18 @@ def _committer_is_nawoolm() -> bool:
     return "나우열" in (name or "")
 
 
-def _nawoolm_request_marker(commit_message: str) -> str | None:
-    """커밋 메시지에서 `[나우열M 요청 YYYY-MM-DD]` 마커를 찾아 유효하면 그 문자열을 돌려준다."""
+_NAWOOLM_ONLY_MARKER_RE = re.compile(r"\[나우열M 요청 (\d{4}-\d{2}-\d{2})\]")
+
+
+def _nawoolm_request_marker(commit_message: str, allow_gm: bool = True) -> str | None:
+    """커밋 메시지에서 `[나우열M 요청 YYYY-MM-DD]`(allow_gm 이면 `[GM 지시 …]` 도) 마커를 찾아 유효하면 그 문자열을 돌려준다.
+
+    allow_gm=False = 줄 삭제 가드(precommit_nawoolm_regression_guard) 전용. 2026-09-15 10:39 실사고: [GM 지시] 마커가
+    줄 삭제 가드까지 통과시켜, 낡은 작업트리 사본 위에 편집한 커밋이 나우열M 이 전날 은퇴시킨 화면 2장을 되살렸다.
+    GM 지시는 「그 화면을 옮겨라」이지 「나우열M 의 최근 줄을 지워도 된다」가 아니다 — 줄 삭제는 나우열M 마커나 본인만."""
     if not commit_message:
         return None
-    m = _NAWOOLM_MARKER_RE.search(commit_message)
+    m = (_NAWOOLM_MARKER_RE if allow_gm else _NAWOOLM_ONLY_MARKER_RE).search(commit_message)
     if not m:
         return None
     try:
