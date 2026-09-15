@@ -7,14 +7,16 @@
 이어받으며(--resume) 원격제어를 켜고 시작하는 것(--remote-control).
 
 동작(UserPromptSubmit 훅 · 프롬프트마다 ~10ms): ~/.claude.json 의 oauthAccount.emailAddress 를 읽어
-세션별 기록과 비교한다. 바뀌었으면 새 창(wt)에 `claude --resume <이 세션> --remote-control <역할>` 을 띄우고
-알림 한 줄을 남긴다. 기존 창은 GM 이 닫는다(대화는 새 창이 이어받는다 · 새 세션 id 로 갈라지므로 기록 충돌 없음).
+세션별 기록과 비교한다. 바뀌었으면 **안내 한 줄만** 남긴다 — 「이 창에서 /rc 를 치면 원격제어가 다시 붙는다」.
+
+★2026-09-15 GM 지시 「창을 안 켰으면 좋겠다, 한 줄만」 — 종전에는 새 창(wt)에 `claude --resume --fork-session
+--remote-control` 을 자동으로 띄웠는데, 계정을 바꿀 때마다 살아 있는 세션 수만큼 창이 열려(하루 3번 · 15개) GM 이
+매번 닫아야 했다. 계정 전환은 GM 이 PC 앞에서 하므로 그 자리에서 /rc 한 번이면 된다. 자동 창은 뺐다(코드 삭제).
 
 시험: echo '{"session_id":"test"}' | RC_WATCH_TEST_EMAIL=x@y python scripts/rc_account_watch.py --dry-run
 """
 import json
 import os
-import subprocess
 import sys
 
 HOME = os.path.expanduser("~")
@@ -56,22 +58,11 @@ def main():
             with open(sp, "w", encoding="utf-8") as f:
                 json.dump({"email": email}, f)
         return 0
-    # 계정이 바뀌었다 — 같은 대화를 새 창에서 이어받으며 원격제어를 켠다
-    role = (os.environ.get("WELLPERION_ROLE") or "ai").upper()
-    cmd = ["wt", "new-tab", "--title", role, "--suppressApplicationTitle", "-d", ROOT,
-           "powershell", "-NoExit", "-Command",
-           "claude --resume %s --fork-session --remote-control '%s'" % (sid, role)]
+    # 계정이 바뀌었다 — 안내 한 줄만(GM 2026-09-15 · 자동 창 없음)
     with open(sp, "w", encoding="utf-8") as f:
-        json.dump({"email": email, "prev": prev, "respawned": not dry}, f)
-    if dry:
-        print("[dry-run] " + " ".join(cmd))
-        return 0
-    try:
-        subprocess.Popen(cmd, cwd=ROOT, creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
-        print("[원격제어] 로그인 계정이 %s → %s 로 바뀌어 원격제어가 끊겼다. 새 창(%s)이 이 대화를 이어받으며 "
-              "원격제어를 다시 켰다 — 이 창은 닫아도 된다." % (prev, email, role))
-    except Exception as e:
-        print("[원격제어] 계정 변경(%s → %s) 감지 — 새 창 자동 열기 실패(%s). 이 창에서 /rc 를 치면 된다." % (prev, email, e))
+        json.dump({"email": email, "prev": prev}, f)
+    print("[원격제어] 로그인 계정이 %s → %s 로 바뀌어 원격제어가 끊겼다. 핸드폰에서 이어 보려면 이 창에서 /rc 한 줄."
+          % (prev, email))
     return 0
 
 
