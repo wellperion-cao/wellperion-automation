@@ -1232,13 +1232,18 @@
      127 은 커밋 안 된 재생성본(회장님 A3 보고 13장이 더 들어간 것)이라 화면과 무관하다.
      그래서 숫자를 주석에 적지 않는다 — 적는 순간 다음 사람이 화면을 그 값에 맞추려 든다. */
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
-    var n = (d.modules || []).length;
-    if (!n) return;
+    var list = d.modules || [];
+    if (!list.length) return;
+    /* 세 층으로 센다 (GM 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」).
+       kind 는 생성기가 붙인다 — 모듈(첫 화면 칸) · 화면(그 아래 하위 화면) · 문서(보고서·A3·가이드).
+       큰 숫자는 모듈만, 화면·문서는 그 옆 작은 글자. 목록 길이(문서 포함)를 모듈 수라고 적지 않는다. */
+    var kc = {module: 0, screen: 0, doc: 0};
+    list.forEach(function(m){ var k = m.kind || 'screen'; kc[k] = (kc[k] || 0) + 1; });
     var el = document.getElementById('n-screens');
     el.textContent = ''; el.classList.remove('placeholder');
-    el.innerHTML = n + '<span class="unit">장</span>';
+    el.innerHTML = kc.module + '<span class="unit">모듈 · 화면 ' + kc.screen + ' · 문서 ' + kc.doc + '</span>';
     var c = document.getElementById('n-cards');   // 접기 안 「구성 3갈래」도 같은 값을 읽는다
-    if (c) c.textContent = n + '개';
+    if (c) c.textContent = '모듈 ' + kc.module + ' · 화면 ' + kc.screen + ' · 문서 ' + kc.doc;
   }).catch(function(){});
 
   /* 자동화 가동 카드 — status/module_registry.json 은 저장소 최상위(웹루트 밖)라 이 화면에서
