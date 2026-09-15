@@ -1128,7 +1128,12 @@ function loadBrojayCompare(c){
     list.forEach(function(x){ var v = Number(x.total_payment_price || 0); total += v; var t = x.sales_tag_name || '미분류'; byTag[t] = (byTag[t] || 0) + v; });
     var sheetTotal = num(c.I4);
     /* 시트 팀 칸 ↔ 꼬리표: sales_targets.json teams[].brojay_tag · 시트 줄 이름(H8~H15)과 팀 이름 앞글자로 맞춘다 */
-    var teams = (tg && tg.teams) || [];
+    /* /repo/status/sales_targets.json 을 못 읽는 세션이 있어(권한 표 밖) 꼬리표 짝을 화면에도 둔다 — 정본은 그 파일 brojay_tag.
+       두 벌이 갈리면 파일이 이긴다(읽히면 파일 값을 쓴다). */
+    var teams = (tg && tg.teams && tg.teams.length) ? tg.teams : [
+      { name: '수영팀', brojay_tag: '수영' }, { name: 'P.T팀', brojay_tag: 'PT' }, { name: '골프팀', brojay_tag: '골프' },
+      { name: '스쿼시팀', brojay_tag: '스쿼시' }, { name: '체조팀', brojay_tag: '체조&트램폴린' }, { name: 'P.L팀', brojay_tag: '필라테스' },
+      { name: '뮤지컬팀', brojay_tag: '뮤지컬' }, { name: 'GXE팀', brojay_tag: '유료GX' } ];
     var parts = [];
     SALES_ROWS.forEach(function(r){
       if (r === 4 || r === 6 || r === 7) return;
@@ -1140,9 +1145,12 @@ function loadBrojayCompare(c){
       parts.push(esc(name.replace(/\(.*$/, '')) + ' ' + (bv === sv ? '<span style="color:#146B4F">=</span>' : (bv ? bv.toLocaleString('ko-KR') : '0') + '<span style="color:#7A838B">/' + sv.toLocaleString('ko-KR') + '</span>'));
     });
     var ops = byTag['운영부'] || 0, sheetOps = num(c.I6) + num(c.I7);
+    /* 브로제이 적재분은 손 이관이라 그날 마감에 지난 날짜 몫이 함께 들어온다(9/14 실측 2,466만 vs 시트 1,001만) —
+       100% 를 넘으면 「이관율」이 아니라 「지난 날짜 몫 섞임」으로 적는다. */
     var ratio = sheetTotal ? Math.round(total / sheetTotal * 100) : null;
+    var ratioTxt = ratio == null ? '' : (ratio <= 100 ? ' (' + ratio + '% 이관)' : ' (시트보다 큼 — 지난 날짜 몫이 섞인 손 이관)');
     el.innerHTML = '<b>브로제이 결제(어제 ' + esc(ymd.slice(5).replace('-', '/')) + ') vs 시트</b> — 합 <b>' + total.toLocaleString('ko-KR') + '</b>/' +
-      sheetTotal.toLocaleString('ko-KR') + (ratio == null ? '' : ' (' + ratio + '% 이관)') +
+      sheetTotal.toLocaleString('ko-KR') + ratioTxt +
       ' · 회원권+옵션 ' + ops.toLocaleString('ko-KR') + '<span style="color:#7A838B">/' + sheetOps.toLocaleString('ko-KR') + '</span> · ' +
       parts.join(' · ') + ' <span style="color:#7A838B">— 차이는 아직 브로제이로 안 옮긴 값(실결제 10/1)</span>';
   }).catch(function(){ el.textContent = ''; });
