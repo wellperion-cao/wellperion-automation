@@ -37,6 +37,10 @@ GM업무 반영 — 서명 행 자체는 이미 GM업무.html 🤵 대표님 표
   ④ 저녁 점수판 — 17:05 합본 맨 아래 「📊 오늘 업무 마감 — 완료 N건 / 목표 3」. 발신은 합본
      (중간관리자알림합본·live)에 얹히므로 SCOREBOARD_ON 플래그로 막아 둔다(GM 승인 후 True).
   ② 미배정 잔량 한 줄은 send_ops_digest(07:50 아침 통)·ceo_morning_pipeline(08:00 항로 꼬리)에 있다.
+
+★2026-09-15 10:2x GM 지시("반려된 것도 중간관리자방에 안내하면 좋을듯") — ⑥ 반려 축 추가.
+  결재상태에 '반려'가 찍힌 건을 승인 통과 같은 판정·같은 관문으로 전달(--reject / run_reject).
+  나우열M 담당은 텔레그램 업무관리 방(AtoA), 그 밖은 ★중간관리자. 지문 notified_reject.
 """
 from __future__ import annotations
 
@@ -115,7 +119,7 @@ def fetch_rows() -> list[dict] | None:
 
 # 지문 3벌이 한 파일에 산다 — notified(대표)·notified_gm(GM)·notified_new(신규 등록).
 # record_heartbeat 는 파일을 통째로 다시 쓰므로 한 벌만 바꿔도 세 벌을 다 실어야 한다(_save_notified).
-_LEDGERS = ("notified", "notified_gm", "notified_new")
+_LEDGERS = ("notified", "notified_gm", "notified_new", "notified_reject")
 
 
 def load_notified(key: str = "notified") -> dict[str, str]:
@@ -453,6 +457,110 @@ def scoreboard_section(rows: list[dict], today: str | None = None) -> str:
             f"   이번 주 완료 {len(week)}건 · 빈 날 {empty}일")
 
 
+# ── ⑥ 반려 알림(GM 지시 2026-09-15 10:2x "반려된 것도 중간관리자방에 안내") ──────────────
+# 반려 판정 칸 = 결재상태(실측 2026-09-16: ''(193)·'결재완료'(57)·'GM 반려'(3)). 담당→방 갈래는
+# 신규 업무 축(pick_new_rows)의 나우열 제외 규칙을 그대로 재사용 — 나우열M 담당은 카톡 어느 방에도
+# 안 싣고 텔레그램 업무관리 방(AtoA · GM 계정 발신)으로, 그 밖(실장·소장·실무진)은 ★중간관리자.
+# 새 발신기 없음 — ★중간관리자는 kakao_report_sender 관문(SENDER 재사용), AtoA 는 이미 쓰는
+# notify.telegram_user_send.send_as_gm(WORK_ROOM_CHAT_ID) 그대로.
+REJECT_COL = "결재상태"
+
+
+def is_rejected(row: dict) -> bool:
+    return "반려" in str(row.get(REJECT_COL) or "")
+
+
+def _reject_who(row: dict) -> str:
+    return str(row.get(REJECT_COL) or "").replace("반려", "").strip() or "GM"
+
+
+def _reject_reason(row: dict) -> str:
+    """결재의견(JSON 문자열 · [{role,name,time,text}]) 마지막 항목 text. 비어 있으면 GM 지시 문구."""
+    try:
+        ops = json.loads(row.get("결재의견") or "[]")
+    except Exception:
+        ops = []
+    text = str((ops[-1] or {}).get("text") or "").strip() if isinstance(ops, list) and ops else ""
+    return text or "GM 반려 · 사유는 GM 께"
+
+
+def pick_reject(rows: list[dict], notified: dict[str, str]) -> list[dict]:
+    """반려 상태인데 아직 전달 안 한 건 — 수정일(반려가 수정일을 갱신) 오름차순."""
+    picked = [r for r in rows if is_rejected(r) and str(r.get("id") or "").strip() not in notified]
+    return sorted(picked, key=lambda r: str(r.get("수정일") or ""))
+
+
+def split_reject_rows(rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(나우열M 몫 · 그 밖) — 나우열M 은 카톡 방에 안 싣는다(GM 2026-09-14 재확정)."""
+    nawool = [r for r in rows if "나우열" in _owner_key(r.get("담당자"))]
+    naw_ids = {str(r.get("id") or "").strip() for r in nawool}
+    rest = [r for r in rows if str(r.get("id") or "").strip() not in naw_ids]
+    return nawool, rest
+
+
+def _reject_lines(r: dict) -> list[str]:
+    title = str(r.get("업무명") or "").strip()
+    when = _kst_day(r.get("수정일"))
+    when_md = f"{int(when[5:7])}/{int(when[8:10])}" if len(when) == 10 else when
+    return [f"▪ {title} — 반려({_reject_who(r)}·{when_md})",
+            f"반려 사유 = {_reject_reason(r)}",
+            "👉 사유 반영해 다시 올려 주시면 됩니다"]
+
+
+def build_reject_message(rows: list[dict], today: str | None = None) -> str:
+    if not rows:
+        return ""
+    _, md = _md(today)
+    lines = [f"⛔ {md} 결재 반려 {len(rows)}건"]
+    for r in rows:
+        lines += _reject_lines(r)
+    lines.append(SIGNOFF)
+    return "\n".join(lines)
+
+
+def run_reject(send: bool = False, dry_run: bool = False) -> int:
+    rows = fetch_rows()
+    if rows is None:
+        print("[reject-relay] 업무 시트 조회 실패 — 이번 회차 건너뜀(0건으로 적지 않는다)")
+        return 1
+    notified = load_notified("notified_reject")
+    if not notified:
+        # 반려 축 첫 실행 = 기준선만 찍는다(그 시점 이미 반려 상태인 옛 건이 「새 반려」로 안 나가게 —
+        # 2026-09-09 접수 통 사고와 같은 자리). 지문이 비어 있을 때마다 이 길을 타므로 자가복구된다.
+        seed_today = datetime.now().strftime("%Y-%m-%d")
+        notified = {str(r.get("id")).strip(): f"seed-{seed_today}" for r in rows if is_rejected(r)}
+        _save_notified("notified_reject", notified, f"반려 축 기준선 {len(notified)}건(seed · 전달 안 함)")
+        print(f"[reject-relay] 반려 축 첫 실행 — 기존 {len(notified)}건 seed, 이번 회차 반려 없음")
+    picked = pick_reject(rows, notified)
+    nawool, rest = split_reject_rows(picked)
+    today = datetime.now().strftime("%Y-%m-%d")
+    msg_rest = build_reject_message(rest, today)
+    msg_naw = build_reject_message(nawool, today)
+    print(f"[reject-relay] 반려 {len(picked)}건 — ★중간관리자 {len(rest)}건 · AtoA(나우열M) {len(nawool)}건")
+    if msg_rest:
+        print(f"── ★중간관리자 미리보기 ──\n{msg_rest}")
+    if msg_naw:
+        print(f"── AtoA(업무관리) 미리보기 ──\n{msg_naw}")
+    if not picked or not send:
+        return 0
+    ok_rest = send_via_gate(msg_rest, dry_run) if msg_rest else True
+    ok_naw = True
+    if msg_naw:
+        if dry_run:
+            print(f"  [AtoA] DRY-RUN — 발송 안 함({len(msg_naw)}자)")
+        else:
+            from notify.telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID
+            ok_naw = send_as_gm(WORK_ROOM_CHAT_ID, msg_naw)
+    if ok_rest and ok_naw and not dry_run:
+        for r in picked:
+            notified[str(r.get("id")).strip()] = today
+        _save_notified("notified_reject", notified,
+                       f"반려 전달 ★중간관리자 {len(rest)}·AtoA {len(nawool)}건 ({today})")
+    elif not dry_run:
+        print("[reject-relay] 일부 방 발신 실패 — 기록 안 함, 다음 회차 재후보")
+    return 0
+
+
 def send_via_gate(text: str, dry_run: bool, sender: str = SENDER, room: str = ROOM) -> bool:
     """kakao_report_sender.py 관문 호출. 실제 전송이 로그로 확인될 때만 True."""
     cmd = [sys.executable, str(SCRIPTS_DIR / "kakao_report_sender.py"),
@@ -579,6 +687,29 @@ def _selfcheck() -> None:
     ]
     s = scoreboard_section(sb, "2026-09-03")   # 수요일 → 월31·화1·수2·목3 = 4일 중 완료 있는 날 31·3 → 빈 날 2
     assert s == "📊 오늘 업무 마감 — 완료 2건 / 목표 3\n   이번 주 완료 3건 · 빈 날 2일", s
+    # ⑥ 반려 축(GM 2026-09-15 10:2x) — 결재상태에 '반려' 포함 칸만·지문 제외·나우열M 은 AtoA 갈래
+    rj = [
+        {"id": "R1", "업무명": "짐벌 카메라", "담당자": "나우열M", "결재상태": "GM 반려",
+         "수정일": "2026-09-15T01:18:07.000Z",
+         "결재의견": '[{"role":"GM","name":"김남욱GM","time":"2026-09-10 19:43:21","text":"그럼 안사도되?"}]'},
+        {"id": "R2", "업무명": "바디프렌드 안마의자", "담당자": "윤병현AM", "결재상태": "GM 반려",
+         "수정일": "2026-09-15T07:23:18.000Z", "결재의견": ""},
+        {"id": "R3", "업무명": "이미 알림", "담당자": "이경연 실장", "결재상태": "대표 반려",
+         "수정일": "2026-09-14T00:00:00.000Z", "결재의견": ""},
+        {"id": "R4", "업무명": "결재완료 건", "담당자": "이경연 실장", "결재상태": "결재완료",
+         "수정일": "2026-09-15T00:00:00.000Z", "결재의견": ""},
+    ]
+    picked = pick_reject(rj, {"R3": "2026-09-14"})
+    assert [r["id"] for r in picked] == ["R1", "R2"], picked   # R3 지문 제외 · R4 결재완료(반려 아님) 제외
+    nawool, rest = split_reject_rows(picked)
+    assert [r["id"] for r in nawool] == ["R1"] and [r["id"] for r in rest] == ["R2"], (nawool, rest)
+    lines = build_reject_message(rest, "2026-09-16").splitlines()
+    assert lines[0] == "⛔ 9/16 결재 반려 1건" and lines[1] == "▪ 바디프렌드 안마의자 — 반려(GM·9/15)", lines
+    assert lines[2] == "반려 사유 = GM 반려 · 사유는 GM 께", lines[2]   # 결재의견 빈칸 → GM 지시 기본문구
+    assert lines[3] == "👉 사유 반영해 다시 올려 주시면 됩니다" and lines[-1] == SIGNOFF, lines
+    lines2 = build_reject_message(nawool, "2026-09-16").splitlines()
+    assert lines2[1] == "▪ 짐벌 카메라 — 반려(GM·9/15)" and lines2[2] == "반려 사유 = 그럼 안사도되?", lines2
+    assert build_reject_message([]) == ""
     print("[selfcheck] rep_approval_relay OK")
 
 
@@ -590,6 +721,8 @@ if __name__ == "__main__":
     ap.add_argument("--scoreboard", action="store_true", help="④ 저녁 점수판 미리보기(발신 없음)")
     ap.add_argument("--assign-brief", action="store_true",
                     help="⑤ 담당별 진행 현황 묶음(미리보기·--send) — GM·외부업체·나우열M 제외")
+    ap.add_argument("--reject", action="store_true",
+                    help="⑥ 결재 반려 알림(미리보기·--send) — 나우열M 은 AtoA, 그 밖은 ★중간관리자")
     ap.add_argument("--selfcheck", action="store_true")
     a = ap.parse_args()
     if a.selfcheck:
@@ -601,6 +734,8 @@ if __name__ == "__main__":
         sys.exit(0)
     if a.assign_brief:
         sys.exit(run_assign_brief(send=a.send, dry_run=a.dry_run))
+    if a.reject:
+        sys.exit(run_reject(send=a.send, dry_run=a.dry_run))
     if a.new_rows:
         sys.exit(run_new_rows(send=a.send, dry_run=a.dry_run))
     sys.exit(run(send=a.send, dry_run=a.dry_run))
