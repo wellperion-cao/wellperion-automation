@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>중간관리자 주간 미팅 회의자료 9/15 — 웰페리온 A3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  @media print { .page{ page-break-after:always; } .page:last-of-type{ page-break-after:auto; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 방향 밴드 */
+  .ask{ margin-top:12px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .it{ flex:1; padding:10px 18px; }
+  .ask .q{ font-size:19px; font-weight:700; line-height:1.35; letter-spacing:-.4px; }
+  .ask .d{ font-size:14.5px; line-height:1.5; opacity:.88; margin-top:3px; }
+
+  /* ③ 3열 블록 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; min-height:0; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:12px 16px 10px;
+    overflow:hidden; display:flex; flex-direction:column; }
+  .box h3{ font-size:19px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:2px; }
+  .box .who{ font-size:14px; color:#3C464F; margin-bottom:8px; }
+  .box h4{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:1px; background:var(--navy-bg);
+    padding:2px 8px; margin:5px 0 5px; }
+  .box ol{ list-style:none; counter-reset:n; }
+  .box ol li{ font-size:17.4px; line-height:1.36; padding-left:30px; position:relative; margin-bottom:3px; counter-increment:n; }
+  .box ol li::before{ content:counter(n); position:absolute; left:0; top:2px; width:22px; height:22px; border-radius:50%;
+    background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; text-align:center; line-height:22px; }
+  .box ol li .ref{ font-weight:700; }
+  .box ol li .due{ color:var(--warn); font-weight:700; }
+  .box ol li .late{ color:var(--bad); font-weight:700; }
+  .box ul{ list-style:none; }
+  .box ul li{ font-size:16px; line-height:1.36; padding-left:20px; position:relative; margin-bottom:2px; color:#3C464F; }
+  .box ul li::before{ content:'⚠'; position:absolute; left:0; top:0; font-size:12.5px; color:var(--bad); }
+  .box ul li b{ color:var(--bad); }
+
+  /* ④ GM 추가 전달 띠 */
+  .gm{ margin-top:12px; border:1.5px solid var(--navy); display:flex; align-items:stretch; }
+  .gm .lb{ width:118px; flex:none; background:var(--navy); color:#fff; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; }
+  .gm .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .gm .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; text-align:center; line-height:1.2; }
+  .gm .items{ flex:1; display:flex; }
+  .gm .it{ flex:1; padding:7px 14px; border-right:1px solid var(--line); }
+  .gm .it:last-child{ border-right:0; }
+  .gm .n{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:3px; }
+  .gm p{ font-size:16px; line-height:1.4; padding-left:14px; position:relative; margin-bottom:2px; }
+  .gm p::before{ content:'·'; position:absolute; left:3px; font-weight:700; }
+  .gm p.hot{ font-weight:900; color:var(--bad); }
+
+  /* ⑤ 참석·출처·다음 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:14px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>중간관리자 주간 미팅 회의자료 — 2026-09-15(화) 15:00 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet1">
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">중간관리자 주간 미팅 회의자료 — 9/15(화) 15:00<br><span style="font-size:19px;color:#3C464F">운영부 · 시설부 · 경영지원부 3라인 「요청할 것」 + GM 추가 전달 · 화면(중간관리자 업무목차) 기준 2026-09-15</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 09. 15.</b> · 문서번호 <b>WP-GM-260915-03</b> · <b>1 / 1</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="it">
+      <div class="q">매주 화 15:00 · 화면(중간관리자 업무목차) 기준으로 진행 · 회신은 번호로</div>
+      <div class="d">아래 번호(#)는 업무목차 원장 번호 그대로다. 답은 「#번호 + 했다/진행중/언제」 한 줄. 진행할 건은 본인이 업무 SSOT 에 등록한다. 이번 주 실측 이상은 매일 07:50 자동 실측값이다.</div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <h3>운영부</h3>
+      <div class="who">이경연 실장 · 열린 11건(본인 1 · 운영부 담당자 10)</div>
+      <h4>요청할 것</h4>
+      <ol>
+        <li><span class="ref">#224</span> 홈페이지 FAQ 취합 — <span class="late">9/12 기한 지남 · 보고 없음</span></li>
+        <li>멤버십 개편 기획안 결재 SSOT 제출 — <span class="late">결재요청 칸 빈칸</span></li>
+        <li><span class="ref">#165</span> 물티슈·각티슈 상시배치(대표님) — 최준용M <span class="due">~9/16</span> · 21일</li>
+        <li><span class="ref">#118</span> 오넛티 9월 문자·사전예약 방안 — 윤병현AM · <span class="late">35일</span></li>
+        <li><span class="ref">#139</span> 김현수1 LOSS 매출보고서 재제출 — 임정은M · <span class="late">27일</span></li>
+        <li>접수처 7일↑ 3건(#124·#139·#172) 닫기 · 분실물 22건 배정</li>
+        <li>주차장 바닥보수 상가 카톡 공지·회원 안내 <span class="due">~9/27</span> — 최준용M</li>
+        <li>추석 연휴(9/24~26) 근무 편성·휴강 안내·순찰 담당 <span class="due">~9/23</span></li>
+      </ol>
+      <h4>이번 주 실측 이상</h4>
+      <ul>
+        <li>업무 SSOT 37건 · <b>기한 지난 11건</b> · 결재대기 5건 · 이번 주 완료 1/15</li>
+        <li>접수처 열린 4건 · <b>7일↑ 3건</b> · 분실물 22건(최장 69일)</li>
+        <li>회신율 <b>17/27(63%)</b> · 최장 36일 · 35일↑ 2건</li>
+      </ul>
+    </div>
+
+    <div class="box">
+      <h3>시설부</h3>
+      <div class="who">이정헌 소장 · 열린 1건 + 대표님 지시 카드 3장 · 김종현 차장 신규 참석</div>
+      <h4>요청할 것</h4>
+      <ol>
+        <li><span class="ref">#283</span> 빔프로젝터 교체건 사진 촬영 여부 — GM 9/14 질문</li>
+        <li><span class="ref">#156</span> 골프장 조명(접수 93) 결정 — <span class="late">22일째 회신 대기</span></li>
+        <li>설비 매뉴얼 전체 개수 회신 — 올해 말 등록 마무리 목표</li>
+        <li>탕청소팀 청결 지적 반복(접수 #139) — <span class="late">개선 없으면 교체 검토</span></li>
+        <li>사우나·수영장 환기(대표님) — 실측 자료→개선안 · 진척 0</li>
+        <li>가나설비 대·소변기·배관 교체(대표님) — 견적·범위·일정 확정</li>
+        <li>방역·방제(대표님) — 매주 토 자체 방역·벌레 사진 첨부 <span class="due">~9/30</span></li>
+        <li>접수처(시설부) 미배정 1건 배정 · 전사일정 기한초과 25건 정리</li>
+      </ol>
+      <h4>이번 주 실측 이상</h4>
+      <ul>
+        <li>설비 일정 이번 달 완료 1건 · <b>기한초과 25건</b>(전체 46건)</li>
+        <li>회신율 27/30(90%) · <b>최장 36일 · 35일↑ 1건</b></li>
+        <li>설비 매뉴얼 미수집(소장 회신 대기)</li>
+      </ul>
+    </div>
+
+    <div class="box">
+      <h3>경영지원부</h3>
+      <div class="who">나우열M · 열린 2건 + 회신 소통건 3건 · 텔레그램 업무관리 방</div>
+      <h4>요청할 것</h4>
+      <ol>
+        <li><span class="ref">#126</span> 브로제이 직원등록+강습 매출마감 수기입력 — <span class="late">33일</span></li>
+        <li><span class="ref">#128</span> 루프매소드·WSC 런칭 협의 기획안 — <span class="late">33일</span></li>
+        <li><span class="ref">#274</span> 매출보고 담당 8건 현황 회신 — 9/11 요청</li>
+        <li><span class="ref">#141</span> 입금완료건 세금계산서 발행 — <span class="late">26일</span></li>
+        <li><span class="ref">#196</span> 강습문의 미컨택 5명 컨택 확인 — <span class="due">~9/16</span></li>
+        <li>인사 SSOT 기한 지난 2건·중복 1건 정리(진행중 8건)</li>
+        <li>SVIP 요가 카드 — 운영·요금·구좌 셋업 <span class="due">~9/30</span></li>
+        <li>골프팀 별도 운영(회장님) — 파트너 후보·계약 조건 · 올해 셋팅</li>
+      </ol>
+      <h4>이번 주 실측 이상</h4>
+      <ul>
+        <li>인사 SSOT 진행중 8건 · <b>기한 지난 2건 · 중복 1건</b></li>
+        <li>파트너팀(강습) 매출 31% — 1억 1,312만 / 목표 3억 6,050만</li>
+        <li>매출·지출 체계 — 자동 집계 원장 없음(미수집)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gm">
+    <div class="lb"><span>FROM GM</span><strong>GM<br>추가 전달</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">운영부</div>
+        <p>위생·감염 예방 선제조치 — 20일 경과 현황</p>
+        <p>멤버십 미컨택 리마인드 — 컨택중 214건 중 60일↑ 114건</p>
+        <p>주차장 바닥보수 10/11 공사·10/13 정상 — 상가 공지 최준용M</p>
+        <p>사우나 정비 — 네 갈래 진행</p>
+      </div>
+      <div class="it">
+        <div class="n">시설부</div>
+        <p><b>김종현 차장 — 이제부터 미팅·업무 참여</b>(명단 기준 김종현·GM 확인)</p>
+        <p class="hot">CCTV 모니터 설치 — 무조건 방법을 찾아 셋업 (GM 개인 요청)</p>
+        <p>CCTV 전체 교체 조건 = 100대 · 월 800,000+공사비 1,000,000 · 서명 전 · 부가세 확인</p>
+      </div>
+      <div class="it">
+        <div class="n">경영지원부 (나우열M)</div>
+        <p>골프팀 별도 운영 이관 — 팀장 결정 · 올해 셋팅 → 내년 보고 · 운영 방식 검토</p>
+        <p>SVIP 요가 — 운영·요금 셋업 이관</p>
+        <p>서버 접속 열쇠 재확인</p>
+        <p>3라인 평가 = 분기 누적으로 자동(업무목차 「분기 누적」)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>참석</b> — 김남욱 GM · 이경연 실장 · 이정헌 소장 · 나우열M · 김종현 차장(신규). <b>출처</b> — 중간관리자 업무목차(2026-09-15 생성본 · 열린 14건) · 책임 항목 실측(manager_eval · 07:50 자동) · 월간운영계획 9월 카드 · GM 원문(9/15). 접수처·SSOT 건수는 업무목차 숫자 그대로.</div>
+    <div><b>다음</b> — 다음 미팅 <b>9/22(화) 15:00</b>. 회신은 번호로 방에 한 줄 → 다음 날 아침 업무목차 갱신 → 9/22 자료는 같은 화면 기준으로 낸다. 3라인 평가는 분기 누적 자동 · 9월 마지막 실측이 3분기 값으로 남는다.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+  html2canvas(document.getElementById('sheet1'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+    var a = document.createElement('a'); a.download = '260915_중간관리자_주간미팅_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+  });
+};
+</script>
+</body>
+</html>
