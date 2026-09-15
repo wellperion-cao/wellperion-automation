@@ -83,6 +83,33 @@ def 화면들() -> list[str]:
     return sorted(나온것)
 
 
+# ── 종류 분류 (GM 2026-09-15 19:0x 「143장은 너무 많다 · 화면 자체를 줄인다」) ──────────────
+# 143장을 한 표에 세니 사람이 쓰는 「화면」과 한 번 읽는 「문서」·옮겨진 「스텁」·안 고른 「시안」이 섞여 있었다.
+# 표준(여섯 가지)은 화면에만 묻는다. 문서·스텁·시안은 종류만 붙여 두고 판정·분모에서 뺀다.
+_문서폴더 = ("coo/chairman/", "cbo/model/", "cto/facility/")
+_화면예외 = ("coo/chairman/GM업무.html", "coo/chairman/대표님_지시사항.html",
+            "coo/chairman/회장님_지시사항.html", "coo/chairman/중간관리자_업무목차.html")
+_문서낱말 = re.compile(r"(가이드|guide|검토|사양서|미팅록|오찬|회의|초안|drafts?_|setup_|before_after|교육|공지문|"
+                     r"올리는 법|운영 기준|브랜드가이드|안내)", re.I)
+_스텁낱말 = re.compile(r"(이동됨|옮겨졌습니다|이름이 바뀌었습니다|바뀌었습니다|통합 안내)")
+
+
+def 종류(경로: str, s: str) -> str:
+    """'화면' | '문서' | '스텁' | '시안' — 경로·제목·머리말로 가른다. 손으로 목록을 두지 않는다."""
+    정규 = 경로.replace("\\", "/").replace(GUIDE + "/", "")
+    이름 = 정규.rsplit("/", 1)[-1]
+    m = re.search(r"<title>(.*?)</title>", s[:4000], re.S)
+    제목 = (m.group(1) if m else "").strip()
+    if ".bak_" in 이름 or _스텁낱말.search(제목) or re.search(r'http-equiv=["\']refresh', s[:4000], re.I):
+        return "스텁"
+    if "(시안)" in 제목 or "시안" in 이름:
+        return "시안"
+    if 정규 in _화면예외:
+        return "화면"
+    if 정규.startswith(_문서폴더) or _문서낱말.search(이름) or _문서낱말.search(제목):
+        return "문서"
+    return "화면"
+
 def 스타일(s: str) -> str:
     """<style> 안쪽만. 주석은 걷어 낸다(주석 속 예시 색을 세면 숫자가 부풀어 오른다)."""
     덩어리 = re.findall(r"<style[^>]*>(.*?)</style>", s, re.S)
@@ -102,6 +129,7 @@ def 재기(경로: str, s: str) -> dict:
             break
     return {
         "화면": 경로.replace("\\", "/").replace(GUIDE + "/", ""),
+        "종류": 종류(경로, s),
         "공통규격": 공통규격 in s,
         "글자단계": len(set(_폰트.findall(st))),
         "색단계": len({c.lower() for c in _색.findall(st)}),
@@ -161,16 +189,20 @@ def 세기(ux: bool = False, 이전: dict | None = None) -> dict:
             지 = 지난.get(r["화면"], {})
             r["ux걸림"] = 지.get("ux걸림"); r["ux항목"] = 지.get("ux항목")
         r["지킴"] = 통과(r)
-    지킴 = sum(1 for r in 행 if r["지킴"])
-    항목 = {k: sum(1 for r in 행 if (r[k] if isinstance(r[k], bool) else r[k] <= 기준[k]))
+    종류별 = {k: sum(1 for r in 행 if r["종류"] == k) for k in ("화면", "문서", "스텁", "시안")}
+    화면만 = [r for r in 행 if r["종류"] == "화면"]     # 표준은 화면에만 묻는다 — 문서·스텁·시안은 분모에서 뺀다
+    지킴 = sum(1 for r in 화면만 if r["지킴"])
+    항목 = {k: sum(1 for r in 화면만 if (r[k] if isinstance(r[k], bool) else r[k] <= 기준[k]))
             for k in ("공통규격", "글자단계", "색단계", "모바일폭", "폭최대")}
-    항목["UX"] = sum(1 for r in 행 if r.get("ux걸림") == 0)
-    항목["UX잼"] = sum(1 for r in 행 if r.get("ux걸림") is not None)
+    항목["UX"] = sum(1 for r in 화면만 if r.get("ux걸림") == 0)
+    항목["UX잼"] = sum(1 for r in 화면만 if r.get("ux걸림") is not None)
     return {
         "_이 파일은": "화면 UI/UX 표준의 규격과 지금 지킴 현황. scripts/ui_standard_check.py 가 만든다 — 손으로 고치지 마라. 규격 정본은 assets/wp-ui.css(간격·글자)·erp/brand/tenant-wellperion.css(웰페리온 색)·erp/admin/platform_brand.css(웰페리온 랩스 색)이고, UX 항목은 scripts/design_audit.py(디자인 규칙집)가 렌더해 센다. 이 파일은 그것을 얼마나 지키는지 센 결과다.",
         "잰 때": datetime.now(KST).isoformat(timespec="seconds"),
         "기준": 기준,
-        "화면수": len(행),
+        "화면수": len(화면만),
+        "잰수": len(행),
+        "종류별": 종류별,
         "지킴수": 지킴,
         "항목별": 항목,
         "화면": sorted(행, key=lambda r: (r["지킴"], -r["글자단계"])),

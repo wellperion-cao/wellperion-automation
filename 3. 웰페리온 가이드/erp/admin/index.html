@@ -1052,6 +1052,7 @@
   <div class="pills">
     <a class="pi" href="#ui"><b id="ui-pass">—</b><span>여섯 가지를 다 지키는 화면</span></a>
     <a class="pi" href="#ui"><b id="ui-total">—</b><span>재고 있는 화면</span></a>
+    <a class="pi" href="#ui"><b id="ui-kinds">—</b><span>화면이 아닌 것(문서 · 스텁 · 시안) — 표준 밖 · GM 2026-09-15 「화면 자체를 줄인다」</span></a>
   </div>
   <div class="tbl-wrap" style="margin-top:10px;"><table class="reg">
     <thead><tr><th style="width:40%">안 지키는 화면</th><th style="width:10%">글자</th><th style="width:10%">색</th><th style="width:10%">UX 걸림</th><th>빠진 것</th></tr></thead>
@@ -1450,6 +1451,7 @@
       var 지킴 = d.지킴수 || 0;
       var p1 = document.getElementById('ui-pass'); if (p1) p1.textContent = 지킴 + ' / ' + n;
       var p2 = document.getElementById('ui-total'); if (p2) p2.textContent = n;
+      var kk = d.종류별 || {}; var p3 = document.getElementById('ui-kinds'); if (p3) p3.textContent = (kk.문서 || 0) + (kk.스텁 || 0) + (kk.시안 || 0) + ' / ' + (d.잰수 || n) + ' (문서 ' + (kk.문서 || 0) + ' · 스텁 ' + (kk.스텁 || 0) + ' · 시안 ' + (kk.시안 || 0) + ')';
       var b = document.getElementById('b-ui'); if (b) b.textContent = 지킴 + '/' + n;
       var w = document.getElementById('ui-when');
       if (w && d['잰 때']) w.textContent = '실측 ' + String(d['잰 때']).slice(0, 16).replace('T', ' ');
@@ -1465,7 +1467,7 @@
         if (r.ux걸림 > 0) x.push('UX ' + (r.ux항목 || []).slice(0, 3).map(function(t){ return t.replace(/\(.*$/, ''); }).join('·'));
         return x.join(' · ');
       }
-      var 안지킴 = (d.화면 || []).filter(function(r){ return !r.지킴; })
+      var 안지킴 = (d.화면 || []).filter(function(r){ return !r.지킴 && (r.종류 || '화면') === '화면'; })
                     .sort(function(a, b2){ return (b2.글자단계 + (b2.ux걸림 || 0) * 3) - (a.글자단계 + (a.ux걸림 || 0) * 3); });
       var 보일것 = 안지킴.slice(0, 15);
       var tb = document.getElementById('ui-rows');
