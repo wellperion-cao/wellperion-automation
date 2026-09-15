@@ -1,76 +1,133 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>웰페리온 랩스 전략 로드맵 v0.1</title>
+<title>웰페리온 랩스 전략 로드맵 v0.2</title>
 <link rel="stylesheet" href="../../assets/wp-ui.css">
 <link rel="stylesheet" href="platform_brand.css">
 <style>
-/* 회사(웰페리온 랩스) 정의 초안 — 배 12655(시보) · GM 지시 2026-09-15 16:2x.
-   웰페리온 랩스 관리 화면 「회사」 메뉴에 붙임(시토·시모). 법인·가격은 GM 결정 전이라 가안. */
-body{max-width:980px;margin:0 auto;padding:28px 20px 60px;font-size:15px;line-height:1.7;word-break:keep-all}
-h1{font-size:24px;margin:0 0 6px}h2{font-size:18px;margin:30px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--pf-pri, #0E9488)}
-.meta{color:#666;font-size:13px}
-table{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0;font-size:14px}
-th,td{border:1px solid #d9dee5;padding:8px 10px;text-align:left;vertical-align:top}
-th{background:var(--pf-tint, #eef7f6)}
-.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:var(--pf-tint, #e6f4f2);color:var(--pf-pri-dk, #0b6f66)}
-.gm{background:#fff8e6;border:1px solid #f0d99a;border-radius:8px;padding:12px 16px}
-.note{color:#666;font-size:13px}
-/* 관리 화면(iframe) 안에 뜰 때 — 바깥 여백·가운데 정렬을 접어 한 장처럼(시모 2026-09-15 · GM 「하나의 페이지처럼」) */
+/* 웰페리온 랩스 전략 로드맵 — 회사 내부 자료(가격·법인·리드·영업 도구). 밖에 보내지 않는다. 배 12655 · 시보. */
+body{max-width:980px;margin:0 auto;padding:28px 20px 60px;font-size:15px;line-height:1.75;word-break:keep-all;font-family:var(--pf-sans);color:var(--pf-ink);background:var(--pf-bg)}
 body.embedded{max-width:1080px;margin:0;padding:8px 12px 48px;background:transparent}
+h1{font-family:var(--pf-head);font-size:24px;margin:0 0 6px}h2{font-family:var(--pf-head);font-size:18px;margin:30px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--pf-pri)}
+.meta{color:var(--pf-soft);font-size:13px}
+.back{display:inline-block;margin-bottom:10px;font-size:13px;color:var(--pf-pri-dk);text-decoration:none;font-weight:600}
+table{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0;font-size:14px}
+th,td{border:1px solid var(--pf-line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--pf-tint)}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:var(--pf-tint);color:var(--pf-pri-dk)}
+.gm{background:var(--pf-warn-bg);border:1px solid #f0d99a;border-radius:8px;padding:12px 16px}
+.note{color:var(--pf-soft);font-size:13px}
+pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:8px;padding:12px 14px;font-family:var(--pf-sans);font-size:13.5px;margin:6px 0 12px}
 </style></head><body>
 <script>if(window.self!==window.top){document.body.className+=' embedded';}</script>
-<h1>웰페리온 랩스 — 전략 로드맵 v0.1 <span class="tag">Wellperion Labs · 로드맵</span></h1>
-<div class="meta">작성 AI 시보 · 2026-09-15 · 이름 = GM 확정 17:2x · 색·글꼴 = platform_brand.css · 숫자는 작성 시점 값 — 현재값은 웰페리온 랩스 관리 첫 화면(라이브 KPI)을 본다</div>
+<a class="back" href="company.html">← 회사 소개서 &amp; 전략 로드맵</a>
+<h1>웰페리온 랩스 — 전략 로드맵 <span class="tag">v0.2 · 내부 자료 · 2026-09-15</span></h1>
+<div class="meta">작성 AI 시보 · 근거 = GM 지시 09-15 · 5모델 검토 A3(09-03) · 희만이 조건 4칸(09-09) · 파일럿 2곳 실측. 밖에 보내지 않는다 — 밖에 보내는 것은 회사 소개서.</div>
 
 <h2>1. 북극성 · 지표</h2>
 <table><colgroup><col style="width:22%"><col></colgroup>
-<tr><th>비전 한 줄</th><td>센터 한 곳의 반복 업무를 사람 손에서 떼어 낸다 — 운영자는 회원 앞에만 선다</td></tr>
-<tr><th>북극성(재는 숫자)</th><td><b>유료 도입 센터 수</b>(웰페리온은 안 센다 · 상담봇 KPI 와 같은 줄)</td></tr>
-<tr><th>앞 지표</th><td>파일럿 센터 수 · 센터당 자동으로 도는 반복 업무 건수</td></tr>
-<tr><th>뒤 지표</th><td>센터당 월 구독 유지 개월 · 센터 운영자가 줄인 시간</td></tr>
-<tr><th>지금 값</th><td>유료 도입 0 · 파일럿 2(다이어트캠프 · 고척GDR QA 골프존) · 유료 전환 제안 0건</td></tr>
+<tr><th>북극성</th><td><b>유료 도입 센터 수</b>(웰페리온은 안 센다)</td></tr>
+<tr><th>앞 지표</th><td>소개서 받은 센터 수 → 설문 회신 센터 수 → 파일럿 진행 센터 수</td></tr>
+<tr><th>뒤 지표</th><td>센터당 월 이용 유지 개월 · 운영자가 줄인 시간(설문 41·42번 기준선 대비)</td></tr>
+<tr><th>지금 값</th><td>유료 0 · 파일럿 2 · 소개서 발송 0 · 유료 전환 제안 0</td></tr>
+<tr><th>중단선</th><td>유료 전환 0건 6개월(배 11209)</td></tr>
 </table>
 
-
-<h2>2. 단계 (파일럿 → 첫 유료 → 반복)</h2>
-<table><colgroup><col style="width:16%"><col style="width:44%"><col></colgroup>
-<tr><th>단계</th><th>끝 기준</th><th>지금</th></tr>
-<tr><td>0 · 시험장</td><td>웰페리온 안에서 ERP·상담봇·자동화가 매일 돈다</td><td>가동 중(파트너 1호)</td></tr>
-<tr><td>1 · 파일럿</td><td>외부 센터 2곳이 문서 3종 + 블로그 자동 + 상담봇 페이지를 쓴다</td><td>다이어트캠프 · 고척GDR QA 골프존 진행 중</td></tr>
-<tr><td>2 · 첫 유료</td><td>유료 테넌트 1곳 계약 — 이때 법인·가격 확정</td><td>0건 · 중단선 = 유료 전환 0건 6개월</td></tr>
-<tr><td>3 · 반복</td><td>온보딩 질문은행으로 새 센터 셋업 1주 안 · 사람 손 최소</td><td>질문은행 118문 · 누적 표 가동</td></tr>
+<h2>2. 비즈니스 모델 — 파트너 2곳에 실제로 해 준 것이 상품이다</h2>
+<table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
+<tr><th>실제로 한 일</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
+<tr><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문</td><td>셋업(1회)</td></tr>
+<tr><td>문서 3종</td><td>브랜드가이드·회사소개서·운영전략 — 다캠 v0.4 · 고척 v0.1 · 파트너 라인 페이지로</td><td>셋업(1회)</td></tr>
+<tr><td>블로그 자동</td><td>06:30 매일 임시저장 · 서버 계정으로 자동 로그인 · 문체는 blog_style.json</td><td>월 이용(마케팅 자동화)</td></tr>
+<tr><td>상담봇</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
+<tr><td>카톡 AI 비서</td><td>07:00·21:00 통 · 답 접수 · 빈칸 질문 · Before/After 페이지</td><td>월 이용(운영 비서)</td></tr>
+<tr><td>ERP 3모듈</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
 </table>
-<h2>3. 가격 모델 (구조만 · 금액은 GM 결재 · 전부 공급가 기준 · 부가세 별도)</h2>
+<p class="note">사람 손(시보 시간)이 셋업에 든다 — 다캠 2주 · 고척 1주. 이 시간을 질문은행·발행 스크립트로 계속 줄이는 것이 원가 전략이다.</p>
+
+<h2>3. 누구에게 파나</h2>
+<table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
+<tr><th>세그먼트</th><th>왜 맞나</th><th>들어가는 길</th></tr>
+<tr><td>PT·그룹 운동 센터(직원 1~5명)</td><td>글 쓸 사람이 없고 문의가 카톡·DM 으로 흩어진다 — 다캠형</td><td>GM 인맥 · 파트너 소개</td></tr>
+<tr><td>골프 연습장·스크린</td><td>반복 업무가 「하루 대부분」 · 코치 콘텐츠가 자산 — 고척형</td><td>체인(스포짐 19곳) 소개</td></tr>
+<tr><td>중형 스포츠클럽</td><td>ERP 3모듈까지 필요한 곳 — 웰페리온형</td><td>벤치마크 투어(아이디어 2호)</td></tr>
+</table>
+
+<h2>4. 영업 구조 — 6단계 · 단계마다 도구 하나</h2>
+<table><colgroup><col style="width:6%"><col style="width:18%"><col style="width:32%"><col style="width:22%"><col></colgroup>
+<tr><th>#</th><th>단계</th><th>도구</th><th>재는 숫자</th><th>누가</th></tr>
+<tr><td>1</td><td>소개</td><td>회사 소개서 링크 + 카톡 첫 문안(부록 A)</td><td>소개서 받은 센터</td><td>GM(관계) · 시보(문안)</td></tr>
+<tr><td>2</td><td>설문</td><td>질문은행에서 뽑은 번호 질문 한 통(부록 B)</td><td>회신 센터 · 회신까지 일수</td><td>시보</td></tr>
+<tr><td>3</td><td>파일럿 4주</td><td>문서 3종 → 블로그 자동 → 상담 페이지 (소개서 §4 그대로)</td><td>파일럿 센터</td><td>시보 · 시토(라인) · 시모(디자인)</td></tr>
+<tr><td>4</td><td>결과</td><td>Before &amp; After 1장(기준 숫자 대비)</td><td>결과 페이지 발송 수</td><td>시보</td></tr>
+<tr><td>5</td><td>유료 전환</td><td>전환 제안 한 통(부록 C · 금액은 GM 결재)</td><td>제안 → 계약</td><td>GM</td></tr>
+<tr><td>6</td><td>운영·확장</td><td>월 이용 + 미답 회로 + 채널 확장 · 소개 부탁</td><td>유지 개월 · 소개 건수</td><td>시보 · 파트너 손</td></tr>
+</table>
+<p class="note">리드 대장은 웰페리온 랩스 관리 › 파트너사 › 온보딩 질문·답 누적 표가 겸한다(센터가 늘면 「단계」 열을 붙인다 — 새 표 안 만든다).</p>
+
+<h2>5. 가격 구조 (금액은 GM 결재 · 공급가 · 부가세 별도)</h2>
 <table><colgroup><col style="width:20%"><col style="width:40%"><col></colgroup>
-<tr><th>층</th><th>무엇에 대한 값인가</th><th>원가·근거</th></tr>
-<tr><td>① 셋업비(1회)</td><td>온보딩 질문은행 채우기 · 정본화 · 문서 3종 · 계정·채널 연결</td><td>시보 시간 = 지금은 원가 0으로 잡히지만 사람 손이 든다 · 다캠 2주 · 고척 1주 실측</td></tr>
-<tr><td>② 월 구독(모듈 단위)</td><td>ERP 3모듈+로그인 / 상담봇 / 마케팅 자동화 — 따로 또는 묶음</td><td>AWS 월 150만 한도 안 80만 여유(A3 09-03) · 테넌트 추가 원가 = FAQ 폴더 1·계정 1행·nginx 1줄(시토)</td></tr>
-<tr><td>③ 사용량(실비)</td><td>상담봇 답변 호출(모델 원가) · 카톡 채널 API 건당</td><td>LLM 월 수천 원(시토 추정) · 상한 가드 = 테넌트 일 300건</td></tr>
-<tr><td>파트너 1호 웰페리온</td><td>내부 거래 — 0원 또는 원가(이전가격)</td><td>법인을 나누면 이 값이 세무상 필요하다 → GM 결정 표 4번</td></tr>
+<tr><th>층</th><th>무엇에 대한 값</th><th>원가·근거</th></tr>
+<tr><td>셋업(1회)</td><td>정본 셋업 · 문서 3종 · 계정·채널 연결</td><td>시보 시간 — 다캠 2주 · 고척 1주</td></tr>
+<tr><td>월 이용(묶음)</td><td>스타트 / 그로스 / 운영 — 소개서 §5</td><td>AWS 월 150만 한도 안 80만 여유(A3 09-03) · 테넌트 추가 원가 = FAQ 폴더 1·계정 1행·nginx 1줄</td></tr>
+<tr><td>사용량(실비)</td><td>상담봇 답변 호출 · 카톡 채널 API</td><td>LLM 월 수천 원(시토 추정) · 상한 가드 일 300건</td></tr>
+<tr><td>웰페리온(1호)</td><td>내부 거래 — 0원 또는 원가</td><td>법인 분리 시 세무상 필요</td></tr>
 </table>
-<p class="note">희만이(지분 파트너 · 기술 총괄 · 10% · 투잡) 몫은 가격이 아니라 지분으로 푼다 — 09-09 GM 확정 4칸. 가격표에 사람 몫을 섞지 않는다.</p>
+<p class="note">희만이(지분 파트너 · 기술 총괄 · 10% · 투잡) 몫은 가격이 아니라 지분으로 푼다(GM 09-09). 가격표에 사람 몫을 섞지 않는다.</p>
 
-
-<h2>4. 법인 분리 검토 (결정 = GM)</h2>
+<h2>6. 법인 분리 (결정 = GM)</h2>
 <table><colgroup><col style="width:16%"><col style="width:42%"><col></colgroup>
 <tr><th>갈래</th><th>이렇게 되면</th><th>비고</th></tr>
-<tr><td>A. 지금 분리</td><td>+ 희만이 지분 그릇이 바로 생긴다 · 계약 주체가 분명하다 · 웰페리온 본업(스포츠클럽) 재무와 갈린다<br>− 매출 0·인력 0 상태에서 고정비(설립·회계·세무·4대보험)가 먼저 나간다 · 웰페리온 코드·서버·상표를 넘기는 계약이 필요하다</td><td>금액은 회계사 확인 뒤 적는다 — 여기 안 적음</td></tr>
-<tr><td>B. 사업부로 두고 브랜드만 분리 (제안)</td><td>+ 비용 0 · 지금 바로 · 브랜드가이드(시모)와 이 문서로 얼굴은 갖춘다<br>− 지분 배정을 못 한다(희만이 조건 4칸 중 「그릇」이 빈다)</td><td>첫 유료 계약 직전에 A 로 넘어간다</td></tr>
-<tr><td>C. 시기 제안</td><td><b>유료 테넌트 1곳 계약 직전</b>에 분리 — 계약 주체가 필요한 순간이 법인이 필요한 순간</td><td>중단선 = 유료 전환 0건 6개월(배 11209)</td></tr>
+<tr><td>A. 지금 분리</td><td>+ 지분 그릇 즉시 · 계약 주체 분명 · 본업 재무와 분리<br>− 매출 0 상태에서 고정비 먼저 · 코드·서버·상표 이전 계약 필요</td><td>금액은 회계사 확인 뒤</td></tr>
+<tr><td>B. 사업부 + 브랜드만 (제안)</td><td>+ 비용 0 · 지금 바로<br>− 지분 배정 못 함(그릇이 빈다)</td><td>첫 유료 계약 직전 A 로</td></tr>
+<tr><td>C. 시기</td><td><b>유료 테넌트 1곳 계약 직전</b> — 계약 주체가 필요한 순간이 법인이 필요한 순간</td><td></td></tr>
 </table>
 
+<h2>7. 리스크 · 대책</h2>
+<table><colgroup><col style="width:28%"><col></colgroup>
+<tr><th>사람 손이 병목</th><td>셋업마다 시보 시간이 든다 → 질문은행·발행 스크립트·문서 템플릿으로 셋업 1주 안(3단계 끝 기준)</td></tr>
+<tr><th>카톡이 PC 에 묶임</th><td>카카오 채널 API 전환은 결제 결재 · 2·3호 시점(시토)</td></tr>
+<tr><th>파트너 회신 속도</th><td>한 번호씩 묻지 않는다 — 번호 질문 한 통(GM 09-15) · 재촉은 「남은 번호 N개」</td></tr>
+<tr><th>정본 어긋남</th><td>client.json ↔ 상담봇 정본 대조 스크립트를 매일(고척에서 가동 중)</td></tr>
+<tr><th>보안</th><td>파트너 계정은 서버 한 곳(코드 1531) · 개인정보 든 원문은 저장소 밖</td></tr>
+</table>
 
-<h2>5. GM 결정 필요 (번호로 답)</h2>
+<h2>8. 90일 (2026-09-15 ~ 12-15)</h2>
+<table><colgroup><col style="width:14%"><col style="width:50%"><col></colgroup>
+<tr><th>기간</th><th>끝 기준</th><th>재는 숫자</th></tr>
+<tr><td>~9월 말</td><td>파일럿 2곳 문서 3종 + 블로그 자동 + 상담 페이지 완성 · 회사 소개서 공개 주소(/labs/) 개통</td><td>파일럿 2 완성</td></tr>
+<tr><td>10월</td><td>Before &amp; After 2장 발송 · 가격 확정(GM) · 소개서 발송 5곳 · 유료 전환 제안 1곳</td><td>소개서 5 · 제안 1</td></tr>
+<tr><td>11월</td><td>첫 유료 계약 1곳 → 법인 갈래 결정 · 3호 파트너 설문 회신</td><td>유료 1</td></tr>
+<tr><td>12월</td><td>셋업 1주 안(질문은행 → 문서 자동 초안) · 2호 유료 제안</td><td>셋업 일수 · 유료 2</td></tr>
+</table>
+
+<h2>9. GM 결정 (번호로 답)</h2>
 <div class="gm">
 <table><colgroup><col style="width:8%"><col style="width:42%"><col></colgroup>
 <tr><th>번호</th><th>결정</th><th>찾은 것 · 후보</th></tr>
-<tr><td>1</td><td>회사 이름</td><td><b>웰페리온 랩스 — 확정(09-15)</b> · 상표 출원 여부만 남음</td></tr>
-<tr><td>2</td><td>법인 분리 갈래·시기</td><td>A 지금 / B 사업부+브랜드(제안) / C 첫 유료 계약 직전</td></tr>
-<tr><td>3</td><td>가격 — 셋업비·월 구독·사용량 공급가</td><td>구조는 §4 · 금액은 미산정(견적 0건)</td></tr>
-<tr><td>4</td><td>웰페리온 이전가격</td><td>0원 / 원가 — 법인을 나누면 세무상 필요</td></tr>
+<tr><td>1</td><td>법인 분리 갈래·시기</td><td>A 지금 / B 사업부+브랜드(제안) / C 첫 유료 계약 직전</td></tr>
+<tr><td>2</td><td>가격 — 셋업·월 이용(3묶음)·사용량 공급가</td><td>구조 §5 · 금액 미산정</td></tr>
+<tr><td>3</td><td>웰페리온 이전가격</td><td>0원 / 원가</td></tr>
+<tr><td>4</td><td>소개서에 파트너 실명 표기</td><td>대표님 동의 받고 실명 / 업종만(지금)</td></tr>
+<tr><td>5</td><td>랩스 문의 창구</td><td>웰페리온 AI 카톡(지금) / 랩스 전용 번호·채널</td></tr>
 </table>
 </div>
 
+<h2>부록 A. 카톡 첫 소개 문안(초안 · GM 승인 뒤 발송)</h2>
+<pre>OOO 대표님, 웰페리온 AI입니다.
+웰페리온에서 매일 돌아가는 블로그·상담·운영 자동화를 다른 센터에도 해 드리고 있습니다.
+1️⃣ 소개 한 장 = https://erp.wellperion.com/labs/intro.html
+2️⃣ 4주 동안 대표님 센터에 그대로 세워 드리고, 결과를 한 페이지로 보여 드립니다
+3️⃣ 시작은 카톡 질문 한 통 — 대표님은 번호로 답만 주시면 됩니다
+👉 관심 있으시면 「센터 이름 · 지금 제일 시간이 드는 일 하나」만 답해 주세요</pre>
 
-<p class="note">기록 = erp/admin/company_roadmap.html · 짝 문서 = 회사소개서(company_intro.html)</p>
+<h2>부록 B. 설문 한 통</h2>
+<p class="note">질문은행(A~L 118문)에서 그 센터 빈칸만 뽑아 번호를 단다 — <b>scripts/partner_onboarding_publish.py --kakao {키}</b>. 파트너 답은 tenants/{센터}_qa.json 에 번호로 누적 → 웰페리온 랩스 관리 › 파트너사 › 온보딩 표.</p>
+
+<h2>부록 C. 유료 전환 제안 골격(4주 뒤)</h2>
+<pre>1. 4주 동안 한 것 — 문서 3종 · 글 N편 임시저장/발행 M편 · 상담 답 K건(자력 답변 비율)
+2. 숫자 — 기준선(문의 · 회원 · 시간) → 4주 뒤
+3. 계속하면 — 묶음(스타트/그로스/운영) · 셋업비 · 월 이용 · 사용량 (금액 = GM 결재값)
+4. 다음 달 할 것 3줄
+5. 답 = 번호 하나(① 계속 ② 묶음 바꿔서 ③ 여기까지)</pre>
+<p class="note">정본 = erp/admin/company_roadmap.html · 짝 문서 = 회사 소개서(company_intro.html) · 갱신은 마일스톤마다 v 올림</p>
 </body></html>
