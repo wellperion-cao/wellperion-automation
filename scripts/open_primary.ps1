@@ -15,9 +15,10 @@ Add-Type -Namespace W -Name U32 -MemberDefinition @'
 '@
 Add-Type -AssemblyName System.Windows.Forms
 $prim = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-# 창 크기 = 작업영역의 70% · 가운데 (전체화면 금지 · GM 2026-09-15)
-$ww = [int]($prim.Width * 0.7); $wh = [int]($prim.Height * 0.7)
-$wx = $prim.X + [int](($prim.Width - $ww) / 2); $wy = $prim.Y + [int](($prim.Height - $wh) / 2)
+# 창 = 주 모니터 작업영역 전체(최대화). 2026-09-15 13:04 에 70% 가운데로 줄였다가 GM 「부분확대가 되는데?」(17:3x)로 되돌렸다 —
+# GM 이 보려고 여는 창은 크게, 사람이 볼 필요 없는 자동화 브라우저만 화면 밖(browser_quiet)이다.
+$ww = $prim.Width; $wh = $prim.Height
+$wx = $prim.X; $wy = $prim.Y
 
 $incog = $Targets -contains '--incognito'
 $items = @($Targets | Where-Object { $_ -ne '--incognito' })
@@ -47,5 +48,6 @@ for ($i = 0; $i -lt 30; $i++) {
 if ($h -eq [IntPtr]::Zero) { $h = [W.U32]::GetForegroundWindow() }
 [void][W.U32]::ShowWindow($h, 9)   # SW_RESTORE (최대화 상태면 먼저 풀어야 위치가 먹는다)
 [void][W.U32]::SetWindowPos($h, [IntPtr]::Zero, $wx, $wy, $ww, $wh, 0x0040)
+[void][W.U32]::ShowWindow($h, 3)   # SW_MAXIMIZE — 주 모니터에 놓은 뒤 최대화
 [void][W.U32]::SetForegroundWindow($h)
 Write-Host ("opened on primary monitor: " + ($urls -join ' '))
