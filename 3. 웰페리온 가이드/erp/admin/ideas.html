@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>아이디어 — 주 단위 누적 · 웰페리온 랩스</title>
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+/* 아이디어 주 단위 누적 — 웰페리온 랩스 관리 오른쪽 화면(#view/ideas · iframe)에 그대로 들어가는 한 장.
+   GM 지시 2026-09-15 17:4x(개인 묶음 「아이디어」가 ERP 메인을 통째로 띄우던 것을 대체) · 시토 전달 · 시보 작성.
+   원천 = status/gm_personal_routine.json 의 ideas 키(G1 탭과 같은 파일 · 같은 GAS read_file/commit_file 길). 새 원장 0.
+   자체 메뉴·비밀번호 커튼 없음 — 이 화면은 회사 관리자 로그인 뒤(/erp/admin/)에만 뜬다. */
+body{margin:0;padding:22px 24px 48px;background:var(--pf-bg);color:var(--pf-ink);font-family:var(--pf-sans);font-size:14.5px;line-height:1.65;word-break:keep-all}
+h1{font-family:var(--pf-head);font-size:20px;font-weight:700;margin:0 0 2px}
+.sub{color:var(--pf-soft);font-size:12.5px;margin-bottom:16px}
+form{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
+form input{flex:1;min-width:260px;padding:9px 12px;border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);font:inherit;color:var(--pf-ink)}
+form button{padding:9px 16px;border:0;border-radius:var(--pf-radius-sm);background:var(--pf-pri-dk);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+form button:disabled{opacity:.5;cursor:default}
+.msg{font-size:12.5px;color:var(--pf-soft);min-height:18px;margin:-10px 0 12px}
+.week{margin:0 0 18px;border:1px solid var(--pf-line);border-radius:var(--pf-radius);background:var(--pf-panel);overflow:hidden}
+.week h2{font-family:var(--pf-head);font-size:14px;font-weight:700;margin:0;padding:9px 14px;background:var(--pf-tint);color:var(--pf-pri-dk);display:flex;justify-content:space-between}
+.week h2 span{font-weight:500;color:var(--pf-soft)}
+.item{display:grid;grid-template-columns:22px 86px 1fr;gap:10px;padding:9px 14px;border-top:1px solid var(--pf-line);background:var(--pf-bg);align-items:start}
+.item:first-of-type{border-top:0}
+.item .d{color:var(--pf-soft);font-size:12.5px;font-family:var(--pf-head)}
+.item .t{font-weight:600}
+.item .m{color:var(--pf-soft);font-size:12.5px;margin-top:2px;white-space:pre-wrap}
+.item.done .t{text-decoration:line-through;color:var(--pf-soft);font-weight:500}
+.item input{margin-top:4px}
+.empty{padding:14px;color:var(--pf-soft)}
+</style></head><body>
+<h1>아이디어 <span style="font-weight:500;color:var(--pf-soft)">— 주 단위 누적</span></h1>
+<div class="sub" id="sub">불러오는 중…</div>
+<form id="f"><input id="txt" placeholder="아이디어 한 줄 — 엔터로 추가" autocomplete="off" maxlength="300"><button id="btn" type="submit">추가</button></form>
+<div class="msg" id="msg"></div>
+<div id="weeks"></div>
+<script>
+(function(){
+  var GAS_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var JPATH='status/gm_personal_routine.json', RAW='/repo/status/gm_personal_routine.json', DATA=null;
+  var sub=document.getElementById('sub'), weeks=document.getElementById('weeks'), msg=document.getElementById('msg'), txt=document.getElementById('txt'), btn=document.getElementById('btn');
+  function esc(t){return String(t||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function monday(s){var d=new Date(s+'T00:00:00');var k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d;}
+  function weekLabel(mon){var now=monday(ymd(new Date()));var diff=Math.round((now-mon)/604800000);
+    var end=new Date(mon);end.setDate(end.getDate()+6);var range=ymd(mon).slice(5).replace('-','.')+'~'+ymd(end).slice(5).replace('-','.');
+    return (diff===0?'이번 주':diff===1?'지난 주':diff+'주 전')+' · '+range;}
+  function read(){
+    return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'read_file',path:JPATH})})
+      .then(function(r){return r.json();}).then(function(j){if(!j||!j.ok||!j.content) throw 0;return JSON.parse(j.content);})
+      .catch(function(){return fetch(RAW+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();});});
+  }
+  function render(){
+    var ideas=(DATA&&DATA.ideas)||[]; var groups={};
+    ideas.forEach(function(it,i){var m=ymd(monday(it.t||ymd(new Date())));(groups[m]=groups[m]||[]).push({it:it,i:i});});
+    var keys=Object.keys(groups).sort().reverse(); var h='';
+    keys.forEach(function(k){var g=groups[k];g.sort(function(a,b){return (b.it.t||'').localeCompare(a.it.t||'');});
+      h+='<section class="week"><h2>'+esc(weekLabel(new Date(k+'T00:00:00')))+'<span>'+g.length+'건 · 끝낸 것 '+g.filter(function(x){return x.it.done;}).length+'</span></h2>';
+      g.forEach(function(x){h+='<div class="item'+(x.it.done?' done':'')+'"><input type="checkbox" data-i="'+x.i+'"'+(x.it.done?' checked':'')+' title="끝냄"><div class="d">'+esc(x.it.t)+'</div><div><div class="t">'+esc(x.it.text)+'</div>'+(x.it.memo?'<div class="m">'+esc(x.it.memo)+'</div>':'')+'</div></div>';});
+      h+='</section>';});
+    weeks.innerHTML=h||'<div class="empty">아직 아이디어가 없습니다</div>';
+    sub.textContent='전체 '+ideas.length+'건 · 끝낸 것 '+ideas.filter(function(x){return x.done;}).length+'건 · 원천 status/gm_personal_routine.json (G1 아이디어 탭과 같은 파일)';
+  }
+  function write(mutate){
+    btn.disabled=true; msg.textContent='저장 중…';
+    return read().then(function(fresh){DATA=fresh;DATA.ideas=DATA.ideas||[];mutate(DATA.ideas);
+      return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({action:'commit_file',path:JPATH,content:JSON.stringify(DATA,null,2),message:'[GM] 아이디어 기록 '+ymd(new Date()),key:''})});
+    }).then(function(r){return r.json();}).then(function(j){if(!j||!j.ok) throw 0;msg.textContent='저장됐습니다 '+new Date().toTimeString().slice(0,5);render();})
+      .catch(function(){msg.textContent='저장 실패 — 다시 시도해 주세요(연결 또는 저장소 응답 없음)';}).then(function(){btn.disabled=false;});
+  }
+  document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();var v=txt.value.trim();if(!v)return;
+    write(function(a){a.push({t:ymd(new Date()),text:v,done:false});}).then(function(){txt.value='';});});
+  weeks.addEventListener('change',function(e){var cb=e.target;if(!cb.matches('input[type=checkbox]'))return;var i=+cb.getAttribute('data-i'),v=cb.checked;
+    write(function(a){if(a[i]) a[i].done=v;});});
+  read().then(function(d){DATA=d;render();}).catch(function(){sub.textContent='원천(status/gm_personal_routine.json)을 못 읽었습니다 — 새로고침';});
+})();
+</script>
+</body></html>
