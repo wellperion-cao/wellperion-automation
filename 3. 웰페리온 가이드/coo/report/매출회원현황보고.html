@@ -534,34 +534,33 @@
        자리에 두고 문의를 아래로 내렸다. -->
   <!-- 등록 띠 — 기준일 하루치. 왼쪽 멤버십(등록이 더 많아 넓은 칸) · 오른쪽 강습.
        원천은 그날 일자탭(「2026년 N월 매출 보고」 파일의 1~31 탭). -->
-  <div class="body" id="p2regband" style="flex:1.35;">
-    <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2memh">오늘 등록 — 멤버십</h2>
-        <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+  <!-- 등록 띠 — 위 멤버십 한 줄 · 아래 강습(성인·유소년) 넓게. 종전 좌우 반반은 강습 명단이
+       성인+유소년 두 단을 반 폭에 욱여넣어 이름 줄이 잘렸다(GM 지적 2026-09-15). 멤버십은 하루
+       몇 건이라 한 줄이면 충분하다. -->
+  <div class="col" id="p2regband" style="flex:1.35;min-height:0;">
+    <div class="sec" style="flex:none;">
+      <h2 id="p2memh">오늘 등록 — 멤버십</h2>
+      <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
-        <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
+    <div class="sec" style="flex:1;min-height:0;">
+      <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
+      <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
   </div>
 
   <div class="body" id="p2inqband" style="flex:1;margin-top:11px;">
     <div class="col">
-      <!-- 문의 상세 내역 — 오늘 들어온 문의와 아직 연락 못 한 분. 이름·종목·상품이 한 줄에
-           들어가야 해서 넓은 왼쪽 칸에 둔다. -->
+      <!-- 왼쪽 = 문의에서 가입까지. 멤버십 · 성인강습 · 유소년강습 세 갈래를 따로 본다
+           (GM 지시 2026-09-15 — 합쳐 두면 어느 쪽이 막히는지 안 보인다). -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의 상세 내역 — 오늘 문의 · 아직 안 챙긴 분 먼저</h2>
-        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
+        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
     <div class="col">
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
-        <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2>문의 상세 내역 — 오늘 문의 · 아직 안 챙긴 분 먼저</h2>
+        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
@@ -1795,12 +1794,12 @@ function readContracts(c, cols){
   rows.sort(function(a, b){ return b.amount - a.amount; });
   return rows;
 }
-function contractListHTML(title, rows){
+function contractListHTML(title, rows, cols){
   var top = rows.slice(0, 20), restN = rows.length - top.length;   // 12→20 (GM: 접지 말고 다 보여라)
   // 두 단으로 흘린다 — 한 줄 세로 나열은 20건이면 칸 높이를 넘겼다(GM 지적 2026-09-02 "칸 넘어가고").
   // 단이 좁아져 줄 끝이 잘리므로 금액·분류를 앞으로 당기고 긴 종목명을 꼬리에 둔다(잘려도 되는 것만 잘리게).
   return '<div style="flex:1;min-width:0"><b style="font-size:10.6px;color:var(--navy)">' + title + '</b>' +
-    (rows.length ? '<div style="columns:2;column-gap:14px">' + top.map(function(x){
+    (rows.length ? '<div style="columns:' + (cols || 2) + ';column-gap:14px">' + top.map(function(x){
       return '<div style="font-size:10.8px;padding:1.5px 0;border-bottom:1px dotted var(--line);' +
         'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;break-inside:avoid">' + esc(x.staff) + ' · ' + esc(x.member) +
         ' · <b>' + esc(x.amountRaw) + '</b> · ' + esc(x.type) + ' · ' + esc(x.sport) + '</div>'; }).join('') + '</div>'
@@ -1919,14 +1918,14 @@ function renderP2Contract(c, dayLabel){
   if (h1) h1.textContent = dayLabel + ' 등록 — 멤버십';
   if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (성인 · 유소년)';
   var memRows = readContracts(c, ['A','B','C','D','E','F','G']);
-  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows);
+  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows, 4);   // 한 줄에 흐르게(GM 2026-09-15)
   if (les) {
     var rows = readContracts(c, ['H','I','J','K','L','M','N']);
     /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
        그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
     var band = document.getElementById('p2regband');
-    if (band) band.style.flex = (memRows.length + rows.length) ? '1' : '0.42';
+    if (band) band.style.flex = (memRows.length + rows.length) ? '1.35' : '0.42';
     var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
     var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
     les.innerHTML = '<div style="display:flex;gap:14px">' +
@@ -2243,11 +2242,12 @@ function fnDomHTML(name, c, note){
     (note ? '<div class="fnnote">' + esc(note) + '</div>' : '') + '</div>';
 }
 
-function renderP2Funnel(mem, les){
+function renderP2Funnel(mem, adult, youth){
   var el = document.getElementById('p2funnel'); if (!el) return;
   el.innerHTML =
     fnDomHTML('멤버십', mem, '') +
-    fnDomHTML('강습 (성인 · 유소년)', les, '') +
+    fnDomHTML('강습 — 성인', adult, '') +
+    fnDomHTML('강습 — 유소년', youth, '') +
     '<div class="fnnote">세 갈래는 문의 원장의 진행상태 칸을 그대로 센 것입니다. 예약·방문 단계는 현장에서 기록하지 않아 따로 세지 않습니다.</div>';
 }
 
@@ -2358,16 +2358,25 @@ function load2(){
       .catch(function(){ RAW2.__inq = null; }); })
     /* 강습 문의 원장 — 퍼널을 원장 그대로 세기 위해 함께 받는다. 종전 강습 퍼널은 폼 응답 전체를
        세어 문의 8,784건이었는데 실제 원장은 705건이다(실측 2026-09-14). */
-    .then(function(){ return p2fetch('lesson_inquiry_list')
-      .then(function(d){ RAW2.__les = d; })
-      .catch(function(){ RAW2.__les = null; }); })
+    /* 강습 문의는 성인·유소년을 따로 받는다(GAS 는 type 으로 가른다 — sync_inquiries.py 와 같은 칸).
+       합친 목록 __les 는 종전 쓰임(오늘 문의 수·자체 점검)을 그대로 쓰도록 여기서 이어 붙인다. */
+    .then(function(){ return p2fetch('lesson_inquiry_list', '&type=성인강습')
+      .then(function(d){ RAW2.__lesA = d; })
+      .catch(function(){ RAW2.__lesA = null; }); })
+    .then(function(){ return p2fetch('lesson_inquiry_list', '&type=유소년강습')
+      .then(function(d){ RAW2.__lesY = d; })
+      .catch(function(){ RAW2.__lesY = null; }); })
+    .then(function(){
+      var a = RAW2.__lesA, y = RAW2.__lesY;
+      RAW2.__les = (a && a.ok) || (y && y.ok)
+        ? { ok: true, data: ((a && a.data) || []).concat((y && y.data) || []) } : null;
+    })
     .then(function(){
     var t = RAW2.cpo_today_stats, c = RAW2.cpo_churn_stats, l = RAW2.lesson_stats;
     try {
       renderP2Todo(c && c.ok ? c : null, t && t.ok ? t : null, RAW2.__actions);
-      renderP2Funnel(
-        (RAW2.__inq && RAW2.__inq.ok) ? fnCount((RAW2.__inq.data || []).filter(function(x){ return x.name; })) : null,
-        (RAW2.__les && RAW2.__les.ok) ? fnCount((RAW2.__les.data || []).filter(function(x){ return x.name; })) : null);
+      var _fc = function(d){ return (d && d.ok) ? fnCount((d.data || []).filter(function(x){ return x.name; })) : null; };
+      renderP2Funnel(_fc(RAW2.__inq), _fc(RAW2.__lesA), _fc(RAW2.__lesY));
       renderP2Inq(RAW2.__inq && RAW2.__inq.ok ? RAW2.__inq : null);
       if (l && l.ok) renderP2Lesson(l);
     } catch (ex) {
