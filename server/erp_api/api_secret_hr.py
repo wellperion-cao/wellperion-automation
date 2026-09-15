@@ -17,6 +17,7 @@ HR_ADMIN_EMAILS(인사 관리자 · 나우열M) 또는 ERP_PLATFORM_ADMINS(회�
 import json
 import os
 import tempfile
+import time
 import urllib.request
 
 from fastapi import APIRouter, Request
@@ -56,6 +57,27 @@ def _probe(pw):
     if not data.get("ok"):
         return False, str(data.get("error") or "unauthorized")[:40]
     return True, len(data.get("results") or [])
+
+
+_NEG = {"until": 0.0}      # 틀린 값으로 GAS 를 매 요청마다 두드리지 않게 10분 쉼
+
+
+def learn_from_payload(payload):
+    """인사 화면이 서버 먼저 읽을 때 본문에 실어 보내는 그 비밀번호로 적재 열쇠(HR_GAS_PASSWORD)를 한 번 배운다
+    (GM 지시 2026-09-15 「비번 있는 부분도 변환 · 비번은 그대로 유지」). 값이 이미 있으면 아무것도 안 한다.
+    맞는 값만 저장하고(GAS 읽기 시험 통과), 틀리면 10분 뒤에 다시 본다. 값은 어디에도 찍지 않는다."""
+    if os.environ.get(KEY):
+        return
+    pw = str((payload or {}).get("password") or "").strip()
+    if not pw or time.time() < _NEG["until"]:
+        return
+    ok, info = _probe(pw)
+    if ok:
+        save_env(ENV_FILE, KEY, pw)
+        os.environ[KEY] = pw
+        print("[hr-secret] 화면 읽기에서 적재 열쇠 학습 · 직원 행 %d" % info, flush=True)
+    else:
+        _NEG["until"] = time.time() + 600
 
 
 def save_env(path, key, value):
@@ -152,6 +174,11 @@ def selftest():
         save_env(p, "NEW_KEY", "v")
         assert open(p, encoding="utf-8").read().endswith("B=2\nNEW_KEY=v\n")
         assert stat.S_IMODE(os.stat(p).st_mode) == 0o600 or os.name == "nt"
+    os.environ.pop(KEY, None)
+    _NEG["until"] = time.time() + 600
+    learn_from_payload({"db": "emp", "password": "zz"})       # 쉼 중이면 GAS 를 안 두드린다
+    assert not os.environ.get(KEY)
+    learn_from_payload({"db": "emp"})                          # 값 없으면 아무 일도 없다
     os.environ["HR_ADMIN_EMAILS"] = "A@x.com, b@y.com"
     os.environ["ERP_PLATFORM_ADMINS"] = ""
     assert _admins() == {"a@x.com", "b@y.com"}

@@ -1051,6 +1051,7 @@ def health():
 async def read(request: Request):
     """현행 화면이 GAS 를 부르던 모양 그대로 — 본문 {"db":"appl"}. 주소 상수 한 줄만 바꾸면 화면이 그대로 산다.
     ⛔ 본문에 비밀 문자열이 실려 와도 읽지 않고 기록하지 않는다. 인증은 앞단 nginx auth_request 가 이미 했다.
+    ★예외 하나(GM 지시 2026-09-15 · 비밀번호는 그대로 두고 서버로) — 적재 열쇠(HR_GAS_PASSWORD)가 비어 있을 때만 그 값을 서버 환경파일에 한 번 저장한다(api_secret_hr.learn_from_payload · 기록·응답엔 안 남는다).
     ★본문 정리 말고는 아무 일도 하지 않는다 — 판별·조회·마스킹·기록·봉투는 전부 공통 통로 안에서 한 순서로 일어난다."""
     bad = None
     key = ""
@@ -1061,6 +1062,11 @@ async def read(request: Request):
             raise ValueError
         key = str(payload.get("db") or "").strip()
         inc_van = payload.get("include_vanished")    # 관리자 전용 — 검사·거절은 공통 통로 안에서
+        try:   # [GM 지시 2026-09-15] 비밀번호를 그대로 둔 채 서버로 옮긴다 — 화면이 보내는 그 값으로 적재 열쇠를 한 번만 배운다(api_secret_hr)
+            from api_secret_hr import learn_from_payload
+            learn_from_payload(payload)
+        except Exception:
+            pass
     except Exception:
         bad = ("bad-payload", "요청 본문을 읽지 못했습니다. {\"db\":\"appl\"} 모양으로 보내 주세요.")
     return _serve(request, key, "POST /api/hr/read", reject=bad, include_vanished=inc_van)
