@@ -18,7 +18,7 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 .hero .hint{margin-top:38px;color:var(--g);font-weight:700;animation:bob 1.6s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){.hero .hint{animation:none}}
-.track{position:relative;height:calc(var(--frames) * 9px)}
+.track{position:relative;height:calc(var(--frames) * 26px)}
 .stage{position:sticky;top:0;height:100vh;overflow:hidden;background:#0b0b0d}
 .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(28px) brightness(.45);transform:scale(1.15)}
 .frame{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);height:100%;aspect-ratio:9/16;background:#000;box-shadow:0 0 60px rgba(0,0,0,.6)}
@@ -69,27 +69,37 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 
 <script>
 (function(){
-  var N=740, DIR='tour/frames/', FPS=2;
+  var N=740, DIR='tour/frames/', FPS=2, STEP=26, EASE=0.10, DWELL=14;
+  // 편집(GM 2026-09-15 19:3x 「중간에 조금 편집」) — 뺀 구간(초): 벽 액자·인물 사진 클로즈업, 신발장 뒤 빈 벽 흔들림
+  var CUT=[[34,49],[182,188]];
   // 장면 표(초 → 이름·한 줄) — 영상을 15초 간격으로 훑어 붙였다(2026-09-15 시보). 값이 아니라 안내문이라 대표님 확인 뒤 다듬는다.
   var CH=[
     [0,'입구','은평로 23, DC백화점 건물 — 3층으로 올라옵니다'],
-    [40,'출입문','DIET CAMP & PT 로고가 있는 문 · 신발장'],
-    [60,'상담 데스크','처음 오시면 여기서 인바디와 목표부터'],
-    [75,'매트 스튜디오','스텝박스·매트 — 그룹 수업이 열리는 곳'],
-    [90,'소도구 30가지','밴드·볼·튜빙·폼롤러 — 매일 다른 프로그램의 재료'],
+    [12,'3층으로','계단 옆 안내판 · 다이어트캠프 & PT'],
+    [50,'출입문 · 신발장','DIET CAMP & PT 로고가 있는 문'],
+    [58,'상담 데스크','처음 오시면 여기서 인바디와 목표부터'],
+    [66,'잔디 복도','스튜디오와 짐을 잇는 길'],
+    [80,'매트 스튜디오','그룹 수업이 열리는 곳 — 매일 다른 프로그램'],
+    [90,'소도구 30가지','밴드·볼·튜빙·스텝박스·원판 — 300가지 프로그램의 재료'],
     [120,'스튜디오 전경','거울 벽과 조명 · 여러 명이 같은 동작을 하는 자리'],
-    [150,'짐으로 가는 복도','잔디 바닥의 개인 PT 존으로'],
-    [180,'탈의실 · 락커','전자 잠금 락커'],
+    [158,'다시 데스크 앞','짐과 탈의실로 가는 갈림길'],
+    [190,'탈의실','세면대 · 파우더'],
+    [200,'락커','전자 잠금 락커'],
     [210,'샤워실','샤워부스'],
     [240,'휴게 · 정수기','수업 전후 잠깐 쉬는 자리'],
-    [255,'웨이트 존','바벨·덤벨·랙 — 개인 PT 다이어트'],
+    [262,'유산소 · 머신','트레드밀 · 바이크 · 머신'],
     [285,'1:1 재활 존','재활 테이블 · 원인 근육부터, 4단계로'],
-    [315,'유산소 존','트레드밀·바이크'],
+    [310,'소도구 벽 · 웨이트','밴드 보드 · 바벨 · 덤벨'],
+    [330,'유산소 존','트레드밀 라인'],
     [345,'마무리','다이어트캠프 & PT — 운동을 그만두지 않게']
   ];
+  // 재생 순서 = 뺀 구간을 건너뛴 프레임 목록 · 장면 첫 프레임은 DWELL 번 반복(캡션 읽을 시간)
+  var SEQ=[]; (function(){ var chStart={}; CH.forEach(function(c){ chStart[Math.round(c[0]*FPS)]=1; });
+    for(var i=0;i<N;i++){ var sec=i/FPS, cut=false; for(var c=0;c<CUT.length;c++){ if(sec>=CUT[c][0]&&sec<CUT[c][1]) cut=true; } if(cut) continue;
+      var rep=chStart[i]?DWELL:1; for(var r=0;r<rep;r++) SEQ.push(i); } })();
   var track=document.getElementById('track'), fr=document.getElementById('fr'), bg=document.getElementById('bg'), bar=document.getElementById('bar');
   var capn=document.getElementById('capn'), caph=document.getElementById('caph'), capp=document.getElementById('capp'), nav=document.getElementById('nav'), load=document.getElementById('load'), pct=document.getElementById('pct');
-  document.documentElement.style.setProperty('--frames', N);
+  document.documentElement.style.setProperty('--frames', SEQ.length);
   var src=function(i){ return DIR+'f_'+String(i+1).padStart(4,'0')+'.jpg'; };
   var cache=new Array(N), loaded=0, cur=-1, curCh=-1;
   function want(i){ if(cache[i]) return; var im=new Image(); im.onload=function(){ loaded++; if(loaded%10===0||loaded===N) pct.textContent=Math.round(loaded*100/N); if(loaded>=60) load.classList.add('hide'); }; im.src=src(i); cache[i]=im; }
@@ -99,18 +109,19 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
   function show(i){
     if(i===cur) return; cur=i; want(i); for(var j=1;j<=6;j++){ if(i+j<N) want(i+j); }
     fr.src=src(i); bg.style.backgroundImage='url('+src(i)+')';
-    bar.style.width=(i*100/(N-1))+'%';
+    bar.style.width=(SEQ.indexOf(i)*100/(SEQ.length-1))+'%';
     var sec=i/FPS, c=0; for(var m=0;m<CH.length;m++){ if(sec>=CH[m][0]) c=m; }
     if(c!==curCh){ curCh=c; capn.textContent=String(c+1).padStart(2,'0')+' / '+CH.length; caph.textContent=CH[c][1]; capp.textContent=CH[c][2];
       Array.prototype.forEach.call(nav.children,function(b,x){ b.classList.toggle('on',x===c); }); }
   }
-  CH.forEach(function(ch,x){ var b=document.createElement('button'); b.type='button'; b.textContent=(x+1)+'. '+ch[1]; b.addEventListener('click',function(){ var top=track.offsetTop+(ch[0]*FPS/(N-1))*(track.offsetHeight-window.innerHeight); window.scrollTo({top:top,behavior:'smooth'}); }); nav.appendChild(b); });
-  var ticking=false;
-  function onScroll(){ if(ticking) return; ticking=true; requestAnimationFrame(function(){ ticking=false;
-    var top=track.offsetTop, h=track.offsetHeight-window.innerHeight, y=window.scrollY-top;
-    var p=Math.min(1,Math.max(0,h>0?y/h:0)); show(Math.round(p*(N-1))); }); }
+  CH.forEach(function(ch,x){ var b=document.createElement('button'); b.type='button'; b.textContent=(x+1)+'. '+ch[1]; b.addEventListener('click',function(){ var pos=SEQ.indexOf(Math.round(ch[0]*FPS)); if(pos<0) pos=0; var top=track.offsetTop+(pos/(SEQ.length-1))*(track.offsetHeight-window.innerHeight); window.scrollTo({top:top,behavior:'smooth'}); }); nav.appendChild(b); });
+  // 스크롤 위치 → 목표 자리, 화면은 천천히 따라간다(EASE) — 「너무 빠르다」(GM) 를 STEP 26px + 완만한 추종으로
+  var target=0, pos=0, running=false;
+  function tick(){ var d=target-pos; if(Math.abs(d)<0.5){ pos=target; show(SEQ[Math.round(pos)]); running=false; return; } pos+=d*EASE; show(SEQ[Math.round(pos)]); requestAnimationFrame(tick); }
+  function onScroll(){ var top=track.offsetTop, h=track.offsetHeight-window.innerHeight, y=window.scrollY-top;
+    var p=Math.min(1,Math.max(0,h>0?y/h:0)); target=p*(SEQ.length-1); if(!running){ running=true; requestAnimationFrame(tick); } }
   window.addEventListener('scroll',onScroll,{passive:true}); window.addEventListener('resize',onScroll);
-  show(0);
+  show(SEQ[0]);
 })();
 </script>
 </body></html>
