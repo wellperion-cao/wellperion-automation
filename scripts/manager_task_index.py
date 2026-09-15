@@ -622,12 +622,10 @@ def quarter_section(hist: dict) -> str:
   </section>'''
 
 
-def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> str:
-    ev = load_eval()
-    objs = load_month_objectives()
-    mgr_names = ["이경연 실장", "이정헌 소장", "나우열M"]
-
-    rows_def = {
+def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None", objs: list) -> dict:
+    """책임 항목 4인 정의 {사람: [(항목, 기준, 측정fn[, raw[, detail_fn]]), …]}. 책임 표(resp_section)와
+    주간 회의자료 A3(build_meeting_a3)가 같은 정의를 쓴다 — 두 곳에 두지 않는다."""
+    return {
         # GM 확정 2026-09-14 16:5x 「자동화 및 자율화(ERP+브로제이) 진척율 // 웰페리온 비즈니스 확장건 //
         #   회장님&대표님 지시 이렇게 3개로만」 — 종전 4개(카드 진척·회신 짝·결재 처리·주간 미팅)는 뺐다.
         "김남욱 GM": [
@@ -675,6 +673,12 @@ def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None"
              lambda: ledger_reply_cell(seen, "나우열M")),
         ],
     }
+
+
+def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> str:
+    ev = load_eval()
+    objs = load_month_objectives()
+    rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
 
     blocks = []
     month_snap: dict = {}
@@ -2012,15 +2016,266 @@ def build() -> str:
 '''
 
 
+# ═══ 📋 주간 회의자료 A3 정본 (GM 지시 2026-09-15 · 카드 2026-09-35 · 운영 기준 10) ═══
+#   매주 화 07:50 send_ops_digest.send_weekly_meeting_pack 이 부른다. 달별이 아니라 주별 — 회차는
+#   status/weekly_meeting_ledger.json 에 회의일 키로 쌓이고, 화면 하나(중간관리자_회의자료_A3.html)가
+#   ?week=YYYY-MM-DD 로 회차를 고른다(인자 없으면 최신 회차). 원장은 HTML 안에 인라인으로 박는다 —
+#   /repo/ 원장 fetch 는 erp 도메인에서만 값이 붙어 Pages·file 캡처가 빈 값이 되기 때문(2026-09-15 실측).
+#   3열 = 운영부·시설부·경영지원부 · 열마다 ▸사전 보고 ▸실측 이상(책임 항목 bad 셀 재사용) ▸회신 없는 것.
+MEETING_OUT = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "중간관리자_회의자료_A3.html"
+MEETING_PNG = MEETING_OUT.with_suffix(".png")
+MEETING_LEDGER = ROOT / "status" / "weekly_meeting_ledger.json"
+WEEKLY_INTAKE = ROOT / "status" / "weekly_meeting_intake.json"
+MEETING_COLS = [("운영부", "이경연 실장"), ("시설부", "이정헌 소장"), ("경영지원부", "나우열M")]
+MEETING_ATTENDEES = "김남욱 GM · 이경연 실장 · 이정헌 소장 · 김종현 차장 · 나우열M"
+_REPORT_DIRS = (ROOT / "3. 웰페리온 가이드" / "reports", ROOT / "3. 웰페리온 가이드" / "coo" / "chairman")
+
+
+def _meeting_doc_no(meeting: date, rounds: dict) -> str:
+    """WP-GM-YYMMDD-NN — 같은 회차가 원장에 있으면 그 번호 재사용, 없으면 그날 A3 파일 수 + 1."""
+    prev = (rounds.get(meeting.isoformat()) or {}).get("doc_no")
+    if prev:
+        return prev
+    ymd = meeting.strftime("%y%m%d")
+    n = sum(len(list(d.glob(f"{ymd}_*_A3.html"))) for d in _REPORT_DIRS if d.exists())
+    return f"WP-GM-{ymd}-{n + 1:02d}"
+
+
+def _load_intake(meeting: date) -> dict:
+    try:
+        d = json.loads(WEEKLY_INTAKE.read_text(encoding="utf-8"))
+        return d.get("people") or {} if d.get("meeting_date") == meeting.isoformat() else {}
+    except Exception:
+        return {}
+
+
+def meeting_round(meeting: date, rounds: dict) -> dict:
+    """회차 데이터 한 벌 — 열마다 사전 보고·실측 이상·회신 없는 것·GM 결정 받을 것."""
+    seen = latest_by_no()
+    sales_data = fill_sales_current(seen)
+    ssot_rows = fetch_ssot_rows()
+    objs = load_month_objectives()
+    rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
+    intake = _load_intake(meeting)
+    try:
+        import send_ops_digest as _sod
+        nudges = _sod.build_reply_nudge_items(meeting.isoformat(), ssot_rows or [])
+    except Exception:
+        nudges = []
+    cols = {}
+    for dept, person in MEETING_COLS:
+        p = intake.get(person) or {"submitted": False, "lines": [], "at": ""}
+        anomalies = []
+        for entry in rows_def.get(person, []):
+            item, fn = entry[0], entry[2]
+            raw = entry[3] if len(entry) > 3 else False
+            try:
+                text, bad = fn()
+            except Exception:
+                continue
+            if bad:
+                anomalies.append(f"{item} — {_plain(text) if raw else text}")
+        open_n = sum(1 for _d, it in seen.values()
+                     if str(it.get("owner") or "").strip() == person and str(it.get("status", "")).lower() not in DONE)
+        cols[dept] = {"person": person, "submitted": bool(p.get("submitted")), "at": p.get("at", ""),
+                      "intake": list(p.get("lines") or []), "open": open_n, "anomalies": anomalies,
+                      "nudges": [it["ask"] for it in nudges if it.get("who") == person],
+                      "decisions": [ln for ln in (p.get("lines") or []) if re.search(r"④|결정", ln)]}
+    y, w, _ = meeting.isocalendar()
+    return {"meeting_date": meeting.isoformat(), "week": f"{y}-W{w:02d}", "doc_no": _meeting_doc_no(meeting, rounds),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"), "attendees": MEETING_ATTENDEES,
+            "ssot_ok": ssot_rows is not None, "cols": cols}
+
+
+MEETING_TEMPLATE = r'''<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>중간관리자 회의자료 — 웰페리온 A3 (주별)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; } .bar a{ color:#fff; opacity:.85; margin-right:6px; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy); letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .title small{ font-size:18px; color:#3C464F; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.65; color:#3C464F; } .meta b{ color:var(--ink); }
+  .ask{ margin-top:12px; background:var(--navy); color:#fff; display:flex; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; } .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; }
+  .ask .it{ flex:1; padding:10px 18px; } .ask .q{ font-size:19px; font-weight:700; line-height:1.35; } .ask .d{ font-size:14.5px; line-height:1.5; opacity:.88; margin-top:3px; }
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; min-height:0; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:12px 16px 10px; overflow:hidden; display:flex; flex-direction:column; }
+  .box h3{ font-size:19px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+  .box .who{ font-size:14px; color:#3C464F; margin-bottom:8px; }
+  .box h4{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:1px; background:var(--navy-bg); padding:2px 8px; margin:5px 0 5px; }
+  .box ol{ list-style:none; counter-reset:n; }
+  .box ol li{ font-size:16px; line-height:1.36; padding-left:30px; position:relative; margin-bottom:3px; counter-increment:n; }
+  .box ol li::before{ content:counter(n); position:absolute; left:0; top:2px; width:22px; height:22px; border-radius:50%; background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; text-align:center; line-height:22px; }
+  .box ul{ list-style:none; }
+  .box ul li{ font-size:15.5px; line-height:1.36; padding-left:20px; position:relative; margin-bottom:2px; color:#3C464F; }
+  .box ul li::before{ content:'⚠'; position:absolute; left:0; top:0; font-size:12.5px; color:var(--bad); }
+  .box .ok{ color:var(--good); font-size:15px; padding-left:4px; }
+  .box .miss{ color:var(--bad); font-weight:900; font-size:17px; padding:6px 8px; border:2px solid var(--bad); display:inline-block; margin:2px 0 6px; }
+  .gm{ margin-top:12px; border:1.5px solid var(--navy); display:flex; }
+  .gm .lb{ width:118px; flex:none; background:var(--navy); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .gm .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; } .gm .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; text-align:center; line-height:1.2; }
+  .gm .items{ flex:1; display:flex; } .gm .it{ flex:1; padding:7px 14px; border-right:1px solid var(--line); } .gm .it:last-child{ border-right:0; }
+  .gm .n{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:3px; }
+  .gm p{ font-size:16px; line-height:1.4; padding-left:14px; position:relative; margin-bottom:2px; } .gm p::before{ content:'·'; position:absolute; left:3px; font-weight:700; }
+  .gm p.none{ color:#6B7580; }
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px; display:flex; gap:26px; font-size:14px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b id="bar-title">중간관리자 회의자료 (A3 1장)</b>
+  <span class="sp"></span>
+  <span id="weeks"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet1"></div>
+<script id="rounds" type="application/json">__ROUNDS__</script>
+<script>
+(function () {
+  var ROUNDS = JSON.parse(document.getElementById('rounds').textContent || '{}');
+  var keys = Object.keys(ROUNDS).sort();
+  var q = new URLSearchParams(location.search).get('week');
+  var key = (q && ROUNDS[q]) ? q : keys[keys.length - 1];
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  document.getElementById('weeks').innerHTML = keys.map(function (k) { return '<a href="?week=' + k + '">' + (k === key ? '<b>' + k + '</b>' : k) + '</a>'; }).join('');
+  if (!key) { document.getElementById('sheet1').innerHTML = '<p style="padding:40px;font-size:20px">회차 데이터가 없습니다.</p>'; return; }
+  var r = ROUNDS[key], d = new Date(key + 'T00:00:00'), md = (d.getMonth() + 1) + '/' + d.getDate();
+  var dot = key.slice(0, 4) + '. ' + key.slice(5, 7) + '. ' + key.slice(8, 10) + '.';
+  document.title = '중간관리자 회의자료 ' + md + ' — 웰페리온 A3';
+  document.getElementById('bar-title').textContent = '중간관리자 회의자료 — ' + key + '(화) 15:00 (A3 1장 · ' + r.week + ')';
+  var list = function (arr, tag, empty) {
+    if (!arr || !arr.length) return '<div class="ok">' + empty + '</div>';
+    return '<' + tag + '>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</' + tag + '>';
+  };
+  var cols = '', gm = '';
+  ['운영부', '시설부', '경영지원부'].forEach(function (dept) {
+    var c = r.cols[dept] || {};
+    var intake = c.submitted ? list(c.intake, 'ol', '') : '<div class="miss">사전 보고 미제출</div>';
+    cols += '<div class="box"><h3>' + dept + '</h3><div class="who">' + esc(c.person) + ' · 원장 열린 ' + (c.open || 0) + '건'
+      + (c.submitted ? ' · 사전 보고 ' + esc(c.at) : '') + '</div>'
+      + '<h4>▸ 사전 보고 ①~⑤</h4>' + intake
+      + '<h4>▸ 실측 이상 (07:50 자동)</h4>' + list(c.anomalies, 'ul', '이상 없음')
+      + '<h4>▸ 회신 없는 것</h4>' + list(c.nudges, 'ol', '없음') + '</div>';
+    gm += '<div class="it"><div class="n">' + dept + '</div>'
+      + ((c.decisions && c.decisions.length) ? c.decisions.map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') : '<p class="none">결정 요청 없음</p>') + '</div>';
+  });
+  document.getElementById('sheet1').innerHTML =
+    '<div class="head"><div><div class="brand">WELLPERION</div><div class="title">중간관리자 회의자료 — ' + md + '(화) 15:00<br><small>운영부 · 시설부 · 경영지원부 3라인 · 사전 보고(월 17:00) + 실측 이상(화 07:50 자동) + 회신 없는 것</small></div></div>'
+    + '<div class="meta">작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b><br>작성일 <b>' + dot + '</b> · 문서번호 <b>' + esc(r.doc_no) + '</b> · <b>1 / 1</b></div></div>'
+    + '<div class="ask"><div class="lb"><span>DIRECTION</span><strong>방향</strong></div><div class="it"><div class="q">회의는 이 한 장으로 · 답은 「#번호 + 한 줄」 · 사전 보고 안 낸 열은 회의에서 구두로 ①~⑤</div>'
+    + '<div class="d">번호(#)는 중간관리자 업무목차 원장 번호 그대로다. 실측 이상은 매일 07:50 자동 실측값 · 진행할 건은 본인이 업무 SSOT 에 등록한다.' + (r.ssot_ok ? '' : ' ⚠ 이번 회차는 업무 SSOT 조회 실패 — SSOT 항목은 안 잰 값이다.') + '</div></div></div>'
+    + '<div class="cols">' + cols + '</div>'
+    + '<div class="gm"><div class="lb"><span>DECISION</span><strong>GM 결정<br>받을 것</strong></div><div class="items">' + gm + '</div></div>'
+    + '<div class="foot"><div><b>참석</b> — ' + esc(r.attendees) + '. <b>출처</b> — 사전 보고(★중간관리자 방·AtoA 월 00:00~화 08:59) · 중간관리자 업무목차 책임 항목 실측 · 원장 열린 건. 생성 ' + esc(r.generated_at) + '.</div>'
+    + '<div><b>다음</b> — 다음 화요일 15:00 · 월 17:00 까지 사전 보고 ①이번 주 한 것 ②다음 주 할 것 ③막힌 것 ④GM 결정 필요 ⑤요청. 회의 결과는 카드·원장에 반영.</div></div>';
+  document.getElementById('png').onclick = function () {
+    if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+    html2canvas(document.getElementById('sheet1'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+      var a = document.createElement('a'); a.download = key.replace(/-/g, '').slice(2) + '_중간관리자_회의자료_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+    });
+  };
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
+'''
+
+
+def render_meeting_html(rounds: dict) -> str:
+    payload = json.dumps(rounds, ensure_ascii=False).replace("</", "<\\/")
+    return MEETING_TEMPLATE.replace("__ROUNDS__", payload)
+
+
+def capture_meeting_png(html_path: Path, png_path: Path) -> bool:
+    """Chrome headless 캡처 — 창은 browser_quiet 로 화면 밖(창 크기만 A3 캡처 크기로 덮는다)."""
+    import subprocess
+    chrome = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+    if not chrome.exists():
+        return False
+    try:
+        from browser_quiet import quiet_args
+        quiet = [a for a in quiet_args() if not a.startswith("--window-size")]
+    except Exception:
+        quiet = []
+    cmd = [str(chrome), "--headless=new", "--disable-gpu", "--hide-scrollbars", *quiet,
+           "--window-size=1660,1260", f"--screenshot={png_path}", "--virtual-time-budget=6000", html_path.as_uri()]
+    proc = subprocess.run(cmd, capture_output=True, timeout=90)   # bytes — 크롬 stderr 가 cp949 로 깨져 디코드 오류 내던 것 회피
+    return png_path.exists() and proc.returncode == 0
+
+
+def build_meeting_a3(meeting: date) -> dict:
+    """회차 데이터를 원장에 쌓고(회의일 키 · 같은 회차는 교체) 정본 HTML + PNG 를 다시 쓴다. 돌려주는 값 = 이번 회차."""
+    try:
+        ledger = json.loads(MEETING_LEDGER.read_text(encoding="utf-8"))
+    except Exception:
+        ledger = {"_doc": "중간관리자 주간 회의자료 회차 원장 — 회의일(화요일) 키 · manager_task_index.build_meeting_a3 가 매주 화 07:50 append", "rounds": {}}
+    rounds = ledger.setdefault("rounds", {})
+    rnd = meeting_round(meeting, rounds)
+    rounds[meeting.isoformat()] = rnd
+    MEETING_LEDGER.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    MEETING_OUT.write_text(render_meeting_html(rounds), encoding="utf-8")
+    capture_meeting_png(MEETING_OUT, MEETING_PNG)
+    return rnd
+
+
+def _selfcheck_meeting_a3() -> None:
+    """미제출 빨강·3열·결정 띠 — 네트워크 없이 렌더만."""
+    rounds = {"2026-09-22": {"meeting_date": "2026-09-22", "week": "2026-W39", "doc_no": "WP-GM-260922-01",
+                             "generated_at": "2026-09-22 07:50", "attendees": MEETING_ATTENDEES, "ssot_ok": True,
+                             "cols": {"운영부": {"person": "이경연 실장", "submitted": True, "at": "2026-09-21 16:40",
+                                               "intake": ["① FAQ 취합", "④ 결정: 요금표"], "open": 3,
+                                               "anomalies": ["소통 — 회신율 1/3"], "nudges": ["#224 FAQ"],
+                                               "decisions": ["④ 결정: 요금표"]},
+                                      "시설부": {"person": "이정헌 소장", "submitted": False, "at": "", "intake": [],
+                                               "open": 0, "anomalies": [], "nudges": [], "decisions": []},
+                                      "경영지원부": {"person": "나우열M", "submitted": False, "at": "", "intake": [],
+                                                 "open": 1, "anomalies": [], "nudges": [], "decisions": []}}}}
+    out = render_meeting_html(rounds)
+    payload = json.loads(out.split('type="application/json">', 1)[1].split("</script>", 1)[0].replace("<\\/", "</"))
+    cols = payload["2026-09-22"]["cols"]
+    assert len(cols) == 3 and [c["submitted"] for c in cols.values()] == [True, False, False]
+    assert ".miss{ color:var(--bad)" in out and "사전 보고 미제출" in out   # 미제출 = 빨강 박스
+    assert _meeting_doc_no(date(2026, 9, 22), {"2026-09-22": {"doc_no": "WP-GM-260922-07"}}) == "WP-GM-260922-07"
+    print("[selfcheck] meeting_a3 렌더 OK")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="중간관리자 업무 목차 렌더")
     ap.add_argument("--clean-notes", action="store_true",
                     help="원장 note 에서 우리 발신 조각·똑같이 겹친 조각을 걷어낸다(원장을 고침)")
     ap.add_argument("--dry", action="store_true", help="--clean-notes 미리보기 — 파일은 안 고침")
     ap.add_argument("--selfcheck", action="store_true", help="판정 규칙 자가검사")
+    ap.add_argument("--meeting-a3", action="store_true",
+                    help="주간 회의자료 A3 정본(중간관리자_회의자료_A3.html + png) 생성 · 회차 원장 append")
+    ap.add_argument("--week", default="", help="--meeting-a3 회의일(화요일 YYYY-MM-DD · 기본 오늘이 속한 주 화요일)")
     args = ap.parse_args()
     if args.selfcheck:
         selfcheck()
+        _selfcheck_meeting_a3()
+    elif args.meeting_a3:
+        _d = date.fromisoformat(args.week) if args.week else date.today()
+        _meeting = _d - timedelta(days=_d.weekday()) + timedelta(days=1)
+        _r = build_meeting_a3(_meeting)
+        print(f"[meeting-a3] {_r['doc_no']} · {_meeting} · {MEETING_OUT.relative_to(ROOT)} · png={'있음' if MEETING_PNG.exists() else '없음'}")
     elif args.clean_notes:
         clean_notes(dry=args.dry)
     else:

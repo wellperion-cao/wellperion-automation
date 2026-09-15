@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>중간관리자 회의자료 — 웰페리온 A3 (주별)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6; --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff; display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; } .bar a{ color:#fff; opacity:.85; margin-right:6px; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy); letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .title small{ font-size:18px; color:#3C464F; font-family:'Noto Sans KR',sans-serif; font-weight:500; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.65; color:#3C464F; } .meta b{ color:var(--ink); }
+  .ask{ margin-top:12px; background:var(--navy); color:#fff; display:flex; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; } .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; }
+  .ask .it{ flex:1; padding:10px 18px; } .ask .q{ font-size:19px; font-weight:700; line-height:1.35; } .ask .d{ font-size:14.5px; line-height:1.5; opacity:.88; margin-top:3px; }
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; min-height:0; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:12px 16px 10px; overflow:hidden; display:flex; flex-direction:column; }
+  .box h3{ font-size:19px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+  .box .who{ font-size:14px; color:#3C464F; margin-bottom:8px; }
+  .box h4{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:1px; background:var(--navy-bg); padding:2px 8px; margin:5px 0 5px; }
+  .box ol{ list-style:none; counter-reset:n; }
+  .box ol li{ font-size:16px; line-height:1.36; padding-left:30px; position:relative; margin-bottom:3px; counter-increment:n; }
+  .box ol li::before{ content:counter(n); position:absolute; left:0; top:2px; width:22px; height:22px; border-radius:50%; background:var(--navy); color:#fff; font-size:12.5px; font-weight:700; text-align:center; line-height:22px; }
+  .box ul{ list-style:none; }
+  .box ul li{ font-size:15.5px; line-height:1.36; padding-left:20px; position:relative; margin-bottom:2px; color:#3C464F; }
+  .box ul li::before{ content:'⚠'; position:absolute; left:0; top:0; font-size:12.5px; color:var(--bad); }
+  .box .ok{ color:var(--good); font-size:15px; padding-left:4px; }
+  .box .miss{ color:var(--bad); font-weight:900; font-size:17px; padding:6px 8px; border:2px solid var(--bad); display:inline-block; margin:2px 0 6px; }
+  .gm{ margin-top:12px; border:1.5px solid var(--navy); display:flex; }
+  .gm .lb{ width:118px; flex:none; background:var(--navy); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .gm .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; } .gm .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; text-align:center; line-height:1.2; }
+  .gm .items{ flex:1; display:flex; } .gm .it{ flex:1; padding:7px 14px; border-right:1px solid var(--line); } .gm .it:last-child{ border-right:0; }
+  .gm .n{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:1px; margin-bottom:3px; }
+  .gm p{ font-size:16px; line-height:1.4; padding-left:14px; position:relative; margin-bottom:2px; } .gm p::before{ content:'·'; position:absolute; left:3px; font-weight:700; }
+  .gm p.none{ color:#6B7580; }
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px; display:flex; gap:26px; font-size:14px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; } .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <b id="bar-title">중간관리자 회의자료 (A3 1장)</b>
+  <span class="sp"></span>
+  <span id="weeks"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+<div class="page" id="sheet1"></div>
+<script id="rounds" type="application/json">{"2026-09-15": {"meeting_date": "2026-09-15", "week": "2026-W38", "doc_no": "WP-GM-260915-04", "generated_at": "2026-09-15 15:51", "attendees": "김남욱 GM · 이경연 실장 · 이정헌 소장 · 김종현 차장 · 나우열M", "ssot_ok": true, "cols": {"운영부": {"person": "이경연 실장", "submitted": false, "at": "", "intake": [], "open": 9, "anomalies": ["종합접수처(운영부) — 열린 4건 · 7일↑ 3건 · 담당 미배정 0건(운영부) · 분실물 보관 22건 별도", "업무·결재 SSOT(운영부 전원) — 진행중·보류 34건 · 지난주(9/7~9/13) 완료 8/15 · 이번 주 완료 4/15 · 기한 지난 10건 · 결재대기 2건 · 결재 제출 — 결재요청 칸: 미제출(빈칸) · 상태 진행중", "소통 — 회신율 18/27(67%) · 최장경과 36일 · 35일↑ 2건"], "nudges": ["#105 분실물(목걸이) — 2026-09-16", "#129 환불기준 개정 5가지(계약서 규정·결재란·상담실 게시물·요금 인상안·서비스 정리)", "#147 여자사우나 비품 3가지(의자·수영복 거치대·오리발 수건걸이)"], "decisions": []}, "시설부": {"person": "이정헌 소장", "submitted": false, "at": "", "intake": [], "open": 3, "anomalies": ["설비·시설 업무 일정 — 이번 달 완료 1건 · 현재 기한초과 25건(전체 시설부 47건 · 원장 2026-09-15 기준)", "소통 — 회신율 27/30(90%) · 최장경과 36일 · 35일↑ 1건"], "nudges": ["#156 골프장 조명(접수 93) 결정", "#283 빔프로젝터 교체건 사진 촬영 여부"], "decisions": []}, "경영지원부": {"person": "나우열M", "submitted": false, "at": "", "intake": [], "open": 8, "anomalies": ["인사(CHRO) — 업무·결재 SSOT 운영 — 진행중 8건 · 보류 0건 · 기한 지난 것 2건 · 중복 1건 · 전체 85건"], "nudges": ["#274 매출보고 나우열M 담당 8건 현황 회신", "#279 info@·lessons@ 계정 토큰 사용량을 admin#tokens 에 뜨게 — 두 PC 사용량…"], "decisions": []}}}}</script>
+<script>
+(function () {
+  var ROUNDS = JSON.parse(document.getElementById('rounds').textContent || '{}');
+  var keys = Object.keys(ROUNDS).sort();
+  var q = new URLSearchParams(location.search).get('week');
+  var key = (q && ROUNDS[q]) ? q : keys[keys.length - 1];
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  document.getElementById('weeks').innerHTML = keys.map(function (k) { return '<a href="?week=' + k + '">' + (k === key ? '<b>' + k + '</b>' : k) + '</a>'; }).join('');
+  if (!key) { document.getElementById('sheet1').innerHTML = '<p style="padding:40px;font-size:20px">회차 데이터가 없습니다.</p>'; return; }
+  var r = ROUNDS[key], d = new Date(key + 'T00:00:00'), md = (d.getMonth() + 1) + '/' + d.getDate();
+  var dot = key.slice(0, 4) + '. ' + key.slice(5, 7) + '. ' + key.slice(8, 10) + '.';
+  document.title = '중간관리자 회의자료 ' + md + ' — 웰페리온 A3';
+  document.getElementById('bar-title').textContent = '중간관리자 회의자료 — ' + key + '(화) 15:00 (A3 1장 · ' + r.week + ')';
+  var list = function (arr, tag, empty) {
+    if (!arr || !arr.length) return '<div class="ok">' + empty + '</div>';
+    return '<' + tag + '>' + arr.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</' + tag + '>';
+  };
+  var cols = '', gm = '';
+  ['운영부', '시설부', '경영지원부'].forEach(function (dept) {
+    var c = r.cols[dept] || {};
+    var intake = c.submitted ? list(c.intake, 'ol', '') : '<div class="miss">사전 보고 미제출</div>';
+    cols += '<div class="box"><h3>' + dept + '</h3><div class="who">' + esc(c.person) + ' · 원장 열린 ' + (c.open || 0) + '건'
+      + (c.submitted ? ' · 사전 보고 ' + esc(c.at) : '') + '</div>'
+      + '<h4>▸ 사전 보고 ①~⑤</h4>' + intake
+      + '<h4>▸ 실측 이상 (07:50 자동)</h4>' + list(c.anomalies, 'ul', '이상 없음')
+      + '<h4>▸ 회신 없는 것</h4>' + list(c.nudges, 'ol', '없음') + '</div>';
+    gm += '<div class="it"><div class="n">' + dept + '</div>'
+      + ((c.decisions && c.decisions.length) ? c.decisions.map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') : '<p class="none">결정 요청 없음</p>') + '</div>';
+  });
+  document.getElementById('sheet1').innerHTML =
+    '<div class="head"><div><div class="brand">WELLPERION</div><div class="title">중간관리자 회의자료 — ' + md + '(화) 15:00<br><small>운영부 · 시설부 · 경영지원부 3라인 · 사전 보고(월 17:00) + 실측 이상(화 07:50 자동) + 회신 없는 것</small></div></div>'
+    + '<div class="meta">작성 <b>AI 웰리</b> · 담당 <b>김남욱 GM</b><br>작성일 <b>' + dot + '</b> · 문서번호 <b>' + esc(r.doc_no) + '</b> · <b>1 / 1</b></div></div>'
+    + '<div class="ask"><div class="lb"><span>DIRECTION</span><strong>방향</strong></div><div class="it"><div class="q">회의는 이 한 장으로 · 답은 「#번호 + 한 줄」 · 사전 보고 안 낸 열은 회의에서 구두로 ①~⑤</div>'
+    + '<div class="d">번호(#)는 중간관리자 업무목차 원장 번호 그대로다. 실측 이상은 매일 07:50 자동 실측값 · 진행할 건은 본인이 업무 SSOT 에 등록한다.' + (r.ssot_ok ? '' : ' ⚠ 이번 회차는 업무 SSOT 조회 실패 — SSOT 항목은 안 잰 값이다.') + '</div></div></div>'
+    + '<div class="cols">' + cols + '</div>'
+    + '<div class="gm"><div class="lb"><span>DECISION</span><strong>GM 결정<br>받을 것</strong></div><div class="items">' + gm + '</div></div>'
+    + '<div class="foot"><div><b>참석</b> — ' + esc(r.attendees) + '. <b>출처</b> — 사전 보고(★중간관리자 방·AtoA 월 00:00~화 08:59) · 중간관리자 업무목차 책임 항목 실측 · 원장 열린 건. 생성 ' + esc(r.generated_at) + '.</div>'
+    + '<div><b>다음</b> — 다음 화요일 15:00 · 월 17:00 까지 사전 보고 ①이번 주 한 것 ②다음 주 할 것 ③막힌 것 ④GM 결정 필요 ⑤요청. 회의 결과는 카드·원장에 반영.</div></div>';
+  document.getElementById('png').onclick = function () {
+    if (typeof html2canvas !== 'function') { alert('이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.'); return; }
+    html2canvas(document.getElementById('sheet1'), {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false}).then(function (c) {
+      var a = document.createElement('a'); a.download = key.replace(/-/g, '').slice(2) + '_중간관리자_회의자료_A3.png'; a.href = c.toDataURL('image/png'); a.click();
+    });
+  };
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>

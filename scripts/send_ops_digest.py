@@ -869,6 +869,10 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
+    # 📋 월요일이면 통 끝에 내일 회의·오늘 17:00 사전 보고 한 줄(주간 미팅 체계 · GM 지시 2026-09-15).
+    _monday_line = weekly_meeting_monday_line(date.today())
+    if _monday_line:
+        parts.append(_monday_line)
 
     # 🧭 GM업무 담당 몫 (GM 지시 2026-09-09 "GM업무 및 각 중간관리자 업무들 정리해줘 · 아침마다 전달").
     # 카톡 통엔 실장·소장 몫만, 나우열M 몫은 위 규칙대로 텔레그램 본문에 합쳐 보낸다.
@@ -3528,8 +3532,9 @@ WEEKLY_MEETING_CARD_ID = "2026-09-35"
 WEEKLY_MEETING_PEOPLE = {"이경연 실장": ("이경연",), "이정헌 소장": ("이정헌",), "나우열M": ("나우열", "라우열")}
 WEEKLY_MEETING_ATTENDEES = "김남욱 GM · 이경연 실장 · 이정헌 소장 · 김종현 차장 · 나우열M"
 WEEKLY_MEETING_A3_URL = "https://erp.wellperion.com/coo/chairman/%EC%A4%91%EA%B0%84%EA%B4%80%EB%A6%AC%EC%9E%90_%ED%9A%8C%EC%9D%98%EC%9E%90%EB%A3%8C_A3.html"
-# 사전 보고 단서 — ①~⑤ 번호 또는 「보고·사전·이번 주·다음 주」 낱말. 회신 매칭(_reply_keywords)은 드문 낱말을 찾는 쪽이라 여기엔 안 맞는다.
-_INTAKE_HINT_RE = re.compile(r"[①②③④⑤]|사전\s*보고|이번\s*주|다음\s*주|보고")
+# 사전 보고 단서 — ①~⑤ 번호 또는 「사전 보고·주간 보고·이번 주 한/할·다음 주 할」. 「보고」 낱말 하나로는 안 잡는다 —
+# 2026-09-15 실측: AtoA 의 「보고받으면」·시토 요청문이 사전 보고로 잡혔다. 회신 매칭(_reply_keywords)은 드문 낱말을 찾는 쪽이라 여기엔 안 맞는다.
+_INTAKE_HINT_RE = re.compile(r"[①②③④⑤]|사전\s*보고|주간\s*보고|이번\s*주\s*(한|할)|다음\s*주\s*할")
 _INTAKE_DECISION_RE = re.compile(r"④|결정")
 
 
@@ -3566,6 +3571,11 @@ def build_weekly_intake(meeting: date, human_lines: "list[dict] | None" = None) 
             continue
         msg = str(l.get("msg") or "").strip()
         if not msg or not _INTAKE_HINT_RE.search(msg):
+            continue
+        # AI 에이전트가 사람 계정으로 올린 전달문(「▎」 인용 막대 · 「웰리야 …」 지시)은 사람 보고가 아니다 —
+        # 2026-09-15 실측: AtoA 의 시토 요청문 2건이 ① 번호 때문에 나우열M 사전 보고로 잡혔다.
+        # ponytail: 낱말 규칙 하나뿐이다 — 사전 보고 서식(①~⑤ 한 줄씩)이 굳으면 서식 매칭으로 바꾼다.
+        if "▎" in msg or msg.startswith("웰리야"):
             continue
         p = people[who]
         p["submitted"] = True
@@ -3758,6 +3768,9 @@ def main() -> int:
     ap.add_argument("--why", default="", help="--resolve 사유(선택)")
     ap.add_argument("--nawool-noon", action="store_true",
                     help="평일 12:10 나우열M 낮 미회신 통(배2541) — 같은 날 두 번 안 보낸다")
+    ap.add_argument("--weekly-intake", action="store_true",
+                    help="주간 미팅 사전 보고 수집만(status/weekly_meeting_intake.json 저장 · 발송 없음)")
+    ap.add_argument("--date", default="", help="--weekly-intake 기준일(YYYY-MM-DD · 그 주 화요일로 맞춘다)")
     ap.add_argument("--selfcheck", action="store_true",
                     help="네트워크 없이 도는 자가점검(날짜 시간대·끝난 건 필터 등)")
     args = ap.parse_args()
@@ -3768,7 +3781,11 @@ def main() -> int:
         _selfcheck_gm_work_section()
         _selfcheck_inquiry_contact_section()
         _selfcheck_reply_match()
+        _selfcheck_weekly_meeting()
         return 0
+
+    if args.weekly_intake:
+        return weekly_intake_cli(args.date)
 
     if args.nudge_review:
         return nudge_review()
@@ -3846,6 +3863,12 @@ def main() -> int:
     #   에서도 preview_mgr_brief() 로 본문은 그대로 보여주고, 대기·발송·지문기록만 막는다.
     if args.dry_run:
         preview_mgr_brief()
+        # 📋 화요일 회의자료 통도 dry 로 본다 — 파일(intake·A3)만 쓰고 발송·지문·카드는 안 건드린다.
+        if datetime.now().weekday() == 1:
+            try:
+                send_weekly_meeting_pack(dry=True)
+            except Exception as exc:
+                log(f"[weekly-meeting] dry 예외: {type(exc).__name__}: {exc}")
     else:
         _sleep_until(*MORNING_SEND_TIMES["★중간관리자"])
         try:
@@ -3863,6 +3886,14 @@ def main() -> int:
             log(f"[mgr] 업무 목차 화면 재생성 — {manager_task_index.OUT.name}")
         except Exception as exc:
             log(f"[mgr] 업무 목차 재생성 예외(무시): {type(exc).__name__}: {exc}")
+
+        # 📋 화요일 = 주간 미팅 날(GM 지시 2026-09-15 · 카드 2026-09-35). 07:50 통 뒤 사전 보고 수집 →
+        # 회의자료 A3 정본 → ★중간관리자 + AtoA 「오늘 15:00 회의자료」 통 → 카드 갱신. 같은 날 두 번 안 나간다.
+        if datetime.now().weekday() == 1:
+            try:
+                send_weekly_meeting_pack()
+            except Exception as exc:
+                log(f"[weekly-meeting] 예외 — 다음 화요일 재시도: {type(exc).__name__}: {exc}")
 
         _sleep_until(*MORNING_SEND_TIMES["★부서장"])
         if ovd_ready:
