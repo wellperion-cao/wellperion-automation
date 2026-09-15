@@ -108,7 +108,14 @@ def record_gm_prompt_hook(with_recall: bool = False) -> None:
 
     with_recall=True(--recall 인자) 면 memory_recall.recall() 로 이번 프롬프트와
     관련된 메모리 상위 3건 본문을 additionalContext 뒤에 이어 붙인다(배1016).
+
+    무인 표식(배12672 · 2026-09-16): model_router.run_claude 가 띄우는 자식 claude 도
+    같은 훅을 타서 「[형식 고정] … 8요소 표」 리마인더가 무인 응답(카톡·텔레그램 자동 통)에
+    얹혀 나갔다. WELLPERION_HEADLESS=1 이면 접수 기록도 additionalContext 도 남기지 않고
+    아무 출력 없이 끝낸다(UserPromptSubmit 훅은 stdout 이 비어 있으면 아무 영향이 없다).
     """
+    if os.environ.get("WELLPERION_HEADLESS"):
+        return
     prompt = ""
     try:
         data = json.loads(sys.stdin.read())
@@ -604,6 +611,32 @@ def _selfcheck() -> None:
         assert not _SIMPLE_QUERY_RE.match(d), f'진짜 지시가 걸러짐: {d!r}'
     print(f'[OK] worklog 단순조회 필터 자가검사 통과 — 조회 {len(queries)}건 거름·지시 {len(directives)}건 통과')
 
+    # 배12672: WELLPERION_HEADLESS=1 이면 두 훅 진입점이 접수 기록(log)도 additionalContext
+    # 출력도 없이 바로 끝나는지 — 실제로 함수를 불러서 확인(log 를 임시로 가로채 실기록 방지).
+    import io
+    import contextlib
+    _log_calls = []
+    _orig_log = globals()['log']
+    globals()['log'] = lambda *a, **k: (_log_calls.append((a, k)) or True)
+    _orig_stdin, _orig_environ = sys.stdin, os.environ.get("WELLPERION_HEADLESS")
+    try:
+        os.environ["WELLPERION_HEADLESS"] = "1"
+        sys.stdin = io.StringIO(json.dumps({"prompt": "배12672 확인용 지시"}))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            record_gm_prompt_hook()
+        assert buf.getvalue() == "", f'HEADLESS=1 인데 stdout 출력이 있다: {buf.getvalue()!r}'
+        assert not _log_calls, f'HEADLESS=1 인데 접수 기록(log)이 호출됐다: {_log_calls!r}'
+        close_gm_refs_hook()  # 예외 없이 조용히 끝나면 통과(role 닫기 호출 안 함)
+    finally:
+        sys.stdin = _orig_stdin
+        globals()['log'] = _orig_log
+        if _orig_environ is None:
+            os.environ.pop("WELLPERION_HEADLESS", None)
+        else:
+            os.environ["WELLPERION_HEADLESS"] = _orig_environ
+    print('[OK] worklog 무인 표식(WELLPERION_HEADLESS) 조기 return 회귀 검사 통과')
+
 
 def close_gm_refs_hook() -> None:
     """Stop 훅 — 세션이 응답을 끝내면 그 역할의 열린 GM 접수를 닫는다.
@@ -613,7 +646,12 @@ def close_gm_refs_hook() -> None:
     다음 날 부팅문이고 부팅문은 걸러져서 닫기 호출까지 건너뛴다. 실측: 08-20 마지막 발화
     "나 퇴근해도되?" 가 다음 날 아침 쿵짝표에 미완으로 떴다. 코드 주석은 "Stop 훅에도 같은
     호출을 뒀다"고 적혀 있었지만 **훅 등록이 없어 한 번도 발화한 적이 없었다.**
+
+    무인 표식(배12672 · 2026-09-16): 무인 claude(WELLPERION_HEADLESS=1)는 사람 세션이
+    아니므로 GM 접수를 닫을 대상이 없다 — 건너뛴다.
     """
+    if os.environ.get("WELLPERION_HEADLESS"):
+        return
     try:
         role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
         if role:

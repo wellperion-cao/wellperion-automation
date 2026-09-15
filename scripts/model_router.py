@@ -176,6 +176,12 @@ def run_claude(
                 time.sleep(backoff)
 
             try:
+                # 무인 표식(배12672 · 2026-09-16): 이 자식 claude 도 사람 세션과 같은
+                # UserPromptSubmit/Stop 훅(worklog.py)을 타서 「[형식 고정] … 8요소 표」
+                # 리마인더가 무인 응답(message 칸)에 얹혀 나갔다. 자식 env 에 표식을 줘서
+                # 훅이 스스로 건너뛰게 한다(프롬프트로는 못 이긴다 — 위 cwd 주석 참조).
+                _env = os.environ.copy()
+                _env["WELLPERION_HEADLESS"] = "1"
                 result = subprocess.run(
                     cmd,
                     input=prompt,  # 긴 한글 프롬프트는 stdin (명령줄 길이·인코딩 한계 회피)
@@ -188,6 +194,7 @@ def run_claude(
                     # 2026-09-11 실측: 고척 블로그 본문 자리에 「[형식 고정] 8요소 표」 훅이
                     # 붙어 블로그 글 대신 업무 보고 표가 4번 연속 나왔다(프롬프트로는 못 이긴다).
                     cwd=cwd,
+                    env=_env,
                 )
             except subprocess.TimeoutExpired:
                 last_err = f"타임아웃({timeout}s)"

@@ -1347,6 +1347,17 @@ def _normalize_category(raw) -> str:
     return ""
 
 
+# 배12672(2026-09-16): 무인 두뇌 호출에 사람 세션 훅(GM 보고 8요소 표 리마인더)이 얹혀
+# message 칸에 「📌 GM요청 | 🔍 실측 | …」 표가 그대로 실린 사고 — 원인은 model_router.py·
+# worklog.py 에서 표식으로 막았다(①②). 여기는 마지막 안전판 — 그래도 새어 들어온 표 머리는
+# 아침 통으로 내보내지 않는다.
+_REPORT_TABLE_MARKERS = ("📌 GM요청", "📌GM요청", "📌 GM 요청", "| 🔍 실측 |")
+
+
+def _has_report_table_header(text: str) -> bool:
+    return any(marker in text for marker in _REPORT_TABLE_MARKERS)
+
+
 def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
     """claude 응답에서 {"message","issues","schedules"} JSON 파싱.
     실패 시 원문을 메시지로, issues·schedules=[] (정직 강등)."""
@@ -1357,6 +1368,14 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
     try:
         data = json.loads(cleaned)
         message = str(data.get("message", "")).strip()
+        if message and _has_report_table_header(message):
+            print("[차단] 두뇌 응답 message 칸에 GM 보고 표 머리가 섞였다 — 발송 차단(배12672, 정직 강등)")
+            try:
+                from model_router import _alert
+                _alert("🚨 아침요약 발송 차단 — message 에 GM 보고 표 유입(배12672). 두뇌 응답·훅 표식 확인 요망.")
+            except Exception:
+                pass
+            return "", [], [], False
         issues = data.get("issues") or []
         if not isinstance(issues, list):
             issues = []
@@ -2241,6 +2260,22 @@ def _schedule_reply_lines(added: list[dict]) -> str:
             "\n  (틀리면 한 줄만 주세요 — 바로 고칩니다)")
 
 
+def _selfcheck_report_table_guard() -> None:
+    """배12672 회귀 검사 — message 칸에 GM 보고 표 머리가 섞이면 parse_brain_json 이
+    발송을 차단하고(정직 강등), 정상 메시지는 그대로 통과하는지."""
+    contaminated = json.dumps({
+        "message": "🌅 아침 요약\n📌 GM요청 | 🔍 실측 | ✅ 반영\n어제 대화 요약입니다",
+        "issues": [], "schedules": [],
+    }, ensure_ascii=False)
+    message, issues, schedules, json_ok = parse_brain_json(contaminated)
+    assert message == "" and json_ok is False, "보고 표 유입 message 가 차단되지 않았다(배12672 회귀)"
+    clean = json.dumps({"message": "🌅 정상 요약\n오늘은 별일 없었습니다",
+                        "issues": [], "schedules": []}, ensure_ascii=False)
+    message2, _, _, json_ok2 = parse_brain_json(clean)
+    assert message2 and json_ok2 is True, "정상 메시지까지 막혔다(과차단)"
+    print("[selfcheck] ops_daily_digest 보고 표 유입 차단(배12672) OK")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="★운영부 카톡 대화 → AI 아침 요약 두뇌(v1) — 발송·txt 내보내기는 범위 밖",
@@ -2254,7 +2289,12 @@ def main():
                         help="방 이름 ASCII 별칭(ops·mgr) — .bat 에서 부를 때 쓴다(한글 인자는 깨진다)")
     parser.add_argument("--bridge-dry-run", dest="bridge_dry_run", action="store_true",
                         help="업무 장부 다리를 실제로 등록하지 않고 무엇이 올라갈지만 보여준다")
+    parser.add_argument("--selfcheck", dest="selfcheck", action="store_true",
+                        help="회귀 자가검사만 실행(발송·claude 호출 없음)")
     args = parser.parse_args()
+    if args.selfcheck:
+        _selfcheck_report_table_guard()
+        sys.exit(0)
     room = ROOM_KEYS[args.room_key] if args.room_key else args.room
     sys.exit(run(forced_date=args.date, room=room, bridge_dry_run=args.bridge_dry_run))
 
