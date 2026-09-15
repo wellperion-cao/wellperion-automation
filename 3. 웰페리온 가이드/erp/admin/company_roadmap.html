@@ -26,6 +26,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 
 <h2>1. 북극성 · 지표</h2>
 <table><colgroup><col style="width:22%"><col></colgroup>
+<tr><th>궁극 목표</th><td>자동화 모듈을 하나씩 셋업해 피트니스 업계가 본질에 집중하게 한다 — 효율적이고 능률적인 자동화(GM 2026-09-15)</td></tr>
 <tr><th>북극성</th><td><b>유료 도입 센터 수</b>(웰페리온은 안 센다)</td></tr>
 <tr><th>앞 지표</th><td>소개서 받은 센터 수 → 설문 회신 센터 수 → 파일럿 진행 센터 수</td></tr>
 <tr><th>뒤 지표</th><td>센터당 월 이용 유지 개월 · 운영자가 줄인 시간(설문 41·42번 기준선 대비)</td></tr>
@@ -38,10 +39,10 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>실제로 한 일</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
 <tr><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문</td><td>셋업(1회)</td></tr>
 <tr><td>문서 3종</td><td>브랜드가이드·회사소개서·운영전략 — 다캠 v0.4 · 고척 v0.1 · 파트너 라인 페이지로</td><td>셋업(1회)</td></tr>
-<tr><td>블로그 자동</td><td>06:30 매일 임시저장 · 서버 계정으로 자동 로그인 · 문체는 blog_style.json</td><td>월 이용(마케팅 자동화)</td></tr>
-<tr><td>상담봇</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
-<tr><td>카톡 AI 비서</td><td>07:00·21:00 통 · 답 접수 · 빈칸 질문 · Before/After 페이지</td><td>월 이용(운영 비서)</td></tr>
-<tr><td>ERP 3모듈</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
+<tr><td>마케팅 자동화(블로그)</td><td>06:30 매일 임시저장 · 서버 계정으로 자동 로그인 · 문체는 blog_style.json</td><td>월 이용(마케팅 자동화)</td></tr>
+<tr><td>상담 자동화</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
+<tr><td>보고 자동화(카톡 아침 통)</td><td>07:00·21:00 통 · 답 접수 · 빈칸 질문 · Before/After 페이지</td><td>월 이용(운영 비서)</td></tr>
+<tr><td>운영 자동화(ERP 3모듈)</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
 </table>
 <p class="note">사람 손(시보 시간)이 셋업에 든다 — 다캠 2주 · 고척 1주. 이 시간을 질문은행·발행 스크립트로 계속 줄이는 것이 원가 전략이다.</p>
 
@@ -69,7 +70,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <table><colgroup><col style="width:14%"><col style="width:16%"><col style="width:16%"><col></colgroup>
 <tr><th>묶음</th><th>셋업(1회)</th><th>월 이용</th><th>근거 · 어디서 온 숫자인가</th></tr>
 <tr><td>스타트</td><td>500,000</td><td>150,000</td><td>블로그 대행 시장가 월 30~60만(추정) 아래 · 시보 셋업 1주</td></tr>
-<tr><td>그로스</td><td>1,000,000</td><td>300,000</td><td>+상담봇·인스타 · 직원 1명 인건비(월 250만+)의 12%</td></tr>
+<tr><td>그로스</td><td>1,000,000</td><td>300,000</td><td>+상담 자동화·인스타 · 직원 1명 인건비(월 250만+)의 12%</td></tr>
 <tr><td>운영</td><td>1,500,000</td><td>500,000</td><td>+운영 시스템 3모듈 · 다캠 셋업 2주 실측</td></tr>
 <tr><td>사용량</td><td>—</td><td>답변 1건 50원</td><td>모델 원가 10~30원(추정) · 상한 일 300건 → 월 최대 45만 · 보통 1~3만</td></tr>
 <tr><td>웰페리온(1호)</td><td>0</td><td>0 또는 원가 100,000</td><td>법인 분리 시 이전가격 필요</td></tr>
@@ -102,7 +103,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><th>층</th><th>무엇에 대한 값</th><th>원가·근거</th></tr>
 <tr><td>셋업(1회)</td><td>정본 셋업 · 문서 3종 · 계정·채널 연결</td><td>시보 시간 — 다캠 2주 · 고척 1주</td></tr>
 <tr><td>월 이용(묶음)</td><td>스타트 / 그로스 / 운영 — 소개서 §5</td><td>AWS 월 150만 한도 안 80만 여유(A3 09-03) · 테넌트 추가 원가 = FAQ 폴더 1·계정 1행·nginx 1줄</td></tr>
-<tr><td>사용량(실비)</td><td>상담봇 답변 호출 · 카톡 채널 API</td><td>LLM 월 수천 원(시토 추정) · 상한 가드 일 300건</td></tr>
+<tr><td>사용량(실비)</td><td>상담 자동화 답변 호출 · 카톡 채널 API</td><td>LLM 월 수천 원(시토 추정) · 상한 가드 일 300건</td></tr>
 <tr><td>웰페리온(1호)</td><td>내부 거래 — 0원 또는 원가</td><td>법인 분리 시 세무상 필요</td></tr>
 </table>
 <p class="note">희만이(지분 파트너 · 기술 총괄 · 10% · 투잡) 몫은 가격이 아니라 지분으로 푼다(GM 09-09). 가격표에 사람 몫을 섞지 않는다.</p>

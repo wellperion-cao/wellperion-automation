@@ -299,11 +299,12 @@
   <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
   <div class="sep"></div>
   <div class="cap">모듈</div>
-  <a href="#view/kakao" data-view="kakao"><span class="t">카톡 전송</span></a>
-  <a href="#view/counsel" data-view="counsel"><span class="t">상담봇</span></a>
+  <!-- GM 2026-09-15 19:1x: 모듈 이름은 「○○ 자동화」로 · 궁극 목표 = 효율적이고 능률적인 자동화를 셋업해 피트니스 업계가 본질에 집중하게 -->
+  <a href="#view/kakao" data-view="kakao"><span class="t">보고 자동화</span></a>
+  <a href="#view/counsel" data-view="counsel"><span class="t">상담 자동화</span></a>
   <!-- 마케팅 자동업로드 — 센터 공식 계정 발행(GM 2026-09-14 「마케팅 전체 파이프라인은
        ERP플랫폼관리 라인으로」). 파트너사 첫 화면에서는 뺐다 — 파는 쪽 기능이다. -->
-  <a href="#view/upload" data-view="upload"><span class="t">마케팅 자동업로드</span></a>
+  <a href="#view/upload" data-view="upload"><span class="t">마케팅 자동화</span></a>
   <div class="sep"></div>
   <!-- GM 2026-09-15 19:0x: 이 묶음은 「자료」가 아니라 표준화(기준)다 · 다운로드는 모듈 진행 전에 받는 것이라 여기 · 공부는 AI 운영 가이드로 -->
   <div class="cap">표준화 · 기준</div>
@@ -381,9 +382,9 @@
   <script>
   (function(){
     var P=[
-      {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['ERP','상담봇','카톡 전송','블로그 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
-      {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
-      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['상담봇','/info/gocheokgolf/']]}
+      {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['운영 자동화(ERP)','상담 자동화','보고 자동화','마케팅 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
+      {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
+      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['상담봇','/info/gocheokgolf/']]}
     ];
     var $=function(id){ return document.getElementById(id); };
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -452,7 +453,7 @@
         <td>2026-09</td>
         <td class="path"><span class="n">없음</span></td>
         <td class="path"><span class="n">없음</span></td>
-        <td><span class="st wait">상담봇·블로그 자동화</span></td>
+        <td><span class="st wait">상담 자동화·마케팅 자동화</span></td>
       </tr>
       <tr>
         <td class="item"><b>3호</b></td>
@@ -460,7 +461,7 @@
         <td>2026-09</td>
         <td class="path"><span class="n">없음</span></td>
         <td class="path"><span class="n">없음</span></td>
-        <td><span class="st wait">상담봇·블로그 자동화</span></td>
+        <td><span class="st wait">상담 자동화·마케팅 자동화</span></td>
       </tr>
     </tbody>
   </table></div>
@@ -672,7 +673,7 @@
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/1.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%ED%9A%8C%EC%82%AC%EC%86%8C%EA%B0%9C%EC%84%9C_v2.19.html" target="_blank" rel="noopener"><b>2 회사소개서</b><span>v2.19</span></a>
       <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>3 브랜드가이드</b><span>색 · 로고 · 서체 · 말투 · 금지어</span></a>
       <a class="pi ok" href="../../%ED%9A%8C%EC%82%AC%EB%AC%B8%EC%84%9C/2.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%EC%A0%84%EB%9E%B5%EB%A1%9C%EB%93%9C%EB%A7%B5_%EB%B3%B4%EA%B3%A0%EC%84%9C_v1.4_A3.html" target="_blank" rel="noopener"><b>4 운영전략</b><span>전략로드맵 v1.4</span></a>
-      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문)</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>5 상담 자동화 · 자주 묻는 질문</b><span>질문·답 28건 · 자력 답변 77%(172문 중 133문)</span></a>
       <a class="pi ok" href="http://wellperion.com/llms.txt" target="_blank" rel="noopener"><b>6 검색 노출 셋팅</b><span>사람 검색(SEO) · AI 검색(GEO) · 즉답(AEO) — robots · sitemap · llms.txt 다 있음</span></a>
       <a class="pi ok" href="../../cmo/funnel/%EC%BD%98%ED%85%90%EC%B8%A0%EB%AC%B8%EC%9D%98%ED%98%84%ED%99%A9.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그·인스타·카페·당근 자동 발행 돌고 있음</span></a>
       <a class="pi ok" href="#acct" data-acct="1"><b>8 계정</b><span>발행·상담봇이 쓰는 계정 자리 — 누르면 아이디가 보입니다</span></a>
@@ -686,7 +687,7 @@
       <a class="pi warn" href="../../cbo/dietcamp/intro.html" target="_blank" rel="noopener"><b>2 회사소개서</b><span>v0.3 · 손님용 9절은 홈으로, 동행자용으로 다시 짠다</span></a>
       <a class="pi ok" href="../../cbo/dietcamp/brand.html" target="_blank" rel="noopener"><b>3 브랜드가이드</b><span>v0.3 · 로고 파일만 미수령</span></a>
       <a class="pi ok" href="../../cbo/dietcamp/strategy.html" target="_blank" rel="noopener"><b>4 운영전략</b><span>v0.2 · 90일 계획까지</span></a>
-      <a class="pi ok" href="https://erp.wellperion.com/dietcamp/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>질문·답 6건(웰페리온은 28건) · 자력 답변 84%(38문 중 32문)</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/dietcamp/counsel/" target="_blank" rel="noopener"><b>5 상담 자동화 · 자주 묻는 질문</b><span>질문·답 6건(웰페리온은 28건) · 자력 답변 84%(38문 중 32문)</span></a>
       <span class="pi none"><b>6 검색 노출 셋팅</b><span>아직 없음 — robots · sitemap · llms.txt 셋 다 미설치</span></span>
       <span class="pi none"><b>7 마케팅 자동 셋업</b><span>시작 여부를 대표님께 여쭌 상태(9/14)</span></span>
       <span class="pi none"><b>8 계정</b><span>블로그 계정 미수령</span></span>
@@ -700,7 +701,7 @@
       <span class="pi none"><b>2 회사소개서</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
       <span class="pi none"><b>3 브랜드가이드</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
       <span class="pi none"><b>4 운영전략</b><span>글 원고만 · 볼 수 있는 화면 없음</span></span>
-      <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>5 상담봇 · 자주 묻는 질문</b><span>자력 답변 100%(9문 중 9문 · 아직 표본이 적다)</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>5 상담 자동화 · 자주 묻는 질문</b><span>자력 답변 100%(9문 중 9문 · 아직 표본이 적다)</span></a>
       <span class="pi none"><b>6 검색 노출 셋팅</b><span>아직 없음 — robots · sitemap · llms.txt 셋 다 미설치</span></span>
       <a class="pi bad" href="../../cbo/gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener"><b>7 마케팅 자동 셋업</b><span>블로그 자동 발행 있으나 9/12~14 3일 연속 실패</span></a>
       <a class="pi warn" href="#acct" data-acct="3"><b>8 계정</b><span>블로그·인스타 계정 자리 있음 · 로그인이 풀려 다시 로그인 필요</span></a>
@@ -1006,8 +1007,8 @@
       <tr><td class="item">월간 운영계획</td><td>1</td><td class="note">월간 운영계획</td></tr>
       <tr><td colspan="3" class="grp">플랫폼 것 (3) — 「이관」 판으로 옮긴다</td></tr>
       <tr><td class="item">자율 가동</td><td>1</td><td class="note">자율현황</td></tr>
-      <tr><td class="item">발신</td><td>1</td><td class="note">카톡 전송 관리</td></tr>
-      <tr><td class="item">상담봇</td><td>1</td><td class="note">상담봇 관리</td></tr>
+      <tr><td class="item">발신</td><td>1</td><td class="note">보고 자동화 관리</td></tr>
+      <tr><td class="item">상담 자동화</td><td>1</td><td class="note">상담 자동화 관리</td></tr>
       <tr><td colspan="3" class="grp">모듈이 아닌 것 (10)</td></tr>
       <tr><td class="item">문서·도구 9</td><td>—</td><td class="note">부서 체계 3 · 거래업체 · 브로제이 업무분장 · 프로필월 · ERP 가이드 · 마케팅 월간보고서 · 개인계정 기록</td></tr>
       <tr><td class="item">임시 1</td><td>—</td><td class="note">오넛티 접수(추석 행사) — 끝나면 내린다</td></tr>
@@ -1254,7 +1255,7 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { company:'회사' };
+    var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화' };
     // 오른쪽 화면 높이 = 안쪽 문서 높이(같은 도메인이라 읽을 수 있다) — 스크롤바가 페이지 하나만 남는다
     // (GM 2026-09-15 「페이지 스크롤바가 있고 또 블럭 안에 스크롤바가 있는데」). 못 읽으면(다른 도메인) 화면 높이로 둔다.
     // 안쪽 문서가 첫 화면이 아닌 곳(소개서·로드맵 등)에 가 있으면 true — 메뉴를 다시 누르면 첫 화면으로 돌아오게(2026-09-15 시보)
