@@ -178,9 +178,9 @@ def _main(argv):
     try:
         name = argv[argv.index("--name") + 1]
     except (ValueError, IndexError):
-        print("--name 이 필요합니다 (%s)" % " · ".join([GM_NAME] + sorted(set(DEPT_PIN.values()))))
+        print("--name 이 필요합니다 (%s)" % " · ".join([GM_NAME, CHECK_UNLOCK_NAME] + sorted(set(DEPT_PIN.values()))))
         return 2
-    if name not in ([GM_NAME] + list(DEPT_PIN.values())):
+    if name not in ([GM_NAME, CHECK_UNLOCK_NAME] + list(DEPT_PIN.values())):
         print("모르는 비번 이름: %s" % name)
         return 2
     pin = sys.stdin.readline().strip() if not sys.stdin.isatty() else __import__("getpass").getpass("PIN: ")
