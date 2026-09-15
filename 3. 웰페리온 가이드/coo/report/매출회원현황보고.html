@@ -1968,9 +1968,9 @@ function renderP2Contract(c, dayLabel){
   var mem = document.getElementById('p2mem'), les = document.getElementById('p2les');
   var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh');
   if (h1) h1.textContent = dayLabel + ' 등록 — 멤버십';
-  if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (성인 · 유소년)';
+  if (h2) h2.textContent = dayLabel + ' 등록 — 강습 (팀별)';
   var memRows = readContracts(c, ['A','B','C','D','E','F','G']);
-  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows, 4);   // 한 줄에 흐르게(GM 2026-09-15)
+  if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', memRows, 2);   // 두 단(4단은 줄 끝이 잘렸다 · 2026-09-15)
   if (les) {
     var rows = readContracts(c, ['H','I','J','K','L','M','N']);
     /* 등록 띠는 등록이 많은 날 이름이 잘리지 않게 넉넉히 잡아 두지만, 한 건도 없는 날(휴관 등)에는
