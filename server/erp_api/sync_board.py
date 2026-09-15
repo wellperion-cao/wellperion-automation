@@ -28,6 +28,7 @@ BOARD_KEYS = (
     "ALLDEPT_VENDOR_CATEGORIES",   # 전사_거래업체 (2026-09-04 배985)
     "GM_TASK_CHECKS",              # GM업무 체크칸
     "CHAIRMAN_ITEM_CHECKS",        # 회장님 지시사항 체크칸
+    "SUPPORT_SUPPLY",              # 비품 원장 — 지원부 체계·CFO 매출지출현황 비품관리 탭이 공유(배12615 · CFO 요청서3 §1-④)
 )
 
 
