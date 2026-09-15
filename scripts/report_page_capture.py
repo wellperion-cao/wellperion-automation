@@ -115,7 +115,7 @@ def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> 
         # READY 뒤에도 늦게 오는 칸(일 단위·두 장부 대조 등)이 「불러오는 중…」으로 남은 채 찍히던 것(2026-09-14 실측)
         # — 그 글자가 사라질 때까지 최대 60초 더 기다린다. 끝내 남으면 그대로 찍는다(사유는 그림에 보인다).
         try:
-            page.wait_for_function("() => !document.body.innerText.includes('불러오는 중')", timeout=60_000)
+            page.wait_for_function("() => !document.body.innerText.includes('불러오는 중')", timeout=150_000)
         except Exception:
             pass
 

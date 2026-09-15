@@ -443,8 +443,9 @@
         </div>
       </div>
 
-      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분 -->
-    <div class="sec" style="flex:1;min-height:0;">
+      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분(합계 + 세 줄). 높이를 먼저 잡아 두지 않으면
+           위 컨택·로스자 글이 길어진 날 세 줄 중 마지막이 잘린다(2026-09-15 실측). -->
+    <div class="sec" style="flex:none;height:132px;">
       <h2>어제 다녀가신 분</h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -849,15 +850,18 @@ function loadDaily(){
      떨구고 본 보고까지 같이 죽는다(2026-09-14 실측 — 7일치 동시 호출에 1면 전체가 404 로 비었다).
      그래서 ①본 보고가 다 그려진 뒤에 ②한 건씩 차례로 부른다. 이 칸이 늦거나 비어도 발송 판정
      (window.__REPORT_READY)에는 들어가지 않는다 — 보고를 막지 않는다. */
-  var vals = [];
-  function step(i){
-    if (i >= days.length) { paintDaily(days, vals); return; }
-    drGet('dump', '&sheet=' + days[i].getDate() + '&range=J3:J3')
-      .then(function(r){ vals.push((r && r.ok && r.cells) ? num(r.cells.J3) : null); })
-      .catch(function(){ vals.push(null); })
-      .then(function(){ step(i + 1); });
+  var vals = new Array(days.length);
+  var CH = 3;                                   // 한 번에 3건씩 — 7건 동시(2026-09-14 사고)도, 1건씩(느림)도 아니다
+  function chunk(start){
+    if (start >= days.length) { paintDaily(days, vals); return; }
+    var part = days.slice(start, start + CH);
+    Promise.all(part.map(function(d, k){
+      return drGet('dump', '&sheet=' + d.getDate() + '&range=J3:J3')
+        .then(function(r){ vals[start + k] = (r && r.ok && r.cells) ? num(r.cells.J3) : null; })
+        .catch(function(){ vals[start + k] = null; });
+    })).then(function(){ chunk(start + CH); });
   }
-  step(0);
+  chunk(0);
 }
 
 function paintDaily(days, vals){
