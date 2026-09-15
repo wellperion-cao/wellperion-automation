@@ -41,6 +41,7 @@ GM업무 반영 — 서명 행 자체는 이미 GM업무.html 🤵 대표님 표
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -135,13 +136,59 @@ def pick_new(rows: list[dict], notified: dict[str, str], col: str = "대표싸�
     return sorted(new, key=lambda r: str(r.get("수정일") or ""))
 
 
-def _line_item(r: dict, compact: bool = False) -> list[str]:
+# ── 전달 경로(GM 지시 2026-09-15) ────────────────────────────────────────────
+# GM 원문: "결재완료 알림 담당자가 운영부방에 있으면 이경연실장이 전달 꼭 해주는걸로,
+#          담당자가 전달 받았는지도 확인해서 진행 후 결과보고서까지 만들어서 SSOT 할 수 있도록".
+# 담당자 → 부서 리더 매핑의 정본 = ssot/ownership_map.json 부서_리더(약속 L01 — 표를 여기 베끼지 않는다).
+_DEPT_TABLE: list | None = None
+
+
+def _dept_table() -> list:
+    global _DEPT_TABLE
+    if _DEPT_TABLE is None:
+        try:
+            m = json.loads((REPO_ROOT / "ssot" / "ownership_map.json").read_text(encoding="utf-8"))
+            _DEPT_TABLE = (m.get("부서_리더") or {}).get("부서") or []
+        except Exception:
+            _DEPT_TABLE = []
+    return _DEPT_TABLE
+
+
+def delivery_leader(owner: str) -> str:
+    """담당자 이름 → 그 사람에게 전달해 줄 부서 리더. 명단에 없으면 '' (지어내지 않는다)."""
+    nm = _owner_key(owner)
+    for d in _dept_table():
+        if nm in (d.get("구성원") or []):
+            return str(d.get("리더") or "")
+    return ""
+
+
+def delivery_note(r: dict, no: int | None = None) -> str:
+    """그 건을 누가 누구에게 전달하고 무엇으로 회신하는지 한 조각. 번호가 있으면 회신 규격까지."""
+    owner = _owner_key(r.get("담당자"))
+    if not owner:
+        return "담당 지정 후 전달 부탁드립니다"
+    leader = delivery_leader(owner)
+    tail = f" · #{no} 전달완료 회신" if isinstance(no, int) else ""
+    if _HOLD_OWNER_RE.search(owner) and "나우열" not in owner:
+        return "GM 본인 건"      # 남에게 전달할 것이 없다 — 회신도 안 받는다
+    if "나우열" in owner:
+        return "업무관리 방(AtoA) 전달" + tail
+    if not leader:
+        return "전달 담당을 정해 주세요" + tail
+    if leader == owner:
+        return "직접 진행" + tail
+    return f"{leader}님 → {owner} 전달" + tail
+
+
+def _line_item(r: dict, compact: bool = False, nos: dict | None = None) -> list[str]:
     title = str(r.get("업무명") or "").strip()
     owner = str(r.get("담당자") or "").strip() or "담당 미지정"
+    note = delivery_note(r, (nos or {}).get(str(r.get("id") or "").strip()))
     if compact:
-        return [f"▪ {title} — {owner}"]
+        return [f"▪ {title} — {owner} · {note}"]
     cat = _CAT_RE.sub("", str(r.get("카테고리") or "").strip())
-    detail = f"   담당 {owner}" + (f" · {cat}" if cat else "")
+    detail = f"   담당 {owner}" + (f" · {cat}" if cat else "") + f" · {note}"
     return [f"▪ {title}", detail]
 
 
@@ -151,7 +198,8 @@ def _md(today: str | None) -> tuple[str, str]:
     return today, f"{int(m)}/{int(d)}"
 
 
-def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, today: str | None = None) -> list[str]:
+def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, today: str | None = None,
+                   nos: dict | None = None) -> list[str]:
     """실무진 전달문 — 제목 줄 · 항목(▪)+상세(들여쓰기 3칸) · 빈 줄 없음 · 끝에 할 일 한 줄.
     대표님·GM 둘 다 있으면 한 통에 두 절(🤵 대표님 / 👤 GM). 같은 건이 양쪽에 있으면 대표님 절에만.
     4건까지는 제목+상세 2줄, 넘으면 「▪ 제목 — 담당」 1줄로 줄여 한 통 10줄 안쪽을 지킨다(8건 넘으면 분할)."""
@@ -164,7 +212,8 @@ def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, toda
     both = bool(rep_rows) and bool(gm_rows)
     who = "대표님" if rep_rows and not gm_rows else ("GM" if gm_rows and not rep_rows else "대표님·GM")
     compact = total > MAX_ITEMS_PER_MSG or both
-    per_msg = MAX_ITEMS_PER_MSG if not compact else (5 if both else 7)   # 제목1+절이름2+마감2 = 10줄 안
+    # 마감 문구가 2줄(전달완료 회신 · 결과보고서)로 늘어 한 통 자리가 하나씩 줄었다(GM 2026-09-15).
+    per_msg = MAX_ITEMS_PER_MSG if not compact else (4 if both else 6)   # 제목1+절이름2+마감3 = 10줄 안
     flat = [("🤵 대표님", r) for r in rep_rows] + [("👤 GM", r) for r in gm_rows]
     chunks = [flat[i:i + per_msg] for i in range(0, total, per_msg)]
     msgs = []
@@ -176,15 +225,69 @@ def build_messages(rep_rows: list[dict], gm_rows: list[dict] | None = None, toda
             if both and sec != last_sec:
                 lines.append(sec)
                 last_sec = sec
-            lines += _line_item(r, compact)
+            lines += _line_item(r, compact, nos)
         if ci == len(chunks) - 1:
-            # 담당이 빈 건이 섞여 있으면 "각 담당자께서는" 이 그 건에는 닿지 않는다 — 지정 부탁을 먼저 둔다.
-            if any("담당 미지정" in ln for ln in lines):
-                lines.append("담당이 비어 있는 건은 중간관리자께서 담당자를 정해 업무 화면에 적어 주세요.")
-            lines.append("담당자께서는 결재된 내용대로 진행해 주시고, 진행 상황은 업무 화면에 남겨 주세요.")
+            # 담당이 비어 있다는 말은 항목 줄에 이미 붙어 있다(delivery_note) — 따로 한 줄 더 쓰지 않는다.
+            # GM 지시 2026-09-15 — 전달 → 전달 확인 → 진행 → 결과보고서까지가 한 흐름이라 마감이 두 줄이다.
+            lines.append("전달하신 분은 위 #번호로 「전달완료」 한 줄만 답해 주세요(회신 올 때까지 아침 정리에 실립니다).")
+            lines.append("진행 끝나면 사진·최종 금액·완료 시각을 이 방에 올려 주세요 — 결과보고서 A4 초안을 드리고, 담당자께서 결재 SSOT 행에 등록하시면 됩니다.")
             lines.append(SIGNOFF)
         msgs.append("\n".join(lines))
     return msgs
+
+
+# ── 전달 확인 원장 (GM 지시 2026-09-15 "담당자가 전달 받았는지도 확인해서") ──────────
+# 새 리마인더·새 상태 파일을 만들지 않는다(약속 L21) — 이미 도는 ★중간관리자 원장에 건별로
+# 한 줄 얹으면, 07:50 아침 정리(send_ops_digest.build_reply_nudge_items)가 「#번호 했다」
+# 회신이 올 때까지 그 줄을 계속 싣고 sync_ledger_replies 가 회신으로 닫는다.
+MGR_LEDGER = REPO_ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★중간관리자" / "_digest_ledger.json"
+
+
+def build_delivery_asks(rows: list[dict]) -> list[dict]:
+    """전달 확인을 받을 건만 원장 이슈 꼴로 만든다. 담당이 비었거나 부서 명단에 없는 건은
+    뺀다 — 주인 없는 일은 사람한테 묻지 않는다(build_reply_nudge_items 와 같은 규칙)."""
+    asks = []
+    for r in rows:
+        owner = _owner_key(r.get("담당자"))
+        leader = delivery_leader(owner)
+        title = str(r.get("업무명") or "").strip()
+        if not owner or not leader or not title:
+            continue
+        asks.append({
+            "issue": f"결재완료 전달 — {title}" + (f" ({owner})" if owner != leader else ""),
+            "owner": leader,           # 회신을 받을 사람 = 부서 리더(운영부=이경연 실장 · 시설부=이정헌 소장)
+            "status": "open",
+            "kind": "reply",
+            "todo_id": str(r.get("id") or "").strip(),
+        })
+    return asks
+
+
+def register_delivery_asks(asks: list[dict], today: str, save: bool) -> dict[str, int]:
+    """원장 번호 규칙(ops_daily_digest.assign_ledger_no)으로 #번호를 매겨 {업무 id: 번호} 를
+    돌려준다. save=True 일 때만 오늘 자리에 더해 파일에 쓴다 — 통이 실제로 나간 뒤에 부른다
+    (안 나간 통의 번호가 원장에 남으면 아무도 모르는 미회신 건이 쌓인다)."""
+    if not asks:
+        return {}
+    try:
+        from ops_daily_digest import assign_ledger_no, save_ledger
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[rep-approval-relay] 전달 확인 원장 읽기 실패 — 번호 없이 보냅니다 ({exc})")
+        return {}
+    assign_ledger_no(ledger, asks)
+    if save:
+        entry = next((e for e in ledger if isinstance(e, dict) and e.get("date") == today), None)
+        if entry is None:
+            entry = {"date": today, "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                     "source_file": "rep_approval_relay", "issues": []}
+            ledger.append(entry)
+            ledger.sort(key=lambda e: str(e.get("date", "")))
+        entry.setdefault("issues", []).extend(asks)
+        save_ledger(ledger, path=MGR_LEDGER)   # 전역 LEDGER_PATH 는 ★운영부다 — 이 방 경로를 명시
+        print(f"[rep-approval-relay] 전달 확인 {len(asks)}건 원장 등록 → #{[a.get('no') for a in asks]}")
+    return {a["todo_id"]: a["no"] for a in asks
+            if isinstance(a.get("no"), int) and a.get("todo_id")}
 
 
 # ── ⑤ 담당별 진행 현황(GM업무 열린 행) ─────────────────────────────────────
@@ -383,7 +486,12 @@ def run(send: bool = False, dry_run: bool = False) -> int:
     new_gm = pick_new(rows, notified_gm, "GM싸인")
     print(f"[rep-approval-relay] 전체 {len(rows)}행 · 대표 서명 {sum(1 for r in rows if is_signed(r))}건(전달 전 {len(new)}) "
           f"· GM 서명 {sum(1 for r in rows if is_signed(r, 'GM싸인'))}건(전달 전 {len(new_gm)})")
-    msgs = build_messages(new, new_gm)
+    # 전달 확인 번호를 먼저 매겨 문구에 박고, 원장 쓰기는 통이 나간 뒤에 한다(GM 2026-09-15).
+    today = datetime.now().strftime("%Y-%m-%d")
+    rep_ids = {str(r.get("id")).strip() for r in new}
+    asks = build_delivery_asks(new + [r for r in new_gm if str(r.get("id")).strip() not in rep_ids])
+    nos = register_delivery_asks(asks, today, save=False)
+    msgs = build_messages(new, new_gm, nos=nos)
     for i, t in enumerate(msgs, 1):
         print(f"── 미리보기 {i}/{len(msgs)} ({t.count(chr(10)) + 1}줄) ──")
         print(t)
@@ -391,7 +499,7 @@ def run(send: bool = False, dry_run: bool = False) -> int:
         return 0
     sent_all = all(send_via_gate(t, dry_run) for t in msgs)
     if sent_all and not dry_run:
-        today = datetime.now().strftime("%Y-%m-%d")
+        register_delivery_asks(asks, today, save=True)
         for r in new:
             notified[str(r.get("id")).strip()] = today
         for r in new_gm:
@@ -418,24 +526,34 @@ def _selfcheck() -> None:
     assert len(msgs) == 1 and "\n\n" not in msgs[0], msgs
     lines = msgs[0].splitlines()
     assert lines[0] == "📋 9/3 대표님 결재 완료 2건" and lines[-1] == SIGNOFF, lines
-    assert lines[1] == "▪ 병" and lines[2] == "   담당 담당 미지정", lines[1:3]
-    assert lines[3] == "▪ 갑" and lines[4] == "   담당 이경연 실장 · 운영 정책", lines[3:5]
+    assert lines[1] == "▪ 병" and lines[2] == "   담당 담당 미지정 · 담당 지정 후 전달 부탁드립니다", lines[1:3]
+    # 전달 경로(GM 2026-09-15) — 담당이 부서 명단에 있으면 그 부서 리더가 전달, 번호가 있으면 회신 규격까지
+    assert lines[3] == "▪ 갑" and lines[4] == "   담당 이경연 실장 · 운영 정책 · 직접 진행", lines[3:5]
     assert len(lines) <= 10
+    lines = build_messages(pick_new(rows, {}), today="2026-09-03", nos={"A": 301})[0].splitlines()
+    assert lines[4] == "   담당 이경연 실장 · 운영 정책 · 직접 진행 · #301 전달완료 회신", lines[4]
+    assert "전달완료" in lines[-3] and "결과보고서 A4" in lines[-2], lines[-3:]
+    dept = [dict(rows[0], id="E", 업무명="무", 담당자="윤병현AM")]
+    assert build_messages(dept, today="2026-09-03", nos={"E": 302})[0].splitlines()[2] \
+        == "   담당 윤병현AM · 운영 정책 · 이경연 실장님 → 윤병현AM 전달 · #302 전달완료 회신"
+    assert [a["owner"] for a in build_delivery_asks(dept)] == ["이경연 실장"]
+    assert build_delivery_asks([rows[2]]) == []          # 담당 빈칸은 원장에 안 올린다
     many = [dict(rows[0], id=f"A{i}") for i in range(6)]
     msgs = build_messages(many, today="2026-09-03")
-    assert len(msgs) == 1 and msgs[0].startswith("📋 9/3 대표님 결재 완료 6건\n▪ 갑 — 이경연 실장") and len(msgs[0].splitlines()) <= 10, msgs
+    assert len(msgs) == 1 and msgs[0].startswith("📋 9/3 대표님 결재 완료 6건\n▪ 갑 — 이경연 실장 · 직접 진행") and len(msgs[0].splitlines()) <= 10, msgs
     many = [dict(rows[0], id=f"A{i}") for i in range(9)]
     msgs = build_messages(many, today="2026-09-03")
     assert len(msgs) == 2 and "(1/2)" in msgs[0] and SIGNOFF not in msgs[0] and msgs[1].endswith(SIGNOFF)
-    assert all(len(m.splitlines()) <= 10 for m in msgs)
+    assert all(len(m.splitlines()) <= 10 for m in msgs), [len(m.splitlines()) for m in msgs]
     assert build_messages([]) == []
     # ① GM 절 — 둘 다 있으면 한 통 두 절, 같은 건은 대표님 절에만, GM 만 있으면 제목이 GM
     gm = [dict(rows[1], GM싸인="2026-09-03 10:00 (페이지)"), dict(rows[0])]
     assert [r["id"] for r in pick_new(gm, {}, "GM싸인")] == ["B"]   # A 는 GM싸인 없음
     msgs = build_messages([rows[0]], gm, today="2026-09-03")
     lines = msgs[0].splitlines()
-    assert lines[0] == "📋 9/3 대표님·GM 결재 완료 2건" and lines[1] == "🤵 대표님" and lines[2] == "▪ 갑 — 이경연 실장", lines
-    assert lines[3] == "👤 GM" and lines[4] == "▪ 을 — 나우열M" and len(lines) <= 10, lines
+    assert lines[0] == "📋 9/3 대표님·GM 결재 완료 2건" and lines[1] == "🤵 대표님" and lines[2] == "▪ 갑 — 이경연 실장 · 직접 진행", lines
+    # 나우열M 건은 카톡 방이 채널이 아니다 — 전달 경로를 업무관리 방(AtoA)으로 적는다(방 분리 규칙 유지)
+    assert lines[3] == "👤 GM" and lines[4] == "▪ 을 — 나우열M · 업무관리 방(AtoA) 전달" and len(lines) <= 10, lines
     assert build_messages([], gm, today="2026-09-03")[0].startswith("📋 9/3 GM 결재 완료 2건\n▪ 을")
     # ③ 신규 등록 — 생성일 KST(UTC 15:00Z = 다음날 00:00 KST)·AI 생성자 제외·지문 제외
     nr = [
