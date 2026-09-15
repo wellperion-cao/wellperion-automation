@@ -658,8 +658,8 @@ def _selfcheck() -> None:
     # 최신까지 처리했으면 새 것 없음
     assert new_from_partner(lines, _k("2026-09-02", "오전 9:10", "40대 여자들 많아")) == []
     # 표식·이력에 원문이 남지 않는다(2026-09-15 비밀번호 유출) — 해시 16자 · 비밀값 가림
-    assert len(_k("d", "w", "네이버 블러그\nabc\nlskian2764!")) == 16 and "lskian" not in _k("d", "w", "lskian2764!")
-    assert mask_secrets("네이버 블러그\niandietcamp\nlskian2764!") == "네이버 블러그\niandietcamp\n[가림]"
+    assert len(_k("d", "w", "네이버 블러그\nabc\npw-example-1234")) == 16 and "pw-example" not in _k("d", "w", "pw-example-1234")
+    assert mask_secrets("네이버 블러그\niandietcamp\npw-example-1234") == "네이버 블러그\niandietcamp\n[가림]"
     assert mask_secrets("비밀번호 abc12345! 입니다") == "비밀번호 [가림] 입니다"
     assert mask_secrets("사람없을때 다시 찍어서 보내줄께 02-6261-1200") == "사람없을때 다시 찍어서 보내줄께 02-6261-1200"
     # GM 발화는 답장 대상이 아니다
