@@ -1,0 +1,34 @@
+diff --git a/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html b/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html
+index a74d133c4a..7f8fb7ffe5 100644
+--- a/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html	
++++ b/3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html	
+@@ -1265,6 +1265,20 @@ async function resetTask(taskId) {
+   } catch (e) { alert('연결 실패: ' + e.message); }
+ }
+ 
++/* ─── [GM 선 종료] 남은 부서장 단계를 건너뛰고 GM 선에서 결재를 끝낸다 (GM 지시 2026-09-15) ───
++   GM 원문: "GM 선에서 종료 버튼 추가해서 GM 이나 대표님 결재 완료 시 각 담당자에게 전달".
++   새 GAS 액션을 만들지 않는다 — 기존 todo_sign(role=GM) 그대로다. GM 은 결재선의 마지막이라
++   서버 next_approver 가 앞 단계 미서명을 무시하고 최종으로 본다(mirror_patch.next_approver 88줄):
++   GM싸인 = "YYYY-MM-DD HH:MM:SS (페이지)" · 결재상태='결재완료' · 결재완료시각·완료일이 함께 찍힌다.
++   그 GM싸인 칸이 담당자 전달(scripts/rep_approval_relay.py GM 축)의 트리거다.
++   대표 보고가 필요한 건은 종전대로 결재완료 뒤 [대표 보고 올리기] → 서명본 업로드 경로를 쓴다. */
++async function gmFinalize(taskId) {
++  if (!confirm('이 건을 GM 선에서 결재 완료로 종료합니다.\n남은 부서장 단계는 건너뛰고 GM싸인·결재완료시각이 찍힙니다.\n종료되면 담당자에게 전달됩니다(대표 보고는 필요할 때 따로 올립니다).\n\n계속하시겠습니까?')) return;
++  const pin = gateApproval('GM', '결재 완료·종료');
++  if (pin === null) return;
++  await signTask(taskId, 'GM', 'approve', pin);
++}
++
+ async function signTask(taskId, role, decision, pin, reason) {
+   const params = { action: 'todo_sign', id: taskId, role: role, decision: decision, signer: '페이지', pin: pin || '' };
+   if (reason) params.reason = reason;   // 반려 사유(2026-06-17 COO B2) — reject 시에만 전달
+@@ -1554,6 +1568,8 @@ function renderApprovalCard(t, idx) {
+   h += '<div class="approval-badge-line"><span class="' + chipCls + '">' + esc(chipText) + '</span>' +
+     // GM 서명 대기 단계 — 🖨 업무보고서 인쇄(GM 검토·결재용, 단건 인쇄 재사용). 2026-06-16 GM
+     ((!isDone && !isRejected) ? '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(t.id) + '\')" title="업무보고서 인쇄 (GM 검토·결재용) — 기획안·결과보고 포함" style="margin-left:6px;display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.35);padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🖨 업무보고서 인쇄</button>' : '') +
++    // [GM 선 종료] GM 차례가 아직 안 온 건(부서장 대기)에만 — GM 차례면 아래 싸인 줄에 이미 [GM 승인] 이 있다.
++    ((!isDone && !isRejected && nxt && nxt !== 'GM') ? '<button onclick="event.stopPropagation();gmFinalize(\'' + escAttr(t.id) + '\')" title="GM 선에서 결재 완료로 종료 — 남은 부서장 단계를 건너뛰고 GM싸인·결재완료시각을 찍는다(담당자 전달 시작)" style="margin-left:6px;display:inline-flex;align-items:center;gap:4px;background:var(--green);color:#fff;border:1px solid var(--green);padding:4px 12px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ GM 결재 완료·종료</button>' : '') +
+     '<button onclick="event.stopPropagation();resetTask(\'' + escAttr(t.id) + '\')" title="결재요청 전으로 리셋 (GM 전용) — 업무현황에서 수정 가능" style="margin-left:6px;background:transparent;color:var(--dim);border:1px solid var(--border);padding:2px 8px;border-radius:7px;font-size:10px;cursor:pointer;font-family:inherit;">↩ 리셋</button>' +
+     // [GM 인라인 편집] GM 담당 건만 — 이 페이지에서 본문(기획·진척 내용) 직접 수정 (2026-06-23 시우)
+     (isGmOwned(t) ? '<button onclick="event.stopPropagation();openGmEdit(\'' + escAttr(t.id) + '\')" title="GM 담당 결재건 본문(기획·진척 내용) 직접 수정" style="margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);padding:2px 8px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">✏ 본문 수정</button>' : '') +
