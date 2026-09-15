@@ -417,8 +417,10 @@
               '<td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td><td>—</td>'+
               '<td><button class="ps-put">넣기</button></td></tr>';
           }).join('');
-          return '<h4 style="margin:14px 0 4px;font-size:13px">'+tname(t)+'</h4><div class="tbl-wrap"><table class="reg">'+
-            '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>메모</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
+          // 세 표의 열 폭을 똑같이 고정한다 — 자동 폭이면 계정이 있는 표만 넓어져 3호만 칸이 어긋나 보인다(GM 지적 2026-09-15).
+          return '<h4 style="margin:14px 0 4px;font-size:13px">'+tname(t)+'</h4><div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">'+
+            '<colgroup><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:9%"><col style="width:12%"><col><col style="width:150px"></colgroup>'+
+            '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>메모</th><th></th></tr></thead><tbody style="word-break:break-all">'+body+'</tbody></table></div>';
         }).join('');
       }).catch(function(e){ line.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '목록을 못 읽었습니다('+e+')'; boards.innerHTML=''; });
     }
