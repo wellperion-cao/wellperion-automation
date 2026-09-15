@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-09-15T15:26:35Z",
-  "generated_at_kst": "2026-09-16 00:26",
-  "summary": "대체로 정상 (일부 확인 불가)",
+  "generated_at": "2026-09-15T20:57:34Z",
+  "generated_at_kst": "2026-09-16 05:57",
+  "summary": "⚠️ 점검 필요: 텔레그램 봇, git 푸시 동기화",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "4분 전 활동",
+      "detail": "0분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
-      "state": "정상",
-      "detail": "하트비트 4분 전(생존) · 최근 발신 345분 전",
+      "state": "이상",
+      "detail": "하트비트 330분째 미갱신(폴링 정지 의심) · 최근 발신 676분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -42,7 +42,7 @@
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 109건/705153B"
+      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 109건/605459B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -82,7 +82,7 @@
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "16.6h 전 갱신 — 정상"
+      "detail": "22.1h 전 갱신 — 정상"
     },
     {
       "name": "업무 SSOT 배번호 신선도",
@@ -91,10 +91,10 @@
     }
   ],
   "automation_health": {
-    "summary": "자동화 47/51 정상 (92%)",
+    "summary": "자동화 45/51 정상 (88%)",
     "total": 51,
-    "healthy": 47,
-    "rate": 92,
+    "healthy": 45,
+    "rate": 88,
     "items": [
       {
         "name": "Wellperion-AI-Education-Weekly",
@@ -133,10 +133,10 @@
       },
       {
         "name": "Wellperion-CMO-Content-Intake-15min",
-        "state": "정상",
-        "last_run": "2026-09-16 �삤�쟾 12:15:01",
-        "last_result": 0,
-        "next_run": "2026-09-16 �삤�쟾 12:30:00"
+        "state": "실패",
+        "last_run": "2026-09-16 �삤�쟾 12:30:01",
+        "last_result": 1073807364,
+        "next_run": "2026-09-16 �삤�쟾 6:00:00"
       },
       {
         "name": "Wellperion-CMO-Daily-Marketing-2100",
@@ -168,10 +168,10 @@
       },
       {
         "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
-        "state": "정상",
-        "last_run": "2026-09-16 �삤�쟾 12:24:01",
-        "last_result": 0,
-        "next_run": "2026-09-16 �삤�쟾 12:27:00"
+        "state": "실행 중",
+        "last_run": "2026-09-16 �삤�쟾 5:57:01",
+        "last_result": 267009,
+        "next_run": "2026-09-16 �삤�쟾 6:00:00"
       },
       {
         "name": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
@@ -220,7 +220,7 @@
         "state": "정상",
         "last_run": "2026-09-16 �삤�쟾 12:20:01",
         "last_result": 0,
-        "next_run": "2026-09-16 �삤�쟾 1:20:00"
+        "next_run": "2026-09-16 �삤�쟾 6:20:00"
       },
       {
         "name": "Wellperion-GM-Aide-Scan-0630",
@@ -246,9 +246,9 @@
       {
         "name": "Wellperion-Guide-Edits-Apply",
         "state": "정상",
-        "last_run": "2026-09-16 �삤�쟾 12:19:01",
+        "last_run": "2026-09-16 �삤�쟾 12:29:01",
         "last_result": 0,
-        "next_run": "2026-09-16 �삤�쟾 12:29:00"
+        "next_run": "2026-09-16 �삤�쟾 5:59:00"
       },
       {
         "name": "Wellperion-IG-Reach-Collect-0945",
@@ -379,7 +379,7 @@
       {
         "name": "Wellperion-PC-Boot-Greeting",
         "state": "실패",
-        "last_run": "2026-09-15 �삤�쟾 5:55:17",
+        "last_run": "2026-09-16 �삤�쟾 5:56:01",
         "last_result": -2147024894,
         "next_run": "N/A"
       },
@@ -388,7 +388,7 @@
         "state": "정상",
         "last_run": "2026-09-16 �삤�쟾 12:16:13",
         "last_result": 0,
-        "next_run": "2026-09-16 �삤�쟾 12:31:12"
+        "next_run": "2026-09-16 �삤�쟾 6:01:12"
       },
       {
         "name": "Wellperion-SalesReport-OpsSummary-0900",
@@ -442,14 +442,14 @@
       {
         "name": "WellperionDailyScheduler",
         "state": "정상",
-        "last_run": "2026-09-15 �삤�쟾 5:56:20",
+        "last_run": "2026-09-16 �삤�쟾 5:57:15",
         "last_result": 0,
         "next_run": "N/A"
       },
       {
         "name": "WellperionTelegramBot",
         "state": "정상",
-        "last_run": "2026-09-15 �삤�쟾 5:56:20",
+        "last_run": "2026-09-16 �삤�쟾 5:57:15",
         "last_result": 0,
         "next_run": "N/A"
       }
@@ -500,14 +500,14 @@
     }
   },
   "git_sync": {
-    "state": "정상",
-    "detail": "미푸시 0건 · origin 최신 2분 전",
-    "unpushed": 0,
-    "origin_at": "2026-09-16T00:24:15+09:00"
+    "state": "경고",
+    "detail": "미푸시 1건 · origin 최신 328분 전",
+    "unpushed": 1,
+    "origin_at": "2026-09-16T00:29:14+09:00"
   },
   "archive_summary": {
-    "total": 4178,
-    "done": 4116,
-    "latest_processed_at": "2026-09-14T18:24+09:00"
+    "total": 4207,
+    "done": 4145,
+    "latest_processed_at": "2026-09-15"
   }
 }
