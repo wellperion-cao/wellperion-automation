@@ -885,8 +885,10 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     wline = waiting_assign_line(waiting_assign_items(relay_current, today), waiting_prev_count(today))
     if wline:
         parts.insert(0, wline)
-    # 📞 멤버십 연락 없음 — 통 머리 한 줄(배 2648 · GM 지시 2026-09-15). 0건이면 줄 없음 · 못 읽음이면 줄 없음+로그.
-    mline = membership_uncontacted_line(today)
+    # 📞 문의 회원 연락 절 — 통 머리(배 2648 · GM 지시 2026-09-15 「멤버십은 이경연 실장 통해 임정은M,
+    #   강습은 나우열M 통해 각 파트너팀 리더 · 항상 중간관리자방에 전달해 다 체크시켜라」).
+    #   0건이면 절 없음 · 못 읽음이면 절 없음+로그.
+    mline = inquiry_contact_section(today)
     if mline:
         parts.insert(1 if wline else 0, mline)
 
@@ -908,12 +910,17 @@ def _mark_mgr_sent(target_date: str) -> None:
     from module_heartbeat import last_heartbeat, record_heartbeat
     # membership_log{날짜: 멤버십 연락 없음 건수} — record_heartbeat 가 파일을 통째로 다시 쓰므로 매번 같이 실어야 안 지워진다
     # (waiting_log 와 같은 규칙 · 배 2648). 최근 14일만 남긴다.
-    log_ = dict((last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}).get("membership_log") or {})
+    prev = last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}
+    log_ = dict(prev.get("membership_log") or {})
     if _MEMBERSHIP_TODAY:
         log_[_MEMBERSHIP_TODAY[0]] = _MEMBERSHIP_TODAY[1]
     log_ = dict(sorted(log_.items())[-14:])
+    llog = dict(prev.get("lesson_log") or {})
+    if _LESSON_TODAY:
+        llog[_LESSON_TODAY[0]] = _LESSON_TODAY[1]
+    llog = dict(sorted(llog.items())[-14:])
     record_heartbeat(MGR_DAILY_HEARTBEAT_ID, detail=f"★중간관리자 결정거리 요약 발송 — {target_date}",
-                     extra={"state": {"date": target_date}, "membership_log": log_})
+                     extra={"state": {"date": target_date}, "membership_log": log_, "lesson_log": llog})
 
 
 def done_titles_by_person(rows: list, days: "tuple") -> dict:
@@ -1294,7 +1301,8 @@ def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_
                 for m in msgs:
                     msg = str(m.get("msg") or "")
                     if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg):
-                        out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg})
+                        out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg,
+                                    "name": str(m.get("name") or "")})  # name = 주간 사전 보고 사람 판정용(2026-09-15)
     return out
 
 
@@ -2776,6 +2784,116 @@ def membership_uncontacted_line(today: str) -> str:
         return ""
 
 
+# ── 강습 문의 연락 없음 + 두 갈래 전달 경로 (GM 지시 2026-09-15) ─────────────────
+# GM 원문: "멤버십 문의 회원 컨택은 이경연실장 통해서 임정은M에게 // 강습 문의 회원 컨택은
+#   나우열M 통해서 각 파트너팀리더에게 항상 중간관리자방에 전달해서 다 체크시켜줘,
+#   그리고 가능하면 억지로가 아니라 능동적으로 체크할 수 있게 해줘."
+# 왜 한 절로 묶나: 같은 방에 같은 성격의 두 줄이 따로 뜨면 누가 무엇을 맡는지가 안 보인다.
+#   줄마다 '누구를 통해 누구에게'를 붙이고, 어제보다 몇 건 줄었는지를 같이 보여 준다 —
+#   숫자가 움직이는 것이 보여야 재촉 없이도 스스로 확인하게 된다.
+# 원천: 강습은 status/inquiry_snapshot_lesson.json(3분마다 갱신 · cpo_inquiry_snapshot.py).
+#   멤버십은 위 membership_uncontacted_line 그대로(원장 직접 조회).
+# ★못 읽음 != 0 — 스냅샷이 없거나 낡았으면 줄을 비우고 로그에 남긴다.
+_LESSON_SNAP = ROOT / "status" / "inquiry_snapshot_lesson.json"
+_LESSON_SNAP_MAX_AGE_H = 6          # 이보다 낡은 스냅샷이면 못 읽음으로 본다
+_MEMBER_LINK = "https://erp.wellperion.com/cpo/member/membership.html"
+_LESSON_LINK = "https://erp.wellperion.com/cpo/member/lesson.html"
+_LESSON_TODAY = None                # (날짜, 건수) — 발송 뒤 _mark_mgr_sent 가 lesson_log 에 적는다
+
+
+def _uncontacted_rows(rows: list) -> list:
+    """연락 기록이 하나도 없는 열린 문의 — 판정 부품은 정본(report_stream_1_impl·unassigned_nudge) 재사용."""
+    import report_stream_1_impl as _s1
+    import unassigned_nudge as _un
+    out = []
+    for r in rows or []:
+        if str(r.get("status", "") or "").strip() not in {"컨택중", "신규", "미정", "가망"}:
+            continue
+        if _s1._is_registered(r, True) or _s1._is_loss(r) or _un._has_contact(r):
+            continue
+        out.append(r)
+    return out
+
+
+def lesson_uncontacted_line(today: str) -> str:
+    """강습 연락 없음 N건 — 성인 a · 유소년 b (팀 상위 2곳) · 어제보다 +-k. 0건·못 읽음이면 빈 문자열."""
+    global _LESSON_TODAY
+    try:
+        snap = json.loads(_LESSON_SNAP.read_text(encoding="utf-8"))
+        age_h = (datetime.now().timestamp() - _LESSON_SNAP.stat().st_mtime) / 3600
+        if age_h > _LESSON_SNAP_MAX_AGE_H:
+            log(f"[mgr] 강습 문의 스냅샷이 {age_h:.0f}시간 낡음 — 못 읽음으로 보고 줄 생략(0건이라 적지 않는다)")
+            return ""
+        counts, teams = {}, {}
+        for key, label in (("adult", "성인"), ("youth", "유소년")):
+            rows = ((snap.get(key) or {}).get("year") or {}).get("rows") or []
+            hit = _uncontacted_rows(rows)
+            counts[label] = len(hit)
+            for r in hit:
+                t = str(r.get("bucket", "") or "").strip() or "기타"
+                teams[t] = teams.get(t, 0) + 1
+        total = sum(counts.values())
+        _LESSON_TODAY = (today, total)
+        if not total:
+            log("[mgr] 강습 연락 없음 0건 — 줄 없음")
+            return ""
+        top = " · ".join(f"{t} {n}" for t, n in sorted(teams.items(), key=lambda kv: -kv[1])[:2])
+        from module_heartbeat import last_heartbeat
+        log_ = (last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}).get("lesson_log") or {}
+        prev_days = [d for d in log_ if d < today]
+        diff = ""
+        if prev_days:
+            delta = total - int(log_[max(prev_days)])
+            diff = f" · 어제보다 {'+' if delta > 0 else ''}{delta}건" if delta else " · 어제와 같음"
+        return (f"강습 연락 없음 {total}건 — 성인 {counts.get('성인', 0)} · 유소년 {counts.get('유소년', 0)}"
+                f" ({top}){diff}")
+    except Exception as exc:
+        log(f"[mgr] 강습 연락 없음 줄 실패 — 줄 생략: {type(exc).__name__}: {exc}")
+        return ""
+
+
+def inquiry_contact_section(today: str) -> str:
+    """문의 회원 연락 절 — 멤버십·강습 두 줄 + 각자의 전달 경로 + 줄어든 건수 한 줄.
+
+    경로(GM 지시 2026-09-15): 멤버십 = 이경연 실장 -> 임정은M / 강습 = 나우열M -> 각 파트너팀 리더.
+    둘 다 중간관리자 방 한 곳에 싣는다 — 방이 갈리면 서로 무엇이 남았는지 못 본다."""
+    mem, les = membership_uncontacted_line(today), lesson_uncontacted_line(today)
+    if not mem and not les:
+        return ""
+    parts = ["📞 문의 회원 연락 — 오늘 체크하실 것"]
+    if mem:
+        parts.append("▪ " + mem.replace("📞 ", "", 1))
+        parts.append(f"   이경연 실장님 → 임정은M · 📎 {_MEMBER_LINK}")
+    if les:
+        parts.append("▪ " + les)
+        parts.append(f"   나우열M → 각 파트너팀 리더 · 📎 {_LESSON_LINK}")
+    parts.append(progress_praise_line(mem, les)
+                 or "   연락하신 분은 그 회원 줄 '연락 기록'에 한 줄만 남기시면 이 목록에서 빠집니다")
+    return "\n".join(parts)
+
+
+def progress_praise_line(mem: str, les: str) -> str:
+    """어제보다 줄었으면 줄어든 만큼을 먼저 말한다 — 재촉 대신 움직인 숫자를 보여 준다.
+
+    두 줄에 이미 적힌 '어제보다 -N건' 을 다시 세지 않고 그대로 읽는다(셈하는 자리는 한 곳)."""
+    hits = re.findall(r"어제보다 -(\d+)건", (mem or "") + " " + (les or ""))
+    drop = sum(int(x) for x in hits)
+    if not drop:
+        return ""
+    return f"   🙌 어제 하루에 {drop}건 연락되었습니다 — 연락 기록 한 줄이면 이 목록에서 빠집니다"
+
+
+def _selfcheck_inquiry_contact_section() -> None:
+    assert progress_praise_line("📞 멤버십 연락 없음 3건 — 신규 1 · 컨택중 2 (최장 5일) · 어제보다 -2건", "") \
+        == "   🙌 어제 하루에 2건 연락되었습니다 — 연락 기록 한 줄이면 이 목록에서 빠집니다"
+    assert progress_praise_line("… 어제보다 +1건", "… 어제와 같음") == ""
+    assert _uncontacted_rows([{"status": "컨택중", "contacts": [{"note": "통화함"}]},
+                              {"status": "컨택중", "contacts": []},
+                              {"status": "LOSS", "contacts": []}]) \
+        == [{"status": "컨택중", "contacts": []}]
+    print("[selfcheck] _selfcheck_inquiry_contact_section OK")
+
+
 def _migrate_relay_state(state: dict) -> None:
     """방 배정이 바뀐 첫 회차에 옛 방 스냅샷을 새 방으로 합친다(배443).
 
@@ -3397,6 +3515,204 @@ def send_schedule_pings() -> None:
 # 않는다. 응원·당부를 다시 넣고 싶으면 새 통을 만들지 말고 기존 통의 한 줄로 넣는다.
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 📋 주간 미팅 체계 (GM 지시 2026-09-15 · GM업무 카드 2026-09-35 · 운영 기준 10)
+#   월 17:00 사전 보고(①~⑤ · ★중간관리자 방, 나우열M 은 AtoA) → 화 07:50 자동 A3 + 통 → 화 15:00 회의.
+#   새 원장·새 파서 없음 — 방 사람 발언은 _mgr_room_human_lines/_nawool_telegram_human_lines,
+#   화면은 manager_task_index.build_meeting_a3, 발신은 kakao_report_sender·send_as_gm 그대로.
+# ══════════════════════════════════════════════════════════════════════════
+WEEKLY_INTAKE = ROOT / "status" / "weekly_meeting_intake.json"
+WEEKLY_MEETING_HEARTBEAT_ID = "weekly-meeting-pack-sent"   # 화요일 통 같은 날 중복 방지 지문
+WEEKLY_MEETING_CARD_ID = "2026-09-35"
+# 방 표시 이름 → 사람. 카톡 내보내기 이름은 「웰페리온 운영부 이경연 실장님」·「라우열」 처럼 길거나 별칭이라 부분 일치로 잡는다.
+WEEKLY_MEETING_PEOPLE = {"이경연 실장": ("이경연",), "이정헌 소장": ("이정헌",), "나우열M": ("나우열", "라우열")}
+WEEKLY_MEETING_ATTENDEES = "김남욱 GM · 이경연 실장 · 이정헌 소장 · 김종현 차장 · 나우열M"
+WEEKLY_MEETING_A3_URL = "https://erp.wellperion.com/coo/chairman/%EC%A4%91%EA%B0%84%EA%B4%80%EB%A6%AC%EC%9E%90_%ED%9A%8C%EC%9D%98%EC%9E%90%EB%A3%8C_A3.html"
+# 사전 보고 단서 — ①~⑤ 번호 또는 「보고·사전·이번 주·다음 주」 낱말. 회신 매칭(_reply_keywords)은 드문 낱말을 찾는 쪽이라 여기엔 안 맞는다.
+_INTAKE_HINT_RE = re.compile(r"[①②③④⑤]|사전\s*보고|이번\s*주|다음\s*주|보고")
+_INTAKE_DECISION_RE = re.compile(r"④|결정")
+
+
+def meeting_tuesday(d: date) -> date:
+    """d 가 속한 주(월~일)의 화요일 = 그 주 회의일."""
+    return d - timedelta(days=d.weekday()) + timedelta(days=1)
+
+
+def _intake_person(name: str) -> str:
+    for who, keys in WEEKLY_MEETING_PEOPLE.items():
+        if any(k in (name or "") for k in keys):
+            return who
+    return ""
+
+
+def _intake_in_window(d: str, t: str, meeting: date) -> bool:
+    """월요일 00:00 ~ 화요일 08:59 만 사전 보고로 본다(화요일 09:00 이후는 회의 뒤 회신)."""
+    monday = (meeting - timedelta(days=1)).isoformat()
+    if d == monday:
+        return True
+    return d == meeting.isoformat() and (t or "") < "09:00"
+
+
+def build_weekly_intake(meeting: date, human_lines: "list[dict] | None" = None) -> dict:
+    """사전 보고 수집 — 사람별 {submitted, lines, at}. 미제출 = submitted False(그대로 적는다).
+    human_lines 를 넘기면 그것만 본다(자가점검용) · 없으면 카톡(★중간관리자)+AtoA(나우열M) 사람 발언."""
+    if human_lines is None:
+        ds = meeting.isoformat()
+        human_lines = _mgr_room_human_lines(ds, 2) + [dict(l, name="나우열M") for l in _nawool_telegram_human_lines(ds, 2)]
+    people = {who: {"submitted": False, "lines": [], "at": ""} for who in WEEKLY_MEETING_PEOPLE}
+    for l in human_lines:
+        who = _intake_person(l.get("name", ""))
+        if not who or not _intake_in_window(str(l.get("date", "")), str(l.get("time", "")), meeting):
+            continue
+        msg = str(l.get("msg") or "").strip()
+        if not msg or not _INTAKE_HINT_RE.search(msg):
+            continue
+        p = people[who]
+        p["submitted"] = True
+        p["lines"].append(msg)
+        p["at"] = f"{l.get('date')} {l.get('time')}"
+    y, w, _ = meeting.isocalendar()
+    return {"week": f"{y}-W{w:02d}", "meeting_date": meeting.isoformat(),
+            "window": [(meeting - timedelta(days=1)).isoformat() + " 00:00", meeting.isoformat() + " 08:59"],
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "people": people}
+
+
+def weekly_intake_cli(date_str: str) -> int:
+    """--weekly-intake [--date] — 파일만 쓴다(발송 없음). 3인 판정을 stdout 에 찍는다."""
+    meeting = meeting_tuesday(date.fromisoformat(date_str) if date_str else date.today())
+    intake = build_weekly_intake(meeting)
+    WEEKLY_INTAKE.write_text(json.dumps(intake, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"[weekly-intake] {intake['week']} · 회의 {intake['meeting_date']} · 창 {intake['window'][0]} ~ {intake['window'][1]}")
+    for who, p in intake["people"].items():
+        print(f"  {who}: {'제출 ' + p['at'] + ' · ' + str(len(p['lines'])) + '줄' if p['submitted'] else '미제출'}")
+    print(f"[weekly-intake] 저장 → {WEEKLY_INTAKE.relative_to(ROOT)}")
+    return 0
+
+
+def weekly_meeting_monday_line(today: date) -> str:
+    """월요일 아침 통 끝 한 줄 — 내일 회의·오늘 17:00 사전 보고. 월요일이 아니면 빈 문자열."""
+    if today.weekday() != 0:
+        return ""
+    t = today + timedelta(days=1)
+    return f"📋 내일 {t.month}/{t.day}(화) 15:00 중간관리자 회의 · 오늘 17:00 까지 사전 보고 ①~⑤ 이 방에"
+
+
+def weekly_meeting_message(intake: dict, meeting: date) -> str:
+    """화요일 07:50 통 — 무슨 일 / 어디서 / 무엇을 하면 되나 · 10줄 안쪽 · 빈 줄 없음 · 링크는 쿼리 없는 주소."""
+    missing = [who for who, p in (intake.get("people") or {}).items() if not p.get("submitted")]
+    lines = [f"📋 오늘 {meeting.month}/{meeting.day}(화) 15:00 중간관리자 회의자료가 나왔습니다",
+             f"어디서: {WEEKLY_MEETING_A3_URL}",
+             "무엇을: 자료 한 번 보시고 이 방에 「참석」 한 줄 답해 주세요",
+             "회의는 이 A3 한 장으로 진행합니다 · 답은 「#번호 + 한 줄」"]
+    if missing:
+        lines.append("사전 보고 미제출: " + " · ".join(missing) + " — 회의 전까지 ①~⑤ 한 줄씩 올려 주세요")
+    lines.append(f"참석: {WEEKLY_MEETING_ATTENDEES}")
+    return "\n".join(lines)
+
+
+def _weekly_meeting_already_sent(ds: str) -> bool:
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(WEEKLY_MEETING_HEARTBEAT_ID)
+    return bool(rec) and (rec.get("state") or {}).get("date") == ds
+
+
+def _update_meeting_card(meeting: date, hhmm: str, doc_no: str, submitted: int) -> None:
+    """GM업무 카드 2026-09-35 — docs 에 그 회차 A3 링크 1건 · progress_note 에 「▶ M/D 회차 자동 발송 HH:MM」 1줄(있으면 교체).
+    이력은 status/monthly_ops_plan_이력.md 에 append(SSOT .md 규칙)."""
+    plan_path = ROOT / "status" / "monthly_ops_plan.json"
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    card = None
+    for m in (plan.get("months") or {}).values():
+        for o in m.get("objectives") or []:
+            if o.get("id") == WEEKLY_MEETING_CARD_ID:
+                card = o
+    if card is None:
+        log(f"[weekly-meeting] 카드 {WEEKLY_MEETING_CARD_ID} 없음 — 카드 갱신 생략")
+        return
+    ds = meeting.isoformat()
+    md = f"{meeting.month}/{meeting.day}"
+    href = f"중간관리자_회의자료_A3.html?week={ds}"
+    docs = card.setdefault("docs", [])
+    if not any(d.get("href") == href for d in docs):
+        docs.append({"label": f"{md} 회의자료 — 자동 A3({doc_no})", "href": href})
+    prefix = f"▶ {md} 회차 자동 발송 "
+    line = f"{prefix}{hhmm} · 사전 보고 {submitted}/3"
+    note_lines = [ln for ln in str(card.get("progress_note") or "").split("\n") if not ln.startswith(prefix)]
+    note_lines.insert(0, line)
+    card["progress_note"] = "\n".join(note_lines)
+    plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    hist = ROOT / "status" / "monthly_ops_plan_이력.md"
+    with hist.open("a", encoding="utf-8") as f:
+        f.write(f"\n▶[{ds} 웰리 자동 · 2026-09-35 중간관리자 회의자료] {line} · {doc_no}\n")
+
+
+def send_weekly_meeting_pack(dry: bool = False, meeting: "date | None" = None) -> bool:
+    """화요일 07:50 — ①사전 보고 수집 → ②A3 정본·캡처 → ③★중간관리자 + AtoA 통 → ④카드 갱신.
+    dry 는 ①②만 파일로 쓰고 통은 stdout · 지문·카드는 안 건드린다."""
+    meeting = meeting or date.today()
+    ds = meeting.isoformat()
+    if not dry and _weekly_meeting_already_sent(ds):
+        log(f"[weekly-meeting] 이미 발송된 회차({ds}) — 생략")
+        return True
+    intake = build_weekly_intake(meeting)
+    WEEKLY_INTAKE.write_text(json.dumps(intake, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    submitted = sum(1 for p in intake["people"].values() if p["submitted"])
+    log(f"[weekly-meeting] 사전 보고 {submitted}/3 → {WEEKLY_INTAKE.name}")
+    import manager_task_index
+    rnd = manager_task_index.build_meeting_a3(meeting)
+    log(f"[weekly-meeting] A3 생성 — {rnd['doc_no']} · {manager_task_index.MEETING_OUT.name}")
+    msg = weekly_meeting_message(intake, meeting)
+    if dry:
+        print(f"\n===== {WEEKLY_ROOM} + AtoA 화요일 회의자료 통 ({ds} · --dry-run · 미발송) =====")
+        print(msg)
+        print("(dry-run — 카드 2026-09-35 갱신·지문 기록 안 함)")
+        return True
+    cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", WEEKLY_ROOM, "--sender", "웰리"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    kakao_ok = proc.returncode == 0 and "DONE" in (proc.stdout or "")
+    if not kakao_ok:
+        log(f"[weekly-meeting] 카톡 발송 실패(rc={proc.returncode}) — 다음 회차 재시도")
+    try:
+        from notify.telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID
+        tg_ok = send_as_gm(WORK_ROOM_CHAT_ID, msg)
+    except Exception as exc:
+        log(f"[weekly-meeting] AtoA 발송 예외: {type(exc).__name__}: {exc}")
+        tg_ok = False
+    if not (kakao_ok and tg_ok):
+        return False
+    hhmm = datetime.now().strftime("%H:%M")
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(WEEKLY_MEETING_HEARTBEAT_ID, detail=f"화요일 회의자료 통 발송 — {ds}", extra={"state": {"date": ds}})
+    try:
+        _update_meeting_card(meeting, hhmm, rnd["doc_no"], submitted)
+    except Exception as exc:
+        log(f"[weekly-meeting] 카드 갱신 예외(통은 나감): {type(exc).__name__}: {exc}")
+    log(f"[weekly-meeting] 발송 완료 {hhmm}")
+    return True
+
+
+def _selfcheck_weekly_meeting() -> None:
+    """사전 보고 창·사람 판정·미제출 표기·월요일 줄 — 네트워크 없이 돈다."""
+    meeting = date(2026, 9, 22)
+    assert meeting_tuesday(date(2026, 9, 21)) == meeting and meeting_tuesday(date(2026, 9, 27)) == meeting
+    fake = [
+        {"date": "2026-09-21", "time": "16:40", "name": "웰페리온 운영부 이경연 실장님", "msg": "① 이번 주 한 것: FAQ 취합 ② 다음 주 ③ 막힌 것 없음 ④ 결정: 없음 ⑤ 요청 없음"},
+        {"date": "2026-09-21", "time": "10:00", "name": "웰페리온 시설부 이정헌 소장님", "msg": "네 알겠습니다"},   # 단서 없음 → 미제출
+        {"date": "2026-09-22", "time": "09:30", "name": "라우열", "msg": "① 이번 주 보고"},                       # 창 밖(화 09:00 이후)
+        {"date": "2026-09-20", "time": "23:59", "name": "라우열", "msg": "사전 보고 ①"},                          # 창 밖(일요일)
+    ]
+    it = build_weekly_intake(meeting, fake)
+    assert it["week"] == "2026-W39", it["week"]
+    assert it["people"]["이경연 실장"]["submitted"] and it["people"]["이경연 실장"]["at"] == "2026-09-21 16:40"
+    assert not it["people"]["이정헌 소장"]["submitted"] and not it["people"]["나우열M"]["submitted"]
+    msg = weekly_meeting_message(it, meeting)
+    assert "사전 보고 미제출: 이정헌 소장 · 나우열M" in msg and "?" not in msg.split("\n")[1], msg
+    assert len(msg.split("\n")) <= 10 and "\n\n" not in msg
+    assert weekly_meeting_monday_line(date(2026, 9, 21)).startswith("📋 내일 9/22(화) 15:00")
+    assert weekly_meeting_monday_line(date(2026, 9, 22)) == ""
+    print("[selfcheck] weekly_meeting OK")
+
+
 def _seconds_until(hour: int, minute: int, now: "datetime | None" = None) -> float:
     """지금부터 오늘 그 시각까지 남은 초. 이미 지났으면 0 — 앞 단계(내보내기·다이제스트
     생성)가 늦어져도 다음날까지 기다리지 않고 바로 진행한다(순서만 지킨다)."""
@@ -3450,6 +3766,7 @@ def main() -> int:
         _selfcheck_parse_ymd()
         _selfcheck_done_filter()
         _selfcheck_gm_work_section()
+        _selfcheck_inquiry_contact_section()
         _selfcheck_reply_match()
         return 0
 
