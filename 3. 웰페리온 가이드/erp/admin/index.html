@@ -348,6 +348,66 @@
   <details class="tip"><summary>파트너사를 늘리면 무엇이 달라지나</summary>
     <div class="in">이 표에 줄이 한 줄 늡니다. 회사마다 다른 값(브랜드·용어·조직·채널)만 갈아 끼우고
     뼈대는 그대로 씁니다 — 갈아 끼우는 목록 20건은 <b>자료 ▸ 구조 문서</b>에 있습니다.</div></details>
+
+  <!-- 파트너 마케팅 채널 계정 — 서버에만 보관(배 2652 · GM 확정 2026-09-15). 이 파일은 공개 배포 파일이라 값도 코드도 안 넣는다.
+       원천 = 서버 비밀 파일 · API /api/admin/partner-secrets(회사 관리자만) · 보기·저장은 결재 GM 코드를 서버가 검사한다. -->
+  <h3 style="margin:22px 0 6px;">파트너 마케팅 채널 계정 <span style="font-weight:400;font-size:12px;color:var(--dim);">서버에만 보관 · 보기는 코드</span></h3>
+  <div class="meta" id="ps-line">불러오는 중…</div>
+  <div class="tbl-wrap"><table class="reg">
+    <thead><tr><th>파트너</th><th>채널</th><th>아이디</th><th>비밀번호</th><th>받은 날</th><th></th></tr></thead>
+    <tbody id="ps-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <details class="tip"><summary>계정 넣기 · 바꾸기</summary>
+    <div class="in" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+      <input id="ps-tenant" placeholder="파트너 (jo / dc)" style="width:110px">
+      <select id="ps-channel"></select>
+      <input id="ps-id" placeholder="아이디" autocomplete="off" style="width:150px">
+      <input id="ps-pw" type="password" placeholder="비밀번호" autocomplete="off" style="width:150px">
+      <input id="ps-note" placeholder="메모(선택)" style="width:160px">
+      <input id="ps-code" type="password" inputmode="numeric" placeholder="코드" autocomplete="off" style="width:70px">
+      <button id="ps-save">서버에 저장</button>
+      <span id="ps-msg"></span>
+    </div></details>
+  <script>
+  (function(){
+    var API='/api/admin/partner-secrets', rows=document.getElementById('ps-rows'), line=document.getElementById('ps-line'), sel=document.getElementById('ps-channel');
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function load(){
+      fetch(API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+        sel.innerHTML=(d.channels||[]).map(function(c){ return '<option>'+c+'</option>'; }).join('');
+        line.textContent=(d.items||[]).length+'건 · 값은 서버 파일에만 있고 이 화면·저장소·로그엔 없습니다';
+        rows.innerHTML=(d.items||[]).length ? d.items.map(function(it){
+          return '<tr data-t="'+esc(it.tenant)+'" data-c="'+esc(it.channel)+'"><td class="item">'+esc(it.tenant)+'</td><td>'+esc(it.channel)+'</td>'+
+            '<td class="ps-id">'+esc(it.id_masked)+'</td><td class="ps-pw">'+(it.has_pw?'••••••••':'—')+'</td><td>'+esc(it.received_at)+'</td>'+
+            '<td><button class="ps-show">보기</button> <button class="ps-del">삭제</button></td></tr>';
+        }).join('') : '<tr><td colspan="6" class="note">아직 없음 — 아래 「계정 넣기」로 서버에 넣습니다</td></tr>';
+      }).catch(function(e){ line.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '목록을 못 읽었습니다('+e+')'; rows.innerHTML=''; });
+    }
+    rows.addEventListener('click', function(ev){
+      var b=ev.target, tr=b.closest('tr'); if(!tr||b.tagName!=='BUTTON') return;
+      var body={tenant:tr.dataset.t, channel:tr.dataset.c};
+      if(b.classList.contains('ps-show')){
+        var code=prompt('코드를 입력하세요'); if(!code) return; body.code=code;
+        fetch(API+'/reveal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
+          if(!d.ok){ alert(d.error||'실패'); return; }
+          tr.querySelector('.ps-id').textContent=d.id; tr.querySelector('.ps-pw').textContent=d.pw;
+          setTimeout(load, 60000);   /* 60초 뒤 다시 가린다 */
+        });
+      } else if(b.classList.contains('ps-del')){
+        var code2=prompt('삭제 — 코드를 입력하세요'); if(!code2) return; body.code=code2; body.delete=true;
+        fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){ if(!d.ok) alert(d.error||'실패'); load(); });
+      }
+    });
+    document.getElementById('ps-save').onclick=function(){
+      var g=function(id){ return document.getElementById(id).value; }, msg=document.getElementById('ps-msg');
+      var body={tenant:g('ps-tenant'),channel:sel.value,id:g('ps-id'),pw:g('ps-pw'),note:g('ps-note'),code:g('ps-code')};
+      fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){
+        msg.textContent = d.ok ? '저장됨' : ('안 됨 — '+(d.error||'')); if(d.ok){ ['ps-id','ps-pw','ps-code','ps-note'].forEach(function(i){ document.getElementById(i).value=''; }); load(); }
+      });
+    };
+    load();
+  })();
+  </script>
 </section>
 
 <!-- 파트너 산출물 — 밖의 업체에 만들어 준 것. 플랫폼을 파는 자리라 여기 둔다(GM 지시 2026-09-14
