@@ -561,7 +561,11 @@ async def run_setup() -> int:
     await page.goto(NAVER_LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
 
     try:
-        await page.check("input[name=nvlong]", timeout=5_000)   # 로그인 상태 유지 — 안 켜면 세션 쿠키뿐이라 하루 안에 풀린다(2026-09-15 실측)
+        # 로그인 상태 유지 — 안 켜면 세션 쿠키뿐이라 하루 안에 풀린다(2026-09-15 실측).
+        # 체크박스 자체(input[name=nvlong])는 1×1px 로 숨어 있어 page.check 가 못 누른다 — 라벨을 누른다(같은 날 실측).
+        await page.click("label[for=loginStay]", timeout=5_000)
+        if not await page.is_checked("input[name=nvlong]"):
+            raise RuntimeError("라벨을 눌렀는데 안 켜짐")
         print("[INFO] 「로그인 상태 유지」 켬")
     except Exception as e:
         print(f"[WARN] 「로그인 상태 유지」 자동 체크 실패(무시 · 손으로 켜라): {type(e).__name__}")
@@ -574,7 +578,8 @@ async def run_setup() -> int:
         try:
             await page.fill("#id", nid)
             await page.fill("#pw", npw)
-            await page.click("button[type=submit]")
+            # 로그인 버튼은 button[type=submit] 이 아니다(2026-09-15 실측 — 그 셀렉터는 언어 선택 버튼뿐이라 30초 타임아웃).
+            await page.locator("#loginBtn_column, #loginBtn_row").filter(visible=True).first.click(timeout=10_000)
             await page.wait_for_timeout(4000)
             print("[INFO] 아이디·비밀번호 자동 입력 — 확인 절차가 뜨면 사람이 이어받으면 된다.")
         except Exception as e:
