@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ERP 플랫폼 브랜드가이드 — 시안 3개 (청록 #0E9488 기준)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* ── 페이지 자체(중립) ── */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Pretendard",system-ui,sans-serif;background:#F1F5F9;color:#0F172A;font-size:16px;line-height:1.6;padding:32px 24px 80px}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.lead{color:#475569;margin:6px 0 20px;max-width:46em}
+.lead b{color:#0F172A}
+:focus-visible{outline:2px solid #0E9488;outline-offset:3px}
+button,[role=button]{cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ── 시안 카드: 각 시안은 자기 CSS 변수로만 칠한다 ── */
+.v{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-family:var(--sans)}
+.v .hd{padding:22px 22px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.v .no{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:44px;border-radius:10px;background:var(--pri);color:#fff;font-weight:700;font-size:20px;font-family:var(--head)}
+.v .nm{font-family:var(--head);font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.v .nm small{display:block;font-size:12.5px;font-weight:500;color:var(--soft);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.v .tag{font-size:13.5px;color:var(--soft);margin-top:8px}
+.v .sec{padding:16px 22px;border-bottom:1px solid var(--line)}
+.v .sec:last-child{border-bottom:0}
+.v .lb{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-family:var(--head)}
+.sw{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sw div{border-radius:10px;padding:10px 10px 8px;min-height:64px;font-size:11.5px;line-height:1.35;border:1px solid var(--line);font-family:var(--head)}
+.sw b{display:block;font-size:12.5px}
+.sw .cr{display:block;opacity:.85}
+.type h3{font-family:var(--head);font-size:20px;font-weight:700;line-height:1.25;margin-bottom:6px}
+.type p{font-size:14.5px;color:var(--ink);opacity:.9}
+.type .num{font-family:var(--head);font-size:26px;font-weight:600;letter-spacing:-.02em;margin-top:8px;color:var(--pri-dk)}
+.type .num small{font-size:12.5px;font-weight:500;color:var(--soft);margin-left:6px;letter-spacing:0}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font-family:var(--head);font-size:13.5px;font-weight:600;border-radius:9px;padding:0 16px;min-height:44px;display:inline-flex;align-items:center;border:1px solid transparent;transition:background .2s,color .2s,border-color .2s}
+.btn.p{background:var(--pri-dk);color:#fff}.btn.p:hover{background:var(--pri)}
+.btn.s{background:transparent;color:var(--pri-dk);border-color:var(--pri)}.btn.s:hover{background:var(--tint)}
+.btn.a{background:var(--acc);color:#fff}.btn.a:hover{filter:brightness(.92)}
+.btn.g{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.side{display:flex;gap:10px}
+.side nav{width:118px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 0;font-size:13px}
+.side nav a{display:flex;align-items:center;min-height:44px;padding:0 12px;color:var(--ink);text-decoration:none;border-left:3px solid transparent}
+.side nav a.on{background:var(--tint);color:var(--pri-dk);font-weight:700;border-left-color:var(--pri)}
+.side .pane{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.side .pane .ttl{font-family:var(--head);font-weight:700;font-size:14px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+colgroup col:nth-child(1){width:34%}colgroup col:nth-child(2){width:33%}colgroup col:nth-child(3){width:33%}
+th{font-family:var(--head);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;font-family:var(--head)}
+.st.on{background:var(--tint);color:var(--pri-dk)}
+.st.off{background:transparent;border:1px solid var(--line);color:var(--soft)}
+.st.warn{background:var(--acc-tint);color:var(--acc-dk)}
+.st i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.why{font-size:13px;color:var(--soft);line-height:1.55}
+.why b{color:var(--ink)}
+.pick{position:sticky;bottom:0;margin-top:26px;background:#0F172A;color:#fff;border-radius:12px;padding:14px 18px;font-size:14.5px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.pick b{font-size:16px}
+.pick .k{background:#fff;color:#0F172A;border-radius:8px;padding:4px 10px;font-weight:700;font-family:"Plus Jakarta Sans",sans-serif}
+.note{font-size:12.5px;color:#475569;margin-top:14px;max-width:46em}
+/* ── 시안 1 · 트러스트 틸 ── */
+.v1{--sans:"Pretendard",system-ui,sans-serif;--head:"Plus Jakarta Sans","Pretendard",sans-serif;
+  --pri:#0E9488;--pri-dk:#0F766E;--tint:#CCFBF1;--acc:#C2410C;--acc-dk:#9A3412;--acc-tint:#FFEDD5;
+  --ink:#134E4A;--soft:#5B7470;--bg:#F0FDFA;--panel:#FFFFFF;--line:#CBE9E4}
+/* ── 시안 2 · 딥 네이비 + 틸 ── */
+.v2{--sans:"Pretendard",system-ui,sans-serif;--head:"DM Sans","Pretendard",sans-serif;
+  --pri:#0E9488;--pri-dk:#0B6F66;--tint:#D5F3EF;--acc:#B45309;--acc-dk:#92400E;--acc-tint:#FEF3C7;
+  --ink:#0F172A;--soft:#475569;--bg:#F8FAFC;--panel:#FFFFFF;--line:#CBD5E1}
+.v2 .hd{background:#0F172A;color:#fff;border-bottom-color:#1E293B}
+.v2 .hd .nm small,.v2 .hd .tag{color:#94A3B8}
+/* ── 시안 3 · 소프트 민트 + 틸 ── */
+.v3{--sans:"Noto Sans KR","Pretendard",sans-serif;--head:"Plus Jakarta Sans","Noto Sans KR",sans-serif;
+  --pri:#0E9488;--pri-dk:#0A6E66;--tint:#CFF5EE;--acc:#4F46E5;--acc-dk:#3730A3;--acc-tint:#E0E7FF;
+  --ink:#0F3D3A;--soft:#4F6B68;--bg:#FFFFFF;--panel:#F3FBF9;--line:#BFE6DF}
+</style>
+</head>
+<body>
+<h1>ERP 플랫폼 브랜드가이드 — 시안 3개</h1>
+<p class="lead">기준색은 지금 플랫폼관리가 쓰는 <b>청록 #0E9488</b> 그대로 두고, 그 옆에 올 색·글꼴·이름(가칭)만 세 갈래로 냈습니다. 웰페리온 베이지·코랄·Playfair 는 한 곳도 쓰지 않았습니다. <b>번호 하나만 골라 주시면</b> 그 시안으로 모듈 3장(카톡 전송·상담봇·마케팅 자동업로드)을 다시 칠합니다. 각 색 칸의 숫자 = 글자 명암비(4.5 이상이면 통과).</p>
+
+<div class="grid">
+
+<!-- ═════ 시안 1 ═════ -->
+<section class="v v1" id="v1">
+  <div class="hd">
+    <div><div class="nm">클럽온<small>ClubOn · 가칭</small></div><div class="tag">센터를 켜 두는 운영 플랫폼</div></div>
+    <span class="no">1</span>
+  </div>
+  <div class="sec">
+    <div class="lb">팔레트 — 트러스트 틸</div>
+    <div class="sw">
+      <div style="background:#0E9488;color:#fff"><b>주색 #0E9488</b><span class="cr" data-fg="#fff" data-bg="#0E9488"></span>활성 선·아이콘·큰 글자</div>
+      <div style="background:#0F766E;color:#fff"><b>진한 #0F766E</b><span class="cr" data-fg="#fff" data-bg="#0F766E"></span>채운 버튼·강조 글자</div>
+      <div style="background:#C2410C;color:#fff"><b>행동 #C2410C</b><span class="cr" data-fg="#fff" data-bg="#C2410C"></span>발송·주의</div>
+      <div style="background:#F0FDFA;color:#134E4A"><b>바탕 #F0FDFA</b><span class="cr" data-fg="#134E4A" data-bg="#F0FDFA"></span>글자 #134E4A</div>
+      <div style="background:#CCFBF1;color:#0F766E"><b>틴트 #CCFBF1</b><span class="cr" data-fg="#0F766E" data-bg="#CCFBF1"></span>선택 행·배지</div>
+      <div style="background:#FFFFFF;color:#5B7470"><b>패널 #FFFFFF</b><span class="cr" data-fg="#5B7470" data-bg="#FFFFFF"></span>보조 글자 #5B7470</div>
+    </div>
+  </div>
+  <div class="sec type">
+    <div class="lb">글꼴 — Pretendard(한글) + Plus Jakarta Sans(영문·숫자)</div>
+    <h3>파트너사 3곳, 오늘 발송 12건</h3>
+    <p>카톡 전송·상담봇·자동업로드를 한 화면에서 켜고 끕니다. 규칙집 「Friendly SaaS」 조합 — B2B 관리 화면에 맞는 둥근 기하 서체.</p>
+    <div class="num">1,284<small>이번 달 상담</small></div>
+  </div>
+  <div class="sec">
+    <div class="lb">버튼</div>
+    <div class="btns"><button class="btn p">저장</button><button class="btn s">미리보기</button><button class="btn a">지금 발송</button><button class="btn g">취소</button></div>
+  </div>
+  <div class="sec">
+    <div class="lb">플랫폼관리 화면 견본</div>
+    <div class="side">
+      <nav><a href="#v1">파트너사</a><a href="#v1" class="on" aria-current="true">카톡 전송</a><a href="#v1">상담봇</a><a href="#v1">자동업로드</a></nav>
+      <div class="pane"><div class="ttl">카톡 전송 — 파트너사별</div>
+        <table><colgroup><col><col><col></colgroup><thead><tr><th>파트너사</th><th>방</th><th>상태</th></tr></thead>
+        <tbody><tr><td>1호 웰페리온</td><td>운영부</td><td><span class="st on"><i></i>활성</span></td></tr>
+        <tr><td>2호 다이어트캠프</td><td>대표님</td><td><span class="st warn"><i></i>확인 대기</span></td></tr>
+        <tr><td>3호 고척골프</td><td>—</td><td><span class="st off"><i></i>비활성</span></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="sec why"><b>왜 이 조합인가</b> — 규칙집 팔레트 「Trust teal」(#0F766E·#14B8A6·#F0FDFA·#134E4A)을 우리 청록에 맞춰 그대로 얹은 것. 청록 한 가지로 신뢰감을 주고, 발송·삭제 같은 「눌러야 하는」 자리만 주황으로 갈라 눈이 헤매지 않는다. 세 시안 중 가장 안전한 기본형.</div>
+</section>
+
+<!-- ═════ 시안 2 ═════ -->
+<section class="v v2" id="v2">
+  <div class="hd">
+    <div><div class="nm">센터리<small>Centery · 가칭</small></div><div class="tag">센터 운영을 하나로</div></div>
+    <span class="no">2</span>
+  </div>
+  <div class="sec">
+    <div class="lb">팔레트 — 딥 네이비 + 틸</div>
+    <div class="sw">
+      <div style="background:#0E9488;color:#fff"><b>주색 #0E9488</b><span class="cr" data-fg="#fff" data-bg="#0E9488"></span>활성 선·아이콘·큰 글자</div>
+      <div style="background:#0F172A;color:#fff"><b>네이비 #0F172A</b><span class="cr" data-fg="#fff" data-bg="#0F172A"></span>머리띠·제목 (채운 버튼은 #0B6F66)</div>
+      <div style="background:#B45309;color:#fff"><b>행동 #B45309</b><span class="cr" data-fg="#fff" data-bg="#B45309"></span>발송·주의</div>
+      <div style="background:#F8FAFC;color:#0F172A"><b>바탕 #F8FAFC</b><span class="cr" data-fg="#0F172A" data-bg="#F8FAFC"></span>글자 #0F172A</div>
+      <div style="background:#D5F3EF;color:#0B6F66"><b>틴트 #D5F3EF</b><span class="cr" data-fg="#0B6F66" data-bg="#D5F3EF"></span>선택 행·배지</div>
+      <div style="background:#FFFFFF;color:#475569"><b>패널 #FFFFFF</b><span class="cr" data-fg="#475569" data-bg="#FFFFFF"></span>보조 글자 #475569</div>
+    </div>
+  </div>
+  <div class="sec type">
+    <div class="lb">글꼴 — Pretendard(한글) + DM Sans(영문·숫자)</div>
+    <h3>파트너사 3곳, 오늘 발송 12건</h3>
+    <p>카톡 전송·상담봇·자동업로드를 한 화면에서 켜고 끕니다. 규칙집 「Premium Sans」의 구글 대체 DM Sans — 차분하고 밀도 높은 관리 화면용.</p>
+    <div class="num">1,284<small>이번 달 상담</small></div>
+  </div>
+  <div class="sec">
+    <div class="lb">버튼</div>
+    <div class="btns"><button class="btn p">저장</button><button class="btn s">미리보기</button><button class="btn a">지금 발송</button><button class="btn g">취소</button></div>
+  </div>
+  <div class="sec">
+    <div class="lb">플랫폼관리 화면 견본</div>
+    <div class="side">
+      <nav><a href="#v2">파트너사</a><a href="#v2" class="on" aria-current="true">카톡 전송</a><a href="#v2">상담봇</a><a href="#v2">자동업로드</a></nav>
+      <div class="pane"><div class="ttl">카톡 전송 — 파트너사별</div>
+        <table><colgroup><col><col><col></colgroup><thead><tr><th>파트너사</th><th>방</th><th>상태</th></tr></thead>
+        <tbody><tr><td>1호 웰페리온</td><td>운영부</td><td><span class="st on"><i></i>활성</span></td></tr>
+        <tr><td>2호 다이어트캠프</td><td>대표님</td><td><span class="st warn"><i></i>확인 대기</span></td></tr>
+        <tr><td>3호 고척골프</td><td>—</td><td><span class="st off"><i></i>비활성</span></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="sec why"><b>왜 이 조합인가</b> — 규칙집 「Professional navy + blue CTA」의 파랑 자리에 우리 청록을 넣은 것. 네이비 머리띠가 「개발사 제품」 느낌을 가장 또렷이 내고, 웰페리온(베이지·따뜻함)과 한눈에 구분된다. 파는 앱을 여러 회사에 보일 때 가장 「회사 같은」 인상.</div>
+</section>
+
+<!-- ═════ 시안 3 ═════ -->
+<section class="v v3" id="v3">
+  <div class="hd">
+    <div><div class="nm">루틴웍스<small>RoutineWorks · 가칭</small></div><div class="tag">매일 도는 일을 대신 돌립니다</div></div>
+    <span class="no">3</span>
+  </div>
+  <div class="sec">
+    <div class="lb">팔레트 — 소프트 민트 + 틸</div>
+    <div class="sw">
+      <div style="background:#0E9488;color:#fff"><b>주색 #0E9488</b><span class="cr" data-fg="#fff" data-bg="#0E9488"></span>활성 선·아이콘·큰 글자</div>
+      <div style="background:#0A6E66;color:#fff"><b>진한 #0A6E66</b><span class="cr" data-fg="#fff" data-bg="#0A6E66"></span>채운 버튼·강조 글자</div>
+      <div style="background:#4F46E5;color:#fff"><b>행동 #4F46E5</b><span class="cr" data-fg="#fff" data-bg="#4F46E5"></span>발송·AI 표시</div>
+      <div style="background:#FFFFFF;color:#0F3D3A"><b>바탕 #FFFFFF</b><span class="cr" data-fg="#0F3D3A" data-bg="#FFFFFF"></span>글자 #0F3D3A</div>
+      <div style="background:#CFF5EE;color:#0A6E66"><b>틴트 #CFF5EE</b><span class="cr" data-fg="#0A6E66" data-bg="#CFF5EE"></span>선택 행·배지</div>
+      <div style="background:#F3FBF9;color:#4F6B68"><b>패널 #F3FBF9</b><span class="cr" data-fg="#4F6B68" data-bg="#F3FBF9"></span>보조 글자 #4F6B68</div>
+    </div>
+  </div>
+  <div class="sec type">
+    <div class="lb">글꼴 — Noto Sans KR(한글) + Plus Jakarta Sans(영문·숫자)</div>
+    <h3>파트너사 3곳, 오늘 발송 12건</h3>
+    <p>카톡 전송·상담봇·자동업로드를 한 화면에서 켜고 끕니다. 규칙집 「Korean Modern」 — 한글 본문이 가장 고르게 읽히는 조합, 상담봇처럼 글이 많은 화면에 유리.</p>
+    <div class="num">1,284<small>이번 달 상담</small></div>
+  </div>
+  <div class="sec">
+    <div class="lb">버튼</div>
+    <div class="btns"><button class="btn p">저장</button><button class="btn s">미리보기</button><button class="btn a">지금 발송</button><button class="btn g">취소</button></div>
+  </div>
+  <div class="sec">
+    <div class="lb">플랫폼관리 화면 견본</div>
+    <div class="side">
+      <nav><a href="#v3">파트너사</a><a href="#v3" class="on" aria-current="true">카톡 전송</a><a href="#v3">상담봇</a><a href="#v3">자동업로드</a></nav>
+      <div class="pane"><div class="ttl">카톡 전송 — 파트너사별</div>
+        <table><colgroup><col><col><col></colgroup><thead><tr><th>파트너사</th><th>방</th><th>상태</th></tr></thead>
+        <tbody><tr><td>1호 웰페리온</td><td>운영부</td><td><span class="st on"><i></i>활성</span></td></tr>
+        <tr><td>2호 다이어트캠프</td><td>대표님</td><td><span class="st warn"><i></i>확인 대기</span></td></tr>
+        <tr><td>3호 고척골프</td><td>—</td><td><span class="st off"><i></i>비활성</span></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="sec why"><b>왜 이 조합인가</b> — 규칙집 「Teal focus + action」 변형. 흰 바탕에 민트 틴트만 얹어 가장 밝고 가볍다. 행동색을 남색 계열(#4F46E5)로 두어 「AI 가 한 일」 표시와 발송 버튼을 같은 색으로 묶을 수 있다. 상담봇 관리처럼 글이 많은 화면에 가장 편하다.</div>
+</section>
+
+</div>
+
+<div class="pick"><b>GM 결정</b> 번호 하나: <span class="k">1</span> <span class="k">2</span> <span class="k">3</span> — 채팅에 숫자만 주시면 됩니다. 이름은 가칭이며 시보(회사 정의 초안)와 같은 가칭을 씁니다.</div>
+<p class="note">세 시안 공통: 청록 #0E9488 유지(흰 글자를 얹으면 명암비 3.7 이라 채운 버튼엔 진한 청록을 쓴다) · 글자 명암비 4.5 이상 · 터치 44px · 초점 표시 · 이모지 아이콘 없음. 근거 = 디자인 규칙집(UI/UX Pro Max) color·typography 조회 2026-09-15. 이 파일이 선택 뒤 브랜드가이드 정본이 됩니다(고른 시안만 남김).</p>
+
+<script>
+// 색 칸의 명암비를 그 자리에서 계산해 적는다 — 표기와 실제가 어긋나지 않게.
+(function(){
+  function lum(hex){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(function(c){return c+c}).join('');
+    var r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+    function f(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}
+    return .2126*f(r)+.7152*f(g)+.0722*f(b)}
+  document.querySelectorAll('.cr').forEach(function(el){
+    var a=lum(el.dataset.fg),b=lum(el.dataset.bg),r=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+    el.textContent='명암비 '+r.toFixed(1)+(r>=4.5?' 통과':' 큰 글자·선·아이콘만');
+  });
+})();
+</script>
+</body>
+</html>
