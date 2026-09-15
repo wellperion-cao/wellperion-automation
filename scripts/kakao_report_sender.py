@@ -437,19 +437,52 @@ def _chat_room_windows() -> list[tuple[int, str]]:
     있고, 채팅방 창에는 대화 목록 EVA_VH_ListControl_Dblclk 가 있다. 자식 창 이름으로
     가른다. 자식을 못 읽으면 채팅방으로 두고 넘어간다 — 그건 send_enter 의 전송 확인이
     받아 낸다(둘 다 실패해야 사고가 되게 겹쳐 둔다)."""
-    out: list[tuple[int, str]] = []
-    for hwnd, title, cls in _enum_visible_top_level_windows():
-        if cls != KAKAO_ROOM_WINDOW_CLASS:
-            continue
-        kids: list[str] = []
-        try:
-            win32gui.EnumChildWindows(hwnd, lambda c, acc: acc.append(win32gui.GetWindowText(c)), kids)
-        except Exception:
-            pass
-        if any(k.startswith("Moim") for k in kids):
-            continue  # 공지 상세보기 창 — 채팅방이 아니다
-        out.append((hwnd, title))
-    return out
+    return [(h, t) for h, t in _room_class_windows() if not _has_moim_child(h)]
+
+
+def _room_class_windows() -> list[tuple[int, str]]:
+    return [(h, t) for h, t, c in _enum_visible_top_level_windows() if c == KAKAO_ROOM_WINDOW_CLASS]
+
+
+def _has_moim_child(hwnd: int) -> bool:
+    """자식 창의 클래스 또는 텍스트가 Moim* 이면 공지 「상세보기」 창이다.
+    09-11 실측은 텍스트로 잡혔지만 이름이 클래스 쪽일 수도 있어 둘 다 본다(더 넓게 빼는 쪽이 안전하다)."""
+    kids: list[str] = []
+    try:
+        win32gui.EnumChildWindows(
+            hwnd, lambda c, acc: acc.extend((win32gui.GetWindowText(c), win32gui.GetClassName(c))), kids)
+    except Exception:
+        pass
+    return any(k.startswith("Moim") for k in kids)
+
+
+NOTICE_TRACE_LOG = Path(__file__).resolve().parent.parent / "logs" / "kakao_notice_trace.log"
+
+
+def _log_new_notice_windows(room_name: str, before: set) -> None:
+    """검색 Enter 뒤 새로 생긴 공지 창을 stdout 과 logs/kakao_notice_trace.log 에 남긴다(배 2636).
+    발신기 stdout 은 예약작업이 버리므로 파일에도 적는다 — 다음 아침 이 파일이 비어 있으면 검색 경로는 원인이 아니다."""
+    new = [t for t in _notice_windows() if t not in before]
+    if not new:
+        return
+    line = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} [{room_name}] 검색 Enter 뒤 공지 창 {len(new)}개 새로 열림 — " \
+           + " · ".join(f"{t!r}(hwnd {h})" for h, t in new)
+    log(line)
+    try:
+        NOTICE_TRACE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with NOTICE_TRACE_LOG.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+    before.update(new)   # 같은 창을 폴링마다 다시 적지 않는다
+
+
+def _notice_windows() -> list[tuple[int, str]]:
+    """공지 「상세보기」 창 목록 [(hwnd, 제목)] — _chat_room_windows 가 빼는 바로 그 창들.
+
+    배 2636(GM 물음 2026-09-15 「왜 공지 상세보기가 다 열려 있나」)의 감지 장치. 검색 Enter 전후로
+    이 목록을 대조해 우리 자동화가 공지 창을 열었는지 로그에 남긴다 — 닫는 것은 원인이 확인된 뒤에."""
+    return [(h, t) for h, t in _room_class_windows() if _has_moim_child(h)]
 
 
 def find_room_window(room_name: str, timeout: float = 3.0):
@@ -825,11 +858,13 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
         except Exception:
             pass
 
+    notices_before = set(_notice_windows())     # 배 2636 — Enter 가 공지 창을 여는지 전후 대조
     edit.type_keys("{ENTER}", pause=0.1)  # 최상단 검색결과 열기
 
     # 새 채팅방 창이 뜰 때까지 폴링(주 경로와 동일하게 창-제목 완전일치로 확인)
     deadline = time.time() + timeout
     while time.time() < deadline:
+        _log_new_notice_windows(room_name, notices_before)
         for hwnd, title in _chat_room_windows():  # 공지 「상세보기」 창 제외(제목이 같다)
             if _title_key(title) == _title_key(room_name):
                 room_win = Desktop(backend="uia").window(handle=hwnd)
