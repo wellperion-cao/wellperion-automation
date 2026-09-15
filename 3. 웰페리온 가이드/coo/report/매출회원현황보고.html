@@ -314,7 +314,8 @@
   .tmbox .tnone{font-size:10px;color:#9AA4AD;}
   /* 4면 담당별 매출 — 왼쪽이 그날, 오른쪽이 누적. 시트가 쓰는 그 배치 그대로. */
   .ptab{width:100%;border-collapse:collapse;font-size:10.2px;}
-  #sheet4 .ptab td, #sheet4 .ptab th{padding-top:1.5px;padding-bottom:1.5px;}
+  #sheet4 .ptab{font-size:10.8px;line-height:1.2;}
+  #sheet4 .ptab td, #sheet4 .ptab th{padding-top:2.2px;padding-bottom:2.2px;height:auto;font-size:10.8px;}   /* 전역 th,td{height:26px;font-size:12px} 를 이 표에서만 푼다 */   /* 43줄(담당 35+팀 8)이 한 단에 들어가게(GM 지시 2026-09-15 왼쪽에 다 몰아) */
   .ptab tr.p4team td{background:#EEF3F7;color:var(--navy);font-weight:800;border-top:2px solid #D5DCE3;}
   .ptab .p4n{font-weight:600;color:#7A838B;font-size:9.5px;margin-left:4px;}
   .ptab td.p4who{padding-left:14px;}
@@ -1679,7 +1680,7 @@ function renderPage3(c){
       var dm = /([0-9]{1,2}\/[0-9]{1,2}\s*\([^)]+\))/.exec(first);
       if (/운영\s*현황/.test(first)) {
         body = ops.slice(1);
-        if (head && dm) head.textContent = '운영 현황 — 시설 · 지원 · 주차 · ' + dm[1];
+        if (head && dm) setSecTitle(head, '운영 현황 — 시설 · 지원 · 주차 · ' + dm[1]);   // 원천 꼬리표(.src)는 남긴다
       }
       var out = '', open = false;
       body.forEach(function(ln){
@@ -1702,7 +1703,7 @@ function renderPage3(c){
     var _y3 = new Date(Date.now() - 86400000);
     if (isClosedDay(_y3)) {
       var _md3 = (_y3.getMonth() + 1) + '/' + _y3.getDate();
-      if (head) head.textContent += ' · 휴관일';
+      if (head) setSecTitle(head, head.firstChild ? String(head.firstChild.textContent || '') + ' · 휴관일' : '운영 현황 · 휴관일');
       el.innerHTML = '<div class="closednote">' + _md3 + ' 은 <b>휴관일</b>입니다(' + esc(closedReason(_y3)) +
         ') — 아래 점검이 0 인 것은 문을 닫았기 때문이고, 빠뜨린 것이 아닙니다.</div>' + el.innerHTML;
     }
@@ -1828,7 +1829,7 @@ function p4TeamTable(heads, teams){
 function renderPage4(c, dayLabel){
   var les = p4Rows(c, 16, 66);   // 63행 루프 메소드까지(2026-09-15 실측 · 종전 62행에서 잘렸다)
   var h2 = document.getElementById('p4lesh');
-  if (h2) h2.textContent = (dayLabel || '') + ' 강습 — 팀 · 담당별';
+  if (h2) setSecTitle(h2, (dayLabel || '') + ' 강습 — 팀 · 담당별');   // 원천 꼬리표(.src)는 남긴다
   var e2 = document.getElementById('p4les'), e3 = document.getElementById('p4les2');
   /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
