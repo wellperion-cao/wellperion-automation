@@ -2,7 +2,7 @@
 """파트너사 마케팅 채널 계정(아이디·비밀번호) 서버 보관 (배 2652 · 2026-09-15 시토 · GM 확정 「개인 PC 말고 서버 플랫폼관리에 안 보이게 저장 · 보기는 코드 1531」).
 
 정본 = 서버 비밀 파일 하나(/srv/erp/partner_secrets.json · 권한 600 · api.env 와 같은 취급). 다른 어디에도 값을 두지 않는다.
-모양 = {"<tenant>/<channel>": {"id":…, "pw":…, "note":…, "received_at":…, "updated_by":…}}  · tenant = jo/dc/… · channel = naver-blog/instagram/danggn/naver-cafe/kakao-channel
+모양 = {"<tenant>/<channel>": {"id":…, "pw":…, "note":…, "received_at":…, "updated_by":…}}  · tenant = jo/dc/… · channel = naver-blog/naver-cafe/danggn/instagram/threads/google/kakao-channel
 
   GET  /api/admin/partner-secrets                 회사 관리자(ERP_PLATFORM_ADMINS)만 · 목록(아이디 앞 2자만 · 비밀번호는 있다/없다)
   POST /api/admin/partner-secrets/reveal          {"code","tenant","channel"} → 코드가 맞을 때만 {id, pw}
@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 router = APIRouter()
 
 SECRETS_FILE = os.environ.get("PARTNER_SECRETS_FILE", "/srv/erp/partner_secrets.json")
-CHANNELS = ("naver-blog", "instagram", "danggn", "naver-cafe", "kakao-channel")
+CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "kakao-channel")   # GM 2026-09-15 스레드·구글 추가 · 화면은 이 순서로 자리를 만든다
 
 
 def _user(request):
