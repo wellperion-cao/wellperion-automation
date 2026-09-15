@@ -14090,7 +14090,11 @@ function apiPost(payload) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
   // 회원 시트에 쓴 직후 5분은 미러가 옛 값이다 — 도장을 찍어 두고 _memberListFetch 가 그동안 GAS 를 읽게 한다(배 942 ②).
-  try { if (/^(member|lesson)_/.test(String(payload && payload.action))) localStorage.setItem('cpo_ma_wrote_at', String(Date.now())); } catch (e) {}
+  // ★2026-09-15 시포 — 「쓴 뒤 6분 GAS 우회」 도장을 좁힌다. 회원 쓰기 7종은 09-11 부터 서버 원장(members)에 먼저 쓰므로
+  //   미러가 곧 새 값이다 — 우회하면 느리고(구글 왕복) 되밀기 전 옛값을 보여 준다(문의 쪽 같은 사고 · 임정은M FB260915-162312).
+  //   아직 GAS 가 행을 만드는 두 경우만 도장을 찍는다: 새 회원 직접등록(member_registered_add · 전화 0건이면 GAS 가 행 생성)과
+  //   강습 쓰기(lesson_* · write_lesson 스위치 없음 · 5분 동기화). 나머지 member_* 는 서버 미러를 바로 읽는다.
+  try { if (/^(lesson_|member_registered_add$)/.test(String(payload && payload.action))) localStorage.setItem('cpo_ma_wrote_at', String(Date.now())); } catch (e) {}
   /* 쓰기 액션에만 직원 이름을 붙인다 — 호출부 9곳을 고치지 않고 이 관문 한 곳에서(배327). */
   try {
     var _a = payload && payload.action;
