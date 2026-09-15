@@ -87,7 +87,8 @@ h1,h2,h3{text-wrap:balance;}
   letter-spacing:0.2em; text-transform:uppercase; opacity:.78;
   transition:opacity .3s;
 }
-.nav-menu a:hover{opacity:1;}
+.nav-menu a:hover,.nav-menu a[aria-current="true"]{opacity:1;}
+.nav-menu a[aria-current="true"]{text-decoration:underline; text-underline-offset:6px; text-decoration-thickness:1px;}
 .nav-menu .nav-cta{
   border:1px solid currentColor; padding:9px 20px; opacity:1;
   transition:background .3s, color .3s;
@@ -106,7 +107,7 @@ h1,h2,h3{text-wrap:balance;}
   border:1px solid currentColor; padding:5px 12px; transition:opacity .3s;
 }
 .nav-staff:hover{opacity:.95;}
-.nav-burger{display:none; background:none; border:0; color:inherit; font-size:20px; cursor:pointer; line-height:1;}
+.nav-burger{display:none; background:none; border:0; color:inherit; font-size:20px; cursor:pointer; line-height:1; min-width:44px; min-height:44px; margin:-12px -12px -12px 0;}
 
 /* ── 히어로 ── */
 .hero{
@@ -209,11 +210,12 @@ h1,h2,h3{text-wrap:balance;}
 .footer{
   padding:26px var(--pad-x) 40px; background:var(--white);
   display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;
-  font-family:var(--label); font-size:10px; font-weight:500;
+  font-family:var(--label); font-size:12px; font-weight:500;
   letter-spacing:0.14em; text-transform:uppercase; color:var(--gray);
   border-top:1px solid var(--line);
 }
 .footer .footer-addr{text-transform:none; letter-spacing:0.02em;}
+.footer a{display:inline-block; padding:12px 0;}
 
 .reveal{opacity:0; transform:translateY(24px); transition:opacity .9s cubic-bezier(.16,.84,.44,1), transform .9s cubic-bezier(.16,.84,.44,1);}
 .reveal.on{opacity:1; transform:none;}
@@ -230,7 +232,7 @@ h1,h2,h3{text-wrap:balance;}
     background:rgba(251,249,246,.98); backdrop-filter:blur(14px);
     color:var(--black); padding:24px var(--pad-x) 30px; border-bottom:1px solid var(--line);
   }
-  .nav-menu.open a{opacity:1;}
+  .nav-menu.open a{opacity:1; min-height:44px; display:flex; align-items:center;}
   .nav-menu.open .nav-cta{border-color:var(--black);}
   .nav-menu.open .nav-aux{border-left:0; margin-left:0; padding-left:0; flex-direction:column; align-items:flex-start; gap:12px;}
   .nav-burger{display:block;}
