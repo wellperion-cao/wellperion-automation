@@ -160,6 +160,14 @@
   /* 연 단위 4칸 */
   /* 어제 다녀가신 분 — 세 갈래를 가로 세 칸으로(2026-09-15). 막대 세 줄은 칸 높이를 넘겨
      마지막 줄(유소년)이 늘 잘렸다. */
+  /* 강습 등록 팀별 묶음(2026-09-15) — 팀 머리줄에 신규·재등록 인원과 금액을 적고 명단을 아래로. */
+  .lteams{columns:2;column-gap:14px;margin-top:4px;}
+  .lteam{break-inside:avoid;margin-bottom:6px;}
+  .lth{font-size:10.6px;font-weight:800;color:var(--navy);display:flex;gap:6px;align-items:baseline;
+    border-bottom:1px solid var(--line);padding-bottom:1px;}
+  .lth .ltc{margin-left:auto;font-weight:600;color:#48525B;font-size:10px;white-space:nowrap;}
+  .ltr{font-size:10.3px;padding:1.2px 0;border-bottom:1px dotted var(--line);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px;}
   .vgrid .vcell{border:1px solid var(--line);padding:5px 9px 6px;min-width:0;}
   .vgrid .vcl{font-size:10.3px;color:#48525B;font-weight:700;white-space:nowrap;}
@@ -449,9 +457,9 @@
         </div>
       </div>
 
-      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분(합계 + 세 줄). 높이를 먼저 잡아 두지 않으면
-           위 컨택·로스자 글이 길어진 날 세 줄 중 마지막이 잘린다(2026-09-15 실측). -->
-    <div class="sec" style="flex:none;">
+      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분. 남은 높이를 전부 먹어 왼쪽 「매출 현황」과
+           아래선이 맞는다(GM 지시 2026-09-15). 세 갈래는 가로 세 칸이라 높이를 넘지 않는다. -->
+    <div class="sec" style="flex:1;min-height:0;">
       <h2>어제 다녀가신 분</h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -477,7 +485,7 @@
           <div class="yr yr2" id="yearly"></div>
         </div>
         <div class="chartwrap">
-          <svg id="chart" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
+          <svg id="chart" viewBox="0 0 660 250" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
         </div>
       </div>
     </div>
@@ -544,30 +552,31 @@
   <!-- 등록 띠 — 위 멤버십 한 줄 · 아래 강습(성인·유소년) 넓게. 종전 좌우 반반은 강습 명단이
        성인+유소년 두 단을 반 폭에 욱여넣어 이름 줄이 잘렸다(GM 지적 2026-09-15). 멤버십은 하루
        몇 건이라 한 줄이면 충분하다. -->
-  <div class="col" id="p2regband" style="flex:1.32;min-height:0;">
-    <div class="sec" style="flex:none;">
-      <h2 id="p2memh">오늘 등록 — 멤버십</h2>
-      <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+  <!-- 등록 띠 — 왼쪽 멤버십 · 오른쪽 강습(팀별). 강습이 하루 20건 넘게 나와 오른쪽을 두 배 넓게 준다
+       (GM 지시 2026-09-15). -->
+  <div class="body" id="p2regband" style="flex:1.5;">
+    <div class="col" style="flex:0.62;">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p2memh">오늘 등록 — 멤버십</h2>
+        <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
     </div>
-    <div class="sec" style="flex:1;min-height:0;">
-      <h2 id="p2lesh">오늘 등록 — 강습 (성인 · 유소년)</h2>
-      <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    <div class="col" style="flex:1.38;">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="p2lesh">오늘 등록 — 강습 (팀별)</h2>
+        <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
     </div>
   </div>
 
-  <div class="body" id="p2inqband" style="flex:0.96;margin-top:11px;">
-    <div class="col">
-      <!-- 왼쪽 = 문의에서 가입까지. 멤버십 · 성인강습 · 유소년강습 세 갈래를 따로 본다
-           (GM 지시 2026-09-15 — 합쳐 두면 어느 쪽이 막히는지 안 보인다). -->
+  <!-- 문의 띠 — 「문의 상세 내역」 칸은 뺐다(GM 지시 2026-09-15). 그 자리를 등록 띠가 쓴다.
+       안 챙긴 분은 맨 위 「후속 연락 필요한 문의」 칸이 이미 사람 수로 알려 준다. -->
+  <div class="body" id="p2inqband" style="flex:0.8;margin-top:11px;">
+    <div class="col" style="flex:1;">
+      <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). -->
       <div class="sec" style="flex:1;min-height:0;">
         <h2>문의에서 가입까지 — 원장 진행상태 그대로</h2>
         <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-    </div>
-    <div class="col">
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>문의 상세 내역 — 오늘 문의 · 아직 안 챙긴 분 먼저</h2>
-        <div class="bd" id="p2inq"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
   </div>
@@ -1233,15 +1242,19 @@ function renderLesson(d){
 
 /* 월별 매출 막대 — 막대 하나가 한 달. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
-  var W = 1020, H = 180, L = 70, R = 62, T = 18, B = 28;
+  var W = 660, H = 250, L = 56, R = 14, T = 22, B = 26;
   var months = (d && d.months) || [];
+  /* 값이 아직 없는 뒷달(예 10·11·12월)은 자리만 먹고 아무것도 못 보여 준다 — 채워진 마지막 달까지만 그린다. */
+  var lastI = -1;
+  months.forEach(function(m, i){ if (m.value != null) lastI = i; });
+  if (lastI >= 0) months = months.slice(0, lastI + 1);
   var vals = months.map(function(m){ return m.value; });
   var maxV = Math.max.apply(null, vals.map(function(v){ return v || 0; }).concat([1]));
   var cum = [], acc = 0;
   vals.forEach(function(v){ if (v == null) { cum.push(null); } else { acc += v; cum.push(acc); } });
   var maxC = Math.max.apply(null, cum.map(function(v){ return v || 0; })
                 .concat([(d && d.yearTarget) || 0, 1]));
-  var iw = W - L - R, ih = H - T - B, bw = iw / 12;
+  var iw = W - L - R, ih = H - T - B, bw = iw / Math.max(months.length, 1);
   var s = [];
 
   // 가로 눈금(월 매출 기준 3단)
@@ -1249,7 +1262,7 @@ function renderChart(d){
     var y = T + ih - (ih * g / 3);
     s.push('<line x1="' + L + '" y1="' + y + '" x2="' + (W-R) + '" y2="' + y +
            '" stroke="#E3E7EB" stroke-width="1"/>');
-    s.push('<text x="' + (L-8) + '" y="' + (y+4) + '" text-anchor="end" font-size="12" fill="#7A838B">' +
+    s.push('<text x="' + (L-8) + '" y="' + (y+4) + '" text-anchor="end" font-size="14" fill="#7A838B">' +
            eok(maxV * g / 3) + '</text>');
   }
   /* 오른쪽 축(연 누적)은 뺐다 — 이 띠는 월 단위로 재정립했다(GM 2026-09-14). 막대 하나가 한 달이고,
@@ -1260,13 +1273,13 @@ function renderChart(d){
     var h = ih * (m.value / maxV), x = L + bw * i + bw * 0.22, y = T + ih - h;
     s.push('<rect x="' + x + '" y="' + y + '" width="' + (bw*0.56) + '" height="' + h +
            '" fill="' + (m.partial ? '#8FA6BC' : '#14304E') + '" rx="2"/>');
-    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="' +
+    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-6) + '" text-anchor="middle" font-size="15" font-weight="700" fill="' +
            (m.partial ? '#48525B' : '#14304E') + '">' + eok(m.value) +
            (m.partial ? ' ' + (m.partialLabel || '집계중') : '') + '</text>');
   });
   // 월 라벨
-  for (var i = 0; i < 12; i++) {
-    s.push('<text x="' + (L + bw*i + bw*0.5) + '" y="' + (H-8) + '" text-anchor="middle" font-size="12.5" fill="#48525B">' +
+  for (var i = 0; i < months.length; i++) {
+    s.push('<text x="' + (L + bw*i + bw*0.5) + '" y="' + (H-7) + '" text-anchor="middle" font-size="14" fill="#48525B">' +
            (i+1) + '월</text>');
   }
   document.getElementById('chart').innerHTML = s.join('');
@@ -1803,6 +1816,36 @@ function readContracts(c, cols){
   rows.sort(function(a, b){ return b.amount - a.amount; });
   return rows;
 }
+/* 강습 등록 — 팀별 묶음. 팀마다 「신규 n명 · 재등록 m명 · 금액」을 먼저 적고 그 아래 명단을 둔다.
+   팀 분류는 매출 표와 같은 규칙(DAY_TEAM_RULES)을 쓴다 — 한 화면에서 팀 이름이 갈리면 안 된다. */
+function lessonTeamHTML(rows){
+  if (!rows.length) return '<div class="fnote">그날 강습 등록이 없습니다.</div>';
+  var isNew = function(t){ return /신규/.test(String(t || '')); };
+  var order = DAY_TEAM_RULES.map(function(r){ return r[0]; }).concat(['기타']);
+  var byTeam = {};
+  rows.forEach(function(x){
+    var team = '기타';
+    for (var i = 0; i < DAY_TEAM_RULES.length; i++) {
+      if (DAY_TEAM_RULES[i][1].test(String(x.sport || ''))) { team = DAY_TEAM_RULES[i][0]; break; }
+    }
+    (byTeam[team] = byTeam[team] || []).push(x);
+  });
+  var html = order.filter(function(t){ return byTeam[t]; }).map(function(t){
+    var list = byTeam[t];
+    var nNew = list.filter(function(x){ return isNew(x.type); }).length;
+    var nRe  = list.length - nNew;
+    var sum  = list.reduce(function(a, x){ return a + (x.amount || 0); }, 0);
+    return '<div class="lteam"><div class="lth">' + esc(t) +
+      '<span class="ltc">신규 <b>' + nNew + '명</b> · 재등록 <b>' + nRe + '명</b> · ' + _won(sum) + '</span></div>' +
+      '<div class="ltl">' + list.map(function(x){
+        return '<div class="ltr">' + esc(x.staff) + ' · ' + esc(x.member) + ' · <b>' + esc(x.amountRaw) +
+               '</b> · ' + esc(x.type) + ' · ' + esc(x.sport) + '</div>'; }).join('') + '</div></div>';
+  }).join('');
+  var tNew = rows.filter(function(x){ return isNew(x.type); }).length;
+  return '<div class="fnote" style="margin-top:0">전체 ' + rows.length + '건 · 신규 ' + tNew +
+         '명 · 재등록 ' + (rows.length - tNew) + '명</div>' + '<div class="lteams">' + html + '</div>';
+}
+
 function contractListHTML(title, rows, cols){
   var top = rows.slice(0, 20), restN = rows.length - top.length;   // 12→20 (GM: 접지 말고 다 보여라)
   // 두 단으로 흘린다 — 한 줄 세로 나열은 20건이면 칸 높이를 넘겼다(GM 지적 2026-09-02 "칸 넘어가고").
@@ -1935,11 +1978,7 @@ function renderP2Contract(c, dayLabel){
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
     var band = document.getElementById('p2regband');
     if (band) band.style.flex = (memRows.length + rows.length) ? '1.32' : '0.42';
-    var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
-    var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
-    les.innerHTML = '<div style="display:flex;gap:14px">' +
-      contractListHTML('성인 (' + adult.length + '건)', adult) +
-      contractListHTML('유소년 (' + kid.length + '건)', kid) + '</div>';
+    les.innerHTML = lessonTeamHTML(rows);
   }
 }
 
@@ -2274,7 +2313,7 @@ function inqOpenUncontacted(r){
 }
 
 function renderP2Inq(d){
-  var el = document.getElementById('p2inq'); if (!el) return;
+  var el = document.getElementById('p2inq'); if (!el) return;   // 칸을 뺀 판에서는 그리지 않는다(GM 2026-09-15)
   if (!d || !d.data) { el.innerHTML = '<div class="err">문의 목록을 못 읽었습니다 — 문의 시트 조회 실패</div>'; return; }
   var rows = d.data.filter(function(r){ return r.name; });
   rows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
