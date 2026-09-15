@@ -17,6 +17,7 @@
   등록:  python scripts/gm_handoff.py --title "…" --content "…" [--date 2026-09-09 --time 14:00]
              [--approval "GM,대표님"] [--category "[7] IT·시스템·자동화"] [--due 2026-09-11]
              [--plan 2026-08-24 --check "□ 로 추가할 체크 한 줄"] [--assignee "김남욱 GM"] [--dry-run]
+             [--source 회장님|대표님]  ← 회장님·대표님 지시면 제목 앞에 「[회장님 지시] 」를 붙이고 카드 첫 줄에 남긴다(GM업무 배지 👑/🤵 · GM 지시 2026-09-15)
              [--todo-id TODO-…]  ← 실무진이 이미 올린 업무 SSOT 행이 있으면 같이 준다. --todo-id·--plan 은
              전사일정 item 의 todo_id·plan_id 칸이 되어, 전사일정 카드에 「업무」·「GM업무」 링크로 뜬다.
   완료:  python scripts/gm_handoff.py --done --todo-id TODO-… [--event-id evt-…] [--plan 2026-08-24 --check "☑ 로 바꿀 체크 원문"] [--dry-run]
@@ -124,6 +125,9 @@ def add_todo(title: str, content: str, category: str, due: str, approval: str, d
 GM_KEY = "1531"  # GM 행(결재 SSOT)은 gmkey 없이는 조회에 안 나온다 — 중복 검사는 반드시 이 키로
 
 
+GM_TAG = "(GM 직접)"   # _gm_direct_tasks.js GM_TAG 와 같은 값 — GM업무 화면 편입 판정
+
+
 def _title_head(title: str) -> str:
     head = str(title or "").split(" — ")[0].split("(")[0]
     return "".join(ch for ch in head if ch.isalnum()).lower()
@@ -213,7 +217,7 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     return {"ok": True}
 
 
-def new_card(title: str, content: str, due: str, dry: bool, category: str = "") -> dict:
+def new_card(title: str, content: str, due: str, dry: bool, category: str = "", source: str = "") -> dict:
     """GM업무 카드(월간운영계획 이번 달 objectives · 담당 김남욱 GM) 새로 만들기 — GM 본인 건이 --plan 없이
     들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
     셋업」). 업무 SSOT 행은 여전히 안 만든다(TODO_UPLOAD_BLOCKED) — GM업무 = 이 카드, 결재 = 사람이 SSOT 에.
@@ -230,10 +234,15 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "") 
             if str(o.get("id") or "").startswith(ym + "-") and str(o.get("id") or "").rsplit("-", 1)[-1].isdigit()]
     cid = f"{ym}-{(max(nums) + 1) if nums else 1:02d}"
     today = _today().isoformat()
+    # 제목 태그 「(GM 직접)」— GM업무 화면(_gm_direct_tasks.js isGmDirect)은 이 태그가 있는 카드만 싣는다.
+    #   태그 없이 만들면 카드는 있는데 GM업무엔 안 보인다(2026-09-15 실측 · 09-32). 화면은 태그를 떼고 그린다.
+    if GM_TAG not in title:
+        title = f"{title} {GM_TAG}"
+    src_line = f"▶[{source} 지시 · GM 전달 {today}]\n" if source else ""
     card = {
         "id": cid, "initiative_id": "", "owner": GM_OWNER, "dept": "경영지원부", "title": title,
         "target": content[:300], "metric": "", "status": "진행", "progress": 0, "northstar": "",
-        "progress_note": f"■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}",
+        "progress_note": f"{src_line}■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}",
         "honesty": {"level": "manual", "label": "📝 사람값", "basis": "GM 지시 · gm_handoff 생성", "at": today},
         "due": due or "",
     }
@@ -270,6 +279,8 @@ def main() -> int:
     ap.add_argument("--event-id")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
+    ap.add_argument("--source", choices=["회장님", "대표님"],
+                    help="지시 출처 — 제목 앞에 「[회장님 지시] 」/「[대표님 지시] 」를 붙이고 GM업무 카드 첫 줄에 남긴다(👑/🤵 배지)")
     a = ap.parse_args()
     dry = a.dry_run
 
@@ -290,6 +301,8 @@ def main() -> int:
 
     if not a.title:
         ap.error("--title 필요")
+    if a.source and not a.title.startswith(f"[{a.source} 지시]"):
+        a.title = f"[{a.source} 지시] {a.title}"
     if not a.force:
         dup = find_open_duplicate(a.title)
         if dup:
@@ -308,7 +321,7 @@ def main() -> int:
                             a.check, False, dry)
     elif (a.assignee or GM_OWNER) == GM_OWNER:
         # GM 본인 건인데 카드가 없으면 GM업무 카드를 새로 낸다 — 전사일정만 남고 GM업무 면이 비던 것을 막는다(2026-09-14).
-        r_plan = new_card(a.title, a.content, due, dry, a.category)
+        r_plan = new_card(a.title, a.content, due, dry, a.category, a.source or "")
         a.plan = r_plan.get("id", "")
     else:
         r_plan = None

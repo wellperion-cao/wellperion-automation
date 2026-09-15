@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>경영 보고·GM 업무 현황 · WELLPERION</title>
+<title>GM 업무 현황 · WELLPERION</title>
 <script>
   /* GM 1차 신고(2026-08-26) "열자마자 맨 아래로 스크롤" 대응으로 넣었던 것 — 이건 진짜 원인이
      아니었다(같은 날 GM 재신고로 확인). scrollRestoration은 브라우저가 "이전 방문 스크롤 위치"를
@@ -89,7 +89,6 @@
   /* 상태가 왼쪽 띠 색으로 먼저 읽히게(:has 지원 브라우저 — Chrome/Edge/Safari 전부 지원) */
   .item:has(> summary.cardhead .st.on){border-left-color:var(--mid);}
   .item:has(> summary.cardhead .st.carry){border-left-color:var(--beige);}
-  .item:has(> summary.cardhead .done-badge){border-left-color:#5B8C6B;}
   .item:has(> summary.cardhead .due.overdue){border-left-color:var(--accent);}
   details.item[open]{border-color:var(--beige);}
   /* 달 묶음 머리는 뺐다 (GM 지시 2026-09-01 "월별로 나누지말고 계속 확대·업데이트되게"). 일은 달에
@@ -124,13 +123,6 @@
 
   .rep-empty{font-size:var(--fs-2);color:var(--grey);padding:14px 0;}
 
-  /* 경영 보고건 표(회장님·대표님) 액션 버튼·완료 배지 — 대표님_지시사항.html과 같은 값으로 이식
-     (GM 지적 2026-08-11 "가독성" — 이 페이지에 정의가 없어 무늬 없는 맨 버튼으로 보이던 것). */
-  .ebtn{font-family:var(--font);font-size:var(--fs-2);font-weight:700;padding:6px 14px;border-radius:2px;cursor:pointer;
-        background:var(--deep);color:#fff;border:0;}
-  .ebtn:hover{background:var(--mid);}
-  .ebtn:disabled{background:var(--line);color:var(--grey);cursor:not-allowed;}
-  .done-badge{font-size:var(--fs-1);font-weight:700;color:#1f7a3d;}
   .sum td .cat{font-size:var(--fs-1);font-weight:500;color:var(--grey);}
 
   .grp{margin:20px 0 10px;padding:7px 13px;background:var(--deep);color:#fff;
@@ -158,7 +150,7 @@
   .sum td.dept.none{color:var(--mid);font-weight:500;}
 
   /* 담당 칸 (GM 결정 2026-08-29 · 배843 "GM업무 관련 전체 담당칸이 있어야해") — 회장님·대표님·GM 직접
-     세 표 공통. 값은 셋 다 원본에 없어 공용 보드(GM_TASK_OWNERS)에 GM이 직접 입력한 값만 쌓인다 —
+     GM 직접 표. 값은 원본에 없어 공용 보드(GM_TASK_OWNERS)에 GM이 직접 입력한 값만 쌓인다 —
      안 채우면 계속 빈칸(지어내지 않음). 저장은 체크박스와 같은 즉시저장(_owner_directive.js 참조). */
   /* 담당 칸 — 96px 였을 때 「이경연 실장 + 윤병현AM」이 「이경연 실장 + 윤」에서 잘렸다(2026-09-01 웰리가
      20건 담당을 채우고 나서 실측). 두 사람이 붙는 건이 많아 폭을 넓힌다. */
@@ -176,7 +168,7 @@
   .tgl-nav a{font-size:var(--fs-2);font-weight:700;text-decoration:none;color:var(--mid);
              border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
   .sec{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden;}
-  /* 이 3개 섹션(경영 보고건·GM 진행건·완료건)이 맨 위에 이어 붙어 요약 띠 역할도 겸한다 —
+  /* 섹션(GM 진행건·완료건)이 맨 위에 이어 붙어 요약 띠 역할도 겸한다 —
      각자 접고 펼 수 있는 실제 섹션이면서, 접힌 채로도 건수가 큼직하게 보인다(GM 지시 2026-09-03). */
   .sec > summary{list-style:none;cursor:pointer;padding:11px 16px;background:var(--ink);color:#fff;
                  font-family:var(--font-serif);font-size:var(--fs-3);font-weight:800;letter-spacing:.02em;
@@ -318,8 +310,7 @@
   details.fold > summary::-webkit-details-marker{display:none;}
   details.fold > summary:after{content:" ▾";color:var(--grey);}
   details.fold[open] > summary:after{content:" ▴";}
-  @media print{ details.fold:not([open]){display:none;} #owner-grid{display:none !important;} }
-  #owner-grid,#owner-done-grid{display:none;}   /* 대표님 카드는 전용 화면과 중복 — 요약표만 남긴다(보고완료도 회장님과 동일하게 표만, GM 지적 2026-08-08) */
+  @media print{ details.fold:not([open]){display:none;} }
   @media print{
     .sec{break-inside:avoid;}
     .tgl-nav{display:none;}
@@ -384,7 +375,7 @@
 
   <div class="hd">
     <p class="brand">WELLPERION · 월간계획보고</p>
-    <h1>경영 보고 · GM 업무 현황<span class="ai-owner">AI 웰리</span></h1>
+    <h1>GM 업무 현황<span class="ai-owner">AI 웰리</span></h1>
     <p class="sub">회장님·대표님 보고건과 김남욱 GM 직접 업무를 한 장에서 봅니다</p>
     <!-- 대상 월·기준일 표기는 뺐다(GM 지시 2026-08-24 "대상 및 기준일도 아래에 다 기록할거라서") —
          각 업무 목표에 이제 기한(due)이 아래 목록에 직접 찍힌다. -->
@@ -468,62 +459,6 @@
     </div>
   </details>
 
-  <!-- ① 경영 보고건 — 회장님·대표님을 한 묶음으로(2026-08-06 GM: "둘이 비슷한 맥락이고 업무는 다 내가 본다").
-       두 목록의 정본·판정 로직은 그대로다(회장님=_chairman_items.js / 대표님=업무 시트) — 화면에서만 한 블록으로 모은다. -->
-  <details class="sec" id="sec-report" open>
-    <summary><span class="ic">📋</span> 경영 보고건 <span class="cnt"><span id="rep-total">—</span></span>
-      <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
-      <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
-      <!-- 월간운영계획 링크는 상단 바(◂ 월간운영계획으로)에만 남긴다 — 3중 중복 제거(GM 지적 2026-08-08) -->
-      <!-- 「보고 문안 복사」·「결재 현황」 버튼은 뺐다(GM 지시 2026-08-24). owner-bulk-btn 이 없어도
-           _owner_directive.js mount() 가 죽지 않도록 그 파일에 null 가드를 넣었다(대표님_지시사항.html은
-           같은 id 로 자기 버튼을 그대로 갖고 있어 영향 없음). -->
-    </summary>
-    <div class="sec-body">
-
-      <!-- ① 보고 대기·완료 통합 — 판정은 _owner_directive.js 가 이미 끝낸 것을 그대로 읽어, 표 하나 안에
-           대기 건은 위·완료 건은 아래로 정렬해서 그린다(GM 지시 2026-08-10, 판정 로직 복제 없음). 전체
-           대기·완료 합계는 위 「📋 경영 보고건」 옆 배지(id="rep-total")에 표시된다. -->
-      <!-- 진척률 출처 고지(GM 확정 2026-08-11 "약간의 색깔 및 %로") — 실측 수치 아님을 과대표기 없이 밝힌다. -->
-      <div style="font-size:var(--fs-1);color:var(--grey);margin:0 0 8px;">% ·막대는 상태 문구를 단계로 읽어 산출한 값입니다(실측 진척률 아님) — 아래 회장님·대표님 표 공통</div>
-
-      <div class="sub-h"><span class="who">👑 회장님</span><span style="font-size:var(--fs-1);color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
-      <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 회장님 목록 정본은 이 시트가 아니라
-           별도 하드코딩 배열(_chairman_items.js)이다. 어디서 오는지 화면에 밝혀 대표님 목록과 헷갈리지 않게 한다. -->
-      <div style="font-size:var(--fs-1);color:var(--grey);margin:2px 0 6px;">회장님께 <b>아직 보고하지 않은 건</b>만 표시합니다 — 보고를 마치면 목록에서 내려가고, 진행은 아래 GM 업무 목표에서 이어 봅니다 · 보고 이력·상세 = 회장님 지시사항 페이지</div>
-      <div class="sum">
-        <table><tbody id="chairman-sum-body"></tbody></table>
-      </div>
-
-      <div class="sub-h" style="margin-top:14px;"><span class="who">🤵 대표님</span><span style="font-size:var(--fs-1);color:var(--grey);font-weight:600;">기한 순</span><span class="cnt3" id="owner-grp-cnt">불러오는 중…</span></div>
-      <!-- ★ 분류 기준 명시(GM 2026-08-08) — 업무&결재 SSOT 중 담당=김남욱 + 내용칸에 '대표님 보고건' 표식이
-           붙은 건만 여기 들어온다. 같은 시트의 다른 김남욱 건(표식 없음)은 여기 없다 — 삭제된 게 아니라 애초에
-           대표님 보고 대상이 아니라는 뜻(기준 = 표식 유무). -->
-      <div style="font-size:var(--fs-1);color:var(--grey);margin:2px 0 6px;">업무&결재 SSOT 중 담당 김남욱 + '대표님 보고건' 표식이 붙은 건만 · 표식 없는 김남욱 건은 대상 아님(누락 아님)</div>
-      <!-- 「보고 문안 복사」 버튼·안내문은 헤더 우측으로 이동(GM 2026-08-06) — 여기는 결과(건수·상태)만 남긴다 -->
-      <div class="repbar">
-        <span class="cnt2" id="owner-count">불러오는 중…</span>
-        <span class="rstatus" id="owner-bulk-status"></span>
-      </div>
-      <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
-      <!-- owner-done-grid — 화면엔 안 보인다(#owner-grid,#owner-done-grid{display:none} 위 CSS).
-           완료로 표시된 카드를 여기로 옮겨 대기/완료 건수를 가른다. -->
-      <div class="grid" id="owner-done-grid"></div>
-      <div class="sum">
-        <table><tbody id="owner-sum-body"></tbody></table>
-      </div>
-      <!-- ✅ 대표님 보고·결재 완료 — 별도 토글(GM 지시 2026-09-03 "대표님 보고 및 결재 완료건은
-           따로 결재완료 토글 걸어주고"). 위 표에는 기다리는 건만 남는다. 기본 접힘. -->
-      <details class="sec" id="owner-done-sec" style="margin-top:8px;display:none;">
-        <summary><span class="ic">✅</span> 대표님 보고·결재 완료 <span class="cnt" id="owner-done-cnt">0건</span></summary>
-        <div class="sum" style="margin-top:6px;">
-          <table><tbody id="owner-done-sum-body"></tbody></table>
-        </div>
-      </details>
-
-    </div>
-  </details>
-
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
     <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
@@ -540,10 +475,10 @@
            이 체크로 자동 반영되지 않는다. -->
       <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span></summary>
     <div class="sec-body">
-      <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
-           밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
-           인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
-      <div style="font-size:var(--fs-1);color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
+      <!-- ★ 분류 기준 명시 — 정본 = _gm_direct_tasks.js. 회장님·대표님 경영 보고건 섹션은 뺐다(GM 지시 2026-09-15
+           「GM업무만 집중」). 회장님·대표님 지시는 이 카드에 「[회장님 지시]」「[대표님 지시]」 접두로 들어와
+           👑/🤵 배지로 보인다 — 등록 = scripts/gm_handoff.py --source 회장님|대표님. -->
+      <div style="font-size:var(--fs-1);color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 👑 회장님 지시 · 🤵 대표님 지시는 배지로 구분(배지 없음 = GM 본인 건)</div>
       <div class="sum">
         <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
@@ -574,12 +509,12 @@
 </div>
 
 
-<!-- 판정 로직 = _gm_direct_tasks.js / 대표님·회장님 = _owner_directive.js + _chairman_items.js (약속 L01 · 복제 없음) -->
+<!-- 판정 로직 = _gm_direct_tasks.js / 담당 칸(GM_TASK_OWNERS 보드) = _owner_directive.js ownerCellHtml (약속 L01 · 복제 없음).
+     회장님·대표님 경영 보고건 섹션과 _chairman_items.js 로드·OwnerDirective.mount 호출은 뺐다(GM 지시 2026-09-15). -->
 <!-- ?v= 는 브라우저 캐시 무력화용 버전표다. 이 파일을 고치면 날짜를 올린다 —
      2026-08-27 실측: 부서 칸을 붙였는데 GM 브라우저가 옛 _gm_direct_tasks.js 를 그대로 써서
      전 줄이 '미정' 으로 떴다(HTML 은 새것, 이 스크립트만 캐시). -->
-<script src="_gm_direct_tasks.js?v=20260901b"></script>
-<script src="_chairman_items.js"></script>
+<script src="_gm_direct_tasks.js?v=20260915"></script>
 <!-- 쓰기 관문(배 960 #6b) — ERP 도메인에서만 todo 쓰기를 서버 /api/write 로. 실패하면 종전 GAS. -->
 <script src="../../_assets/erp_write.js"></script>
 <script src="_owner_directive.js"></script>
@@ -635,14 +570,14 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
   })();
 
   // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개 「전체 지도」로 축소 2026-08-24) ──
-  // 접힌 <details class="sec"> 3개(경영 보고건·GM 진행건·완료건) 강제 오픈은 beforeprint/afterprint 로
+  // 접힌 <details class="sec">(GM 진행건·완료건) 강제 오픈은 beforeprint/afterprint 로
   // 건다 — 버튼 클릭 시점이 아니라 실제 인쇄가 시작되는 시점(브라우저가 beforeprint 를 쏘는 순간)에
   // 열어야, 그 사이 비동기로 늦게 그려진 GM 업무 카드(readPlan fetch 응답 지연)도 놓치지 않는다.
   // window.print() 호출 없이 사람이 Ctrl+P 로 직접 인쇄해도 동일하게 펼쳐진다.
   // ★선택자를 'details' → 'details.sec' 로 좁혔다(GM 지적 2026-08-24 "전체지도 누르면 이상한것 같아").
   // 원인 실측: 예전 선택자는 각 카드 안의 「내용 전체」 접힘(.fold, 무클래스 details)까지 전부 강제
   // 오픈해 18개 카드의 진행 이력 전문이 통째로 펼쳐졌다 — A3 가로 인쇄 시 44페이지(그중 다수가 텍스트만
-  // 빽빽하거나 마지막 장은 거의 공백)로 쏟아져 "지도"(요약)가 아니라 "전문"이 나왔다. 상위 섹션 3개만
+  // 빽빽하거나 마지막 장은 거의 공백)로 쏟아져 "지도"(요약)가 아니라 "전문"이 나왔다. 상위 섹션만
   // 펴면 카드 제목·상태·요약(lead)까지만 찍혀 개요에 맞고, 페이지 수도 크게 준다. 개별 카드를 화면에서
   // 펼친 채로 인쇄하면 그 카드만 전문이 찍히는 건 그대로(수동 확장은 안 건드림).
   var a3FoldSaved = null;
@@ -665,7 +600,7 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
   };
 
   // ── 🗺 전체 지도 보기 (GM 지시 2026-08-27 — 누르자마자 인쇄가 뜨던 것을 「보고 나서 고르기」로) ──
-  // 오버레이·복제본을 만들지 않는다. 지금 화면의 섹션 3개를 펼쳐 보여줄 뿐이라, 눈에 보이는 것과
+  // 오버레이·복제본을 만들지 않는다. 지금 화면의 섹션들을 펼쳐 보여줄 뿐이라, 눈에 보이는 것과
   // 인쇄·PNG 결과가 같다(위 beforeprint 강제 오픈과 같은 대상: details.sec).
   var mapSaved = null;
   window.openMapView = function () {
@@ -969,7 +904,7 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
       //   2026-09-01 에 접었던 이유는 목록이 길어서였는데, 오늘 큰 묶음이 생겨 그 이유가 없어졌다.
       return '<details class="item" open id="gm-' + esc(it.id) + '">' +
         '<summary class="cardhead">' +
-        '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
+        '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) + sourceBadge(it) +
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
         // 전사 배지 — gm_top3_rank 로만 편입된 건(제목에 "(GM 직접)" 없음)은 회사 전체가 보는 과제라는 걸
         // 한눈에 구분한다(2026-08-07 GM 지시, 목록에서 빼진 않고 같은 자리에 둔다). 기존 .dept-badge 재사용.
@@ -1043,6 +978,13 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     }
     return (typeof it.progress === 'number') ? it.progress : null;
   }
+  // 지시 출처 배지(GM 지시 2026-09-15 「회장님 지시는 [회장님 지시], 대표님 지시는 [대표님 지시]라고 업무칸에 명시」)
+  // — 판정(제목 접두)은 _gm_direct_tasks.js 가 source 로 넘긴다. 태그 없는 카드 = GM 본인 건 = 배지 없음. 기존 .dept-badge 재사용.
+  function sourceBadge(it) {
+    if (it.source === '회장님') return ' <span class="dept-badge">👑 회장님 지시</span>';
+    if (it.source === '대표님') return ' <span class="dept-badge">🤵 대표님 지시</span>';
+    return '';
+  }
   // 요약표 행 하나 — 위 cardHtml과 같은 재사용 원칙.
   function sumRowHtml(it, i) {
     var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
@@ -1054,7 +996,7 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     var deptTxt = it.dept ? esc(it.dept) : '미정';
     var deptCls = it.dept ? 'dept' : 'dept none';
     return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
-      esc(it.title) + '</a></td><td class="' + deptCls + '">' + deptTxt + '</td>' +
+      esc(it.title) + '</a>' + sourceBadge(it) + '</td><td class="' + deptCls + '">' + deptTxt + '</td>' +
       '<td class="mgr">' + window.OwnerDirective.ownerCellHtml(it.id) + '</td>' +
       '<td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
   }
@@ -1258,9 +1200,6 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     setTimeout(function () { el.style.background = ''; }, 2200);
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   }
-  // 경영 보고건 합계(id="rep-total") — 회장님·대표님 표가 각자 그려질 때마다 updateReportCounts()가
-  // 갱신한다(아래 IIFE). 두 목록이 비동기로 채워지므로 시간차 setTimeout 대신 MutationObserver로 잡는다.
-
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
 
@@ -1283,63 +1222,6 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     });
   })();
 
-  // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
-  OwnerDirective.mount({
-    wantCeoRows: true,
-    markPrefix: '대표님 보고완료',
-    reportIntro: '대표님께 아래 업무를 보고드립니다.',
-    emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
-    includeChairman: true,
-    // 회장님 등록 목록에 GM 업무 카드로 가는 🔗 링크를 뺀다(GM 지시 2026-08-24 "링크좀 안달았으면
-    // 좋겠어"). 대표님_지시사항.html 은 cfg 를 안 넘기므로 그 페이지 표는 그대로 링크를 유지한다.
-    hideChairmanLinks: true
-  });
-
-  // ══════════════════════════════════════════════════════════════════
-  // ① 보고건 합계 집계 · ② 완료건도 같은 표에 표시(_owner_directive.js가 대기·완료 순서로 이미 그림) ·
-  // ③ 결재 문서 인쇄. (GM 지시 2026-08-10 — 우측 칸의 부서 배지는 뺐다. 소속은 소제목이 이미 말한다.)
-  // _owner_directive.js 의 isReported 판정을 다시 짜지 않고, 그 판정이 이미 그려낸 표식
-  // (.done-badge = 보고완료)만 DOM에서 읽어 집계·인쇄용으로만 쓴다.
-  // ══════════════════════════════════════════════════════════════════
-  (function () {
-    var elGrid = document.getElementById('owner-grid');
-    var elSum = document.getElementById('owner-sum-body');
-    var elDoneGrid = document.getElementById('owner-done-grid');
-    var elRepTotal = document.getElementById('rep-total');
-    if (!elGrid || !elSum) return;
-
-    // 보고 대기·완료 건수 — 회장님(판정=_owner_directive.js)과 대표님(DOM 카드) 양쪽을 더해
-    // 「📋 경영 보고건」 옆 배지(rep-total)에 「대기 N건 · 완료 M건」으로 표시한다.
-    function chPend() { return (window.OwnerDirective.chairmanPending ? window.OwnerDirective.chairmanPending() : (window.WellperionChairmanItems || [])); }
-    function chDone() { return (window.OwnerDirective.chairmanDone ? window.OwnerDirective.chairmanDone() : []); }
-    function updateReportCounts() {
-      var pendCount = elGrid.querySelectorAll('.item').length;
-      var doneCount = elDoneGrid.querySelectorAll('.item').length;
-      var totalPend = chPend().length + pendCount;
-      var totalDone = chDone().length + doneCount;
-      // 완료 칸은 0이면 안 적는다 — 회장님 건은 보고를 마치면 배열에서 빼는 규칙이라(2026-08-21)
-      // 완료가 늘 0이었고, 영원히 0인 숫자는 읽는 사람에게 잡음일 뿐이다. 0이 아닐 때만 붙인다.
-      if (elRepTotal) elRepTotal.textContent = '대기 ' + totalPend + '건' + (totalDone ? ' · 완료 ' + totalDone + '건' : '');
-    }
-    var elChSum = document.getElementById('chairman-sum-body');
-    if (elChSum) {
-      updateReportCounts();
-      new MutationObserver(updateReportCounts).observe(elChSum, { childList: true });
-    }
-
-    // 대표님 카드가 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 완료 카드만 숨은 done-grid로
-    // 옮긴다 — 대기/완료 건수를 가르는 데 쓴다. 화면 표(elSum)는
-    // _owner_directive.js가 이미 대기 위·완료 아래 순서로 그려내므로 여기서 다시 가르지 않는다.
-    function regroupReports() {
-      var doneItems = Array.prototype.filter.call(elGrid.children, function (el) {
-        return el.classList && el.classList.contains('item') && el.querySelector('.done-badge');
-      });
-      doneItems.forEach(function (el) { elDoneGrid.appendChild(el); });
-      updateReportCounts();
-    }
-    new MutationObserver(regroupReports).observe(elGrid, { childList: true });
-
-  })();
 })();
 
 /* ── ⓪ 오늘 일정 띠 (GM 지시 2026-08-25) ────────────────────────────────────────
