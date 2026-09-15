@@ -174,14 +174,14 @@
   .lsumline .lsumv{margin-left:auto;font-size:12.5px;font-weight:900;color:var(--navy);
     font-variant-numeric:tabular-nums;}
   .lteams{margin-top:5px;}          /* 한 단 — 팀·담당자 라인이 왼쪽부터 세로로 읽힌다(GM 2026-09-15) */
-  .lstaff{display:flex;align-items:baseline;gap:6px;font-size:9.9px;font-weight:700;color:#48525B;
-    padding:0.5px 0 0.5px 6px;background:#F7F9FB;}
+  .lstaff{display:flex;align-items:baseline;gap:6px;font-size:9.5px;font-weight:700;color:#48525B;
+    padding:0.2px 0 0.2px 6px;background:#F7F9FB;}
   .lstaff .lsc{margin-left:auto;font-weight:600;font-size:9.6px;color:#7A838B;white-space:nowrap;}
   .lteam{break-inside:avoid;margin-bottom:6px;}
   .lth{font-size:10.4px;font-weight:800;color:var(--navy);display:flex;gap:6px;align-items:baseline;
     border-bottom:1px solid var(--line);padding-bottom:0.5px;margin-top:2px;}
   .lth .ltc{margin-left:auto;font-weight:600;color:#48525B;font-size:10px;white-space:nowrap;}
-  .ltr{font-size:9.9px;padding:0.6px 0 0.6px 14px;border-bottom:1px dotted var(--line);
+  .ltr{font-size:9.4px;padding:0.2px 0 0.2px 13px;border-bottom:1px dotted var(--line);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px;}
   .vgrid .vcell{border:1px solid var(--line);padding:5px 9px 6px;min-width:0;}
@@ -334,14 +334,14 @@
   .wmore{font-size:9.5px;color:#7A838B;padding-top:4px;}
   /* 문의에서 가입까지 — 사람이 적은 진행상태를 그대로 센다(GM 2026-09-14 「신뢰가 잘 안 간다」).
      종전 5단계 깔때기는 「칸에 뭐라도 적혀 있나」로 단계를 올려 이탈 287명을 0 으로 지웠다. */
-  .fndom{margin-bottom:9px;}
+  .fndom{margin-bottom:6px;}
   .fndom:last-child{margin-bottom:0;}
   .fndom .fnt{font-size:11.4px;font-weight:800;color:var(--navy);margin-bottom:4px;
     display:flex;align-items:baseline;gap:7px;}
   .fndom .fnt small{font-weight:600;color:#7A838B;font-size:10px;}
   .fndom .fnt .fnend{margin-left:auto;font-size:10.5px;font-weight:700;color:#7A838B;}
   .fndom .fnt .fnend b{font-size:15px;color:var(--navy);}
-  .fnbar2{display:flex;height:17px;border-radius:3px;overflow:hidden;margin-bottom:4px;}
+  .fnbar2{display:flex;height:14px;border-radius:3px;overflow:hidden;margin-bottom:3px;}
   .fnbar2 i{display:block;}
   .fnkey{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:10.5px;}
   .fnkey span{display:inline-flex;align-items:center;gap:4px;color:#48525B;}
@@ -569,7 +569,7 @@
        몇 건이라 한 줄이면 충분하다. -->
   <!-- 등록 띠 — 왼쪽 멤버십 · 오른쪽 강습(팀별). 강습이 하루 20건 넘게 나와 오른쪽을 두 배 넓게 준다
        (GM 지시 2026-09-15). -->
-  <div class="body" id="p2regband" style="display:flex;gap:13px;flex:1.8;">
+  <div class="body" id="p2regband" style="display:flex;gap:13px;flex:2.2;">
     <div class="col" style="flex:none;width:36%;min-width:0;">
       <div class="sec" style="flex:1;min-height:0;">
         <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
@@ -586,7 +586,7 @@
 
   <!-- 문의 띠 — 「문의 상세 내역」 칸은 뺐다(GM 지시 2026-09-15). 그 자리를 등록 띠가 쓴다.
        안 챙긴 분은 맨 위 「후속 연락 필요한 문의」 칸이 이미 사람 수로 알려 준다. -->
-  <div class="body" id="p2inqband" style="display:flex;gap:13px;flex:0.62;margin-top:11px;">
+  <div class="body" id="p2inqband" style="display:flex;gap:13px;flex:0.5;margin-top:11px;">
     <div class="col" style="flex:1;">
       <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). -->
       <div class="sec" style="flex:1;min-height:0;">
@@ -2023,7 +2023,7 @@ function renderP2Contract(c, dayLabel){
        그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
     var band = document.getElementById('p2regband');
-    if (band) band.style.flex = (memRows.length + rows.length) ? '1.8' : '0.42';
+    if (band) band.style.flex = (memRows.length + rows.length) ? '2.2' : '0.42';
     les.innerHTML = lessonTeamHTML(rows);
   }
 }
