@@ -21,10 +21,13 @@ status/briefs/CPO-2026-09-05-매출보고서-22칸-정의.md 정본.
 시트 미러를 그대로 쓰므로(1단계) 항상 일치 — 브로제이 결제 데이터가 들어오면 그 칸들도 하나씩
 독립 계산으로 바뀐다(정의서 "브로제이 뒤" 열).
 
-기준일 규칙(정의서 §기준일 · 2026-09-05 확정) — 인원 5칸의 기준일 = 보고 날짜(어제, KST).
-대상 = members(valid+ended 합침) 중 등록일자<=기준일 AND 종료일>=기준일 AND (LOSS일자 빈칸
-또는 >기준일). 회원구분(kind)으로 중단기·법인 분류, 대기=등록분류(reg_class) '대기'. '지금'
+기준일 규칙(정의서 §기준일 · 2026-09-05 확정 · 2026-09-15 수리) — 인원 5칸의 기준일 = 시트
+제목(H2 '26년 9월 14일 …')에 박힌 보고 대상일 그대로(_title_ref_date) · 못 뽑을 때만 어제(KST)
+로 폴백. 대상 = members(valid+ended 합침) 중 등록일자<=기준일 AND 종료일>=기준일 AND (LOSS일자
+빈칸 또는 >기준일). 회원구분(kind)으로 중단기·법인 분류, 대기=등록분류(reg_class) '대기'. '지금'
 스냅샷이 아니라 '기준일 시점'이라 그 사이 종료·등록으로 scope 가 바뀌어도 흔들리지 않는다.
+(수리 전엔 '실행 시각-1일'을 항상 썼다 — 시트 쪽 반영이 늦은 날은 시트가 그제 데이터를 보여주는데
+서버는 어제로 계산해 22칸 대조가 하루 어긋났다 · 09-10 실측 20/22.)
 
 자체점검: python3 sales_report_render.py --selftest (네트워크·DB 없음 — 순수 파싱·대조·기준일 로직만)
 """
@@ -70,6 +73,23 @@ def _num(s):
         return 0
     m = re.sub(r"[^\d-]", "", str(s))
     return int(m) if m not in ("", "-") else 0
+
+
+def _title_ref_date(cells):
+    """H2 제목('📅 26년 9월 14일 매출 및 운영사항 보고')에 박힌 보고 대상일을 그대로 뽑는다 —
+    시트가 그 날 마감 데이터를 언제 올리든(정시·지연 다 포함) 서버 기준일이 시트 기준일과
+    항상 같아진다(배1061 22칸 대조 20/22 사고 · 09-10 — 서버가 '실행 시각-1일'을 썼다가
+    시트 반영이 늦은 날 하루 어긋났다). 못 찾으면 None(호출부가 어제 KST 로 폴백)."""
+    m = re.search(r"(\d{2,4})년\s*(\d{1,2})월\s*(\d{1,2})일", cells.get("H2") or "")
+    if not m:
+        return None
+    y, mo, d = (int(x) for x in m.groups())
+    if y < 100:
+        y += 2000
+    try:
+        return "%04d-%02d-%02d" % (y, mo, d)
+    except ValueError:
+        return None
 
 
 def compare(mirror_cells, final_cells):
@@ -148,13 +168,15 @@ def compute_overrides(ref_date):
 
 
 def build_report(ref_date=None):
-    """시트 미러 + 회원현황 서버 override(기준일=어제 KST 기본) → 최종 22칸 + 대조 결과. 미러가 없으면 None."""
-    if ref_date is None:
-        ref_date = (datetime.now(KST) - timedelta(days=1)).strftime("%Y-%m-%d")
+    """시트 미러 + 회원현황 서버 override(기준일=시트 제목의 보고 대상일 · 못 뽑으면 어제 KST)
+    → 최종 22칸 + 대조 결과. 미러가 없으면 None. ref_date 를 호출부가 직접 주면(예: API ?date=)
+    그 값을 그대로 쓴다 — 시트 제목 파싱은 '기본값'일 때만 개입한다."""
     data, synced = fetch_mirror()
     if not data:
         return None
     cells = dict(data.get("cells") or {})
+    if ref_date is None:
+        ref_date = _title_ref_date(cells) or (datetime.now(KST) - timedelta(days=1)).strftime("%Y-%m-%d")
     overrides = compute_overrides(ref_date)
     final = dict(cells)
     for k in ("N2", "N3", "N4", "N5", "N6"):
@@ -293,6 +315,8 @@ def render_png(report, out_path):
 def selftest():
     assert _num("1,027명") == 1027 and _num("  - ") == 0 and _num(None) == 0 and _num("0명") == 0
     assert _strip_emoji("📅 26년 9월 4일 보고") == "26년 9월 4일 보고"
+    assert _title_ref_date({"H2": "📅 26년 9월 14일 매출 및 운영사항 보고"}) == "2026-09-14"
+    assert _title_ref_date({"H2": ""}) is None and _title_ref_date({}) is None
     mirror = {"N2": "1,027명", "N3": "988명", "N4": "3명", "N5": "31명", "N6": "5명"}
     same = dict(mirror)
     matched, total, mm = compare(mirror, same)

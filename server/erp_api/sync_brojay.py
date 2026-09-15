@@ -180,7 +180,12 @@ def main(argv):
 
     today = date.fromisoformat(now[:10])
     flags, argv = [a for a in argv if a.startswith("--")], [a for a in argv if not a.startswith("--")]
-    frm, to = (argv[0], argv[1]) if len(argv) >= 2 else ((today - timedelta(days=1)).isoformat(), today.isoformat())
+    # ponytail: 5분 cron 기본값은 today-1 그대로(콜 예산 안 건드림) — 브로제이가 지난 날짜를
+    # 나중에 손으로 고쳐도(정산 지연·오타 정정) 이 기본 구간 밖은 다시 안 부르므로 거울이
+    # 그 날짜로 굳는다(2026-09-15 배2595 실측). 하루 한 번 넓게 훑는 별도 cron 을
+    # BROJAY_BACKFILL_DAYS=7 python3 sync_brojay.py 로 추가하면(핫패스 cron 은 그대로) 정정이 뒤늦게라도 잡힌다.
+    backfill_days = int(os.environ.get("BROJAY_BACKFILL_DAYS", "1") or "1")
+    frm, to = (argv[0], argv[1]) if len(argv) >= 2 else ((today - timedelta(days=backfill_days)).isoformat(), today.isoformat())
     auth = os.environ.get("BROJAY_AUTH", DEFAULT_AUTH)
     want, items = 0, []
     for kind, env in SOURCES + OPTIONAL_DAILY:
