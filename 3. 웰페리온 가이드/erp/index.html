@@ -650,34 +650,48 @@ function loadPending(){
   }).catch(function(){ b.textContent = '—'; });   // 잠겼거나 못 닿았다 — 0 이라고 적지 않는다
 }
 
-// 모듈 배치 — 켠 것/끈 것을 체크로 고르고 한 번에 저장한다
-// 문서(kind=doc · 보고서·A3·가이드)는 이 목록에 싣지 않는다 — 켜고 끄는 모듈이 아니라 읽는 것이다
-// (GM 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」). 서버 목록엔 kind 가
-// 없어 /erp/modules.json 의 kind 를 같이 읽는다. 숨긴 문서 중 이미 끈 것은 저장 때 그대로 끈 채로 보낸다.
+// 모듈 배치 — 파는 단위(모듈 12)만 행으로 · 딸린 화면은 그 행에 접는다 · 모듈을 끄면 딸린 화면 id 도 같이 끈다
+// (GM 2026-09-15 「모듈 배치가 제일 중요 · 문서는 모듈이 아니다 · 화면이 117개?」 — 기준 = 랩스 관리 › 자료 › 모듈 기준
+//  「낱장을 모듈 아래로 접으면 12칸 · 켜고 끄는 단위도 그 12칸」). 층은 /erp/modules.json 의 kind(module·screen·doc)와
+//  module(딸린 모듈 이름)을 읽는다 — 서버 목록엔 층이 없다. 문서(kind=doc)·모듈에 안 딸린 도구 화면은 여기 없다;
+//  끈 상태였다면 저장 때 그대로 끈 채로 보낸다(목록에 안 보인다고 켜지면 안 된다).
 var HIDDEN_OFF = [];
+var MOD_KIDS = {};   // 모듈 id → 딸린 화면 id
 function loadMods(){
-  var kinds = fetch('/erp/modules.json', {cache: 'no-store'}).then(function(r){ return r.json(); })
-    .then(function(d){ var k = {}; (d.modules || []).forEach(function(m){ k[m.id] = m.kind; }); return k; })
-    .catch(function(){ return {}; });
-  Promise.all([adminGet('/auth/admin/api/modules'), kinds]).then(function(rs){
-    var d = rs[0], kind = rs[1];
-    var all = d.modules || [];
-    HIDDEN_OFF = all.filter(function(m){ return kind[m.id] === 'doc' && m.off; }).map(function(m){ return m.id; });
-    var list = all.filter(function(m){ return kind[m.id] !== 'doc'; });
-    var offN = list.filter(function(m){ return m.off; }).length;
-    var trs = list.map(function(m){
+  var reg = fetch('/erp/modules.json', {cache: 'no-store'}).then(function(r){ return r.json(); })
+    .then(function(d){ return d.modules || []; }).catch(function(){ return []; });
+  Promise.all([adminGet('/auth/admin/api/modules'), reg]).then(function(rs){
+    var d = rs[0], all = d.modules || [], meta = {}, byId = {};
+    rs[1].forEach(function(m){ meta[m.id] = m; });
+    all.forEach(function(m){ byId[m.id] = m; });
+    var leads = all.filter(function(m){ return (meta[m.id] || {}).kind === 'module'; });
+    var leadOf = {};                                   // 모듈 이름 → 대표 화면 id
+    leads.forEach(function(m){ leadOf[meta[m.id].module] = m.id; MOD_KIDS[m.id] = []; });
+    var shown = {};
+    leads.forEach(function(m){ shown[m.id] = 1; });
+    all.forEach(function(m){
+      var mm = meta[m.id] || {};
+      if (mm.kind === 'screen' && leadOf[mm.module] && leadOf[mm.module] !== m.id) {
+        MOD_KIDS[leadOf[mm.module]].push(m.id); shown[m.id] = 1;
+      }
+    });
+    HIDDEN_OFF = all.filter(function(m){ return !shown[m.id] && m.off; }).map(function(m){ return m.id; });
+    var hiddenN = all.length - Object.keys(shown).length;
+    var offN = leads.filter(function(m){ return m.off; }).length;
+    var trs = leads.map(function(m){
+      var kids = MOD_KIDS[m.id].map(function(id){ return esc((byId[id] || {}).name || id); });
       return '<tr><td class="c"><input type="checkbox" data-id="' + esc(m.id) + '"'
-           + (m.off ? '' : ' checked') + ' aria-label="' + esc(m.name) + ' 켜기"></td>'
-           + '<td class="k">' + esc(m.name) + '</td>'
-           + '<td class="d">' + esc(m.group || m.appgroup || '') + '</td>'
+           + (m.off ? '' : ' checked') + ' aria-label="' + esc(meta[m.id].module) + ' 켜기"></td>'
+           + '<td class="k">' + esc(meta[m.id].module) + '</td>'
+           + '<td class="d">' + esc(m.name) + (kids.length ? ' · ' + kids.join(' · ') : '') + '</td>'
            + '<td class="o">' + esc(m.staff || '') + '</td>'
            + '<td class="d">' + (m.core ? '핵심' : '') + '</td></tr>';
     }).join('');
     document.getElementById('mods-body').innerHTML =
-      tbl(['켬', '모듈', '묶음', '담당 실무진', '핵심'], trs)
+      tbl(['켬', '모듈', '딸린 화면(대표 먼저)', '담당 실무진', '핵심'], trs)
       + '<div class="savebar"><button class="btn" id="mods-save" type="button">저장</button>'
-      + '<span class="r" id="mods-res">전체 ' + list.length + '개 · 켠 것 '
-      + (list.length - offN) + '개 · 끈 것 ' + offN + '개</span></div>';
+      + '<span class="r" id="mods-res">모듈 ' + leads.length + '개 · 켠 것 '
+      + (leads.length - offN) + '개 · 끈 것 ' + offN + '개 · 문서·도구 ' + hiddenN + '장은 모듈이 아니라 여기 없다</span></div>';
     document.getElementById('mods-save').addEventListener('click', saveMods);
   }).catch(function(e){ paneFail('mods-body', e); });
 }
@@ -686,9 +700,11 @@ function saveMods(){
   btn.disabled = true; res.textContent = '저장 중…';
   var body = new URLSearchParams();
   [].forEach.call(document.querySelectorAll('#mods-body input[data-id]'), function(c){
-    if (!c.checked) body.append('off', c.dataset.id);   // 끈 것만 보낸다(서버 계약)
+    if (c.checked) return;                              // 끈 것만 보낸다(서버 계약)
+    body.append('off', c.dataset.id);
+    (MOD_KIDS[c.dataset.id] || []).forEach(function(id){ body.append('off', id); });   // 딸린 화면도 같이 끈다
   });
-  HIDDEN_OFF.forEach(function(id){ body.append('off', id); });   // 목록에 안 보이는 문서 — 끈 상태를 지운다고 켜지면 안 된다
+  HIDDEN_OFF.forEach(function(id){ body.append('off', id); });   // 목록에 안 보이는 문서·도구 — 끈 상태를 지운다고 켜지면 안 된다
   fetch('/auth/admin/api/modules', {method: 'POST', credentials: 'same-origin',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: body.toString()})
     .then(function(r){
@@ -697,7 +713,7 @@ function saveMods(){
       return r.json();
     }).then(function(d){
       btn.disabled = false;
-      res.textContent = '저장했다 — 끈 것 ' + (d.off || []).length + '개. 직원 홈 카드에 바로 반영된다.';
+      res.textContent = '저장했다 — 끈 것 ' + (d.off || []).length + '장(딸린 화면 포함). 직원 홈 카드에 바로 반영된다.';
     }).catch(function(e){
       btn.disabled = false;
       res.innerHTML = (e && e.lock)
