@@ -901,6 +901,11 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     mline = inquiry_contact_section(today)
     if mline:
         parts.insert(1 if wline else 0, mline)
+    # 🙌 ERP 회원관리 활용 칭찬 — 어제 화면에서 기록한 칸 수를 사람별로(GM 지시 2026-09-15 「칭찬을 아끼지 말아라」).
+    #   원천 문(/api/members/change_log)이 없거나 0건이면 줄 없음.
+    pline = erp_usage_praise_line(target_date)
+    if pline:
+        parts.insert(0, pline)
 
     # [2026-08-29 GM 결정] 25줄 상한으로 본문을 자르던 것 삭제 — "줄을 접는 게 아니라
     # 안 끝난 건수를 줄여야 한다". 넘쳐도 자르지 않는다(밀린 일이 안 보이게 되는 게 더 나쁘다).
@@ -929,8 +934,13 @@ def _mark_mgr_sent(target_date: str) -> None:
     if _LESSON_TODAY:
         llog[_LESSON_TODAY[0]] = _LESSON_TODAY[1]
     llog = dict(sorted(llog.items())[-14:])
+    ulog = dict(prev.get(_PRAISE_LOG_KEY) or {})
+    _rows = _erp_change_rows(target_date)
+    if _rows is not None:
+        ulog[target_date] = sum(1 for r in _rows if str(r.get("staff") or "").strip() and not str(r.get("staff")).isdigit())
+    ulog = dict(sorted(ulog.items())[-14:])
     record_heartbeat(MGR_DAILY_HEARTBEAT_ID, detail=f"★중간관리자 결정거리 요약 발송 — {target_date}",
-                     extra={"state": {"date": target_date}, "membership_log": log_, "lesson_log": llog})
+                     extra={"state": {"date": target_date}, "membership_log": log_, "lesson_log": llog, _PRAISE_LOG_KEY: ulog})
 
 
 def done_titles_by_person(rows: list, days: "tuple") -> dict:
@@ -2384,6 +2394,63 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     lines.append("👉 번호(#숫자) 있는 건은 회신에 그 번호 + 했다/진행중/언제로, 없는 건은 진행 중 / 완료 / 날짜 한 마디만 답해 주시면 됩니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
+
+
+# ── ERP 회원관리 활용 칭찬 (GM 지시 2026-09-15 「멤버십·강습 회원관리 ERP 잘 활용할수록 칭찬을 아끼지 말아줘 꼭」) ──
+# 원천 = 서버 회원 변경 이력(member_change_log · 화면에서 저장한 칸마다 1줄 · staff 는 화면 로그인 이름).
+#   읽는 문 = GET /api/members/change_log?from=&to= (시토 배 2673) — 문이 서기 전엔 조용히 줄을 뺀다(0 위장 금지).
+# 칭찬은 숫자로 한다 — 「N칸 기록」과 어제보다 늘었으면 그 말. 값싼 구호(화이팅·최고)는 쓰지 않는다.
+# 시트 이름을 화면 이름으로: 로그인 이름이 「임정은」이면 통엔 「임정은M」(FB_STAFF_TITLES 표 재사용).
+_PRAISE_MIN = 3          # 이보다 적으면 칭찬 줄을 안 만든다(한두 칸은 늘 있다)
+_PRAISE_LOG_KEY = "erp_usage_log"
+
+
+def _erp_change_rows(day: str) -> "list | None":
+    """그날 회원 변경 이력 rows. 문이 없거나 실패하면 None(0 과 구분)."""
+    try:
+        import json as _json
+        import urllib.request as _ur
+        from collectors.ops_shared import _env_line
+        tok = _env_line("ERP_SESSION_TOKEN")
+        if not tok:
+            return None
+        req = _ur.Request(f"https://erp.wellperion.com/api/members/change_log?from={day}&to={day}",
+                          headers={"Cookie": "erp_session=" + tok})
+        d = _json.loads(_ur.urlopen(req, timeout=30).read().decode("utf-8"))
+        rows = d.get("rows") if isinstance(d, dict) else None
+        return rows if isinstance(rows, list) else None
+    except Exception as exc:
+        log(f"[mgr] ERP 활용 이력 못 읽음(칭찬 줄 생략): {type(exc).__name__}")
+        return None
+
+
+def erp_usage_praise_line(target_date: str) -> str:
+    rows = _erp_change_rows(target_date)
+    if not rows:
+        return ""
+    by: dict = {}
+    for r in rows:
+        who = str(r.get("staff") or "").strip()
+        if not who or who.isdigit() or who == "이름미상":
+            continue
+        by[who] = by.get(who, 0) + 1
+    top = sorted(by.items(), key=lambda kv: -kv[1])
+    top = [(w, n) for w, n in top if n >= _PRAISE_MIN][:3]
+    if not top:
+        return ""
+    from module_heartbeat import last_heartbeat
+    prev = (last_heartbeat(MGR_DAILY_HEARTBEAT_ID) or {}).get(_PRAISE_LOG_KEY) or {}
+    prev_days = [d for d in prev if d < target_date]
+    prev_total = int(prev[max(prev_days)]) if prev_days else None
+    total = sum(n for _, n in top)
+    _, m, d = target_date.split("-")
+    names = " · ".join(f"{FB_STAFF_TITLES.get(w, w)} {n}칸" for w, n in top)
+    tail = ""
+    if prev_total is not None and total > prev_total:
+        tail = f" — 전날보다 {total - prev_total}칸 더, 화면이 곧 원장이 되어 갑니다"
+    elif prev_total is None:
+        tail = " — 시트 대신 화면에 남긴 기록입니다, 고맙습니다"
+    return f"🙌 {int(m)}/{int(d)} ERP 회원관리 기록 {names}{tail}"
 
 
 def _split_by_who(items: list, who: str) -> "tuple[list, list]":
