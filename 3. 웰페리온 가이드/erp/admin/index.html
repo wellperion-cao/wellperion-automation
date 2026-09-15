@@ -287,11 +287,11 @@
   <div class="cap">웰페리온 랩스</div>
   <a href="#view/company" data-view="company"><span class="t">회사</span></a>
   <div class="sep"></div>
-  <!-- GM 2026-09-15 19:0x: 「1. 파트너사 관리 / 2. 파트너사 브랜드자료 / 3. 파트너사 산출물 · 다운로드는 모듈 전에 받는 것이라 기준 묶음으로」 -->
+  <!-- GM 2026-09-15 19:0x: 「파트너사 관리 / 파트너사 브랜드자료 / 파트너사 산출물(번호는 GM 이 순서만 알려준 것 · 19:2x 「삭제」) · 다운로드는 모듈 전에 받는 것이라 기준 묶음으로」 -->
   <div class="cap">파트너사</div>
-  <a href="#partners" data-go="partners"><span class="t">1. 파트너사 관리</span><span class="b" id="b-tn">1</span></a>
-  <a href="#brand" data-go="brand"><span class="t">2. 파트너사 브랜드자료</span><span class="b">3</span></a>
-  <a href="#products" data-go="products"><span class="t">3. 파트너사 산출물</span><span class="b">3</span></a>
+  <a href="#partners" data-go="partners"><span class="t">파트너사 관리</span><span class="b" id="b-tn">1</span></a>
+  <a href="#brand" data-go="brand"><span class="t">파트너사 브랜드자료</span><span class="b">3</span></a>
+  <a href="#products" data-go="products"><span class="t">파트너사 산출물</span><span class="b">3</span></a>
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
@@ -329,7 +329,7 @@
 
 
 <section class="panel" data-panel="partners">
-  <h2>1. 파트너사 관리</h2>
+  <h2>파트너사 관리</h2>
   <div class="meta">지금 <b>1곳</b>이 이 플랫폼을 쓰고 있습니다 · <a href="/auth/admin" target="_blank" rel="noopener">권한 관리 ↗</a></div>
   <!-- 옛 콘솔 즐겨찾기 카드 7장(화면·자동화·비용·권한·기술·자율·GM)은 파트너사와 무관해 숨김 — GM 2026-09-15 18:4x 「화면 열람 의미 없지 않나, 즐겨찾기 링크 같은데」.
        지우지 않고 숨긴 이유 = 아래 JS 가 n-screens·n-auto·n-cost 칸을 채운다(없으면 오류). 같은 값은 사이드 메뉴 자율현황·AI·서버 비용 현황에 있다. -->
@@ -617,7 +617,7 @@
 <!-- 파트너 산출물 — 밖의 업체에 만들어 준 것. 플랫폼을 파는 자리라 여기 둔다(GM 지시 2026-09-14
      「이런 부분은 ERP플랫폼관리에 따로 넣어두면 안되나?」). 종전 cbo/partners.html 은 지웠다. -->
 <section class="panel" data-panel="products" hidden>
-  <h2>3. 파트너사 산출물</h2>
+  <h2>파트너사 산출물</h2>
   <div class="meta">밖의 업체에 만들어 준 것 · <b>임시 주소는 깃허브</b>, 제 자리는 이 서버입니다</div>
 
   <!-- 업체 하나를 맡으면 이 네 가지를 만든다. 같은 내용을 두 곳에 두지 않으려고 역할을 갈라 놓았다
@@ -742,7 +742,7 @@
 </section>
 
 <section class="panel" data-panel="brand" hidden>
-  <h2>2. 파트너사 브랜드자료</h2>
+  <h2>파트너사 브랜드자료</h2>
   <div class="meta">파트너사마다 <b>브랜드가이드 화면 + 그 화면을 만든 원자료</b>를 한 자리에 모았습니다 (GM 지시 2026-09-14) ·
     <b>서버</b> = 이 서버에 있어 바로 열림 · <b>저장소</b> = 원본 파일이 저장소(2. 브랜드_자료 폴더)에만 있어 깃허브로 열림 · 회색 = 아직 못 받음</div>
   <!-- 2. 브랜드_자료 → sparse-checkout 추가 완료(시토 배 CTO-2026-09-14) · 사진 폴더 3개(01_시설_사진·03_파트너강사프로필월·241030_PNG)는 용량 제외. -->
