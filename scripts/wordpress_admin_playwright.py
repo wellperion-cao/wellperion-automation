@@ -16,6 +16,7 @@
 #
 # 페이지 신설/편집 자동화(draft/publish)는 GM 로그인 후 wp-admin DOM 실측하여 다음 단계 구현.
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import asyncio
 import sys
@@ -50,7 +51,7 @@ async def _launch(async_playwright):
         user_data_dir=str(PROFILE_DIR),
         headless=False,
         ignore_https_errors=True,      # 자체서명 인증서 우회
-        args=["--start-maximized"],
+        args=[*quiet_args()],
         no_viewport=True,
     )
     # Remember Me 미체크 시 세션쿠키는 프로필에 안 남음 — 별도 저장한 쿠키가 있으면 복원

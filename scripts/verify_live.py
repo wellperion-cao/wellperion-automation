@@ -10,6 +10,7 @@
 #
 # 종료코드: 0=성공(+expect 통과), 1=실패(미도달·expect 불일치·오류)
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import asyncio
 import sys
@@ -68,7 +69,7 @@ async def run_verify(url: str, expect: str | None, out: Path, show: bool, timeou
         try:
             browser = await p.chromium.launch(
                 headless=not show,
-                args=["--start-maximized"] if show else [],
+                args=[*quiet_args()] if show else [],
             )
         except Exception as e:
             print(f"❌ 브라우저 실행 실패: {e}")

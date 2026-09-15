@@ -21,6 +21,7 @@
 #   danggn → profiles/danggn/
 
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import argparse
 import asyncio
@@ -637,7 +638,7 @@ async def _retrieve_url_async(
             "headless": not headful,
         }
         if headful:
-            launch_kwargs["args"] = ["--start-maximized"]
+            launch_kwargs["args"] = [*quiet_args()]
             launch_kwargs["no_viewport"] = True
         else:
             launch_kwargs["viewport"] = {"width": 1280, "height": 900}

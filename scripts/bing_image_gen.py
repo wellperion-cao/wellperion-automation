@@ -27,6 +27,7 @@
 # 보안:
 #   세션 쿠키 값은 stdout 에 절대 노출하지 않음. profiles/bing/ 은 .gitignore 로 커밋 제외.
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import asyncio
 import sys
@@ -185,7 +186,7 @@ async def run_setup(max_wait_sec: int = 300) -> None:
             user_data_dir=str(PROFILE_DIR),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            args=[*quiet_args()],
             no_viewport=True,
         )
         page = await context.new_page()
@@ -350,7 +351,7 @@ async def run_gen(prompt: str, out_name: str, count: int = DEFAULT_COUNT) -> Non
             user_data_dir=str(PROFILE_DIR),
             headless=False,
             user_agent=FIXED_UA,
-            args=["--start-maximized"],
+            args=[*quiet_args()],
             no_viewport=True,
         )
         page = await context.new_page()

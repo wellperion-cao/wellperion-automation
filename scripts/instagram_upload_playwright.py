@@ -30,6 +30,7 @@
 # 결과 확인:
 #   %USERPROFILE%\welperion-automation\scripts\poc-evidence\instagram-{mode}-{timestamp}.png
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import asyncio
 import os
@@ -697,7 +698,7 @@ async def run_setup(account: str = DEFAULT_ACCOUNT) -> None:
             user_agent=FIXED_UA,
             # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
             # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
-            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
             ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
@@ -754,7 +755,7 @@ async def run_setup_auto(account: str = DEFAULT_ACCOUNT, max_wait_sec: int = 900
             user_agent=FIXED_UA,
             # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
             # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
-            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
             ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
@@ -810,7 +811,7 @@ async def run_dryrun(account: str = DEFAULT_ACCOUNT) -> None:
             user_agent=FIXED_UA,
             # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
             # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
-            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
             ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )
@@ -1092,7 +1093,7 @@ async def run_publish(
             user_agent=FIXED_UA,
             # 자동화 표시를 끈다 — 켜져 있으면 메타가 「로봇이 아닙니다」를 끝없이 띄운다
             # (2026-09-09 GM 실사례: 부장님 계정 로그인이 5분 동안 확인 문턱을 못 넘었다)
-            args=["--start-maximized", "--disable-blink-features=AutomationControlled"],
+            args=[*quiet_args(), "--disable-blink-features=AutomationControlled"],
             ignore_default_args=["--enable-automation"],
             no_viewport=True,
         )

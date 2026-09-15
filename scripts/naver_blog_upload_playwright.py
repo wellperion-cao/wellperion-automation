@@ -26,6 +26,7 @@
 #   임시저장 button.save_btn__bzc5B ≡ button[data-click-area="tpb.save"]
 #   ⚠ 임시저장 큐 0건일 때만 본문 lazy load 활성 (project_draft_queue_dependency)
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import os
 import re
@@ -455,7 +456,7 @@ async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=Tr
 
 # 자동화 표시를 끈다 — 켜져 있으면 로그인 화면이 비밀번호가 맞아도 계속 다시 뜬다
 # (2026-09-09 GM 실사례: 네이버·메타 둘 다 확인 문턱에서 되돌아왔다)
-_LAUNCH_ARGS = ["--start-maximized", "--disable-blink-features=AutomationControlled"]
+_LAUNCH_ARGS = [*quiet_args(), "--disable-blink-features=AutomationControlled"]
 _HIDE_AUTOMATION = ["--enable-automation"]
 
 
@@ -623,7 +624,7 @@ async def run_migrate_cookies(args: "argparse.Namespace | None" = None) -> int:
         return 3
 
     p = await async_playwright().start()
-    context = await _launch_persistent_with_heal(p, headless=True, args=["--start-maximized"], no_viewport=True)
+    context = await _launch_persistent_with_heal(p, headless=True, args=[*quiet_args()], no_viewport=True)
     try:
         page = context.pages[0] if context.pages else await context.new_page()
         write_url = BLOG_WRITE_URL_TEMPLATE.format(blog_id=DEFAULT_BLOG_ID)

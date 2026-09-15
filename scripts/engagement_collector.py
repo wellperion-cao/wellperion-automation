@@ -28,6 +28,7 @@
 #       3. 웰페리온 가이드/cmo/funnel/engagement/cafe_snapshot.json   (카페 스냅샷)
 #       3. 웰페리온 가이드/cmo/funnel/engagement/kakao_snapshot.json  (카카오 스냅샷)
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import asyncio
 import json
@@ -375,7 +376,7 @@ async def _collect_cafe_async(dry_run: bool) -> list[dict]:
         context = await p.chromium.launch_persistent_context(
             user_data_dir=str(CAFE_PROFILE),
             headless=False,
-            args=["--start-maximized"],
+            args=[*quiet_args()],
             no_viewport=True,
         )
         page = context.pages[0] if context.pages else await context.new_page()
@@ -495,7 +496,7 @@ async def _collect_kakao_async(dry_run: bool) -> list[dict]:
         context = await p.chromium.launch_persistent_context(
             user_data_dir=str(KAKAO_PROFILE),
             headless=False,
-            args=["--start-maximized"],
+            args=[*quiet_args()],
             no_viewport=True,
         )
         page = context.pages[0] if context.pages else await context.new_page()

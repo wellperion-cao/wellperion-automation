@@ -24,6 +24,7 @@ exit 1.
 출력: 성공 시 stdout에 `IMAGE: <절대경로>` + exit 0. 실패 시 `FAILED: <이유>` + exit 1.
 """
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import argparse
 import json
@@ -149,7 +150,7 @@ def _launch_context(p):
     launch_kwargs = dict(
         user_data_dir=str(PERSISTENT_PROFILE_DIR),
         headless=False,
-        args=["--start-maximized"],
+        args=[*quiet_args()],
         no_viewport=True,
     )
     try:

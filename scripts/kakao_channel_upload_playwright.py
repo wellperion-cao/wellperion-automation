@@ -30,6 +30,7 @@
 #   python scripts\kakao_channel_upload_playwright.py --mode dryrun ^
 #       --content-dir "instagram\260426_WJO_스쿼시_대회"
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import os
 import re
@@ -338,7 +339,7 @@ async def _launch_context(async_playwright):
     context = await p.chromium.launch_persistent_context(
         user_data_dir=str(PERSISTENT_PROFILE_DIR),
         headless=False,
-        args=["--start-maximized"],
+        args=[*quiet_args()],
         no_viewport=True,
     )
     return p, context

@@ -26,6 +26,7 @@
 #   python scripts\danggn_upload_playwright.py --mode dryrun ^
 #       --content-dir "instagram\260426_WJO_스쿼시_대회"
 
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 import argparse
 import os
 import re
@@ -529,12 +530,12 @@ async def _launch_context(async_playwright):
     p = await async_playwright().start()
     if COOKIE_STATE_PATH.exists():
         # 쿠키 인증 모드 — 영속 프로필 손상 회피(fresh context)
-        browser = await p.chromium.launch(headless=False, args=["--start-maximized"])
+        browser = await p.chromium.launch(headless=False, args=[*quiet_args()])
         context = await browser.new_context(storage_state=str(COOKIE_STATE_PATH), no_viewport=True)
         print(f"[INFO] 쿠키 인증 모드 — storage_state 주입 ({COOKIE_STATE_PATH.name})")
         return p, context
     # 폴백: 기존 영속 프로필 (state 미생성 시 — 무회귀)
-    context = await _launch_persistent_with_heal(p, headless=False, args=["--start-maximized"])
+    context = await _launch_persistent_with_heal(p, headless=False, args=[*quiet_args()])
     print("[INFO] 영속 프로필 모드 (쿠키 state 미생성 — migrate-cookies/setup으로 생성 권장)")
     return p, context
 

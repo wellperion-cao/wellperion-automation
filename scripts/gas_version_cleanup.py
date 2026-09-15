@@ -25,6 +25,7 @@
     C:/Python314/python.exe scripts/gas_version_cleanup.py --mode delete --project funnel --i-am-sure
 """
 from __future__ import annotations
+from browser_quiet import quiet_args  # 자동화 창은 화면 밖으로(2026-09-15 GM)
 
 import argparse
 import asyncio
@@ -94,7 +95,7 @@ async def _launch(p):
         ignore_default_args=["--enable-automation"],
         args=[
             "--disable-blink-features=AutomationControlled",
-            "--start-maximized",
+            *quiet_args(),
         ],
     )
     # navigator.webdriver 제거 (자동화 탐지 완화)
