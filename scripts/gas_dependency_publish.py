@@ -14,17 +14,21 @@ PY = sys.executable
 OUT = [ROOT / "status" / "gas_dependency.json", ROOT / "3. 웰페리온 가이드" / "status" / "gas_dependency.json"]
 # 같은 예약(매시)에 얹어 하루 한 번 비용 실측(힉스필드·AWS)도 갱신한다 — 같은 날 것이면 스스로 건너뛴다(2026-09-15 GM).
 COST = [ROOT / "status" / "cost_status.json", ROOT / "3. 웰페리온 가이드" / "status" / "cost_status.json"]
+# AI 토큰 현황(status/token_usage.json)도 같은 예약에서 매시 갱신한다 — 종전엔 아무도 안 돌려 하루 넘게 낡았다(GM 2026-09-15 「레슨 계정도 반영」).
+#   가이드 사본은 저장 훅(sync_queue_mirror --pre-commit)이 짝으로 동봉한다.
+TOKEN = ROOT / "status" / "token_usage.json"
 
 
 def main():
     subprocess.run([PY, str(ROOT / "scripts" / "gas_dependency_scan.py")], check=True, cwd=str(ROOT), **_NOWIN)
     subprocess.run([PY, str(ROOT / "scripts" / "cost_collect.py")], cwd=str(ROOT), **_NOWIN)   # 실패해도 의존 실측은 그대로 간다
+    subprocess.run([PY, str(ROOT / "scripts" / "token_usage.py")], cwd=str(ROOT), **_NOWIN)    # 실패해도 그대로 간다
     d = json.loads(OUT[0].read_text(encoding="utf-8"))
     assert d.get("screens_total", 0) > 0, "스캔 결과가 비었다"
     msg = "chore(cto): 구글 의존 실측 갱신 — 구글만 %d · 예비 %d · 서버만 %d / %d" % (
         d.get("screens_gas_only", 0), d.get("screens_both", 0), d.get("screens_server_only", 0), d.get("screens_total", 0))
     r = subprocess.run([PY, str(ROOT / "scripts" / "safe_commit.py"), "--holder", "gas-dep-scan", "-m", msg]
-                       + [str(p.relative_to(ROOT)) for p in OUT + [c for c in COST if c.exists()]], cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", **_NOWIN)
+                       + [str(p.relative_to(ROOT)) for p in OUT + [c for c in COST if c.exists()] + ([TOKEN] if TOKEN.exists() else [])], cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace", **_NOWIN)
     print((r.stdout or "")[-300:])
     return 0
 
