@@ -31,12 +31,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-# 캡처 주소 = GitHub Pages 공개 사본(2026-09-14 실측 · 시포 라인). erp.wellperion.com 판은 로그인 벽이라
-# 봇 브라우저가 열면 로그인 화면만 나오고 __REPORT_READY 가 영영 안 뜬다(GM PC 90초 타임아웃 · 서버 rc=1).
-# 공개 사본은 같은 파일(발행 루트 = 가이드 폴더)이고 GAS 폴백으로 데이터가 채워진다. 바꾸려면 env REPORT_CAPTURE_URL.
+# 캡처 주소 = ERP 판(erp.wellperion.com)이 기본이다. 화면은 hostname 이 erp 일 때만 서버 API(ERP_API_ON)를
+# 켜므로, GitHub Pages 공개 사본을 찍으면 회원 5칸·입장 3칸 서버 전환분이 한 칸도 안 들어가고 22칸 전부
+# 시트(GAS) 값이 된다 — 「서버판」이라는 이름과 어긋난다(2026-09-15 GM 지적 · 시포 실측).
+# 로그인 벽은 기존 로그인 쿠키(erp_session)로 지난다 — 새 인증 체계·새 공개 통로를 만들지 않는다.
+# 토큰이 없으면 종전대로 공개 사본으로 내려간다(발송이 멈추지 않게). 바꾸려면 env REPORT_CAPTURE_URL.
 _PAGE = "%EB%A7%A4%EC%B6%9C%ED%9A%8C%EC%9B%90%ED%98%84%ED%99%A9%EB%B3%B4%EA%B3%A0.html"
-URL = os.environ.get("REPORT_CAPTURE_URL") or (
-    "https://wellperion-cao.github.io/wellperion-automation/coo/report/" + _PAGE)
+_PAGES_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/report/" + _PAGE
+_ERP_URL = "https://erp.wellperion.com/coo/report/" + _PAGE
+
+
+def _session_token() -> str:
+    """telegram_bot/.env 의 ERP_SESSION_TOKEN 한 줄(저장소 밖) — ops_shared 와 같은 관례."""
+    try:
+        from collectors.ops_shared import _env_line
+        return _env_line("ERP_SESSION_TOKEN")
+    except Exception:
+        return ""
+
+
+# ★기본은 아직 공개 사본이다 — 봇 계정에 /coo/report/ 권한이 없어 ERP 판은 /auth/forbidden 으로 막힌다
+# (2026-09-15 실측). 권한이 열리면 env REPORT_CAPTURE_URL 에 _ERP_URL 을 넣는 것만으로 서버 원천으로 바뀐다.
+URL = os.environ.get("REPORT_CAPTURE_URL") or _PAGES_URL
 # 1~3면 = 화면의 .page 세 덩어리(id) — 1면 매출 및 회원 현황 보고 · 2면 문의 등록 상세 · 3면 운영 현황(GM 지시 2026-09-14).
 PAGES3 = ("sheet", "sheet2", "sheet3")
 
@@ -69,6 +85,12 @@ def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> 
                                   timezone_id="Asia/Seoul")
         # 사내 게이트 통과 — 비밀번호를 치는 대신 통과 표시만 미리 넣는다(gate.js 의 세션 키).
         ctx.add_init_script("try{sessionStorage.setItem('welp_gate_ok','1')}catch(e){}")
+        # ERP 판을 찍을 때만 로그인 쿠키를 얹는다(서버 API 가 켜지는 유일한 조건 = erp 도메인).
+        if "erp.wellperion.com" in URL:
+            tok = _session_token()
+            if tok:
+                ctx.add_cookies([{"name": "erp_session", "value": tok,
+                                  "domain": "erp.wellperion.com", "path": "/"}])
         page = ctx.new_page()
         try:
             page.goto(URL, wait_until="domcontentloaded", timeout=60_000)
