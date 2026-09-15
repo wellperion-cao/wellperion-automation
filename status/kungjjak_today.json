@@ -227,7 +227,7 @@
           "start": "10:19",
           "end": "10:20",
           "minutes": 1,
-          "upload": "✅ 배포 (db7d128cc)",
+          "upload": "✅ 배포 (587da85e6)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -239,7 +239,7 @@
           "start": "10:20",
           "end": "10:23",
           "minutes": 2,
-          "upload": "✅ 배포 (db7d128cc)",
+          "upload": "✅ 배포 (28353dc8f)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -251,7 +251,7 @@
           "start": "10:23",
           "end": "10:25",
           "minutes": 1,
-          "upload": "✅ 배포 (db7d128cc)",
+          "upload": "✅ 배포 (28353dc8f)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -263,7 +263,7 @@
           "start": "10:26",
           "end": "10:27",
           "minutes": 1,
-          "upload": "✅ 배포 (db7d128cc)",
+          "upload": "✅ 배포 (28353dc8f)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -271,13 +271,13 @@
           "ref": "GM-20260915-2011",
           "no": "11",
           "got": "텔레그램 지금 저장한 메시지에 내용이 가는 것 같은데? 업무관리방에 가야하는데? 그리고 업무관리방에 방제를 \"AtoA\" 로 변경하고싶어",
-          "did": "",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "10:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:31",
+          "minutes": 3,
+          "upload": "✅ 배포 (28353dc8f)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260915-pin",
@@ -287,7 +287,7 @@
           "start": "10:27",
           "end": "10:27",
           "minutes": 0,
-          "upload": "✅ 배포 (db7d128cc)",
+          "upload": "✅ 배포 (28353dc8f)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -370,31 +370,34 @@
           "area": "작업",
           "event": "feat(cto): 업무 GAS 의 매출 KPI 2종(home_kpi·sales_monthly)을 매출 거울에 얹는다 [GM 지시 2026-09-15] (배12615 · CFO 매출현황·지출현황)",
           "detail": "커밋 7ba57e9f38 · 배 12631"
+        },
+        {
+          "time": "10:31",
+          "area": "작업",
+          "event": "fix(cto): GM 계정 발신 도구 — '업무관리' 는 나우열M 그룹으로 고정 · 자기 자신(저장한 메시지) 발송 차단 · --rename 추가",
+          "detail": "커밋 f931d9d549 · 배 12631"
+        },
+        {
+          "time": "10:33",
+          "area": "작업",
+          "event": "chore(cto): 나우열M 라인 가드 마커에 [GM 지시 YYYY-MM-DD] 추가 — GM 결정 2026-09-15 10:3x",
+          "detail": "커밋 28353dc8f8 · 배 12631"
+        },
+        {
+          "time": "10:34",
+          "area": "작업",
+          "event": "feat(cto): 읽기 서버 우선·안 되면 구글 폴백 공용 함수 erpReadFirst (배12615 · GM 지시 2026-09-15)",
+          "detail": "커밋 0a7fe793d8 · 배 12631"
         }
       ],
       "count": 12,
-      "done": 11,
-      "open": 1,
+      "done": 12,
+      "open": 0,
       "avg_minutes": 0,
-      "work_count": 13,
+      "work_count": 16,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260915-2011",
-          "no": "11",
-          "got": "텔레그램 지금 저장한 메시지에 내용이 가는 것 같은데? 업무관리방에 가야하는데? 그리고 업무관리방에 방제를 \"AtoA\" 로 변경하고싶어",
-          "did": "",
-          "start": "10:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -464,6 +467,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260915-4004",
+          "no": "04",
+          "got": "- 결제전액+부가세포함+기간 안나눔",
+          "did": "",
+          "start": "10:33",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260915-SALES-SRC",
           "no": "RC",
           "got": "서버가 가져올 수 있는 값·못 가져오는 값 실측(22칸)",
@@ -496,14 +511,29 @@
           "detail": "커밋 8ca39313ec · 배 12523"
         }
       ],
-      "count": 4,
+      "count": 5,
       "done": 4,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 4,
       "work_count": 3,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260915-4004",
+          "no": "04",
+          "got": "- 결제전액+부가세포함+기간 안나눔",
+          "did": "",
+          "start": "10:33",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "coo": {
