@@ -312,6 +312,7 @@
   .ptab tr.p4team td{background:#EEF3F7;color:var(--navy);font-weight:800;border-top:2px solid #D5DCE3;}
   .ptab .p4n{font-weight:600;color:#7A838B;font-size:9.5px;margin-left:4px;}
   .ptab td.p4who{padding-left:14px;}
+  .ptab td.acc, .ptab td.ss{white-space:nowrap;overflow:visible;text-overflow:clip;}   /* 팀 합계 52,766,750 이 「52,766,…」로 잘리던 것 */
   .ptab th{font-size:9.5px;font-weight:700;color:#7A838B;text-align:right;padding:3px 4px;
     border-bottom:1px solid var(--line);white-space:nowrap;}
   .ptab th:first-child{text-align:left;}
@@ -726,7 +727,7 @@
   <div class="audit wait" id="audit4">자체 점검 중…</div>
 
   <div class="foot">
-    <div><b>이 장이 보는 것</b> — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 세션(일일·월 누적) 칸은 원천이 정해지면 붙습니다.</div>
+    <div><b>이 장이 보는 것</b> — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 세션 2칸은 브로제이 강습 일정의 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다(세션카드 이관 전엔 「—」).</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
@@ -1752,18 +1753,19 @@ function p4Num(v){ return parseInt(String(v || '0').replace(/[^0-9\-]/g, ''), 10
 function p4TeamTable(heads, teams){
   if (!teams.length) return '<div class="mrow"><span class="lb">담당 줄이 없습니다</span></div>';
   var th = '<tr><th>팀 · 담당</th>' + heads.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') +
-           '<th style="border-left:2px solid #E3E7EB;padding-left:8px">누적</th></tr>';
+           '<th style="border-left:2px solid #E3E7EB;padding-left:8px">누적</th>' +
+           '<th style="border-left:2px solid #E3E7EB;padding-left:8px" title="브로제이 출석 차감 기준">세션 금일</th><th>세션 월누적</th></tr>';
   var body = teams.map(function(t){
     var cols = [0, 1, 2, 3].map(function(i){ return t.rows.reduce(function(a, x){ return a + p4Num(x.cols[i]); }, 0); });
     var acc = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
     var solo = t.rows.length === 1 && P4_TEAM_STARTS.some(function(x){ return x[0] === t.rows[0].name && x[0] === x[1].replace('팀', ''); });
-    var head = '<tr class="sum p4team"><td>' + esc(t.name) + (solo ? '' : ' <span class="p4n">' + t.rows.length + '명</span>') + '</td>' +
+    var head = '<tr class="sum p4team" data-team="' + esc(t.name) + '"><td>' + esc(t.name) + (solo ? '' : ' <span class="p4n">' + t.rows.length + '명</span>') + '</td>' +
       cols.map(function(v){ return '<td class="' + (v ? '' : 'zero') + '">' + v.toLocaleString('ko-KR') + '</td>'; }).join('') +
-      '<td class="acc">' + acc.toLocaleString('ko-KR') + '</td></tr>';
+      '<td class="acc">' + acc.toLocaleString('ko-KR') + '</td><td class="ss sd">—</td><td class="ss sm">—</td></tr>';
     return head + t.rows.map(function(x){
-      return '<tr><td class="p4who">' + esc(x.name) + '</td>' +
+      return '<tr data-who="' + esc(x.name) + '"><td class="p4who">' + esc(x.name) + '</td>' +
         x.cols.map(function(v){ return '<td class="' + (v === '0' ? 'zero' : '') + '">' + esc(v) + '</td>'; }).join('') +
-        '<td class="acc">' + esc(x.acc) + '</td></tr>';
+        '<td class="acc">' + esc(x.acc) + '</td><td class="ss sd">—</td><td class="ss sm">—</td></tr>';
     }).join('');
   }).join('');
   return '<table class="ptab">' + th + body + '</table>';
@@ -1793,14 +1795,70 @@ function renderPage4(c, dayLabel){
   }
 }
 
+/* ★4면 세션 2칸 — 브로제이 강습 일정·출석(시토 배 2663 · GET /api/brojay/sessions?month= · /api/brojay/trainers).
+   세션 1 = 일정 1건에서 출석(SHOW)이 한 명 이상 찍힌 것. 금일 = 기준일(어제) · 월누적 = 그 달 1일~기준일.
+   강사 이름은 trainers 명단(trainer_id→name)으로 풀어 4면 담당 줄과 이름으로 맞춘다 — 못 맞춘 강사는 아래 한 줄로 밝힌다.
+   ERP 도메인(경영진 세션)에서만 읽힌다 — 공개 사본·캡처 계정은 「—」 그대로. 원천이 비어 있으면(세션카드 이관 전) 0 이 아니라 「—」. */
+function loadPage4Sessions(d){
+  if (!ERP_API_ON) return;
+  var ym = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  var ymd = ym + '-' + ('0' + d.getDate()).slice(-2);
+  Promise.all([
+    fetch('/api/brojay/sessions?month=' + ym + '&cb=' + Date.now(), { credentials: 'same-origin' }).then(function(r){ return r.ok ? r.json() : null; }),
+    fetch('/api/brojay/trainers?cb=' + Date.now(), { credentials: 'same-origin' }).then(function(r){ return r.ok ? r.json() : null; })
+  ]).then(function(res){
+    var sess = res[0], tr = res[1];
+    if (!sess || !tr) return;
+    var tl = (tr.data && tr.data.data) || tr.data || [];
+    var tname = {};
+    tl.forEach(function(t){ if (t && t.trainer_id) tname[t.trainer_id] = String(t.name || '').trim(); });
+    var day = {}, month = {}, total = 0;
+    (sess.days || []).forEach(function(dd){
+      var list = (dd.data && dd.data.data) || dd.data || [];
+      if (String(dd.date || '') > ymd) return;   // 기준일 뒤 일정은 아직 진행 전
+      list.forEach(function(sc){
+        var booked = (sc.reservations && sc.reservations.booked) || [];
+        var shown = booked.some(function(b){ return b && b.attendance && b.attendance.attendance_status === 'SHOW'; });
+        if (!shown) return;
+        total += 1;
+        (sc.trainer_ids || []).forEach(function(tid){
+          var nm = tname[tid] || tid;
+          month[nm] = (month[nm] || 0) + 1;
+          if (String(dd.date || '') === ymd) day[nm] = (day[nm] || 0) + 1;
+        });
+      });
+    });
+    var rows = document.querySelectorAll('#sheet4 tr[data-who]');
+    var matched = {}, teamD = {}, teamM = {}, curTeam = '';
+    document.querySelectorAll('#sheet4 .ptab tr').forEach(function(tr){
+      if (tr.getAttribute('data-team')) { curTeam = tr.getAttribute('data-team'); return; }
+      var who = tr.getAttribute('data-who'); if (!who) return;
+      var md = month[who] || 0, dv = day[who] || 0;
+      if (month[who] != null) matched[who] = true;
+      tr.querySelector('.sd').textContent = total ? String(dv) : '—';
+      tr.querySelector('.sm').textContent = total ? String(md) : '—';
+      teamD[curTeam] = (teamD[curTeam] || 0) + dv; teamM[curTeam] = (teamM[curTeam] || 0) + md;
+    });
+    document.querySelectorAll('#sheet4 tr[data-team]').forEach(function(tr){
+      var t = tr.getAttribute('data-team');
+      tr.querySelector('.sd').textContent = total ? String(teamD[t] || 0) : '—';
+      tr.querySelector('.sm').textContent = total ? String(teamM[t] || 0) : '—';
+    });
+    var unmatched = Object.keys(month).filter(function(n){ return !matched[n]; });
+    var a4 = document.getElementById('audit4');
+    if (a4) a4.innerHTML += ' · 세션 ' + (total ? ('이달 ' + total + '건(브로제이 출석 기준)' + (unmatched.length ? ' · 담당 줄에 없는 강사 ' + unmatched.length + '명(' + esc(unmatched.slice(0, 4).join('·')) + ')' : '')) : '원천 비어 있음(세션카드 이관 전)');
+  }).catch(function(){ /* 세션 칸만 — 로 남는다 */ });
+}
+
 /* 4면 조회 — 기준일 일자탭의 O6:U34 한 번. 다른 칸은 안 읽는다. */
 function loadPage4(){
   var d = new Date(Date.now() - 86400000);
   var label = (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
-  drGet('dump', '&sheet=' + d.getDate() + '&range=O6:U66')
+  drGet('dump', '&sheet=' + d.getDate() + '&range=O15:U66')   // GAS dump 는 400칸 근처가 상한(O6:U66 은 'range too large') — 머리 P15~S15 부터
     .then(function(r){
       if (!r || !r.ok || !r.cells) throw new Error('일자탭 조회 실패');
       renderPage4(r.cells, label);
+      loadPage4Sessions(d);
     })
     .catch(function(e){
       var el = document.getElementById('err4');
