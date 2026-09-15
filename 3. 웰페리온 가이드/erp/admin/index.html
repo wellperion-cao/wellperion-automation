@@ -252,26 +252,27 @@
 <div class="shell">
 
 <nav class="side" aria-label="관리 영역">
-  <div class="cap">운영</div>
+  <!-- 메뉴 묶음 5개(GM 2026-09-15 「항목값에 맞는 셋업인지 곰곰이 판단」 · 시토 정리):
+       파트너사 = 파는 상대(고객)에 관한 것 · 플랫폼 운영 = 우리 살림(서버·이관·자동화·비용) ·
+       모듈 = 따로 파는 앱 · 자료 = 기준·문서 · 개인 = GM 본인 것(회사 화면과 섞지 않는다). -->
+  <div class="cap">파트너사</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
   <a href="#products" data-go="products"><span class="t">파트너 산출물</span><span class="b">3</span></a>
   <a href="#brand" data-go="brand"><span class="t">브랜드 자료</span><span class="b">3</span></a>
-  <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#downloads" data-go="downloads"><span class="t">다운로드</span><span class="b" id="b-dl">—</span></a>
-  <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
+  <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
+  <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
   <a href="../../자율현황.html"><span class="t">자율현황</span></a>
   <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
   <div class="sep"></div>
   <div class="cap">모듈</div>
-  <div class="desc">따로 쓸 수 있는 앱 — 화면과 CLI 에서 돈다</div>
   <a href="../../cto/automation/카톡전송관리.html"><span class="t">카톡 전송</span></a>
   <a href="../../cbo/counsel_admin.html"><span class="t">상담봇</span></a>
   <!-- 마케팅 자동업로드 — 센터 공식 계정 발행(GM 2026-09-14 「마케팅 전체 파이프라인은
        ERP플랫폼관리 라인으로」). 파트너사 첫 화면에서는 뺐다 — 파는 쪽 기능이다. -->
   <a href="../../cmo/upload/마케팅자동업로드.html"><span class="t">마케팅 자동업로드</span></a>
-  <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span><span class="b">개인</span></a>
   <div class="sep"></div>
   <div class="cap">자료</div>
   <a href="#standard" data-go="standard"><span class="t">모듈 기준</span></a>
@@ -279,6 +280,13 @@
   <a href="#guide" data-go="guide"><span class="t">AI 운영 가이드</span></a>
   <a href="#platform-docs" data-go="platform-docs"><span class="t">플랫폼 문서</span></a>
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
+  <div class="sep"></div>
+  <!-- 개인 = GM 본인 것(GM 2026-09-15 「김남욱GM 카드·어떤 하루·개인 아이디어를 맨 아래 따로」).
+       아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보). -->
+  <div class="cap">개인</div>
+  <a href="/home#G1"><span class="t">김남욱 GM</span></a>
+  <a href="../../cmo/sunday/GM의일요일.html"><span class="t">어떤 하루</span></a>
+  <a href="/home#G1/ideas"><span class="t">아이디어</span><span class="b">주간</span></a>
 </nav>
 
 <div class="main">
@@ -751,10 +759,12 @@
   <!-- cto/automation/토큰 사용량.html 을 새 페이지로 열지 않고 이 안에 병합한다(GM 지시 2026-09-14).
        그 화면은 지우지 않는다 — 원천은 같은 status/token_usage.json 이다. -->
   <h2>AI·서버 비용 현황</h2>
+  <!-- 이번 달 합계 한 줄(GM 2026-09-15 「이번 달 기준 맞아? 합계가 안 나온다」) — 원천 cost_status.json summary(달력 달 기준). -->
+  <div class="meta" id="cost-total" style="font-size:14px;margin-bottom:6px;">이번 달 합계 계산 중…</div>
   <div class="meta" id="tok-billing-line">불러오는 중…</div>
   <div class="tbl-wrap">
   <table class="reg">
-    <thead><tr><th>계정</th><th>세션</th><th>출력 토큰</th><th>캐시 읽기</th><th>비용<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">정가 환산(실제 청구는 위 정액)</span></th><th>어디에 많이 썼나 (상위 3 · 역할·폴더)</th></tr></thead>
+    <thead><tr><th>계정</th><th>세션</th><th>출력 토큰</th><th>캐시 읽기</th><th>비용<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">정가 환산(실제 청구는 위 정액) · 최근 30일 누적, 이번 달 아님</span></th><th>어디에 많이 썼나 (상위 3 · 역할·폴더)</th></tr></thead>
     <tbody id="tok-acct-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
   </table></div>
   <p class="tip" id="tok-cache-note"></p>
@@ -788,6 +798,13 @@
         document.getElementById('aws-rows').innerHTML = rs.length ? rs.join('') : '<tr><td colspan="2" class="note">이번 달 사용 없음</td></tr>';
       } else { document.getElementById('aws-line').textContent = 'AWS 못 읽음 — ' + ((d.errors || {}).aws || ''); }
       document.getElementById('cost-note').textContent = '실측 ' + when + ' · ' + ((a && a.note) || '') + ' · 환율 1,400원 고정';
+      var sm = d.summary;
+      if (sm) {
+        var mm = String(sm.month || '').slice(5).replace(/^0/, '');
+        document.getElementById('cost-total').innerHTML = mm + '월 실제 나가는 돈 <b>' + won(sm.total_paid_krw) + '</b>'
+          + ' = 클로드 정액 ' + won(sm.claude_fixed_krw) + ' + 힉스필드 ' + won(sm.higgsfield_month_krw) + '(연 선결제 ÷12) + AWS 실청구 ' + won(sm.aws_net_krw || 0)
+          + (sm.aws_usage_krw ? ' <span style="color:var(--dim)">(AWS 사용액 ' + won(sm.aws_usage_krw) + '은 크레딧이 대신 냄 · 크레딧 끝나면 합계 ' + won(sm.total_if_no_credit_krw) + ')</span>' : '');
+      } else { document.getElementById('cost-total').textContent = '이번 달 합계 — 실측 파일에 아직 없음'; }
     }).catch(function(){ document.getElementById('hf-line').textContent = '비용 실측 파일이 아직 없습니다'; document.getElementById('aws-line').textContent = ''; });
   })();
   </script>

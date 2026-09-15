@@ -23,6 +23,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = [ROOT / "status" / "cost_status.json", ROOT / "3. 웰페리온 가이드" / "status" / "cost_status.json"]
 USD_KRW = 1400                 # token_usage.py 와 같은 고정 환율
 AWS_BUDGET_KRW = 150000        # 결재 SSOT 「AI 운영 예산 월 150만원」 안의 AWS 추정치(2026-09-02)
+HF_PLAN_USD_YEAR = 564         # 힉스필드 플러스 연간 선결제(GM 승인 2026-09-03 · 배939) — 월 환산은 /12
+TOKEN_USAGE = ROOT / "status" / "token_usage.json"   # 클로드 정액(billing.krw_month_fixed)은 여기서 읽는다
 KST = dt.timezone(dt.timedelta(hours=9))
 
 
@@ -97,6 +99,25 @@ def aws(today):
             "note": "사용액 = 실제 쓴 만큼 · 크레딧 = AWS 가 깎아 준 만큼 · 실청구 = 카드로 나가는 돈(크레딧이 남는 동안 0)"}
 
 
+def summary(out):
+    """이번 달 실제로 나가는 돈 한 줄(GM 2026-09-15 「합계가 안 나온다」). 셋 다 달력 달 기준.
+    클로드 = 계정별 정액(토큰을 얼마나 쓰든 고정) · 힉스필드 = 연간 선결제의 월 환산 · AWS = 실청구(크레딧 상쇄 뒤)."""
+    claude = 0
+    try:
+        claude = int((json.loads(TOKEN_USAGE.read_text(encoding="utf-8")).get("billing") or {}).get("krw_month_fixed") or 0)
+    except Exception:  # noqa: BLE001
+        pass
+    hf = round(HF_PLAN_USD_YEAR / 12 * USD_KRW)
+    a = out.get("aws") or {}
+    aws_net = int(a.get("net_krw") or 0) if a else None
+    aws_usage = int(a.get("usage_krw") or 0) if a else None
+    paid = claude + hf + (aws_net or 0)
+    return {"month": _now().strftime("%Y-%m"), "claude_fixed_krw": claude, "higgsfield_month_krw": hf,
+            "aws_net_krw": aws_net, "aws_usage_krw": aws_usage, "total_paid_krw": paid,
+            "total_if_no_credit_krw": claude + hf + (aws_usage or 0),
+            "note": "클로드 = 계정 정액 · 힉스필드 = 연 $%d 선결제 ÷12 · AWS = 실청구(크레딧 상쇄 뒤)" % HF_PLAN_USD_YEAR}
+
+
 def write(out):
     for p in OUT:
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -123,6 +144,7 @@ def main(argv):
         out["aws"] = aws(today)
     except Exception as e:  # noqa: BLE001
         out["errors"]["aws"] = str(e)[:200]
+    out["summary"] = summary(out)
     write(out)
     print("wrote", OUT[0], "hf=%s aws=%s errors=%s" % (bool(out["higgsfield"]), bool(out["aws"]), out["errors"]))
     return 1 if len(out["errors"]) == 2 else 0
@@ -138,6 +160,9 @@ def selftest():
     h = higgsfield(st, tx, today)
     assert h["month_spent"] == 54.37 and h["by_model"] == {"Seedance 2.5": 52, "GPT 6 Astra": 2.37} and h["credits_left"] == 624.21, h
     assert h["last"]["model"] == "Seedance 2.5"
+    sm = summary({"aws": {"net_krw": 0, "usage_krw": 16072}})
+    assert sm["higgsfield_month_krw"] == 65800 and sm["total_paid_krw"] == sm["claude_fixed_krw"] + 65800, sm
+    assert sm["total_if_no_credit_krw"] == sm["total_paid_krw"] + 16072
     print("selftest ok")
     return 0
 
