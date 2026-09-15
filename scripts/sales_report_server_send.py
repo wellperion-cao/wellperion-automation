@@ -93,6 +93,35 @@ def send_three_pages(token, chat, paths, ref_date, note, dry_run=False):
     return ok_all, ids
 
 
+def server_check_note():
+    """GM PC 09:00 캡션에 붙는 서버 원천 대조 한 줄 (GM 지시 2026-09-15 「시트 보고는 그대로 두고
+    ERP 매출·회원현황보고만 서버에서 가져와 체크」). 서버 렌더러가 이미 22칸을 계산해 두므로
+    (/api/report/sales_report_cells · build_report 재사용) 그 결과만 받아 적는다 — 새 계산·새 경로 없음.
+    로그인 쿠키는 기존 ERP_SESSION_TOKEN 하나(telegram_bot/.env). 못 받으면 빈 문자열이라 발송은 안 막는다."""
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import requests
+        from collectors.ops_shared import _env_line, ERP_API_BASE
+        tok = _env_line("ERP_SESSION_TOKEN")
+        if not tok:
+            return ""
+        r = requests.get(ERP_API_BASE + "/api/report/sales_report_cells",
+                         headers={"Cookie": "erp_session=" + tok}, timeout=40)
+        if r.status_code != 200:
+            return " · 서버 원천 대조 못함(권한·응답 %s)" % r.status_code
+        d = r.json()
+        if not isinstance(d.get("total"), int):
+            return " · 서버 원천 대조 못함(응답 모양 다름)"
+        note = " · 서버 원천 대조 %d/%d 일치" % (d["matched"], d["total"])
+        if d.get("mismatches"):
+            note += " · 다른 칸: " + ", ".join(d["mismatches"])
+        if str(d.get("ref_date") or "") != _ref_date():
+            note += " · ⚠️서버 기준일 %s" % d.get("ref_date")
+        return note
+    except Exception as e:
+        return " · 서버 원천 대조 못함(%s)" % type(e).__name__
+
+
 def _capture_pages(n):
     """n면 캡처 — 실패는 (None, 사유). 요약표 폴백은 없다(GM 지시 2026-09-14)."""
     try:
@@ -165,7 +194,7 @@ def gm_pc_0900(dry_run):
         if not dry_run:
             tg_send(token, chat, text, source="sales_report_server_send", full_response=True)
         return 1
-    ok, ids = send_three_pages(token, chat, paths, ref_date, "", dry_run=dry_run)
+    ok, ids = send_three_pages(token, chat, paths, ref_date, server_check_note(), dry_run=dry_run)
     print("DONE: ok=%s ids=%s pages=%s" % (ok, ids, paths))
     return 0 if ok else 1
 
