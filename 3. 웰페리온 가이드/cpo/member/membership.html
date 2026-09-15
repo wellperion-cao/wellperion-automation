@@ -5983,9 +5983,10 @@ function _lastActivityDays(r) {
   var ds = [];
   var t = String(r.timestamp || '').slice(0, 10); if (t) ds.push(t);
   (r.contacts || []).forEach(function(c){ var d = c && String(c.date || '').slice(0, 10); if (d) ds.push(d); });
-  ['exp1Time','exp2Time','exp3Time','tourDate','visitDate','visit2Date','contact1','contact2','contact3'].forEach(function(k){
+  ['exp1','exp2','exp3','tourDate','visitDate','visit2Date','contact1','contact2','contact3'].forEach(function(k){
     var m = String(r[k] || '').match(/\d{4}-\d{2}-\d{2}/); if (m) ds.push(m[0]);
   });
+  (r.reservations || []).forEach(function(rv){ var d = rv && String(rv.date || '').slice(0, 10); if (d) ds.push(d); });
   if (!ds.length) return null;
   ds.sort();
   var last = new Date(ds[ds.length - 1] + 'T00:00:00');
