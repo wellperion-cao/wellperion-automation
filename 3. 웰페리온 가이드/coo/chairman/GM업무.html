@@ -147,6 +147,10 @@
      값은 목표 자체의 dept 를 그대로 쓴다 — 화면에 부서 표를 새로 만들지 않는다(약속 L01).
      기록에 부서가 없으면 '미정' 으로 두고 지어 채우지 않는다. */
   .sum td.dept{width:104px;color:var(--grey);font-weight:700;white-space:nowrap;}
+  /* 결재 SSOT 표(GM 완료건·대표님 결재완료 · 2026-09-15) — 4열이라 첫 칸 번호 규칙을 푼다 */
+  .sum table.appr th{font-size:var(--fs-1);color:var(--grey);text-align:left;padding:3px 4px;border-bottom:1px solid var(--line);}
+  .sum table.appr td:first-child{width:auto;font-weight:600;color:var(--ink);}
+  .sum table.appr td:nth-child(2),.sum table.appr td:nth-child(3){width:110px;white-space:nowrap;}
   .sum td.dept.none{color:var(--mid);font-weight:500;}
 
   /* 담당 칸 (GM 결정 2026-08-29 · 배843 "GM업무 관련 전체 담당칸이 있어야해") — 회장님·대표님·GM 직접
@@ -487,16 +491,33 @@
     </div>
   </details>
 
-  <!-- ④ 완료건 — 위 「진행건」에서 끝난 건만 별도 토글로 이관(GM 지시 2026-08-24 "완료 토글 하나 더 만들어서
-       완료건으로 이관"). 완료 판정은 진행건과 같은 isDone()을 그대로 재사용(복제 없음) — 기본 접힘. -->
-  <details class="sec" id="sec-gm-done" style="display:none;">
-    <summary><span class="ic">✅</span> 완료건 <span class="cnt" id="gm-done-cnt">0건</span></summary>
+  <!-- ④ ✅ GM 완료건 — 위 「진행건」에서 끝난 카드(판정 isDone() 재사용) + 결재 SSOT 중 GM 선에서 끝난 결재
+       (담당 김남욱 · 결재요청에 GM 만 · 상태 완료). 기본 접힘. 결재 표는 _owner_directive.js 의 조회를 그대로
+       쓴다(GM 지시 2026-09-15 「완료칸을 GM 완료건 / 대표님 결재완료 둘로」). -->
+  <details class="sec" id="sec-gm-done">
+    <summary><span class="ic">✅</span> GM 완료건 <span class="cnt" id="gm-done-cnt">0건</span> <span class="cnt" id="gm-appr-cnt">결재 —</span></summary>
     <div class="sec-body">
       <div class="sum">
         <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-done-sum-body"></tbody></table>
       </div>
       <div class="grid" id="gm-done-grid"></div>
+      <div class="sum">
+        <h3>결재 SSOT — GM 선에서 끝난 결재</h3>
+        <table class="appr"><thead><tr><th>제목</th><th>금액</th><th>결재일</th><th>담당</th></tr></thead><tbody id="gm-appr-body"></tbody></table>
+      </div>
+    </div>
+  </details>
+
+  <!-- ⑤ 🤵 대표님 결재완료 — 결재요청에 「대표님」이 있고 대표싸인 칸에 실서명(이미지 URL 또는 날짜)이 찍힌 행.
+       판정 = _owner_directive.js ownerSigned/ownerSignDate 그대로(복제 없음). PENDING·빈칸은 완료 아님 — 어디에도
+       안 싣는다(진행 결재는 이 화면 소관 아님). 기본 접힘. -->
+  <details class="sec" id="sec-rep-done">
+    <summary><span class="ic">🤵</span> 대표님 결재완료 <span class="cnt" id="rep-done-cnt">—</span></summary>
+    <div class="sec-body">
+      <div class="sum">
+        <table class="appr"><thead><tr><th>제목</th><th>금액</th><th>결재일</th><th>담당</th></tr></thead><tbody id="rep-done-body"></tbody></table>
+      </div>
     </div>
   </details>
 
@@ -795,7 +816,6 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
   var elGmCnt = document.getElementById('gm-grp-cnt');
   var elGmGrid = document.getElementById('gm-grid');
   var elGmSum = document.getElementById('gm-sum-body');
-  var elGmDoneSec = document.getElementById('sec-gm-done');
   var elGmDoneCnt = document.getElementById('gm-done-cnt');
   var elGmDoneGrid = document.getElementById('gm-done-grid');
   var elGmDoneSum = document.getElementById('gm-done-sum-body');
@@ -1028,14 +1048,12 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     if (items === null) {
       elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
       elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = '';
-      elGmDoneSec.style.display = 'none';
       return;
     }
     if (!items.length) {
       elGmCnt.textContent = '0건';
       elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
       elGmSum.innerHTML = '';
-      elGmDoneSec.style.display = 'none';
       return;
     }
     gmNoteLines = {};
@@ -1123,9 +1141,8 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
 
     elGmDoneCnt.textContent = doneItems.length + '건';
     if (!doneItems.length) {
-      elGmDoneSec.style.display = 'none';
+      elGmDoneGrid.innerHTML = ''; elGmDoneSum.innerHTML = '';
     } else {
-      elGmDoneSec.style.display = '';
       // 번호는 진행건 다음부터 이어 붙인다 — 완료건이 01 부터 다시 시작하면 GM 이 「11-3」 으로
       // 짚었을 때 같은 번호가 두 곳에 생긴다(GM 지시 2026-08-25 번호 체계 도입과 짝).
       var off = activeItems.length;
@@ -1222,6 +1239,58 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     });
   })();
 
+})();
+
+/* ── ✅ GM 완료건(결재 SSOT 표) · 🤵 대표님 결재완료 (GM 지시 2026-09-15) ──────────────────────
+   데이터 = _owner_directive.js readWorkApproval (서버 미러 우선 · GAS 폴백 · include_gm) 그대로 — 새 조회 경로 없음.
+   판정 = 같은 파일 ownerSigned(실서명: 이미지 URL 또는 날짜 · PENDING 아님)·ownerSignDate(결재완료시각→대표싸인 날짜).
+   GM 선 = 담당 김남욱 + 결재요청에 GM 만(대표님 없음) + 상태 완료. 대표님 선 = 결재요청에 대표님 + 실서명.
+   조회 실패면 두 표 자리에 못 읽었다고 적는다 — 0건으로 보이면 거짓이라 숨기지 않는다. */
+(function () {
+  var OD = window.OwnerDirective;
+  var elA = document.getElementById('gm-appr-body'), elB = document.getElementById('rep-done-body');
+  var cA = document.getElementById('gm-appr-cnt'), cB = document.getElementById('rep-done-cnt');
+  if (!OD || !elA || !elB) return;
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  // 금액 — 행에 금액 칸이 없다(2026-09-15 실측 26칸). 제목·내용에서 「N,NNN원」 첫 매치, 없으면 —.
+  function amountOf(r) {
+    var m = /\d{1,3}(?:,\d{3})+\s*원/.exec(String(r['업무명'] || '') + ' ' + String(r['내용'] || ''));
+    return m ? m[0].replace(/\s+/g, '') : '—';
+  }
+  function classify(rows) {
+    var gm = [], rep = [];
+    rows.forEach(function (r) {
+      if (String(r['업무명'] || '').indexOf('[테스트]') !== -1) return;   // 서식 검증용 행
+      var appr = String(r['결재요청'] || '').trim();
+      if (appr.indexOf('대표님') !== -1) { if (OD.ownerSigned(r)) rep.push(r); return; }   // PENDING·빈칸 = 완료 아님
+      if (String(r['담당자'] || '').indexOf('김남욱') !== -1 && /GM/.test(appr) && String(r['상태'] || '').trim() === '완료') gm.push(r);
+    });
+    var byDate = function (a, b) { return (OD.ownerSignDate(b) || '').localeCompare(OD.ownerSignDate(a) || ''); };
+    return { gm: gm.sort(byDate), rep: rep.sort(byDate) };
+  }
+  function rowHtml(r) {
+    return '<tr><td>' + esc(r['업무명']) + '</td><td>' + esc(amountOf(r)) + '</td><td>' +
+      esc(OD.ownerSignDate(r) || '—') + '</td><td>' + esc(r['담당자'] || '—') + '</td></tr>';
+  }
+  function fill(el, list, empty) {
+    el.innerHTML = list.length ? list.map(rowHtml).join('') : '<tr><td colspan="4" class="rep-empty">' + empty + '</td></tr>';
+  }
+  window.GmApprovalTables = { classify: classify, rowHtml: rowHtml };   // 자가검사(node)가 이 둘만 떼어 돌린다
+  OD.readWorkApproval().then(function (rows) {
+    if (!rows) {
+      var msg = '<tr><td colspan="4" class="rep-empty">결재 SSOT 를 못 읽었습니다 — 0건이라는 뜻이 아닙니다.</td></tr>';
+      elA.innerHTML = msg; elB.innerHTML = msg; cA.textContent = '결재 ?'; cB.textContent = '?';
+      return;
+    }
+    var c = classify(rows);
+    fill(elA, c.gm, 'GM 선에서 끝난 결재가 없습니다.');
+    fill(elB, c.rep, '대표님 실서명이 찍힌 결재가 없습니다.');
+    cA.textContent = '결재 ' + c.gm.length + '건'; cB.textContent = c.rep.length + '건';
+  });
 })();
 
 /* ── ⓪ 오늘 일정 띠 (GM 지시 2026-08-25) ────────────────────────────────────────

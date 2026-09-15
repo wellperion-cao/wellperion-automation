@@ -668,5 +668,8 @@
 
   // 보고 대기/완료 판정은 이 파일 하나만 갖는다 — 읽는 쪽(GM업무.html 인쇄·건수)은 이 두 함수를
   // 쓴다(약속 L01 · 판정 복제 금지). 상태 파일 조회 전에는 전부 '대기'로 나온다.
-  window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate, ownerCellHtml: ownerCellHtml };
+  // readWorkApproval·ownerSigned·ownerSignDate 도 내놓는다 — GM업무.html 완료칸 2개(GM 완료건 / 대표님 결재완료 ·
+  // GM 지시 2026-09-15)가 같은 조회·같은 실서명 판정을 그대로 쓴다(약속 L01 · 판정 복제 금지).
+  window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate, ownerCellHtml: ownerCellHtml,
+                            readWorkApproval: readWorkApproval, ownerSigned: ownerSigned, ownerSignDate: ownerSignDate };
 })();
