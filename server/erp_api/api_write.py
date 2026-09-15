@@ -39,6 +39,7 @@ from api_reception_ops import forget as _rc_forget, write_gas_key as _rc_gas_key
 import gas_key  # noqa: E402  — 접수 GAS 게이트 열쇠(RECEPTION_TOKEN). 비어 있으면 본문 무변경.
 import mirror_patch  # noqa: E402  — server 모드 업무·결재 쓰기를 거울(todo_items)에 그 자리에서 반영
 import mirror_proc  # noqa: E402  — server 모드 구매요청 쓰기를 거울(proc_items)에 그 자리에서 반영(2026-09-14)
+import mirror_inquiry  # noqa: E402  — server 모드 문의 수정을 거울(inquiries)에 그 자리에서 반영(2026-09-15 · FB260915-162312)
 import api_reception as _rc  # noqa: E402  — 첨부 저장 자리·총량 상한은 접수 사진(배 984)과 같은 곳을 그대로 쓴다
 import approval_pin  # noqa: E402  — 결재 PIN 서버 검증(todo_sign·todo_opinion·todo_opinion_delete)
 from write_perm import WRITE_MODULES, write_allowed  # noqa: E402  — 쓰기 권한 표(배1112 · api_reception_ops 와 공유)
@@ -731,6 +732,10 @@ def _write_sync(headers, body):
                 # 구매요청 거울(proc_items)도 같은 자리에서(mirror_proc.py · 나우열M 요청 2026-09-14) — 서버 목록을
                 # 읽는 화면이 지워진 행·옛 상태로 승인·삭제를 보내던 것(14:03 실사고)을 막는다.
                 mirror_proc.apply(conn, action, payload)
+            if action in mirror_inquiry.ACTIONS:
+                # 문의 거울(inquiries)도 같은 자리에서(mirror_inquiry.py · 2026-09-15) — 화면이 쓰기 뒤 GAS 를 우회하지 않아도
+                # 거울이 곧바로 새 값이라 느림·옛값(실무진 피드백 FB260915-162312)이 사라진다.
+                mirror_inquiry.apply(conn, action, payload)
             if sched_rev is not None:
                 _schedule_mirror(conn, payload.get("data"), sched_rev)
         except Exception:

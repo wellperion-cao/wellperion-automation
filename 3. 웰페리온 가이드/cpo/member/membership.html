@@ -3373,8 +3373,9 @@ function _wroteRecently() { try { return Date.now() - Number(localStorage.getIte
 function _inquiryListFetch() {
   var gas = function(){ return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); }); };
   if (!ERP_API_ON) return gas();
-  // 쓰기 도장은 회원 목록과 같은 키 — apiPost 가 member_* 액션(member_inquiry_update 포함) 전부에 찍는다.
-  try { if (Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000) return gas(); } catch (e) {}
+  // ★2026-09-15 시토 — 쓰기 뒤 6분 GAS 우회를 뺐다. write_member 가 server 로 바뀐 뒤(09-11) 이 우회는 느리고(GAS 왕복)
+  //   시트가 되밀리기 전이라 옛값까지 보여 줬다(임정은M 피드백 FB260915-162312 「수정이 너무 느려졌어요 · 새로고침도 잘 안 돼요」).
+  //   지금은 서버가 쓰기를 받는 순간 문의 거울을 직접 고친다(server/erp_api/mirror_inquiry.py) — 거울이 곧 새 값이다.
   return _apiInquiryList('멤버십').catch(function(e){ console.warn('[문의DB] API 실패 → GAS 폴백:', e && e.message); return gas(); });
 }
 function _memberListFetch(scope) {
