@@ -326,6 +326,7 @@
      가리지 않게 — 일반 브라우저 탭에서는 env() 값이 0이라 기존과 동일하게 보인다(회귀 없음). */
   #gate{padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 </style>
+<script src="../../_assets/erp_write.js"></script>
 </head>
 <body>
 
@@ -691,8 +692,11 @@ async function loadSsot(){
    이메일·생년 등 포함)을 그대로 보관하지 않고, 여기서 화이트리스트 필드만 뽑아 저장한다 — 나중에
    렌더 코드가 실수로 다른 필드를 참조해도 애초에 데이터가 없어 노출될 수 없는 구조. */
 function dbRead(dbName){
+  // [추가 2026-09-15 시토 배12615] 읽기 서버 우선(/api/hr/read) · 안 되면 종전 구글(GAS) 그대로.
+  return window.erpReadFirst('/api/hr/read', function(){
   return fetch(NOTION_FN,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},
     body:JSON.stringify({db:dbName,password:SESSION_PW})}).then(function(r){return r.json();});
+  }, {body:{db:dbName}, needRows:true});
 }
 async function loadOnbo(){
   try{
