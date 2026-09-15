@@ -60,8 +60,12 @@
   /* 두 칸을 가로로 놓고, 칸 안은 세로 흐름이다. 칸마다 마지막 상자가 남은 높이를 먹어 아래
      끝선이 맞는다. 종전 2행 격자는 1행 높이를 오른쪽 칸이 정해 2행에 154px 만 남겼고, 305px 가
      필요한 매출 현황 표가 팀 절반부터 잘렸다(2026-09-14 실측). */
-  .body{display:flex;gap:13px;margin-top:12px;flex:1;min-height:0;}
-  .col{flex:1;display:flex;flex-direction:column;gap:11px;min-height:0;}
+  /* 2열 × 2행 격자 — 행 높이를 격자가 맞춰 주므로 왼쪽 「매출 현황」과 오른쪽 「금일 예상 컨택·
+     로스자」의 윗선이 같아진다(GM 지시 2026-09-15 「위에 높이칸을 맞춰야해」). 종전 flex 2열은
+     칸마다 내용 높이가 달라 윗선이 어긋났다. */
+  .body{display:grid;grid-template-columns:1.32fr 1fr;grid-template-rows:auto minmax(0,1fr);
+    gap:11px 13px;margin-top:12px;flex:1;min-height:0;}
+  .col{display:flex;flex-direction:column;gap:11px;min-height:0;}
   /* overflow:hidden — 내용이 넘치면 칸 안에서 잘리게 한다. 이게 없으면 넘친 명단이 아래 칸 위로
      겹쳐 그려진다(GM 지적 2026-09-02 "회원권 계약건도 칸 넘어가고"). */
   .sec{border:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden;}
@@ -155,6 +159,11 @@
   .daysum b{color:var(--navy);font-variant-numeric:tabular-nums;}
   /* 연 단위 4칸 */
   .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px;}
+  /* 월 단위 띠 — 왼쪽 카드 2×2 · 오른쪽 그래프(GM 2026-09-15). 카드 폭을 고정해야 그래프가
+     남는 폭을 전부 먹는다. */
+  .mband{display:flex;gap:10px;flex:1;min-height:0;}
+  .mband > .bd{width:322px;flex:none;overflow:hidden;}
+  .yr.yr2{grid-template-columns:repeat(2,1fr);margin-top:0;gap:7px;}
   /* min-width:0 — 1fr 격자 칸은 내용이 길면 스스로 안 줄어들어 오른쪽 칸이 잘린다
      (실측 2026-09-02: 「남은 달 월 필요액」 산식이 508px 로 칸 470px 를 넘어 잘렸다). */
   .yr .yb{border:1px solid var(--line);padding:5px 9px 6px;min-width:0;}
@@ -175,7 +184,7 @@
   .rr .rrv.minus{color:var(--bad);}
 
   /* 헤드라인 — 회장님·대표님이 맨 먼저 보는 네 숫자 */
-  .hl{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:11px;}
+  .hl{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:11px;}
   .hl .b{border:1px solid var(--line);border-top:3px solid var(--navy);padding:7px 12px 8px;}
   .hl .t{font-size:10.5px;color:#48525B;font-weight:700;letter-spacing:1px;}
   .hl .v{font-size:24px;font-weight:900;letter-spacing:-1px;font-variant-numeric:tabular-nums;
@@ -191,7 +200,7 @@
      (배율이 0.7 밑으로 떨어지면 글자가 7px 이 되어 안 읽힌다 — 2026-08-28 GM 지적). */
   /* 아래 전폭 띠 = 연 단위 + 연간 추이. 왼쪽 칸에 있던 그래프를 여기로 내려 폭을 두 배로 키웠다
      (2026-08-28 GM 지적 "그래프가 잘 보이지도 않는다"). 높이를 못 박아야 배율이 1 근처로 유지된다. */
-  .band{height:184px;margin-top:11px;display:flex;gap:13px;}
+  .band{height:214px;margin-top:11px;display:flex;gap:13px;}
 
   /* 강습 신규·재등록 — 팀별 두 칸(신규/재등록) */
   /* 4칸 × 2줄 = 8팀 고정. 줄마다 종목 칸 너비를 같게 둬야 아래윗줄 숫자가 세로로 맞는다
@@ -380,13 +389,13 @@
   <div class="hl" id="headline">
     <div class="b"><div class="t">어제 매출</div><div class="v">—</div></div>
     <div class="b"><div class="t">이번 달 누적</div><div class="v">—</div></div>
+    <div class="b"><div class="t">이번 달 목표</div><div class="v">—</div></div>
     <div class="b"><div class="t">목표 달성률</div><div class="v">—</div></div>
     <div class="b"><div class="t">총 회원수</div><div class="v">—</div></div>
   </div>
 
   <div class="body">
-    <!-- 왼쪽 칸 — 등록·재등록·환불(내용만큼) + 매출 현황(남은 높이 전부) -->
-    <div class="col" style="flex:1.32;">
+    <!-- 좌상 — 등록·재등록·환불 -->
     <!-- ③화면 직관화(GM 읽는 순서 2026-09-05): 어제 돈 → 이달 순으로 배치 -->
     <div class="sec">
       <h2>등록 · 재등록 · 환불 — 어제 돈이 어디서 들어오고 나갔나</h2>
@@ -397,18 +406,7 @@
       </div>
     </div>
 
-    <!-- 왼쪽 칸 둘째 상자 — 매출 현황. 표 11줄이 다 보이도록 남은 높이를 전부 먹는다. -->
-    <div class="sec" style="flex:1;min-height:0;">
-      <h2>매출 현황</h2>
-      <table id="sales-table">
-        <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
-        <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
-        <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
-      </table>
-    </div>
-    </div>
-
-    <!-- 오른쪽 칸 — 회원 구성 · 드나듦 · 컨택/로스자 · 어제 다녀가신 분(남은 높이 전부) -->
+    <!-- 우상 — 회원 구성 · 드나듦 (격자가 좌상과 높이를 맞춘다) -->
     <div class="col">
       <div class="sec">
         <h2>회원 구성 — 어제 기준 몇 분이 회원인가</h2>
@@ -416,12 +414,24 @@
         <!-- 서버 판(배1061·1063) — 회원 5칸을 서버 회원 원장으로 다시 세어 시트와 22칸 대조. 업무보고방 09:20 병행 발송과 같은 계산. -->
         <div class="fnote" id="serverCmp" style="display:none;margin:4px 0 0;"></div>
       </div>
-
       <div class="sec">
         <h2>회원 드나듦 — 들어온 분 · 나간 분</h2>
         <div class="bd" id="memberFlow"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
+    </div>
 
+    <!-- 좌하 — 매출 현황. 표 11줄이 다 보이도록 남은 높이를 전부 먹는다. -->
+    <div class="sec" style="min-height:0;">
+      <h2>매출 현황</h2>
+      <table id="sales-table">
+        <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
+        <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
+        <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- 우하 — 컨택·로스자 + 어제 다녀가신 분 -->
+    <div class="col">
       <div class="two">
         <div class="sec">
           <h2 id="t-contact">금일 예상 컨택</h2>
@@ -441,7 +451,7 @@
     </div>
   </div>
 
-  <!-- 아래 띠 = 일 단위 · 월 단위 (GM 지시 2026-09-14 「연단위로 정리하니까 너무 정리가 안되어서,
+  <!-- 아래 띠 = 일 단위(1주일) · 월 단위 (GM 지시 2026-09-14 「연단위로 정리하니까 너무 정리가 안되어서,
        일/월 단위로 재정립해줘」). 연 목표·연 지출은 이 보고가 볼 것이 아니다 — 매일 보는 것은
        어제 하루와 이번 달이다. -->
   <div class="band">
@@ -453,11 +463,15 @@
     </div>
     <div class="sec" style="flex:1;min-width:0;">
       <h2>월 단위 — 이번 달 성적과 월별 흐름</h2>
-      <div class="bd" style="padding-bottom:2px;">
-        <div class="yr" id="yearly"></div>
-      </div>
-      <div class="chartwrap" style="height:108px;">
-        <svg id="chart" viewBox="0 0 1020 150" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
+      <!-- 좌 = 이번 달 카드 4장(2×2) · 우 = 월별 흐름 그래프. 종전은 카드가 가로 4칸을 먹고
+           그래프가 높이 108px 로 눌려 선이 안 보였다(GM 지시 2026-09-15). -->
+      <div class="mband">
+        <div class="bd" style="padding:8px 11px;">
+          <div class="yr yr2" id="yearly"></div>
+        </div>
+        <div class="chartwrap">
+          <svg id="chart" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
+        </div>
       </div>
     </div>
   </div>
@@ -821,7 +835,7 @@ function paintYearly(){
    일별 값은 일자탭에만 있다(보고탭·월 집계 탭에는 날짜별이 없다 — 2026-09-14 실측). 그래서 기준일부터
    거슬러 7일치 탭의 총매출 칸 하나(J3)만 읽는다. GAS 를 한꺼번에 쏘면 일부 응답을 떨구므로 **직렬**로
    부른다. 이달 1일보다 앞서가면 멈춘다 — 지난달 탭은 이미 다음 달 값으로 덮여 있어 읽으면 거짓이 된다. */
-var DAY_N = 3;   // 조회 수 = 날짜 수 × 2(파일 해석 포함). 3일이면 흐름이 보이면서 구글 부하도 감당된다.
+var DAY_N = 7;   // 1주일치(GM 지시 2026-09-15). 한 건씩 차례로 부르므로 2026-09-14 동시 호출 사고와 다르다.
 function loadDaily(){
   var el = document.getElementById('days'); if (!el) return;
   var base = new Date(Date.now() - 86400000);          // 기준일 = 어제
@@ -1154,13 +1168,14 @@ function renderSheet(c){
   //    멈췄고, 뒤따르는 목표 달성률·총 회원수·금일 예상 컨택·로스자·컨택 칸 제목이 통째로 처음
   //    상태(「—」)로 남아 매일 그대로 보고 사진에 찍혔다. 어제 날짜는 위에서 _yst 로 잡아 둔다.
   setHl(0, cellMoney(c.I4), isClosedDay(_yst) ? ('휴관일 — ' + closedReason(_yst)) : '전날 하루');
-  setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
+  setHl(1, (c.J4 || '').trim(), '어제까지 쌓인 값');
+  setHl(2, (c.K4 || '').trim(), '이번 달 채워야 할 값');
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
-  setHl(2, (c.L4 || '').trim(), '이번 달 목표 대비');
-  setHl(3, (c.N2 || '').trim(), '정회원 ' + (c.N3 || '–').trim());
+  setHl(3, (c.L4 || '').trim(), '이번 달 목표 대비');
+  setHl(4, (c.N2 || '').trim(), '정회원 ' + (c.N3 || '–').trim());
   var rc = rateClass(c.L4);
-  hl[2].querySelector('.v').className = 'v ' + rc;
+  hl[3].querySelector('.v').className = 'v ' + rc;
 
   // 빈 칸에 「—」만 두면 무슨 뜻인지 모른다 — 없다는 사실을 말로 적는다(GM 지적 2026-09-14).
   function setTxt(id, val, empty){
@@ -1316,7 +1331,7 @@ function load(){
       // 09:00 자동 보고 1면 맨 위가 빈 채로 찍혀 나갔다(2026-09-14 실측 · 아래 표에는 있었다).
       (function(){
         var hlf = document.getElementById('headline').children;
-        [[2, RAW.cells.L4], [3, RAW.cells.N2]].forEach(function(p){
+        [[2, RAW.cells.K4], [3, RAW.cells.L4], [4, RAW.cells.N2]].forEach(function(p){
           if (String(p[1] || '').trim()) hlf[p[0]].querySelector('.v').textContent = String(p[1]).trim();
         });
       })();
