@@ -11,7 +11,7 @@ SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
 SRC="3. 웰페리온 가이드/cbo/dietcamp"
 TMP="$(mktemp -d)"
-for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy}.html; do
+for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy,tour}.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거(서버엔 없는 경로)
 done
 # 손님이 보는 두 장(홈·문의 폼) + 대표님이 보는 한 장(문의 관리).
@@ -25,6 +25,8 @@ $S "sudo mkdir -p /srv/www/2_dietcamp/img && sudo chown -R ec2-user:ec2-user /sr
 $SCP "$TMP"/*.html $HOST:/srv/www/2_dietcamp/
 $SCP "$SRC/dc.css" $HOST:/srv/www/2_dietcamp/dc.css
 $SCP "$SRC"/img/*.jpg "$SRC"/img/*.png $HOST:/srv/www/2_dietcamp/img/ 2>/dev/null || true   # 대표님 사진 웹 사본(브랜드가이드 v0.2 · 배 892)
+# 둘러보기(tour.html) 프레임 740장 — 저장소 밖(.gitignore) · 영상에서 다시 뽑는다(tour.html 머리 주석) · tar 로 한 번에(2026-09-15 시보)
+if [ -d "$SRC/tour/frames" ]; then tar -C "$SRC" -cf - tour | $S "mkdir -p /srv/www/2_dietcamp && tar -C /srv/www/2_dietcamp -xf -"; fi
 $S "mkdir -p /srv/erp/faq/2_dietcamp"
 if ! $S "test -f /srv/erp/faq/2_dietcamp/faq.json"; then
   $SCP "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/07_FAQ/faq.json" $HOST:/srv/erp/faq/2_dietcamp/faq.json   # 첫 배포만 — 있으면 안 건드린다(배1036 관리자 API 편집 보호 · deploy_chat.sh 와 같은 원칙)
@@ -33,7 +35,7 @@ $SCP "server/counselbot/tenants/2_dietcamp.json" $HOST:/srv/erp/faq/2_dietcamp/p
 $SCP server/erp_api/dietcamp.nginx.conf $HOST:/tmp/dietcamp.conf
 $S "sudo mv /tmp/dietcamp.conf /etc/nginx/conf.d/erp-locations/dietcamp.conf && sudo nginx -t 2>&1 | tail -1 && sudo systemctl reload nginx && ls -la /srv/www /srv/www/2_dietcamp"
 rm -rf "$TMP"
-for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy}.html "$SRC/dc.css"; do
+for f in "$SRC"/{before_after_*,drafts_*,intro,brand,strategy,tour}.html "$SRC/dc.css"; do
   b=$(basename "$f"); printf '%s = ' "$b"; curl -s -o /dev/null -w '%{http_code}
 ' "https://erp.wellperion.com/dietcamp/$b"
 done
