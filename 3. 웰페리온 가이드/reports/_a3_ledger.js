@@ -3,12 +3,19 @@
  * 왜 있나
  *   보고서의 숫자를 매달 사람이 손으로 옮겨 적고 있었다. 이 파일이 원장
  *   (status/monthly_report_ledger.json)을 읽어 화면의 숫자 자리를 그 달 값으로 채운다.
- *   달을 바꾸려면 주소 끝에 ?m=2026-07 을 붙인다 — 파일을 매월 새로 만들지 않는다.
+ *   달을 바꾸려면 주소 끝에 ?month=2026-07 을 붙인다(?m= 도 같다) — 파일을 매월 새로 만들지 않는다.
+ *   정본 2장(월간_운영현황_A3.html · 월간_운영계획_A3.html)은 body data-default-month 에 달 대신
+ *   'prev'(지난달) · 'cur'(이번 달) 낱말을 두어 인자 없이 열어도 그 달이 잡힌다(2026-09-15 웰리).
  *
  * 어떻게 쓰나
  *   숫자 자리에 <span data-f="sales.month" data-fmt="won"></span> 처럼 적어 둔다.
  *   data-f = 원장 안 경로(점으로 내려간다) · data-fmt = 표기법(won/num/pct/pct1)
  *   data-w = 막대 너비를 그 값(%)으로 (예 data-w="sales.month_rate_pct")
+ *   data-month = 달 이름표 자리(예 <span data-month="M">8</span>월) · M=달 숫자 · Y=해 · YM=2026-08 ·
+ *                prevM=지난달 숫자 · nextM=다음 달 숫자 · M2/nextM2=두 자리 · nextY=다음 달의 해 ·
+ *                YYMM=2608(문서번호용) — 원장이 없어도 채운다
+ *   표를 통째로 그려야 하는 절(부문별·목표 목록 등)은 문서 안 <script> 가 'a3ledger' 이벤트
+ *   (detail = {month, data, months}) 를 받아 그린다 — 이 파일은 값 자리만 채운다.
  *
  * 원칙
  *   · 원장에 그 달이 없으면 숫자를 지어내지 않고 '—' 로 두고 맨 위에 띠를 띄운다.
@@ -18,9 +25,42 @@
 (function () {
   var LEDGER = '/repo/status/monthly_report_ledger.json';
 
+  function shiftMonth(ym, n) {
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n;
+    return (y + Math.floor(m / 12)) + '-' + ('0' + ((m % 12 + 12) % 12 + 1)).slice(-2);
+  }
+
   function monthParam() {
-    var m = new URLSearchParams(location.search).get('m');
+    var q = new URLSearchParams(location.search);
+    var m = q.get('month') || q.get('m');
     return (m && /^\d{4}-\d{2}$/.test(m)) ? m : null;   // 없으면 문서에 박힌 기본 달을 쓴다
+  }
+
+  function wantMonth() {
+    var p = monthParam();
+    if (p) return p;
+    var d = document.body.getAttribute('data-default-month') || 'cur';
+    if (/^\d{4}-\d{2}$/.test(d)) return d;
+    var now = new Date(), cur = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+    return d === 'prev' ? shiftMonth(cur, -1) : cur;
+  }
+
+  /* 달 이름표 — 원장이 없어도 제목·문서번호·앞뒤 장 링크는 그 달로 적힌다. */
+  function labelMonth(ym) {
+    var nx = shiftMonth(ym, 1);
+    var map = { M: String(+ym.slice(5, 7)), M2: ym.slice(5, 7), Y: ym.slice(0, 4), YM: ym, YYMM: ym.slice(2, 4) + ym.slice(5, 7),
+                prevM: String(+shiftMonth(ym, -1).slice(5, 7)),
+                nextM: String(+nx.slice(5, 7)), nextM2: nx.slice(5, 7), nextY: nx.slice(0, 4) };
+    document.querySelectorAll('[data-month]').forEach(function (el) {
+      var v = map[el.getAttribute('data-month')];
+      if (v !== undefined) el.textContent = v;
+    });
+    document.querySelectorAll('[data-month-href]').forEach(function (el) {
+      // data-month-href="월간_운영계획_A3.html|1" → 그 파일에 ?month=(이 달+1) 을 붙인다
+      var parts = el.getAttribute('data-month-href').split('|');
+      el.setAttribute('href', parts[0] + '?month=' + shiftMonth(ym, +(parts[1] || 0)));
+    });
+    document.title = document.title.replace(/\d{4}년 \d{1,2}월|월간/, map.Y + '년 ' + map.M + '월');
   }
 
   function dig(obj, path) {
@@ -80,23 +120,33 @@
     if (data.closed === false) banner('이 달은 아직 마감 전입니다 — 숫자는 ' + (data.asOf || '') + ' 기준이며 마감 시 달라집니다.', 'warn');
   }
 
+  var want = wantMonth();
+  labelMonth(want);
+
+  function emit(month, data, months) {
+    document.dispatchEvent(new CustomEvent('a3ledger', { detail: { month: month, data: data, months: months } }));
+  }
+
   fetch(LEDGER + '?cb=' + Date.now(), { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (led) {
       var months = (led && led.months) || {};
-      var want = monthParam() || document.body.getAttribute('data-default-month');
       var data = months[want];
       if (!data) {
         banner('원장에 ' + want + ' 자료가 아직 없습니다 — 화면 숫자는 문서에 적힌 값 그대로입니다.', 'bad');
+        emit(want, null, months);
         return;
       }
       /* 계획 장은 지난달 실적을 함께 인용한다(예 "8월은 5.45억이었습니다").
-         data-f="prev.…" 로 적으면 여기서 붙인 지난달 줄에서 값을 찾는다 — 그 값도 손으로 안 적는다. */
-      var pm = document.body.getAttribute('data-prev-month');
-      if (pm && months[pm]) data = Object.assign({}, data, { prev: months[pm] });
+         data-f="prev.…" 로 적으면 여기서 붙인 지난달 줄에서 값을 찾는다 — 그 값도 손으로 안 적는다.
+         지난달은 따로 안 적어도 이 달에서 계산한다(data-prev-month 가 있으면 그 값이 우선). */
+      var pm = document.body.getAttribute('data-prev-month') || shiftMonth(want, -1);
+      if (months[pm]) data = Object.assign({}, data, { prev: months[pm] });
       apply(want, data);
+      emit(want, data, months);
     })
     .catch(function () {
       banner('보고 원장을 불러오지 못했습니다 — 화면 숫자는 문서에 적힌 값 그대로입니다(새로고침하면 다시 시도합니다).', 'bad');
+      emit(want, null, {});
     });
 })();

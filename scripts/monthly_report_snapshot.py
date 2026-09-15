@@ -8,6 +8,8 @@
 
 무엇을 채우나 / 무엇을 안 채우나
     채운다  = 매출 · 회원 · 문의 · 접수 · 점검 · 과제·로드맵 진척  (전부 원장 직접 카운트)
+              + 중간관리자 책임 항목(managers) · 전사일정 월 이행(schedule) · 업무&결재 SSOT 월 처리(todo)
+                (GM 물음 2026-09-15 「GM업무·중간관리자·전사일정·업무&결재 SSOT 도 매월 자동 보고되나」 — 세 원천이 원장에 없었다)
     안 채운다 = narrative(본질 한 줄·좋아진 것·손대야 할 것) · decision · watchlist
                 → 그건 판단이라 기계가 쓸 수 없다. 그 달 담당이 쓴다. 이 스크립트는 절대 덮어쓰지 않는다.
 
@@ -41,6 +43,8 @@ MEMBER_SNAP = os.path.join(REPO, "status", "member_active_snapshot.json")
 MEMBER_ENDED = os.path.join(REPO, "status", "member_ended_snapshot.json")
 LESSON_SNAP = os.path.join(REPO, "status", "inquiry_snapshot_lesson.json")
 OPS_PLAN = os.path.join(REPO, "status", "monthly_ops_plan.json")
+MGR_HIST = os.path.join(REPO, "status", "manager_eval_history.json")
+SCHEDULE = os.path.join(REPO, "status", "schedule_ssot.json")
 
 # 점검 집계 GAS — coo_registry.CHECK_API 와 같은 곳(주소를 여기 복제하지 않고 그 모듈에서 가져온다)
 KST = timezone(timedelta(hours=9))
@@ -260,6 +264,108 @@ def collect_objectives(month: str) -> tuple[dict, dict]:
     return obj, road
 
 
+# ─── 중간관리자 책임 항목 ─────────────────────────────────────────────────────
+def collect_managers(month: str):
+    """status/manager_eval_history.json 의 그 달 키를 그대로 복사(4인 × 항목 {text,bad,good,fix}).
+    send_ops_digest 07:50 이 매일 이번 달 키를 덮어써 두므로 여기서 다시 재지 않는다(약속 L21).
+    그 달 키가 없으면 None — 0·빈 표로 위장하지 않는다."""
+    d = _load(MGR_HIST) or {}
+    m = (d.get("months") or {}).get(month)
+    return m if m else None
+
+
+# ─── 전사일정 월 이행 ─────────────────────────────────────────────────────────
+def collect_schedule(month: str):
+    """schedule_ssot.json items 중 next_due 가 그 달인 건(due) · last_done 이 그 달에 찍힌 건(done) ·
+    기한이 지났는데 last_done 이 그 기한에 못 미친 건(missed) · 부서별 분해.
+    판정은 schedule_ssot.status_of() 그대로(overdue = next_due < 오늘) — 새 판정식을 두지 않는다.
+    ▸달이 아직 안 끝났으면 missed 는 「오늘까지」 기준이라 말일에 다시 세면 늘 수 있다."""
+    try:
+        import schedule_ssot as S
+
+        cal = S.load(SCHEDULE)
+    except Exception as e:
+        print(f"[경고] 전사일정 원장 읽기 실패 — {e}")
+        return None
+    items = [it for it in (cal.get("items") or []) if it.get("applies") != "해당없음"]
+    due = [it for it in items if _month_of(it.get("next_due")) == month]
+    done = [it for it in items if _month_of(it.get("last_done")) == month]
+
+    def missed(it) -> bool:
+        if S.status_of(it)["status"] != "overdue":
+            return False
+        return str(it.get("last_done") or "")[:10] < str(it.get("next_due") or "")[:10]
+
+    miss = [it for it in due if missed(it)]
+    by_dept = {}
+    for key, rows in (("due", due), ("done", done), ("missed", miss)):
+        for it in rows:
+            by_dept.setdefault(str(it.get("dept") or "(부서 없음)"), {"due": 0, "done": 0, "missed": 0})[key] += 1
+    return {
+        "due": len(due),
+        "done": len(done),
+        "missed": len(miss),
+        "by_type": dict(collections.Counter(str(it.get("type") or "미상") for it in due)),
+        "by_dept": by_dept,
+        "missed_items": [{"id": it.get("id"), "name": str(it.get("name") or "")[:40], "dept": it.get("dept"),
+                          "next_due": it.get("next_due")} for it in miss][:12],
+    }
+
+
+# ─── 업무&결재 SSOT 월 처리 ───────────────────────────────────────────────────
+TODO_PEOPLE = ("김남욱 GM", "이경연 실장", "이정헌 소장", "나우열M")
+
+
+def collect_todo(month: str):
+    """업무&결재 SSOT(GAS todo_list · gmkey 포함) — manager_task_index.fetch_ssot_rows() 를 그대로 쓴다.
+    그 달 완료 수(완료일, 없으면 수정일이 그 달) · 지금 진행중/보류 수 · 기한 지난 수 · 결재요청 칸 채워진 수
+    (그 달에 만들어졌거나 완료된 행 기준) · 담당자별 완료 수. 조회 실패면 None(사유는 unmeasured 에).
+    ▸진행중·보류·기한 지남은 「지금」 열려 있는 행이라 지난달을 나중에 다시 재면 값이 다르다 —
+      말일 21:00 실행이 넣어 둔 값이 그 달의 값이다(매출·점검과 같은 규칙)."""
+    try:
+        import manager_task_index as M
+
+        rows = M.fetch_ssot_rows()
+        done_set = M.SSOT_DONE
+    except Exception as e:
+        print(f"[경고] 업무 SSOT 조회 실패 — {e}")
+        return None
+    if rows is None:
+        print("[경고] 업무 SSOT 조회 실패 — 응답 없음")
+        return None
+    today = _now().date()
+
+    def ymd(v):
+        try:
+            return datetime.strptime(str(v)[:10], "%Y-%m-%d").date()
+        except Exception:
+            return None
+
+    def done_on(r):
+        return ymd(r.get("완료일")) or ymd(r.get("수정일"))
+
+    def person(r) -> str:
+        p = str(r.get("담당자") or "").strip()
+        return p if p in TODO_PEOPLE else "그 외"
+
+    done = [r for r in rows if str(r.get("상태") or "") in done_set and _month_of(done_on(r)) == month]
+    open_ = [r for r in rows if str(r.get("상태") or "") in ("진행중", "보류")]
+    overdue = [r for r in open_ if (d := ymd(r.get("종료일"))) and d < today]
+    touched = {id(r): r for r in [r for r in rows if _month_of(r.get("생성일")) == month] + done}
+    approval = [r for r in touched.values() if str(r.get("결재요청") or "").strip()]
+    people = TODO_PEOPLE + ("그 외",)
+    return {
+        "done": len(done),
+        "in_progress": sum(1 for r in open_ if str(r.get("상태")) == "진행중"),
+        "on_hold": sum(1 for r in open_ if str(r.get("상태")) == "보류"),
+        "overdue": len(overdue),
+        "approval_requested": len(approval),
+        "done_by_person": {p: sum(1 for r in done if person(r) == p) for p in people},
+        "open_by_person": {p: sum(1 for r in open_ if person(r) == p) for p in people},
+        "rows_total": len(rows),
+    }
+
+
 # ─── 원장 갱신 ───────────────────────────────────────────────────────────────
 def build(month: str) -> dict:
     obj, road = collect_objectives(month)
@@ -272,12 +378,16 @@ def build(month: str) -> dict:
         "check": collect_check(),
         "objectives": obj,
         "roadmap": road,
+        "managers": collect_managers(month),
+        "schedule": collect_schedule(month),
+        "todo": collect_todo(month),
     }
 
 
 # 기계가 덮어써도 되는 칸만 나열한다. 여기 없는 칸(narrative·decision·watchlist·unmeasured·note)은
 # 사람이 쓴 판단이라 손대지 않는다 — 자동 갱신이 판단을 지우면 그 달 보고가 통째로 비어 버린다.
-MACHINE_KEYS = ("asOf", "sales", "member", "inquiry", "reception", "check", "objectives", "roadmap")
+MACHINE_KEYS = ("asOf", "sales", "member", "inquiry", "reception", "check", "objectives", "roadmap",
+                "managers", "schedule", "todo")
 
 
 def _derive(cur: dict) -> None:
@@ -321,6 +431,13 @@ def main() -> int:
     #   지난달의 진짜 값은 말일 21:00 실행이 이미 넣어 둔 것이다.
     fresh = None if a.close else build(a.month)
     cur = cur if cur else months.setdefault(a.month, {"kind": "현황", "closed": False})
+    # 전월 매출은 원장의 지난달 줄에서 가져온다 — 사람이 넣어 둔 값이 있으면 그대로(2026-09-15 웰리 ·
+    # A3 정본이 달마다 자동으로 열리면서 「전월 대비」 칸이 손 입력 없이도 채워져야 한다).
+    if fresh and (fresh.get("sales") or {}).get("month") and not (cur.get("sales") or {}).get("prev_month"):
+        prev_key = (datetime.strptime(a.month + "-01", "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m")
+        pv = ((months.get(prev_key) or {}).get("sales") or {}).get("month")
+        if pv:
+            fresh["sales"]["prev_month"] = pv
     for k in (MACHINE_KEYS if fresh else ()):
         v = fresh.get(k)
         if not v:                  # 조회 실패로 빈 값이면 기존 값을 지우지 않는다
@@ -335,6 +452,16 @@ def main() -> int:
             cur[k] = v
     if fresh:
         _derive(cur)
+        # 세 원천(managers·schedule·todo)을 못 재면 사유를 unmeasured 에 남긴다(원장 규칙 2 · 0 으로 위장 금지).
+        # [자동] 표시 줄만 매번 다시 쓰고, 사람이 적은 사유는 그대로 둔다.
+        um = [x for x in (cur.get("unmeasured") or []) if not str(x).startswith("[자동]")]
+        for k, why in (("managers", "중간관리자 책임 항목 — manager_eval_history 에 그 달 키 없음"),
+                       ("schedule", "전사일정 월 이행 — schedule_ssot.json 읽기 실패"),
+                       ("todo", "업무&결재 SSOT 월 처리 — todo_list 조회 실패")):
+            if fresh.get(k) is None and cur.get(k) is None:
+                um.append(f"[자동] {why}")
+        if um or cur.get("unmeasured"):
+            cur["unmeasured"] = um
     if a.close:
         cur["closed"] = True
     led["updated_at"] = _now().strftime("%Y-%m-%d")
@@ -343,6 +470,11 @@ def main() -> int:
     line = (f"{a.month} · 매출 {(shown.get('sales') or {}).get('month')} · 회원 {(shown.get('member') or {}).get('active')} "
             f"· 등록 {(shown.get('member') or {}).get('registered')} · 접수 {(shown.get('reception') or {}).get('total')} "
             f"· 점검 시설 {(shown.get('check') or {}).get('facility_pct')} 지원 {(shown.get('check') or {}).get('support_pct')}")
+    mg, sc, td = shown.get("managers"), shown.get("schedule"), shown.get("todo")
+    line += "\n · 중간관리자 " + (f"{len(mg)}인 {sum(len(v) for v in mg.values())}항목" if mg else "못 잼")
+    line += "\n · 전사일정 " + (f"기한 {sc['due']} · 이행 {sc['done']} · 놓침 {sc['missed']} · 부서별 {sc['by_dept']}" if sc else "못 잼")
+    line += "\n · 업무SSOT " + (f"완료 {td['done']} · 진행중 {td['in_progress']} · 보류 {td['on_hold']} · 기한지남 {td['overdue']}"
+                               f" · 결재요청 {td['approval_requested']} · 담당별 완료 {td['done_by_person']}" if td else "못 잼")
     if not a.write:
         print("[드라이런] 원장에 쓰지 않았습니다.")
         print(line)
@@ -362,6 +494,10 @@ def _selftest():
     assert _reg_class({"등록 분류": "신규"}) == "신규"
     assert _reg_class({}) == "(빈칸)"
     assert _month_of("2026-08-28 16:55") == "2026-08"
+    assert "managers" in MACHINE_KEYS and "schedule" in MACHINE_KEYS and "todo" in MACHINE_KEYS
+    assert collect_managers("1999-01") is None, "없는 달은 None 이어야 한다(빈 표로 위장 금지)"
+    sc = collect_schedule("1999-01")
+    assert sc and sc["due"] == 0 and sc["missed"] == 0 and sc["by_dept"] == {}
     print("자체검사 통과")
 
 

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>월간 운영 현황 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="_a3_report.css" rel="stylesheet">
+<!-- ══════════════════════════════════════════════════════════════════════════
+  월간 운영 현황 A3 — 정본 1장 (2026-09-15 웰리 · GM 물음 「월간 보고가 월간계획에만 있나?」)
+
+  왜 한 장으로 합쳤나
+    260901_8월_운영현황_A3.html 처럼 달마다 새 파일을 만들면 ①원장 배선을 매달 다시 깔고 ②지난달 파일은
+    손으로 박은 값이 남아 원장과 어긋난다. 이 파일은 원장(status/monthly_report_ledger.json)의 그 달 줄을
+    ?month=YYYY-MM 으로 골라 읽는다 — 값 자리는 data-f, 표는 아래 <script> 가 'a3ledger' 이벤트로 그린다.
+    인자 없이 열면 지난달(data-default-month="prev")이다.
+
+  무엇이 늘었나(GM 물음 2026-09-15 · 세 원천)
+    Ⅴ 전사일정 월 이행 · 업무&결재 SSOT 월 처리 · Ⅵ 중간관리자 책임 항목 — 원장 schedule·todo·managers 칸.
+    원장에 그 칸이 없는 달(2026-08 이전)은 「원장에 없음」으로 두고 0 을 적지 않는다(약속 L25).
+
+  이 파일에 숫자를 손으로 적지 않는다 — 원장이 없을 때 보이는 예비 글자는 전부 '—' 다.
+  ══════════════════════════════════════════════════════════════════════════ -->
+<style>
+  /* 매출·회원 표는 회장님이 가장 먼저·오래 보시는 자리라 이 장에서만 한 단계 더 키운다
+     (GM 지시 2026-08-28 "매출 및 회원 현황보고는 조금 더 글씨 크게"). */
+  .big th, .big td{ font-size:14.2px; line-height:1.34; padding:0 10px; }
+  .big thead th{ height:33px; font-size:13.6px; }
+  .big tbody td{ height:37px; }
+  .big td.k{ font-size:13.6px; }
+  .big .est{ font-size:12px; }
+  .big .glab{ font-size:12.4px; }
+  .big .gbar{ height:13px; }
+  .big .dot{ width:11px; height:11px; }
+  /* 촘촘한 표 — 세 원천·목표 목록처럼 줄 수가 많은 절은 한 단계 작게 */
+  .tight th, .tight td{ font-size:10.6px; line-height:1.25; padding:0 7px; }
+  .tight thead th{ height:23px; font-size:10.4px; }
+  .tight tbody td{ height:20px; }
+  .tight td.k{ font-size:10.4px; }
+  .tight .est{ font-size:9.6px; }
+  .tight .gbar{ height:9px; }
+  .tight td.cut{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* 한 줄 넘는 실측은 자르고 전문은 title 에 */
+  .left, .right{ gap:10px; }
+  .twin{ display:flex; gap:9px; }
+  .twin > div{ flex:1; min-width:0; }
+  .twin .cap{ font-size:10.6px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+  td.none{ color:var(--gray); font-weight:400; }
+</style>
+</head>
+<body data-default-month="prev">
+
+<div class="bar">
+  <b><span data-month="Y"></span>년 <span data-month="M"></span>월 운영 현황 (A3 1장 · <span data-month="nextM"></span>/1 보고)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기 · 달 바꾸기 = 주소 끝 ?month=YYYY-MM</span>
+  <a class="lnk" data-month-href="월간_운영계획_A3.html|1" href="월간_운영계획_A3.html"><span data-month="nextM"></span>월 운영 계획 →</a>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title"><span data-month="Y"></span>년 <span data-month="M"></span>월 운영 현황</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b><span data-month="nextY"></span>. <span data-month="nextM2"></span>. 01.</b> · 문서번호 <b>WP-GM-<span data-month="YYMM"></span>01-01</b><br>
+      수치 기준 <b data-asof>—</b>
+    </div>
+  </div>
+
+  <!-- 본질 — 판단 문장은 원장 narrative 에 그 달 담당이 쓴다(기계가 안 쓴다) -->
+  <div class="top">
+    <div class="core">
+      <div class="c" style="flex:1.6;">
+        <div class="lb"><span data-month="M"></span> 월 의 결 론</div>
+        <div class="tx" data-f="narrative.essence">— (이 달의 결론은 원장 narrative.essence 에 담당이 적습니다)</div>
+        <div class="sub" data-f="narrative.essence_sub">—</div>
+      </div>
+      <div class="c sep">
+        <div class="lb">한 눈 요 약</div>
+        <div class="sub" style="margin-top:2px;font-size:11.6px;color:var(--ink);line-height:1.62;">
+          <span class="dot g"></span><b>좋아진 것</b> — <span data-f="narrative.good.0">—</span> · <span data-f="narrative.good.1">—</span> · <span data-f="narrative.good.2">—</span><br>
+          <span class="dot w"></span><b>지켜볼 것</b> — <span data-f="narrative.watch.0">—</span> · <span data-f="narrative.watch.1">—</span><br>
+          <span class="dot b"></span><b>손봐야 할 것</b> — <span data-f="narrative.act.0">—</span> · <span data-f="narrative.act.1">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="body2">
+
+    <div class="left" style="width:59%;">
+
+      <div>
+        <div class="sec-h">Ⅰ. <span data-month="M"></span>월 성적표 <span class="hint"><b data-asof>—</b> · 영업일 <span data-f="business_days" data-fmt="num">—</span>일</span></div>
+        <table class="big">
+          <colgroup><col style="width:96px"><col><col style="width:188px"><col style="width:142px"><col style="width:30px"></colgroup>
+          <thead><tr><th class="k">구분</th><th><span data-month="M"></span>월 실적</th><th>목표 대비</th><th>전월 대비</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">매출</td>
+              <td class="strong"><span data-f="sales.month" data-fmt="won">—</span> <span class="est" id="seg-est">부문 전부 합(주차·뮤지컬 포함)</span></td>
+              <td><div class="gwrap"><div class="gbar"><i data-w="sales.month_rate_pct" style="width:0"></i></div><span class="glab">월 <span data-f="sales.month_target" data-fmt="eok">—</span> · <span data-f="sales.month_rate_pct" data-fmt="pct1">—</span></span></div></td>
+              <td class="ctr"><span data-month="prevM"></span>월 <span data-f="sales.prev_month" data-fmt="eok">—</span>의 <b data-f="sales.vs_prev_pct" data-fmt="pct1">—</b></td>
+              <td class="ctr"><span class="dot" id="dot-sales"></span></td>
+            </tr>
+            <tr>
+              <td class="k">연 누계</td>
+              <td><span data-f="sales.year_cum" data-fmt="won">—</span> <span class="est">1~<span data-month="M"></span>월 실측 합</span></td>
+              <td><div class="gwrap"><div class="gbar"><i class="g" data-w="sales.pace_rate_pct" style="width:0"></i></div><span class="glab"><span data-month="M"></span>월 페이스 · <span data-f="sales.pace_rate_pct" data-fmt="pct1">—</span></span></div></td>
+              <td class="ctr">연 목표 <span data-f="sales.year_target" data-fmt="eok">—</span>의 <span data-f="sales.year_rate_pct" data-fmt="pct1">—</span></td>
+              <td class="ctr"><span class="dot" id="dot-year"></span></td>
+            </tr>
+            <tr>
+              <td class="k">회원</td>
+              <td>유효 <b><span data-f="member.active" data-fmt="num">—</span>명</b> <span class="est" id="member-est"></span></td>
+              <td class="ctr">정원 1,000명 <b id="member-cap">—</b></td>
+              <td class="ctr"><span data-month="M"></span>월 등록 <b><span data-f="member.registered" data-fmt="num">—</span>건</b><br><span class="est">신규 <span data-f="member.registered_by_class.신규" data-fmt="num">—</span> · 재등록 <span data-f="member.registered_by_class.재등록" data-fmt="num">—</span></span></td>
+              <td class="ctr"><span class="dot g"></span></td>
+            </tr>
+            <tr>
+              <td class="k">이탈</td>
+              <td><b><span data-f="member.loss" data-fmt="num">—</span>건</b> <span class="est">가격을 이유로 한 이탈은 종료 <span data-f="member.price_reason_loss.of_total_ended" data-fmt="num">—</span>건 중 <span data-f="member.price_reason_loss.count" data-fmt="num">—</span>건(<span data-f="member.price_reason_loss.pct" data-fmt="pct1">—</span>)</span></td>
+              <td class="ctr">—</td>
+              <td class="ctr"><span data-month="prevM"></span>월 <span data-f="member.loss_prev_month" data-fmt="num">—</span>건 → <b id="loss-diff">—</b></td>
+              <td class="ctr"><span class="dot" id="dot-loss"></span></td>
+            </tr>
+            <tr>
+              <td class="k"><span data-month="nextM"></span>월 만기</td>
+              <td class="bad"><span data-f="member.next_month_expiry.count" data-fmt="num">—</span>명 — 재등록 상담 기록 <b><span data-f="member.next_month_expiry.contacted" data-fmt="num">—</span>명</b> <span class="est" id="expiry-est"></span></td>
+              <td class="ctr" colspan="2"><span class="bad"><span data-month="nextM"></span>월 최우선 관리</span> <span class="est">— 만기 이탈은 정원 공백으로 직결</span></td>
+              <td class="ctr"><span class="dot b"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅱ. 어디서 벌었나 <span class="hint"><span data-month="M"></span>월 · 많이 번 순서 · 원장 sales.by_segment</span></div>
+        <table class="tight">
+          <colgroup><col style="width:96px"><col style="width:130px"><col><col style="width:60px"></colgroup>
+          <thead><tr><th class="k">부문</th><th><span data-month="M"></span>월 매출</th><th>구성</th><th>비중</th></tr></thead>
+          <tbody id="seg-rows"><tr><td class="k">—</td><td class="num">—</td><td></td><td class="ctr">—</td></tr></tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅲ. 다음 매출은 어디서 오나 <span class="hint">이번 달 들어온 강습 문의 · 멤버십 문의는 접수일 칸이 없어 월별 집계 불가</span></div>
+        <div style="display:flex;gap:9px;">
+          <div style="flex:1;">
+            <table class="tight">
+              <colgroup><col style="width:96px"><col><col style="width:150px"><col style="width:30px"></colgroup>
+              <thead><tr><th class="k">경로</th><th><span data-month="M"></span>월 문의</th><th>전월 대비</th><th></th></tr></thead>
+              <tbody>
+                <tr><td class="k">성인 강습</td><td><b><span data-f="inquiry.adult_lesson.count" data-fmt="num">—</span>건</b> <span class="est">두 달 전 <span data-f="inquiry.adult_lesson.prev2" data-fmt="num">—</span> · 전월 <span data-f="inquiry.adult_lesson.prev" data-fmt="num">—</span></span></td><td class="ctr" id="adult-vs">—</td><td class="ctr"><span class="dot" id="dot-adult"></span></td></tr>
+                <tr><td class="k">유소년 강습</td><td><b><span data-f="inquiry.youth_lesson.count" data-fmt="num">—</span>건</b> <span class="est">두 달 전 <span data-f="inquiry.youth_lesson.prev2" data-fmt="num">—</span> · 전월 <span data-f="inquiry.youth_lesson.prev" data-fmt="num">—</span></span></td><td class="ctr" id="youth-vs">—</td><td class="ctr"><span class="dot" id="dot-youth"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="width:150px;flex:none;border:1px solid var(--line);border-top:2.5px solid var(--bad);padding:5px 9px 6px;display:flex;flex-direction:column;">
+            <div style="font-size:10.3px;font-weight:700;color:var(--bad);margin-bottom:3px;">유소년 문의 3개월</div>
+            <div class="trend" style="height:36px;margin-top:16px;" id="youth-trend">
+              <div class="t"><span data-f="inquiry.youth_lesson.prev2" data-fmt="num">—</span><i style="height:0"></i></div>
+              <div class="t"><span data-f="inquiry.youth_lesson.prev" data-fmt="num">—</span><i style="height:0"></i></div>
+              <div class="t last"><span data-f="inquiry.youth_lesson.count" data-fmt="num">—</span><i style="height:0"></i></div>
+            </div>
+            <div class="trend-x"><div id="tx0">—</div><div id="tx1">—</div><div id="tx2">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅳ. 현장에서 생긴 일 <span class="hint">회원이 직접 겪은 것</span></div>
+        <table class="tight">
+          <colgroup><col style="width:96px"><col><col style="width:188px"><col style="width:142px"><col style="width:30px"></colgroup>
+          <thead><tr><th class="k">구분</th><th><span data-month="M"></span>월 현황</th><th>판정</th><th>전월 대비</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">종합접수처</td>
+              <td><b><span data-f="reception.total" data-fmt="num">—</span>건</b> 접수 <span class="est" id="rec-est"></span></td>
+              <td class="ctr">완료 <span data-f="reception.done" data-fmt="num">—</span> / <span class="bad">미완료 <span data-f="reception.open" data-fmt="num">—</span></span> <span class="est">7일 초과 <span data-f="reception.over_7d" data-fmt="num">—</span> · 최장 <span data-f="reception.oldest_days" data-fmt="num">—</span>일</span></td>
+              <td class="ctr"><span data-month="prevM"></span>월 <span data-f="reception.prev_month" data-fmt="num">—</span>건 → <b id="rec-vs">—</b></td>
+              <td class="ctr"><span class="dot" id="dot-rec"></span></td>
+            </tr>
+            <tr>
+              <td class="k">일일 점검</td>
+              <td>시설부 <b><span data-f="check.facility_pct" data-fmt="pct">—</span></b> · 지원부 <b><span data-f="check.support_pct" data-fmt="pct">—</span></b> · 운영부 <b><span data-f="check.ops_pct" data-fmt="pct">—</span></b> · 주차부 <b><span data-f="check.parking_pct" data-fmt="pct">—</span></b></td>
+              <td class="ctr" colspan="2"><span class="est">「측정 불가」는 실적 0 이 아니라 집계 경로가 없는 것</span></td>
+              <td class="ctr"><span class="dot" id="dot-check"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 세 원천 중 둘(GM 물음 2026-09-15) — 전사일정 월 이행 · 업무&결재 SSOT 월 처리 -->
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="sec-h">Ⅴ. 약속한 일은 지켜졌나 <span class="hint">전사일정 · 업무&amp;결재 SSOT · 원장 schedule·todo (<b data-asof>—</b>)</span></div>
+        <div class="twin">
+          <div>
+            <div class="cap">전사일정 — 이 달 기한 <span id="sch-due">—</span>건 · 이행 <span id="sch-done">—</span> · 놓침 <span id="sch-missed" class="bad">—</span> <span class="est" id="sch-type"></span></div>
+            <table class="tight">
+              <colgroup><col style="width:88px"><col><col><col></colgroup>
+              <thead><tr><th class="k">부서</th><th class="ctr">기한</th><th class="ctr">이행</th><th class="ctr">놓침</th></tr></thead>
+              <tbody id="sch-rows"><tr><td class="k none" colspan="4">원장에 없음</td></tr></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="cap">업무&amp;결재 SSOT — 완료 <span id="todo-done">—</span>건 · 진행중 <span id="todo-ip">—</span> · 보류 <span id="todo-hold">—</span> · 기한 지남 <span id="todo-over" class="bad">—</span> · 결재요청 <span id="todo-ap">—</span></div>
+            <table class="tight">
+              <colgroup><col style="width:88px"><col><col></colgroup>
+              <thead><tr><th class="k">담당</th><th class="ctr">이 달 완료</th><th class="ctr">지금 열린 것</th></tr></thead>
+              <tbody id="todo-rows"><tr><td class="k none" colspan="3">원장에 없음</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="right" style="width:41%;">
+
+      <!-- 세 원천 중 하나 — 중간관리자 책임 항목(4인) · 원장 managers = manager_eval_history 그 달 키 복사 -->
+      <div>
+        <div class="sec-h">Ⅵ. 중간관리자 책임 항목 <span class="hint">4인 · 이 달 실측 · 빨간 줄 = 기준 미달</span></div>
+        <table class="tight">
+          <colgroup><col style="width:72px"><col style="width:150px"><col></colgroup>
+          <thead><tr><th class="k">사람</th><th>항목</th><th>실측</th></tr></thead>
+          <tbody id="mgr-rows"><tr><td class="k none" colspan="3">원장에 없음</td></tr></tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅶ. <span data-month="M"></span>월에 앞으로 나간 일 <span class="hint">GM업무 목표 · 전체 <span data-f="objectives.total" data-fmt="num">—</span> · 완료 <span data-f="objectives.done" data-fmt="num">—</span> · 기한 없음 <span data-f="objectives.no_due" data-fmt="num">—</span></span></div>
+        <table class="tight">
+          <colgroup><col><col style="width:120px"><col style="width:44px"></colgroup>
+          <thead><tr><th>과제(진척 높은 순)</th><th>진척</th><th class="ctr">%</th></tr></thead>
+          <tbody id="obj-rows"><tr><td class="k none" colspan="3">원장에 없음</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="sec-h">Ⅷ. 지금 어디까지 왔나 <span class="hint">전략 로드맵 8단계 · 원장 roadmap</span></div>
+        <div id="stage-rows"><div class="stage"><span class="no wait">—</span><span class="nm">원장에 없음</span><span class="tr"><i style="width:0"></i></span><span class="pc">—</span></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>기준 시점</b> — 이 장의 숫자는 원장(status/monthly_report_ledger.json)의 <span data-month="YM"></span> 줄이며 <b data-asof>—</b>분입니다(영업일 <span data-f="business_days" data-fmt="num">—</span>일). 매출은 부문 전부 합(주차·뮤지컬 포함 · GM 확정 2026-08-28), 월 목표는 대외·보고 기준입니다.</div>
+    <div><b>어디서 가져온 숫자인가</b> — 매출·회원·만기·문의·접수·점검은 각 원장을 말일 밤에 직접 센 값, Ⅴ 전사일정은 schedule_ssot(기한이 그 달인 건 · last_done 이 그 달에 찍힌 건 · 기한이 지났는데 안 찍힌 건), 업무&amp;결재 SSOT 는 todo_list(완료일이 그 달인 행 · 지금 열린 행), Ⅵ 는 중간관리자 업무목차가 매일 남기는 책임 항목 스냅숏입니다. <b>못 잰 것</b> — <span id="unmeasured">—</span> <b>함께 보는 문서</b> — 「<span data-month="nextM"></span>월 운영 계획」.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  var ym = (new URLSearchParams(location.search).get('month') || document.title.match(/\d{4}년 \d{1,2}월/) || ['월간'])[0];
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '월간_운영현황_A3_' + String(ym).replace(/[^\d]/g, '') + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+<script src="_a3_ledger.js"></script>
+<script>
+/* 표를 통째로 그리는 절 — _a3_ledger.js 가 원장 그 달 줄을 'a3ledger' 이벤트로 넘긴다.
+   원장에 그 칸이 없으면 「원장에 없음」 줄을 그대로 둔다(0 을 그리지 않는다). */
+(function () {
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function num(v) { return (v == null) ? '—' : Number(v).toLocaleString('ko-KR'); }
+  function man(v) { return (v == null) ? '—' : Math.round(Number(v) / 10000).toLocaleString('ko-KR') + '만'; }
+  function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+  function dot(id, cls) { var el = document.getElementById(id); if (el) el.className = 'dot ' + cls; }
+  function pctDiff(cur, prev) {
+    if (cur == null || !prev) return null;
+    return Math.round((cur / prev - 1) * 100);
+  }
+  function vsCell(cur, prev) {
+    var d = pctDiff(cur, prev);
+    if (d === null) return { html: '—', cls: 'n' };
+    return { html: '<b>' + (d > 0 ? '+' : '') + d + '%</b>', cls: d >= 0 ? 'g' : 'b' };
+  }
+  function kv(obj, sep) {
+    return Object.keys(obj || {}).map(function (k) { return k + ' ' + num(obj[k]); }).join(sep || ' · ');
+  }
+
+  document.addEventListener('a3ledger', function (ev) {
+    var d = ev.detail.data, ym = ev.detail.month;
+    if (!d) return;
+    var s = d.sales || {}, m = d.member || {}, iq = d.inquiry || {}, rc = d.reception || {}, ck = d.check || {};
+
+    /* Ⅰ 성적표 — 신호등·부연 */
+    dot('dot-sales', s.month_rate_pct == null ? 'n' : s.month_rate_pct >= 100 ? 'g' : s.month_rate_pct >= 95 ? 'w' : 'b');
+    dot('dot-year', s.pace_rate_pct == null ? 'n' : s.pace_rate_pct >= 95 ? 'g' : 'w');
+    if (m.by_type) set('member-est', esc(kv(m.by_type)));
+    if (m.active != null) set('member-cap', m.active >= 1000 ? '마감' : (1000 - m.active) + '석 남음');
+    if (m.loss != null && m.loss_prev_month != null) {
+      var ld = m.loss - m.loss_prev_month;
+      set('loss-diff', (ld > 0 ? '+' : (ld < 0 ? '−' : '')) + Math.abs(ld) + '건');
+      dot('dot-loss', ld <= 0 ? 'g' : 'b');
+    }
+    if (m.next_month_expiry && m.next_month_expiry.by_type) set('expiry-est', esc(kv(m.next_month_expiry.by_type)));
+
+    /* Ⅱ 부문별 — 많이 번 순 · 상위 3 + 기타(부연에 나머지) */
+    var seg = s.by_segment || {}, total = 0, keys = Object.keys(seg).filter(function (k) { return seg[k] > 0; });
+    keys.forEach(function (k) { total += seg[k]; });
+    keys.sort(function (a, b) { return seg[b] - seg[a]; });
+    if (keys.length && total > 0) {
+      var top = keys.slice(0, 3), rest = keys.slice(3), restSum = 0;
+      rest.forEach(function (k) { restSum += seg[k]; });
+      var rows = top.map(function (k, i) {
+        var p = seg[k] / total * 100;
+        return '<tr><td class="k">' + esc(k) + '</td><td class="num' + (i === 0 ? ' strong' : '') + '">' + num(seg[k]) + '</td>' +
+               '<td><div class="gbar"><i style="width:' + p.toFixed(1) + '%"></i></div></td><td class="ctr' + (i === 0 ? ' strong' : '') + '">' + p.toFixed(1) + '%</td></tr>';
+      });
+      if (rest.length) {
+        var p2 = restSum / total * 100;
+        rows.push('<tr><td class="k">기타</td><td class="num">' + num(restSum) + '</td><td><div class="gbar"><i style="width:' + p2.toFixed(1) + '%"></i></div><span class="est">' +
+                  esc(rest.map(function (k) { return k + ' ' + man(seg[k]); }).join(' · ')) + '</span></td><td class="ctr">' + p2.toFixed(1) + '%</td></tr>');
+      }
+      set('seg-rows', rows.join(''));
+      set('seg-est', esc(top.map(function (k) { return k + ' ' + (seg[k] / 1e8).toFixed(2); }).join(' · ')) + ' · 부문 전부 합(주차·뮤지컬 포함)');
+    }
+
+    /* Ⅲ 문의 — 전월 대비·3개월 막대 */
+    ['adult', 'youth'].forEach(function (g) {
+      var q = iq[g + '_lesson'] || {}, v = vsCell(q.count, q.prev);
+      set(g + '-vs', q.prev != null ? '전월 ' + num(q.prev) + ' → ' + v.html : '—');
+      dot('dot-' + g, v.cls);
+    });
+    var y = iq.youth_lesson || {}, vals = [y.prev2, y.prev, y.count], mx = Math.max.apply(null, vals.map(function (v) { return v || 0; })) || 1;
+    document.querySelectorAll('#youth-trend .t i').forEach(function (el, i) { el.style.height = Math.round((vals[i] || 0) / mx * 100) + '%'; });
+    var mm = +ym.slice(5, 7);
+    ['tx0', 'tx1', 'tx2'].forEach(function (id, i) { set(id, (((mm - 3 + i) + 12) % 12 + 1) + '월'); });
+
+    /* Ⅳ 현장 */
+    if (rc.by_category) { var ck2 = Object.keys(rc.by_category).sort(function (a, b) { return rc.by_category[b] - rc.by_category[a]; }).slice(0, 3); var o2 = {}; ck2.forEach(function (k) { o2[k.replace(' 접수', '')] = rc.by_category[k]; }); set('rec-est', esc(kv(o2))); }
+    var rv = vsCell(rc.total, rc.prev_month); set('rec-vs', rv.html === '—' ? '—' : rv.html); dot('dot-rec', rv.cls === 'g' ? 'b' : rv.cls === 'b' ? 'g' : 'n');  /* 접수는 줄어야 좋다 */
+    var pcts = ['facility_pct', 'support_pct', 'ops_pct', 'parking_pct'].map(function (k) { return ck[k]; }).filter(function (v) { return v != null; });
+    dot('dot-check', !pcts.length ? 'n' : Math.min.apply(null, pcts) >= 90 ? 'g' : 'w');
+
+    /* Ⅴ 전사일정 · 업무&결재 SSOT */
+    var sc = d.schedule;
+    if (sc) {
+      set('sch-due', num(sc.due)); set('sch-done', num(sc.done)); set('sch-missed', num(sc.missed));
+      if (sc.by_type) set('sch-type', '(' + esc(kv(sc.by_type)) + ')');
+      var bd = sc.by_dept || {}, dk = Object.keys(bd).sort(function (a, b) { return bd[b].due - bd[a].due; });
+      var shown = dk.slice(0, 4), other = dk.slice(4), o = { due: 0, done: 0, missed: 0 };
+      other.forEach(function (k) { o.due += bd[k].due; o.done += bd[k].done; o.missed += bd[k].missed; });
+      var srows = shown.map(function (k) {
+        var r = bd[k];
+        return '<tr><td class="k">' + esc(k) + '</td><td class="ctr">' + r.due + '</td><td class="ctr">' + r.done + '</td><td class="ctr' + (r.missed ? ' bad' : '') + '">' + r.missed + '</td></tr>';
+      });
+      if (other.length) srows.push('<tr><td class="k">그 외 ' + other.length + '곳</td><td class="ctr">' + o.due + '</td><td class="ctr">' + o.done + '</td><td class="ctr' + (o.missed ? ' bad' : '') + '">' + o.missed + '</td></tr>');
+      if (srows.length) set('sch-rows', srows.join(''));
+    }
+    var td = d.todo;
+    if (td) {
+      set('todo-done', num(td.done)); set('todo-ip', num(td.in_progress)); set('todo-hold', num(td.on_hold));
+      set('todo-over', num(td.overdue)); set('todo-ap', num(td.approval_requested));
+      var dp = td.done_by_person || {}, op = td.open_by_person || {};
+      var trows = Object.keys(dp).map(function (p) {
+        return '<tr><td class="k">' + esc(p) + '</td><td class="ctr">' + num(dp[p]) + '</td><td class="ctr">' + num(op[p]) + '</td></tr>';
+      });
+      if (trows.length) set('todo-rows', trows.join(''));
+    }
+
+    /* Ⅵ 중간관리자 책임 항목 — 사람마다 rowspan · bad 는 빨갛게 */
+    var mg = d.managers;
+    if (mg) {
+      var mrows = [];
+      Object.keys(mg).forEach(function (p) {
+        var items = Object.keys(mg[p] || {});
+        items.forEach(function (it, i) {
+          var r = mg[p][it] || {};
+          mrows.push('<tr>' + (i === 0 ? '<td class="k" rowspan="' + items.length + '">' + esc(p) + '</td>' : '') +
+                     '<td class="cut" title="' + esc(it) + '">' + esc(it) + '</td><td class="cut' + (r.bad ? ' bad' : '') + '" title="' + esc(r.text || '') + '">' + esc(r.text || '—') + '</td></tr>');
+        });
+      });
+      if (mrows.length) set('mgr-rows', mrows.join(''));
+    }
+
+    /* Ⅶ 목표 진척 상위 */
+    var ob = d.objectives || {};
+    if (ob.top_progress && ob.top_progress.length) {
+      set('obj-rows', ob.top_progress.map(function (t) {
+        return '<tr><td>' + esc(t.title) + '</td><td><div class="gbar"><i class="' + (t.pct >= 100 ? 'g' : '') + '" style="width:' + Math.min(100, t.pct || 0) + '%"></i></div></td><td class="ctr">' + (t.pct || 0) + '%</td></tr>';
+      }).join(''));
+    }
+
+    /* Ⅷ 로드맵 */
+    var st = (d.roadmap || {}).stages || [];
+    if (st.length) {
+      set('stage-rows', st.map(function (x) {
+        var cls = x.pct >= 100 ? 'done' : (x.pct > 0 ? '' : 'wait');
+        return '<div class="stage' + (x.pct > 0 && x.pct < 100 ? ' now' : '') + '"><span class="no ' + cls + '">' + x.no + '</span><span class="nm">' + esc(x.name) + '</span>' +
+               '<span class="tr"><i class="' + (x.pct >= 100 ? 'g' : '') + '" style="width:' + Math.min(100, x.pct || 0) + '%"></i></span><span class="pc">' + (x.pct || 0) + '%</span></div>';
+      }).join(''));
+    }
+
+    /* 각주 — 못 잰 것 */
+    if (d.unmeasured && d.unmeasured.length) set('unmeasured', esc(d.unmeasured.map(function (u) { return String(u).split(' — ')[0].replace(/^\[자동\] /, ''); }).join(' · ')));
+    else set('unmeasured', '없음');
+  });
+})();
+</script>
+</body>
+</html>

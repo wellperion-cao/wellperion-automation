@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>월간 운영 계획 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="_a3_report.css" rel="stylesheet">
+<!-- ══════════════════════════════════════════════════════════════════════════
+  월간 운영 계획 A3 — 정본 1장 (2026-09-15 웰리 · GM 물음 「월간 보고가 월간계획에만 있나?」)
+
+  어디서 읽나
+    · 이 달 목표 목록(Ⅳ) · 지난달에서 넘어온 일(Ⅲ) = status/monthly_ops_plan.json (GM업무 카드 · GM 직접 카드 포함)
+      — 월초 텔레그램 카드(monthly_ops_report.py)와 같은 원천·같은 셈(완료 아닌 것 = 이월 후보).
+    · 결론·꼭 할 것·다음 달 확인 항목(Ⅱ·Ⅴ) = status/monthly_report_ledger.json 그 달 「계획」 줄(narrative·key_tasks·watchlist)
+      — 판단이라 기계가 안 쓰고 그 달 담당이 적는다. 없으면 「담당이 적습니다」로 둔다.
+    · 출발점(Ⅰ) = 원장 지난달 「현황」 줄(prev.…).
+    달은 ?month=YYYY-MM · 인자 없이 열면 이번 달(data-default-month="cur").
+  이 파일에 숫자를 손으로 적지 않는다 — 원장이 없을 때 보이는 예비 글자는 전부 '—' 다.
+  ══════════════════════════════════════════════════════════════════════════ -->
+<style>
+  .tight th, .tight td{ font-size:10.8px; line-height:1.28; padding:0 7px; }
+  .tight thead th{ height:24px; font-size:10.6px; }
+  .tight tbody td{ height:22px; }
+  .tight td.k{ font-size:10.6px; }
+  .tight .est{ font-size:9.8px; }
+  .tight .gbar{ height:9px; }
+  td.none{ color:var(--gray); font-weight:400; }
+  /* 출발점 띠 — 지난달에서 이어받는 숫자 넷 */
+  .kpi{ display:flex; gap:9px; }
+  .kpi .c{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:6px 11px 7px; background:#FAFBFC; }
+  .kpi .c.b{ border-top-color:var(--bad); }
+  .kpi .l{ font-size:10.4px; font-weight:700; color:var(--dim); }
+  .kpi .v{ font-size:17px; font-weight:700; letter-spacing:-.4px; margin-top:1px; font-variant-numeric:tabular-nums; }
+  .kpi .s{ font-size:10.4px; color:var(--dim); margin-top:1px; }
+  .dir li{ list-style:none; font-size:11.4px; line-height:1.5; }
+</style>
+</head>
+<body data-default-month="cur">
+
+<div class="bar">
+  <b><span data-month="Y"></span>년 <span data-month="M"></span>월 운영 계획 (A3 1장 · <span data-month="M"></span>/1 보고)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기 · 달 바꾸기 = 주소 끝 ?month=YYYY-MM</span>
+  <a class="lnk" data-month-href="월간_운영현황_A3.html|-1" href="월간_운영현황_A3.html">← <span data-month="prevM"></span>월 운영 현황</a>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title"><span data-month="Y"></span>년 <span data-month="M"></span>월 운영 계획</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b><span data-month="Y"></span>. <span data-month="M2"></span>. 01.</b> · 문서번호 <b>WP-GM-<span data-month="YYMM"></span>01-02</b><br>
+      계획 기준 <b data-asof>—</b>
+    </div>
+  </div>
+
+  <div class="top">
+    <div class="core">
+      <div class="c sep">
+        <div class="lb"><span data-month="M"></span> 월 의 결 론</div>
+        <div class="tx" data-f="narrative.essence">— (이 달의 결론은 원장 narrative.essence 에 담당이 적습니다)</div>
+        <div class="sub" data-f="narrative.essence_sub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="body2">
+
+    <div class="left" style="width:52%;">
+
+      <div>
+        <div class="sec-h">Ⅰ. 어디서 출발하나 <span class="hint"><span data-month="prevM"></span>월 현황에서 이어받는 숫자 · 원장 prev</span></div>
+        <div class="kpi">
+          <div class="c"><div class="l"><span data-month="prevM"></span>월 매출</div><div class="v"><span data-f="prev.sales.month" data-fmt="eok">—</span></div><div class="s">목표 대비 <span data-f="prev.sales.month_rate_pct" data-fmt="pct1">—</span></div></div>
+          <div class="c"><div class="l"><span data-month="M"></span>월 매출 목표</div><div class="v"><span data-f="targets.sales_month" data-fmt="eok">—</span></div><div class="s">원장 targets.sales_month · 대외·보고 기준</div></div>
+          <div class="c b"><div class="l"><span data-month="M"></span>월 만기 회원</div><div class="v"><span data-f="prev.member.next_month_expiry.count" data-fmt="num">—</span>명</div><div class="s">재등록 상담 기록 <span data-f="prev.member.next_month_expiry.contacted" data-fmt="num">—</span>명</div></div>
+          <div class="c b"><div class="l">넘어온 접수 미완료</div><div class="v"><span data-f="prev.reception.open" data-fmt="num">—</span>건</div><div class="s">7일 초과 <span data-f="prev.reception.over_7d" data-fmt="num">—</span> · 최장 <span data-f="prev.reception.oldest_days" data-fmt="num">—</span>일</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅱ. <span data-month="M"></span>월에 꼭 할 것 <span class="hint">원장 key_tasks · 그 달 담당이 적는다</span></div>
+        <table>
+          <colgroup><col style="width:30px"><col><col style="width:150px"></colgroup>
+          <thead><tr><th class="k ctr"></th><th>과제</th><th><span data-month="M"></span>월에 정해질 것</th></tr></thead>
+          <tbody id="task-rows"><tr><td class="none" colspan="3">원장 key_tasks 없음 — 담당이 적습니다</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="sec-h">Ⅲ. <span data-month="prevM"></span>월에서 넘어온 일 <span class="hint">GM업무 목표 중 완료 아닌 것 · 진척 높은 순 · <span id="carry-n">—</span>건</span></div>
+        <table class="tight">
+          <colgroup><col><col style="width:78px"><col style="width:40px"><col style="width:44px"></colgroup>
+          <thead><tr><th>과제</th><th class="ctr">담당</th><th class="ctr">상태</th><th class="ctr">진척</th></tr></thead>
+          <tbody id="carry-rows"><tr><td class="none" colspan="4">월간운영계획 원장을 불러오지 못했습니다</td></tr></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="right" style="width:48%;">
+
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="sec-h">Ⅳ. <span data-month="M"></span>월 목표 목록 <span class="hint">GM업무 카드 전부(GM 직접 포함) · <span id="obj-n">—</span>건 · 테마: <span id="theme">—</span></span></div>
+        <table class="tight">
+          <colgroup><col><col style="width:78px"><col style="width:40px"><col style="width:44px"><col style="width:46px"></colgroup>
+          <thead><tr><th>과제</th><th class="ctr">담당</th><th class="ctr">상태</th><th class="ctr">진척</th><th class="ctr">기한</th></tr></thead>
+          <tbody id="obj-rows"><tr><td class="none" colspan="5">월간운영계획 원장을 불러오지 못했습니다</td></tr></tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅴ. 다음 달에 확인할 것 <span class="hint">원장 watchlist · 다음 보고의 점검 기준</span></div>
+        <ul class="watch" id="watch-rows"><li class="w"><b>원장 watchlist 없음</b><span>그 달 담당이 적습니다.</span></li></ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="road">
+    <div style="width:100%;">
+      <div class="sec-h">하반기 방향 <span class="hint" id="h2-head">—</span></div>
+      <ul class="dir" id="h2-rows"><li>—</li></ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>계획의 출처</b> — Ⅱ·Ⅴ 는 월간 보고 원장(status/monthly_report_ledger.json)의 <span data-month="YM"></span> 계획 줄, Ⅲ·Ⅳ 는 월간 운영 계획 원장(status/monthly_ops_plan.json)의 카드입니다. 두 원장 모두 화면(GM업무·월간운영계획)에서 고치면 이 장에 그대로 나옵니다 — 이 파일엔 손으로 적은 숫자가 없습니다.</div>
+    <div><b>다음 보고</b> — <span data-month="Y"></span>년 <span data-month="M"></span>월 말일 21:00 원장 재측정 · <span data-month="nextY"></span>년 <span data-month="nextM"></span>월 1일 09:00 마감 확정 후 「<span data-month="M"></span>월 운영 현황」으로 위 Ⅴ 항에 수치로 답합니다. <span data-month="prevM"></span>월 실적은 「<span data-month="prevM"></span>월 운영 현황」 참조.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  var ym = (new URLSearchParams(location.search).get('month') || document.title.match(/\d{4}년 \d{1,2}월/) || ['월간'])[0];
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '월간_운영계획_A3_' + String(ym).replace(/[^\d]/g, '') + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+<script src="_a3_ledger.js"></script>
+<script>
+(function () {
+  var PLAN = '/repo/status/monthly_ops_plan.json';   // GM업무·월간운영계획 화면과 같은 뿌리
+  var ICON = { '완료': '🏁', '진행': '🚢', '계획': '⚓', '이월': '🔄' };
+  var CAP = { carry: 10, obj: 24 };   // A3 한 장 높이 — 넘치는 줄은 「외 N건」 한 줄로 접는다
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function set(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
+  function shift(ym, n) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n; return (y + Math.floor(m / 12)) + '-' + ('0' + ((m % 12 + 12) % 12 + 1)).slice(-2); }
+  function nick(plan, o) { var r = String(o.owner || ''); return String((plan.owner_nick || {})[r] || r); }
+  function due(o) { var d = o.due || o.deadline || ''; return d ? (+d.slice(5, 7)) + '/' + (+d.slice(8, 10)) : '—'; }
+  function row(plan, o, withDue) {
+    var p = o.progress || 0;
+    return '<tr><td>' + esc(o.title) + '</td><td class="ctr est">' + esc(nick(plan, o)) + '</td><td class="ctr">' + (ICON[o.status] || '•') + '</td>' +
+           '<td class="ctr' + (p >= 100 ? ' good' : '') + '">' + p + '%</td>' + (withDue ? '<td class="ctr est">' + due(o) + '</td>' : '') + '</tr>';
+  }
+  function fold(rows, cap, cols) {
+    if (rows.length <= cap) return rows.join('');
+    return rows.slice(0, cap).join('') + '<tr><td class="none" colspan="' + cols + '">외 ' + (rows.length - cap) + '건 — 월간운영계획 화면에서 전부 봅니다</td></tr>';
+  }
+
+  /* 원장 「계획」 줄 — key_tasks · watchlist (판단 칸 · 담당이 적는다) */
+  document.addEventListener('a3ledger', function (ev) {
+    var d = ev.detail.data;
+    if (!d) return;
+    if (d.key_tasks && d.key_tasks.length) {
+      set('task-rows', d.key_tasks.map(function (t, i) {
+        return '<tr><td class="k ctr strong" style="color:var(--navy);font-size:13px;">' + (t.no || i + 1) + '</td><td><b>' + esc(t.title) + '</b>' +
+               (t.detail ? ' <span class="est">' + esc(t.detail) + '</span>' : '') + (t.due ? ' <span class="est">· ' + esc(t.due) + '</span>' : '') +
+               '</td><td class="ctr">' + esc(t.decides || '—') + '</td></tr>';
+      }).join(''));
+    }
+    if (d.watchlist && d.watchlist.length) {
+      set('watch-rows', d.watchlist.map(function (w) {
+        var cls = w.level === 'high' ? '' : (w.level === 'mid' ? 'w' : 'g');
+        return '<li class="' + cls + '"><b>' + esc(w.title) + '</b>' + (w.note ? '<span>' + esc(w.note) + '</span>' : '') + '</li>';
+      }).join(''));
+    }
+  });
+
+  /* 월간 운영 계획 원장 — 이 달 목표 전부 · 지난달 이월 후보 · 하반기 방향 */
+  var ym = (new URLSearchParams(location.search).get('month') || new URLSearchParams(location.search).get('m'));
+  if (!/^\d{4}-\d{2}$/.test(ym || '')) { var n = new Date(); ym = n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2); }
+  fetch(PLAN + '?cb=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (plan) {
+      var months = plan.months || {}, cur = months[ym] || {}, prev = months[shift(ym, -1)] || {};
+      var objs = cur.objectives || [], carry = (prev.objectives || []).filter(function (o) { return o.status !== '완료'; });
+      carry.sort(function (a, b) { return (b.progress || 0) - (a.progress || 0); });
+      set('obj-n', objs.length); set('carry-n', carry.length);
+      set('theme', esc(cur.theme || '—'));
+      set('obj-rows', objs.length ? fold(objs.map(function (o) { return row(plan, o, true); }), CAP.obj, 5) : '<tr><td class="none" colspan="5">이 달 카드가 아직 없습니다 — 월간운영계획 화면에서 세웁니다</td></tr>');
+      set('carry-rows', carry.length ? fold(carry.map(function (o) { return row(plan, o, false); }), CAP.carry, 4) : '<tr><td class="none" colspan="4">지난달 목표 전부 완료 — 이월 없음</td></tr>');
+      var h = plan.half_year_review || {};
+      set('h2-head', esc(h.headline ? h.headline + ' — ' + (h.headline_sub || '') : '—'));
+      if (h.directions && h.directions.length) set('h2-rows', h.directions.map(function (x) { return '<li>' + esc(x.icon || '') + ' <b>' + esc(x.title) + '</b> — <span>' + esc(x.desc || '') + '</span></li>'; }).join(''));
+    })
+    .catch(function () { /* 「불러오지 못했습니다」 예비 글자가 그대로 남는다 */ });
+})();
+</script>
+</body>
+</html>

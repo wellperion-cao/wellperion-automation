@@ -70,6 +70,9 @@ HOME_KPI_URL = (
 
 # ── 계획 페이지 (라이브 루트배포·가이드접두사 없음·ASCII) ──
 PLAN_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/월간운영계획.html"
+# ── 회장님·대표님 A3 2장 정본(달별 직독 · 2026-09-15 웰리) — 원장(/repo/)을 읽어야 해 ERP 도메인으로 건다
+A3_STATUS_URL = "https://erp.wellperion.com/reports/월간_운영현황_A3.html?month={m}"
+A3_PLAN_URL = "https://erp.wellperion.com/reports/월간_운영계획_A3.html?month={m}"
 
 # ── 상태 배지 ──
 STATUS_ICON = {"완료": "🏁", "진행": "🚢", "계획": "⚓", "이월": "🔄"}
@@ -214,6 +217,9 @@ def build_start_card(plan: dict, now: datetime) -> str:
 
     lines.append(f"👉 계획 페이지에서 {e(cur_lbl)} 목표를 확정하세요:")
     lines.append(f"📊 {PLAN_WEB_URL}")
+    # 회장님·대표님 보고 A3 초안 — 전월 현황 · 이번 달 계획(원장이 채운 달을 그대로 읽는다 · 사람은 결론·판단 칸만 적는다)
+    lines.append(f"📄 {e(prev_lbl)} 운영 현황 A3: {A3_STATUS_URL.format(m=prev_key)}")
+    lines.append(f"📄 {e(cur_lbl)} 운영 계획 A3: {A3_PLAN_URL.format(m=cur_key)}")
     return "\n".join(lines)
 
 
