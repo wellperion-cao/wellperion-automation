@@ -83,6 +83,11 @@ def judge(table, status, resp):
         # 원장(서버)엔 이미 반영됐으니 사람이 볼 gas-error 대신 sheet-missing 으로만 표시(배1090·INC-056).
         if "찾을 수 없습니다" in str(data.get("error") or ""):
             return "sheet-missing", True
+        # 시트 행 번호가 시트 범위 밖(삭제·행 밀림 뒤 사람이 시트를 손본 경우) — 시트엔 이미 그 행이 없다.
+        # 서버 원장엔 반영됐고 다시 보내도 같은 답이라 실패로 세지 않는다(2026-09-14 write_log 1327 · 되밀기 실패 1건이
+        # 30분마다 경보로 반복됐다 — GM 2026-09-15 「근본해결」).
+        if "범위를 벗어" in str(data.get("error") or ""):
+            return "sheet-missing", True
         return "gas-error", True
     return LEDGERS[table]["ok"], True
 
@@ -245,6 +250,7 @@ def selftest():
     assert judge("write_log", "200", '{"ok":false,"error":"bad-token"}') == ("gas-error", True)
     # 시트 동결로 GAS 가 접수ID를 못 찾는 경우 — gas-error 가 아니라 sheet-missing(재시도 없이 표시만·배1090)
     assert judge("write_log", "200", '{"ok":false,"error":"해당 접수ID를 찾을 수 없습니다: RECEPTION-9999"}') == ("sheet-missing", True)
+    assert judge("write_log", "200", '{"ok":false,"error":"server_error: Exception: 해당 행이 범위를 벗어납니다."}') == ("sheet-missing", True)
     # ok 칸 없이 success 만 있는 응답(점검 저장 등) — api_write.resp_ok 와 같은 판정으로 성공 처리(배 1067)
     assert judge("write_log", "200", '{"success":true,"saved":3}') == ("ok", True)
     # 200 + 비JSON = 구글이 답한 것(로그인 안내 HTML). 시트엔 한 줄도 없으므로 되민 것으로 치면 안 된다(배 960 H3).
