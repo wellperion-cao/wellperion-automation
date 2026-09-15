@@ -59,6 +59,7 @@
     "#welpGate input{width:100%;box-sizing:border-box;text-align:center;padding:11px;margin-top:16px;" +
     "border:1px solid #45423f;border-radius:8px;background:#1f1d1c;color:#f3efe9;font:13px inherit;outline:none}" +
     "#welpGate input:focus{border-color:#c9a24b}" +
+    "#welpGate input:focus-visible,#welpGate button:focus-visible{outline:2px solid #c9a24b;outline-offset:2px}" +   /* 키보드 초점 표시(디자인 규칙집 검수 · 2026-09-15) */
     "#welpGate button{width:100%;margin-top:10px;padding:11px;border:0;border-radius:8px;cursor:pointer;" +
     "background:#c9a24b;color:#1a1918;font:600 13px inherit}" +
     "#welpGate button:hover{background:#d8b55f}" +
