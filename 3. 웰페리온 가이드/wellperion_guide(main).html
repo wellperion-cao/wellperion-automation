@@ -63,7 +63,6 @@
        (아래 모바일 규칙이 이미 같은 방식을 쓴다). */
     .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
     .main:has(#home.active) .ops-detail-grid>div:first-child{grid-column:auto!important;}
-    .main:has(#home.active) .wa-block-grid{grid-template-columns:1fr!important;gap:10px!important;}
     /* 슬로건(좌)·ERP 설명(우) — 위아래 끝을 맞춘다(GM 지시 2026-08-27). 종전에는 각자
        바깥 여백(슬로건 4/22px · 설명 18/8px)을 갖고 가운데 정렬만 해서 두 칸의 위·아래가
        어긋나 보였다. 같은 높이로 늘리고 바깥 여백은 행이 관리한다. */
@@ -368,14 +367,8 @@
   }
   /* ── /KPI 대시보드 v1 ──────────────────────────────────────── */
   @media(max-width:965px){.ops-detail-grid{grid-template-columns:minmax(0,1fr) !important;}}
-  @media(max-width:600px){.wa-block-grid{grid-template-columns:1fr !important;gap:12px;}}
   .ops-detail-grid>*{min-width:0;}
   .wa-block-grid>*{min-width:0;}
-  /* 업무·결재 칸 4개가 한 줄에 서면 칸 폭이 70px 안팎이라 「19 (48%)」·「오늘 3 · 전체 187」이 칸 밖으로
-     넘쳤다(GM 지적 2026-09-14 「숫자 다 선 넘었네」). 2×2 로 세워 칸 폭을 두 배로 준다 — 인라인 repeat(4) 를
-     이기려면 !important. 아래 줄은 좁을 때 두 줄로 접히게 nowrap 을 푼다. (09-15 옛 사본 저장으로 사라진 것 복원) */
-  .main:has(#home.active) .wa-block-grid>div>div:nth-child(2){grid-template-columns:repeat(2,minmax(0,1fr))!important;}
-  .main:has(#home.active) .wa-block-grid>div>div:nth-child(2)>div>div:last-child{white-space:normal!important;line-height:1.3;}
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
 <link rel="stylesheet" href="assets/wp-ui.css">
@@ -573,26 +566,22 @@
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-2);font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#F3EFE9,#EFE9E1);color:#221F20;border:1px solid #D8C9B6;border-radius:20px;text-decoration:none;white-space:nowrap;">📋 업무&amp;결재 SSOT →</a>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:start;" class="wa-block-grid">
-          <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
-          <div style="display:grid;gap:8px;align-content:start;">
-            <div style="font-size:var(--fs-1);font-weight:800;color:var(--text);">📋 업무</div>
-            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayActive">—</span> · 전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:var(--fs-1);color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayDone">—</span> · 전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">보류</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayHold">—</span> · 전체 <span id="kpiWorkAllHold" style="font-weight:700;">—</span></div></div>
-            </div>
+        <!-- [GM 지시 2026-09-15] 옆 두 카드(문의&등록·종합 접수처)와 칸 문법을 하나로 — 종합 접수처 타일 그대로
+             (라벨 위 · 큰 숫자 · 작은 괄호 · 92px · 한 줄 3칸). 「대기」「보류」 칸은 값이 늘 0 이라 뺐다
+             (GM: 「대기는 없는 것 같은데? 업무에도 보류는 없지 않아? 3칸씩 해서 맞추자」). 종전 4칸×2 는
+             풀폭 시절 모양이라 3열로 좁힌 뒤 세로로 쌓여 옆 카드와 어긋났다(원인). -->
+        <div style="display:grid;gap:8px;align-content:start;" class="wa-block-grid">
+          <div style="font-size:var(--fs-1);font-weight:800;color:var(--text);">📋 업무 · 이번달</div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">총</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiWorkStripTotal" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(오늘 <b style="color:#FFFFFF;" id="kpiWorkTodayTotal">—</b></span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiWorkAllTotal">—</b>)</span></span></div></div>
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">진행</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiWorkStripActive" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(오늘 <b style="color:#FFFFFF;" id="kpiWorkTodayActive">—</b></span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiWorkAllActive">—</b>)</span></span></div></div>
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">완료</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiWorkStripDone" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(<b style="color:#FFFFFF;" id="kpiWorkDoneRate">—</b>%</span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiWorkAllDone">—</b>)</span></span></div></div>
           </div>
-          <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
-          <div style="display:grid;gap:8px;align-content:start;">
-            <div style="font-size:var(--fs-1);font-weight:800;color:#FFFFFF;">✍️ 결재</div>
-            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
-              <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">총</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">대기</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
-              <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:#FFFFFF;line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayDone">—</span> · 전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:#221F20;border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-5);font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;font-weight:600;">반려</div><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayReject">—</span> · 전체 <span id="kpiApprAllReject" style="font-weight:700;">—</span></div></div>
-            </div>
+          <div style="font-size:var(--fs-1);font-weight:800;color:var(--text);margin-top:2px;">✍️ 결재 · 이번달</div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;">
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">총</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiApprStripTotal" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(오늘 <b style="color:#FFFFFF;" id="kpiApprTodayTotal">—</b></span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiApprAllTotal">—</b>)</span></span></div></div>
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">완료</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiApprStripDone" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(<b style="color:#FFFFFF;" id="kpiApprDoneRate">—</b>%</span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiApprAllDone">—</b>)</span></span></div></div>
+            <div style="background:#221F20;border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:var(--fs-1);color:rgba(255,255,255,0.72);margin-bottom:5px;font-weight:600;">반려</div><div style="display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;"><span id="kpiApprStripReject" style="font-size:var(--fs-6);font-weight:800;color:#FFFFFF;line-height:1;">—</span><span style="font-size:var(--fs-1);color:var(--dim);"><span style="white-space:nowrap;">(오늘 <b style="color:#FFFFFF;" id="kpiApprTodayReject">—</b></span> <span style="white-space:nowrap;">· 누적 <b style="color:#FFFFFF;" id="kpiApprAllReject">—</b>)</span></span></div></div>
           </div>
         </div>
 
@@ -806,12 +795,10 @@
     //   ERP_API_ON·apiFirst 는 전역(위 734행) 재사용 — 이 스코프에 다시 선언하지 않는다(검토 지적 ③ 중복 제거).
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
     // 업무·결재 조회 실패 표시 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
-    var WORK_APPR_IDS = ['kpiWorkStripTotal','kpiWorkStripActive','kpiWorkStripDone','kpiWorkStripHold',
-      'kpiWorkTodayTotal','kpiWorkTodayActive','kpiWorkTodayDone','kpiWorkTodayHold',
-      'kpiWorkAllTotal','kpiWorkAllActive','kpiWorkAllDone','kpiWorkAllHold',
-      'kpiApprStripTotal','kpiApprStripPend','kpiApprStripDone','kpiApprStripReject',
-      'kpiApprTodayTotal','kpiApprTodayPend','kpiApprTodayDone','kpiApprTodayReject',
-      'kpiApprAllTotal','kpiApprAllPend','kpiApprAllDone','kpiApprAllReject'];
+    var WORK_APPR_IDS = ['kpiWorkStripTotal','kpiWorkStripActive','kpiWorkStripDone','kpiWorkDoneRate',
+      'kpiWorkTodayTotal','kpiWorkTodayActive','kpiWorkAllTotal','kpiWorkAllActive','kpiWorkAllDone',
+      'kpiApprStripTotal','kpiApprStripDone','kpiApprStripReject','kpiApprDoneRate',
+      'kpiApprTodayTotal','kpiApprTodayReject','kpiApprAllTotal','kpiApprAllDone','kpiApprAllReject'];
     function setWorkApprFail(){ WORK_APPR_IDS.forEach(function(id){ set(id, '⚠'); }); }
     function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
     function yearStart(){ return new Date().getFullYear()+'-01-01'; }
@@ -898,21 +885,16 @@
         // 오늘 = 생성일이 오늘인 분(이번달 부분집합)
         var wToday      = work.filter(function(r){ return getCreated(r)===today; });
         var wTodayAct   = wToday.filter(function(r){ var st=getStatus(r); return st!=='완료' && st!=='보류'; }).length;
-        var wTodayDone  = wToday.filter(function(r){ return getStatus(r)==='완료'; }).length;
-        var wTodayHold  = wToday.filter(function(r){ return getStatus(r)==='보류'; }).length;
         set('kpiWorkStripTotal',  wM.total);
         set('kpiWorkStripActive', wM.active);
-        set('kpiWorkStripDone',   wM.done + ' (' + wM.rate + '%)');
-        set('kpiWorkStripHold',   wM.hold);
+        set('kpiWorkStripDone',   wM.done);          // 완료율은 괄호 안(kpiWorkDoneRate) — 칸 문법 통일(GM 2026-09-15)
+        set('kpiWorkDoneRate',    wM.rate);
         set('kpiWorkTodayTotal',  wToday.length);
         set('kpiWorkTodayActive', wTodayAct);
-        set('kpiWorkTodayDone',   wTodayDone);
-        set('kpiWorkTodayHold',   wTodayHold);
-        // 전체(누적) 병기
+        // 전체(누적) 병기 · 「보류」 칸은 뺐다(값이 늘 0 · GM 2026-09-15)
         set('kpiWorkAllTotal',  wA.total);
         set('kpiWorkAllActive', wA.active);
-        set('kpiWorkAllDone',   wA.done + ' (' + wA.rate + '%)');
-        set('kpiWorkAllHold',   wA.hold);
+        set('kpiWorkAllDone',   wA.done);
 
         // 👤 다음 결재자(결재선 다음 서명자) — 결재현황 SSOT buildEffectiveRoute+nextApprover와 동일 로직. 대기 정의 재사용.
         var _HEADS = ['이경연 실장','이정헌 소장','나우열M'];
@@ -951,21 +933,16 @@
         var aM = apprStats(apprMonth);   // 이번달
         var aA = apprStats(apprAllArr);  // 전체
         var aToday      = apprMonth.filter(function(r){ return getCreated(r)===today; });
-        var aTodayPend  = aToday.filter(apprIsPending).length;
-        var aTodayDone  = aToday.filter(function(r){ return getApprStatus(r)==='결재완료'; }).length;
         var aTodayReject= aToday.filter(function(r){ return /반려/.test(getApprStatus(r)); }).length;
         set('kpiApprStripTotal',  aM.total);
-        set('kpiApprStripPend',   aM.pend);
-        set('kpiApprStripDone',   aM.done + ' (' + aM.rate + '%)');
+        set('kpiApprStripDone',   aM.done);
+        set('kpiApprDoneRate',    aM.rate);
         set('kpiApprStripReject', aM.reject);
         set('kpiApprTodayTotal',  aToday.length);
-        set('kpiApprTodayPend',   aTodayPend);
-        set('kpiApprTodayDone',   aTodayDone);
         set('kpiApprTodayReject', aTodayReject);
-        // 전체(누적) 병기
+        // 전체(누적) 병기 · 「대기」 칸은 뺐다(값이 늘 0 · GM 2026-09-15)
         set('kpiApprAllTotal',  aA.total);
-        set('kpiApprAllPend',   aA.pend);
-        set('kpiApprAllDone',   aA.done + ' (' + aA.rate + '%)');
+        set('kpiApprAllDone',   aA.done);
         set('kpiApprAllReject', aA.reject);
 
         // 담당자별 집계는 2026-08-28 GM 지시로 홈에서 뺐다 — 업무&결재 SSOT 페이지가 같은 것을 더 자세히 보여준다.
