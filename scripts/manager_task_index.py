@@ -5,15 +5,22 @@
 새 원장을 만들지 않는다(약속 L21) — 이미 매일 쌓이는 `_digest_ledger.json` 의 번호(no) 건을 사람별로 갈라 렌더할 뿐이다.
 GM 이 화면에서 체크한 것은 그 브라우저에만 남는다(localStorage) — 원장 상태는 실무진 회신으로만 바뀐다.
 
-읽기 편하게 다듬음(GM 지시 2026-09-10 "이거 조금 더 친절하게 정리해줄 수 있어? 그리고 GM업무에 붙여줘"):
-  · 맨 위 요약 띠 + 「먼저 볼 것」(경과 긴 순 5건)
-  · 「최근 상황」은 40자까지만 보이고 전문은 title(마우스 올리면)
-  · 경과 14일↑ 빨강 / 7~13일 주황
-  · 담당 미정 건은 성격별 <details> 묶음
+화면 순서(GM 지시 2026-09-15 「최상단 책임항목 - 놓친 것 - 현재 업무」):
+  · 👤 책임 항목 3인(이경연 실장·이정헌 소장·나우열M) — GM 책임 항목은 GM업무.html 띠로 옮겼다
+    (같은 원장 status/manager_eval_history.json 을 읽는다 · 값 복제 없음)
+  · ⚠ 놓친 것 — 종전 「먼저 볼 것」+「멈춘 것」 병합 · 기한 지난 것이 맨 위 · 사람별 · 경과 긴 순
+  · 📋 현재 업무 — 사람별 블록 · 블록마다 「🖨 A3 요약본」(그 사람의 책임 항목+놓친 것+현재 업무만)
+  · 📅 분기 누적 책임항목 평가 — 맨 위 오른쪽 버튼 하나 · 절은 접힌 <details id="resp-q"> 로 맨 아래
+  · 체크리스트 대신 건마다 「다음 한 걸음 · 기한 · 회신 규격(#N 했다)」 한 줄 — 원장 next_step·due 칸
+    (빈 값 허용 · 없으면 「다음 한 걸음 미정 — 담당이 한 줄로」) · 회신 「#N 했다」가 오면 자동 종결
+    (send_ops_digest.sync_ledger_replies) · 3일째 답 없으면 07:50 통이 「N일째」로 재게재(같은 파일 build_reply_nudge_items)
+  · 「최근 상황」은 40자까지만 보이고 전문은 title · 경과 14일↑ 빨강 / 7~13일 주황
 
-갱신: python scripts/manager_task_index.py   (매일 아침 정리 뒤 다시 돌리면 최신)
-  · send_ops_digest 07:50 이 매일 build() 를 다시 돌린다 → 책임 항목 실측 스냅숏 원장
-    status/manager_eval_history.json 의 이번 달 키가 매일 자동 갱신된다(분기·연 누적 · GM 지시 2026-09-15).
+갱신: python scripts/manager_task_index.py            (화면만 다시 쓴다)
+      python scripts/manager_task_index.py --publish  (다시 쓰고 저장·배포까지 = regenerate_and_publish)
+  · 「바로 반영」(GM 지시 2026-09-15 「#283 완료했는데 바로 반영이 안됨」) — 원장이 바뀌는 자리 셋
+    (send_ops_digest --resolve · sync_ledger_replies 회신 매칭 · 07:50 통)이 모두 regenerate_and_publish() 를
+    부른다 → 책임 항목 실측 스냅숏 원장 status/manager_eval_history.json 이번 달 키도 그때마다 갱신.
 
 업무 SSOT 와 안 겹치게(나우열M 지적 2026-09-10 "직원들은 SSOT 와 너가 준 페이지 두 개를
 중복으로 확인하는 비효율적인 상황"): 렌더 때마다 업무 SSOT(GAS todo_list)를 읽어 제목이
@@ -96,52 +103,6 @@ def first_seen_by_no() -> dict[int, str]:
     return first
 
 
-def week_block(seen: dict) -> str:
-    """이번 주 한 장 (GM 지시 2026-09-14 「1주 단위로 진행된 업무·놓치는 업무도 체크해서 정리」).
-    새 원장을 만들지 않는다 — 이미 있는 확인요청 원장의 날짜만 센다(약속 L21).
-      · 끝난 것 = 최근 7일 안에 닫힌 번호
-      · 새로 뜬 것 = 최근 7일 안에 원장에 처음 실린 번호
-      · 멈춘 것 = 열려 있는데 7일 넘게 원장에 아무 기록이 없는 번호 — 이것이 놓치는 자리다.
-    """
-    first = first_seen_by_no()
-    done, fresh, stuck = [], [], []
-    for n, (d, it) in seen.items():
-        closed = str(it.get("status", "")).lower() in DONE
-        age = days_since(d)
-        if closed and age <= 7:
-            done.append((n, d, it))
-        elif not closed:
-            if days_since(first.get(n, d)) <= 7:
-                fresh.append((n, d, it))
-            elif age > 7:
-                stuck.append((n, d, it))
-    stuck.sort(key=lambda x: days_since(x[1]), reverse=True)
-    done.sort(key=lambda x: x[1], reverse=True)
-    fresh.sort(key=lambda x: x[0], reverse=True)
-
-    def lines(rows, tail):
-        if not rows:
-            return '<div class="wk-none">없음</div>'
-        out = []
-        for n, d, it in rows[:12]:
-            who = html.escape(str(it.get("owner") or "담당 미정").strip() or "담당 미정")
-            ttl = html.escape(short(str(it.get("issue") or ""), 46))
-            out.append(f'<li><b>#{n}</b> {ttl} <span class="wk-who">{who}</span>'
-                       f'<span class="wk-age">{tail(d)}</span></li>')
-        more = f'<li class="wk-none">외 {len(rows) - 12}건</li>' if len(rows) > 12 else ''
-        return f'<ul class="wk-list">{"".join(out)}{more}</ul>'
-
-    return f'''  <section class="week">
-    <h2>이번 주 <span class="sub">최근 7일 · 끝난 것 {len(done)} · 새로 뜬 것 {len(fresh)} ·
-      한 주 넘게 멈춘 것 {len(stuck)}</span></h2>
-    <div class="wk-cols">
-      <div class="wk-col"><h3>🏁 끝난 것</h3>{lines(done, lambda d: f"{d[5:]} 닫힘")}</div>
-      <div class="wk-col"><h3>🆕 새로 뜬 것</h3>{lines(fresh, lambda d: f"{d[5:]} 접수")}</div>
-      <div class="wk-col wk-warn"><h3>⏸ 멈춘 것 — 여기가 놓치는 자리</h3>{lines(stuck, lambda d: f"{days_since(d)}일째")}</div>
-    </div>
-  </section>'''
-
-
 def days_since(d: str) -> int:
     try:
         return (date.today() - datetime.strptime(d[:10], "%Y-%m-%d").date()).days
@@ -177,7 +138,10 @@ EVAL_PATH = ROOT / "status" / "manager_eval.json"
 # 책임 항목 실측 스냅숏 원장(GM 지시 2026-09-15 「평가체계를 가지고 계속 자동으로 · 분기 단위로 누적」) —
 #   렌더 때마다 이번 달 키만 덮어쓰고 다른 달은 그대로 둔다. GM업무 「리더 현황」띠도 이 파일을 읽는다.
 HIST_PATH = ROOT / "status" / "manager_eval_history.json"
-RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우열M"]
+RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우열M"]   # 원장(manager_eval_history) 키 — 4인 그대로
+# 이 화면에 그리는 사람 = 3인(GM 지시 2026-09-15 「책임항목 4인에서 GM 빼고 3인으로」). GM 은 원장에만
+#   남고 GM업무.html 「👤 GM 책임 항목」 띠가 같은 원장을 읽어 그린다 — 값을 두 곳에 두지 않는다.
+MGR_PEOPLE = [m[0] for m in MANAGERS]
 _NO_MEASURE = "미수집"
 SSOT_DONE = {"완료", "폐기", "완료됨"}
 OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원", "이지영 사원"]
@@ -506,6 +470,75 @@ def directive_cell(objs: list) -> tuple[str, bool]:
     return f"지시 카드 {len(ds)}장 · {ck} · 기한 지난 것 {over}건", over > 0
 
 
+# ═══ GM 책임 항목 웰리 추천 2개(GM 2026-09-15 「웰리가 방향 추천해줘도 좋아, 지금 있는 것 +로」) ═══
+#   ④ 체계화 = 같은 지시가 두 번 온 건수(0 이 목표) — worklog GM 접수(warn)에서 제목 유사도로 센다.
+#   ⑤ 회수 = 사람에게 넘긴 것(원장에 처음 실린 건) 중 그날 안에 회신·종결된 비율.
+#   측정식은 여기 코드 한 곳 · 못 재면 「미측정」(지어내지 않는다).
+WORKLOG_PATH = ROOT / "status" / "worklog.jsonl"
+_GM_AREAS = ("GM요청", "GM지시")
+
+
+_DIRECTIVE_NOISE_RE = re.compile(r"https?://\S+|[A-Za-z]:[\\/]\S+|\S+@\S+")
+
+
+def _directive_key(event) -> str:
+    """지시 제목 비교 열쇠 — 주소·파일 경로·메일은 뺀다(같은 화면 주소를 붙인 다른 지시가 「같은 지시」로 잡히던 것) · 앞 40자."""
+    t = _DIRECTIVE_NOISE_RE.sub(" ", str(event or ""))
+    return "".join(ch for ch in t if ch.isalnum())[:40]
+
+
+def dup_directive_cell() -> tuple[str, bool]:
+    """이번 달 GM 접수 제목 중 앞선 날의 다른 접수와 0.8 이상 닮은 것 = 「같은 지시 두 번」."""
+    ym = date.today().strftime("%Y-%m")
+    try:
+        lines = WORKLOG_PATH.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return "미측정(worklog 없음)", False
+    seen_keys: list[tuple[str, str]] = []   # (day, key)
+    total = dup = 0
+    for ln in lines:
+        try:
+            d = json.loads(ln)
+        except Exception:
+            continue
+        ts = str(d.get("ts") or "")
+        if not ts.startswith(ym) or d.get("area") not in _GM_AREAS or d.get("result") != "warn":
+            continue
+        key = _directive_key(d.get("event"))
+        if len(key) < 12:
+            continue
+        total += 1
+        day = ts[:10]
+        if any(pd != day and difflib.SequenceMatcher(None, key, pk).ratio() >= 0.85 for pd, pk in seen_keys):
+            dup += 1
+        seen_keys.append((day, key))
+    if not total:
+        return "미측정(이번 달 접수 없음)", False
+    return f"같은 지시 두 번 {dup}건(이번 달 접수 {total}건 · 목표 0)", dup > 0
+
+
+def handoff_return_cell(seen: dict) -> tuple[str, bool]:
+    """이번 달 원장에 처음 실린 담당 있는 건 중 번호가 나간 그날(원장 날짜 다음 날)까지 회신(replied_at)·종결(resolved_at)된 비율."""
+    ym = date.today().strftime("%Y-%m")
+    first = first_seen_by_no()
+    n = k = 0
+    for no, (_d, it) in seen.items():
+        f = first.get(no, "")
+        owner = str(it.get("owner") or "").strip()
+        if not f.startswith(ym) or not owner or is_ai_owner(owner):
+            continue
+        n += 1
+        # 번호는 다음 날 07:50 통에서 나가므로 「당일」= 통이 나간 그날(원장 날짜 +1일)까지.
+        limit = (datetime.strptime(f, "%Y-%m-%d").date() + timedelta(days=1)).isoformat()
+        got = [str(it.get(k_) or "")[:10] for k_ in ("replied_at", "resolved_at")]
+        if any(g and g <= limit for g in got):
+            k += 1
+    if not n:
+        return "미측정(이번 달 넘긴 건 없음)", False
+    pct = round(k / n * 100)
+    return f"당일 회신 {k}/{n}({pct}%)", pct < 50
+
+
 def _no_measure_cell(reason: str) -> tuple[str, bool]:
     return f"{_NO_MEASURE}({reason})", False
 
@@ -599,7 +632,7 @@ def _quarter_tables(months: dict, keys: list) -> str:
     head = ('<tr><th class="ri">항목</th>' + "".join(f'<th class="rq">{int(k[5:7])}월</th>' for k in keys)
             + '<th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>')
     blocks = []
-    for person in RESP_PEOPLE:
+    for person in MGR_PEOPLE:
         items: list[str] = []
         for k in keys:
             for it in (months.get(k) or {}).get(person) or {}:
@@ -630,7 +663,8 @@ def _quarter_tables(months: dict, keys: list) -> str:
 
 
 def quarter_section(hist: dict) -> str:
-    """📅 분기 누적 — 이번 분기(오늘 기준) 표 + 지난 분기(원장에 있으면) <details>. GM업무 띠가 #resp-q 로 온다."""
+    """📅 분기 누적 책임항목 평가 — 접힌 <details id="resp-q"> (GM 지시 2026-09-15 「맨 위 우측 버튼 항목으로」).
+    맨 위 오른쪽 버튼이 이 절을 펼치고 그 자리로 옮긴다 · 이번 분기 표 + 지난 분기 <details> · 3인만(GM 은 GM업무 띠)."""
     months = hist.get("months") or {}
     today = date.today()
     y, q = _quarter_of(today.strftime("%Y-%m"))
@@ -640,10 +674,10 @@ def quarter_section(hist: dict) -> str:
         f'\n    <details><summary>{py}년 {pq}분기</summary>\n'
         f'{_quarter_tables(months, [f"{py}-{mm:02d}" for mm in range(3 * pq - 2, 3 * pq + 1)])}\n    </details>'
         for py, pq in past)
-    return f'''  <section class="resp-q" id="resp-q">
-    <h2>📅 분기 누적 — 책임 항목 <span class="sub">{y}년 {q}분기 · 달마다 마지막 실측이 남습니다(매일 07:50 자동)</span></h2>
+    return f'''  <details class="resp-q pr-skip" id="resp-q">
+    <summary>📅 분기 누적 책임항목 평가 <span class="sub">{y}년 {q}분기 · 달마다 마지막 실측이 남습니다(매일 07:50 자동)</span></summary>
 {_quarter_tables(months, cur)}{past_html}
-  </section>'''
+  </details>'''
 
 
 def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None", objs: list) -> dict:
@@ -659,6 +693,11 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
              lambda: expansion_cell()),
             ("회장님·대표님 지시", "지시 카드 체크 완료율 · 기한 지난 것 0",
              lambda: directive_cell(objs)),
+            # 웰리 추천 2개(GM 2026-09-15 「+로」) — 이름 끝 「(웰리 추천)」 딱지가 원장 키에도 그대로 남는다.
+            ("체계화 — 같은 지시 두 번 (웰리 추천)", "같은 지시가 두 번 온 건수 0 · worklog GM 접수 제목 유사도",
+             lambda: dup_directive_cell()),
+            ("회수 — 당일 회신 비율 (웰리 추천)", "사람에게 넘긴 것 중 번호가 나간 그날까지 회신·종결 비율 · 50% 미만 감점",
+             lambda: handoff_return_cell(seen)),
         ],
         "이경연 실장": [
             ("매출(회원권+옵션)", "월 매출목표 대비 달성률 · 옵션 포함",
@@ -703,29 +742,28 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
     }
 
 
-def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> str:
+def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> tuple[str, str]:
+    """돌려주는 값 = (👤 책임 항목 3인 절, 📅 분기 누적 <details>) — 분기 절은 화면 맨 아래에 놓는다."""
     ev = load_eval()
     objs = load_month_objectives()
     rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
 
     blocks = []
     month_snap: dict = {}
-    for person in RESP_PEOPLE:
+    for person in RESP_PEOPLE:          # 스냅숏은 4인(GM 포함) — GM업무 띠가 이 원장을 읽는다
         tbl, month_snap[person] = resp_table(person, rows_def[person], ev)
-        if person == "이경연 실장":
-            extra = chief_detail_blocks(ssot_rows)
-        else:
-            extra = ""
+        if person not in MGR_PEOPLE:    # 화면은 3인만(GM 지시 2026-09-15)
+            continue
         # 📄 보고 문서 선반은 이 화면에 두지 않는다 (GM 지시 2026-09-14 「보고문서 관련해서는
         # GM업무로 이관해, 중복이네」). 같은 목록이 GM업무 화면에 이미 있다 — 한 곳만 둔다(약속 L01).
-        blocks.append(f'      <div class="rp-person">\n        <h3>{html.escape(person)}</h3>\n        '
-                       f'{tbl}\n{extra}      </div>')
+        blocks.append(f'      <div class="rp-person" data-person="{html.escape(person, quote=True)}">\n'
+                      f'        <h3>{html.escape(person)}</h3>\n        {tbl}\n      </div>')
     hist = save_eval_history(month_snap)   # 표를 만든 그 값으로 원장 이번 달 키 갱신(계산 한 번)
-    return f'''  <section class="resp">
-    <h2>👤 책임 항목 — 4인</h2>
+    resp = f'''  <section class="resp">
+    <h2>👤 책임 항목 — 3인 <span class="sub">GM 책임 항목은 GM업무 화면 띠에 있습니다(같은 원장)</span></h2>
 {chr(10).join(blocks)}
-  </section>
-{quarter_section(hist)}'''
+  </section>'''
+    return resp, quarter_section(hist)
 
 
 # ═══ 실장 건별 목록 3종(GM 지시 2026-09-14 "종합접수처 건·업무SSOT 건·점검현황 건별로 보고") ═══
@@ -775,6 +813,31 @@ def reception_dept_detail(dept: str = "운영부") -> "tuple[list, list] | tuple
     return rest, lost
 
 
+# ═══ 토글 상세표 공통 틀(GM 지적 2026-09-15 「번호가 왼쪽 벽에 붙고 칸 정렬이 안 맞는다 · 셋 다」) ═══
+#   종합접수처·점검 현황·업무&결재 SSOT 세 표가 같은 6열(번호|내용|담당|기한|경과|비고) · colgroup +
+#   table-layout:fixed 로 열 폭을 못 박는다 — 표마다 열 폭 배열이 같아야 머리행과 값 칸이 맞는다.
+DT_COLS = [("번호", "dt-no"), ("내용", "dt-ti"), ("담당·전달", "dt-who"),
+           ("기한", "dt-due"), ("경과", "dt-age"), ("비고", "dt-etc")]
+
+
+def detail_table(rows: list[list[str]], empty: str, note: str) -> str:
+    """rows = 이미 escape 된 셀 HTML 6개짜리 목록. 첫 열(번호)은 표 안 첫 칸이라 벽에 안 붙는다."""
+    cg = "<colgroup>" + "".join(f'<col class="{c}">' for _n, c in DT_COLS) + "</colgroup>"
+    head = "<tr>" + "".join(f'<th class="{c}">{n}</th>' for n, c in DT_COLS) + "</tr>"
+    body = "\n        ".join(
+        "<tr>" + "".join(f'<td class="{DT_COLS[i][1]}">{cell}</td>' for i, cell in enumerate(r)) + "</tr>"
+        for r in rows) or f'<tr><td colspan="6" class="empty">{empty}</td></tr>'
+    return (f'<table class="dt">{cg}{head}\n        {body}</table>'
+            f'<div class="sub-note">{note}</div>')
+
+
+def _age_td(age: "int | None") -> str:
+    """경과 칸 내용 — 값이 없으면 —. 색은 age_cls 그대로."""
+    if age is None:
+        return "—"
+    return f'<span class="age {age_cls(age)}">{age}일</span>'
+
+
 def reception_toggle_detail_html() -> str:
     """책임 표 「종합접수처(운영부)」 행을 클릭하면 펼쳐지는 내역 — 접수자·전달 대상 칸
     포함(GM 지시 2026-09-14 "누가 접수했고, 누구에게 전달해야하는지도 정리가 되면"). 원천은
@@ -790,23 +853,20 @@ def reception_toggle_detail_html() -> str:
     for r in rest_sorted:
         age = reception_elapsed_days(r, now)
         content = str(r.get("content") or "").strip()
-        memo_on = "있음" if str(r.get("memo") or "").strip() else "—"
-        rows.append(f'<tr><td>#{html.escape(str(r.get("regId") or "—"))}</td>'
-                    f'<td>{html.escape(str(r.get("category") or "—"))}</td>'
-                    f'<td>{html.escape(_reception_reporter(r))}</td>'
-                    f'<td>{html.escape(_reception_deliver_to(r, "운영부"))}</td>'
-                    f'<td class="age {age_cls(age)}">{age}일</td>'
-                    f'<td title="{html.escape(content)}">{html.escape(short(content) if content else "—")}</td>'
-                    f'<td>{memo_on}</td></tr>')
-    body = "\n        ".join(rows) or '<tr><td colspan="7" class="empty">열린 건 없음</td></tr>'
+        memo_on = "처리메모 있음" if str(r.get("memo") or "").strip() else "처리메모 —"
+        cat = html.escape(str(r.get("category") or ""))
+        rows.append([f'#{html.escape(str(r.get("regId") or "—"))}',
+                     f'<span title="{html.escape(content)}">{html.escape(short(content) if content else "—")}</span>'
+                     + (f'<span class="cat">{cat}</span>' if cat else ""),
+                     html.escape(_reception_deliver_to(r, "운영부")),
+                     "—",
+                     _age_td(age),
+                     f'접수 {html.escape(_reception_reporter(r))} · {memo_on}'])
     lost_line = ""
     if lost:
         lage = max((reception_elapsed_days(r, now) for r in lost), default=0)
-        lost_line = f'<div class="sub-note">분실물 {len(lost)}건(담당 미배정 · 최장 {lage}일)</div>'
-    return ('<table><tr><th>번호</th><th>분류</th><th>접수자</th><th>전달 대상</th><th>경과</th>'
-            '<th>제목</th><th>처리메모</th></tr>'
-            f'{body}</table>{lost_line}'
-            '<div class="sub-note">닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료</div>')
+        lost_line = f'분실물 {len(lost)}건(담당 미배정 · 최장 {lage}일) · '
+    return detail_table(rows, "열린 건 없음", lost_line + "닫는 곳: 종합접수처 화면 처리자·처리메모·전달완료")
 
 
 def ssot_ops_detail_rows(rows: "list | None") -> "list | None":
@@ -902,18 +962,16 @@ def ssot_detail_html(ssot_rows: "list | None") -> str:
         d = _parse_ymd(r.get("종료일"))
         due_disp = d.isoformat() if d else (str(r.get("종료일") or "").strip()[:10] or "—")
         od = (today - d).days if d else None
-        od_td = f'<td class="age old">{od}일</td>' if od and od > 0 else '<td>—</td>'
-        ap = str(r.get("결재요청") or "").strip() or "—"
-        rows.append(f'<tr><td>{html.escape(str(r.get("담당자") or "—"))}</td>'
-                    f'<td class="ti">{ssot_links(r)}</td>'
-                    f'<td>{html.escape(due_disp)}</td>'
-                    f'{od_td}'
-                    f'<td>{html.escape(ap)}</td></tr>')
-    body = "\n        ".join(rows) or '<tr><td colspan="5" class="empty">진행중·보류 없음</td></tr>'
+        ap = str(r.get("결재요청") or "").strip()
+        rows.append([html.escape(str(r.get("id") or "—")),
+                     ssot_links(r),
+                     html.escape(str(r.get("담당자") or "—")),
+                     html.escape(due_disp),
+                     _age_td(od if od and od > 0 else None),
+                     f'결재요청 {html.escape(ap)}' if ap else "—"])
     return (f'<details open class="grp"><summary>② 업무·결재 SSOT(운영부 전원) <span class="gc">{len(mine)}건</span></summary>'
-            '<table><tr><th>담당</th><th>업무명</th><th>종료일</th><th>기한지남</th><th>결재요청</th></tr>'
-            f'{body}</table>'
-            '<div class="sub-note">닫는 곳: 업무 현황 SSOT 화면 상태·종료일</div></details>')
+            + detail_table(rows, "진행중·보류 없음", "닫는 곳: 업무 현황 SSOT 화면 상태·종료일 · 경과 = 종료일 지난 일수")
+            + '</details>')
 
 
 _CHK_BODY_RE = re.compile(r"^\s*□\s*\d*\)?\s*(.+)$")
@@ -1008,29 +1066,19 @@ def check_detail_html(objs: list) -> str:
         same = (title == last_card)
         last_card = title
         oid = str(o.get("id") or "").strip()
-        disp = html.escape(short(title) if title else "—")
+        disp = html.escape(short(title, 28) if title else "—")
         card = (f'<a href="GM업무.html#gm-{html.escape(oid, quote=True)}" target="_blank" '
                 f'rel="noopener" title="{html.escape(title)}">{disp}</a>' if oid
                 else f'<span title="{html.escape(title)}">{disp}</span>')
-        card_cell = ('<td class="ti ti-cont"></td>' if same
-                     else f'<td class="ti">{card}{objective_docs_html(o)}</td>')
         body = _CHK_BODY_RE.sub(r"\1", ln)
         owner_text = _check_owner_text(o, ln)
-        rows.append(f'<tr>{card_cell}'
-                    f'<td title="{html.escape(body)}">{html.escape(short(body))}</td>'
-                    f'<td>{html.escape(owner_text)}</td>'
-                    f'<td>{html.escape(_check_deliver_to(owner_text))}</td>'
-                    f'<td>{html.escape(_check_due_text(ln))}</td></tr>')
-    body_html = "\n        ".join(rows) or '<tr><td colspan="5" class="empty">미완 체크 없음</td></tr>'
-    return ('<table><tr><th>카드</th><th>체크</th><th>체크 담당</th><th>전달 대상</th><th>완료예정일</th></tr>'
-            f'{body_html}</table>'
-            '<div class="sub-note">닫는 곳: GM업무 화면 체크</div>')
-
-
-def chief_detail_blocks(ssot_rows: "list | None") -> str:
-    """더는 아래에 따로 펴지 않는다 — 업무·결재 SSOT 목록은 그 행 토글 안으로 들어갔다
-    (GM 지시 2026-09-14 「하나로 토글 정리해줘」). 호출부는 그대로 두고 빈 문자열을 돌린다."""
-    return ""
+        rows.append([html.escape(oid or "—"),
+                     f'<span title="{html.escape(body)}">{html.escape(short(body))}</span>',
+                     html.escape(_check_deliver_to(owner_text)),
+                     html.escape(_check_due_text(ln)),
+                     "—",
+                     ('〃' if same else card + objective_docs_html(o))])
+    return detail_table(rows, "미완 체크 없음", "닫는 곳: GM업무 화면 체크 · 비고 = 카드(같은 카드는 〃)")
 
 
 def _title_key(t: str) -> str:
@@ -1232,20 +1280,36 @@ def row_html(no: int, seen_date: str, it: dict) -> str:
     #   「담당자 구분 확실하게」. 리드가 책임지고, 함께는 같이 한다.
     helper = str(it.get("with") or "").strip()
     helper_html = f'<div class="with">함께 {html.escape(helper)}</div>' if helper else ""
-    return (f'<tr data-no="{no}"><td class="ck"><input type="checkbox" data-k="mgr-{no}"></td>'
-            f'<td class="no">#{no}</td>'
+    return (f'<tr data-no="{no}"><td class="no">#{no}</td>'
             f'<td class="ti">{html.escape(str(it.get("issue") or ""))}'
             f'{f"<span class=cat>{html.escape(cn)}</span>" if cn else ""}</td>'
             f'<td class="own">{owner_select(no, who)}{helper_html}</td>'
-            f'<td class="due">{html.escape(due)}</td>'
+            f'<td class="due{" old" if is_overdue(it) else ""}">{html.escape(due)}</td>'
+            f'<td class="nx">{next_step_html(no, it)}</td>'
             f'{progress_cell(it)}'
             f'<td class="ss">{ss}</td>'
             f'{note_td}'
             f'<td class="age {age_cls(age)}">{age}일</td></tr>')
 
 
-HEAD_ROW = ('<tr><th class="ck">✓</th><th class="no">번호</th><th>업무</th>'
-            '<th class="own">담당</th><th class="due">기한</th><th class="pg">진척</th>'
+def is_overdue(it: dict) -> bool:
+    d = _parse_ymd(str(it.get("due") or "")[:10])
+    return bool(d and d < date.today())
+
+
+NEXT_STEP_MISSING = "다음 한 걸음 미정 — 담당이 한 줄로"
+
+
+def next_step_html(no: int, it: dict) -> str:
+    """체크리스트 대신(GM 물음 2026-09-15 ⑤) — 건마다 「다음 한 걸음 · 회신 규격」 한 줄.
+    원장 next_step 칸 그대로(빈 값이면 미정 표시 · 문장에서 지어내지 않는다) · 회신 규격 = 「#N 했다」."""
+    nx = str(it.get("next_step") or "").strip()
+    body = html.escape(nx) if nx else f'<span class="nx-none">{NEXT_STEP_MISSING}</span>'
+    return f'{body}<div class="nx-reply">회신 「#{no} 했다」 한 줄이면 닫힘</div>'
+
+
+HEAD_ROW = ('<tr><th class="no">번호</th><th>업무</th>'
+            '<th class="own">담당</th><th class="due">기한</th><th class="nx">다음 한 걸음</th><th class="pg">진척</th>'
             '<th class="ss">업무·결재 SSOT</th>'
             '<th>최근 상황</th><th class="age">경과</th></tr>')
 
@@ -1401,7 +1465,20 @@ def selfcheck() -> None:
          2: ("2026-09-07", {"issue": "회원 접수 4건 처리방향 미정(#1)"}),
          3: ("2026-09-05", {"issue": "에스컬레이터 견적"})}
     assert find_dups(o) == {1: 2}, find_dups(o)
-    print("[selfcheck] 담당 드롭다운·중복 판정·note 청소 판정 OK")
+    # ⚠ 놓친 것 — 기한 지난 것이 맨 위, 그다음 경과 긴 순 · 7일 미만·기한 안 지난 건은 안 잡힌다
+    today = date.today()
+    shown = [(1, (today - timedelta(days=3)).isoformat(), {"issue": "a", "due": (today - timedelta(days=1)).isoformat()}, "이정헌 소장"),
+             (2, (today - timedelta(days=20)).isoformat(), {"issue": "b"}, "이경연 실장"),
+             (3, (today - timedelta(days=2)).isoformat(), {"issue": "c"}, "나우열M"),
+             (4, (today - timedelta(days=9)).isoformat(), {"issue": "d", "next_step": "견적 회신"}, "담당 미정")]
+    assert [r[0] for r in missed_items(shown)] == [1, 2, 4], missed_items(shown)
+    sec = missed_section(missed_items(shown))
+    assert "기한 지남" in sec and NEXT_STEP_MISSING in sec and "다음 한 걸음: 견적 회신" in sec and "회신 「#2 했다」" in sec
+    assert "다음 한 걸음 미정" in next_step_html(9, {}) and "회신 「#9 했다」" in next_step_html(9, {})
+    # 토글 상세표 — 세 표가 같은 6열 틀(colgroup) · 번호가 첫 칸
+    t = detail_table([["#R-1", "x", "y", "—", _age_td(8), "—"]], "없음", "n")
+    assert t.count("<col ") == 6 and t.count("<th ") == 6 and '<td class="dt-no">#R-1</td>' in t and 'class="age warn"' in t
+    print("[selfcheck] 담당 드롭다운·중복 판정·note 청소·놓친 것·다음 한 걸음·상세표 6열 OK")
 
 
 def approval_badge(m: dict) -> str:
@@ -1425,19 +1502,47 @@ def table(rows: list[str], empty: str) -> str:
     return f'<table>\n          {HEAD_ROW}\n          {body}\n        </table>'
 
 
-def top_html(items: list[tuple[int, str, dict, str]]) -> str:
-    """먼저 볼 것 — 사람 상관없이 경과가 긴 순 5건."""
-    cards = []
-    for no, d, it, who in items:
-        age = days_since(d)
-        fl = "".join(f'<span class="fl">{f}</span>' for f in flags_of(it))
-        note = str(it.get("note") or "").strip()
-        cards.append(
-            f'<div class="top-i"><span class="top-age {age_cls(age)}">{age}일</span>'
-            f'<div class="top-b"><b>#{no} {html.escape(str(it.get("issue") or ""))}</b>{fl}'
-            f'<div class="top-w">{html.escape(who)}'
-            f'{" · " + html.escape(short(note, 46)) if note else ""}</div></div></div>')
-    return "\n      ".join(cards)
+def missed_items(shown: list) -> list:
+    """⚠ 놓친 것 = 기한 지난 것 + 7일 넘게 원장에 기록 없는 것(종전 「먼저 볼 것」+「멈춘 것」 병합 ·
+    GM 지시 2026-09-15). 기한 지난 것이 맨 위, 그다음 경과 긴 순. 돌려주는 값 = shown 과 같은 4-튜플."""
+    out = [row for row in shown if is_overdue(row[2]) or days_since(row[1]) >= 7]
+    out.sort(key=lambda x: (not is_overdue(x[2]), -days_since(x[1]), x[0]))
+    return out
+
+
+def missed_section(missed: list) -> str:
+    """사람별로 묶어(3인 순 → 그 밖 → 담당 미정) 한 줄씩: N일째 · #번호 제목 · 딱지 · 기한 · 다음 한 걸음 · 회신 규격."""
+    by_who: dict[str, list] = {}
+    for row in missed:
+        by_who.setdefault(row[3], []).append(row)
+    order = MGR_PEOPLE + [w for w in by_who if w not in MGR_PEOPLE and w != "담당 미정"] + ["담당 미정"]
+    groups = []
+    for who in order:
+        rows = by_who.get(who)
+        if not rows:
+            continue
+        lines = []
+        for no, d, it, _w in rows:
+            age = days_since(d)
+            fl = "".join(f'<span class="fl">{f}</span>' for f in flags_of(it))
+            if is_overdue(it):
+                fl = f'<span class="fl">기한 지남 {html.escape(str(it.get("due"))[:10])}</span>' + fl
+            due = str(it.get("due") or "").strip()[:10]
+            nx = str(it.get("next_step") or "").strip()
+            lines.append(
+                f'<div class="top-i"><span class="top-age {age_cls(age)}">{age}일째</span>'
+                f'<div class="top-b"><b>#{no} {html.escape(str(it.get("issue") or ""))}</b>{fl}'
+                f'<div class="top-w">기한 {html.escape(due) if due else "—"} · '
+                f'{("다음 한 걸음: " + html.escape(nx)) if nx else f"<span class=nx-none>{NEXT_STEP_MISSING}</span>"}'
+                f' · 회신 「#{no} 했다」</div></div></div>')
+        groups.append(f'    <div class="top-who" data-person="{html.escape(who, quote=True)}">'
+                      f'<h3>{html.escape(who)} <span class="gc">{len(rows)}건</span></h3>\n      '
+                      + "\n      ".join(lines) + '\n    </div>')
+    body = "\n".join(groups) or '<div class="empty" style="padding:6px 0;">없음 — 기한 지난 것·7일 넘게 멈춘 것이 없습니다</div>'
+    return f'''  <div class="top" id="missed">
+    <h2>⚠ 놓친 것 <span class="why">기한 지난 것이 맨 위 · 7일 넘게 답 없는 것 · 사람별 · {len(missed)}건 — 여기부터 답을 받으세요</span></h2>
+{body}
+  </div>'''
 
 
 def build() -> str:
@@ -1457,8 +1562,7 @@ def build() -> str:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
-    resp_html = resp_section(seen, ssot_rows, sales_data)
-    week_html = week_block(seen)   # 📅 이번 주 — 끝난 것·새로 뜬 것·멈춘 것(GM 지시 2026-09-14)   # 👤 책임 항목 4인 — seen·ssot_rows·매출 원자료 그대로 넘긴다
+    resp_html, quarter_html = resp_section(seen, ssot_rows, sales_data)   # 👤 책임 3인 · 📅 분기 누적(접힘)
     moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
         # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
@@ -1543,8 +1647,9 @@ def build() -> str:
             team_html = (f'\n        <details open class="grp"><summary>{team_lead} {team_title} '
                          f'<span class="gc">{len(team_rows)}건</span></summary>\n        {inner}\n        </details>')
 
-        blocks.append(f'''      <div class="blk">
-        <h2>{html.escape(name)} <span class="sub">{html.escape(dept)} · {html.escape(room)} · 열린 건 {len(person_rows)}건(본인 {len(mine)}건)</span></h2>
+        blocks.append(f'''      <div class="blk" data-person="{html.escape(name, quote=True)}">
+        <h2>{html.escape(name)} <span class="sub">{html.escape(dept)} · {html.escape(room)} · 열린 건 {len(person_rows)}건(본인 {len(mine)}건)</span>
+          <button type="button" class="sec-act" onclick="openPersonA3(this.closest('.blk').dataset.person);">🖨 A3 요약본</button></h2>
         {table([row_html(n, d, it) for n, d, it in mine], "열린 건 없음")}{team_html}
       </div>''')
 
@@ -1619,7 +1724,7 @@ def build() -> str:
             f'<h3 class="rsp">{html.escape(w)} <span class="gc">{len(by_who[w])}건</span></h3>\n        '
             + table([row_html(n, d, it) for n, d, it in by_who[w]], "없음")
             for w in names)
-        blocks.insert(0, f'''      <div class="blk">
+        blocks.insert(len(MANAGERS), f'''      <div class="blk pr-skip">
         <h2>책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · {len(aside_rt)}건 ·
           이 줄은 완료로 닫지 않습니다 — 아래 「업무」와 구분해 주십시오</span></h2>
         {inner}
@@ -1656,7 +1761,7 @@ def build() -> str:
                      f'{len(aside_rc)}건 · 중복 {len(aside_dup)}건은 맨 아래 접힘 목록으로 내렸습니다 · '
                      f'<b>여기 남은 {len(shown)}건이 업무 SSOT 에 올려야 하는 것</b>입니다.</span>')
 
-    top5 = sorted(shown, key=lambda x: (-days_since(x[1]), x[0]))[:5]
+    missed = missed_items(shown)
     head = " · ".join(f"{n} {c}건(SSOT 미등록 {m}건)" for n, c, m in counts)
     total = len(shown)
     oldest = max((days_since(d) for _, d, _, _ in shown), default=0)
@@ -1683,13 +1788,13 @@ def build() -> str:
   h2 {{ font-size:16px; padding:10px 14px; background:var(--navy-bg); color:var(--navy); border-bottom:1px solid var(--line); }}
   h2 .sub {{ font-weight:400; color:var(--dim); font-size:13px; margin-left:8px; }}
   /* 👤 책임 항목 4인(GM 지시 2026-09-14) — .blk·table 결 그대로, 칸 너비만 추가 */
-  section.resp, section.resp-q {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
+  section.resp, details.resp-q {{ background:#fff; border:1px solid var(--line); margin-top:14px; }}
   section.resp > h2, section.resp-q > h2 {{ background:var(--navy); color:#fff; }}
   /* 📅 분기 누적(GM 지시 2026-09-15) — 같은 .resp-tb, 달 칸(rq)만 추가 */
-  section.resp-q > h2 .sub {{ color:#fff; opacity:.8; }}
-  section.resp-q th.rq, section.resp-q td.rq {{ width:16%; font-size:13px; }}
-  section.resp-q td.rq.bad {{ color:var(--bad); font-weight:700; }}
-  section.resp-q details > summary {{ padding:9px 14px; cursor:pointer; color:var(--navy); font-weight:700; border-top:1px solid var(--line); }}
+  details.resp-q > summary .sub {{ color:#fff; opacity:.8; font-weight:400; font-size:13px; margin-left:8px; }}
+  details.resp-q th.rq, details.resp-q td.rq {{ width:16%; font-size:13px; }}
+  details.resp-q td.rq.bad {{ color:var(--bad); font-weight:700; }}
+  details.resp-q details > summary {{ padding:9px 14px; cursor:pointer; color:var(--navy); font-weight:700; border-top:1px solid var(--line); }}
   .rp-person {{ border-top:1px solid var(--line); }}
   .rp-person:first-child {{ border-top:0; }}
   .rp-person h3 {{ padding:9px 14px; font-size:14.5px; color:var(--navy); background:var(--navy-bg); }}
@@ -1717,6 +1822,7 @@ def build() -> str:
   td.note {{ color:var(--dim); }}
   /* 진척 칸·함께 하는 사람·책임 사람머리 (GM 지시 2026-09-11) */
   td.pg, th.pg {{ width:132px; }}
+  th.pg {{ display:table-cell; }}   /* 아래 .pg flex 규칙이 머리칸까지 먹어 머리행 배경이 끊기던 것 */
   /* ★막대가 찔끔 나오던 것 (GM 지적 2026-09-14 「30%인데 그래프가 찔끔?」).
      .bar 가 span 이라 기본이 inline 이었다 — inline 은 height·width 가 안 먹어 트랙이
      내용 폭(=0)으로 접혔고, 그 0 의 30% 라 막대가 점처럼 보였다. 블록으로 펴고 폭을 준다. */
@@ -1807,19 +1913,6 @@ def build() -> str:
     .blk table {{ min-width:620px; }}
     .top-age {{ flex:0 0 46px; font-size:15px; }}
   }}
-  /* 📅 이번 주 — 세 칸(끝난 것·새로 뜬 것·멈춘 것). 좁아지면 한 줄씩 쌓인다. */
-  .week{{margin:14px 0 18px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff}}
-  .week>h2{{margin:0 0 10px;font-size:15px;font-weight:800}}
-  .week .sub{{font-size:11.5px;font-weight:600;color:var(--dim);margin-left:8px}}
-  .wk-cols{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}}
-  .wk-col{{border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}}
-  .wk-col>h3{{margin:0 0 7px;font-size:12.5px;font-weight:800}}
-  .wk-warn{{border-color:#e6b3b3;background:#fff8f8}}
-  .wk-list{{margin:0;padding-left:16px}}
-  .wk-list li{{font-size:12px;line-height:1.65;padding:1px 0}}
-  .wk-who{{color:var(--dim);margin-left:6px}}
-  .wk-age{{color:var(--dim);margin-left:6px;font-variant-numeric:tabular-nums}}
-  .wk-none{{font-size:12px;color:var(--dim);list-style:none;margin-left:-14px}}
   /* A3 요약본(인쇄+PNG) — GM업무.html 과 같은 버튼 3개(GM 지시 2026-09-15). 제목 줄 오른쪽에 상시 노출,
      별도 배지·설명문은 안 둔다. */
   @page {{ size: A3 portrait; margin: 12mm; }}
@@ -1829,47 +1922,89 @@ def build() -> str:
     background:var(--navy);border:1px solid var(--navy);border-radius:99px;padding:5px 13px;}}
   .a3bar button:hover{{opacity:.85;}}
   .a3bar button:disabled{{opacity:.5;cursor:default;}}
+  /* 사람별 A3 요약본 막대 — GM업무.html .mapbar 와 같은 구성 */
+  .mapbar{{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--navy);color:#fff;padding:8px 14px;margin:-22px -18px 14px;font-size:13px;}}
+  .mapbar .t{{flex:1 1 auto;font-weight:700;}}
+  .mapbar button{{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--navy);background:#fff;border:0;border-radius:99px;padding:5px 13px;cursor:pointer;}}
+  .mapbar button.x{{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);}}
+  .a3-hide{{display:none !important;}}
+  body[data-a3] .pr-skip, body[data-a3] .cur-h{{display:none !important;}}
+  /* 사람 블록 「🖨 A3 요약본」 버튼 — GM업무.html .sec-act 와 같은 규격(알약·테두리 1px·12.5px·700) */
+  h2 .sec-act{{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--navy);background:#fff;cursor:pointer;
+    border:1px solid var(--navy);border-radius:99px;padding:3px 11px;margin-left:auto;white-space:nowrap;}}
+  h2 .sec-act:hover{{background:var(--navy);color:#fff;}}
+  .blk > h2{{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}}
+  h2.cur-h{{margin-top:18px;background:var(--navy);color:#fff;border:1px solid var(--navy);}}
+  h2.cur-h .sub{{color:#fff;opacity:.8;}}
+  /* ⚠ 놓친 것 — 사람별 묶음 */
+  .top-who{{margin-top:6px;}}
+  .top-who h3{{font-size:14px;font-weight:800;color:var(--navy);margin:8px 0 2px;}}
+  .top-who h3 .gc{{font-size:12px;font-weight:600;color:var(--dim);margin-left:6px;}}
+  /* 다음 한 걸음 칸(체크리스트 대신) */
+  td.nx, th.nx{{width:190px;font-size:13px;}}
+  .nx-none{{color:var(--warn);}}
+  .nx-reply{{font-size:11px;color:var(--dim);margin-top:2px;}}
+  td.due.old{{color:var(--bad);font-weight:800;}}
+  /* 토글 상세표 공통 6열(colgroup + table-layout:fixed) — 세 표가 같은 열 폭 · 번호 칸은 표 안 첫 칸 */
+  table.dt{{table-layout:fixed;width:100%;}}
+  table.dt col.dt-no{{width:150px;}} table.dt col.dt-who{{width:150px;}} table.dt col.dt-due{{width:104px;}}
+  table.dt col.dt-age{{width:70px;}} table.dt col.dt-etc{{width:220px;}}
+  table.dt th, table.dt td{{overflow:hidden;text-overflow:ellipsis;}}
+  table.dt th.dt-no, table.dt td.dt-no{{padding-left:24px;color:var(--dim);font-weight:700;white-space:nowrap;}}
+  table.dt td.dt-age .age{{font-variant-numeric:tabular-nums;}} table.dt td.dt-age .age.warn{{color:var(--warn);font-weight:700;}}
+  table.dt td.dt-age .age.old{{color:var(--bad);font-weight:900;}}
+  /* 📅 분기 누적 — 접힌 details */
+  details.resp-q > summary{{list-style:none;cursor:pointer;font-size:16px;font-weight:700;padding:10px 14px;background:var(--navy);color:#fff;}}
+  details.resp-q > summary::-webkit-details-marker{{display:none;}}
+  details.resp-q > summary::before{{content:"▸ ";opacity:.8;}}
+  details.resp-q[open] > summary::before{{content:"▾ ";}}
   @media print{{
-    .a3bar{{display:none !important;}}
+    .a3bar,.mapbar{{display:none !important;}}
     body{{padding:0;}}
     .wrap{{max-width:100%;}}
-    section.resp,.week,.top,.blk{{break-inside:avoid;}}
+    section.resp,.top,.blk,.top-who{{break-inside:avoid;}}
     .pr-skip{{display:none !important;}}
   }}
 </style>
 </head>
 <body>
+<div class="mapbar" id="mapbar" style="display:none;">
+  <span class="t">🖨 A3 요약본 — <b id="a3name"></b> · 책임 항목 + 놓친 것 + 현재 업무만 인쇄·저장됩니다</span>
+  <button type="button" onclick="printA3('landscape');">🖨 A3 가로 인쇄</button>
+  <button type="button" onclick="printA3('portrait');">🖨 A3 세로 인쇄</button>
+  <button type="button" id="mgr-png-btn" onclick="saveMapPng(this);">🖼 PNG 다운로드</button>
+  <button type="button" class="x" onclick="closePersonA3();">✕ 닫기</button>
+</div>
 <div class="wrap">
   <div class="h1row">
     <h1>중간관리자 업무 목차</h1>
     <div class="a3bar">
-      <button type="button" onclick="printA3('landscape');">🖨 A3 가로 인쇄</button>
-      <button type="button" onclick="printA3('portrait');">🖨 A3 세로 인쇄</button>
-      <button type="button" id="mgr-png-btn" onclick="saveMapPng(this);">🖼 PNG 다운로드</button>
+      <button type="button" onclick="openQuarter();">📅 분기 누적 책임항목 평가</button>
     </div>
   </div>
   <div class="lede">이경연 실장 · 이정헌 소장 · 나우열M 세 사람의 <b>열린 업무</b>를 번호순으로 편 목차입니다.
     회신은 번호로 받습니다 — 「#번호 + 했다/진행중/언제」 한 줄.<br>
-    체크는 GM 화면에만 남습니다(이 브라우저). 원장 상태는 실무진 회신이 오면 바뀝니다.</div>
+    회신이 오면 원장이 닫히고 이 화면이 바로 다시 만들어집니다(체크리스트 없음).</div>
   <div class="bar">기준 {date.today().isoformat()} · 열린 {total}건 · 가장 오래된 것 {oldest}일 · 14일 넘게 답 없는 것 {stale}건
-    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건 · 진행할 건은 본인이 SSOT 등록</span>
+    <span class="b2">{html.escape(head)} · 담당 미정 {len(unassigned)}건 · 놓친 것 {len(missed)}건 · 진행할 건은 본인이 SSOT 등록</span>
     {ssot_note}</div>
 
 {resp_html}
-{week_html}
 
-  <div class="top">
-    <h2>🔺 먼저 볼 것 <span class="why">사람 상관없이 오래 묵은 순 5건 — 여기부터 답을 받으세요</span></h2>
-      {top_html(top5)}
-  </div>
+{missed_section(missed)}
 
+  <h2 class="cur-h">📋 현재 업무 <span class="sub">사람별 · 번호순 · 담당 칸은 GM 이 바꿀 수 있습니다</span></h2>
 {chr(10).join(blocks)}
+
+{quarter_html}
   <div class="foot">
     <b>이 목록은 무엇인가</b><br>
     ① 값은 매일 아침 카카오·텔레그램 방을 정리해 쌓는 원장(<code>_digest_ledger.json</code>)에서 그대로 옵니다 — 이 화면이 따로 적어 두는 건 없습니다.<br>
     ② 번호(#)는 건마다 처음 잡힌 그대로 고정입니다 — 목록이 바뀌어도 번호는 안 바뀌므로 그 번호로 이야기하시면 됩니다.<br>
-    ③ 회신은 번호로 붙습니다 — 실무진이 방에 「#번호 + 했다/진행중/언제」로 답하면 다음 날 아침 정리에서 그 건의 「최근 상황」이 바뀌고, 끝난 건은 이 목록에서 내려갑니다.<br>
-    갱신 = <code>python scripts/manager_task_index.py</code> · 경과 색 = 14일 이상 빨강 · 7~13일 주황.
+    ③ 회신은 번호로 붙습니다 — 실무진이 방에 「#번호 + 했다」로 답하면 그 건이 닫히고 이 화면이 바로 다시 만들어집니다 · 답이 없으면 07:50 통에 「N일째」로 다시 실립니다.<br>
+    ④ 「다음 한 걸음」은 원장 next_step 칸입니다 — 비어 있으면 담당이 한 줄로 채웁니다(지어 넣지 않습니다).<br>
+    갱신 = <code>python scripts/manager_task_index.py --publish</code> · 경과 색 = 14일 이상 빨강 · 7~13일 주황.
   </div>
 </div>
 <script>
@@ -1881,6 +2016,27 @@ def build() -> str:
     if (!st) {{ st = document.createElement('style'); st.id = 'mgr-a3-style'; document.head.appendChild(st); }}
     st.textContent = '@page{{ size: A3 ' + orientation + '; margin: 12mm; }}';
     window.print();
+  }};
+  // 사람별 A3 요약본(GM 지시 2026-09-15 「각 업무에 요약본 · GM업무 A3 요약본처럼」) — GM업무 「전체 지도」와
+  //   같은 순서: 보기 먼저(그 사람의 책임 항목+놓친 것+현재 업무만 남김) → 위 막대에서 A3 인쇄·PNG. data-person
+  //   이 다른 블록은 감춘다(값을 지우는 게 아니라 잠시 안 보이는 것 · 닫기로 원상복구).
+  window.openPersonA3 = function (name) {{
+    document.body.dataset.a3 = name;
+    document.querySelectorAll('[data-person]').forEach(function (el) {{ el.classList.toggle('a3-hide', el.dataset.person !== name); }});
+    document.getElementById('a3name').textContent = name;
+    document.getElementById('mapbar').style.display = 'flex';
+    document.getElementById('resp-q').open = false;
+    window.scrollTo(0, 0);
+  }};
+  window.closePersonA3 = function () {{
+    delete document.body.dataset.a3;
+    document.querySelectorAll('.a3-hide').forEach(function (el) {{ el.classList.remove('a3-hide'); }});
+    document.getElementById('mapbar').style.display = 'none';
+  }};
+  window.openQuarter = function () {{
+    var d = document.getElementById('resp-q');
+    d.open = true;
+    d.scrollIntoView({{behavior: 'smooth', block: 'start'}});
   }};
   var H2C_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
   function loadH2C() {{
@@ -1896,7 +2052,8 @@ def build() -> str:
     var label = btn.textContent;
     btn.textContent = '변환 중…'; btn.disabled = true;
     var d = new Date();
-    var name = '중간관리자_업무목차_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
+    var who = document.body.dataset.a3 ? '_' + document.body.dataset.a3.replace(/[ ]+/g, '') : '';
+    var name = '중간관리자_업무' + who + '_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
     // html2canvas 는 화면 그대로를 찍어 @media print 규칙(.pr-skip 숨김)이 안 먹는다 — 인쇄와 같은
     // 범위가 되도록 캡처 직전에만 감췄다가 끝나면 되돌린다(인쇄의 details 강제오픈과 대칭인 처리).
     var skipped = Array.prototype.slice.call(document.querySelectorAll('.pr-skip'));
@@ -1916,47 +2073,10 @@ def build() -> str:
       }});
   }};
 
-  // 체크 상태는 공용 보드에 남긴다(GM 지적 2026-09-10 "아무 추적 및 연동 관련된 부분이 어설픈데?").
-  //   종전엔 localStorage 라 그 브라우저에만 남았다 — 다른 기기로 열거나 다른 사람이 보면
-  //   아무 흔적이 없었다. GM_TASK_OWNERS 담당 칸이 쓰는 그 보드(GAS saveBoard)에 키만 하나
-  //   더 둔다 — 새 저장소를 만들지 않는다(약속 L21). 저장은 최신 보드를 다시 읽어 내 값 하나만
-  //   얹는 방식이라 남의 체크를 덮지 않는다.
+  // 체크 보드(MGR_TASK_DONE)는 뺐다(GM 2026-09-15 「체크리스트로 하는거 말고 더 효율적인 방법」) —
+  //   건마다 「다음 한 걸음 · 회신 규격」 한 줄로 보이고, 회신 「#N 했다」가 오면 원장이 닫히며 화면이 바로 다시 만들어진다.
   var BOARD_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
-  var BOARD_KEY = 'MGR_TASK_DONE';
   var ERP_API_ON = /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname);
-  var boardCache = {{}};
-  function readBoard() {{
-    var gas = function () {{
-      return fetch(BOARD_URL + '?action=board&key=' + BOARD_KEY, {{cache:'no-store'}})
-        .then(function (r) {{ return r.json(); }});
-    }};
-    if (!ERP_API_ON) return gas();
-    return fetch('/api/board/' + BOARD_KEY, {{cache:'no-store'}})
-      .then(function (r) {{ if (!r.ok) throw new Error('api ' + r.status); return r.json(); }})
-      .catch(gas);
-  }}
-  function saveCheck(k, on) {{
-    return readBoard().then(function (j) {{
-      var fresh = (j && j.ok && j.board) ? j.board : {{}};
-      if (on) fresh[k] = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      else delete fresh[k];
-      boardCache = fresh;
-      return fetch(BOARD_URL, {{method:'POST', headers:{{'Content-Type':'text/plain;charset=UTF-8'}},
-                              body: JSON.stringify({{action:'saveBoard', key: BOARD_KEY, board: fresh}}),
-                              redirect:'follow'}}).then(function (r) {{ return r.json(); }});
-    }});
-  }}
-  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[data-k]'));
-  readBoard().then(function (j) {{
-    boardCache = (j && j.ok && j.board) ? j.board : {{}};
-    boxes.forEach(function (b) {{
-      var when = boardCache[b.dataset.k];
-      if (!when) return;
-      b.checked = true;
-      b.closest('tr').classList.add('done');
-      b.title = '체크 ' + when;
-    }});
-  }}).catch(function (e) {{ console.warn('[목차] 체크 보드 읽기 실패', e && e.message); }});
   // ── 담당 지정 (GM 2026-09-10 "SSOT 등록건은 담당자도 설정할 수 있어야해") ──────────────
   //   저장 자리 = 같은 공용 보드의 다른 키(MGR_TASK_OWNER). 체크와 같은 방식이라 새 저장소가 없다.
   //   다음 갱신(manager_task_index.py)이 이 값을 읽어 원장 담당 빈칸을 채우고 사람별 표로 옮긴다.
@@ -2008,22 +2128,6 @@ def build() -> str:
       }}).catch(function () {{
         inp.disabled = false; inp.value = was;
         alert('담당을 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.');
-      }});
-    }});
-  }});
-
-  boxes.forEach(function (b) {{
-    b.addEventListener('change', function () {{
-      var on = b.checked;
-      b.closest('tr').classList.toggle('done', on);
-      b.disabled = true;
-      saveCheck(b.dataset.k, on).then(function (res) {{
-        b.disabled = false;
-        if (!(res && res.ok)) {{ b.checked = !on; b.closest('tr').classList.toggle('done', !on);
-                                alert('체크를 저장하지 못했습니다 — 잠시 뒤 다시 눌러 주세요.'); }}
-      }}).catch(function () {{
-        b.disabled = false; b.checked = !on; b.closest('tr').classList.toggle('done', !on);
-        alert('체크를 저장하지 못했습니다 — 잠시 뒤 다시 눌러 주세요.');
       }});
     }});
   }});
@@ -2286,12 +2390,39 @@ def _selfcheck_meeting_a3() -> None:
     print("[selfcheck] meeting_a3 렌더 OK")
 
 
+def regenerate_and_publish(reason: str = "") -> bool:
+    """「바로 반영」 한 관문(GM 지시 2026-09-15 「#283 완료했는데 바로 반영이 안됨」) — 화면 재생성 → 저장·배포.
+    원장(_digest_ledger)이 바뀌는 자리(send_ops_digest --resolve · sync_ledger_replies 회신 매칭 · 07:50 통 ·
+    GM 채팅 「#N 완료」→ --resolve)가 전부 이 함수를 부른다. 저장은 safe_commit(락·가드) 한 경로 · 푸시까지.
+    실패해도 예외를 밖으로 던지지 않는다(통 발송을 막지 않는다) — False 로만 알린다."""
+    import subprocess
+    import sys
+    try:
+        OUT.write_text(build(), encoding="utf-8")
+    except Exception as exc:
+        print(f"[mgr] 재생성 실패: {type(exc).__name__}: {exc}")
+        return False
+    msg = "chore(mgr): 중간관리자 업무 화면 바로 반영" + (f" — {reason}" if reason else "")
+    cmd = [sys.executable, str(ROOT / "scripts" / "safe_commit.py"),
+           str(OUT.relative_to(ROOT)), str(HIST_PATH.relative_to(ROOT)), "-m", msg, "--holder", "mgr_publish"]
+    try:
+        proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, timeout=300)
+    except Exception as exc:
+        print(f"[mgr] 저장·배포 실패: {type(exc).__name__}: {exc}")
+        return False
+    tail = (proc.stdout or b"").decode("utf-8", "replace").strip().splitlines()[-1:]
+    print(f"[mgr] 재생성 → 저장·배포 rc={proc.returncode} {' '.join(tail)}")
+    return proc.returncode == 0
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="중간관리자 업무 목차 렌더")
     ap.add_argument("--clean-notes", action="store_true",
                     help="원장 note 에서 우리 발신 조각·똑같이 겹친 조각을 걷어낸다(원장을 고침)")
     ap.add_argument("--dry", action="store_true", help="--clean-notes 미리보기 — 파일은 안 고침")
     ap.add_argument("--selfcheck", action="store_true", help="판정 규칙 자가검사")
+    ap.add_argument("--publish", action="store_true", help="재생성 뒤 저장·배포까지(regenerate_and_publish)")
+    ap.add_argument("--reason", default="", help="--publish 커밋 메시지 꼬리(예: #283 완료)")
     ap.add_argument("--meeting-a3", action="store_true",
                     help="주간 회의자료 A3 정본(중간관리자_회의자료_A3.html + png) 생성 · 회차 원장 append")
     ap.add_argument("--week", default="", help="--meeting-a3 회의일(화요일 YYYY-MM-DD · 기본 오늘이 속한 주 화요일)")
@@ -2306,6 +2437,8 @@ if __name__ == "__main__":
         print(f"[meeting-a3] {_r['doc_no']} · {_meeting} · {MEETING_OUT.relative_to(ROOT)} · png={'있음' if MEETING_PNG.exists() else '없음'}")
     elif args.clean_notes:
         clean_notes(dry=args.dry)
+    elif args.publish:
+        raise SystemExit(0 if regenerate_and_publish(args.reason) else 1)
     else:
         OUT.write_text(build(), encoding="utf-8")
         print(f"[manager_task_index] {OUT.relative_to(ROOT)} · {OUT.stat().st_size:,} bytes")

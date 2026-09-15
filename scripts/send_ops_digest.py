@@ -802,6 +802,12 @@ def resolve_nudge_issues(fragments: list, why: str = "") -> int:
 
     for d, owner, title in hits:
         print(f"{d} | {owner} | {title}")
+    # 바로 반영(GM 지시 2026-09-15 「#283 완료했는데 바로 반영이 안됨」) — 닫은 그 자리에서 화면 재생성·저장·배포.
+    try:
+        import manager_task_index
+        manager_task_index.regenerate_and_publish(f"--resolve {len(hits)}건")
+    except Exception as exc:
+        print(f"[mgr] 바로 반영 예외(무시): {type(exc).__name__}: {exc}")
     return 0
 
 
@@ -1067,6 +1073,9 @@ def send_nawool_noon(dry: bool = False) -> int:
         no_touched = sync_ledger_replies(today, ledger)
         if no_touched:
             log(f"[noon] 원장 이슈 {len(no_touched)}건에 번호 회신 반영")
+            # 바로 반영(GM 지시 2026-09-15) — 낮 회신으로 닫힌 건이 화면에서 그날 안에 내려간다.
+            import manager_task_index
+            manager_task_index.regenerate_and_publish(f"낮 회신 {len(no_touched)}건")
     except Exception as exc:
         log(f"[noon] 원장 번호 매칭 예외(무시): {type(exc).__name__}: {exc}")
 
@@ -3992,8 +4001,8 @@ def main() -> int:
         # 통 발송을 막지 않는다 — 로그 한 줄만 남기고 다음 회차에 다시 만든다.
         try:
             import manager_task_index
-            manager_task_index.OUT.write_text(manager_task_index.build(), encoding="utf-8")
-            log(f"[mgr] 업무 목차 화면 재생성 — {manager_task_index.OUT.name}")
+            ok = manager_task_index.regenerate_and_publish("07:50 통")   # 재생성 + 저장·배포 한 흐름(GM 2026-09-15)
+            log(f"[mgr] 업무 목차 화면 재생성·배포 {'OK' if ok else '실패'} — {manager_task_index.OUT.name}")
         except Exception as exc:
             log(f"[mgr] 업무 목차 재생성 예외(무시): {type(exc).__name__}: {exc}")
 
