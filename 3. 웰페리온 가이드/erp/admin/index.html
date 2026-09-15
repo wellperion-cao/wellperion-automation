@@ -305,8 +305,10 @@
 
 <section class="panel" data-panel="partners">
   <h2>파트너사</h2>
-  <div class="meta">지금 <b>1곳</b>이 이 ERP 를 쓰고 있습니다 · 숫자를 누르면 그 화면이 열립니다</div>
-  <div class="entries">
+  <div class="meta">지금 <b>1곳</b>이 이 플랫폼을 쓰고 있습니다 · <a href="/auth/admin" target="_blank" rel="noopener">권한 관리 ↗</a></div>
+  <!-- 옛 콘솔 즐겨찾기 카드 7장(화면·자동화·비용·권한·기술·자율·GM)은 파트너사와 무관해 숨김 — GM 2026-09-15 18:4x 「화면 열람 의미 없지 않나, 즐겨찾기 링크 같은데」.
+       지우지 않고 숨긴 이유 = 아래 JS 가 n-screens·n-auto·n-cost 칸을 채운다(없으면 오류). 같은 값은 사이드 메뉴 자율현황·AI·서버 비용 현황에 있다. -->
+  <div class="entries" style="display:none">
     <a class="entry" href="/erp/" target="_blank" rel="noopener">
       <div class="num placeholder" id="n-screens">—</div>
       <div class="name">화면</div>
@@ -1189,8 +1191,13 @@
         try {
           var d = f.contentDocument; if (!d || !d.documentElement) return;
           d.documentElement.style.overflow = 'hidden';
+          // 재기 전에 높이를 잠깐 최소로 — 안 그러면 html 의 scrollHeight 가 「지금 iframe 높이」로 읽혀
+          // 700ms 마다 24px 씩 끝없이 자라고, 긴 문서에서 짧은 문서로 돌아와도 안 줄어든다(2026-09-15 실측 · 시보).
+          // 같은 틱 안에서 되돌리므로 화면에 깜빡임은 없다.
+          var keep = f.style.height; f.style.height = '150px';
           var h = Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
-          if (h > 200) f.style.height = (h + 24) + 'px';
+          f.style.height = keep;
+          if (h > 200) { var want = (h + 24) + 'px'; if (f.style.height !== want) f.style.height = want; }
         } catch (e) { f.style.height = 'calc(100vh - 84px)'; }
       }
       f.onload = function(){ apply(); f._fitTimer = setInterval(apply, 700); };

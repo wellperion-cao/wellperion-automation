@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>웰페리온 랩스 전략 로드맵 v0.2</title>
+<title>웰페리온 랩스 전략 로드맵 v0.3</title>
 <link rel="stylesheet" href="../../assets/wp-ui.css">
 <link rel="stylesheet" href="platform_brand.css">
 <style>
@@ -21,7 +21,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </style></head><body>
 <script>if(window.self!==window.top){document.body.className+=' embedded';}</script>
 <a class="back" href="company.html">← 회사 소개서 &amp; 전략 로드맵</a>
-<h1>웰페리온 랩스 — 전략 로드맵 <span class="tag">v0.2 · 내부 자료 · 2026-09-15</span></h1>
+<h1>웰페리온 랩스 — 전략 로드맵 <span class="tag">v0.3 · 내부 자료 · 2026-09-15 · 숫자 가안 추가</span></h1>
 <div class="meta">작성 AI 시보 · 근거 = GM 지시 09-15 · 5모델 검토 A3(09-03) · 희만이 조건 4칸(09-09) · 파일럿 2곳 실측. 밖에 보내지 않는다 — 밖에 보내는 것은 회사 소개서.</div>
 
 <h2>1. 북극성 · 지표</h2>
@@ -65,7 +65,39 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </table>
 <p class="note">리드 대장은 웰페리온 랩스 관리 › 파트너사 › 온보딩 질문·답 누적 표가 겸한다(센터가 늘면 「단계」 열을 붙인다 — 새 표 안 만든다).</p>
 
-<h2>5. 가격 구조 (금액은 GM 결재 · 공급가 · 부가세 별도)</h2>
+<h2>5. 가격 가안 — 숫자로 (GM 결재 전 · 공급가 · 부가세 별도)</h2>
+<table><colgroup><col style="width:14%"><col style="width:16%"><col style="width:16%"><col></colgroup>
+<tr><th>묶음</th><th>셋업(1회)</th><th>월 이용</th><th>근거 · 어디서 온 숫자인가</th></tr>
+<tr><td>스타트</td><td>500,000</td><td>150,000</td><td>블로그 대행 시장가 월 30~60만(추정) 아래 · 시보 셋업 1주</td></tr>
+<tr><td>그로스</td><td>1,000,000</td><td>300,000</td><td>+상담봇·인스타 · 직원 1명 인건비(월 250만+)의 12%</td></tr>
+<tr><td>운영</td><td>1,500,000</td><td>500,000</td><td>+운영 시스템 3모듈 · 다캠 셋업 2주 실측</td></tr>
+<tr><td>사용량</td><td>—</td><td>답변 1건 50원</td><td>모델 원가 10~30원(추정) · 상한 일 300건 → 월 최대 45만 · 보통 1~3만</td></tr>
+<tr><td>웰페리온(1호)</td><td>0</td><td>0 또는 원가 100,000</td><td>법인 분리 시 이전가격 필요</td></tr>
+</table>
+<table><colgroup><col style="width:30%"><col style="width:20%"><col></colgroup>
+<tr><th>테넌트 1곳 월 원가(가안)</th><th>금액</th><th>근거</th></tr>
+<tr><td>AWS 증분</td><td>50,000</td><td>월 150만 한도 안 80만 여유(A3 09-03) · 테넌트 추가 = 폴더·계정·nginx 1줄 → 증분 작음(추정)</td></tr>
+<tr><td>모델 호출(상담봇·글)</td><td>20,000</td><td>시토 추정 「월 수천 원」 상한을 넉넉히</td></tr>
+<tr><td>AI 운영(아침 통·문서 갱신 토큰)</td><td>30,000</td><td>추정 — 토큰 수집기(status/token_usage) 로 10월에 실측 교체</td></tr>
+<tr><td><b>합계</b></td><td><b>100,000</b></td><td>묶음 평균 월 280,000(스타트 4:그로스 4:운영 2) → <b>월 마진 180,000/곳</b></td></tr>
+</table>
+<p class="note">시보 시간(사람 손)은 원가에 0으로 잡혀 있다 — 이것이 셋업비를 받는 이유다. 시장가 줄은 추정이라 GM 이 알고 계신 업계 값으로 바꿔 주시면 표를 다시 계산한다.</p>
+
+<h2>5-1. 12개월 시나리오 (2026-10 ~ 2027-09 · 가안)</h2>
+<table><colgroup><col style="width:12%"><col style="width:22%"><col style="width:22%"><col style="width:22%"><col></colgroup>
+<tr><th>시나리오</th><th>유료 테넌트(누적)</th><th>12개월 매출</th><th>12개월 원가</th><th>이익</th></tr>
+<tr><td>보수</td><td>11월 1 → 3월 3 → 9월 5</td><td>14,300,000</td><td>5,900,000</td><td>8,400,000</td></tr>
+<tr><td>기본</td><td>11월 1 → 3월 5 → 8월 10</td><td>27,200,000</td><td>8,900,000</td><td>18,300,000</td></tr>
+</table>
+<table><colgroup><col style="width:26%"><col></colgroup>
+<tr><th>계산 방식</th><td>새 테넌트마다 셋업 평균 900,000 + 누적 테넌트 × 월 280,000 · 원가 = 누적 × 100,000 + 월 고정비 200,000(법인 뒤 회계·세무 추정 · 사업부 단계는 0)</td></tr>
+<tr><th>마지막 달 월 매출</th><td>보수 1,400,000 · 기본 2,800,000 (셋업 없이 월 이용만)</td></tr>
+<tr><th>손익분기</th><td>고정비 200,000 ÷ 월 마진 180,000 = <b>테넌트 1.1곳</b> — 첫 유료 계약이 곧 손익분기</td></tr>
+<tr><th>10곳 뒤 사람 손</th><td>셋업 1주/곳 → 월 2곳이 상한. 그 위는 질문은행 → 문서 자동 초안(12월 끝 기준)이 있어야 한다</td></tr>
+<tr><th>안 넣은 것</th><td>카카오 채널 API 전환 비용(결제 결재) · 법인 설립 1회 비용 · 희만이 지분(가격 밖)</td></tr>
+</table>
+
+<h2>5-2. 가격 구조 (층)</h2>
 <table><colgroup><col style="width:20%"><col style="width:40%"><col></colgroup>
 <tr><th>층</th><th>무엇에 대한 값</th><th>원가·근거</th></tr>
 <tr><td>셋업(1회)</td><td>정본 셋업 · 문서 3종 · 계정·채널 연결</td><td>시보 시간 — 다캠 2주 · 고척 1주</td></tr>
@@ -106,7 +138,7 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <table><colgroup><col style="width:8%"><col style="width:42%"><col></colgroup>
 <tr><th>번호</th><th>결정</th><th>찾은 것 · 후보</th></tr>
 <tr><td>1</td><td>법인 분리 갈래·시기</td><td>A 지금 / B 사업부+브랜드(제안) / C 첫 유료 계약 직전</td></tr>
-<tr><td>2</td><td>가격 — 셋업·월 이용(3묶음)·사용량 공급가</td><td>구조 §5 · 금액 미산정</td></tr>
+<tr><td>2</td><td>가격 — §5 가안 그대로 갈지, 값을 바꿀지</td><td>스타트 50만+15만 · 그로스 100만+30만 · 운영 150만+50만 · 답변 50원</td></tr>
 <tr><td>3</td><td>웰페리온 이전가격</td><td>0원 / 원가</td></tr>
 <tr><td>4</td><td>소개서에 파트너 실명 표기</td><td>대표님 동의 받고 실명 / 업종만(지금)</td></tr>
 <tr><td>5</td><td>랩스 문의 창구</td><td>웰페리온 AI 카톡(지금) / 랩스 전용 번호·채널</td></tr>
