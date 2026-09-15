@@ -544,7 +544,7 @@
   <!-- 등록 띠 — 위 멤버십 한 줄 · 아래 강습(성인·유소년) 넓게. 종전 좌우 반반은 강습 명단이
        성인+유소년 두 단을 반 폭에 욱여넣어 이름 줄이 잘렸다(GM 지적 2026-09-15). 멤버십은 하루
        몇 건이라 한 줄이면 충분하다. -->
-  <div class="col" id="p2regband" style="flex:1.22;min-height:0;">
+  <div class="col" id="p2regband" style="flex:1.32;min-height:0;">
     <div class="sec" style="flex:none;">
       <h2 id="p2memh">오늘 등록 — 멤버십</h2>
       <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -555,7 +555,7 @@
     </div>
   </div>
 
-  <div class="body" id="p2inqband" style="flex:1.06;margin-top:11px;">
+  <div class="body" id="p2inqband" style="flex:0.96;margin-top:11px;">
     <div class="col">
       <!-- 왼쪽 = 문의에서 가입까지. 멤버십 · 성인강습 · 유소년강습 세 갈래를 따로 본다
            (GM 지시 2026-09-15 — 합쳐 두면 어느 쪽이 막히는지 안 보인다). -->
@@ -1934,7 +1934,7 @@ function renderP2Contract(c, dayLabel){
        그만큼이 빈 상자로 남는다. 건수를 보고 자리를 돌려준다 — 남는 높이는 위 문의 띠가 먹는다.
        (GM 지시 2026-09-14 「좌우 상하 칸 배치·밸런스까지 챙겨 달라」) */
     var band = document.getElementById('p2regband');
-    if (band) band.style.flex = (memRows.length + rows.length) ? '1.22' : '0.42';
+    if (band) band.style.flex = (memRows.length + rows.length) ? '1.32' : '0.42';
     var kid = rows.filter(function(x){ return /유소년/.test(x.route); });
     var adult = rows.filter(function(x){ return !/유소년/.test(x.route); });
     les.innerHTML = '<div style="display:flex;gap:14px">' +
