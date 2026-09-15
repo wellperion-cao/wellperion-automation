@@ -257,6 +257,10 @@
   <!-- 메뉴 묶음 5개(GM 2026-09-15 「항목값에 맞는 셋업인지 곰곰이 판단」 · 시토 정리):
        파트너사 = 파는 상대(고객)에 관한 것 · 플랫폼 운영 = 우리 살림(서버·이관·자동화·비용) ·
        모듈 = 따로 파는 앱 · 자료 = 기준·문서 · 개인 = GM 본인 것(회사 화면과 섞지 않는다). -->
+  <!-- 본 회사 = 파는 쪽(우리) — 파트너사 안에 숨기지 않고 맨 위 자기 묶음(GM 2026-09-15 17:3x 「본회사가 왜 파트너사를 들어가야 나오나」). 정본 = company_v0.1.html(시보). -->
+  <div class="cap">웰페리온 랩스</div>
+  <a href="#view/company" data-view="company"><span class="t">본 회사</span></a>
+  <div class="sep"></div>
   <div class="cap">파트너사</div>
   <a href="#partners" data-go="partners"><span class="t">파트너사</span><span class="b" id="b-tn">1</span></a>
   <a href="#products" data-go="products"><span class="t">파트너 산출물</span><span class="b">3</span></a>
@@ -295,15 +299,6 @@
 
 
 <section class="panel" data-panel="partners">
-  <!-- 본 회사(플랫폼 개발사) — 정본은 company_v0.1.html(시보 배 2659 · GM 2026-09-15 「파트너사가 아니라 본 회사 내용도 정립」).
-       여기는 링크 카드 하나뿐이다 — 내용을 두 곳에 두지 않는다. 오른쪽 화면(#view/company)에 뜬다. -->
-  <div class="entries" style="margin-bottom:14px;">
-    <a class="entry" href="#view/company" data-view="company">
-      <div class="num placeholder">v0.1</div>
-      <div class="name">본 회사 — ERP 플랫폼 개발사(가칭)</div>
-      <div class="desc">한 줄 · 비전 · 상품 · 가격 구조 · 법인 갈래 · GM 결정 4번</div>
-    </a>
-  </div>
   <h2>파트너사</h2>
   <div class="meta">지금 <b>1곳</b>이 이 ERP 를 쓰고 있습니다 · 숫자를 누르면 그 화면이 열립니다</div>
   <div class="entries">
@@ -973,7 +968,6 @@
 <!-- 바깥 화면 보기 — 플랫폼관리에서는 모듈·개인 화면을 새 창으로 넘기지 않고 오른쪽에 그대로 띄운다
      (GM 2026-09-15 「ERP플랫폼관리에서는 우측 화면에 보였으면」 · 실사용 ERP 홈은 종전대로 새 페이지). 주소는 #view/이름. -->
 <section class="panel" data-panel="view" hidden>
-  <div class="meta" style="margin-bottom:6px;"><span id="view-title">—</span> · <a id="view-open" href="#" target="_blank" rel="noopener">새 창으로 열기 ↗</a></div>
   <iframe id="view-frame" title="화면 보기" src="about:blank"></iframe>
 </section>
 
@@ -1152,8 +1146,6 @@
     var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황', company:'본 회사' };
     if (key === 'view' && VIEW_NAMES[viewKey]) {
       if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
-      document.getElementById('view-title').textContent = VIEW_NAMES[viewKey];
-      document.getElementById('view-open').href = VIEWS[viewKey];
       var vf0 = document.getElementById('view-frame');
       if (vf0.getAttribute('data-key') !== viewKey) { vf0.src = VIEWS[viewKey]; vf0.setAttribute('data-key', viewKey); }
     }
@@ -1162,8 +1154,6 @@
       a.classList.toggle('on', on);
       if (on) {
         if (crumb) crumb.textContent = a.querySelector('.t').textContent;
-        document.getElementById('view-title').textContent = a.querySelector('.t').textContent;
-        document.getElementById('view-open').href = VIEWS[viewKey];
         var vf = document.getElementById('view-frame');
         if (vf.getAttribute('data-key') !== viewKey) { vf.src = VIEWS[viewKey]; vf.setAttribute('data-key', viewKey); }
       }
