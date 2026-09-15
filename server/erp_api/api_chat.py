@@ -1077,7 +1077,8 @@ def profile(tenant: str, full: bool = False):
                     "emoji": persona.get("emoji") or ""},
         "reservation_url": reservation_url if reservation_url.startswith("http") else "",
         "contact": {"phone": _v(facts.get("phone")), "kakao": _v(channels.get("kakao")),
-                    "naver_place": _v(channels.get("naver_place"))},
+                    "naver_place": _v(channels.get("naver_place")),
+                    "instagram": _v(channels.get("instagram"))},   # 배 2644 — 프로필 배포 확인 칸(공개 계정명뿐)
         "status": meta.get("status") or "",
         "chips": chips, "faq_count": len(faq), "verified_count": sum(1 for it in faq if it.get("verified")),
     }
