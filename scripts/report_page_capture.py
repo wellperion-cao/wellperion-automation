@@ -25,6 +25,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -93,7 +94,10 @@ def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> 
                                   "domain": "erp.wellperion.com", "path": "/"}])
         page = ctx.new_page()
         try:
-            page.goto(URL, wait_until="domcontentloaded", timeout=60_000)
+            # 캐시 버스터 — 공개 사본(Pages)은 CDN 캐시라 방금 올린 판이 아니라 옛 판이 찍힐 수 있다
+            # (2026-09-15 실측: 화면은 새 판인데 캡처만 옛 판이 나왔다).
+            _u = URL + ("&" if "?" in URL else "?") + "cb=" + str(int(time.time()))
+            page.goto(_u, wait_until="domcontentloaded", timeout=60_000)
             page.wait_for_function("() => window.__REPORT_READY != null", timeout=READY_TIMEOUT_MS)
             ready = page.evaluate("() => window.__REPORT_READY")
         except Exception as exc:
@@ -115,7 +119,10 @@ def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> 
         # READY 뒤에도 늦게 오는 칸(일 단위·두 장부 대조 등)이 「불러오는 중…」으로 남은 채 찍히던 것(2026-09-14 실측)
         # — 그 글자가 사라질 때까지 최대 60초 더 기다린다. 끝내 남으면 그대로 찍는다(사유는 그림에 보인다).
         try:
-            page.wait_for_function("() => !document.body.innerText.includes('불러오는 중')", timeout=150_000)
+            page.wait_for_function(
+                "() => !document.body.innerText.includes('불러오는 중')"
+                " && (function(){var e=document.getElementById('p2les');"
+                "return !e || e.innerText.trim().length > 10;})()", timeout=150_000)
         except Exception:
             pass
 
