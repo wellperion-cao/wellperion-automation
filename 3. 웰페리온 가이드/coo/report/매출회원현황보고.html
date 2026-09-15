@@ -173,12 +173,15 @@
   .lsumline b{color:var(--navy);}
   .lsumline .lsumv{margin-left:auto;font-size:12.5px;font-weight:900;color:var(--navy);
     font-variant-numeric:tabular-nums;}
-  .lteams{columns:2;column-gap:14px;margin-top:5px;}
+  .lteams{margin-top:5px;}          /* 한 단 — 팀·담당자 라인이 왼쪽부터 세로로 읽힌다(GM 2026-09-15) */
+  .lstaff{display:flex;align-items:baseline;gap:6px;font-size:10.2px;font-weight:700;color:#48525B;
+    padding:1px 0 1px 6px;background:#F7F9FB;}
+  .lstaff .lsc{margin-left:auto;font-weight:600;font-size:9.6px;color:#7A838B;white-space:nowrap;}
   .lteam{break-inside:avoid;margin-bottom:6px;}
   .lth{font-size:10.6px;font-weight:800;color:var(--navy);display:flex;gap:6px;align-items:baseline;
     border-bottom:1px solid var(--line);padding-bottom:1px;}
   .lth .ltc{margin-left:auto;font-weight:600;color:#48525B;font-size:10px;white-space:nowrap;}
-  .ltr{font-size:10.3px;padding:1.2px 0;border-bottom:1px dotted var(--line);
+  .ltr{font-size:10.3px;padding:1.2px 0 1.2px 14px;border-bottom:1px dotted var(--line);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:7px;}
   .vgrid .vcell{border:1px solid var(--line);padding:5px 9px 6px;min-width:0;}
@@ -1847,11 +1850,30 @@ function lessonTeamHTML(rows){
     var nNew = list.filter(function(x){ return isNew(x.type); }).length;
     var nRe  = list.length - nNew;
     var sum  = list.reduce(function(a, x){ return a + (x.amount || 0); }, 0);
+    /* 팀 안을 담당자로 한 번 더 묶는다 — 누가 얼마를 올렸는지 줄 단위로 보인다(GM 지시 2026-09-15). */
+    var byStaff = {}, staffOrder = [];
+    list.forEach(function(x){
+      var k = x.staff || '–';
+      if (!byStaff[k]) { byStaff[k] = []; staffOrder.push(k); }
+      byStaff[k].push(x);
+    });
+    staffOrder.sort(function(a, b){
+      var sa = byStaff[a].reduce(function(v, x){ return v + (x.amount || 0); }, 0);
+      var sb = byStaff[b].reduce(function(v, x){ return v + (x.amount || 0); }, 0);
+      return sb - sa;
+    });
     return '<div class="lteam"><div class="lth">' + esc(t) +
       '<span class="ltc">신규 <b>' + nNew + '명</b> · 재등록 <b>' + nRe + '명</b> · ' + _won(sum) + '</span></div>' +
-      '<div class="ltl">' + list.map(function(x){
-        return '<div class="ltr">' + esc(x.staff) + ' · ' + esc(x.member) + ' · <b>' + esc(x.amountRaw) +
-               '</b> · ' + esc(x.type) + ' · ' + esc(x.sport) + '</div>'; }).join('') + '</div></div>';
+      staffOrder.map(function(k){
+        var g = byStaff[k];
+        var gNew = g.filter(function(x){ return isNew(x.type); }).length;
+        var gSum = g.reduce(function(a, x){ return a + (x.amount || 0); }, 0);
+        return '<div class="lstaff">' + esc(k) +
+          '<span class="lsc">신규 ' + gNew + ' · 재등록 ' + (g.length - gNew) + ' · ' + _won(gSum) + '</span></div>' +
+          g.map(function(x){
+            return '<div class="ltr">' + esc(x.member) + ' · <b>' + esc(x.amountRaw) + '</b> · ' +
+                   esc(x.type) + ' · ' + esc(x.sport) + '</div>'; }).join('');
+      }).join('') + '</div>';
   }).join('');
   var tNew = rows.filter(function(x){ return isNew(x.type); }).length;
   var tSum = rows.reduce(function(a, x){ return a + (x.amount || 0); }, 0);
