@@ -293,6 +293,15 @@
 
 
 <section class="panel" data-panel="partners">
+  <!-- 본 회사(플랫폼 개발사) — 정본은 company_v0.1.html(시보 배 2659 · GM 2026-09-15 「파트너사가 아니라 본 회사 내용도 정립」).
+       여기는 링크 카드 하나뿐이다 — 내용을 두 곳에 두지 않는다. 오른쪽 화면(#view/company)에 뜬다. -->
+  <div class="entries" style="margin-bottom:14px;">
+    <a class="entry" href="#view/company" data-view="company">
+      <div class="num placeholder">v0.1</div>
+      <div class="name">본 회사 — ERP 플랫폼 개발사(가칭)</div>
+      <div class="desc">한 줄 · 비전 · 상품 · 가격 구조 · 법인 갈래 · GM 결정 4번</div>
+    </a>
+  </div>
   <h2>파트너사</h2>
   <div class="meta">지금 <b>1곳</b>이 이 ERP 를 쓰고 있습니다 · 숫자를 누르면 그 화면이 열립니다</div>
   <div class="entries">
@@ -764,7 +773,7 @@
   <div class="meta" id="tok-billing-line">불러오는 중…</div>
   <div class="tbl-wrap">
   <table class="reg">
-    <thead><tr><th>계정</th><th>세션</th><th>출력 토큰</th><th>캐시 읽기</th><th>비용<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">정가 환산(실제 청구는 위 정액) · 최근 30일 누적, 이번 달 아님</span></th><th>어디에 많이 썼나 (상위 3 · 역할·폴더)</th></tr></thead>
+    <thead><tr><th>계정</th><th>AI 실행 수<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">창 + 서브에이전트 + 자동 실행(하나당 1)</span></th><th>출력 토큰</th><th>캐시 읽기</th><th>비용<br><span style="font-weight:400;font-size:10.5px;color:var(--dim);">정가 환산(실제 청구는 위 정액) · 최근 30일 누적, 이번 달 아님</span></th><th>어디에 많이 썼나 (상위 3 · 역할·폴더)</th></tr></thead>
     <tbody id="tok-acct-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
   </table></div>
   <p class="tip" id="tok-cache-note"></p>
@@ -1128,7 +1137,7 @@
   var viewCards = [].slice.call(document.querySelectorAll('.main a[data-view]'));
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/자율현황.html', kakao:'/cto/automation/카톡전송관리.html', counsel:'/cbo/counsel_admin.html',
-                upload:'/cmo/upload/마케팅자동업로드.html', gm:'/home?v=g1#G1', t1:'/home?v=t1#T1', t2:'/home?v=t2#T2', sunday:'/cmo/sunday/GM의일요일.html', ideas:'/home?v=ideas#G1/ideas' };
+                upload:'/cmo/upload/마케팅자동업로드.html', gm:'/home?v=g1#G1', t1:'/home?v=t1#T1', t2:'/home?v=t2#T2', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html', ideas:'/home?v=ideas#G1/ideas' };
   function show(key, scroll){
     var viewKey = '';
     if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
@@ -1139,7 +1148,7 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황' };
+    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황', company:'본 회사' };
     if (key === 'view' && VIEW_NAMES[viewKey]) {
       if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
       document.getElementById('view-title').textContent = VIEW_NAMES[viewKey];
@@ -1455,7 +1464,7 @@
         }).join('');
         return '<details class="tip"><summary>' + k + ' — 어디에 많이 썼나 상위 ' + items.length + '곳</summary>'
              + '<div class="in"><div class="tbl-wrap"><table class="reg">'
-             + '<thead><tr><th>어디에(역할·폴더)</th><th>세션</th><th>출력</th><th>비용 · 정가환산</th></tr></thead>'
+             + '<thead><tr><th>어디에(역할·폴더)</th><th>AI 실행 수</th><th>출력</th><th>비용 · 정가환산</th></tr></thead>'
              + '<tbody>' + body + '</tbody></table></div></div></details>';
       }).join('');
     }).catch(function(){
