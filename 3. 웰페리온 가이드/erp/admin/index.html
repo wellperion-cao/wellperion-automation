@@ -452,9 +452,8 @@
     var API='/api/admin/partner-secrets', boards=document.getElementById('ps-boards'), line=document.getElementById('ps-line'), sel=document.getElementById('ps-channel');
     // 채널 키 → 사람이 보는 이름. 목록 자체는 서버(d.channels)가 준다 — 서버에 채널이 늘면 자리가 저절로 생긴다.
     var CN={'naver-blog':'네이버 블로그','naver-cafe':'네이버 카페','danggn':'당근','instagram':'인스타그램','threads':'스레드(Threads)','google':'구글','kakao-channel':'카카오 채널','parking':'주차 관리 서비스(ppark-wall)'};
-    // 회사 계정(랩스가 쓰는 밖 서비스) — 파트너 마케팅 채널 표가 아니라 환경 패널 「회사 계정」 표에 wellperion 한 줄로만 그린다(배 2668).
-    var COMPANY={'parking':'http://ppark-wall.iptime.org:8280 · 주차 매출 크롤러(sync_parking.py)가 실행 때 서버에서 받아 씀'};
-    var envAcc=null;   // 환경 패널은 이 스크립트보다 아래에 있어 파싱 때는 없다 — 응답이 온 뒤(문서 완성 뒤) 찾는다
+    // 파트너사 한 곳에만 있는 채널 — 주차 관리 서비스(ppark-wall)는 1호 웰페리온 표에만 그린다(GM 2026-09-15 「파트너사 웰페리온 라인으로」 · 배 2668).
+    var TENANT_ONLY={'parking':'wellperion'};
     function cname(c){ return CN[c] || esc(c); }
     // 파트너 키(jo/dc) → 사람이 보는 이름. 식별자 표·계정 넣기 선택칸과 같은 번호를 쓴다.
     var TN={wellperion:'1호 웰페리온', dc:'2호 다이어트캠프', jo:'3호 고척GDR QA 골프존'};
@@ -464,25 +463,12 @@
       fetch(API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
         sel.innerHTML=(d.channels||[]).map(function(c){ return '<option>'+c+'</option>'; }).join('');
         var items=d.items||[], allChans=d.channels||[], have={};
-        var chans=allChans.filter(function(c){ return !COMPANY[c]; }), comp=allChans.filter(function(c){ return !!COMPANY[c]; });
+        var chans=allChans;
         items.forEach(function(it){ have[it.tenant+'/'+it.channel]=it; });
-        envAcc=envAcc||document.getElementById('env-accounts');
-        if(envAcc&&!envAcc.dataset.bound){ envAcc.addEventListener('click', onClick); envAcc.dataset.bound='1'; }
-        if(envAcc){
-          envAcc.innerHTML='<div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">'+
-            '<colgroup><col style="width:22%"><col style="width:12%"><col style="width:11%"><col style="width:9%"><col style="width:12%"><col><col style="width:150px"></colgroup>'+
-            '<thead><tr><th>서비스</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>어디에 쓰나</th><th></th></tr></thead><tbody style="word-break:break-all">'+
-            comp.map(function(c){
-              var it=have['wellperion/'+c];
-              if(it) return '<tr data-t="wellperion" data-c="'+esc(c)+'" data-company="1"><td class="item">'+cname(c)+'</td><td class="ps-id">'+esc(it.id_masked)+'</td><td class="ps-pw">'+(it.has_pw?'••••••••':'—')+'</td>'+
-                '<td><span class="st ok">활성</span></td><td>'+esc(it.received_at)+'</td><td class="n">'+esc(COMPANY[c])+'</td><td><button class="ps-show">보기</button> <button class="ps-edit">수정</button> <button class="ps-del">삭제</button></td></tr>';
-              return '<tr data-t="wellperion" data-c="'+esc(c)+'" data-company="1" style="opacity:.55"><td class="item">'+cname(c)+'</td><td>—</td><td>—</td><td><span class="st wait">비활성</span></td><td>—</td><td class="n">'+esc(COMPANY[c])+'</td><td><button class="ps-put">넣기</button></td></tr>';
-            }).join('')+'</tbody></table></div>';
-        }
-        line.textContent='활성 '+items.length+'건 / 자리 '+(Object.keys(TN).length*chans.length)+'칸 · 값은 서버 파일에만 있고 이 화면·저장소·로그엔 없습니다';
+        line.textContent='활성 '+items.length+'건 · 값은 서버 파일에만 있고 이 화면·저장소·로그엔 없습니다';
         // 파트너사(1호·2호·3호)마다 표 하나. 행 = 채널 자리 전부. 계정이 있으면 활성, 없으면 비활성.
         boards.innerHTML=Object.keys(TN).map(function(t){
-          var body=chans.map(function(c){
+          var body=chans.filter(function(c){ return !TENANT_ONLY[c] || TENANT_ONLY[c]===t; }).map(function(c){
             var it=have[t+'/'+c];
             if(it){
               return '<tr data-t="'+esc(t)+'" data-c="'+esc(c)+'"><td class="item">'+cname(c)+'</td>'+
@@ -499,27 +485,11 @@
             '<colgroup><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:9%"><col style="width:12%"><col><col style="width:150px"></colgroup>'+
             '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>메모</th><th></th></tr></thead><tbody style="word-break:break-all">'+body+'</tbody></table></div>';
         }).join('');
-      }).catch(function(e){ line.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '목록을 못 읽었습니다('+e+')'; boards.innerHTML=''; if(envAcc) envAcc.innerHTML='<div class="note">'+((e===403)?'회사 관리자 계정만 봅니다':'목록을 못 읽었습니다('+e+')')+'</div>'; });
-    }
-    // 회사 계정 줄의 넣기·수정 — 환경 패널엔 넣기 칸이 없으니 물음창 셋(아이디·비밀번호·코드)으로 바로 서버에 저장한다.
-    function companyPut(body, id0, pw0){
-      var id=prompt('아이디', id0||''); if(id==null) return;
-      var pw=prompt('비밀번호', pw0||''); if(pw==null) return;
-      var code=prompt('저장 — 코드를 입력하세요'); if(!code) return;
-      body.id=id; body.pw=pw; body.code=code; body.note='회사 계정';
-      fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(d){ if(!d.ok) alert(d.error||'실패'); load(); });
+      }).catch(function(e){ line.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '목록을 못 읽었습니다('+e+')'; boards.innerHTML=''; });
     }
     function onClick(ev){
       var b=ev.target, tr=b.closest('tr'); if(!tr||b.tagName!=='BUTTON') return;
       var body={tenant:tr.dataset.t, channel:tr.dataset.c};
-      if(tr.dataset.company && b.classList.contains('ps-put')){ companyPut(body); return; }
-      if(tr.dataset.company && b.classList.contains('ps-edit')){
-        var code4=prompt('수정 — 코드를 입력하세요'); if(!code4) return;
-        fetch(API+'/reveal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tenant:body.tenant,channel:body.channel,code:code4})}).then(function(r){return r.json();}).then(function(d){
-          if(!d.ok){ alert(d.error||'실패'); return; } companyPut(body, d.id, d.pw);
-        });
-        return;
-      }
       if(b.classList.contains('ps-put')){
         // 비활성 자리의 「넣기」 — 아래 계정 넣기 칸에 파트너·채널을 미리 채우고 연다
         document.getElementById('ps-tenant').value=tr.dataset.t; sel.value=tr.dataset.c;
@@ -779,11 +749,6 @@
     </div>
   </div>
   <p class="lead">올라가는 방향은 <b>알파 → 베타 → 라이브</b> 한 방향뿐입니다.</p>
-  <!-- 회사 계정 — 랩스(웰페리온)가 쓰는 밖 서비스 로그인. 파트너 마케팅 채널이 아니라 여기(환경)에 둔다(GM 결정 2026-09-15 · 배 2668).
-       원천·보관·코드 검사는 파트너 채널 계정과 같은 서버 통로(/api/admin/partner-secrets · tenant=wellperion)를 그대로 쓴다 —
-       값은 서버 비밀 파일에만 있고, 크롤러(sync_parking.py)는 실행 때 서버 GET 으로 받아 메모리에만 둔다. -->
-  <h3 style="margin:22px 0 6px;font-size:14px;">회사 계정 <span style="font-weight:400;font-size:12px;color:var(--dim);">랩스가 쓰는 밖 서비스 로그인 · 서버에만 보관 · 보기·저장은 코드</span></h3>
-  <div id="env-accounts"><div class="note">불러오는 중…</div></div>
   <!-- 플랫폼 환경 정본 — 서버·개발 언어·DB·연동 전부(GM 지시 2026-09-14). 값은 ssot/platform_env.json 한 곳에만 있다.
        같은 파일의 partner=true 항목만 ERP관리(파트너사 관리자) ▸개발 환경 에 보인다 — 여기는 전부 보인다. -->
   <h3 style="margin:22px 0 6px;font-size:14px;">플랫폼 환경 정본</h3>
