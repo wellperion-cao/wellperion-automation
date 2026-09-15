@@ -178,7 +178,29 @@ def extract(text: str) -> list[dict]:
     return [c for c in out if c["text"]]
 
 
+# 비밀값처럼 보이는 낱말 — 글자+숫자+특수문자가 섞인 8자 이상(예: 블로그 비밀번호) · 계정·비밀번호 낱말 뒤 토큰.
+# 2026-09-15 실사고: 다캠 대표님이 카톡으로 보내신 네이버 계정·비밀번호가 큐 note·접수 지문·상담 상태에 원문 그대로
+# 적혀 자동 저장·배포로 공개 저장소·Pages·서버까지 퍼졌다. 원문을 적는 자리는 전부 이 함수를 거친다.
+_SECRET_TOKEN_RE = re.compile(r"(?=\S*\d)(?=\S*[A-Za-z])(?=\S*[!@#$%^&*?~])\S{8,}")
+_SECRET_AFTER_RE = re.compile(r"(?<![A-Za-z])(비밀번호|비번|패스워드|password|passwd|pw|아이디|계정|id)(?![A-Za-z])\s*[:：=]?\s*\S+",
+                              re.IGNORECASE)
+
+
+def mask_secrets(text: str) -> str:
+    """사람이 보낸 원문에서 비밀값처럼 보이는 것만 가린다 — 나머지 문장은 그대로."""
+    if not text:
+        return text
+    out = _SECRET_AFTER_RE.sub(lambda m: m.group(1) + " [가림]", text)
+    return _SECRET_TOKEN_RE.sub("[가림]", out)
+
+
 def fingerprint(c: dict) -> str:
+    """중복 판정용 지문 — 원문을 담지 않는다(해시). 옛 지문(원문 그대로)은 fingerprint_legacy 로 한 번 더 본다."""
+    import hashlib
+    return hashlib.sha256(fingerprint_legacy(c).encode("utf-8")).hexdigest()[:16]
+
+
+def fingerprint_legacy(c: dict) -> str:
     return f"{c.get('day','')}|{c['who']}|{c['when']}|{c['text'][:40]}"
 
 
@@ -221,9 +243,9 @@ def extract_external(text: str) -> list[dict]:
 
 
 def to_ship(c: dict, dry: bool) -> bool:
-    title = f"[웰리] ★중간관리자 방 호출 — {c['who']}: {c['text'][:60]}"
+    title = f"[웰리] ★중간관리자 방 호출 — {c['who']}: {mask_secrets(c['text'])[:60]}"
     note = (f"[카톡 호출 자동 접수] ★중간관리자 방 · {c.get('day','')} {c['when']} · {c['who']}\n\n"
-            f"{c['text']}\n\n"
+            f"{mask_secrets(c['text'])}\n\n"
             "▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n"
             "  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n"
             "▸사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 GM 승인을 먼저 받는다(GM 확정 2026-08-21).")
@@ -299,7 +321,7 @@ def _append_to_ship(role: str, room_name: str, ship_no, fresh: list[dict]) -> st
     from queue_lock import mutate_queue
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    lines = [f"- [시토 {now} · 카톡 자동감지 · {room_name}] {c['who']}: {c['text'].replace(chr(10), ' ')[:60]}"
+    lines = [f"- [시토 {now} · 카톡 자동감지 · {room_name}] {c['who']}: {mask_secrets(c['text'].replace(chr(10), ' '))[:60]}"
              for c in fresh]
     hit: dict = {}
 
@@ -332,7 +354,7 @@ def _new_ship_for_external(role: str, room_name: str, fresh: list[dict]) -> None
     제목에 방 이름이 들어가므로 방마다 다른 배가 서고, 담당이 kakao_rooms.json 의 ship_no 를
     그 번호로 바꿔 주면 다음 회차부터 고정 매핑으로 돌아온다(역할 추론 폴백은 쓰지 않는다)."""
     now = datetime.now().strftime("%Y-%m-%d")
-    lines = [f"- [{now} · 카톡 자동감지] {c['who']}: {c['text'].replace(chr(10), ' ')[:60]}" for c in fresh]
+    lines = [f"- [{now} · 카톡 자동감지] {c['who']}: {mask_secrets(c['text'].replace(chr(10), ' '))[:60]}" for c in fresh]
     cmd = [sys.executable, str(ROOT / "scripts" / "queue_dispatch.py"),
            "--to", role, "--sender", "cto", "--priority", "⛴️여객선",
            "--audience", "office", "--reversible", "yes", "--work-type", "update",
@@ -472,7 +494,7 @@ def run_external(dry: bool, probe: bool = False) -> int:
         # last 이후(같은 분 포함 — 분 해상도라 같은 분 재발화를 놓치지 않게 >=)만 후보,
         # 그 안에서 이미 처리한 것은 fingerprint 로 걸러낸다(같은 분 중복 발화 대비).
         candidates = [c for c in calls if call_key(c) >= last]
-        fresh_all = [c for c in candidates if fingerprint(c) not in seen]
+        fresh_all = [c for c in candidates if fingerprint(c) not in seen and fingerprint_legacy(c) not in seen]
         fresh = fresh_all[-MAX_LINES:]
         skipped = len(fresh_all) - len(fresh)
         print(f"[external] {name} — {last} 이후 {len(candidates)}건 · 새 것 {len(fresh_all)}건" +

@@ -40,6 +40,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from kakao_room_listen import mask_secrets  # noqa: E402  — 원문을 적는 자리는 한 함수로(2026-09-15 비밀번호 유출)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
@@ -263,10 +266,16 @@ def new_from_partner(lines: list[dict], last_handled: str) -> list[dict]:
         return []
     if not last_handled:
         return mine[-1:]
-    keys = [f"{ln['day']} {ln['when']} {ln['text']}" for ln in mine]
+    keys = [handled_key(ln) for ln in mine]
     if last_handled in keys:
         return mine[keys.index(last_handled) + 1:]
     return mine[-1:]
+
+
+def handled_key(ln: dict) -> str:
+    """마지막 처리 표식 — 원문을 담지 않는다(해시). 상태 파일에 대표님 말씀이 그대로 남지 않게(2026-09-15)."""
+    import hashlib
+    return hashlib.sha256(f"{ln['day']} {ln['when']} {ln['text']}".encode("utf-8")).hexdigest()[:16]
 
 
 GAP_LABEL = {   # 상담봇 needs_facts 경로 → 대표님께 여쭐 말(GM 2026-09-05 "모르는 건 대표님이랑 소통해서 물어봐")
@@ -484,8 +493,7 @@ def init_marker(conf: dict | None = None) -> int:
     mine = [ln for ln in lines if ln["who"] != GM_NAME]
     st = _load_state(conf["state"])
     st["enabled"] = True
-    st["last_handled"] = (f"{mine[-1]['day']} {mine[-1]['when']} {mine[-1]['text']}"
-                          if mine else "")
+    st["last_handled"] = handled_key(mine[-1]) if mine else ""
     _save_state(st, conf["state"])
     print(f"[agent] {conf['room']} 초기화 완료 — 이 시점 이후 대표님 말씀부터 답한다\n  기준: {st['last_handled'][:80]}")
     return 0
@@ -615,7 +623,7 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
             st["asked_date"] = today
         st.setdefault("history", []).append(
             {"at": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": used,
-             "partner": partner_text[:120], "reply": draft})
+             "partner": mask_secrets(partner_text)[:120], "reply": draft})
         st["history"] = st["history"][-30:]
         _save_state(st, conf["state"])
         _kind = "하루의 마무리" if evening else ("하루의 시작" if asking else "답장")
@@ -645,9 +653,15 @@ def _selfcheck() -> None:
     # 처음 도는 경우 = 마지막 한 줄만 새 것
     assert [x["text"] for x in new_from_partner(lines, "")] == ["40대 여자들 많아"]
     # 표식 이후만 새 것
-    assert [x["text"] for x in new_from_partner(lines, "2026-09-01 오후 5:11 3번")] == ["40대 여자들 많아"]
+    _k = lambda d, w, t: handled_key({"day": d, "when": w, "text": t})  # noqa: E731
+    assert [x["text"] for x in new_from_partner(lines, _k("2026-09-01", "오후 5:11", "3번"))] == ["40대 여자들 많아"]
     # 최신까지 처리했으면 새 것 없음
-    assert new_from_partner(lines, "2026-09-02 오전 9:10 40대 여자들 많아") == []
+    assert new_from_partner(lines, _k("2026-09-02", "오전 9:10", "40대 여자들 많아")) == []
+    # 표식·이력에 원문이 남지 않는다(2026-09-15 비밀번호 유출) — 해시 16자 · 비밀값 가림
+    assert len(_k("d", "w", "네이버 블러그\nabc\nlskian2764!")) == 16 and "lskian" not in _k("d", "w", "lskian2764!")
+    assert mask_secrets("네이버 블러그\niandietcamp\nlskian2764!") == "네이버 블러그\niandietcamp\n[가림]"
+    assert mask_secrets("비밀번호 abc12345! 입니다") == "비밀번호 [가림] 입니다"
+    assert mask_secrets("사람없을때 다시 찍어서 보내줄께 02-6261-1200") == "사람없을때 다시 찍어서 보내줄께 02-6261-1200"
     # GM 발화는 답장 대상이 아니다
     assert all(x["who"] != GM_NAME for x in new_from_partner(lines, ""))
 
