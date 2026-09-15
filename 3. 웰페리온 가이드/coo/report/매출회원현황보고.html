@@ -200,7 +200,7 @@
      (배율이 0.7 밑으로 떨어지면 글자가 7px 이 되어 안 읽힌다 — 2026-08-28 GM 지적). */
   /* 아래 전폭 띠 = 연 단위 + 연간 추이. 왼쪽 칸에 있던 그래프를 여기로 내려 폭을 두 배로 키웠다
      (2026-08-28 GM 지적 "그래프가 잘 보이지도 않는다"). 높이를 못 박아야 배율이 1 근처로 유지된다. */
-  .band{height:214px;margin-top:11px;display:flex;gap:13px;}
+  .band{height:196px;margin-top:11px;display:flex;gap:13px;}
 
   /* 강습 신규·재등록 — 팀별 두 칸(신규/재등록) */
   /* 4칸 × 2줄 = 8팀 고정. 줄마다 종목 칸 너비를 같게 둬야 아래윗줄 숫자가 세로로 맞는다
@@ -2059,8 +2059,9 @@ function onDatePick(silent){
       // 빈 채로 찍혀 나갔다(아래 표에는 35.94%·1,027명이 그대로 있었다). 보고탭 값으로 채운다.
       var _rc = (window.RAW && RAW.cells) || null;
       if (_rc) {
-        if (String(_rc.L4 || '').trim()) hl[2].querySelector('.v').textContent = String(_rc.L4).trim();
-        if (String(_rc.N2 || '').trim()) hl[3].querySelector('.v').textContent = String(_rc.N2).trim();
+        if (String(_rc.K4 || '').trim()) hl[2].querySelector('.v').textContent = String(_rc.K4).trim();
+        if (String(_rc.L4 || '').trim()) hl[3].querySelector('.v').textContent = String(_rc.L4).trim();
+        if (String(_rc.N2 || '').trim()) hl[4].querySelector('.v').textContent = String(_rc.N2).trim();
       }
       hl[0].style.opacity = hl[1].style.opacity = ok ? '' : '.45';
       if (!ok) e.innerHTML = '<div class="err" style="background:#FFF4E5;border-color:var(--warn);color:var(--warn);">' + staleMsg + '</div>';
@@ -2105,7 +2106,7 @@ load();
 /* ══ 2페이지 — 회원·문의 상세. 1페이지 GAS(보고 시트)와 원천이 다른 회원관리 ERP를
    따로 조회한다. 1페이지 변수·함수(esc·num·MIX_COLORS)는 읽기만 하고 건드리지 않는다. ══ */
 var GAS2 = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-var P2_ACTIONS = ['cpo_today_stats', 'cpo_churn_stats', 'lesson_stats'];
+var P2_ACTIONS = ['cpo_today_stats', 'cpo_churn_stats'];   // lesson_stats 는 뒤 직렬로(2026-09-15 · 같이 쏘면 떨어진다)
 var RAW2 = {};
 /* 2페이지 읽기 원천 전환(배 943 · 2026-09-03 시토) — ERP 도메인에서만 서버 미러 집계 /api/report/{action}(server/erp_api/
    members_report.py · 신규/재등록 판정은 GAS _isNewRegistration_ 을 그대로 옮긴 한 곳)을 먼저 부르고, 실패하면 GAS 로
@@ -2366,6 +2367,9 @@ function load2(){
     .then(function(){ return p2fetch('lesson_inquiry_list', '&type=유소년강습')
       .then(function(d){ RAW2.__lesY = d; })
       .catch(function(){ RAW2.__lesY = null; }); })
+    .then(function(){ return p2fetch('lesson_stats')
+      .then(function(d){ RAW2.lesson_stats = d; })
+      .catch(function(){ RAW2.lesson_stats = null; }); })
     .then(function(){
       var a = RAW2.__lesA, y = RAW2.__lesY;
       RAW2.__les = (a && a.ok) || (y && y.ok)
