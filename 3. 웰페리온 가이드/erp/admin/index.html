@@ -262,7 +262,7 @@
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
   <a href="../../자율현황.html"><span class="t">자율현황</span></a>
-  <a href="#tokens" data-go="tokens"><span class="t">AI 토큰 현황</span></a>
+  <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
   <div class="sep"></div>
   <div class="cap">모듈</div>
   <div class="desc">따로 쓸 수 있는 앱 — 화면과 CLI 에서 돈다</div>
@@ -300,8 +300,8 @@
     </a>
     <a class="entry" href="#tokens" data-go="tokens">
       <div class="num placeholder" id="n-cost">—</div>
-      <div class="name">AI 토큰 현황</div>
-      <div class="desc" id="n-cost-desc">얼마 썼는지 · 어디에 많이 썼는지</div>
+      <div class="name">AI·서버 비용 현황</div>
+      <div class="desc" id="n-cost-desc">Claude 정액 · 힉스필드 크레딧 · AWS 사용액</div>
     </a>
     <a class="entry" href="/auth/admin" target="_blank" rel="noopener">
       <div class="num placeholder">—</div>
@@ -600,7 +600,7 @@
 <section class="panel" data-panel="tokens" hidden>
   <!-- cto/automation/토큰 사용량.html 을 새 페이지로 열지 않고 이 안에 병합한다(GM 지시 2026-09-14).
        그 화면은 지우지 않는다 — 원천은 같은 status/token_usage.json 이다. -->
-  <h2>AI 토큰 현황</h2>
+  <h2>AI·서버 비용 현황</h2>
   <div class="meta" id="tok-billing-line">불러오는 중…</div>
   <div class="tbl-wrap">
   <table class="reg">
@@ -609,6 +609,38 @@
   </table></div>
   <p class="tip" id="tok-cache-note"></p>
   <div id="tok-acct-detail"></div>
+
+  <!-- 힉스필드 + AWS (GM 지시 2026-09-15 「AI 토큰 현황 안에 힉스필드 사용량 + AWS 비용관리까지」).
+       원천 = status/cost_status.json 한 곳(scripts/cost_collect.py · 하루 한 번 · 매시 예약이 돌린다). 못 읽으면 줄을 숨긴다. -->
+  <h3 style="margin:22px 0 6px;">힉스필드(영상·이미지 생성) 크레딧</h3>
+  <div class="meta" id="hf-line">불러오는 중…</div>
+  <div class="tbl-wrap"><table class="reg"><thead><tr><th>모델</th><th>이번 달 사용 크레딧</th></tr></thead>
+    <tbody id="hf-rows"><tr><td colspan="2" class="note">불러오는 중…</td></tr></tbody></table></div>
+  <h3 style="margin:22px 0 6px;">AWS 서버 비용</h3>
+  <div class="meta" id="aws-line">불러오는 중…</div>
+  <div class="tbl-wrap"><table class="reg"><thead><tr><th>서비스</th><th>이번 달 사용액</th></tr></thead>
+    <tbody id="aws-rows"><tr><td colspan="2" class="note">불러오는 중…</td></tr></tbody></table></div>
+  <p class="tip" id="cost-note"></p>
+  <script>
+  (function(){
+    function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+    fetch('/status/cost_status.json?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+      var h = d.higgsfield, a = d.aws, when = (d.generated_at || '').slice(0, 16).replace('T', ' ');
+      if (h) {
+        document.getElementById('hf-line').innerHTML = '플랜 <b>' + (h.plan || '—') + '</b> · 남은 크레딧 <b>' + h.credits_left + '</b> · ' + h.month + ' 사용 <b>' + h.month_spent + '</b>' + (h.last ? ' · 마지막 ' + h.last.at + ' ' + h.last.model : '');
+        var rows = Object.keys(h.by_model || {}).map(function(k){ return '<tr><td>' + k + '</td><td>' + h.by_model[k] + '</td></tr>'; });
+        document.getElementById('hf-rows').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="2" class="note">이번 달 사용 없음</td></tr>';
+      } else { document.getElementById('hf-line').textContent = '힉스필드 못 읽음 — ' + ((d.errors || {}).higgsfield || ''); }
+      if (a) {
+        var over = a.month_projection_krw > a.budget_krw;
+        document.getElementById('aws-line').innerHTML = a.month + ' 사용액 <b>' + won(a.usage_krw) + '</b>($' + a.usage_usd + ') · 크레딧 상쇄 $' + a.credit_usd + ' · 실청구 <b>' + won(a.net_krw) + '</b> · 하루 $' + a.daily_avg_usd + ' → 한 달 추정 <b' + (over ? ' style="color:#c0392b"' : '') + '>' + won(a.month_projection_krw) + '</b> / 예산 ' + won(a.budget_krw);
+        var rs = Object.keys(a.by_service || {}).filter(function(k){ return a.by_service[k] > 0; }).map(function(k){ return '<tr><td>' + k + '</td><td>$' + a.by_service[k].toFixed(2) + '</td></tr>'; });
+        document.getElementById('aws-rows').innerHTML = rs.length ? rs.join('') : '<tr><td colspan="2" class="note">이번 달 사용 없음</td></tr>';
+      } else { document.getElementById('aws-line').textContent = 'AWS 못 읽음 — ' + ((d.errors || {}).aws || ''); }
+      document.getElementById('cost-note').textContent = '실측 ' + when + ' · ' + ((a && a.note) || '') + ' · 환율 1,400원 고정';
+    }).catch(function(){ document.getElementById('hf-line').textContent = '비용 실측 파일이 아직 없습니다'; document.getElementById('aws-line').textContent = ''; });
+  })();
+  </script>
 </section>
 
 <section class="panel" data-panel="downloads" hidden>
@@ -1174,7 +1206,7 @@
   </script>
 
   <script>
-  /* AI 토큰 현황 — cto/automation/토큰 사용량.html 을 새로 열지 않고 이 화면 안에 병합한다.
+  /* AI·서버 비용 현황 — cto/automation/토큰 사용량.html 을 새로 열지 않고 이 화면 안에 병합한다.
      원천은 그 화면과 같은 status/token_usage.json 의 accounts.by_account(scripts/token_usage.py 산출). */
   (function(){
     function fmtNum(n){ return (n||0).toLocaleString('ko-KR'); }

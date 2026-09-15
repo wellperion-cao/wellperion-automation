@@ -1505,19 +1505,21 @@
 </script>
 <script>
 /* 서버 이관 진척 한 줄 (GM 지시 2026-09-10 "GM업무에다가 진척률만 라이브로").
-   원천 = status/aws_migration.json 한 곳 — AWS 이관 현황 화면이 읽는 그 파일 그대로다(새 수집기 0).
+   원천 = status/gas_dependency.json 한 곳 — AWS 이관 현황 화면 맨 위 숫자가 읽는 그 파일 그대로다(새 수집기 0).
    숫자만 보여 주고 설명은 안 한다. 자세한 것은 눌러서 그 화면에서 본다.
    못 읽거나 숫자가 없으면 줄 자체를 숨긴다 — 0% 로 보이면 거짓말이 된다. */
 (function () {
   var box = document.getElementById('awsMig');
   if (!box) return;
-  fetch('../../status/aws_migration.json?cb=' + Date.now(), { cache: 'no-store' })
+  /* 2026-09-15 GM 「여긴 75% 인데 자세히 들어가면 97%」 — summary.progress_pct 는 손으로 적는 값이라 낡았다.
+     AWS 이관 현황 화면 맨 위 숫자와 같은 실측(status/gas_dependency.json · 구글 없이 뜨는 화면 비율)을 같은 공식으로 센다. */
+  fetch('../../status/gas_dependency.json?cb=' + Date.now(), { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      var s = (d && d.summary) || {};
-      var pct = Number(s.progress_pct);
-      if (!isFinite(pct)) return;                       // 값이 없으면 숨긴 채로 둔다
-      var where = String(s.origin_switched || '').trim();
+      var total = Number(d && d.screens_total) || 0, gasOnly = Number(d && d.screens_gas_only) || 0;
+      if (!total) return;                               // 값이 없으면 숨긴 채로 둔다
+      var pct = Math.round((total - gasOnly) / total * 100);
+      var where = '구글 없이 뜨는 화면 ' + (total - gasOnly) + '/' + total;
       box.innerHTML =
         '<span class="am-pct">' + pct + '%</span>' +
         '<span class="am-bar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></span>' +
