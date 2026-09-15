@@ -273,7 +273,6 @@
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
-  <a href="#migration" data-go="migration"><span class="t">이관</span><span class="b" id="b-mig">—</span></a>
   <a href="#view/auto" data-view="auto"><span class="t">자율현황</span></a>
   <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
   <div class="sep"></div>
@@ -293,12 +292,12 @@
   <div class="sep"></div>
   <!-- 개인 = GM 본인 것(GM 2026-09-15 「김남욱GM 카드·어떤 하루·개인 아이디어를 맨 아래 따로」).
        아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보).
-       ★김남욱 GM·아이디어·AI 학습·자율 작업 현황은 웰페리온 ERP 메인(자체 왼쪽 메뉴 + 비밀번호 커튼)이라 오른쪽 화면에 못 넣는다 —
-         2026-09-15 17:4x GM 「이건 좀 많이 아닌 것 같은데」 → 새 창(↗). 오른쪽에 넣을 아이디어 화면은 시보가 플랫폼 브랜드로 따로 만든다. -->
+       ★GM 2026-09-15 17:5x 「새 창 하지 말고 랩스 우측에 · 링크 과정 없애고 · ERP 홈으로 가는 건 아니다」 —
+         아이디어 = erp/admin/ideas.html(시보 · 플랫폼 브랜드 한 장) · 김남욱 GM = ERP 메인의 끼움 모드(/home?embed=1#G1 · 왼쪽 메뉴 없이 G1 만). -->
   <div class="cap">개인</div>
-  <a href="/home#G1" target="_blank" rel="noopener"><span class="t">김남욱 GM ↗</span></a>
+  <a href="#view/gm" data-view="gm"><span class="t">김남욱 GM</span></a>
   <a href="#view/sunday" data-view="sunday"><span class="t">어떤 하루</span></a>
-  <a href="/home#G1/ideas" target="_blank" rel="noopener"><span class="t">아이디어 ↗</span><span class="b">주간</span></a>
+  <a href="#view/ideas" data-view="ideas"><span class="t">아이디어</span><span class="b">주간</span></a>
 </nav>
 
 <div class="main">
@@ -831,16 +830,6 @@
   <div id="downloads"><div class="desc">불러오는 중…</div></div>
 </section>
 
-<section class="panel" data-panel="migration" hidden>
-  <h2>이관</h2>
-  <div class="meta" id="mig-meta">파트너사 화면에 얹혀 있는 <b>플랫폼 것</b>을 이 콘솔로 가져옵니다</div>
-  <details class="tip"><summary>무엇을 플랫폼 것으로 보나</summary>
-    <div class="in">잣대는 하나입니다 — <b>파트너사 직원·관리자가 그것을 볼 이유가 있나.</b>
-    없으면 파는 쪽(플랫폼) 살림이라 이 콘솔로 옵니다. AI 가 스스로 도는 현황, 발신 장치,
-    서버 환경, 파는 상품의 설계도, 다른 고객사 자료가 여기 해당합니다.
-    목록은 <code>erp/admin/migration.json</code> 한 곳에 적습니다 — 화면은 고치지 않습니다.</div></details>
-  <div id="mig-body"><div class="desc">불러오는 중…</div></div>
-</section>
 
 <section class="panel" data-panel="standard" hidden>
   <h2>모듈 기준</h2>
@@ -1138,7 +1127,8 @@
   var viewCards = [].slice.call(document.querySelectorAll('.main a[data-view]'));
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/자율현황.html', kakao:'/cto/automation/카톡전송관리.html', counsel:'/cbo/counsel_admin.html',
-                upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html' };
+                upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html',
+                gm:'/home?embed=1#G1', ideas:'/erp/admin/ideas.html' };
   function show(key, scroll){
     var viewKey = '';
     if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
@@ -1392,41 +1382,7 @@
   </script>
 
   <script>
-  /* 이관 판 — 목록은 erp/admin/migration.json 한 곳만 보고 그린다. 항목이 늘어도 이 화면은 안 고친다. */
-  fetch('/erp/admin/migration.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
-    var list = d.items || [];
-    var done = list.filter(function(x){ return x.state === 'done'; });
-    var left = list.filter(function(x){ return x.state !== 'done'; });
-    var badge = document.getElementById('b-mig');
-    if (badge) badge.textContent = left.length;
-    var meta = document.getElementById('mig-meta');
-    if (meta) meta.innerHTML = '옮길 것 <b>' + left.length + '건</b> · 옮긴 것 ' + done.length
-                             + '건 — 잣대는 「파트너사가 볼 이유가 있나」 하나입니다';
-    function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-    function pill(st){
-      if (st === 'done') return '<span class="st ok">옮김</span>';
-      if (st === 'doing') return '<span class="st go">옮기는 중</span>';
-      return '<span class="st wait">대기</span>';
-    }
-    function rows(items){
-      return items.map(function(x){
-        return '<tr><td class="item">' + esc(x.name) + '</td>'
-             + '<td class="note">' + esc(x.was) + '</td>'
-             + '<td class="note">' + esc(x.why) + '</td>'
-             + '<td>' + pill(x.state) + '</td></tr>';
-      }).join('');
-    }
-    var head = '<thead><tr><th style="width:22%">무엇</th><th style="width:24%">지금 자리</th>'
-             + '<th>왜 플랫폼 것인가</th><th style="width:9%">상태</th></tr></thead>';
-    document.getElementById('mig-body').innerHTML =
-        '<div class="tbl-wrap"><table class="reg">' + head + '<tbody>'
-      + '<tr><td colspan="4" class="grp">옮겨야 하는 것 (' + left.length + ')</td></tr>' + rows(left)
-      + '<tr><td colspan="4" class="grp">이미 옮긴 것 (' + done.length + ')</td></tr>' + rows(done)
-      + '</tbody></table></div>';
-  }).catch(function(){
-    document.getElementById('mig-body').innerHTML = '<div class="desc">이관 목록을 불러오지 못했다.</div>';
-  });
+  /* 이관 판은 2026-09-15 GM 「랩스에 이관 메뉴는 이제 필요없지 않나?」로 뺐다 — 목록 파일 erp/admin/migration.json 은 기록으로 남긴다. */
   </script>
 
   <script>

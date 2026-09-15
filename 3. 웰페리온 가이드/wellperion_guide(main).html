@@ -375,6 +375,21 @@
 <link rel="stylesheet" href="assets/wp-typography.css">
 <link rel="stylesheet" href="assets/wp-ui.css">
 <link rel="stylesheet" href="erp/brand/tenant-wellperion.css">
+<!-- 끼움 모드(?embed=1) — 웰페리온 랩스 관리 오른쪽 화면에 G1(김남욱 GM 전용)만 띄운다(GM 2026-09-15 「랩스 우측에 · 링크 과정 없애고 · ERP 홈으로 가는 건 아니다」).
+     왼쪽 메뉴·머리 여백을 감추고, erp.wellperion.com(로그인 관문 뒤)에서만 G1 비밀번호 커튼을 건너뛴다 — 공개 Pages 에서는 커튼 그대로. -->
+<style>
+  html.embed .sidebar{display:none!important;}
+  html.embed .main{padding:18px 26px 60px!important;max-width:none!important;}
+  html.embed.embed-unlock #gm1-lock{display:none!important;}
+  html.embed.embed-unlock #gm1-content{display:block!important;}
+</style>
+<script>
+(function(){
+  if(!/[?&]embed=1(&|$)/.test(location.search)) return;
+  var h=document.documentElement; h.classList.add('embed');
+  if(location.hostname==='erp.wellperion.com'||location.hostname==='127.0.0.1'){ h.classList.add('embed-unlock'); try{ sessionStorage.setItem('gm1_auth','1'); }catch(e){} }
+})();
+</script>
 </head>
 <body>
 <div class="layout">
