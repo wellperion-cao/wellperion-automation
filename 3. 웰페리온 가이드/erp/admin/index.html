@@ -245,6 +245,28 @@
     .topbar .brand{margin-right:auto;}
     table.reg{min-width:520px;}   /* 좁은 화면에선 상자가 가로로 스크롤된다 */
   }
+/* 파트너사 첫 화면 — 카드 대시보드(2차 A/B 의 B · GM 2026-09-15 「카드 형식으로 · 내용은 그대로 · 파트너사 추가 좋다」). 아래 표들은 그대로 두고 위에 얹는다. */
+.pc-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 16px}
+.pc-kpi div{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:10px;padding:12px 14px}
+.pc-kpi b{display:block;font-family:var(--pf-head,inherit);font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--pf-pri-dk);line-height:1.1}
+.pc-kpi span{font-size:12.5px;color:var(--pf-soft)}
+.pc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:26px}
+.pc-card{background:var(--pf-bg);border:1px solid var(--pf-line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.pc-card .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pc-card .no{font-family:var(--pf-head,inherit);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--pf-soft)}
+.pc-card h3{font-family:var(--pf-head,inherit);font-size:19px;font-weight:700;margin:2px 0 0;letter-spacing:-.01em}
+.pc-card .who{font-size:13px;color:var(--pf-soft)}
+.pc-bar{height:8px;background:var(--pf-panel);border-radius:999px;overflow:hidden}
+.pc-bar i{display:block;height:100%;background:var(--pf-pri);border-radius:999px}
+.pc-row{display:flex;justify-content:space-between;font-size:13px}
+.pc-row b{font-family:var(--pf-head,inherit);font-weight:600}
+.pc-mods{display:flex;flex-wrap:wrap;gap:6px}
+.pc-next{background:var(--pf-panel);border-left:3px solid var(--pf-pri);border-radius:6px;padding:10px 12px;font-size:13.5px}
+.pc-next b{display:block;font-family:var(--pf-head,inherit);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-soft);margin-bottom:3px}
+.pc-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.pc-acts .pf-btn{min-height:44px;padding:0 12px;font-size:13px}
+.pc-add{border:1px dashed var(--pf-pri);background:transparent;align-items:center;justify-content:center;text-align:center;color:var(--pf-soft);min-height:200px}
+.pc-add b{font-family:var(--pf-head,inherit);color:var(--pf-pri-dk);font-size:15px;display:block;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -348,6 +370,61 @@
     </a>
   </div>
   <p class="lead" id="ping-line" hidden></p>
+
+  <!-- 파트너 한 곳 = 카드 한 장 (2차 UI/UX A/B 의 B · GM 2026-09-15 「카드 형식으로 · 내용은 그대로 · 파트너사 추가 좋다」).
+       위 숫자 5개 = 전체, 카드 안 = 단계·온보딩 진행·쓰는 모듈·채널 계정 활성 수·다음 할 일·바로가기.
+       원천 = 아래 표들과 같다(온보딩 발행본 data/partner_onboarding.json · 채널 활성은 아래 「파트너 채널 계정」이 읽은 서버 응답을 그대로 받는다). 아래 표는 하나도 안 뺐다. -->
+  <div class="pc-kpi" id="pc-kpi"></div>
+  <div class="pc-cards" id="pc-cards"></div>
+  <script>
+  (function(){
+    var P=[
+      {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['ERP','상담봇','카톡 전송','블로그 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
+      {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
+      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담봇','블로그 자동화'], links:[['상담봇','/info/gocheokgolf/']]}
+    ];
+    var $=function(id){ return document.getElementById(id); };
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    var ch={}; // 파트너 키 → [활성, 자리 수] — 아래 채널 계정 표가 서버를 읽은 뒤 채운다
+    var last={};
+    function draw(ob){
+      var t=(ob&&ob.tenants)||{}, tp=0, ta=0, tn=0;
+      P.forEach(function(p){ var x=t[p.key]||{}; p.asked=x.asked||0; p.answered=x.answered||0; p.pending=x.pending||0; tp+=p.pending; ta+=p.asked; tn+=p.answered; });
+      var on=0, all=0; Object.keys(ch).forEach(function(k){ on+=ch[k][0]; all+=ch[k][1]; });
+      $('pc-kpi').innerHTML=[
+        '<b>'+P.length+'</b><span>파트너사</span>',
+        '<b>'+P.filter(function(p){return p.stage.indexOf('도입')===0}).length+'</b><span>도입(유료 전환 0)</span>',
+        '<b>'+tn+'<small style="font-size:14px;color:var(--pf-soft)"> / '+ta+'</small></b><span>온보딩 답 받은 것</span>',
+        '<b>'+tp+'</b><span>답 기다리는 질문</span>',
+        '<b>'+(all?on+'<small style="font-size:14px;color:var(--pf-soft)"> / '+all+'</small>':'—')+'</b><span>채널 계정 활성'+(all?'':' · 서버 연결 시')+'</span>'
+      ].map(function(a){return '<div>'+a+'</div>'}).join('');
+      $('pc-cards').innerHTML=P.map(function(p){
+        var pct=p.asked?Math.round(p.answered*100/p.asked):0;
+        var next=p.pending?'답 없는 질문 '+p.pending+'개 — 카톡 한 통으로 번호 질문 보내기':(p.asked?'온보딩 답 다 받음 — 문서 3종·상담봇 정본 갱신 확인':'온보딩 질문 아직 안 보냄 — 질문은행에서 번호 뽑기');
+        var c=ch[p.key];
+        return '<section class="pc-card">'
+          +'<div class="hd"><div><div class="no">'+p.no+' · '+esc(p.key)+'</div><h3>'+esc(p.name)+'</h3><div class="who">'+esc(p.who)+'</div></div>'
+          +'<span class="pf-st '+(p.stage.indexOf('도입')===0?'on':'warn')+'"><i></i>'+esc(p.stage)+'</span></div>'
+          +'<div><div class="pc-row"><span>온보딩 답</span><b>'+p.answered+' / '+p.asked+' · '+pct+'%</b></div><div class="pc-bar" style="margin-top:6px"><i style="width:'+pct+'%"></i></div></div>'
+          +'<div class="pc-row"><span>쓰는 모듈</span></div><div class="pc-mods">'+p.mods.map(function(m){return '<span class="pf-st on"><i></i>'+esc(m)+'</span>'}).join('')+'</div>'
+          +'<div class="pc-row"><span>채널 계정</span><b>'+(c?c[0]+' / '+c[1]+' 활성':'서버 연결 시 표시')+'</b></div>'
+          +'<div class="pc-next"><b>다음 할 일</b>'+esc(next)+'</div>'
+          +'<div class="pc-acts"><button type="button" class="pf-btn p" data-pc="onb" data-t="'+esc(p.key)+'">온보딩 답 보기</button><button type="button" class="pf-btn s" data-pc="sec" data-t="'+esc(p.key)+'">채널 계정</button>'
+          +p.links.map(function(l){return '<a class="pf-btn g" href="'+l[1]+'" target="_blank" rel="noopener">'+esc(l[0])+' ↗</a>'}).join('')+'</div>'
+          +'</section>';
+      }).join('')+'<section class="pc-card pc-add"><div><b>파트너사 추가</b>질문은행에서 번호를 뽑아 첫 한 통을 보내면 여기 카드가 한 장 늡니다.<div style="margin-top:10px"><button type="button" class="pf-btn s" data-pc="onb" data-t="">온보딩 질문 보기</button></div></div></section>';
+    }
+    fetch('data/partner_onboarding.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){ last=d; draw(d); }).catch(function(){ draw({}); });
+    // 아래 「파트너 채널 계정」이 서버를 읽으면 여기로 넘겨 준다 — 같은 값을 두 번 부르지 않는다
+    window.pcChannels=function(items,chans,only){ ch={}; P.forEach(function(p){ var k=p.key; var slots=chans.filter(function(c){ return !only[c]||only[c]===k; }); ch[k]=[items.filter(function(it){return it.tenant===k}).length, slots.length]; }); draw(last); };
+    // 카드 버튼 — 온보딩 표·채널 계정 표로 내려가 그 파트너를 고른다(같은 화면 안)
+    $('pc-cards').addEventListener('click',function(ev){
+      var b=ev.target.closest('[data-pc]'); if(!b) return;
+      if(b.dataset.pc==='onb'){ var s=$('po-tenant'); if(s&&b.dataset.t){ s.value=b.dataset.t; s.dispatchEvent(new Event('change')); } (s||$('pc-cards')).scrollIntoView({behavior:'smooth',block:'start'}); }
+      else { var h=$('ps-b-'+b.dataset.t)||$('ps-line'); if(h) h.scrollIntoView({behavior:'smooth',block:'start'}); }
+    });
+  })();
+  </script>
 
 
 
@@ -467,6 +544,7 @@
         items.forEach(function(it){ have[it.tenant+'/'+it.channel]=it; });
         line.textContent='활성 '+items.length+'건 · 값은 서버 파일에만 있고 이 화면·저장소·로그엔 없습니다';
         // 파트너사(1호·2호·3호)마다 표 하나. 행 = 채널 자리 전부. 계정이 있으면 활성, 없으면 비활성.
+        if(window.pcChannels) window.pcChannels(items, chans, TENANT_ONLY);
         boards.innerHTML=Object.keys(TN).map(function(t){
           var body=chans.filter(function(c){ return !TENANT_ONLY[c] || TENANT_ONLY[c]===t; }).map(function(c){
             var it=have[t+'/'+c];
@@ -481,7 +559,7 @@
               '<td><button class="ps-put">넣기</button></td></tr>';
           }).join('');
           // 세 표의 열 폭을 똑같이 고정한다 — 자동 폭이면 계정이 있는 표만 넓어져 3호만 칸이 어긋나 보인다(GM 지적 2026-09-15).
-          return '<h4 style="margin:14px 0 4px;font-size:13px">'+tname(t)+'</h4><div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">'+
+          return '<h4 id="ps-b-'+esc(t)+'" style="margin:14px 0 4px;font-size:13px">'+tname(t)+'</h4><div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">'+
             '<colgroup><col style="width:15%"><col style="width:12%"><col style="width:11%"><col style="width:9%"><col style="width:12%"><col><col style="width:150px"></colgroup>'+
             '<thead><tr><th>채널</th><th>아이디</th><th>비밀번호</th><th>상태</th><th>받은 날</th><th>메모</th><th></th></tr></thead><tbody style="word-break:break-all">'+body+'</tbody></table></div>';
         }).join('');
