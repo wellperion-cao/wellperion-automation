@@ -176,6 +176,50 @@ def record_gm_prompt_hook(with_recall: bool = False) -> None:
 #   무엇을 적나: 그 지시를 받은 시각부터 다음 지시를 받기 전까지 **실제로 만들어진 커밋 제목**.
 #   지어내지 않는다 — 커밋이 없으면 기존 ⚠️ 문구 그대로 둔다(없는 일을 있는 것처럼 적지 않는다).
 _AUTO_NOISE = ("chore(auto)", "chore(queue): auto-log", "Merge ", "chore(sync)")
+# 역할→닉네임. 정본은 ssot/ownership_map.json(boot_pack._load_nicks) — 여기서는 커밋 제목
+# 앞머리 「[웰리]」 를 알아보는 용도라 짧은 표만 둔다. ponytail: 정본과 어긋나면 boot_pack 것을 쓴다.
+_ROLE_NICK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
+              "coo": "시우", "cpo": "시포", "cto": "시토", "cbo": "시보"}
+
+
+def _worklog_evidence_between(since: str, until: str, role: str) -> str:
+    """[since, until) 사이 그 역할이 스스로 남긴 완료 기록(ok · GM 접수 ref 아님 · detail 있음)을
+    한 줄로 잇는다. 없으면 빈 문자열.
+
+    커밋이 없는 일(카톡·텔레그램 발송 · 큐 종결 · 카드 갱신)은 _commits_between 이 못 본다.
+    그런 일은 역할이 worklog.log(result='ok', detail=…) 로 남기므로 그 줄이 곧 증거다
+    (실측 2026-09-15: 발송 12건이 「세션 응답 종료」로만 찍혀 GM 이 마무리 안 된 것으로 읽음)."""
+    if not since or not role or not WORKLOG_PATH.exists():
+        return ""
+    role_v = role.strip().lower()
+    hits: list[str] = []
+    try:
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if '"result": "ok"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:  # noqa: BLE001
+                    continue
+                if (d.get("role") or "").strip().lower() != role_v:
+                    continue
+                ts = str(d.get("ts") or "")
+                if ts < since or (until and ts >= until):
+                    continue
+                if str(d.get("ref") or "").startswith("GM-"):
+                    continue          # GM 접수 짝은 증거가 아니라 대상이다
+                det = str(d.get("detail") or "").strip()
+                if not det or det.startswith("⚠️"):
+                    continue
+                ev = str(d.get("event") or "").strip()
+                hits.append(f"{ev[:40]} — {det[:60]}" if ev else det[:80])
+    except Exception:  # noqa: BLE001
+        return ""
+    if not hits:
+        return ""
+    tail = f" 외 {len(hits) - 2}건" if len(hits) > 2 else ""
+    return " · ".join(hits[:2]) + tail
 
 
 def _commits_between(since: str, until: str = "", role: str = "",
@@ -204,8 +248,14 @@ def _commits_between(since: str, until: str = "", role: str = "",
     except Exception:  # noqa: BLE001
         return ""
     tag = f"({role.strip().lower()})"
+    # 「[웰리] …」 처럼 닉네임 대괄호로 시작하는 제목도 그 역할 것이다 — safe_commit 이
+    # 2026-09 부터 이 꼴로 저장하는데 (ceo) 태그만 보던 필터가 전부 버려 「한 것」이 비었다
+    # (실측 2026-09-15: 웰리 커밋 20건 중 0건 채택 → GM 「마무리가 안 된다」).
+    nick = _ROLE_NICK.get(role.strip().lower(), "")
+    nick_tag = f"[{nick}]" if nick else "[?]"
     subs = [s for s in subs
-            if not s.startswith(_AUTO_NOISE) and tag in s.split(":", 1)[0].lower()]
+            if not s.startswith(_AUTO_NOISE)
+            and (tag in s.split(":", 1)[0].lower() or s.startswith(nick_tag))]
     # 기계가 주기적으로 내는 발행 커밋은 「한 것」이 아니다 — 같은 제목이 몇 줄씩 반복돼
     # GM 화면에서 진짜 결과를 밀어낸다(2026-08-13 실측: 시포 칸이 '문의 스냅샷 자동 발행' 로 도배).
     subs = [s for s in subs if "자동 발행" not in s]
@@ -227,6 +277,8 @@ def _commits_between(since: str, until: str = "", role: str = "",
     clean = []
     for s in subs[:3]:
         body = s.split(": ", 1)[1] if ": " in s[:24] else s
+        if body.startswith(nick_tag):
+            body = body[len(nick_tag):].strip()
         clean.append(body[:70])
     tail = f" 외 {len(subs) - 3}건" if len(subs) > 3 else ""
     return " · ".join(clean) + tail
@@ -342,6 +394,9 @@ def close_gm_refs(role: str, detail: str = "") -> int:
             # 처리한 게 없다는 사실 자체를 detail 에 정직하게 남긴다(⚠️ 로 시작 — 쿵짝표
             # evidence_state 가 상투어로 걸러낸다).
             auto = detail or _commits_between(ts, nxt, role_v, used_subjects)
+            wl = _worklog_evidence_between(ts, nxt, role_v)
+            if wl and not detail:
+                auto = f"{auto} · {wl}" if auto else wl
             if log(role_v, GM_AREA, "답변 종결 — 세션이 응답을 마쳤다",
                    result="ok",
                    detail=auto or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
@@ -557,7 +612,9 @@ def close_gm_refs_hook() -> None:
     try:
         role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
         if role:
-            close_gm_refs(role, detail="세션 응답 종료 · 자동 종결(Stop)")
+            # detail 을 비워 둔다 — 상투어를 넘기면 `detail or _commits_between(...)` 에서
+            # 증거 경로가 한 번도 안 돌아 「세션 응답 종료」만 하루 20건 찍혔다(2026-09-15 실측).
+            close_gm_refs(role, detail="")
     except Exception:  # noqa: BLE001 — 훅은 절대 세션을 막지 않는다
         pass
 
