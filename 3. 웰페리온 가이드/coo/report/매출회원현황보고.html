@@ -269,6 +269,7 @@
   .audit.ok .w{color:var(--warn);}
   .audit.bad{color:#fff;background:var(--bad);border-color:var(--bad);font-size:12px;font-weight:700;}
 
+  .foot > div{max-height:32px;overflow:hidden;}   /* 발밑 칸은 두 줄까지 — 넘치면 위 표가 잘린다(A3 고정 높이) */
   .foot{margin-top:7px;border-top:1px solid var(--line);padding-top:6px;
     font-size:10.6px;line-height:1.5;color:#48525B;display:flex;gap:22px;}
   .foot div{flex:1;}
@@ -1143,14 +1144,15 @@ function loadBrojayCompare(c){
       parts.push(esc(name) + ' ' + (bv === sv ? '<span style="color:#146B4F">=</span>' : (bv ? bv.toLocaleString('ko-KR') : '0') + '<span style="color:#7A838B">/' + sv.toLocaleString('ko-KR') + '</span>'));
     });
     var ops = byTag['운영부'] || 0, sheetOps = num(c.I6) + num(c.I7);
-    /* 브로제이 적재분은 손 이관이라 그날 마감에 지난 날짜 몫이 함께 들어온다(9/14 실측 2,466만 vs 시트 1,001만) —
-       100% 를 넘으면 「이관율」이 아니라 「지난 날짜 몫 섞임」으로 적는다. */
+    /* 발밑은 A3 고정 높이라 두 줄을 넘기면 위 표가 잘린다(2026-09-15 실측 · 총매출 줄이 사라졌다) — 팀별 상세는 툴팁으로. */
+    var same = parts.filter(function(x){ return x.indexOf('>=<') >= 0; }).length;
+    var man = function(n){ return (Math.round(n / 10000)).toLocaleString('ko-KR') + '만'; };
     var ratio = sheetTotal ? Math.round(total / sheetTotal * 100) : null;
-    var ratioTxt = ratio == null ? '' : (ratio <= 100 ? ' (' + ratio + '% 이관)' : ' (시트보다 큼 — 지난 날짜 몫이 섞인 손 이관)');
-    el.innerHTML = '<b>브로제이 결제(어제 ' + esc(ymd.slice(5).replace('-', '/')) + ') vs 시트</b> — 합 <b>' + total.toLocaleString('ko-KR') + '</b>/' +
-      sheetTotal.toLocaleString('ko-KR') + ratioTxt +
-      ' · 회원권+옵션 ' + ops.toLocaleString('ko-KR') + '<span style="color:#7A838B">/' + sheetOps.toLocaleString('ko-KR') + '</span> · ' +
-      parts.join(' · ') + ' <span style="color:#7A838B">— 차이는 아직 브로제이로 안 옮긴 값(실결제 10/1)</span>';
+    var ratioTxt = ratio == null ? '' : (ratio <= 100 ? ratio + '% 이관' : '시트보다 큼 · 지난 날짜 몫 섞인 손 이관');
+    el.setAttribute('title', parts.map(function(x){ return x.replace(/<[^>]+>/g, ''); }).join(' · '));
+    el.innerHTML = '<b>브로제이 결제 vs 시트(' + esc(ymd.slice(5).replace('-', '/')) + ')</b> — 합 ' + man(total) + '/' + man(sheetTotal) +
+      (ratioTxt ? '(' + ratioTxt + ')' : '') + ' · 회원권+옵션 ' + man(ops) + '/' + man(sheetOps) +
+      ' · 팀 일치 ' + same + '/' + parts.length + ' <span style="color:#7A838B">— 차이는 아직 안 옮긴 값(실결제 10/1) · 팀별은 마우스</span>';
   }).catch(function(){ el.textContent = ''; });
 }
 
