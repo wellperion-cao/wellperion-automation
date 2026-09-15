@@ -225,6 +225,55 @@ def _committer_is_nawoolm() -> bool:
 
 _NAWOOLM_ONLY_MARKER_RE = re.compile(r"\[나우열M 요청 (\d{4}-\d{2}-\d{2})\]")
 
+# ── GM 열쇠 (GM 확정 2026-09-15 18:0x 「GM 인 내가 막힌 걸 못 뚫으면 안 된다 · 내가 막은 건 누구도 못 뚫게」) ──
+#   모든 가드에 GM 만 열 수 있는 열쇠 하나를 둔다. 두 조각이 다 맞아야 열린다:
+#   ① 커밋 메시지 마커 `[GM 승인 YYYY-MM-DD]`(오늘 날짜)
+#   ② GM 이 직접 친 말 — UserPromptSubmit 훅이 worklog 에 「받음 · 자동 접수」로 적은 GM 접수 가운데
+#      최근 GM_KEY_WINDOW_MIN 분 안에 「승인」이 들어간 것(가드·줄삭제·잠금·저장·뚫 가운데 하나와 함께).
+#   AI 가 스스로 worklog.log 로 적은 줄은 detail 이 다르므로 열쇠가 되지 않는다 — 열쇠는 GM 손에만 있다.
+#   [GM 지시] 마커(경로 가드용)와 다르다: 그건 「이 화면을 옮겨라」, 이것은 「막힌 것을 뚫어라」.
+_GM_KEY_MARKER_RE = re.compile(r"\[GM 승인 (\d{4}-\d{2}-\d{2})\]")
+GM_KEY_WINDOW_MIN = 180
+_GM_KEY_WORDS = ("가드", "줄삭제", "줄 삭제", "잠금", "저장", "뚫", "커밋", "막힌")
+
+
+def _gm_key(commit_message: str) -> str | None:
+    """GM 열쇠가 맞으면 마커 문자열, 아니면 None. 오늘 날짜 마커 + 최근 GM 이 직접 친 「승인」 접수 둘 다 있어야 한다."""
+    m = _GM_KEY_MARKER_RE.search(commit_message or "")
+    if not m:
+        return None
+    try:
+        if datetime.strptime(m.group(1), "%Y-%m-%d").date() != datetime.now().date():
+            return None
+    except ValueError:
+        return None
+    try:
+        import json as _json
+        from datetime import timedelta as _td
+        path = os.path.join(ROOT, "status", "worklog.jsonl")
+        cutoff = (datetime.now().astimezone() - _td(minutes=GM_KEY_WINDOW_MIN)).isoformat()
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if '"GM' not in line or "승인" not in line:
+                    continue
+                try:
+                    d = _json.loads(line)
+                except Exception:  # noqa: BLE001
+                    continue
+                if str(d.get("area") or "") not in ("GM요청", "GM지시") or d.get("result") != "warn":
+                    continue
+                if not str(d.get("detail") or "").startswith("받음 · 자동 접수"):
+                    continue          # 훅이 적은 GM 접수만 — AI 가 적은 줄은 열쇠가 아니다
+                if str(d.get("ts") or "") < cutoff:
+                    continue
+                ev = str(d.get("event") or "")
+                if "승인" in ev and any(w in ev for w in _GM_KEY_WORDS):
+                    return m.group(0)
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
 
 def _nawoolm_request_marker(commit_message: str, allow_gm: bool = True) -> str | None:
     """커밋 메시지에서 `[나우열M 요청 YYYY-MM-DD]`(allow_gm 이면 `[GM 지시 …]` 도) 마커를 찾아 유효하면 그 문자열을 돌려준다.

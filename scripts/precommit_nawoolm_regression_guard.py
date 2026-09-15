@@ -12,7 +12,8 @@
   **추가한 줄**과 글자 그대로 같은 줄이 있으면 커밋을 막는다.
   (같은 파일 안에서만 대조 · 공백만 다른 줄은 같은 줄 · 20자 미만 짧은 줄은 뺀다 — `</div>` 같은 줄로 헛경보 금지)
 
-통과 = 커밋 메시지 `[나우열M 요청 YYYY-MM-DD]` 마커(safe_commit._nawoolm_request_marker · 경로 가드와 같은 열쇠).
+통과 = 커밋 메시지 `[나우열M 요청 YYYY-MM-DD]` 마커(safe_commit._nawoolm_request_marker · 경로 가드와 같은 열쇠)
+     또는 GM 열쇠 `[GM 승인 YYYY-MM-DD]` + GM 이 직접 친 「승인」 접수(safe_commit._gm_key · GM 확정 2026-09-15).
 우회 env 없음. 가드 오류·git 없음 = fail-open(통과) — 다른 pre-commit 가드와 같은 규약.
 
 막혔을 때 할 일 = 작업트리가 낡은 사본이다. `git show HEAD:<파일>` 로 최신을 읽고, 내 변경만 Edit 로 다시 적용한다
@@ -31,7 +32,7 @@ _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from safe_commit import _nawoolm_request_marker, _committer_is_nawoolm  # noqa: E402
+from safe_commit import _nawoolm_request_marker, _committer_is_nawoolm, _gm_key  # noqa: E402
 from precommit_nawoolm_domain_guard import _staged_paths, _commit_message  # noqa: E402
 
 ROOT = os.path.dirname(_SCRIPTS_DIR)
@@ -154,7 +155,11 @@ def main(argv=None):
     if not hits:
         return 0
     # [GM 지시] 마커는 여기서 안 통한다(allow_gm=False) — 2026-09-15 10:39 낡은 사본 커밋이 은퇴 화면 2장을 되살린 사고.
-    marker = _nawoolm_request_marker(_commit_message(explicit_message), allow_gm=False)
+    msg = _commit_message(explicit_message)
+    marker = _nawoolm_request_marker(msg, allow_gm=False)
+    # GM 열쇠(2026-09-15 GM 확정) — GM 이 직접 「승인」이라 친 접수 + 오늘 날짜 [GM 승인] 마커 둘 다 있을 때만.
+    if not marker:
+        marker = _gm_key(msg)
     _report(hits, marker)
     return 0 if marker else 1
 
