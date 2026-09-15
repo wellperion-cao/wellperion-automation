@@ -57,7 +57,7 @@ def plan():
         rel = p.replace("\\", "/").replace(chk.GUIDE + "/", "")
         full = os.path.join(chk.ROOT, p)
         s = io.open(full, encoding="utf-8", errors="ignore").read()
-        if "<style" not in s and chk.공통규격 not in s:
+        if "<style" not in s and chk.공통규격 not in s and 'rel="stylesheet"' not in s:
             continue
         if chk.공통규격 in s:
             continue

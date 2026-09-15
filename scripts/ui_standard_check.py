@@ -145,7 +145,7 @@ def 세기(ux: bool = False, 이전: dict | None = None) -> dict:
     경로표 = {}
     for p in 화면들():
         s = io.open(os.path.join(ROOT, p), encoding="utf-8", errors="ignore").read()
-        if "<style" not in s and 공통규격 not in s:
+        if "<style" not in s and 공통규격 not in s and 'rel="stylesheet"' not in s:
             continue                      # 자기 모양이 없는 조각 — 잴 것이 없다
         r = 재기(p, s)
         경로표[r["화면"]] = os.path.join(ROOT, p).replace("\\", "/")
