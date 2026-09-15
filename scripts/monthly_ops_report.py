@@ -453,6 +453,15 @@ def run(mode: str, send: bool = False) -> str:
         _snapshot_ledger(mode, now)
         if mode == "start":
             _roll_month_status(now)
+        # 중간관리자 책임 항목 달별 스냅숏(GM 지시 2026-09-15 ⑦ 「매월 평가해서 성장」) — 말일 21:00 의 이번 달 실측이
+        #   status/manager_eval_history.json 그 달 키의 마지막 값으로 남는다. 새 예약 없이 이 진입점에 흡수(약속 L21).
+        if mode == "end":
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import manager_task_index
+                manager_task_index.regenerate_and_publish("말일 마감 실측")
+            except Exception as exc:
+                print(f"  [WARN] 중간관리자 책임 항목 마감 스냅숏 건너뜀: {type(exc).__name__}: {exc}")
 
     plan = load_plan()
 

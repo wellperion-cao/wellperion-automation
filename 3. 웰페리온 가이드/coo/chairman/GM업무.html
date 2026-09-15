@@ -382,82 +382,12 @@
   </div>
 
 
-  <!-- ⓪-0 서버 이관 진척 한 줄 (GM 지시 2026-09-10 "GM업무에다가 진척률만 라이브로 볼 수 있게") —
-       GM 이 매일 "몇 퍼센트냐"를 물어야 했다. 숫자 하나만 여기 띄운다.
-       원천 = status/aws_migration.json 한 곳(그 화면과 같은 파일 · 새 수집기 0 · 약속 L01·L21).
-       자세한 것은 누르면 열리는 AWS 이관 현황 화면에 있다 — 여기서는 설명하지 않는다.
-       못 읽으면 줄 자체를 숨긴다(0% 로 보이면 거짓말이 된다). -->
-
-  <!-- ⓪ 오늘 일정 띠 (GM 지시 2026-08-25 "전사일정+GM업무는 일체화 되어있어야하고") —
-       전사일정과 GM업무가 텔레그램 「하루」 방 메시지에서는 이미 한 장으로 합쳐져 나가는데
-       (08:00 아침 브리핑) 화면끼리는 끊겨 있었다. 이 화면을 열면 전사일정을 따로 안 열어도
-       오늘 잡힌 것이 맨 위에 보인다.
-       원천 = 전사_일정.html 이 쓰는 그 GAS·그 액션 그대로(새 GAS·새 액션 0 · 약속 L01·L21).
-       판정은 '오늘자 표시'뿐이다 — 누가 담당인지 고르는 판정은 gm_checkin 한 곳에만 둔다. -->
-  <div id="todaySched" class="today-sched" hidden></div>
-
-  <!-- ⓪-2 👤 GM 책임 항목 띠 (GM 지시 2026-09-15 「책임항목 4인에서 GM 빼고 3인으로 · GM 은 GM업무에 책임항목
-       넣어서 방향 잃지 않게」). 종전 「리더 현황」(4인 요약) 자리. 원천 = 중간관리자 업무목차 생성기가 남기는 책임
-       항목 스냅숏 status/manager_eval_history.json 의 이번 달 「김남욱 GM」 키 — GM 3개(자동화·확장·지시) +
-       웰리 추천 2개(체계화·회수 · 이름 끝 「(웰리 추천)」 딱지). 값을 여기 복제하지 않는다(약속 L01).
-       읽기 전용 — 원장이 없거나 이번 달 키가 없으면 조용히 숨긴다. -->
-  <div id="leaderBand" class="today-sched" hidden></div>
-
-  <!-- ⓪-2b 중간관리자 업무 목차 링크 (GM 지시 2026-09-10 "그리고 GM업무에 붙여줘") — 바로 위
-       「리더 현황」과 같은 세 사람(이경연 실장·이정헌 소장·나우열M)의 열린 건을 번호로 편 화면이다.
-       리더 현황 띠는 통신 실패 시 숨으므로 이 줄은 정적으로 둔다. 기존 .today-sched/.ts-row/.doc-link
-       재사용 — 새 스타일·새 색 없음. -->
-  <div class="today-sched">
-    <div class="ts-row"><b>🧭 중간관리자 업무 목차</b>
-      <span class="ts-who">이경연 실장 · 이정헌 소장 · 나우열M 의 아직 안 끝난 일을 번호로 펼쳐 봅니다 — 번호로 답을 받으시면 됩니다</span>
-      <a class="doc-link" href="중간관리자_업무목차.html" target="_blank" rel="noopener">▸목차 열기</a></div>
-  </div>
-
-  <!-- ⓪-2c 보고 문서 선반 (GM 지시 2026-09-14 「회사 주소 로그인 뒤에는 회장님건 삭제하고, GM업무
-       관련된건 다 삭제 — GM업무에서만 볼 수 있게 해줘」). ERP 홈 문서함에서 뺀 회장님·GM업무 문서를
-       이 자리로 옮겨 그린다. 목록을 여기 적지 않는다 — erp/modules.json 한 곳을 읽는다(약속 L01).
-       기본 접힘 — 평소엔 자리만 차지하지 않게. 기존 .sec/.sum 재사용, 새 스타일 없음. -->
-  <details class="sec" id="sec-chairman-docs">
-    <summary><span class="ic">📄</span> 보고 문서 <span class="cnt" id="chdoc-cnt">—</span></summary>
-    <div class="sum" style="padding:8px 14px 12px;">
-      <table><thead><tr><th style="width:340px">문서</th><th>설명</th></tr></thead>
-      <tbody id="chdoc-body"><tr><td colspan="2" class="rep-empty">불러오는 중…</td></tr></tbody></table>
-    </div>
-  </details>
-  <script>
-  /* 문서 목록 = erp/modules.json 의 chairman 문서(appgroup 문서함)만. 빌더가 화면 파일에서 자동 생성하므로
-     새 A3 를 만들면 저장한 다음 날 없이 바로 이 표에 붙는다 — 손으로 줄을 더하지 않는다. */
-  (function(){
-    var body = document.getElementById('chdoc-body'), cnt = document.getElementById('chdoc-cnt');
-    fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){
-      var rows = (d.modules || []).filter(function(m){
-        return m.appgroup === '문서함' && /\/chairman\//.test(m.path || '');
-      });
-      cnt.textContent = rows.length + '장';
-      if (!rows.length) { body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서가 없습니다.</td></tr>'; return; }
-      rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });   // 최신 날짜부터
-      body.innerHTML = rows.map(function(m){
-        var file = String(m.path || '').split('/').pop();
-        return '<tr><td><a href="' + file + '" target="_blank" rel="noopener">' +
-               (m.name || file) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
-      }).join('');
-    }).catch(function(){
-      body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서 목록을 불러오지 못했습니다 — 새로고침</td></tr>';
-    });
-  })();
-  </script>
-
-  <!-- ⓪-3 AI C-Level 역할·방향 토글 (GM 지시 2026-09-05 "GM업무 맨 위에 각 AI C레벨들의 역할 및 방향성을
-       기록해두면 보기 편할 것 같아 토글라인으로 — 나는 GM업무만 보니까"). 값은 ssot/kpi.json roles 한 곳
-       (line=편제 · core_role=역할 · direction=방향 · staff=실무진 · gm_work_groups=GM업무 담당 대분류)을
-       직독해 그린다 — 여기에 글자를 적지 않는다(약속 L01). 기본은 접힘 — GM이 볼 때만 편다. -->
-  <details class="sec" id="sec-ai-roles">
-    <summary><span class="ic">🤖</span> AI C-Level 역할 · 방향 <span class="cnt" id="ai-roles-cnt">—</span></summary>
-    <div class="sum" style="padding:8px 14px 12px;">
-      <table><thead><tr><th style="width:92px">AI</th><th style="width:230px">편제</th><th>역할</th><th>방향</th><th style="width:150px">실무진</th><th style="width:150px">GM업무 대분류</th></tr></thead>
-      <tbody id="ai-roles-body"><tr><td colspan="6" class="rep-empty">불러오는 중…</td></tr></tbody></table>
-    </div>
-  </details>
+  <!-- ② 👤 GM 책임 항목 띠 (GM 지시 2026-09-15 「책임항목 4인에서 GM 빼고 3인으로 · GM 은 GM업무에 책임항목
+       넣어서 방향 잃지 않게」 · 「오늘 일정·리더 현황 삭제」). 원천 = 중간관리자 업무 생성기가 남기는 책임 항목
+       스냅숏 status/manager_eval_history.json 의 이번 달 「김남욱 GM」 키 — GM 3개(자동화·확장·지시) + 웰리 추천
+       2개(체계화·회수 · 이름 끝 「(웰리 추천)」 딱지). 3인 현황은 싣지 않는다(중간관리자 화면 몫). 값을 여기 복제하지
+       않는다(약속 L01). 읽기 전용 — 원장이 없거나 이번 달 키가 없으면 조용히 숨긴다. -->
+  <div id="gmRespBand" class="today-sched" hidden></div>
 
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
@@ -517,6 +447,43 @@
     </div>
   </details>
 
+  <!-- ⑥ 보고 문서 선반(맨 아래 · GM 2026-09-15 순서 = 책임 항목 → 진행건 → 완료건 → 대표님 결재완료) (GM 지시 2026-09-14 「회사 주소 로그인 뒤에는 회장님건 삭제하고, GM업무
+       관련된건 다 삭제 — GM업무에서만 볼 수 있게 해줘」). ERP 홈 문서함에서 뺀 회장님·GM업무 문서를
+       이 자리로 옮겨 그린다. 목록을 여기 적지 않는다 — erp/modules.json 한 곳을 읽는다(약속 L01).
+       기본 접힘 — 평소엔 자리만 차지하지 않게. 기존 .sec/.sum 재사용, 새 스타일 없음. -->
+  <details class="sec" id="sec-chairman-docs">
+    <summary><span class="ic">📄</span> 보고 문서 <span class="cnt" id="chdoc-cnt">—</span></summary>
+    <div class="sum" style="padding:8px 14px 12px;">
+      <table><thead><tr><th style="width:340px">문서</th><th>설명</th></tr></thead>
+      <tbody id="chdoc-body"><tr><td colspan="2" class="rep-empty">불러오는 중…</td></tr></tbody></table>
+    </div>
+  </details>
+  <script>
+  /* 문서 목록 = erp/modules.json 의 chairman 문서(appgroup 문서함)만. 빌더가 화면 파일에서 자동 생성하므로
+     새 A3 를 만들면 저장한 다음 날 없이 바로 이 표에 붙는다 — 손으로 줄을 더하지 않는다. */
+  (function(){
+    var body = document.getElementById('chdoc-body'), cnt = document.getElementById('chdoc-cnt');
+    fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){
+      var rows = (d.modules || []).filter(function(m){
+        return m.appgroup === '문서함' && /\/chairman\//.test(m.path || '');
+      });
+      cnt.textContent = rows.length + '장';
+      if (!rows.length) { body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서가 없습니다.</td></tr>'; return; }
+      rows.sort(function(a, b){ return String(b.path).localeCompare(String(a.path)); });   // 최신 날짜부터
+      body.innerHTML = rows.map(function(m){
+        var file = String(m.path || '').split('/').pop();
+        return '<tr><td><a href="' + file + '" target="_blank" rel="noopener">' +
+               (m.name || file) + '</a></td><td>' + (m.desc || '') + '</td></tr>';
+      }).join('');
+    }).catch(function(){
+      body.innerHTML = '<tr><td colspan="2" class="rep-empty">문서 목록을 불러오지 못했습니다 — 새로고침</td></tr>';
+    });
+  })();
+  </script>
+
+  </details>
+
+
 
   <div class="ft">
     <span>WELLPERION 경영지원부 · 경영진 업무 진행 현황</span>
@@ -557,34 +524,6 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
     });
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-
-  // ⓪-3 AI C-Level 역할·방향 — ssot/kpi.json roles 직독(정본 한 곳 · 약속 L01). 실패해도 나머지 화면은 그대로.
-  (function renderAiRoles() {
-    var body = document.getElementById('ai-roles-body'), cnt = document.getElementById('ai-roles-cnt');
-    if (!body) return;
-    var ORDER = ['ceo', 'cto', 'cpo', 'cmo', 'coo', 'cbo', 'cfo', 'chro'];
-    var TITLE = { ceo: 'CEO', cto: 'CTO', cpo: 'CPO', cmo: 'CMO', coo: 'COO', cbo: 'CBO', cfo: 'CFO', chro: 'CHRO' };
-    fetch(RAW_BASE + 'ssot/kpi.json?cb=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var roles = (d && d.roles) || {};
-        var rows = ORDER.filter(function (k) { return roles[k]; }).map(function (k) {
-          var r = roles[k];
-          var grp = (r.gm_work_groups || []).join(' · ');
-          return '<tr><td><b>AI ' + esc(r.nickname || k) + '</b><div class="cat">' + TITLE[k] + '</div></td>'
-            + '<td>' + esc(r.line || '—') + '</td>'
-            + '<td>' + esc(r.core_role || '—') + '</td>'
-            + '<td>' + esc(r.direction || '—') + '</td>'
-            + '<td>' + esc(r.staff || '—') + '</td>'
-            + '<td>' + (grp ? '<span class="ai-owner" style="margin-left:0">' + esc(grp) + '</span>' : '—') + '</td></tr>';
-        });
-        body.innerHTML = rows.join('') || '<tr><td colspan="6" class="rep-empty">역할 정보 없음</td></tr>';
-        if (cnt) cnt.textContent = rows.length + '역할';
-      })
-      .catch(function () {
-        body.innerHTML = '<tr><td colspan="6" class="rep-empty">역할 정보를 못 읽었습니다(ssot/kpi.json)</td></tr>';
-      });
-  })();
 
   // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개 「전체 지도」로 축소 2026-08-24) ──
   // 접힌 <details class="sec">(GM 진행건·완료건) 강제 오픈은 beforeprint/afterprint 로
@@ -1311,90 +1250,13 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
   });
 })();
 
-/* ── ⓪ 오늘 일정 띠 (GM 지시 2026-08-25) ────────────────────────────────────────
-   전사일정 GAS 를 그대로 읽어 오늘자만 맨 위에 띄운다. 기존 흐름과 섞이지 않게
-   독립 함수로 두고, 실패해도 이 화면의 다른 섹션에는 영향이 없다.
-   ▸'0건'과 '못 읽음'을 반드시 구분해 적는다 — 조용한 실패는 화면을 거짓말하게 만든다.
-   ▸시각이 없는 항목은 '종일'로 적고 뒤로 보낸다. 시각을 지어내지 않는다(약속 L23·L25). */
-(function () {
-  var SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec';
-  var box = document.getElementById('todaySched');
-  if (!box) return;
-  // ★2026-09-04 배985 — ERP 도메인에서는 서버 미러(/api/misc/schedule/load_schedule)를 먼저 읽는다
-  // (★전사일정 정본은 GAS 그대로 — 읽기만 서버). 시토 배990 배포 전엔 404 → 아래 GAS 재시도 그대로
-  // 유지, 배포 즉시 서버 우선으로 자동 전환.
-  var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
-
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
-  }
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-  }
-  // 띠 끝에 전사일정 화면 링크 고정(GM 지시 2026-09-14) — 기존 doc-link 클래스 재사용, 상태와 무관하게 항상 붙는다.
-  function show(html) {
-    box.innerHTML = html + ' <a class="doc-link" href="../check/전사_일정.html" target="_blank" rel="noopener">▸전사일정</a>';
-    box.hidden = false;
-  }
-
-  var today = todayStr();
-  // 전사일정 GAS 는 응답이 60KB 라 느릴 때가 있고(실측 1.4~4.5초) 가끔 한 번씩 끊긴다.
-  // 그 한 번에 GM 화면이 「불러오지 못했습니다」로 바뀌던 것을 막는다 — 실패하면 2초 뒤 한 번만
-  // 다시 부르고, 그래도 안 되면 그때 안내를 띄운다(조용한 실패는 여전히 금지 · GM 지적 2026-08-26).
-  function _scheduleGas(retry) {
-    return fetch(SCHEDULE_GAS_URL + '?action=load_schedule&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
-      .then(function (r) { return r.json(); })
-      .catch(function (e) {
-        if (!retry) throw e;
-        return new Promise(function (ok) { setTimeout(ok, 2000); })
-          .then(function () { return _scheduleGas(false); });
-      });
-  }
-  function loadSchedule(retry) {
-    if (!ERP_API_ON) return _scheduleGas(retry);
-    return fetch('/api/misc/schedule/load_schedule', { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-      .catch(function (e) { console.warn('[오늘일정] API 실패 → GAS 폴백:', e && e.message); return _scheduleGas(retry); });
-  }
-  loadSchedule(true)
-    .then(function (res) {
-      if (!res || !res.ok || !res.data || !Array.isArray(res.data.items)) throw new Error('형식 불일치');
-      var rows = res.data.items.filter(function (it) {
-        return String((it && it.next_due) || '').slice(0, 10) === today;
-      });
-      rows.sort(function (a, b) {
-        var ta = String(a.time || '') || 'zz', tb = String(b.time || '') || 'zz';
-        return ta < tb ? -1 : ta > tb ? 1 : 0;
-      });
-      if (!rows.length) {
-        show('<b>오늘 일정</b> <span class="ts-none">— 전사일정에 오늘 잡힌 것은 없습니다.</span>');
-        return;
-      }
-      var body = rows.map(function (it) {
-        var t = String(it.time || '').trim() || '종일';
-        var who = String(it.assignee || '').trim();
-        return '<div class="ts-row"><span class="ts-time">' + esc(t) + '</span>' +
-               '<span>' + esc(it.name || '(제목 없음)') +
-               (who ? ' <span class="ts-who">· ' + esc(who) + '</span>' : '') + '</span></div>';
-      }).join('');
-      show('<b>오늘 일정 ' + rows.length + '건</b>' + body);
-    })
-    .catch(function (e) {
-      show('<b>오늘 일정</b> <span class="ts-none">— 전사일정을 불러오지 못했습니다(' + esc(e && e.message) + '). ' +
-           '0건이라는 뜻이 아닙니다 — 전사일정 화면에서 직접 확인해 주세요.</span>');
-    });
-})();
-
-/* ── ⓪-2 👤 GM 책임 항목 띠 (GM 지시 2026-09-15) ────────────────────────────────────────────
+/* ── ② 👤 GM 책임 항목 띠 (GM 지시 2026-09-15 · 진행건 바로 위 단독 띠) ────────────────────────────────────────────
    중간관리자 업무목차 생성기(scripts/manager_task_index.py)가 남기는 책임 항목 스냅숏 원장
    status/manager_eval_history.json 의 이번 달 「김남욱 GM」 항목을 한 줄씩 그린다 — 실측 이상(bad)은 빨강,
    「(웰리 추천)」 이름은 딱지로. 3인 책임 항목은 중간관리자 업무목차 화면에 있다(같은 파일 하나가 원천 · 약속 L01).
    원장이 없거나 이번 달 키가 없으면 조용히 숨긴다(에러 문구로 채우지 않는다). */
 (function () {
-  var box = document.getElementById('leaderBand');
+  var box = document.getElementById('gmRespBand');
   if (!box) return;
   var GM = '김남욱 GM'; // RESP_PEOPLE(manager_task_index.py)의 GM 키
   function esc(s) {
