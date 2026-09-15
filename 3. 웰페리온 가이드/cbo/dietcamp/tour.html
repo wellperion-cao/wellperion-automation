@@ -15,7 +15,7 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 .hero img{height:64px;background:#fff;padding:10px 18px;border-radius:12px;margin-bottom:22px}
 .hero h1{font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.25}
 .hero p{margin-top:12px;color:#c7cbc9;font-size:clamp(14px,1.6vw,18px)}
-.hero .hint{margin-top:38px;color:var(--g);font-weight:700;animation:bob 1.6s ease-in-out infinite}
+.hero .hint{margin-top:38px;color:#2ecc8a;font-weight:700;animation:bob .9s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){.hero .hint{animation:none}}
 .track{position:relative;height:calc(var(--frames) * 26px)}
@@ -24,22 +24,34 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
 .frame{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);height:100%;aspect-ratio:9/16;background:#000;box-shadow:0 0 60px rgba(0,0,0,.6)}
 .frame canvas{width:100%;height:100%;display:block}
 .cap{position:absolute;left:0;right:0;bottom:0;padding:22px 24px 26px;background:linear-gradient(transparent,rgba(0,0,0,.75));pointer-events:none}
-.cap .n{font-size:12px;letter-spacing:.2em;color:var(--g);font-weight:700}
+.cap .n{font-size:12px;letter-spacing:.2em;color:#2ecc8a;font-weight:700}
+.cap .chips{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.cap .chips span{font-size:12px;padding:4px 10px;border-radius:999px;background:#1f2b26;color:#fff;border:1px solid #3a4a43}
+.cap .where{margin-top:8px;font-size:12px;color:#c7cbc9}
+.cap.swap h2,.cap.swap p,.cap.swap .chips{animation:rise .5s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.frame canvas{transition:transform .6s ease-out}
+.mark{position:absolute;left:18px;top:14px;height:34px;background:rgba(255,255,255,.92);padding:5px 10px;border-radius:8px}
+.mark img{height:100%;display:block}
 .cap h2{font-size:clamp(20px,2.6vw,30px);font-weight:800;margin-top:4px}
 .cap p{margin-top:6px;color:#d7dbd9;font-size:clamp(13px,1.4vw,16px);max-width:520px}
 .bar{position:absolute;left:0;right:0;top:0;height:4px;background:rgba(255,255,255,.15)}
-.bar i{display:block;height:100%;width:0;background:var(--g)}
+.bar i{display:block;height:100%;width:0;background:#2ecc8a}
 .nav{position:absolute;right:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;max-height:80vh;overflow:auto}
 .nav button{border:0;background:rgba(0,0,0,.45);color:#cfd3d1;font:inherit;font-size:12.5px;padding:6px 10px;border-radius:999px;cursor:pointer;text-align:left;white-space:nowrap;min-height:32px}
-.nav button.on{background:var(--g);color:#fff;font-weight:700}
+.nav button.on{background:#00733F;color:#fff;font-weight:700}
 @media (max-width:760px){.nav{display:none}.frame{aspect-ratio:auto;width:100%;left:0;transform:none}}
 .load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0b0d;color:#c7cbc9;font-size:14px;z-index:3}
 .load.hide{display:none}
 .end{min-height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 24px;background:var(--paper);color:var(--ink)}
 .end h2{font-size:clamp(22px,3vw,34px);font-weight:800}
 .end p{margin-top:10px;color:#3f4643;max-width:560px;line-height:1.7}
-.end a{display:inline-block;margin-top:22px;padding:14px 26px;border-radius:999px;background:var(--g);color:#fff;font-weight:800;text-decoration:none;min-height:44px}
-.end .sub{margin-top:14px;font-size:13px;color:var(--soft)}
+.end a{display:inline-block;margin-top:22px;padding:14px 26px;border-radius:999px;background:#00733F;color:#fff;font-weight:800;text-decoration:none;min-height:44px}
+.end .form{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.end .form input{padding:12px 14px;border:1px solid #cfd4d1;border-radius:10px;font:inherit;min-width:180px;min-height:44px}
+.end .form button{padding:12px 20px;border:0;border-radius:10px;background:#00733F;color:#fff;font:inherit;font-weight:800;min-height:44px;cursor:pointer}
+.end .msg{margin-top:8px;font-size:13px;color:#00733F;min-height:18px}
+.end .sub{margin-top:14px;font-size:13px;color:#4f5a56}
 </style></head><body>
 
 <section class="hero">
@@ -54,7 +66,8 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
     <canvas class="bg" id="bg" width="27" height="48" aria-hidden="true"></canvas>
     <div class="frame"><canvas id="fr" width="480" height="854" role="img" aria-label="다이어트캠프 내부"></canvas></div>
     <div class="bar"><i id="bar"></i></div>
-    <div class="cap"><div class="n" id="capn"></div><h2 id="caph"></h2><p id="capp"></p></div>
+    <div class="mark"><img src="img/logo_h.png" alt="다이어트캠프 &amp; PT" loading="lazy"></div>
+    <div class="cap" id="cap"><div class="n" id="capn"></div><h2 id="caph"></h2><p id="capp"></p><div class="chips" id="chips"></div><div class="where" id="where"></div></div>
     <div class="nav" id="nav"></div>
     <div class="load" id="load">공간을 불러오는 중 … <span id="pct">0</span>%</div>
   </div>
@@ -64,6 +77,8 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
   <h2>직접 와서 걸어 보시면 더 좋습니다</h2>
   <p>매일 다른 프로그램, 관절에 무리 없는 기능성 운동. 첫 방문은 상담 예약으로 시작합니다 — 평일 9시~23시 · 토요일 9시~16시.</p>
   <a href="https://erp.wellperion.com/dietcamp/counsel/">궁금한 것 바로 물어보기</a>
+  <form class="form" id="ask" action="https://erp.wellperion.com/dietcamp/inquiry.html" method="get"><input name="name" placeholder="성함" required autocomplete="name"><input name="phone" placeholder="연락처" required inputmode="tel" autocomplete="tel"><button type="submit">상담 예약 남기기</button></form>
+  <div class="msg" id="askmsg">남기시면 다음 영업일 안에 연락드립니다</div>
   <div class="sub">전화 02-6941-0701 · 예약은 네이버 플레이스 · 건물 내 주차 불가</div>
 </section>
 
@@ -74,24 +89,24 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
   var CUT=[[34,49],[182,188]];
   // 장면 표(초 → 이름·한 줄) — 영상을 15초 간격으로 훑어 붙였다(2026-09-15 시보). 값이 아니라 안내문이라 대표님 확인 뒤 다듬는다.
   var CH=[
-    [0,'입구','은평로 23, DC백화점 건물 — 3층으로 올라옵니다'],
-    [12,'3층으로','계단 옆 안내판 · 다이어트캠프 & PT'],
-    [50,'출입문 · 신발장','DIET CAMP & PT 로고가 있는 문'],
-    [58,'상담 데스크','처음 오시면 여기서 인바디와 목표부터'],
-    [66,'잔디 복도','스튜디오와 짐을 잇는 길'],
-    [80,'매트 스튜디오','그룹 수업이 열리는 곳 — 매일 다른 프로그램'],
-    [90,'소도구 30가지','밴드·볼·튜빙·스텝박스·원판 — 300가지 프로그램의 재료'],
-    [120,'스튜디오 전경','거울 벽과 조명 · 여러 명이 같은 동작을 하는 자리'],
-    [158,'다시 데스크 앞','짐과 탈의실로 가는 갈림길'],
-    [190,'탈의실','세면대 · 파우더'],
-    [200,'락커','전자 잠금 락커'],
-    [210,'샤워실','샤워부스'],
-    [240,'휴게 · 정수기','수업 전후 잠깐 쉬는 자리'],
-    [262,'유산소 · 머신','트레드밀 · 바이크 · 머신'],
-    [285,'1:1 재활 존','재활 테이블 · 원인 근육부터, 4단계로'],
-    [310,'소도구 벽 · 웨이트','밴드 보드 · 바벨 · 덤벨'],
-    [330,'유산소 존','트레드밀 라인'],
-    [345,'마무리','다이어트캠프 & PT — 운동을 그만두지 않게']
+    [0,'입구','은평로 23, DC백화점 건물 — 3층으로 올라옵니다',['본죽 있는 건물','3층','주차 불가 · 대중교통'],'건물 밖'],
+    [12,'3층으로','계단 옆 안내판 · 다이어트캠프 & PT',['계단 3층','안내판'],'계단'],
+    [50,'출입문 · 신발장','DIET CAMP & PT 로고가 있는 문',['실내화로 갈아 신기','출입문'],'입구'],
+    [58,'상담 데스크','처음 오시면 여기서 인바디와 목표부터',['인바디 측정','목표 상담','6단계 상담'],'입구 → 데스크'],
+    [66,'잔디 복도','스튜디오와 짐을 잇는 길',['인조잔디','왼쪽 스튜디오 · 오른쪽 짐'],'복도'],
+    [80,'매트 스튜디오','그룹 수업이 열리는 곳 — 매일 다른 프로그램',['그룹PT','매일 다른 수업','30~50대'],'스튜디오'],
+    [90,'소도구 30가지','밴드·볼·튜빙·스텝박스·원판 — 300가지 프로그램의 재료',['밴드','스텝박스','폼롤러','원판'],'스튜디오 안쪽'],
+    [120,'스튜디오 전경','거울 벽과 조명 · 여러 명이 같은 동작을 하는 자리',['거울 벽','조명','정원제 수업'],'스튜디오'],
+    [158,'다시 데스크 앞','짐과 탈의실로 가는 갈림길',['짐','탈의실'],'데스크 앞'],
+    [190,'탈의실','세면대 · 파우더',['세면대','드라이어'],'탈의실'],
+    [200,'락커','전자 잠금 락커',['전자 잠금','개인 락커'],'탈의실'],
+    [210,'샤워실','샤워부스',['샤워부스','온수'],'탈의실 안쪽'],
+    [240,'휴게 · 정수기','수업 전후 잠깐 쉬는 자리',['정수기','휴게'],'짐 입구'],
+    [262,'유산소 · 머신','트레드밀 · 바이크 · 머신',['트레드밀','바이크','머신'],'짐'],
+    [285,'1:1 재활 존','재활 테이블 · 원인 근육부터, 4단계로',['재활 테이블','1:1 평가','40~60대'],'짐 안쪽'],
+    [310,'소도구 벽 · 웨이트','밴드 보드 · 바벨 · 덤벨',['밴드 보드','바벨','덤벨'],'짐'],
+    [330,'유산소 존','트레드밀 라인',['트레드밀','유산소'],'짐'],
+    [345,'마무리','다이어트캠프 & PT — 운동을 그만두지 않게',['Can · Need · Fun','상담 예약'],'데스크']
   ];
   // 재생 순서 = 뺀 구간을 건너뛴 프레임 목록 · 장면 첫 프레임은 DWELL 번 반복(캡션 읽을 시간)
   var SEQ=[]; (function(){ var chStart={}; CH.forEach(function(c){ chStart[Math.round(c[0]*FPS)]=1; });
@@ -100,6 +115,7 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
   var track=document.getElementById('track'), fr=document.getElementById('fr'), bg=document.getElementById('bg'), bar=document.getElementById('bar');
   var fx=fr.getContext('2d'), bx=bg.getContext('2d'), POS={}; SEQ.forEach(function(i,k){ if(POS[i]===undefined) POS[i]=k; });
   var capn=document.getElementById('capn'), caph=document.getElementById('caph'), capp=document.getElementById('capp'), nav=document.getElementById('nav'), load=document.getElementById('load'), pct=document.getElementById('pct');
+  var cap=document.getElementById('cap'), chips=document.getElementById('chips'), where=document.getElementById('where');
   document.documentElement.style.setProperty('--frames', SEQ.length);
   var src=function(i){ return DIR+'f_'+String(i+1).padStart(4,'0')+'.jpg'; };
   var cache=new Array(N), loaded=0, cur=-1, curCh=-1;
@@ -114,8 +130,12 @@ body{font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;bac
     paint(i);
     bar.style.width=((POS[i]||0)*100/(SEQ.length-1))+'%';
     var sec=i/FPS, c=0; for(var m=0;m<CH.length;m++){ if(sec>=CH[m][0]) c=m; }
-    if(c!==curCh){ curCh=c; capn.textContent=String(c+1).padStart(2,'0')+' / '+CH.length; caph.textContent=CH[c][1]; capp.textContent=CH[c][2];
+    if(c!==curCh){ curCh=c; capn.textContent=String(c+1).padStart(2,'0')+' / '+CH.length+'  ·  '+(CH[c][4]||''); caph.textContent=CH[c][1]; capp.textContent=CH[c][2];
+      chips.innerHTML=(CH[c][3]||[]).map(function(t){ return '<span>'+t+'</span>'; }).join(''); where.textContent='다음 · '+(CH[c+1]?CH[c+1][1]:'상담 예약');
+      cap.classList.remove('swap'); void cap.offsetWidth; cap.classList.add('swap');
       Array.prototype.forEach.call(nav.children,function(b,x){ b.classList.toggle('on',x===c); }); }
+    // 장면 안에서 아주 천천히 다가가는 느낌(1.00→1.04)
+    var nxt=CH[c+1]?CH[c+1][0]:N/FPS, span=Math.max(1,nxt-CH[c][0]), t=Math.min(1,Math.max(0,(sec-CH[c][0])/span)); fr.style.transform='scale('+(1+0.04*t).toFixed(3)+')';
   }
   CH.forEach(function(ch,x){ var b=document.createElement('button'); b.type='button'; b.textContent=(x+1)+'. '+ch[1]; b.addEventListener('click',function(){ var pos=SEQ.indexOf(Math.round(ch[0]*FPS)); if(pos<0) pos=0; var top=track.offsetTop+(pos/(SEQ.length-1))*(track.offsetHeight-window.innerHeight); window.scrollTo({top:top,behavior:'smooth'}); }); nav.appendChild(b); });
   // 스크롤 위치 → 목표 자리, 화면은 천천히 따라간다(EASE) — 「너무 빠르다」(GM) 를 STEP 26px + 완만한 추종으로
