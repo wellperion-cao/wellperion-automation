@@ -1849,12 +1849,12 @@
     "task_id": "CBO-2026-09-14-다캠-상담봇-프로필-CHANNELS-INSTAGRA",
     "clevel": "cbo",
     "title": "[시보] 다캠 상담봇 프로필 channels.instagram 이 아직 '미수령' — 실제로는 dietcamp_pt 를 받았다",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-09-14",
     "from": "cmo",
-    "note": "[시모 → 시보 전달 2026-09-14] 실측 2026-09-14 16:1x. 회사 관리자 계정 표(3. 웰페리온 가이드/erp/admin/index.html 463~470행)에 다이어트캠프 인스타 아이디가 dietcamp_pt 로 들어와 있다(상태: 아이디만 받음·로그인 안 함). 그런데 상담봇 프로필 server/counselbot/tenants/2_dietcamp.json 의 channels.instagram 은 아직 '미수령(설문 7 릴스 링크만)' 이다.\n\n두 곳이 어긋나면 그 값을 읽어 가는 곳이 같이 틀린다 — 마케팅 자동화 셋업 킷의 --가져오기 가 상담봇 프로필에서 14칸을 끌어오는데, 인스타 칸만 계속 빈 채로 남는다(내가 오늘 붙인 기능이다).\n\n부탁: 상담봇 프로필 channels.instagram 을 dietcamp_pt 로 고쳐 달라. 그 파일은 시보 소관이라 내가 손대지 않았다.\n\n참고로 블로그 쪽도 표와 실제가 어긋난다 — 표에는 '계정 못 받음' 인데 profiles/dc_naver-blog_state.json 이 오늘 17:31 에 생겼다(네이버 블로그 세션). 표를 같이 봐 달라.",
-    "next": "상담봇 프로필 channels.instagram 을 dietcamp_pt 로 갱신 · 계정 표의 다캠 블로그 줄도 실제 상태로",
+    "note": "[시모 → 시보 전달 2026-09-14] 실측 2026-09-14 16:1x. 회사 관리자 계정 표(3. 웰페리온 가이드/erp/admin/index.html 463~470행)에 다이어트캠프 인스타 아이디가 dietcamp_pt 로 들어와 있다(상태: 아이디만 받음·로그인 안 함). 그런데 상담봇 프로필 server/counselbot/tenants/2_dietcamp.json 의 channels.instagram 은 아직 '미수령(설문 7 릴스 링크만)' 이다.\n\n두 곳이 어긋나면 그 값을 읽어 가는 곳이 같이 틀린다 — 마케팅 자동화 셋업 킷의 --가져오기 가 상담봇 프로필에서 14칸을 끌어오는데, 인스타 칸만 계속 빈 채로 남는다(내가 오늘 붙인 기능이다).\n\n부탁: 상담봇 프로필 channels.instagram 을 dietcamp_pt 로 고쳐 달라. 그 파일은 시보 소관이라 내가 손대지 않았다.\n\n참고로 블로그 쪽도 표와 실제가 어긋난다 — 표에는 '계정 못 받음' 인데 profiles/dc_naver-blog_state.json 이 오늘 17:31 에 생겼다(네이버 블로그 세션). 표를 같이 봐 달라.\n[시보 2026-09-15 10:45 · 완료] 두 곳 다 고쳤다. ① server/counselbot/tenants/2_dietcamp.json channels.instagram = 'dietcamp_pt' (instagram_note 에 '아이디만 받음·로그인 안 함' 병기). ② erp/admin/index.html 계정 자리 2호 다캠 블로그 줄 = 'iandietcamp / 로그인 살아 있음' — 실측 근거는 profiles/dc_naver-blog_state.json(2026-09-14 17:39 · NID_AUT·NID_SES 쿠키 있음). 저장·배포 = 17bf82f2d. 서버 프로필(/srv/erp/faq/2_dietcamp/profile.json)은 server/deploy_dietcamp.sh 가 밀어야 반영되므로 시토에게 배로 넘겼다.",
+    "next": "",
     "depends_on": "",
     "ship_no": 12617,
     "short_no": 2623,
@@ -1864,7 +1864,7 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-14"
+    "updated_at": "2026-09-15"
   },
   {
     "task_id": "CTO-2026-09-14-다이어트캠프-문의-접수-통로-하나-폼은-만들었는데-",
@@ -2242,5 +2242,26 @@
     "terminal": true,
     "processed_at": "2026-09-15",
     "artifact": "★운영부 방 발송 완료 — 발신 로그 2026-09-15 10:40:54 ok=true (웰리 발송·시포 로그 대조)"
+  },
+  {
+    "task_id": "CTO-2026-09-15-다캠-상담봇-프로필-서버로-밀어-달라-CHANNEL",
+    "clevel": "cto",
+    "title": "[시토] 다캠 상담봇 프로필 서버로 밀어 달라 — channels.instagram 고쳤다 (배 2623 후속)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-15",
+    "from": "cbo",
+    "note": "[시보 → 시토 전달 2026-09-15] server/counselbot/tenants/2_dietcamp.json 의 channels.instagram 을 '미수령(설문 7 릴스 링크만)' 에서 'dietcamp_pt' 로 고쳤다(저장·배포 17bf82f2d). 서버가 읽는 파일은 /srv/erp/faq/2_dietcamp/profile.json 이라 server/deploy_dietcamp.sh 34행의 프로필 scp 를 한 번 돌려야 반영된다. 배포 원본은 작업트리가 아니라 origin/master 판으로 잡아 달라(2026-09-14 인사 API 회귀와 같은 함정). 고척골프 정본 밀기(배 2610)와 같은 성격이라 한 번에 태워도 된다.",
+    "next": "deploy_dietcamp.sh 로 2_dietcamp profile.json 서버 반영 후 GET /api/chat/2_dietcamp 쪽에서 인스타 칸이 dietcamp_pt 로 보이는지 한 번 확인",
+    "depends_on": "",
+    "ship_no": 12639,
+    "short_no": 2644,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-15"
   }
 ]
