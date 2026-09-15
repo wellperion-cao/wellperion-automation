@@ -1442,7 +1442,7 @@ def build() -> str:
 
     if ai_items:
         ai_line = " · ".join(f'#{n} {html.escape(str(it.get("issue") or ""))}' for n, _d, it in ai_items)
-        blocks.append(f'''      <div class="blk">
+        blocks.append(f'''      <div class="blk pr-skip">
         <h2>AI 처리 건 <span class="sub">사람 일이 아니라 화면 결함 등 — 사람 목차에서 뺐습니다 · {len(ai_items)}건</span></h2>
         <div style="padding:10px 14px;font-size:13.5px;">{ai_line}</div>
       </div>''')
@@ -1460,7 +1460,7 @@ def build() -> str:
         f'<details class="grp"><summary>{html.escape(k)} <span class="gc">{len(v)}건</span></summary>\n        '
         + table([row_html(n, d, it) for n, d, it in v], "없음") + "\n        </details>"
         for k, v in buckets.items() if v)
-    blocks.append(f'''      <div class="blk">
+    blocks.append(f'''      <div class="blk pr-skip">
         <h2>담당 미정 <span class="sub">GM 이 세 사람 중 누구 몫인지 정하면 그 사람 목차로 옮긴다 · {len(unassigned)}건 · 성격별로 묶어 접어 뒀습니다</span></h2>
         <div class="grps">
         {groups_html or '<div class="empty" style="padding:10px 14px;">없음</div>'}
@@ -1477,7 +1477,7 @@ def build() -> str:
             f'{approval_badge(m)}'
             f'<span class="mvd-id">{"id로 연결" if matched_by == "id" else "제목으로 연결"}</span></span></li>'
             for no, d, it, m, matched_by in moved_sorted)
-        blocks.append(f'''      <div class="blk">
+        blocks.append(f'''      <div class="blk pr-skip">
         <details class="grp"><summary>업무 SSOT 로 넘어간 것 <span class="gc">{len(moved)}건</span></summary>
         <ul class="mvlist">
         {moved_rows}
@@ -1517,7 +1517,7 @@ def build() -> str:
             f'<h3 class="rsp">{html.escape(w)} <span class="gc">{len(by_who_r[w])}건</span></h3>\n        '
             + table([row_html(n, d, it) for n, d, it in by_who_r[w]], "없음")
             for w in names_r)
-        blocks.append(f'''      <div class="blk">
+        blocks.append(f'''      <div class="blk pr-skip">
         <details class="grp"><summary>회신 소통건 — 업무 아님 · 한 줄 답이 오면 닫힘 <span class="gc">{len(aside_reply)}건</span></summary>
         {inner_r}
         </details>
@@ -1694,11 +1694,34 @@ def build() -> str:
   .wk-who{{color:var(--dim);margin-left:6px}}
   .wk-age{{color:var(--dim);margin-left:6px;font-variant-numeric:tabular-nums}}
   .wk-none{{font-size:12px;color:var(--dim);list-style:none;margin-left:-14px}}
+  /* A3 요약본(인쇄+PNG) — GM업무.html 과 같은 버튼 3개(GM 지시 2026-09-15). 제목 줄 오른쪽에 상시 노출,
+     별도 배지·설명문은 안 둔다. */
+  @page {{ size: A3 portrait; margin: 12mm; }}
+  .h1row{{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}}
+  .a3bar{{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}}
+  .a3bar button{{font-family:inherit;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;
+    background:var(--navy);border:1px solid var(--navy);border-radius:99px;padding:5px 13px;}}
+  .a3bar button:hover{{opacity:.85;}}
+  .a3bar button:disabled{{opacity:.5;cursor:default;}}
+  @media print{{
+    .a3bar{{display:none !important;}}
+    body{{padding:0;}}
+    .wrap{{max-width:100%;}}
+    section.resp,.week,.top,.blk{{break-inside:avoid;}}
+    .pr-skip{{display:none !important;}}
+  }}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>중간관리자 업무 목차</h1>
+  <div class="h1row">
+    <h1>중간관리자 업무 목차</h1>
+    <div class="a3bar">
+      <button type="button" onclick="printA3('landscape');">🖨 A3 가로 인쇄</button>
+      <button type="button" onclick="printA3('portrait');">🖨 A3 세로 인쇄</button>
+      <button type="button" id="mgr-png-btn" onclick="saveMapPng(this);">🖼 PNG 다운로드</button>
+    </div>
+  </div>
   <div class="lede">이경연 실장 · 이정헌 소장 · 나우열M 세 사람의 <b>열린 업무</b>를 번호순으로 편 목차입니다.
     회신은 번호로 받습니다 — 「#번호 + 했다/진행중/언제」 한 줄.<br>
     체크는 GM 화면에만 남습니다(이 브라우저). 원장 상태는 실무진 회신이 오면 바뀝니다.</div>
@@ -1724,6 +1747,49 @@ def build() -> str:
   </div>
 </div>
 <script>
+  // A3 요약본(인쇄+PNG) — GM업무.html printA3/saveMapPng 그대로 재사용(GM 지시 2026-09-15 · 새 인쇄
+  // 경로·새 라이브러리 금지). 이 화면은 AI 처리건·담당 미정·접힌 기록(.pr-skip)만 @media print 로
+  // 숨기면 되고, 나머지 사람별 목록은 이미 펼쳐져 있어 GM업무.html 의 details 강제 오픈이 필요 없다.
+  window.printA3 = function (orientation) {{
+    var st = document.getElementById('mgr-a3-style');
+    if (!st) {{ st = document.createElement('style'); st.id = 'mgr-a3-style'; document.head.appendChild(st); }}
+    st.textContent = '@page{{ size: A3 ' + orientation + '; margin: 12mm; }}';
+    window.print();
+  }};
+  var H2C_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  function loadH2C() {{
+    if (typeof html2canvas === 'function') return Promise.resolve();
+    return new Promise(function (ok, no) {{
+      var s = document.createElement('script');
+      s.src = H2C_SRC; s.onload = ok; s.onerror = no;
+      document.head.appendChild(s);
+    }});
+  }}
+  function pad2(n) {{ return n < 10 ? '0' + n : '' + n; }}
+  window.saveMapPng = function (btn) {{
+    var label = btn.textContent;
+    btn.textContent = '변환 중…'; btn.disabled = true;
+    var d = new Date();
+    var name = '중간관리자_업무목차_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
+    // html2canvas 는 화면 그대로를 찍어 @media print 규칙(.pr-skip 숨김)이 안 먹는다 — 인쇄와 같은
+    // 범위가 되도록 캡처 직전에만 감췄다가 끝나면 되돌린다(인쇄의 details 강제오픈과 대칭인 처리).
+    var skipped = Array.prototype.slice.call(document.querySelectorAll('.pr-skip'));
+    skipped.forEach(function (el) {{ el.dataset.pngHidden = el.style.display; el.style.display = 'none'; }});
+    loadH2C()
+      .then(function () {{
+        return html2canvas(document.querySelector('.wrap'), {{ scale: 2, backgroundColor: '#ffffff', windowWidth: document.querySelector('.wrap').scrollWidth }});
+      }})
+      .then(function (c) {{
+        var a = document.createElement('a');
+        a.download = name; a.href = c.toDataURL('image/png'); a.click();
+      }})
+      .catch(function () {{ alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); }})
+      .finally(function () {{
+        skipped.forEach(function (el) {{ el.style.display = el.dataset.pngHidden; delete el.dataset.pngHidden; }});
+        btn.textContent = label; btn.disabled = false;
+      }});
+  }};
+
   // 체크 상태는 공용 보드에 남긴다(GM 지적 2026-09-10 "아무 추적 및 연동 관련된 부분이 어설픈데?").
   //   종전엔 localStorage 라 그 브라우저에만 남았다 — 다른 기기로 열거나 다른 사람이 보면
   //   아무 흔적이 없었다. GM_TASK_OWNERS 담당 칸이 쓰는 그 보드(GAS saveBoard)에 키만 하나
