@@ -3085,6 +3085,29 @@ def _lesson_sla_block() -> tuple:
         return "", 0
 
 
+def _membership_sla_block() -> tuple:
+    """멤버십 문의 중 24시간 넘게 컨택 기록이 없는 **누적** 목록 → (본문, 건수 | None=못 읽음).
+
+    ★2026-09-15 GM 지시(배 2649) — "멤버십 미정인 채로 컨택이 잘 안 되고 체크를 안 하는 것 같은데, 계속
+      리마인드". 아침 07:55 ★부서장 통은 _lesson_sla_block 이 강습만 싣고, 멤버십 몫은 저녁 ★운영부 통의
+      변화 게이트 뒤에만 있어 담당 임정은M 이 매일 보는 자리가 없었다(실측: 9/15 멤버십 2건이 어느 통에도 안 실림).
+      아침 ★운영부 통(07:45)에 누적 전체를 매일 싣는다 — 강습 절과 같은 규칙(게이트 없음).
+    ★못 읽음 ≠ 0건(2026-08-06 규칙) — 원장 조회가 빈 응답이면 「0건」이라 적지 않고 절을 비운 채 로그에 남긴다.
+    판정·문구는 unassigned_nudge 정본 그대로 — 여기서 다시 만들지 않는다(약속 L01).
+    """
+    try:
+        import unassigned_nudge as _un
+        import report_stream_1_impl as _s1
+        if not _s1._fetch_list("member_inquiry_list"):
+            log("[ovd] 멤버십 문의 원장이 빈 응답 — 못 읽음으로 보고 절 생략(0건이라 적지 않는다)")
+            return "", None
+        vs = [v for v in _un.collect_sla_violations() if v.get("type") == "멤버십"]
+        return _un.build_sla_alert_text(vs), len(vs)
+    except Exception as exc:
+        log(f"[ovd] 멤버십 미컨택 목록 실패 — 절 생략: {type(exc).__name__}: {exc}")
+        return "", None
+
+
 def build_today_reception_block(today: str = "", rows: list | None = None) -> str:
     """오늘 들어온 종합접수처 접수 중 ★부서장 몫(강습·업장) — 저녁 통 앞절.
 
@@ -3515,6 +3538,13 @@ def _send_ops_room(args) -> int:
         done_section = ""  # 최초실행 — 과거 완료건 일괄 스팸 방지, 스냅샷만 찍고 이번엔 침묵
     if done_section:
         message = f"{message}\n\n{done_section}"
+    # 멤버십 미컨택 누적 절(배 2649 · GM 지시 2026-09-15) — 담당 임정은M 이 매일 아침 보는 자리.
+    sla_text, sla_n = _membership_sla_block()
+    if sla_text:
+        message = f"{message}\n\n{sla_text}"
+        log(f"[ovd] ★운영부 아침 통에 멤버십 미컨택 {sla_n}건 절 실음")
+    elif sla_n == 0:
+        log("[ovd] 멤버십 미컨택 0건 — 절 없음")
 
     # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
     cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", TARGET_ROOM,
