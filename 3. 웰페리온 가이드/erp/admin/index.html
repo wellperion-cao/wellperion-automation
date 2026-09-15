@@ -292,11 +292,13 @@
   <a href="#docs" data-go="docs"><span class="t">구조 문서</span></a>
   <div class="sep"></div>
   <!-- 개인 = GM 본인 것(GM 2026-09-15 「김남욱GM 카드·어떤 하루·개인 아이디어를 맨 아래 따로」).
-       아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보). -->
+       아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보).
+       ★김남욱 GM·아이디어·AI 학습·자율 작업 현황은 웰페리온 ERP 메인(자체 왼쪽 메뉴 + 비밀번호 커튼)이라 오른쪽 화면에 못 넣는다 —
+         2026-09-15 17:4x GM 「이건 좀 많이 아닌 것 같은데」 → 새 창(↗). 오른쪽에 넣을 아이디어 화면은 시보가 플랫폼 브랜드로 따로 만든다. -->
   <div class="cap">개인</div>
-  <a href="#view/gm" data-view="gm"><span class="t">김남욱 GM</span></a>
+  <a href="/home#G1" target="_blank" rel="noopener"><span class="t">김남욱 GM ↗</span></a>
   <a href="#view/sunday" data-view="sunday"><span class="t">어떤 하루</span></a>
-  <a href="#view/ideas" data-view="ideas"><span class="t">아이디어</span><span class="b">주간</span></a>
+  <a href="/home#G1/ideas" target="_blank" rel="noopener"><span class="t">아이디어 ↗</span><span class="b">주간</span></a>
 </nav>
 
 <div class="main">
@@ -328,17 +330,17 @@
     </a>
     <!-- 직원 화면 메뉴에 있던 기술·자율·GM 세 문서를 이 층으로 옮겼다 (GM 지시 2026-09-11).
          문서 자체는 그대로 있고 들어오는 문만 여기로 바뀐다. -->
-    <a class="entry" href="#view/t1" data-view="t1">
+    <a class="entry" href="/home#T1" target="_blank" rel="noopener">
       <div class="num placeholder">—</div>
       <div class="name">기술 · AI 학습</div>
       <div class="desc">무엇을 어떻게 돌리고 있는지</div>
     </a>
-    <a class="entry" href="#view/t2" data-view="t2">
+    <a class="entry" href="/home#T2" target="_blank" rel="noopener">
       <div class="num placeholder">—</div>
       <div class="name">자율 작업 현황</div>
       <div class="desc">사람 손 없이 도는 것들</div>
     </a>
-    <a class="entry" href="#view/gm" data-view="gm">
+    <a class="entry" href="/home#G1" target="_blank" rel="noopener">
       <div class="num placeholder">—</div>
       <div class="name">김남욱 GM</div>
       <div class="desc">할 일 · 루틴 · 영양 · 목표</div>
@@ -1136,7 +1138,7 @@
   var viewCards = [].slice.call(document.querySelectorAll('.main a[data-view]'));
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/자율현황.html', kakao:'/cto/automation/카톡전송관리.html', counsel:'/cbo/counsel_admin.html',
-                upload:'/cmo/upload/마케팅자동업로드.html', gm:'/home?v=g1#G1', t1:'/home?v=t1#T1', t2:'/home?v=t2#T2', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html', ideas:'/home?v=ideas#G1/ideas' };
+                upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company_v0.1.html' };
   function show(key, scroll){
     var viewKey = '';
     if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
@@ -1147,7 +1149,7 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { t1:'기술 · AI 학습', t2:'자율 작업 현황', company:'회사' };
+    var VIEW_NAMES = { company:'회사' };
     if (key === 'view' && VIEW_NAMES[viewKey]) {
       if (crumb) crumb.textContent = VIEW_NAMES[viewKey];
       var vf0 = document.getElementById('view-frame');
