@@ -797,7 +797,7 @@
         var rs = Object.keys(a.by_service || {}).filter(function(k){ return a.by_service[k] > 0; }).map(function(k){ return '<tr><td>' + k + '</td><td>$' + a.by_service[k].toFixed(2) + '</td></tr>'; });
         document.getElementById('aws-rows').innerHTML = rs.length ? rs.join('') : '<tr><td colspan="2" class="note">이번 달 사용 없음</td></tr>';
       } else { document.getElementById('aws-line').textContent = 'AWS 못 읽음 — ' + ((d.errors || {}).aws || ''); }
-      document.getElementById('cost-note').textContent = '실측 ' + when + ' · ' + ((a && a.note) || '') + ' · 환율 1,400원 고정';
+      document.getElementById('cost-note').textContent = '실측 ' + when + ' · 매일 00:20 자동 실측(힉스필드는 그 시각 기준 · AWS 는 전날분까지 잡힘) · ' + ((a && a.note) || '') + ' · 환율 1,400원 고정';
       var sm = d.summary;
       if (sm) {
         var mm = String(sm.month || '').slice(5).replace(/^0/, '');
@@ -1424,7 +1424,7 @@
       var remoteLine = ' · 다른 PC 분 <b>' + ((acc.remote_hosts || []).length) + '대</b> 합산'
         + (acc.remote_error ? ' · <span style="color:#B23B3B">⚠ ' + acc.remote_error + '</span>' : '');
       document.getElementById('tok-billing-line').innerHTML =
-        '이번 달 정액 요금 <b>' + fmtUsd(billing.usd_month_fixed) + '/월</b> · 계정 <b>' + Object.keys(accts).length + '개</b>' + remoteLine;
+        '이번 달 정액 요금 <b>' + fmtUsd(billing.usd_month_fixed) + '/월</b> · 계정 <b>' + Object.keys(accts).length + '개</b>' + remoteLine + ' · 매시 20분 자동 집계(실측 ' + String(d.generated_at || '').slice(5, 16).replace('T', ' ') + ')';
       document.getElementById('tok-cache-note').textContent = d.cache_read_note || '';
 
       var ba = (d.accounts || {}).by_account || {};
