@@ -266,8 +266,10 @@ def _gm_key(commit_message: str) -> str | None:
                     continue          # 훅이 적은 GM 접수만 — AI 가 적은 줄은 열쇠가 아니다
                 if str(d.get("ts") or "") < cutoff:
                     continue
-                ev = str(d.get("event") or "")
-                if "승인" in ev and any(w in ev for w in _GM_KEY_WORDS):
+                ev = str(d.get("event") or "").strip()
+                # 「승인」 한 마디(GM 이 👉 GM 액션 한 줄에 답한 것)도 열쇠다 — 짧은 답이 곧 그 물음의 답이다.
+                bare = ev.rstrip(".!~ ") in ("승인", "GM 승인", "승인한다", "승인함")
+                if bare or ("승인" in ev and any(w in ev for w in _GM_KEY_WORDS)):
                     return m.group(0)
     except Exception:  # noqa: BLE001
         return None
