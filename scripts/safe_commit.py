@@ -519,6 +519,11 @@ def _batch_blobs(root: Path, rev_path_pairs: list[tuple[str, str]]) -> dict[tupl
     return out
 
 
+# 2026-09-15 GM 지적 「GIT·셸창이 엄청 켜졌다가 꺼진다 — 너무 불편」: 이 도구가 부르는 git·가드·훅 자식 프로세스가
+# 콘솔 없는 부모(에이전트 도구 셸)에서 뜨면 창이 번쩍인다. 윈도우에서는 창 없이 띄운다(출력은 capture 로 그대로 받는다).
+_NOWIN = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+
+
 def _git(args: list[str], root: Path, env: dict | None = None,
          check: bool = False) -> subprocess.CompletedProcess:
     run_env = dict(os.environ)
@@ -532,7 +537,7 @@ def _git(args: list[str], root: Path, env: dict | None = None,
         # (2026-07-23 격리 재현으로 실측 — instagram/.../큐레이션_추천.md 가 혼입으로 오판됨)
         ["git", "-C", str(root), "-c", "core.quotepath=false", *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        env=run_env, check=check,
+        env=run_env, check=check, **_NOWIN,
     )
 
 
@@ -665,7 +670,7 @@ def _run_hook_guards(root: Path, index_path: Path, message: str = "") -> list[st
                 [sys.executable, str(script)],
                 cwd=str(root), env=run_env,
                 capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=30,
+                encoding="utf-8", errors="replace", timeout=30, **_NOWIN,
             )
         except Exception as exc:
             # 가드 실행 자체 실패 = fail-open(기존 훅 규약과 동일 — 가드 버그로
@@ -730,7 +735,7 @@ def _run_producer_hooks(root: Path, index_path: Path, rel_paths: list[str],
             subprocess.run(
                 [sys.executable, str(script), *argv],
                 cwd=str(root), env=run_env, capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=60,
+                encoding="utf-8", errors="replace", timeout=60, **_NOWIN,
             )
         except Exception as exc:
             print(f"[WARN] {label} 생산훅 실행 실패(fail-open): {type(exc).__name__}: {exc}")
@@ -871,7 +876,7 @@ def _sync_live_index(rel_paths: list[str], root: Path, old_head: str, new_sha: s
             for attempt in range(_INDEX_LOCK_RETRIES):
                 r = subprocess.run(
                     ["git", "-C", str(root), "update-index", "--add", "--index-info"],
-                    input=payload, capture_output=True, timeout=60,
+                    input=payload, capture_output=True, timeout=60, **_NOWIN,
                 )
                 if r.returncode == 0:
                     break
