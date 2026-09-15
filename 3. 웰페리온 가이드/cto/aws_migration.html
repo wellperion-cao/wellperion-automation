@@ -75,8 +75,9 @@ td.area{white-space:nowrap;font-weight:700;}
 <div class="content">
 
   <div class="stats">
-    <div class="stat"><div class="lb">구글 없이 뜨는 화면</div><div class="vl" id="statProgress">—</div></div>
+    <div class="stat"><div class="lb">구글 없이 뜨는 화면 <span class="dim">(코드 검사 · 폴백 포함)</span></div><div class="vl" id="statProgress">—</div></div>
     <div class="stat"><div class="lb">구글 의존 화면</div><div class="vl" id="statOrigin" style="font-size:20px;">—</div></div>
+    <div class="stat"><div class="lb">자료 원천이 서버인 영역 <span class="dim">(시트를 지울 수 있는 곳)</span></div><div class="vl" id="statSource" style="font-size:20px;">—</div></div>
     <div class="stat"><div class="lb">다음</div><div class="vl" id="statNext" style="font-size:16px;">—</div></div>
   </div>
 
@@ -275,6 +276,9 @@ function render(d){
   // statOrigin 은 아래 renderGasDep() 이 실측(status/gas_dependency.json)으로 채운다.
   // 여기서는 옛 방식(영역 표 줄 수 비율)을 못 읽었을 때만 쓰는 대체값으로 저장해 둔다.
   window._oldRatio = nTotal ? (nOrigin + '/' + nTotal) : '—';
+  // 자료 원천이 서버인 영역 = 표에서 「원천 전환」 줄 수(거울·시트 축소는 원천이 아직 구글이다) — 2026-09-15 GM 물음
+  // 「87% 신뢰할 수 있나」에 답하려고 화면 비율(코드 검사)과 갈라 따로 띄운다.
+  document.getElementById('statSource').textContent = window._oldRatio;
   var nextRow = rows.filter(function(r){ return r.stage !== '원천 전환'; })[0];
   document.getElementById('statNext').textContent =
     nextRow ? ((nextRow.area || nextRow.name || '') + (nextRow.switch_date ? ' — ' + nextRow.switch_date : '')) : '남은 것 없음';

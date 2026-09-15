@@ -177,7 +177,35 @@ def format_offense(assistant_text):
                 "  8요소 표는 8행 고정이다. 한 요소 = 한 줄. 내용이 많으면 그 칸 안에서 줄여 쓰고,\n"
                 "  목록이 필요하면 표 아래 보조 표 한 장으로 내린다.\n"
                 % ", ".join("%s %d줄" % (k, v) for k, v in dup)) + FORMAT_HINT
+    # 검사 D — 칸 하나에 문단을 넣지 않는다(GM 재지적 4회 · 2026-09-05·07·11·15 「표가 이상하게 나온다」).
+    #   원격 화면은 칸이 길면 표가 통째로 무너진다. 규칙(한 줄 60자 안쪽)은 lessons.md 에 세 번 적혔는데
+    #   지켜지지 않았다 — 문서가 아니라 여기서 잡는다. 8요소 표의 내용 칸만 잰다(보조 표는 안 잰다).
+    long_cells = _long_cells(rows)
+    if long_cells:
+        return ("[GM 답변 형식] 칸이 너무 길다(%d자 초과) — %s\n"
+                "  한 칸 = 한 줄 %d자 안쪽·한 가지. 긴 설명은 보조 표 한 장으로 내리거나 표 밖 두 줄로.\n"
+                % (CELL_MAX, ", ".join("%s %d자" % (k, v) for k, v in long_cells), CELL_MAX)) + FORMAT_HINT
     return None
+
+
+CELL_MAX = 60
+
+
+def _long_cells(rows):
+    """8요소 표 행(| 📌 … | 내용 |)에서 내용 칸이 CELL_MAX 를 넘는 것 [(요소, 글자수)]."""
+    out = []
+    for m, n in EIGHT:
+        for s in rows:
+            if m not in s:
+                continue
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            body = max(cells[1:], key=len)
+            if len(body) > CELL_MAX:
+                out.append(("%s %s" % (m, n), len(body)))
+            break
+    return out
 
 
 def main():
@@ -191,6 +219,13 @@ def main():
         assert prose_offense(table + "\n" + "\n".join("줄글%d 입니다." % i for i in range(6)))[0] == 6
         assert prose_offense("표 없는 답인데 줄글이 다섯 줄이다.\n" * 6) is None   # 표 없는 답은 대상 밖
         assert prose_offense(table + "\n- 목록은 줄글이 아니다\n" * 9) is None
+        # 검사 D — 칸 60자 초과(GM 재지적 4회 · 2026-09-15). 8요소 표 내용 칸만 잰다.
+        full8 = ("| 📌 GM 요청 | 무엇 |\n|---|---|\n| 🔍 실측 | %s |\n| ✅ 반영 | 했다 |\n| 🔎 검수 | 봤다 |\n"
+                 "| 📤 배포 | 완료 |\n| ⏱ 소요 | 1분 |\n| 💡 더 나았을 방법 | 없음 |")
+        assert format_offense(full8 % ("짧다" * 5)) is None
+        _long = format_offense(full8 % ("가" * 61))
+        assert _long and "너무 길다" in _long and "🔍 실측 61자" in _long
+        assert _long_cells(["| 🔍 실측 | " + "가" * 60 + " |"]) == []                  # 60자는 통과
         a, u = last_messages(os.devnull)
         assert (a, u) == ("", "")                                            # 못 읽어도 안 죽는다
         # Stop 훅 타이밍 버그: user 가 먼저 있고 assistant 가 없으면 미기록 상태 → ('', '')
