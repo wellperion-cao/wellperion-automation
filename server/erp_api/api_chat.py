@@ -359,7 +359,9 @@ async def chat(tenant: str, request: Request):
         body = json.loads((await request.body()).decode("utf-8", "replace") or "{}")
     except json.JSONDecodeError:
         body = {}
-    q = str((body or {}).get("q") or "").strip()
+    # 질문 키는 q 가 정본. message·question 도 받는다(2026-09-15 실측: 검수 POST 5건이 "message" 로 와서
+    # 전부 invalid_request → 핸드오프 문구 → 「봇이 죽었다」로 오판됐다. 파는 물건이라 남의 클라이언트가 붙는다).
+    q = str((body or {}).get("q") or (body or {}).get("message") or (body or {}).get("question") or "").strip()
     session_id = str((body or {}).get("session_id") or "")[:128]   # 배1036 GM 구조전환② — 클라이언트가 만든 임의 문자열
     data = _load_faq(tenant)
     fallback = _fallback_text(tenant, data.get("meta"))
