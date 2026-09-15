@@ -102,26 +102,53 @@ def _already_ok_today(state: dict) -> bool:
                for r in state.get("runs", []))
 
 
-def _parse_login_env(text: str) -> dict[str, str] | None:
-    """profiles/{tenant}_naver_login.env 두 줄(NAVER_ID=…/NAVER_PW=…) 파서."""
-    vals: dict[str, str] = {}
-    for line in text.splitlines():
-        line = line.strip()
-        if "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        vals[k.strip()] = v.strip()
-    nid, npw = vals.get("NAVER_ID"), vals.get("NAVER_PW")
+SECRET_FETCH_URL = "https://erp.wellperion.com/api/partner-secrets/fetch"
+PUSH_KEY_FILE = Path.home() / ".claude" / "token_push.key"
+
+
+def _push_key() -> str:
+    """발행 PC 열쇠 — token_usage_push 와 같은 파일(없으면 환경변수 ERP_TOKEN_PUSH_KEY)."""
+    try:
+        v = PUSH_KEY_FILE.read_text(encoding="utf-8").strip()
+        if v:
+            return v
+    except OSError:
+        pass
+    return (os.environ.get("ERP_TOKEN_PUSH_KEY") or "").strip()
+
+
+def _secret_from_response(status: int, body: dict | None) -> dict[str, str] | None:
+    """서버 응답 → {NAVER_ID, NAVER_PW} 또는 None. 값은 어디에도 찍지 않는다."""
+    if status != 200 or not body or not body.get("ok"):
+        return None
+    nid, npw = str(body.get("id") or "").strip(), str(body.get("pw") or "").strip()
     if not nid or not npw:
         return None
     return {"NAVER_ID": nid, "NAVER_PW": npw}
 
 
-def _read_login_secret(tenant: str) -> dict[str, str] | None:
-    path = ROOT / "profiles" / f"{tenant}_naver_login.env"
-    if not path.exists():
+def _read_login_secret(tenant: str, channel: str = "naver-blog") -> dict[str, str] | None:
+    """파트너 계정은 서버 플랫폼관리 한 곳(GM 확정 2026-09-15 · 보기는 코드 1531)에서만 가져온다.
+    실행 때 GET 으로 받아 환경변수로만 쓰고 디스크에 남기지 않는다. PC 파일 폴백은 없다."""
+    import json as _json
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+    key = _push_key()
+    if not key:
         return None
-    return _parse_login_env(path.read_text(encoding="utf-8"))
+    url = SECRET_FETCH_URL + "?" + urllib.parse.urlencode({"tenant": tenant, "channel": channel})
+    req = urllib.request.Request(url, headers={"X-Token-Push-Key": key})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return _secret_from_response(r.status, _json.load(r))
+    except urllib.error.HTTPError as e:
+        # 404 = 아직 안 넣음 · 401 = 열쇠 불일치. 값이 아니라 상태만 로그에 남긴다.
+        print(f"[INFO] 서버 계정 조회 {tenant}/{channel}: HTTP {e.code}")
+        return None
+    except Exception as e:                      # noqa: BLE001
+        print(f"[WARN] 서버 계정 조회 실패({type(e).__name__})")
+        return None
 
 
 def _try_relogin(style: dict, tenant: str) -> str:
@@ -378,7 +405,7 @@ def main() -> int:
     elif relogin_tag == "no-secret" and 연속 >= 1:
         꼬리 = (f" · 네이버 재로그인이 필요하다(사람 손)\n👉 재로그인: ops\\relogin_blog.bat {tenant}"
                 f"\n★로그인 창에서 「로그인 상태 유지」를 켜야 내일도 돕니다"
-                f"\n(자동 재로그인 미설정 · ops\\set_blog_login.bat {tenant} 로 한 번 넣어 두면 다음부턴 스스로 로그인한다)")
+                f"\n(서버에 이 계정이 아직 없다 · 플랫폼관리 > 파트너사 > 「계정 넣기」에 {tenant}/naver-blog 을 코드로 넣어 두면 다음부턴 스스로 로그인한다)")
     elif 연속 >= 1:
         # 로그인이 풀리는 진짜 원인은 「로그인 상태 유지」를 안 켜고 로그인한 것이다(2026-09-15 실측 —
         # 세 계정 모두 NID_AUT·NID_SES 가 세션 쿠키였다). 재로그인 안내는 1회 실패부터 낸다.
@@ -475,10 +502,10 @@ def _self_test() -> None:
     assert not _already_ok_today({"runs": []})
 
     # ── 비밀 파일 파서: 공백·CRLF 허용, 키 없으면 None ──
-    assert _parse_login_env("NAVER_ID=abc\nNAVER_PW=xyz\n") == {"NAVER_ID": "abc", "NAVER_PW": "xyz"}
-    assert _parse_login_env("NAVER_ID=abc \r\nNAVER_PW= xyz \r\n") == {"NAVER_ID": "abc", "NAVER_PW": "xyz"}
-    assert _parse_login_env("NAVER_ID=abc\n") is None, "비밀번호 없는데 통과함"
-    assert _parse_login_env("") is None
+    assert _secret_from_response(200, {"ok": True, "id": "abc", "pw": "Xample1234!"}) == {"NAVER_ID": "abc", "NAVER_PW": "Xample1234!"}
+    assert _secret_from_response(200, {"ok": True, "id": " abc ", "pw": " x "}) == {"NAVER_ID": "abc", "NAVER_PW": "x"}
+    assert _secret_from_response(200, {"ok": True, "id": "abc"}) is None, "비밀번호 없는데 통과함"
+    assert _secret_from_response(404, {"ok": False}) is None and _secret_from_response(200, None) is None
 
 
 if __name__ == "__main__":
