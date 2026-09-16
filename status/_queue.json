@@ -2613,5 +2613,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-16"
+  },
+  {
+    "task_id": "CTO-2026-09-16-텔레그램-발송-관문-SENDPHOTO-실패-사유가-",
+    "clevel": "cto",
+    "title": "[시토] 텔레그램 발송 관문 — sendPhoto 실패 사유가 로그에 안 남고(except 무음) 429 아닌 실패는 재시도 0회 · 09:00 서버판 3/3 운영 현황 오늘 조용히 빠짐",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-09-16",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-09-16] 실측 2026-09-16 09:00:43(시포): sales_report_server_send 3/3 운영 현황 sendPhoto ok=false. png 664KB·3176×2246 정상(1·2면과 같은 크기) · 11:21 같은 파일 재발송 ok(message_id 11800) → 일시 오류. tg_outbound_log.send 는 HTTPError(429 외)·Exception 을 break 로 삼키고 log_outbound 에 ok=false 만 남겨 사유(HTTP 코드·description·timeout)를 알 수 없다. 9/15 3장은 전부 성공.",
+    "next": "①log_outbound 에 실패 사유 한 줄(HTTP 코드 + description 앞 80자 또는 예외 이름) 남기기 ②429 아닌 실패도 1회 재시도(3초) — 같은 관문 한 곳만 고침(약속 L21)",
+    "depends_on": "",
+    "ship_no": 12685,
+    "short_no": 2688,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-16"
   }
 ]
