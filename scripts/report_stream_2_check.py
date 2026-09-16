@@ -427,18 +427,23 @@ def build_morning_kakao(today: str | None = None) -> str:
                 tag = f" · 사우나 {streak}일째" if streak >= 2 else " · 사우나 포함"
             out.append(IND + f"{g.replace('조', '')}({z[0]}) 0/{t}{tag}")
 
-    # ── 🔁 계속 빠지는 항목 — 오늘 조회분(최근 7일 누적)을 그대로 옮긴다.
-    rep = [ln.strip() for ln in sup_today if ln.strip().startswith("·")][:3]
-    if rep:
-        out.append("🔁 계속 빠지는 항목 — 이번엔 챙겨 주세요")
-        for r in rep:
-            line = r.lstrip("· ").replace("'", "")
-            line = re.sub(r"최근 7일 中 (\d+)일 미완료", r"7일 중 \1일 빠짐", line)
-            # 회차를 맨 앞으로 — 위 두 절(오전(남)·마감(여))과 같은 차례로 훑히게 한다.
-            m = re.match(r"^(.*?)\s*\((오전|오후|마감|야간)조?\)\s*(.*)$", line)
-            if m:
-                line = f"{m.group(2)} {m.group(1)} — {m.group(3)}"
-            out.append(IND + line)
+    # ── 🔁 계속 빠지는 항목 — 원장(최근 7일 中 4일 이상 미완료)에서만 뽑는다. 없으면 절 생략.
+    # ★2026-09-16 GM 지적으로 고침. 종전엔 sup_today 의 「·」 줄을 앞에서 3개 집었는데, 원장 반복이
+    #   0건인 날은 그 자리에 support_nudge_lines 의 **오늘 07:41 진행(오전 0/27 · 미체크 전 항목)**이
+    #   들어와 「계속 빠지는 항목」으로 나갔다 — 아직 시작도 안 한 조를 매일 「너희가 빠뜨렸다」고 적은 것.
+    #   미체크 항목명 나열은 17·22시 개별 독려의 몫이라 아침 통에서는 뺀다(GM 「직관적·단순화」).
+    try:
+        import check_incomplete_detector as _cid
+        _rec = _cid.detect_recurring(_cid.load_ledger(_scs.CHECK_INCOMPLETE_LEDGER), today)
+    except Exception:
+        _rec = []
+    if _rec:
+        win = getattr(_cid, "WINDOW_DAYS", 7)
+        out.append(f"🔁 {win}일 중 절반 넘게 빠진 항목 — 이번엔 챙겨 주세요")
+        for r in _rec[:3]:
+            out.append(IND + f"{r['shift_label'].replace('조', '')} · {r['item']} — {win}일 중 {r['days']}일")
+        if len(_rec) > 3:
+            out.append(IND + f"외 {len(_rec) - 3}개")
 
     out.append(f"📎 지원부 체계 {_page_url('지원부 체계')}")
     out.append(f"📎 종합접수처 {_RECEPTION_BOARD_URL}")
