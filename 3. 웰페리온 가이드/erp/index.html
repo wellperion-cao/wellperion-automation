@@ -131,10 +131,19 @@
   table.tbl td.k a{color:inherit; text-decoration:none;}
   table.tbl td.k a:hover{color:var(--accent-hover);}
   table.tbl td.d{color:var(--dim);}
-  /* 개발 환경 표 — 구분·항목은 좁게, 내용은 줄바꿈(말줄임으로 잘리지 않게 · GM 2026-09-16) */
-  #dev-body table.tbl td.k{width:14%;}
-  #dev-body table.tbl td.k + td.k{width:16%;}
-  #dev-body table.tbl td:last-child{white-space:normal; height:auto; padding:8px 12px; line-height:1.45;}
+  /* 개발 환경 — 절마다 카드 한 장(모듈 칸 .mod 과 같은 결) · 항목 굵게 + 내용 + 원본 링크 버튼.
+     GM 2026-09-16 「표는 보기 불편 · 직관성」 — 24줄 표 한 장은 세로로 훑어야 했다. 9절 카드 격자면 한 화면에 잡힌다. */
+  .devgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px;}
+  .devgrid .mod{cursor:default;}
+  .devgrid .mod:hover{border-color:var(--border); background:var(--paper);}
+  .devgrid .mod .name{margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--border);}
+  .devgrid .row{display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12.5px; line-height:1.45;}
+  .devgrid .row .k{flex:0 0 76px; font-weight:700; color:var(--text);}
+  .devgrid .row .v{flex:1 1 auto; color:var(--text-soft); min-width:0;}
+  .devgrid .row a.go{flex:0 0 auto; font-size:11.5px; color:var(--text-soft); text-decoration:none;
+                     padding:1px 7px; border-radius:4px; background:var(--gray-bg); border:1px solid var(--border);
+                     white-space:nowrap;}
+  .devgrid .row a.go:hover{border-color:var(--accent); color:var(--accent-hover); background:var(--accent-bg);}
   table.tbl td.o{width:16%; color:var(--dim); font-size:12px;}
   @media(max-width:900px){ :root{--row-h:44px;} table.tbl thead{top:88px;} }
 
@@ -830,16 +839,19 @@ function loadDev(){
   repoGet('ssot/platform_env.json').then(function(d){
     document.getElementById('dev-lead').textContent =
       (d.partner_lead || '') + (d.updated ? ' (정본 갱신 ' + d.updated + ')' : '');
-    // 표 한 장(GM 2026-09-16 「표로 축소해서 정리」) — 종전엔 절마다 제목+작은 표 9장이었다.
-    //   구분 칸은 같은 절의 첫 줄에만 적어 눈이 세로로 훑긴다. 내용·줄 수는 그대로(24줄).
-    var rows = '';
-    (d.sections || []).forEach(function(s){
+    // 절마다 카드 한 장(GM 2026-09-16 「직관성」) — 항목 굵게 · 내용 · 원본으로 가는 버튼(정본 link 칸 · 있을 때만).
+    //   표 한 장(같은 날 오전)은 24줄을 세로로 훑어야 해 되돌렸다. 값·줄 수는 그대로다.
+    var cards = (d.sections || []).map(function(s){
       var its = (s.items || []).filter(function(it){ return it.partner === true; });
-      its.forEach(function(it, i){
-        rows += '<tr><td class="k">' + (i === 0 ? esc(s.title) : '') + '</td><td class="k">' + esc(it.k) + '</td><td>' + esc(it.v) + '</td></tr>';
-      });
-    });
-    document.getElementById('dev-body').innerHTML = rows ? tbl(['구분', '항목', '내용'], rows) : '<div class="msg">보여 줄 항목이 없다.</div>';
+      if (!its.length) return '';
+      return '<div class="mod"><div class="name">' + esc(s.title) + '</div>'
+        + its.map(function(it){
+            var go = it.link ? '<a class="go" href="' + esc(it.link) + '" target="_blank" rel="noopener">' + esc(it.link_label || '원본') + ' ↗</a>' : '';
+            return '<div class="row"><span class="k">' + esc(it.k) + '</span><span class="v">' + esc(it.v) + '</span>' + go + '</div>';
+          }).join('')
+        + '</div>';
+    }).join('');
+    document.getElementById('dev-body').innerHTML = cards ? '<div class="devgrid">' + cards + '</div>' : '<div class="msg">보여 줄 항목이 없다.</div>';
   }).catch(function(e){ paneFail('dev-body', e); document.getElementById('dev-lead').textContent = ''; });
 }
 
