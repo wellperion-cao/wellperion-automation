@@ -194,6 +194,14 @@ def _price_check(text: str, allowed_prices: list):
     return bool(_MONEY_RE.search(rest)), (" · ".join(used) or None)
 
 
+# 금액 질문 결말(시보 확정 2026-09-10 23:1x · 설계 §3-5 "유형이 아니라 결과로 가른다" · 배12520) —
+# 새 유형 분류기를 만들지 않는다. 이미 있는 type_id(price_ask)와 allowed_price(로그에 남기는 통과 근거)
+# 유무만으로 가른다: allowed_price 근거로 실제로 답했으면 answered 그대로(분모 포함) · 그 외(handed off·
+# 금액 없이 둘러 답함 등)엔 policy(분모 제외 — "넘기는 것을 잘 한 것"이지 정본으로 답한 게 아니다).
+def _money_outcome(type_id: str, allowed_price) -> str:
+    return "policy" if type_id == "price_ask" and not allowed_price else None
+
+
 def _best_match(q: str, faq: list):
     """(faq_item|None, score) — 정규화 뒤 overlap coefficient(짧은 쪽 bigram 수 기준).
     교집합 2-gram 2개 이상 AND 비율 0.5 이상만 매칭 후보 — 어미 한두 글자만 겹쳐 확신 있게
@@ -340,9 +348,11 @@ def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs
         # 대표가 허락을 거두면 이 칸으로 어떤 답이 나갔는지 되짚는다.
         row["allowed_price"] = allowed_price
     if outcome:
-        # 배1074④(시보 요청 2026-09-10) — 문답이 아닌 결말을 이름 붙여 남긴다. 지금 쓰는 값은 하나:
+        # 배1074④(시보 요청 2026-09-10) — 문답이 아닌 결말을 이름 붙여 남긴다. 지금 쓰는 값은 둘:
         #   invalid_request = 본문 형식이 어긋나 질문이 빈 문자열로 들어옴(질문 키가 q 가 아니었다).
-        # 이 행은 stats 의 분모(total)와 미답 목록에서 빠진다 — 손님 문답이 아니기 때문이다.
+        #   policy = 금액 질문인데 allowed_price 근거 없이 끝남(넘기는 것을 잘 한 것 · 배12520 · _money_outcome).
+        # 이 행은 stats 의 분모(total)와 미답 목록에서 빠진다 — 손님 문답이 아니거나(invalid) 정본으로
+        # 답한 게 아니기(policy) 때문이다.
         row["outcome"] = outcome
     if body_keys:
         # 무엇이 왔는지는 남기되 값은 안 남긴다 — 남의 클라이언트가 잘못 붙었을 때 어느 키를 보냈는지만 본다.
@@ -401,32 +411,36 @@ async def chat(tenant: str, request: Request):
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     if _forbidden_hit(q, tenant):
-        _log(tenant, q, False, None, type_id, missing, session_id)
+        _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None))
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
     text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id, type_id, missing)
     if status == "ok":
-        _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text)
+        _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text,
+             outcome=_money_outcome(type_id, allowed_price))
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
-        _log(tenant, q, False, None, type_id, missing, session_id)   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+        _log(tenant, q, False, None, type_id, missing, session_id,   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
+             outcome=_money_outcome(type_id, None))
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
-            _log(tenant, q, True, "today_hours", type_id, missing, session_id, answer=today_line)
+            _log(tenant, q, True, "today_hours", type_id, missing, session_id, answer=today_line,
+                 outcome=_money_outcome(type_id, None))
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
-                _log(tenant, q, True, item.get("id"), type_id, missing, session_id, answer=item.get("a", ""))
+                _log(tenant, q, True, item.get("id"), type_id, missing, session_id, answer=item.get("a", ""),
+                     outcome=_money_outcome(type_id, None))
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
-                _log(tenant, q, False, None, type_id, missing, session_id)
+                _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None))
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
@@ -611,7 +625,7 @@ def stats(tenant: str, days: int = 30):
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
-    total = answered = invalid = 0
+    total = answered = invalid = policy = 0
     unanswered_count: dict = {}
     try:
         # ponytail: 전량 스캔(회전 전 세대 .1 은 안 봄) — 관리자 화면이 여는 통계라 자주 안 불리고,
@@ -633,6 +647,9 @@ def stats(tenant: str, days: int = 30):
                 if row.get("outcome") == "invalid_request":
                     invalid += 1   # 손님 문답이 아니다 — 분모에서 빼고 따로 센다(배1074④)
                     continue
+                if row.get("outcome") == "policy":
+                    policy += 1   # 금액 질문인데 정본 값 없이 넘긴 건 — 분모에서 빼고 따로 센다(시보 확정 2026-09-10 · 배12520)
+                    continue
                 total += 1
                 if row.get("answered"):
                     answered += 1
@@ -646,6 +663,8 @@ def stats(tenant: str, days: int = 30):
             "answer_ratio": round(answered / total, 3) if total else None,
             # 손님 문답이 아니라 잘못 붙은 클라이언트가 낸 요청 수 — 0 이 아니면 어딘가에서 손님이 새고 있다(배1074④)
             "invalid_requests": invalid,
+            # 금액 질문인데 정본 값 없이 상담·전화로 넘긴 수 — 분모 제외(넘김 성공 여부는 별도 지표 · 배12520)
+            "policy_referred": policy,
             "top_unanswered": [{"q": q, "count": c} for q, c in top_unanswered]}
 
 
@@ -1269,6 +1288,12 @@ def _selfcheck() -> None:
     assert _empty_skeleton_line(None, ["facts.parking"]) == ""
     assert "처음 오시는 분은 상담과" in _concierge_system_block(
         "1_wellperion", _load_profile("1_wellperion"), _persona_of("1_wellperion"), "trial_flow", ["offerings[trial]"])
+
+    # 배12520 — 금액 질문은 유형이 아니라 결과로 가른다(시보 확정 2026-09-10 · 가짜 유형·가짜 금액값).
+    assert _money_outcome("price_ask", None) == "policy", "금액질문+허락근거없음 = policy(분모 제외)"
+    assert _money_outcome("price_ask", "레슨 2회 + 일주일 체험권") is None, "허락근거로 실제로 답한 건 answered 그대로"
+    assert _money_outcome("parking", None) is None, "금액 유형이 아니면 태그 안 붙인다"
+    assert _money_outcome(None, None) is None
 
     # 시보 요청② — 테스트 세션 접두어는 집계 제외 판정용(GM 07-18 규칙).
     assert _is_test_session("test-abc123") is True
