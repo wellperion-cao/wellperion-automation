@@ -67,6 +67,12 @@ REM 2026-09-16 (chairman meetings, CTO): monthly reminders to the GM bot room - 
 REM   and day 20 (month-end review meeting). The script checks the date itself; other days are a no-op.
 "%PY%" "%ROOT%\scripts\monthly_meeting_reminders.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% monthly_meeting_reminders
+REM 2026-09-16 (chairman's word - meeting recording to AI summary, CTO, ship 2727): scans
+REM   status/meeting_recordings/ for new .m4a/.mp3/.wav/.mp4, transcribes locally (faster-whisper,
+REM   zero cost), summarizes, renders an A4 page, sends one Telegram line to the GM bot room.
+REM   No-op when the folder has no new file.
+"%PY%" "%ROOT%\scripts\meeting_transcribe.py" --send >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% meeting_transcribe
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed
