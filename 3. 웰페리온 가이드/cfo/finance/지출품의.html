@@ -1,6 +1,7 @@
 <!-- 이 화면 = 「새 구매 품의」 신청 + 내 품의 현황(실무진 전용 진입). 원본 = 3. 웰페리온 가이드/cfo/finance/매출지출현황.html
      (?req=1 모드 구매요청 탭)에서 신청·현황 부분만 옮겼다 — 재무 현황(매출·지출·인건비·손익) 데이터·fetch는 없다.
-     승인·반려는 여기 없음(원본 화면·승인자 전용). 권한 모듈 id = cfo-finance-지출품의(account_perms.json). 배1095 · GM 지시 2026-09-06. -->
+     승인·반려·검토완료·최종확인도 이 한 화면에서 처리 — 승인자별 비밀번호 잠금 + 서버 경유 상태 기록(매니저 결정 2026-09-11 「한 화면+승인자별 비밀번호」, 반영 2026-09-16 매니저 지시).
+     권한 모듈 id = cfo-finance-지출품의(account_perms.json). 분리 자체는 배1095 · GM 지시 2026-09-06. -->
 <!DOCTYPE html><html lang="ko"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -204,7 +205,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   <div id="reqSort" class="team-chips" style="display:none;margin-bottom:8px;align-items:center;gap:6px"></div>
   <div id="capBar" class="cap-bar"><span>🖨 출력할 건을 체크하세요 — <b>체크한 순서대로</b> 나열되어 인쇄됩니다</span><span id="capHint" style="color:var(--ink-soft)">선택 0건</span><button class="cap-btn" id="capPrintBtn" disabled>🖨 선택 출력</button><button class="cap-clear" id="capClearBtn">선택 해제</button></div>
   <div class="tbl-wrap"><table id="reqTbl"></table></div>
-  <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태는 부서장 처리에 따라 실시간 반영됩니다. 승인·반려는 여기서 할 수 없습니다.</div>
+  <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태는 부서장 처리에 따라 실시간 반영됩니다. 승인·반려·검토완료·최종확인은 <b>승인자 비밀번호</b>로 이 화면에서 바로 처리합니다(품의→검토 [승인]은 지정 승인자 비밀번호, 이후 단계는 부서장 공용 비밀번호).</div>
 
   </div>
 </main>
@@ -559,12 +560,17 @@ function renderReqTbl(){
   var bigPhoto=(reqFilter==="정산"||reqFilter==="완료");
   var tc=bigPhoto?"thumb2":"thumb";
   document.getElementById("reqTbl").className=bigPhoto?"set-compact":"";
-  var h='<thead><tr>'+(capTab?'<th style="text-align:center">출력</th>':'')+'<th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">처리</th></tr></thead><tbody>';
+  var h='<thead><tr>'+(capTab?'<th style="text-align:center">출력</th>':'')+'<th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
-    if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
+    /* 승인 버튼 — 원본(매출지출현황.html ?req=1 구매요청 탭)과 같은 상태기계. 한 화면 처리(매니저 결정 2026-09-11 · 반영 2026-09-16) */
+    if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
+    else if(st==="검토")act='<button class="reqAct" data-row="'+r.row+'" data-next="정산" data-pw="1" style="'+btnCss("#2f6d9e")+'">검토완료</button>';
+    else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" data-pw="1" style="'+btnCss("#a98a52")+'">최종확인</button>';
+    else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else if(st==="반려")act='<span style="color:var(--red);font-size:12px;font-weight:700">반려됨</span>';
-    else act='<span class="chip '+(stc[st]||"wait")+'">처리 대기</span>';
+    else act='<span class="chip '+(stc[st]||"wait")+'">'+escapeHtml(st)+'</span>';
+    if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
     act+=' <button class="reqDel" data-row="'+r.row+'" data-no="'+escapeHtml(r.번호||"")+'" data-item="'+escapeHtml(r.물품||"")+'" title="시트에서 삭제(내가 잘못 제출한 경우)" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
     var attq=function(u){return String(u==null?"":u).replace(/"/g,"&quot;");};
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+attq(r.이미지)+'" class="'+tc+'" title="첨부사진 — 클릭하면 확대" onclick="openLightbox(this.src)" loading="lazy">':'';
@@ -581,8 +587,56 @@ function renderReqTbl(){
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
   document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b,b.dataset.no,b.dataset.item);};});
+  document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
+  document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려","1",b);};});
   document.querySelectorAll(".capCk").forEach(function(b){b.onchange=function(){toggleCap(b.dataset.row);};});
   updateCapBar();
+}
+function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
+/* 단계별·승인자별 비밀번호 (2026-08-04 매니저 지시 — 원본 화면과 동일 규칙)
+     품의→검토 [승인]     : 승인자가 김남욱 GM 이면 GM 전용, 그 외(이경연 실장·이정헌 소장 등)는 부서장 공용
+     검토→정산 [검토완료] : 1202!
+     정산→완료 [최종확인] : 1202
+     반려                 : 1202
+   ⚠ 이 확인은 브라우저에서만 이뤄진다(실수 방지 잠금). 서버는 공통 접근키만 본다 — 서버 검증은 후속 안건. */
+var APPR_PW={"김남욱":"1531"};
+var APPR_PW_DEFAULT="1202";
+function apprPwFor(next,row){
+  if(next==="정산")return "1202!";
+  if(next==="완료"||next==="반려")return "1202";
+  var it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
+  var who=String((it&&it.승인자)||"");
+  for(var k in APPR_PW){if(who.indexOf(k)>=0)return APPR_PW[k];}
+  return APPR_PW_DEFAULT;
+}
+async function doAct(row,next,needPw,btn){
+  if(needPw){
+    var _a=(next==="반려")?"반려":(next==="정산")?"검토완료":(next==="완료")?"최종확인":"승인";
+    var _need=apprPwFor(next,row);
+    var _it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
+    var _who=(next==="검토"&&_it&&_it.승인자)?String(_it.승인자):"";
+    var pw=prompt(_a+" 처리 — "+(_who?(_who+" "):"부서장 ")+"비밀번호를 입력하세요");
+    if(pw===null)return;
+    if(String(pw).trim()!==_need){alert("비밀번호가 올바르지 않습니다");return;}
+  }
+  /* 즉시 반영 후 서버는 뒤에서 처리 — 실패하면 원래 상태로 되돌리고 빨간 안내(원본 2026-08-04 · 재시도 2026-09-14 동일) */
+  var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;
+  var item=src.filter(function(x){return String(x.row)===String(row);})[0];
+  var prev=item?item.상태:null;
+  if(item){item.상태=next;renderReqTbl();}
+  reqToast("✔ "+((next==="반려")?"반려":next)+" 처리했습니다");
+  (async function(){
+    var delays=[0,900,2000,3500,6000];
+    for(var a=0;a<delays.length;a++){
+      if(delays[a])await new Promise(function(rs){setTimeout(rs,delays[a]);});
+      var d=null;
+      try{ d=await procCall("status",{row:row,status:next}); }catch(e){ d=null; }
+      if(d&&d.ok){ writeReqCache(); loadReq(); return; }
+    }
+    if(item&&prev!==null){item.상태=prev;renderReqTbl();}
+    reqToast("⚠️ 저장되지 않았습니다 — 목록을 다시 불러옵니다",1);
+    loadReq();
+  })();
 }
 var _delBusy=false;
 async function delReq(row,btn,no,item){
