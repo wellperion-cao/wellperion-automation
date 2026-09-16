@@ -87,6 +87,22 @@ def list_secrets(request: Request):
     return {"ok": True, "items": listing(_load()), "channels": list(CHANNELS)}
 
 
+@router.get("/api/partner_secrets/status")
+def status(request: Request, tenant: str = ""):
+    """채널별 활성/비활성 — 마케팅 자동화 화면(cmo/upload/마케팅자동업로드.html)이 부른다(배 2662 ①).
+    값은 한 글자도 안 나간다 — 채널 이름과 있다/없다만. 관리자만(다른 라우트와 같은 관문).
+    GM 2026-09-16 「계정이 서버에 있으면 활성이라던데 다 비활성이네?」 — 이 문이 없어서 화면이 전부 비활성으로 남았다."""
+    if _user(request) not in _admins():
+        return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
+    t = (tenant or "").strip()
+    if not t:
+        return JSONResponse({"ok": False, "error": "tenant required"}, status_code=400)
+    data = _load()
+    have = {k.split("/")[1] for k, v in data.items() if k.split("/")[0] == t and v.get("id")}
+    return {"ok": True, "tenant": t,
+            "channels": [{"channel": c, "active": c in have} for c in CHANNELS]}
+
+
 @router.post("/api/admin/partner-secrets/reveal")
 async def reveal(request: Request):
     who = _user(request)
@@ -149,6 +165,13 @@ def fetch(request: Request, tenant: str = "", channel: str = ""):
     return {"ok": True, "id": v.get("id", ""), "pw": v.get("pw", "")}
 
 
+def _selfcheck_status():
+    data = {"t1/naver-blog": {"id": "fake_id", "pw": "Xample1234!"}, "t1/instagram": {"id": "", "pw": ""}}
+    have = {k.split("/")[1] for k, v in data.items() if k.split("/")[0] == "t1" and v.get("id")}
+    assert "naver-blog" in have and "instagram" not in have, "status 판정"
+    assert not [c for c in ("t2",) if any(k.startswith("t2/") for k in data)], "다른 테넌트 섞임"
+
+
 def selftest():
     import stat
     global SECRETS_FILE
@@ -166,4 +189,5 @@ def selftest():
 
 
 if __name__ == "__main__":
+    _selfcheck_status()
     selftest()
