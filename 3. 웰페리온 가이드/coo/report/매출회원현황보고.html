@@ -648,14 +648,6 @@
 
   <div class="body">
     <div class="col">
-      <!-- 이달 운영 계획 · 진척 — 월간운영계획 화면에만 있던 절을 여기로 옮겼다(GM 방향 2026-09-16 · 배 2696).
-           원장 = /repo/status/monthly_ops_plan.json(GM업무 카드와 같은 원장) · 점검 = /api/check/{dept}/monthly · 접수 = /api/reception/board.
-           구글 호출은 들여오지 않았다. erp 도메인에서만 값이 붙는다 — 09:00 자동 캡처(Pages 사본)는 /repo·/api 가 없어
-           절을 접는다('—' 를 그리지 않는다). 자체 점검(audit3)이 원천 도착 여부를 한 줄로 덧붙인다. -->
-      <div class="sec" id="p3plan-sec" style="display:none">
-        <h2 id="p3planh">이달 운영 계획 · 진척<span class="src">월간운영계획 원장 · 점검 거울 · 접수 원장 → 서버</span></h2>
-        <div class="bd" id="p3plan"></div>
-      </div>
       <div class="sec">
         <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차<span class="src">점검·종합접수처 화면 → 시트 P20 → 서버</span></h2>
         <div class="bd" id="p3ops"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -668,6 +660,14 @@
       </div>
     </div>
     <div class="col">
+      <!-- 이달 운영 계획 · 진척 — 월간운영계획 화면에만 있던 절을 여기로 옮겼다(GM 방향 2026-09-16 · 배 2696).
+           원장 = /repo/status/monthly_ops_plan.json(GM업무 카드와 같은 원장) · 점검 = /api/check/{dept}/monthly · 접수 = /api/reception/board.
+           구글 호출은 들여오지 않았다. erp 도메인에서만 값이 붙는다 — 09:00 자동 캡처(Pages 사본)는 /repo·/api 가 없어
+           절을 접는다('—' 를 그리지 않는다). 자체 점검(audit3)이 원천 도착 여부를 한 줄로 덧붙인다. -->
+      <div class="sec" id="p3plan-sec" style="display:none">
+        <h2 id="p3planh">이달 운영 계획 · 진척<span class="src">월간운영계획 원장 · 점검 거울 · 접수 원장 → 서버</span></h2>
+        <div class="bd" id="p3plan"></div>
+      </div>
       <div class="sec">
         <h2>인사 · 파트너팀 진행사항<span class="src">업무·결재 SSOT → 시트 I20 → 서버</span></h2>
         <div class="bd" id="p3hr"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -1823,13 +1823,13 @@ function renderP3Plan(plan, ym, sup, fac, rec){
     });
     var depts = Object.keys(by).sort(function(a, b){ return by[b].n - by[a].n; });
     html += '<div class="p3plan-h">부서별 월 목표 · 도달율 — 과제 ' + objs.length + '건</div>';
-    // A3 한 장에 들어가야 한다 — 과제 많은 부서 5줄까지, 나머지(겹침 부서 등)는 한 줄로 합친다
-    depts.slice(0, 5).forEach(function(d){
+    // A3 한 장에 들어가야 한다 — 과제 많은 부서 4줄까지, 나머지(겹침 부서 등)는 한 줄로 합친다
+    depts.slice(0, 4).forEach(function(d){
       var b = by[d];
       html += p3PlanRow(esc(d) + ' <span style="color:#7A838B">과제 ' + b.n + ' · 완료 ' + b.done + '</span>', '평균 진척 ' + Math.round(b.sum / b.n) + '%');
     });
-    if (depts.length > 5) {
-      var rest = depts.slice(5), rn = 0, rd = 0, rs = 0;
+    if (depts.length > 4) {
+      var rest = depts.slice(4), rn = 0, rd = 0, rs = 0;
       rest.forEach(function(d){ rn += by[d].n; rd += by[d].done; rs += by[d].sum; });
       html += p3PlanRow('그 외 ' + rest.length + '부서 <span style="color:#7A838B">과제 ' + rn + ' · 완료 ' + rd + '</span>', '평균 진척 ' + Math.round(rs / rn) + '%');
     }
