@@ -390,7 +390,9 @@
     var P=[
       {key:'wellperion', no:'1호', name:'웰페리온', who:'김남욱 GM · 1호 파트너 · 시험장', stage:'도입 · 쓰는 중', mods:['운영 자동화(ERP)','상담 자동화','보고 자동화','마케팅 자동화'], links:[['관리자 화면','/erp/'],['직원 화면','/']]},
       {key:'dc', no:'2호', name:'다이어트캠프', who:'이승기 대표님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['홈 초안','/dietcamp/'],['상담봇','/info/dietcamp/']]},
-      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['상담봇','/info/gocheokgolf/']]}
+      {key:'jo', no:'3호', name:'고척GDR QA 골프존', who:'조재오 지점장님 · 파일럿 4주', stage:'파일럿', mods:['상담 자동화','마케팅 자동화'], links:[['상담봇','/info/gocheokgolf/']]},
+      // 랩스 자체 메시지 채널(파트너사 아님 · GM 2026-09-16 · 시보 요청) — 계정 자리는 tenant 'ax' · 정본 = 로드맵 §2 「무엇을 계속 말하나」
+      {key:'ax', no:'랩스 채널', name:'피트니스 AX', who:'랩스 메시지 채널 · 본명·회사명 앞세우지 않음', stage:'랩스 채널', mods:['마케팅 자동화'], links:[]}
     ];
     var $=function(id){ return document.getElementById(id); };
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -493,6 +495,7 @@
         <option value="wellperion">1호 웰페리온</option>
         <option value="dc">2호 다이어트캠프</option>
         <option value="jo">3호 고척GDR QA 골프존</option>
+        <option value="ax">랩스 채널 · 피트니스 AX</option>
       </select>
       <select id="ps-channel"></select>
       <input id="ps-id" placeholder="아이디" autocomplete="off" style="width:150px">
