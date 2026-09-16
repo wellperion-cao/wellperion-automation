@@ -41,6 +41,9 @@ _AI_SIGNS = ("[AI 웰리]", "AI 시토", "AI 시모", "AI 시우", "AI 시포", 
 sys.path.insert(0, str(ROOT / "scripts"))
 from tg_outbound_log import log_outbound  # noqa: E402 — 기존 발신 로그 관문 재사용
 import worklog  # noqa: E402 — CHRO 업무지시 발신 로그(GM 원문 보관)용
+# 직함 뒤 '님' 자동 보정 — 카톡 발신 관문(kakao_report_sender.build_caption)과 같은 함수를 그대로 가져다
+# 쓴다(배 12677 · GM 지시 2026-09-16). 새 함수를 또 만들지 않는다 — 관문은 하나, 부르는 자리만 둘(약속 L21).
+from kakao_report_sender import add_honorifics  # noqa: E402
 
 
 def _parse_env_file(path: Path) -> dict:
@@ -263,6 +266,7 @@ def _notify_cap_once() -> None:
 
 def send_as_gm(chat_id, text: str) -> bool:
     """다른 파이썬 코드에서 호출. 성공 True."""
+    text = add_honorifics(text)
     cfg, code = _prepare(text)
     if cfg is None:
         return False
