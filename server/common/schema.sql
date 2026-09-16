@@ -1274,4 +1274,5 @@ CREATE TABLE IF NOT EXISTS marketing_uploads (
   files      JSONB NOT NULL DEFAULT '[]',  -- [{"name":..,"path":..}]
   PRIMARY KEY (tenant_id, id)
 );
+ALTER TABLE marketing_uploads ADD COLUMN IF NOT EXISTS channel_status JSONB NOT NULL DEFAULT '{}';  -- {"naver-blog":{"status":"drafted","note":"","updated_at":".."}} (배 12680 · 발행 워커 1단계)
 CREATE INDEX IF NOT EXISTS ix_billing_charges_retry ON billing_charges (tenant_id, status, retry_at);

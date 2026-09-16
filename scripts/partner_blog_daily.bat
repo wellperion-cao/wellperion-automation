@@ -21,5 +21,10 @@ if /i "%~1"=="jo" (
 )
 echo [%date% %time%] --- run --- >> %LOGFILE%
 C:\Python314\python.exe scripts\partner_blog_daily.py --client %~1 >> %LOGFILE% 2>&1
-echo [%date% %time%] exit=%ERRORLEVEL% >> %LOGFILE%
-exit /b %ERRORLEVEL%
+set BLOGRC=%ERRORLEVEL%
+echo [%date% %time%] exit=%BLOGRC% >> %LOGFILE%
+REM Marketing upload worker phase 1 (task 12680, 2026-09-16): drains the server queue for
+REM naver-blog drafts. Own lock file makes repeat calls (jo then dc) harmless.
+C:\Python314\python.exe scripts\marketing_upload_worker.py >> logs\marketing_upload_worker.log 2>&1
+echo [%date% %time%] exit=%ERRORLEVEL% >> logs\marketing_upload_worker.log
+exit /b %BLOGRC%
