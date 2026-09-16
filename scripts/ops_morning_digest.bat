@@ -58,6 +58,10 @@ REM   SSOT in one page) is regenerated right after the 07:50 digest (manager tas
 REM   send_ops_digest). --check = regenerate html+png, overflow check, safe_commit. No new task - same bat.
 "%PY%" "%ROOT%\scripts\meeting_brief_a3.py" --check >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% meeting_brief_a3
+REM 2026-09-16 (chairman meetings, CTO): monthly reminders to the GM bot room - day 5 (mid-month meeting)
+REM   and day 20 (month-end review meeting). The script checks the date itself; other days are a no-op.
+"%PY%" "%ROOT%\scripts\monthly_meeting_reminders.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% monthly_meeting_reminders
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed
