@@ -1006,6 +1006,37 @@ def _vault_filename(caption: str, ext: str) -> str:
     return f"{stamp}_{slug}.{ext}" if slug else f"{stamp}.{ext}"
 
 
+async def handle_recording(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """GM 이 봇방에 올린 회의 녹음(음성·오디오·m4a/mp3/wav 문서) → status/meeting_recordings/ 에 저장
+    (회장님 말씀 2026-09-16 「회의 녹음 → AI 요약」 · 시토). 이 PC 에 구글드라이브 동기 폴더가 없어 폰 → 봇방이
+    가장 짧은 길이다. 요약은 scripts/meeting_transcribe.py 가 매일 07:5x(ops_morning_digest.bat)에 그 폴더를 보고
+    돌린다 — 바로 원하면 그 스크립트를 손으로 한 번(파일 머리말). 저장만 하고 여기서 변환하지 않는다(봇이 무거워진다)."""
+    msg = update.message
+    if not msg or msg.chat.type != constants.ChatType.PRIVATE:
+        return
+    if not await authorized(update):
+        return
+    doc = msg.audio or msg.voice or msg.document
+    if doc is None:
+        return
+    name = getattr(doc, "file_name", None) or ""
+    ext = (name.rsplit(".", 1)[-1].lower() if "." in name else ("ogg" if msg.voice else "m4a"))
+    if ext not in ("m4a", "mp3", "wav", "mp4", "ogg", "aac"):
+        return
+    try:
+        tg_file = await ctx.bot.get_file(doc.file_id)
+        out_dir = REPO_ROOT / "status" / "meeting_recordings"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        base = _vault_filename(name.rsplit(".", 1)[0] if name else "회의녹음", ext)
+        path = out_dir / base
+        await tg_file.download_to_drive(str(path))
+        await msg.reply_text(f"🎙 녹음 저장했습니다 — {path.name} · 요약은 내일 07:5x 에 자동(바로 원하시면 「요약 지금」)")
+        logger.info(f"[recording] 저장 {path.name} ({path.stat().st_size} bytes)")
+    except Exception as e:
+        logger.error(f"[recording] 저장 실패: {e}")
+        await msg.reply_text("🎙 녹음 저장 실패 — 파일을 다시 올려 주세요")
+
+
 async def handle_media(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     msg = update.message
     if not msg or msg.chat.type != constants.ChatType.PRIVATE:
@@ -2242,6 +2273,7 @@ def main():
     if push_lock_card is not None:
         app.add_handler(CallbackQueryHandler(push_lock_card.handle_callback, pattern=r"^plk:"))
     app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO, handle_media))
+    app.add_handler(MessageHandler(filters.AUDIO | filters.VOICE | filters.Document.AUDIO | filters.Document.FileExtension("m4a"), handle_recording))   # 회의 녹음(2026-09-16)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 
