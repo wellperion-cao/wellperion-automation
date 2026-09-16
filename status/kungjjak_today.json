@@ -636,12 +636,6 @@
       ],
       "work": [
         {
-          "time": "09:39",
-          "area": "작업",
-          "event": "배12675 — GM 담당자 표기 통일(업무 SSOT 가림 대응) + gmkey 감사 3건",
-          "detail": "커밋 829cd7f47d · 배 12672"
-        },
-        {
           "time": "09:45",
           "area": "작업",
           "event": "docs(cto): 알림 중복·잡음 정리안 표 — 7일 실측 235→151건 제안 (배 12678 · GM 확인 전)",
@@ -814,6 +808,12 @@
           "area": "작업",
           "event": "feat(labs): 플랫폼관리 파트너사 패널에 「랩스 채널 · 피트니스 AX」 카드 + 계정 넣기 목록 ax (시보 요청 · GM 지시 2026-09-16)",
           "detail": "커밋 f23c692ebf · 배 12682"
+        },
+        {
+          "time": "12:40",
+          "area": "작업",
+          "event": "feat(billing): 요금표 GM 확정값 — 스타트 99,000 · 그로스 199,000 · 운영 390,000(준비 중 · 등록 차단) · 주문명 AX 랩스 · 구독 버튼 금액 2곳 (GM 확정 2026-09",
+          "detail": "커밋 fd29596803 · 배 12682"
         }
       ],
       "count": 11,
@@ -1008,7 +1008,7 @@
           "start": "12:31",
           "end": "12:34",
           "minutes": 3,
-          "upload": "✅ 배포 (30ea1d071)",
+          "upload": "✅ 배포 (051222a96)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1020,7 +1020,7 @@
           "start": "12:34",
           "end": "12:35",
           "minutes": 0,
-          "upload": "✅ 배포 (30ea1d071)",
+          "upload": "✅ 배포 (051222a96)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1145,13 +1145,25 @@
           "area": "공통",
           "event": "feat(cpo): 매출·회원 현황 보고 시트 없는 판 1단계 — brojay_cells.py(브로제이 결제+ERP 회원 원장으로 매출 11칸·등록 6칸 계산 · 자체점검) + /api/report/sales_rep",
           "detail": "커밋 d879fc2f2e · 배 12668"
+        },
+        {
+          "time": "12:39",
+          "area": "공통",
+          "event": "feat(cpo): 매출·회원 현황보고 4면 — 팀 순서 = 분기 목표·누적 큰 팀부터(수영팀 맨 위 · 바뀌면 자동) 왼쪽·오른쪽 같은 순서 · 담당 편중 → 저조 담당(이달 0원·팀 평균 30% 미만) (GM 지",
+          "detail": "커밋 051222a968 · 배 12668"
+        },
+        {
+          "time": "12:40",
+          "area": "GM지시",
+          "event": "4면 팀 순서 분기 목표·누적순(수영 맨 위·자동) · 담당 편중→저조 담당",
+          "detail": "로컬 렌더 실측 · 저장 완료(12:39 · 시우 13시 편집 전)"
         }
       ],
       "count": 16,
       "done": 15,
       "open": 1,
       "avg_minutes": 4,
-      "work_count": 14,
+      "work_count": 16,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1167,7 +1179,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         }
       ],
       "repeats": []
@@ -1483,7 +1495,7 @@
           "start": "12:25",
           "end": "12:32",
           "minutes": 6,
-          "upload": "✅ 배포 (dd86f7076)",
+          "upload": "✅ 배포 (f2f4b68ed)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1495,7 +1507,7 @@
           "start": "12:32",
           "end": "12:36",
           "minutes": 3,
-          "upload": "기록만",
+          "upload": "✅ 배포 (f2f4b68ed)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1503,13 +1515,13 @@
           "ref": "GM-20260916-5030",
           "no": "30",
           "got": "병렬로 지금 월간운영계획을 매출 및 회원 현황보고 로 옮기고있는거지? 그럼 매출 및 회원 현황보고 타이틀도 조금 변경을 하긴해야겠다. 거의 운영 관련 전반적인 것들을 매일 보고하는것이니까",
-          "did": "",
+          "did": "첨부 인쇄 버튼(A4 가로/세로 자동) ee9eb982d · .bin→.pdf 2건 바로잡음 · nginx PDF 인라인 라이브 반영(카드 PL-20260916-09) · 시토 배 1척",
           "start": "12:36",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "12:39",
+          "minutes": 3,
+          "upload": "✅ 배포 (ee9eb982d)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1608,31 +1620,22 @@
           "area": "작업",
           "event": "결재 현황 SSOT — GM 승인 단계에서 갈래 선택(최종승인 / 승인→대표님 보고) · 결재완료는 승인 최근 순 최상단 [GM 지시 2026-09-16]",
           "detail": "커밋 e6f4e2bdb4 · 배 12686"
+        },
+        {
+          "time": "12:37",
+          "area": "작업",
+          "event": "결재 첨부 인쇄 — 첨부 전용 A4 인쇄(가로/세로 자동) · .bin 첨부 근본 수리(머리 바이트 판정) [GM 지시 2026-09-16]",
+          "detail": "커밋 ee9eb982d3 · 배 12686"
         }
       ],
       "count": 28,
-      "done": 27,
-      "open": 1,
+      "done": 28,
+      "open": 0,
       "avg_minutes": 3,
-      "work_count": 16,
+      "work_count": 17,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260916-5030",
-          "no": "30",
-          "got": "병렬로 지금 월간운영계획을 매출 및 회원 현황보고 로 옮기고있는거지? 그럼 매출 및 회원 현황보고 타이틀도 조금 변경을 하긴해야겠다. 거의 운영 관련 전반적인 것들을 매일 보고하는것이니까",
-          "did": "",
-          "start": "12:36",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
