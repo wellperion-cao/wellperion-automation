@@ -69,6 +69,7 @@ import json
 import os
 import re
 import sys
+import time
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -371,12 +372,21 @@ def _finish(conn, body, log_id, is_test, extra, revert=None):
     if is_test:
         conn.close()
         return dict(extra, ok=True, _source="server", gas_status="skipped-test")
-    try:
-        resp = api_write._gas_forward(body, "FUNNEL_EXEC_URL")
-        gas_status = "ok" if resp.get("ok") else "gas-error"
-    except Exception as e:
-        resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}
-        gas_status = "forward-failed"
+    # ★2026-09-16 시포 실측: 12:55~13:01 여섯 분 사이 GAS 가 HTTP 404 를 세 번 돌려 정상 저장 3건이 되돌려지고
+    #   실무진 화면에 오류가 떴다(13:00:09 같은 저장은 성공 · 09-15 에는 timeout 1건). 구글 쪽 일시 오류라
+    #   한 번 더 두드리면 대개 닿는다 — 되돌리기 전에 2초 뒤 1회 재시도. GAS 가 「거부」한 응답(ok:false ·
+    #   hold-gated 등)은 재시도하지 않는다(그건 규칙 판정이지 장애가 아니다).
+    resp, gas_status = None, "forward-failed"
+    for attempt in range(2):
+        try:
+            resp = api_write._gas_forward(body, "FUNNEL_EXEC_URL")
+            gas_status = "ok" if resp.get("ok") else "gas-error"
+            break
+        except Exception as e:
+            resp = {"ok": False, "error": "server-forward-failed", "detail": "%s: %s" % (type(e).__name__, str(e)[:200]), "noRetry": False}
+            gas_status = "forward-failed"
+            if attempt == 0:
+                time.sleep(2)
     gas_ok = gas_status == "ok"
     try:
         with conn:
