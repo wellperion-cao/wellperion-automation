@@ -197,7 +197,7 @@ def 세기(ux: bool = False, 이전: dict | None = None) -> dict:
     항목["UX"] = sum(1 for r in 화면만 if r.get("ux걸림") == 0)
     항목["UX잼"] = sum(1 for r in 화면만 if r.get("ux걸림") is not None)
     return {
-        "_이 파일은": "화면 UI/UX 표준의 규격과 지금 지킴 현황. scripts/ui_standard_check.py 가 만든다 — 손으로 고치지 마라. 규격 정본은 assets/wp-ui.css(간격·글자)·erp/brand/tenant-wellperion.css(웰페리온 색)·erp/admin/platform_brand.css(웰페리온 랩스 색)이고, UX 항목은 scripts/design_audit.py(디자인 규칙집)가 렌더해 센다. 이 파일은 그것을 얼마나 지키는지 센 결과다.",
+        "_이 파일은": "화면 UI/UX 표준의 규격과 지금 지킴 현황. scripts/ui_standard_check.py 가 만든다 — 손으로 고치지 마라. 규격 정본은 assets/wp-ui.css(간격·글자)·erp/brand/tenant-wellperion.css(웰페리온 색)·erp/admin/platform_brand.css(AX 랩스 색)이고, UX 항목은 scripts/design_audit.py(디자인 규칙집)가 렌더해 센다. 이 파일은 그것을 얼마나 지키는지 센 결과다.",
         "잰 때": datetime.now(KST).isoformat(timespec="seconds"),
         "기준": 기준,
         "화면수": len(화면만),
