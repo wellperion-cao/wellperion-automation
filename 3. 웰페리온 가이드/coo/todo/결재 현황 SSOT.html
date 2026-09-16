@@ -1843,10 +1843,9 @@ function renderOpinions(t, route, midName) {
       h += '<div class="opinion-row"><button onclick="event.stopPropagation();deleteOpinion(\'' + escAttr(t.id) + '\',' + idx + ')" class="opinion-del" title="이 의견 삭제 (GM 비밀번호)">✕</button><span class="opinion-who">' + nm + '</span><span class="opinion-time">' + tm + '</span><div class="opinion-text">' + esc(o.text || '') + '</div></div>';
     });
   }
-  var btns = '';
-  if (route.includes('부서장')) btns += '<button onclick="event.stopPropagation();addOpinion(\'' + escAttr(t.id) + '\',\'부서장\',\'' + escAttr(midName || '부서장') + '\')" class="opinion-btn">💬 ' + esc(midName || '부서장') + ' 의견 남기기</button>';
-  if (route.includes('GM')) btns += '<button onclick="event.stopPropagation();addOpinion(\'' + escAttr(t.id) + '\',\'GM\',\'김남욱GM\')" class="opinion-btn">💬 GM 의견 남기기</button>';
-  if (btns) h += '<div class="opinion-btn-row">' + btns + '</div>';
+  // 「의견 남기기」 버튼은 뺐다 — 의견은 반려할 때만 남긴다(GM 지시 2026-09-15 「의견을 남기고 최종 결재 요청을
+  //   하면 내가 어떻게 결재를 해?」). 반려 대화상자의 사유가 곧 의견이다. 승인하면서 조건을 달 일이면 반려한다.
+  //   addOpinion·deleteOpinion 함수와 기존 의견 표시는 그대로 둔다(과거 기록 보존).
   h += '</div>';
   return h;
 }
