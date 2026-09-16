@@ -3210,13 +3210,15 @@ def run_mgmt_notice_digest() -> None:
         import send_ops_digest as _od3
         notice_items = _mnq.pop_today(today)
         notice_text = _mnq.build_digest_text(notice_items, today)
-        # ④ 저녁 점수판 — 합본 맨 아래 한 절(GM 승인 2026-09-03). 합본 발신은 live 라
-        #   rep_approval_relay.SCOREBOARD_ON(기본 False)이 True 일 때만 붙는다. 큐가 0건이어도 점수판만 나간다.
+        # ④ 저녁 점수판 — 합본 맨 아래 한 절(GM 승인 2026-09-03 · 문구·집계 범위 GM 확정 2026-09-16
+        #   "1인당 상한 3건·운영부 6명"). 합본 발신은 live 라 rep_approval_relay.SCOREBOARD_ON
+        #   (기본 False)이 True 일 때만 붙는다. 큐가 0건이어도 점수판만 나간다.
+        _sb_rows = None
         try:
             if _rar.SCOREBOARD_ON:
-                _rows = _rar.fetch_rows()
-                if _rows is not None:
-                    notice_text = "\n".join(t for t in (notice_text, _rar.scoreboard_section(_rows)) if t)
+                _sb_rows = _rar.fetch_rows()
+                if _sb_rows is not None:
+                    notice_text = "\n".join(t for t in (notice_text, _rar.scoreboard_section(_sb_rows)) if t)
         except Exception as e:
             logger.error(f"{label} 점수판 예외: {e}")
         if notice_text:
@@ -3233,6 +3235,12 @@ def run_mgmt_notice_digest() -> None:
             logger.info(f"{label} 카톡 {_od3.RELAY_ROOM}({len(notice_items)}건) 발송: {tail[0]}")
             if proc.returncode != 0:
                 _kakao_fail_notify("알림성 합본", tail[0], room=_od3.RELAY_ROOM)
+            elif _sb_rows is not None:
+                # ⑤ 운영부 6인 일별 등록·완료 적재 — 발송 성공 후에만(다른 하트비트 기록과 같은 규칙 · 배 12682).
+                try:
+                    _rar.record_ops_daily_counts(_sb_rows)
+                except Exception as e:
+                    logger.error(f"{label} 운영부 일별 집계 적재 예외: {e}")
         else:
             logger.info(f"{label} 오늘 큐 0건, 발송 없음")
     except Exception as e:

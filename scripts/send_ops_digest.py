@@ -744,6 +744,60 @@ def mgr_open_candidates(ledger: list) -> list:
     return rows
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 📝 「오늘 만들 후보」 절 (배 12682 · GM 지시 2026-09-16 "하루에 3개 정도씩 업무를 만들고
+# 완료했으면 좋겠어 ... 웰리가 체계를 구축해서 서포트해줘" · GM 확정 재지시: 이 절 = 실장이
+# 배분할 후보 3건 그대로). 실장 몫 원장(MGR_LEDGER)의 열린 건 중 가장 오래된 것부터 보여준다
+# — mgr_open_candidates() 판정을 그대로 쓴다(약속 L01, nudge_review·SSOT 다리와 같은 집계).
+# 여기 「3건」은 후보 개수이지 팀 목표가 아니다 — 1인당 하루 상한 3건(scoreboard_section 쪽)과는
+# 다른 숫자다(GM 지시 2026-09-16 "'목표'라 쓰지 마라").
+# ══════════════════════════════════════════════════════════════════════════
+def build_today_candidates_section(ledger: list, owner: str = "이경연 실장", n: int = NUDGE_SHOW_N) -> str:
+    """07:50 통 — 실장 몫 원장 열린 건 오래된 순 n 건. 실장이 이 중 골라 업무 SSOT 에 등록하고
+    운영부 나머지 인원 중 담당을 정하면 끝(등록·배정은 실장 몫 — AI 는 SSOT 행을 안 만든다)."""
+    from manager_task_index import OPS_DEPT_STAFF
+    cands = [r for r in mgr_open_candidates(ledger) if r["owner"] == owner][:n]
+    if not cands:
+        return ""
+    team = [w for w in OPS_DEPT_STAFF if w != owner]
+    lines = ["📝 오늘 만들 후보 — 오래된 순"]
+    for r in cands:
+        no = r["issue"].get("no")
+        head = f"#{no} " if isinstance(no, int) else ""
+        lines.append(f"▪ {head}{r['title']} — {r['age']}일째")
+    lines.append(f"👉 업무 SSOT 에 {len(cands)}건 등록하시고 담당({'/'.join(team)})만 정해 주시면, 그 방으로 전달합니다.")
+    return "\n".join(lines)
+
+
+def _selfcheck_today_candidates() -> None:
+    """오래된 순 3건만 · 담당자(owner) 다른 건 제외 · resolved 는 제외 · 빈 원장은 절 없음."""
+    d = date.today()
+
+    def _iso(days_ago: int) -> str:
+        return (d - timedelta(days=days_ago)).isoformat()
+
+    ledger = [
+        {"date": _iso(40), "issues": [{"issue": "환불기준 개정", "owner": "이경연 실장", "status": "open", "no": 129}]},
+        {"date": _iso(33), "issues": [{"issue": "여자사우나 비품", "owner": "이경연 실장", "status": "open", "no": 147}]},
+        {"date": _iso(26), "issues": [{"issue": "안면인식 거부 회원 안내", "owner": "이경연 실장", "status": "open", "no": 148}]},
+        {"date": _iso(20), "issues": [{"issue": "네 번째 건 — 안 보여야 함", "owner": "이경연 실장", "status": "open", "no": 199}]},
+        {"date": _iso(50), "issues": [{"issue": "이미 끝난 건", "owner": "이경연 실장", "status": "resolved", "no": 100}]},
+        {"date": _iso(45), "issues": [{"issue": "소장 몫 — 안 보여야 함", "owner": "이정헌 소장", "status": "open", "no": 200}]},
+    ]
+    body = build_today_candidates_section(ledger)
+    lines = body.splitlines()
+    assert lines[0] == "📝 오늘 만들 후보 — 오래된 순", lines
+    assert lines[1] == "▪ #129 환불기준 개정 — 40일째", lines
+    assert lines[2] == "▪ #147 여자사우나 비품 — 33일째", lines
+    assert lines[3] == "▪ #148 안면인식 거부 회원 안내 — 26일째", lines
+    assert len(lines) == 5, lines   # 헤더1 + 항목3 + 안내1 = 5줄 (네 번째 건·소장 몫·resolved 는 안 실림)
+    assert "최준용M" in lines[4] and "이경연 실장" not in lines[4], lines[4]   # 담당 후보엔 실장 본인 제외
+    assert build_today_candidates_section([]) == ""
+    assert build_today_candidates_section([{"date": _iso(1), "issues": [
+        {"issue": "소장 건", "owner": "이정헌 소장", "status": "open", "no": 1}]}]) == ""
+    print("[selfcheck] today_candidates OK")
+
+
 def nudge_review() -> int:
     """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 사람별
     오래된 순으로 상한 없이 전부 출력 — --resolve 로 닫을 후보를 고르는 용도.
@@ -875,6 +929,15 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, lis
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
+    # 📝 오늘 만들 후보(배 12682) — 원장을 다시 읽는다(로컬 파일이라 새 조회 아님 · sync_ledger_replies
+    #   도 같은 자리에서 따로 읽는다). 실패해도 이 통 나머지는 그대로 나간다(fail-soft).
+    try:
+        _ledger_now = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+        today_candidates = build_today_candidates_section(_ledger_now)
+        if today_candidates:
+            parts.append(today_candidates)
+    except Exception as exc:
+        log(f"[mgr] 오늘 만들 후보 절 예외(무시): {type(exc).__name__}: {exc}")
     # 📋 월요일이면 통 끝에 내일 회의·오늘 17:00 사전 보고 한 줄(주간 미팅 체계 · GM 지시 2026-09-15).
     _monday_line = weekly_meeting_monday_line(date.today())
     if _monday_line:
@@ -4086,6 +4149,7 @@ def main() -> int:
         _selfcheck_parse_ymd()
         _selfcheck_done_filter()
         _selfcheck_gm_work_section()
+        _selfcheck_today_candidates()
         _selfcheck_inquiry_contact_section()
         _selfcheck_reply_match()
         _selfcheck_own_broadcast_log_match()

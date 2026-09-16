@@ -60,6 +60,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from collectors.ops_shared import SSOT_API_URL, gas_get  # noqa: E402
 from module_heartbeat import last_heartbeat, record_heartbeat  # noqa: E402
+from manager_task_index import OPS_DEPT_STAFF  # noqa: E402 — 운영부 6인 정본(배 12682 · 웰리 배포, 이 파일은 안 건드린다)
 
 HEARTBEAT_ID = "rep-approval-relay"
 ROOM = "★중간관리자"
@@ -69,7 +70,9 @@ SEND_STAGGER_SECONDS = 6        # 두 방 알림이 같은 초에 겹치지 않�
 SENDER = "대표결재전달"          # kakao_report_sender.AUTO_PIPELINE_SENDERS 에 넣어야 사람 방 통과
 SENDER_NEW = "업무등록묶음"      # ③ 신규 업무 묶음 — 같은 집합에 주석(OFF) 상태
 SCOREBOARD_ON = True            # ④ 점수판 — GM 승인 2026-09-03 "추천 진행" 으로 켬(17:05 합본 꼬리)
-DAILY_DONE_TARGET = 3           # ④ 하루 완료 목표(GM 기획 3단계)
+# ④ 1인당 하루 상한(목표 아님) — GM 확정 2026-09-16 "「하루 3건」은 상한이지 목표가 아니다,
+#   '목표'라고 쓰지 마라". 팀 전체가 채워야 할 합계가 아니라 사람마다 하루 최대 3건이라는 뜻.
+DAILY_DONE_TARGET = 3
 SIGNOFF = "웰페리온 AI 드림"    # send_ops_digest.RELAY_SIGNOFF 와 동일(ops_daily_digest 자동글 필터가 이 문구를 안다)
 MAX_ITEMS_PER_MSG = 3           # 제목+상세 2줄씩(3건=6줄)+제목1+마감2 = 9줄 → 한 통 10줄 안쪽. 넘으면 1줄 항목으로
 _CAT_RE = re.compile(r"^\[\d+\]\s*")
@@ -442,19 +445,72 @@ def _done_day(r: dict) -> str:
     return _kst_day(r.get("완료일") or r.get("수정일"))
 
 
-def scoreboard_section(rows: list[dict], today: str | None = None) -> str:
-    """📊 오늘 업무 마감 — 완료 N건 / 목표 3 · 이번 주 완료 N건 · 빈 날 N일(월요일~오늘 중 완료 0건인 날).
-    완료 = 상태 '완료' · 완료일(없으면 수정일)로 센다 — 요약줄 옮겨 적기 없음."""
+# ── ④+⑤ 운영부 6인(OPS_DEPT_STAFF) 일별 등록·완료 — 점수판 문구와 하트비트 적재가
+# 같은 집계 하나를 나눠 쓴다(약속 L01 — 두 곳이 각자 세면 숫자가 갈린다). GM 확정 2026-09-16:
+# 「하루 3건」은 1인당 상한(목표 아님) · 대상은 실장 포함 6명(이지영 사원 제외·진수아 사원 합류,
+# manager_task_index.OPS_DEPT_STAFF 가 정본) · 즉시 통 3종(새 접수·완료 통보·대표님 결재 전달)은
+# 이 배선과 무관 — 손대지 않는다.
+OPS_COUNT_HEARTBEAT_ID = "mgr-ops-daily-count"
+
+
+def _ops_new_on(rows: list[dict], day: str) -> list[dict]:
+    """day 에 생성 + 운영부 6인 담당 + 사람이 등록(AI 생성자 제외) — pick_new_rows 와 같은
+    생성일·AI 판정이지만 나우열 제외·notified 지문은 안 쓴다(알림 여부와 무관하게 전부 센다)."""
+    return [r for r in rows
+            if _kst_day(r.get("생성일")) == day
+            and not _AI_RE.search(str(r.get("생성자") or ""))
+            and str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
+
+
+def _ops_done_on(rows: list[dict], day: str) -> list[dict]:
+    return [r for r in rows
+            if str(r.get("상태") or "").strip() == "완료"
+            and _done_day(r) == day
+            and str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
+
+
+def ops_daily_counts(rows: list[dict], today: str | None = None) -> dict:
+    """운영부 6인 오늘·이번 주 등록·완료 집계 + 사람별 오늘 값. scoreboard_section(문구)과
+    record_ops_daily_counts(적재)가 이 하나를 같이 쓴다."""
     today, _ = _md(today)
     d1 = date.fromisoformat(today)
     monday = d1 - timedelta(days=d1.weekday())
-    done_days = [_done_day(r) for r in rows if str(r.get("상태") or "").strip() == "완료"]
-    n_today = done_days.count(today)
-    week = [d for d in done_days if monday.isoformat() <= d <= today]
-    empty = sum(1 for i in range((d1 - monday).days + 1)
-                if (monday + timedelta(days=i)).isoformat() not in week)
-    return (f"📊 오늘 업무 마감 — 완료 {n_today}건 / 목표 {DAILY_DONE_TARGET}\n"
-            f"   이번 주 완료 {len(week)}건 · 빈 날 {empty}일")
+    week_days = [(monday + timedelta(days=i)).isoformat() for i in range((d1 - monday).days + 1)]
+    new_today = _ops_new_on(rows, today)
+    done_today = _ops_done_on(rows, today)
+    week_new = sum(len(_ops_new_on(rows, d)) for d in week_days)
+    week_done = sum(len(_ops_done_on(rows, d)) for d in week_days)
+    per_person = {}
+    for name in OPS_DEPT_STAFF:
+        n = sum(1 for r in new_today if str(r.get("담당자") or "").strip() == name)
+        m = sum(1 for r in done_today if str(r.get("담당자") or "").strip() == name)
+        if n or m:
+            per_person[name] = {"등록": n, "완료": m}
+    return {"today": today, "n_new": len(new_today), "n_done": len(done_today),
+            "week_new": week_new, "week_done": week_done, "per_person": per_person}
+
+
+def scoreboard_section(rows: list[dict], today: str | None = None) -> str:
+    """📊 오늘 업무 마감 — 등록 N · 완료 N(1인 최대 3 · 6명) · 이번 주 등록 N · 완료 N
+    (문구 GM 확정 2026-09-16). 대상은 운영부 6인(OPS_DEPT_STAFF)만 — 나우열M 라인은 안 센다."""
+    c = ops_daily_counts(rows, today)
+    return (f"📊 오늘 업무 마감 — 등록 {c['n_new']}건 · 완료 {c['n_done']}건"
+            f"(1인 최대 {DAILY_DONE_TARGET} · {len(OPS_DEPT_STAFF)}명) · "
+            f"이번 주 등록 {c['week_new']}건 · 완료 {c['week_done']}건")
+
+
+def record_ops_daily_counts(rows: list[dict], today: str | None = None, *, root: Path | None = None) -> dict:
+    """⑤ 사람별 일별 등록·완료를 하트비트에 적재 — MGR 하트비트 membership_log 와 같은 방식
+    (읽고-병합-쓰기, 최근 30일만 · 새 파일 없음 · module_heartbeat 재사용). 17:05 점수판 발신
+    성공 뒤에만 호출부가 부른다. root — selfcheck 전용(실제 status/heartbeats/ 를 안 건드리려고)."""
+    c = ops_daily_counts(rows, today)
+    kwargs = {"root": root} if root is not None else {}
+    prev = last_heartbeat(OPS_COUNT_HEARTBEAT_ID, **kwargs) or {}
+    log_ = dict(prev.get("daily_counts") or {})
+    log_[c["today"]] = c["per_person"]
+    log_ = dict(sorted(log_.items())[-30:])
+    return record_heartbeat(OPS_COUNT_HEARTBEAT_ID, detail=f"운영부 6인 일별 등록·완료 — {c['today']}",
+                            extra={"state": {"date": c["today"]}, "daily_counts": log_}, **kwargs)
 
 
 # ── ⑥ 반려 알림(GM 지시 2026-09-15 10:2x "반려된 것도 중간관리자방에 안내") ──────────────
@@ -680,13 +736,34 @@ def _selfcheck() -> None:
     assert build_new_rows_message([], "2026-09-03") == ""
     t9 = build_new_rows_message([dict(nr[0], id=f"N{i}") for i in range(9)], "2026-09-03").splitlines()
     assert len(t9) == 10 and t9[7] == "▪ 외 3건", t9
-    # ④ 점수판 — 완료일 우선·없으면 수정일·KST, 주간=월요일부터, 빈 날=완료 0건인 날
+    # ④+⑤ 점수판·적재 — 운영부 6인만 센다(나우열M·비운영부 제외) · 등록=생성일·AI 아님 · 완료=완료일 우선 없으면 수정일
+    assert set(OPS_DEPT_STAFF) == {"이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원"}, OPS_DEPT_STAFF
     sb = [
-        {"상태": "완료", "완료일": "2026-08-31"}, {"상태": "완료", "완료일": "", "수정일": "2026-09-02T15:30:00.000Z"},
-        {"상태": "완료", "완료일": "2026-09-03"}, {"상태": "진행중", "완료일": "2026-09-03"}, {"상태": "완료", "완료일": "2026-08-30"},
+        # 2026-09-03(수) 등록 2건 — 이경연 실장·최준용M(운영부) / 나우열M(제외) / AI 생성(제외)
+        {"id": "S1", "담당자": "이경연 실장", "생성자": "", "생성일": "2026-09-03T01:00:00.000Z", "상태": "진행중"},
+        {"id": "S2", "담당자": "최준용M", "생성자": "김남욱GM", "생성일": "2026-09-03T02:00:00.000Z", "상태": "진행중"},
+        {"id": "S3", "담당자": "나우열M", "생성자": "", "생성일": "2026-09-03T03:00:00.000Z", "상태": "진행중"},
+        {"id": "S4", "담당자": "윤병현AM", "생성자": "AI 웰리", "생성일": "2026-09-03T04:00:00.000Z", "상태": "진행중"},
+        # 완료 — 09-03(오늘) 이경연 실장 1건 · 09-01(이번 주) 최준용M 1건 · 08-30(지난주, 주간 집계 밖) 1건
+        {"id": "S5", "담당자": "이경연 실장", "상태": "완료", "완료일": "2026-09-03"},
+        {"id": "S6", "담당자": "최준용M", "상태": "완료", "완료일": "", "수정일": "2026-09-01T15:30:00.000Z"},
+        {"id": "S7", "담당자": "이경연 실장", "상태": "완료", "완료일": "2026-08-30"},
+        {"id": "S8", "담당자": "진수아 사원", "상태": "진행중", "완료일": "2026-09-03"},  # 완료 아님 — 제외
     ]
-    s = scoreboard_section(sb, "2026-09-03")   # 수요일 → 월31·화1·수2·목3 = 4일 중 완료 있는 날 31·3 → 빈 날 2
-    assert s == "📊 오늘 업무 마감 — 완료 2건 / 목표 3\n   이번 주 완료 3건 · 빈 날 2일", s
+    c = ops_daily_counts(sb, "2026-09-03")   # 수요일 → 월31·화1·수2 = 월31 밖(월요일=08-31)
+    assert c == {"today": "2026-09-03", "n_new": 2, "n_done": 1, "week_new": 2, "week_done": 2,
+                 "per_person": {"이경연 실장": {"등록": 1, "완료": 1}, "최준용M": {"등록": 1, "완료": 0}}}, c
+    s = scoreboard_section(sb, "2026-09-03")
+    assert s == "📊 오늘 업무 마감 — 등록 2건 · 완료 1건(1인 최대 3 · 6명) · 이번 주 등록 2건 · 완료 2건", s
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as _d:
+        _root = Path(_d)
+        rec = record_ops_daily_counts(sb, "2026-09-03", root=_root)
+        assert rec.get("ok") is True, rec
+        assert rec["daily_counts"]["2026-09-03"] == c["per_person"], rec
+        rec2 = record_ops_daily_counts(sb, "2026-09-04", root=_root)  # 다른 날 재적재 — 기존 날짜가 안 지워진다
+        assert set(rec2["daily_counts"]) == {"2026-09-03", "2026-09-04"}, rec2["daily_counts"]
+    print("[selfcheck] ops_daily_counts·record_ops_daily_counts OK")
     # ⑥ 반려 축(GM 2026-09-15 10:2x) — 결재상태에 '반려' 포함 칸만·지문 제외·나우열M 은 AtoA 갈래
     rj = [
         {"id": "R1", "업무명": "짐벌 카메라", "담당자": "나우열M", "결재상태": "GM 반려",
