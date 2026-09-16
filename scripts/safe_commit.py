@@ -1180,6 +1180,76 @@ def _flush_pending(root: Path, push: bool) -> list:
     return healed
 
 
+# ── HEAD 보다 낡은 판 되쓰기 차단(2026-09-16 GM 지시 · 웰리 실측) ──────────────
+# 사고: monthly_ops_sync.py 가 07:01 status/monthly_ops_plan.json 을 읽어 그대로
+# 고쳐 썼는데, 그 시점 디스크가 이미 HEAD(d5fdbfeecd·전날 18:39 커밋)보다 낡아
+# HEAD 에만 있던 줄 다수가 사라졌다. safe_commit() 자체의 _detect_concurrent_edit_
+# warnings 는 커밋 시점에만 돌고(이번엔 index.lock 60초 경합으로 커밋 시도조차
+# 못 감 — write_text() 는 이미 끝난 뒤) status/ 작은 JSON 은 경고로만 낮춰 놓아
+# 막지 못한다. 여기 이 함수는 "쓰기 직전"에 부르는 별도 관문 — 디스크에 쓰려는
+# 내용이 HEAD 커밋본에만 있던 줄을 threshold 개 이상 잃으면 쓰기 자체를 거부한다.
+_STALE_WRITE_LINE_THRESHOLD = 3
+
+
+def refuse_if_older_than_head(path, new_text: str | None = None, root: Path = ROOT,
+                               threshold: int = _STALE_WRITE_LINE_THRESHOLD) -> bool:
+    """공유 상태 파일을 읽고 고쳐 되쓰는 자리에서, write_text() 직전에 부른다.
+    new_text 를 생략하면 디스크의 현재 내용(=쓰기 직전 상태)을 그대로 본다.
+    HEAD 커밋본에만 있는 줄이 threshold 개 이상이면 거부(False) — 로그+텔레그램
+    경보 남기고 호출자는 쓰지 않고 그대로 리턴해야 한다. 통과(True)면 써도 된다.
+    HEAD 에 아직 없는 새 파일은 대조 대상이 아니라 통과시킨다(정직: 판단 불가는 차단 아님)."""
+    p = Path(path)
+    rel = _rel(p, root) if p.is_absolute() else str(path).replace("\\", "/")
+    head_show = _git(["show", f"HEAD:{rel}"], root)
+    if head_show.returncode != 0 or not head_show.stdout:
+        return True  # HEAD 에 없음 — 새 파일, 낡음 판정 대상 아님
+    if new_text is None:
+        fp = root / rel
+        if not fp.exists():
+            return True
+        new_text = fp.read_text(encoding="utf-8", errors="replace")
+    only_in_head = set(head_show.stdout.splitlines()) - set(new_text.splitlines())
+    if len(only_in_head) < threshold:
+        return True
+    sample = "; ".join(sorted(only_in_head)[:5])
+    reason = (f"{rel} — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 {len(only_in_head)}개 "
+              f"빠져 있습니다(기준 {threshold}개 이상 → 거부): {sample}")
+    print(f"[낡은판 쓰기 거부] {reason}")
+    _domain_guard_log("stale_write_refused", [rel], str(root))
+    try:
+        from model_router import _alert  # noqa: PLC0415 — 경보 시점에만 import(기존 관문 재사용)
+        _alert(f"⚠ 낡은 판 쓰기 거부 — {reason}")
+    except Exception:
+        pass  # 경보 실패가 본 작업을 막으면 안 된다
+    return False
+
+
+def _refuse_if_older_than_head_selfcheck() -> None:
+    """임시 저장소에서 HEAD 가 더 새로운 상황을 만들어 실제로 거부되는지 재현."""
+    import subprocess as _sp
+    import tempfile as _tf
+    tmp = Path(_tf.mkdtemp(prefix="wp_stale_guard_"))
+    _sp.run(["git", "init", "-q"], cwd=tmp, check=True)
+    _sp.run(["git", "config", "user.email", "a@b.c"], cwd=tmp, check=True)
+    _sp.run(["git", "config", "user.name", "t"], cwd=tmp, check=True)
+    f = tmp / "plan.json"
+    old_text = "마커1\n마커2\n마커3\n공통\n"
+    f.write_text(old_text, encoding="utf-8")
+    _sp.run(["git", "add", "plan.json"], cwd=tmp, check=True)
+    _sp.run(["git", "commit", "-q", "-m", "old"], cwd=tmp, check=True)
+    new_head_text = "마커1\n마커2\n마커3\n마커4\n마커5\n마커6\n공통\n"
+    f.write_text(new_head_text, encoding="utf-8")
+    _sp.run(["git", "add", "plan.json"], cwd=tmp, check=True)
+    _sp.run(["git", "commit", "-q", "-m", "new(HEAD)"], cwd=tmp, check=True)
+    # ① 디스크가 낡은 판(old_text)으로 되돌아간 상태에서 그대로 쓰려 하면 거부돼야 한다
+    ok1 = refuse_if_older_than_head("plan.json", old_text, root=tmp)
+    assert ok1 is False, "낡은 판을 거부하지 못했다"
+    # ② HEAD 그대로(또는 그 이상) 쓰는 정상 경로는 통과해야 한다
+    ok2 = refuse_if_older_than_head("plan.json", new_head_text + "마커7\n", root=tmp)
+    assert ok2 is True, "정상 갱신을 오탐으로 막았다"
+    print("[selfcheck] refuse_if_older_than_head OK — 낡은 판 거부·정상 갱신 통과 둘 다 확인")
+
+
 def safe_commit(
     paths,
     message: str,
@@ -1662,5 +1732,6 @@ if __name__ == "__main__":
         _feature_marker_loss_selfcheck()
         _feedback_close_selfcheck()
         _nawoolm_domain_selfcheck()
+        _refuse_if_older_than_head_selfcheck()
         raise SystemExit(0)
     raise SystemExit(main())

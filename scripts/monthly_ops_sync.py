@@ -67,9 +67,11 @@ except Exception:
         return False
 
 try:  # 안전 커밋터(배9820) — 임시 인덱스+CAS. 커밋은 반드시 이 경유(맨손 git 금지, 저장소 규칙)
-    from safe_commit import safe_commit as _safe_commit
+    from safe_commit import safe_commit as _safe_commit, refuse_if_older_than_head as _refuse_if_stale
 except Exception:
     _safe_commit = None
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
 
 INDEX_LOCK_FILE = BASE_DIR / ".git" / "index.lock"
 _COMMIT_LOCK_RETRY_SEC = 5
@@ -644,21 +646,33 @@ def run(month: str | None, apply: bool) -> None:
             "사람값": n_manual, "측정실패": n_gap,
             "자동화율": auto_rate, "at": datetime.now().strftime("%Y-%m-%d"),
         }
-        PLAN_FILE.write_text(
-            json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"[반영] {PLAN_FILE.name} 저장 완료 — safe_commit 경유 커밋 시도.")
-        commit_plan(month, changed, obs_changed)
-        # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)
-        worklog_log(
-            "coo", "월간계획",
-            f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신·상태관찰 {obs_changed}건 갱신·"
-            f"정직딱지 {honesty_changed}건 갱신",
-            result="ok",
-            detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건 · "
-                   f"상태만판정 {n_observe}건 중 관찰갱신 {obs_changed}건 · "
-                   f"정직딱지 갱신 {honesty_changed}건 · 자동화율 {round(auto_rate * 100)}%",
-            ref=month,
-        )
+        new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
+        # ★2026-09-16 GM 지시(웰리 실측) — 쓰기 직전 HEAD 대비 신선도 확인. 이 시점
+        #   디스크가 이미 HEAD 보다 낡아 있으면(다른 세션 커밋이 워킹트리 미반영 등)
+        #   그 낡은 판 위에 자동반영을 얹어 되쓰면 HEAD 에만 있던 내용이 사라진다.
+        if not _refuse_if_stale(PLAN_FILE, new_text):
+            print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. "
+                  f"이 PC 워킹트리를 최신으로 맞춘 뒤 재실행하세요.")
+            worklog_log(
+                "coo", "월간계획",
+                "월간 운영계획 자동 반영 거부 — 디스크가 HEAD 보다 낡음(쓰기 전 가드)",
+                result="warn", detail=f"{month} · refuse_if_older_than_head 거부", ref=month,
+            )
+        else:
+            PLAN_FILE.write_text(new_text, encoding="utf-8")
+            print(f"[반영] {PLAN_FILE.name} 저장 완료 — safe_commit 경유 커밋 시도.")
+            commit_plan(month, changed, obs_changed)
+            # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)
+            worklog_log(
+                "coo", "월간계획",
+                f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신·상태관찰 {obs_changed}건 갱신·"
+                f"정직딱지 {honesty_changed}건 갱신",
+                result="ok",
+                detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건 · "
+                       f"상태만판정 {n_observe}건 중 관찰갱신 {obs_changed}건 · "
+                       f"정직딱지 갱신 {honesty_changed}건 · 자동화율 {round(auto_rate * 100)}%",
+                ref=month,
+            )
     elif live:
         # ★2026-08-03 시토 — 여기 있던 '잔여분 재시도' 특수처리는 **관문으로 올렸다**(약속 L21 net-zero).
         #   같은 구멍(커밋 실패 후 아무도 재시도 안 함)이 이 스크립트만의 문제가 아니라 저장소
