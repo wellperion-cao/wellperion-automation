@@ -202,6 +202,14 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 <script>
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  /* 서버 우선(2026-09-14 시토) — 서버 /api/reception/lost/public 을 먼저 읽고, 실패하면 종전 GAS(lf_gallery·lf_disposal)로
+     조용히 돌아간다. 응답 모양이 GAS 와 같아(api_reception.py _LF_PUBLIC_FIELDS) 화면 렌더 코드는 그대로다. */
+  function _rcLostPublic(view){
+    var gas = function(){ return fetch(RECEPTION_API+'?action='+(view==='gallery'?'lf_gallery':'lf_disposal')+'&_='+Date.now(),{redirect:'follow',cache:'no-store'}).then(function(r){ return r.json(); }); };
+    return fetch('https://erp.wellperion.com/api/reception/lost/public?view='+view+'&_='+Date.now(),{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('api '+r.status); return r.json(); })
+      .catch(function(e){ console.warn('[lost-found-en] API failed → GAS fallback:', e&&e.message); return gas(); });
+  }
   var CACHE_KEY = 'wlp_lf_gallery_v1';
   var CACHE_TTL = 90000; // 90초 짧은 TTL — disposal due 배지 등 변화 시 무효화
 
@@ -269,8 +277,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     }
     if(_loading) return; _loading=true;
     if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML=_skeleton(6); }
-    fetch(RECEPTION_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    _rcLostPublic('gallery')
       .then(function(d){ _loading=false;
         if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">Could not load the list — '+_esc(d&&d.error||'')+'</div>'; } return; }
         var rows=Array.isArray(d.data)?d.data:[];
@@ -295,8 +302,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 
   // ── 폐기 임박(upcoming) — lf_disposal(공개). 처분 완료 기록·수령·삭제는 종합접수처(직원 게이트) 전용 ──
   function loadDisposal(){
-    fetch(RECEPTION_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
-      .then(function(r){ return r.json(); })
+    _rcLostPublic('disposal')
       .then(function(d){
         if(!d||!d.ok) return; // 실패는 조용히 스킵 — 게시중 그리드는 그대로 유지
         var up=Array.isArray(d.upcoming)?d.upcoming:[];

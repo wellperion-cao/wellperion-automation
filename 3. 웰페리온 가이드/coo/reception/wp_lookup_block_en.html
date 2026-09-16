@@ -256,6 +256,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
   var STEPS = ["접수","처리중","완료"];
   // 원장 값은 한글 그대로 두고 화면 표기만 영어로 (값을 바꾸면 조회가 깨진다)
   var LBL = { "접수":"Received", "처리중":"In progress", "완료":"Completed" };
+  /* Category labels come back in Korean from the server (same values the Korean form stores) —
+     show them in English here. Unknown values fall through unchanged. GM review 2026-09-16. */
+  var CAT_EN = { "분실물 접수":"Lost item", "시설물 고장 접수":"Facility fault", "청결 이슈 접수":"Cleanliness",
+                 "직원·강사 칭찬합니다":"Compliment", "직원·강사 쓴소리합니다":"Feedback", "컴플레인 접수":"Complaint" };
+  function catEn(v){ v = String(v||''); return CAT_EN[v] || v; }
   var DEFREPLY = { "접수":"We have received your request. The team will review it shortly.", "처리중":"We are working on it. Thank you for your patience.", "완료":"This has been resolved. We are sorry for the inconvenience." };
   var cur = "home", rows = [];
   function $(s,r){ return (r||ROOT).querySelector(s); }
@@ -343,14 +348,14 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
       var st = r.status || '';
       return '<div class="rcard" data-open="'+i+'">'
         + '<div class="row1"><span class="badge" style="background:'+(STATUS[st]||'#999')+'">'+esc(LBL[st]||st)+'</span>'
-        + '<span class="cat">'+esc(r.category||'')+'</span><span class="meta">'+esc(String(r.createdAt||'').slice(0,10))+'</span></div>'
+        + '<span class="cat">'+esc(catEn(r.category))+'</span><span class="meta">'+esc(String(r.createdAt||'').slice(0,10))+'</span></div>'
         + '<div class="snip">'+esc(r.content||'')+'</div></div>';
     }).join('') + '</div>';
     $all('[data-open]').forEach(function(c){ c.addEventListener('click', function(){ openDetail(+c.getAttribute('data-open')); }); });
   }
   function openDetail(i){
     var r = rows[i]; if(!r) return;
-    $('[data-dcat]').textContent = r.category || '';
+    $('[data-dcat]').textContent = catEn(r.category);
     $('[data-dmeta]').textContent = (r.regId||'') + ' · submitted ' + String(r.createdAt||'').slice(0,10);
     $('[data-dcontent]').textContent = r.content || '';
     var idx = STEPS.indexOf(r.status);
@@ -369,7 +374,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!impor
   var IDLE=60, left=60;
   function tick(){
     left--;
-    var txt = (cur==='home') ? '' : ('무입력 시 <b>'+left+'초</b> 후 처음으로');
+    var txt = (cur==='home') ? '' : ('Back to home in <b>'+left+' s</b> if idle');
     $all('[data-pill]').forEach(function(e){ e.innerHTML = txt; });
     if(left<=0) hardReset();
   }
