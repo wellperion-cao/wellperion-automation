@@ -167,6 +167,64 @@ def sync_owner_cols(conn):
     return mismatch
 
 
+SERVER_FIRST_SINCE = "2026-09-11 19:00:00"   # write_member=server 발효(GM 지시 2026-09-11 19:1x) — 그 뒤 쓰기만 서버가 이긴다
+
+
+def _merge_server_values(data, fields):
+    """data(시트 원행 JSON · 머리글에 줄바꿈 섞임) 에 서버가 쓴 fields 를 덮어 쓴다 — 바뀐 칸 수 반환. 순수 함수."""
+    raw_key = {re.sub(r"\s+", "", str(k)): k for k in data}
+    n = 0
+    for f, v in fields.items():
+        k = raw_key.get(re.sub(r"\s+", "", str(f)))
+        if k is not None and (data.get(k) or "") != (v or ""):
+            data[k] = v
+            n += 1
+    return n
+
+
+def reassert_server_json_writes(conn, since=SERVER_FIRST_SINCE):
+    """서버가 원장에 먼저 적은 JSON 칸(P.L Contact 같은 실컬럼 밖 칸)을 시트 갱신이 덮지 않게 되살린다.
+
+    실측 2026-09-16(시포 · 배 2581): reconcile by_form.member_active_update 24/108 — 불일치 표본 20/20 이 전부
+    「P.L Contact」. 서버는 09-11 부터 연락 기록을 members.data 에 먼저 적고 GAS 로 넘기는데, 5분마다 도는 이
+    동기화가 data JSON 을 시트값으로 통째 덮어 서버가 적은 값이 사라졌다(M00278: 서버 「09-09 부재중, 문자완료」
+    → 거울 「관심 없다 하심」 = 다른 회원 글). 실컬럼 9칸은 sync_owner_cols 가 이미 지키는데 JSON 칸은 비어 있었다.
+    GM 지시 2026-09-16 「시트 배제 · ERP 가 원장」 — 서버가 쓴 (회원번호, 칸)은 서버 값이 이긴다. 시트에서 사람이
+    나중에 고친 값은 ERP 에 안 온다(시트는 곧 잠근다 · 배 2671).
+    같은 (회원번호, 칸)은 마지막 성공 쓰기만 본다. gas_status 가 ok 가 아니면(되돌린 쓰기) 건드리지 않는다."""
+    latest = {}
+    for r in conn.execute(
+            "SELECT at, payload FROM write_log WHERE tenant_id=%s AND action='member_active_update'"
+            " AND gas_status='ok' AND at>=%s ORDER BY at", (db.TENANT, since)).fetchall():
+        p = r["payload"]
+        p = json.loads(p) if isinstance(p, str) else (p or {})
+        no, saved = p.get("_member_no"), p.get("_saved") or {}
+        if not no or not isinstance(saved, dict):
+            continue
+        for f, v in saved.items():
+            latest[(no, f)] = v
+    by_no = {}
+    for (no, f), v in latest.items():
+        by_no.setdefault(no, {})[f] = v
+    fixed = 0
+    with conn:
+        for no, fields in by_no.items():
+            row = conn.execute("SELECT data FROM members WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                               (db.TENANT, no)).fetchone()
+            if not row:
+                continue
+            try:
+                data = json.loads(row["data"]) if isinstance(row["data"], str) else (row["data"] or {})
+            except Exception:
+                continue
+            n = _merge_server_values(data, fields)
+            fixed += n
+            if n:
+                conn.execute("UPDATE members SET data=%s WHERE tenant_id=%s AND member_no=%s AND scope='valid'",
+                             (json.dumps(data, ensure_ascii=False), db.TENANT, no))
+    return fixed
+
+
 def canon_drift(conn, hours=6):
     """서버가 쓴 수강반종목명이 GAS 가 쓴 것과 갈렸는지 센다(배1050 · 시토 제안 2026-09-09).
 
@@ -268,6 +326,8 @@ def main():
         total += n
         unnumbered += u
         print("[ok] %s %d건 (번호 없음 %d)" % (scope, n, u))
+    reasserted = reassert_server_json_writes(conn)
+    print("[parity] 서버가 쓴 JSON 칸 되살림 %d칸" % reasserted)
     owner_mismatch = sync_owner_cols(conn)
     if owner_mismatch:
         _tell_gm("⚠️ 회원 실컬럼 정합 어긋남 — 시트 갱신 뒤에도 %d행 불일치(sync_members · 어긋난 칸=%s)"
@@ -293,6 +353,10 @@ def main():
 
 
 def selftest():
+    d = {"P.L Contact": "옛값", "종료\n일자": "2026-01-01", "회원명": "홍길동"}
+    assert _merge_server_values(d, {"P.L Contact": "새값", "종료 일자": "2026-02-02", "없는칸": "x"}) == 2
+    assert d["P.L Contact"] == "새값" and d["종료\n일자"] == "2026-02-02" and "없는칸" not in d, d
+    assert _merge_server_values(d, {"P.L Contact": "새값"}) == 0, "같은 값은 안 센다"
     db.TENANT = "selftest"                      # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
     conn = db.connect()
     with conn:
