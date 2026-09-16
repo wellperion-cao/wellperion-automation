@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -379,7 +380,10 @@ def missed_targets(target_date: datetime, limit: int = 10) -> "list[datetime]":
 
 
 def reported_in_send_log(day: datetime) -> bool:
-    """그날치 보고가 회장님 방으로 실제로 나갔는지 발신 로그로 본다(약속 L03 — 기록 말고 현실).
+    """그날치 보고가 실제로 나갔는지 발신 로그로 본다(약속 L03 — 기록 말고 현실).
+
+    2026-09-16: 회장님 방은 대상에서 빠졌다(GM 회장님 보고 — 매일 보고는 월 2회 회의로 대체).
+    그래서 방 이름을 묻지 않고 그 회차 사진 줄이 하나라도 있으면 나간 것으로 본다.
 
     2026-09-07 실사고: 9/5 회차가 09:30 에 실패한 뒤 13:01 에 손으로 다시 나갔는데 STATUS_FILE 의
     last_ok_target 은 안 바뀌어, 다음 날 인사말이 「9.5(토)·9.6(일) …」로 4개 방에 나갔다.
@@ -391,7 +395,7 @@ def reported_in_send_log(day: datetime) -> bool:
             continue
         try:
             for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
-                if '"차의주 회장님"' in line and "image" in line and tag in line:
+                if "image" in line and tag in line:   # 어느 방이든(2026-09-16 회장님 방 제외 뒤)
                     return True
         except Exception:
             continue
@@ -533,6 +537,39 @@ def run_sender_message(rooms: "list[str] | None", message: str, dry_run: bool) -
         if rc != 0 or "DONE:" not in output:
             failures.append(f"{label}: {tail}")
     return (len(failures) == 0), failures
+
+
+def publish_to_erp_public(image_path: str) -> None:
+    """방금 회장님 방에 나간 보고 이미지를 ERP 공개 폴더에도 놓는다(배1115 ② · GM 2026-09-09).
+
+    왜: GM 지시 — "회장님 방 보고 사진도 ERP 안에서 보여야 한다". 회장님은 ERP 계정을
+    만들지 않으시므로 로그인 없이 열리는 자리(public/)에 사본을 둔다. 원본 아카이브
+    (1. AI자료_아카이브/10_매출보고/)는 그대로 두고 **사본만** 옮긴다.
+
+    안전: 카톡으로 이미 나간 바로 그 파일만 복사한다 — 새로 고르거나 만들지 않는다.
+    실패해도 발송 결과를 뒤집지 않는다(fail-open) — 이 함수는 발송이 성공한 뒤에만 불린다.
+    커밋은 safe_commit 관문을 거친다(맨손 git 금지 · 지정 경로만).
+    """
+    try:
+        src = Path(image_path)
+        if not src.is_file():
+            log(f"[public] 원본 이미지 없음 — 건너뜀: {image_path}")
+            return
+        dst_dir = ROOT / "3. 웰페리온 가이드" / "public" / "chairman"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        dst = dst_dir / src.name
+        shutil.copyfile(src, dst)
+        rel = str(dst.relative_to(ROOT)).replace("\\", "/")
+        subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "safe_commit.py"),
+             "-m", f"chore(cto): 회장님 보고 사진 ERP 공개 자리 반영 — {src.name} (배1115)",
+             "--", rel],
+            cwd=str(ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180,
+        )
+        log(f"[public] ERP 공개 자리 반영: /public/chairman/{src.name}")
+    except Exception as exc:  # 발송은 이미 끝났다 — 여기서 실패해도 결과를 바꾸지 않는다
+        log(f"[public] 반영 실패(발송에는 영향 없음): {type(exc).__name__}: {exc}")
 
 
 def main() -> int:
@@ -686,6 +723,7 @@ def main() -> int:
         #   진짜 못 나간 날이 다음 회차 인사말에서 빠진다(검증이 사실을 덮는다).
         if not args.dry_run and rooms is None:
             record_ok_target(target)
+            publish_to_erp_public(image_path)
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
         log(msg)
