@@ -215,7 +215,7 @@ def _server_final_line():
     text = "↳ 서버판(브로제이+ERP) 대조 · 기준일 %s · %d/%d칸 채움 · 시트와 다른 칸 %d" % (
         d.get("ref_date"), sf["cells_filled"], sf["cells_total"], len(diff))
     if diff:
-        text += " · 큰 차이: " + ", ".join("%s %+,d" % (x["cell"], int(x["gap"])) for x in diff[:3])
+        text += " · 큰 차이: " + ", ".join("{} {:+,}".format(x["cell"], int(x["gap"])) for x in diff[:3])
     if sf.get("missing"):
         text += " · ⚠️빠진 원천: " + ", ".join(map(str, sf["missing"]))
     return text
