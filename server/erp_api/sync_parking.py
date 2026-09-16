@@ -5,20 +5,18 @@
 (헤더 X-Token-Push-Key = api.env ERP_TOKEN_PUSH_KEY)로 받아 메모리에만 둔다(project_partner_credentials_server_only_1531).
 계정 자체는 ERP 플랫폼관리(erp/admin/index.html 파트너사 계정 표 · 코드 1531)에 GM 이 넣는다.
 
-★ 2026-09-15 현재 계정 미수령 — 로그인 폼·parkStat 응답 모양을 실측하지 못했다. 그래서 셋을 env 로 뺐다
-  (/srv/erp/api.env, 없으면 기본값으로 시도하되 실패해도 추측으로 값을 만들지 않는다):
-    PARKING_LOGIN_URL   기본 http://ppark-wall.iptime.org:8280/login       로그인 POST 주소
-    PARKING_LOGIN_ID_FIELD / PARKING_LOGIN_PW_FIELD   기본 userId / userPw   로그인 폼 칸 이름
-    PARKING_STAT_URL    기본 http://ppark-wall.iptime.org:8280/parkStat?parkId=1057&date={date}   일 매출 조회
-    PARKING_REVENUE_FIELD   매출 칸 경로("data.total" 처럼 점으로 중첩) — 없으면 revenue_krw=None,
-                            raw 원문은 항상 담는다(칸 이름을 지어내 잘못된 값을 저장하지 않는다).
-  ponytail: 로그인 성공 판정은 "예외 없이 200번대"뿐이다(진짜 로그인 성공/실패 신호는 실측 후 갈아끼운다).
+2026-09-16 실측 완료(시토·계정 GM 등록 2026-09-15 18:38 이후) — 로그인·응답 모양 확정:
+    로그인  POST http://ppark-wall.iptime.org:8280/login.htm  필드 loginId/loginPw (login.htm 폼 실측)
+    통계    POST http://ppark-wall.iptime.org:8280/io/getParkStat  JSON 바디 {"searchParkId":"1057"}
+            (parkStat.js 실측 — GET·date 파라미터 아님. 응답 data.salesCardTodayAmt/salesCashTodayAmt/salesEtcTodayAmt
+             = "오늘" 누적만 제공, 과거 특정일 조회 API 없음 → 소급 구간 불가·매 실행은 오늘 하루치만 적재)
+  env(선택 · /srv/erp/api.env, 없으면 위 실측값을 기본으로 쓴다):
+    PARKING_LOGIN_URL / PARKING_LOGIN_ID_FIELD / PARKING_LOGIN_PW_FIELD / PARKING_STAT_URL / PARKING_PARK_ID
 
-실행: python3 /srv/erp/api/sync_parking.py                오늘(KST)
-      python3 /srv/erp/api/sync_parking.py 2026-09-01 2026-09-14   소급 구간
+실행: python3 /srv/erp/api/sync_parking.py                오늘(KST) 누적 매출 1회 적재(멱등 — 여러 번 돌려도 최신값으로 덮어씀)
 자체점검: python3 sync_parking.py --selftest              (tenant 'selftest' · 네트워크 없음)
 
-예약 실행은 계정이 들어온 뒤에 건다:
+예약 실행:
   sudo tee /etc/cron.d/erp-parking-sync <<< '*/30 * * * * ec2-user /usr/bin/python3 /srv/erp/api/sync_parking.py >> /srv/erp/sync_parking.log 2>&1'
 """
 import json
@@ -29,7 +27,7 @@ import time
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from sync_brojay import days, kst_now  # noqa: E402 — 같은 날짜 유틸 재사용(브로제이와 중복 구현 안 함)
+from sync_brojay import kst_now  # noqa: E402 — 같은 날짜 유틸 재사용(브로제이와 중복 구현 안 함)
 from sync_inquiries import load_env  # noqa: E402 — 같은 api.env
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -65,10 +63,10 @@ def fetch_creds():
 
 
 def _login(session, user_id, pw):
-    """랩스(ppark-wall) 로그인. 성공 = True. 폼 모양이 실측 전이라 상태코드만 본다(ponytail 위 문서 참고)."""
-    url = _env("PARKING_LOGIN_URL", "http://ppark-wall.iptime.org:8280/login")
-    id_field = _env("PARKING_LOGIN_ID_FIELD", "userId")
-    pw_field = _env("PARKING_LOGIN_PW_FIELD", "userPw")
+    """랩스(ppark-wall) 로그인. 성공 = True (실측 2026-09-16: login.htm 폼 필드 loginId/loginPw)."""
+    url = _env("PARKING_LOGIN_URL", "http://ppark-wall.iptime.org:8280/login.htm")
+    id_field = _env("PARKING_LOGIN_ID_FIELD", "loginId")
+    pw_field = _env("PARKING_LOGIN_PW_FIELD", "loginPw")
     try:
         r = session.post(url, data={id_field: user_id, pw_field: pw}, timeout=15)
         return r.status_code < 400
@@ -77,44 +75,36 @@ def _login(session, user_id, pw):
         return False
 
 
-def extract_revenue(data, field_path):
-    """field_path="data.total" 처럼 점으로 중첩된 칸을 뽑는다. 없거나 숫자가 아니면 None(지어내지 않는다)."""
-    if not field_path:
+def extract_revenue(data):
+    """오늘 매출 3종 합계(카드+현금+기타) — 실측(parkStat.js)한 칸 이름 그대로. 하나라도 없으면 None(지어내지 않는다)."""
+    fields = ("salesCardTodayAmt", "salesCashTodayAmt", "salesEtcTodayAmt")
+    if not isinstance(data, dict) or any(f not in data for f in fields):
         return None
-    cur = data
-    for part in field_path.split("."):
-        if not isinstance(cur, dict) or part not in cur:
-            return None
-        cur = cur[part]
-    if isinstance(cur, bool):
-        return None
-    if isinstance(cur, (int, float)):
-        return int(cur)
-    if isinstance(cur, str):
-        try:
-            return int(cur.replace(",", "").strip())
-        except ValueError:
-            return None
-    return None
-
-
-def fetch_day(session, day):
-    """하루치 parkStat 조회. 성공 = {"revenue_krw":…, "raw":…}, 실패 = None(그 날은 안 건드린다)."""
-    time.sleep(CALL_GAP)
-    url = _env("PARKING_STAT_URL", "http://ppark-wall.iptime.org:8280/parkStat?parkId=1057&date={date}").replace("{date}", day)
     try:
-        r = session.get(url, timeout=30)
+        return sum(int(str(data[f]).replace(",", "").strip()) for f in fields)
+    except (ValueError, TypeError):
+        return None
+
+
+def fetch_today(session):
+    """오늘 누적 parkStat 조회(과거 날짜 조회 API 없음 — 항상 "지금까지 오늘"). 성공 = {"revenue_krw":…, "raw":…}, 실패 = None."""
+    time.sleep(CALL_GAP)
+    url = _env("PARKING_STAT_URL", "http://ppark-wall.iptime.org:8280/io/getParkStat")
+    park_id = _env("PARKING_PARK_ID", "1057")
+    try:
+        r = session.post(url, json={"searchParkId": park_id}, timeout=30)
         if r.status_code >= 400:
-            print("[warn] %s 조회 실패: HTTP %d" % (day, r.status_code))
+            print("[warn] 조회 실패: HTTP %d" % r.status_code)
             return None
         try:
-            raw = r.json()
+            body = r.json()
         except ValueError:
-            raw = {"_raw_text": r.text[:5000]}
+            body = {"_raw_text": r.text[:5000]}
     except Exception as e:  # noqa: BLE001
-        print("[warn] %s 조회 실패: %s: %s" % (day, type(e).__name__, str(e)[:150]))
+        print("[warn] 조회 실패: %s: %s" % (type(e).__name__, str(e)[:150]))
         return None
-    return {"revenue_krw": extract_revenue(raw, _env("PARKING_REVENUE_FIELD", "")), "raw": raw}
+    data = body.get("data") if isinstance(body, dict) else None
+    return {"revenue_krw": extract_revenue(data), "raw": data if data is not None else body}
 
 
 def upsert(conn, items, now):
@@ -140,10 +130,6 @@ def main(argv):
         print("[blocked] 계정 없음")
         return 2
 
-    from datetime import date, timedelta
-    today = date.fromisoformat(now[:10])
-    frm, to = (argv[0], argv[1]) if len(argv) >= 2 else ((today - timedelta(days=1)).isoformat(), today.isoformat())
-
     session = requests.Session()
     if not _login(session, user_id, pw):
         with conn:
@@ -152,30 +138,26 @@ def main(argv):
         print("[blocked] 로그인 실패")
         return 2
 
-    want, items = 0, []
-    for day in days(frm, to):
-        want += 1
-        d = fetch_day(session, day)
-        if d is not None:
-            items.append((day, d))
-    if items:
-        print("[ok] %d/%d 건 적재 (%s~%s)" % (upsert(conn, items, now), want, frm, to))
-    ok = len(items) == want and want > 0
+    today = now[:10]
+    d = fetch_today(session)
+    ok = d is not None
+    if ok:
+        upsert(conn, [(today, d)], now)
+        print("[ok] %s 적재 · revenue_krw=%s" % (today, d["revenue_krw"]))
     with conn:
         if ok:
             db.meta_set(conn, "parking_last_sync", now)
-        db.meta_set(conn, "parking_last_failed", "" if ok else now + " 일부 실패 — 빠진 날짜는 기존 값 유지")
+        db.meta_set(conn, "parking_last_failed", "" if ok else now + " 조회 실패")
     conn.close()
-    print("[done] %s · %s" % (now, "정상" if ok else "일부 실패"))
+    print("[done] %s · %s" % (now, "정상" if ok else "실패"))
     return 0 if ok else 1
 
 
 def selftest():
-    assert extract_revenue({"data": {"total": 12000}}, "data.total") == 12000
-    assert extract_revenue({"data": {"total": "12,000"}}, "data.total") == 12000
-    assert extract_revenue({"data": {}}, "data.total") is None, "없는 칸은 None"
-    assert extract_revenue({"data": {"total": "abc"}}, "data.total") is None, "숫자 아니면 None"
-    assert extract_revenue({"total": 1}, "") is None, "필드명 없으면 지어내지 않는다"
+    assert extract_revenue({"salesCardTodayAmt": 1000, "salesCashTodayAmt": "2,000", "salesEtcTodayAmt": 0}) == 3000
+    assert extract_revenue({"salesCardTodayAmt": 0}) is None, "칸이 빠지면 None"
+    assert extract_revenue({"salesCardTodayAmt": "x", "salesCashTodayAmt": 0, "salesEtcTodayAmt": 0}) is None, "숫자 아니면 None"
+    assert extract_revenue(None) is None
 
     db.TENANT = "selftest"
     conn = db.connect()
