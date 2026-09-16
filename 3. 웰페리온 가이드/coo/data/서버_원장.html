@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>서버 원장 — 종합접수처·습득물</title>
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<style>
+/* 2026-09-16 시우 · GM 「AWS PostgreSQL 에 들어가 있는 데이터를 보여줘」.
+   이 화면은 서버 표(reception_items · lost_found · hold_items)를 서버 문(/api/reception/*)으로 읽어 그대로 표로 그린다.
+   구글 주소 없음 · 쓰기 없음 · 로그인 벽 안(erp.wellperion.com). 값을 가공하지 않는다 — 칸 이름도 서버 응답 그대로. */
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#3d3835;--green:#6abf7b;--red:#ED5B3F}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;padding:16px 20px 60px}
+h1{font-size:18px;font-weight:700}
+.sub{font-size:12px;color:var(--dim);margin:4px 0 14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);cursor:pointer;font:inherit;font-weight:600}
+.tab.on{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.meta{font-size:12px;color:var(--dim);margin:0 0 8px}
+.wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;min-width:100%;font-size:12.5px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}
+th{position:sticky;top:0;background:#332f2c;color:var(--accent);font-weight:700;z-index:1}
+tr:hover td{background:rgba(255,255,255,0.03)}
+.err{color:var(--red);padding:14px}
+.ok{color:var(--green)}
+input[type=search]{font:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--paper);color:var(--text);width:260px;max-width:100%}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+</style>
+</head>
+<body>
+<h1>서버 원장 — AWS PostgreSQL 그대로 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px">AI 시우</span></h1>
+<p class="sub">서버 표를 문(/api/reception/*)으로 읽어 그대로 그립니다 · 구글 시트 안 봄 · 읽기만</p>
+<div class="tabs" id="tabs"></div>
+<div class="bar"><span class="meta" id="meta">불러오는 중…</span><input type="search" id="q" placeholder="표 안에서 찾기"></div>
+<div class="wrap" id="out"></div>
+<script>
+var TABLES = [
+  {key:'reception', label:'접수 (reception_items)', url:'/api/reception/board'},
+  {key:'lost',      label:'습득물 (lost_found)',     url:'/api/reception/lost'},
+  {key:'hold',      label:'휴회 (hold_items)',       url:'/api/reception/hold'}
+];
+var _cur = 'reception', _rows = [], _health = null;
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function cell(v){ if (v && typeof v === 'object') return JSON.stringify(v); return v; }
+function render(){
+  var q = (document.getElementById('q').value || '').trim().toLowerCase();
+  var rows = _rows.filter(function(r){ return !q || JSON.stringify(r).toLowerCase().indexOf(q) >= 0; });
+  var cols = [];
+  rows.forEach(function(r){ Object.keys(r).forEach(function(k){ if (cols.indexOf(k) < 0) cols.push(k); }); });
+  var t = TABLES.filter(function(x){ return x.key === _cur; })[0];
+  var h = _health ? ' · 마지막 동기화 ' + esc(_health.last_sync || _health.synced_at || JSON.stringify(_health).slice(0,80)) : '';
+  document.getElementById('meta').textContent = t.label + ' — ' + rows.length + '행 / ' + _rows.length + '행 · 칸 ' + cols.length + '개' + h;
+  if (!rows.length){ document.getElementById('out').innerHTML = '<div class="err">행이 없습니다.</div>'; return; }
+  var html = '<table><thead><tr>' + cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function(r){ html += '<tr>' + cols.map(function(c){ return '<td title="' + esc(cell(r[c])) + '">' + esc(cell(r[c])) + '</td>'; }).join('') + '</tr>'; });
+  document.getElementById('out').innerHTML = html + '</tbody></table>';
+}
+function load(key){
+  _cur = key; _rows = [];
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(b){ b.classList.toggle('on', b.getAttribute('data-key') === key); });
+  document.getElementById('meta').textContent = '불러오는 중…';
+  document.getElementById('out').innerHTML = '';
+  var t = TABLES.filter(function(x){ return x.key === key; })[0];
+  fetch(t.url, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('서버 응답 ' + r.status); return r.json(); })
+    .then(function(d){ _rows = (d && (d.data || d.rows || d.items)) || []; render(); })
+    .catch(function(e){ document.getElementById('meta').textContent = t.label; document.getElementById('out').innerHTML = '<div class="err">못 읽었습니다 — ' + esc(e.message) + ' (ERP 로그인 뒤 다시 여세요)</div>'; });
+}
+document.getElementById('tabs').innerHTML = TABLES.map(function(t){ return '<button class="tab" data-key="' + t.key + '" onclick="load(\'' + t.key + '\')">' + esc(t.label) + '</button>'; }).join('');
+document.getElementById('q').addEventListener('input', render);
+fetch('/api/reception/health', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){ _health = d; render(); }).catch(function(){});
+load('reception');
+</script>
+</body>
+</html>
