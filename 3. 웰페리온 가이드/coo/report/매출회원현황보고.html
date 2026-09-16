@@ -263,6 +263,9 @@
   .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 
   /* 자체 점검 줄 */
+  .p3plan-h{font-size:10.5px;font-weight:800;color:#7A838B;letter-spacing:.02em;margin:6px 0 1px;}
+  .p3plan-h:first-child{margin-top:0;}
+  .mrow .rk{display:inline-block;min-width:14px;font-weight:800;color:var(--ink);}
   .audit{margin-top:9px;padding:5px 11px;font-size:11px;line-height:1.45;border:1px solid var(--line);}
   .audit.wait{color:#7A838B;background:#F6F8FA;}
   .audit.ok{color:var(--good);background:#EEF6F2;border-color:#BFDCD0;}
@@ -645,6 +648,14 @@
 
   <div class="body">
     <div class="col">
+      <!-- 이달 운영 계획 · 진척 — 월간운영계획 화면에만 있던 절을 여기로 옮겼다(GM 방향 2026-09-16 · 배 2696).
+           원장 = /repo/status/monthly_ops_plan.json(GM업무 카드와 같은 원장) · 점검 = /api/check/{dept}/monthly · 접수 = /api/reception/board.
+           구글 호출은 들여오지 않았다. erp 도메인에서만 값이 붙는다 — 09:00 자동 캡처(Pages 사본)는 /repo·/api 가 없어
+           절을 접는다('—' 를 그리지 않는다). 자체 점검(audit3)이 원천 도착 여부를 한 줄로 덧붙인다. -->
+      <div class="sec" id="p3plan-sec" style="display:none">
+        <h2 id="p3planh">이달 운영 계획 · 진척<span class="src">월간운영계획 원장 · 점검 거울 · 접수 원장 → 서버</span></h2>
+        <div class="bd" id="p3plan"></div>
+      </div>
       <div class="sec">
         <h2 id="p3oph">운영 현황 — 시설 · 지원 · 주차<span class="src">점검·종합접수처 화면 → 시트 P20 → 서버</span></h2>
         <div class="bd" id="p3ops"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -1752,7 +1763,138 @@ function renderPage3(c){
     a3.className = 'audit ok';
     a3.innerHTML = '<b>자체 점검 4/4 통과</b> — 운영 현황·인사/파트너팀·핵심 보고·팀별 현황을 ' + at + ' 에 확인했습니다';
   }
+  p3PlanAudit();
 }
+
+/* ══ 3면 — 이달 운영 계획 · 진척 (배 2696 · 월간운영계획 화면 → 이 화면) ══
+   top3 선정 규칙은 월간운영계획.html selectTop3 와 같다 — GM 지정(gm_top3_rank) 우선 · 모자라면
+   북극성 기여도(high 10000 · mid 5000 · low 1000) + 상태(진행3·이월2·계획1·완료0) + 전사(+40) + 북극성 연결(+20)
+   + 진척×0.01 · 매출 과제 제외. 진척 = progress_note 의 □/☑ 개수, 없으면 progress 값.
+   원천 셋(원장·점검·접수) 중 하나도 안 오면 절을 접은 채 둔다. */
+var _p3plan = null;   // {pages, arrived:[], missing:[]} — audit3 가 읽는다
+function p3PlanProg(o){
+  var total = 0, done = 0;
+  String((o && o.progress_note) || '').split(/\r?\n/).forEach(function(ln){
+    var m = /^\s*([□☑])/.exec(ln); if (!m) return; total++; if (m[1] === '☑') done++;
+  });
+  var v = total ? done / total * 100 : Number(o && o.progress);
+  return isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : 0;
+}
+function p3PlanTop3(objs){
+  var ranked = objs.filter(function(o){ return typeof o.gm_top3_rank === 'number'; })
+    .sort(function(a, b){ return a.gm_top3_rank - b.gm_top3_rank; });
+  if (ranked.length >= 3) return ranked.slice(0, 3);
+  var W = {high:10000, mid:5000, low:1000}, S = {'진행':3, '이월':2, '계획':1, '완료':0};
+  var isSales = function(o){ return /매출/.test((o.metric && o.metric.name) || '') || /매출/.test(o.dept || ''); };
+  var rest = objs.filter(function(o){ return !isSales(o) && typeof o.gm_top3_rank !== 'number'; })
+    .map(function(o, i){
+      var c = o.northstar_contribution; c = (c === 'high' || c === 'low') ? c : 'mid';
+      var s = W[c] + (S[o.status] != null ? S[o.status] : 1) + (/전사|전 부서/.test(o.dept || '') ? 40 : 0) + (o.northstar ? 20 : 0) + p3PlanProg(o) * 0.01;
+      return {o:o, i:i, s:s};
+    })
+    .sort(function(a, b){ return (b.s - a.s) || (p3PlanProg(b.o) - p3PlanProg(a.o)) || (a.i - b.i); })
+    .map(function(x){ return x.o; });
+  return ranked.concat(rest).slice(0, 3);
+}
+function p3PlanRow(label, val, cls){
+  return '<div class="mrow"><span class="lb">' + label + '</span><span class="dt"></span><span class="vl ' + (cls || '') + '">' + val + '</span></div>';
+}
+function renderP3Plan(plan, ym, sup, fac, rec){
+  var sec = document.getElementById('p3plan-sec'), el = document.getElementById('p3plan');
+  if (!sec || !el) return;
+  var html = '', arrived = [], missing = [];
+  var m = plan && plan.months && plan.months[ym];
+  var objs = (m && m.objectives) || [];
+  if (objs.length) {
+    arrived.push('원장');
+    html += '<div class="p3plan-h">핵심 과제 top3 — ' + esc(String(m.theme || '').split(/—/)[0].trim() || '중요도순') + '</div>';
+    // 담당 표기 — 원장의 역할 코드는 닉네임으로, 직함 뒤엔 「님」(GM 지시 2026-09-16 「무엇이든 직함 뒤에 님」)
+    var NICK = {ceo:'AI 웰리', cto:'AI 시토', coo:'AI 시우', cpo:'AI 시포', cmo:'AI 시모', cbo:'AI 시보', cfo:'AI 시뽀', chro:'AI 시로'};
+    p3PlanTop3(objs).forEach(function(o, i){
+      var who = String(o.owner || '').replace(/\s+/g, ' ');
+      who = NICK[who.toLowerCase()] || who.replace(/(실장|소장|팀장|고문|이사|대표|GM)$/, '$1님');
+      html += p3PlanRow('<span class="rk">' + (i + 1) + '</span>' + esc(o.title) + (who ? ' <span style="color:#7A838B">· ' + esc(who) + '</span>' : ''),
+                        esc(o.status || '') + ' ' + p3PlanProg(o) + '%');
+    });
+    var by = {};
+    objs.forEach(function(o){
+      var d = String(o.dept || '미지정').trim(); var b = by[d] || (by[d] = {n:0, done:0, sum:0});
+      b.n++; if (o.status === '완료') b.done++; b.sum += p3PlanProg(o);
+    });
+    var depts = Object.keys(by).sort(function(a, b){ return by[b].n - by[a].n; });
+    html += '<div class="p3plan-h">부서별 월 목표 · 도달율 — 과제 ' + objs.length + '건</div>';
+    // A3 한 장에 들어가야 한다 — 과제 많은 부서 5줄까지, 나머지(겹침 부서 등)는 한 줄로 합친다
+    depts.slice(0, 5).forEach(function(d){
+      var b = by[d];
+      html += p3PlanRow(esc(d) + ' <span style="color:#7A838B">과제 ' + b.n + ' · 완료 ' + b.done + '</span>', '평균 진척 ' + Math.round(b.sum / b.n) + '%');
+    });
+    if (depts.length > 5) {
+      var rest = depts.slice(5), rn = 0, rd = 0, rs = 0;
+      rest.forEach(function(d){ rn += by[d].n; rd += by[d].done; rs += by[d].sum; });
+      html += p3PlanRow('그 외 ' + rest.length + '부서 <span style="color:#7A838B">과제 ' + rn + ' · 완료 ' + rd + '</span>', '평균 진척 ' + Math.round(rs / rn) + '%');
+    }
+    var prog = (m && m.practitioner_progress) || {}, roster = (plan.practitioners || []);
+    var pl = Object.keys(prog).map(function(id){
+      var p = null; roster.forEach(function(r){ if (r.id === id) p = r; });
+      return (p ? esc(p.name + (p.role ? ' ' + p.role : '')) : esc(id)) + ' ' + prog[id] + '%';
+    });
+    if (pl.length) html += p3PlanRow('실무 도달율(중간관리자 제출)', pl.join(' · '));
+  } else missing.push('원장');
+
+  var chk = [];
+  var fMt = fac && fac.monthTotals;
+  if (fMt && fMt.sessionCount) {
+    var oor = (fac.outOfRange && typeof fac.outOfRange.total === 'number') ? fac.outOfRange.total : (fMt.outOfRangeCount || 0);
+    chk.push(p3PlanRow('시설부 점검 <span style="color:#7A838B">입력률 · 점검 ' + fMt.sessionCount + '회 · 이상 ' + oor + '건</span>', fMt.avgPct + '%'));
+  }
+  if (sup && Array.isArray(sup.byZone)) {
+    var z = {}; sup.byZone.forEach(function(x){ z[x.zone] = x; });
+    var parts = [['m', '남'], ['f', '여']].map(function(p){
+      var d = z[p[0]]; if (!d || !d.sessionCount) return '';
+      var pct = (typeof d.pct === 'number') ? d.pct : (d.sumTotal ? Math.round(d.sumDone / d.sumTotal * 100) : null);
+      return p[1] + ' ' + (pct == null ? '—' : pct + '%') + '(' + d.sessionCount + '회)';
+    }).filter(Boolean);
+    if (parts.length) chk.push(p3PlanRow('지원부 점검 <span style="color:#7A838B">들어온 회차 안에서 채워진 비율</span>', parts.join(' · ')));
+  }
+  if (chk.length) arrived.push('점검'); else missing.push('점검');
+  var rows = rec && (rec.data || rec.board);
+  if (Array.isArray(rows)) {
+    arrived.push('접수');
+    var mon = rows.filter(function(r){ return String(r.createdAt || r.created_at || '').slice(0, 7) === ym; });
+    var st = {'접수':0, '처리중':0, '완료':0};
+    mon.forEach(function(r){ var k = String(r.status || '접수'); st[k] = (st[k] || 0) + 1; });
+    chk.push(p3PlanRow('종합접수처 <span style="color:#7A838B">이번 달 접수 · 접수 ' + st['접수'] + ' · 처리중 ' + st['처리중'] + ' · 완료 ' + st['완료'] + '</span>', mon.length + '건'));
+  } else missing.push('접수');
+  if (chk.length) html += '<div class="p3plan-h">점검 · 접수 — 이번 달</div>' + chk.join('');
+
+  _p3plan = {pages:false, arrived:arrived, missing:missing};
+  if (arrived.length) { el.innerHTML = html; sec.style.display = ''; }
+  p3PlanAudit();
+}
+function p3PlanAudit(){
+  var a3 = document.getElementById('audit3'); if (!a3 || !_p3plan) return;
+  var old = document.getElementById('audit3plan'); if (old) old.parentNode.removeChild(old);
+  if (a3.classList.contains('wait')) return;   // 본 점검 4칸이 먼저 찍힌 뒤에 덧붙인다
+  var p = _p3plan, sp = document.createElement('span'); sp.id = 'audit3plan';
+  if (p.pages) sp.textContent = ' · 이달 운영 계획: Pages 사본이라 접힘(정상)';
+  else if (p.missing.length) { sp.className = 'w'; sp.textContent = ' · 이달 운영 계획: 원천 ' + p.arrived.length + '/3 도착 — 안 온 것 ' + p.missing.join('·'); }
+  else sp.textContent = ' · 이달 운영 계획: 원천 3/3 도착';
+  a3.appendChild(sp);
+}
+function loadP3Plan(){
+  if (!document.getElementById('p3plan-sec')) return;
+  if (!ERP_API_ON) { _p3plan = {pages:true, arrived:[], missing:[]}; p3PlanAudit(); return; }
+  var t = new Date(), ym = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2);
+  var j = function(u){ return fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'cb=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
+  Promise.all([
+    j('/repo/status/monthly_ops_plan.json'),
+    j('/api/check/support/monthly?month=' + ym),
+    j('/api/check/facility/monthly?month=' + ym),
+    j('/api/reception/board')
+  ]).then(function(a){ renderP3Plan(a[0], ym, a[1] && a[1].ok ? a[1] : null, a[2] && a[2].ok ? a[2] : null, a[3] && a[3].ok ? a[3] : null); });
+}
+loadP3Plan();
 
 /* ══ 4면 — 담당별 매출 ══
    일자탭 O~U 를 그대로 편다. 블록 둘 —
