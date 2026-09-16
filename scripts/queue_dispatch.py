@@ -61,6 +61,12 @@ OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 # 내린다. "무엇이 밀렸는지 안 보인다"는 2026-08-05 의 우려는 GM 이 감수하기로 한 것이다
 # (그 도메인은 나우열M 이 자기 방식으로 관리하며, AI 항로에 섞이면 GM 이 매번 걸러야 한다).
 EXCLUDED_ROLES = {"chro", "cfo"}  # 정본 — 복사 금지·import 해서 쓴다.
+
+# ★역할당 열린 배 상한 (GM 2026-09-16 「배편이 줄지 않고 계속 늘기만 한다」).
+#   실측 9/10~9/16: 하루 30~50척 생성 · 30척 종결 — 발견·전달마다 새 배를 띄우고 줄기에 합치지 않아서다.
+#   상한을 넘으면 새 배 대신 같은 줄기 배의 note 에 붙이라고 관문이 거부한다(약속 L15 · 배 = 체계 작업만).
+#   정말 별개 줄기면 --force-wip "이유" 로 통과 — 이유는 note 에 남는다.
+WIP_CAP_PER_ROLE = 10
 EXCLUDED_OWNER = "나우열M"
 
 
@@ -295,6 +301,8 @@ def main() -> int:
                      help="오늘 반드시 끝낼 배로 지목. 값 생략=오늘 날짜, 날짜를 직접 주면 그 날짜로 "
                           "지목(예: 못 지킨 걸 소급 기록). hangro_board 맨 위·자율현황·08시 보고에 뜬다 — "
                           "다음날까지 안 끝나면 status=DONE 될 때까지 조용히 안 사라진다.")
+    ap.add_argument("--force-wip", dest="force_wip", default="",
+                    help="역할당 열린 배 상한(WIP_CAP_PER_ROLE)을 넘겨도 새 배를 만드는 이유 — note 에 남는다")
     ap.add_argument("--force-route", dest="force_route", action="store_true",
                      help="담당 어긋남 경고를 무시하고 그대로 보낸다 — 그럴 만한 이유가 있을 때만")
     args = ap.parse_args()
@@ -335,6 +343,21 @@ def main() -> int:
         print("  그대로 보내려면 --force-route 를 붙이세요(그럴 만한 이유가 있을 때만).")
         if not args.force_route:
             return 2
+
+    # ★열린 배 상한 — 줄기에 합치지 않고 새 배만 늘리는 것을 관문에서 막는다(GM 2026-09-16).
+    from queue_lock import load_queue as _lq
+    _open = [it for it in _lq() if str(it.get("clevel", "")).lower() == args.to.lower()
+             and it.get("status") in ("PENDING", "IN_PROGRESS")]
+    if len(_open) >= WIP_CAP_PER_ROLE and not args.force_wip.strip():
+        print("! %s 의 열린 배가 %d척 — 상한 %d척을 넘습니다. 새 배 대신 같은 줄기 배의 note 에 붙이세요."
+              % (ROLES.get(args.to.lower(), args.to), len(_open), WIP_CAP_PER_ROLE))
+        for it in sorted(_open, key=lambda x: str(x.get("updated_at") or ""), reverse=True)[:WIP_CAP_PER_ROLE]:
+            print("  배 %s · %s · %s" % (it.get("short_no") if it.get("short_no") is not None else it.get("ship_no"),
+                                      it.get("status"), str(it.get("title") or "")[:70]))
+        print('  정말 별개 줄기면 --force-wip "이유" (이유는 note 에 남습니다). 먼저 줄기 배를 닫거나 합치세요.')
+        return 2
+    if args.force_wip.strip():
+        args.note = (args.note or "") + "\n[상한 초과 생성 사유] " + args.force_wip.strip()
 
     made = {}
 
