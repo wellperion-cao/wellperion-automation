@@ -190,6 +190,24 @@ def format_offense(assistant_text):
 
 CELL_MAX = 60
 
+# ── 검사 E — 👉 GM 액션 행에 GM 몫이 아닌 것을 올리지 않는다 (GM 2026-09-16 「일을 줄여야 하는데 왜 거꾸로 · 너무 힘들다」).
+#   그날 한 세션이 4턴에 GM 액션 7건을 냈는데 GM 만 할 수 있는 것은 2건(💰 결제 · 공식값)이었다.
+#   GM 몫 = 금지 5종(💰🔒🚫📐🏷️) + GM 손·GM 계정(결제·로그인·사람 사실 확인). 그 밖은 AI 가 기본값으로
+#   진행하고 사후 한 줄이다(wellperion-boot §2-1 2026-08-03 GM 재확정). 경고만 — 형식 검사와 달리 내용 판정이라 막지 않는다.
+GM_ONLY = ("💰", "🔒", "🚫", "📐", "🏷️", "결제", "결재", "계정", "로그인", "비밀번호", "공식값", "전략",
+           "회장님", "대표님", "손", "직접", "가/부", "승인")
+
+
+def gm_action_offense(assistant_text):
+    """👉 GM 액션 행이 있는데 GM 몫 신호가 하나도 없으면 그 칸 내용을 돌려준다. 아니면 None."""
+    for s in _body(assistant_text):
+        if s.startswith("|") and "👉" in s:
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            body = max(cells[1:], key=len) if len(cells) > 1 else ""
+            if body and not any(k in body for k in GM_ONLY):
+                return body
+    return None
+
 
 def _long_cells(rows):
     """8요소 표 행(| 📌 … | 내용 |)에서 내용 칸이 CELL_MAX 를 넘는 것 [(요소, 글자수)]."""
@@ -259,6 +277,11 @@ def main():
         assert format_offense("🥁 쿵짝표\n| 지시 | 한 것 |\n|---|---|\n| a | b |") is None
         assert format_offense("네, 맞다.\n어느 쪽을 말하는 건가?") is None    # 표 없는 짧은 답
         assert format_offense("```\ncode only\n```") is None
+        # 검사 E — 👉 행 내용 판정(GM 2026-09-16)
+        assert gm_action_offense("| 👉 GM 액션 | 매터포트 결제(💰) |") is None
+        assert gm_action_offense("| 👉 GM 액션 | 로고 v1 가/부 |") is None
+        assert gm_action_offense("| 👉 GM 액션 | v3 이름표 바꿀 곳 지목 |") == "v3 이름표 바꿀 곳 지목"
+        assert gm_action_offense(full) is None                                 # 👉 행 없음
         print("selftest ok")
         return 0
     try:
@@ -289,6 +312,13 @@ def main():
     if bad_format:
         sys.stderr.write(bad_format)
         return 2                       # 막는다 — 경고만으로는 같은 지적이 다섯 번 났다
+    homework = gm_action_offense(assistant)
+    if homework:
+        sys.stderr.write(
+            "[GM 숙제] 👉 GM 액션 행에 GM 몫이 아닌 것이 올라갔다: %s\n"
+            "  GM 몫 = 💰🔒🚫📐🏷️ 5종 + GM 손·GM 계정뿐(2026-08-03 GM 재확정). 나머지는 기본값으로\n"
+            "  내가 진행하고 사후 한 줄로 알린다 — 행을 지우거나 GM 몫만 남겨라(GM 2026-09-16 「일이 거꾸로 는다」).\n"
+            % (homework[:60] + "…" if len(homework) > 60 else homework))
     return 0
 
 
