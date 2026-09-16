@@ -440,6 +440,12 @@ MGR_LEDGER = MGR_PENDING.parent / "_digest_ledger.json"
 # ★운영부 전용 원장(배12678 §v2 · 2026-09-17) — ops_daily_digest.py 의 기본(--room-key 없음)
 # 실행이 매일 쓰는 그 파일 그대로(PENDING.parent 는 이미 "★운영부" 디렉터리). 새 원장 아님.
 OPS_LEDGER = PENDING.parent / "_digest_ledger.json"
+# 이월 절 기준일(GM 확정 2026-09-16 「카톡 두 통」 체계 시작일) — 실측(2026-09-17, 시토):
+# OPS_LEDGER 302건 중 8/10~9/15 하루 1건씩 쌓인 36건이 전부 resolved=false 로 남아 있다.
+# 원장을 닫는 장치(sync_ops_ledger_replies)가 이번에 처음 생기기 전까지 아무도 닫은 적
+# 없는 옛 다이제스트 항목이라 "사람이 기다리는 미결"이 아니다 — 이 날짜 이전에 처음 등장한
+# (no 최초 등장일) 이슈는 이월 절에서 뺀다(데이터는 안 건드림 · 기준일로만 거른다).
+OPS_CARRYOVER_SINCE = "2026-09-16"
 NUDGE_LOOKBACK_DAYS = 7   # 이보다 오래된 건 원장에서 안 꺼낸다(오래 묵은 건 웰리가 사람으로 판단)
 NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 아무도 안 읽는다
 # ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
@@ -722,14 +728,40 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
 # 웰리가 직접 --nudge-review 로 훑어보고 --resolve 로 닫는다. 새 파일·새 상태 없음 —
 # MGR_LEDGER(원장) 자체를 읽고 쓴다.
 # ══════════════════════════════════════════════════════════════════════════
-def _ledger_open_candidates(ledger: list, owners: "list | None" = None) -> list:
+def _ledger_first_seen_by_no(ledger: list) -> dict:
+    """no 별로 원장에 처음 등장한 날짜(entry.date, 상태 무관 최솟값) — {no: date}.
+    같은 no 가 여러 날짜 entry 에 걸쳐 재등장해도(assign_ledger_no 가 같은 건이면 no 를
+    이어 쓴다) "생긴" 날은 그 최초 날짜다. _ledger_open_candidates 의 since 필터가 쓴다."""
+    out: dict = {}
+    for e in ledger:
+        if not isinstance(e, dict):
+            continue
+        edate = str(e.get("date", ""))
+        if not edate:
+            continue
+        for it in e.get("issues") or []:
+            no = it.get("no")
+            if not isinstance(no, int):
+                continue
+            if no not in out or edate < out[no]:
+                out[no] = edate
+    return out
+
+
+def _ledger_open_candidates(ledger: list, owners: "list | None" = None,
+                             since: "str | None" = None) -> list:
     """원장(_digest_ledger.json 스키마) 전체에서 status=='open'인 이슈를 오래된 순으로
     돌려준다 — {"age","date","owner","title","issue"}(issue=원장 원본 딕셔너리, todo_id 를
     되적을 때 그대로 쓴다). owners 를 주면 그 담당만(mgr_open_candidates 가 _NUDGE_MEMBERS 로
     씀) · None 이면 전원(방 전용 원장은 그 방 안에서만 갈리므로 필터가 필요 없다 — ops_open_
-    candidates 가 씀). mgr_open_candidates·ops_open_candidates·nudge_review·배1102 SSOT 다리가
-    이 판정 하나를 공유한다(약속 L01 — 여럿이 각자 세면 숫자가 갈린다)."""
+    candidates 가 씀). since 를 주면 그 no 가 원장에 "처음 등장한" 날짜(_ledger_first_seen_
+    by_no, 상태 무관)가 since 이전이면 뺀다 — 지금 이 row 의 entry 날짜가 아니라 최초
+    등장일 기준이다(옛 이슈가 나중에 다시 언급됐다고 "새로 생긴 것"으로 안 읽는다 —
+    ops_open_candidates 가 OPS_CARRYOVER_SINCE 로 씀). mgr_open_candidates·ops_open_
+    candidates·nudge_review·배1102 SSOT 다리가 이 판정 하나를 공유한다(약속 L01 —
+    여럿이 각자 세면 숫자가 갈린다)."""
     today = date.today()
+    first_seen = _ledger_first_seen_by_no(ledger) if since else {}
     rows = []
     for e in ledger:
         if not isinstance(e, dict):
@@ -742,6 +774,11 @@ def _ledger_open_candidates(ledger: list, owners: "list | None" = None) -> list:
                 continue
             if owners is not None and owner not in owners:
                 continue
+            if since is not None:
+                no = it.get("no")
+                fs = first_seen.get(no) if isinstance(no, int) else edate
+                if not fs or fs < since:
+                    continue
             try:
                 age = (today - date.fromisoformat(edate)).days
             except Exception:
@@ -759,10 +796,13 @@ def mgr_open_candidates(ledger: list) -> list:
 
 
 def ops_open_candidates(ledger: list) -> list:
-    """★운영부 전용 원장(OPS_LEDGER)에서 status=='open'인 이슈를 오래된 순으로 — 담당자
-    필터 없음(이 파일 자체가 ★운영부방 전용이라 방 밖 인물이 섞여 들어올 일이 없다).
-    배12678 §v2(2026-09-17) — mgr_open_candidates 와 같은 판정 함수 재사용(약속 L01)."""
-    return _ledger_open_candidates(ledger)
+    """★운영부 전용 원장(OPS_LEDGER)에서 status=='open'·OPS_CARRYOVER_SINCE 이후 처음
+    생긴 이슈만 오래된 순으로 — 담당자 필터 없음(이 파일 자체가 ★운영부방 전용이라 방
+    밖 인물이 섞여 들어올 일이 없다). 배12678 §v2(2026-09-17) — 기준일 이전(8/10~9/15,
+    닫는 장치가 없던 시절) 쌓인 36건은 「사람이 기다리는 미결」이 아니라 옛 다이제스트
+    항목이라 이월 절에서 뺀다(위 OPS_LEDGER 상수 주석 참고). mgr_open_candidates 와 같은
+    판정 함수 재사용(약속 L01)."""
+    return _ledger_open_candidates(ledger, since=OPS_CARRYOVER_SINCE)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -877,12 +917,16 @@ def build_ops_carryover_section(n: int = 10) -> str:
 
 
 def _selfcheck_ops_carryover_section() -> None:
-    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 담당자 무관(필터 없음) · 빈 원장은
-    절 없음. 임시 원장 파일로 돌며 실제 _digest_ledger.json 은 건드리지 않는다(mgr_evening_
-    carryover selfcheck 와 같은 패턴)."""
+    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 담당자 무관(필터 없음) · 기준일
+    (OPS_CARRYOVER_SINCE) 이전 최초등장 이슈 제외 · 빈 원장/기준일 이전만 있으면 절 자체
+    생략. OPS_LEDGER·OPS_CARRYOVER_SINCE 둘 다 테스트 전용 값으로 임시 교체하고 돈다 —
+    실제 상수·실제 _digest_ledger.json 은 안 건드린다(mgr_evening_carryover selfcheck 와
+    같은 패턴). 기준일을 실제 값(2026-09-16) 그대로 두면 today 가 그 값에 가까운 날(예:
+    2026-09-17 당일)엔 relative 테스트 날짜가 기준일 이전으로 밀려버려 시간에 따라 결과가
+    달라진다 — 그래서 기준일도 _iso() 로 테스트마다 상대적으로 잡는다."""
     import tempfile
-    global OPS_LEDGER
-    orig = OPS_LEDGER
+    global OPS_LEDGER, OPS_CARRYOVER_SINCE
+    orig_ledger, orig_since = OPS_LEDGER, OPS_CARRYOVER_SINCE
     d = date.today()
 
     def _iso(days_ago: int) -> str:
@@ -890,27 +934,39 @@ def _selfcheck_ops_carryover_section() -> None:
 
     with tempfile.TemporaryDirectory() as td:
         OPS_LEDGER = Path(td) / "_digest_ledger.json"
+        OPS_CARRYOVER_SINCE = _iso(5)   # 테스트 전용 기준일(실제 상수는 안 건드림)
         try:
             OPS_LEDGER.write_text(json.dumps([
+                {"date": _iso(20), "issues": [{"issue": "기준일 이전(옛 다이제스트) — 안 보여야 함",
+                                               "owner": "최준용M", "status": "open", "no": 10}]},
                 {"date": _iso(5), "issues": [{"issue": "닫힌 건 — 안 보여야 함", "owner": "최준용M",
-                                              "status": "resolved", "no": 10}]},
+                                              "status": "resolved", "no": 20}]},
                 {"date": _iso(3), "issues": [{"issue": "최근 건", "owner": "임정은M",
-                                              "status": "open", "no": 20}]},
-                {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "윤병현AM",
                                               "status": "open", "no": 21}]},
+                {"date": _iso(4), "issues": [{"issue": "오래된 건", "owner": "윤병현AM",
+                                              "status": "open", "no": 22}]},
             ], ensure_ascii=False), encoding="utf-8")
             out = build_ops_carryover_section()
             lines = out.splitlines()
             assert lines[0] == "🔁 안 닫힌 이월 항목", lines
-            assert lines[1] == "▪ #21 오래된 건 — 9일째", lines   # 오래된 순(나이 큰 것 먼저)
-            assert lines[2] == "▪ #20 최근 건 — 3일째", lines
-            assert len(lines) == 3, lines   # resolved 는 안 실림, 담당자 무관하게 둘 다 실림
+            assert lines[1] == "▪ #22 오래된 건 — 4일째", lines   # 오래된 순(나이 큰 것 먼저)
+            assert lines[2] == "▪ #21 최근 건 — 3일째", lines
+            assert len(lines) == 3, lines   # resolved(no=20)·기준일 이전(no=10) 은 안 실림
+            assert build_ops_carryover_section(n=1) == "\n".join(lines[:2]), "n 상한이 안 먹음"
 
             OPS_LEDGER = Path(td) / "없는_원장.json"   # 파일 자체가 없는 경우
             assert build_ops_carryover_section() == "", "원장 파일이 없으면 빈 문자열(예외 삼킴)"
+
+            # 기준일 이전 항목만 있으면 절 자체가 생략(빈 목록이 아니라 절 자체가 없다)
+            OPS_LEDGER = Path(td) / "옛건만.json"
+            OPS_LEDGER.write_text(json.dumps([
+                {"date": _iso(20), "issues": [{"issue": "아주 옛 건", "owner": "최준용M",
+                                               "status": "open", "no": 30}]},
+            ], ensure_ascii=False), encoding="utf-8")
+            assert build_ops_carryover_section() == "", "기준일 이전 항목만 있으면 절 자체가 생략돼야 함"
         finally:
-            OPS_LEDGER = orig
-    print("[selfcheck] ops_carryover_section OK")
+            OPS_LEDGER, OPS_CARRYOVER_SINCE = orig_ledger, orig_since
+    print("[selfcheck] ops_carryover_section 기준일가드·번호·N일째 OK")
 
 
 def _selfcheck_mgr_evening_carryover() -> None:
@@ -1543,16 +1599,18 @@ def _is_own_broadcast(msg: str, room: str = RELAY_ROOM, today: "str | None" = No
     return False
 
 
-def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
-    """★중간관리자 방 최근 lookback_days일치 사람 발화(자동 발신 제외) — [{date,time,msg}].
-    kakao_room_listen 이 만든 원문 내보내기(1. AI자료_아카이브/11_카카오톡/★중간관리자/
-    {YYYY-MM}/*.txt)를 ops_daily_digest 의 기존 파서로 읽는다(새 파서 금지 · 약속 L21)."""
+def _room_human_lines(room: str, today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
+    """<room> 방 최근 lookback_days일치 사람 발화(자동 발신 제외) — [{date,time,msg,name}].
+    kakao_room_listen 이 만든 원문 내보내기(1. AI자료_아카이브/11_카카오톡/<room>/{YYYY-MM}/
+    *.txt)를 ops_daily_digest 의 기존 파서로 읽는다(새 파서 금지 · 약속 L21). _mgr_room_
+    human_lines(★중간관리자 전용 래퍼)·sync_ops_ledger_replies(★운영부, 배12678 §v2
+    2026-09-17)가 이 함수 하나를 공용으로 쓴다."""
     try:
         from ops_daily_digest import ROOM_DIR_BASE, parse_export, read_text_robust, _is_auto_broadcast
     except Exception as exc:
         log(f"[reply] ops_daily_digest 파서 로드 실패 — 회신 매칭 생략: {exc}")
         return []
-    room_dir = ROOM_DIR_BASE / RELAY_ROOM
+    room_dir = ROOM_DIR_BASE / room
     if not room_dir.exists():
         return []
     try:
@@ -1576,10 +1634,16 @@ def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_
                     continue
                 for m in msgs:
                     msg = str(m.get("msg") or "")
-                    if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg, RELAY_ROOM, today, lookback_days):
+                    if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg, room, today, lookback_days):
                         out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg,
                                     "name": str(m.get("name") or "")})  # name = 주간 사전 보고 사람 판정용(2026-09-15)
     return out
+
+
+def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
+    """★중간관리자 방 몫 — _room_human_lines(RELAY_ROOM, ...) 얇은 래퍼(동작 동일 ·
+    기존 호출부·selfcheck monkeypatch 는 이 이름을 그대로 계속 쓴다)."""
+    return _room_human_lines(RELAY_ROOM, today, lookback_days)
 
 
 def _reply_match(staff_message: str, human_lines: "list[dict]", rare_words: "set[str]") -> dict:
@@ -1744,13 +1808,20 @@ _LEDGER_REPLY_TAG_RE = re.compile(r"\(#(\d+)\)")  # 제목에 박힌 "(#133)" �
 _LEDGER_REPLY_DONE_WORDS = _REPLY_DONE_WORDS + ("했다",)
 
 
-def sync_ledger_replies(target_date: str, ledger: list) -> list:
+def sync_ledger_replies(target_date: str, ledger: list, human_lines: "list | None" = None,
+                          ledger_path: "Path | None" = None) -> list:
     """카톡·텔레그램 회신 본문에서 #123 형태 번호를 찾아 그 no 의(아직 open 인) 원장
     issue 에 반영한다. 「했다/완료/끝」등 완료 낱말이 있으면 resolved + note 에 회신 원문,
     없으면(진행중·날짜 등) note 에 회신 원문만 붙인다(약속 L23 — 기한·상태를 추측으로
     바꾸지 않는다). 한 회신에 번호가 여럿이면 각각 반영한다. ledger 를 그 자리에서
     바로 수정하고 저장까지 한다(호출부가 재조회 없이 이어 쓴다). 돌려주는 값 = 이번에
     건드린 issue [{"no","title","line"}].
+
+    human_lines·ledger_path 생략(둘 다 None) 시 기존과 동일하게 ★중간관리자 방(_mgr_room_
+    human_lines)+나우열M 텔레그램을 합쳐 읽고 MGR_LEDGER 에 저장한다(기존 호출부 회귀 없음).
+    ★배12678 §v2(2026-09-17) — sync_ops_ledger_replies(★운영부)가 human_lines=★운영부
+    방 자체 대화(_room_human_lines)·ledger_path=OPS_LEDGER 로 이 함수를 그대로 재사용한다
+    (#no 정규식·완료낱말 판정 전부 공용 — 새 매칭기 없음, 약속 L21).
 
     ★2026-09-09 실측 결함 수리(시토·배1102/1124) — assign_ledger_no 가 유사도 대조를
     통과 못 해 같은 건에 새 번호(133→211)를 매겨도, 사람은 예전에 받은 번호(#133)로
@@ -1759,7 +1830,8 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
     남는다(#133→211 실측 · 배1124). 지금 open 인 issue 의 제목에 박힌 "(#옛번호)" 자기
     표기를 별칭으로 같이 등록해, 옛 번호로 온 회신도 현재 열려 있는 후속 issue 를 찾게
     한다(새 파일·새 장치 없이 이 함수 안에서만)."""
-    human_lines = _mgr_room_human_lines(target_date) + _nawool_telegram_human_lines(target_date)
+    if human_lines is None:
+        human_lines = _mgr_room_human_lines(target_date) + _nawool_telegram_human_lines(target_date)
     if not human_lines:
         return []
 
@@ -1810,8 +1882,9 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
 
     if touched:
         from ops_daily_digest import save_ledger
-        save_ledger(ledger, path=MGR_LEDGER)  # ops_daily_digest.LEDGER_PATH 전역은 ★운영부
-        # 기본값이라 그냥 부르면 엉뚱한 방에 써진다(배1124 실측) — 이 방 경로를 명시한다.
+        save_ledger(ledger, path=ledger_path or MGR_LEDGER)  # ops_daily_digest.LEDGER_PATH
+        # 전역은 ★운영부 기본값이라 그냥 부르면 엉뚱한 방에 써진다(배1124 실측) — 이 방
+        # 경로를 명시한다(ledger_path 생략 시 기존처럼 MGR_LEDGER).
     return touched
 
 
@@ -2004,6 +2077,72 @@ def _selfcheck_sync_ledger_replies() -> None:
         _mgr_room_human_lines, _nawool_telegram_human_lines = orig_mgr, orig_nawool
         o.save_ledger = orig_save
     print("[selfcheck] sync_ledger_replies 번호매칭·완료판정·복수번호·우리발신제외 OK")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 🔁 ★운영부 「#N 했다/완료/진행중」 회신 → OPS_LEDGER 닫기 (배12678 §v2 · 2026-09-17)
+# sync_ledger_replies(위, ★중간관리자용) 를 ledger_path·human_lines 인자로 그대로 재사용 —
+# #no 정규식(_LEDGER_REPLY_NO_RE)·완료낱말(_LEDGER_REPLY_DONE_WORDS)·별칭(#옛번호) 판정 전부
+# 공용, 새 매칭기 없음(약속 L21). 회신원 = ★운영부 방 자체 대화만(_room_human_lines) — 나우열M
+# 텔레그램은 안 섞는다(그 채널은 ★중간관리자 몫 회신 전용이라 방이 다르면 사람도 다르다).
+# ══════════════════════════════════════════════════════════════════════════
+def sync_ops_ledger_replies(target_date: str) -> list:
+    """★운영부 방 회신으로 OPS_LEDGER(안 닫힌 이월 #번호)를 닫는다. build_ops_carryover_
+    section() 이 원장을 읽기 '전' _send_ops_room() 이 부른다 — 방금 닫힌 건이 그날 이월
+    절에 다시 실리지 않게(send_mgr_brief 계열과 같은 순서)."""
+    try:
+        ledger = json.loads(OPS_LEDGER.read_text(encoding="utf-8")) if OPS_LEDGER.exists() else []
+    except Exception as exc:
+        log(f"[ops-reply] 원장 읽기 실패(무시 — 다음 회차 재시도): {exc}")
+        return []
+    if not ledger:
+        return []
+    human_lines = _room_human_lines(TARGET_ROOM, target_date)
+    return sync_ledger_replies(target_date, ledger, human_lines=human_lines, ledger_path=OPS_LEDGER)
+
+
+def _selfcheck_sync_ops_ledger_replies() -> None:
+    """★운영부 전용 — #no 매칭·완료낱말 판정은 sync_ledger_replies 그대로(위 selfcheck 로
+    이미 검증됨), 여기서는 ①ledger_path=OPS_LEDGER 로 저장되는지 ②human_lines 원천이
+    ★운영부 방(_room_human_lines(TARGET_ROOM,…))인지 ③나우열M 텔레그램은 안 섞이는지만
+    확인한다(네트워크 없이)."""
+    import ops_daily_digest as o
+    global OPS_LEDGER
+    orig_ledger_path = OPS_LEDGER
+    orig_room_human_lines = globals()["_room_human_lines"]
+    orig_save = o.save_ledger
+    seen_rooms = []
+    saved = []
+
+    def _fake_room_human_lines(room, today, lookback_days=REPLY_MATCH_LOOKBACK_DAYS):
+        seen_rooms.append(room)
+        return [{"date": "2026-09-10", "time": "09:00", "msg": "#201 완료했습니다"}]
+
+    globals()["_room_human_lines"] = _fake_room_human_lines
+    o.save_ledger = lambda ledger, path=None: saved.append(path)
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        OPS_LEDGER = Path(td) / "_digest_ledger.json"
+        try:
+            OPS_LEDGER.write_text(json.dumps([
+                {"date": "2026-09-05", "issues": [
+                    {"no": 201, "issue": "건201", "owner": "최준용M", "status": "open", "note": ""}]},
+            ], ensure_ascii=False), encoding="utf-8")
+            touched = sync_ops_ledger_replies("2026-09-10")
+            assert {t["no"] for t in touched} == {201}, touched
+            assert seen_rooms == [TARGET_ROOM], f"★운영부 방({TARGET_ROOM}) 대화만 읽어야 함 — {seen_rooms}"
+            assert saved and saved[0] == OPS_LEDGER, "OPS_LEDGER 경로로 저장돼야 함(MGR_LEDGER 아님)"
+
+            # 원장 자체가 없으면(원장 파일 부재) 조용히 빈 목록 — _room_human_lines 도 안 부름
+            seen_rooms.clear()
+            OPS_LEDGER = Path(td) / "없는_원장.json"
+            assert sync_ops_ledger_replies("2026-09-10") == []
+            assert seen_rooms == [], "빈 원장이면 방 대화를 읽을 필요가 없다"
+        finally:
+            OPS_LEDGER = orig_ledger_path
+            globals()["_room_human_lines"] = orig_room_human_lines
+            o.save_ledger = orig_save
+    print("[selfcheck] sync_ops_ledger_replies OPS_LEDGER경로·★운영부방전용 OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -4530,6 +4669,7 @@ def main() -> int:
         _selfcheck_register_manager_reply()
         _selfcheck_mgr_evening_carryover()
         _selfcheck_ops_carryover_section()
+        _selfcheck_sync_ops_ledger_replies()
         return 0
 
     if args.weekly_intake:
@@ -4702,6 +4842,15 @@ def _send_ops_room(args) -> int:
     # 안 닫힌 이월 #번호·N일째(배12678 §v2 · 2026-09-17) — ★중간관리자와 같은 스키마를
     # ★운영부에 확장(OPS_LEDGER, 새 원장·새 발신기 없음). 이 원장은 이미 매일 아침
     # ops_daily_digest.py(기본 --room-key 없음)가 채운다 — 재활성화가 필요 없다.
+    # 회신부터 반영하고 나서 절을 만든다(send_mgr_brief 계열과 같은 순서) — 방금
+    # 「#N 했다」로 닫힌 건이 오늘 이월 절에 다시 실리지 않게.
+    try:
+        _ops_no_touched = sync_ops_ledger_replies(today)
+        if _ops_no_touched:
+            log(f"[ops] 원장 이슈 {len(_ops_no_touched)}건에 번호 회신 반영 — "
+                + "; ".join(f"#{t['no']}" for t in _ops_no_touched))
+    except Exception as exc:
+        log(f"[ops] 원장 번호 매칭 예외(무시 — 다음 회차 재시도): {type(exc).__name__}: {exc}")
     carryover_text = build_ops_carryover_section()
     if carryover_text:
         message = f"{message}\n\n{carryover_text}"
