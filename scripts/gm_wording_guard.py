@@ -234,8 +234,12 @@ def gm_action_defer(assistant_text, in_window=None):
     for s in _body(assistant_text):
         if s.startswith("|") and "👉" in s:
             cells = [c.strip() for c in s.strip("|").split("|")]
-            body = max(cells[1:], key=len) if len(cells) > 1 else ""
-            if body and not any(k in body for k in URGENT_MARKS):
+            # 2026-09-17 시토: 첫 칸이 👉 요소일 때만 — 가로 머리행(| 📌 … | 👉 GM 액션 |)이나
+            #   👉 를 언급한 규칙 줄까지 여쭐 것으로 적혔다(gm_asks #3·#4 잡음).
+            if not cells or not cells[0].startswith("👉") or len(cells) < 2:
+                continue
+            body = cells[1]
+            if body and body not in ("없음", "행 없음", "해당 없음", "—", "-")                     and "📌" not in body and not any(k in body for k in URGENT_MARKS):
                 return body
     return None
 
