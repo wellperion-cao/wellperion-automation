@@ -1100,7 +1100,9 @@ function printAttachmentImages(title, urls) {
 //   결재상태('결재완료')와 독립. 대표님 결재완료는 오직 서명본 업로드(approval_rep_sign_upload)로만 달성(훅 강제).
 function repStageOf(t) {
   var s = String((t && (t.repSign || t['대표싸인'])) || '').trim();
-  if (/^https?:\/\//.test(s)) return 'done';
+  // 서버 업로드 서명본은 '/uploads/todo/…' 상대 주소다(9월부터) — http 로 시작하지 않아 「미올림」으로 보였다
+  // (2026-09-16 GM 「#005 는 대표님 결재가 없다」 — 실제로는 9/14 서명본 사진이 있었다).
+  if (/^https?:\/\//.test(s) || /^\/uploads\//.test(s)) return 'done';
   if (s.toUpperCase() === 'PENDING') return 'pending';
   if (s === 'GM종결') return 'gm_final';
   return 'none';
@@ -1134,6 +1136,7 @@ function renderRepApprovalRow(t) {
     // 대표님 결재완료 → 배지 + 📎 서명본 링크
     h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(11,128,67,0.3);padding:4px 10px;border-radius:7px;">🏛 대표님 서명본 수령 ✅</span>';
     var u = String((t.repSign || t['대표싸인']) || '').trim();
+    if (u.charAt(0) === '/') u = 'https://erp.wellperion.com' + u;   // 서버 상대 주소 → 어느 도메인에서 열어도 닿게
     h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표님 서명본</a>';
     h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;" title="대표님 보고 올림 취소(주의) — 대표싸인 비움">↩ 취소</button>';
     h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
