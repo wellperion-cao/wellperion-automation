@@ -712,20 +712,16 @@ async def _handle_call(text: str, ctx) -> None:
 
 
 def _dispatch_call_ship(text: str) -> None:
-    """웰리 앞으로 배 한 척. 같은 제목이면 queue_dispatch 의 중복 가드가 막는다."""
-    import subprocess
-    head = (text or "").strip().splitlines()[0][:40]
+    """조회로 못 푼 호출 → 호출 인박스(status/calls.json · scripts/call_inbox.py). 배는 더 만들지 않는다
+    (GM 2026-09-16 「배 = 체계·시스템화만」 · 호출 배가 하루 4척씩 생겼다). 살아 있는 웰리 세션이 생존 신호에서
+    미답 호출을 읽어 그 방에 답한다. 함수 이름은 호출부 호환으로 그대로."""
     try:
-        subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / "queue_dispatch.py"),
-             "--to", "ceo", "--sender", "cto",
-             "--title", f"[업무관리] 나우열M 호출 — {head}",
-             "--note", f"업무관리 방 원문: {text[:500]}\n받았다는 답은 이미 나갔다. 실제 답·처리가 남았다.",
-             "--next", "그 방에 결과 한 줄로 답한다",
-             "--audience", "office", "--reversible", "yes", "--work-type", "update"],
-            cwd=str(REPO_ROOT), capture_output=True, timeout=60)
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        from call_inbox import add_call
+        cid = add_call("업무관리", "나우열M", text)
+        log.info("[work_room] 호출 인박스 %s — %s", cid or "(중복)", (text or "")[:60])
     except Exception as exc:
-        log.error(f"[work_room] 호출 배 생성 실패: {exc}")
+        log.error(f"[work_room] 호출 인박스 기록 실패: {exc}")
 
 
 async def _handle_question(text: str, ctx) -> None:

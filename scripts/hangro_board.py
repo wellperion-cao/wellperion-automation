@@ -1348,6 +1348,63 @@ def _no_reply_findings(items: list[dict]) -> list[tuple[dict, str]]:
     return out
 
 
+# ── 배 흐름 한 줄 + 14일 무기록 배 (2026-09-16 시토 · 웰리 요청 · GM 「배가 줄지 않고 늘기만 하는 근본 원인」) ──
+#   큐(status/_queue.json)와 보관함을 역할 슬라이스와 무관하게 직접 읽는다 — 이 줄은 「전체 물량」을 말한다.
+#   14일 무기록 = 열린 배인데 updated_at(없으면 enqueued_at)이 14일 전보다 오래된 것 · 웰리가 합치거나 닫는 자리.
+STALE_DAYS = 14
+
+
+def _flow_stats(role: str = "") -> dict:
+    today = dt.date.today()
+    yday = (today - dt.timedelta(days=1)).isoformat()
+    open_all: list[dict] = []
+    born_y = done_y = 0
+    for path in (QUEUE_PATH, _REPO / "status" / "_queue_archive.json"):
+        try:
+            rows = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for q in rows if isinstance(rows, list) else []:
+            if not isinstance(q, dict):
+                continue
+            st = str(q.get("status", "")).upper()
+            if str(q.get("enqueued_at") or "").startswith(yday):
+                born_y += 1
+            if st in {"DONE", "완료"} and str(q.get("done_at") or q.get("processed_at") or "").startswith(yday):
+                done_y += 1
+            if st in {"PENDING", "IN_PROGRESS"} and path == QUEUE_PATH:
+                open_all.append(q)
+    cut = (today - dt.timedelta(days=STALE_DAYS)).isoformat()
+    stale = [q for q in open_all
+             if str(q.get("updated_at") or q.get("enqueued_at") or "")[:10] < cut
+             and (not role or str(q.get("clevel") or "") == role)]
+    stale.sort(key=lambda q: str(q.get("updated_at") or q.get("enqueued_at") or ""))
+    return {"open": len(open_all), "born_y": born_y, "done_y": done_y, "stale": stale}
+
+
+def _flow_lines(role: str = "") -> list[str]:
+    f = _flow_stats(role)
+    out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · {STALE_DAYS}일 무기록 배 {len(f['stale'])}척"]
+    try:
+        from call_inbox import summary_line
+        cl = summary_line()
+        if cl:
+            out.append(cl)
+    except Exception:
+        pass
+    if f["stale"]:
+        out.append("")
+        out.append(f"### 🕸 {STALE_DAYS}일 무기록 배 {len(f['stale'])}척 — 합치거나 닫는다(웰리)")
+        out.append("| 배 | 담당 | 진행명 | 마지막 기록 |")
+        out.append("|---|---|---|---|")
+        for q in f["stale"][:20]:
+            out.append(f"| {str(q.get('priority') or '')[:1]} | {_nick(str(q.get('clevel') or ''))} {q.get('short_no') or q.get('ship_no')} "
+                       f"| {str(q.get('title') or '')[:60].replace('|', '·')} | {str(q.get('updated_at') or q.get('enqueued_at') or '')[:10]} |")
+        if len(f["stale"]) > 20:
+            out.append(f"· 외 {len(f['stale']) - 20}척")
+    return out
+
+
 def build_board(gas_items: list[dict], queue_items: list[dict],
                 role: str = "", sent_by_role: list[dict] | None = None) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
@@ -1415,6 +1472,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
     lines.append("━" * 36)
     lines.append(summary_table)
+    lines.extend(_flow_lines(role))   # 배 흐름 한 줄 · 미답 호출 · 14일 무기록 배(2026-09-16)
 
     # ── 🎯 오늘 반드시 끝낼 것 (GM 2026-08-10) — 보드 맨 위. 못 지킨 건 조용히 안 사라진다 ──
     mf_overdue = secs["must_finish_overdue"]

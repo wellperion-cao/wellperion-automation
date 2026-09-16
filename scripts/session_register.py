@@ -206,6 +206,16 @@ def main() -> int:
             print(f"! {args.role} 은 등록된 적이 없습니다 — --session 으로 먼저 등록하세요.")
             return 2
         print(f"생존 갱신: {data['role']} · {data.get('session')} · {data['heartbeat_at']}")
+        if args.role == "ceo":   # 사람 방 호출은 배가 아니라 인박스 — 웰리 세션이 여기서 보고 그 방에 답한다(배 2614 줄기)
+            try:
+                from call_inbox import summary_line, open_calls
+                line = summary_line()
+                if line:
+                    print(line + " → python scripts/call_inbox.py --list · 답한 뒤 --answer <id>")
+                    for c in open_calls()[:3]:
+                        print(f"   - {c['id']} · {c['room']} {c['who']}: {c['text'][:60]}")
+            except Exception as exc:
+                print(f"! 호출 인박스 읽기 실패: {exc}")
         return 0
     if args.role and args.session:
         data = register(args.role, args.session, args.ref)

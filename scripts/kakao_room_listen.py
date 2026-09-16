@@ -243,22 +243,16 @@ def extract_external(text: str) -> list[dict]:
 
 
 def to_ship(c: dict, dry: bool) -> bool:
-    title = f"[웰리] ★중간관리자 방 호출 — {c['who']}: {mask_secrets(c['text'])[:60]}"
-    note = (f"[카톡 호출 자동 접수] ★중간관리자 방 · {c.get('day','')} {c['when']} · {c['who']}\n\n"
-            f"{mask_secrets(c['text'])}\n\n"
-            "▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n"
-            "  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n"
-            "▸사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 GM 승인을 먼저 받는다(GM 확정 2026-08-21).")
-    cmd = [sys.executable, str(ROOT / "scripts" / "queue_dispatch.py"),
-           "--to", "ceo", "--sender", "cto", "--priority", "⛴️여객선",
-           "--audience", "office", "--reversible", "yes", "--work-type", "update",
-           "--title", title, "--note", note,
-           "--next", "내용 확인 → 간단한 답은 바로 회신, 판단이 들어가면 GM 승인 후 회신"]
+    """호출 한 건 → 호출 인박스(status/calls.json). 이름은 옛 호출부 그대로 두었다 — 배는 더 만들지 않는다.
+    GM 2026-09-16 「배 = 체계·시스템화만」 · 9/10~16 생성 207척 중 방 호출 배 48척(23%) → 인박스로(배 2614 줄기).
+    살아 있는 웰리 세션이 생존 신호에서 미답 호출을 읽어 답한다 · 세션 없으면 러너 · 아침 보드 「📞 미답 호출 N」."""
+    from call_inbox import add_call
     if dry:
-        cmd.append("--dry-run")
-    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT))
-    print((r.stdout or r.stderr or "").strip().splitlines()[0] if (r.stdout or r.stderr) else "")
-    return r.returncode == 0
+        print(f"[dry-run] 호출 인박스 ← ★중간관리자 {c['who']}: {mask_secrets(c['text'])[:40]}")
+        return True
+    cid = add_call("★중간관리자", c["who"], c["text"])
+    print(f"호출 인박스 {cid or '(중복)'} ← {c['who']}: {mask_secrets(c['text'])[:40]}")
+    return True
 
 
 ARCHIVE = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / ROOM
