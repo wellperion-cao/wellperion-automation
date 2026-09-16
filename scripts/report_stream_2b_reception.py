@@ -580,7 +580,7 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
                       if str(r.get("category") or "").strip() == "분실물 접수")
 
     head = ("⏰ 미처리 적체 리마인드 (강습·업장)" if scope == "lesson"
-            else "⏰ 미처리 적체 리마인드 (이경연 실장)")
+            else "⏰ 미처리 적체 리마인드 (이경연 실장님)")   # 직함 뒤 님 — GM 지시 2026-09-16
     lines = [head, (f"기한초과 {len(overdue)}건" if scope == "lesson"
                     else f"미처리 {len(undone) - lost_undone}건 · 기한초과 {len(overdue)}건")]
     if lost_undone:
