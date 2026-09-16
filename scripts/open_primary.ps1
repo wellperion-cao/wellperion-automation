@@ -12,6 +12,21 @@ Add-Type -Namespace W -Name U32 -MemberDefinition @'
 [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
 [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+public delegate bool EnumProc(IntPtr h, IntPtr l);
+[DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
+[DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, System.Text.StringBuilder sb, int n);
+// 크롬 최상위 창 목록 — 클래스 Chrome_WidgetWin_1 이고 보이는 것만. 전후 차집합으로 "우리가 방금 띄운 창"을 잡는다.
+public static System.Collections.Generic.List<IntPtr> ChromeWindows() {
+    var l = new System.Collections.Generic.List<IntPtr>();
+    EnumWindows((h, p) => {
+        if (!IsWindowVisible(h)) return true;
+        var sb = new System.Text.StringBuilder(64); GetClassName(h, sb, 64);
+        if (sb.ToString() == "Chrome_WidgetWin_1") l.Add(h);
+        return true;
+    }, IntPtr.Zero);
+    return l;
+}
 '@
 Add-Type -AssemblyName System.Windows.Forms
 $prim = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
@@ -29,23 +44,33 @@ $chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 $urls = @($items | ForEach-Object { if ($_ -match '^[a-z]+://') { $_ } elseif (Test-Path $_) { ([Uri](Resolve-Path $_).Path).AbsoluteUri } else { $_ } })
 $quoted = @($urls | ForEach-Object { '"' + $_ + '"' })
 
-$before = [W.U32]::GetForegroundWindow()
+# ★2026-09-16 GM 「어떤 화면이든 작업하고 있으면 저절로 전체확대」 — 원인은 이 아래 창 고르기였다.
+#   종전엔 "포그라운드 창이 바뀌면 그게 새 창" 으로 잡고, 못 잡으면 "지금 포그라운드 창" 을 최대화했다.
+#   GM 이 그 6초 사이 카톡·터미널을 누르면 그 창이 잡혀 최대화됐고, 크롬이 기존 인스턴스에 탭만 얹어
+#   새 창이 안 뜨면 GM 이 쓰던 창이 그대로 최대화됐다. 세션 6개가 아티팩트 훅으로 이 관문을 부르니 하루 종일 반복.
+#   고침 = 크롬 최상위 창 목록의 전후 차집합으로만 "우리가 띄운 창" 을 잡는다. 못 찾으면 아무 창도 건드리지 않는다.
+$chromeBefore = @([W.U32]::ChromeWindows())
 if (Test-Path $chrome) {
     $args = @('--new-window', "--window-position=$wx,$wy", "--window-size=$ww,$wh")
     if ($incog) { $args += '--incognito' }
     Start-Process $chrome -ArgumentList ($args + $quoted)
 } else {
     foreach ($u in $urls) { Start-Process $u }
+    Write-Host ("opened with default app (창 위치 조정 없음): " + ($urls -join ' '))
+    exit 0
 }
 
-# 새 창이 앞에 올 때까지 최대 6초 기다렸다가 주 모니터 가운데로 옮긴다(최대화하지 않는다).
+# 새 크롬 창이 목록에 나타날 때까지 최대 6초 기다린다. 포그라운드 창은 보지 않는다(GM 이 쓰는 창일 수 있다).
 $h = [IntPtr]::Zero
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Milliseconds 200
-    $f = [W.U32]::GetForegroundWindow()
-    if ($f -ne [IntPtr]::Zero -and $f -ne $before) { $h = $f; break }
+    $new = @([W.U32]::ChromeWindows() | Where-Object { $chromeBefore -notcontains $_ })
+    if ($new.Count -gt 0) { $h = $new[0]; break }
 }
-if ($h -eq [IntPtr]::Zero) { $h = [W.U32]::GetForegroundWindow() }
+if ($h -eq [IntPtr]::Zero) {
+    Write-Host ("opened (새 크롬 창을 못 찾아 창 위치·크기는 손대지 않음): " + ($urls -join ' '))
+    exit 0
+}
 [void][W.U32]::ShowWindow($h, 9)   # SW_RESTORE (최대화 상태면 먼저 풀어야 위치가 먹는다)
 [void][W.U32]::SetWindowPos($h, [IntPtr]::Zero, $wx, $wy, $ww, $wh, 0x0040)
 [void][W.U32]::ShowWindow($h, 3)   # SW_MAXIMIZE — 주 모니터에 놓은 뒤 최대화
