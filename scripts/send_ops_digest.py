@@ -1693,6 +1693,22 @@ _MGR_REPLY_HAIL_OWNERS = (("이경연 실장님", "이경연 실장"), ("이정�
 _MGR_REPLY_AUTO_HEADS = ("🌅", "🌙", "📊", "📞", "📮", "🧾")   # 우리 자동 통 표제 — 이 건 대상 아님
 
 
+def _reply_title(lines: list) -> str:
+    """원장 제목 = 본문의 첫 「▪ 」 줄(있으면) → 없으면 첫 줄에서 「○○님, 」 호명과 「부탁드립니다」류
+    인사말을 뗀 나머지(웰리 지적 2026-09-16 · #287 이 「이경연 실장님, GM 요청 한 가지 — …」 로 잡혀
+    07:50 통·업무 목차에서 무슨 건인지 안 보였다). 60자."""
+    for ln in lines:
+        if ln.startswith("▪"):
+            return ln.lstrip("▪ ").strip()[:60]
+    head = lines[0] if lines else ""
+    head = re.sub(r"^[^,，]{1,20}님[,，]\s*", "", head)          # 「이경연 실장님, 」
+    head = re.sub(r"\s*[—\-·]?\s*(최대한 빠르게|빠르게|꼭|한 번)?\s*부탁드립니다\.?$", "", head)
+    head = re.sub(r"^(GM 요청|GM 지시|요청) (한 가지|하나)\s*[—\-:]?\s*", "", head)
+    if not head.strip() and len(lines) > 1:
+        head = lines[1]
+    return head.strip()[:60] or (lines[0][:60] if lines else "")
+
+
 def register_manager_reply(text: str, sent_at: str, source: str = "kakao_sent") -> "int | None":
     """★중간관리자 방으로 나간 글이 실장·소장 앞 개별 통이면 원장에 kind=reply 로 등록하고
     번호(no)를 돌려준다. 대상이 아니면(호명 없음·우리 자동 통 표제) None — 호출측은 발신
@@ -1707,7 +1723,7 @@ def register_manager_reply(text: str, sent_at: str, source: str = "kakao_sent") 
     if not owner:
         return None
 
-    title = head[:60]
+    title = _reply_title(lines)
     today = str(sent_at)[:10]
     ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8")) if MGR_LEDGER.exists() else []
     entry = next((e for e in ledger if isinstance(e, dict) and e.get("date") == today), None)
