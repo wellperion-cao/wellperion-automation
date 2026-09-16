@@ -30,6 +30,7 @@ SSOT 조회가 실패하면 대조 없이 종전대로 렌더하고 화면에 �
 from __future__ import annotations
 
 import argparse
+import calendar
 import difflib
 import html
 import json
@@ -143,6 +144,29 @@ RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우�
 #   남고 GM업무.html 「👤 GM 책임 항목」 띠가 같은 원장을 읽어 그린다 — 값을 두 곳에 두지 않는다.
 MGR_PEOPLE = [m[0] for m in MANAGERS]
 _NO_MEASURE = "미수집"
+
+# ═══ --backfill 지난 달 소급 실측(GM 지시 2026-09-16) ═══════════════════════════════
+# PERIOD 가 있으면 측정fn 들이 "오늘" 대신 그 달 말일을 기준으로 잰다 — 날짜(생성일·완료일·회신일·
+# 카드가 속한 달)로 거를 수 있는 값만 이렇게 다시 잰다. 지금 상태만 있는 값(라이브 조회·현재 필드)은
+# _period_no_history() 로 "당시 값 없음"을 적는다 — 지어내지 않는다.
+PERIOD: "date | None" = None
+
+
+def _today() -> date:
+    return PERIOD or date.today()
+
+
+def _period_ym() -> str:
+    return _today().strftime("%Y-%m")
+
+
+def _period_no_history(reason: str) -> "tuple[str, bool] | None":
+    """PERIOD(과거 달) 소급 중일 때만 '당시 값 없음'을 돌려준다 — None 이면 호출부가 평소대로 잰다."""
+    if PERIOD is None:
+        return None
+    return f"{_NO_MEASURE}(당시 값 없음(원장 없음) — {reason})", False
+
+
 SSOT_DONE = {"완료", "폐기", "완료됨"}
 OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원"]
 # GM 확정 2026-09-16 「운영부 직원이 실장 포함 6명」 — 이지영 사원은 9월 일용근무 전환이라 정원 밖(행이 있으면 세긴 한다).
@@ -183,7 +207,7 @@ def load_month_objectives() -> list:
     """월간운영계획 이번 달 카드(status/monthly_ops_plan.json). 조회 실패면 빈 목록."""
     try:
         d = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
-        return d["months"][date.today().strftime("%Y-%m")].get("objectives") or []
+        return d["months"][_period_ym()].get("objectives") or []
     except Exception:
         return []
 
@@ -219,7 +243,7 @@ def _checkbox_tally(objs: list) -> tuple[int, int]:
 
 
 def _overdue_objs(objs: list) -> int:
-    today = date.today()
+    today = _today()
     return sum(1 for o in objs
                if (due := _parse_ymd(o.get("due"))) and due < today and str(o.get("status") or "") != "완료")
 
@@ -235,6 +259,8 @@ def objective_progress_cell(objs: list) -> tuple[str, bool]:
 
 def ledger_reply_cell(seen: dict, owner: str) -> tuple[str, bool]:
     """확인요청 원장(latest_by_no)에서 사람별 회신율 — 닫힌 건/보낸 건 · 최장경과 · 35일↑."""
+    if (nh := _period_no_history("회신·종결 상태는 지금 값만 보관")) is not None:
+        return nh
     mine = [(n, d, it) for n, (d, it) in seen.items() if str(it.get("owner") or "").strip() == owner]
     if not mine:
         return f"{_NO_MEASURE}(배정 건 없음)", False
@@ -263,6 +289,8 @@ def reception_dept_cell(dept: str) -> tuple[str, bool]:
     """종합접수처 부서별 열린·7일↑·담당 미배정 — 건별 목록①과 같은 필터(분실물 제외)로 센다
     (GM 지적 2026-09-14 — 목록은 5건인데 칸은 27건으로 분실물이 섞여 있었다).
     1영업일 첫처리는 첫처리 시각 필드가 없어 잴 수 없다(지어내지 않는다·기준 칸에만 남긴다)."""
+    if (nh := _period_no_history("종합접수처는 지금 열린 건만 조회됨(과거 스냅숏 없음)")) is not None:
+        return nh
     from collectors.ops_shared import reception_elapsed_days
     rest, lost = reception_dept_detail(dept)
     if rest is None:
@@ -280,7 +308,7 @@ def facility_check_cell() -> tuple[str, bool]:
     """시설 점검 이행 — 오늘 회차 입력 수·기준이탈 건(support_check_summary 실측)."""
     try:
         import support_check_summary as scs
-        lines, filled = scs.build_facility_section(date.today().isoformat())
+        lines, filled = scs.build_facility_section(_today().isoformat())
     except Exception:
         return f"{_NO_MEASURE}(점검판 조회 실패)", False
     if not filled.get("facility_status"):
@@ -298,9 +326,14 @@ def facility_schedule_cell() -> tuple[str, bool]:
     except Exception:
         return f"{_NO_MEASURE}(전사일정 원장 조회 실패)", False
     items = [it for it in d.get("items") or [] if it.get("dept") == "시설부"]
-    mp = date.today().strftime("%Y-%m")
-    today = date.today()
+    mp = _period_ym()
+    today = _today()
     done_month = sum(1 for it in items if str(it.get("last_done") or "").startswith(mp))
+    if PERIOD is not None:
+        # last_done(완료 이력)은 실제 날짜라 그 달 값을 잴 수 있다 — next_due(기한)는 지금 상태만
+        # 보관해 당시 값이 아니다(지어내지 않는다).
+        return (f"그 달 완료 {done_month}건(전체 시설부 {len(items)}건) · "
+                f"기한초과=당시 값 없음(원장은 현재 상태만 보관)"), False
     overdue = sum(1 for it in items if (due := _parse_ymd(it.get("next_due"))) and due < today)
     text = (f"이번 달 완료 {done_month}건 · 현재 기한초과 {overdue}건"
             f"(전체 시설부 {len(items)}건 · 원장 {d.get('updated_at', '?')} 기준)")
@@ -332,7 +365,7 @@ def ssot_week_cell(rows: "list | None") -> tuple[str, bool]:
     종전 「주 15건 완료」 기준은 이 루프로 대체. 목록②와 같은 원천(todo_list)만 센다."""
     if rows is None:
         return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
-    today = date.today()
+    today = _today()
     monday = today - timedelta(days=today.weekday())
     mine = [r for r in rows if str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
     staff_n = len(OPS_DEPT_STAFF)
@@ -344,6 +377,15 @@ def ssot_week_cell(rows: "list | None") -> tuple[str, bool]:
         if str(r.get("상태") or "") not in SSOT_DONE:
             return None
         return _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
+
+    if PERIOD is not None:
+        # 과거 달 — 생성일·완료일(실제 날짜)로 그 달 안(1일~말일) 등록·완료만 잰다.
+        # 진행중·보류·기한지난·결재대기·1인당 상한은 지금 상태만 있어 못 잰다(지어내지 않는다).
+        first = PERIOD.replace(day=1)
+        made_month = sum(1 for r in mine if (c := _created(r)) and first <= c <= PERIOD)
+        done_month = sum(1 for r in mine if (d := _done_on(r)) and first <= d <= PERIOD)
+        return (f"{_period_ym()} 등록 {made_month}건 · 완료 {done_month}건"
+                f" · 진행중·보류/기한지난/결재대기=당시 값 없음(원장 현재상태만)"), False
 
     made_today = [r for r in mine if _created(r) == today]
     done_today = [r for r in mine if _done_on(r) == today]
@@ -379,6 +421,8 @@ def approval_submit_cell(rows: "list | None") -> tuple[str, bool]:
     """결재 SSOT 제출 — 멤버십 개편 기획안 행의 결재요청 칸 실측."""
     if rows is None:
         return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    if (nh := _period_no_history("결재요청 칸은 지금 상태만 보관")) is not None:
+        return nh
     r = find_ssot_row(rows, "멤버십", owner="이경연 실장") or find_ssot_row(rows, "멤버십")
     if r is None:
         return f"{_NO_MEASURE}(멤버십 개편 기획안 SSOT 행 못 찾음)", True
@@ -400,6 +444,8 @@ def chro_ssot_cell(rows: "list | None") -> tuple[str, bool]:
     """인사(CHRO) 업무·결재 SSOT 운영 — 나우열M 담당 행: 진행중·보류·기한 지난 것·중복."""
     if rows is None:
         return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
+    if (nh := _period_no_history("진행중·보류·중복은 지금 상태만 보관")) is not None:
+        return nh
     mine = [r for r in rows if str(r.get("담당자") or "").strip() == "나우열M"]
     today = date.today()
     ip = sum(1 for r in mine if str(r.get("상태") or "") == "진행중")
@@ -423,6 +469,8 @@ def automation_cell(objs: list) -> tuple[str, bool]:
     """GM 책임 ① 자동화·자율화(ERP+브로제이) — ERP = AWS 이관 표(status/aws_migration.json · 시토 정본)의
     영역별 전환 완료 수 / 전체, 브로제이 = 이번 달 카드 중 제목·체크에 「브로제이」가 든 카드의 체크 완료율.
     두 원천 다 있는 값만 적는다 — 없으면 없다고 적는다."""
+    if (nh := _period_no_history("AWS 이관 표·브로제이 카드는 지금 상태만 보관")) is not None:
+        return nh
     parts, warn = [], False
     try:
         d = json.loads((ROOT / "3. 웰페리온 가이드" / "status" / "aws_migration.json").read_text(encoding="utf-8"))
@@ -447,6 +495,8 @@ def automation_cell(objs: list) -> tuple[str, bool]:
 def expansion_cell() -> tuple[str, bool]:
     """GM 책임 ② 비즈니스 확장 — 전략 로드맵 「비즈니스 확장」 항목(status/monthly_ops_plan.json strategy_roadmap)
     상태·진척 + 시보(CBO) 배(status/_queue.json) 진행·대기·완료 수."""
+    if (nh := _period_no_history("로드맵·배 상태는 지금 값만 보관")) is not None:
+        return nh
     parts = []
     try:
         m = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
@@ -498,7 +548,7 @@ def _directive_key(event) -> str:
 
 def dup_directive_cell() -> tuple[str, bool]:
     """이번 달 GM 접수 제목 중 앞선 날의 다른 접수와 0.8 이상 닮은 것 = 「같은 지시 두 번」."""
-    ym = date.today().strftime("%Y-%m")
+    ym = _period_ym()
     try:
         lines = WORKLOG_PATH.read_text(encoding="utf-8").splitlines()
     except Exception:
@@ -528,7 +578,7 @@ def dup_directive_cell() -> tuple[str, bool]:
 
 def handoff_return_cell(seen: dict) -> tuple[str, bool]:
     """이번 달 원장에 처음 실린 담당 있는 건 중 번호가 나간 그날(원장 날짜 다음 날)까지 회신(replied_at)·종결(resolved_at)된 비율."""
-    ym = date.today().strftime("%Y-%m")
+    ym = _period_ym()
     first = first_seen_by_no()
     n = k = 0
     for no, (_d, it) in seen.items():
@@ -556,6 +606,8 @@ def _no_measure_cell(reason: str) -> tuple[str, bool]:
 #   원장 = status/inquiry_contact_watch.json — 07:50 ★중간관리자 통(send_ops_digest.inquiry_contact_section)이
 #   매일 적는다. 여기서 다시 세지 않는다(약속 L21) · 감점 판정도 그쪽 상수(ESCALATE_BIZ_DAYS)를 쓴다.
 def inquiry_contact_cell(line: str) -> tuple[str, bool]:
+    if (nh := _period_no_history("연락 감시 원장은 지금 값만 보관")) is not None:
+        return nh
     try:
         w = json.loads((ROOT / "status" / "inquiry_contact_watch.json").read_text(encoding="utf-8"))
         from send_ops_digest import stalled_biz_days, ESCALATE_BIZ_DAYS
@@ -605,19 +657,53 @@ def resp_table(person: str, rows_def: list, ev: dict) -> tuple[list, dict]:
 
 
 def save_eval_history(month_snap: dict) -> dict:
-    """이번 달 키만 덮어쓴다(그 달의 최신) · 다른 달 키는 그대로(분기·연 누적). 되돌려주는 값 = 원장 전체."""
+    """그 달(PERIOD 있으면 그 달·없으면 이번 달) 키만 덮어쓴다 · 다른 달 키는 그대로(분기·연 누적 ·
+    --backfill 소급도 이 함수를 그대로 쓴다). 되돌려주는 값 = 원장 전체."""
     try:
         d = json.loads(HIST_PATH.read_text(encoding="utf-8"))
     except Exception:
         d = {}
     months = d.get("months") if isinstance(d.get("months"), dict) else {}
-    months[date.today().strftime("%Y-%m")] = month_snap
+    months[_period_ym()] = month_snap
     d = {"_doc": "중간관리자 책임 항목 실측 스냅숏 — manager_task_index.py 가 렌더 때마다 이번 달 키를 덮어쓴다"
                  "(send_ops_digest 07:50 매일). months[YYYY-MM][사람][항목] = {text 실측, bad 이상, good 잘한 것, fix 보완할 것}."
                  " GM업무 리더 현황 띠·중간관리자 업무목차 「분기 누적」 절이 읽는다. 손으로 고치지 않는다.",
          "updated_at": date.today().isoformat(), "months": dict(sorted(months.items()))}
     HIST_PATH.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
     return d
+
+
+def backfill_months(months: list[str], force: bool = False) -> None:
+    """지난 달을 그 달 말일(PERIOD) 기준으로 실측해 원장(manager_eval_history) 그 달 키에 적는다
+    (GM 지시 2026-09-16). 날짜(생성일·완료일·회신일·카드가 속한 달)로 거를 수 있는 항목만 그 달 값을
+    다시 잰다 — 나머지는 각 측정fn 이 스스로 '당시 값 없음'을 적는다(_period_no_history · 지어내지 않는다).
+    이미 있는 달 키는 건드리지 않는다(--force 없이는) — 이번 달(현재) 키는 PERIOD 가 그 달을 안 가리켜
+    아예 손대지 않는다."""
+    global PERIOD
+    seen = latest_by_no()
+    ssot_rows = fetch_ssot_rows()
+    ev = load_eval()
+    try:
+        existing = json.loads(HIST_PATH.read_text(encoding="utf-8")).get("months", {})
+    except Exception:
+        existing = {}
+    try:
+        for ym in months:
+            if ym in existing and not force:
+                print(f"[backfill] {ym} 이미 있음 — 건너뜀(--force 로 덮어쓰기)")
+                continue
+            y, m = (int(x) for x in ym.split("-"))
+            PERIOD = date(y, m, calendar.monthrange(y, m)[1])
+            sales_data = fill_sales_current(seen)
+            objs = load_month_objectives()
+            rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
+            month_snap: dict = {"_소급": "2026-09-16 실측(웰리)"}
+            for person in RESP_PEOPLE:
+                _, month_snap[person] = resp_table(person, rows_def[person], ev)
+            save_eval_history(month_snap)
+            print(f"[backfill] {ym} 기록 완료 · PERIOD={PERIOD.isoformat()}")
+    finally:
+        PERIOD = None
 
 
 def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None", objs: list) -> dict:
@@ -1144,7 +1230,7 @@ def fill_sales_current(seen: dict) -> None:
         data = resp.json() if resp is not None else {}
         if not data.get("ok"):
             return None
-        mi = date.today().month - 1
+        mi = _today().month - 1
         for it in rows:
             bucket = str(it.get("sales_bucket") or "total")
             cur = (data.get(bucket) or [None] * 12)[mi]
@@ -1161,7 +1247,7 @@ def sales_bucket_cell(sales_data: "dict | None", bucket: str) -> tuple[str, bool
     '목표 미등록'만 적고 %·막대는 안 켠다(지어내지 않는다 · GM 지시 2026-09-14)."""
     if not sales_data:
         return f"{_NO_MEASURE}(매출 조회 실패)", False
-    mi = date.today().month - 1
+    mi = _today().month - 1
     cur = (sales_data.get(bucket) or [None] * 12)[mi]
     if cur is None:
         return f"{_NO_MEASURE}(매출 자료 없음)", False
@@ -1790,8 +1876,13 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   table.resp-tb th.rc, table.resp-tb td.rc{width:21%;}
   table.resp-tb th.rp, table.resp-tb td.rp{width:24%;}
   table.resp-tb th.rg, table.resp-tb td.rg, table.resp-tb th.rf, table.resp-tb td.rf{width:16%;}
-  details.resp-q th.rq, details.resp-q td.rq{width:14%;}
-  details.resp-q th.rs, details.resp-q td.rs{width:12%;font-size:13px;}
+  /* 📅 분기 누적 열 밸런스(GM 지시 2026-09-16) — 책임 표(section.resp)는 위 generic 폭 그대로,
+     여기 details.resp-q 로 이름 붙은 것만 덮어쓴다(항목12·달×3=16·분기합7·잘한것16.5·보완할것16.5). */
+  details.resp-q th.ri, details.resp-q td.ri{width:12%;}
+  details.resp-q th.rq, details.resp-q td.rq{width:16%;font-size:13px;}
+  details.resp-q th.rs, details.resp-q td.rs{width:7%;font-size:13px;}
+  details.resp-q th.rg, details.resp-q td.rg, details.resp-q th.rf, details.resp-q td.rf{width:16.5%;font-size:13px;}
+  .rq-back{display:inline-block;margin-left:4px;padding:0 4px;border-radius:3px;background:var(--navy-bg);color:var(--navy);font-size:10px;font-weight:700;vertical-align:middle;}
   td.nx, th.nx{width:190px;font-size:13px;}
 </style>
 </head>
@@ -1933,7 +2024,10 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
     var y = NOW.getFullYear(), q = Math.floor(NOW.getMonth() / 3) + 1;
     var keys = [0, 1, 2].map(function (i) { return y + '-' + ('0' + (3 * q - 2 + i)).slice(-2); });
     document.getElementById('rq-sub').textContent = y + '년 ' + q + '분기 · 달마다 마지막 실측(말일 21:00 마감)이 남습니다 · 매월 평가해 다음 달과 비교';
-    var head = '<tr><th class="ri">항목</th>' + keys.map(function (k) { return '<th class="rq">' + parseInt(k.slice(5), 10) + '월</th>'; }).join('') + '<th class="rs">분기 합</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>';
+    var head = '<tr><th class="ri">항목</th>' + keys.map(function (k) {
+      var back = (months[k] || {})._소급;
+      return '<th class="rq">' + parseInt(k.slice(5), 10) + '월' + (back ? '<span class="rq-back" title="' + esc(back) + '">소급</span>' : '') + '</th>';
+    }).join('') + '<th class="rs">분기 합</th><th class="rg">분기 잘한 것</th><th class="rf">분기 보완할 것</th></tr>';
     return (M.people_order || []).map(function (person) {
       var items = [];
       keys.forEach(function (k) { Object.keys((months[k] || {})[person] || {}).forEach(function (it) { if (items.indexOf(it) < 0) items.push(it); }); });
@@ -1946,7 +2040,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
           cells += '<td class="rq' + (c.bad ? ' bad' : '') + '">' + esc(c.text || '—') + '</td>';
           [[c.good, goods], [c.fix, fixes]].forEach(function (p) { var v = String(p[0] || '').trim(); if (v && v !== '—' && p[1].indexOf(v) < 0) p[1].push(v); });
         });
-        var sum = have ? (badN ? '<span class="dn">이상 ' + badN + '/' + have + '달</span>' : '<span class="up">이상 0/' + have + '달</span>') : '—';
+        var sum = have ? ('<span class="' + (badN ? 'dn' : 'up') + '">' + badN + '/' + have + '</span>') : '—';
         return '<tr><td class="ri">' + esc(it) + '</td>' + cells + '<td class="rs">' + sum + '</td><td class="rg">' + esc(goods.join(' · ') || '—') + '</td><td class="rf">' + esc(fixes.join(' · ') || '—') + '</td></tr>';
       }).join('') || '<tr><td class="ri">—</td><td class="rq" colspan="5">스냅숏 없음</td></tr>';
       return '<div class="rp-person"><h3>' + esc(person) + '</h3><table class="resp-tb">' + head + trs + '</table></div>';
@@ -2380,8 +2474,14 @@ if __name__ == "__main__":
     ap.add_argument("--meeting-a3", action="store_true",
                     help="주간 회의자료 A3 정본(중간관리자_회의자료_A3.html + png) 생성 · 회차 원장 append")
     ap.add_argument("--week", default="", help="--meeting-a3 회의일(화요일 YYYY-MM-DD · 기본 오늘이 속한 주 화요일)")
+    ap.add_argument("--backfill", nargs="+", default=None, metavar="YYYY-MM",
+                    help="지난 달을 그 달 말일 기준으로 실측해 원장(manager_eval_history) 그 달 키에 적는다"
+                         "(이미 있는 달은 건너뜀 · --force 로 덮어쓰기)")
+    ap.add_argument("--force", action="store_true", help="--backfill 이미 있는 달 키도 덮어쓴다")
     args = ap.parse_args()
-    if args.selfcheck:
+    if args.backfill:
+        backfill_months(args.backfill, force=args.force)
+    elif args.selfcheck:
         selfcheck()
         _selfcheck_meeting_a3()
     elif args.meeting_a3:
