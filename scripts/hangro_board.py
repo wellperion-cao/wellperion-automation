@@ -1077,11 +1077,11 @@ def _selftest_gm_answered_yesterday() -> None:
     tf = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8")
     yday = "2026-09-15"
     rows = [
-        {"ts": f"{yday}T08:00:00+09:00", "area": "GM요청", "result": "ok"},     # 센다
-        {"ts": f"{yday}T09:00:00+09:00", "area": "GM지시", "result": "ok"},     # 센다(구값)
-        {"ts": f"{yday}T09:00:00+09:00", "area": "GM요청", "result": "warn"},   # 접수뿐 — 안 센다
-        {"ts": f"{yday}T09:00:00+09:00", "area": "발행", "result": "ok"},       # GM_AREAS 아님 — 안 센다
-        {"ts": "2026-09-16T09:00:00+09:00", "area": "GM요청", "result": "ok"},  # 오늘 — 안 센다
+        {"ts": f"{yday}T08:00:00+09:00", "area": "GM요청", "result": "warn"},   # 센다(GM 이 친 말 = 접수)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM지시", "result": "warn"},   # 센다(구값 area)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM요청", "result": "ok"},     # 완료 줄 — 안 센다(세션 종료 훅 허수)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "발행", "result": "warn"},     # GM_AREAS 아님 — 안 센다
+        {"ts": "2026-09-16T09:00:00+09:00", "area": "GM요청", "result": "warn"},  # 오늘 — 안 센다
     ]
     for r in rows:
         tf.write(json.dumps(r, ensure_ascii=False) + "\n")
