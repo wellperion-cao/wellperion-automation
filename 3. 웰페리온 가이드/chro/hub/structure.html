@@ -369,7 +369,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@87, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@88, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -913,8 +913,8 @@
         <tr><td><span class="tag db">db:onbo</span></td><td>입사 · 온보딩</td><td>체크 항목 · 주차 체크인 · 완료 여부</td><td>온보딩 · 성찰 · 워치</td></tr>
         <tr><td><span class="tag db">db:blacklist</span></td><td>채용블랙리스트</td><td>차단 대상(PII 최소화: 생년 · 연락처 뒤4)</td><td>재지원 자동 경고</td></tr>
         <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일) — 웰페리온 스케줄보드 셀 정본(2026-07-27 서버 동기화)</td><td>휴무 관리 · 스케줄보드</td></tr>
-        <tr><td><span class="tag db">연차원장 탭</span></td><td>연차원장</td><td>(성명 · 연도) 단위 부여 · 이월 · 조정 — 보드 관리자 모드에서 부여 직접 수정(@79), 잔여는 서버 결정적 산출(부여+이월+조정−연차−반차×0.5), 부여 공란=미확정 표기(2026-07-28 신설)</td><td>연차 부여/잔여 정본 · 승인 잔여 검증</td></tr>
-        <tr><td><span class="tag db">보드명단 탭</span></td><td>보드명단</td><td>스케줄보드 명단 정본(보드부서 · 표기명 · 연차적용 N=프리랜서/외주 · 퇴사일) — 입사/퇴사 액션이 자동 갱신 + 보드 관리자 모드에서 수동 제외 · 복원 · 추가 · 개명(행 삭제 없음, 2026-07-28 신설)</td><td>보드 명단 · 연차 미적용 분기 · 퇴사자 자동 숨김</td></tr>
+        <tr><td><span class="tag db">연차원장 탭</span><span class="tag db">db:ledger</span></td><td>연차원장</td><td>(성명 · 연도) 단위 부여 · 이월 · 조정 — 보드 관리자 모드에서 부여 직접 수정(@79), 잔여는 서버 결정적 산출(부여+이월+조정−연차−반차×0.5), 부여 공란=미확정 표기(2026-07-28 신설) · <b>db=ledger 전체 조회 신설</b>(admin · viewer · mirror 허용, 캐시 300초, ledger-set 쓰기 시 무효화, 2026-09-16 배포완료 @88)</td><td>연차 부여/잔여 정본 · 승인 잔여 검증</td></tr>
+        <tr><td><span class="tag db">보드명단 탭</span><span class="tag db">db:boardroster</span></td><td>보드명단</td><td>스케줄보드 명단 정본(보드부서 · 표기명 · 연차적용 N=프리랜서/외주 · 퇴사일) — 입사/퇴사 액션이 자동 갱신 + 보드 관리자 모드에서 수동 제외 · 복원 · 추가 · 개명(행 삭제 없음, 2026-07-28 신설) · <b>db=boardroster 전체 조회 신설</b>(admin · viewer · mirror 허용, 캐시 300초, roster-set 쓰기 시 무효화, 2026-09-16 배포완료 @88)</td><td>보드 명단 · 연차 미적용 분기 · 퇴사자 자동 숨김</td></tr>
         <tr><td><span class="tag db">공휴일 탭</span></td><td>공휴일</td><td>날짜 · 명칭(2026 · 2027 적재) — 연도 전환을 시트 입력만으로 반영, 코드 연도 리터럴 제거(2026-07-28 신설)</td><td>보드 공휴 판정 · 필요휴무 산정</td></tr>
         <tr><td><span class="tag db">자동화로그 탭</span></td><td>자동화로그</td><td>주체 · 작업 · 상세 · 결과 · 일시</td><td>오피스 대시보드 · 이력 추적</td></tr>
         <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 가산점(≤+10) 프리필</td></tr>
@@ -925,7 +925,7 @@
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 54종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 55종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86 · 2026-09-16 schedreq-list 응답 필드 10→12칸(createdAt · updatedAt 추가)·배포완료 @88)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
@@ -957,9 +957,10 @@
         <tr><td><span class="tag act">get-self-eval</span></td><td>최신 자기평가 조회(정기평가지 갭 병렬표시 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td rowspan="2">리더십평가</td><td><span class="tag act">leadership-submit</span></td><td>부서원 익명 제출(성명+연락처뒤4 자가인증 후 폐기, append-only, 신원 미저장)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td><span class="tag act">get-leadership-eval</span></td><td>집계 조회(index/summary/raw, k=3 미만 비공개 게이트, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
-        <tr><td rowspan="10">휴무 · 스케줄보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync) — 기입한 날짜가 시트에서 날짜형으로 저장되므로 단건 쓰기는 반드시 날짜 정규화 경유(@79)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="11">휴무 · 스케줄보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync) — 기입한 날짜가 시트에서 날짜형으로 저장되므로 단건 쓰기는 반드시 날짜 정규화 경유(@79)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">schedboard-list</span></td><td>보드 셀 읽기(공개 · 캐시 60초) + roster(보드명단) · holidays(공휴일) · ann(연차 부여/잔여 산출) · year 동봉(2026-07-28 확장)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedboard-set</span></td><td>보드 셀 단건 upsert(공개 창구 — (성명 · 날짜) 키 정규화로 중복 행 방지 @79, 게이트 전부 서버측: 유형 화이트리스트·25일~말일 윈도우·PIN 서버검증·쓰기 상한·Lock, 연차·반차는 결재 승인 반영/PIN 정정만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">schedreq-list</span></td><td>근무변경신청 목록 조회 — 응답 필드 <b>10→12칸</b>(createdAt · updatedAt 2칸 추가, 기존 10칸 불변, 2026-09-16 배포완료 @88)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedreq-approve</span></td><td>신청 승인 서버 원자 처리(공개+PIN — 연차적용 · 잔여 검증 → 휴무 셀 upsert → 상태 · 결재일 기입을 Lock 1회에, 잔여 부족 시 거부, 2026-07-28 신설)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedreq-reject</span></td><td>신청 반려 서버 기입(공개+PIN — 상태 · 결재일만, 기반영 셀 삭제 없음)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">leave-balance</span></td><td>연차 부여/잔여 서버 산출 조회(연도 필터 · 연차 미적용 명단 동봉, 관리자 전용)</td><td><span class="badge bg-a5">A-5</span></td></tr>
@@ -991,8 +992,8 @@
   <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
   <div class="grid">
     <div class="item">
-      <div class="item-head"><h3>Apps Script 백엔드 (@87 · 라이브, 2026-09-11 배포)</h3></div>
-      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정). <b>@81(2026-08-04 배포)</b> = 입사확정 중복가드(동일 지원자 재확정 클릭 차단, forceRegister:true로 의도된 재등록만 통과) + 온보딩 기본항목 8→6 축소 + update-applicant에 <b>합류 가능일(첫 출근 예정일)</b> 저장 매핑 신설. <b>@82(2026-08-05 배포)</b> = 무비밀번호 <code>hr-schedule-feed</code> 신설(익명 일정 피드, 실명 · 연락처 구조적 제외 5필드 고정 응답) — 기존 코드 무변경 순수 추가. <b>@84(2026-08-25 배포)</b> = 개인 캘린더 <code>cal-add/list/update/delete</code> 4종 신설(개인일정 탭, id 단위 upsert). <b>@86(2026-08-26 배포)</b> = 개인일정에 완료 열 + 전사등재 정보 5열(등재담당자 · 등재분류 · 등재부서 · 등재시각 · 등재메모, 화이트리스트 안전처리) 추가·헤더 마이그레이션 보정(ensureSchemaHeader_) — 신규 액션 없이 기존 4종 계약만 확장, personalcal 스키마 13→18열. <b>@87(2026-09-11 배포)</b> = <b>mirror 읽기 전용 등급</b> 신설 — Script Properties 슬롯 <code>HR_MIRROR_PASSWORD</code>(16자 이상)에 값이 설정되면 그 비밀번호로 읽기 시 서버 미러 동기화 전용 role이 활성화됩니다(원문 읽기만 허용, 쓰기 전체 · exitroster · autolog는 거부) — 슬롯 미설정이면 등급 비활성, 기존 admin/viewer 동작은 무변경.</p>
+      <div class="item-head"><h3>Apps Script 백엔드 (@88 · 라이브, 2026-09-16 배포)</h3></div>
+      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정). <b>@81(2026-08-04 배포)</b> = 입사확정 중복가드(동일 지원자 재확정 클릭 차단, forceRegister:true로 의도된 재등록만 통과) + 온보딩 기본항목 8→6 축소 + update-applicant에 <b>합류 가능일(첫 출근 예정일)</b> 저장 매핑 신설. <b>@82(2026-08-05 배포)</b> = 무비밀번호 <code>hr-schedule-feed</code> 신설(익명 일정 피드, 실명 · 연락처 구조적 제외 5필드 고정 응답) — 기존 코드 무변경 순수 추가. <b>@84(2026-08-25 배포)</b> = 개인 캘린더 <code>cal-add/list/update/delete</code> 4종 신설(개인일정 탭, id 단위 upsert). <b>@86(2026-08-26 배포)</b> = 개인일정에 완료 열 + 전사등재 정보 5열(등재담당자 · 등재분류 · 등재부서 · 등재시각 · 등재메모, 화이트리스트 안전처리) 추가·헤더 마이그레이션 보정(ensureSchemaHeader_) — 신규 액션 없이 기존 4종 계약만 확장, personalcal 스키마 13→18열. <b>@87(2026-09-11 배포)</b> = <b>mirror 읽기 전용 등급</b> 신설 — Script Properties 슬롯 <code>HR_MIRROR_PASSWORD</code>(16자 이상)에 값이 설정되면 그 비밀번호로 읽기 시 서버 미러 동기화 전용 role이 활성화됩니다(원문 읽기만 허용, 쓰기 전체 · exitroster · autolog는 거부) — 슬롯 미설정이면 등급 비활성, 기존 admin/viewer 동작은 무변경. <b>@88(2026-09-16 배포)</b> = 읽기 db 키 <b>2종 신설</b> — <code>boardroster</code>(보드명단 탭 전체: 성명 · 보드부서 · 표기명 · 연차적용 · 퇴사일, 64행 실측) · <code>ledger</code>(연차원장 탭 전체: 성명 · 연도 · 부여 · 이월 · 조정 · 비고, 19행 실측), admin/viewer/mirror 등급 전부 허용 · 캐시 300초 · ledger-set/roster-set 쓰기 시 자동 무효화. <code>schedreq-list</code> 응답에 <b>createdAt · updatedAt 2칸 추가</b>(기존 10칸 불변). 용도 = AWS 적재기 3탭 확장. A-6 사전감사 GO, 라운드트립 5건 통과.</p>
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">
