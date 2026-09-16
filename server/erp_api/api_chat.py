@@ -290,6 +290,22 @@ def _needs_facts_missing(prof: dict, type_id: str) -> list:
     return [p for p in (t.get("needs_facts") or []) if not _fact_present(prof, p)]
 
 
+def _empty_skeleton_line(type_id: str, missing: list) -> str:
+    """공통 기본 문장 배선(시보 요청 2026-09-10 · 배12516) — 이 유형에 필요한 정본 칸이 비어 있으면
+    question_types.json 의 skeleton_when_empty(숫자·업체 값 없는 태도 문장 · 지금은 5유형만 있음)를
+    시스템 프롬프트에 얹는다. _grounded 와 안 부딪히는 이유 = 문장이 프롬프트 안에 그대로 들어 있어
+    숫자가 없으니 애초에 근거 밖 숫자 검사에 걸릴 게 없다."""
+    if not type_id or not missing:
+        return ""
+    types = _load_shared("question_types.json").get("types", [])
+    t = next((x for x in types if x.get("type_id") == type_id), None)
+    skel = (t or {}).get("skeleton_when_empty")
+    if not skel:
+        return ""
+    return ("\n\n[이 질문 유형은 업체 값이 아직 비어 있습니다 — 정본 값 대신 아래 문장을 그대로(또는 자연스럽게 "
+            "다듬어) 답하세요. 숫자·업체 고유 값은 넣지 않습니다]\n%s" % skel)
+
+
 def _mask_pii(q: str) -> str:
     """로그에 남기기 전 전화번호·이메일 마스킹(검수 M5) — 상담 문의는 대개 "010-...로 연락 주세요" 형태로 온다."""
     return _EMAIL_RE.sub("[이메일]", _PHONE_RE.sub("[전화번호]", q or ""))
@@ -390,7 +406,7 @@ async def chat(tenant: str, request: Request):
         return Response(json.dumps(out, ensure_ascii=False), media_type="application/json; charset=utf-8", headers=CORS)
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
-    text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id)
+    text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id, type_id, missing)
     if status == "ok":
         _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text)
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
@@ -916,9 +932,12 @@ def _shared_prompt_sections() -> str:
     return ("\n\n" + "\n\n".join(parts)) if parts else ""
 
 
-def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
+def _concierge_system_block(tenant: str, prof: dict, persona: dict, type_id: str = None, missing: list = None) -> str:
     """system 프롬프트 = 업체 정본 11구역 전부 + FAQ 전체 + 오늘 상태 한 줄(배1036 GM 구조전환①·설계 §3-1①·⑦)
-    + 공통 학습층 3파일(배1074). cache_control 로 캐싱 — 정본이 바뀌기 전까진 매 질문 동일해 재사용된다."""
+    + 공통 학습층 3파일(배1074) + 이 질문 유형의 기본 문장(빈 칸일 때만 · 배12516). cache_control 로 캐싱 —
+    정본이 바뀌기 전까진 매 질문 동일해 재사용된다. type_id·missing 은 질문마다 달라 이 블록 끝에 붙으므로
+    같은 유형이 연달아 오면 그 사이엔 그대로 캐시 적중, 유형이 바뀌면 새로 계산된다(ponytail: type_id 조합마다
+    캐시가 갈라지는 것 — 지금 유형 수(20개)에선 값이 크지 않다)."""
     faq = _load_faq(tenant).get("faq") or []
     faq_lines = "\n".join("- id=%s Q:%s A:%s" % (it.get("id"), it.get("q", ""), it.get("a", "")) for it in faq)
     preset = _concept_preset(prof)
@@ -951,9 +970,10 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict) -> str:
         "\"%s\" 라고 답하세요. 금액 숫자·의료 판단은 말하지 않습니다. "
         "질문이 영어면 영어로, 한국어면 한국어로 답하세요. 답변 문장만 출력하세요(설명·따옴표 없이). "
         "이 화면은 카카오톡 대화창처럼 평문만 보입니다 — 마크다운 금지(**굵게**·목록 기호·제목 기호 쓰지 않는다).\n\n"
-        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s%s%s"
+        "[오늘] %s\n\n[업체 정본]\n%s\n\n[FAQ]\n%s%s%s%s"
         % (_CONCIERGE_PRINCIPLES, name, service_concept, preset_line, sales_line, tone, handoff, today_line or "미확인",
-           json.dumps(prof, ensure_ascii=False), faq_lines, _shared_prompt_sections(), allowed_block)
+           json.dumps(prof, ensure_ascii=False), faq_lines, _shared_prompt_sections(), allowed_block,
+           _empty_skeleton_line(type_id, missing))
     )
 
 
@@ -1000,7 +1020,7 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
     return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None)
 
 
-def _concierge_answer(tenant: str, q: str, session_id: str):
+def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None, missing: list = None):
     """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status, 허용금액근거|None).
     status: 'ok'(그대로 응답) · 'invalid'(출력검사 탈락 → 호출부가 핸드오프) ·
     'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥).
@@ -1013,7 +1033,7 @@ def _concierge_answer(tenant: str, q: str, session_id: str):
         return None, "error", None
     persona = _persona_of(tenant)
     prof = _load_profile(tenant)
-    system_text = _concierge_system_block(tenant, prof, persona)
+    system_text = _concierge_system_block(tenant, prof, persona, type_id, missing)
     system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
     lang_hint = " (질문이 영어이니 영어로 답하세요)" if _is_english_q(q) else ""
     messages = _session_history(session_id) + [{"role": "user", "content": q + lang_hint}]
@@ -1240,6 +1260,15 @@ def _selfcheck() -> None:
     #   자동으로 깨지는 단정이라(위 hours 자리와 같은 사고 · 내 변경 전 HEAD 에서도 깨져 있었다) 자체점검이
     #   자료 관리 상태를 감시하는 꼴이 됐다. 검증하려던 규칙 자체는 바로 위 두 줄이 가짜 자료로 이미 덮는다.
     assert _needs_facts_missing(_load_profile("_no_such_tenant_"), "parking") == ["facts.parking"]
+
+    # 배12516 — 정본 칸이 비어도 공통 기본 문장으로 답하게(시보 요청 2026-09-10 · 가짜 유형·가짜 결측값).
+    assert _empty_skeleton_line("trial_flow", ["offerings[trial]"]) != "", "체험 유형은 skeleton_when_empty 가 있다"
+    assert "처음 오시는 분은 상담과" in _empty_skeleton_line("trial_flow", ["offerings[trial]"])
+    assert _empty_skeleton_line("trial_flow", []) == "", "빈 칸이 없으면 기본 문장을 안 얹는다"
+    assert _empty_skeleton_line("parking", ["facts.parking"]) == "", "skeleton_when_empty 없는 유형은 얹지 않는다"
+    assert _empty_skeleton_line(None, ["facts.parking"]) == ""
+    assert "처음 오시는 분은 상담과" in _concierge_system_block(
+        "1_wellperion", _load_profile("1_wellperion"), _persona_of("1_wellperion"), "trial_flow", ["offerings[trial]"])
 
     # 시보 요청② — 테스트 세션 접두어는 집계 제외 판정용(GM 07-18 규칙).
     assert _is_test_session("test-abc123") is True
