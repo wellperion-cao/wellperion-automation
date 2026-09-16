@@ -75,9 +75,9 @@ def _server_final(out):
         a, b = _num(cells[k]), _num(sheet.get(k))
         if a != b:
             diff.append({"cell": k, "server": cells[k], "sheet": str(sheet.get(k) or "").strip(), "gap": a - b})
-    # 22칸 = 보고 정의서의 금일·회원·등록·입장 칸(I4·I6·I7·I8~I15 + N2~N15). J* 누적은 화면용이라 셈에서 뺀다
-    # (시토 실측 2026-09-16: J 까지 세면 36 이 나와 「22칸 무결」과 자리가 안 맞는다).
-    report22 = ["I4", "I6", "I7"] + ["I%d" % r for r in range(8, 16)] + ["N%d" % r for r in range(2, 16)]
+    # 22칸 = sales_report_render 정의서 그대로(I4·I6·I7 + 팀 8 + 회원 5 + 등록 6 = 22). 입장 3칸(N13~N15)과
+    # J* 누적은 정의서 밖(화면용)이라 셈에서 뺀다 — 시토 실측 2026-09-16: 입장까지 세면 25, 누적까지 36.
+    report22 = ["I4", "I6", "I7"] + ["I%d" % r for r in range(8, 16)] + ["N%d" % r for r in range(2, 13)]
     return {"cells": cells, "source": source, "missing": missing, "diff": diff,
             "cells_total": len(report22), "cells_filled": sum(1 for k in report22 if k in cells),
             "sheet_cells_used": 0}
