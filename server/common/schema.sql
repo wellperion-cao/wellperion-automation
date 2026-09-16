@@ -1218,3 +1218,44 @@ CREATE INDEX IF NOT EXISTS ix_hr_acclog_key  ON hr.access_log (tenant_id, db_key
 --     보존 연한). 지금은 물리 삭제 없음 · 수치 미정(aws2 §F-4). 실삭제 탭(온보딩·평가)의 내용 열쇠 승격은 2단계 쓰기
 --     API 가 _id 를 받기 시작하기 전에 먼저 한다(aws2 §F-5).
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+-- 랩스 구독 카드 자동결제 — 토스페이먼츠 빌링 (배12680 · 2026-09-16 시토 · GM 확정 09-16).
+-- billing_subscriptions = 파트너(tenant, 예 '2_dietcamp')별 구독 상태(plan·amount·다음 청구일) — 빌링키 원문은 없다.
+-- billing_secrets = 빌링키 원문 전용 표(별도 · 절대 API 응답에 안 실린다 · 읽기는 청구 함수 하나에서만).
+-- billing_charges = 청구 시도 원장. PRIMARY KEY(tenant_id, tenant, ym) 이 그대로 "같은 달 두 번 청구 금지"다.
+CREATE TABLE IF NOT EXISTS billing_subscriptions (
+  tenant_id       TEXT NOT NULL DEFAULT 'wellperion',
+  tenant          TEXT NOT NULL,
+  plan            TEXT NOT NULL DEFAULT '',
+  amount          BIGINT NOT NULL DEFAULT 0,
+  customer_key    TEXT NOT NULL DEFAULT '',
+  has_billing_key BOOLEAN NOT NULL DEFAULT FALSE,
+  next_charge     TEXT NOT NULL DEFAULT '',
+  status          TEXT NOT NULL DEFAULT '',
+  created_at      TEXT NOT NULL DEFAULT '',
+  updated_at      TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (tenant_id, tenant)
+);
+
+CREATE TABLE IF NOT EXISTS billing_secrets (
+  tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
+  tenant      TEXT NOT NULL,
+  billing_key TEXT NOT NULL,
+  updated_at  TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (tenant_id, tenant)
+);
+
+CREATE TABLE IF NOT EXISTS billing_charges (
+  tenant_id        TEXT NOT NULL DEFAULT 'wellperion',
+  tenant           TEXT NOT NULL,
+  ym               TEXT NOT NULL,
+  order_id         TEXT NOT NULL DEFAULT '',
+  amount           BIGINT NOT NULL DEFAULT 0,
+  status           TEXT NOT NULL DEFAULT '',
+  toss_payment_key TEXT NOT NULL DEFAULT '',
+  error            TEXT NOT NULL DEFAULT '',
+  tried_at         TEXT NOT NULL DEFAULT '',
+  retry_at         TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (tenant_id, tenant, ym)
+);
+CREATE INDEX IF NOT EXISTS ix_billing_charges_retry ON billing_charges (tenant_id, status, retry_at);
