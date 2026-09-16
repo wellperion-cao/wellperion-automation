@@ -35,7 +35,7 @@ from common import db  # noqa: E402
 
 KIND = "daily"
 CALL_GAP = 1.0          # ponytail: 고정 간격 — 실제 제한값 실측 전엔 브로제이(1.1초)와 같은 자릿수로 보수적으로
-SELF_BASE_URL = os.environ.get("ERP_SELF_BASE_URL", "http://127.0.0.1:8000")  # api_hr.py AUTH_CHECK_URL_DEFAULT 와 같은 관례
+SELF_BASE_URL = os.environ.get("ERP_SELF_BASE_URL", "http://127.0.0.1:8001")  # 라이브 앱 포트(brojay_transfer_gap.py BASE 와 같은 값 — 8000 은 별도 auth 서비스, 실측 2026-09-16)
 
 
 def _env(name, default):
