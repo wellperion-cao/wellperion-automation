@@ -9,7 +9,7 @@
     POST /auth/login   /auth/signup   /auth/logout
     GET  /auth/check                  — nginx auth_request 용 (200 통과 / 401 로그인 필요 / 403 권한 없음)
     GET  /auth/me                     — 로그인 사용자 + allowed_ids(허용 모듈 id · 앱 셸이 카드 표시에 씀)
-    GET  /auth/forbidden              — 403 안내 화면
+    GET  /auth/forbidden              — 권한 없음 화면(nginx 내부 재작성 전용 · 밖에서는 404)
     GET  /auth/admin                  — 관리자 콘솔(admin.html, SPA 하나가 아래 API로 전부 그린다)
     GET  /auth/admin/api/state        — 콘솔 데이터(관리자 아니거나 비밀번호 미입력=401)
     GET  /auth/admin/push_approvals   — 🔒 커밋·푸시 승인 현황(읽기 전용 · 배1098 2단계) · 결정은 GM 봇방 카드만
@@ -1140,18 +1140,10 @@ def me(erp_session: Optional[str] = Cookie(default=None)):
 
 
 @app.get("/auth/forbidden")
-def forbidden_page(next: str = "/", erp_session: Optional[str] = Cookie(default=None)):
-    # 지금 계정으로 next 가 열리면 「권한 없음」을 보이지 말고 그리로 보낸다 — 권한을 고친 뒤 GM 이 즐겨찾기·뒤로가기로
-    # 이 주소(/auth/forbidden?next=…)를 다시 열어 「안 들어가진다」고 보신 일(2026-09-16 · /home 수리 직후).
-    # 판정은 check() 와 같은 두 줄(카드 허용 · 카드 밖 path_allowed)만 — 자동 세션의 쓰기·인사 제한은 GET 화면이라 해당 없음.
-    u = current(erp_session)
-    dest = safe_next(next)
-    if u and dest not in ("/", "") and not dest.startswith("/auth/"):
-        path = uri_path(dest)
-        m = module_at(dest)
-        ok = (allowed(u, m) if m else path_allowed(u, path)) and not (is_platform_path(path) and (u["email"] or "").lower() not in PLATFORM_ADMINS)
-        if ok:
-            return RedirectResponse(dest, status_code=302)
+def forbidden_page(next: str = "/"):
+    # nginx @forbidden 의 내부 재작성으로만 도달한다(erp.nginx.conf `location = /auth/forbidden { internal; }`) —
+    # 밖에서 이 주소를 직접 열면 404. 옛 주소(/auth/forbidden?next=…)를 받아 주던 처리는 GM 2026-09-16 지시로 지웠다
+    # (「다 삭제하고 기록으로만」) — 경위는 저장 이력 c2733fc03·14ece03d4.
     return page("권한 없음", f"""<div class=box><h1>권한 없음</h1>
 <p class=err>이 화면은 지금 계정에 허용되지 않았습니다.<br><small>{escape(next)}</small></p>
 <p>필요하면 GM 에게 권한을 요청하세요. <a href=/erp/>ERP 홈으로</a></p></div>""")
