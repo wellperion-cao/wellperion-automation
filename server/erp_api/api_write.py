@@ -237,6 +237,21 @@ UPLOAD_EXT = {
 UPLOAD_SUBDIR = "todo"
 
 
+# 형식(MIME)이 비었거나 표에 없어 .bin 이 될 때 — 파일 머리 바이트로 한 번 더 본다. 2026-09-16 실측: 주차장 대기구역
+# 결재 첨부 PDF 2건이 .bin 으로 저장돼 GM 이 열면 내려받기만 됐다(file 판정 = PDF 1.6). 표에 있는 형식만 준다 — .html/.svg 는 그대로 .bin.
+_MAGIC = ((b"%PDF", ".pdf"), (b"\x89PNG", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp"))
+
+
+def _sniff_ext(raw):
+    head = raw[:12]
+    for sig, ext in _MAGIC:
+        if head.startswith(sig):
+            if ext == ".webp" and head[8:12] != b"WEBP":
+                continue
+            return ext
+    return ".bin"
+
+
 def save_todo_file(b64, mime):
     r"""첨부 base64 → 서버 디스크. 돌려주는 값은 화면이 그대로 쓰는 주소, 실패하면 ''.
 
@@ -252,6 +267,8 @@ def save_todo_file(b64, mime):
         return ""
     if not raw:
         return ""
+    if ext == ".bin":
+        ext = _sniff_ext(raw)   # 브라우저가 형식을 안 보내거나 모르는 이름으로 보낸 PDF·사진 — 머리 바이트로 판정(2026-09-16)
     if _rc._upload_dir_usage() + len(raw) > _rc.UPLOAD_QUOTA_BYTES:   # 접수 사진과 같은 총량 상한을 함께 쓴다
         return ""
     name = hashlib.sha256(raw).hexdigest()[:24] + ext
@@ -949,6 +966,10 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
         # 표에 없는 형식은 .bin — .html/.svg 가 ERP 오리진에 저장되는 길을 막는다(검수 C3 와 같은 이유)
         assert save_todo_file(base64.b64encode(b"<svg/>").decode(), "image/svg+xml").endswith(".bin")
         assert save_todo_file(base64.b64encode(b"<h1>x").decode(), "text/html").endswith(".bin")
+        # 형식이 비어 와도 PDF·PNG 는 머리 바이트로 알아본다(2026-09-16 · .bin 첨부 사고) — html 은 여전히 .bin
+        assert save_todo_file(base64.b64encode(b"%PDF-1.6 y").decode(), "").endswith(".pdf")
+        assert save_todo_file(base64.b64encode(b"\x89PNG\r\n\x1a\nz").decode(), "application/octet-stream").endswith(".png")
+        assert _sniff_ext(b"<html>") == ".bin"
         # 대표 서명본은 GM 결재완료 건만 — 아니면 서버가 안 맡고 GAS 가 같은 문구로 거절한다(GAS 관문 보존)
         _rec = {"todo_items": {"T1": {"id": "T1", "결재상태": "대기", "파일URL": ""}}}
         assert upload_as_update(_MirrorConn(_rec), "approval_rep_sign_upload",
