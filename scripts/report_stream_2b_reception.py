@@ -635,7 +635,8 @@ def _score_block() -> str:
     ▸셈법은 서버(reg_scoreboard) 한 곳뿐 — 여기서 다시 세지 않는다. 화면과 이 발표의
       숫자가 갈라지면 아무도 점수를 안 믿는다.
     """
-    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_scoreboard", "period": "week"},
+    # ★기간 = 이번 달(GM 지시 2026-09-16 「텔레그램·카톡 점수는 항상 이번달 기준」 · 화면 기본과 같게).
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_scoreboard", "period": "month"},
                    timeout=20, label="stream2b-score")
     if resp is None:
         return ""
@@ -645,10 +646,10 @@ def _score_block() -> str:
     except Exception:
         return ""
     if not board:
-        return (f"{_DIVIDER}\n🏆 이번 주 점수판 (접수 1점 + 완료 1점)\n\n"
+        return (f"{_DIVIDER}\n🏆 이번 달 점수판 (접수 1점 + 완료 1점)\n\n"
                 "아직 점수가 없습니다. 접수하시거나 처리를 끝내시면 쌓입니다.")
 
-    lines = [_DIVIDER, "🏆 이번 주 점수판 (접수 1점 + 완료 1점)", ""]
+    lines = [_DIVIDER, "🏆 이번 달 점수판 (접수 1점 + 완료 1점)", ""]
     top = board[0]["total"]
     for x in board[:5]:
         mark = "🎉" if x["total"] == top else "▪"
@@ -656,7 +657,7 @@ def _score_block() -> str:
         lines.append(f"   접수 {x['intake']} · 완료 {x['done']}")
     winners = [x["name"] for x in board if x["total"] == top]
     lines.append("")
-    lines.append(f"🎊 {' · '.join(winners)}님 수고하셨습니다! 이번 주 1위입니다 🎊")
+    lines.append(f"🎊 {' · '.join(winners)}님 수고하셨습니다! 이번 달 1위입니다 🎊")
     return "\n".join(lines)
 
 
@@ -832,11 +833,14 @@ def _score4_block(rows: list[dict], today: datetime | None = None) -> str:
     """📐 처리 점수제 — 기존 접수/완료 점수판(_score_block) 아래에 얹는 4규칙 요약.
     표만 낸다(사람 탓 문장 금지 — 설계 문서 지시)."""
     today = today or datetime.now()
+    # ★이번 달 접수분만(GM 지시 2026-09-16) — 종전엔 완료예정일 신설(8월 말) 이후 전부를 합쳐 셌다.
+    ym = today.strftime("%Y-%m")
+    rows = [r for r in rows if str(r.get("createdAt") or "").startswith(ym)]
     table = build_score4_table(rows, today)
     if not table:
         return ""
     names = sorted(table, key=lambda n: (-(table[n]["plus1"] - table[n]["minus1"] * 1 - table[n]["minus3"] * 3), n))
-    lines = [_DIVIDER, "📐 처리 점수제 (완료예정일 신설 이후 집계)", ""]
+    lines = [_DIVIDER, "📐 처리 점수제 (이번 달 접수분)", ""]
     for name in names[:8]:
         t = table[name]
         net = t["plus1"] - t["minus1"] - t["minus3"] * 3
