@@ -1123,7 +1123,8 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     if is_auto_token(erp_session):
         # 사무실 자동 로그인 세션(배1134) — 계정 perms 와 별개로 조회만 허용. 쓰기(GET/HEAD 아닌 요청)와
         # 인사 폴더(chro-*)는 이 세션으로 못 연다 — account_perms.json 이 나중에 바뀌어도 여기서 다시 막는다.
-        if (request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD") \n                and not path.startswith(AUTO_LOGIN_WRITE_PREFIXES):
+        if ((request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD")
+                and not path.startswith(AUTO_LOGIN_WRITE_PREFIXES)):
             raise HTTPException(403)          # 쓰기는 AUTO_LOGIN_WRITE_PREFIXES(피드백 · 종합접수처 처리)뿐
         if m and m["id"].startswith("chro-"):
             raise HTTPException(403)
