@@ -170,12 +170,18 @@ def sync_owner_cols(conn):
 SERVER_FIRST_SINCE = "2026-09-11 19:00:00"   # write_member=server 발효(GM 지시 2026-09-11 19:1x) — 그 뒤 쓰기만 서버가 이긴다
 
 
+_IDENTITY_KEYS = {"회원명", "휴대폰번호", "회원번호"}   # 되살림 제외 — 값이 갈리면 사람(임정은M) 확인이 먼저
+
+
 def _merge_server_values(data, fields):
     """data(시트 원행 JSON · 머리글에 줄바꿈 섞임) 에 서버가 쓴 fields 를 덮어 쓴다 — 바뀐 칸 수 반환. 순수 함수."""
     raw_key = {re.sub(r"\s+", "", str(k)): k for k in data}
     n = 0
     for f, v in fields.items():
-        k = raw_key.get(re.sub(r"\s+", "", str(f)))
+        fk = re.sub(r"\s+", "", str(f))
+        if fk in _IDENTITY_KEYS:   # 사람을 가리키는 칸은 자동으로 되살리지 않는다 — 사람이 확인한 뒤에만(2026-09-16 실측 M01751 회원명 갈림)
+            continue
+        k = raw_key.get(fk)
         if k is not None and (data.get(k) or "") != (v or ""):
             data[k] = v
             n += 1
