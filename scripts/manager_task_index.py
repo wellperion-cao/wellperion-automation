@@ -951,6 +951,26 @@ def ssot_links(r: dict) -> str:
     return head + (f'<div class="dcs">{" ".join(tail)}</div>' if tail else "")
 
 
+def row_docs(it: dict, ssot_by_id: dict) -> list[dict]:
+    """업무 행 자동 첨부(GM 지시 2026-09-16 "업무마다 첨부가 여러 개") — 그 행이 업무 SSOT(todo_id)와
+    이어져 있으면 그 행의 기획안·결과보고·파일URL/링크를 {label, href} 로 낸다. 안 이어져 있으면
+    빈 목록(주소를 지어내지 않는다) — ssot_links() 와 같은 원천(doc_urls)을 그대로 쓴다."""
+    todo_id = str(it.get("todo_id") or "").strip()
+    r = ssot_by_id.get(todo_id) if todo_id else None
+    if not r:
+        return []
+    tid = quote(todo_id, safe="")
+    body = str(r.get("내용") or "")
+    out = []
+    if "===PLAN===" in body:
+        out.append({"label": "기획안", "href": f"{SSOT_PAGE}?doc={tid}&which=plan"})
+    if "===RESULT===" in body:
+        out.append({"label": "결과보고", "href": f"{SSOT_PAGE}?doc={tid}&which=result"})
+    for i, u in enumerate(doc_urls(r), 1):
+        out.append({"label": f"첨부{i}", "href": u})
+    return out
+
+
 def objective_docs_html(o: dict) -> str:
     """월간운영계획 카드에 달린 자료 링크 — GM업무 화면이 읽는 그 칸(docs[]·doc) 그대로.
     docs 원소는 {label, href} 도 있고 주소 문자열만 있는 것도 있다. 두 화면이 같은 폴더에
@@ -1291,8 +1311,8 @@ def is_overdue(it: dict) -> bool:
 NEXT_STEP_MISSING = "다음 한 걸음 미정 — 담당이 한 줄로"
 
 
-def row_model(no: int, seen_date: str, it: dict) -> dict:
-    """열린 건 하나 → 공개 스냅숏 행. 담는 것 = 번호·제목·담당·함께·기한·다음 한 걸음·경과·구분·SSOT 열쇠·진척 —
+def row_model(no: int, seen_date: str, it: dict, ssot_by_id: "dict | None" = None) -> dict:
+    """열린 건 하나 → 공개 스냅숏 행. 담는 것 = 번호·제목·담당·함께·기한·다음 한 걸음·경과·구분·SSOT 열쇠·진척·첨부 —
     카톡 원문(note)·전화·비밀값은 싣지 않는다(공개 저장소·Pages 에 배포되는 파일)."""
     cn = cat_name(it)
     todo_id = str(it.get("todo_id") or "").strip()
@@ -1302,7 +1322,8 @@ def row_model(no: int, seen_date: str, it: dict) -> dict:
            "owner": str(it.get("owner") or "").strip(), "with": str(it.get("with") or "").strip(),
            "due": str(it.get("due") or "").strip()[:10], "overdue": is_overdue(it),
            "next_step": _mask(str(it.get("next_step") or "").strip()),
-           "todo_id": todo_id, "ss": ss, "flags": flags_of(it)}
+           "todo_id": todo_id, "ss": ss, "flags": flags_of(it),
+           "docs": row_docs(it, ssot_by_id or {})}
     if it.get("target"):
         out["target"], out["current"], out["unit"] = it.get("target"), it.get("current") or 0, str(it.get("unit") or "")
     return out
@@ -1469,6 +1490,10 @@ def selfcheck() -> None:
     rm = row_model(7, (today - timedelta(days=3)).isoformat(),
                    {"issue": "네이버 계정 비밀번호 abc!2345678 전달", "note": "카톡 원문 010-1234-5678", "due": "2026-01-01"})
     assert rm["overdue"] and "note" not in rm and "[가림]" in rm["issue"] and "abc!2345678" not in rm["issue"]
+    assert rm["docs"] == []   # todo_id 없음 — 자동 첨부 0(지어내지 않는다)
+    rm2 = row_model(8, today.isoformat(), {"issue": "e", "todo_id": "T1"},
+                    {"T1": {"id": "T1", "내용": "===PLAN===\nx\n===RESULT===\ny", "파일URL": "https://a.b/c"}})
+    assert [d["label"] for d in rm2["docs"]] == ["기획안", "결과보고", "첨부1"], rm2["docs"]
     # 뼈대 렌더 — 스냅숏 인라인 · JS 가 6열 colgroup 으로 그린다 · 라이브 못 읽음 문구 존재
     page = render_page({"generated_at": "t", "today": "2026-09-15", "resp": {}, "people": [], "missed": [],
                         "line_out": [], "ai": [], "unassigned": [], "moved": [], "routine": [], "reply": [],
@@ -1476,6 +1501,10 @@ def selfcheck() -> None:
                         "rc_n": 0, "dup_n": 0, "ssot_ok": True, "owner_choices": [], "people_order": MGR_PEOPLE,
                         "next_step_missing": NEXT_STEP_MISSING})
     assert 'id="snap"' in page and "라이브 원장을 못 읽었습니다" in page and "DT_COLS" in page and "manager_ledger_snapshot.json" in page
+    # 사람별 A3 요약본(GM 지시 2026-09-16 걷어냄) — mapbar·printA3·sec-act 흔적이 없어야 한다.
+    assert "mapbar" not in page and "printA3" not in page and "sec-act" not in page and "A3 요약본" not in page
+    # 업무 행 첨부 — 자동(r.docs) 껍데기(attShell)·손 첨부 버튼(dc-add)·보드 키가 있어야 한다.
+    assert 'class="att"' in page and "dc-add" in page and "MGR_TASK_DOCS" in page
     print("[selfcheck] 담당 드롭다운·중복 판정·note 청소·놓친 것·스냅숏 가림·뼈대 렌더 OK")
 
 
@@ -1520,11 +1549,14 @@ def build_model() -> dict:
 
     ssot_rows = fetch_ssot_rows()
     ssot_ok = ssot_rows is not None
+    # 행마다 첨부(row_docs) 도 같은 id 맵을 쓴다 — ssot_ok 가 False 면 빈 dict(자동 첨부 없음 · 지어내지 않는다).
+    ssot_by_id = {str(r.get("id")): r for r in ssot_rows if r.get("id")} if ssot_rows else {}
+    rm = lambda n_, d_, it_: row_model(n_, d_, it_, ssot_by_id)
     resp_model, _hist = resp_section(seen, ssot_rows, sales_data)   # 👤 책임 3인(원장 이번 달 키 갱신 포함)
     moved: list[tuple[int, str, dict, dict, str]] = []  # (no, date, it, ssot_row, matched_by) — 업무 SSOT 로 넘어간 것
     if ssot_ok:
         # 번호가 유사도보다 먼저다(GM 규칙) — 원장 todo_id 가 있으면 그 id 로 바로 맞춘다.
-        by_id = {str(r.get("id")): r for r in ssot_rows if r.get("id")}
+        by_id = ssot_by_id
         remain = {}
         for n, (d, it) in opens.items():
             todo_id = str(it.get("todo_id") or "").strip()
@@ -1584,10 +1616,10 @@ def build_model() -> dict:
         shown += [(n, d, it, name) for n, d, it in person_rows]
         counts.append((name, len(person_rows), sum(1 for _n, _d, it in person_rows if ssot_missing(it))))
         people.append({"name": name, "dept": dept, "room": room,
-                       "mine": [row_model(n, d, it) for n, d, it in mine],
+                       "mine": [rm(n, d, it) for n, d, it in mine],
                        "team_title": team[1] if team else "", "team_lead": team[2] if team else "",
                        # 사람 순서 = 명단(OPS_TEAM·FACILITY_TEAM) 순서 — GM 지시 2026-09-14
-                       "team": [{"who": p_, "rows": [row_model(n, d, it) for n, d, it in sorted(team_groups[p_])]}
+                       "team": [{"who": p_, "rows": [rm(n, d, it) for n, d, it in sorted(team_groups[p_])]}
                                 for p_ in (team[0] if team else []) if p_ in team_groups]})
 
     line_out = sorted(((n, d, it) for n, (d, it) in opens.items()
@@ -1600,19 +1632,19 @@ def build_model() -> dict:
     shown += [(n, d, it, "담당 미정") for n, d, it in unassigned]
     buckets: dict[str, list] = {k: [] for k in [g[0] for g in GROUPS] + ["기타"]}
     for n, d, it in unassigned:
-        buckets[group_of(it)].append(row_model(n, d, it))
+        buckets[group_of(it)].append(rm(n, d, it))
 
     def by_owner(rows_, order_):
         by: dict[str, list] = {}
         for n, d, it in rows_:
-            by.setdefault(str(it.get("owner") or "담당 미정").strip() or "담당 미정", []).append(row_model(n, d, it))
+            by.setdefault(str(it.get("owner") or "담당 미정").strip() or "담당 미정", []).append(rm(n, d, it))
         names = [w for w in order_ if w in by] + [w for w in by if w not in order_]
         return [{"who": w, "rows": by[w]} for w in names]
 
     missed = missed_items(shown)
     mm: dict[str, list] = {}
     for no, d, it, who in missed:
-        mm.setdefault(who, []).append(row_model(no, d, it))
+        mm.setdefault(who, []).append(rm(no, d, it))
     m_order = MGR_PEOPLE + [w for w in mm if w not in MGR_PEOPLE and w != "담당 미정"] + ["담당 미정"]
     return {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"), "today": date.today().isoformat(),
@@ -1620,7 +1652,7 @@ def build_model() -> dict:
         "resp": resp_model, "people_order": MGR_PEOPLE,
         "missed": [{"who": w, "rows": mm[w]} for w in m_order if w in mm],
         "people": people,
-        "line_out": [row_model(n, d, it) for n, d, it in line_out],
+        "line_out": [rm(n, d, it) for n, d, it in line_out],
         "ai": [{"no": n, "issue": _mask(str(it.get("issue") or ""))} for n, _d, it in ai_items],
         "unassigned": [{"group": k, "rows": v} for k, v in buckets.items() if v],
         "moved": [{"no": no, "issue": _mask(str(it.get("issue") or "")), "ssot_id": str(m.get("id") or ""),
@@ -1799,6 +1831,17 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   .dc { display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
          background:rgba(255,255,255,0.08); color:var(--dim); text-decoration:none; }
   .dc:hover { color:inherit; text-decoration:underline; }
+  /* 업무 행 첨부(GM 지시 2026-09-16 "업무마다 첨부 여러 개") — td.ti 는 흰 배경이라 .dc 색을 다시 입힌다 */
+  .att { margin-top:4px; display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+  .att .dc { background:var(--navy-bg); color:var(--navy); text-decoration:none; }
+  .att .dc:hover { background:var(--navy); color:#fff; }
+  .dc-chip { display:inline-flex; align-items:center; }
+  .dc-x { font-family:inherit; font-size:11px; line-height:1; color:var(--dim); background:transparent;
+          border:0; cursor:pointer; padding:0 2px; }
+  .dc-x:hover { color:var(--bad); }
+  .dc-add, .dc-all { display:inline-block; font-family:inherit; font-size:11px; font-weight:700; color:var(--navy);
+    background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 6px; cursor:pointer; text-decoration:none; }
+  .dc-add:hover, .dc-all:hover { background:var(--navy-bg); }
   .ss-st { display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px;
             background:rgba(255,255,255,0.08); color:var(--dim); margin-right:4px; }
   .ss-ap { display:inline-block; padding:1px 6px; border-radius:6px; font-size:11.5px; }
@@ -1825,27 +1868,14 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
     .blk table { min-width:620px; }
     .top-age { flex:0 0 46px; font-size:15px; }
   }
-  /* A3 요약본(인쇄+PNG) — GM업무.html 과 같은 버튼 3개(GM 지시 2026-09-15). 제목 줄 오른쪽에 상시 노출,
-     별도 배지·설명문은 안 둔다. */
-  @page { size: A3 portrait; margin: 12mm; }
+  /* 제목 줄 오른쪽 버튼(📅 분기 누적) — 사람별 인쇄용 통짜 문서는 GM 지시 2026-09-16 로 걷어냈다
+     (업무마다 첨부가 여러 개 필요해 "1명으로 좁혀지는" 통짜 인쇄 대신 행마다 첨부 목록으로 바꿨다). */
   .h1row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
   .a3bar{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}
   .a3bar button{font-family:inherit;font-size:12.5px;font-weight:700;color:#fff;cursor:pointer;
     background:var(--navy);border:1px solid var(--navy);border-radius:99px;padding:5px 13px;}
   .a3bar button:hover{opacity:.85;}
   .a3bar button:disabled{opacity:.5;cursor:default;}
-  /* 사람별 A3 요약본 막대 — GM업무.html .mapbar 와 같은 구성 */
-  .mapbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-    background:var(--navy);color:#fff;padding:8px 14px;margin:-22px -18px 14px;font-size:13px;}
-  .mapbar .t{flex:1 1 auto;font-weight:700;}
-  .mapbar button{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--navy);background:#fff;border:0;border-radius:99px;padding:5px 13px;cursor:pointer;}
-  .mapbar button.x{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6);}
-  .a3-hide{display:none !important;}
-  body[data-a3] .pr-skip, body[data-a3] .cur-h{display:none !important;}
-  /* 사람 블록 「🖨 A3 요약본」 버튼 — GM업무.html .sec-act 와 같은 규격(알약·테두리 1px·12.5px·700) */
-  h2 .sec-act{font-family:inherit;font-size:12.5px;font-weight:700;color:var(--navy);background:#fff;cursor:pointer;
-    border:1px solid var(--navy);border-radius:99px;padding:3px 11px;margin-left:auto;white-space:nowrap;}
-  h2 .sec-act:hover{background:var(--navy);color:#fff;}
   .blk > h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   h2.cur-h{margin-top:18px;background:var(--navy);color:#fff;border:1px solid var(--navy);}
   h2.cur-h .sub{color:#fff;opacity:.8;}
@@ -1872,7 +1902,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   details.resp-q > summary::before{content:"▸ ";opacity:.8;}
   details.resp-q[open] > summary::before{content:"▾ ";}
   @media print{
-    .a3bar,.mapbar{display:none !important;}
+    .a3bar{display:none !important;}
     body{padding:0;}
     .wrap{max-width:100%;}
     section.resp,.top,.blk,.top-who{break-inside:avoid;}
@@ -1898,13 +1928,6 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
 </style>
 </head>
 <body>
-<div class="mapbar" id="mapbar" style="display:none;">
-  <span class="t">🖨 A3 요약본 — <b id="a3name"></b> · 책임 항목 + 놓친 것 + 현재 업무만 인쇄·저장됩니다</span>
-  <button type="button" onclick="printA3('landscape');">🖨 A3 가로 인쇄</button>
-  <button type="button" onclick="printA3('portrait');">🖨 A3 세로 인쇄</button>
-  <button type="button" id="mgr-png-btn" onclick="saveMapPng(this);">🖼 PNG 다운로드</button>
-  <button type="button" class="x" onclick="closePersonA3();">✕ 닫기</button>
-</div>
 <div class="wrap">
   <div class="h1row">
     <h1>중간관리자 업무 목차</h1>
@@ -1945,6 +1968,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   var HEAD_ROW = '<tr><th class="no">번호</th><th>업무</th><th class="own">담당</th><th class="due">기한</th><th class="nx">다음 한 걸음</th><th class="pg">진척</th><th class="ss">업무·결재 SSOT</th><th class="age">경과</th></tr>';
   var SSOT_PAGE = '../todo/업무 현황 SSOT.html';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/'/g, '&#39;'); }
   function ageCls(a) { return a >= 14 ? 'old' : (a >= 7 ? 'warn' : ''); }
   function fmtAmt(v, unit) {
     var n = parseInt(v, 10); if (isNaN(n)) return v + unit;
@@ -1978,8 +2002,12 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   function nextStep(r) {
     return (r.next_step ? esc(r.next_step) : '<span class="nx-none">' + esc(M.next_step_missing) + '</span>') + '<div class="nx-reply">회신 「#' + r.no + ' 했다」 한 줄이면 닫힘</div>';
   }
+  function attShell(r) {
+    // 첨부(자동+손) 껍데기만 — 실제 칩은 renderAtt() 가 채운다(자동은 바로 · 손은 보드 읽은 뒤).
+    return '<div class="att" data-no="' + r.no + '" data-auto=\'' + escAttr(JSON.stringify(r.docs || [])) + '\'></div>';
+  }
   function rowHtml(r) {
-    return '<tr data-no="' + r.no + '"><td class="no">#' + r.no + '</td><td class="ti">' + esc(r.issue) + (r.cat ? '<span class="cat">' + esc(r.cat) + '</span>' : '') + '</td>' +
+    return '<tr data-no="' + r.no + '"><td class="no">#' + r.no + '</td><td class="ti">' + esc(r.issue) + (r.cat ? '<span class="cat">' + esc(r.cat) + '</span>' : '') + attShell(r) + '</td>' +
       '<td class="own">' + ownerSelect(r) + (r['with'] ? '<div class="with">함께 ' + esc(r['with']) + '</div>' : '') + '</td>' +
       '<td class="due' + (r.overdue ? ' old' : '') + '">' + esc(r.due || '—') + '</td><td class="nx">' + nextStep(r) + '</td>' + progressCell(r) +
       '<td class="ss">' + ssCell(r) + '</td><td class="age ' + ageCls(r.age) + '">' + r.age + '일</td></tr>';
@@ -2025,7 +2053,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
         if (r.detail) tr += '<tr class="rp-detail" hidden><td colspan="6">' + detailTable(r.detail) + '</td></tr>';
         return tr;
       }).join('');
-      out += '<div class="rp-person" data-person="' + esc(person) + '"><h3>' + esc(person) + '</h3><table class="resp-tb">' + head + trs + '</table></div>';
+      out += '<div class="rp-person"><h3>' + esc(person) + '</h3><table class="resp-tb">' + head + trs + '</table></div>';
     });
     return out;
   }
@@ -2066,7 +2094,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
         return '<div class="top-i"><span class="top-age ' + ageCls(r.age) + '">' + r.age + '일째</span><div class="top-b"><b>#' + r.no + ' ' + esc(r.issue) + '</b>' + fl +
           '<div class="top-w">기한 ' + esc(r.due || '—') + ' · ' + (r.next_step ? '다음 한 걸음: ' + esc(r.next_step) : '<span class="nx-none">' + esc(M.next_step_missing) + '</span>') + ' · 회신 「#' + r.no + ' 했다」</div></div></div>';
       }).join('');
-      return '<div class="top-who" data-person="' + esc(g.who) + '"><h3>' + esc(g.who) + ' <span class="gc">' + g.rows.length + '건</span></h3>' + lines + '</div>';
+      return '<div class="top-who"><h3>' + esc(g.who) + ' <span class="gc">' + g.rows.length + '건</span></h3>' + lines + '</div>';
     }).join('') || '<div class="empty" style="padding:6px 0;">없음 — 기한 지난 것·7일 넘게 멈춘 것이 없습니다</div>';
     return '<h2>⚠ 놓친 것 <span class="why">기한 지난 것이 맨 위 · 7일 넘게 답 없는 것 · 사람별 · ' + (M.missed_n || 0) + '건 — 여기부터 답을 받으세요</span></h2>' + groups;
   }
@@ -2078,8 +2106,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
       var teamN = n - p.mine.length;
       var team = p.team_title ? '<details open class="grp"><summary>' + esc(p.team_lead) + ' ' + esc(p.team_title) + ' <span class="gc">' + teamN + '건</span></summary>' +
         (p.team.length ? groupTables(p.team) : '<div class="empty" style="padding:8px 14px;">없음</div>') + '</details>' : '';
-      return '<div class="blk" data-person="' + esc(p.name) + '"><h2>' + esc(p.name) + ' <span class="sub">' + esc(p.dept) + ' · ' + esc(p.room) + ' · 열린 건 ' + n + '건(본인 ' + p.mine.length + '건)</span>' +
-        '<button type="button" class="sec-act" onclick="openPersonA3(this.closest(\'.blk\').dataset.person);">🖨 A3 요약본</button></h2>' + table(p.mine, '열린 건 없음') + team + '</div>';
+      return '<div class="blk"><h2>' + esc(p.name) + ' <span class="sub">' + esc(p.dept) + ' · ' + esc(p.room) + ' · 열린 건 ' + n + '건(본인 ' + p.mine.length + '건)</span></h2>' + table(p.mine, '열린 건 없음') + team + '</div>';
     });
     if (M.routine && M.routine.length) out.push('<div class="blk pr-skip"><h2>책임 <span class="sub">끝나는 일이 아니라 계속 보는 자리 · 이 줄은 완료로 닫지 않습니다</span></h2>' + groupTables(M.routine) + '</div>');
     if (M.line_out && M.line_out.length) out.push('<div class="blk"><h2>라인 밖 <span class="sub">실장·소장·나우열M 어느 라인도 아닌 담당 · ' + M.line_out.length + '건</span></h2>' + table(M.line_out, '없음') + '</div>');
@@ -2123,6 +2150,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
     return fetch('/api/board/' + OWNER_KEY, { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); }).catch(gas);
   }
   function wire() {
+    hydrateDocs();
     document.querySelectorAll('tr.rp-toggle').forEach(function (tr) {
       tr.addEventListener('click', function () {
         var det = tr.nextElementSibling; if (!det || !det.classList.contains('rp-detail')) return;
@@ -2159,41 +2187,86 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
     });
   }
 
-  // ── A3 요약본(사람별) · 분기 누적 버튼 · 인쇄 · PNG ───────────────────────────────
-  window.printA3 = function (orientation) {
-    var st = document.getElementById('mgr-a3-style');
-    if (!st) { st = document.createElement('style'); st.id = 'mgr-a3-style'; document.head.appendChild(st); }
-    st.textContent = '@page{ size: A3 ' + orientation + '; margin: 12mm; }';
-    window.print();
-  };
-  window.openPersonA3 = function (name) {
-    document.body.dataset.a3 = name;
-    document.querySelectorAll('[data-person]').forEach(function (el) { el.classList.toggle('a3-hide', el.dataset.person !== name); });
-    document.getElementById('a3name').textContent = name;
-    document.getElementById('mapbar').style.display = 'flex';
-    document.getElementById('resp-q').open = false;
-    window.scrollTo(0, 0);
-  };
-  window.closePersonA3 = function () {
-    delete document.body.dataset.a3;
-    document.querySelectorAll('.a3-hide').forEach(function (el) { el.classList.remove('a3-hide'); });
-    document.getElementById('mapbar').style.display = 'none';
-  };
   window.openQuarter = function () { var d = document.getElementById('resp-q'); d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  var H2C_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-  function loadH2C() { if (typeof html2canvas === 'function') return Promise.resolve(); return new Promise(function (ok, no) { var s = document.createElement('script'); s.src = H2C_SRC; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
-  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-  window.saveMapPng = function (btn) {
-    var label = btn.textContent; btn.textContent = '변환 중…'; btn.disabled = true;
-    var d = new Date(), who = document.body.dataset.a3 ? '_' + document.body.dataset.a3.replace(/[ ]+/g, '') : '';
-    var name = '중간관리자_업무' + who + '_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
-    var skipped = Array.prototype.slice.call(document.querySelectorAll('.pr-skip'));
-    skipped.forEach(function (el) { el.dataset.pngHidden = el.style.display; el.style.display = 'none'; });
-    loadH2C().then(function () { return html2canvas(document.querySelector('.wrap'), { scale: 2, backgroundColor: '#ffffff', windowWidth: document.querySelector('.wrap').scrollWidth }); })
-      .then(function (c) { var a = document.createElement('a'); a.download = name; a.href = c.toDataURL('image/png'); a.click(); })
-      .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
-      .finally(function () { skipped.forEach(function (el) { el.style.display = el.dataset.pngHidden; delete el.dataset.pngHidden; }); btn.textContent = label; btn.disabled = false; });
-  };
+
+  // ── 업무 행 첨부(GM 지시 2026-09-16) — 자동(SSOT 문서·r.docs) + 손(공용 보드 MGR_TASK_DOCS) ─────
+  var DOCS_KEY = 'MGR_TASK_DOCS';
+  var HAND_DOCS = {};
+  function readDocsBoard() {
+    var gas = function () { return fetch(BOARD_URL + '?action=board&key=' + DOCS_KEY, { cache: 'no-store' }).then(function (r) { return r.json(); }); };
+    if (!ERP_API_ON) return gas();
+    return fetch('/api/board/' + DOCS_KEY, { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); }).catch(gas);
+  }
+  function saveDocsBoard(board) {
+    return fetch(BOARD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'saveBoard', key: DOCS_KEY, board: board }), redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (res) { if (res && res.ok && ERP_API_ON) fetch('/api/board/' + DOCS_KEY + '/refresh', { cache: 'no-store' }).catch(function () {}); return res; });
+  }
+  function docChip(d, no, idx, hand) {
+    return '<span class="dc-chip"><a class="dc" href="' + escAttr(d.href) + '" target="_blank" rel="noopener" title="' + escAttr(d.href) + '">📎 ' + esc(d.label || d.href) + '</a>' +
+      (hand ? '<button type="button" class="dc-x" data-no="' + no + '" data-idx="' + idx + '" title="첨부 삭제">✕</button>' : '') + '</span>';
+  }
+  function renderAtt(el) {
+    if (!el) return;
+    var no = el.dataset.no, auto = [];
+    try { auto = JSON.parse(el.dataset.auto || '[]'); } catch (e) { auto = []; }
+    var hand = HAND_DOCS[no] || [];
+    var chips = auto.map(function (d) { return docChip(d, no, -1, false); }).join('') + hand.map(function (d, i) { return docChip(d, no, i, true); }).join('');
+    var openAll = (auto.length + hand.length) >= 2 ? '<a class="dc-all" href="#" data-no="' + no + '">🖨 모두 열기</a>' : '';
+    el.innerHTML = chips + openAll + '<button type="button" class="dc-add" data-no="' + no + '">+첨부</button>';
+  }
+  function hydrateDocs() {
+    document.querySelectorAll('.att[data-no]').forEach(renderAtt);   // 자동 첨부는 바로 보인다
+    readDocsBoard().then(function (j) {
+      HAND_DOCS = (j && j.ok && j.board) ? j.board : {};
+      document.querySelectorAll('.att[data-no]').forEach(renderAtt);
+    }).catch(function (e) { console.warn('[목차] 첨부 보드 읽기 실패', e && e.message); });
+  }
+  document.addEventListener('click', function (ev) {
+    var add = ev.target.closest && ev.target.closest('.dc-add');
+    if (add) {
+      var no = add.dataset.no;
+      var href = (prompt('첨부 주소(http 로 시작)를 입력하세요') || '').trim();
+      if (!href) return;
+      if (!/^https?:\/\//.test(href)) { alert('http 또는 https 로 시작하는 주소만 저장할 수 있습니다.'); return; }
+      var label = (prompt('첨부 이름(짧게)') || href).trim().slice(0, 30);
+      add.disabled = true;
+      readDocsBoard().then(function (j) {
+        var fresh = (j && j.ok && j.board) ? j.board : {};
+        var arr = (fresh[no] || []).slice();
+        arr.push({ label: label, href: href });
+        fresh[no] = arr;
+        return saveDocsBoard(fresh).then(function (res) {
+          if (res && res.ok) { HAND_DOCS = fresh; renderAtt(document.querySelector('.att[data-no="' + no + '"]')); }
+          else alert('첨부를 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.');
+        });
+      }).catch(function () { alert('첨부를 저장하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.'); }).finally(function () { add.disabled = false; });
+      return;
+    }
+    var del = ev.target.closest && ev.target.closest('.dc-x');
+    if (del) {
+      var no2 = del.dataset.no, idx = parseInt(del.dataset.idx, 10);
+      if (!confirm('이 첨부를 지울까요?')) return;
+      readDocsBoard().then(function (j) {
+        var fresh = (j && j.ok && j.board) ? j.board : {};
+        var arr = (fresh[no2] || []).slice();
+        arr.splice(idx, 1);
+        if (arr.length) fresh[no2] = arr; else delete fresh[no2];
+        return saveDocsBoard(fresh).then(function (res) {
+          if (res && res.ok) { HAND_DOCS = fresh; renderAtt(document.querySelector('.att[data-no="' + no2 + '"]')); }
+          else alert('삭제하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.');
+        });
+      }).catch(function () { alert('삭제하지 못했습니다 — 잠시 뒤 다시 시도해 주세요.'); });
+      return;
+    }
+    var all = ev.target.closest && ev.target.closest('.dc-all');
+    if (all) {
+      ev.preventDefault();
+      var no3 = all.dataset.no, el = document.querySelector('.att[data-no="' + no3 + '"]');
+      var auto3 = []; try { auto3 = JSON.parse(el.dataset.auto || '[]'); } catch (e3) { auto3 = []; }
+      auto3.concat(HAND_DOCS[no3] || []).forEach(function (d) { window.open(d.href, '_blank', 'noopener'); });
+    }
+  });
 
   // ── 부팅: 라이브 원장 3개 fetch → 실패하면 인라인 정적본(못 읽었다고 적는다) ────────────
   Promise.all([fetchJson('status/manager_ledger_snapshot.json'), fetchJson('status/manager_eval_history.json'), fetchJson('status/manager_eval.json').catch(function () { return {}; })])
