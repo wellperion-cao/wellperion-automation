@@ -26,5 +26,13 @@ def sales_report_cells(date: str = Query(None)):
     report = build_report(ref_date=date)
     if report is None:
         raise HTTPException(503, "시트 미러 없음(sync_sales.py 미동기화)")
-    return {k: report[k] for k in
-            ("cells", "final", "overrides", "matched", "total", "mismatches", "ref_date", "synced_at")}
+    out = {k: report[k] for k in
+           ("cells", "final", "overrides", "matched", "total", "mismatches", "ref_date", "synced_at")}
+    # 시트 없는 판(브로제이 결제 + ERP 회원 원장 · 배 2523 · GM 지시 2026-09-16) — 같은 칸 이름으로 나란히 낸다.
+    # 10/1 실결제 전환까지는 병행(시트 = 손 이관 원천) · 못 계산하면 사유만 적고 시트 판은 그대로 낸다.
+    try:
+        from brojay_cells import compute as _brojay  # noqa: PLC0415
+        out["brojay"] = _brojay(out["ref_date"]) or {"detail": "그달 브로제이 결제 적재 없음"}
+    except Exception as e:  # 원천 하나가 없어도 보고는 나간다 — 조용히 0 으로 두지 않고 사유를 남긴다
+        out["brojay"] = {"detail": "계산 실패: %s" % e}
+    return out
