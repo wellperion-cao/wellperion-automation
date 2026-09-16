@@ -1140,7 +1140,18 @@ def me(erp_session: Optional[str] = Cookie(default=None)):
 
 
 @app.get("/auth/forbidden")
-def forbidden_page(next: str = "/"):
+def forbidden_page(next: str = "/", erp_session: Optional[str] = Cookie(default=None)):
+    # 지금 계정으로 next 가 열리면 「권한 없음」을 보이지 말고 그리로 보낸다 — 권한을 고친 뒤 GM 이 즐겨찾기·뒤로가기로
+    # 이 주소(/auth/forbidden?next=…)를 다시 열어 「안 들어가진다」고 보신 일(2026-09-16 · /home 수리 직후).
+    # 판정은 check() 와 같은 두 줄(카드 허용 · 카드 밖 path_allowed)만 — 자동 세션의 쓰기·인사 제한은 GET 화면이라 해당 없음.
+    u = current(erp_session)
+    dest = safe_next(next)
+    if u and dest not in ("/", "") and not dest.startswith("/auth/"):
+        path = uri_path(dest)
+        m = module_at(dest)
+        ok = (allowed(u, m) if m else path_allowed(u, path)) and not (is_platform_path(path) and (u["email"] or "").lower() not in PLATFORM_ADMINS)
+        if ok:
+            return RedirectResponse(dest, status_code=302)
     return page("권한 없음", f"""<div class=box><h1>권한 없음</h1>
 <p class=err>이 화면은 지금 계정에 허용되지 않았습니다.<br><small>{escape(next)}</small></p>
 <p>필요하면 GM 에게 권한을 요청하세요. <a href=/erp/>ERP 홈으로</a></p></div>""")
