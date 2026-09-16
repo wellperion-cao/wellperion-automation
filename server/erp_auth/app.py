@@ -442,21 +442,33 @@ def current(token: Optional[str]):
 
 # ── 권한 ────────────────────────────────────────────────────────────────
 _MODS: tuple = (None, [], {})                  # (mtime, 모듈 목록, 경로→모듈) · mtime 바뀌면 다시 읽는다
+_DOCS: tuple = (None, [], {})                  # (mtime, 문서 목록, 경로→문서) — 같은 modules.json 의 documents 키(배 12666)
+
+
+def _by_path(items: list) -> dict:
+    # path 는 /erp/ 기준 상대경로("../cpo/x.html") → 사이트 절대경로("/cpo/x.html")
+    return {posixpath.normpath(urllib.parse.urljoin("/erp/", m["path"])): m for m in items}
 
 
 def modules() -> list:
-    global _MODS
+    global _MODS, _DOCS
     try:
         mt = os.stat(MODULES).st_mtime
     except OSError:
         return _MODS[1]
     if mt != _MODS[0]:
         with open(MODULES, encoding="utf-8") as f:
-            ms = json.load(f)["modules"]
-        # path 는 /erp/ 기준 상대경로("../cpo/x.html") → 사이트 절대경로("/cpo/x.html")
-        by_path = {posixpath.normpath(urllib.parse.urljoin("/erp/", m["path"])): m for m in ms}
-        _MODS = (mt, ms, by_path)
+            raw = json.load(f)
+        ms = raw["modules"]
+        _MODS = (mt, ms, _by_path(ms))
+        ds = raw.get("documents") or []            # 보고 문서(kind=doc) — 모듈이 아니다(배 12666)
+        _DOCS = (mt, ds, _by_path(ds))
     return _MODS[1]
+
+
+def documents() -> list:
+    modules()                                      # 같은 파일·같은 mtime 로 같이 읽는다
+    return _DOCS[1]
 
 
 _ACCTS: tuple = (None, {})                     # (mtime, 이메일→권한) · 파일이 바뀌면 다시 읽는다(재기동 불필요)
@@ -483,20 +495,31 @@ def uri_path(uri: str) -> str:
     return "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
 
 
-def module_at(uri: str) -> Optional[dict]:
-    """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
-    modules()
-    path = uri_path(uri)
-    if path in _MODS[2]:
-        return _MODS[2][path]
+def _lookup(path: str, by_path: dict) -> Optional[dict]:
+    """정확 경로 → 없으면 .html 생략 보정 → 없으면 폴더 index.html. module_at·doc_at 공용."""
+    if path in by_path:
+        return by_path[path]
     if path.endswith(".html"):
         return None
     # 깔끔한 주소(.html 생략) 허용 — nginx try_files 가 $uri.html 로 파일을 찾으므로 권한 판정도 같은 파일로(GM 2026-09-05)
-    m = _MODS[2].get(path + ".html")
+    m = by_path.get(path + ".html")
     if m:
         return m
-    # 폴더 index.html 모듈(/chro/hub/ 등 6개) — nginx try_files 가 $uri/index.html 로 찾는 것과 맞춘다(2026-09-05 검수 H2)
-    return _MODS[2].get(path.rstrip("/") + "/index.html")
+    # 폴더 index.html(/chro/hub/ 등) — nginx try_files 가 $uri/index.html 로 찾는 것과 맞춘다(2026-09-05 검수 H2)
+    return by_path.get(path.rstrip("/") + "/index.html")
+
+
+def module_at(uri: str) -> Optional[dict]:
+    """nginx 가 넘긴 X-Original-URI → 모듈. 목록에 없는 경로(공용 자산·status 등)는 None."""
+    modules()
+    return _lookup(uri_path(uri), _MODS[2])
+
+
+def doc_at(path: str) -> Optional[dict]:
+    """카드 밖 보고 문서(kind=doc) 찾기 — module_at 과 같은 매칭 규칙(배 12666).
+    path_allowed 가 이미 uri_path 로 정규화한 path 를 그대로 받는다(재정규화 안 함)."""
+    modules()
+    return _lookup(path, _DOCS[2])
 
 
 def perms_of(user) -> Optional[dict]:
@@ -536,7 +559,22 @@ def allowed(user, module: dict) -> bool:
 
 
 def allowed_ids(user) -> list:
-    return [m["id"] for m in modules() if allowed(user, m)]
+    return [m["id"] for m in modules() if allowed(user, m)] + \
+           [d["id"] for d in documents() if doc_allowed(user, d)]
+
+
+def doc_allowed(user, doc: dict) -> bool:
+    """보고 문서(kind=doc) 권한 — 카드 밖 폴더 대체판정을 건너뛰고 개인 예외로만 연다(배 12666).
+    관리자=전부. 그 외는 account_perms 의 deny 를 먼저, 그다음 modules(개인 지정)만 본다 —
+    groups·all 은 안 본다(문서는 부서 권한이 아니라 사람을 콕 집어 여는 것이다)."""
+    if user["role"] == "admin":
+        return True
+    p = perms_of(user)
+    if p is None:
+        return False
+    if doc["id"] in p.get("deny", []):
+        return False
+    return doc["id"] in p.get("modules", [])
 
 
 # ── 카드 목록(modules.json) 밖 경로의 권한 (2026-09-14 배포 전 점검 · 치명 2·3번) ─────────────────
@@ -645,6 +683,9 @@ def path_allowed(user, path: str) -> bool:
         return True if need is None else bool(need & set(allowed_ids(user)))
     last = path.rsplit("/", 1)[-1]
     if path.endswith(".html") or "." not in last:                # 화면 또는 폴더(index.html) — 확장자 없는 경로는 페이지로 본다
+        doc = doc_at(path)
+        if doc is not None:            # 보고 문서(kind=doc) — 개인 예외로만(배 12666). 폴더 대체판정을 건너뛴다
+            return doc_allowed(user, doc)
         # 카드에 없는 화면 — 같은 최상위 폴더에 허용된 카드가 하나라도 있어야 열린다(폴더 = 부서 도메인).
         # 루트 낱장(자율현황·항해지도 등)은 폴더가 없어 관리자만.
         top = "/" + path.strip("/").split("/")[0] + "/"
@@ -1960,14 +2001,30 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     # MODULES 를 없는 경로로 돌려 modules()의 os.stat 이 항상 실패하게 만든다 — 그래야 실제
     # /srv/erp/www/erp/modules.json 이 있는 서버에서도 이 임시 _MODS 가 재로딩으로 덮이지 않는다.
     _real_modules_path, MODULES = MODULES, "/__selftest_no_such_modules_json__"
-    _MODS = (None, [], {"/chro/hub/index.html": {"id": "chro-hub-index"}, "/check.html": {"id": "check"}})
+    _MODS = (None, [], {"/chro/hub/index.html": {"id": "chro-hub-index"}, "/check.html": {"id": "check"},
+                        "/cpo/member/membership.html": {"id": "member", "group": "시포", "core": True}})
     assert module_at("/chro/hub/")["id"] == "chro-hub-index"
     assert module_at("/chro/hub")["id"] == "chro-hub-index"
     assert module_at("/check")["id"] == "check"                # 기존 .html 생략 보정은 그대로
     assert module_at("/check.html")["id"] == "check"
     assert module_at("/없는경로/") is None
+    # 문서(kind=doc, 배 12666 남은 절반) — modules 배열 밖(documents)으로 빠지면 module_at 은 못 찾고 doc_at 이 찾는다.
+    # path_allowed 는 doc_at 을 먼저 본다 — 같은 폴더에 열린 카드(member)가 있어도 문서는 개인 예외로만 연다.
+    # 이 assert 가 없으면 「빼면 폴더 대체판정이 더 연다」(오전 배 12666 note)는 회귀를 못 잡는다.
+    _DOCS = (None, [], {"/cpo/member/실무진피드백.html": {"id": "cpo-member-실무진피드백"}})
+    assert doc_at("/cpo/member/실무진피드백.html")["id"] == "cpo-member-실무진피드백"
+    assert doc_at("/cpo/member/실무진피드백")["id"] == "cpo-member-실무진피드백"    # .html 생략도 module_at 과 같이
+    assert doc_at("/없는문서") is None
+    _stf2 = {"role": "staff", "email": "s2@x", "perms": json.dumps({"modules": ["member"], "groups": [], "deny": []})}
+    _exc = {"role": "staff", "email": "exc@x",
+            "perms": json.dumps({"modules": ["member", "cpo-member-실무진피드백"], "groups": [], "deny": []})}
+    assert path_allowed(_stf2, "/cpo/member/membership.html")         # 카드는 그대로 열린다(비교군)
+    assert not path_allowed(_stf2, "/cpo/member/실무진피드백.html")    # 같은 폴더 카드가 있어도 문서는 개인 예외 없인 막힘
+    assert path_allowed(_exc, "/cpo/member/실무진피드백.html")         # modules 로 콕 집으면(개인 예외) 열린다
+    assert path_allowed(_adm, "/cpo/member/실무진피드백.html")         # 관리자는 그대로
     MODULES = _real_modules_path
     _MODS = (None, [], {})                                     # 다음 modules() 호출이 실제 파일에서 다시 읽도록 리셋
+    _DOCS = (None, [], {})
 
     ok = {"email": "cao@wellperion.com", "email_verified": True, "hd": "wellperion.com"}
     assert is_company_account(ok)

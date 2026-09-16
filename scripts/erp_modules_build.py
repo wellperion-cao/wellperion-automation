@@ -439,10 +439,9 @@ def build():
 
 # ── 세 층 (GM 지시 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」) ──
 # module = 첫 화면 칸(MODULE_BUNDLES 대표 12) · screen = 그 아래 하위 화면 · doc = 읽는 문서(보고서·A3·가이드).
-# 문서를 목록에서 빼지 않고 kind 로만 가른다 — 서버 관문(server/erp_auth/app.py)이 이 목록의 id 로
-# 권한(account_perms deny·API_MODULES·write_perm)을 판정하므로, 빼면 그 문서들이 카드 밖 경로 규칙
-# (같은 폴더 카드 하나면 열림)으로 떨어져 파트너 계정에 회장님 A3 가 열린다(2026-09-15 실측).
-# 문서를 목록 밖(documents)으로 옮기는 것은 서버가 kind 를 읽게 된 뒤에 한다.
+# 문서는 write() 가 modules 배열 밖(documents 키)으로 뺀다 — 서버(server/erp_auth/app.py doc_at·doc_allowed,
+# 배 12666)가 kind=doc 을 따로 읽어 카드 밖 폴더 대체판정을 건너뛰고 개인 예외(account_perms deny/modules)로만
+# 열게 된 뒤에 안전해졌다(그 전엔 빼면 파트너 계정에 회장님 A3 가 열렸다 — 2026-09-15 실측).
 KIND_ORDER = ("module", "screen", "doc")
 
 
@@ -589,14 +588,23 @@ def _attach_accounts(items):
         m["accounts"] = 열수있는계정
 
 
+def split_kind(items):
+    """modules(kind!=doc) · documents(kind==doc) 로 가른다 — 서버(app.py doc_at·doc_allowed, 배 12666)가
+    documents 를 따로 읽어 개인 예외로만 연다. 「보고 문서는 모듈이 아니다」(GM 09-15)를 목록 구조로도 지킨다."""
+    return [m for m in items if m.get("kind") != "doc"], [m for m in items if m.get("kind") == "doc"]
+
+
 def write(items):
+    modules_out, docs_out = split_kind(items)
     doc = {
         "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 손으로 고치지 마라 — "
                 "scripts/erp_modules_build.py 가 화면 파일·ssot/ownership_map.json·ssot/kpi.json·"
                 "status/module_registry.json 에서 만든다. 카드를 늘리려면 화면을 만들면 되고, "
-                "담당자 이름을 바꾸려면 ssot/kpi.json 을 고친다.",
+                "담당자 이름을 바꾸려면 ssot/kpi.json 을 고친다. documents = 읽는 문서(kind=doc) — "
+                "모듈이 아니다. 서버 권한은 app.py doc_at·doc_allowed 가 개인 예외로만 연다(배 12666).",
         "_generator": "scripts/erp_modules_build.py",
-        "modules": items,
+        "modules": modules_out,
+        "documents": docs_out,
     }
     text = json.dumps(doc, ensure_ascii=False, indent=2) + "\n"
     out = os.path.join(REPO, OUT_REL)
@@ -702,6 +710,10 @@ def _selftest():
     assert sum(kc.values()) == len(items), "kind 가 세 층으로 안 갈린 카드가 있다"
     assert kc["module"] == len(MODULE_BUNDLES), "모듈 수 != 판(MODULE_BUNDLES) 수"
     assert not [m for m in items if m["kind"] == "doc" and m.get("module")], "문서가 모듈 판에 들어 있다"
+    mods_out, docs_out = split_kind(items)
+    assert len(mods_out) + len(docs_out) == len(items) and len(docs_out) == kc["doc"], "documents 분리가 안 맞다"
+    assert all(m["kind"] != "doc" for m in mods_out), "modules 안에 문서가 남아 있다"
+    assert all(m["kind"] == "doc" for m in docs_out), "documents 안에 문서 아닌 것이 있다"
     print("selftest kind:", kc)
     print("selftest OK ·", len(items), "건 · 미매칭 모듈", len(missing_automation))
 

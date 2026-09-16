@@ -427,7 +427,7 @@ function loadModules(role, allowedIds){
       'cpo-member-오넛티-접수현황'];
 
     var order = [], bag = {}, docs = [], files = [], pinned = {}, seenDoc = {};
-    (d.modules || []).forEach(function(m){
+    (d.modules || []).concat(d.documents || []).forEach(function(m){
       if (allowedIds && allowedIds.indexOf(m.id) < 0) return;     // 권한 밖 화면은 카드 자체를 안 그린다
       if (GM_ONLY_IDS.indexOf(m.id) >= 0) return;                 // GM 전용 — GM업무 안에서만 연다
       var isShelf = m.doc === true || m.appgroup === '문서함';

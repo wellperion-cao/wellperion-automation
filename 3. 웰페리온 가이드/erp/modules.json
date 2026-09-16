@@ -1,5 +1,5 @@
 {
-  "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 손으로 고치지 마라 — scripts/erp_modules_build.py 가 화면 파일·ssot/ownership_map.json·ssot/kpi.json·status/module_registry.json 에서 만든다. 카드를 늘리려면 화면을 만들면 되고, 담당자 이름을 바꾸려면 ssot/kpi.json 을 고친다.",
+  "_doc": "ERP 앱 셸(erp/index.html)이 그리는 모듈 카드 목록. 손으로 고치지 마라 — scripts/erp_modules_build.py 가 화면 파일·ssot/ownership_map.json·ssot/kpi.json·status/module_registry.json 에서 만든다. 카드를 늘리려면 화면을 만들면 되고, 담당자 이름을 바꾸려면 ssot/kpi.json 을 고친다. documents = 읽는 문서(kind=doc) — 모듈이 아니다. 서버 권한은 app.py doc_at·doc_allowed 가 개인 예외로만 연다(배 12666).",
   "_generator": "scripts/erp_modules_build.py",
   "modules": [
     {
@@ -1007,7 +1007,9 @@
       "module": "월간 운영계획",
       "module_lead": true,
       "kind": "module"
-    },
+    }
+  ],
+  "documents": [
     {
       "id": "cpo-member-lesson-guide",
       "core": false,

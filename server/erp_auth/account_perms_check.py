@@ -49,7 +49,8 @@ def _redirect_pairs(modules: list) -> list:
 
 def check(perms_file: str = PERMS, modules_file: str = MODULES) -> tuple:
     """(막아야 할 것, 알리기만 할 것). 앞쪽이 하나라도 있으면 배포를 멈춘다."""
-    mods = json.load(open(modules_file, encoding="utf-8"))["modules"]
+    raw = json.load(open(modules_file, encoding="utf-8"))
+    mods = raw["modules"] + raw.get("documents", [])   # 문서(kind=doc)도 id 대조 대상 — modules 밖으로 빠졌다(배 12666)
     ids = {m["id"] for m in mods}
     accounts = json.load(open(perms_file, encoding="utf-8")).get("accounts") or {}
     bad, soft = [], []
@@ -77,7 +78,8 @@ def check(perms_file: str = PERMS, modules_file: str = MODULES) -> tuple:
 
 def main() -> int:
     bad, soft = check()
-    ids = {m["id"] for m in json.load(open(MODULES, encoding="utf-8"))["modules"]}
+    _raw = json.load(open(MODULES, encoding="utf-8"))
+    ids = {m["id"] for m in _raw["modules"] + _raw.get("documents", [])}
     accounts = json.load(open(PERMS, encoding="utf-8")).get("accounts") or {}
     for email, p in sorted(accounts.items()):
         n = len(ids) - len(set(p.get("deny", []))) if p.get("all") else len(set(p.get("modules", [])))

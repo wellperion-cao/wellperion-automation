@@ -464,7 +464,7 @@
   (function(){
     var body = document.getElementById('chdoc-body'), cnt = document.getElementById('chdoc-cnt');
     fetch('../../erp/modules.json?cb=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){
-      var rows = (d.modules || []).filter(function(m){
+      var rows = (d.modules || []).concat(d.documents || []).filter(function(m){
         return m.appgroup === '문서함' && /\/chairman\//.test(m.path || '');
       });
       cnt.textContent = rows.length + '장';

@@ -79,7 +79,8 @@ def audit_one(op, m: dict) -> dict:
 
 
 def main() -> int:
-    mods = json.loads(MODS.read_text(encoding="utf-8"))["modules"]
+    _raw = json.loads(MODS.read_text(encoding="utf-8"))
+    mods = _raw["modules"] + _raw.get("documents", [])   # 문서(kind=doc)도 감사 대상 — modules 밖으로 빠졌다(배 12666)
     op = login()
     with ThreadPoolExecutor(max_workers=6) as ex:
         rows = list(ex.map(lambda m: audit_one(op, m), mods))

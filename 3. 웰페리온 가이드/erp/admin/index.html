@@ -1345,7 +1345,7 @@
      127 은 커밋 안 된 재생성본(회장님 A3 보고 13장이 더 들어간 것)이라 화면과 무관하다.
      그래서 숫자를 주석에 적지 않는다 — 적는 순간 다음 사람이 화면을 그 값에 맞추려 든다. */
   fetch('/erp/modules.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){
-    var list = d.modules || [];
+    var list = (d.modules || []).concat(d.documents || []);
     if (!list.length) return;
     /* 세 층으로 센다 (GM 2026-09-15 「보고문서가 모듈로 다 열려있던데, 이건 모듈이 아니지 않아?」).
        kind 는 생성기가 붙인다 — 모듈(첫 화면 칸) · 화면(그 아래 하위 화면) · 문서(보고서·A3·가이드).
