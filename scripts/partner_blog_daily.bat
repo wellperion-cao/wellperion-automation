@@ -1,9 +1,11 @@
 @echo off
-REM 파트너 블로그 매일 임시저장 자동화 (GM 지시 2026-09-10 고척골프 · 2026-09-15 다이어트캠프 합류).
-REM 인자 1개: jo=고척골프 · dc=다이어트캠프. 로그는 업체별 기존 파일 그대로 쌓인다.
+REM Partner blog daily draft automation (GM directive 2026-09-10 Gocheok golf, 2026-09-15 Diet Camp joined).
+REM One argument: jo=Gocheok golf, dc=Diet Camp. Logs go to the existing per-client file.
+REM ASCII only: cmd.exe reads this file as CP949, so UTF-8 Korean here breaks parsing
+REM when launched from the hidden VBS launcher (2026-09-16: scheduled runs returned 1 in 0.3 s).
 setlocal
 if "%~1"=="" (
-    echo 사용법: partner_blog_daily.bat jo  ^(고척골프^)  또는  partner_blog_daily.bat dc  ^(다이어트캠프^)
+    echo usage: partner_blog_daily.bat jo ^(Gocheok golf^)  or  partner_blog_daily.bat dc ^(Diet Camp^)
     exit /b 1
 )
 cd /d "%USERPROFILE%\welperion-automation"
@@ -14,7 +16,7 @@ if /i "%~1"=="jo" (
 ) else if /i "%~1"=="dc" (
     set LOGFILE=logs\dietcamp_blog_daily.log
 ) else (
-    echo 알 수 없는 --client 값: %~1  ^(jo 또는 dc 만 지원^)
+    echo unknown --client value: %~1 ^(only jo or dc^)
     exit /b 1
 )
 echo [%date% %time%] --- run --- >> %LOGFILE%
