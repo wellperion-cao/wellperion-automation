@@ -175,9 +175,17 @@ _ERP_BASE = "https://erp.wellperion.com/"
 _ERP_LINK_RE = re.compile(re.escape(_OLD_PAGES_BASE) + r"(\S*?\.html(?:[?#][^\s)]*)?)")
 
 
+# ERP 홈의 옛 긴 주소 → 짧은 주소(GM 지시 2026-09-11 · /home·/home/·/guide 셋 다 같은 화면 · 시토 배 2535).
+#   옛 긴 주소는 2026-09-18 에 서버에서 지운다(배 2536) — 그 뒤에도 발신 스크립트 26개는 Pages 링크를
+#   그대로 쓰므로 여기서 한 번 더 바꾸지 않으면 실무진 카톡에 404 가 나간다(09-07 파트너팀 404 사고 재발).
+_OLD_GUIDE = _ERP_BASE + "wellperion_guide(main).html"
+_NEW_GUIDE = _ERP_BASE + "home"
+
+
 def to_erp_links(text: str) -> str:
     """옛 주소의 업무 화면(.html) 링크만 ERP 새 주소로 바꾼다."""
-    return _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), str(text or ''))
+    out = _ERP_LINK_RE.sub(lambda m: _ERP_BASE + m.group(1), str(text or ''))
+    return out.replace(_OLD_GUIDE, _NEW_GUIDE)
 
 
 def selfcheck_log_outbound_masks_secrets():
@@ -208,6 +216,9 @@ def selfcheck_to_erp_links():
     assert to_erp_links(f"{old}cpo/member/membership.html?manage=lesson").endswith(
         "membership.html?manage=lesson"), "쿼리는 그대로 붙어 간다"
     assert to_erp_links(f"시안 {old}reports/현수막.png") == f"시안 {old}reports/현수막.png",         "이미지는 옛 주소 그대로 — 로그인 뒤로 넣으면 회원·외부가 못 연다"
+    # 2026-09-16 배 2536 — ERP 홈 옛 긴 주소는 짧은 주소로(앵커는 그대로 붙어 간다)
+    assert to_erp_links(f"{old}wellperion_guide(main).html#M1") == "https://erp.wellperion.com/home#M1", "ERP 홈은 /home 으로"
+    assert to_erp_links("https://erp.wellperion.com/wellperion_guide(main).html") == "https://erp.wellperion.com/home", "이미 erp 주소여도 짧은 주소로"
     print('[selfcheck] to_erp_links OK')
 
 

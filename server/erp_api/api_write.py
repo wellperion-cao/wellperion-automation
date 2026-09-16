@@ -651,7 +651,10 @@ def _write_sync(headers, body):
             "detail": "관문 목적지 표에 없는 액션입니다: %s" % action[:60]})
     # saveBoard(공용 보드 · GM_TASK_OWNERS 등 여러 화면이 공유)는 write_perm 표로 안 가른다(write_perm.py 머리말).
     #   GM_TASK_OWNERS 자체 권한(_owner_write_check)은 아래에서 그대로 돈다.
-    if action != "saveBoard" and not write_allowed(headers, dest):
+    # 실무진 피드백은 로그인한 직원 누구나 — 카드 목록이 37장으로 줄며(2026-09-15) 「cpo-member-실무진피드백」 카드가
+    #   빠져 회원·문의 카드가 없는 계정은 FUNNEL 목적지 권한 교집합이 비어 403 이 났다(GM 2026-09-16 「37개로 축소하며
+    #   권한 리셋된 듯」). 피드백은 권한 카드가 아니라 통로다 — 카드 판정을 건너뛴다(자동 세션 판정은 아래 그대로).
+    if action != "saveBoard" and not action.startswith("staff_feedback_") and not write_allowed(headers, dest):
         return JSONResponse(status_code=403, content={
             "ok": False, "error": "forbidden", "noRetry": True,
             "detail": "이 계정에 허용되지 않은 화면의 저장입니다"})
@@ -818,6 +821,7 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
     assert auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "staff_feedback_submit")
     assert not auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "member_owner_save")
     assert auto_login_ok({"x-erp-allowed": "*"}, "member_owner_save") and auto_login_ok({}, "todo_update")
+    assert not write_allowed({"x-erp-allowed": "coo-check-%EC%9A%B4"}, "FUNNEL_EXEC_URL")   # 피드백은 이 판정을 건너뛴다(위 _write_sync)
     assert resp_ok({"success": True, "saved": 3}) is True     # 배 1067 — ok 칸 없어도 success 로 성공
     assert resp_ok({"ok": True}) is True
     assert resp_ok({"ok": False, "error": "bad-token"}) is False

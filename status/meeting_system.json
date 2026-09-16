@@ -1,0 +1,106 @@
+{
+  "_doc": "회의 체계 원장 — 회장님 회의 2종(중간회의·월말 결산 회의)을 회차별로 굴린다. 정본이다(화면·리마인드가 이것을 읽는다). 값은 회장님 말씀 2026-09-16 · GM 최종 문안 16:5x 에 있는 것만 — 지어낸 날짜·이름 없음. 소비자: scripts/meeting_system_page.py(화면) · scripts/monthly_meeting_reminders.py(5일·20일 GM 봇방 한 줄). 전사일정(status/schedule_ssot.json)은 별개 원장 — 이 파일이 고치지 않고 어긋나면 화면에 표시만 한다. | 2026-09-16 GM: 두 회의 = GM업무 카드 2026-09-39 한 장(월 2회 회의) · A3 요약 = coo/chairman/260916_월2회회의체계_요약_A3.html",
+  "_회차_필드": "meeting(mid|closing) · ym · date(확정일 · 빈칸=미정) · date_status(사람이 읽는 한 줄) · window_start(그 달 회의 창이 열리는 첫날 — D-10 빨강 판정 기준 · 추정 금지, 회의 규칙에서 나온 값) · checks(항목→완료 여부) · recording · summary(파일 경로) · decisions(GM업무 카드 id) · status(준비중|완료)",
+  "updated_at": "2026-09-16",
+  "meetings": {
+    "mid": {
+      "name": "중간회의",
+      "attendees": [
+        "회장님",
+        "전응준 대표님",
+        "김남욱 GM"
+      ],
+      "rule": "매월 15~20일 · 회장님 일정 확인 뒤 확정",
+      "materials": [
+        "회의 요약 A3(지난 회의 이후 달라진 것)"
+      ],
+      "recording": false,
+      "schedule_event": "evt-20261015-gm-회장님지시중간회의회장님대표님GM매월1520일",
+      "card": "2026-09-39"
+    },
+    "closing": {
+      "name": "월말 결산 회의",
+      "attendees": [
+        "회장님",
+        "전응준 대표님",
+        "김남욱 GM",
+        "각 팀 리더(이경연 실장님·이정헌 소장님·나우열M)"
+      ],
+      "rule": "매월 첫째 주 · 요일 선정 뒤 회장님 일정 확인",
+      "materials": [
+        "리더별 결산 한 장 3(매출·회원·운영 현황·특이사항 말일 기준 + 이번 달 계획)",
+        "연 목표 대비(올해 72억 · 내년 100억 · 순이익 20~25%)"
+      ],
+      "materials_note": "준비 중(시포 배 2523) — 리더별 결산 한 장 서식 경로가 생기면 여기에 경로를 적고 화면이 링크로 그린다",
+      "recording": true,
+      "schedule_event": "evt-20260930-gm-회장님지시월말결산회의",
+      "card": "2026-09-39"
+    }
+  },
+  "rounds": [
+    {
+      "meeting": "mid",
+      "ym": "2026-09",
+      "date": "2026-09-16",
+      "date_status": "확정 · 지난 회차",
+      "window_start": "2026-09-15",
+      "checks": {
+        "날짜 확정": true,
+        "회의 요약 A3 준비": true,
+        "결정·지시 카드 반영": true
+      },
+      "recording": "",
+      "summary": "260916_회장님회의_요약_A3.html",
+      "decisions": [
+        "2026-09-38",
+        "2026-09-39",
+        "2026-09-40",
+        "2026-09-41"
+      ],
+      "status": "완료"
+    },
+    {
+      "meeting": "closing",
+      "ym": "2026-10",
+      "date": "2026-10-01",
+      "date_status": "확정(첫 회 · GM 2026-09-16)",
+      "window_start": "2026-10-01",
+      "checks": {
+        "날짜 확정": true,
+        "리더별 결산 한 장 — 이경연 실장님": false,
+        "리더별 결산 한 장 — 이정헌 소장님": false,
+        "리더별 결산 한 장 — 나우열M": false,
+        "회의 요약 A3 준비": false,
+        "녹음 파일": false,
+        "AI 요약": false,
+        "결정·지시 카드 반영": false
+      },
+      "recording": "",
+      "summary": "",
+      "decisions": [],
+      "status": "준비중"
+    },
+    {
+      "meeting": "mid",
+      "ym": "2026-10",
+      "date": "",
+      "date_status": "미정 — 회장님 일정 확인(15~20일)",
+      "window_start": "2026-10-15",
+      "checks": {
+        "날짜 확정": false,
+        "회의 요약 A3 준비": false,
+        "결정·지시 카드 반영": false
+      },
+      "recording": "",
+      "summary": "",
+      "decisions": [],
+      "status": "준비중"
+    }
+  ],
+  "chairman_reported": {
+    "date": "2026-09-16",
+    "by": "김남욱 GM",
+    "channel": "회장님 직접 보고(최종 문안 16:5x → 발신 18:3x)",
+    "note": "매일 드리던 매출·운영 보고는 두 회의 체계로 대체(회장님 방 09:30 카톡 종료 9/17~) · 결산 첫 회 10/1(목) 예정 · 이후 매월 첫째 주 요일 선정"
+  }
+}

@@ -180,11 +180,12 @@ C:\Python314\python.exe scripts/worklog.py --open-gm {role}
 
 - 내 역할이 아닌 일을 발견하거나 GM께 받으면 **직접 처리하지 않고, 그 자리에서 담당 C-Level 앞으로 배를 만들어 전달**한다(말로 넘기면 사라진다).
   ```
-  python scripts/queue_dispatch.py --to {role} --title "..." --note "맥락·재현" --next "받는 쪽의 다음 한 걸음"
+  python scripts/queue_dispatch.py --to {role} --title "..." --note "맥락·재현" --next "받는 쪽의 다음 한 걸음" --gm-needed no
   ```
 - 받는 쪽은 부팅 시 `status/_queue.json`에서 자기 배로 본다(약속 L15 — 큐에 없으면 항로에도 없다). **전달 후 저장·배포까지 해야 상대 화면에 뜬다.**
 - 도구가 보장하는 것: 큐 동시쓰기 직렬화(INC-008) · 같은 제목 열린 배 중복 생성 방지 · 배 번호 자동 부여 · `[보낸이 → 받는이 전달 날짜]` 마커.
 - 옵션: `--priority 🛳️크루즈|⛴️여객선|⛵돛단배` · `--sender {role}`(기본 ceo) · `--dry-run`(미리보기).
+- **`--gm-needed no|yes` 필수(GM 2026-09-16)** — no=AI/담당이 처리 가능(지금처럼 배). yes=GM 손(결제·승인·계정 등)이 꼭 필요 → 배 대신 `status/gm_asks.json` 에 적혀 아침에 한 줄로 모아 여쭙는다. 미지정이면 배가 안 만들어진다.
 
 ## 5-2. 저장은 맨손으로 하지 않는다 (★7역할 공통 · 2026-07-23 시토)
 

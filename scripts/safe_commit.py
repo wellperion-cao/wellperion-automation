@@ -332,7 +332,7 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         f"{role_label} 도메인 차단: {hits[0]}{extra} — AI가 직접 수정하지 않습니다"
         f"(GM 확정 2026-09-14, 나우열M 라인 전체). 담당: {contact}. {where}에 담당자 붙여 전달하세요: "
         f"python scripts/queue_dispatch.py --to ceo --title \"[{room_tag} 전달] "
-        f"{hits[0]} 수정 필요\" --note \"담당자: {contact} ({ref})\" "
+        f"{hits[0]} 수정 필요\" --note \"담당자: {contact} ({ref})\" --gm-needed no "
         f"(웰리가 {where}으로 전달)."
         f" 나우열M 이 실제로 요청한 건이면 커밋 제목에 [나우열M 요청 {today}] 를 붙이세요"
         f"(우회 스위치 없음 — 마커만 통과).{note}"

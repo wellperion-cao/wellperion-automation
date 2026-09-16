@@ -305,10 +305,39 @@ def main() -> int:
                     help="역할당 열린 배 상한(WIP_CAP_PER_ROLE)을 넘겨도 새 배를 만드는 이유 — note 에 남는다")
     ap.add_argument("--force-route", dest="force_route", action="store_true",
                      help="담당 어긋남 경고를 무시하고 그대로 보낸다 — 그럴 만한 이유가 있을 때만")
+    # ★GM 손이 필요한 배는 거부한다(GM 2026-09-16 「일을 늘리지 말고 줄여라 · 내가 다 체크한다」).
+    #   실측: 하루 30~50척 생성 · 30척 종결하며 배마다 GM 께 결정 하나씩 얹었다. 명시 필수 —
+    #   미지정이면 판정을 안 하고 넘어가던 옛 배들처럼 새는 것을 막는다.
+    ap.add_argument("--gm-needed", dest="gm_needed", choices=("no", "yes"), default=None,
+                     help="yes=GM 손(결제·승인·계정 등)이 꼭 필요 → 배 대신 status/gm_asks.json 에 적고 끝(아침에 모아 여쭙는다). "
+                          "no=AI/담당이 처리 가능 → 지금처럼 배를 띄운다. 미지정이면 거부한다.")
     args = ap.parse_args()
     args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
     if args.must_finish == "TODAY":
         args.must_finish = _dt.date.today().isoformat()
+
+    if args.gm_needed is None:
+        print("! --gm-needed no 또는 yes 를 명시하세요 — 미지정이면 배를 만들지 않습니다"
+              "(GM 2026-09-16 「일을 늘리지 말고 줄여라」).")
+        print("  no  = AI/담당이 처리 가능 → 지금처럼 배를 띄웁니다.")
+        print("  yes = GM 손(결제·승인·계정 등)이 꼭 필요 → 배 대신 status/gm_asks.json 에 적고 "
+              "아침에 한 줄로 모아 여쭙습니다.")
+        return 2
+
+    if args.gm_needed == "yes":
+        if args.dry_run:
+            print("[미리보기 — gm_asks 에 쌓일 내용, 배는 만들지 않음]")
+            print("  역할 : %s" % ROLES.get(args.to.lower(), args.to))
+            print("  제목 : %s" % args.title)
+            print("  이유 : %s" % ((args.note or "(비어 있음)")[:120]))
+            return 0
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import gm_asks
+        new_id = gm_asks.add(role=args.to.lower(), title=args.title, why_gm=args.note or "")
+        print("배 대신 아침 한 줄로 모았습니다 — status/gm_asks.json #%d" % new_id)
+        print("  역할 : %s" % ROLES.get(args.to.lower(), args.to))
+        print("  제목 : %s" % args.title)
+        return 0
 
     if args.to.lower() in EXCLUDED_ROLES:
         print(excluded_role_notice(args.to.lower()))
@@ -447,5 +476,45 @@ def main() -> int:
     return 0
 
 
+def _selftest() -> None:
+    """--gm-needed 관문 자가검사 — 실제 큐·gm_asks.json 은 건드리지 않는다.
+    미지정=거부 / no=배 미리보기(실제 큐 쓰기는 --dry-run 으로 생략) / yes=가짜 gm_asks 파일에 1건."""
+    import subprocess
+    import tempfile
+    script = os.path.abspath(__file__)
+    base = [sys.executable, script, "--to", "cto", "--title", "셀프테스트 배 — 지우지 마세요"]
+
+    r = subprocess.run(base, capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 2, r.stdout + r.stderr
+    assert "명시하세요" in (r.stdout + r.stderr), r.stdout + r.stderr
+
+    r = subprocess.run(base + ["--gm-needed", "no", "--dry-run"],
+                        capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "미리보기" in r.stdout and "task_id" in r.stdout, r.stdout
+
+    tf = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
+    tf.close()
+    os.unlink(tf.name)
+    try:
+        env = dict(os.environ, GM_ASKS_PATH=tf.name)
+        r = subprocess.run(base + ["--gm-needed", "yes", "--note", "테스트 이유"],
+                            capture_output=True, text=True, encoding="utf-8", env=env)
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "아침 한 줄로 모았습니다" in r.stdout, r.stdout
+        import gm_asks as _ga
+        asks = _ga.unanswered(tf.name)
+        assert len(asks) == 1 and asks[0]["title"].startswith("셀프테스트"), asks
+    finally:
+        try:
+            os.unlink(tf.name)
+        except OSError:
+            pass
+    print("[OK] queue_dispatch --gm-needed 자가검사 통과 — 미지정 거부 · no=배 미리보기 · yes=gm_asks 1건")
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    if "--selftest" in sys.argv:
+        _selftest()
+    else:
+        raise SystemExit(main())

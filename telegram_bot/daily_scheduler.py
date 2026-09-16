@@ -3189,12 +3189,15 @@ def _run_rep_approval_relay() -> None:
 
 
 def run_mgmt_notice_digest() -> None:
-    """★중간관리자 알림성 합본 — 매일 17:00 낮 시간 단독 발송(배499 큐 그대로 재사용).
+    """★중간관리자 「🌙 하루의 마무리」 — 매일 17:05 낮 시간 단독 발송(배499 큐 그대로 재사용).
     처음엔 run_daily_digest(평일 22:30/휴일 20:00) 안에 얹혀 밤에 나갔으나, GM 지시
     2026-08-10 "갑자기 낮시간 카톡 자동화 중단 발송은 밤으로 이동하면 안되" 로 낮
     시간(17:00)으로 분리했다. 알림성 건은 mgmt_notice_queue(scripts/mgmt_notice_queue.py)
     에 하루 동안 쌓이고 여기서 한 번에 팝해 보낸다. 답요구 건·3-트리거(💰🔒🚫) 긴급건은
-    그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지."""
+    그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지.
+    ★2026-09-16(배12678) GM 지시 「방마다 하루 두 통」 — 제목을 「🌙 하루의 마무리」로 통일하고
+    그날 안 닫힌 원장(MGR_LEDGER) 이월 항목을 맨 뒤에 붙인다(send_ops_digest.build_mgr_evening_carryover
+    재사용 · 새 원장 없음). 「🌅 하루의 시작」(send_ops_digest.send_mgr_morning_one)의 저녁 짝."""
     label = "[★중간관리자 알림성 합본]"
     today = datetime.now().strftime("%Y-%m-%d")
     # 대표 결재 전달은 여기서 하지 않는다 — GM 지시 2026-09-03 "즉시 전달" 로 10분 주기
@@ -3221,18 +3224,26 @@ def run_mgmt_notice_digest() -> None:
                     notice_text = "\n".join(t for t in (notice_text, _rar.scoreboard_section(_sb_rows)) if t)
         except Exception as e:
             logger.error(f"{label} 점수판 예외: {e}")
-        if notice_text:
+        # ⑥ 이월 항목 — 원장(MGR_LEDGER) 안 닫힌 건 오래된 순 최대 10줄(배12678 · GM 지시
+        #   2026-09-16 「하루 두 통」). 「🌅 하루의 시작」의 저녁 짝 — 원장 읽기는 mgr_open_candidates
+        #   하나뿐(약속 L01), 새 원장 없음.
+        carryover_text = _od3.build_mgr_evening_carryover()
+        _, _mm, _dd = today.split("-")
+        header = f"🌙 하루의 마무리 — {_od3.RELAY_ROOM} {int(_mm)}/{int(_dd)}"
+        body_parts = [p for p in (notice_text, carryover_text) if p]
+        combined_text = "\n\n".join([header] + body_parts) if body_parts else ""
+        if combined_text:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             # --sender 중간관리자알림합본 — 사람 방 발신 가드(배 11070 ⑤) 통과용.
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", notice_text, "--only-room", _od3.RELAY_ROOM,
+                [sys.executable, str(sender), "--message", combined_text, "--only-room", _od3.RELAY_ROOM,
                  "--sender", "중간관리자알림합본"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=180,
                 env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 카톡 {_od3.RELAY_ROOM}({len(notice_items)}건) 발송: {tail[0]}")
+            logger.info(f"{label} 카톡 {_od3.RELAY_ROOM}({len(notice_items)}건+이월) 발송: {tail[0]}")
             if proc.returncode != 0:
                 _kakao_fail_notify("알림성 합본", tail[0], room=_od3.RELAY_ROOM)
             elif _sb_rows is not None:
@@ -3242,7 +3253,7 @@ def run_mgmt_notice_digest() -> None:
                 except Exception as e:
                     logger.error(f"{label} 운영부 일별 집계 적재 예외: {e}")
         else:
-            logger.info(f"{label} 오늘 큐 0건, 발송 없음")
+            logger.info(f"{label} 오늘 큐 0건 · 이월 0건, 발송 없음")
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
 

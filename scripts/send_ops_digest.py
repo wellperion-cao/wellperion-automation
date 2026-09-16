@@ -817,6 +817,63 @@ def nudge_review() -> int:
     return 0
 
 
+def build_mgr_evening_carryover(n: int = 10) -> str:
+    """🌙 하루의 마무리 — 안 닫힌 이월 항목(배12678 · GM 지시 2026-09-16 「하루 두 통」).
+    원장(MGR_LEDGER) 열린 건 오래된 순 최대 n 줄 — mgr_open_candidates() 판정을 그대로
+    쓴다(약속 L01, nudge_review·오늘 만들 후보와 같은 집계 · 새 원장 없음)."""
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    rows = mgr_open_candidates(ledger)[:n]
+    if not rows:
+        return ""
+    lines = ["🔁 안 닫힌 이월 항목"]
+    for r in rows:
+        no = r["issue"].get("no")
+        head = f"#{no} " if isinstance(no, int) else ""
+        lines.append(f"▪ {head}{r['title']} — {r['age']}일째")
+    return "\n".join(lines)
+
+
+def _selfcheck_mgr_evening_carryover() -> None:
+    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 빈 원장은 절 없음. 임시 원장
+    파일로 돌며 실제 _digest_ledger.json 은 건드리지 않는다(위 register_manager_reply
+    selfcheck 와 같은 패턴)."""
+    import tempfile
+    global MGR_LEDGER
+    orig = MGR_LEDGER
+    d = date.today()
+
+    def _iso(days_ago: int) -> str:
+        return (d - timedelta(days=days_ago)).isoformat()
+
+    with tempfile.TemporaryDirectory() as td:
+        MGR_LEDGER = Path(td) / "_digest_ledger.json"
+        try:
+            MGR_LEDGER.write_text(json.dumps([
+                {"date": _iso(5), "issues": [{"issue": "닫힌 건 — 안 보여야 함", "owner": "이경연 실장",
+                                              "status": "resolved", "no": 10}]},
+                {"date": _iso(3), "issues": [{"issue": "최근 건", "owner": "이경연 실장",
+                                              "status": "open", "no": 20}]},
+                {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "이정헌 소장",
+                                              "status": "open", "no": 21}]},
+            ], ensure_ascii=False), encoding="utf-8")
+            out = build_mgr_evening_carryover()
+            lines = out.splitlines()
+            assert lines[0] == "🔁 안 닫힌 이월 항목", lines
+            assert lines[1] == "▪ #21 오래된 건 — 9일째", lines   # 오래된 순(나이 큰 것 먼저)
+            assert lines[2] == "▪ #20 최근 건 — 3일째", lines
+            assert len(lines) == 3, lines   # resolved 는 안 실림
+            assert build_mgr_evening_carryover(n=1) == "\n".join(lines[:2]), "n 상한이 안 먹음"
+
+            MGR_LEDGER = Path(td) / "없는_원장.json"   # 파일 자체가 없는 경우
+            assert build_mgr_evening_carryover() == "", "원장 파일이 없으면 빈 문자열(예외 삼킴)"
+        finally:
+            MGR_LEDGER = orig
+    print("[selfcheck] mgr_evening_carryover OK")
+
+
 def resolve_nudge_issues(fragments: list, why: str = "") -> int:
     """MGR_LEDGER 에서 status=='open' 이고 제목이 fragments(제목 조각, OR) 중 하나라도
     포함하면 resolved 로 닫는다 — 아침 리마인드가 이미 답 온 건을 매일 다시 싣는 것을
@@ -3385,14 +3442,11 @@ def kill_switch_enabled() -> bool:
         return False
 
 
-def send_mgr_brief() -> None:
-    """★중간관리자 결정거리 요약 발송 — ★운영부 결과와 무관하게 자기 조건으로 돈다.
-
-    ★2026-08-15 수리(방마다 독립 · 배536 원칙): 예전엔 이 블록이 main()의 ★운영부 발송
-    '성공' 분기 안에 있었다. 그래서 ①★운영부 발송이 실패하면 ★중간관리자도 통째로 안 나갔고
-    ②같은 날 재실행하면 ★운영부가 '이미 발송됨'으로 먼저 return 해 — mgr 발송 실패 시
-    "다음 회차 재시도" 로그가 거짓이었다(재시도 기회가 그날 다시 오지 않는다).
-    중복방지는 원래대로 _mgr_already_sent(하트비트) 하나가 담당한다.
+def _prepare_mgr_daily() -> "tuple[str, str, dict, list, str]":
+    """★중간관리자 결정거리 요약 — 데이터 조회·본문 조립(발신 없음). send_mgr_brief()·
+    send_mgr_morning_one()(배12678) 공용. 반환 = (target_date, mgr_msg, relay_current,
+    reply_hits, nawool_msg) — 이미 발송된 회차거나 보낼 내용이 없으면 mgr_msg·nawool_msg
+    가 빈 문자열이다.
 
     대상일 = 그 방 자신의 _pending_digest.json(date) — 오늘 생성분일 때만. 없으면 어제.
     (예전엔 ★운영부 pending 의 date 를 빌려 썼다 — 두 방의 대화 폴백일이 갈리면 어긋난다.)"""
@@ -3412,7 +3466,7 @@ def send_mgr_brief() -> None:
 
     if _mgr_already_sent(target_date):
         log(f"[mgr] 이미 발송된 회차({target_date}) — 생략")
-        return
+        return target_date, "", {}, [], ""
     # ③ 회신 매칭 → SSOT 행 append(배1102) — 본문을 만들기 '전' 반영해야 방금 닫힌 건이
     # 이번 회차 「확인 부탁드릴 것」에 다시 안 실린다. 실제 발송 경로에서만 돈다 —
     # preview_mgr_brief(미리보기)는 이 함수를 안 부르므로 방/SSOT 에 손 안 댄다는 약속이 유지된다.
@@ -3444,6 +3498,23 @@ def send_mgr_brief() -> None:
             log(f"[weekly] 미결표 예외(무시 — 다음 월요 재시도): {type(exc).__name__}: {exc}")
 
     mgr_msg, relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(rows, target_date)
+    return target_date, mgr_msg, relay_current, reply_hits, nawool_msg
+
+
+def send_mgr_brief() -> None:
+    """★중간관리자 결정거리 요약 발송 — ★운영부 결과와 무관하게 자기 조건으로 돈다.
+
+    ★2026-08-15 수리(방마다 독립 · 배536 원칙): 예전엔 이 블록이 main()의 ★운영부 발송
+    '성공' 분기 안에 있었다. 그래서 ①★운영부 발송이 실패하면 ★중간관리자도 통째로 안 나갔고
+    ②같은 날 재실행하면 ★운영부가 '이미 발송됨'으로 먼저 return 해 — mgr 발송 실패 시
+    "다음 회차 재시도" 로그가 거짓이었다(재시도 기회가 그날 다시 오지 않는다).
+    중복방지는 원래대로 _mgr_already_sent(하트비트) 하나가 담당한다.
+
+    ★2026-09-16(배12678) — 데이터 조회·본문 조립은 _prepare_mgr_daily() 로 뺐다. main() 의
+    ★중간관리자 07:50 슬롯은 이제 이 함수 대신 send_mgr_morning_one() 을 부른다(카톡 발신을
+    미해결 접수·오늘 일정과 한 통으로 합치기 위해서) — 이 함수는 그대로 남겨 단독 호출도
+    이전과 같이 동작한다."""
+    target_date, mgr_msg, relay_current, reply_hits, nawool_msg = _prepare_mgr_daily()
     if not mgr_msg and not nawool_msg:
         log("[mgr] 보낼 내용 0건 — 발송 생략")
         return
@@ -3492,6 +3563,120 @@ def send_mgr_brief() -> None:
         if reply_hits:
             _record_reply_hits(reply_hits)  # 회신 감지된 배 note 기록 — 실제 발송 성공 후에만(배1057)
         log("[mgr] 발송 완료")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# ★중간관리자 「🌅 하루의 시작」 1통 병합 (배12678 · GM 지시 2026-09-16 "방마다 하루 두 통")
+# 옛 세 함수(_send_ovd_room·send_mgr_brief·send_schedule_pings)가 07:40~07:58 사이 이 방에
+# 따로 보내던 미해결 접수·결정거리·오늘 일정을 카톡 한 통으로 합친다. 각 함수의 데이터
+# 조회·본문 조립은 그대로 두고(아래 _build_ovd_room_text·_prepare_mgr_daily·
+# _build_mgr_schedule_text) 발신 호출만 한 번으로 뺐다 — 새 발신기 없음(kakao_report_sender
+# 그대로). 하루 지문은 _MGR_MORNING_ONE_HEARTBEAT_ID 하나뿐.
+# ══════════════════════════════════════════════════════════════════════════
+_MGR_MORNING_ONE_HEARTBEAT_ID = "mgr-morning-one-sent"
+
+
+def _mgr_morning_one_already_sent_today() -> bool:
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(_MGR_MORNING_ONE_HEARTBEAT_ID)
+    return bool(rec) and str((rec.get("state") or {}).get("date", "")) == date.today().isoformat()
+
+
+def _mgr_morning_one_mark_sent() -> None:
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(_MGR_MORNING_ONE_HEARTBEAT_ID, detail="★중간관리자 하루의 시작 통합 발송",
+                     extra={"state": {"date": date.today().isoformat()}})
+
+
+def send_mgr_morning_one(ovd_ready: bool) -> bool:
+    """★중간관리자 「🌅 하루의 시작」 통합 발송 — 미해결 접수 + 결정거리 + 오늘 일정을 카톡
+    한 통으로. main() 의 ★중간관리자 07:50 슬롯이 옛 send_mgr_brief() 대신 이 함수를 부른다
+    (★부서장·★운영부 몫은 그대로 _send_ovd_room·send_schedule_pings 가 따로 보낸다).
+    반환값 = 미해결 접수 절을 실었는지(main() 의 _ovd_mark_sent 판단용 — 옛 sent_ovd_ops 자리)."""
+    if _mgr_morning_one_already_sent_today():
+        log("[mgr1] 이미 발송된 회차 — 생략")
+        return False
+
+    ovd_text = _build_ovd_room_text(_OVD_ROOM_OPS) if ovd_ready else ""
+    target_date, mgr_msg, relay_current, reply_hits, nawool_msg = _prepare_mgr_daily()
+    sched_text = _build_mgr_schedule_text()
+
+    parts = [p for p in (ovd_text, mgr_msg, sched_text) if p]
+    if not parts and not nawool_msg:
+        log("[mgr1] 보낼 내용 0건 — 발송 생략")
+        return False
+
+    kakao_ok = True
+    if parts:
+        header = f"🌅 하루의 시작 — {WEEKLY_ROOM} {datetime.now().strftime('%m/%d')}"
+        combined = "\n\n".join([header] + parts)
+        cmd = [sys.executable, str(SENDER), "--message", combined, "--only-room", WEEKLY_ROOM,
+               "--sender", "아침정리다이제스트"]
+        log(f"[mgr1] 하루의 시작 통합 발송({len(parts)}절) → {WEEKLY_ROOM}")
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        out = (proc.stdout or "").strip()
+        kakao_ok = proc.returncode == 0 and "DONE" in out
+        if not kakao_ok:
+            log(f"[mgr1] 카톡 발송 실패(rc={proc.returncode}) — 다음 회차 재시도")
+
+    # 나우열M 텔레그램·강습 문제제기·GM 개인 봇방 — 다른 채널이라 손 안 대고 send_mgr_brief 와
+    # 같은 순서로 그대로 돈다(카톡 실패 여부만 kakao_ok 로 받는다).
+    nawool_ok = send_nawool_telegram(nawool_msg) if nawool_msg else True
+    if kakao_ok and _LESSON_ESCALATION:
+        try:
+            sys.path.insert(0, str(ROOT / "scripts" / "notify"))
+            from telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID
+            ok = send_as_gm(WORK_ROOM_CHAT_ID, _LESSON_ESCALATION)
+            log(f"[mgr1] 강습 연락 문제제기 → 나우열M 텔레그램 {'ok' if ok else '실패'}")
+        except Exception as exc:
+            log(f"[mgr1] 강습 연락 문제제기 텔레그램 발송 실패: {type(exc).__name__}: {exc}")
+    gm_room_ok = send_gm_room_digest()
+    if not gm_room_ok:
+        log("[mgr1] GM 개인 봇방 §8 요약 발송 실패 — 다음 회차 재시도")
+
+    if kakao_ok and nawool_ok and gm_room_ok:
+        if mgr_msg:   # mgr 절이 실제로 있었을 때만 mgr 쪽 지문·스냅샷을 남긴다(빈 절이면 흔적 없음)
+            _mark_mgr_sent(target_date)
+            _record_last_sent(_LAST_SENT_HEARTBEAT_MGR, target_date)
+            relay_state = _relay_state()
+            _migrate_relay_state(relay_state)
+            relay_state[WEEKLY_ROOM] = relay_current
+            _save_relay_state(relay_state, waiting_today=len(relay_current))
+            if reply_hits:
+                _record_reply_hits(reply_hits)
+        _mgr_morning_one_mark_sent()
+        log("[mgr1] 발송 완료")
+
+    return bool(ovd_text)
+
+
+def preview_mgr_morning_one() -> int:
+    """★중간관리자 「🌅 하루의 시작」 통합 통 미리보기 — 방에 손 안 댐(발신·SSOT/원장 기록 없음).
+    preview_mgr_brief() 와 같은 원칙으로 reply-sync·주간표는 여기서 안 돈다 — --dry-run 전용."""
+    target_date = ""
+    if PENDING.exists():
+        try:
+            target_date = json.loads(PENDING.read_text(encoding="utf-8")).get("date", "")
+        except Exception:
+            pass
+    if not target_date:
+        from datetime import timedelta as _td
+        target_date = (datetime.now() - _td(days=1)).strftime("%Y-%m-%d")
+
+    ovd_text = _build_ovd_room_text(_OVD_ROOM_OPS)
+    mgr_msg, _relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    sched_text = _build_mgr_schedule_text()
+
+    parts = [p for p in (ovd_text, mgr_msg, sched_text) if p]
+    header = f"🌅 하루의 시작 — {WEEKLY_ROOM} {datetime.now().strftime('%m/%d')}"
+    combined = "\n\n".join([header] + parts) if parts else "(보낼 내용 0건 — 발송 안 함)"
+    print(f"\n===== {WEEKLY_ROOM} 하루의 시작 통합 미리보기 (mgr 대상 {target_date}) =====")
+    print(combined)
+    if reply_hits:
+        print(f"(회신 감지로 전달 제외 {len(reply_hits)}건 — 미리보기라 note 기록은 안 함)")
+    if nawool_msg:
+        log(f"[mgr1-preview] 나우열M 텔레그램 본문 참고용(미발송): {len(nawool_msg)}자")
+    return 0
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -3842,25 +4027,25 @@ def _ovd_ready() -> bool:
     return True
 
 
-def _send_ovd_room(room: str) -> bool:
-    """기한 초과 접수를 방 하나에 발송(원장은 그때그때 새로 조회 — 07:40·07:55로 시각이
-    떨어져 있어 값이 살짝 다를 수 있는 것이 자연스럽다). 반환=실제 발송 여부."""
+def _build_ovd_room_text(room: str) -> str:
+    """기한 초과 접수 본문 조립(발신 없음) — _send_ovd_room·send_mgr_morning_one(배12678) 공용."""
     from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get
     resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ovd-alert")
     if resp is None:
         log("[ovd] 종합접수 조회 실패 — 생략")
-        return False
+        return ""
     try:
         data = resp.json()
         rows = data.get("data", []) if data.get("ok") else []
     except Exception:
         log("[ovd] 응답 파싱 실패 — 생략")
-        return False
+        return ""
     eligible = [r for r in rows
                 if str(r.get("status", "")) not in {"완료"}
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
-    # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58).
+    # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(★운영부=send_schedule_pings,
+    # ★중간관리자=_build_mgr_schedule_text).
     block = _build_ovd_block(room_rows)
     # ★부서장 아침 = 누적 두 절(접수 전문 + 강습 미컨택 목록) — GM 지시 2026-09-05.
     if room == _OVD_ROOM_LESSON:
@@ -3870,6 +4055,15 @@ def _send_ovd_room(room: str) -> bool:
             block = f"{head} · 컨택 기록 없는 문의 {sla_n}건\n{rest}\n\n\n{sla_text}"
         elif sla_text:
             block = sla_text
+    return block
+
+
+def _send_ovd_room(room: str) -> bool:
+    """기한 초과 접수를 방 하나에 발송(원장은 그때그때 새로 조회 — 방마다 시각이 떨어져
+    있어 값이 살짝 다를 수 있는 것이 자연스럽다). 반환=실제 발송 여부.
+    ★2026-09-16(배12678) — ★중간관리자 몫은 send_mgr_morning_one() 이 _build_ovd_room_text()
+    를 직접 불러 다른 절과 합쳐 보낸다. 이 함수는 이제 ★부서장(07:55)에만 쓰인다."""
+    block = _build_ovd_room_text(room)
     if not block:
         log(f"[ovd] {room} — 보낼 절 없음, 생략")
         return False
@@ -3898,8 +4092,29 @@ def _sched_ping_already_sent_today() -> bool:
     return bool(rec) and str((rec.get("state") or {}).get("date", "")) == date.today().isoformat()
 
 
+def _build_mgr_schedule_text() -> str:
+    """📅 다가오는 일정 — ★중간관리자용 본문 조립(발신 없음). send_mgr_morning_one 전용(배12678).
+    ★운영부 몫은 send_schedule_pings() 가 그대로 따로 보낸다(이 함수는 그 발신엔 안 쓰인다).
+    주말 스킵(GM 2026-09-01)·전부 펼침(GM 2026-08-29)은 옛 send_schedule_pings 규칙 그대로."""
+    if date.today().weekday() >= 5:
+        return ""
+    items = _upcoming_schedule_items()
+    block = _build_schedule_block(items, show_all=True)
+    if not block:
+        return ""
+    # 오늘 건이 있으면 담당자를 불러 준다 — 이름이 없으면 아무도 자기 일로 안 읽는다.
+    _names = _todays_assignees(items)
+    _who = (" · ".join(_names) if len(_names) <= 2 else "담당자분들") if _names else ""
+    ask = (f"👉 오늘 건 {_who} — 본인 부서 건은 담당자에게 전달 부탁드립니다"
+           if _who else
+           "👉 본인 부서 건은 담당자에게 전달 부탁드립니다")
+    tail_lines = [f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
+                  "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다"]
+    return "\n".join([block, ask] + tail_lines)
+
+
 def send_schedule_pings() -> None:
-    """📅 다가오는 일정 통 — ★중간관리자 방 1통. 하루 1회.
+    """📅 다가오는 일정 통 — ★운영부 방 1통 + 담당 직통(4부서방, 블라인드 담당만). 하루 1회.
 
     ★2026-09-01 GM 지시 — "다가오는 일정은 전체 방 말고 중간관리자 방에만. 각 관리자들이
       챙길 수 있도록." 종전엔 4부서방(부서 소관)·★중간관리자(관리자 건)로 갈라 두 통을 보냈다.
@@ -3908,6 +4123,9 @@ def send_schedule_pings() -> None:
     ▸부서 소관 건도 함께 싣는다. 받는 사람이 관리자 한 자리로 바뀌었으니 갈라 둘 이유가 없다.
     ▸접지 않고 전부 싣는다(GM 2026-08-29 "줄을 접지 말고 건수를 줄여라") — 관리자가 챙기려면
       가려진 것이 없어야 한다.
+    ★2026-09-16(배12678) — ★중간관리자 몫은 send_mgr_morning_one() 이 _build_mgr_schedule_text()
+      를 직접 불러 「🌅 하루의 시작」 통합 통에 싣는다. 이 함수는 이제 ★운영부·4부서방(담당 직통)만
+      보낸다 — 새 발신기 아님, 자리만 옮겼다(같은 SENDER·같은 하트비트).
     """
     # ★2026-09-01 GM 지시 — "주말에는 보내지마." 창이 이번 주 금요일까지라 토·일에는 남은
     #   일정이 없고, 쉬는 날 알림은 소음이다. 월요일 아침에 그 주 것을 다시 낸다.
@@ -3924,39 +4142,17 @@ def send_schedule_pings() -> None:
     if not block:
         log("[sched] 7일 내 일정 없음 — 통 생략")
     else:
-        # 오늘 건이 있으면 담당자를 불러 준다 — 이름이 없으면 아무도 자기 일로 안 읽는다.
-        _names = _todays_assignees(items)
-        _who = (" · ".join(_names) if len(_names) <= 2 else "담당자분들") if _names else ""
-        # ★2026-09-02 GM 지시 — 「완료」 한 마디 요청을 뺐다. "아침에도 완료 한마디 이건 의미없는
-        #   것 같아 삭제하고." 완료 보고를 받아 목록을 줄이는 것이 목적이 아니다. 목적은 문의·접수가
-        #   들어왔을 때 빨리 컨택되고 회신까지 가는 것이다 — 그건 실무진에게 한 줄 부탁해서 되는 일이
-        #   아니라 시스템이 재고 밀어야 하는 일이다. 여기 남기는 것은 전달 부탁 한 줄뿐이다.
-        ask = (f"👉 오늘 건 {_who} — 본인 부서 건은 담당자에게 전달 부탁드립니다"
-               if _who else
-               "👉 본인 부서 건은 담당자에게 전달 부탁드립니다")
         tail_lines = [f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
                       "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다"]
-        # ★2026-09-01 GM 지시 — "중간관리자방 + 운영부방까지 공유하자."
-        #   ★운영부는 답을 요구하지 않는 공유 전용 방이다(약속 L24) — 같은 통을 보내되
-        #   묻는 자리(👉 전달 부탁)는 ★중간관리자 한 곳에만 둔다. 2026-09-03 실측: 두 방에 같은
-        #   👉 줄이 나가고 있었다 — 주석은 "한 곳"이라 적고 코드는 두 곳에 보냈다.
-        #   같은 사람이 두 방에서 같은 걸 두 번 받는 중복이지만, 일정은 놓치면 되돌릴 수 없어
-        #   GM 이 중복을 감수하기로 정했다.
-        msg_by_room = {
-            RELAY_ROOM: "\n".join([block, ask] + tail_lines),
-            TARGET_ROOM: "\n".join([block] + tail_lines),
-        }
-        for _i, _room in enumerate((RELAY_ROOM, TARGET_ROOM)):
-            if _i:
-                time.sleep(SEND_STAGGER_SECONDS)   # 알림 두 개가 같은 초에 겹치지 않게
-            cmd = [sys.executable, str(SENDER), "--message", msg_by_room[_room], "--only-room", _room,
-                   "--sender", "아침정리다이제스트"]
-            log(f"[sched] 발송 → {_room}")
-            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-            out = (proc.stdout or "").strip()
-            log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
-            if proc.returncode == 0 and "DONE" in out:
-                sent_any = True
+        msg = "\n".join([block] + tail_lines)
+        cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", TARGET_ROOM,
+               "--sender", "아침정리다이제스트"]
+        log(f"[sched] 발송 → {TARGET_ROOM}")
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        out = (proc.stdout or "").strip()
+        log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
+        if proc.returncode == 0 and "DONE" in out:
+            sent_any = True
         # 두 방 어디에도 안 앉은 담당(지원부 반장·주차 고문)의 오늘·내일 건만 4부서 방으로 한 줄씩.
         blind = _room_blind_assignee_items(items)
         if blind:
@@ -4255,6 +4451,7 @@ def main() -> int:
         _selfcheck_own_broadcast_log_match()
         _selfcheck_weekly_meeting()
         _selfcheck_register_manager_reply()
+        _selfcheck_mgr_evening_carryover()
         return 0
 
     if args.weekly_intake:
@@ -4320,22 +4517,20 @@ def main() -> int:
         except Exception as exc:
             log(f"[morning] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
-        if ovd_ready:
-            try:
-                sent_ovd_ops = _send_ovd_room(_OVD_ROOM_OPS)
-            except Exception as exc:
-                log(f"[ovd] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+        # ★2026-09-16(배12678) — ★중간관리자 몫 미해결 접수는 여기서 따로 안 보낸다. 아래
+        #   07:50 슬롯의 send_mgr_morning_one() 이 「🌅 하루의 시작」 통합 통에 실어 보낸다.
 
         _sleep_until(*MORNING_SEND_TIMES["★운영부"])
     rc = _send_ops_room(args)
 
     # ★중간관리자 — ★운영부 결과와 무관하게 시도한다(방마다 독립 · 2026-08-15 수리,
-    # send_mgr_brief docstring 참조).
+    # send_mgr_brief docstring 참조). ★2026-09-16(배12678) 부터는 send_mgr_morning_one() 이
+    # 미해결 접수·결정거리·오늘 일정을 「🌅 하루의 시작」 한 통으로 합쳐 보낸다.
     # ★2026-09-07 웰리 검수 — --dry-run(방에 손 안 댐) 이 이 방을 통째로 건너뛰어 「확인
     #   부탁드릴 것」 절이 안 보였다(대기·전송만 건너뛰어야 하는데 렌더까지 건너뜀). --dry-run
-    #   에서도 preview_mgr_brief() 로 본문은 그대로 보여주고, 대기·발송·지문기록만 막는다.
+    #   에서도 preview_mgr_morning_one() 으로 본문은 그대로 보여주고, 대기·발송·지문기록만 막는다.
     if args.dry_run:
-        preview_mgr_brief()
+        preview_mgr_morning_one()
         # 📋 화요일 회의자료 통도 dry 로 본다 — 파일(intake·A3)만 쓰고 발송·지문·카드는 안 건드린다.
         if datetime.now().weekday() == 1:
             try:
@@ -4345,9 +4540,9 @@ def main() -> int:
     else:
         _sleep_until(*MORNING_SEND_TIMES["★중간관리자"])
         try:
-            send_mgr_brief()
+            sent_ovd_ops = send_mgr_morning_one(ovd_ready)
         except Exception as exc:
-            log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+            log(f"[mgr1] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
         # 중간관리자 업무 목차 화면 재생성 — 07:50 통이 원장(MGR_LEDGER)에 회신을 반영한 '뒤'라야
         # 화면이 그 반영분을 담는다. 2026-09-11 실측: 원장엔 새 건이 들어갔는데 화면은 9/10

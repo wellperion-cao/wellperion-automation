@@ -6,9 +6,20 @@
 
 관리자만(ERP_PLATFORM_ADMINS · api_partner_secrets.py 와 같은 관문). 사진은 서버
 {MARKETING_DIR}/{tenant}/{ymd}_{id}/ 에 저장. 실제 채널 발행(네이버·인스타 자동화)은 이 배 범위 밖 —
-status='queued' 로 접수만 한다. 발행 워커는 기존 발행 스크립트를 재사용하는 다음 배.
+status='queued' 로 접수만 한다.
+
+발행 워커 1단계(배 12680 · 2026-09-16 시토) — 로그인 쿠키 없는 GM PC 워커가 부르는 문 2개(열쇠 헤더
+X-Token-Push-Key = api_token_usage.py 와 같은 방식 · nginx 는 marketing-worker.nginx.conf 초안 참조):
+
+  GET  /api/marketing/uploads/queue?tenant=  status=queued 행 전부(오래된 순)
+  POST /api/marketing/uploads/status  {id, channel, status: drafted|failed|published, note}  → 채널별 상태 기록
+
+채널별 상태는 channel_status(JSONB) 한 칸에 담는다 — {channel: {status, note, updated_at}}. 행 전체
+status 는 _overall_status() 가 정한다: 하나라도 failed 면 재시도하도록 queued 유지, 접수된 채널
+전부가 drafted/published 로 끝나면 그 값(전부 published 면 published, 아니면 drafted)으로 올린다.
 """
 import datetime as dt
+import hmac
 import json
 import os
 import sys
@@ -24,7 +35,9 @@ router = APIRouter()
 
 MARKETING_DIR = os.environ.get("MARKETING_UPLOAD_DIR", "/srv/erp/marketing")
 KST = dt.timezone(dt.timedelta(hours=9))
-STATUS_LABEL = {"queued": "접수됨", "ok": "발행됨", "fail": "실패"}
+STATUS_LABEL = {"queued": "접수됨", "ok": "발행됨", "fail": "실패",
+                "drafted": "임시저장됨", "failed": "실패", "published": "발행됨"}
+CHANNEL_STATUSES = ("drafted", "failed", "published")
 
 
 def _user(request):
@@ -95,16 +108,86 @@ def uploads(request: Request, tenant: str = ""):
     conn = db.connect(readonly=True)
     with conn:
         rows = conn.execute(
-            "SELECT channels, title, status, created_at FROM marketing_uploads"
+            "SELECT channels, title, status, channel_status, created_at FROM marketing_uploads"
             " WHERE tenant_id=%s AND tenant=%s ORDER BY created_at DESC LIMIT 20",
             (db.TENANT, t)).fetchall()
     conn.close()
     items = []
     for r in rows:
+        cs = r["channel_status"] or {}
         for c in (r["channels"] or [""]):
-            items.append({"date": r["created_at"], "channel": c, "title": r["title"], "status": r["status"],
-                          "status_label": STATUS_LABEL.get(r["status"], r["status"])})
+            st = (cs.get(c) or {}).get("status") or r["status"]
+            items.append({"date": r["created_at"], "channel": c, "title": r["title"], "status": st,
+                          "status_label": STATUS_LABEL.get(st, st)})
     return {"ok": True, "items": items}
+
+
+def _check_key(request: Request) -> bool:
+    """열쇠 헤더 확인 — 로그인 쿠키 없는 GM PC 워커 호출용(api_token_usage.py 와 같은 방식)."""
+    want = os.environ.get("ERP_TOKEN_PUSH_KEY", "")
+    got = request.headers.get("x-token-push-key", "")
+    return bool(want) and hmac.compare_digest(got, want)
+
+
+def _overall_status(channels, channel_status):
+    """채널별 상태 → 행 전체 status. 순수 함수(라우트 밖) — _selfcheck 가 잰다."""
+    if any((channel_status.get(c) or {}).get("status") == "failed" for c in channel_status):
+        return "queued"
+    if channels and all((channel_status.get(c) or {}).get("status") in ("drafted", "published") for c in channels):
+        return "published" if all(channel_status[c]["status"] == "published" for c in channels) else "drafted"
+    return "queued"
+
+
+@router.get("/api/marketing/uploads/queue")
+def uploads_queue(request: Request, tenant: str = ""):
+    if not _check_key(request):
+        return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
+    t = (tenant or "").strip()
+    conn = db.connect(readonly=True)
+    with conn:
+        if t:
+            rows = conn.execute(
+                "SELECT id, tenant, channels, title, body, files, created_at FROM marketing_uploads"
+                " WHERE tenant_id=%s AND tenant=%s AND status='queued' ORDER BY created_at ASC",
+                (db.TENANT, t)).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, tenant, channels, title, body, files, created_at FROM marketing_uploads"
+                " WHERE tenant_id=%s AND status='queued' ORDER BY created_at ASC",
+                (db.TENANT,)).fetchall()
+    conn.close()
+    items = [{"id": r["id"], "tenant": r["tenant"], "channels": r["channels"], "title": r["title"],
+              "body": r["body"], "files": r["files"], "created_at": r["created_at"]} for r in rows]
+    return {"ok": True, "items": items}
+
+
+@router.post("/api/marketing/uploads/status")
+async def uploads_status(request: Request):
+    if not _check_key(request):
+        return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
+    payload = await request.json()
+    uid = str(payload.get("id") or "").strip()
+    channel = str(payload.get("channel") or "").strip()
+    status = str(payload.get("status") or "").strip()
+    note = str(payload.get("note") or "")
+    if not uid or not channel or status not in CHANNEL_STATUSES:
+        return JSONResponse({"ok": False, "error": "bad payload"}, status_code=400)
+    conn = db.connect()
+    with conn:
+        row = conn.execute(
+            "SELECT channels, channel_status FROM marketing_uploads WHERE tenant_id=%s AND id=%s",
+            (db.TENANT, uid)).fetchone()
+        if not row:
+            conn.close()
+            return JSONResponse({"ok": False, "error": "not found"}, status_code=404)
+        cs = dict(row["channel_status"] or {})
+        cs[channel] = {"status": status, "note": note, "updated_at": _now()}
+        overall = _overall_status(row["channels"] or [], cs)
+        conn.execute(
+            "UPDATE marketing_uploads SET channel_status=%s::jsonb, status=%s WHERE tenant_id=%s AND id=%s",
+            (json.dumps(cs, ensure_ascii=False), overall, db.TENANT, uid))
+    conn.close()
+    return {"ok": True, "status": overall}
 
 
 def _selfcheck():
@@ -115,6 +198,10 @@ def _selfcheck():
     ymd = "20260916"
     saved = {"name": "x.jpg", "path": "/".join((tenant, "%s_%s" % (ymd, uid), "x.jpg"))}
     assert saved["path"] == "selftest/20260916_abc123def456/x.jpg"
+    assert _overall_status(["naver-blog"], {"naver-blog": {"status": "drafted"}}) == "drafted"
+    assert _overall_status(["naver-blog", "instagram"], {"naver-blog": {"status": "failed"}}) == "queued"
+    assert _overall_status(["naver-blog"], {}) == "queued"
+    assert _overall_status(["naver-blog"], {"naver-blog": {"status": "published"}}) == "published"
     print("selfcheck ok")
 
 

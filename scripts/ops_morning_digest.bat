@@ -53,6 +53,26 @@ if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 "%PY%" "%ROOT%\scripts\send_ops_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% send_ops_digest
+REM 2026-09-16 (Welly ship 2705, CTO): meeting brief A3 (GM work + manager ledger + schedule + task/approval
+REM   SSOT in one page) is regenerated right after the 07:50 digest (manager task index is rebuilt inside
+REM   send_ops_digest). --check = regenerate html+png, overflow check, safe_commit. No new task - same bat.
+"%PY%" "%ROOT%\scripts\meeting_brief_a3.py" --check >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% meeting_brief_a3
+REM 2026-09-16 (Welly ship 2706): meeting system page (chairman meeting rounds - date, materials,
+REM   recording, summary, decisions) regenerated from status/meeting_system.json right after the brief.
+REM   --check = html + png + console-error check. The 5th/20th reminders derive from that same ledger.
+"%PY%" "%ROOT%\scripts\meeting_system_page.py" --check >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% meeting_system_page
+REM 2026-09-16 (chairman meetings, CTO): monthly reminders to the GM bot room - day 5 (mid-month meeting)
+REM   and day 20 (month-end review meeting). The script checks the date itself; other days are a no-op.
+"%PY%" "%ROOT%\scripts\monthly_meeting_reminders.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% monthly_meeting_reminders
+REM 2026-09-16 (chairman's word - meeting recording to AI summary, CTO, ship 2727): scans
+REM   status/meeting_recordings/ for new .m4a/.mp3/.wav/.mp4, transcribes locally (faster-whisper,
+REM   zero cost), summarizes, renders an A4 page, sends one Telegram line to the GM bot room.
+REM   No-op when the folder has no new file.
+"%PY%" "%ROOT%\scripts\meeting_transcribe.py" --send >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% meeting_transcribe
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed

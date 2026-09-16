@@ -263,6 +263,9 @@
   .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 
   /* 자체 점검 줄 */
+  .p3plan-h{font-size:10.5px;font-weight:800;color:#7A838B;letter-spacing:.02em;margin:6px 0 1px;}
+  .p3plan-h:first-child{margin-top:0;}
+  .mrow .rk{display:inline-block;min-width:14px;font-weight:800;color:var(--ink);}
   .audit{margin-top:9px;padding:5px 11px;font-size:11px;line-height:1.45;border:1px solid var(--line);}
   .audit.wait{color:#7A838B;background:#F6F8FA;}
   .audit.ok{color:var(--good);background:#EEF6F2;border-color:#BFDCD0;}
@@ -401,7 +404,6 @@
   <b>매출 및 회원 현황 보고</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
-  <a href="../../월간운영계획.html">📋 전 부서 보고 사항 (월간운영계획) ↗</a>
   <!-- 날짜별·월별 보기 (GM 지시 2026-09-02). 인쇄 시 .bar 통째로 숨어 인쇄에는 안 나온다. -->
   <input type="date" id="dpick" onchange="onDatePick()">
   <button id="dmonth" onclick="toggleMonth()">📅 이번 달 전체</button>
@@ -440,7 +442,7 @@
     <!-- 좌상 — 등록·재등록·환불 -->
     <!-- ③화면 직관화(GM 읽는 순서 2026-09-05): 어제 돈 → 이달 순으로 배치 -->
     <div class="sec">
-      <h2>등록 · 재등록 · 환불 — 어제 돈이 어디서 들어오고 나갔나<span class="src ">시트 → 서버</span></h2>
+      <h2>등록 · 재등록 · 환불 — 어제 돈이 어디서 들어오고 나갔나<span class="src " data-sf="1">시트 → 서버</span></h2>
       <div class="bd">
         <div class="lstitle" style="border-top:0;margin-top:0;padding-top:0;">회원권 · 옵션</div>
         <div id="regRev" style="margin-top:6px;"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -457,14 +459,14 @@
         <div class="fnote" id="serverCmp" style="display:none;margin:4px 0 0;"></div>
       </div>
       <div class="sec">
-        <h2>회원 드나듦 — 들어온 분 · 나간 분<span class="src ">시트 → 서버</span></h2>
+        <h2>회원 드나듦 — 들어온 분 · 나간 분<span class="src " data-sf="1">시트 → 서버</span></h2>
         <div class="bd" id="memberFlow"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
 
     <!-- 좌하 — 매출 현황. 표 11줄이 다 보이도록 남은 높이를 전부 먹는다. -->
     <div class="sec" style="min-height:0;">
-      <h2>매출 현황<span class="src ">시트 → 서버</span></h2>
+      <h2>매출 현황<span class="src " data-sf="1">시트 → 서버</span></h2>
       <table id="sales-table">
         <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
         <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
@@ -657,6 +659,14 @@
       </div>
     </div>
     <div class="col">
+      <!-- 이달 운영 계획 · 진척 — 월간운영계획 화면에만 있던 절을 여기로 옮겼다(GM 방향 2026-09-16 · 배 2696).
+           원장 = /repo/status/monthly_ops_plan.json(GM업무 카드와 같은 원장) · 점검 = /api/check/{dept}/monthly · 접수 = /api/reception/board.
+           구글 호출은 들여오지 않았다. erp 도메인에서만 값이 붙는다 — 09:00 자동 캡처(Pages 사본)는 /repo·/api 가 없어
+           절을 접는다('—' 를 그리지 않는다). 자체 점검(audit3)이 원천 도착 여부를 한 줄로 덧붙인다. -->
+      <div class="sec" id="p3plan-sec" style="display:none">
+        <h2 id="p3planh">이달 운영 계획 · 진척<span class="src">월간운영계획 원장 · 점검 거울 · 접수 원장 → 서버</span></h2>
+        <div class="bd" id="p3plan"></div>
+      </div>
       <div class="sec">
         <h2>인사 · 파트너팀 진행사항<span class="src">업무·결재 SSOT → 시트 I20 → 서버</span></h2>
         <div class="bd" id="p3hr"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -901,6 +911,19 @@ function loadDaily(){
      그래서 ①본 보고가 다 그려진 뒤에 ②한 건씩 차례로 부른다. 이 칸이 늦거나 비어도 발송 판정
      (window.__REPORT_READY)에는 들어가지 않는다 — 보고를 막지 않는다. */
   var vals = new Array(days.length);
+  /* 서버판이 켜져 있으면 일자탭 대신 브로제이 날짜별 합(brojay.raw.daily · 환불 제외)을 쓴다 — 시트 0칸.
+     적재가 빠진 날(days_loaded 에 없음)은 0 이 아니라 「못 읽음」으로 둔다. 서버판이 없으면 종전 일자탭 그대로. */
+  if (ERP_API_ON && _serverCellsP) {
+    _serverCellsP.then(function(srv){
+      var bj = srv && srv.brojay, raw = bj && bj.raw;
+      if (!SF_CELLS || !raw || !raw.daily) { chunk(0); return; }
+      var loaded = {}; (raw.days_loaded || []).forEach(function(d){ loaded[d] = 1; });
+      days.forEach(function(d, i){ var k = ymd(d); vals[i] = (k in raw.daily) ? raw.daily[k] : (loaded[k] ? 0 : null); });
+      var h = document.querySelector('#dayh .src'); if (h) { h.textContent = '브로제이 → 서버'; h.className = 'src bro'; }
+      paintDaily(days, vals);
+    });
+    return;
+  }
   var CH = 3;                                   // 한 번에 3건씩 — 7건 동시(2026-09-14 사고)도, 1건씩(느림)도 아니다
   function chunk(start){
     if (start >= days.length) { paintDaily(days, vals); return; }
@@ -1088,7 +1111,7 @@ function paintAudit(out){
   } else {
     el.className = 'audit ok';
     el.innerHTML = '<b>✅ 자체 점검 ' + (out.length - warns.length) + '/' + out.length + ' 통과</b> — ' + at +
-      ' · <b>' + automationProgressText() + '</b>' +
+      ' · <b id="autoProg">' + automationProgressText() + '</b>' +
       (warns.length ? ' <span class="w">· 주의 ' + warns.map(function(x){ return esc(x.name) + (x.detail ? '(' + esc(x.detail) + ')' : ''); }).join(' / ') + '</span>' : '');
   }
 }
@@ -1099,7 +1122,15 @@ function paintAudit(out){
    바뀌면 이 목록에 그 칸을 더한다 — 그것이 유일한 갱신 자리다(매일 09:00 사진에 그대로 찍힌다). */
 var BROJAY_SOURCE_CELLS = ['N13', 'N14', 'N15'];   // 입장 3칸 = 브로제이 출입 기록(api_visitors · 2026-09-09)
 var REPORT_CELL_COUNT = 22;
+/* ★서버판(시트 0칸) — GM 지시 2026-09-16 「시트를 배제하고 브로제이+웰페리온 ERP 만으로 최종 서버판」.
+   /api/report/sales_report_cells 의 server_final(brojay_cells · members · 브로제이 출석)이 22칸을 다 채우면 1면 값을
+   그 판으로 그리고, 시트 판은 대조 줄 한 줄로 내린다. 도착 전·미달이면 종전(시트 + 회원 5칸·입장 3칸 덮기) 그대로.
+   SF = 서버판 응답 · SF_CELLS = 보고탭 칸 이름으로 옮긴 그리기용 사본(RAW.cells 는 손대지 않는다 — 09:30 발송 판정) ·
+   SF_SRC = 칸별 원천(bro/erp · srcTag 꼬리표가 읽는다). */
+var SF = null, SF_CELLS = null, SF_SRC = {};
+function sfOn(){ return !!(SF_CELLS && document.getElementById('dpick').value === ymd(new Date(Date.now() - 86400000))); }
 function automationProgressText(){
+  if (SF && SF.cells_total) return '서버 원천(브로제이+ERP) ' + SF.cells_filled + '/' + SF.cells_total + '칸 (' + Math.round(SF.cells_filled / SF.cells_total * 100) + '%)';
   var n = BROJAY_SOURCE_CELLS.length;
   return '브로제이→서버 원천 ' + n + '/' + REPORT_CELL_COUNT + '칸 (' + Math.round(n / REPORT_CELL_COUNT * 100) + '%)';
 }
@@ -1165,8 +1196,10 @@ function loadBrojayCompare(c){
 
 /* 칸 꼬리표 — 원천이 어디인지 칸마다 붙인다. 'sheet' = 시트→서버(서버에 거울로 있어도 시트가 원천) · 'bro' = 브로제이→서버.
    칸의 원천이 바뀌면 그 칸의 호출만 바꾼다(BROJAY_SOURCE_CELLS 와 같은 뜻 · 두 곳이 어긋나면 안 된다). */
-function srcTag(kind){
-  return kind === 'bro' ? '<span class="srct bro">브로제이→서버</span>' : '<span class="srct">시트→서버</span>';
+function srcTag(kind, cell){
+  if (cell && sfOn() && SF_SRC[cell]) kind = SF_SRC[cell];
+  return kind === 'bro' ? '<span class="srct bro">브로제이→서버</span>' :
+         kind === 'erp' ? '<span class="srct bro">ERP→서버</span>' : '<span class="srct">시트→서버</span>';
 }
 
 function renderSheet(c){
@@ -1198,11 +1231,18 @@ function renderSheet(c){
   }
 
   loadBrojayCompare(c);   // 어제 브로제이 결제 vs 시트 — 발밑 한 줄(ERP 도메인에서만)
+  renderReportCells(c);
+}
+
+/* 보고탭 칸 그리기 — 매출 표·회원 구성·드나듦·입장·등록 매출·헤드라인. renderSheet(기본 보기)와
+   applyServerFinal(서버판 · 날짜 보기 유지)이 같이 쓴다. */
+function renderReportCells(c){
+  var _yst = new Date(Date.now() - 86400000);   // 헤드라인 「전날 하루」 꼬리표용 — renderSheet 와 같은 어제
   document.getElementById('sales').innerHTML = SALES_ROWS.map(function(r){
     var name = c['H' + r]; if (!name) return '';
     var rv = parseFloat(String(c['L'+r] || '').replace('%',''));
     var bar = isNaN(rv) ? '' : '<span class="rb" style="width:' + Math.min(100, rv) + '%"></span>';
-    return '<tr' + (r === 4 ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(name) + '">' + esc(name) + '</span>' + srcTag('sheet') + '</td>' +
+    return '<tr' + (r === 4 ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(name) + '">' + esc(name) + '</span>' + srcTag('sheet', 'I' + r) + '</td>' +
       '<td>' + esc(c['I'+r] || '–') + '</td><td>' + esc(c['J'+r] || '–') + '</td>' +
       '<td>' + esc(c['K'+r] || '–') + '</td>' +
       '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + bar + '</td></tr>';
@@ -1215,7 +1255,7 @@ function renderSheet(c){
   }).filter(function(x){ return x.label; });
   var mixSum = mixItems.reduce(function(a, b){ return a + b.n; }, 0) || 1;
   document.getElementById('memberMix').innerHTML =
-    '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + srcTag('sheet') + '</span>' +
+    '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + srcTag('sheet', 'N2') + '</span>' +
       '<span class="bv">' + esc(c.N2 || '–') + '</span></div>' +
     '<div class="stack">' + mixItems.map(function(x){
         return '<i style="width:' + (x.n / mixSum * 100) + '%;background:' + x.color + '" title="' +
@@ -1554,8 +1594,9 @@ function load(){
     // '집계 중' 막대를 세운다 — 값을 다시 계산하지 않고 시트 칸을 그대로 옮긴다.
     if (RAW.chart && RAW.chart.months && RAW.cells) {
       var cm = RAW.chart.months[new Date().getMonth()];
-      if (cm && cm.value == null && num(RAW.cells.J4) > 0) {
-        cm.value = num(RAW.cells.J4); cm.partial = true;
+      var _j4 = (SF_CELLS || RAW.cells).J4;   // 서버판이 먼저 와 있으면 그 누적으로(시트 누적이 그래프에만 남지 않게)
+      if (cm && cm.value == null && num(_j4) > 0) {
+        cm.value = num(_j4); cm.partial = true; cm.partialLabel = _yestLabel();
         renderChart(RAW.chart);
       }
     }
@@ -1752,7 +1793,137 @@ function renderPage3(c){
     a3.className = 'audit ok';
     a3.innerHTML = '<b>자체 점검 4/4 통과</b> — 운영 현황·인사/파트너팀·핵심 보고·팀별 현황을 ' + at + ' 에 확인했습니다';
   }
+  p3PlanAudit();
 }
+
+/* ══ 3면 — 이달 운영 계획 · 진척 (배 2696 · 월간운영계획 화면 → 이 화면) ══
+   top3 선정 규칙은 월간운영계획.html selectTop3 와 같다 — GM 지정(gm_top3_rank) 우선 · 모자라면
+   북극성 기여도(high 10000 · mid 5000 · low 1000) + 상태(진행3·이월2·계획1·완료0) + 전사(+40) + 북극성 연결(+20)
+   + 진척×0.01 · 매출 과제 제외. 진척 = progress_note 의 □/☑ 개수, 없으면 progress 값.
+   원천 셋(원장·점검·접수) 중 하나도 안 오면 절을 접은 채 둔다. */
+var _p3plan = null;   // {pages, arrived:[], missing:[]} — audit3 가 읽는다
+function p3PlanProg(o){
+  var total = 0, done = 0;
+  String((o && o.progress_note) || '').split(/\r?\n/).forEach(function(ln){
+    var m = /^\s*([□☑])/.exec(ln); if (!m) return; total++; if (m[1] === '☑') done++;
+  });
+  var v = total ? done / total * 100 : Number(o && o.progress);
+  return isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : 0;
+}
+function p3PlanTop3(objs){
+  var ranked = objs.filter(function(o){ return typeof o.gm_top3_rank === 'number'; })
+    .sort(function(a, b){ return a.gm_top3_rank - b.gm_top3_rank; });
+  if (ranked.length >= 3) return ranked.slice(0, 3);
+  var W = {high:10000, mid:5000, low:1000}, S = {'진행':3, '이월':2, '계획':1, '완료':0};
+  var isSales = function(o){ return /매출/.test((o.metric && o.metric.name) || '') || /매출/.test(o.dept || ''); };
+  var rest = objs.filter(function(o){ return !isSales(o) && typeof o.gm_top3_rank !== 'number'; })
+    .map(function(o, i){
+      var c = o.northstar_contribution; c = (c === 'high' || c === 'low') ? c : 'mid';
+      var s = W[c] + (S[o.status] != null ? S[o.status] : 1) + (/전사|전 부서/.test(o.dept || '') ? 40 : 0) + (o.northstar ? 20 : 0) + p3PlanProg(o) * 0.01;
+      return {o:o, i:i, s:s};
+    })
+    .sort(function(a, b){ return (b.s - a.s) || (p3PlanProg(b.o) - p3PlanProg(a.o)) || (a.i - b.i); })
+    .map(function(x){ return x.o; });
+  return ranked.concat(rest).slice(0, 3);
+}
+function p3PlanRow(label, val, cls){
+  return '<div class="mrow"><span class="lb">' + label + '</span><span class="dt"></span><span class="vl ' + (cls || '') + '">' + val + '</span></div>';
+}
+function renderP3Plan(plan, ym, sup, fac, rec){
+  var sec = document.getElementById('p3plan-sec'), el = document.getElementById('p3plan');
+  if (!sec || !el) return;
+  var html = '', arrived = [], missing = [];
+  var m = plan && plan.months && plan.months[ym];
+  var objs = (m && m.objectives) || [];
+  if (objs.length) {
+    arrived.push('원장');
+    html += '<div class="p3plan-h">핵심 과제 top3 — ' + esc(String(m.theme || '').split(/—/)[0].trim() || '중요도순') + '</div>';
+    // 담당 표기 — 원장의 역할 코드는 닉네임으로, 직함 뒤엔 「님」(GM 지시 2026-09-16 「무엇이든 직함 뒤에 님」)
+    var NICK = {ceo:'AI 웰리', cto:'AI 시토', coo:'AI 시우', cpo:'AI 시포', cmo:'AI 시모', cbo:'AI 시보', cfo:'AI 시뽀', chro:'AI 시로'};
+    p3PlanTop3(objs).forEach(function(o, i){
+      var who = String(o.owner || '').replace(/\s+/g, ' ');
+      who = NICK[who.toLowerCase()] || who.replace(/(실장|소장|팀장|고문|이사|대표|GM)$/, '$1님');
+      html += p3PlanRow('<span class="rk">' + (i + 1) + '</span>' + esc(o.title) + (who ? ' <span style="color:#7A838B">· ' + esc(who) + '</span>' : ''),
+                        esc(o.status || '') + ' ' + p3PlanProg(o) + '%');
+    });
+    var by = {};
+    objs.forEach(function(o){
+      var d = String(o.dept || '미지정').trim(); var b = by[d] || (by[d] = {n:0, done:0, sum:0});
+      b.n++; if (o.status === '완료') b.done++; b.sum += p3PlanProg(o);
+    });
+    var depts = Object.keys(by).sort(function(a, b){ return by[b].n - by[a].n; });
+    // A3 한 장 · 오른쪽 열을 「지연·결재 대기」와 나눠 쓴다 — 부서는 한 줄에 이어 적는다(라이브 실측 2026-09-16:
+    // 부서 한 줄씩 두면 지연 10건 중 4건이 잘렸다). 과제 많은 부서 3 + 그 외 합계.
+    var pieces = depts.slice(0, 3).map(function(d){ return '<b>' + esc(d) + '</b> ' + by[d].n + '건 ' + Math.round(by[d].sum / by[d].n) + '%'; });
+    if (depts.length > 3) {
+      var rn = 0, rs = 0; depts.slice(3).forEach(function(d){ rn += by[d].n; rs += by[d].sum; });
+      pieces.push('<b>그 외 ' + (depts.length - 3) + '부서</b> ' + rn + '건 ' + Math.round(rs / rn) + '%');
+    }
+    var doneN = objs.filter(function(o){ return o.status === '완료'; }).length;
+    html += '<div class="p3plan-h">부서별 월 목표 · 도달율 — 과제 ' + objs.length + '건 · 완료 ' + doneN + ' · 평균 진척 %</div>' +
+            '<div class="mrow" style="flex-wrap:wrap;row-gap:2px"><span class="lb">' + pieces.join(' <span style="color:#B8C0C7">·</span> ') + '</span></div>';
+    var prog = (m && m.practitioner_progress) || {}, roster = (plan.practitioners || []);
+    var pl = Object.keys(prog).map(function(id){
+      var p = null; roster.forEach(function(r){ if (r.id === id) p = r; });
+      return (p ? esc(p.name + (p.role ? ' ' + p.role : '')) : esc(id)) + ' ' + prog[id] + '%';
+    });
+    if (pl.length) html += p3PlanRow('실무 도달율(중간관리자 제출)', pl.join(' · '));
+  } else missing.push('원장');
+
+  var chk = [];
+  var fMt = fac && fac.monthTotals;
+  if (fMt && fMt.sessionCount) {
+    var oor = (fac.outOfRange && typeof fac.outOfRange.total === 'number') ? fac.outOfRange.total : (fMt.outOfRangeCount || 0);
+    chk.push(p3PlanRow('시설부 점검 <span style="color:#7A838B">입력률 · 점검 ' + fMt.sessionCount + '회 · 이상 ' + oor + '건</span>', fMt.avgPct + '%'));
+  }
+  if (sup && Array.isArray(sup.byZone)) {
+    var z = {}; sup.byZone.forEach(function(x){ z[x.zone] = x; });
+    var parts = [['m', '남'], ['f', '여']].map(function(p){
+      var d = z[p[0]]; if (!d || !d.sessionCount) return '';
+      var pct = (typeof d.pct === 'number') ? d.pct : (d.sumTotal ? Math.round(d.sumDone / d.sumTotal * 100) : null);
+      return p[1] + ' ' + (pct == null ? '—' : pct + '%') + '(' + d.sessionCount + '회)';
+    }).filter(Boolean);
+    if (parts.length) chk.push(p3PlanRow('지원부 점검 <span style="color:#7A838B">들어온 회차 안에서 채워진 비율</span>', parts.join(' · ')));
+  }
+  if (chk.length) arrived.push('점검'); else missing.push('점검');
+  var rows = rec && (rec.data || rec.board);
+  if (Array.isArray(rows)) {
+    arrived.push('접수');
+    var mon = rows.filter(function(r){ return String(r.createdAt || r.created_at || '').slice(0, 7) === ym; });
+    var st = {'접수':0, '처리중':0, '완료':0};
+    mon.forEach(function(r){ var k = String(r.status || '접수'); st[k] = (st[k] || 0) + 1; });
+    chk.push(p3PlanRow('종합접수처 <span style="color:#7A838B">이번 달 접수 · 접수 ' + st['접수'] + ' · 처리중 ' + st['처리중'] + ' · 완료 ' + st['완료'] + '</span>', mon.length + '건'));
+  } else missing.push('접수');
+  if (chk.length) html += '<div class="p3plan-h">점검 · 접수 — 이번 달</div>' + chk.join('');
+
+  _p3plan = {pages:false, arrived:arrived, missing:missing};
+  if (arrived.length) { el.innerHTML = html; sec.style.display = ''; }
+  p3PlanAudit();
+}
+function p3PlanAudit(){
+  var a3 = document.getElementById('audit3'); if (!a3 || !_p3plan) return;
+  var old = document.getElementById('audit3plan'); if (old) old.parentNode.removeChild(old);
+  if (a3.classList.contains('wait')) return;   // 본 점검 4칸이 먼저 찍힌 뒤에 덧붙인다
+  var p = _p3plan, sp = document.createElement('span'); sp.id = 'audit3plan';
+  if (p.pages) sp.textContent = ' · 이달 운영 계획: Pages 사본이라 접힘(정상)';
+  else if (p.missing.length) { sp.className = 'w'; sp.textContent = ' · 이달 운영 계획: 원천 ' + p.arrived.length + '/3 도착 — 안 온 것 ' + p.missing.join('·'); }
+  else sp.textContent = ' · 이달 운영 계획: 원천 3/3 도착';
+  a3.appendChild(sp);
+}
+function loadP3Plan(){
+  if (!document.getElementById('p3plan-sec')) return;
+  if (!ERP_API_ON) { _p3plan = {pages:true, arrived:[], missing:[]}; p3PlanAudit(); return; }
+  var t = new Date(), ym = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2);
+  var j = function(u){ return fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'cb=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
+  Promise.all([
+    j('/repo/status/monthly_ops_plan.json'),
+    j('/api/check/support/monthly?month=' + ym),
+    j('/api/check/facility/monthly?month=' + ym),
+    j('/api/reception/board')
+  ]).then(function(a){ renderP3Plan(a[0], ym, a[1] && a[1].ok ? a[1] : null, a[2] && a[2].ok ? a[2] : null, a[3] && a[3].ok ? a[3] : null); });
+}
+loadP3Plan();
 
 /* ══ 4면 — 담당별 매출 ══
    일자탭 O~U 를 그대로 편다. 블록 둘 —
@@ -2109,7 +2280,8 @@ var _serverCellsP = null;
    이경연 실장 공유). 실측 2026-09-08 정회원 549·준회원 37·유소년 44 = 시트와 0 차이. */
 var _visitorsP = null;
 function applyServerPanel(){
-  if (!ERP_API_ON || VIEW_MODE !== 'default' || !RAW.cells) return;
+  if (!ERP_API_ON || !RAW.cells) return;
+  if (VIEW_MODE !== 'default' && !(VIEW_MODE === 'date' && document.getElementById('dpick').value === ymd(new Date(Date.now() - 86400000)))) return;
   if (!_serverCellsP) {
     _serverCellsP = fetch('/api/report/sales_report_cells?cb=' + Date.now())
       .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
@@ -2124,7 +2296,12 @@ function applyServerPanel(){
   }
   Promise.all([_serverCellsP, _visitorsP]).then(function(both){
     var srv = both[0], vis = both[1];
-    if (VIEW_MODE !== 'default' || !RAW.cells) return;
+    if (!RAW.cells) return;
+    var sf = srv && srv.server_final;
+    if (sf && sf.cells && sf.cells_total && sf.cells_filled === sf.cells_total && srv.ref_date === ymd(new Date(Date.now() - 86400000))) {
+      applyServerFinal(srv, sf); return;
+    }
+    if (VIEW_MODE !== 'default') return;
     var ov = {}, basis = '', memberOn = false;
     if (srv) {
       ov = { N2: srv.overrides.N2, N3: srv.overrides.N3, N4: srv.overrides.N4, N5: srv.overrides.N5, N6: srv.overrides.N6 };
@@ -2174,12 +2351,54 @@ function applyServerPanel(){
   });
 }
 
+/* 서버판 그리기 — 값은 서버가 준 문자열 그대로(다시 계산하지 않는다). 달성률(L)만 J/K 로 다시 센다(시트 L 은 시트 J 기준이라).
+   RAW.cells(09:30 발송 판정)는 손대지 않고 그리기용 사본(SF_CELLS)만 만든다. 시트 판은 대조 줄 한 줄로 남긴다 —
+   차이는 「틀림」이 아니라 브로제이 손입력 날짜(8월 말 계약 9/1 입력 포함)와 시트 결제일이 어긋난 것(10/1 실결제 전). */
+function applyServerFinal(srv, sf){
+  SF = sf; SF_SRC = {};
+  Object.keys(sf.source || {}).forEach(function(k){ SF_SRC[k] = /^brojay/.test(sf.source[k]) ? 'bro' : 'erp'; });
+  var c = {}; Object.keys(RAW.cells).forEach(function(k){ c[k] = RAW.cells[k]; });
+  Object.keys(sf.cells).forEach(function(k){
+    if (!/^[IJN]\d+$/.test(k)) return;
+    var v = String(sf.cells[k]);
+    if (/^N(13|14|15)$/.test(k)) v = v.replace(/명$/, '');          // 입장 칸은 시트가 숫자만 쓴다
+    c[k] = v;
+  });
+  SALES_ROWS.forEach(function(r){
+    var j = num(c['J' + r]), kk = num(c['K' + r]);
+    if (('J' + r) in sf.cells && kk > 0) c['L' + r] = (Math.round(j / kk * 1000) / 10).toFixed(1) + '%';
+  });
+  SF_CELLS = c;
+  renderReportCells(c);
+  if (VIEW_MODE === 'date' && _lastDay) {
+    renderDaySales(_lastDay.c, _lastDay.label);
+    var hl = document.getElementById('headline').children;
+    hl[0].querySelector('.v').textContent = _won(num(c.I4));
+    hl[1].querySelector('.v').textContent = _won(num(c.J4));
+  }
+  syncChartPartial(c.J4, _yestLabel());   // 월 단위 4칸·그래프 「9월」 막대도 서버판 누적으로(한 화면에 누적이 둘로 갈리지 않게)
+  var ap = document.getElementById('autoProg'); if (ap) ap.textContent = automationProgressText();
+  var label = function(k){ return String(RAW.cells[(k.charAt(0) === 'N' ? 'M' : 'H') + k.substring(1)] || k).replace(/\n/g, ' ').replace(/^[✅☑️👤\s]+/, '').replace(/\(.*?\)/g, '').trim(); };
+  var diffs = (sf.diff || []).filter(function(x){ return !/^J/.test(x.cell); })   // 누적(J)은 하루 칸(I)의 되풀이라 따로 안 센다
+    .sort(function(a, b){ return Math.abs(b.gap) - Math.abs(a.gap); });
+  var man = function(n){ return Math.abs(n) >= 10000 ? (Math.round(n / 10000)).toLocaleString('ko-KR') + '만' : n.toLocaleString('ko-KR'); };
+  var big = diffs.slice(0, 2).map(function(x){ return label(x.cell).replace(/\s*매출$/, '') + ' ' + man(num(x.sheet)) + '→' + man(num(x.server)); });
+  /* 발밑 「두 장부 대조」 자리(회원 구성 칸은 높이가 고정이라 줄이 늘면 아래 입장 칸이 잘린다 — 2026-09-16 실측). */
+  var el = document.getElementById('accGapNote');
+  if (el) el.innerHTML = '🖥 <b>서버판(브로제이+ERP)</b> — 기준일 ' + esc(String(srv.ref_date || '').slice(5).replace('-', '/')) + ' · <b>' + sf.cells_filled + '/' + sf.cells_total + '칸</b>' +
+    ' · 시트와 다른 칸 <b>' + diffs.length + '</b>' + (big.length ? ' · 큰 차이: ' + esc(big.join(', ')) : '') +
+    (sf.missing && sf.missing.length ? ' <span style="color:var(--bad)">· 못 채움: ' + esc(sf.missing.join(', ')) + '</span>' : '') +
+    ' <span style="color:var(--dim)">(시트 칸 0 · 차이 = 브로제이 손입력 날짜 · 10/1 실결제 뒤 사라짐)</span>';
+  Array.prototype.forEach.call(document.querySelectorAll('.src[data-sf]'), function(s){ s.textContent = '브로제이 → 서버'; s.className = 'src bro'; });
+}
+
 /* ══ 날짜별 · 월별 보기 (GM 지시 2026-09-02) ══
    일자탭(시트 이름 1~31)을 그대로 읽는다 — 매달 덮어써지므로 조회 가능한 건 "이번 달 1일~오늘"뿐이고,
    그 뒤 번호는 지난달 기록이 남은 것이다(아래서 밝힌다). RAW.cells(자체 점검이 보는 값)는 절대
    건드리지 않는다 — 날짜를 바꿔도 09:30 발송 판정(window.__REPORT_READY)은 항상 어제 기준이다. */
 var VIEW_MODE = 'default';   // default | date | month
 var _dayReq = 0;             // 일자탭 조회 순번 — 최신 요청의 응답만 화면에 그린다
+var _lastDay = null;         // 마지막으로 그린 일자탭 {c, label} — 서버판이 뒤늦게 오면 그 위에 다시 그린다
 function ymd(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
 
 /* 그래프 「집계중」 막대 — 기본은 어제 「보고」탭 J4 인데, 오늘 일자탭을 읽으면 그 J4(오늘까지
@@ -2187,6 +2406,7 @@ function ymd(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2)
    집계가 끝난 달 값은 절대 덮지 않는다 — 값은 시트 칸 그대로다. */
 function syncChartPartial(j4raw, asOfLabel){
   if (!RAW.chart || !RAW.chart.months) return;
+  if (SF_CELLS && asOfLabel === _yestLabel()) j4raw = SF_CELLS.J4;   // 서버판이 켜져 있으면 어제까지 누적은 서버판(부르는 곳이 여럿이라 여기서 한 번에)
   var cm = RAW.chart.months[new Date().getMonth()];
   var v = num(j4raw);
   if (cm && v > 0 && (cm.value == null || cm.partial)) {
@@ -2348,27 +2568,30 @@ function renderDaySales(c, dayLabel){
      바로 읽히므로 줄로 두지 않는다. */
   /* 이번 달 누적·목표·달성률은 「보고」탭의 같은 줄 값을 그대로 가져다 쓴다 — 일자탭에는 그날 값만
      있어 비워 두면 세 칸이 통째로 '–' 가 된다(줄 순서가 회원권6·옵션7·팀8~15 로 같다). */
-  var RP = RAW.cells || {};
+  /* 서버판(SF_CELLS · 어제 = 서버 기준일)이 켜져 있으면 그날 값(I)·누적(J·K·L)을 서버판에서 읽는다 — 시트 0칸. */
+  var sf = sfOn();
+  var RP = sf ? SF_CELLS : (RAW.cells || {});
   function accCells(sheetRow){
     if (!sheetRow) return ['–', '–', '–'];
     return [RP['J'+sheetRow] || '–', RP['K'+sheetRow] || '–', RP['L'+sheetRow] || '–'];
   }
+  function dayv(sheetRow, fallback){ return sf ? _won(num(RP['I' + sheetRow])) : fallback; }
   var rows = [
-    ['회원권', _won(s.membership)].concat(accCells(6)),
-    ['옵션', _won(s.option)].concat(accCells(7))   // 골프라카·일일입장 — 칸이 좁아 이름은 줄이고 뜻은 시트 H7 그대로
+    ['회원권', dayv(6, _won(s.membership))].concat(accCells(6), [6]),
+    ['옵션', dayv(7, _won(s.option))].concat(accCells(7), [7])   // 골프라카·일일입장 — 칸이 좁아 이름은 줄이고 뜻은 시트 H7 그대로
   ];
   DAY_TEAM_RULES.forEach(function(t, i){
-    rows.push([TEAM_LABEL[t[0]] || t[0], _won(s.teams[t[0]])].concat(accCells(8 + i)));
+    rows.push([TEAM_LABEL[t[0]] || t[0], dayv(8 + i, _won(s.teams[t[0]]))].concat(accCells(8 + i), [8 + i]));
   });
-  if (s.etc > 0) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–', '–', '–']);
+  if (s.etc > 0 && !sf) rows.push(['기타 강습 (팀 미분류)', _won(s.etc), '–', '–', '–']);
   /* 누적 열은 전부 「보고」탭 값으로 통일한다 — 총 매출만 일자탭 누적을 쓰면 줄 합과 총합이
      서로 다른 장부가 돼 화면 안에서 어긋난다(GM 지적 2026-09-11 440,475 차액). */
-  rows.push(['총 매출', cellMoney(c.J3)].concat(accCells(4)));
+  rows.push(['총 매출', dayv(4, cellMoney(c.J3))].concat(accCells(4), [4]));
   var lastIdx = rows.length - 1;
   document.getElementById('sales').innerHTML = rows.map(function(r, i){
     var bar = rateClass(r[4]) ? '<span class="rb" style="width:' +
       Math.min(100, parseFloat(String(r[4]).replace('%','')) || 0) + '%"></span>' : '';
-    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(r[0]) + '">' + r[0] + '</span>' + srcTag('sheet') + '</td><td>' + esc(r[1] || '–') +
+    return '<tr' + (i === lastIdx ? ' class="sum"' : '') + '><td><span class="rn" title="' + esc(r[0]) + '">' + r[0] + '</span>' + srcTag('sheet', r[5] ? 'I' + r[5] : '') + '</td><td>' + esc(r[1] || '–') +
       '</td><td>' + esc(r[2] || '–') + '</td><td>' + esc(r[3] || '–') +
       '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
@@ -2376,10 +2599,10 @@ function renderDaySales(c, dayLabel){
   /* 두 장부의 이번 달 누적이 어긋나면 그 자리에서 밝힌다 — 「보고」탭 팀별 누적은 사람이 채우는
      칸이라 일자탭 계약 합계와 갈릴 수 있다(2026-09-11 실측 440,475원 · 종목 칸에 팀 이름이 없는
      계약을 사람이 임의로 팀에 배분한 것이 원인). 안 밝히면 GM 이 두 화면을 대조해야 안다. */
-  var accGap = num(RP.J4) - num(c.J4);
-  var _gapEl = document.getElementById('accGapNote');
+  var accGap = num((RAW.cells || {}).J4) - num(c.J4);   // 두 시트 장부끼리의 대조 — 서버판과는 별개
+  var _gapEl = sf ? null : document.getElementById('accGapNote');   // 서버판이 켜져 있으면 그 자리는 서버판 대조 줄
   if (_gapEl) _gapEl.innerHTML = accGap
-    ? '<b style="color:var(--warn)">⚠ 이번 달 누적이 두 곳에서 다릅니다</b> — 보고탭 ' + esc((RP.J4||'').trim()) +
+    ? '<b style="color:var(--warn)">⚠ 이번 달 누적이 두 곳에서 다릅니다</b> — 보고탭 ' + esc(((RAW.cells || {}).J4||'').trim()) +
       ' · 일자탭 계약 합계 ' + esc((c.J4||'').trim()) + ' · 차이 <b>' + _won(accGap) +
       '</b> (보고탭 팀별 누적은 손입력 칸이라 계약 명단과 갈립니다)'
     : '<b>이번 달 누적</b> — 보고탭과 일자탭 계약 합계가 같습니다.';
@@ -2530,10 +2753,11 @@ function onDatePick(silent){
       var dayLabel = (picked.getMonth()+1) + '월 ' + day + '일';
       document.getElementById('asof').textContent = dayLabel + (isToday ? ' (집계 중 · 오늘)' : '') +
         (mdiff === 1 && !tabHasCur ? ' (지난달 탭 기록)' : '') + (ok ? '' : ' — 표시 주의');
+      _lastDay = { c: c, label: dayLabel };
       renderDaySales(c, dayLabel);
       var hl = document.getElementById('headline').children;
-      hl[0].querySelector('.v').textContent = cellMoney(c.J3);
-      hl[1].querySelector('.v').textContent = c.J4 || '—';
+      hl[0].querySelector('.v').textContent = sfOn() ? _won(num(SF_CELLS.I4)) : cellMoney(c.J3);
+      hl[1].querySelector('.v').textContent = sfOn() ? _won(num(SF_CELLS.J4)) : (c.J4 || '—');
       // 칸 제목도 같이 바꾼다 — 「어제 매출」이라 적힌 칸에 오늘 값이 들어가면 제목이 거짓말이 된다.
       hl[0].querySelector('.t').textContent = isToday ? '오늘 매출 (집계 중)' : dayLabel + ' 매출';
       hl[1].querySelector('.t').textContent = '이번 달 누적';
@@ -2542,7 +2766,7 @@ function onDatePick(silent){
       // 3·4칸(목표 달성률·총 회원수)은 날짜와 무관한 이번 달·현재 값인데, 날짜 보기가 0·1칸만
       // 덮으면서 이 둘이 처음 상태 「—」로 남았다. 2026-09-14 실측: 자동 보고 1면 맨 위 두 칸이
       // 빈 채로 찍혀 나갔다(아래 표에는 35.94%·1,027명이 그대로 있었다). 보고탭 값으로 채운다.
-      var _rc = (window.RAW && RAW.cells) || null;
+      var _rc = sfOn() ? SF_CELLS : ((window.RAW && RAW.cells) || null);
       if (_rc) {
         if (String(_rc.K4 || '').trim()) hl[2].querySelector('.v').textContent = String(_rc.K4).trim();
         if (String(_rc.L4 || '').trim()) hl[3].querySelector('.v').textContent = String(_rc.L4).trim();

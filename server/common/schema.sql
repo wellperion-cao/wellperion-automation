@@ -1029,7 +1029,41 @@ CREATE TABLE IF NOT EXISTS hr.holiday (
   PRIMARY KEY (tenant_id, holiday_date)
 );
 
+-- ── 14-1. 보드명단(근무표판 명단) ───────────────────────────────────────────────────────────────
+-- 적재 탭 10번째(인사 이관 요청서 ④ · CHRO/나우열M 요청 2026-09-16). 원천 db 열쇠 = boardroster
+-- (CHRO 9/16 12:47 개통 · 64행 실측). 관리자 열쇠라 실 헤더 표본을 못 봤다 — 후보 이름은 schedule.html
+-- 의 schedboard-list 공개 roster 배열(name·dept·leaveApplied·exitDate, 함정노트 §schedboard) 을 그대로
+-- 옮겨 왔다. 못 맞은 칸은 NULL 로 남고 원본은 data JSONB 에 통째로 남는다(migrate_hr.py MAP 후보 규칙).
+CREATE TABLE IF NOT EXISTS hr.board_roster (
+  roster_id            BIGSERIAL PRIMARY KEY,
+  tenant_id            TEXT NOT NULL DEFAULT 'wellperion',
+  employee_id          BIGINT REFERENCES hr.employee(employee_id) ON DELETE RESTRICT,  -- 느슨(NULL 허용)
+  person_name_raw      TEXT NOT NULL,                   -- [PII]
+  dept_name_raw        TEXT,
+  roster_display_name  TEXT,
+  leave_applied        TEXT,                            -- schedboard-list 의 leaveApplied 원문(Y·N 등 미확정)
+  exit_date            DATE,
+  note                 TEXT,
+  legacy_tab           TEXT,
+  legacy_row           INTEGER,
+  is_test              BOOLEAN NOT NULL DEFAULT FALSE,
+  data                 JSONB,
+  synced_at            TIMESTAMPTZ,
+  vanished_at          TIMESTAMPTZ,
+  vanish_reason        TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id      BIGINT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_boardroster_legacy_live ON hr.board_roster (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_hr_boardroster_legacy ON hr.board_roster (tenant_id, legacy_tab, legacy_row);
+CREATE INDEX IF NOT EXISTS ix_hr_boardroster_name   ON hr.board_roster (tenant_id, person_name_raw);
+
 -- ── 15. 근무변경신청 ────────────────────────────────────────────────────────────────────────────
+-- 적재 탭 11번째(요청서 ④). 원천 = 전용 액션 schedreq-list(비밀번호 없이 읽는 공개 GET·POST — sync_hrboard.py
+-- gas_hr() 와 같은 계약). 원천 id 가 "R"+Date.now() 밀리초 정수라 legacy_row 열쇠로 INTEGER 상한(21억)을
+-- 넘을 수 있어 BIGINT 로 넓힌다(migrate_hr.py schedreq_row_num). 등록일시·수정일시(CHRO 9/16 추가분)는
+-- 실 응답을 아직 못 봤다(그 순간 대기 건 0) — requested_at/decided_at 후보에 넉넉히 올려 두고 실측을 기다린다.
 CREATE TABLE IF NOT EXISTS hr.schedule_change_request (
   request_id            BIGSERIAL PRIMARY KEY,
   tenant_id             TEXT NOT NULL DEFAULT 'wellperion',
@@ -1045,15 +1079,25 @@ CREATE TABLE IF NOT EXISTS hr.schedule_change_request (
   requested_at          TIMESTAMPTZ,
   decided_at            TIMESTAMPTZ,
   legacy_tab            TEXT,
-  legacy_row            INTEGER,
+  legacy_row            BIGINT,                          -- id="R"+ms epoch — INTEGER 상한 초과(적재 탭 편입 시 확장)
   is_test               BOOLEAN NOT NULL DEFAULT FALSE,
   data                  JSONB,
   synced_at             TIMESTAMPTZ,
+  vanished_at           TIMESTAMPTZ,
+  vanish_reason         TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed')),
+  vanished_run_id       BIGINT,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, legacy_tab, legacy_row)
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 기존 배포(적재 편입 전)에 무손실로 얹는 이행(멱등) — legacy_row 를 BIGINT 로 넓히고 vanish 3칸 + 부분 유일 인덱스를 더한다.
+ALTER TABLE hr.schedule_change_request ALTER COLUMN legacy_row TYPE BIGINT;
+ALTER TABLE hr.schedule_change_request ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
+ALTER TABLE hr.schedule_change_request ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.schedule_change_request ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
+ALTER TABLE hr.schedule_change_request DROP CONSTRAINT IF EXISTS schedule_change_request_tenant_id_legacy_tab_legacy_row_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_schedreq_legacy_live ON hr.schedule_change_request (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;
 CREATE INDEX IF NOT EXISTS ix_hr_schedreq_status ON hr.schedule_change_request (tenant_id, status, target_date);
+CREATE INDEX IF NOT EXISTS ix_hr_schedreq_legacy ON hr.schedule_change_request (tenant_id, legacy_tab, legacy_row);
 
 -- ── 16. 개인일정 ────────────────────────────────────────────────────────────────────────────────
 -- ⚠️ 이 탭의 계약(칸 이름·뜻)이 정본 문서에 없다(진단 §6 미확인 9). 최소 골격만 두고, 칸 추가는 계약 확인 뒤.
@@ -1274,4 +1318,5 @@ CREATE TABLE IF NOT EXISTS marketing_uploads (
   files      JSONB NOT NULL DEFAULT '[]',  -- [{"name":..,"path":..}]
   PRIMARY KEY (tenant_id, id)
 );
+ALTER TABLE marketing_uploads ADD COLUMN IF NOT EXISTS channel_status JSONB NOT NULL DEFAULT '{}';  -- {"naver-blog":{"status":"drafted","note":"","updated_at":".."}} (배 12680 · 발행 워커 1단계)
 CREATE INDEX IF NOT EXISTS ix_billing_charges_retry ON billing_charges (tenant_id, status, retry_at);

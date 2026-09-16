@@ -1160,6 +1160,7 @@ def _create_review_ship(item: dict) -> str:
         "--audience", "office",
         "--reversible", "yes",
         "--work-type", "update",
+        "--gm-needed", "no",
     ]
     proc = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True,
                            encoding="utf-8", timeout=30)

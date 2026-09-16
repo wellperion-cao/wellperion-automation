@@ -69,7 +69,7 @@ HOME_KPI_URL = (
 )
 
 # ── 계획 페이지 (라이브 루트배포·가이드접두사 없음·ASCII) ──
-PLAN_WEB_URL = "https://wellperion-cao.github.io/wellperion-automation/월간운영계획.html"
+PLAN_WEB_URL = "https://erp.wellperion.com/coo/report/매출회원현황보고.html#sheet3"  # 2026-09-16 월간운영계획 화면 → 현황보고 3면 병합(배 2696) · Pages 사본은 값이 안 붙어 erp 주소
 # ── 회장님·대표님 A3 2장 정본(달별 직독 · 2026-09-15 웰리) — 원장(/repo/)을 읽어야 해 ERP 도메인으로 건다
 A3_STATUS_URL = "https://erp.wellperion.com/reports/월간_운영현황_A3.html?month={m}"
 A3_PLAN_URL = "https://erp.wellperion.com/reports/월간_운영계획_A3.html?month={m}"

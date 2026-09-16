@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 from datetime import timezone
+import difflib
 import functools
 import io
 import datetime as _dt
@@ -306,8 +307,10 @@ def _gm_key() -> str:
     return ""
 
 
-def fetch_gas_items() -> list[dict]:
-    """GAS todo_list → GM·AI C레벨 전체 항목(완료 포함)."""
+def _fetch_gas_rows() -> list[dict]:
+    """GAS todo_list 원본 행 그대로(필터 없음) — fetch_gas_items·ssot_hygiene 공용 fetch.
+    업무·결재 SSOT 전체(실무진 담당 포함) 행이 필요한 자리는 이 함수를 쓴다.
+    fetch_gas_items()는 이 원본을 G1(GM·AI C레벨) 담당만 걸러 보드용으로 다듬는다."""
     # 열쇠 없으면 GM 행이 안 온다 — 조용히 비면 GM 할 일이 사라져도 아무도 모른다. 반드시 남긴다.
     _k = _gm_key()
     if not _k:
@@ -331,7 +334,11 @@ def fetch_gas_items() -> list[dict]:
         print("[WARN] GM_TODO_KEY 불일치 추정 — 열쇠를 붙였는데 GM 행이 0건입니다(배326). "
               "GAS 스크립트 속성 GM_TODO_KEY 와 telegram_bot/.env 값이 같은지 확인하세요.",
               file=sys.stderr)
+    return rows
 
+
+def _gas_items_from_rows(rows: list[dict]) -> list[dict]:
+    """원본 GAS 행 → G1(GM·AI C레벨) 담당만 걸러 보드용으로 다듬는다."""
     items = []
     for row in rows:
         owner = str(row.get("담당자", ""))
@@ -365,6 +372,97 @@ def fetch_gas_items() -> list[dict]:
             "source":    "gas",
         })
     return items
+
+
+def fetch_gas_items() -> list[dict]:
+    """GAS todo_list → GM·AI C레벨 전체 항목(완료 포함)."""
+    return _gas_items_from_rows(_fetch_gas_rows())
+
+
+# ── SSOT 위생 검수 (2026-09-16 시토 · 배 12694/2697 · GM 「전체 검수」) ──────────
+#   원천 = GAS todo_list 전체 행(_fetch_gas_rows, 담당자 필터 없음). 고치지 않는다 —
+#   건수·id만 낸다. 실무진 행까지 봐야 [병합]/[중복] 잔재·담당 표기 오류를 잡는다.
+_RE_MERGE_DUP_PREFIX = re.compile(r"^\s*\[(병합|중복)\]\s*")
+
+
+_RE_ROUND_TAG = re.compile(r"\((\d+)차\)\s*$")
+
+
+def _round_tag(norm_title: str) -> str:
+    """정규화 제목 끝의 「(N차)」 회차 — 없으면 빈 문자열. 회차가 다르면 같은 제목이라도 중복이 아니다."""
+    m = _RE_ROUND_TAG.search(norm_title)
+    return m.group(1) if m else ""
+
+
+def _normalize_title(title: str) -> str:
+    """제목 유사도 비교용 정규화 — [병합]/[중복] 접두 제거·공백 정리·소문자."""
+    t = _RE_MERGE_DUP_PREFIX.sub("", str(title or ""))
+    t = re.sub(r"\s+", " ", t).strip().lower()
+    # 「(N차)」 접미 = 같은 일의 회차 — 별건이다(웰리 판정 2026-09-16 · 브로제이→스포피아 1차·2차). 접미를 남겨 서로 다르게 본다.
+    return t
+
+
+def ssot_hygiene(rows: list[dict]) -> dict:
+    """업무·결재 SSOT(todo_items) 전체 행 → 위생 규칙 5개 위반 행 dict. 순수 함수.
+    ① 중복(정규화 제목 유사도≥0.9) ② [병합]/[중복] 잔재 ③ 업무명·담당자 빈 행
+    ④ 담당자 명단 밖 표기('김남욱' 단독·'미지정'·'AI '로 시작 — 빈칸은 ③에서 셈)
+    ⑤ 결재상태에 '반려'가 있는데 상태='완료'."""
+    dup: list[dict] = []
+    merge_residue: list[dict] = []
+    blank: list[dict] = []
+    owner_badge: list[dict] = []
+    reject_done: list[dict] = []
+
+    seen_norms: list[str] = []
+    for row in rows:
+        title = str(row.get("업무명", "")).strip()
+        owner = str(row.get("담당자", "")).strip()
+
+        if not title or not owner:
+            blank.append(row)
+            continue  # 빈 제목·빈 담당은 유사도·표기 비교 대상에서 뺀다(잡음 방지)
+
+        if _RE_MERGE_DUP_PREFIX.match(title):
+            merge_residue.append(row)
+
+        norm = _normalize_title(title)
+        if any(difflib.SequenceMatcher(None, norm, prev).ratio() >= 0.9 and _round_tag(norm) == _round_tag(prev)
+               for prev in seen_norms):
+            dup.append(row)
+        seen_norms.append(norm)
+
+        owners = [o.strip() for o in owner.split(",") if o.strip()]
+        if any(o == "김남욱" or o.startswith("미지정") or o.startswith("AI ") for o in owners):
+            owner_badge.append(row)
+
+        apr = str(row.get("결재상태", ""))
+        status = str(row.get("상태", ""))
+        if "반려" in apr and status == "완료":
+            reject_done.append(row)
+
+    return {
+        "중복": dup,
+        "[병합]잔재": merge_residue,
+        "빈 행": blank,
+        "담당 표기": owner_badge,
+        "반려-완료": reject_done,
+    }
+
+
+def _ssot_hygiene_lines(rows: list[dict]) -> list[str]:
+    h = ssot_hygiene(rows)
+    counts = " · ".join(f"{k} {len(v)}" for k, v in h.items())
+    out = [f"🧹 SSOT 위생: {counts}"]
+    flat = [(rule, row) for rule, group in h.items() for row in group]
+    if flat:
+        out.append("| 규칙 | id | 업무명 | 담당자 |")
+        out.append("|---|---|---|---|")
+        for rule, row in flat[:20]:
+            out.append(f"| {rule} | {row.get('id', '')} "
+                       f"| {str(row.get('업무명', ''))[:40].replace('|', '·')} | {row.get('담당자', '')} |")
+        if len(flat) > 20:
+            out.append(f"· 외 {len(flat) - 20}건")
+    return out
 
 
 def _queue_row_to_item(q: dict) -> dict | None:
@@ -973,6 +1071,60 @@ def _selftest_take_unlisted() -> None:
     print("[selfcheck] _take_unlisted OK")
 
 
+def _selftest_gm_answered_yesterday() -> None:
+    """GM_AREAS 완료 줄만 어제 날짜로 세고, 다른 area·다른 날짜·warn 은 안 세는지."""
+    import tempfile
+    tf = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8")
+    yday = "2026-09-15"
+    rows = [
+        {"ts": f"{yday}T08:00:00+09:00", "area": "GM요청", "result": "warn"},   # 센다(GM 이 친 말 = 접수)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM지시", "result": "warn"},   # 센다(구값 area)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM요청", "result": "ok"},     # 완료 줄 — 안 센다(세션 종료 훅 허수)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "발행", "result": "warn"},     # GM_AREAS 아님 — 안 센다
+        {"ts": "2026-09-16T09:00:00+09:00", "area": "GM요청", "result": "warn"},  # 오늘 — 안 센다
+    ]
+    for r in rows:
+        tf.write(json.dumps(r, ensure_ascii=False) + "\n")
+    tf.close()
+    global WORKLOG_PATH
+    _orig = WORKLOG_PATH
+    WORKLOG_PATH = Path(tf.name)
+    try:
+        n = _gm_answered_yesterday(yday)
+        assert n == 2, n
+    finally:
+        WORKLOG_PATH = _orig
+        os.unlink(tf.name)
+    print("[selfcheck] _gm_answered_yesterday OK")
+
+
+def _selftest_ssot_hygiene() -> None:
+    """규칙 5개 각 1케이스 + 정상 행 1케이스."""
+    rows = [
+        {"id": "1", "업무명": "종합접수처 개선", "담당자": "시토", "상태": "진행중", "결재상태": "", "결재요청": ""},
+        {"id": "2", "업무명": "종합접수처  개선 ", "담당자": "시우", "상태": "진행중", "결재상태": "", "결재요청": ""},  # ①중복(공백 차이)
+        {"id": "3", "업무명": "[병합] 옛 카드 정리", "담당자": "시모", "상태": "완료", "결재상태": "", "결재요청": ""},  # ②[병합]잔재
+        {"id": "4", "업무명": "", "담당자": "시뽀", "상태": "대기", "결재상태": "", "결재요청": ""},  # ③빈 업무명
+        {"id": "5", "업무명": "정상 업무 A", "담당자": "", "상태": "대기", "결재상태": "", "결재요청": ""},  # ③빈 담당자
+        {"id": "6", "업무명": "정상 업무 B", "담당자": "김남욱", "상태": "대기", "결재상태": "", "결재요청": ""},  # ④담당 표기(GM 안 붙음)
+        {"id": "7", "업무명": "정상 업무 C", "담당자": "미지정", "상태": "대기", "결재상태": "", "결재요청": ""},  # ④담당 표기
+        {"id": "8", "업무명": "정상 업무 D", "담당자": "AI 인턴", "상태": "대기", "결재상태": "", "결재요청": ""},  # ④담당 표기
+        {"id": "9", "업무명": "정상 업무 E", "담당자": "나우열M", "상태": "완료", "결재상태": "GM 반려", "결재요청": "GM"},  # ⑤반려-완료
+        {"id": "10", "업무명": "정상 업무 F", "담당자": "이경연 실장", "상태": "진행중", "결재상태": "", "결재요청": ""},  # 정상
+    ]
+    h = ssot_hygiene(rows)
+    assert [r["id"] for r in h["중복"]] == ["2"], h["중복"]
+    # 「(N차)」 회차 접미가 다르면 별건(웰리 판정 2026-09-16 · 브로제이→스포피아 1차·2차)
+    h2 = ssot_hygiene([{"id": "a", "업무명": "브로제이->스포피아 데이터 수동 이관", "담당자": "최준용M", "상태": "완료"},
+                       {"id": "b", "업무명": "브로제이->스포피아 데이터 수동 이관 (2차)", "담당자": "최준용M", "상태": "진행중"}])
+    assert h2["중복"] == [], h2["중복"]
+    assert [r["id"] for r in h["[병합]잔재"]] == ["3"], h["[병합]잔재"]
+    assert {r["id"] for r in h["빈 행"]} == {"4", "5"}, h["빈 행"]
+    assert {r["id"] for r in h["담당 표기"]} == {"6", "7", "8"}, h["담당 표기"]
+    assert [r["id"] for r in h["반려-완료"]] == ["9"], h["반려-완료"]
+    print("[selfcheck] ssot_hygiene OK")
+
+
 def _selftest_gm_directives() -> None:
     """3줄(warn·ok·warn 같은 ref) 넣으면 미완 1건(가장 나중 warn)만 남는지 확인.
     GM-20260804-05 실사고(09:20 warn/09:23 ok/21:03 warn) 재현 — 21:03 만 남아야 한다."""
@@ -1382,9 +1534,45 @@ def _flow_stats(role: str = "") -> dict:
     return {"open": len(open_all), "born_y": born_y, "done_y": done_y, "stale": stale}
 
 
-def _flow_lines(role: str = "") -> list[str]:
+def _gm_answered_yesterday(yday: str) -> int:
+    """어제 GM 이 AI 에게 친 말 횟수 — worklog.jsonl 의 GM_AREAS 접수(result=warn · 프롬프트 훅이 GM 말마다 1줄) 수(전 역할 합).
+    처음엔 완료(ok) 줄을 셌는데 그건 세션 종료 훅이 몰아 닫는 기록이라 316 같은 허수가 났다(2026-09-16 실측).
+    GM 부담의 실측 = GM 이 직접 친 말의 수 · 9/15 = 240 · 목표는 이 숫자가 줄어드는 것."""
+    n = 0
+    try:
+        with WORKLOG_PATH.open(encoding="utf-8") as f:
+            for line in f:
+                if '"result": "warn"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("area") not in GM_AREAS:
+                    continue
+                if str(d.get("ts") or "")[:10] != yday:
+                    continue
+                n += 1
+    except Exception:
+        return 0
+    return n
+
+
+def _flow_lines(role: str = "", gas_rows: list[dict] | None = None) -> list[str]:
     f = _flow_stats(role)
-    out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · {STALE_DAYS}일 무기록 배 {len(f['stale'])}척"]
+    yday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    answered = _gm_answered_yesterday(yday)
+    out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · "
+           f"{STALE_DAYS}일 무기록 배 {len(f['stale'])}척 · 어제 GM 말 {answered}회"]
+    # GM 부담 관문(GM 2026-09-16) — 배 대신 gm_asks 에 쌓인 「GM 손 필요」 건수를 보드 맨 위에서 본다.
+    try:
+        import gm_asks
+        n_asks = len(gm_asks.unanswered())
+        if n_asks:
+            out.append(f"📮 GM 여쭐 것 {n_asks}건 — status/gm_asks.json (아침 한 줄로 모음)")
+    except Exception:
+        pass
+    out.extend(_ssot_hygiene_lines(gas_rows or []))
     try:
         from call_inbox import summary_line
         cl = summary_line()
@@ -1406,7 +1594,8 @@ def _flow_lines(role: str = "") -> list[str]:
 
 
 def build_board(gas_items: list[dict], queue_items: list[dict],
-                role: str = "", sent_by_role: list[dict] | None = None) -> tuple[str, dict]:
+                role: str = "", sent_by_role: list[dict] | None = None,
+                gas_rows: list[dict] | None = None) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
     3섹터: 🚢 진행중 / ⚓ 대기중 / 🏁 입항 완료 (오늘)
     표 칼럼(5개): 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언
@@ -1472,7 +1661,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
     lines.append("━" * 36)
     lines.append(summary_table)
-    lines.extend(_flow_lines(role))   # 배 흐름 한 줄 · 미답 호출 · 14일 무기록 배(2026-09-16)
+    lines.extend(_flow_lines(role, gas_rows))   # 배 흐름 한 줄 · SSOT 위생 · 미답 호출 · 14일 무기록 배(2026-09-16)
 
     # ── 🎯 오늘 반드시 끝낼 것 (GM 2026-08-10) — 보드 맨 위. 못 지킨 건 조용히 안 사라진다 ──
     mf_overdue = secs["must_finish_overdue"]
@@ -2185,9 +2374,10 @@ def main() -> None:
         return
 
     if args.dry_run:
-        gas_items = []
+        gas_rows = []
     else:
-        gas_items = fetch_gas_items()
+        gas_rows = _fetch_gas_rows()
+    gas_items = _gas_items_from_rows(gas_rows)
 
     queue_items = fetch_queue_items()
 
@@ -2208,7 +2398,8 @@ def main() -> None:
         gas_items = [it for it in gas_items if _nick(str(it.get("owner", ""))) == target]
         queue_items = [it for it in queue_items if _nick(str(it.get("owner", ""))) == target]
 
-    board_text, secs = build_board(gas_items, queue_items, role=role_slug, sent_by_role=sent_by_role)
+    board_text, secs = build_board(gas_items, queue_items, role=role_slug, sent_by_role=sent_by_role,
+                                    gas_rows=gas_rows)
     if role_slug in {"ceo", "cmo"}:
         alert = _unsent_relay_alert(queue_items)
         if alert:
@@ -2248,5 +2439,7 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest_gm_directives()
         _selftest_take_unlisted()
+        _selftest_ssot_hygiene()
+        _selftest_gm_answered_yesterday()
     else:
         main()

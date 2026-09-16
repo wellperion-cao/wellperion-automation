@@ -867,8 +867,8 @@ var RAW_BASE = '/repo/';   // 이 <script> 의 IIFE 들이 함께 쓴다(status/
         // 이월 배지 — 지난 달에 안 끝나 이어서 보이는 건(GM 지시 2026-09-01 "다 그대로 나오게").
         // 어느 달 것인지 함께 적는다. 판정은 _gm_direct_tasks.js 가 한다(여기서 다시 계산하지 않는다).
         (it.carried ? ' <span class="dept-badge">' + esc(String(it.fromMonth || '').replace(/^\d{4}-0?/, '')) + '월부터</span>' : '') +
-        // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
-        ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
+        // ③ 종전 📌 「월간운영계획에서 보기」 아이콘은 뺐다 — 그 화면은 2026-09-16 현황보고 3면으로 합쳐져
+        //    과제별 자리가 없다(배 2696). 이 카드가 그 원장(monthly_ops_plan.json) 자체다.
         '</h2>' +
         '<span class="badges"><span class="st ' + stCls + '">' + esc(it.status || '—') + '</span>' +
         // 체크리스트 있으면 「n/m 완료」 배지가 %와 같은 사실이라 % 배지는 뺀다(중복 표시 제거, GM 지시

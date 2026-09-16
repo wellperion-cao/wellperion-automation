@@ -183,12 +183,20 @@
   window.renderHiringStatus = function (hostId, dept) {
     var host = document.getElementById(hostId);
     if (!host) return;
-    fetch(NOTION_FN, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'public-job-status' })
-    })
-      .then(function (r) { return r.json(); })
+    /* 서버 먼저(2026-09-16 시우 · 배 1177) — /api/jobs/public 은 GAS public-job-status 응답을 그대로 내주는
+       무로그인 거울(시토 배12615 · CORS 허용이라 Pages 사본에서도 절대주소로 부른다). 실패하면 종전 GAS 로
+       조용히 돌아간다 — GAS 예비 경로는 GAS 를 끄는 날 한꺼번에 걷는다. */
+    var gas = function () {
+      return fetch(NOTION_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'public-job-status' })
+      }).then(function (r) { return r.json(); });
+    };
+    fetch('https://erp.wellperion.com/api/jobs/public?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function (d) { if (!d || !d.ok || !Array.isArray(d.jobs)) throw new Error('shape'); return d; })
+      .catch(function () { return gas(); })
       .then(function (d) {
         if (!d || !d.ok || !Array.isArray(d.jobs)) return;   // 폴백=침묵
         paint(host, dept, d.jobs);
