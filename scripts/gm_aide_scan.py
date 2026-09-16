@@ -300,13 +300,22 @@ def scan_long_pending(active: list, parked_out: list | None = None) -> list:
     return caps
 
 
+def _gm_key() -> str:
+    """GM 행 조회 열쇠 — 정본은 gm_handoff.GM_KEY 한 곳(값을 여기 베끼지 않는다)."""
+    try:
+        from gm_handoff import GM_KEY
+        return str(GM_KEY)
+    except Exception:
+        return ""
+
+
 def fetch_todo_list_readonly() -> list:
     """업무&결재 SSOT(ERP S3) 원본 읽기 전용 GET(action=todo_list). 쓰기 호출 없음.
     실패(네트워크·타임아웃·파싱 오류)해도 예외를 밖으로 던지지 않고 빈 리스트 반환 —
     이 스캔이 06:30 예약 전체를 죽이면 안 된다(기존 함수들의 방어적 실패 패턴과 동일)."""
     try:
         req = urllib.request.Request(
-            SSOT_TODO_URL + "?action=todo_list",
+            SSOT_TODO_URL + "?action=todo_list&include_gm=1&gmkey=" + _gm_key(),  # GM 행은 gmkey 없이는 안 나온다(2026-09-16 담당자 표기 통일 뒤 0건 실측) — gm_handoff.GM_KEY 재사용
             headers={"User-Agent": "gm_aide_scan/1.0"},
         )
         with urllib.request.urlopen(req, timeout=15) as r:

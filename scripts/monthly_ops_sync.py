@@ -161,7 +161,9 @@ def fetch_todo() -> list:
     global _TODO_CACHE
     if _TODO_CACHE is not None:
         return _TODO_CACHE
-    data = _get_json_retry(TODO_URL + "?action=todo_list", timeout=30)
+    # GM 행은 gmkey 없이는 안 나온다(2026-09-16 담당자 표기 통일 뒤 0건 실측) — gm_handoff.GM_KEY 재사용
+    from gm_handoff import GM_KEY
+    data = _get_json_retry(TODO_URL + "?action=todo_list&include_gm=1&gmkey=" + str(GM_KEY), timeout=30)
     _TODO_CACHE = data.get("data", []) if isinstance(data, dict) else []
     return _TODO_CACHE
 

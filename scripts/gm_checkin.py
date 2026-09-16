@@ -502,14 +502,29 @@ def mark_idea_done(text_or_index) -> bool:
     return True
 
 
+
+IDEAS_PAGE_URL = "https://erp.wellperion.com/erp/admin/ideas.html"
+
+
+def _last_progress(row: dict) -> str:
+    """업무 SSOT 행 내용의 마지막 「[YYYY-MM-DD] …」 진척 줄(60자 안쪽). 없으면 빈 문자열."""
+    lines = [ln.strip() for ln in str(row.get('내용') or '').splitlines() if ln.strip().startswith('[')]
+    if not lines:
+        return ''
+    m = re.match(r"\[(\d{4})-(\d{2})-(\d{2})\]\s*(.*)", lines[-1])
+    if not m:
+        return ''
+    body = m.group(4).split(' · ')[0].split('(')[0].strip()
+    return f"{int(m.group(2))}/{int(m.group(3))} {body[:60]}"
+
 def _idea_section() -> str:
     """하루 공지에 붙는 아이디어 절. 없으면 빈 문자열(빈 절을 만들지 않는다)."""
     items = open_ideas()
     if not items:
         return ''
-    lines = [f"💡 쌓아둔 아이디어 {len(items)}건"]
-    lines += [f"· {i['text']} ({i['t'][5:].replace('-', '/')})" for i in items]
-    return '\n'.join(lines)
+    # GM 지시 2026-09-16 「쌓아둔 아이디어까지 하루방에 안 올려줘도 돼 — 내가 따로 볼 테니 링크만」.
+    # 알림이 길어지면 안 읽힌다 — 건수 + 링크 한 줄만 남긴다(목록은 랩스 아이디어 화면이 정본).
+    return f"💡 쌓아둔 아이디어 {len(items)}건 — {IDEAS_PAGE_URL}"
 
 
 # ── 📖 오늘의 문장 — 체화할 때까지 반복 (GM 지시 2026-08-30) ──────────────────
@@ -810,7 +825,11 @@ def _fetch_gm_ssot_open() -> list | None:
         from collectors.ops_shared import SSOT_API_URL, TODO_DONE_STATUSES, gas_get
     except Exception:
         return None
-    resp = gas_get(SSOT_API_URL, params={'action': 'todo_list'}, label='gm_morning_brief')
+    # 2026-09-16 시토가 GM 담당자 표기를 「김남욱GM」 하나로 통일한 뒤(배 12675) gmkey 없는 조회에는
+    # GM 행이 한 건도 안 나온다(실측 0건). GM 개인 통이므로 GM 열쇠로 읽는다(gm_handoff.GM_KEY 재사용).
+    from gm_handoff import GM_KEY
+    resp = gas_get(SSOT_API_URL, params={'action': 'todo_list', 'include_gm': '1', 'gmkey': GM_KEY},
+                   label='gm_morning_brief')
     if resp is None:
         return None
     try:
@@ -1598,7 +1617,9 @@ def _morning_brief_v2(day: str) -> str:
     _ch = chairman or []
     receive = ([f"{_ch[0]['title']} — 회장님 보고 대기" + (f" (외 {len(_ch) - 1}건)" if len(_ch) > 1 else "")]
                if _ch else [])
-    receive += [f"{x.get('업무명', '')} — {x.get('상태', '')}" for x in ssot_rest[:1]]
+    # GM 지시 2026-09-16 「헬스장 장비교체 → 진행한 게 GYM 바이크 최종 네고 요청이야」 —
+    # 「진행중」 낱말 대신 그 행 내용 끝의 마지막 진척 줄([날짜] …)을 보여 준다. 없으면 종전대로 상태.
+    receive += [f"{x.get('업무명', '')} — {_last_progress(x) or x.get('상태', '')}" for x in ssot_rest[:1]]
     lines.append("② 보고할 것 / 받을 것")
     lines.append("· 보고: " + (" · ".join(report) if report else "없음"))
     lines.append("· 받을 것: " + (" · ".join(v for v in receive if v.strip(' —')) or "없음"))
