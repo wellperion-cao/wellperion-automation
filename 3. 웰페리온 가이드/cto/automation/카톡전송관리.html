@@ -115,6 +115,18 @@ tr:last-child td{border-bottom:none;}
 
 <div class="content">
 
+  <!-- ══ 방 × 보고 한 장 (GM 2026-09-16 「어떤 방에 어떤 보고를 · 어떤 현황·내용을」) — 값은 status/report_automation_map.json 한 곳. 화면엔 값을 적지 않는다. ══ -->
+  <div class="card">
+    <div class="card-title"><span>📬 방 × 보고 — 어떤 방에 · 언제 · 무엇을</span><span class="dim" id="mapMeta" style="font-weight:400;font-size:12px"></span></div>
+    <div class="tbl-wrap">
+      <table id="mapTable" style="table-layout:fixed">
+        <colgroup><col style="width:21%"><col style="width:17%"><col style="width:15%"><col><col style="width:9%"></colgroup>
+        <thead><tr><th>받는 곳</th><th>언제</th><th>보고</th><th>담기는 내용</th><th>상태</th></tr></thead>
+        <tbody id="mapBody"><tr><td colspan="5" class="dim">불러오는 중…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- ══ 방 목록 관리 ══ -->
   <div class="card">
     <div class="card-title">
@@ -236,6 +248,23 @@ tr:last-child td{border-bottom:none;}
 
   var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 var RAW_BASE = '/repo/';
+// 방 × 보고 한 장 — status/report_automation_map.json 을 그대로 그린다(그룹마다 첫 줄에 받는 곳·채널)
+fetch(RAW_BASE + 'status/report_automation_map.json?t=' + Date.now(), {cache:'no-store'})
+  .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(function(j){
+    var esc=function(t){ return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); };
+    var html='';
+    (j.groups||[]).forEach(function(g){
+      g.items.forEach(function(it,i){
+        html+='<tr>'+(i===0?'<td rowspan="'+g.items.length+'" style="vertical-align:top;font-weight:600">'+esc(g.to)+'<div class="dim" style="font-weight:400;font-size:11.5px">'+esc(g.channel)+'</div></td>':'')
+          +'<td style="white-space:nowrap">'+esc(it.when)+'</td><td>'+esc(it.name)+'</td><td>'+esc(it.content)+'</td>'
+          +'<td><span class="badge" style="'+(it.status==='on'?'':'background:#f3f4f6;color:#6b7280;border-color:#e5e7eb')+'">'+(it.status==='on'?'켜짐':'꺼짐')+'</span><div class="dim" style="font-size:11px">'+esc(it.last)+'</div></td></tr>';
+      });
+    });
+    document.getElementById('mapBody').innerHTML=html||'<tr><td colspan="5" class="dim">항목 없음</td></tr>';
+    document.getElementById('mapMeta').textContent='실측 '+(j.measured_at||'');
+  })
+  .catch(function(e){ document.getElementById('mapBody').innerHTML='<tr><td colspan="5" class="dim">못 읽었습니다('+e.message+')</td></tr>'; });
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
