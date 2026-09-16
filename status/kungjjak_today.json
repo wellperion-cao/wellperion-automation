@@ -256,6 +256,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260916-1024",
+          "no": "24",
+          "got": "웰리 2679 배편 맥락들은 실업무들이니 GM업무나 중간관리자 업무에 들어갔으면  배편에서 내려줘 혼란스러워",
+          "did": "",
+          "start": "11:39",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -440,14 +452,29 @@
           "detail": "★중간관리자 방 발송(문자 자동 연동 · 휴회 문의폼·종합접수처 자동발송) kakao_sent 로그 ok"
         }
       ],
-      "count": 21,
+      "count": 22,
       "done": 21,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-1024",
+          "no": "24",
+          "got": "웰리 2679 배편 맥락들은 실업무들이니 GM업무나 중간관리자 업무에 들어갔으면  배편에서 내려줘 혼란스러워",
+          "did": "",
+          "start": "11:39",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -565,13 +592,13 @@
           "ref": "GM-20260916-2013",
           "no": "13",
           "got": "옛버전을 그럼 우린 가지고 있어야하네? 다 삭제하고 기록으로만 남겼으면 하는데",
-          "did": "",
+          "did": "erp.nginx.conf 저장소 사본에 남아 있던 옛 /public/ 블록 제거 — 라이브는 09-08 부터 erp-loca · fix(tg_outbound_log): sendPhoto 실패 사유 무음·non-429 재시도 0회 수정 · 권한 없음 옛 주소(/auth/forbidden) 폐지 — nginx internal 전용·관문의 옛 주소 받아 주기 삭제 ( · fix(tg_outbound_log): sendPhoto 실패 사유 무음 — 커밋 142c51953c · 배 12682",
           "start": "11:32",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:38",
+          "minutes": 5,
+          "upload": "✅ 배포 (142c51953)",
+          "open": false,
+          "evidence": "🔁재확인"
         },
         {
           "ref": "GM-20260916-12675",
@@ -769,28 +796,13 @@
         }
       ],
       "count": 11,
-      "done": 10,
-      "open": 1,
+      "done": 11,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260916-2013",
-          "no": "13",
-          "got": "옛버전을 그럼 우린 가지고 있어야하네? 다 삭제하고 기록으로만 남겼으면 하는데",
-          "did": "",
-          "start": "11:32",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -933,7 +945,7 @@
           "start": "11:27",
           "end": "11:29",
           "minutes": 2,
-          "upload": "✅ 배포 (f7fc3855e)",
+          "upload": "✅ 배포 (e37d29549)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -945,7 +957,7 @@
           "start": "11:29",
           "end": "11:29",
           "minutes": 0,
-          "upload": "✅ 배포 (f7fc3855e)",
+          "upload": "✅ 배포 (e37d29549)",
           "open": false,
           "evidence": "⚠️없음"
         }
@@ -1010,13 +1022,25 @@
           "area": "공통",
           "event": "fix(cpo): 브로제이 이관 차이 대조기 — 골프·스쿼시·뮤지컬·유료GX 분류 짝 추가 (9/9~14 골프·스쿼시가 매핑 구멍으로 미이관 오판 · 실측 2026-09-16)",
           "detail": "커밋 6427b36834 · 배 12668"
+        },
+        {
+          "time": "11:38",
+          "area": "공통",
+          "event": "fix(cpo): 브로제이 이관 대조기 — 짝 없는 칸을 CELL_TAG 기준으로 세어 골프·스쿼시 중복 표기 제거 · 음수 차이는 「옮긴 날짜 어긋남」으로 문구 분리 (시토 배포 실측 2026-09-16)",
+          "detail": "커밋 e37d295491 · 배 12668"
+        },
+        {
+          "time": "11:39",
+          "area": "배908",
+          "event": "브로제이 이관 대조기 매핑 구멍(골프·스쿼시·뮤지컬·유료GX)·중복 표기·음수 문구 수리 — 시토 배포 11:39 실측 확인",
+          "detail": "저장 6427b3683·e37d29549 · 서버 실행 결과 「2026-09-15 브로제이가 시트보다 3,312,352원 많음(옮긴 날짜 어긋남) — 수영·P.T·체조·골프·스쿼시」"
         }
       ],
       "count": 10,
       "done": 10,
       "open": 0,
       "avg_minutes": 6,
-      "work_count": 10,
+      "work_count": 12,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1441,13 +1465,13 @@
           "ref": "GM-20260916-9008",
           "no": "08",
           "got": "웰페리온랩스에 마케팅 자동화에 들어가면 다 비활성으로 되어있는데, 반영안된듯? 그리고 좌우 사이즈에 따라서 크기가 달라지고, 글씨들이 아래로 내려가는데, 이런것 사이즈 조정해서 보기 좋게 만들어줘",
-          "did": "",
+          "did": "마케팅 자동화 화면 — 폭이 바뀌어도 안 무너지게(GM 2026-09-16): 한 열 고정 · 채널 타일 4열(760px 아래 · 마케팅 자동화 화면 — 폭이 바뀌어도 안 무너지게(GM 2026-09-1 — 커밋 fdbcab6d92 · 배 12655",
           "start": "11:36",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:38",
+          "minutes": 2,
+          "upload": "✅ 배포 (fdbcab6d9)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1486,31 +1510,22 @@
           "area": "작업",
           "event": "결제 착수는 비즈니스 모델(요금표) 확정 뒤 — GM 지시 09-16 · 배 2683 대기·2659 note · 로드맵 §9 결정 6",
           "detail": "커밋 1e462ff6b2 · 배 12655"
+        },
+        {
+          "time": "11:38",
+          "area": "작업",
+          "event": "마케팅 자동화 화면 — 폭이 바뀌어도 안 무너지게(GM 2026-09-16): 한 열 고정 · 채널 타일 4열(760px 아래 2열)·줄바꿈 금지 · 머리 배지 고정 · 탭 가로 스크롤 · 본문 폭 1040px 상한",
+          "detail": "커밋 fdbcab6d92 · 배 12655"
         }
       ],
       "count": 8,
-      "done": 7,
-      "open": 1,
+      "done": 8,
+      "open": 0,
       "avg_minutes": 1,
-      "work_count": 6,
+      "work_count": 7,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260916-9008",
-          "no": "08",
-          "got": "웰페리온랩스에 마케팅 자동화에 들어가면 다 비활성으로 되어있는데, 반영안된듯? 그리고 좌우 사이즈에 따라서 크기가 달라지고, 글씨들이 아래로 내려가는데, 이런것 사이즈 조정해서 보기 좋게 만들어줘",
-          "did": "",
-          "start": "11:36",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
