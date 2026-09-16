@@ -1588,6 +1588,13 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   .bar { margin-top:14px; background:var(--navy); color:#fff; padding:10px 14px; font-size:14px; font-weight:700; line-height:1.6; }
   .bar .b2 { display:block; font-weight:400; font-size:13px; opacity:.85; }
   .blk { background:#fff; border:1px solid var(--line); margin-top:14px; }
+  /* 사람별 업무 표 — 같은 열 폭(colgroup·fixed) · 첫 칸은 블록 선에서 14px 띄운다(GM 지적 2026-09-16) */
+  table.tk { table-layout:fixed; }
+  table.tk col.own { width:120px; } table.tk col.nx { width:190px; } table.tk col.ss { width:112px; }
+  table.tk th:first-child, table.tk td:first-child { padding-left:14px; }
+  table.tk th:last-child, table.tk td:last-child { padding-right:14px; }
+  table.tk td { overflow-wrap:anywhere; }
+  .blk h3.rsp { padding-left:14px; }
   h2 { font-size:16px; padding:10px 14px; background:var(--navy-bg); color:var(--navy); border-bottom:1px solid var(--line); }
   h2 .sub { font-weight:400; color:var(--dim); font-size:13px; margin-left:8px; }
   /* 👤 책임 항목 4인(GM 지시 2026-09-14) — .blk·table 결 그대로, 칸 너비만 추가 */
@@ -1632,7 +1639,12 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   /* ★한 줄 + 채움 (GM 지적 2026-09-14 「한 줄로 %랑 같이 · 올 회색이 아니라 41%만큼 색칠」).
      위 .bar(머리 검정 띠) 규칙의 padding·line-height 가 이 트랙에도 먹어 트랙이 20px 로 부풀고
      채움(i)은 내용 높이 0 의 100% = 0px 라 안 보였다 — 트랙·채움 높이를 px 로 못 박고 padding 을 지운다. */
-  .pg { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  /* ★td.pg 는 표 칸으로 남긴다(GM 지적 2026-09-16 「진척칸이 또 깨져있네」) — 종전 .pg{display:flex} 가
+     td.pg 에도 먹어 칸이 표 격자에서 떨어져 나가 선이 끊기고 옆 표와 열이 안 맞았다. flex 는 책임 표 안
+     span.pg 에만, td.pg 안 막대는 inline-block 으로 한 줄. */
+  span.pg { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  td.pg { display:table-cell; white-space:nowrap; }
+  td.pg .bar { display:inline-block; width:72px; vertical-align:middle; margin-right:6px; }
   .pg .bar { display:block; flex:1 1 80px; min-width:60px; max-width:180px; height:8px; padding:0; margin:0;
              line-height:0; border-radius:4px; background:var(--line); overflow:hidden; }
   .pg .bar i { display:block; height:8px; }
@@ -1827,6 +1839,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   var ERP_API_ON = /^(erp[.]wellperion[.]com|15[.]164[.]151[.]105)$/.test(location.hostname);
   var RAW_BASE = '/repo/';   // GM업무 A3 정본과 같은 방식 — erp 도메인에서만 값이 붙는다
   var DT_COLS = [['번호', 'dt-no'], ['내용', 'dt-ti'], ['담당·전달', 'dt-who'], ['기한', 'dt-due'], ['경과', 'dt-age'], ['비고', 'dt-etc']];
+  var COLG = '<colgroup><col class="no"><col><col class="own"><col class="due"><col class="nx"><col class="pg"><col class="ss"><col class="age"></colgroup>';
   var HEAD_ROW = '<tr><th class="no">번호</th><th>업무</th><th class="own">담당</th><th class="due">기한</th><th class="nx">다음 한 걸음</th><th class="pg">진척</th><th class="ss">업무·결재 SSOT</th><th class="age">경과</th></tr>';
   var SSOT_PAGE = '../todo/업무 현황 SSOT.html';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -1869,7 +1882,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
       '<td class="due' + (r.overdue ? ' old' : '') + '">' + esc(r.due || '—') + '</td><td class="nx">' + nextStep(r) + '</td>' + progressCell(r) +
       '<td class="ss">' + ssCell(r) + '</td><td class="age ' + ageCls(r.age) + '">' + r.age + '일</td></tr>';
   }
-  function table(rows, empty) { return '<table>' + HEAD_ROW + (rows.length ? rows.map(rowHtml).join('') : '<tr><td colspan="8" class="empty">' + empty + '</td></tr>') + '</table>'; }
+  function table(rows, empty) { return '<table class="tk">' + COLG + HEAD_ROW + (rows.length ? rows.map(rowHtml).join('') : '<tr><td colspan="8" class="empty">' + empty + '</td></tr>') + '</table>'; }
   function groupTables(groups) { return groups.map(function (g) { return '<h3 class="rsp">' + esc(g.who) + ' <span class="gc">' + g.rows.length + '건</span></h3>' + table(g.rows, '없음'); }).join(''); }
 
   // ── 토글 내역 표(6열 colgroup · 세 표 같은 틀) ────────────────────────────────────
