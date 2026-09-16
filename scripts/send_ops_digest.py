@@ -1281,13 +1281,69 @@ _OWN_BROADCAST_MARKERS = (RELAY_SIGNOFF, "🧾 확인 부탁드릴 것", "🌅 �
                           "「#번호 + 했다 / 진행중 / 언제」 한 줄이면 됩니다")
 
 
-def _is_own_broadcast(msg: str) -> bool:
-    """이 스크립트가 ★중간관리자 방에 낸 다이제스트 본문이면 True(회신 후보 제외).
-    ops_daily_digest._is_auto_broadcast 는 옛 헤더 문구 기준이라 지금 헤더(🧾 확인 부탁드릴 것)를
-    못 잡아, 우리가 「#132 …」식으로 번호를 나열한 공고문이 사람 회신으로 오인돼 매 회차
-    자기 자신에게 중복 note 를 쌓았다(2026-09-09 배1102 후속 실측). 서명·현재 헤더로
-    한 번 더 거른다(새 파서 없이 기존 신호 재사용 · 약속 L21)."""
-    return any(mk in msg for mk in _OWN_BROADCAST_MARKERS)
+# 2026-09-16 GM 계정 대필(서명 없는 전달문)은 마커 4개를 전부 비껴간다 — 웰리가 9/15 18:07
+# ★중간관리자 방에 보낸 "이경연 실장님 — 브로제이 관련 확인 2건입니다(GM 지시)"가 사람
+# 발화로 남아 시포 배 12665 전달문과 드문 낱말이 겹쳐 「회신 감지」로 오탐(INC-059 2회째).
+# 마커를 더 늘리는 대신(약속 L21) kakao_report_sender 가 이미 남기는 발신 로그
+# (logs/kakao_sent-<날짜>.log)와 대조한다 — 우리가 그 방에 실제로 보낸 글이면 그 글의
+# 앞 60자가 로그에 그대로 있다.
+_OWN_BROADCAST_LOG_DIR = ROOT / "logs"
+_own_broadcast_log_cache: "dict[str, set[str]]" = {}  # (room,today,lookback) -> 정규화 앞 60자 집합
+
+
+def _normalize_head(s: str, n: int = 60) -> str:
+    """연속 공백·개행을 한 칸으로 정규화한 뒤 앞 n자 — 로그 원문과 방 원문의 줄바꿈 표기가
+    달라도(\\n 이스케이프 vs 실제 줄바꿈) 같은 문장으로 비교되게 한다."""
+    return re.sub(r"\s+", " ", str(s or "")).strip()[:n]
+
+
+def _own_sent_heads(room: str, today: str, lookback_days: int) -> "set[str]":
+    """logs/kakao_sent-<날짜>.log 에서 chat_id==room 인 발신 text 의 정규화 앞 60자 집합.
+    호출마다 파일을 다시 열지 않도록 (room, today, lookback_days) 키로 모듈 캐시 한 번만 읽는다."""
+    key = f"{room}|{today}|{lookback_days}"
+    if key in _own_broadcast_log_cache:
+        return _own_broadcast_log_cache[key]
+    heads: "set[str]" = set()
+    try:
+        t = date.fromisoformat(today)
+        for d in range(lookback_days + 1):
+            path = _OWN_BROADCAST_LOG_DIR / f"kakao_sent-{(t - timedelta(days=d)).isoformat()}.log"
+            if not path.exists():
+                continue
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                if rec.get("chat_id") != room:
+                    continue
+                text = rec.get("text")
+                if text:
+                    heads.add(_normalize_head(text))
+    except Exception as exc:
+        log(f"[reply] 발신 로그 읽기 실패({room}) — 마커 판정만: {exc}")
+        return set()
+    _own_broadcast_log_cache[key] = heads
+    return heads
+
+
+def _is_own_broadcast(msg: str, room: str = RELAY_ROOM, today: "str | None" = None,
+                       lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> bool:
+    """이 스크립트(또는 GM 계정 대필)가 room 방에 낸 발신이면 True(회신 후보 제외).
+    ① 서명·헤더 마커(_OWN_BROADCAST_MARKERS) 우선 판정 — 새 파서 없이 기존 신호 재사용
+    (약속 L21). ② today 가 주어지면 kakao_sent 발신 로그와 앞 60자(공백 정규화) 대조 —
+    마커 없는 대필문까지 잡는다. 로그가 없거나 못 읽으면 ①로만 판정한다(예외를 삼키지
+    않고 log 한 줄 남김 — _own_sent_heads 참조)."""
+    if any(mk in msg for mk in _OWN_BROADCAST_MARKERS):
+        return True
+    if today:
+        heads = _own_sent_heads(room, today, lookback_days)
+        if heads and _normalize_head(msg) in heads:
+            return True
+    return False
 
 
 def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_DAYS) -> "list[dict]":
@@ -1323,7 +1379,7 @@ def _mgr_room_human_lines(today: str, lookback_days: int = REPLY_MATCH_LOOKBACK_
                     continue
                 for m in msgs:
                     msg = str(m.get("msg") or "")
-                    if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg):
+                    if msg and not _is_auto_broadcast(msg) and not _is_own_broadcast(msg, RELAY_ROOM, today, lookback_days):
                         out.append({"date": d, "time": str(m.get("time") or ""), "msg": msg,
                                     "name": str(m.get("name") or "")})  # name = 주간 사전 보고 사람 판정용(2026-09-15)
     return out
@@ -1777,6 +1833,34 @@ def _selfcheck_reply_match() -> None:
     assert not _reply_match(unanswered, human_lines, rare), \
         "흔한 낱말(앞으로 등)만 겹치는 배는 매치되면 안 된다(오탐 방지)"
     print("[selfcheck] _reply_match OK")
+
+
+def _selfcheck_own_broadcast_log_match() -> None:
+    """마커(서명·헤더) 없는 GM 계정 대필문도 발신 로그(kakao_sent) 대조로 우리 발신으로
+    걸러지는지, 로그에 없는 사람 글은 그대로 회신 후보로 남는지 확인
+    (2026-09-16 배12673 · 9/15 18:07 웰리 대필문 실측 · INC-059 와 같은 본질 2회째).
+    네트워크 없이 돈다 — 임시 폴더에 가짜 발신 로그 1줄을 두고 모듈 캐시를 원복한다."""
+    import tempfile
+    global _OWN_BROADCAST_LOG_DIR
+    orig_dir, orig_cache = _OWN_BROADCAST_LOG_DIR, dict(_own_broadcast_log_cache)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            today = "2026-09-15"
+            sent_text = "이경연 실장님 — 브로제이 관련 확인 2건입니다(GM 지시)\n1️⃣ 환불 처리 위치 — 한 줄 답"
+            (Path(tmp) / f"kakao_sent-{today}.log").write_text(
+                json.dumps({"chat_id": RELAY_ROOM, "text": sent_text}, ensure_ascii=False) + "\n",
+                encoding="utf-8")
+            _OWN_BROADCAST_LOG_DIR = Path(tmp)
+            _own_broadcast_log_cache.clear()
+            assert _is_own_broadcast(sent_text, RELAY_ROOM, today), \
+                "발신 로그에 있는 우리 본문(마커 없음)은 우리 발신으로 걸러야 함"
+            assert not _is_own_broadcast("실장님이 직접 쓰신 답변입니다", RELAY_ROOM, today), \
+                "로그에 없는 사람 글은 회신 후보로 남아야 함"
+    finally:
+        _OWN_BROADCAST_LOG_DIR = orig_dir
+        _own_broadcast_log_cache.clear()
+        _own_broadcast_log_cache.update(orig_cache)
+    print("[selfcheck] _selfcheck_own_broadcast_log_match OK")
 
 
 def log(msg: str) -> None:
@@ -4004,6 +4088,7 @@ def main() -> int:
         _selfcheck_gm_work_section()
         _selfcheck_inquiry_contact_section()
         _selfcheck_reply_match()
+        _selfcheck_own_broadcast_log_match()
         _selfcheck_weekly_meeting()
         return 0
 
