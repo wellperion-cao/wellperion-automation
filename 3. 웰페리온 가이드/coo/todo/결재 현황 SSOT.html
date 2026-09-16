@@ -453,8 +453,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
     <div class="doc-viewer-bar">
       <span class="doc-viewer-title" id="docViewerTitle"></span>
       <span style="display:flex;gap:8px;flex-shrink:0;">
-        <button class="doc-viewer-btn" id="docViewerPrintBtn" style="display:none" onclick="printCurrentAttachment()" title="A4 · 가로/세로 자동 · 잘림 없이">🖨 인쇄</button>
-        <a class="doc-viewer-btn ghost" id="docViewerOpenBtn" style="display:none;text-decoration:none" href="#" target="_blank" rel="noopener">↗ 새 탭</a>
+        <span id="docViewerAttachBtns" style="display:contents"></span>
         <button class="doc-viewer-btn ghost" onclick="closeDocViewer()">✕ 닫기</button>
       </span>
     </div>
@@ -1478,9 +1477,7 @@ function closeDocViewer() {
   document.body.style.overflow = '';
   _docViewerTaskId = null;
   _attachViewer = null;
-  var pb = document.getElementById('docViewerPrintBtn'), ob = document.getElementById('docViewerOpenBtn');
-  if (pb) pb.style.display = 'none';
-  if (ob) ob.style.display = 'none';
+  var bx = document.getElementById('docViewerAttachBtns'); if (bx) bx.innerHTML = '';
   var paper = document.getElementById('docViewerPaper'); if (paper) { paper.style.padding = ''; paper.style.width = ''; }
 }
 
@@ -1494,19 +1491,29 @@ function openAttachmentViewer(u, title) {
   var isImg = /\.(jpe?g|png|gif|webp|bmp)(\?|#|$)/i.test(u);
   var isPdf = /\.pdf(\?|#|$)/i.test(u);
   var kind = m ? 'drive' : isImg ? 'img' : isPdf ? 'pdf' : 'other';
+  // 구글 드라이브·그 밖의 형식은 화면 안에 못 띄운다 — 드라이브 미리보기 틀은 구글 로그인이 없는 창(시크릿)에서 빈 화면이
+  // 된다(2026-09-16 GM 「시크릿 크롬으로 해도 안 열려」 · 실측: 첨부 36개 중 대부분이 드라이브). 그 경우는 종전처럼 새 탭.
+  if (kind === 'drive' || kind === 'other') { window.open(u, '_blank', 'noopener'); return; }
   _attachViewer = { u: u, kind: kind, title: title || '' };
   var paper = document.getElementById('docViewerPaper');
   paper.style.padding = '0'; paper.style.width = 'min(1100px,100%)';
   var body;
   if (kind === 'img') body = '<img id="attachViewImg" src="' + escAttr(u) + '" alt="첨부" style="display:block;max-width:100%;height:auto;margin:0 auto">';
-  else if (kind === 'pdf') body = '<iframe id="attachViewFrame" src="' + escAttr(u) + '#toolbar=0" style="width:100%;height:80vh;border:0;display:block"></iframe>';
-  else if (kind === 'drive') body = '<iframe id="attachViewFrame" src="https://drive.google.com/file/d/' + escAttr(m[1]) + '/preview" style="width:100%;height:80vh;border:0;display:block" allow="autoplay"></iframe>';
-  else body = '<div style="padding:40px;text-align:center;color:#333">이 형식은 화면 안에서 못 보여 드립니다 — ↗ 새 탭에서 열어 인쇄해 주세요<br><a href="' + escAttr(u) + '" target="_blank" rel="noopener">' + esc(u) + '</a></div>';
+  else if (kind === 'pdf') body = '<iframe id="attachViewFrame" src="' + escAttr(u) + '" style="width:100%;height:80vh;border:0;display:block"></iframe>' +
+    '<div style="padding:8px 12px;font-size:12px;color:#555;background:#f3f1ee">안에서 안 보이면 <a href="' + escAttr(u) + '" target="_blank" rel="noopener">↗ 새 탭에서 열기</a> — 크롬 뷰어에서 인쇄하면 A4 에 맞춰집니다</div>';
+
   paper.innerHTML = body;
   document.getElementById('docViewerTitle').textContent = '📎 ' + (title || '첨부');
-  var pb = document.getElementById('docViewerPrintBtn'), ob = document.getElementById('docViewerOpenBtn');
-  pb.style.display = (kind === 'img' || kind === 'pdf') ? '' : 'none';
-  ob.style.display = ''; ob.href = u;
+  var bx = document.getElementById('docViewerAttachBtns');
+  if (bx) {
+    bx.innerHTML = '';
+    var pb = document.createElement('button'); pb.className = 'doc-viewer-btn'; pb.type = 'button';
+    pb.textContent = 'A4로 출력'; pb.title = 'A4 · 가로/세로 자동 · 잘림 없이';   // 🖨·「인쇄」 글자를 안 쓴다 — print_options.js 가 그 글자로 버튼을 잡아간다
+    pb.addEventListener('click', function (e) { e.stopPropagation(); printCurrentAttachment(); });
+    var ob = document.createElement('a'); ob.className = 'doc-viewer-btn ghost'; ob.style.textDecoration = 'none';
+    ob.textContent = '↗ 새 탭'; ob.href = u; ob.target = '_blank'; ob.rel = 'noopener';
+    bx.appendChild(pb); bx.appendChild(ob);
+  }
   document.getElementById('docViewerOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
