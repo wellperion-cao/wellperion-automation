@@ -61,8 +61,9 @@
 · hr.person 생성·동일인 병합: (이름+생년월일) 일치도 '후보'일 뿐 최종 확인은 사람 몫이고(동명이인 4쌍 실재),
   자동 병합은 연차·평가·급여를 남의 것과 섞는다. 그래서 1단계는 person_id 를 NULL 로 두고 *_name_raw 만 채운다.
 · 지원자 memo 분해(hr.applicant_document): 분해 규칙의 재현율을 아직 실증하지 않았다(#48).
-· 미적재 7탭(자동화로그·명령큐·근무변경신청·연차원장·보드명단·공휴일·개인일정) = 아래 OUT_OF_SCOPE 상수가 정본.
-  hr 스키마는 21표인데 이 스크립트가 적재하는 것은 9탭뿐이다 — '표가 있으니 적재됐겠지'로 읽히지 않게
+· 미적재 5탭(자동화로그·명령큐·연차원장·공휴일·개인일정) = 아래 OUT_OF_SCOPE 상수가 정본.
+  보드명단·근무변경신청은 2026-09-16 요청서 ④(CHRO/나우열M)로 적재 범위에 편입됐다(11탭).
+  hr 스키마는 23표인데 이 스크립트가 적재하는 것은 11탭뿐이다 — '표가 있으니 적재됐겠지'로 읽히지 않게
   사유와 함께 코드에 박아 두고, 실행 머리말과 리포트 JSON 에 '이번 범위 밖'으로 그대로 찍는다.
 """
 import argparse
@@ -95,9 +96,10 @@ LIVE_PRED = "vanished_at IS NULL"        # '살아 있는 행' 술어 — 읽기
 MASS_VANISH_MIN = 10                     # 대량 소실 보호 = 소실 > max(10, 살아 있는 행의 50퍼센트) 이면 그 탭 롤백
 MASS_VANISH_PCT = 50
 
-# ── 이번 범위 밖 = 적재하지 않는 7탭 (C-03) ────────────────────────────────────────────────────
+# ── 이번 범위 밖 = 적재하지 않는 5탭 (C-03) ────────────────────────────────────────────────────
 # hr 스키마에는 표가 있으나 이 스크립트는 채우지 않는다. 사유를 세 갈래로 갈라 적는다 —
-# 지어내지 않고 '미확인'은 미확인으로 남긴다(현행 백엔드의 db 읽기 열쇠는 10종인데 여기서 쓰는 것은 9종이다).
+# 지어내지 않고 '미확인'은 미확인으로 남긴다(현행 백엔드의 db 읽기 열쇠는 10종인데 여기서 쓰는 것은 9종+boardroster).
+# ★보드명단·근무변경신청은 2026-09-16 요청서 ④로 적재 범위에 편입됐다 — 아래 TABS 의 "board"·"schedchg" 참고.
 SCOPE_ACTION = "별도 액션 원천"       # `{db:...}` 읽기 계약이 아니라 다른 GAS 액션으로 읽는다
 SCOPE_SIDEEFFECT = "조회 부작용"      # 조회 자체가 상태를 바꾼다
 SCOPE_UNKNOWN = "원천 계약 미확인"    # db 읽기 계약인지 아직 확인되지 않았다
@@ -106,9 +108,7 @@ OUT_OF_SCOPE = [
      "현행 db 읽기 열쇠 10종 중 이 스크립트가 쓰는 9종을 뺀 나머지 1종이 이 탭인지 다른 것인지 미확인"),
     ("명령큐", "hr.command_queue", SCOPE_SIDEEFFECT,
      "cmd-pull 이 조회만으로 상태를 delivered 로 바꾼다 — 확인 전에는 부르지 않는다"),
-    ("근무변경신청", "hr.schedule_change_request", SCOPE_ACTION, "전용 액션으로 읽는다"),
     ("연차원장", "hr.leave_ledger", SCOPE_ACTION, "전용 액션으로 읽는다 · 적재 열쇠는 (성명, 연도)"),
-    ("보드명단", "hr.department.board_group", SCOPE_ACTION, "전용 액션으로 읽는다"),
     ("공휴일", "hr.holiday", SCOPE_ACTION, "전용 액션으로 읽는다 · 기본키는 날짜이고 행번호 칸 자체가 없다"),
     ("개인일정", "hr.personal_calendar_event", SCOPE_ACTION, "전용 액션으로 읽는다"),
 ]
@@ -196,6 +196,16 @@ def to_text(v):
 def to_last4(v):
     d = re.sub(r"\D", "", s(v))
     return d[-4:] if len(d) >= 4 else None
+
+
+_SCHEDREQ_ID_RE = re.compile(r"^R?(\d+)$")
+
+
+def schedreq_row_num(v):
+    """근무변경신청 원천 id("R"+밀리초 epoch, 예 R1758005551234) → legacy_row(BIGINT).
+    행번호(_sheet_row)가 원래 없는 액션 응답이라 이 값으로 대신한다 — 못 읽으면 None(행번호 없음으로 건너뜀)."""
+    m = _SCHEDREQ_ID_RE.match(s(v))
+    return int(m.group(1)) if m else None
 
 
 def mask(name):
@@ -324,6 +334,30 @@ LEAVE_MAP = [
     ("work_date", ("날짜", "일자"), to_date),
     ("raw_value", ("값", "휴무"), to_text),
 ]
+# db 열쇠 boardroster(관리자 읽기 — 실 헤더 표본을 못 봤다). 후보 이름은 schedboard-list 공개 roster 배열
+# (name·dept·leaveApplied·exitDate, schedule.html 실측) 을 그대로 옮겼다 — 안 맞으면 NULL 로 리포트에 남는다.
+BOARD_MAP = [
+    ("person_name_raw", ("성명", "이름", "name"), to_text),
+    ("dept_name_raw", ("부서", "소속", "dept"), to_text),
+    ("roster_display_name", ("표기명", "보드명"), to_text),
+    ("leave_applied", ("연차적용여부", "leaveApplied"), to_text),
+    ("exit_date", ("퇴사일", "exitDate"), to_date),
+    ("note", ("비고",), to_text),
+]
+# 전용 액션 schedreq-list(비밀번호 없음). 필드명은 schedule.html 실측(id·emp·type·date·s·e·reason·appr·status·
+# decidedAt — REQ_API=HR_GAS_URL 라이브 GET 으로 봉투도 확인함, 2026-09-16 그 순간 대기 0건이라 값 표본은 못 봤다).
+# ★s(시작)·e(종료) 제안 시간은 스키마에 자리(before_value/after_value)가 있지만 뜻이 값이 아니라 '제안 시간'이라
+#   지어내지 않고 뺐다 — 실측 뒤 합칠지 결정. 등록일시·수정일시(CHRO 9/16 추가분)는 후보만 걸어 둔다.
+SCHEDCHG_MAP = [
+    ("requester_name_raw", ("성명", "신청자", "emp"), to_text),
+    ("approver_name_raw", ("결재자", "appr"), to_text),
+    ("target_date", ("날짜", "date"), to_date),
+    ("request_type", ("유형", "구분", "type"), to_text),
+    ("reason", ("사유", "reason"), to_text),
+    ("status", ("상태", "status"), to_text),
+    ("requested_at", ("등록일시", "requestedAt", "createdAt"), to_date),
+    ("decided_at", ("결정일시", "수정일시", "decidedAt", "updatedAt"), to_date),
+]
 
 # 적재 열쇠(conflict) = upsert 의 ON CONFLICT 대상. ★대상 표에 실제로 선언된 유일 제약과 같아야 한다(C-01).
 #   8탭 = 시트 1행이 DB 1행이라 (tenant_id, legacy_tab, legacy_row).
@@ -372,10 +406,20 @@ TABS = {
     "leave":      {"label": "휴무", "table": "hr.leave_entry", "pk": "leave_id",
                    "legacy_tab": "휴무", "map": LEAVE_MAP, "fixed": {},
                    "required": ("person_name_raw", "work_date"), "conflict": LEAVE_KEY, "identity": ()},
+    # ── 요청서 ④(2026-09-16 CHRO/나우열M) 편입분 2탭 — 아래는 db 열쇠·전용 액션이 9탭과 다르다 ──
+    "board":      {"label": "보드명단", "table": "hr.board_roster", "pk": "roster_id",
+                   "legacy_tab": "보드명단", "map": BOARD_MAP, "fixed": {}, "dbkey": "boardroster",
+                   "required": ("person_name_raw",), "conflict": ROW_KEY, "identity": ("person_name_raw",)},
+    "schedchg":   {"label": "근무변경신청", "table": "hr.schedule_change_request", "pk": "request_id",
+                   "legacy_tab": "근무변경신청", "map": SCHEDCHG_MAP, "fixed": {},
+                   "fetch_kind": "action", "action": "schedreq-list", "list_field": "reqs",
+                   "row_num": schedreq_row_num,
+                   "required": ("requester_name_raw",), "conflict": ROW_KEY, "identity": ()},
 }
-TAB_ORDER = ["hire", "emp", "exitroster", "exit", "appl", "eval", "onbo", "blacklist", "leave"]
+TAB_ORDER = ["hire", "emp", "exitroster", "exit", "appl", "eval", "onbo", "blacklist", "leave",
+             "board", "schedchg"]
 # 개인정보가 아닌 칸만 값 분포를 리포트에 낸다(사람이 코드 뜻을 확인해야 하는 칸).
-HISTOGRAM = {"leave": "raw_value", "appl": "stage", "emp": "status", "hire": "status"}
+HISTOGRAM = {"leave": "raw_value", "appl": "stage", "emp": "status", "hire": "status", "schedchg": "status"}
 # 건너뛴 사유 3갈래 — 요약표·리포트가 같은 이름을 쓴다(C-06). '행번호 없음'은 적을 번호가 없어 건수만 센다.
 SKIP_NO_ROW, SKIP_REQUIRED, SKIP_DUP = "행번호 없음", "필수칸 없음", "중복 열쇠"
 SKIP_REASONS = (SKIP_REQUIRED, SKIP_NO_ROW, SKIP_DUP)
@@ -384,7 +428,8 @@ SKIP_REASONS = (SKIP_REQUIRED, SKIP_NO_ROW, SKIP_DUP)
 # ★판정기 자체는 그대로 쓴다 — 여기서는 한글 칸 레코드를 판정기가 보는 이름으로 '투영'만 한다.
 #   투영하지 않으면 판정기가 검사하는 칸이 하나도 없어 인사 더미가 전혀 안 잡힌다(그 반대의 오분류도 난다).
 TEST_PROBE = {
-    "name":    ("person_name_raw", "applicant_name", "employee_name_raw", "subject_name_raw", "name"),
+    "name":    ("person_name_raw", "applicant_name", "employee_name_raw", "subject_name_raw",
+               "requester_name_raw", "name"),
     "phone":   ("phone",),
     "title":   ("title",),
     "memo":    ("memo",),
@@ -437,6 +482,49 @@ def fetch(dbkey, timeout=FETCH_TIMEOUT):
             for f in DROP_FIELDS:
                 rec.pop(f, None)
     return rows
+
+
+def fetch_action(action, timeout=FETCH_TIMEOUT):
+    """비밀번호 없이 읽히는 GAS 액션 1회(schedreq-list 등 — sync_hrboard.py gas_hr() 와 같은 계약 ·
+    db 열쇠 계약과 달리 password 를 안 보낸다). 실패하면 None(지어내지 않는다)."""
+    url = os.environ.get("HR_GAS_URL", "")
+    if not url:
+        raise SystemExit("HR_GAS_URL 없음 — %s 를 확인(값은 저장소에 두지 않는다)" % ENV_FILE)
+    body = json.dumps({"action": action}).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "text/plain;charset=utf-8",
+                                                          "User-Agent": "wellperion-erp-api"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        print("[warn] action:%s 조회 실패: %s: %s" % (action, type(e).__name__, str(e)[:120]))
+        return None
+    if not isinstance(data, dict) or not data.get("ok"):
+        print("[warn] action:%s 응답 ok=false" % action)
+        return None
+    return data
+
+
+def fetch_tab(key):
+    """탭 하나를 원천에서 읽는다 — db 열쇠 계약(기본) 또는 전용 액션 계약(TABS[key]["fetch_kind"]=="action").
+    실패하면 None(지어내지 않는다). 액션 응답은 _sheet_row 가 없으므로 여기서 spec["row_num"] 으로 채운다."""
+    spec = TABS[key]
+    if spec.get("fetch_kind") == "action":
+        data = fetch_action(spec["action"])
+        if data is None:
+            return None
+        rows = data.get(spec["list_field"])
+        if not isinstance(rows, list):
+            print("[warn] action:%s 응답에 %s 배열이 없다" % (spec["action"], spec["list_field"]))
+            return None
+        rows = [dict(r) for r in rows if isinstance(r, dict)]
+        for rec in rows:
+            for f in DROP_FIELDS:
+                rec.pop(f, None)
+            if "_sheet_row" not in rec:
+                rec["_sheet_row"] = spec["row_num"](rec.get("id"))
+        return rows
+    return fetch(spec.get("dbkey", key))
 
 
 # ══════════════════════════════════════════════════════════════════════════════════════════
@@ -1084,7 +1172,7 @@ def run(args):
             last_step = "fetch %s" % key
             if i:
                 time.sleep(FETCH_GAP_SEC)              # 연속 호출 간격(핵심규칙 9)
-            rows = fetch(key)
+            rows = fetch_tab(key)
             if rows is None:
                 failed.append("%s 조회 실패" % key)
                 step_log(conn, run_id, key, "fetch", ok=False, detail={"error": "fetch-failed"})
@@ -1514,7 +1602,7 @@ def selftest():
     finally:
         TABS["leave"]["conflict"] = _saved
     # 이번 범위 밖 목록(C-03) — 사유는 세 갈래 중 하나여야 하고, 적재 탭과 겹치지 않는다
-    assert len(OUT_OF_SCOPE) == 7 and len(TAB_ORDER) == 9
+    assert len(OUT_OF_SCOPE) == 5 and len(TAB_ORDER) == 11
     assert all(r in (SCOPE_ACTION, SCOPE_SIDEEFFECT, SCOPE_UNKNOWN) for _t, _tb, r, _n in OUT_OF_SCOPE)
     assert [t for t, _tb, r, _n in OUT_OF_SCOPE if r == SCOPE_UNKNOWN] == ["자동화로그"]
     assert not {t for t, _tb, _r, _n in OUT_OF_SCOPE} & {TABS[k]["legacy_tab"] for k in TAB_ORDER}

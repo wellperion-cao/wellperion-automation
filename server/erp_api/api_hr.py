@@ -1093,6 +1093,60 @@ def read_get(
                   include_vanished=include_vanished)
 
 
+ONBOARDING_WRITE_ACTIONS = ("add-onboarding", "update-onboarding", "delete-onboarding")
+ONBOARDING_WRITE_TIMEOUT = 50
+
+
+@router.post("/onboarding")
+async def onboarding_write(request: Request):
+    """온보딩 쓰기 3종 중계(add-onboarding · update-onboarding · delete-onboarding · 요청서 ④ ·
+    CHRO/나우열M 2026-09-16). 화면(chro/hub/index.html)이 지금 GAS 로 직접 보내는 본문을 그대로 받아
+    그대로 GAS(HR_GAS_URL)로 넘기고 응답을 그대로 돌려준다 — DB 에는 안 쓴다(아래 2단계 TODO 와 다른 자리 ·
+    그 계획의 hr.onboarding_item 직접 쓰기를 앞당긴 것이 아니라 그 전 단계 프록시일 뿐이다).
+    ★관문 = 기존 admin 판정(HR_ADMIN_EMAILS·_identify) 재사용 — 새 판정을 만들지 않는다.
+    ★화면이 본문에 실어 보내는 GAS 액션 전용 PIN 칸(읽기 열쇠 HR_GAS_PASSWORD 와는 다른 값)은 이름조차
+      이 파일에 적지 않는다(라우터 금지어 자체점검) — 값을 보지도 검사하지도 않고 그대로 중계만 한다.
+    ★성공하면 온보딩 명단 거울(board_cache HR_ONBO_NAMES)을 즉시 갱신한다 — 새 함수를 만들지 않고
+      기존 api_board.board_refresh() 를 그대로 부른다(실패해도 cron 5분 뒤 sync_hrboard 가 따라잡으므로
+      쓰기 응답 자체는 막지 않는다)."""
+    ident = _identify(request)
+    if ident["role"] != ROLE_ADMIN:
+        return JSONResponse(error_envelope("scope-blocked", MSG_SCOPE_BLOCKED, role=ident["role"]),
+                            status_code=_status(403))
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse(error_envelope("bad-payload", "요청 본문을 읽지 못했습니다.", role=ident["role"]),
+                            status_code=_status(400))
+    action = str(payload.get("action") or "").strip()
+    if action not in ONBOARDING_WRITE_ACTIONS:
+        return JSONResponse(error_envelope("bad-param", "지원하지 않는 액션입니다: %s" % action[:40],
+                                           role=ident["role"]), status_code=_status(400))
+    url = os.environ.get("HR_GAS_URL", "")
+    if not url:
+        return JSONResponse(error_envelope("db-unavailable", MSG_DB_UNAVAILABLE, role=ident["role"]),
+                            status_code=_status(503))
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
+                                 headers={"Content-Type": "text/plain;charset=utf-8",
+                                          "User-Agent": "wellperion-erp-api"})
+    try:
+        with urllib.request.urlopen(req, timeout=ONBOARDING_WRITE_TIMEOUT) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        _log_exc("onboarding/%s" % action, e)
+        return JSONResponse(error_envelope("db-error", "온보딩 저장 중 오류가 발생했습니다.", role=ident["role"]),
+                            status_code=_status(503))
+    if isinstance(data, dict) and data.get("ok"):
+        try:
+            from api_board import board_refresh          # 지연 임포트 — 순환 임포트 방지(api_board 는 이 파일을 안 쓴다)
+            board_refresh("HR_ONBO_NAMES")
+        except Exception as e:
+            _log_exc("onboarding/mirror-refresh", e)      # best-effort — 거울 실패로 쓰기 응답을 막지 않는다
+    return JSONResponse(data if isinstance(data, dict) else {"ok": False, "error": "bad-response"})
+
+
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 #  쓰기 — 2단계(회신 §2 ②쓰기 서버화). 이번 커밋 범위 밖이라 뼈대만 적어 둔다.
 #  TODO(2단계) 라우트 목록 — 현행 GAS 액션과 1:1 로 맞춘다
@@ -1100,7 +1154,8 @@ def read_get(
 #    POST /api/hr/applicant/stage      set-stage      ★stage 를 덮지 말고 hr.application_stage_history 에 쌓는다
 #    POST /api/hr/applicant/photo      set-photo      ★파일명 r<row>.jpg 는 당분간 유지(러너 3종이 묶여 있다)
 #    POST /api/hr/employee             hire-complete / fix-emp-field / resign
-#    POST /api/hr/onboarding           add-onboarding / update-onboarding / onbo-checkin-save
+#    POST /api/hr/onboarding           add-onboarding / update-onboarding / delete-onboarding — 완료(위 라우트).
+#                                       onbo-checkin-save 만 이번 범위 밖으로 남는다
 #    POST /api/hr/evaluation           save-eval
 #    POST /api/hr/leave                set-leave / set-leave-bulk  ★단건 UPSERT — full-sync 월 병합 규칙이 필요 없어진다
 #    POST /api/hr/log                  log-add        ★actor_code 없는 쓰기는 거절(공통 셀프체크 6 을 서버가 강제)
