@@ -1614,6 +1614,28 @@ def _split_queue_items_for_rooms(queue_items: list[dict]) -> tuple[list[dict], l
     return office, ai
 
 
+def _gm_asks_lines() -> list[str]:
+    """08:00 GM 봇방 한 줄 — GM 께 여쭐 것(status/gm_asks.json 미답)과 어제 GM 이 답한 횟수.
+    GM 2026-09-16 「내가 다 체크한다 · 힘들다」 → 낮엔 안 묻고 여기 한 번만 모은다(시토 관문 ②). 0건이면 횟수 줄만."""
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        import gm_asks  # noqa: PLC0415
+        import hangro_board  # noqa: PLC0415
+        asks = gm_asks.unanswered()
+        yday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        n_ans = hangro_board._gm_answered_yesterday(yday)
+    except Exception as e:  # noqa: BLE001
+        return ["", f"📮 GM 여쭐 것 — 읽기 실패({type(e).__name__})"]
+    lines = ["", f"📮 GM 여쭐 것 {len(asks)}건 · 어제 GM 이 AI 에게 친 말 {n_ans}회(줄어야 정상)"]
+    for a in asks[:5]:
+        lines.append(f"   - #{a.get('id')} {str(a.get('title') or '')[:60]}")
+    if len(asks) > 5:
+        lines.append(f"   · 외 {len(asks) - 5}건")
+    if asks:
+        lines.append("   👉 번호로 답하시면 됩니다(예: 「3 해」) — 안 답하셔도 배는 안 늘어납니다")
+    return lines
+
+
 def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str, str | None]:
     """
     08:00 보고를 업무보고방/AI 진행현황방 2건으로 분리 조립.
@@ -1631,6 +1653,7 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
         ([holiday_line, ""] if holiday_line else [])
         + _northstar_head()
         + _board_summary_lines(_office_secs) + _build_appendix_lines()
+        + _gm_asks_lines()
     )
 
     ai_board, ai_secs = _board_text_and_secs([], ai_queue)

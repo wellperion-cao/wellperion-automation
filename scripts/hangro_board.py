@@ -1535,13 +1535,14 @@ def _flow_stats(role: str = "") -> dict:
 
 
 def _gm_answered_yesterday(yday: str) -> int:
-    """어제 GM 이 답한 횟수 — worklog.jsonl 의 GM_AREAS 완료(result=ok) 줄 수(전 역할 합).
-    close_gm_refs(worklog.py)가 세션 종료마다 남기는 '답변 종결' 기록을 센다."""
+    """어제 GM 이 AI 에게 친 말 횟수 — worklog.jsonl 의 GM_AREAS 접수(result=warn · 프롬프트 훅이 GM 말마다 1줄) 수(전 역할 합).
+    처음엔 완료(ok) 줄을 셌는데 그건 세션 종료 훅이 몰아 닫는 기록이라 316 같은 허수가 났다(2026-09-16 실측).
+    GM 부담의 실측 = GM 이 직접 친 말의 수 · 9/15 = 240 · 목표는 이 숫자가 줄어드는 것."""
     n = 0
     try:
         with WORKLOG_PATH.open(encoding="utf-8") as f:
             for line in f:
-                if '"result": "ok"' not in line:
+                if '"result": "warn"' not in line:
                     continue
                 try:
                     d = json.loads(line)
@@ -1562,7 +1563,7 @@ def _flow_lines(role: str = "", gas_rows: list[dict] | None = None) -> list[str]
     yday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
     answered = _gm_answered_yesterday(yday)
     out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · "
-           f"{STALE_DAYS}일 무기록 배 {len(f['stale'])}척 · 어제 GM 답 {answered}회"]
+           f"{STALE_DAYS}일 무기록 배 {len(f['stale'])}척 · 어제 GM 말 {answered}회"]
     # GM 부담 관문(GM 2026-09-16) — 배 대신 gm_asks 에 쌓인 「GM 손 필요」 건수를 보드 맨 위에서 본다.
     try:
         import gm_asks
