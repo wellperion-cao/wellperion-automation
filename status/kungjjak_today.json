@@ -1,7 +1,41 @@
 {
   "_doc": "쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)",
   "date": "2026-09-17",
-  "roles": {},
+  "roles": {
+    "cto": {
+      "nick": "시토",
+      "items": [],
+      "work": [
+        {
+          "time": "06:01",
+          "area": "작업",
+          "event": "fix(notify): 텔레그램 200+ok:false 응답도 오류 본문 기록 후 재시도 — 09-16 매출보고 3/3 사진 실패 재발 방지",
+          "detail": "커밋 47ec889c28 · 배 12680"
+        },
+        {
+          "time": "06:01",
+          "area": "자가점검",
+          "event": "매출보고 서버판 09-16 3/3 사진 실패 원인·수리",
+          "detail": "원인=tg_outbound_log.send 가 200+ok:false 응답에 재시도·오류기록 없이 종료 · 관문 한 곳에 오류본문 기록+재시도 박음 · 자체점검 통과 · 저장·배포"
+        },
+        {
+          "time": "06:02",
+          "area": "작업",
+          "event": "fix(guard): 👉 GM 액션 자동 수집은 첫 칸이 👉 인 행만 — 머리행·규칙 줄 잡음 차단(gm_asks #3·#4 닫음)",
+          "detail": "커밋 167dcc983b · 배 12680"
+        }
+      ],
+      "count": 0,
+      "done": 0,
+      "open": 0,
+      "avg_minutes": null,
+      "work_count": 3,
+      "missed": [],
+      "unclosed": [],
+      "just": [],
+      "repeats": []
+    }
+  },
   "tomorrow": {
     "ok": true,
     "items": [
