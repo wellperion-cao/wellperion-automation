@@ -1071,6 +1071,33 @@ def _selftest_take_unlisted() -> None:
     print("[selfcheck] _take_unlisted OK")
 
 
+def _selftest_gm_answered_yesterday() -> None:
+    """GM_AREAS 완료 줄만 어제 날짜로 세고, 다른 area·다른 날짜·warn 은 안 세는지."""
+    import tempfile
+    tf = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8")
+    yday = "2026-09-15"
+    rows = [
+        {"ts": f"{yday}T08:00:00+09:00", "area": "GM요청", "result": "ok"},     # 센다
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM지시", "result": "ok"},     # 센다(구값)
+        {"ts": f"{yday}T09:00:00+09:00", "area": "GM요청", "result": "warn"},   # 접수뿐 — 안 센다
+        {"ts": f"{yday}T09:00:00+09:00", "area": "발행", "result": "ok"},       # GM_AREAS 아님 — 안 센다
+        {"ts": "2026-09-16T09:00:00+09:00", "area": "GM요청", "result": "ok"},  # 오늘 — 안 센다
+    ]
+    for r in rows:
+        tf.write(json.dumps(r, ensure_ascii=False) + "\n")
+    tf.close()
+    global WORKLOG_PATH
+    _orig = WORKLOG_PATH
+    WORKLOG_PATH = Path(tf.name)
+    try:
+        n = _gm_answered_yesterday(yday)
+        assert n == 2, n
+    finally:
+        WORKLOG_PATH = _orig
+        os.unlink(tf.name)
+    print("[selfcheck] _gm_answered_yesterday OK")
+
+
 def _selftest_ssot_hygiene() -> None:
     """규칙 5개 각 1케이스 + 정상 행 1케이스."""
     rows = [
@@ -1507,9 +1534,43 @@ def _flow_stats(role: str = "") -> dict:
     return {"open": len(open_all), "born_y": born_y, "done_y": done_y, "stale": stale}
 
 
+def _gm_answered_yesterday(yday: str) -> int:
+    """어제 GM 이 답한 횟수 — worklog.jsonl 의 GM_AREAS 완료(result=ok) 줄 수(전 역할 합).
+    close_gm_refs(worklog.py)가 세션 종료마다 남기는 '답변 종결' 기록을 센다."""
+    n = 0
+    try:
+        with WORKLOG_PATH.open(encoding="utf-8") as f:
+            for line in f:
+                if '"result": "ok"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("area") not in GM_AREAS:
+                    continue
+                if str(d.get("ts") or "")[:10] != yday:
+                    continue
+                n += 1
+    except Exception:
+        return 0
+    return n
+
+
 def _flow_lines(role: str = "", gas_rows: list[dict] | None = None) -> list[str]:
     f = _flow_stats(role)
-    out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · {STALE_DAYS}일 무기록 배 {len(f['stale'])}척"]
+    yday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    answered = _gm_answered_yesterday(yday)
+    out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · "
+           f"{STALE_DAYS}일 무기록 배 {len(f['stale'])}척 · 어제 GM 답 {answered}회"]
+    # GM 부담 관문(GM 2026-09-16) — 배 대신 gm_asks 에 쌓인 「GM 손 필요」 건수를 보드 맨 위에서 본다.
+    try:
+        import gm_asks
+        n_asks = len(gm_asks.unanswered())
+        if n_asks:
+            out.append(f"📮 GM 여쭐 것 {n_asks}건 — status/gm_asks.json (아침 한 줄로 모음)")
+    except Exception:
+        pass
     out.extend(_ssot_hygiene_lines(gas_rows or []))
     try:
         from call_inbox import summary_line
@@ -2378,5 +2439,6 @@ if __name__ == "__main__":
         _selftest_gm_directives()
         _selftest_take_unlisted()
         _selftest_ssot_hygiene()
+        _selftest_gm_answered_yesterday()
     else:
         main()

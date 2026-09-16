@@ -209,6 +209,37 @@ def gm_action_offense(assistant_text):
     return None
 
 
+# ── 검사 F — 👉 GM 액션은 아침 한 줄로 모은다 (GM 2026-09-16 「일을 늘리지 말고 줄여라 · 내가 다 체크한다」).
+#   검사 E 는 "이게 GM 몫이 맞나"를 가른다. 이 검사는 그 다음 층 — GM 몫이 맞아도 턴마다
+#   물으면 GM 이 그때그때 결정을 떠안는다(같은 날 실측 하루 10회+). 급한 5종(💰🔒🚫📐🏷️)이
+#   아니면 지금 묻지 않고 status/gm_asks.json 에 적어 아침 07:30~08:30 수집 창에서 한 번에
+#   모은다. 경고만 — 표는 다음 턴이 지운다.
+DEFER_WINDOW = (7 * 60 + 30, 8 * 60 + 30)  # 07:30~08:30(분)
+URGENT_MARKS = ("💰", "🔒", "🚫", "📐", "🏷️")
+
+
+def _in_defer_window(now=None) -> bool:
+    import datetime as _dt
+    now = now or _dt.datetime.now()
+    minutes = now.hour * 60 + now.minute
+    return DEFER_WINDOW[0] <= minutes <= DEFER_WINDOW[1]
+
+
+def gm_action_defer(assistant_text, in_window=None):
+    """👉 GM 액션 행 중 급한 5종이 없고 지금이 수집 시간도 아니면 그 칸 내용을 돌려준다. 아니면 None."""
+    if in_window is None:
+        in_window = _in_defer_window()
+    if in_window:
+        return None
+    for s in _body(assistant_text):
+        if s.startswith("|") and "👉" in s:
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            body = max(cells[1:], key=len) if len(cells) > 1 else ""
+            if body and not any(k in body for k in URGENT_MARKS):
+                return body
+    return None
+
+
 def _long_cells(rows):
     """8요소 표 행(| 📌 … | 내용 |)에서 내용 칸이 CELL_MAX 를 넘는 것 [(요소, 글자수)]."""
     out = []
@@ -282,6 +313,13 @@ def main():
         assert gm_action_offense("| 👉 GM 액션 | 로고 v1 가/부 |") is None
         assert gm_action_offense("| 👉 GM 액션 | v3 이름표 바꿀 곳 지목 |") == "v3 이름표 바꿀 곳 지목"
         assert gm_action_offense(full) is None                                 # 👉 행 없음
+        # 검사 F — 👉 아침 수집(GM 2026-09-16). in_window 를 직접 넘겨 벽시계에 의존하지 않는다.
+        assert gm_action_defer("| 👉 GM 액션 | 급하지 않은 것 |", in_window=True) is None
+        assert gm_action_defer("| 👉 GM 액션 | 급하지 않은 것 |", in_window=False) == "급하지 않은 것"
+        assert gm_action_defer("| 👉 GM 액션 | 매터포트 결제(💰) |", in_window=False) is None   # 급한 5종은 통과
+        assert gm_action_defer(full, in_window=False) is None                  # 👉 행 없음
+        assert _in_defer_window(__import__("datetime").datetime(2026, 9, 16, 8, 0)) is True
+        assert _in_defer_window(__import__("datetime").datetime(2026, 9, 16, 9, 0)) is False
         print("selftest ok")
         return 0
     try:
@@ -319,6 +357,18 @@ def main():
             "  GM 몫 = 💰🔒🚫📐🏷️ 5종 + GM 손·GM 계정뿐(2026-08-03 GM 재확정). 나머지는 기본값으로\n"
             "  내가 진행하고 사후 한 줄로 알린다 — 행을 지우거나 GM 몫만 남겨라(GM 2026-09-16 「일이 거꾸로 는다」).\n"
             % (homework[:60] + "…" if len(homework) > 60 else homework))
+    defer = gm_action_defer(assistant)
+    if defer:
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import gm_asks
+            new_id = gm_asks.add(role=os.environ.get("WELLPERION_ROLE") or "unknown",
+                                  title=defer, why_gm="👉 GM 액션(수집 시간 07:30~08:30 밖)")
+        except Exception:
+            new_id = 0
+        sys.stderr.write(
+            "[GM 액션 보류] 👉 는 아침 한 줄로 모은다 — status/gm_asks.json #%d 에 적고 표에서 뺀다.\n"
+            "  수집 시간(07:30~08:30) 밖이다. 급한 5종(💰🔒🚫📐🏷️)이면 그대로 두어도 된다.\n" % new_id)
     return 0
 
 

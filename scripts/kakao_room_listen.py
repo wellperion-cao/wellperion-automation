@@ -355,6 +355,7 @@ def _new_ship_for_external(role: str, room_name: str, fresh: list[dict]) -> None
            "--title", f"[카톡 감지] {room_name} 새 대화",
            "--note", "\n".join(lines),
            "--next", "카톡 내용 확인 후 회신 판단",
+           "--gm-needed", "no",
            # 담당은 kakao_rooms.json external_rooms.owner_role 이 이미 정한 값이다 —
            # ownership_map 낱말 스캔과 어긋나도(예: '카톡'=시토 낱말) 그대로 보낸다.
            "--force-route"]

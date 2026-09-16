@@ -589,7 +589,7 @@ def dispatch_proposal_ship(proposal_total: int, proposal_path: str) -> dict:
                         "반영 커밋이 0건이었습니다. 그래서 결과를 항로로 올리게 바꿨습니다."),
              "--next", "이번 주 정리 후보 중 반영할 것 선택 → 시토가 실행",
              "--priority", "⛵돛단배", "--audience", "office",
-             "--reversible", "yes", "--work-type", "update"],
+             "--reversible", "yes", "--work-type", "update", "--gm-needed", "no"],
             cwd=_PROJECT_ROOT, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=120,
         )
