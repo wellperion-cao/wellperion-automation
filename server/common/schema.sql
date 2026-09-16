@@ -1258,4 +1258,20 @@ CREATE TABLE IF NOT EXISTS billing_charges (
   retry_at         TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (tenant_id, tenant, ym)
 );
+
+-- 마케팅 자동업로드 접수 큐 — cmo/upload/마케팅자동업로드.html 서버 문 ②③ (배 2662 · 2026-09-16 시토 · 시모 배 2658 짝).
+-- 실제 채널 발행(네이버·인스타 자동화)은 이 표 밖 — status='queued' 로 접수만 한다. 발행 워커는 기존 발행 스크립트를 재사용하는 다음 배.
+CREATE TABLE IF NOT EXISTS marketing_uploads (
+  tenant_id  TEXT NOT NULL DEFAULT 'wellperion',
+  id         TEXT NOT NULL,
+  tenant     TEXT NOT NULL,             -- wellperion/dc/jo
+  channels   JSONB NOT NULL,            -- ["naver-blog",...]
+  title      TEXT NOT NULL DEFAULT '',
+  body       TEXT NOT NULL DEFAULT '',
+  status     TEXT NOT NULL DEFAULT 'queued',
+  created_at TEXT NOT NULL DEFAULT '',
+  created_by TEXT NOT NULL DEFAULT '',
+  files      JSONB NOT NULL DEFAULT '[]',  -- [{"name":..,"path":..}]
+  PRIMARY KEY (tenant_id, id)
+);
 CREATE INDEX IF NOT EXISTS ix_billing_charges_retry ON billing_charges (tenant_id, status, retry_at);
