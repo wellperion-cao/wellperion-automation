@@ -21,14 +21,18 @@
 <link rel="stylesheet" href="../../erp/admin/platform_brand.css">
 <style>
 *{box-sizing:border-box}
-body{padding:18px 20px 60px}
-.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.top>div{min-width:0}
+.top .pf-st{flex:none;white-space:nowrap;margin-top:4px}
 .brand{font-family:var(--pf-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-soft)}
 .brand .dot{color:var(--pf-pri-dk)}
-.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:900px){.grid{grid-template-columns:1fr}}
-.ch{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.ch label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);background:var(--pf-bg);font-size:13.5px;cursor:pointer}
+/* 한 열 고정 — 오른쪽 화면(iframe) 폭이 바뀌어도 두 카드가 서로 밀지 않는다(GM 2026-09-16 「좌우 사이즈에 따라 크기가 달라지고 글씨가 내려간다」) */
+.grid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+.ch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.ch{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ch label{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 10px;border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);background:var(--pf-bg);font-size:13.5px;cursor:pointer;white-space:nowrap;overflow:hidden}
+.ch label .pf-st{flex:none}
 .ch label.off{opacity:.55;cursor:not-allowed}
 .ch input{width:18px;height:18px;accent-color:var(--pf-pri-dk);margin:0}
 .ch .pf-st{margin-left:auto}
@@ -37,6 +41,8 @@ body{padding:18px 20px 60px}
 .drop{border:1px dashed var(--pf-pri);border-radius:var(--pf-radius-sm);background:var(--pf-bg);min-height:88px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:var(--pf-soft);padding:12px}
 .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
 .acts .note{font-size:12.5px;color:var(--pf-soft);margin-left:auto}
+.pf-tabs{flex-wrap:nowrap;overflow-x:auto}
+.pf-tabs [role=tab]{white-space:nowrap;flex:none}
 .empty{padding:22px 12px;text-align:center;color:var(--pf-soft);font-size:13.5px}
 </style>
 </head>
