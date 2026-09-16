@@ -9,6 +9,7 @@
        토스 /v1/billing/authorizations/issue 로 교환해 빌링키를 받는다. 빌링키 원문은 billing_secrets
        표에만 저장하고(별도 표 · API 응답·로그에 절대 안 싣는다), billing_subscriptions 에는
        has_billing_key=true 만 남는다.
+  GET  /api/billing/config                 카드 등록창 SDK 초기화용 공개 클라이언트 키(TOSS_CLIENT_KEY)만. 없으면 빈 문자열.
   GET  /api/billing/{tenant}               plan·amount·next_charge·status·has_billing_key·최근 청구 이력.
        빌링키 원문 없이.
   POST /api/billing/{tenant}/charge        수동 청구 1회(관리자 콘솔 "지금 청구" 버튼·시험용).
@@ -305,6 +306,14 @@ async def register_billing_key(tenant: str, request: Request):
     except RuntimeError as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
     return result
+
+
+@router.get("/config")
+def billing_config(request: Request):
+    """카드 등록창 SDK(TossPayments(clientKey))에 넣을 공개 가능한 클라이언트 키만 — 시크릿 키는 절대 안 준다."""
+    if _user(request) not in _admins():
+        return JSONResponse({"ok": False, "error": "forbidden"}, status_code=403)
+    return {"ok": True, "client_key": os.environ.get("TOSS_CLIENT_KEY", "")}
 
 
 @router.get("/{tenant}")

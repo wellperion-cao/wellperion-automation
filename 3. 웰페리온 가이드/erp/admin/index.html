@@ -500,6 +500,126 @@
       <span id="ps-msg"></span>
     </div></details>
 
+  <!-- 구독(자동결제) — 토스페이먼츠 빌링 시안 1장 (배 12680 · 2026-09-16 시토 2단계).
+       1단계 서버(api_billing.py)는 이미 있다 — 여기는 그 위에 얹는 화면뿐. 플랜 금액·문구(data-plan 자리)는
+       시보가 채운다(비워 둔다) · 카드번호·빌링키 원문은 이 화면·저장소에 절대 안 실린다(INC-061).
+       카드 등록 흐름: 「카드 등록」 → 토스 결제창(SDK requestBillingAuth) → 이 주소(successUrl)로 authKey 를 달고
+       되돌아옴 → POST .../billing-key 로 서버가 빌링키로 바꿔 저장. -->
+  <h3 style="margin-top:22px">구독(자동결제) <span style="font-weight:400;font-size:12px;color:var(--dim);">토스페이먼츠 빌링 · 카드 한 번 등록하면 매달 1일 자동 청구</span></h3>
+  <div class="meta" id="bl-line">불러오는 중…</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0">
+    <select id="bl-tenant" title="파트너사 — 구독 대상(웰페리온 자신은 과금 대상이 아니라 뺀다)">
+      <option value="2_dietcamp">2호 다이어트캠프</option>
+      <option value="3_gocheokgolf">3호 고척GDR QA 골프존</option>
+    </select>
+    <!-- 묶음(플랜) 두 가지 — 금액·문구는 시보가 data-plan 자리에 채운다. 고른 쪽만 pf-btn.p(진하게). -->
+    <button type="button" class="pf-btn s bl-plan" data-plan="start">스타트<small class="bl-amt" data-plan="start"></small></button>
+    <button type="button" class="pf-btn s bl-plan" data-plan="growth">그로스<small class="bl-amt" data-plan="growth"></small></button>
+    <button type="button" id="bl-register" class="pf-btn p">카드 등록</button>
+    <span id="bl-msg" class="n"></span>
+  </div>
+  <div id="bl-status"><div class="note">불러오는 중…</div></div>
+  <div class="tbl-wrap"><table class="reg" id="bl-charges" style="table-layout:fixed;width:100%">
+    <colgroup><col style="width:66px"><col><col style="width:90px"><col style="width:64px"><col><col style="width:130px"><col style="width:96px"></colgroup>
+    <thead><tr><th>월</th><th>주문번호</th><th>금액</th><th>상태</th><th>오류</th><th>시도 시각</th><th>재시도일</th></tr></thead>
+    <tbody><tr><td colspan="7" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <script>
+  (function(){
+    var API='/api/billing';
+    var tSel=document.getElementById('bl-tenant'), line=document.getElementById('bl-line'), msg=document.getElementById('bl-msg');
+    var statusBox=document.getElementById('bl-status'), chargesBody=document.querySelector('#bl-charges tbody');
+    var planBtns=[].slice.call(document.querySelectorAll('.bl-plan'));
+    var selectedPlan='start', clientKey=null, sdkLoading=null;
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function won(n){ return (n==null||n==='') ? '—' : Number(n).toLocaleString('ko-KR')+'원'; }
+    function markPlan(){ planBtns.forEach(function(b){ b.classList.toggle('p', b.dataset.plan===selectedPlan); b.classList.toggle('s', b.dataset.plan!==selectedPlan); }); }
+    planBtns.forEach(function(b){ b.addEventListener('click', function(){ selectedPlan=b.dataset.plan; markPlan(); }); });
+    markPlan();
+
+    function loadStatus(){
+      var tenant=tSel.value;
+      statusBox.innerHTML='<div class="note">불러오는 중…</div>';
+      chargesBody.innerHTML='<tr><td colspan="7" class="note">불러오는 중…</td></tr>';
+      fetch(API+'/'+tenant+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+        if(!d.subscribed){
+          statusBox.innerHTML='<div class="note">아직 구독 등록 전 — 묶음을 고르고 카드를 등록하세요</div>';
+          chargesBody.innerHTML='<tr><td colspan="7" class="note">이력 없음</td></tr>';
+          return;
+        }
+        statusBox.innerHTML='<div class="pc-row"><span>플랜</span><b>'+esc(d.plan)+'</b></div>'
+          +'<div class="pc-row"><span>월 금액</span><b>'+won(d.amount)+'</b></div>'
+          +'<div class="pc-row"><span>다음 청구일</span><b>'+esc(d.next_charge)+'</b></div>'
+          +'<div class="pc-row"><span>상태</span><b>'+esc(d.status)+'</b></div>';
+        var rows=(d.charges||[]).map(function(c){
+          return '<tr><td>'+esc(c.ym)+'</td><td class="n">'+esc(c.order_id)+'</td><td>'+won(c.amount)+'</td>'
+            +'<td>'+esc(c.status)+'</td><td class="n">'+esc(c.error||'')+'</td><td>'+esc(c.tried_at||'')+'</td><td>'+esc(c.retry_at||'')+'</td></tr>';
+        }).join('');
+        chargesBody.innerHTML = rows || '<tr><td colspan="7" class="note">이력 없음</td></tr>';
+      }).catch(function(e){ statusBox.innerHTML='<div class="note">못 읽었습니다('+e+')</div>'; chargesBody.innerHTML=''; });
+    }
+
+    function ensureSdk(){
+      if(window.TossPayments) return Promise.resolve();
+      if(sdkLoading) return sdkLoading;
+      sdkLoading=new Promise(function(resolve,reject){
+        var s=document.createElement('script');
+        s.src='https://js.tosspayments.com/v1';
+        s.onload=function(){ resolve(); };
+        s.onerror=function(){ reject(new Error('SDK 로드 실패')); };
+        document.head.appendChild(s);
+      });
+      return sdkLoading;
+    }
+    function getConfig(){
+      if(clientKey!==null) return Promise.resolve(clientKey);
+      return fetch(API+'/config',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){ clientKey=d.client_key||''; return clientKey; });
+    }
+
+    document.getElementById('bl-register').addEventListener('click', function(){
+      msg.textContent='';
+      var tenant=tSel.value;
+      getConfig().then(function(key){
+        if(!key){ msg.textContent='키 미설정'; return; }
+        return ensureSdk().then(function(){
+          var tossPayments=window.TossPayments(key);
+          var customerKey='wellperion-'+tenant;
+          var here=location.origin+location.pathname;
+          var successUrl=here+'?billing=success&tenant='+encodeURIComponent(tenant)+'&plan='+encodeURIComponent(selectedPlan);
+          var failUrl=here+'?billing=fail&tenant='+encodeURIComponent(tenant);
+          tossPayments.requestBillingAuth('카드', {customerKey:customerKey, successUrl:successUrl, failUrl:failUrl}).catch(function(e){
+            msg.textContent = (e&&e.code==='USER_CANCEL') ? '취소했습니다' : ('실패 — '+((e&&e.message)||e));
+          });
+        });
+      }).catch(function(){ msg.textContent='SDK 로드 실패'; });
+    });
+
+    tSel.addEventListener('change', loadStatus);
+
+    // successUrl/failUrl 콜백 — 이 화면 자체가 콜백 주소(로그인 벽 안 · 새 공개 라우트 안 연다). 토스가
+    // authKey·customerKey 를 쿼리로 붙여 되돌려 준다.
+    (function handleCallback(){
+      var q=new URLSearchParams(location.search), billing=q.get('billing');
+      if(!billing) return;
+      var tenant=q.get('tenant')||'';
+      if(billing==='fail'){ line.textContent='카드 등록 실패·취소'; history.replaceState(null,'',location.pathname+location.hash); return; }
+      var authKey=q.get('authKey'), customerKey=q.get('customerKey')||('wellperion-'+tenant), plan=q.get('plan')||'start';
+      if(!authKey || !tenant){ return; }
+      line.textContent='카드 등록 처리 중…';
+      fetch(API+'/'+tenant+'/billing-key',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({authKey:authKey, customerKey:customerKey, plan:plan})})
+        .then(function(r){return r.json();}).then(function(d){
+          history.replaceState(null,'',location.pathname+location.hash);
+          if(d.ok){ line.textContent='카드 등록 완료 — 다음 청구일 '+d.next_charge; tSel.value=tenant; loadStatus(); }
+          else { line.textContent='카드 등록 실패 — '+(d.message||d.error||''); }
+        }).catch(function(){ line.textContent='카드 등록 처리 중 오류'; history.replaceState(null,'',location.pathname+location.hash); });
+    })();
+
+    line.textContent='파트너가 카드를 한 번 등록하면 매달 1일 자동 청구됩니다 · 값은 서버에만';
+    loadStatus();
+  })();
+  </script>
+
   <!-- 온보딩 질문·답 누적 (GM 지시 2026-09-15 「질문·답 자료를 다음 파트너사를 위해 정립 · 플랫폼관리에 누적」).
        정본 = server/counselbot/question_bank.json(공통 질문은행) + tenants/{t}_qa.json(업체별 답).
        이 화면은 발행본 data/partner_onboarding.json 만 읽는다 — scripts/partner_onboarding_publish.py 가 만든다. -->
