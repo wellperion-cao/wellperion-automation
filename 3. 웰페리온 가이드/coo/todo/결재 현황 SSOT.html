@@ -293,8 +293,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   #approvalPrintArea .ap{page:ap-port;page-break-after:always;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
   #approvalPrintArea .ap:last-child{page-break-after:auto}
   #approvalPrintArea .ap.ap-l{page:ap-land}
-  #approvalPrintArea .ap img{display:block;max-width:100%;max-height:270mm;width:auto;height:auto;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .ap.ap-l img{max-height:190mm}
+  /* 한 장에 사진+설명줄이 들어가야 한다 — 종전 270mm/190mm 는 설명줄(≈9mm)을 안 세어 가로 사진이 두 장에 걸쳐
+     잘렸다(2026-09-16 GM 「인쇄는 되는데 많이 잘린다」 · 실측 11장 → 15쪽). 용지 높이 − 여백 16mm − 설명줄 = 세로 262 · 가로 176. */
+  #approvalPrintArea .ap{break-inside:avoid;overflow:hidden;max-height:281mm}
+  #approvalPrintArea .ap img{display:block;max-width:100%;max-height:262mm;width:auto;height:auto;object-fit:contain;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .ap.ap-l{max-height:194mm}
+  #approvalPrintArea .ap.ap-l img{max-height:176mm}
   #approvalPrintArea .ap .ap-cap{font-size:11px;color:#444;margin-top:4mm;font-family:"Malgun Gothic",sans-serif}
   #approvalPrintArea .ap-cover{page:ap-port;page-break-after:always;font-family:"Malgun Gothic",sans-serif;color:#111;font-size:14px;line-height:1.7}
   #approvalPrintArea .ap-cover li{word-break:break-all}
@@ -330,6 +334,11 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   /* ── 첨부 사진 인라인 — 이미지 첨부는 문서에 직접 표시(비이미지는 링크). 페이지 넘침 방지 (2026-07-02 시토) ── */
   #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:4px 0}
   #approvalPrintArea .rr-attach-img{display:block;max-width:100%;max-height:360px;object-fit:contain;border:1px solid #bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 진척 로그·본문의 긴 주소가 표를 종이보다 넓게 밀어 오른쪽이 잘렸다(2026-09-16 실측 1086px > 794px) — 표 폭 고정 + 아무 데서나 줄바꿈 */
+  #approvalPrintArea .rr-log-table,#approvalPrintArea .rr-info-table{table-layout:fixed;width:100%}
+  #approvalPrintArea .rr-log-table td,#approvalPrintArea .rr-info-table td,#approvalPrintArea .rr-section-body,#approvalPrintArea .rr-result-box,#approvalPrintArea .rr-doc{overflow-wrap:anywhere;word-break:break-word}
+  #approvalPrintArea .rr-doc table{table-layout:fixed}
+  #approvalPrintArea .rr-page{overflow:hidden}
   #approvalPrintArea .rr-attach-link{font-size:13px;word-break:break-all}
   #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:13.5px}
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
