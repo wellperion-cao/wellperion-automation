@@ -288,6 +288,7 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="attach"] .header,
   body[data-print-mode="attach"] .dash-overlay,
   body[data-print-mode="attach"] #docViewerOverlay{display:none!important}
+  body[data-print-mode="attach"] > *:not(#approvalPrintArea){display:none!important}   /* 안내 띠·커튼 등 나머지 전부 — 첨부 장만 나간다 */
   body[data-print-mode="attach"] #approvalPrintArea{display:block!important}
   #approvalPrintArea .ap{page:ap-port;page-break-after:always;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
   #approvalPrintArea .ap:last-child{page-break-after:auto}
@@ -452,6 +453,8 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
     <div class="doc-viewer-bar">
       <span class="doc-viewer-title" id="docViewerTitle"></span>
       <span style="display:flex;gap:8px;flex-shrink:0;">
+        <button class="doc-viewer-btn" id="docViewerPrintBtn" style="display:none" onclick="printCurrentAttachment()" title="A4 · 가로/세로 자동 · 잘림 없이">🖨 인쇄</button>
+        <a class="doc-viewer-btn ghost" id="docViewerOpenBtn" style="display:none;text-decoration:none" href="#" target="_blank" rel="noopener">↗ 새 탭</a>
         <button class="doc-viewer-btn ghost" onclick="closeDocViewer()">✕ 닫기</button>
       </span>
     </div>
@@ -1046,11 +1049,9 @@ function printApprovalCard(id) {
 
 /* 첨부 전용 인쇄 (GM 지시 2026-09-16). 이미지(drive 는 큰 썸네일 · 서버 업로드는 그대로)는 한 장에 하나,
    불러온 뒤 실제 가로세로로 용지 방향을 정한다. PDF·문서는 그림으로 못 그려 표지에 주소로 남긴다. */
-function printAttachments(id) {
-  var t = (ALL_TASKS || []).filter(function(x){ return String(x.id) === String(id); })[0];
-  if (!t) { alert('해당 건을 찾을 수 없습니다.'); return; }
-  var urls = attachmentUrls(t);
-  if (!urls.length) { alert('첨부가 없습니다.'); return; }
+function printAttachmentImages(title, urls) {
+  var t = { title: title || '' };
+  if (!urls || !urls.length) { alert('첨부가 없습니다.'); return; }
   var imgs = [], docs = [];
   urls.forEach(function (u) {
     var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
@@ -1473,6 +1474,47 @@ function closeDocViewer() {
   document.getElementById('docViewerOverlay').classList.remove('show');
   document.body.style.overflow = '';
   _docViewerTaskId = null;
+  _attachViewer = null;
+  var pb = document.getElementById('docViewerPrintBtn'), ob = document.getElementById('docViewerOpenBtn');
+  if (pb) pb.style.display = 'none';
+  if (ob) ob.style.display = 'none';
+  var paper = document.getElementById('docViewerPaper'); if (paper) { paper.style.padding = ''; paper.style.width = ''; }
+}
+
+/* ── 첨부 뷰어 (GM 지시 2026-09-16 「첨부파일을 클릭하면 우측 상단에 인쇄 버튼 하나 넣어서 인쇄」) ──
+   첨부 칩을 누르면 새 탭 대신 이 뷰어가 뜬다. 사진·서버 PDF 는 안에서 보이고 🖨 인쇄는 A4 에 맞춰
+   (사진 = 가로/세로 자동 용지 · PDF = 크롬 뷰어가 용지에 맞춤). 구글 드라이브는 미리보기 틀로 보이되
+   인쇄는 드라이브가 막아 ↗ 새 탭에서 한다. */
+var _attachViewer = null;
+function openAttachmentViewer(u, title) {
+  var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
+  var isImg = /\.(jpe?g|png|gif|webp|bmp)(\?|#|$)/i.test(u);
+  var isPdf = /\.pdf(\?|#|$)/i.test(u);
+  var kind = m ? 'drive' : isImg ? 'img' : isPdf ? 'pdf' : 'other';
+  _attachViewer = { u: u, kind: kind, title: title || '' };
+  var paper = document.getElementById('docViewerPaper');
+  paper.style.padding = '0'; paper.style.width = 'min(1100px,100%)';
+  var body;
+  if (kind === 'img') body = '<img id="attachViewImg" src="' + escAttr(u) + '" alt="첨부" style="display:block;max-width:100%;height:auto;margin:0 auto">';
+  else if (kind === 'pdf') body = '<iframe id="attachViewFrame" src="' + escAttr(u) + '#toolbar=0" style="width:100%;height:80vh;border:0;display:block"></iframe>';
+  else if (kind === 'drive') body = '<iframe id="attachViewFrame" src="https://drive.google.com/file/d/' + escAttr(m[1]) + '/preview" style="width:100%;height:80vh;border:0;display:block" allow="autoplay"></iframe>';
+  else body = '<div style="padding:40px;text-align:center;color:#333">이 형식은 화면 안에서 못 보여 드립니다 — ↗ 새 탭에서 열어 인쇄해 주세요<br><a href="' + escAttr(u) + '" target="_blank" rel="noopener">' + esc(u) + '</a></div>';
+  paper.innerHTML = body;
+  document.getElementById('docViewerTitle').textContent = '📎 ' + (title || '첨부');
+  var pb = document.getElementById('docViewerPrintBtn'), ob = document.getElementById('docViewerOpenBtn');
+  pb.style.display = (kind === 'img' || kind === 'pdf') ? '' : 'none';
+  ob.style.display = ''; ob.href = u;
+  document.getElementById('docViewerOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function printCurrentAttachment() {
+  if (!_attachViewer) return;
+  if (_attachViewer.kind === 'pdf') {
+    var f = document.getElementById('attachViewFrame');
+    try { f.contentWindow.focus(); f.contentWindow.print(); return; }   // 같은 도메인 PDF — 크롬 뷰어가 A4 에 맞춰 인쇄
+    catch (e) { window.open(_attachViewer.u, '_blank'); return; }
+  }
+  if (_attachViewer.kind === 'img') printAttachmentImages(_attachViewer.title, [_attachViewer.u]);
 }
 /* (2026-07-15 나우열M 확정) 뷰어는 열람 전용 — 인쇄는 카드의 [🖨 업무보고서 인쇄](printApprovalCard) 하나로 일원화. */
 document.addEventListener('keydown', function (e) {
@@ -1713,14 +1755,10 @@ function renderApprovalCard(t, idx) {
       } catch (e) { label = '첨부'; }
       if (label.length > 26) label = label.slice(0, 26) + '…';
       h += '<a class="chip" href="' + escAttr(u) + '" target="_blank" rel="noopener" ' +
-        'onclick="event.stopPropagation();" title="' + escAttr(u) + '" ' +
+        'onclick="event.stopPropagation();event.preventDefault();openAttachmentViewer(\'' + escAttr(u) + '\',\'' + escAttr(t.title || t['업무명'] || '') + ' — ' + escAttr(label) + '\');" title="' + escAttr(u) + '" ' +
         'style="text-decoration:none;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,.45);">' +
         '📎 ' + esc(label) + '</a>';
     });
-    if (_atts.length) {
-      h += '<button class="chip" onclick="event.stopPropagation();printAttachments(\'' + escAttr(t.id) + '\')" title="첨부 사진을 한 장에 하나씩 A4 로 · 가로 사진은 가로 용지" ' +
-        'style="cursor:pointer;font-family:inherit;background:transparent;color:var(--dim);border:1px dashed var(--border);">🖨 첨부 인쇄</button>';
-    }
     h += '</div>';
   }
 
