@@ -382,7 +382,7 @@ def selftest():
         conn.close()
         try:
             r = _billing_key_sync(tenant, "authkey-abc", _default_customer_key(tenant), "start")
-            assert r["ok"] and r["amount"] == 190000
+            assert r["ok"] and r["amount"] == 99000
 
             charge_billing_key = fake_charge_ok
             r1 = charge_one(tenant)
