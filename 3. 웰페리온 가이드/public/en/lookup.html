@@ -30,7 +30,8 @@ html,body{margin:0!important;padding:0!important;background:#0d0d12!important;ov
 html{scrollbar-width:none!important;touch-action:pan-x pan-y}
 body{scrollbar-width:none!important}
 html::-webkit-scrollbar,body::-webkit-scrollbar{width:0!important;height:0!important}
-#ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important}
+#ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important;max-width:none!important;width:100%!important}
+#wlp-lk{width:100%} /* 2026-09-16 GM 지적 — 넓은 화면에서 테마 컨테이너(1425px·좌측 고정)에 갇혀 왼쪽으로 쏠림 · 한글판(wp_lookup_block.html)과 같게 */
 #footer-outer,#footer-widgets,.footer-outer,#footer-outer .row{display:none!important}
 .wpb_row,.vc_row,.wpb_column,.vc_column_container,.wpb_wrapper,.wpb_text_column,.wpb_raw_html,.vc_column-inner{margin:0!important;padding:0!important}
 #wlp-lk .kiosk{width:100%;max-width:820px;padding:28px 22px 40px;display:flex;flex-direction:column}
