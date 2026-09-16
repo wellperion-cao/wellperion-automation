@@ -51,6 +51,9 @@ PREFIX_RE = re.compile(r"^(?:[▶▸·□☑✅\-\s]|\[[^\]]*\]|\([^)]*\d{4}-\d{
 TAIL_RE = re.compile(r"\s*[—\-·]?\s*담당\s*[:：].*$|\s*[—\-·]?\s*기한\s*[:：].*$|\s*\(~?\d{1,2}/\d{1,2}\)\s*$")
 NUMBERED_RE = re.compile(r"^\d+(?:-\d+)?\)\s*")
 SYS_KW = re.compile(r"시스템|자동화|체계|ERP|AWS|서버|자동|보고 루틴|랩스|플랫폼")
+# AI 살림 문장(큐·카드 정리 얘기)은 회의 종이에 안 싣는다 — 걸리면 그 카드의 다음 후보 줄로(3판 · 팀장 지시)
+HOUSEKEEPING = re.compile(r"배 \d+|큐에서|카드로 합치|합치고 삭제|목표 칸|화면에 안 실렸|note|원문 =|이력\.md|gm_handoff|시우 제안값|채웠다|기록 묶음|주장 중")
+PERSON_OWNER = re.compile(r"^[가-힣]{2,4}\s?(실장|소장|원장|팀장|고문|M|AM|사원|주임|프로)님?$")  # 미회신 사람별 — 비정형 owner(AI·두 사람 묶음)는 뺀다
 
 
 def esc(s) -> str:
@@ -145,7 +148,8 @@ def note_lines(note: str) -> list[tuple[dt.date | None, str]]:
 def latest_lines(card: dict, today: dt.date, n: int = 1, prefer_numbers: bool = False) -> tuple[dt.date | None, list[str]]:
     """최신 날짜 줄부터 n개 정제 절. prefer_numbers = 숫자·날짜 든 줄을 앞세운다(진행 표 「현재」)."""
     dated = sorted(((d, l) for d, l in card["_lines"] if d and d <= today), key=lambda x: x[0], reverse=True)
-    pool = [l for _, l in dated] or [l for _, l in card["_lines"]] or [card.get("target") or "미정"]
+    pool = [l for _, l in dated] or [l for _, l in card["_lines"]]
+    pool = [l for l in pool if not HOUSEKEEPING.search(l)] or [card.get("target") or "미정"]
     if prefer_numbers:
         pool = sorted(pool[:6], key=lambda l: not re.search(r"\d", clause(l)))
     out: list[str] = []
@@ -383,7 +387,7 @@ def build(since: dt.date, today: dt.date, now: dt.datetime, log) -> tuple[dict, 
     # 3열 — 📋 중간관리자 미회신(사람별)
     open_by: dict[str, list[int]] = {}
     for d, it in ledger.values():
-        if it.get("status") == "open":
+        if it.get("status") == "open" and PERSON_OWNER.match(it.get("owner") or ""):
             ref = parse_date(it.get("sent_at")) or parse_date(d) or today
             open_by.setdefault(it.get("owner") or "담당 미정", []).append((today - ref).days)
     mgr_li = [f'<li><span class="k">{esc(nim(o))}</span> {len(v)}건 · 최장 {max(v)}일</li>'
