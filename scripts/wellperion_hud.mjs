@@ -950,7 +950,9 @@ function buildLine(cwd, role, transcript, sessionId) {
       // ③ 방금 끝냄 — ★'GM답 기다림'이 아니라 **방금 무엇을 했는지**를 적는다
       //    (GM 2026-08-11 "GM답 기다림 11:56부터 · 진행7척 · 다음 25… 이런건 의미가없고 답답하네").
       //    GM 이 창을 볼 때 알고 싶은 건 '내 답을 기다린다'가 아니라 '방금 뭘 했나'다.
-      time = `${D}·${X}${D}방금${X}${lastWork(cwd, role)} ${D}${when}${X}`;
+      // ★💬 표식을 되살린다(GM 2026-09-16 「상태 표시(🟢/💬/⏸)가 없다」) — 08-11 에 문구를 '방금 한 일'로
+      //   바꾸면서 세 상태 중 이 칸만 기호가 떨어져 GM 눈에 '상태 없는 줄'로 보였다. 뜻은 그대로: 내 차례 끝.
+      time = `${D}·${X}💬${D}방금${X}${lastWork(cwd, role)} ${D}${when}${X}`;
     }
   } else if (bg) {
     // ★transcript 를 못 읽어도(유실 등) 배경 에이전트가 실측으로 살아있으면 대기로 보이면 안 된다.
@@ -959,7 +961,8 @@ function buildLine(cwd, role, transcript, sessionId) {
     const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
     time = `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
   } else if (lc) {
-    time = `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
+    // 세션 기록을 못 읽은 채 마지막 커밋만 아는 상태 — 기호 없이 시간만 두면 '상태 없음'으로 읽힌다.
+    time = `${D}·${X}💬${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
   }
 
   // 선택부(접히는 순서의 역순으로 정의) — ③🆕 ④대기 목록 ⑤오늘🏁 ⑥전사 막힌 것 우선.
