@@ -1681,6 +1681,90 @@ def sync_ledger_replies(target_date: str, ledger: list) -> list:
     return touched
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 📥 실장·소장 앞 개별 통 원장 자동 등록 (GM 지시 2026-09-16 배12682 ③ · 웰리 실측
+# — 지난 7일 개별 통 27건이 원장 기록 0이라 07:50 리마인드·회신 매칭 밖에 있었다).
+# kakao_report_sender.send_message_to_room 이 ★중간관리자 방으로 텍스트 발신에
+# 성공한 직후 이 함수를 부른다. 새 원장·새 쓰기 경로를 만들지 않는다(약속 L21) —
+# 번호는 assign_ledger_no(ops_daily_digest, max+1), 저장은 save_ledger(path=MGR_LEDGER)
+# 그대로 재사용한다(register_delivery_asks·sync_ledger_replies 와 동일 패턴).
+# ══════════════════════════════════════════════════════════════════════════
+_MGR_REPLY_HAIL_OWNERS = (("이경연 실장님", "이경연 실장"), ("이정헌 소장님", "이정헌 소장"))
+_MGR_REPLY_AUTO_HEADS = ("🌅", "🌙", "📊", "📞", "📮", "🧾")   # 우리 자동 통 표제 — 이 건 대상 아님
+
+
+def register_manager_reply(text: str, sent_at: str, source: str = "kakao_sent") -> "int | None":
+    """★중간관리자 방으로 나간 글이 실장·소장 앞 개별 통이면 원장에 kind=reply 로 등록하고
+    번호(no)를 돌려준다. 대상이 아니면(호명 없음·우리 자동 통 표제) None — 호출측은 발신
+    결과와 무관하게 이 함수를 try/except 로 감싸 부른다(등록 실패가 발신 성공을 덮으면
+    안 된다). 같은 날 같은 첫 줄(60자)이 이미 등록돼 있으면 새로 만들지 않고 기존 번호를
+    그대로 돌려준다(재시도·재기동으로 중복 등록되는 것을 막는다)."""
+    lines = [ln.strip() for ln in str(text or "").splitlines() if ln.strip()]
+    head = lines[0] if lines else ""
+    if any(head.startswith(h) for h in _MGR_REPLY_AUTO_HEADS):
+        return None
+    owner = next((o for hail, o in _MGR_REPLY_HAIL_OWNERS if head.startswith(hail)), None)
+    if not owner:
+        return None
+
+    title = head[:60]
+    today = str(sent_at)[:10]
+    ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8")) if MGR_LEDGER.exists() else []
+    entry = next((e for e in ledger if isinstance(e, dict) and e.get("date") == today), None)
+    if entry:
+        dup = next((it for it in entry.get("issues") or [] if it.get("issue") == title), None)
+        if dup and isinstance(dup.get("no"), int):
+            return dup["no"]
+
+    issue = {"issue": title, "owner": owner, "status": "open", "kind": "reply",
+              "sent_at": sent_at, "source": source}
+    from ops_daily_digest import assign_ledger_no, save_ledger
+    assign_ledger_no(ledger, [issue])
+    if entry is None:
+        entry = {"date": today, "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                  "source_file": source, "issues": []}
+        ledger.append(entry)
+        ledger.sort(key=lambda e: str(e.get("date", "")))
+    entry.setdefault("issues", []).append(issue)
+    save_ledger(ledger, path=MGR_LEDGER)
+    return issue["no"]
+
+
+def _selfcheck_register_manager_reply() -> None:
+    """호명 있는 개별 통 → 등록됨 · 우리 자동 통 표제 → 등록 안 됨. 임시 원장 파일로
+    돌며 실제 _digest_ledger.json 은 건드리지 않는다."""
+    import tempfile
+    global MGR_LEDGER
+    orig = MGR_LEDGER
+    with tempfile.TemporaryDirectory() as td:
+        MGR_LEDGER = Path(td) / "_digest_ledger.json"
+        try:
+            no1 = register_manager_reply(
+                "홍길동 실장님 — 가짜 요청 확인 부탁드립니다.\n둘째 줄.",
+                sent_at="2026-09-16 10:44:18")
+            assert no1 is None, "정의된 호칭(이경연 실장님/이정헌 소장님)이 아니면 등록 안 함"
+
+            no2 = register_manager_reply(
+                "이경연 실장님, GM 요청 한 가지 — 최대한 빠르게 부탁드립니다.\n▪ 통신이용증명서 1부",
+                sent_at="2026-09-16 10:44:18")
+            assert isinstance(no2, int), "호명 있는 개별 통은 등록돼야 함"
+            ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+            issue = ledger[0]["issues"][0]
+            assert issue["owner"] == "이경연 실장" and issue["kind"] == "reply"
+
+            no2_again = register_manager_reply(
+                "이경연 실장님, GM 요청 한 가지 — 최대한 빠르게 부탁드립니다.\n▪ 통신이용증명서 1부",
+                sent_at="2026-09-16 11:00:00")
+            assert no2_again == no2, "같은 날 같은 첫 줄 재발신은 새 번호를 만들지 않음"
+
+            no3 = register_manager_reply("🌅 하루의 시작 — 아직 안 끝난 접수 2건",
+                                         sent_at="2026-09-16 07:50:00")
+            assert no3 is None, "우리 자동 통 표제는 등록 안 함"
+        finally:
+            MGR_LEDGER = orig
+    print("[selfcheck] register_manager_reply 호명등록·자동통제외·같은날중복방지 OK")
+
+
 def _selfcheck_sync_ledger_replies() -> None:
     """#no 매칭 — 완료 낱말 있으면 resolved+note, 없으면 note 만, 매칭 없는 번호·회신
     없는 issue 는 안 건드림, 한 회신에 번호 여럿이면 각각 반영. 네트워크 없이 돈다.
@@ -4154,6 +4238,7 @@ def main() -> int:
         _selfcheck_reply_match()
         _selfcheck_own_broadcast_log_match()
         _selfcheck_weekly_meeting()
+        _selfcheck_register_manager_reply()
         return 0
 
     if args.weekly_intake:

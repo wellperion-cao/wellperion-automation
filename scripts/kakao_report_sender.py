@@ -2181,6 +2181,17 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
             raise RuntimeError(
                 f"[{room_name}] 보냈다는 기록을 logs/kakao_sent-*.log 에 남기지 못했다 — "
                 f"기록이 없으면 나갔는지 셀 수 없어 성공으로 적지 않는다")
+        if room_name == _VIA_MANAGER_ROOM:
+            # ★중간관리자 실장·소장 앞 개별 통을 원장에 kind=reply 로 자동 등록(GM 지시
+            # 2026-09-16 배12682 ③) — 등록 실패가 이미 나간 발신 성공을 덮으면 안 되므로
+            # 여기서 예외를 삼킨다(로그만).
+            try:
+                from send_ops_digest import register_manager_reply
+                _no = register_manager_reply(text, sent_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                if _no:
+                    log(f"[{room_name}] 원장 등록 #{_no} (kind=reply)")
+            except Exception as exc:
+                log(f"[{room_name}] 원장 등록 실패(발신 결과엔 영향 없음): {exc}")
         return True, ""
     finally:
         # 성공이든 예외든 방 창은 닫는다(GM 지시 2026-09-09) — close_room_window 자체가
