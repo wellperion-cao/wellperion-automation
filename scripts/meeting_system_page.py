@@ -193,6 +193,29 @@ h3{{margin:26px 0 0;font-size:15px;font-weight:900;color:var(--navy)}}
 """
 
 
+def next_round(led: dict, meeting: str) -> dict | None:
+    """그 회의의 다음(완료 아닌 · ym 가장 이른) 회차 — 없으면 None."""
+    todo = [r for r in led.get("rounds", []) if r.get("meeting") == meeting and r.get("status") != "완료"]
+    todo.sort(key=lambda r: r.get("ym", ""))
+    return todo[0] if todo else None
+
+
+def reminder_verdict(meeting: str, rnd: dict) -> tuple[bool, str]:
+    """리마인드가 나가야 하나 — 화면 「알림(원장에서 파생)」 절과 monthly_meeting_reminders.py 가 같이 쓰는 판정 하나(순수 함수).
+    중간회의(mid) = 날짜가 비어 있으면 나감. 결산 회의(closing) = 「리더별 결산 한 장」 체크 중 미제출이 있으면 나감(날짜 미정도 나감).
+    돌려주는 값 = (나감 여부, 사람이 읽는 이유)."""
+    if not rnd.get("date"):
+        return True, "날짜 미정"
+    checks = rnd.get("checks", {}) or {}
+    if meeting == "closing":
+        missing = [k for k, v in checks.items() if k.startswith("리더별 결산 한 장") and not v]
+        if missing:
+            return True, f"리더별 결산 한 장 미제출 {len(missing)}건"
+        return False, "날짜 확정 · 리더별 결산 한 장 제출 완료"
+    open_n = sum(1 for v in checks.values() if not v)
+    return (False, "날짜 확정 · 준비 완료") if not open_n else (False, f"날짜 확정 · 남은 준비 {open_n}건(리마인드 대상 아님)")
+
+
 def build(led: dict, sched: dict, now: dt.datetime) -> str:
     today = now.date()
     due = schedule_due(sched)
@@ -209,13 +232,9 @@ def build(led: dict, sched: dict, now: dt.datetime) -> str:
             continue
         rnd = todo[0]
         current.append(round_card(mt, rnd, today, due))
-        open_n = sum(1 for v in rnd.get("checks", {}).values() if not v)
-        if not rnd.get("date"):
-            alerts.append(f'<div class="kv"><span class="k red">나감</span>{esc(mt["name"])} {esc(rnd["ym"])} — 날짜 미정</div>')
-        elif open_n:
-            alerts.append(f'<div class="kv"><span class="k red">나감</span>{esc(mt["name"])} {esc(rnd["ym"])} — 자료 미제출 {open_n}건</div>')
-        else:
-            alerts.append(f'<div class="kv"><span class="k ok">안 나감</span>{esc(mt["name"])} {esc(rnd["ym"])} — 날짜 확정 · 준비 완료</div>')
+        verdict, why = reminder_verdict(key, rnd)
+        cls = "red" if verdict else "ok"
+        alerts.append(f'<div class="kv"><span class="k {cls}">{"나감" if verdict else "안 나감"}</span>{esc(mt["name"])} {esc(rnd["ym"])} — {esc(why)}</div>')
 
     past_rows = []
     for r in sorted([x for x in rounds if x.get("status") == "완료"], key=lambda x: x.get("date") or x.get("ym"), reverse=True):
@@ -281,6 +300,13 @@ def _selfcheck() -> None:
     assert date_cell({"date": "", "date_status": "미정", "window_start": "2026-10-15"}, today)[1] == "red"
     assert date_cell({"date": "", "date_status": "미정", "window_start": "2026-11-15"}, today)[1] == "mute"
     assert checks_html({"checks": {"a": True, "b": False}})[1:] == (1, 2)
+    # 리마인드 판정(화면·monthly_meeting_reminders 공용)
+    assert reminder_verdict("mid", {"date": ""})[0] is True
+    assert reminder_verdict("mid", {"date": "2026-10-16", "checks": {"회의 요약 A3 준비": False}})[0] is False
+    assert reminder_verdict("closing", {"date": "2026-10-01", "checks": {"리더별 결산 한 장 — 이경연 실장님": False, "녹음 파일": False}}) == (True, "리더별 결산 한 장 미제출 1건")
+    assert reminder_verdict("closing", {"date": "2026-10-01", "checks": {"리더별 결산 한 장 — 이경연 실장님": True}})[0] is False
+    led = {"rounds": [{"meeting": "mid", "ym": "2026-11", "status": "준비중"}, {"meeting": "mid", "ym": "2026-10", "status": "준비중"}, {"meeting": "mid", "ym": "2026-09", "status": "완료"}]}
+    assert next_round(led, "mid")["ym"] == "2026-10" and next_round(led, "closing") is None
     print("selfcheck ok")
 
 
