@@ -21,6 +21,7 @@ import sys
 
 HOME = os.path.expanduser("~")
 STATE_DIR = os.path.join(HOME, ".claude", "rc_account_watch")
+RC_ACCOUNT = "cao@wellperion.com"   # 원격제어를 붙이는 유일한 계정(GM 2026-09-16) — 다른 계정 전환은 조용히
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -58,11 +59,14 @@ def main():
             with open(sp, "w", encoding="utf-8") as f:
                 json.dump({"email": email}, f)
         return 0
-    # 계정이 바뀌었다 — 안내 한 줄만(GM 2026-09-15 · 자동 창 없음)
+    # 계정이 바뀌었다 — 기록만 갱신.
     with open(sp, "w", encoding="utf-8") as f:
         json.dump({"email": email, "prev": prev}, f)
-    print("[원격제어] 로그인 계정이 %s → %s 로 바뀌어 원격제어가 끊겼다. 핸드폰에서 이어 보려면 이 창에서 /rc 한 줄."
-          % (prev, email))
+    # ★2026-09-16 GM 「계정 변경될 때 /rc 안 해도 돼 · 그냥 cao 계정 rc 만 되어 있으면 돼」
+    #   원격제어는 cao@ 계정 하나에만 붙인다. 다른 계정(info@·lessons@)으로 바뀐 때는 아무 말도 하지 않고,
+    #   cao@ 로 돌아온 때만 한 줄 — 그때가 /rc 를 다시 붙일 자리다.
+    if email.lower() == RC_ACCOUNT:
+        print("[원격제어] cao 계정으로 돌아왔다 — 핸드폰에서 이어 보려면 이 창에서 /rc 한 줄.")
     return 0
 
 
