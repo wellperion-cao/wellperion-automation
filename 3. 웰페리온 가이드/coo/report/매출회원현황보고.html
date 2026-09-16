@@ -398,7 +398,7 @@
 <body>
 
 <div class="bar">
-  <b>매출 및 회원 현황 보고 (A3 1장)</b>
+  <b>매출 및 회원 현황 보고</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <a href="../../월간운영계획.html">📋 전 부서 보고 사항 (월간운영계획) ↗</a>
@@ -1789,10 +1789,15 @@ var P4_TEAM_STARTS = [
   ['김상식', 'P.T팀'], ['최은지', 'P.L팀'], ['이상훈', '스쿼시팀'], ['김태엽', '골프팀'],
   ['박민서', '수영팀'], ['이형주', '체조팀'], ['뮤지컬', '뮤지컬팀'], ['GXE', 'GXE팀'], ['루프 메소드', 'GXE팀']
 ];
+/* 줄을 싣지 않는 담당(GM 지시 2026-09-16 「골프팀 최현준은 그만두었어 · 유승용도 빼도 될 것 같아」).
+   시트 일자탭 O열에는 그 줄이 그대로 있으므로 금액(환불 정산 포함)은 팀 합에 남기고 이름 줄만 감춘다 —
+   시트에서 줄을 지우는 것은 실장 몫이고, 지워지면 이 표도 저절로 비워진다. */
+var P4_HIDE = { '최현준': '퇴직', '유승용': '제외' };
 function p4Teams(rows){
   var teams = [], cur = null;
   rows.forEach(function(x){
     if (x.sum) return;
+    if (P4_HIDE[x.name]) x.hide = true;
     for (var i = 0; i < P4_TEAM_STARTS.length; i++) {
       if (x.name === P4_TEAM_STARTS[i][0]) {
         var nm = P4_TEAM_STARTS[i][1];
@@ -1816,10 +1821,12 @@ function p4TeamTable(heads, teams){
     var cols = [0, 1, 2, 3].map(function(i){ return t.rows.reduce(function(a, x){ return a + p4Num(x.cols[i]); }, 0); });
     var acc = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
     var solo = t.rows.length === 1 && P4_TEAM_STARTS.some(function(x){ return x[0] === t.rows[0].name && x[0] === x[1].replace('팀', ''); });
-    var head = '<tr class="sum p4team" data-team="' + esc(t.name) + '"><td>' + esc(t.name) + (solo ? '' : ' <span class="p4n">' + t.rows.length + '명</span>') + '</td>' +
+    var shown = t.rows.filter(function(x){ return !x.hide; });
+    var hidden = t.rows.filter(function(x){ return x.hide && p4Num(x.acc); }).map(function(x){ return x.name + '(' + P4_HIDE[x.name] + ') ' + x.acc; });
+    var head = '<tr class="sum p4team" data-team="' + esc(t.name) + '"' + (hidden.length ? ' title="합에 포함: ' + esc(hidden.join(' · ')) + '"' : '') + '><td>' + esc(t.name) + (solo ? '' : ' <span class="p4n">' + shown.length + '명</span>') + (hidden.length ? ' <span class="p4n">+정산 ' + hidden.length + '</span>' : '') + '</td>' +
       cols.map(function(v){ return '<td class="' + (v ? '' : 'zero') + '">' + v.toLocaleString('ko-KR') + '</td>'; }).join('') +
       '<td class="acc">' + acc.toLocaleString('ko-KR') + '</td><td class="ss sd">—</td><td class="ss sm">—</td></tr>';
-    return head + t.rows.map(function(x){
+    return head + shown.map(function(x){
       return '<tr data-who="' + esc(x.name) + '"><td class="p4who">' + esc(x.name) + '</td>' +
         x.cols.map(function(v){ return '<td class="' + (v === '0' ? 'zero' : '') + '">' + esc(v) + '</td>'; }).join('') +
         '<td class="acc">' + esc(x.acc) + '</td><td class="ss sd">—</td><td class="ss sm">—</td></tr>';
@@ -2449,14 +2456,17 @@ function parseActions(d){
   if (!d || !d.detail) return null;
   function pick(re){ var m = re.exec(String(d.detail)); return m ? parseInt(m[1].replace(/,/g, ''), 10) : null; }
   var kst = String(d.generated_at_kst || '');
-  var n = new Date();
-  var today = n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2) + '-' + ('0' + n.getDate()).slice(-2);
+  /* 집계는 매일 09:10 에 새로 쓰이고 이 화면은 09:00 에 찍힌다 — 그 시각의 최신값은 어제 09:10 분이 맞다.
+     「오늘 값」 기준이면 매일 아침 헛경보(GM 2026-09-16 「이것도 스스로 보완해 줄 순 없나」).
+     낡음 = 하루치 실행이 빠진 것(26시간 초과)으로 잰다. */
+  var gen = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/.exec(kst);
+  var ageH = gen ? (Date.now() - new Date(+gen[1], +gen[2] - 1, +gen[3], +gen[4], +gen[5]).getTime()) / 3600000 : Infinity;
   return {
     noContact: pick(/미컨택\s*([0-9,]+)\s*건/),
     todayResv: pick(/오늘예약\s*([0-9,]+)\s*건/),
     lossPrev : pick(/LOSS\s*예방\s*대상[^0-9]*([0-9,]+)\s*건/),
     at: kst,
-    stale: kst.indexOf(today) !== 0      // 오늘 잰 값이 아니면 화면에 그렇다고 밝힌다
+    stale: ageH > 26      // 하루치 집계가 빠졌으면 화면에 그렇다고 밝힌다
   };
 }
 
@@ -2643,7 +2653,7 @@ function runAudit2(){
     el.innerHTML = '<b>⛔ 조회 실패 ' + missed.length + '/' + SRC.length + '건</b> · 못 읽음: ' + missed.join(' · ');
   } else {
     var warn = (RAW2.__actions && RAW2.__actions.stale)
-      ? ' <span class="w">· 주의 — 문의 집계가 오늘 값이 아닙니다(' + esc(RAW2.__actions.at) + ')</span>' : '';
+      ? ' <span class="w">· 주의 — 문의 집계가 하루 넘게 안 돌았습니다(마지막 ' + esc(RAW2.__actions.at) + ')</span>' : '';
     el.className = 'audit ok';
     el.innerHTML = '<b>✅ 자체 점검 ' + (SRC.length - (warn ? 1 : 0)) + '/' + SRC.length + ' 통과</b> — 회원관리 ERP 3개와 문의 원장 둘·아침 문의 집계를 ' + at + ' 에 확인했습니다' + warn;
   }
