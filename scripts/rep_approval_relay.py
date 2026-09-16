@@ -138,8 +138,11 @@ def _save_notified(key: str, merged: dict[str, str], detail: str) -> None:
 
 
 def pick_new(rows: list[dict], notified: dict[str, str], col: str = "대표싸인") -> list[dict]:
-    """서명이 찍혔는데 아직 전달 안 한 건 — 수정일(서명이 수정일을 갱신) 오름차순."""
-    new = [r for r in rows if is_signed(r, col) and str(r.get("id") or "").strip() not in notified]
+    """서명이 찍혔는데 아직 전달 안 한 건 — 수정일(서명이 수정일을 갱신) 오름차순.
+    상태=완료 행은 뺀다 — 끝난 일에 「진행·결과보고서」 전달이 나가면 오독이다(2026-09-16 12:27 ★중간관리자 사고:
+    9/15 완료된 「홈페이지 자주 묻는 질문」이 GM 최종승인 뒤 옛 코드로 전달됨 · 웰리 정정 1통)."""
+    new = [r for r in rows if is_signed(r, col) and str(r.get("상태") or "").strip() != "완료"
+           and str(r.get("id") or "").strip() not in notified]
     return sorted(new, key=lambda r: str(r.get("수정일") or ""))
 
 
@@ -713,6 +716,8 @@ def _selfcheck() -> None:
     # ① GM 절 — 둘 다 있으면 한 통 두 절, 같은 건은 대표님 절에만, GM 만 있으면 제목이 GM
     gm = [dict(rows[1], GM싸인="2026-09-03 10:00 (페이지)"), dict(rows[0])]
     assert [r["id"] for r in pick_new(gm, {}, "GM싸인")] == ["B"]   # A 는 GM싸인 없음
+    assert pick_new([{"id": "D", "대표싸인": "https://x/서명.png", "상태": "완료", "수정일": "2026-09-16"}], {}) == []   # 완료 행은 전달 안 함
+    assert pick_new([{"id": "E", "대표싸인": "GM종결", "수정일": "2026-09-16"}], {}) == []   # GM 최종승인은 대표 서명 아님
     msgs = build_messages([rows[0]], gm, today="2026-09-03")
     lines = msgs[0].splitlines()
     assert lines[0] == "📋 9/3 대표님·GM 결재 완료 2건" and lines[1] == "🤵 대표님" and lines[2] == "▪ 갑 — 이경연 실장 · 직접 진행", lines
