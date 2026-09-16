@@ -719,7 +719,7 @@
          GM: "ERP모듈 바로가기는 이제 의미없을 것 같긴해" — 같은 링크가 사이드바·각 허브·여기 셋에 있었다.
          ▸대신 왼쪽 AI C-Level 메뉴를 누르면 그 역할의 허브(T1·M1·O1·P1)로 바로 간다.
          ▸링크 유실 0 을 전수 대조로 확인했다(15종). 이 그리드에만 있던 2건은 옮겼다 —
-           브로제이 CRM → P1 회원 통합 체계 · 매출현황(구) → F1 재무 허브.
+           브로제이 CRM → P1 회원 관리 체계 · 매출현황(구) → F1 재무 허브.
          ▸인사 카드의 정적 KPI 6숫자(2026-06-22 스냅샷·66일 묵음)는 H2 인사 허브의 실시간 배선이 대신한다.
            그 카드에 있던 id="ps-caption-top" 중복도 함께 해소된다(H2 psSet 이 홈 카드 캡션을 건드리던 겹침).
          ▸되살려야 하면 git 이력에서 본다. -->
@@ -7150,50 +7150,127 @@ function crTab(btn, panelId) {
     </script>
   </article>
 
-  <!-- ══ P1: 회원 통합 체계 (2026-08-26 GM 지시 — "AI C-LEVEL 메뉴칸을 클릭했을 때 각각 정리가 되는
-       페이지를 기준으로 하위탭 이동", "AI COO 운영 클릭하면 운영 통합체계가 나오는 것처럼")
-       ★새 파일이 아니다 — O1·M1·H2·F1 과 같은 방식의 이 파일 안 article 이다.
-       CPO 만 내부 허브가 없어 서브메뉴가 전부 외부 새창이었다(클릭해서 랜딩할 곳이 없었다).
-       스크립트 0줄 — 숫자는 각 대상 페이지가 이미 갖고 있고, 여기는 설명과 문만 둔다(O1 원칙 "카드 = 문"). ══ -->
+  <!-- ══ P1: 회원 관리 체계 (2026-08-26 GM 지시 허브 · 2026-09-16 GM 지시로 재정리 —
+       "왼쪽 메뉴 4개(상품 기획·멤버십 회원관리·강습 회원관리·브로제이 CRM)와 같은 카드 4개만,
+        카드를 기준으로 안내 정리 · 문의 현황은 카드 대신 이 페이지 안 대시보드(일/월/연 × 종목)".
+       ▸종합접수처는 운영 관리(O1) 소관이라 뺐다. 실무진 피드백은 각 화면 안 버튼이 담당한다.
+       ▸카드 = 문. 화면들은 그대로 독립 유지. 문의 대시보드 원천 = /repo/status/inquiry_snapshot_*.json
+        (멤버십 회원관리 화면과 같은 스냅샷 · erp 도메인에서만 값이 붙고 Pages 에서는 「아직 없음」). ══ -->
   <article class="doc" id="P1">
-    <div class="doc-header"><h2>회원 통합 체계</h2><div class="meta">CPO 회원 SSOT · 문의 → 등록 → 이용 → 재등록</div></div>
+    <div class="doc-header"><h2>회원 관리 체계</h2><div class="meta">문의 → 등록 → 이용 → 재등록 · 담당 임정은M · AI 시포</div></div>
 
-    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
-      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · CPO 회원 허브</div>
-      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">한 분의 회원이 <span style="color:var(--text);">문의 → 등록 → 이용 → 재등록</span>까지 어디쯤 계신지를 한 흐름으로 보는 곳입니다.</div>
-      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">화면마다 흩어져 있던 것을 한 자리에 모았습니다. <strong>지금 손이 필요한 분</strong>(회신 안 간 문의·만료 임박·휴회)이 먼저 보이고, 그 자리에서 담당 화면으로 바로 들어갑니다.</div>
-      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
-        <div>🔗 <strong style="color:var(--text);">카드 = 문</strong> — 각 칸이 그 화면으로 가는 입구입니다. 화면들은 그대로 독립 유지(흡수 아님).</div>
-        <div>🚫 <strong style="color:var(--text);">가짜 숫자 없음</strong> — 못 센 것은 0 이 아니라 '아직 없음'으로 적습니다.</div>
-        <div>👤 <strong style="color:var(--text);">담당</strong> — 임정은M(회원·CS) · AI CPO 시포</div>
+    <p class="lead" style="margin:10px 0 14px;">한 분의 회원이 문의부터 재등록까지 어디쯤 계신지를 아래 화면 4개로 봅니다. 실무진 일상 작업은 <strong>멤버십·강습 회원관리</strong> 두 화면에서 하고, 시트는 쓰지 않습니다. 화면에서 불편한 점은 그 화면 안 「실무진 피드백」 버튼으로 남기면 다음 영업일 안에 고쳐 같은 자리에 답합니다.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 22px;">
+      <a href="cpo/product/상품기획.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🏷️ 상품 기획</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">회원권·강습 상품 구성과 가격 기준. 등록 화면의 상품 목록은 여기서 정한 것을 따릅니다.</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--text);margin-top:6px;line-height:1.6;">👉 상품·가격을 바꾸거나 새 상품을 낼 때 먼저 엽니다.</span></a>
+
+      <a href="cpo/member/membership.html?manage=membership" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">📋 멤버십 회원관리</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">멤버십 문의 접수 → 상담·투어 → 등록 → 유효회원 → 만료·휴회·재등록까지 한 화면. 연락 기록·진행 상태도 이 안에 남깁니다.</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--text);margin-top:6px;line-height:1.6;">👉 새 문의 회신, 회원 등록·만료 처리, 재등록 안내 — 매일 여는 화면입니다.</span></a>
+
+      <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🏃 강습 회원관리</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">성인·유소년 강습 문의와 등록 원장. 종목·횟수·유효기간·담당 코치를 봅니다.</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--text);margin-top:6px;line-height:1.6;">👉 강습 문의 배정·연락 기록, 강습 등록·연장 처리 때 엽니다.</span></a>
+
+      <a href="https://crm.broj.co.kr/" target="_blank" rel="noopener" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🚪 브로제이 CRM ↗</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">얼굴인증 출입·스마트 락커·결제 원천(외부 시스템). 출입·결제 사실은 여기가 정본입니다.</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--text);margin-top:6px;line-height:1.6;">👉 출입 이력·결제 내역·락커 배정을 확인하거나 매출분류를 설정할 때 엽니다.</span></a>
+    </div>
+
+    <!-- 문의 현황 대시보드 — 화면 계산 없음: 스냅샷 두 개(멤버십·강습)를 받아 세기만 한다.
+         일 = 오늘 · 월 = 이번 달 · 연 = 올해(KST). 종목 = 멤버십은 프로그램명 앞부분, 강습은 종목명 앞부분. -->
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:16px 20px;margin:0 0 8px;">
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <div style="font-size:var(--fs-3);font-weight:800;color:var(--text);">📮 문의 현황 — 종목별 접수 건수</div>
+        <div id="p1-inq-meta" style="font-size:var(--fs-1);color:var(--dim);">불러오는 중…</div>
+        <a href="cpo/문의현황.html" target="_blank" style="margin-left:auto;font-size:var(--fs-1);color:var(--dim);text-decoration:none;">전환율·예약까지 보기 →</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="p1-inq-table" style="width:100%;border-collapse:collapse;font-size:var(--fs-2);table-layout:fixed;">
+          <colgroup><col style="width:14%"><col style="width:auto"><col style="width:13%"><col style="width:13%"><col style="width:13%"></colgroup>
+          <thead><tr style="color:var(--dim);text-align:right;">
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">구분</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">종목</th>
+            <th style="padding:6px 8px;border-bottom:1px solid var(--border);">오늘</th>
+            <th style="padding:6px 8px;border-bottom:1px solid var(--border);">이번 달</th>
+            <th style="padding:6px 8px;border-bottom:1px solid var(--border);">올해</th>
+          </tr></thead>
+          <tbody><tr><td colspan="5" style="padding:10px 8px;color:var(--dim);">불러오는 중…</td></tr></tbody>
+        </table>
       </div>
     </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:14px 0 20px;">
-      <a href="cpo/member/membership.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">📋 멤버십 회원관리</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">유효회원·법인·대기자 원장. 등록·만료·휴회를 여기서 다룹니다.</span></a>
-      <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">🏃 강습 회원관리</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">성인·유소년 강습 등록 원장. 종목·횟수·유효기간을 봅니다.</span></a>
-      <!-- cpo/member/문의회원.html 은 membership.html 로 넘기는 껍데기라 링크하지 않는다(2026-08-26 실재 확인). -->
-      <a href="cpo/문의현황.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">📮 문의 현황</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">들어온 문의와 투어·체험 예약. 회신이 안 간 분이 먼저 뜹니다.</span></a>
-      <a href="cpo/product/상품기획.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">🏷️ 상품 기획</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">회원권·강습 상품 구성과 가격 기준.</span></a>
-      <a href="cpo/member/실무진피드백.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">🗣️ 실무진 피드백</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">현장에서 올라온 불편·요청. 접수되면 담당 배로 섭니다.</span></a>
-      <a href="coo/reception/종합접수처_현황.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">🙋 종합 접수처</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">회원이 직접 남긴 6종 접수(컴플레인·분실물 등). 운영부와 함께 봅니다.</span></a>
-      <!-- ERP 모듈 바로가기(2026-08-26 삭제)에만 있던 링크를 여기로 옮겼다 — 유실 0. -->
-      <a href="https://crm.broj.co.kr/" target="_blank" rel="noopener" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
-        <span style="display:block;font-size:var(--fs-3);font-weight:800;color:var(--text);">🚪 브로제이 CRM ↗</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:4px;line-height:1.5;">얼굴인증 출입·스마트 락커 등 현장 자동화 시스템(외부 사이트).</span></a>
-    </div>
+    <script>
+    (function(){
+      var meta = document.getElementById('p1-inq-meta'), tb = document.querySelector('#p1-inq-table tbody');
+      if (!meta || !tb) return;
+      function kst(){ var d = new Date(Date.now() + 9*3600*1000); return d.toISOString().slice(0,10); }
+      var today = kst(), month = today.slice(0,7), year = today.slice(0,4);
+      function head(s){ s = String(s || '').trim(); s = s.split(' (')[0].split('(')[0].trim(); return s.length >= 2 ? s : '기타'; }
+      // 강습 종목 버킷 — 멤버십 회원관리 화면 _lessonRosterKeyOf 와 같은 순서·같은 규칙(정본은 그 화면).
+      //   표기 변형(WSC 수영·WSC수영·Swimming)이 한 줄로 모이고, 「P.T, 수영」처럼 둘을 적은 문의는 종목마다 1건씩 센다.
+      function sportKeys(s){
+        var out = [];
+        String(s || '').split(',').forEach(function(p){
+          p = p.trim(); if (!p) return;
+          var k = /아쿠아|aqua/i.test(p) ? '수영' : /수영|Parent.?Child|swim/i.test(p) ? '수영'
+                : /P\.?T/i.test(p) ? 'P.T' : /필라|pilates/i.test(p) ? '필라테스'
+                : /골프|golf/i.test(p) ? '골프' : /스쿼시|squash/i.test(p) ? '스쿼시'
+                : /체조|트램폴린|WSC|gymnas/i.test(p) ? '체조&트램폴린' : /뮤지컬|musical|star\s*academy/i.test(p) ? '뮤지컬'
+                : /웰니스|wellness|루프/i.test(p) ? '웰니스' : /ballet|발레/i.test(p) ? '발레' : /barre|바레/i.test(p) ? '바레' : '기타';
+          if (out.indexOf(k) < 0) out.push(k);
+        });
+        return out.length ? out : ['기타'];
+      }
+      function getJson(u){ return fetch(u + '?t=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }); }
+      function count(rows, key, into, split){
+        (rows || []).forEach(function(r){
+          var ts = String(r.timestamp || '').slice(0,10); if (!ts) return;
+          (split ? sportKeys(r[key]) : [head(r[key])]).forEach(function(k){
+            var c = into[k] || (into[k] = {d:0,m:0,y:0});
+            if (ts === today) c.d++; if (ts.slice(0,7) === month) c.m++; if (ts.slice(0,4) === year) c.y++;
+          });
+        });
+      }
+      function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+      function render(groups, stamp){
+        var html = '', tot = {d:0,m:0,y:0};
+        groups.forEach(function(g){
+          var keys = Object.keys(g.c).sort(function(a,b){ return g.c[b].y - g.c[a].y; });
+          keys.forEach(function(k, i){
+            var c = g.c[k]; tot.d += c.d; tot.m += c.m; tot.y += c.y;
+            html += '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border-subtle,var(--border));color:var(--dim);">' + (i===0 ? esc(g.name) : '') + '</td>'
+                  + '<td style="padding:5px 8px;border-bottom:1px solid var(--border-subtle,var(--border));color:var(--text);">' + esc(k) + '</td>'
+                  + '<td style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border-subtle,var(--border));font-weight:' + (c.d ? 800 : 400) + ';color:var(--text);">' + c.d + '</td>'
+                  + '<td style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border-subtle,var(--border));color:var(--text);">' + c.m + '</td>'
+                  + '<td style="padding:5px 8px;text-align:right;border-bottom:1px solid var(--border-subtle,var(--border));color:var(--text);">' + c.y + '</td></tr>';
+          });
+        });
+        html += '<tr style="font-weight:800;color:var(--text);"><td style="padding:7px 8px;">합계</td><td></td>'
+              + '<td style="padding:7px 8px;text-align:right;">' + tot.d + '</td><td style="padding:7px 8px;text-align:right;">' + tot.m + '</td><td style="padding:7px 8px;text-align:right;">' + tot.y + '</td></tr>';
+        tb.innerHTML = html;
+        meta.textContent = '오늘 ' + today + ' · 이번 달 ' + month + ' · 올해 ' + year + (stamp ? ' · 집계 ' + stamp : '');
+      }
+      Promise.all([getJson('/repo/status/inquiry_snapshot_member.json'), getJson('/repo/status/inquiry_snapshot_lesson.json')])
+        .then(function(res){
+          var m = res[0] || {}, l = res[1] || {};
+          var gm = {}, ga = {}, gy = {};
+          count(m.rows, 'program', gm);
+          count(((l.adult || {}).year || {}).rows, 'sport', ga, true);
+          count(((l.youth || {}).year || {}).rows, 'sport', gy, true);
+          render([{name:'멤버십', c:gm}, {name:'성인강습', c:ga}, {name:'유소년강습', c:gy}], String(m.generated_at_kst || m.ts || '').slice(0,16));
+        })
+        .catch(function(){
+          tb.innerHTML = '<tr><td colspan="5" style="padding:10px 8px;color:var(--dim);">아직 없음 — 문의 집계는 erp.wellperion.com 에서 열어야 값이 붙습니다.</td></tr>';
+          meta.textContent = '';
+        });
+    })();
+    </script>
   </article>
 
   <!-- ── G19: 업무자동화 ── -->
