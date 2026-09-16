@@ -244,6 +244,18 @@
           "upload": "✅ 배포 (e095faf32)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260916-1023",
+          "no": "23",
+          "got": "배편리스트업해줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "11:35",
+          "end": "11:35",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -428,8 +440,8 @@
           "detail": "★중간관리자 방 발송(문자 자동 연동 · 휴회 문의폼·종합접수처 자동발송) kakao_sent 로그 ok"
         }
       ],
-      "count": 20,
-      "done": 20,
+      "count": 21,
+      "done": 21,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
@@ -575,12 +587,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:15",
-          "area": "배12626",
-          "event": "재발방지 회귀 경보 검사대상 좁힘(백업·캐시·보관함 제외)",
-          "detail": "커밋 3ac8e8d5c · before 118건→after 99건(신규 캐논발산) · 자체점검 4577건(0 아님·통과) · divergence_scan.py EXCLUDE_PATH_PREFIXES/GLOBS 추가"
-        },
         {
           "time": "09:26",
           "area": "배12666",
@@ -754,6 +760,12 @@
           "area": "GM지시",
           "event": "권한 없음 별도 주소 폐지 — 그 자리 표시(nginx 내부 재작성) + 허용되면 원래 화면으로",
           "detail": "라이브 nginx reload 11:27 · 저장소 사본 동기 · 실측 info@·lessons@ 6케이스"
+        },
+        {
+          "time": "11:36",
+          "area": "작업",
+          "event": "fix(tg_outbound_log): sendPhoto 실패 사유 무음·non-429 재시도 0회 수정",
+          "detail": "커밋 142c51953c · 배 12682"
         }
       ],
       "count": 11,
@@ -776,7 +788,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 4
         }
       ],
       "repeats": []
@@ -921,7 +933,7 @@
           "start": "11:27",
           "end": "11:29",
           "minutes": 2,
-          "upload": "✅ 배포 (51a0118a9)",
+          "upload": "✅ 배포 (f7fc3855e)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -933,7 +945,7 @@
           "start": "11:29",
           "end": "11:29",
           "minutes": 0,
-          "upload": "✅ 배포 (51a0118a9)",
+          "upload": "✅ 배포 (f7fc3855e)",
           "open": false,
           "evidence": "⚠️없음"
         }
@@ -992,13 +1004,19 @@
           "area": "GM요청",
           "event": "매출·회원 현황 자동화 진척 실측 답변 — 발송·대조 가동, 원천 3/22칸, 병목 = 브로제이 실결제 10/1·실장 답 3건",
           "detail": "09:00 3면 실패분 11:21 재발송(id 11800) · 시토 배 2688 전달"
+        },
+        {
+          "time": "11:36",
+          "area": "공통",
+          "event": "fix(cpo): 브로제이 이관 차이 대조기 — 골프·스쿼시·뮤지컬·유료GX 분류 짝 추가 (9/9~14 골프·스쿼시가 매핑 구멍으로 미이관 오판 · 실측 2026-09-16)",
+          "detail": "커밋 6427b36834 · 배 12668"
         }
       ],
       "count": 10,
       "done": 10,
       "open": 0,
       "avg_minutes": 6,
-      "work_count": 9,
+      "work_count": 10,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1418,6 +1436,18 @@
           "upload": "✅ 배포 (cd5cfd8e9)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260916-9008",
+          "no": "08",
+          "got": "웰페리온랩스에 마케팅 자동화에 들어가면 다 비활성으로 되어있는데, 반영안된듯? 그리고 좌우 사이즈에 따라서 크기가 달라지고, 글씨들이 아래로 내려가는데, 이런것 사이즈 조정해서 보기 좋게 만들어줘",
+          "did": "",
+          "start": "11:36",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1458,14 +1488,29 @@
           "detail": "커밋 1e462ff6b2 · 배 12655"
         }
       ],
-      "count": 7,
+      "count": 8,
       "done": 7,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 1,
       "work_count": 6,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-9008",
+          "no": "08",
+          "got": "웰페리온랩스에 마케팅 자동화에 들어가면 다 비활성으로 되어있는데, 반영안된듯? 그리고 좌우 사이즈에 따라서 크기가 달라지고, 글씨들이 아래로 내려가는데, 이런것 사이즈 조정해서 보기 좋게 만들어줘",
+          "did": "",
+          "start": "11:36",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     }
   },
