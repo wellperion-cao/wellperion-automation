@@ -144,7 +144,9 @@ RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우�
 MGR_PEOPLE = [m[0] for m in MANAGERS]
 _NO_MEASURE = "미수집"
 SSOT_DONE = {"완료", "폐기", "완료됨"}
-OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원", "이지영 사원"]
+OPS_DEPT_STAFF = ["이경연 실장", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "진수아 사원"]
+# GM 확정 2026-09-16 「운영부 직원이 실장 포함 6명」 — 이지영 사원은 9월 일용근무 전환이라 정원 밖(행이 있으면 세긴 한다).
+DAILY_CAP_PER_PERSON = 3   # 하루 1인당 최대 3건 등록·완료(GM 2026-09-16) — 목표가 아니라 상한
 # 중간관리자 목차 개편(GM 지시 2026-09-14 "실장이 운영부 담당자들 업무들까지 체크해야") —
 #   실장·소장 라인 밑에 팀원 담당 건을 묶어 넣는다. 본인(실장·소장) 이름은 뺀다.
 OPS_TEAM = [s for s in OPS_DEPT_STAFF if s != "이경연 실장"]
@@ -325,36 +327,43 @@ def ssot_pending_cell(rows: "list | None") -> tuple[str, bool]:
 
 
 def ssot_week_cell(rows: "list | None") -> tuple[str, bool]:
-    """업무·결재 SSOT(운영부 전원) — 진행중·보류(건별 목록②와 같은 수) · 지난주/이번 주 완료(기준 15) ·
-    기한 지난 · 결재대기. 「대상행」(완료 행까지 센 수라 뜻 없음) 대신 목록②와 같은 원천으로 센다
-    (GM 지적 2026-09-14 — 월요일 아침에 「이번 주 0」만 보이면 오해)."""
+    """업무·결재 SSOT(운영부 전원) — 「하루 3건」 루프(GM 2026-09-16 「하루에 3개씩 만들고 완료 · 1인당 최대 3건 ·
+    운영부 실장 포함 6명」). 오늘 등록/완료 · 이번 주 누적 · 사람별 오늘 건수(상한 3) · 기한 지난 · 결재대기.
+    종전 「주 15건 완료」 기준은 이 루프로 대체. 목록②와 같은 원천(todo_list)만 센다."""
     if rows is None:
         return f"{_NO_MEASURE}(업무 SSOT 조회 실패)", False
     today = date.today()
     monday = today - timedelta(days=today.weekday())
-    sunday = monday + timedelta(days=6)
-    last_monday = monday - timedelta(days=7)
-    last_sunday = monday - timedelta(days=1)
     mine = [r for r in rows if str(r.get("담당자") or "").strip() in OPS_DEPT_STAFF]
+    staff_n = len(OPS_DEPT_STAFF)
 
-    def done_between(start: date, end: date) -> int:
-        n = 0
-        for r in mine:
-            if str(r.get("상태") or "") in SSOT_DONE:
-                cd = _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
-                if cd and start <= cd <= end:
-                    n += 1
-        return n
+    def _created(r) -> "date | None":
+        return _parse_ymd(r.get("생성일"))
 
-    done_last = done_between(last_monday, last_sunday)
-    done_week = done_between(monday, sunday)
+    def _done_on(r) -> "date | None":
+        if str(r.get("상태") or "") not in SSOT_DONE:
+            return None
+        return _parse_ymd(r.get("완료일")) or _parse_ymd(r.get("수정일"))
+
+    made_today = [r for r in mine if _created(r) == today]
+    done_today = [r for r in mine if _done_on(r) == today]
+    made_week = sum(1 for r in mine if (c := _created(r)) and monday <= c <= today)
+    done_week = sum(1 for r in mine if (d := _done_on(r)) and monday <= d <= today)
+    per = {}
+    for r in made_today:
+        per[str(r.get("담당자")).strip()] = per.get(str(r.get("담당자")).strip(), 0) + 1
+    over_cap = [f"{k} {v}" for k, v in per.items() if v > DAILY_CAP_PER_PERSON]
     open_rows = ssot_ops_detail_rows(rows) or []
     overdue = sum(1 for r in open_rows if (d := _parse_ymd(r.get("종료일"))) and d < today)
     pend = sum(1 for r in mine if str(r.get("결재요청") or "").strip() and str(r.get("결재상태") or "") != "결재완료")
     md = lambda d: f"{d.month}/{d.day}"
-    text = (f"진행중·보류 {len(open_rows)}건 · 지난주({md(last_monday)}~{md(last_sunday)}) 완료 {done_last}/15 · "
-            f"이번 주 완료 {done_week}/15 · 기한 지난 {overdue}건 · 결재대기 {pend}건")
-    return text, done_week < 15 or overdue > 0
+    text = (f"오늘 등록 {len(made_today)}건 · 완료 {len(done_today)}건(1인 최대 {DAILY_CAP_PER_PERSON} · {staff_n}명) · "
+            f"이번 주({md(monday)}~) 등록 {made_week} · 완료 {done_week} · 진행중·보류 {len(open_rows)}건 · "
+            f"기한 지난 {overdue}건 · 결재대기 {pend}건"
+            + (f" · 상한 초과 {', '.join(over_cap)}" if over_cap else ""))
+    # 빨강 = 오늘 하나도 안 만들었거나(평일) 기한 지난 것이 있을 때. 상한 초과도 빨강.
+    weekday = today.weekday() < 5
+    return text, (weekday and not made_today) or overdue > 0 or bool(over_cap)
 
 
 def find_ssot_row(rows: "list | None", title_contains: str, owner: str = "") -> dict | None:
@@ -639,7 +648,7 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
                              "(월간운영계획 체크 중 담당 이경연/운영부)",
              lambda: _ops_progress_cell(objs), False, lambda: check_detail_html(objs)),
             ("업무·결재 SSOT(운영부 전원)",
-             "주 15건 완료(운영부 전원 합산) + 기획안·보고는 결재요청 칸까지 채워 제출",
+             "하루 3건 루프 — 매일 만들고 끝낸다(1인당 최대 3건 · 실장 포함 6명) + 기획안·보고는 결재요청 칸까지 채워 제출",
              lambda: ops_ssot_cell(ssot_rows), False, lambda: ssot_detail_html(ssot_rows)),
             ("문의 회원 연락(멤버십)", "임정은M 라인 연락 기록 없는 문의 0 · 3영업일 움직임 없으면 감점",
              lambda: inquiry_contact_cell("member")),
