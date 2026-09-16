@@ -98,7 +98,7 @@ def _gm_key() -> str:
 def is_signed(row: dict, col: str = "대표싸인") -> bool:
     """_owner_directive.js ownerSigned() 와 같은 판정 — 대표싸인·GM싸인 공용."""
     v = str(row.get(col) or "").strip()
-    return bool(v) and v != "PENDING"
+    return bool(v) and v not in ("PENDING", "GM종결")   # GM종결 = GM 최종승인(대표님 보고 없이 종료 · 2026-09-16) — 대표님 서명 아님
 
 
 is_rep_signed = is_signed   # 호환(ceo_morning_pipeline 등 기존 호출부)

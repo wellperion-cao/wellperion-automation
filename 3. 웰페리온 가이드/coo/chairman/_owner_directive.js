@@ -91,7 +91,7 @@
   // 받음" 자리표시라 서명이 아니다(2026-09-02 실측 190행: 실서명 16 · PENDING 14 · 빈칸 160).
   function ownerSigned(r) {
     var v = String(r['대표싸인'] || '').trim();
-    return !!v && v !== 'PENDING';
+    return !!v && v !== 'PENDING' && v !== 'GM종결';   // 'GM종결' = GM 최종승인(대표님 보고 없이 종료 · 2026-09-16) — 서명 아님
   }
   // 서명 건의 완료 배지 날짜 — 결재완료시각(항상 있음)에서, 없으면 대표싸인 문구에서 날짜를 뽑는다.
   function ownerSignDate(r) {

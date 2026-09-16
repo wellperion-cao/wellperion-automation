@@ -93,7 +93,7 @@ def approval_route(row: dict) -> str:
         steps.append((mid, str(row.get("부서장싸인") or "").strip()))
     steps.append(("김남욱 GM", str(row.get("GM싸인") or "").strip()))
     rep = str(row.get("대표싸인") or "").strip()
-    if rep and rep.upper() != "PENDING":
+    if rep and rep.upper() != "PENDING" and rep != "GM종결":   # GM종결 = GM 최종승인 · 대표님 단계 없음(2026-09-16)
         steps.append(("전응준 대표", rep if not rep.startswith("http") else "서명본 수령"))
     return " → ".join(f"{n} ({kst_minute(s)})" if s and s != "서명본 수령" else
                       (f"{n} (서명본 수령)" if s else f"{n} (미서명)") for n, s in steps)

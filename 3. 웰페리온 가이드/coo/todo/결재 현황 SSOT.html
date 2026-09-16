@@ -848,14 +848,34 @@ function buildShareUrl() {
 // 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 문서 품질로 통일 (2026-06-16 GM).
 //   업무 보고서의 헤더·정보표·섹션·푸터 레이아웃을 그대로 쓰되, 결재 고유 요소(결재선·서명란·대표님 서명완료)를 보존·강화.
 // 첨부 인라인 — 이미지면 <img>로 문서에 바로 표시, 아니면 링크. Drive 파일 링크는 표시가능 thumbnail URL로 변환, 실패 시 링크 폴백 (2026-07-02 시토)
+/* 첨부 칸 → 주소 목록 (GM 지적 2026-09-16 「첨부된 서류가 분명 있는데 GM 승인 후에는 안 보인다」).
+   원인 두 가지 — ①칸 값이 여러 줄(첨부 여러 개)인데 통째로 한 주소로 다뤄 칩 하나에 줄바꿈이 들어갔고
+   ②9월부터 서버에 올린 첨부는 '/uploads/todo/…' 상대 주소라 'http' 로 시작하지 않아 걸러졌다(GM 승인 건이 대부분 이쪽).
+   여기서 줄을 나누고 상대 주소는 erp 도메인을 붙인다. 카드 칩·인쇄 둘 다 이 함수를 쓴다. */
+function attachmentUrls(t) {
+  var out = [];
+  ['파일URL', '링크'].forEach(function (k) {
+    String((t && (t[k] || '')) || '').split(/\r?\n/).forEach(function (line) {
+      var u = line.trim();
+      if (!u) return;
+      if (u.charAt(0) === '/') u = 'https://erp.wellperion.com' + u;
+      if (u.indexOf('http') === 0 && out.indexOf(u) < 0) out.push(u);
+    });
+  });
+  return out;
+}
+
 function buildAttachmentHtml(t) {
-  var u = String((t && (t['파일URL'] || t.fileUrl || t['링크'])) || '').trim();
-  if (!u) return '';
+  var urls = attachmentUrls(t);
+  if (!urls.length) return '';
+  return '<div class="rr-section-title">첨부' + (urls.length > 1 ? ' ' + urls.length + '건' : '') + '</div>' + urls.map(_attachOneHtml).join('');
+}
+function _attachOneHtml(u) {
   var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
   var driveId = m ? m[1] : '';
   var isImgExt = /\.(jpe?g|png|gif|webp|bmp|heic)(\?|#|$)/i.test(u);
   var imgSrc = driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1200') : (isImgExt ? u : '');
-  var title = '<div class="rr-section-title">첨부</div>';
+  var title = '';
   if (imgSrc) {
     // 이미지 로드 실패(권한·비이미지 등) 시 링크로 폴백
     return title + '<div class="rr-attach">'
@@ -1010,6 +1030,7 @@ function repStageOf(t) {
   var s = String((t && (t.repSign || t['대표싸인'])) || '').trim();
   if (/^https?:\/\//.test(s)) return 'done';
   if (s.toUpperCase() === 'PENDING') return 'pending';
+  if (s === 'GM종결') return 'gm_final';
   return 'none';
 }
 
@@ -1021,6 +1042,10 @@ function renderRepApprovalRow(t) {
   if (stage === 'none') {
     // 대표님 미올림 → [대표님 결재 올리기]
     h += '<button onclick="event.stopPropagation();repEscalate(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.4);cursor:pointer;font-family:inherit;">🏛 대표님 보고 올리기(선택·종이)</button>';
+    h += '<button onclick="event.stopPropagation();gmFinalClose(\'' + escAttr(id) + '\')" title="대표님 보고 없이 GM 선에서 종료" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:var(--green);color:#fff;border:1px solid var(--green);cursor:pointer;font-family:inherit;">✅ GM 최종승인</button>';
+  } else if (stage === 'gm_final') {
+    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(11,128,67,0.3);padding:4px 10px;border-radius:7px;">✅ GM 최종승인 — 대표님 보고 없이 종료</span>';
+    h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;" title="GM 최종승인 취소 — 대표싸인 비움">↩ 취소</button>';
   } else if (stage === 'pending') {
     // 대표님 올림(서명본 대기) → 상태 + 🖨 인쇄(대표님 서명란 포함) + 📄 업로드 + 올림 취소
     h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--yellow);background:var(--yellow-bg);border:1px solid rgba(214,166,79,0.3);padding:4px 10px;border-radius:7px;">🏛 대표님 보고 대기(오프라인 종이)</span>';
@@ -1289,20 +1314,21 @@ async function signTask(taskId, role, decision, pin, reason) {
   }
 }
 
-/* GM 최종 (GM 지시 2026-09-16) — 「GM 승인」과 「대표님 보고 올리기」 두 번 누르던 것을 한 버튼으로.
-   PIN 1회 → todo_sign(GM approve) → 전 라인 통과면 곧장 approval_rep_escalate(대표싸인=PENDING).
-   그 뒤 화면은 종전 「대표님 보고 올리기」를 누른 뒤와 같다(🖨 인쇄 · 📷 촬영 · 📄 서명본 업로드).
-   승인이 실패하거나 다음 결재자가 남으면 올리지 않는다. */
-async function gmFinal(taskId) {
-  const pin = gateApproval('GM', '최종 승인 (승인 + 대표님 보고 올리기)');
-  if (pin === null) return;
-  const res = await signTask(taskId, 'GM', 'approve', pin);
-  if (!res || !res.ok || res.next) return;
+/* GM 최종승인 (GM 지시 2026-09-16 12:1x 「대표님 보고 올리기 우측에 GM최종승인 버튼 — 누르면 대표님 보고 없이
+   GM 선에서 종료」). 결재완료(GM 서명) 건에서만 뜬다. 대표싸인 칸에 'GM종결' 을 적어 두 갈래를 가른다 —
+   빈칸 = 아직 안 정함 / 'PENDING' = 대표님 보고 대기 / URL = 대표님 서명본 / 'GM종결' = GM 선에서 끝.
+   GM업무 화면(classify · _owner_directive.ownerSigned)·대표결재전달 통(rep_approval_relay.is_signed)이 같은 값을 읽는다.
+   쓰기 = 기존 todo_update(한글 칸 이름 그대로) — 새 서버 동작 없음. 되돌리기 = ↩ 취소(approval_rep_cancel · 칸 비움). */
+var REP_GM_FINAL = 'GM종결';
+async function gmFinalClose(taskId) {
+  if (!confirm('이 건을 GM 최종승인으로 종료합니다.\n대표님 보고(종이)는 올리지 않습니다 — GM 선에서 끝난 건으로 기록됩니다.\n\n계속하시겠습니까?')) return;
   try {
-    const r2 = await window.erpTodoCall(TODO_API_URL, { action: 'approval_rep_escalate', id: taskId });
-    if (!r2.ok) alert('승인은 됐으나 대표님 보고 올리기 실패: ' + (r2.error || '알 수 없는 오류'));
-  } catch (e) { alert('승인은 됐으나 대표님 보고 올리기 연결 실패: ' + e.message); }
-  loadTasks();
+    var res = await window.erpTodoCall(TODO_API_URL, { action: 'todo_update', id: taskId, '대표싸인': REP_GM_FINAL });
+    if (res.ok) {
+      if (typeof fanfare === 'function') fanfare('✅ GM 최종승인<br>대표님 보고 없이 종료', true);
+      loadTasks();
+    } else { alert('GM 최종승인 실패: ' + (res.error || '알 수 없는 오류')); }
+  } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
 
@@ -1541,7 +1567,7 @@ function renderApprovalCard(t, idx) {
     stCls = 'st-done'; chipCls += ' done';
     // (GM 결재완료)·(대표님 결재완료) 두 칸 시각 분리
     chipText = '✅ GM 결재완료'
-      + (_repStage === 'done' ? ' · 🏛 대표님 서명본 수령' : _repStage === 'pending' ? ' · 🏛 대표님 보고 대기(종이)' : '');
+      + (_repStage === 'done' ? ' · 🏛 대표님 서명본 수령' : _repStage === 'pending' ? ' · 🏛 대표님 보고 대기(종이)' : _repStage === 'gm_final' ? ' · ✅ GM 최종승인' : '');
   } else if (isRejected) {
     stCls = 'st-rejected'; chipCls += ' rejected'; chipText = '❌ ' + (t.approvalStatus || '반려');
   } else if (signedRoles.length) {
@@ -1583,11 +1609,7 @@ function renderApprovalCard(t, idx) {
   // 메타 — 예산 + 첨부 자료 (카테고리·담당자는 제목 줄로 이동)
   // 첨부 링크는 그동안 인쇄본에만 나왔다 — 화면 카드에서는 자료가 있어도 보이지 않아
   // 결재하는 사람이 근거 문서를 못 열었다(GM 지적 2026-09-02 "결재 SSOT에서 첨부 링크 좀 띄워줘").
-  var _atts = [];
-  ['파일URL', '링크'].forEach(function (k) {
-    var v = String((t && (t[k] || '')) || '').trim();
-    if (v && v.indexOf('http') === 0 && _atts.indexOf(v) < 0) _atts.push(v);
-  });
+  var _atts = attachmentUrls(t);   // 여러 줄·서버 상대주소 처리는 attachmentUrls 한 곳
   if (parsed.budget || _atts.length) {
     h += '<div class="meta-row" style="margin-bottom:6px;">';
     if (parsed.budget) {
@@ -1704,9 +1726,7 @@ function renderSignPill(role, sign, taskId, isCurrent, isInRoute, displayLabel) 
   if (isCurrent && taskId) {
     return '<span class="sign-pill empty active" style="background:var(--accent-bg);border-color:var(--accent);color:var(--accent);display:inline-flex;align-items:center;gap:4px;padding:3px 4px;">' +
       '<span style="padding:1px 6px;font-weight:700;">' + esc(label) + ' 미서명</span>' +
-      (role === 'GM'
-        ? '<button onclick="gmFinal(\'' + escAttr(taskId) + '\')" title="승인 + 대표님 보고 올리기를 한 번에" style="background:var(--green);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ GM 최종</button>'
-        : '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(label) + ' 승인</button>') +
+      '<button onclick="approveTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--green);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">✅ ' + esc(label) + ' 승인</button>' +
       '<button onclick="rejectTask(\'' + escAttr(taskId) + '\',\'' + escAttr(role) + '\')" style="background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">❌ 반려</button>' +
       '</span>';
   }
