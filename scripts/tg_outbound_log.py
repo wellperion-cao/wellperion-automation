@@ -7,7 +7,7 @@ from pathlib import Path
 _LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
 _RETAIN_DAYS = 30
 
-def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', channel='telegram'):
+def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', channel='telegram', error=None):
     """channel: 'telegram'(기본) → logs/telegram_sent-*.log / 'kakao' → logs/kakao_sent-*.log.
     배99(2026-07-25): 카톡도 하루 단위로 셀 수 있게 같은 관문 로거를 채널만 나눠 재사용(L21).
 
@@ -28,6 +28,8 @@ def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', cha
             'source': source, 'chat_id': chat_id, 'kind': kind, 'ok': ok,
             'text': logged_text,  # 로그 전용 — 실제 발신 본문(raw_text)은 건드리지 않는다(배 12648 · INC-061)
         }
+        if error:
+            rec['error'] = error
         with open(path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(rec, ensure_ascii=False) + '\n')
         _cleanup(now)
@@ -299,6 +301,7 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         payload.update(extra)
     url = 'https://api.telegram.org/bot%s/%s' % (token, kind)
     ok = False
+    _last_err = None
     resp_json = None
     for attempt in range(max_attempts):
         pace(min_interval)
@@ -320,19 +323,33 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
                 ok = resp.status == 200 and resp_json.get('ok') is True
                 break
         except urllib.error.HTTPError as ex:
+            err_body = ''
+            try:
+                err_body = ex.read().decode('utf-8', 'replace')[:300]
+            except Exception:
+                pass
             if ex.code == 429 and attempt < max_attempts - 1:
                 ra = 3
                 try:
-                    ra = int(json.loads(ex.read().decode()).get('parameters', {}).get('retry_after', 3))
+                    ra = int(json.loads(err_body or '{}').get('parameters', {}).get('retry_after', 3))
                 except Exception:
                     pass
                 time.sleep(min(ra + 2 * (attempt + 1), 60))
                 continue
+            _last_err = 'HTTPError %d: %s' % (ex.code, err_body)
+            if ex.code >= 500 and attempt < max_attempts - 1:
+                time.sleep(2 * (attempt + 1))
+                continue
             break
-        except Exception:
+        except Exception as ex:
+            _last_err = '%s: %s' % (type(ex).__name__, str(ex)[:200])
+            if attempt < max_attempts - 1:
+                time.sleep(2 * (attempt + 1))
+                continue
             break
     try:
-        log_outbound(text, chat_id=chat_id, source=source, ok=ok, kind=kind)
+        log_outbound(text, chat_id=chat_id, source=source, ok=ok, kind=kind,
+                     error=_last_err if not ok else None)
     except Exception:
         pass
     if full_response:
