@@ -486,13 +486,21 @@ def accounts() -> dict:
     return _ACCTS[1]
 
 
+GUIDE_ALIASES = {"/home": "/wellperion_guide(main).html", "/guide": "/wellperion_guide(main).html"}   # = guide-alias.nginx.conf rewrite
+
+
 def uri_path(uri: str) -> str:
     """X-Original-URI → 정규화한 경로('/'로 시작 · 쿼리 없음 · 퍼센트 해제 · '..' 정리). module_at·path_allowed 가 같이 쓴다."""
     # 선행 슬래시를 1개로 강제 — posixpath.normpath 는 '//x' 를 보존해 '//cpo/…' 요청이 모듈 조회를 빗나가게 했다
     # (권한 판정 우회 · 2026-09-05 검수 C4). nginx 는 merge_slashes 로 파일은 정상으로 내주므로 여기서 맞춘다.
     # urlsplit 을 쓰지 않는다 — '//cpo/x' 는 urlsplit 이 '//cpo' 를 호스트로 먹어 path 가 '/x' 가 된다(실측 2026-09-05).
     raw = uri.split("?", 1)[0].split("#", 1)[0]
-    return "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
+    path = "/" + posixpath.normpath(urllib.parse.unquote(raw) or "/").lstrip("/")
+    # 짧은 주소(guide-alias.nginx.conf 의 rewrite /home·/guide → 가이드 화면)는 nginx 안에서만 바뀌고
+    # X-Original-URI 엔 '/home' 그대로 온다. 그러면 카드 조회가 빗나가 직원 계정이 전부 403 이었다
+    # (GM 2026-09-16 「/auth/forbidden?next=/home 이거 어디길래」 — 사무실 자동 로그인(info@)으로 열려 있던 창).
+    # nginx 가 재작성하는 것과 같은 규칙으로 여기서도 맞춘다 — 관리자는 원래 열렸고 직원은 카드 권한대로 열린다.
+    return GUIDE_ALIASES.get(path, path)
 
 
 def _lookup(path: str, by_path: dict) -> Optional[dict]:
@@ -1950,6 +1958,8 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     _adm = {"role": "admin", "email": "a@x", "perms": None}
     _stf = {"role": "staff", "email": "s@x", "perms": json.dumps({"modules": ["cpo-member-lesson"], "groups": [], "deny": []})}
     assert path_allowed(_adm, "/repo/scripts/x.py") and not path_allowed(_stf, "/repo/scripts/x.py")
+    # 짧은 주소 /home·/guide 는 가이드 화면과 같은 경로로 판정된다(2026-09-16 · 직원 계정 403 사고)
+    assert uri_path("/home") == "/wellperion_guide(main).html" == uri_path("/guide?x=1") == uri_path("/wellperion_guide(main).html#S3")
     # 플랫폼관리 = 회사 계정 관리자만(GM 2026-09-14) — 관리자 등급이라도 개인 아이디는 못 연다
     _adm_personal = {"role": "admin", "email": "namuk87", "perms": None}
     _adm_company = {"role": "admin", "email": "cao@wellperion.com", "perms": None}
