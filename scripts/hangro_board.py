@@ -385,10 +385,20 @@ def fetch_gas_items() -> list[dict]:
 _RE_MERGE_DUP_PREFIX = re.compile(r"^\s*\[(병합|중복)\]\s*")
 
 
+_RE_ROUND_TAG = re.compile(r"\((\d+)차\)\s*$")
+
+
+def _round_tag(norm_title: str) -> str:
+    """정규화 제목 끝의 「(N차)」 회차 — 없으면 빈 문자열. 회차가 다르면 같은 제목이라도 중복이 아니다."""
+    m = _RE_ROUND_TAG.search(norm_title)
+    return m.group(1) if m else ""
+
+
 def _normalize_title(title: str) -> str:
     """제목 유사도 비교용 정규화 — [병합]/[중복] 접두 제거·공백 정리·소문자."""
     t = _RE_MERGE_DUP_PREFIX.sub("", str(title or ""))
     t = re.sub(r"\s+", " ", t).strip().lower()
+    # 「(N차)」 접미 = 같은 일의 회차 — 별건이다(웰리 판정 2026-09-16 · 브로제이→스포피아 1차·2차). 접미를 남겨 서로 다르게 본다.
     return t
 
 
@@ -416,7 +426,8 @@ def ssot_hygiene(rows: list[dict]) -> dict:
             merge_residue.append(row)
 
         norm = _normalize_title(title)
-        if any(difflib.SequenceMatcher(None, norm, prev).ratio() >= 0.9 for prev in seen_norms):
+        if any(difflib.SequenceMatcher(None, norm, prev).ratio() >= 0.9 and _round_tag(norm) == _round_tag(prev)
+               for prev in seen_norms):
             dup.append(row)
         seen_norms.append(norm)
 
@@ -1076,6 +1087,10 @@ def _selftest_ssot_hygiene() -> None:
     ]
     h = ssot_hygiene(rows)
     assert [r["id"] for r in h["중복"]] == ["2"], h["중복"]
+    # 「(N차)」 회차 접미가 다르면 별건(웰리 판정 2026-09-16 · 브로제이→스포피아 1차·2차)
+    h2 = ssot_hygiene([{"id": "a", "업무명": "브로제이->스포피아 데이터 수동 이관", "담당자": "최준용M", "상태": "완료"},
+                       {"id": "b", "업무명": "브로제이->스포피아 데이터 수동 이관 (2차)", "담당자": "최준용M", "상태": "진행중"}])
+    assert h2["중복"] == [], h2["중복"]
     assert [r["id"] for r in h["[병합]잔재"]] == ["3"], h["[병합]잔재"]
     assert {r["id"] for r in h["빈 행"]} == {"4", "5"}, h["빈 행"]
     assert {r["id"] for r in h["담당 표기"]} == {"6", "7", "8"}, h["담당 표기"]
