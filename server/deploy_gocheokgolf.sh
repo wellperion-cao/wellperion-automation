@@ -10,7 +10,7 @@ KEY="$HOME/.aws/wellperion-sito.pem"
 S="ssh -i $KEY -o StrictHostKeyChecking=accept-new $HOST"
 SCP="scp -i $KEY -o StrictHostKeyChecking=accept-new"
 cd "$(dirname "$0")/.."
-SRC="3. 웰페리온 가이드/cbo/gocheokgolf"
+SRC="3. 웰페리온 가이드/erp/admin/gocheokgolf"   # 2026-09-16 웰리 배 2513 이관 — 옛 cbo/gocheokgolf 는 meta refresh 스텁만 남았다
 TMP="$(mktemp -d)"
 for f in "$SRC"/*.html; do
   grep -v 'page_ping.js' "$f" > "$TMP/$(basename "$f")"   # 저장소 전용 핑 스크립트 제거
