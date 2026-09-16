@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 웰페리온 랩스 공개 라인 배포(시보 요청 2026-09-15) — 이 PC(git-bash)에서 실행. 서버 = AWS 15.164.151.105.
+# AX 랩스 공개 라인 배포(시보 요청 2026-09-15) — 이 PC(git-bash)에서 실행. 서버 = AWS 15.164.151.105.
 #   bash server/deploy_labs.sh
 # 하는 일: 회사 소개서 한 장(erp/admin/company_intro.html)을 /srv/www/4_labs/intro.html 로 올리고, 그 장이 무는 css 2개를
 # 같은 폴더 사본으로 두며(관리 화면 css 는 로그인 벽 뒤라 그대로 못 쓴다), nginx 공개 location 을 넣고 reload 한다.

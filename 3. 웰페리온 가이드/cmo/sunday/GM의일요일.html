@@ -516,11 +516,11 @@
 
   /* 회사판(#marketing) 옷 — 글자만 바꾼다. 동작·뒷단은 개인판과 같다. */
   function 회사판으로(){
-    document.title = '마케팅 자동업로드 — 웰페리온 랩스';
+    document.title = '마케팅 자동업로드 — AX 랩스';
     /* 큰 제목은 건드리지 않는다 — 그 자리는 고른 트랙 이름이 들어가고(paintSeries),
        회사판에서는 그게 곧 어느 계정으로 나가는지를 말한다. */
     var eb = document.querySelector('.eyebrow');
-    if (eb) eb.textContent = '웰페리온 랩스 · 마케팅 자동업로드';
+    if (eb) eb.textContent = 'AX 랩스 · 마케팅 자동업로드';
     var app = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (app) app.setAttribute('content', '마케팅 업로드');
   }
