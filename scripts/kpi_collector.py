@@ -639,10 +639,12 @@ def _count_gm_unrouted(rows: list) -> int:
 def _ceo_gm_record_gap() -> dict:
     """GM기록 미반영 건수(배358 · 2026-08-04). todo_list(_CFO_GAS 재사용, 새 GAS 없음)에서
     생성자='김남욱GM'·담당자 공란 행 = 월간운영계획으로 아직 안 흘러간 GM 원본 기록.
-    실패=None(0 위장 금지)."""
+    실패=None(0 위장 금지).
+    ★배12675 — GAS 가림은 gmkey 없이 부르면 GM 행을 통째로 뺀다. 이 값은 GM 본인 기록을
+    세는 CEO/GM 전용 KPI라 include_gm=1&gmkey=1531 로 불러야 한다(gm_handoff.GM_KEY 와 동일)."""
     result: dict = {"GM기록_미반영": None, "_GM기록_note": "측정 전"}
     try:
-        data = _http_get_json(f"{_CFO_GAS}?action=todo_list")
+        data = _http_get_json(f"{_CFO_GAS}?action=todo_list&include_gm=1&gmkey=1531")
         if not isinstance(data, dict) or not (data.get("ok") or data.get("success")):
             result["_GM기록_note"] = "todo_list GAS 응답 오류(ok=false 또는 형식 불일치)"
             return result

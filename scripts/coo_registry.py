@@ -188,15 +188,20 @@ def fetch_check_status(fetch_fn=_http_get_json, support_date: str = "") -> dict:
 
 
 def fetch_workapproval_status(fetch_fn=_http_get_json) -> dict:
-    """업무·결재 SSOT(TODO_API) — 서버 사전집계 없음, 클라이언트 산식 복제. 공통 status 계약 반환."""
-    rows = fetch_fn(f"{TODO_API}?action=todo_list").get("data", [])
-    active = [r for r in rows if r.get("상태") not in ("완료", "보류")]
+    """업무·결재 SSOT(TODO_API) — 서버 사전집계 없음, 클라이언트 산식 복제. 공통 status 계약 반환.
+    ★배12675(2026-09-16) — include_gm=1&gmkey=1531 없이 부르면 GAS 가 GM 행을 통째로 가려
+    「전사」 업무·결재 집계에서 GM 몫이 빠진다(전사 집계 KPI = gmkey 포함이 정본).
+    반려 건은 결재상태=완료가 아니어도 '지연'이 아니다 — overdue 계산에서 뺀다(웰리 실측 ③,
+    반려 건이 상태=진행중으로 남아 지연에 계속 뜨던 문제)."""
+    rows = fetch_fn(f"{TODO_API}?action=todo_list&include_gm=1&gmkey=1531").get("data", [])
+    rejected = [r for r in rows if "반려" in (r.get("결재상태") or "")]
+    rejected_ids = {id(r) for r in rejected}
+    active = [r for r in rows if r.get("상태") not in ("완료", "보류") and id(r) not in rejected_ids]
     pending = [r for r in rows
                if (r.get("결재상태") or r.get("결재요청")) and r.get("결재상태") != "결재완료"
                and "반려" not in (r.get("결재상태") or "")]
     today = _kst_today()
     overdue = [r for r in active if r.get("종료일") and r["종료일"] < today]
-    rejected = [r for r in rows if "반려" in (r.get("결재상태") or "")]
     # ★마감 초과 건수를 본문에 같이 적는다 (GM 승인 2026-08-13). 09:10 독립 카드는 매일 같은
     #   이름 13건을 그대로 다시 실어 곧 안 읽히는 상태였다 — 카드를 없애고 '몇 건인가'만 남긴다.
     #   이름은 업무·결재 SSOT 화면에 있다. 숫자가 튀면 GM 이 그때 화면을 연다.

@@ -38,6 +38,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 PLAN_PATH = ROOT / "status" / "monthly_ops_plan.json"
+# ★배12675 웰리 실측(2026-09-16) — 표기가 둘로 갈렸던 자리. GM_OWNER(띄어쓰기)는 전사일정
+#   표시 정본(2026-09-03 통일 · kakao_report_sender.py) 이자 GM업무 카드 owner 값으로,
+#   gm_surfaces_sync.card_owner() 가 어차피 화면에 띄울 때 다시 이 모양으로 편다 — 그대로 둔다.
+#   GM_CREATOR(안 띄움)는 GAS 업무 SSOT(todo_list) 가림 규칙이 실제로 매칭하는 표기다 —
+#   GAS 로 쓰는 자리(add_todo 의 owner 기본값)는 이 값을 써야 한다.
 GM_OWNER = "김남욱 GM"
 GM_CREATOR = "김남욱GM"
 
@@ -107,14 +112,14 @@ TODO_UPLOAD_BLOCKED = True
 
 
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
-             owner: str = GM_OWNER) -> dict:
-    """owner 기본 = 김남욱 GM. ★2026-09-09 부터 이 길은 막혀 있다(위 TODO_UPLOAD_BLOCKED 주석).
-    막힌 이유를 그대로 돌려주어 호출부가 사람에게 보여 준다."""
+             owner: str = GM_CREATOR) -> dict:
+    """owner 기본 = 김남욱GM(안 띄움 · GAS 가림 기준 표기 — 배12675). ★2026-09-09 부터 이 길은
+    막혀 있다(위 TODO_UPLOAD_BLOCKED 주석). 막힌 이유를 그대로 돌려주어 호출부가 사람에게 보여 준다."""
     if TODO_UPLOAD_BLOCKED:
         return {"ok": False, "blocked": True,
                 "reason": "업무 SSOT 등록은 AI 가 하지 않는다(GM 지시 2026-09-09) — 지시를 받은 실무진이 직접 올린다"}
     import ops_daily_digest as o
-    params = {"action": "todo_add", "title": title, "category": category, "owner": owner or GM_OWNER,
+    params = {"action": "todo_add", "title": title, "category": category, "owner": owner or GM_CREATOR,
               "startDate": _today().isoformat(), "endDate": due, "content": content,
               "link": "", "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
     if dry:
