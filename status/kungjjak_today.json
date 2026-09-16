@@ -85,13 +85,13 @@
           "ref": "GM-20260916-2001",
           "no": "01",
           "got": "배편 리스트업 해줘, 배편 병렬로 처리 가능하면 진행하자 // 시토 statusline 왜이래?",
-          "did": "",
+          "did": "상담봇 결말 5값(outcome) 배선 — 금액 질문은 결과로 가른다(시보 규칙 · 배12520) · 주차 매출 크롤러 — 자가 API 기본 포트 8000→8001 (배 12664) · incidents.json 들여쓰기 원래(1칸)로 — 직전 커밋 통째 재포맷 되돌림(내용 동일) 외 4건 · 나우열M 라인 접촉 금지 규칙 배 — 코드 가드 확인 뒤 종결 — 약속 L27 · safe_commit 가드 · fix(cto): 주차 매출 크롤러 — 실측대로 로그인/조회 엔드포인트  — 커밋 eaf9c1905a · 배 12672 외 6건",
           "start": "08:59",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "09:10",
+          "minutes": 11,
+          "upload": "✅ 배포 (eaf9c1905)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -208,31 +208,22 @@
           "area": "작업",
           "event": "상담봇 결말 5값(outcome) 배선 — 금액 질문은 결과로 가른다(시보 규칙 · 배12520)",
           "detail": "커밋 c345d33fae · 배 12672"
+        },
+        {
+          "time": "09:10",
+          "area": "배12664",
+          "event": "주차매출 크롤러 실측·수리·크론 등록",
+          "detail": "실측: 계정 있음(18:38 등록)인데 크론 없음·서버표 0행. 로그인/조회 엔드포인트가 추측값이라 실패 + 자가API 포트 8000 오류(라이브는 8001) 3개 버그 수리(커밋 eaf9c1905,68a6c3df0)→실행 성공(1행 적재)→API 200 확인→cron.d 등록. 소급 적재는 원천 API 한계로 불가."
         }
       ],
       "count": 1,
-      "done": 0,
-      "open": 1,
-      "avg_minutes": null,
-      "work_count": 19,
+      "done": 1,
+      "open": 0,
+      "avg_minutes": 11,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260916-2001",
-          "no": "01",
-          "got": "배편 리스트업 해줘, 배편 병렬로 처리 가능하면 진행하자 // 시토 statusline 왜이래?",
-          "did": "",
-          "start": "08:59",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 11
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -333,7 +324,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         }
       ],
       "repeats": []
