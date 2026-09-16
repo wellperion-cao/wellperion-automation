@@ -66,13 +66,19 @@
           "area": "사고",
           "event": "07:50 통 AI 표 유출 — 정정 발송 완료(GM 승인 08:5x) · 시토 수리 5c5a4684e8 원격 도달",
           "detail": "kakao_sent 09:00:47 ★중간관리자 ok=true · 완료 판정은 내일 07:50 본문"
+        },
+        {
+          "time": "09:15",
+          "area": "작업",
+          "event": "fix(cto): 재발방지 회귀 경보 — 백업·캐시·보관함을 검사 대상에서 제외 (배 12626 · 웰리 실측 2026-09-15)",
+          "detail": "커밋 3ac8e8d5c8 · 배 11401"
         }
       ],
       "count": 1,
       "done": 1,
       "open": 0,
       "avg_minutes": 1,
-      "work_count": 8,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -214,13 +220,43 @@
           "area": "배12664",
           "event": "주차매출 크롤러 실측·수리·크론 등록",
           "detail": "실측: 계정 있음(18:38 등록)인데 크론 없음·서버표 0행. 로그인/조회 엔드포인트가 추측값이라 실패 + 자가API 포트 8000 오류(라이브는 8001) 3개 버그 수리(커밋 eaf9c1905,68a6c3df0)→실행 성공(1행 적재)→API 200 확인→cron.d 등록. 소급 적재는 원천 API 한계로 불가."
+        },
+        {
+          "time": "09:14",
+          "area": "배12673",
+          "event": "fix",
+          "detail": "send_ops_digest._is_own_broadcast 발신 로그 대조 추가 — 커밋 7d4895c46 · selfcheck 통과 · 실측 확인"
+        },
+        {
+          "time": "09:14",
+          "area": "배12516",
+          "event": "상담봇 정본 칸 빈 유형 5가지 기본문장 배선",
+          "detail": "question_types.json skeleton_when_empty 5유형을 _concierge_system_block 에 배선, 자체점검·라이브 검증 통과"
+        },
+        {
+          "time": "09:14",
+          "area": "배12517",
+          "event": "상담봇 허락 금액 예외 라이브 검증",
+          "detail": "코드는 기배선(c30d87378b)·HEAD=live sha256 일치 확인, 라이브 3케이스(허락금액/할인차단/월회비무노출) 확인"
+        },
+        {
+          "time": "09:14",
+          "area": "배12520",
+          "event": "상담봇 금액질문 outcome policy 배선",
+          "detail": "type_id price_ask+allowed_price 유무로 policy 태깅, stats policy_referred 추가, 자체점검·라이브 확인. 분류기 회귀(얼마 어미 오삭제) 별건 발견해 시보께 전달"
+        },
+        {
+          "time": "09:15",
+          "area": "배12626",
+          "event": "재발방지 회귀 경보 검사대상 좁힘(백업·캐시·보관함 제외)",
+          "detail": "커밋 3ac8e8d5c · before 118건→after 99건(신규 캐논발산) · 자체점검 4577건(0 아님·통과) · divergence_scan.py EXCLUDE_PATH_PREFIXES/GLOBS 추가"
         }
       ],
       "count": 1,
       "done": 1,
       "open": 0,
       "avg_minutes": 11,
-      "work_count": 20,
+      "work_count": 25,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -249,23 +285,57 @@
     },
     "cpo": {
       "nick": "시포",
-      "items": [],
+      "items": [
+        {
+          "ref": "GM-20260916-4001",
+          "no": "01",
+          "got": "ERP/home#P1 회원 통합 체계 -> 회원 관리 체계 // 왼쪽 메뉴에 상품기획 / 멤버십 회원관리 / 강습 회원관리 / 브로제이 CRM 이렇게만 있는데, 왜 우측 페이지에는 문의 현황, 실무진 피드백, 종합접…",
+          "did": "",
+          "start": "09:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
       "work": [
         {
           "time": "09:08",
           "area": "부팅",
           "event": "시포 부팅 자율 진행 — 배 12665 착수: 실장 회신 확인·전달문 후속화 · 배 2676 시토 전달 · 저장 1d306a733",
           "detail": "실장 9/15 18:20 회신 원문 note 첨부 · 07:50 통 회신 감지 오탐 원인 = 서명 없는 우리 발신 본문"
+        },
+        {
+          "time": "09:13",
+          "area": "공통",
+          "event": "fix(cto): 07:50 통 회신 감지 — 발신 로그 대조로 우리 발신(서명 없는 GM 계정분) 제외 (배 12673 · 시포 실측 2026-09-16 · INC-059 2회째)",
+          "detail": "커밋 7d4895c462 · 배 12668"
         }
       ],
-      "count": 0,
+      "count": 1,
       "done": 0,
-      "open": 0,
+      "open": 1,
       "avg_minutes": null,
-      "work_count": 1,
+      "work_count": 2,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-4001",
+          "no": "01",
+          "got": "ERP/home#P1 회원 통합 체계 -> 회원 관리 체계 // 왼쪽 메뉴에 상품기획 / 멤버십 회원관리 / 강습 회원관리 / 브로제이 CRM 이렇게만 있는데, 왜 우측 페이지에는 문의 현황, 실무진 피드백, 종합접…",
+          "did": "",
+          "start": "09:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -324,7 +394,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 7
         }
       ],
       "repeats": []
