@@ -109,8 +109,11 @@ def check(day):
             gaps.append({"cell": cell, "label": CELL_LABEL.get(cell, cell), "tag": tag,
                          "sheet": won(cells.get(cell)), "brojay": by_tag.get(tag, 0), "diff": diff})
     # 짝을 못 지은 시트 칸 중 값이 있는 것 — 브로제이에 그 분류 자체가 없다는 뜻일 수 있다
+    # 2026-09-16 시포: 칸 목록을 손으로 적지 않고 CELL_TAG 에 없는 강습 칸으로 센다 — 골프·스쿼시가
+    # 짝을 얻은 뒤에도 여기 남아 목록에 두 번 찍혔다(시토 배포 실측).
     unmapped = [{"cell": c, "label": CELL_LABEL.get(c, c), "sheet": won(cells.get(c))}
-                for c in ("I10", "I11", "I14", "I15") if won(cells.get(c))]
+                for c in ("I8", "I9", "I10", "I11", "I12", "I13", "I14", "I15")
+                if c not in CELL_TAG and won(cells.get(c))]
     out = {
         "date": day, "checked_at": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
         "sheet_total": sheet_total, "brojay_total": broj_total, "total_diff": sheet_total - broj_total,
@@ -126,6 +129,10 @@ def line(o):
     if o["total_diff"] == 0 and not o["gaps"] and not o["unmapped_with_value"]:
         return "%s 이관 누락 없음" % o["date"]
     names = [g["label"] for g in o["gaps"]] + [u["label"] for u in o["unmapped_with_value"]]
+    if o["total_diff"] < 0:
+        # 브로제이가 시트보다 많다 = 안 넘어간 게 아니라 날짜가 어긋난 것(전날 결제를 다음 날 옮김 · 2026-09-14·15 실측)
+        return "%s 브로제이가 시트보다 %s원 많음(옮긴 날짜 어긋남) — %s" % (
+            o["date"], format(-o["total_diff"], ","), " · ".join(names) or "분류 미상")
     return "%s 아직 브로제이에 안 넘어간 금액 %s원 — %s" % (
         o["date"], format(o["total_diff"], ","), " · ".join(names) or "분류 미상")
 
