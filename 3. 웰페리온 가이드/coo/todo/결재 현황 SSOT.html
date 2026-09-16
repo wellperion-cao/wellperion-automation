@@ -1754,8 +1754,9 @@ function renderApprovalCard(t, idx) {
         label = last.replace(/\.(html?|pdf|png|jpe?g|gif|webp)$/i, '').replace(/[_-]+/g, ' ').trim() || '첨부';
       } catch (e) { label = '첨부'; }
       if (label.length > 26) label = label.slice(0, 26) + '…';
-      h += '<a class="chip" href="' + escAttr(u) + '" target="_blank" rel="noopener" ' +
-        'onclick="event.stopPropagation();event.preventDefault();openAttachmentViewer(\'' + escAttr(u) + '\',\'' + escAttr(t.title || t['업무명'] || '') + ' — ' + escAttr(label) + '\');" title="' + escAttr(u) + '" ' +
+      /* 주소·제목은 data- 칸에 두고 this 로 읽는다 — onclick 문자열 안에 제목을 넣으면 홑따옴표 하나에 클릭이 죽는다(2026-09-16 GM 「클릭 자체가 안 되는데?」). */
+      h += '<a class="chip" href="' + escAttr(u) + '" target="_blank" rel="noopener" data-att-url="' + escAttr(u) + '" data-att-title="' + escAttr((t.title || t['업무명'] || '') + ' — ' + label) + '" ' +
+        'onclick="event.stopPropagation();event.preventDefault();openAttachmentViewer(this.getAttribute(\'data-att-url\'), this.getAttribute(\'data-att-title\'));" title="' + escAttr(u) + '" ' +
         'style="text-decoration:none;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,.45);">' +
         '📎 ' + esc(label) + '</a>';
     });
