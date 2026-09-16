@@ -53,6 +53,11 @@ if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 "%PY%" "%ROOT%\scripts\send_ops_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% send_ops_digest
+REM 2026-09-16 (Welly ship 2705, CTO): meeting brief A3 (GM work + manager ledger + schedule + task/approval
+REM   SSOT in one page) is regenerated right after the 07:50 digest (manager task index is rebuilt inside
+REM   send_ops_digest). --check = regenerate html+png, overflow check, safe_commit. No new task - same bat.
+"%PY%" "%ROOT%\scripts\meeting_brief_a3.py" --check >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% meeting_brief_a3
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed
