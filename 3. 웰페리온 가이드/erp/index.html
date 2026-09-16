@@ -131,6 +131,10 @@
   table.tbl td.k a{color:inherit; text-decoration:none;}
   table.tbl td.k a:hover{color:var(--accent-hover);}
   table.tbl td.d{color:var(--dim);}
+  /* 개발 환경 표 — 구분·항목은 좁게, 내용은 줄바꿈(말줄임으로 잘리지 않게 · GM 2026-09-16) */
+  #dev-body table.tbl td.k{width:14%;}
+  #dev-body table.tbl td.k + td.k{width:16%;}
+  #dev-body table.tbl td:last-child{white-space:normal; height:auto; padding:8px 12px; line-height:1.45;}
   table.tbl td.o{width:16%; color:var(--dim); font-size:12px;}
   @media(max-width:900px){ :root{--row-h:44px;} table.tbl thead{top:88px;} }
 
@@ -826,13 +830,16 @@ function loadDev(){
   repoGet('ssot/platform_env.json').then(function(d){
     document.getElementById('dev-lead').textContent =
       (d.partner_lead || '') + (d.updated ? ' (정본 갱신 ' + d.updated + ')' : '');
-    var html = (d.sections || []).map(function(s){
-      var rows = (s.items || []).filter(function(it){ return it.partner === true; }).map(function(it){
-        return '<tr><td class="k">' + esc(it.k) + '</td><td>' + esc(it.v) + '</td></tr>';
-      }).join('');
-      return rows ? '<h3>' + esc(s.title) + '</h3>' + tbl(['항목', '내용'], rows) : '';
-    }).join('');
-    document.getElementById('dev-body').innerHTML = html || '<div class="msg">보여 줄 항목이 없다.</div>';
+    // 표 한 장(GM 2026-09-16 「표로 축소해서 정리」) — 종전엔 절마다 제목+작은 표 9장이었다.
+    //   구분 칸은 같은 절의 첫 줄에만 적어 눈이 세로로 훑긴다. 내용·줄 수는 그대로(24줄).
+    var rows = '';
+    (d.sections || []).forEach(function(s){
+      var its = (s.items || []).filter(function(it){ return it.partner === true; });
+      its.forEach(function(it, i){
+        rows += '<tr><td class="k">' + (i === 0 ? esc(s.title) : '') + '</td><td class="k">' + esc(it.k) + '</td><td>' + esc(it.v) + '</td></tr>';
+      });
+    });
+    document.getElementById('dev-body').innerHTML = rows ? tbl(['구분', '항목', '내용'], rows) : '<div class="msg">보여 줄 항목이 없다.</div>';
   }).catch(function(e){ paneFail('dev-body', e); document.getElementById('dev-lead').textContent = ''; });
 }
 
