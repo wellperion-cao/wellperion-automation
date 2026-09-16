@@ -332,6 +332,13 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
                 body = resp.read().decode('utf-8', 'replace')
                 resp_json = json.loads(body)
                 ok = resp.status == 200 and resp_json.get('ok') is True
+                if not ok:
+                    # 2026-09-17 시토: 200 + {"ok": false} 는 오류 본문을 남기고 한 번 더 시도한다
+                    #   (09-16 09:00 매출보고 3/3 사진이 이 분기에서 재시도·기록 없이 실패 → 손 재발송).
+                    _last_err = 'ok=false: %s' % body[:300]
+                    if attempt < max_attempts - 1:
+                        time.sleep(2 * (attempt + 1))
+                        continue
                 break
         except urllib.error.HTTPError as ex:
             err_body = ''
