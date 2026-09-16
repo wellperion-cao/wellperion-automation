@@ -1441,10 +1441,8 @@ table.op-t td b{font-size:15px}
            팝업 = 모달 iframe(실무진피드백.html), openRenewDash 패턴 벤치마킹. -->
       <div class="header-feedback-slot">
         <button type="button" class="feedback-cta-btn" onclick="openStaffFeedback()">💬 실무진 피드백</button>
-        <!-- 실무진 피드백 모음 페이지 링크(GM 지시 2026-07-29 밤 — "내가 남긴 게 어떻게 됐나"를 같은 자리에서). -->
-<!-- 작업 현황 로그 — 피드백을 남긴 다음 "그래서 뭐가 됐나"를 같은 자리에서 보게 한다(GM 지시 2026-07-27,
-             배10313 시우 전달). 종합접수처_현황.html 과 같은 배치. 배지=신규 '빠진 것' 건수(0건이면 숨김). -->
-        <button type="button" class="feedback-cta-btn is-secondary" id="btnWorklog" onclick="openWorklogModal()">📋 회원 변경 이력<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
+        <!-- 회원 변경 이력 버튼은 여기서 📊 현황(라이브) 「🧭 오늘 할 일」 오른쪽으로 옮겼다(GM 지시 2026-09-16
+             「실무진 피드백은 그대로 두고, 회원 변경이력만 현황(라이브) 오늘 할일 우측으로 고정배치」). -->
       </div>
       <div class="header-actions">
         <div class="hz-zone z-status">
@@ -1472,8 +1470,9 @@ table.op-t td b{font-size:15px}
             <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
                  카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
             <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
-            <!-- 작업 현황 로그 버튼은 여기 있다가 💬 실무진 피드백 옆으로 옮겼다(GM 2026-07-27 원 지시가
-                 "실무진 피드백 옆에", 배10313). 종합접수처_현황.html 과 같은 배치로 맞춤 — 위쪽 header-feedback-slot 참조. -->
+            <!-- 회원 변경 이력 — 「오늘 할 일」 바로 오른쪽 고정(GM 지시 2026-09-16). 2026-07-27 에 실무진 피드백 옆으로
+                 옮겼던 것을 되돌린 자리. 실무진 피드백 버튼은 그대로 위 슬롯에 둔다. 배지=신규 '빠진 것' 건수(0건이면 숨김). -->
+            <button type="button" class="action-btn" id="btnWorklog" onclick="openWorklogModal()">📋 회원 변경 이력<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
           </div>
         </div>
         <div class="hz-zone z-guide">
