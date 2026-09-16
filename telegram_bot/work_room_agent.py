@@ -58,6 +58,13 @@ CANON_PATH = REPO_ROOT / "ssot" / "canon_values.json"
 PENDING_PATH = REPO_ROOT / "status" / "work_room_pending.json"
 
 WORK_ROOM_CHAT_ID = -5492623600  # 텔레그램 「업무관리」 그룹(GM·나우열M·봇 · GM 확정 2026-09-05)
+# 이 에이전트가 상대하는 사람 방 — 방마다 누구를 상대하는지 · 호출 인박스(call_inbox) 방 이름(GM 2026-09-16 「운영부 방 하나 더」).
+#   운영부 방 = GM 계정이 만든 슈퍼그룹 「AtoA 운영부」(최준용M · 봇 관리자 · 초대 링크로 입장 · 2026-09-16 18:59 시토).
+ROOMS = {
+    WORK_ROOM_CHAT_ID: {"name": "업무관리", "who": "나우열M"},
+    -1004470286998: {"name": "AtoA 운영부", "who": "최준용M"},
+}
+_room_chat_id = WORK_ROOM_CHAT_ID   # 지금 처리 중인 방(handle_group_message 가 매 수신마다 세팅 · 답은 이 방으로)
 _GM_CHAT_ID = 8254867551  # GM 텔레그램 챗 id (bot.py _GM_CHAT_ID 와 동일 · ssot/canon_values.json 정본)
 TODO_API_URL = (
     "https://script.google.com/macros/s/"
@@ -77,7 +84,7 @@ KST = timezone(timedelta(hours=9))
 # 사람이 이름을 부르는 첫마디(배2541 · 2026-09-11). 나우열M 이 「웰리야」로 네 번 불렀는데
 # 받는 갈래가 없어 전부 무응답이었다 — 무응답이 가장 나쁘다. 부르면 먼저 답하고 나서 처리한다.
 # 뒤에 조사가 붙으면(「웰리한테」·「웰리가」) 부른 게 아니라 그냥 언급이다 — 경계를 본다.
-_CALL_RE = re.compile(r"^\s*(웰리야|윌리야|웰리님|웰리)(?=$|[\s,.!?~、])[\s,.!?~]*")
+_CALL_RE = re.compile(r"^\s*(웰리야|윌리야|웰리님|웰리|시우야|시우님|시우)(?=$|[\s,.!?~、])[\s,.!?~]*")   # 운영부 방은 「시우야」로 부른다(2026-09-16)
 
 
 def classify(text: str) -> str:
@@ -695,7 +702,7 @@ async def _handle_call(text: str, ctx) -> None:
         log.error(f"[work_room] telegram_user_send 임포트 실패: {exc}")
         await _escalate(ctx, f"📣 나우열M 호출 — {text[:200]} → 답 못 나감(발신기 미가용)")
         return
-    ok = await asyncio.to_thread(send_as_gm, WORK_ROOM_CHAT_ID, reply)
+    ok = await asyncio.to_thread(send_as_gm, _room_chat_id, reply)
     if not ok:
         # 오늘 상한에 닿아 못 보낸 것이면 알리지 않는다 — 사유가 하나뿐이라 부를 때마다 같은 줄이
         # GM 봇방에 쌓인다(2026-09-11 실측). 상한 자체는 발신기가 그날 한 줄로 이미 알린다.
@@ -718,7 +725,8 @@ def _dispatch_call_ship(text: str) -> None:
     try:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
         from call_inbox import add_call
-        cid = add_call("업무관리", "나우열M", text)
+        room = ROOMS.get(_room_chat_id, ROOMS[WORK_ROOM_CHAT_ID])
+        cid = add_call(room["name"], room["who"], text)
         log.info("[work_room] 호출 인박스 %s — %s", cid or "(중복)", (text or "")[:60])
     except Exception as exc:
         log.error(f"[work_room] 호출 인박스 기록 실패: {exc}")
@@ -734,7 +742,7 @@ async def _handle_question(text: str, ctx) -> None:
             log.error(f"[work_room] telegram_user_send 임포트 실패: {exc}")
             await _escalate(ctx, f"❓ 업무관리 질문 — {text[:200]} → 답 필요(발신기 미가용)")
             return
-        ok = await asyncio.to_thread(send_as_gm, WORK_ROOM_CHAT_ID, answer)
+        ok = await asyncio.to_thread(send_as_gm, _room_chat_id, answer)
         if not ok:
             from notify.telegram_user_send import cap_reached
             if await asyncio.to_thread(cap_reached):
@@ -750,9 +758,11 @@ async def _handle_question(text: str, ctx) -> None:
 async def handle_group_message(update, ctx) -> None:
     """bot.py handle_message() 의 그룹 수신 지점에서 1줄 호출. WORK_ROOM_CHAT_ID 방
     사람·CHRO 발화만 상대하고, 봇·GM 본인 발화·다른 방은 조용히 지나간다."""
+    global _room_chat_id
     chat = update.effective_chat
-    if not chat or chat.id != WORK_ROOM_CHAT_ID:
+    if not chat or chat.id not in ROOMS:
         return
+    _room_chat_id = chat.id
     msg = update.message
     text = msg.text if msg else None
     if not text:

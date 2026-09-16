@@ -31,7 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PATH = ROOT / "status" / "calls.json"
 KST = timezone(timedelta(hours=9))
-ROOMS = ("업무관리", "★중간관리자")
+ROOMS = ("업무관리", "★중간관리자", "AtoA 운영부")   # AtoA 운영부 = 최준용M 텔레그램 방(2026-09-16)
 
 
 def _now() -> datetime:

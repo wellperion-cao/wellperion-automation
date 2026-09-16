@@ -151,6 +151,8 @@ def _room_id(chat_id):
     # 보내면 「저장한 메시지」(자기 자신)로 들어갔다(10:17·10:20 두 통). 이 도구의 '업무관리' 는 나우열M 그룹뿐이다.
     if s in ("업무관리", "업무관리-나우열M", "AtoA"):
         return WORK_ROOM_CHAT_ID
+    if s in ("AtoA 운영부", "AtoA운영부", "운영부AtoA"):   # 최준용M ↔ 시우 방(GM 계정이 만든 슈퍼그룹 · 2026-09-16)
+        return OPS_ROOM_CHAT_ID
     if s.lstrip("-").isdigit():
         rid = int(s)
     else:
@@ -280,6 +282,7 @@ def send_as_gm(chat_id, text: str) -> bool:
 
 
 WORK_ROOM_CHAT_ID = -5492623600  # 텔레그램 「업무관리」 그룹(GM·나우열M·봇 · GM 확정 2026-09-05)
+OPS_ROOM_CHAT_ID = -1004470286998   # 「AtoA 운영부」 슈퍼그룹(GM·최준용M·봇 · GM 지시 2026-09-16 · 시토 18:59 생성)
 
 
 def render_chro_task(name: str, owner: str, start: str, end: str, content: str, no=None) -> str:
