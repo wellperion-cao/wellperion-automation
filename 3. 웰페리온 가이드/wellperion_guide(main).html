@@ -7204,6 +7204,9 @@ function crTab(btn, panelId) {
           <tbody><tr><td colspan="5" style="padding:10px 8px;color:var(--dim);">불러오는 중…</td></tr></tbody>
         </table>
       </div>
+      <!-- 상담봇 질문 — 손님이 봇에 물은 것도 문의다(GM 지시 2026-09-14 · 배 2604). 가공본 status/counsel_questions_summary.json
+           (scripts/counsel_questions.py) 하나만 읽는다 · 웰페리온 것만 · 승격(자주 묻는 질문으로)은 기존 FAQ 화면 링크. -->
+      <div id="p1-bot" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:var(--fs-2);color:var(--dim);">🤖 상담봇 질문 — 불러오는 중…</div>
     </div>
     <script>
     (function(){
@@ -7269,6 +7272,20 @@ function crTab(btn, panelId) {
           tb.innerHTML = '<tr><td colspan="5" style="padding:10px 8px;color:var(--dim);">아직 없음 — 문의 집계는 erp.wellperion.com 에서 열어야 값이 붙습니다.</td></tr>';
           meta.textContent = '';
         });
+      // 상담봇 질문 줄 — 날짜별 배열로 어제·이번 달·올해를 세고(가공본은 매일 22:10 생성이라 「오늘」은 늘 0 — 어제로 센다), 못 답한 것 위 5개를 그대로 보인다.
+      var bot = document.getElementById('p1-bot');
+      getJson('/repo/status/counsel_questions_summary.json').then(function(d){
+        var w = ((d || {}).centers || {})['1_wellperion']; if (!w) throw new Error('no center');
+        var dT = 0, dM = 0, dY = 0, yday = new Date(Date.now() + 9*3600*1000 - 86400000).toISOString().slice(0,10);
+        (w['날짜별'] || []).forEach(function(p){ var day = String(p[0] || ''), n = Number(p[1] || 0);
+          if (day === yday) dT += n; if (day.slice(0,7) === month) dM += n; if (day.slice(0,4) === year) dY += n; });
+        var srv = w['서버_집계'] || {}, rate = (typeof srv['답변율'] === 'number') ? Math.round(srv['답변율'] * 100) + '%' : '–';
+        var miss = (w['많이_물었는데_못_답한_것'] || []).slice(0, 5).map(function(p){ return esc(p[0]) + '(' + Number(p[1] || 0) + ')'; });
+        bot.innerHTML = '🤖 <b style="color:var(--text);">상담봇 질문</b> — 어제 <b style="color:var(--text);">' + dT + '</b> · 이번 달 ' + dM + ' · 올해 ' + dY +
+          ' · 봇이 답한 비율 ' + rate + (miss.length ? ' · <span style="color:var(--text);">못 답한 것:</span> ' + miss.join(' · ') : ' · 못 답한 것 없음') +
+          ' <a href="cbo/counsel_faq.html" target="_blank" style="color:var(--text);font-weight:600;text-decoration:none;">→ 자주 묻는 질문으로 올리기</a>' +
+          (d.generated_at ? ' <span style="opacity:.7;">(집계 ' + esc(String(d.generated_at).slice(0,16).replace('T',' ')) + ')</span>' : '');
+      }).catch(function(){ bot.textContent = '🤖 상담봇 질문 — 아직 없음(erp.wellperion.com 에서 열어야 값이 붙습니다)'; });
     })();
     </script>
   </article>
