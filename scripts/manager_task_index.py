@@ -164,7 +164,9 @@ def _period_no_history(reason: str) -> "tuple[str, bool] | None":
     """PERIOD(과거 달) 소급 중일 때만 '당시 값 없음'을 돌려준다 — None 이면 호출부가 평소대로 잰다."""
     if PERIOD is None:
         return None
-    return f"{_NO_MEASURE}(당시 값 없음(원장 없음) — {reason})", False
+    # 칸 한 줄로(GM 지적 2026-09-16 「칸 축소·밸런스」) — 이유는 첫 구절만.
+    short = re.split(r"[(—·]", str(reason or ""), 1)[0].strip()
+    return f"당시 원장 없음" + (f" · {short}" if short else ""), False
 
 
 SSOT_DONE = {"완료", "폐기", "완료됨"}
@@ -258,10 +260,17 @@ def objective_progress_cell(objs: list) -> tuple[str, bool]:
 
 
 def ledger_reply_cell(seen: dict, owner: str) -> tuple[str, bool]:
-    """확인요청 원장(latest_by_no)에서 사람별 회신율 — 닫힌 건/보낸 건 · 최장경과 · 35일↑."""
-    if (nh := _period_no_history("회신·종결 상태는 지금 값만 보관")) is not None:
-        return nh
+    """확인요청 원장(latest_by_no)에서 사람별 회신율 — 닫힌 건/보낸 건 · 최장경과 · 35일↑.
+    소급 달(PERIOD)이면 「그 달에 물은 건」만 세고, 닫힘은 지금 상태로 본다(물은 날짜는 원장에 있다)."""
     mine = [(n, d, it) for n, (d, it) in seen.items() if str(it.get("owner") or "").strip() == owner]
+    if PERIOD is not None:
+        ym = _period_ym()
+        mine = [(n, d, it) for n, d, it in mine if str(d)[:7] == ym]
+        if not mine:
+            return "그 달 물은 건 없음", False
+        closed = sum(1 for _n, _d, it in mine if str(it.get("status", "")).lower() in DONE)
+        rate = round(closed / len(mine) * 100)
+        return f"그 달 물은 {len(mine)}건 · 답 온 {closed}건({rate}%)", rate < 50
     if not mine:
         return f"{_NO_MEASURE}(배정 건 없음)", False
     closed = sum(1 for _n, _d, it in mine if str(it.get("status", "")).lower() in DONE)
@@ -306,6 +315,8 @@ def reception_dept_cell(dept: str) -> tuple[str, bool]:
 
 def facility_check_cell() -> tuple[str, bool]:
     """시설 점검 이행 — 오늘 회차 입력 수·기준이탈 건(support_check_summary 실측)."""
+    if (nh := _period_no_history("점검판은 당일 조회만")) is not None:
+        return nh
     try:
         import support_check_summary as scs
         lines, filled = scs.build_facility_section(_today().isoformat())
