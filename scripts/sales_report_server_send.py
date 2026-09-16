@@ -200,15 +200,42 @@ def gm_pc_0900(dry_run):
     return 0 if ok else 1
 
 
+def _server_final_line():
+    """서버 09:02 대조 줄 본문 — 축 = server_final(시트 0칸 판 · 브로제이+ERP) vs 시트 (GM 2026-09-16 「오늘부터
+    브로제이로 시험」 · 시포·시토 합의). 시트는 10/1 전까지 참고값이라 어긋남은 경보가 아니라 기록 — gap 상위 3칸만.
+    경보(⚠️)는 빠진 원천(missing)이 있을 때만. 관문은 서버 안에서 부른다(127.0.0.1:8001 · 관리자 헤더)."""
+    import json as _json, urllib.request as _u
+    req = _u.Request("http://127.0.0.1:8001/api/report/sales_report_cells",
+                     headers={"X-Erp-User": "cto@wellperion.com", "X-Erp-Allowed": "*"})
+    d = _json.loads(_u.urlopen(req, timeout=60).read().decode("utf-8"))
+    sf = d.get("server_final") or {}
+    if not isinstance(sf.get("cells_total"), int):
+        return None
+    diff = sorted(sf.get("diff") or [], key=lambda x: -abs(int(x.get("gap") or 0)))
+    text = "↳ 서버판(브로제이+ERP) 대조 · 기준일 %s · %d/%d칸 채움 · 시트와 다른 칸 %d" % (
+        d.get("ref_date"), sf["cells_filled"], sf["cells_total"], len(diff))
+    if diff:
+        text += " · 큰 차이: " + ", ".join("%s %+,d" % (x["cell"], int(x["gap"])) for x in diff[:3])
+    if sf.get("missing"):
+        text += " · ⚠️빠진 원천: " + ", ".join(map(str, sf["missing"]))
+    return text
+
+
 def server_check_line(dry_run):
-    """서버 09:02 — 22칸 대조 결과 한 줄(글). 사진은 GM PC 가 09:00 에 보냈다."""
-    report = _render().build_report()
-    if not report:
-        print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
-        return 1
-    text = "↳ 서버판 22칸 대조 · 기준일 %s · %d/%d 일치" % (report["ref_date"], report["matched"], report["total"])
-    if report["mismatches"]:
-        text += " · 불일치: " + ", ".join(report["mismatches"])
+    """서버 09:02 — 대조 결과 한 줄(글). 사진은 GM PC 가 09:00 에 보냈다."""
+    try:
+        text = _server_final_line()
+    except Exception as e:
+        text = None
+        print("[warn] server_final 못 받음(%s) — 종전 22칸 대조로" % type(e).__name__)
+    if text is None:
+        report = _render().build_report()
+        if not report:
+            print("[fail] 시트 미러 없음 — sync_sales.py(deptrep/dump) 캐시 확인")
+            return 1
+        text = "↳ 서버판 22칸 대조 · 기준일 %s · %d/%d 일치" % (report["ref_date"], report["matched"], report["total"])
+        if report["mismatches"]:
+            text += " · 불일치: " + ", ".join(report["mismatches"])
     token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
     if dry_run:
         print("[dry-run] " + text)
