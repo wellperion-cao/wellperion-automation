@@ -984,7 +984,7 @@
    "증상": "logs/kakao_sent-2026-09-16.log 07:50:48 본문 353자 지점부터 「📌 GM요청 | 🔍 실측 | ✅ 반영 …」 마크다운 표 · _pending_digest.json message 칸 07:37:58",
    "본질": "훅은 사람 세션을 전제로 만든 안내인데, 같은 settings 훅이 무인 자식 claude 에도 붙는다 — 사람용 안내가 자동 발신 본문의 형식을 바꿨다. 「사람 화면용 규칙」과 「자동 발신용 규칙」을 구분하는 표식이 없었다.",
    "뿌리분류": "경계",
-   "차단조치": "(시토) 커밋 5c5a4684e8 — ①run_claude env WELLPERION_HEADLESS=1 ②worklog record_gm_prompt_hook·close_gm_refs_hook 표식이면 즉시 return ③ops_daily_digest parse_brain_json _REPORT_TABLE_MARKERS 차단+경보 ④자체점검 2줄(훅 무출력 · 표 든 message 차단)",
+   "차단조치": "(시토) 커밋 5c5a4684e8 — ①run_claude env WELLPERION_HEADLESS=1 ②worklog record_gm_prompt_hook·close_gm_refs_hook 표식이면 즉시 return ③ops_daily_digest parse_brain_json _REPORT_TABLE_MARKERS 차단+경보 ④자체점검 2줄(훅 무출력 · 표 든 message 차단) · ★재발 2026-09-17 07:50(2회째 · 같은 통에 표 그대로): 원인 = ③gm_wording_guard Stop 훅이 무인 자식에도 붙어 「8요소 표로 다시 써라」(return 2)로 되돌리자 두뇌가 표를 냈고 ④파서는 JSON 파싱 실패 폴백(원문→message)에서 표 가드를 안 탔다 → (시토) gm_wording_guard·auto_next_ship_hook 두 Stop 훅에 WELLPERION_HEADLESS 건너뛰기 + parse_brain_json 폴백에도 표 가드",
    "상태": "GUARDED",
    "검증증거": "2026-09-16 07:5x — 오늘 실제 오염 message 로 파서 차단 확인 · 표식 있을 때 훅 stdout 없음·worklog 무변경 · 완료 판정 = 09-17 07:50 본문이 사람 말(웰리 로그 판정)"
   }

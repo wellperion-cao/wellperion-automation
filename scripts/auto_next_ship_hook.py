@@ -154,6 +154,8 @@ def bump_chain(session_id: str, human_stamp: str) -> int:
 
 
 def main() -> None:
+    if os.environ.get("WELLPERION_HEADLESS"):
+        allow_stop("무인 claude(WELLPERION_HEADLESS) — 사람 세션 훅 건너뜀(INC-063)")
     try:
         data = json.loads(sys.stdin.read() or "{}")
     except Exception:  # noqa: BLE001

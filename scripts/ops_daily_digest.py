@@ -1389,6 +1389,16 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
             return message, issues, schedules, True
     except json.JSONDecodeError:
         pass
+    # INC-063 재발(2026-09-17): 두뇌가 표를 내면 JSON 파싱이 실패하고 이 원문 폴백으로 빠져
+    # 위 차단을 우회했다 — 폴백도 같은 가드를 탄다(표가 섞이면 통째로 비운다 · 정직 강등).
+    if _has_report_table_header(raw):
+        print("[차단] 두뇌 원문(비JSON)에 GM 보고 표 머리가 섞였다 — 발송 차단(INC-063 재발 경로)")
+        try:
+            from model_router import _alert
+            _alert("🚨 아침요약 발송 차단 — 비JSON 원문에 GM 보고 표 유입(INC-063). 두뇌 응답·훅 표식 확인 요망.")
+        except Exception:
+            pass
+        return "", [], [], False
     return raw.strip(), [], [], False
 
 

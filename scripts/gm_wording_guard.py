@@ -326,6 +326,11 @@ def main():
         assert _in_defer_window(__import__("datetime").datetime(2026, 9, 16, 9, 0)) is False
         print("selftest ok")
         return 0
+    if os.environ.get("WELLPERION_HEADLESS"):
+        # INC-063 재발(2026-09-17): 무인 claude -p(아침 요약 두뇌)에도 이 Stop 훅이 붙어
+        # 「8요소 표로 다시 써라」(return 2)로 되돌리자 두뇌가 JSON 대신 표를 냈다.
+        # 사람 세션 규칙은 사람 세션에만 — worklog.py 와 같은 표식으로 통째 건너뛴다.
+        return 0
     try:
         payload = json.loads(sys.stdin.read() or "{}")
     except ValueError:
