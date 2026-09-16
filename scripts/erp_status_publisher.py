@@ -642,8 +642,11 @@ def _send_telegram(text, kind="tech_check"):
 
 
 def _bridge_sig(name: str, detail: str) -> str:
+    """(다리, 사유) 지문 — 배12678(GM 2026-09-16 「카운트 숫자 빼고 종류로」): 사유에서 숫자
+    (되밀기 실패 건수 등)를 지우고 지문을 낸다. 숫자만 바뀐 재발은 '같은 사유'로 억제한다."""
     import hashlib
-    return hashlib.sha256(f"{name}|{detail}".encode("utf-8")).hexdigest()[:16]
+    detail_key = re.sub(r'\d+', '#', detail)
+    return hashlib.sha256(f"{name}|{detail_key}".encode("utf-8")).hexdigest()[:16]
 
 
 def alert_newly_broken(bridges):

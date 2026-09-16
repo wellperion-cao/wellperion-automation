@@ -21,6 +21,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import sys
 import time
 
@@ -474,8 +475,15 @@ def _check_reception_lost() -> list[str]:
     return issues
 
 
+def _issue_category_key(issue: str) -> str:
+    """이슈 문구에서 숫자(건수·분·일수 등)를 지운 카테고리 키 — 배12678(GM 2026-09-16
+    「같은 문구 반복은 1회로」). 숫자만 바뀌고 종류가 같은 이슈는 같은 걸로 본다."""
+    return re.sub(r'\d+', '#', issue)
+
+
 def _reception_state_changed(issues: list[str]) -> tuple[bool, list[str]]:
-    """직전 결과와 비교 — 바뀐 때만 True. (상태, 직전 문제 목록)"""
+    """직전 결과와 비교 — 종류가 바뀐 때만 True(숫자만 바뀐 것은 같은 종류로 본다).
+    (상태, 직전 문제 목록)"""
     prev: dict = {}
     try:
         with open(_RC_STATE, encoding='utf-8') as f:
@@ -493,7 +501,8 @@ def _reception_state_changed(issues: list[str]) -> tuple[bool, list[str]]:
             json.dump(rec, f, ensure_ascii=False, indent=1)
     except Exception as e:
         print(f"[WARN] 상태 파일 기록 실패: {e}", flush=True)
-    return (sorted(issues) != sorted(prev_issues)), prev_issues
+    return (sorted(_issue_category_key(i) for i in issues)
+            != sorted(_issue_category_key(i) for i in prev_issues)), prev_issues
 
 
 def run_reception_only(token: str, dry_run: bool) -> None:

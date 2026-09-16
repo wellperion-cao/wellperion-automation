@@ -1825,6 +1825,10 @@ def check_dedup(room_name: str, text: str = "", image_path: Path | None = None) 
     "보냄"으로 남아 재시도를 막는다). 성공 확정 후에는 record_dedup_sent()가 기록한다.
     우회: env SKIP_KAKAO_DEDUP_GUARD=1."""
     if os.environ.get(SKIP_DEDUP_ENV) == "1":
+        # 배12678(시토 2026-09-16) — 2026-09-11 ★운영부 07:45·08:37 동일 문구 실중복이
+        # 이 가드(2시간창)를 통과했는데, 그때 로그엔 우회 흔적이 전혀 안 남아 원인을 못
+        # 짚었다. 가드는 그대로 두고(임의 약화 안 함) 우회 사용 자체를 보이게만 한다.
+        log(f"[dedup] ⚠ 우회됨 — [{room_name}] {SKIP_DEDUP_ENV}=1 로 중복 가드를 건너뛴다")
         return False
     sig = _dedup_signature(room_name, text, image_path)
     now = time.time()
@@ -2154,6 +2158,12 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         if not sent:
             # 나갔는지 확인 못 했으면 성공이라 적지 않는다(2026-09-11 공지창 사고).
             # 예외로 올려 호출측 실패 경로(BLOCKED·업무보고방 통보·rc=1)를 그대로 태운다.
+            # ★배12678(시토 2026-09-16) — 2026-09-11 ★중간관리자 실제 중복(12:00:19 이 확인
+            # 실패로 예외만 올리고 원장에 안 남음 → 7분 뒤 재시도가 진짜로 두 번째로 나감,
+            # 실장이 "같은 글이 두 번" 지적). 확인은 실패했어도 글자는 이미 입력칸을 떠났을
+            # 수 있어 원장에 남긴다 — 같은 내용 재시도가 오면 중복 가드가 잡는다(2시간 창).
+            # 우회: env SKIP_KAKAO_DEDUP_GUARD=1.
+            record_dedup_sent(room_name, text=text)
             shot = screenshot(room_win, room_name, "send_unconfirmed")
             _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
                           ok=False, kind="message", channel="kakao")

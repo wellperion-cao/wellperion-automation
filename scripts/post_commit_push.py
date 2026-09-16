@@ -989,7 +989,11 @@ def _alert_should_send_locked(root: str, reason: str, *, track_stuck: bool = Tru
     """_alert_should_send의 실제 판정 로직(락으로 감싸진 임계구역)."""
     import hashlib
     import time
-    key = hashlib.sha256(reason.encode("utf-8", "replace")).hexdigest()[:16]
+    # 배12678(GM 2026-09-16 「파일 개수 빼고 상태로」) — 표류 경보 사유에 박힌 파일 개수
+    # (len(stale)/len(reverted))가 매 회차 달라 같은 종류의 표류도 매번 '새 사유'로 잡혔다.
+    # 숫자를 지운 키로 지문을 내 개수만 바뀐 재발을 같은 사유로 억제한다.
+    reason_key = _re_mask.sub(r'\d+', '#', reason)
+    key = hashlib.sha256(reason_key.encode("utf-8", "replace")).hexdigest()[:16]
     now = time.time()
     st = _alert_state_read(root)
     quiet_window = _ALERT_QUIET_SEC if quiet_sec is None else quiet_sec

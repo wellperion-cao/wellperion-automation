@@ -80,7 +80,7 @@
       "owner": "웰리",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 확정 2026-09-03 신설 — 밀린 접수 목록이 ★운영부로 옮겨가 빈 07:40 자리를 채운다. GM: '하루의 시작은 어떤 일을 해야하고, 어떤게 잘하는거고' + '종합접수 받은 청결 및 이런 부분까지도 추가해주면 잘한다는 것이 더 본질에 집중할 수 있을듯'. 점검=했다 / 접수=회원이 어떻게 느꼈나. 새 수집기 없음(support_check_summary·report_stream_2b_reception 재사용).",
+      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 확정 2026-09-03 신설 — 밀린 접수 목록이 ★운영부로 옮겨가 빈 07:40 자리를 채운다. GM: '하루의 시작은 어떤 일을 해야하고, 어떤게 잘하는거고' + '종합접수 받은 청결 및 이런 부분까지도 추가해주면 잘한다는 것이 더 본질에 집중할 수 있을듯'. 점검=했다 / 접수=회원이 어떻게 느꼈나. 새 수집기 없음(support_check_summary·report_stream_2b_reception 재사용). | 하루 두 통 합치기 대상(배12678 GM 2026-09-16 v2 설계) — 「🌅 하루의 시작」 유지, 코드 변경은 다음 레인. 상세 = status/briefs/CTO-2026-09-16-배12678-알림정리안.md §v2.",
       "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py → report_stream_2_check.build_morning_kakao()",
       "bookend": "start"
     },
@@ -96,7 +96,7 @@
       "owner": "웰리",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-09-03 수신처 변경 — ★운영+시설+지원+주차(4부서 합본)에서 ★운영부로 좁혔다. 여럿에게 같이 보이면 아무도 자기 것으로 안 잡는다(실측 그날 8건 중 20일 넘은 것 3건·최장 24일, 전날엔 44일짜리). 처리 책임이 모이는 실장 방 한 곳으로(약속 L24). 부서별 인지는 15분 주기 「📮 새 접수」 통지가 종전대로 4부서방에 계속 나가 유지된다. 킬스위치 status/ops_digest_send.json overdue_alert_enabled. ▸[같은 날 GM 정정 2026-09-03] \"종합접수처 전체는 중간관리자방에만\" — ★운영부 → ★중간관리자 로 옮김. 실장·소장·나우열M 이 같이 있어 부서를 가로지르는 배정이 한 번에 끝난다.",
+      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸GM 지시 2026-09-03 수신처 변경 — ★운영+시설+지원+주차(4부서 합본)에서 ★운영부로 좁혔다. 여럿에게 같이 보이면 아무도 자기 것으로 안 잡는다(실측 그날 8건 중 20일 넘은 것 3건·최장 24일, 전날엔 44일짜리). 처리 책임이 모이는 실장 방 한 곳으로(약속 L24). 부서별 인지는 15분 주기 「📮 새 접수」 통지가 종전대로 4부서방에 계속 나가 유지된다. 킬스위치 status/ops_digest_send.json overdue_alert_enabled. ▸[같은 날 GM 정정 2026-09-03] \"종합접수처 전체는 중간관리자방에만\" — ★운영부 → ★중간관리자 로 옮김. 실장·소장·나우열M 이 같이 있어 부서를 가로지르는 배정이 한 번에 끝난다. | 하루 두 통 합치기 대상(배12678 GM 2026-09-16 v2 설계) — ★중간관리자 「시작」 1통으로 send_mgr_brief·schedule_pings 와 병합 예정, 코드 변경은 다음 레인. 상세 = 위 브리프 §v2.",
       "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_OPS)"
     },
     {
@@ -111,7 +111,7 @@
       "owner": "시토",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "킬스위치 status/ops_digest_send.json enabled=true(GM go 2026-07-14 발효) | [2026-08-04 정정] GM 확인 — 실제 방 이름은 공백 없는 \"★운영부\"(kakao_rooms.json 08-04 갱신과 일치). kakao_report_sender._title_key 가 공백 무시 대조라 표기는 기능에 영향 없음, 문서만 정정. | [2026-08-05 시토 · GM 편제 확정] 같은 07:30 실행에 '사람이 처리할 배 전달' 1통이 붙었다 — AI가 실행하지 않는 시우·시로·시뽀 배(status/_queue.json)를 담당자 이름과 함께 방에 넘긴다. 목록이 지난번과 같으면 발신하지 않는다(지문=status/heartbeats/clevel-queue-human-relay.json). 새 발신기·새 예약작업 없음 — 기존 관문 kakao_report_sender.py 재사용. | [2026-08-08 시토 · 배443 · GM 확정 2026-08-07 채널 역할 분리] 배 전달문의 방 배정을 역할별에서 ★중간관리자 한 곳으로 모았다 — 이 전달문은 \"해주세요\"라 본질이 요청이고 요청은 답을 받아야 한다. 이경연 실장·이정헌 소장·나우열M 이 그 방에 다 있어 부서를 가로지르는 확인이 한 번에 끝난다. ★운영부 방은 공유 전용으로 남아 아침 다이제스트만 받는다(답변 요구 없음). 방이 바뀐 첫 회차에 옛 방 스냅샷을 승계해 이미 전달한 배가 신규로 쏟아지는 것을 막는다.  | [2026-08-08 시토 · 배442] 발신 전 GM 승인 단계 발효 — status/ops_digest_send.json relay_approval_required=true. 켜져 있으면 카톡 대신 업무보고방에 초안만 올리고 대기하고, 승인 후 send_ops_digest.py --relay-approved 로 실발신한다. GM \"초반에만 확인하고 나중에 자율화\" — 오발신 0건이 이어지면 이 키를 지우고 자율 발송으로 되돌린다(꺼둔 채 두지 않는다·약속 L21). 아울러 staff_message 가 JSON null 인 배를 \"None\" 이라는 글자로 읽어 실무진 방에 그대로 실을 뻔한 것을 막았다. | [2026-09-03 웰리] 시각을 실제값으로 정정 — ★운영부 07:45 · ★중간관리자 07:50(예약 실행은 07:30 그대로, 발신 시각은 MORNING_SEND_TIMES 가 정한다). 같은 아침에 나가는 4부서방 07:40·부서장 07:55·일정 07:58 통은 별도 항목으로 등록했다. | [2026-09-03 GM 승인 '추천 진행' · 4단계 모듈 2단계 배정 마감 1영업일] ★중간관리자 07:50 통 맨 위에 「⏳ 배정 기다리는 것 N건 (어제 N건) · 1영업일 넘긴 것 N건」 한 줄 — 전달했는데 진행 흔적 없는 배(relay 스냅샷 전부·relay_until_replied 포함). 어제 값은 같은 하트비트 waiting_log{날짜:건수}, 처음 전달한 날은 스냅샷 first_sent(휴관일=close_days.is_closed 제외). 넘긴 건은 08:00 GM 항로 꼬리 「⏳ 배정 마감 넘김」(ceo_morning_pipeline._build_overdue_assign)에도 건별 N일째로 실린다. 이 줄은 기존 통에 얹혀 나간다(별도 게이트 없음).",
+      "state_note": "킬스위치 status/ops_digest_send.json enabled=true(GM go 2026-07-14 발효) | [2026-08-04 정정] GM 확인 — 실제 방 이름은 공백 없는 \"★운영부\"(kakao_rooms.json 08-04 갱신과 일치). kakao_report_sender._title_key 가 공백 무시 대조라 표기는 기능에 영향 없음, 문서만 정정. | [2026-08-05 시토 · GM 편제 확정] 같은 07:30 실행에 '사람이 처리할 배 전달' 1통이 붙었다 — AI가 실행하지 않는 시우·시로·시뽀 배(status/_queue.json)를 담당자 이름과 함께 방에 넘긴다. 목록이 지난번과 같으면 발신하지 않는다(지문=status/heartbeats/clevel-queue-human-relay.json). 새 발신기·새 예약작업 없음 — 기존 관문 kakao_report_sender.py 재사용. | [2026-08-08 시토 · 배443 · GM 확정 2026-08-07 채널 역할 분리] 배 전달문의 방 배정을 역할별에서 ★중간관리자 한 곳으로 모았다 — 이 전달문은 \"해주세요\"라 본질이 요청이고 요청은 답을 받아야 한다. 이경연 실장·이정헌 소장·나우열M 이 그 방에 다 있어 부서를 가로지르는 확인이 한 번에 끝난다. ★운영부 방은 공유 전용으로 남아 아침 다이제스트만 받는다(답변 요구 없음). 방이 바뀐 첫 회차에 옛 방 스냅샷을 승계해 이미 전달한 배가 신규로 쏟아지는 것을 막는다.  | [2026-08-08 시토 · 배442] 발신 전 GM 승인 단계 발효 — status/ops_digest_send.json relay_approval_required=true. 켜져 있으면 카톡 대신 업무보고방에 초안만 올리고 대기하고, 승인 후 send_ops_digest.py --relay-approved 로 실발신한다. GM \"초반에만 확인하고 나중에 자율화\" — 오발신 0건이 이어지면 이 키를 지우고 자율 발송으로 되돌린다(꺼둔 채 두지 않는다·약속 L21). 아울러 staff_message 가 JSON null 인 배를 \"None\" 이라는 글자로 읽어 실무진 방에 그대로 실을 뻔한 것을 막았다. | [2026-09-03 웰리] 시각을 실제값으로 정정 — ★운영부 07:45 · ★중간관리자 07:50(예약 실행은 07:30 그대로, 발신 시각은 MORNING_SEND_TIMES 가 정한다). 같은 아침에 나가는 4부서방 07:40·부서장 07:55·일정 07:58 통은 별도 항목으로 등록했다. | [2026-09-03 GM 승인 '추천 진행' · 4단계 모듈 2단계 배정 마감 1영업일] ★중간관리자 07:50 통 맨 위에 「⏳ 배정 기다리는 것 N건 (어제 N건) · 1영업일 넘긴 것 N건」 한 줄 — 전달했는데 진행 흔적 없는 배(relay 스냅샷 전부·relay_until_replied 포함). 어제 값은 같은 하트비트 waiting_log{날짜:건수}, 처음 전달한 날은 스냅샷 first_sent(휴관일=close_days.is_closed 제외). 넘긴 건은 08:00 GM 항로 꼬리 「⏳ 배정 마감 넘김」(ceo_morning_pipeline._build_overdue_assign)에도 건별 N일째로 실린다. 이 줄은 기존 통에 얹혀 나간다(별도 게이트 없음). | 하루 두 통 합치기 대상(배12678 GM 2026-09-16 v2 설계) — 코드 변경은 다음 레인. 상세 = 위 브리프 §v2.",
       "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py(다이제스트 + send_relays)"
     },
     {
@@ -157,7 +157,7 @@
       "owner": "웰리",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸2026-08-29 GM 카톡 중복 정리 — 같은 목록이 아침·저녁 두 번 전문으로 나가던 것을 아침은 건수만으로 줄였다.",
+      "state_note": "[2026-09-03 웰리 · GM 지시] 아침 4통 중 등록이 빠져 있던 것을 채웠다 — 자율현황 「알림 한 장」이 실제 나가는 발신을 다 못 보여주고 있었다. ▸2026-08-29 GM 카톡 중복 정리 — 같은 목록이 아침·저녁 두 번 전문으로 나가던 것을 아침은 건수만으로 줄였다. | 하루 두 통 합치기 대상(배12678 GM 2026-09-16 v2 설계) — 미컨택 경보 절은 마무리에 안 넣는다(GM 지시), 코드 변경은 다음 레인. 상세 = 위 브리프 §v2.",
       "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py _send_ovd_room(_OVD_ROOM_LESSON)"
     },
     {
@@ -519,7 +519,7 @@
       "owner": "웰리",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "큐(mgmt_notice_queue)가 0건이면 발신 없음 — 조용한 날이 정상이다.",
+      "state_note": "큐(mgmt_notice_queue)가 0건이면 발신 없음 — 조용한 날이 정상이다. | 하루 두 통 합치기 대상(배12678 GM 2026-09-16 v2 설계) — 「🌙 하루의 마무리」로 병합 예정, 코드 변경은 다음 레인. 상세 = 위 브리프 §v2.",
       "source": "telegram_bot/daily_scheduler.py run_mgmt_notice_digest()",
       "job_id": "mgmt_notice_digest_1705"
     },
@@ -767,7 +767,7 @@
       "owner": "시토",
       "trigger": "git post-commit hook",
       "state": "conditional",
-      "state_note": "2026-08-31 수리 전에는 하루 22통까지 나갔다(표류 경고가 밀림 시계를 잘못 켜 「정상화」 통지를 연쇄 발생). 지금은 표류 하루 1통 상한 · 밀림은 진짜 막혔을 때만",
+      "state_note": "2026-08-31 수리 전에는 하루 22통까지 나갔다(표류 경고가 밀림 시계를 잘못 켜 「정상화」 통지를 연쇄 발생). 지금은 표류 하루 1통 상한 · 밀림은 진짜 막혔을 때만 | 잡음 정리 완료(배12678 시토 2026-09-16) — 표류 경보 지문에서 파일 개수를 빼고 상태(종류)로만 억제한다(post_commit_push._alert_should_send_locked). 텔레그램 즉시·상세 유지.",
       "source": "scripts/post_commit_push.py _telegram_warn · .git/hooks/post-commit"
     },
     {
@@ -935,7 +935,7 @@
       "owner": "시토",
       "trigger": "manual",
       "state": "live",
-      "state_note": "2026-08-04 시토(텔레그램·카톡 전수점검) 등록 — 등록부에 빠져 있었다. 고정 스케줄 하나가 아니라 post_commit_push·self_health_watchdog·kpi_collector 등 여러 지점이 각자 호출(trigger=manual로 표기, schtasks 단일 매핑 불가). 실측: 2026-08-03 21:18·22:17 같은 사유(시트 GAS todo_list 타임아웃) 1시간 간격 재경보 — 코드상 dedup은 있음(newly broken만) → 그 사이 복구판정→재발 플래핑으로 추정, 확정 못함.",
+      "state_note": "2026-08-04 시토(텔레그램·카톡 전수점검) 등록 — 등록부에 빠져 있었다. 고정 스케줄 하나가 아니라 post_commit_push·self_health_watchdog·kpi_collector 등 여러 지점이 각자 호출(trigger=manual로 표기, schtasks 단일 매핑 불가). 실측: 2026-08-03 21:18·22:17 같은 사유(시트 GAS todo_list 타임아웃) 1시간 간격 재경보 — 코드상 dedup은 있음(newly broken만) → 그 사이 복구판정→재발 플래핑으로 추정, 확정 못함. | 잡음 정리 완료(배12678 시토 2026-09-16) — 연동 다리 경보 지문(_bridge_sig)에서 카운트 숫자를 빼고 종류로만 억제한다. 텔레그램 즉시·상세 유지.",
       "source": "scripts/erp_status_publisher.py:429-469 (alert_newly_broken)"
     },
     {
@@ -950,7 +950,7 @@
       "owner": "시토",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "[2026-08-08 시토 등록] 새 완료건이 없으면 조용히 넘어간다 — 로그에 없는 것이 곧 고장은 아니다(조건부). 킬스위치는 아침 다이제스트와 같은 status/ops_digest_send.json 하나를 공유한다.",
+      "state_note": "[2026-08-08 시토 등록] 새 완료건이 없으면 조용히 넘어간다 — 로그에 없는 것이 곧 고장은 아니다(조건부). 킬스위치는 아침 다이제스트와 같은 status/ops_digest_send.json 하나를 공유한다. | 즉시 유지(배12678 GM 2026-09-16) — 완료 통보 3종 중 하나, 이번 정리·병합 대상 아님.",
       "source": "telegram_bot/daily_scheduler.py _check_ops_done_immediate() → scripts/send_ops_digest.py build_done_section()",
       "job_id": "ops_done_immediate_alert"
     },
