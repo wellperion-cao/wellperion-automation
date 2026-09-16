@@ -3102,6 +3102,17 @@ def run_daily_digest(early: bool = False) -> None:
         logger.error(f"{label} 오늘 완료건 빌드 예외: {e}")
         daily_done_msg = ""
 
+    # 안 닫힌 이월 #번호·N일째 — ★운영부 「🌙 하루의 마무리」 짝(배12678 §v2 · 2026-09-17,
+    # send_ops_digest.build_ops_carryover_section 재사용 — 새 원장 없음). ★부서장은 아직
+    # 없음(원장 데이터원이 없다 — status/briefs/CTO-2026-09-16-배12678-알림정리안.md §v2
+    # "확인 필요" ③ 참고, 2026-08-20 GM 지시로 끈 --room-key dept 경로를 다시 켜야 생긴다).
+    try:
+        import send_ops_digest as _od4
+        ops_carryover_msg = _od4.build_ops_carryover_section()
+    except Exception as e:
+        logger.error(f"{label} ★운영부 이월 항목 빌드 예외: {e}")
+        ops_carryover_msg = ""
+
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
     # ★2026-08-18 GM 결정(배670) — 문의 정리 + 24h SLA 위반(sla_text, 위에서 계산분)을
     #   한 통으로 묶어 보낸다. 종전엔 22:31 미배정 557자·22:32 문의 639자가 1분 간격
@@ -3129,23 +3140,25 @@ def run_daily_digest(early: bool = False) -> None:
             (KAKAO_DEPTHEAD_ROOM, "강습",
              _scoped_plain("lesson"),
              "",
-             today_reception_msg),
+             today_reception_msg,
+             ""),   # ★부서장 이월 — 아직 없음(위 ops_carryover_msg 주석 참고)
             (KAKAO_OPS_DEPT_ROOM, "멤버십",
              _scoped_plain("membership"),
              _un.build_sla_alert_text([v for v in sla_violations if v["type"] == "멤버십"])
              if sla_text else "",
-             daily_done_msg),
+             daily_done_msg,
+             ops_carryover_msg),
         ]
     except Exception as e:
         logger.error(f"{label} 문의 정리 방별 분리 실패 — 종전 병합본으로 발송: {e}")
         room_payload = [
-            (KAKAO_DEPTHEAD_ROOM, "문의", inquiry_plain or "", "", today_reception_msg),
-            (KAKAO_OPS_DEPT_ROOM, "완료건", "", "", daily_done_msg),
+            (KAKAO_DEPTHEAD_ROOM, "문의", inquiry_plain or "", "", today_reception_msg, ""),
+            (KAKAO_OPS_DEPT_ROOM, "완료건", "", "", daily_done_msg, ops_carryover_msg),
         ]
 
     _sent_any = False
-    for _room, _tag, _body, _sla, _extra in room_payload:
-        parts = [p for p in (_body, _sla, _extra) if p]
+    for _room, _tag, _body, _sla, _extra, _carryover in room_payload:
+        parts = [p for p in (_body, _sla, _extra, _carryover) if p]
         if not parts:
             logger.info(f"{label} 카톡 {_room}({_tag}) 보낼 내용 없음 — 발송 없음")
             continue

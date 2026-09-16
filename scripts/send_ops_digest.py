@@ -437,6 +437,9 @@ MORNING_4DEPT_HEARTBEAT_ID = "ops-digest-morning-4dept-sent"   # 🌅 하루의 
 # build_reply_nudge_items 호출 두 줄만 지우면 이 항목들이 사라진다.
 # ══════════════════════════════════════════════════════════════════════════
 MGR_LEDGER = MGR_PENDING.parent / "_digest_ledger.json"
+# ★운영부 전용 원장(배12678 §v2 · 2026-09-17) — ops_daily_digest.py 의 기본(--room-key 없음)
+# 실행이 매일 쓰는 그 파일 그대로(PENDING.parent 는 이미 "★운영부" 디렉터리). 새 원장 아님.
+OPS_LEDGER = PENDING.parent / "_digest_ledger.json"
 NUDGE_LOOKBACK_DAYS = 7   # 이보다 오래된 건 원장에서 안 꺼낸다(오래 묵은 건 웰리가 사람으로 판단)
 NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 아무도 안 읽는다
 # ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
@@ -719,11 +722,13 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
 # 웰리가 직접 --nudge-review 로 훑어보고 --resolve 로 닫는다. 새 파일·새 상태 없음 —
 # MGR_LEDGER(원장) 자체를 읽고 쓴다.
 # ══════════════════════════════════════════════════════════════════════════
-def mgr_open_candidates(ledger: list) -> list:
-    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 오래된 순으로
+def _ledger_open_candidates(ledger: list, owners: "list | None" = None) -> list:
+    """원장(_digest_ledger.json 스키마) 전체에서 status=='open'인 이슈를 오래된 순으로
     돌려준다 — {"age","date","owner","title","issue"}(issue=원장 원본 딕셔너리, todo_id 를
-    되적을 때 그대로 쓴다). nudge_review(사람이 보는 CLI)와 배1102 SSOT 다리(bridge_to_todo
-    호출부)가 이 판정 하나를 공유한다(약속 L01 — 두 곳이 각자 세면 숫자가 갈린다)."""
+    되적을 때 그대로 쓴다). owners 를 주면 그 담당만(mgr_open_candidates 가 _NUDGE_MEMBERS 로
+    씀) · None 이면 전원(방 전용 원장은 그 방 안에서만 갈리므로 필터가 필요 없다 — ops_open_
+    candidates 가 씀). mgr_open_candidates·ops_open_candidates·nudge_review·배1102 SSOT 다리가
+    이 판정 하나를 공유한다(약속 L01 — 여럿이 각자 세면 숫자가 갈린다)."""
     today = date.today()
     rows = []
     for e in ledger:
@@ -733,7 +738,9 @@ def mgr_open_candidates(ledger: list) -> list:
         for it in e.get("issues") or []:
             owner = str(it.get("owner") or "").strip()
             title = str(it.get("issue") or "").strip()
-            if not title or owner not in _NUDGE_MEMBERS or str(it.get("status") or "") != "open":
+            if not title or str(it.get("status") or "") != "open":
+                continue
+            if owners is not None and owner not in owners:
                 continue
             try:
                 age = (today - date.fromisoformat(edate)).days
@@ -742,6 +749,20 @@ def mgr_open_candidates(ledger: list) -> list:
             rows.append({"age": age, "date": edate, "owner": owner, "title": title, "issue": it})
     rows.sort(key=lambda r: -r["age"])
     return rows
+
+
+def mgr_open_candidates(ledger: list) -> list:
+    """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 오래된 순으로
+    돌려준다. nudge_review(사람이 보는 CLI)와 배1102 SSOT 다리(bridge_to_todo 호출부)가
+    이 판정 하나를 공유한다(약속 L01)."""
+    return _ledger_open_candidates(ledger, owners=_NUDGE_MEMBERS)
+
+
+def ops_open_candidates(ledger: list) -> list:
+    """★운영부 전용 원장(OPS_LEDGER)에서 status=='open'인 이슈를 오래된 순으로 — 담당자
+    필터 없음(이 파일 자체가 ★운영부방 전용이라 방 밖 인물이 섞여 들어올 일이 없다).
+    배12678 §v2(2026-09-17) — mgr_open_candidates 와 같은 판정 함수 재사용(약속 L01)."""
+    return _ledger_open_candidates(ledger)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -817,15 +838,10 @@ def nudge_review() -> int:
     return 0
 
 
-def build_mgr_evening_carryover(n: int = 10) -> str:
-    """🌙 하루의 마무리 — 안 닫힌 이월 항목(배12678 · GM 지시 2026-09-16 「하루 두 통」).
-    원장(MGR_LEDGER) 열린 건 오래된 순 최대 n 줄 — mgr_open_candidates() 판정을 그대로
-    쓴다(약속 L01, nudge_review·오늘 만들 후보와 같은 집계 · 새 원장 없음)."""
-    try:
-        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
-    except Exception:
-        return ""
-    rows = mgr_open_candidates(ledger)[:n]
+def _format_carryover_lines(rows: list, n: int) -> str:
+    """「🔁 안 닫힌 이월 항목」 절 조립 — #번호·N일째(있는 만큼) 오래된 순. build_mgr_evening_
+    carryover·build_ops_carryover_section 공용(약속 L01, 같은 표기를 두 곳에 안 둔다)."""
+    rows = rows[:n]
     if not rows:
         return ""
     lines = ["🔁 안 닫힌 이월 항목"]
@@ -834,6 +850,67 @@ def build_mgr_evening_carryover(n: int = 10) -> str:
         head = f"#{no} " if isinstance(no, int) else ""
         lines.append(f"▪ {head}{r['title']} — {r['age']}일째")
     return "\n".join(lines)
+
+
+def build_mgr_evening_carryover(n: int = 10) -> str:
+    """🌙 하루의 마무리 — 안 닫힌 이월 항목(배12678 · GM 지시 2026-09-16 「하루 두 통」).
+    원장(MGR_LEDGER) 열린 건 오래된 순 최대 n 줄 — mgr_open_candidates() 판정을 그대로
+    쓴다(약속 L01, nudge_review·오늘 만들 후보와 같은 집계 · 새 원장 없음)."""
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    return _format_carryover_lines(mgr_open_candidates(ledger), n)
+
+
+def build_ops_carryover_section(n: int = 10) -> str:
+    """★운영부 「🔁 안 닫힌 이월 항목」 — 원장(OPS_LEDGER, ★운영부 전용 파일) 열린 건 오래된
+    순 최대 n 줄. build_mgr_evening_carryover 와 같은 판정·표기 재사용(약속 L01) — 담당자
+    필터 없음(방 전용 원장이라 방 밖 인물이 섞일 일이 없다). 배12678 §v2(2026-09-17 시토) —
+    ★중간관리자와 같은 스키마로 ★운영부까지 확장(새 원장·새 발신기 없음). _send_ops_room()
+    이 「🌅 하루의 시작」·「🌙 하루의 마무리(문의정리 room_payload)」 양쪽에서 같은 함수를 쓴다."""
+    try:
+        ledger = json.loads(OPS_LEDGER.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    return _format_carryover_lines(ops_open_candidates(ledger), n)
+
+
+def _selfcheck_ops_carryover_section() -> None:
+    """#번호 · N일째 · 오래된 순 · n 상한 · resolved 제외 · 담당자 무관(필터 없음) · 빈 원장은
+    절 없음. 임시 원장 파일로 돌며 실제 _digest_ledger.json 은 건드리지 않는다(mgr_evening_
+    carryover selfcheck 와 같은 패턴)."""
+    import tempfile
+    global OPS_LEDGER
+    orig = OPS_LEDGER
+    d = date.today()
+
+    def _iso(days_ago: int) -> str:
+        return (d - timedelta(days=days_ago)).isoformat()
+
+    with tempfile.TemporaryDirectory() as td:
+        OPS_LEDGER = Path(td) / "_digest_ledger.json"
+        try:
+            OPS_LEDGER.write_text(json.dumps([
+                {"date": _iso(5), "issues": [{"issue": "닫힌 건 — 안 보여야 함", "owner": "최준용M",
+                                              "status": "resolved", "no": 10}]},
+                {"date": _iso(3), "issues": [{"issue": "최근 건", "owner": "임정은M",
+                                              "status": "open", "no": 20}]},
+                {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "윤병현AM",
+                                              "status": "open", "no": 21}]},
+            ], ensure_ascii=False), encoding="utf-8")
+            out = build_ops_carryover_section()
+            lines = out.splitlines()
+            assert lines[0] == "🔁 안 닫힌 이월 항목", lines
+            assert lines[1] == "▪ #21 오래된 건 — 9일째", lines   # 오래된 순(나이 큰 것 먼저)
+            assert lines[2] == "▪ #20 최근 건 — 3일째", lines
+            assert len(lines) == 3, lines   # resolved 는 안 실림, 담당자 무관하게 둘 다 실림
+
+            OPS_LEDGER = Path(td) / "없는_원장.json"   # 파일 자체가 없는 경우
+            assert build_ops_carryover_section() == "", "원장 파일이 없으면 빈 문자열(예외 삼킴)"
+        finally:
+            OPS_LEDGER = orig
+    print("[selfcheck] ops_carryover_section OK")
 
 
 def _selfcheck_mgr_evening_carryover() -> None:
@@ -4452,6 +4529,7 @@ def main() -> int:
         _selfcheck_weekly_meeting()
         _selfcheck_register_manager_reply()
         _selfcheck_mgr_evening_carryover()
+        _selfcheck_ops_carryover_section()
         return 0
 
     if args.weekly_intake:
@@ -4620,6 +4698,14 @@ def _send_ops_room(args) -> int:
         log(f"[ovd] ★운영부 아침 통에 멤버십 미컨택 {sla_n}건 절 실음")
     elif sla_n == 0:
         log("[ovd] 멤버십 미컨택 0건 — 절 없음")
+
+    # 안 닫힌 이월 #번호·N일째(배12678 §v2 · 2026-09-17) — ★중간관리자와 같은 스키마를
+    # ★운영부에 확장(OPS_LEDGER, 새 원장·새 발신기 없음). 이 원장은 이미 매일 아침
+    # ops_daily_digest.py(기본 --room-key 없음)가 채운다 — 재활성화가 필요 없다.
+    carryover_text = build_ops_carryover_section()
+    if carryover_text:
+        message = f"{message}\n\n{carryover_text}"
+        log("[ops] 안 닫힌 이월 항목 절 실음")
 
     # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
     cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", TARGET_ROOM,
