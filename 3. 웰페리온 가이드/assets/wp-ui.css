@@ -46,7 +46,10 @@ h1{ font-size: var(--fs-6); line-height:1.25; }
 h2{ font-size: var(--fs-5); line-height:1.3; }
 h3{ font-size: var(--fs-4); line-height:1.35; }
 h4{ font-size: var(--fs-3); line-height:1.4; }
-h1,h2,h3,h4{ color: var(--ink); font-weight:700; }
+/* 제목 색은 정하지 않는다 — 본문 색을 그대로 물려받는다. 2026-09-15 링크 확대 뒤 어두운
+   바탕 화면 30장(시설부·지원부·주차관리부 체계 등)의 제목이 tokens.css 의 --ink(#221F20)로
+   찍혀 바탕과 같은 색이 됐다(GM 지적 2026-09-16). 밝은 화면은 본문이 이미 ink 라 달라지지 않는다. */
+h1,h2,h3,h4{ font-weight:700; }
 
 /* --- 모바일 터치 크기 --------------------------------------
    누르는 것만 키운다. 글 안의 링크는 건드리지 않는다 —
