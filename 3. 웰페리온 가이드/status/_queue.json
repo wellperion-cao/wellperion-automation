@@ -1470,11 +1470,11 @@
     "task_id": "CTO-2026-09-14-나우열M-라인-CHRO-CFO-절대-접촉-금지-AW",
     "clevel": "cto",
     "title": "[시토] 나우열M 라인(CHRO·CFO) 절대 접촉 금지 — AWS 이관 배관 포함 · 요청 마커 없이는 저장 불가 (GM 확정 2026-09-14 12:5x)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-14",
     "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-09-14] GM 원문: 「일단 CHRO + CFO건은 건드리지말고, 나우열M 요청해서 진행하게끔 박제시켜줘 이건 절대 건드리지못하게해줘」.\n배경: 9/11 CFO 화면 4건 수정→되돌림, 9/11 밤·9/14 아침 서버 이관 3건이 나우열M 눈에 「계속 건드림」으로 보였고 오늘 12:02 항의.\n정해진 것(약속 L27 · safe_commit 도메인 가드 + precommit_nawoolm_domain_guard · 우회 스위치 폐지):\n- 대상 = chro/** · cfo/** · 업무/결재 SSOT 화면 · .deploy-todo/** · .deploy-procurement/** · server/erp_chro/** · api_hr* · migrate_hr · api_proc* · api_todo* · sync_todo*\n- 통과 = 커밋 제목 [나우열M 요청 YYYY-MM-DD] 마커뿐(나우열M 이 업무관리 방에서 요청한 건).\n시토가 할 것: ①배1039(AWS 전면 서버 원천)·배1195 등 이관 배에서 인사·품의·업무SSOT 구간을 「나우열M 요청 대기」로 표시하고 그 구간은 멈춘다 ②진행 중이던 인사·품의 서버 작업이 있으면 현재 상태를 업무관리 방에 사실만 한 줄(웰리 경유) ③가드가 정상 커밋을 잘못 막으면 판정 버그로 웰리에게.",
+    "note": "[웰리 → 시토 전달 2026-09-14] GM 원문: 「일단 CHRO + CFO건은 건드리지말고, 나우열M 요청해서 진행하게끔 박제시켜줘 이건 절대 건드리지못하게해줘」.\n배경: 9/11 CFO 화면 4건 수정→되돌림, 9/11 밤·9/14 아침 서버 이관 3건이 나우열M 눈에 「계속 건드림」으로 보였고 오늘 12:02 항의.\n정해진 것(약속 L27 · safe_commit 도메인 가드 + precommit_nawoolm_domain_guard · 우회 스위치 폐지):\n- 대상 = chro/** · cfo/** · 업무/결재 SSOT 화면 · .deploy-todo/** · .deploy-procurement/** · server/erp_chro/** · api_hr* · migrate_hr · api_proc* · api_todo* · sync_todo*\n- 통과 = 커밋 제목 [나우열M 요청 YYYY-MM-DD] 마커뿐(나우열M 이 업무관리 방에서 요청한 건).\n시토가 할 것: ①배1039(AWS 전면 서버 원천)·배1195 등 이관 배에서 인사·품의·업무SSOT 구간을 「나우열M 요청 대기」로 표시하고 그 구간은 멈춘다 ②진행 중이던 인사·품의 서버 작업이 있으면 현재 상태를 업무관리 방에 사실만 한 줄(웰리 경유) ③가드가 정상 커밋을 잘못 막으면 판정 버그로 웰리에게.\n[시토 2026-09-16 09:06 종결] 이 배는 규칙 통보(약속 L27 · safe_commit 도메인 가드 + pre-commit 훅 · 우회 없음)라 할 일이 없다. 규칙은 boot_pack 슬라이스·safe_commit 가드에 이미 박혀 있고 오늘 부팅에서 흡수 확인. 종결.",
     "next": "이관 배 note 에 나우열M 요청 대기 구간 표시",
     "depends_on": "",
     "ship_no": 12599,
@@ -1485,7 +1485,8 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-14"
+    "updated_at": "2026-09-16",
+    "artifact": "ssot/약속.json L27 · scripts/safe_commit.py 도메인 가드"
   },
   {
     "task_id": "CTO-2026-09-14-토큰-사용량-원격-수집-INFO-LESSONS-PC",
@@ -2356,7 +2357,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-16",
     "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-09-16] ■ 실측 logs/kakao_sent-2026-09-16.log 07:50:48 ★중간관리자 34줄 중 「📌 GM요청 | 🔍 실측 | …」 마크다운 표 3줄이 어제 대화 요약 자리에 그대로 실려 나감(실무진이 봄). 원문 = ★중간관리자/_pending_digest.json message 칸(07:37:58 생성). ★운영부 07:45 통은 안 새어 나감. ■ 원인 ops_daily_digest → model_router.run_claude(claude -p) 가 사람 세션과 같은 훅을 탄다 — scripts/worklog.py UserPromptSubmit 훅이 additional_context 로 「[형식 고정] … 8요소 표 하나뿐」(09-15 GM 재지시로 박은 문구)을 무인 호출에도 얹어, 모델이 message 칸을 8요소 표로 썼다. 09-15 이전엔 이 문구가 없어 안 났다. ■ 고칠 것 ①run_claude 가 띄우는 자식에 무인 표식(env 예: WP_HEADLESS=1)을 주고 worklog 훅은 그 표식이 있으면 additional_context 를 비운다(접수 기록도 무인이면 남기지 않는다) ②ops_daily_digest 파싱에 「message 에 ‘📌 GM요청’ 같은 보고 표 머리가 있으면 정직 강등(발송 안 함·경보)」 가드 ③self-check 한 줄. ■ 완료 판정 = 내일 07:50 ★중간관리자 통 본문에 요약 절이 사람 말로 실림 + 가드 자가검사 통과. 사람 방 정정 발송은 웰리가 GM 승인 뒤 한다(이 배 범위 아님).\n\n[시토 2026-09-16 07:59] 원인 = ops_daily_digest→model_router.run_claude(claude -p) 자식이 사람 세션과 같은 UserPromptSubmit/Stop 훅(worklog.py)을 타 GM 보고 리마인더(_GM_REMINDER)가 무인 응답에 얹힘. 고친 3자리: ①model_router.run_claude — subprocess env 에 WELLPERION_HEADLESS=1 표식 부여(claude -p 호출은 이 한 곳뿐, grep 으로 확인) ②worklog.py record_gm_prompt_hook·close_gm_refs_hook — 표식 있으면 접수기록·additionalContext 없이 즉시 return ③ops_daily_digest.parse_brain_json — message 에 보고 표 머리(📌 GM요청 등) 섞이면 마지막 안전판으로 차단(정직 강등)+model_router._alert 경보. 확인: (a) WELLPERION_HEADLESS=1 로 record_gm_prompt_hook 실행 — stdout 없음·log() 미호출 실측(worklog.jsonl 변화 없음 확인) vs 표식 없이는 종전대로 additionalContext+접수 나옴 (b) 오늘 ★중간관리자 _pending_digest.json 의 실제 오염 message 를 parse_brain_json 에 넣어 차단 실측(message=\"\" json_ok=False) — 3개 selfcheck(--selfcheck) 전부 통과. 커밋 5c5a4684e8. 완료 판정 = 내일 2026-09-17 07:50 ★중간관리자 통 본문 요약 절이 사람 말로 실리는 것 — 그때 사람 말이 서있다.",
+    "note": "[웰리 → 시토 전달 2026-09-16] ■ 실측 logs/kakao_sent-2026-09-16.log 07:50:48 ★중간관리자 34줄 중 「📌 GM요청 | 🔍 실측 | …」 마크다운 표 3줄이 어제 대화 요약 자리에 그대로 실려 나감(실무진이 봄). 원문 = ★중간관리자/_pending_digest.json message 칸(07:37:58 생성). ★운영부 07:45 통은 안 새어 나감. ■ 원인 ops_daily_digest → model_router.run_claude(claude -p) 가 사람 세션과 같은 훅을 탄다 — scripts/worklog.py UserPromptSubmit 훅이 additional_context 로 「[형식 고정] … 8요소 표 하나뿐」(09-15 GM 재지시로 박은 문구)을 무인 호출에도 얹어, 모델이 message 칸을 8요소 표로 썼다. 09-15 이전엔 이 문구가 없어 안 났다. ■ 고칠 것 ①run_claude 가 띄우는 자식에 무인 표식(env 예: WP_HEADLESS=1)을 주고 worklog 훅은 그 표식이 있으면 additional_context 를 비운다(접수 기록도 무인이면 남기지 않는다) ②ops_daily_digest 파싱에 「message 에 ‘📌 GM요청’ 같은 보고 표 머리가 있으면 정직 강등(발송 안 함·경보)」 가드 ③self-check 한 줄. ■ 완료 판정 = 내일 07:50 ★중간관리자 통 본문에 요약 절이 사람 말로 실림 + 가드 자가검사 통과. 사람 방 정정 발송은 웰리가 GM 승인 뒤 한다(이 배 범위 아님).\n\n[시토 2026-09-16 07:59] 원인 = ops_daily_digest→model_router.run_claude(claude -p) 자식이 사람 세션과 같은 UserPromptSubmit/Stop 훅(worklog.py)을 타 GM 보고 리마인더(_GM_REMINDER)가 무인 응답에 얹힘. 고친 3자리: ①model_router.run_claude — subprocess env 에 WELLPERION_HEADLESS=1 표식 부여(claude -p 호출은 이 한 곳뿐, grep 으로 확인) ②worklog.py record_gm_prompt_hook·close_gm_refs_hook — 표식 있으면 접수기록·additionalContext 없이 즉시 return ③ops_daily_digest.parse_brain_json — message 에 보고 표 머리(📌 GM요청 등) 섞이면 마지막 안전판으로 차단(정직 강등)+model_router._alert 경보. 확인: (a) WELLPERION_HEADLESS=1 로 record_gm_prompt_hook 실행 — stdout 없음·log() 미호출 실측(worklog.jsonl 변화 없음 확인) vs 표식 없이는 종전대로 additionalContext+접수 나옴 (b) 오늘 ★중간관리자 _pending_digest.json 의 실제 오염 message 를 parse_brain_json 에 넣어 차단 실측(message=\"\" json_ok=False) — 3개 selfcheck(--selfcheck) 전부 통과. 커밋 5c5a4684e8. 완료 판정 = 내일 2026-09-17 07:50 ★중간관리자 통 본문 요약 절이 사람 말로 실리는 것 — 그때 사람 말이 서있다.\n- [2026-09-16] fix(cto): 주차 매출 크롤러 — 실측대로 로그인/조회 엔드포인트 수리 (배 12664) (커밋 eaf9c1905a)",
     "next": "①②③ 고치고 저장·배포 → 웰리에게 커밋 한 줄 회신",
     "depends_on": "",
     "ship_no": 12672,
