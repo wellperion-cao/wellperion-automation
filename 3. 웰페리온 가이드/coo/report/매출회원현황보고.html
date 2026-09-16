@@ -1822,17 +1822,16 @@ function renderP3Plan(plan, ym, sup, fac, rec){
       b.n++; if (o.status === '완료') b.done++; b.sum += p3PlanProg(o);
     });
     var depts = Object.keys(by).sort(function(a, b){ return by[b].n - by[a].n; });
-    html += '<div class="p3plan-h">부서별 월 목표 · 도달율 — 과제 ' + objs.length + '건</div>';
-    // A3 한 장에 들어가야 한다 — 과제 많은 부서 4줄까지, 나머지(겹침 부서 등)는 한 줄로 합친다
-    depts.slice(0, 4).forEach(function(d){
-      var b = by[d];
-      html += p3PlanRow(esc(d) + ' <span style="color:#7A838B">과제 ' + b.n + ' · 완료 ' + b.done + '</span>', '평균 진척 ' + Math.round(b.sum / b.n) + '%');
-    });
-    if (depts.length > 4) {
-      var rest = depts.slice(4), rn = 0, rd = 0, rs = 0;
-      rest.forEach(function(d){ rn += by[d].n; rd += by[d].done; rs += by[d].sum; });
-      html += p3PlanRow('그 외 ' + rest.length + '부서 <span style="color:#7A838B">과제 ' + rn + ' · 완료 ' + rd + '</span>', '평균 진척 ' + Math.round(rs / rn) + '%');
+    // A3 한 장 · 오른쪽 열을 「지연·결재 대기」와 나눠 쓴다 — 부서는 한 줄에 이어 적는다(라이브 실측 2026-09-16:
+    // 부서 한 줄씩 두면 지연 10건 중 4건이 잘렸다). 과제 많은 부서 3 + 그 외 합계.
+    var pieces = depts.slice(0, 3).map(function(d){ return '<b>' + esc(d) + '</b> ' + by[d].n + '건 ' + Math.round(by[d].sum / by[d].n) + '%'; });
+    if (depts.length > 3) {
+      var rn = 0, rs = 0; depts.slice(3).forEach(function(d){ rn += by[d].n; rs += by[d].sum; });
+      pieces.push('<b>그 외 ' + (depts.length - 3) + '부서</b> ' + rn + '건 ' + Math.round(rs / rn) + '%');
     }
+    var doneN = objs.filter(function(o){ return o.status === '완료'; }).length;
+    html += '<div class="p3plan-h">부서별 월 목표 · 도달율 — 과제 ' + objs.length + '건 · 완료 ' + doneN + ' · 평균 진척 %</div>' +
+            '<div class="mrow" style="flex-wrap:wrap;row-gap:2px"><span class="lb">' + pieces.join(' <span style="color:#B8C0C7">·</span> ') + '</span></div>';
     var prog = (m && m.practitioner_progress) || {}, roster = (plan.practitioners || []);
     var pl = Object.keys(prog).map(function(id){
       var p = null; roster.forEach(function(r){ if (r.id === id) p = r; });
