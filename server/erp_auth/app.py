@@ -190,7 +190,11 @@ OFFICE_AUTO_LOGIN_IPS = frozenset(ip.strip() for ip in os.environ.get("OFFICE_AU
 OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
 # 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
 AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
-                                 "cpo-member-실무진피드백", "cpo-member-오넛티-접수현황"})
+                                 "cpo-member-오넛티-접수현황"})
+# 자동 로그인 세션에 여는 유일한 쓰기 = 실무진 피드백(GM 2026-09-16 「인포 계정 실무진 피드백 권한도 열어줘야 해」).
+#   쓰기 관문(/api/write)만 통과시키고, 액션은 api_write.AUTO_LOGIN_ACTIONS(staff_feedback_*)가 다시 가른다 — 표식은
+#   X-Erp-Allowed 맨 앞 "auto-login"(모듈 id 모양이 아닌 낱말이라 다른 카드와 안 섞인다). 피드백 카드 자체도 연다.
+AUTO_LOGIN_ALLOWED_HEADER = "auto-login," + urllib.parse.quote("cpo-member-실무진피드백", safe="")
 # 그 카드들이 쓰는 읽기 API 도 같이 막는다 — 화면만 막고 API 를 열어 두면 주소로 자료를 그대로 받는다.
 AUTO_LOGIN_DENY_API = ("/api/members", "/api/inquiries", "/api/lesson/", "/api/hr/")
 # 관리자 화면 별도 비밀번호(GM 2026-09-04 "관리자 사이트 비밀번호는 별도로") — 로그인 계정과 무관하게 한 번 더 묻는다.
@@ -1116,8 +1120,8 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     if is_auto_token(erp_session):
         # 사무실 자동 로그인 세션(배1134) — 계정 perms 와 별개로 조회만 허용. 쓰기(GET/HEAD 아닌 요청)와
         # 인사 폴더(chro-*)는 이 세션으로 못 연다 — account_perms.json 이 나중에 바뀌어도 여기서 다시 막는다.
-        if (request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD"):
-            raise HTTPException(403)
+        if (request.headers.get("x-original-method") or "GET").upper() not in ("GET", "HEAD") and path != "/api/write":
+            raise HTTPException(403)          # 쓰기는 /api/write(실무진 피드백만 · AUTO_LOGIN_ALLOWED_HEADER)뿐
         if m and m["id"].startswith("chro-"):
             raise HTTPException(403)
         # 개인정보 화면·자료도 이 세션으로는 안 연다(배 2574 · 2026-09-15). 사무실 회선과 손님용 와이파이의
@@ -1128,6 +1132,8 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     headers = {"X-Erp-User": u["email"], "X-Erp-Role": u["role"]}
     if path.startswith("/api/"):
         headers["X-Erp-Allowed"] = allowed_header(u)              # 쓰기 관문(api_write)이 action 별 카드 권한을 이걸로 판정
+        if is_auto_token(erp_session):
+            headers["X-Erp-Allowed"] = AUTO_LOGIN_ALLOWED_HEADER   # 자동 세션은 계정 권한과 무관하게 실무진 피드백만
     return Response(status_code=200, headers=headers)
 
 
@@ -1984,6 +1990,7 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert _auto_denies_api("/api/members") and _auto_denies_api("/api/inquiries/list") and _auto_denies_api("/api/hr/x")
     assert not _auto_denies_api("/api/check/list") and not _auto_denies_api("/api/todo")
     assert "member" in AUTO_LOGIN_DENY_IDS and "inquiry" in AUTO_LOGIN_DENY_IDS
+    assert "cpo-member-실무진피드백" not in AUTO_LOGIN_DENY_IDS and AUTO_LOGIN_ALLOWED_HEADER.startswith("auto-login,")   # GM 2026-09-16
     assert MEMBER_DATA_RE.match("/status/member_active_snapshot.json")
     assert path_allowed(_stf, "/repo/status/monthly_ops_plan.json") and path_allowed(_stf, "/repo/ssot/kpi.json")   # 화면이 읽는 데이터
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")

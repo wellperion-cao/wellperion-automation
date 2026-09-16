@@ -623,6 +623,19 @@ async def write(request: Request):
     return await run_in_threadpool(_write_sync, headers, body)
 
 
+# 사무실 자동 로그인 세션(erp_auth AUTO_LOGIN_ALLOWED_HEADER · X-Erp-Allowed 맨 앞 "auto-login")이 저장할 수 있는 액션.
+#   GM 2026-09-16 「인포 계정 실무진 피드백 권한도 열어줘야 해」 — 관문은 /api/write 만 열고 액션은 여기서 가른다.
+AUTO_LOGIN_ACTIONS = frozenset({"staff_feedback_submit", "staff_feedback_list"})
+
+
+def auto_login_ok(headers, action: str) -> bool:
+    """자동 로그인 세션이면 AUTO_LOGIN_ACTIONS 만 · 일반 세션은 항상 True(순수함수)."""
+    allowed = str((headers or {}).get("x-erp-allowed", "") or "")
+    if not allowed.startswith("auto-login"):
+        return True
+    return action in AUTO_LOGIN_ACTIONS
+
+
 def _write_sync(headers, body):
     try:
         payload = json.loads(body.decode("utf-8"))
@@ -642,6 +655,10 @@ def _write_sync(headers, body):
         return JSONResponse(status_code=403, content={
             "ok": False, "error": "forbidden", "noRetry": True,
             "detail": "이 계정에 허용되지 않은 화면의 저장입니다"})
+    if not auto_login_ok(headers, action):   # 사무실 자동 로그인 세션 — 실무진 피드백만(GM 2026-09-16)
+        return JSONResponse(status_code=403, content={
+            "ok": False, "error": "forbidden", "noRetry": True,
+            "detail": "사무실 자동 로그인 세션은 실무진 피드백만 저장할 수 있습니다 — 로그인 뒤 다시"})
     try:
         conn = db.connect()
     except db.Error as e:
@@ -798,6 +815,9 @@ def _write_sync(headers, body):
 
 
 if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점검(서버 없이)
+    assert auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "staff_feedback_submit")
+    assert not auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "member_owner_save")
+    assert auto_login_ok({"x-erp-allowed": "*"}, "member_owner_save") and auto_login_ok({}, "todo_update")
     assert resp_ok({"success": True, "saved": 3}) is True     # 배 1067 — ok 칸 없어도 success 로 성공
     assert resp_ok({"ok": True}) is True
     assert resp_ok({"ok": False, "error": "bad-token"}) is False
