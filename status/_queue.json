@@ -1297,19 +1297,19 @@
     "task_id": "NEXT-20260913-073327",
     "clevel": "cpo",
     "title": "[시포] 2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조",
-    "status": "PENDING",
+    "status": "IN_PROGRESS",
     "priority": "⛵돛단배",
     "depends_on": "CPO-2026-09-13-서버-회원-모듈-7항목-실측-회신-시토-배2507",
     "from": "cpo",
     "origin": "bridge",
     "enqueued_at": "2026-09-12T22:33:27Z",
-    "note": "[브릿지 자동 등록 2026-09-13] 배 '서버 회원 모듈 7항목 실측 회신 (시토 배2507)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시포.\n▶할 일: 2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: 시토 실측 7항목 CPO 수신확인 완료 — 전항목 정상/설계정상. reconcile fix d6f480126 수신. 원페이저 996 일치. 내일 06:10 by_form 대조 등록",
-    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "note": "[브릿지 자동 등록 2026-09-13] 배 '서버 회원 모듈 7항목 실측 회신 (시토 배2507)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시포.\n▶할 일: 2026-09-14 06:10 이후 reconcile by_form.member_active_update 참값 대조\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: 시토 실측 7항목 CPO 수신확인 완료 — 전항목 정상/설계정상. reconcile fix d6f480126 수신. 원페이저 996 일치. 내일 06:10 by_form 대조 등록\n[시포 2026-09-16 13:1x 실측] reconcile by_form.member_active_update 24/108(06:10) · 불일치 표본 20/20 = 「P.L Contact」. 원인 = 서버가 먼저 적은 연락 기록(data JSON 칸)을 sync_members 5분 배치가 시트값으로 통째 덮음(실컬럼 9칸만 보호). M00278 서버 「09-09 부재중, 문자완료」 → 거울 「관심 없다 하심」(다른 회원 글). 수리 = sync_members.reassert_server_json_writes(마지막 성공 쓰기 되살림 · 96592d9d5 · 시토 배포 요청). 덤: 오늘 12:55~13:01 GAS 404 로 정상 저장 3건이 되돌려짐 → api_members_write 전달 1회 재시도(02dc50ffe · 13:07 서버 반영).",
+    "next": "시토 배포 뒤 reconcile 재실행 → ok 24→? 확인 → 남는 불일치 유형 판정",
     "ship_no": 12576,
     "short_no": 2581,
     "audience": "ai",
     "reversible": true,
-    "updated_at": "2026-09-13"
+    "updated_at": "2026-09-16"
   },
   {
     "task_id": "CMO-2026-09-14-콘텐츠-검수-큐가-9-3-이후-멈춘-채-발행만-나간",
