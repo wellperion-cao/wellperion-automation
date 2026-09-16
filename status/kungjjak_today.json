@@ -256,7 +256,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 0
+          "waited": 3
         }
       ],
       "repeats": []
@@ -277,6 +277,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260916-2003",
+          "no": "03",
+          "got": "아 자꾸 화면이 전체확대 되는데 왜 계속 이러는거야? 너무 불편해",
+          "did": "",
+          "start": "10:18",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260916-12675",
           "no": "675",
           "got": "GM 담당자 표기 통일 + gmkey 감사 3건 수정",
@@ -290,18 +302,6 @@
         }
       ],
       "work": [
-        {
-          "time": "07:59",
-          "area": "배12672",
-          "event": "무인 훅 오염 수리 완료(배 12672) — WELLPERION_HEADLESS 표식+파서 차단",
-          "detail": ""
-        },
-        {
-          "time": "09:06",
-          "area": "배12599",
-          "event": "나우열M 라인 접촉 금지 규칙 배 — 코드 가드 확인 뒤 종결",
-          "detail": "약속 L27 · safe_commit 가드"
-        },
         {
           "time": "09:08",
           "area": "작업",
@@ -469,16 +469,43 @@
           "area": "배12680",
           "event": "랩스 구독 2단계 — 파트너사 패널 구독 탭 + billing/config 라우트",
           "detail": "erp/admin/index.html 구독 절 추가(51f9aacd2) · api_billing.py GET /config 추가 · 서버 배포 sha256 일치 · health200 · config 관리자200/무헤더403 · design_audit ⚠️0 · 큐 IN_PROGRESS 갱신"
+        },
+        {
+          "time": "10:17",
+          "area": "작업",
+          "event": "랩스 구독 절 — 스타트·그로스 버튼에 월 구독 금액·한 줄 문구(로드맵 §5 추천안 값 · GM 확정 전) · 시토 배 2683 시안 검수",
+          "detail": "커밋 795eddcafd · 배 12682"
+        },
+        {
+          "time": "10:18",
+          "area": "작업",
+          "event": "feat(cto): 운영부 「하루 3건」 루프 배선 — 07:50 후보 절 · 17:05 마감 문구 재정의 · 사람별 일별 적재 (배 12682 · GM 지시 2026-09-16)",
+          "detail": "커밋 fb2a191c0f · 배 12682"
         }
       ],
-      "count": 2,
+      "count": 3,
       "done": 2,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 5,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-2003",
+          "no": "03",
+          "got": "아 자꾸 화면이 전체확대 되는데 왜 계속 이러는거야? 너무 불편해",
+          "did": "",
+          "start": "10:18",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -754,6 +781,42 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260916-5013",
+          "no": "13",
+          "got": "AWS 서버에 저장된걸 라이브로 열어달라고 한건데",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:17",
+          "end": "10:17",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260916-5014",
+          "no": "14",
+          "got": "그리고 텔레그램 알림이랑 카카오톡에 종합접수처 점수 뜨는거 항상 이번달 기준으로 나와야해 합친것들 기준으로 나온것도 본것 같은데?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:18",
+          "end": "10:19",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260916-5015",
+          "no": "15",
+          "got": "원래 보드랑 https://erp.wellperion.com/api/reception/lost 이렇게 api 막 추가해서 링크주소 만들어내도 되나?",
+          "did": "",
+          "start": "10:19",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -812,14 +875,29 @@
           "detail": "커밋 5cb2146863 · 배 12532"
         }
       ],
-      "count": 10,
-      "done": 10,
-      "open": 0,
-      "avg_minutes": 5,
+      "count": 13,
+      "done": 12,
+      "open": 1,
+      "avg_minutes": 4,
       "work_count": 9,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-5015",
+          "no": "15",
+          "got": "원래 보드랑 https://erp.wellperion.com/api/reception/lost 이렇게 api 막 추가해서 링크주소 만들어내도 되나?",
+          "did": "",
+          "start": "10:19",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "cbo": {
