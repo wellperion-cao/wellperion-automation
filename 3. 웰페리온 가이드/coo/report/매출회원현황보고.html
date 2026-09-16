@@ -724,7 +724,7 @@
         <div class="bd" id="p4q"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p4ch">담당 편중 — 상위 20% 가 팀 매출 몇 %<span class="src">왼쪽 담당표</span></h2>
+        <h2 id="p4ch">저조 담당 — 이달 0원 · 팀 평균 30% 미만<span class="src">왼쪽 담당표</span></h2>
         <div class="bd" id="p4c"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
@@ -1852,8 +1852,13 @@ function renderPage4(c, dayLabel){
   var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
   /* 팀 전부 왼쪽 한 단(GM 지시 2026-09-15). 오른쪽 칸은 세션 흐름 자리로 비워 둔다. */
   var teams = p4Teams(les);
+  /* 팀 순서 = 분기 목표(보고탭 K×3)가 큰 팀부터, 같으면 이달 누적 큰 팀(GM 지시 2026-09-16 「수영팀 맨 위 ·
+     가장 높은 팀이 바뀌면 그 팀이 맨 위」). 보고탭이 아직 안 왔으면 이달 누적으로 먼저 세우고, 분기 표가
+     그려질 때 같은 순서로 다시 세운다(세션 칸 값은 옮겨 담는다). */
+  P4_STATE.lesHead = lesHead; P4_STATE.teams = teams;
+  teams = p4OrderTeams(teams, null);
   if (e2) e2.innerHTML = p4TeamTable(lesHead, teams);
-  renderP4Concentration(teams);
+  renderP4Lagging(teams);
   renderP4Quarter(teams);
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
@@ -1870,29 +1875,64 @@ function renderPage4(c, dayLabel){
 /* ══ 4면 오른쪽 ② 담당 편중 (GM 선택 2026-09-16 · 4번) ══
    팀마다 담당을 이달 누적 큰 순으로 세워 위에서 20%(올림 · 최소 1명)가 팀 누적의 몇 % 인지. 왼쪽 표 값 그대로 —
    새 조회 없음. 한 사람 팀(뮤지컬·GXE)은 뜻이 없어 뺀다. 감춘 담당(퇴직)은 사람 수에서 빼고 금액은 팀 합에 둔다. */
-function renderP4Concentration(teams){
+var P4_STATE = { lesHead: null, teams: null, order: null };
+/* 팀 순서 — order(팀 이름 배열)가 있으면 그 순서, 없으면 이달 누적 큰 팀부터. 목록에 없는 팀(기타)은 뒤로. */
+function p4OrderTeams(teams, order){
+  var acc = function(t){ return t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0); };
+  return teams.slice().sort(function(a, b){
+    if (order) {
+      var ia = order.indexOf(a.name), ib = order.indexOf(b.name);
+      if (ia < 0) ia = 99; if (ib < 0) ib = 99;
+      if (ia !== ib) return ia - ib;
+    }
+    return acc(b) - acc(a);
+  });
+}
+/* 분기 표가 정한 순서로 왼쪽 담당표를 다시 세운다 — 브로제이 세션 칸(금일·월 누적)은 이미 채워졌을 수 있어 옮겨 담는다. */
+function p4ReorderLeft(order){
+  var e2 = document.getElementById('p4les'); if (!e2 || !P4_STATE.teams) return;
+  var keep = {};
+  e2.querySelectorAll('tr[data-who], tr[data-team]').forEach(function(tr){
+    var k = tr.getAttribute('data-who') || ('팀:' + tr.getAttribute('data-team'));
+    var sd = tr.querySelector('.sd'), sm = tr.querySelector('.sm');
+    keep[k] = [sd ? sd.textContent : '—', sm ? sm.textContent : '—'];
+  });
+  P4_STATE.order = order;
+  e2.innerHTML = p4TeamTable(P4_STATE.lesHead, p4OrderTeams(P4_STATE.teams, order));
+  e2.querySelectorAll('tr[data-who], tr[data-team]').forEach(function(tr){
+    var k = tr.getAttribute('data-who') || ('팀:' + tr.getAttribute('data-team'));
+    var v = keep[k]; if (!v) return;
+    var sd = tr.querySelector('.sd'), sm = tr.querySelector('.sm');
+    if (sd) sd.textContent = v[0]; if (sm) sm.textContent = v[1];
+  });
+}
+
+/* ══ 4면 오른쪽 ② 저조 담당 (GM 2026-09-16 「담당 편중 말고 다른 1칸」 · 시포 추천) ══
+   이달 누적이 0 이거나 팀 평균의 30% 에 못 미치는 담당 — 누가 멈춰 있나를 이름으로. 왼쪽 표 값 그대로(새 조회 없음).
+   한 사람 팀(뮤지컬·GXE)·감춘 담당(퇴직)은 뺀다. 아무도 없으면 「없음」 한 줄 — 빈 칸으로 두지 않는다. */
+function renderP4Lagging(teams){
   var el = document.getElementById('p4c'); if (!el) return;
   var rows = [];
   teams.forEach(function(t){
+    if (t.name === 'GXE팀' || t.name === '뮤지컬팀') return;
     var ppl = t.rows.filter(function(x){ return !x.hide; }).map(function(x){ return { name: x.name, acc: p4Num(x.acc) }; });
-    var total = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
-    if (ppl.length < 2 || total <= 0 || t.name === 'GXE팀' || t.name === '뮤지컬팀') return;   // 사람이 아니라 팀 이름 줄
-    ppl.sort(function(a, b){ return b.acc - a.acc; });
-    var k = Math.max(1, Math.ceil(ppl.length * 0.2));
-    var top = ppl.slice(0, k), topSum = top.reduce(function(a, x){ return a + x.acc; }, 0);
-    var zero = ppl.filter(function(x){ return x.acc <= 0; }).length;
-    rows.push({ team: t.name, n: ppl.length, top: top.map(function(x){ return x.name; }).join('·'),
-                share: Math.round(topSum / total * 100), zero: zero });
+    if (ppl.length < 2) return;
+    var avg = ppl.reduce(function(a, x){ return a + x.acc; }, 0) / ppl.length;
+    ppl.forEach(function(x){
+      if (x.acc <= 0 || (avg > 0 && x.acc < avg * 0.3))
+        rows.push({ team: t.name, name: x.name, acc: x.acc, avg: avg, pct: avg > 0 ? Math.round(x.acc / avg * 100) : 0 });
+    });
   });
-  if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">팀 담당 줄이 없습니다</span></div>'; return; }
-  rows.sort(function(a, b){ return b.share - a.share; });
-  el.innerHTML = '<table class="ptab"><tr><th>팀</th><th>담당</th><th>상위 20%</th><th>팀 매출 비중</th><th>0원 담당</th></tr>' +
+  if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">이달 저조 담당 없음 — 모든 담당이 팀 평균 30% 이상</span></div>'; return; }
+  rows.sort(function(a, b){ return a.pct - b.pct || a.acc - b.acc; });
+  el.innerHTML = '<table class="ptab"><tr><th>팀</th><th>담당</th><th>이달 누적</th><th>팀 평균</th><th>평균 대비</th></tr>' +
     rows.map(function(r){
-      return '<tr><td>' + esc(r.team) + '</td><td>' + r.n + '명</td><td style="text-align:left">' + esc(r.top) + '</td>' +
-        '<td class="acc" style="font-weight:800;' + (r.share >= 60 ? 'color:#B0413E' : '') + '">' + r.share + '%</td>' +
-        '<td class="' + (r.zero ? '' : 'zero') + '">' + r.zero + '명</td></tr>';
+      return '<tr><td>' + esc(r.team) + '</td><td style="text-align:left">' + esc(r.name) + '</td>' +
+        '<td class="acc ' + (r.acc ? '' : 'zero') + '">' + r.acc.toLocaleString('ko-KR') + '</td>' +
+        '<td class="acc">' + Math.round(r.avg).toLocaleString('ko-KR') + '</td>' +
+        '<td class="acc" style="font-weight:800;color:#B0413E">' + r.pct + '%</td></tr>';
     }).join('') + '</table>' +
-    '<div class="mrow" style="margin-top:4px"><span class="lb">상위 20% 비중이 60% 를 넘으면 붉게 — 그 사람이 빠지면 팀 매출이 반 넘게 흔들립니다</span></div>';
+    '<div class="mrow" style="margin-top:4px"><span class="lb">' + rows.length + '명 · 0원은 이달 계약이 한 건도 없는 담당 · 팀 평균은 감춘 담당(퇴직)을 뺀 값</span></div>';
 }
 
 /* ══ 4면 오른쪽 ① 분기 팀 목표 · 달성 가능 % · 연 누적 (GM 선택 2026-09-16 · 1번 + 연 누적) ══
@@ -1959,6 +1999,10 @@ function renderP4Quarter(teams, tries){
     });
     var uniq = function(a){ return a.filter(function(v, i){ return a.indexOf(v) === i; }); };
     missQ = uniq(missQ); missY = uniq(missY);
+    rows.sort(function(a, b){ return (b.qt - a.qt) || (b.qa - a.qa); });   // 분기 목표 큰 팀 → 같으면 분기 누적
+    var order = rows.map(function(x){ return x.team; });
+    p4ReorderLeft(order);
+    renderP4Lagging(p4OrderTeams(P4_STATE.teams, order));
     var won = function(v){ return Math.round(v / 10000).toLocaleString('ko-KR'); };   // 만원
     var pct = function(v){ return v == null ? '—' : Math.round(v) + '%'; };
     var cls = function(v){ return v == null ? '' : (v >= 100 ? 'style="color:#1F7A4D;font-weight:800"' : v < 80 ? 'style="color:#B0413E;font-weight:800"' : 'style="font-weight:800"'); };
