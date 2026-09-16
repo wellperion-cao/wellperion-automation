@@ -59,6 +59,22 @@ EXCLUDE_PATH_PREFIXES = (
     "status/_queue_archive.json",
     "3. 웰페리온 가이드/status/_queue.json",
     "3. 웰페리온 가이드/status/_queue_archive.json",
+    # 추가 2026-09-16(배12626·웰리 실측 2026-09-15): 재발방지 회귀 경보 118건 중 25건이
+    # 재생성 캐시·백업·지난 기록이었다(graphify-out 코드그래프 캐시 4 · poc-evidence 홈페이지
+    # 원문 백업 8 · status/_private 스냅샷 백업 6 · evening_wraps 지난 날 기록 2 ·
+    # qa_screenshots 지난 캡처 2 · *_snapshot.json 회원 스냅샷 2 · *backup* 1). 사람이 고칠 수
+    # 없는 파일이라 검사 대상에서 뺀다(시토·배12626).
+    "scripts/graphify-out/",        # 코드 그래프 캐시(언제든 재생성 · .gitignore 대상)
+    "scripts/poc-evidence/",        # 홈페이지 원문 백업(그 시점 값이 그대로 박혀 있는 게 정상)
+    "status/_private/",             # 지난 스냅샷 백업(backup_*.json 등)
+    "status/evening_wraps/",        # 지난 날 저녁 기록(날짜별로 계속 쌓이는 기록물)
+    "qa_screenshots/",              # 지난 화면 확인 캡처·로그
+)
+
+# 파일명 패턴 기반 제외(경로 접두사로 못 거르는 것) — fnmatch 글롭.
+EXCLUDE_PATH_GLOBS = (
+    "status/*_snapshot.json",       # 지난 회원 스냅샷 백업(member_active_snapshot 등)
+    "*backup*",                     # 파일명에 backup 이 든 시점 백업 전반
 )
 
 # 제외 파일 확장자 (바이너리)
@@ -98,6 +114,9 @@ def is_excluded_path(path: Path, repo_root: Path) -> bool:
     rel_str = rel.as_posix()
     for prefix in EXCLUDE_PATH_PREFIXES:
         if rel_str == prefix or rel_str.startswith(prefix):
+            return True
+    for pattern in EXCLUDE_PATH_GLOBS:
+        if fnmatch.fnmatch(rel_str, pattern):
             return True
 
     return False

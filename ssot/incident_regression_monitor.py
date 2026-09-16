@@ -58,6 +58,17 @@ def _is_code(f: str) -> bool:
             or f.endswith((".py", ".js", ".gs")))
 
 
+def _scanned_file_count() -> int:
+    """제외 규칙 적용 후 실제 스캔 대상 파일 수. 배12626 자체점검 — 제외 목록을 잘못 넣어
+    스캔 대상이 통째로 0이 되면(경로 오타 등) '회귀 0건'이 진짜 정상인지 검사기가 아무것도
+    못 읽은 것인지 구분이 안 된다. 0이면 스캔 실패로 본다(read_files 실패와 동급)."""
+    try:
+        from divergence_scan import collect_files  # type: ignore
+        return len(collect_files(_ROOT))
+    except Exception:
+        return -1
+
+
 def _divergence_map() -> dict | None:
     """캐논·규칙 발산(정본·allow_globs 밖 복사/재서술) → {key: set(files)}. 스캐너 오류 시 None.
     2026-07-20: 값(run_scan) + 규칙(run_rule_scan, canon_values.json "rules") 둘 다 병합 —
@@ -214,13 +225,16 @@ def _today() -> str:
 # 의도가 깨진다. 그래서 baseline은 그대로 두고, **직전에 이미 보낸 것과 똑같은
 # 내용**일 때만 재발신을 억제한다 — 지문이 바뀌면(새 파일·새 유실·새 leaked)
 # 즉시 다시 보낸다. 새 상태파일 없음 — 이미 있는 BASELINE_FILE에 필드 하나만 얹는다.
-def _signature(new_drift: dict, missing: list, unguarded: list, leaked: list) -> str:
+def _signature(new_drift: dict, missing: list, unguarded: list, leaked: list,
+                selfcheck_fail: bool = False) -> str:
     """회귀 '내용'만의 지문 — 시각·커밋해시 등 매번 바뀌는 값은 절대 안 넣는다."""
     import hashlib
     parts = [f"drift:{k}:{','.join(sorted(v))}" for k, v in sorted(new_drift.items())]
     parts += [f"missing:{m}" for m in sorted(missing)]
     parts += [f"unguarded:{u}" for u in sorted(unguarded)]
     parts += [f"leaked:{l}" for l in sorted(leaked)]
+    if selfcheck_fail:
+        parts.append("selfcheck_fail")
     return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
@@ -243,6 +257,8 @@ def run(set_baseline: bool = False) -> int:
     missing = _missing_assets()
     unguarded = _unguarded()
     leaked = _leaked_today()  # [결정 정합 게이트 §6.3] 가드 우회 재발송 흔적(있으면 회귀)
+    scanned = _scanned_file_count()
+    selfcheck_fail = scanned == 0  # 제외 규칙이 스캔 대상을 통째로 지웠으면 '0건=정상'이 아니라 스캔 실패
 
     # 신규 드리프트 = baseline 초과분(파일 단위).
     new_drift = {}
@@ -262,7 +278,7 @@ def run(set_baseline: bool = False) -> int:
                 if extra:
                     new_drift[k] = sorted(extra)
 
-    regression = bool(new_drift) or bool(missing) or bool(unguarded) or bool(leaked)
+    regression = bool(new_drift) or bool(missing) or bool(unguarded) or bool(leaked) or selfcheck_fail
     verdict = "⚠️ 회귀 감지" if regression else "✅ 정상(회귀 없음)"
 
     # 현재 발산을 코드/문서로 분리(코드=수정 후보).
@@ -275,6 +291,7 @@ def run(set_baseline: bool = False) -> int:
                     doc_fp += 1
 
     print("🛡️ 재발방지 회귀감시")
+    print(f"  자체점검(스캔대상 제외후): {scanned}건" + (" ⚠️ 0건 — 제외 규칙 오류 의심(실패)" if selfcheck_fail else ""))
     print(f"  캐논 발산: {scan_state}" + (f" · 신규 {sum(len(v) for v in new_drift.values())}건 {list(new_drift)}" if new_drift else ""))
     print(f"  가드 자산 유실: {len(missing)}건" + (f" {missing}" if missing else ""))
     print(f"  박제 무결: {'깨짐 '+str(unguarded) if unguarded else 'OK(전부 GUARDED)'}")
@@ -282,7 +299,7 @@ def run(set_baseline: bool = False) -> int:
     print(f"  (참고) 기존 코드 드리프트(수정 후보): {len(code_drift)}건 · 문서 FP {doc_fp}건")
     print(f"  판정: {verdict}" + (" · baseline established" if established else ""))
 
-    sig = _signature(new_drift, missing, unguarded, leaked) if regression else None
+    sig = _signature(new_drift, missing, unguarded, leaked, selfcheck_fail) if regression else None
     suppressed = bool(regression and sig == _load_alert_sig())
     if regression:
         print(f"  경보: {'억제(동일 회귀 반복 — 지문 ' + sig + ', 직전 발신과 내용 동일)' if suppressed else '발신'}")
@@ -296,6 +313,8 @@ def run(set_baseline: bool = False) -> int:
         "",
         "| 검사 | 결과 |",
         "|---|---|",
+        f"| 자체점검(제외 후 스캔 대상) | {scanned}건"
+        + (" ⚠️ 0건 — 제외 규칙 오류 의심(실패)" if selfcheck_fail else "") + " |",
         f"| 신규 캐논 발산(baseline 초과) | {sum(len(v) for v in new_drift.values())}건"
         + (f" · {', '.join(new_drift)}" if new_drift else "") + " |",
         f"| 가드 자산 무결 | {'유실 '+str(len(missing))+'건' if missing else 'OK'} |",
@@ -330,6 +349,8 @@ def run(set_baseline: bool = False) -> int:
             det.append(f"박제깨짐 {len(unguarded)}건")
         if leaked:
             det.append(f"결정정합 누출(leaked) {len(leaked)}건")
+        if selfcheck_fail:
+            det.append("자체점검 실패(스캔대상 0건 — 제외 규칙 오류 의심)")
         if not suppressed:
             _alert("🛡️⚠️ 재발방지 회귀 감지 — " + " / ".join(det) + ". status/incident_health.md 확인.")
             _save_alert_sig(sig)
