@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<title>상담 자동화 — 웰페리온 랩스</title>
+<link rel="stylesheet" href="platform_brand.css">
+<link rel="stylesheet" href="../../cbo/counsel.css">
+</head><body>
+<div class="wrap">
+<div class="kicker">Wellperion Labs<span>.</span></div>
+<h1>상담 자동화</h1>
+<p class="sub" id="subline">불러오는 중…</p>
+<div class="tabs" id="tabs"></div>
+<div class="subnav" id="subnav"></div>
+
+<div class="kpi" id="kpi">
+  <div><b>-</b><span>질문(오늘)</span></div>
+  <div><b>-</b><span>봇이 답한 것</span></div>
+  <div><b>-</b><span>못 답한 것</span></div>
+</div>
+
+<section><h2>손님이 보는 화면</h2>
+  <div class="acts" id="pageLinks"></div>
+  <p class="muted">링크 하나로 손님이 들어와 묻는 자리입니다. 새 창으로 열어 직접 물어보시면 지금 답이 어떻게 나가는지 그대로 보입니다.</p>
+</section>
+
+<section><h2>업체 정보</h2>
+  <table><tbody id="infoBody"></tbody></table>
+  <p class="muted">고치는 곳 = <code>server/counselbot/tenants/{업체}.json</code> (시보). 이 화면은 보기만 합니다.</p>
+</section>
+
+<section><h2>최근 30일</h2>
+  <div id="statsBody"><p class="muted">불러오는 중…</p></div>
+</section>
+</div>
+
+<script src="../../cbo/counsel.js"></script>
+<script>
+(function () {
+  "use strict";
+  var esc = Counsel.esc, j = Counsel.j;
+
+  Counsel.start("counsel_admin.html", function (ctx) {
+    document.getElementById("pageLinks").innerHTML =
+      '<a href="' + esc(ctx.cur.page) + '" target="_blank" rel="noopener">손님 화면 열기 — ' + esc(ctx.cur.page) + '</a>';
+
+    j(ctx.api + "/stats?days=1").then(function (s) {
+      var k = document.getElementById("kpi").children;
+      k[0].querySelector("b").textContent = s.total;
+      k[1].querySelector("b").textContent = s.answered +
+        (s.answer_ratio != null ? " (" + Math.round(s.answer_ratio * 100) + "%)" : "");
+      k[2].querySelector("b").textContent = s.total - s.answered;
+    }).catch(function () {
+      var k = document.getElementById("kpi").children;
+      for (var i = 0; i < k.length; i++) k[i].querySelector("b").textContent = "—";
+    });
+
+    j(ctx.api + "/profile?full=1").then(function (p) {
+      var persona = p.persona || {};
+      document.getElementById("infoBody").innerHTML =
+        '<tr><th>업체</th><td>' + esc(p.name) + '</td></tr>' +
+        '<tr><th>우리 쪽 이름</th><td>' + esc(ctx.cur.role) + '</td></tr>' +
+        '<tr><th>상담원 이름</th><td>' + esc(persona.name) + '</td></tr>' +
+        '<tr><th>인사말</th><td>' + esc(persona.greeting) + '</td></tr>' +
+        '<tr><th>못 답할 때 하는 말</th><td>' + esc(persona.handoff) + '</td></tr>' +
+        '<tr><th>상태</th><td>' + esc(p.status) + '</td></tr>' +
+        '<tr><th>예약 링크</th><td>' + esc(p.reservation_url) + '</td></tr>' +
+        '<tr><th>FAQ</th><td>' + p.faq_count + '개 (확정 ' + p.verified_count + ')</td></tr>';
+      document.getElementById("subline").textContent =
+        p.name + " · FAQ " + p.faq_count + "개 · 손님 화면 " + ctx.cur.page;
+    }).catch(function () {
+      document.getElementById("subline").textContent =
+        ctx.cur.name + " · 업체 정보를 불러오지 못했습니다(로그인이 풀렸을 수 있습니다)";
+    });
+
+    j(ctx.api + "/stats?days=30").then(function (s) {
+      var rows = (s.top_unanswered || []).map(function (r) {
+        return '<tr><td>' + esc(r.q) + '</td><td>' + r.count + '</td></tr>';
+      }).join("");
+      document.getElementById("statsBody").innerHTML =
+        '<p class="muted">질문 ' + s.total + '개 · 봇이 답한 것 ' + s.answered +
+        (s.answer_ratio != null ? ' (' + Math.round(s.answer_ratio * 100) + '%)' : '') + '</p>' +
+        (rows ? '<table><thead><tr><th>많이 물었는데 못 답한 것</th><th>횟수</th></tr></thead><tbody>' +
+                rows + '</tbody></table>'
+              : '<p class="muted">못 답한 질문 없음</p>');
+    }).catch(function () {
+      document.getElementById("statsBody").innerHTML =
+        '<p class="muted">통계를 불러오지 못했습니다(로그인이 풀렸을 수 있습니다).</p>';
+    });
+  });
+})();
+</script>
+</body></html>

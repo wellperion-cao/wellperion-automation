@@ -103,7 +103,7 @@ LOG_PATH = STATUS_DIR / "self_health_watchdog_log.jsonl"
 DECISION_CONTRACTS_PATH = PROJECT_ROOT / "ssot" / "decision_contracts.json"
 ROOMS_PATH = STATUS_DIR / "telegram_rooms.json"
 BOT_ROOM = "자동화현황방"  # 기존 채널 재사용(새 봇·새 방 금지)
-LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#layer-automation"
+LINK = "https://wellperion-cao.github.io/wellperion-automation/erp/admin/자율현황.html#layer-automation"
 
 MODULE_ID = "cto-self-health-watchdog"
 # 2026-08-08 시토: SELF_HEALTH_WATCHDOG_LIVE 환경변수 게이트를 없앴다. 아무도 그 변수를

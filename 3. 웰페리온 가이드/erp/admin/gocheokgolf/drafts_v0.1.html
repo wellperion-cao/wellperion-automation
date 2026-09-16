@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../../assets/wp-ui.css"><meta name="robots" content="noindex">
+<title>고척GDR QA 골프존 — 블로그·인스타그램 초안 v0.7</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#111820;--navy:#16325C;--sky:#EDF2FA;--line:#DDE4EE;--dim:#6B7684;--red:#B4232A;--red-bg:#FDF0F0;--gold-bg:#FFF8E8}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#EEF1F6;font-size:16px;line-height:1.75;word-break:keep-all}
+.wrap{max-width:100%;margin:0;background:#fff}
+header{padding:34px 40px 26px;border-bottom:1px solid var(--line)}
+.kicker{font-size:12px;letter-spacing:4px;color:var(--navy);font-weight:700}
+h1{font-size:30px;font-weight:900;margin-top:10px;line-height:1.28}
+.sub{font-size:15px;color:var(--dim);margin-top:10px}
+.top{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.top div{padding:20px 40px}
+.top .l{border-right:1px solid var(--line)}
+.top .t{font-size:12px;letter-spacing:2px;color:var(--dim);font-weight:700}
+.top .v{font-size:19px;font-weight:900;margin-top:6px;line-height:1.45}
+.top .v small{display:block;font-size:14px;font-weight:400;color:var(--dim);margin-top:4px}
+nav{position:sticky;top:0;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:12px 40px;display:flex;gap:6px;flex-wrap:wrap;z-index:5}
+nav a{text-decoration:none;color:var(--navy);font-weight:700;font-size:14px;padding:6px 14px;border-radius:20px}
+nav a:hover{background:var(--sky)}
+section{padding:40px 40px 8px}
+.num{font-size:12px;letter-spacing:3px;color:var(--navy);font-weight:700}
+h2{font-size:25px;font-weight:900;margin:8px 0 18px;line-height:1.3}
+p{margin-bottom:12px}
+table{width:100%;border-collapse:collapse;margin:12px 0 6px;font-size:15px}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:var(--sky);font-size:13.5px;font-weight:700}
+td.bad{color:var(--red);text-decoration:line-through}
+.fix{background:var(--red-bg);border:1px solid #F0C9C9;border-radius:10px;padding:20px 24px;margin:14px 0}
+.fix .h{font-weight:900;color:var(--red);font-size:17px;margin-bottom:8px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 8px}
+.card{border:1px solid var(--line);border-radius:10px;padding:20px}
+.card .n{font-size:32px;font-weight:900;color:var(--navy);line-height:1}
+.card .h{font-size:17px;font-weight:900;margin:8px 0 6px}
+.card .d{font-size:14.5px;color:var(--dim);line-height:1.6}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.grid figure{border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.grid img{width:100%;height:230px;object-fit:cover;display:block}
+.grid figcaption{font-size:14px;padding:10px 14px;color:var(--dim)}
+.phone{max-width:400px;margin:18px auto;border:10px solid #111820;border-radius:32px;overflow:hidden;background:#fff}
+.phone .bar{background:#111820;color:#fff;font-size:12.5px;padding:8px 14px;letter-spacing:1px}
+.phone .shot{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.phone .shot img{width:100%;height:88px;object-fit:cover;display:block}
+.phone .body{padding:16px 16px 18px;font-size:15px;line-height:1.8;white-space:pre-wrap}
+.phone .tag{padding:0 16px 16px;font-size:13px;color:var(--navy);line-height:1.8}
+.doc{border:1px solid var(--line);border-radius:10px;padding:26px 30px;margin:16px 0;background:#FCFDFF;white-space:pre-wrap;font-size:15.5px;line-height:1.9}
+.doc b{font-weight:900}
+.note{font-size:14px;color:var(--dim);background:var(--sky);border-radius:8px;padding:12px 16px;margin:14px 0}
+.ask{background:var(--gold-bg);border:1px solid #F0DCAE;border-radius:10px;padding:22px 26px;margin:16px 0}
+.ask ol{margin:0;padding-left:22px}.ask li{margin-bottom:10px;font-size:15.5px}
+.foot{padding:22px 40px 34px;font-size:13.5px;color:var(--dim);border-top:1px solid var(--line);margin-top:24px}
+@media (max-width:760px){.top{grid-template-columns:1fr}.top .l{border-right:0;border-bottom:1px solid var(--line)}
+ .cards,.grid{grid-template-columns:1fr}header,section,nav,.top div,.foot{padding-left:20px;padding-right:20px}
+ h1{font-size:24px}h2{font-size:21px}table{display:block;overflow-x:auto}}
+</style></head><body><div class="wrap">
+
+<header>
+<div class="kicker">WELLPERION · AI 브랜딩</div>
+<h1>고척GDR QA 골프존<br>블로그 · 인스타그램 초안 v0.7</h1>
+<div class="sub">받는 분 조재오 부장님 &nbsp;·&nbsp; 만든 이 웰페리온 AI &nbsp;·&nbsp; 2026. 09. 09. · 부장님 확인 완료본</div>
+</header>
+
+<div class="top">
+<div class="l"><div class="t">지금 상태</div><div class="v">18문 전항 확인 완료<small>부장님 2026-09-09 20:24 회신 — 값이 굳었습니다</small></div></div>
+<div><div class="t">다음</div><div class="v">주 2회 · 임시저장까지<small>발행 버튼은 부장님이 직접 누르십니다</small></div></div>
+</div>
+
+<nav><a href="#fix">확정된 정본</a><a href="#blog">블로그</a><a href="#insta">인스타그램</a><a href="#essence">업의 본질</a><a href="#rule">앞으로</a><a href="#ask">부장님 답변 18문</a></nav>
+
+<section id="fix">
+<div class="num">01</div><h2>확정된 정본 &mdash; 이 값만 씁니다</h2>
+<div class="fix" style="background:#E9F3EC;border-color:#BFD9C7">
+<div class="h" style="color:#2C6B39">부장님이 18문 전부 답해 주셔서 값이 굳었습니다</div>
+<p>어긋났던 세 곳은 모두 <b>블로그 값이 맞다</b>고 확인해 주셨습니다. 현수막의 체험권과 규모도 맞다고 하셨고, 금액을 글에 적어도 된다고 허락해 주셨습니다. 오늘부터 나가는 모든 글은 아래 값만 씁니다.</p>
+</div>
+<table>
+<tr><th style="width:22%">항목</th><th style="width:78%">확정값 &nbsp;<small>(부장님 확인 2026-09-09 20:24)</small></th></tr>
+<tr><td>상호</td><td><b>고척GDR QA 골프존</b> · 본문에서는 「고척동 GDR QA 골프아카데미」 (간판 영문 QA GOLF STUDIO)</td></tr>
+<tr><td>주소</td><td><b>서울 구로구 중앙로 18 고척헤리움 B1</b> (고척동 사거리 인근)</td></tr>
+<tr><td>운영시간</td><td>평일 <b>06:30~23:00</b> · 주말 <b>10:00~20:00</b> · <b>국경일·대체휴일·공휴일도 주말과 같은 시간</b></td></tr>
+<tr><td>주차</td><td>건물 내 <b>2시간 무료주차</b></td></tr>
+<tr><td>규모·타석</td><td><b>600평 · GDR 40타석</b> · <b>6타석씩 룸</b>으로 나뉜 구조</td></tr>
+<tr><td>체험권</td><td><b>레슨 2회 + 일주일 체험권 99,000원</b> &mdash; 글에 금액을 적어도 된다고 허락받았습니다</td></tr>
+<tr><td>시설</td><td>클럽 <b>대여 가능</b> · 락커 <b>있음</b> · 샤워시설 <b>없음</b></td></tr>
+<tr><td>문의</td><td>02-2066-1119 · 온라인 = 블로그·인스타그램 / 오프라인 = 대형 현수막</td></tr>
+<tr><td>코치</td><td>프로필(성함·경력) 글에 <b>사용 가능</b> &mdash; 원자료를 주시면 넣겠습니다</td></tr>
+<tr><td>발행</td><td>임시저장까지만 만들고 <b>발행은 부장님이 직접</b> · 주 2회 · 골프 관련 자유 주제 · AI 사진 사용 가능</td></tr>
+</table>
+<div class="note">어제 올린 옛 임시저장 글은 「지워도 됩니다」 하셔서 <b>삭제하겠습니다.</b></div>
+</section>
+
+<section id="blog">
+<div class="num">02</div><h2>다시 쓴 블로그 글</h2>
+<div class="note"><b>태그</b> — 부장님이 콕 집어 주신 <b>#고척골프</b> 를 맨 앞에 넣었습니다. 네이버는 본문 해시태그와 <b>발행 화면의 태그 칸(최대 30개)</b>이 따로 있어 둘 다 채웁니다. 고정 25개 + 글마다 바뀌는 5개 = 30개입니다.</div>
+<p>부장님 글 「공 100개 치면 실력도 100만큼 늘까요?」의 구조를 그대로 따랐습니다. 인사 → 공감 장면 → 질문 → 구분선으로 나눈 본론 → 오늘의 TIP → 푸터 → 해시태그.</p>
+<div class="doc"><b>⛳ 옆 타석이 신경 쓰여서 스윙이 작아지셨나요?</b>
+
+안녕하세요 😊
+
+고척동 GDR QA 골프아카데미입니다.
+
+혼자 연습할 때는 편하게 휘두르던 분이
+
+옆 타석에 사람이 서는 순간 스윙이 갑자기 조심스러워지는 경우가 있습니다.
+
+괜히 헛스윙이 날까 봐, 공이 이상하게 튈까 봐.
+
+그러다 보면 백스윙이 짧아지고, 팔로만 치게 되고, 임팩트가 급해집니다.
+
+“나 원래 이것보다는 잘 쳤는데…”
+
+🤔
+
+━━━━━━━━━━━━━━━━━━
+
+🏌️ 긴장은 스윙보다 먼저 호흡을 바꿉니다
+
+사람이 신경 쓰이면 가장 먼저 숨이 얕아집니다.
+
+숨이 얕아지면 어깨가 올라가고, 어깨가 올라가면 팔에 힘이 들어갑니다.
+
+그 상태로 치면 스윙이 작아지는 게 아니라, 몸통이 안 돌아가는 것에 가깝습니다.
+
+그래서 “크게 쳐야지”라고 마음먹는 것만으로는 잘 안 바뀝니다.
+
+바꿔야 할 것은 스윙의 크기가 아니라 치기 전의 상태입니다.
+
+━━━━━━━━━━━━━━━━━━
+
+🎯 오늘 바로 해볼 수 있는 세 가지
+
+① 치기 전에 숨을 한 번 길게 내쉬기
+
+   들이쉬는 것보다 내쉬는 것이 어깨를 내려 줍니다.
+
+② 클럽을 짧게 잡고 반 스윙 다섯 번
+
+   처음부터 풀스윙으로 들어가지 않습니다. 몸통이 도는 느낌을 먼저 찾습니다.
+
+③ 공을 보지 말고 목표를 먼저 보기
+
+   시선이 목표로 한 번 갔다 오면 몸이 방향을 기억합니다.
+
+이 세 가지는 30초면 됩니다. 그런데 다음 다섯 개가 달라집니다.
+
+━━━━━━━━━━━━━━━━━━
+
+📊 GDR 화면은 이럴 때 특히 도움이 됩니다
+
+긴장했을 때와 편할 때의 차이는 느낌으로는 잘 안 잡힙니다.
+
+숫자로 보면 금방 보입니다.
+
+볼 스피드가 떨어졌는지, 발사각이 낮아졌는지, 출발 방향이 한쪽으로 몰렸는지.
+
+같은 스윙을 했다고 생각했는데 숫자가 다르면, 몸이 다르게 움직였다는 뜻입니다.
+
+숫자를 많이 보라는 말이 아닙니다.
+
+“왜 이 결과가 나왔지?” 한 번만 생각해 보시면 됩니다.
+
+━━━━━━━━━━━━━━━━━━
+
+☝️ 골프는 애쓸수록 나빠지는 몇 안 되는 운동입니다
+
+대부분의 일은 힘을 더 쓰면 결과가 조금이라도 나아집니다.
+
+골프는 반대입니다. 세게 치려고 할수록 공이 덜 나갑니다.
+
+힘을 빼라는 말이 어려운 건, 우리가 평소에 그렇게 살지 않아서인 것 같습니다.
+
+사람이 적은 시간에 한 번 나와 보시는 것도 방법입니다.
+
+내가 원래 어떤 스윙을 하는 사람인지 다시 확인할 수 있습니다.
+
+━━━━━━━━━━━━━━━━━━
+
+🌱 연습장은 못 쳐도 아무 일이 안 생기는 자리입니다
+
+필드에서는 한 번의 실수가 점수로 남습니다. 같이 친 사람도 그 장면을 봅니다.
+
+그런데 연습장에서는 아무 일도 일어나지 않습니다.
+
+빗맞은 공은 그물에 걸리고, 다음 공을 놓으면 됩니다.
+
+생각해 보면 이렇게 마음 놓고 실패할 수 있는 자리가 하루에 몇 군데나 있을까 싶습니다.
+
+일에서도 사람 사이에서도 실수는 대개 흔적을 남깁니다.
+
+연습장이 좋은 이유는 시설이 좋아서가 아니라, 여기서는 못 쳐도 괜찮기 때문입니다.
+
+그러니 오늘 잘 맞지 않으셨다면, 연습장을 제대로 쓰신 겁니다.
+
+━━━━━━━━━━━━━━━━━━
+
+🏌️‍♂️ 오늘의 골프 TIP
+
+“스윙이 작아졌다면 스윙을 키우려 하지 마시고,
+
+치기 전 30초를 바꿔 보세요.”
+
+여기는 못 쳐도 되는 자리입니다. 그 사실이 스윙을 제일 크게 만들어 줍니다.
+
+옆 사람은 생각보다 내 스윙을 보고 있지 않습니다.
+
+오늘은 남의 시선이 아니라 내 호흡을 한 번 챙겨 보세요. ⛳
+
+━━━━━━━━━━━━━━━━━━
+
+📍 고척GDR QA 골프존
+
+서울 구로구 중앙로 18 고척헤리움 B1
+
+(고척동 사거리 인근)
+
+🚗 건물 내 2시간 무료주차
+
+⏰ 운영시간
+
+평일 : 06:30 ~ 23:00
+
+주말·공휴일 : 10:00 ~ 20:00
+
+📞 레슨 및 타석 이용 문의
+
+02-2066-1119
+
+600평 GDR 40타석 · 6타석씩 룸 · 클럽 대여 가능
+
+처음이시라면 레슨 2회 + 일주일 체험권 99,000원으로 먼저 경험해 보셔도 좋습니다.
+
+방문 상담 시 체형 및 스윙 진단 상담도 가능합니다. 😊
+
+━━━━━━━━━━━━━━━━━━
+
+#고척골프 #고척gdrQA골프존 #고척gdr #고척골프연습장 #고척동골프연습장 #고척동골프 #구로구골프연습장 #구로골프 #개봉동골프연습장 #구일동골프연습장 #gdr골프 #gdr연습장 #실내골프연습장 #골프연습 #골프연습방법 #골프스윙 #골프레슨 #골프초보 #골린이 #골린이탈출 #골프팁 #골프연습팁 #골프잘치는법 #골프취미 #직장인취미 #골프멘탈 #골프힘빼기 #스윙교정 #연습장추천 #주말골프</div>
+</section>
+
+<section id="insta">
+<div class="num">03</div><h2>인스타그램 첫 게시물</h2>
+<p>블로그 글에서 한 조각만 떼어 짧게 만들었습니다. 사진 6장 묶음, 계정 <b>@gocheok_qa_golf</b>.</p>
+<div class="phone">
+<div class="bar">gocheok_qa_golf</div>
+<div class="shot">
+<img src="img/cover_signboard.jpg" alt=""><img src="img/bay_gdr_01.jpg" alt=""><img src="img/bay_gdr_02.jpg" alt="">
+<img src="img/sign_qa_gdr.jpg" alt=""><img src="img/kiosk_booking.jpg" alt=""><img src="img/entrance.jpg" alt="">
+</div>
+<div class="body">공을 몇 개 쳤느냐보다, 무엇을 연습했느냐입니다.
+
+오늘 나오신다면 목표를 하나만 정해 보세요.
+1️⃣ 오늘은 방향성만
+2️⃣ 오늘은 스윙 템포만
+3️⃣ 오늘은 어프로치 거리감만
+
+하나만 정해도 같은 50개가 달라집니다.
+여기는 못 쳐도 아무 일이 안 생기는 자리니까요.
+GDR 화면에 남는 볼 스피드와 방향을 같이 보시면
+그 50개는 그냥 50개가 아니라 데이터가 됩니다.
+
+📍 서울 구로구 중앙로 18 고척헤리움 B1
+🚗 건물 내 2시간 무료주차
+⏰ 평일 06:30~23:00 · 주말·공휴일 10:00~20:00
+📞 02-2066-1119
+👉 궁금한 점은 DM으로 편하게 남겨 주세요.</div>
+<div class="tag">#고척골프 #고척gdrQA골프존 #고척gdr #고척골프연습장 #고척동골프연습장 #구로구골프연습장 #gdr연습장 #실내골프연습장 #골프연습방법 #골프레슨 #골프초보 #골린이 #골프팁 #골프멘탈 #직장인취미</div>
+</div>
+</section>
+
+<section id="essence">
+<div class="num">04</div><h2>저희가 이 업을 이렇게 봅니다</h2>
+<p>부장님이 하신 말씀 한 줄에서 시작했습니다. <b>「결국 문턱을 낮추어 상담 기회를 늘리는 구조입니다」</b>. 저희는 이 말을 값을 깎는다는 뜻으로 읽지 않았습니다.</p>
+<div class="cards">
+<div class="card"><div class="n">01</div><div class="h">파는 것은 타석이 아니라 자리</div><div class="d">손님이 사는 건 공 100개가 아닙니다. 아무도 나를 평가하지 않는 한 시간입니다. 골프연습장은 <b>못 해도 아무 일이 안 생기는</b> 흔치 않은 자리입니다.</div></div>
+<div class="card"><div class="n">02</div><div class="h">문턱을 낮춘다 = 실패의 값을 낮춘다</div><div class="d">7일 체험권도, 6타석 룸도, 대여 클럽도 결국 같은 말입니다. <b>처음 오는 사람이 잃을 것을 줄여 주는 것.</b> 부장님이 이미 그렇게 만들어 두셨습니다.</div></div>
+<div class="card"><div class="n">03</div><div class="h">골프는 애쓸수록 나빠진다</div><div class="d">힘을 더 쓰면 대개 결과가 조금은 나아집니다. 골프는 반대입니다. 그래서 골프를 치는 사람은 <b>조급함을 다루는 법</b>을 배웁니다. 이 이야기가 시설 자랑보다 오래 남습니다.</div></div>
+</div>
+<div class="note">그래서 저희 글은 「우리 시설이 좋습니다」로 시작하지 않습니다. <b>오늘 연습에 바로 쓰는 골프 이야기</b>를 하고, 그 끝에 한 문장만 남깁니다 — 여기는 못 쳐도 되는 자리라는 것. 팔지 않아도 그 문장이 사람을 오게 합니다.</div>
+</section>
+<section id="rule">
+<div class="num">05</div><h2>앞으로 이렇게 씁니다</h2>
+<p>부장님 글을 규칙으로 정리해 두었습니다. 다음 글부터는 이 틀에서 시작합니다.</p>
+<div class="cards">
+<div class="card"><div class="n">01</div><div class="h">골프 정보가 8할</div><div class="d">오늘 연습에 바로 쓰는 내용이 본문입니다. 시설은 맨 끝 푸터 한 덩어리에만 넣습니다.</div></div>
+<div class="card"><div class="n">02</div><div class="h">기본정보는 부장님 값만</div><div class="d">주소·시간·주차·요금은 부장님이 쓰신 글이나 확인해 주신 값만 씁니다.</div></div>
+<div class="card"><div class="n">03</div><div class="h">팔지 않습니다</div><div class="d">등록·결제를 재촉하지 않습니다. 마지막 줄은 편하게 물어보시라는 한 마디로 끝냅니다.</div></div>
+</div>
+</section>
+
+<section id="ask">
+<div class="num">06</div><h2>부장님 답변 18문 &mdash; 받은 그대로</h2>
+<table>
+<tr><th style="width:6%">번호</th><th style="width:40%">여쭌 것</th><th style="width:54%">부장님 답</th></tr>
+<tr><td>1</td><td>운영시간</td><td><b>블로그가 맞다</b></td></tr>
+<tr><td>2</td><td>건물 이름</td><td><b>블로그가 맞다</b></td></tr>
+<tr><td>3</td><td>상호</td><td><b>블로그가 맞다</b></td></tr>
+<tr><td>4</td><td>체험권</td><td><b>현수막이 맞다</b> (레슨 2회 + 일주일 99,000원)</td></tr>
+<tr><td>5</td><td>규모</td><td><b>현수막이 맞다</b> (600평 · 40타석)</td></tr>
+<tr><td>6</td><td>금액 표기</td><td><b>적어도 된다</b></td></tr>
+<tr><td>7</td><td>공휴일</td><td>국경일·대체휴일·공휴일·주말 <b>모두 같은 시간</b></td></tr>
+<tr><td>8</td><td>주차</td><td><b>2시간 무료주차</b></td></tr>
+<tr><td>9</td><td>타석 구조</td><td><b>6타석씩 룸</b>으로 되어 있다</td></tr>
+<tr><td>10</td><td>클럽 랙</td><td><b>대여용</b></td></tr>
+<tr><td style="background:var(--gold-bg)"><b>11</b></td><td style="background:var(--gold-bg)">글의 결·길이</td><td style="background:var(--gold-bg)">「공 100개가 무슨 의미인지 모르겠다」 &mdash; <b>제가 잘못 여쭀습니다. 아래에서 다시 여쭙습니다</b></td></tr>
+<tr><td>12</td><td>발행 방식</td><td><b>임시저장까지만</b></td></tr>
+<tr><td>13</td><td>옛 임시저장 글</td><td><b>지워도 된다</b></td></tr>
+<tr><td>14</td><td>사진</td><td>계속 <b>업데이트할 수 있다</b></td></tr>
+<tr><td>15</td><td>락커·샤워</td><td>락커 <b>있음</b> · 샤워시설 <b>없음</b></td></tr>
+<tr><td>16</td><td>코치 프로필</td><td><b>사용해도 된다</b></td></tr>
+<tr><td>17</td><td>문의 경로</td><td>온라인 = <b>블로그·인스타</b> / 오프라인 = <b>대형 현수막</b></td></tr>
+<tr><td>18</td><td>주기·글감</td><td><b>주 2회</b> · 골프 관련 <b>자유 주제</b> · <b>AI 사진 사용도 좋다</b></td></tr>
+</table>
+<div class="ask"><ol>
+<li><b>11번을 다시 여쭙습니다.</b> 제가 「공 100개 글 구조를 따랐다」고 적어 뜻이 통하지 않았습니다. 여쭙고 싶었던 것은 <b>이번에 저희가 쓴 글(02번)의 길이와 말투가 부장님 마음에 드시는지</b>입니다. 더 길게 / 더 짧게 / 이대로 &mdash; 셋 중 하나만 주시면 됩니다.</li>
+<li><b>코치 프로필</b>을 쓰라 하셨으니, 성함·경력·사진을 보내 주시면 다음 글부터 넣겠습니다. 원하시는 분만 넣습니다.</li>
+</ol></div>
+</section>
+
+<div class="foot">이 페이지는 부장님 확인 뒤에만 밖으로 나갑니다. 부장님이 확인해 주신 값만 씁니다. 발행 버튼은 부장님이 직접 누르십니다. &mdash; 웰페리온 AI</div>
+</div></body></html>

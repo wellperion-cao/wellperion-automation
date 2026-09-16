@@ -67,7 +67,7 @@ ROOMS_PATH = STATUS_DIR / "telegram_rooms.json"
 # 「AI 작업 관련된 내용만(백엔드 라인)」인 AI관리 방으로 맞춘다 — 새 방·새 봇을 만들지 않는다(약속 L21).
 BOT_ROOM = "AI관리"
 # 2026-09-09 (배1115): 깃헙 주소 → ERP. 실무진·GM 이 여는 곳은 erp.wellperion.com 하나다.
-LINK = "https://erp.wellperion.com/자율현황.html#health"
+LINK = "https://erp.wellperion.com/erp/admin/자율현황.html#health"
 
 # ── 예상 갱신주기(h) — notify_spec 의 유일한 주기 필드를 그대로 쓴다 ──────────
 DAILY_MAX_H = 30

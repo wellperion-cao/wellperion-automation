@@ -2725,9 +2725,9 @@
   <article class="doc" id="T1">
     <div class="doc-header"><h2><span class="g-id">T1</span>기술 & AI 학습 상세</h2><div class="meta">기술 인프라(설정·경로·프롬프트) + AI 학습(기본기·토큰절약·자기학습) 통합 · 기술 담당용</div></div>
     <p class="lead">scripts 폴더 구조, 경로 표준화, CTO 개발 아카이브 운영의 상세 기술 문서입니다.</p>
-    <p class="lead"><a href="cto/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">☁️ 웰페리온 ERP 운영 가이드 — AWS ↗</a> — 주소·계정·층별 구조·개발 언어·운영 규칙·단계·교훈 한 장(2026-09-03)</p>
+    <p class="lead"><a href="erp/admin/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">☁️ 웰페리온 ERP 운영 가이드 — AWS ↗</a> — 주소·계정·층별 구조·개발 언어·운영 규칙·단계·교훈 한 장(2026-09-03)</p>
     <div class="callout" style="margin:10px 0 16px;">
-      <h3 style="margin:0 0 8px;">☁️ 서버·DB 정의 (2026-09-03 · 정본 = <a href="cto/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">운영 가이드</a>)</h3>
+      <h3 style="margin:0 0 8px;">☁️ 서버·DB 정의 (2026-09-03 · 정본 = <a href="erp/admin/AWS_ERP_운영가이드.html" target="_blank" rel="noopener">운영 가이드</a>)</h3>
       <table style="width:100%;border-collapse:collapse;font-size:var(--fs-2);">
         <tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #D7CFC6;">층</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #D7CFC6;">무엇</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #D7CFC6;">어디</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #D7CFC6;">담당</th></tr>
         <tr><td style="padding:4px 6px;">서버</td><td style="padding:4px 6px;">AWS EC2 t3.small(서울) · 고정 IP 15.164.151.105 · nginx · 자물쇠(HTTPS)</td><td style="padding:4px 6px;"><a href="https://erp.wellperion.com/" target="_blank" rel="noopener">erp.wellperion.com</a> · 설정 = <code>server/</code> · <code>scripts/aws_bootstrap.py</code></td><td style="padding:4px 6px;">시토</td></tr>
@@ -2870,7 +2870,7 @@
         </div>
 
         <h4 style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);">운영 실행 도구</h4>
-        <p style="font-size:var(--fs-2); color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트(T1 본 섹션). 누가 무엇을 정비하나(R/R·범위표 단일출처)는 <a href="자율현황.html#sec-weekly" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a> 참조.</p>
+        <p style="font-size:var(--fs-2); color:var(--dim); margin-bottom:12px;">정기 정비·자기학습을 실제로 돌리는 실행 프롬프트(T1 본 섹션). 누가 무엇을 정비하나(R/R·범위표 단일출처)는 <a href="erp/admin/자율현황.html#sec-weekly" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a> 참조.</p>
 
         <div style="margin-bottom:16px; padding:13px 16px; background:#F1EDE9; border-radius:8px; border-left:3px solid var(--accent);">
           <div style="font-size:var(--fs-2); font-weight:700; color:var(--text); margin-bottom:6px;">컨텍스트 정비 실행 (STEP 1~5) — 빠른 실행</div>
@@ -3103,7 +3103,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </table>
 
         <h4>자동화 도구</h4>
-        <div class="callout"><strong>가동 현황·주기는 자율현황.html 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="자율현황.html" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html</a> 참조.</div>
+        <div class="callout"><strong>가동 현황·주기는 자율현황.html 단일 출처</strong>(중복 표 제거 2026-06-06). 자기학습을 돌리는 자동화 = <code>ai_education_auto_learner.py</code>(웹 수집→요약→텔레그램) · <code>education_archive_weekly.py</code>(매주 일 09:00 교육자료 정리) · 컨텍스트 주간 정비(매주 일 09:00) · CEO 통합보고(매일 08:00). 무엇이 언제 도는지는 <a href="erp/admin/자율현황.html" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html</a> 참조.</div>
 
         <h4>고도화 진화 로드맵</h4>
         <ul>
@@ -3126,7 +3126,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <p style="font-size:var(--fs-2);color:var(--dim);margin-top:6px;">※ 콘텐츠용(캡션·훅·바이럴)은 마케팅(시모/CMO) 영역으로 별도 추가 예정. 새 명령 추가는 <code>.claude/commands/</code>에 .md 한 장이면 끝.</p>
 
         <h3><span class="ico">🔧</span>컨텍스트 정비 범위 정의 (매주 일 09:00)</h3>
-        <div class="callout"><strong>→ 범위표 단일출처 = 자율현황.html, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="자율현황.html#sec-weekly" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
+        <div class="callout"><strong>→ 범위표 단일출처 = 자율현황.html, 실행 프롬프트 = T1 본 섹션.</strong> 주간 컨텍스트 정비 범위표(6 C-Level 식별자·정비 범위·체크포인트)는 <a href="erp/admin/자율현황.html#sec-weekly" target="_blank" style="color:var(--text);font-weight:700;text-decoration:none;">자율현황.html ▸ 매주 ▸ 7 C-Level 컨텍스트 정비</a>에서 단일 관리합니다(2026-06-05 이관). 실행 프롬프트(STEP 1~5)는 <strong>T1 기술 인프라 상세 ▸ 핵심 프롬프트 ▸ 운영 실행 도구</strong>. 범위표 중복 기재 금지.</div>
 
         <!-- ══ 📓 반영·효과 로그 (2026-06-23 시토 신설) ══ -->
         <h3 style="margin-top:28px;border-top:1px solid var(--border);padding-top:22px;"><span class="ico">📓</span>반영·효과 로그 <span style="font-size:var(--fs-2);color:var(--dim);font-weight:400;">— 반영된 제안의 실제 효과 회고</span></h3>
@@ -7279,7 +7279,7 @@ function crTab(btn, panelId) {
     <p class="lead">Windows 스케줄러 + Python 프로세스 실측 기반 자동화 SSOT(무엇이 언제 자동으로 도는가)와, AI가 사람 지시 없이 스스로 포착·처리한 자율 작업 이력(무엇을 자율로 했는가)을 한 보드에서 봅니다.</p>
 
     <!-- ══ 🤖 자율 작업 현황 진입 (보드 일원화 · 2026-07-03 · 배339 설명순서 정합) ══ -->
-    <a href="자율현황.html" style="display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--border);border-left:3px solid #D8C9B6;border-radius:12px;padding:16px 20px;margin:12px 0 22px;text-decoration:none;color:inherit;">
+    <a href="erp/admin/자율현황.html" style="display:flex;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--border);border-left:3px solid #D8C9B6;border-radius:12px;padding:16px 20px;margin:12px 0 22px;text-decoration:none;color:inherit;">
       <span style="font-size:var(--fs-6);flex-shrink:0;">🤖</span>
       <span style="flex:1;">
         <span style="display:block;font-size:var(--fs-4);font-weight:800;">자율 작업 현황 보드 <span style="font-size:var(--fs-2);font-weight:400;color:var(--dim);">(자율로 한 일 + 돌아가는 자동화 — 두 축 통합)</span></span>
@@ -7291,7 +7291,7 @@ function crTab(btn, panelId) {
 
     <p style="font-size:var(--fs-2);color:var(--dim);margin:6px 0 14px;">📋 7대 자동화 모듈 <strong>전사 로드맵(목표)</strong> = <strong>S2 공통탭 ▸ 🌟 전사 자동화 로드맵</strong>. 이 진입점은 '지금 도는 현황'만 — 상세는 위 보드에서.</p>
 
-    <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 · 상세 보드로 일원화(2026-07-03, 구 T2 상세는 <a href="자율현황.html" style="color:var(--text);">자율현황.html</a>로 이관)</div>
+    <div class="source">점검 기준: Windows Task Scheduler + Python 프로세스 실측 · 상세 보드로 일원화(2026-07-03, 구 T2 상세는 <a href="erp/admin/자율현황.html" style="color:var(--text);">자율현황.html</a>로 이관)</div>
   </article>
   <!-- O3 재등록 대시보드 제거 (2026-07-20 시우·GM) — CPO 회원관리 소관으로 이관: cpo/member/renewal.html
        멤버십 회원관리 상단 '🔄 재등록 현황' 버튼에서 열람. 이관하고 삭제 = GM 지시. -->

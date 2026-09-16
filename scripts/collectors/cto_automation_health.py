@@ -46,7 +46,7 @@ if _SCRIPTS_DIR not in sys.path:
 from collectors.base import make_payload  # noqa: E402
 import self_health_watchdog as _self_health  # noqa: E402 — §자가건강 재사용(재수집 금지)
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#health"
+_LINK = "https://wellperion-cao.github.io/wellperion-automation/erp/admin/자율현황.html#health"
 _DEFAULT_REF = "status/erp_status.json"
 _KST = timezone(timedelta(hours=9))
 _LIVE_OK_STATES = ("정상", "정상(건너뜀)")

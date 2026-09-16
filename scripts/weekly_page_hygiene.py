@@ -96,8 +96,8 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "cmo", "label": "wp_inquiry_block_en", "path": "3. 웰페리온 가이드/cmo/survey/wp_inquiry_block_en.html"},
     # ── CTO 2 (2026-07-14 추가) — 자율현황.html은 실제로 리포 루트에 위치(cto/automation/
     # 하위 아님, 08-27 확인) ──
-    {"clevel": "cto", "label": "카톡전송관리", "path": "3. 웰페리온 가이드/cto/automation/카톡전송관리.html"},
-    {"clevel": "cto", "label": "자율현황", "path": "3. 웰페리온 가이드/자율현황.html"},
+    {"clevel": "cto", "label": "카톡전송관리", "path": "3. 웰페리온 가이드/erp/admin/카톡전송관리.html"},
+    {"clevel": "cto", "label": "자율현황", "path": "3. 웰페리온 가이드/erp/admin/자율현황.html"},
     # ── CFO 3 (2026-07-14 추가) ──
     {"clevel": "cfo", "label": "매출지출현황", "path": "3. 웰페리온 가이드/cfo/finance/매출지출현황.html"},
     {"clevel": "cfo", "label": "매출현황", "path": "3. 웰페리온 가이드/cfo/finance/매출현황.html"},

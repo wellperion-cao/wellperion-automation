@@ -162,6 +162,6 @@ img{{max-width:100%;border-radius:6px;margin:6px 0;display:block}}
 {'<div class="foot">비용·조건은 이 페이지에 없으며 별도로 말씀드립니다. 이 초안은 대표님 확인 뒤에만 밖으로 나갑니다. — 웰페리온 AI</div>' if PARTNER else ''}
 {WIDGET if PARTNER else ''}
 </div></body></html>"""
-out = '3. 웰페리온 가이드/cbo/dietcamp/' + ('drafts_v0.1.html' if PARTNER else 'setup_v0.1.html')
+out = '3. 웰페리온 가이드/erp/admin/dietcamp/' + ('drafts_v0.1.html' if PARTNER else 'setup_v0.1.html')
 open(out, 'w', encoding='utf-8').write(page)
 print(out, len(page))

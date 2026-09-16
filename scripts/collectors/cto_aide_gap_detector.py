@@ -29,7 +29,7 @@ if _SCRIPTS_DIR not in sys.path:
 from collectors.base import make_payload  # noqa: E402
 import gm_aide_scan  # noqa: E402 — read_jsonl()·SCAN_LOG 재사용(중복 파싱 금지)
 
-_LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#layer-autonomy"
+_LINK = "https://wellperion-cao.github.io/wellperion-automation/erp/admin/자율현황.html#layer-autonomy"
 _KST = timezone(timedelta(hours=9))
 
 

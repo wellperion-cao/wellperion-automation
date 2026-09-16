@@ -4,8 +4,10 @@
 (function (g) {
   "use strict";
 
+  // 경로는 이 스크립트(cbo/) 기준 — 상담봇 관리 화면은 랩스(erp/admin/)로 옮겨 세 화면이 한 폴더에 있지 않다(배 2513 · 2026-09-16).
+  var BASE = (document.currentScript && document.currentScript.src || "").replace(/[^\/]*$/, "");
   var PAGES = [
-    { file: "counsel_admin.html", name: "상담봇" },
+    { file: "../erp/admin/counsel_admin.html", name: "상담봇" },
     { file: "counsel_log.html", name: "상담 내역" },
     { file: "counsel_faq.html", name: "FAQ" }
   ];
@@ -25,7 +27,7 @@
 
   /* 업체 목록을 읽고 지금 고른 업체를 정한다(?t=). 목록을 못 읽으면 화면이 빈 채로 서지 않게 오류를 올린다. */
   function load() {
-    return j("counsel_tenants.json").then(function (d) {
+    return j(BASE + "counsel_tenants.json").then(function (d) {
       var list = d.tenants || [];
       if (!list.length) throw new Error("업체 목록이 비어 있다");
       var want = new URLSearchParams(location.search).get("t");
@@ -43,8 +45,8 @@
 
   function subnav(el, ctx, activeFile) {
     el.innerHTML = PAGES.map(function (p) {
-      return '<a href="' + p.file + '?t=' + encodeURIComponent(ctx.cur.id) + '"' +
-        (p.file === activeFile ? ' class="on"' : '') + '>' + esc(p.name) + '</a>';
+      return '<a href="' + BASE + p.file + '?t=' + encodeURIComponent(ctx.cur.id) + '"' +
+        (p.file.split("/").pop() === activeFile ? ' class="on"' : '') + '>' + esc(p.name) + '</a>';
     }).join("");
   }
 
