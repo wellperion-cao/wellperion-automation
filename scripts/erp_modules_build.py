@@ -67,7 +67,6 @@ ROOT_PAGES = {
     "wellperion_dashboard_web.html": "cpo",
     "자율현황.html": "cto",
     "전사회의.html": "coo",
-    "월간운영계획.html": "gm",
     # ★2026-09-03 GM 지시 "일단 다 AWS ERP에 넣어두고 하나씩 정리해야할듯" — 역할 폴더 밖에 있어
     #   자동 수집에 안 걸리던 화면들. 웰리 전수조사(저장소 HTML 198 · 등록 95)에서 나온 것들이다.
     "onboarding/직원교육_30분.html": "coo",    # 운영부 신입 교육 — 인사 기밀이 아니라 실무 교육이다
@@ -119,7 +118,7 @@ APPGROUP_IDS = {
             "chro-hub-calendar", "cmo-series-ai시리즈보드"],
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차", "gm-월간운영계획",
+    "경영": ["coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
@@ -500,7 +499,6 @@ MODULE_BUNDLES = [
     ("콘텐츠",      ["cmo-series-ai시리즈보드"]),
     ("경영 보고",   ["coo-chairman-gm업무", "coo-chairman-대표님-지시사항",
                      "coo-chairman-회장님-지시사항", "coo-chairman-중간관리자-업무목차"]),
-    ("월간 운영계획", ["gm-월간운영계획"]),
 ]
 
 
