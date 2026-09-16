@@ -145,9 +145,21 @@
           "start": "10:49",
           "end": "10:53",
           "minutes": 4,
-          "upload": "✅ 배포 (5b529b03d)",
+          "upload": "✅ 배포 (0a4cdc116)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260916-1014",
+          "no": "14",
+          "got": "신성미소시티 벽면 간판 관련해서 우리가 7/15 명령서 수령 여부 확인이 필요해 -> 받은적이 없음",
+          "did": "",
+          "start": "11:00",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -318,16 +330,43 @@
           "area": "GM지시",
           "event": "GM업무 정리 4건 — 상가 담당(최준용M·소장·관리비 제외) 전달 · CCTV 100대 · 오찬 완료 확인 · 파트너팀 리셉션 마케팅 나우열M 이관(AtoA 규격)",
           "detail": "카톡 최준용M 10:52 ok · AtoA 10:53 ok · monthly_ops_plan 4카드(낡은 07:01 사본은 HEAD 로 되쓰고 적용)"
+        },
+        {
+          "time": "10:58",
+          "area": "작업",
+          "event": "feat(ceo): 중간관리자 업무 — 업무마다 첨부(A3 등) 칸 · 사람별 A3 버튼 제거 (GM 2026-09-16)",
+          "detail": "커밋 0a4cdc1168 · 배 11401"
+        },
+        {
+          "time": "11:00",
+          "area": "작업",
+          "event": "fix(cto): 개별 통 원장 제목 = 첫 ▪ 줄 또는 호명·인사말 뗀 첫 줄 — #287 이 인사말로 잡히던 것 (배 12682 ③ · 웰리 지적 2026-09-16)",
+          "detail": "커밋 0226f39be4 · 배 11401"
         }
       ],
-      "count": 12,
+      "count": 13,
       "done": 12,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
-      "work_count": 28,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260916-1014",
+          "no": "14",
+          "got": "신성미소시티 벽면 간판 관련해서 우리가 7/15 명령서 수령 여부 확인이 필요해 -> 받은적이 없음",
+          "did": "",
+          "start": "11:00",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -431,18 +470,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:10",
-          "area": "배12664",
-          "event": "주차매출 크롤러 실측·수리·크론 등록",
-          "detail": "실측: 계정 있음(18:38 등록)인데 크론 없음·서버표 0행. 로그인/조회 엔드포인트가 추측값이라 실패 + 자가API 포트 8000 오류(라이브는 8001) 3개 버그 수리(커밋 eaf9c1905,68a6c3df0)→실행 성공(1행 적재)→API 200 확인→cron.d 등록. 소급 적재는 원천 API 한계로 불가."
-        },
-        {
-          "time": "09:14",
-          "area": "배12673",
-          "event": "fix",
-          "detail": "send_ops_digest._is_own_broadcast 발신 로그 대조 추가 — 커밋 7d4895c46 · selfcheck 통과 · 실측 확인"
-        },
         {
           "time": "09:14",
           "area": "배12516",
@@ -610,6 +637,18 @@
           "area": "작업",
           "event": "feat(cto): 개발 환경 — 정본에 원본 링크 38개(콘솔·nginx·관문 코드·표 정의·pgweb·인증서 기록·커밋 목록) · 파트너사 관리자 개발 환경은 절별 카드 9장 + 원본 버튼 · 랩스 관리 환경 카",
           "detail": "커밋 8c7c307195 · 배 12680"
+        },
+        {
+          "time": "10:58",
+          "area": "작업",
+          "event": "feat(cto): ★중간관리자 실장·소장 앞 개별 통 원장 자동 등록 — 발신 성공 직후 kind=reply · #N 부여 + 오늘 10:44 통 소급 1건 (배 12682 ③)",
+          "detail": "커밋 de53a3b39e · 배 12680"
+        },
+        {
+          "time": "10:59",
+          "area": "배12682",
+          "event": "실장·소장 개별 통 원장 자동 등록 배선",
+          "detail": "send_message_to_room 성공 직후 register_manager_reply(kind=reply·assign_ledger_no·save_ledger 재사용) · 10:44 통신이용증명서 통 소급 #287 · 커밋 de53a3b39e"
         }
       ],
       "count": 8,
