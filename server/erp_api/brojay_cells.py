@@ -87,6 +87,7 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     refund_day = 0
     new_amt = new_n = re_amt = re_n = 0
     unmatched = 0
+    daily = {}   # 날짜별 총매출(환불 제외) — 보고 1면 「일 단위 최근 7일」 막대가 일자탭 대신 읽는다(시트 0칸)
     for p in payments:
         d = _day_of(p)
         if not d or d > ref_date:
@@ -97,6 +98,7 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             if is_day:
                 refund_day += amt
             continue
+        daily[d] = daily.get(d, 0) + amt
         tag = str(p.get("sales_tag_name") or "")
         ptype = str(p.get("product_type") or "")
         if tag == OPS_TAG:
@@ -129,7 +131,7 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     cells.update({"N7": _money(new_amt), "N8": "%d명" % new_n, "N9": _money(re_amt), "N10": "%d명" % re_n,
                   "N11": _money(refund_day), "N12": "%d명" % loss_count})
     return {"cells": cells, "raw": {"day": day, "month": month, "refund_day": refund_day,
-                                    "new": [new_n, new_amt], "re": [re_n, re_amt]},
+                                    "new": [new_n, new_amt], "re": [re_n, re_amt], "daily": daily},
             "unmapped": unmapped, "unmatched_membership": unmatched, "payments": len(payments)}
 
 
@@ -146,6 +148,7 @@ def compute(ref_date=None):
             "SELECT key, data FROM brojay_records WHERE tenant_id=%s AND kind='sales' AND key BETWEEN %s AND %s",
             (db.TENANT, first, ref_date)).fetchall()
         payments = []
+        days_loaded = sorted(str(r["key"])[:10] for r in rows)
         for r in rows:
             d = json.loads(r["data"])
             lst = d.get("data") if isinstance(d, dict) else d
@@ -176,6 +179,7 @@ def compute(ref_date=None):
     finally:
         conn.close()
     out = aggregate(payments, ref_date, tag_rows(), members_by_phone, phone_of_member, loss_count)
+    out["raw"]["days_loaded"] = days_loaded
     out.update({"ref_date": ref_date, "_source": "brojay+erp", "members_joined": bool(phone_of_member)})
     return out
 
@@ -206,6 +210,7 @@ def selftest():
     assert c["N7"] == "1,000,000" and c["N8"] == "1명" and c["N9"] == "0" and c["N10"] == "0명"
     assert c["N11"] == "300,000" and c["N12"] == "2명"
     assert o["unmapped"] == {"요가": 50000} and o["unmatched_membership"] == 0
+    assert o["raw"]["daily"] == {"2026-09-15": 1379000, "2026-09-14": 330000}, o["raw"]["daily"]   # 환불·기준일 뒤는 빠진다
     o2 = aggregate(pays, "2026-09-15", tags, {}, {"A": "01011112222"})
     assert o2["unmatched_membership"] == 1 and o2["cells"]["N8"] == "0명"   # 원장에 없으면 지어내지 않는다
     assert tag_rows("/nonexistent") == TAG_TEAM

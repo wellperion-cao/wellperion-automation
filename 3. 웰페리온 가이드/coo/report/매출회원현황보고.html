@@ -911,6 +911,19 @@ function loadDaily(){
      그래서 ①본 보고가 다 그려진 뒤에 ②한 건씩 차례로 부른다. 이 칸이 늦거나 비어도 발송 판정
      (window.__REPORT_READY)에는 들어가지 않는다 — 보고를 막지 않는다. */
   var vals = new Array(days.length);
+  /* 서버판이 켜져 있으면 일자탭 대신 브로제이 날짜별 합(brojay.raw.daily · 환불 제외)을 쓴다 — 시트 0칸.
+     적재가 빠진 날(days_loaded 에 없음)은 0 이 아니라 「못 읽음」으로 둔다. 서버판이 없으면 종전 일자탭 그대로. */
+  if (ERP_API_ON && _serverCellsP) {
+    _serverCellsP.then(function(srv){
+      var bj = srv && srv.brojay, raw = bj && bj.raw;
+      if (!SF_CELLS || !raw || !raw.daily) { chunk(0); return; }
+      var loaded = {}; (raw.days_loaded || []).forEach(function(d){ loaded[d] = 1; });
+      days.forEach(function(d, i){ var k = ymd(d); vals[i] = (k in raw.daily) ? raw.daily[k] : (loaded[k] ? 0 : null); });
+      var h = document.querySelector('#dayh .src'); if (h) { h.textContent = '브로제이 → 서버'; h.className = 'src bro'; }
+      paintDaily(days, vals);
+    });
+    return;
+  }
   var CH = 3;                                   // 한 번에 3건씩 — 7건 동시(2026-09-14 사고)도, 1건씩(느림)도 아니다
   function chunk(start){
     if (start >= days.length) { paintDaily(days, vals); return; }
