@@ -48,8 +48,10 @@ router = APIRouter(prefix="/api/billing")
 KST = dt.timezone(dt.timedelta(hours=9))
 TOSS_BASE = "https://api.tosspayments.com"
 
-# 랩스 소개서 §5 확정값(company_roadmap.html) — 금액은 부가세 별도. 운영(ops)은 "준비 중"이라 아직 안 판다.
-PLAN_AMOUNTS = {"start": 190000, "growth": 390000, "ops": 690000}
+# GM 확정 2026-09-16 요금표(로드맵 v0.5 §9 · 시보 전달) — 월 구독 · 부가세 별도 · 셋업 0 · 최소 6개월.
+#   운영(ops)은 "준비 중"이라 아직 안 판다 — 빌링키 등록(plan 선택)에서 막는다(SELLABLE).
+PLAN_AMOUNTS = {"start": 99000, "growth": 199000, "ops": 390000}
+SELLABLE = ("start", "growth")
 
 # 파트너(과금 대상) tenant — api_chat.py/api_faq_intake.py TENANTS 에서 웰페리온 자신(1_wellperion)을 뺀 값.
 # 모듈 독립(약속: 한 도메인 임포트 실패가 다른 도메인까지 죽이지 않는다)을 지키려 여기서 다시 적는다 —
@@ -229,7 +231,7 @@ def charge_one(tenant):
         if not billing_key:
             return {"ok": False, "tenant": tenant, "error": "빌링키 원문 없음(billing_secrets)"}
         order_id = "BILL-%s-%s-%s" % (tenant, ym.replace("-", ""), secrets.token_hex(3))
-        order_name = "웰페리온랩스 구독 %s(%s)" % (sub["plan"], ym)
+        order_name = "AX 랩스 구독 %s(%s)" % (sub["plan"], ym)
         try:
             resp = charge_billing_key(billing_key, sub["customer_key"], sub["amount"], order_id, order_name)
             with conn:
@@ -296,8 +298,8 @@ async def register_billing_key(tenant: str, request: Request):
     auth_key = str(body.get("authKey") or "")
     plan = str(body.get("plan") or "")
     customer_key = str(body.get("customerKey") or "") or _default_customer_key(tenant)
-    if not auth_key or plan not in PLAN_AMOUNTS:
-        return JSONResponse({"ok": False, "error": "authKey·plan(start|growth|ops) 필요"}, status_code=400)
+    if not auth_key or plan not in SELLABLE:
+        return JSONResponse({"ok": False, "error": "authKey·plan(start|growth) 필요 — ops 는 준비 중"}, status_code=400)
     try:
         result = await run_in_threadpool(_billing_key_sync, tenant, auth_key, customer_key, plan)
     except TossError as e:
@@ -346,7 +348,8 @@ def selftest():
     global TOSS_BASE
     assert next_month_first(dt.datetime(2026, 9, 16, tzinfo=KST)) == "2026-10-01"
     assert next_month_first(dt.datetime(2026, 12, 20, tzinfo=KST)) == "2027-01-01"
-    assert PLAN_AMOUNTS["start"] == 190000 and PLAN_AMOUNTS["growth"] == 390000
+    assert PLAN_AMOUNTS["start"] == 99000 and PLAN_AMOUNTS["growth"] == 199000 and PLAN_AMOUNTS["ops"] == 390000
+    assert "ops" not in SELLABLE and set(SELLABLE) <= set(PLAN_AMOUNTS)
 
     calls = []
 
