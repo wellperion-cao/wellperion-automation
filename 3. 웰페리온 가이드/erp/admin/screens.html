@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>화면 지도 — AX 랩스</title>
+<link rel="stylesheet" href="/erp/admin/platform_brand.css">
+<style>
+  :root{
+    --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
+    --dim:#4F6B68; --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12)); --gray-bg:#F4F8F8;
+  }
+  html{color-scheme:light;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;}
+  .wrap{max-width:1100px; margin:0 auto; padding:24px 20px 60px;}
+  h1{font-family:var(--pf-head,inherit); font-size:22px; font-weight:700; margin-bottom:4px;}
+  .sub{font-size:12.5px; color:var(--dim); margin-bottom:18px;}
+
+  .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
+  .kpi div{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .kpi b{display:block; font-family:var(--pf-head,inherit); font-size:26px; font-weight:700; color:var(--accent-hover); line-height:1.1;}
+  .kpi span{font-size:12px; color:var(--dim);}
+
+  .note-box{background:var(--accent-bg); border:1px solid var(--accent); border-radius:8px;
+            padding:10px 14px; font-size:12.5px; color:var(--text-soft); margin-bottom:22px; line-height:1.6;}
+  .note-box b{color:var(--accent-hover);}
+
+  .grp{font-size:13px; font-weight:700; color:var(--accent-hover); margin:20px 0 6px;}
+  .grp:first-of-type{margin-top:0;}
+  .tbl-wrap{overflow-x:auto; margin-bottom:6px;}
+  table.reg{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:12.5px;}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); font-size:12px;
+               height:32px; padding:0 8px; background:var(--gray-bg); border-bottom:1px solid var(--border); white-space:nowrap;}
+  table.reg td{height:auto; min-height:28px; padding:5px 8px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word;}
+  table.reg td.path{color:var(--dim); font-family:ui-monospace,Consolas,monospace; font-size:11px; word-break:break-all;}
+  table.reg a{color:var(--accent-hover); text-decoration:none; font-weight:600;}
+  table.reg a:hover{text-decoration:underline;}
+  table.reg .alt{color:var(--dim); font-size:11px; margin-left:4px;}
+  table.reg .flag{font-size:11px; font-weight:700;}
+  table.reg .flag.on{color:#B4530A;}
+  .foot{margin-top:30px; padding-top:14px; border-top:1px solid var(--border); font-size:11.5px; color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>화면 지도</h1>
+  <div class="sub">「3. 웰페리온 가이드」 아래 전체 화면(*.html) 링크 목록 — GM 지시 2026-09-17 「전체 화면 페이지를 링크화 시켜서 정리해줘, 내가 보고 수습할 수 있게」</div>
+
+  <div class="kpi" id="kpi">
+    <div><b>—</b><span>전체 화면</span></div>
+    <div><b>—</b><span>카드에 실린 것</span></div>
+    <div><b>—</b><span>고립(카드 밖 · 들어오는 링크 0)</span></div>
+    <div><b>—</b><span>30일 넘게 안 고친 것</span></div>
+  </div>
+
+  <div class="note-box">
+    <b>이번 정리 1건</b> — GM 지시(2026-09-17): <code>/erp/?view=home</code> 은 옛 직원 층 주소, 삭제한다 · <code>/erp/</code> 는 관리자 한 층으로만 쓴다 · 직원이 쓰는 홈 화면 주소는 <code>/home</code> 하나로 모은다.
+  </div>
+
+  <div id="root"><div class="sub">불러오는 중…</div></div>
+
+  <div class="foot">번호는 전체 일련번호 — GM 께서 「12번·37번 삭제」처럼 번호로 답할 수 있게 붙였다. 정본 = status/screen_map.json (scripts/screen_map.py 생성).</div>
+</div>
+<script>
+(function(){
+  var REPO='/repo/status/screen_map.json', LOCAL='../../../status/screen_map.json';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  function render(data){
+    document.getElementById('kpi').innerHTML =
+      '<div><b>'+data.total+'</b><span>전체 화면</span></div>'+
+      '<div><b>'+data.in_card+'</b><span>카드에 실린 것</span></div>'+
+      '<div><b>'+data.orphan+'</b><span>고립(카드 밖 · 들어오는 링크 0)</span></div>'+
+      '<div><b>'+data.stale+'</b><span>30일 넘게 안 고친 것</span></div>';
+
+    var byFolder = {};
+    var order = [];
+    data.screens.forEach(function(e){
+      if(!byFolder[e.folder]){ byFolder[e.folder]=[]; order.push(e.folder); }
+      byFolder[e.folder].push(e);
+    });
+    order.sort(function(a,b){
+      if(a==='(루트)') return -1;
+      if(b==='(루트)') return 1;
+      return a.localeCompare(b,'ko');
+    });
+
+    var html='';
+    order.forEach(function(folder){
+      var rows = byFolder[folder];
+      html += '<div class="grp">'+esc(folder)+' ('+rows.length+'장)</div>';
+      html += '<div class="tbl-wrap"><table class="reg">'+
+        '<colgroup><col style="width:40px"><col style="width:200px"><col style="width:250px"><col style="width:85px"><col style="width:100px"><col style="width:100px"><col style="width:110px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>경로</th><th>마지막 저장</th><th>카드</th><th>들어오는 링크</th><th>표시</th></tr></thead><tbody>';
+      rows.forEach(function(e){
+        var altTag = e.alt_url ? '<span class="alt">→ '+esc(e.alt_url.replace('https://erp.wellperion.com',''))+'</span>' : '';
+        html += '<tr>'+
+          '<td>'+e.no+'</td>'+
+          '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>'+altTag+'</td>'+
+          '<td class="path">'+esc(e.rel)+'</td>'+
+          '<td>'+esc(e.last_commit||'—')+'</td>'+
+          '<td>'+esc(e.in_card||'—')+'</td>'+
+          '<td>'+e.inbound+'</td>'+
+          '<td class="flag'+(e.flags.length?' on':'')+'">'+esc(e.flags.join(' · ')||'—')+'</td>'+
+        '</tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    document.getElementById('root').innerHTML = html;
+  }
+
+  fetch(REPO+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .catch(function(){ return fetch(LOCAL+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}); })
+    .then(render)
+    .catch(function(){ document.getElementById('root').innerHTML='<div class="sub">화면 지도를 못 불러왔습니다.</div>'; });
+})();
+</script>
+</body>
+</html>
