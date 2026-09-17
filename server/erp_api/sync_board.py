@@ -32,6 +32,10 @@ BOARD_KEYS = (
     # 시설부 체계(점검 현황) 보드 3키 — 거울에 없어 404 → GAS 폴백으로 화면이 6~17초 늦게 떴다(GM 2026-09-17 「점검현황 왜 늦게 뜨나」).
     "FACILITY_POLICY_BOARD", "FACILITY_MANUAL_CARDS", "FACILITY_VENDOR_CATEGORIES",
     "FACILITY_MANUAL_BOARD", "FACILITY_GUIDE_BOARD", "FACILITY_VENDOR_BOARD",   # 같은 화면의 나머지 보드(16:33 실측 폴백 2건)
+    # 지원부·주차관리부 체계 보드 13키 — 화면이 변수로 키를 만들어 grep 전수에서 빠졌다. 거울에 없어 404 → 부팅마다 구글 폴백 13건
+    # (2026-09-18 08:07 헤드리스 실측 · 배 11299 3차). 시설부와 같은 처방.
+    "SUPPORT_GUIDE_BOARD", "SUPPORT_POLICY_BOARD", "SUPPORT_CS_GUIDE", "SUPPORT_MANUAL_BOARD", "SUPPORT_STAFF", "SUPPORT_TOUR",
+    "PARKING_STAFF", "PARK_POLICY_BOARD", "PARK_VALET_BOARD", "PARK_MANUAL_BOARD", "PARKING_CS_GUIDE", "PARK_GUIDE_BOARD", "PARKING_SUPPLY",
 )
 
 
