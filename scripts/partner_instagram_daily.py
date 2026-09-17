@@ -227,6 +227,10 @@ def main() -> int:
         st["runs"].append({"at": datetime.now().isoformat(timespec="seconds"), "folder": str(folder), "publish_rc": rc})
         save_state(a.client, st)
         return rc
+    today = datetime.now().strftime("%Y-%m-%d")
+    if not a.no_send and any(r.get("sent") and str(r.get("at", "")).startswith(today) for r in st.get("runs", [])):
+        print(f"[skip] 오늘({today}) 임시안 이미 보냄 — 하루 한 통(예약 재실행·손 실행 중복 방지)")
+        return 0
     topic = a.topic or today_topic(style)
     if not topic:
         raise SystemExit("오늘 블로그 주제가 없다 — partner_blog_daily 가 먼저 돌아야 한다(--topic 으로 직접 줄 수 있음)")
