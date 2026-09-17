@@ -144,6 +144,10 @@ RESP_PEOPLE = ["김남욱 GM", "이경연 실장", "이정헌 소장", "나우�
 #   남고 GM업무.html 「👤 GM 책임 항목」 띠가 같은 원장을 읽어 그린다 — 값을 두 곳에 두지 않는다.
 MGR_PEOPLE = [m[0] for m in MANAGERS]
 _NO_MEASURE = "미수집"
+# 평가 = ERP 관리자 페이지(erp/admin/index.html) 평가 탭으로 단일화(GM 지시 2026-09-17) — 이 화면(중간관리자
+#   업무목차)의 책임 항목 4인 블록·분기 누적 버튼 렌더는 끈다. 코드·원장 갱신(save_eval_history)은 그대로
+#   둔다 — ERP 관리자 페이지가 같은 원장(manager_eval_history.json)을 읽는다(값을 두 곳에 두지 않는다).
+SHOW_RESP_BLOCK = False
 
 # ═══ --backfill 지난 달 소급 실측(GM 지시 2026-09-16) ═══════════════════════════════
 # PERIOD 가 있으면 측정fn 들이 "오늘" 대신 그 달 말일을 기준으로 잰다 — 날짜(생성일·완료일·회신일·
@@ -661,7 +665,9 @@ def resp_table(person: str, rows_def: list, ev: dict) -> tuple[list, dict]:
         detail_fn = entry[4] if len(entry) > 4 else None
         text, bad = fn()
         good, fix = eval_cell(ev, person, item)
-        snap[item] = {"text": _plain(text) if raw else text, "bad": bool(bad), "good": good, "fix": fix}
+        # crit(기준 문구) 을 이번 달 스냅숏에 같이 적는다(GM 지시 2026-09-17) — ERP 관리자 페이지 평가 탭이
+        # 이 원장(manager_eval_history.json) 하나만 읽어 기준·진척·잘한 것·보완할 것을 그린다(값 복제 금지).
+        snap[item] = {"text": _plain(text) if raw else text, "bad": bool(bad), "good": good, "fix": fix, "crit": crit}
         rows.append({"item": item, "crit": crit, "raw": bool(raw),
                      "html": text if raw else "", "detail": detail_fn() if detail_fn else None})
     return rows, snap
@@ -1697,7 +1703,8 @@ def render_page(model: dict) -> str:
     """뼈대(HTML 틀 + CSS + JS) — 값은 JS 가 그린다. 인라인 스냅숏은 라이브 원장을 못 읽을 때(Pages·로컬 파일)의
     정적본 폴백이며, 그때는 화면에 「라이브 원장을 못 읽었습니다 — 정적본」이라 적는다(0 이 아님)."""
     payload = json.dumps(model, ensure_ascii=False).replace("</", "<\\/")
-    return PAGE_TEMPLATE.replace("__SNAP__", payload)
+    return (PAGE_TEMPLATE.replace("__SNAP__", payload)
+            .replace("__SHOW_RESP__", "true" if SHOW_RESP_BLOCK else "false"))
 
 
 PAGE_TEMPLATE = r'''<!DOCTYPE html>
@@ -1932,7 +1939,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   <div class="h1row">
     <h1>중간관리자 업무 목차</h1>
     <div class="a3bar">
-      <button type="button" onclick="openQuarter();">📅 분기 누적 책임항목 평가</button>
+      <button type="button" id="qbtn" onclick="openQuarter();">📅 분기 누적 책임항목 평가</button>
     </div>
   </div>
   <div class="lede">이경연 실장 · 이정헌 소장 · 나우열M 세 사람의 <b>열린 업무</b>를 번호순으로 편 목차입니다.
@@ -2128,16 +2135,24 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
   }
 
   var M = INLINE;
+  // 평가 = ERP 관리자 페이지 평가 탭으로 옮겼다(GM 지시 2026-09-17) — false 면 아래서 책임 표·분기 버튼을 숨긴다.
+  var SHOW_RESP = __SHOW_RESP__;
   function render(model, hist, ev, live) {
     M = model || INLINE;
     var lv = document.getElementById('live');
     if (live) { lv.className = 'live'; lv.textContent = '● 라이브 — 원장 스냅숏 ' + (M.generated_at || '') + ' 생성 · 회신 종결 뒤 저장·배포 1분 안에 바뀝니다'; }
     else { lv.className = 'live off'; lv.textContent = '⚠ 라이브 원장을 못 읽었습니다(erp 도메인에서만 값이 붙습니다) — 아래 값은 ' + (M.generated_at || '') + ' 정적본 · 0 이 아니라 못 읽은 것'; }
     document.getElementById('bar').innerHTML = barHtml();
-    document.getElementById('resp').innerHTML = respHtml(hist, ev);
+    if (SHOW_RESP) {
+      document.getElementById('resp').innerHTML = respHtml(hist, ev);
+      document.getElementById('rq').innerHTML = quarterHtml(hist);
+    } else {
+      document.getElementById('resp').style.display = 'none';
+      document.getElementById('resp-q').style.display = 'none';
+      var qb = document.getElementById('qbtn'); if (qb) qb.style.display = 'none';
+    }
     document.getElementById('missed').innerHTML = missedHtml();
     document.getElementById('cur').innerHTML = curHtml();
-    document.getElementById('rq').innerHTML = quarterHtml(hist);
     wire();
   }
 
