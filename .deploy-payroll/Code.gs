@@ -686,6 +686,7 @@ function evidenceCreate_(ym, name, by) {
   // N월P 재작성
   var n = P_LAST_ROW - P_FIRST_ROW + 1;
   shP.getRange(P_FIRST_ROW, 1, n, 9).clearContent(); shP.getRange(P_FIRST_ROW, 18, n, 1).clearContent(); shP.getRange(P_FIRST_ROW, P_COL_KEY, n, 1).clearContent();
+  shP.getRange(P_FIRST_ROW, 1, n, P_COL_KEY).clearDataValidations();   // 원본 I열(회원구분) 등 드롭다운 검증이 ERP 값('WSC' 등)을 막지 않게 사본에서 해제
   var star = it['시트형식'] === '수영격자';
   var rows = r.regs.slice().sort(function (a, b) { return String(a['등록일']) < String(b['등록일']) ? -1 : 1; });
   // 원본 수식 범위 실측: J열 수식이 있는 첫 행(복사 원본) · 마지막 행(상단 합계 SUM($Q$7:$Q48) 범위 끝)
@@ -735,7 +736,7 @@ function writeGrid_(shS, sessions, twoCol) {
   last.r1 = end;
   var lastBlockRow = last.r1;
   // 이름 칸만 초기화(날짜 열 · 시간 블록 범위) — 수업료 수식 열·하단 표는 무접촉
-  Object.keys(colOfDay).forEach(function (d) { shS.getRange(S_FIRST, colOfDay[d] + 1, lastBlockRow + 1, 1).clearContent(); });
+  Object.keys(colOfDay).forEach(function (d) { var rg = shS.getRange(S_FIRST, colOfDay[d] + 1, lastBlockRow + 1, 1); rg.clearContent(); rg.clearDataValidations(); });
   var grid = shS.getRange(S_FIRST, 1, nRows, S_COLS).getValues();
   sessions.forEach(function (s) {
     var d = +String(s['일시']).slice(8, 10), hh = +String(s['일시']).slice(11, 13), mm = +String(s['일시']).slice(14, 16);
