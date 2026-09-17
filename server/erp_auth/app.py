@@ -194,6 +194,7 @@ LOCK_SECS = 600                                # 잠금 시간(10분)
 OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
 # 직원 홈 주소 — 로그인만 되면 누구나(카드·폴더 판정 밖). nginx guide-alias 가 /home·/guide 를 정본 파일로 되쓴다.
 STAFF_HOME_PATHS = frozenset({"/home", "/guide", "/wellperion_guide(main).html"})
+STAFF_HOME_MODULE = "ceo-wellperion-guide-main"   # 그 파일의 카드 id(modules.json) — 카드 판정에서도 전원 허용
 # 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
 AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
                                  "cpo-member-오넛티-접수현황"})
@@ -561,6 +562,8 @@ def allowed(user, module: dict) -> bool:
     """계정이 모듈을 볼 수 있나. admin=전부 · perms 없음=핵심 화면만 · 있으면 거부>개인예외>허용.
     개인 예외(EXCEPTION_ONLY_IDS)는 groups/all 매칭을 건너뛴다 — modules 로 콕 집어야만 켜진다(배1026 §3)."""
     if user["role"] == "admin":
+        return True
+    if module["id"] == STAFF_HOME_MODULE:          # 직원 홈(/home) — 로그인한 계정 전원(GM 2026-09-17 「직원 화면 = /home」)
         return True
     if module["id"] in modules_off():              # 이 회사에서 끈 모듈(모듈 배치) — 직원은 못 본다
         return False
