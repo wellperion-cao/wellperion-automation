@@ -77,13 +77,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    한 줄(넘치는 부분은 …, 전체는 제목 풍선). 「더 보기」를 누르면 둘 다 같이 펴진다. */
 /* ★2026-09-17 18:1x GM 「다 짤렸는데?」 — 자르지 않는다. 사람은 전원 그대로 보인다.
    자리 줄이기는 여백·안내문 한 줄까지만 한다(접어서 감추지 않는다). */
-.livestrip{position:relative}
-/* 접힘일 땐 안내문을 한 줄로(전체 글은 제목 풍선 — 스크립트가 붙인다). 단추는 그 줄 오른쪽에 띄워
-   놓아 줄을 하나 더 먹지 않는다. 안내문 줄 자체는 고치지 않는다(남이 최근에 넣은 줄). */
-.livestrip:not(.ls-open) .ls-foot{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:64px}
-.ls-more{position:absolute;right:16px;bottom:0;background:none;border:0;color:var(--dim);font-family:inherit;
-  font-size:var(--fs-1);font-weight:700;cursor:pointer;padding:0 4px;white-space:nowrap}
-.ls-more:hover{color:var(--text)}
+/* ★GM 2026-09-17 18:2x 「글씨 크기만 줄여도 될 것 같은데」 — 숨기지 않는다.
+   줄 글씨·순위 동그라미·안내문만 한 단 줄여 자리를 번다. 사람 줄은 언제나 전원 보인다. */
+.livestrip .ls-row{font-size:var(--fs-2);padding:1px 0;line-height:1.45}
+.livestrip .ls-rank{min-width:19px;width:19px;height:19px;font-size:var(--fs-1)}
+.livestrip .ls-row-todo .ls-name,.livestrip .ls-row-eval .ls-name{font-size:var(--fs-2)}
+.livestrip .ls-pt{font-size:var(--fs-3)}
+.livestrip .ls-foot{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 게이트 미달(배정 5건 미만) 줄도 두 열에 나눠 담는다 — 사람이 늘어도 세로로 길어지지 않게 */
+.livestrip .ls-row.ls-span2{grid-column:auto}
+/* 미채점 건수 뱃지 — 줄 간격을 좁히니 위 줄 숫자와 겹쳤다. 띄우지 말고 숫자 옆에 붙여 쓴다 */
+.livestrip .ls-unscored-badge{position:static;margin-left:3px;vertical-align:middle}
 .ls-head .ls-sub{font-size:var(--fs-2);font-weight:500;color:var(--dim);margin-left:5px}
 /* 2열 그리드 + 필드 줄맞춤(2026-08-24 나우열M 지시, #44 표시 전용) — 인원이 늘어도 세로 스크롤이
    덜 늘어나게 좌→우로 채우고, 각 사람 행은 모두 같은 고정폭 칼럼(.ls-row-todo/.ls-row-eval)을
@@ -584,7 +588,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="ls-head">📋 업무 처리 현황 <span class="ls-sub">라이브</span></div>
     <div class="ls-body" id="lsTodo"><div class="ls-dim">불러오는 중…</div></div>
   </section>
-  <button type="button" class="ls-more" id="lsMore" onclick="toggleLiveStrip()" title="아래 안내문 전체 보기">▾ 안내문</button>
   <div class="ls-foot">업무 처리 현황의 건수는 배분 현황이며 평가가 아닙니다. 평가점수는 완료 규모·품질 기반 정량 산출입니다(배정 5건 미만은 게이트 미달). 정체 기준 = 무변동 기간이 max(14일, 마감까지 총기간의 25%) 초과 · 마감일 없는 업무는 정체 판정에서 제외됩니다.</div>
 </div>
 
@@ -946,24 +949,18 @@ let calViewMonth = new Date().getMonth();  // 0-based
 /* ═══════════════════════════════════════════
    Init
    ═══════════════════════════════════════════ */
-// 상단 라이브 판 펴기·접기 — 마지막 선택을 기억한다(GM 지시 2026-09-17).
-function toggleLiveStrip(force) {
-  const strip = document.getElementById('liveStrip');
-  const foot = strip && strip.querySelector('.ls-foot');
-  if (foot && !foot.title) foot.title = foot.textContent.trim();   // 접히면 …로 잘리므로 전체 글을 풍선으로
-  const btn = document.getElementById('lsMore');
-  if (!strip) return;
-  const open = (force === undefined) ? !strip.classList.contains('ls-open') : !!force;
-  strip.classList.toggle('ls-open', open);
-  if (btn) btn.textContent = open ? '▴ 접기' : '▾ 안내문';
-  try { localStorage.setItem('ssot_livestrip_open', open ? '1' : '0'); } catch (e) {}
+// 상단 라이브 판 안내문은 한 줄로 줄여 두고, 전체 글은 제목 풍선으로 보여 준다
+// (GM 2026-09-17 18:2x — 접기·더 보기 장치는 없앴다).
+function setLiveStripFootTitle() {
+  const foot = document.querySelector('#liveStrip .ls-foot');
+  if (foot && !foot.title) foot.title = foot.textContent.trim();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   updateHeaderSub();
   buildFilters();
   loadTasks();
-  try { toggleLiveStrip(localStorage.getItem('ssot_livestrip_open') === '1'); } catch (e) { toggleLiveStrip(false); }
+  setLiveStripFootTitle();
 
   // 작성 유실 방지 (2026-05-30 COO): 바깥(오버레이) 클릭으로는 닫지 않음.
   // 작성·편집 모달은 [취소]/[저장] 버튼으로만 닫히게 해 작성 중 데이터 유실 차단.
@@ -4130,6 +4127,18 @@ if (location.hash === '#approval') ssotShowApproval();   // 새로고침·즐겨
     {key:"최준용M",name:"최준용",title:"대리"},
     {key:"윤병현AM",name:"윤병현",title:"주임"}
   ];
+  /* ★GM 2026-09-17 「우측이랑 같게」 — 위 네 줄(책임 4인·2026-08-24)은 순서 기준으로 그대로 두고,
+     오른쪽 판과 같은 명단(MEMBERS)의 나머지 사람을 뒤에 붙인다. 임정은M 은 맨 아래 「별도 기준」
+     줄이 따로 있어 뺀다. 이름은 오른쪽 판과 같은 표기를 그대로 쓴다. */
+  (typeof MEMBERS !== 'undefined' ? MEMBERS : []).forEach(function (m) {
+    if (m === '임정은M') return;
+    if (QEVAL_PEOPLE.some(function (p) { return p.key === m; })) return;
+    QEVAL_PEOPLE.push({ key: m, name: m, title: '' });
+  });
+  // 이름 표기도 오른쪽 판과 같게 맞춘다(왼쪽만 「나우열」, 오른쪽은 「나우열M」이면 같은 사람으로 안 읽힌다)
+  QEVAL_PEOPLE.forEach(function (p) {
+    if ((typeof MEMBERS !== 'undefined' ? MEMBERS : []).indexOf(p.key) >= 0) p.name = p.key;
+  });
   var QEVAL_SIZE_WHITELIST = ["1","2","3","5","8"];
   function qevOwners(t){ return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean); }
   function qevDate(s){ return s?new Date(s):null; }
