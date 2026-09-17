@@ -54,6 +54,14 @@ def day_sources(dept, d):
     return [("ledger", d + "|m", {"date": d, "dept": "parking", "gender": "m"}, False)]
 
 
+def master_sources(dept):
+    """(kind, key, GAS params, require_ok) — 날짜와 무관한 부서 마스터. 항목(items)은 지원·주차만 시트 마스터를 쓴다
+    (시설은 화면 고정 목록). GAS items 응답은 {items:[...]} 뿐이라 ok 를 안 싣는다(require_ok=False). 배 11299 3차."""
+    if dept == "facility":
+        return []
+    return [("items", "-", {"action": "items", "dept": dept}, False)]
+
+
 def put(conn, dept, kind, key, data, now):
     with conn:
         conn.execute(
@@ -84,13 +92,16 @@ def plan(conn, today):
             jobs.append((dept, "monthly", m, {"action": "monthly_report", "dept": dept, "month": m}, True))
         if dept != "facility":     # weekly 는 조별 원장 부서만 뜻이 있다(시설은 GAS 도 안 센다)
             jobs.append((dept, "weekly", "-", {"action": "weekly", "dept": dept}, True))
+        jobs += [(dept, kind, key, params, ok) for kind, key, params, ok in master_sources(dept)]
     return jobs + backfill[:BACKFILL_PER_RUN * 5]
 
 
 def plan_today(today):
-    """오늘치 원장·보드만 — /api/write 쓰기 직후 거울을 즉시 맞출 때(배 960 #5b). 월간·주간·빈날채움은 5분 cron 몫."""
+    """오늘치 원장·보드 + 항목 마스터 — /api/write 쓰기 직후 거울을 즉시 맞출 때(배 960 #5b · saveItems 는 items).
+    월간·주간·빈날채움은 5분 cron 몫."""
     d = today.isoformat()
-    return [(dept, kind, key, params, ok) for dept in DEPTS for kind, key, params, ok in day_sources(dept, d)]
+    return [(dept, kind, key, params, ok) for dept in DEPTS
+            for kind, key, params, ok in day_sources(dept, d) + master_sources(dept)]
 
 
 def main(only_today=False):

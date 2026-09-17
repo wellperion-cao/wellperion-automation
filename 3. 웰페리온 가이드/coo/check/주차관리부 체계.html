@@ -2118,20 +2118,15 @@ async function seedParkItemsToServer(){
 /* 서버 항목 마스터 로드. 조회 자체가 실패(네트워크·타임아웃·파싱오류)하면 시드하지 않는다 —
    실패를 "0개"로 읽고 시드하면, 실무진이 지운 항목이 되살아난다(GM 지시 2026-09-11). */
 async function loadParkItemsFromServer(){
-  let res;
+  /* 배 11299 3차(2026-09-18 시토) — ERP 도메인이면 서버 거울 /api/check/parking/items 먼저(_chkRead · 실패·저장 6분 안은 종전 GAS). */
+  let data;
   try{
-    res=await Promise.race([fetch(API_URL+'?action=items&dept=parking',{method:'GET',redirect:'follow'}), _chkTimeout(15000)]);
-    if(!res.ok) throw new Error('items '+res.status);
+    data=await _chkRead('/api/check/parking/items', '?action=items&dept=parking', '주차 항목');
   }catch(e){
     console.warn('[주차 점검항목] 조회 실패 → 로컬 PARK_CHECKLIST 로 표시(시드 안 함):', e&&e.message);
     return PARK_ITEMS;   // 부팅 시 이미 채워둔 로컬 시드값 그대로
   }
-  let data;
-  try{ data=await res.json(); }catch(e){
-    console.warn('[주차 점검항목] 응답 파싱 실패 → 로컬 표시(시드 안 함)');
-    return PARK_ITEMS;
-  }
-  const items=Array.isArray(data.items)?data.items:[];
+  const items=Array.isArray(data&&data.items)?data.items:[];
   if(items.length) return items.map(parkItemFromSheet);
   console.warn('[주차 점검항목] 서버 응답 정상 · 0개 확인 → PARK_CHECKLIST 시드 진행');
   return await seedParkItemsToServer();

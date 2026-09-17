@@ -2418,9 +2418,9 @@ async function loadItemMasterFromSheet(){
     return;
   }
   try{
-    const res = await fetch(API_URL+'?action=items'+DEPT_Q,{method:'GET',redirect:'follow'});
-    const data = await res.json();
-    const items = Array.isArray(data.items) ? data.items : [];
+    /* 배 11299 3차(2026-09-18 시토) — ERP 도메인이면 서버 거울 /api/check/support/items 먼저(_chkRead · 실패·저장 6분 안은 종전 GAS). */
+    const data = await _chkRead('/api/check/'+DEPT+'/items', '?action=items'+DEPT_Q, '지원 항목');
+    const items = Array.isArray(data&&data.items) ? data.items : [];
     CUSTOM_ITEMS = items.map(itemFromSheet);
     // 서버 성공 = 단일 진실: 캐시를 서버값으로 완전 교체(옛 cx_/custom_ 잔상 제거)
     localStorage.setItem(ITEM_CACHE_KEY, JSON.stringify(CUSTOM_ITEMS)); // 오프라인 폴백

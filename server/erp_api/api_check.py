@@ -95,6 +95,17 @@ def today(dept: str, date: Optional[str] = None):
     return out
 
 
+@router.get("/{dept}/items")
+def items(dept: str):
+    """점검 항목 마스터(지원·주차 · GAS action=items 응답 그대로 {items:[...]}) — 화면 부팅 시 구글 직행을 없앤다(배 11299 3차)."""
+    conn = _conn()
+    with closing(conn):
+        data, at = _get(conn, _dept(dept), "items", "-")
+    if data is None:
+        raise HTTPException(404, "미러에 없음: %s items" % dept)
+    return dict(data, synced_at=at, _source=SOURCE)
+
+
 @router.get("/{dept}/monthly")
 def monthly(dept: str, month: Optional[str] = None):
     m = month or datetime.now(KST).strftime("%Y-%m")
@@ -128,7 +139,8 @@ def selftest():
             ("support", "today_live", d, {"ok": True, "total": 30, "done": 12}),
             ("parking", "ledger", d + "|m", {"date": d, "rows": []}),
             ("support", "monthly", d[:7], {"ok": True, "dept": "support", "issues": {"list": []}}),
-            ("support", "weekly", "-", {"ok": True, "dept": "support", "data": [{"date": d, "total": 10, "done": 8, "pct": 80}]})]
+            ("support", "weekly", "-", {"ok": True, "dept": "support", "data": [{"date": d, "total": 10, "done": 8, "pct": 80}]}),
+            ("parking", "items", "-", {"items": [{"id": "p1", "name": "차단기", "dept": "parking"}]})]
     try:
         with c:
             c.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))
@@ -141,7 +153,9 @@ def selftest():
         assert today("parking")["ledger"]["m"]["rows"] == []
         assert monthly("support")["dept"] == "support"
         assert weekly("support")["data"][0]["pct"] == 80
-        for fn, args in ((today, ("facility", "1999-01-01")), (monthly, ("facility", d[:7])), (weekly, ("facility",)), (today, ("nope",))):
+        assert items("parking")["items"][0]["name"] == "차단기" and items("parking")["_source"] == SOURCE
+        for fn, args in ((today, ("facility", "1999-01-01")), (monthly, ("facility", d[:7])), (weekly, ("facility",)), (today, ("nope",)),
+                         (items, ("support",))):
             try:
                 fn(*args)
                 raise AssertionError("404 이어야: %s" % (args,))
