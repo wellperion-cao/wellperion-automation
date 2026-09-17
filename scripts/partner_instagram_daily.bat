@@ -20,4 +20,6 @@ REM Step 2: build today's draft from the blog topic and send it to the partner r
 C:\Python314\python.exe scripts\partner_instagram_daily.py %~1 >> %LOGFILE% 2>&1
 set RC=%ERRORLEVEL%
 echo [%date% %time%] exit=%RC% >> %LOGFILE%
+REM waiting-list board (labs_waiting.json) refresh (2026-09-17)
+C:\Python314\python.exe scripts\labs_waiting.py >> logs\labs_waiting.log 2>&1
 exit /b %RC%

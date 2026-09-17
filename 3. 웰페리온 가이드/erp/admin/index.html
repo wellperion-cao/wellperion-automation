@@ -401,6 +401,13 @@
        원천 = 아래 표들과 같다(온보딩 발행본 data/partner_onboarding.json · 채널 활성은 아래 「파트너 채널 계정」이 읽은 서버 응답을 그대로 받는다). 아래 표는 하나도 안 뺐다. -->
   <div class="pc-kpi" id="pc-kpi"></div>
   <div class="pc-cards" id="pc-cards"></div>
+  <h3 style="margin:8px 0 4px;font-size:15px">기다리는 답 — 시보가 묻지 않아도 여기서 보입니다</h3>
+  <div class="ppre">파트너 설문·인스타 임시안·GM 손이 필요한 것을 원천 파일에서 자동으로 모읍니다(07:20 · 22:10 · 저장 때마다). 답이 오면 줄이 「답 옴」으로 바뀝니다 — 정본 = status/labs_waiting.json(scripts/labs_waiting.py).</div>
+  <div class="tbl-wrap"><table class="reg" id="wtbl">
+    <thead><tr><th>누구</th><th>무엇</th><th>보낸 때 · 경로</th><th>상태</th><th>답 오면</th></tr></thead>
+    <tbody><tr><td colspan="5" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="ppre" id="wfoot"></div>
   <script>
   (function(){
     var P=[
@@ -2091,6 +2098,27 @@
       if (f) f.textContent = '유형 ' + ((d.overall && d.overall['유형_수']) || '—') + '개 · 새 유형 후보 '
         + ((d.overall && d.overall['후보_유형_수']) || 0) + '개 · 마지막으로 센 때 ' + (d.generated_at || '').slice(0,16).replace('T',' ');
     }).catch(function(){ fail('못 읽었습니다 — 잠시 뒤 새로고침해 주세요.'); });
+  })();
+  // 기다리는 답 — status/labs_waiting.json 하나만 읽는다(scripts/labs_waiting.py 가 만든다 · GM 2026-09-17 「기다리지 않아도 확인할 수 있게」).
+  (function(){
+    var tbl = document.getElementById('wtbl'); if (!tbl) return;
+    function get(path){
+      var local = (location.hostname === 'erp.wellperion.com')
+        ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        : Promise.reject(0);
+      return local.catch(function(){ return fetch('/repo/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
+    }
+    function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    var body = tbl.tBodies[0];
+    get('status/labs_waiting.json').then(function(d){
+      if (!d || !d.items) { body.innerHTML = '<tr><td colspan="5" class="ppct" style="padding:14px 8px">이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.</td></tr>'; return; }
+      body.innerHTML = d.items.map(function(i){
+        var st = i.done ? '<span class="st ok">' + esc(i.state) + '</span>' : '<span class="st">' + esc(i.state) + '</span>';
+        return '<tr><td class="item">' + esc(i.who) + '</td><td>' + esc(i.what) + (i.detail ? '<div class="n">' + esc(i.detail) + '</div>' : '') + '</td>'
+          + '<td>' + esc((i.since||'').slice(0,16).replace('T',' ')) + '<div class="n">' + esc(i.via) + '</div></td><td>' + st + '</td><td>' + esc(i.then) + '</td></tr>';
+      }).join('');
+      var f = document.getElementById('wfoot'); if (f) f.textContent = '열린 것 ' + d.open + ' / ' + d.items.length + ' · 마지막으로 모은 때 ' + (d.generated_at||'').slice(0,16).replace('T',' ');
+    }).catch(function(){ body.innerHTML = '<tr><td colspan="5" class="ppct" style="padding:14px 8px">못 읽었습니다 — 잠시 뒤 새로고침해 주세요.</td></tr>'; });
   })();
   </script>
 
