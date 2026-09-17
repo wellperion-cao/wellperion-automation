@@ -645,6 +645,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <option value="[7] IT·시스템·자동화">[7] IT·시스템·자동화</option>
         <option value="[8] 교육·조직문화">[8] 교육·조직문화</option>
         <option value="[9] 회의">[9] 회의</option>
+        <option value="[10] 마케팅">[10] 마케팅</option>
       </select>
     </div>
     <div class="field">
@@ -850,7 +851,8 @@ MEMBERS.unshift('김남욱GM');  // GM 지시 2026-09-17 「나도 업무SSOT에
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
-  '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의'
+  '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의',
+  '[10] 마케팅'   // GM 오케이 2026-09-17 — 07:50 통·보고 흐름엔 이미 있는데 이 화면에만 빠져 미분류로 붙었다
 ];
 
 /* 카테고리 칸도 같은 이유로 한 가지 색이다 — 번호와 이름이 이미 구별을 해 준다. */
@@ -864,7 +866,8 @@ const CAT_COLORS = {
   '[6] 회원·CS':         CAT_CHIP,
   '[7] IT·시스템·자동화': CAT_CHIP,
   '[8] 교육·조직문화':   CAT_CHIP,
-  '[9] 회의':            CAT_CHIP
+  '[9] 회의':            CAT_CHIP,
+  '[10] 마케팅':          CAT_CHIP
 };
 
 /* field mapping: API 한글 → 영문 */
