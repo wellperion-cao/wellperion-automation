@@ -284,8 +284,9 @@
   .p3plan-h:first-child{margin-top:0;}
   .mrow .rk{display:inline-block;min-width:14px;font-weight:800;color:var(--ink);}
   .audit{margin-top:9px;padding:5px 11px;font-size:11px;line-height:1.45;border:1px solid var(--line);}
-  /* 자체 점검 줄은 장 맨 위 머리 오른쪽에 작게 붙인다(GM 2026-09-17) — 아래에 두면 표 한 줄을 먹는다. */
-  .head .audit{display:inline-block;margin:3px 0 0;padding:2px 7px;font-size:9.6px;line-height:1.3;max-width:560px;
+  /* 자체 점검 줄은 제목 줄 「AI 시포」 칸 바로 오른쪽에 나란히(GM 2026-09-17 19:0x 「아래 배치는 별로」) — 제목 글꼴을 물려받지 않게 따로 잡는다. */
+  .head .audit{display:inline-block;vertical-align:middle;margin:0 0 0 8px;padding:2px 7px;font-size:9.6px;line-height:1.3;max-width:420px;
+    font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;font-weight:600;letter-spacing:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;}
   .audit.wait{color:#7A838B;background:#F6F8FA;}
   .audit.ok{color:var(--good);background:#EEF6F2;border-color:#BFDCD0;}
@@ -438,8 +439,7 @@
       <div class="brand">WELLPERION</div>
       <!-- 소유 표시 — 이 화면은 시포(AI CPO) 소유다(GM 지시 2026-09-02 "소유관리 시포로 지정 ·
            시포가 관리하는 페이지에는 항상 AI 시포 를 제목 옆에 눈에 띄게"). 정본 = status/page_score.json -->
-      <div class="title">웰페리온 운영 현황 보고<span class="ai-owner">AI 시포</span></div>
-      <div class="audit wait" id="audit">자체 점검 중…</div>
+      <div class="title">웰페리온 운영 현황 보고<span class="ai-owner">AI 시포</span><span class="audit wait" id="audit">자체 점검 중…</span></div>
     </div>
     <div class="meta">
       기준 <b id="asof">불러오는 중…</b><br>
@@ -580,8 +580,7 @@
       <div class="brand">WELLPERION</div>
       <!-- 제목 = 「문의 · 등록 상세」 (GM 지시 2026-09-02). 이 장의 무게중심을 회원 현황이 아니라
            문의에서 등록으로 이어지는 흐름에 둔다 — 등록 내역이 여기 정리되는 것이 목적이다. -->
-      <div class="title">문의 · 등록 상세<span class="ai-owner">AI 시포</span></div>
-      <div class="audit wait" id="audit2">자체 점검 중…</div>
+      <div class="title">문의 · 등록 상세<span class="ai-owner">AI 시포</span><span class="audit wait" id="audit2">자체 점검 중…</span></div>
     </div>
     <div class="meta">
       웰페리온 운영 현황 보고 <b>2 / 4</b><br>
@@ -665,8 +664,7 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">운영 현황<span class="ai-owner">AI 시포</span></div>
-      <div class="audit wait" id="audit3">자체 점검 중…</div>
+      <div class="title">운영 현황<span class="ai-owner">AI 시포</span><span class="audit wait" id="audit3">자체 점검 중…</span></div>
     </div>
     <div class="meta">
       웰페리온 운영 현황 보고 <b>3 / 4</b><br>
@@ -782,6 +780,11 @@
        이 장이 보는 것 — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 오른쪽 위 표는 이번 분기(3개월) 팀 목표 대비 누적과, 남은 영업일을 지금 하루 평균으로 채웠을 때의 예상 달성률 · 올해 누적입니다. 오른쪽 아래 표는 팀 매출이 몇 사람에게 쏠려 있는지(상위 20% 담당의 비중)입니다. 세션 2칸은 브로제이 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다.
   -->
 
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>지금 집중</b> — AI를 활용하여 본질에 집중 · 시설·설비 밸류업 · 요금 체계 재설계 · 공간 활용 수익화</span>
+  </div>
 </div>
 
 <!-- 5~7면 — 월말 결산 리더별 3장 (배 2523 · 스펙 .omc/specs/deep-interview-monthly-closing-pages.md).
