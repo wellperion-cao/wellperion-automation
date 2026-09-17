@@ -78,7 +78,7 @@ function route_(p) {
       case 'payroll_team':          return out_(teamSummary_(p.month, p.team, p.viewer));
       case 'payroll_config_get':    return out_(configGet_(p.viewer));
       case 'payroll_flags':         var sc0 = scopeFor_(loadConfig_(), p.viewer);
-                                    return out_({ ok: true, scope: sc0.mode, rows: readTab_('플래그').filter(function (r) { return (!p.month || r['월'] === p.month) && (!p.instructor || r['강사명'] === p.instructor) && allowName_(sc0, r['강사명']); }) });
+                                    return out_({ ok: true, scope: sc0.mode, rows: readTab_('플래그').filter(function (r) { return (!p.month || ym7_(r['월']) === p.month) && (!p.instructor || r['강사명'] === p.instructor) && allowName_(sc0, r['강사명']); }) });
       case 'payroll_sync_log':      return out_({ ok: true, rows: readTab_('동기화로그').slice(-(+p.limit || 30)) });
     }
     if (badAdmin_(p.adminPassword)) return out_({ ok: false, error: 'unauthorized_admin' });
@@ -108,6 +108,8 @@ function db_() { var id = prop_('PAYROLL_DB_ID'); return id ? SpreadsheetApp.ope
 function tab_(name) {
   var ss = db_(), sh = ss.getSheetByName(name);
   if (!sh) { sh = ss.insertSheet(name); sh.appendRow(TABS[name]); sh.setFrozenRows(1); }
+  var mi = TABS[name].indexOf('월');
+  if (mi >= 0 && !sh._monthFmt) { try { sh.getRange(1, mi + 1, sh.getMaxRows(), 1).setNumberFormat('@'); } catch (e) {} sh._monthFmt = true; }
   return sh;
 }
 function readTab_(name) {
@@ -123,12 +125,13 @@ function readTab_(name) {
 }
 function rowArr_(name, o) { return TABS[name].map(function (h) { return o[h] == null ? '' : o[h]; }); }
 /** 키 열 조합이 같은 행은 갱신, 없으면 추가 */
+function keyVal_(col, v) { return col === '월' ? ym7_(v) : String(v == null ? '' : v); }
 function upsert_(name, keyCols, objs) {
   var sh = tab_(name), existing = readTab_(name), idx = {};
-  existing.forEach(function (r) { idx[keyCols.map(function (k) { return String(r[k]); }).join('|')] = r._row; });
+  existing.forEach(function (r) { idx[keyCols.map(function (k) { return keyVal_(k, r[k]); }).join('|')] = r._row; });
   var add = [], upd = 0;
   objs.forEach(function (o) {
-    var k = keyCols.map(function (c) { return String(o[c]); }).join('|');
+    var k = keyCols.map(function (c) { return keyVal_(c, o[c]); }).join('|');
     if (idx[k]) { sh.getRange(idx[k], 1, 1, TABS[name].length).setValues([rowArr_(name, o)]); upd++; }
     else add.push(rowArr_(name, o));
   });
@@ -322,9 +325,9 @@ function summarize_(rows, sessions, c, ym, summaryOvr) {
 /** 월·강사 계산 결과(등록행 계산·세션·합계·플래그) — 화면 응답과 월합계 캐시가 같은 함수를 쓴다 */
 function calc_(ym, name) {
   var cfg = loadConfig_(), c = cfgFor_(cfg, name);
-  var regs = readTab_('등록').filter(function (r) { return r['월'] === ym && r['강사명'] === name; });
-  var sess = readTab_('세션').filter(function (r) { return r['월'] === ym && r['강사명'] === name; });
-  var ovr = readTab_('보정').filter(function (r) { return r['월'] === ym && r['강사명'] === name && String(r['취소']).toUpperCase() !== 'Y'; });
+  var regs = readTab_('등록').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name; });
+  var sess = readTab_('세션').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name; });
+  var ovr = readTab_('보정').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name && String(r['취소']).toUpperCase() !== 'Y'; });
   var codePrice = {}; c.codes.forEach(function (x) { codePrice[String(x['코드']).trim()] = +x['1회수업료'] || 0; });
   sess.forEach(function (x) { x['수업료'] = codePrice[String(x['코드']).trim()] || 0; });
   // 진행 = 출석 세션(SHOW/NO_SHOW) 수 — 수강권ID 조인, 없으면 회원명
@@ -371,7 +374,7 @@ function listPayroll_(ym, name, viewer) {
   var sc = scopeFor_(loadConfig_(), viewer);
   if (!allowName_(sc, name)) return { ok: false, error: 'forbidden_scope: 이 계정은 「' + name + '」 페이롤을 볼 권한이 없습니다' };
   var r = calc_(ym, name), today = new Date();
-  var closed = readTab_('월합계').some(function (m) { return m['월'] === ym && m['강사명'] === name && String(m['마감']) === '마감'; });
+  var closed = readTab_('월합계').some(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name && String(m['마감']) === '마감'; });
   var regs = r.regs.map(function (x) {
     var c = x._c, end = x['유효기간'] ? new Date(String(x['유효기간']).slice(0, 10)) : null;
     return { key: x['수강권ID'], 회원명: x['회원명'], 회원명원문: x['회원명원문'], 회원구분: x['회원구분'], 등록일: String(x['등록일'] || '').slice(0, 10), 유효기간: String(x['유효기간'] || '').slice(0, 10),
@@ -379,15 +382,15 @@ function listPayroll_(ym, name, viewer) {
       공제후: c.J, 부가세: c.K, 최종: c.L, 단가: c.M, 지급단가: c.N, 규칙: c.ruleTxt, 진행: c.O, 잔여: c.P, 청구: c.Q, 소진: c.T, 미소진: c.U, 출처: x['출처'], 상태: x['상태'], 특이사항: x['특이사항'], 보정: x._ovr || [] };
   });
   var sessions = r.sessions.map(function (x) { return { rid: x['reservation_id'], 일시: x['일시'], 수업: x['수업명'], 회원: x['회원명'], 수강권ID: x['수강권ID'], 수강권명: x['수강권명'], 출석: x['출석'], 코드: x['코드'], 기록명: x['기록명'], 회차: x['회차'], 수업료: x['수업료'], 판별: x['판별경로'] }; });
-  var last = readTab_('동기화로그').filter(function (l) { return l['월'] === ym; }).slice(-1)[0];
+  var last = readTab_('동기화로그').filter(function (l) { return ym7_(l['월']) === ym; }).slice(-1)[0];
   return { ok: true, month: ym, instructor: name, team: r.cfg.it['팀'], config: r.cfg.it, regs: regs, sessions: sessions, summary: r.summary, flags: r.flags, overrides: r.overrides, syncedAt: last ? last['실행시각'] : '', closed: closed };
 }
 /** 월합계·플래그 탭 갱신(수집 후·보정 후) */
 function recompute_(ym, name) {
   var r = calc_(ym, name), s = r.summary;
-  var closed = readTab_('월합계').some(function (m) { return m['월'] === ym && m['강사명'] === name && String(m['마감']) === '마감';});
+  var closed = readTab_('월합계').some(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name && String(m['마감']) === '마감';});
   upsert_('월합계', ['월', '강사명'], [{ '월': ym, '강사명': name, '팀': r.cfg.it['팀'], '등록건수': s.등록건수, '신규': s.신규, '재등록': s.재등록, '진행': s.진행, '잔여': s.잔여, '청구합': s.청구합, '업무추진비': s.업무추진비, '팀인센티브': s.팀인센티브, '카드수수료': s.카드수수료, '주차비': s.주차비, '지급총액': s.지급총액, '소진': s.소진, '미소진': s.미소진, '당월매출': s.당월매출, '프로모션수': s.프로모션수, '프로모션강습료': s.프로모션강습료, '플래그수': r.flags.length, '마감': closed ? '마감' : '진행', '계산시각': now_() }]);
-  deleteRows_('플래그', function (f) { return f['월'] === ym && f['강사명'] === name && String(f['상태']) !== '처리'; });
+  deleteRows_('플래그', function (f) { return ym7_(f['월']) === ym && f['강사명'] === name && String(f['상태']) !== '처리'; });
   if (r.flags.length) {
     var sh = tab_('플래그');
     sh.getRange(sh.getLastRow() + 1, 1, r.flags.length, TABS['플래그'].length).setValues(r.flags.map(function (f) { return rowArr_('플래그', { '월': ym, '강사명': name, '유형': f.유형, '키': f.키, '내용': f.내용, '상태': '열림', '시각': now_() }); }));
@@ -396,7 +399,7 @@ function recompute_(ym, name) {
 }
 function teamSummary_(ym, team, viewer) {
   var sc = scopeFor_(loadConfig_(), viewer);
-  var rows = readTab_('월합계').filter(function (m) { return (!ym || m['월'] === ym) && (!team || team === '전체' || m['팀'] === team) && allowName_(sc, m['강사명']); });
+  var rows = readTab_('월합계').filter(function (m) { return (!ym || ym7_(m['월']) === ym) && (!team || team === '전체' || m['팀'] === team) && allowName_(sc, m['강사명']); });
   var totals = {}; rows.forEach(function (m) { var t = m['팀'] || '?'; totals[t] = totals[t] || { 강사수: 0, 진행: 0, 청구합: 0, 지급총액: 0, 소진: 0, 미소진: 0, 플래그수: 0 };
     totals[t].강사수++; ['진행', '청구합', '지급총액', '소진', '미소진', '플래그수'].forEach(function (k) { totals[t][k] += +m[k] || 0; }); });
   return { ok: true, month: ym, rows: rows, totals: totals, scope: sc.mode };
@@ -417,8 +420,8 @@ function overrideDel_(row) {
 }
 function flagClose_(row) { var sh = tab_('플래그'); sh.getRange(+row, TABS['플래그'].indexOf('상태') + 1).setValue('처리'); return { ok: true }; }
 function closeMonth_(ym, name, reopen) {
-  var sh = tab_('월합계'), rows = readTab_('월합계').filter(function (m) { return m['월'] === ym && m['강사명'] === name; });
-  if (!rows.length) recompute_(ym, name), rows = readTab_('월합계').filter(function (m) { return m['월'] === ym && m['강사명'] === name; });
+  var sh = tab_('월합계'), rows = readTab_('월합계').filter(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name; });
+  if (!rows.length) recompute_(ym, name), rows = readTab_('월합계').filter(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name; });
   sh.getRange(rows[0]._row, TABS['월합계'].indexOf('마감') + 1).setValue(reopen ? '진행' : '마감');
   return { ok: true, closed: !reopen };
 }
@@ -454,7 +457,7 @@ function installDailySyncTrigger() {
 /** 여러 강사 — 그룹 재료(매출·일정·강사)는 1회만 받고 강사별로 나눔. 4.5분 넘으면 SYNC_CURSOR 에 남겨 이어감 */
 function syncMany_(ym, team, actor) {
   var started = Date.now(), cfg = loadConfig_();
-  var closedSet = {}; readTab_('월합계').forEach(function (m) { if (m['월'] === ym && String(m['마감']) === '마감') closedSet[m['강사명']] = 1; });
+  var closedSet = {}; readTab_('월합계').forEach(function (m) { if (ym7_(m['월']) === ym && String(m['마감']) === '마감') closedSet[m['강사명']] = 1; });
   var targets = cfg.instructors.filter(function (i) { return String(i['활성']).toUpperCase() === 'Y' && (!team || team === '전체' || i['팀'] === team) && !closedSet[i['강사명']]; }).map(function (i) { return i['강사명']; });
   var props = PropertiesService.getScriptProperties(), cursor = JSON.parse(props.getProperty('SYNC_CURSOR') || 'null');
   if (cursor && cursor.month === ym && cursor.remaining) targets = cursor.remaining;
@@ -521,7 +524,7 @@ function syncOne_(ym, name, actor, mat) {
     var res1 = upsert_('등록', ['월', '강사명', '수강권ID'], regs);
     // 2) 일정·출석 → 세션 (코드 = 수강권ID 조인 → 단가 → 코드표 역조회, 폴백 수강권명)
     var unitByTicket = {};
-    readTab_('등록').filter(function (r) { return r['월'] === ym && r['강사명'] === name; }).forEach(function (r) { unitByTicket[r['수강권ID']] = computeRow_(r, c, 0).M; });
+    readTab_('등록').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name; }).forEach(function (r) { unitByTicket[r['수강권ID']] = computeRow_(r, c, 0).M; });
     var codesByPrice = {}; c.codes.forEach(function (x) { var p = Math.round(+x['1회수업료']); (codesByPrice[p] = codesByPrice[p] || []).push(String(x['코드']).trim()); });
     var items = [];
     mat.sched.filter(function (s) { return (s.trainer_ids || []).indexOf(tr.trainer_id) >= 0; }).forEach(function (s) {
@@ -614,6 +617,8 @@ function num_(v, dflt) {
   if (isNaN(n)) return dflt === undefined ? 0 : dflt;
   return pct ? n / 100 : n;
 }
+/** 월 정규화 — 시트가 "2026-09" 를 날짜로 바꿔 "2026-09-01 00:00:00" 이 돼도 앞 7자(YYYY-MM)로 비교한다 */
+function ym7_(v) { return String(v == null ? '' : v).slice(0, 7); }
 function uniq_(a) { var s = {}; return a.filter(function (x) { if (!x || s[x]) return false; s[x] = 1; return true; }); }
 function list_(j) { if (Array.isArray(j)) return j; if (j && Array.isArray(j.data)) return j.data; if (j && Array.isArray(j.items)) return j.items; return []; }
 
