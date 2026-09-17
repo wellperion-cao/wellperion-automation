@@ -708,24 +708,6 @@
       ],
       "work": [
         {
-          "time": "11:09",
-          "area": "작업",
-          "event": "fix(sms): 중복 방지 키를 문구 id 기준으로 — 접수·진행·완료 3통이 같은 자리 키로 막히던 것(라이브 실측)",
-          "detail": "커밋 ebc0fc0f27 · 배 12715"
-        },
-        {
-          "time": "11:10",
-          "area": "작업",
-          "event": "docs(sms): 딜라이브 문자연동 가이드 1장 + 문자 발송 카드 링크 (GM 지시 2026-09-17)",
-          "detail": "커밋 21a0ffac3f · 배 12715"
-        },
-        {
-          "time": "11:10",
-          "area": "배",
-          "event": "접수처 문자 버튼 라이브 dry 실측·중복 키 수정 배포",
-          "detail": "ebc0fc0f27 · 접수 3종 dry ok · 휴회+접수처 2자리 연결"
-        },
-        {
           "time": "11:15",
           "area": "작업",
           "event": "docs(sms): 딜라이브 문자연동 가이드 — AX 랩스 표준·기준 묶음에 캡션+링크 등록 (GM 지시 2026-09-17)",
@@ -886,6 +868,24 @@
           "area": "작업",
           "event": "fix(chat): CLOSE_DAYS_PATH 서버 sparse-checkout 대응 — /srv/erp/repo 우선 (팀장 실측 2026-09-17)",
           "detail": "커밋 1889ced0a2 · 배 12715"
+        },
+        {
+          "time": "13:34",
+          "area": "작업",
+          "event": "feat(erp-home): 왼쪽 「업무」 묶음 = 모듈 배치의 모듈과 같은 칸·같은 차례(회원·문의·점검·콘텐츠·라커·분실물·업무·결재·인사·전사 일정·경영 보고·재무) — 업무영역 5칸 묶음 폐기 (GM 2026",
+          "detail": "커밋 0d1450232f · 배 12715"
+        },
+        {
+          "time": "13:36",
+          "area": "작업",
+          "event": "fix(erp-home): 자주 여는 것 화면도 제 모듈 묶음에 그대로 — 문의·점검·업무·결재 묶음이 비어 모듈 배치(11)와 어긋나던 것 (GM 2026-09-17 13:2x)",
+          "detail": "커밋 e5e5ade5a9 · 배 12715"
+        },
+        {
+          "time": "13:36",
+          "area": "작업",
+          "event": "fix(git): 무접촉 통합 뒤 「손 안 댄 작업본」(디스크 = 옛 HEAD 그대로)은 새 HEAD 내용으로 자동 갱신 — 9/15 판 두 파일이 9/16 원격 커밋 뒤에도 옛 판으로 남아 매시간 경보 나던 것(G",
+          "detail": "커밋 bf83d25f99 · 배 12715"
         }
       ],
       "count": 26,
@@ -1277,13 +1277,13 @@
           "ref": "GM-20260917-3036",
           "no": "36",
           "got": "시모도 지금 모델 낮은걸로 전체 검수하고, 그리드나 각 업체 브랜드가이드를 기준으로 셋업 확인해서 아티팩트로 제안해줘 내가 번호로 선택해서 시모 제안 결정할 수 있게 해줘",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "13:31",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "13:36",
+          "minutes": 4,
+          "upload": "✅ 배포 (2f946d2f1)",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260917-erp-noslash",
@@ -1367,28 +1367,13 @@
         }
       ],
       "count": 33,
-      "done": 32,
-      "open": 1,
+      "done": 33,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 11,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-3036",
-          "no": "36",
-          "got": "시모도 지금 모델 낮은걸로 전체 검수하고, 그리드나 각 업체 브랜드가이드를 기준으로 셋업 확인해서 아티팩트로 제안해줘 내가 번호로 선택해서 시모 제안 결정할 수 있게 해줘",
-          "did": "",
-          "start": "13:31",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
@@ -1755,13 +1740,25 @@
           "area": "공통",
           "event": "fix(cpo): ERP 홈 운영 섹션 머리의 「이달 운영 계획·진척」 알약 링크도 제거 — 운영 현황 보고 3면에 통합(GM 9/17)",
           "detail": "커밋 faa0ec8f84 · 배 12523"
+        },
+        {
+          "time": "13:34",
+          "area": "강습",
+          "event": "feat(counselbot): facts.parking 채우기 — 회원 무료주차 4시간·강습 100분(운영부 확인값 2026-09-15)",
+          "detail": "커밋 2be87c3b06 · 배 12523"
+        },
+        {
+          "time": "13:35",
+          "area": "강습",
+          "event": "fix(cpo): 매출분류 빈 결제는 상품명으로 팀 행에 싣는다 — 9/4 아쿠아로빅 5건 1,210,000 이 팀 합에서 빠져 총액≠팀합(운영 현황 보고 대조 · GM 9/17)",
+          "detail": "커밋 a76f2fc762 · 배 12523"
         }
       ],
       "count": 22,
       "done": 20,
       "open": 2,
       "avg_minutes": 9,
-      "work_count": 16,
+      "work_count": 18,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1777,7 +1774,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         },
         {
           "ref": "GM-20260917-cpo-sweep",
@@ -1791,7 +1788,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         }
       ],
       "repeats": [
@@ -2020,7 +2017,7 @@
           "start": "13:26",
           "end": "13:28",
           "minutes": 1,
-          "upload": "⚠️ 저장만 (744c51008)",
+          "upload": "✅ 배포 (744c51008)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2032,7 +2029,7 @@
           "start": "13:29",
           "end": "13:29",
           "minutes": 0,
-          "upload": "⚠️ 저장만 (744c51008)",
+          "upload": "✅ 배포 (744c51008)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2040,8 +2037,20 @@
           "ref": "GM-20260917-5023",
           "no": "23",
           "got": "나도 업무SSOT에 이름 올려줘 일단은",
-          "did": "",
+          "did": "업무 현황 SSOT 에 김남욱GM 담당자 올림 [GM 지시 2026-09-17] — 「나도 업무SSOT에 이름 올려줘 일단은」 · feat(todo): 업무 현황 SSOT 에 김남욱GM 담당자 올림 [G — 커밋 2bbf3bf169 · 배 12716",
           "start": "13:29",
+          "end": "13:35",
+          "minutes": 6,
+          "upload": "✅ 배포 (2bbf3bf16)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-5024",
+          "no": "24",
+          "got": "바이크 관련해서 추정이라고 되어있는데, 추청이라고 하지말라고 // 있으면 라이브 크롬창 띄워줘",
+          "did": "",
+          "start": "13:35",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2103,29 +2112,41 @@
           "area": "작업",
           "event": "docs(chairman): 바이크 3사 A3 4차 — 테크노짐 대당·3대 값을 비율 배분 추정으로 표기(GM 09-17 카드 답 · 입식 12,419,000/37,258,000 · 좌식 12,847,000/38,5",
           "detail": "커밋 02b8315e23 · 배 12716"
+        },
+        {
+          "time": "13:34",
+          "area": "작업",
+          "event": "feat(todo): 업무 현황 SSOT 에 김남욱GM 담당자 올림 [GM 지시 2026-09-17] — 「나도 업무SSOT에 이름 올려줘 일단은」 · 읽기 열쇠(include_gm=1&gmkey) 결재 SSOT 와",
+          "detail": "커밋 2bbf3bf169 · 배 12716"
+        },
+        {
+          "time": "13:36",
+          "area": "작업",
+          "event": "docs(chairman): 바이크 3사 A3 5차 — 「추정」 표기 제거(GM 09-17 13:4x) · 테크노짐 값은 「6대 네고 비율 배분」으로 · PNG 재생성",
+          "detail": "커밋 d09d0934cb · 배 12716"
         }
       ],
-      "count": 20,
-      "done": 19,
+      "count": 21,
+      "done": 20,
       "open": 1,
-      "avg_minutes": 2,
-      "work_count": 9,
+      "avg_minutes": 3,
+      "work_count": 11,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-5023",
-          "no": "23",
-          "got": "나도 업무SSOT에 이름 올려줘 일단은",
+          "ref": "GM-20260917-5024",
+          "no": "24",
+          "got": "바이크 관련해서 추정이라고 되어있는데, 추청이라고 하지말라고 // 있으면 라이브 크롬창 띄워줘",
           "did": "",
-          "start": "13:29",
+          "start": "13:35",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 2
         }
       ],
       "repeats": []
@@ -2180,6 +2201,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-9006",
+          "no": "06",
+          "got": "정말 중요한것같아, 상담봇이 각각 파트너사에 맞게 답변을 정리가되어 해줘야하고, 전체적인 질문을 가공해서 다른 업체에도 어느정도 반영하거나 아니면 질문해서 답변받고, 계속 데이터가 쌓여가는식으로 셋팅이 되어야해 정말…",
+          "did": "",
+          "start": "13:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2244,14 +2277,29 @@
           "detail": "커밋 946fc30b79 · 배 11386"
         }
       ],
-      "count": 4,
+      "count": 5,
       "done": 4,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 5,
       "work_count": 10,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-9006",
+          "no": "06",
+          "got": "정말 중요한것같아, 상담봇이 각각 파트너사에 맞게 답변을 정리가되어 해줘야하고, 전체적인 질문을 가공해서 다른 업체에도 어느정도 반영하거나 아니면 질문해서 답변받고, 계속 데이터가 쌓여가는식으로 셋팅이 되어야해 정말…",
+          "did": "",
+          "start": "13:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     }
   },
