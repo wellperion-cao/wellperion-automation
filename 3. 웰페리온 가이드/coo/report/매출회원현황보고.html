@@ -292,7 +292,7 @@
 
   /* ══ 2페이지 — 회원·문의 상세. 기존 스타일(.stack·.chips·.flow·.yr·.vrow·.bigrow)을
      그대로 재사용하고, 여기 쓰는 것만 덧붙인다. ══ */
-  @media print{ #sheet2, #sheet3, #sheet4{ page-break-before:always; } .no-print{ display:none!important; } }
+  @media print{ #sheet2, #sheet3, #sheet4, #sheet5, #sheet6, #sheet7{ page-break-before:always; } .no-print{ display:none!important; } }
   .mv6{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
   .vrow2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
   .vrow2 .vcol-h{font-size:10.4px;font-weight:800;color:var(--navy);margin-bottom:3px;}
@@ -745,6 +745,174 @@
   <div class="foot">
     <div><b>이 장이 보는 것</b> — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 오른쪽 위 표는 이번 분기(3개월) 팀 목표 대비 누적과, 남은 영업일을 지금 하루 평균으로 채웠을 때의 예상 달성률 · 올해 누적입니다. 오른쪽 아래 표는 팀 매출이 몇 사람에게 쏠려 있는지(상위 20% 담당의 비중)입니다. 세션 2칸은 브로제이 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다.</div>
     <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
+  </div>
+
+</div>
+
+<!-- 5~7면 — 월말 결산 리더별 3장 (배 2523 · 스펙 .omc/specs/deep-interview-monthly-closing-pages.md).
+     매월 첫째 주 결산 회의(첫 회 10/1)에서 리더 3인이 각자 한 장으로 본다. 숫자는 이 보고서 1~4면이
+     이미 읽은 값을 그대로 재사용한다 — 새 조회는 정적 json 3개(sales_targets·canon_values·
+     monthly_report_ledger)뿐이고 시트(GAS) 호출은 0이다. 특이사항·이달 계획은 리더 손 — AI 는 채우지
+     않는다. 타이틀 「월말 결산」은 GM 확정 전 임시 표기(후보 ①N월 경영 결산 ②월간 결산 보고). -->
+<div class="page" id="sheet5">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">월말 결산 — 운영부(이경연 실장님)<span class="ai-owner">AI 시포</span></div>
+    </div>
+    <div class="meta">
+      매출 및 회원 현황 보고 <b>월말 결산 1/3</b><br>
+      작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>이 보고서 1·2면과 같은 값</b><br>
+      읽은 시각 <b id="readat5">—</b>
+    </div>
+  </div>
+
+  <div id="err5"></div>
+  <div id="closingHead5"></div>
+
+  <div class="body">
+    <div class="col">
+      <div class="sec">
+        <h2>회원권 · 옵션 매출 — 이번 달 누적<span class="src " data-sf="1">시트 → 서버</span></h2>
+        <div class="bd" id="c5memsales"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>회원 구성<span class="src srv">서버</span></h2>
+        <div class="bd" id="c5mix"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>회원 드나듦 — 신규 · 재등록 · 로스<span class="src " data-sf="1">시트 → 서버</span></h2>
+        <div class="bd" id="c5flow"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec">
+        <h2>입장 — 어제 다녀가신 분<span class="src bro">브로제이 → 서버</span></h2>
+        <div class="bd" id="c5visit"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>접수 처리 — 이번 달<span class="src">종합접수처 → 서버</span></h2>
+        <div class="bd" id="c5recv"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>문의에서 가입까지<span class="src ">시트 → 서버</span></h2>
+        <div class="bd" id="c5funnel"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:9px;">
+    <h2>특이사항 · 이달 계획 — 이경연 실장님</h2>
+    <div class="bd"><div class="mrow"><span class="lb">리더 입력 전</span></div></div>
+  </div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>월말 결산</b> — 매월 첫째 주 회의 자료(첫 회 10/1)</span>
+  </div>
+
+</div>
+
+<div class="page" id="sheet6">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">월말 결산 — 시설부(이정헌 소장님)<span class="ai-owner">AI 시포</span></div>
+    </div>
+    <div class="meta">
+      매출 및 회원 현황 보고 <b>월말 결산 2/3</b><br>
+      작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>이 보고서 3면과 같은 값</b><br>
+      읽은 시각 <b id="readat6">—</b>
+    </div>
+  </div>
+
+  <div id="err6"></div>
+  <div id="closingHead6"></div>
+
+  <div class="body">
+    <div class="col">
+      <div class="sec">
+        <h2>점검 이행률 — 지원 · 시설<span class="src">점검 화면 → 서버</span></h2>
+        <div class="bd" id="c6check"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>설비 일정 — 이번 달 시설부 과제<span class="src">월간운영계획 원장</span></h2>
+        <div class="bd" id="c6plan"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec">
+        <h2>접수 — 시설물 고장<span class="src">종합접수처 → 서버</span></h2>
+        <div class="bd" id="c6recv"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec">
+        <h2>지출 — 구매요청 건수<span class="src">원천 미배선</span></h2>
+        <div class="bd" id="c6purch"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:9px;">
+    <h2>특이사항 · 이달 계획 — 이정헌 소장님</h2>
+    <div class="bd"><div class="mrow"><span class="lb">리더 입력 전</span></div></div>
+  </div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>월말 결산</b> — 매월 첫째 주 회의 자료(첫 회 10/1)</span>
+  </div>
+
+</div>
+
+<div class="page" id="sheet7">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">월말 결산 — 파트너팀(나우열M님)<span class="ai-owner">AI 시포</span></div>
+    </div>
+    <div class="meta">
+      매출 및 회원 현황 보고 <b>월말 결산 3/3</b><br>
+      작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>이 보고서 4면과 같은 값</b><br>
+      읽은 시각 <b id="readat7">—</b>
+    </div>
+  </div>
+
+  <div id="err7"></div>
+  <div id="closingHead7"></div>
+
+  <div class="body">
+    <div class="col">
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>강습 팀 매출 · 목표 · 달성 · 연 누적<span class="src">보고탭 목표×3 · 각 달 말일 일자탭</span></h2>
+        <div class="bd" id="c7quarter"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sec">
+        <h2>강습 신규 · 재등록 — 팀별<span class="src">시트 → 서버</span></h2>
+        <div class="bd" id="c7new"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>강습 담당별 매출<span class="src">일자탭 O~U(손입력) → 서버</span></h2>
+        <div class="bd" id="c7who"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:9px;">
+    <h2>특이사항 · 이달 계획 — 나우열M님</h2>
+    <div class="bd"><div class="mrow"><span class="lb">리더 입력 전</span></div></div>
+  </div>
+
+  <div class="bband">
+    <span class="sl">하루의 완성, 웰페리온</span>
+    <span class="pos">정원제 스포츠클럽 · 회원 한 사람의 건강한 하루를 완성한다</span>
+    <span class="fc"><b>월말 결산</b> — 매월 첫째 주 회의 자료(첫 회 10/1)</span>
   </div>
 
 </div>
@@ -1607,6 +1775,7 @@ function load(){
       var e3 = document.getElementById('err3');
       if (e3) e3.innerHTML = '<div class="err">3면 그리기 실패 — ' + esc(ex.message) + '</div>';
     }
+    renderClosingSheets();   // 5~7면 — 지금까지 온 값으로 먼저 채우고, 늦게 오는 원천은 아래 두 지점이 다시 채운다
   }
   Promise.all([p1, p2, p3, p4]).then(afterAll, afterAll);
 }
@@ -1921,7 +2090,11 @@ function loadP3Plan(){
     j('/api/check/support/monthly?month=' + ym),
     j('/api/check/facility/monthly?month=' + ym),
     j('/api/reception/board')
-  ]).then(function(a){ renderP3Plan(a[0], ym, a[1] && a[1].ok ? a[1] : null, a[2] && a[2].ok ? a[2] : null, a[3] && a[3].ok ? a[3] : null); });
+  ]).then(function(a){
+    renderP3Plan(a[0], ym, a[1] && a[1].ok ? a[1] : null, a[2] && a[2].ok ? a[2] : null, a[3] && a[3].ok ? a[3] : null);
+    CLOSING_PLAN = { plan: a[0], ym: ym, sup: a[1] && a[1].ok ? a[1] : null, fac: a[2] && a[2].ok ? a[2] : null, rec: a[3] && a[3].ok ? a[3] : null };
+    renderClosingSheets();   // 6면(시설부)이 쓰는 원천이 방금 왔다
+  });
 }
 loadP3Plan();
 
@@ -2191,6 +2364,7 @@ function renderP4Quarter(teams, tries){
       (missQ.length ? ' · <b style="color:#B0413E">' + missQ.join('·') + '월 말일 탭을 못 읽어 분기 누적이 모자랍니다</b>' : '') +
       (missY.length && !missQ.length ? ' · ' + missY.join('·') + '월을 못 읽어 연 누적은 비웠습니다' : '') + '</span></div>';
     el.innerHTML = html;
+    renderClosingSheets();   // 7면(파트너팀)이 복제해 쓰는 #p4q 가 방금 최종 순서로 다시 그려졌다
   });
 }
 
@@ -3101,9 +3275,170 @@ function load2(){
     document.getElementById('readat2').textContent = new Date().toTimeString().substring(0, 5);
     runAudit2();
     applyServerPanel();   // 1페이지 시트가 먼저 왔으면 여기서, 아니면 afterAll 에서 — 둘 중 늦은 쪽이 그린다
+    renderClosingSheets();   // 5면이 복제해 쓰는 #p2funnel 이 방금 왔다
   });
 }
 load2();
+
+/* ══ 5~7면 — 월말 결산 리더별 3장 (배 2523) ══
+   원천 재사용 — 새 조회 없이 이 화면이 이미 읽은 값만 다시 담는다:
+     머리띠         RAW.cells/SF_CELLS(J4) + 정적 json 3개(sales_targets·canon_values·monthly_report_ledger)
+     운영부(5면)    회원권·옵션=RAW.cells H6·H7 · 회원구성/드나듦/입장/문의퍼널=#memberMix·#memberFlow·#visits·#p2funnel 복제
+     시설부(6면)    점검=loadP3Plan 이 이미 부른 CLOSING_PLAN.sup/.fac · 설비 일정=CLOSING_PLAN.plan(dept=시설) · 접수=CLOSING_PLAN.rec
+     파트너팀(7면)  강습 팀·담당=#p4q·#p4les 복제 · 신규/재등록=#lesson 복제
+   새 조회는 정적 json 3개뿐 — 시트(GAS) 호출 0. 리더 손 칸(특이사항·이달 계획)은 채우지 않는다.
+   각 render 함수는 재호출해도 안전하다 — 원천이 늦게 오면 그 값만 다시 채운다. */
+var CLOSING_REF = null;
+function loadClosingRef(){
+  if (CLOSING_REF) return CLOSING_REF;
+  var base = ERP_API_ON ? '/repo/' : '../../../';
+  var j = function(p){ return fetch(base + p + '?cb=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); };
+  CLOSING_REF = Promise.all([ j('status/sales_targets.json'), j('ssot/canon_values.json'), j('status/monthly_report_ledger.json') ])
+    .then(function(a){
+      var targets = a[0], canon = a[1], ledger = a[2];
+      var canonVal = canon && canon.values && canon.values.filter(function(x){ return x.key === 'sales_year_target'; })[0];
+      return { monthTarget: targets && targets.monthly_target_total, yearTarget: canonVal ? Number(canonVal.value) : null, ledger: ledger };
+    });
+  return CLOSING_REF;
+}
+loadClosingRef();
+
+var CLOSING_PLAN = null;   // {plan, ym, sup, fac, rec} — loadP3Plan 이 채운다(3면과 같은 원천)
+function closingBox(t, v, s){
+  return '<div class="b"><div class="t">' + t + '</div><div class="v">' + v + '</div><div class="s">' + (s || '') + '</div></div>';
+}
+/* 공통 머리띠 — 월 총매출 · 월 목표 달성률 · 연 누적 vs 연 목표 · 남은 달 필요 월매출 · 전월 대비.
+   연 누적 = 원장에 닫힌 마지막 달의 year_cum(그 달까지 누적이 이미 박제돼 있다) + 이번 달 현재까지 값.
+   이번 달 자체가 이미 원장에 닫혀 있으면(다음 해part 넘어갈 때) 중복으로 더하지 않는다. */
+function renderClosingHead(){
+  if (!RAW || !RAW.cells) return;
+  loadClosingRef().then(function(ref){
+    var c = SF_CELLS || RAW.cells;
+    var now = new Date(), y = now.getFullYear(), m = now.getMonth() + 1, thisKey = y + '-' + ('0' + m).slice(-2);
+    var lastDay = new Date(y, m, 0).getDate();
+    var monthTotal = num(c.J4);
+    var target = ref.monthTarget, yearTarget = ref.yearTarget;
+    var months = (ref.ledger && ref.ledger.months) || {};
+    var closedKeys = Object.keys(months).filter(function(k){ return months[k].closed && months[k].sales && typeof months[k].sales.year_cum === 'number'; }).sort();
+    var baseKey = closedKeys.length ? closedKeys[closedKeys.length - 1] : null;
+    var yearCumBase = baseKey ? months[baseKey].sales.year_cum : 0;
+    var yearCum = (baseKey === thisKey) ? yearCumBase : yearCumBase + monthTotal;
+    var prevKey = closedKeys.filter(function(k){ return k !== thisKey; }).sort().slice(-1)[0];
+    var prevMonthTotal = (prevKey && months[prevKey].sales) ? months[prevKey].sales.month : null;
+    var monthsLeft = 12 - m;
+    var yearRemain = (yearTarget != null) ? Math.max(0, yearTarget - yearCum) : null;
+    var neededMonthly = (yearRemain != null && monthsLeft > 0) ? Math.round(yearRemain / monthsLeft) : null;
+    var stage = (now.getDate() >= lastDay) ? '확정' : (now.getDate() + '일까지 · 집계 중');
+    var rate = target ? (monthTotal / target * 100) : null;
+    var yrate = (yearTarget) ? (yearCum / yearTarget * 100) : null;
+    var prevPct = prevMonthTotal ? (monthTotal / prevMonthTotal * 100) : null;
+    var html = '<div class="hl">' +
+      closingBox(m + '월 총매출', eok(monthTotal), stage) +
+      closingBox('월 목표 달성률', rate == null ? '—' : rate.toFixed(1) + '%', target ? '목표 ' + eok(target) : '월 목표 없음') +
+      closingBox('연 누적', (yearTarget != null) ? (eok(yearCum) + ' / ' + eok(yearTarget)) : eok(yearCum), (yrate == null ? '' : yrate.toFixed(1) + '%') + (baseKey ? (' · ' + baseKey + ' 확정분 포함') : '') ) +
+      closingBox('남은 달 필요 월매출', neededMonthly == null ? '—' : eok(neededMonthly), monthsLeft > 0 ? monthsLeft + '개월 남음' : '올해 마지막 달') +
+      closingBox('전월 대비', prevPct == null ? '—' : prevPct.toFixed(0) + '%', prevMonthTotal ? ('전월 ' + eok(prevMonthTotal)) : '전월 확정값 없음') +
+      '</div>';
+    ['5', '6', '7'].forEach(function(n){ var el = document.getElementById('closingHead' + n); if (el) el.innerHTML = html; });
+  });
+}
+
+/* 이미 그려진 다른 칸의 innerHTML 을 그대로 옮긴다 — 값을 다시 계산하지 않는다. 원본이 아직
+   '불러오는 중…'·'집계 중…' 그대로면 옮기지 않고 집계 중으로 남긴다(지어내지 않는다). */
+function cloneInto(destId, srcId, emptyMsg){
+  var d = document.getElementById(destId); if (!d) return;
+  var s = document.getElementById(srcId);
+  var ok = s && s.innerHTML && s.innerHTML.indexOf('불러오는 중') < 0 && s.innerHTML.indexOf('집계 중') < 0;
+  d.innerHTML = ok ? s.innerHTML : '<div class="mrow"><span class="lb">' + (emptyMsg || '집계 중…') + '</span></div>';
+}
+
+/* 종합접수처 한 달 치 원장 + 상태별 집계 — 5·6면이 함께 쓴다(renderP3Plan 과 같은 판정, 별도 사본). */
+function monthReceptionRows(rec, ym){
+  var rows = rec && (rec.data || rec.board);
+  if (!Array.isArray(rows)) return null;
+  return rows.filter(function(r){ return String(r.createdAt || r.created_at || '').slice(0, 7) === ym; });
+}
+function receptionStatusRow(label, rows){
+  var st = { '접수': 0, '처리중': 0, '완료': 0 };
+  rows.forEach(function(r){ var k = String(r.status || '접수'); st[k] = (st[k] || 0) + 1; });
+  return p3PlanRow(label + ' <span style="color:#7A838B">접수 ' + st['접수'] + ' · 처리중 ' + st['처리중'] + ' · 완료 ' + st['완료'] + '</span>', rows.length + '건');
+}
+
+function renderClosingSheet5(){
+  if (!document.getElementById('sheet5')) return;
+  var c = SF_CELLS || RAW.cells;
+  if (c) {
+    var rows = [6, 7].map(function(r){ return { name: c['H' + r], y: c['I' + r], m: c['J' + r], t: c['K' + r], rate: c['L' + r] }; }).filter(function(x){ return x.name; });
+    var el = document.getElementById('c5memsales');
+    if (el && rows.length) {
+      el.innerHTML = '<table class="ptab"><tr><th>항목</th><th>어제</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr>' +
+        rows.map(function(x){ return '<tr><td>' + esc(x.name) + '</td><td class="acc">' + esc(x.y || '–') + '</td>' +
+          '<td class="acc">' + esc(x.m || '–') + '</td><td class="acc">' + esc(x.t || '–') + '</td><td class="acc">' + esc(x.rate || '–') + '</td></tr>'; }).join('') +
+        '</table>';
+    }
+  }
+  cloneInto('c5mix', 'memberMix');
+  cloneInto('c5flow', 'memberFlow');
+  cloneInto('c5visit', 'visits');
+  cloneInto('c5funnel', 'p2funnel');
+  if (CLOSING_PLAN) {
+    var elr = document.getElementById('c5recv');
+    if (elr) {
+      var mon = monthReceptionRows(CLOSING_PLAN.rec, CLOSING_PLAN.ym);
+      elr.innerHTML = mon ? receptionStatusRow('이번 달 전체 접수', mon) : '<div class="mrow"><span class="lb">접수 원장을 못 읽었습니다</span></div>';
+    }
+  }
+  var r5 = document.getElementById('readat5'); if (r5) r5.textContent = new Date().toTimeString().substring(0, 5);
+}
+
+function renderClosingSheet6(){
+  if (!document.getElementById('sheet6')) return;
+  if (!CLOSING_PLAN) return;   // 3면과 같은 원천이 아직 안 왔다 — 다음 호출을 기다린다
+  var p = CLOSING_PLAN;
+  var elChk = document.getElementById('c6check');
+  if (elChk) {
+    var lines = [];
+    var fMt = p.fac && p.fac.monthTotals;
+    if (fMt && fMt.sessionCount) lines.push(p3PlanRow('시설 점검', fMt.avgPct + '% <span style="color:#7A838B">(' + fMt.sessionCount + '회 · 이상 ' + (fMt.outOfRangeCount || 0) + '건)</span>'));
+    if (p.sup && Array.isArray(p.sup.byZone)) {
+      p.sup.byZone.forEach(function(z){
+        if (!z.sessionCount) return;
+        var pct = (typeof z.pct === 'number') ? z.pct : (z.sumTotal ? Math.round(z.sumDone / z.sumTotal * 100) : null);
+        lines.push(p3PlanRow('지원 점검 — ' + (z.zone === 'm' ? '남' : z.zone === 'f' ? '여' : z.zone), (pct == null ? '—' : pct + '%') + ' <span style="color:#7A838B">(' + z.sessionCount + '회)</span>'));
+      });
+    }
+    elChk.innerHTML = lines.length ? lines.join('') : '<div class="mrow"><span class="lb">점검 원천을 못 읽었습니다</span></div>';
+  }
+  var elPlan = document.getElementById('c6plan');
+  if (elPlan) {
+    var m = p.plan && p.plan.months && p.plan.months[p.ym];
+    var objs = ((m && m.objectives) || []).filter(function(o){ return /시설/.test(String(o.dept || '')); });
+    elPlan.innerHTML = objs.length ? objs.map(function(o){
+      return '<div class="wrow"><span class="wt">' + esc(o.title) + '</span><span class="wo">' + esc(o.status || '') + ' ' + p3PlanProg(o) + '%</span></div>';
+    }).join('') : '<div class="mrow"><span class="lb">이번 달 시설부 과제가 원장에 없습니다</span></div>';
+  }
+  var elRecv = document.getElementById('c6recv');
+  if (elRecv) {
+    var mon = monthReceptionRows(p.rec, p.ym);
+    if (!mon) elRecv.innerHTML = '<div class="mrow"><span class="lb">접수 원장을 못 읽었습니다</span></div>';
+    else elRecv.innerHTML = receptionStatusRow('시설물 고장', mon.filter(function(r){ return /시설/.test(String(r.category || '')); }));
+  }
+  var r6 = document.getElementById('readat6'); if (r6) r6.textContent = new Date().toTimeString().substring(0, 5);
+}
+
+function renderClosingSheet7(){
+  if (!document.getElementById('sheet7')) return;
+  cloneInto('c7quarter', 'p4q');
+  cloneInto('c7who', 'p4les');
+  cloneInto('c7new', 'lesson');
+  var r7 = document.getElementById('readat7'); if (r7) r7.textContent = new Date().toTimeString().substring(0, 5);
+}
+
+function renderClosingSheets(){
+  try { renderClosingHead(); renderClosingSheet5(); renderClosingSheet6(); renderClosingSheet7(); }
+  catch (ex) { console.warn('[월말 결산 5~7면] 그리기 실패:', ex && ex.message); }
+}
 </script>
 <script src="../../_assets/ai_owner_badge.js" defer></script>
 <script>
