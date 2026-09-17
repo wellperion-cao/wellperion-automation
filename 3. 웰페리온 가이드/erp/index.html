@@ -225,9 +225,15 @@
 <div class="shell">
 
 <nav class="side" aria-label="메뉴">
-  <!-- 직원 묶음(업무·문서함·모듈 안내)은 여기 없다 — 직원 화면은 /home 한 장뿐이다
-       (GM 지시 2026-09-17 「/erp/?view=home 은 내가 생각하지 못한 화면 · 삭제 · /erp/ 로 병합」).
-       /erp/ 는 관리자 한 층만 그린다. 관리자가 직원 화면을 보려면 아래 「ERP 홈(직원 화면) ↓」. -->
+  <!-- 직원 묶음(업무 카드·문서함·모듈 안내) — 관리자 화면에 병합해 같이 보인다
+       (GM 2026-09-17 「?view=home 삭제 · /erp/ 로 병합」 → 13:2x 「관리자용에 직원용이 병합돼야」).
+       직원 전용 주소는 /home 한 장(관리자 아니면 이 파일은 /home 으로 보낸다). -->
+  <div id="menu-staff">
+    <div class="cap">업무</div>
+    <div id="menu-groups"></div>
+    <a href="#doc" data-go="doc"><span class="t">문서함</span><span class="b" id="b-doc">—</span></a>
+    <a href="module.html"><span class="t">모듈 안내</span></a>
+  </div>
   <!-- 관리 5줄 — 이 회사에 모듈을 배치하고, 계정·권한을 정하고, 쓰이는지·돌아가는지를 본다.
        보기 편하라고 감출 뿐 잠금이 아니다 — 실제 차단은 서버가 한다(관리자 아니면 401). -->
   <div id="menu-admin" hidden>
@@ -343,13 +349,10 @@ function setLayer(role){
   // 회사 관리자 콘솔로 올라가는 줄은 두지 않는다 (GM 지시 2026-09-11). 직원 화면으로 내려가는 줄만.
   var up = document.getElementById('up-admin');
   up.href = '/home'; up.textContent = 'ERP 홈(직원 화면) ↓'; up.hidden = false;
+  // 병합(GM 2026-09-17 13:2x): 직원 묶음(업무 카드·문서함) + 관리 5줄을 한 화면에. 첫 판 = 업무 카드.
   document.getElementById('menu-admin').hidden = false;
-  document.getElementById('find').hidden = true;        // 찾기는 직원 카드·문서를 뒤지는 칸이었다
-  bindMenu();
-  showPane('mods');
-  mark('[data-go="mods"]', '모듈 배치');
   if (role === 'admin') loadPending();
-  return true;                                          // 직원 카드는 그리지 않는다
+  return false;                                         // 이어서 loadModules 가 직원 카드·문서함을 그린다
 }
 
 // 2) 모듈 카드 — modules.json 은 scripts/erp_modules_build.py 가 화면 파일에서 자동 생성한다.
