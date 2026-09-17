@@ -165,13 +165,13 @@
   .lesson-strip .crow{display:flex;gap:9px;align-items:baseline;padding:1px 0;}
   .lesson-strip .crow .ch{font-size:10.4px;font-weight:800;color:var(--navy);min-width:52px;white-space:nowrap;}
 
-  /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 회원권·강습과 주머니가 달라 따로 본다. */
-  .etcgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
-  .etile{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;}
-  .etile .et{font-size:11px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .etile .ev{font-size:16px;font-weight:800;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;}
-  .etile .em{font-size:11px;color:var(--ink);white-space:nowrap;}
-  .etile .en{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 오른쪽 칸에 78px 밖에 안 남아
+     한 타일을 두 줄(이름 / 금액)로 눌러 담는다 — 잘리면 사진에서 값이 사라진다. */
+  .etcgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .etile{border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff;min-width:0;}
+  .etile .et{font-size:10.2px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .etile .ev{font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .etile .em{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
   .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
@@ -509,7 +509,7 @@
       <h2>어제 다녀가신 분<span class="src bro">브로제이 → 서버</span></h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="sec" style="flex:1;min-height:0;">
+    <div class="sec" style="flex:1;min-height:78px;">
       <h2>그 밖의 매출 — 주차 · 제휴 · 굿즈<span class="src srv">서버 · 일부 연동 전</span></h2>
       <div class="bd" id="etcRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -611,7 +611,7 @@
   <!-- 격자 하나: 1행 = 멤버십 · 강습 성인 · 강습 유소년 / 2행 = 「문의에서 가입까지」(멤버십+성인 폭) · 유소년은 두 행을
        세로로 다 쓴다(GM 지시 2026-09-15 「문의에서 가입까지는 좌우 너무 큰데, 멤버십+강습 성인칸까지만 · 맨 우측
        유소년 칸은 더 길게」). 유소년이 하루 17건으로 제일 길어 세로를 준다. -->
-  <div id="p2regband" style="display:grid;grid-template-columns:26% 1fr 1fr;grid-template-rows:minmax(0,1fr) auto;gap:11px 13px;flex:1;min-height:0;">
+  <div id="p2regband" style="display:grid;grid-template-columns:26% 1fr 1fr;grid-template-rows:minmax(0,1fr) auto auto;gap:11px 13px;flex:1;min-height:0;">
     <div class="sec" style="grid-column:1;grid-row:1;min-height:0;">
       <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
       <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
@@ -620,7 +620,7 @@
       <h2 id="p2lesh">오늘 등록 — 강습 성인 (팀별)<span class="src">시트 → 서버</span></h2>
       <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="sec" style="grid-column:3;grid-row:1 / span 2;min-height:0;">
+    <div class="sec" style="grid-column:3;grid-row:1 / span 3;min-height:0;">
       <h2 id="p2lesyh">오늘 등록 — 강습 유소년 (팀별)<span class="src">시트 → 서버</span></h2>
       <div class="bd" id="p2lesy"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -631,12 +631,12 @@
       <h2>문의에서 가입까지 — 원장 진행상태 그대로<span class="src ">시트 → 서버</span></h2>
       <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-  </div>
-
-  <!-- 종목·유입 경로 — 그날 일이 아니라 누적 흐름이라 맨 아래 얇은 띠로 내렸다(GM 지시 2026-09-14). -->
-  <div class="sec lesson-strip" style="margin-top:11px;">
-    <h2>강습 종목별 · 유입 경로 (누적)<span class="src ">시트 → 서버</span></h2>
-    <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    <!-- 종목·유입 경로 — 누적 흐름이라 얇은 띠로 깐다. 격자 3행 · 멤버십~성인 폭까지만 쓰고,
+         맨 오른쪽 유소년 칸이 세 행을 다 먹어 더 길어진다(GM 지시 2026-09-17). -->
+    <div class="sec lesson-strip" style="grid-column:1 / span 2;grid-row:3;min-height:0;">
+      <h2>강습 종목별 · 유입 경로 (누적)<span class="src ">시트 → 서버</span></h2>
+      <div class="bd" id="p2lesson"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    </div>
   </div>
 
   <div class="audit wait" id="audit2">자체 점검 중…</div>
@@ -1957,7 +1957,7 @@ function renderP3Teams(c){
   for (var r = 8; r <= 15; r++) {
     var name = String((RAW.cells || {})['H' + r] || '').split(/\r?\n/)[0].trim();
     if (!name) continue;
-    rows.push({ name: name.replace(/\s*매출$/, ''), acc: num(RP['J' + r]), goal: num(RP['K' + r]), row: r });
+    rows.push({ name: name.replace(/\s*매출$/, '').replace(/^[☀-➿️←-⇿⬀-⯿\s]+/, ''), acc: num(RP['J' + r]), goal: num(RP['K' + r]), row: r });
   }
   if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">팀 값을 아직 못 읽었습니다</span></div>'; return; }
   var prev = (window.P3_PREV_TEAMS || null);   // {팀이름: 지난달 전체 누적} — 없으면 「—」
@@ -2875,16 +2875,15 @@ function renderEtcRev(){
   var tiles = [
     { t: '주차', d: pk && pk.day != null ? _won(pk.day) : '못 읽음',
       m: pk && pk.month ? _won(pk.month) : '못 읽음',
-      note: pk && pk.upto ? '서버 원장 · ' + esc(String(pk.upto).slice(5).replace('-', '/')) + '까지' : '서버 원장' },
+      note: pk && pk.upto ? '서버 원장 · ' + String(pk.upto).slice(5).replace('-', '/') + '까지' : '서버 원장' },
     { t: '바디프렌드 (이익 30%)', d: '연동 전', m: '연동 전', note: '라운지 월 정산 · 계정 들어오면 자동' },
     { t: '굿즈 (오넛티 팝업)', d: '연동 전', m: '연동 전', note: '9/18 시작 · 판매 금액 담을 자리 준비 중' },
     { t: '그 밖 제휴', d: '없음', m: '없음', note: '생기면 이 자리에 붙는다' }
   ];
   box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
-    return '<div class="etile"><div class="et">' + esc(x.t) + '</div>' +
+    return '<div class="etile" title="' + esc(x.note) + '"><div class="et">' + esc(x.t) + '</div>' +
       '<div class="ev">' + esc(x.d) + '</div>' +
-      '<div class="em">이번 달 ' + esc(x.m) + '</div>' +
-      '<div class="en">' + x.note + '</div></div>';
+      '<div class="em">이번 달 ' + esc(x.m) + '</div></div>';
   }).join('') + '</div>';
 }
 
