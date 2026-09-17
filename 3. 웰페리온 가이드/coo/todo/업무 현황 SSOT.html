@@ -68,6 +68,22 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
 .ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0;container-type:inline-size}
 .ls-head{font-size:var(--fs-3);font-weight:700;color:var(--text);margin-bottom:11px}
+/* ── 자리 줄이기 (GM 지시 2026-09-17 「위 칸을 너무 많이 잡아먹는다」) ──
+   ★위 줄들을 고치지 않고 여기서 덮어쓴다(뒤 규칙이 이긴다) — 남이 최근에 넣은 줄을 지우지 않는다. */
+.livestrip{padding:8px 16px 0;gap:10px}
+.ls-card{padding:10px 12px}
+.ls-head{margin-bottom:7px}
+/* 두 판을 같은 높이로 접어 둔다 — 업무 카드가 주인공이고 이건 머리말이다. 안내문도 접힘일 땐
+   한 줄(넘치는 부분은 …, 전체는 제목 풍선). 「더 보기」를 누르면 둘 다 같이 펴진다. */
+/* 접힘 높이 = 머리줄 + 사람 2줄. 잘린 줄이 반쪽으로 보이지 않게 아래를 흐린다(잘렸다는 표시). */
+.livestrip:not(.ls-open) .ls-body{max-height:84px;overflow:hidden;position:relative;mask-image:linear-gradient(180deg,#000 72%,transparent);-webkit-mask-image:linear-gradient(180deg,#000 72%,transparent)}
+.livestrip{position:relative}
+/* 접힘일 땐 안내문을 한 줄로(전체 글은 제목 풍선 — 스크립트가 붙인다). 단추는 그 줄 오른쪽에 띄워
+   놓아 줄을 하나 더 먹지 않는다. 안내문 줄 자체는 고치지 않는다(남이 최근에 넣은 줄). */
+.livestrip:not(.ls-open) .ls-foot{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:64px}
+.ls-more{position:absolute;right:16px;bottom:0;background:none;border:0;color:var(--dim);font-family:inherit;
+  font-size:var(--fs-1);font-weight:700;cursor:pointer;padding:0 4px;white-space:nowrap}
+.ls-more:hover{color:var(--text)}
 .ls-head .ls-sub{font-size:var(--fs-2);font-weight:500;color:var(--dim);margin-left:5px}
 /* 2열 그리드 + 필드 줄맞춤(2026-08-24 나우열M 지시, #44 표시 전용) — 인원이 늘어도 세로 스크롤이
    덜 늘어나게 좌→우로 채우고, 각 사람 행은 모두 같은 고정폭 칼럼(.ls-row-todo/.ls-row-eval)을
@@ -568,6 +584,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="ls-head">📋 업무 처리 현황 <span class="ls-sub">라이브</span></div>
     <div class="ls-body" id="lsTodo"><div class="ls-dim">불러오는 중…</div></div>
   </section>
+  <button type="button" class="ls-more" id="lsMore" onclick="toggleLiveStrip()">▾ 더 보기</button>
   <div class="ls-foot">업무 처리 현황의 건수는 배분 현황이며 평가가 아닙니다. 평가점수는 완료 규모·품질 기반 정량 산출입니다(배정 5건 미만은 게이트 미달). 정체 기준 = 무변동 기간이 max(14일, 마감까지 총기간의 25%) 초과 · 마감일 없는 업무는 정체 판정에서 제외됩니다.</div>
 </div>
 
@@ -926,10 +943,24 @@ let calViewMonth = new Date().getMonth();  // 0-based
 /* ═══════════════════════════════════════════
    Init
    ═══════════════════════════════════════════ */
+// 상단 라이브 판 펴기·접기 — 마지막 선택을 기억한다(GM 지시 2026-09-17).
+function toggleLiveStrip(force) {
+  const strip = document.getElementById('liveStrip');
+  const foot = strip && strip.querySelector('.ls-foot');
+  if (foot && !foot.title) foot.title = foot.textContent.trim();   // 접히면 …로 잘리므로 전체 글을 풍선으로
+  const btn = document.getElementById('lsMore');
+  if (!strip) return;
+  const open = (force === undefined) ? !strip.classList.contains('ls-open') : !!force;
+  strip.classList.toggle('ls-open', open);
+  if (btn) btn.textContent = open ? '▴ 접기' : '▾ 더 보기';
+  try { localStorage.setItem('ssot_livestrip_open', open ? '1' : '0'); } catch (e) {}
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   updateHeaderSub();
   buildFilters();
   loadTasks();
+  try { toggleLiveStrip(localStorage.getItem('ssot_livestrip_open') === '1'); } catch (e) { toggleLiveStrip(false); }
 
   // 작성 유실 방지 (2026-05-30 COO): 바깥(오버레이) 클릭으로는 닫지 않음.
   // 작성·편집 모달은 [취소]/[저장] 버튼으로만 닫히게 해 작성 중 데이터 유실 차단.
@@ -1201,6 +1232,63 @@ function apiCall(params) {
   return window.erpTodoCall(TODO_API_URL, params);
 }
 
+// ═══ 전사일정 연동 (GM 지시 2026-09-17) ═══════════════════════════════
+// 업무 행이 전사일정에도 올라가 있으면 카드에 「📅 전사일정 D-N」 칩을 붙인다.
+// 원천 = 전사일정 화면이 쓰는 그 경로 그대로(서버 미러 → 저장소 사본 폴백). 실패하면 칩만 없다.
+let SCHED_BY_TODO = {};
+
+function _schedIdsOf(it) {
+  const ids = [];
+  if (it.todo_id) ids.push(String(it.todo_id).trim());
+  // 옛 건(5건)은 todo_id 칸 없이 메모에만 TODO-… 가 적혀 있다.
+  const m = String(it.note || '').match(/TODO-\d+/g);
+  if (m) m.forEach(x => ids.push(x));
+  return ids;
+}
+
+async function loadScheduleLinks() {
+  const tryFetch = async (u) => {
+    const r = await fetch(u, { cache: 'no-store' });
+    if (!r.ok) throw new Error(u + ' ' + r.status);
+    return r.json();
+  };
+  let items = null;
+  try {
+    const res = await tryFetch('/api/misc/schedule/load_schedule');
+    items = (res && res.data && res.data.items) || (res && res.items) || null;
+  } catch (e) { /* 서버 미러가 없으면 저장소 사본 */ }
+  if (!items) {
+    try {
+      const res = await tryFetch('/repo/status/schedule_ssot.json?cb=' + Date.now());
+      items = (res && res.items) || null;
+    } catch (e) { return; }
+  }
+  const map = {};
+  (items || []).forEach(it => {
+    const due = String(it.next_due || '').slice(0, 10);
+    if (!due) return;
+    _schedIdsOf(it).forEach(id => {
+      if (!id) return;
+      // 같은 업무에 일정이 여럿이면 가장 가까운 날짜 하나만 보여 준다.
+      if (!map[id] || due < map[id].due) map[id] = { due: due, name: String(it.name || '') };
+    });
+  });
+  SCHED_BY_TODO = map;
+}
+
+function scheduleChip(id) {
+  const s = SCHED_BY_TODO[String(id || '').trim()];
+  if (!s) return '';
+  const end = new Date(s.due + 'T23:59:59');
+  const diff = Math.ceil((end - new Date()) / 86400000);
+  const label = diff < 0 ? ('D+' + Math.abs(diff)) : (diff === 0 ? 'D-Day' : ('D-' + diff));
+  const cls = diff < 0 ? 'overdue' : (diff <= 3 ? 'due-soon' : 'due-ok');
+  const title = s.name ? (s.name + ' — ' + s.due) : s.due;
+  return '<a class="chip ' + cls + '" href="../check/전사_일정.html" target="_blank" rel="noopener"'
+    + ' onclick="event.stopPropagation()" title="' + escAttr(title) + '" style="text-decoration:none">'
+    + '📅 전사일정 ' + label + '</a>';
+}
+
 async function loadTasks() {
   const el = document.getElementById('mainContent');
   el.innerHTML = '<div class="loading">불러오는 중...</div>';
@@ -1227,6 +1315,7 @@ async function loadTasks() {
     showToast('네트워크 오류: 로컬 데이터 표시 중', true);
   }
   if (!_initApplied) { _initApplied = true; applyUrlParams(); }
+  try { await loadScheduleLinks(); } catch (e) { /* 칩만 빠진다 */ }
   renderTasks();
   handleDeepLink();
 }
@@ -1671,6 +1760,8 @@ function renderTaskCard(t, idx) {
     const badge = getDeadlineBadge(t.endDate);
     if (badge) html += '<span class="chip ' + badge.cls + '">' + badge.text + '</span>';
   }
+
+  html += scheduleChip(t.id);   // 📅 전사일정 D-N (GM 지시 2026-09-17) — 짝이 없으면 빈 문자열
 
   if (t.approval) {
     // ── 결재 진행 표시 (2026-05-29 GM 지시) ─────────────────────────────
@@ -3157,6 +3248,36 @@ async function removeAttachment(id, idx) {
   } catch (e) { showToast('삭제 실패: ' + e.message, true); }
 }
 
+// ═══ 첨부·링크 404 가드 (GM 지시 2026-09-17) ═══════════════════════════
+// 우리 서버 주소만 본다. 200 이 아니면 저장을 막고 그 주소를 그대로 보여 준다.
+// 확인이 불가능한 자리(다른 도메인에서 열었을 때 등)에서는 조용히 통과시킨다.
+const _OUR_HOST = /^(erp\.wellperion\.com|15\.164\.151\.105)$/;
+
+function _ourUrlsIn(text) {
+  const out = [];
+  String(text || '').replace(/https?:\/\/[^\s"'<>)\]]+/g, (u) => {
+    try {
+      const h = new URL(u).hostname;
+      if (_OUR_HOST.test(h)) out.push(u.replace(/[.,]$/, ''));
+    } catch (e) { /* 주소 모양이 아니면 건너뛴다 */ }
+    return u;
+  });
+  return out;
+}
+
+async function missingOurFiles(urls) {
+  const seen = {}, miss = [];
+  for (const u of urls) {
+    if (seen[u]) continue;
+    seen[u] = 1;
+    try {
+      const r = await fetch(u, { method: 'HEAD', cache: 'no-store' });
+      if (r.status === 404) miss.push(u);
+    } catch (e) { /* 못 두드렸다 = 없다는 뜻이 아니다 */ }
+  }
+  return miss;
+}
+
 async function saveTask() {
   const title = document.getElementById('fTitle').value.trim();
   const category = document.getElementById('fCategory').value;
@@ -3216,6 +3337,15 @@ async function saveTask() {
   // 시트 셀 글자수 한계(5만자) 보호 — 초과분은 저장 자체를 막아 데이터 절단 사고 방지 (2026-07-15)
   if (composedContent.length > 45000) {
     alert('내용이 너무 깁니다 (' + composedContent.length.toLocaleString() + '자 / 한도 45,000자).\n\n이미지 수를 줄이거나 본문을 나눠 주세요. 저장이 취소되었습니다.');
+    return;
+  }
+
+  // 우리 서버 주소 첨부·링크는 저장 전에 있는지 본다(GM 지시 2026-09-17 — 카드 첨부 404).
+  const _miss = await missingOurFiles(
+    _ourUrlsIn(document.getElementById('fLink').value).concat(_ourUrlsIn(composedContent)));
+  if (_miss.length) {
+    alert('파일 없음 — 아래 주소가 서버에 없습니다(404). 주소를 고치거나 파일을 올린 뒤 저장해 주세요.\n\n'
+      + _miss.join('\n'));
     return;
   }
 
