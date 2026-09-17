@@ -232,7 +232,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 39
+          "waited": 42
         }
       ],
       "repeats": []
@@ -374,18 +374,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:37",
-          "area": "GM요청",
-          "event": "부서장 방 09:30 매출보고 누락 — 원인·재발송·잠금",
-          "detail": "원인=내 카톡 UI 시험(09:30:46 ★부서장 창 닫기)이 발신과 겹쳐 COM 오류 · 09:35 재발송 ok · 실행 잠금 배포 · lessons 한 줄"
-        },
-        {
-          "time": "09:37",
-          "area": "작업",
-          "event": "fix(gm-plan): monthly_ops_plan 08:00 낡은 사본 되쓰기 주체 gm_task_autocheck.py 에 HEAD 대조 가드 (09-16 monthly_ops_sync 와 같은 본질 2회째)",
-          "detail": "커밋 856dc839c9 · 배 12680"
-        },
         {
           "time": "09:38",
           "area": "자가점검",
@@ -553,6 +541,18 @@
           "area": "배",
           "event": "관리자 콘솔 화면 탭 부서 7열(○/—) 읽기 전용 표시 배포·라이브 실측",
           "detail": "d0449eb244 · deploy_auth 11:39 · 라이브 렌더 콘솔 오류 0"
+        },
+        {
+          "time": "11:47",
+          "area": "작업",
+          "event": "docs(auth): 매트릭스 브리프 §2·§6 — 제안판이 정본에 합쳐진 사실과 '저장소 판 != 실무진 화면' 을 적음 (배 1026)",
+          "detail": "커밋 76e5453ab5 · 배 12715"
+        },
+        {
+          "time": "11:48",
+          "area": "작업",
+          "event": "fix(gm-plan): monthly_ops_plan 되쓰기 7곳을 queue_lock.mutate_json 관문으로 통일 — 낡은 판 되쓰기 근본 차단",
+          "detail": "커밋 1a39073c55 · 배 12715"
         }
       ],
       "count": 11,
@@ -788,13 +788,13 @@
           "ref": "GM-20260917-3020",
           "no": "20",
           "got": "여 사우나 통로 턴게이트 가운데로 배치해달라고 계속 이야기하고 있는데...?",
-          "did": "",
+          "did": "여사우나 봉 안 — 가운데 배치 가이드(좌우 24.5cm 동일)로 재생성 · 2후보 중 가이드선 없는 판 채택 · 4크레딧",
           "start": "11:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:47",
+          "minutes": 2,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -824,28 +824,13 @@
         }
       ],
       "count": 19,
-      "done": 18,
-      "open": 1,
+      "done": 19,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-3020",
-          "no": "20",
-          "got": "여 사우나 통로 턴게이트 가운데로 배치해달라고 계속 이야기하고 있는데...?",
-          "did": "",
-          "start": "11:44",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
@@ -1148,6 +1133,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-5011",
+          "no": "11",
+          "got": "요약은 남기는게 좋은것 같아, 컴팩트를 작업없을때 자동으로 하는건 좀 그렇지? 70%넘으면",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "11:47",
+          "end": "11:47",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -1170,8 +1167,8 @@
           "detail": "커밋 27a2bc6afc · 배 12716"
         }
       ],
-      "count": 10,
-      "done": 10,
+      "count": 11,
+      "done": 11,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 3,
@@ -1206,6 +1203,18 @@
           "upload": "✅ 배포 (0e9701df3)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-9003",
+          "no": "03",
+          "got": "그래 차라리 저렇게 파트너사 셋업을 빠르게 정리하는게 좋고, 다음에는 페이지로 만들어서 초안 작업 시 제공해달라고하는게 훨씬 좋을듯 이것도 AX랩스 파트너사 연동 관련 가이드라인으로 만들어서 박제 시켜줘",
+          "did": "",
+          "start": "11:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1246,14 +1255,29 @@
           "detail": "커밋 f9ee09e246 · 배 11386"
         }
       ],
-      "count": 2,
+      "count": 3,
       "done": 2,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 8,
       "work_count": 6,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-9003",
+          "no": "03",
+          "got": "그래 차라리 저렇게 파트너사 셋업을 빠르게 정리하는게 좋고, 다음에는 페이지로 만들어서 초안 작업 시 제공해달라고하는게 훨씬 좋을듯 이것도 AX랩스 파트너사 연동 관련 가이드라인으로 만들어서 박제 시켜줘",
+          "did": "",
+          "start": "11:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     }
   },
