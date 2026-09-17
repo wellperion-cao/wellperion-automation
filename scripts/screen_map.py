@@ -266,6 +266,50 @@ FIRST_P_RE = re.compile(r'<p[^>]*>(.*?)</p>', re.I | re.S)
 SCRIPT_RE = re.compile(r"<script\b[^>]*>.*?</script>", re.I | re.S)
 
 
+
+# ── 계정권한 (GM 지시 2026-09-17 「들어갈 수 있는 계정권한도 표 종류 옆에」) ──────────────────────
+# 판정 규칙은 서버 관문(server/erp_auth/app.py path_allowed · is_platform_path · allowed)과 같은 순서로 읽는다.
+# 값은 계산만 하고 서버 규칙 파일은 손대지 않는다 — 접두·프리셋은 그 파일들에서 읽는다.
+PLATFORM_PREFIX = "erp/admin/"
+PLATFORM_PATHS = ("자율현황.html", "cto/automation/카톡전송관리.html", "cto/aws_migration.html",
+                  "cto/env_status.html", "cto/AWS_ERP_운영가이드.html", "cbo/counsel_admin.html")
+PLATFORM_PATH_PREFIXES = ("cbo/model/", "cbo/dietcamp/", "cbo/gocheokgolf/")
+ADMIN_ONLY_PREFIXES = ("reports/", "회사문서/", "erp/admin/", "1. AI자료_아카이브/", "gm/", "coo/chairman/")
+
+
+def _load_access_tables():
+    """화면 경로 → 카드/문서 id · 부서 프리셋(부서 → id 목록)."""
+    path_to_id = {}
+    try:
+        m = json.loads((GUIDE / "erp" / "modules.json").read_text(encoding="utf-8"))
+        for x in (m.get("modules") or []) + (m.get("documents") or []):
+            p = str(x.get("path") or "").replace("../", "").lstrip("/")
+            if p:
+                path_to_id[p] = x.get("id")
+    except Exception:
+        pass
+    presets = {}
+    try:
+        dp = json.loads((ROOT / "server" / "erp_auth" / "dept_presets.json").read_text(encoding="utf-8"))
+        presets = {k: set(v) for k, v in dp.items() if isinstance(v, list)}
+    except Exception:
+        pass
+    return path_to_id, presets
+
+
+def classify_access(rel: str, path_to_id: dict, presets: dict) -> str:
+    """이 화면을 열 수 있는 계정 — 「회사 관리자만 / 관리자 / 관리자·부서… / 전 부서」."""
+    r = rel.lstrip("/")
+    if r.startswith(PLATFORM_PREFIX) or r in PLATFORM_PATHS or r.startswith(PLATFORM_PATH_PREFIXES):
+        return "회사 관리자(cao)만"
+    sid = path_to_id.get(r)
+    depts = [d for d, ids in presets.items() if sid and sid in ids]
+    if depts:
+        return "전 부서" if len(depts) >= len(presets) else "관리자 · " + " · ".join(depts)
+    if r.startswith(ADMIN_ONLY_PREFIXES):
+        return "관리자"
+    return "관리자(카드 없음)"
+
 def extract_essence(text: str, title: str) -> str:
     """본질·핵심 한 줄 — <meta description> -> h1 다음 첫 문단(.sub/.lead/p) -> title 순. 60자 자름.
     <script> 안 문자열이 '<p>' 처럼 보여 오검출되는 것을 막으려 스크립트 블록은 먼저 걷어낸다."""
@@ -463,6 +507,7 @@ def build(carried_deleted: list) -> dict:
     modules = load_modules()
 
     entries = []
+    _ACCESS = _load_access_tables()
     for i, p in enumerate(files, 1):
         rel = p.relative_to(GUIDE).as_posix()
         text = contents[rel]
@@ -524,6 +569,7 @@ def build(carried_deleted: list) -> dict:
             "kind": classify_kind(rel, title),
             "external": is_external_embed(rel),
             "essence": extract_essence(text, title),
+            "access": classify_access(rel, _ACCESS[0], _ACCESS[1]),
         }
         if redirect_to:
             entry["redirect_to"] = redirect_to
