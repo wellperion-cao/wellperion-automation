@@ -98,8 +98,7 @@ async def heartbeat(request: Request):
     except Exception:
         raise HTTPException(400, "json body")
     with _LOCK:
-        if not _STATE:
-            _load()
+        _load()                                  # 파일이 정본 — uvicorn 워커 2개(프로세스별 메모리)라 매번 읽는다
         try:
             merge(_STATE, body, _now_iso())
         except ValueError:
@@ -108,11 +107,57 @@ async def heartbeat(request: Request):
     return {"ok": True, "seen_at": _STATE[str(body["role"]).strip().lower()]["seen_at"]}
 
 
+EVENTS_MAX = 30
+
+
+def add_events(state: dict, body: dict, seen_at: str) -> dict:
+    """활동(지시·응답) 붙이기 — 순수 함수. events 는 [{ts,kind,text}] · 역할당 최근 EVENTS_MAX 만 · busy_at 은 마지막 도구 시각."""
+    role = str(body.get("role") or "").strip().lower()
+    if role not in ROLES:
+        raise ValueError("role")
+    cur = dict(state.get(role) or {})
+    ev = list(cur.get("events") or [])
+    for e in body.get("events") or []:
+        if isinstance(e, dict) and e.get("text"):
+            ev.append({"ts": str(e.get("ts") or "")[:32], "kind": str(e.get("kind") or "")[:8], "text": str(e["text"])[:160]})
+    cur["events"] = ev[-EVENTS_MAX:]
+    if body.get("busy_at"):
+        cur["busy_at"] = str(body["busy_at"])[:32]
+    cur["event_seen_at"] = seen_at
+    state[role] = cur
+    return state
+
+
+@router.post("/api/console/event")
+async def event(request: Request):
+    """활동 푸시(scripts/console_activity_push.py · 3초) — 열쇠 헤더 · 로그인 없음(console.nginx.conf)."""
+    if not _check_key(request):
+        raise HTTPException(401)
+    try:
+        body = await request.json()
+        if not isinstance(body, dict):
+            raise ValueError
+    except Exception:
+        raise HTTPException(400, "json body")
+    items = body.get("batch") if isinstance(body.get("batch"), list) else [body]
+    with _LOCK:
+        _load()                                  # 파일이 정본 — uvicorn 워커 2개(프로세스별 메모리)라 매번 읽는다
+        n = 0
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            try:
+                add_events(_STATE, it, _now_iso()); n += 1
+            except ValueError:
+                continue
+        _save()
+    return {"ok": True, "n": n}
+
+
 @router.get("/api/console/state")
 def state():
     with _LOCK:
-        if not _STATE:
-            _load()
+        _load()                                  # 파일이 정본 — uvicorn 워커 2개(프로세스별 메모리)라 매번 읽는다
         snap = json.loads(json.dumps(_STATE))
     return JSONResponse(view(snap, datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))))
 
@@ -132,6 +177,8 @@ def _selfcheck() -> None:
     assert v["roles"]["cto"]["alive"] is True
     v = view(st, datetime.datetime(2026, 9, 17, 18, 0, tzinfo=tz))
     assert v["roles"]["cto"]["alive"] is False, "90분 넘으면 죽은 것"
+    add_events(st, {"role": "cto", "events": [{"ts": "t1", "kind": "지시", "text": "a"}] * 40, "busy_at": "t9"}, "2026-09-17T15:30:00+09:00")
+    assert len(st["cto"]["events"]) == EVENTS_MAX and st["cto"]["busy_at"] == "t9" and st["cto"]["saves_today"] == 3, "활동은 최근 30건 · 다른 칸은 그대로"
     print("selfcheck ok")
 
 

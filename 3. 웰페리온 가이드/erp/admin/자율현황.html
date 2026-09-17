@@ -198,6 +198,18 @@
 .cb-card .ships div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cb-card .ft{display:flex;gap:12px;margin-top:7px;font-size:var(--fs-1);color:var(--dim);}
 .cb-card .ft b{color:var(--text);}
+.cb-card .acts{margin:6px 0 0;border-top:1px dashed var(--border);padding-top:5px;font-size:var(--fs-1);line-height:1.45;}
+.cb-card .acts div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-soft);}
+.cb-card .acts .t{color:var(--dim);margin-right:4px;}
+.cb-card.busy{border-left-color:var(--gold);}
+.cb-card .hd .busy-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:6px;box-shadow:0 0 0 0 rgba(126,95,32,.5);animation:cbpulse 1.4s infinite;}
+@keyframes cbpulse{0%{box-shadow:0 0 0 0 rgba(126,95,32,.45)}70%{box-shadow:0 0 0 7px rgba(126,95,32,0)}100%{box-shadow:0 0 0 0 rgba(126,95,32,0)}}
+.cb-feed{background:var(--paper);border:1px solid var(--border);border-radius:11px;padding:9px 13px;margin:0 0 12px;max-height:260px;overflow:auto;font-size:var(--fs-1);line-height:1.5;}
+.cb-feed div{display:flex;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cb-feed .t{color:var(--dim);flex:0 0 40px;}
+.cb-feed .who{font-weight:700;color:var(--text);flex:0 0 34px;}
+.cb-feed .k{flex:0 0 18px;}
+.cb-feed .x{color:var(--text-soft);overflow:hidden;text-overflow:ellipsis;}
 .cb-tbl{table-layout:fixed;min-width:0;}
 .cb-tbl td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cb-tbl td.w{white-space:normal;}
@@ -224,6 +236,8 @@
     <h2 class="sec" style="margin-top:0;">🎛 C레벨 관제판 <span id="cb-asof" style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">불러오는 중…</span></h2>
     <div class="cb-nums" id="cb-nums"></div>
     <div class="cb-cards" id="cb-cards"><div class="feed-status">불러오는 중…</div></div>
+    <h3 style="margin:8px 0 4px;font-size:var(--fs-2);">⚡ 지금 흐름 <span style="font-weight:400;color:var(--dim);">(창 6개의 지시·응답 · 3초 푸시 · 새것이 위)</span></h3>
+    <div class="cb-feed" id="cb-feed"><div class="feed-status">활동 신호 대기 중…</div></div>
     <h3 style="margin:8px 0 4px;font-size:var(--fs-2);">📨 GM 이 오늘 던진 것 <span id="cb-gm-sub" style="font-weight:400;color:var(--dim);"></span></h3>
     <div class="gtbl-wrap" id="cb-gm"></div>
   </div>
@@ -1335,7 +1349,13 @@
   // ── 🎛 C레벨 관제판 (배 12723) — kungjjak_today.json + _queueAll + calls.json. 30초 갱신.
   var CB_ORDER = ['ceo','cto','cmo','cpo','coo','cbo'];
   var CB_OPEN = { 'PENDING':1, 'IN_PROGRESS':1, 'ON_HOLD':1 };
-  function cbClock(iso){ return iso ? String(iso).slice(11,16) : '—'; }
+  var CB_KIND = { '지시':'💬', '응답':'💡', '도구':'🔧' };
+  function cbClock(iso){
+    if(!iso) return '—';
+    var s = String(iso);
+    if(/Z$|[+-]\d\d:\d\d$/.test(s)){ var d = new Date(s); if(!isNaN(d.getTime())) return d.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit', hour12:false}); }
+    return s.slice(11,16);
+  }
   function cbShips(role){
     return _queueAll.filter(function(q){ return q && q.clevel === role && CB_OPEN[q.status] && !q.trashed; });
   }
@@ -1344,7 +1364,7 @@
     var roles = (kj && kj.roles) ? kj.roles : {};
     var asof = document.getElementById('cb-asof');
     if(asof) asof.textContent = (kj && kj.board && kj.board.published_at)
-      ? ((kj.board.live ? '🟢 라이브 ' : '발행본 ') + cbClock(kj.board.published_at) + ' · 15초마다 다시 읽음') : '원천 없음';
+      ? ((kj.board.live ? '🟢 라이브 ' : '발행본 ') + cbClock(kj.board.published_at) + ' · 5초마다 다시 읽음') : '원천 없음';
     // 숫자 4
     var alive = 0, got = 0, done = 0, open = 0;
     CB_ORDER.forEach(function(r){
@@ -1375,13 +1395,34 @@
       else if(last) now = (last.result === 'warn' ? '⏳ ' : '✅ ') + esc(last.time) + ' <b>' + esc(last.event) + '</b>';
       else now = '오늘 기록 없음';
       var saves = (b.saves_today != null) ? b.saves_today : (b.saves || 0);
+      var busy = false;
+      try{ busy = b.busy_at ? (Date.now() - new Date(b.busy_at).getTime()) < 90000 : false; }catch(e){}
+      var acts = (b.events || []).slice(-3).reverse().map(function(ev){
+        return '<div><span class="t">' + esc(cbClock(ev.ts)) + '</span>' + (CB_KIND[ev.kind] || '') + ' ' + esc(ev.text) + '</div>';
+      }).join('');
       var sh = ships.slice(0,3).map(function(q){ return '<div title="' + esc(q.title) + '">' + esc(String(q.status||'').replace('IN_PROGRESS','🚢').replace('PENDING','⚓').replace('ON_HOLD','⚓')) + ' ' + esc(q.title) + '</div>'; }).join('')
              + (ships.length > 3 ? '<div>… 외 ' + (ships.length - 3) + '척</div>' : '') + (ships.length ? '' : '<div>열린 배 없음</div>');
       var mine = items.length, mineDone = items.filter(function(i){ return !i.open; }).length;
-      return '<div class="cb-card' + (b.alive ? ' on' : '') + '"><div class="hd">' + esc(nick) + '<span class="st">' + st + '</span></div>'
+      return '<div class="cb-card' + (b.alive ? ' on' : '') + (busy ? ' busy' : '') + '"><div class="hd">' + esc(nick) + (busy ? '<span class="busy-dot" title="지금 도구를 돌리는 중"></span>' : '') + '<span class="st">' + st + '</span></div>'
         + '<div class="now">' + now + '</div><div class="ships">' + sh + '</div>'
+        + (acts ? '<div class="acts">' + acts + '</div>' : '')
         + '<div class="ft"><span>열린 배 <b>' + ships.length + '</b></span><span>오늘 저장 <b>' + saves + '</b></span><span>GM 지시 <b>' + mine + '</b> / 완료 <b>' + mineDone + '</b></span></div></div>';
     }).join('');
+    // ⚡ 지금 흐름 — 6창 활동을 시각순으로 합쳐 최신 20줄
+    var feed = document.getElementById('cb-feed');
+    if(feed){
+      var all = [];
+      CB_ORDER.forEach(function(r){
+        var b = board[r] || {}; var nick = b.nick || (roles[r] && roles[r].nick) || r;
+        (b.events || []).forEach(function(ev){ all.push({ ts: ev.ts || '', nick: nick, kind: ev.kind, text: ev.text }); });
+      });
+      all.sort(function(a, b){ return String(b.ts).localeCompare(String(a.ts)); });
+      feed.innerHTML = all.length
+        ? all.slice(0, 20).map(function(ev){
+            return '<div><span class="t">' + esc(cbClock(ev.ts)) + '</span><span class="who">' + esc(ev.nick) + '</span><span class="k">' + (CB_KIND[ev.kind] || '') + '</span><span class="x">' + esc(ev.text) + '</span></div>';
+          }).join('')
+        : '<div class="feed-status">활동 신호 대기 중…</div>';
+    }
     // GM 이 던진 것 — 오늘 전 역할 · 최신 접수가 위
     var rows = [];
     CB_ORDER.forEach(function(r){ ((roles[r] && roles[r].items) || []).forEach(function(i){ rows.push({ r:r, nick:(roles[r].nick||r), i:i }); }); });
@@ -1420,7 +1461,7 @@
       }
     });
   }
-  setInterval(reloadControlBoard, 15000);
+  setInterval(reloadControlBoard, 5000);
 
   // ── 🟢 CLI 라이브 — 127.0.0.1:8787/live(scripts/live_cli_status_server.py) 3초 폴링.
   //   서버가 없으면(다른 PC·미기동) fetch 가 실패하고 섹션을 숨긴다 — 깨진 화면 금지.

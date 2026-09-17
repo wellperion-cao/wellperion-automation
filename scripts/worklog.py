@@ -121,6 +121,18 @@ def record_gm_prompt_hook(with_recall: bool = False) -> None:
         data = json.loads(sys.stdin.read())
         prompt = str(data.get("prompt") or "").strip()
         role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
+        # 세션 id ↔ 역할 지도(배 12723 3차 · 2026-09-17): 관제판 활동 푸시(scripts/console_activity_push.py)가
+        # 어느 대화 기록(jsonl)이 어느 창인지 이걸로 안다. 프롬프트마다 덮어써도 값은 같다 — 실패해도 조용히.
+        try:
+            sid = str(data.get("session_id") or "").strip()
+            if role and sid and re.fullmatch(r"[0-9a-f-]{20,}", sid):
+                _p = ROOT / "status" / "sessions" / f".sid_{role}"
+                if not _p.exists() or _p.read_text(encoding="utf-8").strip() != sid:
+                    _tmp = _p.with_suffix(".tmp")
+                    _tmp.write_text(sid, encoding="utf-8")
+                    os.replace(_tmp, _p)
+        except Exception:
+            pass
         # ★역할을 못 읽으면 조용히 건너뛰지 않는다(시포 배490 · 2026-08-08 실사고).
         #   그날 시포는 GM 지시 17건을 받아 16건을 끝냈는데 쿵짝표가 "오늘 받은 지시 없음"을 냈다.
         #   훅은 돌았고 리마인더도 나갔지만 role 이 비어 접수만 건너뛴 탓이었다 — 아무 흔적이

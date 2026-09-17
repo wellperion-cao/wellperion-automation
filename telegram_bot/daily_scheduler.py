@@ -150,6 +150,11 @@ try:  # 자율현황 라이브 섹션용 로컬 읽기전용 서버(best-effort)
 except Exception:
     def start_live_cli_status_server(logger=None):
         return None
+try:  # 관제판 활동 푸시(창 6개 대화 기록 → 서버 /api/console/event · 3초 · 배 12723 3차 2026-09-17) — 같은 best-effort
+    from console_activity_push import start_pusher as start_console_activity_push
+except Exception:
+    def start_console_activity_push(logger=None):
+        return None
 
 # 배 분류 공유 모듈 (scripts/ship_classify.py)
 try:
@@ -4938,6 +4943,7 @@ def main():
         logger.warning(f"git 잠금 청소 주기 등록 실패(기동은 계속): {_exc}")
 
     start_live_cli_status_server(logger)
+    start_console_activity_push(logger)
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
