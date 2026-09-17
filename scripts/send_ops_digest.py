@@ -542,10 +542,13 @@ def gm_work_items_by_person(today: "date | None" = None, rows: "list | None" = N
             members = routed.setdefault(line, [])
             if line != one and one not in members:
                 members.append(one)
+        migrated = "에서 이관" in str(r.get("내용") or "")   # 9/17 이관 행 — 옛 날짜를 그대로 달고 왔다
+        overdue = bool(due) and due < today.isoformat()
         for line, members in routed.items():
             mark = f" (담당 {' · '.join(members)})" if members else ""
             out.setdefault(line, []).append({"ask": f"[업무] {name}{tail}{mark}",
-                                             "date": due or "9999-99-99"})
+                                             "date": due or "9999-99-99",
+                                             "overdue": overdue, "migrated": migrated})
     return out
 
 
@@ -560,14 +563,25 @@ def build_gm_work_section(by_person: dict, skip: "set | None" = None) -> str:
         if who in skip:
             continue
         items = sorted(by_person[who], key=lambda x: x.get("date") or "9999-99-99")
-        shown = items[:GM_WORK_SHOW_N]
+        # ★2026-09-17 — 기한이 지난 건은 줄로 싣지 않는다. 9/17 이관 행이 옛 날짜를 그대로 달고 와
+        # 「지남」이 통을 덮었다(실측 실장 58건 중 상단 7줄이 6~8월 기한). 대신 한 줄로 알리고
+        # 날짜 정리는 그 사람이 업무 SSOT 에서 한다 — AI 는 남의 행 날짜를 고치지 않는다(08-18 규칙).
+        live = [it for it in items if not it.get("overdue")]
+        over = [it for it in items if it.get("overdue")]
+        shown = live[:GM_WORK_SHOW_N]
         lines = [f"▪ {who}"] + [f"   {it['ask']}" for it in shown]
-        if len(items) > len(shown):
-            lines.append(f"   그 밖 {len(items) - len(shown)}건 — 업무 SSOT 화면에서 보시면 됩니다")
+        if len(live) > len(shown):
+            lines.append(f"   그 밖 {len(live) - len(shown)}건 — 업무 SSOT 화면에서 보시면 됩니다")
+        if over:
+            lines.append(f"   기한 지난 행 {len(over)}건 — 업무 SSOT 에서 날짜를 오늘 기준으로 잡아 주세요"
+                         + (" (카드에서 옮겨오며 옛 날짜 그대로 온 건 포함)" if any(i.get("migrated") for i in over) else ""))
+        if len(lines) == 1:
+            continue
         blocks.append(lines)
     if not blocks:
         return ""
-    head = f"🧭 업무 — 담당 몫 {sum(len(v) for k, v in by_person.items() if k not in skip)}건"
+    head = f"🧭 업무 — 담당 몫 "
+    head += f"{sum(1 for k, v in by_person.items() if k not in skip for it in v if not it.get('overdue'))}건"
     tail = "👉 진행 상황은 건마다 한 줄(했다 / 진행중 / 언제)로 답해 주시면 됩니다."
     return "\n".join([head] + [l for b in blocks for l in b] + [tail])
 
@@ -611,6 +625,11 @@ def _selfcheck_gm_work_section() -> None:
     assert list(by) == ["이경연 실장"], by            # 팀원 건은 라인장(실장) 묶음으로 · GM·완료·빈칸은 빠진다
     assert "(담당 최준용M)" in by["이경연 실장"][0]["ask"], by
     assert "[업무]" in by["이경연 실장"][0]["ask"], by
+    over = {"이정헌 소장": [{"ask": "[업무] 옛 건 — 6/8 지남", "date": "2026-06-08", "overdue": True, "migrated": True},
+                           {"ask": "[업무] 오늘 건 — 9/30", "date": "2026-09-30"}]}
+    body_over = build_gm_work_section(over)
+    assert "옛 건" not in body_over and "기한 지난 행 1건" in body_over, body_over
+    assert body_over.splitlines()[0].endswith("1건"), body_over   # 머리 숫자 = 살아 있는 기한만
     sample = {"이경연 실장": [{"ask": "[업무] 가 — 9/30 (D-1)", "date": "2026-09-30"}],
               "나우열M": [{"ask": "[업무] 나 — 9/30 (D-1)", "date": "2026-09-30"}]}
     body = build_gm_work_section(sample, skip={"나우열M"})
