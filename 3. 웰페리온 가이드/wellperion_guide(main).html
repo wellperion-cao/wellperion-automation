@@ -7257,13 +7257,20 @@ function crTab(btn, panelId) {
       //   스냅샷 경로는 생성 3분 주기 + 한 번 도는 데 2.5분 + 서버 받기 1분이라 실제로는 6~12분 늦었고,
       //   구글 조회가 실패한 주기에는 직전 값을 그대로 이어 실었다(9/17 하루 22회). 서버 원장은 시트 동기화 5분 주기이고
       //   ERP 화면에서 넣은 문의는 쓰는 순간 거울에 박히므로 곧바로 보인다.
-      function liveInquiries(){
-        return getJson('/api/inquiries?limit=1000&since=' + year + '-01-01').then(function(d){
+      // 한 번에 1,000줄이 한도라 올해 문의(9/17 기준 1,044건)가 잘린다 — 마지막 쪽이 1,000줄보다 적을 때까지 이어 받는다.
+      function livePage(since, offset, acc){
+        return getJson('/api/inquiries?limit=1000&offset=' + offset + '&since=' + since).then(function(d){
           if (!d || !d.rows) throw new Error('no rows');
+          acc = acc.concat(d.rows);
+          return (d.rows.length === 1000 && acc.length < d.total) ? livePage(since, offset + 1000, acc) : acc;
+        });
+      }
+      function liveInquiries(){
+        return livePage(year + '-01-01', 0, []).then(function(rows){
           var g = {'멤버십': {}, '성인강습': {}, '유소년강습': {}};
           Object.keys(g).forEach(function(t){
-            var rows = d.rows.filter(function(r){ return String(r._type || r.type || '') === t; });
-            count(rows, t === '멤버십' ? 'program' : 'sport', g[t], t !== '멤버십');
+            var only = rows.filter(function(r){ return String(r._type || r.type || '') === t; });
+            count(only, t === '멤버십' ? 'program' : 'sport', g[t], t !== '멤버십');
           });
           render([{name:'멤버십', c:g['멤버십']}, {name:'성인강습', c:g['성인강습']}, {name:'유소년강습', c:g['유소년강습']}], '서버 원장 · 지금');
         });
