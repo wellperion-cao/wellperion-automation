@@ -38,6 +38,22 @@ DUE_MARK_PLAIN = re.compile(r"기한\s*[:：]\s*(?:\d{4}-)?(\d{1,2})[-/](\d{1,2}
 CARD_DONE = {"완료", "취소"}
 SSOT_DONE = {"완료", "종결", "취소"}
 
+# 전사일정 노이즈 제거(GM 지시 2026-09-17 2차) — 반복 청소·점검·법정 점검이 GM 밀림을 덮었다.
+# cycle·repeat 가 있으면(매주/월 1회/1회 등 값 자체가 있으면) 반복·정기 취급 · 법정/점검 계열
+# 카테고리(schedule_ssot.json categories 정의 그대로 — 새 분류 안 만듦)는 통째로 뺀다.
+SCHEDULE_DENY_CATEGORIES = {"fire", "elec", "lift", "hyg", "water", "edu", "safe", "gas", "safety"}
+
+# 표식·태그 청소(GM 지시 2026-09-17 2차) — 업무 SSOT 내용 칸에 위키형 HTML·"===PLAN===" 같은
+# 구조 표식이 그대로 박혀 있어 걷어낸다. 정본 텍스트(SSOT·카드)는 안 바꾼다 — 화면에 보여줄 때만.
+_TAG_RE = re.compile(r"<[^>]+>")
+_MARKER_RE = re.compile(r"={2,}[^=\n]{0,40}={2,}")
+
+
+def clean_text(s) -> str:
+    s = _TAG_RE.sub(" ", str(s or ""))
+    s = _MARKER_RE.sub(" ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
 
 def _kst_today() -> date:
     return datetime.now(timezone(timedelta(hours=9))).date()
@@ -76,7 +92,7 @@ def collect_cards(today: date):
             for o in month.get("objectives") or []:
                 if o.get("status") in CARD_DONE:
                     continue
-                title = str(o.get("title") or "").strip()
+                title = clean_text(o.get("title"))
                 if not title:
                     continue
                 next_step, due = "", None
@@ -84,11 +100,11 @@ def collect_cards(today: date):
                     t = ln.strip()
                     if not t.startswith("□"):
                         continue
-                    next_step = t[1:].strip()
+                    next_step = clean_text(t[1:])
                     due = _due_from_check_line(t, today)
                     break
                 if not next_step:
-                    next_step = str(o.get("target") or "").strip()[:80]
+                    next_step = clean_text(o.get("target"))[:80]
                 items.append({
                     "title": title, "owner": str(o.get("owner") or "").strip(),
                     "dept": str(o.get("dept") or "").strip(), "due": due,
@@ -135,13 +151,13 @@ def collect_ssot(today: date):
         for r in rows:
             if str(r.get("상태") or "") in SSOT_DONE:
                 continue
-            title = str(r.get("업무명") or "").strip()
+            title = clean_text(r.get("업무명"))
             if not title:
                 continue
             items.append({
                 "title": title, "owner": str(r.get("담당자") or "").strip(),
                 "dept": "", "due": (str(r.get("종료일") or "")[:10] or None),
-                "next": str(r.get("내용") or "").strip()[:80],
+                "next": clean_text(r.get("내용"))[:80],
                 "hold": str(r.get("상태") or "") == "보류",
                 "src": "ssot", "ref": str(r.get("id") or ""),
             })
@@ -151,7 +167,9 @@ def collect_ssot(today: date):
 
 
 def collect_schedule(today: date):
-    """전사일정 = schedule_ssot items 중 next_due 오늘±14일 · 해당없음 제외."""
+    """전사일정 = schedule_ssot items 중 next_due 오늘±14일 · 해당없음 제외 ·
+    반복 청소·점검·법정 점검 제외(cycle·repeat 값이 있거나 법정/점검 계열 category 면 뺀다 —
+    GM 지시 2026-09-17 2차, 「D-73 수영장 화장실 청소」 등 반복 항목이 밀림을 덮었다)."""
     items, failed = [], False
     try:
         import schedule_ssot as sch
@@ -159,16 +177,20 @@ def collect_schedule(today: date):
         for it in cal.get("items") or []:
             if it.get("applies") == "해당없음":
                 continue
+            if it.get("cycle") or it.get("repeat"):
+                continue
+            if it.get("category") in SCHEDULE_DENY_CATEGORIES:
+                continue
             due = sch._parse_due(it.get("next_due"))
             if due is None or abs((due - today).days) > 14:
                 continue
-            title = str(it.get("name") or "").strip()
+            title = clean_text(it.get("name"))
             if not title:
                 continue
             items.append({
                 "title": title, "owner": str(it.get("assignee") or "").strip(),
                 "dept": str(it.get("dept") or "").strip(), "due": due.isoformat(),
-                "next": str(it.get("note") or "").strip(), "hold": False,
+                "next": clean_text(it.get("note")), "hold": False,
                 "src": "schedule", "ref": str(it.get("id") or ""),
             })
     except Exception:
