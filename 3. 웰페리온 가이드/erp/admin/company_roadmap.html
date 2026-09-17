@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>AX 랩스 전략 로드맵 v0.6</title>
+<title>AX 랩스 전략 로드맵 v0.7</title>
 <link rel="stylesheet" href="../../assets/wp-ui.css">
 <link rel="stylesheet" href="platform_brand.css">
 <style>
@@ -13,7 +13,7 @@ h1{font-family:var(--pf-head);font-size:24px;margin:0 0 6px}h2{font-family:var(-
 .back{display:none;margin-bottom:10px;font-size:13px;color:var(--pf-pri-dk);text-decoration:none;font-weight:600}
 table{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0;font-size:14px}
 @media(max-width:640px){table.tbl{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;table-layout:auto}table.tbl th,table.tbl td{min-width:140px}}
-.st{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;background:var(--pf-tint);color:var(--pf-pri-dk)}.st.done{background:#e6f4ea;color:#1e6b3a}.st.wait{background:#f1f1f1;color:#555}
+.st{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:700;background:var(--pf-tint);color:var(--pf-pri-dk)}.st.done{background:#e6f4ea;color:#1e6b3a}.st.wait{background:#f1f1f1;color:#555}.st.run{background:#e8f0fb;color:#1f4e9c}
 th,td{border:1px solid var(--pf-line);padding:8px 10px;text-align:left;vertical-align:top}
 th{background:var(--pf-tint)}
 .tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:var(--pf-tint);color:var(--pf-pri-dk)}
@@ -192,6 +192,17 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 <tr><td>12월</td><td>셋업 1주 안(질문은행 → 문서 자동 초안) · 2호 유료 제안</td><td>셋업 일수 · 유료 2</td></tr>
 </table>
 
+</details>
+<details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">8-1. 비즈니스 확대 5모델 — 순서 고정 (GM 09-17 · 옛 업무 SSOT #004 를 여기로)</summary>
+<p class="note">GM 09-17 「비즈니스 확대 방향은 전략 로드맵에 들어가야 하는 내용 — 업무 SSOT 에선 벗어나야」. 근거 = <a href="../../reports/260903_비즈니스확대_5모델검토_A3.html" target="_blank">5모델 검토 A3(09-03)</a>. 순서는 고정이고, 돈이 나가는 시점마다 GM 결재(9번 표)로 올린다. 현장 2건(2호점·위탁)은 숫자가 잡히기 전엔 착수하지 않는다.</p>
+<table><colgroup><col style="width:6%"><col style="width:16%"><col style="width:40%"><col style="width:24%"><col></colgroup>
+<tr><th>순서</th><th>모델</th><th>지금 걸음</th><th>재는 숫자 · 기한</th><th>상태</th></tr>
+<tr><td>1</td><td>모듈(상담·마케팅·보고 자동화)</td><td>다캠·고척 파일럿 → 4주 Before &amp; After → 유료 전환 제안(부록 C · 금액은 결정 2)</td><td>유료 파일럿 1곳</td><td><span class="st run">진행</span> 파일럿 2곳 · 유료 0</td></tr>
+<tr><td>2</td><td>ERP 판매(멀티테넌트)</td><td>AWS 3환경 + 보안 수리 뒤 판매 단위 = 핵심 3모듈(회원·문의·점검) → 다캠을 2호 테넌트로</td><td>유료 테넌트 1</td><td><span class="st run">진행</span> 이관 뒷정리 관문 9/19·10/1</td></tr>
+<tr><td>3</td><td>퍼포먼스 마케팅</td><td>독립 사업이 아니다 — 1번 모듈의 「마케팅 자동화」 한 행으로 판다(온라인 전환 19% 라 따로 팔 실적이 아직 없다)</td><td>고객 월 문의 건수</td><td><span class="st wait">1번에 얹음</span></td></tr>
+<tr><td>4</td><td>2호점(직영)</td><td>숫자 3개(대기자 수 · 평균 대기 기간 · 상권)가 잡히면 별도 A3 로 재상정 — 그 전엔 회원 원장에서 대기자만 센다</td><td>대기자 두 자릿수 · 대기 3개월↑ → 재상정</td><td><span class="st wait">숫자 대기</span> 대기 5명(8월)</td></tr>
+<tr><td>5</td><td>위탁 운영(수탁)</td><td>모집 광고 없음 — GM 인맥에서 수탁 수요가 나오면 그때 별도 A3(사람이 먼저 막힌다 · 실장 라인 5명 과부하)</td><td>수탁 수요 1건 · 12/31</td><td><span class="st wait">수요 대기</span> 0건</td></tr>
+</table>
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">9. GM 결정 (번호로 답)</summary>
 <div class="gm">
