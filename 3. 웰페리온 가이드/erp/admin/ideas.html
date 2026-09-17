@@ -35,7 +35,8 @@ form button:disabled{opacity:.5;cursor:default}
 <div id="weeks"></div>
 <script>
 (function(){
-  var GAS_URL='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  /* 원천 = 서버(2026-09-17 · 배 11299 · 구글 Apps Script read_file/commit_file 폐지). 읽기 = 서버 대기열의 최신 판(/api/guide/latest)
+     이 있으면 그것, 없으면 저장소 판(/repo/…). 쓰기 = /api/guide/commit 대기열 → GM PC 적용기가 10분 주기로 저장소에 커밋. */
   var JPATH='status/gm_personal_routine.json', RAW='/repo/status/gm_personal_routine.json', DATA=null;
   var sub=document.getElementById('sub'), weeks=document.getElementById('weeks'), msg=document.getElementById('msg'), txt=document.getElementById('txt'), btn=document.getElementById('btn');
   function esc(t){return String(t||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -45,7 +46,7 @@ form button:disabled{opacity:.5;cursor:default}
     var end=new Date(mon);end.setDate(end.getDate()+6);var range=ymd(mon).slice(5).replace('-','.')+'~'+ymd(end).slice(5).replace('-','.');
     return (diff===0?'이번 주':diff===1?'지난 주':diff+'주 전')+' · '+range;}
   function read(){
-    return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'read_file',path:JPATH})})
+    return fetch('/api/guide/latest?path='+encodeURIComponent(JPATH),{credentials:'same-origin',cache:'no-store'})
       .then(function(r){return r.json();}).then(function(j){if(!j||!j.ok||!j.content) throw 0;return JSON.parse(j.content);})
       .catch(function(){return fetch(RAW+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();});});
   }
@@ -63,10 +64,10 @@ form button:disabled{opacity:.5;cursor:default}
   function write(mutate){
     btn.disabled=true; msg.textContent='저장 중…';
     return read().then(function(fresh){DATA=fresh;DATA.ideas=DATA.ideas||[];mutate(DATA.ideas);
-      return fetch(GAS_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify({action:'commit_file',path:JPATH,content:JSON.stringify(DATA,null,2),message:'[GM] 아이디어 기록 '+ymd(new Date()),key:''})});
-    }).then(function(r){return r.json();}).then(function(j){if(!j||!j.ok) throw 0;msg.textContent='저장됐습니다 '+new Date().toTimeString().slice(0,5);render();})
-      .catch(function(){msg.textContent='저장 실패 — 다시 시도해 주세요(연결 또는 저장소 응답 없음)';}).then(function(){btn.disabled=false;});
+      return fetch('/api/guide/commit',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json;charset=utf-8'},
+        body:JSON.stringify({path:JPATH,content:JSON.stringify(DATA,null,2),message:'아이디어 기록 '+ymd(new Date())})});
+    }).then(function(r){if(r.status===403) throw 403;return r.json();}).then(function(j){if(!j||!j.ok) throw 0;msg.textContent='저장됐습니다 '+new Date().toTimeString().slice(0,5)+' (저장소 반영은 10분 안)';render();})
+      .catch(function(e){msg.textContent=(e===403?'저장 권한 없음 — 관리자 계정으로 로그인해 주세요':'저장 실패 — 다시 시도해 주세요(서버 응답 없음)');}).then(function(){btn.disabled=false;});
   }
   document.getElementById('f').addEventListener('submit',function(e){e.preventDefault();var v=txt.value.trim();if(!v)return;
     write(function(a){a.push({t:ymd(new Date()),text:v,done:false});}).then(function(){txt.value='';});});

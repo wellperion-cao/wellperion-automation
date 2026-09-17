@@ -29,6 +29,7 @@ APPLIED_URL = "https://erp.wellperion.com/api/guide/applied"
 # 서버 api_guide.py 의 ALLOWED_PATHS 와 같은 값(늘리면 양쪽 다 고친다).
 ALLOWED_PATHS = frozenset([
     "3. 웰페리온 가이드/coo/bootsetup_matrix.json",
+    "status/gm_personal_routine.json",   # 아이디어 화면(erp/admin/ideas.html · 2026-09-17 서버 원천 전환)
 ])
 
 

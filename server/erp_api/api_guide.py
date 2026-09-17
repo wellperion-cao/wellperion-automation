@@ -32,9 +32,10 @@ PENDING_DIR = os.path.join(STORE_DIR, "pending")
 APPLIED_DIR = os.path.join(STORE_DIR, "applied")
 MAX_BODY = 2 * 1024 * 1024
 
-# 저장 허용 경로 — 하나뿐(2026-09-14). 화면이 늘면 여기만 넓힌다.
+# 저장 허용 경로 — 화면이 늘면 여기만 넓힌다(GM PC 적용기 scripts/guide_edits_apply.py 의 목록과 같은 값).
 ALLOWED_PATHS = frozenset([
     "3. 웰페리온 가이드/coo/bootsetup_matrix.json",
+    "status/gm_personal_routine.json",   # 아이디어 화면(erp/admin/ideas.html) — 구글 commit_file 에서 서버로(2026-09-17 · 배 11299)
 ])
 
 ID_RE = re.compile(r"^[0-9]{8}T[0-9]{6}$")
@@ -88,6 +89,29 @@ async def commit(request: Request):
     with open(fname, "w", encoding="utf-8") as f:
         json.dump(record, f, ensure_ascii=False, indent=2)
     return {"ok": True, "queued": True, "id": edit_id}
+
+
+@router.get("/latest")
+def latest(request: Request, path: str = ""):
+    """그 경로의 아직 안 적용된 최신 대기 내용 — 화면이 10분 적용 주기 사이에 다시 읽어도 방금 저장한 판을 본다
+    (없으면 content=null → 화면은 저장소 판 /repo/… 을 읽는다). 관리자 로그인만."""
+    if not _is_admin(request):
+        raise HTTPException(403, "관리자만")
+    if path not in ALLOWED_PATHS:
+        raise HTTPException(400, "허용되지 않은 경로: %s" % path)
+    newest = None
+    if os.path.isdir(PENDING_DIR):
+        for name in sorted(os.listdir(PENDING_DIR)):
+            if not name.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(PENDING_DIR, name), encoding="utf-8") as f:
+                    rec = json.load(f)
+            except Exception:
+                continue
+            if rec.get("path") == path:
+                newest = rec
+    return {"ok": True, "path": path, "content": newest and newest.get("content"), "id": newest and newest.get("id")}
 
 
 @router.get("/pending")
@@ -165,6 +189,16 @@ def selftest():
     assert res["ok"] and res["queued"] and res["id"]
     fname = os.path.join(PENDING_DIR, res["id"] + ".json")
     assert os.path.exists(fname)
+    # 최신 대기 조회 — 방금 쌓은 것이 돌아오고, 다른 경로엔 null
+    p0 = list(ALLOWED_PATHS)[0]
+    got = latest(_Req({"x-erp-user": "cao@wellperion.com"}), path=p0)
+    assert got["ok"] and got["id"] == res["id"] and json.loads(got["content"]) == {"a": 1}, "latest"
+    other = [p for p in ALLOWED_PATHS if p != p0][0]
+    assert latest(_Req({"x-erp-user": "cao@wellperion.com"}), path=other)["content"] is None, "latest-other"
+    try:
+        latest(_Req({"x-erp-user": "staff@wellperion.com"}), path=p0); assert False, "latest-admin"
+    except HTTPException as e:
+        assert e.status_code == 403
     os.remove(fname)
     print("selftest ok")
 
