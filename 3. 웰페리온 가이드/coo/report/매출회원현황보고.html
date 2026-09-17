@@ -2887,9 +2887,10 @@ function renderP2Contract(c, dayLabel){
    84% 까지 줄여도 넘치면 그대로 둔다(그 아래는 사람이 못 읽는다). */
 function fitPanel(id){
   var el = document.getElementById(id); if (!el) return;
-  el.style.fontSize = '';
-  var steps = ['96%', '92%', '88%', '84%'];
-  for (var i = 0; i < steps.length && el.scrollHeight > el.clientHeight + 2; i++) el.style.fontSize = steps[i];
+  el.style.zoom = '';
+  // 줄마다 글자 크기가 px 로 박혀 있어 부모 font-size 로는 안 줄어든다 — 칸 전체를 zoom 으로 줄인다.
+  var steps = [0.95, 0.9, 0.85, 0.8];
+  for (var i = 0; i < steps.length && el.scrollHeight > el.clientHeight + 2; i++) el.style.zoom = steps[i];
 }
 
 /* 기본 진입에서도 등록 내역이 뜨게 어제 일자탭을 따로 읽는다(GM 지시 2026-09-11).
