@@ -1168,6 +1168,14 @@ function _card(r){
     h += '</div>';
   }
 
+  /* 📱 회원께 문자 — 상태별 버튼 1개(접수=접수 즉시 · 처리중=처리 시작 · 완료=완료 통보). GM 지시 2026-09-17(버튼 1회 · 자동 아님).
+     문구는 서버 정본(/api/sms/send · 시토 배 2714) — 화면에 박지 않는다. origin_key=접수번호가 같은 건·같은 문구 중복 방지 열쇠. */
+  var _smsTpl = status === '접수' ? 'rcpt_received' : status === '처리중' ? 'rcpt_progress' : _closed ? 'rcpt_done' : '';
+  if(_smsTpl){
+    var _smsLabel = _smsTpl === 'rcpt_received' ? '📱 접수 문자' : _smsTpl === 'rcpt_progress' ? '📱 진행 문자' : '📱 완료 문자';
+    h += '<div class="lf-ctrl-row" style="margin-bottom:8px;"><button type="button" class="lf-btn" data-reg-sms="' + _esc(_smsTpl) + '" data-reg-sms-id="' + _esc(rawId) + '" data-reg-sms-phone="' + _esc(String(r.contact||'')) + '" data-reg-sms-name="' + _esc(String(r.name||'')) + '">' + _smsLabel + '</button></div>';
+  }
+
   /* 상태 */
   var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
   h += '<div class="field-row"><label>상태</label>';
@@ -1769,6 +1777,31 @@ function _wireBoard(){
     /* 📨 전달 완료 — 아래 상태 드롭다운과 완전히 같은 경로(_update → reg_update status:'완료').
        새 상태값·새 액션 없음. 처리자가 비어 있으면 완료 처리하지 않고 입력을 요구한다(GM 지시 2026-08-18) —
        채워져 있으면 처리자와 완료 상태를 한 번에 같이 저장한다(_update 공용 함수, payload에 handler 추가). */
+    /* 📱 문자 버튼 — 서버 응답 status 별 안내(sent/dry/hold/skip_duplicate/그 외 실패). 멤버십 휴회 버튼(holdSmsSend)과 같은 규칙. */
+    var smsBtn = e.target.closest('[data-reg-sms]');
+    if(smsBtn){
+      var _sPhone = String(smsBtn.dataset.regSmsPhone||'').replace(/[^0-9]/g,'');
+      var _sName = smsBtn.dataset.regSmsName || '';
+      var _sTpl = smsBtn.dataset.regSms;
+      var _sLabel = smsBtn.textContent.replace('📱','').trim();
+      if(!_sPhone){ toast('연락처가 없어 문자를 보낼 수 없습니다', true); return; }
+      if(!confirm(_sName + ' 회원님(' + _sPhone + ')께 ' + _sLabel + '를 보낼까요?')) return;
+      smsBtn.disabled = true;
+      fetch('/api/sms/send', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ template_id:_sTpl, rcpt:_sPhone, vars:{}, origin_key:String(smsBtn.dataset.regSmsId||_sPhone) }) })
+        .then(function(res){ return res.json().catch(function(){ return {ok:false, status:'fail'}; }); })
+        .then(function(d){
+          var st = (d && d.status) || 'fail';
+          if(st === 'skip_duplicate'){ toast('이미 보냄 — 이 건에 같은 문자가 오늘 이미 나갔습니다'); return; }
+          if(st === 'hold'){ toast('야간 보류 — 08시 이후 다시 눌러 주세요(실패 아님)'); return; }
+          if(st === 'dry'){ toast('문자 준비 확인(시험 모드 · 실제 발송 전)'); return; }
+          if(d && d.ok && st === 'sent'){ toast('문자 발송 완료'); return; }
+          toast('문자 발송 실패 — 다시 시도', true);
+        })
+        .catch(function(){ toast('문자 발송 실패 — 다시 시도', true); })
+        .then(function(){ smsBtn.disabled = false; });
+      return;
+    }
     var doneBtn = e.target.closest('[data-reg-done]');
     if(doneBtn){
       var did = doneBtn.dataset.regDone;
