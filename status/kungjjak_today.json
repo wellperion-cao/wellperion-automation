@@ -1845,12 +1845,6 @@
       ],
       "work": [
         {
-          "time": "13:24",
-          "area": "작업",
-          "event": "fix(chat): CLOSE_DAYS_PATH 서버 sparse-checkout 대응 — /srv/erp/repo 우선 (팀장 실측 2026-09-17)",
-          "detail": "커밋 1889ced0a2 · 배 12715"
-        },
-        {
           "time": "13:34",
           "area": "작업",
           "event": "feat(erp-home): 왼쪽 「업무」 묶음 = 모듈 배치의 모듈과 같은 칸·같은 차례(회원·문의·점검·콘텐츠·라커·분실물·업무·결재·인사·전사 일정·경영 보고·재무) — 업무영역 5칸 묶음 폐기 (GM 2026",
@@ -2023,6 +2017,12 @@
           "area": "작업",
           "event": "fix(ssot): 결재판을 주소 #approval 로 남겨 새로고침·즐겨찾기에도 결재판 유지 — 프레임 전환이라 주소가 안 바뀌어 업무판으로 돌아가던 것 [GM 지시 2026-09-17]",
           "detail": "커밋 2d97f6c7b0 · 배 12730"
+        },
+        {
+          "time": "18:41",
+          "area": "작업",
+          "event": "feat(guide): 아이디어 화면(erp/admin/ideas.html) 구글 Apps Script read_file/commit_file 폐지 → 서버 대기열(/api/guide/commit)·최신 대기 조회(",
+          "detail": "커밋 af96b3b9a7 · 배 12730"
         }
       ],
       "count": 62,
@@ -2557,12 +2557,6 @@
       ],
       "work": [
         {
-          "time": "12:59",
-          "area": "작업",
-          "event": "feat(design): 디자인 도구 상태 자동 갱신 — 부팅 자동 업데이트(impeccable·emil 스킬)+ui_standard_check --tools 가 status/ui_standard.json 도구 칸에",
-          "detail": "커밋 cb49c18180 · 배 12691"
-        },
-        {
           "time": "13:16",
           "area": "작업",
           "event": "fix(erp-home): 홈 3카드 높이 정렬 — 종합접수처 「이번달 접수 흐름」 칸 92→64px (GM 지시 2026-09-17 · 1920px 실측 249·247·276 → 249·247·248)",
@@ -2735,6 +2729,12 @@
           "area": "큐",
           "event": "배 12691 종결 — 피트니스 AX 채널 소개글·첫 글 3편",
           "detail": "2. 브랜드_자료/12_AX랩스/채널/ 4파일 · 549e011a5b"
+        },
+        {
+          "time": "18:42",
+          "area": "작업",
+          "event": "style(spec): 규격 링크·UX 2일차 — 자율현황·AI시리즈보드 (GM 화면 정돈 3·4번 2026-09-17)",
+          "detail": "커밋 ec992df058 · 배 12734"
         }
       ],
       "count": 43,
@@ -3031,7 +3031,7 @@
           "start": "18:37",
           "end": "18:38",
           "minutes": 0,
-          "upload": "✅ 배포 (b5fd5351f)",
+          "upload": "✅ 배포 (7ce63f2e6)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -3043,21 +3043,33 @@
           "start": "18:38",
           "end": "18:38",
           "minutes": 0,
-          "upload": "✅ 배포 (b5fd5351f)",
+          "upload": "✅ 배포 (7ce63f2e6)",
           "open": false,
           "evidence": "⚠️없음"
         },
         {
-          "ref": "GM-20260917-cpo-bodyfriend",
-          "no": "nd",
-          "got": "바디프렌드 라운지 9월 매출 집계 가능한지 · 채널 계정 AX랩스 정본→ERP 관리자 반영",
-          "did": "실측: 로그인 ID/PW + Google OTP(TOTP) · OTP 씨앗을 서버 계정칸에 두면 자동 로그인·집계 가능 · 정본 한 곳(AX랩스)+ERP 관리자 읽기만",
-          "start": "10:51",
-          "end": "10:52",
-          "minutes": 0,
-          "upload": "✅ 배포 (22f910aae)",
+          "ref": "GM-20260917-4040",
+          "no": "40",
+          "got": "1. 바디프렌드 연동",
+          "did": "자체 점검 줄을 머리 오른쪽으로 · 그 밖의 매출을 왼쪽 칸으로 · 바디프렌드는 매출 그대로 [GM 2026-09-17] · fix(report): 자체 점검 줄을 머리 오른쪽으로 · 그 밖의 매출 — 커밋 488343bf46 · 배 12523",
+          "start": "18:38",
+          "end": "18:42",
+          "minutes": 3,
+          "upload": "✅ 배포 (488343bf4)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-4041",
+          "no": "41",
+          "got": "자체점검은 AI 시포 옆칸으로 옮길까?",
+          "did": "",
+          "start": "18:42",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         },
         {
           "ref": "GM-20260917-cpo-counsel-qa",
@@ -3193,12 +3205,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:45",
-          "area": "멤버십",
-          "event": "fix(cpo): 멤버십 회원관리 직원 이름 칸에 숫자만(입장코드 「1202」) 들어간 값은 무효 — 새로고침 때 지우고 다음 저장 때 이름을 다시 묻는다 (9/17 기외호님 종료일 변경자 추적 불가 사례)",
-          "detail": "커밋 b54390bae0 · 배 12523"
-        },
         {
           "time": "10:54",
           "area": "멤버십",
@@ -3372,17 +3378,46 @@
           "area": "공통",
           "event": "feat(secrets): 파트너 계정 보관함에 바디프렌드 라운지 채널 추가 (GM 2026-09-17 「계정 서버에 입력하게 셋팅」)",
           "detail": "커밋 259bb88a10 · 배 12523"
+        },
+        {
+          "time": "18:41",
+          "area": "공통",
+          "event": "fix(report): 자체 점검 줄을 머리 오른쪽으로 · 그 밖의 매출을 왼쪽 칸으로 · 바디프렌드는 매출 그대로 [GM 2026-09-17]",
+          "detail": "커밋 488343bf46 · 배 12523"
         }
       ],
-      "count": 36,
+      "count": 37,
       "done": 36,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 8,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-4041",
+          "no": "41",
+          "got": "자체점검은 AI 시포 옆칸으로 옮길까?",
+          "did": "",
+          "start": "18:42",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": [
+        {
+          "count": 2,
+          "got": "지금 문자 연동 관련해서는 버튼을 ERP에 셋팅을 해줘야하고, 실무진들에게도 의견물어보고 반영해줄 수 있으면 반영해줘",
+          "nos": [
+            "05",
+            "40"
+          ]
+        },
         {
           "count": 2,
           "got": "그리고 환불 매출이 -418,000원인데, 어떻게 발생된지도 모르겠어 // erp 직원 페이지home에선 매출 및 회원 현황보고 그대로 되어있네? 그리고 이달 운영 계획 진척은 월간운영계획이였는데, 웰페리온 운영 현…",
@@ -4256,7 +4291,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T18:40:20",
+    "published_at": "2026-09-17T18:42:59",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -4278,13 +4313,13 @@
         "alive": true,
         "signal": "18:30",
         "last": {
-          "time": "18:30",
-          "area": "GM요청",
-          "event": "또 카카오톡 전달전에 예행하네?",
-          "result": "warn"
+          "time": "18:41",
+          "area": "작업",
+          "event": "feat(guide): 아이디어 화면(erp/admin/ideas.html) 구글 Apps Script read_file/commit_file 폐지 → 서버 대기열(/api/guide/commit)·최신 대기 조회(",
+          "result": "ok"
         },
-        "idle_since": "18:30",
-        "saves": 112
+        "idle_since": null,
+        "saves": 113
       },
       "cmo": {
         "nick": "시모",
@@ -4292,13 +4327,13 @@
         "alive": true,
         "signal": "18:30",
         "last": {
-          "time": "18:37",
-          "area": "큐",
-          "event": "배 12691 종결 — 피트니스 AX 채널 소개글·첫 글 3편",
+          "time": "18:42",
+          "area": "작업",
+          "event": "style(spec): 규격 링크·UX 2일차 — 자율현황·AI시리즈보드 (GM 화면 정돈 3·4번 2026-09-17)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 48
+        "saves": 49
       },
       "cpo": {
         "nick": "시포",
@@ -4306,9 +4341,9 @@
         "alive": true,
         "signal": "17:15",
         "last": {
-          "time": "18:38",
+          "time": "18:42",
           "area": "GM요청",
-          "event": "1. 바디프렌드 연동",
+          "event": "자체점검은 AI 시포 옆칸으로 옮길까?",
           "result": "warn"
         },
         "idle_since": null,
