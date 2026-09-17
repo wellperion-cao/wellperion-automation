@@ -642,7 +642,6 @@ API_MODULES = {
     "/api/brojay/": {"coo-report-매출회원현황보고"},
     "/api/visitors": {"coo-report-매출회원현황보고"},
     "/api/chat/": set(),            # 상담봇 관리 API(log·unanswered·faq·stats) = 관리자만(빈 집합 = 아무 카드도 안 연다)
-    "/api/faq-intake/": set(),
     "/api/track/": {"cmo-funnel-콘텐츠문의현황"},
 }
 

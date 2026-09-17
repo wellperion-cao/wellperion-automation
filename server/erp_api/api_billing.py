@@ -53,7 +53,7 @@ TOSS_BASE = "https://api.tosspayments.com"
 PLAN_AMOUNTS = {"start": 99000, "growth": 199000, "ops": 390000}
 SELLABLE = ("start", "growth")
 
-# 파트너(과금 대상) tenant — api_chat.py/api_faq_intake.py TENANTS 에서 웰페리온 자신(1_wellperion)을 뺀 값.
+# 파트너(과금 대상) tenant — api_chat.py TENANTS 에서 웰페리온 자신(1_wellperion)을 뺀 값. (api_faq_intake.py 는 2026-09-17 폐기 — FAQ 답받기는 tenants/{t}_qa.json + 설문으로 대체)
 # 모듈 독립(약속: 한 도메인 임포트 실패가 다른 도메인까지 죽이지 않는다)을 지키려 여기서 다시 적는다 —
 # 새 파트너가 생기면 저 두 파일과 함께 여기도 늘린다.
 PARTNER_TENANTS = ("2_dietcamp", "3_gocheokgolf")
