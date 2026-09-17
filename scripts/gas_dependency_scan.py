@@ -24,6 +24,8 @@ GUIDE = REPO / "3. 웰페리온 가이드"
 SCAN_ROOTS = ["cbo", "cfo", "chro", "cmo", "coo", "cpo", "cto", "erp"]
 EXCLUDE_DIR_NAMES = {"_archive", "launchers", "public"}
 NAWOOLM_LINES = {"cfo", "chro"}
+# 폴더 밖에 있어도 나우열M 라인인 화면(AI 는 안 고친다 · 09-14 GM) — 폴더만 보면 AI 소관으로 잘못 찍힌다(2026-09-17 실측).
+NAWOOLM_PATHS = {"coo/check/파트너팀_페이롤.html"}   # 강사 페이롤 · 정본 = 강사페이롤_DB 시트(cfo) + 바인딩 GAS 웹앱 · 나우열 09-17 작성
 
 RE_GAS = re.compile(r"script\.google\.com/macros")
 RE_API = re.compile(r"/api/")
@@ -32,7 +34,7 @@ RE_FLAG = re.compile(r"ERP_API_ON")
 
 def owner_line(rel_path: str) -> str:
     top = rel_path.split("/", 1)[0]
-    return "나우열M" if top in NAWOOLM_LINES else "AI"
+    return "나우열M" if (top in NAWOOLM_LINES or rel_path in NAWOOLM_PATHS) else "AI"
 
 
 def scan() -> dict:
