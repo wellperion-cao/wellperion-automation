@@ -783,7 +783,14 @@ var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3
    (leave.html 2026-09-14 isServerHost() hostname 분기와 동일 패턴).
    킬스위치: MIRROR_ON=false면 호출 0건·종전 동작과 완전 동일 — 되돌리기는 이 상수 하나.
    연속 실패(3회 이상) 시에만 화면 하단에 경고 배너 — 단발 실패는 콘솔 경고만 남기고 조용히 다음 호출로 넘어간다
-   (조용한 실패 금지 원칙은 "계속 실패인데 아무 표시도 없음"을 막는 것 — 단발 재시도는 하지 않는다). */
+   (조용한 실패 금지 원칙은 "계속 실패인데 아무 표시도 없음"을 막는 것 — 단발 재시도는 하지 않는다).
+   [2026-09-17 17:2x 계약 재확인] origin/master server/erp_api/api_hr_mirror.py(라우트 정의 186~211행,
+   최신 반영 커밋 2f9438aac2)를 직접 대조 — 본문은 지금도 {"tabs":[...]}(list, plural) 하나뿐이고
+   body.get("tabs")가 list가 아니면 400을 던진다(단수 "tab" 키는 서버가 아예 모름). 응답은
+   {"ok":true,"queued":[처리 예정 탭...],"skipped":[...]}로, queued는 불리언이 아니라 탭 이름 배열이다.
+   즉 본문 모양은 원래 구현 그대로가 맞아 바꾸지 않았고, 응답은 HTTP status만 보던 것에서
+   JSON의 ok 필드까지 확인하도록 보강했다(아래 .then). health는 /api/hr/mirror/health(213행)인데
+   이 파일 쓰기 화면은 애초에 health를 호출하지 않아 고칠 지점이 없다(leave.html도 동일). */
 var MIRROR_ON = true;
 var MIRROR_FAIL_STREAK_ = 0;
 function isErpOrigin_(){
@@ -806,12 +813,19 @@ function mirrorWarnClear_(){
   if(b) b.style.display = "none";
 }
 // 쓰기 응답 ok 직후 호출하는 공용 함수. tabs = 서버 열쇠 배열(예:["emp","onbo"], 8종: hire·emp·exit·appl·eval·onbo·blacklist·leave).
+// 본문 {"tabs":tabs}는 서버 api_hr_mirror.py 그대로(단수 키 없음) — 한 번의 POST로 다중 탭을 같이 보낸다(탭별 순차 재호출 아님).
 function hrMirror(tabs){
   if(!MIRROR_ON || !isErpOrigin_() || !tabs || !tabs.length) return;
   fetch("/api/hr/mirror",{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
     body:JSON.stringify({tabs:tabs})})
     .then(function(r){
       if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json().catch(function(){return null;});
+    })
+    .then(function(d){
+      // 서버가 200과 함께 {"ok":false}를 주는 경로는 코드상 없지만(성공 응답은 항상 ok:true),
+      // 응답 JSON까지 확인해 진짜 접수(ok===true)만 성공으로 친다 — 파싱 실패(d=null)는 HTTP 200을 받았으니 성공 취급.
+      if(d && d.ok===false) throw new Error(d.error||"mirror ok:false");
       MIRROR_FAIL_STREAK_ = 0; mirrorWarnClear_();
     })
     .catch(function(e){
