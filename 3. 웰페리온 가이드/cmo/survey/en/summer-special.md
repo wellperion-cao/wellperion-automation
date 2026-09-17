@@ -1,6 +1,6 @@
 # Wellperion Summer Special Program Inquiry Form (English)
 
-**Form Title:** Wellperion Private Sports Club — Summer Special Programs
+**Form Title:** Wellperion Limited-Enrollment Sports Club — Summer Special Programs
 **Form Description:** Make the most of your summer at Wellperion. Our Summer Special programs offer intensive sessions across five premium sports disciplines. Submit your inquiry and our team will reach out with program details and scheduling options.
 
 > **Language Integration Note:** Add a hidden field `Language` with fixed value `EN` so all responses merge into the existing Korean response sheet under a unified language-distinguishing column.

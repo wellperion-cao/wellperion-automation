@@ -1,7 +1,7 @@
 # Wellperion Membership Inquiry Form (English)
 
-**Form Title:** Wellperion Private Sports Club — Membership Inquiry
-**Form Description:** Thank you for your interest in Wellperion, Seoul's premier private sports club. Please complete the following to schedule your exclusive club tour and consultation.
+**Form Title:** Wellperion Limited-Enrollment Sports Club — Membership Inquiry
+**Form Description:** Thank you for your interest in Wellperion, a limited-enrollment sports club in Hannam-dong, Seoul. Please complete the following to schedule your exclusive club tour and consultation.
 
 > **Language Integration Note:** Add a hidden field `Language` with fixed value `EN` so all responses merge into the existing Korean response sheet under a unified language-distinguishing column.
 

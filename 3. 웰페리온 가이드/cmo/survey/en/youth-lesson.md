@@ -1,6 +1,6 @@
 # Wellperion Youth Lesson Inquiry Form (English)
 
-**Form Title:** Wellperion Private Sports Club — Youth (WSC) Lesson Inquiry
+**Form Title:** Wellperion Limited-Enrollment Sports Club — Youth (WSC) Lesson Inquiry
 **Form Description:** Enroll your child in Wellperion's exclusive youth sports programs. Please provide the details below and our WSC program team will contact you to discuss the best fit.
 
 > **Language Integration Note:** Add a hidden field `Language` with fixed value `EN` so all responses merge into the existing Korean response sheet under a unified language-distinguishing column.

@@ -1,6 +1,6 @@
 # Wellperion Adult Lesson Inquiry Form (English)
 
-**Form Title:** Wellperion Private Sports Club — Adult Lesson Inquiry
+**Form Title:** Wellperion Limited-Enrollment Sports Club — Adult Lesson Inquiry
 **Form Description:** Interested in private or group lessons at Wellperion? Fill in the details below and our program consultants will reach out to arrange a session tailored to your schedule and goals.
 
 > **Language Integration Note:** Add a hidden field `Language` with fixed value `EN` so all responses merge into the existing Korean response sheet under a unified language-distinguishing column.
