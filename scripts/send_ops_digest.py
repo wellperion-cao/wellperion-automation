@@ -3824,6 +3824,32 @@ def send_mgr_brief() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# ── 하루치 안내 한 줄(일회성) ────────────────────────────────────────────────
+# 화면이 바뀌었을 때처럼 「그날 한 번만」 실무진에게 알릴 줄을 담는 자리. 새 통·새 스크립트를
+# 만들지 않고 기존 🌅 하루의 시작 통에 절 하나로 얹는다. 파일 = status/ops_notice_once.json
+#   {"2026-09-18": ["줄1", "줄2"]}  — 그날 통이 싣고 끝(날짜로 갈리므로 지울 필요 없다).
+NOTICE_ONCE_FILE = ROOT / "status" / "ops_notice_once.json"
+
+
+def notice_once_section(today: "date | None" = None) -> str:
+    """오늘 날짜에 적힌 안내 줄이 있으면 절 하나로. 없으면 빈 문자열."""
+    day = (today or date.today()).isoformat()
+    try:
+        lines = (json.loads(NOTICE_ONCE_FILE.read_text(encoding="utf-8")) or {}).get(day) or []
+    except Exception:
+        return ""
+    lines = [str(l).strip() for l in lines if str(l).strip()]
+    if not lines:
+        return ""
+    return chr(10).join(["📢 알려드립니다"] + [f"▪ {l}" for l in lines])
+
+
+def _selfcheck_notice_once() -> None:
+    from datetime import date as _d
+    assert notice_once_section(_d(1999, 1, 1)) == "", "없는 날짜는 빈 절"
+    print("[selfcheck] notice_once OK")
+
+
 # ★중간관리자 「🌅 하루의 시작」 1통 병합 (배12678 · GM 지시 2026-09-16 "방마다 하루 두 통")
 # 옛 세 함수(_send_ovd_room·send_mgr_brief·send_schedule_pings)가 07:40~07:58 사이 이 방에
 # 따로 보내던 미해결 접수·결정거리·오늘 일정을 카톡 한 통으로 합친다. 각 함수의 데이터
@@ -3859,7 +3885,7 @@ def send_mgr_morning_one(ovd_ready: bool) -> bool:
     target_date, mgr_msg, relay_current, reply_hits, nawool_msg = _prepare_mgr_daily()
     sched_text = _build_mgr_schedule_text()
 
-    parts = [p for p in (ovd_text, mgr_msg, sched_text) if p]
+    parts = [p for p in (ovd_text, mgr_msg, sched_text, notice_once_section()) if p]
     if not parts and not nawool_msg:
         log("[mgr1] 보낼 내용 0건 — 발송 생략")
         return False
@@ -3925,7 +3951,7 @@ def preview_mgr_morning_one() -> int:
     mgr_msg, _relay_current, reply_hits, nawool_msg = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
     sched_text = _build_mgr_schedule_text()
 
-    parts = [p for p in (ovd_text, mgr_msg, sched_text) if p]
+    parts = [p for p in (ovd_text, mgr_msg, sched_text, notice_once_section()) if p]
     header = f"🌅 하루의 시작 — {WEEKLY_ROOM} {datetime.now().strftime('%m/%d')}"
     combined = "\n\n".join([header] + parts) if parts else "(보낼 내용 0건 — 발송 안 함)"
     print(f"\n===== {WEEKLY_ROOM} 하루의 시작 통합 미리보기 (mgr 대상 {target_date}) =====")
