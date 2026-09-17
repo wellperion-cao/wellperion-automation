@@ -75,8 +75,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-head{margin-bottom:7px}
 /* 두 판을 같은 높이로 접어 둔다 — 업무 카드가 주인공이고 이건 머리말이다. 안내문도 접힘일 땐
    한 줄(넘치는 부분은 …, 전체는 제목 풍선). 「더 보기」를 누르면 둘 다 같이 펴진다. */
-/* 접힘 높이 = 머리줄 + 사람 2줄. 잘린 줄이 반쪽으로 보이지 않게 아래를 흐린다(잘렸다는 표시). */
-.livestrip:not(.ls-open) .ls-body{max-height:84px;overflow:hidden;position:relative;mask-image:linear-gradient(180deg,#000 72%,transparent);-webkit-mask-image:linear-gradient(180deg,#000 72%,transparent)}
+/* ★2026-09-17 18:1x GM 「다 짤렸는데?」 — 자르지 않는다. 사람은 전원 그대로 보인다.
+   자리 줄이기는 여백·안내문 한 줄까지만 한다(접어서 감추지 않는다). */
 .livestrip{position:relative}
 /* 접힘일 땐 안내문을 한 줄로(전체 글은 제목 풍선 — 스크립트가 붙인다). 단추는 그 줄 오른쪽에 띄워
    놓아 줄을 하나 더 먹지 않는다. 안내문 줄 자체는 고치지 않는다(남이 최근에 넣은 줄). */
@@ -584,7 +584,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="ls-head">📋 업무 처리 현황 <span class="ls-sub">라이브</span></div>
     <div class="ls-body" id="lsTodo"><div class="ls-dim">불러오는 중…</div></div>
   </section>
-  <button type="button" class="ls-more" id="lsMore" onclick="toggleLiveStrip()">▾ 더 보기</button>
+  <button type="button" class="ls-more" id="lsMore" onclick="toggleLiveStrip()" title="아래 안내문 전체 보기">▾ 안내문</button>
   <div class="ls-foot">업무 처리 현황의 건수는 배분 현황이며 평가가 아닙니다. 평가점수는 완료 규모·품질 기반 정량 산출입니다(배정 5건 미만은 게이트 미달). 정체 기준 = 무변동 기간이 max(14일, 마감까지 총기간의 25%) 초과 · 마감일 없는 업무는 정체 판정에서 제외됩니다.</div>
 </div>
 
@@ -955,7 +955,7 @@ function toggleLiveStrip(force) {
   if (!strip) return;
   const open = (force === undefined) ? !strip.classList.contains('ls-open') : !!force;
   strip.classList.toggle('ls-open', open);
-  if (btn) btn.textContent = open ? '▴ 접기' : '▾ 더 보기';
+  if (btn) btn.textContent = open ? '▴ 접기' : '▾ 안내문';
   try { localStorage.setItem('ssot_livestrip_open', open ? '1' : '0'); } catch (e) {}
 }
 
