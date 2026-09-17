@@ -2,8 +2,8 @@
    ─────────────────────────────────────────────────────────────────────────────
    업무·결재 GAS(TODO_API_URL)로 가던 호출을 ERP 도메인(erp.wellperion.com)에서만 서버 /api/write 로 보낸다.
    서버는 write_log 에 먼저 적고 같은 본문을 그대로 GAS 에 넘긴 뒤 GAS 응답을 그대로 돌려준다(이중 기록).
-   서버에 못 닿거나(미로그인 401·서버 다운) 서버가 GAS 에 못 닿으면(server-forward-failed) 종전 GAS 직접 경로로 폴백 —
-   실무진은 이전 여부를 못 느낀다. GitHub Pages(github.io)에서는 ERP_ON 이 false 라 종전 그대로다.
+   서버에 못 닿거나(미로그인 401·서버 다운) 서버가 GAS 에 못 닿으면(server-forward-failed) ERP 도메인에서는
+   더 이상 구글로 폴백하지 않는다(2026-09-18 · _noGas · 실패를 사람에게 보인다). GitHub Pages(github.io)에서는 ERP_ON 이 false 라 종전 그대로다.
 
    읽기(todo_list·todo_scoreboard·ai_list·todo_categories 등)는 손대지 않는다 — 읽기 거울은 /api/todo (배 922 레인 T).
    되돌리기 = 아래 ERP_ON 을 false 로 두거나, 각 화면에서 erpTodoCall(...) 호출을 종전 fetch 로 되돌린다.
@@ -12,6 +12,19 @@
    서버 목적지 판정(api_write._gas_key)과 같은 접두사(todo_ · approval_rep_)를 쓴다 — 한쪽만 늘리면 안 된다. */
 (function (w) {
   var ERP_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+
+  /* ── 구글 직행 폴백 끄기 (배 11299 · 2026-09-18 시토 · GM 2026-09-05 「서버 원천 100%」) ──
+     ERP 도메인에서 쓰기 관문(/api/write)이 실패하면 종전엔 브라우저가 구글 GAS 로 직접 다시 보냈다.
+     실측 7일(9/11~17) 관문 1,174건 중 서버→GAS 전달 실패 4건(0.3%) — 그 4건을 조용히 구글로 흘리는 대신
+     사람에게 「저장 안 됨」을 보이고 멈춘다(조용한 실패 금지 · 점검 화면 여러 곳이 .catch(()=>{}) 로 삼키므로
+     alert 로 한 번 보인다). GitHub Pages(ERP_ON=false)에서는 종전 그대로 구글 직행. */
+  function _noGas(gas, label, why) {
+    if (!ERP_ON) return gas();
+    var msg = '저장이 되지 않았습니다(' + label + ' · ' + (why || '관문 실패') + ') — 잠시 후 다시 시도해 주세요.';
+    try { w.alert(msg); } catch (_e) {}
+    var err = new Error(msg); err.noFallback = true;
+    throw err;
+  }
 
   /* ── 시험 비행 (배1183 · 2026-09-09 시토) ─────────────────────────────────────────────────
      주소에 ?erpenv=beta 를 붙이면 이 화면의 쓰기가 라이브가 아니라 베타 서버로 간다.
@@ -85,8 +98,9 @@
       throw e;
     }
     if (e && e.status === 403) throw e;
-    console.warn('[' + label + '] /api/write 실패 → GAS 폴백:', e && e.message);
-    return gas();
+    if (e && e.noFallback) throw e;
+    console.warn('[' + label + '] /api/write 실패:', e && e.message);
+    return _noGas(gas, label, e && e.message);
   }
 
   /* 관문 POST 하나 — 요청마다 idem 열쇠(uuid)를 본문에 실어 보낸다 (배 960 M7 · 2026-09-04).
@@ -158,7 +172,7 @@
     var gas = noGas(function () { return gasCall(gasUrl, params); }, params, function (a) { return WRITE.test(a); });
     if (!ERP_ON || !params || !WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
-      .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
+      .then(function (d) { return (d && d.error === 'server-forward-failed') ? _noGas(gas, '업무쓰기관문', 'server-forward-failed') : d; })
       .catch(function (e) { return _gateFallback(e, gas, '업무쓰기관문'); });
   }
 
@@ -188,7 +202,7 @@
       if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
       // 본문은 복제본으로만 들여다본다 — 원본 r 은 호출부가 그대로 .json() 할 수 있어야 한다.
       return r.clone().json().then(function (d) {
-        if (d && d.error === 'server-forward-failed') return gas();
+        if (d && d.error === 'server-forward-failed') return _noGas(gas, '점검쓰기관문', 'server-forward-failed');
         // 공용 보드는 5분 동기화를 안 기다리고 그 열쇠만 즉시 다시 떠온다(배 926 /api/board/{key}/refresh).
         if (d && d.ok !== false && params.action === 'saveBoard' && params.key) {
           fetch('/api/board/' + encodeURIComponent(params.key) + '/refresh', { method: 'POST' }).catch(function () {});
@@ -222,7 +236,7 @@
     }, params, function (a) { return PROC_WRITE.test(a); });
     if (!ERP_ON || !params || !PROC_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
-      .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
+      .then(function (d) { return (d && d.error === 'server-forward-failed') ? _noGas(gas, '구매쓰기관문', 'server-forward-failed') : d; })
       .catch(function (e) { return _gateFallback(e, gas, '구매쓰기관문'); });
   }
 
@@ -299,7 +313,7 @@
     }, params, function (a) { return FUNNEL_WRITE.test(a); });
     if (!ERP_ON || !params || !FUNNEL_WRITE.test(String(params.action || ''))) return gas();
     return gwPost('/api/write', params).then(_json)
-      .then(function (d) { return (d && d.error === 'server-forward-failed') ? gas() : d; })
+      .then(function (d) { return (d && d.error === 'server-forward-failed') ? _noGas(gas, '오누띠·피드백쓰기관문', 'server-forward-failed') : d; })
       .catch(function (e) { return _gateFallback(e, gas, '오누띠·피드백쓰기관문'); });
   }
 
