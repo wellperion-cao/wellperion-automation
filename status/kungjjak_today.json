@@ -712,7 +712,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 7
         }
       ],
       "repeats": [
@@ -1152,12 +1152,6 @@
       ],
       "work": [
         {
-          "time": "11:39",
-          "area": "배",
-          "event": "관리자 콘솔 화면 탭 부서 7열(○/—) 읽기 전용 표시 배포·라이브 실측",
-          "detail": "d0449eb244 · deploy_auth 11:39 · 라이브 렌더 콘솔 오류 0"
-        },
-        {
           "time": "11:47",
           "area": "작업",
           "event": "docs(auth): 매트릭스 브리프 §2·§6 — 제안판이 정본에 합쳐진 사실과 '저장소 판 != 실무진 화면' 을 적음 (배 1026)",
@@ -1330,6 +1324,12 @@
           "area": "작업",
           "event": "feat(hr): 인사 쓰기 거울 — POST /api/hr/mirror(3초 디바운스·탭별 60초 간격·백그라운드 한 탭 재적재) + GET /api/hr/mirror/health(탭별 last_ok·오류·지연)",
           "detail": "커밋 bfa8df0c5d · 배 12715"
+        },
+        {
+          "time": "15:14",
+          "area": "작업",
+          "event": "fix(hr): 거울 상태를 파일 정본 + 탭별 잠금 파일로 — uvicorn 워커 2개가 같은 탭을 두 번 돌리던 것(실측 15:12) [나우열M 요청 2026-09-17]",
+          "detail": "커밋 1042ac00a1 · 배 12715"
         }
       ],
       "count": 35,
@@ -1866,7 +1866,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 0
+          "waited": 3
         }
       ],
       "repeats": []
@@ -2554,11 +2554,11 @@
           "evidence": "🔁재확인"
         },
         {
-          "ref": "GM-20260917-5029",
-          "no": "29",
-          "got": "방향도 그냥 첫페이지에 통일 시켜주고, 총 합계금액이 왜 28,061,000원이야? 지금 우린 2개소만 설치하고 + 입구 키패스는 웰니스스튜디오것 이설하기로 했는데?",
+          "ref": "GM-20260917-5030",
+          "no": "30",
+          "got": "이건 밸런스가 너무 깨지는데?",
           "did": "",
-          "start": "15:11",
+          "start": "15:14",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2662,22 +2662,28 @@
           "area": "작업",
           "event": "fix(chairman): 턴게이트 A3 7차 — 원본 사진 두 장이 옆으로 누운 채 실려 합성본과 틀이 어긋나던 것 수리(세로로 회전) + GM 관리부 보고용 낱장 6장 폴더 추가 [GM 지시 2026-09-17]",
           "detail": "커밋 ee4a74a732 · 배 12716"
+        },
+        {
+          "time": "15:14",
+          "area": "작업",
+          "event": "docs(chairman): 턴게이트 A3 8차 — 봉/유리 두 열을 한 열로(같은 견적서라 금액 동일) · 「두 안의 차이」 절과 2장 방향·표·각주 삭제 · 범위를 사우나 2개소 17,248,000 으로 정정(정",
+          "detail": "커밋 9622686422 · 배 12716"
         }
       ],
       "count": 24,
       "done": 23,
       "open": 1,
       "avg_minutes": 3,
-      "work_count": 16,
+      "work_count": 17,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-5029",
-          "no": "29",
-          "got": "방향도 그냥 첫페이지에 통일 시켜주고, 총 합계금액이 왜 28,061,000원이야? 지금 우린 2개소만 설치하고 + 입구 키패스는 웰니스스튜디오것 이설하기로 했는데?",
+          "ref": "GM-20260917-5030",
+          "no": "30",
+          "got": "이건 밸런스가 너무 깨지는데?",
           "did": "",
-          "start": "15:11",
+          "start": "15:14",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -2751,6 +2757,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-9007",
+          "no": "07",
+          "got": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
+          "did": "",
+          "start": "15:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -2827,14 +2845,29 @@
           "detail": "커밋 7f3f38b28c · 배 11386"
         }
       ],
-      "count": 5,
+      "count": 6,
       "done": 5,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 4,
       "work_count": 12,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-9007",
+          "no": "07",
+          "got": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
+          "did": "",
+          "start": "15:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     }
   },
@@ -2846,13 +2879,13 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T15:13:18",
+    "published_at": "2026-09-17T15:16:09",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-68",
         "alive": true,
-        "signal": "15:00",
+        "signal": "15:15",
         "last": {
           "time": "15:09",
           "area": "GM요청",
@@ -2866,15 +2899,15 @@
         "nick": "시토",
         "session": "welperion-automation-fc",
         "alive": true,
-        "signal": "15:00",
+        "signal": "15:15",
         "last": {
-          "time": "15:11",
+          "time": "15:14",
           "area": "작업",
-          "event": "feat(hr): 인사 쓰기 거울 — POST /api/hr/mirror(3초 디바운스·탭별 60초 간격·백그라운드 한 탭 재적재) + GET /api/hr/mirror/health(탭별 last_ok·오류·지연)",
+          "event": "fix(hr): 거울 상태를 파일 정본 + 탭별 잠금 파일로 — uvicorn 워커 2개가 같은 탭을 두 번 돌리던 것(실측 15:12) [나우열M 요청 2026-09-17]",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 74
+        "saves": 75
       },
       "cmo": {
         "nick": "시모",
@@ -2910,24 +2943,24 @@
         "alive": false,
         "signal": "13:30",
         "last": {
-          "time": "15:11",
+          "time": "15:14",
           "area": "GM요청",
-          "event": "방향도 그냥 첫페이지에 통일 시켜주고, 총 합계금액이 왜 28,061,000원이야? 지금 우린 2개소만 설치하고 + 입구 키패스는 웰니스스튜디오것 이설하기로 했는데?",
+          "event": "이건 밸런스가 너무 깨지는데?",
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 22
+        "saves": 23
       },
       "cbo": {
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "15:00",
+        "signal": "15:15",
         "last": {
-          "time": "13:54",
-          "area": "작업",
-          "event": "fix(deploy-chat): kakao_room_listen.py 도 서버로 — api_chat 가 import 하는데 안 올라가 13:51~13:52 /api/chat 전부 404(즉시 복구)",
-          "result": "ok"
+          "time": "15:14",
+          "area": "GM요청",
+          "event": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
+          "result": "warn"
         },
         "idle_since": null,
         "saves": 15
