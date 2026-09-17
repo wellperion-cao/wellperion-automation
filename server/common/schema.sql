@@ -721,6 +721,7 @@ CREATE TABLE IF NOT EXISTS hr.applicant (
   applied_at       DATE,
   source           TEXT,
   rating           NUMERIC(5,2) CHECK (rating IS NULL OR rating >= 0),
+  rating_grade     TEXT,                                -- 평점 등급 문자 원문(A·B+·C…) — 새 DB 용 · 기존 DB 는 아래 ALTER 가 붙인다
   interviewer      TEXT,
   interview_at     TIMESTAMPTZ,
   phone            TEXT,                                -- [PII]
@@ -740,6 +741,7 @@ CREATE TABLE IF NOT EXISTS hr.applicant (
 );
 ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanished_at     TIMESTAMPTZ;
 ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanish_reason   TEXT CHECK (vanish_reason IS NULL OR vanish_reason IN ('absent-from-source', 'identity-changed'));
+ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS rating_grade    TEXT;   -- 평점 등급 문자 원문(A·B+·C…) — 시트 평점은 숫자가 아니라 등급이라 rating(NUMERIC) 이 전건 비었다 [나우열M 요청 2026-09-17]
 ALTER TABLE hr.applicant ADD COLUMN IF NOT EXISTS vanished_run_id BIGINT;
 ALTER TABLE hr.applicant DROP CONSTRAINT IF EXISTS applicant_tenant_id_legacy_tab_legacy_row_key;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_hr_appl_legacy_live ON hr.applicant (tenant_id, legacy_tab, legacy_row) WHERE vanished_at IS NULL;

@@ -280,6 +280,7 @@ APPL_MAP = [
     ("applied_at", ("지원일", "접수일", "등록일"), to_date),
     ("source", ("지원 경로", "채널", "출처"), to_text),
     ("rating", ("면접 평점", "평점", "서류 평점"), to_num),
+    ("rating_grade", ("면접 평점", "평점", "서류 평점"), to_text),   # 등급 문자 원문(A·B+·C…) — 숫자가 아니면 rating 은 NULL, 여기만 찬다
     ("interviewer", ("면접관", "담당 면접관"), to_text),
     ("phone", ("연락처", "전화번호"), to_text),
     ("email", ("이메일",), to_text),
@@ -289,12 +290,12 @@ APPL_MAP = [
 HIRE_MAP = [
     ("title", ("포지션명", "공고명", "제목", "포지션"), to_text),
     ("dept_name_raw", ("부서", "소속"), to_text),
-    ("status", ("상태", "공고 상태"), to_text),
-    ("employment_type", ("고용 형태", "고용형태"), to_text),
+    ("status", ("상태", "공고 상태", "채용 상태"), to_text),
+    ("employment_type", ("고용 형태", "고용형태", "채용 유형"), to_text),
     ("headcount", ("모집인원", "모집 인원"), to_int),
-    ("start_date", ("게시일", "시작일"), to_date),
-    ("end_date", ("마감일", "종료일"), to_date),
-    ("channels", ("채널", "게시 채널"), to_text),
+    ("start_date", ("게시일", "시작일", "공고 시작일"), to_date),
+    ("end_date", ("마감일", "종료일", "공고 마감일"), to_date),   # 마감일이 비면 서버 쪽 공고 만료 판정 불가
+    ("channels", ("채널", "게시 채널", "채용 채널"), to_text),
     ("owner_clevel", ("담당 C-Level", "담당 C레벨", "담당"), to_text),
     ("detail_url", ("상세 링크", "링크", "URL"), to_text),
 ]
@@ -302,8 +303,8 @@ EVAL_MAP = [
     ("subject_name_raw", ("대상자", "피평가자"), to_text),
     ("evaluator_name_raw", ("평가자",), to_text),
     ("title", ("평가명", "제목"), to_text),
-    ("period_start", ("평가 시작일", "시작일"), to_date),
-    ("period_end", ("평가 종료일", "종료일", "평가일"), to_date),
+    ("period_start", ("평가 시작일", "시작일", "평가 기간 시작"), to_date),
+    ("period_end", ("평가 종료일", "종료일", "평가일", "평가 기간 종료"), to_date),
     ("total_score", ("총점",), to_num),
     ("bonus_points", ("가산점",), to_num),
     ("grade", ("평가 등급", "등급"), to_text),
@@ -311,10 +312,10 @@ EVAL_MAP = [
 ]
 ONBO_MAP = [
     ("employee_name_raw", ("대상 신입 직원", "대상자", "성명"), to_text),
-    ("track", ("트랙", "구분", "유형"), to_text),
+    ("track", ("트랙", "구분", "유형", "카테고리"), to_text),
     ("week_no", ("주차",), to_int),
     ("title", ("항목", "제목", "내용", "체크 항목"), to_text),
-    ("due_date", ("예정일", "기한", "일자"), to_date),
+    ("due_date", ("예정일", "기한", "일자", "완료 기한"), to_date),
     ("done", ("완료", "완료 여부"), lambda v: to_bool(v, False)),  # 빈값=미완료(hr.onboarding_item.done NOT NULL DEFAULT FALSE)
     ("done_at", ("완료일",), to_date),
     ("owner", ("담당자",), to_text),
