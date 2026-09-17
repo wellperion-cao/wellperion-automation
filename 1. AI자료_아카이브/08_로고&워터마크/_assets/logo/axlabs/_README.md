@@ -1,4 +1,4 @@
-# AX 랩스(AX LABS) 로고 정본 — 웰페리온과 별개 회사(색·글꼴이 갈린다)
+# 웰페리온 AX 랩스(WELLPERION AX LABS) 로고 정본 — 웰페리온과 별개 회사(색·글꼴이 갈린다)
 
 - 심볼 = AX 합자(A 오른 다리 = X 한 획) · 색 = erp/admin/platform_brand.css 토큰 · 글꼴 = Pretendard Bold 외곽선
 - axlabs_logo.svg(가로) · axlabs_symbol.svg(정사각) · png 3색(컬러·흰·검) · favicon-16/32/180/256.png · favicon.svg

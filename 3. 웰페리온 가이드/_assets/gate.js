@@ -95,7 +95,7 @@
     ov.id = "welpGate";
     ov.innerHTML =
       '<div class="gc">' +
-      '<div class="mk">' + (AX ? 'AX LABS' : 'WELLPERION') + '</div>' +
+      '<div class="mk">' + (AX ? 'WELLPERION AX LABS' : 'WELLPERION') + '</div>' +
       '<h2>사내 전용</h2>' +
       '<p>접근 비밀번호를 입력하세요.</p>' +
       '<input type="password" id="welpGatePw" placeholder="접근 비밀번호" autocomplete="current-password">' +

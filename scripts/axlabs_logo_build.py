@@ -23,7 +23,7 @@ SSOT = ROOT / "1. AI자료_아카이브" / "08_로고&워터마크" / "_assets" 
 WEB = ROOT / "3. 웰페리온 가이드" / "erp" / "admin"
 
 PRI, PRI_DK, TINT, INK, WHITE, BLACK = "#0E9488", "#0A6E66", "#CFF5EE", "#0F3D3A", "#FFFFFF", "#111111"
-WORDMARK = "AX LABS"  # 회사 표기 정본 = ssot/canon_values.json platform_company_name · 바뀌면 여기만
+WORDMARK = "WELLPERION AX LABS"  # 회사 표기 정본 = ssot/canon_values.json platform_company_name · 바뀌면 여기만
 
 # ---------- 심볼(256×256) ----------
 def mark_paths(letter, cross, sw=26):
@@ -38,7 +38,7 @@ def mark_paths(letter, cross, sw=26):
 def symbol_svg(size=256):
     bg = f'<rect width="256" height="256" rx="58" fill="{PRI}"/>'
     body = mark_paths(WHITE, TINT)
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="{size}" height="{size}" role="img" aria-label="AX LABS">'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="{size}" height="{size}" role="img" aria-label="WELLPERION AX LABS">'
             f'{bg}{body}</svg>')
 
 # ---------- 워드마크(글꼴 → 외곽선) ----------
@@ -66,7 +66,7 @@ def logo_svg(color=None, height=64):
         sym = mark_paths(color, color)
         text_fill = color
     s = height / 256
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {total_w:.0f} {height}" width="{total_w:.0f}" height="{height}" role="img" aria-label="AX LABS">'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {total_w:.0f} {height}" width="{total_w:.0f}" height="{height}" role="img" aria-label="WELLPERION AX LABS">'
             f'<g transform="scale({s:.5f})">{sym}</g>'
             f'<g transform="translate({height + gap:.1f},0)"><path d="{d}" fill="{text_fill}"/></g></svg>')
 
@@ -101,7 +101,7 @@ def build():
     render_pngs(jobs)
     readme = SSOT / "_README.md"
     readme.write_text(
-        "# AX 랩스(AX LABS) 로고 정본 — 웰페리온과 별개 회사(색·글꼴이 갈린다)\n\n"
+        "# 웰페리온 AX 랩스(WELLPERION AX LABS) 로고 정본 — 웰페리온과 별개 회사(색·글꼴이 갈린다)\n\n"
         "- 심볼 = AX 합자(A 오른 다리 = X 한 획) · 색 = erp/admin/platform_brand.css 토큰 · 글꼴 = Pretendard Bold 외곽선\n"
         "- axlabs_logo.svg(가로) · axlabs_symbol.svg(정사각) · png 3색(컬러·흰·검) · favicon-16/32/180/256.png · favicon.svg\n"
         "- 서버가 서빙하는 사본 = 3. 웰페리온 가이드/erp/admin/axlabs_logo.svg · axlabs_logo_white.svg · axlabs_favicon.png · axlabs_favicon.svg (이 폴더에서 파생 · 손으로 고치지 않는다)\n"
