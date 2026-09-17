@@ -41,11 +41,8 @@ SENT_LOCK = ROOT / 'status' / '.gm_autocheck_sent'
 sys.path.insert(0, str(ROOT / 'scripts'))
 from kungjjak_board import _norm, _SHIP_IN_TEXT_RE  # 판정 보조 재사용(약속 L01)
 
-try:  # 안전 커밋터 신선도 가드(배9820 monthly_ops_sync.py 와 동일 재사용 — 약속 L01)
-    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
-except Exception:
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다 — run() 참조.
 
 try:
     from worklog import log as worklog_log
@@ -104,9 +101,9 @@ def run(dry_run: bool, body_out: str | None = None) -> int:
             return 0
 
     today = datetime.date.today()
-    _raw_text = PLAN.read_text(encoding='utf-8')
-    plan = json.loads(_raw_text)
-    month = plan.get('months', {}).get(f'{today:%Y-%m}')
+    month_key = f'{today:%Y-%m}'
+    plan = json.loads(PLAN.read_text(encoding='utf-8'))
+    month = plan.get('months', {}).get(month_key)
     if not month:
         print('[SKIP] 이번 달 계획 없음')
         return 0
@@ -149,23 +146,34 @@ def run(dry_run: bool, body_out: str | None = None) -> int:
                               'at': today.isoformat()}
 
     if checked and not dry_run:
-        plan['updated_at'] = today.isoformat()
-        new_text = json.dumps(plan, ensure_ascii=False, indent=2) + '\n'
-        # ★2026-09-17 시토 실측 — 08:00:05 이 자리가 이미 HEAD 보다 낡은 디스크를 그대로
-        #   되써 09-16 GM 편집(progress_note 16곳)을 지웠다(monthly_ops_sync.py 와 같은
-        #   본질 2회째). 쓰기 직전 HEAD 대비 신선도를 확인 — 낡았으면 체크도 되돌린다
-        #   (반영 안 된 체크를 발송 문안에만 있는 척 남기지 않는다).
-        if not _refuse_if_stale(PLAN, new_text, base_text=_raw_text):
-            print(f'[거부] {PLAN.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 체크 되돌림.')
+        # ★2026-09-17 시토 — queue_lock.mutate_json 관문으로 통일(GM 「낡은 판 되쓰기 근본 해결」).
+        #   plan 통째로 되쓰지 않는다 — 잠금 안에서 디스크를 다시 읽고(낡았으면 HEAD 로 자가치유)
+        #   이번에 실제로 체크가 바뀐 목표만 병합해 쓴다(09-17 08:00:05 사고 — 낡은 디스크를
+        #   그대로 되써 GM 편집 16곳을 지운 것과 같은 본질을 근본 차단).
+        checked_ids = {str(oid) for oid, _no, _txt in checked}
+        obj_patches = {str(o.get('id')): o for o in month.get('objectives', [])
+                       if str(o.get('id')) in checked_ids}
+
+        def _mutator(data):
+            fresh_objs = data.setdefault('months', {}).setdefault(month_key, {}).setdefault('objectives', [])
+            for i, cur_o in enumerate(fresh_objs):
+                if isinstance(cur_o, dict) and str(cur_o.get('id')) in obj_patches:
+                    fresh_objs[i] = obj_patches[str(cur_o.get('id'))]
+            data['updated_at'] = today.isoformat()
+            return data
+
+        from queue_lock import mutate_json
+        try:
+            mutate_json('status/monthly_ops_plan.json', _mutator, holder='gm_task_autocheck', repo_root=str(ROOT))
+        except Exception as e:
+            print(f'[거부] {PLAN.name} 저장 실패 — {e}')
             worklog_log(
                 'coo', '월간계획',
-                'GM 직접 업무 자동 체크 저장 거부 — 디스크가 HEAD 보다 낡음(쓰기 전 가드)',
-                result='warn', detail=f'{today.isoformat()} · refuse_if_older_than_head 거부',
+                'GM 직접 업무 자동 체크 저장 실패 — mutate_json 관문 오류',
+                result='warn', detail=f'{today.isoformat()} · {e}',
                 ref=today.isoformat(),
             )
             checked = []
-        else:
-            PLAN.write_text(new_text, encoding='utf-8')
 
     print(f'[체크] 자동 체크 {len(checked)}건' + (' (dry-run — 저장 안 함)' if dry_run and checked else ''))
     for oid, no, txt in checked:

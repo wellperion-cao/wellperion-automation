@@ -480,12 +480,8 @@ def _fetch_gm_task_owners() -> dict:
 
 
 GM_PLAN_FILE = ROOT / "status" / "monthly_ops_plan.json"
-
-try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
-    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
-except Exception:
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다 — _update_meeting_card 참조.
 
 # 3라인 구조(운영부=이경연 실장 / 시설·지원=이정헌 소장 / 파트너팀=나우열M) — 팀원 몫은 그 사람의
 # 라인장 묶음에 싣고 줄 끝에 원 담당 이름을 남긴다(약속 L24 · 운영부는 실장 경유).
@@ -4597,34 +4593,43 @@ def _weekly_meeting_already_sent(ds: str) -> bool:
 
 def _update_meeting_card(meeting: date, hhmm: str, doc_no: str, submitted: int) -> None:
     """GM업무 카드 2026-09-35 — docs 에 그 회차 A3 링크 1건 · progress_note 에 「▶ M/D 회차 자동 발송 HH:MM」 1줄(있으면 교체).
-    이력은 status/monthly_ops_plan_이력.md 에 append(SSOT .md 규칙)."""
+    이력은 status/monthly_ops_plan_이력.md 에 append(SSOT .md 규칙).
+    ★2026-09-17 시토 — queue_lock.mutate_json 관문으로 통일(GM 「낡은 판 되쓰기 근본 해결」).
+    카드 탐색·수정을 fresh 데이터 위에서 한다 — plan 통째로 되쓰지 않는다."""
     plan_path = ROOT / "status" / "monthly_ops_plan.json"
-    _raw_text = plan_path.read_text(encoding="utf-8")
-    plan = json.loads(_raw_text)
-    card = None
-    for m in (plan.get("months") or {}).values():
-        for o in m.get("objectives") or []:
-            if o.get("id") == WEEKLY_MEETING_CARD_ID:
-                card = o
-    if card is None:
-        log(f"[weekly-meeting] 카드 {WEEKLY_MEETING_CARD_ID} 없음 — 카드 갱신 생략")
-        return
     ds = meeting.isoformat()
     md = f"{meeting.month}/{meeting.day}"
     href = f"중간관리자_회의자료_A3.html?week={ds}"
-    docs = card.setdefault("docs", [])
-    if not any(d.get("href") == href for d in docs):
-        docs.append({"label": f"{md} 회의자료 — 자동 A3({doc_no})", "href": href})
     prefix = f"▶ {md} 회차 자동 발송 "
     line = f"{prefix}{hhmm} · 사전 보고 {submitted}/3"
-    note_lines = [ln for ln in str(card.get("progress_note") or "").split("\n") if not ln.startswith(prefix)]
-    note_lines.insert(0, line)
-    card["progress_note"] = "\n".join(note_lines)
-    new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
-    if not _refuse_if_stale(plan_path, new_text, base_text=_raw_text):
-        log(f"[weekly-meeting] {plan_path.name} 저장 안 함 — 디스크가 HEAD 보다 낡음(쓰기 전 가드) — 카드 갱신 생략")
+    found = {"ok": False}
+
+    def _mutator(data):
+        card = None
+        for m in (data.get("months") or {}).values():
+            for o in m.get("objectives") or []:
+                if o.get("id") == WEEKLY_MEETING_CARD_ID:
+                    card = o
+        if card is None:
+            return data
+        found["ok"] = True
+        docs = card.setdefault("docs", [])
+        if not any(d.get("href") == href for d in docs):
+            docs.append({"label": f"{md} 회의자료 — 자동 A3({doc_no})", "href": href})
+        note_lines = [ln for ln in str(card.get("progress_note") or "").split("\n") if not ln.startswith(prefix)]
+        note_lines.insert(0, line)
+        card["progress_note"] = "\n".join(note_lines)
+        return data
+
+    from queue_lock import mutate_json
+    try:
+        mutate_json("status/monthly_ops_plan.json", _mutator, holder="send_ops_digest", repo_root=str(ROOT))
+    except Exception as e:
+        log(f"[weekly-meeting] {plan_path.name} 저장 실패 — {e} — 카드 갱신 생략")
         return
-    plan_path.write_text(new_text, encoding="utf-8")
+    if not found["ok"]:
+        log(f"[weekly-meeting] 카드 {WEEKLY_MEETING_CARD_ID} 없음 — 카드 갱신 생략")
+        return
     hist = ROOT / "status" / "monthly_ops_plan_이력.md"
     with hist.open("a", encoding="utf-8") as f:
         f.write(f"\n▶[{ds} 웰리 자동 · 2026-09-35 중간관리자 회의자료] {line} · {doc_no}\n")

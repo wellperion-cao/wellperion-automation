@@ -9,11 +9,8 @@ import json
 import re
 import sys
 
-try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
-    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
-except Exception:
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다 — main() 참조.
 
 PLAN_PATH = "status/monthly_ops_plan.json"
 HISTORY_PATH = "status/monthly_ops_plan_이력.md"
@@ -104,17 +101,11 @@ def load_history_sections(text):
     return sections, order
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--apply", action="store_true", help="실제로 쓴다 (기본은 dry-run)")
-    args = ap.parse_args()
-
-    with open(PLAN_PATH, encoding="utf-8") as f:
-        raw_text = f.read()          # 고치기 전 원문 — 신선도는 이것으로 잰다(트림이 줄을 줄이는 건 정상)
-    data = json.loads(raw_text)
-
+def _compute_trim_plan(data):
+    """(before_checklist_total, plan) — plan = [(path, o, before_len, after_len, archive_text, heading), ...].
+    data 하나만의 순수함수 — dry-run 미리보기와 실제 적용(mutate_json 안 fresh 데이터) 양쪽에서 같이 쓴다."""
     before_checklist_total = 0
-    plan = []  # (path, prefix, keep_note, archive_text, heading)
+    plan = []
     for month, path, o in find_objectives(data):
         note = o.get("progress_note", "")
         if not note:
@@ -129,6 +120,18 @@ def main():
         new_note = prefix + "".join(keep_blocks)
         heading = f"## {month} · {o.get('title', '')}"
         plan.append((path, o, len(note), len(new_note), "".join(archive_blocks), heading))
+    return before_checklist_total, plan
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--apply", action="store_true", help="실제로 쓴다 (기본은 dry-run)")
+    args = ap.parse_args()
+
+    with open(PLAN_PATH, encoding="utf-8") as f:
+        data = json.loads(f.read())
+
+    before_checklist_total, plan = _compute_trim_plan(data)
 
     if not plan:
         print("손댈 칸 없음 (4블록 이상인 progress_note 없음)")
@@ -145,52 +148,63 @@ def main():
         print("(dry-run — 적용하려면 --apply)")
         return
 
-    # 쓰기 직전 신선도 확인 — 방금 읽은 디스크가 이미 HEAD 보다 낡으면(다른 커밋이
-    # 워킹트리에 반영 안 된 채 앞서 있으면) 트림해서 그대로 되쓰지 않는다. monthly_ops_sync.py
-    # 가 거부해도 이 스크립트가 신선도 확인 없이 뒤이어 그 낡은 사본을 다시 써버리던 구멍
-    # (09-17 gm_task_autocheck 사고의 전파 경로) 을 막는다.
-    if not _refuse_if_stale(PLAN_PATH, json.dumps(data, ensure_ascii=False, indent=2) + "\n", base_text=raw_text):
-        print(f"[거부] {PLAN_PATH} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 트림 건너뜀.")
+    # ★2026-09-17 시토 — queue_lock.mutate_json 관문으로 통일(GM 「낡은 판 되쓰기 근본 해결」).
+    # 트림 판정은 fresh 데이터 하나만의 순수함수(_compute_trim_plan)라 잠금 안에서 다시 계산해도
+    # 결과가 같다 — 디스크가 HEAD 보다 낡았으면 자가치유된 뒤 그 판 위에서 트림한다.
+    outcome = {"applied": False}
+
+    def _mutator(fresh_data):
+        _, fresh_plan = _compute_trim_plan(fresh_data)
+        if not fresh_plan:
+            return fresh_data  # 이미 트림됨(다른 실행이 먼저 처리) — 손대지 않는다
+
+        try:
+            with open(HISTORY_PATH, encoding="utf-8") as f:
+                history_text = f.read()
+        except FileNotFoundError:
+            history_text = "# 월간운영계획 progress_note 이력\n\n"
+
+        sections, order = load_history_sections(history_text)
+        for path, o, before, after, archived, heading in fresh_plan:
+            existing = sections.get(heading, "")
+            if archived and archived not in existing:
+                sections[heading] = existing + "\n" + archived
+                if heading not in order:
+                    order.append(heading)
+
+        for path, o, before, after, archived, heading in fresh_plan:
+            prefix, blocks = split_blocks(o["progress_note"])
+            keep_blocks, _ = select_blocks(blocks)
+            o["progress_note"] = prefix + "".join(keep_blocks)
+
+        header = history_text.split("## ", 1)[0] if "## " in history_text else history_text
+        if not header.strip():
+            header = "# 월간운영계획 progress_note 이력\n\n"
+        new_history = header
+        for heading in order:
+            new_history += heading + "\n" + sections[heading].rstrip("\n") + "\n\n"
+
+        with open(HISTORY_PATH, "w", encoding="utf-8") as f:
+            f.write(new_history)
+
+        outcome["applied"] = True
+        return fresh_data
+
+    from queue_lock import mutate_json
+    try:
+        mutate_json(PLAN_PATH, _mutator, holder="trim_progress_notes")
+    except Exception as e:
+        print(f"[거부] {PLAN_PATH} 저장 실패 — {e}")
         return
 
-    # 이력 파일에 append (중복 방지: 섹션 본문에 이미 있는 블록은 다시 안 넣는다)
-    try:
-        with open(HISTORY_PATH, encoding="utf-8") as f:
-            history_text = f.read()
-    except FileNotFoundError:
-        history_text = "# 월간운영계획 progress_note 이력\n\n"
+    if not outcome["applied"]:
+        print("적용 시점 재확인 결과 손댈 칸 없음 — 건너뜀")
+        return
 
-    sections, order = load_history_sections(history_text)
-    for path, o, before, after, archived, heading in plan:
-        existing = sections.get(heading, "")
-        if archived and archived not in existing:
-            sections[heading] = existing + "\n" + archived
-            if heading not in order:
-                order.append(heading)
-        o["progress_note"] = o["progress_note"]  # placeholder; set below
-
-    # rebuild new_note into the objective dicts now that history is staged
-    for path, o, before, after, archived, heading in plan:
-        prefix, blocks = split_blocks(o["progress_note"])
-        keep_blocks, _ = select_blocks(blocks)
-        o["progress_note"] = prefix + "".join(keep_blocks)
-
-    header = history_text.split("## ", 1)[0] if "## " in history_text else history_text
-    if not header.strip():
-        header = "# 월간운영계획 progress_note 이력\n\n"
-    new_history = header
-    for heading in order:
-        new_history += heading + "\n" + sections[heading].rstrip("\n") + "\n\n"
-
-    with open(HISTORY_PATH, "w", encoding="utf-8") as f:
-        f.write(new_history)
-
-    with open(PLAN_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-
+    with open(PLAN_PATH, encoding="utf-8") as f:
+        after_data = json.loads(f.read())
     after_checklist_total = 0
-    for _month, _path, o in find_objectives(data):
+    for _month, _path, o in find_objectives(after_data):
         after_checklist_total += count_checklist_lines(o.get("progress_note", ""))
 
     print(f"체크리스트 줄(전체 파일): 적용전 {before_checklist_total} -> 적용후 {after_checklist_total}")

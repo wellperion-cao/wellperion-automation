@@ -56,11 +56,8 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
-try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
-    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
-except Exception:
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다 — _roll_month_status 참조.
 
 # ── 경로 상수 ──
 BASE_DIR = Path.home() / "welperion-automation"
@@ -412,32 +409,38 @@ def _roll_month_status(now: datetime) -> None:
     이 진입점에 흡수시킨다.
 
     라이브(--send)에서만 부른다 — 드라이런은 부작용 0 을 유지한다.
-    """
-    try:
-        _raw_text = PLAN_FILE.read_text(encoding="utf-8")
-        plan = json.loads(_raw_text)
-    except Exception as e:  # 원장을 못 읽으면 손대지 않는다
-        print(f"[달상태] 원장을 못 읽어 건너뜀 — {e}")
+
+    ★2026-09-17 시토 — queue_lock.mutate_json 관문으로 통일(GM 「낡은 판 되쓰기 근본 해결」).
+    이 판정은 now 하나만의 순수함수라 fresh 데이터를 받아 그 자리에서 다시 계산해도 결과가
+    같다 — 그래서 판정 자체를 mutator 안으로 옮겼다(별도 base_text 비교가 필요 없다)."""
+    if not PLAN_FILE.exists():
+        print(f"[달상태] 원장 없음 — 건너뜀({PLAN_FILE})")
         return
     cur = f"{now.year:04d}-{now.month:02d}"
-    months = plan.get("months") or {}
     changed = []
-    for key, body in months.items():
-        if not isinstance(body, dict):
-            continue
-        want = "완료" if key < cur else ("진행" if key == cur else "계획")
-        if body.get("month_status") != want:
-            changed.append((key, body.get("month_status"), want))
-            body["month_status"] = want
+
+    def _mutator(data):
+        months = data.get("months") or {}
+        for key, body in months.items():
+            if not isinstance(body, dict):
+                continue
+            want = "완료" if key < cur else ("진행" if key == cur else "계획")
+            if body.get("month_status") != want:
+                changed.append((key, body.get("month_status"), want))
+                body["month_status"] = want
+        return data
+
+    from queue_lock import mutate_json
+    try:
+        mutate_json("status/monthly_ops_plan.json", _mutator, holder="monthly_ops_report",
+                    repo_root=str(BASE_DIR))
+    except Exception as e:
+        print(f"[달상태] 저장 실패 — {e}")
+        log_event("plan_stale_write_refused", month=cur)
+        return
     if not changed:
         print("[달상태] 이미 최신 — 바꿀 것 없음")
         return
-    new_text = json.dumps(plan, ensure_ascii=False, indent=2)
-    if not _refuse_if_stale(PLAN_FILE, new_text, base_text=_raw_text):
-        print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 달상태 갱신 건너뜀.")
-        log_event("plan_stale_write_refused", month=cur)
-        return
-    PLAN_FILE.write_text(new_text, encoding="utf-8")
     for key, old, new in changed:
         print(f"[달상태] {key} {old} → {new}")
     log_event("month_status_rolled", month=cur, changed=len(changed))

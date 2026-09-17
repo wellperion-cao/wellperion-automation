@@ -67,11 +67,11 @@ except Exception:
         return False
 
 try:  # 안전 커밋터(배9820) — 임시 인덱스+CAS. 커밋은 반드시 이 경유(맨손 git 금지, 저장소 규칙)
-    from safe_commit import safe_commit as _safe_commit, refuse_if_older_than_head as _refuse_if_stale
+    from safe_commit import safe_commit as _safe_commit
 except Exception:
     _safe_commit = None
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다.
 
 INDEX_LOCK_FILE = BASE_DIR / ".git" / "index.lock"
 _COMMIT_LOCK_RETRY_SEC = 5
@@ -550,7 +550,6 @@ def sync_schedule(objs: list, live: bool) -> None:
 
 def run(month: str | None, apply: bool) -> None:
     plan = load_json(PLAN_FILE)
-    _plan_base_text = PLAN_FILE.read_text(encoding="utf-8") if PLAN_FILE.exists() else None
     if not month:
         month = datetime.now().strftime("%Y-%m")
     objs = plan.get("months", {}).get(month, {}).get("objectives", []) or []
@@ -639,7 +638,7 @@ def run(month: str | None, apply: bool) -> None:
     auto_rate = round(n_auto / total, 4) if total else 0.0
 
     if live and (changed or obs_changed or honesty_changed):
-        plan["honesty_summary"] = {
+        honesty_summary = {
             "총": total, "실측": n_auto, "상태만": n_observe,
             # 근거계산 = 연결 소스는 없지만 '몇 개 중 몇 개' 를 구조로 적어 엔진이 센 값(items_basis).
             # 사람이 타이핑한 숫자(사람값)와 구분한다 — 근거가 있으면 어긋남을 기계가 잡는다(2026-07-27).
@@ -647,20 +646,32 @@ def run(month: str | None, apply: bool) -> None:
             "사람값": n_manual, "측정실패": n_gap,
             "자동화율": auto_rate, "at": datetime.now().strftime("%Y-%m-%d"),
         }
-        new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
-        # ★2026-09-16 GM 지시(웰리 실측) — 쓰기 직전 HEAD 대비 신선도 확인. 이 시점
-        #   디스크가 이미 HEAD 보다 낡아 있으면(다른 세션 커밋이 워킹트리 미반영 등)
-        #   그 낡은 판 위에 자동반영을 얹어 되쓰면 HEAD 에만 있던 내용이 사라진다.
-        if not _refuse_if_stale(PLAN_FILE, new_text, base_text=_plan_base_text):
-            print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. "
-                  f"이 PC 워킹트리를 최신으로 맞춘 뒤 재실행하세요.")
+        # ★2026-09-17 시토 — queue_lock.mutate_json 관문으로 통일(GM 「낡은 판 되쓰기 근본 해결」).
+        #   plan 통째로 되쓰지 않는다 — 잠금 안에서 디스크를 다시 읽고(낡았으면 HEAD 로 자가치유)
+        #   이번에 실제로 바뀐 목표(obj_patches)와 honesty_summary 만 병합해 쓴다. 그 사이 다른
+        #   세션이 커밋한 다른 목표·다른 달 내용은 그대로 남는다.
+        obj_patches = {str(o["id"]): o for o in objs if o.get("id") is not None}
+
+        def _mutator(data):
+            cur_objs = data.setdefault("months", {}).setdefault(month, {}).setdefault("objectives", [])
+            for i, cur_o in enumerate(cur_objs):
+                if isinstance(cur_o, dict) and str(cur_o.get("id")) in obj_patches:
+                    cur_objs[i] = obj_patches[str(cur_o.get("id"))]
+            data["honesty_summary"] = honesty_summary
+            return data
+
+        from queue_lock import mutate_json
+        try:
+            mutate_json("status/monthly_ops_plan.json", _mutator, holder="monthly_ops_sync",
+                        repo_root=str(BASE_DIR))
+        except Exception as e:
+            print(f"[거부] {PLAN_FILE.name} 저장 실패 — {e}")
             worklog_log(
                 "coo", "월간계획",
-                "월간 운영계획 자동 반영 거부 — 디스크가 HEAD 보다 낡음(쓰기 전 가드)",
-                result="warn", detail=f"{month} · refuse_if_older_than_head 거부", ref=month,
+                "월간 운영계획 자동 반영 실패 — mutate_json 관문 오류",
+                result="warn", detail=f"{month} · {e}", ref=month,
             )
         else:
-            PLAN_FILE.write_text(new_text, encoding="utf-8")
             print(f"[반영] {PLAN_FILE.name} 저장 완료 — safe_commit 경유 커밋 시도.")
             commit_plan(month, changed, obs_changed)
             # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)

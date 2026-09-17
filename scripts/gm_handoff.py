@@ -40,21 +40,34 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 PLAN_PATH = ROOT / "status" / "monthly_ops_plan.json"
-
-try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
-    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
-except Exception:
-    def _refuse_if_stale(*a, **k):
-        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+# ★2026-09-17 시토 — 낡은 판 되쓰기 가드는 이제 queue_lock.mutate_json 관문 안에 있다(자가치유
+#   포함). 이 파일은 더 이상 refuse_if_older_than_head 를 직접 부르지 않는다 — _save_card·
+#   각 함수의 mutate_json 호출부 참조.
 
 
-def _save_plan(plan: dict, base_text: str | None = None) -> dict | None:
-    """PLAN_PATH 를 통째로 되쓰기 전 HEAD 대비 신선도 확인 — 거부 시 None 이 아닌 사유를 돌려준다.
-    base_text = 호출자가 고치기 전에 읽은 원문(있으면 낡음 판정을 이 원문으로 잰다)."""
-    new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
-    if not _refuse_if_stale(PLAN_PATH, new_text, base_text=base_text):
-        return {"ok": False, "reason": "디스크가 HEAD 보다 낡음 — 저장 거부(refuse_if_older_than_head)"}
-    PLAN_PATH.write_text(new_text, encoding="utf-8")
+def _save_card(card_id: str, mutated_card: dict) -> dict | None:
+    """카드 하나(이미 고쳐 둔 mutated_card)를 fresh 데이터의 같은 id 카드에 병합해 저장 —
+    queue_lock.mutate_json 관문(2026-09-17 시토 · GM 「낡은 판 되쓰기 근본 해결」).
+    plan 통째로 되쓰지 않는다 — 잠금 안에서 디스크를 다시 읽고(낡았으면 HEAD 로 자가치유) 그
+    카드 하나만 바꿔치기해서 쓴다. 실패 시 None 이 아닌 사유를 돌려준다."""
+    from queue_lock import mutate_json  # noqa: PLC0415 (지연 import — 저장할 때만 잠금)
+    result: dict = {"reason": None}
+
+    def _mutator(data):
+        fresh_card = _find_card(data, card_id)
+        if fresh_card is None:
+            result["reason"] = f"카드 {card_id} 없음"
+            return data
+        fresh_card.clear()
+        fresh_card.update(mutated_card)
+        return data
+
+    try:
+        mutate_json("status/monthly_ops_plan.json", _mutator, holder="gm_handoff", repo_root=str(ROOT))
+    except Exception as e:  # noqa: BLE001 — 잠금 타임아웃 등, 저장 실패를 사유로 돌려준다
+        return {"ok": False, "reason": f"저장 실패 — {e}"}
+    if result["reason"]:
+        return {"ok": False, "reason": result["reason"]}
     return None
 # ★배12675 웰리 실측(2026-09-16) — 표기가 둘로 갈렸던 자리. GM_OWNER(띄어쓰기)는 전사일정
 #   표시 정본(2026-09-03 통일 · kakao_report_sender.py) 이자 GM업무 카드 owner 값으로,
@@ -228,8 +241,7 @@ def _find_card(obj, card_id: str):
 
 
 def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) -> dict:
-    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
-    plan = json.loads(_raw_text)
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
     card = _find_card(plan, card_id)
     if not card:
         return {"ok": False, "reason": f"카드 {card_id} 없음"}
@@ -247,7 +259,7 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     if dry:
         return {"ok": True, "dry": True}
     card["progress_note"] = pn
-    fail = _save_plan(plan, base_text=_raw_text)
+    fail = _save_card(card_id, card)
     if fail:
         return fail
     return {"ok": True}
@@ -258,8 +270,7 @@ def close_card(card_id: str, why: str, dry: bool) -> dict:
     지금까지 카드 status 를 완료로 바꾸는 코드가 없어(진척 체크만 바꾸는 touch_plan 뿐) 판정만
     하고 못 닫던 것을 여기 하나로 연다. 나우열M 라인 카드는 AI 가 안 고친다(feedback_cfo_screens_
     belong_to_nawoolm_hands_off 와 같은 원칙 — 08-18 규칙 확장) → 거부."""
-    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
-    plan = json.loads(_raw_text)
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
     card = _find_card(plan, card_id)
     if not card:
         return {"ok": False, "reason": f"카드 {card_id} 없음"}
@@ -275,7 +286,7 @@ def close_card(card_id: str, why: str, dry: bool) -> dict:
     card["status"] = "완료"
     card["progress"] = 100
     card["progress_note"] = pn
-    fail = _save_plan(plan, base_text=_raw_text)
+    fail = _save_card(card_id, card)
     if fail:
         return fail
     return {"ok": True}
@@ -287,8 +298,7 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
     셋업」). 업무 SSOT 행은 여전히 안 만든다(TODO_UPLOAD_BLOCKED) — GM업무 = 이 카드, 결재 = 사람이 SSOT 에.
     같은 제목의 카드가 이번 달에 이미 있으면 새로 만들지 않고 그 id 를 돌려준다."""
-    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
-    plan = json.loads(_raw_text)
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
     ym = _today().strftime("%Y-%m")
     month = plan.setdefault("months", {}).setdefault(ym, {})
     objs = month.setdefault("objectives", [])
@@ -300,7 +310,7 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
                 # 카드가 먼저 있고 행이 나중에 생긴 경우 — 짝만 붙인다(카드 본문은 그대로).
                 o["todo_id"] = todo_id
                 o["progress_note"] = (o.get("progress_note") or "").rstrip() + f"\n🔗 업무 SSOT {todo_id}"
-                fail = _save_plan(plan, base_text=_raw_text)
+                fail = _save_card(o.get("id"), o)
                 if fail:
                     return fail
             return {"ok": True, "id": o.get("id"), "existing": True}
@@ -328,10 +338,19 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
         card["category"] = category
     if dry:
         return {"ok": True, "dry": True, "id": cid}
-    objs.append(card)
-    fail = _save_plan(plan, base_text=_raw_text)
-    if fail:
-        return fail
+
+    from queue_lock import mutate_json  # noqa: PLC0415 (지연 import — 저장할 때만 잠금)
+
+    def _mutator(data):
+        fresh_objs = data.setdefault("months", {}).setdefault(ym, {}).setdefault("objectives", [])
+        if not any(str(x.get("id")) == cid for x in fresh_objs):
+            fresh_objs.append(card)
+        return data
+
+    try:
+        mutate_json("status/monthly_ops_plan.json", _mutator, holder="gm_handoff", repo_root=str(ROOT))
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": f"저장 실패 — {e}"}
     return {"ok": True, "id": cid}
 
 
@@ -371,10 +390,9 @@ def _open_checks(progress_note: str) -> list[str]:
 
 
 def migrate_cards(dry: bool, only: set | None) -> list[dict]:
-    """월간운영계획(GM 카드) 열린 카드 → 업무 SSOT 행. dry=False 면 카드마다 즉시 _save_plan
-    으로 저장한다(누적 diff 방지 · 배 지시 「한 카드 = 한 저장」) — 실제 실행은 --only 로 끊어 부른다."""
-    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
-    plan = json.loads(_raw_text)
+    """월간운영계획(GM 카드) 열린 카드 → 업무 SSOT 행. dry=False 면 카드마다 즉시 _save_card
+    로 저장한다(누적 diff 방지 · 배 지시 「한 카드 = 한 저장」) — 실제 실행은 --only 로 끊어 부른다."""
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
     open_rows = _open_todo_rows()
     rows = []
     for ym, month in (plan.get("months") or {}).items():
@@ -414,26 +432,14 @@ def migrate_cards(dry: bool, only: set | None) -> list[dict]:
                 rows.append(row)
                 continue
             todo_id = str(r.get("id") or "")
-            # ★배 「업무 SSOT 이관 실행」(2026-09-17) 실측 — refuse_if_older_than_head 는 파일당
-            # 2줄(이상)+ 이 바뀌면(카드 여러 개를 커밋 없이 이어 쓰면 금방 넘는다) 거부한다.
-            # 그래서 카드마다 즉시 저장하되(위 설계 「한 카드 = 한 저장」), 다른 레인이 그 사이
-            # monthly_ops_plan.json 을 커밋해 HEAD 가 앞서갔을 때는 plan 을 다시 읽어 재적용한다
-            # (add_todo 는 이미 끝났으니 다시 부르지 않는다 — 재시도는 카드 쪽 저장만).
+            # ★배 「업무 SSOT 이관 실행」(2026-09-17) → 2026-09-17 시토: 재시도 루프를 걷어내고
+            # _save_card(queue_lock.mutate_json 관문)로 통일했다 — 잠금+자가치유가 관문 안에 있어
+            # 카드마다 다시 읽어 재시도할 필요가 없다(add_todo 는 이미 끝났으니 다시 부르지 않는다).
             note_suffix = f"\n[업무 SSOT {todo_id} 로 이관 {_MIGRATE_TAG}]"
-            fail = None
-            for _attempt in range(3):
-                cur_raw_text = PLAN_PATH.read_text(encoding="utf-8") if _attempt else _raw_text
-                cur_plan = json.loads(cur_raw_text) if _attempt else plan
-                cur_card = _find_card(cur_plan, cid) if _attempt else card
-                if not cur_card:
-                    fail = {"reason": "저장 재시도 중 카드를 못 찾음"}
-                    break
-                cur_card["status"] = "이관"
-                if note_suffix not in (cur_card.get("progress_note") or ""):
-                    cur_card["progress_note"] = (cur_card.get("progress_note") or "").rstrip() + note_suffix
-                fail = _save_plan(cur_plan, base_text=cur_raw_text)
-                if not fail:
-                    break
+            card["status"] = "이관"
+            if note_suffix not in (card.get("progress_note") or ""):
+                card["progress_note"] = (card.get("progress_note") or "").rstrip() + note_suffix
+            fail = _save_card(cid, card)
             if fail:
                 row["판정"] = f"행은 만듦({todo_id}) · 카드 저장 실패({fail.get('reason')})"
             else:
