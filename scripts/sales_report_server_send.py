@@ -51,7 +51,7 @@ from tg_outbound_log import send as tg_send  # noqa: E402
 SWITCH_PATH = ROOT / "status" / "sales_report_server_switch.json"
 REPORT_ROOM = "8254867551"        # 업무보고방(@namuki_report_bot) — CLAUDE.md 0장
 SCREEN_URL = "https://erp.wellperion.com/coo/report/매출회원현황보고.html"
-PAGE_TITLES = ("매출 및 회원 현황 보고", "문의 등록 상세", "운영 현황")
+PAGE_TITLES = ("매출 및 회원 현황", "문의 등록 상세", "운영 현황")   # 화면 제목은 「웰페리온 운영 현황 보고」(GM 2026-09-17) · 1면 이름만 여기
 ON_SERVER = _DEPLOYED.is_dir()
 
 
@@ -76,7 +76,7 @@ def _ref_date():
 
 def send_three_pages(token, chat, paths, ref_date, note, dry_run=False):
     """1~3면 사진 3장 — 1면 캡션에 제목·기준일·판 안내, 2·3면은 면 이름만."""
-    head = ("매출 및 회원 현황 보고 · 기준일 %s · 서버판 09:00(병행 · 10/1 전환 예정) · 정본 %s"
+    head = ("웰페리온 운영 현황 보고 · 기준일 %s · 서버판 09:00(병행 · 10/1 전환 예정) · 정본 %s"
             % (ref_date, SCREEN_URL))
     caps = ["%s\n1/3 %s%s" % (head, PAGE_TITLES[0], note),
             "2/3 %s · 기준일 %s" % (PAGE_TITLES[1], ref_date),
