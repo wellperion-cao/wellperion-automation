@@ -82,6 +82,22 @@ def reception_key() -> str:
     return ""
 
 
+def gas_date10(v) -> str:
+    """GAS 가 돌려주는 날짜 칸을 「YYYY-MM-DD」(한국 날짜)로. 시트 날짜 칸은 한국 자정으로 저장돼
+    ISO 로는 전날 15:00Z 로 온다 — 앞 10자만 자르면 하루 앞당겨진다(2026-09-17 실사고: todo_update 가
+    읽은 값을 그대로 되보내 갱신마다 시작일·종료일이 하루씩 당겨졌다). 여기 하나로만 자른다."""
+    s = str(v or "").strip()
+    if not s:
+        return ""
+    if "T" in s and (s.endswith("Z") or "+" in s[10:]):
+        try:
+            d = datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone(timedelta(hours=9)))
+            return d.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+    return s[:10]
+
+
 def gas_get(
     url: str,
     params: dict | None = None,

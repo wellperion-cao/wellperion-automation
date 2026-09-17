@@ -199,6 +199,7 @@ def find_open_duplicate(title: str) -> dict | None:
 
 
 def append_todo(todo_id: str, line: str, dry: bool) -> dict:
+    from collectors.ops_shared import gas_date10  # noqa: PLC0415  날짜 칸은 여기서만 자른다(2026-09-17 하루 당김 사고)
     """GM업무 한 행의 내용 끝에 진척 한 줄을 덧붙인다(GM 2026-09-05 "G1에 계속 업데이트").
     todo_update 는 전 칸을 다시 보내야 하므로 현재 행을 읽어 내용만 늘린다. 행이 없으면 실패를 그대로 돌려준다."""
     import ops_daily_digest as o
@@ -210,7 +211,7 @@ def append_todo(todo_id: str, line: str, dry: bool) -> dict:
         return {"ok": False, "reason": f"행 없음 {todo_id}"}
     content = (row.get("내용") or "").rstrip() + f"\n[{_today().isoformat()}] {line}"
     params = {"action": "todo_update", "id": todo_id, "title": row.get("업무명", ""), "category": row.get("카테고리", ""),
-              "owner": row.get("담당자", ""), "startDate": str(row.get("시작일", ""))[:10], "endDate": str(row.get("종료일", ""))[:10],
+              "owner": row.get("담당자", ""), "startDate": gas_date10(row.get("시작일", "")), "endDate": gas_date10(row.get("종료일", "")),
               "content": content, "approval": row.get("결재요청", "")}
     if dry:
         return {"ok": True, "dry": True, "content": content}

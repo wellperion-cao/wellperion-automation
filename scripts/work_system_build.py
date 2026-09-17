@@ -25,6 +25,7 @@ if _HERE not in sys.path:
 
 import gm_surfaces_sync as sync            # noqa: E402  norm_title · similar (약속 L01 재사용)
 import gm_handoff                          # noqa: E402  GM_KEY
+from collectors.ops_shared import gas_date10  # noqa: E402  ISO→한국 날짜(2026-09-17 하루 당김 사고)
 from send_ops_digest import MGR_LEDGER     # noqa: E402  중간관리자 원장 정본 경로
 from collectors.ops_shared import gas_get, SSOT_API_URL  # noqa: E402
 
@@ -172,7 +173,7 @@ def collect_ssot(today: date):
                 continue
             items.append({
                 "title": title, "owner": str(r.get("담당자") or "").strip(),
-                "dept": "", "due": (str(r.get("종료일") or "")[:10] or None),
+                "dept": "", "due": (gas_date10(r.get("종료일")) or None),
                 # 09-17 GM 지적(바이크 A3 자료 실종) — 카드 이관 관문(gm_handoff.migrate_cards)이
                 # ■ 자료 절을 내용 끝에 싣게 됐다. 80자로 자르면 그 절이 항상 잘려 안 보인다 → 자르지 않는다.
                 "next": clean_multiline(r.get("내용")),
