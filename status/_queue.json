@@ -745,5 +745,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-09-17"
+  },
+  {
+    "task_id": "CTO-2026-09-17-옛-업무-화면-3장-삭제-업무-SSOT-이관-검증-",
+    "clevel": "cto",
+    "title": "[시토] 옛 업무 화면 3장 삭제 — 업무 SSOT 이관 검증 뒤(GM 지시 2026-09-17 17:1x)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-17",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-09-17] GM 원문 17:1x: 「백엔드 및 프론트엔드, 특히 페이지 관련해서도 다 이관하면 문제 없으면 기존에 있던 페이지는 삭제처리해줘」. 대상 = coo/chairman/GM업무.html · 업무시스템.html · 중간관리자_업무목차.html(지금은 이동 스텁 · 옛 링크 52곳 살아 있음). 삭제 전 조건 3: ① 시우 배 2727(회의요약·회의자료 A3 원천 = 업무 SSOT) 입항 ② 9/18 07:50 통이 SSOT 원천으로 정상 발신(시우 e13883c618) ③ 저장소 안 옛 링크 52곳(screen_map.json 들어오는 링크)을 업무 현황 SSOT.html?owner= 로 교체. 삭제 = 파일 3장 + 빌더(manager_task_index.py PAGE_RETIRED · work_system_build.py) 가 HTML 을 더 안 쓰게(json 산출은 평가 탭 원천이라 유지) + nginx 옛 주소 301 → 업무 현황 SSOT(09-07 교훈: 외부 즐겨찾기 끊김 · 301 은 9/25 까지 유지) + 화면 지도 재생성. 실무진 안내는 웰리가 17:13 ★중간관리자에 「옛 화면은 검증 뒤 내림」으로 이미 보냄 — 삭제 당일 새 주소 한 줄은 웰리가 낸다(시토는 삭제 시각만 알려 달라). 라우팅 강제 이유 = 화면 파일 삭제·nginx·빌더 = 시토 소관(화면 이름에 GM업무 낱말이 있을 뿐).",
+    "next": "① 시우 2727 상태 확인 → ② 9/18 07:50 통 검증 → ③ 링크 52곳 교체·저장 → ④ 9/18 오후 삭제+301+화면 지도 → 웰리에게 시각 한 줄",
+    "depends_on": "",
+    "ship_no": 12730,
+    "short_no": 2728,
+    "module": "home",
+    "audience": "office",
+    "reversible": false,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-17"
   }
 ]
