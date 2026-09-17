@@ -95,6 +95,8 @@ description: 웰페리온(Wellperion) 시각물·콘텐츠를 만들거나 검�
 | 릴스 영상 제작 | `scripts/make_reel.py` | 1080×1920·Ken Burns·CrossFade 0.4초 |
 | 화면 디자인 검수(홈·랜딩·파트너 페이지) | `.venv/Scripts/python.exe scripts/design_audit.py "<html>"` | 디자인 규칙집(`~/.claude/skills/ui-ux-pro-max`)의 순수 HTML 항목 19개를 헤드리스로 잰다 — **화면을 내놓기 전에 먼저 돌려 ⚠️ 0 으로 만든다**(GM 2026-09-15 「시모가 먼저 학습해서 오라」). 색·글꼴은 안 잰다(canon 이 정본) |
 | 화면 UI/UX 표준 전수 실측(ERP 전 화면) | `C:/Python314/python.exe scripts/ui_standard_check.py --저장 --ux` | 규격 ①~⑤(파일 읽기) + ⑥ UX 19항목(위 검수기) = 여섯 가지 → `status/ui_standard.json` → 웰페리온 랩스 관리 화면 › 자료 › 화면 UI/UX 표준 표. 141장 ≈ 8분. GM 「UI 표준 승인」 뒤 안 지키는 화면부터 맞춘다(GM 2026-09-15 「시모 성장분을 UI/UX 표준화로」) |
+| 그림 도구 고르기(합성·3D·라벨) | `ssot/model_routing.json` › `그림_도구` | 새 그림 만들기만 힉스필드(2k=2·4k=4) · 옮기기·지우기·라벨·표는 코드 0원 · 위치 지시는 상자 가이드 그림으로 · 재시도 2회 넘으면 방법 교체(GM 2026-09-17 「작업에 맞게 골라 써라」) |
+| 화면 디자인 스킬 3종(2026-09-17 설치) | `/impeccable`(감사·폴리싱·안티패턴) · `emil-design-eng`(타이포·여백·모션 판단) · `design-taste-frontend`(AI 티 제거 · 변수 3개) | 새 화면·랜딩 = ①design-taste 로 방향(웰페리온 회사 화면 variance 4·motion 3·density 5 / 랩스 랜딩 6·4·4) ②만들기 ③`agent-browser` 로 열어 스크린샷 ④`/impeccable` 감사 + `design_audit.py` ⑤고치고 다시 본다(2~3회). 색·글꼴·용어는 canon 이 이긴다 |
 | 플랫폼(웰페리온 랩스) 화면 색·부품 | `3. 웰페리온 가이드/erp/admin/platform_brand.css` · 사람용 `platform_brand_guide.html` | 파는 모듈·관리 화면은 이 토큰(--pf-*)만 · 웰페리온 회사 화면은 종전대로 `erp/brand/tokens.css` |
 
 콘텐츠 작업 폴더 구조(`instagram/{YYMMDD_명}/`, `output(채널)/` 4종)와 발행 파이프라인 상세는 CLAUDE.md §3-2 이하 및 `3. 웰페리온 가이드/cmo/brand/브랜드가이드.html`(정본 ② — 구 비주얼_스타일_가이드.md 흡수) 참조.
