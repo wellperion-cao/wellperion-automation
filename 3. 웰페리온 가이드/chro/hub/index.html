@@ -776,6 +776,64 @@
 "use strict";
 /* ============ config ============ */
 var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+/* ============ 서버 거울(mirror) 호출 — 쓰기 ok 직후 (2026-09-17, 서버 규격 시토 14:57 확정) ============
+   POST /api/hr/mirror {tabs:[...]} — fire-and-forget(await 없음, 응답을 기다려 사용자 동작을 막지 않음).
+   실패해도 GAS 쓰기 결과 표시에는 영향 없음(쓰기는 종전 그대로 NOTION_FN/GAS 직행 — 이 호출은 부수효과).
+   원점가드: erp.wellperion.com(또는 서버 IP)에서 열렸을 때만 호출 — GitHub Pages 사본(github.io)은 호출 안 함
+   (leave.html 2026-09-14 isServerHost() hostname 분기와 동일 패턴).
+   킬스위치: MIRROR_ON=false면 호출 0건·종전 동작과 완전 동일 — 되돌리기는 이 상수 하나.
+   연속 실패(3회 이상) 시에만 화면 하단에 경고 배너 — 단발 실패는 콘솔 경고만 남기고 조용히 다음 호출로 넘어간다
+   (조용한 실패 금지 원칙은 "계속 실패인데 아무 표시도 없음"을 막는 것 — 단발 재시도는 하지 않는다).
+   [2026-09-17 17:2x 계약 재확인] origin/master server/erp_api/api_hr_mirror.py(라우트 정의 186~211행,
+   최신 반영 커밋 2f9438aac2)를 직접 대조 — 본문은 지금도 {"tabs":[...]}(list, plural) 하나뿐이고
+   body.get("tabs")가 list가 아니면 400을 던진다(단수 "tab" 키는 서버가 아예 모름). 응답은
+   {"ok":true,"queued":[처리 예정 탭...],"skipped":[...]}로, queued는 불리언이 아니라 탭 이름 배열이다.
+   즉 본문 모양은 원래 구현 그대로가 맞아 바꾸지 않았고, 응답은 HTTP status만 보던 것에서
+   JSON의 ok 필드까지 확인하도록 보강했다(아래 .then). health는 /api/hr/mirror/health(213행)인데
+   이 파일 쓰기 화면은 애초에 health를 호출하지 않아 고칠 지점이 없다(leave.html도 동일). */
+var MIRROR_ON = true;
+var MIRROR_FAIL_STREAK_ = 0;
+function isErpOrigin_(){
+  var h = location.hostname;
+  return h === "erp.wellperion.com" || /^\d{1,3}(\.\d{1,3}){3}$/.test(h);
+}
+function mirrorWarnBanner_(msg){
+  var b = document.getElementById("hrMirrorWarnBanner");
+  if(!b){
+    b = document.createElement("div"); b.id = "hrMirrorWarnBanner";
+    b.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#b00020;color:#fff;"
+      + "font-size:12px;text-align:center;padding:4px 8px;";
+    document.body.appendChild(b);
+  }
+  b.textContent = "⚠ 서버 거울(mirror) 연속 실패: " + msg;
+  b.style.display = "block";
+}
+function mirrorWarnClear_(){
+  var b = document.getElementById("hrMirrorWarnBanner");
+  if(b) b.style.display = "none";
+}
+// 쓰기 응답 ok 직후 호출하는 공용 함수. tabs = 서버 열쇠 배열(예:["emp","onbo"], 8종: hire·emp·exit·appl·eval·onbo·blacklist·leave).
+// 본문 {"tabs":tabs}는 서버 api_hr_mirror.py 그대로(단수 키 없음) — 한 번의 POST로 다중 탭을 같이 보낸다(탭별 순차 재호출 아님).
+function hrMirror(tabs){
+  if(!MIRROR_ON || !isErpOrigin_() || !tabs || !tabs.length) return;
+  fetch("/api/hr/mirror",{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({tabs:tabs})})
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json().catch(function(){return null;});
+    })
+    .then(function(d){
+      // 서버가 200과 함께 {"ok":false}를 주는 경로는 코드상 없지만(성공 응답은 항상 ok:true),
+      // 응답 JSON까지 확인해 진짜 접수(ok===true)만 성공으로 친다 — 파싱 실패(d=null)는 HTTP 200을 받았으니 성공 취급.
+      if(d && d.ok===false) throw new Error(d.error||"mirror ok:false");
+      MIRROR_FAIL_STREAK_ = 0; mirrorWarnClear_();
+    })
+    .catch(function(e){
+      MIRROR_FAIL_STREAK_++;
+      console.warn("[hrMirror] 실패("+tabs.join(",")+"):",(e&&e.message)||e);
+      if(MIRROR_FAIL_STREAK_>=3) mirrorWarnBanner_(tabs.join(",")+" 등 "+MIRROR_FAIL_STREAK_+"회 연속");
+    });
+}
 // [추가 2026-07-14 A-4] COO 업무보드(업무 현황 SSOT) 읽기 전용 소스 — 무인증 GET(todo_list). HR과 별개 백엔드.
 //   직무성과 산출을 위해 담당자별 업무·중요도(난이도)만 읽어옴. 이 화면에서 COO 보드에 쓰지 않음(읽기전용).
 var COO_TODO_FN = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
@@ -936,6 +994,7 @@ async function onChannelToggle(ev){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"set-channels",adminPassword:SESSION_PW,sheetRow:Number(row),jobName:jobName,channels:next})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"set-channels 실패");
+    hrMirror(["hire"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     if(h) h["채용 채널"]=next.join(", "); // 메모리 즉시 갱신 (다음 토글 정확도)
     var nowOn=!has;                          // 클릭한 칩 즉시 시각 갱신
     el.textContent=(nowOn?"✓ ":"· ")+chName;
@@ -1693,6 +1752,7 @@ async function closeJob(row,name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-hire",adminPassword:SESSION_PW,sheetRow:row,status:"마감"})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
+    hrMirror(["hire"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     // [추가 2026-07-16 A-5 P2·G4] 진행중 지원자 명단 안내(자동쓰기 0, 당락 자동변경 배제).
     if(r.pendingApplicants&&r.pendingApplicants.length>0){ showPendingApplicantsModal(name,r.pendingApplicants); }
     // [수정 2026-08-04 A-5 즉시반영] 재조회(reloadData)는 B-3 스테일 창에서 마감 전 구본을 되그릴 수 있어,
@@ -2679,6 +2739,7 @@ async function submitAddBlacklist(){
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-blacklist",adminPassword:SESSION_PW,
       name:name, birth:g("blf_birth"), phone4:g("blf_phone4"), source:g("blf_source"), reason:reason, memo:g("blf_memo")})}).then(function(x){return x.json();});
     if(!r||!r.ok) throw new Error((r&&r.error)||"등록 실패");
+    hrMirror(["blacklist"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     if(msg){msg.style.color="var(--green)";msg.textContent="✓ 등록 완료";}
     // [수정 2026-08-04 A-5 즉시반영] 재조회(loadBlacklist)는 B-3 스테일 창에서 방금 등록분이 빠진 구본을
     // 받을 수 있어, 성공 응답(row·등록일 포함)을 로컬 BLACKLIST에 직접 반영 후 부분 재렌더(폼도 초기화됨).
@@ -2700,6 +2761,7 @@ async function submitRemoveBlacklist(sheetRow,name){
     if(sheetRow) body.sheetRow=Number(sheetRow); else body.name=name;
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify(body)}).then(function(x){return x.json();});
     if(!r||!r.ok) throw new Error((r&&r.error)||"삭제 실패");
+    hrMirror(["blacklist"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 배열에서 해당 행 제거 + 부분 재렌더(재조회는 B-3 스테일 위험).
     var __tr=(r.row!=null?String(r.row):String(sheetRow||""));
     BLACKLIST=BLACKLIST.filter(function(b){ return __tr?String(b["_sheet_row"])!==__tr:blNorm(b["성명"])!==blNorm(name); });
@@ -2754,6 +2816,7 @@ async function obSubmitStart(){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-onboarding",adminPassword:SESSION_PW,name:name,dept:dept,mentor:document.getElementById("obsMentor").value.trim(),joinDate:join,owner:document.getElementById("obsOwner").value.trim()})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
+    hrMirror(["onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     obCloseModal("obStartModal");
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 백엔드 고정 템플릿(체크인 13+성찰 12+정보 1)을 로컬
     // DB.onbo에 미러링 후 부분 재렌더 — 재조회는 B-3 스테일 창에서 생성분이 빠진 구본을 되그릴 수 있음.
@@ -2809,6 +2872,7 @@ async function ogSubmitGenerate(){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-onboarding",adminPassword:SESSION_PW,name:__ogCtx.name,dept:dept,joinDate:__ogCtx.joinDate,owner:"관리자+HR"})}).then(function(x){return x.json();});
     if(!r||!r.ok) throw new Error((r&&r.error)||"실패");
+    hrMirror(["onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     mirrorOnboRowsLocal_(__ogCtx.name,dept,"",__ogCtx.joinDate,"관리자+HR");
     applyLocalWrite(["onbo"],["onbo","dash"]);
     obCloseModal("onboGateModal");
@@ -2998,6 +3062,7 @@ async function obSubmitCheck(){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-onboarding",adminPassword:SESSION_PW,sheetRow:row,done:true,note:note,owner:owner})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
+    hrMirror(["onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     obCloseModal("obCheckModal");
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 해당 행만 로컬 패치(완료·완료일·비고·담당자 — 백엔드
     // handleUpdateOnboarding_ 기록 필드와 동일) + 부분 재렌더. 재조회는 B-3 스테일 창 위험으로 미사용.
@@ -3016,6 +3081,7 @@ async function obDelete(name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"delete-onboarding",adminPassword:SESSION_PW,name:name})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
+    hrMirror(["onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 제거 + 후속 행번호 시프트 보정 — 백엔드
     // handleDeleteOnboarding_는 deleteRow로 아래 행들을 위로 당기므로, 보정 없이는 남은 행의 체크인
     // 기입(update-onboarding sheetRow)이 어긋난 행에 쓰일 수 있다. url은 행 재계산 불가라 비움(온보딩 미사용).
@@ -3641,6 +3707,7 @@ function wpSavePerfEval(p){
             __fb=__fb?(__bd+"\n\n"+__fb):__bd;
           }
           DB.eval.push({"평가명":__evalName,"대상자":__tgt,"평가 종류":(p.evalType||"정기 성과평가"),"평가 주기":(p.cycle||"반기"),"평가 기간 시작":(p.startDate||""),"평가 기간 종료":(p.endDate||""),"평가자":(p.evaluator||""),"총점":(r.total!=null?r.total:""),"가산점":(r.bonus!=null?r.bonus:""),"평가 등급":(r.grade||""),"평가지 링크":"","포상 여부":"N","포상 내역":"","피드백":__fb,"원본 Notion URL":"","_sheet_row":"","url":""});
+          hrMirror(["eval"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
           applyLocalWrite(["eval"],["eval","dash"]);
         }catch(e){ if(window.console&&console.warn)console.warn("[save-eval local]",(e&&e.message)||e); }
       }
@@ -5184,6 +5251,7 @@ async function submitResign(){
       msg.className="modal-msg err";msg.textContent=(data.error||("처리 실패 — 서버 오류 "+r.status));
       btn.disabled=false;btn.textContent="퇴사 처리 실행";return;
     }
+    hrMirror(["emp","exit"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     var parts=["• 임직원 명부: 퇴사 반영"];
     var exitOk=!!data.exitRecord;
     parts.push(exitOk?"• 퇴사 처리 DB: 레코드 생성":"• 퇴사 처리 DB: 실패 — "+(data.exitRecordMsg||"원인 미상"));
@@ -5302,6 +5370,7 @@ async function submitHire(){
       msg.className="modal-msg err";msg.textContent=(data.error||(data.notionMsg||"")||("처리 실패 — 서버 오류 "+r.status));
       btn.disabled=false;btn.textContent="등록 실행";return;
     }
+    hrMirror(["emp","onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     var parts=[data.notionRoster?"• 임직원 명부: 페이지 생성":"• 임직원 명부: 실패 — "+(data.notionMsg||"")];
     if(data.sheet&&data.sheet.attempted){
       parts.push(data.sheet.ok?"• 매출보고서 시트: "+(data.sheet.msg||"행 추가 완료")
@@ -5360,6 +5429,7 @@ async function submitSchedule(){
       msg.className="modal-msg err";msg.textContent=(data.error||"등록 실패");
       btn.disabled=false;btn.textContent="면접 등록";return;
     }
+    hrMirror(["appl"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     msg.className="modal-msg ok";msg.innerHTML="✓ "+esc(schTarget.name)+" — "+esc(stage)+" 일정 등록 완료";
     btn.textContent="완료";
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 지원자 행 패치(백엔드 handleScheduleInterview_ 기록
@@ -5409,6 +5479,7 @@ async function submitInterviewEval(){
       msg.className="modal-msg err";msg.textContent=(data.error||"등록 실패");
       btn.disabled=false;btn.textContent="평가 등록";return;
     }
+    hrMirror(["appl"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     msg.className="modal-msg ok";msg.innerHTML="✓ "+esc(iveTarget.name)+" — "+esc(grade)+" 등급 / "+esc(next)+" 처리 완료";
     btn.textContent="완료";
     // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 패치(백엔드 handleUpdateInterview_ 기록과 동일:
@@ -5466,6 +5537,7 @@ async function saveJoinDate(pageId,name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-applicant",adminPassword:SESSION_PW,sheetRow:__a["_sheet_row"],joinDate:date})}).then(function(x){return x.json();});
     if(r&&r.ok){
+      hrMirror(["appl"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
       // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 반영(합류 가능일만 — stage 미전달 계약 그대로) +
       // 부분 재렌더. 재조회는 B-3 스테일 창에서 방금 저장한 날짜를 빈값/구값으로 되돌려 보일 수 있음.
       __a["합류 가능일"]=date;
@@ -5511,6 +5583,7 @@ async function submitHireComplete(force){
       if(fbtn)fbtn.style.display=(data.error&&__dupCodes[data.error])?"":"none";
       btn.disabled=false;btn.textContent="입사 확정 실행";return;
     }
+    hrMirror(["appl","emp","onbo"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     var parts=["• 임직원 명부: "+(data.empPage?"생성 완료":"실패 — "+(data.empPageMsg||""))];
     parts.push("• 매출보고서 시트: "+(data.sheet&&data.sheet.ok?(data.sheet.msg||"행 추가 완료"):"실패 — "+((data.sheet&&data.sheet.msg)||"")));
     parts.push("• 지원자 페이지: 입사 완료 표시");
@@ -5774,6 +5847,7 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
         stage: stage, interviewDate: date, interviewer: interviewer, note: note
       })}).then(function(r){return r.json();});
       if(!r1.ok) throw new Error(r1.error||"set-stage failed");
+      hrMirror(["appl"]);   // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
       // [수정 2026-08-04 A-5 즉시반영 — 매니저 실증 결함 교정] 종전 loadAll()만으로는 ①재렌더가 없어 화면
       // 불변 ②재조회 자체도 B-3 스테일 창 위험. __currentAppl은 DB.appl 행과 동일 참조(APPS_BY_NAME 경유)라
       // 성공 응답 확인 후 직접 패치가 곧 DB 갱신 — 백엔드 handleSetStage_ 기록 필드(단계·일정·면접관·메모
