@@ -294,8 +294,22 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         file_bytes, file_name = _read_upload(document)
 
     if (photo is not None or document is not None) and file_bytes is None:
-        # 파일을 못 읽으면 네트워크를 두드리지 않는다 — 실패도 로그에는 남긴다.
-        log_outbound(text, chat_id=chat_id, source=source, ok=False, kind=kind)
+        # 2026-09-17 시토: 방금 만든 파일은 잠시 못 읽힐 수 있다(09-16·09-17 09:00 매출보고 3/3 사진이
+        #   이틀 연속 이 자리에서 조용히 실패 — 파일은 멀쩡히 있었고 손 재발송은 성공). 몇 초 두고 다시 읽는다.
+        _spec = photo if photo is not None else document
+        for _i in range(4):
+            time.sleep(2)
+            file_bytes, file_name = _read_upload(_spec)
+            if file_bytes is not None:
+                break
+    if (photo is not None or document is not None) and file_bytes is None:
+        # 파일을 못 읽으면 네트워크를 두드리지 않는다 — 실패도 로그에는 남긴다(왜 못 읽었는지까지).
+        try:
+            Path(photo if photo is not None else document).read_bytes()
+            _why = 'read failed'
+        except Exception as _ex:
+            _why = '%s: %s' % (type(_ex).__name__, str(_ex)[:200])
+        log_outbound(text, chat_id=chat_id, source=source, ok=False, kind=kind, error='file unreadable — ' + _why)
         return {'ok': False} if full_response else False
 
     # ★파일 업로드는 글자 발신보다 오래 걸린다 — 여기 관문에서 바닥값을 보장한다(약속 L21:
