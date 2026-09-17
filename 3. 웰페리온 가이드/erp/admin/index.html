@@ -857,6 +857,16 @@
   </table></div>
   <div class="ppre" id="qfoot"></div>
 
+  <h3 style="margin:26px 0 4px;font-size:15px">배운 것이 쌓이는 자리 — 학습 루프</h3>
+  <div class="ppre">손님 질문을 <b>유형</b>으로 묶어 세 곳 모두에 대조합니다. 값이 있으면 그 자리에서 답하고, 없으면 그 센터에 여쭐 <b>번호</b>가 됩니다.
+  한 센터에서 새 유형이 나오면 유형 원장이 두꺼워져 <b>다른 센터도 같이</b> 좋아집니다 — 같은 번호는 두 번 묻지 않습니다.
+  숫자는 매일 밤 다시 셉니다(scripts/counsel_learning_loop.py).</div>
+  <div class="tbl-wrap"><table class="reg" id="ltbl">
+    <thead><tr><th>파트너사</th><th>자력 답변</th><th>유형 커버리지</th><th>빈칸</th><th>여쭐 번호</th><th>답 온 번호</th></tr></thead>
+    <tbody><tr><td colspan="6" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="ppre" id="lfoot"></div>
+
   <div id="acct" class="acctbox" hidden>
     <div class="accthead"><b>계정 자리</b>
       <button type="button" id="acct-toggle" class="acctbtn">아이디 보기</button></div>
@@ -2016,6 +2026,39 @@
       var f = document.getElementById('qfoot');
       if (f && d.generated_at) f.textContent = '마지막으로 센 때 ' + d.generated_at.slice(0, 16).replace('T', ' ');
     }).catch(function(){});
+  })();
+  // 학습 루프 지표 — status/counsel_learning.json 하나만 읽는다(scripts/counsel_learning_loop.py 가 만든다).
+  (function(){
+    var tbl = document.getElementById('ltbl');
+    if (!tbl) return;
+    var NAME = {'1_wellperion':'1호 웰페리온','2_dietcamp':'2호 다이어트캠프','3_gocheokgolf':'3호 고척GDR QA 골프존'};
+    function get(path){
+      var local = (location.hostname === 'erp.wellperion.com')
+        ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        : Promise.reject(0);
+      return local.catch(function(){ return fetch('/repo/' + path + '?_=' + Date.now(), {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : null; }); });
+    }
+    var body = tbl.tBodies[0];
+    function fail(msg){ body.innerHTML = '<tr><td colspan="6" class="ppct" style="padding:14px 8px">' + msg + '</td></tr>'; }
+    get('status/counsel_learning.json').then(function(d){
+      if (!d || !d.centers) { fail('이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.'); return; }
+      var rows = '';
+      Object.keys(d.centers).forEach(function(k){
+        var c = d.centers[k];
+        var pct = (c['답변율'] == null) ? '—' : Math.round(c['답변율'] * 100) + '%';
+        rows += '<tr><td class="item">' + (NAME[k] || c['name'] || k) + '</td>'
+              + '<td><b>' + pct + '</b></td>'
+              + '<td>' + (c['유형_커버리지'] || '—') + '</td>'
+              + '<td>' + (c['빈칸_수'] == null ? '—' : c['빈칸_수'] + '칸') + '</td>'
+              + '<td>' + (c['안_물은_번호_수'] == null ? '—' : c['안_물은_번호_수'] + '개') + '</td>'
+              + '<td>' + (c['답_온_번호_수'] == null ? '—' : c['답_온_번호_수'] + '개') + '</td></tr>';
+      });
+      body.innerHTML = rows;
+      var f = document.getElementById('lfoot');
+      if (f) f.textContent = '유형 ' + ((d.overall && d.overall['유형_수']) || '—') + '개 · 새 유형 후보 '
+        + ((d.overall && d.overall['후보_유형_수']) || 0) + '개 · 마지막으로 센 때 ' + (d.generated_at || '').slice(0,16).replace('T',' ');
+    }).catch(function(){ fail('못 읽었습니다 — 잠시 뒤 새로고침해 주세요.'); });
   })();
   </script>
 

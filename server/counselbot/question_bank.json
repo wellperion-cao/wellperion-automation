@@ -1,7 +1,7 @@
 {
- "_doc": "상담봇 기반 질문 세례 v1 — 업체 하나를 처음 맡을 때 던지는 질문 전부. 각 질문에 '왜 쌓나(why)'와 '채워지는 정본 칸(feeds)'이 붙는다(GM 2026-09-05: 어떤 정보를 왜 쌓는지도 계속 쌓아 두라). 답은 업체별 사본(tenants/{t}_qa.json)에 쌓이고 정본 칸으로 승격된다. 질문만 있고 사실은 없다 — 지어내지 않음. | 2026-09-15 L 영역(콘텐츠·자동화 8문) 추가 — 업체별 답은 tenants/{t}_qa.json 에 q_id·partner_no 로 누적하고 플랫폼관리 파트너사 패널이 발행본(scripts/partner_onboarding_publish.py)을 읽는다.",
+ "_doc": "상담봇 기반 질문 세례 v1 — 업체 하나를 처음 맡을 때 던지는 질문 전부. 각 질문에 '왜 쌓나(why)'와 '채워지는 정본 칸(feeds)'이 붙는다(GM 2026-09-05: 어떤 정보를 왜 쌓는지도 계속 쌓아 두라). 답은 업체별 사본(tenants/{t}_qa.json)에 쌓이고 정본 칸으로 승격된다. 질문만 있고 사실은 없다 — 지어내지 않음. | 2026-09-15 L 영역(콘텐츠·자동화 8문) 추가 — 업체별 답은 tenants/{t}_qa.json 에 q_id·partner_no 로 누적하고 플랫폼관리 파트너사 패널이 발행본(scripts/partner_onboarding_publish.py)을 읽는다. | 2026-09-17 fills 칸 — 상담봇 질문 유형(question_types needs_facts)의 빈칸 경로가 어느 질문 하나로 채워지나. counsel_learning_loop.py 가 빈칸→번호 질문(중복 0)·답→정본 칸에 이 매핑을 쓴다. 경로가 은행에 없으면 질문을 추가한다.",
  "version": "1.0",
- "updated": "2026-09-15",
+ "updated": "2026-09-17",
  "count": 118,
  "questions": [
   {
@@ -26,7 +26,11 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.address",
+    "facts.route_line"
+   ]
   },
   {
    "area": "A 기본 사실",
@@ -38,7 +42,11 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.hours",
+    "facts.hours.closed_rules"
+   ]
   },
   {
    "area": "A 기본 사실",
@@ -62,7 +70,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "channels.*"
+   ]
   },
   {
    "area": "A 기본 사실",
@@ -74,7 +85,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.parking"
+   ]
   },
   {
    "area": "A 기본 사실",
@@ -86,7 +100,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.capacity"
+   ]
   },
   {
    "area": "A 기본 사실",
@@ -122,7 +139,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "channels.reservation_url"
+   ]
   },
   {
    "area": "B 정체성·말투",
@@ -134,7 +154,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "identity.one_liner"
+   ]
   },
   {
    "area": "B 정체성·말투",
@@ -398,7 +421,11 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "identity.one_liner_en",
+    "offerings.english_support"
+   ]
   },
   {
    "area": "C 고객·니즈",
@@ -434,7 +461,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "offerings[].who"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -446,7 +476,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "offerings[].schedule"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -470,7 +503,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "offerings[trial]"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -494,7 +530,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "offerings[rehab]"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -518,7 +557,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "offerings[].price_policy"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -530,7 +572,11 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.provided",
+    "facts.bring"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -542,7 +588,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.facility"
+   ]
   },
   {
    "area": "D 상품·프로그램",
@@ -578,7 +627,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=소개]"
+   ]
   },
   {
    "area": "E 규정·정책",
@@ -590,7 +642,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=환불]"
+   ]
   },
   {
    "area": "E 규정·정책",
@@ -602,7 +657,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=연기]"
+   ]
   },
   {
    "area": "E 규정·정책",
@@ -614,7 +672,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=양도]"
+   ]
   },
   {
    "area": "E 규정·정책",
@@ -698,7 +759,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=미성년]"
+   ]
   },
   {
    "area": "E 규정·정책",
@@ -758,7 +822,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "facts.first_visit_flow"
+   ]
   },
   {
    "area": "F 예약·첫 방문 흐름",
@@ -782,7 +849,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "자료"
+   "how": "자료",
+   "fills": [
+    "policies[topic=방문]"
+   ]
   },
   {
    "area": "F 예약·첫 방문 흐름",
@@ -962,7 +1032,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "staff.disclose_policy"
+   ]
   },
   {
    "area": "H 강사·운영진",
@@ -998,7 +1071,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "staff.contact_hours"
+   ]
   },
   {
    "area": "H 강사·운영진",
@@ -1022,7 +1098,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "staff.public_summary"
+   ]
   },
   {
    "area": "H 강사·운영진",
@@ -1094,7 +1173,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "guards.medical_words"
+   ]
   },
   {
    "area": "I 불만·민감 질문",
@@ -1106,7 +1188,11 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "policies[topic=불만]",
+    "staff.complaint_owner"
+   ]
   },
   {
    "area": "I 불만·민감 질문",
@@ -1166,7 +1252,10 @@
    "asked_on": null,
    "answered_on": null,
    "source": null,
-   "how": "인터뷰"
+   "how": "인터뷰",
+   "fills": [
+    "identity.sales_style"
+   ]
   },
   {
    "area": "J 세일즈·전환",

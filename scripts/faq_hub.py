@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,7 +68,10 @@ def faq_of(profile: dict) -> tuple[list[dict], str]:
     path = raw.split(" (")[0].split(" · ")[0].strip()
     p = ROOT / path
     if not p.exists():
-        return [], path
+        # 파일이 없으면 0 이 아니라 「못 읽음」이다 — 폴더 이름이 바뀐 것을 모르고 커버리지 0/21 을
+        # 정상값처럼 보고했다(2026-09-17 고척 실측 · 지점장님→부장님 폴더). 0 위장을 막는다.
+        print(f"[faq_hub] FAQ 파일 없음 — {path} (그 센터 커버리지는 0 이 아니라 미측정)", file=sys.stderr)
+        return [], path + " (없음)"
     try:
         d = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
