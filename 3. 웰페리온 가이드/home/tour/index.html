@@ -125,6 +125,8 @@ body{color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased
     addEventListener('scroll', onScroll, {passive:true});
     addEventListener('resize', onScroll);
     render();
+  }).catch(function(){
+    document.getElementById('capEn').textContent = '둘러보기 정보를 불러오지 못했습니다';
   });
 })();
 </script>

@@ -5,11 +5,12 @@
 :root{
   color-scheme: light;
   --beige:#B79F8A;
+  --beige-ink:#826B50;  /* 베이지 텍스트 전용 — 흰 바탕에 --beige 그대로 쓰면 명암비 2.2:1(canon 텍스트 금지) 미달이라 어둡힌 톤(09-17) */
   --beige-soft:#E8DFD4;
   --beige-pale:#F7F2EC;
   --black:#221F20;
   --black-soft:#3A3536;
-  --gray:#8A8587;
+  --gray:#6E6A6C;  /* 09-17 명암비 3.45:1 → 5.07:1 로 어둡힘(흰 바탕 텍스트 기준) */
   --line:#D9CFC3;
   --white:#FBF9F6;
   --paper:#F4F0EB;
@@ -44,7 +45,7 @@ h1,h2,h3{text-wrap:balance;}
 
 .eyebrow{
   font-family:var(--label); font-size:11px; font-weight:600;
-  letter-spacing:0.26em; text-transform:uppercase; color:var(--beige);
+  letter-spacing:0.26em; text-transform:uppercase; color:var(--beige-ink);
   display:flex; align-items:center; gap:16px;
 }
 .eyebrow::after{content:""; flex:1; height:1px; background:var(--line); max-width:220px;}
@@ -58,6 +59,7 @@ h1,h2,h3{text-wrap:balance;}
 .body-ko{
   font-size:clamp(15px,1.1vw,17px); line-height:1.95;
   color:var(--black-soft); letter-spacing:-0.005em;
+  max-width:70em;  /* 09-17 긴 문단 가독 폭 — em 단위라 폰트 단계가 바뀌어도 글자당 비율이 그대로 유지된다 */
 }
 .body-ko + .body-ko{margin-top:1.5em;}
 
@@ -191,7 +193,7 @@ h1,h2,h3{text-wrap:balance;}
 .membership-grid{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:clamp(40px,6vw,88px); align-items:start; margin-top:clamp(28px,3.4vw,44px);}
 .membership-metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(20px,2.6vw,36px); border-top:1px solid var(--line); padding-top:clamp(20px,2.4vw,30px);}
 .m-num{font-family:var(--serif); font-weight:400; font-size:clamp(2rem,4.4vw,3.2rem); color:var(--black); display:flex; align-items:baseline; gap:.14em;}
-.m-unit{font-family:var(--sans); font-weight:500; font-size:1rem; color:var(--beige);}
+.m-unit{font-family:var(--sans); font-weight:500; font-size:1rem; color:var(--beige-ink);}
 .m-label{margin-top:8px; font-size:13px; color:var(--gray);}
 
 /* ── 문의 ── */
@@ -200,7 +202,7 @@ h1,h2,h3{text-wrap:balance;}
 .inquiry-title{font-family:var(--serif); font-weight:400; font-size:clamp(1.8rem,3.6vw,2.6rem); line-height:1.2; letter-spacing:-0.02em;}
 .inquiry-desc{margin-top:18px; max-width:48ch; font-size:15px; line-height:1.95; color:var(--black-soft);}
 .inquiry-actions{margin-top:clamp(28px,3.4vw,40px); display:flex; flex-wrap:wrap; gap:12px;}
-.info-h{font-family:var(--label); font-size:11px; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; color:var(--beige); padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:16px;}
+.info-h{font-family:var(--label); font-size:11px; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; color:var(--beige-ink); padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:16px;}
 .info-body{font-size:14px; line-height:2; color:var(--black-soft);}
 .info-body a{display:inline-block; padding:10px 0; border-bottom:1px solid var(--line); transition:border-color .3s;}
 .info-body a:hover{border-bottom-color:var(--black);}
