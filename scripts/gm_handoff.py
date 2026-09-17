@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import difflib
 import json
 import sys
 from pathlib import Path
@@ -132,14 +133,15 @@ TODO_UPLOAD_BLOCKED = False
 
 
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
-             owner: str = "") -> dict:
-    """owner 기본 = 공란(담당은 부서가 정한다 · GM 2026-09-17). 생성자는 김남욱GM(GAS 가림 기준 표기 — 배12675)."""
+             owner: str = "", start: str = "") -> dict:
+    """owner 기본 = 공란(담당은 부서가 정한다 · GM 2026-09-17). 생성자는 김남욱GM(GAS 가림 기준 표기 — 배12675).
+    start 기본 = 오늘(기존 동작 그대로) — 이관 관문(migrate_cards)만 카드 달 1일을 넘긴다."""
     if TODO_UPLOAD_BLOCKED:
         return {"ok": False, "blocked": True,
                 "reason": "업무 SSOT 등록은 AI 가 하지 않는다(GM 지시 2026-09-09) — 지시를 받은 실무진이 직접 올린다"}
     import ops_daily_digest as o
     params = {"action": "todo_add", "title": title, "category": category, "owner": owner,
-              "startDate": _today().isoformat(), "endDate": due, "content": content,
+              "startDate": start or _today().isoformat(), "endDate": due, "content": content,
               "link": "", "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
     if dry:
         return {"ok": True, "dry": True, "id": "TODO-(미리보기)"}
@@ -157,22 +159,28 @@ def _title_head(title: str) -> str:
     return "".join(ch for ch in head if ch.isalnum()).lower()
 
 
-def find_open_duplicate(title: str) -> dict | None:
-    """열린 행 중 제목 머리가 닮은 것(difflib ≥ 0.75). 2026-09-07 같은 날 두 번 중복 등록한 뒤 박은 가드."""
-    import difflib
+def _open_todo_rows() -> list[dict]:
+    """업무 SSOT 열린 행 한 번 fetch — 이관 dry-run 이 카드·원장마다 API 를 두드리지 않게 재사용."""
     import ops_daily_digest as o
     rows = o._gas_get(o.SSOT_API_URL, params={"action": "todo_list", "include_gm": "1", "gmkey": GM_KEY},
                       timeout=40, label="gm_handoff dup").json().get("data") or []
+    return [r for r in rows if r.get("상태") != "완료"]
+
+
+def _dup_in(title: str, open_rows: list[dict]) -> dict | None:
+    """open_rows(열린 행) 중 제목 머리가 닮은 것(difflib ≥ 0.75). 2026-09-07 같은 날 두 번 중복 등록한 뒤 박은 가드."""
     key = _title_head(title)
     if not key:
         return None
-    for r in rows:
-        if r.get("상태") == "완료":
-            continue
+    for r in open_rows:
         t = _title_head(r.get("업무명"))
         if t and difflib.SequenceMatcher(None, key, t).ratio() >= 0.75:
             return r
     return None
+
+
+def find_open_duplicate(title: str) -> dict | None:
+    return _dup_in(title, _open_todo_rows())
 
 
 def append_todo(todo_id: str, line: str, dry: bool) -> dict:
@@ -323,6 +331,162 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     return {"ok": True, "id": cid}
 
 
+# ── 이관 관문 — GM 카드·중간관리자 원장 → 업무 SSOT 행 (GM 지시 2026-09-17 10:3x) ─────────────
+# 설계 정본 = status/briefs/CEO-2026-09-17-업무SSOT-단일화-설계.md §1·§2. 행 만들기는 위 add_todo
+# 그대로 쓴다(관문은 하나) — 여기 두 함수는 그 앞뒤(원천 판정·중복 검사·원래 자리 정리)만 얹는다.
+_MIGRATE_TAG = "2026-09-17"
+
+CARD_OWNER_MAP = {
+    "coo": "이경연 실장", "ceo": "김남욱GM", "gm": "김남욱GM",
+    "cto": "김남욱GM", "cmo": "김남욱GM", "cpo": "김남욱GM", "cbo": "김남욱GM",
+    "김남욱gm": "김남욱GM", "김남욱 gm": "김남욱GM",
+}
+NAWOOL_LINE_OWNERS = {"chro", "cfo", "나우열m"}
+
+LEDGER_OWNER_DEPT = {  # 원장 이관 대상 5인(GM 지시 범위) — 그 밖 담당은 skip
+    "이경연 실장": "운영부", "최준용M": "운영부", "임정은M": "운영부",
+    "윤병현AM": "운영부", "이정헌 소장": "시설부",
+}
+
+
+def _normalize_card_owner(owner: str) -> tuple[str | None, str | None]:
+    """GM 카드 owner → 업무 SSOT 담당자. (정규화값, skip 사유) — skip 사유가 있으면 만들지 않는다."""
+    o = str(owner or "").strip()
+    lo = o.lower()
+    if lo in NAWOOL_LINE_OWNERS:
+        return None, "나우열M 라인"
+    if lo in CARD_OWNER_MAP:
+        return CARD_OWNER_MAP[lo], None
+    if not o:
+        return None, "담당자 공란"
+    return o, None  # 이미 사람 이름(이경연 실장·이정헌 소장·최준용M 등) — 그대로
+
+
+def _open_checks(progress_note: str) -> list[str]:
+    return [ln.strip() for ln in str(progress_note or "").splitlines() if ln.strip().startswith("□")]
+
+
+def migrate_cards(dry: bool, only: set | None) -> list[dict]:
+    """월간운영계획(GM 카드) 열린 카드 → 업무 SSOT 행. dry=False 면 카드마다 즉시 _save_plan
+    으로 저장한다(누적 diff 방지 · 배 지시 「한 카드 = 한 저장」) — 실제 실행은 --only 로 끊어 부른다."""
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    open_rows = _open_todo_rows()
+    rows = []
+    for ym, month in (plan.get("months") or {}).items():
+        for card in month.get("objectives") or []:
+            cid = str(card.get("id") or "")
+            if only and cid not in only:
+                continue
+            if card.get("status") in ("완료", "취소", "이관"):
+                continue
+            title = str(card.get("title") or "")
+            row = {"원천": "GM카드", "id": cid, "업무명": title,
+                   "담당자": card.get("owner", ""), "종료": card.get("due", "") or ""}
+            owner_norm, skip = _normalize_card_owner(card.get("owner", ""))
+            if skip:
+                row["판정"] = f"skip({skip})"
+                rows.append(row)
+                continue
+            dup = _dup_in(title, open_rows)
+            if dup:
+                row["판정"] = f"skip(이미 있음 {dup.get('id')})"
+                rows.append(row)
+                continue
+            content = "\n".join(x for x in (
+                [str(card.get("target") or "")] + _open_checks(card.get("progress_note"))
+                + [f"(GM 카드 {cid} 에서 이관 {_MIGRATE_TAG})"]
+            ) if x)
+            due = card.get("due", "") or ""
+            start = f"{ym}-01"
+            if dry:
+                row["판정"] = "만듦(dry)"
+                rows.append(row)
+                continue
+            r = add_todo(title, content, str(card.get("dept") or ""), due, "", False,
+                        owner=owner_norm, start=start)
+            if not r.get("ok"):
+                row["판정"] = f"실패({r.get('reason')})"
+                rows.append(row)
+                continue
+            todo_id = str(r.get("id") or "")
+            card["status"] = "이관"
+            card["progress_note"] = (card.get("progress_note") or "").rstrip() \
+                + f"\n[업무 SSOT {todo_id} 로 이관 {_MIGRATE_TAG}]"
+            fail = _save_plan(plan)
+            if fail:
+                row["판정"] = f"행은 만듦({todo_id}) · 카드 저장 실패({fail.get('reason')})"
+            else:
+                row["판정"] = f"만듦({todo_id})"
+            open_rows.append({"업무명": title, "id": todo_id, "상태": "진행"})
+            rows.append(row)
+    return rows
+
+
+def migrate_ledger(dry: bool, only: set | None) -> list[dict]:
+    """중간관리자 원장(send_ops_digest.MGR_LEDGER) 열린 이슈(kind != reply) → 업무 SSOT 행.
+    dry=False 면 성공한 건마다 즉시 resolve_nudge_issues 로 원장을 닫는다(원자 저장 — 그 함수 안에서 처리)."""
+    import send_ops_digest as D
+    ledger = json.loads(D.MGR_LEDGER.read_text(encoding="utf-8"))
+    open_rows = _open_todo_rows()
+    rows = []
+    for e in ledger:
+        for it in e.get("issues") or []:
+            if it.get("status") != "open":
+                continue
+            no = str(it.get("no") or "")
+            if only and no not in only:
+                continue
+            title = str(it.get("issue") or "")
+            owner = str(it.get("owner") or "")
+            row = {"원천": "원장", "id": f"#{no}", "업무명": title,
+                   "담당자": owner, "종료": it.get("due", "") or ""}
+            if it.get("kind") == "reply":
+                row["판정"] = "skip(회신 소통건 · 원장에 남김)"
+                rows.append(row)
+                continue
+            if owner not in LEDGER_OWNER_DEPT:
+                row["판정"] = "skip(나우열M 라인)" if owner == "나우열M" else "skip(대상 담당자 아님)"
+                rows.append(row)
+                continue
+            dup = _dup_in(title, open_rows)
+            if dup:
+                row["판정"] = f"skip(이미 있음 {dup.get('id')})"
+                rows.append(row)
+                continue
+            content = f"{it.get('note', '') or ''} (#{no} 에서 이관 {_MIGRATE_TAG})".strip()
+            if dry:
+                row["판정"] = "만듦(dry)"
+                rows.append(row)
+                continue
+            r = add_todo(title, content, LEDGER_OWNER_DEPT[owner], it.get("due", "") or "", "", False, owner=owner)
+            if not r.get("ok"):
+                row["판정"] = f"실패({r.get('reason')})"
+                rows.append(row)
+                continue
+            todo_id = str(r.get("id") or "")
+            D.resolve_nudge_issues([title], why=f"업무 SSOT {todo_id} 로 이관")
+            row["판정"] = f"만듦({todo_id})"
+            open_rows.append({"업무명": title, "id": todo_id, "상태": "진행"})
+            rows.append(row)
+    return rows
+
+
+def _print_migrate_table(rows: list[dict]) -> None:
+    made = sum(1 for r in rows if r["판정"].startswith("만듦"))
+    from collections import Counter
+    skip_reasons = Counter(r["판정"].split("(", 1)[1].rstrip(")").split(" · ")[0]
+                           for r in rows if r["판정"].startswith("skip"))
+    fail = sum(1 for r in rows if r["판정"].startswith("실패"))
+    print(f"만들 것 {made}건 · skip {sum(skip_reasons.values())}건 · 실패 {fail}건")
+    for reason, n in skip_reasons.most_common():
+        print(f"  - {reason}: {n}건")
+    print("\n| 원천 | id | 업무명 | 담당자 | 종료 | 판정 |")
+    print("|---|---|---|---|---|---|")
+    for r in rows:
+        name = r["업무명"].replace("|", "/").replace("\n", " ")[:40]
+        print(f"| {r['원천']} | {r['id']} | {name} | {r['담당자']} | {r['종료']} | {r['판정']} |")
+
+
 def _mark(res: dict) -> str:
     if not res:
         return "—"
@@ -351,8 +515,21 @@ def main() -> int:
                     help="지시 출처 — 제목 앞에 「[회장님 지시] 」/「[대표님 지시] 」를 붙이고 GM업무 카드 첫 줄에 남긴다(👑/🤵 배지)")
     ap.add_argument("--close-card", metavar="카드ID", help="월간운영계획 카드를 status=완료 로 닫는다 — 증거를 --why 로 반드시 준다. 나우열M 담당 카드는 거부(exit 2)")
     ap.add_argument("--why", default="", help="--close-card 근거")
+    ap.add_argument("--migrate-cards", action="store_true", help="GM 카드(열림) → 업무 SSOT 행 이관(§2). --dry-run 이면 표만 찍는다")
+    ap.add_argument("--migrate-ledger", action="store_true", help="중간관리자 원장(kind!=reply) → 업무 SSOT 행 이관(§2). --dry-run 이면 표만 찍는다")
+    ap.add_argument("--only", default="", help="--migrate-* 대상 제한 — 콤마로 카드id/#no 나열")
     a = ap.parse_args()
     dry = a.dry_run
+
+    if a.migrate_cards or a.migrate_ledger:
+        only = {x.strip() for x in a.only.split(",") if x.strip()} or None
+        rows = []
+        if a.migrate_cards:
+            rows += migrate_cards(dry, only)
+        if a.migrate_ledger:
+            rows += migrate_ledger(dry, only)
+        _print_migrate_table(rows)
+        return 0
 
     if a.close_card:
         r = close_card(a.close_card, a.why, dry)
