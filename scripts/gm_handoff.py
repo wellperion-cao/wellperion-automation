@@ -21,6 +21,7 @@
              [--todo-id TODO-…]  ← 실무진이 이미 올린 업무 SSOT 행이 있으면 같이 준다. --todo-id·--plan 은
              전사일정 item 의 todo_id·plan_id 칸이 되어, 전사일정 카드에 「업무」·「GM업무」 링크로 뜬다.
   완료:  python scripts/gm_handoff.py --done --todo-id TODO-… [--event-id evt-…] [--plan 2026-08-24 --check "☑ 로 바꿀 체크 원문"] [--dry-run]
+  카드 닫기: python scripts/gm_handoff.py --close-card 2026-09-20 --why "근거 한 줄" [--dry-run]  ← status=완료 로 닫는다. 나우열M 담당 카드는 거부(exit 2)
   결과 마지막 줄 = 🧭 4면 표기(전사일정 · 월간계획 카드 · 업무&결재SSOT(막힘) · 중간관리자 통(없음))
              — GM 보고 표 기록위치 줄에 그대로 붙인다.
 
@@ -239,6 +240,33 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     return {"ok": True}
 
 
+def close_card(card_id: str, why: str, dry: bool) -> dict:
+    """월간운영계획 카드를 status='완료' 로 닫는 관문 — 배 「업무 싹 정리」(2026-09-17 GM 권한).
+    지금까지 카드 status 를 완료로 바꾸는 코드가 없어(진척 체크만 바꾸는 touch_plan 뿐) 판정만
+    하고 못 닫던 것을 여기 하나로 연다. 나우열M 라인 카드는 AI 가 안 고친다(feedback_cfo_screens_
+    belong_to_nawoolm_hands_off 와 같은 원칙 — 08-18 규칙 확장) → 거부."""
+    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    card = _find_card(plan, card_id)
+    if not card:
+        return {"ok": False, "reason": f"카드 {card_id} 없음"}
+    owner = str(card.get("owner") or "")
+    if "나우열M" in owner:
+        return {"ok": False, "reason": f"나우열M 담당 카드({owner}) — AI 가 안 닫는다", "code": 2}
+    if not why:
+        return {"ok": False, "reason": "--why 근거 필요"}
+    pn = card.get("progress_note") or ""
+    pn += f"\n[완료 처리 {_today().isoformat()} 웰리 · 근거: {why}]"
+    if dry:
+        return {"ok": True, "dry": True}
+    card["status"] = "완료"
+    card["progress"] = 100
+    card["progress_note"] = pn
+    fail = _save_plan(plan)
+    if fail:
+        return fail
+    return {"ok": True}
+
+
 def new_card(title: str, content: str, due: str, dry: bool, category: str = "", source: str = "") -> dict:
     """GM업무 카드(월간운영계획 이번 달 objectives · 담당 김남욱 GM) 새로 만들기 — GM 본인 건이 --plan 없이
     들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
@@ -305,8 +333,15 @@ def main() -> int:
     ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
     ap.add_argument("--source", choices=["회장님", "대표님"],
                     help="지시 출처 — 제목 앞에 「[회장님 지시] 」/「[대표님 지시] 」를 붙이고 GM업무 카드 첫 줄에 남긴다(👑/🤵 배지)")
+    ap.add_argument("--close-card", metavar="카드ID", help="월간운영계획 카드를 status=완료 로 닫는다 — 증거를 --why 로 반드시 준다. 나우열M 담당 카드는 거부(exit 2)")
+    ap.add_argument("--why", default="", help="--close-card 근거")
     a = ap.parse_args()
     dry = a.dry_run
+
+    if a.close_card:
+        r = close_card(a.close_card, a.why, dry)
+        print(f"🧭 월간계획 카드 {_mark(r)} {a.close_card}" + ("" if r.get("ok") else f" — {r.get('reason')}"))
+        return 0 if r.get("ok") else r.get("code", 1)
 
     if a.append:
         if not a.todo_id:
