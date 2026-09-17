@@ -96,14 +96,6 @@ CORE = {
         "desc": "시설 일일 점검과 고장 접수 현황을 본다.",
         "staff": "이정헌 소장",
     },
-    # GM 지시 2026-09-17 「업무 시스템 페이지」 — GM·실장·소장·나우열M·실무진 7명이 각자 ?who= 로 본다(웰리 67dc2ccd34).
-    # /coo/chairman/ 은 카드 밖이면 관리자만(app.py ADMIN_ONLY_PREFIXES)이라 핵심 카드로 실어 로그인 직원 전원에게 연다.
-    # 사람별 범위는 화면 안 ?who= 가 가른다 · 계정별 잠금은 배 1026 권한 정리 때.
-    "coo/chairman/업무시스템.html": {
-        "id": "coo-chairman-업무시스템", "name": "업무 시스템",
-        "desc": "GM업무·중간관리자 업무·전사일정·업무&결재를 사람별 한 화면으로 본다.",
-        "staff": "이경연 실장 · 이정헌 소장 · 나우열M",
-    },
 }
 
 SKIP_DIRS = {"tmp", "_assets", "status", "reports"}
@@ -133,7 +125,7 @@ APPGROUP_IDS = {
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-파트너팀-페이롤",
             "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-chairman-업무시스템", "coo-chairman-gm업무",
+    "경영": [   # 업무시스템·GM업무 카드는 업무 현황 SSOT 로 합쳤다(GM 2026-09-17 16:5x · 웰리 전달)
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
@@ -514,8 +506,7 @@ MODULE_BUNDLES = [
     ("재무",        ["cfo-finance-지출품의", "cfo-finance-매출현황",
                      "cfo-finance-지출현황", "cfo-finance-매출지출현황"]),
     ("콘텐츠",      ["cmo-series-ai시리즈보드"]),
-    ("경영 보고",   ["coo-chairman-gm업무", "coo-chairman-대표님-지시사항",
-                     "coo-chairman-회장님-지시사항"]),
+    ("경영 보고",   ["coo-chairman-대표님-지시사항", "coo-chairman-회장님-지시사항"]),   # GM업무는 업무시스템으로 이관(GM 2026-09-17 16:5x)
 ]
 
 
@@ -714,7 +705,7 @@ def _selftest():
     assert make_id("cpo", "cpo/member/lesson.html") == "cpo-member-lesson"
     items, missing_automation = build()
     assert items and items[0]["core"], "핵심 모듈이 맨 위가 아니다"
-    assert [m["id"] for m in items if m["core"]] == ["member", "inquiry", "check", "coo-chairman-업무시스템"]
+    assert [m["id"] for m in items if m["core"]] == ["member", "inquiry", "check"]
     assert not [m for m in items if m["doc"] and m["path"].startswith("../coo/chairman/")], "관리자 전용 폴더 보고서가 문서함에 실렸다(배 11434)"
     assert not missing_paths(items), "없는 경로가 있다"
     ids = [m["id"] for m in items]
