@@ -1161,7 +1161,14 @@ def run(args):
         if apply_mode:
             db.init_schema(conn)                       # 멱등 — hr 표가 없으면 만든다
             if not acquire_run_lock(conn):             # 단일 실행(§A-6) — run 행을 만들지 않고 끝낸다
-                raise RunLockBusy()
+                # --wait-lock N: 거울 재적재(api_hr_mirror)·차등 cron 은 앞선 적재가 끝나길 N초까지 기다린다(2초 간격)
+                waited, got = 0.0, False
+                while waited < float(getattr(args, "wait_lock", 0) or 0):
+                    time.sleep(2.0); waited += 2.0
+                    if acquire_run_lock(conn):
+                        got = True; break
+                if not got:
+                    raise RunLockBusy()
             run_id, aborted = open_run(conn, mode, batch_at)
             report["aborted_runs"] = aborted
             if aborted:
@@ -1307,14 +1314,19 @@ def run(args):
                               % (key, v["missing_count"], v["recall_pct"], args.min_recall, v["extra_count"]))
 
         # ── FK 정합 대조(§A-8) — 모든 모드에서 돌리되 판정에는 apply·verify 만 넣는다(dry-run 은 적재 전) ──
-        last_step = "FK 대조"
-        fkc = verify_fks(conn)
-        report["fk_check"] = fkc
-        for l in fkc["links"]:
-            print("[fkchk] %-12s 불일치 %d · 닫힌 행 참조 %d · 고아 %d건" % (l["link"], l["mismatch"], l["to_vanished"], l["orphan"]))
-        step_log(conn, run_id, "-", "fkcheck", ok=(fkc["mismatch_total"] == 0), detail=fkc)
-        if fkc["mismatch_total"] and strict:
-            failed.append("FK 불일치 %d건" % fkc["mismatch_total"])
+        #    --light(거울 재적재 · 한두 탭)는 전탭 대조를 건너뛴다 — 그 탭의 검증·연결 채우기는 위에서 이미 돌았다.
+        if getattr(args, "light", False):
+            report["fk_check"] = {"skipped": "light"}
+            print("[fkchk] 건너뜀(--light · 한 탭 재적재)")
+        else:
+            last_step = "FK 대조"
+            fkc = verify_fks(conn)
+            report["fk_check"] = fkc
+            for l in fkc["links"]:
+                print("[fkchk] %-12s 불일치 %d · 닫힌 행 참조 %d · 고아 %d건" % (l["link"], l["mismatch"], l["to_vanished"], l["orphan"]))
+            step_log(conn, run_id, "-", "fkcheck", ok=(fkc["mismatch_total"] == 0), detail=fkc)
+            if fkc["mismatch_total"] and strict:
+                failed.append("FK 불일치 %d건" % fkc["mismatch_total"])
 
         # ── 매핑 리포트 ─────────────────────────────────────────────────────────────────
         last_step = "매핑 리포트"
@@ -1836,6 +1848,9 @@ def selftest():
     assert a.allow_mass_vanish is False, "대량 소실 보호는 명시할 때만 꺼진다(§A-10)"
     assert build_parser().parse_args(["--apply"]).apply is True
     assert build_parser().parse_args(["--apply", "--allow-mass-vanish"]).allow_mass_vanish is True
+    _l = build_parser().parse_args(["--apply", "--light", "--tab", "appl", "--wait-lock", "90"])
+    assert _l.light is True and _l.wait_lock == 90.0 and _l.tab == ["appl"]
+    assert build_parser().parse_args([]).light is False and build_parser().parse_args([]).wait_lock == 0.0
     print("selftest ok")
     return 0
 
@@ -1855,6 +1870,10 @@ def build_parser():
                    help="대량 소실 보호(살아 있는 행의 50퍼센트 초과 소실 시 그 탭 롤백)를 끈다 — 원천 탭을 의도적으로"
                         " 비웠을 때만 (환경변수 HR_ALLOW_MASS_VANISH 와 같은 뜻)")
     p.add_argument("--selftest", action="store_true", help="DB·네트워크 없이 변환기·매핑표·스키마 대조를 점검")
+    p.add_argument("--light", action="store_true",
+                   help="경량 모드(쓰기 거울 재적재 · 한두 탭) — 전탭 FK 대조를 건너뛴다 [나우열M 요청 2026-09-17]")
+    p.add_argument("--wait-lock", type=float, default=0.0, dest="wait_lock",
+                   help="앞선 적재가 advisory lock 을 쥐고 있으면 이 초까지 기다린다(기본 0 = 바로 LOCKED 종료)")
     return p
 
 

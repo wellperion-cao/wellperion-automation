@@ -1,0 +1,11 @@
+# 서버의 /etc/cron.d/erp-hr-mirror 로 배치 (권한 644 · root 소유). 인사 쓰기 거울 안전망 — 탭별 차등 재적재 (CHRO 요청서③ · [나우열M 요청 2026-09-17]).
+# 같은 --light 경량 모드 · advisory lock 을 공유하므로 화면 호출(api_hr_mirror)과 겹쳐도 한 번에 하나만 돈다(--wait-lock 60).
+# 환경(HR_GAS_URL·HR_GAS_PASSWORD)은 migrate_hr.load_env 가 /srv/erp/api.env 에서 읽는다 — 여기에 값을 적지 않는다.
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+# 5분 — 자주 바뀌는 탭(지원자·채용공고·온보딩·블랙리스트)
+1-59/5 * * * *  ec2-user  /usr/bin/python3 /srv/erp/api/migrate_hr.py --apply --light --wait-lock 60 --tab appl --tab hire --tab onbo --tab blacklist >> /srv/erp/hr_mirror.log 2>&1
+# 10분 — 직원·퇴사·평가
+3-59/10 * * * * ec2-user  /usr/bin/python3 /srv/erp/api/migrate_hr.py --apply --light --wait-lock 60 --tab emp --tab exit --tab eval >> /srv/erp/hr_mirror.log 2>&1
+# 15분 — 휴무(5,600행 · 가장 큼)
+7-59/15 * * * * ec2-user  /usr/bin/python3 /srv/erp/api/migrate_hr.py --apply --light --wait-lock 60 --tab leave >> /srv/erp/hr_mirror.log 2>&1
