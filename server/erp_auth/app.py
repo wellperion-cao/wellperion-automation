@@ -774,7 +774,7 @@ STYLE = (
     "'Malgun Gothic',-apple-system,system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}"
     ".brand{display:block;width:100%;max-width:400px;margin:0 auto 20px;font-size:14px;font-weight:700;letter-spacing:.18em;"
     "color:var(--ink);text-decoration:none}.brand.wide{max-width:860px}"
-    ".brand{display:flex;align-items:center}.brand svg{height:15px;width:auto;display:block}"
+    ".brand{display:flex;align-items:center;min-height:44px}.brand svg{height:15px;width:auto;display:block}"
     ".brand small{margin-left:8px;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--ink-soft)}"
     "form,.box{width:100%;max-width:400px;margin:0 auto;padding:28px;background:var(--paper);border:1px solid var(--line);border-radius:8px}"
     ".box.wide{max-width:860px}"
@@ -805,7 +805,7 @@ STYLE = (
     ".soc-row a,.soc-row span{display:flex;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center}"
     ".soc-row a{text-decoration:none;border:1px solid transparent}.soc-row a:hover{filter:brightness(1.06)}"
     ".soc-row span.off{opacity:.35;cursor:default;background:var(--accent-soft)}"
-    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
+    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{display:inline-block;padding:6px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
     ".err,.ok{margin:0 0 16px;padding:8px 12px;font-size:13.5px;color:var(--ink);border-left:3px solid var(--accent);background:var(--accent-soft)}"
     ".err{border-left-color:#ED5B3F}"
     ".tw{overflow-x:auto}table{width:100%;min-width:640px;font-size:14px;border-collapse:collapse}"
@@ -815,11 +815,11 @@ STYLE = (
     "td button{width:auto;margin:0 6px 4px 0;padding:6px 10px;font-size:13px}"
     ".tag{display:inline-block;white-space:nowrap;padding:1px 8px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid var(--line-strong)}"
     ".tag.on{background:var(--accent);color:#221F20;border-color:transparent}"
-    ".nav{margin-top:18px;font-size:13.5px;color:var(--ink-soft)}.nav a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-right:14px}"
+    ".nav{margin-top:18px;font-size:13.5px;color:var(--ink-soft)}.nav a{display:inline-block;padding:6px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-right:14px}"
     # ── 2026-09-04 시포(GM "UI/UX 신경써서") — 머리글·상태색·대기 카드·비밀번호 표시·모바일 카드형 ──
     ".hd{max-width:400px;margin:0 auto 18px}.hd.wide{max-width:860px}.hd .brand{margin:0}.hd .sub{margin:4px 0 0;font-size:13px;color:var(--ink-soft)}"
-    ".hint{margin:-6px 0 16px;padding:8px 12px;font-size:13px;color:var(--ink-soft);background:var(--accent-soft);border-radius:6px}"
-    ".pw{position:relative;display:block}.pw button{position:absolute;right:6px;bottom:6px;width:auto;margin:0;padding:5px 9px;font-size:12px;font-weight:600;"
+    ".hint{margin:-6px 0 16px;padding:8px 12px;font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:6px}"
+    ".pw{position:relative;display:block}.pw button{position:absolute;right:6px;bottom:6px;width:auto;margin:0;padding:7px 10px;min-height:36px;font-size:12px;font-weight:600;"
     "color:var(--ink-soft);background:transparent;border:0}.pw button:hover{color:var(--ink);filter:none}"
     ".foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.foot p{margin:6px 0 0}"
     ".tag.ok{color:#2E6B3A;background:rgba(46,107,58,.12);border-color:transparent}.tag.off{color:var(--ink-soft);background:transparent}"
@@ -838,6 +838,10 @@ STYLE = (
     # 권한 매트릭스 A3 가로 인쇄(배1026 §4-2 · 2026-09-05) — 화면 요소는 숨기고 표만 최대한 넓게.
     "@media print{@page{size:A3 landscape;margin:10mm}.hd,.nav,.find,#mfind,form button,.acts form"
     "{display:none!important}table{font-size:11px}#matrix{max-width:none}}"
+    # 시모 검수 2026-09-17(design_audit) — 폰 본문 16px · 움직임 줄이기 · 인라인 버튼을 클래스로
+    "@media(max-width:480px){body{font-size:16px}}"
+    "@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}button:active{transform:none}}"
+    ".btn{display:inline-block;padding:11px 20px;border-radius:8px;background:var(--accent);color:#221F20;font-weight:700;text-decoration:none;min-height:44px;box-sizing:border-box}"
     "</style>")
 
 # 워드마크 = erp/brand/wellperion-wordmark.svg 원본 벡터(배932·952) · fill=currentColor 라 라이트/다크 --ink 상속
@@ -1181,7 +1185,8 @@ def account_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "
 <button>비밀번호 변경</button></form>""")
     return page("내 계정", head("내 계정 · 정보 확인과 비밀번호 변경") + f"""<div class=box>
 <style>.box .row{{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);margin:0}}.box .row:last-of-type{{border-bottom:0}}
-.box .row .k{{color:var(--ink-soft);font-size:13px}}.box h2{{margin:18px 0 10px;font-size:15px}}</style>
+.box .row .k{{color:var(--ink-soft);font-size:13px}}.box h2{{margin:22px 0 10px;font-size:15px}}
+.box form{{padding:0;border:0;background:none;max-width:none;margin:0}}.box .hint{{margin:16px 0 0}}</style>
 <h1>내 계정</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 {info}
 <h2>비밀번호 변경</h2>{pw_form}
@@ -1196,7 +1201,7 @@ def forbidden_page(next: str = "/"):
     # (「다 삭제하고 기록으로만」) — 경위는 저장 이력 c2733fc03·14ece03d4.
     return page("권한 없음", f"""<div class=box><h1>권한 없음</h1>
 <p class=err>이 화면은 지금 계정에 허용되지 않았습니다.<br><small>{escape(next)}</small></p>
-<p><a href="/auth/logout?next={escape(next)}" style="display:inline-block;padding:11px 20px;border-radius:8px;background:var(--accent);color:#221F20;font-weight:700;text-decoration:none">로그인하기</a></p>
+<p><a href="/auth/logout?next={escape(next)}" class=btn>로그인하기</a></p>
 <p class=hint>지금 계정(공용 계정일 수 있습니다)을 내리고 <b>개인 계정</b>으로 다시 로그인합니다 — 구글 로그인은 계정 선택창이 뜹니다.<br>그래도 안 열리면 GM 에게 권한을 요청하세요.</p></div>""")
 
 
