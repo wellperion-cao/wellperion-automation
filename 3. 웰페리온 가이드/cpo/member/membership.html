@@ -14043,7 +14043,9 @@ var STAFF_NAME_KEY = 'wellperion_staff_name';
 // 다른 화면이 다시 오염시킨다).
 function _isValidStaffName(s){
   var t = String(s == null ? '' : s).trim();
-  return !!t && t.length <= 10 && !/[\r\n]/.test(t);
+  // 숫자만(예: 「1202」 · 입장코드를 이름 칸에 넣은 것 · 2026-09-17 기외호님 종료일 변경자 추적 불가)은 이름이 아니다 —
+  //   유효하지 않으면 _healBadStaffName 이 지우고 다음 저장 때 다시 묻는다.
+  return !!t && t.length <= 10 && !/[\r\n]/.test(t) && !/^[\d\s\-]+$/.test(t);
 }
 function _promptStaffName(defaultVal){
   for (var i = 0; i < 5; i++){
