@@ -1142,12 +1142,51 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
     return Response(status_code=200, headers=headers)
 
 
+ROLE_LABEL = {"admin": "관리자", "staff": "직원"}   # 화면엔 영문 role 을 그대로 내지 않는다(GM 2026-09-17 「admin 이 뭐야」)
+
+
+def _profile(u) -> dict:
+    """계정 화면·/auth/me 가 같이 쓰는 내 정보 — perms 의 dept·rank 는 관리자 콘솔이 적은 값(없으면 빈칸)."""
+    p = perms_of(u) or {}
+    return {"email": u["email"], "name": u["name"], "role": u["role"], "role_label": ROLE_LABEL.get(u["role"], u["role"]),
+            "dept": p.get("dept") or "", "rank": p.get("rank") or "", "phone": p.get("phone") or "",
+            "last_login": str(u["last_login"] or "") if "last_login" in u.keys() else "",
+            "social": bool(u["pw"]) is False}
+
+
 @app.get("/auth/me")
 def me(erp_session: Optional[str] = Cookie(default=None)):
     u = current(erp_session)
     if not u:
         raise HTTPException(401)
-    return JSONResponse({"email": u["email"], "name": u["name"], "role": u["role"], "allowed_ids": allowed_ids(u)})
+    d = _profile(u); d["allowed_ids"] = allowed_ids(u)
+    return JSONResponse(d)
+
+
+@app.get("/auth/account")
+def account_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "", err: str = ""):
+    """내 계정 — 이름·아이디·부서·직급·역할·최근 로그인·열린 화면 수 + 비밀번호 변경 한 화면(GM 2026-09-17)."""
+    u = current(erp_session)
+    if not u:
+        return RedirectResponse("/auth/login?next=/auth/account", status_code=303)
+    d = _profile(u)
+    n_allowed = len(allowed_ids(u)) if u["role"] != "admin" else len(modules()) + len(documents())
+    rows = [("이름", d["name"] or "—"), ("아이디", d["email"]), ("부서", d["dept"] or "—"), ("직급", d["rank"] or "—"),
+            ("역할", d["role_label"]), ("최근 로그인", short_dt(d["last_login"]) or "—"), ("열린 화면", "%d개" % n_allowed)]
+    info = "".join(f"<div class=row><span class=k>{escape(k)}</span><b>{escape(str(v))}</b></div>" for k, v in rows)
+    pw_form = ("<p class=muted>구글·네이버·카카오로 로그인하는 계정은 비밀번호가 그 서비스에 있습니다.</p>" if d["social"] else f"""
+<form method=post action=/auth/password>
+<label>현재 비밀번호<input name=current_password type=password autocomplete=current-password required></label>
+<label>새 비밀번호<input name=new_password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
+<button>비밀번호 변경</button></form>""")
+    return page("내 계정", head("내 계정 · 정보 확인과 비밀번호 변경") + f"""<div class=box>
+<style>.box .row{{justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);margin:0}}.box .row:last-of-type{{border-bottom:0}}
+.box .row .k{{color:var(--ink-soft);font-size:13px}}.box h2{{margin:18px 0 10px;font-size:15px}}</style>
+<h1>내 계정</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
+{info}
+<h2>비밀번호 변경</h2>{pw_form}
+<p class=hint>부서·직급·권한이 다르면 GM 께 한 줄로 알려 주세요 — 관리자 화면에서 고칩니다.</p>
+<p class=nav><a href=/home>← 직원 홈</a> · <a href=/auth/logout>로그아웃</a></p></div>""")
 
 
 @app.get("/auth/forbidden")
@@ -1163,13 +1202,9 @@ def forbidden_page(next: str = "/"):
 
 @app.get("/auth/password")
 def password_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "", err: str = ""):
-    if not current(erp_session):
-        return RedirectResponse("/auth/login?next=/auth/password", status_code=303)
-    return page("비밀번호 변경", head("내 계정 · 비밀번호 변경") + f"""<form method=post action=/auth/password>
-<h1>비밀번호 변경</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
-<label>현재 비밀번호<input name=current_password type=password autocomplete=current-password required></label>
-<label>새 비밀번호<input name=new_password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
-<button>변경</button><p><a href=/erp/>ERP 로 돌아가기</a></p></form>""")
+    # 비밀번호 변경은 내 계정 화면 안으로 합쳤다(GM 2026-09-17) — 옛 주소는 그리로 보낸다.
+    q = ("?err=" + urllib.parse.quote(err)) if err else (("?msg=" + urllib.parse.quote(msg)) if msg else "")
+    return RedirectResponse("/auth/account" + q, status_code=303)
 
 
 @app.post("/auth/password")
@@ -1177,15 +1212,15 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
                      erp_session: Optional[str] = Cookie(default=None)):
     u = current(erp_session)
     if not u:
-        return RedirectResponse("/auth/login?next=/auth/password", status_code=303)
-    if hash_pw(current_password, u["salt"])[1] != u["pw"]:
-        return RedirectResponse("/auth/password?err=현재 비밀번호가 맞지 않습니다", status_code=303)
+        return RedirectResponse("/auth/login?next=/auth/account", status_code=303)
+    if not u["pw"] or hash_pw(current_password, u["salt"])[1] != u["pw"]:
+        return RedirectResponse("/auth/account?err=현재 비밀번호가 맞지 않습니다", status_code=303)
     if len(new_password) < 8:
-        return RedirectResponse("/auth/password?err=새 비밀번호는 8자 이상이어야 합니다", status_code=303)
+        return RedirectResponse("/auth/account?err=새 비밀번호는 8자 이상이어야 합니다", status_code=303)
     salt, h = hash_pw(new_password)
     with db() as c:
         c.execute("UPDATE users SET salt=%s, pw=%s WHERE tenant_id=%s AND id=%s", (salt, h, T, u["id"]))
-    return RedirectResponse("/auth/password?msg=변경됐습니다", status_code=303)
+    return RedirectResponse("/auth/account?msg=비밀번호가 바뀌었습니다", status_code=303)
 
 
 # ── 소셜 로그인 공용 — state(jwt+브라우저 nonce 쿠키) 구글·네이버·카카오가 같이 쓴다 ──────────
