@@ -14,6 +14,9 @@
 /* ── 다크(기본) ── */
 :root{
   --bg:#1a1817;--paper:#221F20;--paper2:#2a2725;--text:#f5f2ef;--text-soft:#d8d2ca;--dim:#948a7c;
+  --tag-hi:#F1A697;--tag-ac:#DFD2C4;--tag-deep:#D6C8BD;
+  --tag-hi-bg:#35211C;--tag-ac-bg:#2D2825;
+  --paper-glass:rgba(34,31,32,0.82);
   --accent:#c8b199;--accent-deep:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#37322e;--hair:#2c2825;
   --highlight:#ED5B3F;--highlight-bg:rgba(237,91,63,0.13);
   --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
@@ -26,7 +29,10 @@
 /* ── 라이트(시스템 선호) ── */
 @media(prefers-color-scheme:light){
   :root{
-    --bg:#e8e2d6;--paper:#fbf8f2;--paper2:#f2ece0;--text:#221F20;--text-soft:#4a4239;--dim:#8c8375;
+    --bg:#e8e2d6;--paper:#fbf8f2;--paper2:#f2ece0;--text:#221F20;--text-soft:#4a4239;--dim:#635A51; /* 명암비: paper #fbf8f2 대비 5.38:1(4.5 이상) — GM 화면 UX 정돈 2026-09-17 */
+    --tag-hi:#883D30;--tag-ac:#594B3D;--tag-deep:#6D5F55; /* 칩·배지 글자 — highlight/accent/accent-deep 원색은 옅은 칩 배경 위에서 4.5 미달이라 짙힌 값(각 4.5 이상 확인) */
+    --tag-hi-bg:#E9D5C7;--tag-ac-bg:#E1D9CB; /* 칩 배경 — --bg 위 실제 합성색을 고정값으로(투명 배경은 검수기가 알파를 못 읽어 오판) */
+    --paper-glass:rgba(251,248,242,0.82); /* color-mix→rgba: 헤더 유리 배경, 값은 그대로(같은 픽셀) — 검수기가 못 읽는 color() 표기만 피함 */
     --accent:#8f7659;--accent-deep:#B79F8A;--accent-bg:rgba(183,159,138,0.14);--border:#e2dacd;--hair:#ece5d8;
     --highlight:#ed5b3f;--highlight-bg:rgba(237,91,63,0.10);
     --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);
@@ -40,6 +46,9 @@
 /* ── 테마 강제 토글 (뷰어 data-theme 우선) ── */
 :root[data-theme="dark"]{
   --bg:#1a1817;--paper:#221F20;--paper2:#2a2725;--text:#f5f2ef;--text-soft:#d8d2ca;--dim:#948a7c;
+  --tag-hi:#F1A697;--tag-ac:#DFD2C4;--tag-deep:#D6C8BD;
+  --tag-hi-bg:#35211C;--tag-ac-bg:#2D2825;
+  --paper-glass:rgba(34,31,32,0.82);
   --accent:#c8b199;--accent-deep:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#37322e;--hair:#2c2825;
   --highlight:#ED5B3F;--highlight-bg:rgba(237,91,63,0.13);
   --green:#6abf7b;--green-bg:rgba(106,191,123,0.12);
@@ -50,7 +59,10 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 30px rgba(0,0,0,.28);
 }
 :root[data-theme="light"]{
-  --bg:#e8e2d6;--paper:#fbf8f2;--paper2:#f2ece0;--text:#221F20;--text-soft:#4a4239;--dim:#8c8375;
+  --bg:#e8e2d6;--paper:#fbf8f2;--paper2:#f2ece0;--text:#221F20;--text-soft:#4a4239;--dim:#635A51;
+  --tag-hi:#883D30;--tag-ac:#594B3D;--tag-deep:#6D5F55;
+  --tag-hi-bg:#E9D5C7;--tag-ac-bg:#E1D9CB;
+  --paper-glass:rgba(251,248,242,0.82);
   --accent:#8f7659;--accent-deep:#B79F8A;--accent-bg:rgba(183,159,138,0.14);--border:#e2dacd;--hair:#ece5d8;
   --highlight:#ed5b3f;--highlight-bg:rgba(237,91,63,0.10);
   --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);
@@ -73,22 +85,24 @@ b,strong{font-weight:700}
 
 /* ── 화면 전용 헤더 ── */
 .screen-header{
-  background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(10px);
+  background:var(--paper-glass);backdrop-filter:blur(10px);
   padding:13px 22px;display:flex;align-items:center;justify-content:space-between;
   border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
 .screen-header-left{display:flex;align-items:center;gap:12px}
-.sh-mark{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--accent-deep)}
-.sh-mark .dot{color:var(--highlight)}
+.sh-mark{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--tag-deep)}
+.sh-mark .dot{color:var(--tag-hi)}
 .screen-header h1{font-size:15px;font-weight:700;letter-spacing:-.01em}
 .sh-divider{width:1px;height:16px;background:var(--border)}
-.version-badge{font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--highlight-bg);color:var(--highlight);font-weight:800;letter-spacing:.04em;border:1px solid color-mix(in srgb,var(--highlight) 30%,transparent)}
-.theme-toggle{background:var(--accent-bg);border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:12px;font-weight:700;font-family:inherit;padding:6px 14px;cursor:pointer;transition:all .15s}
-.theme-toggle:hover{background:var(--accent-bg);border-color:var(--accent)}
+.version-badge{font-size:10.5px;padding:3px 9px;border-radius:20px;background:var(--tag-hi-bg);color:var(--tag-hi);font-weight:800;letter-spacing:.04em;border:1px solid color-mix(in srgb,var(--highlight) 30%,transparent)}
+.theme-toggle{background:var(--tag-ac-bg);border:1px solid var(--border);border-radius:20px;color:var(--tag-ac);font-size:12px;font-weight:700;font-family:inherit;padding:6px 14px;cursor:pointer;transition:all .15s}
+.theme-toggle:hover{background:var(--tag-ac-bg);border-color:var(--accent)}
 
 .toolbar{padding:12px 22px;background:var(--paper);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.print-btn{display:inline-flex;align-items:center;gap:7px;background:var(--highlight);border:1px solid var(--highlight);border-radius:9px;padding:9px 18px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;transition:transform .12s,filter .15s;letter-spacing:.01em}
+.print-btn{display:inline-flex;align-items:center;gap:7px;background:#C94A30;border:1px solid #C94A30;border-radius:9px;padding:9px 18px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;transition:transform .12s,filter .15s;letter-spacing:.01em} /* 흰 글자 대비 4.66:1(--highlight #ed5b3f 원색은 3.4:1로 미달이라 버튼 전용으로 짙게) */
 .print-btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
 .print-btn:active{transform:translateY(0)}
+/* print_options.js 가 뒤에서 주입하는 .po-toggle{background:transparent} 를 명암비로 이긴다(ID+클래스 2개 = 특이도 우위) — GM 화면 UX 정돈 2026-09-17 */
+#po-toggle-btn.po-toggle.print-btn{background:#C94A30;color:#fff}
 .back-link{font-size:12px;color:var(--dim);display:inline-flex;align-items:center;gap:5px;font-weight:600}
 .back-link:hover{color:var(--accent)}
 .tb-spacer{flex:1}
@@ -107,8 +121,8 @@ b,strong{font-weight:700}
   box-shadow:var(--shadow);overflow:hidden}
 .cover::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,var(--accent-deep),var(--highlight))}
 .cover-topline{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:44px}
-.cover-mark{font-size:15px;font-weight:800;letter-spacing:.30em;color:var(--accent-deep)}
-.cover-mark .dot{color:var(--highlight)}
+.cover-mark{font-size:15px;font-weight:800;letter-spacing:.30em;color:var(--tag-deep)}
+.cover-mark .dot{color:var(--tag-hi)}
 .cover-doc{font-size:10.5px;font-weight:700;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
 .cover-eyebrow{font-size:11px;font-weight:800;letter-spacing:.34em;color:var(--highlight);text-transform:uppercase;margin-bottom:14px}
 .cover-title{font-size:46px;font-weight:800;color:var(--text);line-height:1.08;letter-spacing:-.025em;margin-bottom:26px}
@@ -136,8 +150,8 @@ b,strong{font-weight:700}
 .section-eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 .section-title{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-.012em;display:flex;align-items:center;gap:8px}
 .section-rule{flex:1;height:1px;background:var(--border)}
-.tag-core{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:20px;background:var(--highlight-bg);color:var(--highlight)}
-.tag-auto{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent)}
+.tag-core{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:20px;background:var(--tag-hi-bg);color:var(--tag-hi)}
+.tag-auto{font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:20px;background:var(--tag-ac-bg);color:var(--tag-ac)}
 
 .panel{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow)}
 .panel-flush{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
@@ -190,7 +204,7 @@ b,strong{font-weight:700}
 .comment-box{background:var(--paper);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
 .comment-row{display:grid;grid-template-columns:132px 1fr;min-height:60px;border-bottom:1px solid var(--hair)}
 .comment-row:last-child{border-bottom:none}
-.comment-lbl{padding:15px 16px;background:var(--paper2);font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.02em;display:flex;align-items:center;gap:7px;position:relative}
+.comment-lbl{padding:15px 16px;background:var(--paper2);font-size:11px;font-weight:800;color:var(--tag-ac);letter-spacing:.02em;display:flex;align-items:center;gap:7px;position:relative}
 .comment-lbl::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--accent-deep)}
 .comment-row:nth-child(2) .comment-lbl::before{background:var(--red)}
 .comment-row:nth-child(3) .comment-lbl::before{background:var(--highlight)}
@@ -205,7 +219,7 @@ b,strong{font-weight:700}
 
 /* 푸터 */
 .page-footer{text-align:center;padding:26px 20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:8px;letter-spacing:.02em}
-.page-footer .fmark{font-weight:800;letter-spacing:.14em;color:var(--accent-deep)}
+.page-footer .fmark{font-weight:800;letter-spacing:.14em;color:var(--tag-deep)}
 
 /* ── 인쇄 스타일 (A4 최우선) ── */
 @page{size:A4;margin:14mm 13mm}
@@ -265,6 +279,7 @@ b,strong{font-weight:700}
   .tp-name{width:74px}
   .data-table{font-size:12px}
   .data-table th,.data-table td{padding:9px 8px}
+  .back-link{min-height:44px}
 }
 </style>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -277,7 +292,7 @@ b,strong{font-weight:700}
   <div class="screen-header-left">
     <span class="sh-mark">WELLPERION<span class="dot">.</span></span>
     <span class="sh-divider"></span>
-    <h1>마케팅 월간 보고서<span class="ai-owner" style="display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;opacity:.65;white-space:nowrap;">AI 시모</span></h1>
+    <h1>마케팅 월간 보고서<span class="ai-owner" style="display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;white-space:nowrap;">AI 시모</span></h1>
     <span class="version-badge">인쇄용</span>
   </div>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">◐ 테마</button>
@@ -285,7 +300,7 @@ b,strong{font-weight:700}
 
 <!-- 툴바 -->
 <div class="toolbar">
-  <button class="print-btn" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  <button class="print-btn" onclick="window.print()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> 인쇄 / PDF 저장</button>
   <a href="../../wellperion_guide(main).html#M1" class="back-link">← 대시보드로 돌아가기</a>
   <span class="tb-spacer"></span>
   <span class="tb-month">

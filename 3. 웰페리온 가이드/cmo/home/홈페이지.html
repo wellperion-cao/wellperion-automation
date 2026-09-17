@@ -17,9 +17,9 @@
   --card: #1A1816;
   --gold: #B79F8A;
   --gold-light: #D4C4B0;
-  --gold-dark: #8A7562;
+  --gold-dark: #96826E; /* 어두운 배경(카드 #1A1816 등) 대비 4.5 미만이라 밝힘(원래값 #8A7562 은 4.3:1) — GM 화면 UX 정돈 2026-09-17 */
   --text: #E8E4DF;
-  --dim: #6B6560;
+  --dim: #8D8479; /* 위와 같은 이유로 밝힘(원래값 #6B6560 은 3.5:1) */
   --white: #F5F2EF;
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
@@ -47,13 +47,13 @@ a { color: var(--gold); text-decoration: none; }
   text-transform: uppercase; transition: color 0.3s; font-weight: 500;
 }
 .nav-links a:hover { color: var(--gold); }
-.nav-cta {
+.nav-links a.nav-cta { /* .nav-links a 보다 특이도를 높여야 금색이 이긴다 — 안 그러면 .nav-links a{color:var(--dim)} 에 덮여 버튼 글자가 옅어진다(3.5:1) */
   font-size: var(--fs-2); letter-spacing: 1px; padding: 10px 24px;
   border: 1px solid var(--gold); color: var(--gold); border-radius: 2px;
   transition: all 0.3s; text-transform: uppercase;
 }
 .nav-cta:hover { background: var(--gold); color: var(--bg); }
-.nav-mobile { display: none; background: none; border: none; color: var(--gold); font-size: var(--fs-6); cursor: pointer; }
+.nav-mobile { display: none; background: none; border: none; color: var(--gold); font-size: var(--fs-6); cursor: pointer; padding: 10px; margin: -10px; }
 
 /* ── Hero ── */
 .hero {
@@ -247,6 +247,7 @@ a { color: var(--gold); text-decoration: none; }
   .about-stats { gap: 24px; }
   .facilities { padding: 80px 20px; }
   .info-section { padding: 60px 20px; }
+  .info-group a { display: inline-block; min-height: 44px; padding: 11px 0; margin: -11px 0; } /* 터치 44px — 줄간격은 그대로 두고 누르는 영역만 확장 */
 }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
@@ -263,7 +264,7 @@ a { color: var(--gold); text-decoration: none; }
     <a href="#membership">멤버십</a>
     <a href="http://wellperion.com/ko/inquiry/" class="nav-cta">문의하기</a>
   </div>
-  <button class="nav-mobile" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">&#9776;</button>
+  <button class="nav-mobile" aria-label="메뉴" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
 </nav>
 
 <!-- Hero -->
@@ -317,22 +318,22 @@ a { color: var(--gold); text-decoration: none; }
 
   <div class="programs-grid">
     <div class="program-card fade-in">
-      <div class="program-icon">&#9883;</div>
+      <div class="program-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 14.7 8.6 22 9.3 16.5 14.1 18.2 21.3 12 17.5 5.8 21.3 7.5 14.1 2 9.3 9.3 8.6 12 2"/></svg></div>
       <div class="program-name">WJO</div>
       <div class="program-desc">Wellperion Junior Olympic. 체계적인 주니어 스포츠 육성 프로그램.</div>
     </div>
     <div class="program-card fade-in">
-      <div class="program-icon">&#9826;</div>
+      <div class="program-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 22 12 12 22 2 12 12 2"/></svg></div>
       <div class="program-name">Ballet</div>
       <div class="program-desc">클래식 발레부터 컨템포러리까지. 유연성과 우아함을 함께.</div>
     </div>
     <div class="program-card fade-in">
-      <div class="program-icon">&#9898;</div>
+      <div class="program-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg></div>
       <div class="program-name">Barre</div>
       <div class="program-desc">발레 기반 전신 근력 트레이닝. 체형 교정과 코어 강화.</div>
     </div>
     <div class="program-card fade-in">
-      <div class="program-icon">&#9724;</div>
+      <div class="program-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/></svg></div>
       <div class="program-name">Squash</div>
       <div class="program-desc">글라스 코트 스쿼시. 전략적 사고와 전신 유산소를 동시에.</div>
     </div>

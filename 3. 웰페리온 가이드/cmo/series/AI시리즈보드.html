@@ -8,9 +8,10 @@
 <style>
 :root{
   --bg:#F4F0EB;--paper:#FFFFFF;--text:#221F20;--dim:#6E655C;
-  --accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#E3DCD3;
+  --accent:#6D5F55;--accent-bg:rgba(183,159,138,0.12);--border:#E3DCD3; /* 텍스트용 accent 는 짙게(원 배지색 #B79F8A 는 흰 바탕 대비 2.5:1 미달) — GM 화면 UX 정돈 2026-09-17 */
+  --badge-bg:#F6F3F1;--box-bg:#EDE6DF; /* accent-bg 를 흰 바탕/--bg 바탕에 실제로 합성한 값(칩·박스 전용 — 검수기가 투명 배경의 알파를 못 읽어 오판하는 것 방지) */
   --green:#2E6B3A;--green-bg:rgba(106,191,123,0.12);
-  --red:#C23B21;--red-bg:rgba(237,91,63,0.12);
+  --red:#722D21;--red-bg:rgba(237,91,63,0.12);--red-bg-solid:#FDEBE8; /* --red 도 흰 바탕 대비 4.5 미달이라 짙게(원래값 #C23B21 은 4.1:1) */
   --yellow:#9A7B12;--yellow-bg:rgba(230,200,78,0.12);
   --blue:#2F6BA8;--blue-bg:rgba(91,159,213,0.12);
   --orange:#B45309;--orange-bg:rgba(230,148,78,0.12);
@@ -23,7 +24,7 @@ a{color:var(--accent);text-decoration:none}
 .header{background:var(--paper);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
 .header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .header h1{font-size:17px;font-weight:700}
-.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--accent-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25);white-space:nowrap}
+.version-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--badge-bg);color:var(--accent);font-weight:700;border:1px solid rgba(183,159,138,0.25);white-space:nowrap}
 .header-meta{font-size:12px;color:var(--dim)}
 
 /* Content */
@@ -35,7 +36,7 @@ a{color:var(--accent);text-decoration:none}
 .section-title::after{content:"";flex:1;height:1px;background:var(--border)}
 
 /* Info box */
-.info-box{background:var(--accent-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
+.info-box{background:var(--box-bg);border:1px solid rgba(183,159,138,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px}
 .info-box strong{color:var(--accent)}
 .info-box .ssot-note{font-size:11px;color:var(--dim);margin-top:6px}
 
@@ -87,7 +88,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
 .slide-num{font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:70px;padding-top:1px}
 .slide-text{font-size:12px;color:var(--text);line-height:1.6}
 
-.reality-guard{background:var(--red-bg);border:1px solid rgba(237,91,63,.2);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--red);display:flex;gap:8px;align-items:flex-start}
+.reality-guard{background:var(--red-bg-solid);border:1px solid rgba(237,91,63,.2);border-radius:9px;padding:10px 14px;font-size:12px;color:var(--red);display:flex;gap:8px;align-items:flex-start}
 .reality-guard-icon{font-size:14px;flex-shrink:0;margin-top:1px}
 
 .ep-question{background:var(--blue-bg);border:1px solid rgba(91,159,213,.2);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--blue);font-weight:600}
@@ -106,7 +107,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
 
 /* Loading / error */
 .loading-msg{color:var(--dim);font-size:13px;font-style:italic;padding:20px 0}
-.error-msg{color:var(--red);font-size:13px;padding:12px 14px;background:var(--red-bg);border-radius:8px;margin:8px 0}
+.error-msg{color:var(--red);font-size:13px;padding:12px 14px;background:var(--red-bg-solid);border-radius:8px;margin:8px 0}
 
 /* Footer */
 .page-footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:20px}
@@ -131,7 +132,7 @@ table.ep-table .status-cell{white-space:nowrap;width:140px}
 <!-- Header -->
 <div class="header">
   <div class="header-left">
-    <h1>🧭 AI 시리즈 보드<span class="ai-owner" style="display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;opacity:.65;white-space:nowrap;">AI 시모</span></h1>
+    <h1><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:4px"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>AI 시리즈 보드<span class="ai-owner" style="display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;white-space:nowrap;">AI 시모</span></h1>
     <span class="version-badge" id="season-badge">로드 중…</span>
   </div>
   <div class="header-meta">namuk.wellperion · GM + 시모 전용</div>
