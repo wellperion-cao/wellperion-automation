@@ -1361,6 +1361,7 @@
       <tr><td class="item">지금</td><td id="ui-approve-state">—</td></tr>
       <tr><td class="item">승인 방법</td><td class="note">GM 이 이 표를 보고 「UI 표준 승인」이라고 한 마디 주시면 시모가 <code>status/ui_standard.json</code> 에 승인일을 적고 반영을 시작합니다. 화면이 많아 한 번에 바꾸지 않고 <b>많이 어긋난 화면부터</b> 나눠 갑니다.</td></tr>
       <tr><td class="item">되돌리기</td><td class="note">화면마다 저장 이력이 남습니다. 한 화면씩 직전 판으로 되돌릴 수 있습니다.</td></tr>
+      <tr><td class="item">디자인 도구</td><td id="ui-tools" class="note">—</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -1851,6 +1852,11 @@
       if (more) more.textContent = 안지킴.length > 보일것.length
         ? '많이 어긋난 순 15장만 띄웁니다 — 전체 ' + 안지킴.length + '장.' : '';
 
+      // 디자인 도구(스킬) 상태 — 부팅 자동 업데이트가 --도구 로 적는다(GM 2026-09-17 「상태값이 항상 업데이트되는 구조」)
+      (function(){ var e = document.getElementById('ui-tools'); var t = d.도구; if (!e) return;
+        if (!t || !t.목록) { e.textContent = '아직 안 잼'; return; }
+        e.innerHTML = t.목록.map(function(x){ return '<span class="st ' + (x.상태 === '있음' ? 'ok' : 'bad') + '">' + x.이름 + (x.판 ? ' ' + x.판 : '') + '</span>'; }).join(' ')
+          + ' <span class="n">갱신 ' + String(t['잰 때'] || '').slice(0, 10) + ' · 매 부팅 자동 업데이트(Start-AI CEO)</span>'; })();
       var st = document.getElementById('ui-approve-state');
       if (st) st.innerHTML = d.승인
         ? '<span class="st ok">승인됨 ' + (d.승인일 || '') + '</span> · 반영 ' + (d.반영 || '시작 전')

@@ -38,6 +38,7 @@ GM 지시 2026-09-14: "전체 페이지 디자인 UI/UX 표준화를 만들어�
 from __future__ import annotations
 
 import argparse
+import pathlib
 import glob
 import io
 import json
@@ -260,11 +261,38 @@ def 자가점검() -> None:
     print("자가점검 OK — 링크·글자·색·모바일 폭·좌측정렬 다섯 + UX 걸림을 각각 세고, 주석은 안 센다")
 
 
+def 도구현황() -> dict:
+    """설치된 화면 디자인 도구(스킬)의 이름·판·마지막 갱신일. sdk-kim 가이드(2026-09-17 GM)
+    「가이드 내용과 상태값이 항상 업데이트되는 구조」 — 손으로 적지 않고 설치 폴더를 읽는다.
+    정본 자리 = status/ui_standard.json["도구"] (같은 화면이 읽는다 · 새 파일 없음)."""
+    import datetime
+    home = pathlib.Path.home()
+    후보 = {
+        "impeccable": home / ".claude" / "skills" / "impeccable" / "SKILL.md",
+        "emil-design-eng": home / ".agents" / "skills" / "emil-design-eng" / "SKILL.md",
+        "prototype": home / ".agents" / "skills" / "prototype" / "SKILL.md",
+        "review-animations": home / ".agents" / "skills" / "review-animations" / "SKILL.md",
+        "design-taste-frontend": home / ".claude" / "skills" / "design-taste-frontend" / "SKILL.md",
+        "ui-ux-pro-max": home / ".claude" / "skills" / "ui-ux-pro-max" / "SKILL.md",
+    }
+    out = []
+    for 이름, f in 후보.items():
+        if not f.is_file():
+            out.append({"이름": 이름, "상태": "없음"})
+            continue
+        head = io.open(f, encoding="utf-8", errors="ignore").read(3000)
+        m = re.search(r"^version:\s*([\w.\-]+)", head, re.M)
+        갱신 = datetime.datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d")
+        out.append({"이름": 이름, "상태": "있음", "판": m.group(1) if m else "", "갱신": 갱신})
+    return {"잰 때": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "목록": out}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--저장", action="store_true", help=f"{OUT} 에 쓴다")
     ap.add_argument("--자가점검", action="store_true")
     ap.add_argument("--ux", action="store_true", help="⑥ UX 19항목을 헤드리스로 잰다(느림)")
+    ap.add_argument("--도구", "--tools", dest="도구", action="store_true", help="디자인 도구(스킬) 설치 상태만 json 에 적는다(부팅 자동 업데이트 뒤)")
     a = ap.parse_args()
     if a.자가점검:
         자가점검()
@@ -275,13 +303,19 @@ def main() -> None:
             기존 = json.load(io.open(OUT, encoding="utf-8"))
         except Exception:
             기존 = {}
+    if a.도구:
+        기존["도구"] = 도구현황()
+        io.open(OUT, "w", encoding="utf-8").write(json.dumps(기존, ensure_ascii=False, indent=1) + "\n")
+        print("  도구 " + ", ".join(f"{x['이름']}={x.get('판') or x['상태']}" for x in 기존["도구"]["목록"]) + f" → {OUT}")
+        return
     d = 세기(ux=a.ux, 이전=기존)
     보고(d)
     if a.저장:
         # 승인 상태는 사람이 정하는 값이라 재는 쪽이 덮지 않는다
-        for k in ("승인", "승인일", "승인자", "반영"):
+        for k in ("승인", "승인일", "승인자", "반영", "도구"):
             if k in 기존:
                 d[k] = 기존[k]
+        d["도구"] = 도구현황()
         io.open(OUT, "w", encoding="utf-8").write(json.dumps(d, ensure_ascii=False, indent=1) + "\n")
         print(f"  → {OUT}")
 

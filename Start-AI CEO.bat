@@ -40,6 +40,10 @@ if errorlevel 1 (
   call claude update >> "%UPDLOG%" 2>&1
   call claude plugin marketplace update omc >> "%UPDLOG%" 2>&1
   call claude plugin update oh-my-claudecode@omc >> "%UPDLOG%" 2>&1
+  REM  Design skills (GM 2026-09-17): keep Impeccable/Emil skills current and record versions.
+  call npx -y impeccable update --global --providers=claude-code --no-hooks -y >> "%UPDLOG%" 2>&1
+  call npx -y skills update -g >> "%UPDLOG%" 2>&1
+  call C:\Python314\python.exe "%WORK%\scripts\ui_standard_check.py" --tools >> "%UPDLOG%" 2>&1
   for /f "tokens=*" %%v in ('claude --version 2^>nul') do echo [%DATE% %TIME%] now -^> %%v >> "%UPDLOG%"
   del /q "%WORK%\logs\.claude_updating" 2>nul
 ) else (
