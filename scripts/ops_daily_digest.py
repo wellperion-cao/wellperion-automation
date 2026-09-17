@@ -175,6 +175,23 @@ def _is_auto_broadcast(msg: str) -> bool:
 DISPLAY_NAME_ALIAS = {"라우열": "나우열M", "웰페리온 F.C매니저 임정은 선생님": "임정은M"}
 
 
+_AI_REPORT_MARKS = ("📌 GM 요청", "🔎 검수", "👉 GM 액션", "8요소")
+
+
+def looks_like_ai_report(text: str) -> bool:
+    """이 글이 사람 방 정리가 아니라 AI 가 GM 께 내는 보고 표인가.
+
+    사람 방 통에 AI 8요소 표가 실려 나간 사고가 세 번 났다(INC-063 · 09-16 · 09-17 07:50).
+    판정 = 8요소 표식이 있거나, 마크다운 표 머리(---|---|---)가 있는 줄이 있으면 AI 글이다.
+    사람 대화 정리에는 이 두 가지가 나오지 않는다."""
+    t = str(text or "")
+    if not t.strip():
+        return False
+    if sum(1 for m in _AI_REPORT_MARKS if m in t) >= 2:
+        return True
+    return bool(re.search(r"^-{3,}\s*\|\s*-{3,}", t, re.M))
+
+
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1585,6 +1602,11 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     else:
         final_message = day_outputs[0][1]
     final_date = day_outputs[-1][0]
+
+    if looks_like_ai_report(final_message):
+        # AI 보고 표가 「방 대화 정리」 자리에 들어왔다 — 저장하면 다음 07:50 통 본문에 그대로 실린다.
+        print("[실패] 대화 정리가 AI 보고 표 모양이라 저장하지 않는다(다음 회차 재생성)")
+        return 1
 
     PENDING_DIGEST_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {"date": final_date, "generated_at": now_str(), "message": final_message, "sent": False}

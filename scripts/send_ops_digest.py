@@ -787,7 +787,7 @@ def _ledger_first_seen_by_no(ledger: list) -> dict:
 
 
 def _ledger_open_candidates(ledger: list, owners: "list | None" = None,
-                             since: "str | None" = None) -> list:
+                             since: "str | None" = None, reply_only: bool = False) -> list:
     """원장(_digest_ledger.json 스키마) 전체에서 status=='open'인 이슈를 오래된 순으로
     돌려준다 — {"age","date","owner","title","issue"}(issue=원장 원본 딕셔너리, todo_id 를
     되적을 때 그대로 쓴다). owners 를 주면 그 담당만(mgr_open_candidates 가 _NUDGE_MEMBERS 로
@@ -810,9 +810,11 @@ def _ledger_open_candidates(ledger: list, owners: "list | None" = None,
             title = str(it.get("issue") or "").strip()
             if not title or str(it.get("status") or "") != "open":
                 continue
-            # ★2026-09-17 — 원장에서 꺼내는 것은 회신 소통건(kind=="reply")뿐이다. 업무성 항목은
-            # 업무 SSOT 한 곳에서만 읽는다(GM 「업무 SSOT 로 단일화」 · 같은 건이 두 통에 나오던 자리).
-            if str(it.get("kind") or "") != "reply":
+            # ★2026-09-17 — 중간관리자 원장에서 꺼내는 것은 회신 소통건(kind=="reply")뿐이다.
+            # 업무성 항목은 업무 SSOT 한 곳에서만 읽는다(GM 「업무 SSOT 로 단일화」).
+            # ★운영부 원장(ops_open_candidates)은 kind 를 안 붙이므로 이 필터를 걸지 않는다 —
+            # 걸었더니 이월 절 98건이 통째로 사라졌다(같은 날 실측).
+            if reply_only and str(it.get("kind") or "") != "reply":
                 continue
             if owners is not None and owner not in owners:
                 continue
@@ -834,7 +836,7 @@ def mgr_open_candidates(ledger: list) -> list:
     """MGR_LEDGER 전체에서 status=='open'·담당이 _NUDGE_MEMBERS 인 이슈를 오래된 순으로
     돌려준다. nudge_review(사람이 보는 CLI)와 배1102 SSOT 다리(bridge_to_todo 호출부)가
     이 판정 하나를 공유한다(약속 L01)."""
-    return _ledger_open_candidates(ledger, owners=_NUDGE_MEMBERS)
+    return _ledger_open_candidates(ledger, owners=_NUDGE_MEMBERS, reply_only=True)
 
 
 def ops_open_candidates(ledger: list) -> list:
@@ -879,13 +881,15 @@ def _selfcheck_today_candidates() -> None:
     def _iso(days_ago: int) -> str:
         return (d - timedelta(days=days_ago)).isoformat()
 
+    R = {"status": "open", "kind": "reply"}     # 이 절은 회신 소통건만 센다(업무성 항목은 업무 SSOT 몫)
     ledger = [
-        {"date": _iso(40), "issues": [{"issue": "환불기준 개정", "owner": "이경연 실장", "status": "open", "no": 129}]},
-        {"date": _iso(33), "issues": [{"issue": "여자사우나 비품", "owner": "이경연 실장", "status": "open", "no": 147}]},
-        {"date": _iso(26), "issues": [{"issue": "안면인식 거부 회원 안내", "owner": "이경연 실장", "status": "open", "no": 148}]},
-        {"date": _iso(20), "issues": [{"issue": "네 번째 건 — 안 보여야 함", "owner": "이경연 실장", "status": "open", "no": 199}]},
-        {"date": _iso(50), "issues": [{"issue": "이미 끝난 건", "owner": "이경연 실장", "status": "resolved", "no": 100}]},
-        {"date": _iso(45), "issues": [{"issue": "소장 몫 — 안 보여야 함", "owner": "이정헌 소장", "status": "open", "no": 200}]},
+        {"date": _iso(40), "issues": [{"issue": "환불기준 개정", "owner": "이경연 실장", "no": 129, **R}]},
+        {"date": _iso(33), "issues": [{"issue": "여자사우나 비품", "owner": "이경연 실장", "no": 147, **R}]},
+        {"date": _iso(26), "issues": [{"issue": "안면인식 거부 회원 안내", "owner": "이경연 실장", "no": 148, **R}]},
+        {"date": _iso(20), "issues": [{"issue": "네 번째 건 — 안 보여야 함", "owner": "이경연 실장", "no": 199, **R}]},
+        {"date": _iso(50), "issues": [{"issue": "이미 끝난 건", "owner": "이경연 실장", "status": "resolved", "kind": "reply", "no": 100}]},
+        {"date": _iso(45), "issues": [{"issue": "소장 몫 — 안 보여야 함", "owner": "이정헌 소장", "no": 200, **R}]},
+        {"date": _iso(48), "issues": [{"issue": "업무성 항목 — 안 보여야 함", "owner": "이경연 실장", "status": "open", "no": 201}]},
     ]
     body = build_today_candidates_section(ledger)
     lines = body.splitlines()
@@ -895,6 +899,11 @@ def _selfcheck_today_candidates() -> None:
     assert lines[3] == "▪ #148 안면인식 거부 회원 안내 — 26일째", lines
     assert len(lines) == 5, lines   # 헤더1 + 항목3 + 안내1 = 5줄 (네 번째 건·소장 몫·resolved 는 안 실림)
     assert "최준용M" in lines[4] and "이경연 실장" not in lines[4], lines[4]   # 담당 후보엔 실장 본인 제외
+    assert "업무성 항목" not in body, body      # kind 없는(=업무성) 줄은 원장에서 안 꺼낸다
+    # ★운영부 이월 절은 kind 를 안 붙인 원장을 쓴다 — 같은 필터에 걸려 0건이 되면 안 된다
+    ops_ledger = [{"date": _iso(0), "issues": [{"issue": "운영부 열린 건", "owner": "이경연 실장",
+                                                "status": "open", "no": 900}]}]
+    assert len(ops_open_candidates(ops_ledger)) == 1, ops_ledger
     assert build_today_candidates_section([]) == ""
     assert build_today_candidates_section([{"date": _iso(1), "issues": [
         {"issue": "소장 건", "owner": "이정헌 소장", "status": "open", "no": 1}]}]) == ""
@@ -1030,9 +1039,9 @@ def _selfcheck_mgr_evening_carryover() -> None:
                 {"date": _iso(5), "issues": [{"issue": "닫힌 건 — 안 보여야 함", "owner": "이경연 실장",
                                               "status": "resolved", "no": 10}]},
                 {"date": _iso(3), "issues": [{"issue": "최근 건", "owner": "이경연 실장",
-                                              "status": "open", "no": 20}]},
+                                              "status": "open", "kind": "reply", "no": 20}]},
                 {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "이정헌 소장",
-                                              "status": "open", "no": 21}]},
+                                              "status": "open", "kind": "reply", "no": 21}]},
             ], ensure_ascii=False), encoding="utf-8")
             out = build_mgr_evening_carryover()
             lines = out.splitlines()
@@ -1109,7 +1118,18 @@ def _mgr_conversation_message(target_date: str) -> str:
         return ""
     if str(data.get("date", "")) != target_date:
         return ""
-    return (data.get("message") or "").strip()
+    msg = (data.get("message") or "").strip()
+    # ★사람 방에 AI 8요소 표를 싣지 않는다(INC-063 3회째 · 09-17 07:50 실제 발송).
+    # 쓰는 자리(ops_daily_digest)에도 같은 가드를 뒀지만, 이미 저장된 파일·손 편집이 있으므로
+    # 읽는 자리에서 한 번 더 막는다 — 절이 통째로 빠지고 아래 제목 줄이 대신 선다.
+    try:
+        import ops_daily_digest as _odd
+        if _odd.looks_like_ai_report(msg):
+            log("[mgr] 대화 정리가 AI 보고 표 모양 — 이 절을 통에서 뺐다")
+            return ""
+    except Exception as exc:
+        log(f"[mgr] AI 보고 표 판정 실패(그대로 진행): {type(exc).__name__}: {exc}")
+    return msg
 
 
 def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict, list, str]":
