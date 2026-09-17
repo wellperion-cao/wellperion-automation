@@ -418,6 +418,15 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="calendar"] .cal-badge,
   body[data-print-mode="calendar"] .cal-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* ── 명암비 수리(시모 실측 · GM 지시 2026-09-17) ─────────────────────────────
+   어두운 바탕에서 흐린 글자가 4.5:1 에 못 미쳐 실무진이 읽기 힘들었다.
+   값만 올리고 구조는 건드리지 않는다 — 인쇄는 밝은 팔레트라 화면에서만 건다. */
+@media screen {
+  .view-toggle-btn,.group-toggle .gcount{color:#9A8B78}
+  .filter-btn:not(.active){color:#9A8B78}
+  .view-toggle-btn.active{color:#201F1D}
+  .kanban-col-head .kcount{color:#E8E2D8}
+}
 </style>
 <script src="../../_assets/gate.js" charset="utf-8"></script>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
@@ -429,6 +438,8 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   <div class="header-top">
     <h1>웰페리온 결재 현황 SSOT</h1>
     <div class="header-right">
+      <!-- 결재 진행 현황 칩(GM 지시 2026-09-17) — 값은 render() 가 채운다(자료를 읽은 뒤라야 셀 수 있다) -->
+      <div id="stageChips" style="display:flex;gap:4px;align-items:center;margin-right:2px"></div>
       <a class="sheet-link" href="업무 현황 SSOT.html" onclick="if(window.parent && window.parent!==window && window.parent.ssotShowTasks){window.parent.ssotShowTasks();return false;}" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(91,159,213,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
         업무 현황 SSOT
@@ -570,6 +581,7 @@ function deptHeadNameOf(t) {
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
+let activeStageFilter = '전체';  // '전체' | '부서장' | 'GM' | '대표님' | '놓친 것' (상단 결재 진행 현황 칩)
 let activeRoleFilter = '전체';  // '전체' | 부서장 실명 | 'GM' (약속 L09: 대표님 단계 폐지)
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
@@ -663,6 +675,63 @@ function normalizeTask(r) {
   t.updatedAt = r['수정일'] || r.updatedAt || '';
   t.createdAt = r['생성일'] || r.createdAt || '';
   return t;
+}
+
+/* 결재가 어느 단계에서 멈췄나 — 서명 칸이 정본(상태 칸은 업무 진행이라 따로 논다).
+   결재요청에 그 사람이 걸려 있는데 서명 칸이 비었거나 PENDING 이면 그 단계에서 대기다. */
+function _unsigned(v) {
+  const x = String(v || '').trim();
+  return !x || x === 'PENDING';
+}
+
+function approvalStageOf(t) {
+  const line = String(t.approval || t['결재요청'] || '').trim();
+  if (!line) return '';
+  if (/반려/.test(String(t.approvalStatus || ''))) return '';
+  const others = line.split(',').map(x => x.trim())
+    .filter(x => x && x.indexOf('GM') < 0 && x.indexOf('대표') < 0);
+  if (others.length && _unsigned(t['부서장싸인'])) return '부서장';
+  if (line.indexOf('GM') >= 0 && _unsigned(t['GM싸인'])) return 'GM';
+  if (line.indexOf('대표') >= 0 && _unsigned(t['대표싸인'])) return '대표님';
+  return '';
+}
+
+/* 놓친 것 = 아직 서명이 안 끝났는데 종료일이 지난 건. 기한 없는 건은 세지 않는다(없는 것을 늦었다고 하지 않는다). */
+function approvalOverdue(t) {
+  if (!approvalStageOf(t)) return false;
+  const due = String(t.endDate || t['종료일'] || '').slice(0, 10);
+  if (!due) return false;
+  return new Date(due + 'T23:59:59') < new Date();
+}
+
+function renderStageChips(tasks) {
+  const box = document.getElementById('stageChips');
+  if (!box) return;
+  const n = { '대표님': 0, 'GM': 0, '부서장': 0, '놓친 것': 0 };
+  tasks.forEach(t => {
+    const st = approvalStageOf(t);
+    if (st) n[st]++;
+    if (approvalOverdue(t)) n['놓친 것']++;
+  });
+  const chip = (key, label, color, bg) => {
+    const on = activeStageFilter === key;
+    return '<button type="button" class="sheet-link" onclick="setStageFilter(\'' + key + '\')"'
+      + ' title="' + label + '만 보기 — 다시 누르면 해제"'
+      + ' style="background:' + bg + ';color:' + color + ';border-color:rgba(183,159,138,0.35);'
+      + (on ? 'box-shadow:0 0 0 2px var(--bg),0 0 0 3px ' + color + ';' : '') + '">'
+      + label + ' <b>' + n[key] + '</b></button>';
+  };
+  box.innerHTML = chip('부서장', '부서장 미결', 'var(--blue)', 'var(--blue-bg)')
+    + chip('GM', 'GM 미결', 'var(--accent)', 'var(--accent-bg)')
+    + chip('대표님', '대표님 미결', 'var(--purple)', 'var(--purple-bg)')
+    + chip('놓친 것', '놓친 것', 'var(--red)', 'var(--red-bg)');
+}
+
+function setStageFilter(key) {
+  activeStageFilter = (activeStageFilter === key) ? '전체' : key;
+  // 고른 단계를 주소에 남긴다(새로고침·공유해도 같은 화면) — 이 화면의 주소 만들기는 buildShareUrl 하나다.
+  try { history.replaceState(null, '', buildShareUrl()); } catch (e) {}
+  render();
 }
 
 function render() {
@@ -763,11 +832,20 @@ function render() {
   if (clearBtn) clearBtn.style.display = searchQuery ? '' : 'none';
 
 
+  renderStageChips(approvalTasks);   // 상단 결재 진행 현황 칩(GM 지시 2026-09-17)
+
   // 필터링
   let list = approvalTasks;
   if (activeFilter === '결재완료') list = done;
   else if (activeFilter === '반려') list = rejected;
   else if (activeFilter === '미결') list = pending;
+
+  // 결재 진행 단계 필터 — 상단 칩(GM 지시 2026-09-17)
+  if (activeStageFilter === '놓친 것') {
+    list = list.filter(approvalOverdue);
+  } else if (activeStageFilter !== '전체') {
+    list = list.filter(t => approvalStageOf(t) === activeStageFilter);
+  }
 
   // 카테고리 필터
   if (activeCatFilter !== '전체') {
@@ -893,6 +971,7 @@ function applyUrlParams() {
     const item = p.get('item');
     if (item) { _deepLinkId = item; activeFilter = '전체'; activeRoleFilter = '전체'; activeCatFilter = '전체'; searchQuery = ''; return; }
     if (p.get('f')) activeFilter = p.get('f');
+    if (p.get('stage')) activeStageFilter = p.get('stage');
     if (p.get('role')) activeRoleFilter = p.get('role');
     if (p.get('cat')) activeCatFilter = p.get('cat');
     if (p.get('sort')) activeSortBy = p.get('sort');
@@ -902,6 +981,7 @@ function applyUrlParams() {
 function buildShareUrl() {
   const u = new URL(location.origin + location.pathname);
   if (activeFilter && activeFilter !== '전체') u.searchParams.set('f', activeFilter);
+  if (activeStageFilter && activeStageFilter !== '전체') u.searchParams.set('stage', activeStageFilter);
   if (activeRoleFilter && activeRoleFilter !== '전체') u.searchParams.set('role', activeRoleFilter);
   if (activeCatFilter && activeCatFilter !== '전체') u.searchParams.set('cat', activeCatFilter);
   if (activeSortBy && activeSortBy !== '최신순') u.searchParams.set('sort', activeSortBy);

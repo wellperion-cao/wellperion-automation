@@ -561,6 +561,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .task-actions{width:100%}
   .action-btn{flex:1;text-align:center}
 }
+/* ── 명암비 수리(시모 실측 · GM 지시 2026-09-17) ─────────────────────────────
+   어두운 바탕에서 흐린 글자가 4.5:1 에 못 미쳐 실무진이 읽기 힘들었다.
+   값만 올리고 구조는 건드리지 않는다 — 인쇄는 밝은 팔레트라 화면에서만 건다. */
+@media screen {
+  .ls-head .ls-sub,.ls-fld,.view-toggle-btn{color:#9A8B78}
+  .ls-hdr .ls-fld{color:#9A8B78}   /* 머리행 칸 이름은 더 좁은 규칙이 있어 따로 적는다 */
+  .filter-btn:not(.active){color:#9A8B78}
+  .ls-unscored-badge{color:#E8E2D8}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <link rel="stylesheet" href="../../assets/wp-ui.css">
