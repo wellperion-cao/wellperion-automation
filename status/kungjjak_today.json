@@ -220,7 +220,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 12
+          "waited": 15
         }
       ],
       "repeats": []
@@ -326,12 +326,6 @@
         }
       ],
       "work": [
-        {
-          "time": "08:19",
-          "area": "재발방지",
-          "event": "INC-063 재발(09-17 07:50 중간관리자 통 8요소 표 2회째) 원인·차단",
-          "detail": "원인=gm_wording_guard Stop 훅이 무인 claude 에 붙어 표를 되돌려 받음 + 파서 비JSON 폴백이 가드 우회 · Stop 훅 2종 HEADLESS 건너뜀·폴백 가드 · 자체점검 통과 · 저장·배포"
-        },
         {
           "time": "09:04",
           "area": "작업",
@@ -505,6 +499,12 @@
           "area": "GM요청",
           "event": "딜라이브 문자연동 가이드 1장(AX 랩스 표준화·기준 묶음 + 문자 발송 카드 링크)",
           "detail": "21a0ffac3·7759efa3f·43020e49d · 라이브 200 · 관리자 콘솔 카드 링크 확인"
+        },
+        {
+          "time": "11:20",
+          "area": "GM요청",
+          "event": "ERP 관리자 판 단순화(GM 10:44)+내보내기 버튼(10:49) 배포·라이브 실측",
+          "detail": "ba7ad2fe8e·7b9fce5dc2·373798568f · deploy_auth 11:19 · 콘솔 오류 0 · 스크린샷 scratchpad/admin_live_*.png"
         }
       ],
       "count": 8,
@@ -687,6 +687,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-3016",
+          "no": "16",
+          "got": "아 정말 뭔가 잘 안되네....",
+          "did": "",
+          "start": "11:19",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -715,14 +727,29 @@
           "detail": "client=ax 발행기 저장·배포 417ceb0154 · self-test 통과 · 임시저장은 계정 뒤"
         }
       ],
-      "count": 14,
+      "count": 15,
       "done": 14,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-3016",
+          "no": "16",
+          "got": "아 정말 뭔가 잘 안되네....",
+          "did": "",
+          "start": "11:19",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -799,6 +826,18 @@
           "upload": "✅ 배포 (f06276b15)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-4009",
+          "no": "09",
+          "got": "바디프렌드 매출라인으로 연동했어? 우린 저 매출에서 30% 이익금을 가져오는거야",
+          "did": "아직 미연동(계정·OTP 씨앗 GM 저장 대기) · 30% 이익금 규칙을 배 2523 note 에 박음(총액·우리 몫 둘 다 표기)",
+          "start": "11:21",
+          "end": "11:21",
+          "minutes": 0,
+          "upload": "✅ 배포 (f06276b15)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -881,8 +920,8 @@
           "detail": "커밋 02589588ba · 배 12523"
         }
       ],
-      "count": 9,
-      "done": 9,
+      "count": 10,
+      "done": 10,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 7,
@@ -1025,7 +1064,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 7
         }
       ],
       "repeats": []
@@ -1076,13 +1115,19 @@
           "area": "작업",
           "event": "feat(gocheok): 파트너 3호 소개서·브랜드가이드·운영전략 3화면 v0.2 — 원고+지점장님 답변(9/14 요금 구조·9/15 규정) 반영",
           "detail": "커밋 bea08de55e · 배 11386"
+        },
+        {
+          "time": "11:19",
+          "area": "작업",
+          "event": "feat(partner-agent): 번호 설문 나간 방은 아침 통에 질문 안 얹음(SURVEY_SENT_MARK) + 고척·다캠 브리프·받을것·qa 정리 — GM 2026-09-17 「반복 중복 질문 절대 금지 ·",
+          "detail": "커밋 99495a02e3 · 배 11386"
         }
       ],
       "count": 2,
       "done": 1,
       "open": 1,
       "avg_minutes": 0,
-      "work_count": 3,
+      "work_count": 4,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1098,7 +1143,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 13
+          "waited": 16
         }
       ],
       "repeats": []
