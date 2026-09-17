@@ -712,7 +712,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 17
+          "waited": 22
         }
       ],
       "repeats": [
@@ -1009,8 +1009,32 @@
           "ref": "GM-20260917-2692",
           "no": "692",
           "got": "지금 근데 AWS라서 자율현황 라이브 가능하지않나? 직관적이고, 액티비티하게?",
-          "did": "",
+          "did": "살아있음 판정에 활동 푸시 시각도 — 생존 루프가 멈춘 창이 일하고 있으면 🟢 · 관제판 활동 라이브 — 창 6개 대화 기록(지시·응답)을 3초마다 서버로 푸시(console_activity_push · 세션 · fix(console): 살아있음 판정에 활동 푸시 시각도 — 생존 루프 — 커밋 720362c6b9 · 배 12715",
           "start": "15:20",
+          "end": "15:29",
+          "minutes": 8,
+          "upload": "✅ 배포 (720362c6b)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-2693",
+          "no": "693",
+          "got": "흠 하나도 직관적이거나 그러지가 않은데, 시각적인 액티비티한게 없어서 그런가? 중복적인것도 너무 많은 것 같고?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "15:30",
+          "end": "15:30",
+          "minutes": 0,
+          "upload": "✅ 배포 (377dc6407)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-2694",
+          "no": "694",
+          "got": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
+          "did": "",
+          "start": "15:30",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1074,6 +1098,18 @@
           "end": "14:17",
           "minutes": 0,
           "upload": "✅ 배포 (6151b51aa)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-LIVE3",
+          "no": "E3",
+          "got": "자율현황 활동 라이브(3차) — 창 6개 지시·응답 3초 푸시 · 카드 활동 3줄·작업 중 불 · 지금 흐름 20줄 · 5초 갱신",
+          "did": "a5a0d7560·720362c6b · 서버 15:25·15:28 재기동 · 푸시 PID 34664 · 15:28 실측 6/6 🟢·활동 5창·흐름 5줄·오류 0",
+          "start": "15:29",
+          "end": "15:29",
+          "minutes": 0,
+          "upload": "✅ 배포 (720362c6b)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1163,12 +1199,6 @@
         }
       ],
       "work": [
-        {
-          "time": "11:50",
-          "area": "GM요청",
-          "event": "monthly_ops_plan 되쓰기 7곳 mutate_json 관문 통일(근본 수리 ②)",
-          "detail": "1a39073c5 · 자체점검 통과 · 낡은 디스크 재현에서 HEAD 카드 보존 확인"
-        },
         {
           "time": "11:51",
           "area": "작업",
@@ -1342,10 +1372,16 @@
           "area": "작업",
           "event": "인사 쓰기 거울 배관 — /api/hr/mirror(디바운스·간격·탭 잠금)·/api/hr/mirror/health·migrate_hr --light/--wait-lock·차등 cron 5/10/15 · 라이브 실측 3연타→1회 ok",
           "detail": "bfa8df0c5·1042ac00a·2f9438aac · erp-api 재기동 15:17 · AtoA CHRO야 회신 15:18 [나우열M 요청 2026-09-17]"
+        },
+        {
+          "time": "15:28",
+          "area": "작업",
+          "event": "fix(console): 살아있음 판정에 활동 푸시 시각도 — 생존 루프가 멈춘 창이 일하고 있으면 🟢",
+          "detail": "커밋 720362c6b9 · 배 12715"
         }
       ],
-      "count": 36,
-      "done": 35,
+      "count": 39,
+      "done": 38,
       "open": 1,
       "avg_minutes": 9,
       "work_count": 30,
@@ -1353,18 +1389,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-2692",
-          "no": "692",
-          "got": "지금 근데 AWS라서 자율현황 라이브 가능하지않나? 직관적이고, 액티비티하게?",
+          "ref": "GM-20260917-2694",
+          "no": "694",
+          "got": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
           "did": "",
-          "start": "15:20",
+          "start": "15:30",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 6
+          "waited": 1
         }
       ],
       "repeats": []
@@ -1871,13 +1907,19 @@
           "area": "작업",
           "event": "fix(brand): AX 랩스 브랜드가이드 「가칭」 삭제 · company 포인터 수정",
           "detail": "커밋 5f48219afe · 배 12691"
+        },
+        {
+          "time": "15:27",
+          "area": "배",
+          "event": "배 2722(12724) GEO 파일 FTP 반영 — 이미 라이브(9/11) 실측으로 종결",
+          "detail": "llms 200 md5 동일 · robots 200 AI 허용 · sitemap_index 200"
         }
       ],
       "count": 36,
       "done": 36,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 11,
+      "work_count": 12,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2593,13 +2635,13 @@
           "ref": "GM-20260917-5033",
           "no": "33",
           "got": "그리고 턴게이트는 사진 3장(남) 3장(여) 다 따로 카톡방에 보고드려줘, 클릭하면 확대해서 볼 수 있으니까",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "15:21",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:27",
+          "minutes": 5,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -2719,28 +2761,13 @@
         }
       ],
       "count": 26,
-      "done": 25,
-      "open": 1,
+      "done": 26,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 19,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-5033",
-          "no": "33",
-          "got": "그리고 턴게이트는 사진 3장(남) 3장(여) 다 따로 카톡방에 보고드려줘, 클릭하면 확대해서 볼 수 있으니까",
-          "did": "",
-          "start": "15:21",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
@@ -2810,13 +2837,13 @@
           "ref": "GM-20260917-9007",
           "no": "07",
           "got": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
-          "did": "",
+          "did": "전략 로드맵 v0.7 — 8-1 비즈니스 확대 5모델 순서 고정 절(옛 업무 SSOT #004 흡수 · GM 지시 2026-0 · 화면 지도 1차 분류 — 유지·문서함·정리·확인 네 갈래(GM 지시 2026-09-17) · scripts/screen_bin · 화면 지도 1차 분류 — 유지·문서함·정리·확인 네 갈래(GM 지시 20 — 커밋 a1699b1cfd · 배 11386 · 전략 로드맵 v0.7 — 8-1 비즈니스 확대 5모델 순서 고정 절(옛  — 커밋 8bbb582423 · 배 11386",
           "start": "15:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:30",
+          "minutes": 16,
+          "upload": "✅ 배포 (a1699b1cf)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -2891,31 +2918,28 @@
           "area": "작업",
           "event": "fix(deploy-chat): kakao_room_listen.py 도 서버로 — api_chat 가 import 하는데 안 올라가 13:51~13:52 /api/chat 전부 404(즉시 복구)",
           "detail": "커밋 7f3f38b28c · 배 11386"
+        },
+        {
+          "time": "15:28",
+          "area": "작업",
+          "event": "화면 지도 1차 분류 — 유지·문서함·정리·확인 네 갈래(GM 지시 2026-09-17) · scripts/screen_bins.py + status/screen_bins.json + screens.html 절",
+          "detail": "커밋 a1699b1cfd · 배 11386"
+        },
+        {
+          "time": "15:29",
+          "area": "작업",
+          "event": "전략 로드맵 v0.7 — 8-1 비즈니스 확대 5모델 순서 고정 절(옛 업무 SSOT #004 흡수 · GM 지시 2026-09-17)",
+          "detail": "커밋 8bbb582423 · 배 11386"
         }
       ],
       "count": 6,
-      "done": 5,
-      "open": 1,
-      "avg_minutes": 4,
-      "work_count": 12,
+      "done": 6,
+      "open": 0,
+      "avg_minutes": 6,
+      "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-9007",
-          "no": "07",
-          "got": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
-          "did": "",
-          "start": "15:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 12
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
@@ -2927,13 +2951,13 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T15:26:29",
+    "published_at": "2026-09-17T15:31:32",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-68",
         "alive": true,
-        "signal": "15:15",
+        "signal": "15:30",
         "last": {
           "time": "15:09",
           "area": "GM요청",
@@ -2947,35 +2971,35 @@
         "nick": "시토",
         "session": "welperion-automation-fc",
         "alive": true,
-        "signal": "15:15",
+        "signal": "15:30",
         "last": {
-          "time": "15:20",
+          "time": "15:30",
           "area": "GM요청",
-          "event": "지금 근데 AWS라서 자율현황 라이브 가능하지않나? 직관적이고, 액티비티하게?",
+          "event": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 78
+        "saves": 79
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "15:15",
+        "signal": "15:30",
         "last": {
-          "time": "15:13",
-          "area": "GM요청",
-          "event": "AB테스트로 보여주면 딱 일듯",
-          "result": "warn"
+          "time": "15:27",
+          "area": "배",
+          "event": "배 2722(12724) GEO 파일 FTP 반영 — 이미 라이브(9/11) 실측으로 종결",
+          "result": "ok"
         },
-        "idle_since": "15:22",
+        "idle_since": null,
         "saves": 23
       },
       "cpo": {
         "nick": "시포",
         "session": "welperion-automation-3b",
         "alive": true,
-        "signal": "15:15",
+        "signal": "15:30",
         "last": {
           "time": "13:39",
           "area": "배",
@@ -2988,30 +3012,30 @@
       "coo": {
         "nick": "시우",
         "session": "welperion-automation-76",
-        "alive": false,
-        "signal": "13:30",
+        "alive": true,
+        "signal": "15:30",
         "last": {
           "time": "15:21",
           "area": "GM요청",
           "event": "그리고 턴게이트는 사진 3장(남) 3장(여) 다 따로 카톡방에 보고드려줘, 클릭하면 확대해서 볼 수 있으니까",
           "result": "warn"
         },
-        "idle_since": null,
+        "idle_since": "15:27",
         "saves": 25
       },
       "cbo": {
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "15:15",
+        "signal": "15:30",
         "last": {
-          "time": "15:14",
-          "area": "GM요청",
-          "event": "시보가 https://erp.wellperion.com/erp/admin/screens.html 이거 정리 나랑 같이 해볼까? AX랩스라서 정말 중요한 건이긴해 모델 Fable5.1로 변경해줄게",
-          "result": "warn"
+          "time": "15:29",
+          "area": "작업",
+          "event": "전략 로드맵 v0.7 — 8-1 비즈니스 확대 5모델 순서 고정 절(옛 업무 SSOT #004 흡수 · GM 지시 2026-09-17)",
+          "result": "ok"
         },
-        "idle_since": null,
-        "saves": 15
+        "idle_since": "15:30",
+        "saves": 17
       }
     }
   }
