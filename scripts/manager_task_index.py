@@ -1696,7 +1696,23 @@ def build() -> str:
     q0 = 3 * ((t.month - 1) // 3) + 1
     keys = [f"{t.year}-{m:02d}" for m in range(q0, q0 + 3)]
     model = dict(model, _hist={"months": {k: {p_: v for p_, v in (months.get(k) or {}).items() if p_ in MGR_PEOPLE} for k in keys if k in months}})
+    if PAGE_RETIRED:
+        return RETIRED_STUB
     return render_page(model)
+
+
+# GM 지시 2026-09-17 15:4x 「업무 SSOT 로 단일화할 거면 중간관리자 업무목차는 삭제」 — 화면은 이동 스텁으로
+# 은퇴(즐겨찾기·옛 링크는 업무시스템으로 넘어간다). 원장·평가 이력·회의자료 A3·07:50 실측(build_model)은
+# 그대로 돈다 — 이 파일이 만드는 것 중 화면 한 장만 내렸다. 되돌리려면 PAGE_RETIRED=False.
+PAGE_RETIRED = True
+RETIRED_STUB = """<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=업무시스템.html">
+<title>웰페리온 · 중간관리자 업무 → 업무시스템</title>
+<!-- 중간관리자 업무목차는 업무 SSOT 로 단일화됐습니다 (GM 지시 2026-09-17). 업무는 업무 현황 SSOT ·
+     사람별 보기는 업무시스템.html?who=이름 · 평가는 ERP 관리자 페이지 「평가」 탭. 이 파일은 옛 링크용 이동 스텁입니다. -->
+</head><body style="font-family:sans-serif;padding:24px">업무시스템으로 이동합니다… <a href="업무시스템.html">바로 가기</a></body></html>
+"""
 
 
 def render_page(model: dict) -> str:
