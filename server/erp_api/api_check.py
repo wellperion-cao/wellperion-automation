@@ -162,7 +162,7 @@ def selftest():
             except HTTPException as e:
                 assert e.status_code == 404
         h = health()
-        assert h["facility_today_sessions"] == 2 and h["rows"] == 6, h
+        assert h["facility_today_sessions"] == 2 and h["rows"] == 7, h
     finally:
         with c:
             c.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))

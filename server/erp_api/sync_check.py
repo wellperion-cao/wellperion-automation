@@ -148,7 +148,8 @@ def selftest():
         assert day_sources("support", "2026-09-03")[0][3] is False, "조별 원장은 ok 없는 응답"
         tkeys = {(j[0], j[1], j[2]) for j in plan_today(today)}   # --today = 오늘치 원장·보드만(월간·주간·빈날 없음)
         assert ("support", "today_live", "2026-09-03") in tkeys and ("facility", "board", "2026-09-03") in tkeys
-        assert not [k for k in tkeys if k[1] in ("monthly", "weekly")] and len(tkeys) == 5
+        assert not [k for k in tkeys if k[1] in ("monthly", "weekly")] and len(tkeys) == 7   # 원장·보드 5 + 항목 마스터 2(지원·주차)
+        assert ("parking", "items", "-") in tkeys and ("support", "items", "-") in keys and ("facility", "items", "-") not in keys
     finally:
         with conn:
             conn.execute("DELETE FROM check_records WHERE tenant_id=%s", (db.TENANT,))
