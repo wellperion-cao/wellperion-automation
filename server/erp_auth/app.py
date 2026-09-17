@@ -819,7 +819,7 @@ STYLE = (
     ".soc-row a,.soc-row span{display:flex;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center}"
     ".soc-row a{text-decoration:none;border:1px solid transparent}.soc-row a:hover{filter:brightness(1.06)}"
     ".soc-row span.off{opacity:.35;cursor:default;background:var(--accent-soft)}"
-    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{display:inline-block;padding:10px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
+    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{display:inline-block;padding:12px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
     ".err,.ok{margin:0 0 16px;padding:8px 12px;font-size:13.5px;color:var(--ink);border-left:3px solid var(--accent);background:var(--accent-soft)}"
     ".err{border-left-color:#ED5B3F}"
     ".tw{overflow-x:auto}table{width:100%;min-width:640px;font-size:14px;border-collapse:collapse}"
