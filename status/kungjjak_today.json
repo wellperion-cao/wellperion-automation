@@ -486,6 +486,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-1049",
+          "no": "49",
+          "got": "업무시스템 화면 은퇴 — 업무 현황 SSOT 한 화면",
+          "did": "업무시스템.html 스텁(?who→?owner) · GM업무·업무목차 스텁도 SSOT · 빌더 json 유지(평가 탭) · 카드 표 2항목 내림은 시토",
+          "start": "16:57",
+          "end": "16:57",
+          "minutes": 0,
+          "upload": "✅ 배포 (038326e71)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -570,18 +582,6 @@
           "evidence": "✅있음"
         },
         {
-          "ref": "GM-20260917-DELPW",
-          "no": "PW",
-          "got": "업무 현황 SSOT 삭제 비밀번호 1531 안 됨",
-          "did": "원인 = 화면 코드 삭제 비번 1234(7월부터) · 지금은 1234 로 됨 · 1531 통일은 나우열M 라인 파일이라 AtoA 요청 14:0x",
-          "start": "14:02",
-          "end": "14:02",
-          "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "🔁재확인"
-        },
-        {
           "ref": "GM-20260917-F",
           "no": "-F",
           "got": "/erp/?view=home 삭제·/erp/ 병합·ERP 홈=/home · 전체 화면 페이지 링크 목록 정리",
@@ -643,18 +643,6 @@
         }
       ],
       "work": [
-        {
-          "time": "11:07",
-          "area": "작업",
-          "event": "업무 SSOT 이관 관문 — 카드·원장 → 행 (GM 지시 9/17) + 드라이런 표",
-          "detail": "커밋 fb8a85ec29 · 배 12714"
-        },
-        {
-          "time": "11:16",
-          "area": "작업",
-          "event": "업무 SSOT 이관 관문 — 카드 저장 재시도(다른 레인 HEAD 앞섬 대비) 보강",
-          "detail": "커밋 df25577456 · 배 12714"
-        },
         {
           "time": "11:24",
           "area": "작업",
@@ -822,6 +810,18 @@
           "area": "작업",
           "event": "화면 지도 — 계정권한 열(서버 관문 규칙·부서 프리셋으로 계산) · 좌측 정렬 폭 최대 (GM 지시 9/17)",
           "detail": "커밋 1d4b275af6 · 배 12714"
+        },
+        {
+          "time": "16:55",
+          "area": "작업",
+          "event": "GM업무 화면 은퇴 — 이동 스텁(업무시스템?who=gm) · 카드 41장 업무 SSOT 이관 완료(GM 지시 9/17 16:5x)",
+          "detail": "커밋 605abb725a · 배 12714"
+        },
+        {
+          "time": "16:57",
+          "area": "작업",
+          "event": "업무시스템 화면 은퇴 — 업무 현황 SSOT(?owner=) 한 화면으로(GM 지시 9/17 16:5x) · GM업무·업무목차 스텁도 SSOT 로 · 빌더는 평가 탭용 json 만",
+          "detail": "커밋 c36d5b3ad3 · 배 12714"
         }
       ],
       "count": 53,
@@ -839,14 +839,6 @@
           "nos": [
             "33",
             "34"
-          ]
-        },
-        {
-          "count": 2,
-          "got": "업무 현황 SSOT 삭제 비밀번호 1531 안 됨",
-          "nos": [
-            "PW",
-            "T2"
           ]
         }
       ]
@@ -1227,6 +1219,42 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-2701",
+          "no": "701",
+          "got": "■ 1번 종합접수처 현황",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:56",
+          "end": "16:56",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-2702",
+          "no": "702",
+          "got": "확인하고, 운영부방에 회신줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:56",
+          "end": "16:57",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-2703",
+          "no": "703",
+          "got": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
+          "did": "",
+          "start": "16:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260917-CHECKACCT",
           "no": "CT",
           "got": "지원부 점검 공용 계정 check 생성(점검 화면만 · 임시 비번 서버 600 파일 + GM 봇방만)",
@@ -1589,14 +1617,29 @@
           "detail": "커밋 b002a97705 · 배 12715"
         }
       ],
-      "count": 46,
-      "done": 46,
-      "open": 0,
+      "count": 49,
+      "done": 48,
+      "open": 1,
       "avg_minutes": 7,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-2703",
+          "no": "703",
+          "got": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
+          "did": "",
+          "start": "16:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -2173,13 +2216,31 @@
           "area": "디자인",
           "event": "계정·로그인·가입·권한없음 화면 재실측 — 시토 반영(a083148cb) 뒤 이중 상자·겹침 해소 · 잔여 터치 44px 3건(2줄 CSS 추가 전달)",
           "detail": "design_audit login/signup · 계정 폰 캡처"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "style(ui): 다크 화면 7장을 베이지 정본 토큰으로 — 부서 체계 5장·전사_거래업체·AI시리즈보드 :root 값만 교체(구조·내용 무변경 · 흰 반투명 8곳 잉크 반투명) · GM 화면 정돈 2번 「진행」",
+          "detail": "커밋 4e1a49c263 · 배 12691"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "fix(renewal): 폰에서 금액이 두 줄로 꺾이던 것 — 한 줄 고정 + 480px 이하 글자 한 단계 (시모 측정 2026-09-17)",
+          "detail": "커밋 2c6b3e2560 · 배 12691"
+        },
+        {
+          "time": "16:56",
+          "area": "작업",
+          "event": "fix(home): 시설둘러보기360 대기 문구에서 「시험 화면입니다」 제거 — 손님 화면 내부 표기 금지 · GM 화면 정돈 10번",
+          "detail": "커밋 ddc296e556 · 배 12691"
         }
       ],
       "count": 39,
       "done": 39,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 17,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -3212,6 +3273,18 @@
           "upload": "✅ 배포 (a1699b1cf)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-9009",
+          "no": "09",
+          "got": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
+          "did": "",
+          "start": "16:55",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -3312,14 +3385,29 @@
           "detail": "커밋 368f4d33d2 · 배 11386"
         }
       ],
-      "count": 6,
+      "count": 7,
       "done": 6,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 6,
       "work_count": 16,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-9009",
+          "no": "09",
+          "got": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
+          "did": "",
+          "start": "16:55",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     }
   },
@@ -3331,7 +3419,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T16:52:49",
+    "published_at": "2026-09-17T16:58:00",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -3339,13 +3427,13 @@
         "alive": true,
         "signal": "16:45",
         "last": {
-          "time": "16:38",
+          "time": "16:57",
           "area": "GM지시",
-          "event": "화면 지도 계정권한 열 + 풀폭 좌측 정렬",
+          "event": "업무시스템 화면 은퇴 — 업무 현황 SSOT 한 화면",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 85
+        "saves": 87
       },
       "cto": {
         "nick": "시토",
@@ -3353,12 +3441,12 @@
         "alive": true,
         "signal": "16:45",
         "last": {
-          "time": "16:44",
+          "time": "16:57",
           "area": "GM요청",
-          "event": "방금 박민서팀장 처럼 각 강습부(파트너팀) 팀장들은 권한 같게 줘야해 알았지?",
+          "event": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
           "result": "warn"
         },
-        "idle_since": "16:45",
+        "idle_since": null,
         "saves": 98
       },
       "cmo": {
@@ -3367,13 +3455,13 @@
         "alive": true,
         "signal": "16:45",
         "last": {
-          "time": "16:49",
-          "area": "GM요청",
-          "event": "화면 정돈 제안서",
-          "result": "warn"
+          "time": "16:56",
+          "area": "작업",
+          "event": "fix(home): 시설둘러보기360 대기 문구에서 「시험 화면입니다」 제거 — 손님 화면 내부 표기 금지 · GM 화면 정돈 10번",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 26
+        "saves": 29
       },
       "cpo": {
         "nick": "시포",
@@ -3387,7 +3475,7 @@
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 31
+        "saves": 32
       },
       "coo": {
         "nick": "시우",
@@ -3409,12 +3497,12 @@
         "alive": true,
         "signal": "16:45",
         "last": {
-          "time": "16:39",
-          "area": "작업",
-          "event": "관리자 판 — 파트너 카드 그리드 고정 3열 · 브랜드자료 8칸 통일(GM 지시 2026-09-17)",
-          "result": "ok"
+          "time": "16:55",
+          "area": "GM요청",
+          "event": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
+          "result": "warn"
         },
-        "idle_since": "16:41",
+        "idle_since": null,
         "saves": 20
       }
     }
