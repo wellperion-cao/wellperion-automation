@@ -141,6 +141,20 @@ def run_checks(caption: str, style: dict) -> list[str]:
     return errs
 
 
+TAIL = "프로필 링크에서 24시간 상담"
+
+
+def trim_to_sentence(caption: str, limit: int) -> str:
+    """문장 경계에서 잘라 limit 안으로 — 마지막 줄(상담 안내)은 남긴다."""
+    body = caption.replace(TAIL, "").strip()
+    out = ""
+    for sent in re.split(r"(?<=[.!?다요])\s+", body):
+        if len(out) + len(sent) + len(TAIL) + 2 > limit:
+            break
+        out = (out + " " + sent).strip()
+    return (out or body[: limit - len(TAIL) - 2]).strip() + "\n\n" + TAIL
+
+
 def pick_photos(c: dict, st: dict, n: int = 3) -> list[Path]:
     imgs = sorted(p for p in (ADMIN / c["tenant"] / "img").glob("*.jpg") if not SKIP_IMG.search(p.name))
     if len(imgs) < n:
@@ -221,6 +235,15 @@ def main() -> int:
     caption, used = run_claude(build_prompt(topic, style, cj, c), label=f"partner-ig-{a.client}", cwd=tempfile.gettempdir())
     caption = (caption or "").strip() or fallback_caption(topic, c)
     errs = run_checks(caption, style)
+    if errs and all(e.startswith("캡션 ") for e in errs):   # 길이만 넘친 것은 한 번 줄여 본다(규칙 캡션은 마지막 수단)
+        shorter, _ = run_claude(f"아래 인스타 캡션을 {CAPTION_MAX - 20}자 안으로 줄여라. 말투·문장 순서·마지막 줄은 그대로, 결과는 캡션만.\n\n{caption}",
+                                label=f"partner-ig-{a.client}-short", cwd=tempfile.gettempdir())
+        if shorter and not run_checks(shorter.strip(), style):
+            caption, errs = shorter.strip(), []
+        else:                                                  # 모델이 길이를 안 지키면 문장 경계에서 자른다(내용은 앞부분 그대로)
+            cut = trim_to_sentence(caption, CAPTION_MAX - 30)
+            if not run_checks(cut, style):
+                caption, errs = cut, []
     if errs:
         print("[check] 캡션 탈락 —", " · ".join(errs), "→ 규칙 캡션으로 대체")
         caption = fallback_caption(topic, c)
@@ -246,6 +269,9 @@ def self_test() -> int:
     p1 = pick_photos(c, st); p2 = pick_photos(c, st)
     assert len(p1) == 3 and p1 != p2 and not any(SKIP_IMG.search(p.name) for p in p1)
     assert room_name(c) == "★조재오 지점장님"
+    long = ("첫 문장입니다. " * 30) + TAIL
+    cut = trim_to_sentence(long, CAPTION_MAX - 30)
+    assert len(cut) <= CAPTION_MAX - 30 and cut.endswith(TAIL) and cut.startswith("첫 문장입니다.")
     print("partner_instagram_daily 자가점검 통과")
     return 0
 
