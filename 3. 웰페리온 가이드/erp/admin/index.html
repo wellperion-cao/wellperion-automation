@@ -72,7 +72,7 @@
           font-size:13px; font-weight:500; color:var(--text-soft); text-decoration:none;
           transition:background .12s, color .12s, border-color .12s;}
   .side a:hover{background:var(--gray-bg); color:var(--text);}
-  .side a.on{background:var(--accent-bg); color:var(--accent-hover); font-weight:700; border-left-color:var(--accent);}
+  .side a.on{background:#E7F4F3; color:var(--accent-hover); font-weight:700; border-left-color:var(--accent);}
   .side a .b{font-size:11px; font-weight:700; color:var(--dim); font-variant-numeric:tabular-nums;}
   .side a.on .b{color:var(--accent-hover);}
   .side .desc{font-size:11px; color:var(--dim); line-height:1.45; padding:2px 16px 8px 20px;}
@@ -83,9 +83,9 @@
   .st{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
       padding:2px 8px; border-radius:20px; white-space:nowrap;}
   .st::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor;}
-  .st.ok{color:#1B7F5F; background:rgba(27,127,95,.10);}
+  .st.ok{color:#166B50; background:#E8F2EF;}
   .st.bad{color:#B4322A; background:rgba(180,50,42,.10);}
-  .st.wait{color:#6B7176; background:rgba(107,113,118,.10);}
+  .st.wait{color:#565C61; background:#F0F1F2;}
   /* warn 은 화면 4곳이 이미 쓰고 있었는데 정의가 없어 색 없이 떴다(2026-09-14 실측) */
   .st.warn{color:#9A6500; background:rgba(154,101,0,.10);}
 
@@ -139,6 +139,7 @@
   .panel > h2:first-child, .panel > h3:first-of-type{margin-top:0;}
   h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
   .meta{font-size:12.5px; color:var(--dim); margin-bottom:12px;}
+  .meta a{display:inline-block; padding:13px 6px; margin:-13px -2px;}  /* 폰 터치 44px(UX 표준) */
   .meta b{color:var(--text-soft);}
   h3{font-size:13px; font-weight:700; margin:20px 0 8px; padding-bottom:4px;
      border-bottom:1px solid var(--border);}
@@ -155,7 +156,7 @@
   .split-note{display:flex; gap:14px; margin-top:10px; padding:12px 16px; border-radius:4px;
               background:var(--accent-bg); border:1px solid var(--border);}
   .split-note .half{flex:1; font-size:13px; color:var(--text-soft); line-height:1.65;}
-  .split-note .half b{color:var(--text); display:block; font-size:13.5px; margin-bottom:2px;}
+  .split-note .half b{color:#0F1E1E; display:block; font-size:13.5px; margin-bottom:2px;}
   @media(max-width:640px){ .split-note{flex-direction:column;} }
 
   /* 3층 구성도 */
@@ -230,7 +231,7 @@
   details.tip b{color:var(--text-soft);}
 
   .foot{margin-top:50px; padding-top:16px; border-top:1px solid var(--border);
-        font-size:12px; color:var(--dim-soft);}
+        font-size:12px; color:var(--dim);}
   @media(max-width:900px){
     /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 세로 메뉴가 화면 절반을 먹는 것보다 낫다 */
     .shell{grid-template-columns:1fr;}
@@ -1665,7 +1666,7 @@
     panels.forEach(function(p){ p.hidden = (p.dataset.panel !== key); });
     navLinks.forEach(function(a){
       var on = (a.dataset.go === key);
-      a.classList.toggle('on', on);
+      a.classList.toggle('on', on); if(on){a.setAttribute('aria-current','true');}else{a.removeAttribute('aria-current');}
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
     var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화', faq:'FAQ', log:'상담 내역' };
@@ -1702,7 +1703,7 @@
     }
     viewLinks.forEach(function(a){
       var on = (key === 'view' && a.dataset.view === viewKey);
-      a.classList.toggle('on', on);
+      a.classList.toggle('on', on); if(on){a.setAttribute('aria-current','true');}else{a.removeAttribute('aria-current');}
       if (on) {
         if (crumb) crumb.textContent = a.querySelector('.t').textContent;
         var vf = document.getElementById('view-frame');
