@@ -13,6 +13,10 @@ set PYTHONIOENCODING=utf-8
 set PYTHONUTF8=1
 set LOGFILE=logs\partner_instagram_daily.log
 echo [%date% %time%] --- run %~1 --- >> %LOGFILE%
+REM Step 1: if the partner answered "post it" to the previous draft (06:30 Kakao export), publish it.
+C:\Python314\python.exe scripts\partner_instagram_daily.py %~1 --auto-publish >> %LOGFILE% 2>&1
+echo [%date% %time%] auto-publish exit=%ERRORLEVEL% >> %LOGFILE%
+REM Step 2: build today's draft from the blog topic and send it to the partner room for OK.
 C:\Python314\python.exe scripts\partner_instagram_daily.py %~1 >> %LOGFILE% 2>&1
 set RC=%ERRORLEVEL%
 echo [%date% %time%] exit=%RC% >> %LOGFILE%

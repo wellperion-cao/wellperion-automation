@@ -197,6 +197,59 @@ def send_kakao(c: dict, folder: Path, caption: str, tags: list[str]) -> int:
     return p.returncode
 
 
+ARCHIVE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
+OK_WORDS = ("올려", "올리", "게시", "발행", "좋습니다", "좋아요", "진행")
+DATE_RE = re.compile(r"^(\d{4})년 (\d{1,2})월 (\d{1,2})일")
+LINE_RE = re.compile(r"^\[(.+?)\] \[(오전|오후) (\d{1,2}):(\d{2})\] (.*)$")
+
+
+def partner_ok_since(c: dict, since: datetime, text: str | None = None) -> str | None:
+    """카톡 저장본(06:30 하루 한 번)에서 since 뒤 파트너가 「올려요」류로 답했는지 — 답 문장을 돌려준다(없으면 None).
+    text 를 주면 파일 대신 그 문자열을 읽는다(자가점검용)."""
+    room = room_name(c)
+    sender = room.lstrip("★")
+    if text is None:
+        folder = ARCHIVE / room.replace(" ", "")
+        files = sorted(folder.glob("*/*_auto_*.txt"))[-2:]
+        text = "\n".join(f.read_text(encoding="utf-8", errors="replace") for f in files)
+    day = None
+    for line in text.splitlines():
+        m = DATE_RE.match(line)
+        if m:
+            day = datetime(int(m[1]), int(m[2]), int(m[3]))
+            continue
+        m = LINE_RE.match(line)
+        if not m or day is None or m[1] != sender:
+            continue
+        h = int(m[3]) % 12 + (12 if m[2] == "오후" else 0)
+        when = day.replace(hour=h, minute=int(m[4]))
+        body = m[5].strip()
+        if when <= since:
+            continue
+        short_ack = len(body) <= 12 and ("올려" in body or "올리" in body)          # 「올려요」 「네 올려주세요」
+        about_ig = "인스타" in body and any(w in body for w in OK_WORDS)          # 「인스타 그대로 올리세요」
+        if short_ack or about_ig:
+            return body
+    return None
+
+
+def auto_publish(c: dict, key: str, st: dict) -> int:
+    """어제 보낸 임시안에 파트너 「올려요」가 왔으면 그 폴더를 게시한다(아침 07:20 예약이 부른다)."""
+    runs = [r for r in st.get("runs", []) if r.get("await_ok") and not r.get("published_at") and r.get("folder")]
+    if not runs:
+        print("[auto-publish] 답 기다리는 임시안 없음"); return 0
+    r = runs[-1]
+    since = datetime.fromisoformat(r["at"])
+    ok = partner_ok_since(c, since)
+    if not ok:
+        print(f"[auto-publish] {r['folder']} — 아직 답 없음(since {r['at'][:16]})"); return 0
+    print(f"[auto-publish] 파트너 답 「{ok[:40]}」 → 게시")
+    rc = publish(c, Path(r["folder"]))
+    r["published_at"] = datetime.now().isoformat(timespec="seconds"); r["publish_rc"] = rc; r["ok_text"] = ok[:80]
+    save_state(key, st)
+    return rc
+
+
 def publish(c: dict, folder: Path) -> int:
     cmd = [PY, str(ROOT / "scripts" / "instagram_upload_playwright.py"), "--mode", "publish",
            "--account", c["account"], "--content-folder", str(folder), "--tenant", "wellperion"]
@@ -209,6 +262,7 @@ def main() -> int:
     ap.add_argument("client", nargs="?", choices=sorted(CLIENTS))
     ap.add_argument("--no-send", action="store_true")
     ap.add_argument("--publish", action="store_true", help="파트너 「올려요」 뒤 — 오늘 폴더를 게시")
+    ap.add_argument("--auto-publish", action="store_true", help="답 기다리는 임시안에 파트너 「올려요」가 왔으면 게시(아침 예약)")
     ap.add_argument("--topic", default="", help="주제를 직접 줄 때(기본 = 오늘 블로그 주제)")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
@@ -220,6 +274,8 @@ def main() -> int:
     style, cj, st = style_of(c), client_json(c), load_state(a.client)
     day = datetime.now().strftime("%y%m%d")
     folder = c["dir"] / "05_콘텐츠_초안" / "instagram" / day
+    if a.auto_publish:
+        return auto_publish(c, a.client, st)
     if a.publish:
         if not (folder / "큐레이션_추천.md").exists():
             raise SystemExit(f"오늘 임시안 폴더 없음 — {folder}")
@@ -273,6 +329,12 @@ def self_test() -> int:
     p1 = pick_photos(c, st); p2 = pick_photos(c, st)
     assert len(p1) == 3 and p1 != p2 and not any(SKIP_IMG.search(p.name) for p in p1)
     assert room_name(c) == "★조재오 지점장님"
+    sample = ("2026년 9월 17일 목요일 ---------------\n[김남욱] [오후 5:26] 조재오 지점장님, 웰페리온 AI입니다. 인스타 초안\n"
+              "[조재오 지점장님] [오후 2:11] 예약 발행 진행중입니다\n[조재오 지점장님] [오후 6:40] 올려요\n")
+    since = datetime(2026, 9, 17, 17, 26)
+    assert partner_ok_since(c, since, text=sample) == "올려요"
+    assert partner_ok_since(c, datetime(2026, 9, 17, 19, 0), text=sample) is None
+    assert partner_ok_since(c, datetime(2026, 9, 17, 12, 0), text=sample.replace("올려요", "인스타는 그대로 올리세요")) == "인스타는 그대로 올리세요"
     long = ("첫 문장입니다. " * 30) + TAIL
     cut = trim_to_sentence(long, CAPTION_MAX - 30)
     assert len(cut) <= CAPTION_MAX - 30 and cut.endswith(TAIL) and cut.startswith("첫 문장입니다.")
