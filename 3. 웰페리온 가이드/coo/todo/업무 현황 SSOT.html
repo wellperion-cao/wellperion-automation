@@ -4076,15 +4076,18 @@ function ssotShowApproval(){
   document.getElementById('ssotViewTasks').style.display='none';
   document.getElementById('ssotViewApproval').style.display='block';
   document.title = '웰페리온 결재 현황 SSOT';  // 결재 판은 이 화면 안 프레임으로 열려 탭 이름이 업무 현황으로 남아 있었다(GM 2026-09-17)
+  try { if (location.hash !== '#approval') history.replaceState(null, '', location.pathname + location.search + '#approval'); } catch (e) {}   // 주소에 남겨야 새로고침해도 결재판(GM 2026-09-17 「새로고침하면 업무로 넘어간다」)
   window.scrollTo(0,0);
 }
 function ssotShowTasks(){
   document.getElementById('ssotViewApproval').style.display='none';
   document.getElementById('ssotViewTasks').style.display='block';
   document.title = '웰페리온 업무 현황 SSOT';
+  try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
 }
 window.ssotShowApproval=ssotShowApproval;
 window.ssotShowTasks=ssotShowTasks;
+if (location.hash === '#approval') ssotShowApproval();   // 새로고침·즐겨찾기로 들어와도 결재판 그대로
 
 /* ══ 라이브 점수판 2단 (2026-08-07 GM 결재 A안) ══
    계산은 전부 서버(GAS)가 한다. 여기서는 받은 값을 그리기만 한다 —
