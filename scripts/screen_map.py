@@ -2,9 +2,11 @@
 # 화면 지도 생성기 (GM 지시 2026-09-17 「전체 화면 페이지를 링크화 시켜서 정리해줘」)
 # "3. 웰페리온 가이드" 아래 *.html 전부를 훑어 status/screen_map.json 을 만든다.
 # 실행: C:/Python314/python.exe scripts/screen_map.py
+#       C:/Python314/python.exe scripts/screen_map.py --apply   ← AI삭제 판정 실제로 지우고 재생성(GM 승인 건만)
 import json
 import re
 import subprocess
+import sys
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
@@ -14,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "3. 웰페리온 가이드"
 OUT = ROOT / "status" / "screen_map.json"
 TODAY = date(2026, 9, 17)
+DELETED_KEY = "deleted_2026_09_17"
 
 EXCLUDE_DIR_NAMES = {"tmp", "node_modules"}
 TEMP_PAT = re.compile(r"초안|draft|backup|copy|v0\b|\bA-B\b", re.I)
@@ -48,6 +51,16 @@ REFS_INVENTORY_THRESHOLD = 15
 REFS_INVENTORY_EXTS = (".json", ".md")
 VERSION_RE = re.compile(r"[_\-(]?[vV]\d+(?:\.\d+)?[_\-)]?")
 
+# 옛 판 탐지 — 같은 폴더·같은 줄기 이름에서 이 토큰만 다르면 "판이 여럿" (GM 지시 2026-09-17 13:1x)
+STALE_VER_RE = re.compile(r"(_v\d+(?:\.\d+)?|v\d+(?:\.\d+)?|\(A\)|\(B\)|_old|_backup|_copy|_초안|초안|_최종|최종)", re.I)
+
+# 종류 판정(GM 정의 2026-09-17 13:1x 「업무와 문서의 차이」)
+KIND_DOC_PREFIXES = ("회사문서/", "cmo/brand/")
+KIND_DOC_NAME_RE = re.compile(r"가이드|매뉴얼|로드맵|소개서")
+KIND_WORK_PREFIXES = ("reports/",)
+KIND_WORK_A3_RE = re.compile(r"^\d{6}_.*_A[34]\b")
+KIND_WORK_NAME_RE = re.compile(r"지침|검토|비교|선물|행사|WP-GM-")
+
 
 def excluded(path: Path) -> bool:
     for part in path.relative_to(GUIDE).parts[:-1]:
@@ -58,6 +71,14 @@ def excluded(path: Path) -> bool:
 
 def clean_text(raw: str) -> str:
     return TAG_RE.sub("", raw).strip()
+
+
+def md(iso_date):
+    """'2026-09-07' -> '9/7'. 없으면 그대로 돌려준다."""
+    if not iso_date:
+        return iso_date
+    y, mo, d = iso_date.split("-")
+    return f"{int(mo)}/{int(d)}"
 
 
 def load_last_commits() -> dict:
@@ -131,19 +152,46 @@ def count_refs(basenames: set) -> dict:
     return refs_by_basename
 
 
-def load_hits() -> dict:
+def load_hits() -> tuple:
+    """(hits_dict, since, until). 로그 보존 11일 실측(시토 2026-09-17) — 파일에 없는 경로는 0 접속으로 본다."""
     if not HITS_FILE.exists():
-        return {}
+        return {}, None, None
     try:
-        return json.loads(HITS_FILE.read_text(encoding="utf-8")).get("hits", {})
+        data = json.loads(HITS_FILE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return {}
+        return {}, None, None
+    return data.get("hits", {}), data.get("since"), data.get("until")
 
 
 def norm_title(title: str) -> str:
     t = re.sub(r"\s+", "", title)
     t = VERSION_RE.sub("", t)
     return t
+
+
+def stem_key(rel: str) -> tuple:
+    """폴더 + 판번호 뗀 줄기 이름. 같은 폴더 안에서만 "같은 화면의 다른 판"으로 본다."""
+    dirpart, _, base = rel.rpartition("/")
+    name = base[:-5] if base.lower().endswith(".html") else base
+    s = STALE_VER_RE.sub("", name)
+    s = s.strip("_-")
+    return dirpart, s
+
+
+def classify_kind(rel: str, title: str) -> str:
+    """문서(회사가 계속 갖는 정본) / 업무(끝이 있는 산출물) / 화면(그 외 앱 화면). GM 정의 2026-09-17."""
+    name = rel.rsplit("/", 1)[-1]
+    if rel.startswith(KIND_DOC_PREFIXES) or rel.startswith("erp/admin/company"):
+        return "문서"
+    if KIND_DOC_NAME_RE.search(name) or KIND_DOC_NAME_RE.search(title):
+        return "문서"
+    if rel.startswith(KIND_WORK_PREFIXES):
+        return "업무"
+    if rel.startswith("coo/chairman/") and KIND_WORK_A3_RE.search(name):
+        return "업무"
+    if KIND_WORK_NAME_RE.search(name) or KIND_WORK_NAME_RE.search(title):
+        return "업무"
+    return "화면"
 
 
 def is_protected(e: dict) -> bool:
@@ -179,26 +227,62 @@ def mark_dup_titles(entries: list) -> dict:
     return dup_reason
 
 
-def judge_verdict(e: dict, refs: int, hits30, dup_reason: str) -> tuple:
-    """1차 정리 판정 — (verdict, reason). verdict ∈ {AI삭제,GM후보,유지,보류}."""
+def mark_stale_versions(entries: list, referrers: dict) -> dict:
+    """같은 폴더·같은 줄기 이름(판번호만 다름) 이 둘 이상 — 오래된 쪽이 접속0·참조0·inbound0 이고
+    새 판이 그 옛 판을 href 로 안 가리킬 때만 자동삭제 후보(GM 승인 2026-09-17 13:1x)."""
+    groups = defaultdict(list)
+    for e in entries:
+        if is_protected(e):
+            continue
+        key = stem_key(e["rel"])
+        if key[1]:
+            groups[key].append(e)
+
+    reason = {}
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        comparable = [e for e in members if e["last_commit"]]
+        if len(comparable) < 2:
+            continue
+        newest = max(comparable, key=lambda e: e["last_commit"])
+        for e in comparable:
+            if e is newest or e["last_commit"] >= newest["last_commit"]:
+                continue
+            old_basename = e["rel"].split("/")[-1]
+            if newest["rel"] in referrers.get(old_basename, set()):
+                continue  # 새 판이 옛 판을 가리킴 — 보존
+            if e["refs"] == 0 and e["inbound"] == 0 and e["hits"] == 0:
+                reason[e["no"]] = "옛 판(새 판 있음)"
+    return reason
+
+
+def judge_verdict(e: dict, hits_since, hits_until, dup_reason: str, stale_reason: str) -> tuple:
+    """1차 정리 판정 — (verdict, reason). verdict ∈ {AI삭제,GM후보,유지}."""
     if e["folder"] == "(루트)" and e["rel"] == "index.html":
         return "유지", "루트 진입"
     if e["folder"] == "reports":
         return "유지", "A3 보관"
+    if stale_reason:
+        return "AI삭제", stale_reason
 
+    refs, hits, inbound = e["refs"], e["hits"], e["inbound"]
+    window = f"{md(hits_since)}~{md(hits_until)}" if hits_since else "접속기록"
     is_stub = bool(e.get("redirect_to")) or bool(STUB_TITLE_RE.search(e["title"]))
-    if is_stub and refs == 0:
-        if hits30 == 0:
-            return "AI삭제", "이동스텁·참조0·접속0"
-        if hits30 is None:
-            return "보류", "이동스텁·참조0·접속기록 없음"
-        return "유지", "이동스텁이지만 접속 있음"
+    if is_stub:
+        if refs == 0 and inbound == 0:
+            if hits == 0:
+                return "AI삭제", f"이동스텁·참조0·{window} 접속0회"
+            return "유지", f"이동스텁이지만 {window} 접속{hits}회"
+        if refs == 0:
+            return "유지", "스텁이지만 들어오는 링크 있음"
+        return "유지", ""
 
     flags = e["flags"]
     cond_a = ("고립" in flags and refs == 0 and
               any(f in flags for f in ("임시", "오래됨", "제목없음")))
     if cond_a or dup_reason:
-        if hits30 is not None and hits30 > 0:
+        if hits > 0:
             return "유지", ""
         if cond_a:
             hit_flags = [f for f in ("오래됨", "임시", "제목없음") if f in flags]
@@ -226,7 +310,16 @@ def load_modules() -> dict:
     return out
 
 
-def main():
+def load_previous_deleted() -> list:
+    if not OUT.exists():
+        return []
+    try:
+        return json.loads(OUT.read_text(encoding="utf-8")).get(DELETED_KEY, [])
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def build(carried_deleted: list) -> dict:
     files = sorted(
         p for p in GUIDE.rglob("*.html") if not excluded(p)
     )
@@ -308,6 +401,7 @@ def main():
             "inbound": inbound,
             "size_kb": size_kb,
             "flags": flags,
+            "kind": classify_kind(rel, title),
         }
         if redirect_to:
             entry["redirect_to"] = redirect_to
@@ -315,24 +409,30 @@ def main():
 
     # ── 1차 정리 판정 ──
     refs_by_basename = count_refs({e["rel"].split("/")[-1] for e in entries})
-    hits = load_hits()
-    dup_reason_by_no = mark_dup_titles(entries)
+    hits, hits_since, hits_until = load_hits()
     for e in entries:
-        refs = refs_by_basename.get(e["rel"].split("/")[-1], 0)
+        e["refs"] = refs_by_basename.get(e["rel"].split("/")[-1], 0)
         hit = hits.get("/" + e["rel"])
-        hits30 = hit["n"] if hit else None
-        verdict, reason = judge_verdict(e, refs, hits30, dup_reason_by_no.get(e["no"], ""))
-        e["refs"] = refs
-        e["hits30"] = hits30
+        e["hits"] = hit["n"] if hit else 0
+
+    dup_reason_by_no = mark_dup_titles(entries)
+    stale_reason_by_no = mark_stale_versions(entries, referrers)
+    for e in entries:
+        verdict, reason = judge_verdict(
+            e, hits_since, hits_until,
+            dup_reason_by_no.get(e["no"], ""), stale_reason_by_no.get(e["no"], ""),
+        )
         e["verdict"] = verdict
         e["reason"] = reason
 
     verdict_counts = defaultdict(int)
+    kind_counts = defaultdict(int)
     for e in entries:
         verdict_counts[e["verdict"]] += 1
+        kind_counts[e["kind"]] += 1
     ai_delete = [e["no"] for e in entries if e["verdict"] == "AI삭제"]
 
-    out = {
+    return {
         "_doc": "전체 화면(*.html) 링크 목록. scripts/screen_map.py 가 만든다 — 손으로 고치지 마라.",
         "generated": TODAY.isoformat(),
         "total": len(entries),
@@ -340,19 +440,56 @@ def main():
         "orphan": sum(1 for e in entries if "고립" in e["flags"]),
         "stale": sum(1 for e in entries if "오래됨" in e["flags"]),
         "stub": sum(1 for e in entries if "이동스텁" in e["flags"]),
+        "hits_since": hits_since,
+        "hits_until": hits_until,
         "verdict_counts": {
             "유지": verdict_counts.get("유지", 0),
             "GM후보": verdict_counts.get("GM후보", 0),
             "AI삭제": verdict_counts.get("AI삭제", 0),
-            "보류": verdict_counts.get("보류", 0),
+        },
+        "kind_counts": {
+            "문서": kind_counts.get("문서", 0),
+            "업무": kind_counts.get("업무", 0),
+            "화면": kind_counts.get("화면", 0),
         },
         "ai_delete": ai_delete,
+        DELETED_KEY: carried_deleted,
         "screens": entries,
     }
+
+
+def write_out(out: dict):
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
-    vc = out["verdict_counts"]
+    vc, kc = out["verdict_counts"], out["kind_counts"]
     print(f"screen_map: {out['total']}장 · 카드 {out['in_card']} · 고립 {out['orphan']} · 오래됨 {out['stale']} · 이동스텁 {out['stub']} -> {OUT}")
-    print(f"1차 정리 판정: 유지 {vc['유지']} · GM후보 {vc['GM후보']} · AI삭제 {vc['AI삭제']} · 보류 {vc['보류']}")
+    print(f"1차 정리 판정: 유지 {vc['유지']} · GM후보 {vc['GM후보']} · AI삭제 {vc['AI삭제']}")
+    print(f"종류: 문서 {kc['문서']} · 업무 {kc['업무']} · 화면 {kc['화면']}")
+    print(f"지운 누적: {len(out[DELETED_KEY])}장")
+
+
+def main():
+    apply_delete = "--apply" in sys.argv[1:]
+    carried = load_previous_deleted()
+    out = build(carried)
+
+    if apply_delete:
+        targets = [e for e in out["screens"] if e["verdict"] == "AI삭제"]
+        if not targets:
+            print("AI삭제 대상 없음 — 지울 것 없다.")
+        else:
+            deleted_now = []
+            for e in targets:
+                fp = GUIDE / e["rel"]
+                try:
+                    fp.unlink()
+                    print(f"삭제: {e['rel']} ({e['reason']})")
+                    deleted_now.append({"rel": e["rel"], "reason": e["reason"]})
+                except OSError as ex:
+                    print(f"삭제 실패: {e['rel']} — {ex}")
+            carried = carried + deleted_now
+            out = build(carried)  # 지운 뒤 재생성 — 숫자 갱신
+
+    write_out(out)
 
 
 if __name__ == "__main__":
