@@ -227,7 +227,10 @@ def build_prompt(topic: str, style: dict, axis: dict | None = None, state: dict 
 def build_footer_and_tags(style: dict) -> str:
     fc = style["footer_canon"]
     divider = style["markers"]["divider"]
-    footer = "\n".join([fc["name"], fc["address"], fc["parking"], fc["hours"], fc["phone"], fc["closing"]])
+    lines = [fc["name"], fc["address"], fc["parking"], fc["hours"], fc["phone"], fc["closing"]]
+    if fc.get("counsel"):   # 상담 페이지 한 줄(GM 2026-09-17 「상담봇 활성화」) — 값이 있는 파트너만
+        lines.append(fc["counsel"])
+    footer = "\n".join(lines)
     tags = " ".join(style["tags"]["core_25"])
     return f"\n\n{divider}\n\n{footer}\n\n{tags}\n"
 
@@ -240,8 +243,8 @@ def assemble_body(llm_body: str, style: dict) -> str:
 def run_checks(body: str, style: dict) -> list[str]:
     errs: list[str] = []
     fc = style["footer_canon"]
-    for key in ("name", "address", "parking", "hours", "phone", "closing"):
-        if fc[key] not in body:
+    for key in ("name", "address", "parking", "hours", "phone", "closing", "counsel"):
+        if fc.get(key) and fc[key] not in body:
             errs.append(f"푸터가 정본과 다름({key})")
     allowed_amounts = set(style["allowed_amounts"])
     amounts = re.findall(r"[0-9][0-9,]*\s*원", body)
@@ -254,7 +257,7 @@ def run_checks(body: str, style: dict) -> list[str]:
         errs.append(f"{required_tag} 태그 없음")
     if "|---|" in body.replace(" ", "") or "GM요청" in body or "더나았을방법" in body:
         errs.append("블로그 글이 아니라 업무 보고 표가 왔다")
-    low = body.lower()
+    low = body.replace(fc.get("counsel") or "<none>", "").lower()   # 상담 페이지 주소(erp.wellperion.com)는 정본 줄이라 혼입 검사에서 뺀다
     hit = [w for w in style["banned_ours"] if w.lower() in low]
     if hit:
         errs.append("우리 쪽 낱말 혼입: " + ", ".join(hit))
