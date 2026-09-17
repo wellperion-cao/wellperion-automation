@@ -11133,6 +11133,7 @@ function crTab(btn, panelId) {
     #wp-acct .role{display:inline-block;font-size:11px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:999px;
       background:rgba(183,159,138,.18);color:var(--text,#333)}
     #wp-acct a{color:var(--dim,#777);text-decoration:none;font-weight:600}
+    #wp-acct #wp-acct-who a{color:var(--text,#333)}
     #wp-acct a:hover{color:var(--accent-hover,#2F6FB0)}
     @media print{#wp-acct{display:none}}
   </style>
@@ -11148,7 +11149,7 @@ function crTab(btn, panelId) {
       return r.json();
     }).then(function(me){
       if (!me) return;
-      var ROLE = {admin:'관리자', staff:'직원', partner:'파트너'}; who.innerHTML = esc(me.name || me.email || '') + (me.role ? '<span class="role">' + esc(ROLE[me.role] || me.role) + '</span>' : '');
+      var ROLE = {admin:'관리자', staff:'직원', partner:'파트너'}; who.innerHTML = '<a href="/auth/account" title="내 계정 · 정보 확인 · 비밀번호 변경">' + esc(me.name || me.email || '') + '</a>' + (me.role ? '<span class="role">' + esc(ROLE[me.role] || me.role) + '</span>' : '');
       link.textContent = '로그아웃'; link.href = '/auth/logout'; box.hidden = false;
     }).catch(function(){ /* 관문 없는 곳 — 숨김 유지 */ });
   })();
