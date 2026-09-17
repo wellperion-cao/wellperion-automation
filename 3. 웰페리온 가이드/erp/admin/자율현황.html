@@ -1343,7 +1343,8 @@
     var board = (kj && kj.board && kj.board.roles) ? kj.board.roles : {};
     var roles = (kj && kj.roles) ? kj.roles : {};
     var asof = document.getElementById('cb-asof');
-    if(asof) asof.textContent = (kj && kj.board && kj.board.published_at) ? '발행 ' + cbClock(kj.board.published_at) + ' · 30초마다 다시 읽음' : '발행본 없음';
+    if(asof) asof.textContent = (kj && kj.board && kj.board.published_at)
+      ? ((kj.board.live ? '🟢 라이브 ' : '발행본 ') + cbClock(kj.board.published_at) + ' · 15초마다 다시 읽음') : '원천 없음';
     // 숫자 4
     var alive = 0, got = 0, done = 0, open = 0;
     CB_ORDER.forEach(function(r){
@@ -1365,17 +1366,21 @@
       var b = board[r] || {}; var items = (roles[r] && roles[r].items) || [];
       var ships = cbShips(r);
       var nick = b.nick || (roles[r] && roles[r].nick) || r;
-      var st = b.alive ? '🟢 살아있음 · 신호 ' + esc(b.signal || '—') : '⚪ 신호 없음' + (b.signal ? '(' + esc(b.signal) + ')' : '');
+      // 라이브(/api/console/state)는 now·seen_at, 발행본은 last·signal — 같은 뜻의 두 이름을 여기서 합친다
+      var last = b.now || b.last;
+      var sig = b.seen_at ? cbClock(b.seen_at) : (b.signal || '');
+      var st = b.alive ? '🟢 살아있음 · 신호 ' + esc(sig || '—') : '⚪ 신호 없음' + (sig ? '(' + esc(sig) + ')' : '');
       var now;
-      if(b.idle_since) now = '<b>쉬는 중</b> · ' + esc(b.idle_since) + ' 답변 마침' + (b.last ? ' · 직전 ' + esc(b.last.event) : '');
-      else if(b.last) now = (b.last.result === 'warn' ? '⏳ ' : '✅ ') + esc(b.last.time) + ' <b>' + esc(b.last.event) + '</b>';
+      if(b.idle_since) now = '<b>쉬는 중</b> · ' + esc(b.idle_since) + ' 답변 마침' + (last ? ' · 직전 ' + esc(last.event) : '');
+      else if(last) now = (last.result === 'warn' ? '⏳ ' : '✅ ') + esc(last.time) + ' <b>' + esc(last.event) + '</b>';
       else now = '오늘 기록 없음';
+      var saves = (b.saves_today != null) ? b.saves_today : (b.saves || 0);
       var sh = ships.slice(0,3).map(function(q){ return '<div title="' + esc(q.title) + '">' + esc(String(q.status||'').replace('IN_PROGRESS','🚢').replace('PENDING','⚓').replace('ON_HOLD','⚓')) + ' ' + esc(q.title) + '</div>'; }).join('')
              + (ships.length > 3 ? '<div>… 외 ' + (ships.length - 3) + '척</div>' : '') + (ships.length ? '' : '<div>열린 배 없음</div>');
       var mine = items.length, mineDone = items.filter(function(i){ return !i.open; }).length;
       return '<div class="cb-card' + (b.alive ? ' on' : '') + '"><div class="hd">' + esc(nick) + '<span class="st">' + st + '</span></div>'
         + '<div class="now">' + now + '</div><div class="ships">' + sh + '</div>'
-        + '<div class="ft"><span>열린 배 <b>' + ships.length + '</b></span><span>오늘 저장 <b>' + (b.saves || 0) + '</b></span><span>GM 지시 <b>' + mine + '</b> / 완료 <b>' + mineDone + '</b></span></div></div>';
+        + '<div class="ft"><span>열린 배 <b>' + ships.length + '</b></span><span>오늘 저장 <b>' + saves + '</b></span><span>GM 지시 <b>' + mine + '</b> / 완료 <b>' + mineDone + '</b></span></div></div>';
     }).join('');
     // GM 이 던진 것 — 오늘 전 역할 · 최신 접수가 위
     var rows = [];
@@ -1395,17 +1400,23 @@
         + (rows.length > 40 ? '<div class="sec-note">최근 40건만 · 나머지는 쿵짝표</div>' : '')
       : '<div class="feed-status">오늘 GM 지시 접수 0건.</div>';
   }
+  // 라이브 원천 = /api/console/state(세션 생존 신호가 45초마다 서버로 직접 · 배 12723 2차 · GM 2026-09-17 「라이브가 아니라 안 본다」).
+  //   발행본(kungjjak_today.json board)은 라이브가 없을 때(다른 PC·API 장애)만 쓰는 폴백. GM 지시 표는 발행본 그대로.
   function reloadControlBoard(){
     Promise.all([
       gasReadText('status/kungjjak_today.json', 'status/kungjjak_today.json').catch(function(){ return ''; }),
-      gasReadText('status/calls.json', 'status/calls.json').catch(function(){ return ''; })
+      gasReadText('status/calls.json', 'status/calls.json').catch(function(){ return ''; }),
+      fetch('/api/console/state?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
     ]).then(function(a){
-      try{ renderControlBoard(parseJson(a[0]), parseJson(a[1])); }catch(e){
+      var kj = parseJson(a[0]) || {};
+      var live = a[2];
+      if(live && live.roles && Object.keys(live.roles).length){ kj.board = live; kj.board.live = true; }
+      try{ renderControlBoard(kj, parseJson(a[1])); }catch(e){
         var el = document.getElementById('cb-cards'); if(el) el.innerHTML = '<div class="feed-status">관제판 표시 오류.</div>';
       }
     });
   }
-  setInterval(reloadControlBoard, 30000);
+  setInterval(reloadControlBoard, 15000);
 
   // ── 🟢 CLI 라이브 — 127.0.0.1:8787/live(scripts/live_cli_status_server.py) 3초 폴링.
   //   서버가 없으면(다른 PC·미기동) fetch 가 실패하고 섹션을 숨긴다 — 깨진 화면 금지.
