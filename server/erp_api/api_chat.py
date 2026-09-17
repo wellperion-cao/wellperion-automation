@@ -79,10 +79,12 @@ SHARED_DIR = os.environ.get(
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "server", "counselbot", "shared"))
 FEEDBACK_LOG_PATH = os.environ.get("ERP_CHAT_FEEDBACK_LOG", "/srv/erp/chat_feedback.jsonl")
 WARN_WORDS = tuple(MONEY_WORDS) + MEDICAL_WORDS + PRICE_QUESTION_WORDS   # 관리자 저장 시 경고(막지 않음) — 배1036 요청⑤
-# close_days.json 정본 = 저장소 status/(공휴일 목록도 여기) — 서버는 /srv/erp/www 가 git 5분 동기화라 그 경로를
-# 그대로 읽는다(별도 배포 불필요). 로컬 자체점검은 저장소 상대경로로 폴백.
+# close_days.json 정본 = 저장소 status/(공휴일 목록도 여기). /srv/erp/www 는 sparse-checkout(3. 웰페리온
+# 가이드/status 만)이라 저장소 루트 status/ 가 거기 없다 — 전체 사본 /srv/erp/repo(매분 동기)를 먼저 본다.
+# 로컬 자체점검은 저장소 상대경로로 폴백(팀장 실측 2026-09-17).
 CLOSE_DAYS_PATH = os.environ.get(
     "ERP_CLOSE_DAYS",
+    "/srv/erp/repo/status/close_days.json" if os.path.exists("/srv/erp/repo/status/close_days.json") else
     "/srv/erp/www/status/close_days.json" if os.path.isdir("/srv/erp/www") else
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "status", "close_days.json"))
 # 주 모델 = Opus 4.6(GM 확정 "성능 좋은 걸로") · 대체 = Sonnet 4.6(주 모델 오류·첫 글자 3초 초과·한도 시 자동).
