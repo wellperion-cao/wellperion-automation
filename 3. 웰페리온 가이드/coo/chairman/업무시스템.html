@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업무 시스템 · WELLPERION</title>
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
+<!-- 사내 게이트(단일 소스 _assets/gate.js) — GM업무.html 과 동일(GM 지시 2026-08-05, 비밀번호 1531). -->
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Serif+KR:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* ── CSS = GM업무.html 의 :root 토큰·클래스를 그대로 가져온다(새 디자인 금지, GM 지시 2026-09-17) ── */
+  :root{
+    --ink:#221F20; --ink-2:#5A524C; --ink-3:#8C8079; --line:#D9CFC4;
+    --paper:#FAF8F5; --paper-2:#F1ECE5; --beige:#B79F8A; --accent:#ED5B3F; --accent-bg:#FDEEE9;
+    --deep:var(--ink); --mid:var(--ink-2); --grey:var(--ink-3); --steam:var(--paper-2);
+    --brass:#96762F;
+    --alert:var(--accent); --alert-bg:var(--accent-bg); --pick:#F5EFE7;
+    --font:'Noto Sans KR', 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+           'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+    --font-serif:'Noto Serif KR', 'Noto Sans KR', serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper-2);}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word;}
+
+  /* .sheet — GM업무.html 은 인쇄용 297mm 고정폭이지만, 이 화면은 항상 브라우저에서만 보는
+     실시간 대시보드라 297mm(≈1123px)를 「최대폭」으로만 쓴다(GM 지시 "폭 1123px 안 넘김" ·
+     모바일은 이 상한 안에서 100%로 줄어든다 — 같은 톤, 반응형만 다르다). */
+  .sheet{width:100%;max-width:1123px;margin:16px auto;background:var(--paper);
+    padding:14mm 16mm 12mm;box-shadow:0 3px 22px rgba(0,0,0,.16);}
+  @media screen and (max-width:760px){ .sheet{padding:6vw 4vw;} }
+
+  .hd{border-bottom:3px solid var(--deep);padding-bottom:10px;margin-bottom:8px;}
+  .brand{font-size:var(--fs-1);font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-family:var(--font-serif);font-size:var(--fs-6);font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
+  .hd .sub{font-size:var(--fs-3);color:var(--grey);margin:0 0 12px;}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:var(--fs-2);}
+  .meta b{color:var(--grey);font-weight:600;font-size:var(--fs-1);letter-spacing:.08em;margin-right:6px;}
+
+  .tgl-nav{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap;}
+  .tgl-nav a{font-size:var(--fs-2);font-weight:700;text-decoration:none;color:var(--mid);
+             border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
+  .tgl-nav a.on{background:var(--deep);color:#fff;border-color:var(--deep);}
+
+  .sum{margin:8px 0 18px;border:2px solid var(--deep);padding:8px 14px;overflow-x:auto;}
+  .sum h3{font-size:var(--fs-1);font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
+  .sum table{width:100%;border-collapse:collapse;font-size:var(--fs-2);white-space:nowrap;}
+  .sum td,.sum th{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;}
+  .sum th{font-size:var(--fs-1);color:var(--grey);}
+  .sum tr:last-child td{border-bottom:none;}
+
+  .sec{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;overflow:hidden;}
+  .sec > summary{list-style:none;cursor:pointer;padding:11px 16px;background:var(--ink);color:#fff;
+                 font-family:var(--font-serif);font-size:var(--fs-3);font-weight:800;letter-spacing:.02em;
+                 display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .sec > summary::-webkit-details-marker{display:none;}
+  .sec > summary .ic{font-family:var(--font);font-size:var(--fs-4);}
+  .sec > summary .cnt{font-family:var(--font);margin-left:auto;font-size:var(--fs-3);font-weight:800;color:#fff;
+    white-space:nowrap;background:rgba(255,255,255,.14);border-radius:99px;padding:3px 12px;}
+  .sec-body{padding:12px 14px 14px;}
+  .rep-empty{font-size:var(--fs-2);color:var(--grey);padding:8px 0;}
+
+  .item{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;
+    padding:12px 14px 13px;background:var(--paper);margin-bottom:10px;}
+  .item:last-child{margin-bottom:0;}
+  .item[data-state="overdue"]{border-left-color:var(--accent);}
+  .item[data-state="hold"]{border-left-color:var(--beige);}
+  .item[data-state="today"],.item[data-state="week"]{border-left-color:var(--mid);}
+  .top{display:flex;flex-direction:column;align-items:stretch;gap:5px;margin-bottom:3px;}
+  .top h2{font-family:var(--font-serif);font-size:var(--fs-4);font-weight:800;letter-spacing:-.02em;margin:0;}
+  .top .when{font-size:var(--fs-2);font-weight:700;color:var(--mid);white-space:nowrap;}
+  .top .when.overdue{color:var(--alert);}
+  .item p.body{font-size:var(--fs-2);line-height:1.6;margin:0 0 6px;}
+  .doc-link{display:inline-block;margin:6px 8px 0 0;font-size:var(--fs-1);font-weight:700;color:var(--brass);
+                  text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:4px 11px;background:var(--steam);}
+  .badges{display:flex;gap:4px;flex-wrap:wrap;}
+  .wsrow-act{margin-top:8px;display:flex;gap:8px;}
+  .wsrow-act button{font-family:var(--font);font-size:var(--fs-1);font-weight:700;padding:5px 12px;
+    cursor:pointer;border:1px solid var(--deep);background:var(--deep);color:#fff;border-radius:2px;}
+  .wsrow-act button:disabled{opacity:.4;cursor:default;background:var(--grey);border-color:var(--grey);}
+
+  @media screen and (max-width:760px){
+    .hd h1{font-size:var(--fs-5);}
+    .meta{gap:4px 16px;}
+  }
+</style>
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+</head>
+<body>
+
+<div class="sheet">
+  <div class="hd">
+    <p class="brand">WELLPERION · 업무 시스템</p>
+    <h1 id="who-name">불러오는 중…</h1>
+    <p class="sub">GM 카드 · 중간관리자 원장 · 업무&amp;결재 SSOT · 전사일정을 한 장으로 합칩니다 — <span id="gen-date">—</span> 기준</p>
+    <div class="meta">
+      <span><b>🔴 밀림</b><span id="cnt-overdue">—</span>건</span>
+      <span><b>📅 오늘·이번주</b><span id="cnt-week">—</span>건</span>
+      <span><b>🚀 진행</b><span id="cnt-progress">—</span>건</span>
+    </div>
+  </div>
+
+  <nav class="tgl-nav" id="switcher"></nav>
+
+  <div class="sum" id="summary-wrap" hidden>
+    <h3>사람별 한 줄 요약</h3>
+    <table>
+      <thead><tr><th>사람</th><th>🔴</th><th>📅</th><th>🚀</th><th>오늘 끝남</th></tr></thead>
+      <tbody id="summary-body"></tbody>
+    </table>
+  </div>
+
+  <div id="root"><p class="rep-empty">불러오는 중…</p></div>
+
+  <p style="font-size:var(--fs-1);color:var(--grey);margin-top:16px;">
+    산출 = scripts/work_system_build.py · 사람·부서 매핑 = status/work_system_people.json ·
+    [완료]·[다음 걸음 적기] 버튼은 쓰기 관문이 아직 없어 준비 중입니다.
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var params = new URLSearchParams(location.search);
+  var who = params.get('who') || 'gm';
+
+  var SRC_LABEL = {card: '카드', ledger: '원장', ssot: 'SSOT', schedule: '일정'};
+  var STATE_ICON = {overdue: '🔴', today: '📅', week: '🗓', progress: '🚀', hold: '⏸', blank: '⚠'};
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+  }
+
+  function srcLink(s) {
+    if (s.src === 'card') return 'GM업무.html#gm-' + encodeURIComponent(s.ref);
+    if (s.src === 'ledger') return '중간관리자_업무목차.html#' + encodeURIComponent(s.ref);
+    if (s.src === 'ssot') return encodeURI('../todo/업무 현황 SSOT.html');
+    if (s.src === 'schedule') return encodeURI('../check/전사_일정.html');
+    return '#';
+  }
+
+  function fmtDue(due) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(due || ''));
+    return m ? (m[2] + '.' + m[3]) : '—';
+  }
+
+  function readData() {
+    var qs = '?cb=' + Date.now();
+    // ERP 도메인은 /repo/ 가 저장소 정적 파일을 그대로 서빙한다(GM업무.html readPlan() 과 같은 방식).
+    // 로컬·깃허브 페이지스 등에서 그 경로가 없으면 저장소 상대경로로 곧장 읽는다.
+    return fetch('/repo/status/work_system.json' + qs, {cache: 'no-store'})
+      .then(function (r) { if (!r.ok) throw new Error('repo ' + r.status); return r.json(); })
+      .catch(function () {
+        return fetch('../../../status/work_system.json' + qs, {cache: 'no-store'})
+          .then(function (r) { if (!r.ok) throw new Error('local ' + r.status); return r.json(); });
+      });
+  }
+
+  function renderRow(it) {
+    var srcs = (it.srcs || []).map(function (s) {
+      return '<a class="doc-link" href="' + srcLink(s) + '" target="_blank" rel="noopener">'
+        + esc(SRC_LABEL[s.src] || s.src) + ' →</a>';
+    }).join('');
+    var whenCls = it.state === 'overdue' ? ' overdue' : '';
+    return '<div class="item" data-state="' + esc(it.state) + '">'
+      + '<div class="top"><h2>' + (STATE_ICON[it.state] || '') + ' ' + esc(it.title) + '</h2>'
+      + '<span class="when' + whenCls + '">' + (it.due ? fmtDue(it.due) : '기한 없음') + '</span></div>'
+      + (it.owner ? '<p class="body">담당: ' + esc(it.owner) + '</p>' : '')
+      + (it.next ? '<p class="body">다음 한 걸음: ' + esc(it.next) + '</p>'
+                 : '<p class="body rep-empty">다음 한 걸음 미정</p>')
+      + '<div class="badges">' + srcs + '</div>'
+      + '<div class="wsrow-act">'
+      +   '<button type="button" disabled title="쓰기 관문 준비 중 — status/work_system_actions.jsonl 관문 배포 뒤 켭니다">완료</button>'
+      +   '<button type="button" disabled title="쓰기 관문 준비 중 — status/work_system_actions.jsonl 관문 배포 뒤 켭니다">다음 걸음 적기</button>'
+      + '</div></div>';
+  }
+
+  function section(icon, title, items, open) {
+    var body = items.length
+      ? items.map(renderRow).join('')
+      : '<p class="rep-empty">해당 없음</p>';
+    return '<details class="sec"' + (open ? ' open' : '') + '>'
+      + '<summary><span class="ic">' + icon + '</span> ' + esc(title)
+      + ' <span class="cnt">' + items.length + '건</span></summary>'
+      + '<div class="sec-body">' + body + '</div></details>';
+  }
+
+  function byDue(a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : 1; }
+
+  function render(data) {
+    var people = data.people || {};
+    var p = people[who];
+    var root = document.getElementById('root');
+    if (!p) {
+      root.innerHTML = '<p class="rep-empty">등록되지 않은 사람입니다 — status/work_system_people.json 확인: ' + esc(who) + '</p>';
+      return;
+    }
+    document.title = p.display + ' 업무 현황 · WELLPERION';
+    document.getElementById('who-name').textContent = p.display + ' 업무 현황';
+    document.getElementById('gen-date').textContent = data.meta.today + ' (생성 ' + data.meta.generated_at + ')';
+    document.getElementById('cnt-overdue').textContent = p.counts['밀림'];
+    document.getElementById('cnt-week').textContent = p.counts['오늘_이번주'];
+    document.getElementById('cnt-progress').textContent = p.counts['진행'];
+
+    var items = p.items || [];
+    var overdue = items.filter(function (i) { return i.state === 'overdue'; }).sort(byDue);
+    var todayWeek = items.filter(function (i) { return i.state === 'today' || i.state === 'week'; }).sort(byDue);
+    var progress = items.filter(function (i) { return i.state === 'progress' || i.state === 'hold'; });
+    var blank = items.filter(function (i) { return i.state === 'blank'; });
+
+    root.innerHTML =
+        section('🔴', '밀린 것', overdue, true)
+      + section('📅', '오늘 · 이번 주', todayWeek, true)
+      + section('🚀', '진행 중', progress, true)
+      + section('⚠', '빈칸 — 기한·다음 걸음 없음', blank, false)
+      + section('✅', '이번 주 끝난 것', [], false); // 완료 판정은 다음 단계(설계 §5) — 지금은 항상 0건, 지어내지 않음
+
+    // 사람 전환 — GM 화면에만 전원, 실무진 화면엔 안 보임(설계 §4.6)
+    var sw = document.getElementById('switcher');
+    if (who === 'gm') {
+      sw.innerHTML = Object.keys(people).map(function (k) {
+        return '<a href="?who=' + encodeURIComponent(k) + '"' + (k === who ? ' class="on"' : '') + '>' + esc(people[k].display) + '</a>';
+      }).join('');
+      var rows = Object.keys(people).map(function (k) {
+        var pp = people[k];
+        return '<tr><td>' + esc(pp.display) + '</td><td>' + pp.counts['밀림'] + '</td><td>'
+          + pp.counts['오늘_이번주'] + '</td><td>' + pp.counts['진행'] + '</td><td>0</td></tr>';
+      }).join('');
+      document.getElementById('summary-body').innerHTML = rows;
+      document.getElementById('summary-wrap').hidden = false;
+    } else {
+      sw.innerHTML = '<a class="on" href="?who=' + encodeURIComponent(who) + '">' + esc(p.display) + '</a>';
+    }
+  }
+
+  readData().then(render).catch(function (e) {
+    document.getElementById('root').innerHTML = '<p class="rep-empty">데이터를 못 불러왔습니다 — ' + esc(e.message) + '</p>';
+    document.getElementById('who-name').textContent = '불러오기 실패';
+  });
+})();
+</script>
+</body>
+</html>
