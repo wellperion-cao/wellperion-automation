@@ -4,8 +4,8 @@
 이 관문이 실제로 닿는 면(약속 L23·L26 · 2026-09-10 진단 카드 6 으로 이름을 GM 어휘에 맞춰 다시 씀)
   ① 전사일정 — 담당·날짜 (동작)
   ② 월간계획 카드 — 진척률 (--plan 이 있을 때만 동작)
-  ③ 업무&결재SSOT — **막혀 있다**(아래 TODO_UPLOAD_BLOCKED). GM업무와 결재는 두 면이 아니라
-     같은 업무 SSOT 한 행의 두 칸이다. 등록은 지시받은 실무진이 직접 한다.
+  ③ 업무&결재SSOT — GM 전달건은 담당 공란으로 올리고 카드와 짝(todo_id)을 맺는다(GM 2026-09-17 ·
+     아래 TODO_UPLOAD_BLOCKED 주석). GM업무와 결재는 두 면이 아니라 같은 업무 SSOT 한 행의 두 칸이다.
   ④ 중간관리자 통 — **이 관문에 없다.** GM 전달건이 실장·소장·나우열M 에게 닿는 경로는
      send_ops_digest 쪽이고 여기서 부르지 않는다. 있는 척하지 않고 「없음」으로 찍는다.
 
@@ -124,18 +124,21 @@ def close_schedule(event_id: str, dry: bool) -> dict:
 #   AI 가 대신 올리면 주인 없는 행이 쌓이고(2026-08-18 규칙과 같은 줄기), 결재가 GM 에게 올라오는
 #   길도 사람 손을 안 거친 채 열린다. 전사일정·월간운영계획(GM업무 카드)·진척 덧붙이기는 그대로 둔다.
 #   되돌리려면 GM 채팅 지시 한 줄이 있어야 한다(이 상수를 코드에서 임의로 바꾸지 않는다).
-TODO_UPLOAD_BLOCKED = True
+# ★GM 지시 2026-09-17 (시우 세션 · 락커 리뉴얼 건에서 되돌림) — "업무 SSOT도 그냥 내가 전달할 업무들은
+#   업로드 해줘 GM업무랑 연동시켜." 그래서 이 관문(GM 전달건 · 생성자 김남욱GM)만 다시 연다.
+#   담당자 칸은 비워 둔다 — 과제는 GM 이 주고 담당은 부서가 정한다(약속 L23). AI 가 스스로 정리한 건을
+#   이 길로 올리는 것은 여전히 금지(2026-08-18 규칙 · GM 원문이 있는 전달건만).
+TODO_UPLOAD_BLOCKED = False
 
 
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
-             owner: str = GM_CREATOR) -> dict:
-    """owner 기본 = 김남욱GM(안 띄움 · GAS 가림 기준 표기 — 배12675). ★2026-09-09 부터 이 길은
-    막혀 있다(위 TODO_UPLOAD_BLOCKED 주석). 막힌 이유를 그대로 돌려주어 호출부가 사람에게 보여 준다."""
+             owner: str = "") -> dict:
+    """owner 기본 = 공란(담당은 부서가 정한다 · GM 2026-09-17). 생성자는 김남욱GM(GAS 가림 기준 표기 — 배12675)."""
     if TODO_UPLOAD_BLOCKED:
         return {"ok": False, "blocked": True,
                 "reason": "업무 SSOT 등록은 AI 가 하지 않는다(GM 지시 2026-09-09) — 지시를 받은 실무진이 직접 올린다"}
     import ops_daily_digest as o
-    params = {"action": "todo_add", "title": title, "category": category, "owner": owner or GM_CREATOR,
+    params = {"action": "todo_add", "title": title, "category": category, "owner": owner,
               "startDate": _today().isoformat(), "endDate": due, "content": content,
               "link": "", "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
     if dry:
@@ -267,7 +270,8 @@ def close_card(card_id: str, why: str, dry: bool) -> dict:
     return {"ok": True}
 
 
-def new_card(title: str, content: str, due: str, dry: bool, category: str = "", source: str = "") -> dict:
+def new_card(title: str, content: str, due: str, dry: bool, category: str = "", source: str = "",
+             todo_id: str = "") -> dict:
     """GM업무 카드(월간운영계획 이번 달 objectives · 담당 김남욱 GM) 새로 만들기 — GM 본인 건이 --plan 없이
     들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
     셋업」). 업무 SSOT 행은 여전히 안 만든다(TODO_UPLOAD_BLOCKED) — GM업무 = 이 카드, 결재 = 사람이 SSOT 에.
@@ -276,9 +280,17 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     ym = _today().strftime("%Y-%m")
     month = plan.setdefault("months", {}).setdefault(ym, {})
     objs = month.setdefault("objectives", [])
-    key = "".join(title.split())[:24]
+    # 비교 전 (GM 직접) 태그를 뗀다 — 짧은 제목은 태그가 [:24] 안에 들어와 같은 카드를 못 알아봤다(09-17 실측 · 45↔46 중복).
+    key = "".join(title.replace(GM_TAG, "").split())[:24]
     for o in objs:
-        if "".join(str(o.get("title") or "").split())[:24] == key and "김남욱" in str(o.get("owner") or ""):
+        if "".join(str(o.get("title") or "").replace(GM_TAG, "").split())[:24] == key and "김남욱" in str(o.get("owner") or ""):
+            if todo_id and not o.get("todo_id") and not dry:
+                # 카드가 먼저 있고 행이 나중에 생긴 경우 — 짝만 붙인다(카드 본문은 그대로).
+                o["todo_id"] = todo_id
+                o["progress_note"] = (o.get("progress_note") or "").rstrip() + f"\n🔗 업무 SSOT {todo_id}"
+                fail = _save_plan(plan)
+                if fail:
+                    return fail
             return {"ok": True, "id": o.get("id"), "existing": True}
     nums = [int(str(o.get("id") or "").rsplit("-", 1)[-1]) for o in objs
             if str(o.get("id") or "").startswith(ym + "-") and str(o.get("id") or "").rsplit("-", 1)[-1].isdigit()]
@@ -289,13 +301,17 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     if GM_TAG not in title:
         title = f"{title} {GM_TAG}"
     src_line = f"▶[{source} 지시 · GM 전달 {today}]\n" if source else ""
+    # 업무 SSOT 행과 짝(GM 2026-09-17 「GM업무랑 연동」) — 완료는 --done --todo-id … --plan … 이 두 면을 같이 닫는다.
+    link_line = f"\n🔗 업무 SSOT {todo_id}" if todo_id else ""
     card = {
         "id": cid, "initiative_id": "", "owner": GM_OWNER, "dept": "경영지원부", "title": title,
         "target": content[:300], "metric": "", "status": "진행", "progress": 0, "northstar": "",
-        "progress_note": f"{src_line}■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}",
+        "progress_note": f"{src_line}■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}{link_line}",
         "honesty": {"level": "manual", "label": "📝 사람값", "basis": "GM 지시 · gm_handoff 생성", "at": today},
         "due": due or "",
     }
+    if todo_id:
+        card["todo_id"] = todo_id
     if category:
         card["category"] = category
     if dry:
@@ -314,7 +330,7 @@ def _mark(res: dict) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="GM 전달건 → 전사일정·월간계획 카드 한 번에 (업무&결재SSOT 는 막힘 · 중간관리자 통은 이 관문에 없음)")
+    ap = argparse.ArgumentParser(description="GM 전달건 → 전사일정·월간계획 카드·업무 SSOT(담당 공란) 한 번에 (중간관리자 통은 이 관문에 없음)")
     ap.add_argument("--title")
     ap.add_argument("--content", default="")
     ap.add_argument("--date", help="있으면 전사일정에도 올린다 (YYYY-MM-DD)")
@@ -371,16 +387,19 @@ def main() -> int:
     due = a.due or a.date or (_today() + _dt.timedelta(days=7)).isoformat()
     r_evt = add_schedule(a.title, a.date, a.time, a.assignee, a.content[:300], dry,
                          todo_id=a.todo_id or "", plan_id=a.plan or "") if a.date else None
-    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=a.assignee)
+    # 업무 SSOT 담당자 칸 = 공란(GM 2026-09-17 「담당자 없이」 · 부서가 정한다 L23). --assignee 를 따로 준 때만 그 값.
+    todo_owner = "" if a.assignee == GM_OWNER else a.assignee
+    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=todo_owner)
     if r_todo.get("blocked"):
         # 막힌 것은 실패가 아니라 규칙이다 — 사람이 무엇을 해야 하는지 한 줄로 알린다.
         print("🚫 업무 SSOT 등록은 하지 않았습니다 — 지시를 받은 실무진이 직접 올립니다(GM 지시 2026-09-09).")
+    todo_id = str(r_todo.get("id") or "") if r_todo.get("ok") and not dry else ""
     if a.plan:
         r_plan = touch_plan(a.plan, f"{a.title} — GM업무 {r_todo.get('id', '')}" + (f" · 전사일정 {r_evt.get('id')}" if r_evt else ""),
                             a.check, False, dry)
     elif (a.assignee or GM_OWNER) == GM_OWNER:
         # GM 본인 건인데 카드가 없으면 GM업무 카드를 새로 낸다 — 전사일정만 남고 GM업무 면이 비던 것을 막는다(2026-09-14).
-        r_plan = new_card(a.title, a.content, due, dry, a.category, a.source or "")
+        r_plan = new_card(a.title, a.content, due, dry, a.category, a.source or "", todo_id=todo_id)
         a.plan = r_plan.get("id", "")
     else:
         r_plan = None
