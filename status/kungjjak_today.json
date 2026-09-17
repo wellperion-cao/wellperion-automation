@@ -226,7 +226,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 21
+          "waited": 24
         }
       ],
       "repeats": []
@@ -353,15 +353,21 @@
           "upload": "✅ 배포 (45ca85711)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-2012",
+          "no": "12",
+          "got": "⚠ 낡은 판 쓰기 거부 — plan.json — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 3개 빠져 있습니다(기준 3개 이상 → 거부): 마커4; 마커5; 마커6 이런거 근본적인 원인해결해줘",
+          "did": "",
+          "start": "11:29",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "09:04",
-          "area": "작업",
-          "event": "fix(notify): 사진 파일 순간 못 읽힘(잠금)도 2초×4 재읽기 + 원인 기록 — 09:00 매출보고 3/3 이틀 연속 조용한 실패",
-          "detail": "커밋 922bee5ed8 · 배 12680"
-        },
         {
           "time": "09:04",
           "area": "자가점검",
@@ -535,16 +541,37 @@
           "area": "GM요청",
           "event": "ERP 관리자 판 단순화(GM 10:44)+내보내기 버튼(10:49) 배포·라이브 실측",
           "detail": "ba7ad2fe8e·7b9fce5dc2·373798568f · deploy_auth 11:19 · 콘솔 오류 0 · 스크린샷 scratchpad/admin_live_*.png"
+        },
+        {
+          "time": "11:29",
+          "area": "작업",
+          "event": "fix(guard): monthly_ops_plan HEAD 가드 호출부에 base_text 전달 — 정리성 줄 감소 오탐 차단",
+          "detail": "커밋 8974dd9b07 · 배 12715"
         }
       ],
-      "count": 10,
+      "count": 11,
       "done": 10,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-2012",
+          "no": "12",
+          "got": "⚠ 낡은 판 쓰기 거부 — plan.json — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 3개 빠져 있습니다(기준 3개 이상 → 거부): 마커4; 마커5; 마커6 이런거 근본적인 원인해결해줘",
+          "did": "",
+          "start": "11:29",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -801,7 +828,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 0
+          "waited": 3
         }
       ],
       "repeats": []
