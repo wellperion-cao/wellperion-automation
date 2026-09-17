@@ -164,6 +164,20 @@ def tier_deny(tier: str) -> list:
     return [] if tier == "leader" else list(ranks_raw().get("member_deny") or [])
 
 
+def tier_extra(dept: str, tier: str) -> list:
+    """리더급에게 부서 기본 위에 더 얹는 화면 — ranks.json leader_extra[부서](GM 2026-09-17 「강습부 팀장은 박민서 팀장처럼 권한 같게」).
+    팀원급은 빈 목록. 강습 팀장 = 파트너팀 기본(강습 회원)에 회원·문의 화면이 더 붙는다."""
+    if tier != "leader":
+        return []
+    return list((ranks_raw().get("leader_extra") or {}).get(dept) or [])
+
+
+def dept_modules_for(dept: str, tier: str) -> list:
+    """부서 기본 + 리더급 추가 — 가입·소셜 승인·부서 일괄 적용이 전부 이 하나를 쓴다(중복 없이 순서 유지)."""
+    mods = list(dept_modules(dept))
+    return mods + [m for m in tier_extra(dept, tier) if m not in mods]
+
+
 # 개인 예외 3건(GM 확정 2026-09-05 §3) — 부서 템플릿·groups·all 매칭으로는 절대 안 열린다.
 # GM 이 관리자 화면에서 그 사람에게만 modules 로 콕 집어 켜야 보인다(월간운영계획=이경연 실장·GM업무=김남욱 GM·
 # 인사재무/채용=나우열M). 매출회원보고·자율현황·카톡전송관리도 경영진 전용이라 같은 방식으로 묶는다.
@@ -805,7 +819,7 @@ STYLE = (
     ".soc-row a,.soc-row span{display:flex;width:44px;height:44px;border-radius:50%;align-items:center;justify-content:center}"
     ".soc-row a{text-decoration:none;border:1px solid transparent}.soc-row a:hover{filter:brightness(1.06)}"
     ".soc-row span.off{opacity:.35;cursor:default;background:var(--accent-soft)}"
-    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{display:inline-block;padding:6px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
+    "p{margin:16px 0 0;font-size:13.5px;color:var(--ink-soft)}p a{display:inline-block;padding:10px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
     ".err,.ok{margin:0 0 16px;padding:8px 12px;font-size:13.5px;color:var(--ink);border-left:3px solid var(--accent);background:var(--accent-soft)}"
     ".err{border-left-color:#ED5B3F}"
     ".tw{overflow-x:auto}table{width:100%;min-width:640px;font-size:14px;border-collapse:collapse}"
@@ -819,7 +833,7 @@ STYLE = (
     # ── 2026-09-04 시포(GM "UI/UX 신경써서") — 머리글·상태색·대기 카드·비밀번호 표시·모바일 카드형 ──
     ".hd{max-width:400px;margin:0 auto 18px}.hd.wide{max-width:860px}.hd .brand{margin:0}.hd .sub{margin:4px 0 0;font-size:13px;color:var(--ink-soft)}"
     ".hint{margin:-6px 0 16px;padding:8px 12px;font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:6px}"
-    ".pw{position:relative;display:block}.pw button{position:absolute;right:6px;bottom:6px;width:auto;margin:0;padding:7px 10px;min-height:36px;font-size:12px;font-weight:600;"
+    ".pw{position:relative;display:block}.pw button{position:absolute;right:1px;bottom:1px;width:auto;margin:0;padding:0 12px;min-height:44px;font-size:12px;font-weight:600;"
     "color:var(--ink-soft);background:transparent;border:0}.pw button:hover{color:var(--ink);filter:none}"
     ".foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.foot p{margin:6px 0 0}"
     ".tag.ok{color:#2E6B3A;background:rgba(46,107,58,.12);border-color:transparent}.tag.off{color:var(--ink-soft);background:transparent}"
@@ -1085,7 +1099,7 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
     # 부서 화면에서 팀원급이 못 보는 것을 뺀다(GM 지시 2026-09-11) — 빼는 목록은 층에 한 번만 적혀 있다.
     tier = rank_tier(rank)
     perms = {"dept": dept, "rank": rank.strip(), "tier": tier, "phone": _digits(phone),
-             "groups": [], "modules": dept_modules(dept), "deny": tier_deny(tier)}
+             "groups": [], "modules": dept_modules_for(dept, tier), "deny": tier_deny(tier)}
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,role,status,created_at,approved_at,perms) "
@@ -1392,7 +1406,7 @@ def _finish_submit(name: str, dept: str, t: str, next: str, action: str, rank: s
     salt, h = hash_pw(salt_pw)
     tier = rank_tier(rank)                                      # 모르는 값·빈 값 = 팀원급(좁은 쪽) — signup 과 같은 규칙
     perms = json.dumps({"dept": dept, "rank": rank.strip(), "tier": tier, "groups": [],
-                        "modules": dept_modules(dept), "deny": tier_deny(tier)}, ensure_ascii=False)
+                        "modules": dept_modules_for(dept, tier), "deny": tier_deny(tier)}, ensure_ascii=False)
     try:
         with db() as c:
             c.execute("INSERT INTO users(tenant_id,email,name,salt,pw,created_at,perms) VALUES(%s,%s,%s,%s,%s,%s,%s)",
@@ -1692,7 +1706,8 @@ def dept_apply(dept: str, erp_session: Optional[str] = Cookie(default=None), erp
         p = _row_perms(r)
         if p.get("dept") != dept or p.get("locked"):
             continue
-        _set_perms(r["id"], {"dept": dept, "groups": [], "modules": mods, "deny": p.get("deny", [])}, me["email"])
+        keep = {k: p[k] for k in ("rank", "tier", "phone") if p.get(k)}      # 직급·층·연락처는 그대로(부서 일괄이 지우지 않는다)
+        _set_perms(r["id"], {"dept": dept, **keep, "groups": [], "modules": dept_modules_for(dept, p.get("tier") or "member"), "deny": p.get("deny", [])}, me["email"])
         n += 1
     return RedirectResponse(f"/auth/admin?msg={urllib.parse.quote(dept)} 부서 기본을 {n}명에 적용했습니다#matrix", status_code=303)
 
