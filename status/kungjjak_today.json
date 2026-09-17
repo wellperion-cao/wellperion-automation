@@ -206,17 +206,23 @@
           "detail": "커밋 bc378bc21a · 배 12714"
         },
         {
-          "time": "12:20",
+          "time": "12:23",
+          "area": "작업",
+          "event": "fix(guard): 낡은 판 판정을 줄 수가 아니라 혈통으로 — 최근 커밋본 중 HEAD 가 가장 가까우면 정상 편집(통과), 옛 판이 더 가까울 때만 낡음(mutate_json 치유·safe_commit 거부)",
+          "detail": "커밋 b554c5dde5 · 배 12714"
+        },
+        {
+          "time": "12:26",
           "area": "작업",
           "event": "중간관리자 업무 화면 바로 반영 — --resolve 1건",
-          "detail": "커밋 e2f38c2fd8 · 배 12714"
+          "detail": "커밋 7a3aaccb23 · 배 12714"
         }
       ],
       "count": 9,
       "done": 8,
       "open": 1,
       "avg_minutes": 20,
-      "work_count": 16,
+      "work_count": 17,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -232,7 +238,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 74
+          "waited": 79
         }
       ],
       "repeats": []
@@ -400,8 +406,20 @@
           "ref": "GM-20260917-2015",
           "no": "15",
           "got": "시토 2651 서버 git으로라는게 git 탈피가 맞아?",
-          "did": "",
+          "did": "낡은 판 판정을 줄 수가 아니라 혈통으로 — 최근 커밋본 중 HEAD 가 가장 가까우면 정상 편집(통과), 옛 판이 더 가까울 · 구글 의존 실측 갱신 — 구글만 2 · 예비 57 · 서버만 12 / 188 · 낡은 판 판정 혈통으로 수리(웰리 실측) — queue_lock.stale_against_head · mutate_json·safe_commit 공용 ·",
           "start": "12:20",
+          "end": "12:24",
+          "minutes": 3,
+          "upload": "✅ 배포 (045ed2f62)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-2016",
+          "no": "16",
+          "got": "2651 우리 AWS 서버로 다 옮기지 않았어?",
+          "did": "",
+          "start": "12:26",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -422,12 +440,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:52",
-          "area": "자가점검",
-          "event": "monthly_ops_plan 되쓰기 자리 4곳 추가 HEAD 가드 · 전파 경로(trim_progress_notes) 확정",
-          "detail": "b26d598b04 · 최초 오염원(09-16 18:58~07:00 커밋 없는 디스크 되쓰기) 미확정·추정"
-        },
         {
           "time": "10:10",
           "area": "GM요청",
@@ -601,29 +613,35 @@
           "area": "작업",
           "event": "docs(auth): 권한 매트릭스 브리프 사실 정정 — 서버 반영·구글 로그인·판정 3건",
           "detail": "커밋 87da4606c2 · 배 12715"
+        },
+        {
+          "time": "12:23",
+          "area": "협업",
+          "event": "낡은 판 판정 혈통으로 수리(웰리 실측)",
+          "detail": "queue_lock.stale_against_head · mutate_json·safe_commit 공용 · 자체점검 3종 · 저장·배포 b554c5dde5 · 웰리 회신 완료"
         }
       ],
-      "count": 15,
-      "done": 14,
+      "count": 16,
+      "done": 15,
       "open": 1,
-      "avg_minutes": 22,
+      "avg_minutes": 21,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-2015",
-          "no": "15",
-          "got": "시토 2651 서버 git으로라는게 git 탈피가 맞아?",
+          "ref": "GM-20260917-2016",
+          "no": "16",
+          "got": "2651 우리 AWS 서버로 다 옮기지 않았어?",
           "did": "",
-          "start": "12:20",
+          "start": "12:26",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 0
         }
       ],
       "repeats": []
@@ -891,7 +909,7 @@
           "start": "12:04",
           "end": "12:16",
           "minutes": 11,
-          "upload": "기록만",
+          "upload": "✅ 배포 (4f86ef9d4)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -903,7 +921,7 @@
           "start": "12:17",
           "end": "12:18",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (3ae1ed67b)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -915,9 +933,21 @@
           "start": "12:21",
           "end": "12:21",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (3ae1ed67b)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-3027",
+          "no": "27",
+          "got": "그리고 https://sdk-kim-builds.com/guides/claude-web-design-skills-setup/ 여기 사이트 들어가서 내용 확인해봐 시모 학습 필요한 것만 셋업해주게 의견도 줘",
+          "did": "sdk-kim 가이드 5종 중 2종 설치(emil-design-eng 전역 · impeccable 전역) · 3종 이미 있음/불필요 · 그림 도구 라우팅을 model_routing.json 그림_도구 로 박음 · 저장·배포 a083598051",
+          "start": "12:22",
+          "end": "12:26",
+          "minutes": 3,
+          "upload": "✅ 배포 (a08359805)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -944,13 +974,19 @@
           "area": "배2694",
           "event": "partner_blog_daily client=ax 준비",
           "detail": "client=ax 발행기 저장·배포 417ceb0154 · self-test 통과 · 임시저장은 계정 뒤"
+        },
+        {
+          "time": "12:26",
+          "area": "작업",
+          "event": "docs(cmo): 그림 도구 라우팅(코드 0원 vs 힉스필드) 정본 + 화면 디자인 스킬 3종 워크플로 포인터 (GM 지시 2026-09-17)",
+          "detail": "커밋 a083598051 · 배 12691"
         }
       ],
-      "count": 24,
-      "done": 24,
+      "count": 25,
+      "done": 25,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 4,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1111,7 +1147,7 @@
           "start": "12:19",
           "end": "12:20",
           "minutes": 0,
-          "upload": "✅ 배포 (881c892dd)",
+          "upload": "✅ 배포 (c4eb7a5f4)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1252,7 +1288,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 6
         }
       ],
       "repeats": []
