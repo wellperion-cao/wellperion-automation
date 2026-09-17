@@ -41,6 +41,16 @@
   table.reg .alt{color:var(--dim); font-size:11px; margin-left:4px;}
   table.reg .flag{font-size:11px; font-weight:700;}
   table.reg .flag.on{color:#B4530A;}
+  table.reg .verdict{font-size:11px; font-weight:700;}
+  table.reg .verdict.gm{color:#B4530A;}
+  table.reg .verdict.del{color:#B4530A;}
+  table.reg .verdict.hold{color:var(--dim);}
+  .verdict-block{margin-bottom:22px;}
+  .verdict-block .hd{font-size:13px; font-weight:700; color:var(--accent-hover); margin-bottom:4px;}
+  .verdict-block .instruction{font-size:12px; color:var(--text-soft); margin-bottom:8px;}
+  details.ai-del{margin-top:8px; border:1px solid var(--border); border-radius:8px; background:var(--paper);}
+  details.ai-del summary{cursor:pointer; padding:8px 12px; font-size:12.5px; font-weight:600; color:var(--dim);}
+  details.ai-del .tbl-wrap{padding:0 12px 10px;}
   .foot{margin-top:30px; padding-top:14px; border-top:1px solid var(--border); font-size:11.5px; color:var(--dim);}
 </style>
 </head>
@@ -60,6 +70,8 @@
     <b>이번 정리 1건</b> — GM 지시(2026-09-17): <code>/erp/?view=home</code> 은 옛 직원 층 주소, 삭제한다 · <code>/erp/</code> 는 관리자 한 층으로만 쓴다 · 직원이 쓰는 홈 화면 주소는 <code>/home</code> 하나로 모은다.
   </div>
 
+  <div id="verdict-block" class="verdict-block"></div>
+
   <div id="root"><div class="sub">불러오는 중…</div></div>
 
   <div class="foot">번호는 전체 일련번호 — GM 께서 「12번·37번 삭제」처럼 번호로 답할 수 있게 붙였다. 정본 = status/screen_map.json (scripts/screen_map.py 생성).</div>
@@ -69,6 +81,47 @@
   var REPO='/repo/status/screen_map.json', LOCAL='../../../status/screen_map.json';
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
+  function renderVerdict(data){
+    var vc = data.verdict_counts || {};
+    var screens = data.screens || [];
+    var gmCand = screens.filter(function(e){ return e.verdict==='GM후보'; }).sort(function(a,b){ return a.no-b.no; });
+    var aiDel = screens.filter(function(e){ return e.verdict==='AI삭제'; }).sort(function(a,b){ return a.no-b.no; });
+
+    var html = '<div class="hd">1차 정리 판정 — 유지 '+(vc['유지']||0)+' · GM후보 '+(vc['GM후보']||0)+
+      ' · AI삭제 '+(vc['AI삭제']||0)+' · 보류 '+(vc['보류']||0)+'</div>';
+
+    if(gmCand.length){
+      html += '<div class="instruction">아래 번호만 답해 주시면 지웁니다.</div>';
+      html += '<div class="tbl-wrap"><table class="reg">'+
+        '<colgroup><col style="width:40px"><col style="width:260px"><col style="width:100px"><col style="width:70px"><col></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>폴더</th><th>판정</th><th>이유</th></tr></thead><tbody>';
+      gmCand.forEach(function(e){
+        html += '<tr><td>'+e.no+'</td>'+
+          '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a></td>'+
+          '<td>'+esc(e.folder)+'</td>'+
+          '<td class="verdict gm">'+esc(e.verdict)+'</td>'+
+          '<td>'+esc(e.reason)+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div class="instruction">GM 후보 없음 — 지금은 GM 이 볼 삭제 후보가 없다.</div>';
+    }
+
+    html += '<details class="ai-del"><summary>AI 가 지우는 것 '+aiDel.length+'장 — 이동 스텁·접속 0·참조 0</summary>';
+    if(aiDel.length){
+      html += '<div class="tbl-wrap"><table class="reg">'+
+        '<colgroup><col style="width:40px"><col style="width:260px"><col style="width:250px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>경로</th></tr></thead><tbody>';
+      aiDel.forEach(function(e){
+        html += '<tr><td>'+e.no+'</td><td>'+esc(e.title)+'</td><td class="path">'+esc(e.rel)+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+    html += '</details>';
+
+    document.getElementById('verdict-block').innerHTML = html;
+  }
+
   function render(data){
     document.getElementById('kpi').innerHTML =
       '<div><b>'+data.total+'</b><span>전체 화면</span></div>'+
@@ -76,6 +129,8 @@
       '<div><b>'+data.orphan+'</b><span>고립(카드 밖 · 들어오는 링크 0)</span></div>'+
       '<div><b>'+data.stale+'</b><span>30일 넘게 안 고친 것</span></div>'+
       '<div><b>'+(data.stub||0)+'</b><span>이동 스텁(옛 주소 → 새 화면)</span></div>';
+
+    renderVerdict(data);
 
     var byFolder = {};
     var order = [];
@@ -94,10 +149,11 @@
       var rows = byFolder[folder];
       html += '<div class="grp">'+esc(folder)+' ('+rows.length+'장)</div>';
       html += '<div class="tbl-wrap"><table class="reg">'+
-        '<colgroup><col style="width:40px"><col style="width:200px"><col style="width:250px"><col style="width:85px"><col style="width:100px"><col style="width:100px"><col style="width:110px"></colgroup>'+
-        '<thead><tr><th>번호</th><th>화면</th><th>경로</th><th>마지막 저장</th><th>카드</th><th>들어오는 링크</th><th>표시</th></tr></thead><tbody>';
+        '<colgroup><col style="width:40px"><col style="width:180px"><col style="width:220px"><col style="width:85px"><col style="width:100px"><col style="width:100px"><col style="width:90px"><col style="width:90px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>경로</th><th>마지막 저장</th><th>카드</th><th>들어오는 링크</th><th>표시</th><th>판정</th></tr></thead><tbody>';
       rows.forEach(function(e){
         var altTag = e.redirect_to ? '<span class="alt">→ '+esc(e.redirect_to)+'</span>' : '';
+        var vcls = e.verdict==='GM후보' ? 'gm' : (e.verdict==='AI삭제' ? 'del' : (e.verdict==='보류' ? 'hold' : ''));
         html += '<tr>'+
           '<td>'+e.no+'</td>'+
           '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>'+altTag+'</td>'+
@@ -106,6 +162,7 @@
           '<td>'+esc(e.in_card||'—')+'</td>'+
           '<td>'+e.inbound+'</td>'+
           '<td class="flag'+(e.flags.length?' on':'')+'">'+esc(e.flags.join(' · ')||'—')+'</td>'+
+          '<td class="verdict'+(vcls?' '+vcls:'')+'">'+esc(e.verdict||'—')+'</td>'+
         '</tr>';
       });
       html += '</tbody></table></div>';
