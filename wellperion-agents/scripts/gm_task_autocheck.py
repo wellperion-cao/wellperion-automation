@@ -41,6 +41,18 @@ SENT_LOCK = ROOT / 'status' / '.gm_autocheck_sent'
 sys.path.insert(0, str(ROOT / 'scripts'))
 from kungjjak_board import _norm, _SHIP_IN_TEXT_RE  # 판정 보조 재사용(약속 L01)
 
+try:  # 안전 커밋터 신선도 가드(배9820 monthly_ops_sync.py 와 동일 재사용 — 약속 L01)
+    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
+except Exception:
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+
+try:
+    from worklog import log as worklog_log
+except Exception:
+    def worklog_log(*a, **k):
+        return False
+
 DUE_RE = re.compile(r'\(~(\d{1,2})/(\d{1,2})\)')
 CHECK_RE = re.compile(r'^(\s*)([\u25A1\u2611])(.*)$')
 
@@ -137,7 +149,22 @@ def run(dry_run: bool, body_out: str | None = None) -> int:
 
     if checked and not dry_run:
         plan['updated_at'] = today.isoformat()
-        PLAN.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        new_text = json.dumps(plan, ensure_ascii=False, indent=2) + '\n'
+        # ★2026-09-17 시토 실측 — 08:00:05 이 자리가 이미 HEAD 보다 낡은 디스크를 그대로
+        #   되써 09-16 GM 편집(progress_note 16곳)을 지웠다(monthly_ops_sync.py 와 같은
+        #   본질 2회째). 쓰기 직전 HEAD 대비 신선도를 확인 — 낡았으면 체크도 되돌린다
+        #   (반영 안 된 체크를 발송 문안에만 있는 척 남기지 않는다).
+        if not _refuse_if_stale(PLAN, new_text):
+            print(f'[거부] {PLAN.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 체크 되돌림.')
+            worklog_log(
+                'coo', '월간계획',
+                'GM 직접 업무 자동 체크 저장 거부 — 디스크가 HEAD 보다 낡음(쓰기 전 가드)',
+                result='warn', detail=f'{today.isoformat()} · refuse_if_older_than_head 거부',
+                ref=today.isoformat(),
+            )
+            checked = []
+        else:
+            PLAN.write_text(new_text, encoding='utf-8')
 
     print(f'[체크] 자동 체크 {len(checked)}건' + (' (dry-run — 저장 안 함)' if dry_run and checked else ''))
     for oid, no, txt in checked:
