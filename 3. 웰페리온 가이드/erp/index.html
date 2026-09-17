@@ -14,7 +14,7 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   [hidden]{display:none !important;}  /* .mod·.modules 가 display 를 덮어써서 필요하다 */
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3);
        -webkit-font-smoothing:antialiased;}
   /* 밀도 = 관리자 콘솔 관행 (실측 근거 = status/briefs/CMO-2026-09-10-ERP콘솔-벤치마킹.md).
      본문 14px(Fiori·Carbon·Odoo·Atlassian 수렴) · 표 13px · 라벨 11px · 간격은 4배수만.
@@ -27,43 +27,43 @@
   .topbar > *{white-space:nowrap; flex-shrink:0;}
   .topbar .brand{display:flex; align-items:center; color:var(--text);}
   .topbar .brand svg{height:16px; width:auto; display:block;}  /* 브랜드 자산 정본 = erp/brand/ (배932·952) */
-  .topbar .brand .sub{font-size:12px; color:var(--dim); font-weight:400; margin-left:8px;}
-  .topbar .who{margin-left:auto; font-size:13.5px; color:var(--text-soft);}
-  .topbar .who .role{display:inline-block; font-size:11.5px; font-weight:600;
+  .topbar .brand .sub{font-size:var(--fs-2); color:var(--dim); font-weight:400; margin-left:8px;}
+  .topbar .who{margin-left:auto; font-size:var(--fs-3); color:var(--text-soft);}
+  .topbar .who .role{display:inline-block; font-size:var(--fs-1); font-weight:600;
                      padding:2px 9px; border-radius:20px; background:var(--accent);
-                     color:#221F20; margin-left:7px;}   /* 베이지 바탕엔 흰 글자가 안 읽힌다 */
-  .topbar a.logout{font-size:13px; color:var(--dim); text-decoration:none; margin-left:16px;}
+                     color:var(--ink); margin-left:7px;}   /* 베이지 바탕엔 흰 글자가 안 읽힌다 */
+  .topbar a.logout{font-size:var(--fs-2); color:var(--dim); text-decoration:none; margin-left:16px;}
   .topbar a.logout:hover{color:var(--accent-hover);}
   /* 지금 어느 층에 있는지 — 회사 관리자(/erp/admin/) · 파트너사 관리자 · 파트너사 직원 (GM 지시 2026-09-09).
      같은 주소가 두 층을 겸하므로 이름표는 역할로 정한다. 위층으로 가는 길은 관리자에게만 보인다. */
-  .topbar .layer{font-size:11.5px; font-weight:600; color:var(--text-soft);
+  .topbar .layer{font-size:var(--fs-1); font-weight:600; color:var(--text-soft);
                  padding:3px 10px; border-radius:20px; background:var(--gray-bg);
                  border:1px solid var(--border); white-space:nowrap;}
-  .topbar a.up{font-size:13px; color:var(--dim); text-decoration:none; white-space:nowrap;}
+  .topbar a.up{font-size:var(--fs-2); color:var(--dim); text-decoration:none; white-space:nowrap;}
   .topbar a.up:hover{color:var(--accent-hover);}
 
   /* 좌측 고정 메뉴 240px + 본문 — 본문에 폭 제한을 두지 않는다(창을 다 쓴다) */
   .shell{display:grid; grid-template-columns:240px minmax(0,1fr); align-items:start;}
   .side{position:sticky; top:48px; align-self:start; height:calc(100vh - 48px); overflow-y:auto;
         background:var(--sidebar); border-right:1px solid var(--border); padding:12px 0 24px;}
-  .side .cap{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--dim-soft);
+  .side .cap{font-size:var(--fs-1); font-weight:700; letter-spacing:.06em; color:var(--dim-soft);
              padding:12px 16px 4px; text-transform:uppercase;}
   .side .cap:first-child{padding-top:0;}
   .side a{display:flex; align-items:center; justify-content:space-between; gap:8px;
           height:32px; padding:0 16px; border-left:4px solid transparent;
-          font-size:13px; font-weight:500; color:var(--text-soft); text-decoration:none;}
+          font-size:var(--fs-2); font-weight:500; color:var(--text-soft); text-decoration:none;}
   .side a:hover{background:var(--gray-bg); color:var(--text);}
   .side a.on{background:var(--accent-bg); color:var(--accent-hover); font-weight:700;
              border-left-color:var(--accent);}
-  .side a .b{font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .side a .b{font-size:var(--fs-1); color:var(--dim); font-variant-numeric:tabular-nums;}
   .side a.on .b{color:var(--accent-hover);}
   .side .sep{height:1px; background:var(--border); margin:8px 16px;}
 
   .main{padding:12px 16px 32px; min-width:0;}
-  h2{font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
+  h2{font-size:var(--fs-4); font-weight:700; letter-spacing:-0.01em; margin-bottom:2px;}
   [role=tabpanel] > h2:first-child{margin-top:0;}
-  .meta{font-size:12.5px; color:var(--dim); margin-bottom:12px;}
-  h3{font-size:13px; font-weight:700; margin:16px 0 8px; padding-bottom:4px;
+  .meta{font-size:var(--fs-2); color:var(--dim); margin-bottom:12px;}
+  h3{font-size:var(--fs-2); font-weight:700; margin:16px 0 8px; padding-bottom:4px;
      border-bottom:1px solid var(--border);}
 
   /* 모듈 타일 = 들어가는 문. 설명은 한 줄로 자르고 담당은 같은 줄 끝에 붙인다 —
@@ -73,25 +73,25 @@
        border-radius:4px; padding:8px 12px; text-decoration:none; color:inherit;
        transition:border-color 0.12s, background 0.12s;}
   .mod:hover{border-color:var(--accent); background:var(--accent-bg);}
-  .mod .name{font-size:13.5px; font-weight:700; margin-bottom:2px;
+  .mod .name{font-size:var(--fs-3); font-weight:700; margin-bottom:2px;
              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .mod .desc{font-size:12px; color:var(--dim); line-height:1.45;
+  .mod .desc{font-size:var(--fs-2); color:var(--dim); line-height:1.45;
              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .mod .owner{font-size:11px; color:var(--dim-soft); margin-top:2px;
+  .mod .owner{font-size:var(--fs-1); color:var(--dim-soft); margin-top:2px;
               white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   /* 모듈 한 칸 — 같은 일을 하는 화면 여럿을 접은 칸(GM 지시 2026-09-14).
      딸린 화면은 칸 안에서 바로 고른다 — 한 번 더 들어가게 하지 않는다. */
   .modbox{cursor:default;}
   .modbox:hover{border-color:var(--border); background:var(--paper);}
-  .modbox .name .cnt{font-size:11px; font-weight:600; color:var(--dim-soft); margin-left:6px;}
+  .modbox .name .cnt{font-size:var(--fs-1); font-weight:600; color:var(--dim-soft); margin-left:6px;}
   .modbox .links{display:flex; flex-wrap:wrap; gap:4px 6px; margin:4px 0 2px;}
-  .modbox .links a{font-size:12px; color:var(--text-soft); text-decoration:none;
+  .modbox .links a{font-size:var(--fs-2); color:var(--text-soft); text-decoration:none;
                    padding:2px 7px; border-radius:4px; background:var(--gray-bg);
                    border:1px solid var(--border); white-space:nowrap;}
   .modbox .links a:hover{border-color:var(--accent); color:var(--accent-hover);
                          background:var(--accent-bg);}
   /* 모듈 안내 링크 — modbox 에서 module.html 로 바로 가는 줄 (GM 지시 2026-09-14) */
-  .modbox .mod-guide-link{display:inline-block;font-size:11px;color:var(--dim);
+  .modbox .mod-guide-link{display:inline-block;font-size:var(--fs-1);color:var(--dim);
                           text-decoration:none;margin-top:4px;}
   .modbox .mod-guide-link:hover{color:var(--accent-hover);}
   /* roles 에 내 역할이 없으면 흐리게만 — 숨기지 않는다 */
@@ -101,12 +101,12 @@
 
   .find{width:260px; height:28px; padding:0 10px; margin:0;
         background:var(--gray-bg); border:1px solid var(--border); border-radius:4px;
-        color:var(--text); font-size:12.5px; font-family:inherit;}
-  .find:focus{outline:none; border-color:var(--accent);}
+        color:var(--text); font-size:var(--fs-2); font-family:inherit;}
+  .find:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
   .find::placeholder{color:var(--dim-soft);}
-  h3 .n{font-size:13px; font-weight:400; color:var(--dim); margin-left:8px;}
+  h3 .n{font-size:var(--fs-2); font-weight:400; color:var(--dim); margin-left:8px;}
 
-  .msg{color:var(--dim); font-size:13px;}
+  .msg{color:var(--dim); font-size:var(--fs-2);}
 
   /* 목록은 표로 — 행 32px(조밀) · 표 안 13px · 머리행 고정 · 셀은 한 줄 말줄임 */
   /* 가로 스크롤 상자를 두지 않는다 — 상자가 스크롤 컨테이너가 되면 머리행 고정(sticky)의 기준이
@@ -116,12 +116,12 @@
             border:1px solid var(--border); border-radius:4px; background:var(--paper);}
   /* border-collapse:collapse 에서는 머리행 고정(sticky)이 먹지 않는다 — separate 로 두고
      칸 사이 간격을 0 으로 만든 뒤, 칸 경계선은 각 칸의 아래 테두리로 그린다. */
-  table.tbl{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; table-layout:fixed;}
+  table.tbl{width:100%; border-collapse:separate; border-spacing:0; font-size:var(--fs-2); table-layout:fixed;}
   /* 고정은 th 가 아니라 thead 에 건다 — 이 표(table-layout:fixed)에서는 th 쪽 sticky 가
      먹지 않아 스크롤하면 머리행이 그대로 올라가 사라졌다(2026-09-10 실측). */
   table.tbl thead{position:sticky; top:48px; z-index:2;}
   table.tbl th{height:40px; text-align:left;
-               font-size:13px; font-weight:600; color:var(--text-soft); background:var(--gray-bg);
+               font-size:var(--fs-2); font-weight:600; color:var(--text-soft); background:var(--gray-bg);
                padding:0 12px; border-bottom:1px solid var(--border-strong); white-space:nowrap;}
   table.tbl td{height:var(--row-h); padding:0 12px; border-bottom:1px solid var(--border);
                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -137,30 +137,30 @@
   .devgrid .mod{cursor:default;}
   .devgrid .mod:hover{border-color:var(--border); background:var(--paper);}
   .devgrid .mod .name{margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--border);}
-  .devgrid .row{display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12.5px; line-height:1.45;}
+  .devgrid .row{display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:var(--fs-2); line-height:1.45;}
   .devgrid .row .k{flex:0 0 76px; font-weight:700; color:var(--text);}
   .devgrid .row .v{flex:1 1 auto; color:var(--text-soft); min-width:0;}
-  .devgrid .row a.go{flex:0 0 auto; font-size:11.5px; color:var(--text-soft); text-decoration:none;
+  .devgrid .row a.go{flex:0 0 auto; font-size:var(--fs-1); color:var(--text-soft); text-decoration:none;
                      padding:1px 7px; border-radius:4px; background:var(--gray-bg); border:1px solid var(--border);
                      white-space:nowrap;}
   .devgrid .row a.go:hover{border-color:var(--accent); color:var(--accent-hover); background:var(--accent-bg);}
-  table.tbl td.o{width:16%; color:var(--dim); font-size:12px;}
+  table.tbl td.o{width:16%; color:var(--dim); font-size:var(--fs-2);}
   @media(max-width:900px){ :root{--row-h:44px;} table.tbl thead{top:88px;} }
 
   /* 탭은 좌측 메뉴로 옮겼다(2026-09-10). 상단바가 담는 것은 넷뿐 —
      제품명 · 지금 어디인지 · 전역 검색 · 사용자. */
-  .topbar .crumb{font-size:13px; font-weight:600; color:var(--text);
+  .topbar .crumb{font-size:var(--fs-2); font-weight:600; color:var(--text);
                  padding-left:12px; border-left:1px solid var(--border);}
   .topbar .spacer{margin-left:auto;}
   .dl .mod .owner::before{content:"내려받기 · ";}
   /* 화면에 상주하는 설명문 대신 접힌 한 줄 (벤치마킹 §5-18) */
-  .tip{font-size:12px; color:var(--dim); margin-bottom:8px;}
+  .tip{font-size:var(--fs-2); color:var(--dim); margin-bottom:8px;}
   .tip > summary{cursor:pointer; list-style:none; color:var(--text-soft); font-weight:600;}
   .tip > summary::-webkit-details-marker{display:none;}
   .tip > summary::before{content:"▸ "; color:var(--dim);}
   .tip[open] > summary::before{content:"▾ ";}
   .tip a{color:var(--accent-hover);}
-  .note{font-size:12.5px; color:var(--dim); background:var(--gray-bg);
+  .note{font-size:var(--fs-2); color:var(--dim); background:var(--gray-bg);
         border-left:2px solid var(--border-strong); padding:8px 12px; border-radius:4px; margin-bottom:12px;}
   .note a{color:var(--accent-hover);}
   /* 권한·비용은 다른 화면을 이 자리에 그대로 끼워 띄운다.
@@ -180,11 +180,11 @@
   /* 회사 설정값은 한 줄 말줄임이 아니라 접어서 다 보여준다 — 값이 문장인 것이 섞여 있다 */
   #cfg-body table.tbl td{white-space:normal; height:auto; padding:7px 12px; line-height:1.5;}
   .btn{height:30px; padding:0 14px; border-radius:4px; cursor:pointer;
-       background:var(--accent); color:#221F20; border:1px solid var(--accent);
-       font-family:inherit; font-size:13px; font-weight:700;}
+       background:var(--accent); color:var(--ink); border:1px solid var(--accent);
+       font-family:inherit; font-size:var(--fs-2); font-weight:700;}
   .btn:disabled{opacity:0.5; cursor:default;}
   .savebar{display:flex; align-items:center; gap:10px; margin:10px 0 4px; flex-wrap:wrap;}
-  .savebar .r{font-size:12.5px; color:var(--dim);}
+  .savebar .r{font-size:var(--fs-2); color:var(--dim);}
   .savebar .r a{color:var(--accent-hover);}
   @media(max-width:900px){
     /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 240px 를 세로로 두면 본문이 화면 밖으로 밀린다 */
@@ -824,10 +824,10 @@ function cssq(v){ return String(v).replace(/"/g, '\\"'); }
 
 function mark(sel, label){
   var links = document.querySelectorAll('.side a[data-grp], .side a[data-go]');
-  [].forEach.call(links, function(a){ a.classList.remove('on'); });
+  [].forEach.call(links, function(a){ a.classList.remove('on'); a.removeAttribute('aria-current'); });
   if (sel) {
     var hit = document.querySelector('.side a' + sel);
-    if (hit) hit.classList.add('on');
+    if (hit) { hit.classList.add('on'); hit.setAttribute('aria-current', 'true'); }
   }
   var crumb = document.getElementById('crumb');
   if (crumb) crumb.textContent = label;
