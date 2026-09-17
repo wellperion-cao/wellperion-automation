@@ -283,6 +283,9 @@
   .p3plan-h:first-child{margin-top:0;}
   .mrow .rk{display:inline-block;min-width:14px;font-weight:800;color:var(--ink);}
   .audit{margin-top:9px;padding:5px 11px;font-size:11px;line-height:1.45;border:1px solid var(--line);}
+  /* 자체 점검 줄은 장 맨 위 머리 오른쪽에 작게 붙인다(GM 2026-09-17) — 아래에 두면 표 한 줄을 먹는다. */
+  .head .audit{margin:4px 0 0;padding:2px 7px;font-size:9.6px;line-height:1.3;max-width:520px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px;}
   .audit.wait{color:#7A838B;background:#F6F8FA;}
   .audit.ok{color:var(--good);background:#EEF6F2;border-color:#BFDCD0;}
   .audit.ok .w{color:var(--warn);}
@@ -441,6 +444,7 @@
       작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>매출·운영 보고 시트</b><br>
       읽은 시각 <b id="readat">—</b>
     </div>
+    <div class="audit wait" id="audit">자체 점검 중…</div>
     <!-- 결재란 없음 — 매일 자동으로 나가는 일일 보고라 서명 자리가 필요 없다(GM 확정 2026-08-28). -->
   </div>
 
@@ -480,14 +484,21 @@
       </div>
     </div>
 
-    <!-- 좌하 — 매출 현황. 표 11줄이 다 보이도록 남은 높이를 전부 먹는다. -->
-    <div class="sec" style="min-height:0;">
+    <!-- 좌하 — 매출 현황 + 그 밖의 매출(주차·제휴·굿즈). 두 칸을 한 세로 줄로 묶는다
+         (GM 2026-09-17 「그 밖의 매출은 왼쪽 칸에 들어가는 게 맞다」). -->
+    <div class="col">
+    <div class="sec" style="flex:1;min-height:0;">
       <h2>매출 현황<span class="src " data-sf="1">시트 → 서버</span></h2>
       <table id="sales-table">
         <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
         <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
         <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
       </table>
+    </div>
+    <div class="sec" style="flex:0 0 auto;min-height:78px;">
+      <h2>그 밖의 매출 — 주차 · 제휴 · 굿즈<span class="src srv">서버 · 일부 연동 전</span></h2>
+      <div class="bd" id="etcRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    </div>
     </div>
 
     <!-- 우하 — 컨택·로스자 + 어제 다녀가신 분 -->
@@ -509,10 +520,6 @@
     <div class="sec" style="flex:0 0 auto;min-height:0;">
       <h2>어제 다녀가신 분<span class="src bro">브로제이 → 서버</span></h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-    </div>
-    <div class="sec" style="flex:1;min-height:78px;">
-      <h2>그 밖의 매출 — 주차 · 제휴 · 굿즈<span class="src srv">서버 · 일부 연동 전</span></h2>
-      <div class="bd" id="etcRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
     </div>
   </div>
@@ -544,7 +551,6 @@
 
   <!-- 자체 점검 줄 — 이 화면이 그대로 보고로 나가므로, 스스로 재고 그 결과를 보고서 안에 남긴다.
        실패가 있으면 빨간 줄이 되고 발송기(window.__REPORT_READY.ok)가 멈춘다. -->
-  <div class="audit wait" id="audit">자체 점검 중…</div>
 
   <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
        대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
@@ -580,6 +586,7 @@
       작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>회원관리 ERP</b><br>
       읽은 시각 <b id="readat2">—</b>
     </div>
+    <div class="audit wait" id="audit2">자체 점검 중…</div>
   </div>
 
   <div id="err2"></div>
@@ -640,7 +647,6 @@
     </div>
   </div>
 
-  <div class="audit wait" id="audit2">자체 점검 중…</div>
 
   <div class="bband">
     <span class="sl">하루의 완성, 웰페리온</span>
@@ -665,6 +671,7 @@
       작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>매출·운영 보고 시트 · 업무 SSOT</b><br>
       읽은 시각 <b id="readat3">—</b>
     </div>
+    <div class="audit wait" id="audit3">자체 점검 중…</div>
   </div>
 
   <div id="err3"></div>
@@ -706,7 +713,6 @@
     </div>
   </div>
 
-  <div class="audit wait" id="audit3">자체 점검 중…</div>
 
   <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
        대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
@@ -737,6 +743,7 @@
       작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>매출·운영 보고 시트 일자탭</b><br>
       읽은 시각 <b id="readat4">—</b>
     </div>
+    <div class="audit wait" id="audit4">자체 점검 중…</div>
   </div>
 
   <div id="err4"></div>
@@ -766,7 +773,6 @@
     </div>
   </div>
 
-  <div class="audit wait" id="audit4">자체 점검 중…</div>
 
   <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
        대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
@@ -2877,7 +2883,7 @@ function renderEtcRev(){
     { t: '주차', d: pk && pk.day != null ? _won(pk.day) : '못 읽음',
       m: pk && pk.month ? _won(pk.month) : '못 읽음',
       note: pk && pk.upto ? '서버 원장 · ' + String(pk.upto).slice(5).replace('-', '/') + '까지' : '서버 원장' },
-    { t: '바디프렌드 (이익 30%)', d: '연동 전', m: '연동 전', note: '라운지 월 정산 · 계정 들어오면 자동' },
+    { t: '바디프렌드', d: '연동 전', m: '연동 전', note: '라운지 매출 그대로(우리 몫 30% 는 따로 적지 않는다) · 계정 들어오면 자동' },
     { t: '굿즈 (오넛티 팝업)', d: '연동 전', m: '연동 전', note: '9/18 시작 · 판매 금액 담을 자리 준비 중' },
     { t: '그 밖 제휴', d: '없음', m: '없음', note: '생기면 이 자리에 붙는다' }
   ];
