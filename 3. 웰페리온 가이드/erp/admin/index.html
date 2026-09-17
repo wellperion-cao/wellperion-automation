@@ -300,6 +300,8 @@
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
   <a href="#view/auto" data-view="auto"><span class="t">자율현황</span></a>
   <a href="#tokens" data-go="tokens"><span class="t">AI·서버 비용 현황</span></a>
+  <!-- 문자 발송 — 딜라이브 SMS/LMS (배 2714 · 2026-09-17 시토 · GM 지시 문자 자동발송 1단계). -->
+  <a href="#sms" data-go="sms"><span class="t">문자 발송</span></a>
   <div class="sep"></div>
   <div class="cap">모듈</div>
   <!-- GM 2026-09-15 19:1x: 모듈 이름은 「○○ 자동화」로 · 궁극 목표 = 효율적이고 능률적인 자동화를 셋업해 피트니스 업계가 본질에 집중하게 -->
@@ -1043,6 +1045,127 @@
           + (sm.aws_usage_krw ? ' <span style="color:var(--dim)">(AWS 사용액 ' + won(sm.aws_usage_krw) + '은 크레딧이 대신 냄 · 크레딧 끝나면 합계 ' + won(sm.total_if_no_credit_krw) + ')</span>' : '');
       } else { document.getElementById('cost-total').textContent = '이번 달 합계 — 실측 파일에 아직 없음'; }
     }).catch(function(){ document.getElementById('hf-line').textContent = '비용 실측 파일이 아직 없습니다'; document.getElementById('aws-line').textContent = ''; });
+  })();
+  </script>
+</section>
+
+<!-- 문자 발송 — 딜라이브 SMS/LMS (배 2714 · 2026-09-17 시토 · GM 지시 문자 자동발송 1단계 · CTO-2026-09-17-문자자동발송-설계.md §5).
+     실제 발송은 server/erp_api/dlive_sms.py 한 곳(약속 L21) — 이 화면은 그 위의 얇은 관리 콘솔뿐.
+     킬스위치 SMS_ENABLED=0 이면 실제 전송 없이 로그에 dry 로만 남는다. 문구를 「발효」로 올려야 화면 버튼·자동 트리거가 쓴다. -->
+<section class="panel" data-panel="sms" hidden>
+  <h2>문자 발송</h2>
+  <div class="meta">딜라이브(SMS/LMS) 연동 · 킬스위치가 꺼져 있으면(SMS_ENABLED=0) 실제로 나가지 않고 로그에 dry 로만 남습니다 · <a href="https://letter.dlive.kr" target="_blank" rel="noopener">잔액·단가는 딜라이브에서 ↗</a></div>
+
+  <h3 style="margin:18px 0 6px;">문구</h3>
+  <div class="meta" id="sms-tpl-line">불러오는 중…</div>
+  <div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">
+    <colgroup><col style="width:12%"><col style="width:16%"><col style="width:9%"><col style="width:9%"><col><col style="width:80px"></colgroup>
+    <thead><tr><th>자리</th><th>이름</th><th>상태</th><th>종류</th><th>미리보기</th><th></th></tr></thead>
+    <tbody id="sms-tpl-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <details class="tip"><summary>문구 편집</summary>
+    <div class="in" style="display:flex;flex-direction:column;gap:6px;max-width:520px">
+      <select id="sms-e-id"></select>
+      <input id="sms-e-name" placeholder="이름">
+      <textarea id="sms-e-body" rows="3" placeholder="본문 — 변수는 {이름} 처럼" style="width:100%;font:inherit"></textarea>
+      <div id="sms-e-count" class="n"></div>
+      <input id="sms-e-sample" placeholder='예시값 JSON — {"시작":"9/20","종료":"10/19"}'>
+      <label style="font-size:12.5px"><input type="checkbox" id="sms-e-active"> 발효(체크 해제 = 초안, 화면 버튼·자동발송이 안 씀)</label>
+      <div><button id="sms-e-save">저장</button> <span id="sms-e-msg" class="n"></span></div>
+    </div>
+  </details>
+
+  <h3 style="margin-top:22px">시험 발송</h3>
+  <div class="meta">관리자 본인 번호로만 · 하루 10건 상한 · 발효 아닌 문구도 시험 가능</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0">
+    <select id="sms-t-id"></select>
+    <input id="sms-t-rcpt" placeholder="받는 번호(01012345678)" style="width:160px">
+    <input id="sms-t-vars" placeholder='변수 JSON(선택) — {"시작":"9/20"}' style="width:220px">
+    <button id="sms-t-send">보내기</button>
+    <span id="sms-t-msg" class="n"></span>
+  </div>
+
+  <h3 style="margin-top:22px">발송 로그</h3>
+  <div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">
+    <colgroup><col style="width:15%"><col style="width:10%"><col style="width:14%"><col style="width:10%"><col style="width:9%"><col></colgroup>
+    <thead><tr><th>시각</th><th>자리</th><th>문구</th><th>수신(뒷4자리)</th><th>상태</th><th>오류</th></tr></thead>
+    <tbody id="sms-log-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
+  </table></div>
+
+  <script>
+  (function(){
+    var TPL_API='/api/admin/sms/templates', TEST_API='/api/admin/sms/test', LOG_API='/api/admin/sms/log';
+    var tplRows=document.getElementById('sms-tpl-rows'), tplLine=document.getElementById('sms-tpl-line');
+    var eSel=document.getElementById('sms-e-id'), eName=document.getElementById('sms-e-name'), eBody=document.getElementById('sms-e-body');
+    var eSample=document.getElementById('sms-e-sample'), eActive=document.getElementById('sms-e-active'), eCount=document.getElementById('sms-e-count'), eMsg=document.getElementById('sms-e-msg');
+    var tSel=document.getElementById('sms-t-id'), tRcpt=document.getElementById('sms-t-rcpt'), tVars=document.getElementById('sms-t-vars'), tMsg=document.getElementById('sms-t-msg');
+    var logRows=document.getElementById('sms-log-rows');
+    var items=[];
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function renderTpl(body, sample){ var t=body||''; Object.keys(sample||{}).forEach(function(k){ t=t.split('{'+k+'}').join(sample[k]); }); return t; }
+    function typeBadge(text){ return text.length<=45 ? '<span class="st ok">SMS</span>' : '<span class="st wait">LMS로 나감('+text.length+'자)</span>'; }
+
+    function loadTemplates(){
+      fetch(TPL_API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+        items=d.items||[];
+        tplLine.textContent='문구 '+items.length+'종 — 「발효」만 화면 버튼·자동 트리거가 쓴다';
+        tplRows.innerHTML = items.map(function(it){
+          var preview=renderTpl(it.body, it.sample);
+          return '<tr><td>'+esc(it.trigger||'')+'</td><td class="item">'+esc(it.name||it.id)+'</td>'+
+            '<td>'+(it.state==='발효' ? '<span class="st ok">발효</span>' : '<span class="st wait">'+esc(it.state||'초안')+'</span>')+'</td>'+
+            '<td>'+typeBadge(preview)+'</td><td class="n" style="word-break:break-all">'+esc(preview)+'</td>'+
+            '<td><button class="sms-edit" data-id="'+esc(it.id)+'">편집</button></td></tr>';
+        }).join('') || '<tr><td colspan="6" class="note">문구 없음</td></tr>';
+        var opts=items.map(function(it){ return '<option value="'+esc(it.id)+'">'+esc(it.name||it.id)+'</option>'; }).join('');
+        eSel.innerHTML=opts; tSel.innerHTML=opts;
+      }).catch(function(e){ tplLine.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '문구를 못 읽었습니다('+e+')'; });
+    }
+
+    function fillEditor(id){
+      var it=items.filter(function(x){ return x.id===id; })[0]; if(!it) return;
+      eName.value=it.name||''; eBody.value=it.body||''; eSample.value=JSON.stringify(it.sample||{});
+      eActive.checked = it.state==='발효';
+      eBody.dispatchEvent(new Event('input'));
+    }
+    eSel.addEventListener('change', function(){ fillEditor(eSel.value); });
+    eBody.addEventListener('input', function(){
+      var n=eBody.value.length; eCount.textContent=n+'자 — '+(n<=45?'SMS':'LMS 로 나감');
+    });
+    tplRows.addEventListener('click', function(ev){
+      if(!ev.target.classList.contains('sms-edit')) return;
+      var det=eSel.closest('details'); if(det) det.open=true;
+      eSel.value=ev.target.dataset.id; fillEditor(ev.target.dataset.id);
+    });
+    document.getElementById('sms-e-save').addEventListener('click', function(){
+      var id=eSel.value; if(!id){ eMsg.textContent='문구를 고르세요'; return; }
+      var sample; try{ sample=eSample.value?JSON.parse(eSample.value):{}; }catch(e){ eMsg.textContent='예시값 JSON 형식 오류'; return; }
+      fetch(TPL_API+'/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:eName.value, body:eBody.value, sample:sample, state: eActive.checked?'발효':'초안'})})
+        .then(function(r){return r.json();}).then(function(d){ eMsg.textContent=d.ok?'저장됨':('안 됨 — '+(d.error||'')); if(d.ok) loadTemplates(); });
+    });
+
+    document.getElementById('sms-t-send').addEventListener('click', function(){
+      var vars={}; if(tVars.value){ try{ vars=JSON.parse(tVars.value); }catch(e){ tMsg.textContent='변수 JSON 형식 오류'; return; } }
+      tMsg.textContent='보내는 중…';
+      fetch(TEST_API,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({template_id:tSel.value, rcpt:tRcpt.value, vars:vars})})
+        .then(function(r){return r.json();}).then(function(d){
+          tMsg.textContent = d.ok ? ('결과: '+d.status+(d.msg_key?(' · '+d.msg_key):'')) : ('실패 — '+(d.error||d.status||''));
+          loadLog();
+        }).catch(function(){ tMsg.textContent='요청 실패'; });
+    });
+
+    function loadLog(){
+      fetch(LOG_API+'?limit=50&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+        var rows=(d.items||[]).map(function(r){
+          return '<tr><td>'+esc(r.at)+'</td><td>'+esc(r.trigger||'')+'</td><td>'+esc(r.template_id||'')+'</td>'+
+            '<td class="n">'+esc(r.rcpt_tail4||'')+'</td><td>'+esc(r.status||'')+'</td><td class="n">'+esc(r.error_code||'')+'</td></tr>';
+        }).join('');
+        logRows.innerHTML = rows || '<tr><td colspan="6" class="note">발송 이력 없음</td></tr>';
+      }).catch(function(){ logRows.innerHTML='<tr><td colspan="6" class="note">로그를 못 읽었습니다</td></tr>'; });
+    }
+
+    loadTemplates(); loadLog();
   })();
   </script>
 </section>

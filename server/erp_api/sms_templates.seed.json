@@ -1,0 +1,38 @@
+{
+  "rcpt_received": {
+    "id": "rcpt_received",
+    "name": "접수 즉시 안내",
+    "trigger": "reception",
+    "body": "[웰페리온] 접수되었습니다. 확인 후 순차적으로 안내드리겠습니다. 문의 02-6261-1200",
+    "sample": {},
+    "sndr": "",
+    "state": "GM확정"
+  },
+  "rcpt_progress": {
+    "id": "rcpt_progress",
+    "name": "접수 처리 시작 안내",
+    "trigger": "reception",
+    "body": "[웰페리온] 접수하신 건을 처리 중입니다. 마무리되면 다시 안내드리겠습니다. 문의 02-6261-1200",
+    "sample": {},
+    "sndr": "",
+    "state": "GM확정"
+  },
+  "rcpt_done": {
+    "id": "rcpt_done",
+    "name": "접수 완료 통보",
+    "trigger": "reception",
+    "body": "[웰페리온] 접수하신 건이 처리 완료되었습니다. 이용에 불편 없으시길 바랍니다. 문의 02-6261-1200",
+    "sample": {},
+    "sndr": "",
+    "state": "GM확정"
+  },
+  "hold_confirm": {
+    "id": "hold_confirm",
+    "name": "휴회 확정 안내",
+    "trigger": "hold",
+    "body": "[웰페리온] 휴회가 확정되었습니다. 기간 {시작}~{종료}. 문의 02-6261-1200",
+    "sample": {"시작": "9/20", "종료": "10/19"},
+    "sndr": "",
+    "state": "GM확정"
+  }
+}
