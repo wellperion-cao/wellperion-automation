@@ -167,6 +167,7 @@
      ★2026-09-10 수리 — 권한 판에 width:calc(100vw - 80px) 이 박혀 있었다. 왼쪽 메뉴가 없던
      시절의 값이라 240px 메뉴가 생긴 뒤로 화면이 오른쪽으로 176px 밀려 잘렸다(실측).
      이제 폭을 지정하지 않는다 — 본문이 이미 메뉴 오른쪽 전부를 쓴다. */
+  #screens-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px; border:0; background:transparent;}
   #adm-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px;
              border:0; background:var(--paper); border-radius:6px;}
 
@@ -243,6 +244,7 @@
     <a href="#usage" data-go="usage"><span class="t">사용 현황</span></a>
     <a href="#cfg" data-go="cfg"><span class="t">회사 설정값</span></a>
     <a href="#dev" data-go="dev"><span class="t">개발 환경</span></a>
+    <a href="#screens" data-go="screens"><span class="t">화면 지도</span></a>
   </div>
   <div class="sep"></div>
   <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">AX 랩스 관리 ↑</span></a>
@@ -263,6 +265,10 @@
        처음 누를 때 한 번만 읽는다(src 를 그때 넣는다) — 안 누르면 아예 안 불러온다. -->
   <div id="pane-adm" role="tabpanel" hidden>
     <iframe id="adm-frame" title="권한 관리" src="about:blank"></iframe>
+  </div>
+  <!-- 화면 지도(admin/screens.html) — GM 이 번호로 화면을 정리하는 곳. 관리자 메뉴 안에서만 연다(GM 2026-09-17 16:2x). -->
+  <div id="pane-screens" role="tabpanel" hidden>
+    <iframe id="screens-frame" title="화면 지도" src="about:blank"></iframe>
   </div>
 
   <!-- 모듈 배치 — 플랫폼에 셋업된 모듈 가운데 이 회사에서 쓸 것을 고른다.
@@ -310,8 +316,10 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   return r.json();
 }).then(function(me){
   if (!me) return;
+  var roleKr = me.role_label || ({admin:'관리자', staff:'직원', partner:'파트너'})[me.role] || me.role || '';
   document.getElementById('who').innerHTML =
-    esc(me.name || me.email || '') + '<span class="role">' + esc(me.role || '') + '</span>';
+    '<a href="/auth/account" title="내 계정 · 정보 확인 · 비밀번호 변경" style="color:inherit;text-decoration:none">' + esc(me.name || me.email || '') + '</a>'
+    + '<span class="role">' + esc(roleKr) + '</span>';
   document.getElementById('logout').hidden = false;
   // 관리자에게만 「권한관리」 탭을 띄운다. ★이건 보기 편하라고 감추는 것일 뿐 잠금이 아니다 —
   //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
@@ -583,7 +591,7 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev'];
+var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev', 'screens'];
 // 계정·권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11 「다른 페이지로 넘어가는게 아니라
 // 우측 페이지에 나타나야해」) — 나머지 관리 판은 이 화면이 직접 그린다.
 // 가동 현황(옛 #health)은 배1026 2026-09-17(GM "가동현황도 뭔지 모르겠고")로 이 판에서 뺐다 —
@@ -596,6 +604,9 @@ function showPane(which){
   if (which === 'adm') {
     var f = document.getElementById('adm-frame');
     if (f && f.getAttribute('src') === 'about:blank') f.setAttribute('src', '/auth/admin');
+  } else if (which === 'screens') {
+    var sf = document.getElementById('screens-frame');
+    if (sf && sf.getAttribute('src') === 'about:blank') sf.setAttribute('src', 'admin/screens.html');
   } else if (LOADER[which] && !loadedPane[which]) {
     loadedPane[which] = 1; LOADER[which]();
   }
