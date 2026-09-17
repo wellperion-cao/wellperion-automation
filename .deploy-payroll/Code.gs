@@ -18,6 +18,12 @@
  *    4) 배포 ▸ 새 배포 ▸ 웹 앱 · 실행 = 나(cao@ — 페이롤은 cao 계정이 통제) · 액세스 = 모든 사용자 → /exec URL 을 화면 PAYROLL_API 에
  *    5) 10월 병행 개시 시 installDailySyncTrigger 1회 실행(매일 05:00 runDailySync)
  *
+ *  ■ 열람 권한 (매니저 지시 2026-09-17 「A강사 페이롤은 A강사·팀장·경영지원부·관리부」)
+ *    설정_열람권한: 계정(ERP 로그인 이메일) · 범위(전체|팀|본인) · 팀(팀 범위일 때, 쉼표로 여럿) · 강사명(본인 범위, 쉼표로 여럿)
+ *    화면이 /auth/me 로 읽은 로그인 계정을 viewer 로 보내면 그 범위 밖 강사는 조회·수집·보정이 막힌다(관리 기능은 전체 범위만).
+ *    viewer 가 없으면(= ERP 밖에서 비밀번호로 연 경영지원·관리부 화면) 종전대로 전체. 강사·팀장 개인 계정이 ERP 에 생기는 시점에
+ *    설정_열람권한에 줄만 추가하면 켜진다. 계정 사칭을 막는 단단한 검증은 서버(PostgreSQL·erp_auth) 이관 때.
+ *
  *  ■ 계약 (procurement 관례) — POST JSON {action, password[, adminPassword], ...} → {ok, ...}
  *    ping · payroll_list · payroll_team · payroll_config_get · payroll_config_set · payroll_override_set · payroll_override_del
  *    payroll_run_sync · payroll_flags · payroll_flag_close · payroll_evidence_create · payroll_close · payroll_sync_log
@@ -44,6 +50,7 @@ var TABS = {
   '설정_지급규칙': ['강사명', '회원구분', '방식', '값', '비고', '수정일시'],
   '설정_회원구분': ['회원구분', '공제율', '상품명접두', '비고'],
   '설정_수업코드': ['팀', '코드', '수업명패턴', '1회수업료', '비고'],
+  '설정_열람권한': ['계정', '범위', '팀', '강사명', '비고', '수정일시'],
   '등록':   ['월', '강사명', '수강권ID', '회원명', '회원명원문', 'member_id', '등록일', '유효기간', '등록회수', '월초잔여', '결제금액', '결제일', '결제담당자', '상품명', '등록분류', '회원구분', '특이사항', '출처', '상태', '수집시각'],
   '세션':   ['월', '강사명', 'reservation_id', '일시', '수업명', '회원명', '회원명원문', '수강권ID', '수강권명', '출석', '코드', '기록명', '회차', '판별경로', '수집시각'],
   '보정':   ['월', '강사명', '대상', '키', '항목', '값', '사유', '등록자', '등록시각', '취소'],
@@ -67,13 +74,16 @@ function route_(p) {
     if (a === 'ping') return out_({ ok: true, system: 'payroll', at: now_() });
     if (badPw_(p.password)) return out_({ ok: false, error: 'unauthorized' });
     switch (a) {
-      case 'payroll_list':          return out_(listPayroll_(p.month, p.instructor));
-      case 'payroll_team':          return out_(teamSummary_(p.month, p.team));
-      case 'payroll_config_get':    return out_({ ok: true, config: loadConfig_() });
-      case 'payroll_flags':         return out_({ ok: true, rows: readTab_('플래그').filter(function (r) { return (!p.month || r['월'] === p.month) && (!p.instructor || r['강사명'] === p.instructor); }) });
+      case 'payroll_list':          return out_(listPayroll_(p.month, p.instructor, p.viewer));
+      case 'payroll_team':          return out_(teamSummary_(p.month, p.team, p.viewer));
+      case 'payroll_config_get':    return out_(configGet_(p.viewer));
+      case 'payroll_flags':         var sc0 = scopeFor_(loadConfig_(), p.viewer);
+                                    return out_({ ok: true, scope: sc0.mode, rows: readTab_('플래그').filter(function (r) { return (!p.month || r['월'] === p.month) && (!p.instructor || r['강사명'] === p.instructor) && allowName_(sc0, r['강사명']); }) });
       case 'payroll_sync_log':      return out_({ ok: true, rows: readTab_('동기화로그').slice(-(+p.limit || 30)) });
     }
     if (badAdmin_(p.adminPassword)) return out_({ ok: false, error: 'unauthorized_admin' });
+    var scA = scopeFor_(loadConfig_(), p.viewer);                       // 관리 기능(수집·보정·설정·증빙·마감)은 전체 범위 계정만
+    if (scA.mode !== '전체') return out_({ ok: false, error: 'forbidden_scope: 관리 기능은 경영지원부·관리부 계정만' });
     switch (a) {
       case 'payroll_config_set':    return out_(configSet_(p.table, p.rows || [], p.by));
       case 'payroll_override_set':  return out_(overrideSet_(p));
@@ -168,6 +178,14 @@ function seedConfig_() {
     { '팀': '체조', '코드': 'B', '수업명패턴': 'WSC|2', '1회수업료': 70000, '비고': 'wsc 1:2 4회' },
     { '팀': '체조', '코드': 'C', '수업명패턴': 'WSC|1', '1회수업료': 92500, '비고': 'wsc 1:1 4회' }
   ]);
+  if (!readTab_('설정_열람권한').length) upsert_('설정_열람권한', ['계정'], [
+    { '계정': 'cao@wellperion.com', '범위': '전체', '팀': '', '강사명': '', '비고': '경영지원부', '수정일시': now_() },
+    { '계정': 'info@wellperion.com', '범위': '전체', '팀': '', '강사명': '', '비고': '관리부', '수정일시': now_() },
+    { '계정': 'ceo@wellperion.com', '범위': '전체', '팀': '', '강사명': '', '비고': '대표', '수정일시': now_() },
+    { '계정': 'coo@wellperion.com', '범위': '전체', '팀': '', '강사명': '', '비고': 'GM', '수정일시': now_() },
+    { '계정': '', '범위': '팀', '팀': '수영', '강사명': '', '비고': '예시 — 수영 팀장 계정이 생기면 계정칸에 이메일을 적는다(팀 전체 열람)', '수정일시': now_() },
+    { '계정': '', '범위': '본인', '팀': '', '강사명': '강대경', '비고': '예시 — 강사 개인 계정이 생기면 계정칸에 이메일을 적는다(본인만 열람)', '수정일시': now_() }
+  ]);
   if (!readTab_('설정_강사').length) upsert_('설정_강사', ['강사명'], [
     // 9월 시트 요약 블록 실측(2026-09-17): H5 지급율 · M5 주차비 · A5 업무추진비 · J5 청구방식 · K5 팀인센티브. 시트형식 = 수영격자(하루 2열·시간블록·*이름*) / 30분격자(하루 1열·30분행·이름)
     { '강사명': '강대경', '팀': '수영', '직급': '시니어', '활성': 'Y', '브로제이강사명': '수영 강대경', 'trainer_id': '', '시트형식': '수영격자', '지급율': 0.5, '주차비': 100000, '카드수수료율': 0.025, '업무추진비': 0, '청구방식': '표준', '팀인센티브': 'N', '팀인센티브기준액': 110000000, '팀인센티브기본율': 0.01, '팀인센티브상위율': 0.02, '프로모션단가': 20000, '원본시트ID': '1nO09_lMIY0_mn0tJP6cA0grd8c-uMB8fQfjsTRa2FJE', '비고': '1단계 검증 완료(9월 진행15·청구446,250·지급335,094)', '수정일시': now_() },
@@ -191,7 +209,34 @@ function seedConfig_() {
 // ───────────────────────── 설정 ─────────────────────────
 function loadConfig_() {
   var instr = readTab_('설정_강사'), rules = readTab_('설정_지급규칙'), mt = readTab_('설정_회원구분'), codes = readTab_('설정_수업코드');
-  return { instructors: instr, rules: rules, memberTypes: mt, codes: codes };
+  return { instructors: instr, rules: rules, memberTypes: mt, codes: codes, viewers: readTab_('설정_열람권한') };
+}
+/** 로그인 계정(viewer) → 열람 범위. 계정이 표에 없으면 전체(전환기 기본 · 화면은 조회 비밀번호로 이미 잠겨 있다) */
+function scopeFor_(cfg, viewer) {
+  var v = String(viewer || '').trim().toLowerCase();
+  if (!v) return { mode: '전체', teams: [], names: [], viewer: '' };
+  var row = (cfg.viewers || []).filter(function (r) { return String(r['계정'] || '').trim().toLowerCase() === v; })[0];
+  if (!row) return { mode: '전체', teams: [], names: [], viewer: v };
+  var split = function (x) { return String(x || '').split(/[,·\/]/).map(function (t) { return t.trim(); }).filter(Boolean); };
+  var mode = String(row['범위'] || '전체').trim();
+  return { mode: (mode === '팀' || mode === '본인') ? mode : '전체', teams: split(row['팀']), names: split(row['강사명']), viewer: v };
+}
+/** 그 강사를 이 범위로 볼 수 있나 */
+function allowName_(sc, name) {
+  if (!sc || sc.mode === '전체') return true;
+  var n = String(name || '').trim();
+  if (sc.mode === '본인') return sc.names.indexOf(n) >= 0;
+  var it = readTab_('설정_강사').filter(function (r) { return String(r['강사명']).trim() === n; })[0];
+  return !!it && sc.teams.indexOf(String(it['팀']).trim()) >= 0;
+}
+/** 설정 조회 — 범위 밖 강사는 목록에서 뺀다(화면 드롭다운이 곧 권한) */
+function configGet_(viewer) {
+  var cfg = loadConfig_(), sc = scopeFor_(cfg, viewer);
+  if (sc.mode !== '전체') {
+    cfg.instructors = cfg.instructors.filter(function (r) { return allowName_(sc, r['강사명']); });
+    cfg.viewers = [];                                                  // 남의 계정 권한표는 내려보내지 않는다
+  }
+  return { ok: true, config: cfg, scope: sc.mode, viewer: sc.viewer };
 }
 function cfgFor_(cfg, name) {
   var it = cfg.instructors.filter(function (r) { return String(r['강사명']).trim() === String(name).trim(); })[0];
@@ -307,8 +352,10 @@ function calc_(ym, name) {
   var summary = summarize_(regs, sess, c, ym, summaryOvr);
   return { cfg: c, regs: regs, sessions: sess, overrides: ovr, summary: summary, flags: flags };
 }
-function listPayroll_(ym, name) {
+function listPayroll_(ym, name, viewer) {
   if (!ym || !name) return { ok: false, error: 'month/instructor required' };
+  var sc = scopeFor_(loadConfig_(), viewer);
+  if (!allowName_(sc, name)) return { ok: false, error: 'forbidden_scope: 이 계정은 「' + name + '」 페이롤을 볼 권한이 없습니다' };
   var r = calc_(ym, name), today = new Date();
   var closed = readTab_('월합계').some(function (m) { return m['월'] === ym && m['강사명'] === name && String(m['마감']) === '마감'; });
   var regs = r.regs.map(function (x) {
@@ -333,11 +380,12 @@ function recompute_(ym, name) {
   }
   return s;
 }
-function teamSummary_(ym, team) {
-  var rows = readTab_('월합계').filter(function (m) { return (!ym || m['월'] === ym) && (!team || team === '전체' || m['팀'] === team); });
+function teamSummary_(ym, team, viewer) {
+  var sc = scopeFor_(loadConfig_(), viewer);
+  var rows = readTab_('월합계').filter(function (m) { return (!ym || m['월'] === ym) && (!team || team === '전체' || m['팀'] === team) && allowName_(sc, m['강사명']); });
   var totals = {}; rows.forEach(function (m) { var t = m['팀'] || '?'; totals[t] = totals[t] || { 강사수: 0, 진행: 0, 청구합: 0, 지급총액: 0, 소진: 0, 미소진: 0, 플래그수: 0 };
     totals[t].강사수++; ['진행', '청구합', '지급총액', '소진', '미소진', '플래그수'].forEach(function (k) { totals[t][k] += +m[k] || 0; }); });
-  return { ok: true, month: ym, rows: rows, totals: totals };
+  return { ok: true, month: ym, rows: rows, totals: totals, scope: sc.mode };
 }
 function overrideSet_(p) {
   if (!p.month || !p.instructor || !p.target || !p.field) return { ok: false, error: 'missing fields' };

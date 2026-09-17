@@ -63,7 +63,7 @@ tr.warn td{background:var(--yellow-bg)}tr.bad td{background:var(--red-bg)}
 /* ★ 배포 후 /exec URL 로 교체(.deploy-payroll README). 비밀번호는 여기 두지 않는다. */
 var PAYROLL_API="https://script.google.com/macros/s/AKfycbzmyC4CMmpzFGQjaXdc4O-DDNvztUgH_elP2qEZdqZIOUqqYa_rROk6_GQr4ZRp7vEJ/exec";   // cao 계정 「강사페이롤 백엔드(ERP)」 웹앱 v1(2026-09-17 배포)
 var TEAMS=["전체","PT","수영","골프","스쿼시","필라테스","체조","루프","GX"];   // 설정_강사.팀 값과 동일(시트목록 8팀)
-var st={team:"전체",instr:"",month:"",pw:"",cfg:null,data:null,teamData:null};
+var st={team:"전체",instr:"",month:"",pw:"",cfg:null,data:null,teamData:null,viewer:"",scope:""};
 var EMBED=/[?&]embed=1/.test(location.search); if(EMBED)document.body.classList.add("embed");
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -72,8 +72,13 @@ function num(n){return Math.round(+n||0).toLocaleString("ko-KR");}
 function toast(m,bad){var t=$("toast");t.textContent=m;t.style.display="block";t.style.borderColor=bad?"var(--red)":"var(--border)";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},bad?5000:2600);}
 function ym0(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
 function ymAdd(ym,k){var y=+ym.slice(0,4),m=+ym.slice(5,7)-1+k;var d=new Date(y,m,1);return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
+/* ERP(erp.wellperion.com)로 열면 로그인 계정을 백엔드에 같이 보낸다 — 설정_열람권한의 범위(전체/팀/본인)가 적용된다.
+   GitHub Pages 직접 열람 등 /auth/me 가 없는 곳에서는 viewer 없이(=조회 비밀번호만으로) 종전대로 동작. */
+async function whoami(){
+  try{var r=await fetch("/auth/me",{credentials:"include"});if(!r.ok)return"";var j=await r.json();return String(j.email||"");}catch(e){return"";}
+}
 async function api(body){
-  body=Object.assign({password:st.pw},body);
+  body=Object.assign({password:st.pw,viewer:st.viewer},body);
   var r=await fetch(PAYROLL_API,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},body:JSON.stringify(body)});
   if(!r.ok)throw new Error("HTTP "+r.status);
   var j=await r.json();
@@ -83,11 +88,12 @@ async function api(body){
 function adminPw(){var p=prompt("관리 비밀번호를 입력하세요(수집·보정·설정·증빙·마감)");return p===null?null:String(p).trim();}
 function showErr(m){var e=$("err");e.style.display=m?"block":"none";e.innerHTML=m?("⚠️ "+esc(m)+' <button class="btn ghost" onclick="load()" style="margin-left:8px">다시 시도</button>'):"";}
 /* ── 관문 ── */
-$("gateBtn").onclick=async function(){var pw=$("gatePw").value.trim();if(!pw)return;st.pw=pw;try{var j=await api({action:"payroll_config_get"});if(!j.ok)throw new Error(j.error||"실패");sessionStorage.setItem("wp_payroll_pw",pw);st.cfg=j.config;$("gate").style.display="none";$("app").style.display="block";boot();}catch(e){$("gateErr").textContent=e.message==="unauthorized"?"비밀번호가 올바르지 않습니다.":("연결 실패: "+e.message);}};
+$("gateBtn").onclick=async function(){var pw=$("gatePw").value.trim();if(!pw)return;st.pw=pw;try{if(!st.viewer)st.viewer=await whoami();var j=await api({action:"payroll_config_get"});if(!j.ok)throw new Error(j.error||"실패");sessionStorage.setItem("wp_payroll_pw",pw);st.cfg=j.config;st.scope=j.scope||"전체";$("gate").style.display="none";$("app").style.display="block";boot();}catch(e){$("gateErr").textContent=e.message==="unauthorized"?"비밀번호가 올바르지 않습니다.":("연결 실패: "+e.message);}};
 $("gatePw").onkeydown=function(e){if(e.key==="Enter")$("gateBtn").click();};
 (async function(){var pw=sessionStorage.getItem("wp_payroll_pw");if(pw){$("gatePw").value=pw;$("gateBtn").click();}})();
 /* ── 부팅 ── */
 function boot(){
+  if(st.scope&&st.scope!=="전체"){var c=$("teamChips");if(c&&c.parentNode){var b=document.createElement("span");b.className="small";b.style.color="var(--accent)";b.style.marginLeft="6px";b.textContent="열람 범위: "+st.scope+(st.viewer?" ("+st.viewer+")":"");c.parentNode.appendChild(b);}}
   st.month=sessionStorage.getItem("wp_payroll_month")||ym0(); st.team=sessionStorage.getItem("wp_payroll_team")||"전체"; st.instr=sessionStorage.getItem("wp_payroll_instr")||"";
   renderChips(); renderInstrSelect(); $("mLabel").textContent=st.month; load();
 }
