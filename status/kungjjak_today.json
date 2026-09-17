@@ -226,7 +226,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 24
+          "waited": 27
         }
       ],
       "repeats": []
@@ -338,7 +338,7 @@
           "start": "11:22",
           "end": "11:24",
           "minutes": 2,
-          "upload": "✅ 배포 (45ca85711)",
+          "upload": "✅ 배포 (3c24a1d6d)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -350,7 +350,7 @@
           "start": "11:25",
           "end": "11:26",
           "minutes": 0,
-          "upload": "✅ 배포 (45ca85711)",
+          "upload": "✅ 배포 (3c24a1d6d)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -358,28 +358,16 @@
           "ref": "GM-20260917-2012",
           "no": "12",
           "got": "⚠ 낡은 판 쓰기 거부 — plan.json — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 3개 빠져 있습니다(기준 3개 이상 → 거부): 마커4; 마커5; 마커6 이런거 근본적인 원인해결해줘",
-          "did": "",
+          "did": "낡은 판 되쓰기 근본 수리 ① — 거부 경보를 자동화현황방으로·파일당 30분 1회·자체점검 무음 ② 상태 JSON 공용 관문  · monthly_ops_plan HEAD 가드 호출부에 base_text 전달 — 정리성 줄 감소 오탐 차단 · fix(guard): monthly_ops_plan HEAD 가드 호출부 — 커밋 8974dd9b07 · 배 12715 · fix(guard): 낡은 판 되쓰기 근본 수리 ① — 거부 경보를 자동 — 커밋 e48e9cb2a8 · 배 12715 외 1건",
           "start": "11:29",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:33",
+          "minutes": 4,
+          "upload": "✅ 배포 (8974dd9b0)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "09:04",
-          "area": "자가점검",
-          "event": "09:00 매출보고 서버판 3/3 사진 이틀 연속 실패 — 원인 좁힘·재시도 가드·재발송",
-          "detail": "실패 경로=파일 읽기 조기반환(오류 미기록) · 파일은 정상(733KB·3176x2246) → 갓 쓴 파일 순간 잠금 추정 · 관문에 2초×4 재읽기+원인 기록(922bee5ed8) · 09:04 3/3 재발송 ok · 내일 09:00 로그 error 칸으로 확정"
-        },
-        {
-          "time": "09:20",
-          "area": "작업",
-          "event": "chore(kakao): 공지 상세보기 창 스냅숏 — 발신·내보내기·외부감시 3관문 실행 전후 기록 (GM 물음 2026-09-17 「왜 매일 아침마다 떠 있나」 원인 특정용)",
-          "detail": "커밋 1dee348344 · 배 12680"
-        },
         {
           "time": "09:27",
           "area": "작업",
@@ -547,31 +535,28 @@
           "area": "작업",
           "event": "fix(guard): monthly_ops_plan HEAD 가드 호출부에 base_text 전달 — 정리성 줄 감소 오탐 차단",
           "detail": "커밋 8974dd9b07 · 배 12715"
+        },
+        {
+          "time": "11:33",
+          "area": "작업",
+          "event": "fix(guard): 낡은 판 되쓰기 근본 수리 ① — 거부 경보를 자동화현황방으로·파일당 30분 1회·자체점검 무음 ② 상태 JSON 공용 관문 queue_lock.mutate_json(잠금 안 새로 읽기·HEAD",
+          "detail": "커밋 e48e9cb2a8 · 배 12715"
+        },
+        {
+          "time": "11:33",
+          "area": "GM요청",
+          "event": "낡은 판 되쓰기 근본 수리 — 경보 라우팅·공용 관문 mutate_json",
+          "detail": "e48e9cb2a8 · 오늘 GM 방 경보 27통(11:17 26통=한 번의 낡은 되쓰기가 줄마다 경보 · 11:28 1통=자체점검 가짜 파일) · 경보=자동화현황방·30분 1회·임시 저장소 무음 · 되쓰기 7곳 관문 통일은 레인"
         }
       ],
       "count": 11,
-      "done": 10,
-      "open": 1,
+      "done": 11,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-2012",
-          "no": "12",
-          "got": "⚠ 낡은 판 쓰기 거부 — plan.json — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 3개 빠져 있습니다(기준 3개 이상 → 거부): 마커4; 마커5; 마커6 이런거 근본적인 원인해결해줘",
-          "did": "",
-          "start": "11:29",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -773,13 +758,13 @@
           "ref": "GM-20260917-3018",
           "no": "18",
           "got": "여 사우나 통로도 그냥 유리봉 1개 완료 / 추가로 턴게이트 가운데로 배치하고, 양 사이즈 좌우측에 봉 1개씩 넣어줘",
-          "did": "",
+          "did": "남(유리) 재작업 — 승인된 봉 판을 참조로 넣어 기둥 형상 동일 판 채택(크롭 대조로 검수) · 여 중앙+봉 안 복원 · 6크레딧",
           "start": "11:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:34",
+          "minutes": 6,
+          "upload": "✅ 배포 (c78f3fae3)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -809,28 +794,13 @@
         }
       ],
       "count": 17,
-      "done": 16,
-      "open": 1,
+      "done": 17,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-3018",
-          "no": "18",
-          "got": "여 사우나 통로도 그냥 유리봉 1개 완료 / 추가로 턴게이트 가운데로 배치하고, 양 사이즈 좌우측에 봉 1개씩 넣어줘",
-          "did": "",
-          "start": "11:28",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
