@@ -165,6 +165,13 @@
   .lesson-strip .crow{display:flex;gap:9px;align-items:baseline;padding:1px 0;}
   .lesson-strip .crow .ch{font-size:10.4px;font-weight:800;color:var(--navy);min-width:52px;white-space:nowrap;}
 
+  /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 회원권·강습과 주머니가 달라 따로 본다. */
+  .etcgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .etile{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;}
+  .etile .et{font-size:11px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .etile .ev{font-size:16px;font-weight:800;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .etile .em{font-size:11px;color:var(--ink);white-space:nowrap;}
+  .etile .en{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
   .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
@@ -495,11 +502,16 @@
         </div>
       </div>
 
-      <!-- 오른쪽 칸 마지막 상자 — 어제 다녀가신 분. 남은 높이를 전부 먹어 왼쪽 「매출 현황」과
-           아래선이 맞는다(GM 지시 2026-09-15). 세 갈래는 가로 세 칸이라 높이를 넘지 않는다. -->
-    <div class="sec" style="flex:1;min-height:0;">
+      <!-- 오른쪽 칸 — 어제 다녀가신 분(세 갈래 가로 세 칸이라 높이가 짧다) 아래에 「그 밖의 매출」을
+           둔다(GM 지시 2026-09-17 「어제 다녀가신 분 축소하고 그 아래 칸에 별도 매출 라인 · 좌우
+           2개씩 4개까지」). 회원권·강습(브로제이)과 주머니가 달라 매출 표에 섞지 않는다. -->
+    <div class="sec" style="flex:0 0 auto;min-height:0;">
       <h2>어제 다녀가신 분<span class="src bro">브로제이 → 서버</span></h2>
       <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+    </div>
+    <div class="sec" style="flex:1;min-height:0;">
+      <h2>그 밖의 매출 — 주차 · 제휴 · 굿즈<span class="src srv">서버 · 일부 연동 전</span></h2>
+      <div class="bd" id="etcRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
     </div>
   </div>
@@ -539,9 +551,7 @@
        scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
        이 보고서가 보는 것 — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.
   -->
-    <div id="accGapNote">두 장부 대조 — 불러오는 중…</div>
-    <div id="brojayNote"><b>원천</b> — 칸마다 붙은 꼬리표 그대로(시트→서버 / 브로제이→서버). 값을 여기서 다시 계산하지 않습니다.</div>
-  </div>
+    
 
   <!-- 브랜드 띠(세 장 공통) — GM 지시 2026-09-14 「우리가 지금 집중하는 것, 슬로건도 계속 나오게」.
        문구 정본: 슬로건·포지셔닝 = ssot/canon_values.json(slogan_kr·positioning_kr · 이 폴더는
@@ -752,7 +762,7 @@
         <div class="bd" id="p4q"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec" style="flex:1;min-height:0;">
-        <h2 id="p4ch">저조 담당 — 이달 0원 · 팀 평균 30% 미만<span class="src">왼쪽 담당표</span></h2>
+        <h2 id="p4ch">담당 매출 순위 — 이달 누적 많은 순<span class="src">왼쪽 담당표</span></h2>
         <div class="bd" id="p4c"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
@@ -1437,7 +1447,6 @@ function renderReportCells(c){
       '<td>' + esc(c['K'+r] || '–') + '</td>' +
       '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + bar + '</td></tr>';
   }).join('') || '<tr><td colspan="5">값 없음</td></tr>';
-  renderEtcRev();   // 그 밖의 수익 세 줄(주차·바디프렌드·팝업)
 
   // ── 회원 구성 : 총계 + 가로 누적 막대(구성이 한눈에 보이게) ──
   var mixItems = MEMBER_MIX.map(function(r, i){
@@ -2225,7 +2234,7 @@ function renderPage4(c, dayLabel){
   P4_STATE.lesHead = lesHead; P4_STATE.teams = teams;
   teams = p4OrderTeams(teams, null);
   if (e2) e2.innerHTML = p4TeamTable(lesHead, teams);
-  renderP4Lagging(teams);
+  renderP4Top(teams);
   renderP4Quarter(teams);
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
@@ -2274,32 +2283,33 @@ function p4ReorderLeft(order){
   });
 }
 
-/* ══ 4면 오른쪽 ② 저조 담당 (GM 2026-09-16 「담당 편중 말고 다른 1칸」 · 시포 추천) ══
-   이달 누적이 0 이거나 팀 평균의 30% 에 못 미치는 담당 — 누가 멈춰 있나를 이름으로. 왼쪽 표 값 그대로(새 조회 없음).
-   한 사람 팀(뮤지컬·GXE)·감춘 담당(퇴직)은 뺀다. 아무도 없으면 「없음」 한 줄 — 빈 칸으로 두지 않는다. */
-function renderP4Lagging(teams){
+/* ══ 4면 오른쪽 ② 담당 매출 순위 (GM 2026-09-17 「저조 담당 삭제 · 잘하는 사람 순위로」) ══
+   이달 누적이 많은 담당부터 줄 세운다. 값은 왼쪽 담당표 그대로(새 조회 없음) · 감춘 담당(퇴직)은 뺀다.
+   종전 「저조 담당」(0원·팀 평균 30% 미만)은 GM 지시로 없앴다 — 못한 사람을 세우는 칸은 두지 않는다. */
+function renderP4Top(teams){
   var el = document.getElementById('p4c'); if (!el) return;
   var rows = [];
   teams.forEach(function(t){
-    if (t.name === 'GXE팀' || t.name === '뮤지컬팀') return;
-    var ppl = t.rows.filter(function(x){ return !x.hide; }).map(function(x){ return { name: x.name, acc: p4Num(x.acc) }; });
-    if (ppl.length < 2) return;
-    var avg = ppl.reduce(function(a, x){ return a + x.acc; }, 0) / ppl.length;
-    ppl.forEach(function(x){
-      if (x.acc <= 0 || (avg > 0 && x.acc < avg * 0.3))
-        rows.push({ team: t.name, name: x.name, acc: x.acc, avg: avg, pct: avg > 0 ? Math.round(x.acc / avg * 100) : 0 });
+    t.rows.filter(function(x){ return !x.hide; }).forEach(function(x){
+      var acc = p4Num(x.acc);
+      if (acc > 0) rows.push({ team: t.name, name: x.name, acc: acc, day: p4Num(x.day) });
     });
   });
-  if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">이달 저조 담당 없음 — 모든 담당이 팀 평균 30% 이상</span></div>'; return; }
-  rows.sort(function(a, b){ return a.pct - b.pct || a.acc - b.acc; });
-  el.innerHTML = '<table class="ptab"><tr><th>팀</th><th>담당</th><th>이달 누적</th><th>팀 평균</th><th>평균 대비</th></tr>' +
-    rows.map(function(r){
-      return '<tr><td>' + esc(r.team) + '</td><td style="text-align:left">' + esc(r.name) + '</td>' +
-        '<td class="acc ' + (r.acc ? '' : 'zero') + '">' + r.acc.toLocaleString('ko-KR') + '</td>' +
-        '<td class="acc">' + Math.round(r.avg).toLocaleString('ko-KR') + '</td>' +
-        '<td class="acc" style="font-weight:800;color:#B0413E">' + r.pct + '%</td></tr>';
+  if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">이달 담당 매출이 아직 없습니다</span></div>'; return; }
+  rows.sort(function(a, b){ return b.acc - a.acc; });
+  var total = rows.reduce(function(a, x){ return a + x.acc; }, 0) || 1;
+  var top = rows.slice(0, 12);
+  var medal = function(i){ return i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + ''; };
+  el.innerHTML = '<table class="ptab"><tr><th>순위</th><th>담당</th><th>팀</th><th>이달 누적</th><th>비중</th></tr>' +
+    top.map(function(r, i){
+      return '<tr><td style="font-weight:800">' + medal(i) + '</td>' +
+        '<td style="text-align:left;font-weight:' + (i < 3 ? 800 : 600) + '">' + esc(r.name) + '</td>' +
+        '<td>' + esc(r.team) + '</td>' +
+        '<td class="acc">' + r.acc.toLocaleString('ko-KR') + '</td>' +
+        '<td class="acc">' + Math.round(r.acc / total * 100) + '%</td></tr>';
     }).join('') + '</table>' +
-    '<div class="mrow" style="margin-top:4px"><span class="lb">' + rows.length + '명 · 0원은 이달 계약이 한 건도 없는 담당 · 팀 평균은 감춘 담당(퇴직)을 뺀 값</span></div>';
+    '<div class="mrow" style="margin-top:4px"><span class="lb">담당 ' + rows.length + '명 중 상위 ' + top.length +
+    '명 · 비중 = 강습 담당 이달 누적 합계 대비 · 감춘 담당(퇴직)은 뺐습니다</span></div>';
 }
 
 /* ══ 4면 오른쪽 ① 분기 팀 목표 · 달성 가능 % · 연 누적 (GM 선택 2026-09-16 · 1번 + 연 누적) ══
@@ -2369,7 +2379,7 @@ function renderP4Quarter(teams, tries){
     rows.sort(function(a, b){ return (b.qt - a.qt) || (b.qa - a.qa); });   // 분기 목표 큰 팀 → 같으면 분기 누적
     var order = rows.map(function(x){ return x.team; });
     p4ReorderLeft(order);
-    renderP4Lagging(p4OrderTeams(P4_STATE.teams, order));
+    renderP4Top(p4OrderTeams(P4_STATE.teams, order));
     var won = function(v){ return Math.round(v / 10000).toLocaleString('ko-KR'); };   // 만원
     var pct = function(v){ return v == null ? '—' : Math.round(v) + '%'; };
     var cls = function(v){ return v == null ? '' : (v >= 100 ? 'style="color:#1F7A4D;font-weight:800"' : v < 80 ? 'style="color:#B0413E;font-weight:800"' : 'style="font-weight:800"'); };
@@ -2787,22 +2797,24 @@ function loadEtcRev(){
     .then(function(){ renderEtcRev(); });
 }
 function renderEtcRev(){
-  var tb = document.getElementById('sales'); if (!tb) return;
-  Array.prototype.slice.call(tb.querySelectorAll('tr.etcrev')).forEach(function(tr){ tr.parentNode.removeChild(tr); });
+  var box = document.getElementById('etcRev'); if (!box) return;
   var pk = ETC_REV.parking;
-  var pkDay = pk && pk.day != null ? _won(pk.day) : '못 읽음';
-  var pkMon = pk && pk.month ? _won(pk.month) : '못 읽음';
-  var rows = [
-    ['주차', pkDay, pkMon, '목표 없음'],
-    ['바디프렌드 (이익 30%)', '연동 전', '연동 전', '목표 없음'],
-    ['팝업 판매', '연동 전', '연동 전', '목표 없음']
+  /* 타일 넷 — 주차(서버 실측) · 바디프렌드(월 정산 30%) · 굿즈(오넛티 팝업) · 그 밖 제휴.
+     값이 없는 줄은 0 원이 아니라 「연동 전」이라 적는다(없는 것과 0 은 다르다). */
+  var tiles = [
+    { t: '주차', d: pk && pk.day != null ? _won(pk.day) : '못 읽음',
+      m: pk && pk.month ? _won(pk.month) : '못 읽음',
+      note: pk && pk.upto ? '서버 원장 · ' + esc(String(pk.upto).slice(5).replace('-', '/')) + '까지' : '서버 원장' },
+    { t: '바디프렌드 (이익 30%)', d: '연동 전', m: '연동 전', note: '라운지 월 정산 · 계정 들어오면 자동' },
+    { t: '굿즈 (오넛티 팝업)', d: '연동 전', m: '연동 전', note: '9/18 시작 · 판매 금액 담을 자리 준비 중' },
+    { t: '그 밖 제휴', d: '없음', m: '없음', note: '생기면 이 자리에 붙는다' }
   ];
-  tb.insertAdjacentHTML('beforeend', rows.map(function(r, i){
-    return '<tr class="etcrev"' + (i === 0 ? ' style="border-top:2px solid var(--line)"' : '') + '>' +
-      '<td><span class="rn" title="' + esc(r[0]) + '">' + esc(r[0]) + '</span>' +
-      (i === 0 ? '<span class="src srv" style="margin-left:5px">서버</span>' : '') + '</td>' +
-      '<td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td><td class="rate">–</td></tr>';
-  }).join(''));
+  box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
+    return '<div class="etile"><div class="et">' + esc(x.t) + '</div>' +
+      '<div class="ev">' + esc(x.d) + '</div>' +
+      '<div class="em">이번 달 ' + esc(x.m) + '</div>' +
+      '<div class="en">' + x.note + '</div></div>';
+  }).join('') + '</div>';
 }
 
 function renderDaySales(c, dayLabel){
@@ -2840,7 +2852,6 @@ function renderDaySales(c, dayLabel){
       '</td><td>' + esc(r[2] || '–') + '</td><td>' + esc(r[3] || '–') +
       '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
-  renderEtcRev();   // 그 밖의 수익 세 줄(주차·바디프렌드·팝업)
   // 나눈 값이 시트 소계와 어긋나면 조용히 넘기지 않는다 — 분류 규칙이 못 따라간 종목이 생겼다는 뜻이다.
   /* 두 장부의 이번 달 누적이 어긋나면 그 자리에서 밝힌다 — 「보고」탭 팀별 누적은 사람이 채우는
      칸이라 일자탭 계약 합계와 갈릴 수 있다(2026-09-11 실측 440,475원 · 종목 칸에 팀 이름이 없는
