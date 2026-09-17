@@ -206,10 +206,10 @@
           "detail": "커밋 bc378bc21a · 배 12714"
         },
         {
-          "time": "11:56",
+          "time": "12:00",
           "area": "작업",
           "event": "중간관리자 업무 화면 바로 반영 — --resolve 1건",
-          "detail": "커밋 aaf8a4f89f · 배 12714"
+          "detail": "커밋 108cad0856 · 배 12714"
         }
       ],
       "count": 9,
@@ -232,7 +232,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 51
+          "waited": 54
         }
       ],
       "repeats": []
@@ -836,13 +836,13 @@
           "ref": "GM-20260917-3022",
           "no": "22",
           "got": "여사우나 통로 턴게이트 좌측으로 20cm정도만 더 가볼까?",
-          "did": "",
+          "did": "여사우나 봉 안 — 생성 모델이 위치를 안 옮겨 픽셀 이동(20cm 좌측)+모델 이음새 보정으로 해결 · 좌측 틈 8cm 라 좌측 봉 생략 · 10크레딧",
           "start": "11:54",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:58",
+          "minutes": 3,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -872,28 +872,13 @@
         }
       ],
       "count": 21,
-      "done": 20,
-      "open": 1,
+      "done": 21,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-3022",
-          "no": "22",
-          "got": "여사우나 통로 턴게이트 좌측으로 20cm정도만 더 가볼까?",
-          "did": "",
-          "start": "11:54",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cpo": {
@@ -991,7 +976,7 @@
           "start": "11:52",
           "end": "11:53",
           "minutes": 1,
-          "upload": "✅ 배포 (721d8310c)",
+          "upload": "✅ 배포 (a5dc41693)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1027,7 +1012,7 @@
           "start": "11:52",
           "end": "11:53",
           "minutes": 1,
-          "upload": "✅ 배포 (721d8310c)",
+          "upload": "✅ 배포 (a5dc41693)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1035,13 +1020,13 @@
           "ref": "GM-20260917-cpo-giwaeho-revert",
           "no": "rt",
           "got": "실무진 피드백 기외호님 종료일 되돌아감 오류 — AWS 이관 뒤 왜 나나",
-          "did": "",
+          "did": "원인 브라우저 큐 옛 편집 재전송(서버 아님) · 가드 배포 · 피드백 처리완료",
           "start": "11:53",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "12:00",
+          "minutes": 6,
+          "upload": "✅ 배포 (a5dc41693)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-cpo-m00248",
@@ -1110,13 +1095,25 @@
           "area": "멤버십",
           "event": "feat(cpo): 멤버십 휴회 진행중 줄에 「문자 보내기」 버튼 — 서버 /api/sms/send hold_confirm(회원번호=중복 방지 열쇠 · 시작/종료 · dry/hold/skip_duplicate 표시)",
           "detail": "커밋 02589588ba · 배 12523"
+        },
+        {
+          "time": "11:59",
+          "area": "멤버십",
+          "event": "fix(cpo): 멤버십 회원관리 — 2시간 넘게 못 보낸 옛 편집은 새로고침 때 되살려 보내지 않고 버린 뒤 알림 · 큐에 넣는 순간 열쇠(idem) 부여로 재전송 중복 차단 (FB260917-115105 기외호님",
+          "detail": "커밋 a5dc416935 · 배 12523"
+        },
+        {
+          "time": "12:00",
+          "area": "배",
+          "event": "배 2719 실무진 피드백 기외호님 종료일 되돌림",
+          "detail": "원인 브라우저 옛 편집 재전송 · 가드 a5dc41693 · 시트 처리완료 반영"
         }
       ],
       "count": 14,
-      "done": 12,
-      "open": 2,
+      "done": 13,
+      "open": 1,
       "avg_minutes": 9,
-      "work_count": 7,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -1132,21 +1129,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
-        },
-        {
-          "ref": "GM-20260917-cpo-giwaeho-revert",
-          "no": "rt",
-          "got": "실무진 피드백 기외호님 종료일 되돌아감 오류 — AWS 이관 뒤 왜 나나",
-          "did": "",
-          "start": "11:53",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
@@ -1351,7 +1334,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 2
+          "waited": 5
         }
       ],
       "repeats": []
