@@ -391,6 +391,71 @@ def _tomorrow_block(day: str) -> dict:
     return {'ok': True, 'items': lines, 'more': max(0, len(pairs) - 3)}
 
 
+def _board(day: str) -> dict:
+    """C레벨 관제판 원천(배 12723 · GM 2026-09-17 「내가 던진 일을 각 창에서 어떻게 하는지 웹에서 라이브로」).
+    역할별 = 세션 생존 신호(status/sessions/{role}.json) · 오늘 마지막 기록 한 줄(worklog) · 오늘 저장 수(git log).
+    새 파일을 만들지 않고 kungjjak_today.json 안에 'board' 로 실린다 — 자율현황 화면이 30초마다 이 파일을 읽는다.
+    생존 신호 시각은 15분 단위로 내림한다: 45초마다 바뀌는 값을 그대로 실으면 3분마다 파일이 달라져 커밋이 쌓인다."""
+    now = datetime.datetime.now()
+    roles = {}
+    for role, nick in NICK.items():
+        if role in ('chro', 'cfo'):
+            continue  # 나우열M 라인 — AI 세션 없음
+        sess = {}
+        sp = ROOT / 'status' / 'sessions' / f'{role}.json'
+        try:
+            sess = json.loads(sp.read_text(encoding='utf-8')) if sp.exists() else {}
+        except Exception:
+            sess = {}
+        hb = str(sess.get('heartbeat_at') or '')
+        alive, hb15 = False, None
+        try:
+            t = datetime.datetime.fromisoformat(hb).replace(tzinfo=None)
+            alive = (now - t).total_seconds() < 90 * 60
+            hb15 = t.replace(minute=(t.minute // 15) * 15, second=0).strftime('%H:%M')
+        except Exception:
+            pass
+        roles[role] = {'nick': nick, 'session': str(sess.get('session') or ''), 'alive': alive,
+                       'signal': hb15, 'last': None, 'idle_since': None, 'saves': 0}
+    # 오늘 마지막 기록 한 줄(역할별 · ok/warn 가리지 않음 = 「지금 하는 것」)
+    for line in LOG.open(encoding='utf-8'):
+        if not line.startswith('{"ts": "' + day):
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        r = roles.get(str(d.get('role') or ''))
+        if r is None:
+            continue
+        ev = str(d.get('event') or '').strip()
+        if not ev or ev.startswith(_NOT_GM_PREFIX) or ev.startswith(('[Cross-session', 'Another Claude session', '[Artifact')):
+            continue
+        if ev.startswith('답변 종결'):   # Stop 훅 상투줄 — 「지금 하는 것」이 아니라 「쉬는 중」 신호
+            r['idle_since'] = str(d.get('ts'))[11:16]
+            continue
+        r['idle_since'] = None
+        r['last'] = {'time': str(d.get('ts'))[11:16], 'area': str(d.get('area') or ''),
+                     'event': ev[:120], 'result': str(d.get('result') or '')}
+    # 오늘 저장 수 — 제목 머리 「[닉]」 또는 scope「(role)」 · 기계 발행 커밋 제외
+    try:
+        out = subprocess.run(['git', '-C', str(ROOT), 'log', '--no-merges', f'--since={day} 00:00', '--format=%s'],
+                             capture_output=True, timeout=15)
+        subs = out.stdout.decode('utf-8', 'replace').splitlines() if out.returncode == 0 else []
+    except Exception:
+        subs = []
+    for sub in subs:
+        sub = sub.strip()
+        if not sub or sub.startswith(('chore(auto)', 'chore(queue): auto-log', 'chore(sync)')) or '자동 발행' in sub:
+            continue
+        head = sub.split(':', 1)[0].lower()
+        for role, r in roles.items():
+            if sub.startswith('[' + r['nick'] + ']') or f'({role})' in head:
+                r['saves'] += 1
+                break
+    return {'published_at': now.strftime('%Y-%m-%dT%H:%M:%S'), 'roles': roles}
+
+
 def emit(day: str) -> int:
     """전 역할 오늘치를 status/kungjjak_today.json 으로 발행 — 자율현황 화면이 이걸 읽는다.
 
@@ -399,6 +464,10 @@ def emit(day: str) -> int:
     """
     out = {'_doc': '쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)',
            'date': day, 'roles': {}, 'tomorrow': _tomorrow_block(day)}
+    try:
+        out['board'] = _board(day)
+    except Exception as e:  # noqa: BLE001 — 관제판이 죽어도 쿵짝표 발행은 계속
+        out['board'] = {'error': str(e)[:200]}
     for role in NICK:
         by = load(day, role)
         items = []
@@ -467,7 +536,8 @@ def emit(day: str) -> int:
     #   올린다"는 조건에 **영원히 걸리지 않았다** — 3분마다 새 파일처럼 보이니 영영 안 묵는다.
     #   허용목록에는 진작 들어 있었는데도 한 번도 안 실린 이유가 이것이다.
     #   결과: GM업무 화면 「오늘 처리 기록」과 자율현황이 아침 값에 머물렀다.
-    if p.exists() and p.read_text(encoding='utf-8') == body:
+    _strip = lambda t: re.sub(r'"published_at": "[^"]*"', '"published_at": ""', t)  # noqa: E731
+    if p.exists() and _strip(p.read_text(encoding='utf-8')) == _strip(body):
         print(f'발행 생략 {p.name} — 값 동일 · {day} · {roles or "기록 없음"}')
     else:
         p.write_text(body, encoding='utf-8')

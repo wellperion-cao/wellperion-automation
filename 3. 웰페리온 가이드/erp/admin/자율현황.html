@@ -181,6 +181,28 @@
   font-size:var(--fs-1);font-weight:800;letter-spacing:.02em;white-space:nowrap;
   background:rgba(143,112,41,.12);color:#7B6023;border:1px solid rgba(143,112,41,.35);}
 @media print{ .ai-owner{border-color:#8FD9CC;color:#4F6B68;background:none;} }
+/* ══ 🎛 C레벨 관제판 (배 12723 · GM 2026-09-17) — 색은 platform_brand 토큰만 ══ */
+.cb-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 12px;}
+.cb-num{background:var(--paper);border:1px solid var(--border);border-radius:11px;padding:10px 14px;}
+.cb-num .k{font-size:var(--fs-1);color:var(--dim);}
+.cb-num .v{font-size:var(--fs-5);font-weight:800;color:var(--text);line-height:1.15;margin-top:2px;}
+.cb-num .v small{font-size:var(--fs-1);font-weight:600;color:var(--dim);margin-left:4px;}
+.cb-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 12px;}
+.cb-card{background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--dim);border-radius:11px;padding:11px 13px;min-width:0;}
+.cb-card.on{border-left-color:var(--green);}
+.cb-card .hd{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--text);font-size:var(--fs-3);}
+.cb-card .hd .st{margin-left:auto;font-size:var(--fs-1);font-weight:600;color:var(--dim);white-space:nowrap;}
+.cb-card .now{margin:7px 0 6px;font-size:var(--fs-2);color:var(--text-soft);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.cb-card .now b{color:var(--text);}
+.cb-card .ships{font-size:var(--fs-1);color:var(--dim);line-height:1.5;}
+.cb-card .ships div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cb-card .ft{display:flex;gap:12px;margin-top:7px;font-size:var(--fs-1);color:var(--dim);}
+.cb-card .ft b{color:var(--text);}
+.cb-tbl{table-layout:fixed;min-width:0;}
+.cb-tbl td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cb-tbl td.w{white-space:normal;}
+#legacy-fold>summary{cursor:pointer;list-style:none;font-size:var(--fs-2);font-weight:700;color:var(--accent-soft);margin:6px 0 10px;}
+@media (max-width:900px){ .cb-nums{grid-template-columns:repeat(2,1fr);} .cb-cards{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -188,10 +210,24 @@
 
   <header class="page-head">
     <h1>자율 작업 현황<span class="ai-owner">AI 웰리</span></h1>
-    <span class="sub"><b>시토 · T2 자동화</b> — 웰리·C-Level이 스스로 돌린 일(로그 실재분만).</span>
+    <span class="sub"><b>C레벨 관제판</b> — GM 이 던진 일이 어느 창에서 어떻게 진행되는지(로그 실재분만 · 시토).</span>
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="wellperion_guide(main).html#S2">📋 AI C-Level 운영 가이드(S2)</a>
   </header>
+
+  <!-- ══ 🎛 C레벨 관제판 — GM 지시 2026-09-17 13:49 「내가 던진 일을 각 C레벨 창에서 어떻게 하는지 웹에서 라이브로」(배 12723).
+       새 화면을 만들지 않고 이 화면 맨 위에 얹었다. 원천 = status/kungjjak_today.json(board: 세션 생존·마지막 기록·저장 수 /
+       roles: 오늘 GM 지시 접수↔완료) · status/_queue.json(열린 배 · 이미 읽던 것) · status/calls.json(미답 호출).
+       30초마다 다시 읽는다. 발행은 3분 주기(kungjjak_board --emit → 바뀌면 저장·배포) → 화면 지연 최대 4분.
+       기존 절(북극성 아래 알림·시스템·항로·완성도·학습)은 아래 「📂 기존 자율현황」에 접혀 있다(삭제 아님). ══ -->
+  <div id="control-board" class="autopanel" style="border-left-color:var(--green);margin-top:8px;">
+    <h2 class="sec" style="margin-top:0;">🎛 C레벨 관제판 <span id="cb-asof" style="font-size:var(--fs-1);font-weight:400;color:var(--dim);">불러오는 중…</span></h2>
+    <div class="cb-nums" id="cb-nums"></div>
+    <div class="cb-cards" id="cb-cards"><div class="feed-status">불러오는 중…</div></div>
+    <h3 style="margin:8px 0 4px;font-size:var(--fs-2);">📨 GM 이 오늘 던진 것 <span id="cb-gm-sub" style="font-weight:400;color:var(--dim);"></span></h3>
+    <div class="gtbl-wrap" id="cb-gm"></div>
+  </div>
+  <!-- ══ /관제판 ══ -->
 
   <!-- ══ 🌟 북극성 — 페이지 맨 위 (GM 지시 2026-08-03 "목표가 정말 중요하다 · 북극성을 최상단으로").
        아래 모든 배·모듈은 이 목적지로 가는 수단이다. 목적지를 먼저 보고 나머지를 본다. ══ -->
@@ -219,6 +255,9 @@
       <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:var(--fs-1);color:#4F6B68;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(34,31,32,0.08);"><span>🌟 <strong style="color:#0A6E66;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#2A4474;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span></div>
     </div>
     <!-- ══ /북극성 ══ -->
+
+  <details id="legacy-fold">
+    <summary>📂 기존 자율현황 펼치기 — 알림 한 장 · 시스템 현황 · 항로 · 화면 완성도 · 학습</summary>
 
   <!-- ══ 📨 알림 한 장 — 북극성 바로 아래(GM 지시 2026-08-15 "북극성 바로 아래 알림 한 장만 있으면 될듯")
        (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합)
@@ -469,6 +508,8 @@
        마케팅 자율 안내는 M1 마케팅 현황 대시보드가 이미 담당(중복 안내였다). 처리 이력 접기는
        "루프가 돈 흔적"을 다시 나열할 뿐 판단에 쓰이지 않아 GM: "의미가없다". buildFeed()·renderFeed()
        함수와 전용 CSS(.feed-item·.fi-*·.feed-more)도 같이 걷었다 — 소비처가 이 블록 하나뿐이었다. -->
+
+  </details><!-- /legacy-fold -->
 
   <footer class="foot">
     정본 = <code>status/</code> 로그 직독 · 로그에 있는 것만 · 미측정은 미표기.
@@ -1291,6 +1332,81 @@
     }catch(e){ /* 접기 실패해도 표 자체는 그대로 보인다 */ }
   }
 
+  // ── 🎛 C레벨 관제판 (배 12723) — kungjjak_today.json + _queueAll + calls.json. 30초 갱신.
+  var CB_ORDER = ['ceo','cto','cmo','cpo','coo','cbo'];
+  var CB_OPEN = { 'PENDING':1, 'IN_PROGRESS':1, 'ON_HOLD':1 };
+  function cbClock(iso){ return iso ? String(iso).slice(11,16) : '—'; }
+  function cbShips(role){
+    return _queueAll.filter(function(q){ return q && q.clevel === role && CB_OPEN[q.status] && !q.trashed; });
+  }
+  function renderControlBoard(kj, calls){
+    var board = (kj && kj.board && kj.board.roles) ? kj.board.roles : {};
+    var roles = (kj && kj.roles) ? kj.roles : {};
+    var asof = document.getElementById('cb-asof');
+    if(asof) asof.textContent = (kj && kj.board && kj.board.published_at) ? '발행 ' + cbClock(kj.board.published_at) + ' · 30초마다 다시 읽음' : '발행본 없음';
+    // 숫자 4
+    var alive = 0, got = 0, done = 0, open = 0;
+    CB_ORDER.forEach(function(r){
+      if(board[r] && board[r].alive) alive++;
+      var items = (roles[r] && roles[r].items) || [];
+      got += items.length; done += items.filter(function(i){ return !i.open; }).length;
+      open += cbShips(r).length;
+    });
+    var unans = Array.isArray(calls && calls.calls) ? calls.calls.filter(function(c){ return !c.answered_at; }).length : 0;
+    var nums = document.getElementById('cb-nums');
+    if(nums) nums.innerHTML =
+        '<div class="cb-num"><div class="k">살아있는 창</div><div class="v">' + alive + '<small>/ ' + CB_ORDER.length + '</small></div></div>'
+      + '<div class="cb-num"><div class="k">오늘 GM 지시 접수 / 완료</div><div class="v">' + got + '<small>/ ' + done + '</small></div></div>'
+      + '<div class="cb-num"><div class="k">열린 배</div><div class="v">' + open + '</div></div>'
+      + '<div class="cb-num"><div class="k">미답 호출</div><div class="v">' + unans + '</div></div>';
+    // 카드 6
+    var cards = document.getElementById('cb-cards');
+    if(cards) cards.innerHTML = CB_ORDER.map(function(r){
+      var b = board[r] || {}; var items = (roles[r] && roles[r].items) || [];
+      var ships = cbShips(r);
+      var nick = b.nick || (roles[r] && roles[r].nick) || r;
+      var st = b.alive ? '🟢 살아있음 · 신호 ' + esc(b.signal || '—') : '⚪ 신호 없음' + (b.signal ? '(' + esc(b.signal) + ')' : '');
+      var now;
+      if(b.idle_since) now = '<b>쉬는 중</b> · ' + esc(b.idle_since) + ' 답변 마침' + (b.last ? ' · 직전 ' + esc(b.last.event) : '');
+      else if(b.last) now = (b.last.result === 'warn' ? '⏳ ' : '✅ ') + esc(b.last.time) + ' <b>' + esc(b.last.event) + '</b>';
+      else now = '오늘 기록 없음';
+      var sh = ships.slice(0,3).map(function(q){ return '<div title="' + esc(q.title) + '">' + esc(String(q.status||'').replace('IN_PROGRESS','🚢').replace('PENDING','⚓').replace('ON_HOLD','⚓')) + ' ' + esc(q.title) + '</div>'; }).join('')
+             + (ships.length > 3 ? '<div>… 외 ' + (ships.length - 3) + '척</div>' : '') + (ships.length ? '' : '<div>열린 배 없음</div>');
+      var mine = items.length, mineDone = items.filter(function(i){ return !i.open; }).length;
+      return '<div class="cb-card' + (b.alive ? ' on' : '') + '"><div class="hd">' + esc(nick) + '<span class="st">' + st + '</span></div>'
+        + '<div class="now">' + now + '</div><div class="ships">' + sh + '</div>'
+        + '<div class="ft"><span>열린 배 <b>' + ships.length + '</b></span><span>오늘 저장 <b>' + (b.saves || 0) + '</b></span><span>GM 지시 <b>' + mine + '</b> / 완료 <b>' + mineDone + '</b></span></div></div>';
+    }).join('');
+    // GM 이 던진 것 — 오늘 전 역할 · 최신 접수가 위
+    var rows = [];
+    CB_ORDER.forEach(function(r){ ((roles[r] && roles[r].items) || []).forEach(function(i){ rows.push({ r:r, nick:(roles[r].nick||r), i:i }); }); });
+    rows.sort(function(a,b){ return String(b.i.start||'').localeCompare(String(a.i.start||'')); });
+    var sub = document.getElementById('cb-gm-sub');
+    if(sub) sub.textContent = rows.length ? '(' + rows.length + '건 · 진행 ' + rows.filter(function(x){ return x.i.open; }).length + ')' : '(오늘 접수 0건)';
+    var tb = document.getElementById('cb-gm');
+    if(tb) tb.innerHTML = rows.length
+      ? '<table class="gtbl cb-tbl"><colgroup><col style="width:62px"><col><col style="width:64px"><col style="width:92px"><col style="width:70px"></colgroup>'
+        + '<tr><th>접수</th><th>던진 것</th><th>담당</th><th>상태</th><th>완료</th></tr>'
+        + rows.slice(0,40).map(function(x){
+            var i = x.i;
+            return '<tr><td>' + esc(i.start || '—') + '</td><td class="w" title="' + esc(i.did || '') + '">' + esc(i.got || '') + '</td><td>' + esc(x.nick) + '</td>'
+              + '<td>' + (i.open ? '🚢 진행' : '🏁 완료' + (i.minutes != null ? ' ' + i.minutes + '분' : '')) + '</td><td>' + esc(i.end || '—') + '</td></tr>';
+          }).join('') + '</table>'
+        + (rows.length > 40 ? '<div class="sec-note">최근 40건만 · 나머지는 쿵짝표</div>' : '')
+      : '<div class="feed-status">오늘 GM 지시 접수 0건.</div>';
+  }
+  function reloadControlBoard(){
+    Promise.all([
+      gasReadText('status/kungjjak_today.json', 'status/kungjjak_today.json').catch(function(){ return ''; }),
+      gasReadText('status/calls.json', 'status/calls.json').catch(function(){ return ''; })
+    ]).then(function(a){
+      try{ renderControlBoard(parseJson(a[0]), parseJson(a[1])); }catch(e){
+        var el = document.getElementById('cb-cards'); if(el) el.innerHTML = '<div class="feed-status">관제판 표시 오류.</div>';
+      }
+    });
+  }
+  setInterval(reloadControlBoard, 30000);
+
   // ── 🟢 CLI 라이브 — 127.0.0.1:8787/live(scripts/live_cli_status_server.py) 3초 폴링.
   //   서버가 없으면(다른 PC·미기동) fetch 가 실패하고 섹션을 숨긴다 — 깨진 화면 금지.
   var CLI_LIVE_URL = 'http://127.0.0.1:8787/live';
@@ -1376,6 +1492,7 @@
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
+    try{ reloadControlBoard(); }catch(e){}   // 🎛 관제판 첫 렌더(배 12723) — 큐가 들어온 뒤
     // [2026-08-26 배798 감사] voyage_map 읽기와 _northstarByRole 채우기를 함께 제거했다 —
     //   소비자였던 「전체 배」 표의 북극성 칸이 같은 날 항로 병합으로 사라져 죽은 배선이 됐다.
     //   되살려야 하면 git 이력에서 본다(약속 L21 — 꺼두면 누가 다시 켠다).
