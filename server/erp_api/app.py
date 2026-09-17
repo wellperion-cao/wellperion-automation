@@ -88,6 +88,57 @@ def inquiries(
             "rows": [_row(r) for r in rows], "_source": SOURCE}
 
 
+@app.get("/api/inquiries/summary")
+def inquiries_summary(from_: str = Query("", alias="from"), to: str = ""):
+    """담당자별 문의 집계 — 구글 GAS member_inquiry_summary 와 같은 모양(ok·from·to·count·all·period·at).
+    업무 현황 SSOT 마지막 줄(회원 상담)이 읽는다 · 2026-09-18 시토 · 배 11299(서버 원천 100%).
+    이름·전화는 싣지 않는다(집계만). 기간 판정 = GAS 와 같은 문자열 비교(timestamp < from · > to 제외).
+    ★ /api/inquiries/{item_id:path} 보다 앞에 있어야 한다 — 뒤에 두면 'summary' 가 문의 id 로 읽힌다."""
+    try:
+        conn = _conn()
+    except db.Error as e:
+        raise HTTPException(503, "DB 열기 실패: %s" % e)
+    with conn:
+        rows = conn.execute("SELECT status, timestamp, data FROM inquiries WHERE tenant_id = %s AND type = '멤버십'",
+                            (db.TENANT,)).fetchall()
+    all_, period = {}, {}
+
+    def bump(bag, owner, status):
+        b = bag.setdefault(owner, {"owner": owner, "total": 0, "reg": 0, "contacting": 0, "lost": 0, "etc": 0})
+        b["total"] += 1
+        if status in ("SUC", "단기SUC"):
+            b["reg"] += 1
+        elif status in ("컨택중", "신규", "가망"):
+            b["contacting"] += 1
+        elif status == "LOSS":
+            b["lost"] += 1
+        else:
+            b["etc"] += 1
+
+    for r in rows:
+        try:
+            owner = str((json.loads(r["data"]) or {}).get("owner") or "").strip() or "(미지정)"
+        except Exception:
+            owner = "(미지정)"
+        status = (r["status"] or "").strip()
+        bump(all_, owner, status)
+        ts = r["timestamp"] or ""
+        if not ts or (from_ and ts < from_) or (to and ts > to):
+            continue
+        bump(period, owner, status)
+
+    def arr(bag):
+        out = []
+        for b in bag.values():
+            b["rate"] = round(b["reg"] / b["total"] * 1000) / 10 if b["total"] else 0
+            out.append(b)
+        return sorted(out, key=lambda b: -b["total"])
+
+    import time as _t
+    return {"ok": True, "from": from_, "to": to, "count": len(rows), "all": arr(all_), "period": arr(period),
+            "at": _t.strftime("%Y-%m-%d %H:%M", _t.gmtime(_t.time() + 9 * 3600)), "_source": SOURCE}
+
+
 @app.get("/api/inquiries/{item_id:path}")
 def inquiry(item_id: str):
     try:
