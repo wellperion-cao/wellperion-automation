@@ -548,6 +548,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         결재 현황 SSOT
       </a>
+      <!-- 간단 요약본(GM 지시 2026-09-17) — 이 화면이 이미 읽은 값으로 팝업 한 장. 새 조회 없음. -->
+      <a class="sheet-link" href="#" onclick="openSimpleSummary();return false;" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(183,159,138,0.3);">
+        <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 6h12v2H3v-2zm0 6h18v2H3v-2z"/></svg>
+        간단 요약본
+      </a>
       <!-- 운영 기준(정본) — 등록·결재·점수·일정·보류·정체·담당표기 한 장 (2026-07-23 시우 신설).
            기존 doc_guide.html(기획안·결과보고 서식)은 어디서도 링크되지 않은 고아 페이지였어서
            운영 기준 페이지 안에서 함께 걸어 찾을 수 있게 했다. -->
@@ -626,6 +631,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 <!-- Add / Edit Modal -->
+<!-- 📋 간단 요약본 팝업 (GM 지시 2026-09-17) -->
+<div class="modal-overlay" id="summaryModal" onclick="if(event.target===this)closeSimpleSummary()">
+  <div class="modal" style="max-width:980px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+      <h2 style="margin:0">📋 간단 요약본 <span id="sumDate" style="font-size:var(--fs-2);font-weight:500;color:var(--dim)"></span></h2>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="sheet-link" onclick="window.print()">🖨 인쇄</button>
+        <button type="button" class="sheet-link" onclick="closeSimpleSummary()">닫기</button>
+      </div>
+    </div>
+    <div id="sumBody"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="taskModal">
   <div class="modal">
     <h2 id="modalTitle">업무 추가</h2>
@@ -949,6 +968,124 @@ let calViewMonth = new Date().getMonth();  // 0-based
 /* ═══════════════════════════════════════════
    Init
    ═══════════════════════════════════════════ */
+/* ══ 📋 간단 요약본 (GM 지시 2026-09-17 「단순하게 볼 수 있는 것 · 팝업으로」) ══
+   원천 = 이 화면이 이미 읽은 ALL_TASKS 하나. 새로 조회하지 않는다(숫자가 갈릴 자리를 안 만든다).
+   담는 것 = 숫자 줄 · 지금 급한 것 · 결재 대기 · 담당자별 세 숫자. 그 밖은 본 화면에서 본다. */
+const SUM_DONE = ['완료', '종결', '취소'];
+
+function _sumDaysLeft(ymd) {
+  if (!ymd) return null;
+  const end = new Date(kstDateStr(ymd) + 'T23:59:59');
+  return Math.ceil((end - new Date()) / 86400000);
+}
+
+/* 결재가 어느 단계에서 멈췄나 — 서명 칸이 정본이다(상태 칸은 업무 진행이라 따로 논다).
+   결재요청에 그 사람이 걸려 있는데 서명 칸이 비었거나 PENDING 이면 그 단계에서 대기다.
+   위에서부터 본다: 부서장 → GM → 대표님(앞 단계가 끝나야 다음 사람이 서명한다). */
+function _sumUnsigned(v) {
+  const x = String(v || '').trim();
+  return !x || x === 'PENDING';
+}
+
+function sumApprovalStage(t) {
+  const line = String(t.approval || t['결재요청'] || '').trim();
+  if (!line) return null;
+  const others = line.split(',').map(x => x.trim())
+    .filter(x => x && x.indexOf('GM') < 0 && x.indexOf('대표') < 0);
+  if (others.length && _sumUnsigned(t['부서장싸인'])) return { t: t, stage: '부서장 서명 대기' };
+  if (line.indexOf('GM') >= 0 && _sumUnsigned(t['GM싸인'])) return { t: t, stage: 'GM 서명 대기' };
+  if (line.indexOf('대표') >= 0 && _sumUnsigned(t['대표싸인'])) return { t: t, stage: '대표님 서명 대기' };
+  return null;
+}
+
+function _sumTable(head, rows) {
+  if (!rows.length) return '';
+  return '<div style="margin-top:14px"><div style="font-weight:700;margin-bottom:6px">' + head + '</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:var(--fs-2)">' + rows.join('') + '</table></div>';
+}
+
+function _sumCell(v, extra) {
+  return '<td style="padding:4px 6px;border-bottom:1px solid var(--border);' + (extra || '') + '">' + v + '</td>';
+}
+
+function buildSimpleSummary() {
+  const all = (typeof excludeNonStaff === 'function' ? excludeNonStaff(ALL_TASKS) : ALL_TASKS) || [];
+  const open = all.filter(t => SUM_DONE.indexOf(String(t.status || '')) < 0);
+  const hold = all.filter(t => String(t.status || '') === '보류');
+  const prog = open.filter(t => String(t.status || '') !== '보류');
+  const overdue = open.filter(t => { const d = _sumDaysLeft(t.endDate); return d !== null && d < 0; });
+  const appr = all.map(sumApprovalStage).filter(x => x);
+
+  const num = (label, v, color) =>
+    '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px">'
+    + '<span style="color:var(--dim);font-size:var(--fs-2)">' + label + '</span>'
+    + '<b style="font-size:var(--fs-4);color:' + (color || 'var(--text)') + '">' + v + '</b></span>';
+  let html = '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg)">'
+    + num('진행중', prog.length) + num('보류', hold.length)
+    + num('기한 지남', overdue.length, overdue.length ? 'var(--red)' : 'var(--text)')
+    + num('결재 대기', appr.length) + num('전체 열린 건', open.length) + '</div>';
+
+  // ② 지금 급한 것 — 기한이 지났거나 사흘 안. 오래 지난 것부터.
+  const urgent = open
+    .map(t => ({ t: t, d: _sumDaysLeft(t.endDate) }))
+    .filter(x => x.d !== null && x.d <= 3)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 12)
+    .map(x => '<tr>'
+      + _sumCell(esc(x.t.title || ''), 'font-weight:600')
+      + _sumCell(esc(x.t.owner || '담당 없음'), 'white-space:nowrap;color:var(--dim)')
+      + _sumCell(x.d < 0 ? ('D+' + Math.abs(x.d) + ' 지남') : (x.d === 0 ? 'D-Day' : 'D-' + x.d),
+                 'white-space:nowrap;text-align:right;font-weight:700;color:' + (x.d < 0 ? 'var(--red)' : 'var(--text)'))
+      + '</tr>');
+  html += _sumTable('⏰ 지금 급한 것 <span style="font-weight:400;color:var(--dim);font-size:var(--fs-1)">기한 지남 · 사흘 안</span>', urgent)
+    || '<div style="margin-top:14px;color:var(--dim)">⏰ 사흘 안에 마감인 건이 없습니다.</div>';
+
+  // ③ 결재 대기 — 결재요청이 걸려 있는데 아직 안 끝난 건(결재선은 적힌 그대로).
+  const apprRows = appr.slice(0, 12).map(x => '<tr>'
+    + _sumCell(esc(x.t.title || ''), 'font-weight:600')
+    + _sumCell(esc(x.t.owner || '담당 없음'), 'white-space:nowrap;color:var(--dim)')
+    + _sumCell(esc(x.stage), 'white-space:nowrap;text-align:right;color:var(--purple);font-weight:700')
+    + '</tr>');
+  const apprHead = '🧾 결재 대기 <span style="font-weight:400;color:var(--dim);font-size:var(--fs-1)">'
+    + '대표님 ' + appr.filter(x => x.stage === '대표님 서명 대기').length
+    + ' · GM ' + appr.filter(x => x.stage === 'GM 서명 대기').length
+    + ' · 부서장 ' + appr.filter(x => x.stage === '부서장 서명 대기').length + '</span>';
+  html += _sumTable(apprHead, apprRows)
+    || '<div style="margin-top:14px;color:var(--dim)">🧾 결재 대기 건이 없습니다.</div>';
+
+  // ④ 담당자별 세 숫자
+  const names = (typeof MEMBERS !== 'undefined' && MEMBERS.length) ? MEMBERS : [];
+  const ownRows = names.map(n => {
+    const mine = all.filter(t => String(t.owner || '').split(',').map(x => x.trim()).indexOf(n) >= 0);
+    const p = mine.filter(t => SUM_DONE.indexOf(String(t.status || '')) < 0).length;
+    const late = mine.filter(t => { const d = _sumDaysLeft(t.endDate);
+      return SUM_DONE.indexOf(String(t.status || '')) < 0 && d !== null && d < 0; }).length;
+    const done = mine.filter(t => String(t.status || '') === '완료').length;
+    return { n: n, p: p, late: late, done: done, total: mine.length };
+  }).filter(r => r.total > 0).sort((a, b) => b.p - a.p)
+    .map(r => '<tr>'
+      + _sumCell(esc(r.n), 'font-weight:600;white-space:nowrap')
+      + _sumCell('진행 <b>' + r.p + '</b>', 'text-align:right;white-space:nowrap')
+      + _sumCell('지연 <b style="color:' + (r.late ? 'var(--red)' : 'var(--dim)') + '">' + r.late + '</b>', 'text-align:right;white-space:nowrap')
+      + _sumCell('완료 <b>' + r.done + '</b>', 'text-align:right;white-space:nowrap')
+      + '</tr>');
+  html += _sumTable('👤 담당자별', ownRows);
+  return html;
+}
+
+function openSimpleSummary() {
+  const d = new Date();
+  const pad = n => (n < 10 ? '0' : '') + n;
+  document.getElementById('sumDate').textContent =
+    '— ' + d.getFullYear() + '. ' + pad(d.getMonth() + 1) + '. ' + pad(d.getDate()) + '. 기준';
+  document.getElementById('sumBody').innerHTML = buildSimpleSummary();
+  document.getElementById('summaryModal').classList.add('show');
+}
+
+function closeSimpleSummary() {
+  document.getElementById('summaryModal').classList.remove('show');
+}
+
 // 상단 라이브 판 안내문은 한 줄로 줄여 두고, 전체 글은 제목 풍선으로 보여 준다
 // (GM 2026-09-17 18:2x — 접기·더 보기 장치는 없앴다).
 function setLiveStripFootTitle() {
