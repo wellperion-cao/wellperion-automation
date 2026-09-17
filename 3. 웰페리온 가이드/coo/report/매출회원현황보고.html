@@ -175,8 +175,9 @@
   .etile .ev{font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;}
   .etile .ev small{font-size:9.5px;font-weight:600;color:var(--muted);margin-left:4px;}
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
-  .dayrows{display:flex;flex-direction:column;gap:3px;}
-  .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
+  .dayrows{display:flex;flex-direction:column;gap:2px;}
+  /* 7줄이 칸보다 10px 길어 마지막 날이 잘렸다(실측 2026-09-17) — 줄 간격·글자를 한 단계 줄인다. */
+  .dayrow{display:flex;align-items:center;gap:7px;font-size:10.4px;line-height:1.25;}
   .dayrow .dd{width:46px;flex:none;color:#48525B;font-variant-numeric:tabular-nums;}
   .dayrow .db{flex:1;min-width:0;height:15px;background:#EDF1F5;border-radius:2px;position:relative;}
   .dayrow .db i{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:2px;}
@@ -2901,8 +2902,8 @@ function renderEtcRev(){
     { t: '바디프렌드', d: bf ? (bf.days && bf.days[ref] != null ? _won(bf.days[ref]) : '0') : '못 읽음',
       m: bf ? _won(bf.total_krw) : '못 읽음',
       note: bf ? '라운지 매출 그대로 · ' + String(bf.fetched_at || '') + ' 수집' : '라운지 수집 전' },
-    { t: '굿즈 (오넛티 팝업)', d: '연동 전', m: '연동 전', note: '9/18 시작 · 판매 금액 담을 자리 준비 중' },
-    { t: '그 밖 제휴', d: '없음', m: '없음', note: '생기면 이 자리에 붙는다' }
+    { t: '굿즈 (오넛티)', d: '연동 전', m: '연동 전', note: '팝업 9/18 시작 · 판매 집계는 회사 구글 계정 화면(GAS)' },
+    { t: '팝업 (이엘리)', d: '연동 전', m: '연동 전', note: '이엘리 회원님 팝업 · 집계 자리 확인 중' }
   ];
   box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
     return '<div class="etile" title="' + esc(x.note) + '"><div class="et">' + esc(x.t) + '</div>' +
