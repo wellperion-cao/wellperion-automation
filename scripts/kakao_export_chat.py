@@ -206,6 +206,13 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     import kakao_report_sender as s
     from pywinauto import Application
 
+    with s.kakao_ui_lock("export " + room_name):
+        return _export_room_chat_locked(room_name, out_path)
+
+
+def _export_room_chat_locked(room_name: str, out_path: Path) -> bool:
+    import kakao_report_sender as s
+    from pywinauto import Application
     close_stray_save_dialog()          # 지난 회차가 남긴 저장창이 카톡을 잠가 둔다
     s.notice_snapshot("export start " + room_name)
     ensure_kakao_foreground()

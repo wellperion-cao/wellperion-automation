@@ -477,6 +477,47 @@ def _log_new_notice_windows(room_name: str, before: set) -> None:
     before.update(new)   # 같은 창을 폴링마다 다시 적지 않는다
 
 
+KAKAO_UI_LOCK = Path(__file__).resolve().parent.parent / "status" / ".kakao_ui.lock"
+
+
+class kakao_ui_lock:
+    """카톡 창을 만지는 프로세스는 한 번에 하나(실행 잠금 · O_EXCL 파일).
+    2026-09-17 09:30 실사고: 매출보고 발신(★부서장 방 여는 중)과 시토 시험(같은 방 닫기)이 겹쳐 발신이
+    COM 오류로 죽고 ★부서장 방만 빠졌다. 상태 검사가 아니라 잠금으로 막는다(lessons 09-15 다캠 블로그 2건과 같은 본질).
+    10분 넘은 잠금은 죽은 프로세스 것으로 보고 걷는다 · 최대 wait 초 기다린 뒤엔 그냥 진행한다(발신을 막지는 않는다)."""
+    def __init__(self, tag: str = "", wait: float = 180.0):
+        self.tag, self.wait, self.fd = tag, wait, None
+
+    def __enter__(self):
+        deadline = time.time() + self.wait
+        while True:
+            try:
+                KAKAO_UI_LOCK.parent.mkdir(parents=True, exist_ok=True)
+                self.fd = os.open(str(KAKAO_UI_LOCK), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(self.fd, ("%s %s %s" % (os.getpid(), self.tag, datetime.now().isoformat())).encode("utf-8"))
+                return self
+            except FileExistsError:
+                try:
+                    if time.time() - KAKAO_UI_LOCK.stat().st_mtime > 600:
+                        KAKAO_UI_LOCK.unlink()
+                        continue
+                except Exception:
+                    pass
+                if time.time() > deadline:
+                    log("[kakao-lock] %s — 다른 카톡 자동화가 %d초 넘게 잠금을 쥐고 있어 그냥 진행" % (self.tag, int(self.wait)))
+                    return self
+                time.sleep(2)
+
+    def __exit__(self, *_exc):
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+                KAKAO_UI_LOCK.unlink()
+            except Exception:
+                pass
+        return False
+
+
 _NOTICE_BASE: set = set()   # 이번 실행 시작 때 이미 열려 있던 공지 창 hwnd — 그건 사람 것이라 안 닫는다
 
 
@@ -3024,11 +3065,13 @@ if __name__ == "__main__":
     # 카카오톡·터미널을 통째로 확대시킨다. 시작할 때도 한 번 놓아 앞 실행의 잔재를 안 물려받는다.
     release_modifiers()
     _cursor_was = park_cursor()          # 커서가 구석에 있으면 안전장치가 발신을 통째로 멈춘다(배 2530 후속)
-    notice_snapshot("sender start")
-    try:
-        sys.exit(main())
-    finally:
-        release_modifiers()
-        notice_snapshot("sender end")
-        clear_foreground_staging()       # 화면을 덮은 채 남은 임시 창 걷어내기(마우스 먹통 방지)
-        restore_cursor(_cursor_was)      # 사람이 쓰던 자리로 되돌린다
+    with kakao_ui_lock("sender"):
+        notice_snapshot("sender start")
+        try:
+            _rc = main()
+        finally:
+            release_modifiers()
+            clear_foreground_staging()       # 화면을 덮은 채 남은 임시 창 걷어내기(마우스 먹통 방지)
+            restore_cursor(_cursor_was)      # 사람이 쓰던 자리로 되돌린다
+            notice_snapshot("sender end")
+    sys.exit(_rc)
