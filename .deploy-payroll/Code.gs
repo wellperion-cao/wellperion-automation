@@ -26,7 +26,7 @@
  *
  *  ■ 계약 (procurement 관례) — POST JSON {action, password[, adminPassword], ...} → {ok, ...}
  *    ping · payroll_list · payroll_month · payroll_team · payroll_config_get · payroll_config_set · payroll_override_set · payroll_override_del
- *    payroll_run_sync · payroll_flags · payroll_flag_close · payroll_evidence_create · payroll_close · payroll_sync_log
+ *    payroll_run_sync · payroll_flags · payroll_flag_close · payroll_evidence_create · payroll_close · payroll_sync_log · payroll_trainers · payroll_instructor_set
  *
  *  ■ 계산 규칙 (강사 시트 수식과 동일 · 반올림 없음, 표시만 반올림)
  *    J 공제후   = 결제금액 × (1 − 회원구분 공제율)           비회원 10% · 그 외 0 · 표에 없는 구분 = 0(플래그)
@@ -78,6 +78,7 @@ function route_(p) {
       case 'payroll_month':         return out_(payrollMonth_(p.month, p.team, p.viewer));
       case 'payroll_team':          return out_(teamSummary_(p.month, p.team, p.viewer));
       case 'payroll_config_get':    return out_(configGet_(p.viewer));
+      case 'payroll_trainers':      return out_(brojTrainers_());
       case 'payroll_flags':         var sc0 = scopeFor_(loadConfig_(), p.viewer);
                                     return out_({ ok: true, scope: sc0.mode, rows: readTab_('플래그').filter(function (r) { return (!p.month || ym7_(r['월']) === p.month) && (!p.instructor || r['강사명'] === p.instructor) && allowName_(sc0, r['강사명']); }) });
       case 'payroll_sync_log':      return out_({ ok: true, rows: readTab_('동기화로그').slice(-(+p.limit || 30)) });
@@ -87,6 +88,7 @@ function route_(p) {
     if (scA.mode !== '전체') return out_({ ok: false, error: 'forbidden_scope: 관리 기능은 경영지원부·관리부 계정만' });
     switch (a) {
       case 'payroll_config_set':    return out_(configSet_(p.table, p.rows || [], p.by));
+      case 'payroll_instructor_set': return out_(instrUpsert_(p.instructor || {}, p.by));
       case 'payroll_override_set':  return out_(overrideSet_(p));
       case 'payroll_override_del':  return out_(overrideDel_(p.row));
       case 'payroll_run_sync':      return out_(runSyncAction_(p));
@@ -234,6 +236,48 @@ function allowName_(sc, name) {
   if (sc.mode === '본인') return sc.names.indexOf(n) >= 0;
   var it = readTab_('설정_강사').filter(function (r) { return String(r['강사명']).trim() === n; })[0];
   return !!it && sc.teams.indexOf(String(it['팀']).trim()) >= 0;
+}
+/** 팀 기본값 — 강사 추가 때 강사명·팀·지급율만 받으면 나머지는 여기서 채운다(설정이 쉬워지게) */
+var TEAM_PRESET = {
+  '수영':   { 시트형식: '수영격자', 주차비: 100000, 카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  '체조':   { 시트형식: '수영격자', 주차비: 100000, 카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  'PT':     { 시트형식: '30분격자', 주차비: 50000,  카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  '골프':   { 시트형식: '30분격자', 주차비: 50000,  카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.6 },
+  '스쿼시': { 시트형식: '30분격자', 주차비: 50000,  카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  '필라테스': { 시트형식: '30분격자', 주차비: 50000, 카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  '루프':   { 시트형식: '30분격자', 주차비: 50000,  카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 },
+  'GX':     { 시트형식: '30분격자', 주차비: 0,      카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 }
+};
+function teamPreset_(team) { return TEAM_PRESET[String(team).trim()] || { 시트형식: '30분격자', 주차비: 50000, 카드수수료율: 0.025, 청구방식: '표준', 지급율: 0.5 }; }
+/** 강사 한 명 추가/수정 — 강사명·팀·지급율(선택)만 필수, 나머지는 팀 기본값. 이미 있으면 준 값만 덮어씀 */
+function instrUpsert_(o, by) {
+  var name = String(o['강사명'] || '').trim();
+  if (!name) return { ok: false, error: '강사명 필수' };
+  var team = String(o['팀'] || '').trim();
+  var exist = readTab_('설정_강사').filter(function (r) { return String(r['강사명']).trim() === name; })[0];
+  var pre = teamPreset_(team || (exist ? exist['팀'] : ''));
+  var base = exist || {
+    '강사명': name, '팀': team, '직급': '', '활성': 'Y', '브로제이강사명': '', 'trainer_id': '',
+    '시트형식': pre.시트형식, '지급율': pre.지급율, '주차비': pre.주차비, '카드수수료율': pre.카드수수료율,
+    '업무추진비': 0, '청구방식': pre.청구방식, '팀인센티브': 'N', '팀인센티브기준액': 110000000,
+    '팀인센티브기본율': 0.01, '팀인센티브상위율': 0.02, '프로모션단가': 20000, '원본시트ID': '', '비고': ''
+  };
+  // 새 강사이고 팀이 지정됐으면 팀 기본값으로 형식·주차비 등 채움 / 준 값(o)만 덮어씀
+  var row = {};
+  Object.keys(base).forEach(function (k) { row[k] = base[k]; });
+  if (!exist && team) { row['시트형식'] = pre.시트형식; row['주차비'] = pre.주차비; row['카드수수료율'] = pre.카드수수료율; row['청구방식'] = pre.청구방식; if (row['지급율'] === '' || row['지급율'] == null) row['지급율'] = pre.지급율; }
+  ['팀', '직급', '활성', '브로제이강사명', 'trainer_id', '시트형식', '지급율', '주차비', '카드수수료율', '업무추진비', '청구방식', '팀인센티브', '팀인센티브기준액', '팀인센티브기본율', '팀인센티브상위율', '프로모션단가', '원본시트ID', '비고'].forEach(function (k) {
+    if (o[k] !== undefined && o[k] !== '') row[k] = o[k];
+  });
+  row['강사명'] = name; row['수정일시'] = now_();
+  var res = upsert_('설정_강사', ['강사명'], [row]);
+  return { ok: true, added: res.added, updated: res.updated, instructor: name, team: row['팀'] };
+}
+/** 브로제이 강사 목록 — 화면이 골라 추가하게(이름·id) */
+function brojTrainers_() {
+  var calls = { n: 0 };
+  var arr = list_(call_('get', '/v1/groups/' + GROUP_ID + '/trainers', {}, null, calls));
+  return { ok: true, trainers: arr.map(function (t) { return { name: t.name || t.trainer_name || '', id: t.trainer_id || t.id || '' }; }).filter(function (t) { return t.name; }) };
 }
 /** 설정 조회 — 범위 밖 강사는 목록에서 뺀다(화면 드롭다운이 곧 권한) */
 function configGet_(viewer) {
