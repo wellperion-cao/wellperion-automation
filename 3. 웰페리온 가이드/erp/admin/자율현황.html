@@ -14,21 +14,22 @@
 <!-- AX 랩스 관리(/erp/admin/) 오른쪽 화면에 뜨는 장 — 랩스 토큰(청록·민트·DM Sans)으로 맞춘다(GM 2026-09-15 「자율현황만 디자인 일관성 파괴」 · 시모). 상태색(빨강·금색·초록·파랑)은 뜻이 있어 그대로. -->
 <style>
   :root{
-    --bg:#FFFFFF; --paper:#fff; --surface:#F3FBF9;
-    --text:#0F3D3A; --text-soft:#3E5B58; --dim:#4F6B68;
-    --accent:#0A6E66; --accent-soft:#0E9488;
+    --bg:var(--pf-bg); --paper:var(--pf-bg); --surface:var(--pf-panel);
+    --text:var(--pf-ink); --text-soft:var(--pf-soft); --dim:var(--pf-soft);
+    --accent:var(--pf-pri-dk); --accent-soft:var(--pf-pri);
     --gold:#7E5F20; --green:#2F6F3C; --blue:#205B7E; --pink:#7E2056; --teal:#277769;
-    --border:#BFE6DF; --border-strong:#8FD9CC;
+    --border:var(--pf-line); --border-strong:#8FD9CC;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   h1,h2,h3,.sec{font-family:var(--pf-head,inherit);}
   body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:var(--fs-2); -webkit-font-smoothing:antialiased; padding:18px 16px 40px;}
+  p{max-width:75ch;}
   .wrap{max-width:100%; margin:0;}
 
   header.page-head{margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px;}
   header.page-head h1{font-size:var(--fs-5); font-weight:800; letter-spacing:-0.02em;}
   header.page-head .sub{font-size:var(--fs-2); color:var(--dim); line-height:1.45; flex:1; min-width:220px;}
-  header.page-head .back{font-size:var(--fs-2); color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
+  header.page-head .back{display:inline-flex; align-items:center; min-height:44px; font-size:var(--fs-2); color:var(--accent); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
   h2.sec{font-size:var(--fs-3); font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
@@ -69,10 +70,10 @@
   .rcard-meta{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px;}
   .rcard-meta .rcard-cy{margin-top:0;}
   .pill{flex-shrink:0; font-size:var(--fs-1); font-weight:800; border-radius:20px; padding:3px 9px; white-space:nowrap; letter-spacing:0.02em;}
-  .pill.on{color:#FFFFFF; background:var(--green);}
+  .pill.on{color:var(--pf-bg); background:var(--green);}
   .pill.idle{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .pill.na{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.30);}
-  .pill.warn{color:#FFFFFF; background:var(--gold);}
+  .pill.warn{color:var(--pf-bg); background:var(--gold);}
   .rrow{display:flex; gap:6px; font-size:var(--fs-1); line-height:1.5; padding:2px 0; border-top:1px dashed var(--border); margin-top:2px;}
   .rrow:first-of-type{border-top:none;}
   .rrow .rk{color:var(--dim); min-width:56px; flex-shrink:0;}
@@ -87,7 +88,7 @@
   /* ── 🔧 시우 실무 3층 v2(배포 배): 라이브 지표 + 실무역할·개선SOP 접기(신규 최소·details 재사용) ── */
   .coo-tier{margin-top:14px;}
   .coo-tier-h{font-size:var(--fs-2); font-weight:800; color:var(--text-soft); margin:0 0 6px; display:flex; align-items:center; gap:6px;}
-  .coo-tier-h .tier-badge{font-size:var(--fs-1); font-weight:800; color:#FFFFFF; background:var(--green); border-radius:8px; padding:1px 7px;}
+  .coo-tier-h .tier-badge{font-size:var(--fs-1); font-weight:800; color:var(--pf-bg); background:var(--green); border-radius:8px; padding:1px 7px;}
   details.coo-details{margin-top:10px; border:1px solid var(--border-strong); border-radius:10px; padding:9px 13px 12px; background:var(--paper);}
   details.coo-details summary{cursor:pointer; list-style:none; font-size:var(--fs-2); font-weight:700; color:var(--text-soft);}
   details.coo-details summary::-webkit-details-marker{display:none;}
@@ -125,12 +126,12 @@
   .autopanel-time{font-size:var(--fs-1); color:var(--dim); margin-top:8px;}
 
   .statchip{display:inline-block; font-size:var(--fs-2); font-weight:700; border-radius:12px; padding:2px 9px; white-space:nowrap;}
-  .statchip.ok{color:#FFFFFF; background:var(--green);}
-  .statchip.bad{color:#0F3D3A; background:#F5E6E5;}
+  .statchip.ok{color:var(--pf-bg); background:var(--green);}
+  .statchip.bad{color:var(--text); background:var(--pf-bad-bg);}
   .statchip.idle{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
-  .statchip.warn{color:#FFFFFF; background:var(--gold);}
+  .statchip.warn{color:var(--pf-bg); background:var(--gold);}
   .statchip.static{color:var(--dim); background:transparent; border:1px dashed var(--border-strong); font-weight:700;}
-  .statchip.dead{color:#3E5B58; background:#F3FBF9; border:1px solid #BFE6DF;}
+  .statchip.dead{color:var(--text-soft); background:var(--surface); border:1px solid var(--border);}
 
   /* ── 채널 인라인 SVG 로고 (일 흐름 시각표에서 이식 · 2026-07-15) + 방 이름 라벨 ── */
   /* ── 📨 알림 한 장 필터 (배1307 · 2026-07-20 신설 · 배10437 · 2026-07-31 방 축 통합 ·
@@ -140,7 +141,7 @@
   .nf-btn{font-size:var(--fs-1); font-weight:700; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; cursor:pointer; white-space:nowrap;}
   .nf-btn:hover{border-color:var(--accent-soft);}
   .nf-btn.active{color:#1a1330; background:var(--accent-soft); border-color:var(--accent-soft);}
-  .nf-btn.nf-problem.active{color:#0F3D3A; background:#F5E6E5; border-color:#e2695f;}
+  .nf-btn.nf-problem.active{color:var(--text); background:var(--pf-bad-bg); border-color:#e2695f;}
   .nf-search{font-size:var(--fs-1); color:var(--text); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; min-width:150px;}
   .notify-problem-line{padding:8px 13px; margin:0 0 8px; border:1px solid rgba(226,105,95,0.4); border-left:3px solid #e2695f; border-radius:9px; background:rgba(226,105,95,0.08); font-size:var(--fs-2); color:var(--text-soft); line-height:1.55;}
   .notify-problem-line b{color:#7E2720;}
@@ -179,8 +180,8 @@
 .ai-owner{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;
   margin-left:10px;padding:3px 9px;border-radius:100px;
   font-size:var(--fs-1);font-weight:800;letter-spacing:.02em;white-space:nowrap;
-  background:rgba(143,112,41,.12);color:#7B6023;border:1px solid rgba(143,112,41,.35);}
-@media print{ .ai-owner{border-color:#8FD9CC;color:#4F6B68;background:none;} }
+  background:var(--pf-warn-bg);color:var(--pf-warn);border:1px solid var(--pf-warn);}
+@media print{ .ai-owner{border-color:var(--border-strong);color:var(--dim);background:none;} }
 /* ══ 🎛 C레벨 창 라이브 (배 12723 2판 · GM 2026-09-17 「직관·시각적 액티비티·중복 제거」) — 색은 platform_brand 토큰만 ══ */
 .cb-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 0 8px;}
 .cb-head h2{margin:0;}
@@ -189,7 +190,7 @@
 .cb-lanes{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 0 6px;}
 .lane{background:var(--paper);border:1px solid var(--border);border-top:4px solid var(--dim);border-radius:10px;padding:9px 10px 8px;min-width:0;display:flex;flex-direction:column;min-height:250px;transition:border-color .4s;}
 .lane.on{border-top-color:var(--green);}
-.lane.busy{border-top-color:var(--gold);animation:lanepulse 1.6s infinite;}
+.lane.busy{border-top-color:var(--gold);animation:lanepulse 1s infinite;}
 @keyframes lanepulse{0%{box-shadow:0 0 0 0 rgba(126,95,32,.35)}60%{box-shadow:0 0 0 6px rgba(126,95,32,0)}100%{box-shadow:0 0 0 0 rgba(126,95,32,0)}}
 .lane .lh{display:flex;align-items:center;gap:6px;font-weight:800;font-size:var(--fs-3);color:var(--text);}
 .lane .dot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:0 0 9px;}
@@ -197,7 +198,7 @@
 .lane.busy .dot{background:var(--gold);animation:dotpulse 1s infinite;}
 @keyframes dotpulse{50%{opacity:.25}}
 .lane .state{margin-left:auto;font-size:var(--fs-1);font-weight:600;color:var(--dim);white-space:nowrap;}
-.lane.busy .state{color:#7E5F20;}
+.lane.busy .state{color:var(--gold);}
 .lane .now{margin:7px 0 6px;font-size:var(--fs-2);line-height:1.4;color:var(--text);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;min-height:3.2em;}
 .lane .now.idle{color:var(--dim);font-weight:400;}
 .lane .stream{border-top:1px dashed var(--border);padding-top:5px;font-size:var(--fs-1);line-height:1.45;overflow:hidden;}
@@ -258,11 +259,11 @@
       <p style="color:#0F3D3A;font-size:var(--fs-3);font-weight:700;line-height:1.55;margin:0 0 12px;">웰페리온 ERP를 정말 잘 만들어, <span style="color:#0A6E66;">모든 스포츠클럽이 이 ERP로 운영되게 한다.</span></p>
       <p style="color:#3E5B58;font-size:var(--fs-2);line-height:1.75;margin:0;">운영의 잡무는 시스템이 책임집니다. 그래서 사람은 <strong style="color:#0F3D3A;">사람을 키우는 일</strong> — 회원의 <strong style="color:#0F3D3A;">정신적·육체적 성장</strong>이라는 본질에 몰입합니다. 그렇게 <strong style="color:#0A6E66;">성장이 지속되는 비즈니스 생태계</strong>를 만듭니다.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(34,31,32,0.10);">
-        <span style="font-size:var(--fs-1);font-weight:600;color:#0A6E66;background:rgba(14,148,136,0.12);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
+        <span style="font-size:var(--fs-1);font-weight:600;color:var(--pf-pri-dk);background:var(--pf-tint);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
         <span style="font-size:var(--fs-1);color:#4F6B68;align-self:center;">→</span>
-        <span style="font-size:var(--fs-1);font-weight:600;color:#0A6E66;background:rgba(14,148,136,0.12);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
+        <span style="font-size:var(--fs-1);font-weight:600;color:var(--pf-pri-dk);background:var(--pf-tint);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
         <span style="font-size:var(--fs-1);color:#4F6B68;align-self:center;">→</span>
-        <span style="font-size:var(--fs-1);font-weight:600;color:#0A6E66;background:rgba(14,148,136,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
+        <span style="font-size:var(--fs-1);font-weight:600;color:var(--pf-pri-dk);background:var(--pf-tint);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
       </div>
       <p style="color:#3E5B58;font-size:var(--fs-2);margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
       <!-- ══ 🌊 자동화 → 자율화 — 별도 섹션이었던 것을 북극성 블록 안으로 흡수(GM 지시 2026-08-15 "북극성 아래에 자동화 → 자율화 병합"). 제목 한 겹(h2)만 없앴다, 문구는 그대로. ══ -->
@@ -479,7 +480,7 @@
     <summary>📚 학습 <span class="hist-sub">— GM 교육 자료 · AI 가 스스로 낸 학습 제안</span></summary>
     <div class="sec-note" style="margin:8px 0 10px;">
       새로 배운 것은 <a href="../../gm/GM_교육.html" target="_blank" rel="noopener"
-         style="display:inline-block;padding:3px 10px;border-radius:4px;background:var(--accent,#E5EDF5);color:#0F3D3A;font-weight:700;text-decoration:none;">📘 GM 교육 자료 열기</a>
+         style="display:inline-flex;align-items:center;min-height:44px;padding:3px 10px;border-radius:4px;background:var(--accent,#E5EDF5);color:var(--pf-bg,#fff);font-weight:700;text-decoration:none;">📘 GM 교육 자료 열기</a>
       에 번호를 붙여 쌓입니다(인쇄 가능).
       아래는 <b>AI 가 스스로 낸 학습 제안</b>입니다 — 무엇을 바꾸면 나아지는지 근거와 함께 적힙니다.
     </div>
