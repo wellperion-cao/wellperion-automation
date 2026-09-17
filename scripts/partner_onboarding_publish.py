@@ -36,6 +36,25 @@ OUT = ROOT / "3. 웰페리온 가이드" / "erp" / "admin" / "data" / "partner_o
 # 플랫폼관리 화면의 파트너 키(식별자 표와 같다) ↔ 상담봇 테넌트 폴더 이름
 TENANT_KEYS = {"wellperion": "1_wellperion", "dc": "2_dietcamp", "jo": "3_gocheokgolf"}
 TENANT_NAMES = {"wellperion": "1호 웰페리온", "dc": "2호 다이어트캠프", "jo": "3호 고척GDR QA 골프존"}
+# 파트너 라인 폴더 — 초안 페이지 3장(소개서·브랜드가이드·운영전략)이 여기 있어야 설문을 보낸다(가이드라인 부록 B 2단계 · GM 2026-09-17).
+TENANT_DIRS = {"dc": "dietcamp", "jo": "gocheokgolf"}
+DRAFT_PAGES = (("회사소개서", "intro.html"), ("브랜드가이드", "brand.html"), ("운영전략", "strategy.html"))
+ADMIN_DIR = ROOT / "3. 웰페리온 가이드" / "erp" / "admin"
+
+def draft_page_lines(key: str) -> list[str]:
+    """설문 머리에 붙일 초안 페이지 링크 — 파일이 없으면 링크 대신 경고 한 줄(페이지 먼저 만들라는 관문)."""
+    d = TENANT_DIRS.get(key)
+    if not d:
+        return []
+    out, missing = [], []
+    for label, fn in DRAFT_PAGES:
+        if (ADMIN_DIR / d / fn).exists():
+            out.append(f"▪ {label} https://erp.wellperion.com/{d}/{fn}")
+        else:
+            missing.append(label)
+    if missing:
+        out.append("[경고] 초안 페이지가 아직 없음: " + " · ".join(missing) + " — 가이드라인 부록 B 2단계(페이지 먼저)를 지키지 않았다")
+    return out
 
 
 def load_json(p: Path):
@@ -90,6 +109,9 @@ def kakao_text(key: str, qa: list, bank: dict) -> str:
         q = it.get("q") or idx.get(it["q_id"], {}).get("q", "")
         known = it.get("known")
         lines.append(f"{it['partner_no']}. {q}" + (f" (저희가 아는 것: {known})" if known else ""))
+    head = draft_page_lines(key)
+    if head:
+        lines = ["[초안 페이지 — 답이 오는 번호부터 채워집니다]"] + head + lines
     return "\n".join(lines)
 
 
@@ -129,7 +151,9 @@ def _self_test() -> None:
     assert d["tenants"]["jo"]["answered"] == 1 and d["tenants"]["jo"]["pending"] == 1
     assert d["tenants"]["jo"]["rows"][1]["q"] == "한 줄은?"
     txt = kakao_text("jo", qa, bank)
-    assert txt == "2. 한 줄은? (저희가 아는 것: 초안)", txt
+    assert txt.splitlines()[-1] == "2. 한 줄은? (저희가 아는 것: 초안)", txt   # 마지막 줄 = 답 없는 번호 하나
+    assert txt.startswith("[초안 페이지"), txt                                 # 머리 = 초안 페이지 링크(가이드라인 B-2 관문)
+    assert "[경고]" not in txt or not (ADMIN_DIR / "gocheokgolf" / "intro.html").exists(), txt
 
 
 if __name__ == "__main__":
