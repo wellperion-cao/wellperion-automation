@@ -357,13 +357,26 @@ def _hr_roster_fetch() -> list:
     return rows
 
 
+def _hr_roster_db() -> list:
+    """서버 인사 표(hr.employee · 나우열M 라인 적재분)를 hr_match 가 읽는 모양({"성명","재직 상태"})으로 — 읽기만 한다.
+    2026-09-17 인사 허브 GAS 가 비밀번호 거절로 명부를 안 줘 가입 신청이 전부 막혔다. 서버 표(재직 71명)가 정본이라 여기부터 본다."""
+    with db() as c:
+        rows = c.execute("SELECT person_name_raw, roster_display_name, status FROM hr.employee").fetchall()
+    return [{"성명": r["roster_display_name"] or r["person_name_raw"], "재직 상태": r["status"] or ""} for r in rows]
+
+
 def hr_roster() -> list:
-    """5분 메모리 캐시(성공한 결과만 캐시 — 실패는 다음 호출에서 바로 재시도)."""
+    """5분 메모리 캐시(성공한 결과만 캐시 — 실패는 다음 호출에서 바로 재시도). 서버 인사 표 → 비었을 때만 인사 허브 GAS."""
     global _HR_ROSTER
     ts, rows = _HR_ROSTER
     if rows is not None and time.time() - ts < 300:
         return rows
-    rows = _hr_roster_fetch()
+    try:
+        rows = _hr_roster_db()
+    except Exception:
+        rows = []
+    if not rows:
+        rows = _hr_roster_fetch()
     _HR_ROSTER = (time.time(), rows)
     return rows
 
