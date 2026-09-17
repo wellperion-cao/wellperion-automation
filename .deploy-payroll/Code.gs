@@ -129,11 +129,13 @@ function keyVal_(col, v) { return col === '월' ? ym7_(v) : String(v == null ? '
 function upsert_(name, keyCols, objs) {
   var sh = tab_(name), existing = readTab_(name), idx = {};
   existing.forEach(function (r) { idx[keyCols.map(function (k) { return keyVal_(k, r[k]); }).join('|')] = r._row; });
-  var add = [], upd = 0;
+  var add = [], addIdx = {}, upd = 0;                       // addIdx: 같은 배치 안 같은 키가 두 번 오면(결제 2건→같은 수강권) 두 번째가 첫 추가행을 덮어쓴다(중복 append 방지)
   objs.forEach(function (o) {
     var k = keyCols.map(function (c) { return keyVal_(c, o[c]); }).join('|');
-    if (idx[k]) { sh.getRange(idx[k], 1, 1, TABS[name].length).setValues([rowArr_(name, o)]); upd++; }
-    else add.push(rowArr_(name, o));
+    var row = rowArr_(name, o);
+    if (idx[k]) { sh.getRange(idx[k], 1, 1, TABS[name].length).setValues([row]); upd++; }
+    else if (addIdx[k] != null) { add[addIdx[k]] = row; }
+    else { addIdx[k] = add.length; add.push(row); }
   });
   if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, TABS[name].length).setValues(add);
   return { added: add.length, updated: upd };
