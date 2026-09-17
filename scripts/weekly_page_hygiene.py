@@ -117,11 +117,8 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "chro", "label": "채용-사우나", "path": "3. 웰페리온 가이드/chro/recruiting/sauna.html"},
     # ── shared 3 — 공용 (2026-07-14 추가) ──
     {"clevel": "shared", "label": "전사회의", "path": "3. 웰페리온 가이드/전사회의.html"},
-    {"clevel": "shared", "label": "웰페리온 대시보드(웹)", "path": "3. 웰페리온 가이드/wellperion_dashboard_web.html"},
     # ── shared 3 — 리다이렉트 스텁(감사 가치 낮으나 GM 지시로 포함) ──
     {"clevel": "shared", "label": "index(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/index.html"},
-    {"clevel": "shared", "label": "항해지도(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/항해지도.html"},
-    {"clevel": "shared", "label": "northstar_today(리다이렉트 스텁)", "path": "3. 웰페리온 가이드/northstar_today.html"},
 ]
 
 DEFAULT_LOG_PATH = os.path.join(_PROJECT_ROOT, "status", "weekly_page_hygiene_log.jsonl")
