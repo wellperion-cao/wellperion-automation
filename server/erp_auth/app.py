@@ -1161,12 +1161,16 @@ def check(request: Request, erp_session: Optional[str] = Cookie(default=None)):
 
 
 ROLE_LABEL = {"admin": "관리자", "staff": "직원"}   # 화면엔 영문 role 을 그대로 내지 않는다(GM 2026-09-17 「admin 이 뭐야」)
+TIER_LABEL = {"leader": "팀 리더", "member": "팀원"}   # 직원 계정은 직급 층으로 부른다(ssot/ranks.json tiers)
 
 
 def _profile(u) -> dict:
     """계정 화면·/auth/me 가 같이 쓰는 내 정보 — perms 의 dept·rank 는 관리자 콘솔이 적은 값(없으면 빈칸)."""
     p = perms_of(u) or {}
-    return {"email": u["email"], "name": u["name"], "role": u["role"], "role_label": ROLE_LABEL.get(u["role"], u["role"]),
+    # 역할 칸 = 시스템 role(admin/staff)이 아니라 직급 층(ranks.json tiers) — 실장·팀장은 「팀 리더」(GM 2026-09-17 「실장인데 왜 직원이야」)
+    tier = p.get("tier") or rank_tier(p.get("rank") or "")
+    role_label = ROLE_LABEL["admin"] if u["role"] == "admin" else TIER_LABEL.get(tier, ROLE_LABEL["staff"])
+    return {"email": u["email"], "name": u["name"], "role": u["role"], "role_label": role_label,
             "dept": p.get("dept") or "", "rank": p.get("rank") or "", "phone": p.get("phone") or "",
             "last_login": str(u["last_login"] or "") if "last_login" in u.keys() else "",
             "social": bool(u["pw"]) is False}
