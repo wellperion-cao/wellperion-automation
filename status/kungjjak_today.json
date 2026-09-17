@@ -2333,18 +2333,6 @@
           "evidence": "✅있음"
         },
         {
-          "ref": "GM-20260917-4024",
-          "no": "24",
-          "got": "home에 문의&등록 현황 관련해서 빠르게 반영이 안되는데 이유가 있나? 그리고 재등록대시보드 https://erp.wellperion.com/cpo/member/renewal.html 이거 어떻게할꺼야? 페이지 필…",
-          "did": "",
-          "start": "16:25",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
-        },
-        {
           "ref": "GM-20260917-cpo-bodyfriend",
           "no": "nd",
           "got": "바디프렌드 라운지 9월 매출 집계 가능한지 · 채널 계정 AX랩스 정본→ERP 관리자 반영",
@@ -2389,6 +2377,18 @@
           "end": "12:00",
           "minutes": 6,
           "upload": "✅ 배포 (9c7e03e48)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-cpo-home-lag",
+          "no": "ag",
+          "got": "홈 문의&등록 현황 반영 늦는 이유 · renewal 페이지 처분 결론",
+          "did": "원인 = 스냅샷 경로(3분 주기 생성 + 1회 2.5분 + 서버 받기 1분 + 구글 조회 실패 시 직전 값 이어싣기 22회) · 수리 = 서버 원장 직독, 스냅샷은 폴백.",
+          "start": "16:25",
+          "end": "16:46",
+          "minutes": 20,
+          "upload": "✅ 배포 (efb794b7b)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -2618,28 +2618,13 @@
         }
       ],
       "count": 24,
-      "done": 23,
-      "open": 1,
+      "done": 24,
+      "open": 0,
       "avg_minutes": 9,
       "work_count": 23,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4024",
-          "no": "24",
-          "got": "home에 문의&등록 현황 관련해서 빠르게 반영이 안되는데 이유가 있나? 그리고 재등록대시보드 https://erp.wellperion.com/cpo/member/renewal.html 이거 어떻게할꺼야? 페이지 필…",
-          "did": "",
-          "start": "16:25",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 20
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -3346,7 +3331,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T16:45:20",
+    "published_at": "2026-09-17T16:50:06",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -3374,20 +3359,20 @@
           "result": "warn"
         },
         "idle_since": "16:45",
-        "saves": 96
+        "saves": 98
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "16:30",
+        "signal": "16:45",
         "last": {
-          "time": "16:40",
-          "area": "GM지시",
-          "event": "화면 정돈 제안서 v3 — 다이어트캠프 제외(11번·요약 행·7번 다캠 홈) · 1호점 먼저 · 2호점 이상 벤치마킹",
-          "result": "ok"
+          "time": "16:49",
+          "area": "GM요청",
+          "event": "화면 정돈 제안서",
+          "result": "warn"
         },
-        "idle_since": "16:40",
+        "idle_since": null,
         "saves": 26
       },
       "cpo": {
@@ -3396,19 +3381,19 @@
         "alive": true,
         "signal": "16:45",
         "last": {
-          "time": "16:44",
-          "area": "공통",
-          "event": "fix(home): 문의 원장 읽기를 쪽 나눠 받는다 — 올해 1,044건이 1,000건 한도에 잘리던 것",
+          "time": "16:46",
+          "area": "GM지시",
+          "event": "home 반영 지연 원인 실측",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 30
+        "saves": 31
       },
       "coo": {
         "nick": "시우",
         "session": "welperion-automation-76",
         "alive": true,
-        "signal": "16:30",
+        "signal": "16:45",
         "last": {
           "time": "16:41",
           "area": "배12726",
