@@ -244,7 +244,27 @@ def main() -> int:
             print(f"! {args.role} 은 등록된 적이 없습니다 — --session 으로 먼저 등록하세요.")
             return 2
         print(f"생존 갱신: {data['role']} · {data.get('session')} · {data['heartbeat_at']} · {push_console(args.role, data)}")
-        if args.role == "ceo":   # 사람 방 호출은 배가 아니라 인박스 — 웰리 세션이 여기서 보고 그 방에 답한다(배 2614 줄기)
+        if args.role == "ceo":   # 유휴 창 감시 — GM 2026-09-17 16:3x 「대기인 사람들 멈추지 않게 오케스트레이션」
+            try:                 # 20분 넘게 조용한데 열린 배가 있는 창을 한 줄로 찍는다 → 웰리 Monitor 가 🛑 줄을 보고 그 창에 다음 배를 준다
+                from kungjjak_board import _board  # noqa: PLC0415
+                q = json.load(open(os.path.join(_PROJECT_ROOT, "status", "_queue.json"), encoding="utf-8"))
+                items = q if isinstance(q, list) else (q.get("items") or [])
+                now = datetime.now()
+                idle = []
+                for role_, r in _board(now.strftime("%Y-%m-%d"))["roles"].items():
+                    if role_ == "ceo" or not r.get("alive"):
+                        continue
+                    stamp = r.get("idle_since") or (r.get("last") or {}).get("time")
+                    if not stamp:
+                        continue
+                    mins = int((now - now.replace(hour=int(stamp[:2]), minute=int(stamp[3:5]), second=0, microsecond=0)).total_seconds() // 60)
+                    n = sum(1 for t in items if str(t.get("clevel", "")).lower() == role_ and str(t.get("status", "")).upper() in ("PENDING", "IN_PROGRESS"))
+                    if mins >= 20:
+                        idle.append(f"{r['nick']} {mins}분(배 {n})")
+                if idle:
+                    print("🛑 유휴 창 — " + " · ".join(idle) + " → 다음 배를 SendMessage 로 준다")
+            except Exception as exc:
+                print(f"! 유휴 감시 실패: {exc}")
             try:
                 from call_inbox import summary_line, open_calls
                 line = summary_line()
