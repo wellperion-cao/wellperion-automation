@@ -4746,7 +4746,16 @@ def main() -> int:
     ap.add_argument("--date", default="", help="--weekly-intake 기준일(YYYY-MM-DD · 그 주 화요일로 맞춘다)")
     ap.add_argument("--selfcheck", action="store_true",
                     help="네트워크 없이 도는 자가점검(날짜 시간대·끝난 건 필터 등)")
+    ap.add_argument("--duty-check", action="store_true",
+                    help="오늘 휴무·대체 판정만 표로 출력(발송 없음 · GM 지시 2026-09-17)")
     args = ap.parse_args()
+
+    if args.duty_check:
+        print("부서 | 반장 | 대체")
+        for _d in ("시설부", "운영부", "지원부(여)", "지원부(남)", "주차관리부"):
+            _sub, _reason = duty_substitute(_d)
+            print(f"{_d} | {_sub} | {_reason or '(휴무 없음)'}")
+        return 0
 
     if args.selfcheck:
         _selfcheck_parse_ymd()
@@ -4818,6 +4827,9 @@ def main() -> int:
             else:
                 import report_stream_2_check as _r2
                 _morning_text = _r2.build_morning_kakao()
+                _duty_line = _duty_today_line()
+                if _duty_line:
+                    _morning_text = _duty_line + "\n\n" + _morning_text
                 _r2._send_kakao(_morning_text)
                 record_heartbeat(MORNING_4DEPT_HEARTBEAT_ID, detail=f"4부서방 하루의 시작 발송 — {_today}",
                                  extra={"state": {"date": _today}})
