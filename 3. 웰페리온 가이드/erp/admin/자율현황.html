@@ -1431,7 +1431,7 @@
     var UPL = { '✅배포':'✅배포', '⚠️저장만':'⚠️저장만', '발송':'발송', '기록만':'기록만' };
     var tb = document.getElementById('cb-gm');
     if(tb) tb.innerHTML = rowsG.length
-      ? '<table class="gtbl cb-tbl"><colgroup><col style="width:48px"><col style="width:40px"><col><col><col style="width:110px"><col style="width:80px"></colgroup>'
+      ? '<table class="gtbl cb-tbl"><colgroup><col style="width:52px"><col style="width:58px"><col><col><col style="width:118px"><col style="width:84px"></colgroup>'
         + '<tr><th>담당</th><th>#</th><th>접수한 것</th><th>한 것</th><th>상태·소요</th><th>저장·배포</th></tr>'
         + rowsG.slice(0,40).map(function(x){ var i = x.i;
             var st = i.open ? '🚢 <b>진행중</b>' : ('🏁 ' + (i.minutes != null ? i.minutes + '분' : '완료'));
