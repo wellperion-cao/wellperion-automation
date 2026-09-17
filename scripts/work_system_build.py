@@ -61,6 +61,15 @@ def clean_text(s) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+def clean_multiline(s) -> str:
+    """clean_text 와 같은 태그·표식 청소를 줄 단위로 — 줄바꿈은 살린다. 09-17 GM 지적(바이크 A3
+    자료 실종) 대응 — ■ 자료 절이 라벨 안에 「·」를 품고 있어(예: 「입식/좌식 · 기본가」) clean_text 로
+    한 줄로 뭉개면 화면 쪽 줄 단위 링크 파싱이 라벨을 엉뚱하게 자른다. 줄마다 청소해 구분을 지킨다."""
+    lines = (re.sub(r"[ \t]+", " ", _MARKER_RE.sub(" ", _TAG_RE.sub(" ", ln))).strip()
+             for ln in str(s or "").splitlines())
+    return "\n".join(ln for ln in lines if ln)
+
+
 def _kst_today() -> date:
     return datetime.now(timezone(timedelta(hours=9))).date()
 
@@ -164,9 +173,13 @@ def collect_ssot(today: date):
             items.append({
                 "title": title, "owner": str(r.get("담당자") or "").strip(),
                 "dept": "", "due": (str(r.get("종료일") or "")[:10] or None),
-                "next": clean_text(r.get("내용"))[:80],
+                # 09-17 GM 지적(바이크 A3 자료 실종) — 카드 이관 관문(gm_handoff.migrate_cards)이
+                # ■ 자료 절을 내용 끝에 싣게 됐다. 80자로 자르면 그 절이 항상 잘려 안 보인다 → 자르지 않는다.
+                "next": clean_multiline(r.get("내용")),
                 "hold": str(r.get("상태") or "") == "보류",
                 "src": "ssot", "ref": str(r.get("id") or ""),
+                "link": str(r.get("링크") or "").strip(),
+                "file_url": str(r.get("파일URL") or "").strip(),
             })
     except Exception:
         failed = True
@@ -223,6 +236,10 @@ def merge(items: list) -> list:
             hit["next"] = it["next"]
         if not hit.get("owner") and it.get("owner"):
             hit["owner"] = it["owner"]
+        if not hit.get("link") and it.get("link"):
+            hit["link"] = it["link"]
+        if not hit.get("file_url") and it.get("file_url"):
+            hit["file_url"] = it["file_url"]
         hit["hold"] = hit.get("hold") or it.get("hold")
     return merged
 

@@ -147,16 +147,17 @@ TODO_UPLOAD_BLOCKED = False
 
 
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
-             owner: str = "", start: str = "") -> dict:
+             owner: str = "", start: str = "", link: str = "") -> dict:
     """owner 기본 = 공란(담당은 부서가 정한다 · GM 2026-09-17). 생성자는 김남욱GM(GAS 가림 기준 표기 — 배12675).
-    start 기본 = 오늘(기존 동작 그대로) — 이관 관문(migrate_cards)만 카드 달 1일을 넘긴다."""
+    start 기본 = 오늘(기존 동작 그대로) — 이관 관문(migrate_cards)만 카드 달 1일을 넘긴다.
+    link = 업무 SSOT 「링크」 칸(GAS _mapFields 가 link→링크 로 옮긴다) — 이관 관문이 카드 첫 자료를 싣는다."""
     if TODO_UPLOAD_BLOCKED:
         return {"ok": False, "blocked": True,
                 "reason": "업무 SSOT 등록은 AI 가 하지 않는다(GM 지시 2026-09-09) — 지시를 받은 실무진이 직접 올린다"}
     import ops_daily_digest as o
     params = {"action": "todo_add", "title": title, "category": category, "owner": owner,
               "startDate": start or _today().isoformat(), "endDate": due, "content": content,
-              "link": "", "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
+              "link": link, "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
     if dry:
         return {"ok": True, "dry": True, "id": "TODO-(미리보기)"}
     return o._todo_post(params) or {"ok": False, "reason": "응답 없음"}
@@ -389,6 +390,34 @@ def _open_checks(progress_note: str) -> list[str]:
     return [ln.strip() for ln in str(progress_note or "").splitlines() if ln.strip().startswith("□")]
 
 
+# GM 지적 2026-09-17 13:2x "바이크 3사 A3 자료가 다 날아갔나?" — 이관 때 카드 docs(첨부 자료)가
+# 행에 안 실려 생긴 일. href 는 카드 파일(coo/chairman/*)기준 상대경로 그대로라, erp 라이브 주소
+# 기준 절대 URL 로 바꿔야 업무 SSOT 쪽에서도 열린다(urljoin 이 ../ 를 그대로 정규화해 준다).
+_CARD_DOC_BASE = "https://erp.wellperion.com/coo/chairman/"
+
+
+def _card_doc_url(href: str) -> str:
+    from urllib.parse import urljoin  # noqa: PLC0415
+    return urljoin(_CARD_DOC_BASE, str(href or "").strip())
+
+
+def _card_doc_lines(docs) -> tuple[list[str], str]:
+    """카드 docs[]({label,href} 또는 href 문자열) → (본문 줄, 첫 자료 절대주소). 빈칸은 만들지 않는다."""
+    lines: list[str] = []
+    first = ""
+    for d in docs or []:
+        if isinstance(d, str):
+            d = {"href": d, "label": ""}
+        href = str((d or {}).get("href") or "").strip()
+        if not href:
+            continue
+        url = _card_doc_url(href)
+        if not first:
+            first = url
+        lines.append(f"· {d.get('label') or href} — {url}")
+    return lines, first
+
+
 def migrate_cards(dry: bool, only: set | None) -> list[dict]:
     """월간운영계획(GM 카드) 열린 카드 → 업무 SSOT 행. dry=False 면 카드마다 즉시 _save_card
     로 저장한다(누적 diff 방지 · 배 지시 「한 카드 = 한 저장」) — 실제 실행은 --only 로 끊어 부른다."""
@@ -415,18 +444,23 @@ def migrate_cards(dry: bool, only: set | None) -> list[dict]:
                 row["판정"] = f"skip(이미 있음 {dup.get('id')})"
                 rows.append(row)
                 continue
+            doc_lines, first_link = _card_doc_lines(card.get("docs"))
+            note = str(card.get("note") or "").strip()
             content = "\n".join(x for x in (
                 [str(card.get("target") or "")] + _open_checks(card.get("progress_note"))
+                + (["■ 자료\n" + "\n".join(doc_lines)] if doc_lines else [])
+                + (["■ 메모(카드)\n" + note] if note else [])
                 + [f"(GM 카드 {cid} 에서 이관 {_MIGRATE_TAG})"]
             ) if x)
             due = card.get("due", "") or ""
             start = f"{ym}-01"
             if dry:
                 row["판정"] = "만듦(dry)"
+                row["_content_preview"] = content  # --dry-run 확인용(표에는 안 찍는다)
                 rows.append(row)
                 continue
             r = add_todo(title, content, str(card.get("dept") or ""), due, "", False,
-                        owner=owner_norm, start=start)
+                        owner=owner_norm, start=start, link=first_link)
             if not r.get("ok"):
                 row["판정"] = f"실패({r.get('reason')})"
                 rows.append(row)

@@ -159,6 +159,29 @@
     return m ? (m[2] + '.' + m[3]) : '—';
   }
 
+  // GM 지적 2026-09-17 "바이크 3사 A3 자료가 다 날아갔나?" — 카드 자료(docs)가 이관되며 SSOT
+  // 「내용」 절(■ 자료 · ■ 메모(카드))로 들어온다. XSS 방지: 먼저 esc() 한 뒤, URL 자리만 <a> 로
+  // 치환한다(치환은 자리표시자로 미리 떼어뒀다 붙이는 방식 — esc() 가 태그를 다시 깨지 않는다).
+  // 「· 라벨 — url」 매칭은 줄 단위(^…$)로 한다 — 라벨 자체가 「·」를 품는 경우(예: "입식/좌식 ·
+  // 기본가")가 있어, 줄 구분 없이 자르면 다음 자료 항목까지 라벨에 섞여 들어간다(빌더가 이제 줄바꿈을
+  // 살려서 내려준다 — clean_multiline).
+  function linkifyBody(raw) {
+    var text = String(raw || '');
+    var slots = [];
+    function stash(html) { slots.push(html); return ' ' + (slots.length - 1) + ' '; }
+    text = text.replace(/■\s*(자료|메모\(카드\))/g, function (m, name) {
+      return stash('<b>■ ' + esc(name) + '</b>');
+    });
+    text = text.replace(/^(\s*·\s*)(.+?)\s+—\s+(https?:\/\/\S+)\s*$/gm, function (m, pre, label, url) {
+      return pre + stash('<a class="doc-link" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label.trim()) + '</a>');
+    });
+    // 그 밖 남은 https 주소는 원문 라벨 그대로 링크(잘라서 「A3 열기」 같은 것으로 바꾸지 않는다).
+    text = text.replace(/https?:\/\/\S+/g, function (url) {
+      return stash('<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url) + '</a>');
+    });
+    return esc(text).replace(/ (\d+) /g, function (m, i) { return slots[Number(i)]; }).replace(/\n/g, '<br>');
+  }
+
   function readData() {
     var qs = '?cb=' + Date.now();
     // ERP 도메인은 /repo/ 가 저장소 정적 파일을 그대로 서빙한다(GM업무.html readPlan() 과 같은 방식).
@@ -176,13 +199,17 @@
       return '<a class="doc-link" href="' + srcLink(s) + '" target="_blank" rel="noopener">'
         + esc(SRC_LABEL[s.src] || s.src) + ' →</a>';
     }).join('');
+    var attach = '';
+    if (it.link) attach += '<a class="doc-link" href="' + esc(it.link) + '" target="_blank" rel="noopener">📎 링크</a>';
+    if (it.file_url) attach += '<a class="doc-link" href="' + esc(it.file_url) + '" target="_blank" rel="noopener">📎 파일</a>';
     var whenCls = it.state === 'overdue' ? ' overdue' : '';
     return '<div class="item" data-state="' + esc(it.state) + '">'
       + '<div class="top"><h2>' + (STATE_ICON[it.state] || '') + ' ' + esc(it.title) + '</h2>'
       + '<span class="when' + whenCls + '">' + (it.due ? fmtDue(it.due) : '기한 없음') + '</span></div>'
       + (it.owner ? '<p class="body">담당: ' + esc(it.owner) + '</p>' : '')
-      + (it.next ? '<p class="body">다음 한 걸음: ' + esc(it.next) + '</p>'
+      + (it.next ? '<p class="body">다음 한 걸음: ' + linkifyBody(it.next) + '</p>'
                  : '<p class="body rep-empty">다음 한 걸음 미정</p>')
+      + (attach ? '<div class="badges">' + attach + '</div>' : '')
       + '<div class="badges">' + srcs + '</div>'
       + '<div class="wsrow-act">'
       +   '<button type="button" disabled title="쓰기 관문 준비 중 — status/work_system_actions.jsonl 관문 배포 뒤 켭니다">완료</button>'
