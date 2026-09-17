@@ -14550,6 +14550,25 @@ var WriteBuffer = (function(){
              saved 가 없는 옛 배포·다른 액션은 종전 재조회 경로로 그대로 떨어진다(회귀 0). */
           else if (data.saved && typeof data.saved === 'object' && _verifySavedInline(item, data.saved)) { /* 인라인 대조로 종결 */ }
           else { item._srvMode = data.mode; scheduleVerify(item); }   // ★저장 확인(read-back) — 큐 제거는 대조 뒤로 미룬다(아래 정의)
+        } else if (data && data.error === 'recent-change-by-other') {
+          /* ★2026-09-17 시포 — 사람끼리 덮어쓰기 관문(서버 api_members_write RECENT_CHANGE_MIN). 기외호님 종료일자를
+             실장님·임정은M 이 번갈아 저장해 「계속 바뀐다」로 보였다. 서버가 「누가·언제·무슨 값」을 돌려주면
+             여기서 사람에게 보여 주고, 그래도 저장을 고르면 force 를 붙여 한 번 더 보낸다(취소 = 이 편집 버림). */
+          item.inflight = false;
+          var _keep = confirm('⚠️ ' + (data.detail || '다른 분이 방금 같은 칸을 바꿨습니다') + '\n\n[확인] = 지금 값으로 덮어쓰기 · [취소] = 내 편집 버리고 그분 값 유지');
+          if (_keep) { item.payload.force = true; item.parked = false; item.nextTry = 0; _save(); scheduleFlush(0); }
+          else {
+            item.overlay = null; _remove(item.id);
+            showToast('저장 안 함 — 다른 분 값을 유지합니다. 목록을 새로고침해 주세요', '');
+            if (typeof loadActiveMembers === 'function') { try { loadActiveMembers(); } catch (e) {} }
+          }
+        } else if (data && data.error === 'staff-name-required') {
+          // 이름 없는 저장 거부(같은 관문) — 이름을 다시 받아 그대로 재전송. 취소하면 이 편집은 버린다.
+          item.inflight = false;
+          try { localStorage.removeItem(STAFF_NAME_KEY); localStorage.removeItem(STAFF_NAME_KEY + '_asked'); } catch (e) {}
+          var _nm = memberStaffName();
+          if (_nm) { item.payload.staff = _nm; item.parked = false; item.nextTry = 0; _save(); scheduleFlush(0); }
+          else { item.overlay = null; _remove(item.id); showToast('이름을 입력하지 않아 저장하지 않았습니다', 'err'); }
         } else if (data && data.error === 'rowkey-not-found' &&
                    item.payload && item.payload.rowKey && item.payload.keyPhone && !item.rekeyTried) {
           /* ★배579 근본 수리 (GM 지시 2026-08-12·착수 2026-08-14) — '저장했는데 사라진다'의 뿌리.

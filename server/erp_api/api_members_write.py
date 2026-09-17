@@ -65,6 +65,7 @@ dry-run · 배1054 검증 반영 2026-09-06).
 
 자체점검: python3 api_members_write.py   (DB·네트워크 없음 — 필드매핑·마스킹·직원표기·상태검증 판정만)
 """
+import calendar
 import json
 import os
 import re
@@ -132,7 +133,27 @@ _ACTIVE_ERRORS = {   # GAS 오류 문구 그대로(Survey.js L9678·9691·9743·
                   "detail": "지문키 중복 매칭 — 회원번호(member_no)를 포함해 다시 시도하세요"},
     "member_no_mismatch": {"ok": False, "error": "member_no-phone-mismatch", "noRetry": True,
                            "detail": "회원번호와 전화번호가 일치하지 않습니다"},
+    # ★2026-09-17 시포 — 사람끼리 덮어쓰기 차단(기외호님 종료일자 9/16↔9/17 · 실장님·임정은M 이 번갈아 저장 ·
+    #   상담실 PC 직원 이름 「1202」/빈칸이라 누가 고쳤는지도 안 남았다). 이름 없는 저장은 거부하고, 같은 칸을
+    #   다른 사람이 RECENT_CHANGE_MIN 안에 바꿨으면 화면이 그 사실을 보여 주고 확인(force)을 받은 뒤에만 덮는다.
+    "staff-name-required": {"ok": False, "error": "staff-name-required", "noRetry": True,
+                            "detail": "저장한 사람 이름이 없어 저장하지 않았습니다 — 화면에서 이름을 입력한 뒤 다시 저장해 주세요"},
 }
+RECENT_CHANGE_MIN = 120   # 같은 칸을 다른 사람이 이 시간(분) 안에 바꿨으면 확인 없이 덮지 않는다
+
+
+def _recent_change_by_other(conn, tenant, member_no, fields, staff, now):
+    """같은 회원·같은 칸을 다른 사람이 RECENT_CHANGE_MIN 안에 바꾼 마지막 기록 — 없으면 None(순수 조회)."""
+    if not fields:
+        return None
+    since = time.strftime("%Y-%m-%d %H:%M:%S",
+                          time.gmtime(calendar.timegm(time.strptime(now, "%Y-%m-%d %H:%M:%S")) - RECENT_CHANGE_MIN * 60))   # 시간대 무관(서버 UTC·PC KST 같은 결과)
+    row = conn.execute(
+        "SELECT at, staff, field, new_value FROM member_change_log WHERE tenant_id=%s AND member_no=%s"
+        " AND field = ANY(%s) AND at >= %s AND coalesce(staff,'') <> %s"
+        " AND coalesce(staff,'') NOT LIKE '시스템%%' ORDER BY at DESC LIMIT 1",
+        (tenant, member_no, [str(f) for f in fields], since, staff)).fetchone()
+    return dict(row) if row else None
 
 # member_archive_restore(6단계 · 배1054) — GAS MEMBER_DEFAULT_OWNER 상수(Survey.js L2721) 그대로.
 MEMBER_DEFAULT_OWNER = "임정은"
@@ -522,6 +543,22 @@ def _member_active_update_one(payload, raw_body, user):
                 else:
                     targets.append((col, payload.get("value")))
 
+                # ★2026-09-17 시포 — 덮어쓰기 관문(위 _ACTIVE_ERRORS 주석). force=true 는 화면이 「다른 분이 방금
+                #   바꿨다」 안내를 보여 주고 사람이 그래도 저장을 고른 뒤에만 붙인다.
+                if not err_code and not payload.get("force"):
+                    if "staff" in payload and staff == "이름미상":
+                        err_code = "staff-name-required"
+                    else:
+                        clash = _recent_change_by_other(conn, tenant, member_no, [t[0] for t in targets], staff, now)
+                        if clash:
+                            err_code = "recent-change-by-other"
+                            extra = {"ok": False, "error": "recent-change-by-other", "noRetry": True,
+                                     "detail": "%s %s님이 「%s」을(를) 「%s」(으)로 바꿨습니다 — 그래도 지금 값으로 덮으시겠습니까?"
+                                               % (clash["at"][11:16], clash["staff"], str(clash["field"]).replace("\n", ""),
+                                                  clash["new_value"]),
+                                     "last": {"at": clash["at"], "staff": clash["staff"], "field": clash["field"],
+                                              "value": clash["new_value"]}}
+
                 if not err_code:
                     saved, wrote_names, promoted_names, reverts = {}, [], [], []
                     for fname, fv in targets:
@@ -585,6 +622,9 @@ def _member_active_update_one(payload, raw_body, user):
     if err_code == "phone-blocked":
         conn.close()
         return {"ok": False, "error": "전화·회원번호·지문키 칸은 이 경로로 수정할 수 없습니다"}
+    if err_code == "recent-change-by-other":
+        conn.close()
+        return extra
     if err_code:
         conn.close()
         return _ACTIVE_ERRORS[err_code]
@@ -2005,7 +2045,24 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert _ACTIVE_COL_MAP["잔여일(일)"] == "remain_days"   # sync_members.py COLS 재사용(새 스키마 불필요)
     assert _ACTIVE_COL_MAP["주소"] == "address" and _ACTIVE_COL_MAP["종료사유메모"] == "end_reason_memo"
     assert len(_ACTIVE_COL_MAP) == 21
-    assert set(_ACTIVE_ERRORS) == {"unverified", "not_found", "ambiguous", "member_no_mismatch"}
+    assert set(_ACTIVE_ERRORS) == {"unverified", "not_found", "ambiguous", "member_no_mismatch", "staff-name-required"}
+    # 덮어쓰기 관문(2026-09-17) — 다른 사람이 2시간 안에 같은 칸을 바꿨으면 잡고, 본인·시스템·오래된 것은 안 잡는다.
+    class _CL:
+        def __init__(self, rows): self.rows = rows; self.q = None
+        def execute(self, q, p=None): self.q = (q, p); return self
+        def fetchone(self):
+            _t, _m, _f, _since, _staff = self.q[1]
+            for r in self.rows:
+                if r["field"] in _f and r["at"] >= _since and r["staff"] != _staff and not r["staff"].startswith("시스템"):
+                    return r
+            return None
+    _rows = [{"at": "2026-09-17 12:23:10", "staff": "이경연", "field": "종료\n일자", "new_value": "2026-09-16"}]
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", ["종료\n일자"], "임정은", "2026-09-17 12:40:00")["staff"] == "이경연"
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", ["종료\n일자"], "이경연", "2026-09-17 12:40:00") is None      # 본인
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", ["종료\n일자"], "임정은", "2026-09-17 15:40:00") is None      # 2시간 지남
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", ["미등록사유"], "임정은", "2026-09-17 12:40:00") is None      # 다른 칸
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", [], "임정은", "2026-09-17 12:40:00") is None
+    assert _recent_change_by_other(_CL(_rows), "t", "M1", [], "임정은", "2026-09-17 12:40:00") is None
     # 재등록예약목록 첫 예약 파싱(GAS _resParse_ 이식) — 빈 값·이상값은 무손실 스킵.
     assert _parse_first_reservation('[{"date":"2026-09-10","time":"14:00","note":"전화상담"}]') \
         == ("2026-09-10", "14:00", "전화상담")
