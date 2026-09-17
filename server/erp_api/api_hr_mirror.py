@@ -47,9 +47,11 @@ def _now() -> str:
     return datetime.datetime.now(KST).isoformat(timespec="seconds")
 
 
-def _load():
+def _load(force: bool = False):
+    """상태는 파일이 정본 — uvicorn 이 워커 2개라 프로세스마다 메모리가 따로다(2026-09-17 실측: 같은 탭이 5초 간격으로 두 번 돌았다).
+    판정(간격·실행 중)은 매번 파일을 다시 읽고 한다."""
     global _STATE
-    if _STATE:
+    if _STATE and not force:
         return
     try:
         with open(STATE_PATH, encoding="utf-8") as f:
@@ -88,15 +90,45 @@ def plan(tabs, state: dict, now_ts: float, min_gap: float = MIN_GAP_SEC):
 
 
 def _run_tab(tab: str):
+    # 프로세스 간 직렬화 — 탭별 잠금 파일(O_EXCL). 다른 워커 프로세스가 같은 탭을 막 돌렸으면(간격 안) 건너뛴다.
+    lock_path = os.path.join(HERE, "hr_mirror_%s.lock" % tab)
+    try:
+        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode()); os.close(fd)
+    except FileExistsError:
+        try:
+            if time.time() - os.path.getmtime(lock_path) < RUN_TIMEOUT_SEC:
+                return                                     # 다른 프로세스가 돌리는 중
+            os.remove(lock_path)                           # 죽은 잠금(타임아웃 지남) — 걷고 진행
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY); os.close(fd)
+        except Exception:
+            return
+    try:
+        with _LOCK:
+            _load(force=True)
+            st = _tab(tab)
+            if time.time() - float(st.get("last_started_ts") or 0) < MIN_GAP_SEC:
+                st["queued"] = False; _save()
+                return                                     # 다른 프로세스가 방금 돌렸다
+            st.update({"running": True, "queued": False, "last_started_at": _now(), "last_started_ts": time.time()})
+            _save()
+        _run_tab_locked(tab)
+    finally:
+        try:
+            os.remove(lock_path)
+        except Exception:
+            pass
+
+
+def _run_tab_locked(tab: str):
     st = _tab(tab)
-    st.update({"running": True, "queued": False, "last_started_at": _now(), "last_started_ts": time.time()})
-    _save()
     cmd = [sys.executable, MIGRATE, "--apply", "--light", "--tab", tab, "--wait-lock", str(WAIT_LOCK_SEC)]
     try:
         p = subprocess.run(cmd, cwd=HERE, capture_output=True, timeout=RUN_TIMEOUT_SEC)
         code = p.returncode
         tail = p.stdout.decode("utf-8", "replace").strip().splitlines()[-3:]
         with _LOCK:
+            _load(force=True)
             st = _tab(tab)
             st["last_exit"] = code
             if code == 0:
@@ -113,6 +145,7 @@ def _run_tab(tab: str):
             _tab(tab).update({"last_exit": -2, "last_error": type(e).__name__})
     finally:
         with _LOCK:
+            _load(force=True)
             _tab(tab)["running"] = False
             _save()
 
@@ -123,6 +156,7 @@ def _worker():
     while True:
         time.sleep(1.0)
         with _LOCK:
+            _load(force=True)
             now = time.time()
             ready = []
             for t, ts in list(_PENDING.items()):
@@ -163,7 +197,7 @@ async def mirror(request: Request):
     except Exception:
         raise HTTPException(400, "본문 = {\"tabs\": [\"appl\", …]}")
     with _LOCK:
-        _load()
+        _load(force=True)
         run, skip = plan(tabs, _STATE, time.time())
         queued = []
         for t in run + [t for t, why in skip if why == "min-gap"]:
@@ -179,7 +213,7 @@ async def mirror(request: Request):
 @router.get("/api/hr/mirror/health")
 def health():
     with _LOCK:
-        _load()
+        _load(force=True)
         snap = json.loads(json.dumps(_STATE))
         pending = sorted(_PENDING)
     now = datetime.datetime.now(KST)
