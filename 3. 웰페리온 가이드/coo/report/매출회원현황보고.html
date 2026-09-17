@@ -551,7 +551,6 @@
        scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
        이 보고서가 보는 것 — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.
   -->
-    
 
   <!-- 브랜드 띠(세 장 공통) — GM 지시 2026-09-14 「우리가 지금 집중하는 것, 슬로건도 계속 나오게」.
        문구 정본: 슬로건·포지셔닝 = ssot/canon_values.json(slogan_kr·positioning_kr · 이 폴더는
@@ -678,7 +677,7 @@
       <!-- 강습 팀별 운영 현황 — 각 팀이 적는 이번 달 미션·기대치·리스크. 시트 판 보고에서는
            칸 높이에 눌려 아래가 잘려 나가던 자리다(2026-09-14 A·B 비교 실측). -->
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>강습 팀별 운영 현황 — 이번 달 미션 · 기대치 · 리스크<span class="src">보고탭 O3~P18(손입력) → 서버</span></h2>
+        <h2>강습 팀별 성적 — 이달 누적 · 목표 · 지난달 전체 대비<span class="src srv">보고탭 누적 · 목표 · 지난달 말일</span></h2>
         <div class="bd" id="p3teams"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
     </div>
@@ -692,11 +691,11 @@
         <div class="bd" id="p3plan"></div>
       </div>
       <div class="sec">
-        <h2>인사 · 파트너팀 진행사항<span class="src">업무·결재 SSOT → 시트 I20 → 서버</span></h2>
+        <h2>인사 · 파트너팀 진행사항<span class="src srv">업무 SSOT 원장 → 서버</span></h2>
         <div class="bd" id="p3hr"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec">
-        <h2>핵심 보고 · 진행현황<span class="src">업무·결재 SSOT → 시트 I21 → 서버</span></h2>
+        <h2>핵심 보고 · 진행현황<span class="src srv">업무 SSOT 원장 → 서버</span></h2>
         <div class="bd" id="p3work"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
       <div class="sec" style="flex:1;min-height:0;">
@@ -714,8 +713,6 @@
        scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
        이 장이 보는 것 — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.
   -->
-    <div><b>원천</b> — 매출·운영 보고 시트의 운영 현황 칸과 업무 SSOT입니다. 값을 여기서 다시 계산하지 않습니다.</div>
-  </div>
 
   <div class="bband">
     <span class="sl">하루의 완성, 웰페리온</span>
@@ -776,8 +773,6 @@
        scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
        이 장이 보는 것 — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 오른쪽 위 표는 이번 분기(3개월) 팀 목표 대비 누적과, 남은 영업일을 지금 하루 평균으로 채웠을 때의 예상 달성률 · 올해 누적입니다. 오른쪽 아래 표는 팀 매출이 몇 사람에게 쏠려 있는지(상위 20% 담당의 비중)입니다. 세션 2칸은 브로제이 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다.
   -->
-    <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
-  </div>
 
 </div>
 
@@ -1899,23 +1894,90 @@ function loadP3Work(){
    줄은 작게, 항목 줄은 그대로 둔다. 시트에 없는 팀은 지어내지 않고 그 자리를 비운다. */
 var P3_TEAM_CELLS = [['O3', 'P3'], ['O6', 'P6'], ['O9', 'P9'], ['O12', 'P12'], ['O16', 'P16'], ['O18', 'P18']];
 
+
+/* ══ 3면 업무 두 칸 — 업무 SSOT 서버 원장 직독 (GM 2026-09-17 「업무 SSOT 랑 안 맞는다」) ══
+   종전 원천은 보고 시트 I20·I21(사람이 옮겨 적는 칸)이라 원장이 바뀌어도 그대로였다. 이제 원장
+   자체(/api/todo)를 읽고, 못 읽는 자리(공개 사본)에서는 종전 시트 칸으로 떨어진다.
+     인사·파트너팀 = 카테고리에 인사·파트너·채용·교육이 든 진행 중 업무
+     핵심 보고     = 결재 요청이 걸렸거나 기한이 7일 안인 진행 중 업무(기한 이른 순)
+   완료·보류는 싣지 않는다. 열 건을 넘으면 「외 N건」 한 줄. */
+function p3TodoRows(rows, kind, now){
+  var out = [];
+  (rows || []).forEach(function(r){
+    var st = String(r['상태'] || '').trim();
+    if (st === '완료' || st === '취소') return;
+    var cat = String(r['카테고리'] || ''), due = String(r['종료일'] || '').slice(0, 10);
+    var appr = String(r['결재요청'] || '').trim();
+    var hit;
+    if (kind === 'hr') hit = /인사|파트너|채용|교육|평가/.test(cat);
+    else {
+      var left = due ? (new Date(due) - now) / 86400000 : 999;
+      hit = !!appr || (due && left <= 7);
+    }
+    if (!hit) return;
+    out.push({ title: String(r['업무명'] || '').trim(), due: due ? due.slice(5).replace('-', '/') : '',
+               owner: String(r['담당자'] || r['생성자'] || '').replace('GM', ' GM').trim(), sort: due || '9999-99-99' });
+  });
+  out.sort(function(a, b){ return a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0; });
+  return out;
+}
+function renderP3Todo(id, rows, now){
+  var box = document.getElementById(id); if (!box) return false;
+  if (!rows.length) return false;
+  var show = rows.slice(0, 10), rest = rows.length - show.length;
+  box.innerHTML = show.map(function(w){
+    return '<div class="wrow' + (p3Overdue(w.due, now) ? ' over' : '') + '">' +
+      '<span class="wt" title="' + esc(w.title) + '">' + esc(w.title) + '</span>' +
+      '<span class="wd">' + esc(w.due) + '</span>' +
+      '<span class="wo">' + esc(w.owner) + '</span></div>';
+  }).join('') + (rest > 0 ? '<div class="wmore">외 ' + rest + '건</div>' : '');
+  return true;
+}
+function loadP3Todo(){
+  if (!ERP_API_ON) return;
+  fetch('/api/todo?limit=400&t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){
+      var rows = (d && d.data) || [];
+      if (!rows.length) return;
+      var now = new Date();
+      renderP3Todo('p3hr', p3TodoRows(rows, 'hr', now), now);
+      renderP3Todo('p3work', p3TodoRows(rows, 'work', now), now);
+    })
+    .catch(function(){ /* 못 읽으면 시트 칸 그대로 둔다 */ });
+}
+
 function renderP3Teams(c){
   var el = document.getElementById('p3teams'); if (!el) return;
-  var boxes = P3_TEAM_CELLS.map(function(pair){
-    var name = String(c[pair[0]] || '').split(/\r?\n/)[0].trim();
-    if (!name) return '';
-    var body = p3Lines(c[pair[1]]);
-    var inner = body.length ? body.map(function(ln){
-      var t = ln.trim();
-      return /^\[/.test(t)
-        ? '<div class="tl">' + esc(t.replace(/^\[|\]\s*/g, ' ').trim()) + '</div>'
-        : '<div class="ti">' + esc(t.replace(/^[-·•]\s*/, '· ')) + '</div>';
-    }).join('') : '<div class="tnone">아직 안 적혔습니다</div>';
-    return '<div class="tmbox"><div class="tn">' + esc(name) + '</div>' + inner + '</div>';
-  }).filter(Boolean);
-  el.innerHTML = boxes.length
-    ? '<div class="tmgrid">' + boxes.join('') + '</div>'
-    : '<div class="mrow"><span class="lb">팀별 운영 현황 칸이 비어 있습니다</span></div>';
+  /* 팀 성적표 — 「이 팀이 이번 달에 얼마를 했고, 목표까지 얼마 남았고, 지난달보다 나아졌나」 세 가지만.
+     값 = 보고탭 J8~J15(이달 누적) · K8~K15(이달 목표) + 지난달 같은 날까지 누적(p4MonthEndTeams 와 같은
+     원천을 쓰되 없으면 「—」). 지난달 대비는 GM 기준 그대로 — 늘면 발전, 같으면 유지, 줄면 퇴보로 읽는다. */
+  var RP = (typeof sfOn === 'function' && sfOn() && SF_CELLS) ? SF_CELLS : (RAW.cells || c || {});
+  var rows = [];
+  for (var r = 8; r <= 15; r++) {
+    var name = String((RAW.cells || {})['H' + r] || '').split(/\r?\n/)[0].trim();
+    if (!name) continue;
+    rows.push({ name: name.replace(/\s*매출$/, ''), acc: num(RP['J' + r]), goal: num(RP['K' + r]), row: r });
+  }
+  if (!rows.length) { el.innerHTML = '<div class="mrow"><span class="lb">팀 값을 아직 못 읽었습니다</span></div>'; return; }
+  var prev = (window.P3_PREV_TEAMS || null);   // {팀이름: 지난달 전체 누적} — 없으면 「—」
+  rows.sort(function(a, b){ return b.acc - a.acc; });
+  var tot = rows.reduce(function(a, x){ return a + x.acc; }, 0) || 1;
+  el.innerHTML = '<table class="ptab"><tr><th>팀</th><th>이달 누적</th><th>이달 목표</th><th>달성률</th><th>지난달 전체 대비</th><th>비중</th></tr>' +
+    rows.map(function(x){
+      var rate = x.goal > 0 ? Math.round(x.acc / x.goal * 100) : null;
+      var p = prev && prev[x.name] != null ? prev[x.name] : null;
+      var gap = p != null && p > 0 ? Math.round((x.acc - p) / p * 100) : null;
+      var mark = gap == null ? '—' : (gap > 3 ? '▲ ' + gap + '%' : (gap < -3 ? '▼ ' + Math.abs(gap) + '%' : '= 유지'));
+      var col = gap == null ? 'var(--muted)' : (gap > 3 ? '#1F7A4D' : (gap < -3 ? '#B0413E' : 'var(--ink)'));
+      return '<tr><td style="text-align:left;font-weight:700">' + esc(x.name) + '</td>' +
+        '<td class="acc">' + x.acc.toLocaleString('ko-KR') + '</td>' +
+        '<td class="acc">' + (x.goal ? x.goal.toLocaleString('ko-KR') : '—') + '</td>' +
+        '<td class="acc" style="font-weight:800">' + (rate == null ? '—' : rate + '%') + '</td>' +
+        '<td class="acc" style="font-weight:800;color:' + col + '">' + mark + '</td>' +
+        '<td class="acc">' + Math.round(x.acc / tot * 100) + '%</td></tr>';
+    }).join('') + '</table>' +
+    '<div class="mrow" style="margin-top:4px"><span class="lb">지난달 전체 대비 = 이달 누적 ÷ 지난달 한 달 합계 · ▲ 발전 / = 유지 / ▼ 퇴보(달이 끝나면 그대로 성적)</span></div>';
 }
 
 function renderPage3(c){
@@ -1978,6 +2040,15 @@ function renderPage3(c){
     }).join('') + (more ? '<div class="wmore">' + esc(more) + '</div>' : '');
   });
   renderP3Teams(c);
+  loadP3Todo();   // 업무 두 칸은 서버 원장이 이긴다(시트 칸은 못 읽을 때만)
+  /* 지난달 한 달 합계 — 4면이 쓰는 같은 도우미(말일 일자탭 · 브라우저 저장)로 한 번만 읽고
+     들어오면 팀 성적표를 다시 그린다. 못 읽으면 「지난달 전체 대비」 칸은 「—」로 남는다. */
+  if (!window.P3_PREV_TEAMS && typeof p4MonthEndTeams === 'function') {
+    var _pm = new Date(); _pm.setDate(1); _pm.setMonth(_pm.getMonth() - 1);
+    p4MonthEndTeams(_pm.getFullYear(), _pm.getMonth() + 1).then(function(o){
+      if (o) { window.P3_PREV_TEAMS = o; renderP3Teams(c); }
+    });
+  }
   loadP3Work();
   var at = new Date().toTimeString().substring(0, 5);
   var r3 = document.getElementById('readat3'); if (r3) r3.textContent = at;
