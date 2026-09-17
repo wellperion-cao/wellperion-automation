@@ -3810,6 +3810,8 @@ function renderClosingSheet7(){
 function renderClosingSheets(){
   try { renderClosingHead(); renderClosingSheet5(); renderClosingSheet6(); renderClosingSheet7(); }
   catch (ex) { console.warn('[월말 결산 5~7면] 그리기 실패:', ex && ex.message); }
+  // 다시 그릴 때마다 칸 넘침을 다시 잰다 — 늦게 도착한 값이 앞서 덜어 낸 줄을 되살린다(실측 c7who).
+  if (typeof trimClosingBoxes === 'function') setTimeout(trimClosingBoxes, 120);
 }
 </script>
 <script src="../../_assets/ai_owner_badge.js" defer></script>
