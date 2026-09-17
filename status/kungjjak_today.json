@@ -700,7 +700,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 7
         }
       ],
       "repeats": [
@@ -1006,6 +1006,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-CONSOLE",
+          "no": "LE",
+          "got": "관제판 라이브 원천 — /api/console/heartbeat(열쇠)·/api/console/state · 화면 15초 · 배포·실측(열쇠 없음 401·무로그인 401·시토 신호 라이브 표시)",
+          "did": "4a3fe29ad + 합치기 · erp-api 재기동 15:00 · nginx console.conf · 보내는 쪽 = 웰리(session_register)",
+          "start": "15:03",
+          "end": "15:03",
+          "minutes": 0,
+          "upload": "✅ 배포 (4a3fe29ad)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-HOME",
           "no": "ME",
           "got": "이경연 실장 /home 권한 없음 — 직원 홈 관문 수리(a44b7523d)",
@@ -1127,12 +1139,6 @@
         }
       ],
       "work": [
-        {
-          "time": "11:36",
-          "area": "작업",
-          "event": "docs(auth): 매트릭스 브리프 §2 — 「검사한다」를 실제 대조 결과 + 재측정 한 줄로 고침 (배 1026)",
-          "detail": "커밋 640cdf2e8e · 배 12715"
-        },
         {
           "time": "11:38",
           "area": "GM요청",
@@ -1306,10 +1312,16 @@
           "area": "작업",
           "event": "CHRO 회신 2건 — 쓰기 거울 배관 가능(착수 오늘 저녁·배포 9/18 오전) · 고아 45 = 연결 공고 값 형식 불일치(36 축약 제목·8 주소값·4 빈값·1 자리표시)",
           "detail": "AtoA 15:0x [나우열M 요청 2026-09-17]"
+        },
+        {
+          "time": "15:03",
+          "area": "작업",
+          "event": "fix(console): 관제판 라이브·발행본 역할별 합치기 — 아직 신호를 안 보내는 역할은 발행본 값 유지(1/6 오표시 방지)",
+          "detail": "커밋 323c10de74 · 배 12715"
         }
       ],
-      "count": 34,
-      "done": 34,
+      "count": 35,
+      "done": 35,
       "open": 0,
       "avg_minutes": 9,
       "work_count": 30,
@@ -2744,7 +2756,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T15:01:05",
+    "published_at": "2026-09-17T15:04:00",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -2766,13 +2778,13 @@
         "alive": true,
         "signal": "15:00",
         "last": {
-          "time": "14:57",
-          "area": "작업",
-          "event": "CHRO 회신 2건 — 쓰기 거울 배관 가능(착수 오늘 저녁·배포 9/18 오전) · 고아 45 = 연결 공고 값 형식 불일치(36 축약 제목·8 주소값·4 빈값·1 자리표시)",
+          "time": "15:03",
+          "area": "GM지시",
+          "event": "관제판 라이브 원천 — /api/console/heartbeat(열쇠)·/api/console/state · 화면 15초 · 배포·실측(열쇠 없음 401·무로그인 401·시토 신호 라이브 표시)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 72
+        "saves": 73
       },
       "cmo": {
         "nick": "시모",
