@@ -63,8 +63,14 @@ KIND_WORK_PREFIXES = ("reports/",)
 KIND_WORK_A3_RE = re.compile(r"^\d{6}_.*_A[34]\b")
 
 # 외부 삽입 — 워드프레스·공개 사이트에 끼워 쓰는 블록/위젯. erp 접속 0 이 정상이라
-# 고립·접속0 판정(GM후보·AI삭제)에서 뺀다(GM 지시 2026-09-17 13:1x).
-EXTERNAL_EMBED_RE = re.compile(r"^wp_.*_block(_en)?\.html$|_block(_en)?\.html$|^chat_widget\.html$", re.I)
+# 고립·접속0 판정(GM후보·AI삭제)에서 뺀다(GM 지시 2026-09-17 13:1x·보정).
+# 규칙 = 파일명이 wp_ 로 시작 / _block(.html·_en.html) 로 끝남 / chat_widget.html / public/** (아래 is_external_embed 에서 처리).
+EXTERNAL_EMBED_RE = re.compile(r"^wp_|_block(_en)?\.html$|^chat_widget\.html$", re.I)
+
+# 웰리 판단 (GM후보에만 표시) — 문서·업무 kind 별 권고 한 낱말.
+WELLY_DOC_KEEP_RE = re.compile(r"매뉴얼|가이드")
+WELLY_DOC_DELETE_RE = re.compile(r"초안|샘플|draft|요약", re.I)
+WELLY_WORK_FRESH_DAYS = 60
 
 # 백업류 파일명 — 판번호와 무관하게 항상 자동삭제 대상(GM 지시).
 BACKUP_NAME_RE = re.compile(r"\.bak_|backup|_copy", re.I)
@@ -235,6 +241,48 @@ def classify_kind(rel: str, title: str) -> str:
     if rel.startswith(KIND_WORK_PREFIXES) or (rel.startswith("coo/chairman/") and KIND_WORK_A3_RE.search(name)):
         return "업무"
     return "화면"
+
+
+def welly_judge(e: dict) -> str:
+    """GM후보 표의 「웰리 판단」 열 — reason 옆에 붙는 권고 한 낱말(GM 지시 2026-09-17 13:5x)."""
+    name = e["rel"].rsplit("/", 1)[-1]
+    hay = name + " " + e["title"]
+    if e["kind"] == "문서":
+        if WELLY_DOC_KEEP_RE.search(hay):
+            return "유지·링크 걸기"
+        if WELLY_DOC_DELETE_RE.search(hay):
+            return "삭제 권고"
+    elif e["kind"] == "업무" and e["last_commit"] and days_since(e["last_commit"]) <= WELLY_WORK_FRESH_DAYS:
+        return "유지·업무 첨부"
+    return "GM 판단"
+
+
+META_DESC_RE = re.compile(r'<meta\b[^>]*\bname=["\']description["\'][^>]*\bcontent=["\']([^"\']*)["\']', re.I)
+META_DESC_RE2 = re.compile(r'<meta\b[^>]*\bcontent=["\']([^"\']*)["\'][^>]*\bname=["\']description["\']', re.I)
+LEAD_CLASS_RE = re.compile(r'<(?:div|p)[^>]*class=["\'][^"\']*\b(?:sub|lead)\b[^"\']*["\'][^>]*>(.*?)</(?:div|p)>', re.I | re.S)
+FIRST_P_RE = re.compile(r'<p[^>]*>(.*?)</p>', re.I | re.S)
+
+
+SCRIPT_RE = re.compile(r"<script\b[^>]*>.*?</script>", re.I | re.S)
+
+
+def extract_essence(text: str, title: str) -> str:
+    """본질·핵심 한 줄 — <meta description> -> h1 다음 첫 문단(.sub/.lead/p) -> title 순. 60자 자름.
+    <script> 안 문자열이 '<p>' 처럼 보여 오검출되는 것을 막으려 스크립트 블록은 먼저 걷어낸다."""
+    text = SCRIPT_RE.sub("", text)
+    m = META_DESC_RE.search(text) or META_DESC_RE2.search(text)
+    raw = clean_text(m.group(1)) if m else ""
+    if not raw:
+        hm = H1_RE.search(text)
+        if hm:
+            rest = text[hm.end():]
+            pm = LEAD_CLASS_RE.search(rest) or FIRST_P_RE.search(rest)
+            if pm:
+                raw = clean_text(pm.group(1))
+    if not raw:
+        raw = title
+    raw = re.sub(r"\s+", " ", raw).strip()
+    return raw[:60]
 
 
 def is_protected(e: dict) -> bool:
@@ -475,6 +523,7 @@ def build(carried_deleted: list) -> dict:
             "flags": flags,
             "kind": classify_kind(rel, title),
             "external": is_external_embed(rel),
+            "essence": extract_essence(text, title),
         }
         if redirect_to:
             entry["redirect_to"] = redirect_to
@@ -499,6 +548,7 @@ def build(carried_deleted: list) -> dict:
         e["reason"] = reason
         if gm_tier:
             e["gm_tier"] = gm_tier
+            e["welly"] = welly_judge(e)
 
     verdict_counts = defaultdict(int)
     kind_counts = defaultdict(int)

@@ -104,25 +104,29 @@
     if(tierA.length){
       html += '<div class="instruction">A(삭제 판단) '+tierA.length+'건</div>';
       html += '<div class="tbl-wrap"><table class="reg">'+
-        '<colgroup><col style="width:40px"><col style="width:280px"><col style="width:90px"><col></colgroup>'+
-        '<thead><tr><th>번호</th><th>화면</th><th>종류</th><th>이유</th></tr></thead><tbody>';
+        '<colgroup><col style="width:40px"><col style="width:200px"><col style="width:220px"><col style="width:60px"><col style="width:140px"><col style="width:110px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>본질·핵심</th><th>종류</th><th>이유</th><th>웰리 판단</th></tr></thead><tbody>';
       tierA.forEach(function(e){
         html += '<tr><td>'+e.no+'</td>'+
           '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a></td>'+
+          '<td>'+esc(e.essence||'—')+'</td>'+
           '<td>'+esc(e.kind||'—')+'</td>'+
-          '<td>'+esc(e.reason)+'</td></tr>';
+          '<td>'+esc(e.reason)+'</td>'+
+          '<td>'+esc(e.welly||'—')+'</td></tr>';
       });
       html += '</tbody></table></div>';
     }
     if(tierB.length){
       html += '<div class="instruction">B(보관 판단) '+tierB.length+'건</div>';
       html += '<div class="tbl-wrap"><table class="reg">'+
-        '<colgroup><col style="width:40px"><col style="width:280px"><col></colgroup>'+
-        '<thead><tr><th>번호</th><th>화면</th><th>마지막 저장</th></tr></thead><tbody>';
+        '<colgroup><col style="width:40px"><col style="width:220px"><col style="width:240px"><col style="width:100px"><col style="width:110px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>화면</th><th>본질·핵심</th><th>마지막 저장</th><th>웰리 판단</th></tr></thead><tbody>';
       tierB.forEach(function(e){
         html += '<tr><td>'+e.no+'</td>'+
           '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a></td>'+
-          '<td>'+esc(e.last_commit||'—')+'</td></tr>';
+          '<td>'+esc(e.essence||'—')+'</td>'+
+          '<td>'+esc(e.last_commit||'—')+'</td>'+
+          '<td>'+esc(e.welly||'—')+'</td></tr>';
       });
       html += '</tbody></table></div>';
     }
@@ -185,10 +189,11 @@
         '<thead><tr><th>번호</th><th>화면</th><th>경로</th><th>마지막 저장</th><th>카드</th><th>들어오는 링크</th><th>표시</th><th>판정</th><th>종류</th></tr></thead><tbody>';
       rows.forEach(function(e){
         var altTag = e.redirect_to ? '<span class="alt">→ '+esc(e.redirect_to)+'</span>' : '';
+        var essenceLine = e.essence ? '<div style="color:var(--dim);font-size:11px;margin-top:2px;">'+esc(e.essence)+'</div>' : '';
         var vcls = e.verdict==='GM후보' ? 'gm' : (e.verdict==='AI삭제' ? 'del' : '');
         html += '<tr>'+
           '<td>'+e.no+'</td>'+
-          '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>'+altTag+'</td>'+
+          '<td><a href="'+esc(e.url)+'" target="_blank" rel="noopener">'+esc(e.title)+'</a>'+altTag+essenceLine+'</td>'+
           '<td class="path">'+esc(e.rel)+'</td>'+
           '<td>'+esc(e.last_commit||'—')+'</td>'+
           '<td>'+esc(e.in_card||'—')+'</td>'+
