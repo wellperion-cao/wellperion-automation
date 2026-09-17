@@ -536,12 +536,6 @@
       ],
       "work": [
         {
-          "time": "09:57",
-          "area": "작업",
-          "event": "업무 싹 정리 — 원장·카드 판정 (GM 권한 9/17)",
-          "detail": "커밋 7987efe6a6 · 배 12714"
-        },
-        {
           "time": "10:01",
           "area": "작업",
           "event": "업무 시스템 — 다음 걸음 정제 · 일정 잡음 제거",
@@ -714,6 +708,12 @@
           "area": "작업",
           "event": "중간관리자 업무목차 은퇴(이동 스텁→업무시스템 · GM 지시 9/17 업무 SSOT 단일화) · 직원 홈 T2 자율현황 진입 절 제거(GM 지적) · GM업무 링크 교체",
           "detail": "커밋 fe7cd31dbe · 배 12714"
+        },
+        {
+          "time": "15:47",
+          "area": "작업",
+          "event": "chore(console): 관제판 상단 ERP홈·운영가이드 링크 제거(관리자 홈 하나) · 카드 표 중간관리자 업무목차 내림(GM 15:3x·15:4x 웰리 전달)",
+          "detail": "커밋 a4b8544f5b · 배 12714"
         }
       ],
       "count": 44,
@@ -1107,6 +1107,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-CONSOLE3",
+          "no": "E3",
+          "got": "관제판 상단 ERP홈·운영가이드 링크 제거 · 카드 표 중간관리자 업무목차 내림(웰리 전달 GM 15:4x)",
+          "did": "a4b8544f5b · 가드 오탐 수리 e50b209808",
+          "start": "15:48",
+          "end": "15:48",
+          "minutes": 0,
+          "upload": "✅ 배포 (a4b8544f5)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-HOME",
           "no": "ME",
           "got": "이경연 실장 /home 권한 없음 — 직원 홈 관문 수리(a44b7523d)",
@@ -1240,12 +1252,6 @@
         }
       ],
       "work": [
-        {
-          "time": "12:54",
-          "area": "협업",
-          "event": "회원 쓰기 관문 서버 배포(시포 83d754a253)",
-          "detail": "api_members_write.py 원격판 scp · erp-api 재기동 · health 200 · 시포 회신"
-        },
         {
           "time": "12:57",
           "area": "협업",
@@ -1419,10 +1425,16 @@
           "area": "작업",
           "event": "fix(console): 쿵짝표 번호 칸 폭",
           "detail": "커밋 23356c0a5b · 배 12715"
+        },
+        {
+          "time": "15:47",
+          "area": "작업",
+          "event": "fix(guard): 나우열M 회귀 가드 오탐 — 지워지는 줄이 커밋 뒤 파일에 그대로 남으면(카드 표처럼 같은 계정 줄 반복) 회귀 아님 · 자체점검 표본 추가",
+          "detail": "커밋 e50b209808 · 배 12715"
         }
       ],
-      "count": 41,
-      "done": 41,
+      "count": 42,
+      "done": 42,
       "open": 0,
       "avg_minutes": 8,
       "work_count": 30,
@@ -3013,7 +3025,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T15:45:18",
+    "published_at": "2026-09-17T15:51:24",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -3021,9 +3033,9 @@
         "alive": true,
         "signal": "15:45",
         "last": {
-          "time": "15:44",
-          "area": "GM지시",
-          "event": "자율현황 ERP홈·C레벨 가이드 링크 · /home#T2 정리",
+          "time": "15:47",
+          "area": "작업",
+          "event": "chore(console): 관제판 상단 ERP홈·운영가이드 링크 제거(관리자 홈 하나) · 카드 표 중간관리자 업무목차 내림(GM 15:3x·15:4x 웰리 전달)",
           "result": "ok"
         },
         "idle_since": null,
@@ -3035,19 +3047,19 @@
         "alive": true,
         "signal": "15:45",
         "last": {
-          "time": "15:37",
+          "time": "15:48",
           "area": "GM지시",
-          "event": "관제판 2판 — 이름 C레벨 관제판 · 창 6개 레인(불·지금·활동·배편·숫자) · 미끄러짐·맥박·초 시계 · 중복 걷음 · 바닥 쿵짝표 · 404 링크 수리 · 활동 잡음 필터",
+          "event": "관제판 상단 ERP홈·운영가이드 링크 제거 · 카드 표 중간관리자 업무목차 내림(웰리 전달 GM 15:4x)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 82
+        "saves": 84
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "15:30",
+        "signal": "15:45",
         "last": {
           "time": "15:34",
           "area": "작업",
@@ -3061,7 +3073,7 @@
         "nick": "시포",
         "session": "welperion-automation-3b",
         "alive": true,
-        "signal": "15:30",
+        "signal": "15:45",
         "last": {
           "time": "15:40",
           "area": "GM지시",
@@ -3075,7 +3087,7 @@
         "nick": "시우",
         "session": "welperion-automation-76",
         "alive": true,
-        "signal": "15:30",
+        "signal": "15:45",
         "last": {
           "time": "15:21",
           "area": "GM요청",
@@ -3089,7 +3101,7 @@
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "15:30",
+        "signal": "15:45",
         "last": {
           "time": "15:29",
           "area": "작업",
