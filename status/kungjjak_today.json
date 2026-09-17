@@ -93,13 +93,13 @@
           "ref": "GM-20260917-1010",
           "no": "10",
           "got": "이번주 안에 정리는 아닌 것 같은데, 일단 한번 웰리랑 시토 판단으로 정리 1차적으로 해주고, 그리고 나서 내가 삭제할 수 있게 리스트업해줄래? 지금 300개 넘는것을 정리하기엔 나 너무 힘들어",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "13:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "13:01",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
         },
         {
           "ref": "GM-20260917-B",
@@ -158,6 +158,18 @@
           "end": "12:52",
           "minutes": 15,
           "upload": "✅ 배포 (632e35c32)",
+          "open": false,
+          "evidence": "🔁재확인"
+        },
+        {
+          "ref": "GM-20260917-SCREENS",
+          "no": "NS",
+          "got": "화면 308장 1차 정리(웰리+시토 판단) 뒤 GM 삭제 후보 번호 목록",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "13:01",
+          "end": "13:01",
+          "minutes": 0,
+          "upload": "기록만",
           "open": false,
           "evidence": "🔁재확인"
         }
@@ -296,29 +308,14 @@
           "detail": "커밋 93e9ab5234 · 배 12714"
         }
       ],
-      "count": 13,
-      "done": 12,
-      "open": 1,
-      "avg_minutes": 15,
+      "count": 14,
+      "done": 14,
+      "open": 0,
+      "avg_minutes": 13,
       "work_count": 22,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-1010",
-          "no": "10",
-          "got": "이번주 안에 정리는 아닌 것 같은데, 일단 한번 웰리랑 시토 판단으로 정리 1차적으로 해주고, 그리고 나서 내가 삭제할 수 있게 리스트업해줄래? 지금 300개 넘는것을 정리하기엔 나 너무 힘들어",
-          "did": "",
-          "start": "13:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -556,13 +553,13 @@
           "ref": "GM-20260917-2687",
           "no": "687",
           "got": "🔴 카톡 발신 실패 1개 방 (텍스트(보류))",
-          "did": "",
+          "did": "화면별 접속 수 status/screen_hits.json — nginx 접속 로그 보존분 2026-09-07~09-17(11 · 회원 쓰기 관문 수리판 재배포(시포 6377f2ec27) — LOSS 탭 회원 pass-through 구멍 수리판 scp · 재기동 · health 200 · 화면별 접속 수 집계(screen_hits.json · 웰리 요청 · G — nginx 로그 11일(09-07~09-17) · 210경로 · 65461635e4 · 웰리 회신",
           "start": "12:57",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "13:02",
+          "minutes": 5,
+          "upload": "✅ 배포 (6377f2ec2)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-autocompact",
@@ -575,6 +572,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-hold-loop",
+          "no": "op",
+          "got": "보류 알림 되풀이 원인·중단",
+          "did": "시우 세션 재시도 스크립트(sent 확인 문자열 cp949 깨짐 → 영영 false) 50초 반복 → 실장 경유 가드 보류 알림 12:50~12:58 10통 · 시포가 12:58 프로세스 종료 · 13:01 재발 0 · 문안은 ★중간관리자 방 1회로 경로 변경",
+          "start": "13:01",
+          "end": "13:01",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "🔁재확인"
         },
         {
           "ref": "GM-20260917-locker",
@@ -590,12 +599,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:25",
-          "area": "서버",
-          "event": "업무시스템 화면 핵심 카드 등록 — 로그인 직원 전원 허용(웰리 요청·GM 지시 9/17)",
-          "detail": "955b348f1 · 서버 modules.json 도착 · staff 토큰 who=실장 200 렌더·숫자 3개 확인"
-        },
         {
           "time": "10:31",
           "area": "작업",
@@ -769,31 +772,22 @@
           "area": "협업",
           "event": "회원 쓰기 관문 수리판 재배포(시포 6377f2ec27)",
           "detail": "LOSS 탭 회원 pass-through 구멍 수리판 scp · 재기동 · health 200"
+        },
+        {
+          "time": "13:02",
+          "area": "협업",
+          "event": "화면별 접속 수 집계(screen_hits.json · 웰리 요청 · GM 화면 300개 정리)",
+          "detail": "nginx 로그 11일(09-07~09-17) · 210경로 · 65461635e4 · 웰리 회신"
         }
       ],
-      "count": 22,
-      "done": 21,
-      "open": 1,
-      "avg_minutes": 15,
+      "count": 23,
+      "done": 23,
+      "open": 0,
+      "avg_minutes": 14,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-2687",
-          "no": "687",
-          "got": "🔴 카톡 발신 실패 1개 방 (텍스트(보류))",
-          "did": "",
-          "start": "12:57",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1146,6 +1140,18 @@
           "upload": "✅ 배포 (cb49c1818)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-3033",
+          "no": "33",
+          "got": "내가 몰라도되? 그냥 시모가 다 알아서 해주는거야?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "13:02",
+          "end": "13:02",
+          "minutes": 0,
+          "upload": "✅ 배포 (0a7a3459b)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -1204,8 +1210,8 @@
           "detail": "커밋 cb49c18180 · 배 12691"
         }
       ],
-      "count": 29,
-      "done": 29,
+      "count": 30,
+      "done": 30,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 9,
@@ -1336,6 +1342,18 @@
           "upload": "✅ 배포 (bfc908130)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-4017",
+          "no": "17",
+          "got": "지금 웰페리온 운영 현황보고 보고있는데, 매출이 안맞네? 신규등록 매출이 반영이 안되는건가?",
+          "did": "",
+          "start": "13:03",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -1520,14 +1538,29 @@
           "detail": "13:00:00 ok · 원장 #296 · ★운영부 0건 · 시우 관문"
         }
       ],
-      "count": 18,
+      "count": 19,
       "done": 18,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 10,
       "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-4017",
+          "no": "17",
+          "got": "지금 웰페리온 운영 현황보고 보고있는데, 매출이 안맞네? 신규등록 매출이 반영이 안되는건가?",
+          "did": "",
+          "start": "13:03",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -1808,7 +1841,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 6
         }
       ],
       "repeats": []
