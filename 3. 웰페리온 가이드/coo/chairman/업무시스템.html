@@ -47,6 +47,9 @@
   .tgl-nav a{font-size:var(--fs-2);font-weight:700;text-decoration:none;color:var(--mid);
              border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
   .tgl-nav a.on{background:var(--deep);color:#fff;border-color:var(--deep);}
+  .all-toggle{display:flex;align-items:center;gap:7px;font-size:var(--fs-2);font-weight:600;
+    color:var(--mid);margin:0 0 12px;cursor:pointer;}
+  .all-toggle input{cursor:pointer;}
 
   .sum{margin:8px 0 18px;border:2px solid var(--deep);padding:8px 14px;overflow-x:auto;}
   .sum h3{font-size:var(--fs-1);font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
@@ -107,6 +110,10 @@
   </div>
 
   <nav class="tgl-nav" id="switcher"></nav>
+
+  <label class="all-toggle" id="all-toggle" hidden>
+    <input type="checkbox" id="all-toggle-cb"> 전원 보기 — 아래 구역을 전 사원 건으로 바꿉니다
+  </label>
 
   <div class="sum" id="summary-wrap" hidden>
     <h3>사람별 한 줄 요약</h3>
@@ -196,6 +203,31 @@
 
   function byDue(a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : 1; }
 
+  // GM 화면 기본값 = GM 본인 담당만(GM 지시 2026-09-17 3차) — 표기 변형을 한 줄에서 정규화.
+  var GM_OWNER_ALIASES = ['김남욱', '김남욱gm', 'gm', 'ceo'];
+  function normOwner(s) { return String(s || '').replace(/\s+/g, '').toLowerCase(); }
+  function isGmOwn(it) { return GM_OWNER_ALIASES.indexOf(normOwner(it.owner)) !== -1; }
+
+  function countStates(items) {
+    return {
+      '밀림': items.filter(function (i) { return i.state === 'overdue'; }).length,
+      '오늘_이번주': items.filter(function (i) { return i.state === 'today' || i.state === 'week'; }).length,
+      '진행': items.filter(function (i) { return i.state === 'progress' || i.state === 'hold'; }).length
+    };
+  }
+
+  function renderSections(items) {
+    var overdue = items.filter(function (i) { return i.state === 'overdue'; }).sort(byDue);
+    var todayWeek = items.filter(function (i) { return i.state === 'today' || i.state === 'week'; }).sort(byDue);
+    var progress = items.filter(function (i) { return i.state === 'progress' || i.state === 'hold'; });
+    var blank = items.filter(function (i) { return i.state === 'blank'; });
+    return section('🔴', '밀린 것', overdue, true)
+      + section('📅', '오늘 · 이번 주', todayWeek, true)
+      + section('🚀', '진행 중', progress, true)
+      + section('⚠', '빈칸 — 기한·다음 걸음 없음', blank, false)
+      + section('✅', '이번 주 끝난 것', [], false); // 완료 판정은 다음 단계(설계 §5) — 지금은 항상 0건, 지어내지 않음
+  }
+
   function render(data) {
     var people = data.people || {};
     var p = people[who];
@@ -207,24 +239,37 @@
     document.title = p.display + ' 업무 현황 · WELLPERION';
     document.getElementById('who-name').textContent = p.display + ' 업무 현황';
     document.getElementById('gen-date').textContent = data.meta.today + ' (생성 ' + data.meta.generated_at + ')';
-    document.getElementById('cnt-overdue').textContent = p.counts['밀림'];
-    document.getElementById('cnt-week').textContent = p.counts['오늘_이번주'];
-    document.getElementById('cnt-progress').textContent = p.counts['진행'];
 
-    var items = p.items || [];
-    var overdue = items.filter(function (i) { return i.state === 'overdue'; }).sort(byDue);
-    var todayWeek = items.filter(function (i) { return i.state === 'today' || i.state === 'week'; }).sort(byDue);
-    var progress = items.filter(function (i) { return i.state === 'progress' || i.state === 'hold'; });
-    var blank = items.filter(function (i) { return i.state === 'blank'; });
+    var allItems = p.items || [];
+    var ownItems = who === 'gm' ? allItems.filter(isGmOwn) : allItems;
+    var toggle = document.getElementById('all-toggle');
+    var cb = document.getElementById('all-toggle-cb');
+    var showAll = who !== 'gm' || params.get('all') === '1';
 
-    root.innerHTML =
-        section('🔴', '밀린 것', overdue, true)
-      + section('📅', '오늘 · 이번 주', todayWeek, true)
-      + section('🚀', '진행 중', progress, true)
-      + section('⚠', '빈칸 — 기한·다음 걸음 없음', blank, false)
-      + section('✅', '이번 주 끝난 것', [], false); // 완료 판정은 다음 단계(설계 §5) — 지금은 항상 0건, 지어내지 않음
+    function paint() {
+      var useAll = who !== 'gm' || showAll;
+      var items = useAll ? allItems : ownItems;
+      var counts = useAll ? p.counts : countStates(ownItems);
+      document.getElementById('cnt-overdue').textContent = counts['밀림'];
+      document.getElementById('cnt-week').textContent = counts['오늘_이번주'];
+      document.getElementById('cnt-progress').textContent = counts['진행'];
+      root.innerHTML = renderSections(items);
+    }
+    paint();
 
-    // 사람 전환 — GM 화면에만 전원, 실무진 화면엔 안 보임(설계 §4.6)
+    if (who === 'gm') {
+      toggle.hidden = false;
+      cb.checked = showAll;
+      cb.onchange = function () {
+        showAll = cb.checked;
+        history.replaceState(null, '', '?who=gm' + (showAll ? '&all=1' : ''));
+        paint();
+      };
+    } else {
+      toggle.hidden = true;
+    }
+
+    // 사람 전환 · 사람별 요약 표 — GM 화면에만, 항상 전 사원 기준(설계 §4.6, 토글과 무관)
     var sw = document.getElementById('switcher');
     if (who === 'gm') {
       sw.innerHTML = Object.keys(people).map(function (k) {
