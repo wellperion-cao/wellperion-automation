@@ -21,6 +21,10 @@ TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
 H1_RE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.I | re.S)
 TAG_RE = re.compile(r"<[^>]+>")
 HREF_RE = re.compile(r'href=["\']([^"\'#?]+)', re.I)
+# 이동 스텁 = meta refresh 로 다른 화면으로 넘기기만 하는 파일(옛 주소 보존용)
+REFRESH_RE = re.compile(r'http-equiv=["\']refresh["\'][^>]*url=([^"\'>\s]+)', re.I)
+# 정본 주소 — 서버(nginx guide-alias)가 파일명 대신 쓰는 짧은 주소. 화면엔 이것만 보인다.
+CANON_URL = {"wellperion_guide(main).html": "https://erp.wellperion.com/home"}
 
 
 def excluded(path: Path) -> bool:
@@ -112,12 +116,11 @@ def main():
             title = p.stem
             title_src = "filename"
 
-        url = "https://erp.wellperion.com/" + "/".join(quote(seg) for seg in parts)
-        alt_url = None
+        url = CANON_URL.get(rel) or "https://erp.wellperion.com/" + "/".join(quote(seg) for seg in parts)
         git_key = "3. 웰페리온 가이드/" + rel
         last_commit = last_commits.get(git_key)
-        if rel == "wellperion_guide(main).html":
-            alt_url = "https://erp.wellperion.com/home"
+        rm = REFRESH_RE.search(text)
+        redirect_to = rm.group(1).strip() if rm else None
 
         basename = parts[-1]
         inbound_files = referrers.get(basename, set()) - {rel}
@@ -136,6 +139,9 @@ def main():
             flags.append("제목없음")
         if TEMP_PAT.search(p.stem):
             flags.append("임시")
+        if redirect_to:
+            flags = [f for f in flags if f != "고립"]  # 스텁은 들어오는 링크가 없는 게 정상
+            flags.append("이동스텁")
 
         entry = {
             "no": i,
@@ -149,8 +155,8 @@ def main():
             "size_kb": size_kb,
             "flags": flags,
         }
-        if alt_url:
-            entry["alt_url"] = alt_url
+        if redirect_to:
+            entry["redirect_to"] = redirect_to
         entries.append(entry)
 
     out = {
@@ -160,10 +166,11 @@ def main():
         "in_card": sum(1 for e in entries if e["in_card"]),
         "orphan": sum(1 for e in entries if "고립" in e["flags"]),
         "stale": sum(1 for e in entries if "오래됨" in e["flags"]),
+        "stub": sum(1 for e in entries if "이동스텁" in e["flags"]),
         "screens": entries,
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"screen_map: {out['total']}장 · 카드 {out['in_card']} · 고립 {out['orphan']} · 오래됨 {out['stale']} -> {OUT}")
+    print(f"screen_map: {out['total']}장 · 카드 {out['in_card']} · 고립 {out['orphan']} · 오래됨 {out['stale']} · 이동스텁 {out['stub']} -> {OUT}")
 
 
 if __name__ == "__main__":
