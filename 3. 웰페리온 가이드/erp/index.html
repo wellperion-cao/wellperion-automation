@@ -243,7 +243,6 @@
     <a href="#mods" data-go="mods"><span class="t">모듈 배치</span></a>
     <a href="#adm" data-go="adm"><span class="t">계정·권한</span><span class="b" id="b-pending">—</span></a>
     <a href="#usage" data-go="usage"><span class="t">사용 현황</span></a>
-    <a href="#health" data-go="health"><span class="t">가동 현황</span></a>
     <a href="#cfg" data-go="cfg"><span class="t">회사 설정값</span></a>
     <a href="#dev" data-go="dev"><span class="t">개발 환경</span></a>
   </div>
@@ -283,13 +282,6 @@
     <h2>사용 현황</h2>
     <div class="meta" id="usage-since">불러오는 중…</div>
     <div id="usage-body"><div class="msg">불러오는 중…</div></div>
-  </div>
-
-  <!-- 가동 현황 — 모듈 뒤의 자동화가 신호를 보내고 있나. 원천은 침묵 감지기 스냅샷이다. -->
-  <div id="pane-health" role="tabpanel" hidden>
-    <h2>가동 현황</h2>
-    <div class="meta" id="health-when">불러오는 중…</div>
-    <div id="health-body"><div class="msg">불러오는 중…</div></div>
   </div>
 
   <!-- 회사 설정값 — 읽기만 한다. 고치는 문은 이 화면에 두지 않는다. -->
@@ -607,10 +599,12 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'health', 'cfg', 'dev'];
+var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev'];
 // 계정·권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11 「다른 페이지로 넘어가는게 아니라
 // 우측 페이지에 나타나야해」) — 나머지 관리 판은 이 화면이 직접 그린다.
-var LOADER = {mods: loadMods, usage: loadUsage, health: loadHealth, cfg: loadCfg, dev: loadDev};
+// 가동 현황(옛 #health)은 배1026 2026-09-17(GM "가동현황도 뭔지 모르겠고")로 이 판에서 뺐다 —
+// 원천 status/module_silence_snapshot.json 은 그대로 발행된다(다른 화면이 참조할 수 있게).
+var LOADER = {mods: loadMods, usage: loadUsage, cfg: loadCfg, dev: loadDev};
 var loadedPane = {};
 
 function showPane(which){
@@ -691,17 +685,20 @@ function loadMods(){
     HIDDEN_OFF = all.filter(function(m){ return !shown[m.id] && m.off; }).map(function(m){ return m.id; });
     var hiddenN = all.length - Object.keys(shown).length;
     var offN = leads.filter(function(m){ return m.off; }).length;
+    // 모듈 행 = 켬/꺼짐 토글만(배1026 2026-09-17 · GM "모듈배치도 계정권한도 너무 어려워") —
+    // 딸린 화면·담당·핵심은 details/summary 뒤로 접는다(▸ 펼쳐야 보인다).
     var trs = leads.map(function(m){
       var kids = MOD_KIDS[m.id].map(function(id){ return esc((byId[id] || {}).name || id); });
+      var detail = [esc(m.staff || '담당 없음'), m.core ? '핵심' : '']
+        .concat(kids.length ? ['딸린 화면 ' + kids.length + '개: ' + kids.join(' · ')] : [])
+        .filter(function(s){ return s; }).join(' · ');
       return '<tr><td class="c"><input type="checkbox" data-id="' + esc(m.id) + '"'
            + (m.off ? '' : ' checked') + ' aria-label="' + esc(meta[m.id].module) + ' 켜기"></td>'
            + '<td class="k">' + esc(meta[m.id].module) + '</td>'
-           + '<td class="d">' + esc(m.name) + (kids.length ? ' · ' + kids.join(' · ') : '') + '</td>'
-           + '<td class="o">' + esc(m.staff || '') + '</td>'
-           + '<td class="d">' + (m.core ? '핵심' : '') + '</td></tr>';
+           + '<td class="d"><details><summary>' + esc(m.name) + ' · ▸ 상세</summary>' + detail + '</details></td></tr>';
     }).join('');
     document.getElementById('mods-body').innerHTML =
-      tbl(['켬', '모듈', '딸린 화면(대표 먼저)', '담당 실무진', '핵심'], trs)
+      tbl(['켬', '모듈', '상세'], trs)
       + '<div class="savebar"><button class="btn" id="mods-save" type="button">저장</button>'
       + '<span class="r" id="mods-res">모듈 ' + leads.length + '개 · 켠 것 '
       + (leads.length - offN) + '개 · 끈 것 ' + offN + '개 · 문서·도구 ' + hiddenN + '장은 모듈이 아니라 여기 없다</span></div>';
@@ -764,45 +761,6 @@ function loadUsage(){
   }).catch(function(e){
     paneFail('usage-body', e);
     document.getElementById('usage-since').textContent = '';
-  });
-}
-
-/* 가동 현황 — 모듈 뒤의 자동화가 신호를 보내고 있나.
-   원천 = 침묵 감지기 스냅샷(module_silence_detector.py --publish 가 발행).
-   ★erp_status.json 의 automation_health 는 쓰지 않는다 — 지금 total 0·items 빈 칸이라
-     (예약작업 조회 실패) 그 값을 실으면 「자동화 0개」라고 거짓으로 찍힌다(2026-09-14 실측). */
-function loadHealth(){
-  repoGet('status/module_silence_snapshot.json').then(function(d){
-    var mods = (d && d.modules) || [];
-    var sig = 0, quiet = 0, unknown = 0, quietList = [];
-    mods.forEach(function(m){
-      var st = m.status || '';
-      if (st === 'ok' || st === 'active_no_cadence') sig++;
-      else if (st === 'silent' || st === 'silent_no_cadence') { quiet++; quietList.push(m); }
-      else unknown++;                       // unmeasurable · not_applicable — 못 잰 것이다
-    });
-    document.getElementById('health-when').textContent =
-      (d.generated_at_kst || '') + ' 기준 스냅샷 · 모듈 ' + mods.length + '개';
-    var sum = tbl(['신호 있음', '조용함', '못 잼'],
-      '<tr><td>' + sig + '</td><td>' + quiet + '</td><td>' + unknown + '</td></tr>');
-    var body = sum;
-    if (quietList.length) {
-      quietList.sort(function(a, b){ return (b.silence_hours || 0) - (a.silence_hours || 0); });
-      body += '<h3>조용한 것</h3>' + tbl(['모듈', '담당', '조용한 시간', '자세히'],
-        quietList.map(function(m){
-          var h = (typeof m.silence_hours === 'number') ? m.silence_hours + '시간' : '—';
-          return '<tr><td class="k">' + esc(m.id || '') + '</td>'
-               + '<td class="o">' + esc(m.owner_nick || m.owner_role || '') + '</td>'
-               + '<td>' + esc(h) + '</td>'
-               + '<td class="d">' + esc(String(m.detail || m.feature || '').slice(0, 80)) + '</td></tr>';
-        }).join(''));
-    } else if (mods.length) {
-      body += '<div class="note">조용한 모듈이 없다.</div>';
-    }
-    document.getElementById('health-body').innerHTML = body;
-  }).catch(function(e){
-    paneFail('health-body', e);
-    document.getElementById('health-when').textContent = '';
   });
 }
 
