@@ -156,7 +156,7 @@
   .lesson-strip .vrow{padding:1.5px 0;font-size:11.4px;gap:8px;}
   .lesson-strip .vrow .vbar{height:9px;}
   .lesson-strip .vrow .vn{font-size:12px;width:46px;}
-  .lesson-strip .vrow2{gap:0 26px;}
+  .lesson-strip .vrow2{gap:0 26px;grid-template-columns:1fr .72fr;}   /* 왼쪽 유입 경로 넓게 · 오른쪽 종목별 좁게(GM 2026-09-17) */
 
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
@@ -526,8 +526,12 @@
        실패가 있으면 빨간 줄이 되고 발송기(window.__REPORT_READY.ok)가 멈춘다. -->
   <div class="audit wait" id="audit">자체 점검 중…</div>
 
-  <div class="foot">
-    <div><b>이 보고서가 보는 것</b> — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.</div>
+  <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
+       대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
+       status/brojay_transfer_gap.json + history) · 서버판 22칸 대조 한 줄(매일 09:02 업무보고방 ·
+       scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
+       이 보고서가 보는 것 — 매일 09:30 회장님·관리부·부서장·운영부 방으로 나가는 매출·운영 보고와 같은 값입니다. 그림 대신 화면으로 보고, 그대로 A3 한 장으로 인쇄됩니다.
+  -->
     <div id="accGapNote">두 장부 대조 — 불러오는 중…</div>
     <div id="brojayNote"><b>원천</b> — 칸마다 붙은 꼬리표 그대로(시트→서버 / 브로제이→서버). 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
@@ -596,7 +600,7 @@
       <h2 id="p2memh">오늘 등록 — 멤버십<span class="src">시트 → 서버</span></h2>
       <div class="bd" id="p2mem"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
-    <div class="sec" style="grid-column:2;grid-row:1;min-height:0;">
+    <div class="sec" style="grid-column:2;grid-row:1 / span 2;min-height:0;">
       <h2 id="p2lesh">오늘 등록 — 강습 성인 (팀별)<span class="src">시트 → 서버</span></h2>
       <div class="bd" id="p2les"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -605,7 +609,9 @@
       <div class="bd" id="p2lesy"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
     <!-- 문의에서 가입까지 — 멤버십 · 성인강습 · 유소년강습 세 갈래(GM 2026-09-15). 「문의 상세 내역」 칸은 뺐다. -->
-    <div class="sec" id="p2inqband" style="grid-column:1 / span 2;grid-row:2;min-height:0;">
+    <!-- 2026-09-17 GM — 「문의에서 가입까지」를 왼쪽 한 칸으로 줄이고, 그 폭만큼 강습 성인·유소년 칸을
+         두 행으로 늘렸다(명단이 하루 12~30건이라 세로가 모자랐다). -->
+    <div class="sec" id="p2inqband" style="grid-column:1;grid-row:2;min-height:0;">
       <h2>문의에서 가입까지 — 원장 진행상태 그대로<span class="src ">시트 → 서버</span></h2>
       <div class="bd" id="p2funnel"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
     </div>
@@ -685,8 +691,12 @@
 
   <div class="audit wait" id="audit3">자체 점검 중…</div>
 
-  <div class="foot">
-    <div><b>이 장이 보는 것</b> — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.</div>
+  <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
+       대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
+       status/brojay_transfer_gap.json + history) · 서버판 22칸 대조 한 줄(매일 09:02 업무보고방 ·
+       scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
+       이 장이 보는 것 — 매일 09:30 매출·운영 보고로 나가던 내용과 같은 값입니다. 시설·지원·주차 세 부서의 그날 점검, 인사·파트너팀 진행사항, 기한이 다가온 핵심 업무, 그리고 지연·결재 대기를 한 장에 모았습니다.
+  -->
     <div><b>원천</b> — 매출·운영 보고 시트의 운영 현황 칸과 업무 SSOT입니다. 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
@@ -743,8 +753,12 @@
 
   <div class="audit wait" id="audit4">자체 점검 중…</div>
 
-  <div class="foot">
-    <div><b>이 장이 보는 것</b> — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 오른쪽 위 표는 이번 분기(3개월) 팀 목표 대비 누적과, 남은 영업일을 지금 하루 평균으로 채웠을 때의 예상 달성률 · 올해 누적입니다. 오른쪽 아래 표는 팀 매출이 몇 사람에게 쏠려 있는지(상위 20% 담당의 비중)입니다. 세션 2칸은 브로제이 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다.</div>
+  <!-- 발밑 설명·대조 줄은 뺐다(GM 2026-09-17 「이 보고서가 보는 것·서버판 브로제이 결제 vs 시트 삭제」).
+       대조는 화면이 아니라 감시기·알림이 갖는다 — 브로제이 이관 누락 감시 brojay_transfer_gap(매일 09:10 ·
+       status/brojay_transfer_gap.json + history) · 서버판 22칸 대조 한 줄(매일 09:02 업무보고방 ·
+       scripts/sales_report_server_send.py --check-line). 옛 문구는 아래에 그대로 남긴다.
+       이 장이 보는 것 — 팀별로 묶어 강습 담당 한 사람이 그날 얼마를 올렸고 이번 달 누적이 얼마인지. 팀 줄은 그 팀 합계입니다. 회원권·옵션 담당은 1면 매출 현황에 있습니다. 오른쪽 위 표는 이번 분기(3개월) 팀 목표 대비 누적과, 남은 영업일을 지금 하루 평균으로 채웠을 때의 예상 달성률 · 올해 누적입니다. 오른쪽 아래 표는 팀 매출이 몇 사람에게 쏠려 있는지(상위 20% 담당의 비중)입니다. 세션 2칸은 브로제이 출석(SHOW) 기준이며 ERP 로그인 화면에서만 채워집니다.
+  -->
     <div><b>원천</b> — 매출·운영 보고 시트의 그날 일자탭입니다. 값을 여기서 다시 계산하지 않습니다.</div>
   </div>
 
@@ -1416,6 +1430,7 @@ function renderReportCells(c){
       '<td>' + esc(c['K'+r] || '–') + '</td>' +
       '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + bar + '</td></tr>';
   }).join('') || '<tr><td colspan="5">값 없음</td></tr>';
+  renderEtcRev();   // 그 밖의 수익 세 줄(주차·바디프렌드·팝업)
 
   // ── 회원 구성 : 총계 + 가로 누적 막대(구성이 한눈에 보이게) ──
   var mixItems = MEMBER_MIX.map(function(r, i){
@@ -2735,6 +2750,54 @@ function daySplit(c){
   });
   return out;
 }
+
+/* ══ 그 밖의 수익 — 주차 · 바디프렌드(안마의자) · 팝업 판매 (GM 지시 2026-09-17) ══
+   회원권·강습 매출(브로제이)과 주머니가 달라 총 매출에 섞지 않고 표 맨 아래 따로 붙인다.
+   목표도 두지 않는다(주차 = status/sales_targets.json parking "목표 없음 — 나오는 매출만 집계").
+     주차       서버 원장 /api/parking/daily (랩스 ppark-wall 적재 · 하루 매출 + 그 달 누적)
+     바디프렌드 라운지 사이트 월 정산 · 우리 몫은 판매액의 30% — 계정이 서버에 들어오기 전까지 「연동 전」
+     팝업       오넛티 팝업(9/5~9/19)처럼 기간 판매 — 판매 수량·금액을 담는 자리가 아직 없어 「연동 전」
+   값이 없을 때 0 원으로 적지 않는다 — 없는 것과 0 은 다르다. */
+var ETC_REV = { parking: null };
+function etcRefDate(){
+  if (SF && SF.ref_date) return String(SF.ref_date);
+  return ymd(new Date(Date.now() - 86400000));
+}
+function loadEtcRev(){
+  var ref = etcRefDate();
+  return fetch('/api/parking/daily?month=' + ref.slice(0, 7) + '&t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(d){
+      var days = (d && d.days) || [];
+      var one = days.filter(function(x){ return String(x.date) === ref; })[0];
+      var last = days[days.length - 1];
+      var raw = (last && last.raw) || {};
+      var month = ['salesCardMonthAmt', 'salesCashMonthAmt', 'salesEtcMonthAmt']
+        .reduce(function(a, k){ return a + (parseInt(raw[k], 10) || 0); }, 0);
+      ETC_REV.parking = { day: one ? one.revenue_krw : null, month: month || null, upto: last ? last.date : null };
+    })
+    .catch(function(){ ETC_REV.parking = null; })
+    .then(function(){ renderEtcRev(); });
+}
+function renderEtcRev(){
+  var tb = document.getElementById('sales'); if (!tb) return;
+  Array.prototype.slice.call(tb.querySelectorAll('tr.etcrev')).forEach(function(tr){ tr.parentNode.removeChild(tr); });
+  var pk = ETC_REV.parking;
+  var pkDay = pk && pk.day != null ? _won(pk.day) : '못 읽음';
+  var pkMon = pk && pk.month ? _won(pk.month) : '못 읽음';
+  var rows = [
+    ['주차', pkDay, pkMon, '목표 없음'],
+    ['바디프렌드 (이익 30%)', '연동 전', '연동 전', '목표 없음'],
+    ['팝업 판매', '연동 전', '연동 전', '목표 없음']
+  ];
+  tb.insertAdjacentHTML('beforeend', rows.map(function(r, i){
+    return '<tr class="etcrev"' + (i === 0 ? ' style="border-top:2px solid var(--line)"' : '') + '>' +
+      '<td><span class="rn" title="' + esc(r[0]) + '">' + esc(r[0]) + '</span>' +
+      (i === 0 ? '<span class="src srv" style="margin-left:5px">서버</span>' : '') + '</td>' +
+      '<td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td><td class="rate">–</td></tr>';
+  }).join(''));
+}
+
 function renderDaySales(c, dayLabel){
   setSalesHead(['보고 항목', dayLabel + ' 매출', '이번 달 누적', '이번 달 목표', '달성률']);
   var s = daySplit(c);
@@ -2770,6 +2833,7 @@ function renderDaySales(c, dayLabel){
       '</td><td>' + esc(r[2] || '–') + '</td><td>' + esc(r[3] || '–') +
       '</td><td class="rate ' + rateClass(r[4]) + '">' + esc(r[4] || '–') + bar + '</td></tr>';
   }).join('');
+  renderEtcRev();   // 그 밖의 수익 세 줄(주차·바디프렌드·팝업)
   // 나눈 값이 시트 소계와 어긋나면 조용히 넘기지 않는다 — 분류 규칙이 못 따라간 종목이 생겼다는 뜻이다.
   /* 두 장부의 이번 달 누적이 어긋나면 그 자리에서 밝힌다 — 「보고」탭 팀별 누적은 사람이 채우는
      칸이라 일자탭 계약 합계와 갈릴 수 있다(2026-09-11 실측 440,475원 · 종목 칸에 팀 이름이 없는
@@ -3187,8 +3251,8 @@ function renderP2Inq(d){
 
 function renderP2Lesson(l){
   var el = document.getElementById('p2lesson'); if (!el) return;
-  function bars(list){
-    var top = (list || []).slice(0, 8);   // 2026-09-14 — 이달 등록 내역을 뺀 만큼 자리가 생겨 5→8
+  function bars(list, n){
+    var top = (list || []).slice(0, n || 8);   // 2026-09-14 — 이달 등록 내역을 뺀 만큼 자리가 생겨 5→8
     var max = Math.max.apply(null, top.map(function(x){ return x.v; }).concat([1]));
     return top.map(function(x){
       return '<div class="vrow"><span class="vl2">' + esc(x.k) + '</span>' +
@@ -3196,9 +3260,11 @@ function renderP2Lesson(l){
         '<span class="vn">' + p2num(x.v) + '</span></div>';
     }).join('');
   }
+  // 2026-09-17 GM — 유입 경로를 왼쪽(넓게)·종목별을 오른쪽(좁게)으로 바꾸고 둘 다 6줄로 줄였다.
+  //   이 띠가 짧아진 만큼 위 등록 명단 칸(성인·유소년)이 세로로 길어진다.
   el.innerHTML = '<div class="vrow2">' +
-    '<div><div class="vcol-h">종목별</div>' + bars(l.bySport) + '</div>' +
-    '<div><div class="vcol-h">유입 경로</div>' + bars(l.byChannel) + '</div>' +
+    '<div><div class="vcol-h">유입 경로</div>' + bars(l.byChannel, 6) + '</div>' +
+    '<div><div class="vcol-h">종목별</div>' + bars(l.bySport, 6) + '</div>' +
     '</div>';
 }
 
@@ -3280,6 +3346,7 @@ function load2(){
   });
 }
 load2();
+loadEtcRev();   // 주차 매출(서버 원장) — 늦게 와도 표에 다시 붙인다
 
 /* ══ 5~7면 — 월말 결산 리더별 3장 (배 2523) ══
    원천 재사용 — 새 조회 없이 이 화면이 이미 읽은 값만 다시 담는다:
