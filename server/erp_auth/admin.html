@@ -203,7 +203,7 @@ tbody tr.sel{background:var(--accent-soft)}
           <th>사람</th><th>부서</th><th>상태</th>
           <th title="마케팅 관리">마케팅</th><th title="회원 관리">회원</th><th title="운영 관리">운영</th>
           <th title="인사&amp;파트너 관리">인사</th><th title="매출&amp;지출 관리">매출</th><th title="ERP 플랫폼">플랫폼</th>
-          <th>전체</th><th>개인예외</th><th>저장</th>
+          <th>전체</th><th>개인예외</th><th>저장</th><th>내보내기</th>
         </tr></thead><tbody id="people-body"></tbody></table></div>
       </div>
     </div>
@@ -385,7 +385,8 @@ function renderPending(blk){
   const rows=[...blk,...S.users.filter(u=>u.status!=='blocked'&&locked(u))];
   $('#blocked-body').innerHTML=rows.length?rows.map(u=>`<tr data-uid="${u.id}"><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'—'}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td><td><small>${esc(u.changed_at||u.approved_at||'')}</small></td>
-    <td><div class="acts">${u.status==='blocked'?`<button class="btn sm" data-act="approve" data-uid="${u.id}">다시 허용</button><button class="btn danger sm" data-act="delete" data-uid="${u.id}" data-name="${esc(u.name)}">삭제</button>`:''}${locked(u)?`<button class="btn sm" data-act="lock" data-uid="${u.id}">잠금 해제</button>`:''}</div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">없음</td></tr>';
+    <td><div class="acts">${u.status==='blocked'?`<button class="btn sm" data-act="approve" data-uid="${u.id}">다시 허용</button>`:''}${locked(u)?`<button class="btn sm" data-act="lock" data-uid="${u.id}">잠금 해제</button>`:''}</div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">없음</td></tr>';
+  // 삭제는 「사람」 탭 「내보내기」 버튼 하나로 합쳤다(배1026 2026-09-17 10:49 · GM 지적 "두 단계라 못 찾음") — 여기서 뺐다.
 }
 function peopleList(){
   const qq=q.trim().toLowerCase();
@@ -433,6 +434,16 @@ async function personSave(uid){
   const d=PDRAFTS[uid]; if(!d) return;
   if(await post(`/auth/admin/${uid}/perms`,{m:[...d.modules],d:[...d.deny]})){ toast('권한을 저장했습니다'); delete PDRAFTS[uid]; await load(); }
 }
+/* 내보내기(배1026 2026-09-17 10:49 · GM "탈회·삭제시키는 건 안 되나?") — 사람 탭 한 버튼으로 끝낸다.
+   서버 delete 라우트(app.py admin_action)는 status!='active' 인 계정만 지운다(GM 2026-09-04 확정 —
+   "사용 중" 계정을 실수로 못 지우게 막은 안전장치, 새로 안 건드린다). 그래서 사용 중이면 차단부터
+   부르고 이어서 삭제한다 — 버튼 하나·확인창 하나로 보이지만 안에서는 기존 두 라우트를 순서대로 부른다. */
+async function personDelete(u){
+  if(!confirm(`${u.name}(${u.email}) 님을 내보냅니다. 되돌릴 수 없습니다.`)) return;
+  if(u.status==='active'&&!(await post(`/auth/admin/${u.id}/block`))){ toast('내보내지 못했습니다'); return; }
+  if(await post(`/auth/admin/${u.id}/delete`)){ toast(u.name+' 님을 내보냈습니다'); await load(); }
+  else { toast('내보내지 못했습니다 — 관리자·본인 계정은 서버가 막습니다'); await load(); }
+}
 function renderPeople(){
   const depts=['전체',...Object.keys(S.dept_modules||{}),'미분류'], sts=[['전체','전체'],['active','사용 중'],['pending','승인 대기'],['blocked','차단']];
   $('#people-filters').innerHTML=depts.map(d=>`<button class="chip" data-f="dept" data-v="${esc(d)}" aria-pressed="${filter.dept===d}">${esc(d)}</button>`).join('')+'<span style="width:10px"></span>'+sts.map(([v,l])=>`<button class="chip" data-f="status" data-v="${v}" aria-pressed="${filter.status===v}">${l}</button>`).join('');
@@ -450,8 +461,9 @@ function renderPeople(){
     ${AREAS.map(g=>cell(areaState(d.modules,g),`data-area-for="${u.id}" data-area="${esc(g)}" title="${esc(g)}"`)).join('')}
     ${cell(allSt,`data-all-for="${u.id}" title="전체"`)}
     ${cell(excSt,`data-exc-for="${u.id}" title="개인 예외 화면 전부"`)}
-    <td>${ro?'—':(dirty?`<button class="btn sm pri" data-save-person="${u.id}">저장</button>`:'<span class="tag">저장됨</span>')}</td></tr>`;
-  }).join(''):'<tr><td colspan="12" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
+    <td>${ro?'—':(dirty?`<button class="btn sm pri" data-save-person="${u.id}">저장</button>`:'<span class="tag">저장됨</span>')}</td>
+    <td>${ro?'—':`<button class="btn danger sm" data-delete-person="${u.id}">내보내기</button>`}</td></tr>`;
+  }).join(''):'<tr><td colspan="13" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
   $$('#people-body input[data-partial="1"]').forEach(i=>i.indeterminate=true);
 }
 function renderDepts(){
@@ -543,7 +555,7 @@ function diffText(b,a){ try{ b=b?JSON.parse(b):null; a=a?JSON.parse(a):null; }ca
 /* ── 상호작용 ── */
 function go(t){ $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t)); try{localStorage.setItem('erp_admin_tab',t);}catch(e){} }
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-dept-preset],[data-undo],[data-save-person],.chip'); if(!t) return;
+  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-dept-preset],[data-undo],[data-save-person],[data-delete-person],.chip'); if(!t) return;
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.dataset.go) return go(t.dataset.go);
   if(t.dataset.scroll){ document.querySelector(t.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
@@ -551,10 +563,11 @@ document.addEventListener('click',async e=>{
   if(t.dataset.deptPreset){ const d=t.dataset.deptPreset; if(!confirm(`${d} 전원(잠금 제외)에 부서 기본 화면을 다시 적용합니다. 계속할까요?`)) return;
     if(await post(`/auth/admin/dept_apply/${encodeURIComponent(d)}`)){ toast(d+' 부서 기본을 적용했습니다'); await load(); } return; }
   if(t.dataset.savePerson){ await personSave(+t.dataset.savePerson); return; }
+  if(t.dataset.deletePerson){ const u=S.users.find(x=>x.id===+t.dataset.deletePerson); if(u) await personDelete(u); return; }
   if(t.dataset.undo){ if(await post(`/auth/admin/undo/${t.dataset.undo}`)){ toast('되돌렸습니다'); await load(); } return; }
-  if(t.dataset.act){ const uid=+t.dataset.uid, a=t.dataset.act; if(a==='delete'&&!confirm(`${t.dataset.name} 계정을 지웁니다. 되돌릴 수 없습니다.`)) return;
+  if(t.dataset.act){ const uid=+t.dataset.uid, a=t.dataset.act;
     const rs=a==='approve'?document.querySelector(`select[data-rank-for="${uid}"]`):null;
-    if(await post(a==='lock'?`/auth/admin/${uid}/lock`:`/auth/admin/${uid}/${a}`, rs?{rank:rs.value}:undefined)){ toast({approve:'승인했습니다',block:'차단했습니다',delete:'지웠습니다',toggle_role:'역할을 바꿨습니다',lock:'잠금 상태를 바꿨습니다'}[a]); await load(); } return; }
+    if(await post(a==='lock'?`/auth/admin/${uid}/lock`:`/auth/admin/${uid}/${a}`, rs?{rank:rs.value}:undefined)){ toast({approve:'승인했습니다',block:'차단했습니다',toggle_role:'역할을 바꿨습니다',lock:'잠금 상태를 바꿨습니다'}[a]); await load(); } return; }
 });
 $('#q').addEventListener('input',e=>{ q=e.target.value; renderPeople(); renderScreens(); });
 document.addEventListener('keydown',e=>{ if(e.key==='/'&&document.activeElement!==$('#q')){ e.preventDefault(); $('#q').focus(); } });
