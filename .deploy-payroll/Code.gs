@@ -389,6 +389,7 @@ function listPayroll_(ym, name, viewer) {
 function recompute_(ym, name) {
   var r = calc_(ym, name), s = r.summary;
   var closed = readTab_('월합계').some(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name && String(m['마감']) === '마감';});
+  deleteRows_('월합계', function (m) { return m['강사명'] === name && String(m['월']).indexOf('-') < 0; });   // 월이 일련번호로 깨진 오염행 제거
   upsert_('월합계', ['월', '강사명'], [{ '월': ym, '강사명': name, '팀': r.cfg.it['팀'], '등록건수': s.등록건수, '신규': s.신규, '재등록': s.재등록, '진행': s.진행, '잔여': s.잔여, '청구합': s.청구합, '업무추진비': s.업무추진비, '팀인센티브': s.팀인센티브, '카드수수료': s.카드수수료, '주차비': s.주차비, '지급총액': s.지급총액, '소진': s.소진, '미소진': s.미소진, '당월매출': s.당월매출, '프로모션수': s.프로모션수, '프로모션강습료': s.프로모션강습료, '플래그수': r.flags.length, '마감': closed ? '마감' : '진행', '계산시각': now_() }]);
   deleteRows_('플래그', function (f) { return ym7_(f['월']) === ym && f['강사명'] === name && String(f['상태']) !== '처리'; });
   if (r.flags.length) {
@@ -520,7 +521,9 @@ function syncOne_(ym, name, actor, mat) {
         '월초잔여': monthStartRemain_(t, mat.bookedThisMonth[t.lesson_ticket_id] || 0, parseCount_(s.product_name)), '결제금액': s.product_total_payment_price || 0, '결제일': String(s.paid_at).slice(0, 10),
         '결제담당자': s.sales_manager_name || '', '상품명': s.product_name, '등록분류': prior > 0 ? '재등록' : '신규', '회원구분': g.label, '특이사항': g.note, '출처': 'API', '상태': g.label ? '정상' : '확인필요', '수집시각': now_() });
     });
-    // 수기 행(출처≠API)은 무접촉 · API 행만 upsert
+    // 재수집 = 완전 재작성: 이 강사·이 달 API 등록행 선삭제(월이 날짜/일련번호로 깨져도 제거). 수기 행(출처≠API)은 무접촉.
+    var stale = function (r) { return r['강사명'] === name && String(r['출처']) === 'API' && (ym7_(r['월']) === ym || String(r['월']).indexOf('-') < 0); };
+    deleteRows_('등록', stale);
     var res1 = upsert_('등록', ['월', '강사명', '수강권ID'], regs);
     // 2) 일정·출석 → 세션 (코드 = 수강권ID 조인 → 단가 → 코드표 역조회, 폴백 수강권명)
     var unitByTicket = {};
@@ -543,6 +546,7 @@ function syncOne_(ym, name, actor, mat) {
       sessRows.push({ '월': ym, '강사명': name, 'reservation_id': x.rid, '일시': Utilities.formatDate(x.t, 'UTC', 'yyyy-MM-dd HH:mm'), '수업명': x.lesson, '회원명': x.name, '회원명원문': x.raw, '수강권ID': x.tid || '', '수강권명': x.tname,
         '출석': x.status, '코드': cd.code, '기록명': cnt ? cd.code + x.name + seq[x.name] : '', '회차': cnt ? seq[x.name] : '', '판별경로': cd.via, '수집시각': now_() });
     });
+    deleteRows_('세션', function (r) { return r['강사명'] === name && (ym7_(r['월']) === ym || String(r['월']).indexOf('-') < 0); });
     var res2 = upsert_('세션', ['월', '강사명', 'reservation_id'], sessRows);
     var s = recompute_(ym, name);
     var secs = Math.round((Date.now() - started) / 1000);
