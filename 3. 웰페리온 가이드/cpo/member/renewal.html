@@ -36,7 +36,8 @@ header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20p
 .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--beige)}
 .kpi.accent::before{background:var(--coral)}
 .kpi .label{font-size:12px;color:var(--muted);font-weight:600}
-.kpi .val{font-size:27px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+/* 금액은 한 줄로 — 폰(390)에서 ₩1,056,107,990 이 두 줄로 꺾였다(시모 측정 2026-09-17). 자릿수 폭도 고정. */
+.kpi .val{font-size:27px;font-weight:800;margin-top:6px;letter-spacing:-.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .kpi .val.sm{font-size:19px}
 .kpi .note{font-size:12px;color:var(--muted);margin-top:3px}
 .kpi .note.down{color:var(--coral)}
@@ -63,6 +64,8 @@ footer b{color:var(--charcoal)}
 .skel{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
 #retry{display:none;font:inherit;font-size:11px;font-weight:600;margin-left:6px;padding:3px 10px;border:1px solid var(--line);background:var(--soft);border-radius:999px;cursor:pointer}
 @media(max-width:780px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}h1{font-size:21px}}
+/* 폰 폭에서는 칸이 135px 라 27/19px 로는 열 자리 금액이 안 들어간다 — 한 단계 내린다. */
+@media(max-width:480px){.kpi .val{font-size:22px}.kpi .val.sm{font-size:15px}}
 .rosterBtn{font:inherit;font-size:12px;font-weight:700;padding:8px 15px;border:1px solid var(--line);background:var(--soft);border-radius:999px;cursor:pointer;color:var(--charcoal)}
 .rosterBtn:hover{background:#efe9e2}
 table.roster{font-size:12.5px;margin-top:6px}
