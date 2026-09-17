@@ -110,6 +110,21 @@
 
   <div class="keep">💡 이것만 기억하세요 — <span style="color:var(--accent)">업무명 한 줄만 쓰고 저장.</span> 나머지는 나중에 고칠 수 있습니다.</div>
 
+  <h3>클로드 코드 창(CLI)으로 올리기 — 화면이 어려우면 이 한 줄</h3>
+  <p>클로드 코드 창이 있는 분(GM · 나우열M)은 아래 한 줄을 그대로 붙여 넣고 <b>업무명·기한·내용·이름</b>만 바꾸면 됩니다. 화면에서 올린 것과 같은 행이 생깁니다.</p>
+  <pre style="background:#1c1a17;color:#efe9df;padding:12px 14px;border-radius:8px;font-size:13px;overflow:auto;white-space:pre-wrap;">C:\Python314\python.exe scripts/gm_handoff.py --title "업무명 한 줄" --due 2026-09-30 --category "[4] 운영 정책" --assignee "이경연 실장" --creator "이경연 실장" --content "무엇을 · 어떻게 · 끝 기준"</pre>
+  <table>
+    <tr><th>칸</th><th>뜻</th></tr>
+    <tr><td>--title</td><td>업무명(필수). 이것 하나만 있어도 됩니다.</td></tr>
+    <tr><td>--due</td><td>종료일. 안 쓰면 오늘+7일.</td></tr>
+    <tr><td>--category</td><td>[1] 매출 및 영업 ~ [10] 마케팅 중 하나. 안 쓰면 [9] 회의.</td></tr>
+    <tr><td>--assignee · --creator</td><td>담당자 · 올리는 사람. <b>둘 다 본인 이름</b>으로 — AI 가 대신 올리지 않습니다(2026-08-18 규칙).</td></tr>
+    <tr><td>--approval "GM,대표님"</td><td>결재 받을 건이면 붙입니다(금액·계약·발주). GM 만 결재면 "GM".</td></tr>
+    <tr><td>--date 2026-09-25</td><td>날짜가 있는 일이면 전사일정에도 같이 올라갑니다.</td></tr>
+    <tr><td>--dry-run</td><td>먼저 미리보기만. 실제로는 안 올라갑니다.</td></tr>
+  </table>
+  <p>클로드 코드 창에 말로 시켜도 됩니다 — <b>「업무 SSOT 에 올려줘: 업무명 ○○ · 기한 9/30 · 담당 나」</b> 라고 하면 AI 가 위 한 줄로 바꿔 실행합니다(본인 이름으로만).</p>
+
   <h3>자주 묻는 것</h3>
   <table>
     <tr><th>궁금한 것</th><th>답</th></tr>

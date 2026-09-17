@@ -147,7 +147,7 @@ TODO_UPLOAD_BLOCKED = False
 
 
 def add_todo(title: str, content: str, category: str, due: str, approval: str, dry: bool,
-             owner: str = "", start: str = "", link: str = "") -> dict:
+             owner: str = "", start: str = "", link: str = "", creator: str = "") -> dict:
     """owner 기본 = 공란(담당은 부서가 정한다 · GM 2026-09-17). 생성자는 김남욱GM(GAS 가림 기준 표기 — 배12675).
     start 기본 = 오늘(기존 동작 그대로) — 이관 관문(migrate_cards)만 카드 달 1일을 넘긴다.
     link = 업무 SSOT 「링크」 칸(GAS _mapFields 가 link→링크 로 옮긴다) — 이관 관문이 카드 첫 자료를 싣는다."""
@@ -157,7 +157,7 @@ def add_todo(title: str, content: str, category: str, due: str, approval: str, d
     import ops_daily_digest as o
     params = {"action": "todo_add", "title": title, "category": category, "owner": owner,
               "startDate": start or _today().isoformat(), "endDate": due, "content": content,
-              "link": link, "approval": approval, "difficulty": "중", "creator": GM_CREATOR}
+              "link": link, "approval": approval, "difficulty": "중", "creator": creator or GM_CREATOR}
     if dry:
         return {"ok": True, "dry": True, "id": "TODO-(미리보기)"}
     return o._todo_post(params) or {"ok": False, "reason": "응답 없음"}
@@ -572,6 +572,8 @@ def main() -> int:
     ap.add_argument("--todo-id", help="업무 SSOT 행 id — 등록 때 주면 전사일정 카드에서 그 행으로 가는 링크가 생긴다")
     ap.add_argument("--event-id")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--creator", default=GM_CREATOR,
+                    help="업무 SSOT 생성자 칸 — CLI 로 직접 올리는 사람 이름(GM 2026-09-17 「CLI 로 업무 추가」). 기본 김남욱GM")
     ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
     ap.add_argument("--source", choices=["회장님", "대표님"],
                     help="지시 출처 — 제목 앞에 「[회장님 지시] 」/「[대표님 지시] 」를 붙이고 GM업무 카드 첫 줄에 남긴다(👑/🤵 배지)")
@@ -628,7 +630,7 @@ def main() -> int:
                          todo_id=a.todo_id or "", plan_id=a.plan or "") if a.date else None
     # 업무 SSOT 담당자 칸 = 공란(GM 2026-09-17 「담당자 없이」 · 부서가 정한다 L23). --assignee 를 따로 준 때만 그 값.
     todo_owner = "" if a.assignee == GM_OWNER else a.assignee
-    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=todo_owner)
+    r_todo = add_todo(a.title, a.content, a.category, due, a.approval, dry, owner=todo_owner, creator=a.creator)
     if r_todo.get("blocked"):
         # 막힌 것은 실패가 아니라 규칙이다 — 사람이 무엇을 해야 하는지 한 줄로 알린다.
         print("🚫 업무 SSOT 등록은 하지 않았습니다 — 지시를 받은 실무진이 직접 올립니다(GM 지시 2026-09-09).")
