@@ -18,6 +18,7 @@ cd "$(dirname "$0")/.."
 $SCP server/erp_api/api_chat.py $HOST:/srv/erp/api/
 $SCP scripts/diet_camp_agent.py $HOST:/srv/erp/api/   # FORBIDDEN(금액·계약 금지어) 재사용 — 이 파일만 stdlib 로 끝난다
 $SCP scripts/close_days.py $HOST:/srv/erp/api/        # 오늘 운영 상태 판정(배1036 GM⑥) — stdlib 로 끝난다
+$SCP scripts/kakao_room_listen.py $HOST:/srv/erp/api/  # mask_secrets — api_chat 가 import 한다(2026-09-17 이것만 빠져 /api/chat 전체가 404 났다)
 $S "mkdir -p /srv/erp/counselbot/shared"
 $SCP server/counselbot/shared/*.json "$HOST:/srv/erp/counselbot/shared/"   # 배1074 공통 학습층(저장소 정본 · 사실 값·개인정보 없음)
 $SCP server/erp_api/chat.nginx.conf $HOST:/tmp/chat.conf
