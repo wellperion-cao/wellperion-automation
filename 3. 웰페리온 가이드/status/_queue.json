@@ -595,5 +595,26 @@
     "reversible": true,
     "updated_at": "2026-09-17",
     "artifact_url": "https://erp.wellperion.com/erp/admin/"
+  },
+  {
+    "task_id": "CTO-2026-09-17-AX-랩스-자율현황-C레벨-관제판-개편-GM-이-던",
+    "clevel": "cto",
+    "title": "[시토] AX 랩스 「자율현황」 → C레벨 관제판 개편 — GM 이 던진 일이 어느 창에서 어떻게 진행되는지 라이브(새 화면 0)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-17",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-09-17] GM 지시 2026-09-17 13:49 원문: 「내가 업무를 다 웰리한테 던지면 각 C레벨 CLI창에서 작업하는거 볼 수 있는거지? 이것을 웹에서 라이브로 액티브 및 직관적으로 페이지를 하나 만들어볼까? AX랩스에다가?」. 웰리 설계: 새 화면 만들지 않고 erp/admin/자율현황.html 을 관제판으로 개편(시토 = AI 총괄·자율현황 주인 · 색은 platform_brand.css 토큰 그대로라 디자인 새로 없음). 원천은 전부 이미 있음 — status/sessions/{role}.json(생존 신호 heartbeat_at · 세션명) · status/worklog.jsonl(역할별 마지막 event·GM지시 warn/ok 짝) · status/_queue.json(역할별 열린 배·status) · status/calls.json(미답 호출) · git log 오늘 저장 수(역할 태그 [웰리]…). 화면 = 맨 위 숫자 4(살아있는 창 N/6 · 오늘 GM 지시 접수/완료 · 열린 배 · 미답 호출) → C레벨 카드 6장(닉네임 · 🟢살아있음/⚪N분 무신호 · 지금 하는 것 = worklog 마지막 event 한 줄+시각 · 열린 배 제목 3개 · 오늘 저장 수 · 오늘 GM 지시 접수/완료) → 아래 「GM 이 던진 것」 표(오늘 GM지시 warn 순 · 담당 · 상태 진행/완료 · 완료 시각) · 30초 자동 갱신(/repo/ 읽기) · 폭 1123 · 표 colgroup 고정. 「지금 하는 것」이 더 또렷하려면 각 세션이 배 착수 때 worklog area=진행 한 줄을 남기게 wellperion-boot §7 규칙 한 줄 추가(웰리가 스킬 문서에 넣는다 · 코드는 worklog.log 그대로). 기존 자율현황 내용(모듈 가동·감시기)은 아래 접힌 절로 내린다(삭제 아님). 검수 = 관리자 세션 헤드리스 렌더 · 6카드 숫자가 파일값과 같은지 대조.",
+    "next": "자율현황.html 개편 → 저장·배포 → 헤드리스 대조 → 웰리에게 라이브 주소 한 줄",
+    "depends_on": "",
+    "ship_no": 12723,
+    "short_no": 2721,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-17"
   }
 ]
