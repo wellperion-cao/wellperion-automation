@@ -1,32 +1,34 @@
 <!DOCTYPE html>
 <html lang="ko" data-brand="ax"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="../../../assets/wp-ui.css"><meta name="robots" content="noindex">
+<link rel="stylesheet" href="../../../assets/wp-ui.css">
+<link rel="stylesheet" href="../platform_brand.css"><meta name="robots" content="noindex">
 <title>카톡 AI 브랜딩 파트너 — 비즈니스 모델 구상 v0.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--ink:#0F3D3A;--navy:#0A6E66;--navy-bg:#E8F6F3;--line:#BFE6DF;--dim:#4F6B68;--good:#0A6E66;--warn:#B45309;--bad:#B91C1C}
-body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:#fff;font-size:15px;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+:root{--ink:var(--pf-ink);--navy:var(--pf-pri-dk);--navy-bg:var(--pf-panel-2);--line:var(--pf-line);--dim:var(--pf-soft);--good:var(--pf-ok);--warn:var(--pf-warn);--bad:var(--pf-bad)}
+body{font-family:'Noto Sans KR',sans-serif;color:var(--ink);background:var(--pf-bg);font-size:var(--fs-3);line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+p{max-width:75ch}
 .wrap{max-width:100%;margin:0;padding:24px 20px 60px}
 header{border-bottom:3px solid var(--navy);padding-bottom:12px;margin-bottom:16px}
-.brand{font-size:12px;letter-spacing:4px;color:var(--navy);font-weight:700}
-h1{font-size:25px;font-weight:900;margin-top:4px}
-.meta{font-size:13px;color:var(--dim);margin-top:4px}
-.lead{background:var(--navy);color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:18px;font-size:16px}
+.brand{font-size:var(--fs-2);letter-spacing:4px;color:var(--navy);font-weight:700}
+h1{font-size:var(--fs-6);font-weight:900;margin-top:4px}
+.meta{font-size:var(--fs-2);color:var(--dim);margin-top:4px}
+.lead{background:var(--navy);color:var(--pf-bg);padding:14px 18px;border-radius:6px;margin-bottom:18px;font-size:var(--fs-4)}
 .lead b{color:#FFD86B}
-h2{font-size:19px;color:var(--navy);margin:26px 0 8px;padding-left:9px;border-left:5px solid var(--navy)}
-table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:14px}
+h2{font-size:var(--fs-4);color:var(--navy);margin:26px 0 8px;padding-left:9px;border-left:5px solid var(--navy)}
+table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:var(--fs-3)}
 th,td{border:1px solid var(--line);padding:7px 10px;vertical-align:top;text-align:left}
-th{background:var(--navy-bg);color:var(--navy);font-size:13px}
+th{background:var(--navy-bg);color:var(--navy);font-size:var(--fs-2)}
 .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 12px}
-.step{border:1px solid var(--line);border-top:4px solid var(--navy);padding:10px 12px;font-size:14px}
-.step b{display:block;font-size:13px;color:var(--navy);margin-bottom:3px}
+.step{border:1px solid var(--line);border-top:4px solid var(--navy);padding:10px 12px;font-size:var(--fs-3)}
+.step b{display:block;font-size:var(--fs-2);color:var(--navy);margin-bottom:3px}
 .good{color:var(--good);font-weight:700}.warn{color:var(--warn);font-weight:700}.bad{color:var(--bad);font-weight:700}
 ul{padding-left:20px;margin:4px 0 8px} li{margin-bottom:4px}
-.ask{background:#FFF8E6;border:1.5px solid #E2C46B;border-radius:6px;padding:12px 16px;margin-top:18px}
-.ask h3{font-size:16px;margin-bottom:6px}
-.foot{margin-top:26px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px;color:var(--dim)}
-@media (max-width:760px){.flow{grid-template-columns:1fr}table{display:block;overflow-x:auto}h1{font-size:21px}}
+.ask{background:var(--pf-warn-bg);border:1.5px solid var(--pf-warn);border-radius:6px;padding:12px 16px;margin-top:18px}
+.ask h3{font-size:var(--fs-4);margin-bottom:6px}
+.foot{margin-top:26px;border-top:1px solid var(--line);padding-top:10px;font-size:var(--fs-2);color:var(--dim)}
+@media (max-width:760px){.flow{grid-template-columns:1fr}table{display:block;overflow-x:auto}h1{font-size:var(--fs-5)}}
 </style></head><body><div class="wrap">
 
 <header>
@@ -93,8 +95,8 @@ ul{padding-left:20px;margin:4px 0 8px} li{margin-bottom:4px}
 
 <h2>6. 위험 — 이것 때문에 무너진다</h2>
 <ul>
-  <li><span class="bad">⚠</span> <b>카톡 PC 자동화가 깨진다</b> — 카톡 업데이트·화면 잠김이면 07:00 전부 멈춘다(오늘 실측: 회신 수집 4회 전부 화면잠금 실패). 방이 늘수록 한 번 깨지면 전부 깨진다. 대응 = 실패 시 GM 알림 1줄(있음) + 아침 자가점검에서 "저장 파일이 오늘 것인가"를 본다.</li>
-  <li><span class="bad">⚠</span> <b>GM 계정이 얼굴이다</b> — 모든 방이 GM 카톡으로 나간다. 방이 10개면 GM 이 10명의 사장님과 1:1 로 보인다. 대응 = 첫 인사에 "웰페리온 AI 가 정리해 드린다"를 밝힌다(지금도 그렇게 하고 있다).</li>
+  <li><span class="bad">▲</span> <b>카톡 PC 자동화가 깨진다</b> — 카톡 업데이트·화면 잠김이면 07:00 전부 멈춘다(오늘 실측: 회신 수집 4회 전부 화면잠금 실패). 방이 늘수록 한 번 깨지면 전부 깨진다. 대응 = 실패 시 GM 알림 1줄(있음) + 아침 자가점검에서 "저장 파일이 오늘 것인가"를 본다.</li>
+  <li><span class="bad">▲</span> <b>GM 계정이 얼굴이다</b> — 모든 방이 GM 카톡으로 나간다. 방이 10개면 GM 이 10명의 사장님과 1:1 로 보인다. 대응 = 첫 인사에 "웰페리온 AI 가 정리해 드린다"를 밝힌다(지금도 그렇게 하고 있다).</li>
   <li><span class="warn">△</span> <b>고객 데이터 섞임</b> — 방별 대화 저장·자료 폴더가 한 저장소에 있다. 고객 A 자료가 고객 B 답장에 들어가면 끝이다. 대응 = 에이전트 프롬프트에 그 방 대화만(방별 인자화의 이유) · 계좌 등 민감정보는 산출물 금지(🔒 GM).</li>
   <li><span class="warn">△</span> <b>의료·보장 표현</b> — 운동센터 콘텐츠는 치료·완치·효과 보장을 못 쓴다. 대응 = 브랜드가이드 절대 규칙 + 출고 전 자문.</li>
   <li><span class="warn">△</span> <b>답이 안 온다</b> — 사장님이 바쁘면 방이 조용할 수 있다. 대응 = 그래도 07:00 아침 질문 1통은 보낸다(4가지 산출물 빈칸을 채우는 질문 · 먼저 말 거는 게 기본 · 재촉 문구 없음). 답 없는 달은 "지난달 그대로" 페이지로 보고.</li>
