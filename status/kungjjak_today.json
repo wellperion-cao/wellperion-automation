@@ -1,7 +1,50 @@
 {
   "_doc": "쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)",
   "date": "2026-09-18",
-  "roles": {},
+  "roles": {
+    "ceo": {
+      "nick": "웰리",
+      "items": [],
+      "work": [
+        {
+          "time": "06:02",
+          "area": "작업",
+          "event": "중간관리자 업무 화면 바로 반영 — --resolve 1건",
+          "detail": "커밋 5d06309bfb · 배 12736"
+        }
+      ],
+      "count": 0,
+      "done": 0,
+      "open": 0,
+      "avg_minutes": null,
+      "work_count": 1,
+      "missed": [],
+      "unclosed": [],
+      "just": [],
+      "repeats": []
+    },
+    "cto": {
+      "nick": "시토",
+      "items": [],
+      "work": [
+        {
+          "time": "06:03",
+          "area": "작업",
+          "event": "fix(telegram): 발신 관문에서 글 4096·캡션 1024 상한 초과분 잘라 보냄 — 09-17 11:17 낡은 판 경보 21통 'text is too long' 400 으로 GM 방 미도달(조용한 실패)",
+          "detail": "커밋 58652d7a68 · 배 12730"
+        }
+      ],
+      "count": 0,
+      "done": 0,
+      "open": 0,
+      "avg_minutes": null,
+      "work_count": 1,
+      "missed": [],
+      "unclosed": [],
+      "just": [],
+      "repeats": []
+    }
+  },
   "tomorrow": {
     "ok": true,
     "items": [
@@ -10,14 +53,19 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T06:01:00",
+    "published_at": "2026-09-18T06:03:58",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "05:45",
-        "last": null,
+        "signal": "06:00",
+        "last": {
+          "time": "06:02",
+          "area": "작업",
+          "event": "중간관리자 업무 화면 바로 반영 — --resolve 1건",
+          "result": "ok"
+        },
         "idle_since": null,
         "saves": 0
       },
@@ -26,9 +74,14 @@
         "session": "welperion-automation-c0",
         "alive": true,
         "signal": "06:00",
-        "last": null,
+        "last": {
+          "time": "06:03",
+          "area": "작업",
+          "event": "fix(telegram): 발신 관문에서 글 4096·캡션 1024 상한 초과분 잘라 보냄 — 09-17 11:17 낡은 판 경보 21통 'text is too long' 400 으로 GM 방 미도달(조용한 실패)",
+          "result": "ok"
+        },
         "idle_since": null,
-        "saves": 1
+        "saves": 2
       },
       "cmo": {
         "nick": "시모",
