@@ -226,7 +226,9 @@ def send(template_id, rcpt, variables=None, origin_key="", force=False, tag=None
 
     text = render(tpl.get("body", ""), variables)
     mtype = msg_type_for(text)
-    msg_key = make_msg_key(tpl.get("trigger") or template_id, origin_key or template_id)
+    # 2026-09-17 시토 실측: 접수 문구 3종(접수·진행·완료)이 같은 trigger("reception")라 같은 접수건은 둘째부터
+    #   skip_duplicate 로 막혔다. 중복 키는 「문구 id + 원장 id + 날짜」 — 같은 문구를 같은 건에 하루 두 번만 막는다.
+    msg_key = make_msg_key(template_id, origin_key or template_id)
 
     log_rows = _read_log()
     if any(r.get("msg_key") == msg_key and r.get("status") != "hold" for r in log_rows):
