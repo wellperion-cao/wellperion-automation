@@ -485,8 +485,16 @@ def notice_snapshot(tag: str) -> int:
         wins = _notice_windows()
     except Exception:
         return -1
-    line = "%s [snapshot:%s] 공지 창 %d개%s" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), tag, len(wins),
-                                             (" — " + " · ".join(repr(t) for _h, t in wins)) if wins else "")
+    # 공지 창뿐 아니라 카톡 창 전부(제목)를 같이 적는다 — GM 이 말한 「상세보기」가 공지 창이 아닐 수도 있어
+    # (2026-09-17 실측: 방 열기·붙여넣기·실전송 어느 경로도 Moim 창을 안 만들었다) 창 종류를 안 가리고 남긴다.
+    try:
+        allw = [t for _h, t, c in _enum_visible_top_level_windows() if c == KAKAO_ROOM_WINDOW_CLASS and t.strip() and t != "카카오톡"]
+    except Exception:
+        allw = []
+    line = "%s [snapshot:%s] 공지 창 %d개%s · 카톡 창 %d개%s" % (
+        datetime.now().strftime('%Y-%m-%d %H:%M:%S'), tag, len(wins),
+        (" — " + " · ".join(repr(t) for _h, t in wins)) if wins else "",
+        len(allw), (" — " + " · ".join(repr(t) for t in allw)) if allw else "")
     try:
         NOTICE_TRACE_LOG.parent.mkdir(parents=True, exist_ok=True)
         with NOTICE_TRACE_LOG.open("a", encoding="utf-8") as f:
