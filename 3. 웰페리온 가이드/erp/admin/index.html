@@ -1054,14 +1054,15 @@
      킬스위치 SMS_ENABLED=0 이면 실제 전송 없이 로그에 dry 로만 남는다. 문구를 「발효」로 올려야 화면 버튼·자동 트리거가 쓴다. -->
 <section class="panel" data-panel="sms" hidden>
   <h2>문자 발송</h2>
+  <div class="meta" id="sms-counts-line" style="font-size:14px;margin-bottom:4px;">오늘 발송 건수 확인 중…</div>
   <div class="meta">딜라이브(SMS/LMS) 연동 · 킬스위치가 꺼져 있으면(SMS_ENABLED=0) 실제로 나가지 않고 로그에 dry 로만 남습니다 · <a href="https://letter.dlive.kr" target="_blank" rel="noopener">잔액·단가는 딜라이브에서 ↗</a></div>
 
   <h3 style="margin:18px 0 6px;">문구</h3>
   <div class="meta" id="sms-tpl-line">불러오는 중…</div>
   <div class="tbl-wrap"><table class="reg" style="table-layout:fixed;width:100%">
-    <colgroup><col style="width:12%"><col style="width:16%"><col style="width:9%"><col style="width:9%"><col><col style="width:80px"></colgroup>
-    <thead><tr><th>자리</th><th>이름</th><th>상태</th><th>종류</th><th>미리보기</th><th></th></tr></thead>
-    <tbody id="sms-tpl-rows"><tr><td colspan="6" class="note">불러오는 중…</td></tr></tbody>
+    <colgroup><col style="width:12%"><col style="width:15%"><col style="width:9%"><col style="width:9%"><col><col style="width:52px"><col style="width:80px"></colgroup>
+    <thead><tr><th>자리</th><th>이름</th><th>상태</th><th>종류</th><th>미리보기</th><th>오늘</th><th></th></tr></thead>
+    <tbody id="sms-tpl-rows"><tr><td colspan="7" class="note">불러오는 중…</td></tr></tbody>
   </table></div>
   <details class="tip"><summary>문구 편집</summary>
     <div class="in" style="display:flex;flex-direction:column;gap:6px;max-width:520px">
@@ -1094,28 +1095,47 @@
 
   <script>
   (function(){
-    var TPL_API='/api/admin/sms/templates', TEST_API='/api/admin/sms/test', LOG_API='/api/admin/sms/log';
+    var TPL_API='/api/admin/sms/templates', TEST_API='/api/admin/sms/test', LOG_API='/api/admin/sms/log', COUNTS_API='/api/admin/sms/counts';
     var tplRows=document.getElementById('sms-tpl-rows'), tplLine=document.getElementById('sms-tpl-line');
+    var countsLine=document.getElementById('sms-counts-line');
     var eSel=document.getElementById('sms-e-id'), eName=document.getElementById('sms-e-name'), eBody=document.getElementById('sms-e-body');
     var eSample=document.getElementById('sms-e-sample'), eActive=document.getElementById('sms-e-active'), eCount=document.getElementById('sms-e-count'), eMsg=document.getElementById('sms-e-msg');
     var tSel=document.getElementById('sms-t-id'), tRcpt=document.getElementById('sms-t-rcpt'), tVars=document.getElementById('sms-t-vars'), tMsg=document.getElementById('sms-t-msg');
     var logRows=document.getElementById('sms-log-rows');
-    var items=[];
+    var items=[], countsData={today_sent:0, today_dry:0, today_limit:30, month_sent:0, by_template_today:{}};
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     function renderTpl(body, sample){ var t=body||''; Object.keys(sample||{}).forEach(function(k){ t=t.split('{'+k+'}').join(sample[k]); }); return t; }
     function typeBadge(text){ return text.length<=45 ? '<span class="st ok">SMS</span>' : '<span class="st wait">LMS로 나감('+text.length+'자)</span>'; }
+
+    function renderCountsLine(){
+      var over = countsData.today_sent >= countsData.today_limit;
+      countsLine.innerHTML = '오늘 <b>'+countsData.today_sent+'</b> / '+countsData.today_limit+'건 · 이달 '+countsData.month_sent+'건'
+        + (countsData.today_dry ? ' <span class="n">(시험·킬스위치 dry '+countsData.today_dry+'건 별도)</span>' : '')
+        + (over ? ' <span class="st bad">오늘 상한 도달</span>' : '');
+    }
+    function loadCounts(){
+      return fetch(COUNTS_API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+        countsData=d; renderCountsLine(); renderTplRows();
+      }).catch(function(){ countsLine.textContent='발송 건수를 못 읽었습니다'; });
+    }
+
+    function renderTplRows(){
+      tplRows.innerHTML = items.map(function(it){
+        var preview=renderTpl(it.body, it.sample);
+        var todayCount = (countsData.by_template_today || {})[it.id] || 0;
+        return '<tr><td>'+esc(it.trigger||'')+'</td><td class="item">'+esc(it.name||it.id)+'</td>'+
+          '<td>'+(it.state==='발효' ? '<span class="st ok">발효</span>' : '<span class="st wait">'+esc(it.state||'초안')+'</span>')+'</td>'+
+          '<td>'+typeBadge(preview)+'</td><td class="n" style="word-break:break-all">'+esc(preview)+'</td>'+
+          '<td class="n">'+todayCount+'</td>'+
+          '<td><button class="sms-edit" data-id="'+esc(it.id)+'">편집</button></td></tr>';
+      }).join('') || '<tr><td colspan="7" class="note">문구 없음</td></tr>';
+    }
 
     function loadTemplates(){
       fetch(TPL_API+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
         items=d.items||[];
         tplLine.textContent='문구 '+items.length+'종 — 「발효」만 화면 버튼·자동 트리거가 쓴다';
-        tplRows.innerHTML = items.map(function(it){
-          var preview=renderTpl(it.body, it.sample);
-          return '<tr><td>'+esc(it.trigger||'')+'</td><td class="item">'+esc(it.name||it.id)+'</td>'+
-            '<td>'+(it.state==='발효' ? '<span class="st ok">발효</span>' : '<span class="st wait">'+esc(it.state||'초안')+'</span>')+'</td>'+
-            '<td>'+typeBadge(preview)+'</td><td class="n" style="word-break:break-all">'+esc(preview)+'</td>'+
-            '<td><button class="sms-edit" data-id="'+esc(it.id)+'">편집</button></td></tr>';
-        }).join('') || '<tr><td colspan="6" class="note">문구 없음</td></tr>';
+        renderTplRows();
         var opts=items.map(function(it){ return '<option value="'+esc(it.id)+'">'+esc(it.name||it.id)+'</option>'; }).join('');
         eSel.innerHTML=opts; tSel.innerHTML=opts;
       }).catch(function(e){ tplLine.textContent = (e===403) ? '회사 관리자 계정만 봅니다' : '문구를 못 읽었습니다('+e+')'; });
@@ -1151,7 +1171,7 @@
         body:JSON.stringify({template_id:tSel.value, rcpt:tRcpt.value, vars:vars})})
         .then(function(r){return r.json();}).then(function(d){
           tMsg.textContent = d.ok ? ('결과: '+d.status+(d.msg_key?(' · '+d.msg_key):'')) : ('실패 — '+(d.error||d.status||''));
-          loadLog();
+          loadLog(); loadCounts();
         }).catch(function(){ tMsg.textContent='요청 실패'; });
     });
 
@@ -1165,7 +1185,7 @@
       }).catch(function(){ logRows.innerHTML='<tr><td colspan="6" class="note">로그를 못 읽었습니다</td></tr>'; });
     }
 
-    loadTemplates(); loadLog();
+    loadCounts(); loadTemplates(); loadLog();
   })();
   </script>
 </section>

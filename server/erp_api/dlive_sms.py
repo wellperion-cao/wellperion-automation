@@ -187,13 +187,36 @@ def _is_night():
     return dt.datetime.now(KST).hour >= 21 or dt.datetime.now(KST).hour < 8
 
 
+# ── 하루 상한·건수 (GM 지시 2026-09-17 10:5x 「갯수 파악·하루 30건 제한」) ──────
+
+def _daily_limit():
+    return int(os.environ.get("SMS_DAILY_LIMIT", "30"))
+
+
+def counts():
+    """관리자 화면 맨 위 띠 + /api/admin/sms/counts 원천. dry(킬스위치 꺼짐)는 상한 대상이 아니라 따로 센다."""
+    rows = _read_log()
+    today, month = today_str(), today_str()[:7]
+    today_sent = sum(1 for r in rows if r.get("status") == "sent" and r.get("at", "").startswith(today))
+    today_dry = sum(1 for r in rows if r.get("status") == "dry" and r.get("at", "").startswith(today))
+    month_sent = sum(1 for r in rows if r.get("status") == "sent" and r.get("at", "").startswith(month))
+    by_template_today = {}
+    for r in rows:
+        if r.get("at", "").startswith(today) and r.get("status") in ("sent", "dry"):
+            tid = r.get("template_id", "")
+            by_template_today[tid] = by_template_today.get(tid, 0) + 1
+    return {"today_sent": today_sent, "today_dry": today_dry, "today_limit": _daily_limit(),
+            "month_sent": month_sent, "by_template_today": by_template_today}
+
+
 # ── 보내기 ───────────────────────────────────────────────────────────────
 
 def send(template_id, rcpt, variables=None, origin_key="", force=False, tag=None, require_active=True):
     """template_id 문구를 rcpt 에 보낸다.
     force=True — 야간(21~08시) 보류를 건너뛴다(관리자 1회 버튼용). 자동 발송은 force 없이 불러 보류시킨다.
     require_active=False — 문구 state 가 '발효' 아니어도 보낸다(관리자 시험 발송 전용).
-    같은 msgKey 로 이미 보낸(또는 실패한) 로그가 있으면 다시 보내지 않는다(hold 상태는 아직 안 보낸 것이라 예외)."""
+    같은 msgKey 로 이미 보낸(또는 실패한) 로그가 있으면 다시 보내지 않는다(hold 상태는 아직 안 보낸 것이라 예외).
+    하루 실제 발송(status=sent) 이 SMS_DAILY_LIMIT(기본 30)에 닿으면 force 여도 넘지 않고 status=limit 으로 기록만 한다."""
     templates = load_templates()
     tpl = templates.get(template_id)
     if not tpl:
@@ -205,12 +228,20 @@ def send(template_id, rcpt, variables=None, origin_key="", force=False, tag=None
     mtype = msg_type_for(text)
     msg_key = make_msg_key(tpl.get("trigger") or template_id, origin_key or template_id)
 
-    if any(r.get("msg_key") == msg_key and r.get("status") != "hold" for r in _read_log()):
+    log_rows = _read_log()
+    if any(r.get("msg_key") == msg_key and r.get("status") != "hold" for r in log_rows):
         return {"ok": True, "status": "skip_duplicate", "msg_key": msg_key}
 
     row = {"at": now_kst(), "template_id": template_id, "trigger": tpl.get("trigger", ""),
            "var_keys": sorted((variables or {}).keys()), "rcpt_tail4": _mask_tail4(rcpt),
            "msg_type": mtype, "msg_key": msg_key, "tag": tag}
+
+    today = today_str()
+    sent_today = sum(1 for r in log_rows if r.get("status") == "sent" and r.get("at", "").startswith(today))
+    if sent_today >= _daily_limit():
+        row["status"] = "limit"
+        _append_log(row)
+        return {"ok": False, "status": "limit", "msg_key": msg_key}
 
     if _is_night() and not force:
         row["status"] = "hold"
@@ -331,6 +362,15 @@ def _selfcheck():
         g["_is_night"] = lambda: False
         r5 = send("rcpt_received", "01033334444", {}, origin_key="test-1", require_active=False, tag="test")
         assert r5["status"] == "dry", r5
+
+        # 하루 상한(GM 2026-09-17 「하루 30건 제한」) — 30건 채운 뒤 31번째는 force 여도 limit.
+        for i in range(_daily_limit()):
+            _append_log({"at": now_kst(), "template_id": "hold_confirm", "trigger": "hold", "var_keys": [],
+                         "rcpt_tail4": "0000", "msg_type": "LMS", "msg_key": "fake-%d" % i, "tag": None, "status": "sent"})
+        c = counts()
+        assert c["today_sent"] == _daily_limit() and c["today_limit"] == _daily_limit(), c
+        r6 = send("hold_confirm", "01099998888", {"시작": "9/22", "종료": "10/21"}, origin_key="M00099", force=True)
+        assert r6["status"] == "limit", r6
 
         rows = recent_log(50)
         assert len(rows) >= 4, "로그 누적"
