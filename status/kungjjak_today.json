@@ -114,6 +114,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-1012",
+          "no": "12",
+          "got": "화면지도를 보고 있는데, 우리가 놓치는 부분이 뭔지 알겠네",
+          "did": "",
+          "start": "13:12",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -320,14 +332,29 @@
           "detail": "커밋 93e9ab5234 · 배 12714"
         }
       ],
-      "count": 15,
+      "count": 16,
       "done": 15,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 13,
       "work_count": 22,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-1012",
+          "no": "12",
+          "got": "화면지도를 보고 있는데, 우리가 놓치는 부분이 뭔지 알겠네",
+          "did": "",
+          "start": "13:12",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -612,12 +639,6 @@
       ],
       "work": [
         {
-          "time": "10:31",
-          "area": "작업",
-          "event": "docs(sms): 문자 자동발송 체계 설계 브리프 (GM 지시 2026-09-17)",
-          "detail": "커밋 5a27e82f6a · 배 12680"
-        },
-        {
           "time": "10:33",
           "area": "배",
           "event": "배 2714 설계 브리프 완료 · 1단계 레인 착수",
@@ -790,6 +811,12 @@
           "area": "협업",
           "event": "화면별 접속 수 집계(screen_hits.json · 웰리 요청 · GM 화면 300개 정리)",
           "detail": "nginx 로그 11일(09-07~09-17) · 210경로 · 65461635e4 · 웰리 회신"
+        },
+        {
+          "time": "13:10",
+          "area": "협업",
+          "event": "브로제이 매출 칸 모듈 배포(시포 1f7912a0f7 · GM 13:0x 운영 현황보고 매출 정정)",
+          "detail": "재기동 · health 200 · 9/16 N7 7,000,000·N9 3,230,000·N11 0 일치 · 시포 회신"
         }
       ],
       "count": 23,
@@ -1254,7 +1281,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 4
         }
       ],
       "repeats": []
@@ -1383,18 +1410,6 @@
           "evidence": "⚠️없음"
         },
         {
-          "ref": "GM-20260917-4017",
-          "no": "17",
-          "got": "지금 웰페리온 운영 현황보고 보고있는데, 매출이 안맞네? 신규등록 매출이 반영이 안되는건가?",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
-          "start": "13:03",
-          "end": "13:05",
-          "minutes": 1,
-          "upload": "✅ 배포 (658b40fed)",
-          "open": false,
-          "evidence": "⚠️없음"
-        },
-        {
           "ref": "GM-20260917-4018",
           "no": "18",
           "got": "그리고 환불 매출이 -418,000원인데, 어떻게 발생된지도 모르겠어 // erp 직원 페이지home에선 매출 및 회원 현황보고 그대로 되어있네? 그리고 이달 운영 계획 진척은 월간운영계획이였는데, 웰페리온 운영 현…",
@@ -1487,6 +1502,18 @@
           "end": "12:06",
           "minutes": 0,
           "upload": "✅ 배포 (881c892dd)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-cpo-sales-mismatch",
+          "no": "ch",
+          "got": "운영 현황보고 매출 안 맞음 — 신규등록 매출 미반영?",
+          "did": "신규/재등록 계산 수리(회원권 전 유형·대기=신규) · 환불 칸 운영부만 · 라이브 N7 7,000,000 일치 · 홈 링크 정리",
+          "start": "13:04",
+          "end": "13:11",
+          "minutes": 7,
+          "upload": "✅ 배포 (faa0ec8f8)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1593,17 +1620,32 @@
           "area": "멤버십",
           "event": "fix(cpo): 현황보고 서버판 신규/재등록 = 회원권 결제 전부(FACILITY_TICKET 포함) · 등록분류 「대기」=신규 · 환불 칸은 운영부(회원권·옵션) 환불만 (9/16 시트 신규 2명 7,000,00",
           "detail": "커밋 1f7912a0f7 · 배 12523"
+        },
+        {
+          "time": "13:11",
+          "area": "공통",
+          "event": "fix(cpo): ERP 홈 운영 섹션 머리의 「이달 운영 계획·진척」 알약 링크도 제거 — 운영 현황 보고 3면에 통합(GM 9/17)",
+          "detail": "커밋 faa0ec8f84 · 배 12523"
         }
       ],
       "count": 20,
       "done": 20,
       "open": 0,
       "avg_minutes": 9,
-      "work_count": 15,
+      "work_count": 16,
       "missed": [],
       "unclosed": [],
       "just": [],
-      "repeats": []
+      "repeats": [
+        {
+          "count": 2,
+          "got": "그리고 환불 매출이 -418,000원인데, 어떻게 발생된지도 모르겠어 // erp 직원 페이지home에선 매출 및 회원 현황보고 그대로 되어있네? 그리고 이달 운영 계획 진척은 월간운영계획이였는데, 웰페리온 운영 현…",
+          "nos": [
+            "18",
+            "ch"
+          ]
+        }
+      ]
     },
     "coo": {
       "nick": "시우",
@@ -1811,18 +1853,6 @@
           "upload": "✅ 배포 (aa9f74235)",
           "open": false,
           "evidence": "⚠️없음"
-        },
-        {
-          "ref": "GM-20260917-5020",
-          "no": "20",
-          "got": "지금 3사 바이크 테크노짐거 항목별 미기재가 뭐야? 너가 대당 단가 넣어줘야줘",
-          "did": "",
-          "start": "13:06",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
         }
       ],
       "work": [
@@ -1881,29 +1911,14 @@
           "detail": "커밋 02b8315e23 · 배 12716"
         }
       ],
-      "count": 18,
+      "count": 17,
       "done": 17,
-      "open": 1,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 9,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-5020",
-          "no": "20",
-          "got": "지금 3사 바이크 테크노짐거 항목별 미기재가 뭐야? 너가 대당 단가 넣어줘야줘",
-          "did": "",
-          "start": "13:06",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
