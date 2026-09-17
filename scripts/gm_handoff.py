@@ -409,10 +409,25 @@ def migrate_cards(dry: bool, only: set | None) -> list[dict]:
                 rows.append(row)
                 continue
             todo_id = str(r.get("id") or "")
-            card["status"] = "이관"
-            card["progress_note"] = (card.get("progress_note") or "").rstrip() \
-                + f"\n[업무 SSOT {todo_id} 로 이관 {_MIGRATE_TAG}]"
-            fail = _save_plan(plan)
+            # ★배 「업무 SSOT 이관 실행」(2026-09-17) 실측 — refuse_if_older_than_head 는 파일당
+            # 2줄(이상)+ 이 바뀌면(카드 여러 개를 커밋 없이 이어 쓰면 금방 넘는다) 거부한다.
+            # 그래서 카드마다 즉시 저장하되(위 설계 「한 카드 = 한 저장」), 다른 레인이 그 사이
+            # monthly_ops_plan.json 을 커밋해 HEAD 가 앞서갔을 때는 plan 을 다시 읽어 재적용한다
+            # (add_todo 는 이미 끝났으니 다시 부르지 않는다 — 재시도는 카드 쪽 저장만).
+            note_suffix = f"\n[업무 SSOT {todo_id} 로 이관 {_MIGRATE_TAG}]"
+            fail = None
+            for _attempt in range(3):
+                cur_plan = json.loads(PLAN_PATH.read_text(encoding="utf-8")) if _attempt else plan
+                cur_card = _find_card(cur_plan, cid) if _attempt else card
+                if not cur_card:
+                    fail = {"reason": "저장 재시도 중 카드를 못 찾음"}
+                    break
+                cur_card["status"] = "이관"
+                if note_suffix not in (cur_card.get("progress_note") or ""):
+                    cur_card["progress_note"] = (cur_card.get("progress_note") or "").rstrip() + note_suffix
+                fail = _save_plan(cur_plan)
+                if not fail:
+                    break
             if fail:
                 row["판정"] = f"행은 만듦({todo_id}) · 카드 저장 실패({fail.get('reason')})"
             else:
