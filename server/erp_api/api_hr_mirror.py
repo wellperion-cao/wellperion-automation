@@ -137,12 +137,13 @@ def _run_tab_locked(tab: str):
                 # 값이 실릴 수 있는 stdout 은 안 남긴다 — 마지막 판정 줄([FAILED]/[LOCKED]) 만
                 st["last_error"] = next((ln for ln in reversed(tail) if ln.strip().startswith(("[FAILED]", " [FAILED]", "[LOCKED]", " [LOCKED]"))),
                                         "exit %s" % code)[:200]
+            _save()                                  # 결과를 바로 파일에 — finally 의 재읽기가 덮지 않게(15:15 실측: last_ok_at 유실)
     except subprocess.TimeoutExpired:
         with _LOCK:
-            _tab(tab).update({"last_exit": -1, "last_error": "timeout %ss" % RUN_TIMEOUT_SEC})
+            _load(force=True); _tab(tab).update({"last_exit": -1, "last_error": "timeout %ss" % RUN_TIMEOUT_SEC}); _save()
     except Exception as e:                       # noqa: BLE001
         with _LOCK:
-            _tab(tab).update({"last_exit": -2, "last_error": type(e).__name__})
+            _load(force=True); _tab(tab).update({"last_exit": -2, "last_error": type(e).__name__}); _save()
     finally:
         with _LOCK:
             _load(force=True)
