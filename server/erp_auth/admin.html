@@ -161,6 +161,10 @@ tbody tr.sel{background:var(--accent-soft)}
 .scrrow summary small{color:var(--ink-soft);font-weight:400}
 .scrrow summary .c{margin-left:auto;font-size:12px;color:var(--ink-soft);white-space:nowrap}
 .scrrow .x{color:var(--warn);font-weight:700;font-size:11px;margin-left:2px}
+/* 화면마다 부서 7칸(읽기 전용 · 배1026 2026-09-17) — 원천 = S.dept_modules 그대로, 여기에 목록을 또 적지 않는다. */
+.scrrow summary .dep{margin-left:8px;white-space:nowrap;font-size:11.5px;color:var(--ink-faint)}
+.scrrow summary .dep i{font-style:normal;margin-left:5px}
+.scrrow summary .dep i.y{color:var(--ink);font-weight:700}
 .scrrow .chips{margin:0 12px 10px}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
@@ -249,6 +253,7 @@ tbody tr.sel{background:var(--accent-soft)}
       <div class="preset-row" id="screen-presets"></div>
     </div>
     <div class="card" style="padding:8px 0 4px">
+      <p class="sub" style="padding:0 16px">부서 칸 = 관 관리자 · 경 경영지원 · 운 운영부 · 파 강습&파트너팀 · 시 시설부 · 지 지원부 · 주 주차관리부. ○ 열림 · — 없음. 여기서는 보기만 하고, 고치는 곳은 「부서 기본」 탭입니다.</p>
       <div id="screen-groups"></div>
     </div>
     <div class="card" id="social-card">
@@ -594,13 +599,20 @@ function renderScreens(){
   // 그룹별 접힘 표 1개(회원/운영/점검/경영) + 문서함은 화면 개별 나열 없이 그룹 1줄로 접는다(배1026 2026-09-07).
   const dm=S.dept_modules||{};
   $('#screen-presets').innerHTML=Object.keys(dm).map(k=>`<button class="btn sm" data-dept-preset="${esc(k)}">${esc(k)}</button>`).join('')||'<span class="empty">부서 없음</span>';
+  /* 부서 7칸 = 관리자(allowed() 가 admin 에 무조건 true) + dept_modules 의 부서 순서.
+     한 글자 라벨을 값 옆에 붙여 열 맞춤 없이도 읽힌다(좁은 화면에서 안 깨진다). */
+  const DSHORT={'관리자':'관','경영지원':'경','운영부':'운','파트너팀':'파','시설부':'시','지원부':'지','주차관리부':'주'};
+  const dmark=m=>['관리자',...Object.keys(dm)].map(c=>{
+    const on=(c==='관리자')||(dm[c]||[]).includes(m.id);
+    return `<i class="${on?'y':''}" title="${esc(c)}">${esc(DSHORT[c]||c.slice(0,1))}${on?'○':'—'}</i>`;
+  }).join('');
   const qq=q.trim().toLowerCase(); const act=S.users.filter(u=>u.status==='active');
   const match=m=>!qq||(m.name+' '+m.group+' '+(m.staff||'')).toLowerCase().includes(qq);
   const core=AREAS.map(g=>{
     const all=S.modules.filter(m=>!m.doc&&m.group===g), list=all.filter(match);
     return `<details class="grp"${qq&&list.length?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${list.length}</b>/${all.length} 화면</span></summary>
     ${list.map(m=>{const v=act.filter(u=>allowed(u,m));
-      return `<details class="scrrow"><summary><span>${scrName(m)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
+      return `<details class="scrrow"><summary><span>${scrName(m)}${S.exception_ids.includes(m.id)?'<span class="x">개인 예외</span>':''}</span><small>${esc(m.desc||'')}</small><span class="dep">${dmark(m)}</span><span class="c num">${v.length}명 봄${m.core?' · 핵심':''}</span></summary>
       <div class="chips">${v.length?v.map(u=>`<span class="tag" title="${esc(dept(u)||'')}">${esc(u.name)}</span>`).join(''):'<span class="tag">아무도 못 봅니다</span>'}</div></details>`;}).join('')||'<div class="empty">검색 결과 없음</div>'}
     </details>`;}).join('');
   const docAll=S.modules.filter(m=>m.doc), docList=docAll.filter(match);
