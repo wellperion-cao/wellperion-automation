@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="UTF-8">
+<title>다이어트캠프 &amp; PT — 2주년 특별 이벤트</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+:root{
+  --green:#4E7432; --green-deep:#3A5626; --green-pale:#EEF3E9;
+  --black:#0B0B0D; --muted:#CBCCCA; --white:#FFFFFF;
+  --ink:#16180F; --dim:#5C665C; --line:#DCE3D6; --on-dark:#9FD068;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1350px;overflow:hidden;background:var(--black);font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;word-break:keep-all}
+.poster{width:1080px;height:1350px;display:flex;flex-direction:column;position:relative}
+
+/* 상단 — 히어로 (기존 dc-hero 결 계승) */
+.top{position:relative;background:var(--black);color:var(--white);padding:44px 64px 36px;overflow:hidden;flex:0 0 auto}
+.top .bg{position:absolute;inset:0;background-image:url('../../../../3.%20웰페리온%20가이드/erp/admin/dietcamp/img/tools_01.jpg');background-size:cover;background-position:center;opacity:.28;filter:grayscale(15%) contrast(1.05)}
+.top .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,11,13,.5) 0%,rgba(11,11,13,.94) 100%)}
+.top .inner{position:relative;z-index:1}
+.logo-chip{display:inline-block;background:#fff;padding:6px 12px;border-radius:8px;margin-bottom:22px}
+.logo-chip img{height:34px;display:block}
+.label{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--on-dark);font-weight:700;margin-bottom:14px}
+.lead{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.sub{font-size:14px;color:rgba(203,204,202,.85);margin-bottom:18px}
+.year{font-size:96px;font-weight:800;color:var(--on-dark);line-height:1;letter-spacing:-.02em}
+.year small{font-size:34px;font-weight:800;color:var(--on-dark);margin-left:6px}
+.badge{display:inline-block;background:var(--green);color:#fff;font-size:20px;font-weight:800;padding:8px 22px;margin:14px 0 10px;letter-spacing:-.01em}
+.chance{font-size:14px;color:rgba(203,204,202,.9)}
+
+/* 혜택 헤드라인 */
+.offer-head{background:var(--green-pale);padding:26px 64px 10px;text-align:center;flex:0 0 auto}
+.offer-head .now{font-size:15px;font-weight:700;color:var(--dim)}
+.offer-head .big{font-size:34px;font-weight:800;color:var(--green-deep);letter-spacing:-.01em;margin-top:4px}
+
+/* 4 카드 */
+.cards{flex:1 1 auto;background:var(--white);padding:20px 48px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{border:1px solid var(--line);padding:20px 18px;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.card .ic{font-size:26px;margin-bottom:8px}
+.card h3{font-size:15px;font-weight:800;color:var(--ink)}
+.card .val{font-size:22px;font-weight:800;color:var(--green);margin-top:6px;line-height:1.25}
+.card .note{font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.6}
+
+/* 프로그램 칩 */
+.chips-wrap{background:var(--green-pale);padding:18px 48px;flex:0 0 auto}
+.chips-wrap .tag{font-size:13px;font-weight:800;color:var(--green-deep);margin-bottom:10px}
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.chip{background:var(--white);border:1px solid var(--line);padding:10px 4px;text-align:center;font-size:11.5px;color:var(--dim);font-weight:700}
+
+/* 하단 CTA */
+.cta{background:var(--green);color:#fff;padding:26px 0;text-align:center;flex:0 0 auto}
+.cta h2{font-size:24px;font-weight:800}
+</style>
+</head><body>
+<div class="poster">
+
+  <div class="top">
+    <div class="bg"></div>
+    <div class="overlay"></div>
+    <div class="inner">
+      <div class="logo-chip"><img src="../../../../3.%20웰페리온%20가이드/erp/admin/dietcamp/img/logo_h.png" alt="다이어트캠프 &amp; PT 로고"></div>
+      <div class="label">DIET CAMP &amp; PT · 2주년 특별 이벤트</div>
+      <div class="lead">지금이 바로 시작할 때!</div>
+      <div class="sub">다이어트캠프&amp;PT가 2주년을 맞이했습니다!</div>
+      <div class="year">2<small>주년</small></div>
+      <div class="badge">특별 이벤트</div>
+      <div class="chance">지금이 가장 좋은 기회입니다!</div>
+    </div>
+  </div>
+
+  <div class="offer-head">
+    <div class="now">지금 등록하시면</div>
+    <div class="big">역대급 혜택!</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="ic">🏋️</div>
+      <h3>PT</h3>
+      <div class="val">최대 40% 할인</div>
+      <div class="note">지금이 바로 가장 좋은 타이밍!</div>
+    </div>
+    <div class="card">
+      <div class="ic">🏃</div>
+      <h3>다이어트 캠프</h3>
+      <div class="val">요가 / 줌바 / 바레</div>
+      <div class="note">체계적인 프로그램으로 확실한 변화를!</div>
+    </div>
+    <div class="card">
+      <div class="ic">🎟️</div>
+      <h3>그룹PT 쿠폰</h3>
+      <div class="val">100회 990,000원</div>
+      <div class="note">더 다양하게, 더 합리적으로!</div>
+    </div>
+    <div class="card">
+      <div class="ic">🎁</div>
+      <h3>추가 혜택</h3>
+      <div class="val">100회 990,000원</div>
+      <div class="note">사은품 증정</div>
+    </div>
+  </div>
+
+  <div class="chips-wrap">
+    <div class="tag">다양한 운동 프로그램!</div>
+    <div class="chips">
+      <div class="chip">PT</div>
+      <div class="chip">요가</div>
+      <div class="chip">줌바</div>
+      <div class="chip">바레</div>
+      <div class="chip">재활·체형교정</div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <h2>지금, 더 나은 나를 만날 시간!</h2>
+  </div>
+
+</div>
+</body></html>
