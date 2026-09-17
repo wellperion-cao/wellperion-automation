@@ -1147,6 +1147,61 @@ async def onboarding_write(request: Request):
     return JSONResponse(data if isinstance(data, dict) else {"ok": False, "error": "bad-response"})
 
 
+SCHEDULE_WRITE_ACTIONS = ("schedboard-set", "schedboard-roster", "schedreq-save",
+                          "schedreq-approve", "schedreq-reject", "schedreq-delete")
+SCHEDULE_WRITE_TIMEOUT = 50
+
+
+@router.post("/schedule")
+async def schedule_write(request: Request):
+    """근무표 쓰기 6종 중계(schedboard-set·schedboard-roster·schedreq-save/approve/reject/delete —
+    요청서 ④ · CHRO/나우열M 2026-09-16). 화면(chro/hub/schedule.html·schedule-mobile.html)이 지금
+    GAS 로 직접 보내는 본문을 그대로 받아 그대로 GAS(HR_GAS_URL)로 넘기고 응답을 그대로 돌려준다 —
+    onboarding_write 와 완전히 같은 방식(위 함수 참조).
+    ★관문 = 기존 admin 판정(HR_ADMIN_EMAILS·_identify) 재사용 — 새 판정을 만들지 않는다.
+    ★schedboard-set 은 verifyOnly:true(PIN 검증만)로도 온다 — 같은 액션명, 별도 분기 없이 그대로 중계.
+    ★화면이 본문에 실어 보내는 PIN 값은 이름조차 이 파일에 적지 않는다(라우터 금지어 자체점검) —
+      값을 보지도 검사하지도 않고 그대로 중계만 한다.
+    ★성공하면 근무표 보드 거울(board_cache HR_SCHEDBOARD)을 즉시 갱신한다 — 새 함수를 만들지 않고
+      기존 api_board.board_refresh() 를 그대로 부른다(실패해도 cron 5분 뒤 sync_hrboard 가 따라잡는다)."""
+    ident = _identify(request)
+    if ident["role"] != ROLE_ADMIN:
+        return JSONResponse(error_envelope("scope-blocked", MSG_SCOPE_BLOCKED, role=ident["role"]),
+                            status_code=_status(403))
+    try:
+        payload = json.loads((await request.body()).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+    except Exception:
+        return JSONResponse(error_envelope("bad-payload", "요청 본문을 읽지 못했습니다.", role=ident["role"]),
+                            status_code=_status(400))
+    action = str(payload.get("action") or "").strip()
+    if action not in SCHEDULE_WRITE_ACTIONS:
+        return JSONResponse(error_envelope("bad-param", "지원하지 않는 액션입니다: %s" % action[:40],
+                                           role=ident["role"]), status_code=_status(400))
+    url = os.environ.get("HR_GAS_URL", "")
+    if not url:
+        return JSONResponse(error_envelope("db-unavailable", MSG_DB_UNAVAILABLE, role=ident["role"]),
+                            status_code=_status(503))
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
+                                 headers={"Content-Type": "text/plain;charset=utf-8",
+                                          "User-Agent": "wellperion-erp-api"})
+    try:
+        with urllib.request.urlopen(req, timeout=SCHEDULE_WRITE_TIMEOUT) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        _log_exc("schedule/%s" % action, e)
+        return JSONResponse(error_envelope("db-error", "근무표 저장 중 오류가 발생했습니다.", role=ident["role"]),
+                            status_code=_status(503))
+    if isinstance(data, dict) and data.get("ok"):
+        try:
+            from api_board import board_refresh          # 지연 임포트 — 순환 임포트 방지(api_board 는 이 파일을 안 쓴다)
+            board_refresh("HR_SCHEDBOARD")
+        except Exception as e:
+            _log_exc("schedule/mirror-refresh", e)        # best-effort — 거울 실패로 쓰기 응답을 막지 않는다
+    return JSONResponse(data if isinstance(data, dict) else {"ok": False, "error": "bad-response"})
+
+
 # ═══════════════════════════════════════════════════════════════════════════════════════════
 #  쓰기 — 2단계(회신 §2 ②쓰기 서버화). 이번 커밋 범위 밖이라 뼈대만 적어 둔다.
 #  TODO(2단계) 라우트 목록 — 현행 GAS 액션과 1:1 로 맞춘다
@@ -1561,6 +1616,8 @@ def selftest():
     # ⛔ 금지어 목록에 실제 비밀 조각을 적지 않는다 — 공개 저장소다. '비번을 다루는 모양'만 잡는다.
     for banned in ("adminPassword", "SESSION_PW", "password ==", 'payload.get("password")', "payload.get('password')"):
         assert banned not in code, "라우터가 비밀 문자열을 다루면 안 된다: " + banned
+    # 근무표 쓰기 액션 목록에 읽기 액션이 섞여 들어가지 않아야 한다(schedboard-list·schedreq-list = 읽기)
+    assert not (set(SCHEDULE_WRITE_ACTIONS) & {"schedboard-list", "schedreq-list", "onbo-active-names"})
     print("selftest ok")
     return 0
 
