@@ -1192,12 +1192,17 @@ _STALE_WRITE_LINE_THRESHOLD = 3
 
 
 def refuse_if_older_than_head(path, new_text: str | None = None, root: Path = ROOT,
-                               threshold: int = _STALE_WRITE_LINE_THRESHOLD) -> bool:
+                               threshold: int = _STALE_WRITE_LINE_THRESHOLD,
+                               base_text: str | None = None) -> bool:
     """공유 상태 파일을 읽고 고쳐 되쓰는 자리에서, write_text() 직전에 부른다.
     new_text 를 생략하면 디스크의 현재 내용(=쓰기 직전 상태)을 그대로 본다.
     HEAD 커밋본에만 있는 줄이 threshold 개 이상이면 거부(False) — 로그+텔레그램
     경보 남기고 호출자는 쓰지 않고 그대로 리턴해야 한다. 통과(True)면 써도 된다.
-    HEAD 에 아직 없는 새 파일은 대조 대상이 아니라 통과시킨다(정직: 판단 불가는 차단 아님)."""
+    HEAD 에 아직 없는 새 파일은 대조 대상이 아니라 통과시킨다(정직: 판단 불가는 차단 아님).
+    ★base_text(2026-09-17 시우) = 호출자가 고치기 전에 읽은 원문. 주면 「낡았나」를 new_text 가
+    아니라 이 원문으로 잰다 — 낡음이란 읽은 판이 HEAD 보다 뒤처진 것이지, 일부러 줄을 줄인
+    것(progress_note 트림 등)이 아니다. 09-17 10:02·11:12 트림 스크립트가 정상 정리를 하고도
+    「HEAD 줄 10개 빠짐」으로 거부돼 GM 께 경보 3통이 갔다(오탐)."""
     p = Path(path)
     rel = _rel(p, root) if p.is_absolute() else str(path).replace("\\", "/")
     head_show = _git(["show", f"HEAD:{rel}"], root)
@@ -1208,7 +1213,8 @@ def refuse_if_older_than_head(path, new_text: str | None = None, root: Path = RO
         if not fp.exists():
             return True
         new_text = fp.read_text(encoding="utf-8", errors="replace")
-    only_in_head = set(head_show.stdout.splitlines()) - set(new_text.splitlines())
+    compare_text = base_text if base_text is not None else new_text
+    only_in_head = set(head_show.stdout.splitlines()) - set(compare_text.splitlines())
     if len(only_in_head) < threshold:
         return True
     sample = "; ".join(sorted(only_in_head)[:5])

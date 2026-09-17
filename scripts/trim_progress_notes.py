@@ -60,6 +60,30 @@ def count_checklist_lines(note):
     return sum(1 for line in note.split("\n") if CHECKLIST_LINE.match(line))
 
 
+_BLOCK_DATE = re.compile(r"(20\d{2}-\d{2}-\d{2})")
+
+
+def select_blocks(blocks):
+    """(keep_blocks, archive_blocks) — 원래 순서 유지.
+    ★2026-09-17 시우 수리: 종전 blocks[-KEEP:] 는 「뒤 3개 = 최신」을 가정했는데 이 파일의 note 는
+    최신 블록이 맨 앞에 붙는다(gm_handoff·GM 지시 기록). 그래서 07:00 마다 최신 GM 지시 블록이 이력으로
+    밀려나고(09-16 321→300 · 09-17 352→317 체크리스트 줄 감소) 「GM 표식이 사라진다」가 재발했다.
+    규칙: ①□/☑ 체크리스트가 든 블록은 절대 이력으로 보내지 않는다 ②나머지 중 날짜(YYYY-MM-DD)가 가장
+    최신인 KEEP 개를 남긴다(날짜 없는 블록 = 판정 불가라 남긴다)."""
+    dated = []
+    keep = set()
+    for i, b in enumerate(blocks):
+        if count_checklist_lines(b) or not _BLOCK_DATE.search(b):
+            keep.add(i)
+        else:
+            dated.append((max(_BLOCK_DATE.findall(b)), i))
+    for _, i in sorted(dated, reverse=True)[:KEEP]:
+        keep.add(i)
+    keep_blocks = [b for i, b in enumerate(blocks) if i in keep]
+    archive_blocks = [b for i, b in enumerate(blocks) if i not in keep]
+    return keep_blocks, archive_blocks
+
+
 def load_history_sections(text):
     """{heading: body_text} keyed by exact '## ...' line, preserving order via dict."""
     sections = {}
@@ -86,7 +110,8 @@ def main():
     args = ap.parse_args()
 
     with open(PLAN_PATH, encoding="utf-8") as f:
-        data = json.load(f)
+        raw_text = f.read()          # 고치기 전 원문 — 신선도는 이것으로 잰다(트림이 줄을 줄이는 건 정상)
+    data = json.loads(raw_text)
 
     before_checklist_total = 0
     plan = []  # (path, prefix, keep_note, archive_text, heading)
@@ -98,7 +123,9 @@ def main():
         prefix, blocks = split_blocks(note)
         if len(blocks) < MIN_BLOCKS_TO_TRIM:
             continue
-        archive_blocks, keep_blocks = blocks[:-KEEP], blocks[-KEEP:]
+        keep_blocks, archive_blocks = select_blocks(blocks)
+        if not archive_blocks:
+            continue
         new_note = prefix + "".join(keep_blocks)
         heading = f"## {month} · {o.get('title', '')}"
         plan.append((path, o, len(note), len(new_note), "".join(archive_blocks), heading))
@@ -122,7 +149,7 @@ def main():
     # 워킹트리에 반영 안 된 채 앞서 있으면) 트림해서 그대로 되쓰지 않는다. monthly_ops_sync.py
     # 가 거부해도 이 스크립트가 신선도 확인 없이 뒤이어 그 낡은 사본을 다시 써버리던 구멍
     # (09-17 gm_task_autocheck 사고의 전파 경로) 을 막는다.
-    if not _refuse_if_stale(PLAN_PATH, json.dumps(data, ensure_ascii=False, indent=2) + "\n"):
+    if not _refuse_if_stale(PLAN_PATH, json.dumps(data, ensure_ascii=False, indent=2) + "\n", base_text=raw_text):
         print(f"[거부] {PLAN_PATH} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 트림 건너뜀.")
         return
 
@@ -145,7 +172,7 @@ def main():
     # rebuild new_note into the objective dicts now that history is staged
     for path, o, before, after, archived, heading in plan:
         prefix, blocks = split_blocks(o["progress_note"])
-        keep_blocks = blocks[-KEEP:]
+        keep_blocks, _ = select_blocks(blocks)
         o["progress_note"] = prefix + "".join(keep_blocks)
 
     header = history_text.split("## ", 1)[0] if "## " in history_text else history_text
@@ -170,5 +197,22 @@ def main():
     print("적용 완료.")
 
 
+def _selftest():
+    """최신이 맨 앞인 note 에서 최신 3개·체크리스트 블록이 남는지 — 09-17 수리 자체점검."""
+    note = ("본문\n▶[GM 지시 2026-09-16] 최신\n□ 남을 체크\n▶[2026-09-10] 둘째\n▶[2026-09-05] 셋째\n"
+            "▶[2026-08-20] 넷째\n▶[2026-08-01] 다섯째\n☑ 끝\n▶[2026-07-01] 여섯째\n")
+    prefix, blocks = split_blocks(note)
+    keep, arch = select_blocks(blocks)
+    assert prefix == "본문\n" and len(blocks) == 6
+    # 체크리스트 든 블록(09-16·08-01)은 무조건 남고, 나머지 중 최신 3(09-10·09-05·08-20)이 남는다
+    d = lambda bs: [_BLOCK_DATE.search(b).group(1) for b in bs]
+    assert d(keep) == ["2026-09-16", "2026-09-10", "2026-09-05", "2026-08-20", "2026-08-01"], d(keep)
+    assert d(arch) == ["2026-07-01"], d(arch)
+    print("SELFTEST OK — 체크리스트 블록 유지 + 최신 3 · 옛 블록만 이력행")
+
+
 if __name__ == "__main__":
-    main()
+    if "--self-test" in sys.argv:
+        _selftest()
+    else:
+        main()
