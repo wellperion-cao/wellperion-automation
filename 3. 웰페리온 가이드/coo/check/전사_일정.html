@@ -433,7 +433,7 @@ function appendRow(it, el){
     if(it.todo_id||it.plan_id){
       var ks=[];
       if(it.todo_id)ks.push('<a href="../todo/업무 현황 SSOT.html?item='+encodeURIComponent(it.todo_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸업무</a>');
-      if(it.plan_id)ks.push('<a href="../chairman/GM업무.html#gm-'+encodeURIComponent(it.plan_id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸GM업무</a>');
+      if(it.plan_id)ks.push('<a href="../todo/업무 현황 SSOT.html?owner='+encodeURIComponent('김남욱GM')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">▸GM업무</a>');
       keyTxt='<div class="rvendor">🔗 '+ks.join(' · ')+'</div>';
     }
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);

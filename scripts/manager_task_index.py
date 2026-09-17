@@ -1148,7 +1148,7 @@ def check_detail_html(objs: list) -> dict:
         last_card = title
         oid = str(o.get("id") or "").strip()
         disp = html.escape(short(title, 28) if title else "—")
-        card = (f'<a href="GM업무.html#gm-{html.escape(oid, quote=True)}" target="_blank" '
+        card = (f'<a href="../todo/업무 현황 SSOT.html?owner={html.escape("김남욱GM", quote=True)}" target="_blank" '
                 f'rel="noopener" title="{html.escape(title)}">{disp}</a>' if oid
                 else f'<span title="{html.escape(title)}">{disp}</span>')
         body = _mask(_CHK_BODY_RE.sub(r"\1", ln))

@@ -102,7 +102,7 @@ def round_card(mt: dict, rnd: dict, today: dt.date, due: dict) -> str:
     if mt.get("materials_note"):
         mats += f'<li class="mute">{esc(mt["materials_note"])}</li>'
     dec = rnd.get("decisions") or []
-    dec_html = (f'<a href="GM업무.html">{len(dec)}건 — {esc(" · ".join(dec))}</a>' if dec
+    dec_html = (f'<a href="../todo/업무 현황 SSOT.html?owner={esc("김남욱GM")}">{len(dec)}건 — {esc(" · ".join(dec))}</a>' if dec
                 else '<span class="mute">없음</span>')
     rec = esc(rnd.get("recording")) if rnd.get("recording") else (
         '<span class="mute">미등록</span>' if mt.get("recording") else '<span class="mute">해당 없음</span>')
