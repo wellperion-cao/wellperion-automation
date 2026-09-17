@@ -192,6 +192,8 @@ LOCK_SECS = 600                                # 잠금 시간(10분)
 # 지웠고 info@ 계정은 status=disabled(모든 info 세션이 그 순간 401 → 로그인 화면). 아래 상수·auto 토큰 차단은
 # 아직 살아 있는 옛 auto 토큰 방어용으로만 남긴다(경위는 저장 이력).
 OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
+# 직원 홈 주소 — 로그인만 되면 누구나(카드·폴더 판정 밖). nginx guide-alias 가 /home·/guide 를 정본 파일로 되쓴다.
+STAFF_HOME_PATHS = frozenset({"/home", "/guide", "/wellperion_guide(main).html"})
 # 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
 AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
                                  "cpo-member-오넛티-접수현황"})
@@ -680,6 +682,10 @@ def path_allowed(user, path: str) -> bool:
     if is_platform_path(path):
         return (user["email"] or "").lower() in PLATFORM_ADMINS
     if user["role"] == "admin":
+        return True
+    # 직원 홈(GM 2026-09-17 「직원 화면 = /home」 · nginx 가 /home·/guide 를 wellperion_guide(main).html 로 되쓴다) —
+    # 루트 낱장이라 아래 「폴더 = 부서 도메인」 판정에 걸려 로그인한 실무진 전원이 403 을 받았다(이경연 실장 14:13 실측).
+    if path in STAFF_HOME_PATHS:
         return True
     if path == "/repo" or path.startswith("/repo/"):
         inner = path[len("/repo"):] or "/"
