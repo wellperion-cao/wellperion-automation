@@ -17,7 +17,7 @@ for f in "$SRC"/*.html; do
 done
 $S "sudo mkdir -p /srv/www/3_gocheokgolf/img && sudo chown -R ec2-user:ec2-user /srv/www/3_gocheokgolf && mkdir -p /srv/erp/clients/3_gocheokgolf"
 $SCP "$TMP"/*.html $HOST:/srv/www/3_gocheokgolf/
-$SCP "$SRC"/img/*.jpg $HOST:/srv/www/3_gocheokgolf/img/
+$SCP "$SRC"/img/*.jpg "$SRC"/img/*.png $HOST:/srv/www/3_gocheokgolf/img/   # png = 로고(2026-09-17)
 $SCP "$SRC"/gc.css $HOST:/srv/www/3_gocheokgolf/gc.css   # 3화면 공용 스타일(2026-09-17 시보 · html 만 올려 404 났던 것)
 $SCP "2. 브랜드_자료/11_고척골프_조재오부장님/client.json" $HOST:/srv/erp/clients/3_gocheokgolf/client.json
 $SCP server/erp_api/gocheokgolf.nginx.conf $HOST:/tmp/gocheokgolf.conf
