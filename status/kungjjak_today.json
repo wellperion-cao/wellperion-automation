@@ -232,7 +232,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 42
+          "waited": 45
         }
       ],
       "repeats": []
@@ -374,18 +374,6 @@
         }
       ],
       "work": [
-        {
-          "time": "09:38",
-          "area": "자가점검",
-          "event": "monthly_ops_plan 08:00 낡은 사본 되쓰기(2회째) — 전파자 gm_task_autocheck 가드·복원",
-          "detail": "주체=gm_task_autocheck.py(08:00 CEO 파이프라인) 통째 read→write 에 HEAD 가드 없음 · 가드 추가·복원 856dc839c9 · 최초 오염원(07:00 전) 미확정"
-        },
-        {
-          "time": "09:51",
-          "area": "작업",
-          "event": "fix(gm-plan): monthly_ops_plan 되쓰기 자리 4곳 전부 HEAD 대조 가드 (낡은 사본 되쓰기 3회째 · 09-16·09-17)",
-          "detail": "커밋 b26d598b04 · 배 12680"
-        },
         {
           "time": "09:52",
           "area": "자가점검",
@@ -553,6 +541,18 @@
           "area": "작업",
           "event": "fix(gm-plan): monthly_ops_plan 되쓰기 7곳을 queue_lock.mutate_json 관문으로 통일 — 낡은 판 되쓰기 근본 차단",
           "detail": "커밋 1a39073c55 · 배 12715"
+        },
+        {
+          "time": "11:50",
+          "area": "GM요청",
+          "event": "monthly_ops_plan 되쓰기 7곳 mutate_json 관문 통일(근본 수리 ②)",
+          "detail": "1a39073c5 · 자체점검 통과 · 낡은 디스크 재현에서 HEAD 카드 보존 확인"
+        },
+        {
+          "time": "11:51",
+          "area": "작업",
+          "event": "docs(auth): 권한 매트릭스 브리프 사실 정정 — 서버 반영·구글 로그인·판정 3건",
+          "detail": "커밋 87da4606c2 · 배 12715"
         }
       ],
       "count": 11,
@@ -795,6 +795,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-3021",
+          "no": "21",
+          "got": "여자사우나건 사이즈가 좀 달라보이는데 턴게이트가? 그리고 턴게이트를 조금 더 좌측으로 배치해줄래? 힉스필드 크레딧을 썻는데도 이정도야?",
+          "did": "",
+          "start": "11:49",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -823,14 +835,29 @@
           "detail": "client=ax 발행기 저장·배포 417ceb0154 · self-test 통과 · 임시저장은 계정 뒤"
         }
       ],
-      "count": 19,
+      "count": 20,
       "done": 19,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-3021",
+          "no": "21",
+          "got": "여자사우나건 사이즈가 좀 달라보이는데 턴게이트가? 그리고 턴게이트를 조금 더 좌측으로 배치해줄래? 힉스필드 크레딧을 썻는데도 이정도야?",
+          "did": "",
+          "start": "11:49",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cpo": {
@@ -1145,6 +1172,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-5012",
+          "no": "12",
+          "got": "그럼 70% 지점 지정 해줘 내가 작업안할때는 자동으로 /autocompact 700k 될 수 있게",
+          "did": "",
+          "start": "11:50",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -1167,14 +1206,29 @@
           "detail": "커밋 27a2bc6afc · 배 12716"
         }
       ],
-      "count": 11,
+      "count": 12,
       "done": 11,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 3,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-5012",
+          "no": "12",
+          "got": "그럼 70% 지점 지정 해줘 내가 작업안할때는 자동으로 /autocompact 700k 될 수 있게",
+          "did": "",
+          "start": "11:50",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -1208,8 +1262,20 @@
           "ref": "GM-20260917-9003",
           "no": "03",
           "got": "그래 차라리 저렇게 파트너사 셋업을 빠르게 정리하는게 좋고, 다음에는 페이지로 만들어서 초안 작업 시 제공해달라고하는게 훨씬 좋을듯 이것도 AX랩스 파트너사 연동 관련 가이드라인으로 만들어서 박제 시켜줘",
-          "did": "",
+          "did": "파트너사 연동 가이드라인 v1.0 — 로드맵 부록 B(자료 한 통→초안 페이지 3장 먼저→번호 설문 한 통→답 온 날 Befo · docs(labs): 파트너사 연동 가이드라인 v1.0 — 로드맵 부록  — 커밋 a8fe07d80d · 배 11386",
           "start": "11:46",
+          "end": "11:50",
+          "minutes": 3,
+          "upload": "✅ 배포 (a8fe07d80)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-9004",
+          "no": "04",
+          "got": "각 파트너사 폴더 들어가봐 난 로고 받은걸로 알고 있는데",
+          "did": "",
+          "start": "11:50",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1253,29 +1319,35 @@
           "area": "작업",
           "event": "chore(gocheok-qa): 35번(상담 예약 창구)을 46번에 합침 — 9/9 답 있음 · 중복 질문 금지",
           "detail": "커밋 f9ee09e246 · 배 11386"
+        },
+        {
+          "time": "11:49",
+          "area": "작업",
+          "event": "docs(labs): 파트너사 연동 가이드라인 v1.0 — 로드맵 부록 B(자료 한 통→초안 페이지 3장 먼저→번호 설문 한 통→답 온 날 Before/After · 금지 5) + 설문 발행기에 초안 페이지 관문 ·",
+          "detail": "커밋 a8fe07d80d · 배 11386"
         }
       ],
-      "count": 3,
-      "done": 2,
+      "count": 4,
+      "done": 3,
       "open": 1,
-      "avg_minutes": 8,
-      "work_count": 6,
+      "avg_minutes": 6,
+      "work_count": 7,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-9003",
-          "no": "03",
-          "got": "그래 차라리 저렇게 파트너사 셋업을 빠르게 정리하는게 좋고, 다음에는 페이지로 만들어서 초안 작업 시 제공해달라고하는게 훨씬 좋을듯 이것도 AX랩스 파트너사 연동 관련 가이드라인으로 만들어서 박제 시켜줘",
+          "ref": "GM-20260917-9004",
+          "no": "04",
+          "got": "각 파트너사 폴더 들어가봐 난 로고 받은걸로 알고 있는데",
           "did": "",
-          "start": "11:46",
+          "start": "11:50",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 2
         }
       ],
       "repeats": []
