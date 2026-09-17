@@ -368,6 +368,37 @@ function isServerHost(){
 }
 const LS_LASTWRITE="wp_sched_lastwrite";    // erpSet/erpBulk 성공 시각 — 서버 as_of 스테일 판정용(쓰기 자체는 그대로 GAS)
 const markLocalWrite=()=>{ try{ localStorage.setItem(LS_LASTWRITE,String(Date.now())); }catch(_){} };
+
+/* ============ 서버 거울(mirror) 호출 — 쓰기 ok 직후 (2026-09-17, 서버 규격 시토 14:57 확정) ============
+   POST /api/hr/mirror {tabs:[...]} — fire-and-forget(await 없음), 실패해도 쓰기 결과 표시에 영향 없음.
+   erpSet·erpBulk 자체(GAS 직행)는 손대지 않는다 — 이 호출은 성공 뒤에 얹는 부수효과일 뿐이다.
+   원점가드 = isServerHost()(위 SERVER_READ_ON 분기와 같은 판정 재사용) — GitHub Pages 사본은 호출 안 함.
+   킬스위치: MIRROR_ON=false면 호출 0건·종전 동작과 완전 동일 — 되돌리기는 이 상수 하나.
+   연속 실패(3회 이상)만 화면 하단에 경고 배너 — 단발 실패는 콘솔 경고만 남기고 조용히 넘어간다. */
+const MIRROR_ON=true;
+let _mirrorFailStreak=0;
+function mirrorWarnBanner_(msg){
+  let b=document.getElementById("mirrorFailBanner");
+  if(!b){
+    b=document.createElement("div"); b.id="mirrorFailBanner";
+    b.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#b00020;color:#fff;"
+      +"font-size:12px;text-align:center;padding:4px 8px;";
+    document.body.appendChild(b);
+  }
+  b.textContent="⚠ 서버 거울(mirror) 연속 실패: "+msg;
+  b.style.display="block";
+}
+function mirrorWarnClear_(){ const b=document.getElementById("mirrorFailBanner"); if(b) b.style.display="none"; }
+function hrMirror(tabs){
+  if(!MIRROR_ON || !isServerHost() || !tabs || !tabs.length) return;
+  fetch("/api/hr/mirror",{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({tabs:tabs})})
+    .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); _mirrorFailStreak=0; mirrorWarnClear_(); })
+    .catch(e=>{
+      _mirrorFailStreak++;
+      console.warn("[hrMirror] 실패("+tabs.join(",")+"):",(e&&e.message)||e);
+      if(_mirrorFailStreak>=3) mirrorWarnBanner_(tabs.join(",")+" 등 "+_mirrorFailStreak+"회 연속");
+    });
+}
 /* 서버 db 읽기 1회 시도. 401/403/503/비JSON/빈 결과(results 0행)는 재시도 없이 null → 호출부가 즉시 GAS로 폴백.
    응답 모양은 api_hr.py envelope 그대로 소비(results=GAS와 같은 봉투 칸) — 칸 이름을 새로 짓지 않는다. */
 async function srvRead(dbKey){
@@ -500,6 +531,7 @@ async function erpSet(emp,date,value){
     const r=await erpPost({action:"set-leave",adminPassword:WP_PW,emp,date,value:value||"",dept:EMP_DEPT[emp]||""});
     if(!r||!r.ok) throw new Error((r&&r.error)||"저장 실패");
     markLocalWrite();             // 서버 as_of 스테일 판정용 최종쓰기시각 기록(쓰기 자체는 그대로 GAS)
+    hrMirror(["leave"]);          // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget, delete-leave 경로 포함)
     setErpStatus("ERP 저장됨 ✓","var(--green)");
   }catch(err){ setErpStatus("⚠ 저장 실패","var(--red)"); }
 }
@@ -512,6 +544,7 @@ async function erpBulk(){
     const r=await erpPost({action:"set-leave-bulk",adminPassword:WP_PW,data:leave,deptMap});
     if(!r||!r.ok) throw new Error((r&&r.error)||"동기화 실패");
     markLocalWrite();             // 서버 as_of 스테일 판정용 최종쓰기시각 기록(쓰기 자체는 그대로 GAS)
+    hrMirror(["leave"]);          // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
     setErpStatus("ERP 전체 동기화됨 ✓","var(--green)");
   }catch(err){ setErpStatus("⚠ 동기화 실패","var(--red)"); }
 }
