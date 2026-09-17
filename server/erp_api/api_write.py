@@ -109,6 +109,7 @@ MIRROR_SYNC.update({a: "sync_inquiries.py" for a in _INQUIRY_WRITES})
 MIRROR_SYNC.update({a: "sync_reception.py" for a in _RECEPTION_WRITES})
 MIRROR_SYNC.update({a: "sync_todo.py" for a in _TODO_WRITES})
 MIRROR_SYNC.update({a: "sync_check.py" for a in _CHECK_WRITES})
+MIRROR_SYNC.update({a: "sync_kakao.py" for a in ("kakao_rooms_save", "kakao_rooms_delete")})   # 카톡방 등록부 — 저장 직후 거울(배 11299 · 2026-09-18 · 화면의 6분 구글 우회 제거 짝)
 MIRROR_SYNC.update({a: ["sync_sales.py", "sync_proc.py"] for a in _PROC_MIRROR_WRITES})
 MIRROR_SYNC.update({a: "sync_proc.py" for a in _PROC_ITEMS_MIRROR_WRITES if a not in _PROC_MIRROR_WRITES})
 # 전사일정 거울(misc_cache schedule/load_schedule · 배990)은 sync_misc.py 가 5분마다 다시 뜬다 — 저장 직후는

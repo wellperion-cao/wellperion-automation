@@ -711,7 +711,6 @@ if (location.search.indexOf('embed=1') >= 0) document.documentElement.classList.
           //   저장=GAS commit_file(coo/bootsetup_matrix.json). 편집칸(dims 0,2,1)만 반영, 나머지 원본 보존.
           var RAW_URL = '/repo/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/coo/bootsetup_matrix.json';
           var KPI_RAW_URL = '/repo/ssot/kpi.json';
-          var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
           var RAW_BASE = '/repo/';
           var _matrixData = null;
           var _kpiData = null;
@@ -1266,14 +1265,9 @@ if (location.search.indexOf('embed=1') >= 0) document.documentElement.classList.
              그마저 들쭉날쭉했다(실측: 30초에 아직 '불러오는 중', 다음 실행은 20초에 완료).
              raw 는 같은 내용을 0.1초에 준다. 저장(commit_file)은 그대로 GAS 를 쓴다. */
           function mxReadJson(rawUrl, gasPath){
+            // 구글 스크립트(read_file) 폴백은 2026-09-18 뺐다(배 11299 · 서버 원천 100%) — 저장소 판이 없으면 그냥 실패한다.
             return fetch(rawUrl + (rawUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), {cache:'no-store'})
-              .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); })
-              .catch(function(){
-                return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-                    body: JSON.stringify({action:'read_file', path:gasPath})})
-                  .then(function(r){ return r.json(); })
-                  .then(function(res){ if(res && res.ok && res.content){ return JSON.parse(res.content); } throw new Error((res && res.error) || 'read 실패'); });
-              });
+              .then(function(r){ if(!r.ok) throw new Error('raw ' + r.status); return r.json(); });
           }
           function fetchMatrix(){
             return mxReadJson('coo/bootsetup_matrix.json', '3. 웰페리온 가이드/coo/bootsetup_matrix.json');
@@ -1288,8 +1282,7 @@ if (location.search.indexOf('embed=1') >= 0) document.documentElement.classList.
             fetchMatrix().then(function(d){ _matrixData = d; setEdit(false); });
           };
           window._matrixSave = function(){
-            var pin = prompt('GM 편집 저장 — 비밀번호를 입력하세요:');
-            if(pin === null || pin === '') return;
+            // 비밀번호 물음은 2026-09-18 뺐다 — 서버 대기열은 관리자 로그인 세션으로 판정한다(옛 구글 예비 전용이었다).
             if(!_matrixData) return;
             Array.prototype.forEach.call(mxBody.querySelectorAll('.cell-edit[contenteditable]'), function(el){
               var role = el.getAttribute('data-role'), field = el.getAttribute('data-field'), val = el.innerText || el.textContent || '';
@@ -1306,56 +1299,27 @@ if (location.search.indexOf('embed=1') >= 0) document.documentElement.classList.
             var matrixPath = '3. 웰페리온 가이드/coo/bootsetup_matrix.json';
             var btn = document.getElementById('matrix-save-btn');
             if(btn){ btn.textContent = '저장 중…'; btn.disabled = true; }
-            /* ★저장 통로 = 서버 대기열 우선(2026-09-14 시토 · AWS 이관) — 로그인 쿠키(same-origin)로
-               관리자 판정, 서버가 10분 주기로 실제 커밋한다. 서버가 안 되면(401·403·네트워크)
-               옛 구글(GAS commit_file) 로 조용히 예비한다 — 방금 받은 pin 을 그대로 쓴다. */
+            /* ★저장 통로 = 서버 대기열 하나(2026-09-14 시토 · AWS 이관) — 로그인 쿠키(same-origin)로
+               관리자 판정, 서버가 10분 주기로 실제 커밋한다. 옛 구글(GAS commit_file) 예비는 2026-09-18 뺐다
+               (배 11299 · 서버 원천 100%) — 서버가 안 되면 오류를 그대로 보여 준다. */
             fetch('/api/guide/commit', {
               method: 'POST',
               credentials: 'same-origin',
               headers: {'Content-Type': 'application/json;charset=utf-8'},
               body: JSON.stringify({ path: matrixPath, content: content, message: message })
             })
-              .then(function(r){ if(!r.ok) throw {gasFallback:true, status:r.status}; return r.json(); })
+              .then(function(r){ if(!r.ok) throw new Error('서버 응답 ' + r.status + (r.status === 401 || r.status === 403 ? ' — 관리자 로그인이 필요합니다' : '')); return r.json(); })
               .then(function(res){
                 if(res && res.ok && res.queued){
                   alert('저장 접수 — 10분 안에 반영됩니다.');
                   setEdit(false);
                 } else {
-                  throw {gasFallback:true, status:0};
+                  throw new Error((res && res.error) || '저장 접수 실패');
                 }
               })
               .catch(function(err){
-                if(!(err && err.gasFallback)){
-                  alert('저장 오류: ' + err.message);
-                  if(btn){ btn.textContent = '저장'; btn.disabled = false; }
-                  return;
-                }
-                fetch(GAS_URL, {
-                  method: 'POST',
-                  redirect: 'follow',
-                  headers: {'Content-Type': 'text/plain;charset=utf-8'},
-                  body: JSON.stringify({
-                    action: 'commit_file',
-                    path: matrixPath,
-                    content: content,
-                    message: message,
-                    key: pin
-                  })
-                })
-                  .then(function(r){ return r.json(); })
-                  .then(function(res){
-                    if(res && res.ok){
-                      alert('저장 완료. (커밋: ' + ((res.commit||'') + '').slice(0,7) + ')');
-                      setEdit(false);
-                    } else {
-                      alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
-                      if(btn){ btn.textContent = '저장'; btn.disabled = false; }
-                    }
-                  })
-                  .catch(function(e){
-                    alert('저장 오류: ' + e.message);
-                    if(btn){ btn.textContent = '저장'; btn.disabled = false; }
-                  });
+                alert('저장 오류: ' + err.message);
+                if(btn){ btn.textContent = '저장'; btn.disabled = false; }
               });
           };
 
