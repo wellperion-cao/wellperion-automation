@@ -249,6 +249,67 @@ def _validate_queue_shape(new_items, before_count, allow_shrink):
         )
 
 
+def _json_lock_name(rel: str) -> str:
+    return "json_" + "".join(ch if ch.isalnum() else "_" for ch in rel) + ".lock"
+
+
+def _atomic_write_text(p: str, text: str) -> None:
+    tmp = f"{p}.tmp.{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    last_err = None
+    for _ in range(25):
+        try:
+            os.replace(tmp, p)
+            return
+        except PermissionError as e:
+            last_err = e
+            time.sleep(0.02)
+    try:
+        os.remove(tmp)
+    except OSError:
+        pass
+    raise last_err
+
+
+def mutate_json(rel_path, mutator, holder="?", repo_root=None, heal_from_head=True, indent=2):
+    """공유 상태 JSON(status/*.json 등)의 유일한 「읽고 → 고치고 → 되쓰기」 관문(2026-09-17 시토 · GM
+    「낡은 판 되쓰기 근본 해결」). mutate_queue 와 같은 원리를 어느 JSON 에나:
+      1) 그 파일 전용 잠금 안에서 2) 디스크를 **지금** 읽고 3) 디스크가 HEAD 보다 낡았으면(HEAD 에만 있던 줄이
+      3개 이상) HEAD 판을 바탕으로 삼아 4) mutator(data) 를 적용해 5) 원자적으로 쓴다.
+    낡은 판 사고의 뿌리 = 여러 세션이 각자 읽어 둔 사본을 나중에 통째로 되쓰는 것. 이 관문은 읽기와 쓰기 사이에
+    다른 쓰기가 끼어들 수 없게 하고(잠금), 이미 낡아 있던 디스크는 커밋본으로 되살린 뒤 고친다(자가치유).
+    mutator(data): 새 객체를 반환하거나 data 를 제자리에서 고치고 None 을 반환한다. 반환 = 최종 data."""
+    root = _repo_root(repo_root)
+    rel = str(rel_path).replace("\\", "/")
+    p = os.path.join(root, rel)
+    with QueueLock(holder, root, lock_name=_json_lock_name(rel)):
+        disk = ""
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                disk = f.read()
+        base = disk
+        healed = False
+        if heal_from_head and disk:
+            try:
+                import subprocess
+                head = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=root, capture_output=True,
+                                      text=True, encoding="utf-8", errors="replace")
+                if head.returncode == 0 and head.stdout:
+                    only_in_head = set(head.stdout.splitlines()) - set(disk.splitlines())
+                    if len(only_in_head) >= 3:
+                        base, healed = head.stdout, True
+                        _log(f"[mutate_json] {rel}: 디스크가 HEAD 보다 낡음(HEAD 에만 {len(only_in_head)}줄) "
+                             f"→ HEAD 판을 바탕으로 고친다 (holder={holder})", root)
+            except Exception:
+                pass
+        data = json.loads(base) if base.strip() else {}
+        result = mutator(data)
+        new_data = result if result is not None else data
+        _atomic_write_text(p, json.dumps(new_data, ensure_ascii=False, indent=indent) + "\n")
+    return {"healed": healed, "path": p}
+
+
 def mutate_queue(mutator, holder="?", repo_root=None, allow_shrink=False):
     """락 임계구역에서 load→mutator(items)→원자적 save.
     mutator(items): 새 리스트 반환 또는 items in-place 수정 후 None 반환.

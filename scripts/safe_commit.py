@@ -1222,12 +1222,47 @@ def refuse_if_older_than_head(path, new_text: str | None = None, root: Path = RO
               f"빠져 있습니다(기준 {threshold}개 이상 → 거부): {sample}")
     print(f"[낡은판 쓰기 거부] {reason}")
     _domain_guard_log("stale_write_refused", [rel], str(root))
+    _stale_alert(rel, reason, root)
+    return False
+
+
+_STALE_ALERT_EVERY_SEC = 1800
+
+
+def _stale_alert(rel: str, reason: str, root: Path) -> None:
+    """낡은 판 거부 경보 — AI 살림이라 GM 방이 아니라 자동화현황방(alert_router TECH_CHECK)으로,
+    같은 파일은 30분에 한 번만, 임시 저장소(자체점검)에서는 보내지 않는다.
+    2026-09-17 실측: 11:17 한 번의 낡은 되쓰기가 파일 한 줄마다 경보를 만들어 GM 봇방에 26통,
+    11:28 에는 자체점검의 가짜 파일(plan.json · 마커4;5;6)까지 GM 께 갔다 — 근본 수리 ①."""
+    if Path(root).resolve() != ROOT.resolve():
+        return                                   # 자체점검·임시 저장소 — 사람에게 알릴 일이 아니다
+    marker = ROOT / "status" / ".stale_alert_last.json"
+    now = time.time()
     try:
-        from model_router import _alert  # noqa: PLC0415 — 경보 시점에만 import(기존 관문 재사용)
-        _alert(f"⚠ 낡은 판 쓰기 거부 — {reason}")
+        seen = json.loads(marker.read_text(encoding="utf-8")) if marker.exists() else {}
+    except Exception:
+        seen = {}
+    if now - float(seen.get(rel, 0)) < _STALE_ALERT_EVERY_SEC:
+        return
+    seen[rel] = now
+    try:
+        marker.write_text(json.dumps(seen, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+    try:
+        from alert_router import TECH_CHECK, route  # noqa: PLC0415
+        from tg_outbound_log import send as _tg_send  # noqa: PLC0415
+        token = os.environ.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            env = ROOT / "telegram_bot" / ".env"
+            for line in env.read_text(encoding="utf-8").splitlines():
+                if line.startswith("TELEGRAM_BOT_TOKEN="):
+                    token = line.split("=", 1)[1].strip()
+        if token:
+            _tg_send(token, str(route(TECH_CHECK)),
+                     f"⚠ 낡은 판 쓰기 거부(30분 1회) — {reason[:500]}", source="safe_commit.stale_write")
     except Exception:
         pass  # 경보 실패가 본 작업을 막으면 안 된다
-    return False
 
 
 def _refuse_if_older_than_head_selfcheck() -> None:
