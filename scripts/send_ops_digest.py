@@ -4599,7 +4599,8 @@ def _update_meeting_card(meeting: date, hhmm: str, doc_no: str, submitted: int) 
     """GM업무 카드 2026-09-35 — docs 에 그 회차 A3 링크 1건 · progress_note 에 「▶ M/D 회차 자동 발송 HH:MM」 1줄(있으면 교체).
     이력은 status/monthly_ops_plan_이력.md 에 append(SSOT .md 규칙)."""
     plan_path = ROOT / "status" / "monthly_ops_plan.json"
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    _raw_text = plan_path.read_text(encoding="utf-8")
+    plan = json.loads(_raw_text)
     card = None
     for m in (plan.get("months") or {}).values():
         for o in m.get("objectives") or []:
@@ -4620,7 +4621,7 @@ def _update_meeting_card(meeting: date, hhmm: str, doc_no: str, submitted: int) 
     note_lines.insert(0, line)
     card["progress_note"] = "\n".join(note_lines)
     new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
-    if not _refuse_if_stale(plan_path, new_text):
+    if not _refuse_if_stale(plan_path, new_text, base_text=_raw_text):
         log(f"[weekly-meeting] {plan_path.name} 저장 안 함 — 디스크가 HEAD 보다 낡음(쓰기 전 가드) — 카드 갱신 생략")
         return
     plan_path.write_text(new_text, encoding="utf-8")

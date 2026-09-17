@@ -104,7 +104,8 @@ def run(dry_run: bool, body_out: str | None = None) -> int:
             return 0
 
     today = datetime.date.today()
-    plan = json.loads(PLAN.read_text(encoding='utf-8'))
+    _raw_text = PLAN.read_text(encoding='utf-8')
+    plan = json.loads(_raw_text)
     month = plan.get('months', {}).get(f'{today:%Y-%m}')
     if not month:
         print('[SKIP] 이번 달 계획 없음')
@@ -154,7 +155,7 @@ def run(dry_run: bool, body_out: str | None = None) -> int:
         #   되써 09-16 GM 편집(progress_note 16곳)을 지웠다(monthly_ops_sync.py 와 같은
         #   본질 2회째). 쓰기 직전 HEAD 대비 신선도를 확인 — 낡았으면 체크도 되돌린다
         #   (반영 안 된 체크를 발송 문안에만 있는 척 남기지 않는다).
-        if not _refuse_if_stale(PLAN, new_text):
+        if not _refuse_if_stale(PLAN, new_text, base_text=_raw_text):
             print(f'[거부] {PLAN.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 체크 되돌림.')
             worklog_log(
                 'coo', '월간계획',

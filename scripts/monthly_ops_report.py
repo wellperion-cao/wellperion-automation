@@ -414,7 +414,8 @@ def _roll_month_status(now: datetime) -> None:
     라이브(--send)에서만 부른다 — 드라이런은 부작용 0 을 유지한다.
     """
     try:
-        plan = json.loads(PLAN_FILE.read_text(encoding="utf-8"))
+        _raw_text = PLAN_FILE.read_text(encoding="utf-8")
+        plan = json.loads(_raw_text)
     except Exception as e:  # 원장을 못 읽으면 손대지 않는다
         print(f"[달상태] 원장을 못 읽어 건너뜀 — {e}")
         return
@@ -432,7 +433,7 @@ def _roll_month_status(now: datetime) -> None:
         print("[달상태] 이미 최신 — 바꿀 것 없음")
         return
     new_text = json.dumps(plan, ensure_ascii=False, indent=2)
-    if not _refuse_if_stale(PLAN_FILE, new_text):
+    if not _refuse_if_stale(PLAN_FILE, new_text, base_text=_raw_text):
         print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 달상태 갱신 건너뜀.")
         log_event("plan_stale_write_refused", month=cur)
         return

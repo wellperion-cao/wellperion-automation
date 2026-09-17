@@ -550,6 +550,7 @@ def sync_schedule(objs: list, live: bool) -> None:
 
 def run(month: str | None, apply: bool) -> None:
     plan = load_json(PLAN_FILE)
+    _plan_base_text = PLAN_FILE.read_text(encoding="utf-8") if PLAN_FILE.exists() else None
     if not month:
         month = datetime.now().strftime("%Y-%m")
     objs = plan.get("months", {}).get(month, {}).get("objectives", []) or []
@@ -650,7 +651,7 @@ def run(month: str | None, apply: bool) -> None:
         # ★2026-09-16 GM 지시(웰리 실측) — 쓰기 직전 HEAD 대비 신선도 확인. 이 시점
         #   디스크가 이미 HEAD 보다 낡아 있으면(다른 세션 커밋이 워킹트리 미반영 등)
         #   그 낡은 판 위에 자동반영을 얹어 되쓰면 HEAD 에만 있던 내용이 사라진다.
-        if not _refuse_if_stale(PLAN_FILE, new_text):
+        if not _refuse_if_stale(PLAN_FILE, new_text, base_text=_plan_base_text):
             print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. "
                   f"이 PC 워킹트리를 최신으로 맞춘 뒤 재실행하세요.")
             worklog_log(

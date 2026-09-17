@@ -48,10 +48,11 @@ except Exception:
         return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
 
 
-def _save_plan(plan: dict) -> dict | None:
-    """PLAN_PATH 를 통째로 되쓰기 전 HEAD 대비 신선도 확인 — 거부 시 None 이 아닌 사유를 돌려준다."""
+def _save_plan(plan: dict, base_text: str | None = None) -> dict | None:
+    """PLAN_PATH 를 통째로 되쓰기 전 HEAD 대비 신선도 확인 — 거부 시 None 이 아닌 사유를 돌려준다.
+    base_text = 호출자가 고치기 전에 읽은 원문(있으면 낡음 판정을 이 원문으로 잰다)."""
     new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
-    if not _refuse_if_stale(PLAN_PATH, new_text):
+    if not _refuse_if_stale(PLAN_PATH, new_text, base_text=base_text):
         return {"ok": False, "reason": "디스크가 HEAD 보다 낡음 — 저장 거부(refuse_if_older_than_head)"}
     PLAN_PATH.write_text(new_text, encoding="utf-8")
     return None
@@ -227,7 +228,8 @@ def _find_card(obj, card_id: str):
 
 
 def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) -> dict:
-    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
+    plan = json.loads(_raw_text)
     card = _find_card(plan, card_id)
     if not card:
         return {"ok": False, "reason": f"카드 {card_id} 없음"}
@@ -245,7 +247,7 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     if dry:
         return {"ok": True, "dry": True}
     card["progress_note"] = pn
-    fail = _save_plan(plan)
+    fail = _save_plan(plan, base_text=_raw_text)
     if fail:
         return fail
     return {"ok": True}
@@ -256,7 +258,8 @@ def close_card(card_id: str, why: str, dry: bool) -> dict:
     지금까지 카드 status 를 완료로 바꾸는 코드가 없어(진척 체크만 바꾸는 touch_plan 뿐) 판정만
     하고 못 닫던 것을 여기 하나로 연다. 나우열M 라인 카드는 AI 가 안 고친다(feedback_cfo_screens_
     belong_to_nawoolm_hands_off 와 같은 원칙 — 08-18 규칙 확장) → 거부."""
-    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
+    plan = json.loads(_raw_text)
     card = _find_card(plan, card_id)
     if not card:
         return {"ok": False, "reason": f"카드 {card_id} 없음"}
@@ -272,7 +275,7 @@ def close_card(card_id: str, why: str, dry: bool) -> dict:
     card["status"] = "완료"
     card["progress"] = 100
     card["progress_note"] = pn
-    fail = _save_plan(plan)
+    fail = _save_plan(plan, base_text=_raw_text)
     if fail:
         return fail
     return {"ok": True}
@@ -284,7 +287,8 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     들어오면 이 카드가 「GM업무」 면이다(GM 지시 2026-09-14 「GM업무/전사일정/중간관리자/업무&결재SSOT 연동 놓치지 말고
     셋업」). 업무 SSOT 행은 여전히 안 만든다(TODO_UPLOAD_BLOCKED) — GM업무 = 이 카드, 결재 = 사람이 SSOT 에.
     같은 제목의 카드가 이번 달에 이미 있으면 새로 만들지 않고 그 id 를 돌려준다."""
-    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
+    plan = json.loads(_raw_text)
     ym = _today().strftime("%Y-%m")
     month = plan.setdefault("months", {}).setdefault(ym, {})
     objs = month.setdefault("objectives", [])
@@ -296,7 +300,7 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
                 # 카드가 먼저 있고 행이 나중에 생긴 경우 — 짝만 붙인다(카드 본문은 그대로).
                 o["todo_id"] = todo_id
                 o["progress_note"] = (o.get("progress_note") or "").rstrip() + f"\n🔗 업무 SSOT {todo_id}"
-                fail = _save_plan(plan)
+                fail = _save_plan(plan, base_text=_raw_text)
                 if fail:
                     return fail
             return {"ok": True, "id": o.get("id"), "existing": True}
@@ -325,7 +329,7 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     if dry:
         return {"ok": True, "dry": True, "id": cid}
     objs.append(card)
-    fail = _save_plan(plan)
+    fail = _save_plan(plan, base_text=_raw_text)
     if fail:
         return fail
     return {"ok": True, "id": cid}
@@ -369,7 +373,8 @@ def _open_checks(progress_note: str) -> list[str]:
 def migrate_cards(dry: bool, only: set | None) -> list[dict]:
     """월간운영계획(GM 카드) 열린 카드 → 업무 SSOT 행. dry=False 면 카드마다 즉시 _save_plan
     으로 저장한다(누적 diff 방지 · 배 지시 「한 카드 = 한 저장」) — 실제 실행은 --only 로 끊어 부른다."""
-    plan = json.loads(PLAN_PATH.read_text(encoding="utf-8"))
+    _raw_text = PLAN_PATH.read_text(encoding="utf-8")
+    plan = json.loads(_raw_text)
     open_rows = _open_todo_rows()
     rows = []
     for ym, month in (plan.get("months") or {}).items():
@@ -417,7 +422,8 @@ def migrate_cards(dry: bool, only: set | None) -> list[dict]:
             note_suffix = f"\n[업무 SSOT {todo_id} 로 이관 {_MIGRATE_TAG}]"
             fail = None
             for _attempt in range(3):
-                cur_plan = json.loads(PLAN_PATH.read_text(encoding="utf-8")) if _attempt else plan
+                cur_raw_text = PLAN_PATH.read_text(encoding="utf-8") if _attempt else _raw_text
+                cur_plan = json.loads(cur_raw_text) if _attempt else plan
                 cur_card = _find_card(cur_plan, cid) if _attempt else card
                 if not cur_card:
                     fail = {"reason": "저장 재시도 중 카드를 못 찾음"}
@@ -425,7 +431,7 @@ def migrate_cards(dry: bool, only: set | None) -> list[dict]:
                 cur_card["status"] = "이관"
                 if note_suffix not in (cur_card.get("progress_note") or ""):
                     cur_card["progress_note"] = (cur_card.get("progress_note") or "").rstrip() + note_suffix
-                fail = _save_plan(cur_plan)
+                fail = _save_plan(cur_plan, base_text=cur_raw_text)
                 if not fail:
                     break
             if fail:
