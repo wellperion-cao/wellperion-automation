@@ -25,7 +25,7 @@
  *    설정_열람권한에 줄만 추가하면 켜진다. 계정 사칭을 막는 단단한 검증은 서버(PostgreSQL·erp_auth) 이관 때.
  *
  *  ■ 계약 (procurement 관례) — POST JSON {action, password[, adminPassword], ...} → {ok, ...}
- *    ping · payroll_list · payroll_team · payroll_config_get · payroll_config_set · payroll_override_set · payroll_override_del
+ *    ping · payroll_list · payroll_month · payroll_team · payroll_config_get · payroll_config_set · payroll_override_set · payroll_override_del
  *    payroll_run_sync · payroll_flags · payroll_flag_close · payroll_evidence_create · payroll_close · payroll_sync_log
  *
  *  ■ 계산 규칙 (강사 시트 수식과 동일 · 반올림 없음, 표시만 반올림)
@@ -75,6 +75,7 @@ function route_(p) {
     if (badPw_(p.password)) return out_({ ok: false, error: 'unauthorized' });
     switch (a) {
       case 'payroll_list':          return out_(listPayroll_(p.month, p.instructor, p.viewer));
+      case 'payroll_month':         return out_(payrollMonth_(p.month, p.team, p.viewer));
       case 'payroll_team':          return out_(teamSummary_(p.month, p.team, p.viewer));
       case 'payroll_config_get':    return out_(configGet_(p.viewer));
       case 'payroll_flags':         var sc0 = scopeFor_(loadConfig_(), p.viewer);
@@ -330,6 +331,10 @@ function calc_(ym, name) {
   var regs = readTab_('등록').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name; });
   var sess = readTab_('세션').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name; });
   var ovr = readTab_('보정').filter(function (r) { return ym7_(r['월']) === ym && r['강사명'] === name && String(r['취소']).toUpperCase() !== 'Y'; });
+  return calcCore_(ym, name, c, regs, sess, ovr);
+}
+/** 이미 읽어온 등록·세션·보정 슬라이스로 한 강사 계산 — 대량 조회(payrollMonth_)가 시트를 강사마다 다시 읽지 않게 */
+function calcCore_(ym, name, c, regs, sess, ovr) {
   var codePrice = {}; c.codes.forEach(function (x) { codePrice[String(x['코드']).trim()] = +x['1회수업료'] || 0; });
   sess.forEach(function (x) { x['수업료'] = codePrice[String(x['코드']).trim()] || 0; });
   // 진행 = 출석 세션(SHOW/NO_SHOW) 수 — 수강권ID 조인, 없으면 회원명
@@ -371,12 +376,9 @@ function calc_(ym, name) {
     flags.push({ 유형: '팀매출미입력', 키: ym, 내용: name + ' 은 팀매출 인센티브 대상인데 팀매출이 없어 인센티브 0 — 보정(대상=월합계·항목=팀매출)으로 입력할 것' });
   return { cfg: c, regs: regs, sessions: sess, overrides: ovr, summary: summary, flags: flags };
 }
-function listPayroll_(ym, name, viewer) {
-  if (!ym || !name) return { ok: false, error: 'month/instructor required' };
-  var sc = scopeFor_(loadConfig_(), viewer);
-  if (!allowName_(sc, name)) return { ok: false, error: 'forbidden_scope: 이 계정은 「' + name + '」 페이롤을 볼 권한이 없습니다' };
-  var r = calc_(ym, name), today = new Date();
-  var closed = readTab_('월합계').some(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name && String(m['마감']) === '마감'; });
+/** 계산 결과 r 을 화면용 JSON 으로 정형(listPayroll_·payrollMonth_ 공용) */
+function shapeCalc_(r, ym, name, closed, syncedAt) {
+  var today = new Date();
   var regs = r.regs.map(function (x) {
     var c = x._c, end = x['유효기간'] ? new Date(String(x['유효기간']).slice(0, 10)) : null;
     return { key: x['수강권ID'], 회원명: x['회원명'], 회원명원문: x['회원명원문'], 회원구분: x['회원구분'], 등록일: String(x['등록일'] || '').slice(0, 10), 유효기간: String(x['유효기간'] || '').slice(0, 10),
@@ -384,8 +386,42 @@ function listPayroll_(ym, name, viewer) {
       공제후: c.J, 부가세: c.K, 최종: c.L, 단가: c.M, 지급단가: c.N, 규칙: c.ruleTxt, 진행: c.O, 잔여: c.P, 청구: c.Q, 소진: c.T, 미소진: c.U, 출처: x['출처'], 상태: x['상태'], 특이사항: x['특이사항'], 보정: x._ovr || [] };
   });
   var sessions = r.sessions.map(function (x) { return { rid: x['reservation_id'], 일시: x['일시'], 수업: x['수업명'], 회원: x['회원명'], 수강권ID: x['수강권ID'], 수강권명: x['수강권명'], 출석: x['출석'], 코드: x['코드'], 기록명: x['기록명'], 회차: x['회차'], 수업료: x['수업료'], 판별: x['판별경로'] }; });
+  return { instructor: name, team: r.cfg.it['팀'], 직급: r.cfg.it['직급'], config: r.cfg.it, regs: regs, sessions: sessions, summary: r.summary, flags: r.flags, overrides: r.overrides, syncedAt: syncedAt || '', closed: !!closed };
+}
+function listPayroll_(ym, name, viewer) {
+  if (!ym || !name) return { ok: false, error: 'month/instructor required' };
+  var sc = scopeFor_(loadConfig_(), viewer);
+  if (!allowName_(sc, name)) return { ok: false, error: 'forbidden_scope: 이 계정은 「' + name + '」 페이롤을 볼 권한이 없습니다' };
+  var r = calc_(ym, name);
+  var closed = readTab_('월합계').some(function (m) { return ym7_(m['월']) === ym && m['강사명'] === name && String(m['마감']) === '마감'; });
   var last = readTab_('동기화로그').filter(function (l) { return ym7_(l['월']) === ym; }).slice(-1)[0];
-  return { ok: true, month: ym, instructor: name, team: r.cfg.it['팀'], config: r.cfg.it, regs: regs, sessions: sessions, summary: r.summary, flags: r.flags, overrides: r.overrides, syncedAt: last ? last['실행시각'] : '', closed: closed };
+  var o = shapeCalc_(r, ym, name, closed, last ? last['실행시각'] : '');
+  o.ok = true; o.month = ym; return o;
+}
+/** 한 달·한 팀 전체를 한 번의 시트 읽기로 계산 — 화면이 받아 캐시하면 강사·팀 전환이 네트워크 없이 즉시 */
+function payrollMonth_(ym, team, viewer) {
+  if (!ym) return { ok: false, error: 'month required' };
+  var cfg = loadConfig_(), sc = scopeFor_(cfg, viewer);
+  var regsAll = readTab_('등록').filter(function (r) { return ym7_(r['월']) === ym; });
+  var sessAll = readTab_('세션').filter(function (r) { return ym7_(r['월']) === ym; });
+  var ovrAll = readTab_('보정').filter(function (r) { return ym7_(r['월']) === ym && String(r['취소']).toUpperCase() !== 'Y'; });
+  var msAll = readTab_('월합계').filter(function (m) { return ym7_(m['월']) === ym; });
+  var last = readTab_('동기화로그').filter(function (l) { return ym7_(l['월']) === ym; }).slice(-1)[0];
+  var syncedAt = last ? last['실행시각'] : '';
+  var gReg = {}, gSess = {}, gOvr = {}, closedMap = {};
+  regsAll.forEach(function (r) { (gReg[r['강사명']] = gReg[r['강사명']] || []).push(r); });
+  sessAll.forEach(function (r) { (gSess[r['강사명']] = gSess[r['강사명']] || []).push(r); });
+  ovrAll.forEach(function (r) { (gOvr[r['강사명']] = gOvr[r['강사명']] || []).push(r); });
+  msAll.forEach(function (m) { if (String(m['마감']) === '마감') closedMap[m['강사명']] = 1; });
+  var instrs = cfg.instructors.filter(function (it) {
+    return String(it['활성']).toUpperCase() === 'Y' && (!team || team === '전체' || String(it['팀']).trim() === String(team).trim()) && allowName_(sc, it['강사명']);
+  });
+  var out = instrs.map(function (it) {
+    var name = String(it['강사명']).trim(), c = cfgFor_(cfg, name);
+    var r = calcCore_(ym, name, c, (gReg[name] || []).slice(), (gSess[name] || []).slice(), (gOvr[name] || []).slice());
+    return shapeCalc_(r, ym, name, closedMap[name], syncedAt);
+  });
+  return { ok: true, month: ym, team: team || '전체', scope: sc.mode, syncedAt: syncedAt, instructors: out };
 }
 /** 월합계·플래그 탭 갱신(수집 후·보정 후) */
 function recompute_(ym, name) {
