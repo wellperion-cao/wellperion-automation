@@ -1,0 +1,181 @@
+<!-- 강사 페이롤(강습부) — 파트너팀 체계 ▸ 💰 페이롤 탭에 iframe(?embed=1) 으로 열리는 별도 화면. 정본 = 강사페이롤_DB 시트(cfo) + 바인딩 GAS 웹앱(.deploy-payroll/Code.gs).
+     원천 = 브로제이 API(결제 → 등록, 예약·출석 → 세션) · 규칙 = 강사별 설정표 · 강사 스프레드시트는 관리부 증빙용 사본. 비밀번호는 런타임 입력(sessionStorage)·localStorage 캐시 없음(급여 PII).
+     CFO 2026-09-17 · 매니저 지시 「모든 페이롤 변수를 담는 페이롤을 ERP 강습부 체계 안에」 -->
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">
+<title>💰 강사 페이롤 · 웰페리온</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>💰</text></svg>">
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<style>
+:root{--bg:#221F20;--paper:#2a2725;--text:#f5f2ef;--dim:#8c8b83;--accent:#B79F8A;--accent-bg:rgba(183,159,138,.12);--border:#3d3835;--green:#6abf7b;--green-bg:rgba(106,191,123,.12);--red:#ED5B3F;--red-bg:rgba(237,91,63,.12);--yellow:#e6c84e;--yellow-bg:rgba(230,200,78,.12);--blue:#5b9fd5;--blue-bg:rgba(91,159,213,.12)}
+@media print{:root{--bg:#fff;--paper:#fff;--text:#111;--dim:#555;--border:#bbb;--accent:#7a5c3e;--accent-bg:#f3ede6}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:14px;line-height:1.55}
+.wrap{padding:14px 16px 60px;max-width:1500px;margin:0 auto}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.hd h1{font-size:19px;margin:0;font-weight:800}.hd .sub{color:var(--dim);font-size:12.5px}
+body.embed .hd-top{display:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.chip{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:20px;padding:4px 11px;font-size:12.5px;cursor:pointer}.chip.on{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:700}
+select,input[type=text],input[type=number],input[type=password],textarea{background:#1c1a19;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit}
+.btn{border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--accent);color:#1a1a1a}.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.btn.red{background:var(--red);color:#fff}.btn.blue{background:var(--blue);color:#fff}.btn:disabled{opacity:.5;cursor:default}
+.mono{font-variant-numeric:tabular-nums}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:10px 12px}.card .label{color:var(--dim);font-size:11.5px}.card .num{font-size:20px;font-weight:800;margin-top:2px}.card .sub{color:var(--dim);font-size:11px}
+.card.g .num{color:var(--green)}.card.r .num{color:var(--red)}.card.y .num{color:var(--yellow)}.card.b .num{color:var(--blue)}
+.sec{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:10px 0}.sectit{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;margin-bottom:8px}.sectit .cnt{color:var(--dim);font-weight:500;font-size:12px}.sectit .sp{flex:1}
+.tw{overflow:auto;max-width:100%}table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border-bottom:1px solid var(--border);padding:5px 7px;text-align:right;white-space:nowrap}th{color:var(--dim);font-weight:600;text-align:right;position:sticky;top:0;background:var(--paper)}th.l,td.l{text-align:left}th.c,td.c{text-align:center}
+tr.warn td{background:var(--yellow-bg)}tr.bad td{background:var(--red-bg)}
+.tag{display:inline-block;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}.tag.show{background:var(--green-bg);color:var(--green)}.tag.noshow{background:var(--red-bg);color:var(--red)}.tag.wait{background:var(--yellow-bg);color:var(--yellow)}.tag.api{background:var(--blue-bg);color:var(--blue)}.tag.ovr{background:var(--accent-bg);color:var(--accent)}
+.callout{border:1px solid var(--red);background:var(--red-bg);color:var(--text);border-radius:10px;padding:8px 12px;margin:8px 0;font-size:13px;display:none}
+.notice{color:var(--dim);font-size:12px;margin:6px 0}
+.gate{max-width:420px;margin:60px auto;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:22px}.gate h2{margin:0 0 8px;font-size:17px}.gate p{color:var(--dim);font-size:12.5px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;z-index:9;display:none}
+.small{font-size:11.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+.flag{display:flex;gap:8px;align-items:flex-start;border-bottom:1px solid var(--border);padding:5px 0;font-size:12.5px}.flag .t{flex:0 0 auto;background:var(--yellow-bg);color:var(--yellow);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}
+.cfg-table td input{width:100%;min-width:60px}
+@media print{.bar,.btn,.noprint{display:none !important}.sec{break-inside:avoid;border:none}body{font-size:11px}th,td{padding:2px 5px}}
+</style></head><body>
+<div class="wrap">
+  <div class="hd hd-top"><h1>💰 강사 페이롤</h1><span class="sub">브로제이 결제·출석 → ERP 자동 집계 · 정본 = 페이롤 DB · 강사 시트는 증빙 사본</span><span style="flex:1"></span><a href="파트너팀 체계.html" style="color:var(--accent);font-size:12.5px">← 파트너팀 체계</a></div>
+  <div id="gate" class="gate"><h2>🔒 페이롤 조회</h2><p>급여 정보입니다. 조회 비밀번호를 입력하세요. (브라우저 세션 동안만 기억, 저장하지 않음)</p><input type="password" id="gatePw" placeholder="조회 비밀번호" style="width:100%;margin:6px 0 10px"><button class="btn" id="gateBtn">열기</button><div id="gateErr" class="small" style="color:var(--red);margin-top:6px"></div></div>
+  <div id="app" style="display:none">
+    <div class="bar">
+      <span class="small">팀</span><span id="teamChips"></span>
+      <span class="small" style="margin-left:6px">강사</span><select id="selInstr"><option value="">전체(팀 요약)</option></select>
+      <span class="small" style="margin-left:6px">월</span><button class="chip" id="mPrev">◀</button><b id="mLabel" class="mono">2026-09</b><button class="chip" id="mNext">▶</button>
+      <span style="flex:1"></span>
+      <button class="btn ghost" id="btnRefresh">↻ 새로고침</button>
+      <button class="btn blue" id="btnSync" title="브로제이 API에서 이 강사·월을 지금 수집(관리 비밀번호)">⟳ 지금 수집</button>
+      <button class="btn ghost" id="btnEvidence" title="강사 원본 시트 형식 사본을 만들어 관리부 증빙 링크 생성(관리 비밀번호)">🧾 증빙 사본</button>
+      <button class="btn ghost" id="btnConfig">⚙ 설정표</button>
+      <button class="btn ghost" id="btnClose" title="이 강사·월 마감(수집 중단)">🔒 마감</button>
+      <button class="btn ghost noprint" id="btnPrint">🖨 인쇄</button>
+    </div>
+    <div id="status" class="notice"></div>
+    <div id="err" class="callout"></div>
+    <div id="viewTeam"></div>
+    <div id="viewInstr"></div>
+    <div id="viewConfig" style="display:none"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+/* ★ 배포 후 /exec URL 로 교체(.deploy-payroll README). 비밀번호는 여기 두지 않는다. */
+var PAYROLL_API="PAYROLL_EXEC_URL_PLACEHOLDER";
+var TEAMS=["전체","PT","수영","골프","스쿼시","필라테스","체조","루프","GX"];   // 설정_강사.팀 값과 동일(시트목록 8팀)
+var st={team:"전체",instr:"",month:"",pw:"",cfg:null,data:null,teamData:null};
+var EMBED=/[?&]embed=1/.test(location.search); if(EMBED)document.body.classList.add("embed");
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function won(n){n=Math.round(+n||0);return n.toLocaleString("ko-KR")+"원";}
+function num(n){return Math.round(+n||0).toLocaleString("ko-KR");}
+function toast(m,bad){var t=$("toast");t.textContent=m;t.style.display="block";t.style.borderColor=bad?"var(--red)":"var(--border)";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},bad?5000:2600);}
+function ym0(){var d=new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
+function ymAdd(ym,k){var y=+ym.slice(0,4),m=+ym.slice(5,7)-1+k;var d=new Date(y,m,1);return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2);}
+async function api(body){
+  body=Object.assign({password:st.pw},body);
+  var r=await fetch(PAYROLL_API,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  var j=await r.json();
+  if(j&&j.ok===false&&/unauthorized$/.test(j.error||"")){sessionStorage.removeItem("wp_payroll_pw");st.pw="";$("app").style.display="none";$("gate").style.display="block";$("gateErr").textContent="비밀번호가 올바르지 않습니다.";throw new Error("unauthorized");}
+  return j;
+}
+function adminPw(){var p=prompt("관리 비밀번호를 입력하세요(수집·보정·설정·증빙·마감)");return p===null?null:String(p).trim();}
+function showErr(m){var e=$("err");e.style.display=m?"block":"none";e.innerHTML=m?("⚠️ "+esc(m)+' <button class="btn ghost" onclick="load()" style="margin-left:8px">다시 시도</button>'):"";}
+/* ── 관문 ── */
+$("gateBtn").onclick=async function(){var pw=$("gatePw").value.trim();if(!pw)return;st.pw=pw;try{var j=await api({action:"payroll_config_get"});if(!j.ok)throw new Error(j.error||"실패");sessionStorage.setItem("wp_payroll_pw",pw);st.cfg=j.config;$("gate").style.display="none";$("app").style.display="block";boot();}catch(e){$("gateErr").textContent=e.message==="unauthorized"?"비밀번호가 올바르지 않습니다.":("연결 실패: "+e.message);}};
+$("gatePw").onkeydown=function(e){if(e.key==="Enter")$("gateBtn").click();};
+(async function(){var pw=sessionStorage.getItem("wp_payroll_pw");if(pw){$("gatePw").value=pw;$("gateBtn").click();}})();
+/* ── 부팅 ── */
+function boot(){
+  st.month=sessionStorage.getItem("wp_payroll_month")||ym0(); st.team=sessionStorage.getItem("wp_payroll_team")||"전체"; st.instr=sessionStorage.getItem("wp_payroll_instr")||"";
+  renderChips(); renderInstrSelect(); $("mLabel").textContent=st.month; load();
+}
+function renderChips(){$("teamChips").innerHTML=TEAMS.map(function(t){return '<button class="chip'+(st.team===t?" on":"")+'" data-t="'+t+'">'+t+'</button>';}).join("");
+  $("teamChips").querySelectorAll(".chip").forEach(function(b){b.onclick=function(){st.team=b.dataset.t;sessionStorage.setItem("wp_payroll_team",st.team);st.instr="";renderChips();renderInstrSelect();load();};});}
+function instrList(){return (st.cfg.instructors||[]).filter(function(i){return String(i["활성"]).toUpperCase()==="Y"&&(st.team==="전체"||i["팀"]===st.team);});}
+function renderInstrSelect(){var s=$("selInstr");s.innerHTML='<option value="">전체(팀 요약)</option>'+instrList().map(function(i){return '<option value="'+esc(i["강사명"])+'"'+(st.instr===i["강사명"]?" selected":"")+'>'+esc(i["팀"]+" · "+i["강사명"]+(i["직급"]?" "+i["직급"]:""))+'</option>';}).join("");}
+$("selInstr").onchange=function(){st.instr=this.value;sessionStorage.setItem("wp_payroll_instr",st.instr);load();};
+$("mPrev").onclick=function(){st.month=ymAdd(st.month,-1);sessionStorage.setItem("wp_payroll_month",st.month);$("mLabel").textContent=st.month;load();};
+$("mNext").onclick=function(){if(st.month>=ym0())return;st.month=ymAdd(st.month,1);sessionStorage.setItem("wp_payroll_month",st.month);$("mLabel").textContent=st.month;load();};
+$("btnRefresh").onclick=load; $("btnPrint").onclick=function(){window.print();};
+$("btnConfig").onclick=function(){var v=$("viewConfig");if(v.style.display==="none"){renderConfig();v.style.display="block";$("viewInstr").style.display="none";$("viewTeam").style.display="none";}else{v.style.display="none";$("viewInstr").style.display="";$("viewTeam").style.display="";}};
+$("btnSync").onclick=async function(){var ap=adminPw();if(ap===null)return;var b=this;b.disabled=true;b.textContent="⟳ 수집 중…";try{
+  var j=await api(st.instr?{action:"payroll_run_sync",adminPassword:ap,month:st.month,instructor:st.instr}:{action:"payroll_run_sync",adminPassword:ap,month:st.month,scope:"team",team:st.team});
+  if(!j.ok)throw new Error(j.error||"실패");
+  toast(j.queued?"팀 전체 수집을 뒤에서 시작했습니다 — 잠시 후 새로고침":("수집 완료 · 등록 "+j.regs.total+" · 세션 "+j.sessions.total+" · 호출 "+j.calls+"회 · "+j.secs+"s"));await load();
+ }catch(e){toast("수집 실패: "+e.message,true);}finally{b.disabled=false;b.textContent="⟳ 지금 수집";}};
+$("btnEvidence").onclick=async function(){if(!st.instr){toast("강사를 선택하세요",true);return;}var ap=adminPw();if(ap===null)return;var by=prompt("생성자 이름")||"";var b=this;b.disabled=true;try{
+  var j=await api({action:"payroll_evidence_create",adminPassword:ap,month:st.month,instructor:st.instr,by:by});if(!j.ok)throw new Error(j.error||"실패");
+  toast("증빙 사본 생성됨");window.open(j.url,"_blank");await load();}catch(e){toast("증빙 실패: "+e.message,true);}finally{b.disabled=false;}};
+$("btnClose").onclick=async function(){if(!st.instr){toast("강사를 선택하세요",true);return;}var closed=st.data&&st.data.closed;if(!confirm((closed?"마감을 해제":"이 강사·월을 마감")+"할까요? "+st.month+" · "+st.instr))return;var ap=adminPw();if(ap===null)return;try{var j=await api({action:"payroll_close",adminPassword:ap,month:st.month,instructor:st.instr,reopen:!!closed});if(!j.ok)throw new Error(j.error);toast(closed?"마감 해제":"마감 처리");await load();}catch(e){toast("실패: "+e.message,true);}};
+/* ── 로드 ── */
+var _seq=0;
+async function load(){
+  var seq=++_seq; showErr(""); $("status").textContent="불러오는 중…";
+  try{
+    if(st.instr){var j=await api({action:"payroll_list",month:st.month,instructor:st.instr});if(seq!==_seq)return;if(!j.ok)throw new Error(j.error||"실패");st.data=j;$("viewTeam").innerHTML="";renderInstr(j);}
+    else{var t=await api({action:"payroll_team",month:st.month,team:st.team});if(seq!==_seq)return;if(!t.ok)throw new Error(t.error||"실패");st.teamData=t;$("viewInstr").innerHTML="";renderTeam(t);}
+    $("btnClose").textContent=(st.data&&st.instr&&st.data.closed)?"🔓 마감 해제":"🔒 마감";
+  }catch(e){if(e.message!=="unauthorized")showErr("불러오지 못했습니다: "+e.message);$("status").textContent="";}
+}
+/* ── 강사 화면 ── */
+function renderInstr(d){
+  var s=d.summary,c=d.config;
+  $("status").innerHTML="데이터 기준: <b>"+esc(d.syncedAt||"수집 기록 없음")+"</b> · 출처 브로제이 API · 강사 설정 지급율 "+(Math.round((+c["지급율"]||0)*100))+"% · 청구방식 "+esc(s.청구방식)+(d.closed?' · <span class="tag noshow">마감</span>':' · <span class="tag show">진행</span>')+(d.flags.length?' · <span class="tag wait">플래그 '+d.flags.length+'</span>':'');
+  var cards=[["청구금액(지급 대상)",won(s.청구합),s.청구방식==="100회"?"ΣQ÷진행×100":"Σ 청구(N×O)","g"],["급여 지급 총액",won(s.지급총액),"업무추진비 "+num(s.업무추진비)+" + 청구 + 팀인센티브 "+num(s.팀인센티브)+" − 수수료 "+num(s.카드수수료)+" − 주차 "+num(s.주차비),"b"],["월 진행 세션",num(s.진행),"잔여 "+num(s.잔여),""],["당월 소진 매출",won(s.소진),"미소진 "+won(s.미소진),""],["당월 매출(등록 기준)",won(s.당월매출),"이달 등록 결제 합",""],["스케줄러 합계",won(s.스케줄러합계),"9월S 수업료×지급율 대조",Math.abs(s.스케줄러합계-s.청구합)>1?"y":""],["프로모션",num(s.프로모션수)+"회","강습료 "+won(s.프로모션강습료),""]];
+  var h='<div class="statgrid">'+cards.map(function(k){return '<div class="card '+k[3]+'"><div class="label">'+k[0]+'</div><div class="num mono">'+k[1]+'</div><div class="sub">'+k[2]+'</div></div>';}).join("")+'</div>';
+  if(d.flags.length)h+='<div class="sec"><div class="sectit">⚠ 확인 필요 <span class="cnt">'+d.flags.length+'건</span></div>'+d.flags.map(function(f){return '<div class="flag"><span class="t">'+esc(f.유형)+'</span><span>'+esc(f.내용)+'</span></div>';}).join("")+'</div>';
+  h+='<div class="sec"><div class="sectit">📋 등록 (N월P) <span class="cnt">'+d.regs.length+'명 · 신규 '+s.신규+' · 재등록 '+s.재등록+'</span><span class="sp"></span><button class="btn ghost" id="btnOvrAdd">✎ 수기 보정</button></div><div class="tw"><table><thead><tr><th class="c">No</th><th class="l">회원명</th><th class="l">등록일</th><th class="l">유효기간</th><th>회수</th><th>월초잔여</th><th>결제금액</th><th class="l">분류</th><th class="l">구분</th><th>공제후</th><th>부가세</th><th>최종</th><th>1회단가</th><th>지급단가</th><th>진행</th><th>잔여</th><th>청구</th><th>소진</th><th>미소진</th><th class="l">특이/보정</th></tr></thead><tbody>';
+  d.regs.forEach(function(r,i){var bad=r.상태&&r.상태!=="정상";var ov=(r.보정||[]).map(function(o){return '<span class="tag ovr" title="'+esc(o.사유)+'">'+esc(o.항목)+'='+esc(o.값)+'</span>';}).join(" ");
+    h+='<tr class="'+(bad?"warn":"")+'"><td class="c">'+(i+1)+'</td><td class="l"><b>'+esc(r.회원명)+'</b>'+(r.회원명원문&&r.회원명원문!==r.회원명?' <span class="small">'+esc(r.회원명원문)+'</span>':'')+'</td><td class="l">'+esc(r.등록일)+'</td><td class="l">'+esc(r.유효기간)+(r.dday!=null?' <span class="small">('+(r.dday>=0?r.dday+"일 남음":"만료")+')</span>':'')+'</td><td>'+num(r.등록회수)+'</td><td>'+num(r.월초잔여)+'</td><td>'+num(r.결제금액)+'</td><td class="l">'+esc(r.등록분류)+'</td><td class="l">'+esc(r.회원구분)+'</td><td>'+num(r.공제후)+'</td><td>'+num(r.부가세)+'</td><td>'+num(r.최종)+'</td><td>'+num(r.단가)+'</td><td title="'+esc(r.규칙)+'">'+num(r.지급단가)+'</td><td><b>'+num(r.진행)+'</b></td><td>'+num(r.잔여)+'</td><td><b>'+num(r.청구)+'</b></td><td>'+num(r.소진)+'</td><td>'+num(r.미소진)+'</td><td class="l"><span class="tag '+(r.출처==="API"?"api":"ovr")+'">'+esc(r.출처)+'</span> '+esc(r.특이사항||"")+' '+ov+(bad?' <span class="tag noshow">'+esc(r.상태)+'</span>':'')+'</td></tr>';});
+  h+='<tr style="font-weight:800"><td></td><td class="l">합계</td><td></td><td></td><td></td><td></td><td>'+num(d.regs.reduce(function(a,r){return a+r.결제금액;},0))+'</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>'+num(s.진행)+'</td><td>'+num(s.잔여)+'</td><td>'+num(d.regs.reduce(function(a,r){return a+r.청구;},0))+'</td><td>'+num(s.소진)+'</td><td>'+num(s.미소진)+'</td><td></td></tr></tbody></table></div></div>';
+  var shown=d.sessions.filter(function(x){return x.출석==="SHOW"||x.출석==="NO_SHOW";}),booked=d.sessions.length-shown.length;
+  h+='<div class="sec"><div class="sectit">🗓 진행 세션 (N월S) <span class="cnt">출석 처리 '+shown.length+' · 예약만 '+booked+'(미기입)</span></div><div class="tw"><table><thead><tr><th class="l">일시</th><th class="l">수업</th><th class="l">회원</th><th class="l">수강권</th><th class="c">출석</th><th class="c">코드</th><th class="l">기록명</th><th>회차</th><th>수업료</th><th class="l">판별</th></tr></thead><tbody>';
+  d.sessions.forEach(function(x){var cls=x.출석==="SHOW"?"show":(x.출석==="NO_SHOW"?"noshow":"wait");h+='<tr'+(x.코드==="?"?' class="bad"':'')+'><td class="l mono">'+esc(x.일시)+'</td><td class="l">'+esc(x.수업)+'</td><td class="l">'+esc(x.회원)+'</td><td class="l small">'+esc(x.수강권명)+'</td><td class="c"><span class="tag '+cls+'">'+esc(x.출석)+'</span></td><td class="c"><b>'+esc(x.코드)+'</b></td><td class="l">'+esc(x.기록명)+'</td><td>'+esc(x.회차)+'</td><td>'+(x.기록명?num(x.수업료):"")+'</td><td class="l small">'+esc(x.판별)+'</td></tr>';});
+  h+='</tbody></table></div><div class="notice">기입 규칙: 출석 SHOW·NO_SHOW 만 진행 세션으로 셈(매니저 규칙 2026-09-16). 코드 = 수강권ID ↔ 등록 조인 → 1회 단가 → 수업 코드표, 겹치면 수강권 이름의 (WSC)/(정)/(비)+인원비로 확정.</div></div>';
+  if(d.overrides.length)h+='<div class="sec"><div class="sectit">✎ 수기 보정 <span class="cnt">'+d.overrides.length+'건</span></div><div class="tw"><table><thead><tr><th class="l">대상</th><th class="l">키</th><th class="l">항목</th><th class="l">값</th><th class="l">사유</th><th class="l">등록자</th><th class="l">등록시각</th><th class="c">취소</th></tr></thead><tbody>'+d.overrides.map(function(o){return '<tr><td class="l">'+esc(o["대상"])+'</td><td class="l small">'+esc(o["키"])+'</td><td class="l">'+esc(o["항목"])+'</td><td class="l">'+esc(o["값"])+'</td><td class="l">'+esc(o["사유"])+'</td><td class="l">'+esc(o["등록자"])+'</td><td class="l small">'+esc(o["등록시각"])+'</td><td class="c"><button class="btn ghost ovrDel" data-row="'+o._row+'">취소</button></td></tr>';}).join("")+'</tbody></table></div></div>';
+  h+='<div class="notice">강사 설정: 주차비 '+num(c["주차비"])+' · 카드수수료 '+(Math.round((+c["카드수수료율"]||0)*1000)/10)+'% · 업무추진비 '+num(c["업무추진비"])+' · 팀인센티브 '+esc(c["팀인센티브"])+' · 시트형식 '+esc(c["시트형식"])+' · 원본시트 '+(c["원본시트ID"]?'<a href="https://docs.google.com/spreadsheets/d/'+esc(c["원본시트ID"])+'/edit" target="_blank" style="color:var(--accent)">열기</a>':'없음')+'</div>';
+  $("viewInstr").innerHTML=h; $("viewInstr").style.display="";
+  var ob=$("btnOvrAdd"); if(ob)ob.onclick=overrideDialog;
+  document.querySelectorAll(".ovrDel").forEach(function(b){b.onclick=async function(){if(!confirm("이 보정을 취소할까요?"))return;var ap=adminPw();if(ap===null)return;try{var j=await api({action:"payroll_override_del",adminPassword:ap,row:b.dataset.row});if(!j.ok)throw new Error(j.error);toast("보정 취소");await load();}catch(e){toast("실패: "+e.message,true);}};});
+}
+async function overrideDialog(){
+  var d=st.data; if(!d)return;
+  var target=prompt("보정 대상: 등록 / 월합계","등록"); if(target===null)return; target=target.trim();
+  var key="",field="",value="",reason="";
+  if(target==="등록"){var name=prompt("회원명(등록 목록의 이름)");if(name===null)return;var r=d.regs.filter(function(x){return x.회원명===name.trim();})[0];if(!r){toast("등록 목록에 없는 회원",true);return;}key=r.key;
+    field=prompt("항목: 진행 / 월초잔여 / 결제금액 / 회원구분 / 등록회수 / 특이사항","진행");if(field===null)return;field=field.trim();}
+  else if(target==="월합계"){field=prompt("항목: 팀매출(원) 등","팀매출");if(field===null)return;field=field.trim();}
+  else{toast("대상은 등록 또는 월합계",true);return;}
+  value=prompt("값");if(value===null)return; reason=prompt("사유(필수)")||""; if(!reason.trim()){toast("사유가 필요합니다",true);return;}
+  var by=prompt("입력자 이름")||""; var ap=adminPw(); if(ap===null)return;
+  try{var j=await api({action:"payroll_override_set",adminPassword:ap,month:st.month,instructor:st.instr,target:target,key:key,field:field,value:value,reason:reason,by:by});if(!j.ok)throw new Error(j.error);toast("보정 저장");await load();}catch(e){toast("실패: "+e.message,true);}
+}
+/* ── 팀 요약 ── */
+function renderTeam(t){
+  var rows=t.rows||[],tot=t.totals||{};
+  $("status").innerHTML="월합계 캐시 기준(강사별 마지막 계산시각) · 강사를 선택하면 상세";
+  var h='<div class="statgrid">'+Object.keys(tot).map(function(k){var x=tot[k];return '<div class="card"><div class="label">'+esc(k)+' · '+x.강사수+'명</div><div class="num mono">'+won(x.지급총액)+'</div><div class="sub">청구 '+num(x.청구합)+' · 진행 '+num(x.진행)+(x.플래그수?' · ⚠ '+x.플래그수:'')+'</div></div>';}).join("")+'</div>';
+  h+='<div class="sec"><div class="sectit">👥 강사별 월합계 <span class="cnt">'+rows.length+'명</span></div><div class="tw"><table><thead><tr><th class="l">팀</th><th class="l">강사</th><th>등록</th><th>신규</th><th>재등록</th><th>진행</th><th>잔여</th><th>청구합</th><th>업무추진비</th><th>팀인센티브</th><th>카드수수료</th><th>주차비</th><th>지급총액</th><th>소진</th><th>미소진</th><th>플래그</th><th class="c">마감</th><th class="l">계산시각</th></tr></thead><tbody>';
+  rows.forEach(function(m){h+='<tr'+((+m["플래그수"])?' class="warn"':'')+'><td class="l">'+esc(m["팀"])+'</td><td class="l"><a href="#" class="goInstr" data-n="'+esc(m["강사명"])+'" style="color:var(--accent)"><b>'+esc(m["강사명"])+'</b></a></td><td>'+num(m["등록건수"])+'</td><td>'+num(m["신규"])+'</td><td>'+num(m["재등록"])+'</td><td>'+num(m["진행"])+'</td><td>'+num(m["잔여"])+'</td><td>'+num(m["청구합"])+'</td><td>'+num(m["업무추진비"])+'</td><td>'+num(m["팀인센티브"])+'</td><td>'+num(m["카드수수료"])+'</td><td>'+num(m["주차비"])+'</td><td><b>'+num(m["지급총액"])+'</b></td><td>'+num(m["소진"])+'</td><td>'+num(m["미소진"])+'</td><td>'+num(m["플래그수"])+'</td><td class="c">'+esc(m["마감"])+'</td><td class="l small">'+esc(m["계산시각"])+'</td></tr>';});
+  if(!rows.length)h+='<tr><td colspan="18" class="l" style="color:var(--dim)">이 달 계산된 강사가 없습니다 — 강사를 선택하고 [⟳ 지금 수집]을 누르세요.</td></tr>';
+  h+='</tbody></table></div></div>';
+  $("viewTeam").innerHTML=h; $("viewTeam").style.display="";
+  document.querySelectorAll(".goInstr").forEach(function(a){a.onclick=function(e){e.preventDefault();st.instr=a.dataset.n;sessionStorage.setItem("wp_payroll_instr",st.instr);renderInstrSelect();load();};});
+}
+/* ── 설정표 ── */
+var CFG_TABLES={"설정_강사":["강사명","팀","직급","활성","브로제이강사명","trainer_id","시트형식","지급율","주차비","카드수수료율","업무추진비","청구방식","팀인센티브","팀인센티브기준액","팀인센티브기본율","팀인센티브상위율","프로모션단가","원본시트ID","비고"],"설정_지급규칙":["강사명","회원구분","방식","값","비고"],"설정_회원구분":["회원구분","공제율","상품명접두","비고"],"설정_수업코드":["팀","코드","수업명패턴","1회수업료","비고"]};
+var CFG_KEYS={"설정_강사":"instructors","설정_지급규칙":"rules","설정_회원구분":"memberTypes","설정_수업코드":"codes"};
+function renderConfig(){
+  var c=st.cfg,h='<div class="notice">설정표는 페이롤 DB 시트의 설정 탭과 같습니다. 행을 고치고 [저장]을 누르면 관리 비밀번호를 묻습니다. 지급규칙의 강사명 <b>*</b> = 모든 강사 공통, 강사명을 지정하면 그 강사에게만 우선 적용. 값 <b>H5</b> = 강사 지급율.</div>';
+  Object.keys(CFG_TABLES).forEach(function(tn){var cols=CFG_TABLES[tn],rows=c[CFG_KEYS[tn]]||[];
+    h+='<div class="sec"><div class="sectit">⚙ '+tn+' <span class="cnt">'+rows.length+'행</span><span class="sp"></span><button class="btn ghost cfgAdd" data-t="'+tn+'">+ 행</button><button class="btn cfgSave" data-t="'+tn+'">저장</button></div><div class="tw"><table class="cfg-table" id="cfg-'+tn+'"><thead><tr>'+cols.map(function(k){return '<th class="l">'+esc(k)+'</th>';}).join("")+'</tr></thead><tbody>';
+    rows.forEach(function(r){h+='<tr>'+cols.map(function(k){return '<td class="l"><input type="text" data-k="'+esc(k)+'" value="'+esc(r[k])+'"></td>';}).join("")+'</tr>';});
+    h+='</tbody></table></div></div>';});
+  $("viewConfig").innerHTML=h;
+  document.querySelectorAll(".cfgAdd").forEach(function(b){b.onclick=function(){var tb=$("cfg-"+b.dataset.t).querySelector("tbody");var tr=document.createElement("tr");tr.innerHTML=CFG_TABLES[b.dataset.t].map(function(k){return '<td class="l"><input type="text" data-k="'+esc(k)+'" value=""></td>';}).join("");tb.appendChild(tr);};});
+  document.querySelectorAll(".cfgSave").forEach(function(b){b.onclick=async function(){var tn=b.dataset.t,rows=[];$("cfg-"+tn).querySelectorAll("tbody tr").forEach(function(tr){var o={},any=false;tr.querySelectorAll("input").forEach(function(i){o[i.dataset.k]=i.value.trim();if(i.value.trim())any=true;});if(any)rows.push(o);});
+    var ap=adminPw();if(ap===null)return;var by=prompt("수정자 이름")||"";try{var j=await api({action:"payroll_config_set",adminPassword:ap,table:tn,rows:rows,by:by});if(!j.ok)throw new Error(j.error);toast(tn+" 저장 · 추가 "+j.added+" · 갱신 "+j.updated);var cj=await api({action:"payroll_config_get"});st.cfg=cj.config;renderConfig();renderInstrSelect();}catch(e){toast("저장 실패: "+e.message,true);}};});
+}
+</script></body></html>
