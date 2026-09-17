@@ -639,6 +639,47 @@ const LS_S="wp_att_sched_v1";
 let schedD=JSON.parse(localStorage.getItem(LS_S)||"{}");
 const saveS=()=>localStorage.setItem(LS_S,JSON.stringify(schedD));
 
+/* ============ 서버 거울(mirror) 호출 — 쓰기 ok 직후 (2026-09-17 CHRO 요청서③, leave.html과 동일 계약)
+   [2026-09-17 A-5 왕복시험 실패 진단 후속] schedboard-set(보드 셀 편집)·schedreq-approve(승인 시 셀 반영)는
+   leave.html의 set-leave와 같은 휴무 탭을 바꾸는데도 거울 호출이 빠져 있었다
+   (aws_hr0_쓰기액션_거울요구.md §5.2 우선순위3 — 트리거 원점에 leave.html·schedule.html이 함께 명시돼 있었음).
+   schedreq-reject는 셀을 바꾸지 않아(상태·결재일만) 제외.
+   POST /api/hr/mirror {tabs:[...]} — fire-and-forget(await 없음), 실패해도 쓰기 결과 표시에 영향 없음.
+   원점가드 = isServerHost()(ERP 도메인·서버 IP만 — GitHub Pages 사본은 호출 안 함). 킬스위치: MIRROR_ON=false 1줄.
+   연속 실패(3회 이상)만 화면 하단 경고 배너 — 단발 실패는 콘솔 경고만 남기고 조용히 넘어간다. */
+function isServerHost(){
+  const h=location.hostname;
+  return h==="erp.wellperion.com" || /^\d{1,3}(\.\d{1,3}){3}$/.test(h);
+}
+const MIRROR_ON=true;
+let _mirrorFailStreak=0;
+function mirrorWarnBanner_(msg){
+  let b=document.getElementById("mirrorFailBanner");
+  if(!b){
+    b=document.createElement("div"); b.id="mirrorFailBanner";
+    b.style.cssText="position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#b00020;color:#fff;"
+      +"font-size:12px;text-align:center;padding:4px 8px;";
+    document.body.appendChild(b);
+  }
+  b.textContent="⚠ 서버 거울(mirror) 연속 실패: "+msg;
+  b.style.display="block";
+}
+function mirrorWarnClear_(){ const b=document.getElementById("mirrorFailBanner"); if(b) b.style.display="none"; }
+function hrMirror(tabs){
+  if(!MIRROR_ON || !isServerHost() || !tabs || !tabs.length) return;
+  fetch("/api/hr/mirror",{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({tabs:tabs})})
+    .then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json().catch(()=>null); })
+    .then(d=>{
+      if(d && d.ok===false) throw new Error(d.error||"mirror ok:false");
+      _mirrorFailStreak=0; mirrorWarnClear_();
+    })
+    .catch(e=>{
+      _mirrorFailStreak++;
+      console.warn("[hrMirror] 실패("+tabs.join(",")+"):",(e&&e.message)||e);
+      if(_mirrorFailStreak>=3) mirrorWarnBanner_(tabs.join(",")+" 등 "+_mirrorFailStreak+"회 연속");
+    });
+}
+
 /* ===== 서버 동기화 (2026-07-27 R0 개편 — schedboard-list/schedboard-set 공개 창구, 게이트는 전부 서버측) ===== */
 let boardSynced=null, demoMode=false, writeChain=Promise.resolve();
 function syncBadge(){
@@ -748,6 +789,7 @@ function boardWrite(nm,dt,val){
     .then(res=>res.json())
     .then(j=>{
       if(!j||!j.ok){revert();toast("⚠ "+((j&&SB_ERR[j.error])||(j&&j.message)||"저장 실패"));return j||{ok:false};}
+      hrMirror(["leave"]);        // [추가 2026-09-17 A-5] 쓰기 ok 직후 서버 거울 트리거(fire-and-forget)
       boardSynced=true;syncBadge();if(body.pin)adminTouch();return j;
     })
     .catch(()=>{revert();boardSynced=false;syncBadge();toast("⚠ "+SB_ERR.offline);return{ok:false,error:"offline"};});
@@ -1729,6 +1771,7 @@ function approveReq(id){
         if(j&&j.ok){
           r.status="승인"; r.decidedAt=j.decidedAt||todayYmd(); if(j.appr)r.appr=j.appr;
           saveQ(); reqSynced=true; reqSyncBadge(); renderReq(); rqRemainInfo();
+          hrMirror(["leave"]);   // [추가 2026-09-17 A-5] 휴무 셀이 서버에서 반영됐으므로 거울 트리거(fire-and-forget)
           boardPull();   // 셀은 서버가 반영 완료 — 보드·연차 산출 재동기화
           if(j.balanceUnknown)toast("ℹ 연차 부여 미확정 인원 — 잔여 검증 없이 승인 기록됨(매니저 확인 대기)");
           return;
