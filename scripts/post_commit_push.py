@@ -751,6 +751,7 @@ _MACHINE_OUTPUTS = (
     #   있었다 — 화면은 멀쩡히 뜨고 어떤 경보도 안 울린다(voyage_map 과 같은 부류).
     #   전용 커밋을 3분마다 만들지 않고 여기 태운다: 커밋이 일어날 때 같이 올라간다(약속 L21).
     "status/kungjjak_today.json",                 # scripts/kungjjak_board.py --emit
+    "status/calls.json",                          # scripts/call_inbox.py — 관제판 「미답 호출」이 /repo/ 로 읽는다(2026-09-17 · 미커밋이라 404 였다)
     # ★2026-08-13 시토(배518) — 자율현황 학습제안 배지가 읽는 파일. ai_learning_proposer.py
     #   가 쓰기만 하고 자체 커밋이 없어(scripts/ai_learning_proposer.py 에 safe_commit 호출
     #   없음 실측 확인) kungjjak_today.json 과 같은 부류로 GM 화면이 뒤처졌다. 같은 관문에 흡수.
