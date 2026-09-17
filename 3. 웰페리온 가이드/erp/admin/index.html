@@ -44,7 +44,8 @@
   /* 좁은 화면에서 이름들이 줄바꿈되며 상단바 높이(48px)를 위아래로 넘쳐, 바로 아래 메뉴의
      첫 항목이 상단바에 덮여 눌리지 않았다(390px 실측 2026-09-10). 줄바꿈을 막는다. */
   .topbar > *{white-space:nowrap; flex-shrink:0;}
-  .topbar .brand{display:flex; align-items:baseline; color:var(--topbar-text);}
+  .topbar .brand{display:flex; align-items:center; color:var(--topbar-text);}
+  .topbar .brand .logo{height:22px; width:auto; display:block;}
   .topbar .brand .platform-name{font-size:14.5px; font-weight:700;}
   .topbar .brand .sub{font-size:12px; color:var(--topbar-dim); font-weight:400; margin-left:8px;}
   .topbar .console{font-size:13px; font-weight:600; color:var(--topbar-dim); margin-left:2px;
@@ -281,7 +282,8 @@
 <body>
 
 <div class="topbar">
-  <div class="brand" aria-label="AX 랩스"><span class="platform-name">AX 랩스</span><span class="sub">AX LABS · 센터 자동화 운영 플랫폼</span></div>
+  <!-- 로고 이미지 = 정본 1. AI자료_아카이브/08_로고&워터마크/_assets/logo/axlabs/ 에서 파생한 사본(scripts/axlabs_logo_build.py) · 배 12731 GM 2026-09-17 -->
+  <div class="brand" aria-label="AX 랩스"><img class="logo" src="axlabs_logo_white.svg" alt="AX 랩스" height="22"><span class="sub">센터 자동화 운영 플랫폼</span></div>
   <span class="layer">회사 관리자</span>
   <span class="crumb" id="crumb">파트너사</span>
 </div>
