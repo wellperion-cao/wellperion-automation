@@ -86,9 +86,13 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
 .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .chip{display:inline-flex;align-items:center;font-size:10px;padding:2px 8px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-weight:600;white-space:nowrap}
 .chip.owner{background:var(--blue-bg);color:var(--blue)}
-/* 무지개 이름 칩 글자 가독성 — 그라데이션 위에서도 읽히게(GM 지시 2026-09-17) */
-.chip.owner[style*='linear-gradient']{font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.35)}
-.filter-btn[style*='linear-gradient']{font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.35)}
+/* ★GM 2026-09-17 18:5x 「글자도 무지개색으로」 — 배경이 아니라 글자에 그라데이션을 입힌다.
+   inline background 로 들어온 그라데이션을 글자 모양으로 잘라 쓰고(background-clip:text),
+   칸은 옅은 테두리만 남긴다. 색 하나짜리 이름표(다른 사람)는 종전 그대로. */
+.chip.owner[style*='linear-gradient'],.filter-btn[style*='linear-gradient']{
+  -webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent;color:transparent!important;
+  font-weight:800;text-shadow:none;border:1px solid rgba(183,159,138,0.35)!important}
 .owner-chip-btn{opacity:0.62;font-weight:700}
 .owner-chip-btn:hover{opacity:0.88}
 .owner-chip-btn.active{opacity:1;box-shadow:0 0 0 2px var(--bg),0 0 0 3px currentColor}
@@ -521,6 +525,15 @@ const OWNER_COLORS = {
   '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'},   /* 2026-06-27 퇴사 — 지난 결재 기록 색 유지용(선택지 아님) */
   '김남욱GM':    {bg:'var(--accent-bg)', color:'var(--accent)'},
   '전응준 대표': {bg:'var(--red-bg)',    color:'var(--red)'}
+};
+  /* ★운영부 회신 반영(GM 전달 2026-09-17) — 백승화 사원 초록 · 나우열M 태극(빨강→파랑 그라데이션).
+     겹친 색은 옮겼다: 이정헌 소장 초록→보라. 진수아 사원은 노랑 그대로. */
+OWNER_COLORS['백승화 사원'] = {bg:'rgba(247,159,196,0.16)', color:'#F58FBF'};   /* 루피(뽀로로) 분홍 — GM 2026-09-17 */
+OWNER_COLORS['이정헌 소장'] = {bg:'var(--purple-bg)', color:'var(--purple)'};
+OWNER_COLORS['진수아 사원'] = {bg:'var(--yellow-bg)', color:'var(--yellow)'};
+OWNER_COLORS['나우열M'] = {
+  bg: 'linear-gradient(100deg,#FF4B5C 0%,#FF6A57 36%,#B06CD6 50%,#4DA3FF 64%,#2E7DE0 100%)',
+  color: '#FFFFFF'
 };
   /* ★GM 지시 2026-09-17 — 윤병현AM 은 무지개 그라데이션. inline background 로 들어가므로
      칩·담당자 필터 단추·표 머리까지 같은 색이 한 번에 먹는다. */
