@@ -90,7 +90,9 @@
 
   /* 파트너 산출물 — 업체 카드. 표로 두면 업체명이 빈 칸으로 이어져 어디까지가 한 업체인지
      훑어서 안 잡힌다(GM 2026-09-14 「조금 더 직관적으로」). 업체 하나 = 카드 하나로 묶는다. */
-  .pgrid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); margin-bottom:18px;}
+  .pgrid{display:grid; gap:14px; grid-template-columns:repeat(3,1fr); margin-bottom:18px; align-items:stretch;}
+  @media(max-width:1100px){ .pgrid{grid-template-columns:repeat(2,1fr);} }
+  @media(max-width:820px){ .pgrid{grid-template-columns:1fr;} }
   .pcard{border:1px solid var(--line,#E3E5E8); border-radius:12px; padding:16px 16px 14px; background:#fff;}
   .ph{display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:10px;}
   .ph b{font-size:16px;}
@@ -100,7 +102,7 @@
   .pbar i{display:block; height:100%; background:#1B7F5F;}
   .ppct{font-size:11px; color:#8A9096; margin:5px 0 10px;}
   .pi{display:block; text-decoration:none; color:inherit; border-left:3px solid #D7DBDF;
-      padding:6px 0 6px 10px; margin-bottom:6px;}
+      padding:6px 0 6px 10px; margin-bottom:6px; min-height:54px; box-sizing:border-box;}
   .pi b{display:block; font-size:13px; font-weight:600;}
   .pi span{display:block; font-size:12px; color:#7A8086; line-height:1.45;}
   a.pi:hover{background:#F7F8F9;}
@@ -251,7 +253,9 @@
 .pc-kpi div{background:var(--pf-panel);border:1px solid var(--pf-line);border-radius:10px;padding:12px 14px}
 .pc-kpi b{display:block;font-family:var(--pf-head,inherit);font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--pf-pri-dk);line-height:1.1}
 .pc-kpi span{font-size:12.5px;color:var(--pf-soft)}
-.pc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:26px}
+.pc-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px;align-items:stretch}
+@media(max-width:1100px){ .pc-cards{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:820px){ .pc-cards{grid-template-columns:1fr;} }
 .pc-card{background:var(--pf-bg);border:1px solid var(--pf-line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
 .pc-card .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .pc-card .no{font-family:var(--pf-head,inherit);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--pf-soft)}
@@ -890,46 +894,47 @@
 <section class="panel" data-panel="brand" hidden>
   <h2>파트너사 브랜드자료</h2>
   <div class="meta">파트너사마다 <b>브랜드가이드 화면 + 그 화면을 만든 원자료</b>를 한 자리에 모았습니다 (GM 지시 2026-09-14) ·
-    <b>서버</b> = 이 서버에 있어 바로 열림 · <b>저장소</b> = 원본 파일이 저장소(2. 브랜드_자료 폴더)에만 있어 깃허브로 열림 · 회색 = 아직 못 받음</div>
+    <b>서버</b> = 이 서버에 있어 바로 열림 · <b>저장소</b> = 원본 파일이 저장소(2. 브랜드_자료 폴더)에만 있어 깃허브로 열림 · 회색 = 아직 못 받음 ·
+    세 카드는 같은 8칸·같은 순서다 — 회색 칸은 카톡 번호 설문으로 받아 채운다.</div>
   <!-- 2. 브랜드_자료 → sparse-checkout 추가 완료(시토 배 CTO-2026-09-14) · 사진 폴더 3개(01_시설_사진·03_파트너강사프로필월·241030_PNG)는 용량 제외. -->
   <div class="pgrid">
 
     <div class="pcard">
       <div class="ph"><span class="pno">1호</span><b>웰페리온</b><span class="pwho">우리 것 · 기준판</span></div>
-      <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>브랜드가이드 화면</b><span>서버 · 색 · 로고 · 서체 · 말투 · 금지어 — 글·이미지 만드는 사람이 보는 정본</span></a>
-      <a class="pi ok" href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/241030_%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EB%B8%8C%EB%9E%9C%EB%93%9C%20%EA%B0%80%EC%9D%B4%EB%93%9C%28%EC%B5%9C%EC%A2%85%29.pdf" target="_blank" rel="noopener"><b>브랜드가이드 원본 (2024.10.30 최종)</b><span>서버 · PDF 1부 · 낱장 PNG 18장 — 디자이너가 만든 원판</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/1.%20AI%EC%9E%90%EB%A3%8C_%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C/08_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC/_assets/logo/_README.md" target="_blank" rel="noopener"><b>로고</b><span>저장소 · 가로 워드마크 3색(베이지·흰·검정) · W 한 글자 · 스포츠클럽 워드마크 · 원본 ai 2벌 — 새 화면은 base64 말고 이 폴더를 참조</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/watermarks%20logo" target="_blank" rel="noopener"><b>종목 워터마크 로고 13종</b><span>저장소 · 메인 · 골프 · 수영 · 필라테스 · 체조 · PT · 스쿼시 · 스포츠 · BRAD — 종목별 색값이 파일 이름에 있음</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/font" target="_blank" rel="noopener"><b>서체 파일</b><span>저장소 · Pretendard(Medium·SemiBold·Bold) · 고운바탕 Bold</span></a>
-      <a class="pi ok" href="../brand/tokens.css" target="_blank" rel="noopener"><b>화면 색·서체 정본</b><span>서버 · 웰페리온 ERP 화면이 같이 읽는 색값 한 벌(배경·글자·강조 4색 · 랩스 청록과 별개)</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/01_%EC%8B%9C%EC%84%A4_%EC%82%AC%EC%A7%84" target="_blank" rel="noopener"><b>시설 사진 11장</b><span>저장소 · 원본 + 웹용(10MB 아래) 같은 11장</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/03_%ED%8C%8C%ED%8A%B8%EB%84%88%EA%B0%95%EC%82%AC%20%ED%94%84%EB%A1%9C%ED%95%84%EC%9B%94" target="_blank" rel="noopener"><b>강사 프로필 사진 17장</b><span>저장소 · 골프 4 · 수영 8 · 그 외 — 프로필월·코치 소개에 쓰는 원본</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>브로슈어 · 디자인 요청 가이드라인</b><span>저장소 · 웰페리온 브로슈어 · WSC 브로슈어 · 유소년 브로슈어(2023) · 디자인 요청 가이드라인(2024.10.8) — PDF 4부</span></a>
-      <a class="pi ok" href="/repo/ssot/canon_values.json" target="_blank" rel="noopener"><b>공식값 (포지셔닝 · 금지어 · 발신 이름)</b><span>서버 · 「정원제 스포츠클럽」 · 피트니스→스포츠클럽 · 레슨→강습 — 화면과 생성기가 이 파일을 읽는다</span></a>
-      <div class="pwait">빈 칸 없음 — 새 파트너사는 이 열 줄을 같은 순서로 채웁니다.</div>
+      <a class="pi ok" href="../../cmo/brand/%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C.html" target="_blank" rel="noopener"><b>1 브랜드가이드 화면</b><span>서버 · 색 · 로고 · 서체 · 말투 · 금지어 — 글·이미지 만드는 사람이 보는 정본</span></a>
+      <a class="pi ok" href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/241030_%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EB%B8%8C%EB%9E%9C%EB%93%9C%20%EA%B0%80%EC%9D%B4%EB%93%9C%28%EC%B5%9C%EC%A2%85%29.pdf" target="_blank" rel="noopener"><b>2 브랜드가이드 원고·원본 (2024.10.30 최종)</b><span>서버 · PDF 1부 · 낱장 PNG 18장 — 디자이너가 만든 원판</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/1.%20AI%EC%9E%90%EB%A3%8C_%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C/08_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC/_assets/logo/_README.md" target="_blank" rel="noopener"><b>3 로고</b><span>저장소 · 가로 워드마크 3색(베이지·흰·검정) · W 한 글자 · 스포츠클럽 워드마크 · 원본 ai 2벌 — 새 화면은 base64 말고 이 폴더를 참조</span></a>
+      <a class="pi ok" href="../brand/tokens.css" target="_blank" rel="noopener"><b>4 화면 색·서체 정본</b><span>서버 · 웰페리온 ERP 화면이 같이 읽는 색값 한 벌(배경·글자·강조 4색 · 랩스 청록과 별개)</span></a>
+      <span class="pi ok"><b>5 사진·영상</b><span>저장소 · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/01_%EC%8B%9C%EC%84%A4_%EC%82%AC%EC%A7%84" target="_blank" rel="noopener">시설 사진 11장</a>(원본+웹용) · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/03_%ED%8C%8C%ED%8A%B8%EB%84%88%EA%B0%95%EC%82%AC%20%ED%94%84%EB%A1%9C%ED%95%84%EC%9B%94" target="_blank" rel="noopener">강사 프로필 사진 17장</a>(골프4·수영8 등)</span></span>
+      <span class="pi ok"><b>6 원자료 폴더</b><span>저장소 · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener">2. 브랜드_자료 폴더</a>(웰페리온·WSC·유소년 브로슈어 · 디자인 요청 가이드라인 2024.10.8) · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/watermarks%20logo" target="_blank" rel="noopener">워터마크 로고 13종</a> · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/font" target="_blank" rel="noopener">서체 파일(Pretendard·고운바탕)</a></span></span>
+      <a class="pi ok" href="/repo/ssot/canon_values.json" target="_blank" rel="noopener"><b>7 사실 정본(공식값)</b><span>서버 · 「정원제 스포츠클럽」 · 피트니스→스포츠클럽 · 레슨→강습 — 화면과 생성기가 이 파일을 읽는다</span></a>
+      <span class="pi ok"><b>8 받을 것 목록</b><span>받을 것 없음 — 기준판</span></span>
+      <div class="pwait">빈 칸 없음 — 새 파트너사는 이 여덟 칸을 같은 순서로 채웁니다.</div>
     </div>
 
     <div class="pcard">
       <div class="ph"><span class="pno">2호</span><b>다이어트캠프</b><span class="pwho">이승기 대표님</span></div>
-      <a class="pi ok" href="dietcamp/brand.html" target="_blank" rel="noopener"><b>브랜드가이드 화면 v0.3</b><span>서버 · 한 줄 · 철학(Can·Need·Fun) · 어투 · 쓰는 말/안 쓰는 말 · 사진 규칙 · 검색 셋업</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EB%8B%A4%EC%BA%A0_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>브랜드가이드 원고</b><span>저장소 · 화면의 글 원본(마크다운) · 근거 = 대표님 설문 답변(9/2)</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>대표님 원자료</b><span>저장소 · 브랜드가이드(소통) 답변 · 재활운동 솔루션 pptx · 커리큘럼 가격표 pptx · 사진 58장 · 내부 안내 동영상</span></a>
-      <a class="pi ok" href="dietcamp/img/logo_h.png" target="_blank" rel="noopener"><b>로고</b><span>받음 2026-09-15 · 심볼·가로형·세로형 3종 + 명함 · 브랜드가이드 화면에 반영</span></a>
-      <span class="pi warn"><b>수업 사진·영상</b><span>받음 2026-09-15 · 그룹 수업 2장 · 개인PT 2장 · 영상 3편 · 센터 한 바퀴 영상(둘러보기) — 간판(밖)·프로필·컨셉 컷은 설문 10~12번</span></span>
-      <a class="pi ok" href="dietcamp/dc.css" target="_blank" rel="noopener"><b>화면 색·서체 정본</b><span>서버 · 다캠 화면 4장이 같이 쓰는 스타일 한 벌</span></a>
-      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>받을 것 목록</b><span>저장소 · 18건 중 받음 6 · 남음 12 — 9/17 번호 설문 한 통으로 한 번에 여쭘(같은 번호 재질문 없음)</span></a>
+      <a class="pi ok" href="dietcamp/brand.html" target="_blank" rel="noopener"><b>1 브랜드가이드 화면</b><span>v0.3 · 한 줄 · 철학(Can·Need·Fun) · 어투 · 쓰는 말/안 쓰는 말 · 사진 규칙 · 검색 셋업</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EB%8B%A4%EC%BA%A0_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>2 브랜드가이드 원고·원본</b><span>저장소 · 화면의 글 원본(마크다운) · 근거 = 대표님 설문 답변(9/2)</span></a>
+      <a class="pi ok" href="dietcamp/img/logo_h.png" target="_blank" rel="noopener"><b>3 로고</b><span>받음 2026-09-15 · 심볼·가로형·세로형 3종 + 명함 · 브랜드가이드 화면에 반영</span></a>
+      <a class="pi ok" href="dietcamp/dc.css" target="_blank" rel="noopener"><b>4 화면 색·서체 정본</b><span>서버 · 다캠 화면 4장이 같이 쓰는 스타일 한 벌</span></a>
+      <span class="pi warn"><b>5 사진·영상</b><span>받음 2026-09-15 · 그룹 수업 2장 · 개인PT 2장 · 영상 3편 · 센터 한 바퀴 영상(둘러보기) — 간판(밖)·프로필·컨셉 컷은 설문 10~12번</span></span>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>6 원자료 폴더</b><span>저장소 · 브랜드가이드(소통) 답변 · 재활운동 솔루션 pptx · 커리큘럼 가격표 pptx · 사진 58장 · 내부 안내 동영상</span></a>
+      <span class="pi none"><b>7 사실 정본(공식값)</b><span>아직 없음 — 설문 답이 오면 client.json 으로</span></span>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>8 받을 것 목록</b><span>저장소 · 18건 중 받음 6 · 남음 12 — 9/17 번호 설문 한 통으로 한 번에 여쭘(같은 번호 재질문 없음)</span></a>
       <div class="pwait">기다리는 것 — 연혁 · 간판·프로필·컨셉 사진 · 호칭(번호 설문 9/17)</div>
     </div>
 
     <div class="pcard">
       <div class="ph"><span class="pno">3호</span><b>고척GDR QA 골프존</b><span class="pwho">조재오 지점장님</span></div>
-      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>브랜드가이드 원고 v0.1</b><span>저장소 · 글 원고 — 화면판은 gocheokgolf/brand.html(9/17)</span></a>
-      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>부장님 원자료</b><span>저장소 · 사진 원본 9장 · 선정 8장 · 프로 4분 프로필+3개월 속성반 커리큘럼 6장(9/14 받음) · 기존 블로그 글 100개</span></a>
-      <a class="pi ok" href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener"><b>블로그 글 스타일 정본</b><span>서버 · 자동 발행이 읽는 말투·구성 값</span></a>
-      <a class="pi ok" href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener"><b>사실 정본 (확인된 것 / 안 된 것)</b><span>서버 · 부장님이 확인해 준 사실만 여기에 · 상담봇 정본과 어긋남 검사 한 줄</span></a>
-      <a class="pi ok" href="gocheokgolf/img/logo_qa.png" target="_blank" rel="noopener"><b>로고 · 브랜드 색값</b><span>받음 2026-09-14(명함 · GM 경유) · QA GOLF STUDIO 파랑 #104088 · 인쇄 원본(ai·svg)만 남음</span></a>
-      <a class="pi ok" href="gocheokgolf/gc.css" target="_blank" rel="noopener"><b>화면 색·서체 정본</b><span>서버 · 고척 화면 3장이 같이 쓰는 스타일 한 벌(9/17 · 로고 파랑 #104088 로 맞춤)</span></a>
-      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>받을 것 목록</b><span>저장소 · 7건 중 받음 2(코치 원자료 · 정규 요금 구조) · 못 받음 4 · 확인 대기 1</span></a>
+      <a class="pi ok" href="gocheokgolf/brand.html" target="_blank" rel="noopener"><b>1 브랜드가이드 화면</b><span>v0.2(9/17) · 로고 파랑 반영</span></a>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/01_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C_v0.1.md" target="_blank" rel="noopener"><b>2 브랜드가이드 원고·원본</b><span>저장소 · 글 원고 v0.1</span></a>
+      <a class="pi ok" href="gocheokgolf/img/logo_qa.png" target="_blank" rel="noopener"><b>3 로고</b><span>받음 2026-09-14(명함 · GM 경유) · QA GOLF STUDIO 파랑 #104088 · 인쇄 원본(ai·svg)만 남음</span></a>
+      <a class="pi ok" href="gocheokgolf/gc.css" target="_blank" rel="noopener"><b>4 화면 색·서체 정본</b><span>서버 · 고척 화면 3장이 같이 쓰는 스타일 한 벌(9/17 · 로고 파랑 #104088 로 맞춤)</span></a>
+      <span class="pi warn"><b>5 사진·영상</b><span>사진 원본 9장 · 영상 1개 — 룸 내부·레슨·GDR 화면·간판·세로 영상은 지점장님이 추가 전송 예정(9/17 답)</span></span>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>6 원자료 폴더</b><span>저장소 · 사진 원본 9장 · 선정 8장 · 프로 4분 프로필+3개월 속성반 커리큘럼 6장(9/14 받음) · 기존 블로그 글 100개</span></a>
+      <span class="pi ok"><b>7 사실 정본(공식값)</b><span>서버 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener">client.json</a> · 부장님이 확인해 준 사실만 여기에 · 상담봇 정본과 어긋남 검사 한 줄 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener">블로그 글 스타일 정본</a>도 같은 폴더</span></span>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>8 받을 것 목록</b><span>저장소 · 7건 중 받음 2(코치 원자료 · 정규 요금 구조) · 못 받음 4 · 확인 대기 1</span></a>
       <div class="pwait">다음 — 설문 답이 오는 번호부터 화면에 반영(Before → After 를 저녁 통으로)</div>
     </div>
 
