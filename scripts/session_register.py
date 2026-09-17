@@ -121,7 +121,7 @@ def push_console(role: str, data: dict) -> str:
         ships = []
         try:
             q = json.load(open(os.path.join(_PROJECT_ROOT, "status", "_queue.json"), encoding="utf-8"))
-            items = q.get("items") or q.get("tasks") or (q if isinstance(q, list) else [])
+            items = q if isinstance(q, list) else (q.get("items") or q.get("tasks") or [])
             ships = [t for t in items if str(t.get("clevel") or t.get("role") or "").lower() == role
                      and str(t.get("status") or "").upper() in ("PENDING", "IN_PROGRESS")]
         except Exception:
