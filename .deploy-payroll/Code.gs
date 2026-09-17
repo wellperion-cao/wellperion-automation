@@ -241,12 +241,12 @@ function configGet_(viewer) {
 function cfgFor_(cfg, name) {
   var it = cfg.instructors.filter(function (r) { return String(r['강사명']).trim() === String(name).trim(); })[0];
   if (!it) throw new Error('설정_강사에 없는 강사: ' + name);
-  var deduct = {}; cfg.memberTypes.forEach(function (m) { deduct[String(m['회원구분']).trim()] = +m['공제율'] || 0; });
+  var deduct = {}; cfg.memberTypes.forEach(function (m) { deduct[String(m['회원구분']).trim()] = num_(m['공제율']); });
   var rules = {};
   cfg.rules.forEach(function (r) { if (String(r['강사명']).trim() === '*') rules[String(r['회원구분']).trim()] = r; });
   cfg.rules.forEach(function (r) { if (String(r['강사명']).trim() === String(name).trim()) rules[String(r['회원구분']).trim()] = r; });  // 강사별 규칙이 공통(*) 을 덮음
   var codes = cfg.codes.filter(function (c) { return String(c['팀']).trim() === String(it['팀']).trim(); });
-  return { it: it, deduct: deduct, rules: rules, codes: codes, rate: +it['지급율'] || 0 };
+  return { it: it, deduct: deduct, rules: rules, codes: codes, rate: num_(it['지급율']) };
 }
 function configSet_(table, rows, by) {
   if (!TABS[table] || table.indexOf('설정_') !== 0) return { ok: false, error: 'bad_table' };
@@ -258,19 +258,21 @@ function configSet_(table, rows, by) {
 
 // ───────────────────────── 규칙 엔진 ─────────────────────────
 function computeRow_(reg, c, progress) {
-  var G = +reg['결제금액'] || 0, E = +reg['등록회수'] || 0, F = (reg['월초잔여'] === '' || reg['월초잔여'] == null) ? E : +reg['월초잔여'];
+  var G = num_(reg['결제금액']), E = num_(reg['등록회수']), F = (reg['월초잔여'] === '' || reg['월초잔여'] == null) ? E : num_(reg['월초잔여']);
   var gb = String(reg['회원구분'] || '').trim();
   var known = gb in c.deduct;
   var J = known ? G * (1 - c.deduct[gb]) : 0;
   var K = J * 10 / 110, L = J - K, M = E ? L / E : 0;
-  var rule = c.rules[gb], N = 0, ruleTxt = '';
+  var rule = c.rules[gb], N = 0, ruleTxt = '', badWay = '';
   if (rule) {
     var v = rule['값'];
-    if (String(rule['방식']).trim() === '고정') { N = +v || 0; ruleTxt = '고정 ' + N; }
-    else { var rate = (String(v).trim().toUpperCase() === 'H5') ? c.rate : (+v || 0); N = M * rate; ruleTxt = '단가×' + rate; }
+    var way = String(rule['방식'] || '').trim();
+    if (way === '고정') { N = num_(v); ruleTxt = '고정 ' + N; }
+    else if (way === '비율' || way === '') { var rate = (String(v).trim().toUpperCase() === 'H5') ? c.rate : num_(v); N = M * rate; ruleTxt = '단가×' + rate; }
+    else { N = 0; ruleTxt = '미지원방식 ' + way; badWay = way; }     // 시급·인원제 등은 아직 미구현 → 0 + 플래그(조용히 0 이 되지 않게)
   }
   var O = progress || 0, P = F - O, Q = N * O, T = M * O, U = M * P;
-  return { J: J, K: K, L: L, M: M, N: N, O: O, P: P, Q: Q, T: T, U: U, F: F, ruleTxt: ruleTxt, known: known, hasRule: !!rule };
+  return { J: J, K: K, L: L, M: M, N: N, O: O, P: P, Q: Q, T: T, U: U, F: F, ruleTxt: ruleTxt, known: known, hasRule: !!rule, badWay: badWay };
 }
 function applyOverrides_(rows, sessions, overrides) {
   var byKey = {};
@@ -288,27 +290,28 @@ function summarize_(rows, sessions, c, ym, summaryOvr) {
   rows.forEach(function (r) {
     if (String(r['등록분류']) === '신규') s.신규++; else if (String(r['등록분류']) === '재등록') s.재등록++;
     s.진행 += r._c.O; s.잔여 += r._c.P; s.청구합 += r._c.Q; s.소진 += r._c.T; s.미소진 += r._c.U;
-    if (String(r['등록일'] || '').slice(0, 7) === ym) s.당월매출 += (+r['결제금액'] || 0);
+    if (String(r['등록일'] || '').slice(0, 7) === ym) s.당월매출 += num_(r['결제금액']);
     if (String(r['특이사항'] || '').indexOf('프로모션') >= 0) s.프로모션수 += r._c.O;
   });
   var it = c.it, method = String(it['청구방식'] || '표준').trim();
   if (method === '100회' && s.진행 > 0) s.청구합 = s.청구합 / s.진행 * 100;     // 김상식형: ΣQ ÷ 진행 × 100
   s.청구방식 = method;
-  s.업무추진비 = +it['업무추진비'] || 0;
-  var teamSales = summaryOvr && summaryOvr['팀매출'] != null ? +summaryOvr['팀매출'] : 0;
+  s.업무추진비 = num_(it['업무추진비']);
+  var teamSales = summaryOvr && summaryOvr['팀매출'] != null ? num_(summaryOvr['팀매출']) : 0;
   s.팀매출 = teamSales;
   s.팀인센티브 = 0;
-  if (String(it['팀인센티브']).toUpperCase() === 'Y' && teamSales > 0) {
-    var rate = teamSales >= (+it['팀인센티브기준액'] || 0) ? (+it['팀인센티브상위율'] || 0) : (+it['팀인센티브기본율'] || 0);
+  s.팀매출필요 = String(it['팀인센티브']).toUpperCase() === 'Y';
+  if (s.팀매출필요 && teamSales > 0) {
+    var rate = teamSales >= num_(it['팀인센티브기준액']) ? num_(it['팀인센티브상위율']) : num_(it['팀인센티브기본율']);
     s.팀인센티브 = (teamSales / 1.1) * rate;
   }
-  s.카드수수료율 = +it['카드수수료율'] || 0.025;
+  s.카드수수료율 = num_(it['카드수수료율'], 0.025);
   s.카드수수료 = s.청구합 * s.카드수수료율;
-  s.주차비 = +it['주차비'] || 0;
+  s.주차비 = num_(it['주차비']);
   s.지급총액 = s.업무추진비 + s.청구합 + s.팀인센티브 - (s.카드수수료 + s.주차비);
-  s.프로모션강습료 = s.프로모션수 * (+it['프로모션단가'] || 20000);
+  s.프로모션강습료 = s.프로모션수 * num_(it['프로모션단가'], 20000);
   // 스케줄러 금액 합계(P5 검산): 수영격자 = Σ수업료표 단가 × 지급율(N월S!E128×H5) / 30분격자 = 출석 세션마다 그 회원의 지급단가 N 합(N월S 36행 합)
-  if (it['시트형식'] === '수영격자') s.스케줄러합계 = sessions.reduce(function (a, x) { return a + (+x['수업료'] || 0); }, 0) * c.rate;
+  if (it['시트형식'] === '수영격자') s.스케줄러합계 = sessions.reduce(function (a, x) { return a + num_(x['수업료']); }, 0) * c.rate;
   else {
     var nByTicket = {}, nByName = {};
     rows.forEach(function (r) { nByTicket[r['수강권ID']] = r._c.N; if (nByName[r['회원명']] == null) nByName[r['회원명']] = r._c.N; });
@@ -341,6 +344,7 @@ function calc_(ym, name) {
     if (!r._c.known) flags.push({ 유형: '회원구분미정의', 키: r['수강권ID'], 내용: r['회원명'] + ' 회원구분 「' + r['회원구분'] + '」 공제율 표에 없음 → 공제후 0' });
     if (!r._c.hasRule) flags.push({ 유형: '지급규칙없음', 키: r['수강권ID'], 내용: r['회원명'] + ' 회원구분 「' + r['회원구분'] + '」 지급규칙 없음 → 지급단가 0' });
     if (r._c.P < 0) flags.push({ 유형: '잔여음수', 키: r['수강권ID'], 내용: r['회원명'] + ' 잔여 ' + r._c.P });
+    if (r._c.badWay) flags.push({ 유형: '지급방식미지원', 키: r['수강권ID'], 내용: r['회원명'] + ' 회원구분 「' + r['회원구분'] + '」 방식 「' + r._c.badWay + '」 은 아직 계산기가 없음 → 지급단가 0(보정으로 넣을 것)' });
     if (String(r['상태']) && String(r['상태']) !== '정상') flags.push({ 유형: '등록상태', 키: r['수강권ID'], 내용: r['회원명'] + ' ' + r['상태'] });
   });
   var ticketSet = {}; regs.forEach(function (r) { ticketSet[r['수강권ID']] = 1; });
@@ -349,7 +353,17 @@ function calc_(ym, name) {
       flags.push({ 유형: '등록없는세션', 키: x['reservation_id'], 내용: x['일시'] + ' ' + x['회원명'] + ' 출석 세션이 있으나 이 달 등록 행 없음(이관 수강권·전월 등록)' });
     if (String(x['코드']) === '?' ) flags.push({ 유형: '코드미판별', 키: x['reservation_id'], 내용: x['일시'] + ' ' + x['회원명'] + ' ' + x['수강권명'] });
   });
+  // 같은 회원이 한 달에 두 줄 이상(구·신 수강권) — 강사 시트는 이름 COUNTIFS 라 세션을 줄마다 세어 청구가 부풀 수 있다.
+  // ERP 는 수강권ID 로 갈라 세므로 값이 다를 수 있어, 회귀 대조 때 먼저 볼 수 있게 표시한다(반박검증 2026-09-17).
+  var byMember = {};
+  regs.forEach(function (r) { var n = String(r['회원명'] || '').trim(); if (n) (byMember[n] = byMember[n] || []).push(r); });
+  Object.keys(byMember).forEach(function (n) {
+    if (byMember[n].length > 1) flags.push({ 유형: '중복등록', 키: byMember[n].map(function (r) { return r['수강권ID']; }).join(','),
+      내용: n + ' 이 달 등록 ' + byMember[n].length + '건(수강권 여러 개) — 수기 시트는 이름으로 세어 이중 계상될 수 있음, ERP 는 수강권ID 로 분리 집계' });
+  });
   var summary = summarize_(regs, sess, c, ym, summaryOvr);
+  if (summary.팀매출필요 && !(summary.팀매출 > 0))
+    flags.push({ 유형: '팀매출미입력', 키: ym, 내용: name + ' 은 팀매출 인센티브 대상인데 팀매출이 없어 인센티브 0 — 보정(대상=월합계·항목=팀매출)으로 입력할 것' });
   return { cfg: c, regs: regs, sessions: sess, overrides: ovr, summary: summary, flags: flags };
 }
 function listPayroll_(ym, name, viewer) {
@@ -588,6 +602,17 @@ function labelCode_(tname, codes) {
     if (ok && pat.length > bestLen) { best = String(c['코드']).trim(); bestLen = pat.length; }
   });
   return best || '';
+}
+/** 숫자 파싱 — 쉼표·원·공백 제거, 끝의 % 는 /100(설정표에 '60%' 로 적어도 0.6). 못 읽으면 기본값.
+ *  (인벤토리 반박검증 2026-09-17: 시트에 텍스트로 들어간 결제금액·퍼센트 리터럴이 0으로 먹히던 자리) */
+function num_(v, dflt) {
+  if (v === null || v === undefined || v === '') return dflt === undefined ? 0 : dflt;
+  if (typeof v === 'number') return isNaN(v) ? (dflt === undefined ? 0 : dflt) : v;
+  var s = String(v).trim().replace(/[,\s₩]/g, '').replace(/원$/, ''), pct = /%$/.test(s);
+  if (pct) s = s.slice(0, -1);
+  var n = parseFloat(s);
+  if (isNaN(n)) return dflt === undefined ? 0 : dflt;
+  return pct ? n / 100 : n;
 }
 function uniq_(a) { var s = {}; return a.filter(function (x) { if (!x || s[x]) return false; s[x] = 1; return true; }); }
 function list_(j) { if (Array.isArray(j)) return j; if (j && Array.isArray(j.data)) return j.data; if (j && Array.isArray(j.items)) return j.items; return []; }
