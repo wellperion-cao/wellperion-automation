@@ -398,6 +398,12 @@ def faq_blanks(tenant: str, cap: int = 6) -> list[str]:
     if not tenant:
         return []
     try:
+        # 통합층은 예약이 없어 낡아 있었다(2026-09-17 감사 · 2일 정지) — 읽기 전에 그 자리에서 다시 센다(모델 0 · 낱말 겹침만).
+        try:
+            subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "faq_hub.py"), "--save"], cwd=str(REPO_ROOT),
+                           capture_output=True, text=True, timeout=60)
+        except Exception as exc:  # noqa: BLE001 — 재계량 실패는 옛 파일로 계속
+            print(f"[agent] faq_hub 재계량 실패(옛 파일 사용): {exc}", file=sys.stderr)
         hub = json.loads((REPO_ROOT / "status/faq_hub.json").read_text(encoding="utf-8"))
         types = json.loads((REPO_ROOT / "server/counselbot/shared/question_types.json")
                            .read_text(encoding="utf-8"))["types"]
