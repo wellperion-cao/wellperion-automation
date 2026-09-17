@@ -187,10 +187,10 @@ SESSION_DAYS = 90                              # 30→90 (배1134 · GM 「해�
 KST = timezone(timedelta(hours=9))
 LOCK_AFTER = 5                                 # 연속 실패 허용 횟수
 LOCK_SECS = 600                                # 잠금 시간(10분)
-# 사무실 PC 자동 로그인(배1134 · 기본 꺼짐 — OFFICE_AUTO_LOGIN_IP 가 비어 있으면 이 기능은 통째로 안 돈다).
-# 켜기: /srv/erp/auth.env 에 OFFICE_AUTO_LOGIN_IP=114.207.50.85 (콤마로 여러 개) 추가 → systemctl restart erp-auth.
-# 끄기: 그 줄을 지우거나 비우고 재기동 — 그 순간부터 그 IP 도 다시 로그인 화면을 본다(원래 동작).
-OFFICE_AUTO_LOGIN_IPS = frozenset(ip.strip() for ip in os.environ.get("OFFICE_AUTO_LOGIN_IP", "").split(",") if ip.strip())
+# 사무실 PC 자동 로그인(배1134)은 2026-09-17 GM 지시로 폐지했다 — 「다들 info 계정을 쓰다 보니 크롬에서 erp 를 열면
+# info 로 자동 로그인 · 인포 계정을 삭제하고 개인 계정으로」. 함수 office_auto_login 과 OFFICE_AUTO_LOGIN_IP 환경값을
+# 지웠고 info@ 계정은 status=disabled(모든 info 세션이 그 순간 401 → 로그인 화면). 아래 상수·auto 토큰 차단은
+# 아직 살아 있는 옛 auto 토큰 방어용으로만 남긴다(경위는 저장 이력).
 OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@wellperion.com")
 # 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
 AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
@@ -887,30 +887,6 @@ def _social_login_buttons(next: str) -> str:
 <div class=soc-row>{''.join(out)}</div></div>"""
 
 
-def office_auto_login(request: Request, next: str) -> Optional[Response]:
-    """사무실 고정 IP 자동 로그인(배1134 · OFFICE_AUTO_LOGIN_IP 비어 있으면 항상 None = 기능 꺼짐).
-    조건: 클라이언트 IP 가 그 목록에 있고, 부서 계정이 살아 있고, 가려던 화면이 인사 폴더가 아니고
-    그 계정이 볼 수 있는 화면일 때만 — 하나라도 아니면 평소대로 로그인 화면을 보여준다(안전한 쪽으로 폴백)."""
-    if not OFFICE_AUTO_LOGIN_IPS:
-        return None
-    ip = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()   # erp.nginx.conf 가 $remote_addr 로 채운다
-    if ip not in OFFICE_AUTO_LOGIN_IPS:
-        return None
-    with db() as c:
-        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND email=%s AND status='active'",
-                      (T, OFFICE_AUTO_LOGIN_ACCOUNT)).fetchone()
-    if not u:
-        return None
-    dest = safe_next(next)
-    m = module_at(dest)
-    if m and (m["id"].startswith("chro-") or not allowed(u, m)):
-        return None
-    r = RedirectResponse(dest, status_code=303)
-    https = request.headers.get("x-forwarded-proto") == "https"
-    r.set_cookie(COOKIE, issue(u, auto=True), max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax", path="/", secure=https)
-    return r
-
-
 def _keep_max_age(keep) -> Optional[int]:
     """「로그인 상태 유지」 = 90일 쿠키 / 끄면 max_age 없음(브라우저 닫으면 로그아웃).
 
@@ -955,10 +931,6 @@ LOGIN_JS = r"""
 
 @app.get("/auth/login")
 def login_page(request: Request, next: str = "/", err: str = "", msg: str = ""):
-    if not err:
-        auto = office_auto_login(request, next)
-        if auto:
-            return auto
     dest = {"/auth/admin": "계정 관리", "/auth/password": "비밀번호 변경"}.get(next)
     hint = f"<p class=hint>로그인하면 <b>{escape(dest)}</b> 화면으로 이동합니다</p>" if dest else ""
     # 머리글에 개인 계정을 적어 둔다(GM 지시 2026-09-11 "개인계정 가입하는 것도 열어놔줘").
@@ -1101,8 +1073,9 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
 
 @app.post("/auth/logout")
 @app.get("/auth/logout")
-def logout():
-    r = RedirectResponse("/auth/login", status_code=303)
+def logout(next: str = "/"):
+    dest = safe_next(next)
+    r = RedirectResponse("/auth/login" + (("?next=" + urllib.parse.quote(dest, safe="/?=&")) if dest != "/" else ""), status_code=303)
     r.delete_cookie(COOKIE, path="/")
     return r
 
@@ -1159,7 +1132,8 @@ def forbidden_page(next: str = "/"):
     # (「다 삭제하고 기록으로만」) — 경위는 저장 이력 c2733fc03·14ece03d4.
     return page("권한 없음", f"""<div class=box><h1>권한 없음</h1>
 <p class=err>이 화면은 지금 계정에 허용되지 않았습니다.<br><small>{escape(next)}</small></p>
-<p>필요하면 GM 에게 권한을 요청하세요. <a href=/erp/>ERP 홈으로</a></p></div>""")
+<p><a href="/auth/logout?next={escape(next)}" style="display:inline-block;padding:11px 20px;border-radius:8px;background:var(--accent);color:#221F20;font-weight:700;text-decoration:none">로그인하기</a></p>
+<p class=hint>지금 계정(공용 계정일 수 있습니다)을 내리고 <b>개인 계정</b>으로 다시 로그인합니다 — 구글 로그인은 계정 선택창이 뜹니다.<br>그래도 안 열리면 GM 에게 권한을 요청하세요.</p></div>""")
 
 
 @app.get("/auth/password")
