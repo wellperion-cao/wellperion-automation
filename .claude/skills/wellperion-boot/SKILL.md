@@ -238,6 +238,7 @@ GM 요청: **"부팅되자마자 항로 확인해서 웰리 판단하에 자율 
    - `Monitor`(persistent) 하나를 켠다 — 45초마다 `session_register.py --heartbeat --role {role}` + 내 역할 새 PENDING 배를 알림(본문 = 웰리 세션 2026-09-05 것과 같은 루프). 세션이 살아 있는 한 이 루프가 생존 신호다.
    - 배를 넘길 때 `queue_dispatch.py` 가 `📨 받는 역할 세션 살아있음 → SendMessage to "<세션>"` 줄을 내면 **그 자리에서 `SendMessage`** 로 배 번호·제목·설계 위치를 보낸다(부팅 없이 즉시 착수). `⏳ 세션 없음` 이면 러너/다음 부팅 몫.
    - 무인 러너(매시)는 살아 있는 역할을 건너뛴다(`skip_live_session`) — 세션과 러너가 같은 배를 두 번 집지 않는다.
+   - **★배를 집는 순간 「지금 하는 것」 한 줄을 남긴다(GM 지시 2026-09-17 · 관제판).** `worklog.log(role=역할, area='진행', event='<배 번호> <무엇을>', result='warn')` — AX 랩스 관제판(erp/admin/자율현황.html)이 각 창의 「지금 하는 것」을 이 마지막 줄로 그린다. 끝나면 같은 ref 로 `result='ok'`. 안 남기면 관제판에 그 창은 「조용함」으로 보인다.
 1. **후보 판정(필수 · 읽기전용):**
    ```
    python scripts/welly_auto_runner.py --boot-candidate --clevel {role}
