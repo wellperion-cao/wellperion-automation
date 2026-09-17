@@ -168,10 +168,10 @@
   /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 오른쪽 칸에 78px 밖에 안 남아
      한 타일을 두 줄(이름 / 금액)로 눌러 담는다 — 잘리면 사진에서 값이 사라진다. */
   .etcgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-  .etile{border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff;min-width:0;}
+  .etile{border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:#fff;min-width:0;line-height:1.25;}
   .etile .et{font-size:10.2px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .etile .ev{font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;}
-  .etile .em{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .etile .ev{font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;}
+  .etile .ev small{font-size:9.5px;font-weight:600;color:var(--muted);margin-left:4px;}
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:3px;}
   .dayrow{display:flex;align-items:center;gap:7px;font-size:11px;}
@@ -2882,8 +2882,7 @@ function renderEtcRev(){
   ];
   box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
     return '<div class="etile" title="' + esc(x.note) + '"><div class="et">' + esc(x.t) + '</div>' +
-      '<div class="ev">' + esc(x.d) + '</div>' +
-      '<div class="em">이번 달 ' + esc(x.m) + '</div></div>';
+      '<div class="ev">' + esc(x.d) + '<small>달 ' + esc(x.m) + '</small></div></div>';
   }).join('') + '</div>';
 }
 
