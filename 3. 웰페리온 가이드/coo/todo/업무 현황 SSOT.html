@@ -3942,11 +3942,13 @@ function ssotShowApproval(){
   if(!f.src){f.src='결재 현황 SSOT.html';}
   document.getElementById('ssotViewTasks').style.display='none';
   document.getElementById('ssotViewApproval').style.display='block';
+  document.title = '웰페리온 결재 현황 SSOT';  // 결재 판은 이 화면 안 프레임으로 열려 탭 이름이 업무 현황으로 남아 있었다(GM 2026-09-17)
   window.scrollTo(0,0);
 }
 function ssotShowTasks(){
   document.getElementById('ssotViewApproval').style.display='none';
   document.getElementById('ssotViewTasks').style.display='block';
+  document.title = '웰페리온 업무 현황 SSOT';
 }
 window.ssotShowApproval=ssotShowApproval;
 window.ssotShowTasks=ssotShowTasks;
