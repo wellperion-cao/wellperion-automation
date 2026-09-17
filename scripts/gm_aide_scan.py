@@ -429,7 +429,7 @@ def scan_due_hygiene() -> list:
     cur_ids = {o.get("id") for o in cur.get("objectives", [])}
     for o in all_objs:
         due = _parse_date_loose(o.get("due"))
-        if due and due < TODAY and o.get("status") != "완료":
+        if due and due < TODAY and o.get("status") not in ("완료", "이관"):  # 이관 = 다른 화면으로 넘어간 카드(2026-09-18 웰리 · CCTV 헛경보)
             rows.append(("②기한넘김", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
                          o.get("owner") or "", f"due={o.get('due')} 경과(status={o.get('status')})"))
         if o.get("status") == "완료":
