@@ -695,16 +695,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>카테고리</label>
       <select id="fCategory" onchange="onCategoryChange()">
         <option value="">선택</option>
-        <option value="[1] 매출 및 영업">[1] 매출 및 영업</option>
-        <option value="[2] 인사">[2] 인사</option>
-        <option value="[3] 파트너팀">[3] 파트너팀</option>
+        <option value="[1] 마케팅">[1] 마케팅</option>
+        <option value="[2] 매출 및 영업">[2] 매출 및 영업</option>
+        <option value="[3] 인사&파트너팀">[3] 인사&파트너팀</option>
         <option value="[4] 운영 정책">[4] 운영 정책</option>
         <option value="[5] 시설 및 환경">[5] 시설 및 환경</option>
         <option value="[6] 회원·CS">[6] 회원·CS</option>
         <option value="[7] IT·시스템·자동화">[7] IT·시스템·자동화</option>
         <option value="[8] 교육·조직문화">[8] 교육·조직문화</option>
         <option value="[9] 회의">[9] 회의</option>
-        <option value="[10] 마케팅">[10] 마케팅</option>
+        <option value="[10] 비즈니스 확장">[10] 비즈니스 확장</option>
       </select>
     </div>
     <div class="field">
@@ -909,24 +909,24 @@ const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤�
 MEMBERS.unshift('김남욱GM');  // GM 지시 2026-09-17 「나도 업무SSOT에 이름 올려줘 일단은」 — 2026-05-30 제거 결정 되돌림
 
 const CATEGORIES = [
-  '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
+  '[1] 마케팅','[2] 매출 및 영업','[3] 인사&파트너팀','[4] 운영 정책',
   '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의',
-  '[10] 마케팅'   // GM 오케이 2026-09-17 — 07:50 통·보고 흐름엔 이미 있는데 이 화면에만 빠져 미분류로 붙었다
+  '[10] 비즈니스 확장'   // 카테고리 개편 2026-09-17(GM) — 마케팅은 [1] 로, 인사·파트너팀은 [3] 하나로
 ];
 
 /* 카테고리 칸도 같은 이유로 한 가지 색이다 — 번호와 이름이 이미 구별을 해 준다. */
 const CAT_CHIP = {bg:'var(--accent-bg)', color:'var(--text)'};
 const CAT_COLORS = {
-  '[1] 매출 및 영업':    CAT_CHIP,
-  '[2] 인사':            CAT_CHIP,
-  '[3] 파트너팀':        CAT_CHIP,
+  '[1] 마케팅':          CAT_CHIP,
+  '[2] 매출 및 영업':    CAT_CHIP,
+  '[3] 인사&파트너팀':   CAT_CHIP,
   '[4] 운영 정책':       CAT_CHIP,
   '[5] 시설 및 환경':    CAT_CHIP,
   '[6] 회원·CS':         CAT_CHIP,
   '[7] IT·시스템·자동화': CAT_CHIP,
   '[8] 교육·조직문화':   CAT_CHIP,
   '[9] 회의':            CAT_CHIP,
-  '[10] 마케팅':          CAT_CHIP
+  '[10] 비즈니스 확장':   CAT_CHIP
 };
 
 /* field mapping: API 한글 → 영문 */
@@ -992,8 +992,7 @@ OWNER_COLORS['윤병현AM'] = {
    인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
    매핑 없는 카테고리([1][6][7][8][9])는 부서장 생략 → GM→대표 폴백. */
 const CAT_DEPT_HEAD = {
-  '[2] 인사':        '나우열M',
-  '[3] 파트너팀':    '나우열M',
+  '[3] 인사&파트너팀': '나우열M',
   '[4] 운영 정책':   '이경연 실장',
   '[5] 시설 및 환경': '이정헌 소장'
 };
@@ -1528,6 +1527,14 @@ async function loadTasks() {
   handleDeepLink();
 }
 
+// 옛 카테고리 이름 → 새 이름(2026-09-17 개편). 원장에 옛 값이 남아 있어도 「미분류」로 안 떨어진다.
+const CAT_ALIAS = {
+  '[1] 매출 및 영업': '[2] 매출 및 영업',
+  '[2] 인사': '[3] 인사&파트너팀',
+  '[3] 파트너팀': '[3] 인사&파트너팀',
+  '[10] 마케팅': '[1] 마케팅'
+};
+
 function normalizeTask(raw) {
   const t = {};
   Object.keys(raw).forEach(k => {
@@ -1538,6 +1545,7 @@ function normalizeTask(raw) {
   if (!t.id) t.id = raw.id || '';
   if (!t.title) t.title = raw.title || raw['업무명'] || '';
   if (!t.category) t.category = raw.category || raw['카테고리'] || '';
+  if (t.category && CAT_ALIAS[t.category]) t.category = CAT_ALIAS[t.category];
   if (!t.owner) t.owner = raw.owner || raw['담당자'] || '';
   if (!t.startDate) t.startDate = raw.startDate || raw['시작일'] || '';
   if (!t.endDate) t.endDate = raw.endDate || raw['종료일'] || '';
@@ -3150,9 +3158,8 @@ function openAddModal() {
    본문이 비어 있거나, 다른 카테고리의 양식만 들어있는(작성자가 손대지 않은) 경우에만 교체.
    작성자가 직접 입력한 내용은 절대 덮어쓰지 않음. */
 const CATEGORY_TEMPLATES = {
-  '[1] 매출 및 영업':   '🎯 목표 — \n📊 현황·실적 — \n💡 전략·액션 — \n📅 일정 — ',
-  '[2] 인사':          '👤 대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
-  '[3] 파트너팀':      '🤝 파트너·대상 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
+  '[2] 매출 및 영업':   '🎯 목표 — \n📊 현황·실적 — \n💡 전략·액션 — \n📅 일정 — ',
+  '[3] 인사&파트너팀': '👤 대상·파트너 — \n📋 사안 — \n✅ 조치·결정 — \n📅 일정 — ',
   '[4] 운영 정책':     '📌 정책·사안 — \n🎯 목적 — \n🛠 적용 방안 — \n📅 시행 일정 — ',
   '[5] 시설 및 환경':   '🏢 대상 시설 — \n🔍 점검·이슈 — \n🛠 조치 — \n📅 일정 — ',
   '[6] 회원·CS':       '👥 회원·대상 — \n💬 내용·요청 — \n✅ 대응·해결 — \n📅 후속 — ',
@@ -3933,9 +3940,9 @@ function renderDashboard() {
   // [업무-3] 부서별 책임자 (2026-05-30 COO) — 운영부=이경연 실장 / 시설부=이정헌 소장 / 파트너팀=나우열M
   h += '<h3>부서별 책임자</h3>';
   h += '<table class="dash-table"><tr><th>부서</th><th>책임자</th><th>관련 카테고리</th></tr>';
-  h += '<tr><td>운영부</td><td><strong>이경연 실장</strong></td><td>[1] 매출 및 영업 · [4] 운영 정책</td></tr>';
+  h += '<tr><td>운영부</td><td><strong>이경연 실장</strong></td><td>[2] 매출 및 영업 · [4] 운영 정책</td></tr>';
   h += '<tr><td>시설부</td><td><strong>이정헌 소장</strong></td><td>[5] 시설 및 환경</td></tr>';
-  h += '<tr><td>파트너팀</td><td><strong>나우열M</strong></td><td>[2] 인사 · [3] 파트너팀</td></tr>';
+  h += '<tr><td>파트너팀</td><td><strong>나우열M</strong></td><td>[3] 인사&파트너팀</td></tr>';
   h += '</table>';
 
   // Completion trend (by month)
