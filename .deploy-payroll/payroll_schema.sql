@@ -192,3 +192,17 @@ CREATE TABLE IF NOT EXISTS payroll.sync_log (
 --   team_incentive = team_sales / 1.1 * (team_sales >= threshold ? high_rate : base_rate)  (team_incentive=true 이고 override 팀매출 있을 때)
 --   total_pay = duty_allowance + billed + team_incentive - (billed * card_fee_rate + parking_fee)
 --   promo_count = Σ O where remark like '%프로모션%' ; promo_fee = promo_count * promo_unit
+
+-- 설정_열람권한 (매니저 지시 2026-09-17: A강사 페이롤 = 본인 · 팀장 · 경영지원부 · 관리부)
+CREATE TABLE IF NOT EXISTS payroll.viewer_scope (
+  account      text PRIMARY KEY,               -- 계정 (ERP 로그인 이메일)
+  scope        text NOT NULL,                  -- 범위: 전체 | 팀 | 본인
+  teams        text,                           -- 팀 (범위=팀, 쉼표 구분)
+  instructors  text,                           -- 강사명 (범위=본인, 쉼표 구분)
+  note         text,
+  updated_at   timestamptz
+);
+-- 적용 규칙: 조회·수집·보정·증빙·마감 요청의 viewer(로그인 계정)로 범위를 정한다.
+--   전체 = 모든 강사 · 팀 = teams 에 속한 강사 · 본인 = instructors 에 적힌 강사.
+--   관리 기능(수집·보정·설정·증빙·마감)은 전체 범위 계정만. 서버 이관 뒤에는 viewer 를 믿지 말고
+--   erp_auth 가 넣는 X-Erp-User 헤더로 판정할 것(시트 단계에서는 화면 비밀번호가 1차 잠금).
