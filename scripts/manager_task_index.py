@@ -2597,13 +2597,16 @@ def regenerate_and_publish(reason: str = "") -> bool:
     import subprocess
     import sys
     try:
-        OUT.write_text(build(), encoding="utf-8")
+        html = build()
+        if not PAGE_RETIRED:          # 은퇴 뒤(2026-09-18 · 배 12730 삭제)엔 HTML 을 다시 만들지 않는다 — json 산출만
+            OUT.write_text(html, encoding="utf-8")
     except Exception as exc:
         print(f"[mgr] 재생성 실패: {type(exc).__name__}: {exc}")
         return False
     msg = "chore(mgr): 중간관리자 업무 화면 바로 반영" + (f" — {reason}" if reason else "")
     cmd = [sys.executable, str(ROOT / "scripts" / "safe_commit.py"),
-           str(OUT.relative_to(ROOT)), str(HIST_PATH.relative_to(ROOT)), str(SNAP_PATH.relative_to(ROOT)),
+           *([] if PAGE_RETIRED else [str(OUT.relative_to(ROOT))]),
+           str(HIST_PATH.relative_to(ROOT)), str(SNAP_PATH.relative_to(ROOT)),
            "-m", msg, "--holder", "mgr_publish"]
     try:
         proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, timeout=300)
@@ -2646,5 +2649,9 @@ if __name__ == "__main__":
     elif args.publish:
         raise SystemExit(0 if regenerate_and_publish(args.reason) else 1)
     else:
-        OUT.write_text(build(), encoding="utf-8")
-        print(f"[manager_task_index] {OUT.relative_to(ROOT)} · {OUT.stat().st_size:,} bytes")
+        html = build()
+        if PAGE_RETIRED:
+            print("[manager_task_index] 화면은 은퇴(2026-09-18 삭제) — json 산출만 갱신했다")
+        else:
+            OUT.write_text(html, encoding="utf-8")
+            print(f"[manager_task_index] {OUT.relative_to(ROOT)} · {OUT.stat().st_size:,} bytes")
