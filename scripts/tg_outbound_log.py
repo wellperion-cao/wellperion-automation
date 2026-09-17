@@ -321,6 +321,11 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         need = 30 + int(len(file_bytes) / (1024 * 1024) * 30)
         timeout = max(timeout, 60, need)
 
+    # 2026-09-18 시토: 텔레그램 상한(글 4096 · 캡션 1024)을 넘기면 400 'text is too long' 으로 조용히 실패한다
+    #   (09-17 11:17 낡은 판 경보 21통이 전부 GM 방에 안 닿았다). 관문 한 곳에서 잘라 보낸다 — 잘린 글은 끝에 표시.
+    _cap = 1024 if kind in ('sendPhoto', 'sendDocument') else 4096
+    if text and len(text) > _cap:
+        text = text[:_cap - 12] + '\n…(잘림)'
     payload = {'chat_id': chat_id, _TEXT_FIELD.get(kind, 'text'): text}
     if extra:
         payload.update(extra)
