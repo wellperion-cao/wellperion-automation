@@ -495,57 +495,61 @@ GM_WORK_LINE_OF = {
 GM_WORK_OUTSIDE = {"박수철 대표", "박수철 대표님"}   # 회사 밖 인사 — 실무진 아침 통에 싣지 않는다
 
 
-def gm_work_items_by_person(today: "date | None" = None) -> dict:
-    """GM업무 카드(월간운영계획의 「(GM 직접)」 목표) 중 열린 것을 담당자별로 묶는다.
+_SSOT_CLOSED = {"완료", "종결", "취소"}
 
-    GM 지시 2026-09-09 「GM업무 및 각 중간관리자 업무들 정리해줘, 이걸로 아침마다 전달하면 될듯」.
-    담당은 GM업무 화면의 담당 칸(GM_TASK_OWNERS 보드)이 정본이다 — 여기서 추론하지 않는다.
+
+def gm_work_items_by_person(today: "date | None" = None, rows: "list | None" = None) -> dict:
+    """업무&결재 SSOT 의 열린 행을 담당자별로 묶는다.
+
+    ★2026-09-17 원천 교체(GM 「업무 SSOT 로 단일화」) — 종전엔 월간운영계획의 GM 카드를 읽었는데
+    그 카드 41장이 같은 날 SSOT 행으로 이관돼 두 곳에서 같은 건이 나왔다. 이제 담당자 칸이 정본이고
+    카드·중간관리자 원장의 업무는 읽지 않는다(원장은 회신 소통건만).
     담당이 비었거나 김남욱 GM 이면 실무진에게 보낼 것이 아니므로 뺀다.
     반환 {사람: [{'ask': '[GM업무] 제목 — 기한 M/D', 'date': 'YYYY-MM-DD'}...]} — 다른 절(build_asks_section·
     build_nawool_telegram_message)이 쓰는 모양 그대로라 새 렌더러를 만들지 않는다.
     """
     today = today or date.today()
-    try:
-        plan = json.loads(GM_PLAN_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    owners = _fetch_gm_task_owners()
     out: dict = {}
-    for month in (plan.get("months") or {}).values():
-        for o in month.get("objectives") or []:
-            title = str(o.get("title") or "")
-            if "(GM 직접)" not in title or o.get("status") == "완료":
-                continue
-            who = str(owners.get(str(o.get("id")), "") or "").strip()
-            if not who or who.startswith("김남욱"):
-                continue
-            due = str(o.get("due") or "").strip()[:10]
-            name = title.replace("(GM 직접)", "").strip()
-            tail = ""
-            if due:
-                try:
-                    d = date.fromisoformat(due)
-                    left = (d - today).days
-                    tail = f" — {d.month}/{d.day}" + (" 지남" if left < 0 else (" 오늘" if left == 0 else f" (D-{left})"))
-                except ValueError:
-                    tail = f" — {due}"
-            # 한 카드에 「실장 + 팀원」처럼 여러 이름이 붙어도 라인장 통에는 한 줄만 간다 —
-            # 팀원 이름은 그 줄 끝에 모아 붙인다(같은 카드가 두 줄로 겹치던 것 · 2026-09-09 실측).
-            routed: dict = {}
-            for one in [w.strip() for w in re.split(r"[+·,]", who) if w.strip()]:
-                if one in GM_WORK_OUTSIDE:
-                    continue                      # 외부 인사(대표·업체)는 실무진 통에 싣지 않는다
-                line = GM_WORK_LINE_OF.get(one, one)
-                if line not in _NUDGE_MEMBERS:
-                    continue                      # 3라인 셋 밖이면 보낼 방이 없다 — 조용히 뺀다(배855 판단 그대로)
-                members = routed.setdefault(line, [])
-                if line != one and one not in members:
-                    members.append(one)
-            for line, members in routed.items():
-                mark = f" (담당 {' · '.join(members)})" if members else ""
-                out.setdefault(line, []).append({"ask": f"[GM업무] {name}{tail}{mark}",
-                                                 "date": due or "9999-99-99"})
+    for r in rows if rows is not None else _fetch_todo_rows():
+        if not isinstance(r, dict):
+            continue
+        if str(r.get("상태") or "") in _SSOT_CLOSED:
+            continue
+        who = str(r.get("담당자") or "").strip()
+        if not who or who.startswith("김남욱"):
+            continue
+        due = _ymd(r.get("종료일"))
+        name = str(r.get("업무명") or "").replace("(GM 직접)", "").strip()   # 이관된 행 제목의 카드 표식은 실무진 통에서 뺀다
+        if not name:
+            continue
+        tail = ""
+        if due:
+            try:
+                d = date.fromisoformat(due)
+                left = (d - today).days
+                tail = f" — {d.month}/{d.day}" + (" 지남" if left < 0 else (" 오늘" if left == 0 else f" (D-{left})"))
+            except ValueError:
+                tail = f" — {due}"
+        # 한 행에 「실장 + 팀원」처럼 여러 이름이 붙어도 라인장 통에는 한 줄만 간다 —
+        # 팀원 이름은 그 줄 끝에 모아 붙인다(같은 건이 두 줄로 겹치던 것 · 2026-09-09 실측).
+        routed: dict = {}
+        for one in [w.strip() for w in re.split(r"[+·,]", who) if w.strip()]:
+            if one in GM_WORK_OUTSIDE:
+                continue                      # 외부 인사(대표·업체)는 실무진 통에 싣지 않는다
+            line = GM_WORK_LINE_OF.get(one, one)
+            if line not in _NUDGE_MEMBERS:
+                continue                      # 3라인 셋 밖이면 보낼 방이 없다 — 조용히 뺀다(배855 판단 그대로)
+            members = routed.setdefault(line, [])
+            if line != one and one not in members:
+                members.append(one)
+        for line, members in routed.items():
+            mark = f" (담당 {' · '.join(members)})" if members else ""
+            out.setdefault(line, []).append({"ask": f"[업무] {name}{tail}{mark}",
+                                             "date": due or "9999-99-99"})
     return out
+
+
+GM_WORK_SHOW_N = 7        # 사람당 통에 싣는 줄 수 — 기한 빠른 순. 나머지는 화면에서 본다
 
 
 def build_gm_work_section(by_person: dict, skip: "set | None" = None) -> str:
@@ -556,10 +560,14 @@ def build_gm_work_section(by_person: dict, skip: "set | None" = None) -> str:
         if who in skip:
             continue
         items = sorted(by_person[who], key=lambda x: x.get("date") or "9999-99-99")
-        blocks.append([f"▪ {who}"] + [f"   {it['ask']}" for it in items])
+        shown = items[:GM_WORK_SHOW_N]
+        lines = [f"▪ {who}"] + [f"   {it['ask']}" for it in shown]
+        if len(items) > len(shown):
+            lines.append(f"   그 밖 {len(items) - len(shown)}건 — 업무 SSOT 화면에서 보시면 됩니다")
+        blocks.append(lines)
     if not blocks:
         return ""
-    head = f"🧭 GM업무 — 담당 몫 {sum(len(b) - 1 for b in blocks)}건"
+    head = f"🧭 업무 — 담당 몫 {sum(len(v) for k, v in by_person.items() if k not in skip)}건"
     tail = "👉 진행 상황은 건마다 한 줄(했다 / 진행중 / 언제)로 답해 주시면 됩니다."
     return "\n".join([head] + [l for b in blocks for l in b] + [tail])
 
@@ -595,8 +603,16 @@ def _selfcheck_done_filter() -> None:
 
 def _selfcheck_gm_work_section() -> None:
     """세 가지: ①담당 빈칸·GM 몫은 안 실린다 ②「+」로 묶인 담당은 사람별로 갈린다 ③skip 한 사람은 빠진다."""
-    sample = {"이경연 실장": [{"ask": "[GM업무] 가 — 9/30 (D-1)", "date": "2026-09-30"}],
-              "나우열M": [{"ask": "[GM업무] 나 — 9/30 (D-1)", "date": "2026-09-30"}]}
+    rows = [{"상태": "진행중", "담당자": "최준용M", "업무명": "상가 안내물", "종료일": "2026-09-30"},
+            {"상태": "진행중", "담당자": "김남욱GM", "업무명": "GM 몫", "종료일": "2026-09-30"},
+            {"상태": "완료", "담당자": "이정헌 소장", "업무명": "끝난 일", "종료일": "2026-09-30"},
+            {"상태": "진행중", "담당자": "", "업무명": "담당 빈칸", "종료일": "2026-09-30"}]
+    by = gm_work_items_by_person(today=date(2026, 9, 29), rows=rows)
+    assert list(by) == ["이경연 실장"], by            # 팀원 건은 라인장(실장) 묶음으로 · GM·완료·빈칸은 빠진다
+    assert "(담당 최준용M)" in by["이경연 실장"][0]["ask"], by
+    assert "[업무]" in by["이경연 실장"][0]["ask"], by
+    sample = {"이경연 실장": [{"ask": "[업무] 가 — 9/30 (D-1)", "date": "2026-09-30"}],
+              "나우열M": [{"ask": "[업무] 나 — 9/30 (D-1)", "date": "2026-09-30"}]}
     body = build_gm_work_section(sample, skip={"나우열M"})
     assert "이경연 실장" in body and "나우열M" not in body, body
     assert body.splitlines()[0].endswith("1건"), body
@@ -774,6 +790,10 @@ def _ledger_open_candidates(ledger: list, owners: "list | None" = None,
             owner = str(it.get("owner") or "").strip()
             title = str(it.get("issue") or "").strip()
             if not title or str(it.get("status") or "") != "open":
+                continue
+            # ★2026-09-17 — 원장에서 꺼내는 것은 회신 소통건(kind=="reply")뿐이다. 업무성 항목은
+            # 업무 SSOT 한 곳에서만 읽는다(GM 「업무 SSOT 로 단일화」 · 같은 건이 두 통에 나오던 자리).
+            if str(it.get("kind") or "") != "reply":
                 continue
             if owners is not None and owner not in owners:
                 continue
