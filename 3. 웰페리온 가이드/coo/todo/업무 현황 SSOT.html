@@ -923,6 +923,16 @@ const OWNER_COLORS = {
   '윤병현AM':    OWNER_CHIP,
   '백승화 사원': OWNER_CHIP
 };
+  /* ★GM 2026-09-17 — 이름 칩 = 옅은 배경 + 같은 계열 진한 글자(카테고리 칩과 같은 방식).
+     결재 현황 화면과 같은 색 표로 맞춘다. 운영부 회신이 오면 이 줄만 사람별로 바꾼다. */
+OWNER_COLORS['이경연 실장'] = {bg:'var(--blue-bg)',   color:'var(--blue)'};
+OWNER_COLORS['이정헌 소장'] = {bg:'var(--green-bg)',  color:'var(--green)'};
+OWNER_COLORS['나우열M']     = {bg:'var(--purple-bg)', color:'var(--purple)'};
+OWNER_COLORS['최준용M']     = {bg:'var(--accent-bg)', color:'var(--accent)'};
+OWNER_COLORS['임정은M']     = {bg:'var(--red-bg)',    color:'var(--red)'};
+OWNER_COLORS['백승화 사원'] = {bg:'var(--orange-bg)', color:'var(--orange)'};
+OWNER_COLORS['진수아 사원'] = {bg:'var(--yellow-bg)', color:'var(--yellow)'};
+OWNER_COLORS['김남욱GM']    = {bg:'var(--accent-bg)', color:'var(--text)'};
   /* ★GM 지시 2026-09-17 — 윤병현AM 은 무지개 그라데이션. inline background 로 들어가므로
      칩·담당자 필터 단추·표 머리까지 같은 색이 한 번에 먹는다. */
 OWNER_COLORS['윤병현AM'] = {
