@@ -765,13 +765,13 @@
           "ref": "GM-20260917-1077",
           "no": "77",
           "got": "C레벨 관제판에 배편이 있는데, 팩트인거지?",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "19:06",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:10",
+          "minutes": 4,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260917-B",
@@ -919,12 +919,6 @@
         }
       ],
       "work": [
-        {
-          "time": "14:27",
-          "area": "실무진장애",
-          "event": "이경연 실장 권한 없음(/home) 해결",
-          "detail": "원인 = 아침 /home 전환이 카드·루트 판정에 걸려 14:13~14:26 실무진 전원 권한 없음(관리자 세션으로만 재서 놓침) · 시토 관문 2곳 열고 배포 14:26 · 실장 토큰 /home 정상 · 나우열M 께 시토가 회신"
-        },
         {
           "time": "14:33",
           "area": "실무진장애",
@@ -1098,31 +1092,22 @@
           "area": "작업",
           "event": "docs(todo): 업무 올리는 법 — 카테고리 목록 개편 반영 [GM 지시 2026-09-17]",
           "detail": "커밋 b085ffe227 · 배 12714"
+        },
+        {
+          "time": "19:11",
+          "area": "작업",
+          "event": "fix(console): 관제판 생존 신호 open_ships 가 큐(리스트)에서 항상 0 — 리스트 판정 순서 수정",
+          "detail": "커밋 0144808c7f · 배 12714"
         }
       ],
       "count": 76,
-      "done": 75,
-      "open": 1,
+      "done": 76,
+      "open": 0,
       "avg_minutes": 31,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-1077",
-          "no": "77",
-          "got": "C레벨 관제판에 배편이 있는데, 팩트인거지?",
-          "did": "",
-          "start": "19:06",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -1721,7 +1706,7 @@
           "start": "19:02",
           "end": "19:02",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (4141b717c)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1733,7 +1718,7 @@
           "start": "19:02",
           "end": "19:04",
           "minutes": 1,
-          "upload": "기록만",
+          "upload": "✅ 배포 (4141b717c)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -2132,7 +2117,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 10
         }
       ],
       "repeats": []
@@ -2636,13 +2621,13 @@
           "ref": "GM-20260917-3047",
           "no": "47",
           "got": "업무 현황 SSOT 카드들 보면 뭔가 연결되게끔 되어있는데, 그냥 카드 딱 사이즈 고정해서 딱딱닥 정렬이 밸런스가 맞게 되면 안되나?",
-          "did": "",
+          "did": "[GM 지시 2026-09-17] 업무 현황 SSOT 카드 격자 — 보드 등폭 3열 그리드(가로 스크롤 대신 3→2→1열) · · 규격 3일차 A — labs_home.html (GM 화면 정돈 3·4·15번 2026-09-17) · 규격 3일차 A — screens.html (GM 화면 정돈 3·4·15번 2026-09-17) 외 1건 · style(spec): 규격 3일차 A — screens.html (GM — 커밋 1b29c2f528 · 배 12734 · style(spec): 규격 3일차 A — labs_home.html ( — 커밋 0b4e1aa281 · 배 12734 외 1건",
           "start": "19:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:08",
+          "minutes": 7,
+          "upload": "✅ 배포 (1b29c2f52)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-design-decisions",
@@ -2682,24 +2667,6 @@
         }
       ],
       "work": [
-        {
-          "time": "16:34",
-          "area": "작업",
-          "event": "fix(ax-blog): AX 랩스 블로그 style 에 state_file·log_file 누락 보강(dry-run KeyError) · 첫 편 초안(축 왜 · 센터 대표의 하루는 어디로 새는가) 통과판 저장 —",
-          "detail": "커밋 875ff6c97e · 배 12691"
-        },
-        {
-          "time": "16:34",
-          "area": "배",
-          "event": "배 2694 첫 편 초안 통과판 저장 · 배 2536 옛 주소 히트 실측(사무실 IP 50건·사람 0) → 301 유지 판정",
-          "detail": "status/drafts/AX 랩스블로그_초안_20260917_왜.md · nginx access.log 실측"
-        },
-        {
-          "time": "16:37",
-          "area": "디자인",
-          "event": "계정·로그인·가입·권한없음 화면 디자인 검수(시토 요청 · GM 16:2x) — 수정 7건 줄번호+CSS 로 시토에 전달",
-          "detail": "이중 상자·hint 겹침·폰 16px·명암비·터치 44·reduced-motion"
-        },
         {
           "time": "16:45",
           "area": "디자인",
@@ -2861,31 +2828,34 @@
           "area": "작업",
           "event": "style(ssot): [GM 지시 2026-09-17] 업무 현황 SSOT 카드 격자 — 보드 등폭 3열 그리드(가로 스크롤 대신 3→2→1열) · 카드 같은 높이 188px · 안쪽 제목 2줄/칩 2줄/요약 1줄",
           "detail": "커밋 f7ba8a9114 · 배 12734"
+        },
+        {
+          "time": "19:10",
+          "area": "작업",
+          "event": "style(spec): 규격 3일차 A — index.html (GM 화면 정돈 3·4·15번 2026-09-17)",
+          "detail": "커밋 89b80f21c3 · 배 12734"
+        },
+        {
+          "time": "19:11",
+          "area": "작업",
+          "event": "11386 부록 E 재점검(9/18 채널 계정) — 프로필 사진 출처를 시모 로고 정본(_assets/logo/axlabs/axlabs_symbol.svg)으로 정정 · 회사명·한 줄·아이디·링크는 최신 확정값과 일",
+          "detail": "커밋 580dc850dd · 배 12734"
+        },
+        {
+          "time": "19:12",
+          "area": "작업",
+          "event": "style(spec): 규격 3일차 B — home/tour·index·en·dietcamp intro (GM 화면 정돈 3·4번 2026-09-17)",
+          "detail": "커밋 03477a9ab9 · 배 12734"
         }
       ],
       "count": 45,
-      "done": 44,
-      "open": 1,
+      "done": 45,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-3047",
-          "no": "47",
-          "got": "업무 현황 SSOT 카드들 보면 뭔가 연결되게끔 되어있는데, 그냥 카드 딱 사이즈 고정해서 딱딱닥 정렬이 밸런스가 맞게 되면 안되나?",
-          "did": "",
-          "start": "19:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 7
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -3244,7 +3214,7 @@
           "start": "19:05",
           "end": "19:05",
           "minutes": 0,
-          "upload": "✅ 배포 (ecf5dba8c)",
+          "upload": "✅ 배포 (37d0740f3)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -3595,7 +3565,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 9
         }
       ],
       "repeats": [
@@ -4067,18 +4037,6 @@
       ],
       "work": [
         {
-          "time": "13:42",
-          "area": "작업",
-          "event": "docs(chairman): 바이크 3사 A3 6차 — 방향 밴드의 6대 합계 중복 삭제(표 마지막 줄 한 곳만) · 제품 사진 100→172px · 가격 글자 14.5→17px(GM 09-17 13:4x)",
-          "detail": "커밋 8ced18248b · 배 12716"
-        },
-        {
-          "time": "13:50",
-          "area": "작업",
-          "event": "docs(chairman): 브로제이 턴게이트 A3 5차 — 남자사우나·여자사우나 2장 설치 확정본(원본·합성 봉·합성 유리 · 바이크 A3 셋업 동일) · 여자사우나 견적 미수령 표기 · 다음=네고 요청 4가지 [",
-          "detail": "커밋 cad9af70a2 · 배 12716"
-        },
-        {
           "time": "13:51",
           "area": "작업",
           "event": "docs(chairman): 바이크 3사 A3 7차 — 2장(좌식)에서 중복 삭제(방향 밴드·6대 합계 행·각주 3줄) · 남은 자리만큼 좌식 사진 확대 [GM 지시 2026-09-17]",
@@ -4245,6 +4203,18 @@
           "area": "작업",
           "event": "feat(ssot): [GM 지시 2026-09-17] 이름 색 — GM 청록 그라데이션 · 백승화 사원 루피 그라데이션 (+시토 평가점수 ⓘ)",
           "detail": "커밋 3a154c6049 · 배 12716"
+        },
+        {
+          "time": "19:10",
+          "area": "작업",
+          "event": "feat(cat): [GM 지시 2026-09-17] 업무 카테고리 개편 — 화면·스크립트 8곳",
+          "detail": "커밋 7b1b76d72d · 배 12733"
+        },
+        {
+          "time": "19:13",
+          "area": "작업",
+          "event": "feat(cat): [GM 지시 2026-09-17] 업무 현황 SSOT 도 새 카테고리 목록으로",
+          "detail": "커밋 ae7008b6c8 · 배 12733"
         }
       ],
       "count": 37,
@@ -4570,7 +4540,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T19:07:50",
+    "published_at": "2026-09-17T19:14:20",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -4578,13 +4548,13 @@
         "alive": true,
         "signal": "19:00",
         "last": {
-          "time": "19:06",
-          "area": "GM지시",
-          "event": "업무 SSOT 카테고리 개편",
+          "time": "19:11",
+          "area": "작업",
+          "event": "fix(console): 관제판 생존 신호 open_ships 가 큐(리스트)에서 항상 0 — 리스트 판정 순서 수정",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 94
+        "saves": 95
       },
       "cto": {
         "nick": "시토",
@@ -4598,7 +4568,7 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 118
+        "saves": 120
       },
       "cmo": {
         "nick": "시모",
@@ -4606,13 +4576,13 @@
         "alive": true,
         "signal": "19:00",
         "last": {
-          "time": "19:06",
+          "time": "19:12",
           "area": "작업",
-          "event": "style(spec): 규격 3일차 A — labs_home.html (GM 화면 정돈 3·4·15번 2026-09-17)",
+          "event": "style(spec): 규격 3일차 B — home/tour·index·en·dietcamp intro (GM 화면 정돈 3·4번 2026-09-17)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 55
+        "saves": 58
       },
       "cpo": {
         "nick": "시포",
@@ -4620,13 +4590,13 @@
         "alive": false,
         "signal": "17:15",
         "last": {
-          "time": "19:06",
-          "area": "강습",
-          "event": "fix(report): 운영 현황 보고 — 자체 점검 줄을 제목 「AI 시포」 배지 오른쪽 같은 줄로(3면) · 4면 강습 담당별 매출 맨 아래 슬로건 띠(다른 면과 같게) (GM 2026-09-17 19:0x)",
+          "time": "19:08",
+          "area": "공통",
+          "event": "fix(report): 일 단위 7일 띠 잘림 수리 · 그 밖의 매출 타일을 굿즈(오넛티)·팝업(이엘리)로 [GM 2026-09-17]",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 50
+        "saves": 51
       },
       "coo": {
         "nick": "시우",
@@ -4634,13 +4604,13 @@
         "alive": true,
         "signal": "19:00",
         "last": {
-          "time": "18:56",
+          "time": "19:13",
           "area": "작업",
-          "event": "feat(ssot): [GM 지시 2026-09-17] 이름 색 — GM 청록 그라데이션 · 백승화 사원 루피 그라데이션 (+시토 평가점수 ⓘ)",
+          "event": "feat(cat): [GM 지시 2026-09-17] 업무 현황 SSOT 도 새 카테고리 목록으로",
           "result": "ok"
         },
-        "idle_since": "18:57",
-        "saves": 45
+        "idle_since": null,
+        "saves": 50
       },
       "cbo": {
         "nick": "시보",
@@ -4654,7 +4624,7 @@
           "result": "ok"
         },
         "idle_since": "19:01",
-        "saves": 35
+        "saves": 36
       }
     }
   }
