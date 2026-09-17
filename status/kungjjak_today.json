@@ -498,6 +498,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-1050",
+          "no": "50",
+          "got": "오늘 그럼 대표님 결재 올릴건이 턴게이트(완료), 장비 3사 바이크 네고완료건 이게 다인가?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "16:58",
+          "end": "16:59",
+          "minutes": 0,
+          "upload": "✅ 배포 (038326e71)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -643,12 +655,6 @@
         }
       ],
       "work": [
-        {
-          "time": "11:24",
-          "area": "작업",
-          "event": "평가 단일화 — ERP 관리자 페이지 평가 탭 + 옛 자리 3곳 정리 (GM 지시 9/17)",
-          "detail": "커밋 ba64de04cd · 배 12714"
-        },
         {
           "time": "11:41",
           "area": "작업",
@@ -822,12 +828,18 @@
           "area": "작업",
           "event": "업무시스템 화면 은퇴 — 업무 현황 SSOT(?owner=) 한 화면으로(GM 지시 9/17 16:5x) · GM업무·업무목차 스텁도 SSOT 로 · 빌더는 평가 탭용 json 만",
           "detail": "커밋 c36d5b3ad3 · 배 12714"
+        },
+        {
+          "time": "17:01",
+          "area": "작업",
+          "event": "chore(erp): 카드 표에서 GM업무·업무시스템 카드 내림 — 실무진 업무 카드 = 업무 현황 SSOT 하나(GM 2026-09-17 16:5x · 웰리 전달)",
+          "detail": "커밋 97b3fdb4b8 · 배 12714"
         }
       ],
-      "count": 53,
-      "done": 53,
+      "count": 54,
+      "done": 54,
       "open": 0,
-      "avg_minutes": 44,
+      "avg_minutes": 43,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
@@ -1226,7 +1238,7 @@
           "start": "16:56",
           "end": "16:56",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (cfc776690)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1238,7 +1250,7 @@
           "start": "16:56",
           "end": "16:57",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (cfc776690)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -1246,8 +1258,20 @@
           "ref": "GM-20260917-2703",
           "no": "703",
           "got": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
-          "did": "",
+          "did": "화면 정돈 13번 — 셸 없는 5장(상담 자동화·아이디어·관제판·FAQ·상담 내역)이 단독으로 열리면 관리자 셸(#view)",
           "start": "16:57",
+          "end": "17:00",
+          "minutes": 3,
+          "upload": "✅ 배포 (cfc776690)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-2704",
+          "no": "704",
+          "got": "오넛티것을 병현AM이 구글 스크립트로 구성해버렸네? 이거 병현AM 업무 SSOT에 연동해놓은거지? https://script.google.com/a/macros/wellperion.com/s/AKfycbxbF9Q6F…",
+          "did": "",
+          "start": "17:00",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1437,12 +1461,6 @@
       ],
       "work": [
         {
-          "time": "13:22",
-          "area": "작업",
-          "event": "fix(hr): 적재기 수정 4건 — 온보딩 완료 빈값 기본값·보드명단 헤더 문자 그대로·rollback board_roster·근무변경 상태 기본값 + selftest NOT NULL 검사 [나우열M 요청 2026",
-          "detail": "커밋 6002b576c9 · 배 12715"
-        },
-        {
           "time": "13:23",
           "area": "작업",
           "event": "fix(chat): 상담봇 서버 수리 5건 — 휴관 판정 테넌트별·policies 비dict 가드·admin/cost 관리자 판정 통일·마스킹 질문만·랩스 소개 .back 링크 제거 (시보 감사 2026-09-17)",
@@ -1615,10 +1633,16 @@
           "area": "작업",
           "event": "fix(check): 시설부 체계 보드 3키 더(매뉴얼 보드·가이드·거래업체 보드) 거울에 — 남은 GAS 폴백 2건",
           "detail": "커밋 b002a97705 · 배 12715"
+        },
+        {
+          "time": "17:01",
+          "area": "작업",
+          "event": "feat(admin): 화면 정돈 13번 — 셸 없는 5장(상담 자동화·아이디어·관제판·FAQ·상담 내역)이 단독으로 열리면 관리자 셸(#view) 안으로 · FAQ·상담 내역을 셸 화면으로 등록(새 탭 대신) ·",
+          "detail": "커밋 8ffb513c1b · 배 12715"
         }
       ],
-      "count": 49,
-      "done": 48,
+      "count": 50,
+      "done": 49,
       "open": 1,
       "avg_minutes": 7,
       "work_count": 30,
@@ -1626,18 +1650,18 @@
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-2703",
-          "no": "703",
-          "got": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
+          "ref": "GM-20260917-2704",
+          "no": "704",
+          "got": "오넛티것을 병현AM이 구글 스크립트로 구성해버렸네? 이거 병현AM 업무 SSOT에 연동해놓은거지? https://script.google.com/a/macros/wellperion.com/s/AKfycbxbF9Q6F…",
           "did": "",
-          "start": "16:57",
+          "start": "17:00",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 2
         }
       ],
       "repeats": []
@@ -2090,6 +2114,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-design-decisions",
+          "no": "ns",
+          "got": "화면 정돈 제안서 GM 번호 답 16건 반영 — 2번(다크 7장 베이지) 4e1a49c26 · 9번(영문 정원제) b19f70969 · 10번 ddc296e55 · 12·14번(AX 9장) 6ce760551 · 6·7·8 시우/시포 · 13 시토 · 15 웰리 전달 · 3·4 레인 2개 가동 · 1·5·11·16 안 함",
+          "did": "접수처 잠금 8장은 GM 해제 뒤",
+          "start": "17:02",
+          "end": "17:02",
+          "minutes": 0,
+          "upload": "✅ 배포 (0e8a9dd24)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-design-proposal-dc-out",
           "no": "ut",
           "got": "화면 정돈 제안서 v3 — 다이어트캠프 제외(11번·요약 행·7번 다캠 홈) · 1호점 먼저 · 2호점 이상 벤치마킹",
@@ -2234,13 +2270,25 @@
           "area": "작업",
           "event": "fix(home): 시설둘러보기360 대기 문구에서 「시험 화면입니다」 제거 — 손님 화면 내부 표기 금지 · GM 화면 정돈 10번",
           "detail": "커밋 ddc296e556 · 배 12691"
+        },
+        {
+          "time": "16:58",
+          "area": "작업",
+          "event": "fix(brand): 대외 영문 포지셔닝 members-only/PRIVATE → Limited-Enrollment Sports Club(정원제) — 새 홈 국·영·홈페이지.html 메타(프라이빗 멤버십→정원제)·F",
+          "detail": "커밋 b19f70969a · 배 12691"
+        },
+        {
+          "time": "17:02",
+          "area": "작업",
+          "event": "style(ax): AX 랩스 화면 9장 브랜드 정돈 — gate.js 브랜드 분기(html[data-brand=ax] → 민트+틸 · AX LABS · 로직 무변경) · model 문서 5장 남색→AX 토큰·머리",
+          "detail": "커밋 6ce760551c · 배 12691"
         }
       ],
-      "count": 39,
-      "done": 39,
+      "count": 40,
+      "done": 40,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 20,
+      "work_count": 22,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2676,13 +2724,19 @@
           "area": "공통",
           "event": "fix(home): 문의 원장 읽기를 쪽 나눠 받는다 — 올해 1,044건이 1,000건 한도에 잘리던 것",
           "detail": "커밋 0a6cf902a6 · 배 12523"
+        },
+        {
+          "time": "17:01",
+          "area": "강습",
+          "event": "feat(loss): LOSS 사유에 '시간대 안 맞음' 추가 (강습부 박민서 팀장 요청 FB260917-165117)",
+          "detail": "커밋 e5c3a219d7 · 배 12523"
         }
       ],
       "count": 24,
       "done": 24,
       "open": 0,
       "avg_minutes": 9,
-      "work_count": 23,
+      "work_count": 24,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -3187,13 +3241,19 @@
           "area": "배12726",
           "event": "07:50·저녁 통 업무 원천을 업무 SSOT 로 전환",
           "detail": "e13883c618 원천 교체(GM 카드 읽기 제거·원장 reply 만·사람당 7줄) + 36df20aa20 기한 지난 행 한 줄 안내 · 자체점검 3종 통과 · 내일 통 본문 웰리 확인(그대로 발송)"
+        },
+        {
+          "time": "17:01",
+          "area": "작업",
+          "event": "fix(ui): 화면 정돈 3건 — 전사_일정 임박 순 기본 접힘 + 🔥임박순 팝업 버튼 제거 · 게시물_프로필월·브로제이_업무분장 나란한 칸 바닥선 맞춤 · 시설부 체계 폰 탭 끝 그림자 [GM 지시 2026-09",
+          "detail": "커밋 b5214dfcf9 · 배 12716"
         }
       ],
       "count": 27,
       "done": 27,
       "open": 0,
       "avg_minutes": 3,
-      "work_count": 27,
+      "work_count": 28,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -3278,13 +3338,25 @@
           "ref": "GM-20260917-9009",
           "no": "09",
           "got": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
-          "did": "",
+          "did": "브랜드자료 카드 8칸 → 14칸 — 매일 쌓이는 것 6칸(사진·영상 인박스 · 이벤트 소재 · 코치 프로필 · 규정·요금 원문 · 브랜드자료 카드 8칸 → 14칸 — 매일 쌓이는 것 6칸(사진·영상 인박 — 커밋 9dba369dbb · 배 11386",
           "start": "16:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "17:00",
+          "minutes": 4,
+          "upload": "✅ 배포 (9dba369db)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-9010",
+          "no": "10",
+          "got": "아 매일 쌓이는 것 6칸 만들면 뭘 했는지도 파악이 가능하긴하겠네? 근데 데이터가 너무 쌓일것같네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "17:01",
+          "end": "17:02",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -3383,31 +3455,22 @@
           "area": "작업",
           "event": "관리자 판 — 파트너 카드 그리드 고정 3열 · 브랜드자료 8칸 통일(GM 지시 2026-09-17)",
           "detail": "커밋 368f4d33d2 · 배 11386"
+        },
+        {
+          "time": "16:59",
+          "area": "작업",
+          "event": "브랜드자료 카드 8칸 → 14칸 — 매일 쌓이는 것 6칸(사진·영상 인박스 · 이벤트 소재 · 코치 프로필 · 규정·요금 원문 · 손님 질문 글감 · 발행 목록) (GM 2026-09-17 「매일 콘텐츠 자료 받을",
+          "detail": "커밋 9dba369dbb · 배 11386"
         }
       ],
-      "count": 7,
-      "done": 6,
-      "open": 1,
-      "avg_minutes": 6,
-      "work_count": 16,
+      "count": 8,
+      "done": 8,
+      "open": 0,
+      "avg_minutes": 5,
+      "work_count": 17,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-9009",
-          "no": "09",
-          "got": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
-          "did": "",
-          "start": "16:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
@@ -3419,91 +3482,91 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T16:58:00",
+    "published_at": "2026-09-17T17:02:38",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-68",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:57",
-          "area": "GM지시",
-          "event": "업무시스템 화면 은퇴 — 업무 현황 SSOT 한 화면",
+          "time": "17:01",
+          "area": "작업",
+          "event": "chore(erp): 카드 표에서 GM업무·업무시스템 카드 내림 — 실무진 업무 카드 = 업무 현황 SSOT 하나(GM 2026-09-17 16:5x · 웰리 전달)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 87
+        "saves": 88
       },
       "cto": {
         "nick": "시토",
         "session": "welperion-automation-fc",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:57",
-          "area": "GM요청",
-          "event": "우선해서 오넛티 판매 현황 사이트에 개인정보가 노출이 되는데 마스킹해줄 수 있어? 그리고 외부에서 들어와서 볼려면 가입을 해야하는건가? 아니면 코드번호로만 볼 수 있나? 시크릿창으로 한번 열어줄래? 내가 해볼게",
-          "result": "warn"
+          "time": "17:01",
+          "area": "작업",
+          "event": "feat(admin): 화면 정돈 13번 — 셸 없는 5장(상담 자동화·아이디어·관제판·FAQ·상담 내역)이 단독으로 열리면 관리자 셸(#view) 안으로 · FAQ·상담 내역을 셸 화면으로 등록(새 탭 대신) ·",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 98
+        "saves": 100
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:56",
-          "area": "작업",
-          "event": "fix(home): 시설둘러보기360 대기 문구에서 「시험 화면입니다」 제거 — 손님 화면 내부 표기 금지 · GM 화면 정돈 10번",
+          "time": "17:02",
+          "area": "GM지시",
+          "event": "화면 정돈 제안서 GM 번호 답 16건 반영 — 2번(다크 7장 베이지) 4e1a49c26 · 9번(영문 정원제) b19f70969 · 10번 ddc296e55 · 12·14번(AX 9장) 6ce760551 · 6·",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 29
+        "saves": 31
       },
       "cpo": {
         "nick": "시포",
         "session": "welperion-automation-3b",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:46",
-          "area": "GM지시",
-          "event": "home 반영 지연 원인 실측",
+          "time": "17:01",
+          "area": "강습",
+          "event": "feat(loss): LOSS 사유에 '시간대 안 맞음' 추가 (강습부 박민서 팀장 요청 FB260917-165117)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 32
+        "saves": 33
       },
       "coo": {
         "nick": "시우",
         "session": "welperion-automation-76",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:41",
-          "area": "배12726",
-          "event": "07:50·저녁 통 업무 원천을 업무 SSOT 로 전환",
+          "time": "17:01",
+          "area": "작업",
+          "event": "fix(ui): 화면 정돈 3건 — 전사_일정 임박 순 기본 접힘 + 🔥임박순 팝업 버튼 제거 · 게시물_프로필월·브로제이_업무분장 나란한 칸 바닥선 맞춤 · 시설부 체계 폰 탭 끝 그림자 [GM 지시 2026-09",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 29
+        "saves": 30
       },
       "cbo": {
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "16:45",
+        "signal": "17:00",
         "last": {
-          "time": "16:55",
+          "time": "17:01",
           "area": "GM요청",
-          "event": "8항목밖에 없어? 더 없을까? 매일 콘텐츠 자료를 받을수도 있긴한데, 그런건?",
+          "event": "아 매일 쌓이는 것 6칸 만들면 뭘 했는지도 파악이 가능하긴하겠네? 근데 데이터가 너무 쌓일것같네",
           "result": "warn"
         },
-        "idle_since": null,
-        "saves": 20
+        "idle_since": "17:02",
+        "saves": 21
       }
     }
   }
