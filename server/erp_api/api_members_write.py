@@ -501,6 +501,28 @@ def _member_active_update_one(payload, raw_body, user):
     try:
         with conn:
             row, err_code = _resolve_active_row(conn, tenant, payload)
+            # ★2026-09-17 시포 — 덮어쓰기 관문은 pass-through(LOSS 로 넘어간 회원 등 · 서버가 valid 행을 못 찾는 경우)
+            #   에도 건다. 실측 12:5x: 기외호님이 LOSS 탭으로 넘어가 있어 관문이 통째로 비켜갔다. 전화로 어느 scope 든
+            #   정확히 1명이면 그 회원번호의 변경 기록으로 같은 검사를 한다(값은 안 건드림 · 거부만).
+            if not row and err_code in ("not_found", "ambiguous") and not payload.get("force"):
+                _staff0 = _log_who(payload, user)
+                if "staff" in payload and _staff0 == "이름미상":
+                    err_code = "staff-name-required"
+                else:
+                    _ph = _norm_phone(payload.get("keyPhone")) or _norm_phone((str(payload.get("rowKey") or "").split("|") + ["", ""])[1])
+                    _cands = conn.execute("SELECT DISTINCT member_no FROM members WHERE tenant_id=%s AND phone=%s",
+                                          (tenant, _ph)).fetchall() if _ph else []
+                    if len(_cands) == 1:
+                        _fields = [str(k).strip() for k in fields.keys()] if fields else ([str(col).strip()] if col else [])
+                        clash = _recent_change_by_other(conn, tenant, _cands[0]["member_no"], _fields, _staff0, now)
+                        if clash:
+                            err_code = "recent-change-by-other"
+                            extra = {"ok": False, "error": "recent-change-by-other", "noRetry": True,
+                                     "detail": "%s %s님이 「%s」을(를) 「%s」(으)로 바꿨습니다 — 그래도 지금 값으로 덮으시겠습니까?"
+                                               % (clash["at"][11:16], clash["staff"], str(clash["field"]).replace("\n", ""),
+                                                  clash["new_value"]),
+                                     "last": {"at": clash["at"], "staff": clash["staff"], "field": clash["field"],
+                                              "value": clash["new_value"]}}
             if not row and err_code in ("not_found", "ambiguous"):
                 # 서버 미러엔 회원번호 없어 못 찾거나(시트 원행에 회원번호가 없어 애초에 안 실림) 전화
                 # 지문이 겹쳐 후보가 여럿이라(②) 서버는 못 고르지만, GAS 는 물리 시트를 직접 스캔해
