@@ -57,8 +57,20 @@
           "ref": "GM-20260917-1005",
           "no": "05",
           "got": "GM업무 중간관리자 업무들은 다 업무 SSOT로 넘길 수 있도록 셋업을 해주고, 이제부터 업무 SSOT로 진행이 단일화 되었으면해, 그리고 평가 관련된 부분은 ERP 관리자페이지로 단일화 시키자, 이 부분은 정말 직…",
-          "did": "",
+          "did": "업무 SSOT 이관 관문 — 카드·원장 → 행 (GM 지시 9/17) + — 커밋 fb8a85ec29 · 배 12714",
           "start": "10:57",
+          "end": "11:07",
+          "minutes": 10,
+          "upload": "✅ 배포 (fb8a85ec2)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-1006",
+          "no": "06",
+          "got": "업무 SSOT 단일화 작업 // 중간관리자 평가 시스템 = ERP관리자페이지에 CHRO랑 협업해서 연동시켜줘",
+          "did": "",
+          "start": "11:07",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -174,29 +186,35 @@
           "area": "작업",
           "event": "feat(erp): 업무시스템 화면을 핵심 카드로 — 로그인 직원 전원 허용(카드 밖 /coo/chairman/ 관리자 전용 규칙 우회 · GM 지시 2026-09-17 · 웰리 요청)",
           "detail": "커밋 955b348f15 · 배 12714"
+        },
+        {
+          "time": "11:07",
+          "area": "작업",
+          "event": "업무 SSOT 이관 관문 — 카드·원장 → 행 (GM 지시 9/17) + 드라이런 표",
+          "detail": "커밋 fb8a85ec29 · 배 12714"
         }
       ],
-      "count": 8,
-      "done": 7,
+      "count": 9,
+      "done": 8,
       "open": 1,
-      "avg_minutes": 22,
-      "work_count": 12,
+      "avg_minutes": 20,
+      "work_count": 13,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260917-1005",
-          "no": "05",
-          "got": "GM업무 중간관리자 업무들은 다 업무 SSOT로 넘길 수 있도록 셋업을 해주고, 이제부터 업무 SSOT로 진행이 단일화 되었으면해, 그리고 평가 관련된 부분은 ERP 관리자페이지로 단일화 시키자, 이 부분은 정말 직…",
+          "ref": "GM-20260917-1006",
+          "no": "06",
+          "got": "업무 SSOT 단일화 작업 // 중간관리자 평가 시스템 = ERP관리자페이지에 CHRO랑 협업해서 연동시켜줘",
           "did": "",
-          "start": "10:57",
+          "start": "11:07",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 8
+          "waited": 3
         }
       ],
       "repeats": []
@@ -292,28 +310,16 @@
           "ref": "GM-20260917-2009",
           "no": "09",
           "got": "AX 랩스에",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "11:04",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:05",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
-        {
-          "time": "06:02",
-          "area": "작업",
-          "event": "fix(guard): 👉 GM 액션 자동 수집은 첫 칸이 👉 인 행만 — 머리행·규칙 줄 잡음 차단(gm_asks #3·#4 닫음)",
-          "detail": "커밋 167dcc983b · 배 12680"
-        },
-        {
-          "time": "06:10",
-          "area": "작업",
-          "event": "fix(notify): 카톡 하루 두 통 이월 원장 ★운영부 확장 (배 2681)",
-          "detail": "커밋 1db385ceaf · 배 12680"
-        },
         {
           "time": "06:20",
           "area": "작업",
@@ -481,31 +487,28 @@
           "area": "GM요청",
           "event": "문자 하루 30건 상한·건수 표시(GM 10:5x) 배포·실측",
           "detail": "25d23d8c95 · 서버 재기동 · counts API today 0/30 dry 1 · cp949 본문 400 · 자체점검 35 rows"
+        },
+        {
+          "time": "11:09",
+          "area": "작업",
+          "event": "fix(sms): 중복 방지 키를 문구 id 기준으로 — 접수·진행·완료 3통이 같은 자리 키로 막히던 것(라이브 실측)",
+          "detail": "커밋 ebc0fc0f27 · 배 12715"
+        },
+        {
+          "time": "11:10",
+          "area": "작업",
+          "event": "docs(sms): 딜라이브 문자연동 가이드 1장 + 문자 발송 카드 링크 (GM 지시 2026-09-17)",
+          "detail": "커밋 21a0ffac3f · 배 12715"
         }
       ],
       "count": 8,
-      "done": 7,
-      "open": 1,
+      "done": 8,
+      "open": 0,
       "avg_minutes": 4,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-2009",
-          "no": "09",
-          "got": "AX 랩스에",
-          "did": "",
-          "start": "11:04",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -759,13 +762,25 @@
           "ref": "GM-20260917-4005",
           "no": "05",
           "got": "지금 문자 연동 관련해서는 버튼을 ERP에 셋팅을 해줘야하고, 실무진들에게도 의견물어보고 반영해줄 수 있으면 반영해줘",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "11:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:07",
+          "minutes": 5,
+          "upload": "✅ 배포 (5536749c0)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-4007",
+          "no": "07",
+          "got": "카톡전달 실패한건가? 문자연동?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "11:09",
+          "end": "11:09",
+          "minutes": 0,
+          "upload": "✅ 배포 (5536749c0)",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -795,13 +810,13 @@
           "ref": "GM-20260917-cpo-sms-setup",
           "no": "up",
           "got": "문자 연동 — ERP 버튼 셋팅 + 실무진 의견 수렴·반영",
-          "did": "",
+          "did": "배 2715 시우 — 종합접수처 문자 버튼 3개(GM 지시 9/17)",
           "start": "11:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "11:07",
+          "minutes": 5,
+          "upload": "✅ 배포 (5536749c0)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -848,43 +863,14 @@
           "detail": "커밋 02589588ba · 배 12523"
         }
       ],
-      "count": 8,
-      "done": 6,
-      "open": 2,
+      "count": 9,
+      "done": 9,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 7,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4005",
-          "no": "05",
-          "got": "지금 문자 연동 관련해서는 버튼을 ERP에 셋팅을 해줘야하고, 실무진들에게도 의견물어보고 반영해줄 수 있으면 반영해줘",
-          "did": "",
-          "start": "11:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        },
-        {
-          "ref": "GM-20260917-cpo-sms-setup",
-          "no": "up",
-          "got": "문자 연동 — ERP 버튼 셋팅 + 실무진 의견 수렴·반영",
-          "did": "",
-          "start": "11:01",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "coo": {
@@ -957,16 +943,76 @@
           "area": "작업",
           "event": "feat(gm): gm_handoff — GM 전달건 업무 SSOT 행(담당 공란) 다시 올리고 GM업무 카드와 todo_id 짝 (GM 지시 2026-09-17) · 카드 중복 판정 (GM 직접) 태그 제외 · 카",
           "detail": "커밋 0ad98d9162 · 배 12716"
+        },
+        {
+          "time": "11:06",
+          "area": "작업",
+          "event": "feat(coo): 종합접수처 카드에 문자 버튼 3개(접수·진행·완료 · 서버 /api/sms/send · 문구는 서버 정본) — GM 지시 2026-09-17 11:01 · 시토 배 2714 짝 · 잠금 해제 기록",
+          "detail": "커밋 2f3108157d · 배 12716"
         }
       ],
       "count": 5,
       "done": 5,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 1,
+      "work_count": 2,
       "missed": [],
       "unclosed": [],
       "just": [],
+      "repeats": []
+    },
+    "cbo": {
+      "nick": "시보",
+      "items": [
+        {
+          "ref": "GM-20260917-9001",
+          "no": "01",
+          "got": "일단 고척도 진행되는건들이 뭔가 있어야해, 다이어트캠프처럼 산출물이 있어야하고, 1개씩 질문 던져서 어느세월에 정립이 되는지도 모르겠는데, 로고도 AX랩스에 안받았다고 되어있는데, 다 받은걸로 알고 있고, 전수체크하…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "11:05",
+          "end": "11:06",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-9002",
+          "no": "02",
+          "got": "그리고 반복 중복 질문 하지마, 답변도 반복 중복으로 받게되니까 이건 절대 안되, 새로운 것을 그리고 꼭 답변에 대한 Before&After가 있어야하고, 산출물도 있으면 최고야",
+          "did": "",
+          "start": "11:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
+      "work": [],
+      "count": 2,
+      "done": 1,
+      "open": 1,
+      "avg_minutes": 0,
+      "work_count": 0,
+      "missed": [],
+      "unclosed": [],
+      "just": [
+        {
+          "ref": "GM-20260917-9002",
+          "no": "02",
+          "got": "그리고 반복 중복 질문 하지마, 답변도 반복 중복으로 받게되니까 이건 절대 안되, 새로운 것을 그리고 꼭 답변에 대한 Before&After가 있어야하고, 산출물도 있으면 최고야",
+          "did": "",
+          "start": "11:06",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 4
+        }
+      ],
       "repeats": []
     }
   },
