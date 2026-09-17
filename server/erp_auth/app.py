@@ -172,6 +172,10 @@ EXCEPTION_ONLY_IDS = frozenset({
     "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
     "chro-hub-index", "chro-recruiting-index",
     "coo-report-매출회원현황보고", "cto-자율현황", "cto-automation-카톡전송관리",
+    # 2026-09-17 시토: 관리자 판을 「사람 × 업무영역 6칸 체크」로 단순화(GM 10:44)하면서 화면 UI 관례(MGMT_ONLY)로만
+    #   가려지던 경영 문서 5장이 영역 체크 한 번에 같이 켜지게 됐다 — 서버 규칙으로 개인 예외 전용에 넣는다.
+    "ceo-wellperion-guide-main", "cmo-funnel-월간마케팅보고서",
+    "coo-chairman-대표님-지시사항", "coo-chairman-회장님-지시사항", "cfo-finance-지출품의",
 })
 # 계정별 권한 정본(GM 확정 2026-09-03 · 배951). 여기 적힌 계정은 이 파일이 DB perms 를 이긴다.
 # accounts 를 비우거나 파일을 지우면 종전 동작(DB perms · 없으면 핵심 화면만)으로 그대로 돌아간다.
