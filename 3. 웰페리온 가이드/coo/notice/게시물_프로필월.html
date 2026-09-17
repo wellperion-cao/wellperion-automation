@@ -22,7 +22,8 @@
        font-family:"Pretendard","Malgun Gothic",sans-serif;font-size:14px}
   h2{margin:0 0 6px;font-size:17px}
   .intro{font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 16px}
-  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:stretch}  /* 두 칸 바닥선 맞춤(GM 2026-09-17 · 63px 어긋남) */
+.grid>*{height:100%}
   @media(max-width:900px){.grid{grid-template-columns:1fr}}
   label{font-size:12px;color:var(--dim);display:block}
   input[type=text],textarea{width:100%;margin-top:3px;padding:7px 9px;border:1px solid var(--border);

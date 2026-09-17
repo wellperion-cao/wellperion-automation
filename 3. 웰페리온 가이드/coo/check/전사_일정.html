@@ -187,7 +187,6 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
       <span class="fsel" id="deptSelWrap"><select id="deptSel" aria-label="담당 부서 필터"></select><span class="caret">▼</span></span>
       <span class="fsel hascolor" id="catSelWrap"><span class="cdot" id="catSelDot"></span><select id="catSel" aria-label="분류 필터"></select><span class="caret">▼</span></span>
       <a class="sheet-link hlink-add" id="addBtn" role="button" tabindex="0" onclick="startAddEvent()">➕ 일정 추가</a>
-      <a class="sheet-link" role="button" tabindex="0" onclick="openUrgentPopup()">🔥 임박순 팝업</a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
     </div>
   </div>
@@ -212,10 +211,12 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
     <div id="dayPanel" style="display:none;margin-top:12px;border:1px solid var(--line,#ddd);border-radius:10px;padding:12px 14px;background:rgba(127,127,127,0.05);"></div>
   </div>
 
-  <div class="bar">
-    <div style="display:flex;align-items:baseline;gap:10px"><h2>임박 순</h2><span class="vt">기한 가까운 순서 — 당장 챙길 것부터</span></div>
+  <!-- 임박 순 목록은 기본 접힘(GM 2026-09-17 「임박순 칸만 정리하면 되는 거 아냐」). 달력이 먼저 보이고,
+       목록은 눌러서 편다 — 편집(inlineedit)·지난 일정 접기가 이 목록 안에 있어 지우지 않았다. -->
+  <div class="bar" id="vBar" role="button" tabindex="0" style="cursor:pointer" onclick="toggleVList()">
+    <div style="display:flex;align-items:baseline;gap:10px"><h2><span id="vCaret">▸</span> 임박 순</h2><span class="vt">기한 가까운 순서 — 눌러서 펼칩니다</span></div>
   </div>
-  <div id="vList" class="list"><div class="loading">불러오는 중…</div></div>
+  <div id="vList" class="list" style="display:none"><div class="loading">불러오는 중…</div></div>
   <div class="toast" id="toast"></div>
   <div class="modal-overlay" id="urgentModal" onclick="if(event.target===this)closeUrgentPopup()">
     <div class="modal-box">
@@ -610,6 +611,17 @@ function renderDayPanel(key){
 }
 window.renderDayPanel=renderDayPanel;
 
+// 임박 순 목록 접기/펴기 (GM 2026-09-17) — 편집·달력 클릭에서 부를 때는 펴진 상태를 보장한다.
+function toggleVList(open){
+  var el=document.getElementById("vList"), c=document.getElementById("vCaret");
+  if(!el) return;
+  var next=(typeof open==="boolean")?open:(el.style.display==="none");
+  el.style.display=next?"":"none";
+  if(c) c.textContent=next?"▾":"▸";
+  if(next&&typeof fitFrame==="function") fitFrame();
+}
+window.toggleVList=toggleVList;
+
 // 임박순 팝업 — 기한 가까운 순으로 상단 버튼 하나에서 열림(GM 지시 2026-08-12). 부서·분류 필터 무관 전사 전체.
 function urgentItems(){
   return (DATA.items||[]).filter(function(it){return it.applies!=="해당없음"&&!isPastOneOff(it);})
@@ -703,6 +715,7 @@ function inlinePanelHtml(it,idx){
 }
 function openInline(id){
   inlineEditId=id; renderList(); fitFrame();
+  toggleVList(true);
   setTimeout(function(){var p=document.querySelector('#vList .inlineedit[data-eid="'+(""+id).replace(/"/g,'')+'"]');if(p){p.scrollIntoView({behavior:"smooth",block:"center"});var inp=p.querySelector('input,select');if(inp)try{inp.focus();}catch(e){}}},40);
 }
 window.openInline=openInline;

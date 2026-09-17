@@ -46,7 +46,8 @@
   .broj-role-table{width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:13.5px;}
   .broj-role-table th, .broj-role-table td{border:1px solid var(--border); padding:8px 11px; text-align:left;}
   .broj-role-table th{background:var(--surface); color:var(--text-soft); font-weight:700;}
-  #broj-depts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:14px; align-items:start;}
+  #broj-depts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:14px; align-items:stretch;}  /* 같은 줄 부서 블록 바닥선 맞춤(GM 2026-09-17) */
+  #broj-depts>.broj-dept{height:100%}
   .broj-dept{border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:13px 16px; background:var(--surface);}
   .broj-dept h4{font-size:16px; font-weight:800; color:var(--text); display:flex; flex-wrap:wrap; align-items:baseline; gap:9px; margin-bottom:5px;}
   .broj-dept-sub{font-size:12.5px; font-weight:400; color:var(--dim);}
