@@ -978,7 +978,7 @@ tr.wb-unsaved>td[data-wb-unsaved]::after{
    한 줄을 유지한다(6칸으로 두면 빈 칸이 남거나 마지막 장이 다음 줄로 떨어짐, GM 지적 이력). */
 /* 카드 4장(2026-08-13 — 휴회 카드가 빠져 5칸 격자에 빈자리가 생겼다). 4칸으로 줄여 남은 카드를
    그만큼 넓게 쓴다 — 제목이 말줄임 없이 들어가고 숫자도 커진다. */
-#memberTabNav{grid-template-columns:repeat(4,minmax(0,1fr))}
+#memberTabNav{grid-template-columns:repeat(5,minmax(0,1fr))}
 /* 여러 장을 한 줄에 넣으면 칸이 좁아진다 → 여백을 조이고 제목이 길면 말줄임(줄바꿈으로 카드 높이가
    들쭉날쭉해지는 것 방지). 숫자는 그대로 크게 유지 — 한눈에 봐야 하는 건 숫자다. */
 #memberTabNav .dash-card{padding:15px 15px 16px}
@@ -1728,13 +1728,19 @@ table.op-t td b{font-size:15px}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">대기자</span><span class="dash-v"><b id="dMemWait" style="font-size:13px">–</b>명</span></div>
       </div>
     </a>
-    <!-- 휴회 회원 관리 카드 삭제(2026-08-13 GM 승인 · 실무진 피드백) — 휴회는 이 화면에서 관리하지 않는다.
-         접수=종합접수처 → 기록=시트 → 관리=시트. 이 화면에 있으면 같은 일을 두 곳에서 하게 된다.
-         카드와 함께 렌더마다 돌던 휴회 접수 조회(_loadHoldIntake)도 끊었다 — 유효회원 목록을 열 때마다
-         GAS 를 한 번 더 부르고 있었다. 회원명 '휴회중' 배지(_holdActive)는 정보 표시라 그대로 둔다.
-         ponytail: 진입점 openHoldManage()는 2026-08-16(배643) 전수 grep으로 호출부 0 확인 후 삭제.
-         _loadHoldIntake·holdStatusCard·_renderHoldIntake·holdApprove류는 서로를 부르는 닫힌 루프라
-         여전히 남아 있음(도달 불가능하지만 내부 호출부는 존재 — 삭제하려면 이 클러스터 전체를 같이 지워야 함). -->
+    <!-- 카드5: 휴회 회원 관리 (복원 2026-09-17 GM 지시 — 2026-08-13 에 카드만 지웠다가 되살림).
+         GM: "멤버십 회원관리 ERP 에 휴회신청 카드가 없다 · 예전처럼 우측에 · 휴회하면 멤버십 회원에게도
+         바로 기간이 반영되게." 접수 원천은 그대로 종합접수처(공개 휴회접수 페이지)다 — 이 카드는 그 접수를
+         보고 승인·반려하는 자리이고, 승인하면 서버가 회원 행의 휴회기간·시작·종료·횟수·누적일수를 채운다.
+         엔진(_loadHoldIntake·_renderHoldIntake·holdApprove/Complete/EarlyReturn·setHoldOnlyView)은
+         지운 적이 없어 그대로 쓴다 — 새로 만든 것은 진입점 openHoldManage() 하나뿐. -->
+    <a class="dash-card" data-kind="hold" href="javascript:void(0)" onclick="openHoldManage();_memHighlight(this)">
+      <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">⏸ 휴회 회원 관리</span></div>
+      <div class="dash-metrics">
+        <div class="dash-line"><span class="dash-k">접수대기</span><span class="dash-v"><b class="lead" id="dHoldPending">–</b> 건</span></div>
+        <div class="dash-line"><span class="dash-k">휴회중</span><span class="dash-v"><b id="dHoldOngoing">–</b> 명</span></div>
+      </div>
+    </a>
     <!-- 카드5·6(대기자/LOSS 회원 관리) 삭제(FB260801-141806, 2026-08-01 GM 승인) — '멤버십 회원 관리' 카드
          진입 후 요약카드의 '회원 구분 선택칸'(대기/LOSS 포함)으로 진입점 이관. 데이터 배선(dMemWait·
          dMemLossToday/Month 기록 로직)은 다른 화면(오늘 할 일 등)이 재사용할 수 있어 JS는 그대로 둔다 —
@@ -9129,8 +9135,10 @@ function _activeRender(rows, isFiltered) {
     // 검색 결과에 반대편 명단(유효↔종료)이 섞였으면 몇 명인지 밝힌다 — 안 밝히면 왜 늘었는지 모른다.
     // 보관 시트까지 같이 뒤지므로(2026-08-13) 어느 명단인지 하나로 못 적는다 — '다른 명단'으로 묶어 적는다.
     (_activeCrossExtra ? ' · 다른 명단(유효·LOSS·지난 연도 보관) ' + _activeCrossExtra + '명 포함' : '');
-  // 휴회 접수 조회 끊음(2026-08-13 GM 승인) — 유효회원 목록을 그릴 때마다 GAS 를 한 번 더 부르고 있었다.
-  // 휴회 관리는 종합접수처·시트로 옮긴다. 회원명 '휴회중' 배지는 이미 받아 둔 행 값으로 그리므로 영향 없다.
+  // 휴회 카드 숫자 배선(복원 2026-09-17) — 상단 「⏸ 휴회 회원 관리」 카드의 접수대기·휴회중 숫자를 채운다.
+  //   2026-08-13 에 끊었던 이유(렌더마다 GAS 를 또 부름)는 _holdIntakeLoaded 캐시가 막는다 — 한 번만 받고,
+  //   그 뒤로는 이미 받아 둔 값으로 다시 그리기만 한다. 상세 목록은 휴회 전용 보기에서만 펼쳐진다.
+  if (typeof _renderHoldIntake === 'function') _renderHoldIntake();
 
   if (rows.length === 0) {
     var span = displayCols.length || 1;
@@ -11162,9 +11170,16 @@ function setHoldOnlyView(on) {
     if (backBtn) backBtn.style.display = 'none';
   }
 }
-// ponytail: openHoldManage() 삭제(2026-08-16, 배643) — 전수 grep(호출부 0, 정의문 자신 외 참조 없음) 확인 후 제거.
-//   진입점을 잃은 _loadHoldIntake·holdStatusCard·_renderHoldIntake·holdApprove/Complete/EarlyReturn 은
-//   각각 내부 호출부가 남아 있어(자기 자신을 부르는 닫힌 루프) 이번엔 안 지웠다 — 위 배 note 에 호출부 목록 남김.
+// 진입점(복원 2026-09-17 GM 지시) — 상단 「⏸ 휴회 회원 관리」 카드가 부른다.
+//   순서가 중요하다: switchTab·setActiveSeg 가 각각 setHoldOnlyView(false) 를 부르므로(막다른 길 방지 배선)
+//   휴회 전용 보기는 반드시 그 둘 뒤에 켠다. 접수 목록은 강제로 다시 읽는다 — 카드를 눌러 들어온 사람은
+//   방금 들어온 접수를 보려는 것이라 캐시된 목록을 보여 주면 헛걸음이 된다.
+function openHoldManage() {
+  switchTab('active');
+  setActiveSeg('valid');
+  setHoldOnlyView(true);
+  _loadHoldIntake(true);
+}
 function _loadHoldIntake(force) {
   if (typeof GAS_URL === 'undefined' || GAS_URL === GAS_PLACEHOLDER) { _renderHoldIntake(); return; }
   if (_holdIntakeLoading) return;
