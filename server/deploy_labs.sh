@@ -13,6 +13,7 @@ cd "$(dirname "$0")/.."
 TMP="$(mktemp -d)"; mkdir -p "$TMP/assets"
 git show "HEAD:3. 웰페리온 가이드/erp/admin/company_intro.html" \
   | grep -v 'page_ping.js' \
+  | grep -v 'href="company.html"' \
   | sed 's#href="\.\./\.\./assets/wp-ui\.css"#href="assets/wp-ui.css"#' > "$TMP/intro.html"
 git show "HEAD:3. 웰페리온 가이드/erp/admin/labs_home.html"   | grep -v 'page_ping.js'   | sed 's#href="\.\./\.\./assets/wp-ui\.css"#href="assets/wp-ui.css"#' > "$TMP/index.html"
 git show "HEAD:3. 웰페리온 가이드/erp/admin/platform_brand.css" > "$TMP/platform_brand.css"

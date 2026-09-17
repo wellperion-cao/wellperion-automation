@@ -273,7 +273,7 @@ def _fact_present(prof: dict, path: str) -> bool:
         base, rest = path.split("[topic=", 1)
         topic = rest.rstrip("]")
         items = (prof or {}).get(base) or []
-        return any(topic in (it.get("topic") or "") for it in items)
+        return any(topic in (it.get("topic") or "") for it in items if isinstance(it, dict))
     if "[]" in path:
         items = (prof or {}).get(path.split("[", 1)[0]) or []
         return bool(items)
@@ -340,9 +340,10 @@ def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
     if answer:
         # 손님에게 실제로 나간 답(배2533② · GM 지시 2026-09-11 「질문하는 것들 다 저장하고 가공해줘」).
-        # 질문만 있고 답이 없으면 「그 답이 맞았나」를 나중에 못 본다. 질문과 같은 마스킹을 건다 —
-        # 답이 손님 전화번호를 되읊을 수 있다. 핸드오프 안내문(fallback)은 매번 같은 글이라 안 남긴다.
-        row["a"] = _mask_pii(answer)[:2000]
+        # 질문만 있고 답이 없으면 「그 답이 맞았나」를 나중에 못 본다. 마스킹은 질문(q)에만 건다 — 답에
+        # 걸면 센터 대표전화 같은 업체 정본 전화번호까지 [전화번호]로 가려져 관리자가 안내 번호를 못 본다
+        # (시보 감사 2026-09-17). 손님이 자기 번호를 답에서 되읊는 경우는 드물고, 실제 사고 사례는 없었다.
+        row["a"] = answer[:2000]
     if allowed_price:
         # 답에 금액이 실려 나갔다 — 어느 허락 항목 덕인지 남긴다(GM 승인 2026-09-10 no_price.exception).
         # 대표가 허락을 거두면 이 칸으로 어떤 답이 나갔는지 되짚는다.
@@ -690,9 +691,12 @@ def _cost_krw(row: dict) -> float:
 @router.get("/admin/cost")
 def admin_cost(days: int = 30, request: Request = None):
     """테넌트별·모델별 건당 비용 집계 — counsel_usage.jsonl 기반(배CTO-2026-09-14).
-    관리자 전용(X-Erp-Trusted: 1 헤더 필요 — nginx 가 붙여 준다)."""
-    # 신뢰 플래그 없으면 차단(nginx를 통하지 않은 직접 접근 방지)
-    if request and not request.headers.get("x-erp-trusted"):
+    관리자 전용 — nginx 에 X-Erp-Trusted 를 붙여 주는 곳이 없어 항상 403 이었다(부르는 화면 0장 ·
+    시보 감사 2026-09-17). api_partner_secrets.py 등과 같은 방식(X-Erp-User 헤더가 ERP_PLATFORM_ADMINS
+    에 있는가)으로 교체."""
+    who = (request.headers.get("x-erp-user") or "").strip().lower() if request else ""
+    admins = {e.strip().lower() for e in os.environ.get("ERP_PLATFORM_ADMINS", "cao@wellperion.com").split(",") if e.strip()}
+    if who not in admins:
         raise HTTPException(403, "관리자 전용")
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
     buckets: dict = {}  # (tenant, model) → {calls, in, out, cache_write, cache_read, cost_krw}
@@ -863,10 +867,14 @@ def _grounded(text: str, source: str) -> bool:
 def _today_hours_line(tenant: str) -> str:
     """오늘 운영 상태 한 줄(코드 계산 · 모델 없음) — 배1036 GM⑥·설계 §3-1⑦. facts.hours 없는 테넌트
     (프로필에 시간이 없는 테넌트)는 빈 문자열 — 호출부가 핸드오프로 넘어간다. 휴관 판정은 scripts/close_days.is_closed
-    그대로 재사용(기존 지원부 체계.html getDayInfo 와 같은 2·4째 일요일 규칙 · 새로 안 만든다)."""
+    그대로 재사용(기존 지원부 체계.html getDayInfo 와 같은 2·4째 일요일 규칙 · 새로 안 만든다) — 단 이 규칙은
+    웰페리온(1_wellperion) 전용이다. 다른 테넌트가 facts.hours.closed_rules 를 비워 두면(없거나 []) 그
+    업체 정본이 아직 안 정해졌다는 뜻이므로 휴관 판정 자체를 건너뛴다(항상 '휴관 아님' · 시보 감사 2026-09-17
+    — 고척 봇이 웰페리온 2·4째 일요일 규칙을 그대로 물려받아 오답한 사고)."""
     hours = (_load_profile(tenant).get("facts") or {}).get("hours")
     if not isinstance(hours, dict) or not hours.get("weekday") or _is_closed_day is None:
         return ""
+    use_close_days = tenant == "1_wellperion" and bool(hours.get("closed_rules"))
     today = datetime.now(timezone(timedelta(hours=9))).date()
 
     def _fmt(d):
@@ -878,7 +886,7 @@ def _today_hours_line(tenant: str) -> str:
             if _is_closed_day(d) == want_closed:
                 return d
         return d
-    if _is_closed_day(today):
+    if use_close_days and _is_closed_day(today):
         return "오늘 %s · 휴관 · 다음 영업일 %s" % (_fmt(today), _fmt(_next(today, False)))
     try:
         public_holidays = set(json.loads(Path(CLOSE_DAYS_PATH).read_text(encoding="utf-8")).get("public_holidays", []))
@@ -887,7 +895,8 @@ def _today_hours_line(tenant: str) -> str:
     is_holiday = today.strftime("%Y-%m-%d") in public_holidays
     is_weekend = today.weekday() >= 5
     today_hours = hours.get("holiday") if is_holiday else (hours.get("weekend") if is_weekend else hours.get("weekday"))
-    return "오늘 %s · %s · 휴관 아님 · 다음 휴관 %s" % (_fmt(today), today_hours or "", _fmt(_next(today, True)))
+    next_closed = (" · 다음 휴관 %s" % _fmt(_next(today, True))) if use_close_days else ""
+    return "오늘 %s · %s · 휴관 아님%s" % (_fmt(today), today_hours or "", next_closed)
 
 
 def _is_hours_question(q: str) -> bool:
