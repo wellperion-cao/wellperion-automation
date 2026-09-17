@@ -397,8 +397,11 @@ function loadModules(role, allowedIds){
       return 'mod';
     }
 
-    // 왼쪽 메뉴 차례 = GM 이 정한 1~5 (2026-09-11). 그 밖은 뒤로 간다.
-    var GROUP_ORDER = ['마케팅 관리', '회원 관리', '운영 관리', '인사&파트너 관리', '매출&지출 관리', '전사 공통'];
+    // 왼쪽 메뉴 묶음 = 모듈 배치의 모듈과 같은 칸·같은 차례 (GM 2026-09-17 13:2x 「각 업무 페이지 = 모듈 · 같게」).
+    //   종전(2026-09-11)엔 업무영역 5칸(마케팅·회원·운영·인사&파트너·매출&지출)으로 묶어 모듈 배치(모듈 12행)와 낱말이 달랐다.
+    //   차례 = modules.json 에서 모듈 리드(kind=module)가 나오는 순서 — 모듈 배치 표가 읽는 바로 그 순서.
+    var GROUP_ORDER = (d.modules || []).filter(function(m){ return m.kind === 'module' && m.module; })
+                                        .map(function(m){ return m.module; });
     // 파트너사 목록에 남은 「ERP 플랫폼」은 담당이 회사 대표·GM·기술이라 그렇게 적힌 것이지
     // 파는 쪽 화면이 아니다(파는 쪽 것은 이미 플랫폼 콘솔로 옮겼다). 여기서는 사실대로 부른다.
     var GROUP_NAME = { 'ERP 플랫폼': '전사 공통' };
@@ -441,9 +444,8 @@ function loadModules(role, allowedIds){
       }
       var pi = PINNED.indexOf(m.id);
       if (pi >= 0) { pinned[pi] = m; return; }   // 자주 여는 것은 아래 그룹에 또 그리지 않는다
-      // 묶음 이름 = 왼쪽 메뉴와 같은 업무영역(마케팅 관리·회원 관리·…). 옛 이름(회원·운영·점검·경영)은
-      // 메뉴에 없는 말이라 화면과 메뉴가 서로 다른 낱말을 쓰고 있었다(GM 2026-09-11 통일 지시).
-      var g = GROUP_NAME[m.group] || m.group || m.appgroup || '그 밖';
+      // 묶음 이름 = 그 화면이 딸린 모듈 이름(모듈 배치와 같은 낱말 · GM 2026-09-17). 위에서 module 없는 화면은 문서함으로 갔다.
+      var g = m.module;
       if (!bag[g]) { bag[g] = []; order.push(g); }
       bag[g].push(m);
     });
