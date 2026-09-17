@@ -32,6 +32,26 @@ def mask(text: str) -> str:
     t = _RRN.sub("******-*******", t)
     return _PHONE.sub("010-****-****", t)
 
+_NOISE_PREFIX = ("Stop hook feedback", "[SYSTEM", "<", "[Cross-session", "Another Claude session", "This is how Claude Code",
+                 "[형식 고정", "C-Level 부팅", "PreToolUse", "PostToolUse", "UserPromptSubmit", "Called the ", "Result of calling")
+
+
+def is_noise(text: str) -> bool:
+    """훅·시스템 알림·세션 간 통지 = GM 이 볼 활동이 아니다."""
+    t = (text or "").lstrip()
+    return (not t) or t.startswith(_NOISE_PREFIX)
+
+
+def clean(text: str) -> str:
+    """8요소 표·줄글 벽은 첫 줄(상태 결론)만 — 표 기호(|)·마크다운 굵게를 걷는다."""
+    t = (text or "").strip()
+    first = t.splitlines()[0] if t else ""
+    if first.startswith("|"):                      # 표부터 시작하면 첫 칸 내용
+        first = first.strip("|").split("|")[0]
+    first = first.replace("**", "").strip(" |")
+    return first[:120]
+
+
 SESS_DIR = os.path.join(ROOT, "status", "sessions")
 KEY_PATH = os.path.expanduser("~/.claude/token_push.key")
 URL = os.environ.get("CONSOLE_EVENT_URL", "https://erp.wellperion.com/api/console/event")
@@ -88,7 +108,8 @@ def collect(role: str) -> dict | None:
     tools = [e for e in events if e[1] == "도구"]
     if tools:
         _LAST_TOOL[role] = tools[-1][0]
-    shown = [{"ts": ts, "kind": kind, "text": mask(text)} for ts, kind, text in events if kind != "도구"]
+    shown = [{"ts": ts, "kind": kind, "text": mask(clean(text))} for ts, kind, text in events
+             if kind != "도구" and not is_noise(text)]
     return {"role": role, "events": shown[-MAX_EVENTS_PER_PUSH:], "busy_at": _LAST_TOOL.get(role)}
 
 
@@ -143,6 +164,9 @@ def _selftest():
     assert [e[1] for e in ev] == ["도구", "응답"], ev
     assert "1234" not in mask(ev[1][2]), "전화번호는 가린다"
     assert read_new_lines(p) == []
+    assert is_noise("Stop hook feedback: [x]") and is_noise("<cross-session-message from=…>") and not is_noise("배편 리스트업해줘")
+    assert clean("✅완료 · 시토 · 관제판" + chr(10) + chr(10) + "| 📌 GM 요청 | … |") == "✅완료 · 시토 · 관제판"
+    assert clean("| 📌 GM 요청 | 관제판 |") == "📌 GM 요청"
     print("selfcheck ok")
 
 
