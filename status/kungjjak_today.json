@@ -570,6 +570,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-1057",
+          "no": "57",
+          "got": "[Cross-session idle notice] \"welperion-automation-76\", which you asked to be notified about, is idle now — it finished a…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "17:30",
+          "end": "17:30",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -896,10 +908,10 @@
           "detail": "커밋 9292bdee75 · 배 12714"
         }
       ],
-      "count": 59,
-      "done": 59,
+      "count": 60,
+      "done": 60,
       "open": 0,
-      "avg_minutes": 40,
+      "avg_minutes": 39,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
@@ -1571,12 +1583,6 @@
         {
           "time": "13:23",
           "area": "작업",
-          "event": "fix(chat): 상담봇 서버 수리 5건 — 휴관 판정 테넌트별·policies 비dict 가드·admin/cost 관리자 판정 통일·마스킹 질문만·랩스 소개 .back 링크 제거 (시보 감사 2026-09-17)",
-          "detail": "커밋 2b988fbea2 · 배 12715"
-        },
-        {
-          "time": "13:23",
-          "area": "작업",
           "event": "feat(erp-home): /erp/ 관리자 화면에 직원용(업무 카드·문서함·모듈 안내) 병합 — 첫 판 업무 카드 + 관리 5줄 한 화면 · 직원 전용은 /home 그대로 (GM 2026-09-17 13:2x 「",
           "detail": "커밋 7380420071 · 배 12715"
         },
@@ -1747,6 +1753,12 @@
           "area": "작업",
           "event": "feat(admin): 화면 정돈 13번 — 셸 없는 5장(상담 자동화·아이디어·관제판·FAQ·상담 내역)이 단독으로 열리면 관리자 셸(#view) 안으로 · FAQ·상담 내역을 셸 화면으로 등록(새 탭 대신) ·",
           "detail": "커밋 8ffb513c1b · 배 12715"
+        },
+        {
+          "time": "17:31",
+          "area": "작업",
+          "event": "fix(home): 계정 칩 역할을 관문 role_label(팀 리더/팀원)로 · 매뉴얼 6번 종합접수처 링크 ../reception → coo/reception (GM 2026-09-17 「실장인데 왜 직원」·이경",
+          "detail": "커밋 e07be2eb41 · 배 12715"
         }
       ],
       "count": 54,
@@ -1769,7 +1781,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 8
+          "waited": 11
         }
       ],
       "repeats": []
@@ -2426,13 +2438,19 @@
           "area": "작업",
           "event": "chore(labs): 공개 소개서 배포에 AX 랩스 로고 svg 동봉(시모 정본 2026-09-17)",
           "detail": "커밋 1e78241672 · 배 12691"
+        },
+        {
+          "time": "17:31",
+          "area": "작업",
+          "event": "fix(ux): 명암비·터치44px·이모지→선아이콘 3항목 — 월간마케팅보고서·AI시리즈보드·홈페이지(GM 화면 정돈 4번 2026-09-17)",
+          "detail": "커밋 26fc84ac63 · 배 12691"
         }
       ],
       "count": 40,
       "done": 40,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 28,
+      "work_count": 29,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2935,7 +2953,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 15
+          "waited": 18
         }
       ],
       "repeats": [
@@ -3704,49 +3722,49 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T17:28:57",
+    "published_at": "2026-09-17T17:32:14",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-68",
         "alive": true,
-        "signal": "17:15",
+        "signal": "17:30",
         "last": {
-          "time": "17:27",
-          "area": "작업",
-          "event": "chore(screens): 화면 지도 1차 검수 — 9월 마감 로드맵 → 회사문서/월간로드맵/ 이동 · 사우나 약품 가이드(지원부 체계 인라인 임베드 있음)·회사소개서 섹터 샘플·스텁 3장(northstar_tod",
+          "time": "17:29",
+          "area": "GM지시",
+          "event": "화면 지도 1차 검수 — 5건 판정·삭제",
           "result": "ok"
         },
-        "idle_since": null,
-        "saves": 91
+        "idle_since": "17:30",
+        "saves": 92
       },
       "cto": {
         "nick": "시토",
         "session": "welperion-automation-fc",
         "alive": true,
-        "signal": "17:15",
+        "signal": "17:30",
         "last": {
-          "time": "17:21",
-          "area": "GM요청",
-          "event": "이경연 운영부 실장으로 팀 리더 단위인데 왜 역할이 직원으로 되어있어?",
-          "result": "warn"
+          "time": "17:31",
+          "area": "작업",
+          "event": "fix(home): 계정 칩 역할을 관문 role_label(팀 리더/팀원)로 · 매뉴얼 6번 종합접수처 링크 ../reception → coo/reception (GM 2026-09-17 「실장인데 왜 직원」·이경",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 104
+        "saves": 105
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "17:15",
+        "signal": "17:30",
         "last": {
-          "time": "17:28",
+          "time": "17:31",
           "area": "작업",
-          "event": "chore(labs): 공개 소개서 배포에 AX 랩스 로고 svg 동봉(시모 정본 2026-09-17)",
+          "event": "fix(ux): 명암비·터치44px·이모지→선아이콘 3항목 — 월간마케팅보고서·AI시리즈보드·홈페이지(GM 화면 정돈 4번 2026-09-17)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 35
+        "saves": 36
       },
       "cpo": {
         "nick": "시포",
@@ -3766,7 +3784,7 @@
         "nick": "시우",
         "session": "welperion-automation-76",
         "alive": true,
-        "signal": "17:15",
+        "signal": "17:30",
         "last": {
           "time": "17:26",
           "area": "A3보고",
@@ -3780,7 +3798,7 @@
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "17:15",
+        "signal": "17:30",
         "last": {
           "time": "17:27",
           "area": "배",
