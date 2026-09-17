@@ -87,7 +87,7 @@ _OWNER_CHOICES = ["이경연 실장", "최준용M", "윤병현AM", "임정은M",
                   "이정헌 소장", "나우열M"]
 _CATEGORY_CHOICES = ["[1] 매출 및 영업", "[2] 인사", "[3] 파트너팀", "[4] 운영 정책",
                      "[5] 시설 및 환경", "[6] 회원·CS", "[7] IT·시스템·자동화",
-                     "[8] 교육·조직문화", "[9] 회의"]
+                     "[8] 교육·조직문화", "[9] 회의", "[10] 마케팅"]
 _OWNER_LIST = " · ".join(_OWNER_CHOICES)
 _CATEGORY_LIST = " · ".join(_CATEGORY_CHOICES)
 

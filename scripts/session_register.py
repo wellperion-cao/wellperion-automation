@@ -102,6 +102,44 @@ def heartbeat(role: str) -> dict | None:
     return data
 
 
+CONSOLE_URL = "https://erp.wellperion.com/api/console/heartbeat"
+
+
+def push_console(role: str, data: dict) -> str:
+    """관제판 라이브 — 생존 신호마다 서버로 「지금 하는 것」을 직접 보낸다(시토 배 12723 · GM 2026-09-17
+    「자율작업현황은 라이브가 안 돼 잘 안 본다」). 발행본(3분 저장 + 30초 읽기)을 거치지 않으므로 지연 ≤1분.
+    값 원천은 kungjjak_board._board 와 같다(새 계산 없음). 실패해도 생존 신호는 계속 — 결과 한 줄만 돌려준다."""
+    try:
+        import urllib.request
+        from token_usage import read_push_key  # noqa: PLC0415
+        from kungjjak_board import _board  # noqa: PLC0415
+        key = read_push_key()
+        if not key:
+            return "관제판 열쇠 없음"
+        day = datetime.now().strftime("%Y-%m-%d")
+        r = _board(day)["roles"].get(role) or {}
+        ships = []
+        try:
+            q = json.load(open(os.path.join(_PROJECT_ROOT, "status", "_queue.json"), encoding="utf-8"))
+            items = q.get("items") or q.get("tasks") or (q if isinstance(q, list) else [])
+            ships = [t for t in items if str(t.get("clevel") or t.get("role") or "").lower() == role
+                     and str(t.get("status") or "").upper() in ("PENDING", "IN_PROGRESS")]
+        except Exception:
+            pass
+        body = {"role": role, "nick": r.get("nick"), "session": data.get("session"),
+                "ts": _now().isoformat(timespec="seconds"), "now": r.get("last"),
+                "idle_since": r.get("idle_since"), "saves_today": r.get("saves", 0),
+                "open_ships": {"count": len(ships),
+                               "top": [{"no": t.get("ship_no"), "title": str(t.get("title") or "")[:60],
+                                        "status": t.get("status")} for t in ships[:3]]}}
+        req = urllib.request.Request(CONSOLE_URL, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                                     headers={"Content-Type": "application/json", "X-Token-Push-Key": key}, method="POST")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return f"관제판 {resp.status}"
+    except Exception as exc:
+        return f"관제판 실패 {str(exc)[:60]}"
+
+
 def alive(role: str, minutes: int = ALIVE_MINUTES) -> dict:
     """
     살아있음 판정 — heartbeat_at 이 minutes 이내면 alive.
@@ -205,7 +243,7 @@ def main() -> int:
         if data is None:
             print(f"! {args.role} 은 등록된 적이 없습니다 — --session 으로 먼저 등록하세요.")
             return 2
-        print(f"생존 갱신: {data['role']} · {data.get('session')} · {data['heartbeat_at']}")
+        print(f"생존 갱신: {data['role']} · {data.get('session')} · {data['heartbeat_at']} · {push_console(args.role, data)}")
         if args.role == "ceo":   # 사람 방 호출은 배가 아니라 인박스 — 웰리 세션이 여기서 보고 그 방에 답한다(배 2614 줄기)
             try:
                 from call_inbox import summary_line, open_calls
