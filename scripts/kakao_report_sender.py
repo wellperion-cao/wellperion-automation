@@ -477,6 +477,37 @@ def _log_new_notice_windows(room_name: str, before: set) -> None:
     before.update(new)   # 같은 창을 폴링마다 다시 적지 않는다
 
 
+_NOTICE_BASE: set = set()   # 이번 실행 시작 때 이미 열려 있던 공지 창 hwnd — 그건 사람 것이라 안 닫는다
+
+
+def close_new_notice_windows(room_name: str) -> int:
+    """이번 실행 시작(기준선) 뒤 새로 생긴 공지 「상세보기」 창을 닫는다(WM_CLOSE · 방 창·메인창 아님).
+    GM 물음 2026-09-17 「왜 매일 아침마다 떠 있나」 — 원인이 무엇이든 우리가 방을 만지는 동안 생긴 창은
+    우리가 치운다. 닫은 창은 trace 로그에 남겨 어느 방·어느 단계에서 생겼는지 아침에 대조한다."""
+    try:
+        new = [(h, t) for h, t in _notice_windows() if h not in _NOTICE_BASE]
+    except Exception:
+        return 0
+    if not new:
+        return 0
+    for h, _t in new:
+        try:
+            win32gui.PostMessage(h, win32con.WM_CLOSE, 0, 0)
+        except Exception:
+            pass
+    time.sleep(0.5)
+    line = "%s [%s] 공지 상세보기 창 %d개 닫음(우리 실행 중 생김) — %s" % (
+        datetime.now().strftime('%Y-%m-%d %H:%M:%S'), room_name, len(new), " · ".join(repr(t) for _h, t in new))
+    log(line)
+    try:
+        NOTICE_TRACE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with NOTICE_TRACE_LOG.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+    return len(new)
+
+
 def notice_snapshot(tag: str) -> int:
     """지금 열린 공지 「상세보기」 창 수·제목을 logs/kakao_notice_trace.log 에 남긴다(GM 물음 2026-09-17
     「왜 매일 아침마다 떠 있나」). 09-16 감지기는 검색 Enter 직후만 봐서 0건이었다 — 이번엔 카톡을 만지는
@@ -485,6 +516,9 @@ def notice_snapshot(tag: str) -> int:
         wins = _notice_windows()
     except Exception:
         return -1
+    if tag.endswith("start") or tag.startswith("export start"):
+        _NOTICE_BASE.clear()
+        _NOTICE_BASE.update(h for h, _t in wins)
     # 공지 창뿐 아니라 카톡 창 전부(제목)를 같이 적는다 — GM 이 말한 「상세보기」가 공지 창이 아닐 수도 있어
     # (2026-09-17 실측: 방 열기·붙여넣기·실전송 어느 경로도 Moim 창을 안 만들었다) 창 종류를 안 가리고 남긴다.
     try:
@@ -608,6 +642,8 @@ def close_room_window(win, room_name: str) -> bool:
         time.sleep(0.4)
     closed = _gone()
     log(f"[{room_name}] 방 창 {'닫음' if closed else '안 닫힘'}")
+    notice_snapshot("closed " + room_name)
+    close_new_notice_windows(room_name)
     return closed
 
 
@@ -2167,6 +2203,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         return False, "near_dup"
 
     room_win = open_or_find_room(room_name)
+    notice_snapshot("opened " + room_name)
     try:
         focus_window(room_win, room_name)
         input_box = get_input_box(room_win, room_name)
@@ -2182,6 +2219,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
 
         sent = send_enter(input_box)
         time.sleep(0.5)
+        notice_snapshot("sent " + room_name)
         if not sent:
             # 나갔는지 확인 못 했으면 성공이라 적지 않는다(2026-09-11 공지창 사고).
             # 예외로 올려 호출측 실패 경로(BLOCKED·업무보고방 통보·rc=1)를 그대로 태운다.
