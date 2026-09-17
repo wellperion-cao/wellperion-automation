@@ -107,6 +107,12 @@ CORE = {
 }
 
 SKIP_DIRS = {"tmp", "_assets", "status", "reports"}
+
+# 문서함 자동 등록 제외(배 11434 · 시우 결정 2026-09-17). /coo/chairman/ 은 카드 밖이면 관리자만(app.py
+# ADMIN_ONLY_PREFIXES)인데, 문서함 카드로 실리는 순간 카드 권한이 앞서 로그인 직원 전원에게 열렸다 —
+# 회장님·대표님 보고 A3(견적 금액·지시·법인 상품 설계)가 그대로 보였다. 명시 카드(CORE·APPGROUP_IDS)는 그대로 싣는다.
+# 파일은 그대로 있고 회사 관리자(/erp/admin/)에서는 계속 열린다.
+DOC_EXCLUDE_PREFIXES = ("coo/chairman/",)   # 파트너 초안(cbo/)은 PLATFORM_ONLY_PREFIXES 가 이미 거른다
 TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
 
 # ── ERP 권한 정리(배1026 · 2026-09-05 웰리 설계 §2②) ──────────────────────────
@@ -127,7 +133,7 @@ APPGROUP_IDS = {
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-파트너팀-페이롤",
             "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-chairman-업무시스템", "coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차",
+    "경영": ["coo-chairman-업무시스템", "coo-chairman-gm업무",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
@@ -400,6 +406,8 @@ def build():
         name = core["name"] if core else names.get(mid, title)
         if mid in TAB_PROMOTED:      # 탭으로 올라간 화면은 카드로 그리지 않는다
             return
+        if not core and mid not in APPGROUP_OF and rel.startswith(DOC_EXCLUDE_PREFIXES):
+            return                   # 문서함 자동 등록 제외 — 관리자 전용 폴더의 보고서(배 11434)
         items.append({
             "id": mid,
             "core": bool(core),
@@ -507,7 +515,7 @@ MODULE_BUNDLES = [
                      "cfo-finance-지출현황", "cfo-finance-매출지출현황"]),
     ("콘텐츠",      ["cmo-series-ai시리즈보드"]),
     ("경영 보고",   ["coo-chairman-gm업무", "coo-chairman-대표님-지시사항",
-                     "coo-chairman-회장님-지시사항", "coo-chairman-중간관리자-업무목차"]),
+                     "coo-chairman-회장님-지시사항"]),
 ]
 
 
@@ -706,7 +714,8 @@ def _selftest():
     assert make_id("cpo", "cpo/member/lesson.html") == "cpo-member-lesson"
     items, missing_automation = build()
     assert items and items[0]["core"], "핵심 모듈이 맨 위가 아니다"
-    assert [m["id"] for m in items if m["core"]] == ["member", "inquiry", "check"]
+    assert [m["id"] for m in items if m["core"]] == ["member", "inquiry", "check", "coo-chairman-업무시스템"]
+    assert not [m for m in items if m["doc"] and m["path"].startswith("../coo/chairman/")], "관리자 전용 폴더 보고서가 문서함에 실렸다(배 11434)"
     assert not missing_paths(items), "없는 경로가 있다"
     ids = [m["id"] for m in items]
     assert len(ids) == len(set(ids)), "id 중복"
