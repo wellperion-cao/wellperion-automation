@@ -96,6 +96,14 @@ CORE = {
         "desc": "시설 일일 점검과 고장 접수 현황을 본다.",
         "staff": "이정헌 소장",
     },
+    # GM 지시 2026-09-17 「업무 시스템 페이지」 — GM·실장·소장·나우열M·실무진 7명이 각자 ?who= 로 본다(웰리 67dc2ccd34).
+    # /coo/chairman/ 은 카드 밖이면 관리자만(app.py ADMIN_ONLY_PREFIXES)이라 핵심 카드로 실어 로그인 직원 전원에게 연다.
+    # 사람별 범위는 화면 안 ?who= 가 가른다 · 계정별 잠금은 배 1026 권한 정리 때.
+    "coo/chairman/업무시스템.html": {
+        "id": "coo-chairman-업무시스템", "name": "업무 시스템",
+        "desc": "GM업무·중간관리자 업무·전사일정·업무&결재를 사람별 한 화면으로 본다.",
+        "staff": "이경연 실장 · 이정헌 소장 · 나우열M",
+    },
 }
 
 SKIP_DIRS = {"tmp", "_assets", "status", "reports"}
@@ -118,7 +126,7 @@ APPGROUP_IDS = {
             "chro-hub-calendar", "cmo-series-ai시리즈보드"],
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-전사-일정", "coo-check-전사-거래업체"],
-    "경영": ["coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차",
+    "경영": ["coo-chairman-업무시스템", "coo-chairman-gm업무", "coo-chairman-중간관리자-업무목차",
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
