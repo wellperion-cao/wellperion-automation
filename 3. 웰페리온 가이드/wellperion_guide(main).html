@@ -11148,7 +11148,7 @@ function crTab(btn, panelId) {
       return r.json();
     }).then(function(me){
       if (!me) return;
-      who.innerHTML = esc(me.name || me.email || '') + (me.role ? '<span class="role">' + esc(me.role) + '</span>' : '');
+      var ROLE = {admin:'관리자', staff:'직원', partner:'파트너'}; who.innerHTML = esc(me.name || me.email || '') + (me.role ? '<span class="role">' + esc(ROLE[me.role] || me.role) + '</span>' : '');
       link.textContent = '로그아웃'; link.href = '/auth/logout'; box.hidden = false;
     }).catch(function(){ /* 관문 없는 곳 — 숨김 유지 */ });
   })();
