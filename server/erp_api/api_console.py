@@ -76,13 +76,17 @@ def view(state: dict, now: datetime.datetime) -> dict:
     out = {}
     for role, v in state.items():
         d = dict(v)
-        try:
-            seen = datetime.datetime.fromisoformat(str(d.get("seen_at")))
-            if seen.tzinfo is None:
-                seen = seen.replace(tzinfo=now.tzinfo)
-            d["alive"] = (now - seen).total_seconds() < ALIVE_SEC
-        except Exception:
-            d["alive"] = False
+        # 살아있음 = 생존 신호(seen_at) 또는 활동 푸시(event_seen_at) 중 최근 것이 90분 안 — 루프가 멈춰도 창이 일하면 살아있는 것
+        best = None
+        for k in ("seen_at", "event_seen_at"):
+            try:
+                t = datetime.datetime.fromisoformat(str(d.get(k)))
+                if t.tzinfo is None:
+                    t = t.replace(tzinfo=now.tzinfo)
+                best = t if (best is None or t > best) else best
+            except Exception:
+                pass
+        d["alive"] = bool(best) and (now - best).total_seconds() < ALIVE_SEC
         out[role] = d
     return {"published_at": now.isoformat(timespec="seconds"), "roles": out}
 
@@ -179,6 +183,9 @@ def _selfcheck() -> None:
     assert v["roles"]["cto"]["alive"] is False, "90분 넘으면 죽은 것"
     add_events(st, {"role": "cto", "events": [{"ts": "t1", "kind": "지시", "text": "a"}] * 40, "busy_at": "t9"}, "2026-09-17T15:30:00+09:00")
     assert len(st["cto"]["events"]) == EVENTS_MAX and st["cto"]["busy_at"] == "t9" and st["cto"]["saves_today"] == 3, "활동은 최근 30건 · 다른 칸은 그대로"
+    st2 = {}
+    add_events(st2, {"role": "coo", "events": [{"ts": "t", "kind": "응답", "text": "x"}]}, "2026-09-17T17:50:00+09:00")
+    assert view(st2, datetime.datetime(2026, 9, 17, 18, 0, tzinfo=tz))["roles"]["coo"]["alive"] is True, "생존 신호 없어도 활동이 있으면 살아있음"
     print("selfcheck ok")
 
 
