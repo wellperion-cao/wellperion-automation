@@ -277,6 +277,15 @@
       }).join('');
       var rows = Object.keys(people).map(function (k) {
         var pp = people[k];
+        if (k === 'gm') {
+          // 전체(전 사원 합계)와 GM 본인 담당을 나눈다(GM 지시 2026-09-17 4차) — 첫 줄이
+          // "김남욱 GM 77/22/117"로 나오면 머리 숫자(본인 담당 31/8/27)와 어긋나 보였다.
+          var own = countStates(ownItems);
+          return '<tr><td>전체</td><td>' + pp.counts['밀림'] + '</td><td>' + pp.counts['오늘_이번주']
+              + '</td><td>' + pp.counts['진행'] + '</td><td>0</td></tr>'
+            + '<tr><td>' + esc(pp.display) + ' (본인 담당)</td><td>' + own['밀림'] + '</td><td>'
+              + own['오늘_이번주'] + '</td><td>' + own['진행'] + '</td><td>0</td></tr>';
+        }
         return '<tr><td>' + esc(pp.display) + '</td><td>' + pp.counts['밀림'] + '</td><td>'
           + pp.counts['오늘_이번주'] + '</td><td>' + pp.counts['진행'] + '</td><td>0</td></tr>';
       }).join('');
