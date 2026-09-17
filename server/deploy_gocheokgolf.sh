@@ -17,6 +17,8 @@ for f in "$SRC"/*.html; do
 done
 $S "sudo mkdir -p /srv/www/3_gocheokgolf/img && sudo chown -R ec2-user:ec2-user /srv/www/3_gocheokgolf && mkdir -p /srv/erp/clients/3_gocheokgolf"
 $SCP "$TMP"/*.html $HOST:/srv/www/3_gocheokgolf/
+$SCP "$TMP"/intro.html $HOST:/srv/www/3_gocheokgolf/index.html          # /gocheokgolf/ 가 403 이던 것(2026-09-17 감사) — 소개서가 첫 화면
+$SCP server/counselbot/tenants/3_gocheokgolf.json $HOST:/srv/erp/faq/3_gocheokgolf/profile.json   # 상담봇 정본(deploy_chat.sh:36 과 같은 줄 · 여기서도 올린다 — 09-15 이름 커밋이 서버 미반영이었다)
 $SCP "$SRC"/img/*.jpg "$SRC"/img/*.png $HOST:/srv/www/3_gocheokgolf/img/   # png = 로고(2026-09-17)
 $SCP "$SRC"/gc.css $HOST:/srv/www/3_gocheokgolf/gc.css   # 3화면 공용 스타일(2026-09-17 시보 · html 만 올려 404 났던 것)
 $SCP "2. 브랜드_자료/11_고척골프_조재오부장님/client.json" $HOST:/srv/erp/clients/3_gocheokgolf/client.json

@@ -363,7 +363,7 @@ def main() -> int:
     atexit.register(lambda: lock.unlink(missing_ok=True))
 
     state = load_state(style)
-    if _already_ok_today(state):
+    if _already_ok_today(state) and not args.dry_run:   # dry-run 은 생성·검사만 시험하는 길이라 당일 성공 여부와 무관(2026-09-17 감사)
         log(style, "오늘 이미 임시저장 성공 — 건너뜀")
         return 0
     topic = pick_topic(style, state)
