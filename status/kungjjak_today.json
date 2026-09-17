@@ -1845,18 +1845,6 @@
       ],
       "work": [
         {
-          "time": "13:34",
-          "area": "작업",
-          "event": "feat(erp-home): 왼쪽 「업무」 묶음 = 모듈 배치의 모듈과 같은 칸·같은 차례(회원·문의·점검·콘텐츠·라커·분실물·업무·결재·인사·전사 일정·경영 보고·재무) — 업무영역 5칸 묶음 폐기 (GM 2026",
-          "detail": "커밋 0d1450232f · 배 12715"
-        },
-        {
-          "time": "13:36",
-          "area": "작업",
-          "event": "fix(erp-home): 자주 여는 것 화면도 제 모듈 묶음에 그대로 — 문의·점검·업무·결재 묶음이 비어 모듈 배치(11)와 어긋나던 것 (GM 2026-09-17 13:2x)",
-          "detail": "커밋 e5e5ade5a9 · 배 12715"
-        },
-        {
           "time": "13:36",
           "area": "작업",
           "event": "fix(git): 무접촉 통합 뒤 「손 안 댄 작업본」(디스크 = 옛 HEAD 그대로)은 새 HEAD 내용으로 자동 갱신 — 9/15 판 두 파일이 9/16 원격 커밋 뒤에도 옛 판으로 남아 매시간 경보 나던 것(G",
@@ -2023,6 +2011,18 @@
           "area": "작업",
           "event": "feat(guide): 아이디어 화면(erp/admin/ideas.html) 구글 Apps Script read_file/commit_file 폐지 → 서버 대기열(/api/guide/commit)·최신 대기 조회(",
           "detail": "커밋 af96b3b9a7 · 배 12730"
+        },
+        {
+          "time": "18:44",
+          "area": "작업",
+          "event": "chore(launchers): 가이드·아이디어 저장 대기열 적용기 숨김 실행기 — 예약작업 Wellperion-Guide-Edits-Apply(10분) 등록(문서에만 있고 미등록이던 것)",
+          "detail": "커밋 a396fd7279 · 배 12730"
+        },
+        {
+          "time": "18:46",
+          "area": "작업",
+          "event": "chore(launchers): 적용기 숨김 실행기 되돌림 — 예약작업 Wellperion-Guide-Edits-Apply 는 9/14 부터 run_py_hidden.vbs 로 이미 등록·10분 주기 rc=0(내 조",
+          "detail": "커밋 1026e51383 · 배 12730"
         }
       ],
       "count": 62,
@@ -3063,13 +3063,25 @@
           "ref": "GM-20260917-4041",
           "no": "41",
           "got": "자체점검은 AI 시포 옆칸으로 옮길까?",
-          "did": "",
+          "did": "자체 점검 줄을 제목·AI 시포 배지 바로 아래 한 줄로 (GM 2026-09-17) · fix(report): 자체 점검 줄을 제목·AI 시포 배지 바로 아래  — 커밋 aaea0f2803 · 배 12523",
           "start": "18:42",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "18:43",
+          "minutes": 1,
+          "upload": "✅ 배포 (aaea0f280)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-4042",
+          "no": "42",
+          "got": "그리고 결산 관련해서는 숫자가 중요한게 아니라, 업무가 더 중요할 것 같고",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "18:43",
+          "end": "18:45",
+          "minutes": 1,
+          "upload": "✅ 배포 (7ce63f2e6)",
+          "open": false,
+          "evidence": "⚠️없음"
         },
         {
           "ref": "GM-20260917-cpo-counsel-qa",
@@ -3205,12 +3217,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:54",
-          "area": "멤버십",
-          "event": "feat(cpo): 멤버십 휴회 진행중 줄에 「문자 보내기」 버튼 — 서버 /api/sms/send hold_confirm(회원번호=중복 방지 열쇠 · 시작/종료 · dry/hold/skip_duplicate 표시)",
-          "detail": "커밋 02589588ba · 배 12523"
-        },
         {
           "time": "11:59",
           "area": "멤버십",
@@ -3384,31 +3390,22 @@
           "area": "공통",
           "event": "fix(report): 자체 점검 줄을 머리 오른쪽으로 · 그 밖의 매출을 왼쪽 칸으로 · 바디프렌드는 매출 그대로 [GM 2026-09-17]",
           "detail": "커밋 488343bf46 · 배 12523"
+        },
+        {
+          "time": "18:43",
+          "area": "공통",
+          "event": "fix(report): 자체 점검 줄을 제목·AI 시포 배지 바로 아래 한 줄로 (GM 2026-09-17)",
+          "detail": "커밋 aaea0f2803 · 배 12523"
         }
       ],
-      "count": 37,
-      "done": 36,
-      "open": 1,
-      "avg_minutes": 8,
+      "count": 38,
+      "done": 38,
+      "open": 0,
+      "avg_minutes": 7,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4041",
-          "no": "41",
-          "got": "자체점검은 AI 시포 옆칸으로 옮길까?",
-          "did": "",
-          "start": "18:42",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -3802,6 +3799,30 @@
           "upload": "✅ 배포 (ce5cae7dd)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-5042",
+          "no": "42",
+          "got": "아 그럼 글자도 무지개색으로 하면 안되나? 지금 다 이쁘게 잘해놨네",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "18:45",
+          "end": "18:46",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-5043",
+          "no": "43",
+          "got": "나우열M 노란색이라는데?",
+          "did": "",
+          "start": "18:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -3986,14 +4007,29 @@
           "detail": "커밋 ce5cae7dde · 배 12716"
         }
       ],
-      "count": 31,
-      "done": 31,
-      "open": 0,
+      "count": 33,
+      "done": 32,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-5043",
+          "no": "43",
+          "got": "나우열M 노란색이라는데?",
+          "did": "",
+          "start": "18:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": []
     },
     "cbo": {
@@ -4291,13 +4327,13 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T18:42:59",
+    "published_at": "2026-09-17T18:46:19",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-68",
         "alive": true,
-        "signal": "18:30",
+        "signal": "18:45",
         "last": {
           "time": "18:34",
           "area": "GM요청",
@@ -4311,21 +4347,21 @@
         "nick": "시토",
         "session": "welperion-automation-fc",
         "alive": true,
-        "signal": "18:30",
+        "signal": "18:45",
         "last": {
-          "time": "18:41",
+          "time": "18:46",
           "area": "작업",
-          "event": "feat(guide): 아이디어 화면(erp/admin/ideas.html) 구글 Apps Script read_file/commit_file 폐지 → 서버 대기열(/api/guide/commit)·최신 대기 조회(",
+          "event": "chore(launchers): 적용기 숨김 실행기 되돌림 — 예약작업 Wellperion-Guide-Edits-Apply 는 9/14 부터 run_py_hidden.vbs 로 이미 등록·10분 주기 rc=0(내 조",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 113
+        "saves": 117
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-69",
         "alive": true,
-        "signal": "18:30",
+        "signal": "18:45",
         "last": {
           "time": "18:42",
           "area": "작업",
@@ -4341,13 +4377,13 @@
         "alive": true,
         "signal": "17:15",
         "last": {
-          "time": "18:42",
+          "time": "18:43",
           "area": "GM요청",
-          "event": "자체점검은 AI 시포 옆칸으로 옮길까?",
+          "event": "그리고 결산 관련해서는 숫자가 중요한게 아니라, 업무가 더 중요할 것 같고",
           "result": "warn"
         },
-        "idle_since": null,
-        "saves": 46
+        "idle_since": "18:45",
+        "saves": 47
       },
       "coo": {
         "nick": "시우",
@@ -4355,19 +4391,19 @@
         "alive": true,
         "signal": "18:00",
         "last": {
-          "time": "18:35",
-          "area": "작업",
-          "event": "feat(ssot): [GM 지시 2026-09-17] 이름 칩 글자색 = 카테고리와 같은 방식(옅은 배경 + 같은 계열 진한 글자)",
-          "result": "ok"
+          "time": "18:46",
+          "area": "GM요청",
+          "event": "나우열M 노란색이라는데?",
+          "result": "warn"
         },
-        "idle_since": "18:35",
+        "idle_since": null,
         "saves": 41
       },
       "cbo": {
         "nick": "시보",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "18:30",
+        "signal": "18:45",
         "last": {
           "time": "18:35",
           "area": "작업",
