@@ -7,6 +7,9 @@ GM 지시 2026-09-10(고척골프) · 2026-09-15(다이어트캠프 합류): 「
 정본(이 파일이 지어내지 않고 그대로 읽는 곳) — 업체마다 하나:
   --client jo (고척골프) = "2. 브랜드_자료/11_고척골프_조재오부장님/blog_style.json"
   --client dc (다이어트캠프) = "2. 브랜드_자료/10_다이어트캠프_브랜드가이드/blog_style.json"
+  --client ax (AX 랩스 「피트니스 AX」) = "2. 브랜드_자료/12_AX랩스/blog_style.json"
+    (배 2694 ② · 계정 없음 — 편집 라인·발행기 준비까지만. 사람용 정리본 =
+     status/briefs/CMO-피트니스AX-편집라인-20260916.md, 코드는 blog_style.json 만 읽는다)
 프롬프트도 blog_style.json 의 prompt_template 키가 정본이다 — 이 코드는 값만 끼운다
 (2026-09-10~11 네 번 실패 끝에 겨우 도는 프롬프트라 구조에서 재조립하지 않는다).
 
@@ -33,6 +36,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLIENT_DIRS = {
     "jo": ROOT / "2. 브랜드_자료" / "11_고척골프_조재오부장님",
     "dc": ROOT / "2. 브랜드_자료" / "10_다이어트캠프_브랜드가이드",
+    "ax": ROOT / "2. 브랜드_자료" / "12_AX랩스",
 }
 UPLOADER = ROOT / "scripts" / "naver_blog_upload_playwright.py"
 
@@ -191,12 +195,18 @@ def pick_topic(style: dict, state: dict) -> str | None:
     return None
 
 
-def build_prompt(topic: str, style: dict, axis: dict | None = None) -> str:
+def build_prompt(topic: str, style: dict, axis: dict | None = None, state: dict | None = None) -> str:
     """style["prompt_template"] 에 값만 끼운다 — 프롬프트 문자열 자체는 blog_style.json 이 정본.
 
-    axis 는 보통 랜덤이다. 자가점검에서만 axes[0] 을 넘겨 결과를 고정한다.
+    axis 는 보통 랜덤이다(jo·dc). philosophy.cycle=true(ax) 면 state 의 발행 회차(runs 길이)로
+    axes 를 순서대로 돈다 — GM 09-16 「3축 순환」. 자가점검에서만 axis 를 직접 넘겨 결과를 고정한다.
     """
-    axis = axis or random.choice(style["philosophy"]["axes"])
+    if axis is None:
+        axes = style["philosophy"]["axes"]
+        if style["philosophy"].get("cycle") and state is not None:
+            axis = axes[len(state.get("runs", [])) % len(axes)]
+        else:
+            axis = random.choice(axes)
     markers = style["markers"]
     return style["prompt_template"].format(
         topic=topic,
@@ -248,6 +258,13 @@ def run_checks(body: str, style: dict) -> list[str]:
     hit = [w for w in style["banned_ours"] if w.lower() in low]
     if hit:
         errs.append("우리 쪽 낱말 혼입: " + ", ".join(hit))
+    # ax 전용: 웰페리온·파트너는 본문 사례로는 허용하되 제목·첫머리(앞 200자)에 앞세우면 막는다.
+    # 이 키가 없는 client(jo·dc)는 그대로 통과 — 영향 0.
+    lead_brands = style.get("case_brands_not_in_lead")
+    if lead_brands:
+        lead_hit = [b for b in lead_brands if b in body[:200]]
+        if lead_hit:
+            errs.append("제목·첫 200자에 사례 브랜드 등장: " + ", ".join(lead_hit))
     min_len = style["min_len"]
     if len(body) < min_len:
         errs.append(f"본문 {len(body)}자 — {min_len}자 미만")
@@ -293,6 +310,11 @@ def tell_owner(style: dict, topic: str) -> None:
     """
     owner = style["owner"]
     text = owner["message"].format(topic=topic)
+    if owner.get("telegram"):
+        # 카톡 방이 없는 client(ax) — GM 텔레그램(업무보고방)으로만 알린다. 새 발신기 안 만든다.
+        notify(text)
+        log(style, "GM 텔레그램 알림 보냄(owner.telegram)")
+        return
     try:
         r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_report_sender.py"),
                             "--message", text, "--only-room", owner["room"], "--sender", "웰리"],
@@ -307,7 +329,7 @@ def tell_owner(style: dict, topic: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--client", required=True, choices=sorted(CLIENT_DIRS),
-                     help="jo=고척골프 조재오 지점장님 · dc=다이어트캠프 이승기대표님")
+                     help="jo=고척골프 조재오 지점장님 · dc=다이어트캠프 이승기대표님 · ax=AX 랩스 「피트니스 AX」")
     ap.add_argument("--dry-run", action="store_true", help="본문만 만들고 브라우저를 열지 않는다")
     ap.add_argument("--self-test", action="store_true", help="검사 함수 자가점검")
     ap.add_argument("--no-owner-notice", action="store_true",
@@ -349,7 +371,7 @@ def main() -> int:
         return 0
 
     from model_router import run_claude
-    prompt = build_prompt(topic, style)
+    prompt = build_prompt(topic, style, state=state)
     # 저장소 밖에서 부른다 — 이 프로젝트의 CLAUDE.md·훅(「[형식 고정] 8요소 표」)이 붙으면
     # 블로그 본문 자리에 업무 보고 표가 나온다(2026-09-11 실측, 4회 연속). 프롬프트로는 못 이긴다.
     llm_body, used_model = run_claude(prompt, label=f"partner-blog-daily-{args.client}",
@@ -490,8 +512,20 @@ def _self_test() -> None:
         bad_tag = good.replace(style["required_tag"], "")
         assert any("태그" in e for e in run_checks(bad_tag, style)), client
 
-        bad_brand = good + " 웰페리온 정원제 스포츠클럽 문의는 여기로."
-        assert any("웰페리온" in e for e in run_checks(bad_brand, style)), client
+        # 우리 쪽 낱말 혼입 — client 마다 banned_ours 목록이 다르므로 첫 낱말을 뽑아 일반화한다
+        # (jo·dc = 파트너 블로그에 웰페리온을 못 쓰게 · ax = 본명·영업문구·클리셰를 못 쓰게).
+        banned_word = style["banned_ours"][0]
+        bad_brand = good + f" {banned_word} 이야기입니다."
+        assert any(banned_word in e for e in run_checks(bad_brand, style)), client
+
+        # ax 전용: 사례 브랜드(웰페리온 등)가 제목·첫머리엔 안 되고 본문 사례로는 되는지.
+        lead_brands = style.get("case_brands_not_in_lead")
+        if lead_brands:
+            lead_brand = lead_brands[0]
+            bad_lead = f"{lead_brand} 이야기로 시작합니다. " + good
+            assert any("사례 브랜드" in e for e in run_checks(bad_lead, style)), client
+            ok_case = good + f" {lead_brand} 에서 실제로 그렇게 됐습니다."
+            assert run_checks(ok_case, style) == [], (client, run_checks(ok_case, style))
 
         bad_len = "짧은 글"
         assert any("미만" in e for e in run_checks(bad_len, style)), client
