@@ -9,6 +9,12 @@ import json
 import re
 import sys
 
+try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
+    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
+except Exception:
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+
 PLAN_PATH = "status/monthly_ops_plan.json"
 HISTORY_PATH = "status/monthly_ops_plan_이력.md"
 MARK = "▶["  # ▶[
@@ -110,6 +116,14 @@ def main():
 
     if not args.apply:
         print("(dry-run — 적용하려면 --apply)")
+        return
+
+    # 쓰기 직전 신선도 확인 — 방금 읽은 디스크가 이미 HEAD 보다 낡으면(다른 커밋이
+    # 워킹트리에 반영 안 된 채 앞서 있으면) 트림해서 그대로 되쓰지 않는다. monthly_ops_sync.py
+    # 가 거부해도 이 스크립트가 신선도 확인 없이 뒤이어 그 낡은 사본을 다시 써버리던 구멍
+    # (09-17 gm_task_autocheck 사고의 전파 경로) 을 막는다.
+    if not _refuse_if_stale(PLAN_PATH, json.dumps(data, ensure_ascii=False, indent=2) + "\n"):
+        print(f"[거부] {PLAN_PATH} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 트림 건너뜀.")
         return
 
     # 이력 파일에 append (중복 방지: 섹션 본문에 이미 있는 블록은 다시 안 넣는다)

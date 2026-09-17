@@ -38,6 +38,21 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 PLAN_PATH = ROOT / "status" / "monthly_ops_plan.json"
+
+try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
+    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
+except Exception:
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+
+
+def _save_plan(plan: dict) -> dict | None:
+    """PLAN_PATH 를 통째로 되쓰기 전 HEAD 대비 신선도 확인 — 거부 시 None 이 아닌 사유를 돌려준다."""
+    new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
+    if not _refuse_if_stale(PLAN_PATH, new_text):
+        return {"ok": False, "reason": "디스크가 HEAD 보다 낡음 — 저장 거부(refuse_if_older_than_head)"}
+    PLAN_PATH.write_text(new_text, encoding="utf-8")
+    return None
 # ★배12675 웰리 실측(2026-09-16) — 표기가 둘로 갈렸던 자리. GM_OWNER(띄어쓰기)는 전사일정
 #   표시 정본(2026-09-03 통일 · kakao_report_sender.py) 이자 GM업무 카드 owner 값으로,
 #   gm_surfaces_sync.card_owner() 가 어차피 화면에 띄울 때 다시 이 모양으로 편다 — 그대로 둔다.
@@ -218,7 +233,9 @@ def touch_plan(card_id: str, line: str, check: str, mark_done: bool, dry: bool) 
     if dry:
         return {"ok": True, "dry": True}
     card["progress_note"] = pn
-    PLAN_PATH.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    fail = _save_plan(plan)
+    if fail:
+        return fail
     return {"ok": True}
 
 
@@ -256,7 +273,9 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     if dry:
         return {"ok": True, "dry": True, "id": cid}
     objs.append(card)
-    PLAN_PATH.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    fail = _save_plan(plan)
+    if fail:
+        return fail
     return {"ok": True, "id": cid}
 
 

@@ -480,6 +480,13 @@ def _fetch_gm_task_owners() -> dict:
 
 
 GM_PLAN_FILE = ROOT / "status" / "monthly_ops_plan.json"
+
+try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
+    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
+except Exception:
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+
 # 3라인 구조(운영부=이경연 실장 / 시설·지원=이정헌 소장 / 파트너팀=나우열M) — 팀원 몫은 그 사람의
 # 라인장 묶음에 싣고 줄 끝에 원 담당 이름을 남긴다(약속 L24 · 운영부는 실장 경유).
 GM_WORK_LINE_OF = {
@@ -3958,7 +3965,87 @@ def _ovd_leaders() -> dict:
                 out.pop("지원부", None)
     except Exception:
         pass          # 정본을 못 읽어도 부서 4종은 그대로 동작한다(fail-soft)
+    # 반장이 오늘 휴무면 대체 반장으로 돌린다(GM 지시 2026-09-17 · duty_substitute).
+    for dept in ("시설부", "운영부", "지원부(여)", "지원부(남)", "주차관리부"):
+        if dept not in out:
+            continue
+        sub, reason = duty_substitute(dept)
+        if reason:
+            out[dept] = f"{sub}({reason.split(' 휴무')[0]} 휴무 대신)"
     return out
+
+
+_DUTY_SUB_KEY = "_휴무대체"
+
+
+def duty_substitute(dept: str, today: "date | None" = None) -> "tuple[str, str | None]":
+    """그 부서 반장이 오늘 휴무 기간이면 (대체 부서 반장, 사유문구) · 아니면 (원래 반장, None).
+
+    GM 지시 2026-09-17 — 부서 반장이 휴무면 점검 제출·독려·접수 알림을 대체 부서(기본
+    운영부)로 돌린다. 새 원장을 만들지 않는다(약속 L01·L21):
+    ▸반장 명단 정본 = ssot/kpi.json `_부서반장_2026_08_26.depts`
+    ▸대체 규칙 정본 = 같은 블록의 `_휴무대체.default`
+    ▸휴무 원천 = status/schedule_ssot.json 의 type=="휴무" 항목(assignee·next_due·end_date)
+    """
+    today = today or date.today()
+    try:
+        block = json.loads((ROOT / "ssot" / "kpi.json").read_text(encoding="utf-8")).get(
+            "_부서반장_2026_08_26") or {}
+        depts = block.get("depts") or {}
+    except Exception:
+        return "", None
+    leader = str(depts.get(dept) or "")
+    if not leader:
+        return leader, None
+    try:
+        import schedule_ssot
+        for it in schedule_ssot.load().get("items", []):
+            if it.get("type") != "휴무" or str(it.get("assignee") or "").strip() != leader:
+                continue
+            start = _parse_ymd(it.get("next_due"))
+            end = _parse_ymd(it.get("end_date")) or start
+            if not (start and start <= today <= (end or start)):
+                continue
+            sub_dept = (block.get(_DUTY_SUB_KEY) or {}).get("default", "")
+            sub_leader = str(depts.get(sub_dept) or "") or leader
+            reason = f"{leader} 휴무 {start.month}/{start.day}~{end.month}/{end.day}"
+            return sub_leader, reason
+    except Exception:
+        pass          # 일정 SSOT 를 못 읽어도 원래 반장 그대로 동작한다(fail-soft)
+    return leader, None
+
+
+def _duty_today_line(today: "date | None" = None) -> str:
+    """🌅 하루의 시작(4부서방) 맨 위에 붙일 휴무 대체 안내 — 오늘 휴무인 반장이 있을 때만.
+
+    GM 지시 2026-09-17. 부서별로 duty_substitute 를 다시 부르지 않고 한 번만 훑는다."""
+    today = today or date.today()
+    try:
+        block = json.loads((ROOT / "ssot" / "kpi.json").read_text(encoding="utf-8")).get(
+            "_부서반장_2026_08_26") or {}
+        depts = block.get("depts") or {}
+        rev = {str(who): str(dept) for dept, who in depts.items() if who}
+        sub_dept = (block.get(_DUTY_SUB_KEY) or {}).get("default", "")
+        sub_leader = str(depts.get(sub_dept) or "")
+        import schedule_ssot
+        lines = []
+        for it in schedule_ssot.load().get("items", []):
+            if it.get("type") != "휴무":
+                continue
+            who = str(it.get("assignee") or "").strip()
+            dept = rev.get(who)
+            if not dept:
+                continue
+            start = _parse_ymd(it.get("next_due"))
+            end = _parse_ymd(it.get("end_date")) or start
+            if not (start and start <= today <= (end or start)):
+                continue
+            rng = f"{start.month}/{start.day}~{end.month}/{end.day}"
+            lines.append(f"🔁 오늘 휴무 — {who}({dept}) {rng} → {dept} 점검 제출은 "
+                        f"{sub_dept}({sub_leader}님)가 대신")
+        return "\n".join(lines)
+    except Exception:
+        return ""
 _OVD_HEARTBEAT_ID = "overdue-reception-alert"
 # 이 알림에서 빼는 분류.
 #  · 분실물 접수 = 보관 성격(30일 주기)이라 매일 재촉할 일이 아니다.
@@ -4532,7 +4619,11 @@ def _update_meeting_card(meeting: date, hhmm: str, doc_no: str, submitted: int) 
     note_lines = [ln for ln in str(card.get("progress_note") or "").split("\n") if not ln.startswith(prefix)]
     note_lines.insert(0, line)
     card["progress_note"] = "\n".join(note_lines)
-    plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    new_text = json.dumps(plan, ensure_ascii=False, indent=2) + "\n"
+    if not _refuse_if_stale(plan_path, new_text):
+        log(f"[weekly-meeting] {plan_path.name} 저장 안 함 — 디스크가 HEAD 보다 낡음(쓰기 전 가드) — 카드 갱신 생략")
+        return
+    plan_path.write_text(new_text, encoding="utf-8")
     hist = ROOT / "status" / "monthly_ops_plan_이력.md"
     with hist.open("a", encoding="utf-8") as f:
         f.write(f"\n▶[{ds} 웰리 자동 · 2026-09-35 중간관리자 회의자료] {line} · {doc_no}\n")

@@ -56,6 +56,12 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
+try:  # 안전 커밋터 신선도 가드(monthly_ops_sync.py·gm_task_autocheck.py 와 동일 재사용 — 약속 L01)
+    from safe_commit import refuse_if_older_than_head as _refuse_if_stale
+except Exception:
+    def _refuse_if_stale(*a, **k):
+        return True  # 가드 모듈 로드 실패 — 막지는 않되(기존 동작 유지) 가드는 없는 셈
+
 # ── 경로 상수 ──
 BASE_DIR = Path.home() / "welperion-automation"
 PLAN_FILE = BASE_DIR / "status" / "monthly_ops_plan.json"
@@ -425,7 +431,12 @@ def _roll_month_status(now: datetime) -> None:
     if not changed:
         print("[달상태] 이미 최신 — 바꿀 것 없음")
         return
-    PLAN_FILE.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    new_text = json.dumps(plan, ensure_ascii=False, indent=2)
+    if not _refuse_if_stale(PLAN_FILE, new_text):
+        print(f"[거부] {PLAN_FILE.name} 저장 안 함 — 디스크가 HEAD 보다 낡습니다. 달상태 갱신 건너뜀.")
+        log_event("plan_stale_write_refused", month=cur)
+        return
+    PLAN_FILE.write_text(new_text, encoding="utf-8")
     for key, old, new in changed:
         print(f"[달상태] {key} {old} → {new}")
     log_event("month_status_rolled", month=cur, changed=len(changed))
