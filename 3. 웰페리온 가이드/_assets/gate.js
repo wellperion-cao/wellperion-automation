@@ -41,6 +41,9 @@
   } catch (e) {}
 
   var root = document.documentElement;
+  // 브랜드 분기(2026-09-17 시모 · GM 화면 정돈 12번) — AX 랩스 화면(html[data-brand=ax] 또는 platform_brand.css 링크)은
+  // 민트+틸 게이트 · 워드마크 AX LABS. 기본(웰페리온)은 그대로. 비밀번호·통과 로직은 건드리지 않는다.
+  var AX = root.getAttribute("data-brand") === "ax" || !!document.querySelector('link[href*="platform_brand.css"]');
 
   // 본문 깜빡임(플래시) 방지: 통과 전엔 body 숨김, 게이트만 보이게
   var hideStyle = document.createElement("style");
@@ -64,6 +67,13 @@
     "background:#c9a24b;color:#1a1918;font:600 13px inherit}" +
     "#welpGate button:hover{background:#d8b55f}" +
     "#welpGate .er{color:#e06a5a;font-size:12px;margin-top:10px;min-height:16px}";
+  if (AX) hideStyle.textContent +=
+    "#welpGate{background:linear-gradient(180deg,#F3FBF9,#E8F6F3)}" +
+    "#welpGate .gc{background:#fff;border-color:#BFE6DF;box-shadow:0 18px 50px rgba(15,61,58,.12)}" +
+    "#welpGate .mk{color:#0A6E66}#welpGate h2{color:#0F3D3A}#welpGate p{color:#4F6B68}" +
+    "#welpGate input{background:#fff;border-color:#BFE6DF;color:#0F3D3A}#welpGate input:focus{border-color:#0E9488}" +
+    "#welpGate input:focus-visible,#welpGate button:focus-visible{outline-color:#0E9488}" +
+    "#welpGate button{background:#0A6E66;color:#fff}#welpGate button:hover{background:#0E9488}";
   root.appendChild(hideStyle);
 
   function unlock() {
@@ -85,7 +95,7 @@
     ov.id = "welpGate";
     ov.innerHTML =
       '<div class="gc">' +
-      '<div class="mk">WELLPERION</div>' +
+      '<div class="mk">' + (AX ? 'AX LABS' : 'WELLPERION') + '</div>' +
       '<h2>사내 전용</h2>' +
       '<p>접근 비밀번호를 입력하세요.</p>' +
       '<input type="password" id="welpGatePw" placeholder="접근 비밀번호" autocomplete="current-password">' +
