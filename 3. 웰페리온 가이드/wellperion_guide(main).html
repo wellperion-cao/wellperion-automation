@@ -8004,9 +8004,9 @@ function crTab(btn, panelId) {
     const TODO_LS_KEY = 'wellperion-todo-sheets';
     const TODO_USER_KEY = 'wellperion-todo-user';
     const CATEGORIES = [
-      {value:'[1] 매출 및 영업', label:'[1] 매출 및 영업'},
-      {value:'[2] 인사', label:'[2] 인사'},
-      {value:'[3] 파트너팀', label:'[3] 파트너팀'},
+      {value:'[2] 매출 및 영업', label:'[2] 매출 및 영업'},
+      {value:'[3] 인사&파트너팀', label:'[3] 인사&파트너팀'},
+      {value:'[3] 인사&파트너팀', label:'[3] 인사&파트너팀'},
       {value:'[4] 운영 정책', label:'[4] 운영 정책'},
       {value:'[5] 시설 및 환경', label:'[5] 시설 및 환경'},
       {value:'[6] 회원·CS', label:'[6] 회원·CS'},
@@ -8020,9 +8020,9 @@ function crTab(btn, panelId) {
       {name:'백승화 사원', cls:''},
     ];
     const CAT_MAP = {
-      '[1] 매출 및 영업':'[1] 매출 및 영업',
-      '[2] 인사':'[2] 인사',
-      '[3] 파트너팀':'[3] 파트너팀',
+      '[2] 매출 및 영업':'[2] 매출 및 영업',
+      '[3] 인사&파트너팀':'[3] 인사&파트너팀',
+      '[3] 인사&파트너팀':'[3] 인사&파트너팀',
       '[4] 운영 정책':'[4] 운영 정책',
       '[5] 시설 및 환경':'[5] 시설 및 환경',
       '[6] 회원·CS':'[6] 회원·CS',
@@ -8031,7 +8031,7 @@ function crTab(btn, panelId) {
       '[9] 회의':'[9] 회의',
     };
     const CAT_ICONS = {
-      '[1] 매출 및 영업':'💰','[2] 인사':'👥','[3] 파트너팀':'🤝',
+      '[2] 매출 및 영업':'💰','[3] 인사&파트너팀':'👥','[3] 인사&파트너팀':'🤝',
       '[4] 운영 정책':'⚙️','[5] 시설 및 환경':'🏗️','[6] 회원·CS':'🧑‍🤝‍🧑',
       '[7] IT·시스템·자동화':'🖥️','[8] 교육·조직문화':'📚','[9] 회의':'🗓️',
     };
@@ -8167,7 +8167,7 @@ function crTab(btn, panelId) {
         // S3 안전망: AI C레벨 배 제외 — 2026-06-08 GM 방침 (카테고리·담당자 이중 가드)
         if (t.category === '[7]AI배(C레벨)') return;
         if (/웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i.test(t.owner)) return;
-        const cat = t.category || '[1] 매출 및 영업';
+        const cat = t.category || '[2] 매출 및 영업';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(t);
       });
@@ -8607,7 +8607,7 @@ function crTab(btn, panelId) {
     var SSOT_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
     var SSOT_CAT_MAP = {
       '업무':        '[4] 운영 정책',
-      '인사·파트너': '[2] 인사',
+      '인사·파트너': '[3] 인사&파트너팀',
       '회의':        '[9] 회의',
       '기타':        '[4] 운영 정책'
     };
