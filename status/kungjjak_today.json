@@ -738,6 +738,18 @@
           "evidence": "🔁재확인"
         },
         {
+          "ref": "GM-20260917-1075",
+          "no": "75",
+          "got": "아 지금 chairman이 GM업무가 아냐?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "18:34",
+          "end": "18:34",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -1064,8 +1076,8 @@
           "detail": "TODO-20260909095319018 제목·본문 재작성(남·여 사우나 2개소 17,248,000 · 정문 키오스크 웰니스스튜디오 이관 · 여자사우나 재견적 줄 삭제 · 병합안내·비교표 삭제) · 첨부 7 그대로 · 날짜 그대로"
         }
       ],
-      "count": 73,
-      "done": 73,
+      "count": 74,
+      "done": 74,
       "open": 0,
       "avg_minutes": 32,
       "work_count": 30,
@@ -3012,18 +3024,6 @@
           "evidence": "🔁재확인"
         },
         {
-          "ref": "GM-20260917-4037",
-          "no": "37",
-          "got": "https://lounge.bodyfriend.co.kr/owner/order/total 여기 페이지에 매출이 나와있는데 가져올수 없나? 아이디랑 패스워드 알려줄 수 있는데 따로 서버에 입력하게끔 셋팅해주고 라이브 …",
-          "did": "",
-          "start": "18:33",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
-        },
-        {
           "ref": "GM-20260917-cpo-bodyfriend",
           "no": "nd",
           "got": "바디프렌드 라운지 9월 매출 집계 가능한지 · 채널 계정 AX랩스 정본→ERP 관리자 반영",
@@ -3169,18 +3169,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:25",
-          "area": "공통",
-          "event": "fix(cpo): 현황보고 1면 팀 꼬리표 폴백 뮤지컬팀 brojay_tag 영어뮤지컬 — 정본 sales_targets 와 같은 값 (배 2523)",
-          "detail": "커밋 8383b6b746 · 배 12523"
-        },
-        {
-          "time": "10:26",
-          "area": "배",
-          "event": "배 2523 월말 결산 5~7면 초안",
-          "detail": "저장 d0ab545d5a·8383b6b74 · 로컬 렌더 검증 · erp 실값 검수 남음"
-        },
         {
           "time": "10:45",
           "area": "멤버십",
@@ -3348,31 +3336,28 @@
           "area": "공통",
           "event": "fix(report): 그 밖의 매출 타일을 한 줄로 — 오른쪽 칸 높이에 맞춰 잘림 없앤다",
           "detail": "커밋 3b31355221 · 배 12523"
+        },
+        {
+          "time": "18:35",
+          "area": "공통",
+          "event": "fix(report): 그 밖의 매출 타일을 한 줄 네 칸으로 — 오른쪽 칸 47px 에 맞춘다",
+          "detail": "커밋 dc997f0244 · 배 12523"
+        },
+        {
+          "time": "18:36",
+          "area": "공통",
+          "event": "feat(secrets): 파트너 계정 보관함에 바디프렌드 라운지 채널 추가 (GM 2026-09-17 「계정 서버에 입력하게 셋팅」)",
+          "detail": "커밋 259bb88a10 · 배 12523"
         }
       ],
-      "count": 35,
+      "count": 34,
       "done": 34,
-      "open": 1,
+      "open": 0,
       "avg_minutes": 8,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4037",
-          "no": "37",
-          "got": "https://lounge.bodyfriend.co.kr/owner/order/total 여기 페이지에 매출이 나와있는데 가져올수 없나? 아이디랑 패스워드 알려줄 수 있는데 따로 서버에 입력하게끔 셋팅해주고 라이브 …",
-          "did": "",
-          "start": "18:33",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": [
         {
           "count": 2,
@@ -3751,22 +3736,16 @@
           "ref": "GM-20260917-5041",
           "no": "41",
           "got": "글자색은 아예 흰색으로 하거나 약간 카테고리랑 같은 글자색으로 셋팅해볼까?",
-          "did": "",
+          "did": "[GM 지시 2026-09-17] 이름 칩 글자색 = 카테고리와 같은 방식(옅은 배경 + 같은 계열 진한 글자) · feat(ssot): [GM 지시 2026-09-17] 이름 칩 글자색  — 커밋 ce5cae7dde · 배 12716",
           "start": "18:34",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "18:35",
+          "minutes": 1,
+          "upload": "✅ 배포 (ce5cae7dd)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "12:49",
-          "area": "작업",
-          "event": "바이크 3사 최종 견적 A3 — 모니터 본질 비교(크기·해상도·터치 · 미기재 2곳 확인 요) · 계약금 조항 · 원산지 표기 (GM 검토 요청 2026-09-17)",
-          "detail": "커밋 5477f9d1ea · 배 12716"
-        },
         {
           "time": "13:09",
           "area": "작업",
@@ -3940,31 +3919,22 @@
           "area": "작업",
           "event": "feat(ssot): [GM 지시 2026-09-17] 윤병현AM 이름 칩을 무지개 그라데이션으로",
           "detail": "커밋 8646daf631 · 배 12716"
+        },
+        {
+          "time": "18:35",
+          "area": "작업",
+          "event": "feat(ssot): [GM 지시 2026-09-17] 이름 칩 글자색 = 카테고리와 같은 방식(옅은 배경 + 같은 계열 진한 글자)",
+          "detail": "커밋 ce5cae7dde · 배 12716"
         }
       ],
       "count": 31,
-      "done": 30,
-      "open": 1,
-      "avg_minutes": 3,
+      "done": 31,
+      "open": 0,
+      "avg_minutes": 2,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-5041",
-          "no": "41",
-          "got": "글자색은 아예 흰색으로 하거나 약간 카테고리랑 같은 글자색으로 셋팅해볼까?",
-          "did": "",
-          "start": "18:34",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 0
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cbo": {
@@ -4235,13 +4205,19 @@
           "area": "배",
           "event": "배 12718 2단계 예약 등록 · 11386 채널 글 자리(/labs/posts.html)",
           "detail": "4b00302257 · 예약 rc=0 · posts.html 200"
+        },
+        {
+          "time": "18:35",
+          "area": "작업",
+          "event": "인스타 임시안 — 파트너 「올려요」 답을 06:30 카톡 저장본에서 읽어 아침 07:20 자동 게시(--auto-publish · bat 1단계) · 짧은 승낙/인스타 언급만 인정",
+          "detail": "커밋 d76f1678c2 · 배 12718"
         }
       ],
       "count": 9,
       "done": 9,
       "open": 0,
       "avg_minutes": 5,
-      "work_count": 26,
+      "work_count": 27,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -4256,7 +4232,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T18:34:07",
+    "published_at": "2026-09-17T18:36:50",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -4264,12 +4240,12 @@
         "alive": true,
         "signal": "18:30",
         "last": {
-          "time": "18:31",
+          "time": "18:34",
           "area": "GM요청",
-          "event": "지금 chairman 주소 아직 살아있는거 아냐? 링크줘봐",
+          "event": "아 지금 chairman이 GM업무가 아냐?",
           "result": "warn"
         },
-        "idle_since": "18:33",
+        "idle_since": "18:34",
         "saves": 93
       },
       "cto": {
@@ -4306,13 +4282,13 @@
         "alive": true,
         "signal": "17:15",
         "last": {
-          "time": "18:33",
-          "area": "GM요청",
-          "event": "https://lounge.bodyfriend.co.kr/owner/order/total 여기 페이지에 매출이 나와있는데 가져올수 없나? 아이디랑 패스워드 알려줄 수 있는데 따로 서버에 입력하게끔 셋팅해주고 라이브 ",
-          "result": "warn"
+          "time": "18:36",
+          "area": "공통",
+          "event": "feat(secrets): 파트너 계정 보관함에 바디프렌드 라운지 채널 추가 (GM 2026-09-17 「계정 서버에 입력하게 셋팅」)",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 43
+        "saves": 45
       },
       "coo": {
         "nick": "시우",
@@ -4320,13 +4296,13 @@
         "alive": true,
         "signal": "18:00",
         "last": {
-          "time": "18:29",
+          "time": "18:35",
           "area": "작업",
-          "event": "feat(ssot): [GM 지시 2026-09-17] 윤병현AM 이름 칩을 무지개 그라데이션으로",
+          "event": "feat(ssot): [GM 지시 2026-09-17] 이름 칩 글자색 = 카테고리와 같은 방식(옅은 배경 + 같은 계열 진한 글자)",
           "result": "ok"
         },
-        "idle_since": "18:30",
-        "saves": 40
+        "idle_since": "18:35",
+        "saves": 41
       },
       "cbo": {
         "nick": "시보",
@@ -4334,13 +4310,13 @@
         "alive": true,
         "signal": "18:30",
         "last": {
-          "time": "18:21",
-          "area": "배",
-          "event": "배 12718 2단계 예약 등록 · 11386 채널 글 자리(/labs/posts.html)",
+          "time": "18:35",
+          "area": "작업",
+          "event": "인스타 임시안 — 파트너 「올려요」 답을 06:30 카톡 저장본에서 읽어 아침 07:20 자동 게시(--auto-publish · bat 1단계) · 짧은 승낙/인스타 언급만 인정",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 33
+        "saves": 34
       }
     }
   }
