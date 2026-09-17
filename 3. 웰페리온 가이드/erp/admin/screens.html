@@ -4,54 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>화면 지도 — 웰페리온 AX 랩스</title>
+<link rel="stylesheet" href="../../assets/wp-ui.css">
 <link rel="stylesheet" href="/erp/admin/platform_brand.css">
 <style>
   :root{
     --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
-    --dim:#4F6B68; --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
-    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12)); --gray-bg:#F4F8F8;
+    --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12));
   }
   html{color-scheme:light;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
-       color:var(--text); background:var(--bg); line-height:1.55; font-size:14px;}
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
   .wrap{max-width:none; width:100%; margin:0; padding:24px 20px 60px;}  /* 좌측 정렬·폭 최대 (GM 2026-09-17) */
-  h1{font-family:var(--pf-head,inherit); font-size:22px; font-weight:700; margin-bottom:4px;}
-  .sub{font-size:12.5px; color:var(--dim); margin-bottom:18px;}
+  h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
+  .sub{font-size:var(--fs-2); color:var(--pf-soft); margin-bottom:18px;}
 
   .kpi{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px;}
   .kpi div{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
-  .kpi b{display:block; font-family:var(--pf-head,inherit); font-size:26px; font-weight:700; color:var(--accent-hover); line-height:1.1;}
-  .kpi span{font-size:12px; color:var(--dim);}
+  .kpi b{display:block; font-family:var(--pf-head); font-size:var(--fs-6); font-weight:700; color:var(--accent-hover); line-height:1.1;}
+  .kpi span{font-size:var(--fs-2); color:var(--pf-soft);}
 
   .note-box{background:var(--accent-bg); border:1px solid var(--accent); border-radius:8px;
-            padding:10px 14px; font-size:12.5px; color:var(--text-soft); margin-bottom:22px; line-height:1.6;}
+            padding:10px 14px; font-size:var(--fs-2); color:var(--text); margin-bottom:22px; line-height:1.6;}
   .note-box b{color:var(--accent-hover);}
 
-  .grp{font-size:13px; font-weight:700; color:var(--accent-hover); margin:20px 0 6px;}
+  .grp{font-size:var(--fs-2); font-weight:700; color:var(--accent-hover); margin:20px 0 6px;}
   .grp:first-of-type{margin-top:0;}
   .tbl-wrap{overflow-x:auto; margin-bottom:6px;}
-  table.reg{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:12.5px;}
-  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); font-size:12px;
-               height:32px; padding:0 8px; background:var(--gray-bg); border-bottom:1px solid var(--border); white-space:nowrap;}
+  table.reg{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:var(--fs-2);}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); font-size:var(--fs-2);
+               height:32px; padding:0 8px; background:var(--pf-panel-2); border-bottom:1px solid var(--border); white-space:nowrap;}
   table.reg td{height:auto; min-height:28px; padding:5px 8px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word;}
-  table.reg td.path{color:var(--dim); font-family:ui-monospace,Consolas,monospace; font-size:11px; word-break:break-all;}
+  table.reg td.path{color:var(--pf-soft); font-family:ui-monospace,Consolas,monospace; font-size:var(--fs-1); word-break:break-all;}
   table.reg a{color:var(--accent-hover); text-decoration:none; font-weight:600;}
   table.reg a:hover{text-decoration:underline;}
-  table.reg .alt{color:var(--dim); font-size:11px; margin-left:4px;}
-  table.reg .flag{font-size:11px; font-weight:700;}
-  table.reg .flag.on{color:#B4530A;}
-  table.reg .verdict{font-size:11px; font-weight:700;}
-  table.reg .verdict.gm{color:#B4530A;}
-  table.reg .verdict.del{color:#B4530A;}
-  table.reg .verdict.hold{color:var(--dim);}
+  table.reg .alt{color:var(--pf-soft); font-size:var(--fs-1); margin-left:4px;}
+  table.reg .flag{font-size:var(--fs-1); font-weight:700;}
+  table.reg .flag.on{color:var(--pf-warn);}
+  table.reg .verdict{font-size:var(--fs-1); font-weight:700;}
+  table.reg .verdict.gm{color:var(--pf-warn);}
+  table.reg .verdict.del{color:var(--pf-warn);}
+  table.reg .verdict.hold{color:var(--pf-soft);}
   .verdict-block{margin-bottom:22px;}
-  .verdict-block .hd{font-size:13px; font-weight:700; color:var(--accent-hover); margin-bottom:4px;}
-  .verdict-block .instruction{font-size:12px; color:var(--text-soft); margin-bottom:8px;}
+  .verdict-block .hd{font-size:var(--fs-2); font-weight:700; color:var(--accent-hover); margin-bottom:4px;}
+  .verdict-block .instruction{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:8px;}
   details.ai-del{margin-top:8px; border:1px solid var(--border); border-radius:8px; background:var(--paper);}
-  details.ai-del summary{cursor:pointer; padding:8px 12px; font-size:12.5px; font-weight:600; color:var(--dim);}
+  details.ai-del summary{cursor:pointer; padding:8px 12px; font-size:var(--fs-2); font-weight:600; color:var(--pf-soft);}
   details.ai-del .tbl-wrap{padding:0 12px 10px;}
-  .foot{margin-top:30px; padding-top:14px; border-top:1px solid var(--border); font-size:11.5px; color:var(--dim);}
+  .foot{margin-top:30px; padding-top:14px; border-top:1px solid var(--border); font-size:var(--fs-1); color:var(--pf-soft);}
 </style>
 </head>
 <body>
@@ -219,7 +220,7 @@
         '<thead><tr><th>번호</th><th>화면</th><th>경로</th><th>마지막 저장</th><th>카드</th><th>들어오는 링크</th><th>표시</th><th>판정</th><th>종류</th><th>계정권한</th></tr></thead><tbody>';
       rows.forEach(function(e){
         var altTag = e.redirect_to ? '<span class="alt">→ '+esc(e.redirect_to)+'</span>' : '';
-        var essenceLine = e.essence ? '<div style="color:var(--dim);font-size:11px;margin-top:2px;">'+esc(e.essence)+'</div>' : '';
+        var essenceLine = e.essence ? '<div style="color:var(--pf-soft);font-size:var(--fs-1);margin-top:2px;">'+esc(e.essence)+'</div>' : '';
         var vcls = e.verdict==='GM후보' ? 'gm' : (e.verdict==='AI삭제' ? 'del' : '');
         html += '<tr>'+
           '<td>'+e.no+'</td>'+
