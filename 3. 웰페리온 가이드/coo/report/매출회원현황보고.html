@@ -322,6 +322,9 @@
   body:not(.closing-on) #sheet5, body:not(.closing-on) #sheet6, body:not(.closing-on) #sheet7{ display:none!important; }
   body.closing-on #sheet, body.closing-on #sheet2, body.closing-on #sheet3, body.closing-on #sheet4{ display:none!important; }
   body.closing-on #sheet5{ margin-top:66px; }
+  /* 결산 장은 칸을 두 줄로 쌓지 않는다 — 4면용 2행 격자를 그대로 쓰면 아랫줄이 빈 채 자리를 먹어
+     장 가운데가 통째로 빈다(2026-09-17 실측). 한 줄로 두면 칸들이 남은 높이를 나눠 갖는다. */
+  #sheet5 .body, #sheet6 .body, #sheet7 .body{ grid-template-rows:minmax(0,1fr); }
   #dclosing.on{ background:var(--gold,#c9a24b); color:#1a1918; }
 
   /* 리더가 직접 쓰는 칸 — 숫자가 아니라 업무를 적는 자리라 가장 크게 둔다(GM: 「숫자보다 업무」). */
@@ -3604,6 +3607,7 @@ function closingBox(t, v, s){
    글은 서버 한 곳(/api/closing/notes · 달·부서별 파일 1개)에 남는다. 공개 사본(erp 밖)에서는
    그 통로가 없으므로 칸을 읽기 전용으로 두고 그 사실을 적는다 — 저장되는 척하지 않는다. ── */
 var CLOSING_DEPT = { '5': '운영부', '6': '시설부', '7': '파트너팀' };
+function closingWhen(at){ var t = String(at || '').replace('T', ' '); return t.length >= 16 ? t.slice(5, 16) : t; }
 function closingMonth(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
 function closingBtnLabel(){ var m = new Date().getMonth() + 1; return '📑 ' + m + '월 결산 & ' + (m % 12 + 1) + '월 계획'; }
 function toggleClosing(){
@@ -3614,6 +3618,7 @@ function toggleClosing(){
   window.scrollTo(0, 0);
   if (on) {
     loadClosingNotes();
+    if (typeof renderClosingSheets === 'function') renderClosingSheets();   // 접혀 있는 동안 들어온 값 반영
     setTimeout(trimClosingBoxes, 200);
     setTimeout(trimClosingBoxes, 2500);   // 늦게 도착하는 칸(원장·시트)까지
   }
@@ -3635,7 +3640,7 @@ function loadClosingNotes(){
         var note = (d.notes || {})[CLOSING_DEPT[n]] || {};
         var ta = document.getElementById('cnote' + n), w = document.getElementById('cnwho' + n);
         if (ta && document.activeElement !== ta) ta.value = note.text || '';   // 쓰는 중인 칸은 안 덮는다
-        if (w) w.textContent = note.at ? ('마지막 저장 ' + note.at + ' · ' + (note.by || '—')) : '아직 저장된 내용 없음';
+        if (w) w.textContent = note.at ? ('마지막 저장 ' + closingWhen(note.at) + ' · ' + (note.by || '—')) : '아직 저장된 내용 없음';
       });
     })
     .catch(function(){
@@ -3654,7 +3659,7 @@ function saveClosingNote(dept, n){
     .then(function(r){ return r.json().catch(function(){ return { ok: false }; }); })
     .then(function(d){
       if (!d || !d.ok) throw new Error((d && (d.detail || d.error)) || '저장 실패');
-      if (w) w.textContent = '저장됨 ' + (d.at || '') + (d.by ? (' · ' + d.by) : '');
+      if (w) w.textContent = '저장됨 ' + closingWhen(d.at) + (d.by ? (' · ' + d.by) : '');
     })
     .catch(function(e){ if (w) w.textContent = '저장 실패 — ' + (e.message || '다시 눌러 주세요'); })
     .then(function(){ if (btn) btn.disabled = false; });
