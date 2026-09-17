@@ -367,6 +367,7 @@ def _detect_stale_worktree_copies(root: str, old_head: str, new_sha: str) -> lis
             return []
         paths = [p.decode("utf-8", "replace") for p in r.stdout.split(b"\x00") if p]
         stale: list = []
+        refreshed: list = []
         # ponytail: 경로마다 git show 1회 — 통합이 수백 파일 규모로 흔해지면
         # git cat-file --batch 로 묶어 왕복 줄이기.
         for p in paths:
@@ -384,8 +385,28 @@ def _detect_stale_worktree_copies(root: str, old_head: str, new_sha: str) -> lis
             )
             if show.returncode != 0:
                 continue
-            if disk.replace(b"\r\n", b"\n") != show.stdout.replace(b"\r\n", b"\n"):
-                stale.append(p)
+            disk_n = disk.replace(b"\r\n", b"\n")
+            if disk_n == show.stdout.replace(b"\r\n", b"\n"):
+                continue
+            # ★2026-09-17 시토(GM 「이런 문제가 계속 나는데 근본적으로 해결하고 있는 거지?」 · 09-15 두 파일이
+            #   9/16 원격 커밋 뒤에도 옛 판으로 남아 매시간 경보): 디스크가 **옛 HEAD 와 똑같으면** 이 PC 에서
+            #   아무도 손대지 않은 파일이다 — 잃을 로컬 편집이 0 이므로 새 HEAD 내용으로 갱신한다(경고만 하던
+            #   것을 고침). 디스크가 옛 HEAD 와도 다르면 누군가 편집 중일 수 있으니 종전대로 경고만 남긴다.
+            old = subprocess.run(["git", "show", f"{old_head}:{p}"], cwd=root, capture_output=True, timeout=30)
+            if old.returncode == 0 and disk_n == old.stdout.replace(b"\r\n", b"\n"):
+                try:
+                    tmp = fp + ".sync.tmp"
+                    with open(tmp, "wb") as fh:
+                        fh.write(show.stdout if b"\r\n" not in disk else show.stdout.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+                    os.replace(tmp, fp)
+                    refreshed.append(p)
+                    continue
+                except OSError:
+                    pass
+            stale.append(p)
+        if refreshed:
+            _log(f"POST_COMMIT_PUSH 손 안 댄 작업본 갱신 {len(refreshed)}건(디스크=옛 HEAD 였던 것만): "
+                 f"{', '.join(refreshed[:5])}", root)
         return stale
     except Exception as e:
         _log(f"POST_COMMIT_PUSH 뒤진 작업본 감지 실패(best-effort) {e}", root)
