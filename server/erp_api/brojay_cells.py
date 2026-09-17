@@ -38,7 +38,7 @@ REPO_DIR = os.environ.get("ERP_REPO_DIR", "/srv/erp/repo")
 
 # 매출분류 → 팀 칸 행(보고탭 I8~I15) — 정본은 status/sales_targets.json teams[].brojay_tag(GM 확정 2026-09-15).
 # 파일을 못 읽는 자리(자체점검·로컬)에서만 이 표를 쓴다. 두 표가 갈리면 파일이 이긴다.
-TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램폴린": 12, "필라테스": 13, "뮤지컬": 14, "유료GX": 15}
+TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램폴린": 12, "필라테스": 13, "영어뮤지컬": 14, "유료GX": 15}
 TEAM_KEY_ROW = {"swim": 8, "pt": 9, "golf": 10, "squash": 11, "gym": 12, "pilates": 13, "musical": 14, "gxe": 15}
 OPS_TAG = "운영부"
 LOCKER_TYPES = {"LOCKER_TICKET"}
