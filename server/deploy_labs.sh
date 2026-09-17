@@ -18,12 +18,13 @@ git show "HEAD:3. 웰페리온 가이드/erp/admin/company_intro.html" \
 git show "HEAD:3. 웰페리온 가이드/erp/admin/labs_home.html"   | grep -v 'page_ping.js'   | sed 's#href="\.\./\.\./assets/wp-ui\.css"#href="assets/wp-ui.css"#' > "$TMP/index.html"
 git show "HEAD:3. 웰페리온 가이드/erp/admin/platform_brand.css" > "$TMP/platform_brand.css"
 git show "HEAD:3. 웰페리온 가이드/assets/wp-ui.css" > "$TMP/assets/wp-ui.css"
+git show "HEAD:3. 웰페리온 가이드/erp/admin/axlabs_logo.svg" > "$TMP/axlabs_logo.svg"   # 소개서 머리 로고(시모 정본 2026-09-17)
 $S "sudo mkdir -p /srv/www/4_labs/assets && sudo chown -R ec2-user:ec2-user /srv/www/4_labs"
-$SCP "$TMP/intro.html" "$TMP/index.html" "$TMP/platform_brand.css" $HOST:/srv/www/4_labs/
+$SCP "$TMP/intro.html" "$TMP/index.html" "$TMP/platform_brand.css" "$TMP/axlabs_logo.svg" $HOST:/srv/www/4_labs/
 $SCP "$TMP/assets/wp-ui.css" $HOST:/srv/www/4_labs/assets/
 $SCP server/erp_api/labs.nginx.conf $HOST:/tmp/labs.conf
 $S "sudo cp /tmp/labs.conf /etc/nginx/conf.d/erp-locations/labs.conf && sudo nginx -t && sudo systemctl reload nginx"
-for u in /labs/ /labs/intro.html /labs/platform_brand.css /labs/assets/wp-ui.css; do
+for u in /labs/ /labs/intro.html /labs/platform_brand.css /labs/assets/wp-ui.css /labs/axlabs_logo.svg; do
   printf '%s ' "$u"; curl -s -o /dev/null -w '%{http_code}\n' "https://erp.wellperion.com$u"
 done
 rm -rf "$TMP"
