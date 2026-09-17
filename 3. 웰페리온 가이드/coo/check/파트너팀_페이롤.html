@@ -201,16 +201,53 @@ function renderTeam(t){
   $("viewTeam").innerHTML=h; $("viewTeam").style.display="";
   document.querySelectorAll(".goInstr").forEach(function(a){a.onclick=function(e){e.preventDefault();st.instr=a.dataset.n;sessionStorage.setItem("wp_payroll_instr",st.instr);renderInstrSelect();showView();};});
 }
+/* ── 쉬운 강사 추가 ── */
+var TEAM_DEF={"수영":{f:"수영격자",주차비:100000,율:0.5},"체조":{f:"수영격자",주차비:100000,율:0.5},"PT":{f:"30분격자",주차비:50000,율:0.5},"골프":{f:"30분격자",주차비:50000,율:0.6},"스쿼시":{f:"30분격자",주차비:50000,율:0.5},"필라테스":{f:"30분격자",주차비:50000,율:0.5},"루프":{f:"30분격자",주차비:50000,율:0.5},"GX":{f:"30분격자",주차비:0,율:0.5}};
+function easyAddHtml(){
+  var teamOpts=Object.keys(TEAM_DEF).map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join("");
+  var instrs=(st.cfg.instructors||[]);
+  var h='<div class="sec"><div class="sectit">👤 강사 추가 <span class="cnt">이름·팀·지급율만 넣으면 끝</span><span class="sp"></span><button class="btn ghost" id="btnBrojPick">브로제이에서 불러오기</button></div>';
+  h+='<div class="notice">강사명과 팀만 고르면 시트형식·주차비·수수료·청구방식은 팀 기본값으로 자동입니다. 지급율은 %로 넣으세요(예 50). 세부는 저장 후 아래 상세표에서 조정 가능합니다.</div>';
+  h+='<div id="brojBox"></div>';
+  h+='<div class="tw"><table><tbody><tr>'
+    +'<td class="l"><div class="small">강사명*</div><input id="ea_name" type="text" placeholder="예: 박민서"></td>'
+    +'<td class="l"><div class="small">팀*</div><select id="ea_team">'+teamOpts+'</select></td>'
+    +'<td class="l"><div class="small">지급율(%)</div><input id="ea_rate" type="number" step="1" style="width:80px" placeholder="50"></td>'
+    +'<td class="l"><div class="small">브로제이 강사명</div><input id="ea_broj" type="text" placeholder="예: 수영 박민서"></td>'
+    +'<td class="l"><div class="small">주차비</div><input id="ea_park" type="number" step="10000" style="width:100px"></td>'
+    +'<td class="l"><div class="small">원본시트ID(증빙용·선택)</div><input id="ea_sheet" type="text" style="width:150px" placeholder="선택"></td>'
+    +'<td class="l"><div class="small">&nbsp;</div><button class="btn blue" id="ea_save">+ 추가</button></td>'
+    +'</tr></tbody></table></div>';
+  // 등록된 강사 목록
+  h+='<div class="tw" style="margin-top:8px"><table><thead><tr><th class="l">팀</th><th class="l">강사</th><th class="l">지급율</th><th class="l">주차비</th><th class="l">청구방식</th><th class="l">시트형식</th><th class="l">브로제이명</th><th class="c">활성</th><th class="c">동작</th></tr></thead><tbody>';
+  instrs.forEach(function(i){h+='<tr><td class="l">'+esc(i["팀"])+'</td><td class="l"><b>'+esc(i["강사명"])+'</b></td><td class="l">'+Math.round((+i["지급율"]||0)*100)+'%</td><td class="l">'+num(i["주차비"])+'</td><td class="l">'+esc(i["청구방식"])+'</td><td class="l">'+esc(i["시트형식"])+'</td><td class="l small">'+esc(i["브로제이강사명"]||"")+'</td><td class="c">'+esc(i["활성"])+'</td><td class="c"><button class="btn ghost eaEdit" data-n="'+esc(i["강사명"])+'">수정</button> <button class="btn ghost eaTog" data-n="'+esc(i["강사명"])+'" data-a="'+(String(i["활성"]).toUpperCase()==="Y"?"N":"Y")+'">'+(String(i["활성"]).toUpperCase()==="Y"?"비활성":"활성")+'</button></td></tr>';});
+  if(!instrs.length)h+='<tr><td colspan="9" class="l" style="color:var(--dim)">아직 등록된 강사가 없습니다 — 위에서 추가하세요.</td></tr>';
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function eaFillTeamDefault(){var t=$("ea_team").value,d=TEAM_DEF[t]||{};if($("ea_rate")&&!$("ea_rate").value)$("ea_rate").value=Math.round((d.율||0.5)*100);if($("ea_park")&&$("ea_park").value==="")$("ea_park").value=d.주차비!=null?d.주차비:50000;}
+async function instrSet(o){var ap=adminPw();if(ap===null)return false;var by=prompt("입력자 이름")||"";try{var j=await api({action:"payroll_instructor_set",adminPassword:ap,instructor:o,by:by});if(!j.ok)throw new Error(j.error);toast("강사 저장 · "+j.instructor);var cj=await api({action:"payroll_config_get"});st.cfg=cj.config;renderInstrSelect();renderConfig();load(true);return true;}catch(e){toast("저장 실패: "+e.message,true);return false;}}
+function bindEasyAdd(){
+  var tsel=$("ea_team"); if(tsel){tsel.onchange=eaFillTeamDefault; eaFillTeamDefault();}
+  var sv=$("ea_save"); if(sv)sv.onclick=async function(){var name=$("ea_name").value.trim();if(!name){toast("강사명을 넣으세요",true);return;}
+    var o={"강사명":name,"팀":$("ea_team").value};var rate=$("ea_rate").value.trim();if(rate)o["지급율"]=(+rate)/100;var pk=$("ea_park").value.trim();if(pk!=="")o["주차비"]=+pk;var bj=$("ea_broj").value.trim();if(bj)o["브로제이강사명"]=bj;var sh=$("ea_sheet").value.trim();if(sh)o["원본시트ID"]=sh;
+    await instrSet(o);};
+  document.querySelectorAll(".eaEdit").forEach(function(b){b.onclick=function(){var i=(st.cfg.instructors||[]).filter(function(x){return x["강사명"]===b.dataset.n;})[0];if(!i)return;$("ea_name").value=i["강사명"];$("ea_team").value=i["팀"];$("ea_rate").value=Math.round((+i["지급율"]||0)*100);$("ea_park").value=i["주차비"]||"";$("ea_broj").value=i["브로제이강사명"]||"";$("ea_sheet").value=i["원본시트ID"]||"";$("ea_name").scrollIntoView({behavior:"smooth"});toast("위 폼에서 값을 고치고 [+ 추가]를 누르면 수정됩니다");};});
+  document.querySelectorAll(".eaTog").forEach(function(b){b.onclick=async function(){await instrSet({"강사명":b.dataset.n,"활성":b.dataset.a});};});
+  var bp=$("btnBrojPick"); if(bp)bp.onclick=async function(){bp.disabled=true;bp.textContent="불러오는 중…";try{var j=await api({action:"payroll_trainers"});if(!j.ok)throw new Error(j.error);var box=$("brojBox");box.innerHTML='<div class="notice">브로제이 강사 '+j.trainers.length+'명 — 이름을 누르면 위 「브로제이 강사명」에 채워집니다.</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">'+j.trainers.map(function(t){return '<button class="chip brojT" data-n="'+esc(t.name)+'">'+esc(t.name)+'</button>';}).join("")+'</div>';document.querySelectorAll(".brojT").forEach(function(x){x.onclick=function(){$("ea_broj").value=x.dataset.n;var m=x.dataset.n.match(/[가-힣]{2,4}$/);if(m&&!$("ea_name").value)$("ea_name").value=m[0];};});}catch(e){toast("브로제이 목록 실패: "+e.message,true);}finally{bp.disabled=false;bp.textContent="브로제이에서 불러오기";}};
+}
 /* ── 설정표 ── */
 var CFG_TABLES={"설정_강사":["강사명","팀","직급","활성","브로제이강사명","trainer_id","시트형식","지급율","주차비","카드수수료율","업무추진비","청구방식","팀인센티브","팀인센티브기준액","팀인센티브기본율","팀인센티브상위율","프로모션단가","원본시트ID","비고"],"설정_지급규칙":["강사명","회원구분","방식","값","비고"],"설정_회원구분":["회원구분","공제율","상품명접두","비고"],"설정_수업코드":["팀","코드","수업명패턴","1회수업료","비고"]};
 var CFG_KEYS={"설정_강사":"instructors","설정_지급규칙":"rules","설정_회원구분":"memberTypes","설정_수업코드":"codes"};
 function renderConfig(){
-  var c=st.cfg,h='<div class="notice">설정표는 페이롤 DB 시트의 설정 탭과 같습니다. 행을 고치고 [저장]을 누르면 관리 비밀번호를 묻습니다. 지급규칙의 강사명 <b>*</b> = 모든 강사 공통, 강사명을 지정하면 그 강사에게만 우선 적용. 값 <b>H5</b> = 강사 지급율.</div>';
+  var c=st.cfg,h=easyAddHtml();
+  h+='<div class="sec"><div class="sectit">🛠 상세 설정표 <span class="cnt">고급</span></div><div class="notice">아래는 원본 설정 탭 그대로입니다(고급). 보통은 위 「강사 추가」만 쓰면 됩니다. 지급규칙 강사명 <b>*</b> = 모든 강사 공통, 값 <b>H5</b> = 강사 지급율.</div>';
   Object.keys(CFG_TABLES).forEach(function(tn){var cols=CFG_TABLES[tn],rows=c[CFG_KEYS[tn]]||[];
     h+='<div class="sec"><div class="sectit">⚙ '+tn+' <span class="cnt">'+rows.length+'행</span><span class="sp"></span><button class="btn ghost cfgAdd" data-t="'+tn+'">+ 행</button><button class="btn cfgSave" data-t="'+tn+'">저장</button></div><div class="tw"><table class="cfg-table" id="cfg-'+tn+'"><thead><tr>'+cols.map(function(k){return '<th class="l">'+esc(k)+'</th>';}).join("")+'</tr></thead><tbody>';
     rows.forEach(function(r){h+='<tr>'+cols.map(function(k){return '<td class="l"><input type="text" data-k="'+esc(k)+'" value="'+esc(r[k])+'"></td>';}).join("")+'</tr>';});
     h+='</tbody></table></div></div>';});
   $("viewConfig").innerHTML=h;
+  bindEasyAdd();
   document.querySelectorAll(".cfgAdd").forEach(function(b){b.onclick=function(){var tb=$("cfg-"+b.dataset.t).querySelector("tbody");var tr=document.createElement("tr");tr.innerHTML=CFG_TABLES[b.dataset.t].map(function(k){return '<td class="l"><input type="text" data-k="'+esc(k)+'" value=""></td>';}).join("");tb.appendChild(tr);};});
   document.querySelectorAll(".cfgSave").forEach(function(b){b.onclick=async function(){var tn=b.dataset.t,rows=[];$("cfg-"+tn).querySelectorAll("tbody tr").forEach(function(tr){var o={},any=false;tr.querySelectorAll("input").forEach(function(i){o[i.dataset.k]=i.value.trim();if(i.value.trim())any=true;});if(any)rows.push(o);});
     var ap=adminPw();if(ap===null)return;var by=prompt("수정자 이름")||"";try{var j=await api({action:"payroll_config_set",adminPassword:ap,table:tn,rows:rows,by:by});if(!j.ok)throw new Error(j.error);toast(tn+" 저장 · 추가 "+j.added+" · 갱신 "+j.updated);var cj=await api({action:"payroll_config_get"});st.cfg=cj.config;renderConfig();renderInstrSelect();}catch(e){toast("저장 실패: "+e.message,true);}};});
