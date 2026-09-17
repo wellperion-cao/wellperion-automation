@@ -11123,6 +11123,36 @@ function crTab(btn, panelId) {
   })();
   // ── /home KPI ────────────────────────
 </script>
+  <!-- 우측 상단 로그인 칩 — /erp/ 관리자 홈과 같은 자리(GM 지시 2026-09-17 16:2x). /auth/me 로 이름·역할,
+       401 이면 「로그인」, 관문이 없는 곳(공개 Pages·로컬)에서는 숨긴다. 레이아웃은 건드리지 않는다(fixed). -->
+  <style>
+    #wp-acct{position:fixed;top:10px;right:16px;z-index:9000;display:flex;align-items:center;gap:10px;
+      font-size:13px;color:var(--text-soft,#555);background:var(--paper,#fff);border:1px solid var(--border,#E3E5E8);
+      border-radius:999px;padding:5px 12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    #wp-acct[hidden]{display:none}
+    #wp-acct .role{display:inline-block;font-size:11px;font-weight:600;margin-left:6px;padding:1px 7px;border-radius:999px;
+      background:rgba(183,159,138,.18);color:var(--text,#333)}
+    #wp-acct a{color:var(--dim,#777);text-decoration:none;font-weight:600}
+    #wp-acct a:hover{color:var(--accent-hover,#2F6FB0)}
+    @media print{#wp-acct{display:none}}
+  </style>
+  <div id="wp-acct" hidden><span id="wp-acct-who"></span><a id="wp-acct-link" href="/auth/logout">로그아웃</a></div>
+  <script>
+  (function(){
+    if (location.protocol === 'file:') return;
+    var box = document.getElementById('wp-acct'), who = document.getElementById('wp-acct-who'), link = document.getElementById('wp-acct-link');
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
+      if (r.status === 401) { who.textContent = ''; link.textContent = '로그인'; link.href = '/auth/login?next=' + encodeURIComponent(location.pathname + location.hash); box.hidden = false; return null; }
+      if (!r.ok) return null;
+      return r.json();
+    }).then(function(me){
+      if (!me) return;
+      who.innerHTML = esc(me.name || me.email || '') + (me.role ? '<span class="role">' + esc(me.role) + '</span>' : '');
+      link.textContent = '로그아웃'; link.href = '/auth/logout'; box.hidden = false;
+    }).catch(function(){ /* 관문 없는 곳 — 숨김 유지 */ });
+  })();
+  </script>
   <script src="_assets/page_ping.js" defer></script>
 </body>
 </html>
