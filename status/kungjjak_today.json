@@ -94,7 +94,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
@@ -130,13 +130,13 @@
           "ref": "GM-20260917-2003",
           "no": "03",
           "got": "부서장방은 매출보고 안해? 어제 회장님방 빼곤 그대로하는걸로 알고 있는데?",
-          "did": "",
+          "did": "카톡 UI 실행 잠금(O_EXCL) — 발신·내보내기 프로세스 직렬화 · 09:30 매출보고와 시험이 겹쳐 ★부서장 방 실패( · fix(kakao): 카톡 UI 실행 잠금(O_EXCL) — 발신·내보내 — 커밋 0feabba667 · 배 12680 · 부서장 방 09:30 매출보고 누락 — 원인·재발송·잠금 — 원인=내 카톡 UI 시험(09:30:46 ★부서장 창 닫기)이 발신과 겹쳐 COM 오류 · 09:35 재발송",
           "start": "09:33",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "09:37",
+          "minutes": 3,
+          "upload": "✅ 배포 (0feabba66)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -229,36 +229,58 @@
           "area": "GM요청",
           "event": "카톡 공지 상세보기 창 아침마다 뜨는 원인 시험",
           "detail": "시험 4회(방 열기·붙여넣기 3회 · GM 개인방 2734자 실전송 1회) 전부 공지 창 0개 · 재현 안 됨 · 3관문 단계별 스냅숏 + 우리 실행 중 생긴 공지 창 자동 닫기 배포 · 내일 07:41~07:59 실측으로 확정"
+        },
+        {
+          "time": "09:37",
+          "area": "작업",
+          "event": "fix(kakao): 카톡 UI 실행 잠금(O_EXCL) — 발신·내보내기 프로세스 직렬화 · 09:30 매출보고와 시험이 겹쳐 ★부서장 방 실패(09-17)",
+          "detail": "커밋 0feabba667 · 배 12680"
+        },
+        {
+          "time": "09:37",
+          "area": "GM요청",
+          "event": "부서장 방 09:30 매출보고 누락 — 원인·재발송·잠금",
+          "detail": "원인=내 카톡 UI 시험(09:30:46 ★부서장 창 닫기)이 발신과 겹쳐 COM 오류 · 09:35 재발송 ok · 실행 잠금 배포 · lessons 한 줄"
+        },
+        {
+          "time": "09:37",
+          "area": "작업",
+          "event": "fix(gm-plan): monthly_ops_plan 08:00 낡은 사본 되쓰기 주체 gm_task_autocheck.py 에 HEAD 대조 가드 (09-16 monthly_ops_sync 와 같은 본질 2회째)",
+          "detail": "커밋 856dc839c9 · 배 12680"
+        },
+        {
+          "time": "09:38",
+          "area": "자가점검",
+          "event": "monthly_ops_plan 08:00 낡은 사본 되쓰기(2회째) — 전파자 gm_task_autocheck 가드·복원",
+          "detail": "주체=gm_task_autocheck.py(08:00 CEO 파이프라인) 통째 read→write 에 HEAD 가드 없음 · 가드 추가·복원 856dc839c9 · 최초 오염원(07:00 전) 미확정"
         }
       ],
       "count": 3,
-      "done": 2,
-      "open": 1,
-      "avg_minutes": 7,
-      "work_count": 15,
+      "done": 3,
+      "open": 0,
+      "avg_minutes": 5,
+      "work_count": 19,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-2003",
-          "no": "03",
-          "got": "부서장방은 매출보고 안해? 어제 회장님방 빼곤 그대로하는걸로 알고 있는데?",
-          "did": "",
-          "start": "09:33",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
       "nick": "시모",
-      "items": [],
+      "items": [
+        {
+          "ref": "GM-20260917-3001",
+          "no": "01",
+          "got": "1. G:\\공유 드라이브\\0. 경영지원\\0. 웰페리온 프로젝트&미션 진행(경영지원부)\\26.9.3 브로제이 턴게이트+출입구 키오스크\\턴게이트 설치",
+          "did": "",
+          "start": "09:37",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
       "work": [
         {
           "time": "07:30",
@@ -277,16 +299,37 @@
           "area": "작업",
           "event": "feat(cmo): partner_blog_daily client=ax — AX 랩스 「피트니스 AX」 블로그 발행기 준비 (배 2694 ② · GM 지시 2026-09-16)",
           "detail": "커밋 417ceb0154 · 배 12691"
+        },
+        {
+          "time": "09:37",
+          "area": "배2694",
+          "event": "partner_blog_daily client=ax 준비",
+          "detail": "client=ax 발행기 저장·배포 417ceb0154 · self-test 통과 · 임시저장은 계정 뒤"
         }
       ],
-      "count": 0,
+      "count": 1,
       "done": 0,
-      "open": 0,
+      "open": 1,
       "avg_minutes": null,
-      "work_count": 3,
+      "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-3001",
+          "no": "01",
+          "got": "1. G:\\공유 드라이브\\0. 경영지원\\0. 웰페리온 프로젝트&미션 진행(경영지원부)\\26.9.3 브로제이 턴게이트+출입구 키오스크\\턴게이트 설치",
+          "did": "",
+          "start": "09:37",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cpo": {
