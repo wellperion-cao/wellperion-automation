@@ -11260,7 +11260,8 @@ function _renderHoldIntake() {
         var rem = remainKey ? esc(String(r[remainKey] || '-')) : '-';
         var actions = (st === '진행중')
           ? ('<button onclick="holdEarlyReturn(' + r.rowIndex + ')" style="' + _hbtn('var(--teal)') + '">조기 복귀 처리</button>'
-            + '<button onclick="holdComplete(' + r.rowIndex + ')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>')
+            + '<button onclick="holdComplete(' + r.rowIndex + ')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>'
+            + '<button onclick="holdSmsSend(' + r.rowIndex + ')" style="' + _hbtn('var(--gold)') + '">문자 보내기</button>')   // 휴회 확정 문자 — GM 지시 2026-09-17(버튼 발송 · 자동 아님) · 서버 /api/sms/send(시토 배 2714)
           : '';
         html += _hRowBox('<b style="min-width:56px">' + nm + '</b><span style="color:var(--dim)">' + period + '</span><span>잔여일 ' + rem + '</span>'
           + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : ''));
@@ -11289,6 +11290,29 @@ function holdApprove(intakeRow, decision, phone) {
       //   미확정). 실패해도 목록을 안 바꿨으니 같은 버튼을 다시 누르면 재시도 — alert로 토스트 놓침을 막는다.
       alert('⚠️ 휴회 ' + (decision === 'approve' ? '승인' : '반려') + ' 처리 실패\n' + (e.message || '') + '\n목록은 그대로입니다. 같은 버튼을 다시 눌러 재시도하세요.');
     });
+}
+// 휴회 확정 문자 보내기(직원 버튼 1회) — GM 지시 2026-09-17 · 서버 POST /api/sms/send(시토 배 2714 · 문구 본문은 서버 정본).
+//   origin_key=회원번호가 중복 방지 열쇠(같은 회원·같은 날 두 번 안 나감). 킬스위치 꺼져 있으면 status 'dry'(실제 문자 안 나감).
+function holdSmsSend(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; }); if (!r) return;
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').replace(/[^0-9]/g, '');
+  if (!phone) { showToast('휴대폰 번호가 없어 문자를 보낼 수 없습니다', 'err'); return; }
+  var md = function(s){ var m = String(s || '').match(/(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? (Number(m[2]) + '/' + Number(m[3])) : ''; };
+  var vars = {}; var s0 = md(r['휴회시작일']), e0 = md(r['휴회종료일']);
+  if (s0 && e0) { vars['시작'] = s0; vars['종료'] = e0; }   // 기간 값이 없으면 vars 비움 → 서버가 기간 줄을 뺀다
+  if (!confirm((r['회원명'] || '') + ' 회원님(' + phone + ')께 휴회 확정 문자를 보낼까요?' + (s0 && e0 ? '\n기간 ' + s0 + ' ~ ' + e0 : ''))) return;
+  fetch('/api/sms/send', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ template_id: 'hold_confirm', rcpt: phone, vars: vars, origin_key: String(r._member_no || phone) }) })
+    .then(function(res){ return res.json().catch(function(){ return { ok: false, status: 'fail' }; }); })
+    .then(function(d){
+      var st = (d && d.status) || 'fail';
+      if (st === 'skip_duplicate') { showToast('이미 보냄 — 같은 회원께 오늘 이미 나갔습니다', 'ok'); return; }
+      if (st === 'hold') { showToast('야간 보류 — 08시 이후 다시 눌러 주세요(실패 아님)', 'ok'); return; }
+      if (st === 'dry') { showToast('문자 준비 확인(시험 모드 · 실제 발송 전)', 'ok'); return; }
+      if (d && d.ok && st === 'sent') { showToast('문자 발송 완료', 'ok'); return; }
+      showToast('문자 발송 실패 — 다시 시도', 'err');
+    })
+    .catch(function(){ showToast('문자 발송 실패 — 다시 시도', 'err'); });
 }
 // 완료 처리(진행중→완료) — 회원DB 라이프사이클 전이. 서버 member_hold_transition(HOLD_LIVE_T 게이트).
 function holdComplete(rowIndex) {
