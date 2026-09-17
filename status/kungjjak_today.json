@@ -138,6 +138,18 @@
           "evidence": "🔁재확인"
         },
         {
+          "ref": "GM-20260917-1014",
+          "no": "14",
+          "got": "지금 업무SSOT에 부서별로 업무들이 넘어간 것 같은데,  위에 카테고리별로 해줘 ex.[1] 매출 및 영업 이 카테고리",
+          "did": "",
+          "start": "13:20",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -342,16 +354,37 @@
           "area": "작업",
           "event": "화면 지도 — 정본 주소(/home) 표기 · 이동 스텁 38장 표시·집계 (GM 지적 9/17 루트 칸)",
           "detail": "커밋 93e9ab5234 · 배 12714"
+        },
+        {
+          "time": "13:21",
+          "area": "작업",
+          "event": "화면 지도 — 1차 정리 판정(저장소 참조·3단 판정·GM 후보 표) (GM 지시 9/17)",
+          "detail": "커밋 74ae058be1 · 배 12714"
         }
       ],
-      "count": 17,
+      "count": 18,
       "done": 17,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 12,
-      "work_count": 22,
+      "work_count": 23,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-1014",
+          "no": "14",
+          "got": "지금 업무SSOT에 부서별로 업무들이 넘어간 것 같은데,  위에 카테고리별로 해줘 ex.[1] 매출 및 영업 이 카테고리",
+          "did": "",
+          "start": "13:20",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -610,6 +643,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-erp-noslash",
+          "no": "sh",
+          "got": "/erp 맨살 화면 — 끝 슬래시 없는 주소 301",
+          "did": "nginx location = /erp 301 /erp/ · 라이브 실측 301 · 저장소 사본 저장 · 시모 회신(GM 보고는 시모)",
+          "start": "13:21",
+          "end": "13:21",
+          "minutes": 0,
+          "upload": "✅ 배포 (d933a4010)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-hold-loop",
           "no": "op",
           "got": "보류 알림 되풀이 원인·중단",
@@ -635,18 +680,6 @@
         }
       ],
       "work": [
-        {
-          "time": "10:45",
-          "area": "작업",
-          "event": "feat(sms): 문자 자동발송 1단계 — 딜라이브 발송 모듈·문구 저장소 API·관리자 문자 발송 카드 (배 2714 · GM 지시 2026-09-17)",
-          "detail": "커밋 95a3a62ffb · 배 12715"
-        },
-        {
-          "time": "10:49",
-          "area": "서버",
-          "event": "문자 1단계 서버 배포·라이브 실측 · 파트너 계정 파일 권한 수리",
-          "detail": "95a3a62ffb 3파일 배포 · SMS_ENABLED=0 · health failed_modules 없음 · /api/sms/send dry 실측 = not_active(문구 미발효 · 정상 거부) · 관리자 API staff 403 · partner_secrets.json root 소유→ec2-user(PermissionError 9/16 부터)"
-        },
         {
           "time": "10:54",
           "area": "작업",
@@ -814,12 +847,24 @@
           "area": "협업",
           "event": "CHRO 재감사 — 즉시 2건(덤프·cron 제거)·회신 4건 AtoA",
           "detail": "hr_run1-partial dump 324,126B · cron.d 제거 · 예외명·step 14·행 수·해시 전문·board_roster 회신 · 적재기 수정 4건 레인 진행"
+        },
+        {
+          "time": "13:20",
+          "area": "협업",
+          "event": "FAQ 답받기 API 폐기(시보 확인)",
+          "detail": "서버 제거·재기동 404 · 저장소 f9cfe9ed4(PL-20260917-09) · 권한표·주석 정리"
+        },
+        {
+          "time": "13:22",
+          "area": "작업",
+          "event": "fix(hr): 적재기 수정 4건 — 온보딩 완료 빈값 기본값·보드명단 헤더 문자 그대로·rollback board_roster·근무변경 상태 기본값 + selftest NOT NULL 검사 [나우열M 요청 2026",
+          "detail": "커밋 6002b576c9 · 배 12715"
         }
       ],
-      "count": 23,
-      "done": 23,
+      "count": 24,
+      "done": 24,
       "open": 0,
-      "avg_minutes": 14,
+      "avg_minutes": 13,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
@@ -1200,6 +1245,18 @@
           "upload": "✅ 배포 (2a7a388f3)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-erp-noslash",
+          "no": "sh",
+          "got": "/erp 화면 왜이래 — 원인 실측: 끝 슬래시 없는 /erp 에서 brand css 404 → 시토에게 수리 넘김",
+          "did": "",
+          "start": "13:20",
+          "end": "13:22",
+          "minutes": 1,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -1264,8 +1321,8 @@
           "detail": "커밋 2a7a388f31 · 배 12691"
         }
       ],
-      "count": 31,
-      "done": 31,
+      "count": 32,
+      "done": 32,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 10,
@@ -2015,13 +2072,19 @@
           "area": "작업",
           "event": "fix(labs): AX 랩스 감사(Fable 2레인) 시보 몫 12건 — 고척 상담봇 policies 스키마화(환불 질문 500 수리)+약관 규정 4주제·이름 통일·profile 배포·/gocheokgolf/ 첫",
           "detail": "커밋 dc32232d66 · 배 11386"
+        },
+        {
+          "time": "13:19",
+          "area": "작업",
+          "event": "fix(partner-agent): FAQ 통합층(faq_hub) 을 아침 통 직전에 재계량 — 예약 없이 2일 낡아 있던 것(감사 15번) + 오늘 계량본",
+          "detail": "커밋 946fc30b79 · 배 11386"
         }
       ],
       "count": 4,
       "done": 4,
       "open": 0,
       "avg_minutes": 5,
-      "work_count": 9,
+      "work_count": 10,
       "missed": [],
       "unclosed": [],
       "just": [],
