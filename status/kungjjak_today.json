@@ -624,13 +624,19 @@
           "area": "작업",
           "event": "업무시스템 ↔ 업무 SSOT 연동 — 완료·다음 걸음·결재 배선 · SSOT 링크 · 기록 정리 (GM 지시 9/17)",
           "detail": "커밋 62889d8bd6 · 배 12714"
+        },
+        {
+          "time": "14:27",
+          "area": "실무진장애",
+          "event": "이경연 실장 권한 없음(/home) 해결",
+          "detail": "원인 = 아침 /home 전환이 카드·루트 판정에 걸려 14:13~14:26 실무진 전원 권한 없음(관리자 세션으로만 재서 놓침) · 시토 관문 2곳 열고 배포 14:26 · 실장 토큰 /home 정상 · 나우열M 께 시토가 회신"
         }
       ],
       "count": 37,
       "done": 37,
       "open": 0,
       "avg_minutes": 7,
-      "work_count": 29,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -925,6 +931,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-HOME",
+          "no": "ME",
+          "got": "이경연 실장 /home 권한 없음 — 직원 홈 관문 수리(a44b7523d)",
+          "did": "원인 = 아침 직원 화면=/home 전환 뒤 카드(ceo-wellperion-guide-main)·루트 낱장 판정에 실무진 전원 403 · 관문 2곳 열고 배포 14:26 · 실장 계정 헤드리스 /home 렌더 확인",
+          "start": "14:27",
+          "end": "14:27",
+          "minutes": 0,
+          "upload": "✅ 배포 (773972d2d)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-INFO",
           "no": "FO",
           "got": "info@ 자동 로그인 폐지 · 권한 없음 → 로그인하기 · 개인 계정 전환(배 1026)",
@@ -1203,8 +1221,8 @@
           "detail": ""
         }
       ],
-      "count": 31,
-      "done": 31,
+      "count": 32,
+      "done": 32,
       "open": 0,
       "avg_minutes": 10,
       "work_count": 30,
@@ -2639,7 +2657,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T14:23:44",
+    "published_at": "2026-09-17T14:28:22",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -2647,10 +2665,10 @@
         "alive": true,
         "signal": "14:15",
         "last": {
-          "time": "14:21",
+          "time": "14:27",
           "area": "실무진장애",
-          "event": "이경연 실장 로그인 뒤 권한 없음(/home) — info 폐지 직후",
-          "result": "warn"
+          "event": "이경연 실장 권한 없음(/home) 해결",
+          "result": "ok"
         },
         "idle_since": null,
         "saves": 75
@@ -2661,13 +2679,13 @@
         "alive": true,
         "signal": "14:15",
         "last": {
-          "time": "14:17",
+          "time": "14:27",
           "area": "GM지시",
-          "event": "info@ 자동 로그인 폐지 · 권한 없음 → 로그인하기 · 개인 계정 전환(배 1026)",
+          "event": "이경연 실장 /home 권한 없음 — 직원 홈 관문 수리(a44b7523d)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 68
+        "saves": 71
       },
       "cmo": {
         "nick": "시모",
