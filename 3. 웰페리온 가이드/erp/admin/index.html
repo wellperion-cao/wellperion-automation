@@ -113,6 +113,7 @@
   .pwait{margin-top:10px; padding-top:9px; border-top:1px dashed var(--line,#E3E5E8);
          font-size:12px; color:#8A9096;}
   .pwait.pbad{color:#B4322A;}
+  .pdiv{font-size:11px; font-weight:700; color:#8A9096; letter-spacing:.06em; margin:10px 0 6px; padding-top:8px; border-top:1px dashed var(--line,#E3E5E8);}
   .ppre{font-size:12px; color:#8A9096; margin:0 0 12px; line-height:1.55;}
   span.pi{cursor:default;}
   .pi span a{color:#2F6FB0; text-decoration:underline;}
@@ -895,7 +896,7 @@
   <h2>파트너사 브랜드자료</h2>
   <div class="meta">파트너사마다 <b>브랜드가이드 화면 + 그 화면을 만든 원자료</b>를 한 자리에 모았습니다 (GM 지시 2026-09-14) ·
     <b>서버</b> = 이 서버에 있어 바로 열림 · <b>저장소</b> = 원본 파일이 저장소(2. 브랜드_자료 폴더)에만 있어 깃허브로 열림 · 회색 = 아직 못 받음 ·
-    세 카드는 같은 8칸·같은 순서다 — 회색 칸은 카톡 번호 설문으로 받아 채운다.</div>
+    세 카드는 같은 14칸(고정 자료 8 + 매일 쌓이는 것 6)·같은 순서다 — 회색 칸은 카톡 번호 설문으로 받아 채운다.</div>
   <!-- 2. 브랜드_자료 → sparse-checkout 추가 완료(시토 배 CTO-2026-09-14) · 사진 폴더 3개(01_시설_사진·03_파트너강사프로필월·241030_PNG)는 용량 제외. -->
   <div class="pgrid">
 
@@ -909,7 +910,14 @@
       <span class="pi ok"><b>6 원자료 폴더</b><span>저장소 · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener">2. 브랜드_자료 폴더</a>(웰페리온·WSC·유소년 브로슈어 · 디자인 요청 가이드라인 2024.10.8) · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/watermarks%20logo" target="_blank" rel="noopener">워터마크 로고 13종</a> · <a href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/02_%EB%A1%9C%EA%B3%A0%26%EC%9B%8C%ED%84%B0%EB%A7%88%ED%81%AC%26FONT/font" target="_blank" rel="noopener">서체 파일(Pretendard·고운바탕)</a></span></span>
       <a class="pi ok" href="/repo/ssot/canon_values.json" target="_blank" rel="noopener"><b>7 사실 정본(공식값)</b><span>서버 · 「정원제 스포츠클럽」 · 피트니스→스포츠클럽 · 레슨→강습 — 화면과 생성기가 이 파일을 읽는다</span></a>
       <span class="pi ok"><b>8 받을 것 목록</b><span>받을 것 없음 — 기준판</span></span>
-      <div class="pwait">빈 칸 없음 — 새 파트너사는 이 여덟 칸을 같은 순서로 채웁니다.</div>
+      <div class="pdiv">매일 쌓이는 것 — 방에 올라오면 폴더로, 폴더에 쌓이면 글로</div>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/instagram/Image" target="_blank" rel="noopener"><b>9 매일 오는 사진·영상</b><span>저장소 · 콘텐츠마다 원본 폴더(instagram/Image) · 촬영분은 GM 이 넣는다</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/instagram" target="_blank" rel="noopener"><b>10 이벤트·공지·시즌 소재</b><span>저장소 · 발행 콘텐츠 폴더(260426 WJO ~) · 월간 이벤트는 여기서 시작</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/03_%ED%8C%8C%ED%8A%B8%EB%84%88%EA%B0%95%EC%82%AC%20%ED%94%84%EB%A1%9C%ED%95%84%EC%9B%94" target="_blank" rel="noopener"><b>11 코치·프로 프로필</b><span>저장소 · 강사 프로필 17장(골프 4 · 수영 8 · 그 외)</span></a>
+      <a class="pi ok" href="/repo/ssot/closed_days.json" target="_blank" rel="noopener"><b>12 규정·요금 구조 원문</b><span>서버 · 운영시간·휴관일 정본(closed_days) · 회원 규정·요금은 ERP 회원관리</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/counsel/" target="_blank" rel="noopener"><b>13 손님 질문·후기 → 글감</b><span>라이브 · 자주 묻는 질문 28건 · 자력 답변 77% · 못 답한 질문은 학습 루프 표</span></a>
+      <a class="pi ok" href="../../cmo/funnel/%EC%BD%98%ED%85%90%EC%B8%A0%EB%AC%B8%EC%9D%98%ED%98%84%ED%99%A9.html" target="_blank" rel="noopener"><b>14 발행한 글 목록</b><span>서버 · 블로그·인스타·페북·유튜브 4채널 발행 현황</span></a>
+      <div class="pwait">빈 칸 없음 — 새 파트너사는 이 열네 칸을 같은 순서로 채웁니다.</div>
     </div>
 
     <div class="pcard">
@@ -922,6 +930,13 @@
       <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>6 원자료 폴더</b><span>저장소 · 브랜드가이드(소통) 답변 · 재활운동 솔루션 pptx · 커리큘럼 가격표 pptx · 사진 58장 · 내부 안내 동영상</span></a>
       <span class="pi none"><b>7 사실 정본(공식값)</b><span>아직 없음 — 설문 답이 오면 client.json 으로</span></span>
       <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>8 받을 것 목록</b><span>저장소 · 18건 중 받음 6 · 남음 12 — 9/17 번호 설문 한 통으로 한 번에 여쭘(같은 번호 재질문 없음)</span></a>
+      <div class="pdiv">매일 쌓이는 것 — 방에 올라오면 폴더로, 폴더에 쌓이면 글로</div>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84" target="_blank" rel="noopener"><b>9 매일 오는 사진·영상</b><span>저장소 · 사진 62장(마지막 9/15) · 영상 3편 · 방에 올라온 사진은 06:30 저장 뒤 시보가 이 폴더로(지금은 사람 손)</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/05_%EC%BD%98%ED%85%90%EC%B8%A0_%EC%B4%88%EC%95%88" target="_blank" rel="noopener"><b>10 이벤트·공지·시즌 소재</b><span>저장소 · 9월 이벤트 브랜드판(html·png · 9/17) · 「허리 아픈데 운동해도 되나요」 초안</span></a>
+      <span class="pi none"><b>11 코치·프로 프로필</b><span>아직 못 받음 — 번호 설문(9/17) 강사 파견·재직·프로필 항목으로 카톡 요청 중</span></span>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/10_%EB%8B%A4%EC%9D%B4%EC%96%B4%ED%8A%B8%EC%BA%A0%ED%94%84_%EB%B8%8C%EB%9E%9C%EB%93%9C%EA%B0%80%EC%9D%B4%EB%93%9C/00_%EB%8C%80%ED%91%9C%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>12 규정·요금 구조 원문</b><span>저장소 · 커리큘럼 가격표 pptx · 재활운동 솔루션 pptx — 금액은 공개 안 함, 구조만 씀 · 환불·휴회 규정은 설문 답 대기</span></a>
+      <a class="pi ok" href="https://erp.wellperion.com/dietcamp/counsel/" target="_blank" rel="noopener"><b>13 손님 질문·후기 → 글감</b><span>라이브 · 질문·답 6건 · 못 답한 질문이 번호 질문이 된다(학습 루프)</span></a>
+      <span class="pi ok"><b>14 발행한 글 목록</b><span>블로그 임시저장 매일 1편(9/15~) · 발행은 대표님 · 목록 = 대표님 블로그 임시저장함</span></span>
       <div class="pwait">기다리는 것 — 연혁 · 간판·프로필·컨셉 사진 · 호칭(번호 설문 9/17)</div>
     </div>
 
@@ -935,7 +950,14 @@
       <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C" target="_blank" rel="noopener"><b>6 원자료 폴더</b><span>저장소 · 사진 원본 9장 · 선정 8장 · 프로 4분 프로필+3개월 속성반 커리큘럼 6장(9/14 받음) · 기존 블로그 글 100개</span></a>
       <span class="pi ok"><b>7 사실 정본(공식값)</b><span>서버 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/client.json" target="_blank" rel="noopener">client.json</a> · 부장님이 확인해 준 사실만 여기에 · 상담봇 정본과 어긋남 검사 한 줄 · <a href="/repo/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/blog_style.json" target="_blank" rel="noopener">블로그 글 스타일 정본</a>도 같은 폴더</span></span>
       <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/blob/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/_%EB%B0%9B%EC%9D%84%EA%B2%83.md" target="_blank" rel="noopener"><b>8 받을 것 목록</b><span>저장소 · 7건 중 받음 2(코치 원자료 · 정규 요금 구조) · 못 받음 4 · 확인 대기 1</span></a>
-      <div class="pwait">다음 — 설문 답이 오는 번호부터 화면에 반영(Before → After 를 저녁 통으로)</div>
+      <div class="pdiv">매일 쌓이는 것 — 방에 올라오면 폴더로, 폴더에 쌓이면 글로</div>
+      <a class="pi warn" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84_%EC%9B%90%EB%B3%B8" target="_blank" rel="noopener"><b>9 매일 오는 사진·영상</b><span>저장소 · 사진 원본 9장 · 영상 1개 · 추가 사진·세로 영상 전송 예정(9/17 답) · 손님 얼굴은 블러</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/05_%EC%BD%98%ED%85%90%EC%B8%A0_%EC%B4%88%EC%95%88" target="_blank" rel="noopener"><b>10 이벤트·공지·시즌 소재</b><span>저장소 · 초안 v0.1·v0.2 판 · 9월 이벤트 3트랙(체험권 · 30시간 공동구매 · 주말 친구 동반 · 9/8 말씀)</span></a>
+      <a class="pi ok" href="https://github.com/wellperion-cao/wellperion-automation/tree/master/2.%20%EB%B8%8C%EB%9E%9C%EB%93%9C_%EC%9E%90%EB%A3%8C/11_%EA%B3%A0%EC%B2%99%EA%B3%A8%ED%94%84_%EC%A1%B0%EC%9E%AC%EC%98%A4%EB%B6%80%EC%9E%A5%EB%8B%98/00_%EB%B6%80%EC%9E%A5%EB%8B%98_%EC%9B%90%EC%9E%90%EB%A3%8C/%EC%82%AC%EC%A7%84_%EC%9B%90%EB%B3%B8(%ED%94%84%EB%A1%9C%ED%95%84%2B%EC%BB%A4%EB%A6%AC%ED%81%98%EB%9F%BC)" target="_blank" rel="noopener"><b>11 코치·프로 프로필</b><span>저장소 · 프로 4분 프로필 + 3개월 속성반 커리큘럼(9/14) · 상담봇 coaches·programs 반영</span></a>
+      <span class="pi warn"><b>12 규정·요금 구조 원문</b><span>약관 원문 사진(9/15 · 개인정보 있어 저장소 밖) · 규정 요약은 설문 27번으로 확인(9/17) · 요금은 구조만(시간권 70분 · 회원권 1일 기준) · 환불은 온라인 비노출</span></span>
+      <a class="pi ok" href="https://erp.wellperion.com/gocheokgolf/counsel/" target="_blank" rel="noopener"><b>13 손님 질문·후기 → 글감</b><span>라이브 · 자주 묻는 5문(위치·주차·양도·레슨·휴회) 지점장님 답 그대로(9/17)</span></a>
+      <span class="pi ok"><b>14 발행한 글 목록</b><span>블로그 임시저장 매일 1편 · 지점장님이 예약 발행(9/17 47번) · 주제 제한 없음, 매일 다른 주제</span></span>
+      <div class="pwait">남은 것 — 추가 사진·세로 영상(전송 예정) · 답 27문은 9/17 반영 완료</div>
     </div>
 
   </div>
@@ -1407,8 +1429,8 @@
       <a href="dietcamp/setup_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 자료</b><span style="font-size:11.5px;color:var(--dim);">첫 외부 고객</span></a>
       <a href="gocheokgolf/drafts_v0.1.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">고척 골프 자료</b><span style="font-size:11.5px;color:var(--dim);">두 번째 고객 초안</span></a>
 
-      <a href="../../cbo/counsel_faq.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 FAQ</b><span style="font-size:11.5px;color:var(--dim);">손님에게 나가는 답</span></a>
-      <a href="../../cbo/counsel_log.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담 내역</b><span style="font-size:11.5px;color:var(--dim);">무엇을 물어봤나</span></a>
+      <a href="#view/faq" data-view="faq" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담봇 FAQ</b><span style="font-size:11.5px;color:var(--dim);">손님에게 나가는 답</span></a>
+      <a href="#view/log" data-view="log" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">상담 내역</b><span style="font-size:11.5px;color:var(--dim);">무엇을 물어봤나</span></a>
       <a href="dietcamp/brand.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 브랜드 가이드</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
       <a href="dietcamp/intro.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 회사소개서</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
       <a href="dietcamp/strategy.html" target="_blank" rel="noopener" style="display:block;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">다이어트캠프 운영전략</b><span style="font-size:11.5px;color:var(--dim);">고객 자료</span></a>
@@ -1632,7 +1654,8 @@
   // 오른쪽에 띄우는 바깥 화면 — 절대 경로(이 화면 주소가 /erp/admin 이라 상대 경로가 한 단계 위로 풀린다)
   var VIEWS = { auto:'/erp/admin/자율현황.html', kakao:'/erp/admin/카톡전송관리.html', counsel:'/erp/admin/counsel_admin.html',
                 upload:'/cmo/upload/마케팅자동업로드.html', sunday:'/cmo/sunday/GM의일요일.html', company:'/erp/admin/company.html',
-                gm:'/home?embed=1#G1', ideas:'/erp/admin/ideas.html' };
+                gm:'/home?embed=1#G1', ideas:'/erp/admin/ideas.html',
+                faq:'/cbo/counsel_faq.html', log:'/cbo/counsel_log.html' };   // 상담 자동화 하위(13번 · 셸 안에서 연다)
   function show(key, scroll){
     var viewKey = '';
     if (key.indexOf('view/') === 0) { viewKey = key.slice(5); key = VIEWS[viewKey] ? 'view' : 'partners'; }
@@ -1643,7 +1666,7 @@
       a.classList.toggle('on', on);
       if (on && crumb) crumb.textContent = a.querySelector('.t').textContent;
     });
-    var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화' };
+    var VIEW_NAMES = { company:'회사', kakao:'보고 자동화', counsel:'상담 자동화', upload:'마케팅 자동화', faq:'FAQ', log:'상담 내역' };
     // 오른쪽 화면 높이 = 안쪽 문서 높이(같은 도메인이라 읽을 수 있다) — 스크롤바가 페이지 하나만 남는다
     // (GM 2026-09-15 「페이지 스크롤바가 있고 또 블럭 안에 스크롤바가 있는데」). 못 읽으면(다른 도메인) 화면 높이로 둔다.
     // 안쪽 문서가 첫 화면이 아닌 곳(소개서·로드맵 등)에 가 있으면 true — 메뉴를 다시 누르면 첫 화면으로 돌아오게(2026-09-15 시보)
