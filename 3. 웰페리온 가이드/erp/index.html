@@ -443,7 +443,7 @@ function loadModules(role, allowedIds){
         return;
       }
       var pi = PINNED.indexOf(m.id);
-      if (pi >= 0) { pinned[pi] = m; return; }   // 자주 여는 것은 아래 그룹에 또 그리지 않는다
+      if (pi >= 0) pinned[pi] = m;   // 자주 여는 것은 지름길 — 그 화면도 제 모듈 묶음에 그대로 둔다(GM 2026-09-17 「자주 여는 것 빼고 각 업무 페이지 = 모듈」 · 안 두면 문의·점검·업무·결재 묶음이 통째로 비어 모듈 배치와 어긋난다)
       // 묶음 이름 = 그 화면이 딸린 모듈 이름(모듈 배치와 같은 낱말 · GM 2026-09-17). 위에서 module 없는 화면은 문서함으로 갔다.
       var g = m.module;
       if (!bag[g]) { bag[g] = []; order.push(g); }
