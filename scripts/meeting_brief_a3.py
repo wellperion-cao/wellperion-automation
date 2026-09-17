@@ -5,7 +5,7 @@
 업무 + 전사일정 + 업무&결재SSOT 연동을 원했던거야」). CSS·3열 구성은 손 판 그대로, 내용만 네 원천에서 읽는다.
 
 원천 4 (읽기만 · 어느 원천도 고치지 않는다)
-  ① GM업무 카드      status/monthly_ops_plan.json  months[*].objectives
+  ① 업무 건          업무&결재 SSOT 행(todo_list · 2026-09-17 단일화 · GM 카드는 읽지 않는다)
   ② 중간관리자 원장  1. AI자료_아카이브/11_카카오톡/★중간관리자/_digest_ledger.json  (같은 no 는 마지막 날짜가 최신)
   ③ 전사일정         status/schedule_ssot.json  items[] (name·next_due·assignee·plan_id)
   ④ 업무&결재 SSOT   GAS todo_list (gmkey 포함 — GM 행은 이 키 없이는 안 나온다)
@@ -121,16 +121,41 @@ def emph(s: str) -> str:
 
 
 # ── ① GM업무 카드 ───────────────────────────────────────────────
-def load_cards() -> list[dict]:
-    p = json.load(open(PLAN, encoding="utf-8"))
+HTML_TAGS = re.compile(r"<[^>]+>")   # 시트 편집기가 내용 칸에 남긴 HTML
+_ROW_DONE = {"완료", "종결", "취소"}
+
+
+def load_cards(log=None) -> list[dict]:
+    """업무&결재 SSOT 행을 카드 모양으로. ★2026-09-17 원천 교체(GM 「업무 SSOT 로 단일화」) —
+    종전엔 monthly_ops_plan(GM 카드)를 읽었는데 그 카드가 같은 날 SSOT 행으로 이관돼 두 곳에서
+    같은 건이 나왔다. 아래 절들은 이 모양(_lines·_short·status·due)만 보므로 그대로 돈다."""
+    rows = load_todos(log or (lambda *_a, **_k: None))
+    if rows is None:
+        return []
     cards = []
-    for mk, m in sorted(p["months"].items()):
-        for o in m.get("objectives") or []:
-            o = dict(o)
-            o["_month"] = mk
-            o["_lines"] = note_lines(o.get("progress_note") or "")
-            o["_short"] = short_title(o.get("title") or "")
-            cards.append(o)
+    for r in rows:
+        if not isinstance(r, dict) or not str(r.get("업무명") or "").strip():
+            continue
+        st = str(r.get("상태") or "")
+        stamp = str(r.get("수정일") or r.get("생성일") or "")[:7].replace("/", "-")
+        c = {
+            "id": str(r.get("id") or ""),
+            "title": str(r.get("업무명") or "").strip(),
+            "status": "완료" if st in _ROW_DONE else "진행",
+            "due": str(r.get("종료일") or "")[:10],
+            "owner": str(r.get("담당자") or ""),
+            "category": str(r.get("카테고리") or ""),
+            "progress_note": str(r.get("내용") or ""),
+            "_row": r,
+        }
+        c["_month"] = stamp if len(stamp) == 7 else dt.date.today().strftime("%Y-%m")
+        # SSOT 내용에는 시트 편집기가 넣은 HTML 태그(<p style=…>)와 ===PLAN=== 뒤 본문이 섞여 있다 —
+        # 그대로 두면 표 「현재」 칸에 태그가 그대로 찍힌다(2026-09-17 실측).
+        plain = HTML_TAGS.sub(" ", c["progress_note"].split("===PLAN===")[0])
+        plain = plain.replace("&nbsp;", " ").replace("&amp;", "&")
+        c["_lines"] = note_lines(plain)
+        c["_short"] = short_title(c["title"])
+        cards.append(c)
     return cards
 
 
@@ -252,7 +277,7 @@ def pill(d: dt.date | None, today: dt.date, text: str = "") -> str:
 
 
 def build(since: dt.date, today: dt.date, now: dt.datetime, log) -> tuple[dict, dict]:
-    cards = load_cards()
+    cards = load_cards(log)
     ledger = load_ledger()
     sched = load_schedule()
     todos = load_todos(log)

@@ -209,13 +209,50 @@ def _parse_ymd(s) -> "date | None":
         return None
 
 
-def load_month_objectives() -> list:
-    """월간운영계획 이번 달 카드(status/monthly_ops_plan.json). 조회 실패면 빈 목록."""
-    try:
-        d = json.loads((ROOT / "status" / "monthly_ops_plan.json").read_text(encoding="utf-8"))
-        return d["months"][_period_ym()].get("objectives") or []
-    except Exception:
+_SSOT_DONE = {"완료", "종결", "취소"}
+_HTML_TAGS = re.compile(r"<[^>]+>")
+
+
+def _check_lines_only(note: str) -> str:
+    """SSOT 내용 칸 → 체크 줄(☑·□)만. 태그를 걷고 ===PLAN=== 뒤는 버린다.
+
+    쓰는 쪽이 줄 첫 글자로 체크를 세고(_checkbox_tally·_ops_check_lines), 낱말로 카드를
+    고른다(automation_cell·directive_cell) — 이관 메모가 섞이면 둘 다 부풀어 오른다."""
+    plain = _HTML_TAGS.sub("\n", str(note or "").split("===PLAN===")[0])
+    out = [ln.strip() for ln in plain.replace("&nbsp;", " ").splitlines()
+           if ln.strip().startswith(("☑", "□"))]
+    return "\n".join(out)
+
+
+def load_month_objectives(rows: "list | None" = None) -> list:
+    """이번 달 업무 건 — 업무&결재 SSOT 행을 카드 모양으로 돌려준다.
+
+    ★2026-09-17 원천 교체(GM 「업무 SSOT 로 단일화」). 종전엔 monthly_ops_plan 의 이번 달 카드를
+    읽었는데 그 카드가 같은 날 SSOT 행으로 이관돼 두 원장에 같은 건이 있었다. 쓰는 쪽
+    (automation_cell·directive_cell·_ops_progress_cell)은 title·progress_note(체크 줄)·due·status·owner
+    다섯 칸만 보므로 그 칸만 맞춰 준다. 조회 실패면 빈 목록(지어내지 않는다)."""
+    rows = rows if rows is not None else fetch_ssot_rows()
+    if not rows:
         return []
+    ym = _period_ym()
+    out = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        due = str(r.get("종료일") or "")[:10]
+        touched = str(r.get("수정일") or r.get("생성일") or "")[:7]
+        if due[:7] != ym and touched != ym:
+            continue          # 이번 달과 무관한 행은 이 달 지표에서 뺀다(종전 「이번 달 카드」와 같은 범위)
+        out.append({
+            "id": str(r.get("id") or ""),
+            "title": str(r.get("업무명") or ""),
+            "owner": str(r.get("담당자") or ""),
+            "due": due,
+            # 닫힌 상태는 「완료」 한 낱말로 모은다 — 쓰는 쪽(_overdue_objs)이 status=="완료" 로만 판정한다
+            "status": "완료" if str(r.get("상태") or "") in _SSOT_DONE else str(r.get("상태") or ""),
+            "progress_note": _check_lines_only(r.get("내용")),
+        })
+    return out
 
 
 def load_sales_target(bucket: str) -> "int | None":
@@ -712,7 +749,7 @@ def backfill_months(months: list[str], force: bool = False) -> None:
             y, m = (int(x) for x in ym.split("-"))
             PERIOD = date(y, m, calendar.monthrange(y, m)[1])
             sales_data = fill_sales_current(seen)
-            objs = load_month_objectives()
+            objs = load_month_objectives(ssot_rows)
             rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
             month_snap: dict = {"_소급": "2026-09-16 실측(웰리)"}
             for person in RESP_PEOPLE:
@@ -788,7 +825,7 @@ def resp_rows_def(seen: dict, ssot_rows: "list | None", sales_data: "dict | None
 def resp_section(seen: dict, ssot_rows: "list | None", sales_data: "dict | None" = None) -> tuple[dict, dict]:
     """돌려주는 값 = ({사람: 행 모델 목록} 3인, 원장 전체). 스냅숏은 4인(GM 포함) — GM업무 띠가 그 원장을 읽는다."""
     ev = load_eval()
-    objs = load_month_objectives()
+    objs = load_month_objectives(ssot_rows)
     rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
     model: dict = {}
     month_snap: dict = {}
@@ -2348,7 +2385,7 @@ def meeting_round(meeting: date, rounds: dict) -> dict:
     seen = latest_by_no()
     sales_data = fill_sales_current(seen)
     ssot_rows = fetch_ssot_rows()
-    objs = load_month_objectives()
+    objs = load_month_objectives(ssot_rows)
     rows_def = resp_rows_def(seen, ssot_rows, sales_data, objs)
     intake = _load_intake(meeting)
     try:
