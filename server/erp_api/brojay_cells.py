@@ -42,6 +42,18 @@ TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램�
 TEAM_KEY_ROW = {"swim": 8, "pt": 9, "golf": 10, "squash": 11, "gym": 12, "pilates": 13, "musical": 14, "gxe": 15}
 OPS_TAG = "운영부"
 LOCKER_TYPES = {"LOCKER_TICKET"}
+# 매출분류(sales_tag_name)가 빈 결제 — 상품명으로 팀 행을 짚는다(2026-09-17 시포 · 실측 9/4 「(준)수영강습 아쿠아로빅 8회」
+#   5건 1,210,000 이 분류 없이 총액에만 들어가 팀 합 ≠ 총액). 상품명에 낱말이 없으면 종전대로 unmapped(지어내지 않는다).
+NAME_ROW = (("아쿠아", 8), ("수영", 8), ("P.T", 9), ("PT", 9), ("골프", 10), ("스쿼시", 11), ("체조", 12), ("트램폴린", 12),
+            ("필라테스", 13), ("뮤지컬", 14), ("GX", 15))
+
+
+def _row_by_name(name):
+    n = str(name or "")
+    for word, row in NAME_ROW:
+        if word.lower() in n.lower():
+            return row
+    return None
 
 
 def _money(n):
@@ -107,6 +119,8 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             cell = 7 if ptype in LOCKER_TYPES else 6
         elif tag in tags:
             cell = tags[tag]
+        elif not tag and _row_by_name(p.get("product_name")):
+            cell = _row_by_name(p.get("product_name"))
         else:
             cell = None
             unmapped[tag or "(분류없음)"] = unmapped.get(tag or "(분류없음)", 0) + amt
@@ -216,18 +230,20 @@ def selftest():
          "sales_tag_name": "운영부", "member_id": "H", "total_payment_price": 3230000},
         {"paid_at": "2026-09-15T20:00:00+09:00", "history_type": "REFUND", "product_type": "RESERVATION_TICKET",
          "sales_tag_name": "체조&트램폴린", "member_id": "I", "total_payment_price": -209000},
+        {"paid_at": "2026-09-15T16:00:00+09:00", "history_type": "PAYMENT", "product_type": "RESERVATION_TICKET",
+         "sales_tag_name": "", "member_id": "J", "total_payment_price": 242000, "product_name": "(준)수영강습 아쿠아로빅 8회"},   # 분류 없음 → 상품명으로 수영
     ]
     o = aggregate(pays, "2026-09-15", tags, {"01011112222": "신규", "01033334444": "대기", "01055556666": "재등록"},
                   {"A": "01011112222", "G": "01033334444", "H": "01055556666"}, loss_count=2)
     c = o["cells"]
-    assert c["I4"] == "8,009,000", c["I4"]          # 회원권 100만+340만+323만 + 락커 12만 + 수영 20.9만 + 요가 5만(분류 없음도 총액엔 포함)
-    assert c["I6"] == "7,630,000" and c["I7"] == "120,000" and c["I8"] == "209,000" and c["I10"] == "0"
-    assert c["J10"] == "330,000" and c["J4"] == "8,339,000"
+    assert c["I4"] == "8,251,000", c["I4"]          # 회원권 100만+340만+323만 + 락커 12만 + 수영 20.9만+24.2만 + 요가 5만(분류 없음도 총액엔 포함)
+    assert c["I6"] == "7,630,000" and c["I7"] == "120,000" and c["I8"] == "451,000" and c["I10"] == "0"   # 아쿠아로빅 242,000 이 수영 행으로
+    assert c["J10"] == "330,000" and c["J4"] == "8,581,000"
     assert c["N7"] == "4,400,000" and c["N8"] == "2명", (c["N7"], c["N8"])     # 신규 100만 + 대기(신규) 340만
     assert c["N9"] == "3,230,000" and c["N10"] == "1명", (c["N9"], c["N10"])   # 재등록 FACILITY_TICKET 도 센다
     assert c["N11"] == "300,000" and c["N12"] == "2명"                          # 강습 예약권 환불(-209,000)은 N11 에 안 실린다
     assert o["unmapped"] == {"요가": 50000} and o["unmatched_membership"] == 0
-    assert o["raw"]["daily"] == {"2026-09-15": 8009000, "2026-09-14": 330000}, o["raw"]["daily"]   # 환불·기준일 뒤는 빠진다
+    assert o["raw"]["daily"] == {"2026-09-15": 8251000, "2026-09-14": 330000}, o["raw"]["daily"]   # 환불·기준일 뒤는 빠진다
     o2 = aggregate(pays, "2026-09-15", tags, {}, {"A": "01011112222"})
     assert o2["unmatched_membership"] == 3 and o2["cells"]["N8"] == "0명"   # 원장에 없으면 지어내지 않는다(회원권 3건 전부 unmatched)
     assert tag_rows("/nonexistent") == TAG_TEAM
