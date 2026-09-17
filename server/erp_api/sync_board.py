@@ -31,6 +31,7 @@ BOARD_KEYS = (
     "SUPPORT_SUPPLY",              # 비품 원장 — 지원부 체계·CFO 매출지출현황 비품관리 탭이 공유(배12615 · CFO 요청서3 §1-④)
     # 시설부 체계(점검 현황) 보드 3키 — 거울에 없어 404 → GAS 폴백으로 화면이 6~17초 늦게 떴다(GM 2026-09-17 「점검현황 왜 늦게 뜨나」).
     "FACILITY_POLICY_BOARD", "FACILITY_MANUAL_CARDS", "FACILITY_VENDOR_CATEGORIES",
+    "FACILITY_MANUAL_BOARD", "FACILITY_GUIDE_BOARD", "FACILITY_VENDOR_BOARD",   # 같은 화면의 나머지 보드(16:33 실측 폴백 2건)
 )
 
 
