@@ -129,11 +129,11 @@
           "ref": "GM-20260917-F",
           "no": "-F",
           "got": "/erp/?view=home 삭제·/erp/ 병합·ERP 홈=/home · 전체 화면 페이지 링크 목록 정리",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "did": "시토 632e35c322(index.html 직원 층 제거·nginx 301) · 웰리 869d49959c screens.html 307장 + a169f0856 관리자 구조 문서 링크 · 라이브 /erp/?view=home 301→/home 실측",
           "start": "12:37",
-          "end": "12:41",
-          "minutes": 4,
-          "upload": "✅ 배포 (09414d9f7)",
+          "end": "12:52",
+          "minutes": 15,
+          "upload": "✅ 배포 (632e35c32)",
           "open": false,
           "evidence": "🔁재확인"
         }
@@ -269,7 +269,7 @@
       "count": 11,
       "done": 11,
       "open": 0,
-      "avg_minutes": 15,
+      "avg_minutes": 16,
       "work_count": 21,
       "missed": [],
       "unclosed": [],
@@ -518,21 +518,21 @@
           "upload": "기록만",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-locker",
+          "no": "er",
+          "got": "라커 화면 연결 오류 원인·운영부 회신",
+          "did": "원인=라커 구글 웹앱 404(배포 사라짐) · 서버 관문 server-forward-failed → 화면 구글 폴백 TypeError · 실무진 피드백 버튼은 이경연 세션 헤드리스 정상 · 운영부 방 12:52 회신 ok · 복구=GM 구글 계정(Apps Script 라커 프로젝트 배포)",
+          "start": "12:52",
+          "end": "12:52",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "10:10",
-          "area": "GM요청",
-          "event": "딜라이브 API 등록 회신 — 계정 서버 배치·연결 시험",
-          "detail": "api.env DLIVE_* 6키(600) · /token 200 · /ping 200 · 회신 초안 status/drafts/dlive_test_schedule_20260917.md · 배 2614 note"
-        },
-        {
-          "time": "10:11",
-          "area": "서버",
-          "event": "brojay_cells 폴백 태그 영어뮤지컬(시포 전달) 배포",
-          "detail": "1be00d8de1 · 10:11 서버 반영·재기동 active·health 200 · 값 확인"
-        },
         {
           "time": "10:21",
           "area": "배",
@@ -700,12 +700,24 @@
           "area": "협업",
           "event": "낡은 판 판정 혈통으로 수리(웰리 실측)",
           "detail": "queue_lock.stale_against_head · mutate_json·safe_commit 공용 · 자체점검 3종 · 저장·배포 b554c5dde5 · 웰리 회신 완료"
+        },
+        {
+          "time": "12:52",
+          "area": "협업",
+          "event": "/erp/ 직원 층 병합 + 화면지도 도착 확인(웰리)",
+          "detail": "632e35c322 · nginx 301 · 웰리 회신"
+        },
+        {
+          "time": "12:54",
+          "area": "협업",
+          "event": "회원 쓰기 관문 서버 배포(시포 83d754a253)",
+          "detail": "api_members_write.py 원격판 scp · erp-api 재기동 · health 200 · 시포 회신"
         }
       ],
-      "count": 20,
-      "done": 20,
+      "count": 21,
+      "done": 21,
       "open": 0,
-      "avg_minutes": 16,
+      "avg_minutes": 15,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
@@ -1035,7 +1047,7 @@
           "start": "12:42",
           "end": "12:45",
           "minutes": 3,
-          "upload": "기록만",
+          "upload": "✅ 배포 (87f40b1bc)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -1047,7 +1059,7 @@
           "start": "12:46",
           "end": "12:48",
           "minutes": 1,
-          "upload": "기록만",
+          "upload": "✅ 배포 (87f40b1bc)",
           "open": false,
           "evidence": "⚠️없음"
         }
@@ -1088,13 +1100,25 @@
           "area": "작업",
           "event": "fix(labs): 전략 로드맵 디자인 검수 1회차 — 폰 가로 넘침 560→390 · 이모지 상태 16→글자 알약 · 문단 폭 72ch (임페커블 0 · 검수기 18/19 · 내용 불변 · GM 지시 2026-09",
           "detail": "커밋 1170b48359 · 배 12691"
+        },
+        {
+          "time": "12:52",
+          "area": "작업",
+          "event": "docs(design): PRODUCT.md — 임페커블이 읽는 제품 사실 한 장(정본은 canon·브랜드 스킬 포인터) (GM 지시 2026-09-17 디자인 스킬 셋업)",
+          "detail": "커밋 0cb3aa4ea5 · 배 12691"
+        },
+        {
+          "time": "12:52",
+          "area": "작업",
+          "event": "docs(cmo): 디자인 스킬 학습 마무리 — prototype·review-animations 추가 · 브라우저 단계는 헤드리스 Playwright(agent-browser 멈춤 실측) · PRODUCT.md 포",
+          "detail": "커밋 87f40b1bc7 · 배 12691"
         }
       ],
       "count": 28,
       "done": 28,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 6,
+      "work_count": 8,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1219,21 +1243,9 @@
           "start": "12:20",
           "end": "12:49",
           "minutes": 29,
-          "upload": "✅ 배포 (29e2a808e)",
+          "upload": "✅ 배포 (83d754a25)",
           "open": false,
           "evidence": "⚠️없음"
-        },
-        {
-          "ref": "GM-20260917-4014",
-          "no": "14",
-          "got": "전달은 하는데, 이런 문제가 계속 발송되었었는데, 근본해결방법까지 제시해서 가이드하고, 백라인에서 이런 문제를 다신 발생 안되게끔 작업을 해줘야할 것 같은데?",
-          "did": "",
-          "start": "12:49",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -1299,13 +1311,13 @@
           "ref": "GM-20260917-cpo-overwrite-root",
           "no": "ot",
           "got": "회원 원장 덮어쓰기 문제 근본 해결 — 백라인 재발 방지 + 실무진 가이드",
-          "did": "",
+          "did": "서버 관문+화면 확인 83d754a25 · 시토 배포 요청 · 실무진 정정문 발송 요청",
           "start": "12:50",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "12:53",
+          "minutes": 3,
+          "upload": "✅ 배포 (83d754a25)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-cpo-report-title",
@@ -1398,45 +1410,22 @@
           "area": "공통",
           "event": "feat(cpo): 웰페리온 상담봇 FAQ 정리 초안 — 라이브 26 + 운영부 답 30 + 손님 질문 원장 합침 · 금액·정책은 GM 확인 표시 (GM 지시 9/17)",
           "detail": "커밋 fcfc5a20c5 · 배 12523"
-        }
-      ],
-      "count": 19,
-      "done": 17,
-      "open": 2,
-      "avg_minutes": 10,
-      "work_count": 11,
-      "missed": [],
-      "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4014",
-          "no": "14",
-          "got": "전달은 하는데, 이런 문제가 계속 발송되었었는데, 근본해결방법까지 제시해서 가이드하고, 백라인에서 이런 문제를 다신 발생 안되게끔 작업을 해줘야할 것 같은데?",
-          "did": "",
-          "start": "12:49",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
         },
         {
-          "ref": "GM-20260917-cpo-overwrite-root",
-          "no": "ot",
-          "got": "회원 원장 덮어쓰기 문제 근본 해결 — 백라인 재발 방지 + 실무진 가이드",
-          "did": "",
-          "start": "12:50",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
+          "time": "12:53",
+          "area": "공통",
+          "event": "feat(cpo): 회원 원장 사람끼리 덮어쓰기 관문 — 같은 칸을 다른 사람이 2시간 안에 바꿨으면 서버가 「누가·언제·무슨 값」을 돌려주고 화면이 확인 뒤에만 덮어씀(force) · 이름 없는 저장 거부→이름 재",
+          "detail": "커밋 83d754a253 · 배 12523"
         }
       ],
+      "count": 18,
+      "done": 18,
+      "open": 0,
+      "avg_minutes": 10,
+      "work_count": 12,
+      "missed": [],
+      "unclosed": [],
+      "just": [],
       "repeats": []
     },
     "coo": {
@@ -1705,7 +1694,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 6
+          "waited": 9
         }
       ],
       "repeats": []
