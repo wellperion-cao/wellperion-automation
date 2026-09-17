@@ -634,6 +634,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <label>담당자 (1명)</label>
       <div class="radio-group" id="fOwnerGroup">
         <!-- 김남욱GM 제거: GM은 담당자가 아니라 감독·최종책임자 (2026-05-30 업무-2 GM 결정) -->
+        <!-- → 2026-09-17 GM 지시로 다시 올림(「나도 업무SSOT에 이름 올려줘 일단은」) -->
+        <label><input type="radio" name="fOwner" value="김남욱GM">김남욱GM</label>
         <label><input type="radio" name="fOwner" value="이경연 실장">이경연 실장</label>
         <label><input type="radio" name="fOwner" value="최준용M">최준용M</label>
         <label><input type="radio" name="fOwner" value="임정은M">임정은M</label>
@@ -647,6 +649,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <div class="field">
       <label>협조 담당자 (여러명)</label>
       <div class="checkbox-group" id="fCollabGroup">
+        <label><input type="checkbox" value="김남욱GM">김남욱GM</label>
         <label><input type="checkbox" value="이경연 실장">이경연 실장</label>
         <label><input type="checkbox" value="최준용M">최준용M</label>
         <label><input type="checkbox" value="임정은M">임정은M</label>
@@ -815,17 +818,18 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 var ERP_API_ON = true;
 function fetchTodoList() {
   var gas = function () {
-    return fetch(TODO_API_URL + '?action=todo_list', { redirect: 'follow' })
+    return fetch(TODO_API_URL + '?action=todo_list&include_gm=1&gmkey=1531', { redirect: 'follow' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   };
   if (!ERP_API_ON) return gas();
-  return fetch('/api/todo?limit=1000', { cache: 'no-store' })
+  return fetch('/api/todo?include_gm=1&gmkey=1531&limit=1000', { cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
     .then(function (d) { return { ok: true, data: (d && d.rows) || [] }; })
     .catch(function (e) { console.warn('[업무SSOT] /api/todo 실패 → GAS 폴백:', e && e.message); return gas(); });
 }
 
 const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'];
+MEMBERS.unshift('김남욱GM');  // GM 지시 2026-09-17 「나도 업무SSOT에 이름 올려줘 일단은」 — 2026-05-30 제거 결정 되돌림
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
@@ -900,6 +904,8 @@ let ALL_TASKS = [];
 const STAFF_TOKENS = new Set([
   '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'
 ]);
+STAFF_TOKENS.add('김남욱GM'); STAFF_TOKENS.add('김남욱 GM');  // GM 지시 2026-09-17 — GM 담당 행도 표시
+OWNER_COLORS['김남욱GM'] = OWNER_CHIP;
 function hasNoStaff(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
   if (owners.length === 0) return true; // 담당 없음 → 숨김
