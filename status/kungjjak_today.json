@@ -330,16 +330,28 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260917-1034",
+          "no": "34",
+          "got": "업무 SSOT 정리시작",
+          "did": "#025/#026 결재 상신(나우열M 조건·서류 확인 요청) · #115→#002 병합 10/14 · #024 나우열M 9/28 · #004 전략 로드맵(시보 8bbb582423) · #006 행+카드 삭제 · #007 실장+#012 병합 · #010/#017 결과보고 양식 · #011 시모 오늘 · #013/#014 시모 배 · #015→#030 병합 · #034 최준용M · #052 나우열M+소장 · CCTV·분리수거장 완료 · 첨부 23행 · 전사일정 42 · 날짜 당김 49행 복구+원인 수리",
+          "start": "15:06",
+          "end": "15:33",
+          "minutes": 27,
+          "upload": "✅ 배포 (8bbb58242)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-1035",
           "no": "35",
           "got": "GM업무에서 CCTV 전체교체 관련해서는 결재SSOT 대표님 서명까지 완료된건인데? 이렇게 지금 제대로 안된건들이 꽤 많음 이래서 업무&결재 SSOT 및 업무 시스템이 활성화되어야함",
-          "did": "",
+          "did": "CCTV 행 완료(대표님 서명 9/10) · 분리수거장 중복 완료 · 겹침 후보 나머지는 설치 진행 중이라 유지",
           "start": "15:09",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:33",
+          "minutes": 24,
+          "upload": "✅ 배포 (e04d849af)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-B",
@@ -496,27 +508,9 @@
           "upload": "✅ 배포 (954558fd5)",
           "open": false,
           "evidence": "🔁재확인"
-        },
-        {
-          "ref": "GM-20260917-SSOTCAT",
-          "no": "AT",
-          "got": "업무 SSOT 이관 행 카테고리 부서명→공식 [n] · 카드 자료(A3 링크)·메모 싣기",
-          "did": "카테고리 57행 갱신(실패 0) · 자료·메모 20행(바이크 6건 포함) 링크 칸 채움 · 날아간 것 없음(카드 이관 상태로 보존)",
-          "start": "13:28",
-          "end": "13:28",
-          "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "✅있음"
         }
       ],
       "work": [
-        {
-          "time": "09:52",
-          "area": "작업",
-          "event": "업무 시스템 한 장 — 사람별 화면 + 빌더 (GM 지시 9/17)",
-          "detail": "커밋 db44c478c9 · 배 12714"
-        },
         {
           "time": "09:53",
           "area": "작업",
@@ -690,32 +684,31 @@
           "area": "작업",
           "event": "관제판 라이브 — 생존 신호마다 서버 /api/console/heartbeat 직송(session_register) · 업무 SSOT 카테고리 [10] 마케팅 추가(GM 지시 9/17)",
           "detail": "커밋 c3934ff72a · 배 12714"
+        },
+        {
+          "time": "15:33",
+          "area": "작업",
+          "event": "업무 SSOT 날짜 하루 당김 원인 수리 — GAS 날짜는 gas_date10(한국 날짜) 한 곳에서만 자른다(gm_handoff append · 업무시스템 빌더) · 업무시스템 재생성",
+          "detail": "커밋 253889e96a · 배 12714"
         }
       ],
       "count": 42,
-      "done": 41,
-      "open": 1,
+      "done": 42,
+      "open": 0,
       "avg_minutes": 55,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-1035",
-          "no": "35",
-          "got": "GM업무에서 CCTV 전체교체 관련해서는 결재SSOT 대표님 서명까지 완료된건인데? 이렇게 지금 제대로 안된건들이 꽤 많음 이래서 업무&결재 SSOT 및 업무 시스템이 활성화되어야함",
-          "did": "",
-          "start": "15:09",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 22
-        }
-      ],
+      "just": [],
       "repeats": [
+        {
+          "count": 2,
+          "got": "업무 SSOT 현황에서도 마케팅 관련해서는 하나의 카테고리가 있긴 해야할 것 같아",
+          "nos": [
+            "33",
+            "34"
+          ]
+        },
         {
           "count": 2,
           "got": "업무 현황 SSOT 삭제 비밀번호 1531 안 됨",
@@ -1033,13 +1026,25 @@
           "ref": "GM-20260917-2694",
           "no": "694",
           "got": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "15:30",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "15:32",
+          "minutes": 1,
+          "upload": "✅ 배포 (377dc6407)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-2695",
+          "no": "695",
+          "got": "AI C레벨 운영가이드 접속하면 404뜨고, 관제판도 열린배만 보이는데, 현재 배편 리스트랑 쿵짝표 내가 계속 달라고 하는것을 C레벨 관제판으로 해결될듯? 시각적인 액티비티만 머금는다면? 그리고 \"자율 작업 현황\" …",
+          "did": "관제판 2판 — 이름 「자율 작업 현황」→「C레벨 관제판」 · 창 6개 레인(불·지금 한 줄·활동 흐름·배편·숫자) · 새 활 · feat(console): 관제판 2판 — 이름 「자율 작업 현황」→「C — 커밋 ea533f7dba · 배 12715",
+          "start": "15:32",
+          "end": "15:34",
+          "minutes": 1,
+          "upload": "✅ 배포 (ea533f7db)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-CHECKACCT",
@@ -1199,12 +1204,6 @@
         }
       ],
       "work": [
-        {
-          "time": "11:51",
-          "area": "작업",
-          "event": "docs(auth): 권한 매트릭스 브리프 사실 정정 — 서버 반영·구글 로그인·판정 3건",
-          "detail": "커밋 87da4606c2 · 배 12715"
-        },
         {
           "time": "12:23",
           "area": "협업",
@@ -1378,31 +1377,22 @@
           "area": "작업",
           "event": "fix(console): 살아있음 판정에 활동 푸시 시각도 — 생존 루프가 멈춘 창이 일하고 있으면 🟢",
           "detail": "커밋 720362c6b9 · 배 12715"
+        },
+        {
+          "time": "15:34",
+          "area": "작업",
+          "event": "feat(console): 관제판 2판 — 이름 「자율 작업 현황」→「C레벨 관제판」 · 창 6개 레인(불·지금 한 줄·활동 흐름·배편·숫자) · 새 활동 미끄러짐·작업 중 맥박·N초 전 시계 · 숫자 띠·카드 배",
+          "detail": "커밋 ea533f7dba · 배 12715"
         }
       ],
-      "count": 39,
-      "done": 38,
-      "open": 1,
-      "avg_minutes": 9,
+      "count": 40,
+      "done": 40,
+      "open": 0,
+      "avg_minutes": 8,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-2694",
-          "no": "694",
-          "got": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
-          "did": "",
-          "start": "15:30",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -1829,6 +1819,18 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-3040",
+          "no": "40",
+          "got": "화면 정돈 제안서 9번에 웰페리온은 유소년 멤버십이 아직 구체화되기전이라 정원제란 영단어가 MEMBERS-ONLY이야? 우리 유소년 멤버들은 강습만, 그리고 준회원들도 강습만 받는 회원들이 있는데?",
+          "did": "외부 채널 5곳 붙여넣기 문구 — canon 한 문장 기준(카카오채널·페이스북·플레이스·인스타 2) · 배 2723 · docs(geo): 외부 채널 5곳 붙여넣기 문구 — canon 한 문장 — 커밋 82c245fb36 · 배 12691",
+          "start": "15:34",
+          "end": "15:35",
+          "minutes": 0,
+          "upload": "✅ 배포 (82c245fb3)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260917-erp-noslash",
           "no": "sh",
           "got": "/erp 화면 왜이래 — 원인 실측: 끝 슬래시 없는 /erp 에서 brand css 404 → 시토에게 수리 넘김",
@@ -1913,13 +1915,19 @@
           "area": "배",
           "event": "배 2722(12724) GEO 파일 FTP 반영 — 이미 라이브(9/11) 실측으로 종결",
           "detail": "llms 200 md5 동일 · robots 200 AI 허용 · sitemap_index 200"
+        },
+        {
+          "time": "15:34",
+          "area": "작업",
+          "event": "docs(geo): 외부 채널 5곳 붙여넣기 문구 — canon 한 문장 기준(카카오채널·페이스북·플레이스·인스타 2) · 배 2723",
+          "detail": "커밋 82c245fb36 · 배 12691"
         }
       ],
-      "count": 36,
-      "done": 36,
+      "count": 37,
+      "done": 37,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 12,
+      "work_count": 13,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -2071,6 +2079,18 @@
           "upload": "✅ 배포 (2be87c3b0)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-4023",
+          "no": "23",
+          "got": "https://erp.wellperion.com/cpo/member/renewal.html 이것도 하질 않고 있어서, 삭제해야한다는데, 시포 생각은 어때?",
+          "did": "",
+          "start": "15:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -2309,14 +2329,29 @@
           "detail": "시토 배포 13:39 · 브릿지 배 닫음"
         }
       ],
-      "count": 22,
+      "count": 23,
       "done": 22,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 9,
       "work_count": 19,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-4023",
+          "no": "23",
+          "got": "https://erp.wellperion.com/cpo/member/renewal.html 이것도 하질 않고 있어서, 삭제해야한다는데, 시포 생각은 어때?",
+          "did": "",
+          "start": "15:35",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 0
+        }
+      ],
       "repeats": [
         {
           "count": 2,
@@ -2951,7 +2986,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-17T15:31:32",
+    "published_at": "2026-09-17T15:35:19",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -2959,13 +2994,13 @@
         "alive": true,
         "signal": "15:30",
         "last": {
-          "time": "15:09",
-          "area": "GM요청",
-          "event": "GM업무에서 CCTV 전체교체 관련해서는 결재SSOT 대표님 서명까지 완료된건인데? 이렇게 지금 제대로 안된건들이 꽤 많음 이래서 업무&결재 SSOT 및 업무 시스템이 활성화되어야함",
-          "result": "warn"
+          "time": "15:33",
+          "area": "GM지시",
+          "event": "CCTV 카드 완료 처리 · 결재 끝난 열린 건 정리",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 77
+        "saves": 78
       },
       "cto": {
         "nick": "시토",
@@ -2973,13 +3008,13 @@
         "alive": true,
         "signal": "15:30",
         "last": {
-          "time": "15:30",
-          "area": "GM요청",
-          "event": "그리고 표를 GM이 오늘 던진 것으로 마무리하지말고, 쿵짝표처럼 만들어보는게 나을 것 같은데? // 지금 흐름 은 나 솔직히 하나도 모르겠어",
-          "result": "warn"
+          "time": "15:34",
+          "area": "작업",
+          "event": "feat(console): 관제판 2판 — 이름 「자율 작업 현황」→「C레벨 관제판」 · 창 6개 레인(불·지금 한 줄·활동 흐름·배편·숫자) · 새 활동 미끄러짐·작업 중 맥박·N초 전 시계 · 숫자 띠·카드 배",
+          "result": "ok"
         },
-        "idle_since": null,
-        "saves": 79
+        "idle_since": "15:34",
+        "saves": 80
       },
       "cmo": {
         "nick": "시모",
@@ -2987,13 +3022,13 @@
         "alive": true,
         "signal": "15:30",
         "last": {
-          "time": "15:27",
-          "area": "배",
-          "event": "배 2722(12724) GEO 파일 FTP 반영 — 이미 라이브(9/11) 실측으로 종결",
+          "time": "15:34",
+          "area": "작업",
+          "event": "docs(geo): 외부 채널 5곳 붙여넣기 문구 — canon 한 문장 기준(카카오채널·페이스북·플레이스·인스타 2) · 배 2723",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 23
+        "saves": 24
       },
       "cpo": {
         "nick": "시포",
