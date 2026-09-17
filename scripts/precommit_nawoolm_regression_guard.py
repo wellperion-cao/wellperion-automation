@@ -91,12 +91,23 @@ def nawoolm_added_lines(cwd, path, before=None):
     return added
 
 
+def surviving_lines(cwd, path, rev=None):
+    """커밋 뒤 파일에 남는 줄(정규화). 지워지는 줄과 같은 글자 줄이 여기 있으면 나우열M 블록은 그대로다 —
+    JSON 처럼 같은 줄("cao@wellperion.com", "kind": "screen")이 블록마다 반복되는 파일의 오탐을 막는다(2026-09-17 시토).
+    ponytail: 글자 단위 판정이라 나우열M 블록과 똑같은 블록이 둘일 때 하나를 지우면 통과한다 — 그때는 blame 으로 올린다."""
+    out = _git(["show", (rev if rev else "") + ":" + path], cwd)
+    return {_norm(ln) for ln in out.splitlines()}
+
+
 def find_hits(cwd, paths, rev=None):
     hits = []
     for p in paths:
         if is_state_file(p):
             continue
         rem = removed_lines(cwd, p, rev)
+        if not rem:
+            continue
+        rem -= surviving_lines(cwd, p, rev)
         if not rem:
             continue
         added = nawoolm_added_lines(cwd, p, before=rev)
@@ -185,6 +196,22 @@ def selftest():
         g("add", ".")
         hits = find_hits(d, ["main.html"])
         assert len(hits) == 1 and "통합 메뉴" in hits[0][2] and "구매요청 통합" in hits[0][1], hits
+        # 같은 글자 줄이 블록마다 반복되는 파일(modules.json) — 나우열 블록은 그대로 두고 다른 블록만 지우면 통과
+        j = os.path.join(d, "cards.json")
+        with open(j, "w", encoding="utf-8") as fh:
+            fh.write('[\n' + '  {"id": "a", "accounts": ["cao@wellperion.com", "ceo@wellperion.com"]},\n' + '  {"id": "z"}\n]\n')
+        g("add", "."); g("commit", "-q", "-m", "base cards")
+        with open(j, "w", encoding="utf-8") as fh:      # 나우열M 이 카드 b 추가(같은 계정 줄)
+            fh.write('[\n' + '  {"id": "a", "accounts": ["cao@wellperion.com", "ceo@wellperion.com"]},\n' + '  {"id": "b", "accounts": ["cao@wellperion.com", "ceo@wellperion.com"]},\n' + '  {"id": "z"}\n]\n')
+        g("add", "."); g("commit", "-q", "-m", "카드 b", GIT_AUTHOR_NAME="나우열", GIT_AUTHOR_EMAIL="n@w")
+        with open(j, "w", encoding="utf-8") as fh:      # 시토가 카드 a 를 내림 — b 는 그대로
+            fh.write('[\n' + '  {"id": "b", "accounts": ["cao@wellperion.com", "ceo@wellperion.com"]},\n' + '  {"id": "z"}\n]\n')
+        g("add", ".")
+        assert find_hits(d, ["cards.json"]) == [], find_hits(d, ["cards.json"])
+        with open(j, "w", encoding="utf-8") as fh:      # 카드 b 자체를 지우면 막힘
+            fh.write('[\n' + '  {"id": "a", "accounts": ["cao@wellperion.com", "ceo@wellperion.com"]},\n' + '  {"id": "z"}\n]\n')
+        g("add", ".")
+        assert len(find_hits(d, ["cards.json"])) == 1
         # 짧은 줄(<div>)은 대조 안 함 · 나우열 줄을 안 지우는 커밋은 통과
         with open(f, "w", encoding="utf-8") as fh:
             fh.write('<a href="cfo/finance/매출지출현황.html?req=1">구매요청 — 통합 메뉴</a>\n<div>\n</div>\n<!-- 시모 콘텐츠 -->\n')
