@@ -1410,7 +1410,11 @@
     ]).then(function(a){
       var kj = parseJson(a[0]) || {};
       var live = a[2];
-      if(live && live.roles && Object.keys(live.roles).length){ kj.board = live; kj.board.live = true; }
+      if(live && live.roles && Object.keys(live.roles).length){
+        // 역할별 합치기 — 라이브 신호가 있는 역할은 라이브, 아직 안 보내는 역할은 발행본(세션마다 보내는 쪽 전환이 끝날 때까지)
+        var pub = (kj.board && kj.board.roles) || {};
+        kj.board = { published_at: live.published_at, live: true, roles: Object.assign({}, pub, live.roles) };
+      }
       try{ renderControlBoard(kj, parseJson(a[1])); }catch(e){
         var el = document.getElementById('cb-cards'); if(el) el.innerHTML = '<div class="feed-status">관제판 표시 오류.</div>';
       }
