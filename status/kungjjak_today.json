@@ -42,6 +42,30 @@
           "evidence": "⚠️없음"
         },
         {
+          "ref": "GM-20260917-1004",
+          "no": "04",
+          "got": "지금도 조금 직관적이거나 그러진 않네, 차라리 업무 SSOT를 완전 개선시켜볼까?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:55",
+          "end": "10:56",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260917-1005",
+          "no": "05",
+          "got": "GM업무 중간관리자 업무들은 다 업무 SSOT로 넘길 수 있도록 셋업을 해주고, 이제부터 업무 SSOT로 진행이 단일화 되었으면해, 그리고 평가 관련된 부분은 ERP 관리자페이지로 단일화 시키자, 이 부분은 정말 직…",
+          "did": "",
+          "start": "10:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        },
+        {
           "ref": "GM-20260917-B",
           "no": "-B",
           "got": "배편 리스트업 · 작업 다 됐나",
@@ -152,14 +176,29 @@
           "detail": "커밋 955b348f15 · 배 12714"
         }
       ],
-      "count": 6,
-      "done": 6,
-      "open": 0,
-      "avg_minutes": 26,
+      "count": 8,
+      "done": 7,
+      "open": 1,
+      "avg_minutes": 22,
       "work_count": 12,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260917-1005",
+          "no": "05",
+          "got": "GM업무 중간관리자 업무들은 다 업무 SSOT로 넘길 수 있도록 셋업을 해주고, 이제부터 업무 SSOT로 진행이 단일화 되었으면해, 그리고 평가 관련된 부분은 ERP 관리자페이지로 단일화 시키자, 이 부분은 정말 직…",
+          "did": "",
+          "start": "10:57",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -239,18 +278,6 @@
         }
       ],
       "work": [
-        {
-          "time": "06:01",
-          "area": "작업",
-          "event": "fix(notify): 텔레그램 200+ok:false 응답도 오류 본문 기록 후 재시도 — 09-16 매출보고 3/3 사진 실패 재발 방지",
-          "detail": "커밋 47ec889c28 · 배 12680"
-        },
-        {
-          "time": "06:01",
-          "area": "자가점검",
-          "event": "매출보고 서버판 09-16 3/3 사진 실패 원인·수리",
-          "detail": "원인=tg_outbound_log.send 가 200+ok:false 응답에 재시도·오류기록 없이 종료 · 관문 한 곳에 오류본문 기록+재시도 박음 · 자체점검 통과 · 저장·배포"
-        },
         {
           "time": "06:02",
           "area": "작업",
@@ -412,13 +439,31 @@
           "area": "서버",
           "event": "문자 1단계 서버 배포·라이브 실측 · 파트너 계정 파일 권한 수리",
           "detail": "95a3a62ffb 3파일 배포 · SMS_ENABLED=0 · health failed_modules 없음 · /api/sms/send dry 실측 = not_active(문구 미발효 · 정상 거부) · 관리자 API staff 403 · partner_secrets.json root 소유→ec2-user(PermissionError 9/16 부터)"
+        },
+        {
+          "time": "10:54",
+          "area": "작업",
+          "event": "feat(sms): 하루 30건 상한·발송 건수 표시 + 본문 인코딩 400 처리 (배 2714 · GM 지시 2026-09-17 10:5x)",
+          "detail": "커밋 25d23d8c95 · 배 12715"
+        },
+        {
+          "time": "10:55",
+          "area": "GM요청",
+          "event": "문자 자동발송 1단계 라이브 — 문구 4종 발효(킬스위치 0)·드라이 발송·휴회 버튼 연동 확인",
+          "detail": "95a3a62ffb·02589588b(시포) · 30건 상한은 레인 진행 중"
+        },
+        {
+          "time": "10:56",
+          "area": "GM요청",
+          "event": "문자 하루 30건 상한·건수 표시(GM 10:5x) 배포·실측",
+          "detail": "25d23d8c95 · 서버 재기동 · counts API today 0/30 dry 1 · cp949 본문 400 · 자체점검 35 rows"
         }
       ],
       "count": 6,
       "done": 6,
       "open": 0,
       "avg_minutes": 5,
-      "work_count": 29,
+      "work_count": 30,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -519,7 +564,7 @@
           "start": "10:46",
           "end": "10:46",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (f671f6474)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -531,7 +576,7 @@
           "start": "10:46",
           "end": "10:47",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (f671f6474)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -543,7 +588,7 @@
           "start": "10:47",
           "end": "10:47",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (f671f6474)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -555,9 +600,21 @@
           "start": "10:47",
           "end": "10:52",
           "minutes": 4,
-          "upload": "기록만",
+          "upload": "✅ 배포 (f671f6474)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260917-3013",
+          "no": "13",
+          "got": "남 사우나 입구 턴게이트 보면 좌측이 비어서 그냥 쑥 나가면 될 것 같은데?",
+          "did": "남사우나 좌측 틈 유리로 막음 · 여사우나 우측벽붙임 안 1장 추가(좌측 유리 2장) · 4크레딧 · 저장 뒤 확인",
+          "start": "10:54",
+          "end": "10:56",
+          "minutes": 1,
+          "upload": "✅ 배포 (f671f6474)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -586,8 +643,8 @@
           "detail": "client=ax 발행기 저장·배포 417ceb0154 · self-test 통과 · 임시저장은 계정 뒤"
         }
       ],
-      "count": 11,
-      "done": 11,
+      "count": 12,
+      "done": 12,
       "open": 0,
       "avg_minutes": 2,
       "work_count": 4,
@@ -631,7 +688,7 @@
           "start": "10:50",
           "end": "10:52",
           "minutes": 1,
-          "upload": "✅ 배포 (748de1f89)",
+          "upload": "✅ 배포 (ccbc4ee45)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -639,13 +696,13 @@
           "ref": "GM-20260917-4004",
           "no": "04",
           "got": "[Cross-session idle notice] \"welperion-automation-76\", which you asked to be notified about, is idle now — it finished a…",
-          "did": "",
+          "did": "멤버십 휴회 진행중 줄에 「문자 보내기」 버튼 — 서버 /api/sms/send hold_confirm(회원번호=중복 방지 열 · feat(cpo): 멤버십 휴회 진행중 줄에 「문자 보내기」 버튼 — 서 — 커밋 02589588ba · 배 12523",
           "start": "10:52",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:55",
+          "minutes": 2,
+          "upload": "✅ 배포 (02589588b)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260917-cpo-bodyfriend",
@@ -655,7 +712,7 @@
           "start": "10:51",
           "end": "10:52",
           "minutes": 0,
-          "upload": "✅ 배포 (748de1f89)",
+          "upload": "✅ 배포 (ccbc4ee45)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -708,31 +765,22 @@
           "area": "멤버십",
           "event": "fix(cpo): 멤버십 회원관리 직원 이름 칸에 숫자만(입장코드 「1202」) 들어간 값은 무효 — 새로고침 때 지우고 다음 저장 때 이름을 다시 묻는다 (9/17 기외호님 종료일 변경자 추적 불가 사례)",
           "detail": "커밋 b54390bae0 · 배 12523"
+        },
+        {
+          "time": "10:54",
+          "area": "멤버십",
+          "event": "feat(cpo): 멤버십 휴회 진행중 줄에 「문자 보내기」 버튼 — 서버 /api/sms/send hold_confirm(회원번호=중복 방지 열쇠 · 시작/종료 · dry/hold/skip_duplicate 표시)",
+          "detail": "커밋 02589588ba · 배 12523"
         }
       ],
       "count": 6,
-      "done": 5,
-      "open": 1,
+      "done": 6,
+      "open": 0,
       "avg_minutes": 2,
-      "work_count": 6,
+      "work_count": 7,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260917-4004",
-          "no": "04",
-          "got": "[Cross-session idle notice] \"welperion-automation-76\", which you asked to be notified about, is idle now — it finished a…",
-          "did": "",
-          "start": "10:52",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 2
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "coo": {
