@@ -328,6 +328,8 @@
   .cnote{width:100%;box-sizing:border-box;min-height:118px;resize:vertical;border:1px solid var(--line);
     border-radius:6px;padding:8px 10px;font:13px/1.6 inherit;color:var(--ink);background:#fff;}
   .cnote:focus{outline:none;border-color:var(--navy);}
+  .crow2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;}
+  .crow2 .sec{min-width:0;}
   .cnrow{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;color:#5A6570;}
   .cnsave{margin-left:auto;padding:5px 14px;border-radius:6px;border:0;background:var(--navy);color:#fff;
     font:700 12px inherit;cursor:pointer;}
@@ -860,12 +862,20 @@
     </div>
   </div>
 
-  <div class="sec" style="margin-top:9px;">
-    <h2>특이사항 · 이달 계획 — 이경연 실장님<span class="src srv">리더 직접 작성</span></h2>
-    <div class="bd">
-      <textarea class="cnote" id="cnote5" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
-      <div class="cnrow"><span id="cnwho5">불러오는 중…</span>
-        <button type="button" class="cnsave" onclick="saveClosingNote('운영부', '5')">저장</button></div>
+  <!-- 아래칸은 숫자가 아니라 업무다(GM 2026-09-17 「숫자가 중요한 게 아니라 업무가 더 중요」).
+       왼쪽 = 업무 SSOT 원장에서 이 리더 담당 건을 그대로 · 오른쪽 = 리더가 손으로 쓰는 칸. -->
+  <div class="crow2">
+    <div class="sec">
+      <h2>이달 업무 — 이경연 실장 담당<span class="src srv">업무 SSOT → 서버</span></h2>
+      <div class="bd" id="cwork5"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+    </div>
+    <div class="sec">
+      <h2>특이사항 · 이달 계획 — 이경연 실장님<span class="src srv">리더 직접 작성</span></h2>
+      <div class="bd">
+        <textarea class="cnote" id="cnote5" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
+        <div class="cnrow"><span id="cnwho5">불러오는 중…</span>
+          <button type="button" class="cnsave" onclick="saveClosingNote('운영부', '5')">저장</button></div>
+      </div>
     </div>
   </div>
 
@@ -917,12 +927,20 @@
     </div>
   </div>
 
-  <div class="sec" style="margin-top:9px;">
-    <h2>특이사항 · 이달 계획 — 이정헌 소장님<span class="src srv">리더 직접 작성</span></h2>
-    <div class="bd">
-      <textarea class="cnote" id="cnote6" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
-      <div class="cnrow"><span id="cnwho6">불러오는 중…</span>
-        <button type="button" class="cnsave" onclick="saveClosingNote('시설부', '6')">저장</button></div>
+  <!-- 아래칸은 숫자가 아니라 업무다(GM 2026-09-17 「숫자가 중요한 게 아니라 업무가 더 중요」).
+       왼쪽 = 업무 SSOT 원장에서 이 리더 담당 건을 그대로 · 오른쪽 = 리더가 손으로 쓰는 칸. -->
+  <div class="crow2">
+    <div class="sec">
+      <h2>이달 업무 — 이정헌 소장 담당<span class="src srv">업무 SSOT → 서버</span></h2>
+      <div class="bd" id="cwork6"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+    </div>
+    <div class="sec">
+      <h2>특이사항 · 이달 계획 — 이정헌 소장님<span class="src srv">리더 직접 작성</span></h2>
+      <div class="bd">
+        <textarea class="cnote" id="cnote6" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
+        <div class="cnrow"><span id="cnwho6">불러오는 중…</span>
+          <button type="button" class="cnsave" onclick="saveClosingNote('시설부', '6')">저장</button></div>
+      </div>
     </div>
   </div>
 
@@ -970,12 +988,20 @@
     </div>
   </div>
 
-  <div class="sec" style="margin-top:9px;">
-    <h2>특이사항 · 이달 계획 — 나우열M님<span class="src srv">리더 직접 작성</span></h2>
-    <div class="bd">
-      <textarea class="cnote" id="cnote7" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
-      <div class="cnrow"><span id="cnwho7">불러오는 중…</span>
-        <button type="button" class="cnsave" onclick="saveClosingNote('파트너팀', '7')">저장</button></div>
+  <!-- 아래칸은 숫자가 아니라 업무다(GM 2026-09-17 「숫자가 중요한 게 아니라 업무가 더 중요」).
+       왼쪽 = 업무 SSOT 원장에서 이 리더 담당 건을 그대로 · 오른쪽 = 리더가 손으로 쓰는 칸. -->
+  <div class="crow2">
+    <div class="sec">
+      <h2>이달 업무 — 나우열M 담당<span class="src srv">업무 SSOT → 서버</span></h2>
+      <div class="bd" id="cwork7"><div class="mrow"><span class="lb">집계 중…</span></div></div>
+    </div>
+    <div class="sec">
+      <h2>특이사항 · 이달 계획 — 나우열M님<span class="src srv">리더 직접 작성</span></h2>
+      <div class="bd">
+        <textarea class="cnote" id="cnote7" placeholder="이번 달에 한 일과 다음 달에 할 일을 적어 주세요 — 숫자는 위에 이미 있습니다. 업무 중심으로."></textarea>
+        <div class="cnrow"><span id="cnwho7">불러오는 중…</span>
+          <button type="button" class="cnsave" onclick="saveClosingNote('파트너팀', '7')">저장</button></div>
+      </div>
     </div>
   </div>
 
@@ -1986,8 +2012,42 @@ function loadP3Todo(){
       var now = new Date();
       renderP3Todo('p3hr', p3TodoRows(rows, 'hr', now), now);
       renderP3Todo('p3work', p3TodoRows(rows, 'work', now), now);
+      renderClosingWork(rows, now);   // 결산 3장 아래칸(부서 리더별 업무)
     })
     .catch(function(){ /* 못 읽으면 시트 칸 그대로 둔다 */ });
+}
+
+/* 결산 3장 「이달 업무」 — 업무 SSOT 원장에서 그 리더 담당 건만. 이번 달에 끝낸 건수와 아직 남은 건을
+   같이 보인다(끝낸 것을 안 보이면 한 일이 없는 것처럼 읽힌다). 기한 지난 건은 빨갛게.
+   담당자 칸은 「이경연 실장」처럼 성함+직함이 들어 있어 성만으로 맞춘다 — 표기가 흔들려도 잡힌다. */
+var CLOSING_OWNER = { '5': '이경연', '6': '이정헌', '7': '나우열' };
+function renderClosingWork(rows, now){
+  var ym = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+  ['5', '6', '7'].forEach(function(n){
+    var el = document.getElementById('cwork' + n); if (!el) return;
+    var key = CLOSING_OWNER[n];
+    var mine = (rows || []).filter(function(r){
+      return String(r['담당자'] || '').indexOf(key) >= 0;
+    });
+    if (!mine.length) {
+      el.innerHTML = '<div class="mrow"><span class="lb">원장에 이 담당자 업무가 없습니다</span></div>';
+      return;
+    }
+    var doneM = mine.filter(function(r){ return String(r['상태'] || '').trim() === '완료' && String(r['종료일'] || '').slice(0, 7) === ym; });
+    var open = mine.filter(function(r){ var st = String(r['상태'] || '').trim(); return st !== '완료' && st !== '취소'; });
+    open.sort(function(a, b){ var x = String(a['종료일'] || '9999').slice(0, 10), y = String(b['종료일'] || '9999').slice(0, 10); return x < y ? -1 : x > y ? 1 : 0; });
+    var head = '<div class="mrow"><span class="lb">이번 달 마친 업무</span><span class="vl">' + doneM.length + '건</span></div>'
+      + '<div class="mrow"><span class="lb">아직 남은 업무</span><span class="vl">' + open.length + '건</span></div>';
+    var show = open.slice(0, 7), rest = open.length - show.length;
+    var list = show.map(function(r){
+      var due = String(r['종료일'] || '').slice(0, 10);
+      return '<div class="wrow' + (p3Overdue(due ? due.slice(5).replace('-', '/') : '', now) ? ' over' : '') + '">'
+        + '<span class="wt" title="' + esc(String(r['업무명'] || '')) + '">' + esc(String(r['업무명'] || '')) + '</span>'
+        + '<span class="wd">' + esc(due ? due.slice(5).replace('-', '/') : '기한 없음') + '</span>'
+        + '<span class="wo">' + esc(String(r['카테고리'] || '').replace(/^\[[0-9]+\]\s*/, '')) + '</span></div>';
+    }).join('');
+    el.innerHTML = head + list + (rest > 0 ? '<div class="wmore">외 ' + rest + '건</div>' : '');
+  });
 }
 
 function renderP3Teams(c){
