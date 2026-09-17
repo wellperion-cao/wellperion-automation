@@ -534,9 +534,16 @@ const OWNER_COLORS = {
 };
   /* ★운영부 회신 반영(GM 전달 2026-09-17) — 백승화 사원 초록 · 나우열M 태극(빨강→파랑 그라데이션).
      겹친 색은 옮겼다: 이정헌 소장 초록→보라. 진수아 사원은 노랑 그대로. */
-OWNER_COLORS['백승화 사원'] = {bg:'rgba(247,159,196,0.16)', color:'#F58FBF'};   /* 루피(뽀로로) 분홍 — GM 2026-09-17 */
+OWNER_COLORS['백승화 사원'] = {
+  bg: 'linear-gradient(100deg,#FFD1E8 0%,#FF9AD0 30%,#FF6FB8 58%,#F0489F 82%,#D62E86 100%)',
+  color: '#FFFFFF'
+};   /* 루피(뽀로로) 분홍 그라데이션 — GM 2026-09-17 19:2x */
 OWNER_COLORS['이정헌 소장'] = {bg:'var(--purple-bg)', color:'var(--purple)'};
 OWNER_COLORS['진수아 사원'] = {bg:'var(--yellow-bg)', color:'var(--yellow)'};
+OWNER_COLORS['김남욱GM'] = {
+  bg: 'linear-gradient(100deg,#2DD4BF 0%,#14B8A6 35%,#0EA5A5 65%,#0891B2 100%)',
+  color: '#FFFFFF'
+};   /* GM 청록 그라데이션 — GM 2026-09-17 19:2x */
 OWNER_COLORS['나우열M'] = {
   bg: 'linear-gradient(100deg,#FF4B5C 0%,#FF6A57 36%,#B06CD6 50%,#4DA3FF 64%,#2E7DE0 100%)',
   color: '#FFFFFF'
