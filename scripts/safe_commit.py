@@ -1214,12 +1214,21 @@ def refuse_if_older_than_head(path, new_text: str | None = None, root: Path = RO
             return True
         new_text = fp.read_text(encoding="utf-8", errors="replace")
     compare_text = base_text if base_text is not None else new_text
-    only_in_head = set(head_show.stdout.splitlines()) - set(compare_text.splitlines())
-    if len(only_in_head) < threshold:
+    # ★혈통 판정(2026-09-17 시토 · 웰리 실측): 「HEAD 에만 있던 줄 ≥N」 만으로는 커밋 안 한 정상 편집이
+    # 쌓인 디스크도 낡았다고 오판한다(같은 날 웰리 쓰기 20번 거부). 최근 커밋본들 중 HEAD 가 가장
+    # 가까우면 정상 편집으로 통과, 옛 판이 더 가까울 때만 거부. 판정 코드는 queue_lock 한 곳.
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from queue_lock import stale_against_head  # noqa: PLC0415
+        stale, _ht, info = stale_against_head(rel, compare_text, root, min_missing=threshold)
+    except Exception as e:  # 판정 불가 = 차단 아님(정직)
+        print(f"[낡은판 판정 불가 → 통과] {rel}: {e}")
         return True
+    if not stale:
+        return True
+    only_in_head = set(head_show.stdout.splitlines()) - set(compare_text.splitlines())
     sample = "; ".join(sorted(only_in_head)[:5])
-    reason = (f"{rel} — 쓰려는 내용에 HEAD 커밋본에만 있던 줄이 {len(only_in_head)}개 "
-              f"빠져 있습니다(기준 {threshold}개 이상 → 거부): {sample}")
+    reason = (f"{rel} — 쓰려는 내용이 HEAD 보다 낡은 판({info}): {sample}")
     print(f"[낡은판 쓰기 거부] {reason}")
     _domain_guard_log("stale_write_refused", [rel], str(root))
     _stale_alert(rel, reason, root)

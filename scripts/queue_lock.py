@@ -272,6 +272,47 @@ def _atomic_write_text(p: str, text: str) -> None:
     raise last_err
 
 
+def stale_against_head(rel, text, root, min_missing=3, depth=6):
+    """디스크/읽은 원문(text)이 HEAD 보다 낡은 판인지 — 혈통 판정(2026-09-17 시토).
+    반환: (stale: bool, head_text: str|None, info: str).
+    1) HEAD 에만 있는 줄이 min_missing 미만이면 낡음 아님(작은 차이는 통과).
+    2) 최근 depth 개 커밋본과 줄 집합 유사도(자카드)를 재서 HEAD 가 가장 가까우면 정상 편집,
+       옛 커밋본이 HEAD 보다 더 가까우면 낡은 판. 종전 「HEAD 에만 있던 줄 ≥3」 만으로는
+       커밋 안 한 정상 편집이 2건만 쌓여도(줄 4개 바뀜) 낡았다고 오판해 앞 편집을 되돌렸다(웰리 실측)."""
+    import subprocess
+
+    def git(*a):
+        return subprocess.run(["git", *a], cwd=root, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
+
+    head = git("show", f"HEAD:{rel}")
+    if head.returncode != 0 or not head.stdout:
+        return False, None, "HEAD 에 없음"
+    head_lines = set(head.stdout.splitlines())
+    text_lines = set(text.splitlines())
+    only_in_head = head_lines - text_lines
+    if len(only_in_head) < min_missing:
+        return False, head.stdout, f"HEAD 에만 {len(only_in_head)}줄 — 통과"
+
+    def jac(a, b):
+        return len(a & b) / (len(a | b) or 1)
+
+    sims = [(0, jac(head_lines, text_lines))]
+    log = git("log", f"-n{depth}", "--format=%H", "--", rel)
+    shas = log.stdout.split()[1:] if log.returncode == 0 else []
+    for i, sha in enumerate(shas, start=1):
+        old = git("show", f"{sha}:{rel}")
+        if old.returncode == 0 and old.stdout:
+            sims.append((i, jac(set(old.stdout.splitlines()), text_lines)))
+    best_i, best_s = max(sims, key=lambda t: (t[1], -t[0]))
+    head_s = sims[0][1]
+    if best_i == 0 or best_s <= head_s:
+        return False, head.stdout, (f"HEAD 에만 {len(only_in_head)}줄이지만 HEAD 가 가장 가까움"
+                                    f"(HEAD {head_s:.3f} · 옛 최고 {best_s:.3f}) — 정상 편집")
+    return True, head.stdout, (f"HEAD 에만 {len(only_in_head)}줄 · 옛 커밋본(HEAD~{best_i}) 이 더 가까움"
+                               f"({best_s:.3f} > HEAD {head_s:.3f})")
+
+
 def mutate_json(rel_path, mutator, holder="?", repo_root=None, heal_from_head=True, indent=2):
     """공유 상태 JSON(status/*.json 등)의 유일한 「읽고 → 고치고 → 되쓰기」 관문(2026-09-17 시토 · GM
     「낡은 판 되쓰기 근본 해결」). mutate_queue 와 같은 원리를 어느 JSON 에나:
@@ -292,15 +333,11 @@ def mutate_json(rel_path, mutator, holder="?", repo_root=None, heal_from_head=Tr
         healed = False
         if heal_from_head and disk:
             try:
-                import subprocess
-                head = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=root, capture_output=True,
-                                      text=True, encoding="utf-8", errors="replace")
-                if head.returncode == 0 and head.stdout:
-                    only_in_head = set(head.stdout.splitlines()) - set(disk.splitlines())
-                    if len(only_in_head) >= 3:
-                        base, healed = head.stdout, True
-                        _log(f"[mutate_json] {rel}: 디스크가 HEAD 보다 낡음(HEAD 에만 {len(only_in_head)}줄) "
-                             f"→ HEAD 판을 바탕으로 고친다 (holder={holder})", root)
+                stale, head_text, info = stale_against_head(rel, disk, root)
+                if stale and head_text:
+                    base, healed = head_text, True
+                    _log(f"[mutate_json] {rel}: 디스크가 HEAD 보다 낡음({info}) "
+                         f"→ HEAD 판을 바탕으로 고친다 (holder={holder})", root)
             except Exception:
                 pass
         data = json.loads(base) if base.strip() else {}
