@@ -477,6 +477,25 @@ def _log_new_notice_windows(room_name: str, before: set) -> None:
     before.update(new)   # 같은 창을 폴링마다 다시 적지 않는다
 
 
+def notice_snapshot(tag: str) -> int:
+    """지금 열린 공지 「상세보기」 창 수·제목을 logs/kakao_notice_trace.log 에 남긴다(GM 물음 2026-09-17
+    「왜 매일 아침마다 떠 있나」). 09-16 감지기는 검색 Enter 직후만 봐서 0건이었다 — 이번엔 카톡을 만지는
+    세 관문(발신·내보내기·외부 감시)의 실행 전후를 모두 찍어 어느 실행 사이에 늘었는지 시각으로 가른다."""
+    try:
+        wins = _notice_windows()
+    except Exception:
+        return -1
+    line = "%s [snapshot:%s] 공지 창 %d개%s" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), tag, len(wins),
+                                             (" — " + " · ".join(repr(t) for _h, t in wins)) if wins else "")
+    try:
+        NOTICE_TRACE_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with NOTICE_TRACE_LOG.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+    return len(wins)
+
+
 def _notice_windows() -> list[tuple[int, str]]:
     """공지 「상세보기」 창 목록 [(hwnd, 제목)] — _chat_room_windows 가 빼는 바로 그 창들.
 
@@ -2959,9 +2978,11 @@ if __name__ == "__main__":
     # 카카오톡·터미널을 통째로 확대시킨다. 시작할 때도 한 번 놓아 앞 실행의 잔재를 안 물려받는다.
     release_modifiers()
     _cursor_was = park_cursor()          # 커서가 구석에 있으면 안전장치가 발신을 통째로 멈춘다(배 2530 후속)
+    notice_snapshot("sender start")
     try:
         sys.exit(main())
     finally:
         release_modifiers()
+        notice_snapshot("sender end")
         clear_foreground_staging()       # 화면을 덮은 채 남은 임시 창 걷어내기(마우스 먹통 방지)
         restore_cursor(_cursor_was)      # 사람이 쓰던 자리로 되돌린다

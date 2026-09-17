@@ -207,6 +207,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
     from pywinauto import Application
 
     close_stray_save_dialog()          # 지난 회차가 남긴 저장창이 카톡을 잠가 둔다
+    s.notice_snapshot("export start " + room_name)
     ensure_kakao_foreground()
 
     # 방 열기 + 포커스(창 겹침 극복 핵심)
@@ -284,6 +285,7 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
         _warn_if_stale(out_path)
     close_stray_save_dialog()          # 성공 뒤 남는 '대화 내보내기 · 완료되었습니다' 창도 여기서 닫는다(배 시보→시토 2026-09-08)
     s.close_room_window(room, room_name)   # 저장이 끝난 방 창도 닫는다(GM 지시 2026-09-09) — 안 닫으면 방 창이 GM 화면에 쌓인다
+    s.notice_snapshot("export end " + room_name)
     return ok
 
 

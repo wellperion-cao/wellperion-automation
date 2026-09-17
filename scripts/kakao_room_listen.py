@@ -673,4 +673,13 @@ if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
         demo()
     else:
-        raise SystemExit(main())
+        try:
+            import kakao_report_sender as _ks
+            _ks.notice_snapshot("listen start")
+        except Exception:
+            _ks = None
+        try:
+            raise SystemExit(main())
+        finally:
+            if _ks is not None:
+                _ks.notice_snapshot("listen end")
