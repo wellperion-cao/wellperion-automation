@@ -11210,7 +11210,12 @@ function _renderHoldIntake() {
   //   시트에서 대조키(성함+연락처)로 실물 삭제 완료(배146) — 화면 필터는 걷는다(배174, 시포 실측 재확인:
   //   hold_intake_test_rows 미리보기 재조회 0건). 남겨두면 나중에 같은 이름의 진짜 건이 안 보일 수 있다.
   var intake = _holdIntake || [];
-  var pending = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기'; });
+  // 접수대기 = 상태가 접수대기이면서 종합접수처에서 아직 처리 안 한 것(done=false)만.
+  //   ★2026-09-17 시토 실측 — done 을 안 보면 184건(7·8월 옛 접수 포함)이 오늘 대기로 보인다.
+  //   done 은 종합접수처 처리 체크(서버 hold_items.done · 한 번 켜지면 안 꺼진다) — 그 화면과 같은 기준이어야
+  //   실장·데스크가 두 화면에서 다른 숫자를 보지 않는다. 처리 완료분 건수는 아래 안내줄에 따로 적는다.
+  var pending = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기' && !r.done; });
+  var handledElsewhere = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기' && r.done; }).length;
   var rejected = intake.filter(function(r){ return r.status === '반려'; });
   var ongoing = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '진행중'; });
   var done = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '완료'; });
@@ -11232,7 +11237,7 @@ function _renderHoldIntake() {
     + '<span style="font-size:11px;font-weight:600;color:var(--dim)">접수대기 ' + pending.length
     + ' · 진행중 ' + ongoing.length + ' · 완료 ' + done.length + ' · 반려 ' + rejected.length + '</span>'
     + '<button type="button" onclick="_loadHoldIntake(true)" style="float:right;padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--dim);font:600 11px inherit;cursor:pointer">새로고침</button></div>'
-    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">회원이 <b>휴회 신청 페이지</b>에서 접수하면 여기에 뜹니다. 서버 자동판정(가능/불가)을 확인하고 승인·반려하세요. 승인하면 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다.</div>';
+    + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">회원이 <b>휴회 신청 페이지</b>에서 접수하면 여기에 뜹니다. 서버 자동판정(가능/불가)을 확인하고 승인·반려하세요. 승인하면 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다.' + (handledElsewhere ? ' <b>종합접수처에서 이미 처리한 ' + handledElsewhere + '건은 목록에서 뺐습니다.</b>' : '') + '</div>';
   if (!_hTot) {
     el.innerHTML = html + '<div style="font-size:12px;color:var(--dim);padding:10px 0;line-height:1.7">'
       + '아직 접수된 휴회 신청이 없습니다.<br>'
