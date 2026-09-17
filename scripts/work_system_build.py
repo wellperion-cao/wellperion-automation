@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""업무 시스템 한 장 — 빌더 (GM 지시 2026-09-17).
+"""업무 시스템 한 장 — 빌더 (GM 지시 2026-09-17 · 업무 SSOT 단일화로 원천 재개정).
 
-네 원천(GM 카드 · 중간관리자 원장 · 업무&결재 SSOT · 전사일정)을 읽어
+세 원천(업무&결재 SSOT · 전사일정 · 중간관리자 원장의 회신 대기건)을 읽어
 status/work_system.json 을 사람별로 합쳐 쓴다. 읽기 전용 — 어느 원천에도 쓰지 않는다.
+GM 카드(monthly_ops_plan)·원장의 일반 이슈는 SSOT 로 이관되어 더 안 읽는다(SOURCE_CARDS=False).
 새 원장을 만들지 않는다(약속 L01·L21) — 정규화·상수는 기존 모듈(gm_surfaces_sync·send_ops_digest·
 gm_handoff·collectors.ops_shared·schedule_ssot)을 그대로 가져다 쓴다.
 
@@ -37,6 +38,11 @@ DUE_MARK_PLAIN = re.compile(r"기한\s*[:：]\s*(?:\d{4}-)?(\d{1,2})[-/](\d{1,2}
 
 CARD_DONE = {"완료", "취소"}
 SSOT_DONE = {"완료", "종결", "취소"}
+
+# GM 지시 2026-09-17 업무 SSOT 단일화 — GM 카드 원천은 더 이상 읽지 않는다(이관 완료 전제 ·
+# 다른 레인이 monthly_ops_plan.json 행을 SSOT 로 옮기는 중). 코드는 지우지 않는다 — 함수는 그대로
+# 두고 build() 에서 호출만 끈다.
+SOURCE_CARDS = False
 
 # 전사일정 노이즈 제거(GM 지시 2026-09-17 2차) — 반복 청소·점검·법정 점검이 GM 밀림을 덮었다.
 # cycle·repeat 가 있으면(매주/월 1회/1회 등 값 자체가 있으면) 반복·정기 취급 · 법정/점검 계열
@@ -116,22 +122,23 @@ def collect_cards(today: date):
     return items, failed
 
 
-def collect_ledger(today: date):
-    """중간관리자 원장 = _digest_ledger.json 각 날 issues[] 중 status=open 만."""
+def collect_ledger_reply(today: date):
+    """중간관리자 원장 중 kind=='reply' 만 — 「회신 기다리는 것」(업무 아님, GM 09-14) ·
+    업무 SSOT 단일화(GM 09-17)로 그 외 원장 이슈는 SSOT 로 이관되어 여기서 안 읽는다."""
     items, failed = [], False
     try:
         for day in _read_json(MGR_LEDGER, []):
             for iss in day.get("issues") or []:
-                if iss.get("status") != "open":
+                if iss.get("status") != "open" or iss.get("kind") != "reply":
                     continue
                 title = str(iss.get("issue") or "").strip()
                 if not title:
                     continue
                 items.append({
                     "title": title, "owner": str(iss.get("owner") or "").strip(),
-                    "dept": "", "due": (str(iss.get("due") or "").strip() or None),
+                    "dept": "", "due": None,
                     "next": str(iss.get("note") or "").strip(), "hold": False,
-                    "src": "ledger", "ref": str(iss.get("no") or ""),
+                    "state": "reply", "srcs": [{"src": "reply", "ref": str(iss.get("no") or "")}],
                 })
     except Exception:
         failed = True
@@ -262,9 +269,14 @@ def build() -> dict:
     meta = {"generated_at": datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S"),
             "today": today.isoformat(), "counts": {}, "failed": []}
 
+    sources = [("ssot", collect_ssot), ("schedule", collect_schedule)]
+    if SOURCE_CARDS:
+        sources.insert(0, ("card", collect_cards))
+    else:
+        meta["counts"]["card"] = 0
+
     all_items: list = []
-    for name, fn in (("card", collect_cards), ("ledger", collect_ledger),
-                      ("ssot", collect_ssot), ("schedule", collect_schedule)):
+    for name, fn in sources:
         got, failed = fn(today)
         meta["counts"][name] = len(got)
         if failed:
@@ -277,18 +289,25 @@ def build() -> dict:
     meta["merged_from"] = len(all_items) - len(merged)
     meta["total_items"] = len(merged)
 
+    reply_items, reply_failed = collect_ledger_reply(today)
+    meta["counts"]["reply"] = len(reply_items)
+    if reply_failed:
+        meta["failed"].append("reply")
+
     people = _read_json(PEOPLE_PATH, {})
     people_out = {}
     for who, person in people.items():
         if who.startswith("_"):
             continue
         my_items = [it for it in merged if matches_person(it, person)]
+        my_reply = [it for it in reply_items if matches_person(it, person)]
         counts = {
             "밀림": sum(1 for i in my_items if i["state"] == "overdue"),
             "오늘_이번주": sum(1 for i in my_items if i["state"] in ("today", "week")),
             "진행": sum(1 for i in my_items if i["state"] in ("progress", "hold")),
         }
-        people_out[who] = {"display": person.get("display", who), "counts": counts, "items": my_items}
+        people_out[who] = {"display": person.get("display", who), "counts": counts,
+                            "items": my_items, "reply_items": my_reply}
 
     out = {"_doc": "업무 시스템 한 장 — scripts/work_system_build.py 자동 생성. 손으로 고치지 않는다.",
            "meta": meta, "people": people_out}

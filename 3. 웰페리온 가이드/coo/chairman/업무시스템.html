@@ -101,7 +101,7 @@
   <div class="hd">
     <p class="brand">WELLPERION · 업무 시스템</p>
     <h1 id="who-name">불러오는 중…</h1>
-    <p class="sub">GM 카드 · 중간관리자 원장 · 업무&amp;결재 SSOT · 전사일정을 한 장으로 합칩니다 — <span id="gen-date">—</span> 기준</p>
+    <p class="sub">업무&amp;결재 SSOT 한 표 + 일정·회신 — <span id="gen-date">—</span> 기준</p>
     <div class="meta">
       <span><b>🔴 밀림</b><span id="cnt-overdue">—</span>건</span>
       <span><b>📅 오늘·이번주</b><span id="cnt-week">—</span>건</span>
@@ -138,8 +138,8 @@
   var params = new URLSearchParams(location.search);
   var who = params.get('who') || 'gm';
 
-  var SRC_LABEL = {card: '카드', ledger: '원장', ssot: 'SSOT', schedule: '일정'};
-  var STATE_ICON = {overdue: '🔴', today: '📅', week: '🗓', progress: '🚀', hold: '⏸', blank: '⚠'};
+  var SRC_LABEL = {ssot: 'SSOT', schedule: '일정', reply: '회신'};
+  var STATE_ICON = {overdue: '🔴', today: '📅', week: '🗓', progress: '🚀', hold: '⏸', blank: '⚠', reply: '💬'};
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -148,10 +148,9 @@
   }
 
   function srcLink(s) {
-    if (s.src === 'card') return 'GM업무.html#gm-' + encodeURIComponent(s.ref);
-    if (s.src === 'ledger') return '중간관리자_업무목차.html#' + encodeURIComponent(s.ref);
     if (s.src === 'ssot') return encodeURI('../todo/업무 현황 SSOT.html');
     if (s.src === 'schedule') return encodeURI('../check/전사_일정.html');
+    if (s.src === 'reply') return '중간관리자_업무목차.html#' + encodeURIComponent(s.ref);
     return '#';
   }
 
@@ -216,7 +215,7 @@
     };
   }
 
-  function renderSections(items) {
+  function renderSections(items, replyItems) {
     var overdue = items.filter(function (i) { return i.state === 'overdue'; }).sort(byDue);
     var todayWeek = items.filter(function (i) { return i.state === 'today' || i.state === 'week'; }).sort(byDue);
     var progress = items.filter(function (i) { return i.state === 'progress' || i.state === 'hold'; });
@@ -225,6 +224,7 @@
       + section('📅', '오늘 · 이번 주', todayWeek, true)
       + section('🚀', '진행 중', progress, true)
       + section('⚠', '빈칸 — 기한·다음 걸음 없음', blank, false)
+      + section('💬', '회신 기다리는 것 — 업무 아님', replyItems || [], false)
       + section('✅', '이번 주 끝난 것', [], false); // 완료 판정은 다음 단계(설계 §5) — 지금은 항상 0건, 지어내지 않음
   }
 
@@ -242,6 +242,8 @@
 
     var allItems = p.items || [];
     var ownItems = who === 'gm' ? allItems.filter(isGmOwn) : allItems;
+    var allReply = p.reply_items || [];
+    var ownReply = who === 'gm' ? allReply.filter(isGmOwn) : allReply;
     var toggle = document.getElementById('all-toggle');
     var cb = document.getElementById('all-toggle-cb');
     var showAll = who !== 'gm' || params.get('all') === '1';
@@ -249,11 +251,12 @@
     function paint() {
       var useAll = who !== 'gm' || showAll;
       var items = useAll ? allItems : ownItems;
+      var replyItems = useAll ? allReply : ownReply;
       var counts = useAll ? p.counts : countStates(ownItems);
       document.getElementById('cnt-overdue').textContent = counts['밀림'];
       document.getElementById('cnt-week').textContent = counts['오늘_이번주'];
       document.getElementById('cnt-progress').textContent = counts['진행'];
-      root.innerHTML = renderSections(items);
+      root.innerHTML = renderSections(items, replyItems);
     }
     paint();
 
