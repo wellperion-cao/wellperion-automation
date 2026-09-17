@@ -3612,7 +3612,11 @@ function toggleClosing(){
   var b = document.getElementById('dclosing');
   if (b) { b.classList.toggle('on', on); b.textContent = on ? '↩ 운영 현황으로' : closingBtnLabel(); }
   window.scrollTo(0, 0);
-  if (on) loadClosingNotes();
+  if (on) {
+    loadClosingNotes();
+    setTimeout(trimClosingBoxes, 200);
+    setTimeout(trimClosingBoxes, 2500);   // 늦게 도착하는 칸(원장·시트)까지
+  }
 }
 function loadClosingNotes(){
   if (!ERP_API_ON) {
@@ -3692,6 +3696,28 @@ function renderClosingHead(){
 
 /* 이미 그려진 다른 칸의 innerHTML 을 그대로 옮긴다 — 값을 다시 계산하지 않는다. 원본이 아직
    '불러오는 중…'·'집계 중…' 그대로면 옮기지 않고 집계 중으로 남긴다(지어내지 않는다). */
+/* 칸에 안 들어가는 목록은 줄을 덜어 내고 「외 N건」을 남긴다 — 말없이 잘리는 것보다 낫다.
+   결산 장은 평소 접혀 있어(display:none) 높이가 0 이라 이 함수는 장을 편 뒤에 돈다(toggleClosing). */
+function trimToFit(el){
+  if (!el || !el.clientHeight || el.scrollHeight <= el.clientHeight + 2) return;
+  var tbl = el.querySelector('table');
+  var host = tbl ? (tbl.tBodies[0] || tbl) : el;
+  var note = document.createElement('div');
+  note.className = 'wmore';
+  var cut = 0;
+  while (host.children.length > 2 && el.scrollHeight > el.clientHeight + 2) {
+    host.removeChild(host.lastElementChild); cut++;
+    note.textContent = '외 ' + cut + '건 — 전체는 4면에서';
+    if (cut === 1) el.appendChild(note);
+  }
+}
+function trimClosingBoxes(){
+  ['sheet5', 'sheet6', 'sheet7'].forEach(function(id){
+    var p = document.getElementById(id); if (!p || !p.clientHeight) return;
+    p.querySelectorAll('.bd').forEach(function(el){ trimToFit(el); });
+  });
+}
+
 function cloneInto(destId, srcId, emptyMsg){
   var d = document.getElementById(destId); if (!d) return;
   var s = document.getElementById(srcId);
