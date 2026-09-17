@@ -5333,7 +5333,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <div class="manual-body">
       <div class="ai-note">
         분실물은 <strong>수기 대장이 아니라 습득물 시스템으로 운영 중</strong>입니다. 등록·수령·처분은
-        <a href="../reception/종합접수처_현황.html"><strong>종합접수처 현황</strong></a>(직원 전용)에서만 하고,
+        <a href="coo/reception/종합접수처_현황.html"><strong>종합접수처 현황</strong></a>(직원 전용)에서만 하고,
         회원은 홈페이지 습득물 갤러리에서 <strong>조회만</strong> 합니다.
         아래는 그 시스템에 이미 들어 있는 규칙의 요약입니다 — <strong>규칙이 바뀌면 시스템 쪽을 고치고 이 요약을 맞춥니다</strong>(두 곳에 따로 적지 않습니다).
       </div>
@@ -11174,7 +11174,7 @@ function crTab(btn, panelId) {
       return r.json();
     }).then(function(me){
       if (!me) return;
-      var ROLE = {admin:'관리자', staff:'직원', partner:'파트너'}; who.innerHTML = '<a href="/auth/account" title="내 계정 · 정보 확인 · 비밀번호 변경">' + esc(me.name || me.email || '') + '</a>' + (me.role ? '<span class="role">' + esc(ROLE[me.role] || me.role) + '</span>' : '');
+      var ROLE = {admin:'관리자', staff:'직원', partner:'파트너'}; who.innerHTML = '<a href="/auth/account" title="내 계정 · 정보 확인 · 비밀번호 변경">' + esc(me.name || me.email || '') + '</a>' + (me.role ? '<span class="role">' + esc(me.role_label || ROLE[me.role] || me.role) + '</span>' : '');   // role_label = 관문이 직급 층으로 준 말(팀 리더/팀원 · GM 2026-09-17)
       link.textContent = '로그아웃'; link.href = '/auth/logout'; box.hidden = false;
     }).catch(function(){ /* 관문 없는 곳 — 숨김 유지 */ });
   })();
