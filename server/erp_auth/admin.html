@@ -115,8 +115,19 @@ tbody tr.sel{background:var(--accent-soft)}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--line-strong);background:var(--paper);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
 .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-/* ── 사람 표(배1026 2026-09-17 단순화 · 영역 6칸 체크로 · 드로어 폐지) ── */
-.people{display:block}
+/* ── 사람 표(배1026 2026-09-17 단순화 · 영역 6칸 체크로) + 우측 서랍(같은 날 11:3x GM "우측에 화면 나오는 게 좋다"로 복원 · 화면별 스위치 1개뿐, 옛 3단·기본/허용/거부 이름은 안 씀) ── */
+.people{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.people:has(.drawer:not([hidden])){grid-template-columns:minmax(0,1fr) 420px}
+@media(max-width:1080px){.people:has(.drawer:not([hidden])){grid-template-columns:minmax(0,1fr)}.people .drawer{position:fixed;inset:auto 0 0 0;max-height:82vh;border-radius:18px 18px 0 0;box-shadow:var(--shadow);z-index:30}}
+.drawer{background:var(--paper);border:1px solid var(--line);border-radius:16px;position:sticky;top:74px;max-height:calc(100vh - 92px);overflow:auto}
+.drawer .hd{padding:14px 16px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:2;display:flex;align-items:center;gap:8px}
+.drawer .hd h3{margin:0;font-size:16px;flex:1}
+.drawer .bd{padding:12px 16px 16px}
+.drawer .find2{width:100%;height:32px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper-2);color:var(--ink);margin:8px 0 10px}
+.srow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid var(--line);font-size:13px}
+.srow .nm{flex:1;min-width:0}
+.srow .nm small{display:block;color:var(--ink-faint);font-size:11px}
+#people-body .who{cursor:pointer}
 .areatd{text-align:center;white-space:nowrap}
 .preset-row{display:flex;gap:6px;flex-wrap:wrap}
 .grp{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
@@ -193,12 +204,12 @@ tbody tr.sel{background:var(--accent-soft)}
     </div>
   </section>
 
-  <!-- 사람 — 업무영역 6칸 체크 표(103화면 3단 드로어 폐지 · 배1026 2026-09-17) -->
+  <!-- 사람 — 업무영역 6칸 체크 표 + 이름 누르면 우측 서랍(화면별 스위치 · 배1026 2026-09-17 11:3x GM "우측에 화면 나오는 게 좋다") -->
   <section class="panel on" id="p-people" role="tabpanel">
     <div class="filters" id="people-filters"></div>
     <div class="people">
       <div class="card" style="margin:0">
-        <p class="sub">체크 한 칸 = 그 업무영역 화면 전부 보임. 부서를 고르면 그 부서 기본 화면이 <b>더해집니다</b>(있던 체크는 안 지웁니다). 승인·차단·잠금은 위 「승인 대기」·「차단·잠금」 탭에서 합니다.</p>
+        <p class="sub">체크 한 칸 = 그 업무영역 화면 전부 보임. 부서를 고르면 그 부서 기본 화면이 <b>더해집니다</b>(있던 체크는 안 지웁니다). 이름을 누르면 화면 하나하나를 켜고 끕니다. 승인·차단·잠금은 위 「승인 대기」·「차단·잠금」 탭에서 합니다.</p>
         <div class="tw"><table id="people-table"><thead><tr>
           <th>사람</th><th>부서</th><th>상태</th>
           <th title="마케팅 관리">마케팅</th><th title="회원 관리">회원</th><th title="운영 관리">운영</th>
@@ -206,6 +217,7 @@ tbody tr.sel{background:var(--accent-soft)}
           <th>전체</th><th>개인예외</th><th>저장</th><th>내보내기</th>
         </tr></thead><tbody id="people-body"></tbody></table></div>
       </div>
+      <aside class="drawer" id="drawer" hidden></aside>
     </div>
   </section>
 
@@ -282,6 +294,7 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelect
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MOCK=new URLSearchParams(location.search).get('mock')==='1';
 let S=null, filter={dept:'전체',status:'전체'}, q='';
+let selPerson=null, drawerQ='';   // 서랍(배1026 2026-09-17 11:3x 복원) — selPerson=지금 연 사람 · drawerQ=서랍 안 화면 찾기
 const PDRAFTS={};   // 사람별 편집중 초안(uid→{modules:Set,deny:Set}) · 저장 전까지만, 클릭 안 하면 안 생긴다
 
 /* ── 권한 판정 = 서버 allowed() 그대로 ── */
@@ -414,6 +427,11 @@ function personToggleAll(uid){
   AREAS.forEach(g=>groupIds(g).forEach(id=>{ if(full){ d.modules.delete(id); d.deny.add(id); } else { d.modules.add(id); d.deny.delete(id); } }));
   renderPeople();
 }
+function personToggleScreen(uid,mid){
+  const d=PD(uid), on=d.modules.has(mid)&&!d.deny.has(mid);
+  if(on){ d.modules.delete(mid); d.deny.add(mid); } else { d.modules.add(mid); d.deny.delete(mid); }
+  renderPeople();
+}
 function personToggleExc(uid){
   const d=PD(uid), ids=S.exception_ids||[], on=ids.length&&ids.every(id=>d.modules.has(id));
   ids.forEach(id=>{ if(on) d.modules.delete(id); else d.modules.add(id); });
@@ -454,7 +472,7 @@ function renderPeople(){
     const excSt=!excIds.length?'none':(excIds.every(id=>d.modules.has(id))?'full':(excIds.some(id=>d.modules.has(id))?'partial':'none'));
     const dirty=!ro&&personDirty(u);
     const cell=(st,attrs)=>`<td class="cell"><input type="checkbox" ${attrs} ${st==='full'?'checked':''} data-partial="${st==='partial'?'1':''}" ${ro?'disabled':''}></td>`;
-    return `<tr><td class="who"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
+    return `<tr><td class="who" data-open-drawer="${u.id}" title="눌러서 화면별 상세"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
     <td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}
       ${ro?'':`<select class="rank-sel" data-dept-apply-for="${u.id}" title="부서 기본 화면 더하기"><option value="">+ 부서 기본 추가</option>${Object.keys(S.dept_modules||{}).map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td>
@@ -465,6 +483,62 @@ function renderPeople(){
     <td>${ro?'—':`<button class="btn danger sm" data-delete-person="${u.id}">내보내기</button>`}</td></tr>`;
   }).join(''):'<tr><td colspan="13" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
   $$('#people-body input[data-partial="1"]').forEach(i=>i.indeterminate=true);
+  renderDrawer();
+}
+/* ── 우측 서랍(배1026 2026-09-17 11:3x · GM "우측에 화면 나오는 게 좋다 — 디테일한 부분") ──
+   영역 › 모듈 › 화면(modules.json 의 module/module_lead) 접이식 + 화면마다 스위치 하나.
+   옛 「기본/허용/거부」 3단은 안 쓴다 — 켜짐/꺼짐 뿐. 부서 배지 = 그 사람 부서의 기본 목록(S.dept_modules)에
+   이 화면이 있다 · 개인 배지 = 지금 켜져 있는데 부서 기본엔 없다(영역 체크·부서 추가·이 스위치 어느 쪽으로
+   켰든 데이터상 구분이 없어 "부서 기본 밖" 이면 전부 개인으로 부른다 — 그게 맞는 말이다).
+   문서함(84장)은 여기서 개별 스위치를 안 준다 — perms_save 의 id 허용목록이 modules() 37장만 보고
+   documents() 는 몰라서, 문서 id 를 modules[]/deny[] 로 보내도 서버가 조용히 버린다(app.py 못 건드림 · 위
+   머리말 참고). 그래서 문서함은 요약 한 줄로만 접는다. */
+function screenOn(d,mid){ return d.modules.has(mid)&&!d.deny.has(mid); }
+function renderDrawer(){
+  const box=$('#drawer'); const u=S.users.find(x=>x.id===selPerson);
+  if(!u){ selPerson=null; box.hidden=true; return; }
+  box.hidden=false;
+  const ro=u.role==='admin'||!!u.fixed_perms, d=personView(u), excIds=S.exception_ids||[];
+  const deptBase=new Set((S.dept_modules||{})[dept(u)]||[]);
+  const n=S.modules.length, seen=u.role==='admin'?n:S.modules.filter(m=>screenOn(d,m.id)).length;
+  const qq=drawerQ.trim().toLowerCase(), match=m=>!qq||(m.name+' '+(m.desc||'')).toLowerCase().includes(qq);
+  const screenRow=m=>{
+    const on=screenOn(d,m.id);
+    const badge=excIds.includes(m.id)?'':(deptBase.has(m.id)?'<span class="tag" style="margin-left:6px">부서</span>':(on?'<span class="tag acc" style="margin-left:6px">개인</span>':''));
+    return `<label class="srow"><input type="checkbox" data-screen-for="${u.id}" data-screen="${esc(m.id)}" ${on?'checked':''} ${ro?'disabled':''}>
+      <span class="nm">${scrName(m)}${badge}${m.desc?`<small>${esc(m.desc)}</small>`:''}</span></label>`;
+  };
+  const areaSummary=AREAS.map(g=>{
+    const ms=S.modules.filter(m=>!m.doc&&m.group===g&&!excIds.includes(m.id)), on=ms.filter(m=>screenOn(d,m.id)).length;
+    return `<span class="tag${on&&on===ms.length?' ok':''}" title="${esc(g)}">${esc(g.slice(0,2))} ${on}/${ms.length}</span>`;
+  }).join(' ');
+  const areasHtml=AREAS.map(g=>{
+    const ms=S.modules.filter(m=>!m.doc&&m.group===g&&!excIds.includes(m.id)&&match(m));
+    if(!ms.length) return '';
+    const on=ms.filter(m=>screenOn(d,m.id)).length;
+    const byModule={}, loose=[];
+    ms.forEach(m=>{ if(m.module) (byModule[m.module]=byModule[m.module]||[]).push(m); else loose.push(m); });
+    Object.values(byModule).forEach(l=>l.sort((a,b)=>(b.module_lead?1:0)-(a.module_lead?1:0)));
+    const inner=Object.keys(byModule).map(k=>{
+      const l=byModule[k]; if(l.length===1) return screenRow(l[0]);
+      const lon=l.filter(m=>screenOn(d,m.id)).length;
+      return `<details class="grp"><summary><span class="n">${esc(k)}</span><span class="c"><b class="num">${lon}</b>/${l.length}</span></summary>${l.map(screenRow).join('')}</details>`;
+    }).join('')+loose.map(screenRow).join('');
+    return `<details class="grp"${qq?' open':''}><summary><span class="n">${esc(g)}</span><span class="c"><b class="num">${on}</b>/${ms.length}</span></summary>${inner}</details>`;
+  }).join('');
+  const excMs=S.modules.filter(m=>excIds.includes(m.id)&&match(m));
+  const excOn=excMs.filter(m=>screenOn(d,m.id)).length;
+  const excHtml=excMs.length?`<details class="grp"${qq?' open':''}><summary><span class="n">개인예외</span><span class="c"><b class="num">${excOn}</b>/${excMs.length}</span></summary>${excMs.map(screenRow).join('')}</details>`:'';
+  const docHtml=qq?'':`<div class="grp" style="padding:10px 12px;color:var(--ink-soft);font-size:12.5px">문서함 — 이 화면에서 개별로 켜고 끄지 않습니다(부서 소속·전사 공개 기준)</div>`;
+  box.innerHTML=`<div class="hd"><h3>${esc(u.name)}</h3><button class="btn sm" data-drawer-close>닫기</button></div>
+  <div class="bd">
+    <span class="tag${dept(u)?' acc':''}">${esc(dept(u)||'미분류')}</span> <span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>
+    <span class="num" style="margin-left:6px">보이는 화면 <b>${seen}</b>/${n}</span>
+    <div style="margin-top:8px">${areaSummary}</div>
+    ${ro?'<div class="notice info" style="margin-top:10px">관리자·파일 정본 계정은 여기서 조정하지 않습니다.</div>':''}
+    <input class="find2" type="search" placeholder="화면 이름으로 찾기" value="${esc(drawerQ)}" data-drawer-find>
+    ${areasHtml}${excHtml}${docHtml}
+  </div>`;
 }
 function renderDepts(){
   const byId=Object.fromEntries(S.modules.map(m=>[m.id,m]));
@@ -555,7 +629,9 @@ function diffText(b,a){ try{ b=b?JSON.parse(b):null; a=a?JSON.parse(a):null; }ca
 /* ── 상호작용 ── */
 function go(t){ $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t)); try{localStorage.setItem('erp_admin_tab',t);}catch(e){} }
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-dept-preset],[data-undo],[data-save-person],[data-delete-person],.chip'); if(!t) return;
+  const t=e.target.closest('[data-tab],[data-go],[data-scroll],[data-act],[data-dept-preset],[data-undo],[data-save-person],[data-delete-person],[data-open-drawer],[data-drawer-close],.chip'); if(!t) return;
+  if(t.hasAttribute('data-drawer-close')){ selPerson=null; renderDrawer(); return; }
+  if(t.dataset.openDrawer){ const id=+t.dataset.openDrawer; selPerson=(selPerson===id)?null:id; drawerQ=''; renderDrawer(); return; }
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.dataset.go) return go(t.dataset.go);
   if(t.dataset.scroll){ document.querySelector(t.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
@@ -581,6 +657,12 @@ document.addEventListener('change',e=>{
   const pall=e.target.closest('input[data-all-for]'); if(pall){ personToggleAll(+pall.dataset.allFor); return; }
   const pexc=e.target.closest('input[data-exc-for]'); if(pexc){ personToggleExc(+pexc.dataset.excFor); return; }
   const dsel=e.target.closest('select[data-dept-apply-for]'); if(dsel&&dsel.value){ personApplyDept(+dsel.dataset.deptApplyFor, dsel.value); dsel.value=''; return; }
+  const psc=e.target.closest('input[data-screen-for]'); if(psc){ personToggleScreen(+psc.dataset.screenFor, psc.dataset.screen); return; }
+});
+document.addEventListener('input',e=>{
+  const df=e.target.closest('[data-drawer-find]'); if(!df) return;
+  drawerQ=df.value; renderDrawer();
+  const ni=$('#drawer [data-drawer-find]'); if(ni){ ni.focus(); ni.setSelectionRange(ni.value.length,ni.value.length); }
 });
 $('#dm-save').addEventListener('click',saveDeptMatrix);
 $('#social-save').addEventListener('click',saveSocialKeys);
