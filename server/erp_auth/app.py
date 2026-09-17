@@ -195,6 +195,9 @@ OFFICE_AUTO_LOGIN_ACCOUNT = os.environ.get("OFFICE_AUTO_LOGIN_ACCOUNT", "info@we
 # 직원 홈 주소 — 로그인만 되면 누구나(카드·폴더 판정 밖). nginx guide-alias 가 /home·/guide 를 정본 파일로 되쓴다.
 STAFF_HOME_PATHS = frozenset({"/home", "/guide", "/wellperion_guide(main).html"})
 STAFF_HOME_MODULE = "ceo-wellperion-guide-main"   # 그 파일의 카드 id(modules.json) — 카드 판정에서도 전원 허용
+# 로그인한 계정 전원에게 열리는 카드 — 직원 홈 + 업무 시스템(GM 2026-09-17 「GM·실장·소장·나우열M·실무진 7명이 각자 ?who= 로 본다」).
+# 카드 표(erp_modules_build CORE)에 올려도 perms 가 있는 계정은 modules 목록에 없으면 403 이라(실측 09-17 16:07 직원 9계정 전부) 여기서 연다.
+STAFF_OPEN_MODULES = frozenset({STAFF_HOME_MODULE, "coo-chairman-업무시스템"})
 # 자동 로그인 세션이 못 여는 개인정보 카드(배 2574). chro-* 는 접두로 따로 막는다.
 AUTO_LOGIN_DENY_IDS = frozenset({"member", "inquiry", "cpo-member-lesson", "cpo-member-renewal",
                                  "cpo-member-오넛티-접수현황"})
@@ -563,7 +566,7 @@ def allowed(user, module: dict) -> bool:
     개인 예외(EXCEPTION_ONLY_IDS)는 groups/all 매칭을 건너뛴다 — modules 로 콕 집어야만 켜진다(배1026 §3)."""
     if user["role"] == "admin":
         return True
-    if module["id"] == STAFF_HOME_MODULE:          # 직원 홈(/home) — 로그인한 계정 전원(GM 2026-09-17 「직원 화면 = /home」)
+    if module["id"] in STAFF_OPEN_MODULES:         # 직원 홈(/home)·업무 시스템 — 로그인한 계정 전원(GM 2026-09-17)
         return True
     if module["id"] in modules_off():              # 이 회사에서 끈 모듈(모듈 배치) — 직원은 못 본다
         return False
