@@ -31,10 +31,16 @@
     var p = function (n) { return (n < 10 ? '0' : '') + n; };
     var stamp = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
                 ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-    fetch(URL, {
-      method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'saveBoard', key: 'ping:' + path, board: { last: stamp } })
-    }).catch(function () { /* 실패해도 화면 동작에 영향 없음 — 계측일 뿐이다 */ });
+    var body = JSON.stringify({ action: 'saveBoard', key: 'ping:' + path, board: { last: stamp } });
+    // 2026-09-18 시토(배 11299 · 서버 원천 100%): ERP 도메인에서는 브라우저가 구글로 직접 가지 않는다 —
+    //   서버 쓰기 관문(/api/write · saveBoard 는 카드 권한 없이 로그인만으로 통과)이 같은 보드에 넘긴다.
+    //   GitHub Pages(은퇴 예정)에서만 종전 구글 직행.
+    var onErp = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
+    (onErp
+      ? fetch('/api/write', { method: 'POST', cache: 'no-store', credentials: 'same-origin',
+                              headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body })
+      : fetch(URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: body })
+    ).catch(function () { /* 실패해도 화면 동작에 영향 없음 — 계측일 뿐이다 */ });
   } catch (e) { /* 같은 이유 */ }
 })();
 
