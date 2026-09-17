@@ -14239,13 +14239,29 @@ var WriteBuffer = (function(){
       //   않았다.** 서버 원인을 고쳐도 화면의 실패 칩은 그대로 남는다(오늘 유입경로 건이 정확히 그랬다).
       //   ▸행 확정 실패(오지목 계열)로 park 된 건은 그대로 둔다 — 그건 재시도해도 결과가 같고, 되살리면
       //     경고 팝업이 새로고침마다 다시 뜬다. 그 분기는 parkedHard 로 표시해 구분한다.
-      if (Array.isArray(raw)) queue = raw.map(function(it){
+      // ★2026-09-17 시포(FB260917-115105 임정은M · 기외호님) — 오래 묵은 미전송 편집은 되살리지 않는다.
+      //   브라우저에 남아 있던 옛 편집(종료일자 9/16)이 새로고침마다 다시 전송돼 실무진이 방금 고친 값(9/17)을
+      //   덮었다(같은 사무실 PC · 열쇠(idem)가 매번 새로 생겨 서버 중복 차단도 못 잡음). 편집한 지 STALE_MS 가
+      //   지난 건은 조용히 보내지 않고 버린 뒤 무엇을 버렸는지 알린다 — 그 사이 세상이 바뀌었을 수 있어
+      //   사람이 화면에서 다시 확인하는 쪽이 옛값을 자동으로 덮는 쪽보다 안전하다.
+      var STALE_MS = 2 * 3600 * 1000;
+      var _stale = [];
+      if (Array.isArray(raw)) queue = raw.filter(function(it){
+        var _m = /^w(\d{13})_/.exec(String(it && it.id || ''));
+        var _age = _m ? (Date.now() - Number(_m[1])) : 0;
+        if (_age > STALE_MS) { _stale.push((it.who ? it.who + ' ' : '') + (it.label || '편집')); return false; }
+        return true;
+      }).map(function(it){
         it.inflight = false;
         it.nextTry = 0;
         it.verifying = false;   // 저장 확인 중 새로고침 시 다시 정상 큐로(다음 flush에서 재전송 — 유실보다 안전)
         if (it.parked && !it.parkedHard) { it.parked = false; it.attempts = 0; }
         return it;
       });
+      if (_stale.length) {
+        try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch (e) {}
+        setTimeout(function(){ try { alert('⚠️ 2시간 넘게 전송되지 않은 편집 ' + _stale.length + '건은 자동으로 보내지 않고 버렸습니다.\n' + _stale.join('\n') + '\n화면에서 현재 값을 확인하고 필요하면 다시 입력해 주세요.'); } catch (e) {} }, 800);
+      }
     } catch (e) { queue = []; }
   }
   function _save() { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch (e) {} }
@@ -14410,6 +14426,7 @@ var WriteBuffer = (function(){
       existing.nextTry = 0;
       existing.rev = (existing.rev || 0) + 1;
     } else {
+      try { if (payload && !payload.idem && window.crypto && window.crypto.randomUUID) payload.idem = window.crypto.randomUUID(); } catch (e) {}   // 2026-09-17 시포 — 재전송이 같은 열쇠를 쓰게(apiPost 는 없을 때만 새로 만든다)
       queue.push({
         id: 'w' + _now() + '_' + Math.random().toString(36).slice(2, 7),
         key: key, payload: payload,
