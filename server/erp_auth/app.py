@@ -1180,7 +1180,7 @@ def account_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "
 <label>새 비밀번호<input name=new_password type=password placeholder="8자 이상" minlength=8 autocomplete=new-password required></label>
 <button>비밀번호 변경</button></form>""")
     return page("내 계정", head("내 계정 · 정보 확인과 비밀번호 변경") + f"""<div class=box>
-<style>.box .row{{justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);margin:0}}.box .row:last-of-type{{border-bottom:0}}
+<style>.box .row{{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);margin:0}}.box .row:last-of-type{{border-bottom:0}}
 .box .row .k{{color:var(--ink-soft);font-size:13px}}.box h2{{margin:18px 0 10px;font-size:15px}}</style>
 <h1>내 계정</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}{'<p class=ok>' + escape(msg) + '</p>' if msg else ''}
 {info}
