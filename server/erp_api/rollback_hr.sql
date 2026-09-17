@@ -61,14 +61,14 @@ UPDATE hr.migration_run
 -- 한 문장 TRUNCATE 로 FK 순서 문제를 없앤다(참조하는 표를 같은 문장에 다 넣어야 통한다 — 목록이 곧 계약).
 -- ⛔ 목록에 넣지 않는 표: hr.access_log(열람 원장 — 절대 비우지 않는다) · hr.automation_log · hr.holiday · hr.command_queue
 --    (1단계 미적재 · FK 없음) · hr._dept_manual_backup(1절 백업).
--- leave_ledger·schedule_change_request·personal_calendar_event 는 비어 있어도 employee/person 을 참조하므로 목록에 있어야 한다.
+-- leave_ledger·schedule_change_request·personal_calendar_event·board_roster 는 비어 있어도 employee/person 을 참조하므로 목록에 있어야 한다.
 -- RESTART IDENTITY = 각 표 BIGSERIAL 을 1 부터 다시. 역인덱스(hr.legacy_row_map)도 여기서 비워지고, 다음 적재가 탭 트랜잭션
 -- 안에서 다시 채운다(별도 SQL 없음). 부서 seed 재적재 지점 = 다음 migrate_hr.py --apply 의 seed_departments.
 /*
 TRUNCATE TABLE
   hr.migration_step, hr.migration_run, hr.legacy_row_map,
   hr.applicant_document, hr.application_stage_history,
-  hr.leave_entry, hr.leave_ledger, hr.schedule_change_request, hr.personal_calendar_event,
+  hr.leave_entry, hr.leave_ledger, hr.schedule_change_request, hr.personal_calendar_event, hr.board_roster,
   hr.onboarding_item, hr.resignation, hr.evaluation, hr.applicant, hr.job_posting, hr.hire_blacklist,
   hr.employee, hr.department, hr.person
 RESTART IDENTITY;

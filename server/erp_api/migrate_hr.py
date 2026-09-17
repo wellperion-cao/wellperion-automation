@@ -180,13 +180,13 @@ def to_num(v):
         return None
 
 
-def to_bool(v):
+def to_bool(v, default=None):
     t = s(v).lower()
     if t in ("예", "y", "yes", "true", "완료", "지급", "o", "1"):
         return True
     if t in ("아니오", "아니요", "n", "no", "false", "미지급", "x", "0"):
         return False
-    return None
+    return default
 
 
 def to_text(v):
@@ -315,7 +315,7 @@ ONBO_MAP = [
     ("week_no", ("주차",), to_int),
     ("title", ("항목", "제목", "내용", "체크 항목"), to_text),
     ("due_date", ("예정일", "기한", "일자"), to_date),
-    ("done", ("완료", "완료 여부"), to_bool),
+    ("done", ("완료", "완료 여부"), lambda v: to_bool(v, False)),  # 빈값=미완료(hr.onboarding_item.done NOT NULL DEFAULT FALSE)
     ("done_at", ("완료일",), to_date),
     ("owner", ("담당자",), to_text),
     ("note", ("비고",), to_text),
@@ -338,9 +338,9 @@ LEAVE_MAP = [
 # (name·dept·leaveApplied·exitDate, schedule.html 실측) 을 그대로 옮겼다 — 안 맞으면 NULL 로 리포트에 남는다.
 BOARD_MAP = [
     ("person_name_raw", ("성명", "이름", "name"), to_text),
-    ("dept_name_raw", ("부서", "소속", "dept"), to_text),
+    ("dept_name_raw", ("부서", "소속", "dept", "보드부서"), to_text),
     ("roster_display_name", ("표기명", "보드명"), to_text),
-    ("leave_applied", ("연차적용여부", "leaveApplied"), to_text),
+    ("leave_applied", ("연차적용여부", "leaveApplied", "연차적용"), to_text),
     ("exit_date", ("퇴사일", "exitDate"), to_date),
     ("note", ("비고",), to_text),
 ]
@@ -354,7 +354,7 @@ SCHEDCHG_MAP = [
     ("target_date", ("날짜", "date"), to_date),
     ("request_type", ("유형", "구분", "type"), to_text),
     ("reason", ("사유", "reason"), to_text),
-    ("status", ("상태", "status"), to_text),
+    ("status", ("상태", "status"), lambda v: to_text(v) or "대기"),  # 빈값=대기(hr.schedule_change_request.status NOT NULL DEFAULT '대기')
     ("requested_at", ("등록일시", "requestedAt", "createdAt"), to_date),
     ("decided_at", ("결정일시", "수정일시", "decidedAt", "updatedAt"), to_date),
 ]
@@ -1466,12 +1466,13 @@ def _norm_pred(p):
 
 
 def parse_schema(text):
-    """schema.sql 본문 → {표 이름: {"columns": set, "keys": set((칸 튜플, 술어))}}.
+    """schema.sql 본문 → {표 이름: {"columns": set, "keys": set((칸 튜플, 술어)), "not_null_no_default": set}}.
     표 안의 UNIQUE(...) · PRIMARY KEY(...) 는 술어 "" 로, 표 밖의 CREATE UNIQUE INDEX ... WHERE <술어>; 는
-    술어를 소문자로 정규화해 담는다 — ON CONFLICT (칸) WHERE 술어 가 잡을 수 있는 것이 그것이다(§A-9)."""
+    술어를 소문자로 정규화해 담는다 — ON CONFLICT (칸) WHERE 술어 가 잡을 수 있는 것이 그것이다(§A-9).
+    not_null_no_default = NOT NULL 인데 DEFAULT 가 없는 칸(같은 줄에 둘 다 있는지만 본다 · C-09)."""
     out = {}
     for m in _CREATE_TABLE_RE.finditer(text):
-        cols, keys = set(), set()
+        cols, keys, nn_no_default = set(), set(), set()
         for line in m.group(2).splitlines():
             line = line.split("--", 1)[0].strip().rstrip(",").strip()
             if not line:
@@ -1482,10 +1483,14 @@ def parse_schema(text):
                 continue
             cm = _COLUMN_RE.match(line)
             if cm and cm.group(1).lower() not in _NOT_A_COLUMN:
-                cols.add(cm.group(1).lower())
-        out[m.group(1).lower()] = {"columns": cols, "keys": keys}
+                col = cm.group(1).lower()
+                cols.add(col)
+                low = line.lower()
+                if "not null" in low and "default" not in low:
+                    nn_no_default.add(col)
+        out[m.group(1).lower()] = {"columns": cols, "keys": keys, "not_null_no_default": nn_no_default}
     for m in _UNIQUE_INDEX_RE.finditer(text):
-        t = out.setdefault(m.group(1).lower(), {"columns": set(), "keys": set()})
+        t = out.setdefault(m.group(1).lower(), {"columns": set(), "keys": set(), "not_null_no_default": set()})
         t["keys"].add((tuple(c.strip().lower() for c in m.group(2).split(",")), _norm_pred(m.group(3))))
     return out
 
@@ -1518,6 +1523,25 @@ def check_schema_contract(text):
         badid = [c for c in spec["identity"] if c not in mapcols]
         if badid:
             bad.append("%s: identity 칸이 map 에 없다: %s" % (key, ", ".join(badid)))
+    return bad
+
+
+def check_not_null_contract(tables):
+    """NOT NULL(기본값 없는) 칸이 map/fixed 어느 쪽에도 없으면 그 칸은 항상 NULL 로 들어가 적용 시 NOT NULL
+    위반으로 그 탭이 롤백된다(온보딩 done 실사고 2026-09-17 · parse_schema 의 not_null_no_default 를 본다).
+    기본값이 있는 칸(예: status DEFAULT '대기')은 검사하지 않는다 — 여기서는 존재만 보고, 빈값이 실제로
+    None 이 되지 않게 막는 것은 map 의 변환기 몫이다(예: to_bool(v, False))."""
+    bad = []
+    for key in TAB_ORDER:
+        spec = TABS[key]
+        t = tables.get(spec["table"].lower())
+        if t is None:
+            continue
+        filled = {c for c, _cands, _conv in spec["map"]} | set(spec["fixed"])
+        for col in sorted(t.get("not_null_no_default", ())):
+            if col not in filled:
+                bad.append("%s: %s.%s 는 NOT NULL 이고 기본값도 없는데 map/fixed 어디에도 없다"
+                           % (key, spec["table"], col))
     return bad
 
 
@@ -1578,6 +1602,16 @@ def selftest():
     _bad = check_schema_contract(_schema_text)
     assert not _bad, "스키마 대조 실패:\n  " + "\n  ".join(_bad)
     _parsed = parse_schema(_schema_text)
+    # NOT NULL 대조(C-09) — 기본값 없는 NOT NULL 칸은 map 이나 fixed 로 반드시 채워져야 한다(온보딩 done 실사고).
+    _nn_bad = check_not_null_contract(_parsed)
+    assert not _nn_bad, "NOT NULL 대조 실패:\n  " + "\n  ".join(_nn_bad)
+    # 가드가 실제로 막는지 — map/fixed 밖의(기본값 없는) NOT NULL 칸은 잡혀야 한다
+    _nn_mini = ("CREATE TABLE IF NOT EXISTS hr.onboarding_item (\n"
+                "  item_id BIGSERIAL PRIMARY KEY,\n"
+                "  made_up_required_col TEXT NOT NULL\n"
+                ");\n")
+    _nn_fake = check_not_null_contract(parse_schema(_nn_mini))
+    assert any("made_up_required_col" in b for b in _nn_fake), "map/fixed 밖의 NOT NULL 칸은 잡혀야 한다"
     assert (("tenant_id", "person_name_raw", "work_date"), LIVE_PRED_NORM) in _parsed["hr.leave_entry"]["keys"]
     assert (("tenant_id", "legacy_tab", "legacy_row"), LIVE_PRED_NORM) not in _parsed["hr.leave_entry"]["keys"], \
         "휴무에는 행번호 유일 인덱스가 없다 — 이것이 열쇠를 탭별로 둔 이유다"
