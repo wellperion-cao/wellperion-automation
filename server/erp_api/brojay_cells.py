@@ -94,13 +94,15 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             continue
         amt = int(p.get("total_payment_price") or 0)
         is_day = d == ref_date
+        tag = str(p.get("sales_tag_name") or "")
+        ptype = str(p.get("product_type") or "")
         if str(p.get("history_type") or "") == "REFUND":
-            if is_day:
+            # N11 「환불」 = 시트와 같은 뜻(운영부 회원권·옵션 환불만) — 강습 예약권 환불(2026-09-16 체조 2건 -418,000)이
+            #   여기 실려 GM 이 「어떻게 생긴 값인지 모르겠다」(2026-09-17). 팀 매출은 결제 전액 기준이라 환불을 빼지 않는다.
+            if is_day and tag == OPS_TAG:
                 refund_day += amt
             continue
         daily[d] = daily.get(d, 0) + amt
-        tag = str(p.get("sales_tag_name") or "")
-        ptype = str(p.get("product_type") or "")
         if tag == OPS_TAG:
             cell = 7 if ptype in LOCKER_TYPES else 6
         elif tag in tags:
@@ -115,11 +117,17 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             day["I4"] += amt
             if cell:
                 day["I%d" % cell] += amt
-            if cell == 6 and ptype == "MEMBERSHIP":
+            # 신규/재등록 = 회원권 칸(cell 6) 결제 전부 — MEMBERSHIP 만 세던 것을 FACILITY_TICKET(플래티넘+골프 등)까지.
+            #   등록분류 「대기」(시작일이 앞날인 신규)도 신규다. 2026-09-16 실측: 시트 신규 2명 7,000,000 · 재등록 1명 3,230,000
+            #   인데 서버는 신규 0 · 재등록 3,600,000 — FACILITY_TICKET 2건 누락 + 「대기」를 재등록으로 셈(GM 2026-09-17 지적).
+            if cell == 6:
                 cls = members_by_phone.get(phone_of_member.get(str(p.get("member_id") or ""), ""))
                 if cls is None:
                     unmatched += 1
-                elif "신규" in cls:
+                elif "재등록" in cls:
+                    re_amt += amt
+                    re_n += 1
+                elif "신규" in cls or "대기" in cls:
                     new_amt += amt
                     new_n += 1
                 else:
@@ -201,18 +209,27 @@ def selftest():
          "sales_tag_name": "운영부", "member_id": "E", "total_payment_price": 300000},
         {"paid_at": "2026-09-16T09:00:00+09:00", "history_type": "PAYMENT", "product_type": "MEMBERSHIP",
          "sales_tag_name": "운영부", "member_id": "F", "total_payment_price": 999},           # 기준일 뒤 — 제외
+        # 2026-09-17 추가 — 9/16 실사례: 플래티넘+골프(FACILITY_TICKET) 신규(등록분류 「대기」) · 재등록 FACILITY_TICKET · 강습 예약권 환불
+        {"paid_at": "2026-09-15T15:00:00+09:00", "history_type": "PAYMENT", "product_type": "FACILITY_TICKET",
+         "sales_tag_name": "운영부", "member_id": "G", "total_payment_price": 3400000},
+        {"paid_at": "2026-09-15T15:10:00+09:00", "history_type": "PAYMENT", "product_type": "FACILITY_TICKET",
+         "sales_tag_name": "운영부", "member_id": "H", "total_payment_price": 3230000},
+        {"paid_at": "2026-09-15T20:00:00+09:00", "history_type": "REFUND", "product_type": "RESERVATION_TICKET",
+         "sales_tag_name": "체조&트램폴린", "member_id": "I", "total_payment_price": -209000},
     ]
-    o = aggregate(pays, "2026-09-15", tags, {"01011112222": "신규"}, {"A": "01011112222"}, loss_count=2)
+    o = aggregate(pays, "2026-09-15", tags, {"01011112222": "신규", "01033334444": "대기", "01055556666": "재등록"},
+                  {"A": "01011112222", "G": "01033334444", "H": "01055556666"}, loss_count=2)
     c = o["cells"]
-    assert c["I4"] == "1,379,000", c["I4"]          # 회원권 100만 + 락커 12만 + 수영 20.9만 + 요가 5만(분류 없음도 총액엔 포함)
-    assert c["I6"] == "1,000,000" and c["I7"] == "120,000" and c["I8"] == "209,000" and c["I10"] == "0"
-    assert c["J10"] == "330,000" and c["J4"] == "1,709,000"
-    assert c["N7"] == "1,000,000" and c["N8"] == "1명" and c["N9"] == "0" and c["N10"] == "0명"
-    assert c["N11"] == "300,000" and c["N12"] == "2명"
+    assert c["I4"] == "8,009,000", c["I4"]          # 회원권 100만+340만+323만 + 락커 12만 + 수영 20.9만 + 요가 5만(분류 없음도 총액엔 포함)
+    assert c["I6"] == "7,630,000" and c["I7"] == "120,000" and c["I8"] == "209,000" and c["I10"] == "0"
+    assert c["J10"] == "330,000" and c["J4"] == "8,339,000"
+    assert c["N7"] == "4,400,000" and c["N8"] == "2명", (c["N7"], c["N8"])     # 신규 100만 + 대기(신규) 340만
+    assert c["N9"] == "3,230,000" and c["N10"] == "1명", (c["N9"], c["N10"])   # 재등록 FACILITY_TICKET 도 센다
+    assert c["N11"] == "300,000" and c["N12"] == "2명"                          # 강습 예약권 환불(-209,000)은 N11 에 안 실린다
     assert o["unmapped"] == {"요가": 50000} and o["unmatched_membership"] == 0
-    assert o["raw"]["daily"] == {"2026-09-15": 1379000, "2026-09-14": 330000}, o["raw"]["daily"]   # 환불·기준일 뒤는 빠진다
+    assert o["raw"]["daily"] == {"2026-09-15": 8009000, "2026-09-14": 330000}, o["raw"]["daily"]   # 환불·기준일 뒤는 빠진다
     o2 = aggregate(pays, "2026-09-15", tags, {}, {"A": "01011112222"})
-    assert o2["unmatched_membership"] == 1 and o2["cells"]["N8"] == "0명"   # 원장에 없으면 지어내지 않는다
+    assert o2["unmatched_membership"] == 3 and o2["cells"]["N8"] == "0명"   # 원장에 없으면 지어내지 않는다(회원권 3건 전부 unmatched)
     assert tag_rows("/nonexistent") == TAG_TEAM
     print("selftest ok")
 
