@@ -61,9 +61,9 @@ tr.warn td{background:var(--yellow-bg)}tr.bad td{background:var(--red-bg)}
 <div id="toast" class="toast"></div>
 <script>
 /* ★ 배포 후 /exec URL 로 교체(.deploy-payroll README). 비밀번호는 여기 두지 않는다. */
-var PAYROLL_API="https://script.google.com/macros/s/AKfycbylkkL7uyr40vgjABkMlbCXa-1D1olrdLW7CR1nZpbWsuiiivsIJ_i9XN_9ogE3P599/exec";   // cao 계정 「강사페이롤 백엔드(ERP)」 웹앱 v1(2026-09-17 배포)
+var PAYROLL_API="https://script.google.com/macros/s/AKfycbw1Fhz5nLaSUbpIRk0AtpEhQmzvXjp8NUHtYvaQIaYPZv0Srbob24odHyjG7kPM1ZYr/exec";   // cao 계정 「강사페이롤 백엔드(ERP)」 웹앱 v1(2026-09-17 배포)
 var TEAMS=["전체","PT","수영","골프","스쿼시","필라테스","체조","루프","GX"];   // 설정_강사.팀 값과 동일(시트목록 8팀)
-var st={team:"전체",instr:"",month:"",pw:"",cfg:null,data:null,teamData:null,viewer:"",scope:""};
+var st={team:"전체",instr:"",month:"",pw:"",cfg:null,data:null,teamData:null,viewer:"",scope:"",monthCache:{},byName:{}};
 var EMBED=/[?&]embed=1/.test(location.search); if(EMBED)document.body.classList.add("embed");
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -98,13 +98,13 @@ function boot(){
   renderChips(); renderInstrSelect(); $("mLabel").textContent=st.month; load();
 }
 function renderChips(){$("teamChips").innerHTML=TEAMS.map(function(t){return '<button class="chip'+(st.team===t?" on":"")+'" data-t="'+t+'">'+t+'</button>';}).join("");
-  $("teamChips").querySelectorAll(".chip").forEach(function(b){b.onclick=function(){st.team=b.dataset.t;sessionStorage.setItem("wp_payroll_team",st.team);st.instr="";renderChips();renderInstrSelect();load();};});}
+  $("teamChips").querySelectorAll(".chip").forEach(function(b){b.onclick=function(){st.team=b.dataset.t;sessionStorage.setItem("wp_payroll_team",st.team);st.instr="";renderChips();renderInstrSelect();showView();};});}
 function instrList(){return (st.cfg.instructors||[]).filter(function(i){return String(i["활성"]).toUpperCase()==="Y"&&(st.team==="전체"||i["팀"]===st.team);});}
 function renderInstrSelect(){var s=$("selInstr");s.innerHTML='<option value="">전체(팀 요약)</option>'+instrList().map(function(i){return '<option value="'+esc(i["강사명"])+'"'+(st.instr===i["강사명"]?" selected":"")+'>'+esc(i["팀"]+" · "+i["강사명"]+(i["직급"]?" "+i["직급"]:""))+'</option>';}).join("");}
-$("selInstr").onchange=function(){st.instr=this.value;sessionStorage.setItem("wp_payroll_instr",st.instr);load();};
+$("selInstr").onchange=function(){st.instr=this.value;sessionStorage.setItem("wp_payroll_instr",st.instr);showView();};
 $("mPrev").onclick=function(){st.month=ymAdd(st.month,-1);sessionStorage.setItem("wp_payroll_month",st.month);$("mLabel").textContent=st.month;load();};
 $("mNext").onclick=function(){if(st.month>=ym0())return;st.month=ymAdd(st.month,1);sessionStorage.setItem("wp_payroll_month",st.month);$("mLabel").textContent=st.month;load();};
-$("btnRefresh").onclick=load; $("btnPrint").onclick=function(){window.print();};
+$("btnRefresh").onclick=function(){load(true);}; $("btnPrint").onclick=function(){window.print();};
 $("btnConfig").onclick=function(){var v=$("viewConfig");if(v.style.display==="none"){renderConfig();v.style.display="block";$("viewInstr").style.display="none";$("viewTeam").style.display="none";}else{v.style.display="none";$("viewInstr").style.display="";$("viewTeam").style.display="";}};
 $("btnSync").onclick=async function(){var ap=adminPw();if(ap===null)return;var b=this;b.disabled=true;b.textContent="⟳ 수집 중…";try{
   var j=await api(st.instr?{action:"payroll_run_sync",adminPassword:ap,month:st.month,instructor:st.instr}:{action:"payroll_run_sync",adminPassword:ap,month:st.month,scope:"team",team:st.team});
@@ -117,13 +117,44 @@ $("btnEvidence").onclick=async function(){if(!st.instr){toast("강사를 선택�
 $("btnClose").onclick=async function(){if(!st.instr){toast("강사를 선택하세요",true);return;}var closed=st.data&&st.data.closed;if(!confirm((closed?"마감을 해제":"이 강사·월을 마감")+"할까요? "+st.month+" · "+st.instr))return;var ap=adminPw();if(ap===null)return;try{var j=await api({action:"payroll_close",adminPassword:ap,month:st.month,instructor:st.instr,reopen:!!closed});if(!j.ok)throw new Error(j.error);toast(closed?"마감 해제":"마감 처리");await load();}catch(e){toast("실패: "+e.message,true);}};
 /* ── 로드 ── */
 var _seq=0;
-async function load(){
-  var seq=++_seq; showErr(""); $("status").textContent="불러오는 중…";
-  try{
-    if(st.instr){var j=await api({action:"payroll_list",month:st.month,instructor:st.instr});if(seq!==_seq)return;if(!j.ok)throw new Error(j.error||"실패");st.data=j;$("viewTeam").innerHTML="";renderInstr(j);}
-    else{var t=await api({action:"payroll_team",month:st.month,team:st.team});if(seq!==_seq)return;if(!t.ok)throw new Error(t.error||"실패");st.teamData=t;$("viewInstr").innerHTML="";renderTeam(t);}
-    $("btnClose").textContent=(st.data&&st.instr&&st.data.closed)?"🔓 마감 해제":"🔒 마감";
-  }catch(e){if(e.message!=="unauthorized")showErr("불러오지 못했습니다: "+e.message);$("status").textContent="";}
+async function load(force){
+  var m=st.month, seq=++_seq;
+  if(force||!st.monthCache[m]){
+    showErr(""); $("status").textContent="불러오는 중…";
+    try{
+      var j=await api({action:"payroll_month",month:m,team:"전체"});
+      if(seq!==_seq)return;
+      if(!j.ok)throw new Error(j.error||"실패");
+      var by={}; (j.instructors||[]).forEach(function(d){by[d.instructor]=d;});
+      st.monthCache[m]={instructors:j.instructors||[],byName:by,syncedAt:j.syncedAt||""};
+    }catch(e){if(e.message!=="unauthorized")showErr("불러오지 못했습니다: "+e.message);$("status").textContent="";return;}
+  }
+  showView();
+}
+/* 캐시에서 즉시 렌더(네트워크 0) — 팀·강사 전환용 */
+function showView(){
+  var c=st.monthCache[st.month];
+  if(!c){load();return;}
+  if(st.instr){var d=c.byName[st.instr];if(d){st.data=d;$("viewTeam").innerHTML="";renderInstr(d);}else{st.data=null;$("viewTeam").innerHTML="";$("viewInstr").innerHTML='<div class="notice">이 달 '+esc(st.instr)+' 데이터가 없습니다 — [⟳ 지금 수집]을 누르세요.</div>';$("viewInstr").style.display="";}}
+  else{st.teamData=localTeam(c);$("viewInstr").innerHTML="";renderTeam(st.teamData);}
+  $("btnClose").textContent=(st.data&&st.instr&&st.data.closed)?"🔓 마감 해제":"🔒 마감";
+}
+/* 캐시된 강사들로 팀 요약을 브라우저에서 구성 */
+function localTeam(c){
+  var list=(c.instructors||[]).filter(function(d){return st.team==="전체"||d.team===st.team;});
+  var rows=[],tot={};
+  list.forEach(function(d){
+    var s=d.summary, synced=(s.진행>0||s.청구합>0);
+    rows.push({팀:d.team,강사명:d.instructor,등록건수:d.regs.length,신규:s.신규,재등록:s.재등록,진행:s.진행,잔여:s.잔여,청구합:s.청구합,업무추진비:s.업무추진비,팀인센티브:s.팀인센티브,카드수수료:s.카드수수료,주차비:s.주차비,지급총액:synced?s.지급총액:"",소진:s.소진,미소진:s.미소진,플래그수:d.flags.length,마감:d.closed?"마감":(synced?"진행":"미수집"),계산시각:synced?d.syncedAt:""});
+    if(!synced)return;
+    var t=d.team||"?"; tot[t]=tot[t]||{강사수:0,진행:0,청구합:0,지급총액:0,소진:0,미소진:0,플래그수:0}; tot[t].강사수++;
+    ["진행","청구합","지급총액","소진","미소진","플래그수"].forEach(function(k){tot[t][k]+=(+s[k]||(k==="플래그수"?d.flags.length:0))||0;});
+    tot[t].플래그수 = tot[t].플래그수; // 플래그는 위에서 s 로 안 옴 — 보정
+  });
+  // 플래그수 합 재계산(위 루프에서 s.플래그수 없음)
+  Object.keys(tot).forEach(function(k){tot[k].플래그수=0;});
+  list.forEach(function(d){var synced=(d.regs.length>0||d.sessions.length>0);if(synced&&tot[d.team])tot[d.team].플래그수+=d.flags.length;});
+  return {rows:rows,totals:tot};
 }
 /* ── 강사 화면 ── */
 function renderInstr(d){
@@ -168,7 +199,7 @@ function renderTeam(t){
   if(!rows.length)h+='<tr><td colspan="18" class="l" style="color:var(--dim)">이 달 계산된 강사가 없습니다 — 강사를 선택하고 [⟳ 지금 수집]을 누르세요.</td></tr>';
   h+='</tbody></table></div></div>';
   $("viewTeam").innerHTML=h; $("viewTeam").style.display="";
-  document.querySelectorAll(".goInstr").forEach(function(a){a.onclick=function(e){e.preventDefault();st.instr=a.dataset.n;sessionStorage.setItem("wp_payroll_instr",st.instr);renderInstrSelect();load();};});
+  document.querySelectorAll(".goInstr").forEach(function(a){a.onclick=function(e){e.preventDefault();st.instr=a.dataset.n;sessionStorage.setItem("wp_payroll_instr",st.instr);renderInstrSelect();showView();};});
 }
 /* ── 설정표 ── */
 var CFG_TABLES={"설정_강사":["강사명","팀","직급","활성","브로제이강사명","trainer_id","시트형식","지급율","주차비","카드수수료율","업무추진비","청구방식","팀인센티브","팀인센티브기준액","팀인센티브기본율","팀인센티브상위율","프로모션단가","원본시트ID","비고"],"설정_지급규칙":["강사명","회원구분","방식","값","비고"],"설정_회원구분":["회원구분","공제율","상품명접두","비고"],"설정_수업코드":["팀","코드","수업명패턴","1회수업료","비고"]};
