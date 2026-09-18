@@ -1040,8 +1040,12 @@
       var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
       // ★newOnly=1 (2026-08-25 GM 지적 수리) — 화면(멤버십 회원관리 '가입')은 신규만 세는데
       //   홈은 재등록·양수·환불·양도·대기까지 전부 세어 8월 46 vs 17 로 갈렸다. 화면이 정본이다(배361).
-      fetch(SURVEY_URL + '?action=member_registered_list&newOnly=1&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
-        .then(function(r){ return r.json(); })
+      // 2026-09-18 GM 지시(배 12817·12818②) — ERP 도메인은 서버 집계(/api/report/member_registered_list)만
+      //   쓴다(GAS 폴백 제거). Pages 캡처(비ERP 도메인)는 서버가 없어 그대로 GAS.
+      var _miRegGas = function(){ return fetch(SURVEY_URL + '?action=member_registered_list&newOnly=1&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }); };
+      (ERP_API_ON
+        ? fetch('/api/report/member_registered_list?newOnly=1&from=' + yearStart() + '&to=' + todayStr()).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+        : _miRegGas())
         .then(function(d){
           // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
           if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); return; }
