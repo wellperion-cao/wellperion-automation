@@ -85,23 +85,68 @@ def _check_section(today: str) -> str:
     return _check_section_and_filled(today)[0]
 
 
-def _issue_block(section_text: str) -> str:
-    """이슈사항 — 오늘 짚어야 할 줄만 뽑아 맨 위로 올린다 (GM 지시 2026-09-09).
+_ISSUE_CATEGORIES = ("컴플레인", "청결", "고장")   # 접수 6종 중 이슈로 치는 것(분실물·칭찬·쓴소리 제외)
 
-    본문은 그대로 두고 요약만 앞세운다 — 아래로 내려가야 보이던 짚을 점·미제출 조·주차
-    미제출을 받는 사람이 첫 화면에서 보게 하려는 것. 새로 조회하지 않고 이미 만든 절
-    문자열에서 고른다(약속 L01). 뽑을 줄이 없으면 빈 문자열 — 없음을 지어내지 않는다.
+
+def _today_reception_issues(today: str) -> list[str]:
+    """오늘 새로 들어온 컴플레인·청결·시설물고장 접수 — 「▪ 📮 컴플레인 접수 · 헬스장 — 내용 40자 (운영부)」."""
+    out = []
+    for r in sorted(_reception_rows(), key=lambda x: str(x.get("createdAt") or "")):
+        if not str(r.get("createdAt") or "").startswith(today):
+            continue
+        cat = str(r.get("category") or "").strip()
+        if not any(k in cat for k in _ISSUE_CATEGORIES):
+            continue
+        where = str(r.get("loc") or "").strip()
+        what = " ".join(str(r.get("content") or "").split())[:40]
+        dept = str(r.get("dept") or "").strip()
+        out.append("▪ 📮 " + cat + (f" · {where}" if where else "") + (f" — {what}" if what else "")
+                   + (f" ({dept})" if dept else ""))
+    return out
+
+
+def _issue_block(section_text: str, today: str | None = None) -> str:
+    """이슈사항 — 컴플레인·반복 이슈만 맨 위로 (GM 지시 2026-09-09 · 기준 강화 2026-09-18 배 12760 ①).
+
+    싣는 것 셋 — ① 오늘 새로 들어온 컴플레인·청결·시설물고장 접수(종합접수 원장) ② 🔁 반복 이슈
+    (원인·조치·누가 · support_check_summary 가 만든 줄 그대로) ③ 제출 자체가 없는 조·주차부.
+    완료율 나열(「❗ 짚을 점: 오전(남) 26/27 …」)은 이슈가 아니라 현황이라 여기서 뺐다 — 지원부
+    현황 절 안에는 그대로 남는다. 뽑을 줄이 없으면 빈 문자열 — 없음을 지어내지 않는다.
     """
-    picks: list[str] = []
+    picks: list[str] = _today_reception_issues(today or datetime.now().strftime("%Y-%m-%d"))
+    in_recur = False
     for ln in section_text.split("\n"):
         t = ln.strip()
-        if t.startswith(("❗", "⛔")):
-            picks.append("▪ " + t.lstrip("❗⛔ ").strip())
+        if t.startswith("🔁"):
+            in_recur = True
+            picks.append("▪ " + t)
+            continue
+        if in_recur and t.startswith("·"):
+            picks.append("  " + t)
+            continue
+        in_recur = False
+        if t.startswith("⛔"):
+            picks.append("▪ " + t.lstrip("⛔ ").strip())
         elif t.startswith("🅿") and ("제출 없음" in t or "이슈" in t) and "이슈사항: 없음" not in t:
             picks.append("▪ " + t.lstrip("🅿 ").strip())
     if not picks:
         return ""
-    return "❗ 이슈사항\n" + "\n".join(picks[:6])
+    return "❗ 이슈사항\n" + "\n".join(picks)
+
+
+def _strip_recur_block(section_text: str) -> str:
+    """🔁 반복 이슈 블록(머리줄 + 그 아래 「·」 줄)을 본문에서 뗀다 — 이슈사항이 그대로 갖는다."""
+    out, in_recur = [], False
+    for ln in section_text.split("\n"):
+        t = ln.strip()
+        if t.startswith("🔁"):
+            in_recur = True
+            continue
+        if in_recur and t.startswith("·"):
+            continue
+        in_recur = False
+        out.append(ln)
+    return "\n".join(out)
 
 
 def build_digest(today: str | None = None) -> str:
@@ -114,7 +159,9 @@ def build_digest(today: str | None = None) -> str:
     )
     section, filled = _check_section_and_filled(today)
     praise = _praise_block(section, filled)
-    issues = _issue_block(section)
+    issues = _issue_block(section, today)
+    if "🔁" in issues:
+        section = _strip_recur_block(section)   # 이슈사항으로 옮겼으니 본문에선 뺀다(같은 6줄 두 번 금지)
     top = "\n\n".join(x.strip() for x in (header, praise, issues) if x) + "\n\n"
     # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 본문에서 빼고 run()에서 별도 메시지로 발송
     return f"{top}{section}"
@@ -289,11 +336,35 @@ def _praise_block(section_text: str, filled: dict | None = None) -> str:
 # 블록(수고하신 곳·이슈사항)은 build_digest 가 이미 앞세우므로 여기서 다시 만들지 않는다 —
 # 제목 세 줄만 떼어 낸다(보내는 쪽이 제 제목·서명을 따로 붙인다).
 # 되돌리기 = 이 함수를 옛 압축본으로 되돌린다(git 이력 · 배670 판).
+_ZONE_LINE_RE = re.compile(r"^(\s*)(남성구역|여성구역) (\d+/\d+\(\d+%\)) — (.+)$")
+_GROUP_RE = re.compile(r"(오전조|오후조|마감조|야간조) (\d+/\d+)(?: (✅제출|⛔미제출)(?:\(([^)]*)\))?)?")
+
+
+def _split_zone_lines(body: str) -> str:
+    """지원부 구역 한 줄을 조별 줄로 편다 (GM 지시 2026-09-18 배 12760 ②).
+      「  남성구역 54/57(95%) — 오전조 26/27 ✅제출(박호균 10:50) · 오후조 …」
+    → 「  남성구역 54/57(95%)」 + 「    오전조(남) 26/27 ✅제출 박호균 10:50」 ×조.
+    원문(support_check_summary)은 안 고친다 — 그 한 줄을 정규식으로 읽는 곳이 셋(칭찬 블록·
+    kakao_summary_card·아침 통 _groups)이라 여기 카톡 본문 마지막 자리에서만 편다."""
+    out = []
+    for ln in body.split("\n"):
+        m = _ZONE_LINE_RE.match(ln)
+        if not m:
+            out.append(ln)
+            continue
+        ind, zone, tot, rest = m.groups()
+        out.append(f"{ind}{zone} {tot}")
+        for shift, cnt, mark, who in _GROUP_RE.findall(rest):
+            tail = f" {mark} {who.strip()}" if mark and who else (f" {mark}" if mark else "")
+            out.append(f"{ind}  {shift}({zone[0]}) {cnt}{tail}")
+    return "\n".join(out)
+
+
 def build_kakao_digest(today: str | None = None) -> str:
-    """텔레그램 전문과 같은 본문 — 제목 세 줄만 뺀다."""
+    """텔레그램 전문과 같은 본문 — 제목 세 줄만 빼고, 지원부 구역 줄은 조별로 편다."""
     full = build_digest(today)
     _head, sep, body = full.partition("\n\n")
-    return body if sep else full
+    return _split_zone_lines(body if sep else full)
 
 
 def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:

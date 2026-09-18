@@ -36,7 +36,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # 반복 미완료 감지기(원장 기반) — soft import(없어도 무동작 폴백). GM 2026-07-19 지시3.
@@ -160,10 +160,17 @@ def support_nudge_lines(d: dict) -> list[str]:
     GM 2026-07-23 지시(시토): 17시·22시 개별 독려 알림에만 있던 미체크 항목명을
     22:30 하루정리 보고에도 상시 반영(두 채널이 같은 정보를 보게). 미완 회차가 하나도
     없으면 빈 리스트(블록 자체 생략). uncheckedByShift 없음/빈값이면 그 회차는
-    '— 미체크:' 부분만 조용히 생략(지어내기 금지)."""
+    '— 미체크:' 부분만 조용히 생략(지어내기 금지).
+
+    ★2026-09-18 GM 지시(배 12760 ④) — 미체크 항목명을 남·여 따로 붙인다. 종전엔 m+f 를
+    합쳐 「남 26/27 · 여 7/26 — 미체크: G-2, A-1, …」 로 적어 남 1건(G-2)과 여 19건이
+    한 목록으로 섞였고, 받는 사람은 어느 구역 것인지 알 수 없었다(2026-09-17 저녁 통 실측).
+    분모(26·27)는 GAS handleTodayLive 가 요일 일정(_tlPassesSched)으로 거른 오늘 항목이라
+    그대로 믿는다 · 원천에 「필수 항목」 표식은 없다(rows·항목 마스터 11칸 어디에도)."""
     g = d.get("byGender", {}) or {}
     m = g.get("m", {}) or {}
     f = g.get("f", {}) or {}
+    ub = d.get("uncheckedByShift") or {}
     out: list[str] = []
     for key, label in _SHIFTS:
         mT, mD = int(m.get(key + "Total", 0) or 0), int(m.get(key, 0) or 0)
@@ -171,14 +178,16 @@ def support_nudge_lines(d: dict) -> list[str]:
         total, done = mT + fT, mD + fD
         if total <= 0 or done >= total:
             continue
-        line = f"    · {label} 남 {mD}/{mT} · 여 {fD}/{fT}"
-        names = merged_unchecked_names(d, key)
-        if names:
-            shown = names[:_MAX_UNCHECKED_NAMES]
-            extra = len(names) - len(shown)
-            tail = f" 외 {extra}" if extra > 0 else ""
-            line += " — 미체크: " + ", ".join(shown) + tail
-        out.append(line)
+        parts = []
+        for gk, glabel, dn, tt in (("m", "남", mD, mT), ("f", "여", fD, fT)):
+            seg = f"{glabel} {dn}/{tt}"
+            names = [str(n).strip() for n in ((ub.get(key) or {}).get(gk) or []) if str(n or "").strip()]
+            if names and dn < tt:
+                shown = names[:_MAX_UNCHECKED_NAMES]
+                extra = len(names) - len(shown)
+                seg += " 미체크: " + ", ".join(shown) + (f" 외 {extra}" if extra > 0 else "")
+            parts.append(seg)
+        out.append(f"    · {label} " + " · ".join(parts))
     if not out:
         return []
     return ["  🔔 독려 대상 — 아직 안 된 항목"] + out
@@ -200,7 +209,7 @@ def gender_shift_breakdown(part: dict) -> list[tuple[str, int, int, int]]:
     return out
 
 
-def shift_submits(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
+def shift_submits(today: str, url: str = DEFAULT_GAS_URL, ledgers: dict | None = None) -> dict | None:
     """구역별·조별 '제출' 여부 — {'m': {'am': ('김종현 차장', '09:56')}, 'f': {}}.
 
     ★어디를 읽나 (2026-08-25 GM 지적 "남자는 제출했는데? 정신차려"):
@@ -210,11 +219,11 @@ def shift_submits(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
       실측 2026-08-25: 남성 sub={'am': '김종현 차장'} · 여성 sub={} — 화면 표기와 일치.
     ★조회가 실패하면 None 을 돌려준다. '미제출'로 단정하지 않는다(못 읽음 ≠ 안 함).
     """
+    ledgers = ledgers if ledgers is not None else gender_ledgers(today, url)
+    if ledgers is None:
+        return None
     out: dict = {}
-    for g in ("m", "f"):
-        d = fetch_gas({"date": today, "dept": "support", "gender": g}, url, require_ok=False)
-        if not isinstance(d, dict) or "checkedLedger" not in d:
-            return None
+    for g, d in ledgers.items():
         ledger = d.get("checkedLedger") or {}
         sub = ledger.get("sub") or {}
         sub_at = ledger.get("subAt") or {}
@@ -223,31 +232,279 @@ def shift_submits(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
             who = str(who or "").strip()
             if not who:
                 continue
-            stamp = str(sub_at.get(shift) or "").strip()
-            got[shift] = (who, stamp[11:16] if len(stamp) >= 16 else stamp)
+            got[shift] = (who, _hhmm(sub_at.get(shift)))
         out[g] = got
     return out
 
 
-def recurring_issue_lines(today: str, max_items: int = 3) -> list[str]:
-    """반복 미완료(원장 기반) → '이슈사항'으로 승격. 1회성 특이점과 구분(반복만). GM 2026-07-19 지시3.
-    콜드스타트·원장부족·0건이면 [](정직 — 가짜 이슈 금지)."""
-    if not _CID_OK:
-        return []
+def gender_ledgers(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
+    """성별 원장 응답 원본 {'m': {...}, 'f': {...}} — shift_submits(제출 도장)와
+    record_check_detail(원장 상세)이 같은 두 번 조회를 나눠 쓴다. 하나라도 못 읽으면 None."""
+    out: dict = {}
+    for g in ("m", "f"):
+        d = fetch_gas({"date": today, "dept": "support", "gender": g}, url, require_ok=False)
+        if not isinstance(d, dict) or "checkedLedger" not in d:
+            return None
+        out[g] = d
+    return out
+
+
+def _hhmm(stamp) -> str:
+    """제출 도장에서 hh:mm 만 뽑는다. GAS 가 두 모양을 섞어 준다 — '2026-09-17 20:31:40' 과
+    'Thu Sep 17 2026 10:50:00 GMT+0900 (한국 표준시)'. 앞에서 [11:16] 로 자르면 둘째 꼴이
+    「2026 」로 깨졌다(2026-09-17 저녁 통 실측 · GM 지적 배 12760 ②)."""
+    m = re.search(r"(\d{1,2}):(\d{2})", str(stamp or ""))
+    return f"{int(m.group(1)):02d}:{m.group(2)}" if m else ""
+
+
+# ── 원장 상세(성별·조별 원본) — 반복 이슈 원인을 데이터로 좁히기 위한 재료 (배 12760 ③) ──
+# status/check_incomplete_ledger.json 의 날짜 레코드에 "detail" 을 함께 적는다(새 원장 없음).
+# 종전 레코드(support: 조별 항목명, 남녀 합산)는 그대로 두고 옆에 붙인다 — detect_recurring 등
+# 옛 소비자는 detail 을 모른 채 그대로 돈다. 마지막 쓰기가 이긴다(07:40 아침 부분값 → 22:30 최종값).
+_DUTY_KEY = {"am1": "am", "pm1": "pm", "close1": "close"}
+
+
+def record_check_detail(today: str, live: dict, ledgers: dict | None) -> None:
+    if not _CID_OK or not isinstance(live, dict) or not ledgers:
+        return
+    ub = live.get("uncheckedByShift") or {}
+    bg = live.get("byGender") or {}
+    detail: dict = {"duty": {}}
+    for g in ("m", "f"):
+        led = (ledgers[g].get("checkedLedger") or {})
+        sub, sub_at = led.get("sub") or {}, led.get("subAt") or {}
+        detail[g] = {}
+        for sh, _ in _SHIFTS:
+            t = int((bg.get(g) or {}).get(sh + "Total") or 0)
+            if t <= 0:
+                continue
+            detail[g][sh] = {
+                "n": int((bg.get(g) or {}).get(sh) or 0), "t": t,
+                "sub": str(sub.get(sh) or "").strip(), "at": _hhmm(sub_at.get(sh)),
+                "miss": [str(x).strip() for x in ((ub.get(sh) or {}).get(g) or []) if str(x or "").strip()],
+            }
+        detail["duty"][g] = {_DUTY_KEY.get(k, k): str(v).strip()
+                             for k, v in (ledgers[g].get("inspMemos") or {}).items() if str(v or "").strip()}
     try:
         ledger = _cid.load_ledger(CHECK_INCOMPLETE_LEDGER)
-        recurring = _cid.detect_recurring(ledger, today)
+        rec = _cid.build_daily_record(ub)
+        rec["detail"] = detail
+        ledger = _cid.append_today(ledger, today, rec)
+        ledger[today] = rec
+        _cid.save_ledger(CHECK_INCOMPLETE_LEDGER, ledger)
+    except Exception as e:
+        print(f"[support_check_summary] 원장 detail 기록 실패({today}): {e}", file=sys.stderr)
+
+
+def _backfill_detail(today: str, days: list[str], url: str = DEFAULT_GAS_URL, max_calls: int = 2) -> None:
+    """관찰 창 안에 detail 이 없는 날을 GAS 에서 다시 읽어 채운다 — 하루 3회 조회라 회당
+    max_calls 일까지만(저녁 통을 몇 분씩 붙들지 않게 · 나머지는 다음 날 이어서)."""
+    if not _CID_OK:
+        return
+    ledger = _cid.load_ledger(CHECK_INCOMPLETE_LEDGER)
+    todo = [d for d in days if not (ledger.get(d) or {}).get("detail")][:max_calls]
+    for d in todo:
+        live = fetch_gas({"action": "today_live", "dept": "support", "date": d}, url)
+        if not isinstance(live, dict) or int(live.get("total") or 0) <= 0:
+            continue
+        record_check_detail(d, live, gender_ledgers(d, url))
+
+
+_G_LABEL = {"m": "남", "f": "여"}
+_SHIFT_LABEL = dict(_SHIFTS)
+_WD = "월화수목금토일"
+
+
+def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> list[dict]:
+    """어제까지 window 일 중 threshold 일 이상 미체크였던 (항목·성별·조) 를 원장 detail 에서
+    세고, 원인을 데이터로 가른다(GM 지시 2026-09-18 배 12760 ③ — 「어느 조·누구·어느 요일에
+    빠지나」). 실측 2026-09-10~17 로 정한 세 갈래:
+      · 조통째 — 그 조가 제출 0건인 날이 대부분(남 마감조 9/9·11·12·13·15 = 14항목이 한꺼번에
+        「반복」으로 잡혔다). 항목 문제가 아니라 그 날 그 조를 돌 사람이 없던 것이라 (성별·조)
+        하나로 묶어 한 줄·한 번호로 낸다.
+      · 항목불일치 — 제출자 여럿이 전부 그 항목만 안 체크(여 오전조 D-1 헬스장·D-2 골프장·
+        D-6 스쿼시장 7일 중 7일 · 제출자 3명). 사람이 아니라 항목 마스터(성별·회차) 쪽.
+      · 제출뒤누락 — 한 사람이 제출은 하면서 그 항목만 빠뜨림 → 그 사람 몫.
+    detail 이 있는 날이 threshold 미만이면 [](데이터 부족 — 가짜 반복 금지)."""
+    if not _CID_OK:
+        return []
+    base = datetime.strptime(today, "%Y-%m-%d")
+    days = [(base - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, window + 1)]
+    try:   # 휴관일(둘째·넷째 일요일·추석)은 0건이 정상 — 창에서 뺀다(ssot/closed_days.json · 2026-09-14 사고)
+        from coo_registry import _closed_day
+        days = [d for d in days if not _closed_day(d)]
     except Exception:
+        pass
+    _backfill_detail(today, days)
+    ledger = _cid.load_ledger(CHECK_INCOMPLETE_LEDGER)
+    recs = {d: (ledger.get(d) or {}).get("detail") for d in days}
+    recs = {d: v for d, v in recs.items() if v}
+    if len(recs) < threshold:
         return []
-    if not recurring:
+    hits: dict = {}      # (item, g, sh) -> [(date, n, sub, at)]
+    duty: dict = {}      # (g, sh) -> 체계 메모(담당)
+    for d, det in recs.items():
+        for g in ("m", "f"):
+            for sh, cell in (det.get(g) or {}).items():
+                for name in cell.get("miss") or []:
+                    hits.setdefault((name, g, sh), []).append((d, int(cell.get("n") or 0), cell.get("sub") or "", cell.get("at") or ""))
+                who = ((det.get("duty") or {}).get(g) or {}).get(sh)
+                if who:
+                    duty[(g, sh)] = who
+
+    def _wd(ds):
+        return "·".join(_WD[datetime.strptime(x, "%Y-%m-%d").weekday()] for x in sorted(set(ds)))
+
+    rows: list[dict] = []
+    grouped: dict = {}   # (g, sh) -> 조통째 항목들
+    for (name, g, sh), h in hits.items():
+        if len(h) < threshold:
+            continue
+        zero = [x for x in h if x[1] == 0]
+        subs: dict = {}
+        for x in h:
+            if x[2]:
+                subs[x[2]] = subs.get(x[2], 0) + 1
+        label = f"{_SHIFT_LABEL.get(sh, sh)}({_G_LABEL.get(g, g)})"
+        if len(zero) >= len(h) - 1 and zero:
+            grouped.setdefault((g, sh), {"items": [], "zero": zero, "days": len(h)})["items"].append(name)
+            continue
+        # 제출은 됐는데 이 항목만 빠진 날들로 가른다 — 조 통째 0건 날은 앞에 한 토막으로만 적는다
+        pre = f"조 통째 0건 {len(zero)}일({_wd(x[0] for x in zero)}) + " if zero else ""
+        n_sub = len(h) - len(zero)
+        if len(subs) >= 2:
+            cause = f"{pre}제출자 {len(subs)}명({'·'.join(subs)}) 모두 이 항목만 안 체크 {n_sub}일"
+            action, who = "항목 마스터(성별·회차) 재검토", "이경연 실장"
+        elif len(subs) == 1:
+            s = next(iter(subs))
+            ats = sorted(x[3] for x in h if x[3])
+            cause = f"{pre}{s} 제출({ats[0]}~{ats[-1]}) 뒤 이 항목만 누락 {n_sub}일" if ats else f"{pre}{s} 제출 뒤 이 항목만 누락 {n_sub}일"
+            action, who = "제출 전 이 항목 확인", s
+        else:   # 제출자 이름이 없는 날만 남음(체크는 있고 도장이 없는 꼴) — 사실만 적는다
+            cause = f"{pre}제출 도장 없이 체크만 있는 날 {n_sub}일"
+            action, who = "조 [제출]까지 누르기", duty.get((g, sh)) or "이경연 실장"
+        rows.append({"key": f"{name}|{g}|{sh}", "label": f"'{name}' {label}", "days": len(h),
+                     "n_days": len(recs), "cause": cause, "action": action, "who": who, "items": 1})
+    for (g, sh), grp in grouped.items():
+        label = f"{_SHIFT_LABEL.get(sh, sh)}({_G_LABEL.get(g, g)})"
+        zero_days = sorted({x[0] for x in grp["zero"]})
+        rows.append({"key": f"조통째|{g}|{sh}", "label": f"{label} {len(grp['items'])}항목",
+                     "days": grp["days"], "n_days": len(recs),
+                     "cause": f"그 조 자체가 {len(zero_days)}일 제출 0건({_wd(zero_days)})",
+                     "action": "그 날 대체 제출자 정하기", "who": duty.get((g, sh)) or "이경연 실장",
+                     "items": len(grp["items"])})
+    rows.sort(key=lambda r: (-r["items"], -r["days"], r["label"]))
+    return rows
+
+
+# ── 반복 이슈 이월 원장 — ★운영+시설+지원+주차 방 원장(_digest_ledger.json)에 #번호 등록 (배 12760 ③ 「해결까지」) ──
+# 새 원장 없음: 그 방에 이미 있는 _digest_ledger.json(ops_daily_digest 스키마)에 kind=check_recurring 항목으로
+# 얹는다. 닫히는 길 둘 — ① 방 회신 「#N 했다」(send_ops_digest.sync_ledger_replies · ★운영부와 같은 매칭기)
+# ② 다음 날 재계산에서 반복이 풀리면 resolved(재계산). 회신으로 닫힌 뒤 7일은 다시 안 올린다(답을 존중).
+_RECUR_ROOM = "★운영+시설+지원+주차"
+# ponytail: #번호 띠 700~999 — 회신 정규식이 세 자리(#\d{3})만 읽고 ★운영부는 1xx~3xx 를 쓴다.
+#   999 를 넘기면 회신 매칭이 못 읽는다 — 그 전에 띠를 다시 정한다.
+_RECUR_NO_BASE = 700
+
+
+def _sync_recurring_ledger(today: str, rows: list[dict]) -> None:
+    """rows 각 항목에 no 를 붙이고(있으면 그 번호·없으면 새 번호) 원장을 저장한다.
+    회신으로 최근 닫힌 건은 rows[i]['replied']=True 로 표시만 하고 다시 열지 않는다."""
+    try:
+        import ops_daily_digest as _odd
+        import send_ops_digest as _sod
+    except Exception as e:
+        print(f"[support_check_summary] 이월 원장 모듈 로드 실패 — 번호 없이 낸다: {e}", file=sys.stderr)
+        return
+    path = _odd.ROOM_DIR_BASE / _RECUR_ROOM / "_digest_ledger.json"
+    try:
+        ledger = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    except Exception:
+        ledger = []
+    if not isinstance(ledger, list):
+        ledger = []
+    try:
+        _sod.sync_ledger_replies(today, ledger, human_lines=_sod._room_human_lines(_RECUR_ROOM, today),
+                                 ledger_path=path)
+    except Exception as e:
+        print(f"[support_check_summary] 회신 매칭 실패(무시): {e}", file=sys.stderr)
+    since = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=7)).strftime("%Y-%m-%d")
+    open_by_key, replied_by_key, recalc_by_key, max_no = {}, {}, {}, _RECUR_NO_BASE
+    for e in ledger:
+        for it in (e.get("issues") or []) if isinstance(e, dict) else []:
+            if isinstance(it.get("no"), int):
+                max_no = max(max_no, it["no"])
+            if it.get("kind") != "check_recurring":
+                continue
+            if it.get("status") == "open":
+                open_by_key[it.get("key")] = it
+            elif str(it.get("resolved_at") or "") >= since:
+                if it.get("resolved_by") == "카톡·텔레그램 회신":
+                    replied_by_key[it.get("key")] = it
+                else:
+                    recalc_by_key[it.get("key")] = it   # 재계산으로 닫혔다 다시 반복되면 같은 번호로 되연다
+    keys_now = {r["key"] for r in rows}
+    changed = False
+    for key, it in open_by_key.items():
+        if key not in keys_now:
+            it["status"], it["resolved_by"], it["resolved_at"] = "resolved", "재계산(반복 해소)", today
+            changed = True
+    new_issues = []
+    for r in rows:
+        if r["key"] in open_by_key:
+            r["no"] = open_by_key[r["key"]]["no"]
+        elif r["key"] in replied_by_key:
+            r["no"], r["replied"] = replied_by_key[r["key"]]["no"], True
+        elif r["key"] in recalc_by_key:
+            it = recalc_by_key[r["key"]]
+            it["status"], it["note"] = "open", f"원인(실측) {r['cause']}"
+            it.pop("resolved_by", None); it.pop("resolved_at", None)
+            r["no"], changed = it["no"], True
+        else:
+            max_no += 1
+            r["no"] = max_no
+            new_issues.append({"no": max_no, "kind": "check_recurring", "key": r["key"],
+                               "issue": f"{r['label']} 반복 미완료 — {r['action']}", "owner": r["who"],
+                               "status": "open", "note": f"원인(실측) {r['cause']}", "due": "", "category": "점검"})
+    if new_issues:
+        entry = next((e for e in ledger if isinstance(e, dict) and e.get("date") == today), None)
+        if entry is None:
+            entry = {"date": today, "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                     "source_file": "support_check_summary", "issues": []}
+            ledger.append(entry)
+        entry.setdefault("issues", []).extend(new_issues)
+        changed = True
+    if changed:
+        try:
+            _odd.save_ledger(ledger, path=path)
+        except Exception as e:
+            print(f"[support_check_summary] 이월 원장 저장 실패: {e}", file=sys.stderr)
+
+
+def recurring_issue_lines(today: str, max_items: int = 6) -> list[str]:
+    """반복 미완료 → '이슈사항'으로 승격. GM 2026-07-19 지시3 · 2026-09-18 배 12760 ③ 로
+    항목당 「원인(실측) → 조치 → 누가」 한 줄 + 이월 #번호(회신 「#N 했다」로 닫힘).
+    데이터 부족·0건이면 [](정직 — 가짜 이슈 금지)."""
+    try:
+        rows = recurring_check_causes(today)
+    except Exception as e:
+        print(f"[support_check_summary] 반복 이슈 계산 실패: {e}", file=sys.stderr)
         return []
-    win = getattr(_cid, "WINDOW_DAYS", 7)
-    lines = [f"  🔁 반복 이슈 {len(recurring)}건 (일정 조율 검토)"]
-    for r in recurring[:max_items]:
-        lines.append(
-            f"    · '{r['item']}' ({r['shift_label']}) 최근 {win}일 中 {r['days']}일 미완료")
-    if len(recurring) > max_items:
-        lines.append(f"    · 외 {len(recurring) - max_items}건")
+    if not rows:
+        return []
+    if today == datetime.now().strftime("%Y-%m-%d"):
+        # 지난 날짜 재조립(아침 통의 어제 절·검증용 --date)은 원장을 안 건드린다 — 창이 하루 밀린
+        # 집합으로 닫고 열기를 반복하면 원장 상태가 흔들린다. 번호는 오늘치 조립에서만 붙는다.
+        _sync_recurring_ledger(today, rows)
+    n_items = sum(r["items"] for r in rows)
+    lines = [f"  🔁 반복 이슈 {n_items}항목 — 「#번호 했다」로 답해 주시면 닫힙니다"]
+    for r in rows[:max_items]:
+        no = f"#{r['no']} " if isinstance(r.get("no"), int) else ""
+        tag = " (회신 받음 · 재확인 중)" if r.get("replied") else ""
+        lines.append(f"    · {no}{r['label']} {r['n_days']}일 중 {r['days']}일 — 원인: {r['cause']}"
+                     f" → 조치: {r['action']} → 누가: {r['who']}{tag}")
+    if len(rows) > max_items:
+        lines.append(f"    · 외 {len(rows) - max_items}줄")
     return lines
 
 
@@ -304,7 +561,9 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     lines = [f"🛠 지원부 현황 {done}/{total}({_pct_str(done, total)})"]
 
     # 남성구역·여성구역 각각(합산 아님) — 각 구역 완료율 + 회차분해(요일반영·분모>0만·한 줄 콤팩트)
-    submits = shift_submits(today, url)   # None = 못 읽음(미제출로 단정 금지)
+    ledgers = gender_ledgers(today, url)
+    submits = shift_submits(today, url, ledgers)   # None = 못 읽음(미제출로 단정 금지)
+    record_check_detail(today, d, ledgers)         # 반복 이슈 원인 재료(배 12760 ③) — 실패해도 발신 무영향
     unsubmitted: list[str] = []
     g = d.get("byGender", {}) or {}
     for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
@@ -833,6 +1092,47 @@ def facility_gap(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
     return {"zone": "시설부", "shift": "오늘", "total": 0, "likely": "미시작"}
 
 
+def _selfcheck() -> None:
+    """배 12760 — ① _hhmm 두 도장 모양 ② 독려 줄 남/여 분리 ③ 반복 원인 세 갈래(임시 원장 · 네트워크 없음)."""
+    global CHECK_INCOMPLETE_LEDGER
+    import tempfile
+    assert _hhmm("2026-09-17 20:31:40") == "20:31"
+    assert _hhmm("Thu Sep 17 2026 10:50:00 GMT+0900 (한국 표준시)") == "10:50"
+    assert _hhmm("") == ""
+    live = {"byGender": {"m": {"am": 26, "amTotal": 27}, "f": {"am": 7, "amTotal": 26}},
+            "uncheckedByShift": {"am": {"m": ["G-2 접점 소독"], "f": ["A-1 사우나 탕", "A-2 건/습식 사우나"]}}}
+    ln = support_nudge_lines(live)
+    assert ln[1] == "    · 오전조 남 26/27 미체크: G-2 접점 소독 · 여 7/26 미체크: A-1 사우나 탕, A-2 건/습식 사우나", ln
+    orig = CHECK_INCOMPLETE_LEDGER
+    with tempfile.TemporaryDirectory() as td:
+        CHECK_INCOMPLETE_LEDGER = Path(td) / "ledger.json"
+        try:
+            led = {}
+            # 6일치(휴관일 없음: 2026-09-01(화)~06(일) 중 09-06 은 첫째 일요일이라 영업) — 조통째·항목불일치·제출뒤누락 한 벌
+            for i, d in enumerate(("2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06")):
+                sub = ["박", "김", "이"][i % 3]
+                led[d] = {"support": {}, "detail": {
+                    "duty": {"m": {"close": "운영부"}},
+                    "m": {"close": {"n": 0, "t": 15, "sub": "", "at": "", "miss": ["A-1 탕", "A-2 사우나"]},
+                          "am": {"n": 26, "t": 27, "sub": sub, "at": "10:30", "miss": ["G-2 소독"]}},
+                    "f": {"am": {"n": 25, "t": 26, "sub": "여주임", "at": "11:30", "miss": ["D-1 헬스장"]}}}}
+            _cid.save_ledger(CHECK_INCOMPLETE_LEDGER, led)
+            _bf = globals()["_backfill_detail"]
+            globals()["_backfill_detail"] = lambda *a, **k: None
+            try:
+                rows = {r["key"]: r for r in recurring_check_causes("2026-09-07")}
+            finally:
+                globals()["_backfill_detail"] = _bf
+            assert rows["조통째|m|close"]["items"] == 2 and "6일 제출 0건" in rows["조통째|m|close"]["cause"], rows
+            assert rows["조통째|m|close"]["who"] == "운영부"
+            assert rows["G-2 소독|m|am"]["action"] == "항목 마스터(성별·회차) 재검토", rows["G-2 소독|m|am"]
+            assert rows["D-1 헬스장|f|am"]["who"] == "여주임" and "10:30" not in rows["D-1 헬스장|f|am"]["cause"]
+            assert "11:30~11:30" in rows["D-1 헬스장|f|am"]["cause"]
+        finally:
+            CHECK_INCOMPLETE_LEDGER = orig
+    print("[selfcheck] support_check_summary OK — hhmm·독려 남/여 분리·반복 원인 3갈래")
+
+
 def _weekday_kor(date: str) -> str:
     try:
         return ["월", "화", "수", "목", "금", "토", "일"][datetime.strptime(date, "%Y-%m-%d").weekday()]
@@ -849,7 +1149,11 @@ def main() -> int:
         pass
     ap = argparse.ArgumentParser(description="점검 3섹션 핵심요약 렌더(라이브 미발송)")
     ap.add_argument("--date", help="조회 날짜 YYYY-MM-DD(생략 시 오늘). 주말 렌더 확인용.")
+    ap.add_argument("--selfcheck", action="store_true", help="네트워크 없이 배 12760 로직만 점검")
     args = ap.parse_args()
+    if args.selfcheck:
+        _selfcheck()
+        return 0
     date = args.date or datetime.now().strftime("%Y-%m-%d")
     lines, filled = build_summary_lines(date=date)
     print("=" * 56)
