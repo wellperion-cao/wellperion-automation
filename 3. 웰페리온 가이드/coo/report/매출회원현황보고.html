@@ -2703,7 +2703,9 @@ function p4TeamsFromServer(dayList, monthList){
       var mb = mOwners[b] ? (mOwners[b].amount + mOwners[b].refund) : 0;
       return mb - ma;
     });
-    if (names.indexOf('담당 미등록') >= 0) sorted.push('담당 미등록');   // 미등록은 순위와 무관하게 맨 아래
+    var unl = dOwners['담당 미등록'], unlM = mOwners['담당 미등록'];
+    var unlHas = (unl && (unl.count || unl.amount || unl.refund)) || (unlM && (unlM.count || unlM.amount || unlM.refund));
+    if (unlHas) sorted.push('담당 미등록');   // 그날·누적 둘 다 0 이면 안 그린다(팀마다 빈 줄이 늘어난다) — 값 있을 때만 순위와 무관하게 맨 아래
     var rows = sorted.map(function(n){
       var d = dOwners[n] || { count: 0, amount: 0, refund: 0 };
       var m = mOwners[n] || { count: 0, amount: 0, refund: 0 };
