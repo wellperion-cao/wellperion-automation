@@ -1596,6 +1596,7 @@ table.op-t td b{font-size:15px}
           <option value="">연락 기본순</option>
           <option value="old">오래된 연락순</option>
           <option value="new">최신 연락순</option>
+          <option value="none">연락 없음만</option>
         </select>
         <button class="btn-refresh" onclick="ownerAssignReload()">새로고침</button>
       </div>
@@ -8294,6 +8295,8 @@ function _oaRender(){
     if (q){ var name = String(r['회원명']||'').toLowerCase(); var ph = String(r['휴대폰 번호']||r['휴대폰']||'').toLowerCase(); if (name.indexOf(q) < 0 && ph.indexOf(q) < 0) return false; }
     if (statusVal){ if (String(r['등록 분류']||'').trim() !== statusVal) return false; }
     if (progVal){ if (_mregProgLabel(String(r['수강반종목명']||'').trim()) !== progVal) return false; }
+    // 연락 없음만(실무진 피드백 FB260918-142906 · 배 12797) — 연락 이력(Contact 칸)이 비어 있는 회원만.
+    if (sortVal === 'none'){ if (_oaLastContactDate(r, cfg) !== '') return false; }
     return true;
   });
   if (sortVal === 'old' || sortVal === 'new'){
