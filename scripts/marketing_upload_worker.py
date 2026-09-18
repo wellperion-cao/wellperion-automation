@@ -97,8 +97,20 @@ def _report_status(uid: str, channel: str, status: str, note: str) -> bool:
         return False
 
 
+CHANNEL = "naver-blog"
+CHANNEL_DONE = ("drafted", "published")
+
+
+def _channel_state(it: dict, channel: str) -> str:
+    """큐 항목의 채널별 상태 — 옛 항목(channel_status 없음)은 queued 로 읽는다(마이그레이션 없음)."""
+    return ((it.get("channel_status") or {}).get(channel) or {}).get("status") or "queued"
+
+
 def _filter_naver_targets(items: list[dict], cap: int) -> list[dict]:
-    return [it for it in items if "naver-blog" in (it.get("channels") or [])][:cap]
+    # 행 전체가 queued 여도 naver-blog 가 이미 drafted/published 면 건너뛴다(배 12752 #15 — 다른 채널이
+    # 남아 행이 queued 로 유지되는 동안 매 실행마다 임시저장이 중복되던 것). failed 는 재시도 대상.
+    return [it for it in items
+            if CHANNEL in (it.get("channels") or []) and _channel_state(it, CHANNEL) not in CHANNEL_DONE][:cap]
 
 
 def upload_naver_draft(tenant: str, title: str, body: str, mode: str) -> tuple[int, str]:
@@ -186,6 +198,16 @@ def _self_test() -> None:
     assert [i["id"] for i in got] == ["a", "c"], got
     assert _filter_naver_targets(items, cap=1) == [items[0]]
     assert _filter_naver_targets(items, cap=0) == []
+    # 배 12752 #15: 한 채널 done 뒤 재실행 — 그 채널은 건너뛰고, failed 는 다시 집고, 옛 항목(상태 없음)은 queued.
+    items2 = [
+        {"id": "d", "channels": ["naver-blog", "instagram"],
+         "channel_status": {"naver-blog": {"status": "drafted"}}},
+        {"id": "e", "channels": ["naver-blog"], "channel_status": {"naver-blog": {"status": "published"}}},
+        {"id": "f", "channels": ["naver-blog"], "channel_status": {"naver-blog": {"status": "failed"}}},
+        {"id": "g", "channels": ["naver-blog"], "channel_status": None},
+    ]
+    assert [i["id"] for i in _filter_naver_targets(items2, cap=5)] == ["f", "g"]
+    assert _channel_state(items2[3], "naver-blog") == "queued"
 
 
 if __name__ == "__main__":

@@ -147,17 +147,20 @@ def uploads_queue(request: Request, tenant: str = ""):
     with conn:
         if t:
             rows = conn.execute(
-                "SELECT id, tenant, channels, title, body, files, created_at FROM marketing_uploads"
+                "SELECT id, tenant, channels, title, body, files, channel_status, created_at FROM marketing_uploads"
                 " WHERE tenant_id=%s AND tenant=%s AND status='queued' ORDER BY created_at ASC",
                 (db.TENANT, t)).fetchall()
         else:
             rows = conn.execute(
-                "SELECT id, tenant, channels, title, body, files, created_at FROM marketing_uploads"
+                "SELECT id, tenant, channels, title, body, files, channel_status, created_at FROM marketing_uploads"
                 " WHERE tenant_id=%s AND status='queued' ORDER BY created_at ASC",
                 (db.TENANT,)).fetchall()
     conn.close()
+    # channel_status 를 같이 준다(배 12752 #15) — 행이 queued 여도 이미 drafted/published 인 채널은 워커가
+    # 건너뛰어야 한다(한 채널 남아 queued 유지 → 끝난 채널 재업로드 = 09-15 다캠 중복과 같은 꼴). 옛 행(NULL)은 {}.
     items = [{"id": r["id"], "tenant": r["tenant"], "channels": r["channels"], "title": r["title"],
-              "body": r["body"], "files": r["files"], "created_at": r["created_at"]} for r in rows]
+              "body": r["body"], "files": r["files"], "channel_status": r["channel_status"] or {},
+              "created_at": r["created_at"]} for r in rows]
     return {"ok": True, "items": items}
 
 
