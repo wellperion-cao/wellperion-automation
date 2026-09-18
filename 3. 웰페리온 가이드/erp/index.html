@@ -331,8 +331,10 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
   if (me.role === 'admin') document.getElementById('menu-admin').hidden = false;
   // 주소 해시(#adm 등)로 왔으면 그 판을 바로 띄운다 — /auth/admin 을 주소로 열면 서버가 /erp/#adm 으로 보낸다(배 12775 정정 2026-09-18).
+  //   loadModules 가 끝에 첫 모듈 그룹으로 되돌리므로(595행) hashPaneShown 으로 그 기본 전환을 막는다.
   var h0 = location.hash.replace('#', '');
   if (me.role === 'admin' && PANES.indexOf(h0) > 0) {
+    hashPaneShown = true;
     showPane(h0);
     var a0 = document.querySelector('.side a[data-go="' + h0 + '"]');
     mark('[data-go="' + h0 + '"]', a0 ? a0.querySelector('.t').textContent : h0);
@@ -592,7 +594,7 @@ function loadModules(role, allowedIds){
     var bdoc = document.getElementById('b-doc');
     if (bdoc) bdoc.textContent = docs.length + files.length;   // 문서 + 저장 파일 (가른 뒤 한쪽만 세고 있었다)
     bindMenu();
-    showGroup(groups.length ? groups[0][0] : null);
+    if (!hashPaneShown) showGroup(groups.length ? groups[0][0] : null);
 
     if (!root.children.length) root.innerHTML = '<div class="msg">실행 화면이 없다.</div>';
     if (!rootDoc.children.length) rootDoc.innerHTML = '<div class="msg">문서가 없다.</div>';
@@ -605,6 +607,7 @@ function loadModules(role, allowedIds){
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
 var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev', 'screens', 'eval'];
+var hashPaneShown = false;   // 주소 해시로 관리 판을 바로 열었는지 — loadModules 기본 전환 가드
 // 계정·권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11 「다른 페이지로 넘어가는게 아니라
 // 우측 페이지에 나타나야해」) — 나머지 관리 판은 이 화면이 직접 그린다.
 // 가동 현황(옛 #health)은 배1026 2026-09-17(GM "가동현황도 뭔지 모르겠고")로 이 판에서 뺐다 —
