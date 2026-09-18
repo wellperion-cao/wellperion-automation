@@ -256,7 +256,45 @@
     .item,.tbl-wrap,.agent-card,.node{border-color:#999}
     section{padding:22px 0 4px}
     .badge,.seal,.tag.db{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .cpv1{display:none}
   }
+
+  /* ── 실시간 관제판 v1 (읽기 전용 · 자동화로그 실측, 2026-09-18 신설) ── */
+  .cpv1{background:var(--ink);color:#EDEBE2;padding:26px 0 30px;border-bottom:3px solid var(--brass)}
+  .cpv1-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .cpv1-title{font-family:'Nanum Myeongjo','Batang',Georgia,serif;font-size:17px;font-weight:800;letter-spacing:.01em}
+  .cpv1-badge-v{background:var(--brass);color:var(--ink);font-size:10px;font-weight:800;padding:1px 7px;border-radius:2px;margin-left:6px;vertical-align:middle}
+  .cpv1-note{margin-left:auto;font-size:11px;color:#B9C0B6}
+  .cpv1-counters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  .cpv1-ct{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.16);border-radius:4px;padding:13px 14px;text-align:center}
+  .cpv1-ct .n{font-size:26px;font-weight:800;color:var(--brass);font-family:'Nanum Myeongjo','Batang',Georgia,serif;line-height:1.1}
+  .cpv1-ct .l{font-size:10.5px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
+  .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#8B9389;margin:20px 0 9px;font-weight:700}
+  .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .cpv1-ac{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:9px 6px;text-align:center}
+  .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:10px;padding:2px 7px;border-radius:2px;letter-spacing:.05em;margin-bottom:5px}
+  .cpv1-ac .nm{font-size:11px;font-weight:700;color:#EDEBE2;line-height:1.3}
+  .cpv1-ac .st{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;font-size:10px;color:#B9C0B6}
+  .cpv1-ac .dot{width:7px;height:7px;border-radius:50%;background:#5C665F;flex:none}
+  .cpv1-ac.on .dot{background:#4E9E7A;box-shadow:0 0 0 2px rgba(78,158,122,.25)}
+  .cpv1-ac .cnt{font-size:9.5px;color:#8B9389;margin-top:2px;min-height:12px}
+  .cpv1-routines{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:2px}
+  .cpv1-rc{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:3px;padding:5px 10px;font-size:10.5px;cursor:default}
+  .cpv1-rc .rn{color:#DCD8C8}
+  .cpv1-rc .rb{font-size:9.5px;font-weight:800;padding:1.5px 7px;border-radius:2px;color:#fff;white-space:nowrap}
+  .rb-live{background:#3E7E5E} .rb-delayed{background:#A3792E}
+  .rb-none{background:transparent;color:#8B9389;border:1px dashed #5C665F}
+  .rb-embed{background:#4A4270} .rb-unknown{background:transparent;color:#B9A26A;border:1px dashed #7A6A4A}
+  .cpv1-rc .rt{font-size:9px;color:#8B9389}
+  .cpv1-feed{margin-top:16px;max-height:210px;overflow-y:auto;border:1px solid rgba(233,226,204,.14);border-radius:4px}
+  .cpv1-feed table{width:100%;border-collapse:collapse;font-size:11px}
+  .cpv1-feed th{position:sticky;top:0;background:#16201C;color:#B9C0B6;text-align:left;padding:6px 10px;font-weight:700;font-size:10px}
+  .cpv1-feed td{padding:5px 10px;border-top:1px solid rgba(233,226,204,.08);color:#DCD8C8}
+  .cpv1-feed td:nth-child(3){white-space:normal;min-width:200px}
+  .cpv1-feed tr:nth-child(even){background:rgba(255,255,255,.02)}
+  .cpv1-empty{padding:14px;text-align:center;color:#8B9389;font-size:11px}
+  @media (max-width:960px){ .cpv1-agents{grid-template-columns:repeat(4,1fr)} }
+  @media (max-width:640px){ .cpv1-agents{grid-template-columns:repeat(3,1fr)} .cpv1-counters{grid-template-columns:1fr 1fr 1fr;gap:6px} .cpv1-ct{padding:10px 6px} .cpv1-ct .n{font-size:21px} }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <script src="../../_assets/erp_write.js"></script>
@@ -276,6 +314,259 @@
     </div>
   </div>
 </header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     🛰️ 실시간 관제판 v1 (읽기 전용 · 표시 전용, 2026-09-18 A-5 신설)
+     자동화로그를 라이브 관제로 디벨롭(자율 에이전트 설계안 ④ A단계). 새 백엔드·데이터 쓰기·상시세션
+     없음 — 기존 공개 액션 autolog-list(비밀번호 불필요, work·detail 이니셜 마스킹, 아래 F섹션 정직
+     배지·하단 자동화 로그 위젯과 동일 통로)를 25초 폴링해 표시만 한다. 루틴 매칭 규칙 중 스윕·온보딩
+     워치·효율 리포트 3종은 F섹션 정직 배지(2026-07-09 실측 확정)와 동일 규칙을 그대로 재사용하고,
+     정오 리마인드·카톡 브리핑 2종은 2026-09-18 실측 로그(actor "루틴·A-7"/"루틴 A-7")로 신규 확정했다.
+     사진 자가치유는 독립 스케줄이 없고 일일 정합성 스윕 체인의 고정 스텝(함정노트 #42)이라 스윕 배지를
+     그대로 공유 표시하고, 메일 직접지원 탐지는 로컬 상태파일(mail_intake_status.json)만 남기고 공개
+     자동화로그에 고유 시그니처가 없어 "확인불가"로 정직 표기한다(둘 다 툴팁에 사유 명시).
+     ═══════════════════════════════════════════════════════════ -->
+<div class="cpv1" id="cpv1">
+  <div class="wrap">
+    <div class="cpv1-head">
+      <span class="cpv1-title">🛰️ 실시간 관제판<span class="cpv1-badge-v">v1</span></span>
+      <span class="cpv1-note" id="cpv1Note">자동화로그 확인 중…</span>
+    </div>
+
+    <div class="cpv1-counters">
+      <div class="cpv1-ct"><div class="n" id="cpv1Today">–</div><div class="l">오늘 자동화 처리 건수</div></div>
+      <div class="cpv1-ct"><div class="n" id="cpv1Active">–</div><div class="l">오늘 활동 에이전트</div></div>
+      <div class="cpv1-ct" title="결과 텍스트에 반려·실패·보류·수정필요 등 키워드가 포함된 건수(참고용 근사치 — 정밀 판정 아님)"><div class="n" id="cpv1Issue">–</div><div class="l">미결·이상 신호(참고)</div></div>
+    </div>
+
+    <div class="cpv1-sub">에이전트 12종 · 오늘 활동</div>
+    <div class="cpv1-agents" id="cpv1Agents">
+      <div class="cpv1-ac" data-a="A-1"><span class="seal s-a1">A-1</span><div class="nm">이력서담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-2"><span class="seal s-a2">A-2</span><div class="nm">채용담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-3"><span class="seal s-a3">A-3</span><div class="nm">직원담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-4"><span class="seal s-a4">A-4</span><div class="nm">평가담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-5"><span class="seal s-a5">A-5</span><div class="nm">배포담당자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-6"><span class="seal s-a6">A-6</span><div class="nm">감사자</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-7"><span class="seal s-a7">A-7</span><div class="nm">시스템효율담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-8"><span class="seal s-a8">A-8</span><div class="nm">인사기획담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-9"><span class="seal s-a9">A-9</span><div class="nm">보상담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-10"><span class="seal s-a10">A-10</span><div class="nm">노무담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-11"><span class="seal s-a11">A-11</span><div class="nm">교육개발담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+      <div class="cpv1-ac" data-a="A-12"><span class="seal s-a12">A-12</span><div class="nm">인사분석담당</div><div class="st"><span class="dot"></span><span class="stt">–</span></div><div class="cnt"></div></div>
+    </div>
+
+    <div class="cpv1-sub">주기 루틴 7종 상태</div>
+    <div class="cpv1-routines" id="cpv1Routines">
+      <span class="cpv1-rc" id="cpv1r-sweep"><span class="rn">일일 정합성 스윕</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-onbowatch"><span class="rn">온보딩 주간 감시</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-effreport"><span class="rn">주간 효율 리포트</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-noonremind"><span class="rn">정오 업무 리마인드</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-kakaobrief"><span class="rn">카톡 아침브리핑</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-photoheal"><span class="rn">사진 자가치유</span><span class="rb rb-none">확인중</span><span class="rt"></span></span>
+      <span class="cpv1-rc" id="cpv1r-mailscan"><span class="rn">메일 직접지원 탐지</span><span class="rb rb-unknown">확인불가</span><span class="rt"></span></span>
+    </div>
+
+    <div class="cpv1-sub">최근 자동화 로그</div>
+    <div class="cpv1-feed">
+      <table>
+        <thead><tr><th>일시</th><th>주체</th><th>작업</th><th>결과</th></tr></thead>
+        <tbody id="cpv1FeedBody"></tbody>
+      </table>
+    </div>
+    <div class="cpv1-empty" id="cpv1Empty" style="display:none">불러오는 중이거나 기록이 없습니다.</div>
+  </div>
+</div>
+<script>
+(function(){
+  "use strict";
+  var EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+  var POLL_MS = 25000; // 오피스·정직배지와 동일한 폴링 주기(편승)
+
+  var AGENTS = ["A-1","A-2","A-3","A-4","A-5","A-6","A-7","A-8","A-9","A-10","A-11","A-12"];
+  var ISSUE_RE = /반려|실패|보류|수정필요|차단|미완료|중단|오류|불일치/;
+
+  function actorToAgent(actor){
+    var m = String(actor || "").match(/A-?(1[0-2]|[1-9])(?![0-9])/);
+    return m ? ("A-" + m[1]) : null;
+  }
+  function parseKST(s){
+    var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2})?/.exec(String(s || ""));
+    if(!m) return NaN;
+    return new Date(m[1] + "T" + m[2] + (m[3] || ":00") + "+09:00").getTime();
+  }
+  function fmtLast(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/.exec(String(s || ""));
+    return m ? (m[2] + "-" + m[3] + " " + m[4]) : "";
+  }
+  function kstToday(){
+    var d = new Date();
+    var utc = d.getTime() + d.getTimezoneOffset() * 60000;
+    var k = new Date(utc + 9 * 3600000);
+    var p = function(n){ return String(n).padStart(2, "0"); };
+    return k.getFullYear() + "-" + p(k.getMonth() + 1) + "-" + p(k.getDate());
+  }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // 루틴 매칭 — sweep·onbowatch·effreport는 F섹션 정직 배지(2026-07-09 실측)와 동일 규칙 재사용.
+  // noonremind·kakaobrief는 2026-09-18 실측 로그로 신규 확정(actor "루틴[·\s]A-7" 한정 — 개발 작업
+  // 로그와의 오인 방지를 위해 F섹션 'briefing' 항목과 같은 엄격 actor 매칭 방식을 따른다).
+  var ROUTINES = [
+    { id:"sweep", kind:"daily", hours:25,
+      match:function(a,w,d){ return (/루프/.test(a) && /A-?6/.test(a)) || /정합성\s*스윕|일일\s*정합성/.test(w) || /JOB_DEADLINE_STATE|PHOTO_MISSING_ACTIVE|PHOTO_OFFBYONE/.test(w + d); } },
+    { id:"onbowatch", kind:"weekly", days:8,
+      match:function(a,w,d){ return (/루프/.test(a) && /A-?3/.test(a) && /감시|워치/.test(w)) || /온보딩\s*주간\s*감시|온보딩\s*워치/.test(w); } },
+    { id:"effreport", kind:"weekly", days:8,
+      match:function(a,w,d){ return (/루프/.test(a) && /A-?7/.test(a)) || /주간\s*효율\s*리포트/.test(w); } },
+    { id:"noonremind", kind:"daily", hours:26,
+      match:function(a,w,d){ return /루틴[·\s]?A-?7/.test(a) && /정오/.test(w) && /리마인드/.test(w); } },
+    { id:"kakaobrief", kind:"daily", hours:26,
+      match:function(a,w,d){ return /루틴[·\s]?A-?7/.test(a) && /(카톡|카카오)/.test(w) && /브리핑/.test(w); } }
+  ];
+
+  function computeStatus(item, rows){
+    for(var i = 0; i < rows.length; i++){
+      var r = rows[i];
+      var a = String(r["주체"] || ""), w = String(r["작업"] || ""), d = String(r["상세"] || "");
+      if(item.match(a, w, d)){
+        var ts = r["일시"];
+        var thresholdH = item.kind === "weekly" ? item.days * 24 : item.hours;
+        var hoursSince = (Date.now() - parseKST(ts)) / 3600000;
+        return { state: (hoursSince <= thresholdH ? "live" : "delayed"), last: ts };
+      }
+    }
+    return { state: "none", last: null };
+  }
+
+  function renderRoutine(id, status){
+    var el = document.getElementById("cpv1r-" + id);
+    if(!el) return;
+    var rb = el.querySelector(".rb");
+    var rt = el.querySelector(".rt");
+    if(status.state === "none"){
+      rb.className = "rb rb-none"; rb.textContent = "기록없음"; rt.textContent = "";
+      el.title = "매칭되는 자동화로그 기록이 최근 창(600건) 내 없습니다.";
+    } else if(status.state === "live"){
+      rb.className = "rb rb-live"; rb.textContent = "LIVE"; rt.textContent = "· " + fmtLast(status.last);
+      el.title = "최근 실행 " + fmtLast(status.last);
+    } else {
+      rb.className = "rb rb-delayed"; rb.textContent = "지연"; rt.textContent = "· " + fmtLast(status.last);
+      el.title = "최근 실행 " + fmtLast(status.last) + " (지연)";
+    }
+  }
+
+  function renderAgents(rows, today){
+    var lastByAgent = {}, todayByAgent = {};
+    AGENTS.forEach(function(a){ todayByAgent[a] = 0; });
+    rows.forEach(function(r){
+      var a = actorToAgent(r["주체"]);
+      if(!a || !(a in todayByAgent)) return;
+      if(!lastByAgent[a]) lastByAgent[a] = r["일시"];
+      if(String(r["일시"] || "").slice(0, 10) === today) todayByAgent[a]++;
+    });
+    var activeCount = 0;
+    AGENTS.forEach(function(a){
+      var card = document.querySelector('.cpv1-ac[data-a="' + a + '"]');
+      if(!card) return;
+      var stt = card.querySelector(".stt");
+      var cnt = card.querySelector(".cnt");
+      var last = lastByAgent[a], todayCnt = todayByAgent[a];
+      if(todayCnt > 0){
+        card.classList.add("on");
+        if(stt) stt.textContent = "오늘 활동";
+        activeCount++;
+      } else if(last){
+        card.classList.remove("on");
+        if(stt) stt.textContent = "유휴 · " + fmtLast(last).slice(0, 10);
+      } else {
+        card.classList.remove("on");
+        if(stt) stt.textContent = "기록없음";
+      }
+      if(cnt) cnt.textContent = todayCnt > 0 ? ("오늘 " + todayCnt + "건") : "";
+    });
+    return activeCount;
+  }
+
+  function renderFeed(rows){
+    var body = document.getElementById("cpv1FeedBody");
+    var empty = document.getElementById("cpv1Empty");
+    if(!body) return;
+    var top = rows.slice(0, 12);
+    if(!top.length){
+      body.innerHTML = "";
+      if(empty) empty.style.display = "block";
+      return;
+    }
+    if(empty) empty.style.display = "none";
+    body.innerHTML = top.map(function(r){
+      return "<tr><td>" + esc(fmtLast(r["일시"])) + "</td><td>" + esc(r["주체"]) + "</td><td>" + esc(r["작업"]) + "</td><td>" + esc(r["결과"]) + "</td></tr>";
+    }).join("");
+  }
+
+  async function poll(){
+    var note = document.getElementById("cpv1Note");
+    try{
+      // 읽기 서버 우선(/api/hr/autolog) · 안 되면 종전 구글(GAS) 그대로 — 기존 F섹션 정직 배지와 동일 방식.
+      var j = await window.erpReadFirst('/api/hr/autolog?limit=600&offset=0', async function(){
+        var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
+        return await res.json();
+      }, {needRows:true});
+      if(!j || !j.ok || !Array.isArray(j.results)) throw new Error((j && j.error) || "응답 오류");
+
+      var rows = j.results; // 최신순
+      var today = kstToday();
+      var todayRows = rows.filter(function(r){ return String(r["일시"] || "").slice(0, 10) === today; });
+
+      var elToday = document.getElementById("cpv1Today");
+      if(elToday) elToday.textContent = todayRows.length;
+
+      var issueCnt = todayRows.filter(function(r){ return ISSUE_RE.test(String(r["결과"] || "")); }).length;
+      var elIssue = document.getElementById("cpv1Issue");
+      if(elIssue) elIssue.textContent = issueCnt;
+
+      var activeCount = renderAgents(rows, today);
+      var elActive = document.getElementById("cpv1Active");
+      if(elActive) elActive.textContent = activeCount;
+
+      var sweepStatus = null;
+      ROUTINES.forEach(function(item){
+        var status = computeStatus(item, rows);
+        if(item.id === "sweep") sweepStatus = status;
+        renderRoutine(item.id, status);
+      });
+      // 사진 자가치유 = 독립 스케줄 없이 스윕 체인에 내장(함정노트 #42) — 스윕 상태를 그대로 표시
+      var phEl = document.getElementById("cpv1r-photoheal");
+      if(phEl && sweepStatus){
+        var rb = phEl.querySelector(".rb"), rt = phEl.querySelector(".rt");
+        if(sweepStatus.state === "live"){ rb.className = "rb rb-embed"; rb.textContent = "스윕 동일"; rt.textContent = "· " + fmtLast(sweepStatus.last); }
+        else if(sweepStatus.state === "delayed"){ rb.className = "rb rb-delayed"; rb.textContent = "지연(스윕)"; rt.textContent = "· " + fmtLast(sweepStatus.last); }
+        else { rb.className = "rb rb-none"; rb.textContent = "기록없음"; rt.textContent = ""; }
+        phEl.title = "독립 스케줄 없음 — 일일 정합성 스윕 체인의 고정 스텝(함정노트 #42). 스윕 배지와 상태를 공유 표시합니다.";
+      }
+      // 메일 직접지원 탐지 = 공개 자동화로그에 고유 시그니처 없음(로컬 상태파일만 보유) — 정직 표기
+      var msEl = document.getElementById("cpv1r-mailscan");
+      if(msEl){
+        msEl.title = "자동화로그에 고유 시그니처가 없어 라이브 페이지에서 판별 불가(로컬 mail_intake_status.json만 보유, 정적 페이지에서 접근 불가). 신규 지원자 발견 시 '루틴·A-1 지원자 등록'에 간접 반영될 수 있습니다.";
+      }
+
+      renderFeed(rows);
+      if(note) note.textContent = "마지막 갱신 " + new Date().toLocaleTimeString("ko-KR", {hour:"2-digit", minute:"2-digit"}) + " · 25초 폴링";
+    }catch(e){
+      if(note) note.textContent = "불러오기 실패 — 다음 폴링에서 재시도";
+    }
+  }
+
+  function boot(){ poll(); setInterval(poll, POLL_MS); }
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
 
 <!-- ═══════════ 라우팅 계보도 ═══════════ -->
 <div class="org">
