@@ -313,16 +313,19 @@ def fetch_funnel_conversion(date_from: str, date_to: str) -> dict | None:
 def fetch_member_registered(date_from: str, date_to: str) -> dict | None:
     """member_registered_list — 등록일 기준 기간 내 멤버십 신규 등록 명단.
     실패 시 None(→ 미집계 표기, 0 위장 금지). 회원관리 페이지와 동일 소스(유효회원 시트 등록일자)."""
+    tok = _load_env_value("FUNNEL_ACCESS_TOKEN")   # 배 12818 — 비면 무동작(회귀 0)
     try:
         data = _http_get(
-            f"{GAS_URL}?action=member_registered_list&from={date_from}&to={date_to}", timeout=40
+            f"{GAS_URL}?action=member_registered_list&from={date_from}&to={date_to}"
+            + (f"&key={tok}" if tok else ""), timeout=40
         )
         if not data.get("ok"):
             print(f"[WARN] member_registered_list ok=false: {data}")
             return None
         return data
     except Exception as e:
-        print(f"[WARN] member_registered_list 수집 실패: {e}")
+        msg = str(e).replace(tok, "***") if tok else str(e)
+        print(f"[WARN] member_registered_list 수집 실패: {msg}")
         return None
 
 

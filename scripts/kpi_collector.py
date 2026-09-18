@@ -381,8 +381,13 @@ def _cpo_loss_rate() -> dict:
         "유효회원수": None,
         "_note": "역방향 지표(낮을수록 좋음) · cpo_churn_stats 실측",
     }
+    _tok = ""
     try:
-        data = _http_get_json(f"{_CPO_GAS}?action=cpo_churn_stats")
+        sys.path.insert(0, str(ROOT / "scripts" / "collectors"))
+        from ops_shared import _env_line   # type: ignore  — 회원 GAS 키 배선(배 12818) · 비면 무동작
+        _tok = _env_line("FUNNEL_ACCESS_TOKEN")
+        _url = f"{_CPO_GAS}?action=cpo_churn_stats" + (f"&key={_tok}" if _tok else "")
+        data = _http_get_json(_url)
         if not isinstance(data, dict) or not data.get("ok"):
             result["_note"] = "GAS 응답 오류(ok=false 또는 형식 불일치)"
             return result
@@ -392,7 +397,10 @@ def _cpo_loss_rate() -> dict:
         result["월_LOSS건수"] = data.get("monthLossCount")
         result["유효회원수"] = data.get("activeCount")
     except Exception as e:
-        result["_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+        msg = str(e)[:80]
+        if _tok:
+            msg = msg.replace(_tok, "***")
+        result["_note"] = f"fetch 실패({type(e).__name__}): {msg}"
     return result
 
 

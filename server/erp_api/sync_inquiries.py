@@ -17,6 +17,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리 · 모든 조회는 tenant_id 로 거른다
+import gas_key  # noqa: E402  — 회원 GAS 키 배선(배 12818). api.env FUNNEL_ACCESS_TOKEN 없으면 무동작.
 
 # 문의 유입 경로 채우기(배1006 · status/briefs/CMO-유입경로-발행원장-정의서-20260903.md 표 A).
 # 측정 시작 규칙(GM 확정) — 이 반영일 이전 문의는 전부 unknown(소급 채움 금지).
@@ -117,6 +118,7 @@ def gas_get(action, params, timeout=60):
     q = {"action": action}
     if params:
         q.update(params)
+    q = gas_key.sign_params("FUNNEL_EXEC_URL", q)   # 배 12818 — FUNNEL_ACCESS_TOKEN 없으면 무동작
     return gas_fetch(url, q, timeout=timeout, label=action)
 
 
@@ -219,6 +221,32 @@ def _gas_fetch_selftest():
         urllib.request.urlopen, time.sleep = real_open, real_sleep
 
 
+def _gas_get_key_selftest():
+    """gas_get 이 gas_key.sign_params("FUNNEL_EXEC_URL", ...) 를 타는지(배 12818) —
+    네트워크·DB 없이 gas_fetch 만 가로채 q 딕셔너리를 확인한다."""
+    seen = {}
+
+    def fake_fetch(url, q, timeout=60, label=""):
+        seen["q"] = q
+        return {"ok": True}
+
+    orig_fetch = globals()["gas_fetch"]
+    orig_url, orig_tok = os.environ.get("FUNNEL_EXEC_URL"), os.environ.get("FUNNEL_ACCESS_TOKEN")
+    globals()["gas_fetch"] = fake_fetch
+    os.environ["FUNNEL_EXEC_URL"] = "https://x/exec"
+    try:
+        os.environ.pop("FUNNEL_ACCESS_TOKEN", None)
+        gas_get("member_active_list", {"scope": "valid"})
+        assert "key" not in seen["q"], "토큰 없으면 무동작(회귀 0)"
+        os.environ["FUNNEL_ACCESS_TOKEN"] = "f-s3cret"
+        gas_get("member_active_list", {"scope": "valid"})
+        assert seen["q"]["key"] == "f-s3cret", "토큰 있으면 부착"
+    finally:
+        globals()["gas_fetch"] = orig_fetch
+        for k, v in (("FUNNEL_EXEC_URL", orig_url), ("FUNNEL_ACCESS_TOKEN", orig_tok)):
+            os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+
 def selftest():
     assert channel_code_of("카카오톡 채널", "2026-09-05") == "kakao"
     assert channel_code_of("네이버 블로그", "2026-09-10 09:00:00") == "naver_blog"
@@ -227,6 +255,7 @@ def selftest():
     assert channel_code_of("카카오톡", None) == "unknown", "타임스탬프 없으면 unknown"
 
     _gas_fetch_selftest()
+    _gas_get_key_selftest()
 
     db.TENANT = "selftest"                    # 같은 DB · 다른 tenant — 실데이터는 한 줄도 안 건드린다
     conn = db.connect()

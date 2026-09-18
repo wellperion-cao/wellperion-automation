@@ -19,7 +19,8 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
-# 문의·등록 GAS(.deploy-funnel/Survey.js 배포본). inquiry_list=문의알림방 대시보드 소스와 동일 정본.
+# 문의·등록 GAS(.deploy-funnel-v2/Survey.js 배포본 — 2026-09-18 배 12818 정정, 옛 주석은 v1 을 가리켰다).
+# inquiry_list=문의알림방 대시보드 소스와 동일 정본.
 # env로 오버라이드 가능(기본값=두 소비자 파일이 이전에 각자 갖고 있던 동일 리터럴).
 FUNNEL_EXEC_URL = os.environ.get(
     "FUNNEL_EXEC_URL",
@@ -98,6 +99,15 @@ def gas_date10(v) -> str:
     return s[:10]
 
 
+def _mask_key_in_exc(e: Exception, params: dict | None) -> str:
+    """예외 문자열(연결 오류 등)에 호출한 URL 전체가 그대로 찍히는 경우가 있다 — key 값을 가린다."""
+    s = str(e)
+    k = (params or {}).get("key")
+    if k:
+        s = s.replace(str(k), "***")
+    return s
+
+
 def gas_get(
     url: str,
     params: dict | None = None,
@@ -114,6 +124,13 @@ def gas_get(
         if _k:
             params = dict(params or {})
             params["key"] = _k
+    if url == FUNNEL_EXEC_URL and not (params or {}).get("key"):
+        # 회원 GAS 무인증 PII 노출 수리 1단계(배 12818 · member_active_list 등 5종) — 키 배선만, 게이트는
+        # GAS 쪽에서 아직 안 켰다. 값이 비어 있으면 아무것도 안 붙는다(회귀 0).
+        _k = _env_line("FUNNEL_ACCESS_TOKEN")
+        if _k:
+            params = dict(params or {})
+            params["key"] = _k
     for attempt in range(1, attempts + 1):
         try:
             resp = requests.get(url, params=params, timeout=timeout)
@@ -123,7 +140,7 @@ def gas_get(
                 log_fn(f"{label} HTTP {resp.status_code} (시도 {attempt}/{attempts})")
         except Exception as e:
             if log_fn is not None:
-                log_fn(f"{label} 조회 실패 (시도 {attempt}/{attempts}): {e}")
+                log_fn(f"{label} 조회 실패 (시도 {attempt}/{attempts}): {_mask_key_in_exc(e, params)}")
     return None
 
 
@@ -234,3 +251,43 @@ def utc_iso_to_kst_date(iso_str: str) -> str:
         return s[:10]
     except Exception:
         return ""
+
+
+if __name__ == "__main__":
+    # gas_get 회원 GAS 키 배선(배 12818) — 네트워크 없이 requests.get 만 가로채 params 를 확인한다.
+    _seen: dict = {}
+
+    class _FakeResp:
+        status_code = 200
+
+    def _fake_get(url, params=None, timeout=None):
+        _seen["params"] = params
+        return _FakeResp()
+
+    _orig_get, _orig_tok = requests.get, os.environ.get("FUNNEL_ACCESS_TOKEN")
+    requests.get = _fake_get
+    try:
+        os.environ.pop("FUNNEL_ACCESS_TOKEN", None)
+        gas_get(FUNNEL_EXEC_URL, {"action": "member_active_list"})
+        assert "key" not in _seen["params"], "토큰 없으면 무동작(회귀 0)"
+        gas_get("https://x/exec", {"action": "todo_list"})   # 다른 GAS 는 절대 안 붙는다
+        assert "key" not in _seen["params"]
+
+        os.environ["FUNNEL_ACCESS_TOKEN"] = "f-s3cret"
+        gas_get(FUNNEL_EXEC_URL, {"action": "member_active_list"})
+        assert _seen["params"]["key"] == "f-s3cret", "토큰 있으면 부착"
+        gas_get("https://x/exec", {"action": "todo_list"})
+        assert "key" not in _seen["params"], "다른 GAS 로 안 샌다"
+
+        # 로그 마스킹 — 예외 문자열에 URL 이 그대로 찍혀도 key 값은 안 보인다.
+        logged = []
+        requests.get = lambda *a, **k: (_ for _ in ()).throw(ConnectionError("GET https://x/exec?key=f-s3cret failed"))
+        gas_get(FUNNEL_EXEC_URL, {"action": "member_active_list"}, attempts=1, log_fn=logged.append)
+        assert logged and "f-s3cret" not in logged[0] and "***" in logged[0], logged
+    finally:
+        requests.get = _orig_get
+        if _orig_tok is None:
+            os.environ.pop("FUNNEL_ACCESS_TOKEN", None)
+        else:
+            os.environ["FUNNEL_ACCESS_TOKEN"] = _orig_tok
+    print("ops_shared 자체점검 통과")

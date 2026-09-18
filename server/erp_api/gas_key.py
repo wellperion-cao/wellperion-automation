@@ -9,6 +9,11 @@ TOKEN_ENFORCE=1 이 켜지면 그 액션들은 `key` 파라미터(=ACCESS_TOKEN)
 여기서는 api.env 의 RECEPTION_TOKEN 을 접수 GAS 호출에만 붙인다.
 ★ 값이 비어 있으면 아무것도 하지 않는다 — 스위치를 켜기 전에 배포해도 동작 무변경(회귀 0).
 되돌리기 = api.env 에서 RECEPTION_TOKEN 한 줄 지우고 재시작(또는 GAS TOKEN_ENFORCE=0).
+
+회원 GAS(FUNNEL_EXEC_URL) 키 배선(배 12818 · 2026-09-18) — member_active_list 등 5종이 GAS 쪽
+ACCESS_TOKEN 자체가 없어 키 유무와 무관하게 무인증 공개돼 있던 것의 1단계 수리. api.env 의
+FUNNEL_ACCESS_TOKEN 을 GET 질의(sign_params)에만 붙인다 — 값 없으면 무동작(회귀 0). POST 쓰기
+(sign_body·BODY_KEYS)는 이번 건과 무관 — 그대로 둔다.
 """
 import json
 import os
@@ -27,11 +32,17 @@ BODY_KEYS = {RECEPTION_URL_KEY: ("RECEPTION_TOKEN", "key"),
 ADMIN_SECRET_CHANNELS = {"RCOPS_GAS_URL": "reception-admin", "LOCKER_GAS_URL": "locker-admin"}
 
 
+# GET 질의에 얹을 열쇠 — {GAS url_key: 열쇠 값이 든 환경변수}. 표에 없는 GAS 에는 절대 안 붙는다.
+#   접수 GAS = RECEPTION_TOKEN(GATED 액션 통과용)
+#   회원 GAS = FUNNEL_ACCESS_TOKEN(배 12818 · member_active_list 등 5종 무인증 PII 노출 수리 1단계 —
+#     키 배선만, GAS 쪽 게이트는 아직 안 켰다. 값 없으면 무동작·회귀 0)
+PARAM_KEYS = {RECEPTION_URL_KEY: "RECEPTION_TOKEN", "FUNNEL_EXEC_URL": "FUNNEL_ACCESS_TOKEN"}
+
+
 def key_for(url_key):
-    """접수 GAS 로 갈 때만 열쇠를 준다. 다른 GAS(회원·업무·점검…)에는 절대 붙이지 않는다."""
-    if url_key != RECEPTION_URL_KEY:
-        return ""
-    return os.environ.get("RECEPTION_TOKEN", "").strip()
+    """PARAM_KEYS 표에 있는 GAS 로 갈 때만 열쇠를 준다. 표에 없는 GAS(업무·점검…)에는 절대 안 붙는다."""
+    env = PARAM_KEYS.get(url_key, "")
+    return os.environ.get(env, "").strip() if env else ""
 
 
 def sign_params(url_key, params):
@@ -84,10 +95,21 @@ if __name__ == "__main__":
 
     os.environ["RECEPTION_TOKEN"] = "s3cret"
     assert key_for(RECEPTION_URL_KEY) == "s3cret"
-    assert key_for("FUNNEL_EXEC_URL") == ""                       # 다른 GAS 로 새면 안 된다
+    assert key_for("FUNNEL_EXEC_URL") == ""                       # FUNNEL_ACCESS_TOKEN 아직 없음
     assert sign_params(RECEPTION_URL_KEY, {"action": "lf_list"})["key"] == "s3cret"
     assert sign_params("TODO_GAS_URL", {"action": "todo_list"}) == {"action": "todo_list"}
     assert json.loads(sign_body(RECEPTION_URL_KEY, body).decode("utf-8"))["key"] == "s3cret"
+
+    # 회원 GAS(FUNNEL_EXEC_URL) GET 키 배선(배 12818) — 비었을 때 무동작 · 있을 때 부착 ·
+    # RECEPTION 값과 안 섞임(바이트 단위로 그대로) · POST 서명(BODY_KEYS)은 이번 건과 무관.
+    assert sign_params("FUNNEL_EXEC_URL", {"action": "member_active_list"}) == {"action": "member_active_list"}
+    os.environ["FUNNEL_ACCESS_TOKEN"] = "f-s3cret"
+    assert key_for("FUNNEL_EXEC_URL") == "f-s3cret"
+    assert sign_params("FUNNEL_EXEC_URL", {"action": "member_active_list"})["key"] == "f-s3cret"
+    assert sign_params(RECEPTION_URL_KEY, {"action": "lf_list"})["key"] == "s3cret"   # 서로 안 샌다
+    assert sign_body("FUNNEL_EXEC_URL", body) == body   # POST 서명은 무변경(BODY_KEYS 에 없음)
+    os.environ.pop("FUNNEL_ACCESS_TOKEN", None)
+    assert key_for("FUNNEL_EXEC_URL") == ""
     assert sign_body("FUNNEL_EXEC_URL", body) == body
     assert sign_body(RECEPTION_URL_KEY, b"not json") == b"not json"
 
