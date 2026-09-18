@@ -1395,6 +1395,7 @@ var REPORT_CELL_COUNT = 22;
    SF = 서버판 응답 · SF_CELLS = 보고탭 칸 이름으로 옮긴 그리기용 사본(RAW.cells 는 손대지 않는다 — 09:30 발송 판정) ·
    SF_SRC = 칸별 원천(bro/erp · srcTag 꼬리표가 읽는다). */
 var SF = null, SF_CELLS = null, SF_SRC = {};
+var MEMBER_PENDING = ERP_API_ON;   // 회원 5칸(N2~N6) 서버 응답 대기 중 — 응답(성공·실패 모두)이 오면 false 로 확정된다(배 2821 2차)
 function sfOn(){ return !!(SF_CELLS && document.getElementById('dpick').value === ymd(new Date(Date.now() - 86400000))); }
 function automationProgressText(){
   if (SF && SF.cells_total) return '서버 원천(브로제이+ERP) ' + SF.cells_filled + '/' + SF.cells_total + '칸 (' + Math.round(SF.cells_filled / SF.cells_total * 100) + '%)';
@@ -1516,20 +1517,23 @@ function renderReportCells(c){
   }).join('') || '<tr><td colspan="5">값 없음</td></tr>';
 
   // ── 회원 구성 : 총계 + 가로 누적 막대(구성이 한눈에 보이게) ──
-  var mixItems = MEMBER_MIX.map(function(r, i){
+  // 회원 5칸(N2~N6)은 서버가 정본이다 — 응답 전엔 시트값을 먼저 안 그린다(첫 그림이 시트→서버로 흔들리는 것 방지 · 배 2821 2차 · 시우 09-18 실측).
+  // SF_CELLS 가 이미 있으면 그 값으로 바로 그리고, 기다리는 중이면 "불러오는 중…", 서버가 끝내 못 왔을 때만(MEMBER_PENDING=false) c(시트)로 폴백한다.
+  var mc = SF_CELLS || (MEMBER_PENDING ? null : c);
+  var mixItems = mc ? MEMBER_MIX.map(function(r, i){
     return { label: String(c['M'+r] || '').replace(/\n/g,' ').replace(/\s*수$/,''),
-             raw: c['N'+r] || '–', n: num(c['N'+r]), color: MIX_COLORS[i] };
-  }).filter(function(x){ return x.label; });
+             raw: mc['N'+r] || '–', n: num(mc['N'+r]), color: MIX_COLORS[i] };
+  }).filter(function(x){ return x.label; }) : [];
   var mixSum = mixItems.reduce(function(a, b){ return a + b.n; }, 0) || 1;
-  document.getElementById('memberMix').innerHTML =
+  document.getElementById('memberMix').innerHTML = !mc ? '<div class="mrow"><span class="lb">불러오는 중…</span></div>' : (
     '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + srcTag('sheet', 'N2') + '</span>' +
-      '<span class="bv">' + esc(c.N2 || '–') + '</span></div>' +
+      '<span class="bv">' + esc(mc.N2 || '–') + '</span></div>' +
     '<div class="stack">' + mixItems.map(function(x){
         return '<i style="width:' + (x.n / mixSum * 100) + '%;background:' + x.color + '" title="' +
                esc(x.label) + '"></i>'; }).join('') + '</div>' +
     '<div class="chips">' + mixItems.map(function(x){
         return '<span class="chip"><i style="background:' + x.color + '"></i>' + esc(x.label) +
-               ' <b>' + esc(x.raw) + '</b></span>'; }).join('') + '</div>';
+               ' <b>' + esc(x.raw) + '</b></span>'; }).join('') + '</div>');
 
   // ── 회원 드나듦 : 들어온 분 / 나간 분 / 순증 ──
   var flow = MEMBER_FLOW.map(function(r){
@@ -1602,7 +1606,7 @@ function renderReportCells(c){
   /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
      그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
   setHl(3, (c.L4 || '').trim(), '이번 달 목표 대비');
-  setHl(4, (c.N2 || '').trim(), '정회원 ' + (c.N3 || '–').trim());
+  setHl(4, mc ? (mc.N2 || '').trim() : '…', mc ? '정회원 ' + (mc.N3 || '–').trim() : '불러오는 중…');
   var rc = rateClass(c.L4);
   hl[3].querySelector('.v').className = 'v ' + rc;
 
@@ -2850,6 +2854,8 @@ function applyServerPanel(){
   Promise.all([serverCellsP(), _visitorsP]).then(function(both){
     var srv = both[0], vis = both[1];
     if (!RAW.cells) return;
+    var memberWasPending = MEMBER_PENDING;   // 회원 5칸 — 이 한 번의 응답(성공·실패 모두)으로 대기 상태를 끝낸다(재시도 없음)
+    MEMBER_PENDING = false;
     var sf = srv && srv.server_final;
     if (sf && sf.cells && sf.cells_total && sf.cells_filled === sf.cells_total && srv.ref_date === ymd(new Date(Date.now() - 86400000))) {
       applyServerFinal(srv, sf); return;
@@ -2881,7 +2887,8 @@ function applyServerPanel(){
     }
     var c = {}; Object.keys(RAW.cells).forEach(function(k){ c[k] = RAW.cells[k]; });
     var bjOn = applyBrojayContactLoss(c, srv);
-    if (!memberOn && !visitOn && !bjOn) return;
+    // 회원 5칸이 「불러오는 중…」으로 대기 중이었다면 서버값이 없어도 한 번은 다시 그려 시트값으로 폴백해야 한다(placeholder 영구 고정 방지).
+    if (!memberOn && !visitOn && !bjOn && !memberWasPending) return;
     var diff = [];
     Object.keys(ov).forEach(function(k){
       var label = String(c['M' + k.substring(1)] || k).replace(/\n/g, ' ');
@@ -2905,11 +2912,13 @@ function applyServerPanel(){
   });
 }
 
-/* 서버판 그리기 — 값은 서버가 준 문자열 그대로(다시 계산하지 않는다). 달성률(L)만 J/K 로 다시 센다(시트 L 은 시트 J 기준이라).
+/* 서버판 그리기 — 값은 서버가 준 문자열 그대로(다시 계산하지 않는다).
    RAW.cells(09:30 발송 판정)는 손대지 않고 그리기용 사본(SF_CELLS)만 만든다. 시트 판은 대조 줄 한 줄로 남긴다 —
    차이는 「틀림」이 아니라 브로제이 손입력 날짜(8월 말 계약 9/1 입력 포함)와 시트 결제일이 어긋난 것(10/1 실결제 전).
    매출 11칸(I/J, SALES_ROWS)은 실결제 원천이 아직 스포피아라 미이관분이 0 으로 채워져 있다 — cells_filled 는
-   그 0 도 "채움"으로 세므로 여기서 매출만 시트값 유지, 대조는 위 accGapNote 한 줄로만(배 2821 · GM 09-18 지적). */
+   그 0 도 "채움"으로 세므로 여기서 매출만 시트값 유지, 대조는 위 accGapNote 한 줄로만(배 2821 · GM 09-18 지적).
+   달성률(L)도 매출과 같이 시트값 그대로 둔다 — J/K 를 다시 안 덮으니 재계산이 시트 L 과 반올림 자리에서
+   어긋나 47.99%→48.0% 처럼 흔들렸다(배 2821 2차 · 시우 09-18 실측). */
 function applyServerFinal(srv, sf){
   SF = sf; SF_SRC = {};
   Object.keys(sf.source || {}).forEach(function(k){ SF_SRC[k] = /^brojay/.test(sf.source[k]) ? 'bro' : 'erp'; });
@@ -2921,10 +2930,6 @@ function applyServerFinal(srv, sf){
     var v = String(sf.cells[k]);
     if (/^N(13|14|15)$/.test(k)) v = v.replace(/명$/, '');          // 입장 칸은 시트가 숫자만 쓴다
     c[k] = v;
-  });
-  SALES_ROWS.forEach(function(r){
-    var j = num(c['J' + r]), kk = num(c['K' + r]);
-    if (('J' + r) in sf.cells && kk > 0) c['L' + r] = (Math.round(j / kk * 1000) / 10).toFixed(1) + '%';
   });
   applyBrojayContactLoss(c, srv);
   SF_CELLS = c;
