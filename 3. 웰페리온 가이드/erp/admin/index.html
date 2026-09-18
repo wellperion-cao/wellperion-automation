@@ -442,6 +442,64 @@
     <tbody><tr><td colspan="5" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
   </table></div>
   <div class="ppre" id="wfoot"></div>
+
+  <h3 style="margin:14px 0 4px;font-size:15px">마케팅 결과물 — 최근 7일</h3>
+  <div class="ppre">정본 = status/labs_loop.json(scripts/labs_loop.py).</div>
+  <div class="tbl-wrap"><table class="reg" id="lotbl">
+    <thead><tr><th>날짜</th><th>파트너</th><th>채널</th><th>제목</th><th>상태</th><th>링크</th></tr></thead>
+    <tbody><tr><td colspan="6" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+  </table></div>
+
+  <h3 style="margin:14px 0 4px;font-size:15px">3루프 원장 — 고도화 → 단순화 → 파트너 피드백</h3>
+  <div class="ppre" id="lofoot2"></div>
+  <div class="tbl-wrap"><table class="reg" id="lwtbl">
+    <thead><tr><th>주</th><th>모듈</th><th>단계</th><th>내용</th></tr></thead>
+    <tbody><tr><td colspan="4" class="ppct" style="padding:14px 8px">불러오는 중…</td></tr></tbody>
+  </table></div>
+
+  <script>
+  (function(){
+    var lotbl = document.getElementById('lotbl'), lwtbl = document.getElementById('lwtbl');
+    if (!lotbl || !lwtbl) return;
+    function get(path){
+      var local = (location.hostname === 'erp.wellperion.com')
+        ? fetch('/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        : Promise.reject(0);
+      return local.catch(function(){ return fetch('/repo/' + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
+    }
+    function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    var PN = {jo:'고척', dc:'다캠'};
+    var fail = function(t){ return function(){ t.textContent = '못 읽었습니다 — 잠시 뒤 새로고침해 주세요.'; }; };
+    get('status/labs_loop.json').then(function(d){
+      var loBody = lotbl.tBodies[0], lwBody = lwtbl.tBodies[0];
+      if (!d) { var msg = '<td colspan="6" class="ppct" style="padding:14px 8px">이 주소에서는 못 읽습니다 — 서버 주소(erp.wellperion.com)에서 보입니다.</td>'; loBody.innerHTML = '<tr>' + msg + '</tr>'; return; }
+      loBody.innerHTML = (d.outputs || []).map(function(o){
+        return '<tr><td>' + esc(o.date) + '</td><td>' + esc(PN[o.partner] || o.partner) + '</td><td>' + esc(o.channel) + '</td>'
+          + '<td>' + esc(o.title) + '</td><td>' + esc(o.status) + '</td>'
+          + '<td>' + (o.link ? '<a href="' + esc(o.link) + '" target="_blank" rel="noopener">열기</a>' : '—') + '</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="ppct" style="padding:14px 8px">최근 7일 결과물 없음</td></tr>';
+
+      var wk = {}; (d.weekly || []).forEach(function(w){ (wk[w.week] = wk[w.week] || []).push(w); });
+      var weeks = Object.keys(wk).sort().reverse();
+      var f2 = document.getElementById('lofoot2');
+      if (f2 && weeks.length) {
+        f2.textContent = weeks.map(function(w){
+          return w + ' ' + wk[w].map(function(r){
+            var q = r.questions == null ? '미측정' : r.questions, rp = r.replies == null ? '미측정' : r.replies;
+            return (PN[r.partner] || r.partner) + ' 인스타' + r.insta + '·블로그' + r.blog_pub + '/' + r.blog_draft + '·질문' + q + '·회신' + rp;
+          }).join(' · ');
+        }).join(' | ');
+      }
+      lwBody.innerHTML = (d.loop || []).slice().reverse().map(function(l){
+        return '<tr><td>' + esc(l.week) + '</td><td>' + esc(l.module) + '</td><td>' + esc(l.step) + '</td><td>' + esc(l.note) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" class="ppct" style="padding:14px 8px">원장 없음</td></tr>';
+    }).catch(function(){
+      lotbl.tBodies[0].innerHTML = '<tr><td colspan="6" class="ppct" style="padding:14px 8px">못 읽었습니다 — 잠시 뒤 새로고침해 주세요.</td></tr>';
+      lwtbl.tBodies[0].innerHTML = '<tr><td colspan="4" class="ppct" style="padding:14px 8px">못 읽었습니다 — 잠시 뒤 새로고침해 주세요.</td></tr>';
+    });
+  })();
+  </script>
+
   <script>
   (function(){
     var P=[

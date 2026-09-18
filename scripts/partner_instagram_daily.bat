@@ -18,4 +18,6 @@ set RC=%ERRORLEVEL%
 echo [%date% %time%] exit=%RC% >> %LOGFILE%
 REM waiting-list board (labs_waiting.json) refresh (2026-09-17)
 C:\Python314\python.exe scripts\labs_waiting.py >> logs\labs_waiting.log 2>&1
+REM labs 3-loop ledger + partner marketing outputs 7-day board (2026-09-18)
+C:\Python314\python.exe scripts\labs_loop.py >> logs\labs_loop.log 2>&1
 exit /b %RC%
