@@ -351,6 +351,10 @@
   <!-- 「모듈 구성」 표는 GM 2026-09-18 「필요 없다」로 뺐다 — 모듈은 아래 메뉴 자체가 목록이다. -->
   <a href="#view/kakao" data-view="kakao"><span class="t">보고 자동화</span></a>
   <a href="#view/counsel" data-view="counsel"><span class="t">상담 자동화</span></a>
+  <!-- AI 번역기 — 상담 자동화에서 분리(GM 지시 2026-09-18 20:1x 「랩스도 번역기 따로 구성해줘」 · 배 2828).
+       GM 19:5x 「상담 봇은 상담만, AI 번역기는 번역기만」 — 상담 자동화 하위 번역 탭은 뺐다.
+       번역기·쓰임 내역 2탭(axtodo 3탭과 같은 탭 모양). -->
+  <a href="#translate" data-go="translate"><span class="t">AI 번역기</span></a>
   <!-- 업무&결재 자동화 — 업무 SSOT·결재 SSOT·AI 회의비서 3탭(GM 지시 2026-09-18 18:4x·19:1x · 배 2816·2820).
        회의비서는 독립 묶음이 아니라 이 모듈의 기능 하나라는 GM 정정으로 「AI 비서」 사이드 묶음은 없앴다. -->
   <a href="#axtodo" data-go="axtodo"><span class="t">업무&결재 자동화</span></a>
@@ -1534,6 +1538,37 @@
   document.querySelectorAll('a[data-go="axtodo"]').forEach(function(a){ a.addEventListener('click', ensureInit); });
   window.addEventListener('hashchange', function(){ if (location.hash.slice(1) === 'axtodo') ensureInit(); });
   if (location.hash.slice(1) === 'axtodo') ensureInit();   // 주소를 직접 열고 들어온 경우
+})();
+</script>
+
+<!-- AI 번역기 — 상담 자동화에서 분리(GM 지시 2026-09-18 20:1x · 배 2828). 상담은 상담만, 번역기는 번역기만.
+     번역기(translator.html)·쓰임 내역(assistant_usage.html) 2탭 — axtodo 탭 방식과 같다. -->
+<section class="panel" data-panel="translate" hidden>
+  <h2>AI 번역기</h2>
+  <div class="pf-tabs" id="translate-tabs">
+    <a href="#" data-trtab="tr">번역기</a>
+    <a href="#" data-trtab="usage">쓰임 내역</a>
+  </div>
+  <iframe id="translate-frame" title="AI 번역기" style="width:100%;min-height:70vh;border:1px solid var(--border);border-radius:4px;background:var(--paper);" src="about:blank"></iframe>
+</section>
+<script>
+(function(){
+  // AI 번역기 2탭 — axtodo 탭 방식과 같다(배 2828).
+  var TR_SRC = { tr: 'translator.html', usage: 'assistant_usage.html' };
+  var frame = document.getElementById('translate-frame');
+  var tabs = [].slice.call(document.querySelectorAll('#translate-tabs a'));
+  var inited = false;
+  function switchTab(k){
+    tabs.forEach(function(a){ a.classList.toggle('on', a.dataset.trtab === k); });
+    if (frame.getAttribute('data-key') !== k) { frame.src = TR_SRC[k]; frame.setAttribute('data-key', k); }
+  }
+  tabs.forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); switchTab(a.dataset.trtab); });
+  });
+  function ensureInit(){ if (!inited) { inited = true; switchTab('tr'); } }   // 첫 탭 = 번역기
+  document.querySelectorAll('a[data-go="translate"]').forEach(function(a){ a.addEventListener('click', ensureInit); });
+  window.addEventListener('hashchange', function(){ if (location.hash.slice(1) === 'translate') ensureInit(); });
+  if (location.hash.slice(1) === 'translate') ensureInit();   // 주소를 직접 열고 들어온 경우
 })();
 </script>
 

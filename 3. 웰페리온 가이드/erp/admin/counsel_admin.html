@@ -52,12 +52,6 @@
   <div id="statsBody"><p class="muted">불러오는 중…</p></div>
 </section>
 </div>
-
-<!-- 번역 탭 — 다른 탭(상담봇·상담 내역·FAQ)과 달리 새 페이지로 안 가고 이 화면 안에서 translator.html 을
-     iframe 으로 띄운다(파일 재사용 · 복제 아님 · GM 정정 2026-09-18 18:1x). -->
-<div id="translatePanel" hidden>
-  <iframe src="translator.html" title="AI 번역가" style="width:100%;height:80vh;border:1px solid var(--border,#ddd);border-radius:8px;"></iframe>
-</div>
 </div>
 
 <script src="../../cbo/counsel.js"></script>
@@ -67,25 +61,6 @@
   var esc = Counsel.esc, j = Counsel.j;
 
   Counsel.start("counsel_admin.html", function (ctx) {
-    // 번역 탭 — 다른 subnav 탭처럼 페이지 이동이 아니라 이 화면 안에서 iframe 을 켜고 끈다.
-    (function () {
-      var subnavEl = document.getElementById("subnav");
-      var mainBody = document.getElementById("counselMain");
-      var translatePanel = document.getElementById("translatePanel");
-      var tTab = document.createElement("a");
-      tTab.href = "#";
-      tTab.textContent = "번역";
-      tTab.addEventListener("click", function (e) {
-        e.preventDefault();
-        var opening = translatePanel.hidden;
-        translatePanel.hidden = !opening;
-        mainBody.hidden = opening;
-        [].slice.call(subnavEl.children).forEach(function (a) { a.classList.remove("on"); });
-        if (opening) tTab.classList.add("on");
-      });
-      subnavEl.appendChild(tTab);
-    })();
-
     document.getElementById("pageLinks").innerHTML =
       '<a href="' + esc(ctx.cur.page) + '" target="_blank" rel="noopener">손님 화면 열기 — ' + esc(ctx.cur.page) + '</a>';
 
