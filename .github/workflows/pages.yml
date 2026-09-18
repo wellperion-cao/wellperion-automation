@@ -68,11 +68,16 @@ jobs:
         run: |
           mkdir -p _pages_build
           cp -r "3. 웰페리온 가이드/." _pages_build/
+          # 2026-09-18 (배 12750 P0 #2): 회원 이름·휴대폰·개인 이메일이 든 두 파일은 공개 Pages 에 싣지 않는다.
+          #   _queue_archive.json 은 훅 미러로 이 폴더 안에 들어오므로 복사 뒤 지우고, incidents.json 은 cp 목록에서 뺐다.
+          #   (이 파일들을 읽던 화면 = erp/admin/자율현황·index·clevel-guide·wellperion_guide(main) — 로그인 벽 안 erp 도메인에서만 값이 붙는다)
+          rm -f "_pages_build/status/_queue_archive.json"
           mkdir -p "_pages_build/1. AI자료_아카이브/08_로고&워터마크/_assets"
           cp -r "1. AI자료_아카이브/08_로고&워터마크/_assets/." \
                 "_pages_build/1. AI자료_아카이브/08_로고&워터마크/_assets/"
           mkdir -p _pages_build/ssot
-          cp ssot/dashboard.html ssot/incidents.json ssot/canon_values.json "ssot/약속.json" _pages_build/ssot/
+          cp ssot/dashboard.html ssot/canon_values.json "ssot/약속.json" _pages_build/ssot/
+          test ! -e "_pages_build/status/_queue_archive.json" && test ! -e _pages_build/ssot/incidents.json
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
