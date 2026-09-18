@@ -298,7 +298,7 @@ const AREAS=['마케팅 관리','회원 관리','운영 관리','인사&파트�
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const MOCK=new URLSearchParams(location.search).get('mock')==='1';
-let S=null, filter={dept:'전체',status:'전체'}, q='';
+let S=null, filter={dept:'전체',status:'전체',team:'전체'}, q='';
 let selPerson=null, drawerQ='';   // 서랍(배1026 2026-09-17 11:3x 복원) — selPerson=지금 연 사람 · drawerQ=서랍 안 화면 찾기
 const PDRAFTS={};   // 사람별 편집중 초안(uid→{modules:Set,deny:Set}) · 저장 전까지만, 클릭 안 하면 안 생긴다
 
@@ -337,6 +337,14 @@ const scrName=m=>{
   return h?`<a href="${esc(h)}" target="_blank" rel="noopener">${n}</a>`:n;
 };
 const dept=u=>(perms(u)||{}).dept||u.dept||'';
+/* 파트너팀 안 팀(P.T팀·골프팀·스쿼시팀 …) — GM 2026-09-18 「파트너팀으로만 묶이면 안 보인다」. 목록 정본 = ssot/kpi.json 팀 리더 표(S.teams). 권한과 무관한 구분 칸. */
+const TEAM_DEPT='파트너팀';
+const team=u=>(perms(u)||{}).team||'';
+const deptLabel=u=>dept(u)+(team(u)?' · '+team(u):'');
+function teamSelect(u){
+  const list=((S.teams||{})[TEAM_DEPT])||[], cur=team(u);
+  return `<select class="rank-sel" data-team-for="${u.id}" title="팀">${['<option value="">팀 미지정</option>'].concat(list.map(t=>`<option value="${esc(t)}"${t===cur?' selected':''}>${esc(t)}</option>`)).join('')}</select>`;
+}
 /* 직급·층 — 승인 판단 근거다(GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해」). */
 const rank=u=>(perms(u)||{}).rank||'';
 const tierKo=u=>((perms(u)||{}).tier==='leader'?'리더급':((perms(u)||{}).tier?'팀원급':''));
@@ -395,13 +403,13 @@ function rankSelect(u){
 function renderPendingStrip(pend){
   // 항상 맨 위 · 한 줄 승인/반려(배1026 2026-09-07 · GM "정리 끝나면 가입 안내") — 탭과 무관하게 보인다.
   $('#pend-strip-body').innerHTML=pend.length?pend.map(u=>`<tr><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td>
-    <td>${dept(u)?`<span class="tag acc">${esc(dept(u))}</span>`:'—'} ${rankSelect(u)}</td><td><small>${esc(u.created_at||'')}</small></td>
+    <td>${dept(u)?`<span class="tag acc">${esc(deptLabel(u))}</span>`:'—'} ${rankSelect(u)}</td><td><small>${esc(u.created_at||'')}</small></td>
     <td><div class="acts"><button class="btn ok sm" data-act="approve" data-uid="${u.id}">승인</button><button class="btn danger sm" data-act="block" data-uid="${u.id}">반려</button></div></td></tr>`).join('')
     :'<tr><td colspan="4" class="empty">대기 없음</td></tr>';
 }
 function renderPending(blk){
   const rows=[...blk,...S.users.filter(u=>u.status!=='blocked'&&locked(u))];
-  $('#blocked-body').innerHTML=rows.length?rows.map(u=>`<tr data-uid="${u.id}"><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'—'}</td>
+  $('#blocked-body').innerHTML=rows.length?rows.map(u=>`<tr data-uid="${u.id}"><td class="who"><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${dept(u)?`<span class="tag">${esc(deptLabel(u))}</span>`:'—'}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td><td><small>${esc(u.changed_at||u.approved_at||'')}</small></td>
     <td><div class="acts">${u.status==='blocked'?`<button class="btn sm" data-act="approve" data-uid="${u.id}">다시 허용</button>`:''}${locked(u)?`<button class="btn sm" data-act="lock" data-uid="${u.id}">잠금 해제</button>`:''}</div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">없음</td></tr>';
   // 삭제는 「사람」 탭 「내보내기」 버튼 하나로 합쳤다(배1026 2026-09-17 10:49 · GM 지적 "두 단계라 못 찾음") — 여기서 뺐다.
@@ -409,7 +417,8 @@ function renderPending(blk){
 function peopleList(){
   const qq=q.trim().toLowerCase();
   return S.users.filter(u=>(filter.dept==='전체'||dept(u)===filter.dept||(filter.dept==='미분류'&&!dept(u)))&&(filter.status==='전체'||u.status===filter.status)
-    &&(!qq||(u.name+' '+u.email+' '+dept(u)).toLowerCase().includes(qq)))
+    &&(filter.dept!==TEAM_DEPT||filter.team==='전체'||team(u)===filter.team||(filter.team==='미지정'&&!team(u)))
+    &&(!qq||(u.name+' '+u.email+' '+deptLabel(u)).toLowerCase().includes(qq)))
     .sort((a,b)=>(a.status==='pending'?0:1)-(b.status==='pending'?0:1)||a.name.localeCompare(b.name,'ko'));
 }
 /* ── 사람별 편집 초안 — modules/deny 명시 id 집합만 쓴다(groups[] 는 서버 GROUPS 화이트리스트가
@@ -469,7 +478,9 @@ async function personDelete(u){
 }
 function renderPeople(){
   const depts=['전체',...Object.keys(S.dept_modules||{}),'미분류'], sts=[['전체','전체'],['active','사용 중'],['pending','승인 대기'],['blocked','차단']];
-  $('#people-filters').innerHTML=depts.map(d=>`<button class="chip" data-f="dept" data-v="${esc(d)}" aria-pressed="${filter.dept===d}">${esc(d)}</button>`).join('')+'<span style="width:10px"></span>'+sts.map(([v,l])=>`<button class="chip" data-f="status" data-v="${v}" aria-pressed="${filter.status===v}">${l}</button>`).join('');
+  const teams=filter.dept===TEAM_DEPT?['전체',...(((S.teams||{})[TEAM_DEPT])||[]),'미지정']:[];
+  $('#people-filters').innerHTML=depts.map(d=>`<button class="chip" data-f="dept" data-v="${esc(d)}" aria-pressed="${filter.dept===d}">${esc(d)}</button>`).join('')+'<span style="width:10px"></span>'+sts.map(([v,l])=>`<button class="chip" data-f="status" data-v="${v}" aria-pressed="${filter.status===v}">${l}</button>`).join('')
+    +(teams.length?'<div style="width:100%;height:4px"></div>'+teams.map(t=>`<button class="chip" data-f="team" data-v="${esc(t)}" aria-pressed="${filter.team===t}">${esc(t==='전체'?TEAM_DEPT+' 전체':t)}</button>`).join(''):'');
   const list=peopleList();
   $('#people-body').innerHTML=list.length?list.map(u=>{
     const ro=u.role==='admin'||!!u.fixed_perms, d=personView(u), excIds=S.exception_ids||[];
@@ -478,7 +489,8 @@ function renderPeople(){
     const dirty=!ro&&personDirty(u);
     const cell=(st,attrs)=>`<td class="cell"><input type="checkbox" ${attrs} ${st==='full'?'checked':''} data-partial="${st==='partial'?'1':''}" ${ro?'disabled':''}></td>`;
     return `<tr><td class="who" data-open-drawer="${u.id}" title="눌러서 화면별 상세"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
-    <td>${dept(u)?`<span class="tag">${esc(dept(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}
+    <td>${dept(u)?`<span class="tag">${esc(deptLabel(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}
+      ${(!ro&&dept(u)===TEAM_DEPT)?teamSelect(u):''}
       ${ro?'':`<select class="rank-sel" data-dept-apply-for="${u.id}" title="부서 기본 화면 더하기"><option value="">+ 부서 기본 추가</option>${Object.keys(S.dept_modules||{}).map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td>
     ${AREAS.map(g=>cell(areaState(d.modules,g),`data-area-for="${u.id}" data-area="${esc(g)}" title="${esc(g)}"`)).join('')}
@@ -647,7 +659,7 @@ document.addEventListener('click',async e=>{
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.dataset.go) return go(t.dataset.go);
   if(t.dataset.scroll){ document.querySelector(t.dataset.scroll)?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
-  if(t.classList.contains('chip')){ filter[t.dataset.f]=t.dataset.v; renderPeople(); return; }
+  if(t.classList.contains('chip')){ filter[t.dataset.f]=t.dataset.v; if(t.dataset.f==='dept') filter.team='전체'; renderPeople(); return; }
   if(t.dataset.deptPreset){ const d=t.dataset.deptPreset; if(!confirm(`${d} 전원(잠금 제외)에 부서 기본 화면을 다시 적용합니다. 계속할까요?`)) return;
     if(await post(`/auth/admin/dept_apply/${encodeURIComponent(d)}`)){ toast(d+' 부서 기본을 적용했습니다'); await load(); } return; }
   if(t.dataset.savePerson){ await personSave(+t.dataset.savePerson); return; }
@@ -669,6 +681,7 @@ document.addEventListener('change',e=>{
   const pall=e.target.closest('input[data-all-for]'); if(pall){ personToggleAll(+pall.dataset.allFor); return; }
   const pexc=e.target.closest('input[data-exc-for]'); if(pexc){ personToggleExc(+pexc.dataset.excFor); return; }
   const dsel=e.target.closest('select[data-dept-apply-for]'); if(dsel&&dsel.value){ personApplyDept(+dsel.dataset.deptApplyFor, dsel.value); dsel.value=''; return; }
+  const tsel=e.target.closest('select[data-team-for]'); if(tsel){ post(`/auth/admin/${tsel.dataset.teamFor}/team`,{team:tsel.value}).then(ok=>{ if(ok){ toast('팀을 저장했습니다'); load(); } }); return; }
   const psc=e.target.closest('input[data-screen-for]'); if(psc){ personToggleScreen(+psc.dataset.screenFor, psc.dataset.screen); return; }
 });
 document.addEventListener('input',e=>{

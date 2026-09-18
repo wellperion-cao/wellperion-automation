@@ -150,6 +150,25 @@ def rank_names() -> list:
     return [str(r.get("name") or "").strip() for r in (ranks_raw().get("ranks") or []) if r.get("name")]
 
 
+# 파트너팀 안의 팀(P.T팀·골프팀·스쿼시팀 …) — GM 2026-09-18 「파트너팀으로만 묶이면 안 보인다」.
+# 정본 = ssot/kpi.json _팀리더_2026_08_25.teams(종목별 팀 리더 단일 출처) — 이름을 여기 복제하지 않는다.
+TEAM_DEPT = "파트너팀"
+_KPI_PATHS = ("/srv/erp/repo/ssot/kpi.json",
+              os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                           "ssot", "kpi.json"))
+
+
+def team_names() -> list:
+    for p in _KPI_PATHS:
+        try:
+            with open(p, encoding="utf-8") as f:
+                teams = (json.load(f).get("_팀리더_2026_08_25") or {}).get("teams") or {}
+            return [str(k).strip() for k in teams if str(k).strip()]
+        except (OSError, ValueError):
+            continue
+    return []
+
+
 def rank_tier(rank: str) -> str:
     """그 직급이 리더급인가 팀원급인가. 모르는 값이면 member(좁은 쪽) — 안전한 쪽으로 떨어뜨린다."""
     key = str(rank or "").strip()
@@ -1729,6 +1748,7 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
         "common_modules": [],                    # ponytail: 공통/전용 구분은 이제 dept_presets 안에 이미 합쳐 들어간다(배1026)
         "exception_ids": list(EXCEPTION_ONLY_IDS),
         "ranks": rank_names(),                 # 승인 화면 직급 드롭다운(배2539) — 정본은 ssot/ranks.json 하나
+        "teams": {TEAM_DEPT: team_names()},    # 파트너팀 안 팀 목록(GM 2026-09-18) — 정본은 ssot/kpi.json 팀 리더 표
         "social": {p: bool(social_creds(p)[0]) for p in SOCIAL},   # 값은 안 준다 — 설정됨/비어있음만(키 유출 방지)
         "history": [{
             "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
@@ -2006,7 +2026,7 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
     #   통째 덮어써 저장 한 번에 부서가 「미분류」가 되고 「부서 기본 한 번에」에서 영영 빠지고 잠금도 풀렸다.
     with db() as c:
         row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
-    keep = {k: v for k, v in _row_perms(row).items() if k in ("dept", "rank", "tier", "phone", "locked")} if row else {}
+    keep = {k: v for k, v in _row_perms(row).items() if k in ("dept", "rank", "tier", "phone", "locked", "team")} if row else {}
     if form.get("reset"):
         # 「기본(핵심만)」 = 매일 쓰는 화면만. perms 가 None 이면 allowed() 가 core 만 여는데, 신원 칸을 남기려면
         # dict 여야 하므로 같은 뜻인 groups=["핵심"] 로 적는다(allowed(): 핵심 그룹 = core 모듈 전부).
@@ -2018,6 +2038,29 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
                  "deny": [m for m in form.getlist("d") if m in ids]}
     _set_perms(uid, perms, me["email"])
     return RedirectResponse("/auth/admin?msg=저장됐습니다", status_code=303)
+
+
+@app.post("/auth/admin/{uid}/team")
+async def team_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                    erp_admin: Optional[str] = Cookie(default=None)):
+    """파트너팀 계정의 팀(P.T팀·골프팀 …)만 적는다 — 권한(modules·deny)은 안 건드린다(GM 2026-09-18 구분용).
+    빈 값 = 팀 미지정. 목록 밖 값은 400."""
+    me = admin_only(erp_session, erp_admin)
+    team = str((await request.form()).get("team") or "").strip()
+    if team and team not in team_names():
+        raise HTTPException(400, "모르는 팀")
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    if not row:
+        raise HTTPException(404)
+    p = _row_perms(row)
+    if p.get("dept") != TEAM_DEPT:
+        raise HTTPException(400, f"{TEAM_DEPT} 계정만 팀을 둔다")
+    if (p.get("team") or "") == team:
+        return JSONResponse({"ok": True, "team": team})
+    p["team"] = team
+    _set_perms(uid, p, me["email"])
+    return JSONResponse({"ok": True, "team": team})
 
 
 # /auth/admin/{uid}/{action} 범용 라우트보다 먼저 선언해야 "lock" 이 그 400 처리로 안 빠진다.

@@ -198,27 +198,6 @@ def run_export(room: str = DEFAULT_ROOM) -> "tuple[bool, str]":
     # 기준시각(이후 생성 파일 탐색용)
     t0 = time.time()
 
-    log("[1] ≡ → 대화 내용 → 대화 내보내기")
-    pyautogui.click(R - 25, T + 57)
-    time.sleep(1.2)
-    menus = eva_menus(win32gui)
-    if not menus:
-        return False, "≡ 메뉴가 뜨지 않음"
-    mh, (mL, mT, mR, mB) = menus[0]
-    pyautogui.moveTo(mL + 50, mB - 78)
-    time.sleep(1.5)
-    subs = [m for m in eva_menus(win32gui) if m[0] != mh]
-    if not subs:
-        pyautogui.moveTo(mL + 50, mB - 78)
-        time.sleep(1.5)
-        subs = [m for m in eva_menus(win32gui) if m[0] != mh]
-    if not subs:
-        return False, "서브메뉴(대화 내용)가 뜨지 않음"
-    sh, (sL, sT, sR, sB) = subs[0]
-    pyautogui.click(sL + 45, sT + 22)
-    time.sleep(2.0)
-
-    # 저장창 뜨면 Enter(기본 이름·폴더)
     save = None
 
     def find_save(h, _):
@@ -226,7 +205,35 @@ def run_export(room: str = DEFAULT_ROOM) -> "tuple[bool, str]":
         if win32gui.IsWindowVisible(h) and win32gui.GetClassName(h) == "#32770" and "저장" in win32gui.GetWindowText(h):
             save = h
 
+    # 1차 = Ctrl+S(카톡 방 「대화 내용 저장」 단축키 · GM 2026-09-18) — 메뉴 좌표에 안 기댄다.
+    # 2차 = ≡ → 대화 내용 → 대화 내보내기(종전 경로 · 단축키로 저장창이 안 뜰 때만).
+    log("[1] Ctrl+S (대화 내용 저장)")
+    pyautogui.hotkey("ctrl", "s")
+    time.sleep(2.0)
     win32gui.EnumWindows(find_save, None)
+    if not save:
+        log("[1b] 단축키로 저장창 안 뜸 → ≡ → 대화 내용 → 대화 내보내기")
+        pyautogui.press("esc")
+        time.sleep(0.5)
+        pyautogui.click(R - 25, T + 57)
+        time.sleep(1.2)
+        menus = eva_menus(win32gui)
+        if not menus:
+            return False, "≡ 메뉴가 뜨지 않음"
+        mh, (mL, mT, mR, mB) = menus[0]
+        pyautogui.moveTo(mL + 50, mB - 78)
+        time.sleep(1.5)
+        subs = [m for m in eva_menus(win32gui) if m[0] != mh]
+        if not subs:
+            pyautogui.moveTo(mL + 50, mB - 78)
+            time.sleep(1.5)
+            subs = [m for m in eva_menus(win32gui) if m[0] != mh]
+        if not subs:
+            return False, "서브메뉴(대화 내용)가 뜨지 않음"
+        sh, (sL, sT, sR, sB) = subs[0]
+        pyautogui.click(sL + 45, sT + 22)
+        time.sleep(2.0)
+        win32gui.EnumWindows(find_save, None)
     if not save:
         return False, "저장창이 뜨지 않음"
     log(f"[2] 저장창 hwnd={save} → Enter(기본값 저장)")
@@ -254,8 +261,9 @@ def run_export(room: str = DEFAULT_ROOM) -> "tuple[bool, str]":
     # 생성 파일 탐색(t0 이후 mtime, *.txt)
     log("[3] 생성 파일 탐색")
     cand = []
+    # 저장창은 마지막에 쓴 폴더를 기억한다 — 아카이브 아래 다른 방·월 폴더로 떨어질 수 있어 재귀로 본다(2026-09-18 실측).
     for d in SEARCH_DIRS:
-        for p in glob.glob(str(d / "*.txt")):
+        for p in glob.glob(str(d / "**" / "*.txt"), recursive=True):
             try:
                 if os.path.getmtime(p) >= t0 - 2:
                     cand.append(p)
