@@ -2156,8 +2156,16 @@ async def _body_rank(request: Request) -> str:
         return ""
 
 
+def rank_modules(dept: str, old_tier: str, new_tier: str, mods: list) -> list:
+    """직급 층이 바뀔 때의 modules(배 12752 P1 #12) — 새 층의 부서 기본(leader_extra 포함) + 옛 층 부서 기본에 없던 것(개인 예외로 켠 것)은 그대로.
+    종전엔 승인 화면에서 사원→팀장으로 고쳐도 tier 만 바뀌고 modules 가 가입 때 값이라 회원·문의 화면이 안 열렸다(반대도)."""
+    base_old = set(dept_modules_for(dept, old_tier))
+    new = dept_modules_for(dept, new_tier)
+    return new + [m for m in (mods or []) if m not in base_old and m not in new]
+
+
 def _approve_rank(uid: int, rank: str, by: str) -> None:
-    """직급을 바꾸면 층(tier)과 팀원급 제외 화면(deny)도 같이 따라간다 — 세 값을 따로 고치면 어긋난다."""
+    """직급을 바꾸면 층(tier)·팀원급 제외 화면(deny)·부서 모듈(modules)도 같이 따라간다 — 네 값을 따로 고치면 어긋난다. 부서가 없으면 modules 는 그대로."""
     if not rank or rank not in rank_names():
         return
     with db() as c:
@@ -2173,7 +2181,10 @@ def _approve_rank(uid: int, rank: str, by: str) -> None:
     if p.get("rank") == rank:
         return
     tier = rank_tier(rank)
+    old_tier = p.get("tier") or rank_tier(p.get("rank") or "")
     p["rank"], p["tier"], p["deny"] = rank, tier, tier_deny(tier)
+    if p.get("dept"):
+        p["modules"] = rank_modules(p["dept"], old_tier, tier, p.get("modules"))
     _set_perms(uid, p, by)
 
 
@@ -2341,6 +2352,14 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert rank_tier("사원") == "member"
     assert tier_deny(rank_tier("사원")) == list(ranks_raw().get("member_deny") or [])
     assert rank_tier("없는직급") == "member"      # 모르는 값은 좁은 쪽으로
+    # 승인 때 직급 층이 바뀌면 modules 도 재계산(배 12752 P1 #12) — 파트너팀 leader_extra(member·inquiry)가 붙고 떨어진다 · 개인 예외는 유지
+    _pt_member, _pt_leader = dept_modules_for("파트너팀", "member"), dept_modules_for("파트너팀", "leader")
+    assert set(_pt_leader) - set(_pt_member) == set(ranks_raw()["leader_extra"]["파트너팀"])
+    _up = rank_modules("파트너팀", "member", "leader", _pt_member + ["coo-chairman-gm업무"])
+    assert set(_up) == set(_pt_leader) | {"coo-chairman-gm업무"} and len(_up) == len(set(_up))          # 사원→팀장: extra 붙고 개인 예외 유지
+    _down = rank_modules("파트너팀", "leader", "member", _pt_leader + ["coo-chairman-gm업무"])
+    assert set(_down) == set(_pt_member) | {"coo-chairman-gm업무"}                                        # 팀장→사원: extra 떨어지고 개인 예외 유지
+    assert rank_modules("파트너팀", "member", "member", _pt_member) == _pt_member                         # 같은 층 = 그대로
     # 아이디 가입 규칙(배1108 후속) — 영문 소문자·숫자·.·_ 4~20자.
     assert valid_username("hong.gd01")
     assert not valid_username("Hong.GD")            # 대문자 금지
