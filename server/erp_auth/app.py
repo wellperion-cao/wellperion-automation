@@ -1468,7 +1468,7 @@ def _finish_page(t: str, next: str, err: str, action: str) -> Response:
     # 직급도 받는다(2026-09-14 점검 높음 12번) — 아이디 가입(signup)과 같은 층(팀장/팀원) 규칙이 소셜 가입에도 걸리게.
     return page("가입 완료", head(f"{label} 로그인 확인 · 이름·부서·직급만 알려주세요") + f"""<form method=post action={action}>
 <h1>가입 완료</h1>{'<p class=err>' + escape(err) + '</p>' if err else ''}
-<p class=hint>{escape(claims['e'])} 계정으로 계속합니다.</p>
+<p class=hint>{escape(claims.get('m') or claims['e'])} 계정으로 계속합니다.</p>
 <label>이름<input name=name value="{escape(claims['n'])}" placeholder="직함 포함, 예: 홍길동 매니저" required></label>
 <label>부서<select name=dept required><option value=''>선택하세요</option>{opts}</select></label>
 <label>직급<select name=rank required><option value=''>선택하세요</option>{rank_opts}</select></label>
@@ -1496,6 +1496,8 @@ def _finish_submit(name: str, dept: str, t: str, next: str, action: str, rank: s
         pass                                    # 중복 제출 — 이미 신청돼 있으니 그대로 대기 안내만
     provider = claims.get("p")                  # 구글(기본 흐름)은 문구 그대로, 네이버·카카오만 계정 종류를 덧붙인다
     suffix = f" · {SOCIAL[provider]['label']} 계정" if provider else ""
+    if claims.get("m"):                          # 소셜 키(kakao_123@kakao.login)만으론 GM 이 누군지 모른다 — 이메일을 덧붙인다
+        suffix += f" · 이메일 {claims['m']}"
     tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept}{suffix})\n승인: https://erp.wellperion.com/auth/admin")
     return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
 
@@ -1544,20 +1546,22 @@ def _social_profile(provider: str, access_token: str) -> dict:
 
 
 def _social_identity(provider: str, profile: dict) -> tuple:
-    """(계정 키로 쓸 이메일, 표시 이름). 카카오가 이메일 미동의면 kakao_{id}@kakao.login 로 대체
-    (발송용 아님 — users.email 칸을 채우는 로그인 식별자일 뿐, 화면엔 「카카오 계정」으로 보인다)."""
+    """(계정 키, 표시 이름, 이메일). 계정 키 = {provider}_{id}@{provider}.login — 공급자 안의 고유 id 로만 맞춘다.
+    이메일은 화면·GM 알림용이지 키가 아니다(배 12750 P0 #1 · 2026-09-18): 카카오 대표 이메일은 본인 확인 없이
+    아무 주소나 적을 수 있어(is_email_verified=false) 이메일을 키로 쓰면 그 주소의 기존 계정(관리자 포함)에 그대로
+    붙는다. 검증된 이메일이라도 아이디·구글로 만든 기존 계정과 자동 결합하지 않는다 — 소셜 키로는 그 행을 못 찾으니
+    새 신청(승인 대기)으로 흘러 GM 이 /auth/admin 에서 결정한다. 카카오 이메일은 검증된 것만 넘긴다."""
     if provider == "naver":
         r = profile.get("response") or {}
         email = (r.get("email") or "").strip().lower()
         if not email:
             raise ValueError("네이버 계정에 이메일 제공 동의가 필요합니다")
-        return email, (r.get("name") or email.split("@")[0]).strip()
+        return f"naver_{r['id']}@naver.login", (r.get("name") or email.split("@")[0]).strip(), email
     acct = profile.get("kakao_account") or {}
-    email = (acct.get("email") or "").strip().lower()
-    if not email:
-        email = f"kakao_{profile['id']}@kakao.login"
-    name = ((acct.get("profile") or {}).get("nickname") or email.split("@")[0]).strip()
-    return email, name
+    email = (acct.get("email") or "").strip().lower() if acct.get("is_email_verified") else ""
+    key = f"kakao_{profile['id']}@kakao.login"
+    name = ((acct.get("profile") or {}).get("nickname") or (email or key).split("@")[0]).strip()
+    return key, name, email
 
 
 def _social_start(request: Request, provider: str, next: str) -> Response:
@@ -1592,7 +1596,7 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
         redirect_uri = _oauth_redirect_uri(request, provider)
         tok = _social_token(provider, code, redirect_uri, cid, secret, state)
         profile = _social_profile(provider, tok["access_token"])
-        email, name = _social_identity(provider, profile)
+        email, name, mail = _social_identity(provider, profile)   # email = 계정 키(공급자 id) · mail = 표시·알림용
     except ValueError as e:
         return RedirectResponse(f"/auth/login?err={e}", status_code=303)
     except Exception:
@@ -1609,7 +1613,7 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
         https = request.headers.get("x-forwarded-proto") == "https"
         r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
         return r
-    reg = jwt.encode({"e": email, "n": name, "p": provider, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
+    reg = jwt.encode({"e": email, "n": name, "p": provider, "m": mail, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
     return RedirectResponse(f"/auth/social/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
 
 
@@ -2268,16 +2272,27 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert allowed(exception_granted, gm_work)              # modules 로 콕 집으면(개인 예외 부여) 열린다
     all_true = {**staff_u, "perms": json.dumps({"all": True, "deny": []})}
     assert not allowed(all_true, gm_work)                   # all:true(부서 메인 계정)로도 개인 예외는 안 열린다
-    # 네이버·카카오(배1108) — 계정 키 규칙: 카카오 이메일 없으면 kakao_{id}@kakao.login, 네이버는 이메일 필수.
-    assert _social_identity("naver", {"response": {"email": "A@Test.com", "name": "홍길동"}}) == ("a@test.com", "홍길동")
+    # 네이버·카카오(배1108 → 배 12750 P0 #1) — 계정 키 = {provider}_{id}@{provider}.login 하나. 이메일은 셋째 값(표시·알림).
+    # _social_callback 은 이 키로만 users 를 찾는다 → 이메일 칸으로 만든 기존 계정(관리자 포함)은 소셜 로그인으로 못 연다.
+    assert _social_identity("naver", {"response": {"id": "n1", "email": "A@Test.com", "name": "홍길동"}}) == ("naver_n1@naver.login", "홍길동", "a@test.com")
     try:
-        _social_identity("naver", {"response": {}})
+        _social_identity("naver", {"response": {"id": "n1"}})
         assert False, "네이버 이메일 없으면 ValueError 여야 한다"
     except ValueError:
         pass
-    assert _social_identity("kakao", {"id": 123, "kakao_account": {}}) == ("kakao_123@kakao.login", "kakao_123")
-    assert _social_identity("kakao", {"id": 123, "kakao_account": {"email": "B@Test.com",
-                             "profile": {"nickname": "닉네임"}}}) == ("b@test.com", "닉네임")
+    assert _social_identity("kakao", {"id": 123, "kakao_account": {}}) == ("kakao_123@kakao.login", "kakao_123", "")
+    admin_mail = "cao@wellperion.com"
+    # 케이스 1 · 미검증 이메일(누구나 적을 수 있는 카카오 대표 이메일)을 관리자 주소로 적고 들어와도 키가 되지 않는다 → 결합 안 됨
+    k1 = _social_identity("kakao", {"id": 123, "kakao_account": {"email": admin_mail, "is_email_verified": False,
+                                                                 "profile": {"nickname": "닉네임"}}})
+    assert k1 == ("kakao_123@kakao.login", "닉네임", ""), k1           # 미검증 이메일은 알림에도 안 실린다
+    # 케이스 2 · 검증된 이메일이 기존 계정과 같아도 키는 여전히 카카오 id → 기존 행과 안 맞아 가입 신청(승인 대기)으로 흐른다
+    k2 = _social_identity("kakao", {"id": 123, "kakao_account": {"email": admin_mail, "is_email_verified": True,
+                                                                 "profile": {"nickname": "닉네임"}}})
+    assert k2 == ("kakao_123@kakao.login", "닉네임", admin_mail), k2   # 이메일은 GM 알림용으로만 셋째 값에
+    assert k1[0] != admin_mail and k2[0] != admin_mail                  # 어느 경우도 이메일이 계정 키가 아니다
+    reg = jwt.encode({"e": k2[0], "n": k2[1], "p": "kakao", "m": k2[2], "exp": int(time.time()) + 60}, SECRET, algorithm="HS256")
+    assert _finish_claims(reg)["m"] == admin_mail                        # 가입 토큰이 이메일을 GM 알림까지 나른다
     assert set(SOCIAL) == {"naver", "kakao"}
     # 승인 화면 직급 교정(배2539) — 직급을 고치면 층·제외 화면이 함께 따라와야 한다.
     # 세 값이 갈라지면 팀원급이 리더급 화면을 보게 된다.
