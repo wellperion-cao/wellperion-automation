@@ -26,7 +26,7 @@ WRITE_MODULES = {
     },
     "TODO_GAS_URL": {
         "coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot", "coo-chairman-gm업무",
-        "coo-chairman-회장님-지시사항", "coo-chairman-대표님-지시사항", "coo-notice-게시물-프로필월",
+        "coo-chairman-회장님-지시사항", "coo-notice-게시물-프로필월",
         "cpo-product-상품기획", "cto-automation-카톡전송관리", "ceo-wellperion-guide-main",
         "gm-월간운영계획", "coo-check-파트너팀-체계",
     },

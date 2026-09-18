@@ -121,7 +121,7 @@ APPGROUP_IDS = {
             "coo-notice-게시물-프로필월",
             "chro-hub-schedule", "chro-hub-schedule-mobile", "chro-hub-leave",
             "chro-hub-onboarding-self", "chro-hub-onboarding",
-            "chro-hub-calendar", "cmo-series-ai시리즈보드"],
+            "chro-hub-calendar"],
     "점검": ["check", "coo-check-지원부-체계", "coo-check-주차관리부-체계",
             "coo-check-파트너팀-체계", "coo-check-파트너팀-페이롤",
             "coo-check-전사-일정", "coo-check-전사-거래업체"],
@@ -129,7 +129,6 @@ APPGROUP_IDS = {
             "cfo-finance-매출현황", "cfo-finance-지출현황", "cfo-finance-매출지출현황",
             "cto-자율현황", "cto-automation-카톡전송관리", "cto-automation-토큰-사용량",
             "ceo-wellperion-guide-main", "cmo-sunday-gm의일요일",
-            "cmo-funnel-월간마케팅보고서", "coo-chairman-대표님-지시사항",
             "coo-chairman-회장님-지시사항", "cfo-finance-지출품의"],
     # GM 지시 2026-09-11 「메뉴 맨 아래에 상담봇을 만들어서 거기에 상담 내역 + FAQ 등을 하위메뉴로」.
     # 앱 셸의 하위 메뉴 = 그 그룹 안의 카드다 — 그룹 하나를 맨 아래에 세우고 화면 셋을 담는다.
@@ -505,8 +504,7 @@ MODULE_BUNDLES = [
                      "chro-hub-calendar", "chro-hub-onboarding", "chro-hub-onboarding-self"]),
     ("재무",        ["cfo-finance-지출품의", "cfo-finance-매출현황",
                      "cfo-finance-지출현황", "cfo-finance-매출지출현황"]),
-    ("콘텐츠",      ["cmo-series-ai시리즈보드"]),
-    ("경영 보고",   ["coo-chairman-대표님-지시사항", "coo-chairman-회장님-지시사항"]),   # GM업무는 업무시스템으로 이관(GM 2026-09-17 16:5x)
+    ("경영 보고",   ["coo-chairman-회장님-지시사항"]),   # GM업무는 업무시스템으로 이관(GM 2026-09-17 16:5x)
 ]
 
 
