@@ -13,13 +13,16 @@ pg_dump "$ERP_DB_URL" | gzip > "$F"
 aws s3 cp --only-show-errors "$F" "s3://wellperion-erp-backup/erp/$(basename "$F")" --region ap-northeast-2
 echo "$(date '+%F %T') 백업 완료 erp/$(basename "$F") $(stat -c %s "$F")B"
 
-# 상담봇 문답 기록도 같이 올린다 (2026-09-11 · GM 「AWS에 저장시켜두는거지?」).
-# 이 기록은 DB 가 아니라 디스크 파일(/srv/erp/chat_log.jsonl + 회전본)이라 위 pg_dump 에 안 들어간다 —
-# 이 줄이 없으면 인스턴스가 죽는 순간 손님 질문이 통째로 사라진다. 회전본까지 한 덩어리로 묶는다.
+# 상담봇 문답 기록도 같이 올린다 (2026-09-11 · GM 「AWS에 저장시켜두는거지?」 · 2026-09-18 배 12768 후속으로 경로 이전).
+# 정본 위치 = /srv/erp/faq/{tenant}/{chat_log,counsel_usage,chat_feedback}.jsonl (센터별 폴더 · FAQ 정본·프로필도 이 안에 있어 폴더 통째로 묶는다).
+# 옛 경로 회전본은 /srv/erp 에 chat_log.jsonl* 등으로 이름만 .migrated-YYYYMMDD 붙어 남아 있을 수 있어 있으면 같이 챙긴다.
+# 이 기록은 DB 가 아니라 디스크 파일이라 위 pg_dump 에 안 들어간다 — 이 줄이 없으면 인스턴스가 죽는 순간 손님 질문이 통째로 사라진다.
 # 실패해도 DB 백업은 이미 끝났으므로 스크립트를 멈추지 않는다.
+# 복원: aws s3 cp s3://wellperion-erp-backup/chat/<날짜>.tar.gz /tmp/c.tgz && sudo tar -xzf /tmp/c.tgz -C /srv/erp
 C=/tmp/chat-$(TZ=Asia/Seoul date +%Y%m%d-%H%M).tar.gz
-if ls /srv/erp/chat_log.jsonl* /srv/erp/chat_feedback.jsonl* >/dev/null 2>&1; then
-  if tar -czf "$C" -C /srv/erp $(cd /srv/erp && ls chat_log.jsonl* chat_feedback.jsonl* 2>/dev/null) \
+CHAT_FILES=$(cd /srv/erp && ls -d faq chat_log.jsonl* counsel_usage.jsonl* chat_feedback.jsonl* 2>/dev/null || true)
+if [ -n "$CHAT_FILES" ]; then
+  if tar -czf "$C" -C /srv/erp $CHAT_FILES \
      && aws s3 cp --only-show-errors "$C" "s3://wellperion-erp-backup/chat/$(basename "$C")" --region ap-northeast-2; then
     echo "$(date '+%F %T') 상담기록 백업 완료 chat/$(basename "$C") $(stat -c %s "$C")B"
   else
