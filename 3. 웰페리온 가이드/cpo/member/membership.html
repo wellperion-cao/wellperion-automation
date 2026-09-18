@@ -1386,9 +1386,11 @@ table.op-t td b{font-size:15px}
 /* 문의회원(멤버십·강습 회원관리) 입장 게이트 — 로컬 커튼(_assets/gate.js와 동일 방식).
    입장 비번 = "1200" (파트너 팀 리더 공유용, lesson-guide.html에 명시). 2026-07-14 GM 지시.
    ※ 이것은 "잠금"이 아니라 "커튼"(소스에 노출) — 서버 PII정책(TOKEN_ENFORCE/PII_MASK)과 무관·타 페이지 무영향.
-      진짜 잠금은 JWT+자체서버(배21·101)로 교체 예정. 그러므로 이 비번을 서버·계정 비번과 같게 쓰지 말 것. */
+      진짜 잠금은 JWT+자체서버(배21·101)로 교체 예정. 그러므로 이 비번을 서버·계정 비번과 같게 쓰지 말 것.
+   2026-09-18 GM 지시: erp.wellperion.com 에선 개인 계정 로그인이 대신하므로 건너뜀 · 공개 사본은 회원 GAS 폴백 때문에 유지(시토 배 12818 로 GAS 무인증 읽기 막힌 뒤 가림막 자체 제거 검토). */
 (function(){
   "use strict";
+  if (location.hostname === "erp.wellperion.com") return;
   var GATE_PW="1200";
   var SKEY="mi_gate_ok";
   try { if (sessionStorage.getItem(SKEY)==="1") return; } catch(e){}
