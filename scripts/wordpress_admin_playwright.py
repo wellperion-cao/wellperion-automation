@@ -1966,6 +1966,95 @@ async def run_swap_additional_css(find: str, repl: str, dry_run: bool = False) -
     return 0 if done else 57
 
 
+IHAF_SETTINGS_URL = "http://wellperion.com/wp/wp-admin/options-general.php?page=insert-headers-and-footers"
+
+
+async def run_head_meta(name: str, content: str, dry_run: bool = False) -> int:
+    """--mode head-meta: IHAF(Insert Headers and Footers) 플러그인 'Scripts in Header' 칸에
+    <meta name="{name}" content="{content}"> 한 줄을 넣는다.
+    - 이미 같은 name 의 meta 가 있으면 content 만 교체 · 없으면 맨 앞에 한 줄 추가.
+    - 기존 내용(gtag 등)은 글자 하나 안 바꾼다 — 그 외 구간이 원본과 완전 동일한지 대조.
+    - 원본은 swap-additional-css 와 같은 방식으로 타임스탬프 백업(INSPECT_DIR).
+    - dry_run=True: 저장 없이 기존/결과 길이·맨 앞 200자만 보고."""
+    import re
+    import datetime
+    async_playwright = _import_playwright()
+    print(f"[INFO] === head-meta (name={name}, dry_run={dry_run}) ===")
+    if not PROFILE_DIR.exists():
+        print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
+        return 3
+    INSPECT_DIR.mkdir(parents=True, exist_ok=True)
+    p, ctx = await _launch(async_playwright)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(IHAF_SETTINGS_URL, wait_until="domcontentloaded", timeout=40_000)
+    if "wp-login" in page.url:
+        print("[ERROR] 세션 만료 — setup 재실행 필요.")
+        await ctx.close(); await p.stop(); return 2
+
+    # 플러그인 버전마다 textarea id/name 이 다를 수 있어 후보를 순서대로 시도
+    candidates = [
+        "#ihaf_insert_header", 'textarea[name="ihaf_insert_header"]',
+        "#ihf_header_scripts", 'textarea[name="ihf_header_scripts"]',
+    ]
+    handle = None
+    for sel in candidates:
+        handle = await page.query_selector(sel)
+        if handle:
+            print(f"[INFO] textarea 선택자: {sel}")
+            break
+    if not handle:
+        await page.screenshot(path=str(INSPECT_DIR / "wp_ihaf_notfound.png"))
+        print("[ERROR] 'Scripts in Header' textarea 미검출 — 중단(무손상). 스샷: wp_ihaf_notfound.png")
+        await ctx.close(); await p.stop(); return 50
+    original = await handle.input_value()
+    print(f"[INFO] 기존 길이 {len(original)}")
+
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = INSPECT_DIR / f"ihaf_header_scripts_backup_{ts}.txt"
+    backup_path.write_text(original, encoding="utf-8")
+    print(f"[INFO] 원본 백업: {backup_path}")
+
+    meta_re = re.compile(
+        r"<meta\s+name=['\"]" + re.escape(name) + r"['\"][^>]*>", re.IGNORECASE
+    )
+    new_tag = f'<meta name="{name}" content="{content}">'
+    m = meta_re.search(original)
+    if m:
+        new_content = original[:m.start()] + new_tag + original[m.end():]
+        rest_before = original[:m.start()] + original[m.end():]
+        rest_after = new_content[:m.start()] + new_content[m.start() + len(new_tag):]
+        if rest_before != rest_after:
+            print("[ABORT] 기존 본문 훼손 감지 — 저장 안 함."); await ctx.close(); await p.stop(); return 53
+        print(f"[INFO] 기존 {name} 메타 교체")
+    else:
+        new_content = new_tag + "\n" + original
+        if new_content[len(new_tag) + 1:] != original:
+            print("[ABORT] 기존 본문 훼손 감지(추가) — 저장 안 함."); await ctx.close(); await p.stop(); return 54
+        print(f"[INFO] {name} 메타 신규 추가(맨 앞)")
+
+    print(f"[INFO] 결과 길이 {len(new_content)} · 맨 앞 200자: {new_content[:200]!r}")
+
+    if dry_run:
+        print("[INFO] === DRY-RUN — 저장하지 않음 ===")
+        await ctx.close(); await p.stop(); return 0
+
+    await handle.fill(new_content)
+    save_btn = await page.query_selector('input[type="submit"], button[type="submit"]')
+    if not save_btn:
+        print("[ABORT] 저장 버튼 미검출 — 저장 안 함."); await ctx.close(); await p.stop(); return 55
+    await save_btn.click()
+    try:
+        await page.wait_for_selector(".notice-success, .updated", timeout=15_000)
+        saved = True
+    except Exception:
+        saved = False
+    await page.screenshot(path=str(INSPECT_DIR / f"wp_ihaf_saved_{ts}.png"))
+    print(f"[INFO] 저장 상태: {'saved' if saved else '미확정'}")
+    await ctx.close(); await p.stop()
+    print(f"[INFO] === head-meta {'완료' if saved else '확인 필요'} === (백업: {backup_path})")
+    return 0 if saved else 56
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="워드프레스 관리자 반자동 (setup/check/inspect/draft-inquiry/publish-inquiry/add-menu/swap-href/wpml-create-en/draft-inquiry-en/publish-inquiry-en/draft-reception/publish-reception/draft-page/publish-page/media-check/media-upload/swap-additional-css)")
     ap.add_argument("--mode", choices=[
@@ -1976,8 +2065,11 @@ def main() -> int:
         "draft-page", "publish-page",
         "media-check", "media-upload",
         "swap-additional-css",
+        "head-meta",
         "drift",
     ], default="setup")
+    ap.add_argument("--name", dest="meta_name", default=None, help="head-meta: meta name 속성값(예: naver-site-verification)")
+    ap.add_argument("--content", dest="meta_content", default=None, help="head-meta: meta content 속성값")
     ap.add_argument("--page", dest="page", default=None,
                     choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup", "tour", "faq"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
@@ -2068,6 +2160,10 @@ def main() -> int:
         if not args.find or not args.repl:
             print("[ERROR] swap-additional-css는 --find --repl 필요"); return 1
         return asyncio.run(run_swap_additional_css(args.find, args.repl, args.dry_run))
+    if args.mode == "head-meta":
+        if not args.meta_name or not args.meta_content:
+            print("[ERROR] head-meta는 --name --content 필요"); return 1
+        return asyncio.run(run_head_meta(args.meta_name, args.meta_content, args.dry_run))
     if args.mode == "media-check":
         return asyncio.run(run_media_check())
     if args.mode == "media-upload":
