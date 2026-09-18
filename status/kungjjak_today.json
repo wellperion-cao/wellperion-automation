@@ -237,13 +237,25 @@
           "ref": "GM-20260918-1024",
           "no": "24",
           "got": "지금 관제판은 시토랑 시모 대기인데?",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "10:24",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:25",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-1025",
+          "no": "25",
+          "got": "그리고 우리 배포를 많이하면 AWS 비용만 올라가는거 아냐? 배포를 좀 모아서할 수 있는 그런 기능은 없나?",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:25",
+          "end": "10:26",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -332,29 +344,14 @@
           "detail": "커밋 412353565d · 배 12736"
         }
       ],
-      "count": 20,
-      "done": 19,
-      "open": 1,
+      "count": 21,
+      "done": 21,
+      "open": 0,
       "avg_minutes": 3,
       "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260918-1024",
-          "no": "24",
-          "got": "지금 관제판은 시토랑 시모 대기인데?",
-          "did": "",
-          "start": "10:24",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -649,13 +646,19 @@
           "area": "작업",
           "event": "랩스 관리자 셸 — 좁은 폭(900 이하) 메뉴판을 가로 눕힘 대신 서랍(☰ 로 열고 항목 고르면 닫힘)으로 (GM 09-18 「좌우로 줄이면 메뉴판이 깨진다」)",
           "detail": "커밋 ea4c4ebcf3 · 배 12680"
+        },
+        {
+          "time": "10:27",
+          "area": "작업",
+          "event": "메인 창 직접 실행 차단 관문 + 위임 비율 계측(배 12745 · GM 09-18)",
+          "detail": "커밋 cea02ebdfc · 배 12680"
         }
       ],
       "count": 11,
       "done": 11,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 26,
+      "work_count": 27,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1034,7 +1037,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T10:25:18",
+    "published_at": "2026-09-18T10:28:38",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -1042,13 +1045,14 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "10:24",
+          "time": "10:25",
           "area": "GM요청",
-          "event": "지금 관제판은 시토랑 시모 대기인데?",
+          "event": "그리고 우리 배포를 많이하면 AWS 비용만 올라가는거 아냐? 배포를 좀 모아서할 수 있는 그런 기능은 없나?",
           "result": "warn"
         },
-        "idle_since": null,
-        "saves": 9
+        "idle_since": "10:26",
+        "saves": 9,
+        "lanes": 0
       },
       "cto": {
         "nick": "시토",
@@ -1061,8 +1065,9 @@
           "event": "12745 메인 창 직접 실행 차단 관문 + 위임 비율 — 레인 착수",
           "result": "warn"
         },
-        "idle_since": "10:22",
-        "saves": 36
+        "idle_since": null,
+        "saves": 37,
+        "lanes": 1
       },
       "cmo": {
         "nick": "시모",
@@ -1076,7 +1081,8 @@
           "result": "warn"
         },
         "idle_since": "10:19",
-        "saves": 4
+        "saves": 4,
+        "lanes": 0
       },
       "cpo": {
         "nick": "시포",
@@ -1090,7 +1096,8 @@
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 8
+        "saves": 9,
+        "lanes": 0
       },
       "coo": {
         "nick": "시우",
@@ -1104,7 +1111,8 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 4
+        "saves": 4,
+        "lanes": 1
       },
       "cbo": {
         "nick": "시보",
@@ -1118,7 +1126,8 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 4
+        "saves": 4,
+        "lanes": 2
       }
     }
   }
