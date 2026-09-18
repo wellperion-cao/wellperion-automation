@@ -18,6 +18,7 @@ nginx 가 앞에서 auth_request 로 로그인 쿠키를 검사하고 X-Erp-User
 """
 import base64
 import hashlib
+import io
 import json
 import os
 import subprocess
@@ -25,6 +26,7 @@ import sys
 import threading
 import time
 import urllib.request
+import zipfile
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -241,19 +243,54 @@ UPLOAD_SUBDIR = "todo"
 # 형식(MIME)이 비었거나 표에 없어 .bin 이 될 때 — 파일 머리 바이트로 한 번 더 본다. 2026-09-16 실측: 주차장 대기구역
 # 결재 첨부 PDF 2건이 .bin 으로 저장돼 GM 이 열면 내려받기만 됐다(file 판정 = PDF 1.6). 표에 있는 형식만 준다 — .html/.svg 는 그대로 .bin.
 _MAGIC = ((b"%PDF", ".pdf"), (b"\x89PNG", ".png"), (b"\xff\xd8\xff", ".jpg"), (b"RIFF", ".webp"))
+_ZIP_MAGIC = b"PK\x03\x04"
+_OLE_MAGIC = b"\xd0\xcf\x11\xe0"
+# ZIP 컨테이너 문서(docx·xlsx·pptx·hwpx) 내부 표식 — 표준 zipfile 만으로 목록을 본다(2026-09-18 · 배 12802).
+_ZIP_DOC_MARKERS = (("word/document.xml", ".docx"), ("xl/workbook.xml", ".xlsx"), ("ppt/presentation.xml", ".pptx"))
+# OLE(옛 한글·MS오피스) 는 스트림 이름으로도 못 가르면 요청 fileName 만 본다 — UPLOAD_EXT 에는 안 넣는다
+# (그 표는 mimeType 판정용이고 이건 "형식이 안 왔을 때 머리 바이트로 추측"하는 별도 자리다).
+_OLE_FILENAME_EXT = {".hwp", ".doc", ".xls", ".ppt"}
 
 
-def _sniff_ext(raw):
+def _zip_doc_ext(raw):
+    """ZIP 안 목록으로 docx·xlsx·pptx·hwpx 를 가른다. 못 열거나 못 가르면 None(.bin 그대로)."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            names = set(z.namelist())
+            for marker, ext in _ZIP_DOC_MARKERS:
+                if marker in names:
+                    return ext
+            if "mimetype" in names and z.read("mimetype").strip().startswith(b"application/hwp"):
+                return ".hwpx"
+    except (zipfile.BadZipFile, OSError, ValueError):
+        pass
+    return None
+
+
+def _ole_is_hwp(raw):
+    """OLE 복합 파일 안 한글 스트림 이름 — 스트림 이름은 OLE 디렉터리에 UTF-16LE 로 저장된다."""
+    return "HwpSummaryInformation".encode("utf-16-le") in raw or "FileHeader".encode("utf-16-le") in raw
+
+
+def _sniff_ext(raw, filename=""):
     head = raw[:12]
     for sig, ext in _MAGIC:
         if head.startswith(sig):
             if ext == ".webp" and head[8:12] != b"WEBP":
                 continue
             return ext
+    if head.startswith(_ZIP_MAGIC):
+        return _zip_doc_ext(raw) or ".bin"
+    if head.startswith(_OLE_MAGIC):
+        if _ole_is_hwp(raw):
+            return ".hwp"
+        name_ext = os.path.splitext(str(filename or "").lower())[1]
+        if name_ext in _OLE_FILENAME_EXT:
+            return name_ext          # 스트림 이름으로 옛 doc·xls·ppt 는 못 가른다 — 요청 fileName 만 믿는다
     return ".bin"
 
 
-def save_todo_file(b64, mime):
+def save_todo_file(b64, mime, filename=""):
     r"""첨부 base64 → 서버 디스크. 돌려주는 값은 화면이 그대로 쓰는 주소, 실패하면 ''.
 
     ⚠️ 파일 이름 길이를 함부로 늘리지 마라. 업무 현황 SSOT 의 driveImgUrl() 이 주소에서 [-\w]{25,} 를 찾아
@@ -269,7 +306,7 @@ def save_todo_file(b64, mime):
     if not raw:
         return ""
     if ext == ".bin":
-        ext = _sniff_ext(raw)   # 브라우저가 형식을 안 보내거나 모르는 이름으로 보낸 PDF·사진 — 머리 바이트로 판정(2026-09-16)
+        ext = _sniff_ext(raw, filename)   # 브라우저가 형식을 안 보내거나 모르는 이름으로 보낸 파일 — 머리 바이트로 판정(2026-09-16·09-18)
     if _rc._upload_dir_usage() + len(raw) > _rc.UPLOAD_QUOTA_BYTES:   # 접수 사진과 같은 총량 상한을 함께 쓴다
         return ""
     name = hashlib.sha256(raw).hexdigest()[:24] + ext
@@ -305,7 +342,7 @@ def upload_as_update(conn, action, payload):
         col = "대표싸인"
     else:
         col = "파일URL"
-    url = save_todo_file(payload.get("file") or payload.get("base64"), payload.get("mimeType"))
+    url = save_todo_file(payload.get("file") or payload.get("base64"), payload.get("mimeType"), payload.get("fileName"))
     if not url:
         return None, ""          # 저장 실패·총량 초과 — 조용히 잃지 않고 종전 경로로 보낸다
     value = url
@@ -995,6 +1032,26 @@ if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점
         assert save_todo_file(base64.b64encode(b"%PDF-1.6 y").decode(), "").endswith(".pdf")
         assert save_todo_file(base64.b64encode(b"\x89PNG\r\n\x1a\nz").decode(), "application/octet-stream").endswith(".png")
         assert _sniff_ext(b"<html>") == ".bin"
+        # 판정 확장(2026-09-18 · 배 12802) — mimeType 이 없거나 못 믿을 때 zip·OLE 문서를 가른다.
+        def _fake_zip(entries):
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as z:
+                for n, d in entries.items():
+                    z.writestr(n, d)
+            return buf.getvalue()
+        assert _sniff_ext(_fake_zip({"word/document.xml": "x"})) == ".docx"
+        assert _sniff_ext(_fake_zip({"xl/workbook.xml": "x"})) == ".xlsx"
+        assert _sniff_ext(_fake_zip({"ppt/presentation.xml": "x"})) == ".pptx"
+        assert _sniff_ext(_fake_zip({"mimetype": "application/hwp+zip", "Contents/content.hwpx": "x"})) == ".hwpx"
+        assert _sniff_ext(_fake_zip({"readme.txt": "x"})) == ".bin"        # 문서 표식 없는 평범한 zip 은 그대로 .bin
+        _ole_hwp = _OLE_MAGIC + b"\x00" * 20 + "HwpSummaryInformation".encode("utf-16-le")
+        assert _sniff_ext(_ole_hwp) == ".hwp"                              # 스트림 이름으로 바로 가른다
+        _ole_unknown = _OLE_MAGIC + b"\x00" * 40
+        assert _sniff_ext(_ole_unknown) == ".bin"                          # fileName 없으면 그대로 .bin
+        assert _sniff_ext(_ole_unknown, "요금인상안.doc") == ".doc"         # 허용 목록 안 fileName 확장자만 채택
+        assert _sniff_ext(_ole_unknown, "요금인상안.exe") == ".bin"         # 허용 목록 밖은 안 믿는다
+        assert save_todo_file(base64.b64encode(_fake_zip({"xl/workbook.xml": "x"})).decode(),
+                               "application/octet-stream", "품의내역.xlsx").endswith(".xlsx")
         # 대표 서명본은 GM 결재완료 건만 — 아니면 서버가 안 맡고 GAS 가 같은 문구로 거절한다(GAS 관문 보존)
         _rec = {"todo_items": {"T1": {"id": "T1", "결재상태": "대기", "파일URL": ""}}}
         assert upload_as_update(_MirrorConn(_rec), "approval_rep_sign_upload",
