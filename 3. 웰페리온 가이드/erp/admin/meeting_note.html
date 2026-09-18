@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 비서(회의 요약) — 웰페리온 ERP 관리자</title>
+<!-- AI 비서(회의 요약) — 배 12764 · 2026-09-18 시보. GM 지시 2026-09-18 「SSOT 에서 녹음 버튼 + 제목 입력
+     → 요약해서 업무 SSOT 자동 정리 · GM 이 먼저 사용 테스트」. 랩스 관리(erp/admin/) 소관 화면 — 업무
+     현황 SSOT.html 은 손대지 않고 이 화면을 별도로 둔다(그 화면 링크 한 줄은 시우 배로 넘긴다).
+     녹음 = 브라우저 Web Speech API(webkitSpeechRecognition · 서버 업로드 없음 · 크롬 전용).
+     요약 = 서버 POST /api/meeting/summarize(server/erp_api/api_meeting.py). SSOT 행 올리기 = 이 화면이
+     업무 현황 SSOT.html 과 같은 관문(erpTodoCall→todo_add)을 그대로 불러 GM 세션이 생성자가 되게 한다.
+     이 화면 자체는 회사 관리자 로그인 뒤(/erp/admin/)에만 뜬다 — 별도 비밀번호 커튼 없음(ideas.html 과 같은 원칙). -->
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+  :root{
+    --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
+    --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12)); --dim:var(--pf-soft,#3A4A4A);
+  }
+  html{color-scheme:light;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
+  .wrap{width:100%; max-width:920px; margin:0; padding:24px 20px 60px;}
+  h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
+  .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:18px;}
+  h2{font-size:var(--fs-4); font-weight:700; margin:22px 0 8px; color:var(--accent-hover);}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:var(--fs-2); font-weight:600; margin-bottom:4px;}
+  .field input[type=text], .field textarea{
+    width:100%; font:inherit; padding:9px 12px; border:1px solid var(--border); border-radius:8px;
+    background:var(--paper); color:var(--text);
+  }
+  .field textarea{min-height:220px; resize:vertical; white-space:pre-wrap;}
+  .bar{display:flex; gap:8px; align-items:center; margin:10px 0 4px; flex-wrap:wrap;}
+  .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer;
+       border:1px solid var(--border); background:var(--paper); color:var(--text);}
+  .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}
+  .btn.rec{background:#B3261E; border-color:#B3261E; color:#fff;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .msg{font-size:var(--fs-2); color:var(--text-soft); margin:6px 0;}
+  .msg.ok{color:var(--accent-hover); font-weight:600;}
+  .msg.bad{color:var(--pf-bad,#B3261E); font-weight:600;}
+  .note{font-size:var(--fs-1); color:var(--text-soft); margin-top:6px; line-height:1.5;}
+  ul.summary{margin:6px 0 4px 18px;}
+  ul.summary li{margin-bottom:4px;}
+  .tbl-wrap{overflow-x:auto; margin-bottom:6px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
+  table.reg{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:var(--fs-2);}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); height:32px; padding:0 10px;
+               background:var(--pf-panel-2,var(--bg)); border-bottom:1px solid var(--border); white-space:nowrap;}
+  table.reg td{padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word;}
+  table.reg tr:last-child td{border-bottom:0;}
+  table.reg input[type=text]{width:100%; font:inherit; padding:4px 6px; border:1px solid var(--border); border-radius:6px; background:var(--paper); color:var(--text);}
+  .empty{padding:14px; color:var(--text-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 비서 <span style="font-weight:500;color:var(--text-soft)">— 회의 요약</span></h1>
+  <div class="sub">녹음(또는 붙여넣기) → 요약 → 업무 SSOT 행 초안. 저장 전엔 아무것도 반영되지 않습니다.</div>
+
+  <div class="field">
+    <label>회의 제목</label>
+    <input type="text" id="title" placeholder="예: 9/18 중간관리자 주간 미팅">
+  </div>
+
+  <div class="bar">
+    <button type="button" class="btn rec" id="btnRec">녹음 시작</button>
+    <span class="msg" id="recMsg"></span>
+  </div>
+
+  <div class="field">
+    <label>받아쓴 글 (손으로 고치거나 붙여넣어도 됩니다)</label>
+    <textarea id="transcript" placeholder="녹음을 시작하면 여기 자동으로 받아써집니다. 직접 입력·붙여넣기도 가능합니다."></textarea>
+  </div>
+
+  <div class="bar">
+    <button type="button" class="btn p" id="btnSummarize">요약</button>
+    <span class="msg" id="sumMsg"></span>
+  </div>
+
+  <div id="result" style="display:none">
+    <h2>회의 요약</h2>
+    <ul class="summary" id="summaryList"></ul>
+
+    <h2>업무 행 초안</h2>
+    <div class="tbl-wrap"><table class="reg" id="taskTbl">
+      <colgroup><col style="width:26px"><col style="width:20%"><col style="width:38%"><col style="width:16%"><col style="width:12%"></colgroup>
+      <thead><tr><th></th><th>업무명</th><th>내용</th><th>담당자 후보</th><th>기한 후보</th></tr></thead>
+      <tbody id="taskBody"></tbody>
+    </table></div>
+
+    <div class="bar">
+      <button type="button" class="btn p" id="btnUpload">체크한 행을 업무 SSOT 에 올리기</button>
+      <span class="msg" id="upMsg"></span>
+    </div>
+  </div>
+
+  <div class="note">크롬에서만 녹음이 지원됩니다(Web Speech API) — 다른 브라우저는 손으로 입력해 주세요. 녹음 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다.</div>
+</div>
+
+<!-- 쓰기 관문 — 업무 현황 SSOT.html 과 같은 파일(_assets/erp_write.js)을 그대로 쓴다(복제 없음). -->
+<script src="../../_assets/erp_write.js"></script>
+<script>
+(function(){
+'use strict';
+var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+var MEETING_CATEGORY = '[9] 회의';
+
+function todayDateStr(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* ── 녹음(Web Speech API) ─────────────────────────────────────────── */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var recBtn = document.getElementById('btnRec');
+var recMsg = document.getElementById('recMsg');
+var ta = document.getElementById('transcript');
+var recognizing = false;
+var recognition = null;
+var interim = '';
+
+if (!SR) {
+  recBtn.disabled = true;
+  recMsg.textContent = '이 브라우저는 녹음을 지원하지 않습니다 — 크롬을 쓰거나 손으로 입력해 주세요.';
+  recMsg.className = 'msg bad';
+} else {
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onresult = function(e){
+    var finalText = '';
+    interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalText += t;
+      else interim += t;
+    }
+    if (finalText) {
+      ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n') : '') + finalText.trim();
+    }
+  };
+  recognition.onerror = function(e){
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      recMsg.textContent = '마이크 권한이 없습니다 — 브라우저 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
+      recMsg.className = 'msg bad';
+      recognizing = false;
+      setRecUI();
+    }
+    // no-speech 등은 onend 가 이어서 처리(자동 재시작)
+  };
+  recognition.onend = function(){
+    if (recognizing) {
+      try { recognition.start(); } catch (e) { /* 이미 돌고 있으면 무시 */ }
+    }
+  };
+}
+
+function setRecUI(){
+  recBtn.textContent = recognizing ? '녹음 정지' : '녹음 시작';
+  recBtn.className = recognizing ? 'btn' : 'btn rec';
+  if (recognizing) { recMsg.textContent = '녹음 중…'; recMsg.className = 'msg ok'; }
+}
+
+if (recognition) {
+  recBtn.addEventListener('click', function(){
+    if (!recognizing) {
+      try {
+        recognition.start();
+        recognizing = true;
+        setRecUI();
+      } catch (e) {
+        recMsg.textContent = '녹음을 시작하지 못했습니다: ' + e.message;
+        recMsg.className = 'msg bad';
+      }
+    } else {
+      recognizing = false;
+      recognition.stop();
+      setRecUI();
+      recMsg.textContent = '녹음 정지됨.';
+      recMsg.className = 'msg';
+    }
+  });
+}
+
+/* ── 요약 ──────────────────────────────────────────────────────────── */
+var sumMsg = document.getElementById('sumMsg');
+var result = document.getElementById('result');
+var summaryList = document.getElementById('summaryList');
+var taskBody = document.getElementById('taskBody');
+
+document.getElementById('btnSummarize').addEventListener('click', function(){
+  var title = document.getElementById('title').value.trim();
+  var transcript = ta.value.trim();
+  if (!transcript) { sumMsg.textContent = '받아쓴 글이 없습니다.'; sumMsg.className = 'msg bad'; return; }
+  sumMsg.textContent = '요약 중…'; sumMsg.className = 'msg';
+  fetch('/api/meeting/summarize', {
+    method: 'POST', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: title, transcript: transcript })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) { sumMsg.textContent = d.error; sumMsg.className = 'msg bad'; return; }
+    sumMsg.textContent = '요약 완료.'; sumMsg.className = 'msg ok';
+    renderResult(d.summary || [], d.tasks || []);
+  }).catch(function(e){
+    sumMsg.textContent = '요약 실패: ' + e.message; sumMsg.className = 'msg bad';
+  });
+});
+
+function renderResult(summary, tasks){
+  summaryList.innerHTML = summary.length
+    ? summary.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('')
+    : '<li class="empty">요약할 내용이 없습니다.</li>';
+  taskBody.innerHTML = tasks.length ? tasks.map(function(t, i){
+    return '<tr>' +
+      '<td><input type="checkbox" class="rowck" checked></td>' +
+      '<td><input type="text" class="rowtitle" value="' + escAttr(t.title) + '"></td>' +
+      '<td><input type="text" class="rowbody" value="' + escAttr(t.body) + '"></td>' +
+      '<td><input type="text" class="rowowner" value="' + escAttr(t.owner) + '"></td>' +
+      '<td><input type="text" class="rowdue" value="' + escAttr(t.due) + '" placeholder="YYYY-MM-DD"></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="5" class="empty">회의에서 뽑힌 업무가 없습니다.</td></tr>';
+  result.style.display = '';
+}
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+function escAttr(s){ return esc(s).replace(/"/g, '&quot;'); }
+
+/* ── SSOT 에 올리기(업무 현황 SSOT.html 과 같은 관문·같은 모양) ───────── */
+document.getElementById('btnUpload').addEventListener('click', function(){
+  var rows = Array.prototype.slice.call(taskBody.querySelectorAll('tr')).filter(function(tr){
+    var ck = tr.querySelector('.rowck');
+    return ck && ck.checked;
+  });
+  if (!rows.length) { document.getElementById('upMsg').textContent = '체크한 행이 없습니다.'; document.getElementById('upMsg').className = 'msg bad'; return; }
+  var upMsg = document.getElementById('upMsg');
+  upMsg.textContent = '올리는 중… (0/' + rows.length + ')'; upMsg.className = 'msg';
+  var ok = 0, fail = 0;
+  (function next(i){
+    if (i >= rows.length) {
+      upMsg.textContent = '완료 — 성공 ' + ok + '건' + (fail ? ' · 실패 ' + fail + '건' : '');
+      upMsg.className = fail ? 'msg bad' : 'msg ok';
+      return;
+    }
+    var tr = rows[i];
+    var params = {
+      action: 'todo_add',
+      title: tr.querySelector('.rowtitle').value.trim(),
+      category: MEETING_CATEGORY,
+      owner: tr.querySelector('.rowowner').value.trim(),
+      startDate: todayDateStr(),
+      endDate: tr.querySelector('.rowdue').value.trim(),
+      content: tr.querySelector('.rowbody').value.trim(),
+      link: '',
+      approval: '',
+      creator: '김남욱GM'
+    };
+    if (!params.title) { fail++; upMsg.textContent = '올리는 중… (' + (i+1) + '/' + rows.length + ')'; next(i+1); return; }
+    window.erpTodoCall(TODO_API_URL, params).then(function(res){
+      if (res && res.ok) ok++; else fail++;
+      upMsg.textContent = '올리는 중… (' + (i+1) + '/' + rows.length + ')';
+      next(i+1);
+    }).catch(function(){ fail++; upMsg.textContent = '올리는 중… (' + (i+1) + '/' + rows.length + ')'; next(i+1); });
+  })(0);
+});
+})();
+</script>
+</body>
+</html>
