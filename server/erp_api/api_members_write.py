@@ -80,6 +80,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 from common import db  # noqa: E402  — DB 를 여는 유일한 자리
 import api_write  # noqa: E402  — GAS 포워드·거울 재동기화 재사용(로직 중복 금지)
 from sync_reception import gas_get  # noqa: E402  — 접수 시트 재독(승인 계산 재료 · 새 경로 금지 · 배1054 재검토①)
+import dlive_sms  # noqa: E402  — 휴회 승인 확정 문자(hold_confirm · 배 12755). SMS_ENABLED=1 아니면 dry 로그만.
+from api_sms import _digits, PHONE_RE  # noqa: E402  — 번호 정규화 재사용(api_sms 는 이 파일을 안 부른다 · 순환 없음)
 # api_reception._add_months 는 말일 클램프라 여기(archive_restore 개월 계산)엔 안 맞는다 — 대신 이 파일의
 # _add_months_js(JS setMonth 오버플로 이식)를 쓴다(배1054 검토① · api_reception 임포트 자체가 불필요해졌다).
 
@@ -683,7 +685,9 @@ def _handle_member_active_update(payload, raw_body, user):
 def _handle_member_hold_approve(payload, raw_body, user):
     """member_hold_approve(4단계 · 배1054) — 접수 행(hold_items 미러) FOR UPDATE 잠금 → 상태 재검사(결함②
     가드) → (approve 시) 회원 매칭·한도 검증·6칸 갱신 → 접수 행 상태 갱신 → GAS write-through(_finish).
-    GAS 원본(Survey.js L10708~10783) 대비: reject 는 회원 조회조차 없다(접수 행만 갱신) — 그대로 이식."""
+    GAS 원본(Survey.js L10708~10783) 대비: reject 는 회원 조회조차 없다(접수 행만 갱신) — 그대로 이식.
+    _finish 가 ok=True 를 돌려준 뒤(GAS 도 수락했거나 dry-run)에만 딜라이브 hold_confirm 문자를 보낸다(배
+    12755) — 발송 실패는 삼키고 응답 extra.sms 에만 남긴다(승인 응답 자체는 절대 안 깨진다)."""
     decision = str(payload.get("decision") or "").strip()
     if decision not in ("approve", "reject"):
         return {"ok": False, "error": "decision=approve|reject"}
@@ -852,7 +856,22 @@ def _handle_member_hold_approve(payload, raw_body, user):
     if err_response is not None:
         conn.close()
         return err_response
-    return _finish(conn, raw_body, log_id, is_test, extra, reverts)
+    out = _finish(conn, raw_body, log_id, is_test, extra, reverts)
+    # 배 12755 — 승인 저장이 확정된 뒤(ok=True: 실서비스는 GAS 도 수락·dry-run 은 is_test 스킵)에만 문자.
+    # _finish 가 GAS 거부로 되돌린 경우(ok=False)는 안 보낸다 — 되돌려진 승인에 문자가 나가면 안 된다.
+    # write_log INSERT 는 이미 위에서 커밋됐으므로 발송 결과는 payload_log 가 아니라 응답 extra 에만 남긴다.
+    if out.get("ok") and isinstance(extra, dict) and extra.get("decision") == "approve" and "member_no" in extra:
+        try:
+            rcpt = _digits(mrow.get("phone"))
+            if PHONE_RE.match(rcpt):
+                sms = dlive_sms.send("hold_confirm", rcpt, {"시작": req_start, "종료": req_end},
+                                      origin_key="hold-%s-%s" % (tenant, intake_row))
+                out["sms"] = {"status": sms.get("status"), "msg_key": sms.get("msg_key")}
+            else:
+                out["sms"] = {"status": "no_phone"}
+        except Exception as e:
+            out["sms"] = {"status": "error", "detail": str(e)[:120]}
+    return out
 
 
 def _handle_member_archive_restore(payload, raw_body, user):
@@ -1707,6 +1726,42 @@ def _selftest_hold_approve_gas_reread():
     assert hold_updates and '"_server_edited"' in hold_updates[0][1], hold_updates   # 재검토(중요3)
 
 
+def _selftest_hold_approve_sms():
+    """member_hold_approve(4단계) 배 12755 — 승인 확정(_finish ok=True) 뒤에만 hold_confirm 문자를 보내는지,
+    발송이 예외를 던져도 승인 응답 자체는 안 깨지는지(DB·네트워크 없음 · dlive_sms.send 스텁)."""
+    idata = {"phone": "01000000000", "status": "접수대기", "start": "2026-09-20", "wishDays": 14, "kind": "신규"}
+    member_row = {"member_no": "M00001", "phone": "01000000000", "name": "테스트", "hold_count": "0",
+                  "hold_cum_days": "0", "hold_period": "", "hold_start_date": "", "hold_end_date": "",
+                  "hold_status": ""}
+    payload = {"decision": "approve", "intakeRow": 11, "keyPhone": "010-0000-0000"}   # 더미 전화 → is_test
+    orig_connect, orig_send = db.connect, dlive_sms.send
+
+    calls = []
+    dlive_sms.send = lambda *a, **kw: (calls.append((a, kw)) or {"ok": True, "status": "dry", "msg_key": "x"})
+    db.connect = lambda: _FakeHoldConn(
+        hold_row={"status": "접수대기", "data": json.dumps(idata, ensure_ascii=False)}, member_rows=[dict(member_row)])
+    try:
+        out = _handle_member_hold_approve(payload, b"{}", "테스트")
+    finally:
+        db.connect, dlive_sms.send = orig_connect, orig_send
+    assert out["ok"] is True and out.get("gas_status") == "skipped-test", out
+    assert len(calls) == 1, calls
+    args, _kwargs = calls[0]
+    assert args[0] == "hold_confirm" and args[1] == "01000000000", calls
+    assert args[2] == {"시작": "2026-09-20", "종료": "2026-10-03"}, calls   # 14일 → _hold_end_calc
+    assert out["sms"] == {"status": "dry", "msg_key": "x"}, out
+
+    dlive_sms.send = lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("boom"))
+    db.connect = lambda: _FakeHoldConn(
+        hold_row={"status": "접수대기", "data": json.dumps(idata, ensure_ascii=False)}, member_rows=[dict(member_row)])
+    try:
+        out2 = _handle_member_hold_approve(dict(payload, intakeRow=12), b"{}", "테스트")
+    finally:
+        db.connect, dlive_sms.send = orig_connect, orig_send
+    assert out2["ok"] is True, out2   # 발송 실패해도 승인 응답은 유지
+    assert out2["sms"]["status"] == "error", out2
+
+
 class _FakeArchiveCur:
     """member_archive_restore 단위 검증용 최소 커서 — fetchone/fetchall 만 미리 정한 값을 돌려준다."""
     def __init__(self, one=None, many=None):
@@ -2121,6 +2176,7 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     _selftest_finish_revert()
     _selftest_hold_approve_passthrough()
     _selftest_hold_approve_gas_reread()
+    _selftest_hold_approve_sms()
     _selftest_archive_restore_dry_run_gate()
     _selftest_archive_restore_pk_guard()
     _selftest_archive_restore_double_click_noop()
