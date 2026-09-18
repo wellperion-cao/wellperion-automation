@@ -515,7 +515,84 @@ class kakao_ui_lock:
                 KAKAO_UI_LOCK.unlink()
             except Exception:
                 pass
+        try:  # 우리 자동화가 카톡 UI 를 놓은 시각 — user_idle_seconds 가 우리 클릭을 사람 입력으로 안 센다
+            KAKAO_UI_LAST_AUTO.touch()
+        except Exception:
+            pass
         return False
+
+
+# ── 사람이 PC 를 쓰는 중이면 카톡 UI 자동화를 기다린다 (배 12749 · GM 2026-09-18) ──────────
+# GM: "1시간마다 저장작업을 하는데 이 PC 제어를 뺏어서 하는 것 말고 다른 방법은 없을까?"
+# 카톡 PC 앱은 글자를 안 주므로 UI 조작 말고는 길이 없다(kakao_room_listen 머리말). 대신 조작
+# 시점을 사람이 손을 뗀 때로 미룬다 — 마지막 입력 뒤 min_idle_sec 이 지나야 진행, 아니면 20초씩
+# 다시 재고 max_wait_sec 을 넘기면 조용히 건너뛴다(경보 없음 · 다음 회차). 잠금 화면·로그오프는
+# 입력이 없으니 즉시 통과. 우리 자동화가 넣는 클릭·키도 GetLastInputInfo 에 잡히므로, 직전 자동화가
+# UI 를 놓은 시각(KAKAO_UI_LAST_AUTO) 이전 입력은 사람 것으로 세지 않는다 — 아침 통이 방 셋을
+# 잇따라 뽑을 때 방마다 3분씩 멈추지 않는다.
+# ponytail: 자동화 진행 중 사람이 만진 입력도 '우리 것'으로 묻힌다(놓은 시각 이전이라) — 문제되면
+#           락 잡은 시각도 같이 적어 그 구간만 사람 입력으로 본다.
+KAKAO_UI_LAST_AUTO = KAKAO_UI_LOCK.with_name(".kakao_ui.last_auto")
+KAKAO_UI_SKIPPED = KAKAO_UI_LOCK.with_name(".kakao_ui.skipped")      # 마지막으로 「사람 사용 중」 포기한 시각
+
+
+def _last_input_epoch() -> float:
+    import ctypes
+
+    class _LII(ctypes.Structure):
+        _fields_ = [("cbSize", ctypes.c_uint), ("dwTime", ctypes.c_uint)]
+
+    lii = _LII()
+    lii.cbSize = ctypes.sizeof(_LII)
+    if not ctypes.windll.user32.GetLastInputInfo(ctypes.byref(lii)):
+        raise OSError("GetLastInputInfo 실패")
+    ago_ms = (ctypes.windll.kernel32.GetTickCount() - lii.dwTime) & 0xFFFFFFFF
+    return time.time() - ago_ms / 1000.0
+
+
+def user_idle_seconds() -> int:
+    """마지막 사람 입력 뒤 경과 초. 못 재면(비대화형 세션 등) 무인으로 본다(fail-open · 옛 동작 그대로)."""
+    try:
+        last = _last_input_epoch()
+    except Exception:
+        return 10 ** 6
+    try:
+        if last <= KAKAO_UI_LAST_AUTO.stat().st_mtime + 2:
+            return 10 ** 6          # 마지막 입력이 우리 자동화 것 — 그 뒤 사람 입력 없음
+    except Exception:
+        pass
+    return max(0, int(time.time() - last))
+
+
+def wait_until_user_idle(min_idle_sec: int = 180, max_wait_sec: int = 1500, tag: str = "") -> bool:
+    """True = 진행해도 된다 · False = 사람 사용 중이라 이번 회차 건너뜀. KAKAO_UI_NOW=1(--now) 이면 즉시 True."""
+    if os.environ.get("KAKAO_UI_NOW") == "1":
+        return True
+    deadline = time.time() + max_wait_sec
+    waited = False
+    while True:
+        idle = user_idle_seconds()
+        if idle >= min_idle_sec:
+            if waited:
+                log("[kakao-idle] %s — 사람이 손을 뗐다(idle %d초) · 진행" % (tag, idle))
+            return True
+        try:  # 형제 프로세스(아침 통은 방 셋을 잇따라 뽑는다)가 방금 포기했으면 같은 25분을 또 기다리지 않는다
+            gave_up_ago = time.time() - KAKAO_UI_SKIPPED.stat().st_mtime
+        except Exception:
+            gave_up_ago = 10 ** 6
+        if time.time() + 20 > deadline or gave_up_ago < 600:
+            log("[kakao-idle] %s — 사람 사용 중 — 이번 회차 건너뜀(idle %d초 < %d초 · %s)"
+                % (tag, idle, min_idle_sec,
+                   "%d분 기다림" % (max_wait_sec // 60) if gave_up_ago >= 600 else "%d분 전 다른 회차도 포기" % (gave_up_ago // 60)))
+            try:
+                KAKAO_UI_SKIPPED.touch()
+            except Exception:
+                pass
+            return False
+        if not waited:
+            log("[kakao-idle] %s — 사람 사용 중(idle %d초) · 최대 %d분 기다린다" % (tag, idle, max_wait_sec // 60))
+            waited = True
+        time.sleep(20)
 
 
 _NOTICE_BASE: set = set()   # 이번 실행 시작 때 이미 열려 있던 공지 창 hwnd — 그건 사람 것이라 안 닫는다

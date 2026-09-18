@@ -263,12 +263,24 @@ def _latest_export() -> Path | None:
     return files[-1] if files else None
 
 
+def _user_idle_gate(tag: str) -> bool:
+    """카톡 UI 진입 직전 — 사람이 PC 를 쓰는 중이면 손을 뗄 때까지(최대 25분) 기다리고, 넘기면 이번 회차를
+    조용히 건너뛴다(배 12749 · GM 2026-09-18). 방마다 다시 재지 않고 회차당 한 번 — 자식(kakao_export_chat)도
+    같은 관문을 지나지만 직전 자동화 입력은 사람 것으로 안 세므로 바로 통과한다."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from kakao_report_sender import wait_until_user_idle
+    if wait_until_user_idle(tag=tag):
+        return True
+    print("사람 사용 중 — 이번 회차 건너뜀")
+    return False
+
+
 def _export_now() -> Path | None:
     """카톡 대화를 지금 다시 뽑는다. 정본 = scripts/kakao_export_chat.py (배906 · 이미 매일 도는 도구).
     새 내보내기 도구를 만들지 않는다(약속 L21)."""
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_export_chat.py"),
                         "--room-key", "mgr"],
-                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT), timeout=300)
+                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT), timeout=1800)
     tail = (r.stdout or r.stderr or "").strip().splitlines()
     print(tail[-1] if tail else "(내보내기 출력 없음)")
     return _latest_export()
@@ -296,7 +308,7 @@ def _export_now_external(room_name: str) -> Path | None:
     리스트 인자로 넘어가 .bat 의 CP949 한글 깨짐을 겪지 않는다(kakao_rooms.json room_aliases 필요 없음)."""
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_export_chat.py"),
                         "--room", room_name],
-                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT), timeout=300)
+                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT), timeout=1800)
     tail = (r.stdout or r.stderr or "").strip().splitlines()
     print(tail[-1] if tail else "(내보내기 출력 없음)")
     return _latest_export_for(room_name)
@@ -461,6 +473,8 @@ def run_external(dry: bool, probe: bool = False) -> int:
         elapsed = time.monotonic() - t0
         print(f"[external] (probe) 저장 경로로 진입함 · {elapsed:.1f}초 · 실제 내보내기는 안 함")
         return 0
+    if not _user_idle_gate("listen external"):
+        return 0
     ext = st.setdefault("external", {})
     any_new = False
     rooms_with_new: list[str] = []
@@ -541,11 +555,17 @@ def main() -> int:
     ap.add_argument("--probe", action="store_true",
                     help="--external 전용 — 로컬DB mtime 판정만 찍고 멈춘다(내보내기 자체를 안 함, "
                          "배1149 스킵판정 검증용)")
+    ap.add_argument("--now", action="store_true",
+                    help="사람이 PC 를 쓰는 중이어도 기다리지 않고 바로 내보낸다(배 12749 관문 우회 · 자식에게도 전달)")
     a = ap.parse_args()
+    if a.now:
+        os.environ["KAKAO_UI_NOW"] = "1"
 
     if a.external:
         return run_external(a.dry_run, probe=a.probe)
 
+    if a.export and not a.file and not _user_idle_gate("listen mgr"):
+        return 0
     p = Path(a.file) if a.file else (_export_now() if a.export else _latest_export())
     if p is None or not p.exists():
         print(f"[FAIL] 읽을 대화 파일이 없다: {p}")

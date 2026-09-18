@@ -310,11 +310,22 @@ def main() -> int:
                            .read_text(encoding="utf-8")).get("room_aliases") or {}
     ap.add_argument("--room-key", dest="room_key", choices=sorted(ROOM_KEYS),
                     help="방 이름 ASCII 별칭(ops·mgr) — .bat 에서 부를 때 쓴다")
+    ap.add_argument("--now", action="store_true",
+                    help="사람이 PC 를 쓰는 중이어도 기다리지 않고 바로 내보낸다(배 12749 관문 우회)")
     args = ap.parse_args()
     room = ROOM_KEYS[args.room_key] if args.room_key else args.room
+    if args.now:
+        os.environ["KAKAO_UI_NOW"] = "1"
 
     out_path = _resolve_out_path(room, args.out, args.date)
     log(f"내보내기 시작 — 방='{room}' → {out_path}")
+
+    # ★사람이 PC 를 쓰는 중이면 손을 뗄 때까지 기다리고, 25분 넘으면 이번 회차는 조용히 건너뛴다
+    #   (배 12749 · GM 2026-09-18 「PC 제어를 뺏어서 하는 것 말고」). 경보 없음 · rc=0 · 다음 회차.
+    import kakao_report_sender as _s
+    if not _s.wait_until_user_idle(tag="export " + room):
+        print("SKIPPED: 사람 사용 중 — 이번 회차 건너뜀")
+        return 0
 
     # ★한 번 실패했다고 하루를 버리지 않는다 (2026-08-14 시토 · 배613 계열).
     #   실측 2026-08-14 07:30 — 두 방 모두 "카톡 검색창 활성화 실패(돋보기 클릭 후에도 Edit 못 찾음)"로
@@ -377,9 +388,29 @@ def _release_modifiers() -> None:
         pass
 
 
+def _selfcheck_idle_gate() -> None:
+    """배 12749 관문 자체점검 — idle 초가 정수로 나오고, 우회(--now)·즉시 통과·건너뜀이 각각 맞게 돈다.
+    카톡 UI 는 건드리지 않는다."""
+    import kakao_report_sender as s
+
+    idle = s.user_idle_seconds()
+    assert isinstance(idle, int) and idle >= 0, idle
+    os.environ["KAKAO_UI_NOW"] = "1"
+    assert s.wait_until_user_idle(min_idle_sec=10 ** 9, max_wait_sec=0, tag="selfcheck") is True
+    os.environ.pop("KAKAO_UI_NOW", None)
+    assert s.wait_until_user_idle(min_idle_sec=0, max_wait_sec=0, tag="selfcheck") is True   # 문턱 0 = 즉시 통과
+    assert s.wait_until_user_idle(min_idle_sec=10 ** 9, max_wait_sec=0, tag="selfcheck") is False  # 못 채움 = 건너뜀
+    try:
+        s.KAKAO_UI_SKIPPED.unlink()   # 자체점검이 남긴 「포기」 표식은 실제 회차에 영향 주면 안 된다
+    except Exception:
+        pass
+    print(f"[selfcheck] idle gate OK — 지금 idle {idle}초")
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
         _selfcheck_mask_export_file()
+        _selfcheck_idle_gate()
         sys.exit(0)
     _release_modifiers()
     try:

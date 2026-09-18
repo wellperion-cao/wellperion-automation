@@ -289,10 +289,22 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description="카톡 방 대화 무인 내보내기")
     ap.add_argument("--room", default=DEFAULT_ROOM, help=f"카톡 방 제목(기본 '{DEFAULT_ROOM}')")
+    ap.add_argument("--now", action="store_true",
+                    help="사람이 PC 를 쓰는 중이어도 기다리지 않고 바로 내보낸다(배 12749 관문 우회)")
     args = ap.parse_args()
+    if args.now:
+        os.environ["KAKAO_UI_NOW"] = "1"
+
+    # ★방 열기 직전 — 사람이 PC 를 쓰는 중이면 손을 뗄 때까지 기다리고, 25분 넘으면 조용히 건너뛴다
+    #   (배 12749 · GM 2026-09-18). 카톡 UI 단일 점유(kakao_ui_lock)도 여기서 같이 잡는다(09-17 09:30 겹침 사고).
+    import kakao_report_sender as _krs
+    if not _krs.wait_until_user_idle(tag="ops_export " + args.room):
+        print("EXPORT_SKIP: 사람 사용 중 — 이번 회차 건너뜀")
+        return 0
 
     try:
-        ok, detail = run_export(args.room)
+        with _krs.kakao_ui_lock("ops_export " + args.room):
+            ok, detail = run_export(args.room)
     except Exception as exc:
         ok, detail = False, f"예외 발생: {exc}"
 
