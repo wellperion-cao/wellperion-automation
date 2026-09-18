@@ -2,7 +2,7 @@
 
 대상: http://wellperion.com/ (워드프레스 라이브) · 실측 = curl·urllib GET만(POST 없음).
 
-## SEO — 됨 7 / 부분 2 / 안됨 2 (전체 11 · 17:1x 갱신)
+## SEO — 됨 9 / 부분 1 / 안됨 1 (전체 11 · 19:4x 갱신)
 
 | 항목 | 상태 | 근거(라이브 값) |
 |---|---|---|
@@ -14,10 +14,11 @@
 | en 홈 h1 | 됨 | h1×2, 동일 |
 | ko/inquiry title/meta/og | 부분→됨(이번 반영) | 이전 meta description·og·twitter description 없음(null) 확인 → wp_geo_apply.py로 라이브 반영, curl 재확인 완료(아래 §반영) |
 | ko/facilities, en/facilities title/meta/og | 부분→됨(이번 반영) | 이전 meta description·og·twitter description 둘 다 없음(null) 확인 → wp_geo_apply.py로 라이브 반영(ko post_id=6274·en post_id=7123), curl 재확인 완료(아래 §반영) |
-| ko/inquiry, ko/facilities h1 | 안됨 | 둘 다 `<h1>` 0개(페이지 안에 제목 텍스트는 있으나 h1 태그 미사용) — 화면 코드 수정 필요라 이번 라운드 미반영 |
-| 이미지 alt 비율 | 부분 | ko홈 60%(3/5) · ko/inquiry 60%(3/5) · en홈 60%(3/5) · ko/facilities 15%(3/20 — 17장 alt 없음, 가장 심각) — 변화 없음 |
+| ko/facilities, en/facilities h1 | 됨 | 라이브 재조회(18:5x): ko/en facilities h1 1개씩 확인 |
+| ko/inquiry h1 | 보류 | 종합접수처 최종본 잠금(post 8394) · GM 해제 전 손대지 않음 |
+| 이미지 alt 비율 | 됨(시설 해결) | ko/facilities 90%(18/20 — 남은 2장은 공통 하단 로고·자바스크립트 틀 자리, 사진 아님) · 나머지 ko홈 60%(3/5)·ko/inquiry 60%(3/5)·en홈 60%(3/5)는 변화 없음 |
 | 구조화 데이터(JSON-LD) | 됨 | 전 페이지 IHAF 공통 삽입 확인: Organization·SportsActivityLocation·FAQPage(@graph) 4곳(ko홈·en홈·inquiry·facilities) 동일 존재 |
-| 페이지속도 | 안됨 | 이전 라운드 실측(09-18 11:31 Lighthouse) 값 유지 — WP 라이브 홈 35점·LCP 32.5초·전송 5.2MB. 이번 라운드 재측정 안 함(근본해법=도메인 전환, GM 결정 대기·배923) |
+| 페이지속도 | 안됨 | 이전 실측(09-18 11:31 Lighthouse) 값 유지 — WP 라이브 홈 35점·LCP 32.5초·전송 5.2MB. 오늘 19:44 PageSpeed Insights API(3페이지: ko/·ko/facilities/·ko/inquiry/) 재실측 시도 → 전부 실패(HTTP 429 Quota exceeded — 무료키 없는 호출 일일 한도 소진, 값 못 얻음). 근본해법=도메인 전환, GM 결정 대기·배923 |
 | 구글 소유 인증 태그 | 됨(등록은 별개) | `<meta name="google-site-verification" content="SMzsb...">` 라이브 존재. 실제 서치콘솔 제출·소유 계정 확인은 GM 손(gm_asks #64) |
 | 네이버 서치어드바이저 등록 | 못잼(GM 손) | 배 2741 별건 · GM 로그인 필요 |
 
@@ -59,6 +60,6 @@
 
 ## 남은 것(다음 바퀴)
 
-1. ko/inquiry·ko/facilities h1 태그 부재(사람 눈엔 제목 보이나 `<h1>` 미사용) — 화면 코드(디자인) 수정 필요, CMO 단독 처리 어려움
-2. ko/facilities 이미지 alt 17장 누락 — 이미지별 alt 문구 작성 필요(다음 바퀴)
-3. 페이지속도·GEO 엔진 3개·검색엔진 등록·외부 채널 이름 5곳 = 이전 라운드와 동일하게 GM 손 또는 💰 결재 대기(변화 없음)
+1. ko/inquiry h1 태그 부재 — 종합접수처 최종본 잠금 중, GM 해제 전 손대지 않음(ko/facilities는 이번 라운드 해결)
+2. 페이지속도 — PageSpeed API 일일 한도 소진으로 오늘 재측정 실패, 다음 바퀴 재시도. 근본해법=도메인 전환(GM 결정 대기·배923)
+3. GEO 엔진 3개·검색엔진 등록·외부 채널 이름 5곳 = 이전 라운드와 동일하게 GM 손 또는 💰 결재 대기(변화 없음)
