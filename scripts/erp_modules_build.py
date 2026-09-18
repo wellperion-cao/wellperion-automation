@@ -105,6 +105,9 @@ SKIP_DIRS = {"tmp", "_assets", "status", "reports"}
 # 회장님·대표님 보고 A3(견적 금액·지시·법인 상품 설계)가 그대로 보였다. 명시 카드(CORE·APPGROUP_IDS)는 그대로 싣는다.
 # 파일은 그대로 있고 회사 관리자(/erp/admin/)에서는 계속 열린다.
 DOC_EXCLUDE_PREFIXES = ("coo/chairman/",)   # 파트너 초안(cbo/)은 PLATFORM_ONLY_PREFIXES 가 이미 거른다
+# 문서함에서도 완전히 뺀다 — 화면 파일은 그대로 있지만 다른 곳으로 이관·통합돼 이 진입점이 더 필요 없다(GM 2026-09-18).
+# AI 시리즈 보드 = 랩스로 옮기고 옛 화면을 리다이렉트로 바꿈(시모 6b662d11ea). 월간 마케팅 보고서 = 문의 현황에 통합.
+DOC_EXCLUDE_IDS = ("cmo-series-ai시리즈보드", "cmo-funnel-월간마케팅보고서")
 TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
 
 # ── ERP 권한 정리(배1026 · 2026-09-05 웰리 설계 §2②) ──────────────────────────
@@ -399,6 +402,8 @@ def build():
             return
         if not core and mid not in APPGROUP_OF and rel.startswith(DOC_EXCLUDE_PREFIXES):
             return                   # 문서함 자동 등록 제외 — 관리자 전용 폴더의 보고서(배 11434)
+        if mid in DOC_EXCLUDE_IDS:
+            return                   # 문서함 제외 — 이관·통합돼 진입점 제거(GM 2026-09-18)
         items.append({
             "id": mid,
             "core": bool(core),
