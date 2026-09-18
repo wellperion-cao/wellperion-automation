@@ -2194,6 +2194,19 @@ async def team_save(uid: int, request: Request, erp_session: Optional[str] = Coo
     return JSONResponse({"ok": True, "team": team})
 
 
+@app.post("/auth/admin/{uid}/rank")
+async def admin_set_rank(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                         erp_admin: Optional[str] = Cookie(default=None)):
+    """승인 뒤 직함을 바꾼다(GM 2026-09-18 「직함에 따른 권한도 구분」) — 층(리더급/팀원급)에 따라
+    modules 를 승인 때와 같은 규칙(_approve_rank)으로 다시 계산한다."""
+    me = admin_only(erp_session, erp_admin)
+    rank = await _body_rank(request)
+    if not rank or rank not in rank_names():
+        raise HTTPException(400, "모르는 직함")
+    _approve_rank(uid, rank, me["email"])
+    return JSONResponse({"ok": True, "rank": rank})
+
+
 # /auth/admin/{uid}/{action} 범용 라우트보다 먼저 선언해야 "lock" 이 그 400 처리로 안 빠진다.
 @app.post("/auth/admin/{uid}/lock")
 def toggle_lock(uid: int, erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):

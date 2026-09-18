@@ -82,7 +82,6 @@ td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 tbody tr.sel{background:var(--accent-soft)}
 .rank-sel{padding:1px 6px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);line-height:18px;max-width:9em}
-.tenant-sel{min-width:7em;max-width:none}
 .scrrow summary a,td a,li a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
 .scrrow summary a:hover,td a:hover,li a:hover{text-decoration-color:currentColor}
 .tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;line-height:18px}
@@ -216,7 +215,7 @@ tbody tr.sel{background:var(--accent-soft)}
       <div class="card" style="margin:0">
         <p class="sub">체크 한 칸 = 그 업무영역 화면 전부 보임. 부서를 고르면 그 부서 기본 화면이 <b>더해집니다</b>(있던 체크는 안 지웁니다). 이름을 누르면 화면 하나하나를 켜고 끕니다. 승인·차단·잠금은 위 「승인 대기」·「차단·잠금」 탭에서 합니다.</p>
         <div class="tw"><table id="people-table"><thead><tr>
-          <th>사람</th><th>부서</th><th>상태</th>
+          <th>사람</th><th>부서</th><th>직함</th><th>상태</th>
           <th title="마케팅 관리">마케팅</th><th title="회원 관리">회원</th><th title="운영 관리">운영</th>
           <th title="인사&amp;파트너 관리">인사</th><th title="매출&amp;지출 관리">매출</th><th title="ERP 플랫폼">플랫폼</th>
           <th>전체</th><th>개인예외</th><th>저장</th><th>내보내기</th>
@@ -346,15 +345,16 @@ function teamSelect(u){
   const list=((S.teams||{})[TEAM_DEPT])||[], cur=team(u);
   return `<select class="rank-sel" data-team-for="${u.id}" title="팀">${['<option value="">팀 미지정</option>'].concat(list.map(t=>`<option value="${esc(t)}"${t===cur?' selected':''}>${esc(t)}</option>`)).join('')}</select>`;
 }
-/* 상담봇 파트너 계정 tenant(센터) — 권한(modules)과 무관한 구분 칸. 목록 정본 = cbo/counsel_tenants.json(S.tenants · 배 12768 §12⑤). */
-const tenant=u=>(perms(u)||{}).tenant||'';
-function tenantSelect(u){
-  const list=S.tenants||[], cur=tenant(u);
-  return `<select class="rank-sel tenant-sel" data-tenant-for="${u.id}" title="상담 센터">${['<option value="">상담 센터 없음</option>'].concat(list.map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name||t.id)}</option>`)).join('')}</select>`;
-}
 /* 직급·층 — 승인 판단 근거다(GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해」). */
 const rank=u=>(perms(u)||{}).rank||'';
 const tierKo=u=>((perms(u)||{}).tier==='leader'?'리더급':((perms(u)||{}).tier?'팀원급':''));
+/* 승인 뒤 직함을 바꾸는 칸(GM 2026-09-18 「직함은 넣어줘, 직함에 따른 권한도 구분」) — 골라 바로 저장(/rank),
+   층(리더급/팀원급)에 따라 서버가 권한을 다시 계산한다(_approve_rank 와 같은 규칙). */
+function rankChangeSelect(u){
+  const list=S.ranks||[], cur=rank(u);
+  return `<select class="rank-sel" data-rank-change-for="${u.id}" title="직함">${
+    ['<option value="">직함 없음</option>'].concat(list.map(r=>`<option value="${esc(r)}"${r===cur?' selected':''}>${esc(r)}</option>`)).join('')}</select> <small>${esc(tierKo(u))}</small>`;
+}
 const locked=u=>!!(u.perms&&u.perms.locked);
 const isMe=u=>S.me&&u.id===S.me.id;
 
@@ -498,15 +498,15 @@ function renderPeople(){
     return `<tr><td class="who" data-open-drawer="${u.id}" title="눌러서 화면별 상세"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></td>
     <td>${dept(u)?`<span class="tag">${esc(deptLabel(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}
       ${(!ro&&dept(u)===TEAM_DEPT)?teamSelect(u):''}
-      ${!ro?tenantSelect(u):''}
       ${ro?'':`<select class="rank-sel" data-dept-apply-for="${u.id}" title="부서 기본 화면 더하기"><option value="">+ 부서 기본 추가</option>${Object.keys(S.dept_modules||{}).map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`}</td>
+    <td>${ro?(esc(rank(u))||'—'):rankChangeSelect(u)}</td>
     <td><span class="tag ${statusCls[u.status]}">${statusKo[u.status]||u.status}</span>${locked(u)?' <span class="tag lock">잠금</span>':''}</td>
     ${AREAS.map(g=>cell(areaState(d.modules,g),`data-area-for="${u.id}" data-area="${esc(g)}" title="${esc(g)}"`)).join('')}
     ${cell(allSt,`data-all-for="${u.id}" title="전체"`)}
     ${cell(excSt,`data-exc-for="${u.id}" title="개인 예외 화면 전부"`)}
     <td>${ro?'—':(dirty?`<button class="btn sm pri" data-save-person="${u.id}">저장</button>`:'<span class="tag">저장됨</span>')}</td>
     <td>${ro?'—':`<button class="btn danger sm" data-delete-person="${u.id}">내보내기</button>`}</td></tr>`;
-  }).join(''):'<tr><td colspan="13" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
+  }).join(''):'<tr><td colspan="14" class="empty">조건에 맞는 사람이 없습니다</td></tr>';
   $$('#people-body input[data-partial="1"]').forEach(i=>i.indeterminate=true);
   renderDrawer();
 }
@@ -690,7 +690,7 @@ document.addEventListener('change',e=>{
   const pexc=e.target.closest('input[data-exc-for]'); if(pexc){ personToggleExc(+pexc.dataset.excFor); return; }
   const dsel=e.target.closest('select[data-dept-apply-for]'); if(dsel&&dsel.value){ personApplyDept(+dsel.dataset.deptApplyFor, dsel.value); dsel.value=''; return; }
   const tsel=e.target.closest('select[data-team-for]'); if(tsel){ post(`/auth/admin/${tsel.dataset.teamFor}/team`,{team:tsel.value}).then(ok=>{ if(ok){ toast('팀을 저장했습니다'); load(); } }); return; }
-  const tnsel=e.target.closest('select[data-tenant-for]'); if(tnsel){ post(`/auth/admin/${tnsel.dataset.tenantFor}/tenant`,{tenant:tnsel.value}).then(ok=>{ if(ok){ toast('상담 센터를 저장했습니다'); load(); } }); return; }
+  const rcsel=e.target.closest('select[data-rank-change-for]'); if(rcsel){ post(`/auth/admin/${rcsel.dataset.rankChangeFor}/rank`,{rank:rcsel.value}).then(ok=>{ if(ok){ toast('직함을 저장했습니다 · 권한을 직함 층에 맞춰 다시 계산했습니다'); load(); } }); return; }
   const psc=e.target.closest('input[data-screen-for]'); if(psc){ personToggleScreen(+psc.dataset.screenFor, psc.dataset.screen); return; }
 });
 document.addEventListener('input',e=>{
