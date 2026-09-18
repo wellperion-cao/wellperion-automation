@@ -64,12 +64,15 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   <span class="pf-st off" id="srv"><i></i>서버 연결 전</span>
 </div>
 
-<div class="pf-tabs" role="tablist" aria-label="파트너사" id="tenants">
+<div class="pf-tabs" role="tablist" aria-label="계정" id="tenants">
   <button role="tab" aria-selected="true" class="on" data-tenant="wellperion">1호 웰페리온</button>
+  <button role="tab" aria-selected="false" data-tenant="gm">GM 개인 · AI 하루</button>
   <button role="tab" aria-selected="false" data-tenant="dc">2호 다이어트캠프</button>
   <button role="tab" aria-selected="false" data-tenant="jo">3호 고척골프</button>
-  <button role="tab" aria-selected="false" data-tenant="ax">랩스 채널 · 피트니스 AX</button>
+  <button role="tab" aria-selected="false" data-tenant="ax">웰페리온 AX 랩스</button>
 </div>
+<!-- 탭 5개(GM 2026-09-18 「개인계정이랑 공식계정 다 구분 · AX랩스도」 · 배 2792) — 공식/개인 계정 구분은 review_queue.json 의 account 칸(wellperion=공식 · namuk.wellperion=개인)으로 가른다 -->
+
 
 <div class="grid" style="margin-top:14px">
   <section class="pf-card">
@@ -106,20 +109,26 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 
 <script>
 (function(){
-  // 채널 목록 = 파트너 계정 정본(플랫폼관리 파트너사 표)과 같은 7개 · 순서 고정
-  var CH=[['naver-blog','네이버 블로그'],['naver-cafe','네이버 카페'],['instagram','인스타그램'],['threads','스레드'],['danggn','당근'],['google','구글 비즈니스'],['kakao-channel','카카오톡 채널']];
-  var NAMES={wellperion:'1호 웰페리온',dc:'2호 다이어트캠프',jo:'3호 고척골프',ax:'랩스 채널 · 피트니스 AX'};   // ax = 랩스 자체 메시지 채널(GM 2026-09-16 · 시보)
+  // 채널 목록 = 파트너 계정 정본(플랫폼관리 파트너사 표)과 같은 7개 · 순서 고정 — 공식·다캠·고척 공용
+  var CH_STD=[['naver-blog','네이버 블로그'],['naver-cafe','네이버 카페'],['instagram','인스타그램'],['threads','스레드'],['danggn','당근'],['google','구글 비즈니스'],['kakao-channel','카카오톡 채널']];
+  // AX 랩스 5자리(부록 E · erp/admin/company_roadmap.html 320행) — gmail 은 server/erp_api/api_partner_secrets.py CHANNELS 에 키가 없어(존재 여부 API 없음) 항상 비활성으로 뜬다
+  var CH_AX=[['gmail','지메일'],['instagram','인스타그램'],['threads','스레드'],['naver-blog','네이버 블로그'],['kakao-channel','카카오톡 채널']];
+  // GM 개인계정 채널 — review_queue.json 실측(account=namuk.wellperion 67건이 전부 이 채널 하나)
+  var CH_GM=[['ig-personal','인스타그램 (namuk.wellperion)']];
+  var CH_BY_TENANT={wellperion:CH_STD,dc:CH_STD,jo:CH_STD,ax:CH_AX,gm:CH_GM};
+  var NAMES={wellperion:'1호 웰페리온',gm:'GM 개인 · AI 하루',dc:'2호 다이어트캠프',jo:'3호 고척골프',ax:'웰페리온 AX 랩스'};   // ax = 랩스 자체 메시지 채널(GM 2026-09-16 · 시보)
   var LOCK=(new URLSearchParams(location.search).get('tenant')||'').trim();   // ERP 홈 마케팅 관리에서 열면 ?tenant=wellperion — 그 센터만(GM 2026-09-18 「다른 파트너사 것까지 다 보이네」)
   var tenant=(LOCK && document.querySelector('#tenants [data-tenant="'+LOCK+'"]'))?LOCK:'wellperion', active={};
-  if(LOCK && tenant===LOCK){ var _tb=document.getElementById('tenants'); if(_tb){ _tb.hidden=true; } }
+  if(LOCK && tenant===LOCK){ var _tb=document.getElementById('tenants'); if(_tb){ _tb.hidden=true; _tb.style.display='none'; } }   // platform_brand.css .pf-tabs{display:flex} 가 hidden 속성보다 캐스케이드에서 이겨 인라인으로 덮는다(배 2792 발견)
   var $=function(id){return document.getElementById(id)};
 
   function renderChannels(){
     var host=$('channels'); host.innerHTML='';
-    CH.forEach(function(c){
+    var offLabel=tenant==='ax'?'비활성 · 개설 대기':'비활성';
+    (CH_BY_TENANT[tenant]||CH_STD).forEach(function(c){
       var on=!!active[c[0]];
       var l=document.createElement('label'); l.className=on?'':'off';
-      l.innerHTML='<input type="checkbox" name="channels" value="'+c[0]+'"'+(on?'':' disabled')+'> '+c[1]+'<span class="pf-st '+(on?'on':'off')+'"><i></i>'+(on?'활성':'비활성')+'</span>';
+      l.innerHTML='<input type="checkbox" name="channels" value="'+c[0]+'"'+(on?'':' disabled')+'> '+c[1]+'<span class="pf-st '+(on?'on':'off')+'"><i></i>'+(on?'활성':offLabel)+'</span>';
       host.appendChild(l);
     });
   }
@@ -133,6 +142,13 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   function fmtDate(s){ return s?String(s).slice(0,10):'—'; }
   function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n)+'…':s; }
   function emptyRow(n){ return '<tr><td colspan="'+n+'" class="empty">아직 기록 없음</td></tr>'; }
+  function renderItemsTable(items){
+    var recent=items.slice().sort(function(a,b){return String(b.published_at||b.card_sent_at||'').localeCompare(String(a.published_at||a.card_sent_at||''));}).slice(0,12);
+    var rows=recent.map(function(x){
+      return '<tr><td>'+fmtDate(x.published_at||x.card_sent_at)+'</td><td>'+(x.title||'')+'</td><td>'+(x.channel||'')+'</td><td>'+(x.status||'')+'</td><td>'+(x.post_url?'<a href="'+x.post_url+'" target="_blank" rel="noopener">보기</a>':'—')+'</td></tr>';
+    }).join('')||emptyRow(5);
+    return '<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>채널</th><th>상태</th><th>링크</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
   function renderBlogTable(runs){
     if(!runs||!runs.length) return '<table class="pf-table"><tbody>'+emptyRow(3)+'</tbody></table>';
     var rows=runs.slice(-10).reverse().map(function(r){
@@ -152,27 +168,38 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
     body.innerHTML='<div class="empty">불러오는 중…</div>';
     if(tenant==='wellperion'){
-      src.textContent='review_queue.json · series_data.json';
+      // 공식 계정만 — account==='wellperion' (review_queue.json 실측 · 09-18 배 2792). 그 외 계정 표기(비즈(cao)·없음)는 미분류로 따로 표기
+      src.textContent='review_queue.json(공식 계정)';
+      fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json']).then(function(review){
+        if(curTenant!==tenant) return;
+        var items=Array.isArray(review)?review:((review&&review.items)||[]);
+        if(!items.length){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
+        var official=items.filter(function(x){return x.account==='wellperion';});
+        var personalCnt=items.filter(function(x){return x.account==='namuk.wellperion';}).length;
+        var other=items.length-official.length-personalCnt;
+        var note=other?'<div class="srcname" style="display:block;margin-top:6px">미분류 '+other+'건(계정 칸 없음·기타 표기) — 개인계정(namuk.wellperion)엔 안 들어가 공식 쪽에 표시</div>':'';
+        body.innerHTML=renderItemsTable(official)+note;
+      }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
+    } else if(tenant==='gm'){
+      // 개인계정 — series_data.json(AI 시리즈 로드맵, 전량 개인계정) + review_queue.json 의 account==='namuk.wellperion'
+      src.textContent='series_data.json · review_queue.json(개인 계정)';
       Promise.allSettled([
-        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json']),
-        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/series/series_data.json','../series/series_data.json'])
+        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/series/series_data.json','../series/series_data.json']),
+        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json'])
       ]).then(function(res){
         if(curTenant!==tenant) return;
-        var review=res[0].status==='fulfilled'?res[0].value:null;
-        var series=res[1].status==='fulfilled'?res[1].value:null;
-        if(!review && !series){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
-        var items=Array.isArray(review)?review:((review&&review.items)||[]);
+        var series=res[0].status==='fulfilled'?res[0].value:null;
+        var review=res[1].status==='fulfilled'?res[1].value:null;
+        if(!series && !review){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
         var eps=(series&&series.episodes)||[];
         var done=eps.filter(function(e){return /발행완료/.test(e.roadmap_status||'');}).length;
         var wait=eps.filter(function(e){return /검수대기|검수요청/.test(e.roadmap_status||'');}).length;
-        var pubs=items.filter(function(x){return x.status==='발행완료'&&x.published_at;}).map(function(x){return x.published_at;}).sort();
+        var items=Array.isArray(review)?review:((review&&review.items)||[]);
+        var personal=items.filter(function(x){return x.account==='namuk.wellperion';});
+        var pubs=personal.filter(function(x){return x.status==='발행완료'&&x.published_at;}).map(function(x){return x.published_at;}).sort();
         var last=pubs.length?fmtDate(pubs[pubs.length-1]):'—';
         var sum='<div class="stat4"><div class="box"><b>'+(eps.length||'—')+'</b><span>전체 회차</span></div><div class="box"><b>'+done+'</b><span>발행완료</span></div><div class="box"><b>'+wait+'</b><span>검수대기</span></div><div class="box"><b>'+last+'</b><span>마지막 발행일</span></div></div>';
-        var recent=items.slice().sort(function(a,b){return String(b.published_at||b.card_sent_at||'').localeCompare(String(a.published_at||a.card_sent_at||''));}).slice(0,12);
-        var rows=recent.map(function(x){
-          return '<tr><td>'+fmtDate(x.published_at||x.card_sent_at)+'</td><td>'+(x.title||'')+'</td><td>'+(x.channel||'')+'</td><td>'+(x.status||'')+'</td><td>'+(x.post_url?'<a href="'+x.post_url+'" target="_blank" rel="noopener">보기</a>':'—')+'</td></tr>';
-        }).join('')||emptyRow(5);
-        body.innerHTML=sum+'<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>채널</th><th>상태</th><th>링크</th></tr></thead><tbody>'+rows+'</tbody></table>';
+        body.innerHTML=sum+renderItemsTable(personal);
       });
     } else if(tenant==='dc'||tenant==='jo'){
       var blogFile=tenant==='dc'?'dietcamp_blog_daily.json':'gocheok_blog_daily.json';
@@ -196,11 +223,17 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     }
   }
   function load(){
-    $('tName').textContent=NAMES[tenant]; active={}; renderChannels(); renderSeries();
-    fetch('/api/partner_secrets/status?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
-      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(j){ (j.channels||[]).forEach(function(c){ if(c.active) active[c.channel]=1; }); $('srv').className='pf-st on'; $('srv').innerHTML='<i></i>서버 연결됨'; renderChannels(); })
-      .catch(function(){ /* 배선 전 — 「서버 연결 전」 그대로 */ });
+    $('tName').textContent=NAMES[tenant]; active={}; renderSeries();
+    if(tenant==='gm'){
+      // GM 개인계정 = 플랫폼관리 파트너사 표에 없다(서버 존재확인 대상 아님) — review_queue.json 실측으로 이미 발행 중이라 항상 활성
+      active={'ig-personal':1}; renderChannels();
+    } else {
+      renderChannels();
+      fetch('/api/partner_secrets/status?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(j){ (j.channels||[]).forEach(function(c){ if(c.active) active[c.channel]=1; }); $('srv').className='pf-st on'; $('srv').innerHTML='<i></i>서버 연결됨'; renderChannels(); })
+        .catch(function(){ /* 배선 전 — 「서버 연결 전」 그대로 */ });
+    }
     fetch('/api/marketing/uploads?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){ var rows=(j.items||[]); if(!rows.length) return; $('hist').innerHTML=rows.map(function(x){ return '<tr><td>'+x.date+'</td><td>'+x.channel+'</td><td>'+x.title+'</td><td><span class="pf-st '+(x.status==='ok'?'on':x.status==='fail'?'bad':'warn')+'"><i></i>'+x.status_label+'</span></td></tr>'; }).join(''); })
