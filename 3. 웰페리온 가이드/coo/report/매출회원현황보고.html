@@ -3570,7 +3570,11 @@ function fetchCap(url, ms){
 /* 문의 원장 한 갈래를 서버 거울에서 통째로 — 1000행씩 이어 받는다(멤버십 777 · 유소년 1138).
    돌려주는 모양은 GAS 와 같게 맞춘다({ok:true, data:[...]}) — 읽는 쪽 코드를 안 바꾸려고. */
 function inqList(type, action, qs){
-  if (!ERP_API_ON) return p2fetch(action, qs);   // Pages 캡처(09:00 발송용·비ERP 도메인) — 서버가 없어 그대로 GAS
+  if (!ERP_API_ON) {
+    // 2026-09-18 배 12818 — member_inquiry_list(회원 GAS 비공개 액션)는 공개 사본에서 GAS 를 부르지 않는다.
+    if (action === 'member_inquiry_list') return Promise.resolve({ ok: true, data: [], _note: '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.' });
+    return p2fetch(action, qs);   // 강습 문의(lesson_inquiry_list)는 범위 밖 — Pages 캡처는 그대로 GAS
+  }
   // 2026-09-18 GM 지시(배 12817·12818②) — 회원 문의 원장(멤버십)은 ERP 도메인에서 GAS 폴백 제거.
   //   강습 문의(성인/유소년)는 범위 밖 — 그대로 미러 실패 시 GAS 폴백.
   if (action === 'member_inquiry_list') {
@@ -3596,7 +3600,12 @@ function inqMirror(type){
 var P2_NO_GAS_FALLBACK = { cpo_churn_stats: 1 };
 function p2fetch(action, qs){
   var gas = function(){ return fetchCap(GAS2 + '?action=' + action + (qs || '') + '&cb=' + Date.now()).then(function(r){ return r.json(); }); };
-  if (!ERP_API_ON || !API_ACTIONS[action]) return gas();   // Pages 캡처(09:00 발송용·비ERP 도메인) — 서버가 없어 그대로 GAS
+  if (!ERP_API_ON) {
+    // 2026-09-18 배 12818 — cpo_churn_stats(회원 이탈, 비공개 액션)는 공개 사본에서도 GAS 를 부르지 않는다.
+    if (P2_NO_GAS_FALLBACK[action]) return Promise.resolve({ ok: false });   // 해당 칸은 기존 "못 읽음" 표시(–)로 그려진다
+    return gas();   // Pages 캡처(09:00 발송용·비ERP 도메인) — 서버가 없어 그대로 GAS
+  }
+  if (!API_ACTIONS[action]) return gas();
   return fetchCap('/api/report/' + action + '?cb=' + Date.now() + (qs || ''))
     .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
     .catch(function(e){
@@ -3777,6 +3786,7 @@ function inqOpenUncontacted(r){
 
 function renderP2Inq(d){
   var el = document.getElementById('p2inq'); if (!el) return;   // 칸을 뺀 판에서는 그리지 않는다(GM 2026-09-15)
+  if (d && d._note) { el.innerHTML = '<div class="mrow"><span class="lb">— ' + esc(d._note) + '</span></div>'; return; }
   if (!d || !d.data) { el.innerHTML = '<div class="err">문의 목록을 못 읽었습니다 — 문의 시트 조회 실패</div>'; return; }
   var rows = d.data.filter(function(r){ return r.name; });
   rows.sort(function(a, b){ return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });

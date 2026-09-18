@@ -3491,9 +3491,10 @@ function _apiLessonRegistry(type, from, to) {
       .catch(function(){});
   } catch (e) {}
 })();
-// ── PII 토큰 ── 입장 비번(= 서버 ACCESS_TOKEN, 소스에 없음)을 입장 게이트가 저장 → 데이터 호출에 부착.
-// 맞는 비번이면 서버가 성함·전화 전체 반환, 틀리면 입장 차단(게이트). 별도 '전체보기' 버튼 폐지(2026-06-25 GM).
-function _wpKeyParam(){ try { var t = (localStorage.getItem('wp_access_token')||'').trim(); return t ? '&key=' + encodeURIComponent(t) : ''; } catch(e){ return ''; } }
+// ── PII 토큰(폐지 2026-09-18) ── wp_access_token 은 입장 커튼 비밀번호("1200")일 뿐 서버 ACCESS_TOKEN 이
+// 아니다(실측: key 없음/key=1200 응답 data 해시 동일). 커튼 비번을 key 로 계속 보내면 회원 GAS 게이트
+// (TOKEN_ENFORCE=1 · 배 12818) 전환 뒤 매 호출이 unauthorized 로 깨진다 — 항상 빈 값 반환.
+function _wpKeyParam(){ return ''; }
 /* ── 서버 스냅샷 가속층(배·2026-07-16 시토) ── 첫 진입·새 기기에서 localStorage 캐시가 없을 때
    "불러오는 중…" 대신 서버가 3분 주기로 미리 덤프해둔 목록을 즉시 렌더(0초 체감). ★진실은 여전히
    아래 gviz/GAS 배경 재검증 — 이 스냅샷은 콜드 첫 화면만 담당하고, 재검증은 조건 없이 항상 발사된다
@@ -5024,20 +5025,19 @@ function _postInqLoadedRows_(){
   });
   return { rows: rows, lessonLoadedTypes: lessonLoadedTypes };
 }
+// 2026-09-18 회원 GAS 게이트(배 12818) 준비 — 비공개 액션이라 GAS 폴백 제거. erp 판=서버 API만,
+// 공개 사본(!ERP_API_ON)은 아예 호출하지 않는다(렌더 쪽에서 ERP 로그인 안내로 대체).
 function _postInqFetchFunnel(cb){
   if (_mdashCache.funnel) { cb(_mdashCache.funnel); return; }
-  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  var _sfGas = function(){ return fetch(GAS_URL + '?action=stage_funnel' + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/stage_funnel').catch(function(){ return _sfGas(); }) : _sfGas())   // 배1048 서버 우선(시토 1039)
+  if (GAS_URL === GAS_PLACEHOLDER || !ERP_API_ON) { cb(null); return; }
+  _apiJson('/api/funnel/stage_funnel')
     .then(function(d){ if (d && d.ok) _mdashCache.funnel = d; cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
 function _postInqFetchTc(cb){
   if (_postInqCache.tc) { cb(_postInqCache.tc); return; }
-  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  // ★2026-09-09 배1050 — 서버 퍼널 미러 우선, 실패하면 종전 GAS.
-  var _tcGas = function(){ return fetch(GAS_URL + '?action=type_channel_breakdown' + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/type_channel_breakdown').catch(function(){ return _tcGas(); }) : _tcGas())
+  if (GAS_URL === GAS_PLACEHOLDER || !ERP_API_ON) { cb(null); return; }
+  _apiJson('/api/funnel/type_channel_breakdown')
     .then(function(d){ if (d && d.ok) _postInqCache.tc = d; cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -5046,7 +5046,7 @@ function _postInqFetchTc(cb){
 // ⑥ 회원(현재 유효회원 스냅샷)은 ⑤ 등록(문의 코호트 전화매칭 건수)과 모수가 달라 100%를 넘나들 수 있음 — 그 경우 억지로 캡하지 않고 '△모수차이' 배지로 정직 표기.
 function _postInqRenderFunnel(fd, tcd){
   var el = document.getElementById('postInqSecFunnel'); if (!el) return;
-  if (!fd) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">퍼널 데이터 없음</div>'; return; }
+  if (!fd) { el.innerHTML = '<div style="color:var(--dim);font-size:11px">' + (!ERP_API_ON ? '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.' : '퍼널 데이터 없음') + '</div>'; return; }
   var mt = (fd.membership && fd.membership.total) || {};
   var lt = (fd.lesson && fd.lesson.total) || {};
   function sum(k){ return (mt[k] || 0) + (lt[k] || 0); }
