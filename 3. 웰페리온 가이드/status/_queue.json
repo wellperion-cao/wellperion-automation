@@ -2352,11 +2352,11 @@
     "task_id": "CPO-2026-09-18-매출-및-회원-현황보고-1-2초-뒤-매출이-31-3",
     "clevel": "cpo",
     "title": "[시포] 매출 및 회원 현황보고 — 1~2초 뒤 매출이 31,380,430 → 13,230,000 으로 덮이는 버그",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-09-18",
     "from": "coo",
-    "note": "[시우 → 시포 전달 2026-09-18] GM 09-18 19:1x 「새로고침하면 매출이 1~2초 뒤 변경 · 버그 같다」. 시우 실측(로그인 헤드리스): 1.0초 renderSheet(/api/sales/deptrep/dump 시트 미러) 총매출 31,380,430 · 회원 1,030 → 2.0초 applyServerFinal(/api/report/sales_report_cells · html 2911~2934) 13,230,000 · 1,029 로 덮음. 차이 −18,150,430 거의 전부 브로제이 미이관분 0 (I8 신규 0 vs 2,920,000 · I9 재등록 0 vs 11,326,650 · I11~I13 환불 0). 원인: server_final 게이트(api_report.py:82 cells_filled==cells_total)가 brojay_cells 의 「0=미수집」도 채움으로 세어 통과. 화면 주석(html 2902-2904)은 매출 11칸을 10/1 재대조 뒤 옮긴다고 적었는데 실제로는 덮음. 캡처 scratch report_flicker_0.3s/_5s.png. 기본값 제안(보수): 브로제이 이관이 그날 끝나기 전엔 매출 11칸을 덮지 않고(0=미수집은 missing) 시트값 유지 · 서버값은 대조 줄로만. 09:00 서버판 발송 이미지도 같은 값을 쓰는지 확인.",
+    "note": "[시우 → 시포 전달 2026-09-18] GM 09-18 19:1x 「새로고침하면 매출이 1~2초 뒤 변경 · 버그 같다」. 시우 실측(로그인 헤드리스): 1.0초 renderSheet(/api/sales/deptrep/dump 시트 미러) 총매출 31,380,430 · 회원 1,030 → 2.0초 applyServerFinal(/api/report/sales_report_cells · html 2911~2934) 13,230,000 · 1,029 로 덮음. 차이 −18,150,430 거의 전부 브로제이 미이관분 0 (I8 신규 0 vs 2,920,000 · I9 재등록 0 vs 11,326,650 · I11~I13 환불 0). 원인: server_final 게이트(api_report.py:82 cells_filled==cells_total)가 brojay_cells 의 「0=미수집」도 채움으로 세어 통과. 화면 주석(html 2902-2904)은 매출 11칸을 10/1 재대조 뒤 옮긴다고 적었는데 실제로는 덮음. 캡처 scratch report_flicker_0.3s/_5s.png. 기본값 제안(보수): 브로제이 이관이 그날 끝나기 전엔 매출 11칸을 덮지 않고(0=미수집은 missing) 시트값 유지 · 서버값은 대조 줄로만. 09:00 서버판 발송 이미지도 같은 값을 쓰는지 확인.\n[시포 종결 2026-09-18 19:3x] 원인 = applyServerFinal 이 server_final(cells_filled==cells_total · 브로제이 미이관 0 도 채움으로 셈) 통과 시 매출 11칸(I/J · SALES_ROWS)까지 0 으로 덮음. 수정 75f6b1f9b3 — 매출 11칸은 시트값 유지·대조 줄만, 회원 5칸·입장 3칸은 그대로. 라이브(erp · 관리자 토큰 헤드리스): 1초 31,380,430 → 5초 31,380,430 · 콘솔 오류 0. 공개 사본은 서버 병합 자체가 안 돎(hostname 조건). 09:00 캡처 = scripts/report_page_capture.py 가 토큰 있으면 erp 판 우선 → 같은 수정 적용. 서버 게이트(api_report.py:82 0=미수집 구분)는 10/1 전환 전 따로.",
     "next": "게이트에서 0=미수집 구분 → 매출 11칸 덮기 멈춤 → 라이브 새로고침 1초·5초 값이 같은지 헤드리스로 확인 → 시우에게 수치 회신",
     "depends_on": "",
     "ship_no": 12827,
@@ -2367,6 +2367,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-09-18"
+    "updated_at": "2026-09-18",
+    "done_at": "2026-09-18",
+    "artifact_url": "https://erp.wellperion.com/coo/report/매출회원현황보고.html"
   }
 ]
