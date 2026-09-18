@@ -1565,6 +1565,12 @@ def _flow_lines(role: str = "", gas_rows: list[dict] | None = None) -> list[str]
     answered = _gm_answered_yesterday(yday)
     out = [f"📊 열린 배 {f['open']}척 · 어제 생성 {f['born_y']} / 종결 {f['done_y']} · "
            f"{STALE_DAYS}일 무기록 배 {len(f['stale'])}척 · 어제 GM 말 {answered}회"]
+    # 위임 비율(배 12745 · GM 2026-09-18) — 메인 창이 직접 실행한 것 대비 서브에이전트에 넘긴 비율. 실패해도 보드는 산다.
+    try:
+        import delegation_ratio
+        out.append(delegation_ratio.line())
+    except Exception:
+        pass
     # GM 부담 관문(GM 2026-09-16) — 배 대신 gm_asks 에 쌓인 「GM 손 필요」 건수를 보드 맨 위에서 본다.
     try:
         import gm_asks
