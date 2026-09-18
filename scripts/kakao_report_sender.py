@@ -1034,18 +1034,29 @@ def confirm_clipboard_popup(popup, room_name: str, wait: float = 6.0) -> bool:
     캡션칸(50자 한도)에 두 번 겹쳐 들어갔다 — 사진도 글도 안 나갔는데 ok=true 로 찍혔고,
     그 거짓 기록이 중복 가드까지 물려 재발송도 막았다. 그래서 여기서 '닫혔나'를 확인한다.
     """
-    edits = popup.descendants(control_type="Edit")
-    target = edits[0] if edits else popup
-    target.click_input()
-    time.sleep(0.1)
-    target.type_keys("{ENTER}", pause=0.1)
-    deadline = time.time() + wait
-    while time.time() < deadline:
-        time.sleep(0.3)
-        if find_clipboard_popup(timeout=0.2) is None:
-            log(f"[{room_name}] 클립보드 팝업 전송 확정(Enter) — 팝업 닫힘 확인")
-            return True
-    log(f"[{room_name}] ⛔ Enter 를 쳤는데 클립보드 팝업이 {wait:.0f}초가 지나도 그대로 있다 — 전송 안 됨")
+    # 2026-09-18 ★부서장 09:30 실사고: 첫 방이라 포커스가 불안정해 캡션칸 클릭이 포커스를 못 받고
+    # Enter 가 허공에 떨어졌다(7일간 실패 9건 중 첫 방 ★부서장 4건). 한 번에 실패로 끝내지 않고
+    # 팝업을 앞으로 다시 세운 뒤 Enter 를 최대 3회 친다 — 닫힘이 확인되면 그 자리에서 True.
+    for attempt in range(3):
+        if attempt:
+            log(f"[{room_name}] 팝업 Enter 재시도 {attempt + 1}/3 — 팝업을 앞으로 다시 세운다")
+            try:
+                popup.set_focus()
+            except Exception as exc:
+                log(f"[{room_name}] 팝업 set_focus 실패(계속): {exc}")
+            time.sleep(0.5)
+        edits = popup.descendants(control_type="Edit")
+        target = edits[0] if edits else popup
+        target.click_input()
+        time.sleep(0.1)
+        target.type_keys("{ENTER}", pause=0.1)
+        deadline = time.time() + wait
+        while time.time() < deadline:
+            time.sleep(0.3)
+            if find_clipboard_popup(timeout=0.2) is None:
+                log(f"[{room_name}] 클립보드 팝업 전송 확정(Enter) — 팝업 닫힘 확인")
+                return True
+        log(f"[{room_name}] ⛔ Enter 를 쳤는데 클립보드 팝업이 {wait:.0f}초가 지나도 그대로 있다 — 전송 안 됨")
     return False
 
 
@@ -3027,6 +3038,23 @@ def main() -> int:
             failures.append((room_name, str(exc)))
         if idx < len(rooms) - 1:
             time.sleep(2.0)  # 방 사이 지연
+
+    # 실패한 방은 한 바퀴 끝난 뒤 한 번 더 — 첫 방 실패는 대개 포커스 문제라 다른 방을 지나고 나면
+    # 안정된다(2026-09-18 ★부서장). 두 번째도 실패하면 그대로 실패로 남겨 경보가 나간다.
+    if failures and not args.dry_run:
+        retry_names = [name for name, _ in failures]
+        failures = []
+        for room in [r for r in rooms if r["name"] in retry_names]:
+            room_name = room["name"]
+            log(f"[{room_name}] 재시도(2/2) — 첫 순회 실패")
+            time.sleep(3.0)
+            try:
+                sent, hold_reason = send_to_room(room, image_path, args.caption, args.dry_run)
+                if not sent:
+                    dedup_skipped[room_name] = hold_reason
+            except Exception as exc:
+                log(f"실패(재시도) [{room_name}]: {exc}")
+                failures.append((room_name, str(exc)))
 
     if args.status_file and not args.dry_run:
         write_status(args.status_file, _status_summary(rooms, failures, dedup_skipped),
