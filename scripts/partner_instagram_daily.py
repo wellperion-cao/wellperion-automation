@@ -291,6 +291,8 @@ def verify(c: dict, url: str, caption: str) -> bool:
 
 
 LOGIN_URL = "https://www.instagram.com/accounts/login/"
+ID_SEL = 'input[name="username"], input[name="email"]'      # 2026-09-18 실측: 로그인 폼 칸 이름이 email/pass 로 바뀜(옛 username/password 도 같이 본다)
+PW_SEL = 'input[name="password"], input[name="pass"]'
 
 
 APPROVE_WAIT_SEC = 600      # 앱 승인·인증번호 화면에서 기다리는 상한(파트너가 폰 인스타 알림에서 승인하면 그대로 진행)
@@ -327,9 +329,9 @@ def try_login(c: dict, key: str, st: dict) -> bool:
     import asyncio  # noqa: PLC0415
     from partner_blog_daily import _read_login_secret  # noqa: PLC0415
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    sec = _read_login_secret(c["tenant"], "instagram")
+    sec = _read_login_secret(key, "instagram")     # 서버 금고 키 = 블로그와 같은 클라이언트 키(jo·dc) · 시설 slug(gocheokgolf…)가 아니다(2026-09-18 404 원인)
     if not sec:
-        st["login_needed"] = f"{now} 계정 자리 없음(1531 · {c['tenant']}/instagram) — 플랫폼관리에 넣으면 다음 06:30 에 스스로 로그인 · 시도 안 함"
+        st["login_needed"] = f"{now} 계정 자리 없음(1531 · {key}/instagram) — 플랫폼관리에 넣으면 다음 06:30 에 스스로 로그인 · 시도 안 함"
         print("[login]", st["login_needed"]); save_state(key, st)
         return False
 
@@ -342,15 +344,15 @@ def try_login(c: dict, key: str, st: dict) -> bool:
                 page = await ctx.new_page()
 
                 async def probe() -> tuple[str, str]:
-                    return login_state(page.url, await page.locator('input[name="password"]').count() > 0,
+                    return login_state(page.url, await page.locator(PW_SEL).count() > 0,
                                        await page.locator('input[name="verificationCode"], input[name="security_code"]').count() > 0), page.url
 
                 await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
                 await page.wait_for_timeout(2500)
                 if (await probe())[0] == "ok":
                     return "ok", page.url                       # 이미 로그인돼 있다
-                await page.fill('input[name="username"]', sec["NAVER_ID"])
-                await page.fill('input[name="password"]', sec["NAVER_PW"])
+                await page.locator(ID_SEL).first.fill(sec["NAVER_ID"])
+                await page.locator(PW_SEL).first.fill(sec["NAVER_PW"])
                 await page.keyboard.press("Enter")
                 await page.wait_for_timeout(7000)
                 state, url = await wait_approval(probe)         # 앱 승인·인증번호 화면이면 여기서 최대 10분
@@ -493,6 +495,9 @@ def self_test() -> int:
     gp = gen_prompt(c, "주제")
     assert "주제" in gp and "얼굴" in gp and "글자" in gp
     assert gen_photo(None, gp, Path("x.jpg"), max_credits=0) is None, "상한 0 인데 만들었다"   # 비용 조회만(크레딧 0)
+    # 서버 금고 키 = 블로그 클라이언트 키와 같은 집합(jo·dc) — 시설 slug 로 부르면 404
+    import partner_blog_daily  # noqa: PLC0415
+    assert set(CLIENTS) <= set(partner_blog_daily.CLIENT_DIRS) and all(k != CLIENTS[k]["tenant"] for k in CLIENTS)
     # 로그인 대기 — 즉시 성공 · 승인 뒤 성공 · 10분 초과(가짜 시계 · 잠 안 잠)
     import asyncio  # noqa: PLC0415
     assert login_state("https://www.instagram.com/", False, False) == "ok"
