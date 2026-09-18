@@ -1395,7 +1395,7 @@
       var last = evs[0]; var nowHtml;
       if(last) nowHtml = '<div class="now">' + (CB_KIND[last.kind] || '') + ' ' + esc(last.text) + '</div>';
       else if(b.idle_since) nowHtml = '<div class="now idle">쉬는 중 · ' + esc(b.idle_since) + ' 답변 마침</div>';
-      else if(b.now || b.last){ var n = b.now || b.last; nowHtml = '<div class="now">' + esc(n.event) + '</div>'; }
+      else if(b.now || b.last){ var n = b.now || b.last; nowHtml = '<div class="now">' + esc(n.event) + (b.lanes ? ' <span style="color:var(--dim)">(레인 ' + b.lanes + ')</span>' : '') + '</div>'; }
       else nowHtml = '<div class="now idle">오늘 기록 없음</div>';
       var state = busy ? '🟠 작업 중' : (b.alive ? '🟢 대기' : '⚪ 꺼짐');
       var agoMs = busyMs || cbMs(last && last.ts) || cbMs(b.seen_at);

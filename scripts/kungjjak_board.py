@@ -391,6 +391,12 @@ def _tomorrow_block(day: str) -> dict:
     return {'ok': True, 'items': lines, 'more': max(0, len(pairs) - 3)}
 
 
+try:
+    from session_register import ALIVE_MINUTES  # session_register.py --list 와 같은 값(단일 출처)
+except Exception:
+    ALIVE_MINUTES = 15  # 임포트 실패 폴백 — session_register.py ALIVE_MINUTES 와 같은 값으로 맞춘다
+
+
 def _board(day: str) -> dict:
     """C레벨 관제판 원천(배 12723 · GM 2026-09-17 「내가 던진 일을 각 창에서 어떻게 하는지 웹에서 라이브로」).
     역할별 = 세션 생존 신호(status/sessions/{role}.json) · 오늘 마지막 기록 한 줄(worklog) · 오늘 저장 수(git log).
@@ -411,12 +417,12 @@ def _board(day: str) -> dict:
         alive, hb15 = False, None
         try:
             t = datetime.datetime.fromisoformat(hb).replace(tzinfo=None)
-            alive = (now - t).total_seconds() < 90 * 60
+            alive = (now - t).total_seconds() < ALIVE_MINUTES * 60
             hb15 = t.replace(minute=(t.minute // 15) * 15, second=0).strftime('%H:%M')
         except Exception:
             pass
         roles[role] = {'nick': nick, 'session': str(sess.get('session') or ''), 'alive': alive,
-                       'signal': hb15, 'last': None, 'idle_since': None, 'saves': 0}
+                       'signal': hb15, 'last': None, 'idle_since': None, 'saves': 0, 'lanes': 0}
     # 오늘 마지막 기록 한 줄(역할별 · ok/warn 가리지 않음 = 「지금 하는 것」)
     for line in LOG.open(encoding='utf-8'):
         if not line.startswith('{"ts": "' + day):
@@ -437,6 +443,42 @@ def _board(day: str) -> dict:
         r['idle_since'] = None
         r['last'] = {'time': str(d.get('ts'))[11:16], 'area': str(d.get('area') or ''),
                      'event': ev[:120], 'result': str(d.get('result') or '')}
+
+    # 열린 진행 레인 — 「답변 종결」(Stop 훅)은 그 턴이 끝났다는 뜻이지 서브에이전트 레인이
+    # 끝났다는 뜻이 아니다(2026-09-18 실측: 시토가 10:22:16 warn「레인 착수」를 남기고 17초 뒤
+    # 답변 종결이 찍혀 관제판이 '대기'로 잘못 읽음 · GM 지적). area=='진행' 줄을 ref 별로 모아
+    # warn 만 있고 같은 ref 의 ok 가 아직 없으면 그 레인은 도는 중이다 — idle_since 를 이긴다.
+    progress = {}  # role -> {ref: {'open': bool, 'last': dict|None}}
+    for line in LOG.open(encoding='utf-8'):
+        if not line.startswith('{"ts": "' + day):
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        if str(d.get('area') or '') != '진행':
+            continue
+        role = str(d.get('role') or '')
+        if role not in roles:
+            continue
+        ref = str(d.get('ref') or '')
+        g = progress.setdefault(role, {}).setdefault(ref, {'open': False, 'last': None})
+        result = str(d.get('result') or '')
+        if result == 'ok':
+            g['open'] = False
+        elif result == 'warn':
+            g['open'] = True
+            g['last'] = {'time': str(d.get('ts'))[11:16], 'area': '진행',
+                         'event': str(d.get('event') or '').strip()[:120], 'result': 'warn'}
+    for role, refs in progress.items():
+        opens = [g['last'] for g in refs.values() if g['open'] and g['last']]
+        if not opens:
+            continue
+        r = roles[role]
+        r['idle_since'] = None
+        r['last'] = max(opens, key=lambda x: x['time'])
+        r['lanes'] = len(opens)
+
     # 오늘 저장 수 — 제목 머리 「[닉]」 또는 scope「(role)」 · 기계 발행 커밋 제외
     try:
         out = subprocess.run(['git', '-C', str(ROOT), 'log', '--no-merges', f'--since={day} 00:00', '--format=%s'],
@@ -793,6 +835,43 @@ def _selfcheck() -> None:
     print(f'[OK] kungjjak_board 자가검사 통과 — {len(TABLE_COLUMNS)}칸 정본 유지, 역할 무관 동일 헤더')
 
 
+def _selfcheck_board_idle() -> None:
+    """관제판 idle 판정 회귀 검사(2026-09-18 실측 — 열린 진행 레인인데 '대기'로 뜸 · GM 지적).
+    임시 worklog 로 두 시나리오를 재서 idle_since·lanes 가 기대대로 나오는지 본다 — 진짜 원장은
+    안 건드린다(LOG 를 잠깐 바꿔치고 끝나면 되돌린다)."""
+    global LOG
+    day = '2099-01-01'
+    rows = [
+        {'ts': f'{day}T10:00:00+09:00', 'role': 'cto', 'area': '진행',
+         'event': '레인 착수', 'result': 'warn', 'detail': '', 'ref': 'X-1', 'url': ''},
+        {'ts': f'{day}T10:00:17+09:00', 'role': 'cto', 'area': 'GM요청',
+         'event': '답변 종결 — 세션이 응답을 마쳤다', 'result': 'ok', 'detail': '', 'ref': 'GM-1', 'url': ''},
+        {'ts': f'{day}T10:05:00+09:00', 'role': 'cmo', 'area': '진행',
+         'event': '레인 착수', 'result': 'warn', 'detail': '', 'ref': 'Y-1', 'url': ''},
+        {'ts': f'{day}T10:05:05+09:00', 'role': 'cmo', 'area': '진행',
+         'event': '레인 종료', 'result': 'ok', 'detail': '', 'ref': 'Y-1', 'url': ''},
+        {'ts': f'{day}T10:05:10+09:00', 'role': 'cmo', 'area': 'GM요청',
+         'event': '답변 종결 — 세션이 응답을 마쳤다', 'result': 'ok', 'detail': '', 'ref': 'GM-2', 'url': ''},
+    ]
+    body = '\n'.join(json.dumps(x, ensure_ascii=False) for x in rows) + '\n'
+    tmp = ROOT / 'status' / f'_selfcheck_board_{day}.jsonl'
+    tmp.write_text(body, encoding='utf-8')
+    orig = LOG
+    LOG = tmp
+    try:
+        b = _board(day)
+    finally:
+        LOG = orig
+        tmp.unlink(missing_ok=True)
+    cto = b['roles']['cto']
+    assert cto['idle_since'] is None, f"cto: 진행 warn(ok 없음)인데 idle_since={cto['idle_since']!r} (기대 None)"
+    assert cto.get('lanes') == 1, f"cto: lanes={cto.get('lanes')!r} (기대 1)"
+    cmo = b['roles']['cmo']
+    assert cmo['idle_since'] is not None, "cmo: 진행 warn+ok(닫힘)인데 idle_since 가 None — 쉬는 중 신호가 사라졌다"
+    assert not cmo.get('lanes'), f"cmo: lanes={cmo.get('lanes')!r} (기대 0)"
+    print('[OK] kungjjak_board 관제판 idle 판정 자가검사 통과 — 열린 진행 레인=대기 아님(lanes 1)·닫힌 레인=쉬는 중')
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
@@ -809,6 +888,7 @@ def main() -> int:
 
     if a.selfcheck:
         _selfcheck()
+        _selfcheck_board_idle()
         return 0
 
     if a.emit:
