@@ -301,8 +301,12 @@
 
   @media (max-width:760px){
     .layout{flex-direction:column;}
-    .sidebar{width:100%; position:relative; height:auto;}
-    .main{padding:32px 24px;}
+    /* 모바일 첫 화면에 본문이 먼저 나오게 — 사이드바를 display:contents 로 풀어(width·position·height 는
+       그래서 무의미해 지웠다) 로고 머리줄(.brand)만 맨 위에 남기고 메뉴 목록(.nav-label·.nav·.foot)은
+       본문 뒤로 보낸다. 계정 알약(#wp-acct)은 원래 position:fixed 라 영향 없음(배 2813 후속 · GM 지시 2026-09-18). */
+    .sidebar{display:contents;}
+    .sidebar .brand{order:-2;}
+    .main{order:-1; padding:32px 24px;}
     .grid-2,.grid-3{grid-template-columns:1fr;}
     /* 홈 히어로 매출·지출 카드 — 가로 폭이 좁을 때 그리드 트랙이 min-content 로 안 줄어들어
        문서 전체가 544px 로 넓어지던 것(배 2813 · 실측 erp.wellperion.com/home 390·430px).
