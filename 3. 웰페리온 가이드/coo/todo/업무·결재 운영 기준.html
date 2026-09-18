@@ -166,6 +166,48 @@ footer{color:var(--dim);font-size:12.5px;border-top:1px solid var(--border);padd
 </section>
 
 <section>
+  <div class="sec-h"><span class="sec-n">기준 3-1</span><h2>경험치·레벨·급여 연동</h2>
+    <span class="why">점수는 평가로만 끝나지 않고 경험치로 쌓여 레벨이 되고, 레벨이 급여 밴드를 정합니다. 점수를 비우면 경험치도 0입니다.</span></div>
+  <div class="sec-b">
+    <table>
+      <thead><tr><th>조건</th><th>경험치</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>완료(결재 건은 결재완료 + 결과보고까지)</td><td class="num">점수 그대로(하 1 · 중 5 · 상 10)</td><td>담당자 칸의 사람에게 · 공동 담당은 각자 전액</td></tr>
+        <tr><td>기한 안에 완료</td><td class="num">×1.2</td><td>종료일 당일까지</td></tr>
+        <tr><td>기한 지나 완료</td><td class="num">×0.5</td><td></td></tr>
+        <tr><td>반려·보류·삭제</td><td class="num">0</td><td></td></tr>
+        <tr><td>결재 SSOT 에서 대표님 서명까지</td><td class="num">+2</td><td>결재 타는 건만</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>레벨</th><th>누적 경험치</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>Lv1</td><td class="num">0~49</td><td>시작</td></tr>
+        <tr><td>Lv2</td><td class="num">50~149</td><td>자기 팀 일을 스스로 굴림</td></tr>
+        <tr><td>Lv3</td><td class="num">150~299</td><td>2개 팀 일을 이어 붙임</td></tr>
+        <tr><td>Lv4</td><td class="num">300~499</td><td>전사 일을 맡김</td></tr>
+        <tr><td>Lv5</td><td class="num">500~</td><td>체계를 만드는 사람</td></tr>
+      </tbody>
+    </table>
+    <div class="mut" style="font-size:12px">제안값 · GM 확정 전</div>
+    <table>
+      <thead><tr><th>레벨</th><th>밴드</th><th>금액</th></tr></thead>
+      <tbody>
+        <tr><td>Lv1</td><td>기본</td><td>GM 확정</td></tr>
+        <tr><td>Lv2</td><td>밴드 A</td><td>GM 확정</td></tr>
+        <tr><td>Lv3</td><td>밴드 B</td><td>GM 확정</td></tr>
+        <tr><td>Lv4</td><td>밴드 C</td><td>GM 확정</td></tr>
+        <tr><td>Lv5</td><td>밴드 D</td><td>GM 확정</td></tr>
+      </tbody>
+    </table>
+    <div class="rule"><span class="k">·</span><span class="t">경험치는 업무 SSOT 완료 행에서 자동으로 센다(사람이 따로 적지 않는다).</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">분기 누적 → 분기 말 레벨 확정 → 다음 분기 밴드 적용 · 중간관리자 평가(ERP 관리자 페이지 평가 탭)와 같은 원장.</span></div>
+    <div class="rule"><span class="k">·</span><span class="t">금액·밴드는 GM 이 확정하고 CHRO(나우열M) 라인이 급여에 반영 — 이 페이지는 규칙만 둔다.</span></div>
+    <div class="fact"><b>지금 상태</b> — 점수 비어 있는 행이 있으면 그 사람의 경험치가 그만큼 빠진다(기준 3 실측 참조).</div>
+  </div>
+</section>
+
+<section>
   <div class="sec-h"><span class="sec-n">기준 4</span><h2>일정(마감일) 적기</h2>
     <span class="why">마감일이 있어야 언제 도와드릴지 알 수 있습니다. 감시가 아니라 지원을 위한 칸입니다.</span></div>
   <div class="sec-b">
