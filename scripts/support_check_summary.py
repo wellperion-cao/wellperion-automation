@@ -89,9 +89,13 @@ def _num(n) -> str:
 FETCH_FAILED = "조회 실패"   # '진짜 0' 과 '못 읽음' 을 가르는 표식(아래 주석 참조)
 
 
-def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0,
+def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 60.0,
               tries: int = 3, require_ok: bool = True) -> dict | None:
     """GAS GET → dict(ok=true)만 반환. 끝까지 실패하면 None(정직 — 지어내기 금지).
+
+    ★2026-09-18 timeout 20→60초(배 12760 추가) — 점검 GAS weekly 응답이 실측 18~36초(1회
+      172초)라 20초면 세 번 다 끊겨 9/17 저녁 🅿 주차부 절이 「조회 실패」로 나갔다. 재시도는
+      그대로 3회.
 
     ★2026-08-06 GM 지적으로 재시도를 붙였다. GM 원문: "실무진들이 더 집중할 수 있게
       백엔드에서 실수가 있으면 안 돼… 실무진 힘나게 해야지 힘빠지게 하면 안 돼."
