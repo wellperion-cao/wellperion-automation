@@ -486,7 +486,7 @@
         f2.textContent = weeks.map(function(w){
           return w + ' ' + wk[w].map(function(r){
             var q = r.questions == null ? '미측정' : r.questions, rp = r.replies == null ? '미측정' : r.replies;
-            return (PN[r.partner] || r.partner) + ' 인스타' + r.insta + '·블로그' + r.blog_pub + '/' + r.blog_draft + '·질문' + q + '·회신' + rp;
+            return (PN[r.partner] || r.partner) + ' 인스타' + r.insta + '·블로그' + r.blog_pub + '/' + r.blog_draft + '·질문(시험 섞임)' + q + '·회신' + rp;
           }).join(' · ');
         }).join(' | ');
       }
