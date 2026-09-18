@@ -30,6 +30,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -544,6 +546,10 @@ def main() -> int:
         log(style, "주말 정지(토·일 · GM 2026-09-18 평일만 발행) — 생성·발행 없음")
         return 0
     state = load_state(style)
+    filled = _fill_missing_urls(style, state)
+    if filled:
+        log(style, f"RSS 로 지난 글 주소 {filled}건 채움")
+        save_state(style, state)
     if _already_ok_today(state) and not args.dry_run and not args.force:   # dry-run 은 생성·검사만 시험하는 길이라 당일 성공 여부와 무관(2026-09-17 감사)
         log(style, "오늘 이미 임시저장 성공 — 건너뜀")
         return 0
@@ -689,6 +695,59 @@ def _post_url(out: str) -> str:
     url = m.group(1)
     b, n = re.search(r"[?&]blogId=([A-Za-z0-9_-]+)", url), re.search(r"[?&]logNo=(\d+)", url)
     return f"https://blog.naver.com/{b.group(1)}/{n.group(1)}" if b and n else url
+
+
+def _blog_id_from_style(style: dict) -> str:
+    """RSS 조회용 네이버 블로그 ID — blog_style.json 에 이미 있는 값만 쓴다
+    (jo="blog_id_real" 은 뒤에 괄호 설명이 붙어 있어 앞 토큰만 쓴다). 없으면 빈 문자열."""
+    raw = style.get("blog_account") or style.get("blog_id_real") or ""
+    return raw.split()[0] if raw else ""
+
+
+def _rss_link_for_title(xml_text: str, title: str) -> str:
+    """공개 RSS 항목 중 제목이 완전히 같은 글의 링크(추적 파라미터 제거). 못 찾으면 빈 문자열
+    — 임시저장이라 정말 공개된 적이 없으면 애매하게 채우지 않고 그대로 둔다."""
+    want = title.strip()
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return ""
+    for item in root.iter("item"):
+        if (item.findtext("title") or "").strip() == want:
+            return (item.findtext("link") or "").strip().split("?")[0]
+    return ""
+
+
+def _fetch_rss(blog_id: str, timeout: int = 10) -> str:
+    """공개 RSS(로그인 불필요) — 실패해도 발행 흐름을 막지 않는다."""
+    try:
+        req = urllib.request.Request(f"https://rss.blog.naver.com/{blog_id}.xml",
+                                      headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        print(f"[WARN] RSS 조회 실패(무시): {exc}")
+        return ""
+
+
+def _fill_missing_urls(style: dict, state: dict) -> int:
+    """실행 시작 때 한 번 — ok 인데 url 이 빈 지난 기록만 RSS 로 채운다(제목 완전 일치만)."""
+    targets = [r for r in state.get("runs", []) if r.get("result") == "ok" and not r.get("url")]
+    if not targets:
+        return 0
+    blog_id = _blog_id_from_style(style)
+    if not blog_id:
+        return 0
+    xml_text = _fetch_rss(blog_id)
+    if not xml_text:
+        return 0
+    filled = 0
+    for r in targets:
+        link = _rss_link_for_title(xml_text, r.get("topic", ""))
+        if link:
+            r["url"] = link
+            filled += 1
+    return filled
 
 
 def _fail_streak(state: dict) -> int:
@@ -841,6 +900,19 @@ def _self_test() -> None:
     assert _post_url("post_url: https://blog.naver.com/PostView.naver?blogId=spogym21qa&Redirect=View&logNo=224415780789&isAfterWrite=true") \
         == "https://blog.naver.com/spogym21qa/224415780789"
     assert _post_url("post_url: (회수불가)") == ""
+
+    # ── RSS 빈 url 채우기: 제목 완전 일치만, 못 찾으면 비워 둔다 ──
+    fake_rss = ("<rss><channel>"
+                "<item><title>가짜 제목 A</title><link>https://blog.example.com/acct/111?fromRss=true</link></item>"
+                "</channel></rss>")
+    assert _rss_link_for_title(fake_rss, "가짜 제목 A") == "https://blog.example.com/acct/111"
+    assert _rss_link_for_title(fake_rss, "없는 제목") == ""
+    assert _rss_link_for_title("<broken", "가짜 제목 A") == ""
+    assert _blog_id_from_style({"blog_account": "acct1"}) == "acct1"
+    assert _blog_id_from_style({"blog_id_real": "acct2 (주소용 · 표시명 다름)"}) == "acct2"
+    assert _blog_id_from_style({}) == ""
+    assert _fill_missing_urls({"blog_account": ""}, {"runs": [{"result": "ok", "topic": "x"}]}) == 0, "블로그 id 없으면 조회 안 함"
+    assert _fill_missing_urls({}, {"runs": [{"result": "ok", "url": "이미있음", "topic": "x"}]}) == 0, "이미 있는 url 은 안 건드림"
 
     # ── 비밀 파일 파서: 공백·CRLF 허용, 키 없으면 None ──
     assert _secret_from_response(200, {"ok": True, "id": "abc", "pw": "Xample1234!"}) == {"NAVER_ID": "abc", "NAVER_PW": "Xample1234!"}
