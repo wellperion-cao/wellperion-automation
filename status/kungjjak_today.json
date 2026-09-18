@@ -478,7 +478,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 4
         }
       ],
       "repeats": []
@@ -632,18 +632,6 @@
         }
       ],
       "work": [
-        {
-          "time": "06:18",
-          "area": "작업",
-          "event": "feat(admin): 관리자 화면 3장 구글 폴백 제거 — 자율현황·C레벨 가이드 읽기 read_file 폴백·가이드 저장 commit_file 예비(비밀번호 물음 포함)·카톡전송관리 6분 구글 우회+API 실패",
-          "detail": "커밋 fbb008b2cb · 배 12730"
-        },
-        {
-          "time": "06:25",
-          "area": "작업",
-          "event": "feat(assets): 화면 열람 흔적(page_ping.js · 100장 공유) — ERP 도메인에서는 구글 직행 대신 서버 쓰기 관문(/api/write saveBoard)으로 · 배 11299 (GM 2026",
-          "detail": "커밋 6eb6f689f5 · 배 12730"
-        },
         {
           "time": "06:27",
           "area": "진행",
@@ -811,6 +799,18 @@
           "area": "작업",
           "event": "fix(pages): 공개 Pages 복사에서 status/_queue_archive.json·ssot/incidents.json 제외 — 회원 개인정보 노출 차단(배 12750 P0 · GM 09-18)",
           "detail": "커밋 47d21989f6 · 배 12680"
+        },
+        {
+          "time": "11:16",
+          "area": "작업",
+          "event": "fix(billing): charge_one 토스 호출 전 pending 행 선점(PK) · orderId BILL-{tenant}-{YYYYMM} 고정 · 응답 없음은 unknown 으로 남기고 조회로만 확정(재청",
+          "detail": "커밋 f165fec54d · 배 12680"
+        },
+        {
+          "time": "11:19",
+          "area": "진행",
+          "event": "12750 랩스 배포 전 P0 3건",
+          "detail": "53e5ab38f6·47d21989f6·f165fec54d · 서버 배포 11:1x · Pages 두 파일 404 실측 · billing selftest ok · 웰리 회신"
         }
       ],
       "count": 12,
@@ -935,13 +935,19 @@
           "area": "진행",
           "event": "2740 영문 홈 메타설명 교체 완료",
           "detail": "60cd98b38f · 라이브 meta/og/twitter 영문 · 피트니스 0 (10:59)"
+        },
+        {
+          "time": "11:18",
+          "area": "작업",
+          "event": "revert(ssot): [GM 지시 2026-09-18] 업무 현황 SSOT 카드 보드 원복 — 3열 격자(09-17 시모 f7ba8a9114) 걷어 종전 가로 나열(카테고리 열 450px · 가로 스크롤)로 (G",
+          "detail": "커밋 e88fff3f4a · 배 12748"
         }
       ],
       "count": 2,
       "done": 2,
       "open": 0,
       "avg_minutes": 4,
-      "work_count": 14,
+      "work_count": 15,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1103,6 +1109,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-5004",
+          "no": "04",
+          "got": "지금 업무 SSOT 카드형식이 좌우 나열이 아니라 3칸빼곤 세로 나열인데? 이거 원복해줘야해 너무 불편해",
+          "did": "[GM 지시 2026-09-18] 업무 현황 SSOT 카드 보드 원복 — 3열 격자(09-17 시모 f7ba8a9114) 걷어",
+          "start": "11:16",
+          "end": "11:18",
+          "minutes": 1,
+          "upload": "✅ 배포 (f7ba8a911)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -1149,8 +1167,8 @@
           "detail": "커밋 93f75bba3 · CSS 규칙 245개 제거 픽셀차 0 · 390px 가로스크롤 없음 · page_score 86/85"
         }
       ],
-      "count": 3,
-      "done": 3,
+      "count": 4,
+      "done": 4,
       "open": 0,
       "avg_minutes": 0,
       "work_count": 7,
@@ -1394,7 +1412,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T11:16:07",
+    "published_at": "2026-09-18T11:19:14",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -1417,14 +1435,14 @@
         "alive": true,
         "signal": "11:15",
         "last": {
-          "time": "10:58",
+          "time": "11:19",
           "area": "진행",
-          "event": "12750 랩스 배포 전 P0 3건(카카오 결합·Pages 개인정보·결제 이중청구) 레인 착수",
-          "result": "warn"
+          "event": "12750 랩스 배포 전 P0 3건",
+          "result": "ok"
         },
         "idle_since": null,
         "saves": 43,
-        "lanes": 1
+        "lanes": 0
       },
       "cmo": {
         "nick": "시모",
@@ -1462,13 +1480,13 @@
         "alive": true,
         "signal": "11:15",
         "last": {
-          "time": "10:56",
+          "time": "11:16",
           "area": "GM요청",
-          "event": "자율 순환 한 바퀴(wellperion-boot §7-6 · role=coo): ① C:/Python314/python.exe scripts/welly_auto_runner.py --boot-candidate --c",
+          "event": "지금 업무 SSOT 카드형식이 좌우 나열이 아니라 3칸빼곤 세로 나열인데? 이거 원복해줘야해 너무 불편해",
           "result": "warn"
         },
-        "idle_since": "10:56",
-        "saves": 5,
+        "idle_since": "11:18",
+        "saves": 6,
         "lanes": 0
       },
       "cbo": {
