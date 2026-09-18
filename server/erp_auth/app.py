@@ -2161,7 +2161,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     # 짧은 주소 /home·/guide 는 가이드 화면과 같은 경로로 판정된다(2026-09-16 · 직원 계정 403 사고)
     assert uri_path("/home") == "/wellperion_guide(main).html" == uri_path("/guide?x=1") == uri_path("/wellperion_guide(main).html#S3")
     # 플랫폼관리 = 회사 계정 관리자만(GM 2026-09-14) — 관리자 등급이라도 개인 아이디는 못 연다
-    _adm_personal = {"role": "admin", "email": "namuk87", "perms": None}
+    # 표본 이메일은 실제 PLATFORM_ADMINS 와 절대 겹치면 안 된다 — 겹치면(예: 서버 env 에 GM 개인 계정이
+    # 들어간 경우) 아래 assert 들이 전부 실패해 자가점검이 죽는다(2026-09-18 서버 AssertionError 원인).
+    assert "personal-admin@example.test" not in PLATFORM_ADMINS
+    _adm_personal = {"role": "admin", "email": "personal-admin@example.test", "perms": None}
     _adm_company = {"role": "admin", "email": "cao@wellperion.com", "perms": None}
     assert path_allowed(_adm_company, uri_path("/erp/admin/")) and path_allowed(_adm_company, "/erp/admin/index.html")
     assert not path_allowed(_adm_personal, uri_path("/erp/admin/")) and not path_allowed(_adm_personal, "/erp/admin/clevel-guide.html")
