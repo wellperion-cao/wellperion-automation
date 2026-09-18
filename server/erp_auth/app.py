@@ -169,6 +169,24 @@ def team_names() -> list:
     return []
 
 
+# 상담봇 tenant(센터) 목록 — 정본 = 3. 웰페리온 가이드/cbo/counsel_tenants.json 하나(상담봇 화면 3개가 같이 읽는 파일).
+# 파트너 계정 tenant 칸 select·검증이 여기서 나온다(배 12768 · 상담봇_기획설계_v1.0.html §12 요건 ⑤).
+_COUNSEL_TENANTS_PATHS = ("/srv/erp/repo/3. 웰페리온 가이드/cbo/counsel_tenants.json",
+                          os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                                       "3. 웰페리온 가이드", "cbo", "counsel_tenants.json"))
+
+
+def counsel_tenants() -> list:
+    for p in _COUNSEL_TENANTS_PATHS:
+        try:
+            with open(p, encoding="utf-8") as f:
+                return [{"id": t["id"], "name": t.get("name") or t["id"]}
+                        for t in (json.load(f).get("tenants") or []) if t.get("id")]
+        except (OSError, ValueError, KeyError):
+            continue
+    return []
+
+
 def rank_tier(rank: str) -> str:
     """그 직급이 리더급인가 팀원급인가. 모르는 값이면 member(좁은 쪽) — 안전한 쪽으로 떨어뜨린다."""
     key = str(rank or "").strip()
@@ -780,8 +798,14 @@ API_MODULES = {
     "/api/brojay/": {"coo-report-매출회원현황보고"},
     "/api/visitors": {"coo-report-매출회원현황보고"},
     "/api/chat/": set(),            # 상담봇 관리 API(log·unanswered·faq·stats) = 관리자만(빈 집합 = 아무 카드도 안 연다)
+                                     # · 예외 = 아래 _CHAT_TENANT_RE(파트너는 자기 tenant 만 · 배 12768 §12⑤)
     "/api/track/": {"cmo-funnel-콘텐츠문의현황"},
 }
+# 상담봇 파트너 계정 tenant 문(배 12768 §12⑤) — 화면 4개는 perms.tenant 가 있으면 열리고(폴더 규칙보다 먼저),
+# /api/chat/{t}/… 는 그 t 와 perms.tenant 가 같을 때만 연다(위 API_MODULES 의 빈 집합보다 먼저 본다).
+COUNSEL_TENANT_SCREENS = frozenset({"/cbo/counsel_faq.html", "/cbo/counsel_log.html",
+                                    "/cbo/counsel.js", "/cbo/counsel_tenants.json"})
+_CHAT_TENANT_RE = re.compile(r"^/api/chat/([^/]+)/")
 
 
 def _api_need(path: str) -> Optional[set]:
@@ -838,9 +862,14 @@ def path_allowed(user, path: str) -> bool:
     # uri_path 의 normpath 가 끝 슬래시를 떼므로('/erp/admin/'→'/erp/admin') 폴더 자체 요청도 접두에 걸리게 한 번 더 붙여 본다
     if path.startswith(ADMIN_ONLY_PREFIXES) or (path + "/").startswith(ADMIN_ONLY_PREFIXES):
         return False
+    if path in COUNSEL_TENANT_SCREENS and (perms_of(user) or {}).get("tenant"):
+        return True                                            # 상담봇 파트너 화면 4개 — tenant 있으면 폴더 규칙 앞에서 연다
     if MEMBER_DATA_RE.match(path):
         return "member" in allowed_ids(user)
     if path.startswith("/api/"):
+        m = _CHAT_TENANT_RE.match(path)
+        if m:
+            return (perms_of(user) or {}).get("tenant") == m.group(1)   # 상담봇 API = 자기 tenant 만(배 12768 §12⑤)
         need = _api_need(path)
         return True if need is None else bool(need & set(allowed_ids(user)))
     last = path.rsplit("/", 1)[-1]
@@ -1325,6 +1354,7 @@ def _profile(u) -> dict:
     role_label = ROLE_LABEL["admin"] if u["role"] == "admin" else TIER_LABEL.get(tier, ROLE_LABEL["staff"])
     return {"email": u["email"], "name": u["name"], "role": u["role"], "role_label": role_label,
             "dept": p.get("dept") or "", "rank": p.get("rank") or "", "phone": p.get("phone") or "",
+            "tenant": None if u["role"] == "admin" else (p.get("tenant") or None),   # 상담봇 파트너 센터(배 12768 §12⑤)
             "last_login": str(u["last_login"] or "") if "last_login" in u.keys() else "",
             "social": bool(u["pw"]) is False}
 
@@ -1836,6 +1866,7 @@ def admin_api_state(erp_session: Optional[str] = Cookie(default=None), erp_admin
         "exception_ids": list(EXCEPTION_ONLY_IDS),
         "ranks": rank_names(),                 # 승인 화면 직급 드롭다운(배2539) — 정본은 ssot/ranks.json 하나
         "teams": {TEAM_DEPT: team_names()},    # 파트너팀 안 팀 목록(GM 2026-09-18) — 정본은 ssot/kpi.json 팀 리더 표
+        "tenants": counsel_tenants(),           # 상담봇 tenant 목록(배 12768 §12⑤) — 정본은 cbo/counsel_tenants.json
         "social": {p: bool(social_creds(p)[0]) for p in SOCIAL},   # 값은 안 준다 — 설정됨/비어있음만(키 유출 방지)
         "history": [{
             "id": h["id"], "uid": h["uid"], "name": h["name"], "changed_by": h["changed_by"],
@@ -2115,7 +2146,7 @@ async def perms_save(uid: int, request: Request, erp_session: Optional[str] = Co
     #   통째 덮어써 저장 한 번에 부서가 「미분류」가 되고 「부서 기본 한 번에」에서 영영 빠지고 잠금도 풀렸다.
     with db() as c:
         row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
-    keep = {k: v for k, v in _row_perms(row).items() if k in ("dept", "rank", "tier", "phone", "locked", "team")} if row else {}
+    keep = {k: v for k, v in _row_perms(row).items() if k in ("dept", "rank", "tier", "phone", "locked", "team", "tenant")} if row else {}
     if form.get("reset"):
         # 「기본(핵심만)」 = 매일 쓰는 화면만. perms 가 None 이면 allowed() 가 core 만 여는데, 신원 칸을 남기려면
         # dict 여야 하므로 같은 뜻인 groups=["핵심"] 로 적는다(allowed(): 핵심 그룹 = core 모듈 전부).
@@ -2167,6 +2198,30 @@ def toggle_lock(uid: int, erp_session: Optional[str] = Cookie(default=None), erp
     p["locked"] = not p.get("locked")
     _set_perms(uid, p, me["email"])
     return RedirectResponse("/auth/admin?msg=잠금 상태를 바꿨습니다#matrix", status_code=303)
+
+
+# /auth/admin/{uid}/{action} 범용 라우트보다 먼저 선언(위 lock 과 같은 이유). 상담봇 파트너 계정의 tenant(센터)만
+# 적는다 — 권한(modules·deny)은 안 건드린다(배 12768 §12⑤). 빈 값 = tenant 해제. 목록 밖 값은 400.
+@app.post("/auth/admin/{uid}/tenant")
+async def tenant_save(uid: int, request: Request, erp_session: Optional[str] = Cookie(default=None),
+                      erp_admin: Optional[str] = Cookie(default=None)):
+    me = admin_only(erp_session, erp_admin)
+    tenant = str((await request.form()).get("tenant") or "").strip()
+    if tenant and tenant not in [t["id"] for t in counsel_tenants()]:
+        raise HTTPException(400, "모르는 tenant")
+    with db() as c:
+        row = c.execute("SELECT perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    if not row:
+        raise HTTPException(404)
+    p = _row_perms(row)
+    if (p.get("tenant") or "") == tenant:
+        return JSONResponse({"ok": True, "tenant": tenant})
+    if tenant:
+        p["tenant"] = tenant
+    else:
+        p.pop("tenant", None)
+    _set_perms(uid, p, me["email"])
+    return JSONResponse({"ok": True, "tenant": tenant})
 
 
 @app.post("/auth/admin/{uid}/{action}")
@@ -2301,6 +2356,13 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not path_allowed(_stf, uri_path("/chro/hub/")) and path_allowed(_stf, uri_path("/cpo/member/"))  # 폴더 = 같은 폴더 카드로
     assert path_allowed(_stf, "/api/lesson/members") and path_allowed(_stf, "/api/write") and path_allowed(_stf, "/erp/")
     assert not path_allowed(_stf, "/status/member_active_snapshot.json") and path_allowed(_stf, "/status/monthly_ops_plan.json")
+    # 상담봇 파트너 계정 tenant 문(배 12768 §12⑤) — API 는 자기 tenant 만, 화면 4개는 tenant 있으면 폴더 규칙 앞에서 열린다.
+    _partner = {"role": "staff", "email": "partner@x", "perms": json.dumps({"tenant": "2_dietcamp"})}
+    _no_tenant = {"role": "staff", "email": "notenant@x", "perms": json.dumps({"modules": [], "groups": [], "deny": []})}
+    assert path_allowed(_partner, "/api/chat/2_dietcamp/stats") and not path_allowed(_partner, "/api/chat/3_gocheokgolf/stats")
+    assert not path_allowed(_no_tenant, "/api/chat/2_dietcamp/stats") and path_allowed(_adm, "/api/chat/3_gocheokgolf/stats")
+    assert path_allowed(_partner, "/cbo/counsel_faq.html") and path_allowed(_partner, "/cbo/counsel_log.html")
+    assert not path_allowed(_no_tenant, "/cbo/counsel_faq.html") and not path_allowed(_partner, "/cbo/counsel_admin.html")
     assert allowed_header(_adm) == "*" and "cpo-member-lesson" in allowed_header(_stf)
     # 모듈 배치(2026-09-14) — 끈 모듈은 직원에게 안 열리고 관리자는 그대로 · 영역 이름 표
     import tempfile

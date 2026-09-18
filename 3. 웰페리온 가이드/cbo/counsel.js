@@ -25,11 +25,20 @@
     });
   }
 
-  /* 업체 목록을 읽고 지금 고른 업체를 정한다(?t=). 목록을 못 읽으면 화면이 빈 채로 서지 않게 오류를 올린다. */
+  /* 업체 목록을 읽고 지금 고른 업체를 정한다(?t=). 목록을 못 읽으면 화면이 빈 채로 서지 않게 오류를 올린다.
+     파트너 계정(perms.tenant)은 자기 센터 하나로 목록을 줄인다 — ?t= 로 다른 센터를 적어도 무시한다
+     (배 12768 §12⑤). /auth/me 를 못 읽으면(네트워크 오류 등) 종전처럼 전체 목록 그대로 — 관리자와 같은 동작. */
   function load() {
-    return j(BASE + "counsel_tenants.json").then(function (d) {
-      var list = d.tenants || [];
+    return Promise.all([
+      j(BASE + "counsel_tenants.json"),
+      j("/auth/me").catch(function () { return null; })
+    ]).then(function (r) {
+      var list = r[0].tenants || [], me = r[1];
       if (!list.length) throw new Error("업체 목록이 비어 있다");
+      if (me && me.tenant) {
+        list = list.filter(function (t) { return t.id === me.tenant; });
+        if (!list.length) throw new Error("허용된 업체가 없다");
+      }
       var want = new URLSearchParams(location.search).get("t");
       var cur = list.filter(function (t) { return t.id === want; })[0] || list[0];
       return { list: list, cur: cur, api: "/api/chat/" + cur.id };
