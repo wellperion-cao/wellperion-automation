@@ -22,11 +22,13 @@ FAQ 저장 = /srv/erp/faq/{tenant}/faq.json (tenant = "1_wellperion" | "2_dietca
     다캠 에이전트는 GM PC 전용 스크립트라 나머지 의존 모듈은 없고, FORBIDDEN 은 stdlib 만으로 끝나는 상수라 이 파일 하나만 옮기면 된다).
 의료 표현은 다캠 에이전트에 목록이 없어 이 파일에 최소로 새로 둔다(둘 다 "금액·의료" 관문 하나로 합쳐 검사).
 """
+import hashlib
 import json
 import os
 import re
 import sys
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -47,8 +49,16 @@ router = APIRouter(prefix="/api/chat")
 TENANTS = {"1_wellperion", "2_dietcamp", "3_gocheokgolf"}   # 3번은 고척 QA골프(GM 2026-09-09 「스포짐이 부장님거야」로 교체) — FAQ 0 이어도 라우트는 연다
 FAQ_DIR = os.environ.get("ERP_FAQ_DIR", "/srv/erp/faq")
 SEED_FAQ_DIR = os.path.join(_HERE, "seed_faq")   # /srv/erp/faq 에 없을 때 폴백 — 개발 PC 자체점검용(검수 L4)
-LOG_PATH = os.environ.get("ERP_CHAT_LOG", "/srv/erp/chat_log.jsonl")
-USAGE_LOG_PATH = os.environ.get("ERP_COUNSEL_USAGE_LOG", "/srv/erp/counsel_usage.jsonl")
+_LOG_FILENAMES = {"chat": "chat_log.jsonl", "usage": "counsel_usage.jsonl", "feedback": "chat_feedback.jsonl"}
+
+
+def _log_path(tenant: str, kind: str = "chat") -> str:
+    """§12③(v1.3) — 문답·사용량·피드백 로그를 FAQ 와 같은 센터 폴더에 둔다(센터 폴더 하나 = 그 센터 전부 ·
+    한 센터 파일을 넘기거나 지워도 다른 센터 행이 안 딸려 간다). 옛 ERP_CHAT_LOG·ERP_COUNSEL_USAGE_LOG·
+    ERP_CHAT_FEEDBACK_LOG 환경변수는 폐지 — 폴더 재정의는 ERP_FAQ_DIR 하나로 흡수한다."""
+    return str(Path(FAQ_DIR) / tenant / _LOG_FILENAMES[kind])
+
+
 LOG_ROTATE_BYTES = 20 * 1024 * 1024   # 검수 M4 — 크기 넘으면 회전(삭제 아님 · 배1036 GM 추가② "테스트 데이터=자산")
 UNANSWERED_TAIL_BYTES = 300 * 1024    # unanswered 는 전량 스캔 대신 로그 꼬리만 본다(검수 M4)
 _PHONE_RE = re.compile(r"0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}")
@@ -78,7 +88,6 @@ SHARED_DIR = os.environ.get(
     "ERP_COUNSELBOT_SHARED",
     "/srv/erp/counselbot/shared" if os.path.isdir("/srv/erp/counselbot/shared") else
     os.path.join(os.path.dirname(os.path.dirname(_HERE)), "server", "counselbot", "shared"))
-FEEDBACK_LOG_PATH = os.environ.get("ERP_CHAT_FEEDBACK_LOG", "/srv/erp/chat_feedback.jsonl")
 WARN_WORDS = tuple(MONEY_WORDS) + MEDICAL_WORDS + PRICE_QUESTION_WORDS   # 관리자 저장 시 경고(막지 않음) — 배1036 요청⑤
 # close_days.json 정본 = 저장소 status/(공휴일 목록도 여기). /srv/erp/www 는 sparse-checkout(3. 웰페리온
 # 가이드/status 만)이라 저장소 루트 status/ 가 거기 없다 — 전체 사본 /srv/erp/repo(매분 동기)를 먼저 본다.
@@ -332,9 +341,26 @@ def _empty_skeleton_line(type_id: str, missing: list) -> str:
             "다듬어) 답하세요. 숫자·업체 고유 값은 넣지 않습니다]\n%s" % skel)
 
 
+# §11 v1.3 — 전화·이메일 외 마스킹 3종. 비밀값 규칙은 scripts/kakao_room_listen.mask_secrets 그대로 옮겨 옴
+# (서버는 scripts/ 를 import 못 해 정규식만 복제 — 출처: kakao_room_listen.py _SECRET_AFTER_RE·_SECRET_TOKEN_RE).
+_SECRET_AFTER_RE = re.compile(
+    r"(?<![A-Za-z])(비밀번호|비번|패스워드|password|passwd|pw|아이디|계정|id)(?![A-Za-z])\s*[:：=]?\s*\S+", re.I)
+_SECRET_TOKEN_RE = re.compile(r"(?=\S*\d)(?=\S*[A-Za-z])(?=\S*[!@#$%^&*?~])\S{8,}")
+_NAME_PREFIX_RE = re.compile(r"(저는|제\s?이름은|이름은)\s*[가-힣]{2,4}?(?=입니다|님|[\s,.!?]|$)")
+_NAME_SUFFIX_RE = re.compile(r"[가-힣]{2,4}(입니다|님)")
+_ADDRESS_RE = re.compile(r"[가-힣]{1,8}동\s*\d{1,4}호|[가-힣]{1,8}아파트\s*\d{1,4}동\s*\d{1,4}호")
+
+
 def _mask_pii(q: str) -> str:
-    """로그에 남기기 전 전화번호·이메일 마스킹(검수 M5) — 상담 문의는 대개 "010-...로 연락 주세요" 형태로 온다."""
-    return _EMAIL_RE.sub("[이메일]", _PHONE_RE.sub("[전화번호]", q or ""))
+    """로그에 남기기 전 마스킹(검수 M5 · §11 v1.3 확장) — 전화·이메일(기존) + 비밀값 + 이름 + 상세주소.
+    답(a)엔 안 건다(09-17 결정 유지 · 센터 대표전화 보호). ponytail: 이름 접미(「OO입니다/님」) 패턴은
+    일반 명사("회원입니다")도 과대 마스킹할 수 있다 — 실제 로그로 오탐이 잦으면 좁힌다."""
+    q = _EMAIL_RE.sub("[이메일]", _PHONE_RE.sub("[전화번호]", q or ""))
+    q = _SECRET_AFTER_RE.sub(lambda m: m.group(1) + " [가림]", q)
+    q = _SECRET_TOKEN_RE.sub("[가림]", q)
+    q = _NAME_PREFIX_RE.sub(lambda m: m.group(1) + " [이름]", q)
+    q = _NAME_SUFFIX_RE.sub(lambda m: "[이름]" + m.group(1), q)
+    return _ADDRESS_RE.sub("[주소]", q)
 
 
 def _rotate_log_keep(path: str) -> None:
@@ -346,16 +372,50 @@ def _rotate_log_keep(path: str) -> None:
 
 
 TEST_SESSION_PREFIXES = ("cbo-test-", "test-", "sito-check-")   # GM 07-18 규칙 — 로그는 남기되 집계 제외
+# §11 ★visitor — 위 3개 + 내부 점검 통로 접두(audit-lab·cbo-check·sito-). 새로 쓰는 행의 visitor 를
+# 정하는 폴백에만 쓴다(옛 행 읽기는 _row_visitor 가 TEST_SESSION_PREFIXES 만 본다 · scripts/labs_loop.py 와 규칙 동일).
+_VISITOR_WRITE_TEST_PREFIXES = TEST_SESSION_PREFIXES + ("audit-lab", "cbo-check", "sito-")
 
 
 def _is_test_session(session_id) -> bool:
     return bool(session_id) and str(session_id).startswith(TEST_SESSION_PREFIXES)
 
 
+def _visitor_of(body: dict, session_id: str) -> str:
+    """visitor 칸(§11 ★) — 요청 본문 값이 정본(customer/test/staff) · 없으면 session_id 접두로 test 추정(폴백만)."""
+    v = str((body or {}).get("visitor") or "").strip().lower()
+    if v in ("customer", "test", "staff"):
+        return v
+    return "test" if str(session_id or "").startswith(_VISITOR_WRITE_TEST_PREFIXES) else "customer"
+
+
+def _row_visitor(row: dict) -> str:
+    """읽기 쪽 visitor 판정(stats·unanswered·chat_log · scripts/labs_loop.is_customer 와 같은 규칙) —
+    칸이 있으면 그대로, 없으면(옛 행) TEST_SESSION_PREFIXES 접두로 판정."""
+    v = row.get("visitor")
+    return v if v in ("customer", "test", "staff") else ("test" if _is_test_session(row.get("session_id")) else "customer")
+
+
 def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
          session_id: str = None, outcome: str = None, body_keys: list = None, allowed_price: str = None,
-         answer: str = None):
-    row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id}
+         answer: str = None, visitor: str = None, engine: str = None, model_id: str = None,
+         handoff: bool = None, ttfb_s: float = None, total_s: float = None, usage: dict = None):
+    row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id,
+           "visitor": visitor or "customer"}   # §11 ★ — 집계 분모 판정 칸(폴백은 호출부 _visitor_of)
+    if q:
+        row["lang"] = "en" if _is_english_q(q) else "ko"   # §11 — 질문 언어(외국인 회원 수요 신호)
+    if engine:
+        row["engine"] = engine   # §11 — model/faq/today_hours/handoff/guard(누가 답했나)
+        if model_id:
+            row["model_id"] = model_id
+    if handoff is not None:
+        row["handoff"] = bool(handoff)   # §11 — 예약·전화로 넘긴 답인가(핸드오프율 분자)
+    if ttfb_s is not None:
+        row["ttfb_s"] = ttfb_s   # §11 — 첫 글자까지 초(§13 첫 글자 시간의 유일한 원천)
+    if total_s is not None:
+        row["total_s"] = total_s
+    if usage:
+        row["usage"] = usage   # §11 — in/out/cache 토큰(usage["req_id"] 로 counsel_usage.jsonl 과 잇는다)
     if answer:
         # 손님에게 실제로 나간 답(배2533② · GM 지시 2026-09-11 「질문하는 것들 다 저장하고 가공해줘」).
         # 질문만 있고 답이 없으면 「그 답이 맞았나」를 나중에 못 본다. 마스킹은 질문(q)에만 건다 — 답에
@@ -383,9 +443,10 @@ def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs
     if session_id:
         row["session_id"] = session_id   # 시보 요청② — 테스트 세션 필터(집계 제외)에 쓴다·개인정보 아님
     try:
-        os.makedirs(os.path.dirname(LOG_PATH) or ".", exist_ok=True)
-        _rotate_log_keep(LOG_PATH)
-        with open(LOG_PATH, "a", encoding="utf-8") as f:
+        path = _log_path(tenant)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        _rotate_log_keep(path)
+        with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
         pass  # ponytail: 로그 실패가 고객 답변을 막으면 안 된다
@@ -440,13 +501,19 @@ def _handle_chat(tenant: str, body: dict, ip: str = ""):
     # 전부 invalid_request → 핸드오프 문구 → 「봇이 죽었다」로 오판됐다. 파는 물건이라 남의 클라이언트가 붙는다).
     q = str(body.get("q") or body.get("message") or body.get("question") or "").strip()
     session_id = str(body.get("session_id") or "")[:128]   # 배1036 GM 구조전환② — 클라이언트가 만든 임의 문자열
+    if not session_id:
+        # §11 — session_id 없으면 서버가 채운다. ponytail: IP 로 묶어 익명 다회차 흐름을 살리는 값이라
+        # 같은 IP 뒤 여러 손님(공용 와이파이 등)이 잠깐 문맥을 나눠 쓸 수 있다 — 실측으로 문제되면 세션당
+        # 값(예: User-Agent 조합)으로 좁힌다.
+        session_id = "anon-" + hashlib.sha256((ip or "").encode()).hexdigest()[:8]
+    visitor = _visitor_of(body, session_id)   # §11 ★ — 집계 분모 판정 칸
     data = _load_faq(tenant)
     fallback = _fallback_text(tenant, data.get("meta"))
     if len(q) > MAX_Q_CHARS:
         # 배 12752 #7 — 긴 본문은 모델로 안 보낸다(비용·주입 표면). 위젯·counsel 화면은 상태 코드와 무관하게
         # r.json().answer 를 그대로 띄우므로 안내 문구를 answer 에 싣는다. 문답이 아니라 지표엔 안 센다.
         _log(tenant, q[:100], False, None, session_id=session_id, outcome="invalid_request",
-             body_keys=["q_len=%d" % len(q)])
+             body_keys=["q_len=%d" % len(q)], visitor=visitor)
         return {"ok": False, "answered": False, "faq_id": None, "tenant": tenant,
                 "answer": "질문은 %d자 안쪽으로 나눠서 보내 주세요 🙏" % MAX_Q_CHARS}, 400
     if q and ip and _over_ip_limit(ip):
@@ -468,72 +535,80 @@ def _handle_chat(tenant: str, body: dict, ip: str = ""):
         #   실제로 생기므로, 그때 우리가 "손님이 새고 있다"를 볼 수 있어야 한다.
         #   질문 내용은 없으니 안 남기고, 어떤 키를 보냈는지만 남긴다(값 없음 · 개인정보 없음).
         _log(tenant, "", False, None, session_id=session_id, outcome="invalid_request",
-             body_keys=sorted(str(k)[:24] for k in (body or {}).keys())[:10])
+             body_keys=sorted(str(k)[:24] for k in (body or {}).keys())[:10], visitor=visitor)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return out, 200
 
     if _forbidden_hit(q, tenant):
-        _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None))
+        _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None),
+             visitor=visitor, engine="guard", handoff=True)
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
         return out, 200
 
     # 주 엔진(배1036 GM 구조전환) — 정본 학습형 컨시어지 모델. 실패/키없음/일일한도 = "error"(레거시 매칭 백업으로).
-    text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id, type_id, missing)
+    _meta: dict = {}
+    text, status, allowed_price = (None, "error", None) if _over_daily_limit(tenant) else _concierge_answer(tenant, q, session_id, type_id, missing, meta=_meta)
     if status == "ok":
         _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text,
-             outcome=_money_outcome(type_id, allowed_price))
+             outcome=_money_outcome(type_id, allowed_price), visitor=visitor, engine="model",
+             model_id=_meta.get("model_id"), handoff=False, ttfb_s=_meta.get("ttfb_s"),
+             total_s=_meta.get("total_s"), usage=_meta.get("usage"))
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
         _log(tenant, q, False, None, type_id, missing, session_id,   # ⑤ 핸드오프 = 미답 기록(관리자 페이지·아침 회로가 읽는다)
-             outcome=_money_outcome(type_id, None))
+             outcome=_money_outcome(type_id, None), visitor=visitor, engine="guard", model_id=_meta.get("model_id"),
+             handoff=True, ttfb_s=_meta.get("ttfb_s"), total_s=_meta.get("total_s"), usage=_meta.get("usage"))
         out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     else:
         # 백업(§3-1⑥) — 키 없음·모델 오류·한도(429) 때만. 오늘 운영 질문은 모델 없이도 코드로 바로 답한다(배1036 GM⑥).
         today_line = _today_hours_line(tenant)
         if today_line and _is_hours_question(q):
             _log(tenant, q, True, "today_hours", type_id, missing, session_id, answer=today_line,
-                 outcome=_money_outcome(type_id, None))
+                 outcome=_money_outcome(type_id, None), visitor=visitor, engine="today_hours", handoff=False)
             out = {"ok": True, "answered": True, "answer": today_line, "faq_id": "today_hours", "tenant": tenant}
         else:
             item, score = _best_match(q, data.get("faq") or [])
             if item and score >= MATCH_THRESHOLD:
                 _log(tenant, q, True, item.get("id"), type_id, missing, session_id, answer=item.get("a", ""),
-                     outcome=_money_outcome(type_id, None))
+                     outcome=_money_outcome(type_id, None), visitor=visitor, engine="faq", handoff=False)
                 out = {"ok": True, "answered": True, "answer": item.get("a", ""), "faq_id": item.get("id"), "tenant": tenant}
             else:
-                _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None))
+                _log(tenant, q, False, None, type_id, missing, session_id, outcome=_money_outcome(type_id, None),
+                     visitor=visitor, engine="handoff", handoff=True)
                 out = {"ok": True, "answered": False, "answer": fallback, "faq_id": None, "tenant": tenant}
     return out, 200
 
 
-def _log_generations() -> list:
-    """현재 로그 + 회전본(.타임스탬프) 전부, 오래된 것부터. 회전본을 안 읽으면 과거가 통째로 조회 불가가
-    된다(시보 지적 2026-09-11 ③ — 지금은 양이 작아 안 아프지만 손님이 오면 바로 아프다)."""
-    d = os.path.dirname(LOG_PATH) or "."
-    base = os.path.basename(LOG_PATH)
+def _log_generations(tenant: str) -> list:
+    """이 센터의 현재 로그 + 회전본(.타임스탬프) 전부, 오래된 것부터(§12③ — 센터 폴더 안에서만 돈다).
+    회전본을 안 읽으면 과거가 통째로 조회 불가가 된다(시보 지적 2026-09-11 ③)."""
+    path = _log_path(tenant)
+    d = os.path.dirname(path) or "."
+    base = os.path.basename(path)
     try:
         names = [n for n in os.listdir(d) if n == base or n.startswith(base + ".")]
     except OSError:
         return []
     # 회전본 이름 = <base>.20260911193000 → 이름순이 곧 시간순. 현재 파일이 가장 최신이라 맨 뒤.
     rotated = sorted(n for n in names if n != base)
-    return [os.path.join(d, n) for n in rotated] + ([LOG_PATH] if base in names else [])
+    return [os.path.join(d, n) for n in rotated] + ([path] if base in names else [])
 
 
 @router.get("/{tenant}/log")
-def chat_log(tenant: str, days: int = 30, limit: int = 500, offset: int = 0, include_test: bool = True):
+def chat_log(tenant: str, days: int = 30, limit: int = 500, offset: int = 0, include_test: bool = False):
     """상담 문답 전량 조회 — 답한 것 포함(배2533② · GM 지시 2026-09-11 「다 저장하고 가공해줘」).
 
     /unanswered 는 미답만·꼬리 300KB 라 손님이 실제로 무엇을 물었는지의 대부분이 안 나왔다. 이 통로는
     회전본까지 읽고 답 본문(a)도 같이 준다. 최신순으로 offset·limit 로 넘긴다.
-    테스트 세션은 지우지 않고 is_test 로 표시만 한다(GM 「테스트 데이터=자산」) — include_test=0 이면 뺀다.
+    테스트 행은 지우지 않고 is_test 로 표시만 한다(GM 「테스트 데이터=자산」) — 기본은 손님(customer)만
+    돌려주고, include_test=1 이면 전부(§11 v1.3 · visitor 칸 기준 · 옛 행은 _row_visitor 가 접두로 폴백).
     """
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = (datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)).isoformat()
     rows = []
-    for path in _log_generations():
+    for path in _log_generations(tenant):
         try:
             with open(path, encoding="utf-8", errors="replace") as f:
                 for line in f:
@@ -548,13 +623,14 @@ def chat_log(tenant: str, days: int = 30, limit: int = 500, offset: int = 0, inc
                         continue
                     if str(r.get("ts") or "") < cutoff:
                         continue
-                    is_test = _is_test_session(r.get("session_id"))
-                    if is_test and not include_test:
+                    visitor = _row_visitor(r)
+                    if visitor != "customer" and not include_test:
                         continue
                     rows.append({"ts": r.get("ts"), "q": r.get("q"), "a": r.get("a"),
                                  "answered": bool(r.get("answered")), "faq_id": r.get("faq_id"),
                                  "type_id": r.get("type_id"), "needs_facts": r.get("needs_facts"),
-                                 "session_id": r.get("session_id"), "is_test": is_test})
+                                 "session_id": r.get("session_id"), "is_test": visitor != "customer",
+                                 "visitor": visitor})
         except OSError:
             continue
     rows.sort(key=lambda x: str(x.get("ts") or ""), reverse=True)
@@ -569,9 +645,10 @@ def chat_log(tenant: str, days: int = 30, limit: int = 500, offset: int = 0, inc
 
 
 @router.get("/{tenant}/unanswered")
-def unanswered(tenant: str, days: int = 7, gaps: bool = False):
+def unanswered(tenant: str, days: int = 7, gaps: bool = False, include_test: bool = False):
     """미답 목록 — gaps=1 이면 답은 했지만 needs_facts 가 남은 행도 같이 준다(시보 요청① ·
-    diet_camp_agent.bot_gaps 가 소비 · "이 유형에 필요한 정본 칸이 비었다" 신호는 답 성공 여부와 무관하게 값지다)."""
+    diet_camp_agent.bot_gaps 가 소비 · "이 유형에 필요한 정본 칸이 비었다" 신호는 답 성공 여부와 무관하게 값지다).
+    기본은 visitor=customer 행만(§11 v1.3) · include_test=1 이면 전부."""
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
@@ -580,7 +657,7 @@ def unanswered(tenant: str, days: int = 7, gaps: bool = False):
         # 전량 스캔 대신 로그 꼬리만 본다(검수 M4) — 회전(20MB)으로 크기는 이미 눌러뒀고, 아침 학습 회로가
         # 보는 창은 최근 며칠뿐이라 꼬리 300KB 로 충분하다. ponytail: 정확히 days 일치 안 되면(꼬리 밖 과거
         # 행 누락) 회전 세대(.1)까지 볼 것 — 지금은 그 정도로 못 미친다.
-        with open(LOG_PATH, "rb") as fb:
+        with open(_log_path(tenant), "rb") as fb:
             fb.seek(0, os.SEEK_END)
             size = fb.tell()
             start = max(0, size - UNANSWERED_TAIL_BYTES)
@@ -594,7 +671,7 @@ def unanswered(tenant: str, days: int = 7, gaps: bool = False):
                     row = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if row.get("tenant") != tenant or _is_test_session(row.get("session_id")):
+                if row.get("tenant") != tenant or (_row_visitor(row) != "customer" and not include_test):
                     continue
                 if row.get("outcome") == "invalid_request":
                     continue   # 질문이 빈 행이라 학습거리가 없다 — 아침 승격 목록에 올리지 않는다(배1074④)
@@ -716,8 +793,9 @@ async def edit_faq(tenant: str, request: Request):
 
 
 @router.get("/{tenant}/stats")
-def stats(tenant: str, days: int = 30):
-    """질문 수·자력 답변 비율·미답 상위 — chat_log.jsonl 만 읽는다(이름·전화 없음 · §4④)."""
+def stats(tenant: str, days: int = 30, include_test: bool = False):
+    """질문 수·자력 답변 비율·미답 상위 — chat_log.jsonl 만 읽는다(이름·전화 없음 · §4④).
+    기본은 visitor=customer 행만(§11 v1.3) · include_test=1 이면 전부."""
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
@@ -726,13 +804,13 @@ def stats(tenant: str, days: int = 30):
     try:
         # ponytail: 전량 스캔(회전 전 세대 .1 은 안 봄) — 관리자 화면이 여는 통계라 자주 안 불리고,
         # 20MB 회전 전이면 30일 창 정도는 현재 파일에 다 있다. 부족해지면 unanswered 처럼 꼬리로 바꾼다.
-        with open(LOG_PATH, encoding="utf-8", errors="replace") as f:
+        with open(_log_path(tenant), encoding="utf-8", errors="replace") as f:
             for line in f:
                 try:
                     row = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if row.get("tenant") != tenant or _is_test_session(row.get("session_id")):
+                if row.get("tenant") != tenant or (_row_visitor(row) != "customer" and not include_test):
                     continue
                 try:
                     ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone(timedelta(hours=9)))
@@ -795,31 +873,32 @@ def admin_cost(days: int = 30, request: Request = None):
         raise HTTPException(403, "관리자 전용")
     cutoff = datetime.now(timezone(timedelta(hours=9))) - timedelta(days=days)
     buckets: dict = {}  # (tenant, model) → {calls, in, out, cache_write, cache_read, cost_krw}
-    try:
-        with open(USAGE_LOG_PATH, encoding="utf-8", errors="replace") as f:
-            for line in f:
-                try:
-                    row = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                try:
-                    ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(
-                        tzinfo=timezone(timedelta(hours=9)))
-                except (KeyError, ValueError):
-                    continue
-                if ts < cutoff:
-                    continue
-                key = (row.get("tenant", "unknown"), _model_key(row.get("model", "")))
-                b = buckets.setdefault(key, {"calls": 0, "in": 0, "out": 0,
-                                             "cache_write": 0, "cache_read": 0, "cost_krw": 0.0})
-                b["calls"] += 1
-                b["in"] += row.get("in", 0)
-                b["out"] += row.get("out", 0)
-                b["cache_write"] += row.get("cache_write", 0)
-                b["cache_read"] += row.get("cache_read", 0)
-                b["cost_krw"] += _cost_krw(row)
-    except OSError:
-        pass
+    for t in TENANTS:   # §12③ — usage 로그도 센터 폴더별 파일이라 하나씩 연다
+        try:
+            with open(_log_path(t, "usage"), encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    try:
+                        ts = datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%S").replace(
+                            tzinfo=timezone(timedelta(hours=9)))
+                    except (KeyError, ValueError):
+                        continue
+                    if ts < cutoff:
+                        continue
+                    key = (t, _model_key(row.get("model", "")))
+                    b = buckets.setdefault(key, {"calls": 0, "in": 0, "out": 0,
+                                                 "cache_write": 0, "cache_read": 0, "cost_krw": 0.0})
+                    b["calls"] += 1
+                    b["in"] += row.get("in", 0)
+                    b["out"] += row.get("out", 0)
+                    b["cache_write"] += row.get("cache_write", 0)
+                    b["cache_read"] += row.get("cache_read", 0)
+                    b["cost_krw"] += _cost_krw(row)
+        except OSError:
+            continue
     result = []
     for (tenant, model), b in sorted(buckets.items()):
         calls = b["calls"]
@@ -855,9 +934,10 @@ async def feedback(tenant: str, request: Request):
         raise HTTPException(400, "vote 는 up|down 만")
     row = {"ts": _kst_now(), "tenant": tenant, "faq_id": (body or {}).get("faq_id"), "vote": vote}
     try:
-        os.makedirs(os.path.dirname(FEEDBACK_LOG_PATH) or ".", exist_ok=True)
-        _rotate_log_keep(FEEDBACK_LOG_PATH)
-        with open(FEEDBACK_LOG_PATH, "a", encoding="utf-8") as f:
+        path = _log_path(tenant, "feedback")
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        _rotate_log_keep(path)
+        with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     except OSError:
         pass  # ponytail: 로그 실패가 고객 응답을 막으면 안 된다(_log 와 같은 원칙)
@@ -1055,7 +1135,7 @@ def _session_history(tenant: str, session_id: str) -> list:
     if not session_id:
         return []
     try:
-        with open(LOG_PATH, "rb") as fb:
+        with open(_log_path(tenant), "rb") as fb:
             fb.seek(0, os.SEEK_END)
             start = max(0, fb.tell() - UNANSWERED_TAIL_BYTES)
             fb.seek(start)
@@ -1185,8 +1265,9 @@ def _concierge_system_block(tenant: str, prof: dict, persona: dict, type_id: str
     )
 
 
-def _stream_once(client, model: str, system: list, messages: list, read_timeout: float = None, tenant: str = ""):
-    """스트리밍 1회 호출(설계 §3-1② "속시원함" · GM 확정 스트리밍 필수) — 첫 글자까지 걸린 시간을 반환한다.
+def _stream_once(client, model: str, system: list, messages: list, read_timeout: float = None, tenant: str = "",
+                  req_id: str = ""):
+    """스트리밍 1회 호출(설계 §3-1② "속시원함" · GM 확정 스트리밍 필수) — (답, ttfb_s, total_s, usage) 반환.
     read_timeout 을 주면 청크 사이 대기(사실상 첫 글자 대기 포함)가 그 초를 넘길 때 타임아웃 예외를 던진다
     (SDK/httpx 표준 기능 재사용 — 직접 스레드·타이머 안 짠다)."""
     call_client = client
@@ -1196,6 +1277,7 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
     t0 = time.time()
     first_char_t = None
     chunks = []
+    usage = None
     with call_client.messages.stream(model=model, max_tokens=500, system=system, messages=messages) as stream:
         for text in stream.text_stream:
             if first_char_t is None:
@@ -1210,30 +1292,37 @@ def _stream_once(client, model: str, system: list, messages: list, read_timeout:
             _out = getattr(u, "output_tokens", 0) or 0
             _cw = getattr(u, "cache_creation_input_tokens", 0) or 0
             _cr = getattr(u, "cache_read_input_tokens", 0) or 0
+            usage = {"in": _in, "out": _out, "cache_write": _cw, "cache_read": _cr, "req_id": req_id}
             print("[concierge-usage] tenant=%s model=%s in=%s out=%s cache_write=%s cache_read=%s"
                   % (tenant, model, _in, _out, _cw, _cr), flush=True)
-            # counsel_usage.jsonl 에도 남긴다 — journalctl 대신 파일로 비용을 읽는다(배CTO-2026-09-14).
+            # counsel_usage.jsonl 에도 그대로 남긴다(배CTO-2026-09-14 · journalctl 대신 파일로 비용을 읽는다) —
+            # req_id 로 chat_log.jsonl 의 같은 문답 행과 잇는다(§11 v1.3 · usage 칸은 chat_log 행에도 실린다).
             try:
                 ts = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M:%S")
-                row = json.dumps({"ts": ts, "tenant": tenant, "model": model,
+                row = json.dumps({"ts": ts, "tenant": tenant, "model": model, "req_id": req_id,
                                   "in": _in, "out": _out, "cache_write": _cw, "cache_read": _cr},
                                  ensure_ascii=False)
-                os.makedirs(os.path.dirname(USAGE_LOG_PATH) or ".", exist_ok=True)
-                with open(USAGE_LOG_PATH, "a", encoding="utf-8") as uf:
+                path = _log_path(tenant, "usage")
+                os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+                with open(path, "a", encoding="utf-8") as uf:
                     uf.write(row + "\n")
             except Exception:
                 pass
         except Exception as e:
             print("[concierge-usage] 사용량 못 읽음: %s" % type(e).__name__, flush=True)
-    return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None)
+    total_s = round(time.time() - t0, 2)
+    return "".join(chunks), (round(first_char_t - t0, 2) if first_char_t else None), total_s, usage
 
 
-def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None, missing: list = None):
+def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None, missing: list = None,
+                       meta: dict = None):
     """정본 학습형 주 엔진(배1036 GM 구조전환 · 설계 §3-1·§3-2) — 반환 (답|None, status, 허용금액근거|None).
     status: 'ok'(그대로 응답) · 'invalid'(출력검사 탈락 → 호출부가 핸드오프) ·
     'error'(키 없음·모델 오류·한도 → 호출부가 레거시 FAQ 매칭 백업으로 · §3-1⑥).
     셋째 값 = 답에 실린 금액이 allowed_prices 의 어느 항목 덕에 통과했는지(로그용 · 대표가 허락을 거두면
     되돌릴 근거). 금액이 없으면 None.
+    meta(선택 · §11 v1.3) — 넘기면 model_id·ttfb_s·total_s·usage 를 그 자리에서 채운다(호출부가 _log 행에
+    싣는다 · 반환 튜플 자리수를 안 늘리려고 in-place 로 돌려준다).
     주 모델(Opus 4.6) 오류·첫 글자 3초 초과·한도(429)면 대체(Sonnet 4.6)로 자동 전환한다 — 둘 다
     실패해야 비로소 백업(문장겹침 매칭)으로 내려간다(GM 확정 3단 — 이 함수가 위 두 단만 맡는다)."""
     client = _anthropic_client()
@@ -1246,11 +1335,14 @@ def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None,
     lang_hint = " (질문이 영어이니 영어로 답하세요)" if _is_english_q(q) else ""
     messages = _session_history(tenant, session_id) + [{"role": "user", "content": q + lang_hint}]
 
-    text = None
+    req_id = uuid.uuid4().hex[:12]
+    text = used_model = None
     for model, timeout in ((COUNSEL_MODEL_PRIMARY, FIRST_CHAR_TIMEOUT_S), (COUNSEL_MODEL_FALLBACK, FALLBACK_READ_TIMEOUT_S)):
         try:
-            text, first_char_s = _stream_once(client, model, system, messages, read_timeout=timeout, tenant=tenant)
-            print("[concierge] tenant=%s model=%s first_char_s=%s" % (tenant, model, first_char_s), flush=True)
+            text, ttfb_s, total_s, usage = _stream_once(client, model, system, messages, read_timeout=timeout,
+                                                          tenant=tenant, req_id=req_id)
+            used_model = model
+            print("[concierge] tenant=%s model=%s first_char_s=%s" % (tenant, model, ttfb_s), flush=True)
             break
         except Exception as e:
             print("[concierge] tenant=%s model=%s FAILED %s: %s"
@@ -1259,6 +1351,8 @@ def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None,
                 # 주·대체 둘 다 실패 — Bedrock 쪽 문제일 가능성이 커서 알린다(하루 1회).
                 _tg_alert_bedrock_once("⚠️ 상담봇 주엔진·대체 모두 실패 — FAQ 백업으로 전환 중. %s: %s"
                                         % (type(e).__name__, str(e)[:200]))
+    if meta is not None and text is not None:
+        meta.update(model_id=used_model, ttfb_s=ttfb_s, total_s=total_s, usage=usage)
     if text is None:
         return None, "error", None
     price_blocked, allowed_price = _price_check(text, prof.get("allowed_prices"))
@@ -1430,7 +1524,7 @@ def _selfcheck() -> None:
     assert _price_check("평일 06:00~22:30 운영이에요", [])[0] is False   # ④ 금액 아닌 숫자는 안 막는다(오탐 방지)
     for t in ("1_wellperion", "2_dietcamp"):
         assert not (_load_profile(t).get("allowed_prices") or []), "%s 는 허락 목록이 없어야 한다(회귀 0)" % t
-    global _ANTHROPIC_CLIENT, LOG_PATH, FAQ_DIR
+    global _ANTHROPIC_CLIENT, FAQ_DIR
     saved = _ANTHROPIC_CLIENT
     _ANTHROPIC_CLIENT = (None, True)   # 강제로 "키 없음(시도 완료)" 상태 — 폴백 경로 결정적 검증
     text, status, allowed_price = _concierge_answer("1_wellperion", "테스트 질문", "")
@@ -1519,9 +1613,11 @@ def _selfcheck() -> None:
     assert "99,000원" in sys_gc, "allowed_prices 는 [말해도 되는 금액] 구역으로 여전히 실린다"
     assert "monthly_inquiries" not in sys_gc
     # #7 길이 상한 · IP 한도 — _handle_chat 관문 경로(모델 호출 없음 · 클라이언트 없음 상태로).
-    saved_client, saved_log = _ANTHROPIC_CLIENT, LOG_PATH
+    # FAQ_DIR 을 통째로 스왑한다(§12③ 이후 로그가 FAQ_DIR/{tenant}/chat_log.jsonl 이라 LOG_PATH 단일 변수가 없다) —
+    # 빈 tmp 라 FAQ·프로필은 그대로 SEED_FAQ_DIR·TENANTS_SEED_DIR 폴백으로 읽힌다(로컬 자체점검과 같은 경로).
+    saved_client, saved_faq = _ANTHROPIC_CLIENT, FAQ_DIR
     _ANTHROPIC_CLIENT = (None, True)
-    LOG_PATH = os.path.join(_tf.mkdtemp(), "chat_log.jsonl")
+    FAQ_DIR = _tf.mkdtemp()
     out, code = _handle_chat("1_wellperion", {"q": "가" * (MAX_Q_CHARS + 1)}, "198.51.100.1")
     assert code == 400 and out["answered"] is False and str(MAX_Q_CHARS) in out["answer"], (code, out)
     out, code = _handle_chat("1_wellperion", {"q": "가" * MAX_Q_CHARS}, "198.51.100.1")
@@ -1539,7 +1635,7 @@ def _selfcheck() -> None:
     assert _session_history("1_wellperion", "") == []
     for k in [k for k in _DAILY_COUNTS if k[0].startswith("ip:198.51.100.")]:
         _DAILY_COUNTS.pop(k, None)
-    _ANTHROPIC_CLIENT, LOG_PATH = saved_client, saved_log
+    _ANTHROPIC_CLIENT, FAQ_DIR = saved_client, saved_faq
     # #17 휴관 판정 = 테넌트별 closed_rules. 다캠 일요일(2026-09-20) = 휴관 · 토요일 = 영업 · 고척(규칙 없음) = 휴관 언급 없음.
     dc_sun = _today_hours_line("2_dietcamp", _date(2026, 9, 20))
     assert dc_sun.startswith("오늘 9/20(일) · 휴관 · 다음 영업일 9/21(월)"), dc_sun
@@ -1564,6 +1660,57 @@ def _selfcheck() -> None:
         pass
     assert _faq_path("1_wellperion").read_text(encoding="utf-8") == "{깨진 json", "깨진 파일을 덮어쓰지 않는다"
     FAQ_DIR = saved_faq_dir
+
+    # ── §11·§12 v1.3(배 12768) — 마스킹 확장·visitor 판정·센터별 로그 폴더 ─────────────────────────────
+    assert _mask_pii("저는 김철수입니다 010-1234-5678") == "저는 [이름]입니다 [전화번호]"
+    assert _mask_pii("이름은 박영희 님이 상담 예약했어요") == "이름은 [이름] 님이 상담 예약했어요"
+    assert _mask_pii("비밀번호: abc1234!") == "비밀번호 [가림]"
+    assert _mask_pii("역삼동 101호에 삽니다") == "[주소]에 삽니다"
+    assert _mask_pii("래미안아파트 101동 505호") == "[주소]"
+    assert _mask_pii("Xample1234!") == "[가림]"          # 비밀값 모양(숫자+영문+특수문자 8자+) — 가짜값(실값 금지)
+    assert _mask_pii("평일 06:00~22:30 운영합니다") == "평일 06:00~22:30 운영합니다"   # 정상 문장은 그대로
+
+    # visitor — 쓰기 폴백(§11 ★, 확장 접두) vs 읽기 폴백(_row_visitor, 옛 3접두만 · labs_loop.is_customer 와 동일).
+    assert _visitor_of({"visitor": "staff"}, "") == "staff"
+    assert _visitor_of({}, "audit-lab-1") == "test" and _visitor_of({}, "cbo-check-9") == "test"
+    assert _visitor_of({}, "sito-mem-1") == "test"       # sito- 접두 전체(확장분)
+    assert _visitor_of({}, "live-uuid-1") == "customer"
+    assert _row_visitor({"visitor": "test"}) == "test"
+    assert _row_visitor({"session_id": "cbo-test-1"}) == "test"       # 옛 행(visitor 칸 없음) 폴백
+    assert _row_visitor({"session_id": "audit-lab-1"}) == "customer"  # 옛 행 폴백은 3접두만 — 확장분은 안 본다
+
+    # 센터별 로그 폴더(§12③) — 두 센터가 서로 다른 파일에 쓰고, 서로 안 섞인다.
+    saved_faq2, FAQ_DIR = FAQ_DIR, _tf.mkdtemp()
+    assert _log_path("1_wellperion") != _log_path("2_dietcamp")
+    _log("1_wellperion", "질문A", True, "f01", visitor="customer", engine="faq", handoff=False, session_id="s1")
+    _log("2_dietcamp", "질문B", True, "d01", visitor="customer", engine="faq", handoff=False, session_id="s2")
+    with open(_log_path("1_wellperion"), encoding="utf-8") as f:
+        row_a = json.loads(f.readline())
+    assert row_a["q"] == "질문A" and row_a["engine"] == "faq" and row_a["handoff"] is False, row_a
+    assert row_a["visitor"] == "customer" and row_a["lang"] == "ko", row_a
+    with open(_log_path("2_dietcamp"), encoding="utf-8") as f:
+        assert "질문A" not in f.read(), "다른 센터 행이 딸려 오면 안 된다(§12③)"
+
+    # 행 규격(§11) — engine·handoff·ttfb_s·total_s·usage 칸이 그대로 실린다.
+    _log("1_wellperion", "정본에 없는 질문", True, None, visitor="customer", engine="model", model_id="opus",
+         handoff=False, ttfb_s=1.23, total_s=2.34, usage={"in": 10, "out": 20, "cache_write": 0, "cache_read": 5,
+                                                            "req_id": "abc123"}, session_id="s3")
+    with open(_log_path("1_wellperion"), encoding="utf-8") as f:
+        rows = [json.loads(ln) for ln in f]
+    row_m = rows[-1]
+    assert row_m["engine"] == "model" and row_m["model_id"] == "opus" and row_m["handoff"] is False, row_m
+    assert row_m["ttfb_s"] == 1.23 and row_m["total_s"] == 2.34, row_m
+    assert row_m["usage"]["in"] == 10 and row_m["usage"]["req_id"] == "abc123", row_m
+
+    # stats·chat_log — 기본은 visitor=customer 만(§11 3), include_test=1 이면 전부.
+    _log("1_wellperion", "시험 질문", False, None, visitor="test", engine="handoff", handoff=True, session_id="test-x")
+    got = chat_log("1_wellperion")
+    assert got["total"] == 2, got          # 위 두 손님 행만(질문A·정본에 없는 질문) — 시험 행은 기본 제외
+    assert chat_log("1_wellperion", include_test=True)["total"] == 3
+    st = stats("1_wellperion")
+    assert st["total"] == 2, st            # 시험 행은 stats 분모에서도 빠진다
+    assert stats("1_wellperion", include_test=True)["total"] == 3
+    FAQ_DIR = saved_faq2
     print("api_chat selfcheck ok")
 
 
