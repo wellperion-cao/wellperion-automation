@@ -420,7 +420,6 @@
     <div class="sub-nav" data-parent="cmo-nav2">
       <a href="cmo/upload/마케팅자동업로드.html?tenant=wellperion" target="_blank">🎬 마케팅 자동업로드</a>
       <a href="public/ko/inquiry.html" target="_blank">📝 문의 폼</a>
-      <a href="counsel/index.html" target="_blank">🤖 상담봇</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-id="P1" data-has-sub="true"><span class="num">2</span><span class="label">회원 관리<span class="tag">임정은M</span></span></a>
@@ -436,7 +435,7 @@
       <a data-id="O1">🏢 운영 통합 체계</a>
     </div>
 
-    <a data-toggle="chro-nav2" data-has-sub="true"><span class="num">4</span><span class="label">인사&파트너 관리<span class="tag">나우열M</span></span></a>
+    <a data-toggle="chro-nav2" data-id="H0" data-has-sub="true"><span class="num">4</span><span class="label">인사&파트너 관리<span class="tag">나우열M</span></span></a>
     <div class="sub-nav" data-parent="chro-nav2">
       <a data-id="H1">📋 취업규칙</a>
       <a data-id="H2">🧑‍💼 인사 운영 허브</a>
@@ -446,7 +445,7 @@
       <a href="coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank">📊 파트너팀 체계</a>
     </div>
 
-    <a data-toggle="cfo-nav2" data-has-sub="true"><span class="num">5</span><span class="label">매출&지출 관리<span class="tag">나우열M</span></span></a>
+    <a data-toggle="cfo-nav2" data-id="F0" data-has-sub="true"><span class="num">5</span><span class="label">매출&지출 관리<span class="tag">나우열M</span></span></a>
     <div class="sub-nav" data-parent="cfo-nav2">
       <a data-id="F1">🏛️ 재무 허브</a>
       <a href="cfo/finance/매출지출현황.html" target="_blank">💰 운영매출&지출 현황</a>
@@ -454,13 +453,17 @@
     </div>
   </nav>
 
-  <!-- 웰페리온 비서 — AI 비서 모듈화(배 12815 · GM 지시 2026-09-18). 화면은 랩스(erp/admin/)에 있고
-       여기는 파트너 ERP 홈에서 들어가는 문 3개뿐이다. 「웰페리온 운영」 묶음과는 별개다. -->
-  <div class="nav-label">웰페리온 비서</div>
+  <!-- [GM 지시 2026-09-18 18:1x 정정] 「웰페리온 비서」 3줄 묶음(회의요약·번역·쓰임내역 개별 노출)은 삭제.
+       직원 메뉴 = 「AI」 묶음 두 줄만: AI 회의비서(회의 녹음·요약 → 업무 SSOT 업로드) · 상담봇(손님 상담 + 번역 탑재).
+       ★상담봇 href는 반드시 "counsel/"(디렉터리) — "counsel/index.html"을 쓰면 상담 센터 판정이 실패해
+       GM 화면에 오류가 뜬다. 묶음 머리를 누르면 O1 규격 설명 화면(AS1)이 뜬다. -->
+  <div class="nav-label">AI</div>
   <nav class="nav">
-    <a href="/erp/admin/meeting_note.html" target="_blank" rel="noopener"><span class="num">🎙</span><span class="label">회의 요약</span></a>
-    <a href="/erp/admin/translator.html" target="_blank" rel="noopener"><span class="num">🌐</span><span class="label">번역</span></a>
-    <a href="/erp/admin/assistant_usage.html" target="_blank" rel="noopener"><span class="num">📋</span><span class="label">쓰임 내역</span></a>
+    <a data-toggle="ai-nav2" data-id="AS1" data-has-sub="true"><span class="num">🤖</span><span class="label">AI 비서</span></a>
+    <div class="sub-nav" data-parent="ai-nav2">
+      <a href="/erp/admin/meeting_note.html" target="_blank" rel="noopener">🎙 AI 회의비서</a>
+      <a href="counsel/" target="_blank" rel="noopener">🤖 상담봇</a>
+    </div>
   </nav>
 
   <div class="foot">
@@ -965,8 +968,19 @@
     (function loadMiInqKpi(){
       var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
       var yStart = yearStart();
-      fetch(SURVEY_URL + '?action=member_inquiry_list&_pv=' + Date.now(), { redirect:'follow' })
-        .then(function(r){ return r.json(); })
+      // 2026-09-18 GM 지시(배 12817·12818②) — ERP 도메인은 서버 거울(/api/inquiries)만 쓴다(GAS 폴백 제거).
+      //   Pages 캡처(비ERP 도메인)는 서버가 없어 그대로 GAS — 위 757행 ERP_API_ON·apiFirst 전역 규칙과 동일하게 도메인만 가른다.
+      var _miInqGas = function(){ return fetch(SURVEY_URL + '?action=member_inquiry_list&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }); };
+      var _miInqMirror = function(){
+        var rows = [];
+        function page(off){
+          return fetch('/api/inquiries?type=' + encodeURIComponent('멤버십') + '&limit=1000&offset=' + off)
+            .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
+            .then(function(d){ rows = rows.concat(d.rows || []); return (d.count && off + d.count < (d.total || 0)) ? page(off + d.count) : rows; });
+        }
+        return page(0).then(function(rows){ return { ok: true, data: rows }; });
+      };
+      (ERP_API_ON ? _miInqMirror() : _miInqGas())
         .then(function(d){
           // 실패는 0으로 세지 않는다 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
           if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); return; }
@@ -1900,15 +1914,51 @@
   <!-- ── /웰페리온 대시보드 ── -->
 
   <article class="doc" id="M1">
-    <div class="doc-header"><h2><span class="g-id">M1</span>마케팅 관리</h2><div class="meta">웰페리온 센터의 마케팅 발행 · 고객 문의 · 상담봇을 한 곳에서</div></div>
-    <p class="lead">이 모듈은 <strong>웰페리온 센터가 밖으로 말하는 세 통로</strong>를 관리합니다 — 센터 공식 계정으로 콘텐츠를 내보내는 <strong>마케팅 자동업로드</strong>, 손님이 들어오는 <strong>문의 폼</strong>, 손님 질문에 바로 답하는 <strong>상담봇</strong>. 콘텐츠를 만들고 검수·발행하는 제작 라인과 브랜드 가이드는 이 모듈이 아니라 <strong>웰페리온 AX 랩스</strong>와 <strong>회사소개 · 전략 로드맵</strong>에 있습니다.</p>
+    <div class="doc-header"><h2><span class="g-id">M1</span>마케팅 관리</h2><div class="meta">웰페리온 센터의 마케팅 발행 · 고객 문의를 한 곳에서</div></div>
+
+    <!-- 모듈 소개 (2026-09-18 GM: '3번 운영관리만 모듈 설명이 있다·일관성 있게' — O1 박스 규격 그대로 재사용.
+         상담봇은 같은 날 18:1x GM 지시로 「AI」 묶음(AS1)으로 옮김 — 여기선 뺐다. -->
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · CMO 마케팅</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">웰페리온 센터가 밖으로 말하는 <span style="color:var(--text);">두 통로</span>를 관리합니다.</div>
+      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">센터 공식 계정으로 콘텐츠를 내보내는 <strong>마케팅 자동업로드</strong>, 손님이 들어오는 <strong>문의 폼</strong>. 손님 질문에 바로 답하는 상담봇은 <strong>AI</strong> 묶음으로 옮겼습니다. 콘텐츠를 만들고 검수·발행하는 제작 라인과 브랜드 가이드는 이 모듈이 아니라 <strong>웰페리온 AX 랩스</strong>와 <strong>회사소개 · 전략 로드맵</strong>에 있습니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
+        <div>🎬 <strong style="color:var(--text);">마케팅 자동업로드</strong> — 센터 공식 계정으로 글·사진을 예약 발행. 담당 김남욱 GM.</div>
+        <div>📝 <strong style="color:var(--text);">문의 폼</strong> — 손님이 실제로 보는 회원·강습·시설 문의 화면.</div>
+      </div>
+    </div>
+
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 24px;">
       <a href="cmo/upload/마케팅자동업로드.html?tenant=wellperion" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7EBE9;color:#201F1D;box-shadow:0 2px 10px rgba(237,91,63,0.34);">🎬 마케팅 자동업로드<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">센터 공식 계정으로 글·사진을 예약 발행</span></a>
       <a href="public/ko/inquiry.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:var(--accent-bg);color:#221F20;border:1px solid rgba(183,159,138,0.34);">📝 문의 폼<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">손님이 실제로 보는 문의 화면(회원·강습·시설 문의)</span></a>
-      <a href="counsel/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🤖 상담봇<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">손님 질문에 바로 답 · 답 못 한 질문은 관리자에게</span></a>
     </div>
   </article>
   <!-- ── /M1 마케팅 관리 ── -->
+
+  <!-- AI 비서 모듈 설명 (2026-09-18 GM 지시·18:1x 정정 · O1 규격 박스 재사용 · 두 기능만) -->
+  <article class="doc" id="AS1">
+    <div class="doc-header"><h2>AI 비서</h2><div class="meta">AI 회의비서 · 상담봇 · 화면은 웰페리온 AX 랩스(erp/admin/)</div></div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · 웰페리온 AI 비서</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">회의와 상담을 돕는 AI 비서 <span style="color:var(--text);">두 가지</span>를 모아둡니다.</div>
+      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">화면은 <strong>웰페리온 AX 랩스</strong>(erp/admin/) 안에 있고, 여기는 파트너 ERP 홈에서 들어가는 문입니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
+        <div>🎙 <strong style="color:var(--text);">AI 회의비서</strong> — 회의 녹음·요약 → 업무 SSOT 업로드.</div>
+        <div>🤖 <strong style="color:var(--text);">상담봇</strong> — 손님 상담, 번역 기능 탑재.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="/erp/admin/meeting_note.html" target="_blank" rel="noopener" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🎙 AI 회의비서</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">회의 녹음을 올리면 요약하고, 업무 SSOT 행 초안까지 만들어 줍니다.</span></a>
+      <a href="counsel/" target="_blank" rel="noopener" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🤖 상담봇</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">손님 상담 — 문의·질문에 바로 답, 번역 기능이 탑재돼 외국어 손님도 응대합니다.</span></a>
+    </div>
+  </article>
+  <!-- ── /AS1 AI 비서 ── -->
 
   <article class="doc" id="AXC">
     <div class="doc-header"><h2><span class="g-id">AXC</span>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
@@ -4979,6 +5029,36 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 </script>
 
   <!-- ── 지출현황 소개 ── -->
+  <!-- 매출&지출 관리 모듈 설명 (2026-09-18 GM 지시 · O1 규격 박스 재사용 · cfo/ 아래 실제 화면은 손대지 않는다 —
+       이 파일 안 설명 글만 나우열M 라인 몫으로 새로 둔다) -->
+  <article class="doc" id="F0">
+    <div class="doc-header"><h2>매출&지출 관리</h2><div class="meta">CFO 관할 · 나우열M</div></div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · CFO 매출 & 지출</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;"><span style="color:var(--text);">재무 안정성 · 지출 관리 · 운영 효율</span> 3대 KPI를 담당합니다.</div>
+      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">매출·지출 전 구간이 현장 원장(매출 보고·페이롤·지출품의)에서 실시간으로 집계됩니다 — 사람이 옮겨 적는 단계가 없습니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
+        <div>🏛️ <strong style="color:var(--text);">재무 허브</strong> — CFO 대시보드 안내데스크, 구매요청 가이드.</div>
+        <div>💰 <strong style="color:var(--text);">운영매출&지출 현황</strong> — 관리자용(비밀번호).</div>
+        <div>🛒 <strong style="color:var(--text);">구매요청</strong> — 전 직원 제출, 부서장 승인.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=F1]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🏛️ 재무 허브</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">CFO 대시보드 안내데스크 — 구매요청(지출품의) 이용 가이드.</span></a>
+      <a href="cfo/finance/매출지출현황.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">💰 운영매출&지출 현황</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">관리자용 · 비밀번호 필요.</span></a>
+      <a href="cfo/finance/지출품의.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🛒 구매요청</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">전 직원 제출 · 내 현황. 승인·자산관리는 관리자 화면 구매요청 탭.</span></a>
+    </div>
+  </article>
+  <!-- ── /F0 매출&지출 관리 ── -->
+
   <article class="doc" id="F1">
     <div class="doc-header"><h2>AI CFO 재무 허브</h2><div class="meta">CFO 관할 · 나우열M · 매출·지출 전 구간 실시간 라이브 · 2026-07 개편</div></div>
     <p class="lead">웰페리온 재무의 안내데스크입니다. AI CFO는 <strong>재무 안정성 · 지출 관리 · 운영 효율</strong> 3대 KPI를 담당하며, 대시보드의 모든 수치는 현장 원장(매출 보고·페이롤·지출품의)에서 실시간으로 집계됩니다 — 사람이 옮겨 적는 단계가 없습니다.</p>
@@ -5040,6 +5120,48 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
   <!-- ── G19: 업무자동화 ── -->
   <!-- ── CHRO 취업규칙 ── -->
+  <!-- 인사&파트너 관리 모듈 설명 (2026-09-18 GM 지시 · O1 규격 박스 재사용 · chro/ 아래 실제 화면은 손대지 않는다 —
+       이 파일 안 설명 글만 나우열M 라인 몫으로 새로 둔다) -->
+  <article class="doc" id="H0">
+    <div class="doc-header"><h2>인사&파트너 관리</h2><div class="meta">CHRO 관할 · 나우열M</div></div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · CHRO 인사 & 파트너</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">취업규칙·채용·근무 스케줄·조직 구조부터 <span style="color:var(--text);">강습 파트너팀 운영</span>까지 인사 전 영역을 관리합니다.</div>
+      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">지원자 개인정보와 인사평가 상세는 사내 전용 <strong>HR 허브</strong>(비밀번호 입장)에서만 열람합니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
+        <div>📋 <strong style="color:var(--text);">취업규칙</strong> — 전 직원 근로조건·운영방침 규정.</div>
+        <div>🧑‍💼 <strong style="color:var(--text);">인사 운영 허브</strong> — 채용·온보딩·평가 공개 요약, 상세는 HR 허브(사내 전용).</div>
+        <div>🗓️ <strong style="color:var(--text);">스케줄보드</strong> — 근무·휴무 일정.</div>
+        <div>🗺 <strong style="color:var(--text);">구조도</strong> — CHRO 모듈·파이프라인 구조.</div>
+        <div>📢 <strong style="color:var(--text);">Recruiting</strong> — 채용 공고(외부 지원자용).</div>
+        <div>📊 <strong style="color:var(--text);">파트너팀 체계</strong> — 강습 6개팀 매출·업무 통합.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">📋 취업규칙</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">전 직원 근로조건·운영방침·근무수칙 규정.</span></a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H2]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🧑‍💼 인사 운영 허브</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">채용·온보딩·인사평가 공개 요약. 상세·PII는 HR 허브(사내 전용).</span></a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H3]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🗓️ 웰페리온 스케줄보드</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">직원 근무·휴무 일정.</span></a>
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H4]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🗺 구조도</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">CHRO 모듈·파이프라인 구조도.</span></a>
+      <a href="chro/recruiting/" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">📢 Recruiting</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">채용 공고 페이지 — 외부 지원자가 보는 화면.</span></a>
+      <a href="coo/check/%ED%8C%8C%ED%8A%B8%EB%84%88%ED%8C%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">📊 파트너팀 체계</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">강습 파트너 6개팀 매출·업무 통합 현황.</span></a>
+    </div>
+  </article>
+  <!-- ── /H0 인사&파트너 관리 ── -->
+
   <article class="doc" id="H1">
     <div class="doc-header"><h2>취업규칙</h2><div class="meta">CHRO 관할 · 나우열M · 총 15장 98조 · 2025.07 개정 초안</div></div>
     <p class="lead">㈜웰페리온 스포츠클럽 전 직원의 근로조건·운영방침·근무수칙을 정한 사내 규정입니다.</p>
@@ -5575,7 +5697,18 @@ function crTab(btn, panelId) {
   <article class="doc" id="P1">
     <div class="doc-header"><h2>회원 관리 체계</h2><div class="meta">문의 → 등록 → 이용 → 재등록 · 담당 임정은M · AI 시포</div></div>
 
-    <p class="lead" style="margin:10px 0 14px;">한 분의 회원이 문의부터 재등록까지 어디쯤 계신지를 아래 화면 4개로 봅니다. 실무진 일상 작업은 <strong>멤버십·강습 회원관리</strong> 두 화면에서 하고, 시트는 쓰지 않습니다. 화면에서 불편한 점은 그 화면 안 「실무진 피드백」 버튼으로 남기면 다음 영업일 안에 고쳐 같은 자리에 답합니다.</p>
+    <!-- 모듈 소개 (2026-09-18 GM: '3번 운영관리만 모듈 설명이 있다·일관성 있게' — O1 박스 규격 그대로 재사용) -->
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · CPO 회원 관리</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">한 분의 회원이 <span style="color:var(--text);">문의부터 재등록까지</span> 어디쯤 계신지를 아래 화면 4개로 봅니다.</div>
+      <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">실무진 일상 작업은 <strong>멤버십·강습 회원관리</strong> 두 화면에서 하고, 시트는 쓰지 않습니다. 화면에서 불편한 점은 그 화면 안 「실무진 피드백」 버튼으로 남기면 다음 영업일 안에 고쳐 같은 자리에 답합니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
+        <div>🏷️ <strong style="color:var(--text);">상품 기획</strong> — 회원권·강습 상품 구성과 가격 기준.</div>
+        <div>📋 <strong style="color:var(--text);">멤버십 회원관리</strong> — 문의부터 만료·재등록까지 매일 여는 화면.</div>
+        <div>🏃 <strong style="color:var(--text);">강습 회원관리</strong> — 강습 문의·등록·연장 원장.</div>
+        <div>🚪 <strong style="color:var(--text);">브로제이 CRM</strong> — 출입·락커·결제 정본(외부 시스템).</div>
+      </div>
+    </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 22px;">
       <a href="cpo/product/상품기획.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
@@ -5809,8 +5942,8 @@ function crTab(btn, panelId) {
      ★2026-08-26 GM 지시: "AI C-LEVEL 메뉴칸을 클릭했을 때 각각 정리가 되는 페이지를 기준으로
        하위탭 이동할 수 있게" · "AI COO 운영 클릭하면 운영 통합체계가 나오는 것처럼".
      종전엔 서브메뉴만 펼쳐지고 아무 데도 안 갔다.
-     ▸data-id 가 붙은 대항목만 랜딩한다 — 시로(CHRO)·시뽀(CFO)는 data-id 를 안 붙여 기존 동작 그대로다
-       (그 두 라인은 나우열M 담당이라 AI 가 건드리지 않는다). */
+     ▸data-id 가 붙은 대항목만 랜딩한다. 시로(CHRO)·시뽀(CFO) 라인도 2026-09-18 GM 지시로 O1 규격 모듈
+       설명 화면(H0·F0)을 이 파일 안에 새로 두고 연결했다 — chro/·cfo/ 아래 실제 화면 파일은 그대로다. */
   document.querySelectorAll('.nav > a[data-toggle]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
