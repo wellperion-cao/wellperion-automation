@@ -112,7 +112,7 @@
     </div>
     <div class="divider"></div>
     <div class="side">
-      <div class="sidelabel" id="otherSideLabel">손님</div>
+      <div class="sidelabel">손님 <select class="lang" id="otherLangSplit"></select></div>
       <div class="lasttr" id="lastOther">Translation will appear here.</div>
       <button type="button" class="pressbtn split-btn" id="btnOtherSplit">언어로 말하기</button>
       <div class="typerow">
@@ -135,7 +135,7 @@ var btnKo = document.getElementById('btnKo');
 var btnOther = document.getElementById('btnOther');
 var btnKoSplit = document.getElementById('btnKoSplit');
 var btnOtherSplit = document.getElementById('btnOtherSplit');
-var otherSideLabel = document.getElementById('otherSideLabel');
+var otherLangSplit = document.getElementById('otherLangSplit');
 var lastKoEl = document.getElementById('lastKo');
 var lastOtherEl = document.getElementById('lastOther');
 var typeText = document.getElementById('typeText');
@@ -153,10 +153,11 @@ function updateOtherBtnLabel(){
   var label = LANG_NAME[otherSel.value] + '로 말하기';
   btnOther.textContent = label;
   btnOtherSplit.textContent = label;
-  otherSideLabel.textContent = '손님 (' + LANG_NAME[otherSel.value] + ')';
+  otherLangSplit.value = otherSel.value;
   typeOtherSplit.placeholder = '또는 ' + LANG_NAME[otherSel.value] + '로 입력';
 }
 otherSel.addEventListener('change', updateOtherBtnLabel);
+otherLangSplit.addEventListener('change', function(){ otherSel.value = otherLangSplit.value; updateOtherBtnLabel(); });
 
 /* ── 언어 목록 — 정본 assistant_langs.json(배 12815). 못 읽으면 ko/en 두 개로 폴백. ── */
 function applyLangs(list, defTarget){
@@ -165,10 +166,13 @@ function applyLangs(list, defTarget){
     LANG_NAME[l.code] = l.name_ko;
     if (l.speech) SPEECH_LOCALE[l.code] = l.speech;
   });
-  otherSel.innerHTML = list.filter(function(l){ return l.code !== 'ko'; }).map(function(l){
+  var optsHtml = list.filter(function(l){ return l.code !== 'ko'; }).map(function(l){
     return '<option value="' + esc(l.code) + '">' + esc(l.name_ko) + (l.speech ? '' : ' (음성 인식 미지원 · 입력은 글자로)') + '</option>';
   }).join('');
+  otherSel.innerHTML = optsHtml;
+  otherLangSplit.innerHTML = optsHtml;
   otherSel.value = defTarget || 'en';
+  otherLangSplit.value = otherSel.value;
   updateOtherBtnLabel();
 }
 fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){
