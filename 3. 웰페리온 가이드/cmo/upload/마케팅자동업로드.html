@@ -107,7 +107,8 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 </div>
 
 <section class="pf-card" style="margin-top:16px">
-  <div class="pf-lb">업로드 시리즈 현황<span class="srcname" id="srcName"></span></div>
+  <div class="pf-lb">업로드 시리즈 현황</div>
+  <!-- 원천 파일명은 화면에 안 보인다(GM 09-18 지적) — 탭별 정본: 웰페리온·GM개인=review_queue.json(+series_data.json) · 다캠/고척=status/{tenant}_blog_daily.json+partner_instagram/{tenant}.json · AX=status/ax_blog_daily.json -->
   <div id="seriesBody"><div class="empty">불러오는 중…</div></div>
 </section>
 
@@ -161,8 +162,10 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     Object.keys(groups).forEach(function(k){
       var ok=groups[k].filter(function(r){return r.ok;});
       if(!ok.length) return;   // 전부 실패인 주제 — 표 줄에 안 올림(실패 건수에는 이미 반영됨)
-      ok.sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
-      var last=ok[ok.length-1];
+      var withUrl=ok.filter(function(r){return r.url;});
+      var pool=withUrl.length?withUrl:ok;   // 주소 있는 성공을 우선(시보 09-18 지적 — 주소 없는 임시저장이 "발행"으로 잘못 보였다)
+      pool.sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
+      var last=pool[pool.length-1];
       display.push({date:last.date,title:last.title,url:last.url,label:last.label,edits:ok.length-1});
     });
     display.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
@@ -242,18 +245,18 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:normalizeChannel(x.channel), label:'발행'}; });
   }
   function normBlog(runs){
-    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:normalizeChannel('블로그'), label:'발행'}; });
+    // result:ok 인데 url 이 빈 줄 = 업로더가 임시저장으로만 남긴 경우(실측 09-18) — "발행"이 아니라 "임시저장"으로 표시
+    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:normalizeChannel('블로그'), label:r.url?'발행':'임시저장'}; });
   }
   function normIg(runs){
     // sent:false·없음 = 아직 발행기 검토 전 "대기" 상태(실패 아님) — partner_instagram/*.json 에는 실패 개념 자체가 없다
     return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:normalizeChannel('인스타그램'), label:'임시저장'}; });
   }
   function renderSeries(){
-    var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
+    var body=$('seriesBody'), curTenant=tenant;
     body.innerHTML='<div class="empty">불러오는 중…</div>';
     if(tenant==='wellperion'){
       // 공식 계정만 — account==='wellperion' (review_queue.json 실측 · 09-18 배 2792). 그 외 계정 표기(비즈(cao)·없음)는 미분류로 따로 표기
-      src.textContent='review_queue.json(공식 계정)';
       fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json']).then(function(review){
         if(curTenant!==tenant) return;
         var items=Array.isArray(review)?review:((review&&review.items)||[]);
@@ -268,7 +271,6 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
       }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
     } else if(tenant==='gm'){
       // 개인계정 — series_data.json(AI 시리즈 로드맵, 전량 개인계정) + review_queue.json 의 account==='namuk.wellperion'
-      src.textContent='series_data.json · review_queue.json(개인 계정)';
       Promise.allSettled([
         fetchFirst([REPO+'3. 웰페리온 가이드/cmo/series/series_data.json','../series/series_data.json']),
         fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json'])
@@ -289,8 +291,8 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         renderGrid(chWrap, normReview(personal));
       });
     } else if(tenant==='dc'||tenant==='jo'){
+      // status/{dietcamp,gocheok}_blog_daily.json + status/partner_instagram/{tenant}.json
       var blogFile=tenant==='dc'?'dietcamp_blog_daily.json':'gocheok_blog_daily.json';
-      src.textContent=blogFile+' · partner_instagram/'+tenant+'.json';
       Promise.allSettled([
         fetchFirst([REPO+'status/'+blogFile,'../../../status/'+blogFile]),
         fetchFirst([REPO+'status/partner_instagram/'+tenant+'.json','../../../status/partner_instagram/'+tenant+'.json'])
@@ -304,7 +306,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         renderGrid(chWrap, rows);
       });
     } else {
-      src.textContent='ax_blog_daily.json';
+      // status/ax_blog_daily.json
       fetchFirst([REPO+'status/ax_blog_daily.json','../../../status/ax_blog_daily.json']).then(function(blog){
         if(curTenant!==tenant) return;
         body.innerHTML='';
