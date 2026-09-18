@@ -3407,16 +3407,26 @@ function _inquiryListFetch() {
     throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
   });
 }
+// scope별 진행 중 요청 하나만 — 예열(_gasPrewarm)·명단 로드(loadActiveMembers)·담당자 배정(_oaFetch)·반대편
+// 스코프(_activeLoadOtherScope) 네 곳이 페이지 한 번 여는 동안 같은 scope=valid 를 캐시 없이 각자 쏴 999행
+// 응답(1.33MB)을 최대 3번 받았다(시우 실측 · 배 2819). 새 캐시 계층·만료 로직이 아니라 "요청이 끝나면 지우는"
+// 진행 중 프로미스 공유뿐 — 응답이 오면 바로 비워, 다음 호출(저장 뒤 새로고침 포함)은 기존처럼 새로 받는다.
+// 스냅샷 가속층(_snapActiveGet_ 등)이 이미 쓰는 것과 같은 패턴.
+var _memberListInflight_ = {};
 function _memberListFetch(scope) {
   // 회원 목록 읽기 = 서버 /api 전용(2026-09-18 GM 지시 · 배 12817·12818②). GAS 폴백 제거 —
   // GAS member_active_list 는 키 없이도 전화번호 원문 999행을 그대로 내주는 공개 엔드포인트라
   // 브라우저가 직접 부르면 서버 인증을 우회한다. 실패하면 호출부가 "서버 응답 없음" 오류로 보여준다.
   // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
   if (!ERP_API_ON) return Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'));
-  return _apiMemberList(scope).catch(function(e){
+  if (_memberListInflight_[scope]) return _memberListInflight_[scope];
+  var p = _apiMemberList(scope).catch(function(e){
     console.warn('[회원목록] API 실패:', e && e.message);
     throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
   });
+  _memberListInflight_[scope] = p;
+  p.then(function(){ delete _memberListInflight_[scope]; }, function(){ delete _memberListInflight_[scope]; });
+  return p;
 }
 function _apiPersonView(q) {
   // 사람 찾기 — /api/members?q= 로 사람을 찾고 /api/members/{번호} 로 문의를 붙여 GAS member_person_view 와 같은 모양으로 만든다.
