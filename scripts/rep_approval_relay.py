@@ -58,6 +58,8 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from urllib.parse import quote
+
 from collectors.ops_shared import SSOT_API_URL, gas_get  # noqa: E402
 from module_heartbeat import last_heartbeat, record_heartbeat  # noqa: E402
 from manager_task_index import OPS_DEPT_STAFF  # noqa: E402 — 운영부 6인 정본(배 12682 · 웰리 배포, 이 파일은 안 건드린다)
@@ -122,7 +124,7 @@ def fetch_rows() -> list[dict] | None:
 
 # 지문 3벌이 한 파일에 산다 — notified(대표)·notified_gm(GM)·notified_new(신규 등록).
 # record_heartbeat 는 파일을 통째로 다시 쓰므로 한 벌만 바꿔도 세 벌을 다 실어야 한다(_save_notified).
-_LEDGERS = ("notified", "notified_gm", "notified_new", "notified_reject")
+_LEDGERS = ("notified", "notified_gm", "notified_new", "notified_reject", "notified_direct")
 
 
 def load_notified(key: str = "notified") -> dict[str, str]:
@@ -620,6 +622,106 @@ def run_reject(send: bool = False, dry_run: bool = False) -> int:
     return 0
 
 
+# ── ⑦ 결재완료 → 담당자가 실제로 있는 방에 직접 안내 (GM 지시 2026-09-18 11:5x) ──────────
+# GM 원문: "현재 결재 SSOT 결재 완료 시 카카오톡방에 있는 담당자를 찾아서 안내"(배 2760).
+# ①/⑥ 은 이미 ★중간관리자 한 곳에만 올려 실장·소장이 손으로 나눠 주는 방식(2026-09-15 설계 —
+#   "담당자가 전달 받았는지도 확인해서" 원장으로 전달 여부를 따로 추적한다). 이번 지시는 그
+#   중계를 건너뛰고 담당자 본인이 있는 방에 바로 꽂으라는 것 — ①/⑥ 을 대체하지 않고 더한다.
+# 트리거는 새로 만들지 않는다 — 실측(2026-09-18): 결재상태='결재완료' 58건이 전부 이미 대표싸인·
+#   GM싸인 둘 중 하나가 서명돼 있다(같은 조건). 따로 재면 이중 트리거만 늘 뿐이라 is_signed 를 그대로 쓴다.
+# 방 갈래 — 나우열M=텔레그램 AtoA(GM 계정 발신) · 운영부 6인(임정은M 제외)=★운영부 직접 ·
+#   임정은M·그 밖(실장·소장 자신 포함)=★중간관리자. 임정은M 을 ★운영부로 바로 못 보내는 이유는
+#   kakao_report_sender.via_manager_violation 실장경유가드(그 방에 그분이 계셔 실장을 건너뛴다 —
+#   GM 지시 2026-08-16) — 새 규칙이 아니라 있던 가드를 그대로 지킨다.
+NOTIFY_TELEGRAM = "텔레그램(AtoA)"
+APPROVAL_URL = "https://erp.wellperion.com/coo/todo/" + quote("결재 현황 SSOT.html")
+
+
+def route_direct(owner: str) -> tuple[str, str]:
+    """(보낼 방, 문구 접두). NOTIFY_TELEGRAM 이면 카톡 관문이 아니라 텔레그램으로 보낸다."""
+    if "나우열" in owner:
+        return (NOTIFY_TELEGRAM, "")
+    if "임정은" in owner:
+        return (ROOM, "이경연 실장님, ")   # 실장경유가드 대상 — ★운영부로 못 보낸다
+    if owner in OPS_DEPT_STAFF:
+        return (ROOM_OPS, "")
+    return (ROOM, "")
+
+
+def pick_approval_done(rows: list[dict], notified: dict[str, str]) -> list[dict]:
+    """대표싸인·GM싸인 둘 중 하나가 signed 인 행(=결재완료) · notified_direct 지문 제외 · 수정일 오름차순."""
+    seen: dict[str, dict] = {}
+    for col in ("대표싸인", "GM싸인"):
+        for r in rows:
+            rid = str(r.get("id") or "").strip()
+            if rid and rid not in notified and rid not in seen and is_signed(r, col):
+                seen[rid] = r
+    return sorted(seen.values(), key=lambda r: str(r.get("수정일") or ""))
+
+
+def build_direct_message(rows: list[dict], prefix: str = "", today: str | None = None) -> str:
+    """무슨 일(제목+담당) · 어디(결재 SSOT 링크) · 무엇을(진행 요청) 3줄 뼈대 — 잡담 없이."""
+    if not rows:
+        return ""
+    _, md = _md(today)
+    lines = [f"{prefix}📋 {md} 결재 완료 {len(rows)}건 — 진행해 주세요"]
+    for r in rows[:5]:
+        lines.append(f"▪ {str(r.get('업무명') or '').strip()} ({str(r.get('담당자') or '').strip()})")
+    if len(rows) > 5:
+        lines.append(f"▪ 외 {len(rows) - 5}건")
+    lines.append(f"📎 결재 SSOT {APPROVAL_URL}")
+    lines.append("진행 기록은 업무 SSOT 행에 남겨 주세요.")
+    lines.append(SIGNOFF)
+    return "\n".join(lines)
+
+
+def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
+    rows = fetch_rows()
+    if rows is None:
+        print("[approval-done] 업무 시트 조회 실패 — 이번 회차 건너뜀")
+        return 1
+    notified = load_notified("notified_direct")
+    if not notified:
+        # 첫 실행 = 기준선만(①/⑥ 축과 같은 자리) — 옛 결재완료 건이 한꺼번에 쏟아지지 않게.
+        seed_today = datetime.now().strftime("%Y-%m-%d")
+        notified = {str(r.get("id")).strip(): f"seed-{seed_today}"
+                   for r in rows if is_signed(r) or is_signed(r, "GM싸인")}
+        _save_notified("notified_direct", notified, f"직접안내 축 기준선 {len(notified)}건(seed · 전달 안 함)")
+        print(f"[approval-done] 첫 실행 — 기존 {len(notified)}건 seed, 이번 회차 없음")
+        return 0
+    picked = pick_approval_done(rows, notified)
+    by_route: dict[tuple[str, str], list[dict]] = {}
+    for r in picked:
+        route = route_direct(_owner_key(r.get("담당자")))
+        by_route.setdefault(route, []).append(r)
+    today = datetime.now().strftime("%Y-%m-%d")
+    print(f"[approval-done] 결재완료(미안내) {len(picked)}건 — " +
+         " · ".join(f"{room} {len(rr)}건" for (room, _), rr in by_route.items()))
+    ok_all = True
+    for (room, prefix), rr in by_route.items():
+        msg = build_direct_message(rr, prefix, today)
+        print(f"── {room} 미리보기 ──\n{msg}")
+        if not send:
+            continue
+        if room == NOTIFY_TELEGRAM:
+            if dry_run:
+                print("  [AtoA] DRY-RUN — 발송 안 함")
+                ok = True
+            else:
+                from notify.telegram_user_send import send_as_gm, WORK_ROOM_CHAT_ID
+                ok = send_as_gm(WORK_ROOM_CHAT_ID, msg)
+        else:
+            ok = send_via_gate(msg, dry_run, SENDER, room=room)
+        ok_all = ok_all and ok
+    if send and not dry_run and picked and ok_all:
+        for r in picked:
+            notified[str(r.get("id")).strip()] = today
+        _save_notified("notified_direct", notified, f"결재완료 직접안내 {len(picked)}건 ({today})")
+    elif send and not dry_run and picked:
+        print("[approval-done] 일부 방 발신 실패 — 기록 안 함, 다음 회차 재후보")
+    return 0
+
+
 def send_via_gate(text: str, dry_run: bool, sender: str = SENDER, room: str = ROOM) -> bool:
     """kakao_report_sender.py 관문 호출. 실제 전송이 로그로 확인될 때만 True."""
     cmd = [sys.executable, str(SCRIPTS_DIR / "kakao_report_sender.py"),
@@ -792,6 +894,23 @@ def _selfcheck() -> None:
     lines2 = build_reject_message(nawool, "2026-09-16").splitlines()
     assert lines2[1] == "▪ 짐벌 카메라 — 반려(GM·9/15)" and lines2[2] == "반려 사유 = 그럼 안사도되?", lines2
     assert build_reject_message([]) == ""
+    # ⑦ 결재완료 직접안내(GM 2026-09-18) — 나우열M=AtoA · 운영부(임정은 제외)=★운영부 직접 · 임정은·그 밖=★중간관리자
+    assert route_direct("나우열M") == (NOTIFY_TELEGRAM, "")
+    assert route_direct("임정은M") == (ROOM, "이경연 실장님, ")
+    assert route_direct("최준용M") == (ROOM_OPS, "")
+    assert route_direct("이정헌 소장") == (ROOM, "")
+    ad = [
+        {"id": "AD1", "업무명": "짐벌 카메라", "담당자": "최준용M", "대표싸인": "https://x/1", "수정일": "2026-09-18T01:00:00.000Z"},
+        {"id": "AD2", "업무명": "이미 안내", "담당자": "이경연 실장", "대표싸인": "https://x/2", "수정일": "2026-09-17T00:00:00.000Z"},
+        {"id": "AD3", "업무명": "GM싸인만", "담당자": "임정은M", "GM싸인": "2026-09-18 10:00 (페이지)", "수정일": "2026-09-18T02:00:00.000Z"},
+        {"id": "AD4", "업무명": "미서명", "담당자": "윤병현AM", "대표싸인": "PENDING", "수정일": "2026-09-18T03:00:00.000Z"},
+    ]
+    picked = pick_approval_done(ad, {"AD2": "2026-09-17"})
+    assert [r["id"] for r in picked] == ["AD1", "AD3"], picked   # 지문 있는 AD2·미서명 AD4 제외
+    msg = build_direct_message([ad[0]], "", "2026-09-18").splitlines()
+    assert msg[0] == "📋 9/18 결재 완료 1건 — 진행해 주세요" and msg[1] == "▪ 짐벌 카메라 (최준용M)", msg
+    assert APPROVAL_URL.startswith("https://erp.wellperion.com/coo/todo/%") and APPROVAL_URL.endswith("SSOT.html")
+    assert build_direct_message([]) == ""
     print("[selfcheck] rep_approval_relay OK")
 
 
@@ -805,6 +924,8 @@ if __name__ == "__main__":
                     help="⑤ 담당별 진행 현황 묶음(미리보기·--send) — GM·외부업체·나우열M 제외")
     ap.add_argument("--reject", action="store_true",
                     help="⑥ 결재 반려 알림(미리보기·--send) — 나우열M 은 AtoA, 그 밖은 ★중간관리자")
+    ap.add_argument("--approval-done", action="store_true",
+                    help="⑦ 결재완료 → 담당자 방 직접 안내(미리보기·--send) — 나우열M=AtoA·운영부=★운영부·그 밖=★중간관리자")
     ap.add_argument("--selfcheck", action="store_true")
     a = ap.parse_args()
     if a.selfcheck:
@@ -818,6 +939,8 @@ if __name__ == "__main__":
         sys.exit(run_assign_brief(send=a.send, dry_run=a.dry_run))
     if a.reject:
         sys.exit(run_reject(send=a.send, dry_run=a.dry_run))
+    if a.approval_done:
+        sys.exit(notify_approval_done(send=a.send, dry_run=a.dry_run))
     if a.new_rows:
         sys.exit(run_new_rows(send=a.send, dry_run=a.dry_run))
     sys.exit(run(send=a.send, dry_run=a.dry_run))
