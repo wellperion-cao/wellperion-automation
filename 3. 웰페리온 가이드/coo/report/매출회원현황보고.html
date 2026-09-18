@@ -516,8 +516,12 @@
     <div class="col">
     <div class="sec" style="flex:1;min-height:0;">
       <h2>매출 현황<span class="src " data-sf="1">시트 → 서버</span></h2>
+      <!-- 이름 칸 184→214px(배 2823 4차 · GM 지적) — 「GXE(유료G.X)팀」이 가장 긴 라벨이라 184px에서
+           두 줄로 접혔는데, 이름 칸은 자르지 않는 규칙(2026-09-17)이라 2번째 줄이 줄 높이(21px)를
+           넘어 그 밖의 매출 칸과 겹쳐 보였다(로스자 이동·타일 확장과는 무관 — 실측: 두 박스 모두 배정된
+           높이 그대로, 넘침 0). 214px 는 실측(파이썬+playwright)으로 이름+배지가 한 줄에 들어가는 값이다. -->
       <table id="sales-table">
-        <colgroup><col style="width:184px"><col><col><col><col style="width:74px"></colgroup>
+        <colgroup><col style="width:214px"><col><col><col><col style="width:74px"></colgroup>
         <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
         <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
       </table>
@@ -1190,8 +1194,16 @@ function loadDaily(){
       if (!SF_CELLS || !raw || !raw.daily) { chunk(0); return; }
       var loaded = {}; (raw.days_loaded || []).forEach(function(d){ loaded[d] = 1; });
       days.forEach(function(d, i){ var k = ymd(d); vals[i] = (k in raw.daily) ? raw.daily[k] : (loaded[k] ? 0 : null); });
+      /* 어제·그 전날 — 브로제이 미이관분이 0으로 잡혀 헤드라인(시트 미러 I4)과 같은 날인데 다른 값이 찍혔다
+         (GM 09-18 지적 · 배 2821 1차와 같은 원인). 어제는 이미 로딩된 시트 미러(RAW.cells.I4)로 맞추고,
+         그 전날은 맞출 시트값이 이 화면에 없어 값 옆에 「브로제이 이관 전」만 표시한다(10/1 실결제 전까지).
+         월 단위 막대(paintYearly/syncChartPartial)는 그대로 — 여기 7일 막대만 고친다. */
+      var warn = {};
+      var lastIdx = days.length - 1;
+      if (lastIdx >= 0 && RAW.cells && String(RAW.cells.I4 || '').trim()) vals[lastIdx] = num(RAW.cells.I4);
+      if (lastIdx - 1 >= 0 && vals[lastIdx - 1] != null) warn[lastIdx - 1] = true;
       var h = document.querySelector('#dayh .src'); if (h) { h.textContent = '브로제이 → 서버'; h.className = 'src bro'; }
-      paintDaily(days, vals);
+      paintDaily(days, vals, warn);
     });
     return;
   }
@@ -1208,8 +1220,9 @@ function loadDaily(){
   chunk(0);
 }
 
-function paintDaily(days, vals){
+function paintDaily(days, vals, warn){
   var el = document.getElementById('days'); if (!el) return;
+  warn = warn || {};
   /* 합계·평균에서 휴관일은 뺀다 — 문 닫은 날을 분모에 넣으면 하루 평균이 억울하게 깎인다. */
   var open = vals.filter(function(v, i){ return v != null && !isClosedDay(days[i]); });
   var got = vals.filter(function(v){ return v != null; });
@@ -1226,7 +1239,9 @@ function paintDaily(days, vals){
     return '<div class="dayrow' + (last ? ' today' : '') + (closed ? ' closed' : (v === 0 ? ' zero' : '')) + '">' +
       '<span class="dd">' + label + '</span>' +
       '<span class="db">' + (v == null || closed ? '' : '<i style="width:' + Math.max(v / max * 100, v ? 2 : 0) + '%"></i>') + '</span>' +
-      '<span class="dv">' + (closed ? '휴관' : (v == null ? '못 읽음' : _won(v))) + '</span></div>';
+      '<span class="dv">' + (closed ? '휴관' : (v == null ? '못 읽음' : _won(v))) +
+        (warn[i] ? ' <small style="color:var(--muted);font-weight:600">· 브로제이 이관 전</small>' : '') +
+      '</span></div>';
   }).join('');
   var h = document.getElementById('dayh');
   setSecTitle(h, '일 단위 — 최근 ' + days.length + '일 하루 매출');
