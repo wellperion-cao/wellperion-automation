@@ -5707,6 +5707,9 @@ function printA3Guideline(){
    ═══════════════════════════════════════════ */
 function printCurrentTab(){
   const tab=getActiveTab();
+  // 🧺 린넨 관리는 편집용 화면(입력칸·버튼·가로스크롤 표)이라 그대로 찍으면 깨진다 —
+  // 전용 4장 인쇄(printA4Laundry)로 대신 보낸다(GM 지시 2026-09-18 "인쇄 깨지네?").
+  if(tab==='laundry' && typeof printA4Laundry==='function'){ printA4Laundry(); return; }
   // 모든 content에 data-print-active 제거
   document.querySelectorAll('.content').forEach(c=>c.removeAttribute('data-print-active'));
   // 활성 탭에 마킹
