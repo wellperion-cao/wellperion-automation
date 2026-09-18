@@ -230,22 +230,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .kanban-board > .cat-group{flex:0 0 auto;width:450px;margin-bottom:0;align-self:stretch}
 /* 카드 내부 정보: 컬럼 폭에 맞춰 세로형 컴팩트 (업무명 → 담당·상태·날짜·결재 wrap) */
 .wide-row{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0}
-/* ★GM 2026-09-17 19:2x 「카드 사이즈 고정해서 딱딱 정렬 · 카드 안 그리드도 맞춰라」 — 시모(디자인) · 구조·JS·데이터 무변경.
-   보드 = 등폭 3열 그리드(가로 스크롤 대신 화면 폭에 맞춰 3→2→1열) · 카드 = 같은 높이 · 안쪽 = 제목 2줄 / 칩 2줄 / 요약 1줄 / 버튼 1줄 네 칸 고정.
-   펼친 카드(▶)와 결재 의견 있는 카드만 높이가 자유롭다. */
-.kanban-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;overflow-x:visible;cursor:default;align-items:start}
-.kanban-board::after{display:none}
-.kanban-board > .cat-group{width:auto;flex:none;min-width:0}
-@media(max-width:1100px){.kanban-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:720px){.kanban-board{grid-template-columns:minmax(0,1fr)}}
-.kanban-board .task-card{display:flex;flex-direction:column;height:188px;padding:12px 14px;margin:0 0 10px;overflow:hidden}
-.kanban-board .task-card:has(.task-detail.open),.kanban-board .task-card:has(.appr-opinions){height:auto}
-.kanban-board .task-top{align-items:flex-start}
-.kanban-board .task-top > .toggle-arrow{width:22px;text-align:center}
-.kanban-board .task-title{height:44px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;margin-bottom:6px}
-.kanban-board .task-meta{height:46px;overflow:hidden;align-content:flex-start;margin-bottom:0}
-.kanban-board .task-summary-line{height:20px;margin-top:4px}
-.kanban-board .task-actions{margin-top:auto!important;padding-top:6px!important;height:36px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
 .wide-row .task-title{margin-bottom:0;max-width:100%}
 .wide-row .task-meta{margin-bottom:0;min-width:0}
 /* 내용 요약 한 줄 (상시 노출, 말줄임) */
