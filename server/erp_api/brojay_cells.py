@@ -190,7 +190,8 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     daily = {}   # 날짜별 총매출(환불 제외) — 보고 1면 「일 단위 최근 7일」 막대가 일자탭 대신 읽는다(시트 0칸)
     day_pays = []      # lists.registered 원본 — 기준일 결제(환불 제외) 전부
     lesson_pays = []   # lists.lesson 원본 — 강습 8팀(행 8~15) 결제 전부(그달 1일~기준일)
-    day_refund_pays = []   # lists.by_owner 환불 원본 — 강습 8팀(행 8~15) 기준일 환불(부호 원본 그대로)
+    refund_pays = []   # lists.by_owner·by_owner_month 환불 원본 — 강습 8팀(행 8~15) 그달 환불(부호 원본 그대로 ·
+                        #   is_day 로 기준일만 가른다 · by_owner 는 is_day 만, by_owner_month 는 전부)
     for p in payments:
         d = _day_of(p)
         if not d or d > ref_date:
@@ -204,10 +205,10 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             #   여기 실려 GM 이 「어떻게 생긴 값인지 모르겠다」(2026-09-17). 팀 매출은 결제 전액 기준이라 환불을 빼지 않는다.
             if is_day and tag == OPS_TAG:
                 refund_day += amt
-            if is_day:
-                r_cell = _cell_of(tag, ptype, p.get("product_name"), tags)
-                if r_cell and r_cell >= 8:
-                    day_refund_pays.append({"cell": r_cell, "member_id": str(p.get("member_id") or ""), "amt": amt})
+            r_cell = _cell_of(tag, ptype, p.get("product_name"), tags)
+            if r_cell and r_cell >= 8:
+                refund_pays.append({"cell": r_cell, "member_id": str(p.get("member_id") or ""), "amt": amt,
+                                     "is_day": _kst_day(p.get("paid_at")) == ref_date})
             continue
         daily[d] = daily.get(d, 0) + amt
         cell = _cell_of(tag, ptype, p.get("product_name"), tags)
@@ -253,7 +254,7 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     return {"cells": cells, "raw": {"day": day, "month": month, "refund_day": refund_day,
                                     "new": [new_n, new_amt], "re": [re_n, re_amt], "daily": daily,
                                     "day_pays": day_pays, "lesson_pays": lesson_pays,
-                                    "day_refund_pays": day_refund_pays},
+                                    "refund_pays": refund_pays},
             "unmapped": unmapped, "unmatched_membership": unmatched, "payments": len(payments)}
 
 
@@ -503,9 +504,12 @@ def compute(ref_date=None):
                                                     "owner_pl": m["owner_pl"] or "", "owner_squash": m["owner_squash"] or "",
                                                     "owner_golf": m["owner_golf"] or "", "owner_swim": m["owner_swim"] or ""})
         team_names = _team_names()
-        by_owner = _by_owner_list(out["raw"]["day_pays"], out["raw"]["day_refund_pays"], phone_of_member,
-                                   erp_owner_by_phone, roster_owner_by_phone, sorted(set(TEAM_KEY_ROW.values())),
-                                   team_names)
+        team_rows = sorted(set(TEAM_KEY_ROW.values()))
+        day_refund_pays = [p for p in out["raw"]["refund_pays"] if p["is_day"]]
+        by_owner = _by_owner_list(out["raw"]["day_pays"], day_refund_pays, phone_of_member,
+                                   erp_owner_by_phone, roster_owner_by_phone, team_rows, team_names)
+        by_owner_month = _by_owner_list(out["raw"]["lesson_pays"], out["raw"]["refund_pays"], phone_of_member,
+                                         erp_owner_by_phone, roster_owner_by_phone, team_rows, team_names)
         out["lists"] = {
             "ref_date": ref_date,
             "registered": _registered_list(out["raw"]["day_pays"], team_names, member_info_by_phone,
@@ -515,11 +519,15 @@ def compute(ref_date=None):
             "lesson": _lesson_lists(out["raw"]["lesson_pays"], roster_phones, hist_first_paid, team_names),
             "by_owner": {"ref_date": ref_date, "teams": by_owner["teams"], "linked": by_owner["linked"],
                          "unlinked": by_owner["unlinked"], "note": BY_OWNER_NOTE},
+            "by_owner_month": {"ref_date": ref_date, "teams": by_owner_month["teams"],
+                               "linked": by_owner_month["linked"], "unlinked": by_owner_month["unlinked"],
+                               "note": BY_OWNER_NOTE},
         }
     except Exception:
         out["lists"] = {"ref_date": ref_date, "registered": [], "loss": [], "contact": [],
                          "lesson": {"day": {}, "month": {}, "basis": ""},
-                         "by_owner": {"ref_date": ref_date, "teams": [], "linked": 0, "unlinked": 0, "note": BY_OWNER_NOTE}}
+                         "by_owner": {"ref_date": ref_date, "teams": [], "linked": 0, "unlinked": 0, "note": BY_OWNER_NOTE},
+                         "by_owner_month": {"ref_date": ref_date, "teams": [], "linked": 0, "unlinked": 0, "note": BY_OWNER_NOTE}}
     return out
 
 
@@ -645,6 +653,16 @@ def selftest():
     assert swim["owners"][0]["owner"] == "이보조"   # 금액 내림차순
     assert pt["team"] == "PT팀" and pt["amount"] == 150000 and pt["refund"] == 0
     assert pt["owners"] == [{"owner": "담당 미등록", "count": 1, "amount": 150000, "refund": 0}], pt["owners"]
+
+    # ── lists.by_owner_month(배 12523(d)) — 같은 담당(김수영)의 두 날짜 결제 합 ──
+    month_pays_bo = [
+        {"cell": 8, "member_id": "P1", "amt": 100000},   # 9/10 결제(예시)
+        {"cell": 8, "member_id": "P1", "amt": 60000},    # 9/15 결제(예시) — 같은 담당으로 누적
+    ]
+    bo_month = _by_owner_list(month_pays_bo, [], phone_of_member_bo, erp_owner_bo, roster_owner_bo, [8], {8: "수영팀"})
+    swim_month = bo_month["teams"][0]
+    assert swim_month["amount"] == 160000 and swim_month["owners"][0]["owner"] == "김수영"
+    assert swim_month["owners"][0]["count"] == 2 and swim_month["owners"][0]["amount"] == 160000
     print("selftest ok")
 
 
