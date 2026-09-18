@@ -290,6 +290,9 @@ def run_upload(title: str, body: str, style: dict, mode: str,
             "--title", title,
             "--body-file", tmp.name,
         ]
+        if mode == "publish":
+            argv.append("--i-am-sure")                 # 업로더의 실발행 가드 — 이 스크립트가 곧 GM go(2026-09-18 지시)
+            env["TELEGRAM_BOT_TOKEN"] = ""             # 업로더 자체 텔레그램 보고는 끈다(알림은 이 스크립트 notify 한 곳)
         photo_dir = style.get("photo_dir")
         if images:
             argv += ["--image-dir", str(images[0]), "--image-glob", images[1]]
@@ -342,6 +345,7 @@ def main() -> int:
                      help="jo=고척골프 조재오 지점장님 · dc=다이어트캠프 이승기대표님 · ax=AX 랩스 「피트니스 AX」")
     ap.add_argument("--dry-run", action="store_true", help="본문만 만들고 브라우저를 열지 않는다")
     ap.add_argument("--self-test", action="store_true", help="검사 함수 자가점검")
+    ap.add_argument("--force", action="store_true", help="오늘 성공 기록이 있어도 한 번 더(사람이 실측할 때만)")
     args = ap.parse_args()
 
     if args.self_test:
@@ -371,8 +375,11 @@ def main() -> int:
     import atexit
     atexit.register(lambda: lock.unlink(missing_ok=True))
 
+    if datetime.now().weekday() >= 5:
+        log(style, "주말 정지(토·일 · GM 2026-09-18 평일만 발행) — 생성·발행 없음")
+        return 0
     state = load_state(style)
-    if _already_ok_today(state) and not args.dry_run:   # dry-run 은 생성·검사만 시험하는 길이라 당일 성공 여부와 무관(2026-09-17 감사)
+    if _already_ok_today(state) and not args.dry_run and not args.force:   # dry-run 은 생성·검사만 시험하는 길이라 당일 성공 여부와 무관(2026-09-17 감사)
         log(style, "오늘 이미 임시저장 성공 — 건너뜀")
         return 0
     seed = ig_seed(args.client)
@@ -423,19 +430,27 @@ def main() -> int:
         return 0 if rc == 0 else 1
 
     tenant = style["tenant"]
-    rc, out = run_upload(title, body, style, mode="draft", images=images)
+    # 직접 발행(GM 2026-09-18 「파트너가 누르지 않는다」) — 발행이 안 되면 임시저장으로 남기고 로그(글은 버리지 않는다)
+    rc, out = run_upload(title, body, style, mode="publish", images=images)
     relogin_tag: str | None = None
     if rc != 0 and ("로그인이 풀렸다" in out or "로그인된 블로그가 웰페리온" in out):
         relogin_tag = _try_relogin(style, tenant)
         if relogin_tag == "auto-ok":
-            rc, out = run_upload(title, body, style, mode="draft", images=images)
+            rc, out = run_upload(title, body, style, mode="publish", images=images)
+    url = _post_url(out) if rc == 0 else ""
+    kind = "발행"
+    if rc != 0 or not url:
+        log(style, f"발행 실패(rc={rc} · url={'있음' if url else '없음'}) → 임시저장으로 남긴다")
+        rc, out = run_upload(title, body, style, mode="draft", images=images)
+        kind, url = "임시저장(발행 실패)", ""
 
     if rc == 0:
-        msg = f"{fail_name} 블로그 임시저장 성공 — 「{topic}」 {len(body)}자 (모델 {used_model})"
+        msg = f"{fail_name} 블로그 {kind} 성공 — 「{topic}」 {len(body)}자 (모델 {used_model}){' ' + url if url else ''}"
         log(style, msg + "\n" + out)
         notify(msg)
         state.setdefault("used_topics", []).append(topic)
-        _record_run(style, state, topic, "ok", "", len(body), used_model, relogin_tag, seed=bool(seed))
+        _record_run(style, state, topic, "ok", "" if url else "발행 실패 → 임시저장", len(body), used_model, relogin_tag,
+                    seed=bool(seed), url=url)
         save_state(style, state)
         # 파트너 방 아침 안내는 안 보낸다 — 그 시각에 대신 나가는 것은 없다(GM 2026-09-18 「오전 통은 다 삭제」 · 저녁 통이 한 번에 정리)
         log(style, "아침 안내 skip(GM 2026-09-18)")
@@ -471,6 +486,17 @@ def main() -> int:
     return 1
 
 
+def _post_url(out: str) -> str:
+    """업로더가 찍는 「post_url: https://blog.naver.com/…」 한 줄 — 회수불가면 빈 값.
+    발행 직후 주소(PostView.naver?blogId=…&logNo=…&isAfterWrite=…)는 짧은 정식 주소 blog.naver.com/{blogId}/{logNo} 로 바꾼다."""
+    m = re.search(r"^post_url:\s*(https?://\S+)", out, re.M)
+    if not m:
+        return ""
+    url = m.group(1)
+    b, n = re.search(r"[?&]blogId=([A-Za-z0-9_-]+)", url), re.search(r"[?&]logNo=(\d+)", url)
+    return f"https://blog.naver.com/{b.group(1)}/{n.group(1)}" if b and n else url
+
+
 def _fail_streak(state: dict) -> int:
     """지금까지 몇 번을 내리 실패했나. 기록을 뒤에서부터 센다."""
     n = 0
@@ -482,7 +508,7 @@ def _fail_streak(state: dict) -> int:
 
 
 def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, chars: int,
-                 model: str | None, relogin: str | None = None, seed: bool = False) -> None:
+                 model: str | None, relogin: str | None = None, seed: bool = False, url: str = "") -> None:
     rec = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "topic": topic,
@@ -495,6 +521,8 @@ def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, 
         rec["relogin"] = relogin
     if seed:
         rec["seed"] = "instagram"           # 인스타 → 블로그 순서가 실제로 돌았다는 표식
+    if url:
+        rec["url"] = url                    # 발행 글 주소(저녁 통·주말 되짚기가 읽는다)
     state.setdefault("runs", []).append(rec)
     save_state(style, state)
 
@@ -581,6 +609,10 @@ def _self_test() -> None:
         p.write_text(json.dumps({"runs": [{"at": now, "topic": "주제A", "folder": td}]}), encoding="utf-8")
         assert ig_seed("jo", p) is None, "캡션 없는 런을 씨앗으로 삼음"
     assert ig_seed("jo", Path("없는/파일.json")) is None
+    assert _post_url("[INFO] 발행 완료\npost_url: https://blog.naver.com/abc/223\n") == "https://blog.naver.com/abc/223"
+    assert _post_url("post_url: https://blog.naver.com/PostView.naver?blogId=spogym21qa&Redirect=View&logNo=224415780789&isAfterWrite=true") \
+        == "https://blog.naver.com/spogym21qa/224415780789"
+    assert _post_url("post_url: (회수불가)") == ""
 
     # ── 비밀 파일 파서: 공백·CRLF 허용, 키 없으면 None ──
     assert _secret_from_response(200, {"ok": True, "id": "abc", "pw": "Xample1234!"}) == {"NAVER_ID": "abc", "NAVER_PW": "Xample1234!"}

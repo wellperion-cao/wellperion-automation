@@ -72,12 +72,13 @@ def instagram_items(now: datetime) -> list[dict]:
             out.append({"who": who, "what": "인스타 자동 게시", "since": r.get("at", ""), "via": "—",
                         "state": "게시함 " + r["published_at"][:16], "detail": r.get("post_url") or Path(r["folder"]).name,
                         "then": "다음 날 06:30 자동", "done": True})
-        elif not (ROOT / "profiles" / "instagram" / key).exists():
-            out.append({"who": who, "what": "인스타 발행 세션(로그인 1회 · 사람 손)", "since": r.get("at", ""), "via": "—",
-                        "state": "세션 없음 — 임시안만 쌓임", "detail": Path(r["folder"]).name, "then": "세션 뒤 06:30 자동 게시", "done": False})
+        elif st.get("login_needed") or not (ROOT / "profiles" / "instagram" / key).exists():
+            out.append({"who": who, "what": "인스타 로그인 대기(서버 계정 자리 1531 → 스스로 로그인 · 2단계 인증이면 인증번호)", "since": r.get("at", ""), "via": "—",
+                        "state": st.get("login_needed") or "세션 없음 — 임시안만 쌓임", "detail": Path(r["folder"]).name,
+                        "then": "로그인 뒤 06:30 자동 게시(오늘 것은 --retry)", "done": False})
         elif r.get("publish_rc") is not None:
             out.append({"who": who, "what": "인스타 자동 게시 실패(재시도 없음)", "since": r.get("at", ""), "via": "—",
-                        "state": f"rc={r['publish_rc']} · 세션 만료면 재로그인 1회 뒤 --retry", "detail": Path(r["folder"]).name,
+                        "state": f"rc={r['publish_rc']}", "detail": Path(r["folder"]).name,
                         "then": "logs/partner_instagram_daily.log", "done": False})
     return out
 

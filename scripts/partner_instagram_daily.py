@@ -155,8 +155,51 @@ def trim_to_sentence(caption: str, limit: int, tail: str) -> str:
     return with_tail(out or body[: limit - len(tail) - 2], tail)
 
 
-def pick_photos(c: dict, st: dict, n: int = 3) -> list[Path]:
+def gen_prompt(c: dict, topic: str) -> str:
+    """힉스필드 보충 컷 문장 — 시설 실사가 아니라 TIP·개념 장면만(사람 얼굴·글자·간판 없음 · 다큐 톤)."""
+    return (f"{c['name']} 인스타그램 개념 컷 — 주제 「{topic}」 를 설명하는 장면 하나. 실사 다큐 사진 톤, 자연광, "
+            f"사람 얼굴·글자·로고·간판 없음, 정사각 구도, 과장된 색 없음")
+
+
+def gen_photo(ref: Path | None, prompt: str, dst: Path, max_credits: float = 2) -> Path | None:
+    """파트너 사진이 3장에 못 미칠 때만 — 힉스필드 nano_banana(1:1 · 실측 1크레딧) 한 장(GM 2026-09-18 「힉스필드도 붙여놔서」).
+    비용을 먼저 재고 상한을 넘으면 만들지 않는다 · 실패는 재시도 없이 None(호출부가 부족한 채로 멈춘다)."""
+    import shutil  # noqa: PLC0415
+    import urllib.request  # noqa: PLC0415
+    exe = shutil.which("higgsfield")
+    if not exe:
+        print("[gen] higgsfield CLI 없음 — 보충 컷 생략"); return None
+    spec = ["nano_banana", "--prompt", prompt, "--aspect_ratio", "1:1"] + (["--image-references", str(ref)] if ref else [])
+
+    def cli(args: list[str]):
+        p = subprocess.run([exe, *args, "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=400)
+        try:
+            return json.loads(p.stdout) if p.returncode == 0 else None
+        except json.JSONDecodeError:
+            return None
+    cost = cli(["generate", "cost", *spec])
+    credits = float((cost or {}).get("credits", 99))
+    if credits > max_credits:
+        print(f"[gen] 비용 {credits}크레딧 > 상한 {max_credits} — 만들지 않음"); return None
+    resp = cli(["generate", "create", *spec, "--wait", "--wait-timeout", "5m", "--wait-interval", "5s"])
+    job = (resp[0] if isinstance(resp, list) else resp) or {}
+    url = job.get("result_url") if job.get("status") == "completed" else None
+    if not url:
+        print(f"[gen] 생성 실패 — status={job.get('status')}"); return None
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    urllib.request.urlretrieve(url, dst)
+    print(f"[gen] 보충 컷 {dst.name} · {credits}크레딧")
+    return dst
+
+
+def pick_photos(c: dict, st: dict, n: int = 3, topic: str = "", folder: Path | None = None) -> list[Path]:
+    """파트너 시설 사진 우선(돌려 뽑기) · 모자라는 장수만 힉스필드 개념 컷으로 보충(topic·folder 를 준 실행에서만)."""
     imgs = sorted(p for p in (ADMIN / c["tenant"] / "img").glob("*.jpg") if not SKIP_IMG.search(p.name))
+    if len(imgs) < n and folder is not None:
+        for k in range(n - len(imgs)):
+            g = gen_photo(imgs[0] if imgs else None, gen_prompt(c, topic), folder / f"gen_{k + 1}.jpg")
+            if g:
+                imgs.append(g)
     if len(imgs) < n:
         raise SystemExit(f"사진 부족 — {len(imgs)}장(3장 필요) · {ADMIN / c['tenant'] / 'img'}")
     i = int(st.get("photo_idx") or 0) % len(imgs)
@@ -247,6 +290,56 @@ def verify(c: dict, url: str, caption: str) -> bool:
         return False
 
 
+LOGIN_URL = "https://www.instagram.com/accounts/login/"
+
+
+def try_login(c: dict, key: str, st: dict) -> bool:
+    """세션이 없거나 풀렸을 때 1회 — 서버 계정 자리(플랫폼관리 코드 1531 · 실행 때 GET → 메모리만 · 디스크 금지)로 로그인.
+    2단계 인증·확인 문턱이면 그 자리에서 멈추고 state login_needed 에 남긴다(파트너 방에 직접 묻지 않는다 · 문안은 시보가 GM 승인 뒤)."""
+    import asyncio  # noqa: PLC0415
+    from partner_blog_daily import _read_login_secret  # noqa: PLC0415
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    sec = _read_login_secret(c["tenant"], "instagram")
+    if not sec:
+        st["login_needed"] = f"{now} 서버 계정 자리 없음({c['tenant']}/instagram) — 플랫폼관리 코드 1531 에 넣으면 다음 실행에 스스로 로그인"
+        print("[login]", st["login_needed"]); save_state(key, st)
+        return False
+
+    async def _go() -> tuple[bool, str]:
+        from playwright.async_api import async_playwright  # noqa: PLC0415
+        async with async_playwright() as p:
+            ctx = await p.chromium.launch_persistent_context(str(PROFILES / c["account"]), headless=True,
+                                                             args=["--disable-blink-features=AutomationControlled"])
+            try:
+                page = await ctx.new_page()
+                await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
+                await page.wait_for_timeout(2500)
+                if await page.locator('input[name="password"]').count() == 0:
+                    return True, page.url                       # 이미 로그인돼 있다
+                await page.fill('input[name="username"]', sec["NAVER_ID"])
+                await page.fill('input[name="password"]', sec["NAVER_PW"])
+                await page.keyboard.press("Enter")
+                await page.wait_for_timeout(7000)
+                url = page.url
+                blocked = any(s in url for s in ("/challenge/", "two_factor", "/accounts/login")) or \
+                    await page.locator('input[name="verificationCode"]').count() > 0
+                if not blocked:
+                    for txt in ("정보 저장", "Save info"):          # 세션 쿠키를 영속으로
+                        btn = page.locator(f'button:has-text("{txt}")')
+                        if await btn.count():
+                            await btn.first.click(); await page.wait_for_timeout(2000); break
+                return (not blocked), url
+            finally:
+                await ctx.close()
+    try:
+        ok, url = asyncio.run(_go())
+    except Exception as exc:  # noqa: BLE001
+        ok, url = False, f"{type(exc).__name__}: {exc}"[:120]
+    st["login_needed"] = "" if ok else f"{now} 인증번호 필요(2단계 인증·확인 문턱) — {url}"
+    print("[login]", "성공(세션 저장)" if ok else st["login_needed"]); save_state(key, st)
+    return ok
+
+
 def alert(msg: str) -> None:
     """AI 살림 경보 = 자동화현황방 한 줄(GM 봇방·파트너 방 아님)."""
     try:
@@ -286,6 +379,9 @@ def main() -> int:
     if not a.client:
         ap.error("client")
     c = CLIENTS[a.client]
+    if datetime.now().weekday() >= 5:
+        print("[skip] 주말 정지(토·일 · GM 2026-09-18 평일만 게시) — 생성·게시 없음")
+        return 0
     if not acquire_lock(a.client):
         print(f"[skip] 이미 도는 중 — 잠금 status/.{a.client}_instagram_daily.lock")
         return 0
@@ -307,8 +403,8 @@ def main() -> int:
             alert(f"⚠️ {c['name']} 인스타 — topic_bank 를 다 썼다(주제 추가 필요)")
             return 1
         caption, used = make_caption(topic, style, cj, c, a.client)
-        tags, photos = hashtags(style), pick_photos(c, st)
         folder = c["dir"] / "05_콘텐츠_초안" / "instagram" / datetime.now().strftime("%y%m%d")
+        tags, photos = hashtags(style), pick_photos(c, st, topic=topic, folder=folder)
         write_folder(folder, caption, tags, photos, c)
         print(f"[ok] {folder} · 사진 {[p.name for p in photos]} · 캡션 {len(caption)}자 · 모델 {used}")
         run = {"at": datetime.now().isoformat(timespec="seconds"), "topic": topic, "folder": str(folder),
@@ -317,16 +413,20 @@ def main() -> int:
         save_state(a.client, st)
     if a.no_publish:
         return 0
-    if not (PROFILES / c["account"]).exists():
-        print(f"[skip] {c['name']} 인스타 세션 없음(profiles/instagram/{c['account']} · gm_asks #56) — 임시안만 두고 게시 안 함")
+    if not (PROFILES / c["account"]).exists() and not try_login(c, a.client, st):
+        print(f"[skip] {c['name']} 인스타 세션 없음 · 로그인 대기 — 임시안만 두고 게시 안 함")
         return 0
     rc, url = publish(c, folder)
+    if rc == 2 and try_login(c, a.client, st):       # 세션이 풀린 것 — 서버 계정 자리로 1회 재로그인 뒤 다시(게시 재시도가 아니다)
+        rc, url = publish(c, folder)
     run["publish_rc"] = rc
     if rc == 0 and url:
         run["published_at"] = datetime.now().isoformat(timespec="seconds")
         run["post_url"] = url
         run["verified"] = verify(c, url, caption)
         print(f"[published] {url} · 실측 {'일치' if run['verified'] else '미확인'}")
+    elif rc == 2:
+        print(f"[wait] {c['name']} 인스타 로그인 대기 — {st.get('login_needed')}")   # 사람 손 대기는 경보가 아니다(state login_needed 한 칸)
     else:
         # rc 9 = 성공 토스트는 떴는데 URL 미확정(업로더 규칙: 재시도 금지 · 중복 게시 방지) — 실패와 같이 사람 확인으로 넘긴다
         print(f"[fail] {c['name']} 인스타 게시 실패 rc={rc} — 재시도하지 않는다")
@@ -359,6 +459,9 @@ def self_test() -> int:
     assert today_run({"runs": [{"at": "2026-09-18T06:30:00"}]}, "2026-09-18")["at"].startswith("2026-09-18")
     assert today_run({"runs": [{"at": "2026-09-17T06:30:00"}]}, "2026-09-18") is None
     assert POST_URL_RE.search("  post A: https://www.instagram.com/p/AbC_12-x/").group(0) == "https://www.instagram.com/p/AbC_12-x/"
+    gp = gen_prompt(c, "주제")
+    assert "주제" in gp and "얼굴" in gp and "글자" in gp
+    assert gen_photo(None, gp, Path("x.jpg"), max_credits=0) is None, "상한 0 인데 만들었다"   # 비용 조회만(크레딧 0)
     print("partner_instagram_daily 자가점검 통과")
     return 0
 

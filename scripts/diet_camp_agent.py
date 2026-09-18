@@ -461,7 +461,7 @@ def evening_facts(conf: dict, today: str) -> dict:
     인스타 = status/partner_instagram/{key}.json 오늘 런 post_url · 블로그 = 그 업체 state_file 오늘 ok 런 ·
     설문 = server/counselbot/tenants/{tenant}_qa.json(번호·asked_on·answer·answered_on)."""
     key = conf.get("blog_tenant") or ""
-    out = {"ig_url": "", "blog_title": "", "answered": [], "open_n": 0, "slug": ""}
+    out = {"ig_url": "", "blog_title": "", "blog_url": "", "answered": [], "open_n": 0, "slug": ""}
     if not key:
         return out
     import labs_waiting                      # 번호 설문 시작 번호(floor)는 그 표와 같은 값 하나만 쓴다
@@ -473,8 +473,9 @@ def evening_facts(conf: dict, today: str) -> dict:
     out["ig_url"] = r.get("post_url") or ""
     style = partner_blog_daily.load_style(key)
     runs = partner_blog_daily.load_state(style).get("runs", [])
-    out["blog_title"] = next((x["topic"] for x in reversed(runs)
-                              if x.get("result") == "ok" and str(x.get("date", "")).startswith(today)), "")
+    ok_today = [x for x in runs if x.get("result") == "ok" and str(x.get("date", "")).startswith(today)]
+    best = next((x for x in reversed(ok_today) if x.get("url")), ok_today[-1] if ok_today else {})   # 발행된 것 우선
+    out["blog_title"], out["blog_url"] = best.get("topic", ""), best.get("url", "")
     tenant, _, floor = labs_waiting.TENANTS[key]
     qa = labs_waiting._load(REPO_ROOT / "server" / "counselbot" / "tenants" / f"{tenant}_qa.json", [])
     rows = [x for x in qa if (x.get("partner_no") or 0) >= floor and x.get("asked_on")]
@@ -489,8 +490,10 @@ def evening_body(conf: dict, f: dict) -> str | None:
     did = []
     if f["ig_url"]:
         did.append(f"▪ 오늘 인스타그램 게시 1편 — {f['ig_url']}")
-    if f["blog_title"]:
-        did.append(f"▪ 블로그 임시저장 1편 — 「{f['blog_title']}」 발행만 눌러 주세요")
+    if f.get("blog_url"):
+        did.append(f"▪ 블로그 1편 발행 — 「{f['blog_title']}」 {f['blog_url']}")
+    elif f["blog_title"]:
+        did.append(f"▪ 블로그 1편 임시저장 — 「{f['blog_title']}」(발행은 저희가 다시 올립니다)")
     if f["answered"]:
         did.append(f"▪ 답 주신 {'·'.join(str(n) for n in f['answered'])}번 반영 — https://erp.wellperion.com/{f['slug']}/intro.html")
     if not did:
@@ -599,6 +602,10 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
 
     if st.get("evening_date") == today:
         print(f"[agent] {room} — 오늘 하루의 마무리는 이미 나갔다")
+        return 0
+    if st.get("skip_evening_once") == today and not dry_run:
+        # 그날만 사람이 GM 승인 문안을 손으로 보내는 날(2026-09-18 전환 안내) — 자동 통은 건너뛰고 내일부터 자동
+        print(f"[agent] {room} — 오늘 저녁 자동 통 건너뜀(skip_evening_once={today} · 사람이 승인 문안 발송)")
         return 0
     if not conf.get("owner"):
         print(f"[agent] {room} — rooms.json 에 owner(호칭)가 없어 저녁 통을 못 만든다", file=sys.stderr)
@@ -786,11 +793,14 @@ def _selfcheck() -> None:
     assert _slug("★중간관리자 방") == "중간관리자_방", _slug("★중간관리자 방")
     # 저녁 한 통 = 필요한 것만(GM 2026-09-18) — 한 일이 없으면 None · 남은 번호는 나열하지 않고 개수만 · 빈 줄 0 · 10줄 안쪽
     conf = {"owner": "조재오 지점장님"}
-    f = {"ig_url": "https://www.instagram.com/p/x/", "blog_title": "제목", "answered": [21, 23], "open_n": 5, "slug": "gocheokgolf"}
+    f = {"ig_url": "https://www.instagram.com/p/x/", "blog_title": "제목", "blog_url": "https://blog.naver.com/a/1",
+         "answered": [21, 23], "open_n": 5, "slug": "gocheokgolf"}
     b = evening_body(conf, f)
     assert b.splitlines()[0] == "조재오 지점장님, 웰페리온 AI입니다." and len(b.splitlines()) <= MAX_LINES and "" not in b.splitlines(), b
     assert "설문 남은 번호 5개" in b and "21·23번" in b and "/gocheokgolf/intro.html" in b, b
-    assert evening_body(conf, {**f, "ig_url": "", "blog_title": "", "answered": []}) is None, "한 일 없는 날은 0통"
+    assert "블로그 1편 발행 — 「제목」 https://blog.naver.com/a/1" in b and "눌러" not in b, b
+    assert "임시저장" in evening_body(conf, {**f, "blog_url": ""}), "발행 실패 날은 임시저장으로 적는다"
+    assert evening_body(conf, {**f, "ig_url": "", "blog_title": "", "blog_url": "", "answered": []}) is None, "한 일 없는 날은 0통"
     assert "설문" not in evening_body(conf, {**f, "open_n": 0})
     for c in rs:
         assert c.get("owner") and c.get("blog_tenant"), f"rooms.json 에 owner·blog_tenant 없음: {c['room']}"
