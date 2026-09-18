@@ -2112,6 +2112,37 @@ function _checkSurveyAccess_(action, key) {
   return String(key || '') === tok;
 }
 
+// 게이트 스위치 설정 함수 (배 12818 · 2026-09-19 시토 · 접수 GAS 배 960 과 같은 모양) — clasp run 전용, 라우터 미등록, 토큰 값 자체는 절대 반환 안 함
+function gateSetAccessToken(tok) {
+  var p = PropertiesService.getScriptProperties();
+  tok = String(tok == null ? '' : tok).trim();
+  if (!tok) {
+    var cur = p.getProperty('ACCESS_TOKEN') || '';
+    return { ok: true, changed: false, note: '인자 없음 — 현재 상태만 보고',
+             hasToken: !!cur, len: cur.length, enforce: p.getProperty('TOKEN_ENFORCE') || '',
+             piiMask: p.getProperty('PII_MASK') || '' };
+  }
+  p.setProperty('ACCESS_TOKEN', tok);
+  return { ok: true, changed: true, hasToken: true, len: tok.length,
+           enforce: p.getProperty('TOKEN_ENFORCE') || '', piiMask: p.getProperty('PII_MASK') || '' };
+}
+function gateSetTokenEnforce(v) {
+  var p = PropertiesService.getScriptProperties();
+  v = String(v == null ? '' : v).trim();
+  if (v !== '0' && v !== '1') {
+    var cur = p.getProperty('ACCESS_TOKEN') || '';
+    return { ok: true, changed: false, note: "인자는 '0' 또는 '1' — 현재 상태만 보고",
+             enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: !!cur, len: cur.length,
+             piiMask: p.getProperty('PII_MASK') || '' };
+  }
+  if (v === '1' && !p.getProperty('ACCESS_TOKEN')) {
+    return { ok: false, changed: false, error: 'ACCESS_TOKEN 이 없다 — 먼저 gateSetAccessToken 로 넣어라',
+             enforce: p.getProperty('TOKEN_ENFORCE') || '', hasToken: false };
+  }
+  p.setProperty('TOKEN_ENFORCE', v);
+  return { ok: true, changed: true, enforce: v, hasToken: !!p.getProperty('ACCESS_TOKEN') };
+}
+
 // PII 마스킹 게이트 — 원시 실명·전화는 토큰 있을 때만 풀(full)로. 2026-06-25 시토(GM go: '닫기').
 // ★ 불변식: PII_MASK 가 'on' 이 아니면(기본) 항상 풀 반환 → 코드 배포만으로는 라이브 영향 0.
 //   GM 활성화: ① ScriptProperties ACCESS_TOKEN=<강한 무작위 문자열> ② PII_MASK='on' ③ 웹앱 새 버전 재배포.
