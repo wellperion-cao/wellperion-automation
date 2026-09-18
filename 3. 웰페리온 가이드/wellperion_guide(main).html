@@ -4637,9 +4637,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           moduleCard({icon:'📋',label:'점검 현황', caption:'오늘 시설 입력률·지원 완료율', value:checkVal, bigSize:'.98rem', warn:checkWarnTxt, warnLevel:checkLevel, href:'coo/check/3부서 체계.html#support'})
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:'coo/check/3부서 체계.html#parking'})
           + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
-          + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수 · 공지·일일 점검 포함', value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
+          + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수', value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
-          + moduleCard({icon:'🛎️',label:'리셉션',          caption:'리셉션 운영 시트',  value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF})
+          + moduleCard({icon:'🛎️',label:'리셉션',          caption:'리셉션 운영 시트 · 공지·일일 점검 포함',  value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF})
           + moduleCard({icon:'📚',label:'웰페리온 문서',   caption:'이관된 규정·매뉴얼 모음', value:'회의자료·규정·매뉴얼', warn:'', warnLevel:'ok', href:'coo/docs/index.html'});
         // 허브 4박스(배 12788) — 새 fetch 없이 이 S 를 그대로 미러(점검·종합접수처 칸)
         var hubCheckEl = document.getElementById('o1-hub-check-value');
@@ -4740,12 +4740,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           paint();
         });
 
-        /* 리셉션 — 현황은 웹앱이 비밀번호 POST 로만 내준다(세션 입력). 공개 화면에 비밀번호를
-           심지 않는다(🔒) → 숫자를 지어내지 않고 '들어가서 본다'고 정직하게 적는다.
+        /* 리셉션 — 현황은 웹앱 화면에서 봐야 한다(숫자를 이 카드로 지어내지 않는다 → '들어가서 본다'로 정직하게 적는다).
            2026-07-28: 페이지가 라커 전용 → 리셉션 실무 시트 9종 허브로 교체되어 명칭 변경(GM 지시)
-           「리셉션 업무 / 라커 관리」 → 「리셉션 / 실무진 진행 업무」 — 소스 없는 정적 값, 즉시 반영. */
+           「리셉션 업무 / 라커 관리」 → 「리셉션 / 실무진 진행 업무」 — 소스 없는 정적 값, 즉시 반영.
+           2026-09-18 시토(배 12781): 비밀번호는 서버가 비밀 저장소에서 자동 첨부 — 화면은 실패 때만 묻는다.
+           '(비밀번호 필요)' 문구 삭제(GM 지시). */
         S.lockerVal  = '실무진 진행 업무';
-        S.lockerWarn = '열어서 확인 (비밀번호 필요)';
+        S.lockerWarn = '열어서 확인';
         paint();
       }
       loadHub();
