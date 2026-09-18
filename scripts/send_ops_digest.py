@@ -4146,13 +4146,26 @@ def duty_substitute(dept: str, today: "date | None" = None) -> "tuple[str, str |
             end = _parse_ymd(it.get("end_date")) or start
             if not (start and start <= today <= (end or start)):
                 continue
-            sub_dept = (block.get(_DUTY_SUB_KEY) or {}).get("default", "")
-            sub_leader = str(depts.get(sub_dept) or "") or leader
+            sub_leader = _duty_sub_who(block, depts, dept) or leader
             reason = f"{leader} 휴무 {start.month}/{start.day}~{end.month}/{end.day}"
             return sub_leader, reason
     except Exception:
         pass          # 일정 SSOT 를 못 읽어도 원래 반장 그대로 동작한다(fail-soft)
     return leader, None
+
+
+def _duty_sub_who(block: dict, depts: dict, dept: str) -> str:
+    """부서별 대체자 정본(kpi.json `_휴무대체.by_dept`) — 사람이면 그 사람, 부서면 그 부서 반장,
+    「자체」면 빈 문자열(원래 반장 그대로). by_dept 에 없으면 default 부서 반장(GM 09-17 규칙)."""
+    sub = block.get(_DUTY_SUB_KEY) or {}
+    rule = (sub.get("by_dept") or {}).get(dept)
+    if isinstance(rule, dict):
+        if rule.get("mode") == "자체":
+            return ""
+        if rule.get("who"):
+            return str(rule["who"])
+        return str(depts.get(rule.get("dept") or "") or "")
+    return str(depts.get(sub.get("default", "")) or "")
 
 
 def _duty_today_line(today: "date | None" = None) -> str:
@@ -4165,8 +4178,6 @@ def _duty_today_line(today: "date | None" = None) -> str:
             "_부서반장_2026_08_26") or {}
         depts = block.get("depts") or {}
         rev = {str(who): str(dept) for dept, who in depts.items() if who}
-        sub_dept = (block.get(_DUTY_SUB_KEY) or {}).get("default", "")
-        sub_leader = str(depts.get(sub_dept) or "")
         import schedule_ssot
         lines = []
         for it in schedule_ssot.load().get("items", []):
@@ -4181,11 +4192,26 @@ def _duty_today_line(today: "date | None" = None) -> str:
             if not (start and start <= today <= (end or start)):
                 continue
             rng = f"{start.month}/{start.day}~{end.month}/{end.day}"
-            lines.append(f"🔁 오늘 휴무 — {who}({dept}) {rng} → {dept} 점검 제출은 "
-                        f"{sub_dept}({sub_leader}님)가 대신")
+            sub_leader = _duty_sub_who(block, depts, dept)
+            if not sub_leader:      # 시설부 — 부서 내 자체 해결(GM 09-18)
+                lines.append(f"🔁 오늘 휴무 — {who}({dept}) {rng} → {dept} 점검은 부서 내에서 대신")
+                continue
+            lines.append(f"🔁 오늘 휴무 — {who}({dept}) {rng} → {dept} 점검 제출은 {sub_leader}님이 대신")
         return "\n".join(lines)
     except Exception:
         return ""
+def _selfcheck_duty_sub() -> None:
+    """GM 지시 2026-09-18 부서별 대체자 — 정본(kpi.json)과 판정 함수가 같은 답을 내는지."""
+    block = json.loads((ROOT / "ssot" / "kpi.json").read_text(encoding="utf-8")).get("_부서반장_2026_08_26") or {}
+    depts = block.get("depts") or {}
+    assert _duty_sub_who(block, depts, "시설부") == "", "시설부는 자체"
+    assert _duty_sub_who(block, depts, "지원부(남)") == "최준용M", "지원부(남)→최준용M"
+    assert _duty_sub_who(block, depts, "지원부(여)") == "이경연 실장", "지원부(여)→이경연 실장"
+    assert _duty_sub_who(block, depts, "주차관리부") == depts.get("시설부"), "주차→시설부 반장"
+    assert _duty_sub_who(block, depts, "운영부") == depts.get(block["_휴무대체"]["default"]), "미지정은 default"
+    print("[selfcheck] duty_sub OK")
+
+
 _OVD_HEARTBEAT_ID = "overdue-reception-alert"
 # 이 알림에서 빼는 분류.
 #  · 분실물 접수 = 보관 성격(30일 주기)이라 매일 재촉할 일이 아니다.
@@ -4908,6 +4934,7 @@ def main() -> int:
         return 0
 
     if args.selfcheck:
+        _selfcheck_duty_sub()
         _selfcheck_parse_ymd()
         _selfcheck_done_filter()
         _selfcheck_tidy_bookend()
