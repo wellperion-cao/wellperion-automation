@@ -51,6 +51,14 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 @media (max-width:760px){.stat4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .subtbl{margin-top:10px;font-size:12px}
 .srcname{font-size:11px;font-weight:400;color:var(--pf-soft);margin-left:6px}
+.pf-subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pf-subtabs button{font-family:var(--pf-head);font-size:12.5px;font-weight:600;min-height:36px;padding:0 12px;border-radius:var(--pf-radius-sm);border:1px solid var(--pf-line);background:var(--pf-bg);color:var(--pf-ink);cursor:pointer}
+.pf-subtabs button.on{background:var(--pf-tint);color:var(--pf-pri-dk);border-color:var(--pf-pri)}
+.pf-subtabs .fail{color:#b3261e;font-weight:700}
+.editbadge{font-size:11px;color:var(--pf-soft);margin-left:6px;white-space:nowrap}
+.faildetails{margin-top:8px}
+.faildetails summary{cursor:pointer;font-size:12.5px;color:var(--pf-soft)}
+.faildetails table{margin-top:6px}
 </style>
 </head>
 <body class="pf-body">
@@ -141,28 +149,78 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   }
   function fmtDate(s){ return s?String(s).slice(0,10):'—'; }
   function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n)+'…':s; }
-  function emptyRow(n){ return '<tr><td colspan="'+n+'" class="empty">아직 기록 없음</td></tr>'; }
-  function renderItemsTable(items){
-    var recent=items.slice().sort(function(a,b){return String(b.published_at||b.card_sent_at||'').localeCompare(String(a.published_at||a.card_sent_at||''));}).slice(0,12);
-    var rows=recent.map(function(x){
-      return '<tr><td>'+fmtDate(x.published_at||x.card_sent_at)+'</td><td>'+(x.title||'')+'</td><td>'+(x.channel||'')+'</td><td>'+(x.status||'')+'</td><td>'+(x.post_url?'<a href="'+x.post_url+'" target="_blank" rel="noopener">보기</a>':'—')+'</td></tr>';
-    }).join('')||emptyRow(5);
-    return '<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>채널</th><th>상태</th><th>링크</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  // 발행 표 공통 가공(배 2792 추가 · GM 09-18 15:0x~15:1x) —
+  // ① 같은 제목(주제)으로 성공(ok) 기록이 여럿이면 마지막 한 줄만 보여주고, 그 앞의 성공은 "수정 N" 배지로 접는다(첫 성공은 원글 · 그 뒤 성공은 재발행/수정).
+  // ② 실패(ok=false)는 표 줄로 안 올린다 — 최근 7일치 건수만 채널 탭 배지로, 펼치면(details) 목록.
+  // ③ 제목 글자 자체가 글 주소 링크(url 없으면 글자만).
+  function buildChannelData(rows){
+    var groups={}, cutoff=Date.now()-7*86400000, recentFails=[];
+    rows.forEach(function(r){
+      var k=r.title||'(제목 없음)';
+      (groups[k]=groups[k]||[]).push(r);
+      if(!r.ok && !r.pending){ var t=Date.parse(r.date); if(!isNaN(t)&&t>=cutoff) recentFails.push(r); }   // pending(예: 인스타 임시저장 대기)은 실패가 아니다 — 세지 않는다
+    });
+    var display=[];
+    Object.keys(groups).forEach(function(k){
+      var ok=groups[k].filter(function(r){return r.ok;});
+      if(!ok.length) return;   // 전부 실패인 주제 — 표 줄에 안 올림(실패 건수에는 이미 반영됨)
+      ok.sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
+      var last=ok[ok.length-1];
+      display.push({date:last.date,title:last.title,url:last.url,edits:ok.length-1});
+    });
+    display.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
+    return {display:display.slice(0,12), recentFails:recentFails};
   }
-  function renderBlogTable(runs){
-    if(!runs||!runs.length) return '<table class="pf-table"><tbody>'+emptyRow(3)+'</tbody></table>';
-    var rows=runs.slice(-10).reverse().map(function(r){
-      var ok=r.result==='ok';
-      return '<tr><td>'+fmtDate(r.date)+'</td><td>'+(r.topic||'')+'</td><td><span class="pf-st '+(ok?'on':'bad')+'"><i></i>'+(ok?'성공':'실패')+'</span>'+(ok?'':' '+trunc(r.reason,40))+'</td></tr>';
+  function channelTableHtml(display){
+    if(!display.length) return '<div class="empty">아직 기록 없음</div>';
+    var rows=display.map(function(x){
+      var badge=x.edits?'<span class="editbadge">수정 '+x.edits+'</span>':'';
+      var t=x.title||'(제목 없음)';
+      var titleCell=x.url?'<a href="'+x.url+'" target="_blank" rel="noopener">'+t+'</a>':t;
+      return '<tr><td>'+fmtDate(x.date)+'</td><td>'+titleCell+badge+'</td></tr>';
     }).join('');
-    return '<table class="pf-table"><thead><tr><th>날짜</th><th>주제</th><th>결과</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return '<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
-  function renderIgTable(runs){
-    if(!runs||!runs.length) return '<table class="pf-table"><tbody>'+emptyRow(3)+'</tbody></table>';
-    var rows=runs.slice(-10).reverse().map(function(r){
-      return '<tr><td>'+fmtDate(r.at)+'</td><td>'+(r.topic||'')+'</td><td><span class="pf-st '+(r.sent?'on':'off')+'"><i></i>'+(r.sent?'발송':'미발송')+'</span></td></tr>';
+  function failDetailsHtml(recentFails){
+    if(!recentFails.length) return '';
+    var rows=recentFails.slice().sort(function(a,b){return String(b.date).localeCompare(String(a.date));}).map(function(r){
+      return '<tr><td>'+fmtDate(r.date)+'</td><td>'+(r.title||'')+'</td><td>'+trunc(r.reason,40)+'</td></tr>';
     }).join('');
-    return '<table class="pf-table"><thead><tr><th>일시</th><th>주제</th><th>발송</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return '<details class="faildetails"><summary>최근 7일 실패 '+recentFails.length+'건</summary><table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>사유</th></tr></thead><tbody>'+rows+'</tbody></table></details>';
+  }
+  function renderChannelTabs(host, channels){
+    // channels: [{name, rows:[{date,title,url,ok,reason}]}] — 호출부가 데이터 있는 채널만 넘긴다
+    if(!channels.length){ host.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
+    var built=channels.map(function(c){ return {name:c.name, data:buildChannelData(c.rows)}; });
+    var active=0;
+    function draw(){
+      var tabs=built.map(function(c,i){
+        var fail=c.data.recentFails.length?' <span class="fail">· 실패 '+c.data.recentFails.length+'</span>':'';
+        return '<button type="button" class="'+(i===active?'on':'')+'" data-i="'+i+'">'+c.name+fail+'</button>';
+      }).join('');
+      var cur=built[active];
+      host.innerHTML=(built.length>1?'<div class="pf-subtabs">'+tabs+'</div>':'')+channelTableHtml(cur.data.display)+failDetailsHtml(cur.data.recentFails);
+      host.querySelectorAll('.pf-subtabs button').forEach(function(b){
+        b.addEventListener('click',function(){ active=parseInt(b.dataset.i,10); draw(); });
+      });
+    }
+    draw();
+  }
+  function groupByChannel(rows){
+    var by={}, order=[];
+    rows.forEach(function(r){ if(!by[r.channel]){ by[r.channel]=[]; order.push(r.channel); } by[r.channel].push(r); });
+    return order.map(function(name){ return {name:name, rows:by[name]}; });
+  }
+  // 소스별 정규화 — {date,title,url,ok,reason,channel}
+  function normReview(items){
+    return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:x.channel||'(채널 없음)'}; });
+  }
+  function normBlog(runs){
+    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:'블로그'}; });
+  }
+  function normIg(runs){
+    // sent:false·없음 = 아직 발행기 검토 전 "대기" 상태(실패 아님) — partner_instagram/*.json 에는 실패 개념 자체가 없다
+    return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:'인스타그램'}; });
   }
   function renderSeries(){
     var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
@@ -177,8 +235,10 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         var official=items.filter(function(x){return x.account==='wellperion';});
         var personalCnt=items.filter(function(x){return x.account==='namuk.wellperion';}).length;
         var other=items.length-official.length-personalCnt;
-        var note=other?'<div class="srcname" style="display:block;margin-top:6px">미분류 '+other+'건(계정 칸 없음·기타 표기) — 개인계정(namuk.wellperion)엔 안 들어가 공식 쪽에 표시</div>':'';
-        body.innerHTML=renderItemsTable(official)+note;
+        body.innerHTML='';
+        var chWrap=document.createElement('div'); body.appendChild(chWrap);
+        renderChannelTabs(chWrap, groupByChannel(normReview(official)));
+        if(other){ var n=document.createElement('div'); n.className='srcname'; n.style.cssText='display:block;margin-top:6px'; n.textContent='미분류 '+other+'건(계정 칸 없음·기타 표기) — 개인계정(namuk.wellperion)엔 안 들어가 공식 쪽에 표시'; body.appendChild(n); }
       }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
     } else if(tenant==='gm'){
       // 개인계정 — series_data.json(AI 시리즈 로드맵, 전량 개인계정) + review_queue.json 의 account==='namuk.wellperion'
@@ -198,8 +258,9 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         var personal=items.filter(function(x){return x.account==='namuk.wellperion';});
         var pubs=personal.filter(function(x){return x.status==='발행완료'&&x.published_at;}).map(function(x){return x.published_at;}).sort();
         var last=pubs.length?fmtDate(pubs[pubs.length-1]):'—';
-        var sum='<div class="stat4"><div class="box"><b>'+(eps.length||'—')+'</b><span>전체 회차</span></div><div class="box"><b>'+done+'</b><span>발행완료</span></div><div class="box"><b>'+wait+'</b><span>검수대기</span></div><div class="box"><b>'+last+'</b><span>마지막 발행일</span></div></div>';
-        body.innerHTML=sum+renderItemsTable(personal);
+        body.innerHTML='<div class="stat4"><div class="box"><b>'+(eps.length||'—')+'</b><span>전체 회차</span></div><div class="box"><b>'+done+'</b><span>발행완료</span></div><div class="box"><b>'+wait+'</b><span>검수대기</span></div><div class="box"><b>'+last+'</b><span>마지막 발행일</span></div></div>';
+        var chWrap=document.createElement('div'); body.appendChild(chWrap);
+        renderChannelTabs(chWrap, groupByChannel(normReview(personal)));
       });
     } else if(tenant==='dc'||tenant==='jo'){
       var blogFile=tenant==='dc'?'dietcamp_blog_daily.json':'gocheok_blog_daily.json';
@@ -211,14 +272,18 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         if(curTenant!==tenant) return;
         var blog=res[0].status==='fulfilled'?res[0].value:null;
         var ig=res[1].status==='fulfilled'?res[1].value:null;
-        if(!blog && !ig){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
-        body.innerHTML='<div class="pf-lb subtbl">블로그</div>'+renderBlogTable(blog&&blog.runs)+'<div class="pf-lb subtbl">인스타그램</div>'+renderIgTable(ig&&ig.runs);
+        var rows=normBlog(blog&&blog.runs).concat(normIg(ig&&ig.runs));
+        body.innerHTML='';
+        var chWrap=document.createElement('div'); body.appendChild(chWrap);
+        renderChannelTabs(chWrap, groupByChannel(rows));
       });
     } else {
       src.textContent='ax_blog_daily.json';
       fetchFirst([REPO+'status/ax_blog_daily.json','../../../status/ax_blog_daily.json']).then(function(blog){
         if(curTenant!==tenant) return;
-        body.innerHTML='<div class="pf-lb subtbl">블로그</div>'+renderBlogTable(blog&&blog.runs)+'<div class="pf-lb subtbl">인스타그램</div><div class="empty">아직 없음</div>';
+        body.innerHTML='';
+        var chWrap=document.createElement('div'); body.appendChild(chWrap);
+        renderChannelTabs(chWrap, groupByChannel(normBlog(blog&&blog.runs)));
       }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
     }
   }
