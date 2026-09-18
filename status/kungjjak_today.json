@@ -81,10 +81,10 @@
           "ref": "GM-20260918-1007",
           "no": "07",
           "got": "그리고 AI클로드 관련 잘 모르는 팀장들도 있던데, 이것도 가이드 정리해서 공지해줘",
-          "did": "kakao_sent 09:55 ok · 접속 방법 안내 불필요·질문은 ★부서장 방→GM·나우열M 큐잉",
+          "did": "model_routing.json 세션 opus·역할별 폐지 · settings.json opus · 부팅 스킬 §7 0-1 · 배 2739 시토 착수 요청",
           "start": "09:42",
-          "end": "09:55",
-          "minutes": 12,
+          "end": "10:15",
+          "minutes": 32,
           "upload": "✅ 배포 (16537dd45)",
           "open": false,
           "evidence": "✅있음"
@@ -141,13 +141,13 @@
           "ref": "GM-20260918-1013",
           "no": "13",
           "got": "오늘뿐이 아니라",
-          "did": "",
+          "did": "저장 6bb584e337 배포 · 배 2739 시토 · 실측 7일 40세션 위임 3% 미만",
           "start": "10:09",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:15",
+          "minutes": 5,
+          "upload": "✅ 배포 (6bb584e33)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -216,31 +216,22 @@
           "area": "작업",
           "event": "fix(kakao): 사진 팝업 Enter 미확정 재시도 3회 + 실패 방 1회 재순회 — 09-18 ★부서장 매출보고 누락",
           "detail": "커밋 95e32c01aa · 배 12736"
+        },
+        {
+          "time": "10:15",
+          "area": "작업",
+          "event": "chore(routing): 세션 전부 Opus 5 · Fable 은 추천만 — GM 결정 2026-09-18 (7일 실측 위임 3% 미만)",
+          "detail": "커밋 6bb584e337 · 배 12736"
         }
       ],
       "count": 12,
-      "done": 11,
-      "open": 1,
-      "avg_minutes": 3,
-      "work_count": 11,
+      "done": 12,
+      "open": 0,
+      "avg_minutes": 5,
+      "work_count": 12,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260918-1013",
-          "no": "13",
-          "got": "오늘뿐이 아니라",
-          "did": "",
-          "start": "10:09",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 4
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -353,6 +344,18 @@
           "upload": "기록만",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-2009",
+          "no": "09",
+          "got": "랩스 화면을 좌우로 줄이면 메뉴판이 깨지는데 확인해줘",
+          "did": "",
+          "start": "10:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -499,16 +502,37 @@
           "area": "진행",
           "event": "시모 요청 서버 크론 IG 도달 수집 --dry-run 제거",
           "detail": "crontab 09:45 줄 --dry-run 제거(diff 확인) · 서버 사본만 갱신·push 없음 안내 · 시모 회신 10:09"
+        },
+        {
+          "time": "10:13",
+          "area": "진행",
+          "event": "시포 요청 brojay_cells.py 2차 서버 배포",
+          "detail": "origin/master ef727582ba 판 scp · erp-api 재기동 · md5 동일 · 시포 회신 10:13"
         }
       ],
-      "count": 9,
+      "count": 10,
       "done": 9,
-      "open": 0,
+      "open": 1,
       "avg_minutes": 2,
-      "work_count": 24,
+      "work_count": 25,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260918-2009",
+          "no": "09",
+          "got": "랩스 화면을 좌우로 줄이면 메뉴판이 깨지는데 확인해줘",
+          "did": "",
+          "start": "10:14",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -633,13 +657,19 @@
           "area": "공통",
           "event": "fix(report): lists.lesson — 일별 날짜 비교 수리 · 신규/재등록 판정을 ERP 강습 명단(roster)으로 (배 12523)",
           "detail": "커밋 ef727582ba · 배 12523"
+        },
+        {
+          "time": "10:15",
+          "area": "공통",
+          "event": "fix(report): 1면 강습 띠 서버 덮기를 10/1 전까지 끔(브로제이 몰아적기·명단 미비로 신규 부풀림) · 로스/컨택 0건은 「0명」 표기 (배 12523)",
+          "detail": "커밋 5e3be145cb · 배 12523"
         }
       ],
       "count": 2,
       "done": 2,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 5,
+      "work_count": 6,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -777,6 +807,18 @@
           "upload": "✅ 배포 (0d9e66824)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-9007",
+          "no": "07",
+          "got": "파트너사들이랑 마케팅 자동화 방식을 좀 바꿔보자, 시보가 그냥 마케팅 자동화까지 평일 5일동안은 올리고, 주말에는 평가해서 부족한 부분 보완 학습하고, 진행해보는건 어때? 솔직히 지금 힉스필드도 붙여놔서 잘 만들 수…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:13",
+          "end": "10:14",
+          "minutes": 1,
+          "upload": "✅ 배포 (0d9e66824)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -805,8 +847,8 @@
           "detail": "커밋 0d9e668248 · 배 12718"
         }
       ],
-      "count": 5,
-      "done": 5,
+      "count": 6,
+      "done": 6,
       "open": 0,
       "avg_minutes": 1,
       "work_count": 4,
@@ -824,32 +866,32 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T10:13:03",
+    "published_at": "2026-09-18T10:16:09",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "10:00",
+        "signal": "10:15",
         "last": {
-          "time": "10:09",
-          "area": "GM요청",
-          "event": "오늘뿐이 아니라",
-          "result": "warn"
+          "time": "10:15",
+          "area": "GM지시",
+          "event": "「규칙대로 안 됐다 — 어떻게 하나」 답 · 세션 Opus 5 전환·Fable 추천·위임 관문 배",
+          "result": "ok"
         },
         "idle_since": null,
-        "saves": 6
+        "saves": 7
       },
       "cto": {
         "nick": "시토",
         "session": "welperion-automation-c0",
         "alive": true,
-        "signal": "10:00",
+        "signal": "10:15",
         "last": {
-          "time": "10:09",
-          "area": "진행",
-          "event": "시모 요청 서버 크론 IG 도달 수집 --dry-run 제거",
-          "result": "ok"
+          "time": "10:14",
+          "area": "GM요청",
+          "event": "랩스 화면을 좌우로 줄이면 메뉴판이 깨지는데 확인해줘",
+          "result": "warn"
         },
         "idle_since": null,
         "saves": 34
@@ -872,21 +914,21 @@
         "nick": "시포",
         "session": "welperion-automation-8f",
         "alive": true,
-        "signal": "10:00",
+        "signal": "10:15",
         "last": {
-          "time": "10:12",
+          "time": "10:15",
           "area": "공통",
-          "event": "fix(report): lists.lesson — 일별 날짜 비교 수리 · 신규/재등록 판정을 ERP 강습 명단(roster)으로 (배 12523)",
+          "event": "fix(report): 1면 강습 띠 서버 덮기를 10/1 전까지 끔(브로제이 몰아적기·명단 미비로 신규 부풀림) · 로스/컨택 0건은 「0명」 표기 (배 12523)",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 5
+        "saves": 6
       },
       "coo": {
         "nick": "시우",
         "session": "welperion-automation-7c",
         "alive": true,
-        "signal": "10:00",
+        "signal": "10:15",
         "last": {
           "time": "09:51",
           "area": "진행",
@@ -900,14 +942,14 @@
         "nick": "시보",
         "session": "welperion-automation-c6",
         "alive": true,
-        "signal": "10:00",
+        "signal": "10:15",
         "last": {
-          "time": "10:06",
+          "time": "10:13",
           "area": "GM요청",
-          "event": "파트너사들 마케팅 자동화 관련 결과물도 랩스에서 당분간 보면 좋을 것 같은데",
+          "event": "파트너사들이랑 마케팅 자동화 방식을 좀 바꿔보자, 시보가 그냥 마케팅 자동화까지 평일 5일동안은 올리고, 주말에는 평가해서 부족한 부분 보완 학습하고, 진행해보는건 어때? 솔직히 지금 힉스필드도 붙여놔서 잘 만들 수",
           "result": "warn"
         },
-        "idle_since": "10:07",
+        "idle_since": "10:14",
         "saves": 3
       }
     }
