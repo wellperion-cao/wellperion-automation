@@ -254,6 +254,12 @@
 
 <div class="main">
   <div id="pane-mod" role="tabpanel">
+    <!-- 웰페리온 매출 목표 — 회장님 지시가 아니라 GM 내부 기록(GM 2026-09-18 「전사일정 아니라 erp
+         관리자 페이지에 목표로」). 값 정본 = ssot/canon_values.json (배 12813). -->
+    <div id="goal-tile" class="mod" style="cursor:default; max-width:420px; margin-bottom:8px;">
+      <div class="name">웰페리온 매출 목표</div>
+      <div class="desc" id="goal-tile-desc" style="white-space:normal;">불러오는 중…</div>
+    </div>
     <div id="sections"><div class="msg">불러오는 중…</div></div>
   </div>
 
@@ -351,6 +357,26 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
 
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+// 웰페리온 매출 목표 타일 — 값 정본 = ssot/canon_values.json (GM 지시 2026-09-18 · 배 12813).
+// 여기서 값을 박지 않는다 — canon 이 바뀌면 이 타일도 같이 바뀐다.
+function loadGoalTile(){
+  repoGet('ssot/canon_values.json').then(function(c){
+    var vals = {};
+    ((c && c.values) || []).forEach(function(v){ vals[v.key] = v.value; });
+    function eok(v){
+      var n = Number(String(v || '').replace(/[^0-9.]/g, ''));
+      return n ? (Math.round(n / 1e8)) + '억' : '—';
+    }
+    var margin = String(vals.net_profit_margin_target || '').split('(')[0].trim() || '—';
+    document.getElementById('goal-tile-desc').textContent =
+      '2026 연 ' + eok(vals.sales_year_target) + ' · 2027 연 ' + eok(vals.sales_year_target_2027)
+      + ' · 순이익률 ' + margin;
+  }).catch(function(){
+    document.getElementById('goal-tile-desc').textContent = '2026 연 72억 · 2027 연 100억 · 순이익률 20~25%';
+  });
+}
+loadGoalTile();
 
 /* 층 구조 (GM 확정 2026-09-09 · 2026-09-17 개정)
      /erp/admin/  회사 관리자      — 플랫폼을 파는 우리
