@@ -1567,6 +1567,41 @@ function loadFallback() {
 /* ═══════════════════════════════════════════
    Render
    ═══════════════════════════════════════════ */
+// 검색·필터 적용 전 전체 목록 기준으로 업무 번호를 고정한다 (GM 지시 2026-09-18 —
+// 검색만 하면 #001부터 다시 매겨지던 것 수정). 그룹핑·정렬 규칙은 renderTasks 와 동일하게 맞춘다.
+function buildTaskNumberMap(list) {
+  const map = {};
+  const groups = {};
+  const catOrder = CATEGORIES.concat(['']);
+  list.forEach(t => {
+    const cat = t.category || '';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(t);
+  });
+  Object.keys(groups).forEach(cat => {
+    if (activeSortBy === '시작일순') {
+      groups[cat].sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
+    } else if (activeSortBy === '담당자') {
+      groups[cat].sort((a, b) => String(a.owner || '').localeCompare(String(b.owner || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+    } else if (activeSortBy === '카테고리') {
+      groups[cat].sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title || '').localeCompare(String(b.title || '')));
+    } else {
+      const _ck = t => String(t.createdAt || t.updatedAt || t.startDate || '');
+      groups[cat].sort((a, b) => _ck(b).localeCompare(_ck(a)));
+    }
+  });
+  let n = 1;
+  catOrder.forEach(cat => {
+    if (!groups[cat]) return;
+    groups[cat].forEach(t => { if (t.id) map[t.id] = n++; });
+  });
+  Object.keys(groups).forEach(cat => {
+    if (catOrder.includes(cat)) return;
+    groups[cat].forEach(t => { if (t.id) map[t.id] = n++; });
+  });
+  return map;
+}
+
 function renderTasks() {
   // 필터 UI 재빌드. 검색 input은 buildFilters에서 재생성하지 않으므로
   // 포커스·한글 IME 조합·캐럿이 그대로 유지됨 (별도 복원 불필요).
@@ -1578,6 +1613,8 @@ function renderTasks() {
   const active = excludeNonStaff(ALL_TASKS.filter(t => (t.status !== '완료' && t.status !== '보류') || (t.status === '완료' && isApprPending(t))));
   const hold = excludeNonStaff(ALL_TASKS.filter(t => t.status === '보류'));
   const done = excludeNonStaff(ALL_TASKS.filter(t => t.status === '완료' && !isApprPending(t)));
+  // 검색·담당자·카테고리 필터 전 목록으로 번호를 고정 (GM 지시 2026-09-18)
+  const numberMap = buildTaskNumberMap(active);
 
   // Apply filters to active
   let filtered = active;
@@ -1628,13 +1665,13 @@ function renderTasks() {
     html += '<div class="kanban-board" id="kanbanBoard">';
     catOrder.forEach(cat => {
       if (!groups[cat] || groups[cat].length === 0) return;
-      var result = renderCatGroup(cat, groups[cat], globalIdx);
+      var result = renderCatGroup(cat, groups[cat], globalIdx, numberMap);
       html += result.html;
       globalIdx = result.nextIdx;
     });
     Object.keys(groups).forEach(cat => {
       if (catOrder.includes(cat)) return;
-      var result = renderCatGroup(cat, groups[cat], globalIdx);
+      var result = renderCatGroup(cat, groups[cat], globalIdx, numberMap);
       html += result.html;
       globalIdx = result.nextIdx;
     });
@@ -1903,7 +1940,7 @@ function filterDone(done) {
   return filtered;
 }
 
-function renderCatGroup(cat, tasks, startIdx) {
+function renderCatGroup(cat, tasks, startIdx, numberMap) {
   const label = cat || '미분류';
   const colors = CAT_COLORS[cat] || { bg: 'var(--accent-bg)', color: 'var(--text)' };
   let html = '<div class="cat-group"><div class="cat-accordion">';
@@ -1914,7 +1951,11 @@ function renderCatGroup(cat, tasks, startIdx) {
   html += '</div>';
   html += '<div class="cat-body open">';
   var idx = startIdx || 1;
-  tasks.forEach(t => { html += renderTaskCard(t, idx++); });
+  tasks.forEach(t => {
+    var num = (numberMap && t.id && numberMap[t.id]) ? numberMap[t.id] : idx;
+    html += renderTaskCard(t, num);
+    idx++;
+  });
   html += '</div></div></div>';
   return { html: html, nextIdx: idx };
 }
@@ -1932,6 +1973,8 @@ function filterByStatus(list) {
 }
 
 function renderTaskCard(t, idx) {
+  // 제목 앞 [회장님 지시]류 접두는 표시에서만 떼어 D-day 줄 배지로 옮긴다 (GM 지시 2026-09-18)
+  const _directive = extractDirectiveBadge(t.title);
   // 마감 임박 카드 시각 강조 (옵션 A · 2026-05-28)
   const cardBadge = t.endDate ? getDeadlineBadge(t.endDate) : null;
   let cardClass = 'task-card';
@@ -1949,7 +1992,7 @@ function renderTaskCard(t, idx) {
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:var(--fs-1);color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
   html += '<div class="wide-row">';  // 업무명 + 담당·상태·날짜·결재 가로 한 줄 (2026-06-02 GM 확정)
-  html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(t.title) + '</div>';
+  html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(_directive.title) + '</div>';
   html += '<div class="task-meta">';
 
   if (t.owner) {
@@ -1973,6 +2016,11 @@ function renderTaskCard(t, idx) {
   if (t.endDate) {
     const badge = getDeadlineBadge(t.endDate);
     if (badge) html += '<span class="chip ' + badge.cls + '">' + badge.text + '</span>';
+  }
+
+  if (_directive.badge) {
+    // 제목에서 뗀 [회장님 지시]류 배지 — D-day 옆에 (GM 지시 2026-09-18)
+    html += '<span class="chip" style="background:var(--accent-bg);color:var(--text);font-weight:700;">' + (_directive.badge.icon ? esc(_directive.badge.icon) + ' ' : '') + esc(_directive.badge.label) + '</span>';
   }
 
   html += scheduleChip(t.id);   // 📅 전사일정 D-N (GM 지시 2026-09-17) — 짝이 없으면 빈 문자열
@@ -2297,6 +2345,19 @@ function getDeadlineBadge(endDate) {
   if (diff <= 3)  return { cls: 'due-soon',  text: '⚡ D-' + diff + ' 임박' };
   if (diff <= 7)  return { cls: 'due-warn',  text: '⏰ D-' + diff + ' 마무리' };
   return { cls: 'due-ok', text: 'D-' + diff };
+}
+
+// 제목 앞 [회장님 지시]/[대표님 지시]/[GM 지시](「GM님 지시」 변형 포함) 접두를 떼어
+// D-day 줄 배지로 옮긴다 — 시트 원본 title 값은 그대로 두고 표시만 바꾼다 (GM 지시 2026-09-18)
+function extractDirectiveBadge(title) {
+  const s = String(title || '');
+  const m = s.match(/^\[(회장님\s*지시|대표님\s*지시|GM님?\s*지시)\]\s*/);
+  if (!m) return { title: s, badge: null };
+  const kind = m[1].replace(/\s+/g, '');
+  let icon = '', label = 'GM 지시';
+  if (kind.indexOf('회장님') >= 0) { icon = '👑'; label = '회장님 지시'; }
+  else if (kind.indexOf('대표님') >= 0) { icon = '🤵'; label = '대표님 지시'; }
+  return { title: s.slice(m[0].length), badge: { icon: icon, label: label } };
 }
 
 function esc(s) {
