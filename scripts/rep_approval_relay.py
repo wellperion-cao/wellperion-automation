@@ -635,6 +635,20 @@ def run_reject(send: bool = False, dry_run: bool = False) -> int:
 #   GM 지시 2026-08-16) — 새 규칙이 아니라 있던 가드를 그대로 지킨다.
 NOTIFY_TELEGRAM = "텔레그램(AtoA)"
 APPROVAL_URL = "https://erp.wellperion.com/coo/todo/" + quote("결재 현황 SSOT.html")
+# 조용 시간대 — 이 30분 예약은 daily_scheduler 를 안 거치고 Windows 작업 스케줄러가
+#   직접 rep_approval_relay.py 를 부르므로(GM 지시 2026-09-18 배 2760 · 30분 08~22시), 기존
+#   ①(_run_rep_approval_relay 의 22~08시 스킵)과 달리 여기서 직접 막아야 한다. 세 창은 같은
+#   카톡 PC 에 다른 예약통이 이미 kakao_ui_lock 을 쥐는 시각과 겹친다 — 07:00~08:00(다이어트캠프
+#   07:00·아침정리 07:50·GM 브리핑 08:00) · 09:00~09:40(스트림#3 매출보고 09:30) · 21:25~21:40
+#   (GM 체크인 21:30·일요 주간카드 21:40). 겹쳐도 lock 이 순서를 지켜 주지만, 굳이 줄을 세워
+#   다른 통을 늦출 이유가 없어 이 축만 건너뛰고 다음 30분 회차에 다시 잡는다(지문은 그대로라
+#   유실 없음).
+_QUIET_WINDOWS = (("07:00", "08:00"), ("09:00", "09:40"), ("21:25", "21:40"))
+
+
+def _in_quiet_window(now: datetime | None = None) -> bool:
+    hm = (now or datetime.now()).strftime("%H:%M")
+    return any(a <= hm < b for a, b in _QUIET_WINDOWS)
 
 
 def route_direct(owner: str) -> tuple[str, str]:
@@ -697,11 +711,16 @@ def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
     today = datetime.now().strftime("%Y-%m-%d")
     print(f"[approval-done] 결재완료(미안내) {len(picked)}건 — " +
          " · ".join(f"{room} {len(rr)}건" for (room, _), rr in by_route.items()))
-    ok_all = True
+    quiet = _in_quiet_window()
+    done_ids: list[str] = []   # 실제로 시도해서 성공한 건만 — 건너뛴 방·실패는 다음 회차 재후보
     for (room, prefix), rr in by_route.items():
         msg = build_direct_message(rr, prefix, today)
         print(f"── {room} 미리보기 ──\n{msg}")
         if not send:
+            continue
+        if room != NOTIFY_TELEGRAM and quiet:
+            # 카톡 방만 건너뛴다 — 텔레그램(AtoA)은 UI 충돌이 없어 창과 무관하게 나간다.
+            print(f"[approval-done] {room} — 조용 시간대라 건너뜀, 지문은 그대로 다음 회차 재후보")
             continue
         if room == NOTIFY_TELEGRAM:
             if dry_run:
@@ -712,11 +731,14 @@ def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
                 ok = send_as_gm(WORK_ROOM_CHAT_ID, msg)
         else:
             ok = send_via_gate(msg, dry_run, SENDER, room=room)
-        ok_all = ok_all and ok
-    if send and not dry_run and picked and ok_all:
-        for r in picked:
-            notified[str(r.get("id")).strip()] = today
-        _save_notified("notified_direct", notified, f"결재완료 직접안내 {len(picked)}건 ({today})")
+        if ok:
+            done_ids += [str(r.get("id")).strip() for r in rr]
+        else:
+            print(f"[approval-done] {room} 발신 실패 — 기록 안 함, 다음 회차 재후보")
+    if send and not dry_run and done_ids:
+        for rid in done_ids:
+            notified[rid] = today
+        _save_notified("notified_direct", notified, f"결재완료 직접안내 {len(done_ids)}건 ({today})")
     elif send and not dry_run and picked:
         print("[approval-done] 일부 방 발신 실패 — 기록 안 함, 다음 회차 재후보")
     return 0
@@ -910,6 +932,17 @@ def _selfcheck() -> None:
     msg = build_direct_message([ad[0]], "", "2026-09-18").splitlines()
     assert msg[0] == "📋 9/18 결재 완료 1건 — 진행해 주세요" and msg[1] == "▪ 짐벌 카메라 (최준용M)", msg
     assert APPROVAL_URL.startswith("https://erp.wellperion.com/coo/todo/%") and APPROVAL_URL.endswith("SSOT.html")
+    # 조용 시간대(GM 지시 2026-09-18 배 2760 — 30분 예약이 다른 예약통과 카톡 UI 를 안 다투게)
+    from datetime import datetime as _dt
+    assert _in_quiet_window(_dt(2026, 9, 18, 7, 30)) is True    # 07:00~08:00
+    assert _in_quiet_window(_dt(2026, 9, 18, 9, 20)) is True    # 09:00~09:40
+    assert _in_quiet_window(_dt(2026, 9, 18, 21, 30)) is True   # 21:25~21:40
+    assert _in_quiet_window(_dt(2026, 9, 18, 12, 0)) is False
+    assert _in_quiet_window(_dt(2026, 9, 18, 8, 0)) is False    # 경계값 — 08:00 은 창 밖(포함 안 함)
+    # 나우열M 은 어떤 owner 문자열이 와도 kakao 방(ROOM/ROOM_OPS)이 아니라 텔레그램으로만 간다
+    for who in ("나우열M", "나우열M,이경연 실장", "재무 나우열M"):
+        room, _ = route_direct(who)
+        assert room == NOTIFY_TELEGRAM, (who, room)
     assert build_direct_message([]) == ""
     print("[selfcheck] rep_approval_relay OK")
 
