@@ -248,6 +248,11 @@ def run_morning(target_date: str, out_path: Path) -> str:
     if not items:  # 원장이 아직 비어 있으면(v1) 큐 + 카드로 대신 훑는다
         items = bump_carry(collect_from_queue(target_date) + collect_from_cards())
     md = build_table(items, target_date)
+    try:  # 사람 관리자 지시 추적(배 2766·§7) — 실패해도 AI 지시 점검 보고는 그대로 나간다
+        from manager_directive_track import morning_block
+        md = md + "\n" + morning_block(target_date)
+    except Exception:
+        pass
     out_path.write_text(md, encoding="utf-8")
     return md
 
