@@ -24,13 +24,22 @@
   .wrap{width:100%; max-width:640px; margin:0; padding:24px 20px 60px;}
   h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
   .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:16px;}
-  .bar{display:flex; gap:8px; align-items:center; margin:0 0 14px; flex-wrap:wrap;}
+  .langrow{display:flex; gap:8px; align-items:center; margin:0 0 14px; flex-wrap:wrap;}
   select.lang{font:inherit; font-size:var(--fs-2); padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--paper); color:var(--text);}
+  /* 큰 누르는 버튼 2개 — 방향 토글 대신(GM 지시 2026-09-18 19:3x). 누르면 받아쓰기, 떼면 번역. */
+  .pressgrid{display:flex; flex-direction:column; gap:10px; margin:0 0 14px;}
+  .pressbtn{font:inherit; font-size:16px; font-weight:700; padding:18px 16px; border-radius:12px; cursor:pointer;
+       border:1px solid var(--border); background:var(--paper); color:var(--text); min-height:64px;
+       -webkit-user-select:none; user-select:none; touch-action:none;}
+  .pressbtn.active{background:#B3261E; border-color:#B3261E; color:#fff;}
+  .pressbtn:disabled{opacity:.5; cursor:not-allowed;}
   .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer;
        border:1px solid var(--border); background:var(--paper); color:var(--text);}
   .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}
-  .btn.rec{background:#B3261E; border-color:#B3261E; color:#fff;}
   .btn:disabled{opacity:.5; cursor:not-allowed;}
+  /* 글 입력 — 말 대신 타이핑(GM 「글 입력도 남긴다」). 방향 = 한국어→상대 언어(기본 방향). */
+  .typerow{display:flex; gap:8px; margin:0 0 16px;}
+  .typerow input{flex:1; font:inherit; font-size:var(--fs-2); padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--paper); color:var(--text);}
   .msg{font-size:var(--fs-2); color:var(--text-soft); margin:0 0 12px;}
   .msg.ok{color:var(--accent-hover); font-weight:600;}
   .msg.bad{color:var(--pf-bad,#B3261E); font-weight:600;}
@@ -40,6 +49,8 @@
   .bubble.other{align-self:flex-start; background:var(--paper); border:1px solid var(--border);}
   .bubble .orig{font-size:var(--fs-3); margin-bottom:3px;}
   .bubble .tr{font-size:var(--fs-2); color:var(--text-soft);}
+  /* 번역문은 크게 — 가장 최근 말풍선만(GM 「번역문은 크게 보여 주고」) */
+  .bubble:last-child .tr{font-size:20px; font-weight:700; color:var(--text); line-height:1.4; margin-top:6px;}
   .empty{color:var(--text-soft); font-size:var(--fs-2); text-align:center; padding:40px 0;}
   .note{font-size:var(--fs-1); color:var(--text-soft); margin-top:16px; line-height:1.5;}
 </style>
@@ -47,16 +58,23 @@
 <body>
 <div class="wrap">
   <h1>AI 번역가 <span style="font-weight:500;color:var(--text-soft)">— 실시간 통역</span></h1>
-  <div class="sub">[대화 시작] 한 번 누르면 계속 듣습니다. 말이 끝나면 자동으로 번역해 읽어 줍니다.</div>
+  <div class="sub">버튼을 누르고 있는 동안 말하고, 떼면 번역합니다.</div>
 
-  <div class="bar">
+  <div class="langrow">
+    <span class="msg" style="margin:0">상대 언어</span>
     <select class="lang" id="otherLang"><option value="en">영어</option></select>
-    <button type="button" class="btn" id="btnDir">내가 말함(한국어)</button>
-    <button type="button" class="btn rec" id="btnRec">대화 시작</button>
+  </div>
+  <div class="pressgrid">
+    <button type="button" class="pressbtn" id="btnKo">🇰🇷 한국어로 말하기</button>
+    <button type="button" class="pressbtn" id="btnOther">언어로 말하기</button>
+  </div>
+  <div class="typerow">
+    <input type="text" id="typeText" placeholder="또는 한국어로 입력">
+    <button type="button" class="btn p" id="btnType">번역</button>
   </div>
   <div class="msg" id="statusMsg"></div>
 
-  <div class="chat" id="chat"><div class="empty">대화가 여기 쌓입니다.</div></div>
+  <div class="chat" id="chat"><div class="empty">번역이 여기 쌓입니다.</div></div>
 
   <div class="note">크롬에서만 지원됩니다(Web Speech API) — 마이크 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다. 텍스트만 번역 서버로 보냅니다.</div>
 </div>
@@ -69,34 +87,19 @@ var LANG_NAME = { ko:'한국어' };
 var SPEECH_LOCALE = { ko:'ko-KR' };
 
 var otherSel = document.getElementById('otherLang');
-var dirBtn = document.getElementById('btnDir');
-var recBtn = document.getElementById('btnRec');
+var btnKo = document.getElementById('btnKo');
+var btnOther = document.getElementById('btnOther');
+var typeText = document.getElementById('typeText');
+var btnType = document.getElementById('btnType');
 var statusMsg = document.getElementById('statusMsg');
 var chat = document.getElementById('chat');
 
-var mySide = true;   // true = 내가 말함(한국어 인식) · false = 상대가 말함(고른 언어 인식)
-var recognizing = false;
-
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
-function currentSource(){ return mySide ? 'ko' : otherSel.value; }
-function currentTarget(){ return mySide ? otherSel.value : 'ko'; }
-
-function updateDirLabel(){
-  dirBtn.textContent = mySide
-    ? '내가 말함(' + LANG_NAME.ko + ')'
-    : '상대가 말함(' + LANG_NAME[otherSel.value] + ')';
+function updateOtherBtnLabel(){
+  btnOther.textContent = '🌐 ' + LANG_NAME[otherSel.value] + '로 말하기';
 }
-dirBtn.addEventListener('click', function(){
-  mySide = !mySide;
-  updateDirLabel();
-  if (recognizing) restartRecognition();   // 방향이 바뀌면 인식 언어도 바꿔 다시 듣는다
-});
-otherSel.addEventListener('change', function(){
-  updateDirLabel();
-  if (recognizing) restartRecognition();
-});
-updateDirLabel();
+otherSel.addEventListener('change', updateOtherBtnLabel);
 
 /* ── 언어 목록 — 정본 assistant_langs.json(배 12815). 못 읽으면 ko/en 두 개로 폴백. ── */
 function applyLangs(list, defTarget){
@@ -109,7 +112,7 @@ function applyLangs(list, defTarget){
     return '<option value="' + esc(l.code) + '">' + esc(l.name_ko) + (l.speech ? '' : ' (음성 인식 미지원 · 입력은 글자로)') + '</option>';
   }).join('');
   otherSel.value = defTarget || 'en';
-  updateDirLabel();
+  updateOtherBtnLabel();
 }
 fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){
   if (!r.ok) throw 0; return r.json();
@@ -119,86 +122,85 @@ fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){
   applyLangs([{code:'en', name_ko:'영어', speech:'en-US'}], 'en');
 });
 
-/* ── 인식(Web Speech API) — meeting_note.html 과 같은 continuous 패턴 ── */
+/* ── 인식(Web Speech API) — 누르면 받아쓰기 · 떼면 번역(push-to-talk · GM 지시 2026-09-18 19:3x) ── */
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var recognition = null;
-var restarting = false;   // 방향 전환·번역 중 stop() 뒤 onend 가 자동재시작하지 않게
+var pressing = null;      // {source, target, mine} 누르고 있는 동안만
+var pendingSt = null;     // 뗀 시점 — onend 에서 이 값으로 번역을 부른다
+var liveFinal = '';       // 누르는 동안 쌓인 받아쓴 글(중간 결과 포함 인식이라 final 만 모은다)
+var stopReason = null;
 
 if (!SR) {
-  recBtn.disabled = true;
-  dirBtn.disabled = true;
-  otherSel.disabled = true;
-  statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬을 써 주세요.';
+  btnKo.disabled = true;
+  btnOther.disabled = true;
+  statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬을 쓰거나 아래에 글로 입력해 주세요.';
   statusMsg.className = 'msg bad';
 } else {
   recognition = new SR();
   recognition.continuous = true;
-  recognition.interimResults = false;
+  recognition.interimResults = true;
 
   recognition.onresult = function(e){
-    var i = e.resultIndex;
-    var text = (e.results[i] && e.results[i][0] && e.results[i][0].transcript || '').trim();
-    if (text) handleUtterance(text);
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) liveFinal += (liveFinal ? ' ' : '') + e.results[i][0].transcript;
+    }
   };
   recognition.onerror = function(e){
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
       statusMsg.className = 'msg bad';
-      recognizing = false;
-      setRecUI();
+      pressing = null; setPressUI(null);
     }
-    // no-speech 등은 onend 가 이어서 자동 재시작
   };
   recognition.onend = function(){
-    if (recognizing && !restarting) {
-      try { recognition.start(); } catch (e) { /* 이미 돌고 있으면 무시 */ }
-    }
+    if (stopReason !== 'translate') return;
+    stopReason = null;
+    var st = pendingSt; pendingSt = null;
+    var text = liveFinal.trim();
+    if (text) handleUtterance(text, st.source, st.target, st.mine);
+    else { statusMsg.textContent = '알아듣지 못했습니다 — 버튼을 다시 눌러 말씀해 주세요.'; statusMsg.className = 'msg'; }
   };
 }
 
-function setRecUI(){
-  recBtn.textContent = recognizing ? '대화 끝' : '대화 시작';
-  recBtn.className = recognizing ? 'btn' : 'btn rec';
-  if (recognizing) { statusMsg.textContent = '듣는 중… (' + (mySide ? LANG_NAME.ko : LANG_NAME[otherSel.value]) + ')'; statusMsg.className = 'msg ok'; }
+function setPressUI(which){
+  btnKo.classList.toggle('active', which === 'ko');
+  btnOther.classList.toggle('active', which === 'other');
 }
-
-function startRecognition(){
-  recognition.lang = SPEECH_LOCALE[currentSource()];
-  try { recognition.start(); } catch (e) { /* 이미 돌고 있으면 무시 */ }
+function startPress(source, target, mine, which){
+  if (!recognition || pressing) return;
+  pressing = { source: source, target: target, mine: mine };
+  liveFinal = '';
+  recognition.lang = SPEECH_LOCALE[source] || source;
+  setPressUI(which);
+  statusMsg.textContent = '듣는 중… (' + LANG_NAME[source] + ')'; statusMsg.className = 'msg ok';
+  try { recognition.start(); } catch (e) {}
 }
-
-function restartRecognition(){
-  restarting = true;
+function endPress(){
+  if (!recognition || !pressing) return;
+  pendingSt = pressing; pressing = null;
+  stopReason = 'translate';
+  setPressUI(null);
   try { recognition.stop(); } catch (e) {}
-  setTimeout(function(){ restarting = false; if (recognizing) startRecognition(); setRecUI(); }, 200);
 }
+btnKo.addEventListener('pointerdown', function(e){ e.preventDefault(); startPress('ko', otherSel.value, true, 'ko'); });
+btnOther.addEventListener('pointerdown', function(e){ e.preventDefault(); startPress(otherSel.value, 'ko', false, 'other'); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(function(evt){
+  btnKo.addEventListener(evt, endPress);
+  btnOther.addEventListener(evt, endPress);
+});
 
-if (recognition) {
-  recBtn.addEventListener('click', function(){
-    if (!recognizing) {
-      recognizing = true;
-      startRecognition();
-      setRecUI();
-    } else {
-      recognizing = false;
-      restarting = true;
-      try { recognition.stop(); } catch (e) {}
-      setRecUI();
-      statusMsg.textContent = '대화 끝.';
-      statusMsg.className = 'msg';
-    }
-  });
+/* ── 글 입력(GM 「글 입력도 남긴다」) — 한국어 → 상대 언어(기본 방향) ── */
+function sendTyped(){
+  var text = typeText.value.trim();
+  if (!text) return;
+  typeText.value = '';
+  handleUtterance(text, 'ko', otherSel.value, true);
 }
+btnType.addEventListener('click', sendTyped);
+typeText.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTyped(); });
 
-/* ── 말 한 마디 처리 — 번역 요청 → 말풍선 → 읊기 ──────────────────────
-   ponytail: 번역·TTS 중엔 인식을 잠깐 멈춘다 — 안 그러면 스피커로 나가는 번역 음성을
-   마이크가 다시 주워 무한 루프가 될 수 있다(듣는 상대가 없는 시험 환경에서 실측). */
-function handleUtterance(text){
-  var mine = mySide;
-  var source = currentSource(), target = currentTarget();
-  restarting = true;
-  try { recognition.stop(); } catch (e) {}
-
+/* ── 번역 요청 → 말풍선(크게) → 읽어주기 ── */
+function handleUtterance(text, source, target, mine){
   var bubble = addBubble(mine, text, '번역 중…');
   fetch('/api/translate', {
     method: 'POST', cache: 'no-store',
@@ -207,14 +209,9 @@ function handleUtterance(text){
   }).then(function(r){ return r.json(); }).then(function(d){
     var tr = d.translation || d.error || '(번역 실패)';
     bubble.querySelector('.tr').textContent = tr;
-    speak(tr, target, function(){
-      restarting = false;
-      if (recognizing) { startRecognition(); setRecUI(); }
-    });
+    speak(tr, target, function(){});
   }).catch(function(){
     bubble.querySelector('.tr').textContent = '(번역 요청 실패)';
-    restarting = false;
-    if (recognizing) { startRecognition(); setRecUI(); }
   });
 }
 

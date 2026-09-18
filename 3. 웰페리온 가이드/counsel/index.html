@@ -36,8 +36,10 @@ header h1{margin:0;font-size:17px;font-weight:700;flex:1}
 form{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 form input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--paper);color:var(--ink)}
 form button{padding:11px 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font:inherit;cursor:pointer}
-footer{padding:10px 18px 18px;font-size:12px;color:var(--accent-text);border-top:1px solid var(--line);text-align:center}
+footer{padding:10px 18px 18px;font-size:12px;color:var(--accent-text);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 footer a{color:var(--accent-text)}
+/* 번역기 — 왼쪽 고정(GM 지시 2026-09-18 19:3x) · 전화 등 업체별 연락처는 오른쪽(#footR · 프로필 로드 뒤 채워짐) */
+#footR{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 </style>
 </head><body>
 <div class="wrap">
@@ -46,7 +48,7 @@ footer a{color:var(--accent-text)}
 <div class="chips" id="chips"></div>
 <div id="log"></div>
 <form id="askForm"><input id="q" placeholder="궁금한 것을 편하게 물어보세요" autocomplete="off" autofocus required><button type="submit">보내기</button></form>
-<footer id="foot"></footer>
+<footer id="foot"><a href="/erp/admin/translator.html" target="_blank" rel="noopener">🌐 번역기</a><span id="footR"></span></footer>
 </div>
 <script>
 (function(){
@@ -177,7 +179,7 @@ fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
   if (c.phone) footBits.push('<a href="tel:' + c.phone.replace(/[^0-9+]/g, "") + '">📞 ' + c.phone + '</a>');
   if (c.kakao) footBits.push('<a href="' + c.kakao + '" target="_blank" rel="noopener">💬 카카오톡</a>');
   if (c.naver_place) footBits.push('<a href="' + c.naver_place + '" target="_blank" rel="noopener">📍 위치</a>');
-  document.getElementById("foot").innerHTML = footBits.join(" · ");
+  document.getElementById("footR").innerHTML = footBits.join(" · ");
   var chips = p.chips || [];
   var wrap = document.getElementById("chips");
   chips.slice(0, 3).forEach(function(c){   // 처음 한 번 살짝 보이는 보조일 뿐(GM 09-05) — 6개→3개로 가볍게
