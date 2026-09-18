@@ -97,7 +97,9 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   // 채널 목록 = 파트너 계정 정본(플랫폼관리 파트너사 표)과 같은 7개 · 순서 고정
   var CH=[['naver-blog','네이버 블로그'],['naver-cafe','네이버 카페'],['instagram','인스타그램'],['threads','스레드'],['danggn','당근'],['google','구글 비즈니스'],['kakao-channel','카카오톡 채널']];
   var NAMES={wellperion:'1호 웰페리온',dc:'2호 다이어트캠프',jo:'3호 고척골프',ax:'랩스 채널 · 피트니스 AX'};   // ax = 랩스 자체 메시지 채널(GM 2026-09-16 · 시보)
-  var tenant='wellperion', active={};
+  var LOCK=(new URLSearchParams(location.search).get('tenant')||'').trim();   // ERP 홈 마케팅 관리에서 열면 ?tenant=wellperion — 그 센터만(GM 2026-09-18 「다른 파트너사 것까지 다 보이네」)
+  var tenant=(LOCK && document.querySelector('#tenants [data-tenant="'+LOCK+'"]'))?LOCK:'wellperion', active={};
+  if(LOCK && tenant===LOCK){ var _tb=document.getElementById('tenants'); if(_tb){ _tb.hidden=true; } }
   var $=function(id){return document.getElementById(id)};
 
   function renderChannels(){
