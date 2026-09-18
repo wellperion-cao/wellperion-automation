@@ -50,6 +50,12 @@ PEOPLE = ["이경연 실장", "이정헌 소장", "나우열M"]
 TRIGGER_TAG = "⛔GM 재확인(💰/🔒/🚫)"
 SPLIT_MARK = "<<<JSON>>>"
 
+
+def _is_trigger(title: str) -> bool:
+    """모델이 준 JSON "trigger" 불리언은 안 믿는다(실측 2026-09-18: 23/24건 뒤집혀 나옴).
+    제목에 붙은 {TRIGGER_TAG} 가 정본 — 코드가 결정적으로 다시 판정한다."""
+    return TRIGGER_TAG in (title or "")
+
 FEWSHOT = """26.9.18(금) 에이전트 지시사항 정리
 ■ 웰리
 1. [GM 지시] GM 지시 자동화 파이프라인 구축
@@ -77,7 +83,8 @@ def _prompt(memo: str, source: str, date: str) -> str:
 - 원문이 끊기거나 미확정이면 「미결 사항」 절로 뺀다
 - 모든 항목 끝에 「완료 기준: …」 한 줄
 - 모든 항목 앞에 [{source} 지시] 태그(원문에 회장님/대표님이 나오면 그쪽 태그로 바꾼다)
-- 💰결제·🔒보안·🚫금지 관련 항목은 항목 끝에 {TRIGGER_TAG} 를 붙이고 미결 사항에도 나열
+- 💰결제·🔒보안·🚫금지 관련 항목만 항목 끝(과 JSON title 끝)에 {TRIGGER_TAG} 를 붙이고 미결 사항에도 나열 —
+  그 외 모든 항목은 이 태그를 절대 붙이지 않는다(일반 실행 항목이지 GM 재확인 대상이 아니다)
 - 사람 관리자(이경연 실장/이정헌 소장/나우열M) 앞 지시는 「사람 관리자」 절에 담고 기한을 명시
 
 [견본]
@@ -89,7 +96,8 @@ def _prompt(memo: str, source: str, date: str) -> str:
 3) 그 다음 블록 = 항목 배열 JSON 하나만(설명 텍스트 없이). 각 원소:
    {{"id": 정수, "role": "웰리|시토|시모|시우|시포|시보|이경연 실장|이정헌 소장|나우열M",
      "title": "한 줄 제목", "dod": "완료 기준 문장", "source": "{source}",
-     "trigger": true|false, "collab": "협업 역할 또는 빈 문자열", "status": "new"}}
+     "trigger": "이 항목 title 에 {TRIGGER_TAG} 가 붙어 있으면 true, 없으면 false(대부분 false다)",
+     "collab": "협업 역할 또는 빈 문자열", "status": "new"}}
 
 [날짜] {date}
 [GM 날메모 원문]
@@ -130,6 +138,8 @@ def organize(args) -> int:
     except json.JSONDecodeError as e:
         print(f"[실패] JSON 파싱 실패: {e}", file=sys.stderr)
         return 1
+    for it in items:
+        it["trigger"] = _is_trigger(it.get("title", ""))  # 모델값 무시 · 제목 태그가 정본
 
     out_md = Path(args.out) if args.out else ROOT / "status" / "directives" / f"{date}_정리.md"
     out_json = out_md.with_suffix(".json")
@@ -168,10 +178,10 @@ def _save_ledger(data: dict) -> None:
 def _dispatch_cmd(item: dict, date: str, apply: bool) -> list[str] | None:
     """항목 하나 → queue_dispatch.py(AI) / gm_handoff.py(사람) 명령. 3-트리거·모르는
     역할은 None(자동 배포 제외)."""
-    if item.get("trigger"):
-        return None
     role = item.get("role", "")
     title = item.get("title", "")
+    if _is_trigger(title):  # 사이드카에 남은 값 안 믿고 제목 태그로 재판정(방어적 이중 확인)
+        return None
     dod = item.get("dod", "")
     source = item.get("source", "GM")
     py = sys.executable
@@ -216,7 +226,7 @@ def publish(args) -> int:
     for item in items:
         cmd = _dispatch_cmd(item, date, apply)
         if cmd is None:
-            tag = "[3-트리거 · GM 재확인 필요]" if item.get("trigger") else "[대상 아님]"
+            tag = "[3-트리거 · GM 재확인 필요]" if _is_trigger(item.get("title", "")) else "[대상 아님]"
             print(f"{tag} #{item.get('id')} {item.get('role')} — {item.get('title')}")
             continue
         print(" ".join(cmd))
@@ -272,17 +282,19 @@ def _canned_response(_prompt: str) -> str:
 1. [GM 지시] 이경연 실장 — CCTV 점검 결과 취합
    완료 기준: 금요일까지 결과 수신
 """
+    # trigger 값을 일부러 뒤집어 넣는다(2026-09-18 실측 그대로 재현: 태그 없는 23건이 true,
+    # 태그 있는 1건이 false) — organize() 가 title 태그로 덮어써 바로잡는지 selfcheck 가 검증한다.
     items = [
         {"id": 1, "role": "웰리", "title": "지시 자동화 파이프라인 구축",
-         "dod": "SSOT에 게시되고 승인 흐름이 동작함", "source": "GM", "trigger": False,
+         "dod": "SSOT에 게시되고 승인 흐름이 동작함", "source": "GM", "trigger": True,
          "collab": "", "status": "new"},
         {"id": 2, "role": "시토", "title": "텔레그램 GM지시방 신설 + SSOT 게시 자동화 배선",
-         "dod": "방 개설·봇 수신·게시 자동화 확인", "source": "GM", "trigger": False,
+         "dod": "방 개설·봇 수신·게시 자동화 확인", "source": "GM", "trigger": True,
          "collab": "웰리", "status": "new"},
-        {"id": 3, "role": "시토", "title": "이번 달 카드값 승인",
-         "dod": "GM 승인 확인", "source": "GM", "trigger": True, "collab": "", "status": "new"},
+        {"id": 3, "role": "시토", "title": f"이번 달 카드값 승인 {TRIGGER_TAG}",
+         "dod": "GM 승인 확인", "source": "GM", "trigger": False, "collab": "", "status": "new"},
         {"id": 4, "role": "이경연 실장", "title": "CCTV 점검 결과 취합",
-         "dod": "금요일까지 결과 수신", "source": "GM", "trigger": False, "collab": "", "status": "new"},
+         "dod": "금요일까지 결과 수신", "source": "GM", "trigger": True, "collab": "", "status": "new"},
     ]
     return md + SPLIT_MARK + "\n```json\n" + json.dumps(items, ensure_ascii=False) + "\n```\n"
 
@@ -305,6 +317,10 @@ def selfcheck() -> int:
         items = json.loads(scratch.with_suffix(".json").read_text(encoding="utf-8"))
         assert any(i["trigger"] for i in items), "결제 트리거 항목 미표시"
         assert any(i["role"] == "시토" and "배선" in i["title"] for i in items), "중복 병합 실패"
+        # 모델이 준 trigger 는 일부러 뒤집어 넣었다(_canned_response) — organize() 가 title 의
+        # ⛔태그로 되잡는지 검증. 태그 없는 항목은 반드시 false, 태그 있는 항목만 true.
+        for i in items:
+            assert i["trigger"] == (TRIGGER_TAG in i["title"]), f"trigger 판정 오류: {i['title']}"
 
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
