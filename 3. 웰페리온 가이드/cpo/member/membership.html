@@ -9197,8 +9197,10 @@ function _activeWireMore() {
 function _brojayNormPhone(p) { return String(p || '').replace(/\D/g, ''); }
 function _brojayTagChunk(rows, cols) {
   if (!ERP_API_ON) return;
-  var endIdx = cols.indexOf('종료일자'), phoneCol = '휴대폰 번호';
-  if (endIdx < 0 || cols.indexOf(phoneCol) < 0) return;
+  // 머리칸엔 줄바꿈 표시용 \n 이 섞여 있다("종료\n일자") — _capCol(공백 무시 매칭, 기존 헬퍼)로 실제 칸명을 찾는다.
+  var endCol = _capCol(cols, '종료일자'), phoneCol = '휴대폰 번호';
+  if (!endCol || cols.indexOf(phoneCol) < 0) return;
+  var endIdx = cols.indexOf(endCol);
   var targets = rows.filter(function(r){ return !r._crossFrom && _brojayNormPhone(r[phoneCol]); });
   if (!targets.length) return;
   var phones = targets.map(function(r){ return _brojayNormPhone(r[phoneCol]); });
@@ -9211,7 +9213,7 @@ function _brojayTagChunk(rows, cols) {
         var tr = document.querySelector('tr[data-rowindex="' + CSS.escape(String(r.rowIndex != null ? r.rowIndex : '')) + '"]');
         var td = tr && tr.children[endIdx];
         if (!td) return;
-        var same = String(r['종료일자'] || '').trim().indexOf(it.member_end) >= 0;
+        var same = String(r[endCol] || '').trim().indexOf(it.member_end) >= 0;
         td.insertAdjacentHTML('beforeend', '<div style="font-size:10px;color:' + (same ? 'var(--dim)' : 'var(--orange)') + '">브로제이 종료 ' + esc(it.member_end) + '</div>');
       });
     })
