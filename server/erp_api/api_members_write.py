@@ -293,12 +293,14 @@ def _find_and_lock(conn, tenant, col, member_no_in, phone):
     return (rows[0] if rows else None), False, False
 
 
-def _resolve_active_row(conn, tenant, payload):
+def _resolve_active_row(conn, tenant, payload, scope="valid"):
     """member_active_update 전용 — rowIndex+rowKey(또는 keyPhone) → member_no 행 변환(FOR UPDATE).
     반환 (row|None, error_code|None). error_code 는 _ACTIVE_ERRORS 의 키 중 하나(성공 시 None).
     GAS 의 지문 3단 복구(Survey.js L9678~9776)를 '물리 행 스캔' 대신 '미러 rowKey 값 대조'로 재현한다 —
     member_no 가 곧 서버의 행 열쇠라 물리행 후보 비교(지문 중복 시 rowIndex 로 고르는 GAS 마지막 단)는
-    필요 없다(회원번호 명시를 요구하는 쪽이 더 안전 — INC-020 원칙)."""
+    필요 없다(회원번호 명시를 요구하는 쪽이 더 안전 — INC-020 원칙).
+    scope — 기본 'valid'. LOSS 재등록(배 12810②)이 valid 에서 찾지 못했을 때 같은 규칙으로 'ended' 를
+    한 번 더 훑는 데 재사용한다(로직 복제 금지)."""
     member_no_in = str(payload.get("member_no") or "").strip()
     row_key = str(payload.get("rowKey") or "").strip()
     key_phone = _norm_phone(payload.get("keyPhone"))
@@ -310,8 +312,8 @@ def _resolve_active_row(conn, tenant, payload):
         if not phone:   # 회원번호만 오고 전화 대조 재료가 없으면 거부(GAS Survey.js:9781 과 동일 · 배1054 검토②)
             return None, "unverified"
         row = conn.execute(
-            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND member_no=%s FOR UPDATE",
-            (tenant, member_no_in)).fetchone()
+            "SELECT * FROM members WHERE tenant_id=%s AND scope=%s AND member_no=%s FOR UPDATE",
+            (tenant, scope, member_no_in)).fetchone()
         if not row:
             return None, "not_found"
         if _norm_phone(row["phone"]) != phone:
@@ -320,15 +322,15 @@ def _resolve_active_row(conn, tenant, payload):
 
     if row_key:
         rows = conn.execute(
-            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND data::jsonb->>'rowKey'=%s FOR UPDATE",
-            (tenant, row_key)).fetchall()
+            "SELECT * FROM members WHERE tenant_id=%s AND scope=%s AND data::jsonb->>'rowKey'=%s FOR UPDATE",
+            (tenant, scope, row_key)).fetchall()
         if len(rows) == 1:
             return rows[0], None
         if not rows:
             if phone:   # 지문 미스 복구 — 전화 단독 매칭 정확히 1건일 때만(GAS Survey.js L9708 이식)
                 cand = conn.execute(
-                    "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
-                    (tenant, phone)).fetchall()
+                    "SELECT * FROM members WHERE tenant_id=%s AND scope=%s AND phone=%s FOR UPDATE",
+                    (tenant, scope, phone)).fetchall()
                 if len(cand) == 1:
                     return cand[0], None
             return None, "not_found"
@@ -336,8 +338,8 @@ def _resolve_active_row(conn, tenant, payload):
 
     if phone:
         rows = conn.execute(
-            "SELECT * FROM members WHERE tenant_id=%s AND scope='valid' AND phone=%s FOR UPDATE",
-            (tenant, phone)).fetchall()
+            "SELECT * FROM members WHERE tenant_id=%s AND scope=%s AND phone=%s FOR UPDATE",
+            (tenant, scope, phone)).fetchall()
         if len(rows) == 1:
             return rows[0], None
         if not rows:
@@ -345,6 +347,25 @@ def _resolve_active_row(conn, tenant, payload):
         return None, "ambiguous"
 
     return None, "unverified"
+
+
+def _is_reregistration_fields(fields, today):
+    """member_active_update 의 fields 가 '재등록' 모양인지 판정(배 12810②) — LOSS 회원(scope='ended')을
+    되찾아 즉시 valid 로 되돌릴지 가르는 유일한 기준. LOSS일자가 빈 값으로 오고(재등록이면 GAS 가 LOSS
+    표시를 지운다) 종료일자가 오늘 이상(재등록이면 새 종료일을 미래로 잡는다)일 때만 True — 둘 중 하나라도
+    아니면 일반 칸 수정으로 보고 False(오판이면 ended 행을 건드리지 않고 그냥 not_found 로 pass-through)."""
+    if not isinstance(fields, dict) or "LOSS일자" not in fields:
+        return False
+    if str(fields.get("LOSS일자") or "").strip():
+        return False
+    end = str(fields.get("종료일자") or "").strip()[:10]
+    if not end:
+        return False
+    from datetime import datetime   # noqa: PLC0415 — 이 함수 하나만 쓴다
+    try:
+        return datetime.strptime(end, "%Y-%m-%d").date() >= datetime.strptime(today, "%Y-%m-%d").date()
+    except ValueError:
+        return False
 
 
 _CONTACT_BY_RE = re.compile(r"\s*\(컨택:([^()]*)\)\s*$")   # GAS CONTACT_BY_RE(Survey.js L2371) 사본
@@ -503,6 +524,18 @@ def _member_active_update_one(payload, raw_body, user):
     try:
         with conn:
             row, err_code = _resolve_active_row(conn, tenant, payload)
+            ended_snapshot = None
+            # ★2026-09-18 시포 — LOSS 회원(scope='ended') 재등록이 valid 에서 못 찾아 그냥 GAS pass-through
+            #   로만 넘어가면 서버 원장은 5분 sync 가 다시 돌 때까지(실측 13분) valid 로 안 바뀐다(배 12810②
+            #   · FB260918-165859). fields 가 재등록 모양일 때만 ended 를 같은 규칙으로 한 번 더 찾아 즉시
+            #   valid 로 옮기고 아래 valid 경로를 그대로 탄다(로직 복제 금지).
+            if not row and err_code == "not_found" and _is_reregistration_fields(fields, now[:10]):
+                erow, eerr = _resolve_active_row(conn, tenant, payload, scope="ended")
+                if erow and not eerr:
+                    ended_snapshot = dict(erow)
+                    conn.execute("UPDATE members SET scope='valid' WHERE tenant_id=%s AND member_no=%s AND scope='ended'",
+                                 (tenant, erow["member_no"]))
+                    row, err_code = erow, None
             # ★2026-09-17 시포 — 덮어쓰기 관문은 pass-through(LOSS 로 넘어간 회원 등 · 서버가 valid 행을 못 찾는 경우)
             #   에도 건다. 실측 12:5x: 기외호님이 LOSS 탭으로 넘어가 있어 관문이 통째로 비켜갔다. 전화로 어느 scope 든
             #   정확히 1명이면 그 회원번호의 변경 기록으로 같은 검사를 한다(값은 안 건드림 · 거부만).
@@ -585,6 +618,10 @@ def _member_active_update_one(payload, raw_body, user):
 
                 if not err_code:
                     saved, wrote_names, promoted_names, reverts = {}, [], [], []
+                    if ended_snapshot is not None:   # GAS 거부 시 scope 되돌리기까지 한 항목으로(값 되돌리기와 중복 무해)
+                        reverts.append({"kind": "archive_row", "tenant": tenant, "member_no": member_no,
+                                         "cur_scope": "valid", "old_row": ended_snapshot, "field": "LOSS재등록 즉시복귀",
+                                         "name": row.get("name") or "", "phone_masked": _mask_phone(row.get("phone"))})
                     for fname, fv in targets:
                         new_val = "" if fv is None else str(fv)
                         dbcol = _ACTIVE_COL_MAP.get(_norm_col(fname))
@@ -2123,6 +2160,13 @@ if __name__ == "__main__":   # python3 api_members_write.py — 갈래·마스�
     assert _ACTIVE_COL_MAP["주소"] == "address" and _ACTIVE_COL_MAP["종료사유메모"] == "end_reason_memo"
     assert len(_ACTIVE_COL_MAP) == 21
     assert set(_ACTIVE_ERRORS) == {"unverified", "not_found", "ambiguous", "member_no_mismatch", "staff-name-required"}
+    # LOSS 재등록 판정(배 12810②) — LOSS일자 빈 값 + 종료일자 오늘 이상일 때만 ended 재조회를 태운다.
+    assert _is_reregistration_fields({"LOSS일자": "", "종료일자": "2027-09-17"}, "2026-09-18") is True
+    assert _is_reregistration_fields({"LOSS일자": "2026-09-01", "종료일자": "2027-09-17"}, "2026-09-18") is False
+    assert _is_reregistration_fields({"LOSS일자": "", "종료일자": "2026-09-01"}, "2026-09-18") is False
+    assert _is_reregistration_fields({"LOSS일자": "", "종료일자": ""}, "2026-09-18") is False
+    assert _is_reregistration_fields({"종료일자": "2027-09-17"}, "2026-09-18") is False   # LOSS일자 키 자체가 없음
+    assert _is_reregistration_fields(None, "2026-09-18") is False
     # 덮어쓰기 관문(2026-09-17) — 다른 사람이 2시간 안에 같은 칸을 바꿨으면 잡고, 본인·시스템·오래된 것은 안 잡는다.
     class _CL:
         def __init__(self, rows): self.rows = rows; self.q = None
