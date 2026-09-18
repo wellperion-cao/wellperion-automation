@@ -254,6 +254,8 @@ def _print_session_hint(role: str, ship_label, title: str) -> None:
               % (state["session"], ship_label, title))
     else:
         print("⏳ 받는 역할 세션 없음 → 러너/다음 부팅이 집습니다")
+    # GM 지시 2026-09-18 — 전달은 마무리가 아니다. 넘긴 쪽이 상대의 진행·회신을 받고 결과를 재서 닫는다.
+    print("⛳ 전달 ≠ 마무리 — 상대가 진행하고 회신한 것까지 내가 확인하고, 결과를 재고 닫는다(GM 2026-09-18 · 7역할 공통)")
 
 
 def main() -> int:
