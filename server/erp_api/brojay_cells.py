@@ -23,6 +23,14 @@ GM 지시 2026-09-16: 「시트를 배제한 상태에서 브로제이랑 웰페
 
 반환 형식은 sales_report_render 가 비교하는 시트 칸과 같은 문자열(금액 "1,234,567" · 사람 "N명") — 22칸
 대조기가 그대로 짝을 지을 수 있게. 숫자 원본은 "raw" 에 함께 둔다.
+
+목록 4종("lists" · 배 12523 2단계 · 2026-09-18)
+  registered  그날 결제(환불 제외) 전부 — 이름·분류는 전화로 members 를 이어(신규/재등록/미상), 못 이으면 브로제이
+              회원 스냅샷 이름만 붙인다
+  loss        members.loss_date == 기준일
+  contact     members.reg_consult_date == 기준일 또는 재등록예약목록(reg_reservation) 안의 날짜 항목
+  lesson      강습 8팀 신규/재등록 — lesson_records registry(성인강습·유소년강습) 의 등록횟수(1=신규·2+=재등록)를
+              먼저 보고, 없으면 브로제이 결제 이력(9/1~기준일)에서 같은 회원·같은 팀 이전 결제 유무로 가른다
 실행: python3 brojay_cells.py [YYYY-MM-DD]   자체점검: python3 brojay_cells.py --selftest
 """
 import json
@@ -40,8 +48,11 @@ REPO_DIR = os.environ.get("ERP_REPO_DIR", "/srv/erp/repo")
 # 파일을 못 읽는 자리(자체점검·로컬)에서만 이 표를 쓴다. 두 표가 갈리면 파일이 이긴다.
 TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램폴린": 12, "필라테스": 13, "영어뮤지컬": 14, "유료GX": 15}
 TEAM_KEY_ROW = {"swim": 8, "pt": 9, "golf": 10, "squash": 11, "gym": 12, "pilates": 13, "musical": 14, "gxe": 15}
+ROW_KEY = {v: k for k, v in TEAM_KEY_ROW.items()}   # 행 → sales_targets key
+ROW_TAG = {v: k for k, v in TAG_TEAM.items()}       # 행 → 매출분류 태그(팀 이름 폴백)
 OPS_TAG = "운영부"
 LOCKER_TYPES = {"LOCKER_TICKET"}
+REG_START = "2026-09-01"   # 브로제이 적재 시작일(GM 확정 2026-09-15) — 강습 신규/재등록 이력 조회 하한
 # 매출분류(sales_tag_name)가 빈 결제 — 상품명으로 팀 행을 짚는다(2026-09-17 시포 · 실측 9/4 「(준)수영강습 아쿠아로빅 8회」
 #   5건 1,210,000 이 분류 없이 총액에만 들어가 팀 합 ≠ 총액). 상품명에 낱말이 없으면 종전대로 unmapped(지어내지 않는다).
 NAME_ROW = (("아쿠아", 8), ("수영", 8), ("P.T", 9), ("PT", 9), ("골프", 10), ("스쿼시", 11), ("체조", 12), ("트램폴린", 12),
@@ -64,6 +75,46 @@ def _digits(v):
     return re.sub(r"\D", "", str(v or ""))
 
 
+def _mid_mask(v):
+    """010-****-5691 꼴(코드베이스 관례 · reconcile_dual_write.py 참조) — 가운데를 가리고 앞3·뒤4만 남긴다.
+    8자리 미만은 원본 그대로(가릴 게 없다)."""
+    d = _digits(v)
+    if len(d) < 8:
+        return str(v or "")
+    return d[:3] + "-****-" + d[-4:]
+
+
+def _reg_class_label(cls):
+    """members.reg_class 문자열 → 신규/재등록/미상 — N7~N10 분류(aggregate)와 같은 규칙."""
+    cls = str(cls or "")
+    if not cls:
+        return "미상"
+    if "신규" in cls or "대기" in cls:
+        return "신규"
+    return "재등록"
+
+
+def _kind_of(cell):
+    if cell == 6:
+        return "회원권"
+    if cell == 7:
+        return "옵션"
+    if cell and cell >= 8:
+        return "강습"
+    return "기타"
+
+
+def _cell_of(tag, ptype, product_name, tags):
+    """매출분류·상품유형·상품명 → 보고탭 행(6~15) — aggregate 의 칸 판정 그 자체(한 곳에서만 정의)."""
+    if tag == OPS_TAG:
+        return 7 if ptype in LOCKER_TYPES else 6
+    if tag in tags:
+        return tags[tag]
+    if not tag:
+        return _row_by_name(product_name)
+    return None
+
+
 def tag_rows(repo_dir=REPO_DIR):
     """{매출분류: 보고탭 행} — sales_targets.json 이 있으면 거기서, 없으면 TAG_TEAM."""
     p = os.path.join(repo_dir, "status", "sales_targets.json")
@@ -79,6 +130,17 @@ def tag_rows(repo_dir=REPO_DIR):
         return out or dict(TAG_TEAM)
     except Exception:
         return dict(TAG_TEAM)
+
+
+def _team_names(repo_dir=REPO_DIR):
+    """행(8~15)→팀 이름(사람이 읽는 name) — sales_targets.json teams[].name 그대로. 못 읽으면 매출분류 태그를 이름으로."""
+    p = os.path.join(repo_dir, "status", "sales_targets.json")
+    try:
+        with open(p, encoding="utf-8") as f:
+            by_key = {t.get("key"): t.get("name") for t in (json.load(f).get("teams") or [])}
+        return {row: by_key.get(key) or ROW_TAG.get(row, "") for row, key in ROW_KEY.items()}
+    except Exception:
+        return dict(ROW_TAG)
 
 
 def _day_of(rec):
@@ -100,6 +162,8 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     new_amt = new_n = re_amt = re_n = 0
     unmatched = 0
     daily = {}   # 날짜별 총매출(환불 제외) — 보고 1면 「일 단위 최근 7일」 막대가 일자탭 대신 읽는다(시트 0칸)
+    day_pays = []      # lists.registered 원본 — 기준일 결제(환불 제외) 전부
+    lesson_pays = []   # lists.lesson 원본 — 강습 8팀(행 8~15) 결제 전부(그달 1일~기준일)
     for p in payments:
         d = _day_of(p)
         if not d or d > ref_date:
@@ -115,27 +179,27 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
                 refund_day += amt
             continue
         daily[d] = daily.get(d, 0) + amt
-        if tag == OPS_TAG:
-            cell = 7 if ptype in LOCKER_TYPES else 6
-        elif tag in tags:
-            cell = tags[tag]
-        elif not tag and _row_by_name(p.get("product_name")):
-            cell = _row_by_name(p.get("product_name"))
-        else:
-            cell = None
+        cell = _cell_of(tag, ptype, p.get("product_name"), tags)
+        if cell is None:
             unmapped[tag or "(분류없음)"] = unmapped.get(tag or "(분류없음)", 0) + amt
         month["J4"] += amt
         if cell:
             month["J%d" % cell] += amt
+        member_id = str(p.get("member_id") or "")
+        if cell and cell >= 8:
+            lesson_pays.append({"cell": cell, "member_id": member_id, "phone": phone_of_member.get(member_id, ""),
+                                 "amt": amt, "is_day": is_day, "paid_at": p.get("paid_at")})
         if is_day:
             day["I4"] += amt
             if cell:
                 day["I%d" % cell] += amt
+            day_pays.append({"cell": cell, "member_id": member_id, "amt": amt, "tag": tag, "ptype": ptype,
+                              "product_name": p.get("product_name"), "paid_at": p.get("paid_at")})
             # 신규/재등록 = 회원권 칸(cell 6) 결제 전부 — MEMBERSHIP 만 세던 것을 FACILITY_TICKET(플래티넘+골프 등)까지.
             #   등록분류 「대기」(시작일이 앞날인 신규)도 신규다. 2026-09-16 실측: 시트 신규 2명 7,000,000 · 재등록 1명 3,230,000
             #   인데 서버는 신규 0 · 재등록 3,600,000 — FACILITY_TICKET 2건 누락 + 「대기」를 재등록으로 셈(GM 2026-09-17 지적).
             if cell == 6:
-                cls = members_by_phone.get(phone_of_member.get(str(p.get("member_id") or ""), ""))
+                cls = members_by_phone.get(phone_of_member.get(member_id, ""))
                 if cls is None:
                     unmatched += 1
                 elif "재등록" in cls:
@@ -153,8 +217,139 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     cells.update({"N7": _money(new_amt), "N8": "%d명" % new_n, "N9": _money(re_amt), "N10": "%d명" % re_n,
                   "N11": _money(refund_day), "N12": "%d명" % loss_count})
     return {"cells": cells, "raw": {"day": day, "month": month, "refund_day": refund_day,
-                                    "new": [new_n, new_amt], "re": [re_n, re_amt], "daily": daily},
+                                    "new": [new_n, new_amt], "re": [re_n, re_amt], "daily": daily,
+                                    "day_pays": day_pays, "lesson_pays": lesson_pays},
             "unmapped": unmapped, "unmatched_membership": unmatched, "payments": len(payments)}
+
+
+def _registered_list(day_pays, team_names, member_info_by_phone, phone_of_member, snap_name_by_id):
+    """lists.registered — 기준일 결제(환불 제외) 전부. 이름·분류는 전화로 members 를 이어(신규/재등록/미상),
+    못 이으면 브로제이 회원 스냅샷 이름만 붙인다(지어내지 않는다)."""
+    out = []
+    for p in day_pays:
+        phone = phone_of_member.get(p["member_id"], "")
+        info = member_info_by_phone.get(phone)
+        if info:
+            name, reg_class = info["name"] or snap_name_by_id.get(p["member_id"], ""), _reg_class_label(info["reg_class"])
+        else:
+            name, reg_class = snap_name_by_id.get(p["member_id"], ""), "미상"
+        cell = p["cell"]
+        out.append({"name": name, "phone_masked": _mid_mask(phone), "reg_class": reg_class, "kind": _kind_of(cell),
+                     "team": team_names.get(cell, "") if cell and cell >= 8 else "",
+                     "product": p.get("product_name") or p.get("ptype") or "", "amount": p["amt"],
+                     "paid_at": p.get("paid_at") or ""})
+    return out
+
+
+def _loss_list(mem_rows, ref_date):
+    """lists.loss — members.loss_date == 기준일."""
+    return [{"name": m["name"] or "", "phone_masked": _mid_mask(m["phone"]), "kind": m["kind"] or "",
+             "product": m["program"] or ""} for m in mem_rows if str(m["loss_date"] or "")[:10] == ref_date]
+
+
+def _contact_list(mem_rows, ref_date):
+    """lists.contact — members.reg_consult_date == 기준일 또는 재등록예약목록(reg_reservation) 안의 날짜 항목.
+    한 회원당 먼저 걸리는 것 하나만(3칸 미러가 이미 재등록예약목록 첫 항목을 담아 이중집계를 막는다)."""
+    out = []
+    for m in mem_rows:
+        if str(m["reg_consult_date"] or "")[:10] == ref_date:
+            out.append({"name": m["name"] or "", "phone_masked": _mid_mask(m["phone"]),
+                        "consult_date": m["reg_consult_date"], "consult_time": m["reg_consult_time"] or "",
+                        "note": m["reg_consult_note"] or ""})
+            continue
+        try:
+            arr = json.loads(str(m["reg_reservation"] or "").strip() or "[]")
+        except Exception:
+            arr = []
+        if not isinstance(arr, list):
+            continue
+        for it in arr:
+            if isinstance(it, dict) and str(it.get("date") or "")[:10] == ref_date:
+                out.append({"name": m["name"] or "", "phone_masked": _mid_mask(m["phone"]),
+                            "consult_date": it.get("date") or "", "consult_time": it.get("time") or "",
+                            "note": it.get("note") or ""})
+                break
+    return out
+
+
+LESSON_BASIS = ("registry 등록횟수(1=신규·2+=재등록) 우선 · 없으면 브로제이 이력(9/1~기준일 · "
+                "같은 회원·같은 팀 이전 결제 있으면 재등록)")
+
+
+def _lesson_lists(lesson_pays, registry_cls, hist_first_paid, team_names):
+    """lists.lesson — 강습 8팀 신규/재등록(건수·금액) day(기준일)·month(그달 1일~기준일)."""
+    day, month = {}, {}
+    for p in lesson_pays:
+        cell = p["cell"]
+        team = team_names.get(cell, "행%d" % cell)
+        cls = registry_cls.get((p["phone"], cell))
+        if not cls:
+            first = hist_first_paid.get((p["member_id"], cell))
+            cls = "재등록" if (first and first < str(p.get("paid_at") or "")[:10]) else "신규"
+        for scope, cond in ((month, True), (day, p["is_day"])):
+            if not cond:
+                continue
+            b = scope.setdefault(team, {"new": 0, "re": 0, "new_amt": 0, "re_amt": 0})
+            if cls == "신규":
+                b["new"] += 1
+                b["new_amt"] += p["amt"]
+            else:
+                b["re"] += 1
+                b["re_amt"] += p["amt"]
+    return {"day": day, "month": month, "basis": LESSON_BASIS}
+
+
+def _lesson_registry_class(conn, tenant):
+    """{(전화, 행): '신규'|'재등록'} — lesson_records kind=registry(성인강습·유소년강습) 의 등록횟수
+    (1=신규·2+=재등록). 종목→행은 _row_by_name(NAME_ROW) 재사용. DB 조회 — compute() 전용, selftest 대상 아님."""
+    out = {}
+    for t in ("성인강습", "유소년강습"):
+        r = conn.execute("SELECT data FROM lesson_records WHERE tenant_id=%s AND kind='registry' AND key=%s",
+                          (tenant, t)).fetchone()
+        if not r:
+            continue
+        d = json.loads(r["data"])
+        for row in (d.get("data") or []):
+            if not isinstance(row, dict):
+                continue
+            phone = _digits(row.get("전화"))
+            cell = _row_by_name(row.get("종목"))
+            if not phone or not cell:
+                continue
+            try:
+                n = int(_digits(row.get("등록횟수")) or 0)
+            except ValueError:
+                n = 0
+            if n <= 0:
+                continue
+            out[(phone, cell)] = "신규" if n == 1 else "재등록"
+    return out
+
+
+def _lesson_first_paid(conn, ref_date, tags, tenant):
+    """{(member_id, 행): 가장 이른 결제일} — 브로제이 결제 이력(REG_START~기준일 · 환불 제외). registry 로
+    못 가른 나머지를 「그 전 결제가 있었나」로 가른다. DB 조회 — compute() 전용, selftest 대상 아님."""
+    rows = conn.execute(
+        "SELECT data FROM brojay_records WHERE tenant_id=%s AND kind='sales' AND key BETWEEN %s AND %s",
+        (tenant, REG_START, ref_date)).fetchall()
+    out = {}
+    for r in rows:
+        d = json.loads(r["data"])
+        lst = d.get("data") if isinstance(d, dict) else d
+        if isinstance(lst, dict):
+            lst = lst.get("data")
+        for p in (lst or []):
+            if not isinstance(p, dict) or str(p.get("history_type") or "") == "REFUND":
+                continue
+            cell = _cell_of(str(p.get("sales_tag_name") or ""), str(p.get("product_type") or ""),
+                             p.get("product_name"), tags)
+            if not cell or cell < 8:
+                continue
+            key = (str(p.get("member_id") or ""), cell)
+            paid_d = _day_of(p)
+            if paid_d and (key not in out or paid_d < out[key]):
+                out[key] = paid_d
+    return out
 
 
 def compute(ref_date=None):
@@ -182,14 +377,15 @@ def compute(ref_date=None):
         if not payments:
             return None
         mem = conn.execute(
-            "SELECT phone, reg_class, loss_date FROM members WHERE tenant_id=%s AND scope IN ('valid','ended')",
+            "SELECT phone, reg_class, loss_date, name, kind, program, reg_consult_date, reg_consult_time,"
+            " reg_consult_note, reg_reservation FROM members WHERE tenant_id=%s AND scope IN ('valid','ended')",
             (db.TENANT,)).fetchall()
         members_by_phone = {_digits(m["phone"]): str(m["reg_class"] or "") for m in mem if _digits(m["phone"])}
         loss_count = sum(1 for m in mem if str(m["loss_date"] or "")[:10] == ref_date)
         snap = conn.execute(
             "SELECT data FROM brojay_records WHERE tenant_id=%s AND kind='members' ORDER BY key DESC LIMIT 1",
             (db.TENANT,)).fetchone()
-        phone_of_member = {}
+        phone_of_member, snap_name_by_id = {}, {}
         if snap:
             d = json.loads(snap["data"])
             lst = d.get("data") if isinstance(d, dict) else d
@@ -197,12 +393,35 @@ def compute(ref_date=None):
                 lst = lst.get("data")
             for m in (lst or []):
                 if isinstance(m, dict) and m.get("member_id"):
-                    phone_of_member[str(m["member_id"])] = _digits(m.get("phone_number"))
+                    mid = str(m["member_id"])
+                    phone_of_member[mid] = _digits(m.get("phone_number"))
+                    snap_name_by_id[mid] = m.get("name") or ""
+        tags = tag_rows()
+        registry_cls = _lesson_registry_class(conn, db.TENANT)
+        hist_first_paid = _lesson_first_paid(conn, ref_date, tags, db.TENANT)
     finally:
         conn.close()
-    out = aggregate(payments, ref_date, tag_rows(), members_by_phone, phone_of_member, loss_count)
+    out = aggregate(payments, ref_date, tags, members_by_phone, phone_of_member, loss_count)
     out["raw"]["days_loaded"] = days_loaded
     out.update({"ref_date": ref_date, "_source": "brojay+erp", "members_joined": bool(phone_of_member)})
+    try:
+        member_info_by_phone = {}
+        for m in mem:
+            pd = _digits(m["phone"])
+            if pd:
+                member_info_by_phone.setdefault(pd, {"name": m["name"] or "", "reg_class": str(m["reg_class"] or "")})
+        team_names = _team_names()
+        out["lists"] = {
+            "ref_date": ref_date,
+            "registered": _registered_list(out["raw"]["day_pays"], team_names, member_info_by_phone,
+                                            phone_of_member, snap_name_by_id),
+            "loss": _loss_list(mem, ref_date),
+            "contact": _contact_list(mem, ref_date),
+            "lesson": _lesson_lists(out["raw"]["lesson_pays"], registry_cls, hist_first_paid, team_names),
+        }
+    except Exception:
+        out["lists"] = {"ref_date": ref_date, "registered": [], "loss": [], "contact": [],
+                         "lesson": {"day": {}, "month": {}, "basis": ""}}
     return out
 
 
@@ -247,6 +466,53 @@ def selftest():
     o2 = aggregate(pays, "2026-09-15", tags, {}, {"A": "01011112222"})
     assert o2["unmatched_membership"] == 3 and o2["cells"]["N8"] == "0명"   # 원장에 없으면 지어내지 않는다(회원권 3건 전부 unmatched)
     assert tag_rows("/nonexistent") == TAG_TEAM
+
+    # ── lists 4종(배 12523 2단계) — 작은 함수 단위로 가짜 행만 넣고 DB 없이 검사 ──
+    assert _mid_mask("01012345678") == "010-****-5678" and _mid_mask("1234") == "1234"
+    assert _reg_class_label("") == "미상" and _reg_class_label("재등록") == "재등록" and _reg_class_label("대기") == "신규"
+    assert _kind_of(6) == "회원권" and _kind_of(7) == "옵션" and _kind_of(10) == "강습" and _kind_of(None) == "기타"
+    assert _team_names("/nonexistent") == dict(ROW_TAG)
+
+    team_names = {8: "수영팀", 10: "골프팀"}
+    snap_names = {"B": "나비", "D": "다래", "J": "제이"}
+    member_info = {"01011112222": {"name": "에이", "reg_class": "신규"}}
+    reg_list = _registered_list(o["raw"]["day_pays"], team_names, member_info,
+                                {"A": "01011112222", "G": "01033334444", "H": "01055556666"}, snap_names)
+    assert len(reg_list) == 7, len(reg_list)
+    a_rows = [r for r in reg_list if r["phone_masked"] == _mid_mask("01011112222")]
+    assert len(a_rows) == 2 and a_rows[0]["name"] == "에이" and a_rows[0]["reg_class"] == "신규" and a_rows[0]["kind"] == "회원권"
+    assert a_rows[1]["kind"] == "옵션"
+    b_row = [r for r in reg_list if r["amount"] == 209000][0]
+    assert b_row["name"] == "나비" and b_row["reg_class"] == "미상" and b_row["team"] == "수영팀"   # 원장에 없으면 미상
+    d_row = [r for r in reg_list if r["amount"] == 50000][0]
+    assert d_row["kind"] == "기타" and d_row["team"] == ""   # 분류 못 지은 결제도 빠뜨리지 않는다
+
+    lp = [
+        {"cell": 8, "member_id": "X", "phone": "01099998888", "amt": 100000, "is_day": True, "paid_at": "2026-09-15T10:00:00+09:00"},
+        {"cell": 8, "member_id": "Y", "phone": "01000000000", "amt": 200000, "is_day": True, "paid_at": "2026-09-15T10:00:00+09:00"},
+        {"cell": 8, "member_id": "Y", "phone": "01000000000", "amt": 150000, "is_day": False, "paid_at": "2026-09-10T10:00:00+09:00"},
+    ]
+    lesson = _lesson_lists(lp, {("01099998888", 8): "재등록"}, {("Y", 8): "2026-09-10"}, {8: "수영팀"})
+    assert lesson["basis"] == LESSON_BASIS
+    assert lesson["day"]["수영팀"] == {"new": 0, "re": 2, "new_amt": 0, "re_amt": 300000}, lesson["day"]
+    assert lesson["month"]["수영팀"] == {"new": 1, "re": 2, "new_amt": 150000, "re_amt": 300000}, lesson["month"]
+
+    mem_rows = [
+        {"name": "김로스", "phone": "01011112222", "loss_date": "2026-09-15", "kind": "MEMBERSHIP", "program": "요가",
+         "reg_consult_date": None, "reg_consult_time": None, "reg_consult_note": None, "reg_reservation": None},
+        {"name": "박컨택", "phone": "01022223333", "loss_date": None, "kind": "", "program": "",
+         "reg_consult_date": "2026-09-15", "reg_consult_time": "14:00", "reg_consult_note": "메모", "reg_reservation": None},
+        {"name": "최예약", "phone": "01033334444", "loss_date": None, "kind": "", "program": "",
+         "reg_consult_date": None, "reg_consult_time": None, "reg_consult_note": None,
+         "reg_reservation": json.dumps([{"date": "2026-09-10", "time": "10:00", "note": "옛날"},
+                                        {"date": "2026-09-15", "time": "11:00", "note": "다음달"}], ensure_ascii=False)},
+    ]
+    assert _loss_list(mem_rows, "2026-09-15") == [
+        {"name": "김로스", "phone_masked": _mid_mask("01011112222"), "kind": "MEMBERSHIP", "product": "요가"}]
+    contact = _contact_list(mem_rows, "2026-09-15")
+    assert len(contact) == 2, contact
+    assert contact[0]["name"] == "박컨택" and contact[0]["consult_date"] == "2026-09-15" and contact[0]["consult_time"] == "14:00"
+    assert contact[1]["name"] == "최예약" and contact[1]["consult_date"] == "2026-09-15" and contact[1]["note"] == "다음달"
     print("selftest ok")
 
 
