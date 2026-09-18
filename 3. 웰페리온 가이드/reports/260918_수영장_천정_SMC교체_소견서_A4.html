@@ -2,147 +2,166 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>수영장 천정 SMC 교체 소견서 — 웰페리온 A4 보고서</title>
+<title>공조설비 A/S 및 수영장 천정 SMC 교체 소견서 — 웰페리온</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 @page { size: A4 portrait; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-:root{
-  --ink:#101418; --navy:#14304E; --navy-2:#0E2439; --navy-bg:#EDF1F6;
-  --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --gray:#8A939B;
-  --line:#E3E7EB; --dim:#5C666F;
-}
-html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+:root{ --ink:#111; --line:#000; --dim:#444; }
+html,body{ background:#8A9099; font-family:'Noto Serif KR',serif; color:var(--ink);
   -webkit-print-color-adjust:exact; print-color-adjust:exact; word-break:keep-all; }
 
-.bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+.bar{ position:fixed; top:0; left:0; right:0; height:46px; background:#14304E; color:#fff;
   display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
-  font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  font-family:'Noto Sans KR',sans-serif; font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
 .bar b{ font-weight:700; letter-spacing:-.2px; }
 .bar .sp{ flex:1; }
-.bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+.bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:#14304E;
   background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
 .bar button:hover{ background:#DCE4EE; }
-.bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
 @media print { .bar{ display:none !important; } html,body{ background:#fff; }
   .page{ margin:0 !important; box-shadow:none !important; } }
 
-.page{ width:794px; min-height:1123px; background:#fff; margin:66px auto 30px; padding:34px 42px 26px;
-  display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); }
+.page{ width:794px; min-height:1123px; background:#fff; margin:66px auto 30px; padding:40px 46px 30px;
+  display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); font-size:12.5px; line-height:1.55; }
 .page:last-child{ margin-bottom:66px; }
 
-.head{ border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
-.brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:12px; color:var(--navy);
-  letter-spacing:5px; margin-bottom:3px; }
-.headrow{ display:flex; align-items:flex-end; }
-.title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:24px; letter-spacing:-.7px; line-height:1.2; }
-.meta{ margin-left:auto; text-align:right; font-size:10.5px; line-height:1.55; color:#3C464F; }
-.meta b{ color:var(--ink); font-weight:700; }
-.who{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line);
-  background:#F6F8FA; padding:4px 10px; font-size:11.5px; color:var(--dim); }
-.who b{ color:var(--navy); font-size:12px; }
+.co{ text-align:center; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:11px;
+  letter-spacing:6px; color:#333; }
+.title{ text-align:center; font-weight:700; font-size:21px; letter-spacing:-.3px; margin:10px 0 16px; }
 
-.dir{ margin-top:12px; background:var(--navy); color:#fff; padding:8px 15px 9px; font-size:12.4px; line-height:1.55; }
-.dir b{ letter-spacing:1px; }
-.dir span{ opacity:.85; }
+table.doc{ width:100%; border-collapse:collapse; border-top:2px solid var(--line); border-bottom:1px solid var(--line); }
+table.doc th, table.doc td{ border:1px solid var(--line); padding:6px 10px; font-size:11.8px; vertical-align:middle; }
+table.doc th{ background:#F2F2F2; font-weight:700; width:14%; text-align:center; font-family:'Noto Sans KR',sans-serif; }
+table.doc td{ width:36%; }
 
-.sec-h{ margin-top:14px; font-size:13.6px; font-weight:700; color:var(--navy); letter-spacing:-.2px;
-  border-bottom:1.5px solid var(--navy); padding-bottom:3px; margin-bottom:6px;
-  display:flex; align-items:baseline; }
-.sec-h .hint{ margin-left:auto; font-size:10.5px; font-weight:400; color:var(--dim); }
+.sec{ margin-top:16px; }
+.sec-t{ font-weight:700; font-size:13.5px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif; }
+.sec-b{ padding-left:2px; }
+.sec-b p{ margin:3px 0 3px 14px; text-indent:-14px; }
+.sec-b .blank{ display:inline-block; border-bottom:1px solid #999; min-width:120px; }
 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-th,td{ border:1px solid var(--line); padding:6px 9px; font-size:11.8px; line-height:1.42; vertical-align:top; }
-thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:11.6px; border-color:#2A4763; text-align:left; }
-td.k{ background:#F6F8FA; font-weight:700; font-size:11.6px; color:var(--navy); width:22%; }
-td ul{ list-style:none; }
-td ul li{ padding:1.5px 0 1.5px 11px; position:relative; }
-td ul li::before{ content:'·'; position:absolute; left:0; color:var(--dim); }
+table.kv{ width:100%; border-collapse:collapse; margin-top:4px; }
+table.kv th, table.kv td{ border:1px solid var(--line); padding:5px 9px; font-size:11.5px; vertical-align:top; }
+table.kv th{ background:#F6F6F6; font-weight:700; width:24%; text-align:left; font-family:'Noto Sans KR',sans-serif; }
 
-.note{ margin-top:6px; font-size:10.8px; color:var(--dim); line-height:1.5; border-left:3px solid var(--warn); padding-left:8px; }
+.attach{ margin-top:4px; }
+.attach li{ list-style:none; margin:2px 0 2px 0; }
 
-.foot{ margin-top:auto; padding-top:10px; border-top:1px solid var(--line); font-size:9.8px; color:var(--gray); line-height:1.5; }
+.submit{ margin-top:22px; border-top:1px solid var(--line); padding-top:10px; }
+.submit-t{ font-weight:700; font-size:12.5px; margin-bottom:6px; font-family:'Noto Sans KR',sans-serif; }
+table.submit-tb{ width:100%; border-collapse:collapse; }
+table.submit-tb th, table.submit-tb td{ border:1px solid var(--line); padding:6px 10px; font-size:11.5px; }
+table.submit-tb th{ background:#F6F6F6; font-weight:700; width:18%; text-align:left; font-family:'Noto Sans KR',sans-serif; }
+.seal-cell{ position:relative; }
+.seal{ position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  width:44px; height:44px; border:1px dotted #666; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:11px; color:#888; }
+
+.confirm{ margin-top:14px; display:flex; gap:0; }
+.confirm .box{ flex:1; border:1px solid var(--line); padding:10px 12px 34px; position:relative; font-family:'Noto Sans KR',sans-serif; }
+.confirm .box + .box{ border-left:none; }
+.confirm .lbl{ font-weight:700; font-size:11.5px; }
+.confirm .sign{ position:absolute; right:12px; bottom:10px; font-size:10.5px; color:#666; }
+
+.foot{ margin-top:auto; padding-top:12px; border-top:1px solid #ccc; font-size:9.5px; color:#777;
+  font-family:'Noto Sans KR',sans-serif; line-height:1.5; }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <b>수영장 천정 SMC 교체 소견서 (A4 1장)</b>
-  <span class="note">이정헌 소장 소견</span>
+  <b>공조설비 A/S 및 수영장 천정 SMC 교체 소견서 (공문서형 A4 1장)</b>
   <span class="sp"></span>
   <button onclick="window.print()">A4 인쇄</button>
 </div>
 
 <div class="page">
-  <div class="head">
-    <div class="brand">WELLPERION</div>
-    <div class="headrow">
-      <div class="title">수영장 천정 SMC 교체 소견서</div>
-      <div class="meta">
-        작성 <b>이정헌 소장</b> · 보고 <b>김남욱 GM</b><br>
-        작성일 <b>2026. 09. 18.</b>
-      </div>
+  <div class="co">WELLPERION</div>
+  <div class="title">공조설비 A/S 및 수영장 천정 SMC 교체 소견서</div>
+
+  <table class="doc">
+    <tbody>
+      <tr>
+        <th>문서번호</th><td></td>
+        <th>시행일자</th><td>2026. 09. 18.</td>
+      </tr>
+      <tr>
+        <th>수신</th><td>웰페리온(주) 대표이사</td>
+        <th>참조</th><td>김남욱 GM</td>
+      </tr>
+      <tr>
+        <th>제목</th><td colspan="3">공조설비 A/S 및 수영장 천정 SMC 교체 소견서 제출</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sec">
+    <div class="sec-t">1. 현황</div>
+    <div class="sec-b">
+      <table class="kv">
+        <tbody>
+          <tr><th>대상 설비</th><td>수영장 천정 SMC 천정재</td></tr>
+          <tr><th>공조 방식</th><td>수영장 AHU(공조기) — 100% 외기 급기 방식</td></tr>
+          <tr><th>공조설비 A/S 현황</th><td><span class="blank">&nbsp;</span></td></tr>
+          <tr><th>오염 경위</th><td>한남3구역 철거 공사 분진이 외기 흡입구로 대량 유입되었고, 고습과 결합해 SMC 천정재 표면에 부착·착색됨</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div class="who">시설부 <b>이정헌 소장</b></div>
   </div>
 
-  <div class="sec-h">① 대상</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">대상 설비</td><td>수영장 천정 SMC 천정재</td></tr>
-    </tbody>
-  </table>
+  <div class="sec">
+    <div class="sec-t">2. 점검 소견</div>
+    <div class="sec-b">
+      <table class="kv">
+        <tbody>
+          <tr><th>제거 가능 여부</th><td>세척으로 제거 불가</td></tr>
+          <tr><th>소장 판단</th><td>SMC 천정재 교체 필요</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <div class="sec-h">② 공조 방식</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">급기 방식</td><td>수영장 AHU(공조기) — 100% 외기 급기 방식</td></tr>
-    </tbody>
-  </table>
+  <div class="sec">
+    <div class="sec-t">3. 조치 의견</div>
+    <div class="sec-b">
+      <table class="kv">
+        <tbody>
+          <tr><th>조치</th><td>SMC 천정재 교체</td></tr>
+          <tr><th>공사비</th><td><span class="blank">&nbsp;</span></td></tr>
+          <tr><th>진행 방향</th><td>견적 접수 → 결재 SSOT 등록</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <div class="sec-h">③ 오염 경위</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">분진 유입</td><td>한남3구역 철거 공사 분진이 외기 흡입구로 대량 유입</td></tr>
-      <tr><td class="k">부착·착색</td><td>고습과 결합해 SMC 천정재 표면에 부착·착색</td></tr>
-    </tbody>
-  </table>
+  <div class="sec">
+    <div class="sec-t">4. 첨부</div>
+    <ul class="attach">
+      <li>1. (해당 없음 — 사진·견적 접수 시 별도 첨부)</li>
+    </ul>
+  </div>
 
-  <div class="sec-h">④ 피해 내역</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">제거 가능 여부</td><td>세척으로 제거 불가</td></tr>
-    </tbody>
-  </table>
+  <div class="submit">
+    <div class="submit-t">소견 제출 업체</div>
+    <table class="submit-tb">
+      <tbody>
+        <tr><th>상호</th><td>주식회사 웰페리온</td><th>대표자</th><td class="seal-cell"><span class="seal">(인)</span></td></tr>
+        <tr><th>사업자등록번호</th><td></td><th>연락처</th><td></td></tr>
+        <tr><th>주소</th><td colspan="3">서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <div class="sec-h">⑤ 판단</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">소장 판단</td><td>SMC 천정재 교체 필요</td></tr>
-    </tbody>
-  </table>
-
-  <div class="sec-h">⑥ 조치안</div>
-  <table>
-    <colgroup><col style="width:22%"><col></colgroup>
-    <tbody>
-      <tr><td class="k">조치</td><td>SMC 천정재 교체 — 견적 접수 뒤 결재</td></tr>
-    </tbody>
-  </table>
-
-  <div class="dir">
-    <b>방향</b> <span>견적 접수 → 결재 SSOT 등록</span>
+  <div class="confirm">
+    <div class="box"><span class="lbl">시설부 소장</span><span class="sign">이정헌 (서명)</span></div>
+    <div class="box"><span class="lbl">대표이사</span><span class="sign">(서명)</span></div>
   </div>
 
   <div class="foot">
-    출처 — 이정헌 소장님 소견(2026-09-18 카톡). 사진·견적은 접수되는 대로 별도 보고.
+    출처 — 이정헌 소장님 소견(2026-09-18 카톡). 사진·견적·공조 A/S 세부·공사비는 접수되는 대로 별도 보고.
   </div>
 </div>
 
