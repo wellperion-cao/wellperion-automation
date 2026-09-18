@@ -319,6 +319,10 @@
 
   w.erpTodoCall = erpTodoCall;
   w.erpReadFirst = erpReadFirst;
+  /* 화면이 「지금 ERP 도메인인가」를 물을 때 쓰는 하나뿐인 답 (2026-09-18 · 업무 SSOT 비공개 문서).
+     도메인 판정식을 화면마다 다시 적으면 한쪽만 고쳐져 갈라진다 — 판정은 위 ERP_ON 한 곳에만 둔다.
+     ★이 함수는 「서버에 물어볼 수 있는 자리냐」만 답한다. 열람 권한 자체는 서버가 정한다. */
+  w.erpIsOn = function () { return ERP_ON; };
   w.erpTodoIsWrite = function (action) { return WRITE.test(String(action || '')); };
   w.erpCheckPost = erpCheckPost;
   w.erpCheckIsWrite = function (action) { return CHECK_WRITE.test(String(action || '')); };

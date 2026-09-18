@@ -10,7 +10,7 @@
 /* 최신본 자동 보장 — HTTP 캐시로 옛 버전이 떠 'GM 화면만 미반영'되는 문제 방지 (2026-05-29 COO).
    서버 최신본 버전과 비교해 다르면 1회만 강제 갱신. 루프 방지: ?pv 파라미터가 있으면(=1회 redirect 완료) 무조건 종료.
    (2026-06-04 CEO 수정: 기존 pv===__PV 가드가 CDN 버전 불일치 시 무한 새로고침 유발 → has('pv')로 교체) */
-window.__PV='20260718-1';
+window.__PV='20260918-1';
 (function(){
   window.addEventListener('pageshow',function(e){ if(e.persisted) location.reload(); });
   try{
@@ -380,6 +380,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .hold-why .hold-reason{color:var(--dim)}
 .hold-why .hold-when{color:var(--blue);font-weight:600}
 .hold-why .hold-missing{color:var(--orange);font-weight:600}
+/* 비공개 문서(대외비) — 2026-09-18 나우열M 확정. 제목·담당·기간은 그대로 두고 내용만 가린다.
+   자물쇠는 조용한 표시 하나로 충분하다(요란한 색을 늘리지 않는다 — 2026-09-11 GM). */
+.chip.conf-badge{background:var(--red-bg);color:var(--red);border:1px solid rgba(183,159,138,0.3);font-weight:700}
+.conf-notice{margin-top:8px;padding:12px 14px;border:1px dashed var(--border);border-radius:8px;
+  background:var(--paper);color:var(--dim);font-size:var(--fs-2);line-height:1.6}
+.conf-notice b{color:var(--text)}
+.conf-toggle{display:inline-flex;align-items:center;gap:7px;background:var(--paper);color:var(--dim);
+  border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:var(--fs-2);font-weight:700;
+  font-family:inherit;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.conf-toggle:hover{background:var(--accent-bg)}
+.conf-toggle[aria-pressed="true"]{background:var(--red-bg);color:var(--red);border-color:rgba(183,159,138,0.45)}
+.conf-hint{font-size:var(--fs-1);color:var(--dim);margin-top:6px;line-height:1.5}
+#fConfField.conf-hot{background:var(--red-bg);border:1px solid rgba(183,159,138,0.35);border-radius:10px;padding:12px 14px}
 .done-card{padding:12px 16px;border-bottom:1px solid rgba(61,56,53,0.3)}
 .done-card:last-child{border-bottom:none}
 .done-card .task-title{color:var(--text);font-weight:700}
@@ -720,6 +733,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <option value="[10] 비즈니스 확장">[10] 비즈니스 확장</option>
       </select>
     </div>
+    <!-- 비공개 문서(대외비) — 2026-09-18 나우열M 확정. 인사 관련 대외비에만 쓴다.
+         켜도 제목·카테고리·담당자·기간·상태는 모두에게 그대로 보이고, 가려지는 건 내용뿐이다. -->
+    <div class="field" id="fConfField">
+      <label>비공개 문서</label>
+      <button type="button" id="fConfBtn" class="conf-toggle" aria-pressed="false" onclick="toggleConfidential()">🔓 공개 문서</button>
+      <div class="conf-hint" id="fConfHint">인사 관련 대외비에만 사용합니다. 켜면 제목·카테고리·담당자·기간·상태는 그대로 보이고, <b>내용·첨부만</b> 관리자 권한 계정에게만 보입니다.</div>
+    </div>
     <div class="field">
       <label>담당자 (1명)</label>
       <div class="radio-group" id="fOwnerGroup">
@@ -908,14 +928,83 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 var ERP_API_ON = true;
 function fetchTodoList() {
   var gas = function () {
+    // GAS 직접 읽기는 무인증이다 — 이 길로 온 목록에는 비공개 열람 권한이 붙을 수 없다(폐쇄).
+    setConfPerm(null, 'gas');
     return fetch(TODO_API_URL + '?action=todo_list&include_gm=1&gmkey=1531', { redirect: 'follow' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   };
   if (!ERP_API_ON) return gas();
   return fetch('/api/todo?include_gm=1&gmkey=1531&limit=1000', { cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-    .then(function (d) { return { ok: true, data: (d && d.rows) || [] }; })
+    .then(function (d) { setConfPerm(d, 'server'); return { ok: true, data: (d && d.rows) || [] }; })
     .catch(function (e) { console.warn('[업무SSOT] /api/todo 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
+
+/* ═══════════════════════════════════════════
+   비공개 문서(대외비) — 2026-09-18 나우열M 확정
+   ───────────────────────────────────────────
+   내용 맨 앞 줄에 ===CONFIDENTIAL=== 한 줄이 있으면 그 카드는 비공개다.
+   업무보드 GAS 에 새 칸을 못 만들어(편집권 없음) 내용 필드의 마커 규약으로 표현한다
+   (자유서술 → ===PLAN=== → ===PROGRESS_LOG=== 순서는 그대로, 표식만 맨 앞에 한 줄).
+
+   ★열람 권한은 이 화면이 정하지 않는다. 서버(/api/todo)가 내려주는 값만 따르고,
+     값이 없으면 「못 본다」로 닫는다. 화면에 비밀번호를 적어 비교하는 방식은 쓰지 않는다
+     (그건 공개 저장소 소스에 그대로 보이고, 엔드포인트를 직접 부르면 무의미하다).
+   ⚠️ 지금 GAS 읽기는 무인증이라 화면만으로는 실제 차단이 아니다 — 서버가 비공개 카드의
+     내용을 아예 빼고 내려줘야 진짜 차단이다(시토 요청 중). 그때까지 이 화면은 「가림」이다. */
+const CONFIDENTIAL_MARK = '===CONFIDENTIAL===';
+var CONF_PERM = { known: false, allowed: false, source: 'default' };
+
+/* 서버 응답에서 「이 사람이 관리자냐」만 읽는다. 서버가 어떤 이름으로 주든 하나로 모은다 —
+   판정 키가 정해지면(시토 회신) 이 목록을 그 하나로 줄인다. 아무 것도 없으면 known=false = 폐쇄. */
+function setConfPerm(d, source) {
+  var allowed = null;
+  if (d && typeof d === 'object') {
+    var cands = [
+      d.confidentialAllowed, d.canViewConfidential, d.isAdmin, d.admin,
+      (d.viewer && (d.viewer.isAdmin !== undefined ? d.viewer.isAdmin : d.viewer.admin)),
+      (d.user && (d.user.isAdmin !== undefined ? d.user.isAdmin : d.user.admin))
+    ];
+    for (var i = 0; i < cands.length; i++) {
+      if (cands[i] === true || cands[i] === 'true')  { allowed = true;  break; }
+      if (cands[i] === false || cands[i] === 'false') { allowed = false; break; }
+    }
+    if (allowed === null) {
+      var role = String((d.role || (d.viewer && d.viewer.role) || (d.user && d.user.role) || '')).toLowerCase();
+      if (role) allowed = (role === 'admin' || role === 'administrator' || role === '관리자');
+    }
+  }
+  CONF_PERM = (allowed === null)
+    ? { known: false, allowed: false, source: source || 'default' }
+    : { known: true,  allowed: allowed, source: source || 'server' };
+}
+
+/* ERP 도메인인지 = 서버에 물어볼 수 있는 자리인지. 판정식은 _assets/erp_write.js 한 곳에만 있다.
+   깃허브 사본(github.io)에서는 권한 확인 자체가 불가능하므로 비공개 카드는 언제나 가린다. */
+function isErpDomain() { try { return !!(window.erpIsOn && window.erpIsOn()); } catch (e) { return false; } }
+function canViewConfidential() { return isErpDomain() && CONF_PERM.known === true && CONF_PERM.allowed === true; }
+
+/* 내용 맨 앞의 표식 판별. 시트가 '='로 시작하는 값을 수식으로 오인하는 걸 막으려고
+   composeContent 가 선행 공백 1칸을 붙이므로(2026-05-29 COO) ^\s* 를 허용한다. */
+const _CONF_RE = /^\s*===CONFIDENTIAL===[ \t]*(\r?\n|$)/;
+function isConfidentialContent(content) { return _CONF_RE.test(String(content || '')); }
+function stripConfidentialMark(content) {
+  var s = String(content || '');
+  var m = s.match(_CONF_RE);
+  return m ? s.slice(m[0].length) : s;
+}
+/* 카드가 비공개인가 — 서버가 표시해 준 값이 우선, 없으면 내용의 표식으로 본다.
+   (서버가 내용을 빼고 내려주면 표식도 같이 사라지므로 confidential 표시가 유일한 단서다.) */
+function isTaskConfidential(t) {
+  if (!t) return false;
+  if (t.confidential === true || t.confidential === 'true') return true;
+  return isConfidentialContent(t.content);
+}
+/* 지금 이 사람에게 내용을 가려야 하는가 */
+function isTaskLocked(t) { return isTaskConfidential(t) && !canViewConfidential(); }
+function confBadgeHtml() { return '<span class="chip conf-badge" title="비공개 문서 — 관리자 권한 계정만 내용을 봅니다">🔒 비공개</span>'; }
+function confNoticeHtml() {
+  return '<div class="conf-notice"><b>🔒 비공개 문서입니다</b><br>관리자 권한 계정으로 로그인하면 내용이 표시됩니다.</div>';
 }
 
 const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'];
@@ -1310,6 +1399,11 @@ function clearSearch() {
 function matchesSearch(t) {
   if (!searchQuery || !searchQuery.trim()) return true;
   const q = searchQuery.trim().toLowerCase();
+  // 비공개 카드 중 내용을 못 보는 사람에게는 검색도 화면에 보이는 것까지만 — 본문은 검색으로도 새지 않는다
+  // (검색어가 걸리면 "그 단어가 이 카드 안에 있다"는 사실 자체가 내용 유출이다).
+  if (isTaskLocked(t)) {
+    return [t.title, t.owner, t.category].filter(Boolean).join(' ').toLowerCase().includes(q);
+  }
   const _p = parseContent(t.content || '');
   const _lg = (_p.logs || []).map(function(l){ return (l.date||'') + ' ' + (l.text||''); }).join(' ');
   const _bd = _p.budget ? (_p.budget.category + ' ' + _p.budget.amount) : '';
@@ -1568,6 +1662,10 @@ function normalizeTask(raw) {
   if (!t.link) t.link = raw.link || raw['링크'] || '';
   if (!t.creator) t.creator = raw.creator || raw['생성자'] || '';
   t.opinions = raw['결재의견'] || raw.opinions || '';
+  // 비공개 표시 — 서버가 붙여 주면 그 값이 정본(내용을 빼고 내려준 경우 표식도 같이 사라지므로).
+  // 서버가 아직 안 붙이면 내용의 맨 앞 표식으로 본다.
+  t.confidential = (raw.confidential === true || raw.confidential === 'true') || isConfidentialContent(t.content);
+  t.masked = (raw.masked === true || raw.masked === 'true');
   return t;
 }
 
@@ -1707,7 +1805,7 @@ function renderTasks() {
     filteredHold.forEach(t => {
       html += '<div class="done-card" style="opacity:0.8;">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-      html += '<div><div class="task-title" style="text-decoration:none;color:var(--orange);">' + esc(t.title) + '</div>';
+      html += '<div><div class="task-title" style="text-decoration:none;color:var(--orange);">' + esc(t.title) + (isTaskConfidential(t) ? ' ' + confBadgeHtml() : '') + '</div>';
       html += '<div class="task-meta">';
       if (t.owner) t.owner.split(',').forEach(o => { o=o.trim(); if(o) html += ownerChip(o); });
       if (t.category) html += '<span class="chip" style="background:var(--orange-bg);color:var(--orange)">'+esc(t.category)+'</span>';
@@ -1990,6 +2088,9 @@ function filterByStatus(list) {
 function renderTaskCard(t, idx) {
   // 제목 앞 [회장님 지시]류 접두는 표시에서만 떼어 D-day 줄 배지로 옮긴다 (GM 지시 2026-09-18)
   const _directive = extractDirectiveBadge(t.title);
+  // 비공개 문서 — 제목·담당·기간·상태는 그대로 두고 내용만 가린다 (2026-09-18 나우열M 확정)
+  const _conf = isTaskConfidential(t);
+  const _locked = isTaskLocked(t);
   // 마감 임박 카드 시각 강조 (옵션 A · 2026-05-28)
   const cardBadge = t.endDate ? getDeadlineBadge(t.endDate) : null;
   let cardClass = 'task-card';
@@ -2007,7 +2108,7 @@ function renderTaskCard(t, idx) {
   html += '<span class="toggle-arrow" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.classList.toggle(\'open\');" style="font-size:var(--fs-1);color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:4px;">▶</span>';
   html += '<div style="flex:1;min-width:0;cursor:pointer;" onclick="this.closest(\'.task-card\').querySelector(\'.task-detail\').classList.toggle(\'open\');this.closest(\'.task-card\').querySelector(\'.toggle-arrow\').classList.toggle(\'open\');">';
   html += '<div class="wide-row">';  // 업무명 + 담당·상태·날짜·결재 가로 한 줄 (2026-06-02 GM 확정)
-  html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(_directive.title) + '</div>';
+  html += '<div class="task-title" style="word-break:keep-all;overflow-wrap:anywhere;">' + esc(_directive.title) + (_conf ? ' ' + confBadgeHtml() : '') + '</div>';
   html += '<div class="task-meta">';
 
   if (t.owner) {
@@ -2118,7 +2219,8 @@ function renderTaskCard(t, idx) {
   }
 
   // 내용 요약 한 줄 (상시 노출 — 한 줄 말줄임). 본문 첫 줄을 요약으로 사용.
-  const _sumParsed = parseContent(t.content);
+  // 비공개 카드는 이 한 줄도 본문이다 — 권한 없으면 아예 만들지 않는다.
+  const _sumParsed = _locked ? { body: '' } : parseContent(t.content);
   const _sumText = String((_sumParsed.body || '')).split('\n').map(function(s){return s.trim();}).filter(Boolean)[0] || '';
   if (_sumText) {
     html += '<div class="task-summary-line" title="' + escAttr(_sumText) + '">' + esc(_sumText) + '</div>';
@@ -2133,6 +2235,16 @@ function renderTaskCard(t, idx) {
   html += '<div class="task-actions" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">';
   // 🔗 업무별 링크 — 클릭 한 번에 딥링크 복사(공유 팝업 없음). 열면 해당 카드로 스크롤+하이라이트. (2026-06-05 GM 개선·복원)
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:var(--fs-1);background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
+  // 비공개 카드는 내용을 못 보는 사람에게 손댈 버튼을 주지 않는다 — 편집 창을 열면 가려진 내용이
+  // 빈칸으로 들어가 저장 순간 본문이 통째로 지워진다(가장 큰 사고 경로). 보고서 인쇄도 내용 출력이라 막는다.
+  if (_locked) {
+    html += '<span style="font-size:var(--fs-1);color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 비공개 문서 — 관리자 권한 계정에서만 열람·편집</span>';
+    html += '</div>'; // task-actions
+    html += '<div class="task-detail" style="display:none;padding:10px 0 0 18px;border-top:1px dashed var(--border);margin-top:8px;">';
+    html += confNoticeHtml();
+    html += '</div></div>';   // /task-detail /task-card
+    return html;
+  }
   // 결재 넘어간 업무(결재요청됨) = 업무현황에선 잠금, 결재현황(GM)에서만 관리 (2026-06-05 GM 화면분리)
   // 단 반려된 업무는 담당자에게 반송 — 업무현황에서 다시 수정 가능하게 잠금 해제 (2026-06-05 GM)
   // ★결재자가 실제로 결재하기 전까지는 담당자가 계속 수정할 수 있다 (2026-08-10 GM).
@@ -2245,10 +2357,12 @@ async function deleteTaskWithAuth(id, title) {
 
 function renderDoneCard(t) {
   const p = hideUnfilledDocs(parseContent(t.content || ''), t.title);
+  const _conf = isTaskConfidential(t);
+  const _locked = isTaskLocked(t);
   let html = '<div class="done-card" data-id="' + escAttr(t.id) + '">';
   html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
   html += '<div style="flex:1;min-width:0;">';
-  html += '<div class="task-title">✅ ' + esc(t.title) + '</div>';
+  html += '<div class="task-title">✅ ' + esc(t.title) + (_conf ? ' ' + confBadgeHtml() : '') + '</div>';
   html += '<div class="task-meta">';
   if (t.owner) {
     t.owner.split(',').forEach(o => { o = o.trim(); if (o) html += ownerChip(o); });
@@ -2268,8 +2382,10 @@ function renderDoneCard(t) {
   // 액션: 링크 · 보고서 (🔗 개선·복원 — 2026-06-05 GM)
   html += '<div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">';
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
-  html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(183,159,138,0.3);">🖨 보고서</button>';
+  if (!_locked) html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 8px;font-size:var(--fs-1);background:var(--purple-bg);color:var(--purple);border-color:rgba(183,159,138,0.3);">🖨 보고서</button>';
   html += '</div></div>';
+  // 비공개 완료 카드 — 제목·담당·카테고리·완료일은 그대로, 내용 토글은 안내 하나로 바꾼다
+  if (_locked) { html += confNoticeHtml(); html += '</div>'; return html; }
   // 내용 토글 — 본문·기획·진척·결과 열람
   const hasDetail = p.body || p.plan || (p.logs && p.logs.length) || p.result;
   if (hasDetail) {
@@ -2489,7 +2605,10 @@ function routeApproval(category, amount) {
 function parseOpinions(raw){ if(!raw) return []; try{ var a=JSON.parse(raw); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 
 function parseContent(content) {
-  const raw = String(content || '');
+  // 비공개 표식은 구획이 아니라 맨 앞 줄의 표식 하나다 — 떼어내고 나머지는 종전 그대로 파싱한다.
+  // (구획으로 만들면 본문이 통째로 그 구획에 딸려 들어가 기존 파서가 깨진다.)
+  const confidential = isConfidentialContent(content);
+  const raw = stripConfidentialMark(content);
   const marks = [
     { key: 'plan',     mark: PLAN_MARK },
     { key: 'progress', mark: PROGRESS_MARK },
@@ -2555,10 +2674,10 @@ function parseContent(content) {
     });
   });
 
-  return { body, plan, logs, result, budget, collab, rejections };
+  return { body, plan, logs, result, budget, collab, rejections, confidential };
 }
 
-function composeContent(body, logs, budget, plan, result, collab) {
+function composeContent(body, logs, budget, plan, result, collab, confidential) {
   let out = String(body || '').replace(/\s+$/, '');
   if (plan && String(plan).trim()) {
     out = (out ? out + '\n\n' : '') + PLAN_MARK + '\n' + String(plan).trim();
@@ -2577,6 +2696,9 @@ function composeContent(body, logs, budget, plan, result, collab) {
   if (collab && collab.length) {
     out = (out ? out + '\n\n' : '') + COLLAB_MARK + '\n' + collab.join(',');
   }
+  // 비공개 표식은 맨 앞 줄 한 줄로만 붙인다 — 끄면 이 줄이 사라진다(본문은 이미 표식이 떼인 상태로 들어온다).
+  // 표식이 두 줄로 쌓이지 않게, 넘어온 본문에 혹시 남아 있으면 먼저 떼고 붙인다.
+  if (confidential) out = CONFIDENTIAL_MARK + '\n' + stripConfidentialMark(out);
   // Google Sheets가 '='로 시작하는 값을 수식으로 오인 → 셀이 #ERROR!로 손상되고 원문 유실되는 문제 방지.
   // 본문 없이 ===PROGRESS_LOG=== 등 마커로 시작하면 선행 공백 1칸 추가(읽을 때 본문은 trim되어 무해) (2026-05-29 COO)
   if (out.charAt(0) === '=') out = ' ' + out;
@@ -2773,6 +2895,8 @@ var _docViewerTaskId = null;
 function openDocViewer(id, which) {
   const t = ALL_TASKS.find(function (x) { return x.id === id; });
   if (!t) return;
+  // 비공개 문서 — 딥링크(?doc=ID)로도 열리지 않게 여기서 한 번 더 막는다
+  if (isTaskLocked(t)) { showToast('🔒 비공개 문서입니다 — 관리자 권한 계정으로 로그인해 주세요', true); return; }
   const parsed = parseContent(t.content || '');
   const html = which === 'result' ? parsed.result : parsed.plan;
   if (!html) return;
@@ -3232,9 +3356,35 @@ function syncDocInfoFields() { _syncDocEditorInfo(_planEd); _syncDocEditorInfo(_
 /* ═══════════════════════════════════════════
    Modal — Add / Edit
    ═══════════════════════════════════════════ */
+/* ── 비공개 문서 토글 (모달) ─────────────────────────────────────────
+   저장 시 내용 맨 앞에 표식 한 줄을 붙이고, 끄면 그 줄을 뺀다. 그게 전부다.
+   인사 카테고리를 고르면 칸을 한 번 더 눈에 띄게 한다 — 이 기능이 쓰이는 자리가 거기다.
+   카테고리 이름은 2026-09-17 개편으로 바뀌었다(옛 「[2] 인사」 → 「[3] 인사&파트너팀」).
+   이름을 여기 다시 적지 않고 CAT_ALIAS(옛→새 표)를 통과시켜 비교한다 — 표가 또 바뀌어도 여기는 안 고친다. */
+const CONF_HOT_CAT = '[3] 인사&파트너팀';
+var _confFlag = false;
+function setConfidentialFlag(on) {
+  _confFlag = !!on;
+  var btn = document.getElementById('fConfBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', _confFlag ? 'true' : 'false');
+    btn.textContent = _confFlag ? '🔒 비공개 문서' : '🔓 공개 문서';
+  }
+  syncConfFieldHighlight();
+}
+function toggleConfidential() { setConfidentialFlag(!_confFlag); }
+function syncConfFieldHighlight() {
+  var box = document.getElementById('fConfField');
+  var sel = document.getElementById('fCategory');
+  if (!box || !sel) return;
+  var cat = CAT_ALIAS[sel.value] || sel.value;
+  box.classList.toggle('conf-hot', cat === CONF_HOT_CAT || _confFlag);
+}
+
 function openAddModal() {
   document.getElementById('modalTitle').textContent = '업무 추가';
   document.getElementById('editId').value = '';
+  setConfidentialFlag(false);
   document.getElementById('fTitle').value = '';
   populateTitleSuggest();
   document.getElementById('fCategory').value = '';
@@ -3297,6 +3447,7 @@ function onCategoryChange() {
       content.focus();
     }
   }
+  syncConfFieldHighlight();   // 인사 카테고리면 비공개 문서 칸을 눈에 띄게
   syncMeetingMode();
 }
 
@@ -3398,8 +3549,12 @@ function _composeMeetingPlan() {
 function openEditModal(id) {
   const t = ALL_TASKS.find(x => x.id === id);
   if (!t) return;
+  // 비공개 문서인데 내용을 못 보는 사람이 편집 창을 열면, 가려진 본문이 빈칸으로 들어가
+  // 저장 순간 원문이 통째로 지워진다. 창 자체를 열지 않는다 — 딥링크(?edit=ID)·캘린더 배지 포함.
+  if (isTaskLocked(t)) { showToast('🔒 비공개 문서입니다 — 관리자 권한 계정에서만 편집할 수 있습니다', true); return; }
   document.getElementById('modalTitle').textContent = '업무 편집';
   document.getElementById('editId').value = t.id;
+  setConfidentialFlag(isTaskConfidential(t));
   document.getElementById('fTitle').value = t.title || '';
   document.getElementById('fCategory').value = t.category || '';
   const ownerParts = (t.owner || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -3664,7 +3819,8 @@ async function saveTask() {
     budget,
     planText,
     resultText,
-    collabArr
+    collabArr,
+    _confFlag          // 켜져 있으면 내용 맨 앞에 ===CONFIDENTIAL=== 한 줄
   );
   // 시트 셀 글자수 한계(5만자) 보호 — 초과분은 저장 자체를 막아 데이터 절단 사고 방지 (2026-07-15)
   if (composedContent.length > 45000) {
@@ -4191,6 +4347,8 @@ window.addEventListener('afterprint', function(){
 function printResultReport(taskId, override) {
   var t = ALL_TASKS.find(function(x){ return x.id === taskId; });
   if (!t) { alert('업무를 찾을 수 없습니다.'); return; }
+  // 보고서는 내용을 통째로 종이에 옮기는 일이다 — 비공개 문서는 권한 없이 인쇄되지 않는다
+  if (isTaskLocked(t)) { alert('🔒 비공개 문서입니다.\n관리자 권한 계정으로 로그인하면 인쇄할 수 있습니다.'); return; }
   // 모달에서 인쇄 시: 아직 저장 안 한 현재 화면 값(결재요청·담당)을 반영해 결재칸 누락 방지 (2026-06-18 GM)
   if (override) { t = Object.assign({}, t, override); }
 
