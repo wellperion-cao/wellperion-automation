@@ -196,53 +196,218 @@ def pick_topic(style: dict, state: dict) -> str | None:
     return None
 
 
+RULES_PATH = ROOT / "ssot" / "blog_exposure_rules.json"
+_RULES: dict = {}
+
+
+def rules() -> dict:
+    """공통 노출·가독성 규칙 한 파일(파트너 무관) — blog_style.seo.ref 가 가리킨다. 값을 style 에 베끼지 않는다."""
+    if not _RULES:
+        _RULES.update(json.loads(RULES_PATH.read_text(encoding="utf-8")))
+    return _RULES
+
+
+def _pick_axis(style: dict, axis: dict | None, state: dict | None) -> dict:
+    """axis 는 보통 랜덤(jo·dc). philosophy.cycle=true(ax) 면 발행 회차로 axes 를 순서대로 돈다(GM 09-16 「3축 순환」)."""
+    if axis is not None:
+        return axis
+    axes = style["philosophy"]["axes"]
+    if style["philosophy"].get("cycle") and state is not None:
+        return axes[len(state.get("runs", [])) % len(axes)]
+    return random.choice(axes)
+
+
+def format_block(style: dict) -> str:
+    """① 공통 층 — ssot/blog_exposure_rules.json 을 문장으로 편다(파트너 이름 없음)."""
+    r = rules()
+    ex, rd, mk = r["exposure"], r["readability"], style["markers"]
+    emojis = mk.get("section_emoji") or []
+    head = f"「{mk['section_prefix']}」 하나" if mk.get("section_prefix") else "이모지(" + ", ".join(emojis) + ") 하나"
+    lines = [
+        f"# 형식 — 공통 노출·가독성 규칙(ssot/blog_exposure_rules.json v{r['version'].split()[0]}) · 이것부터 지킨다",
+        f"- 흐름 = {' → '.join(rd['flow'])} · 소제목은 {rd['subheads_min']}~{rd['subheads_max']}개, 소제목 줄은 {head} + 제목 낱말 몇 개로만(소제목 줄에 문장을 쓰지 않는다)",
+        f"- 한 문단은 {rd['paragraph_max_lines']}줄({rd['paragraph_max_chars']}자) 안 · 문단과 문단 사이에 빈 줄 하나(모바일에서 읽힌다)",
+        f"- 목록이 필요하면 「{rd['list_marker']}」 로 시작하는 줄 {rd['list_lines_min']}~{rd['list_lines_max']}개",
+        f"- 굵게(**) 는 문단당 1개 이하 · 이모지는 {'소제목 줄에만' if emojis else '쓰지 않는다'}",
+        f"- 첫 문단 안에 제목의 핵심 낱말을 자연스럽게 1회 · 같은 낱말을 반복하지 않는다(한 낱말 밀도 {ex['keyword_max_ratio']:.0%} 상한 · 키워드 나열 금지)",
+        f"- 직접 경험·구체 장면·순서를 담는다(정보 나열이 아니라 겪은 것처럼) · 제목과 다른 이야기로 새지 않는다",
+        f"- 본문 {max(ex['min_len'], style.get('min_len', 0) - 400)}자 이상 · 링크·주소·전화·해시태그·시설 정보·푸터는 쓰지 않는다(코드가 맨 아래 붙인다)",
+        f"- 마지막 덩어리 = 「{mk.get('tip_header', '오늘의 TIP')}」 + 오늘 바로 할 수 있는 한 문장",
+    ]
+    if mk.get("divider"):
+        lines.append(f"- 소제목 줄 앞에 구분선 \"{mk['divider']}\" 한 줄")
+    return "\n".join(lines)
+
+
+def voice_block(topic: str, style: dict, axis: dict) -> str:
+    """② 파트너 층 — 그 파트너 브랜드가이드(blog_style.voice·philosophy·hard_rules·facility_facts). 빈 값은 「미수령」."""
+    v, ph = style.get("voice") or {}, style["philosophy"]
+    j = lambda x: json.dumps(x, ensure_ascii=False)  # noqa: E731
+    return "\n".join([
+        f"# 목소리 — 이 파트너만의 브랜드가이드({v.get('_source') or 'blog_style.json'})",
+        f"- 이름: 본문에서는 {' · '.join(style['naming']['in_text'])} 로만 부른다",
+        f"- 한 줄: {ph.get('one_line', '미수령')}",
+        f"- 어투: {v.get('tone', '미수령')}",
+        f"- 누구에게: {v.get('audience', '미수령')}",
+        f"- 쓰는 말: {v.get('use_words', '미수령')} · 안 쓰는 말: {v.get('avoid_words', '미수령')} · 금지: {j(ph.get('forbidden', []))}",
+        f"- 오늘 철학 축(본론 한 덩어리에 자연스럽게 · 설교 금지): {axis['name']} — {axis['body']} · 쓰는 법: {j(ph.get('how_to_write', ''))}",
+        f"- 절대 규칙: {j(style['hard_rules'])}",
+        f"- 참고 사실(이 값만 쓴다): {j(style['facility_facts'])}",
+        f"- 마무리 행동 하나(재촉 없이): {v.get('cta', '미수령')}",
+    ])
+
+
 def build_prompt(topic: str, style: dict, axis: dict | None = None, state: dict | None = None) -> str:
-    """style["prompt_template"] 에 값만 끼운다 — 프롬프트 문자열 자체는 blog_style.json 이 정본.
-
-    axis 는 보통 랜덤이다(jo·dc). philosophy.cycle=true(ax) 면 state 의 발행 회차(runs 길이)로
-    axes 를 순서대로 돈다 — GM 09-16 「3축 순환」. 자가점검에서만 axis 를 직접 넘겨 결과를 고정한다.
-    """
-    if axis is None:
-        axes = style["philosophy"]["axes"]
-        if style["philosophy"].get("cycle") and state is not None:
-            axis = axes[len(state.get("runs", [])) % len(axes)]
-        else:
-            axis = random.choice(axes)
-    markers = style["markers"]
-    return style["prompt_template"].format(
-        topic=topic,
-        hard_rules_json=json.dumps(style["hard_rules"], ensure_ascii=False, indent=2),
-        divider=markers.get("divider", ""),
-        section_emoji_joined=", ".join(markers.get("section_emoji", [])),
-        section_prefix=markers.get("section_prefix", ""),
-        checklist=markers.get("checklist"),
-        axis_name=axis["name"],
-        axis_body=axis["body"],
-        how_to_write_json=json.dumps(style["philosophy"]["how_to_write"], ensure_ascii=False),
-        forbidden_json=json.dumps(style["philosophy"]["forbidden"], ensure_ascii=False),
-        tip_header=markers.get("tip_header", ""),
-        facility_facts_json=json.dumps(style["facility_facts"], ensure_ascii=False, indent=2),
-    )
+    """프롬프트 = 출력 형태 경고 + ①형식(공통 규칙) + ②목소리(파트너) + 오늘 주제(GM 2026-09-18 두 층 구조).
+    옛 prompt_template(2026-09-10~17 · blog_style.json)은 안 쓴다 — 자가점검이 testdata/gocheok_prompt_expected.txt 와 대조한다."""
+    axis = _pick_axis(style, axis, state)
+    return "\n\n".join([
+        "손님이 읽는 네이버 블로그 글 본문만 쓴다. 업무 보고가 아니다 — 표(|---|)·체크리스트 보고·작업 요약·「위 본문 그대로 쓰시면 됩니다」 같은 말을 쓰지 마라. "
+        "다른 말 없이 본문만 출력해라(설명·머리말·제목 줄 금지).",
+        format_block(style),
+        voice_block(topic, style, axis),
+        f"# 오늘 주제\n{topic}",
+    ])
 
 
-def build_footer_and_tags(style: dict) -> str:
+def make_title(topic: str, tmax: int) -> str:
+    """제목은 주제 그대로, {tmax}자를 넘으면 「 — 」 앞 토막(8자 이상)으로, 그것도 안 되면 마지막 띄어쓰기에서 자른다."""
+    if len(topic) <= tmax:
+        return topic
+    head = re.split(r"\s+[—–-]\s+|:\s+", topic, maxsplit=1)[0].strip()
+    if 8 <= len(head) <= tmax:
+        return head
+    cut = topic[:tmax]
+    return (cut[: cut.rfind(" ")] if " " in cut[8:] else cut).strip()
+
+
+def default_tags(style: dict) -> list[str]:
+    """모델이 못 고른 날의 태그 — 필수 1 + 창고 앞에서 tags_max-1 개."""
+    seo, t = rules()["exposure"], style["tags"]
+    pool = [x for x in (t.get("pool") or t.get("core_25") or []) if x != style["required_tag"]]   # ax 는 아직 core_25
+    return [style["required_tag"]] + pool[: seo["tags_max"] - 1]
+
+
+def check_tags(tags: list[str], style: dict) -> list[str]:
+    """태그 5~8 · 필수 태그 포함 · 창고(tags.pool) 밖 금지(GM 2026-09-18 · 규칙 파일 sources 태그 줄)."""
+    seo = rules()["exposure"]
+    errs = []
+    if not (seo["tags_min"] <= len(tags) <= seo["tags_max"]):
+        errs.append(f"태그 {len(tags)}개 — {seo['tags_min']}~{seo['tags_max']}개여야 한다")
+    if style["required_tag"] not in tags:
+        errs.append(f"필수 태그 {style['required_tag']} 없음")
+    out = [x for x in tags if x not in set(style["tags"]["pool"]) | {style["required_tag"]}]
+    if out:
+        errs.append("창고 밖 태그: " + ", ".join(out))
+    if len(set(tags)) != len(tags):
+        errs.append("태그 중복")
+    return errs
+
+
+def pick_tags(topic: str, llm_body: str, style: dict) -> list[str]:
+    """글마다 창고(tags.pool)에서 주제에 맞는 태그를 모델이 고른다 — 검사 통과 못 하면 default_tags."""
+    from model_router import run_claude  # noqa: PLC0415
+    seo, pool, must = rules()["exposure"], style["tags"]["pool"], style["required_tag"]
+    prompt = (f"아래 네이버 블로그 글에 붙일 태그를 창고에서만 골라라. 필수 태그 {must} 를 맨 앞에 두고, 글 내용과 직접 맞는 것만 "
+              f"총 {seo['tags_min']}~{seo['tags_max']}개. 결과는 태그를 공백으로 이은 한 줄만(설명 없이).\n\n"
+              f"창고: {' '.join(pool)}\n\n제목: {topic}\n\n본문:\n{llm_body[:1500]}")
+    out, _ = run_claude(prompt, label=f"partner-blog-tags-{style['tenant']}", cwd=tempfile.gettempdir())
+    tags = [x for x in re.findall(r"#[^\s#]+", out or "")]
+    tags = list(dict.fromkeys([must] + [x for x in tags if x != must]))[: seo["tags_max"]]
+    if check_tags(tags, style):
+        print(f"[tags] 모델 선택 불통과({check_tags(tags, style)}) → 기본 태그")
+        return default_tags(style)
+    return tags
+
+
+def build_footer_and_tags(style: dict, tags: list[str] | None = None) -> str:
     fc = style["footer_canon"]
     divider = style["markers"]["divider"]
     lines = [fc["name"], fc["address"], fc["parking"], fc["hours"], fc["phone"], fc["closing"]]
     if fc.get("counsel"):   # 상담 페이지 한 줄(GM 2026-09-17 「상담봇 활성화」) — 값이 있는 파트너만
         lines.append(fc["counsel"])
     footer = "\n".join(lines)
-    tags = " ".join(style["tags"]["core_25"])
-    return f"\n\n{divider}\n\n{footer}\n\n{tags}\n"
+    return f"\n\n{divider}\n\n{footer}\n\n{' '.join(tags or default_tags(style))}\n"
 
 
-def assemble_body(llm_body: str, style: dict) -> str:
-    return llm_body.strip() + build_footer_and_tags(style)
+def assemble_body(llm_body: str, style: dict, tags: list[str] | None = None) -> str:
+    return llm_body.strip() + build_footer_and_tags(style, tags)
+
+
+def fix_prompt(errs: list[str], llm_body: str, style: dict) -> str:
+    """검사에 걸린 본문을 한 번 고쳐 쓰게 하는 프롬프트 — 형식 규칙을 같이 줘야 고치면서 다른 규칙을 깨지 않는다.
+    「미만」(짧음) 지적이면 문단을 더해 늘리고, 그 밖엔 길이를 지킨다."""
+    length = "지적된 길이만큼 문단을 더해 늘려라(각 문단은 형식 규칙 안에서)" if any("미만" in e for e in errs) else "길이는 그대로"
+    return ("아래 네이버 블로그 본문을 지적 사항만 고쳐 다시 써라. 다른 문장·구성은 그대로 · " + length + " · 본문만 출력.\n\n"
+            "지적: " + " · ".join(errs) + "\n\n" + format_block(style) + "\n\n" + llm_body)
+
+
+def seo_checks(body: str, style: dict, title: str = "", images: int | None = None) -> list[str]:
+    """네이버 노출 + 가독성 규칙(ssot/blog_exposure_rules.json · style.seo.ref) — 본문(푸터·태그 줄 뺀 것)에 건다."""
+    if not style.get("seo"):
+        return []
+    r = rules()
+    seo, rd, fc, mk = r["exposure"], r["readability"], style["footer_canon"], style["markers"]
+    errs = []
+    core = body
+    for v in list(fc.values()) + [" ".join(style["tags"].get("pool") or [])]:
+        if isinstance(v, str) and v:
+            core = core.replace(v, " ")
+    core = re.sub(r"#[^\s#]+", " ", core)
+    if title:
+        if len(title) > seo["title_max"]:
+            errs.append(f"제목 {len(title)}자 — {seo['title_max']}자 안")
+        words = [w for w in re.findall(r"[가-힣A-Za-z0-9]{2,}", title) if w not in ("하는", "하지", "해야", "것과", "가장", "먼저")]
+        if words and not any(w in core[: seo["lead_chars"]] for w in words):
+            errs.append(f"제목 핵심 낱말이 첫 {seo['lead_chars']}자에 없음(제목≠내용)")
+    # 소제목 = 줄 머리가 section_prefix 또는 section_emoji 인 줄(TIP 머리는 빼고 센다 · 본문 안 이모지는 안 센다)
+    tip = mk.get("tip_header") or "\x00"
+    lines = [ln.strip() for ln in core.splitlines()]
+    is_head = lambda ln: bool(ln) and tip not in ln and (  # noqa: E731
+        ln.startswith(mk["section_prefix"]) if mk.get("section_prefix") else any(ln.startswith(e) for e in mk.get("section_emoji", [])))
+    heads = sum(1 for ln in lines if is_head(ln))
+    if not (rd["subheads_min"] <= heads <= rd["subheads_max"]):
+        errs.append(f"소제목 {heads}개 — {rd['subheads_min']}~{rd['subheads_max']}개")
+    # 가독성 — 문단 = 빈 줄로 나뉜 덩어리 · 소제목·목록·구분선 줄은 문단 길이에서 뺀다
+    paras = [p for p in re.split(r"\n\s*\n", core.strip()) if p.strip()]
+    if len(paras) < rd["subheads_min"] + 2:
+        errs.append(f"문단 사이 빈 줄 없음(덩어리 {len(paras)}개)")
+    long_paras = 0
+    for p in paras:
+        body_lines = [ln for ln in p.splitlines() if ln.strip() and not is_head(ln.strip())
+                      and not ln.strip().startswith(rd["list_marker"]) and ln.strip() != (mk.get("divider") or "\x00")]
+        text = "".join(body_lines)
+        if len(text) > rd["paragraph_max_chars"] or len(body_lines) > rd["paragraph_max_lines"]:
+            long_paras += 1
+        if p.count("**") // 2 > rd["bold_per_paragraph_max"]:
+            errs.append("굵게 강조가 한 문단에 2개 이상")
+    if long_paras:
+        errs.append(f"긴 문단 {long_paras}개 — 한 문단 {rd['paragraph_max_lines']}줄({rd['paragraph_max_chars']}자) 안")
+    run = 0
+    for ln in lines + [""]:
+        if ln.startswith(rd["list_marker"]):
+            run += 1
+        elif run:
+            if not (rd["list_lines_min"] <= run <= rd["list_lines_max"]):
+                errs.append(f"목록 {run}줄 — 「{rd['list_marker']}」 {rd['list_lines_min']}~{rd['list_lines_max']}줄")
+            run = 0
+    toks = re.findall(r"[가-힣]{2,}", core)
+    if len(toks) >= 100:
+        top = max(set(toks), key=toks.count)
+        ratio = toks.count(top) / len(toks)
+        if ratio > seo["keyword_max_ratio"]:
+            errs.append(f"낱말 「{top}」 밀도 {ratio:.1%} — {seo['keyword_max_ratio']:.0%} 상한(키워드 반복)")
+    links = len(re.findall(r"https?://", core))
+    if links > seo["links_max"]:
+        errs.append(f"본문 링크 {links}개 — 상담 페이지 외 링크 금지({seo['links_max']}개)")
+    if images is not None and images < seo["images_min"]:
+        errs.append(f"사진 {images}장 — {seo['images_min']}장 이상")
+    return errs
 
 
 # ── 검사 (보내기 전 코드로 막는다) ──────────────────────────────────
-def run_checks(body: str, style: dict) -> list[str]:
-    errs: list[str] = []
+def run_checks(body: str, style: dict, title: str = "", images: int | None = None) -> list[str]:
+    errs: list[str] = seo_checks(body, style, title, images)
     fc = style["footer_canon"]
     for key in ("name", "address", "parking", "hours", "phone", "closing", "counsel"):
         if fc.get(key) and fc[key] not in body:
@@ -276,8 +441,8 @@ def run_checks(body: str, style: dict) -> list[str]:
 
 
 def run_upload(title: str, body: str, style: dict, mode: str,
-               images: tuple[Path, str] | None = None) -> tuple[int, str]:
-    """images = (폴더, 글롭) 를 주면 그 사진(오늘 인스타 3장)을, 없으면 style.photo_dir 를 붙인다."""
+               images: tuple[Path, str] | None = None, tags: list[str] | None = None) -> tuple[int, str]:
+    """images = (폴더, 글롭) 를 주면 그 사진(오늘 인스타 3장)을, 없으면 style.photo_dir 를 붙인다. tags 는 발행 패널 태그(5~8)."""
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", encoding="utf-8", delete=False)
     try:
         tmp.write(body)
@@ -302,7 +467,7 @@ def run_upload(title: str, body: str, style: dict, mode: str,
             # 실제 blogId 슬러그가 아니어서 고정 지정하면 "유효하지 않은 요청" 에러로
             # draft가 막힌다(2026-09-10 실측, 고척골프).
             argv += ["--image-dir", str(ROOT / photo_dir), "--image-glob", "*.jpg"]
-        argv += ["--tags", *style["tags"]["core_25"]]
+        argv += ["--tags", *(tags or default_tags(style))]
         ret = subprocess.run(argv, cwd=str(ROOT), env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
         out = (ret.stdout or "") + (ret.stderr or "")
         return ret.returncode, out[-4000:]
@@ -404,12 +569,27 @@ def main() -> int:
         _record_run(style, state, topic, "fail", "모델 호출 실패", 0, None)
         return 1
 
-    body = assemble_body(llm_body, style)
-    errs = run_checks(body, style)
+    images = (Path(seed["folder"]) / "output", "ig_*.jpg") if seed else None   # 인스타에 올린 사진 3장 그대로
+    n_images = len(list(images[0].glob(images[1]))) if images else None
+    tags = pick_tags(topic, llm_body, style)
+    body = assemble_body(llm_body, style, tags)
+    title = make_title(topic, rules()["exposure"]["title_max"]) if style.get("seo") else topic
+    errs = run_checks(body, style, title=title, images=n_images)
+    if errs and not any("금액" in e or "혼입" in e for e in errs):
+        # 노출 규칙만 걸린 것은 한 번 고쳐 쓴다(seo._doc) — 금액·낱말 혼입은 규칙 위반이라 고쳐 쓰지 않는다
+        fixed, _ = run_claude(fix_prompt(errs, llm_body, style), label=f"partner-blog-daily-{args.client}-fix", cwd=tempfile.gettempdir())
+        if fixed and len(fixed.strip()) > len(llm_body) * 0.7:
+            body2 = assemble_body(fixed, style, tags)
+            errs2 = run_checks(body2, style, title=title, images=n_images)
+            log(style, f"노출 규칙 고쳐 쓰기 1회 — 전 {len(errs)}건 → 후 {len(errs2)}건")
+            if not errs2:
+                llm_body, body, errs = fixed, body2, errs2
     if errs:
         reason = "; ".join(errs)
         fail_path = ROOT / "status" / "drafts" / (f"{fail_name}블로그_불통과_%s.md" % datetime.now().strftime("%Y%m%d_%H%M%S"))
         try:
+            if args.dry_run:
+                raise OSError("dry-run 은 파일을 남기지 않는다")
             fail_path.parent.mkdir(parents=True, exist_ok=True)
             fail_path.write_text("# %s\n\n<!-- 불통과 사유: %s -->\n\n%s" % (topic, reason, body), encoding="utf-8")
         except OSError:
@@ -421,27 +601,26 @@ def main() -> int:
         _record_run(style, state, topic, "fail", reason, len(body), used_model)
         return 1
 
-    title = topic
-    images = (Path(seed["folder"]) / "output", "ig_*.jpg") if seed else None   # 인스타에 올린 사진 3장 그대로
     if args.dry_run:
-        rc, out = run_upload(title, body, style, mode="dryrun", images=images)
+        print(f"[dry-run] 제목 「{title}」 · 태그 {tags}")
+        rc, out = run_upload(title, body, style, mode="dryrun", images=images, tags=tags)
         log(style, f"[dry-run] rc={rc}\n{out}")
         print(f"[dry-run] 본문 {len(body)}자 · 검사 통과 · 업로더 dryrun rc={rc}")
         return 0 if rc == 0 else 1
 
     tenant = style["tenant"]
     # 직접 발행(GM 2026-09-18 「파트너가 누르지 않는다」) — 발행이 안 되면 임시저장으로 남기고 로그(글은 버리지 않는다)
-    rc, out = run_upload(title, body, style, mode="publish", images=images)
+    rc, out = run_upload(title, body, style, mode="publish", images=images, tags=tags)
     relogin_tag: str | None = None
     if rc != 0 and ("로그인이 풀렸다" in out or "로그인된 블로그가 웰페리온" in out):
         relogin_tag = _try_relogin(style, tenant)
         if relogin_tag == "auto-ok":
-            rc, out = run_upload(title, body, style, mode="publish", images=images)
+            rc, out = run_upload(title, body, style, mode="publish", images=images, tags=tags)
     url = _post_url(out) if rc == 0 else ""
     kind = "발행"
     if rc != 0 or not url:
         log(style, f"발행 실패(rc={rc} · url={'있음' if url else '없음'}) → 임시저장으로 남긴다")
-        rc, out = run_upload(title, body, style, mode="draft", images=images)
+        rc, out = run_upload(title, body, style, mode="draft", images=images, tags=tags)
         kind, url = "임시저장(발행 실패)", ""
 
     if rc == 0:
@@ -452,6 +631,7 @@ def main() -> int:
         _record_run(style, state, topic, "ok", "" if url else "발행 실패 → 임시저장", len(body), used_model, relogin_tag,
                     seed=bool(seed), url=url)
         save_state(style, state)
+        archive_body(args.client, title, body, tags, url, kind)
         # 파트너 방 아침 안내는 안 보낸다 — 그 시각에 대신 나가는 것은 없다(GM 2026-09-18 「오전 통은 다 삭제」 · 저녁 통이 한 번에 정리)
         log(style, "아침 안내 skip(GM 2026-09-18)")
         return 0
@@ -484,6 +664,20 @@ def main() -> int:
     notify(msg)
     save_state(style, state)
     return 1
+
+
+def archive_body(client: str, title: str, body: str, tags: list[str], url: str, kind: str) -> Path | None:
+    """발행·임시저장한 본문을 파트너 폴더에 남긴다 — 05_콘텐츠_초안/blog/YYMMDD_<제목>.md(주말 평가·GM 열람용 · 종전엔 temp 로 사라졌다)."""
+    safe = re.sub(r"[\\/:*?\"<>|\s]+", "_", title)[:40]
+    p = CLIENT_DIRS[client] / "05_콘텐츠_초안" / "blog" / f"{datetime.now().strftime('%y%m%d')}_{safe}.md"
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(f"# {title}\n\n- {kind} · {datetime.now().strftime('%Y-%m-%d %H:%M')}\n- url: {url or '(임시저장)'}\n- tags: {' '.join(tags)}\n\n---\n\n{body}\n",
+                     encoding="utf-8")
+        return p
+    except OSError as exc:
+        print(f"[WARN] 본문 보관 실패(무시): {exc}")
+        return None
 
 
 def _post_url(out: str) -> str:
@@ -541,8 +735,16 @@ def _self_test() -> None:
         style = load_style(client)
         fc = style["footer_canon"]
         good_footer_tags = build_footer_and_tags(style)
-        filler = ("연습장에서 흔히 보는 장면을 오늘도 하나 떠올려 봅니다. " * 80)
-        good = filler + good_footer_tags
+        # 표본 본문 = 같은 낱말이 없는 글(밀도 검사) + 소제목 2개 + 문단 사이 빈 줄 + ▪ 목록 3줄 + 굵게 1개 + TIP 머리 — 옛 검사·공통 노출·가독성 검사를 한 벌로 통과해야 한다
+        mk = style["markers"]
+        head = (mk.get("section_prefix") or (mk.get("section_emoji") or ["■"])[0]) + " 소제목"
+        uniq = [chr(0xAC00 + i * 7) + chr(0xAC00 + i * 11 + 3) + "다" for i in range(900)]        # 같은 낱말이 없는 본문(밀도 검사용)
+        para = lambda k: " ".join(uniq[k * 30:(k + 1) * 30])                                     # noqa: E731 — 한 문단 ≈ 120자
+        good_seo = "\n\n".join(["연습장 장면 하나를 떠올립니다. " + para(0), para(1), head, para(2), para(3),
+                                "▪ " + uniq[200] + "\n▪ " + uniq[201] + "\n▪ " + uniq[202], head, para(4), "**" + uniq[300] + "** " + para(5),
+                                para(6), para(7), para(8), para(9), para(10), para(11), para(12), para(13), para(15), para(16), para(17),
+                                (mk.get("tip_header") or "오늘의 TIP") + " " + para(14)])
+        good = good_seo + good_footer_tags
         assert len(good) >= style["min_len"], f"[{client}] 자가점검 표본이 최소길이보다 짧음"
         assert run_checks(good, style) == [], (client, run_checks(good, style))
 
@@ -572,6 +774,32 @@ def _self_test() -> None:
 
         bad_len = "짧은 글"
         assert any("미만" in e for e in run_checks(bad_len, style)), client
+
+        # ── 공통 노출·가독성 규칙(ssot/blog_exposure_rules.json) — 통과 본문 1개 → 통과 · 위반 본문 → 항목별 불통과 ──
+        if style.get("seo"):
+            dt = default_tags(style)
+            assert check_tags(dt, style) == [] and style["required_tag"] == dt[0] and 5 <= len(dt) <= 8, (client, dt)
+            assert any("개여야" in e for e in check_tags(dt[:3], style)), client
+            assert any("창고 밖" in e for e in check_tags(dt[:-1] + ["#없는태그"], style)), client
+            assert any("필수 태그" in e for e in check_tags(dt[1:] + ["#골프"], style)), client
+            good_seo = good_seo + build_footer_and_tags(style, dt)
+            ok_errs = seo_checks(good_seo, style, title="연습장 장면 하나", images=3)
+            assert ok_errs == [], (client, ok_errs)
+            assert any("제목" in e and "자 안" in e for e in seo_checks(good_seo, style, title="가" * 31)), client
+            assert any("제목≠내용" in e for e in seo_checks(good_seo, style, title="전혀다른낱말")), client
+            assert any("소제목" in e for e in seo_checks(good_seo.replace(head, "소제목아님", 1), style)), client + " 소제목 1개"
+            assert any("소제목" in e for e in seo_checks(good_seo.replace(para(6), head + "\n\n" + head + "\n\n" + head), style)), client + " 소제목 5개"
+            assert any("긴 문단" in e for e in seo_checks(good_seo.replace(para(7), " ".join(uniq[400:480])), style)), client
+            assert any("빈 줄" in e for e in seo_checks(good_seo.replace("\n\n", "\n"), style)), client
+            assert any("목록" in e for e in seo_checks(good_seo.replace("▪ " + uniq[202], ""), style)), client + " 목록 2줄"
+            assert any("굵게" in e for e in seo_checks(good_seo.replace("**" + uniq[300] + "**", "**a** **b**"), style)), client
+            assert any("밀도" in e for e in seo_checks(good_seo + "\n\n" + " 반복낱말" * 60, style)), client
+            assert any("링크" in e for e in seo_checks(good_seo + "\n\nhttps://a.b/ https://c.d/", style)), client
+            assert any("사진" in e for e in seo_checks(good_seo, style, images=1)) and seo_checks(good_seo, style, images=None) == [], client
+            assert make_title("GDR 숫자 읽는 법 — 볼 스피드와 발사각이 말해 주는 것", 30) == "GDR 숫자 읽는 법"
+            assert len(make_title("가" * 20 + " " + "나" * 20, 30)) <= 30 and make_title("짧은 제목", 30) == "짧은 제목"
+            assert "# 형식" in build_prompt("주제", style, axis=style["philosophy"]["axes"][0]) and "# 목소리" in build_prompt("주제", style, axis=style["philosophy"]["axes"][0])
+            assert "늘려라" in fix_prompt(["본문 900자 — 2000자 미만"], "x", style) and "# 형식" in fix_prompt(["긴 문단 1개"], "x", style) and "그대로" in fix_prompt(["긴 문단 1개"], "x", style)
 
     # dc(다이어트캠프): 금액은 허용값이 없으므로 99,000원 하나만 있어도 불통과여야 한다.
     dc_style = load_style("dc")

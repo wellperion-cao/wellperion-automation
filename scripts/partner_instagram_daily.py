@@ -87,7 +87,7 @@ def today_run(st: dict, today: str) -> dict | None:
 
 def hashtags(style: dict) -> list[str]:
     t = style.get("tags") or {}
-    tags = t.get("instagram_15") or (t.get("core_25") or [])[:15]
+    tags = t.get("instagram_15") or (t.get("pool") or [])[:15]
     must = style.get("required_tag")
     if must and must not in tags:
         tags = [must] + tags

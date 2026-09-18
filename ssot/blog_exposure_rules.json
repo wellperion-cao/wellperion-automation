@@ -1,0 +1,40 @@
+{
+  "_doc": "네이버 블로그 노출·가독성 공통 규칙(파트너 무관 · 순수 규칙만). 파트너 blog_style.json 은 seo.ref 로 이 파일을 가리키고 값을 베끼지 않는다. 검사기 = scripts/partner_blog_daily.py seo_checks(readability 포함). 웰페리온 4채널(시모)도 같은 파일을 읽는다. GM 2026-09-18 「노출 순위 올리는 가이드라인을 정해서 진행 · 그 외는 파트너 브랜드가이드」.",
+  "version": "1.0 (2026-09-18 시보)",
+  "sources": [
+    {"rule": "일관된 주제 — 한 블로그가 한 주제에 집중할수록 출처 신뢰도(C-Rank Context·Content)가 오른다", "url": "https://blog.naver.com/naver_search/220774795442"},
+    {"rule": "콘텐츠 5원칙(직접 경험·일관된 주제·진정성·읽기 쉬운 구조·최신성) · 피할 것 = 무관 키워드 삽입 · 과도한 홍보 · 외부 URL 과다 · 본문과 무관한 이미지", "url": "https://blog.naver.com/naver_search/224296857688"},
+    {"rule": "셀프 체크 — 소제목·리스트로 구조화 · 본문과 직접 관련된 이미지 · 이미지 핵심은 텍스트로도", "url": "https://blog.naver.com/naver_search/224305800678"},
+    {"rule": "스팸 — 키워드 반복·남용 · 낚시성(제목·설명 ≠ 내용) · 숨긴 텍스트 · 스크래핑", "url": "https://blog.naver.com/naver_search/224335446939"},
+    {"rule": "D.I.A. — 주제 적합도 · 경험 정보 · 정보의 충실성 · 어뷰징 척도 · 독창성 · 적시성", "url": "https://blog.naver.com/naver_search/221297090120"},
+    {"rule": "태그 개수 — 네이버 공식 기준 없음(한도 30) · 「너무 많이 달아도 별로」 + 공식 「무관 키워드 삽입 금지」 → 필수 1 + 주제 4~7", "url": "GM 지시 2026-09-18 10:3x"},
+    {"rule": "가독성 형식(문단 2~3줄 · 빈 줄 · 소제목 2~4 · ▪ 목록 3~5 · 굵게 1개 이하 · 사진 분산 · 맨 아래 상담 한 줄+태그)", "url": "GM 지시 2026-09-18 10:4x 「가독성이 너무 떨어진다」"}
+  ],
+  "exposure": {
+    "tags_min": 5,
+    "tags_max": 8,
+    "title_max": 30,
+    "lead_chars": 300,
+    "min_len": 1500,
+    "keyword_max_ratio": 0.04,
+    "images_min": 3,
+    "links_max": 1,
+    "publish_time": "평일 같은 시간대(파트너별 06:45 / 07:00) · 토·일 정지",
+    "_values": "태그 필수 1 + 주제 4~7(창고 밖 금지) · 제목 30자 안 + 핵심 키워드 1개 · 제목 핵심 낱말이 첫 300자 안에 1회 · 본문 1,500자 이상(파트너 min_len 이 더 크면 그 값) · 같은 낱말 밀도 4% 상한(2026-09-18 실측 최대 2.0%) · 사진 3장 이상(본문과 관련 · 사진 없는 날은 검사 생략) · 링크는 상담 페이지 1개만"
+  },
+  "readability": {
+    "paragraph_max_chars": 240,
+    "paragraph_max_lines": 3,
+    "blank_line_between_paragraphs": true,
+    "subheads_min": 2,
+    "subheads_max": 4,
+    "flow": ["문제(장면)", "이유", "방법", "오늘의 TIP"],
+    "list_marker": "▪",
+    "list_lines_min": 3,
+    "list_lines_max": 5,
+    "bold_per_paragraph_max": 1,
+    "photos": "소제목 뒤에 1장씩 분산(3장 · 맨 위 몰기 금지) — 업로더가 3장을 슬라이드 한 덩어리로 넣는다(분산 삽입은 업로더 개선 뒤 · 지금은 검사 안 함)",
+    "bottom": "맨 아래 = 시설 정본 푸터 → 상담 한 줄 → 태그 5~8개(25개 해시태그 벽 폐기)",
+    "_values": "한 문단 2~3줄(240자 안) · 문단 사이 빈 줄 · 소제목 2~4개(문제→이유→방법→TIP) · 목록은 ▪ 3~5줄 · 굵게(**) 문단당 1개 이하"
+  }
+}
