@@ -1638,16 +1638,38 @@ _PURE_NAME_RE = re.compile(r"^[가-힣]{2,4}$")
 # 배정·완료 알림 줄 「✅ 문의 배정 — 김연희(강습팀·P.T) · 담당 김광수」 — 회원 이름 자리는
 # 「— 이름(」 한 곳뿐이다(report_stream_1_impl.py:385 단일 템플릿). 담당 강사는 뒤쪽이라 안 걸린다.
 _ASSIGN_NAME_RE = re.compile(r"(—\s*)([가-힣]{2,4})(?=\()")
+_HANGUL_ONLY_RE = re.compile(r"^[가-힣]+$")
+_HONORIFIC_SUFFIX_RE = re.compile(r"(님|씨)$")
+
+
+def _mask_name_cell(cell: str, staff: "set[str]") -> str:
+    """형태②(「· [태그] 일시 · 이름 · …」)의 이름 칸을 위치 기준으로 가린다(GM 09-19 · 배 12837).
+    이미 가려졌거나(「*」포함) 실무진 정본과 같으면 그대로. 칸 안 첫 낱말만 본다:
+    한글 낱말은 「님/씨」를 떼고 마지막 한 글자만 *(「소진영님」→「소진*님」), 한글이 아니면
+    칸의 모든 낱말을 첫 글자+*로(「Gabriela Rechia krugel」→「G* R* k*」)."""
+    w = cell.strip()
+    if not w or "*" in w or w in staff:
+        return cell
+    words = w.split()
+    first = words[0]
+    if _HANGUL_ONLY_RE.fullmatch(first):
+        m = _HONORIFIC_SUFFIX_RE.search(first)
+        core, suffix = (first[:-1], first[-1]) if m else (first, "")
+        masked_first = (core[:-1] + "*" if len(core) >= 2 else "*") + suffix
+        new_w = " ".join([masked_first] + words[1:])
+    else:
+        new_w = " ".join((word[0] + "*" if word else word) for word in words)
+    return cell.replace(w, new_w, 1)
 
 
 def _mask_roster_names(text: str) -> str:
     """전화 없는 명단 줄의 회원 실명을 가린다(이경언→이경*).
 
-    명단 줄 판정 기준: 「·」(U+00B7)로 구분된 불릿 줄에서 **첫 번째 순수 한글 2~4자 구획**만
-    회원 이름으로 본다 — 문의정리 통의 두 명단 형태가 전부 이 꼴이다:
-      ①「· 이름 · 종목(…) · 담당강사 [상태]」  ②「· [강습] 일시 · 이름 · 종목 · N일째 · …」
-    뒤에 오는 순수 한글 구획(종목명 「바레」·담당 강사명)은 첫-구획 규칙으로 자연히 보호되고,
-    첫 구획이라도 실무진 정본(_staff_names)에 있으면 통과시킨다. 자유 문장·「•」 불릿 줄은
+    명단 줄 판정 기준: 「·」(U+00B7)로 구분된 불릿 줄에서 두 형태를 각각 판정한다:
+      ①「· 이름 · 종목(…) · 담당강사 [상태]」 — **첫 번째 순수 한글 2~4자 구획**만 이름.
+      ②「· [태그] 일시 · 이름 · 종목 · N일째 · …」 — 첫 구획이 「[」로 시작하면
+        **다음 구획(위치 기준)**이 이름 칸이다(글자 종류 무관 · _mask_name_cell).
+    실무진 정본(_staff_names)에 있으면 통과시킨다. 자유 문장·「•」 불릿 줄은
     「·」 구분이 없어 애초에 안 걸린다."""
     staff = _staff_names()
     out_lines = []
@@ -1658,12 +1680,15 @@ def _mask_roster_names(text: str) -> str:
                                         else m.group(2)[:-1] + "*"), line)
         elif line.lstrip().startswith("·") and "·" in line.lstrip()[1:]:
             segs = line.split("·")
-            for i, seg in enumerate(segs):
-                w = seg.strip()
-                if _PURE_NAME_RE.fullmatch(w):
-                    if w not in staff:
-                        segs[i] = seg.replace(w, w[:-1] + "*")
-                    break   # 첫 순수 한글 구획까지만 본다 — 이름 자리는 하나뿐
+            if len(segs) > 2 and segs[1].strip().startswith("["):
+                segs[2] = _mask_name_cell(segs[2], staff)   # 형태② — 위치로 이름 칸 판정
+            else:
+                for i, seg in enumerate(segs):
+                    w = seg.strip()
+                    if _PURE_NAME_RE.fullmatch(w):
+                        if w not in staff:
+                            segs[i] = seg.replace(w, w[:-1] + "*")
+                        break   # 첫 순수 한글 구획까지만 본다 — 이름 자리는 하나뿐
             line = "·".join(segs)
         out_lines.append(line)
     return "\n".join(out_lines)
@@ -1713,6 +1738,15 @@ def _selfcheck_mask_pii() -> None:
          "✅ 등록 전환 — 박소*(강습팀·WSC필라테스) · 담당 담당자 X"),
         ("✅ 문의 배정 — 편한별(강습팀·English Musical) · 담당 편한별",
          "✅ 문의 배정 — 편한별(강습팀·English Musical) · 담당 편한별"),  # 실무진(팀리더)은 통과
+        # 형태② 「[태그] 일시」줄 — 이름 칸은 위치로 판정(GM 09-19 · 배 12837 · 영문·공백 이름 노출 수리)
+        ("· [유소년강습] 2026-08-14 22:46 · Gabriela Rechia krugel · English Musical · 35일째 · 배정완료·기록없음",
+         "· [유소년강습] 2026-08-14 22:46 · G* R* k* · English Musical · 35일째 · 배정완료·기록없음"),
+        ("· [멤버십] 2026-07-31 17:47 · 소진영님 지인 · 플래티넘 · 49일째 · 배정완료·기록없음",
+         "· [멤버십] 2026-07-31 17:47 · 소진*님 지인 · 플래티넘 · 49일째 · 배정완료·기록없음"),
+        ("· [멤버십] 2026-07-09 16:47 · 김태호 · 플래티넘 · 71일째 · 배정완료·기록없음",
+         "· [멤버십] 2026-07-09 16:47 · 김태* · 플래티넘 · 71일째 · 배정완료·기록없음"),
+        ("· [멤버십] 2026-07-27 17:01 · 남* · 노블레스 · 53일째 · 배정완료·기록없음",
+         "· [멤버십] 2026-07-27 17:01 · 남* · 노블레스 · 53일째 · 배정완료·기록없음"),  # 이미 가려짐(무변화)
     ]
     for src, want in cases:
         got = mask_pii(src)
