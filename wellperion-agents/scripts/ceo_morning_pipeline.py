@@ -78,6 +78,12 @@ if _SCRIPTS_ROOT not in sys.path:
 from close_days import is_closed  # noqa: E402
 from kakao_auto_daily_report import build_holiday_notice  # noqa: E402
 
+# 아침 Close the Loop(배 2765 · GM 09-18 §5) — 실패해도 08:00 발신 자체는 막지 않는다
+try:
+    from gm_directive_loop import run_morning as _gm_directive_run_morning  # noqa: E402
+except Exception:
+    _gm_directive_run_morning = None
+
 # ── C-Level 닉네임 (spec ③ — 모든 항목 끝에 [닉네임] 부착) ─────────────────────
 CLEVEL_NICK = {
     "CEO": "웰리",
@@ -1529,7 +1535,14 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     queue_items = hangro_fetch_queue_items()
     _board_text, _secs = _board_text_and_secs(gas_items, queue_items)
     holiday_line = _yesterday_holiday_line()
-    lines = ([holiday_line, ""] if holiday_line else []) + _board_summary_lines(_secs) + _build_appendix_lines()
+    loop_text = ""
+    if _gm_directive_run_morning:
+        try:
+            _y = (datetime.now() - timedelta(days=1)).date().isoformat()
+            loop_text = _gm_directive_run_morning(_y, STATUS_DIR / "gm_directive_morning.md")
+        except Exception:
+            loop_text = ""
+    lines = ([loop_text, ""] if loop_text else []) + ([holiday_line, ""] if holiday_line else []) + _board_summary_lines(_secs) + _build_appendix_lines()
     return "\n".join(lines)
 
 
