@@ -2070,6 +2070,15 @@ table.op-t td b{font-size:15px}
              직원은 아래 '휴회 접수 관리' 카드에서 서버 자동판정 확인 후 승인/반려. (구 openHoldModal 진입 제거) -->
       </div>
 
+      <!-- 브로제이 종료일과 다른 회원만(읽기 전용 토글) — 2026-09-18 시포(배 12761). 유효회원 스코프에서만 보인다(_activeRender 가 표시/숨김). -->
+      <div id="brojayDiffToggleWrap" style="display:none;margin:2px 0 6px">
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;color:var(--text)">
+          <input type="checkbox" id="brojayDiffToggle" onchange="_brojayDiffToggleChange(this.checked)">
+          브로제이 종료일과 다른 회원만
+        </label>
+        <span id="brojayDiffStatus" style="margin-left:8px;font-size:11.5px;color:var(--dim)"></span>
+      </div>
+
       <div class="active-count" id="activeCount"></div>
 
       <!-- 데이터 완성도(2026-08-08 GM 지시) — 이미 로드된 _activeRows만 집계(신규 fetch 0). 계산·필터 로직 = _renderActiveCompleteness(하단, _activeRender 직전). -->
@@ -9110,7 +9119,64 @@ function _completenessSelfTest() {
   return ok;
 }
 
+/* 브로제이 종료일과 다른 회원만 보기(읽기 전용) — 2026-09-18 시포(배 12761). 유효회원 전화를 500개씩 나눠
+   기존 /api/brojay/member_tickets 를 재사용해 시트 종료일자 ≠ 브로제이 member_end 인 전화만 모은다.
+   값을 쓰지 않는다 · 기존 정렬·검색과는 _activeRender 진입점에서 AND 로 결합된다. */
+var _brojayDiffOnly = false;      // 토글 상태
+var _brojayDiffPhones = null;     // {정규화전화: 1} — 다름으로 확인된 전화(세션 캐시, 새로고침 전까지 재사용)
+var _brojayDiffLoading = false;
+function _brojayDiffSetStatus(text) { var el = document.getElementById('brojayDiffStatus'); if (el) el.textContent = text; }
+function _brojayDiffRedraw() { var si = document.getElementById('activeSearch'); _activeFilter(si ? si.value : ''); }
+function _brojayDiffToggleChange(checked) {
+  _brojayDiffOnly = checked;
+  if (!checked) { _brojayDiffSetStatus(''); _brojayDiffRedraw(); return; }
+  if (_brojayDiffPhones) { _brojayDiffSetStatus('다름 ' + Object.keys(_brojayDiffPhones).length + '명'); _brojayDiffRedraw(); return; }
+  _brojayDiffLoad();
+}
+function _brojayDiffLoad() {
+  var endCol = _capCol(_activeHeaders, '종료일자');
+  if (!ERP_API_ON || !endCol) { _brojayDiffFail(); return; }
+  _brojayDiffLoading = true;
+  _brojayDiffSetStatus('불러오는 중…');
+  var phones = [], seen = {};
+  (_activeRows || []).forEach(function(r){
+    var p = _brojayNormPhone(r['휴대폰 번호']);
+    if (p && !seen[p]) { seen[p] = 1; phones.push(p); }
+  });
+  var chunks = [];
+  for (var i = 0; i < phones.length; i += 500) chunks.push(phones.slice(i, i + 500));
+  Promise.all(chunks.map(function(c){ return _apiJson('/api/brojay/member_tickets?phones=' + c.join(',')); }))
+    .then(function(results){
+      var items = {};
+      results.forEach(function(d){ var it = (d && d.items) || {}; Object.keys(it).forEach(function(k){ items[k] = it[k]; }); });
+      var diff = {};
+      (_activeRows || []).forEach(function(r){
+        var p = _brojayNormPhone(r['휴대폰 번호']);
+        var it = p && items[p];
+        if (!it || !it.member_end) return;
+        var same = String(r[endCol] || '').trim().indexOf(it.member_end) >= 0;
+        if (!same) diff[p] = 1;
+      });
+      _brojayDiffPhones = diff;
+      _brojayDiffLoading = false;
+      _brojayDiffSetStatus('다름 ' + Object.keys(diff).length + '명');
+      _brojayDiffRedraw();
+    })
+    .catch(function(e){ console.warn('[브로제이 다름만] 실패:', e && e.message); _brojayDiffLoading = false; _brojayDiffFail(); });
+}
+function _brojayDiffFail() {
+  _brojayDiffSetStatus('불러오지 못했습니다');
+  _brojayDiffOnly = false;
+  var t = document.getElementById('brojayDiffToggle'); if (t) t.checked = false;
+}
+
 function _activeRender(rows, isFiltered) {
+  var _diffWrap = document.getElementById('brojayDiffToggleWrap');
+  if (_diffWrap) _diffWrap.style.display = (_activeScope === 'valid' && ERP_API_ON) ? '' : 'none';
+  if (_activeScope !== 'valid' && _brojayDiffOnly) { _brojayDiffOnly = false; var _dt = document.getElementById('brojayDiffToggle'); if (_dt) _dt.checked = false; _brojayDiffSetStatus(''); }
+  if (_brojayDiffOnly && _brojayDiffPhones) {
+    rows = rows.filter(function(r){ return _brojayDiffPhones[_brojayNormPhone(r['휴대폰 번호'])]; });
+  }
   var head  = document.getElementById('activeHead');
   var tbody = document.getElementById('activeBody');
   var count = document.getElementById('activeCount');
