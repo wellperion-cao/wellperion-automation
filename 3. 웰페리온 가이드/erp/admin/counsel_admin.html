@@ -25,7 +25,7 @@
 </section>
 
 <section><h2>업체 정보</h2>
-  <table><tbody id="infoBody"></tbody></table>
+  <table><colgroup><col style="width:180px"><col></colgroup><tbody id="infoBody"></tbody></table>
   <p class="muted">고치는 곳 = <code>server/counselbot/tenants/{업체}.json</code> (시보). 이 화면은 보기만 합니다.</p>
 </section>
 
@@ -80,7 +80,7 @@
       document.getElementById("statsBody").innerHTML =
         '<p class="muted">질문 ' + s.total + '개 · 봇이 답한 것 ' + s.answered +
         (s.answer_ratio != null ? ' (' + Math.round(s.answer_ratio * 100) + '%)' : '') + '</p>' +
-        (rows ? '<table><thead><tr><th>많이 물었는데 못 답한 것</th><th>횟수</th></tr></thead><tbody>' +
+        (rows ? '<table><colgroup><col><col style="width:90px"></colgroup><thead><tr><th>많이 물었는데 못 답한 것</th><th>횟수</th></tr></thead><tbody>' +
                 rows + '</tbody></table>'
               : '<p class="muted">못 답한 질문 없음</p>');
     }).catch(function () {
