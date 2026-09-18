@@ -21,10 +21,13 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
        color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
-  .wrap{width:100%; max-width:640px; margin:0; padding:24px 20px 60px;}
+  /* 모바일이 주 화면 — wrap 을 세로 flex 로 두고 채팅이 늘어나 버튼을 엄지 닿는 아래로 민다(GM 09-18 20:1x) */
+  .wrap{width:100%; max-width:640px; margin:0 auto; padding:20px 20px calc(16px + env(safe-area-inset-bottom));
+        display:flex; flex-direction:column; min-height:100dvh;}
   h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
   .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:16px;}
-  .langrow{display:flex; gap:8px; align-items:center; margin:0 0 14px; flex-wrap:wrap;}
+  .portrait{display:flex; flex-direction:column; flex:1; min-height:0;}
+  .langrow{display:flex; gap:8px; align-items:center; margin:14px 0 14px; flex-wrap:wrap;}
   select.lang{font:inherit; font-size:var(--fs-2); padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--paper); color:var(--text);}
   /* 큰 누르는 버튼 2개 — 방향 토글 대신(GM 지시 2026-09-18 19:3x). 누르면 받아쓰기, 떼면 번역. */
   .pressgrid{display:flex; flex-direction:column; gap:10px; margin:0 0 14px;}
@@ -33,6 +36,7 @@
        -webkit-user-select:none; user-select:none; touch-action:none;}
   .pressbtn.active{background:#B3261E; border-color:#B3261E; color:#fff;}
   .pressbtn:disabled{opacity:.5; cursor:not-allowed;}
+  .pressbtn.hide{display:none;}
   .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer;
        border:1px solid var(--border); background:var(--paper); color:var(--text);}
   .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}
@@ -43,7 +47,7 @@
   .msg{font-size:var(--fs-2); color:var(--text-soft); margin:0 0 12px;}
   .msg.ok{color:var(--accent-hover); font-weight:600;}
   .msg.bad{color:var(--pf-bad,#B3261E); font-weight:600;}
-  .chat{display:flex; flex-direction:column; gap:10px; min-height:220px;}
+  .chat{display:flex; flex-direction:column; gap:10px; flex:1; min-height:120px; overflow-y:auto;}
   .bubble{max-width:78%; border-radius:12px; padding:10px 14px;}
   .bubble.mine{align-self:flex-end; background:var(--accent-bg); border:1px solid var(--accent);}
   .bubble.other{align-self:flex-start; background:var(--paper); border:1px solid var(--border);}
@@ -53,30 +57,60 @@
   .bubble:last-child .tr{font-size:20px; font-weight:700; color:var(--text); line-height:1.4; margin-top:6px;}
   .empty{color:var(--text-soft); font-size:var(--fs-2); text-align:center; padding:40px 0;}
   .note{font-size:var(--fs-1); color:var(--text-soft); margin-top:16px; line-height:1.5;}
+  /* 가로 태블릿(≥768px·landscape) — 좌우 분할(GM 09-18 20:1x). 손님 쪽 글자 180도 회전은 넣지 않는다(나란히 앉는 자리라 오히려 불편) */
+  .split{display:none;}
+  @media (min-width:768px) and (orientation:landscape){
+    .wrap{max-width:none; padding:0; min-height:100dvh;}
+    #portraitView{display:none;}
+    .split{display:flex; height:100dvh;}
+    .side{flex:1; display:flex; flex-direction:column; justify-content:flex-end; padding:24px; gap:16px; min-width:0;}
+    .divider{width:1px; background:var(--border);}
+    .sidelabel{font-size:var(--fs-2); color:var(--text-soft); text-align:center;}
+    .lasttr{flex:1; display:flex; align-items:center; justify-content:center; text-align:center;
+            font-size:30px; font-weight:700; color:var(--text); overflow-y:auto; padding:10px; line-height:1.4;}
+    .split-btn{min-height:76px; font-size:18px;}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>AI 번역가 <span style="font-weight:500;color:var(--text-soft)">— 실시간 통역</span></h1>
-  <div class="sub">버튼을 누르고 있는 동안 말하고, 떼면 번역합니다.</div>
+  <div id="portraitView" class="portrait">
+    <h1>AI 번역가 <span style="font-weight:500;color:var(--text-soft)">— 실시간 통역</span></h1>
+    <div class="sub">버튼을 누르고 있는 동안 말하고, 떼면 번역합니다.</div>
 
-  <div class="langrow">
-    <span class="msg" style="margin:0">상대 언어</span>
-    <select class="lang" id="otherLang"><option value="en">영어</option></select>
-  </div>
-  <div class="pressgrid">
-    <button type="button" class="pressbtn" id="btnKo">🇰🇷 한국어로 말하기</button>
-    <button type="button" class="pressbtn" id="btnOther">언어로 말하기</button>
-  </div>
-  <div class="typerow">
-    <input type="text" id="typeText" placeholder="또는 한국어로 입력">
-    <button type="button" class="btn p" id="btnType">번역</button>
-  </div>
-  <div class="msg" id="statusMsg"></div>
+    <div class="chat" id="chat"><div class="empty">번역이 여기 쌓입니다.</div></div>
 
-  <div class="chat" id="chat"><div class="empty">번역이 여기 쌓입니다.</div></div>
+    <div class="langrow">
+      <span class="msg" style="margin:0">상대 언어</span>
+      <select class="lang" id="otherLang"><option value="en">영어</option></select>
+    </div>
+    <div class="pressgrid">
+      <button type="button" class="pressbtn" id="btnKo">🇰🇷 한국어로 말하기</button>
+      <button type="button" class="pressbtn" id="btnOther">언어로 말하기</button>
+    </div>
+    <div class="typerow">
+      <input type="text" id="typeText" placeholder="또는 한국어로 입력">
+      <button type="button" class="btn p" id="btnType">번역</button>
+    </div>
+    <div class="msg" id="statusMsg"></div>
 
-  <div class="note">크롬에서만 지원됩니다(Web Speech API) — 마이크 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다. 텍스트만 번역 서버로 보냅니다.</div>
+    <div class="note">크롬·사파리에서 지원됩니다(Web Speech API) — 마이크 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다. 텍스트만 번역 서버로 보냅니다.</div>
+  </div>
+
+  <!-- 가로 태블릿 좌우 분할 — 왼쪽 우리(한국어)·오른쪽 손님(상대 언어). 회전 배치 없음(GM 09-18) -->
+  <div class="split" id="splitView">
+    <div class="side">
+      <div class="sidelabel">우리</div>
+      <div class="lasttr" id="lastKo">번역이 여기 크게 표시됩니다.</div>
+      <button type="button" class="pressbtn split-btn" id="btnKoSplit">🇰🇷 한국어로 말하기</button>
+    </div>
+    <div class="divider"></div>
+    <div class="side">
+      <div class="sidelabel" id="otherSideLabel">손님</div>
+      <div class="lasttr" id="lastOther">Translation will appear here.</div>
+      <button type="button" class="pressbtn split-btn" id="btnOtherSplit">언어로 말하기</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -89,6 +123,11 @@ var SPEECH_LOCALE = { ko:'ko-KR' };
 var otherSel = document.getElementById('otherLang');
 var btnKo = document.getElementById('btnKo');
 var btnOther = document.getElementById('btnOther');
+var btnKoSplit = document.getElementById('btnKoSplit');
+var btnOtherSplit = document.getElementById('btnOtherSplit');
+var otherSideLabel = document.getElementById('otherSideLabel');
+var lastKoEl = document.getElementById('lastKo');
+var lastOtherEl = document.getElementById('lastOther');
 var typeText = document.getElementById('typeText');
 var btnType = document.getElementById('btnType');
 var statusMsg = document.getElementById('statusMsg');
@@ -97,7 +136,10 @@ var chat = document.getElementById('chat');
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
 function updateOtherBtnLabel(){
-  btnOther.textContent = '🌐 ' + LANG_NAME[otherSel.value] + '로 말하기';
+  var label = '🌐 ' + LANG_NAME[otherSel.value] + '로 말하기';
+  btnOther.textContent = label;
+  btnOtherSplit.textContent = label;
+  otherSideLabel.textContent = '손님 (' + LANG_NAME[otherSel.value] + ')';
 }
 otherSel.addEventListener('change', updateOtherBtnLabel);
 
@@ -131,9 +173,16 @@ var liveFinal = '';       // 누르는 동안 쌓인 받아쓴 글(중간 결과
 var stopReason = null;
 
 if (!SR) {
-  btnKo.disabled = true;
-  btnOther.disabled = true;
-  statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬을 쓰거나 아래에 글로 입력해 주세요.';
+  /* 인식 미지원 브라우저 — 비활성이 아니라 버튼을 숨기고 글 입력만 남긴다(GM 09-18) */
+  btnKo.classList.add('hide'); btnOther.classList.add('hide');
+  btnKoSplit.classList.add('hide'); btnOtherSplit.classList.add('hide');
+  statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬·사파리를 쓰거나 아래에 글로 입력해 주세요.';
+  statusMsg.className = 'msg bad';
+} else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+  /* iOS 사파리·안드로이드 크롬 모두 https 아니면 마이크 권한 자체가 안 뜬다 */
+  btnKo.classList.add('hide'); btnOther.classList.add('hide');
+  btnKoSplit.classList.add('hide'); btnOtherSplit.classList.add('hide');
+  statusMsg.textContent = 'https 주소가 아니라 마이크를 쓸 수 없습니다 — 아래에 글로 입력해 주세요.';
   statusMsg.className = 'msg bad';
 } else {
   recognition = new SR();
@@ -165,6 +214,8 @@ if (!SR) {
 function setPressUI(which){
   btnKo.classList.toggle('active', which === 'ko');
   btnOther.classList.toggle('active', which === 'other');
+  btnKoSplit.classList.toggle('active', which === 'ko');
+  btnOtherSplit.classList.toggle('active', which === 'other');
 }
 function startPress(source, target, mine, which){
   if (!recognition || pressing) return;
@@ -182,11 +233,17 @@ function endPress(){
   setPressUI(null);
   try { recognition.stop(); } catch (e) {}
 }
-btnKo.addEventListener('pointerdown', function(e){ e.preventDefault(); startPress('ko', otherSel.value, true, 'ko'); });
-btnOther.addEventListener('pointerdown', function(e){ e.preventDefault(); startPress(otherSel.value, 'ko', false, 'other'); });
+function pressKo(e){ e.preventDefault(); startPress('ko', otherSel.value, true, 'ko'); }
+function pressOther(e){ e.preventDefault(); startPress(otherSel.value, 'ko', false, 'other'); }
+btnKo.addEventListener('pointerdown', pressKo);
+btnOther.addEventListener('pointerdown', pressOther);
+btnKoSplit.addEventListener('pointerdown', pressKo);
+btnOtherSplit.addEventListener('pointerdown', pressOther);
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(evt){
   btnKo.addEventListener(evt, endPress);
   btnOther.addEventListener(evt, endPress);
+  btnKoSplit.addEventListener(evt, endPress);
+  btnOtherSplit.addEventListener(evt, endPress);
 });
 
 /* ── 글 입력(GM 「글 입력도 남긴다」) — 한국어 → 상대 언어(기본 방향) ── */
@@ -209,6 +266,8 @@ function handleUtterance(text, source, target, mine){
   }).then(function(r){ return r.json(); }).then(function(d){
     var tr = d.translation || d.error || '(번역 실패)';
     bubble.querySelector('.tr').textContent = tr;
+    if (target === 'ko') lastKoEl.textContent = tr;
+    else lastOtherEl.textContent = tr;
     speak(tr, target, function(){});
   }).catch(function(){
     bubble.querySelector('.tr').textContent = '(번역 요청 실패)';
