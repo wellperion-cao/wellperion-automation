@@ -440,18 +440,6 @@
       ],
       "work": [
         {
-          "time": "10:19",
-          "area": "작업",
-          "event": "docs(boot): §7-6 자율 순환 — 세션이 30분마다 스스로 깨어 한 바퀴 (GM 09-18 「왜 대기하나」)",
-          "detail": "커밋 88ee134bae · 배 12736"
-        },
-        {
-          "time": "10:23",
-          "area": "작업",
-          "event": "docs(boot): §7-6 첫 바퀴는 즉시 · 30분은 간격 (GM 09-18 10:2x)",
-          "detail": "커밋 412353565d · 배 12736"
-        },
-        {
           "time": "10:29",
           "area": "진행",
           "event": "배 2739(12745) 회수 — 직접 실행 관문 내 창에서 실차단 확인 · 위임 비율 첫 측정(시토2·웰리2·시모1·시보1·시우0·시포0 %)",
@@ -618,6 +606,18 @@
           "area": "작업",
           "event": "feat(directive): 사람 관리자 지시 추적 — Top3·리마인드·아침 점검 (배 2766 · GM 09-18)",
           "detail": "커밋 b1f16fd094 · 배 12736"
+        },
+        {
+          "time": "12:33",
+          "area": "작업",
+          "event": "fix(directive): 회의 기록·보류 행 제외 (배 2766)",
+          "detail": "커밋 49dcaa170f · 배 12736"
+        },
+        {
+          "time": "12:33",
+          "area": "진행",
+          "event": "2766 회의·보류 행 제외 수리(49dcaa170f) — 코드 완료 · 시행은 GM 취지 승인 뒤",
+          "detail": "manager_directive_track.py b1f16fd094·49dcaa170f · 17:00 예약 Disabled 대기"
         }
       ],
       "count": 36,
@@ -639,7 +639,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 210
+          "waited": 213
         },
         {
           "ref": "GM-20260918-1002",
@@ -653,7 +653,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 209
+          "waited": 212
         },
         {
           "ref": "GM-20260918-1003",
@@ -667,7 +667,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 207
+          "waited": 210
         },
         {
           "ref": "GM-20260918-1006",
@@ -681,7 +681,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 170
+          "waited": 173
         },
         {
           "ref": "GM-20260918-1009",
@@ -695,7 +695,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 158
+          "waited": 161
         },
         {
           "ref": "GM-20260918-1010",
@@ -709,7 +709,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 144
+          "waited": 147
         },
         {
           "ref": "GM-20260918-1011",
@@ -723,7 +723,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 142
+          "waited": 145
         },
         {
           "ref": "GM-20260918-1012",
@@ -737,7 +737,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 142
+          "waited": 145
         },
         {
           "ref": "GM-20260918-1014",
@@ -751,7 +751,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 135
+          "waited": 138
         },
         {
           "ref": "GM-20260918-1017",
@@ -765,7 +765,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 131
+          "waited": 134
         },
         {
           "ref": "GM-20260918-1022",
@@ -779,7 +779,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 128
+          "waited": 131
         },
         {
           "ref": "GM-20260918-1023",
@@ -793,7 +793,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 128
+          "waited": 131
         },
         {
           "ref": "GM-20260918-1024",
@@ -807,7 +807,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 127
+          "waited": 130
         },
         {
           "ref": "GM-20260918-1025",
@@ -821,7 +821,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 126
+          "waited": 129
         },
         {
           "ref": "GM-20260918-1027",
@@ -835,7 +835,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 121
+          "waited": 124
         }
       ],
       "just": [
@@ -851,7 +851,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 63
+          "waited": 66
         },
         {
           "ref": "GM-20260918-1038",
@@ -865,7 +865,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 60
+          "waited": 63
         },
         {
           "ref": "GM-20260918-1040",
@@ -879,7 +879,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 48
+          "waited": 51
         },
         {
           "ref": "GM-20260918-pipeline",
@@ -893,7 +893,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 40
+          "waited": 43
         }
       ],
       "repeats": []
@@ -1082,6 +1082,18 @@
           "evidence": null
         },
         {
+          "ref": "GM-20260918-2017",
+          "no": "17",
+          "got": "웰페리온 ERP에 센터선택은 없애주고, 직함은 넣어줘 직함에 따른 권한도 구분 되어야해",
+          "did": "#adm 해시 진입 시 loadModules 기본 그룹 전환에 덮이던 것 수정(hashPaneShown 가드) · fix(auth): #adm 해시 진입 시 loadModules 기본 그 — 커밋 9ba075acd9 · 배 12680",
+          "start": "12:31",
+          "end": "12:33",
+          "minutes": 2,
+          "upload": "✅ 배포 (9ba075acd)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
           "ref": "GM-20260918-accountsfix",
           "no": "ix",
           "got": "권한 관리 진입 위치 정정 — 랩스 셸에서 빼고 /erp/#adm 으로(배 12775 오독)",
@@ -1116,15 +1128,21 @@
           "upload": "기록만",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-rankcol",
+          "no": "ol",
+          "got": "웰페리온 ERP 계정 판 — 센터 선택 제거 · 직함 칸+직함별 권한",
+          "did": "아직",
+          "start": "12:32",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
-        {
-          "time": "10:04",
-          "area": "진행",
-          "event": "12744 brojay_cells.py 서버 배포",
-          "detail": "origin/master 5ceb67a6d1 판 scp · erp-api 재기동 · md5 동일 · 시포 회신"
-        },
         {
           "time": "10:09",
           "area": "진행",
@@ -1298,11 +1316,17 @@
           "area": "진행",
           "event": "12769 후속 GM지시방 승인=실등재",
           "detail": "f0451bb0b9 · 실측 배 12777 생성·종결 · 원장 1건 · 엔진 인코딩 1줄 수리 d632be89a7"
+        },
+        {
+          "time": "12:32",
+          "area": "작업",
+          "event": "fix(auth): #adm 해시 진입 시 loadModules 기본 그룹 전환에 덮이던 것 수정(hashPaneShown 가드)",
+          "detail": "커밋 9ba075acd9 · 배 12680"
         }
       ],
-      "count": 18,
-      "done": 12,
-      "open": 6,
+      "count": 20,
+      "done": 13,
+      "open": 7,
       "avg_minutes": 3,
       "work_count": 30,
       "missed": [],
@@ -1319,7 +1343,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 208
+          "waited": 211
         },
         {
           "ref": "GM-20260918-2004",
@@ -1333,7 +1357,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 204
+          "waited": 207
         },
         {
           "ref": "GM-20260918-2005",
@@ -1347,7 +1371,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 167
+          "waited": 170
         },
         {
           "ref": "GM-20260918-2007",
@@ -1361,7 +1385,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 165
+          "waited": 168
         }
       ],
       "just": [
@@ -1377,7 +1401,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 10
+          "waited": 13
         },
         {
           "ref": "GM-20260918-accountsfix",
@@ -1391,7 +1415,21 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
+        },
+        {
+          "ref": "GM-20260918-rankcol",
+          "no": "ol",
+          "got": "웰페리온 ERP 계정 판 — 센터 선택 제거 · 직함 칸+직함별 권한",
+          "did": "아직",
+          "start": "12:32",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 2
         }
       ],
       "repeats": []
@@ -1608,7 +1646,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 16
+          "waited": 19
         }
       ],
       "repeats": []
@@ -1806,7 +1844,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 164
+          "waited": 167
         },
         {
           "ref": "GM-20260918-4003",
@@ -1820,7 +1858,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 95
+          "waited": 98
         }
       ],
       "just": [
@@ -1836,7 +1874,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 42
+          "waited": 45
         }
       ],
       "repeats": []
@@ -2094,7 +2132,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 159
+          "waited": 162
         }
       ],
       "just": [
@@ -2110,7 +2148,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 9
+          "waited": 12
         },
         {
           "ref": "GM-20260918-5010",
@@ -2124,7 +2162,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 7
+          "waited": 10
         },
         {
           "ref": "GM-20260918-5011",
@@ -2138,7 +2176,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 8
         }
       ],
       "repeats": []
@@ -2486,7 +2524,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 196
+          "waited": 199
         },
         {
           "ref": "GM-20260918-9002",
@@ -2500,7 +2538,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 156
+          "waited": 159
         },
         {
           "ref": "GM-20260918-9004",
@@ -2514,7 +2552,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 151
+          "waited": 154
         },
         {
           "ref": "GM-20260918-9005",
@@ -2528,7 +2566,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 149
+          "waited": 152
         },
         {
           "ref": "GM-20260918-9006",
@@ -2542,7 +2580,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 145
+          "waited": 148
         },
         {
           "ref": "GM-20260918-9007",
@@ -2556,7 +2594,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 138
+          "waited": 141
         },
         {
           "ref": "GM-20260918-9008",
@@ -2570,7 +2608,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 133
+          "waited": 136
         },
         {
           "ref": "GM-20260918-9009",
@@ -2584,7 +2622,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 112
+          "waited": 115
         },
         {
           "ref": "GM-20260918-9010",
@@ -2598,7 +2636,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 112
+          "waited": 115
         },
         {
           "ref": "GM-20260918-9011",
@@ -2612,7 +2650,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 110
+          "waited": 113
         },
         {
           "ref": "GM-20260918-9013",
@@ -2626,7 +2664,7 @@
           "open": true,
           "evidence": null,
           "kind": "unclosed",
-          "waited": 100
+          "waited": 103
         }
       ],
       "just": [
@@ -2642,7 +2680,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 20
+          "waited": 23
         }
       ],
       "repeats": []
@@ -2656,7 +2694,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T12:31:08",
+    "published_at": "2026-09-18T12:34:09",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -2664,14 +2702,14 @@
         "alive": false,
         "signal": "11:30",
         "last": {
-          "time": "12:19",
+          "time": "11:39",
           "area": "진행",
-          "event": "2766 사람 관리자 지시 추적 — 레인 착수 12:14",
+          "event": "시보 배 2756~2759(12762~12765) 3레인 착수 11:4x — 회수 대기 · 회의요약 화면 erp/admin/meeting_note.html · SSOT 버튼은 시우 배 · 라우트는 시토 배",
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 35,
-        "lanes": 2
+        "saves": 36,
+        "lanes": 1
       },
       "cto": {
         "nick": "시토",
@@ -2685,7 +2723,7 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 66,
+        "saves": 67,
         "lanes": 1
       },
       "cmo": {
@@ -2729,7 +2767,7 @@
           "event": "자율 순환 한 바퀴(wellperion-boot §7-6 · role=coo): ① C:/Python314/python.exe scripts/welly_auto_runner.py --boot-candidate --c",
           "result": "warn"
         },
-        "idle_since": null,
+        "idle_since": "12:32",
         "saves": 18,
         "lanes": 0
       },
