@@ -3530,7 +3530,12 @@ function fetchCap(url, ms){
 /* 문의 원장 한 갈래를 서버 거울에서 통째로 — 1000행씩 이어 받는다(멤버십 777 · 유소년 1138).
    돌려주는 모양은 GAS 와 같게 맞춘다({ok:true, data:[...]}) — 읽는 쪽 코드를 안 바꾸려고. */
 function inqList(type, action, qs){
-  if (!ERP_API_ON) return p2fetch(action, qs);
+  if (!ERP_API_ON) return p2fetch(action, qs);   // Pages 캡처(09:00 발송용·비ERP 도메인) — 서버가 없어 그대로 GAS
+  // 2026-09-18 GM 지시(배 12817·12818②) — 회원 문의 원장(멤버십)은 ERP 도메인에서 GAS 폴백 제거.
+  //   강습 문의(성인/유소년)는 범위 밖 — 그대로 미러 실패 시 GAS 폴백.
+  if (action === 'member_inquiry_list') {
+    return inqMirror(type).catch(function(e){ console.warn('[2면] ' + type + ' 거울 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); });
+  }
   return inqMirror(type).catch(function(e){ console.warn('[2면] ' + type + ' 거울 실패 → 시트:', e && e.message); return p2fetch(action, qs); });
 }
 function inqMirror(type){
@@ -3546,12 +3551,19 @@ function inqMirror(type){
   }
   return page(0);
 }
+// 2026-09-18 GM 지시(배 12817·12818②) — cpo_churn_stats(회원 이탈)는 ERP 도메인에서 GAS 폴백 제거.
+//   cpo_today_stats(매출 집계, 회원 PII 아님)는 범위 밖 — 그대로 폴백 유지.
+var P2_NO_GAS_FALLBACK = { cpo_churn_stats: 1 };
 function p2fetch(action, qs){
   var gas = function(){ return fetchCap(GAS2 + '?action=' + action + (qs || '') + '&cb=' + Date.now()).then(function(r){ return r.json(); }); };
-  if (!ERP_API_ON || !API_ACTIONS[action]) return gas();
+  if (!ERP_API_ON || !API_ACTIONS[action]) return gas();   // Pages 캡처(09:00 발송용·비ERP 도메인) — 서버가 없어 그대로 GAS
   return fetchCap('/api/report/' + action + '?cb=' + Date.now() + (qs || ''))
     .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-    .catch(function(e){ console.warn('[2페이지] ' + action + ' API 실패 → GAS 폴백:', e && e.message); return gas(); });
+    .catch(function(e){
+      if (P2_NO_GAS_FALLBACK[action]) { console.warn('[2페이지] ' + action + ' API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); }
+      console.warn('[2페이지] ' + action + ' API 실패 → GAS 폴백:', e && e.message);
+      return gas();
+    });
 }
 /* 강습 통계(byChannel·bySport) — GAS lesson_stats 는 type 없이 성인+유소년을 합쳐 낸다. 미러
    /api/lesson/stats 는 type 별로만 있어(강습 회원관리 ERP 배 922) 두 타입을 따로 받아 합친다
