@@ -319,7 +319,8 @@ _SHIFT_LABEL = dict(_SHIFTS)
 _WD = "월화수목금토일"
 
 
-def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> list[dict]:
+def recurring_check_causes(today: str, window: int = 7, threshold: int = 4,
+                            master_items: list | None = None) -> list[dict]:
     """어제까지 window 일 중 threshold 일 이상 미체크였던 (항목·성별·조) 를 원장 detail 에서
     세고, 원인을 데이터로 가른다(GM 지시 2026-09-18 배 12760 ③ — 「어느 조·누구·어느 요일에
     빠지나」). 실측 2026-09-10~17 로 정한 세 갈래:
@@ -329,7 +330,13 @@ def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> l
       · 항목불일치 — 제출자 여럿이 전부 그 항목만 안 체크(여 오전조 D-1 헬스장·D-2 골프장·
         D-6 스쿼시장 7일 중 7일 · 제출자 3명). 사람이 아니라 항목 마스터(성별·회차) 쪽.
       · 제출뒤누락 — 한 사람이 제출은 하면서 그 항목만 빠뜨림 → 그 사람 몫.
-    detail 이 있는 날이 threshold 미만이면 [](데이터 부족 — 가짜 반복 금지)."""
+    detail 이 있는 날이 threshold 미만이면 [](데이터 부족 — 가짜 반복 금지).
+
+    ★2026-09-18 GM 지시(배 12760) — 원장은 어제까지 쌓인 옛 모습이라, 오늘 항목 마스터(GAS)
+      에서 이미 삭제되거나(예 G-4 리셉션 이관) 성별이 바뀐(D-1·D-2·D-6 all→m) 항목이 그대로
+      「반복」으로 올라오고, GM 이 필수로 박은 항목(G-2 접점 소독 등 detail 「★ …」)엔 빼는
+      조치가 붙었다. 순회 전에 마스터를 한 번 읽어 유효한 (항목·성별) 만 남기고, ★ 항목은
+      조치를 「빼지 않음」으로 고정한다. master_items 는 시험용(가짜값)만 — None 이면 조회."""
     if not _CID_OK:
         return []
     base = datetime.strptime(today, "%Y-%m-%d")
@@ -345,12 +352,23 @@ def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> l
     recs = {d: v for d, v in recs.items() if v}
     if len(recs) < threshold:
         return []
+    if master_items is None:   # 못 읽음(조회 실패) ≠ 없음 — 못 읽으면 거르지 않는다
+        _resp = fetch_gas({"action": "items", "dept": "support"}, require_ok=False)
+        master_items = (_resp or {}).get("items") or []
+    _master_gender = {str(it.get("name")): str(it.get("gender") or "all")
+                       for it in master_items if isinstance(it, dict)}
+    _master_detail = {str(it.get("name")): str(it.get("detail") or "")
+                       for it in master_items if isinstance(it, dict)}
     hits: dict = {}      # (item, g, sh) -> [(date, n, sub, at)]
     duty: dict = {}      # (g, sh) -> 체계 메모(담당)
     for d, det in recs.items():
         for g in ("m", "f"):
             for sh, cell in (det.get(g) or {}).items():
                 for name in cell.get("miss") or []:
+                    # ★2026-09-18 — 마스터에 있는 항목만, 그 항목 gender 가 all 또는 이 g 일 때만
+                    if _master_gender and (name not in _master_gender
+                                            or _master_gender[name] not in ("all", g)):
+                        continue
                     hits.setdefault((name, g, sh), []).append((d, int(cell.get("n") or 0), cell.get("sub") or "", cell.get("at") or ""))
                 who = ((det.get("duty") or {}).get(g) or {}).get(sh)
                 if who:
@@ -385,6 +403,8 @@ def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> l
             action = "제출 전 이 항목 확인"
         else:   # 제출자 이름이 없는 날만 남음(체크는 있고 도장이 없는 꼴) — 사실만 적는다
             cause, action = f"{pre}제출 도장 없이 체크만 있음", "조 [제출]까지 누르기"
+        if _master_detail.get(name, "").startswith("★"):   # GM 필수 항목 — 빼는 조치 금지
+            action = "필수 항목 — 빼지 않음 · 매 회차 체크"
         rows.append({"key": f"{name}|{g}|{sh}", "label": f"{name} — {label} {len(recs)}일 중 {len(h)}일 미체크",
                      "days": len(h), "n_days": len(recs), "cause": cause, "action": action, "who": who, "items": 1})
     for (g, sh), grp in grouped.items():
@@ -1124,27 +1144,41 @@ def _selfcheck() -> None:
         try:
             led = {}
             # 6일치(휴관일 없음: 2026-09-01(화)~06(일) 중 09-06 은 첫째 일요일이라 영업) — 조통째·항목불일치·제출뒤누락 한 벌
+            # G-5 손소독기 = 마스터에서 이미 삭제된 항목(시뮬레이션) · D-2 골프장 = f 미체크인데 마스터 gender=m(성별 바뀜)
             for i, d in enumerate(("2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06")):
                 sub = ["박", "김", "이"][i % 3]
                 led[d] = {"support": {}, "detail": {
                     "duty": {"m": {"close": "운영부"}},
-                    "m": {"close": {"n": 0, "t": 15, "sub": "", "at": "", "miss": ["A-1 탕", "A-2 사우나"]},
+                    "m": {"close": {"n": 0, "t": 15, "sub": "", "at": "", "miss": ["A-1 탕", "A-2 사우나", "G-5 손소독기"]},
                           "am": {"n": 26, "t": 27, "sub": sub, "at": "10:30", "miss": ["G-2 소독"]}},
-                    "f": {"am": {"n": 25, "t": 26, "sub": "여주임", "at": "11:30", "miss": ["D-1 헬스장"]}}}}
+                    "f": {"am": {"n": 25, "t": 26, "sub": "여주임", "at": "11:30", "miss": ["D-1 헬스장", "D-2 골프장"]}}}}
             _cid.save_ledger(CHECK_INCOMPLETE_LEDGER, led)
+            _test_master = [
+                {"name": "A-1 탕", "gender": "all", "detail": ""},
+                {"name": "A-2 사우나", "gender": "all", "detail": ""},
+                {"name": "G-2 소독", "gender": "all", "detail": "★ 매일 꾸준히 — 접점 소독"},
+                {"name": "D-1 헬스장", "gender": "f", "detail": ""},
+                {"name": "D-2 골프장", "gender": "m", "detail": ""},
+            ]   # G-5 손소독기는 없다(삭제된 항목 시뮬레이션)
             _bf = globals()["_backfill_detail"]
+            _fg = globals()["fetch_gas"]
             globals()["_backfill_detail"] = lambda *a, **k: None
+            globals()["fetch_gas"] = lambda *a, **k: {"ok": True, "items": _test_master}
             try:
-                rows = {r["key"]: r for r in recurring_check_causes("2026-09-07")}
+                rows = {r["key"]: r for r in recurring_check_causes("2026-09-07", master_items=_test_master)}
+                issue_lines = recurring_issue_lines("2026-09-07")   # 내부 조회는 monkeypatch 로 무네트워크
             finally:
                 globals()["_backfill_detail"] = _bf
+                globals()["fetch_gas"] = _fg
             assert rows["조통째|m|close"]["items"] == 2 and "6일 조 통째 0건" in rows["조통째|m|close"]["label"], rows
             assert rows["조통째|m|close"]["who"] == _foreman("m")
-            assert rows["G-2 소독|m|am"]["action"] == "항목 빼기/요일 조정", rows["G-2 소독|m|am"]
+            assert rows["G-2 소독|m|am"]["action"] == "필수 항목 — 빼지 않음 · 매 회차 체크", rows["G-2 소독|m|am"]
             assert "박" not in rows["G-2 소독|m|am"]["cause"], "통에 제출자 이름 금지"
             assert rows["D-1 헬스장|f|am"]["who"] == _foreman("f") and "여주임" not in rows["D-1 헬스장|f|am"]["cause"]
             assert "11:30~11:30" in rows["D-1 헬스장|f|am"]["cause"]
-            assert all(len(ln) <= 90 for ln in recurring_issue_lines("2026-09-07")[1:]), "두 줄 규칙"
+            assert "G-5 손소독기|m|close" not in rows, "삭제된 항목은 반복 이슈에서 거른다"
+            assert "D-2 골프장|f|am" not in rows, "성별 바뀐 항목은 그 성별 쪽에서 거른다"
+            assert all(len(ln) <= 90 for ln in issue_lines[1:]), "두 줄 규칙"
         finally:
             CHECK_INCOMPLETE_LEDGER = orig
     print("[selfcheck] support_check_summary OK — hhmm·독려 남/여 분리·반복 원인 3갈래")
