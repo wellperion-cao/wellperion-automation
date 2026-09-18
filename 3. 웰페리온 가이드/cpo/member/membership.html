@@ -9191,6 +9191,32 @@ function _activeWireMore() {
   });
 }
 
+/* 브로제이 회원권·수강권 종료일 태그(읽기 전용) — 2026-09-18 시포(배 12761 · GM "브로제이 CRM 벤치마킹 점진 개선").
+   화면에 그려진 행들의 전화를 모아 /api/brojay/member_tickets 를 한 번 부르고, 응답이 오면 종료일자 칸에
+   작은 글씨로 덧붙인다. 값을 쓰지 않는다(읽기 전용) · 실패해도 화면은 그대로(콘솔 warn 만). */
+function _brojayNormPhone(p) { return String(p || '').replace(/\D/g, ''); }
+function _brojayTagChunk(rows, cols) {
+  if (!ERP_API_ON) return;
+  var endIdx = cols.indexOf('종료일자'), phoneCol = '휴대폰 번호';
+  if (endIdx < 0 || cols.indexOf(phoneCol) < 0) return;
+  var targets = rows.filter(function(r){ return !r._crossFrom && _brojayNormPhone(r[phoneCol]); });
+  if (!targets.length) return;
+  var phones = targets.map(function(r){ return _brojayNormPhone(r[phoneCol]); });
+  _apiJson('/api/brojay/member_tickets?phones=' + phones.join(','))
+    .then(function(d){
+      var items = (d && d.items) || {};
+      targets.forEach(function(r){
+        var it = items[_brojayNormPhone(r[phoneCol])];
+        if (!it || !it.member_end) return;
+        var tr = document.querySelector('tr[data-rowindex="' + CSS.escape(String(r.rowIndex != null ? r.rowIndex : '')) + '"]');
+        var td = tr && tr.children[endIdx];
+        if (!td) return;
+        var same = String(r['종료일자'] || '').trim().indexOf(it.member_end) >= 0;
+        td.insertAdjacentHTML('beforeend', '<div style="font-size:10px;color:' + (same ? 'var(--dim)' : 'var(--orange)') + '">브로제이 종료 ' + esc(it.member_end) + '</div>');
+      });
+    })
+    .catch(function(e){ console.warn('[브로제이 종료일] 실패:', e && e.message); });
+}
 function _activeRenderChunk() {
   var q = _activeRenderQueue;
   var tbody = document.getElementById('activeBody');
@@ -9199,6 +9225,7 @@ function _activeRenderChunk() {
   if (old) old.parentNode.removeChild(old);
   var slice = q.rows.splice(0, ACTIVE_CHUNK);
   tbody.insertAdjacentHTML('beforeend', slice.map(function(row){ return _activeRowHtml(row, q.cols); }).join(''));
+  _brojayTagChunk(slice, q.cols);
   if (!q.rows.length) return;
   tbody.insertAdjacentHTML('beforeend',
     '<tr id="activeMoreSentinel"><td colspan="' + (q.cols.length || 1) + '" ' +
