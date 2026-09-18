@@ -240,16 +240,12 @@
   .foot{margin-top:50px; padding-top:16px; border-top:1px solid var(--border);
         font-size:var(--fs-2); color:var(--dim);}
   @media(max-width:900px){
-    /* 좁은 화면에선 왼쪽 기둥을 가로로 눕힌다 — 세로 메뉴가 화면 절반을 먹는 것보다 낫다 */
-    .shell{grid-template-columns:1fr;}
-    /* 눕혀도 sticky 를 유지한다 — static 으로 두면 아래로 조금만 내려도 메뉴가 화면 밖으로
-       사라져, 영역을 바꾸려면 매번 맨 위까지 올라가야 한다. */
-    .side{position:sticky; top:48px; z-index:19; height:auto; display:flex; gap:2px; padding:0 8px;
-          overflow-x:auto; -webkit-overflow-scrolling:touch;
-          background:var(--paper); border-right:none; border-bottom:1px solid var(--border);}
-    .side .cap, .side .desc, .side .sep{display:none;}
-    .side a{border-left:none; border-bottom:3px solid transparent; white-space:nowrap; padding:12px 14px;}
-    .side a.on{border-left-color:transparent; border-bottom-color:var(--accent); background:transparent;}
+    /* 좁은 화면(GM 2026-09-18 「좌우로 줄이면 메뉴판이 깨진다」) — 종전엔 22개 항목을 가로 한 줄로 눕혀
+       글자가 겹쳤다. 이제 메뉴는 그대로 세로 기둥이고, 본문 위에 덮이는 서랍이다: 기본은 닫힘(☰ 로 연다),
+       항목을 고르면 저절로 닫힌다. 본문은 항상 풀폭. */
+    .shell{grid-template-columns:minmax(0,1fr);}
+    .side{position:fixed; left:0; top:48px; width:240px; height:calc(100vh - 48px); z-index:25;
+          box-shadow:4px 0 16px rgba(0,0,0,.14);}
   }
   @media(max-width:640px){
     .topbar{padding:0 18px; gap:10px;} .main{padding:24px 18px 60px;}
@@ -308,11 +304,23 @@
     btn.setAttribute('aria-label', off?'메뉴 열기':'메뉴 닫기');
   }
   var saved=null; try{ saved=localStorage.getItem('axlabs_side'); }catch(e){}
-  apply(saved==='off');
+  var narrow=function(){ return window.matchMedia('(max-width:900px)').matches; };
+  /* 좁은 화면은 서랍이라 기본 닫힘(저장값이 없을 때) — 넓은 화면은 저장값 그대로. */
+  apply(saved==='off' || (saved===null && narrow()));
+  /* 폭이 900 을 넘나들면 다시 판정 — 좁아지면 서랍은 닫히고, 넓어지면 저장값대로 돌아온다. */
+  window.matchMedia('(max-width:900px)').addEventListener('change', function(ev){
+    var s=null; try{ s=localStorage.getItem('axlabs_side'); }catch(e){}
+    apply(ev.matches ? true : s==='off');
+  });
+  /* 좁은 화면에서 항목을 고르면 서랍을 닫는다 — 본문이 가려진 채 남지 않게. 저장값은 안 건드린다. */
+  document.addEventListener('click', function(e){
+    if(narrow() && e.target.closest('#side-nav a[href]')) apply(true);
+  });
   btn.addEventListener('click', function(){
     var off=!shell.classList.contains('side-off');
     apply(off);
-    try{ localStorage.setItem('axlabs_side', off?'off':'on'); }catch(e){}
+    /* 서랍(좁은 폭)의 열고 닫음은 그때뿐 — 저장하면 넓은 화면으로 돌아왔을 때 메뉴가 닫힌 채 남는다. */
+    if(!narrow()){ try{ localStorage.setItem('axlabs_side', off?'off':'on'); }catch(e){} }
   });
 })();
 </script>
