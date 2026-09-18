@@ -196,6 +196,54 @@
           "upload": "기록만",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-1021",
+          "no": "21",
+          "got": "시모랑 시보 대기? 30분 대기해야 자율 순환 시키는거야?",
+          "did": "§7-6 첫 바퀴는 즉시 · 30분은 간격 (GM 09-18 10:2x) · docs(boot): §7-6 첫 바퀴는 즉시 · 30분은 간격 (GM  — 커밋 412353565d · 배 12736",
+          "start": "10:22",
+          "end": "10:23",
+          "minutes": 0,
+          "upload": "✅ 배포 (412353565)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-1022",
+          "no": "22",
+          "got": "전체 C레벨 지금 돌고 있는지 확인해줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:23",
+          "end": "10:23",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-1023",
+          "no": "23",
+          "got": "C레벨 관제판도 신뢰할 수 있는건지도 확인해줘",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:23",
+          "end": "10:23",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-1024",
+          "no": "24",
+          "got": "지금 관제판은 시토랑 시모 대기인데?",
+          "did": "",
+          "start": "10:24",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -276,16 +324,37 @@
           "area": "작업",
           "event": "docs(boot): §7-6 자율 순환 — 세션이 30분마다 스스로 깨어 한 바퀴 (GM 09-18 「왜 대기하나」)",
           "detail": "커밋 88ee134bae · 배 12736"
+        },
+        {
+          "time": "10:23",
+          "area": "작업",
+          "event": "docs(boot): §7-6 첫 바퀴는 즉시 · 30분은 간격 (GM 09-18 10:2x)",
+          "detail": "커밋 412353565d · 배 12736"
         }
       ],
-      "count": 16,
-      "done": 16,
-      "open": 0,
-      "avg_minutes": 4,
-      "work_count": 13,
+      "count": 20,
+      "done": 19,
+      "open": 1,
+      "avg_minutes": 3,
+      "work_count": 14,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260918-1024",
+          "no": "24",
+          "got": "지금 관제판은 시토랑 시모 대기인데?",
+          "did": "",
+          "start": "10:24",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -326,6 +395,18 @@
           "upload": "✅ 배포 (fe18c272b)",
           "open": false,
           "evidence": "🔁재확인"
+        },
+        {
+          "ref": "GM-20260918-1013",
+          "no": "13",
+          "got": "랩스 화면 좌우로 줄이면 메뉴판 깨짐 확인",
+          "did": "900px 아래 메뉴 22개를 가로 한 줄로 눕혀 글자 겹침 → 서랍(☰ 로 열고 항목 고르면 닫힘)으로 · 저장 ea4c4ebcf · 라이브 760/500/1200 실측 겹침 0",
+          "start": "10:22",
+          "end": "10:22",
+          "minutes": 0,
+          "upload": "✅ 배포 (ea4c4ebcf)",
+          "open": false,
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260918-2001",
@@ -403,13 +484,13 @@
           "ref": "GM-20260918-2009",
           "no": "09",
           "got": "랩스 화면을 좌우로 줄이면 메뉴판이 깨지는데 확인해줘",
-          "did": "",
+          "did": "구글 의존 실측 갱신 — 구글만 1 · 예비 55 · 서버만 15 / 167 · 랩스 관리자 셸 — 좁은 폭(900 이하) 메뉴판을 가로 눕힘 대신 서랍(☰ 로 열고 항목 고르면 닫힘)으로 (GM 09-18 · 랩스 관리자 셸 — 좁은 폭(900 이하) 메뉴판을 가로 눕힘 대신 서랍 — 커밋 ea4c4ebcf3 · 배 12680",
           "start": "10:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:22",
+          "minutes": 7,
+          "upload": "✅ 배포 (ea4c4ebcf)",
+          "open": false,
+          "evidence": "✅있음"
         }
       ],
       "work": [
@@ -570,29 +651,14 @@
           "detail": "커밋 ea4c4ebcf3 · 배 12680"
         }
       ],
-      "count": 10,
-      "done": 9,
-      "open": 1,
+      "count": 11,
+      "done": 11,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 26,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260918-2009",
-          "no": "09",
-          "got": "랩스 화면을 좌우로 줄이면 메뉴판이 깨지는데 확인해줘",
-          "did": "",
-          "start": "10:14",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 8
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -741,13 +807,19 @@
           "area": "진행",
           "event": "12523 2단계 1차 마감 — 남은 3곳(말일 팀 목표·과거 날짜 탭·강습 띠 10/1)",
           "detail": "다음 = 원장 teams 시딩"
+        },
+        {
+          "time": "10:24",
+          "area": "공통",
+          "event": "feat(report): 바디프렌드 라운지 매출 일일 자동 수집 — 계정 저장 뒤 첫 실측 211,000원(9월 13일치) · --daily 게이트(06시 뒤 하루 1회·저장 관문) · 3분 CPO 슬롯에 얹음(새",
+          "detail": "커밋 4b12e10229 · 배 12523"
         }
       ],
       "count": 2,
       "done": 2,
       "open": 0,
       "avg_minutes": 32,
-      "work_count": 8,
+      "work_count": 9,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -935,13 +1007,19 @@
           "area": "작업",
           "event": "fix(cbo): 다캠 강사 모집 정정 — 지인 소개는 회원 유입, 강사는 다캠 브랜딩으로 교육생 모아 양성(GM 정정 2026-09-18) · 교육 시스템 필요 여부 저녁 통 물음 1개 예고",
           "detail": "커밋 0d9e668248 · 배 12718"
+        },
+        {
+          "time": "10:23",
+          "area": "작업",
+          "event": "feat(partner): 파트너 파이프라인 재구축 — 아침 0통 · 인스타 06:30 자동 게시 → 블로그 씨앗 · 저녁 한 통 필요한 것만 · 부록 B v1.1 (GM 2026-09-18 · 배 12718)",
+          "detail": "커밋 3132ce2f99 · 배 12718"
         }
       ],
       "count": 7,
       "done": 7,
       "open": 0,
       "avg_minutes": 0,
-      "work_count": 4,
+      "work_count": 5,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -956,7 +1034,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T10:21:59",
+    "published_at": "2026-09-18T10:25:18",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -964,13 +1042,13 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "10:21",
-          "area": "GM지시",
-          "event": "GM 확인 「웰리가 오케스트레이션 — 이걸 원했다」 → 상시 규칙으로 박제",
-          "result": "ok"
+          "time": "10:24",
+          "area": "GM요청",
+          "event": "지금 관제판은 시토랑 시모 대기인데?",
+          "result": "warn"
         },
         "idle_since": null,
-        "saves": 8
+        "saves": 9
       },
       "cto": {
         "nick": "시토",
@@ -978,12 +1056,12 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "10:19",
-          "area": "작업",
-          "event": "랩스 관리자 셸 — 좁은 폭(900 이하) 메뉴판을 가로 눕힘 대신 서랍(☰ 로 열고 항목 고르면 닫힘)으로 (GM 09-18 「좌우로 줄이면 메뉴판이 깨진다」)",
-          "result": "ok"
+          "time": "10:22",
+          "area": "진행",
+          "event": "12745 메인 창 직접 실행 차단 관문 + 위임 비율 — 레인 착수",
+          "result": "warn"
         },
-        "idle_since": null,
+        "idle_since": "10:22",
         "saves": 36
       },
       "cmo": {
@@ -1006,13 +1084,13 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "10:19",
-          "area": "진행",
-          "event": "12523 2단계 1차 마감 — 남은 3곳(말일 팀 목표·과거 날짜 탭·강습 띠 10/1)",
+          "time": "10:24",
+          "area": "공통",
+          "event": "feat(report): 바디프렌드 라운지 매출 일일 자동 수집 — 계정 저장 뒤 첫 실측 211,000원(9월 13일치) · --daily 게이트(06시 뒤 하루 1회·저장 관문) · 3분 CPO 슬롯에 얹음(새",
           "result": "ok"
         },
         "idle_since": null,
-        "saves": 7
+        "saves": 8
       },
       "coo": {
         "nick": "시우",
@@ -1020,12 +1098,12 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "09:51",
+          "time": "10:24",
           "area": "진행",
-          "event": "2737 FAQ 드리프트 시모 진행·회신 확인·라이브 재측정",
-          "result": "ok"
+          "event": "자율 순환 — 화면 감점 2건 해소(파트너팀 체계 CSS·오넛티 모바일) 레인 진행",
+          "result": "warn"
         },
-        "idle_since": "09:52",
+        "idle_since": null,
         "saves": 4
       },
       "cbo": {
@@ -1034,13 +1112,13 @@
         "alive": true,
         "signal": "10:15",
         "last": {
-          "time": "10:18",
-          "area": "GM요청",
-          "event": "미리 의견 드려봐 이승기대표님이랑 조재오지점장님에게 그리고 고척GDR은 인스타그램 로그인 안되었을거야",
+          "time": "10:24",
+          "area": "진행",
+          "event": "3루프 원장·결과물 표(labs_loop) 레인 + 파트너 파이프라인 레인 동시 진행 · 안내 문안 2장 GM 승인 대기",
           "result": "warn"
         },
-        "idle_since": "10:19",
-        "saves": 3
+        "idle_since": null,
+        "saves": 4
       }
     }
   }
