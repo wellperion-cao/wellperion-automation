@@ -9594,25 +9594,27 @@ function _waitBoardHtml(rows) {
     '</div>';
 }
 // 미등록사유 현황판(LOSS 탭 전용, FB260801-141806 임정은M 요청) — _waitBoardHtml과 동일 패턴(신규 fetch 0),
-// 로드된 종료회원 행의 '미등록사유' 칸을 사유별로 묶어 건수로 보여준다. 사유 미기록은 '미기록'으로 드러낸다.
+// 로드된 종료회원 행의 '미등록사유' 칸을 사유별로 묶어 건수·비율로 보여준다. 사유 미기록은 '사유 미입력'으로 드러낸다.
+// 표 형식(사유|건수|비율, 배 12814 임정은M 요청) — 기존 mdash-mreg-table 클래스 재사용(신규 CSS 없음).
 function _unregReasonBoardHtml(rows) {
   if (!rows || !rows.length) return '';
   var col = _capCol(_activeHeaders, '미등록사유');
   if (!col) return '';
   var counts = {}, order = [];
   rows.forEach(function(r){
-    var v = String(r[col] || '').trim() || '미기록';
+    var v = String(r[col] || '').trim() || '사유 미입력';
     if (!counts[v]) { counts[v] = 0; order.push(v); }
     counts[v]++;
   });
   order.sort(function(a, b){ return counts[b] - counts[a]; });
-  var chips = order.map(function(k){
-    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">' +
-      '<span style="color:var(--text);word-break:keep-all">' + esc(k) + '</span><span style="font-weight:800;color:#c8756f;flex-shrink:0">' + counts[k] + '건</span></div>';
+  var total = rows.length;
+  var trs = order.map(function(k){
+    var pct = total ? (counts[k] / total * 100).toFixed(1) : '0.0';
+    return '<tr><td>' + esc(k) + '</td><td>' + counts[k] + '건</td><td>' + pct + '%</td></tr>';
   }).join('');
   return '<div style="margin-top:10px">' +
-      '<div style="font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:6px">🧮 미등록사유별 현황 (합계 ' + rows.length + '건)</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">' + chips + '</div>' +
+      '<div style="font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:6px">🧮 미등록사유별 현황 (합계 ' + total + '건)</div>' +
+      '<div class="mdash-mreg-wrap"><table class="mdash-mreg-table"><thead><tr><th>사유</th><th>건수</th><th>비율</th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
     '</div>';
 }
 function _memberOverviewHtml() {
