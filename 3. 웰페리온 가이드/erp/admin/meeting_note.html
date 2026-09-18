@@ -88,11 +88,11 @@
     <h2>업무 행 초안</h2>
     <div class="tbl-wrap"><table class="reg" id="taskTbl">
       <colgroup><col style="width:26px"><col style="width:20%"><col style="width:38%"><col style="width:16%"><col style="width:12%"></colgroup>
-      <thead><tr><th></th><th>업무명</th><th>내용</th><th>담당자 후보</th><th>기한 후보</th></tr></thead>
+      <thead><tr><th id="ckHead"></th><th>업무명</th><th>내용</th><th>담당자 후보</th><th>기한 후보</th></tr></thead>
       <tbody id="taskBody"></tbody>
     </table></div>
 
-    <div class="bar">
+    <div class="bar" id="uploadBar">
       <button type="button" class="btn p" id="btnUpload">체크한 행을 업무 SSOT 에 올리기</button>
       <span class="msg" id="upMsg"></span>
     </div>
@@ -108,6 +108,22 @@
 'use strict';
 var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 var MEETING_CATEGORY = '[9] 회의';
+
+/* ── 파트너 계정엔 「업무 SSOT 올리기」 숨김(배 12815 ④) ── 판정 원천 = /auth/me 의 tenant 칸
+   (server/erp_auth/app.py _profile: admin=null · 파트너=perms.tenant 값 · 웰페리온 직원=null).
+   기본값 = 숨김(판정 전·실패 시 안전 쪽) — 확인되면 웰페리온 직원·관리자만 보인다. */
+var HIDE_UPLOAD = true;
+function applyUploadVisibility(){
+  var ck = document.getElementById('ckHead'); if (ck) ck.style.display = HIDE_UPLOAD ? 'none' : '';
+  var bar = document.getElementById('uploadBar'); if (bar) bar.style.display = HIDE_UPLOAD ? 'none' : '';
+  var cells = document.querySelectorAll('#taskBody .ckcell');
+  for (var i = 0; i < cells.length; i++) cells[i].style.display = HIDE_UPLOAD ? 'none' : '';
+}
+applyUploadVisibility();
+fetch('/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(me){
+  HIDE_UPLOAD = !(me && !me.tenant);
+  applyUploadVisibility();
+}).catch(function(){ HIDE_UPLOAD = true; applyUploadVisibility(); });
 
 function todayDateStr(){
   var d = new Date();
@@ -218,7 +234,7 @@ function renderResult(summary, tasks){
     : '<li class="empty">요약할 내용이 없습니다.</li>';
   taskBody.innerHTML = tasks.length ? tasks.map(function(t, i){
     return '<tr>' +
-      '<td><input type="checkbox" class="rowck" checked></td>' +
+      '<td class="ckcell"><input type="checkbox" class="rowck" checked></td>' +
       '<td><input type="text" class="rowtitle" value="' + escAttr(t.title) + '"></td>' +
       '<td><input type="text" class="rowbody" value="' + escAttr(t.body) + '"></td>' +
       '<td><input type="text" class="rowowner" value="' + escAttr(t.owner) + '"></td>' +
@@ -226,6 +242,7 @@ function renderResult(summary, tasks){
       '</tr>';
   }).join('') : '<tr><td colspan="5" class="empty">회의에서 뽑힌 업무가 없습니다.</td></tr>';
   result.style.display = '';
+  applyUploadVisibility();
 }
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
