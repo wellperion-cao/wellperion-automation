@@ -85,6 +85,12 @@ table.otbl tr:last-child td{border-bottom:none}
   /* 상태 드롭다운(화면용 컨트롤) — 값은 남기고 컨트롤 장식만 제거 */
   .stat-sel{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:0}
 }
+
+/* ── 모바일 폭 대응 ── */
+@media (max-width:640px){
+  .wrap{padding:14px 10px 32px}
+  .summary{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
