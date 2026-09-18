@@ -1656,6 +1656,19 @@ function renderLesson(d){
    sales_monthly 는 '26년 매출 분석' 시트 AV열(나우열M 관리)을 읽는데 보고 파일과 매달 갈린다(실측 2026-09-15:
    6월 +1,942만 · 7월 +1,127만 · 8월 +2,688만 — 8월 보고 파일 6.25억 vs 매출 분석 5.99억). 이 화면의 매출 정의는
    09:30 보고와 같은 보고 파일이다. 파일이 없는 달(1·2월)은 종전 값을 둔다. 값은 다시 계산하지 않고 J4 를 그대로 옮긴다. */
+/* 원장(status/monthly_report_ledger.json) 로더 — Promise 캐시 한 곳(배 12523 2단계). fixPastMonths(매출)와
+   p4MonthEndTeams(4면 팀 누적) 가 같은 파일을 각자 fetch 하던 것을 이걸로 합쳐 한 번만 받는다. */
+var _LEDGER_MONTHS_P = null;
+function loadLedgerMonths(){
+  if (_LEDGER_MONTHS_P) return _LEDGER_MONTHS_P;
+  var base = ERP_API_ON ? '/repo/' : '../../../';
+  _LEDGER_MONTHS_P = fetch(base + 'status/monthly_report_ledger.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ return (d && d.months) || {}; })
+    .catch(function(){ return {}; });
+  return _LEDGER_MONTHS_P;
+}
+
 /* 지난달 값 원천 전환(배 12523 6) — 월간 운영 보고 원장(status/monthly_report_ledger.json ·
    months[YYYY-MM].sales.month)이 있으면 그 값을 쓰고 그 달은 GAS 를 안 부른다. 원장이 아직 없는
    달(9월 이전 일부)만 종전대로 보고파일(GAS 31탭 J4)을 부른다. */
@@ -1663,11 +1676,8 @@ function fixPastMonths(d){
   var months = (d && d.months) || [];
   var now = new Date(), y = now.getFullYear(), cur = now.getMonth() + 1;
   if (cur < 2) return;   // 1월 — 지난달이 없다
-  var base = ERP_API_ON ? '/repo/' : '../../../';
-  fetch(base + 'status/monthly_report_ledger.json?t=' + Date.now(), { cache: 'no-store' })
-    .then(function(r){ return r.json(); }).catch(function(){ return null; })
-    .then(function(ledger){
-      var lm = (ledger && ledger.months) || {};
+  loadLedgerMonths()
+    .then(function(lm){
       var jobs = [];
       for (var m = 1; m < cur; m++) (function(m){
         var v = lm[y + '-' + ('0' + m).slice(-2)];
@@ -2519,28 +2529,35 @@ function renderP4Top(teams){
    이 브라우저(localStorage)에 두며, 지난달은 안 바뀌므로 다시 읽지 않는다. 못 읽은 달은 0 이 아니라 「—」로 남긴다.
    달성 가능 % = (분기 누적 + 이달 영업일 하루 평균 × 남은 영업일) ÷ 분기 목표. 영업일 = 휴관일 정본(isClosedDay) 제외. */
 var P4_TEAM_ROW = { '수영팀': 8, 'P.T팀': 9, '골프팀': 10, '스쿼시팀': 11, '체조팀': 12, 'P.L팀': 13, '뮤지컬팀': 14, 'GXE팀': 15 };
-// 말일 팀 성적 = 다음 걸음 · 원장 teams 로(배 12523 6 — 이번 턴엔 원천이 없어 손대지 않는다)
+/* 말일 팀 누적 — 원장(status/monthly_report_ledger.json months[].teams)이 있으면 그것만 쓰고 GAS 를
+   안 부른다(배 12523 2단계 · scripts/seed_monthly_sales_ledger.py 가 1~8월을 채워 둠). 원장에 없는
+   달만 종전대로 말일 일자탭(O15:U66)을 GAS 로 읽는다. */
 function p4MonthEndTeams(year, month){
-  var key = 'p4_monthend_' + year + '-' + ('0' + month).slice(-2);
+  var ym = year + '-' + ('0' + month).slice(-2);
+  var key = 'p4_monthend_' + ym;
   try { var hit = localStorage.getItem(key); if (hit) return Promise.resolve(JSON.parse(hit)); } catch (e) {}
-  var last = new Date(year, month, 0).getDate();
-  return fetch(ERP + '?action=daily_report_sheet&year=' + year + '&month=' + month + '&cb=' + Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (!d || !d.ok || !d.fileId) throw new Error('파일 없음');
-      return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + last + '&range=O15:U66&file=' + encodeURIComponent(d.fileId) + '&cb=' + Date.now())
-        .then(function(r){ return r.json(); });
-    })
-    .then(function(r){
-      if (!r || !r.ok || !r.cells) throw new Error('말일 탭 없음');
-      var out = {};
-      p4Teams(p4Rows(r.cells, 16, 66)).forEach(function(t){
-        out[t.name] = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
-      });
-      try { localStorage.setItem(key, JSON.stringify(out)); } catch (e) {}
-      return out;
-    })
-    .catch(function(e){ console.warn('[4면] ' + year + '-' + month + ' 말일 탭 못 읽음:', e && e.message); return null; });
+  return loadLedgerMonths().then(function(lm){
+    var t = lm[ym] && lm[ym].teams;
+    if (t) { try { localStorage.setItem(key, JSON.stringify(t)); } catch (e) {} return t; }
+    var last = new Date(year, month, 0).getDate();
+    return fetch(ERP + '?action=daily_report_sheet&year=' + year + '&month=' + month + '&cb=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d || !d.ok || !d.fileId) throw new Error('파일 없음');
+        return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=' + last + '&range=O15:U66&file=' + encodeURIComponent(d.fileId) + '&cb=' + Date.now())
+          .then(function(r){ return r.json(); });
+      })
+      .then(function(r){
+        if (!r || !r.ok || !r.cells) throw new Error('말일 탭 없음');
+        var out = {};
+        p4Teams(p4Rows(r.cells, 16, 66)).forEach(function(t){
+          out[t.name] = t.rows.reduce(function(a, x){ return a + p4Num(x.acc); }, 0);
+        });
+        try { localStorage.setItem(key, JSON.stringify(out)); } catch (e) {}
+        return out;
+      })
+      .catch(function(e){ console.warn('[4면] ' + ym + ' 말일 탭 못 읽음:', e && e.message); return null; });
+  });
 }
 function p4BizDays(from, to){   // from~to(둘 다 포함) 중 휴관일 아닌 날 수
   var n = 0, d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
