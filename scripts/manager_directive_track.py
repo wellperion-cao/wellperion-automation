@@ -66,9 +66,17 @@ def person_rows(rows: list, person: str) -> dict:
     return {"open": open_rows, "tagged": tagged, "gm_direct": gm_direct}
 
 
-def directive_rows_for(rows: list, person: str) -> list:
-    """「사람 지시」 행만 — 태그(회장님/대표님/GM 지시) 또는 GM 직접 생성, 열린 것만, id 중복 제거.
-    Top3·리마인드·아침 점검은 이 사람이 맡은 전체 업무가 아니라 이 부분집합만 본다(§7 정의)."""
+def _is_meeting_row(r: dict) -> bool:
+    """「9월 3주차 회의」류 — 회의록이지 지시가 아니다(GM 09-18 지적)."""
+    return "회의" in str(r.get("업무명") or "")
+
+
+def _is_on_hold(r: dict) -> bool:
+    return str(r.get("상태") or "").strip() == "보류"
+
+
+def _candidate_rows(rows: list, person: str) -> list:
+    """tagged ∪ gm_direct, id 중복 제거 — 회의·보류 제외 전 원본(제외 건수 세는 데 쓴다)."""
     pr = person_rows(rows, person)
     seen: set = set()
     out = []
@@ -79,6 +87,17 @@ def directive_rows_for(rows: list, person: str) -> list:
         seen.add(rid)
         out.append(r)
     return out
+
+
+def directive_rows_for(rows: list, person: str) -> list:
+    """「사람 지시」 행만 — 태그(회장님/대표님/GM 지시) 또는 GM 직접 생성, 열린 것만, id 중복 제거,
+    회의록·보류 행 제외. Top3·리마인드·아침 점검은 이 사람이 맡은 전체 업무가 아니라
+    이 부분집합만 본다(§7 정의)."""
+    return [r for r in _candidate_rows(rows, person) if not _is_meeting_row(r) and not _is_on_hold(r)]
+
+
+def meeting_excluded_count(rows: list, person: str) -> int:
+    return sum(1 for r in _candidate_rows(rows, person) if _is_meeting_row(r))
 
 
 # ═══ ① 오늘 집중 업무 Top 3 ══════════════════════════════════════════════
@@ -200,14 +219,18 @@ def classify_person_row(r: dict, today: str) -> tuple[str, str]:
 def morning_block(today: str) -> str:
     rows = fetch_ssot_rows() or []
     items = []
+    n_meeting = 0
     for person in PEOPLE:
+        n_meeting += meeting_excluded_count(rows, person)
         for r in directive_rows_for(rows, person):
             icon, evidence = classify_person_row(r, today)
             items.append({"role": person, "key": f"todo:{r.get('id')}",
                           "title": str(r.get("업무명") or "")[:30], "icon": icon, "evidence": evidence})
     items = bump_carry(items)
-    lines = [f"## 👥 사람 관리자 지시 이행 ({today})", "",
-             "| 담당 | 건 | 상태 | 사유 | 이월 |", "|---|---|---|---|---|"]
+    lines = [f"## 👥 사람 관리자 지시 이행 ({today})", ""]
+    if n_meeting:
+        lines.append(f"(회의 기록 {n_meeting}건 제외)")
+    lines += ["| 담당 | 건 | 상태 | 사유 | 이월 |", "|---|---|---|---|---|"]
     flagged = []
     for it in items:
         flag = " 🚩" if it.get("carry_count", 0) >= 3 else ""
@@ -241,10 +264,15 @@ def selfcheck() -> None:
         {"id": 10, "담당자": "랭크테스트", "업무명": "여유건", "생성자": "김남욱GM", "상태": "", "내용": "", "종료일": "2026-09-30", "수정일": "2026-09-01"},
         {"id": 11, "담당자": "랭크테스트", "업무명": "지남건", "생성자": "김남욱GM", "상태": "", "내용": "", "종료일": "2026-09-10", "수정일": "2026-09-01"},
         {"id": 12, "담당자": "랭크테스트", "업무명": "회장님건 [회장님 지시]", "상태": "", "내용": "완료 기준: 확인", "종료일": "2026-09-30", "수정일": "2026-09-05"},
+        # 회의·보류 제외 확인용 — 둘 다 11 보다 더 지났지만(가장 급해 보이지만) 지시가 아니므로 빠져야 한다.
+        {"id": 13, "담당자": "랭크테스트", "업무명": "9월 3주차 회의", "생성자": "김남욱GM", "상태": "", "내용": "", "종료일": "2026-09-05", "수정일": "2026-09-01"},
+        {"id": 14, "담당자": "랭크테스트", "업무명": "보류건", "생성자": "김남욱GM", "상태": "보류", "내용": "", "종료일": "2026-09-01", "수정일": "2026-09-01"},
     ]
     picked, ambiguous = top3(rank_rows, "랭크테스트", today)
     assert picked and picked[0]["id"] == 11, f"selfcheck 실패: 기한 지남 건이 1순위가 아님 → {picked}"
     assert any(r["id"] == 10 for r in ambiguous), "selfcheck 실패: 완료 기준 없는 건이 역질문 목록에 안 잡힘"
+    assert not any(r["id"] in (13, 14) for r in picked), f"selfcheck 실패: 회의·보류 건이 안 걸러짐 → {picked}"
+    assert meeting_excluded_count(rank_rows, "랭크테스트") == 1, "selfcheck 실패: 회의 제외 건수 집계 오류"
 
     assert _in_quiet_window(datetime(2026, 9, 18, 7, 30)) is True
     assert _in_quiet_window(datetime(2026, 9, 18, 12, 0)) is False
@@ -282,6 +310,9 @@ def main() -> int:
                 print("  역질문 필요(기한 또는 완료 기준 없음):")
                 for r in ambiguous[:5]:
                     print(f"    - #{r.get('id')} {str(r.get('업무명') or '')[:30]}")
+            n_meeting = meeting_excluded_count(rows, person)
+            if n_meeting:
+                print(f"  (회의 기록 {n_meeting}건 제외)")
         return 0
 
     if args.remind:
