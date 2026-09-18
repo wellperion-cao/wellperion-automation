@@ -145,19 +145,27 @@ def _organize(txt_path: Path) -> "tuple[str | None, str | None]":
         return None, f"엔진 호출 실패: {exc}"
 
 
-def _publish(entry: dict) -> "tuple[bool, str | None]":
+def _publish(entry: dict) -> "tuple[bool, str | None, str]":
+    """(성공, 실패사유, stdout) — --flag-trigger 는 안 넘긴다: 엔진이 제목 ⛔GM 재확인 태그로
+    스스로 3-트리거 항목을 가른다(웰리 결정 2026-09-18). --apply 로 실제 등재까지 시킨다."""
     if not PIPELINE.exists():
-        return False, "게시 엔진 준비 중"
-    args = [PYTHON, str(PIPELINE), "publish", "--md", entry["md"]]
-    if entry.get("trigger"):
-        args.append("--flag-trigger")
+        return False, "게시 엔진 준비 중", ""
+    args = [PYTHON, str(PIPELINE), "publish", "--md", entry["md"], "--apply"]
     try:
         r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
         if r.returncode != 0:
-            return False, f"엔진 오류: {(r.stderr or r.stdout or '').strip()[:200]}"
-        return True, None
+            return False, f"엔진 오류: {(r.stderr or r.stdout or '').strip()[:200]}", r.stdout or ""
+        return True, None, r.stdout or ""
     except Exception as exc:
-        return False, f"엔진 호출 실패: {exc}"
+        return False, f"엔진 호출 실패: {exc}", ""
+
+
+_TRIGGER_LINE_RE = re.compile(r"^\[3-트리거[^\n]*$", re.M)
+
+
+def _extract_trigger_lines(stdout: str) -> "list[str]":
+    """엔진 stdout 의 「[3-트리거 · GM 재확인 필요] ...」 줄을 그대로 뽑아 회신에 싣는다."""
+    return _TRIGGER_LINE_RE.findall(stdout or "")
 
 
 async def _reply(ctx, text: str) -> None:
@@ -204,11 +212,15 @@ async def _handle_approve(text: str, ctx) -> None:
     if not entry.get("md"):
         await _reply(ctx, f"#{entry['no']} 아직 정리 전 — 정리 엔진 준비 중")
         return
-    ok, err = await asyncio.to_thread(_publish, entry)
+    ok, err, out = await asyncio.to_thread(_publish, entry)
     now = _iso_now()
     if ok:
         _update_pending(entry["no"], approved_at=now, published_at=now)
-        await _reply(ctx, f"✅ 게시 완료(#{entry['no']})")
+        msg = f"✅ 게시 완료(#{entry['no']})"
+        trigger_lines = _extract_trigger_lines(out)
+        if trigger_lines:
+            msg += "\n\n" + "\n".join(trigger_lines)
+        await _reply(ctx, msg)
     else:
         _update_pending(entry["no"], approved_at=now)
         await _reply(ctx, f"승인 기록했습니다(#{entry['no']}) — {err}")
@@ -316,6 +328,29 @@ def _selftest() -> None:
             asyncio.run(handle_group_message(_update(TEST_ROOM, "메모", 1006, user_id=2, is_bot=False), ctx4))
             assert ctx4.bot.sent == [], "봇·타인 글이 처리됨"
             print("[selftest] 봇·타인 글 무시 OK")
+
+            # (e) 3-트리거 줄 추출(순수 함수)
+            sample_out = ("[3-트리거 · GM 재확인 필요] #3 시토 — 이번 달 카드값 승인 ⛔GM 재확인(💰)\n"
+                          "[게시 완료] 1건 명령 · 원장=x")
+            lines = _extract_trigger_lines(sample_out)
+            assert lines == ["[3-트리거 · GM 재확인 필요] #3 시토 — 이번 달 카드값 승인 ⛔GM 재확인(💰)"], lines
+            print("[selftest] (e) 3-트리거 줄 추출 OK")
+
+            # (f) 게시 성공 + 3-트리거 줄이 있으면 회신에 그대로 실린다(publish 를 스텁)
+            orig_publish = globals()["_publish"]
+            globals()["_publish"] = lambda entry: (True, None, sample_out)
+            _append_pending({"no": 100, "msgid": 1007, "memo": "", "md": str(md_path),
+                             "received_at": _iso_now(), "approved_at": None, "published_at": None,
+                             "trigger": False})
+            ctx5 = _FakeCtx()
+            try:
+                asyncio.run(handle_group_message(_update(TEST_ROOM, "승인 100", 1008), ctx5))
+                assert len(ctx5.bot.sent) == 1, ctx5.bot.sent
+                body = ctx5.bot.sent[0][1]
+                assert "게시 완료(#100)" in body and "3-트리거" in body, body
+            finally:
+                globals()["_publish"] = orig_publish
+            print("[selftest] (f) 게시성공+3트리거 회신 OK")
         finally:
             BASE_DIR = orig_base
             PIPELINE = orig_pipeline
