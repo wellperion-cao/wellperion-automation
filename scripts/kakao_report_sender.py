@@ -93,6 +93,7 @@
 from __future__ import annotations
 
 import argparse
+import faulthandler
 import hashlib
 import io
 import json
@@ -2923,6 +2924,28 @@ def acquire_gui_lock(wait_sec: float = _GUI_LOCK_WAIT_SEC) -> bool:
             time.sleep(2.0)
 
 
+# ── 무한 멈춤 감시 (2026-09-18 사고: 21:16~22:52 멈춰 GUI 잠금을 쥔 채 발신을 막았다) ──
+# pywinauto UI 호출은 자체 타임아웃이 없어 죽으면 영원히 죽는다. 한도를 넘기면 스레드
+# 스택을 남기고 프로세스를 끝낸다(왜 멈췄는지 다음 조사에서 보이게). 방은 기본 3개뿐이라
+# (kakao_rooms.json rooms) 방 하나당 한도를 다시 걸 필요는 없다 — 전체 실행에 한도 하나.
+_HANG_LOG_PATH = ROOT / "logs" / "kakao_sender_hang.log"
+_hang_log_handle = None  # 프로세스가 끝날 때까지 열어 둔다 — 닫히면(GC) 감시가 못 쓴다
+
+
+def _arm_hang_watchdog(argv_tag: str, timeout_sec: float | None = None) -> None:
+    global _hang_log_handle
+    timeout_sec = timeout_sec or float(os.environ.get("KAKAO_SENDER_HANG_SEC", 1200))
+    try:
+        _HANG_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _hang_log_handle = open(_HANG_LOG_PATH, "a", encoding="utf-8")
+        _hang_log_handle.write(
+            f"{datetime.now().isoformat()} pid={os.getpid()} argv={argv_tag[:60]!r}\n")
+        _hang_log_handle.flush()
+        faulthandler.dump_traceback_later(timeout_sec, exit=True, file=_hang_log_handle)
+    except Exception as exc:  # 감시를 못 걸어도 발신 자체는 막지 않는다
+        log(f"[hang-watchdog] 감시 설치 실패({exc}) — 감시 없이 진행")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="텔레그램 매출보고 이미지를 카톡 방(들)에 전송(카카오톡 PC 앱 UI 자동화)")
@@ -2957,6 +2980,8 @@ def main() -> int:
         return 0
     if args.now:
         os.environ["KAKAO_UI_NOW"] = "1"
+    if not args.dry_run:
+        _arm_hang_watchdog(" ".join(sys.argv[1:]))
 
     if sys.platform != "win32":
         print("BLOCKED: 이 스크립트는 Windows(카카오톡 PC 앱) 전용입니다.")
