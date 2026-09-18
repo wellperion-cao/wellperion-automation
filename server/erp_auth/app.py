@@ -1823,7 +1823,7 @@ _ADMIN_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin.ht
 
 
 def _outside_shell(query_embed: Optional[str], sec_fetch_dest: Optional[str]) -> bool:
-    """권한 관리(/auth/admin)를 랩스 셸(erp/admin/index.html) 밖에서 주소로 바로 열었는지(배 12775 · GM 2026-09-18).
+    """권한 관리(/auth/admin)를 파트너사 관리자 콘솔(erp/index.html 계정·권한 판) 밖에서 주소로 바로 열었는지(배 12775 · GM 2026-09-18).
     embed=1 이 있으면(셸이 iframe 에 붙이는 쿼리) 항상 셸 안 — False. 없으면 Sec-Fetch-Dest 로 판정하고,
     그 헤더 자체가 없는 옛 브라우저·curl 은 밖으로 본다(True)."""
     if query_embed == "1":
@@ -1839,7 +1839,7 @@ def admin(request: Request, embed: Optional[str] = None, erp_session: Optional[s
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
     if _outside_shell(embed, request.headers.get("sec-fetch-dest")):
-        return RedirectResponse("/erp/admin/#view/accounts", status_code=303)
+        return RedirectResponse("/erp/#adm", status_code=303)
     with open(_ADMIN_HTML, encoding="utf-8") as f:
         return HTMLResponse(f.read())
 

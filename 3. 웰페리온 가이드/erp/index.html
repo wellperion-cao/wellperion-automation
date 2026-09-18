@@ -330,6 +330,13 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
   // 관리자에게만 「권한관리」 탭을 띄운다. ★이건 보기 편하라고 감추는 것일 뿐 잠금이 아니다 —
   //   실제 차단은 /auth/admin 이 서버에서 한다(관리자 아니면 403, 관리자여도 비밀번호 한 번 더).
   if (me.role === 'admin') document.getElementById('menu-admin').hidden = false;
+  // 주소 해시(#adm 등)로 왔으면 그 판을 바로 띄운다 — /auth/admin 을 주소로 열면 서버가 /erp/#adm 으로 보낸다(배 12775 정정 2026-09-18).
+  var h0 = location.hash.replace('#', '');
+  if (me.role === 'admin' && PANES.indexOf(h0) > 0) {
+    showPane(h0);
+    var a0 = document.querySelector('.side a[data-go="' + h0 + '"]');
+    mark('[data-go="' + h0 + '"]', a0 ? a0.querySelector('.t').textContent : h0);
+  }
   // 관리자 층이면 직원 카드·문서함을 그리지 않는다 — modules.json 을 아예 안 읽는다.
   if (setLayer(me.role)) return;
   return loadModules(me.role, me.allowed_ids || null);
@@ -609,7 +616,7 @@ function showPane(which){
   // 무거운 판은 처음 열 때만 읽는다 — 안 여는 사람에겐 통신이 0이다.
   if (which === 'adm') {
     var f = document.getElementById('adm-frame');
-    if (f && f.getAttribute('src') === 'about:blank') f.setAttribute('src', '/auth/admin');
+    if (f && f.getAttribute('src') === 'about:blank') f.setAttribute('src', '/auth/admin?embed=1');
   } else if (which === 'screens') {
     var sf = document.getElementById('screens-frame');
     if (sf && sf.getAttribute('src') === 'about:blank') sf.setAttribute('src', 'admin/screens.html');
