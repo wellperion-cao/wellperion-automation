@@ -57,18 +57,66 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </table>
 
 </details>
-<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-1. 파트너 2곳에 실제로 해 준 것이 상품이다</summary>
+<details open><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-1. 비즈니스 모델 실측표 — 파트너 목표 → 랩스가 제공하는 것 → 재는 숫자 (GM 09-18 · 배 12762)</summary>
+<p class="note">랩스가 파트너에게 제공하는 것 = 아래 모듈 표(정의 · <code>data-module</code> 행)뿐이다. 파트너별로는 대표의 목표에 이 모듈을 붙이고 숫자로 잰다 — 값은 <code>2. 브랜드_자료/{센터}/partner_profile.json</code>(파트너 프로필 정본 · 받은 값만 · 빈칸 = 미수집)에서 <code>scripts/partner_docs_build.py</code> 가 읽어 운영전략 화면·소개서 빈칸·이 표를 같이 만든다. 판은 같은 이름으로 덮고 이력은 저장소.</p>
 <table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
-<tr><th>실제로 한 일</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
-<tr><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문</td><td>셋업(1회)</td></tr>
-<tr><td>문서 3종</td><td>브랜드가이드·회사소개서·운영전략 — 다캠 v0.4 · 고척 v0.1 · 파트너 라인 페이지로</td><td>셋업(1회)</td></tr>
-<tr><td>마케팅 자동화(4단계)</td><td>① 홈페이지 제작(3D 둘러보기 — 다캠 tour.html MVP · Matterport 스캔 예정) → ② 문의 폼(/dietcamp/inquiry.html) →<br>③ 자동 접수·알림 → ④ 컨택 후 등록 시 CRM 전환 · 블로그 06:30 매일 임시저장</td><td>월 이용(마케팅 자동화)</td></tr>
-<tr><td>상담 자동화</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
-<tr><td>보고 자동화(카톡 아침 통)</td><td>07:00·21:00 통 · 답 접수 · 빈칸 질문 · Before/After 페이지</td><td>월 이용(운영 비서)</td></tr>
-<tr><td>운영 자동화(ERP 3모듈)</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
-<tr><td>강습 예약 자동화</td><td>정의만 — 강사가 시간을 열면 회원이 페이지에서 예약 · 준비 중(시토 배 12670 · 착수 시점 GM)</td><td>월 이용(운영 시스템 안) · 준비 중</td></tr>
+<tr><th>랩스가 제공하는 것(모듈)</th><th>다이어트캠프 · 고척 실측</th><th>상품으로 이름 붙이면</th></tr>
+<tr data-module="setup"><td>정본 셋업</td><td>설문 9문(다캠 09-02) · 확인 목록 18문 + 번호 질문 32문(고척) · 질문은행 118문 · 파트너 프로필 1파일(09-18)</td><td>셋업(1회)</td></tr>
+<tr data-module="docs3"><td>문서 3종</td><td>브랜드가이드·회사소개서·운영전략 — 다캠 v0.5/v0.4 · 고척 v0.3 · 운영전략은 프로필에서 자동 생성(09-18)</td><td>셋업(1회)</td></tr>
+<tr data-module="marketing"><td>마케팅 자동화</td><td>① 홈페이지 제작(3D 둘러보기 — 다캠 tour.html MVP · Matterport 스캔 예정) → ② 문의 폼(/dietcamp/inquiry.html) →<br>③ 자동 접수·알림 → ④ 컨택 후 등록 시 CRM 전환 · 평일 06:30 인스타 자동 게시 → 블로그 파생 발행</td><td>월 이용(마케팅 자동화)</td></tr>
+<tr data-module="counsel"><td>상담 자동화</td><td>센터 페이지 + 관리자 · FAQ 학습 회로 · 손님 공개는 대표 확인 뒤</td><td>월 이용 + 사용량 실비</td></tr>
+<tr data-module="report"><td>보고 자동화(카톡 저녁 통)</td><td>21:00 한 통 · 답 접수 · 남은 번호 N개 · Before/After 페이지 · 아침 0통(09-18)</td><td>월 이용(운영 비서)</td></tr>
+<tr data-module="ops"><td>운영 자동화(ERP 3모듈)</td><td>웰페리온만 가동 · 파트너 미판매 · 서버는 tenant 로 갈라져 있음</td><td>월 이용(운영 시스템)</td></tr>
+<tr data-module="lesson"><td>강습 예약 자동화</td><td>정의만 — 강사가 시간을 열면 회원이 페이지에서 예약 · 준비 중(시토 배 12670 · 착수 시점 GM)</td><td>월 이용(운영 시스템 안) · 준비 중</td></tr>
 </table>
-<p class="note">사람 손(시보 시간)이 셋업에 든다 — 다캠 2주 · 고척 1주. 이 시간을 질문은행·발행 스크립트로 계속 줄이는 것이 원가 전략이다.</p>
+<p class="note">사람 손(시보 시간)이 셋업에 든다 — 다캠 2주 · 고척 1주. 이 시간을 질문은행·발행 스크립트·프로필 자동 생성으로 계속 줄이는 것이 원가 전략이다.</p>
+<table class="tbl"><colgroup><col style="width:16%"><col style="width:22%"><col style="width:20%"><col style="width:26%"><col></colgroup>
+<tr><th>파트너</th><th>대표의 목표</th><th>랩스가 제공하는 것</th><th>재는 숫자</th><th>기준선</th></tr>
+<!-- pb:partners -->
+<tr><td rowspan="4"><b>다이어트캠프</b><br><span class="note">이승기 대표님 · GM 정리 2026-09-18 카톡 방 공지(공지_목표.md)</span></td><td>교육 강사 모집·파견 → 프랜차이즈</td><td>마케팅 자동화 · 상담 자동화 · 문서 3종</td><td>강사 교육 문의 건수 · 기수당 교육생 수</td><td>미수집</td></tr>
+<tr><td>문의 자동화 ① PT·다캠 회원 모집</td><td>마케팅 자동화 · 상담 자동화 · 보고 자동화(카톡 저녁 통)</td><td>월 상담 예약(문의) 건수</td><td>5~8건/월</td></tr>
+<tr><td>문의 자동화 ② 교육 강사 모집·파견</td><td>상담 자동화 · 마케팅 자동화</td><td>강사 모집 문의 건수</td><td>미수집</td></tr>
+<tr><td>기준 문서 3종 지속 보완</td><td>문서 3종</td><td>문서 판 올림 횟수 · 빈칸 수</td><td>소개서 v0.4 · 전략 v0.3 · 브랜드 v0.4</td></tr>
+<tr><td rowspan="3"><b>고척GDR QA 골프존</b><br><span class="note">조재오 지점장님 · GM 정리 2026-09-18 카톡 방 공지(공지_목표.md) · 북극성은 GM 확정 2026-09-09(client.json goal)</span></td><td>매일 반복하는 업무 자동화</td><td>마케팅 자동화 · 보고 자동화(카톡 저녁 통) · 상담 자동화</td><td>반복 업무 4가지(블로그 글 · 만료 회원 · 마감 60일 미만 회원 · 전화·방문 회원 관리) 중 자동으로 도는 건수</td><td>1/4(블로그 글)</td></tr>
+<tr><td>문의 자동화 — 회원·레슨생 모집</td><td>상담 자동화 · 마케팅 자동화</td><td>회원·레슨생 모집 문의 건수 · 체험권 → 회원권 전환율</td><td>월 30건 미만 · 전환 20% 미만(33번)</td></tr>
+<tr><td>기준 문서 3종 지속 보완</td><td>문서 3종</td><td>문서 판 올림 횟수 · 빈칸 수</td><td>소개서 v0.2 · 전략 v0.2 · 브랜드 v0.2 · 빈칸 0(09-17)</td></tr>
+<!-- /pb:partners -->
+</table>
+<p class="note">빈칸(미수집)은 저녁 통 「남은 번호 N개」로만 채운다 — 지어내지 않는다. 새 파트너 = 폴더에 partner_profile.json 한 장 + 로드맵 표 행 하나.</p>
+
+</details>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-2. CRM 모듈 검토 — 브로제이 커스터마이징으로 소형 피트니스 셋업 · 입출입 핸드폰 대안 (GM 09-18 · 배 12765)</summary>
+<p class="note">근거 규칙 — 「가능」은 저장소·공식 페이지에서 확인된 것만. 확인 안 된 것은 「확인 안 됨」으로 두고 브로제이에 묻는 줄로 남긴다. 브로제이 저장소 실측 = server/erp_api/sync_brojay.py(REST API · api.broj.co.kr/v1/schedules·members·trainers · 하루 1~3회 → PostgreSQL brojay_records) · api_brojay.py(읽기 API /api/brojay/*) · coo/brojay/브로제이_업무분장.html(계약금 60% 이체 · 안면인식기 운용).</p>
+<table class="tbl"><colgroup><col style="width:20%"><col style="width:10%"><col style="width:34%"><col style="width:16%"><col></colgroup>
+<tr><th>항목</th><th>판정</th><th>근거</th><th>비용</th><th>다음</th></tr>
+<tr><td>브로제이 회원·매출·출입 데이터를 우리 서버로 가져오기</td><td><span class="st done">확인</span></td><td>REST API 로 가동 중(sync_brojay.py · schedules·members·trainers 실사양) · sales·entries 주소는 서버 api.env 값이라 실가동 여부는 시토 확인</td><td>브로제이 구독료 안(추가 0)</td><td>시토 — api.env 의 sales·entries 실가동 1줄 확인</td></tr>
+<tr><td>브로제이를 파트너(소형 피트니스)에도 계약해 쓰게 하기</td><td><span class="st wait">확인 안 됨</span></td><td>저장소에 파트너 도입 흔적 0 · 월 구독료·계약 총액(계약금 60% = 23,430,000 만 기록)·소형 센터 요금제 없음 · 우리 방향은 「브로제이 흡수 → 자체 대체」(메모리 project_erp_saas_and_brojay_absorption)</td><td>확인 안 됨</td><td>GM — 브로제이에 「소형 센터 최소 요금제·API 개방 조건」 한 통</td></tr>
+<tr><td>브로제이 화면·규칙을 파트너용으로 커스터마이징</td><td><span class="st wait">확인 안 됨</span></td><td>커스터마이징 범위·요금을 다룬 기록이 저장소에 없다 · 우리가 만든 것은 브로제이 위의 읽기층(brojay_cells · transfer_gap)뿐</td><td>확인 안 됨</td><td>같은 한 통에 「커스터마이징 가능 범위·비용」</td></tr>
+<tr><td>대안 = 랩스 ERP 3모듈(회원·문의·점검)을 파트너 테넌트로</td><td><span class="st run">진행</span></td><td>§8-1 2번 · AWS 3환경 · 서버는 tenant 로 갈라져 있음 · 판매 단위 = 핵심 3모듈 · 다캠을 2호 테넌트로</td><td>운영 묶음 449,000(준비 중)</td><td>이관 뒷정리 관문 9/19·10/1 뒤 첫 테넌트</td></tr>
+<tr><td>입출입 ① QR 회원증(앱·카톡 QR)</td><td><span class="st">시장에 있음</span></td><td>바디코디(BodyCodi) — QR·얼굴인식 출입문 제어(슈프리마 공동개발) · <a href="https://bodycodi.com/price/" target="_blank">bodycodi.com/price</a> · 브로제이 연동 근거 없음</td><td>월 198,000(Pro · VAT 별도) · 장비비 확인 안 됨</td><td>파트너 요청 있을 때만 견적</td></tr>
+<tr><td>입출입 ② NFC/BLE 게이트(폰 태그)</td><td><span class="st">시장에 있음</span></td><td>지오스크(G-OSK) Fitness 앱 — 폰 NFC 태그 출입 · <a href="https://www.gosk.co.kr/fitness.html" target="_blank">gosk.co.kr/fitness</a> · 브로제이 연동 근거 없음</td><td>월 29,000 + 셋팅 200,000(VAT 별도) · 단말기 값 확인 안 됨</td><td>가장 싼 축 — 파트너 1곳 견적 받아 본다</td></tr>
+<tr><td>입출입 ③ 앱 버튼(푸시·원터치)만으로 문 열기</td><td><span class="st wait">확인 안 됨</span></td><td>국내 주요 상품(바디코디·트랩)은 전부 QR 스캔 방식 — 리더기 없이 버튼만으로 여는 회원용 상품을 검색으로 못 찾음</td><td>—</td><td>없음(억지로 끼워 넣지 않음)</td></tr>
+<tr><td>입출입 ④ 키오스크 전화번호 뒷자리</td><td><span class="st">시장에 있음</span></td><td>머슬파트너스 키오스크 — 전화번호 인증 출입 · <a href="https://www.musclepartners.kr/kiosk" target="_blank">musclepartners.kr/kiosk</a> · 브로제이 연동 근거 없음</td><td>확인 안 됨(렌탈 문의)</td><td>기기 없는 소형 센터엔 이 축이 맞다 — 견적</td></tr>
+<tr><td>브로제이 자체 출입 기능</td><td><span class="st done">확인</span></td><td>얼굴인식 출석(자체 개발 · <a href="https://company.broj.co.kr/access_control/face_recognition/" target="_blank">company.broj.co.kr</a>) · BROJ PASS 키오스크(2023-12 · 얼굴인식 주기능 + 터치 출석·QR 부기능 · <a href="https://m.segyebiz.com/newsView/20231226512797" target="_blank">세계비즈</a>) · 전화번호 입장은 확인 안 됨</td><td>웰페리온 턴게이트 견적 A3(09-03) 참조</td><td>브로제이에 「QR 단독 · 전화번호 입장 · 소형 키오스크 값」 같은 한 통</td></tr>
+</table>
+<p class="note">결론(시보) — 소형 피트니스 CRM 은 브로제이 재판매가 아니라 <b>랩스 ERP 3모듈 테넌트</b>가 우리 길이다(§8-1 순서 2 · 저장소 방향과 같다). 브로제이는 웰페리온 원천으로만 쓰고, 파트너 입출입은 「폰 QR 또는 전화번호 키오스크」를 파트너가 고른 뒤 그 기기 API 를 ERP 회원 모듈에 붙이는 순서 — 브로제이에 물을 것 3가지(소형 요금제 · 커스터마이징 범위 · QR/전화번호 입장)는 GM 한 통으로 모은다.</p>
+
+</details>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-3. 개발 파이프라인 3루프 — 고도화 → 단순화 → 파트너 피드백 (GM 09-18 · 원장 status/labs_loop.json)</summary>
+<p class="note">GM 09-18 「시보는 랩스 모듈 고도화→단순화→파트너사 피드백 3루프만 · 파트너 마케팅 자동화 결과물도 당분간 랩스에서 보자」. 원장·계산기는 이미 있다 — <code>scripts/labs_loop.py</code> → <code>status/labs_loop.json</code> · 화면 = 웰페리온 AX 랩스 관리 › 파트너사 패널(결과물 7일 · 3루프 원장). 여기는 그 규칙을 적어 둘 뿐 새 원장을 만들지 않는다.</p>
+<table><colgroup><col style="width:14%"><col style="width:40%"><col style="width:22%"><col></colgroup>
+<tr><th>루프</th><th>무엇을 하나</th><th>언제</th><th>어디에 남나</th></tr>
+<tr><td>① 고도화</td><td>모듈(마케팅·상담·보고·문서)에 기능 하나를 더한다 — 인스타 자동 게시·블로그 파생·검사기 같은 것</td><td>평일(월~금) — 발행과 같이 돈다</td><td><code>labs_loop.py --log --module 마케팅 --step 고도화 --note "…"</code> → loop[]</td></tr>
+<tr><td>② 단순화</td><td>더한 것 중 파트너가 안 쓰거나 손이 더 가는 것을 뺀다 — 아침 통 삭제·승낙 게이트 삭제처럼 <b>줄이는 변경</b></td><td>주말(토·일 · 생성·게시 없음) — 한 주 되짚기</td><td>같은 원장 step=단순화</td></tr>
+<tr><td>③ 파트너 피드백</td><td>대표·지점장님이 저녁 통에 준 답·반응(회신 수 · 남은 번호 · 「의미 없다」 같은 말)을 다음 주 고도화의 첫 줄로 쓴다</td><td>답 온 날 즉시 기록 · 주말에 묶어 본다</td><td>step=피드백 · 회신 수는 weekly 표가 카톡 아카이브에서 자동으로 센다</td></tr>
+</table>
+<table><colgroup><col style="width:22%"><col></colgroup>
+<tr><th>자동으로 재는 것(weekly)</th><td>주(이번 주·지난주)×파트너 — 블로그 편수(status/*_blog_daily.json runs) · 인스타 편수(status/partner_instagram/*.json runs) · 상담 손님 질문 수·답변율·핸드오프율(status/counsel_questions.jsonl · visitor=customer) · 파트너 회신 수(카톡 아카이브 파일 수만 · 본문은 안 옮김)</td></tr>
+<tr><th>손으로 남기는 것(loop)</th><td>--log 한 줄뿐(주 · 모듈 · 단계 · 한 줄 메모). 시작값 2건(2026-W38 마케팅·상담 고도화)</td></tr>
+<tr><th>돌리는 때</th><td>counsel_questions.bat(22:10) · partner_instagram_daily.bat(07:20) 끝에 한 줄 — 손 실행 <code>C:/Python314/python.exe scripts/labs_loop.py</code> · 자가검사 <code>--selfcheck</code></td></tr>
+<tr><th>한 주의 끝 기준</th><td>평일 발행 5일 중 실제 나간 편수 · 주말에 단순화 1건 이상 · 피드백 줄이 0이면 「파트너가 아무 말 없었다」를 그대로 적는다(0 위장 금지)</td></tr>
+<tr><th>안 하는 것</th><td>새 원장·새 화면 · 주말 생성·게시 · 파트너에게 피드백을 재촉하는 통</td></tr>
+</table>
 
 </details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">3. 누구에게 파나</summary>

@@ -1,0 +1,212 @@
+{
+  "_doc": "다이어트캠프 파트너 프로필 정본 — 대표의 방향·목표(GM 정리 2026-09-18 공지)·기준선 숫자·채널 계정 유무·받은 자료·qa 참조. 값은 받은 것만 적고 못 받은 값은 null(화면엔 「미수집」). scripts/partner_docs_build.py --tenant dc 가 이 파일로 strategy.html 전체와 intro.html 의 pb 슬롯을 다시 만든다. 사실값(주소·시간·프로그램)은 02_회사소개서 md 가 정본이라 여기 두 벌로 두지 않는다.",
+  "tenant": "dc",
+  "tenant_id": "2_dietcamp",
+  "line": "dietcamp",
+  "line_url": "https://erp.wellperion.com/dietcamp/",
+  "name": "다이어트캠프",
+  "label_en": "DIET CAMP & PT",
+  "owner": "이승기 대표님",
+  "owner_title": "대표님",
+  "owners_all": "대표 2인 — 이승기 · 이대우",
+  "css": "dc.css",
+  "nav": false,
+  "hero_img": "img/space_03.jpg",
+  "logo": "img/logo_h.png",
+  "logo_alt": "다이어트캠프 & PT 로고",
+  "address_short": "은평로 23, 3층",
+  "phone": "02-6941-0701",
+  "goals": {
+    "source": "GM 정리 2026-09-18 카톡 방 공지(공지_목표.md)",
+    "items": [
+      "다캠 교육 강사 모집·파견 프로세스를 세우고 프랜차이즈로 넓힌다",
+      "문의 자동화 2종 — ① PT·다캠 회원 모집 ② 다캠 교육 강사 모집·파견",
+      "기준 문서 3종(회사소개서 · 운영 전략 · 브랜드가이드)을 계속 보완·개선한다"
+    ]
+  },
+  "north_star": {
+    "line": "운동을 그만두지 않게 한다.",
+    "sub": "매일 다른 프로그램으로, 한 번 들어온 회원이 끝까지 운동하게 만드는 센터 — 이것이 다이어트캠프의 북극성입니다.",
+    "status": "제안 · 대표님 확정 전(설문 2·3·5 에서만 꺼냄)"
+  },
+  "metrics": {
+    "north_star": {
+      "what": "회원이 운동을 그만두지 않게 한다",
+      "measure": "활성 회원 수(월말 기준)",
+      "baseline": "65~80명",
+      "source": "대표님 2026-09-05 카톡 회신"
+    },
+    "leading": {
+      "what": "새 사람이 들어오는가",
+      "measure": "월 상담 예약(문의) 건수",
+      "baseline": "5~8건/월",
+      "source": "대표님 2026-09-05 카톡 회신"
+    },
+    "lagging": {
+      "what": "들어온 사람이 남는가",
+      "measure": "재등록률(만료 30일 내 재등록 ÷ 만료)",
+      "baseline": null,
+      "source": null
+    }
+  },
+  "goal_map": [
+    {
+      "goal": "교육 강사 모집·파견 → 프랜차이즈",
+      "labs": [
+        "marketing",
+        "counsel",
+        "docs3"
+      ],
+      "measure": "강사 교육 문의 건수 · 기수당 교육생 수",
+      "baseline": null,
+      "note": "교육 기간·파견처·교육비·모집 창구는 설문 M-1~M-9(2026-09-18 발송) 답 뒤에 채운다"
+    },
+    {
+      "goal": "문의 자동화 ① PT·다캠 회원 모집",
+      "labs": [
+        "marketing",
+        "counsel",
+        "report"
+      ],
+      "measure": "월 상담 예약(문의) 건수",
+      "baseline": "5~8건/월",
+      "note": "예약 창구 = 네이버 플레이스 · 상담 페이지 /dietcamp/counsel/"
+    },
+    {
+      "goal": "문의 자동화 ② 교육 강사 모집·파견",
+      "labs": [
+        "counsel",
+        "marketing"
+      ],
+      "measure": "강사 모집 문의 건수",
+      "baseline": null,
+      "note": "모집 창구(카톡 채널·인스타 DM·전화·상담 페이지)는 설문 M-8 답 뒤"
+    },
+    {
+      "goal": "기준 문서 3종 지속 보완",
+      "labs": [
+        "docs3"
+      ],
+      "measure": "문서 판 올림 횟수 · 빈칸 수",
+      "baseline": "소개서 v0.4 · 전략 v0.3 · 브랜드 v0.4",
+      "note": "답이 오면 그날 Before → After"
+    }
+  ],
+  "labs_modules": {
+    "setup": {
+      "status": "진행",
+      "evidence": "설문 9문(09-02) + 번호 질문 A~M(31문) · 프로필 partner_profile.json(09-18)"
+    },
+    "docs3": {
+      "status": "진행",
+      "evidence": "회사소개서 · 브랜드가이드 · 운영전략 화면 3장 /dietcamp/ · 대표님 확인 09-07(색·사진)"
+    },
+    "marketing": {
+      "status": "진행",
+      "evidence": "평일 06:30 인스타 자동 게시(runs 4 · 09-18 로그인 실패 → 서버 계정 자리 확인) → 블로그 파생 발행 · 주말 정지"
+    },
+    "counsel": {
+      "status": "진행",
+      "evidence": "상담 페이지 /dietcamp/counsel/ 개통 · FAQ 대표님 확인 뒤 손님 공개"
+    },
+    "report": {
+      "status": "진행",
+      "evidence": "저녁 21:00 한 통(오늘 올린 것 · 답 반영 링크 · 남은 번호) · 아침 0통"
+    },
+    "ops": {
+      "status": "미도입",
+      "evidence": null
+    },
+    "lesson": {
+      "status": "준비 중",
+      "evidence": null
+    }
+  },
+  "channels": {
+    "blog": {
+      "has": true,
+      "note": "네이버 블로그 계정 2026-09-14 수령"
+    },
+    "instagram": {
+      "has": null,
+      "note": "계정 자리 확인 중(09-18 자동 로그인 실패)"
+    },
+    "place": {
+      "has": true,
+      "note": "네이버 플레이스 예약 링크 수령"
+    },
+    "daangn": {
+      "has": null,
+      "note": null
+    },
+    "cafe": {
+      "has": null,
+      "note": null
+    }
+  },
+  "received": [
+    "주소·층·전화·운영시간 · 예약 링크 · 주차 정보(2026-09-05~07)",
+    "회원 규모 65~80명 · 월 문의 5~8건(2026-09-05)",
+    "사진 57장(대표 컷 9장 선정) · 색·표지 확정(2026-09-07 「색이 맞다 / 사진 좋다」)",
+    "로고 파일 3종 · 수업 사진 4장(회원 얼굴 동의 전 · 미게재) · 영상 3편 · 명함(2026-09-15)",
+    "블로그 계정(2026-09-14)"
+  ],
+  "not_received": [
+    "간판(밖) 사진",
+    "연혁",
+    "인스타그램 · 네이버 플레이스 계정 아이디",
+    "강사 교육 시스템 · 파견처 · 재직 기간(설문 14·15번)",
+    "목표 관련 질문 M-1~M-9 답(2026-09-18 발송)"
+  ],
+  "diagnosis": {
+    "strengths": [
+      "300가지 프로그램 · 매일 다른 수업 — 지루하지 않다",
+      "재활 5부위 4단계 — 전문성이 자료로 있다",
+      "재등록 = 커뮤니티 — 한 번 들어오면 남는다",
+      "어투가 분명하다(강한 확신)"
+    ],
+    "gaps": [
+      "세 고객층 각각을 향한 한 줄이 아직 흐리다",
+      "재활 자료가 내부 형식이라 검색으로 만나지 못한다",
+      "문의는 대부분 소개로 온다 — 검색·인스타 경로가 비어 있다",
+      "강사는 소개가 아니라 다캠 브랜딩으로 교육받을 사람을 모아 양성하는 구조(GM 정정 2026-09-18) — 교육 시스템·교육생 마케팅이 아직 없다"
+    ]
+  },
+  "plan_90": [
+    {
+      "when": "1주",
+      "what": "기준선 6개 수령 · 브랜드가이드 v0.3 · 회사소개서 v0.3",
+      "done": true
+    },
+    {
+      "when": "2주",
+      "what": "접수 링크 · 콘텐츠 8건 초안 · 상담 페이지 개통",
+      "done": true
+    },
+    {
+      "when": "3~4주",
+      "what": "평일 인스타·블로그 자동 발행 · 강사 교육 설문(M-1~M-9) 답 → 전략에 반영",
+      "done": false
+    },
+    {
+      "when": "2개월",
+      "what": "두 번째 달 발행 · 강사 모집 창구 개통 · 월 Before/After 1장",
+      "done": false
+    },
+    {
+      "when": "3개월",
+      "what": "90일 결과 1장 · 프랜차이즈 확장 조건 정리 · 다음 90일 제안",
+      "done": false
+    }
+  ],
+  "docs": {
+    "intro_md": "02_회사소개서/다캠_회사소개서_v0.1.md",
+    "strategy_md": "03_전략_구상안/다캠_전략구상안_v0.1.md",
+    "brand_md": "01_브랜드가이드/다캠_브랜드가이드_v0.1.md",
+    "intro_version": "v0.5",
+    "strategy_version": "v0.4"
+  },
+  "qa_ref": "server/counselbot/tenants/2_dietcamp_qa.json",
+  "facts_ref": null,
+  "updated_at": "2026-09-18"
+}

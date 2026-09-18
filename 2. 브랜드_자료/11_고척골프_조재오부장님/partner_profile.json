@@ -1,0 +1,200 @@
+{
+  "_doc": "고척GDR QA 골프존 파트너 프로필 정본 — 지점장님의 방향·목표(GM 정리 2026-09-18 공지)·기준선 숫자·채널 계정 유무·받은 자료·qa 참조. 값은 받은 것만 적고 못 받은 값은 null(화면엔 「미수집」). scripts/partner_docs_build.py --tenant jo 가 이 파일로 strategy.html 전체와 intro.html 의 pb 슬롯을 다시 만든다. 사실값(주소·시간·규정)은 client.json facts_confirmed 가 정본이라 여기 두 벌로 두지 않는다.",
+  "tenant": "jo",
+  "tenant_id": "3_gocheokgolf",
+  "line": "gocheokgolf",
+  "line_url": "https://erp.wellperion.com/gocheokgolf/",
+  "name": "고척GDR QA 골프존",
+  "label_en": "QA GOLF STUDIO",
+  "owner": "조재오 지점장님",
+  "owner_title": "지점장님",
+  "owners_all": "조재오 지점장님 · 스포짐(SPOGYM) 체인 소속",
+  "css": "gc.css",
+  "nav": true,
+  "hero_img": "img/bay_gdr_02.jpg",
+  "logo": "img/logo_qa.png",
+  "logo_alt": "QA GOLF STUDIO 로고",
+  "address_short": "서울 구로구 중앙로 18 고척헤리움 B1",
+  "phone": "02-2066-1119",
+  "goals": {
+    "source": "GM 정리 2026-09-18 카톡 방 공지(공지_목표.md) · 북극성은 GM 확정 2026-09-09(client.json goal)",
+    "items": [
+      "지점장님이 매일 반복하는 업무를 자동화한다",
+      "문의 자동화 — 회원·레슨생 모집",
+      "기준 문서 3종(회사소개서 · 운영 전략 · 브랜드가이드)을 계속 보완·개선한다"
+    ]
+  },
+  "north_star": {
+    "line": "지점장님이 지금 손으로 반복하는 업무를 자동으로 돌게 만든다.",
+    "sub": "client.json goal.north_star(GM 확정 2026-09-09) — 이것이 고척GDR QA 골프존의 북극성입니다.",
+    "status": "GM 확정 2026-09-09"
+  },
+  "metrics": {
+    "north_star": {
+      "what": "손으로 하던 반복 업무를 자동으로 돌게 한다",
+      "measure": "자동으로 도는 반복 업무 건수",
+      "baseline": "반복 업무 4가지 중 자동 1(블로그 글)",
+      "source": "지점장님 2026-09-17 41번 답 · 블로그 평일 자동 발행 가동",
+      "tile": "1/4"
+    },
+    "leading": {
+      "what": "새 문의가 들어오는가",
+      "measure": "회원·레슨생 모집 문의 건수",
+      "baseline": "월 30건 미만(온라인 블로그 · 오프라인 간판)",
+      "source": "지점장님 2026-09-17 39번 답",
+      "tile": "30건 미만/월"
+    },
+    "lagging": {
+      "what": "반복 업무 시간이 줄었는가",
+      "measure": "그 업무에 쓰던 시간",
+      "baseline": "「하루 대부분」",
+      "source": "지점장님 2026-09-13 카톡",
+      "tile": "하루 대부분"
+    }
+  },
+  "goal_map": [
+    {
+      "goal": "매일 반복하는 업무 자동화",
+      "labs": [
+        "marketing",
+        "report",
+        "counsel"
+      ],
+      "measure": "반복 업무 4가지(블로그 글 · 만료 회원 · 마감 60일 미만 회원 · 전화·방문 회원 관리) 중 자동으로 도는 건수",
+      "baseline": "1/4(블로그 글)",
+      "note": "만료·마감 회원 관리는 회원 원장이 있어야 한다 — 설문 G-4(회원 관리 도구) 답 뒤"
+    },
+    {
+      "goal": "문의 자동화 — 회원·레슨생 모집",
+      "labs": [
+        "counsel",
+        "marketing"
+      ],
+      "measure": "회원·레슨생 모집 문의 건수 · 체험권 → 회원권 전환율",
+      "baseline": "월 30건 미만 · 전환 20% 미만(33번)",
+      "note": "온라인 문의 0(34번) — 블로그·상담 페이지가 문의로 이어지게 하는 것이 일"
+    },
+    {
+      "goal": "기준 문서 3종 지속 보완",
+      "labs": [
+        "docs3"
+      ],
+      "measure": "문서 판 올림 횟수 · 빈칸 수",
+      "baseline": "소개서 v0.2 · 전략 v0.2 · 브랜드 v0.2 · 빈칸 0(09-17)",
+      "note": "답이 오면 그날 Before → After"
+    }
+  ],
+  "labs_modules": {
+    "setup": {
+      "status": "진행",
+      "evidence": "확인 목록 18문 + 번호 질문 19~48 전항 회신 · client.json facts_confirmed · 프로필 partner_profile.json(09-18)"
+    },
+    "docs3": {
+      "status": "진행",
+      "evidence": "회사소개서 · 브랜드가이드 · 운영전략 화면 3장 /gocheokgolf/ · 설문 27문 전항 회신(09-17) 반영"
+    },
+    "marketing": {
+      "status": "진행",
+      "evidence": "평일 06:30 인스타 자동 게시(runs 2 · 09-18 앱 승인 대기) → 블로그 파생 발행(spogym21qa) · 주말 정지"
+    },
+    "counsel": {
+      "status": "진행",
+      "evidence": "상담 페이지 /gocheokgolf/counsel/ · 상담봇 정본에 입장/양도/휴회/환불/레슨 반영(09-17) · 상품·절차는 상담으로(37번)"
+    },
+    "report": {
+      "status": "진행",
+      "evidence": "저녁 21:00 한 통(오늘 올린 것 · 답 반영 링크 · 남은 번호) · 아침 0통"
+    },
+    "ops": {
+      "status": "미도입",
+      "evidence": null
+    },
+    "lesson": {
+      "status": "준비 중",
+      "evidence": null
+    }
+  },
+  "channels": {
+    "blog": {
+      "has": true,
+      "note": "네이버 블로그 spogym21qa(표시명 QAGOLFSTUDIO) · 서버 계정 자리로 자동 로그인"
+    },
+    "instagram": {
+      "has": true,
+      "note": "gocheok_qa_golf · 09-18 앱 승인 대기"
+    },
+    "place": {
+      "has": null,
+      "note": "네이버 예약 → 상담(34번) · 계정 자리 미확인"
+    },
+    "daangn": {
+      "has": false,
+      "note": "없음 — 인스타·블로그만(46번)"
+    },
+    "cafe": {
+      "has": false,
+      "note": "없음 — 인스타·블로그만(46번)"
+    }
+  },
+  "received": [
+    "확인 목록 18문 전항 회신(2026-09-09 20:24) — 사실 정본 확정",
+    "사진 26장 수령 · 12장 선별(2026-09-09) · 추가 사진 5장 · 세로 영상 3편(2026-09-17)",
+    "약관 사진 — 환불·휴회·양도·단가·수업 유효기간(2026-09-15)",
+    "번호 설문 19~48 전항 회신 · 레슨 시간대(2026-09-17 14:11)",
+    "코치 프로필 4분(2026-09-14) · 규모 기준선 유효회원 430 · 레슨 180(40번)"
+  ],
+  "not_received": [
+    "목표 관련 질문 G-1~G-9 답(2026-09-18 발송) — 반복 업무 5가지 · 예약 경로 · 회원 관리 도구 · 모집 목표 인원"
+  ],
+  "diagnosis": {
+    "strengths": [
+      "브랜드 언어(한 줄·업의 본질)와 블로그 문체 규칙 확보",
+      "사진 26장 수령·12장 선별 완료 · 추가 사진 5장 · 영상 3편(09-17)",
+      "확인 목록 18문 · 번호 설문 27문 전항 회신 — 사실 정본 확정",
+      "규모 기준선 — 유효회원 430명 · 레슨 회원 180명(9/17 · 40번)"
+    ],
+    "gaps": [
+      "문의를 받아 두는 설문(Survey) 창구가 없다",
+      "온라인 문의 0 — 전화·네이버 예약만(9/17 · 34번) · 블로그·상담 페이지가 문의로 이어지게 하는 것이 일",
+      "체험권 이후 정확한 금액은 상담 안내로만 — 정규 요금표 공개는 보류(28번)",
+      "체험권 → 회원권 전환 20% 미만(9/17 · 33번) — 전환이 빈틈"
+    ]
+  },
+  "plan_90": [
+    {
+      "when": "1주",
+      "what": "확인 목록 18문 회신 · 사실 정본 확정 · 문서 3종 v0.1",
+      "done": true
+    },
+    {
+      "when": "2주",
+      "what": "번호 설문 27문 회신 · 화면 3장 v0.2 · 상담봇 정본 반영 · 빈칸 0",
+      "done": true
+    },
+    {
+      "when": "3~4주",
+      "what": "평일 인스타·블로그 자동 발행 · 반복 업무 설문(G-1~G-9) 답 → 자동화 대상 확정",
+      "done": false
+    },
+    {
+      "when": "2개월",
+      "what": "문의 설문 창구 1차 가동 · 만료·마감 회원 알림 자동화 설계 · 월 Before/After 1장",
+      "done": false
+    },
+    {
+      "when": "3개월",
+      "what": "90일 결과 정리(자동으로 도는 업무 건수) · 다음 90일 제안",
+      "done": false
+    }
+  ],
+  "docs": {
+    "intro_md": "02_회사소개서/고척골프_회사소개서_v0.1.md",
+    "strategy_md": "03_전략_구상안/고척골프_전략구상안_v0.1.md",
+    "brand_md": "01_브랜드가이드/고척골프_브랜드가이드_v0.1.md",
+    "intro_version": "v0.3",
+    "strategy_version": "v0.3"
+  },
+  "qa_ref": "server/counselbot/tenants/3_gocheokgolf_qa.json",
+  "facts_ref": "client.json",
+  "updated_at": "2026-09-18"
+}
