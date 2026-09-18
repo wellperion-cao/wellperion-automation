@@ -429,6 +429,155 @@ def build(since: dt.date, today: dt.date, now: dt.datetime, log) -> tuple[dict, 
     return ctx, counts
 
 
+# ── 주간 진척 5영역(배 2745 · GM 09-18 지시) ───────────────────────────────
+# 중간관리자 3분(운영부·시설부·경지부)이 화요일 15:00 회의 전 보는 별도 쪽(page 2) —
+# 첫 장(회의 요약)과 넘침 계산이 섞이지 않도록 자체 .page 로 붙인다.
+WEEKLY_AREAS = ["업무 SSOT", "점검", "종합접수처", "매출", "설비 매뉴얼"]
+
+
+def weekly_five_areas(todos: list | None, today: dt.date, now: dt.datetime, log) -> list[tuple[str, str, str, str, str]]:
+    """5영역 × (담당 부서·지난주 진행된 것·이번 주 진행할 것·진척). 창 = 지난 월요일~일요일(고정) —
+    생성 시각(월 07:50·화 14:30)과 무관하게 같은 주를 가리킨다. 값이 안 잡히면 「미측정」(지어내지 않는다)."""
+    this_mon = today - dt.timedelta(days=today.weekday())
+    last_mon = this_mon - dt.timedelta(days=7)
+    this_sun = this_mon + dt.timedelta(days=6)
+    rows: list[tuple[str, str, str, str, str]] = []
+    try:
+        import manager_task_index as mti
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 manager_task_index import 실패: {e}")
+        mti = None
+    try:
+        import kpi_collector as kc
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 kpi_collector import 실패: {e}")
+        kc = None
+
+    def ssot_area(owners: set, label: str) -> tuple[str, str]:
+        if todos is None:
+            return f"{label} 미측정(SSOT 조회 실패)", "미측정"
+        mine = [r for r in todos if str(r.get("담당자") or "").strip() in owners]
+        done = sum(1 for r in mine if str(r.get("상태") or "") in mti.SSOT_DONE
+                   and (d := tdate(r.get("완료일") or r.get("수정일"))) and last_mon <= d <= this_sun)
+        due = sum(1 for r in mine if str(r.get("상태") or "") not in mti.SSOT_DONE
+                  and (d := tdate(r.get("종료일"))) and today <= d <= this_sun)
+        return f"{label} 완료 {done}건", f"{label} 기한 이번주 {due}건"
+
+    try:
+        if mti is None:
+            raise RuntimeError("manager_task_index 없음")
+        ops_done, ops_due = ssot_area(set(mti.OPS_DEPT_STAFF), "운영부")
+        na_done, na_due = ssot_area({"나우열M"}, "나우열M")
+        status = "미측정" if todos is None else "정상"
+        rows.append(("업무 SSOT", "운영부·경지부", f"{ops_done} · {na_done}", f"{ops_due} · {na_due}", status))
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 업무SSOT 실패: {e}")
+        rows.append(("업무 SSOT", "운영부·경지부", "미측정(조회 실패)", "미측정", "미측정"))
+
+    # 점검 — 시설부(장비 board 회차 · 지난 월~일 하루씩 실측) + 운영부(체크리스트 weekly · 10/1 시작 전)
+    try:
+        if kc is None:
+            raise RuntimeError("kpi_collector 없음")
+        import support_check_summary as scs
+        fac_sessions = fac_days = 0
+        d = last_mon
+        while d <= min(today, this_sun):
+            try:
+                lines, filled = scs.build_facility_section(d.isoformat())
+                if filled.get("facility_status"):
+                    m = re.search(r"현황\s*(\d+)회차", lines[0])
+                    if m:
+                        fac_sessions += int(m[1])
+                        fac_days += 1
+            except Exception:
+                pass
+            d += dt.timedelta(days=1)
+        fac_text = f"시설부 {fac_sessions}회차({fac_days}일)" if fac_days else "시설부 이번 주 입력 없음"
+        ops_start = kc._CHECK_START.get("ops")
+        if ops_start and today < ops_start:
+            ops_chk = f"운영부 시작 전({md(ops_start)}부터)"
+        else:
+            wk = kc._check_weekly("ops")
+            ops_chk = f"운영부 {wk['days']}일 제출 · {wk['done']}/{wk['total']}건" if wk else "운영부 미측정(조회 실패)"
+        bad = "미측정" in fac_text and "미측정" in ops_chk
+        rows.append(("점검", "시설부·운영부", f"{fac_text} · {ops_chk}", "매일 점검(상시 반복)",
+                     "미측정" if bad else "정상"))
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 점검 실패: {e}")
+        rows.append(("점검", "시설부·운영부", "미측정(조회 실패)", "매일 점검(상시 반복)", "미측정"))
+
+    # 종합접수처 — 운영부+시설부 현재 열린 건(완료 시각이 원장에 없어 '지난주 처리'는 못 잰다)
+    try:
+        if mti is None:
+            raise RuntimeError("manager_task_index 없음")
+        from collectors.ops_shared import reception_elapsed_days
+        parts, stale_total, ok = [], 0, True
+        for dept in ("운영부", "시설부"):
+            rest, _lost = mti.reception_dept_detail(dept)
+            if rest is None:
+                ok = False
+                parts.append(f"{dept} 조회 실패")
+                continue
+            stale = sum(1 for r in rest if reception_elapsed_days(r, now) >= 7)
+            stale_total += stale
+            parts.append(f"{dept} 열린 {len(rest)}건(7일↑ {stale})")
+        rows.append(("종합접수처", "운영부·시설부", "미측정(완료 시각 원장 없음 — 열린 건만 조회됨)",
+                     " · ".join(parts), "미측정" if not ok else ("주의" if stale_total else "정상")))
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 종합접수처 실패: {e}")
+        rows.append(("종합접수처", "운영부·시설부", "미측정(조회 실패)", "미측정(조회 실패)", "미측정"))
+
+    # 매출 — 운영부(주간 집계 경로 없음 · 최근 마감월 실측만 참고로 붙인다)
+    try:
+        if kc is None:
+            raise RuntimeError("kpi_collector 없음")
+        sm = kc._cfo_sales_month()
+        ref = f" · 참고 {sm['sales_month_label']} 마감 {sm['sales_month']:,.0f}원" if sm.get("sales_month") else ""
+        rows.append(("매출", "운영부", f"미측정(주간 매출 집계 경로 없음{ref})", "미정(주간 목표 미정의)", "미측정"))
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 매출 실패: {e}")
+        rows.append(("매출", "운영부", "미측정(조회 실패)", "미정", "미측정"))
+
+    # 설비 매뉴얼 — 시설부(기존 셀 재사용 · 09-17 「소장 회신 대기」 그대로 · 새 원장 안 만든다)
+    try:
+        if mti is None:
+            raise RuntimeError("manager_task_index 없음")
+        man_txt, man_bad = mti.manual_count_cell()
+        rows.append(("설비 매뉴얼", "시설부", man_txt, "미정", "주의" if man_bad else "미측정"))
+    except Exception as e:  # noqa: BLE001
+        log(f"주간진척 설비매뉴얼 실패: {e}")
+        rows.append(("설비 매뉴얼", "시설부", "미측정(조회 실패)", "미정", "미측정"))
+
+    return rows
+
+
+STATUS_CLS = {"정상": "ok", "주의": "red"}
+WEEKLY_TEMPLATE = """  <div class="page" style="margin-top:0">
+    <div class="hd">
+      <div>
+        <div class="brand">WELLPERION</div>
+        <h1>📊 주간 진척 — 5영역</h1>
+        <div class="sub">중간관리자 3분(운영부·시설부·경지부) 주간 체크 · 화 15:00 정기회의 자료 · 창(window) = {win}</div>
+      </div>
+      <div class="meta">작성 <b>AI 웰리</b><br>{stamp}</div>
+    </div>
+    <table style="margin-top:16px">
+      <tr><th style="width:130px">영역</th><th style="width:130px">담당 부서</th><th>지난주 진행된 것</th><th>이번 주 진행할 것</th><th style="width:80px">진척</th></tr>
+      {rows}
+    </table>
+    <div class="ft"><span>이 쪽 = 배 2745 주간 진척(첫 회 2026-09-21) · 값 없음 = 미측정(지어내지 않는다) · 생성 scripts/meeting_brief_a3.py --weekly</span><span>AI 웰리 · {stamp}</span></div>
+  </div>
+"""
+
+
+def weekly_page_html(rows: list[tuple[str, str, str, str, str]], win: str, stamp: str) -> str:
+    trs = "\n      ".join(
+        f'<tr><td class="n">{esc(area)}</td><td>{esc(dept)}</td><td>{esc(last)}</td><td>{esc(this)}</td>'
+        f'<td><span class="{STATUS_CLS.get(stat, "")}">{esc(stat)}</span></td></tr>'
+        for area, dept, last, this, stat in rows)
+    return WEEKLY_TEMPLATE.format(win=esc(win), stamp=esc(stamp), rows=trs)
+
+
 def ul(items: list[str], empty="해당 없음") -> str:
     return "<ul>" + ("".join(items) if items else f"<li>{empty}</li>") + "</ul>"
 
@@ -592,15 +741,23 @@ def main() -> int:
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--check", action="store_true", help="헤드리스 넘침 실측 + png")
     ap.add_argument("--open", action="store_true")
+    ap.add_argument("--weekly", action="store_true", help="--since 미지정 시 지난 월요일로 강제(주간 진척 절 자체 창은 항상 지난 월~일)")
     a = ap.parse_args()
     now = dt.datetime.now()
     today = now.date()
-    since = parse_date(a.since) if a.since else today - dt.timedelta(days=7)
+    if a.since:
+        since = parse_date(a.since)
+    elif a.weekly:
+        since = today - dt.timedelta(days=today.weekday() + 7)  # 지난 월요일
+    else:
+        since = today - dt.timedelta(days=7)
     log = lambda m: print("  ·", m)  # noqa: E731
 
     ctx, counts = build(since, today, now, log)
     png = os.path.splitext(a.out)[0] + ".png"
-    # 글자 12.4→12→11.5 먼저, 그래도 넘치면 11.5 에서 항목 수를 줄인다
+    # 글자 12.4→12→11.5 먼저, 그래도 넘치면 11.5 에서 항목 수를 줄인다 — 1쪽(회의 요약)만 대상.
+    # 2쪽(주간 진척)은 이 넘침 계산과 무관하게 fitting 이 끝난 뒤 붙인다(measure() 가 document 전체를
+    # querySelectorAll 해 1쪽 높이에 2쪽 td·ft 가 섞이는 것을 막는다).
     steps = [(fs, 0) for fs in FS_STEPS] + [(FS_STEPS[-1], lv) for lv in range(1, LEVELS)]
     h, fs, lv = None, FS_STEPS[0], 0
     for fs, lv in steps:
@@ -612,6 +769,21 @@ def main() -> int:
         print(f"  · fs={fs} level={lv} → 내용 높이 {h}/{PAGE_H}")
         if h <= PAGE_H:
             break
+
+    todos2 = load_todos(log)
+    weekly_rows = weekly_five_areas(todos2, today, now, log)
+    this_mon = today - dt.timedelta(days=today.weekday())
+    win = f"{md(this_mon - dt.timedelta(days=7))}~{md(this_mon - dt.timedelta(days=1))}"
+    wd = "월화수목금토일"[now.weekday()]
+    stamp = f"{now.year}. {now.month:02d}. {now.day:02d}. ({wd}) {now:%H:%M}"
+    page2 = weekly_page_html(weekly_rows, win, stamp)
+    with open(a.out, encoding="utf-8") as f:
+        html_out = f.read()
+    html_out = html_out.replace("</body></html>", page2 + "</body></html>")
+    with open(a.out, "w", encoding="utf-8") as f:
+        f.write(html_out)
+    print("주간 진척 5영역: " + " · ".join(f"{r[0]}={r[4]}" for r in weekly_rows))
+
     print(f"저장 {a.out}")
     print(" · ".join(f"{k} {v}" for k, v in counts.items()))
     if a.check:
