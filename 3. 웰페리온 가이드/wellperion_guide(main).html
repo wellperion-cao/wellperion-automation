@@ -985,7 +985,16 @@
       var yStart = yearStart();
       // 2026-09-18 GM 지시(배 12817·12818②) — ERP 도메인은 서버 거울(/api/inquiries)만 쓴다(GAS 폴백 제거).
       //   Pages 캡처(비ERP 도메인)는 서버가 없어 그대로 GAS — 위 757행 ERP_API_ON·apiFirst 전역 규칙과 동일하게 도메인만 가른다.
-      var _miInqGas = function(){ return fetch(SURVEY_URL + '?action=member_inquiry_list&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }); };
+      // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본·로컬)는 회원 문의 원장을 아예
+      //   부르지 않는다(곧 GAS 키 검사가 켜지면 브라우저 직접 호출은 막히고, 브라우저에 진짜 키를 못 둔다).
+      //   칸은 원래 기본값 "—"를 그대로 두고, 마우스 오버로 이유를 알린다.
+      if (!ERP_API_ON) {
+        var _miInqNote = '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.';
+        var _miInqTotalEl = document.getElementById('kpiMiInqTotal'), _miInqMonthEl = document.getElementById('kpiMiInqMonth');
+        if (_miInqTotalEl) _miInqTotalEl.title = _miInqNote;
+        if (_miInqMonthEl) _miInqMonthEl.title = _miInqNote;
+        return;
+      }
       var _miInqMirror = function(){
         var rows = [];
         function page(off){
@@ -995,7 +1004,7 @@
         }
         return page(0).then(function(rows){ return { ok: true, data: rows }; });
       };
-      (ERP_API_ON ? _miInqMirror() : _miInqGas())
+      _miInqMirror()
         .then(function(d){
           // 실패는 0으로 세지 않는다 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
           if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); return; }
@@ -1056,11 +1065,17 @@
       // ★newOnly=1 (2026-08-25 GM 지적 수리) — 화면(멤버십 회원관리 '가입')은 신규만 세는데
       //   홈은 재등록·양수·환불·양도·대기까지 전부 세어 8월 46 vs 17 로 갈렸다. 화면이 정본이다(배361).
       // 2026-09-18 GM 지시(배 12817·12818②) — ERP 도메인은 서버 집계(/api/report/member_registered_list)만
-      //   쓴다(GAS 폴백 제거). Pages 캡처(비ERP 도메인)는 서버가 없어 그대로 GAS.
-      var _miRegGas = function(){ return fetch(SURVEY_URL + '?action=member_registered_list&newOnly=1&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }); };
-      (ERP_API_ON
-        ? fetch('/api/report/member_registered_list?newOnly=1&from=' + yearStart() + '&to=' + todayStr()).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
-        : _miRegGas())
+      //   쓴다(GAS 폴백 제거).
+      // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본·로컬)는 회원 등록 원장을 아예
+      //   부르지 않는다. 칸은 기본값 "—" 그대로 두고, 마우스 오버로 이유를 알린다.
+      if (!ERP_API_ON) {
+        var _miRegNote = '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.';
+        var _miRegTotalEl = document.getElementById('kpiMiRegTotal'), _miRegMonthEl = document.getElementById('kpiMiRegMonth');
+        if (_miRegTotalEl) _miRegTotalEl.title = _miRegNote;
+        if (_miRegMonthEl) _miRegMonthEl.title = _miRegNote;
+        return;
+      }
+      fetch('/api/report/member_registered_list?newOnly=1&from=' + yearStart() + '&to=' + todayStr()).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
         .then(function(d){
           // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
           if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); return; }

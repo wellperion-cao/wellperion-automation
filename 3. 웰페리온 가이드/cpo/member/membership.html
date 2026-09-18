@@ -3400,6 +3400,8 @@ function _inquiryListFetch() {
   //   시트가 되밀리기 전이라 옛값까지 보여 줬다(임정은M 피드백 FB260915-162312 「수정이 너무 느려졌어요 · 새로고침도 잘 안 돼요」).
   //   지금은 서버가 쓰기를 받는 순간 문의 거울을 직접 고친다(server/erp_api/mirror_inquiry.py) — 거울이 곧 새 값이다.
   // ★2026-09-18 GM 지시(배 12817·12818②) — 서버 /api 전용, GAS 폴백 완전 제거.
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  if (!ERP_API_ON) return Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'));
   return _apiInquiryList('멤버십').catch(function(e){
     console.warn('[문의DB] API 실패:', e && e.message);
     throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
@@ -3409,6 +3411,8 @@ function _memberListFetch(scope) {
   // 회원 목록 읽기 = 서버 /api 전용(2026-09-18 GM 지시 · 배 12817·12818②). GAS 폴백 제거 —
   // GAS member_active_list 는 키 없이도 전화번호 원문 999행을 그대로 내주는 공개 엔드포인트라
   // 브라우저가 직접 부르면 서버 인증을 우회한다. 실패하면 호출부가 "서버 응답 없음" 오류로 보여준다.
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  if (!ERP_API_ON) return Promise.reject(new Error('회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'));
   return _apiMemberList(scope).catch(function(e){
     console.warn('[회원목록] API 실패:', e && e.message);
     throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
@@ -4181,6 +4185,8 @@ function renderMemberLog(){
   var scope = (_curFamily === 'lesson') ? '강습' : '멤버십';
   box.textContent = '불러오는 중…';
   // 2026-09-18 GM 지시(배 12817·12818②) — 서버 퍼널 미러(/api/funnel/member_log_list) 전용, GAS 폴백 제거.
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  if (!ERP_API_ON) { box.textContent = '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'; return; }
   _apiJson('/api/funnel/member_log_list?scope=' + encodeURIComponent(scope))
     .catch(function(e){ console.warn('[변경이력] API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); })
     .then(function(d){
@@ -4537,6 +4543,9 @@ function _mdashMetric(label, now, prev, ytd, isRate, prevMeasurable){
 // 폐기하고 서버 판정 하나로 통일(약속 L01 — 판정 로직 두 벌 금지).
 function _mdashFetchRegistered(from, to, cb){
   // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계(/api/report/member_registered_list) 전용, GAS 폴백 제거.
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  //   호출부는 cb(null)을 이미 "—"(빈 칸)으로 그린다(이 함수 위 주석 「모든 호출부가 공유」).
+  if (!ERP_API_ON) { cb(null); return; }
   _apiJson('/api/report/member_registered_list?from=' + from + '&to=' + to + '&newOnly=1')
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
@@ -7398,6 +7407,12 @@ function loadRegistered() {
   _regSetLoading(true);
 
   // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계 전용, GAS 폴백 제거.
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  if (!ERP_API_ON) {
+    _regSetLoading(false);
+    _regRenderEmpty('회원 정보 없음', '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.');
+    return;
+  }
   return _apiJson(_apiUrl)
     .catch(function(e){ console.warn('[등록현황] API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); })
     .then(function(data){
@@ -8650,6 +8665,8 @@ function _mregLoad(){
   var to   = (document.getElementById('mregTo')   || {}).value || '';
   _mregSetLoading();
   _oaPreload();   // 조인 소스(유효회원) 준비 착수
+  // ★2026-09-18 GM 지시 3차(배 12817·12818) — 비-erp 호스트(공개 사본)는 서버가 없어 호출하지 않는다.
+  if (!ERP_API_ON) { _mregRenderEmpty('회원 정보 없음', '회원 정보는 ERP 로그인 주소(erp.wellperion.com)에서만 보입니다.'); return; }
   var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');   // 신규만(서버 필터, 배361 — GM 재지시)
   // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계 전용, GAS 폴백 제거.
   return _apiJson(_apiUrl)
