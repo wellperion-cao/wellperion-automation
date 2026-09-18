@@ -141,15 +141,17 @@
     if(!KPI.company.length){ tb.innerHTML='<tr><td colspan="5">회사 KPI 항목이 없습니다 — 아래 KPI 설정에서 추가</td></tr>'; return; }
     tb.innerHTML=KPI.company.map(function(k){
       var v=k.measure?mm.m[k.measure]:undefined, tgt=k.target||'', shown='미측정', rate='—', bad=false;
+      // 목표의 첫 숫자만 기준으로 쓴다(「20~25%」→20 · 「7200000000」→72억). 원 단위 목표만 원으로 찍는다.
+      var tm=String(tgt).match(/\d+(\.\d+)?/), tn=tm?parseFloat(tm[0]):NaN;
+      var tgtShown = !tgt ? '<span class="dim">목표 없음</span>' : ((k.unit==='원' && /^[\d,\s]+$/.test(tgt)) ? (won(parseFloat(tgt.replace(/[^0-9.]/g,'')))||esc(tgt)) : esc(tgt));
       if(v!=null){
         shown = k.measure==='net_margin' ? (v+'% <span class="dim">(매출−지출 기준)</span>') : (won(v)||String(v));
-        var tn=parseFloat(String(tgt).replace(/[^0-9.]/g,''));
-        if(tgt && !isNaN(tn) && tn>0){
-          if(k.measure==='net_margin'){ rate=(v>=tn?'✅':'<b class="bad">'+v+'% / '+esc(tgt)+'</b>'); }
+        if(!isNaN(tn) && tn>0){
+          if(k.measure==='net_margin'){ rate=(v>=tn?'✅ 목표 이상':'<b class="bad">'+v+'% / '+esc(tgt)+'</b>'); }
           else { var r=Math.round(Number(v)*1000/tn)/10; rate=r+'%'; bad=r<100; }
         }
       }
-      return '<tr><td><b>'+esc(k.name)+'</b></td><td>'+(tgt?(isNaN(parseFloat(tgt))?esc(tgt):(won(parseFloat(String(tgt).replace(/[^0-9.]/g,'')))||esc(tgt))):'<span class="dim">목표 없음</span>')+'</td>'
+      return '<tr><td><b>'+esc(k.name)+'</b></td><td>'+tgtShown+'</td>'
         +'<td><b class="v">'+shown+'</b></td><td'+(bad?' class="bad"':'')+'>'+rate+'</td><td class="dim">'+esc(k.source||'')+'</td></tr>';
     }).join('');
     $('co-note').textContent = mm.asOf ? ('실측 기준 시각 '+mm.asOf+' · 연매출·월 매출·지출 = 홈 KPI 스냅숏(운영 현황 보고와 같은 원천). 유효 회원·전환율은 아직 원천이 없어 미측정.') : '홈 KPI 스냅숏을 못 읽었습니다 — 실측은 미측정으로 둡니다.';
