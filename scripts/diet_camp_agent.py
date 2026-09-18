@@ -809,6 +809,9 @@ def _selfcheck() -> None:
     assert "인스타 앱 알림에서 로그인 승인" in lw and len(lw.splitlines()) <= MAX_LINES, lw
     assert "승인" not in evening_body(conf, {**f, "login_needed": ""}), "세션이 서면 안내 줄이 사라진다"
     assert "승인" not in evening_body(conf, {**f, "ig_url": "", "login_needed": "계정 자리 없음(1531)"}), "우리 쪽 원인은 파트너에게 안 적는다"
+    # 발행 즉시 링크 통은 없다(저녁 한 통 규칙 · GM 승인) — 그날 발행 URL 은 저녁 통이 반드시 싣는다
+    pub = evening_body(conf, {**f, "ig_url": "https://www.instagram.com/p/Q9/", "blog_url": "https://blog.naver.com/iandietcamp/224415783952"})
+    assert "https://blog.naver.com/iandietcamp/224415783952" in pub and "https://www.instagram.com/p/Q9/" in pub, pub
     for c in rs:
         assert c.get("owner") and c.get("blog_tenant"), f"rooms.json 에 owner·blog_tenant 없음: {c['room']}"
     print("[selfcheck] diet_camp_agent OK")
