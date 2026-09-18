@@ -444,7 +444,8 @@ def _row_visitor(row: dict) -> str:
 def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs_facts: list = None,
          session_id: str = None, outcome: str = None, body_keys: list = None, allowed_price: str = None,
          answer: str = None, visitor: str = None, engine: str = None, model_id: str = None,
-         handoff: bool = None, ttfb_s: float = None, total_s: float = None, usage: dict = None):
+         handoff: bool = None, ttfb_s: float = None, total_s: float = None, usage: dict = None,
+         guard: str = None):
     row = {"ts": _kst_now(), "tenant": tenant, "q": _mask_pii(q), "answered": answered, "faq_id": faq_id,
            "visitor": visitor or "customer"}   # §11 ★ — 집계 분모 판정 칸(폴백은 호출부 _visitor_of)
     if q:
@@ -487,6 +488,8 @@ def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs
         row["needs_facts"] = needs_facts   # 배1074③ — 못 답한 이유(어느 정본 칸이 비었나)
     if session_id:
         row["session_id"] = session_id   # 시보 요청② — 테스트 세션 필터(집계 제외)에 쓴다·개인정보 아님
+    if guard:
+        row["guard"] = guard   # 배 12816 — 답을 코드가 손댔을 때(예: ko_greeting_strip)만 남긴다
     try:
         path = _log_path(tenant)
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -597,7 +600,7 @@ def _handle_chat(tenant: str, body: dict, ip: str = ""):
         _log(tenant, q, True, None, type_id, missing, session_id, allowed_price=allowed_price, answer=text,
              outcome=_money_outcome(type_id, allowed_price), visitor=visitor, engine="model",
              model_id=_meta.get("model_id"), handoff=False, ttfb_s=_meta.get("ttfb_s"),
-             total_s=_meta.get("total_s"), usage=_meta.get("usage"))
+             total_s=_meta.get("total_s"), usage=_meta.get("usage"), guard=_meta.get("guard"))
         out = {"ok": True, "answered": True, "answer": text, "faq_id": None, "tenant": tenant}
     elif status == "invalid":
         # 모델은 답했지만 출력검사 탈락(금지어·근거밖 숫자) — 레거시로 재시도하지 않고 바로 핸드오프(§3-1④).
@@ -1088,6 +1091,27 @@ def _is_english_q(q: str) -> bool:
     return not re.search(r"[가-힣]", q or "") and bool(re.search(r"[A-Za-z]", q or ""))
 
 
+# 비한국어 질문에 한글 인사가 새는 것을 코드로 2차 차단(배 12816 재발 3회째 — 프롬프트 지시만으로는
+# 확률적으로 샌다. 라이브 실측 예: "안녕하세요, Wellperion 멤버십 상담실입니다 😊 Of course, …").
+# 첫 문장/첫 줄 = 첫 종결부호(.!?。！？)·줄바꿈·이모지 중 가장 먼저 나오는 것까지 — 이 모델의 인사 문장은
+# 늘 그 중 하나로 끝맺고 본문으로 넘어간다(관찰: "…입니다 😊", "…해요! " 등). 그 구간에만 한글이 있으면
+# 그 구간만 잘라낸다 — 본문 뒤쪽 한글(주소·고유명)은 손대지 않는다.
+_FIRST_BREAK_RE = re.compile(r"[.!?。！？\n\U0001F300-\U0001FAFF☀-➿]")
+
+
+def _strip_ko_greeting(q: str, text: str) -> tuple:
+    """(잘랐는지, 남은 텍스트) 반환. 질문에 한글이 하나라도 있으면(=한국어 질문) 건드리지 않는다
+    (_is_english_q 와 같은 한글 판정 재사용) — 없으면(첫 문장에 한글) 그 문장만 지운다."""
+    if re.search(r"[가-힣]", q or ""):
+        return False, text
+    text = text or ""
+    m = _FIRST_BREAK_RE.search(text)
+    seg_end = m.end() if m else len(text)
+    if not re.search(r"[가-힣]", text[:seg_end]):
+        return False, text
+    return True, text[seg_end:].lstrip()
+
+
 def _grounded(text: str, source: str) -> bool:
     """모델 출력에 근거(정본)에 없는 숫자가 새로 등장하면 False(배1036 GM① 근거 밖 숫자 차단).
     URL·이메일·전화는 먼저 지운다(식별자 숫자는 비교 대상 아님) · 앞자리 0 은 없는 셈 치고 비교한다
@@ -1407,6 +1431,11 @@ def _concierge_answer(tenant: str, q: str, session_id: str, type_id: str = None,
         meta.update(model_id=used_model, ttfb_s=ttfb_s, total_s=total_s, usage=usage)
     if text is None:
         return None, "error", None
+    stripped, text = _strip_ko_greeting(q, text)
+    if stripped:
+        print("[concierge] guard=ko_greeting_strip tenant=%s" % tenant, flush=True)
+        if meta is not None:
+            meta["guard"] = "ko_greeting_strip"
     price_blocked, allowed_price = _price_check(text, prof.get("allowed_prices"))
     if not text or _output_unsafe(text) or price_blocked or not _grounded(text, system_text):
         return None, "invalid", None
@@ -1565,6 +1594,15 @@ def _selfcheck() -> None:
     assert _output_unsafe("こんにちは。お気軽にお越しくださいませ。") is True
     assert _output_unsafe("Feel free to stop by anytime!") is True
     assert _output_unsafe("평일 06:00~22:30까지 운영해요") is False   # 정상 답은 안 걸린다
+    # 배 12816④ — 비한국어 질문에 새는 한글 인사를 코드가 2차로 자르는지(라이브 실측 문장 그대로).
+    leaked = "안녕하세요, Wellperion 멤버십 상담실입니다 😊 Of course, we'd love to have you visit!"
+    ok, cut = _strip_ko_greeting("Hello, can I visit tomorrow?", leaked)
+    assert ok is True and cut == "Of course, we'd love to have you visit!", cut
+    ok2, same = _strip_ko_greeting("운영 시간은 어떻게 되나요", leaked)
+    assert ok2 is False and same == leaked, "한국어 질문은 안 건드린다"
+    body_with_ko = "We're open 06:00 to 22:30 today. Our address is Yongsan-gu (용산구), Seoul."
+    ok3, unchanged = _strip_ko_greeting("What are your opening hours?", body_with_ko)
+    assert ok3 is False and unchanged == body_with_ko, "첫 문장 밖 한글(주소·고유명)은 안 건드린다"
     assert not _grounded("월 15만원이에요", "정본 안에 이 금액은 없습니다")
     assert _grounded("오전 8시부터 오후 8시까지예요", "평일 08:00~20:00 운영")   # 앞자리 0 표기차 오탐 수리
 
