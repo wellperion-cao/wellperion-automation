@@ -82,6 +82,7 @@ td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 tbody tr.sel{background:var(--accent-soft)}
 .rank-sel{padding:1px 6px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);line-height:18px;max-width:9em}
+.tenant-sel{min-width:7em;max-width:none}
 .scrrow summary a,td a,li a{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
 .scrrow summary a:hover,td a:hover,li a:hover{text-decoration-color:currentColor}
 .tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11.5px;font-weight:600;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;line-height:18px}
@@ -349,7 +350,7 @@ function teamSelect(u){
 const tenant=u=>(perms(u)||{}).tenant||'';
 function tenantSelect(u){
   const list=S.tenants||[], cur=tenant(u);
-  return `<select class="rank-sel" data-tenant-for="${u.id}" title="상담봇 tenant">${['<option value="">상담봇 tenant 없음</option>'].concat(list.map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name||t.id)}</option>`)).join('')}</select>`;
+  return `<select class="rank-sel tenant-sel" data-tenant-for="${u.id}" title="상담 센터">${['<option value="">상담 센터 없음</option>'].concat(list.map(t=>`<option value="${esc(t.id)}"${t.id===cur?' selected':''}>${esc(t.name||t.id)}</option>`)).join('')}</select>`;
 }
 /* 직급·층 — 승인 판단 근거다(GM 지시 2026-09-11 「팀장과 팀원의 권한은 차별을 둬야해」). */
 const rank=u=>(perms(u)||{}).rank||'';
@@ -689,7 +690,7 @@ document.addEventListener('change',e=>{
   const pexc=e.target.closest('input[data-exc-for]'); if(pexc){ personToggleExc(+pexc.dataset.excFor); return; }
   const dsel=e.target.closest('select[data-dept-apply-for]'); if(dsel&&dsel.value){ personApplyDept(+dsel.dataset.deptApplyFor, dsel.value); dsel.value=''; return; }
   const tsel=e.target.closest('select[data-team-for]'); if(tsel){ post(`/auth/admin/${tsel.dataset.teamFor}/team`,{team:tsel.value}).then(ok=>{ if(ok){ toast('팀을 저장했습니다'); load(); } }); return; }
-  const tnsel=e.target.closest('select[data-tenant-for]'); if(tnsel){ post(`/auth/admin/${tnsel.dataset.tenantFor}/tenant`,{tenant:tnsel.value}).then(ok=>{ if(ok){ toast('상담봇 tenant 를 저장했습니다'); load(); } }); return; }
+  const tnsel=e.target.closest('select[data-tenant-for]'); if(tnsel){ post(`/auth/admin/${tnsel.dataset.tenantFor}/tenant`,{tenant:tnsel.value}).then(ok=>{ if(ok){ toast('상담 센터를 저장했습니다'); load(); } }); return; }
   const psc=e.target.closest('input[data-screen-for]'); if(psc){ personToggleScreen(+psc.dataset.screenFor, psc.dataset.screen); return; }
 });
 document.addEventListener('input',e=>{
