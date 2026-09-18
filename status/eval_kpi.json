@@ -1,0 +1,19 @@
+{
+  "_doc": "평가 KPI 설정 원장(GM 지시 2026-09-18 · 설계 = status/briefs/CEO-2026-09-17-업무SSOT-단일화-설계.md §4). 세 절 = company(회사 평가) · manager(관리자 평가 목표) · partner(파트너사 평가). 라이브 정본은 서버 /srv/erp/auth/eval_kpi.json(POST /auth/admin/api/eval_kpi 로 GM 이 화면에서 저장) — 이 파일은 씨앗(서버에 파일이 없을 때 한 번 읽는다). 실측값은 여기 두지 않는다(화면이 열 때마다 원장에서 읽는다 · 약속 L21). 관리자 KPI 항목 이름은 status/manager_eval.json 의 항목 이름과 같은 문자열을 쓴다.",
+  "updated_at": "2026-09-18",
+  "updated_by": "seed",
+  "company": [
+    {"key": "sales_year", "name": "연매출(2026)", "target": "7200000000", "unit": "원", "source": "canon sales_year_target · GM 결재 2026-06-20", "measure": "sales.year"},
+    {"key": "net_margin", "name": "순이익률", "target": "20~25%", "unit": "%", "source": "canon net_profit_margin_target · 회장님 말씀 2026-09-16", "measure": "net_margin"},
+    {"key": "sales_month", "name": "월 매출", "target": "", "unit": "원", "source": "월 목표 = status/sales_targets.json", "measure": "sales.month"},
+    {"key": "members_active", "name": "유효 회원 수", "target": "", "unit": "명", "source": "", "measure": ""},
+    {"key": "inquiry_to_join", "name": "문의→등록 전환율", "target": "", "unit": "%", "source": "", "measure": ""}
+  ],
+  "manager": [],
+  "partner": [
+    {"key": "onboarding", "name": "온보딩 답 비율", "target": "100%"},
+    {"key": "modules", "name": "쓰는 모듈 수", "target": "2 이상"},
+    {"key": "channels", "name": "채널 계정 활성", "target": "7/7"},
+    {"key": "paid", "name": "유료 전환", "target": "파일럿 4주 뒤"}
+  ]
+}

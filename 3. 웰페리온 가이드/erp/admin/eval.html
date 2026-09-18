@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>평가 — 웰페리온 ERP 관리자</title>
+<!-- 평가 = 웰페리온 ERP 관리자 메뉴 「평가」(GM 지시 2026-09-18 09:3x · 설계 status/briefs/CEO-2026-09-17-업무SSOT-단일화-설계.md §4).
+     절 3개 — ① 회사 평가(회사 KPI 표) ② 관리자 평가(랩스 관리에 있던 책임 항목 4인·실무진 7인 표를 그대로 옮김 · 값 복제 없음)
+     ③ KPI 설정(status/eval_kpi.json · 저장 = POST /auth/admin/api/eval_kpi · 관리자 비밀번호 문 뒤).
+     erp/index.html 「관리 › 평가」 안에서만 연다(화면 지도와 같은 방식). 평가 값(잘한 것·보완)의 주인은 CHRO 원장 그대로 — 여기는 틀·목표만. -->
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="/erp/admin/platform_brand.css">
+<style>
+  :root{
+    --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
+    --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12)); --dim:var(--pf-soft,#3A4A4A);
+  }
+  html{color-scheme:light;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
+  .wrap{width:100%; margin:0; padding:24px 20px 60px;}
+  h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
+  .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:18px;}
+  h2{font-size:var(--fs-4); font-weight:700; margin:26px 0 8px; color:var(--accent-hover);}
+  h2:first-of-type{margin-top:0;}
+  h3{font-size:var(--fs-3); font-weight:700; margin:16px 0 6px;}
+  h3 .n{font-weight:500; color:var(--text-soft); font-size:var(--fs-2); margin-left:6px;}
+  .tbl-wrap{overflow-x:auto; margin-bottom:6px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
+  table.reg{width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0; font-size:var(--fs-2);}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); height:32px; padding:0 10px;
+               background:var(--pf-panel-2); border-bottom:1px solid var(--border); white-space:nowrap;}
+  table.reg td{padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word;}
+  table.reg tr:last-child td{border-bottom:0;}
+  table.reg td b.v{font-family:var(--pf-head); font-size:var(--fs-4); color:var(--accent-hover); font-variant-numeric:tabular-nums;}
+  table.reg td .dim{color:var(--text-soft); font-size:var(--fs-1); margin-top:2px;}
+  table.reg td.bad{color:var(--pf-bad); font-weight:700;}
+  table.reg input{width:100%; font:inherit; padding:4px 6px; border:1px solid var(--border); border-radius:6px; background:var(--paper); color:var(--text);}
+  table.reg input:focus{outline:2px solid var(--accent); border-color:transparent;}
+  .bar{display:flex; gap:8px; align-items:center; margin:10px 0 4px; flex-wrap:wrap;}
+  .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer;
+       border:1px solid var(--border); background:var(--paper); color:var(--text);}
+  .btn.p{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.s{padding:3px 9px; font-size:var(--fs-1);}
+  .msg{font-size:var(--fs-2); color:var(--text-soft);}
+  .msg.ok{color:var(--accent-hover); font-weight:600;}
+  .msg.bad{color:var(--pf-bad); font-weight:600;}
+  .note{font-size:var(--fs-1); color:var(--text-soft); margin-top:6px; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>평가</h1>
+  <div class="sub">회사 평가 · 관리자 평가 · KPI 설정 — 숫자는 화면을 열 때마다 원장에서 읽습니다(손으로 적은 값 아님).</div>
+
+  <h2>① 회사 평가</h2>
+  <div class="tbl-wrap"><table class="reg" id="co-tbl">
+    <colgroup><col style="width:22%"><col style="width:22%"><col style="width:26%"><col style="width:14%"><col></colgroup>
+    <thead><tr><th>항목</th><th>목표</th><th>실측</th><th>달성률</th><th>원천</th></tr></thead>
+    <tbody><tr><td colspan="5">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="note" id="co-note"></div>
+
+  <h2>② 관리자 평가</h2>
+  <h3>책임 항목 4인 <span class="n">김남욱 GM · 이경연 실장 · 이정헌 소장 · 나우열M</span></h3>
+  <div class="tbl-wrap"><table class="reg" id="eval-mgr-tbl">
+    <colgroup><col style="width:12%"><col style="width:26%"><col style="width:24%"><col style="width:19%"><col></colgroup>
+    <thead><tr><th>사람</th><th>기준</th><th>이번 달 진척</th><th>잘한 것</th><th>보완할 것</th></tr></thead>
+    <tbody><tr><td colspan="5">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <h3>실무진 7인 · 이번 달</h3>
+  <div class="tbl-wrap"><table class="reg" id="eval-staff-tbl">
+    <colgroup><col style="width:16%"><col style="width:28%"><col style="width:20%"><col></colgroup>
+    <thead><tr><th>사람</th><th>업무 SSOT 완료/등록</th><th>기한 지킴</th><th>회신</th></tr></thead>
+    <tbody><tr><td colspan="4">불러오는 중…</td></tr></tbody>
+  </table></div>
+  <div class="note">기한 지킴 = 종료일 지난 열린 건. 완료/등록·회신은 빌더(work_system_build)가 아직 값을 안 냅니다 — 자료 없음(지어내지 않음). 잘한 것·보완할 것 값은 CHRO 원장(manager_eval.json)이 주인입니다.</div>
+
+  <h2>③ KPI 설정</h2>
+  <div class="bar"><button type="button" class="btn p" id="kpi-save">저장</button><span class="msg" id="kpi-msg">불러오는 중…</span></div>
+  <h3>회사 KPI</h3>
+  <div class="tbl-wrap"><table class="reg" id="k-co">
+    <colgroup><col style="width:24%"><col style="width:20%"><col style="width:10%"><col><col style="width:8%"></colgroup>
+    <thead><tr><th>항목</th><th>목표</th><th>단위</th><th>원천·근거</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <div class="bar"><button type="button" class="btn s" data-add="company">+ 항목</button></div>
+  <h3>관리자 KPI <span class="n">항목 이름은 CHRO 원장(manager_eval.json)과 같은 문자열 — 여기서는 목표만 적는다</span></h3>
+  <div class="tbl-wrap"><table class="reg" id="k-mgr">
+    <colgroup><col style="width:16%"><col style="width:34%"><col></colgroup>
+    <thead><tr><th>사람</th><th>항목</th><th>목표</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <h3>파트너사 KPI <span class="n">랩스 관리 「파트너사 평가」가 이 항목으로 잰다</span></h3>
+  <div class="tbl-wrap"><table class="reg" id="k-pt">
+    <colgroup><col style="width:34%"><col><col style="width:8%"></colgroup>
+    <thead><tr><th>항목</th><th>목표</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <div class="bar"><button type="button" class="btn s" data-add="partner">+ 항목</button></div>
+  <div class="note">저장은 관리자 비밀번호 문 뒤에 있습니다 — 「계정·권한」에서 한 번 풀면 이 창에서도 저장됩니다. 저장하면 랩스 파트너사 평가·이 화면이 같은 원장을 읽습니다.</div>
+</div>
+
+<script>
+(function(){
+  var RAW='/repo/';
+  function get(path){
+    var local=(location.hostname==='erp.wellperion.com')
+      ? fetch('/'+path+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      : Promise.reject(0);
+    return local.catch(function(){ return fetch(RAW+path+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
+  }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function $(id){ return document.getElementById(id); }
+  function won(n){ return (n==null||isNaN(n)) ? null : Math.round(Number(n)).toLocaleString('ko-KR')+'원'; }
+  function ym(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
+
+  /* ── KPI 원장: 서버(관리자 문 뒤) → 없거나 잠겨 있으면 씨앗(status/eval_kpi.json) ── */
+  var KPI=null, locked=false;
+  function loadKpi(){
+    return fetch('/auth/admin/api/eval_kpi',{credentials:'same-origin',cache:'no-store'}).then(function(r){
+      if(r.status===401||r.status===403){ locked=true; throw 0; }
+      if(!r.ok) throw 0; return r.json();
+    }).catch(function(){ return get('status/eval_kpi.json').catch(function(){ return null; }); }).then(function(k){
+      KPI=k||{company:[],manager:[],partner:[]};
+      KPI.company=KPI.company||[]; KPI.manager=KPI.manager||[]; KPI.partner=KPI.partner||[];
+      return KPI;
+    });
+  }
+
+  /* ── ① 회사 평가 — 실측 = status/home_kpi_snapshot.json(운영 현황 보고와 같은 원천) · 없는 값은 미측정 ── */
+  function measures(snap){
+    var d=(snap&&snap.data)||{}, s=d.sales||{}, e=d.expense||{};
+    var m={ 'sales.year': s.year, 'sales.month': s.month };
+    if(s.year && e.year!=null) m['net_margin']=Math.round((Number(s.year)-Number(e.year))*1000/Number(s.year))/10;
+    return {m:m, asOf:d.asOf||snap&&snap.generated_at_kst||''};
+  }
+  function drawCompany(snap){
+    var tb=$('co-tbl').querySelector('tbody'), mm=measures(snap);
+    if(!KPI.company.length){ tb.innerHTML='<tr><td colspan="5">회사 KPI 항목이 없습니다 — 아래 KPI 설정에서 추가</td></tr>'; return; }
+    tb.innerHTML=KPI.company.map(function(k){
+      var v=k.measure?mm.m[k.measure]:undefined, tgt=k.target||'', shown='미측정', rate='—', bad=false;
+      if(v!=null){
+        shown = k.measure==='net_margin' ? (v+'% <span class="dim">(매출−지출 기준)</span>') : (won(v)||String(v));
+        var tn=parseFloat(String(tgt).replace(/[^0-9.]/g,''));
+        if(tgt && !isNaN(tn) && tn>0){
+          if(k.measure==='net_margin'){ rate=(v>=tn?'✅':'<b class="bad">'+v+'% / '+esc(tgt)+'</b>'); }
+          else { var r=Math.round(Number(v)*1000/tn)/10; rate=r+'%'; bad=r<100; }
+        }
+      }
+      return '<tr><td><b>'+esc(k.name)+'</b></td><td>'+(tgt?(isNaN(parseFloat(tgt))?esc(tgt):(won(parseFloat(String(tgt).replace(/[^0-9.]/g,'')))||esc(tgt))):'<span class="dim">목표 없음</span>')+'</td>'
+        +'<td><b class="v">'+shown+'</b></td><td'+(bad?' class="bad"':'')+'>'+rate+'</td><td class="dim">'+esc(k.source||'')+'</td></tr>';
+    }).join('');
+    $('co-note').textContent = mm.asOf ? ('실측 기준 시각 '+mm.asOf+' · 연매출·월 매출·지출 = 홈 KPI 스냅숏(운영 현황 보고와 같은 원천). 유효 회원·전환율은 아직 원천이 없어 미측정.') : '홈 KPI 스냅숏을 못 읽었습니다 — 실측은 미측정으로 둡니다.';
+  }
+
+  /* ── ② 관리자 평가 — 랩스 관리 「평가」 탭에서 그대로 옮김(2026-09-18) · 원장 = manager_eval_history.json · work_system.json ── */
+  var MGR_ORDER=['김남욱 GM','이경연 실장','이정헌 소장','나우열M'];
+  function drawManager(){
+    get('status/manager_eval_history.json').then(function(h){
+      var tb=document.querySelector('#eval-mgr-tbl tbody');
+      var month=(h&&h.months&&h.months[ym()])||null;
+      if(!month){ tb.innerHTML='<tr><td colspan="5">이번 달 실측 없음</td></tr>'; return; }
+      var rows=[];
+      MGR_ORDER.forEach(function(person){
+        var items=month[person];
+        if(!items){ rows.push('<tr><td><b>'+esc(person)+'</b></td><td colspan="4" class="dim">이번 달 실측 없음</td></tr>'); return; }
+        var keys=Object.keys(items);
+        keys.forEach(function(k,i){
+          var it=items[k]||{};
+          rows.push('<tr>'+(i===0?'<td rowspan="'+keys.length+'"><b>'+esc(person)+'</b></td>':'')
+            +'<td>'+esc(k)+(it.crit?'<div class="dim">'+esc(it.crit)+'</div>':'')+'</td>'
+            +'<td'+(it.bad?' class="bad"':'')+'>'+esc(it.text||'미측정')+'</td>'
+            +'<td>'+esc(it.good||'—')+'</td><td>'+esc(it.fix||'—')+'</td></tr>');
+        });
+      });
+      tb.innerHTML=rows.join('');
+    }).catch(function(){ document.querySelector('#eval-mgr-tbl tbody').innerHTML='<tr><td colspan="5">원장을 못 읽었습니다</td></tr>'; });
+
+    Promise.all([get('status/work_system.json'), get('status/work_system_people.json')]).then(function(r){
+      var ws=r[0], people=r[1], tb=document.querySelector('#eval-staff-tbl tbody');
+      if(!ws||!people){ tb.innerHTML='<tr><td colspan="4">원장을 못 읽었습니다</td></tr>'; return; }
+      var order=Object.keys(people).filter(function(k){ return k.charAt(0)!=='_' && people[k] && people[k].scope==='owner'; });
+      if(!order.length){ tb.innerHTML='<tr><td colspan="4">실무진 명단 없음</td></tr>'; return; }
+      tb.innerHTML=order.map(function(key){
+        var disp=people[key].display||key, p=(ws.people||{})[key];
+        if(!p) return '<tr><td><b>'+esc(disp)+'</b></td><td colspan="3" class="dim">자료 없음</td></tr>';
+        var overdue=(p.counts&&p.counts['밀림'])||0, due=overdue===0?'✅':('<b class="bad">'+overdue+'</b>건 지남');
+        return '<tr><td><b>'+esc(disp)+'</b></td><td class="dim">—</td><td>'+due+'</td><td class="dim">—</td></tr>';
+      }).join('');
+    }).catch(function(){ document.querySelector('#eval-staff-tbl tbody').innerHTML='<tr><td colspan="4">원장을 못 읽었습니다</td></tr>'; });
+  }
+
+  /* ── ③ KPI 설정 — 표 안에서 고치고 저장 버튼 하나 ── */
+  function inp(name,val,ph){ return '<input name="'+name+'" value="'+esc(val)+'" placeholder="'+esc(ph||'')+'">'; }
+  function drawKpiEditor(ledger){
+    $('k-co').querySelector('tbody').innerHTML=KPI.company.map(function(k){
+      return '<tr>'+'<td>'+inp('name',k.name,'항목')+'<div class="dim">'+esc(k.key||'')+'</div></td><td>'+inp('target',k.target,'목표')+'</td><td>'+inp('unit',k.unit,'단위')+'</td>'
+        +'<td>'+inp('source',k.source,'원천·근거')+'</td><td><button type="button" class="btn s" data-del="1">삭제</button></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="dim">항목 없음</td></tr>';
+    // 관리자 KPI 행 = CHRO 원장(manager_eval.json)의 사람×항목 전부 + 저장된 목표. 이름은 원장이 주인이라 여기서 못 바꾼다.
+    var rows=[], have={};
+    KPI.manager.forEach(function(m){ have[m.person+'|'+m.item]=m.target||''; });
+    if(ledger){
+      Object.keys(ledger).forEach(function(person){
+        if(person.charAt(0)==='_'||person==='updated_at'||typeof ledger[person]!=='object') return;
+        Object.keys(ledger[person]).forEach(function(item){ rows.push({person:person,item:item,target:have[person+'|'+item]||''}); delete have[person+'|'+item]; });
+      });
+    }
+    Object.keys(have).forEach(function(k){ var p=k.split('|'); rows.push({person:p[0],item:p[1],target:have[k],orphan:true}); });
+    $('k-mgr').querySelector('tbody').innerHTML=rows.map(function(r){
+      return '<tr data-person="'+esc(r.person)+'" data-item="'+esc(r.item)+'"><td><b>'+esc(r.person)+'</b></td><td>'+esc(r.item)+(r.orphan?'<div class="dim">원장에 없는 항목</div>':'')+'</td><td>'+inp('target',r.target,'목표')+'</td></tr>';
+    }).join('') || '<tr><td colspan="3" class="dim">CHRO 원장을 못 읽었습니다</td></tr>';
+    $('k-pt').querySelector('tbody').innerHTML=KPI.partner.map(function(k){
+      return '<tr><td>'+inp('name',k.name,'항목')+'<div class="dim">'+esc(k.key||'')+'</div></td><td>'+inp('target',k.target,'목표')+'</td><td><button type="button" class="btn s" data-del="1">삭제</button></td></tr>';
+    }).join('') || '<tr><td colspan="3" class="dim">항목 없음</td></tr>';
+    $('kpi-msg').className='msg'; $('kpi-msg').textContent = locked ? '읽기: 씨앗 파일 · 저장하려면 「계정·권한」에서 관리자 비밀번호를 먼저 푸세요' : ('원장 '+(KPI.updated_at||'')+(KPI.updated_by?' · '+KPI.updated_by:''));
+  }
+  function slug(name){ return String(name||'').trim().toLowerCase().replace(/[^0-9a-z가-힣]+/g,'_').replace(/^_+|_+$/g,'')||('k'+Date.now()); }
+  function collect(){
+    var co=[], pt=[], mg=[];
+    var keysCo=KPI.company.slice();
+    $('k-co').querySelectorAll('tbody tr').forEach(function(tr,i){
+      var q=function(n){ var el=tr.querySelector('input[name='+n+']'); return el?el.value.trim():''; };
+      if(!tr.querySelector('input')) return;
+      var name=q('name'); if(!name) return;
+      var old=keysCo[i]||{};
+      co.push({key:old.key||slug(name), name:name, target:q('target'), unit:q('unit'), source:q('source'), measure:old.measure||''});
+    });
+    $('k-mgr').querySelectorAll('tbody tr[data-person]').forEach(function(tr){
+      var t=tr.querySelector('input[name=target]').value.trim();
+      if(t) mg.push({person:tr.dataset.person, item:tr.dataset.item, target:t});
+    });
+    var keysPt=KPI.partner.slice();
+    $('k-pt').querySelectorAll('tbody tr').forEach(function(tr,i){
+      if(!tr.querySelector('input')) return;
+      var name=tr.querySelector('input[name=name]').value.trim(); if(!name) return;
+      pt.push({key:(keysPt[i]||{}).key||slug(name), name:name, target:tr.querySelector('input[name=target]').value.trim()});
+    });
+    return {company:co, manager:mg, partner:pt};
+  }
+  document.addEventListener('click',function(ev){
+    var d=ev.target.closest('[data-del]'); if(d){ var tr=d.closest('tr'), tb=tr.parentNode, idx=Array.prototype.indexOf.call(tb.children,tr); var arr=tb.closest('table').id==='k-co'?KPI.company:KPI.partner; arr.splice(idx,1); tr.remove(); return; }
+    var a=ev.target.closest('[data-add]'); if(a){ var cur=collect(); KPI.company=cur.company; KPI.partner=cur.partner; (a.dataset.add==='company'?KPI.company:KPI.partner).push({key:'', name:'', target:''}); drawKpiEditor(LEDGER); return; }
+  });
+  var LEDGER=null;
+  $('kpi-save').addEventListener('click',function(){
+    var body=collect(), m=$('kpi-msg'); m.className='msg'; m.textContent='저장 중…';
+    fetch('/auth/admin/api/eval_kpi',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){ if(r.status===401||r.status===403){ throw new Error('lock'); } if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(j){ KPI=j.kpi||KPI; locked=false; m.className='msg ok'; m.textContent='저장됨 '+(KPI.updated_at||''); drawKpiEditor(LEDGER); get('status/home_kpi_snapshot.json').then(drawCompany); })
+      .catch(function(e){ m.className='msg bad'; m.textContent = e.message==='lock' ? '저장 안 됨 — 「계정·권한」에서 관리자 비밀번호를 먼저 푸세요' : ('저장 안 됨('+e.message+')'); });
+  });
+
+  loadKpi().then(function(){
+    get('status/home_kpi_snapshot.json').then(drawCompany).catch(function(){ drawCompany(null); });
+    drawManager();
+    get('status/manager_eval.json').then(function(l){ LEDGER=l; drawKpiEditor(l); }).catch(function(){ drawKpiEditor(null); });
+  });
+})();
+</script>
+</body>
+</html>

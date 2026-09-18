@@ -167,7 +167,7 @@
      ★2026-09-10 수리 — 권한 판에 width:calc(100vw - 80px) 이 박혀 있었다. 왼쪽 메뉴가 없던
      시절의 값이라 240px 메뉴가 생긴 뒤로 화면이 오른쪽으로 176px 밀려 잘렸다(실측).
      이제 폭을 지정하지 않는다 — 본문이 이미 메뉴 오른쪽 전부를 쓴다. */
-  #screens-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px; border:0; background:transparent;}
+  #screens-frame, #eval-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px; border:0; background:transparent;}
   #adm-frame{display:block; width:100%; height:calc(100vh - 108px); min-height:520px;
              border:0; background:var(--paper); border-radius:6px;}
 
@@ -245,6 +245,8 @@
     <a href="#cfg" data-go="cfg"><span class="t">회사 설정값</span></a>
     <a href="#dev" data-go="dev"><span class="t">개발 환경</span></a>
     <a href="#screens" data-go="screens"><span class="t">화면 지도</span></a>
+    <!-- 평가(admin/eval.html) — 회사 평가·관리자 평가·KPI 설정. 랩스 관리에 있던 회사 평가를 여기로 옮겼다(GM 2026-09-18 09:3x). -->
+    <a href="#eval" data-go="eval"><span class="t">평가</span></a>
   </div>
   <div class="sep"></div>
   <a class="up" id="up-admin" href="/erp/admin/" hidden><span class="t">웰페리온 AX 랩스 관리 ↑</span></a>
@@ -269,6 +271,10 @@
   <!-- 화면 지도(admin/screens.html) — GM 이 번호로 화면을 정리하는 곳. 관리자 메뉴 안에서만 연다(GM 2026-09-17 16:2x). -->
   <div id="pane-screens" role="tabpanel" hidden>
     <iframe id="screens-frame" title="화면 지도" src="about:blank"></iframe>
+  </div>
+  <!-- 평가(admin/eval.html) — 화면 지도와 같은 방식으로 관리자 메뉴 안에서만 연다(GM 2026-09-18). -->
+  <div id="pane-eval" role="tabpanel" hidden>
+    <iframe id="eval-frame" title="평가" src="about:blank"></iframe>
   </div>
 
   <!-- 모듈 배치 — 플랫폼에 셋업된 모듈 가운데 이 회사에서 쓸 것을 고른다.
@@ -591,7 +597,7 @@ function loadModules(role, allowedIds){
 }
 
 // 2-2) 좌측 메뉴 — 한 번에 한 자리만 띄운다. 무거운 판(비용·권한)은 처음 열 때만 읽는다.
-var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev', 'screens'];
+var PANES = ['mod', 'doc', 'adm', 'mods', 'usage', 'cfg', 'dev', 'screens', 'eval'];
 // 계정·권한은 오른쪽 자리에 끼워 띄운다(GM 2026-09-11 「다른 페이지로 넘어가는게 아니라
 // 우측 페이지에 나타나야해」) — 나머지 관리 판은 이 화면이 직접 그린다.
 // 가동 현황(옛 #health)은 배1026 2026-09-17(GM "가동현황도 뭔지 모르겠고")로 이 판에서 뺐다 —
@@ -607,6 +613,9 @@ function showPane(which){
   } else if (which === 'screens') {
     var sf = document.getElementById('screens-frame');
     if (sf && sf.getAttribute('src') === 'about:blank') sf.setAttribute('src', 'admin/screens.html');
+  } else if (which === 'eval') {
+    var ef = document.getElementById('eval-frame');
+    if (ef && ef.getAttribute('src') === 'about:blank') ef.setAttribute('src', 'admin/eval.html');
   } else if (LOADER[which] && !loadedPane[which]) {
     loadedPane[which] = 1; LOADER[which]();
   }

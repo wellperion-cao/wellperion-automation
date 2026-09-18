@@ -270,6 +270,59 @@ MODULE_SWITCH = os.environ.get("ERP_MODULE_SWITCH",
                                os.path.join(os.path.dirname(os.path.abspath(__file__)), "module_switch.json"))
 _SWITCH: tuple = (None, frozenset())
 
+# ── 평가 KPI 설정(ERP 관리자 「평가」 · GM 지시 2026-09-18) ──────────────────────────────────
+# 원장 = 이 파일 하나(company·manager·partner 세 절). 없으면 저장소 씨앗(status/eval_kpi.json)을 한 번 읽는다.
+# 저장은 관리자 등급 + 관리자 비밀번호 문 뒤(POST /auth/admin/api/eval_kpi). 실측값은 여기 두지 않는다(화면이 원장에서 읽는다).
+EVAL_KPI = os.environ.get("ERP_EVAL_KPI", os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_kpi.json"))
+_EVAL_KPI_SEEDS = ("/srv/erp/repo/status/eval_kpi.json",
+                   os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "status", "eval_kpi.json"))
+_EVAL_KPI_SECTIONS = ("company", "manager", "partner")
+
+
+def eval_kpi_load() -> dict:
+    """서버 원장 → 없으면 씨앗 → 그것도 없으면 빈 세 절. 모양은 항상 세 절 리스트로 맞춘다."""
+    for p in (EVAL_KPI,) + _EVAL_KPI_SEEDS:
+        try:
+            with open(p, encoding="utf-8") as f:
+                d = json.load(f)
+            break
+        except (OSError, ValueError):
+            continue
+    else:
+        d = {}
+    out = {k: v for k, v in d.items() if not k.startswith("_")}
+    for sec in _EVAL_KPI_SECTIONS:
+        out[sec] = [x for x in (out.get(sec) or []) if isinstance(x, dict)]
+    return out
+
+
+def eval_kpi_clean(body: dict) -> dict:
+    """화면이 보낸 본문에서 세 절만, 문자열 칸만 남긴다(모르는 칸·긴 값은 버린다)."""
+    keep = {"company": ("key", "name", "target", "unit", "source", "measure"),
+            "manager": ("person", "item", "target"), "partner": ("key", "name", "target")}
+    out = {}
+    for sec in _EVAL_KPI_SECTIONS:
+        rows = []
+        for x in (body.get(sec) or [])[:200]:
+            if not isinstance(x, dict):
+                continue
+            row = {k: str(x.get(k) or "")[:300] for k in keep[sec]}
+            if row.get("name") or row.get("item"):
+                rows.append(row)
+        out[sec] = rows
+    return out
+
+
+def eval_kpi_save(body: dict, by: str) -> dict:
+    d = eval_kpi_clean(body)
+    d["updated_at"] = now()
+    d["updated_by"] = by
+    tmp = EVAL_KPI + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, EVAL_KPI)
+    return d
+
 
 def modules_off() -> frozenset:
     global _SWITCH
@@ -646,6 +699,9 @@ GUIDE_DIR = "/3. 웰페리온 가이드"
 # 개인 아이디 namuk87·jjky0123 은 관리자 등급이라 열렸다). 회사 관리자 콘솔(/auth/admin)은 종전대로 관리자 등급 전부.
 PLATFORM_ADMINS = frozenset(e.strip().lower() for e in os.environ.get("ERP_PLATFORM_ADMINS", "cao@wellperion.com").split(",") if e.strip())
 PLATFORM_PREFIX = "/erp/admin/"
+# 회사 관리자 도구 — 파일은 랩스 폴더에 있지만 웰페리온 ERP 관리 메뉴(/erp/ 「관리」) 안에서 여는 회사 것.
+# 플랫폼 판정(회사 계정만)에서 빼고 관리자 전용(ADMIN_ONLY_PREFIXES)만 건다 — 개인 아이디 관리자도 연다(GM 2026-09-18 「평가는 ERP 관리자로」).
+COMPANY_ADMIN_SCREENS = ("/erp/admin/screens.html", "/erp/admin/eval.html")
 # 플랫폼(파는 쪽) 화면인데 아직 파트너사 경로에 남아 있는 것 — 회사 계정 관리자만 연다(배 2633 · 웰리 실측 2026-09-15).
 # 파일을 먼저 옮기면 기존 즐겨찾기가 깨지므로(2026-09-07 파트너팀 404) 자리 이동 전에 권한으로 먼저 막는다.
 # 회사 관리자 콘솔(/erp/admin/)이 이 경로들을 그대로 가리키므로 회사 계정에서는 링크가 그대로 산다.
@@ -706,6 +762,8 @@ def is_platform_path(path: str) -> bool:
         p = p[len("/repo"):] or "/"
     if p.startswith(GUIDE_DIR + "/"):
         p = p[len(GUIDE_DIR):]
+    if p in COMPANY_ADMIN_SCREENS:
+        return False          # 회사 관리자 도구 — 랩스 폴더에 있지만 /erp/ 관리 메뉴 안에서 여는 회사 것(관리자 전용은 ADMIN_ONLY_PREFIXES 가 그대로 건다)
     return (p.startswith(PLATFORM_PREFIX) or p == PLATFORM_PREFIX.rstrip("/")
             or p in PLATFORM_PATHS or p.startswith(PLATFORM_PATH_PREFIXES))
 
@@ -1777,6 +1835,27 @@ async def admin_api_modules_save(request: Request, erp_session: Optional[str] = 
     off = [v for v in form.getlist("off") if v in ids]
     _save_modules_off(off, me["email"])
     return JSONResponse({"ok": True, "off": sorted(set(off))})
+
+
+@app.get("/auth/admin/api/eval_kpi")
+def admin_api_eval_kpi(erp_session: Optional[str] = Cookie(default=None), erp_admin: Optional[str] = Cookie(default=None)):
+    """평가 KPI 설정 원장(회사·관리자·파트너 세 절) — ERP 관리자 「평가」·랩스 「파트너사 평가」가 읽는다."""
+    _admin_json_gate(erp_session, erp_admin)
+    return JSONResponse(eval_kpi_load())
+
+
+@app.post("/auth/admin/api/eval_kpi")
+async def admin_api_eval_kpi_save(request: Request, erp_session: Optional[str] = Cookie(default=None),
+                                  erp_admin: Optional[str] = Cookie(default=None)):
+    """KPI 설정 저장(JSON 본문 {company,manager,partner}) — 세 절·정해진 칸만 남기고 통째로 교체."""
+    me = _admin_json_gate(erp_session, erp_admin)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "JSON 본문이 아닙니다")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "본문은 객체여야 합니다")
+    return JSONResponse({"ok": True, "kpi": eval_kpi_save(body, me["email"])})
 
 
 _USAGE_AREAS = (("reg_", "접수"), ("lf_", "접수"), ("voc_", "접수"), ("hold_complete", "접수"),

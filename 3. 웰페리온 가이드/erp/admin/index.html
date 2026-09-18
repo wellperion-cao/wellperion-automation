@@ -361,7 +361,7 @@
   <!-- 평가 = 중간관리자 업무목차·GM업무·실무진_업무점수체계_초안 세 자리에 흩어졌던 평가를 여기 하나로
        단일화(GM 지시 2026-09-17 「평가 관련된 부분은 ERP 관리자페이지로 단일화 · 직관적으로」). -->
   <div class="cap">평가</div>
-  <a href="#eval" data-go="eval"><span class="t">평가</span></a>
+  <a href="#eval" data-go="eval"><span class="t">파트너사 평가</span></a>
   <div class="sep"></div>
   <!-- 개인 = GM 본인 것(GM 2026-09-15 「김남욱GM 카드·어떤 하루·개인 아이디어를 맨 아래 따로」).
        아이디어는 ERP 메인 G1 의 💡 아이디어 탭 한 곳(주 단위 누적 = 시보).
@@ -443,6 +443,7 @@
       // 랩스 자체 메시지 채널(파트너사 아님 · GM 2026-09-16 · 시보 요청) — 계정 자리는 tenant 'ax' · 정본 = 로드맵 §2 「무엇을 계속 말하나」
       {key:'ax', no:'랩스 채널', name:'피트니스 AX', who:'랩스 메시지 채널 · 본명·회사명 앞세우지 않음', stage:'랩스 채널', mods:['마케팅 자동화'], links:[]}
     ];
+    window.labsPartners=P;   // 파트너사 평가 탭이 같은 정의를 읽는다(2026-09-18 · 복제 없음)
     var $=function(id){ return document.getElementById(id); };
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     var ch={}; // 파트너 키 → [활성, 자리 수] — 아래 채널 계정 표가 서버를 읽은 뒤 채운다
@@ -1597,28 +1598,21 @@
 
 </section>
 
-<!-- 평가 = 중간관리자 업무목차 「👤 책임 항목 4인」·GM업무 「GM 책임 항목」 띠·실무진_업무점수체계_초안 세 자리를
-     여기 하나로 단일화(GM 지시 2026-09-17 「평가 관련된 부분은 ERP 관리자페이지로 단일화 · 직관적으로」).
-     값 복제 없음 — 원장(manager_eval_history.json·work_system.json) 을 열 때마다 그대로 읽는다. -->
+<!-- 파트너사 평가 — 회사 평가(책임 항목 4인·실무진 7인)는 2026-09-18 GM 지시로 웰페리온 ERP 관리자 메뉴 「평가」(erp/admin/eval.html · erp/index.html 관리 › 평가)로 옮겼다.
+     여기는 파는 쪽(랩스)의 파트너사 평가만 — 파트너별 한 줄. 원천 = 파트너 카드가 이미 읽는 발행본(data/partner_onboarding.json) + 카드 정의(P) ·
+     항목·목표 = status/eval_kpi.json partner 절(서버 원장 GET /auth/admin/api/eval_kpi · 잠겨 있으면 씨앗). 실측이 없는 열(발행·상담 자력 답변)은 열을 두지 않는다 — 원천이 서면 붙인다. -->
 <section class="panel" data-panel="eval" hidden>
-  <h2>평가</h2>
-  <div class="meta">책임 항목 4인 + 실무진 7인 · 이번 달</div>
-
-  <h3>책임 항목 4인 <span class="n">김남욱 GM · 이경연 실장 · 이정헌 소장 · 나우열M</span></h3>
-  <div class="tbl-wrap"><table class="reg" id="eval-mgr-tbl">
-    <thead><tr><th style="width:12%">사람</th><th style="width:26%">기준</th><th style="width:24%">이번 달 진척</th><th style="width:19%">잘한 것</th><th>보완할 것</th></tr></thead>
+  <h2>파트너사 평가</h2>
+  <div class="meta">파트너별 한 줄 · 이번 달 · 목표는 ERP 관리자 「평가 › KPI 설정 › 파트너사 KPI」에서</div>
+  <div class="tbl-wrap"><table class="reg" id="peval-tbl">
+    <thead><tr><th style="width:18%">파트너</th><th style="width:12%">단계</th><th style="width:20%">온보딩 답</th><th style="width:26%">쓰는 모듈</th><th>유료 전환</th></tr></thead>
     <tbody><tr><td colspan="5">불러오는 중…</td></tr></tbody>
   </table></div>
-
-  <h3 style="margin-top:20px;">실무진 7인 · 이번 달</h3>
-  <div class="tbl-wrap"><table class="reg" id="eval-staff-tbl">
-    <thead><tr><th style="width:16%">사람</th><th style="width:28%">업무 SSOT 완료/등록</th><th style="width:20%">기한 지킴</th><th>회신</th></tr></thead>
-    <tbody><tr><td colspan="4">불러오는 중…</td></tr></tbody>
+  <h3 style="margin-top:18px;">목표(파트너사 KPI)</h3>
+  <div class="tbl-wrap"><table class="reg" id="peval-kpi">
+    <thead><tr><th style="width:40%">항목</th><th>목표</th></tr></thead>
+    <tbody><tr><td colspan="2">불러오는 중…</td></tr></tbody>
   </table></div>
-  <!-- 완료/등록·회신 = "—" — status/work_system.json 빌더(scripts/work_system_build.py)가 완료·생성월·회신
-       미답을 아직 안 낸다(열린 항목만 담음 · SSOT_DONE 은 통째로 빼고 쌓는다 · 지어내지 않는다). -->
-  <p style="font-size:11.5px;color:var(--dim);margin-top:10px;">기한 지킴 = 종료일 지난 열린 건. 완료/등록·회신은 빌더가 아직 값을 안 냅니다(자료 없음 — 지어내지 않습니다).</p>
-
   <script>
   (function(){
     var RAW='/repo/';
@@ -1629,45 +1623,27 @@
       return local.catch(function(){ return fetch(RAW+path+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }); });
     }
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-    var MGR_ORDER = ['김남욱 GM', '이경연 실장', '이정헌 소장', '나우열M'];
-    function ym(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
-
-    get('status/manager_eval_history.json').then(function(h){
-      var tb = document.querySelector('#eval-mgr-tbl tbody');
-      var month = (h && h.months && h.months[ym()]) || null;
-      if (!month) { tb.innerHTML = '<tr><td colspan="5">이번 달 실측 없음</td></tr>'; return; }
-      var rows = [];
-      MGR_ORDER.forEach(function(person){
-        var items = month[person];
-        if (!items) { rows.push('<tr><td><b>' + esc(person) + '</b></td><td colspan="4" style="color:var(--dim)">이번 달 실측 없음</td></tr>'); return; }
-        var keys = Object.keys(items);
-        keys.forEach(function(k, i){
-          var it = items[k] || {};
-          rows.push('<tr>' + (i === 0 ? '<td rowspan="' + keys.length + '"><b>' + esc(person) + '</b></td>' : '')
-            + '<td>' + esc(k) + (it.crit ? '<div style="color:var(--dim);font-size:11.5px;margin-top:2px">' + esc(it.crit) + '</div>' : '') + '</td>'
-            + '<td' + (it.bad ? ' style="color:var(--pf-bad);font-weight:700"' : '') + '>' + esc(it.text || '미측정') + '</td>'
-            + '<td>' + esc(it.good || '—') + '</td>'
-            + '<td>' + esc(it.fix || '—') + '</td></tr>');
-        });
-      });
-      tb.innerHTML = rows.join('');
-    }).catch(function(){ document.querySelector('#eval-mgr-tbl tbody').innerHTML = '<tr><td colspan="5">원장을 못 읽었습니다</td></tr>'; });
-
-    Promise.all([get('status/work_system.json'), get('status/work_system_people.json')]).then(function(r){
-      var ws = r[0], people = r[1];
-      var tb = document.querySelector('#eval-staff-tbl tbody');
-      if (!ws || !people) { tb.innerHTML = '<tr><td colspan="4">원장을 못 읽었습니다</td></tr>'; return; }
-      var order = Object.keys(people).filter(function(k){ return k.charAt(0) !== '_' && people[k] && people[k].scope === 'owner'; });
-      if (!order.length) { tb.innerHTML = '<tr><td colspan="4">실무진 명단 없음</td></tr>'; return; }
-      tb.innerHTML = order.map(function(key){
-        var disp = people[key].display || key;
-        var p = (ws.people || {})[key];
-        if (!p) return '<tr><td><b>' + esc(disp) + '</b></td><td colspan="3" style="color:var(--dim)">자료 없음</td></tr>';
-        var overdue = (p.counts && p.counts['밀림']) || 0;
-        var due = overdue === 0 ? '✅' : ('<b>' + overdue + '</b>건 지남');
-        return '<tr><td><b>' + esc(disp) + '</b></td><td style="color:var(--dim)">—</td><td>' + due + '</td><td style="color:var(--dim)">—</td></tr>';
+    var kpi = fetch('/auth/admin/api/eval_kpi',{credentials:'same-origin',cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .catch(function(){ return get('status/eval_kpi.json'); });
+    Promise.all([get('data/partner_onboarding.json').catch(function(){ return null; }), kpi]).then(function(r){
+      var ob=r[0]||{}, k=r[1]||{}, t=ob.tenants||{}, P=window.labsPartners||[];
+      var tb=document.querySelector('#peval-tbl tbody');
+      var list=P.filter(function(p){ return p.key!=='ax'; });
+      Object.keys(t).forEach(function(key){ if(!list.some(function(p){return p.key===key;})) list.push({key:key, no:'', name:(t[key].name||key), stage:'온보딩', mods:[]}); });
+      if(!list.length){ tb.innerHTML='<tr><td colspan="5">파트너사 없음</td></tr>'; }
+      else tb.innerHTML=list.map(function(p){
+        var x=t[p.key]||{}, asked=x.asked||0, ans=x.answered||0, pct=asked?Math.round(ans*100/asked):null;
+        var paid = p.stage && p.stage.indexOf('도입')===0 ? '도입(유료 전환 0)' : '전환 전';
+        return '<tr><td><b>'+esc(p.name)+'</b>'+(p.no?'<div style="color:var(--dim);font-size:11.5px">'+esc(p.no)+' · '+esc(p.key)+'</div>':'')+'</td>'
+          +'<td>'+esc(p.stage||'—')+'</td>'
+          +'<td>'+(asked?('<b>'+ans+' / '+asked+' · '+pct+'%</b>'):'<span style="color:var(--dim)">질문 안 보냄</span>')+'</td>'
+          +'<td>'+((p.mods||[]).length?'<b>'+p.mods.length+'</b> · '+esc(p.mods.join(' · ')):'<span style="color:var(--dim)">—</span>')+'</td>'
+          +'<td>'+paid+'</td></tr>';
       }).join('');
-    }).catch(function(){ document.querySelector('#eval-staff-tbl tbody').innerHTML = '<tr><td colspan="4">원장을 못 읽었습니다</td></tr>'; });
+      var kb=document.querySelector('#peval-kpi tbody'), items=(k&&k.partner)||[];
+      kb.innerHTML = items.length ? items.map(function(it){ return '<tr><td>'+esc(it.name)+'</td><td><b>'+esc(it.target||'—')+'</b></td></tr>'; }).join('')
+                                  : '<tr><td colspan="2" style="color:var(--dim)">파트너사 KPI 항목 없음 — ERP 관리자 평가 › KPI 설정</td></tr>';
+    }).catch(function(){ document.querySelector('#peval-tbl tbody').innerHTML='<tr><td colspan="5">원장을 못 읽었습니다</td></tr>'; });
   })();
   </script>
 </section>
