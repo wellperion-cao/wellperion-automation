@@ -181,7 +181,7 @@
           "start": "10:20",
           "end": "10:20",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -193,7 +193,7 @@
           "start": "10:21",
           "end": "10:21",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -217,7 +217,7 @@
           "start": "10:23",
           "end": "10:23",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -229,7 +229,7 @@
           "start": "10:23",
           "end": "10:23",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -241,7 +241,7 @@
           "start": "10:24",
           "end": "10:25",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -253,9 +253,45 @@
           "start": "10:25",
           "end": "10:26",
           "minutes": 0,
-          "upload": "기록만",
+          "upload": "✅ 배포 (e17ed7d52)",
           "open": false,
           "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-1026",
+          "no": "26",
+          "got": "지금도 시토 빼곤 다 대기인데?",
+          "did": "관제판 대기 오판 — 열린 진행 레인이면 작업 중 · 생존 15분 (GM 09-18)",
+          "start": "10:28",
+          "end": "10:29",
+          "minutes": 0,
+          "upload": "✅ 배포 (e17ed7d52)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-1027",
+          "no": "27",
+          "got": "[Cross-session idle notice] \"welperion-automation-c0\", which you asked to be notified about, is idle now — it finished a…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:30",
+          "end": "10:30",
+          "minutes": 0,
+          "upload": "✅ 배포 (e17ed7d52)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-1028",
+          "no": "28",
+          "got": "시모도 SEO GEO AEO 그리고 상담봇 이렇게 진척 부족한 것들 진행해야하고, 검색엔진 등록 사이트맵 제출 계정필요 이건도 진행해야 하는거 아냐?",
+          "did": "",
+          "start": "10:30",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -342,16 +378,43 @@
           "area": "작업",
           "event": "docs(boot): §7-6 첫 바퀴는 즉시 · 30분은 간격 (GM 09-18 10:2x)",
           "detail": "커밋 412353565d · 배 12736"
+        },
+        {
+          "time": "10:29",
+          "area": "진행",
+          "event": "배 2739(12745) 회수 — 직접 실행 관문 내 창에서 실차단 확인 · 위임 비율 첫 측정(시토2·웰리2·시모1·시보1·시우0·시포0 %)",
+          "detail": "저장 cea02ebdfc origin 도달 · 관문 rc=2 실측 · 계측기 hangro 한 줄"
+        },
+        {
+          "time": "10:30",
+          "area": "작업",
+          "event": "fix(board): 관제판 대기 오판 — 열린 진행 레인이면 작업 중 · 생존 15분 (GM 09-18)",
+          "detail": "커밋 840f5e83b8 · 배 12736"
         }
       ],
-      "count": 21,
-      "done": 21,
-      "open": 0,
-      "avg_minutes": 3,
-      "work_count": 14,
+      "count": 24,
+      "done": 23,
+      "open": 1,
+      "avg_minutes": 2,
+      "work_count": 16,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260918-1028",
+          "no": "28",
+          "got": "시모도 SEO GEO AEO 그리고 상담봇 이렇게 진척 부족한 것들 진행해야하고, 검색엔진 등록 사이트맵 제출 계정필요 이건도 진행해야 하는거 아냐?",
+          "did": "",
+          "start": "10:30",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -652,13 +715,19 @@
           "area": "작업",
           "event": "메인 창 직접 실행 차단 관문 + 위임 비율 계측(배 12745 · GM 09-18)",
           "detail": "커밋 cea02ebdfc · 배 12680"
+        },
+        {
+          "time": "10:28",
+          "area": "진행",
+          "event": "12745 메인 창 직접 실행 차단 관문 + 위임 비율",
+          "detail": "cea02ebdfc · 메인 창 sed 차단 실측 rc=2 · 첫 측정 위임 시토 2%·웰리 2%·나머지 0~1%"
         }
       ],
       "count": 11,
       "done": 11,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 27,
+      "work_count": 28,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1016,13 +1085,25 @@
           "area": "작업",
           "event": "feat(partner): 파트너 파이프라인 재구축 — 아침 0통 · 인스타 06:30 자동 게시 → 블로그 씨앗 · 저녁 한 통 필요한 것만 · 부록 B v1.1 (GM 2026-09-18 · 배 12718)",
           "detail": "커밋 3132ce2f99 · 배 12718"
+        },
+        {
+          "time": "10:29",
+          "area": "작업",
+          "event": "feat(labs): 3루프 원장 + 파트너 마케팅 결과물 7일 표 (GM 2026-09-18)",
+          "detail": "커밋 055b6817b6 · 배 12718"
+        },
+        {
+          "time": "10:30",
+          "area": "작업",
+          "event": "fix(labs): 3루프 주간 줄 질문 칸에 시험 섞임 표기",
+          "detail": "커밋 4890ba8dc9 · 배 12718"
         }
       ],
       "count": 7,
       "done": 7,
       "open": 0,
       "avg_minutes": 0,
-      "work_count": 5,
+      "work_count": 7,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -1037,43 +1118,43 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T10:28:38",
+    "published_at": "2026-09-18T10:31:03",
     "roles": {
       "ceo": {
         "nick": "웰리",
         "session": "welperion-automation-e3",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
-          "time": "10:25",
-          "area": "GM요청",
-          "event": "그리고 우리 배포를 많이하면 AWS 비용만 올라가는거 아냐? 배포를 좀 모아서할 수 있는 그런 기능은 없나?",
-          "result": "warn"
+          "time": "10:30",
+          "area": "작업",
+          "event": "fix(board): 관제판 대기 오판 — 열린 진행 레인이면 작업 중 · 생존 15분 (GM 09-18)",
+          "result": "ok"
         },
-        "idle_since": "10:26",
-        "saves": 9,
+        "idle_since": null,
+        "saves": 10,
         "lanes": 0
       },
       "cto": {
         "nick": "시토",
         "session": "welperion-automation-c0",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
-          "time": "10:22",
+          "time": "10:28",
           "area": "진행",
-          "event": "12745 메인 창 직접 실행 차단 관문 + 위임 비율 — 레인 착수",
-          "result": "warn"
+          "event": "12745 메인 창 직접 실행 차단 관문 + 위임 비율",
+          "result": "ok"
         },
         "idle_since": null,
         "saves": 37,
-        "lanes": 1
+        "lanes": 0
       },
       "cmo": {
         "nick": "시모",
         "session": "welperion-automation-a4",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
           "time": "10:18",
           "area": "GM요청",
@@ -1088,7 +1169,7 @@
         "nick": "시포",
         "session": "welperion-automation-8f",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
           "time": "10:24",
           "area": "공통",
@@ -1103,7 +1184,7 @@
         "nick": "시우",
         "session": "welperion-automation-7c",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
           "time": "10:24",
           "area": "진행",
@@ -1118,7 +1199,7 @@
         "nick": "시보",
         "session": "welperion-automation-c6",
         "alive": true,
-        "signal": "10:15",
+        "signal": "10:30",
         "last": {
           "time": "10:24",
           "area": "진행",
@@ -1126,7 +1207,7 @@
           "result": "warn"
         },
         "idle_since": null,
-        "saves": 4,
+        "saves": 6,
         "lanes": 2
       }
     }
