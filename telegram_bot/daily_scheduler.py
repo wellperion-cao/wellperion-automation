@@ -2835,8 +2835,9 @@ def run_daily_digest(early: bool = False) -> None:
     휴일(주말·close_days)은 20:00(early=True)만 실행 / 평일은 22:30(early=False)만 실행
     (GM 2026-07-20, close_days 공휴일 반영 — 기존 요일 고정 mon-fri/sat,sun 을 대체).
     문의 정리는 카카오톡 ★부서장 방에도 추가 발송(GM 2026-07-18). ★중간관리자 방
-    알림성 합본(mgmt_notice_queue)은 여기 안 얹는다 — run_mgmt_notice_digest(매일
-    17:00)가 분리 발송한다(GM 지시 2026-08-10: 알림성 카톡을 밤으로 미루지 않는다)."""
+    알림성 합본(mgmt_notice_queue)은 맨 끝에서 run_mgmt_notice_digest 를 불러 같은
+    저녁 흐름에 합류시킨다(GM 지시 2026-09-18 「다른 방이랑 시간 일관성 있게」 · 배12812
+    — 종전 17:05 단독 잡 폐지, 2026-08-10 낮 분리 결정을 대체)."""
     from datetime import timezone as _tz3
     now_dt = datetime.now(_tz3.utc) + timedelta(hours=9)
     today = now_dt.strftime("%Y-%m-%d")
@@ -3189,6 +3190,14 @@ def run_daily_digest(early: bool = False) -> None:
     if _sent_any and sla_violations:
         _un.record_sla_alert_sent(sla_violations)  # 발송 성공 뒤에만 커서 전진
 
+    # ★중간관리자 「🌙 하루의 마무리」 — 다른 방과 같은 저녁 흐름에 합류(GM 지시
+    # 2026-09-18 · 배12812). 위 rest_day 게이트를 통과했을 때(하루 한 번)만 여기까지
+    # 온다 — 실패해도 다른 방 발송엔 영향 없게 감싼다.
+    try:
+        run_mgmt_notice_digest()
+    except Exception as e:
+        logger.error(f"{label} ★중간관리자 하루의 마무리 예외: {e}")
+
 
 def _run_rep_approval_relay() -> None:
     """대표님 결재 촬영본이 올라오면 ★중간관리자 방으로 즉시 전달 (GM 지시 2026-09-03).
@@ -3206,18 +3215,42 @@ def _run_rep_approval_relay() -> None:
         logger.error(f"[대표결재 즉시전달] 예외: {e}")
 
 
+def _mgmt_notice_sent_today(today: str) -> bool:
+    """오늘 이미 ★중간관리자 방에 「🌙 하루의 마무리」가 ok:true 로 나갔는지 — 저녁 흐름
+    합류(GM 지시 2026-09-18 · 배12812) 뒤 재기동·재실행으로 같은 날 두 번 나가는 것을 막는다."""
+    log_path = REPO_ROOT / "logs" / f"kakao_sent-{today}.log"
+    if not log_path.exists():
+        return False
+    try:
+        for line in log_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if rec.get("ok") and str(rec.get("chat_id") or "") == "★중간관리자" \
+                    and str(rec.get("text") or "").startswith("🌙 하루의 마무리"):
+                return True
+    except Exception as exc:
+        logger.error(f"[★중간관리자 알림성 합본] 중복 가드 로그 읽기 실패: {exc}")
+    return False
+
+
 def run_mgmt_notice_digest() -> None:
-    """★중간관리자 「🌙 하루의 마무리」 — 매일 17:05 낮 시간 단독 발송(배499 큐 그대로 재사용).
-    처음엔 run_daily_digest(평일 22:30/휴일 20:00) 안에 얹혀 밤에 나갔으나, GM 지시
-    2026-08-10 "갑자기 낮시간 카톡 자동화 중단 발송은 밤으로 이동하면 안되" 로 낮
-    시간(17:00)으로 분리했다. 알림성 건은 mgmt_notice_queue(scripts/mgmt_notice_queue.py)
-    에 하루 동안 쌓이고 여기서 한 번에 팝해 보낸다. 답요구 건·3-트리거(💰🔒🚫) 긴급건은
-    그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지.
+    """★중간관리자 「🌙 하루의 마무리」 — 다른 방과 같은 저녁 흐름(run_daily_digest 끝)에서
+    호출된다(GM 지시 2026-09-18 「다른 방이랑 시간 일관성」 · 배12812). 처음엔 run_daily_digest
+    안에 얹혀 밤에 나갔다가(2026-08-10 GM 지시로) 17:05 낮 시간 단독 잡으로 분리했었는데,
+    그 잡이 이번에 다시 폐지되고 저녁 흐름으로 돌아왔다 — 알림성 건은 mgmt_notice_queue
+    (scripts/mgmt_notice_queue.py)에 하루 동안 쌓이고 여기서 한 번에 팝해 보낸다. 답요구
+    건·3-트리거(💰🔒🚫) 긴급건은 그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 —
+    그런 건 즉시 개별 발송 유지.
     ★2026-09-16(배12678) GM 지시 「방마다 하루 두 통」 — 제목을 「🌙 하루의 마무리」로 통일하고
     그날 안 닫힌 원장(MGR_LEDGER) 이월 항목을 맨 뒤에 붙인다(send_ops_digest.build_mgr_evening_carryover
     재사용 · 새 원장 없음). 「🌅 하루의 시작」(send_ops_digest.send_mgr_morning_one)의 저녁 짝."""
     label = "[★중간관리자 알림성 합본]"
     today = datetime.now().strftime("%Y-%m-%d")
+    if _mgmt_notice_sent_today(today):
+        logger.info(f"{label} 오늘 이미 발신됨(중복 가드) — 스킵")
+        return
     # 대표 결재 전달은 여기서 하지 않는다 — GM 지시 2026-09-03 "즉시 전달" 로 10분 주기
     # 잡(rep_approval_relay_immediate)이 맡았다. 여기 남겨 두면 같은 건이 두 번 나갈 자리가 된다.
     # ③ 오늘 올라온 업무(12:00 과 같은 함수 · 지문으로 중복 없음 · 게이트 "업무등록묶음" OFF 면 미리보기만)
@@ -4648,7 +4681,7 @@ def main():
             misfire_grace_time=600,
             coalesce=True,
         )
-        logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 발송")
+        logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 + ★중간관리자 하루의 마무리 발송")
 
         # ── 하루 양끝 카톡 미발신 감시 — GM 지시 2026-09-05 ─────────────────────────
         scheduler.add_job(
@@ -4831,22 +4864,12 @@ def main():
         except Exception as e:
             logger.warning(f"weekly_ops_report 등록 실패: {e}")
 
-        # ── ★중간관리자 알림성 합본 (매일 17:05) — GM 지시 2026-08-10: 알림성 카톡을
-        #   밤으로 미루지 않는다. 금요일 17:00 weekly_ops_report(위)와 같은 방이라
-        #   5분 뒤로 둬 두 발신이 겹치지 않게 한다(약속 L21 — 새 방·새 발신기 안 만듦).
-        try:
-            scheduler.add_job(
-                run_mgmt_notice_digest,
-                trigger=CronTrigger(hour=17, minute=5, timezone="Asia/Seoul"),
-                id="mgmt_notice_digest_1705",
-                misfire_grace_time=600,
-                coalesce=True,
-            )
-            logger.info("mgmt_notice_digest 등록 완료 — 매일 17:05 ★중간관리자 알림성 합본")
-        except Exception as e:
-            logger.warning(f"mgmt_notice_digest 등록 실패: {e}")
+        # ── ★중간관리자 알림성 합본 — 별도 잡 없음. run_daily_digest(위 20:00/22:30, 휴일
+        #   게이트로 하루 한 번만 실행) 끝에서 run_mgmt_notice_digest 를 직접 부른다 — 다른
+        #   방과 같은 저녁 흐름(GM 지시 2026-09-18 「시간 일관성」 · 배12812). 종전 17:05
+        #   단독 잡(2026-08-10 낮 분리 결정)은 폐지.
         # ③ 오늘 올라온 업무 12:00 — 12시 슬롯이 없어 예외적으로 잡 하나 추가(GM 승인 2026-09-03).
-        #   17:05 는 위 run_mgmt_notice_digest 가 같은 함수를 부른다. 게이트(AUTO_PIPELINE_SENDERS
+        #   저녁 합본(위 run_mgmt_notice_digest)이 같은 함수를 다시 부른다. 게이트(AUTO_PIPELINE_SENDERS
         #   "업무등록묶음")가 꺼져 있으면 미리보기 로그만 남는다.
         try:
             scheduler.add_job(
