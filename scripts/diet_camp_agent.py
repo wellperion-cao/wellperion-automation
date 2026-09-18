@@ -471,6 +471,7 @@ def evening_facts(conf: dict, today: str) -> dict:
     ig = partner_instagram_daily.load_state(key)
     r = partner_instagram_daily.today_run(ig, today) or {}
     out["ig_url"] = r.get("post_url") or ""
+    out["login_needed"] = "" if out["ig_url"] else (ig.get("login_needed") or "")
     style = partner_blog_daily.load_style(key)
     runs = partner_blog_daily.load_state(style).get("runs", [])
     ok_today = [x for x in runs if x.get("result") == "ok" and str(x.get("date", "")).startswith(today)]
@@ -496,6 +497,8 @@ def evening_body(conf: dict, f: dict) -> str | None:
         did.append(f"▪ 블로그 1편 임시저장 — 「{f['blog_title']}」(발행은 저희가 다시 올립니다)")
     if f["answered"]:
         did.append(f"▪ 답 주신 {'·'.join(str(n) for n in f['answered'])}번 반영 — https://erp.wellperion.com/{f['slug']}/intro.html")
+    if "앱 승인" in (f.get("login_needed") or ""):    # 파트너 손이 필요한 상태(앱 승인 대기)일 때만 · 계정 자리 없음(우리 쪽)은 안 적는다 · 세션이 서면 사라진다
+        did.append("▪ 인스타 자동 게시를 시작하려면 내일 06:30 에 인스타 앱 알림에서 로그인 승인만 눌러 주세요(문자 인증번호가 오면 그 숫자를 톡으로)")
     if not did:
         return None
     if f["open_n"]:
@@ -802,6 +805,10 @@ def _selfcheck() -> None:
     assert "임시저장" in evening_body(conf, {**f, "blog_url": ""}), "발행 실패 날은 임시저장으로 적는다"
     assert evening_body(conf, {**f, "ig_url": "", "blog_title": "", "blog_url": "", "answered": []}) is None, "한 일 없는 날은 0통"
     assert "설문" not in evening_body(conf, {**f, "open_n": 0})
+    lw = evening_body(conf, {**f, "ig_url": "", "login_needed": "2026-09-18 06:40 앱 승인 대기(06:30 재시도)"})
+    assert "인스타 앱 알림에서 로그인 승인" in lw and len(lw.splitlines()) <= MAX_LINES, lw
+    assert "승인" not in evening_body(conf, {**f, "login_needed": ""}), "세션이 서면 안내 줄이 사라진다"
+    assert "승인" not in evening_body(conf, {**f, "ig_url": "", "login_needed": "계정 자리 없음(1531)"}), "우리 쪽 원인은 파트너에게 안 적는다"
     for c in rs:
         assert c.get("owner") and c.get("blog_tenant"), f"rooms.json 에 owner·blog_tenant 없음: {c['room']}"
     print("[selfcheck] diet_camp_agent OK")

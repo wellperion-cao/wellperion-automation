@@ -293,51 +293,82 @@ def verify(c: dict, url: str, caption: str) -> bool:
 LOGIN_URL = "https://www.instagram.com/accounts/login/"
 
 
+APPROVE_WAIT_SEC = 600      # 앱 승인·인증번호 화면에서 기다리는 상한(파트너가 폰 인스타 알림에서 승인하면 그대로 진행)
+APPROVE_STEP_SEC = 5
+WAIT_MSG = "앱 승인 대기(06:30 재시도) — 내일 06:30 인스타 앱 알림에서 로그인 승인만 눌러 주시면 됩니다"
+
+
+def login_state(url: str, has_password: bool, has_code: bool) -> str:
+    """로그인 화면 상태 하나로: ok(들어감) · wait(앱 승인·인증번호 화면) · login(아직 로그인 폼)."""
+    if has_code or any(x in url for x in ("/challenge/", "two_factor", "/auth_platform/")):
+        return "wait"
+    if has_password or "/accounts/login" in url:
+        return "login"
+    return "ok"
+
+
+async def wait_approval(probe, timeout_s: float = APPROVE_WAIT_SEC, step_s: float = APPROVE_STEP_SEC, clock=None, sleep=None) -> tuple[str, str]:
+    """probe() → (state, url) 를 step_s 마다 다시 물어 ok 가 되면 바로, timeout_s 를 넘기면 마지막 상태로 돌려준다."""
+    import asyncio  # noqa: PLC0415
+    import time  # noqa: PLC0415
+    clock, sleep = clock or time.monotonic, sleep or asyncio.sleep
+    t0 = clock()
+    state, url = await probe()
+    while state != "ok" and clock() - t0 < timeout_s:
+        await sleep(step_s)
+        state, url = await probe()
+    return state, url
+
+
 def try_login(c: dict, key: str, st: dict) -> bool:
     """세션이 없거나 풀렸을 때 1회 — 서버 계정 자리(플랫폼관리 코드 1531 · 실행 때 GET → 메모리만 · 디스크 금지)로 로그인.
-    2단계 인증·확인 문턱이면 그 자리에서 멈추고 state login_needed 에 남긴다(파트너 방에 직접 묻지 않는다 · 문안은 시보가 GM 승인 뒤)."""
+    자리가 없으면 시도 자체를 안 한다. 앱 승인·인증번호 화면이면 최대 10분 기다린다(파트너가 폰에서 승인하면 그대로 진행) —
+    넘기면 login_needed 에 「앱 승인 대기」로 남기고 멈춘다(파트너 방에 직접 묻지 않는다 · 저녁 통이 한 줄 안내)."""
     import asyncio  # noqa: PLC0415
     from partner_blog_daily import _read_login_secret  # noqa: PLC0415
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     sec = _read_login_secret(c["tenant"], "instagram")
     if not sec:
-        st["login_needed"] = f"{now} 서버 계정 자리 없음({c['tenant']}/instagram) — 플랫폼관리 코드 1531 에 넣으면 다음 실행에 스스로 로그인"
+        st["login_needed"] = f"{now} 계정 자리 없음(1531 · {c['tenant']}/instagram) — 플랫폼관리에 넣으면 다음 06:30 에 스스로 로그인 · 시도 안 함"
         print("[login]", st["login_needed"]); save_state(key, st)
         return False
 
-    async def _go() -> tuple[bool, str]:
+    async def _go() -> tuple[str, str]:
         from playwright.async_api import async_playwright  # noqa: PLC0415
         async with async_playwright() as p:
             ctx = await p.chromium.launch_persistent_context(str(PROFILES / c["account"]), headless=True,
                                                              args=["--disable-blink-features=AutomationControlled"])
             try:
                 page = await ctx.new_page()
+
+                async def probe() -> tuple[str, str]:
+                    return login_state(page.url, await page.locator('input[name="password"]').count() > 0,
+                                       await page.locator('input[name="verificationCode"], input[name="security_code"]').count() > 0), page.url
+
                 await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=30_000)
                 await page.wait_for_timeout(2500)
-                if await page.locator('input[name="password"]').count() == 0:
-                    return True, page.url                       # 이미 로그인돼 있다
+                if (await probe())[0] == "ok":
+                    return "ok", page.url                       # 이미 로그인돼 있다
                 await page.fill('input[name="username"]', sec["NAVER_ID"])
                 await page.fill('input[name="password"]', sec["NAVER_PW"])
                 await page.keyboard.press("Enter")
                 await page.wait_for_timeout(7000)
-                url = page.url
-                blocked = any(s in url for s in ("/challenge/", "two_factor", "/accounts/login")) or \
-                    await page.locator('input[name="verificationCode"]').count() > 0
-                if not blocked:
+                state, url = await wait_approval(probe)         # 앱 승인·인증번호 화면이면 여기서 최대 10분
+                if state == "ok":
                     for txt in ("정보 저장", "Save info"):          # 세션 쿠키를 영속으로
                         btn = page.locator(f'button:has-text("{txt}")')
                         if await btn.count():
                             await btn.first.click(); await page.wait_for_timeout(2000); break
-                return (not blocked), url
+                return state, url
             finally:
                 await ctx.close()
     try:
-        ok, url = asyncio.run(_go())
+        state, url = asyncio.run(_go())
     except Exception as exc:  # noqa: BLE001
-        ok, url = False, f"{type(exc).__name__}: {exc}"[:120]
-    st["login_needed"] = "" if ok else f"{now} 인증번호 필요(2단계 인증·확인 문턱) — {url}"
-    print("[login]", "성공(세션 저장)" if ok else st["login_needed"]); save_state(key, st)
-    return ok
+        state, url = "error", f"{type(exc).__name__}: {exc}"[:120]
+    st["login_needed"] = {"ok": "", "wait": f"{now} {WAIT_MSG}", "login": f"{now} 로그인 폼에 머묾(계정 값 확인 필요) — {url}"}.get(state, f"{now} 로그인 실패 — {url}")
+    print("[login]", "성공(세션 저장)" if state == "ok" else st["login_needed"]); save_state(key, st)
+    return state == "ok"
 
 
 def alert(msg: str) -> None:
@@ -394,7 +425,10 @@ def main() -> int:
     if run and run.get("publish_rc") is not None and not a.retry:
         print(f"[skip] 오늘({today}) 게시 실패 기록 있음(rc={run['publish_rc']}) — 재시도하지 않는다(로그·자동화현황방에 이미 남김 · 사람이 --retry)")
         return 0
-    if run and run.get("caption"):                      # 오늘 임시안은 있고 게시만 안 된 날(세션 없음 등) — 다시 만들지 않는다
+    if not a.no_publish and not (PROFILES / c["account"]).exists() and not try_login(c, a.client, st):
+        print(f"[wait] {c['name']} 인스타 세션 없음 · 로그인 대기 — 임시안도 안 만든다(블로그는 topic_bank) · {st.get('login_needed')}")
+        return 0
+    if run and run.get("caption"):                      # 오늘 임시안은 있고 게시만 안 된 날(세션 풀림 등) — 다시 만들지 않는다
         folder, caption = Path(run["folder"]), run["caption"]
         print(f"[reuse] 오늘 임시안 그대로 — {folder.name} · 캡션 {len(caption)}자")
     else:
@@ -412,9 +446,6 @@ def main() -> int:
         st["runs"].append(run); st["last_folder"] = str(folder)
         save_state(a.client, st)
     if a.no_publish:
-        return 0
-    if not (PROFILES / c["account"]).exists() and not try_login(c, a.client, st):
-        print(f"[skip] {c['name']} 인스타 세션 없음 · 로그인 대기 — 임시안만 두고 게시 안 함")
         return 0
     rc, url = publish(c, folder)
     if rc == 2 and try_login(c, a.client, st):       # 세션이 풀린 것 — 서버 계정 자리로 1회 재로그인 뒤 다시(게시 재시도가 아니다)
@@ -462,6 +493,32 @@ def self_test() -> int:
     gp = gen_prompt(c, "주제")
     assert "주제" in gp and "얼굴" in gp and "글자" in gp
     assert gen_photo(None, gp, Path("x.jpg"), max_credits=0) is None, "상한 0 인데 만들었다"   # 비용 조회만(크레딧 0)
+    # 로그인 대기 — 즉시 성공 · 승인 뒤 성공 · 10분 초과(가짜 시계 · 잠 안 잠)
+    import asyncio  # noqa: PLC0415
+    assert login_state("https://www.instagram.com/", False, False) == "ok"
+    assert login_state("https://www.instagram.com/challenge/abc/", False, False) == "wait"
+    assert login_state("https://www.instagram.com/accounts/login/two_factor?next=/", False, True) == "wait"
+    assert login_state("https://www.instagram.com/accounts/login/", True, False) == "login"
+    seq = {"n": 0}
+
+    def fake(states):
+        async def probe():
+            i = min(seq["n"], len(states) - 1); seq["n"] += 1
+            return states[i], f"u{i}"
+        return probe
+
+    async def nosleep(_):
+        return None
+
+    tick = {"t": 0.0}
+
+    def clock():
+        tick["t"] += 60; return tick["t"]     # 한 번 볼 때마다 1분 지난 것으로
+
+    seq["n"] = 0; assert asyncio.run(wait_approval(fake(["ok"]), 600, 0, clock, nosleep)) == ("ok", "u0")
+    seq["n"] = 0; assert asyncio.run(wait_approval(fake(["wait", "wait", "ok"]), 600, 0, clock, nosleep)) == ("ok", "u2")
+    seq["n"] = 0; st_, url_ = asyncio.run(wait_approval(fake(["wait"]), 600, 0, clock, nosleep))
+    assert st_ == "wait" and seq["n"] <= 12, (st_, seq["n"])            # 10분 = 1분 시계로 최대 11번
     print("partner_instagram_daily 자가점검 통과")
     return 0
 
