@@ -497,7 +497,10 @@ def evening_body(conf: dict, f: dict) -> str | None:
         did.append(f"▪ 블로그 1편 임시저장 — 「{f['blog_title']}」(발행은 저희가 다시 올립니다)")
     if f["answered"]:
         did.append(f"▪ 답 주신 {'·'.join(str(n) for n in f['answered'])}번 반영 — https://erp.wellperion.com/{f['slug']}/intro.html")
-    if "앱 승인" in (f.get("login_needed") or ""):    # 파트너 손이 필요한 상태(앱 승인 대기)일 때만 · 계정 자리 없음(우리 쪽)은 안 적는다 · 세션이 서면 사라진다
+    ln = f.get("login_needed") or ""    # 둘 중 하나만(계정 없음이 우선) · 세션이 서면 사라진다
+    if "계정 자리 없음" in ln:
+        did.append("▪ 인스타그램 자동 게시를 시작하려면 인스타 아이디·비밀번호를 김남욱 GM님께 카톡으로 한 번만 보내 주세요 — 저희 서버 금고(코드가 있어야 보이는 자리)에만 넣고 다른 곳엔 남기지 않습니다.")
+    elif "앱 승인" in ln:
         did.append("▪ 인스타 자동 게시를 시작하려면 내일 06:30 에 인스타 앱 알림에서 로그인 승인만 눌러 주세요(문자 인증번호가 오면 그 숫자를 톡으로)")
     if not did:
         return None
@@ -808,7 +811,8 @@ def _selfcheck() -> None:
     lw = evening_body(conf, {**f, "ig_url": "", "login_needed": "2026-09-18 06:40 앱 승인 대기(06:30 재시도)"})
     assert "인스타 앱 알림에서 로그인 승인" in lw and len(lw.splitlines()) <= MAX_LINES, lw
     assert "승인" not in evening_body(conf, {**f, "login_needed": ""}), "세션이 서면 안내 줄이 사라진다"
-    assert "승인" not in evening_body(conf, {**f, "ig_url": "", "login_needed": "계정 자리 없음(1531)"}), "우리 쪽 원인은 파트너에게 안 적는다"
+    acc = evening_body(conf, {**f, "ig_url": "", "login_needed": "계정 자리 없음(1531 · x/instagram) 앱 승인"})
+    assert "아이디·비밀번호를 김남욱 GM님께" in acc and "앱 알림" not in acc and len(acc.splitlines()) <= MAX_LINES, acc   # 계정 없음이 우선 · 둘 중 하나만
     # 발행 즉시 링크 통은 없다(저녁 한 통 규칙 · GM 승인) — 그날 발행 URL 은 저녁 통이 반드시 싣는다
     pub = evening_body(conf, {**f, "ig_url": "https://www.instagram.com/p/Q9/", "blog_url": "https://blog.naver.com/iandietcamp/224415783952"})
     assert "https://blog.naver.com/iandietcamp/224415783952" in pub and "https://www.instagram.com/p/Q9/" in pub, pub
