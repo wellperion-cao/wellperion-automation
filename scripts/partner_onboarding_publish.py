@@ -99,14 +99,47 @@ def build(bank: dict, qa_by_key: dict[str, list]) -> dict:
     }
 
 
+BRAND_DIRS = {"dc": ROOT / "2. 브랜드_자료" / "10_다이어트캠프_브랜드가이드", "jo": ROOT / "2. 브랜드_자료" / "11_고척골프_조재오부장님"}
+# 받은 자료 종류 → 질문·수령 기록에서 그 자료를 가리키는 낱말(둘 다 같은 표로 본다)
+MATERIALS = {"프로필": ("프로필", "프로 4분", "프로 개별", "프로들 사진", "코치 사진", "강사 사진"), "로고": ("로고",),
+             "명함": ("명함",), "커리큘럼": ("커리큘럼", "교육 과정표"), "약관": ("약관", "규정 사진")}
+
+
+def received_materials(key: str) -> set[str]:
+    """이미 받은 자료 종류 — partner_profile.json received 줄 + 00_*원자료 폴더 하위 이름(로고·명함·프로필·커리큘럼·약관)."""
+    texts: list[str] = []
+    d = BRAND_DIRS.get(key)
+    if d:
+        prof = d / "partner_profile.json"
+        if prof.exists():
+            texts += load_json(prof).get("received") or []
+        for raw in d.glob("00_*원자료*"):
+            texts += [x.name for x in raw.iterdir()]
+    blob = " ".join(texts)
+    return {m for m, kws in MATERIALS.items() if any(k in blob for k in kws)}
+
+
+def asks_received(q: str, have: set[str]) -> str | None:
+    """질문이 이미 받은 자료를 청하면 그 자료 이름, 아니면 None. 파트너에게 번호를 싣는 자리는 전부 이 관문을 지난다(GM 09-18 「중복 너무 싫어」)."""
+    for m in have:
+        if any(k in q for k in MATERIALS[m]):
+            return m
+    return None
+
+
 def kakao_text(key: str, qa: list, bank: dict) -> str:
     """답 없는 번호만 — 번호 + 질문 한 줄. 미리 아는 값이 있으면 괄호로 붙여 확인만 받게."""
     idx = bank_index(bank)
+    have = received_materials(key)
     lines = []
     for it in qa:
         if it.get("answer") or not it.get("partner_no"):
             continue
         q = it.get("q") or idx.get(it["q_id"], {}).get("q", "")
+        dup = asks_received(q, have)
+        if dup:
+            print(f"[경고] {it['partner_no']}번은 이미 받은 자료({dup})를 청한다 — 문안에서 뺌 · qa 의 q 를 고쳐라", file=sys.stderr)
+            continue
         known = it.get("known")
         lines.append(f"{it['partner_no']}. {q}" + (f" (저희가 아는 것: {known})" if known else ""))
     head = draft_page_lines(key)
@@ -150,7 +183,14 @@ def _self_test() -> None:
     d = build(bank, {"jo": qa})
     assert d["tenants"]["jo"]["answered"] == 1 and d["tenants"]["jo"]["pending"] == 1
     assert d["tenants"]["jo"]["rows"][1]["q"] == "한 줄은?"
+    # 받은 자료 관문 — 「프로 개별 사진」을 청하는 번호는 받은 목록에 프로필이 있으면 문안에서 빠진다
+    assert asks_received("프로 4분 개별 사진 주실 수 있나요?", {"프로필", "로고"}) == "프로필"
+    assert asks_received("밖에서 본 간판 사진 주실 수 있나요?", {"프로필", "로고"}) is None
+    assert "프로필" in received_materials("jo"), received_materials("jo")      # 9/14 수령(partner_profile.json received)
+    qa.append({"q_id": "A-2", "partner_no": 3, "q": "프로 개별 사진 주실 수 있나요?"})
     txt = kakao_text("jo", qa, bank)
+    assert "3. 프로 개별" not in txt, txt
+    qa.pop()
     assert txt.splitlines()[-1] == "2. 한 줄은? (저희가 아는 것: 초안)", txt   # 마지막 줄 = 답 없는 번호 하나
     assert txt.startswith("[초안 페이지"), txt                                 # 머리 = 초안 페이지 링크(가이드라인 B-2 관문)
     assert "[경고]" not in txt or not (ADMIN_DIR / "gocheokgolf" / "intro.html").exists(), txt

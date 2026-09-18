@@ -483,7 +483,10 @@ def evening_facts(conf: dict, today: str) -> dict:
     qa = labs_waiting._load(REPO_ROOT / "server" / "counselbot" / "tenants" / f"{tenant}_qa.json", [])
     rows = [x for x in qa if (x.get("partner_no") or 0) >= floor and x.get("asked_on")]
     out["answered"] = sorted(x["partner_no"] for x in rows if x.get("answered_on") == today)
-    out["open_n"] = sum(1 for x in rows if not (x.get("answer") or "").strip())
+    import partner_onboarding_publish                 # 받은 자료를 다시 청하는 번호는 세지 않는다(GM 09-18 고척 43번)
+    have = partner_onboarding_publish.received_materials(key)
+    out["open_n"] = sum(1 for x in rows if not (x.get("answer") or "").strip()
+                        and not partner_onboarding_publish.asks_received(x.get("q") or "", have))
     return out
 
 
