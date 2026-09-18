@@ -16,6 +16,13 @@
 """
 from __future__ import annotations
 
+import faulthandler
+import sys
+if '--only' in sys.argv:
+    # 2026-09-18: 이 PC 는 .py 파일 읽기가 간헐적으로 수십 분 멈춰 import 단계에서 예약 회차가 막혔다.
+    # 8분이 넘으면 멈춘 자리 스택을 stderr(로그)에 남기고 끝낸다 — import 보다 먼저 걸어야 잡힌다.
+    faulthandler.dump_traceback_later(480, exit=True)
+
 import argparse
 import datetime
 import glob
@@ -613,11 +620,6 @@ def main() -> None:
     env = _load_env(_ENV_PATH)
     token = env.get('TELEGRAM_BOT_TOKEN', '')
     if args.only == 'reception':
-        # 2026-09-18: 15분 예약 실행이 20:46~21:46, 21:57 에 멈춰 다음 회차가 전부 건너뛰어졌다.
-        # requests 타임아웃은 읽기 한 번 기준이라 DNS·느린 응답이면 총 시간이 끝없이 늘 수 있다.
-        # 8분이 넘으면 멈춘 자리의 스택을 로그(stderr)에 남기고 끝낸다(예약작업 한도 12분 안).
-        import faulthandler
-        faulthandler.dump_traceback_later(480, exit=True)
         run_reception_only(token, args.dry_run)
         return
     owner_id_str = env.get('OWNER_ID') or env.get('TELEGRAM_CHAT_ID', '')
