@@ -143,6 +143,13 @@ CHRO_DOMAIN_PATHS = (
     "server/erp_api/api_todo*.py",
     "server/erp_api/sync_todo*.py",
 )
+# ★2026-09-18 [나우열M 요청 2026-09-18](배 12835) — 업무·결재 SSOT 두 화면은 GM측 AI 수정([GM 지시] 마커)이
+#   CHRO push 와 자주 충돌해 왔다(CHRO 가 그 자리에서 고치는 화면). CHRO_DOMAIN_PATHS 의 나머지(서버 코드·
+#   chro/ 폴더)는 여전히 [GM 지시] 로 통과하지만, 이 두 파일만은 [나우열M 요청 날짜] 마커·나우열 커미터만 연다.
+NAWOOLM_ONLY_LOCK_PATHS = (
+    "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html",
+    "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html",
+)
 #   시뽀 domain="운영 매출·지출·구매품의" → cfo/ 전체(화면·GAS 배선 포함) +
 #   .deploy-procurement/ 큐 폴더 + 서버 구매품의 API. 매출지출현황.html 은 GM 이
 #   직접 보는 공개 페이지(기억 project_public_pages_gas_password_exposure_accepted)라
@@ -314,7 +321,9 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         _domain_guard_log(f"{role_label}_nawoolm_self", hits, str(root))
         print(f"[INFO] 나우열M 본인 저장 — {role_label} 도메인 가드 통과: {', '.join(hits)}")
         return None
-    marker = _nawoolm_request_marker(commit_message)
+    # 배 12835 — 잠긴 두 화면(업무·결재 SSOT)이 걸리면 [GM 지시] 는 안 통한다. [나우열M 요청] 마커만.
+    locked = any(_path_matches_any(h, NAWOOLM_ONLY_LOCK_PATHS) for h in hits)
+    marker = _nawoolm_request_marker(commit_message, allow_gm=not locked)
     if marker:
         _domain_guard_log(f"{role_label}_nawoolm_marker", hits, str(root))
         print(f"[WARN] 나우열M 요청 마커 {marker} — {role_label} 도메인 가드 통과: "
@@ -1774,7 +1783,22 @@ def _nawoolm_domain_selfcheck() -> None:
     v4 = _domain_modify_violation([("M", other_path)], "CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS,
                                    "업무관리(텔레그램)", None, ROOT, commit_message="그냥 수정")
     assert v4 is None, "④ 무관 파일이 막혔다"
-    print("[selfcheck] 나우열M 라인 가드 4케이스 OK")
+
+    # ⑤~⑦ 배 12835 — 잠긴 두 화면(업무·결재 SSOT)은 [GM 지시] 로 안 열린다.
+    locked_pairs = [("M", NAWOOLM_ONLY_LOCK_PATHS[0])]
+    v5 = _domain_modify_violation(locked_pairs, "CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS,
+                                   "업무관리(텔레그램)", None, ROOT,
+                                   commit_message=f"[GM 지시 {today}] 업무 SSOT 수정")
+    assert v5 is not None, "⑤ 잠긴 화면이 [GM 지시] 로 열렸다"
+    v6 = _domain_modify_violation(locked_pairs, "CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS,
+                                   "업무관리(텔레그램)", None, ROOT,
+                                   commit_message=f"[나우열M 요청 {today}] 업무 SSOT 수정")
+    assert v6 is None, "⑥ 잠긴 화면이 [나우열M 요청] 마커로도 안 열렸다"
+    v7 = _domain_modify_violation([("M", "server/erp_api/api_todo.py")], "CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS,
+                                   "업무관리(텔레그램)", None, ROOT,
+                                   commit_message=f"[GM 지시 {today}] 서버 수정")
+    assert v7 is None, "⑦ 잠금 밖 CHRO 파일까지 [GM 지시] 가 막혔다"
+    print("[selfcheck] 나우열M 라인 가드 7케이스 OK")
 
 
 if __name__ == "__main__":

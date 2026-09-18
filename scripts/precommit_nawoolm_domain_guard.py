@@ -34,6 +34,7 @@ if _SCRIPTS_DIR not in sys.path:
 from safe_commit import (  # noqa: E402
     CHRO_DOMAIN_PATHS,
     CFO_DOMAIN_PATHS,
+    NAWOOLM_ONLY_LOCK_PATHS,
     _path_matches_any,
     _nawoolm_request_marker,
     _domain_guard_log,
@@ -99,7 +100,9 @@ def main(argv=None):
         _domain_guard_log("nawoolm_domain_precommit_self", hit_paths, ROOT)
         print(f"[INFO] 나우열M 본인 저장 — pre-commit 나우열M 라인 가드 통과: {', '.join(hit_paths)}")
         return 0
-    marker = _nawoolm_request_marker(_commit_message(explicit_message))
+    # 배 12835 — 잠긴 두 화면(업무·결재 SSOT)이 걸리면 [GM 지시] 는 안 통한다. [나우열M 요청] 마커만.
+    locked = any(_path_matches_any(p, NAWOOLM_ONLY_LOCK_PATHS) for p in hit_paths)
+    marker = _nawoolm_request_marker(_commit_message(explicit_message), allow_gm=not locked)
     if marker:
         _domain_guard_log("nawoolm_domain_precommit_marker", hit_paths, ROOT)
         print(f"[WARN] 나우열M 요청 마커 {marker} — pre-commit 나우열M 라인 가드 통과: "
@@ -156,7 +159,21 @@ def _selftest() -> None:
         assert main(["--paths", cfo_path, "--message", "그냥 수정"]) == 0, "⑤ 나우열M 본인 저장이 막혔다"
     finally:
         os.environ.pop("GIT_COMMITTER_NAME", None)
-    print("[selftest] nawoolm_domain_guard 5케이스 OK")
+
+    # ⑥~⑧ 배 12835 — 잠긴 두 화면은 [GM 지시] 로 안 열린다([나우열M 요청]·나우열 커미터만).
+    locked_path = "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html"
+    os.environ["GIT_COMMITTER_NAME"] = "Wellperion GM"
+    try:
+        assert main(["--paths", locked_path, "--message", f"[GM 지시 {today}] 업무 SSOT 수정"]) == 1, \
+            "⑥ 잠긴 화면이 [GM 지시] 로 열렸다"
+        assert main(["--paths", locked_path, "--message", f"[나우열M 요청 {today}] 업무 SSOT 수정"]) == 0, \
+            "⑦ 잠긴 화면이 [나우열M 요청] 마커로도 안 열렸다"
+        # CHRO 서버 코드는 그대로 [GM 지시] 로 열림(잠금 범위는 두 화면뿐)
+        assert main(["--paths", "server/erp_api/api_todo.py", "--message", f"[GM 지시 {today}] 서버 수정"]) == 0, \
+            "⑧ 잠금 밖 CHRO 파일까지 [GM 지시] 가 막혔다"
+    finally:
+        os.environ.pop("GIT_COMMITTER_NAME", None)
+    print("[selftest] nawoolm_domain_guard 8케이스 OK")
 
 
 if __name__ == "__main__":
