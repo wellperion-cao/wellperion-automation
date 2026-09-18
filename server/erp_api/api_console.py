@@ -16,6 +16,7 @@ import datetime
 import hmac
 import json
 import os
+import tempfile
 import threading
 
 from fastapi import APIRouter, HTTPException, Request
@@ -45,10 +46,19 @@ def _load() -> None:
 
 
 def _save() -> None:
-    tmp = STATE_PATH + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(_STATE, f, ensure_ascii=False)
-    os.replace(tmp, STATE_PATH)
+    # 고정 이름(STATE_PATH+".tmp")을 워커 2개가 동시에 쓰면 한쪽 os.replace 가 FileNotFoundError
+    # (2026-09-18 실측 · 6시간 2/2066건). mkstemp 로 호출마다 고유한 임시 파일을 받는다.
+    fd, tmp = tempfile.mkstemp(prefix=".console_state.", suffix=".tmp", dir=os.path.dirname(STATE_PATH))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(_STATE, f, ensure_ascii=False)
+        os.replace(tmp, STATE_PATH)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _check_key(request: Request) -> bool:
@@ -189,5 +199,32 @@ def _selfcheck() -> None:
     print("selfcheck ok")
 
 
+def _selfcheck_save_race() -> None:
+    """_save() 동시 호출 — 옛 고정 임시파일명이면 두 스레드가 서로의 .tmp 를 지워 os.replace 가 FileNotFoundError 났다.
+    _LOCK 없이(실제로는 우분투 워커 2개·프로세스별이라 잠금이 안 걸리는 상황을 흉내) 100회씩 붙여 예외 0 을 잰다."""
+    global _STATE
+    _STATE = {"cto": {"nick": "시토"}}
+    errors = []
+
+    def hammer():
+        for _ in range(100):
+            try:
+                _save()
+            except Exception as e:  # noqa: BLE001
+                errors.append(e)
+
+    threads = [threading.Thread(target=hammer) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors, "동시 _save 예외 %d건: %r" % (len(errors), errors[:3])
+    with open(STATE_PATH, encoding="utf-8") as f:
+        assert json.load(f) == _STATE, "마지막 저장본이 깨졌다"
+    os.unlink(STATE_PATH)
+    print("selfcheck(save race) ok")
+
+
 if __name__ == "__main__":
     _selfcheck()
+    _selfcheck_save_race()
