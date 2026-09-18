@@ -1822,13 +1822,24 @@ def _row_perms(r) -> dict:
 _ADMIN_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin.html")
 
 
+def _outside_shell(query_embed: Optional[str], sec_fetch_dest: Optional[str]) -> bool:
+    """권한 관리(/auth/admin)를 랩스 셸(erp/admin/index.html) 밖에서 주소로 바로 열었는지(배 12775 · GM 2026-09-18).
+    embed=1 이 있으면(셸이 iframe 에 붙이는 쿼리) 항상 셸 안 — False. 없으면 Sec-Fetch-Dest 로 판정하고,
+    그 헤더 자체가 없는 옛 브라우저·curl 은 밖으로 본다(True)."""
+    if query_embed == "1":
+        return False
+    return sec_fetch_dest != "iframe"
+
+
 @app.get("/auth/admin")
-def admin(erp_session: Optional[str] = Cookie(default=None)):
+def admin(request: Request, embed: Optional[str] = None, erp_session: Optional[str] = Cookie(default=None)):
     # 미로그인이면 로그인 화면으로 보낸다 — 새 창·시크릿에서 열면 {"detail":"관리자만"} 만 보였다(GM 2026-09-04).
     # 로그인은 됐지만 관리자가 아니거나 관리자 비밀번호가 없는 경우는 화면을 그대로 내고, 화면이 뜬 뒤
     # api/state 가 401 을 주면 admin.html 이 안내 화면으로 바꾼다(배1076 · 시모 admin.html 마운트).
     if not current(erp_session):
         return RedirectResponse("/auth/login?next=/auth/admin", status_code=303)
+    if _outside_shell(embed, request.headers.get("sec-fetch-dest")):
+        return RedirectResponse("/erp/admin/#view/accounts", status_code=303)
     with open(_ADMIN_HTML, encoding="utf-8") as f:
         return HTMLResponse(f.read())
 
@@ -2524,4 +2535,8 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert eval_kpi_stale({}, {"updated_at": "2026-09-18 10:00"})                              # updated_at 을 안 실은 옛 화면
     assert not eval_kpi_stale({"updated_at": "2026-09-18 10:00"}, {"updated_at": "2026-09-18 10:00"})
     assert not eval_kpi_stale({}, {})
+    # 권한 관리(/auth/admin) 셸 판정(배 12775) — embed=1 있으면 항상 셸 안, 없으면 Sec-Fetch-Dest=iframe 일 때만 셸 안
+    assert not _outside_shell("1", None) and not _outside_shell("1", "iframe")     # embed=1: 헤더와 무관하게 셸 안
+    assert not _outside_shell(None, "iframe")                                     # embed 없어도 iframe 헤더면 셸 안
+    assert _outside_shell(None, None)                                             # 주소로 바로 열면(헤더 없음) 셸 밖
     print("self-check ok")
