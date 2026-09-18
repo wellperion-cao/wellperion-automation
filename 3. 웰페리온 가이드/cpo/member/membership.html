@@ -11292,6 +11292,10 @@ function _renderHoldIntake() {
   });
   el.innerHTML = html; el.style.display = '';
 }
+// 승인 뒤 서버 자동 문자(extra.sms · 배12755) status → 사람 말. 모르는 값은 그대로 표기.
+var HOLD_SMS_STATUS_KR = { sent: '발송됨', dry: '시험(미발송)', skip_duplicate: '같은 건 이미 발송돼 건너뜀',
+  hold: '보류(야간)', limit: '보류(발송한도)', not_active: '보류(문구 미발효)', no_template: '보류(문구 없음)',
+  no_phone: '보류(전화번호 없음)', fail: '실패', error: '실패' };
 // 승인/반려(직원) — 서버 member_hold_approve. HOLD_LIVE_T=false면 'hold-gated'→개통 안내. 성공 시 리스트 새로고침.
 function holdApprove(intakeRow, decision, phone) {
   if (decision === 'reject' && !confirm('이 휴회 접수를 반려하시겠습니까?')) return;
@@ -11301,7 +11305,9 @@ function holdApprove(intakeRow, decision, phone) {
         if (d.error === 'hold-gated') { showToast('승인/반영은 GM 검증 후 개통됩니다', 'err'); return; }
         throw new Error(d.detail || d.error || '처리 실패');
       }
-      showToast(decision === 'approve' ? '승인 완료' : '반려 완료', 'ok');
+      var smsTxt = (decision === 'approve' && d && d.sms && d.sms.status)
+        ? ' · 문자: ' + (HOLD_SMS_STATUS_KR[d.sms.status] || d.sms.status) : '';
+      showToast((decision === 'approve' ? '승인 완료' : '반려 완료') + smsTxt, 'ok');
       _loadHoldIntake(true);
       if (decision === 'approve' && typeof loadActiveMembers === 'function') loadActiveMembers();   // 회원DB 갱신 반영
     })
