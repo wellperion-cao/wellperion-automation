@@ -36,7 +36,8 @@ ASSISTANT_DIR = os.environ.get("ERP_ASSISTANT_DIR", "/srv/erp/assistant")
 DEFAULT_TENANT = "wellperion"
 TENANT_RE = re.compile(r"^[a-z0-9_-]+$")
 # 응답에 실어도 되는 계약 필드만(위 머리말) — log_usage 가 이 목록 밖 키(transcript·text 등)를 받아도 버린다.
-_USAGE_FIELDS = ("title", "source", "target", "out")
+# lang = 음성 인식(stt, 배 12832)이 자동판별한 언어 — 원문 텍스트는 안 싣는다.
+_USAGE_FIELDS = ("title", "source", "target", "out", "lang")
 
 
 def _admins():
@@ -157,7 +158,7 @@ def _selftest():
         row = items[0]
         assert row["in_chars"] == 1234 and row.get("title") == "회의"
         assert "transcript" not in row and "text" not in row, row
-        assert set(row) <= {"ts", "tenant", "email", "kind", "in_chars", "title", "source", "target", "out"}, row
+        assert set(row) <= {"ts", "tenant", "email", "kind", "in_chars", "title", "source", "target", "out", "lang"}, row
     finally:
         ASSISTANT_DIR = real_dir
 
