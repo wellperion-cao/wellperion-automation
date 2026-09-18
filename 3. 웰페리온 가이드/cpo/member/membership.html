@@ -2232,6 +2232,8 @@ table.op-t td b{font-size:15px}
       </div>
       <!-- 강습 현황카드(#3, 2026-07-18 시포·GM): 수강 총원 + 문의상태 버킷(진행/대기/LOSS). 종목별 등록인원=아래 필터칩 재사용. -->
       <div id="lessonMemStatus_adult" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
+      <!-- 브로제이 결제 있음·명단 없음(읽기 전용, 배 12761) — _lessonUnlistedInit 이 채운다 -->
+      <div id="lessonUnlistedCard_adult"></div>
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
@@ -2408,6 +2410,8 @@ table.op-t td b{font-size:15px}
       </div>
       <!-- 강습 현황카드(#3, 2026-07-18 시포·GM): 수강 총원 + 문의상태 버킷(진행/대기/LOSS). 종목별 등록인원=아래 필터칩 재사용. -->
       <div id="lessonMemStatus_youth" class="card" style="display:none;padding:14px 18px;margin-bottom:12px;border-left:3px solid var(--teal)"></div>
+      <!-- 브로제이 결제 있음·명단 없음(읽기 전용, 배 12761) — _lessonUnlistedInit 이 채운다 -->
+      <div id="lessonUnlistedCard_youth"></div>
       <div class="card">
         <div class="card-title"><span class="icon">🧑‍🏫</span>수강 회원 명단
           <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
@@ -5328,6 +5332,7 @@ function switchFamily(fam) {
       if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
       if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
       _lessonComboMRegLoad();   // 멤버십 신규 등록 현황 카드 페이스(금일/월간) — 2026-07-18 재배선
+      _lessonUnlistedInit();   // 브로제이 결제 있음·명단 없음 카드(배 12761) — 강습탭 진입 시 1회만
       try { if (typeof _oaPreload === 'function') _oaPreload(); } catch(_oaErr){}   // 담당자 배정 데이터 사전로드(콜드 GAS ~11s 오버랩) — 2026-07-18
     }
   } catch(_sfErr){ /* best-effort — family 전환은 이미 확정, 렌더 실패해도 안 되돌림 */ }
@@ -9219,6 +9224,47 @@ function _brojayTagChunk(rows, cols) {
     })
     .catch(function(e){ console.warn('[브로제이 종료일] 실패:', e && e.message); });
 }
+
+/* 브로제이 결제 있음·명단 없음(읽기 전용) — 2026-09-18 시포(배 12761 걸음3). 강습 8팀 결제는 있는데 ERP 회원·
+   강습 roster 어디에도 없는 회원을 접힌 카드로 보여준다(강사·파트너팀이 명단에 올리도록). 값을 쓰지 않는다. */
+var _lessonUnlistedLoaded = false;
+function _lessonUnlistedInit() {
+  if (!ERP_API_ON || _lessonUnlistedLoaded) return;
+  _lessonUnlistedLoaded = true;
+  _apiJson('/api/brojay/unlisted_lesson_payments?days=7')
+    .then(function(d){ _lessonUnlistedRender(d); })
+    .catch(function(e){ console.warn('[강습 명단없음] 실패:', e && e.message); _lessonUnlistedLoaded = false; });
+}
+function _lessonUnlistedRender(d) {
+  var items = (d && d.items) || [], days = (d && d.days) || 7;
+  var body = !items.length ? ('<div style="padding:10px 2px;color:var(--dim);font-size:12.5px">최근 ' + days + '일 동안 없음</div>')
+    : ('<div class="reg-table-wrap"><table class="reg-table"><thead><tr><th>결제일</th><th>팀</th><th class="left">상품</th><th>금액</th><th>전화 뒤4자리</th></tr></thead><tbody>' +
+       items.map(function(it){
+         return '<tr><td style="white-space:nowrap">' + esc(it.paid_at) + '</td><td style="white-space:nowrap">' + esc(it.team) + '</td>' +
+                '<td class="left">' + esc(it.product) + '</td><td style="white-space:nowrap">' + (it.amount != null ? Number(it.amount).toLocaleString() : '—') + '</td>' +
+                '<td style="white-space:nowrap">' + esc(it.phone_tail) + '</td></tr>';
+       }).join('') + '</tbody></table></div>');
+  var html = '<div class="card" style="margin-bottom:14px">' +
+    '<div class="card-title" style="cursor:pointer" onclick="_lessonUnlistedToggle(this)">' +
+      '<span class="icon">⚠️</span>브로제이 결제 있음 · 명단 없음 ' + items.length + '건(최근 ' + days + '일)' +
+      '<span style="margin-left:auto;font-size:11px;color:var(--dim)">펼치기 ▾</span>' +
+    '</div>' +
+    '<div style="display:none">' + body + '</div>' +
+  '</div>';
+  ['lessonUnlistedCard_adult', 'lessonUnlistedCard_youth'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+function _lessonUnlistedToggle(head) {
+  var body = head.nextElementSibling;
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  var arrow = head.querySelector('span:last-child');
+  if (arrow) arrow.textContent = open ? '펼치기 ▾' : '접기 ▴';
+}
+
 function _activeRenderChunk() {
   var q = _activeRenderQueue;
   var tbody = document.getElementById('activeBody');
