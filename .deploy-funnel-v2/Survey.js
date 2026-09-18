@@ -2052,6 +2052,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 삭제+유효회원 신규행, 2026-08-26 개정)
   member_registry_build:      true,  // 2026-08-26 시포(GM 승인·배801) — 회원등기부 구축·회원번호 부여(멱등·dryRun 지원)
   member_active_sort_now:     true,  // 2026-08-12 잔여일순 정렬 온디맨드(행 순서만 바꿈·값 무변경·PII 미반환)
+  member_remain_formula_check: true, // 2026-09-18 잔여일 수식 점검·복구(dry/apply) — PII 미반환, member_active_sort_now 와 동일 취급
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
   member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
   member_hold_intake_list:    true,  // 2026-07-22 휴회 접수관리 리스트(ERP read+서버 자동판정). 게이트 뒤. 시포·GM
@@ -2778,6 +2779,24 @@ function _memberProgramCanon_(sh, pgI, program, moN) {
   return best || raw;
 }
 
+// 잔여일 칸의 대표 수식(R1C1) 찾기 — 2026-09-18 시포(GM 지적 "N칸 잔여일 왜 수정하나").
+//   원인: 회원 직접등록이 잔여일 수식 칸에 숫자를 그대로 덮어써(구 2858·2906행) 그 행만 수식이 사라지고
+//   굳은 값으로 남았다(나머지 행은 수식이라 매일 줄어든다). aboveRow(바로 위 데이터 행)에 수식이 있으면
+//   그걸 쓰고, 없으면 시트 전체에서 첫 수식 행을 찾는다. 수식이 아예 없는 시트(값 열)면 null → 호출부가
+//   종전대로 숫자를 쓴다.
+function _memberRemainFormulaR1C1_(sh, remI, aboveRow) {
+  if (aboveRow >= 2) {
+    var f = sh.getRange(aboveRow, remI + 1).getFormulaR1C1();
+    if (f) return f;
+  }
+  var last = sh.getLastRow();
+  for (var r = 2; r <= last; r++) {
+    var f2 = sh.getRange(r, remI + 1).getFormulaR1C1();
+    if (f2) return f2;
+  }
+  return null;
+}
+
 function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var key = _regNormPhone_(phone);
   if (!key) return;
@@ -2855,7 +2874,12 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
         if (regDate && regI >= 0) { var _rc = sh.getRange(row, regI + 1); _rc.setNumberFormat('@'); _rc.setValue(regDate); }
         if (moN > 0 && stI >= 0) sh.getRange(row, stI + 1).setValue(startDate);
         if (moN > 0 && endI >= 0) sh.getRange(row, endI + 1).setValue(endDateStr);
-        if (moN > 0 && remI >= 0) sh.getRange(row, remI + 1).setValue(remN);
+        // 2026-09-18 시포 · GM 지적 — 잔여일 칸이 수식이면 숫자로 덮지 않고 수식을 복사해 살려 둔다.
+        if (moN > 0 && remI >= 0) {
+          var _remF = _memberRemainFormulaR1C1_(sh, remI, row - 1);
+          if (_remF) sh.getRange(row, remI + 1).setFormulaR1C1(_remF);
+          else sh.getRange(row, remI + 1).setValue(remN);
+        }
         _put(row, ownI, opts.owner);
         _put(row, kndI, opts.kind);
         _put(row, ageI, opts.age);
@@ -2903,7 +2927,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   if (pgI >= 0 && program) newRow[pgI] = program;
   if (moN > 0 && stI >= 0) newRow[stI] = startDate;
   if (moN > 0 && endI >= 0) newRow[endI] = endDateStr;
-  if (moN > 0 && remI >= 0) newRow[remI] = remN;
+  // 잔여일은 appendRow 뒤 수식 유무를 보고 채운다(아래) — 여기서 값을 미리 넣으면 수식 칸을 덮어버린다.
   if (ownI >= 0 && opts.owner)    newRow[ownI] = opts.owner;
   if (kndI >= 0 && opts.kind)     newRow[kndI] = opts.kind;
   if (ageI >= 0 && opts.age)      newRow[ageI] = opts.age;
@@ -2917,6 +2941,12 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var _newRow = sh.getLastRow();
   var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
   if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
+  // 2026-09-18 시포 · GM 지적 — 잔여일 칸이 수식이면 숫자로 덮지 않고 수식을 복사해 살려 둔다.
+  if (moN > 0 && remI >= 0) {
+    var _remF2 = _memberRemainFormulaR1C1_(sh, remI, _newRow - 1);
+    if (_remF2) sh.getRange(_newRow, remI + 1).setFormulaR1C1(_remF2);
+    else sh.getRange(_newRow, remI + 1).setValue(remN);
+  }
   _memberCacheBump_(); _aaCacheClear_(['valid']);   // 유효회원 시트만 바뀌었다 — 그 명단 캐시만 지운다(FB260806-150441 근본수리)
   // 회원번호 자동 부여(2026-09-03 시토·배941) — 새 행이 생기는 곳은 여기뿐이라 여기서 한 번만 부른다(약속 L21).
   //   8-26 일괄 부여 뒤에 등록된 사람이 전부 번호 없이 남았고(실측 6명), 회원 미러는 번호 없는 행을 넣지 않아
@@ -9368,6 +9398,57 @@ function _hasRealReply_(memo) {
   if (action === 'member_active_sort_now') {
     var snRes = member_active_sort_by_remaining_({ dry: String(body.dry || '') === '1' });
     return _json({ ok: !snRes.error, result: snRes, error: snRes.error || undefined });
+  }
+
+  // ─── 잔여일 수식 점검·복구(2026-09-18 시포 · GM 지적 "N칸 잔여일 왜 수정하나") ───
+  //   원인: 회원 직접등록(_memberActiveUpsert_, 개월수 있음)이 잔여일 수식 칸에 숫자를 직접 덮어써(2858·2906행)
+  //   그 행만 수식이 사라지고 고정값으로 굳는다(9/1~9/17 신규 32행 실측 — 나머지 행은 수식이라 매일 줄어든다).
+  //   경계 판정은 member_active_sort_by_remaining_ 와 동일 로직 재사용(_memberSortFooterName_, 약속 L21).
+  //   dry=1: 읽기만(PII 0 — 이름·전화 미반환). apply=1: 값 셀에 대표 R1C1 수식을 복사해 되살린다(수식 셀은 안 건드림).
+  if (action === 'member_remain_formula_check') {
+    var mfcSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!mfcSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var mfcLastRow = mfcSh.getLastRow(), mfcLastCol = mfcSh.getLastColumn();
+    if (mfcLastRow < 2) return _json({ ok: false, error: '데이터 없음' });
+    var mfcHdr = mfcSh.getRange(1, 1, 1, mfcLastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+    function _mfcIdx(want) {
+      var w = String(want).replace(/\s/g, '');
+      for (var i = 0; i < mfcHdr.length; i++) { if (mfcHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+      return -1;
+    }
+    var mfcNmI = _mfcIdx('회원명'), mfcRemI = _mfcIdx('잔여일');
+    if (mfcNmI < 0 || mfcRemI < 0) return _json({ ok: false, error: '칸 없음(회원명=' + mfcNmI + ' 잔여일=' + mfcRemI + ')' });
+    var mfcNames = mfcSh.getRange(2, mfcNmI + 1, mfcLastRow - 1, 1).getValues().map(function(r){ return String(r[0] || '').trim(); });
+    var mfcFooterStart = -1;
+    for (var mi = 0; mi < mfcNames.length; mi++) {
+      if (mfcNames[mi] && _memberSortFooterName_(mfcNames[mi])) { mfcFooterStart = mi; break; }
+    }
+    var mfcRowCount = mfcFooterStart < 0 ? mfcNames.length : mfcFooterStart;   // 진짜 회원 행 수(집계블록 제외)
+    if (mfcRowCount < 1) return _json({ ok: true, formulaCellCount: 0, valueCellCount: 0, repFormula: null, valueRowIndexes: [] });
+
+    var mfcFormulas = mfcSh.getRange(2, mfcRemI + 1, mfcRowCount, 1).getFormulas().map(function(r){ return r[0]; });
+    var mfcRepFormula = null, mfcFormulaCount = 0, mfcValueRows = [];
+    for (var fi = 0; fi < mfcFormulas.length; fi++) {
+      if (mfcFormulas[fi]) {
+        mfcFormulaCount++;
+        if (!mfcRepFormula) mfcRepFormula = mfcSh.getRange(fi + 2, mfcRemI + 1).getFormulaR1C1();
+      } else {
+        mfcValueRows.push(fi + 2);
+      }
+    }
+    var mfcOut = { ok: true, formulaCellCount: mfcFormulaCount, valueCellCount: mfcValueRows.length,
+                   repFormula: mfcRepFormula, valueRowIndexes: mfcValueRows };
+    if (String(body.dry || '') === '1') return _json(mfcOut);
+
+    if (String(body.apply || '') === '1') {
+      if (!mfcRepFormula) return _json({ ok: false, error: '대표 수식 없음 — 복구 불가', formulaCellCount: mfcFormulaCount, valueCellCount: mfcValueRows.length });
+      mfcValueRows.forEach(function(r) {
+        mfcSh.getRange(r, mfcRemI + 1).setFormulaR1C1(mfcRepFormula);
+      });
+      _memberCacheBump_();
+      mfcOut.fixed = mfcValueRows.length;
+    }
+    return _json(mfcOut);
   }
 
   if (action === 'member_active_list') {
