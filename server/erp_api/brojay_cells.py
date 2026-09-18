@@ -53,6 +53,8 @@ TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램�
 TEAM_KEY_ROW = {"swim": 8, "pt": 9, "golf": 10, "squash": 11, "gym": 12, "pilates": 13, "musical": 14, "gxe": 15}
 ROW_KEY = {v: k for k, v in TEAM_KEY_ROW.items()}   # 행 → sales_targets key
 ROW_TAG = {v: k for k, v in TAG_TEAM.items()}       # 행 → 매출분류 태그(팀 이름 폴백)
+# 행(팀) → ERP members 담당 전용 칸(배 12523(d) 실측) — 없는 팀(체조&트램폴린·영어뮤지컬·유료GX)은 공통 owner 칸으로.
+TEAM_OWNER_COL = {8: "owner_swim", 9: "owner_pt", 10: "owner_golf", 11: "owner_squash", 13: "owner_pl"}
 OPS_TAG = "운영부"
 LOCKER_TYPES = {"LOCKER_TICKET"}
 REG_START = "2026-09-01"   # 브로제이 적재 시작일(GM 확정 2026-09-15) — 강습 신규/재등록 이력 조회 하한
@@ -187,6 +189,7 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
     daily = {}   # 날짜별 총매출(환불 제외) — 보고 1면 「일 단위 최근 7일」 막대가 일자탭 대신 읽는다(시트 0칸)
     day_pays = []      # lists.registered 원본 — 기준일 결제(환불 제외) 전부
     lesson_pays = []   # lists.lesson 원본 — 강습 8팀(행 8~15) 결제 전부(그달 1일~기준일)
+    day_refund_pays = []   # lists.by_owner 환불 원본 — 강습 8팀(행 8~15) 기준일 환불(부호 원본 그대로)
     for p in payments:
         d = _day_of(p)
         if not d or d > ref_date:
@@ -200,6 +203,10 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
             #   여기 실려 GM 이 「어떻게 생긴 값인지 모르겠다」(2026-09-17). 팀 매출은 결제 전액 기준이라 환불을 빼지 않는다.
             if is_day and tag == OPS_TAG:
                 refund_day += amt
+            if is_day:
+                r_cell = _cell_of(tag, ptype, p.get("product_name"), tags)
+                if r_cell and r_cell >= 8:
+                    day_refund_pays.append({"cell": r_cell, "member_id": str(p.get("member_id") or ""), "amt": amt})
             continue
         daily[d] = daily.get(d, 0) + amt
         cell = _cell_of(tag, ptype, p.get("product_name"), tags)
@@ -244,7 +251,8 @@ def aggregate(payments, ref_date, tags, members_by_phone=None, phone_of_member=N
                   "N11": _money(refund_day), "N12": "%d명" % loss_count})
     return {"cells": cells, "raw": {"day": day, "month": month, "refund_day": refund_day,
                                     "new": [new_n, new_amt], "re": [re_n, re_amt], "daily": daily,
-                                    "day_pays": day_pays, "lesson_pays": lesson_pays},
+                                    "day_pays": day_pays, "lesson_pays": lesson_pays,
+                                    "day_refund_pays": day_refund_pays},
             "unmapped": unmapped, "unmatched_membership": unmatched, "payments": len(payments)}
 
 
@@ -330,11 +338,62 @@ def _lesson_lists(lesson_pays, roster_phones, hist_first_paid, team_names):
     return {"day": day, "month": month, "basis": LESSON_BASIS}
 
 
+BY_OWNER_NOTE = ("담당 = ERP 회원관리·강습 명단 담당 칸(브로제이 담당 안 씀) · "
+                  "미등록 = 브로제이엔 있으나 ERP 원장·명단에 없는 회원")
+
+
+def _owner_of(phone, cell, erp_owner_by_phone, roster_owner_by_phone):
+    """담당 찾기 — ① ERP members 팀별 칸(비었으면 공통 owner 칸) ② 강습 명단(roster) 담당 ③ 담당 미등록
+    (전화 없으면 바로 미등록 — 지어내지 않는다)."""
+    if phone:
+        row = erp_owner_by_phone.get(phone)
+        if row:
+            v = row.get(TEAM_OWNER_COL.get(cell, "")) or row.get("owner")
+            if v:
+                return v
+        v2 = roster_owner_by_phone.get(phone)
+        if v2:
+            return v2
+    return "담당 미등록"
+
+
+def _by_owner_list(day_pays, day_refund_pays, phone_of_member, erp_owner_by_phone, roster_owner_by_phone,
+                    team_rows, team_names):
+    """lists.by_owner — 강습 8팀(행 8~15) 기준일 결제를 담당자별로 묶는다. team_rows = tag_rows() 행
+    오름차순 유니크 목록(팀 순서 정본). 환불은 amount 에서 빼지 않고 refund 로 따로 싣는다."""
+    by_row = {}
+    linked = unlinked = 0
+    for p in day_pays:
+        cell = p.get("cell")
+        if not cell or cell < 8:
+            continue
+        owner = _owner_of(phone_of_member.get(p["member_id"], ""), cell, erp_owner_by_phone, roster_owner_by_phone)
+        linked, unlinked = (linked, unlinked + 1) if owner == "담당 미등록" else (linked + 1, unlinked)
+        o = by_row.setdefault(cell, {}).setdefault(owner, {"owner": owner, "count": 0, "amount": 0, "refund": 0})
+        o["count"] += 1
+        o["amount"] += p["amt"]
+    for p in day_refund_pays:
+        cell = p.get("cell")
+        if not cell or cell < 8:
+            continue
+        owner = _owner_of(phone_of_member.get(p["member_id"], ""), cell, erp_owner_by_phone, roster_owner_by_phone)
+        o = by_row.setdefault(cell, {}).setdefault(owner, {"owner": owner, "count": 0, "amount": 0, "refund": 0})
+        o["refund"] += p["amt"]
+    teams = []
+    for row in team_rows:
+        owners = sorted(by_row.get(row, {}).values(), key=lambda o: -o["amount"])
+        teams.append({"team": team_names.get(row, "행%d" % row), "row": row, "owners": owners,
+                      "count": sum(o["count"] for o in owners), "amount": sum(o["amount"] for o in owners),
+                      "refund": sum(o["refund"] for o in owners)})
+    return {"teams": teams, "linked": linked, "unlinked": unlinked}
+
+
 def _lesson_roster_class(conn, tenant):
-    """{전화} — lesson_records kind=roster(성인강습·유소년강습) 의 ERP 강습 명단(화면 membership.html 이 읽는
-    바로 그 데이터 · 행 모양 sport/name/phone/status/regCount). 전화가 여기 있으면 그 강습에 이미 다니는
-    회원(재등록 후보). DB 조회 — compute() 전용, selftest 대상 아님."""
-    out = set()
+    """{전화}, {전화: 담당} — lesson_records kind=roster(성인강습·유소년강습) 의 ERP 강습 명단(화면 membership.html
+    이 읽는 바로 그 데이터 · 행 모양 sport/name/phone/status/regCount/owner). 전화가 첫 값에 있으면 그 강습에
+    이미 다니는 회원(재등록 후보) · 둘째 값의 담당은 by_owner 2순위(ERP members 담당 칸 다음)로 쓴다.
+    DB 조회 — compute() 전용, selftest 대상 아님."""
+    phones, owners = set(), {}
     for t in ("성인강습", "유소년강습"):
         r = conn.execute("SELECT data FROM lesson_records WHERE tenant_id=%s AND kind='roster' AND key=%s",
                           (tenant, t)).fetchone()
@@ -345,8 +404,11 @@ def _lesson_roster_class(conn, tenant):
             if isinstance(row, dict):
                 phone = _digits(row.get("phone"))
                 if phone:
-                    out.add(phone)
-    return out
+                    phones.add(phone)
+                    owner = row.get("owner")
+                    if owner:
+                        owners[phone] = owner
+    return phones, owners
 
 
 def _lesson_first_paid(conn, ref_date, tags, tenant):
@@ -401,7 +463,8 @@ def compute(ref_date=None):
             return None
         mem = conn.execute(
             "SELECT phone, reg_class, loss_date, name, kind, program, reg_consult_date, reg_consult_time,"
-            " reg_consult_note, reg_reservation FROM members WHERE tenant_id=%s AND scope IN ('valid','ended')",
+            " reg_consult_note, reg_reservation, owner, owner_pt, owner_pl, owner_squash, owner_golf, owner_swim"
+            " FROM members WHERE tenant_id=%s AND scope IN ('valid','ended')",
             (db.TENANT,)).fetchall()
         members_by_phone = {_digits(m["phone"]): str(m["reg_class"] or "") for m in mem if _digits(m["phone"])}
         loss_count = sum(1 for m in mem if str(m["loss_date"] or "")[:10] == ref_date)
@@ -420,7 +483,7 @@ def compute(ref_date=None):
                     phone_of_member[mid] = _digits(m.get("phone_number"))
                     snap_name_by_id[mid] = m.get("name") or ""
         tags = tag_rows()
-        roster_phones = _lesson_roster_class(conn, db.TENANT)
+        roster_phones, roster_owner_by_phone = _lesson_roster_class(conn, db.TENANT)
         hist_first_paid = _lesson_first_paid(conn, ref_date, tags, db.TENANT)
     finally:
         conn.close()
@@ -429,11 +492,18 @@ def compute(ref_date=None):
     out.update({"ref_date": ref_date, "_source": "brojay+erp", "members_joined": bool(phone_of_member)})
     try:
         member_info_by_phone = {}
+        erp_owner_by_phone = {}
         for m in mem:
             pd = _digits(m["phone"])
             if pd:
                 member_info_by_phone.setdefault(pd, {"name": m["name"] or "", "reg_class": str(m["reg_class"] or "")})
+                erp_owner_by_phone.setdefault(pd, {"owner": m["owner"] or "", "owner_pt": m["owner_pt"] or "",
+                                                    "owner_pl": m["owner_pl"] or "", "owner_squash": m["owner_squash"] or "",
+                                                    "owner_golf": m["owner_golf"] or "", "owner_swim": m["owner_swim"] or ""})
         team_names = _team_names()
+        by_owner = _by_owner_list(out["raw"]["day_pays"], out["raw"]["day_refund_pays"], phone_of_member,
+                                   erp_owner_by_phone, roster_owner_by_phone, sorted(set(TEAM_KEY_ROW.values())),
+                                   team_names)
         out["lists"] = {
             "ref_date": ref_date,
             "registered": _registered_list(out["raw"]["day_pays"], team_names, member_info_by_phone,
@@ -441,10 +511,13 @@ def compute(ref_date=None):
             "loss": _loss_list(mem, ref_date),
             "contact": _contact_list(mem, ref_date),
             "lesson": _lesson_lists(out["raw"]["lesson_pays"], roster_phones, hist_first_paid, team_names),
+            "by_owner": {"ref_date": ref_date, "teams": by_owner["teams"], "linked": by_owner["linked"],
+                         "unlinked": by_owner["unlinked"], "note": BY_OWNER_NOTE},
         }
     except Exception:
         out["lists"] = {"ref_date": ref_date, "registered": [], "loss": [], "contact": [],
-                         "lesson": {"day": {}, "month": {}, "basis": ""}}
+                         "lesson": {"day": {}, "month": {}, "basis": ""},
+                         "by_owner": {"ref_date": ref_date, "teams": [], "linked": 0, "unlinked": 0, "note": BY_OWNER_NOTE}}
     return out
 
 
@@ -543,6 +616,32 @@ def selftest():
     assert len(contact) == 2, contact
     assert contact[0]["name"] == "박컨택" and contact[0]["consult_date"] == "2026-09-15" and contact[0]["consult_time"] == "14:00"
     assert contact[1]["name"] == "최예약" and contact[1]["consult_date"] == "2026-09-15" and contact[1]["note"] == "다음달"
+
+    # ── lists.by_owner(배 12523(d)) — 결제 4건(연결 3 · 미연결 1) + 환불 1건, 팀칸 폴백까지 ──
+    day_pays_bo = [
+        {"cell": 8, "member_id": "P1", "amt": 100000},   # ERP owner_swim
+        {"cell": 8, "member_id": "P2", "amt": 200000},   # 강습 명단 owner(roster)
+        {"cell": 8, "member_id": "P4", "amt": 80000},    # ERP owner_swim 비어 공통 owner 폴백
+        {"cell": 9, "member_id": "P3", "amt": 150000},   # 못 이음 → 미등록
+    ]
+    refund_pays_bo = [{"cell": 8, "member_id": "P1", "amt": -50000}]
+    phone_of_member_bo = {"P1": "01011110000", "P2": "01022220000", "P3": "01033330000", "P4": "01044440000"}
+    erp_owner_bo = {
+        "01011110000": {"owner": "", "owner_pt": "", "owner_pl": "", "owner_squash": "", "owner_golf": "", "owner_swim": "김수영"},
+        "01044440000": {"owner": "박총괄", "owner_pt": "", "owner_pl": "", "owner_squash": "", "owner_golf": "", "owner_swim": ""},
+    }
+    roster_owner_bo = {"01022220000": "이보조"}
+    bo = _by_owner_list(day_pays_bo, refund_pays_bo, phone_of_member_bo, erp_owner_bo, roster_owner_bo,
+                        [8, 9], {8: "수영팀", 9: "PT팀"})
+    assert bo["linked"] == 3 and bo["unlinked"] == 1, bo
+    swim, pt = bo["teams"]
+    assert swim["team"] == "수영팀" and swim["row"] == 8 and swim["amount"] == 380000 and swim["refund"] == -50000, swim
+    owners_bo = {o["owner"]: o for o in swim["owners"]}
+    assert owners_bo["김수영"]["amount"] == 100000 and owners_bo["김수영"]["refund"] == -50000
+    assert owners_bo["이보조"]["amount"] == 200000 and owners_bo["박총괄"]["amount"] == 80000
+    assert swim["owners"][0]["owner"] == "이보조"   # 금액 내림차순
+    assert pt["team"] == "PT팀" and pt["amount"] == 150000 and pt["refund"] == 0
+    assert pt["owners"] == [{"owner": "담당 미등록", "count": 1, "amount": 150000, "refund": 0}], pt["owners"]
     print("selftest ok")
 
 
