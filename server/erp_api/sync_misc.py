@@ -155,7 +155,8 @@ def selftest():
         r = conn.execute("SELECT data, synced_at FROM misc_cache WHERE tenant_id=%s AND gas='renewal' AND action='stats'",
                          (db.TENANT,)).fetchall()
         assert len(r) == 1 and r[0]["synced_at"] == "2026-09-04 10:05:00" and json.loads(r[0]["data"])["months"][0]["num"] == 9, r
-        assert jobs() == [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("schedule", "load_schedule", ""),
+        assert jobs() == [("renewal", "stats", ""), ("ops", "vendor_list", ""), ("ops", "fcheck_ranges_get", ""),
+                          ("schedule", "load_schedule", ""),
                           ("todo", "home_kpi", ""), ("todo", "sales_monthly", ""), ("todo", "notice_list", ""),
                           ("todo", "product_plan_list", ""),
                           ("funnel", "staff_feedback_list", ""), ("funnel", "ohnutti_team_list", "")]
