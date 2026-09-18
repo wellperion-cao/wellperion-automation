@@ -10,7 +10,9 @@ erp/admin/index.html 파트너사 관리 패널이 표 두 장(결과물 7일 ·
 원천(정본은 각 파일 · 여기는 읽기만):
   블로그         status/{gocheok,dietcamp}_blog_daily.json runs[]
   인스타         status/partner_instagram/{jo,dc}.json runs[]
-  상담 질문 수   status/counsel_questions.jsonl (tenant · is_test 아닌 것)
+  상담 질문 수   status/_private/counsel_questions.jsonl (tenant · 손님 행만 — visitor=customer · 없으면 시험 접두 폴백)
+  상담 지표      같은 원장에서 답변율(answered ÷ 분모 · invalid_request·policy 제외 · 설계 §6)·핸드오프율(handoff 칸 · 없으면 미답)
+                 → weekly 행 answer_rate·handoff_rate · 첫 글자 시간은 원장에 칸이 없어 안 센다(시토 배 2762 뒤)
   파트너 회신 수 1. AI자료_아카이브/11_카카오톡/{★조재오지점장님,다이어트캠프이승기대표님}/*/*_auto_*.txt (개수만 · 본문은 안 옮긴다)
 예약 = counsel_questions.bat(22:10) · partner_instagram_daily.bat(07:20) 끝에 한 줄. 손 실행:
   C:/Python314/python.exe scripts/labs_loop.py
@@ -129,6 +131,52 @@ def count_by_week(records: list[dict], starts: dict[str, datetime]) -> dict[str,
     return out
 
 
+TEST_PREFIXES = ("test-", "cbo-test-", "sito-check-")   # api_chat.TEST_SESSION_PREFIXES 와 같은 값 — visitor 칸이 없을 때만 폴백
+
+
+def is_customer(r: dict) -> bool:
+    """손님 행인가(설계 §11 visitor). 칸이 있으면 그 값이 정답 · 없으면 is_test·시험 접두로 판정."""
+    v = r.get("visitor")
+    if v:
+        return v == "customer"
+    if r.get("is_test"):
+        return False
+    return not str(r.get("session_id") or "").startswith(TEST_PREFIXES)
+
+
+def counsel_rows_from(lines: list[str], starts: dict[str, datetime]) -> dict[tuple[str, str], list[dict]]:
+    """주·파트너별 손님 행 — 질문 수·답변율·핸드오프율이 다 이 한 묶음에서 나온다."""
+    out: dict[tuple[str, str], list[dict]] = {(wk, p): [] for wk in starts for p in TENANTS}
+    for ln in lines:
+        try:
+            r = json.loads(ln)
+        except Exception:  # noqa: BLE001
+            continue
+        if not is_customer(r):
+            continue
+        partner = next((k for k, t in TENANTS.items() if t == r.get("tenant")), None)
+        if not partner:
+            continue
+        try:
+            dt = datetime.fromisoformat(r["ts"][:19])
+        except Exception:  # noqa: BLE001
+            continue
+        for wk, ws in starts.items():
+            if ws <= dt < ws + timedelta(days=7):
+                out[(wk, partner)].append(r)
+    return out
+
+
+def counsel_rates(rows: list[dict]) -> tuple[float | None, float | None]:
+    """(답변율, 핸드오프율) — 분모 = invalid_request·policy 뺀 손님 문답(설계 §6). 0건이면 None(0 위장 금지)."""
+    body = [r for r in rows if r.get("outcome") not in ("invalid_request", "policy")]
+    if not body:
+        return None, None
+    answered = sum(1 for r in body if r.get("answered"))
+    handoff = sum(1 for r in body if (r["handoff"] if "handoff" in r else not r.get("answered")))
+    return round(answered / len(body), 3), round(handoff / len(body), 3)
+
+
 def counsel_counts_from(lines: list[str], starts: dict[str, datetime]) -> dict[tuple[str, str], int | None]:
     if not lines:
         return {(wk, p): None for wk in starts for p in TENANTS}
@@ -138,10 +186,7 @@ def counsel_counts_from(lines: list[str], starts: dict[str, datetime]) -> dict[t
             r = json.loads(ln)
         except Exception:  # noqa: BLE001
             continue
-        if r.get("is_test"):
-            continue
-        sid = r.get("session_id") or ""
-        if sid.startswith(("test-", "cbo-test-", "sito-check-")):
+        if not is_customer(r):
             continue
         partner = next((k for k, t in TENANTS.items() if t == r.get("tenant")), None)
         if not partner:
@@ -194,8 +239,9 @@ def build(now: datetime, loop: list[dict]) -> dict:
 
     outputs = dedupe_latest([r for r in blog_recs + insta_recs if r["_dt"] >= now_n - timedelta(days=7)])
 
-    counsel_lines = _load_lines(ROOT / "status" / "counsel_questions.jsonl")
+    counsel_lines = _load_lines(ROOT / "status" / "_private" / "counsel_questions.jsonl")
     q = counsel_counts_from(counsel_lines, starts)
+    crows = counsel_rows_from(counsel_lines, starts)
 
     weekly = []
     for partner in TENANTS:
@@ -210,6 +256,7 @@ def build(now: datetime, loop: list[dict]) -> dict:
                 "week": wk, "partner": partner,
                 "insta": insta_pub.get(wk, 0), "blog_pub": blog_pub.get(wk, 0), "blog_draft": blog_draft.get(wk, 0),
                 "questions": q.get((wk, partner)), "replies": (replies.get(wk) if replies is not None else None),
+                "answer_rate": counsel_rates(crows[(wk, partner)])[0], "handoff_rate": counsel_rates(crows[(wk, partner)])[1],
             })
     weekly.sort(key=lambda r: (r["week"], r["partner"]), reverse=True)
 
@@ -261,6 +308,16 @@ def selfcheck() -> None:
 
     d = build(now, list(DEFAULT_LOOP))
     assert isinstance(d["outputs"], list) and isinstance(d["weekly"], list) and len(d["loop"]) == 2
+    # 상담 지표(배 12763) — visitor 칸 우선 · 없으면 접두 폴백 · invalid/policy 분모 제외 · handoff 칸 없으면 미답=넘김
+    rows = [{"answered": True}, {"answered": False}, {"answered": True, "outcome": "policy"}, {"answered": True, "handoff": True}]
+    assert counsel_rates(rows) == (round(2 / 3, 3), round(2 / 3, 3)), counsel_rates(rows)
+    assert counsel_rates([]) == (None, None)
+    assert is_customer({"visitor": "customer", "session_id": "test-x"}) and not is_customer({"visitor": "test"})
+    assert not is_customer({"session_id": "cbo-test-1"}) and not is_customer({"is_test": True}) and is_customer({"session_id": "audit-lab"})
+    lines = [json.dumps({"tenant": "2_dietcamp", "ts": "2026-09-16T10:00:00", "answered": False}),
+             json.dumps({"tenant": "2_dietcamp", "ts": "2026-09-16T11:00:00", "answered": True, "session_id": "test-1"})]
+    cr = counsel_rows_from(lines, starts)
+    assert len(cr[(week_key(this_start), "dc")]) == 1 and counsel_rates(cr[(week_key(this_start), "dc")]) == (0.0, 1.0)
     print("labs_loop selfcheck 통과")
 
 

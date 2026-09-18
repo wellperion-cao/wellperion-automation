@@ -6,10 +6,11 @@
 모델 0 · 규칙만 · 언제든 재실행(멱등). 카톡 발송·서버 배포는 이 스크립트가 하지 않는다.
 
 흐름
-  ① 수집·가공  status/counsel_questions.jsonl(원장 · counsel_questions.py 가 서버 /log·/unanswered 를 합쳐
+  ① 수집·가공  status/_private/counsel_questions.jsonl(원장 · counsel_questions.py 가 서버 /log·/unanswered 를 합쳐
               쌓은 것 · 예약작업에서 이 스크립트 바로 앞에 돈다 — 서버를 다시 부르지 않는다) 의 질문을
               question_types 에 붙인다(faq_hub.match_type 재사용). 어느 유형에도 안 붙고 2회 이상 나온 질문은
-              새 유형 후보로 server/counselbot/shared/question_candidates.json 에 누적한다(원문·업체·횟수·첫날).
+              새 유형 후보로 server/counselbot/shared/question_candidates.json 에 누적한다(정규화 문장·횟수·센터수·첫날 —
+              공통 학습층이라 손님 원문·센터 id 는 싣지 않는다 · 설계 §12 ② · 배 12763).
               ★후보는 자동 승격하지 않는다 — 시보가 유형(answer_skeleton·needs_facts)을 정해 question_types 에
               넣으면 그 순간 전 업체에 전파된다(②가 매일 전 업체를 대조하므로).
   ② 전파      유형마다 needs_facts 를 3업체 전부에 대조 — api_chat._fact_present 와 같은 규칙(아래 fact_present ·
@@ -86,6 +87,28 @@ def mask(q: str) -> str:
     return _EMAIL.sub("[이메일]", _PHONE.sub("[전화번호]", q or ""))
 
 
+_TAIL_PUNCT = "?？!！.。~ "
+
+
+def norm_q(q: str) -> str:
+    """후보 열쇠 = 마스킹 + 공백 정리 + 끝 문장부호 제거(「지금 영업해요?」·「지금 영업해요」 = 한 후보). 원문은 원장에만."""
+    return " ".join(mask(q or "").split()).rstrip(_TAIL_PUNCT)
+
+
+def _migrate_candidates(items: dict) -> dict:
+    """옛 규격(원문 열쇠 · 업체 목록) → 새 규격(정규화 열쇠 · 센터수). 한 번 지나면 그대로."""
+    out: dict = {}
+    for q, c in items.items():
+        k = norm_q(q)
+        n = c.get("센터수") or len(c.get("업체") or [])
+        cur = out.get(k) or {"질문": k, "횟수": 0, "센터수": 0, "첫날": c.get("첫날") or ""}
+        cur["횟수"] = max(cur["횟수"], c.get("횟수") or 0)
+        cur["센터수"] = max(cur["센터수"], n)
+        cur["첫날"] = min(cur["첫날"] or c.get("첫날") or "", c.get("첫날") or cur["첫날"])
+        out[k] = cur
+    return out
+
+
 # ── ② api_chat._fact_present 와 같은 규칙(서버 코드는 import 하지 않는다 · --self-test 가 동일함을 보인다) ──
 def fact_present(prof: dict, path: str) -> bool:
     if "[topic=" in path:
@@ -131,7 +154,7 @@ def collect_candidates(rows: list, types: list, cands: dict) -> tuple[dict, dict
     for r in rows:
         if r.get("is_test") or not r.get("q"):
             continue
-        q = mask(r["q"].strip())
+        q = norm_q(r["q"])
         tid = r.get("type_id") or match_type({"q": q}, types)
         if tid:
             typed.setdefault(r["tenant"], set()).add(tid)
@@ -140,17 +163,17 @@ def collect_candidates(rows: list, types: list, cands: dict) -> tuple[dict, dict
         c["업체"].add(r["tenant"])
         c["횟수"] += 1
         c["첫날"] = min(c["첫날"], (r.get("ts") or "")[:10]) or c["첫날"]
-    items = cands.setdefault("candidates", {})
+    items = cands["candidates"] = _migrate_candidates(cands.get("candidates") or {})
     for q, c in seen.items():
         if c["횟수"] < 2:
             continue
-        cur = items.get(q) or {"질문": q, "업체": [], "횟수": 0, "첫날": c["첫날"]}
-        cur["업체"] = sorted(set(cur["업체"]) | c["업체"])
+        cur = items.get(q) or {"질문": q, "횟수": 0, "센터수": 0, "첫날": c["첫날"]}
+        cur["센터수"] = max(cur["센터수"], len(c["업체"]))   # 어느 센터인지는 원장에서 되짚는다(공통층에 센터 id 금지)
         cur["횟수"] = max(cur["횟수"], c["횟수"])   # 원장은 누적이라 같은 줄을 다시 센다 — 큰 쪽이 진짜
         cur["첫날"] = min(cur["첫날"], c["첫날"])
         items[q] = cur
     cands["_rule"] = ("후보는 자동 승격하지 않는다. 시보가 유형(answer_skeleton·needs_facts)을 정해 "
-                      "question_types.json 에 넣으면 그 순간 전 업체에 전파된다. 개인정보는 마스킹 유지.")
+                      "question_types.json 에 넣으면 그 순간 전 업체에 전파된다. 정규화 문장·횟수·센터수만 — 손님 원문·센터 id 는 여기 없다(설계 §12 ②).")
     cands["updated"] = today()
     return cands, typed
 
@@ -367,7 +390,10 @@ def self_test() -> None:
     qa_by = {"t1": [{"q_id": "E-1", "partner_no": 3, "answer": None, "asked_on": "2026-09-10"}], "t2": []}
     cands, pend, learn, qa_by = run(rows, types, bank, profiles, qa_by, {}, {}, {"t1": {"covered": {"parking": ["f1"]}}})
     assert list(cands["candidates"]) == ["달나라 가나요"], cands           # 2회·두 업체 → 후보 · 1회짜리는 아님
-    assert cands["candidates"]["달나라 가나요"]["업체"] == ["t1", "t2"]
+    assert cands["candidates"]["달나라 가나요"]["센터수"] == 2 and "업체" not in cands["candidates"]["달나라 가나요"]
+    assert norm_q("지금 영업해요?  ") == "지금 영업해요" and norm_q("010-1234-5678 로요") == "[전화번호] 로요"
+    old = {"영업해요?": {"질문": "영업해요?", "업체": ["a", "b"], "횟수": 3, "첫날": "2026-09-05"}}
+    assert _migrate_candidates(old) == {"영업해요": {"질문": "영업해요", "횟수": 3, "센터수": 2, "첫날": "2026-09-05"}}
     assert cands["candidates"]["달나라 가나요"]["첫날"] == "2026-09-01"
     assert [r["q_id"] for r in qa_by["t1"]] == ["E-1"], qa_by["t1"]         # 이미 있는 번호는 다시 안 넣는다(답 없어도)
     assert [r["q_id"] for r in qa_by["t2"]] == ["A-1"] and qa_by["t2"][0]["partner_no"] == 1

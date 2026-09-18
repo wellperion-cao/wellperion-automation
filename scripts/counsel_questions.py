@@ -16,7 +16,9 @@ GM 지시 2026-09-11: 「erp.wellperion.com/counsel/ 여기에 질문하는 것�
   3) GET /api/chat/{tenant}/stats    — 집계값(총계·답변율·많이 물은 미답)
 
 쌓는 곳(둘 다 저장소 · 언제든 다시 만들 수 있는 것은 만들지 않는다):
-  status/counsel_questions.jsonl        원장 — 질문 한 줄씩, 합집합으로만 더한다(삭제 0)
+  status/_private/counsel_questions.jsonl 원장 — 질문 한 줄씩, 합집합으로만 더한다(삭제 0)
+      ★손님 문장 원문(전화만 가림)이라 공개 저장소 밖(.gitignore status/_private/)에 둔다(배 12763 · 2026-09-18).
+      화면·집계는 아래 가공본만 읽는다.
   status/counsel_questions_summary.json 가공 — 센터별 집계·유형별·많이 물은 것·날짜별
 
 쓰는 법:
@@ -34,7 +36,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LEDGER = ROOT / "status" / "counsel_questions.jsonl"
+LEDGER = ROOT / "status" / "_private" / "counsel_questions.jsonl"   # 공개 저장소 밖(배 12763)
 SUMMARY = ROOT / "status" / "counsel_questions_summary.json"
 TENANTS_FILE = ROOT / "3. 웰페리온 가이드" / "cbo" / "counsel_tenants.json"
 KST = timezone(timedelta(hours=9))
@@ -174,7 +176,7 @@ def summarize(stats: dict | None = None) -> dict:
         }
     out = {
         "_about": ("상담봇에 손님이 던진 질문 가공본 — scripts/counsel_questions.py 가 만든다. "
-                   "손으로 고치지 않는다(언제든 재생성). 원장 = status/counsel_questions.jsonl"),
+                   "손으로 고치지 않는다(언제든 재생성). 원장 = status/_private/counsel_questions.jsonl(비공개)"),
         "_caveat": ("전량 통로(GET /log)가 2026-09-11 19:51 에 열려 답한 질문까지 들어온다. "
                     "다만 답 본문(a)은 그 시각 이후 답부터 찍힌다 — 그 전 행은 질문만 있다(소급 불가). "
                     "원장 줄 수가 「서버_집계」보다 클 수 있다: 원장은 지우지 않으므로 서버 로그가 "
