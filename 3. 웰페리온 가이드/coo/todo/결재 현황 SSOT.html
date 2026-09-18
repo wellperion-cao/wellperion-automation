@@ -509,7 +509,15 @@ const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNc
 // 2026-09-14 서버 읽기 전환(GM 지시 · 나우열M 「진행」 13:53) · 서버 249건=구글 249건 대조 완료 · 되돌리기 = false
 var ERP_API_ON = true;
 
+// 업무 현황 SSOT와 같은 이름·같은 순서(9-17 개편 10분류) — 필터·정렬·그룹 순서 기준(GM 지시 2026-09-18).
+const CATEGORIES = [
+  '[1] 마케팅','[2] 매출 및 영업','[3] 인사&파트너팀','[4] 운영 정책',
+  '[5] 시설 및 환경','[6] 회원·CS','[7] IT·시스템·자동화','[8] 교육·조직문화','[9] 회의',
+  '[10] 비즈니스 확장'
+];
+
 const CAT_COLORS = {
+  '[1] 마케팅':        {bg:'var(--accent-bg)', color:'var(--text)'},
   '[2] 매출 및 영업':  {bg:'var(--blue-bg)',   color:'var(--blue)'},
   '[3] 인사&파트너팀':      {bg:'var(--purple-bg)', color:'var(--purple)'},
   '[4] 운영 정책':    {bg:'var(--accent-bg)', color:'var(--accent)'},
@@ -517,7 +525,16 @@ const CAT_COLORS = {
   '[6] 회원·CS':       {bg:'var(--red-bg)',    color:'var(--red)'},
   '[7] IT·시스템·자동화':{bg:'var(--blue-bg)',  color:'var(--blue)'},
   '[8] 교육·조직문화': {bg:'var(--yellow-bg)', color:'var(--yellow)'},
-  '[9] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'}
+  '[9] 회의':          {bg:'var(--orange-bg)', color:'var(--orange)'},
+  '[10] 비즈니스 확장': {bg:'var(--accent-bg)', color:'var(--text)'}
+};
+
+// 옛 카테고리 이름 → 새 이름(업무 현황 SSOT CAT_ALIAS와 동일, 2026-09-17 개편). 원장에 옛 값이 남아 있어도 흡수.
+const CAT_ALIAS = {
+  '[1] 매출 및 영업': '[2] 매출 및 영업',
+  '[2] 인사': '[3] 인사&파트너팀',
+  '[3] 파트너팀': '[3] 인사&파트너팀',
+  '[10] 마케팅': '[1] 마케팅'
 };
 
 /* 카테고리 → 부서장 매핑 (결재선 1단계 자동 복원, 2026-06-10 GM 확정 9분류).
@@ -662,6 +679,7 @@ function normalizeTask(r) {
   t.id = r.id;
   t.title = r['업무명'] || r.title || '';
   t.category = r['카테고리'] || r.category || '';
+  if (CAT_ALIAS[t.category]) t.category = CAT_ALIAS[t.category];
   t.owner = r['담당자'] || r.owner || '';
   t.content = r['내용'] || r.content || '';
   t.startDate = r['시작일'] || r.startDate || '';
@@ -763,10 +781,11 @@ function render() {
     else if (nxt && nxt in pendingByRole) pendingByRole[nxt]++;
   });
 
-  // 카테고리 목록 (실측)
+  // 카테고리 목록 (실측 건수 + CATEGORIES 순서 — 업무 현황 SSOT와 동일 순서, GM 지시 2026-09-18)
   const catSet = {};
   approvalTasks.forEach(t => { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
-  const catList = Object.keys(catSet).sort();
+  const catList = CATEGORIES.filter(c => catSet[c])
+    .concat(Object.keys(catSet).filter(c => CATEGORIES.indexOf(c) < 0).sort());
 
   // [결재-1] 담당자(결재자) 버튼 + 정렬 드롭다운·대시보드·인쇄 툴바 — 한 줄 (2026-07-18 GM 피드백:
   // 별도 줄로 내려가 있던 툴바를 담당자 필터와 같은 줄로 복원 — 업무현황 SSOT ownerFilters와 동일 배치)
@@ -894,7 +913,8 @@ function render() {
     };
     list.sort((a, b) => stRank(a) - stRank(b) || String(a.title).localeCompare(String(b.title)));
   } else if (activeSortBy === '카테고리') {
-    list.sort((a, b) => String(a.category || '').localeCompare(String(b.category || '')) || String(a.title).localeCompare(String(b.title)));
+    const catRank = c => { const i = CATEGORIES.indexOf(c || ''); return i < 0 ? 999 : i; };
+    list.sort((a, b) => catRank(a.category) - catRank(b.category) || String(a.title).localeCompare(String(b.title)));
   } else if (activeSortBy === '시작일순') {
     list.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
   } else {
@@ -2165,7 +2185,8 @@ function renderApprovalDashboard() {
   var catBarColors = ['blue','purple','accent','green','yellow','red'];
   var catSet = {};
   all.forEach(function(t) { if (t.category) catSet[t.category] = (catSet[t.category]||0) + 1; });
-  var catList = Object.keys(catSet).sort();
+  var catList = CATEGORIES.filter(function(c){ return catSet[c]; })
+    .concat(Object.keys(catSet).filter(function(c){ return CATEGORIES.indexOf(c) < 0; }).sort());
   h += '<table class="dash-table"><tr><th>카테고리</th><th>건수</th><th>비율</th><th style="min-width:120px">분포</th></tr>';
   catList.forEach(function(cat, ci) {
     var count = catSet[cat];
