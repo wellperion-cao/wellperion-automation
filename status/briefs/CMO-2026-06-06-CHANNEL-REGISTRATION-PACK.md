@@ -45,6 +45,7 @@
 ---
 
 ## 2. 구글 비즈니스 프로필 — 2순위 (외국인·지도 검색)
+> → 최신 입력표: `status/briefs/CMO-구글비즈니스-입력표-20260918.md` (아래 문구는 폐기값 「프리미엄 라이프스타일 클럽」이 남아 있다 — 새로 쓰지 않는다)
 
 **Business name:** Wellperion
 **Category:** Sports Club (보조: Swimming, Pilates, Squash, Golf, Spa)
