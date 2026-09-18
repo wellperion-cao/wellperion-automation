@@ -373,7 +373,7 @@
 <link rel="stylesheet" href="assets/wp-typography.css">
 <link rel="stylesheet" href="assets/wp-ui.css">
 <link rel="stylesheet" href="erp/brand/tenant-wellperion.css">
-<!-- 끼움 모드(?embed=1) — AX 랩스 관리 오른쪽 화면에 G1(김남욱 GM 전용)만 띄운다(GM 2026-09-15 「랩스 우측에 · 링크 과정 없애고 · ERP 홈으로 가는 건 아니다」).
+<!-- 끼움 모드(?embed=1) — AX 랩스 관리 오른쪽 화면에 해시가 가리키는 문서(G1 기본 · AXC = 콘텐츠 제작·검수·발행(AX 랩스) · GM 2026-09-18)만 띄운다(GM 2026-09-15 「랩스 우측에 · 링크 과정 없애고 · ERP 홈으로 가는 건 아니다」).
      왼쪽 메뉴·머리 여백을 감추고, erp.wellperion.com(로그인 관문 뒤)에서만 G1 비밀번호 커튼을 건너뛴다 — 공개 Pages 에서는 커튼 그대로. -->
 <style>
   html.embed .sidebar{display:none!important;}
@@ -381,12 +381,14 @@
   html.embed.embed-unlock #gm1-lock{display:none!important;}
   html.embed.embed-unlock #gm1-content{display:block!important;}
   html.embed #home{display:none!important;}          /* 홈이 먼저 번쩍이지 않게 — G1 만 바로(GM 2026-09-15 「home 화면 떴다가 넘어가는데?」) */
-  html.embed #G1{display:block!important;}
+  html.embed[data-embed-doc="G1"] #G1{display:block!important;}
+  html.embed[data-embed-doc="AXC"] #AXC{display:block!important;}
 </style>
 <script>
 (function(){
   if(!/[?&]embed=1(&|$)/.test(location.search)) return;
   var h=document.documentElement; h.classList.add('embed');
+  h.setAttribute('data-embed-doc', (location.hash||'#G1').replace('#','') || 'G1');
   if(location.hostname==='erp.wellperion.com'||location.hostname==='127.0.0.1'){ h.classList.add('embed-unlock'); try{ sessionStorage.setItem('gm1_auth','1'); }catch(e){} }
 })();
 </script>
@@ -411,23 +413,14 @@
     <a data-id="S3"><span class="num">📝</span><span class="label">업무&결재 현황 SSOT</span></a>
   </nav>
 
-  <!-- [2026-09-11 GM 지시] 메뉴 이름을 AI 직책(AI CMO 마케팅 …)에서 업무영역(1. 마케팅 관리 …)으로 바꿨다.
-       실무진은 자기 일 이름으로 찾지, 담당 AI 이름으로 찾지 않는다. 순서도 GM이 준 1~5 그대로다.
-       1 마케팅 관리 안에 회사소개·전략 로드맵·브랜드 가이드·콘텐츠 접수·콘텐츠 제작·문의 폼까지 모았다 —
-       [정정 2026-09-15 · GM 재지시] 위 줄은 옛 사본이 되살린 설명이다 — 지금은 브랜드 가이드 · 마케팅 자동업로드 ·
-       콘텐츠 제작·검수·발행 · 문의 폼 네 칸이고, 회사소개·전략 로드맵은 「시작하기」 홈 아래(문서 M0)다.
-       회사소개·전략 로드맵은 위 「시작하기」 홈 아래(문서 M0).
-       「어떤 하루」(개인 계정 기록)는 파트너사 것이 아니라 ERP 플랫폼 것이라 여기서 뺐다. -->
   <div class="nav-label">웰페리온 운영</div>
   <nav class="nav">
+    <!-- GM 2026-09-18 12:41: M1 = 자동업로드·문의 폼·상담봇 세 칸 · 콘텐츠 제작·검수·발행은 AX 랩스(문서 AXC) · 브랜드 가이드는 M0 아래 -->
     <a data-toggle="cmo-nav2" data-id="M1" data-has-sub="true"><span class="num">1</span><span class="label">마케팅 관리<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cmo-nav2">
-      <a href="cmo/brand/브랜드가이드.html" target="_blank">🎨 브랜드 가이드</a>
-      <a href="cmo/upload/마케팅자동업로드.html" target="_blank">🎬 마케팅 자동업로드</a>
-      <a data-id="M1">📂 콘텐츠 제작 · 검수·발행</a>
-      <!-- 문의 폼 = 손님이 실제로 보는 문의 화면. cmo/survey/wp_inquiry_form.html 은 워드프레스에
-           심는 조각이라 그것만 열면 「문의 유형을 문의 페이지에서 선택해 주세요」 한 줄만 뜬다. -->
+      <a href="cmo/upload/마케팅자동업로드.html?tenant=wellperion" target="_blank">🎬 마케팅 자동업로드</a>
       <a href="public/ko/inquiry.html" target="_blank">📝 문의 폼</a>
+      <a href="counsel/index.html" target="_blank">🤖 상담봇</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-id="P1" data-has-sub="true"><span class="num">2</span><span class="label">회원 관리<span class="tag">임정은M</span></span></a>
@@ -1707,6 +1700,8 @@
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a href="회사문서/웰페리온_회사소개서_통합.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7EBE9;color:#201F1D;box-shadow:0 2px 10px rgba(237,91,63,0.34);">📘 회사소개서 v2.2</a>
         <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:var(--accent-bg);color:#221F20;border:1px solid rgba(183,159,138,0.34);">🗺️ 전략 로드맵</a>
+        <!-- GM 2026-09-18 12:41: 브랜드 가이드는 회사소개·전략 로드맵 아래(M1 에서 이관) -->
+        <a href="cmo/brand/브랜드가이드.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🎨 브랜드 가이드</a>
         <a href="cmo/home/홈페이지_파생초안.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🏠 공개 홈페이지 <span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">초안</span></a>
       </div>
 
@@ -1976,7 +1971,18 @@
   <!-- ── /웰페리온 대시보드 ── -->
 
   <article class="doc" id="M1">
-    <div class="doc-header"><h2><span class="g-id">M1</span>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
+    <div class="doc-header"><h2><span class="g-id">M1</span>마케팅 관리</h2><div class="meta">웰페리온 센터의 마케팅 발행 · 고객 문의 · 상담봇을 한 곳에서</div></div>
+    <p class="lead">이 모듈은 <strong>웰페리온 센터가 밖으로 말하는 세 통로</strong>를 관리합니다 — 센터 공식 계정으로 콘텐츠를 내보내는 <strong>마케팅 자동업로드</strong>, 손님이 들어오는 <strong>문의 폼</strong>, 손님 질문에 바로 답하는 <strong>상담봇</strong>. 콘텐츠를 만들고 검수·발행하는 제작 라인과 브랜드 가이드는 이 모듈이 아니라 <strong>웰페리온 AX 랩스</strong>와 <strong>회사소개 · 전략 로드맵</strong>에 있습니다.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 24px;">
+      <a href="cmo/upload/마케팅자동업로드.html?tenant=wellperion" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7EBE9;color:#201F1D;box-shadow:0 2px 10px rgba(237,91,63,0.34);">🎬 마케팅 자동업로드<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">센터 공식 계정으로 글·사진을 예약 발행</span></a>
+      <a href="public/ko/inquiry.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:var(--accent-bg);color:#221F20;border:1px solid rgba(183,159,138,0.34);">📝 문의 폼<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">손님이 실제로 보는 문의 화면(회원·강습·시설 문의)</span></a>
+      <a href="counsel/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7F5F3;color:#252321;border:1px solid rgba(183,159,138,0.45);">🤖 상담봇<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">손님 질문에 바로 답 · 답 못 한 질문은 관리자에게</span></a>
+    </div>
+  </article>
+  <!-- ── /M1 마케팅 관리 ── -->
+
+  <article class="doc" id="AXC">
+    <div class="doc-header"><h2><span class="g-id">AXC</span>콘텐츠 제작 프로세스</h2><div class="meta">CMO 운영 SSOT · 제작 프로세스 + 마케팅 자동화 + 문의 Survey</div></div>
 
     <!-- 모듈 소개 — 상세 (2026-07-18 GM: '이 모듈은'부터 자세 설명 · S2 CMO 본인탭 '콘텐츠 허브 모듈' + module_registry.feature와 동기화) -->
     <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
@@ -6065,7 +6071,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           {title:"O-A 리셉션 오픈",items:[
             {id:"oa1",name:"O-A1 PC·전화·POS 전원 점검",detail:"리셉션 PC·전화·POS 정상 부팅 | 당일 예약 일정 확인",gender:"m"},
             {id:"oa2",name:"O-A2 카운터 청결·비품 점검",detail:"카운터 정돈·청결 | 안내물·음료·소모품 보충",gender:"m"},
-            {id:"oa3",name:"O-A3 입구·안내 표지 점검",detail:"입구 안내판·현수막 위치·상태 | 운영시간 표기 정상",gender:"m"}
+            {id:"oa3",name:"O-A3 입구·안내 표지 점검",detail:"입구 안내판·현수막 위치·상태 | 운영시간 표기 정상",gender:"m"},
+            {id:"oa4",name:"O-A4 손소독제·손소독기 점검",detail:"리셉션·사우나 입구·GX·헬스 손소독기 잔량·작동·제자리 확인 | 비었으면 채우고 없어지면 접수처 기록 | 월요일 재고 확인(리셉션·사우나) — 지원부에서 이관 2026-09-18",gender:"m"}
           ]}
         ]},
         {slot:"오전 응대 08:30~13:00",shift:"am",groups:[
@@ -7326,8 +7333,8 @@ function crTab(btn, panelId) {
   const LEGACY_TO_ID = {
     'g9':'M0','S0':'M0','update':'S1','g10':'S2','gcoo-todo':'S3','gcfo-expense':'F1','gchro-rules':'H1',
     'gcoo-check':'O1','ghome':'M1','g14':'M1',   // gcoo-reenroll(O3) 제거 → 아래 외부 이관 리다이렉트로 처리
-    'gcmo-print':'M1','gcmo-funnel':'M2','cmo-publish':'M1','g16':'T1','g19':'T2',
-    'M3':'M1',  // 2026-07-09: M3(검수·발행) → M1로 병합 (죽은 링크 방지 안전망)
+    'gcmo-print':'AXC','gcmo-funnel':'M2','cmo-publish':'AXC','g16':'T1','g19':'T2',
+    'M3':'AXC',  // 2026-07-09: M3(검수·발행) → M1로 병합, 2026-09-18: 콘텐츠 제작·검수·발행은 AXC로 이관(죽은 링크 방지 안전망)
     'g15':'T1','T3':'T1','gm1':'G1','O5':'O1','O4':'O1','O2':'O1'
   };
 
@@ -7342,7 +7349,7 @@ function crTab(btn, panelId) {
   // LEGACY 안전망 — 시모(CMO) M-문서 순차 리넘버(M2→M1·M4→M2·M5→M3, 2026-07-03) 이전
   // 구주소(#M2·#M4·#M5)로 온 외부 북마크·링크를 새 식별자로 재해석. LEGACY_TO_ID와 별도 —
   // 이 표는 "옛 M번호" 자체를 키로 쓰며, applyHashDeepLink에서 대상 문서가 없을 때만 폴백 조회한다.
-  const M_LEGACY = { M2: 'M1', M4: 'M2', M5: 'M1' };
+  const M_LEGACY = { M2: 'M1', M4: 'M2', M5: 'AXC' };
 
   /* H3(휴무·근무 스케줄) iframe = leave.html 로 ERP 관리자 비번 전달 → 자동 통과(비번창 미출현).
      수신측 계약: leave.html window.message 리스너가 {type:"wp-pass", pw} 를 동일오리진에서만 수신해
