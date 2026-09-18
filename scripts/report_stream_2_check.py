@@ -124,6 +124,9 @@ def _issue_block(section_text: str, today: str | None = None) -> str:
         if in_recur and t.startswith("·"):
             picks.append("  " + t)
             continue
+        if in_recur and t.startswith("원인:"):
+            picks.append("     " + t)      # 제목 줄(「  · 」) 아래 3칸 더
+            continue
         in_recur = False
         if t.startswith("⛔"):
             picks.append("▪ " + t.lstrip("⛔ ").strip())
@@ -142,7 +145,7 @@ def _strip_recur_block(section_text: str) -> str:
         if t.startswith("🔁"):
             in_recur = True
             continue
-        if in_recur and t.startswith("·"):
+        if in_recur and t.startswith(("·", "원인:")):
             continue
         in_recur = False
         out.append(ln)

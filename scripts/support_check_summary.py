@@ -370,35 +370,43 @@ def recurring_check_causes(today: str, window: int = 7, threshold: int = 4) -> l
             if x[2]:
                 subs[x[2]] = subs.get(x[2], 0) + 1
         label = f"{_SHIFT_LABEL.get(sh, sh)}({_G_LABEL.get(g, g)})"
+        who = _foreman(g)   # 누가 = 그 조 성별의 반장(정본 ssot/kpi.json) · 실장은 항목 삭제 최종 결정일 때만
         if len(zero) >= len(h) - 1 and zero:
             grouped.setdefault((g, sh), {"items": [], "zero": zero, "days": len(h)})["items"].append(name)
             continue
-        # 제출은 됐는데 이 항목만 빠진 날들로 가른다 — 조 통째 0건 날은 앞에 한 토막으로만 적는다
+        # 제출은 됐는데 이 항목만 빠진 날들로 가른다 — 조 통째 0건 날은 앞에 한 토막으로만 적는다.
+        # 통에 사람 이름은 안 싣는다(표적화 금지) — 누가 제출했는지는 원장 detail 에 그대로 있다.
         pre = f"조 통째 0건 {len(zero)}일({_wd(x[0] for x in zero)}) + " if zero else ""
-        n_sub = len(h) - len(zero)
         if len(subs) >= 2:
-            cause = f"{pre}제출자 {len(subs)}명({'·'.join(subs)}) 모두 이 항목만 안 체크 {n_sub}일"
-            action, who = "항목 마스터(성별·회차) 재검토", "이경연 실장"
+            cause, action = f"{pre}제출자 전원 이 항목만 안 체크", "항목 빼기/요일 조정"
         elif len(subs) == 1:
-            s = next(iter(subs))
             ats = sorted(x[3] for x in h if x[3])
-            cause = f"{pre}{s} 제출({ats[0]}~{ats[-1]}) 뒤 이 항목만 누락 {n_sub}일" if ats else f"{pre}{s} 제출 뒤 이 항목만 누락 {n_sub}일"
-            action, who = "제출 전 이 항목 확인", s
+            cause = f"{pre}제출({ats[0]}~{ats[-1]}) 뒤 이 항목만 누락" if ats else f"{pre}제출 뒤 이 항목만 누락"
+            action = "제출 전 이 항목 확인"
         else:   # 제출자 이름이 없는 날만 남음(체크는 있고 도장이 없는 꼴) — 사실만 적는다
-            cause = f"{pre}제출 도장 없이 체크만 있는 날 {n_sub}일"
-            action, who = "조 [제출]까지 누르기", duty.get((g, sh)) or "이경연 실장"
-        rows.append({"key": f"{name}|{g}|{sh}", "label": f"'{name}' {label}", "days": len(h),
-                     "n_days": len(recs), "cause": cause, "action": action, "who": who, "items": 1})
+            cause, action = f"{pre}제출 도장 없이 체크만 있음", "조 [제출]까지 누르기"
+        rows.append({"key": f"{name}|{g}|{sh}", "label": f"{name} — {label} {len(recs)}일 중 {len(h)}일 미체크",
+                     "days": len(h), "n_days": len(recs), "cause": cause, "action": action, "who": who, "items": 1})
     for (g, sh), grp in grouped.items():
         label = f"{_SHIFT_LABEL.get(sh, sh)}({_G_LABEL.get(g, g)})"
         zero_days = sorted({x[0] for x in grp["zero"]})
-        rows.append({"key": f"조통째|{g}|{sh}", "label": f"{label} {len(grp['items'])}항목",
+        rows.append({"key": f"조통째|{g}|{sh}",
+                     "label": f"{label} {len(grp['items'])}항목 — {len(recs)}일 중 {len(zero_days)}일 조 통째 0건",
                      "days": grp["days"], "n_days": len(recs),
-                     "cause": f"그 조 자체가 {len(zero_days)}일 제출 0건({_wd(zero_days)})",
-                     "action": "그 날 대체 제출자 정하기", "who": duty.get((g, sh)) or "이경연 실장",
+                     "cause": f"그 날 조를 돌 사람이 없음({_wd(zero_days)})",
+                     "action": "그 날 대체 제출자 정하기", "who": _foreman(g),
                      "items": len(grp["items"])})
     rows.sort(key=lambda r: (-r["items"], -r["days"], r["label"]))
     return rows
+
+
+def _foreman(g: str) -> str:
+    """지원부 반장 — 정본 ssot/kpi.json _부서반장_2026_08_26 (이름을 코드에 복제하지 않는다 · 약속 L01)."""
+    try:
+        depts = json.loads((Path(_scr_dir).parent / "ssot" / "kpi.json").read_text(encoding="utf-8"))["_부서반장_2026_08_26"]["depts"]
+        return str(depts.get("지원부(여)" if g == "f" else "지원부(남)") or depts.get("지원부") or "지원부 반장")
+    except Exception:
+        return "지원부 반장"
 
 
 # ── 반복 이슈 이월 원장 — ★운영+시설+지원+주차 방 원장(_digest_ledger.json)에 #번호 등록 (배 12760 ③ 「해결까지」) ──
@@ -502,11 +510,12 @@ def recurring_issue_lines(today: str, max_items: int = 6) -> list[str]:
         _sync_recurring_ledger(today, rows)
     n_items = sum(r["items"] for r in rows)
     lines = [f"  🔁 반복 이슈 {n_items}항목 — 「#번호 했다」로 답해 주시면 닫힙니다"]
+    # 항목당 두 줄(카톡 가독 규칙 · 한 줄 60자) — 제목 줄 + 들여쓰기한 원인 줄. 이름 뒤 「님」은 발신 관문이 붙인다.
     for r in rows[:max_items]:
         no = f"#{r['no']} " if isinstance(r.get("no"), int) else ""
         tag = " (회신 받음 · 재확인 중)" if r.get("replied") else ""
-        lines.append(f"    · {no}{r['label']} {r['n_days']}일 중 {r['days']}일 — 원인: {r['cause']}"
-                     f" → 조치: {r['action']} → 누가: {r['who']}{tag}")
+        lines.append(f"    · {no}{r['label']}{tag}")
+        lines.append(f"      원인: {r['cause']} → 조치: {r['action']} → {r['who']}")
     if len(rows) > max_items:
         lines.append(f"    · 외 {len(rows) - max_items}줄")
     return lines
@@ -1127,11 +1136,13 @@ def _selfcheck() -> None:
                 rows = {r["key"]: r for r in recurring_check_causes("2026-09-07")}
             finally:
                 globals()["_backfill_detail"] = _bf
-            assert rows["조통째|m|close"]["items"] == 2 and "6일 제출 0건" in rows["조통째|m|close"]["cause"], rows
-            assert rows["조통째|m|close"]["who"] == "운영부"
-            assert rows["G-2 소독|m|am"]["action"] == "항목 마스터(성별·회차) 재검토", rows["G-2 소독|m|am"]
-            assert rows["D-1 헬스장|f|am"]["who"] == "여주임" and "10:30" not in rows["D-1 헬스장|f|am"]["cause"]
+            assert rows["조통째|m|close"]["items"] == 2 and "6일 조 통째 0건" in rows["조통째|m|close"]["label"], rows
+            assert rows["조통째|m|close"]["who"] == _foreman("m")
+            assert rows["G-2 소독|m|am"]["action"] == "항목 빼기/요일 조정", rows["G-2 소독|m|am"]
+            assert "박" not in rows["G-2 소독|m|am"]["cause"], "통에 제출자 이름 금지"
+            assert rows["D-1 헬스장|f|am"]["who"] == _foreman("f") and "여주임" not in rows["D-1 헬스장|f|am"]["cause"]
             assert "11:30~11:30" in rows["D-1 헬스장|f|am"]["cause"]
+            assert all(len(ln) <= 90 for ln in recurring_issue_lines("2026-09-07")[1:]), "두 줄 규칙"
         finally:
             CHECK_INCOMPLETE_LEDGER = orig
     print("[selfcheck] support_check_summary OK — hhmm·독려 남/여 분리·반복 원인 3갈래")
