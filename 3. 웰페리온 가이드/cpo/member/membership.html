@@ -4313,6 +4313,7 @@ function openStatusOnepager(){
    비밀번호 화면이 새로고침을 하는데 # 뒤는 살아남으므로, 입장한 뒤에 열린다. */
 window.addEventListener('load', function(){
   if (location.hash === '#onepager') setTimeout(openStatusOnepager, 300);
+  if (location.hash === '#hold') setTimeout(openHoldManage, 300);   // 종합접수처 휴회 카드 → 휴회 회원 관리 바로 열기(시우 요청 2026-09-18 · FB260917-182605)
 });
 function closeStatusOnepager(){
   var ov = document.getElementById('opOverlay');
