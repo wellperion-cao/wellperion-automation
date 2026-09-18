@@ -375,6 +375,17 @@ def _log(tenant: str, q: str, answered: bool, faq_id, type_id: str = None, needs
         pass  # ponytail: 로그 실패가 고객 답변을 막으면 안 된다
 
 
+def _decode_body(raw: bytes) -> str:
+    """요청 본문 글자 해석 — UTF-8 이 정본. UTF-8 로 안 읽히면 CP949(Windows 콘솔 curl -d 인라인 한글)로 한 번 더.
+    2026-09-18 시모 실측(고척 · 6문 전부): CP949 바이트를 utf-8 'replace' 로 풀어 「할인 있어요」가 '���� �־��' 로
+    들어갔고 — 금지어 관문·유형 매칭이 「할인」을 못 봐 모델이 뭉개진 질문에 주차·운영시간을 지어 답했다(answered=true).
+    원인 = 매칭이 아니라 글자 해석. 정상 UTF-8 클라이언트(위젯·python)는 첫 줄에서 끝나 종전과 같다."""
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp949", "replace")
+
+
 @router.options("/{tenant}")
 def preflight(tenant: str):
     return Response(status_code=204, headers=CORS)
@@ -385,7 +396,7 @@ async def chat(tenant: str, request: Request):
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     try:
-        body = json.loads((await request.body()).decode("utf-8", "replace") or "{}")
+        body = json.loads(_decode_body(await request.body()) or "{}")
     except json.JSONDecodeError:
         body = {}
     # 질문 키는 q 가 정본. message·question 도 받는다(2026-09-15 실측: 검수 POST 5건이 "message" 로 와서
@@ -610,7 +621,7 @@ async def edit_faq(tenant: str, request: Request):
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     try:
-        body = json.loads((await request.body()).decode("utf-8", "replace") or "{}")
+        body = json.loads(_decode_body(await request.body()) or "{}")
     except json.JSONDecodeError:
         raise HTTPException(400, "잘못된 JSON")
     data = _load_faq(tenant)
@@ -754,7 +765,7 @@ async def feedback(tenant: str, request: Request):
     if tenant not in TENANTS:
         raise HTTPException(404, "모르는 센터: %s" % tenant)
     try:
-        body = json.loads((await request.body()).decode("utf-8", "replace") or "{}")
+        body = json.loads(_decode_body(await request.body()) or "{}")
     except json.JSONDecodeError:
         body = {}
     vote = str((body or {}).get("vote") or "").strip()
@@ -1312,6 +1323,10 @@ def _selfcheck() -> None:
     assert _is_test_session("sito-check-1") is True
     assert _is_test_session("live-uuid-1234") is False
     assert _is_test_session(None) is False
+    # 2026-09-18 시모 실측 — Windows curl 이 CP949 로 보낸 「할인 있어요」가 글자 깨진 채 모델로 가 주차 답이 나갔다.
+    assert _decode_body("할인 있어요".encode("cp949")) == "할인 있어요"
+    assert _decode_body("할인 있어요".encode("utf-8")) == "할인 있어요"
+    assert _forbidden_hit(json.loads(_decode_body('{"q":"레슨 패키지 할인 있나요"}'.encode("cp949")))["q"], "3_gocheokgolf") is True
     print("api_chat selfcheck ok")
 
 
