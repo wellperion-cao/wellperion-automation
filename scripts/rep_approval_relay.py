@@ -697,11 +697,15 @@ def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
     notified = load_notified("notified_direct")
     if not notified:
         # 첫 실행 = 기준선만(①/⑥ 축과 같은 자리) — 옛 결재완료 건이 한꺼번에 쏟아지지 않게.
+        # 단, 최근 2일 안에 서명된 행은 seed 에서 뺀다 — 첫 실행이 방금 결재된 건까지
+        # 조용히 삼켜 통보가 안 나가는 사고를 막는다(2026-09-18 5건 미통보 실사고).
         seed_today = datetime.now().strftime("%Y-%m-%d")
+        cutoff = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
         notified = {str(r.get("id")).strip(): f"seed-{seed_today}"
-                   for r in rows if is_signed(r) or is_signed(r, "GM싸인")}
-        _save_notified("notified_direct", notified, f"직접안내 축 기준선 {len(notified)}건(seed · 전달 안 함)")
-        print(f"[approval-done] 첫 실행 — 기존 {len(notified)}건 seed, 이번 회차 없음")
+                   for r in rows if (is_signed(r) or is_signed(r, "GM싸인"))
+                   and _kst_day(r.get("수정일")) < cutoff}
+        _save_notified("notified_direct", notified, f"직접안내 축 기준선 {len(notified)}건(seed · 최근 2일 서명 제외 · 전달 안 함)")
+        print(f"[approval-done] 첫 실행 — 기존 {len(notified)}건 seed(최근 2일 서명 제외), 이번 회차는 다음 회차로")
         return 0
     picked = pick_approval_done(rows, notified)
     by_route: dict[tuple[str, str], list[dict]] = {}
