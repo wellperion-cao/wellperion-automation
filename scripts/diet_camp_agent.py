@@ -476,7 +476,9 @@ def evening_facts(conf: dict, today: str) -> dict:
     runs = partner_blog_daily.load_state(style).get("runs", [])
     ok_today = [x for x in runs if x.get("result") == "ok" and str(x.get("date", "")).startswith(today)]
     best = next((x for x in reversed(ok_today) if x.get("url")), ok_today[-1] if ok_today else {})   # 발행된 것 우선
-    out["blog_title"], out["blog_url"] = best.get("topic", ""), best.get("url", "")
+    topic = best.get("topic", "")
+    out["blog_title"] = partner_blog_daily.make_title(topic, partner_blog_daily.rules()["exposure"]["title_max"]) if style.get("seo") else topic   # 라이브 글 제목과 같게(30자 규칙)
+    out["blog_url"] = best.get("url", "")
     tenant, _, floor = labs_waiting.TENANTS[key]
     qa = labs_waiting._load(REPO_ROOT / "server" / "counselbot" / "tenants" / f"{tenant}_qa.json", [])
     rows = [x for x in qa if (x.get("partner_no") or 0) >= floor and x.get("asked_on")]
@@ -501,7 +503,7 @@ def evening_body(conf: dict, f: dict) -> str | None:
     if "계정 자리 없음" in ln:
         did.append("▪ 인스타그램 자동 게시를 시작하려면 인스타 아이디·비밀번호를 김남욱 GM님께 카톡으로 한 번만 보내 주세요 — 저희 서버 금고(코드가 있어야 보이는 자리)에만 넣고 다른 곳엔 남기지 않습니다.")
     elif "앱 승인" in ln:
-        did.append("▪ 인스타 자동 게시를 시작하려면 내일 06:30 에 인스타 앱 알림에서 로그인 승인만 눌러 주세요(문자 인증번호가 오면 그 숫자를 톡으로)")
+        did.append("▪ 인스타 자동 게시를 시작하려면 내일 아침 6시 30분쯤 인스타그램 앱 알림이 오면 「승인」 한 번만 눌러 주세요(문자 인증번호가 오면 그 숫자를 톡으로)")
     if not did:
         return None
     if f["open_n"]:
@@ -809,7 +811,7 @@ def _selfcheck() -> None:
     assert evening_body(conf, {**f, "ig_url": "", "blog_title": "", "blog_url": "", "answered": []}) is None, "한 일 없는 날은 0통"
     assert "설문" not in evening_body(conf, {**f, "open_n": 0})
     lw = evening_body(conf, {**f, "ig_url": "", "login_needed": "2026-09-18 06:40 앱 승인 대기(06:30 재시도)"})
-    assert "인스타 앱 알림에서 로그인 승인" in lw and len(lw.splitlines()) <= MAX_LINES, lw
+    assert "내일 아침 6시 30분쯤 인스타그램 앱 알림이 오면 「승인」 한 번만" in lw and len(lw.splitlines()) <= MAX_LINES, lw
     assert "승인" not in evening_body(conf, {**f, "login_needed": ""}), "세션이 서면 안내 줄이 사라진다"
     acc = evening_body(conf, {**f, "ig_url": "", "login_needed": "계정 자리 없음(1531 · x/instagram) 앱 승인"})
     assert "아이디·비밀번호를 김남욱 GM님께" in acc and "앱 알림" not in acc and len(acc.splitlines()) <= MAX_LINES, acc   # 계정 없음이 우선 · 둘 중 하나만
