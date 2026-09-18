@@ -181,17 +181,21 @@ def _load_shared(name: str) -> dict:
 def _lang_rule_text() -> str:
     """손님 언어로 답하는 규칙 한 줄(배 12816 · 종전 「영어면 영어로, 한국어면 한국어로」 1차 한/영 폐지).
     목록은 assistant_langs.json 그대로 — 코드에 이름을 박지 않는다. 파일이 없으면(폴백) 목록 없이 규칙만.
-    "인사말도 포함"을 박은 이유 — 라이브 실측(배 12816②): 영어 질문에 첫 문장(인사)만 한국어로 나가고
-    나머지만 영어인 답이 나왔다. 정본·FAQ 가 한국어라 모델이 인사 문장만은 그 톤을 그대로 베낀 것으로 보인다."""
+    "자기소개까지" 를 박은 이유 — 라이브 실측 2회(배 12816②③): 1차 수정 후에도 영어 새 세션 첫 턴에서
+    "안녕하세요, Wellperion 멤버십 상담실입니다" 처럼 인사·자기소개 문장이 한국어 문법·조사 그대로 나가고
+    회사명만 로마자로 바뀌었다 — "%s 상담원입니다" 프롬프트 문장(name 변수) 자체가 한국어라 모델이 그
+    문장 구조를 그대로 베낀 것으로 보인다. 낱말 치환이 아니라 "문장 전체를 그 언어 문법으로 새로 짓는다"
+    를 명시해야 한다."""
     try:
         langs = json.loads(Path(ASSISTANT_LANGS_PATH).read_text(encoding="utf-8")).get("langs", [])
     except (OSError, json.JSONDecodeError):
         langs = []
     names = [l.get("name_ko") for l in langs if l.get("name_ko")]
+    tail = ("질문에 사용된 언어로 답하세요 — 인사·자기소개를 포함해 답변 전체를 그 언어의 문법으로 새로 "
+            "짓습니다(한국어 낱말·조사·문장구조를 그대로 옮겨 쓰지 않습니다).")
     if not names:
-        return "질문에 사용된 언어로 답하세요(첫 인사말도 예외 없이 그 언어로)."
-    return ("질문에 사용된 언어로 답하세요(첫 인사말도 예외 없이 그 언어로 · 지원 언어 — %s). "
-            "목록에 없는 언어면 영어로 답하세요." % "·".join(names))
+        return tail
+    return tail + (" 지원 언어 — %s. 목록에 없는 언어면 영어로 답하세요." % "·".join(names))
 
 
 # 예약 없이 방문을 권하는 표현 금지(배 12816③) — 라이브 실측: 일본어 답에 "お気軽にお越しくださいませ"
@@ -1669,10 +1673,12 @@ def _selfcheck() -> None:
     if Path(ASSISTANT_LANGS_PATH).exists():
         assert "일본어" in sys_gc, "assistant_langs.json 이 있는데 언어 이름이 프롬프트에 안 실렸다"
     else:
-        assert _lang_rule_text() == "질문에 사용된 언어로 답하세요(첫 인사말도 예외 없이 그 언어로).", \
+        assert "그 언어의 문법으로 새로" in _lang_rule_text() and "지원 언어" not in _lang_rule_text(), \
             "파일 없으면 목록 없이 규칙 한 줄만이어야 한다"
-    # 배 12816②③ — 라이브 실측(영어 답 인사만 한국어·일본어 답에 워크인 권유)에서 나온 두 규칙이 프롬프트에 있는지.
-    assert "인사말도 예외 없이 그 언어로" in sys_gc, "인사말도 손님 언어로 하라는 규칙이 빠졌다"
+    # 배 12816②③④ — 라이브 실측 3회(영어 답 인사만 한국어·일본어 워크인 권유·영어 인사·자기소개 재발)에서
+    # 나온 규칙이 프롬프트에 있는지.
+    assert "인사·자기소개를 포함해 답변 전체를 그 언어의 문법으로 새로 짓습니다" in sys_gc, \
+        "인사·자기소개까지 손님 언어로 지으라는 규칙이 빠졌다"
     assert _NO_WALKIN_RULE in sys_gc, "예약 없이 방문 권유 금지 규칙이 빠졌다"
     assert _BRAND_ROMAN_RULE in sys_gc, "비한국어 브랜드명 로마자 규칙이 빠졌다"
     # 배 12816 재발 — identity.counselor_persona.greeting(한국어 리터럴)이 [업체 정본] JSON 에 안 실려야
