@@ -345,14 +345,17 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   #approvalPrintArea .rr-doc td,#approvalPrintArea .rr-doc th{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
   #approvalPrintArea .rr-doc img{max-width:100%;height:auto}
   /* ── 첨부 사진 인라인 — 이미지 첨부는 문서에 직접 표시(비이미지는 링크). 페이지 넘침 방지 (2026-07-02 시토) ── */
-  #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:4px 0}
-  #approvalPrintArea .rr-attach-img{display:block;max-width:100%;max-height:360px;object-fit:contain;border:1px solid #bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* 첨부 3열 격자(2026-09-18 GM 「링크를 다 달면 칸이 없다」) — 세로로 쌓이던 것을 칸으로 */
+  #approvalPrintArea .rr-attach-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:0;border:1px solid #bbb;padding:4px}
+  #approvalPrintArea .rr-attach-img{display:block;max-height:62mm;width:100%;object-fit:contain;border:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-attach-cap{font-size:11px;text-align:center;color:#333;margin-top:2px}
   /* 진척 로그·본문의 긴 주소가 표를 종이보다 넓게 밀어 오른쪽이 잘렸다(2026-09-16 실측 1086px > 794px) — 표 폭 고정 + 아무 데서나 줄바꿈 */
   #approvalPrintArea .rr-log-table,#approvalPrintArea .rr-info-table{table-layout:fixed;width:100%}
   #approvalPrintArea .rr-log-table td,#approvalPrintArea .rr-info-table td,#approvalPrintArea .rr-section-body,#approvalPrintArea .rr-result-box,#approvalPrintArea .rr-doc{overflow-wrap:anywhere;word-break:break-word}
   #approvalPrintArea .rr-doc table{table-layout:fixed}
   #approvalPrintArea .rr-page{overflow:hidden}
-  #approvalPrintArea .rr-attach-link{font-size:13px;word-break:break-all}
+  #approvalPrintArea .rr-attach-link{font-size:11px;word-break:break-all}
   #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:13.5px}
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
@@ -1010,26 +1013,62 @@ function attachmentUrls(t) {
   return out;
 }
 
+/* 본문의 「■ 자료」 링크 덩어리·「■ 첨부 — …」 설명 절·낱개 URL 을 걸러낸다 — 링크는 첨부 절에만
+   보인다(GM 지시 2026-09-18 「각 링크들이 너무 난잡한데, 첨부문서에만 링크 주소 붙여서」).
+   원본 데이터(시트 값)는 그대로 — 인쇄·카드에 찍기 직전에만 거른다. 인쇄 본문·카드 상세(토글) 둘 다 이 함수를 쓴다. */
+function stripAttachmentClutter(text) {
+  var s = String(text || '');
+  s = s.replace(/^■\s*자료[^\n]*\n?(?:(?!■)[^\n]*\n?)*/gm, '');
+  s = s.replace(/^■\s*첨부[^\n]*\n?/gm, '');
+  s = s.replace(/https?:\/\/\S+/g, '(첨부 참조)');
+  s = s.replace(/(^|\s)\/uploads\/\S+/g, '$1(첨부 참조)');
+  return s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// 「■ 자료」 절의 "· 라벨 — url" 줄에서 라벨을 뽑는다 — 첨부 절 이름에 그 라벨을 우선 쓴다(주소로 매칭).
+function resourceLabelMap(content) {
+  var map = {};
+  var m = String(content || '').match(/^■\s*자료[^\n]*\n((?:(?!■)[^\n]*\n?)*)/m);
+  if (!m) return map;
+  m[1].split(/\r?\n/).forEach(function (line) {
+    var mm = line.match(/^\s*[·\-*]?\s*(.+?)\s*[—–]\s*(https?:\/\/\S+|\/\S+)\s*$/);
+    if (mm) map[mm[2].trim()] = mm[1].trim();
+  });
+  return map;
+}
+// 카드 칩(attachmentUrls 만 씀)과 인쇄(buildAttachmentHtml)는 서로 다른 렌더 — 그리드·번호 캡션은 인쇄 전용.
 function buildAttachmentHtml(t) {
   var urls = attachmentUrls(t);
   if (!urls.length) return '';
-  return '<div class="rr-section-title">첨부' + (urls.length > 1 ? ' ' + urls.length + '건' : '') + '</div>' + urls.map(_attachOneHtml).join('');
+  var labels = resourceLabelMap(t.content);
+  return '<div class="rr-section-title">첨부' + (urls.length > 1 ? ' ' + urls.length + '건' : '') + '</div>'
+    + '<div class="rr-attach-grid">' + urls.map(function (u, i) { return _attachOneHtml(u, i, labels[u]); }).join('') + '</div>';
 }
-function _attachOneHtml(u) {
+// 주소 마지막 경로 조각(쿼리 제거) = 짧은 이름 — 긴 주소를 격자 칸에 그대로 찍지 않는다.
+function _attachFileLabel(u) {
+  if (/\/file\/d\/([-\w]{20,})/.test(u) || /[?&]id=([-\w]{20,})/.test(u)) return 'Drive 파일';
+  try {
+    var segs = u.split('?')[0].split('#')[0].split('/').filter(function (s) { return s; });
+    return decodeURIComponent(segs[segs.length - 1] || u) || u;
+  } catch (e) { return u; }
+}
+function _attachOneHtml(u, i, label) {
   var m = u.match(/\/file\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
   var driveId = m ? m[1] : '';
   var isImgExt = /\.(jpe?g|png|gif|webp|bmp|heic)(\?|#|$)/i.test(u);
   var imgSrc = driveId ? ('https://drive.google.com/thumbnail?id=' + driveId + '&sz=w1200') : (isImgExt ? u : '');
-  var title = '';
+  var name = label || _attachFileLabel(u);
+  var cap = '<div class="rr-attach-cap">첨부 ' + (i + 1) + '</div>';
   if (imgSrc) {
     // 이미지 로드 실패(권한·비이미지 등) 시 링크로 폴백
-    return title + '<div class="rr-attach">'
+    return '<div class="rr-attach">'
       + '<img class="rr-attach-img" src="' + esc(imgSrc) + '" alt="첨부 이미지" '
       +   'onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'block\';">'
-      + '<a class="rr-attach-link" href="' + esc(u) + '" style="display:none">' + esc(u) + '</a>'
+      + '<a class="rr-attach-link" href="' + esc(u) + '" style="display:none">' + esc(name) + '</a>'
+      + cap
       + '</div>';
   }
-  return title + '<div class="rr-section-body"><a class="rr-attach-link" href="' + esc(u) + '">' + esc(u) + '</a></div>';
+  return '<div class="rr-attach"><a class="rr-attach-link" href="' + esc(u) + '">' + esc(name) + '</a>' + cap + '</div>';
 }
 
 function buildApprovalPrint(list) {
@@ -1085,10 +1124,11 @@ function buildApprovalPrint(list) {
                   .join('<span class="rr-route-arrow">→</span>')
       + '</div>';
 
-    /* ── 본문 ── */
-    var bodyHtml = (parsed.body && parsed.body.trim())
+    /* ── 본문 (자료 링크 덩어리는 걸러 첨부 절에만) ── */
+    var _bodyClean = stripAttachmentClutter(parsed.body);
+    var bodyHtml = _bodyClean
       ? '<div class="rr-section-title">결재 내용</div>'
-        + '<div class="rr-section-body">' + esc(parsed.body.trim()) + '</div>'
+        + '<div class="rr-section-body">' + esc(_bodyClean) + '</div>'
       : '';
 
     /* ── 결과보고 ── */
@@ -1941,17 +1981,18 @@ function renderApprovalCard(t, idx) {
     h += renderRepApprovalRow(t);
   }
 
-  // 토글 (본문 + 기획 + 진척 로그 + 결과보고)
-  if (parsed.body || parsed.plan || parsed.logs.length || parsed.result) {
+  // 토글 (본문 + 기획 + 진척 로그 + 결과보고) — 자료 링크 덩어리는 걸러 첨부 칩에만(GM 지시 2026-09-18)
+  const _bodyClean = stripAttachmentClutter(parsed.body);
+  if (_bodyClean || parsed.plan || parsed.logs.length || parsed.result) {
     const label = [
-      parsed.body ? '본문' : null,
+      _bodyClean ? '본문' : null,
       parsed.plan ? '기획' : null,
       parsed.logs.length ? '진척 ' + parsed.logs.length + '건' : null,
       parsed.result ? '결과보고' : null
     ].filter(Boolean).join(' · ');
     h += '<div class="detail-toggle" onclick="toggleDetail(this)"><span class="arrow">▶</span>' + label + '</div>';
     h += '<div class="detail-body">';
-    if (parsed.body) h += '<div class="body-text">' + esc(parsed.body) + '</div>';
+    if (_bodyClean) h += '<div class="body-text">' + esc(_bodyClean) + '</div>';
     if (parsed.plan) {
       h += '<div style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid rgba(91,159,213,0.3);border-radius:8px;">';
       h += '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px;">📋 기획</div>';
