@@ -14181,28 +14181,45 @@ function apiPost(payload) {
       });
     });
   }
-  // ★쓰기 관문(배 961 · 2026-09-03 시토) — ERP 도메인이면 서버 /api/write 가 먼저 받아 write_log 에 남기고 같은 payload 를
-  //   GAS 에 그대로 전달한 응답을 돌려준다. 서버에 못 닿거나(네트워크·401·5xx) 서버가 GAS 에 못 닿으면(server-forward-failed)
-  //   종전 GAS 직접 경로로 폴백 — 읽기 관문(_memberListFetch)과 같은 규칙. 되돌리기 = 아래 ERP_API_ON 을 false 로.
+  // ★쓰기 관문(배 961 · 2026-09-03 시토 · 2026-09-18 시포 갱신 · 배 12753) — ERP 도메인이면 서버 /api/write 가 먼저
+  //   받아 write_log 에 남기고 같은 payload 를 GAS 에 그대로 전달한 응답을 돌려준다. 서버에 못 닿거나(네트워크·5xx)
+  //   서버가 GAS 에 못 닿으면(server-forward-failed) 더 이상 구글로 폴백하지 않는다(GM 09-05 「서버 원천 100%」·
+  //   _assets/erp_write.js _noGas 와 같은 규칙 · 조용한 저장 실패 금지 — 사람에게 실패를 보이고 멈춘다).
+  //   401(세션 만료)은 안내 토스트 뒤 로그인 화면으로 보낸다(입력값은 WriteBuffer 대기줄에 남는다). 되돌리기 = 아래 ERP_API_ON 을 false 로.
   var _gas = function(){ return _send(GAS_URL, false); };
   // ★회원 쓰기 2단계(배1054 · 2026-09-08 시포) — member_owner_save + member_hold_transition 을 서버 원장 라우트 /api/members/write 로.
   //   서버가 members.owner_* 5칸 + member_change_log 에 먼저 적고 같은 body 를 GAS 에 write-through 한다(시토 1050).
-  //   응답 모양은 /api/write 와 같다(ok·phone·field·value·rowIndex=회원번호). 실패(401·5xx)면 아래 catch 가 GAS 로 폴백.
+  //   응답 모양은 /api/write 와 같다(ok·phone·field·value·rowIndex=회원번호). 실패해도 GAS 로 안 새 나간다(2026-09-18 · 아래 catch).
   //   member_no 는 같은 번호를 쓰는 가족 회원(유효 4쌍 실측) 구분용 — 서버가 받으면 번호 우선, GAS 는 무시한다.
   // ★3단계(배1054 · 2026-09-08 시포) — member_active_update 추가(시토 커밋 24c3d94d2 selftest 통과). 미러 없는 행·전화 같은 2건 GAS pass-through, keyPhone 빈칸 거부, 회원번호·rowKey·rowIndex 서버 차단.
   var _MEMBER_WRITE_ACTIONS = { member_owner_save: 1, member_hold_transition: 1, member_active_update: 1, member_hold_approve: 1, member_archive_restore: 1, member_registered_add: 1, member_registered_remove: 1 };
   var _writeUrl = (payload && _MEMBER_WRITE_ACTIONS[payload.action]) ? '/api/members/write' : '/api/write';
   var _p = !ERP_API_ON ? _gas()
     : _send(_writeUrl, true)
-        .then(function(d){ return (d && d.error === 'server-forward-failed') ? _gas() : d; })
+        .then(function(d){
+          if (d && d.error === 'server-forward-failed') {
+            var _fe = new Error('저장이 되지 않았습니다(쓰기관문 · 서버가 원장에 못 닿음) — 잠시 후 다시 시도해 주세요');
+            _fe.noFallback = true; throw _fe;
+          }
+          return d;
+        })
         .catch(function(e){
           if (_ac && _ac.signal.aborted) throw e;
-          // 401(미로그인)은 로그인으로, 403(허용 안 된 화면)은 폴백 없이 던진다(배1112) — 폴백하면
-          // 서버가 막은 쓰기가 GAS 직접 경로로 새 나가 관문이 무의미해진다.
-          if (e && e.status === 401) { try { location.href = '/auth/login?next=' + encodeURIComponent(location.pathname); } catch (_e) {} throw e; }
+          // 401(미로그인)은 안내 뒤 로그인으로, 403(허용 안 된 화면)·server-forward-failed(위)는 폴백 없이 던진다
+          // (배1112 · 2026-09-18 갱신) — 폴백하면 서버가 막은/못 새긴 쓰기가 GAS 직접 경로로 새 나가 관문이 무의미해진다.
+          if (e && e.status === 401) {
+            try { showToast('로그인 세션이 만료됐습니다 — 다시 로그인한 뒤 저장해 주세요(입력한 값은 이 화면 대기줄에 남습니다)', 'err'); } catch (_e1) {}
+            try { location.href = '/auth/login?next=' + encodeURIComponent(location.pathname); } catch (_e2) {}
+            e.noFallback = true; throw e;
+          }
           if (e && e.status === 403) throw e;
-          console.warn('[쓰기관문] /api/write 실패 → GAS 폴백:', e && e.message);
-          return _gas();
+          if (e && e.noFallback) throw e;
+          // ★2026-09-18 시포 — 여기서 GAS 로 폴백하던 것을 걷어냈다(조용한 저장 실패 금지). 실패는 그대로 던져
+          //   호출부(WriteBuffer.flush 14561행·직접 호출부 전부 .catch 로 showToast/alert 표면화 확인)가 재시도·배지·park 한다.
+          console.warn('[쓰기관문] /api/write 실패(폴백 없음):', e && e.message);
+          var _we = new Error('저장이 되지 않았습니다(쓰기관문 · ' + ((e && e.message) || '관문 실패') + ') — 잠시 후 다시 시도해 주세요');
+          _we.status = e && e.status; _we.noFallback = true;
+          throw _we;
         });
   return _p.then(function(d){ if (_to) clearTimeout(_to); return d; })
            .catch(function(e){ if (_to) clearTimeout(_to); throw e; });
