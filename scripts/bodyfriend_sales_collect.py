@@ -98,18 +98,40 @@ def selftest():
     assert month_range("2026-09") == ("2026-09-01", "2026-09-30")
     assert month_range("2026-12") == ("2026-12-01", "2026-12-31")
     assert parse_days("합계 ( 2026-09-04 ) = 3,000원\n합계 ( 2026-09-04 ) = 9,000원") == {"2026-09-04": 9000}
+    assert already_today(datetime(2026, 9, 18, 5, 59, tzinfo=KST)) is True   # 06시 전엔 안 받는다
     print("selftest ok")
 
 
+def already_today(now: datetime) -> bool:
+    """--daily 게이트: 오늘 06:00 이후 한 번 받았으면 다시 받지 않는다(3분 슬롯에 얹어 쓰므로 하루 1회로 묶는다)."""
+    if now.hour < 6:
+        return True
+    try:
+        prev = json.loads(OUT.read_text(encoding="utf-8"))
+        return str(prev.get("fetched_at", ""))[:10] == now.strftime("%Y-%m-%d")
+    except Exception:
+        return False
+
+
 def main() -> int:
-    args = [a for a in sys.argv[1:] if a != "--selftest"]
+    args = [a for a in sys.argv[1:] if a not in ("--selftest", "--daily")]
     if "--selftest" in sys.argv:
         selftest()
+        return 0
+    if "--daily" in sys.argv and already_today(datetime.now(KST)):
         return 0
     ym = args[0] if args else datetime.now(KST).strftime("%Y-%m")
     data = collect(ym)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp = OUT.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, OUT)
+    # 저장소로 올려야 erp(/repo/status/…)가 읽는다 — safe_commit 관문(실패해도 파일은 남는다).
+    if "--daily" in sys.argv:
+        import subprocess
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "safe_commit.py"), "-m",
+                        "[시포] chore(report): 바디프렌드 라운지 매출 일일 수집 %s" % data["fetched_at"][:10],
+                        "--", "status/bodyfriend_sales.json"], cwd=str(ROOT), capture_output=True)
     print("DONE: %s 매출 %s원 · 날짜 %d일 · %s" % (ym, format(data["total_krw"], ","), len(data["days"]), OUT))
     return 0
 

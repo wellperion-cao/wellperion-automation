@@ -45,6 +45,11 @@ REM autonomy page can show today GM-order vs done pairs live. Read-only over wor
 REM no sending, no new scheduled task - rides this existing 3-minute slot. Fail-soft.
 "%PY%" "%ROOT%\scripts\kungjjak_board.py" --emit >> "%ROOT%\logs\kungjjak_board.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% kungjjak_board
+REM Bodyfriend lounge sales (2026-09-18 GM account saved) - once a day after 06:00 (the
+REM script gates itself with --daily), rides this 3-minute slot, no new scheduled task.
+REM Result status/bodyfriend_sales.json feeds report page 1 other-sales tile. Fail-soft.
+"%PY%" "%ROOT%\scripts\bodyfriend_sales_collect.py" --daily >> "%ROOT%\logs\bodyfriend_sales.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% bodyfriend_sales
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed
