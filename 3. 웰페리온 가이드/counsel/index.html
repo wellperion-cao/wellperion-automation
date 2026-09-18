@@ -15,7 +15,7 @@
 :root{--paper:#F4F0EB;--ink:#221F20;--accent-text:#8F7659;--beige:#B79F8A;--line:rgba(34,31,32,.14);--good:#2E6B3A;--bad:#B3402B}
 *{box-sizing:border-box}
 body{margin:0;padding:0;background:var(--paper);color:var(--ink);font:15px/1.6 'Pretendard Variable',Pretendard,'Apple SD Gothic Neo','Malgun Gothic',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:#fff}
+.wrap{max-width:720px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:#fff}
 header{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 header h1{margin:0;font-size:17px;font-weight:700;flex:1}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;margin-right:5px}
@@ -36,16 +36,32 @@ header h1{margin:0;font-size:17px;font-weight:700;flex:1}
 form{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 form input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--paper);color:var(--ink)}
 form button{padding:11px 16px;border:0;border-radius:10px;background:var(--ink);color:#fff;font-weight:700;font:inherit;cursor:pointer}
+.iconbtn{width:44px;height:44px;flex:0 0 44px;padding:0;border:1px solid var(--line);background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent-text);cursor:pointer}
+.iconbtn:hover{border-color:var(--beige);color:var(--ink)}
+#micBtn.listening{background:var(--bad);border-color:var(--bad);color:#fff}
+#soundBtn.off{color:var(--beige)}
+.voicemsg{padding:0 18px 8px;font-size:12px;color:var(--bad);text-align:center}
 footer{padding:10px 18px 18px;font-size:12px;color:var(--accent-text);border-top:1px solid var(--line);text-align:center}
 footer a{color:var(--accent-text)}
 </style>
 </head><body>
 <div class="wrap">
-<header><h1 id="botName"><!--H1-->웰페리온에 무엇이든 물어보세요<!--/H1--></h1><span class="status"><span class="dot"></span>응답 가능</span></header>
+<header><h1 id="botName"><!--H1-->웰페리온에 무엇이든 물어보세요<!--/H1--></h1><span class="status"><span class="dot"></span>응답 가능</span>
+<button type="button" id="soundBtn" class="iconbtn" aria-label="소리 끄기" aria-pressed="false" title="소리 끄기">
+<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M4 9v6h4l5 5V4L8 9H4z"/><path class="wav" d="M16.5 8a5 5 0 010 8"/><path class="mute" d="M15 9l6 6M21 9l-6 6" hidden/>
+</svg></button>
+</header>
 <div class="greet" id="greet"><!--GREET-->한남동 정원제 스포츠클럽 · 수영 · 골프 · 스쿼시 · 유소년 체조 · 멤버십<!--/GREET--></div>
 <div class="chips" id="chips"></div>
 <div id="log"></div>
-<form id="askForm"><input id="q" placeholder="궁금한 것을 편하게 물어보세요" autocomplete="off" autofocus required><button type="submit">보내기</button></form>
+<form id="askForm"><input id="q" placeholder="궁금한 것을 편하게 물어보세요" autocomplete="off" autofocus required>
+<button type="button" id="micBtn" class="iconbtn" aria-label="음성으로 묻기" title="음성으로 묻기" hidden>
+<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z"/><path d="M19 11a7 7 0 01-14 0M12 18v3"/>
+</svg></button>
+<button type="submit">보내기</button></form>
+<div class="voicemsg" id="voiceMsg" hidden></div>
 <footer id="foot"></footer>
 </div>
 <script>
@@ -87,6 +103,12 @@ var API = "/api/chat/" + tenant;
 var log = document.getElementById("log");
 var reservationUrl = "";
 var typingMs = 900;
+var qEl = document.getElementById("q");
+var qPlaceholderDefault = qEl.placeholder;
+// 음성 대화(GM 지시 2026-09-18 20:1x) — 인식 언어를 판단하는 기존 코드가 이 화면엔 없어 ko-KR 고정.
+// ponytail: 언어별 인식이 필요해지면 그때 판단 코드를 추가한다.
+var speechLang = "ko-KR";
+var soundOn = true;
 
 // 대화 문맥 유지용 세션 id(배1036 GM 구조전환②) — 이 브라우저 탭 안에서만(sessionStorage), 개인정보 아님.
 var sessionId = "";
@@ -129,11 +151,26 @@ function feedbackRow(faqId){
   return row;
 }
 
-function ask(text){
+function stripForSpeech(text){
+  return (text || "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[☀-➿\u{1F300}-\u{1FAFF}]/gu, "")
+    .replace(/\s+/g, " ").trim();
+}
+function speak(text){
+  if (!soundOn || !text || !("speechSynthesis" in window)) return;
+  try {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = speechLang;
+    speechSynthesis.speak(u);
+  } catch (e) { /* 읽어주기 실패는 무시 — 화면 답은 이미 나갔다 */ }
+}
+
+function ask(text, isVoice){
   text = (text || "").trim();
   if (!text) return;
   addMsg("q", text);
-  document.getElementById("q").value = "";
+  qEl.value = "";
   var chips = document.getElementById("chips");
   if (chips) chips.hidden = true;   // 칩은 첫 질문 전 살짝 보이는 보조일 뿐(GM 09-05) — 대화 시작되면 치운다
   var typing = document.createElement("div");
@@ -155,6 +192,7 @@ function ask(text){
           extra = feedbackRow(d.faq_id);
         }
         addMsg("a", d.answer || "", extra);
+        if (isVoice) speak(stripForSpeech(d.answer));
       }, typingMs);
     })
     .catch(function(){ typing.remove(); addMsg("a", "지금 답을 받아올 수 없습니다. 잠시 후 다시 시도해 주세요."); });
@@ -164,6 +202,66 @@ document.getElementById("askForm").addEventListener("submit", function(e){
   e.preventDefault();
   ask(document.getElementById("q").value);
 });
+
+// 소리 끄기 토글(기본값 켬)
+var soundBtn = document.getElementById("soundBtn");
+soundBtn.addEventListener("click", function(){
+  soundOn = !soundOn;
+  soundBtn.classList.toggle("off", !soundOn);
+  soundBtn.setAttribute("aria-pressed", String(!soundOn));
+  var label = soundOn ? "소리 끄기" : "소리 켜기";
+  soundBtn.setAttribute("aria-label", label); soundBtn.title = label;
+  soundBtn.querySelector(".wav").hidden = !soundOn;
+  soundBtn.querySelector(".mute").hidden = soundOn;
+  if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
+});
+
+// 🎤 음성 대화 — 탭해서 시작, 다시 탭하면 멈춤(누른 채 있을 필요 없음)
+var micBtn = document.getElementById("micBtn");
+var voiceMsg = document.getElementById("voiceMsg");
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  micBtn.hidden = false;
+  var recognition = new SR();
+  var listening = false;
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.onresult = function(e){
+    var text = e.results[0][0].transcript;
+    if (text && text.trim()) ask(text, true);
+  };
+  recognition.onerror = function(e){
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      voiceMsg.textContent = "마이크 권한이 없습니다 — 주소창의 자물쇠 아이콘에서 마이크를 허용해 주세요.";
+      voiceMsg.hidden = false;
+      setTimeout(function(){ voiceMsg.hidden = true; }, 6000);
+    }
+  };
+  recognition.onend = function(){
+    listening = false;
+    micBtn.classList.remove("listening");
+    qEl.placeholder = qPlaceholderDefault;
+  };
+  micBtn.addEventListener("click", function(){
+    if (listening) { recognition.stop(); return; }
+    try {
+      recognition.lang = speechLang;
+      recognition.start();
+      listening = true;
+      micBtn.classList.add("listening");
+      qEl.placeholder = "듣는 중…";
+    } catch (e) { listening = false; micBtn.classList.remove("listening"); }
+  });
+}
+
+// 모바일 키보드가 입력줄을 가리지 않게(아이폰 사파리는 vh/dvh 가 키보드를 안 반영한다)
+if (window.visualViewport) {
+  var wrapEl = document.querySelector(".wrap");
+  window.visualViewport.addEventListener("resize", function(){
+    var vv = window.visualViewport;
+    wrapEl.style.height = (vv.height < window.innerHeight) ? vv.height + "px" : "";
+  });
+}
 
 fetch(API + "/profile").then(function(r){ return r.json(); }).then(function(p){
   var name = (p.persona && p.persona.name) || p.name || "상담";
