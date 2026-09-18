@@ -2726,7 +2726,9 @@ function p4SetSrcBadge(){
 function renderPage4Server(srv, dayLabel){
   var bo = srv.brojay.lists.by_owner, boM = srv.brojay.lists.by_owner_month || { teams: [] };
   var teams = p4TeamsFromServer(bo, boM);
-  var extra = ' · 담당 연결 ' + (bo.linked || 0) + ' · 미등록 ' + (bo.unlinked || 0);
+  /* 연결/미등록 건수는 그 달 누적(by_owner_month)으로 센다 — 그날(day) 건수는 결제 없는 날 0/0 이라
+     표에 실제로 뜬 누적 담당 미등록 줄과 안 맞아 보인다(2026-09-18 실측 · 시토 3차 배포 확인). */
+  var extra = ' · 담당 연결 ' + (boM.linked || 0) + ' · 미등록 ' + (boM.unlinked || 0);
   p4Paint(teams, ['건수', '매출', '환불', '순매출'], dayLabel, extra, true);
 }
 /* 4면 조회 — 서버판(brojay.lists.by_owner)이 있으면 그것만 쓰고 시트 GAS 는 안 부른다(배 12523(d)).
