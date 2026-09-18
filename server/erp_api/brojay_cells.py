@@ -53,7 +53,8 @@ TAG_TEAM = {"수영": 8, "PT": 9, "골프": 10, "스쿼시": 11, "체조&트램�
 TEAM_KEY_ROW = {"swim": 8, "pt": 9, "golf": 10, "squash": 11, "gym": 12, "pilates": 13, "musical": 14, "gxe": 15}
 ROW_KEY = {v: k for k, v in TEAM_KEY_ROW.items()}   # 행 → sales_targets key
 ROW_TAG = {v: k for k, v in TAG_TEAM.items()}       # 행 → 매출분류 태그(팀 이름 폴백)
-# 행(팀) → ERP members 담당 전용 칸(배 12523(d) 실측) — 없는 팀(체조&트램폴린·영어뮤지컬·유료GX)은 공통 owner 칸으로.
+# 행(팀) → ERP members 담당 전용 칸(배 12523(d) 실측) — 없는 팀(체조&트램폴린·영어뮤지컬·유료GX)은 강습 명단(roster)만
+# 본다(공통 owner 칸=회원권·문의 담당이라 강습 담당이 아니다 — 2026-09-18 라이브 실측: 수영·골프팀에 문의 담당 「임정은」이 찍힘).
 TEAM_OWNER_COL = {8: "owner_swim", 9: "owner_pt", 10: "owner_golf", 11: "owner_squash", 13: "owner_pl"}
 OPS_TAG = "운영부"
 LOCKER_TYPES = {"LOCKER_TICKET"}
@@ -338,17 +339,18 @@ def _lesson_lists(lesson_pays, roster_phones, hist_first_paid, team_names):
     return {"day": day, "month": month, "basis": LESSON_BASIS}
 
 
-BY_OWNER_NOTE = ("담당 = ERP 회원관리·강습 명단 담당 칸(브로제이 담당 안 씀) · "
-                  "미등록 = 브로제이엔 있으나 ERP 원장·명단에 없는 회원")
+BY_OWNER_NOTE = ("담당 = ERP 회원관리 팀별 담당 칸(수영·PT·필라테스·스쿼시·골프)·강습 명단 담당 칸만(브로제이 담당 안 씀 · "
+                  "회원권·문의 공통 담당 칸은 강습 담당이 아니라 안 쓴다) · 미등록 = 팀별 칸·강습 명단 어느 쪽에도 없는 회원")
 
 
 def _owner_of(phone, cell, erp_owner_by_phone, roster_owner_by_phone):
-    """담당 찾기 — ① ERP members 팀별 칸(비었으면 공통 owner 칸) ② 강습 명단(roster) 담당 ③ 담당 미등록
-    (전화 없으면 바로 미등록 — 지어내지 않는다)."""
+    """담당 찾기 — ① ERP members 팀별 칸(그 팀 전용 칸이 없으면 건너뜀 — 공통 owner 칸은 회원권·문의 담당이라
+    강습 담당으로 안 쓴다) ② 강습 명단(roster) 담당 ③ 담당 미등록(전화 없으면 바로 미등록 — 지어내지 않는다)."""
     if phone:
-        row = erp_owner_by_phone.get(phone)
-        if row:
-            v = row.get(TEAM_OWNER_COL.get(cell, "")) or row.get("owner")
+        col = TEAM_OWNER_COL.get(cell)
+        if col:
+            row = erp_owner_by_phone.get(phone)
+            v = row.get(col) if row else ""
             if v:
                 return v
         v2 = roster_owner_by_phone.get(phone)
@@ -617,11 +619,11 @@ def selftest():
     assert contact[0]["name"] == "박컨택" and contact[0]["consult_date"] == "2026-09-15" and contact[0]["consult_time"] == "14:00"
     assert contact[1]["name"] == "최예약" and contact[1]["consult_date"] == "2026-09-15" and contact[1]["note"] == "다음달"
 
-    # ── lists.by_owner(배 12523(d)) — 결제 4건(연결 3 · 미연결 1) + 환불 1건, 팀칸 폴백까지 ──
+    # ── lists.by_owner(배 12523(d)) — 결제 4건(연결 2 · 미연결 2) + 환불 1건, 공통 owner 칸은 안 쓴다 ──
     day_pays_bo = [
         {"cell": 8, "member_id": "P1", "amt": 100000},   # ERP owner_swim
         {"cell": 8, "member_id": "P2", "amt": 200000},   # 강습 명단 owner(roster)
-        {"cell": 8, "member_id": "P4", "amt": 80000},    # ERP owner_swim 비어 공통 owner 폴백
+        {"cell": 8, "member_id": "P4", "amt": 80000},    # ERP owner_swim 비고 roster 도 없음 → 미등록(공통 owner 칸 무시)
         {"cell": 9, "member_id": "P3", "amt": 150000},   # 못 이음 → 미등록
     ]
     refund_pays_bo = [{"cell": 8, "member_id": "P1", "amt": -50000}]
@@ -633,12 +635,13 @@ def selftest():
     roster_owner_bo = {"01022220000": "이보조"}
     bo = _by_owner_list(day_pays_bo, refund_pays_bo, phone_of_member_bo, erp_owner_bo, roster_owner_bo,
                         [8, 9], {8: "수영팀", 9: "PT팀"})
-    assert bo["linked"] == 3 and bo["unlinked"] == 1, bo
+    assert bo["linked"] == 2 and bo["unlinked"] == 2, bo
     swim, pt = bo["teams"]
     assert swim["team"] == "수영팀" and swim["row"] == 8 and swim["amount"] == 380000 and swim["refund"] == -50000, swim
     owners_bo = {o["owner"]: o for o in swim["owners"]}
     assert owners_bo["김수영"]["amount"] == 100000 and owners_bo["김수영"]["refund"] == -50000
-    assert owners_bo["이보조"]["amount"] == 200000 and owners_bo["박총괄"]["amount"] == 80000
+    assert owners_bo["이보조"]["amount"] == 200000
+    assert owners_bo["담당 미등록"]["amount"] == 80000   # P4 — 공통 owner("박총괄")는 강습 담당이 아니라 안 쓴다
     assert swim["owners"][0]["owner"] == "이보조"   # 금액 내림차순
     assert pt["team"] == "PT팀" and pt["amount"] == 150000 and pt["refund"] == 0
     assert pt["owners"] == [{"owner": "담당 미등록", "count": 1, "amount": 150000, "refund": 0}], pt["owners"]
