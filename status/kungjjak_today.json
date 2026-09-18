@@ -184,6 +184,42 @@
       "nick": "시토",
       "items": [
         {
+          "ref": "GM-20260918-0948",
+          "no": "948",
+          "got": "관리자 판 파트너팀을 P.T팀·골프팀·스쿼시팀 등으로 구분",
+          "did": "관리자 계정·권한 판에 팀 칸(파트너팀 · 골프팀 표기 · 팀 선택칸 · 팀 칩) · 서버 문 /auth/admin/{uid}/team · 정본 kpi.json 팀 8 · 박민서=수영팀 · 저장 fe18c272b · 서버 배포·라이브 실측 OK",
+          "start": "10:01",
+          "end": "10:01",
+          "minutes": 0,
+          "upload": "✅ 배포 (fe18c272b)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-0949",
+          "no": "949",
+          "got": "카톡 대화 내보내기 Ctrl+S 로 되지 않나",
+          "did": "Ctrl+S = 대화 내용 저장 맞음 · 내보내기 1차 Ctrl+S·2차 메뉴로 바꿈 · 저장 폴더 재귀 탐색 · ★운영부 재실행 성공(09:55) · 저장 fe18c272b",
+          "start": "10:01",
+          "end": "10:01",
+          "minutes": 0,
+          "upload": "✅ 배포 (fe18c272b)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260918-0957",
+          "no": "957",
+          "got": "랩스 모듈 구성 메뉴 삭제",
+          "did": "랩스 관리자 셸에서 모듈 구성 메뉴·표 삭제(강습 예약 자동화는 준비 표시만) · 저장 fe18c272b",
+          "start": "10:01",
+          "end": "10:01",
+          "minutes": 0,
+          "upload": "✅ 배포 (fe18c272b)",
+          "open": false,
+          "evidence": "🔁재확인"
+        },
+        {
           "ref": "GM-20260918-2001",
           "no": "01",
           "got": "웰페리온 AX 랩스 메뉴판 닫기도 만들어줘",
@@ -232,18 +268,6 @@
           "evidence": "⚠️없음"
         },
         {
-          "ref": "GM-20260918-2006",
-          "no": "06",
-          "got": "ERP관리자페이지에서 보면 파트너팀으로 묶여있는데, 더 구체적으로 P.T팀 골프팀 스쿼시팀 등으로 구분해주면 더 좋을 것 같은데?",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
-          "start": "09:46",
-          "end": "09:46",
-          "minutes": 0,
-          "upload": "기록만",
-          "open": false,
-          "evidence": "⚠️없음"
-        },
-        {
           "ref": "GM-20260918-2007",
           "no": "07",
           "got": "그리고 대화 내보내기 할때 컨트롤 S 누르면 될텐데, 메뉴 선택해서 하는거야?",
@@ -259,13 +283,13 @@
           "ref": "GM-20260918-2008",
           "no": "08",
           "got": "랩스에서 모듈구성 메뉴는 필요없을 것 같은데?",
-          "did": "",
+          "did": "관리자 판 파트너팀 안 팀 칸(P.T팀·골프팀 …) · 랩스 모듈 구성 메뉴 삭제 · 카톡 내보내기 Ctrl+S 우선",
           "start": "09:54",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:02",
+          "minutes": 7,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -402,29 +426,14 @@
           "detail": "3849d7ad8·7d82e8593·9bd333486·70e28ea3b · 09:33 실측 직원 권한없음·개인관리자 표 5/21/7 렌더·랩스 파트너 3줄 · design_audit 0"
         }
       ],
-      "count": 7,
-      "done": 6,
-      "open": 1,
+      "count": 9,
+      "done": 9,
+      "open": 0,
       "avg_minutes": 2,
       "work_count": 22,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260918-2008",
-          "no": "08",
-          "got": "랩스에서 모듈구성 메뉴는 필요없을 것 같은데?",
-          "did": "",
-          "start": "09:54",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 7
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cmo": {
@@ -483,7 +492,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 1
+          "waited": 4
         }
       ],
       "repeats": []
@@ -522,13 +531,25 @@
           "area": "배",
           "event": "시우 요청 membership.html #hold → 휴회 회원 관리 바로 열기",
           "detail": "저장 8d442c3aa7 · origin 도달"
+        },
+        {
+          "time": "10:02",
+          "area": "공통",
+          "event": "feat(report): 서버 응답 lists — 등록 명단·로스자·예상 컨택·강습 신규/재등록(브로제이+ERP · 배 12523 2단계)",
+          "detail": "커밋 5ceb67a6d1 · 배 12523"
+        },
+        {
+          "time": "10:02",
+          "area": "공통",
+          "event": "feat(report): 월별 확정 매출 1~7월을 원장(monthly_report_ledger)에 굳힘 — 화면 지난달 시트 읽기 끊을 재료 (배 12523 2단계)",
+          "detail": "커밋 11cc3671d9 · 배 12523"
         }
       ],
       "count": 2,
       "done": 2,
       "open": 0,
       "avg_minutes": 2,
-      "work_count": 1,
+      "work_count": 3,
       "missed": [],
       "unclosed": [],
       "just": [],
@@ -627,7 +648,7 @@
           "start": "09:55",
           "end": "09:56",
           "minutes": 1,
-          "upload": "기록만",
+          "upload": "⚠️ 저장만 (0d9e66824)",
           "open": false,
           "evidence": "🔁재확인"
         },
@@ -635,13 +656,25 @@
           "ref": "GM-20260918-9004",
           "no": "04",
           "got": "그리고 우리 업무&결재 SSOT도 업무 및 결재 자동화 모듈화로 만들어둘수 있나? 각 파트너사들도 필요할듯",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "10:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "10:02",
+          "minutes": 2,
+          "upload": "✅ 배포 (0d9e66824)",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
+          "ref": "GM-20260918-9005",
+          "no": "05",
+          "got": "이승기대표님 강사님 모집을 지인소개로 오는게 아니라 회원이 지인소개로 오는거고, 강사는 따로 다이어트캠프가 브랜딩 되어서 교육을 받을 사람들은 브랜딩으로 모아줘야해, 교육 시스템도 구축해줘야하고, 물어보고 교육 시스…",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "start": "10:02",
+          "end": "10:02",
+          "minutes": 0,
+          "upload": "✅ 배포 (0d9e66824)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
@@ -662,31 +695,22 @@
           "area": "작업",
           "event": "chore(cbo): 카톡 감지 배 2척 판정·종결(고척 사진·영상 = 전날 정리 완료 · 다캠 「소개」 = 강사 모집 경로) + 다캠 강사 모집=지인 소개 반영(소통기록·전략구상안 §2·회사소개서 부록)",
           "detail": "커밋 43853660e4 · 배 12718"
+        },
+        {
+          "time": "10:04",
+          "area": "작업",
+          "event": "fix(cbo): 다캠 강사 모집 정정 — 지인 소개는 회원 유입, 강사는 다캠 브랜딩으로 교육생 모아 양성(GM 정정 2026-09-18) · 교육 시스템 필요 여부 저녁 통 물음 1개 예고",
+          "detail": "커밋 0d9e668248 · 배 12718"
         }
       ],
-      "count": 3,
-      "done": 2,
-      "open": 1,
+      "count": 4,
+      "done": 4,
+      "open": 0,
       "avg_minutes": 1,
-      "work_count": 3,
+      "work_count": 4,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260918-9004",
-          "no": "04",
-          "got": "그리고 우리 업무&결재 SSOT도 업무 및 결재 자동화 모듈화로 만들어둘수 있나? 각 파트너사들도 필요할듯",
-          "did": "",
-          "start": "10:00",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 1
-        }
-      ],
+      "just": [],
       "repeats": []
     }
   },
@@ -698,7 +722,7 @@
     "more": 0
   },
   "board": {
-    "published_at": "2026-09-18T10:01:19",
+    "published_at": "2026-09-18T10:04:03",
     "roles": {
       "ceo": {
         "nick": "웰리",
@@ -720,12 +744,12 @@
         "alive": true,
         "signal": "10:00",
         "last": {
-          "time": "09:54",
-          "area": "GM요청",
-          "event": "랩스에서 모듈구성 메뉴는 필요없을 것 같은데?",
-          "result": "warn"
+          "time": "10:01",
+          "area": "GM지시",
+          "event": "랩스 모듈 구성 메뉴 삭제",
+          "result": "ok"
         },
-        "idle_since": null,
+        "idle_since": "10:02",
         "saves": 34
       },
       "cmo": {
@@ -748,13 +772,13 @@
         "alive": true,
         "signal": "10:00",
         "last": {
-          "time": "09:48",
-          "area": "진행",
-          "event": "12523 운영 현황 보고 2단계 착수 — 시트 읽기 남은 자리 전수 실측 뒤 원천 배선",
-          "result": "warn"
+          "time": "10:02",
+          "area": "공통",
+          "event": "feat(report): 월별 확정 매출 1~7월을 원장(monthly_report_ledger)에 굳힘 — 화면 지난달 시트 읽기 끊을 재료 (배 12523 2단계)",
+          "result": "ok"
         },
-        "idle_since": "09:49",
-        "saves": 1
+        "idle_since": null,
+        "saves": 3
       },
       "coo": {
         "nick": "시우",
@@ -776,12 +800,12 @@
         "alive": true,
         "signal": "10:00",
         "last": {
-          "time": "10:00",
+          "time": "10:02",
           "area": "GM요청",
-          "event": "그리고 우리 업무&결재 SSOT도 업무 및 결재 자동화 모듈화로 만들어둘수 있나? 각 파트너사들도 필요할듯",
+          "event": "이승기대표님 강사님 모집을 지인소개로 오는게 아니라 회원이 지인소개로 오는거고, 강사는 따로 다이어트캠프가 브랜딩 되어서 교육을 받을 사람들은 브랜딩으로 모아줘야해, 교육 시스템도 구축해줘야하고, 물어보고 교육 시스",
           "result": "warn"
         },
-        "idle_since": null,
+        "idle_since": "10:02",
         "saves": 2
       }
     }
