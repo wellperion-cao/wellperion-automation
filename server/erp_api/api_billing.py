@@ -19,9 +19,16 @@
 인증 = 기존 관문 재사용(api_partner_secrets.py 와 같은 방식) — x-erp-user 헤더가 ERP_PLATFORM_ADMINS 에
 있을 때만. nginx auth_request 뒤에서 로그인 자체는 이미 걸러진다.
 
-청구 idempotency = billing_charges 표 PRIMARY KEY (tenant_id, tenant, ym) 그 자체 — 같은 달 두 번째
-호출은 기존 행을 보고 건너뛴다(토스를 두 번 치지 않는다). 실패하면 이번 달 안에 딱 한 번만 재시도
-(retry_at = 실패 시각 + 3일) — 재시도까지 또 실패하면 그 달은 status='failed' 로 끝(다음 달에 다시 시도).
+청구 idempotency(배 12750 P0 #3 · 2026-09-18) = 토스를 치기 **전에** billing_charges 에 status='pending' 행을
+INSERT … ON CONFLICT DO NOTHING 으로 먼저 넣어 PK (tenant_id, tenant, ym) 를 선점한다 — 0행이면 다른 호출(cron·수동)이
+이미 그 달을 잡은 것이라 즉시 돌아간다(조회→토스→기록 사이에 끼어들 틈이 없다). orderId 는 BILL-{tenant}-{YYYYMM}
+(재시도 회차는 -R) 로 고정해 토스 쪽 주문번호 중복 차단이 두 번째 안전망이 되고, 응답을 못 받았을 때 그 번호로
+조회할 수 있다. 실패(토스가 거절 응답)하면 이번 달 안에 딱 한 번만 재시도(retry_at = 실패 시각 + 3일) — 재시도까지
+또 실패하면 그 달은 status='failed' 로 끝(다음 달에 다시 시도).
+응답을 못 받은 호출(타임아웃·연결 끊김)은 청구됐는지 모른다 → status='unknown' 으로 남기고 **재청구하지 않는다**.
+다음 회차(cron 은 next_charge 가 안 넘어가 매일 다시 집는다)는 GET /v1/payments/orders/{orderId} 로 결과를 확인한 뒤에만
+움직인다: DONE 이면 paid 로 확정(토스 재호출 없음) · 주문이 없으면(NOT_FOUND) 청구가 안 간 것이라 실패 1회로 친다.
+pending 인 채 10분이 지난 행(진행 중 프로세스가 죽은 것)도 같은 조회 경로로 푼다.
 
 카드번호·빌링키 원문은 절대 로그에 안 찍는다(INC-061). 토스 시크릿 키는 서버 api.env 의 TOSS_SECRET_KEY
 하나(값은 GM/시토가 넣는다 — 이 파일은 이름만 읽는다). 테스트 키(test_sk_...)로 먼저 끝까지 돌리고,
@@ -30,8 +37,8 @@
 import base64
 import datetime as dt
 import json
+import time
 import os
-import secrets
 import sys
 import urllib.error
 import urllib.request
@@ -63,6 +70,10 @@ class TossError(Exception):
     def __init__(self, code, message):
         self.code, self.message = code, message
         super().__init__("%s: %s" % (code, message))
+
+
+class TossUnknown(TossError):
+    """토스의 답을 못 받았다(타임아웃·연결 끊김·본문 깨짐) — 요청이 닿았는지 모르므로 호출부는 재시도하면 안 된다."""
 
 
 def _user(request):
@@ -106,10 +117,12 @@ def _toss_headers():
     return {"Authorization": "Basic %s" % b64, "Content-Type": "application/json"}
 
 
-def _toss_post(path, body):
-    """토스 결제 서버로 POST. 실패하면 TossError(code, message) — 원문 body(카드정보 없음)는 예외에 안 싣는다."""
-    req = urllib.request.Request(TOSS_BASE + path, data=json.dumps(body).encode("utf-8"),
-                                 method="POST", headers=_toss_headers())
+def _toss_call(path, body=None):
+    """토스 결제 서버 왕복(body 있으면 POST · 없으면 GET). 토스가 오류로 답하면 TossError(code, message),
+    답 자체를 못 받으면 TossUnknown — 원문 body(카드정보 없음)는 예외에 안 싣는다."""
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(TOSS_BASE + path, data=data, method="POST" if body is not None else "GET",
+                                 headers=_toss_headers())
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             return json.loads(r.read().decode("utf-8"))
@@ -119,8 +132,17 @@ def _toss_post(path, body):
         except Exception:
             detail = {}
         raise TossError(detail.get("code", "HTTP_%s" % e.code), detail.get("message", str(e)))
-    except urllib.error.URLError as e:
-        raise TossError("NETWORK_ERROR", str(e.reason))
+    except Exception as e:      # URLError·socket.timeout(읽기 중)·JSON 깨짐 — 요청이 닿았을 수 있다
+        raise TossUnknown("NO_RESPONSE", "%s: %s" % (type(e).__name__, str(getattr(e, "reason", e))[:120]))
+
+
+def _toss_post(path, body):
+    return _toss_call(path, body)
+
+
+def get_payment_by_order(order_id):
+    """GET /v1/payments/orders/{orderId} — unknown 회차의 결과 확인. 주문이 없으면 TossError(NOT_FOUND_PAYMENT)."""
+    return _toss_call("/v1/payments/orders/%s" % order_id)
 
 
 def issue_billing_key(auth_key, customer_key):
@@ -208,46 +230,122 @@ def notify_dry_run(tenant, ok, detail):
 
 
 # ── 청구 1회 (cron·수동 트리거 공용) ───────────────────────────────────────────────────────────────
+PENDING_STALE_MIN = 10          # ponytail: 토스 타임아웃 15초 ≪ 10분 — 이보다 오래 pending 이면 진행 중 프로세스가 죽은 것
+
+
+def _order_id(tenant, ym, is_retry):
+    return "BILL-%s-%s%s" % (tenant, ym.replace("-", ""), "-R" if is_retry else "")
+
+
+def _claim(conn, tenant, ym, amount):
+    """이번 달 행을 pending 으로 선점. 새로 넣었으면 True, 이미 있으면 False(그 행은 호출부가 읽어 판정)."""
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO billing_charges (tenant_id, tenant, ym, order_id, amount, status, tried_at)"
+            " VALUES (%s,%s,%s,%s,%s,'pending',%s) ON CONFLICT (tenant_id, tenant, ym) DO NOTHING",
+            (db.TENANT, tenant, ym, _order_id(tenant, ym, False), amount, _now_str()))
+        return cur.rowcount == 1
+
+
+def _claim_retry(conn, tenant, ym):
+    """retry 행을 pending 으로 바꿔 재시도 회차를 선점(같은 순간 두 호출이 재시도를 겹치지 않게 · orderId 는 -R)."""
+    with conn:
+        cur = conn.execute(
+            "UPDATE billing_charges SET status='pending', order_id=%s, tried_at=%s"
+            " WHERE tenant_id=%s AND tenant=%s AND ym=%s AND status='retry'",
+            (_order_id(tenant, ym, True), _now_str(), db.TENANT, tenant, ym))
+        return cur.rowcount == 1
+
+
+def _settle_paid(conn, tenant, ym, order_id, amount, payment_key):
+    with conn:
+        _upsert_charge(conn, tenant, ym, order_id=order_id, amount=amount, status="paid",
+                       toss_payment_key=payment_key, error="", tried_at=_now_str(), retry_at="")
+        _set_next_charge(conn, tenant, next_month_first())
+
+
+def _settle_failed(conn, tenant, ym, order_id, amount, is_retry, err):
+    status = "failed" if is_retry else "retry"
+    retry_at = "" if is_retry else (_now() + dt.timedelta(days=3)).strftime("%Y-%m-%d")
+    with conn:
+        _upsert_charge(conn, tenant, ym, order_id=order_id, amount=amount, status=status,
+                       toss_payment_key="", error=str(err)[:300], tried_at=_now_str(), retry_at=retry_at)
+    return status
+
+
+def _resolve_unknown(conn, tenant, ym, row):
+    """응답을 못 받았던 회차(unknown · 죽은 pending)를 토스 조회로 확정한다. 토스를 다시 치지 않는다."""
+    order_id, is_retry = row["order_id"], row["order_id"].endswith("-R")
+    try:
+        pay = get_payment_by_order(order_id)
+    except TossError as e:
+        if e.code != "NOT_FOUND_PAYMENT":
+            return {"ok": False, "tenant": tenant, "ym": ym, "skipped": "inquiry-failed", "error": str(e)[:300]}
+        pay = None                                       # 주문 자체가 없다 = 청구가 토스에 안 닿았다
+    if pay and pay.get("status") == "DONE":
+        _settle_paid(conn, tenant, ym, order_id, row["amount"], pay.get("paymentKey", ""))
+        notify_dry_run(tenant, True, "%s원 청구 성공 확인(조회 · %s)" % (row["amount"], ym))
+        return {"ok": True, "tenant": tenant, "ym": ym, "amount": row["amount"], "confirmed": "by-inquiry"}
+    reason = "응답 없음 뒤 조회: %s" % ("주문 없음" if pay is None else "status=%s" % pay.get("status"))
+    status = _settle_failed(conn, tenant, ym, order_id, row["amount"], is_retry, reason)
+    notify_dry_run(tenant, False, "청구 실패 확정(%s) — %s" % (ym, reason))
+    return {"ok": False, "tenant": tenant, "ym": ym, "status": status, "error": reason}
+
+
 def charge_one(tenant):
-    """이번 달(ym) 청구를 시도. 이미 이번 달에 paid 면 건너뛴다(idempotency = PK 자체).
-    실패했다가 재시도(status='retry')인 회차가 또 실패하면 이번 달은 'failed' 로 끝난다(1회 재시도 한도)."""
+    """이번 달(ym) 청구를 시도. 순서 = pending 행 선점 → 토스 → 기록. 선점이 안 되면(이미 행 있음) 그 행의 상태대로:
+    paid·failed 는 건너뛰고, retry 는 retry_at 이 왔을 때 재시도 회차를 다시 선점해 딱 한 번 더, unknown·죽은 pending 은
+    토스 조회로만 확정한다(재청구 금지). 응답을 못 받으면 unknown 으로 남긴다."""
     conn = db.connect()
     try:
         sub = get_subscription(conn, tenant)
         if not sub or not sub["has_billing_key"]:
             return {"ok": False, "tenant": tenant, "error": "구독·빌링키 없음"}
         ym = _ym()
-        existing = _charge_row(conn, tenant, ym)
-        if existing and existing["status"] == "paid":
-            return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "already-paid"}
-        if existing and existing["status"] == "failed":
-            return {"ok": False, "tenant": tenant, "ym": ym, "skipped": "already-failed-terminal"}
-        is_retry = bool(existing and existing["status"] == "retry")
-        if is_retry and existing["retry_at"] and existing["retry_at"] > _now().strftime("%Y-%m-%d"):
-            # next_charge 는 성공해야만 다음 달로 넘어가므로 due_new(next_charge<=오늘)가 매일 이 tenant 를
-            # 다시 집는다 — retry_at 이 아직 안 왔으면 여기서 멈춘다(3일 뒤 "딱 한 번" 재시도를 지킨다).
-            return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "retry-not-due", "retry_at": existing["retry_at"]}
+        is_retry = False
+        if not _claim(conn, tenant, ym, sub["amount"]):
+            existing = _charge_row(conn, tenant, ym)
+            conn.raw.rollback()                          # 위 SELECT 가 연 트랜잭션을 닫아 아래 쓰기가 낡은 스냅샷을 안 본다
+            st = existing["status"]
+            if st == "paid":
+                return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "already-paid"}
+            if st == "failed":
+                return {"ok": False, "tenant": tenant, "ym": ym, "skipped": "already-failed-terminal"}
+            stale_before = (_now() - dt.timedelta(minutes=PENDING_STALE_MIN)).strftime("%Y-%m-%d %H:%M:%S")
+            if st == "pending" and existing["tried_at"] >= stale_before:
+                return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "in-progress"}
+            if st in ("unknown", "pending"):
+                return _resolve_unknown(conn, tenant, ym, existing)
+            if st == "retry" and existing["retry_at"] and existing["retry_at"] > _now().strftime("%Y-%m-%d"):
+                # next_charge 는 성공해야만 다음 달로 넘어가므로 due_new(next_charge<=오늘)가 매일 이 tenant 를
+                # 다시 집는다 — retry_at 이 아직 안 왔으면 여기서 멈춘다(3일 뒤 "딱 한 번" 재시도를 지킨다).
+                return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "retry-not-due", "retry_at": existing["retry_at"]}
+            if st != "retry" or not _claim_retry(conn, tenant, ym):
+                return {"ok": True, "tenant": tenant, "ym": ym, "skipped": "in-progress"}
+            is_retry = True
+        order_id = _order_id(tenant, ym, is_retry)
         billing_key = _load_billing_key(conn, tenant)
+        conn.raw.rollback()
         if not billing_key:
+            with conn:                                   # 선점만 풀어 준다 — 키가 들어오면 이달 안에 다시 청구할 수 있게
+                conn.execute("DELETE FROM billing_charges WHERE tenant_id=%s AND tenant=%s AND ym=%s AND status='pending'",
+                             (db.TENANT, tenant, ym))
             return {"ok": False, "tenant": tenant, "error": "빌링키 원문 없음(billing_secrets)"}
-        order_id = "BILL-%s-%s-%s" % (tenant, ym.replace("-", ""), secrets.token_hex(3))
         order_name = "AX 랩스 구독 %s(%s)" % (sub["plan"], ym)
         try:
             resp = charge_billing_key(billing_key, sub["customer_key"], sub["amount"], order_id, order_name)
+        except TossUnknown as e:
             with conn:
-                _upsert_charge(conn, tenant, ym, order_id=order_id, amount=sub["amount"], status="paid",
-                               toss_payment_key=resp.get("paymentKey", ""), error="", tried_at=_now_str(), retry_at="")
-                _set_next_charge(conn, tenant, next_month_first())
-            notify_dry_run(tenant, True, "%s원 청구 성공(%s)" % (sub["amount"], ym))
-            return {"ok": True, "tenant": tenant, "ym": ym, "amount": sub["amount"]}
+                _upsert_charge(conn, tenant, ym, status="unknown", error=str(e)[:300], tried_at=_now_str())
+            notify_dry_run(tenant, False, "청구 응답 없음(%s) — 재청구 안 함, 다음 회차에 조회로 확정: %s" % (ym, e))
+            return {"ok": False, "tenant": tenant, "ym": ym, "status": "unknown", "error": str(e)[:300]}
         except TossError as e:
-            status = "failed" if is_retry else "retry"
-            retry_at = "" if is_retry else (_now() + dt.timedelta(days=3)).strftime("%Y-%m-%d")
-            with conn:
-                _upsert_charge(conn, tenant, ym, order_id=order_id, amount=sub["amount"], status=status,
-                               toss_payment_key="", error=str(e)[:300], tried_at=_now_str(), retry_at=retry_at)
+            status = _settle_failed(conn, tenant, ym, order_id, sub["amount"], is_retry, e)
             notify_dry_run(tenant, False, "청구 실패(%s) — %s" % (ym, e))
             return {"ok": False, "tenant": tenant, "ym": ym, "status": status, "error": str(e)[:300]}
+        _settle_paid(conn, tenant, ym, order_id, sub["amount"], resp.get("paymentKey", ""))
+        notify_dry_run(tenant, True, "%s원 청구 성공(%s)" % (sub["amount"], ym))
+        return {"ok": True, "tenant": tenant, "ym": ym, "amount": sub["amount"]}
     finally:
         conn.close()
 
@@ -342,11 +440,29 @@ async def manual_charge(tenant: str, request: Request):
     return await run_in_threadpool(charge_one, tenant)
 
 
+def _reset_charges(tenant):
+    conn = db.connect()
+    with conn:
+        conn.execute("DELETE FROM billing_charges WHERE tenant_id=%s AND tenant=%s", (db.TENANT, tenant))
+    conn.close()
+
+
+def _read_charge(tenant):
+    conn = db.connect(readonly=True)
+    try:
+        return _charge_row(conn, tenant, _ym())
+    finally:
+        conn.close()
+
+
 def selftest():
     """토스 호출은 monkeypatch(실제 네트워크 0) · DB 는 진짜 접속(tenant='selftest' · api_proc.py 와 같은 관례).
     ERP_DB_URL 이 없는 자리(개발 PC)에서는 DB 파트를 건너뛰고 순수 로직만 잰다."""
     global TOSS_BASE
     assert next_month_first(dt.datetime(2026, 9, 16, tzinfo=KST)) == "2026-10-01"
+    assert _order_id("2_dietcamp", "2026-09", False) == "BILL-2_dietcamp-202609"          # 고정 orderId(랜덤 없음)
+    assert _order_id("2_dietcamp", "2026-09", True) == "BILL-2_dietcamp-202609-R"
+    assert issubclass(TossUnknown, TossError)
     assert next_month_first(dt.datetime(2026, 12, 20, tzinfo=KST)) == "2027-01-01"
     assert PLAN_AMOUNTS["start"] == 99000 and PLAN_AMOUNTS["growth"] == 199000 and PLAN_AMOUNTS["ops"] == 390000
     assert "ops" not in SELLABLE and set(SELLABLE) <= set(PLAN_AMOUNTS)
@@ -417,8 +533,63 @@ def selftest():
             assert r4["status"] == "failed"
             r5 = charge_one(tenant)  # 종결 뒤 또 부르면 건너뛴다(재시도 한도 = 1회)
             assert r5.get("skipped") == "already-failed-terminal"
+            o1 = _order_id(tenant, _ym(), False)
+            assert [c[1] for c in calls if c[0] == "charge"] == [o1, o1, o1 + "-R"], calls   # orderId 고정(첫 회차 · 재시도 -R)
 
-            dump = json.dumps(calls) + json.dumps([r, r1, r2, r3, r3b, r4, r5])
+            # 동시 호출(배 12750 P0 #3) — 예약 청구와 수동 청구가 같은 순간 같은 tenant·ym 를 치면 토스는 1번만
+            import threading
+            _reset_charges(tenant)
+            del calls[:]
+
+            def fake_charge_slow(billing_key, customer_key, amount, order_id, order_name):
+                calls.append(("charge", order_id, amount))
+                time.sleep(0.5)                          # 첫 호출이 토스 답을 기다리는 동안 둘째 호출이 들어온다
+                return {"paymentKey": "pay_test_slow", "status": "DONE"}
+
+            charge_billing_key = fake_charge_slow
+            outs = []
+            ts = [threading.Thread(target=lambda: outs.append(charge_one(tenant))) for _ in range(2)]
+            [t.start() for t in ts]; [t.join() for t in ts]
+            assert len([c for c in calls if c[0] == "charge"]) == 1, ("동시 호출인데 토스를 두 번 쳤다", calls)
+            assert sorted(o.get("skipped") or "charged" for o in outs) in (["charged", "in-progress"], ["already-paid", "charged"]), outs
+            row = _read_charge(tenant)
+            assert row["status"] == "paid" and row["order_id"] == _order_id(tenant, _ym(), False), dict(row)
+
+            # 응답 없음(타임아웃) — unknown 으로 남기고 재청구 금지 · 다음 회차는 조회로만 확정
+            _reset_charges(tenant)
+            del calls[:]
+
+            def fake_charge_timeout(billing_key, customer_key, amount, order_id, order_name):
+                calls.append(("charge", order_id, amount))
+                raise TossUnknown("NO_RESPONSE", "timeout: timed out")
+
+            global get_payment_by_order
+            real_inquiry = get_payment_by_order
+            inquiries = []
+            try:
+                charge_billing_key = fake_charge_timeout
+                r6 = charge_one(tenant)
+                assert r6["status"] == "unknown" and _read_charge(tenant)["status"] == "unknown", r6
+                get_payment_by_order = lambda oid: (inquiries.append(oid), {"status": "DONE", "paymentKey": "pay_found"})[1]
+                r7 = charge_one(tenant)          # 조회 결과 DONE → paid 확정, 토스 청구 재호출 0
+                assert r7["ok"] and r7.get("confirmed") == "by-inquiry", r7
+                assert inquiries == [_order_id(tenant, _ym(), False)] and len(calls) == 1, (inquiries, calls)
+                assert _read_charge(tenant)["status"] == "paid" and _read_charge(tenant)["toss_payment_key"] == "pay_found"
+                # 조회 결과 주문 없음(청구가 안 닿았다) → 실패 1회로 쳐서 retry 예약 · 여전히 재청구 0
+                _reset_charges(tenant)
+                r8 = charge_one(tenant)
+                assert r8["status"] == "unknown"
+
+                def _not_found(oid):
+                    raise TossError("NOT_FOUND_PAYMENT", "존재하지 않는 결제 정보 입니다.")
+                get_payment_by_order = _not_found
+                r9 = charge_one(tenant)
+                assert r9["status"] == "retry" and _read_charge(tenant)["status"] == "retry", r9
+                assert len([c for c in calls if c[0] == "charge"]) == 2, calls   # r6·r8 두 번뿐(r7·r9 는 조회만)
+            finally:
+                get_payment_by_order = real_inquiry
+
+            dump = json.dumps(calls) + json.dumps([r, r1, r2, r3, r3b, r4, r5, r6, r7, r8, r9, outs])
             assert "billing_test_key_should_never_be_logged" not in dump, "빌링키 원문이 응답/로그에 샜다"
         finally:
             conn = db.connect()
