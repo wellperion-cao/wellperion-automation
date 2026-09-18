@@ -651,6 +651,19 @@ def _schedule_sync(script):
     t.start()
 
 
+# Postgres 는 text·jsonb 어느 칸에도 NUL(U+0000)을 못 담는다(psycopg2 UntranslatableCharacter) — 원장에
+# 넣기 전 재귀로 지운다(2026-09-18 · 배 12808). 전사일정 저장이 이 자리(write_log INSERT) 하나에서 전원
+# 500 을 맞았다 — 여기서 막으면 save_schedule 뿐 아니라 이 INSERT 를 지나는 모든 액션이 함께 보호된다.
+def _strip_nul(v):
+    if isinstance(v, str):
+        return v.replace("\x00", "") if "\x00" in v else v
+    if isinstance(v, dict):
+        return {k: _strip_nul(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_strip_nul(x) for x in v]
+    return v
+
+
 @router.post("/api/write")
 async def write(request: Request):
     """수신만 여기서 — 나머지(DB·GAS 왕복 최대 55초)는 동기라 threadpool 로 돌린다(배1112).
@@ -790,9 +803,9 @@ def _write_sync(headers, body):
         log_id = conn.execute(
             "INSERT INTO write_log (tenant_id, at, action, payload, user_email, gas_status, raw_body)"
             " VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-            (db.TENANT, _now_kst(), action, json.dumps(redact_blobs(payload), ensure_ascii=False), user,
+            (db.TENANT, _now_kst(), action, json.dumps(_strip_nul(redact_blobs(payload)), ensure_ascii=False), user,
              "test" if is_test else ("queued" if server_mode else "pending"),
-             body.decode("utf-8") if server_mode else None)).fetchone()[0]
+             _strip_nul(body.decode("utf-8")) if server_mode else None)).fetchone()[0]
     if is_test:
         conn.close()
         return server_ok(log_id, test=True)
@@ -856,6 +869,11 @@ def _write_sync(headers, body):
 
 
 if __name__ == "__main__":   # python3 api_write.py — 갈래·가림 자체점검(서버 없이)
+    # NUL 제거(2026-09-18 · 배 12808) — Postgres 가 못 담는 문자를 원장에 넣기 전에 지운다.
+    assert _strip_nul("깨끗") == "깨끗" and _strip_nul("앞\x00뒤") == "앞뒤"
+    assert _strip_nul({"note": "G:\\경로\x00. 폴더", "items": ["a\x00b", 1, None]}) == \
+        {"note": "G:\\경로. 폴더", "items": ["ab", 1, None]}
+    assert "\x00" not in json.dumps(_strip_nul({"a": "x\x00y"}), ensure_ascii=False)  # 저장 성공(NUL 없음)
     assert auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "staff_feedback_submit")
     assert not auto_login_ok({"x-erp-allowed": "auto-login,cpo-member-%EC%8B%A4"}, "member_owner_save")
     assert auto_login_ok({"x-erp-allowed": "*"}, "member_owner_save") and auto_login_ok({}, "todo_update")
