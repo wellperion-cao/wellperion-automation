@@ -1112,10 +1112,12 @@ def _selfcheck() -> None:
     assert _hhmm("2026-09-17 20:31:40") == "20:31"
     assert _hhmm("Thu Sep 17 2026 10:50:00 GMT+0900 (한국 표준시)") == "10:50"
     assert _hhmm("") == ""
-    live = {"byGender": {"m": {"am": 26, "amTotal": 27}, "f": {"am": 7, "amTotal": 26}},
+    # amTotal 남28/여24 = 2026-09-18 GM 지시 반영 새 마스터(월요일 기준·G-1 포함) 실측값.
+    # 손소독 2건 리셉션 이관 + 운동시설 3건 남만 + G-1 방역 월요일 신규 편입(남녀 공통) 반영.
+    live = {"byGender": {"m": {"am": 26, "amTotal": 28}, "f": {"am": 7, "amTotal": 24}},
             "uncheckedByShift": {"am": {"m": ["G-2 접점 소독"], "f": ["A-1 사우나 탕", "A-2 건/습식 사우나"]}}}
     ln = support_nudge_lines(live)
-    assert ln[1] == "    · 오전조 남 26/27 미체크: G-2 접점 소독 · 여 7/26 미체크: A-1 사우나 탕, A-2 건/습식 사우나", ln
+    assert ln[1] == "    · 오전조 남 26/28 미체크: G-2 접점 소독 · 여 7/24 미체크: A-1 사우나 탕, A-2 건/습식 사우나", ln
     orig = CHECK_INCOMPLETE_LEDGER
     with tempfile.TemporaryDirectory() as td:
         CHECK_INCOMPLETE_LEDGER = Path(td) / "ledger.json"
