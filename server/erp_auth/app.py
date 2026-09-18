@@ -732,11 +732,16 @@ MEMBER_DATA_RE = re.compile(r"^/status/(member_|inquiry_snapshot|counsel_questio
 # 읽기 API 접두 → 그 자료를 그리는 카드들. 그중 하나라도 허용돼야 API 도 열린다(2026-09-14 화면 전수 grep 으로 만든 표).
 # /api/write·/api/members/write 는 본문의 action 으로 갈리므로 상류(api_write.write_allowed)가 X-Erp-Allowed 헤더로 판정한다.
 # /api/board 는 페이지 공용 보드(로그인 전용 그대로).
+# ⚠️ 홈 모듈(ceo-wellperion-guide-main)은 STAFF_OPEN_MODULES 로 로그인 직원 전원에게 열린다 — 이 표에 넣는 순간
+#   그 접두는 전원 공개다. 홈(wellperion_guide(main).html)이 실제로 fetch 하는 접두에만 넣는다(2026-09-18 · 홈은
+#   /api/members 를 안 부르는데 넣어 뒀다가 회원 API 가 전 직원에게 뚫려 있었다 — 문서 표 안 <code> 언급과 실제
+#   fetch 호출을 혼동하지 말 것). /api/lesson/ 은 개인정보(등록회원·명단)라 좁게, 홈이 쓰는 집계는 /api/lesson/stats 로 따로 연다.
 API_MODULES = {
-    "/api/members": {"member", "cpo-member-renewal", "ceo-wellperion-guide-main"},
+    "/api/members": {"member", "cpo-member-renewal"},
     "/api/inquiries": {"member", "inquiry", "ceo-wellperion-guide-main"},
     "/api/report/": {"member", "coo-report-매출회원현황보고"},
-    "/api/lesson/": {"member", "cpo-member-lesson", "ceo-wellperion-guide-main"},
+    "/api/lesson/stats": {"member", "cpo-member-lesson", "ceo-wellperion-guide-main"},  # 홈 KPI 타일(집계만·개인정보 없음)
+    "/api/lesson/": {"member", "cpo-member-lesson"},          # /members·/roster·/registry = 강습 등록 회원 개인정보
     "/api/hr/": {"chro-hub-index", "chro-recruiting-index"},
     "/api/todo": {"coo-todo-업무-현황-ssot", "coo-todo-결재-현황-ssot", "coo-chairman-gm업무", "coo-check-파트너팀-체계",
                   "ceo-wellperion-guide-main", "gm-월간운영계획"},
@@ -2191,6 +2196,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not path_allowed(_stf, "/repo/status/member_active_snapshot.json") and not path_allowed(_stf, "/repo/logs/a.log")
     assert path_allowed(_stf, "/repo/3. 웰페리온 가이드/coo/bootsetup_matrix.json") and not path_allowed(_stf, "/repo/3. 웰페리온 가이드/reports/x.html")
     assert not path_allowed(_stf, "/reports/x.html") and not path_allowed(_stf, "/erp/admin/") and not path_allowed(_stf, "/api/members")
+    # 홈 모듈만 가진 직원(카드 없음) — 회원·강습 개인정보 API 는 못 열고, 홈이 실제로 fetch 하는 접두만 연다(2026-09-18 구멍 수리).
+    _stf_home = {"role": "staff", "email": "home@x", "perms": json.dumps({"modules": [], "groups": [], "deny": []})}
+    assert not path_allowed(_stf_home, "/api/members") and not path_allowed(_stf_home, "/api/lesson/members")
+    assert path_allowed(_stf_home, "/api/inquiries") and path_allowed(_stf_home, "/api/lesson/stats")
     # 보고 문서(kind=doc, 배 12666) — 카드 밖으로 떨어져도 직원은 못 연다 · 관리자는 그대로
     assert not path_allowed(_stf, "/coo/chairman/x.html") and path_allowed(_adm, "/coo/chairman/x.html")
     assert not path_allowed(_stf, uri_path("/erp/admin/")) and not path_allowed(_stf, uri_path("/repo/"))   # 폴더 요청(끝 슬래시 떼임)
