@@ -661,6 +661,27 @@ def _nudge_similar(a: str, b: str) -> bool:
     return na in nb or nb in na or SequenceMatcher(None, na, nb).ratio() >= 0.6
 
 
+_REPLY_RECENT_DAYS = 3  # 회신 뒤 이 안엔 같은 건을 다시 안 묻는다(나우열M 09-18 "어제 피드백 줬잖아")
+
+
+def _reply_recently_answered(issue: dict, target_date: str, days: int = _REPLY_RECENT_DAYS) -> bool:
+    """issue["replied_at"](sync_ledger_replies 가 완료 낱말 없는 회신에도 남긴다)이 최근
+    며칠 안이면 True. 전엔 이 값을 아무도 안 읽어서 답한 건이 다시 실렸다(배12796)."""
+    r = str(issue.get("replied_at") or "")
+    if not r:
+        return False
+    try:
+        return 0 <= (date.fromisoformat(target_date) - date.fromisoformat(r)).days < days
+    except Exception:
+        return False
+
+
+def _remind_still_pending(issue: dict, target_date: str) -> bool:
+    """회신에 적힌 리마인드 요청일(issue["remind_at"])이 아직 안 지났으면 True — 그날까지 침묵."""
+    r = str(issue.get("remind_at") or "")
+    return bool(r) and target_date < r
+
+
 def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -> list:
     """전날들의 열린 건(담당 있음)을 항목 리스트로 돌려준다 — {"date","who","ask","how"}.
     build_asks_section 이 배 전달(relay) 항목과 합쳐 오래된 순으로 잘라 보여준다
@@ -718,6 +739,8 @@ def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -
             title = str(it.get("issue") or "").strip()
             owner = str(it.get("owner") or "").strip()
             if not title or not owner or str(it.get("status") or "") != "open":
+                continue
+            if _reply_recently_answered(it, target_date) or _remind_still_pending(it, target_date):
                 continue
             if any(_nudge_similar(title, x) for x in resolved_texts + today_texts):
                 continue
@@ -1419,7 +1442,8 @@ def send_nawool_noon(dry: bool = False) -> int:
         return 0
 
     # 한 일을 먼저, 남은 것을 그 다음에. 한쪽이 비면 그 절만 빠진다.
-    parts = ["🕛 낮 확인"]
+    # 기준 한 줄(GM 09-18 "3건 기준이 뭐야") — NUDGE_SHOW_N 그대로 적는다(값 하드코딩 금지).
+    parts = [f"🕛 낮 확인 · 기준: 원장 오래 묵은 순 사람당 {NUDGE_SHOW_N}건(그 이상은 다음 회차)"]
     if done_titles:
         parts.append(f"✅ 오늘 끝내신 것 {len(done_titles)}건")
         for t in done_titles[:ASKS_PER_PERSON_CAP]:
@@ -1733,6 +1757,29 @@ def _reply_match(staff_message: str, human_lines: "list[dict]", rare_words: "set
 # ══════════════════════════════════════════════════════════════════════════
 _REPLY_DONE_WORDS = ("완료", "됐습니다", "됩니다", "끝났", "처리했", "됨")
 _REPLY_DATE_RE = re.compile(r"(\d{1,2})[/.](\d{1,2})")
+# 「9/30 리마인드」·「30일 리마인드」— 완료 낱말 없는 회신이 요청일을 남긴 경우(배12796).
+_REMIND_RE = re.compile(r"(?:(\d{1,2})[/.])?(\d{1,2})일?\s*리마인드")
+
+
+def _parse_remind_at(chunk: str, target_date: str) -> str:
+    """회신 chunk 에서 리마인드 요청일(YYYY-MM-DD)을 뽑는다. 없으면 빈 문자열.
+    슬래시형(9/30)은 이미 지났으면 내년, 일자형(30일)은 이미 지났으면 다음 달로 넘긴다."""
+    m = _REMIND_RE.search(chunk)
+    if not m:
+        return ""
+    yyyy, mm = int(target_date[:4]), int(target_date[5:7])
+    if m.group(1):
+        mm, dd = int(m.group(1)), int(m.group(2))
+        remind = f"{yyyy}-{mm:02d}-{dd:02d}"
+        if remind < target_date:
+            remind = f"{yyyy + 1}-{mm:02d}-{dd:02d}"
+        return remind
+    dd = int(m.group(2))
+    remind = f"{yyyy}-{mm:02d}-{dd:02d}"
+    if remind < target_date:
+        mm, yyyy = (mm + 1, yyyy) if mm < 12 else (1, yyyy + 1)
+        remind = f"{yyyy}-{mm:02d}-{dd:02d}"
+    return remind
 
 
 def sync_ssot_replies(target_date: str, todo_rows: list) -> list:
@@ -1945,6 +1992,10 @@ def sync_ledger_replies(target_date: str, ledger: list, human_lines: "list | Non
                 issue["status"] = "resolved"
                 issue["resolved_by"] = "카톡·텔레그램 회신"
                 issue["resolved_at"] = target_date
+            else:
+                remind = _parse_remind_at(chunk, target_date)
+                if remind:
+                    issue["remind_at"] = remind
             touched.append({"no": no, "title": issue.get("issue", ""), "line": chunk[:80]})
 
     if touched:
