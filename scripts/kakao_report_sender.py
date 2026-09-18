@@ -565,7 +565,8 @@ def user_idle_seconds() -> int:
 
 
 def wait_until_user_idle(min_idle_sec: int = 180, max_wait_sec: int = 1500, tag: str = "") -> bool:
-    """True = 진행해도 된다 · False = 사람 사용 중이라 이번 회차 건너뜀. KAKAO_UI_NOW=1(--now) 이면 즉시 True."""
+    """True = 진행해도 된다 · False = max_wait_sec 안에 사람이 손을 안 뗌(내보내기는 건너뛰고, 사람 방 발신기는 그래도
+    보낸다 — 판정은 호출부). KAKAO_UI_NOW=1(--now) 이면 즉시 True."""
     if os.environ.get("KAKAO_UI_NOW") == "1":
         return True
     deadline = time.time() + max_wait_sec
@@ -581,7 +582,7 @@ def wait_until_user_idle(min_idle_sec: int = 180, max_wait_sec: int = 1500, tag:
         except Exception:
             gave_up_ago = 10 ** 6
         if time.time() + 20 > deadline or gave_up_ago < 600:
-            log("[kakao-idle] %s — 사람 사용 중 — 이번 회차 건너뜀(idle %d초 < %d초 · %s)"
+            log("[kakao-idle] %s — 사람 사용 중 · 대기 끝(idle %d초 < %d초 · %s) — 건너뛸지는 호출부가 정한다"
                 % (tag, idle, min_idle_sec,
                    "%d분 기다림" % (max_wait_sec // 60) if gave_up_ago >= 600 else "%d분 전 다른 회차도 포기" % (gave_up_ago // 60)))
             try:
@@ -2927,6 +2928,8 @@ def main() -> int:
         description="텔레그램 매출보고 이미지를 카톡 방(들)에 전송(카카오톡 PC 앱 UI 자동화)")
     ap.add_argument("--selftest", action="store_true",
                      help="회장님 게이트·정제 로직 자가검사만 실행(실제 발신 없음)")
+    ap.add_argument("--now", action="store_true",
+                     help="사람이 PC 를 쓰는 중이어도 기다리지 않고 바로 보낸다(배 12749 관문 우회)")
     ap.add_argument("--image", default=None, help="전송할 이미지 파일 경로(미지정 시 --from-folder 필요)")
     ap.add_argument("--from-folder", action="store_true",
                      help="--image 미지정 시 kakao_rooms.json의 archive_dir/YYYY-MM/에서 오늘 날짜 파일 자동 선택")
@@ -2952,6 +2955,8 @@ def main() -> int:
     if args.selftest:
         _selftest()
         return 0
+    if args.now:
+        os.environ["KAKAO_UI_NOW"] = "1"
 
     if sys.platform != "win32":
         print("BLOCKED: 이 스크립트는 Windows(카카오톡 PC 앱) 전용입니다.")
@@ -3009,6 +3014,11 @@ def main() -> int:
     if not args.dry_run and not acquire_gui_lock():
         print(f"BLOCKED: 다른 카톡 발신이 {int(_GUI_LOCK_WAIT_SEC)}초 넘게 화면을 잡고 있어 보내지 못했다")
         return 1
+    # ★사람이 PC 를 쓰는 중이면 손을 뗄 때까지 최대 5분 기다린 뒤 보낸다 — 사람 방 발신(09:30 매출보고·07:50 통)은
+    #   절대 빠지면 안 되므로 형제 스크립트와 달리 **건너뛰지 않는다**(배 12749 후속 · 시토 2026-09-18).
+    #   회차당 한 번(첫 방 앞) — 방을 따로 도는 프로세스는 직전 자동화가 놓은 표식(.kakao_ui.last_auto)으로 바로 통과.
+    if not args.dry_run and not wait_until_user_idle(min_idle_sec=180, max_wait_sec=300, tag="sender"):
+        log("[kakao-idle] 사람 사용 중 5분 대기 뒤 발신 — 사람 방 발신은 건너뛰지 않는다(배 12749)")
     room_names = [r["name"] for r in rooms]
 
     def _log_room_members(target_rooms):
