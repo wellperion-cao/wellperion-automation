@@ -84,6 +84,11 @@ try:  # 업무관리 방 에이전트(wrk: 콜백, 2026-09-05 GM 물음 · 배10
 except Exception:
     work_room_agent = None
 
+try:  # GM지시방 수신 에이전트(2026-09-18 GM 지시 · 배12769) — telegram_bot/ 폴더 내 모듈
+    import gm_directive_room
+except Exception:
+    gm_directive_room = None
+
 try:  # 🔒 자물쇠 라인 승인 카드(plk: 콜백, 2026-09-07 GM 지시 · 배1098)
     import push_lock_card
 except Exception:
@@ -1093,6 +1098,8 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     _log_group_message(update)
     if work_room_agent is not None:
         await work_room_agent.handle_group_message(update, ctx)  # 업무관리 방 에이전트(배1068) — 그룹만 상대, 그 외 무영향
+    if gm_directive_room is not None:
+        await gm_directive_room.handle_group_message(update, ctx)  # GM지시방 에이전트(배12769) — 그 방만 상대, 그 외 무영향
     if not await authorized(update):
         return
 
