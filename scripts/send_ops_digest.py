@@ -951,7 +951,10 @@ def build_mgr_evening_carryover(n: int = 10) -> str:
         ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
     except Exception:
         return ""
-    return _format_carryover_lines(mgr_open_candidates(ledger), n)
+    # 나우열M 건은 카톡 방 어디에도 싣지 않는다(GM 2026-09-14 · 텔레그램 업무관리 방 몫) — 09-17 17:05 통에
+    # #141·#196·#274 가 실려 나갔다. 아침 통은 3047줄 갈래에서 이미 갈라 보내고, 저녁 통은 여기서 뺀다.
+    rows = [r for r in mgr_open_candidates(ledger) if NAWOOL_WHO not in str(r.get("owner") or "")]
+    return _format_carryover_lines(rows, n)
 
 
 def build_ops_carryover_section(n: int = 10) -> str:
@@ -1040,6 +1043,8 @@ def _selfcheck_mgr_evening_carryover() -> None:
                                               "status": "resolved", "no": 10}]},
                 {"date": _iso(3), "issues": [{"issue": "최근 건", "owner": "이경연 실장",
                                               "status": "open", "kind": "reply", "no": 20}]},
+                {"date": _iso(12), "issues": [{"issue": "나우열M 건 — 카톡엔 안 실려야 함", "owner": "나우열M",
+                                              "status": "open", "no": 30, "kind": "reply"}]},
                 {"date": _iso(9), "issues": [{"issue": "오래된 건", "owner": "이정헌 소장",
                                               "status": "open", "kind": "reply", "no": 21}]},
             ], ensure_ascii=False), encoding="utf-8")
@@ -3870,6 +3875,62 @@ def _selfcheck_notice_once() -> None:
     print("[selfcheck] notice_once OK")
 
 
+# ── 두 통 합본 정돈 관문 (GM 지시 2026-09-18 · 웰리) ───────────────────────
+# 09-18 07:50 ★중간관리자 통에 「🌅 하루의 시작」이 세 번(머리글 + 접수 절 제목 + 어제 요약 제목),
+# 「웰페리온 AI 드림」 서명이 본문 한가운데 나갔다(GM: 「불필요하고 무의미한 중복 — 삭제하고 반복하지 마라」).
+# 절마다 제목을 따로 짓고 합본 때 그대로 이어 붙인 결과다. 절 쪽을 하나씩 고치면 다음 절이 또 어긋나므로
+# 합치는 자리 한 곳에서 걷는다(약속 L21) — 아침(send_mgr_morning_one·미리보기)·저녁(daily_scheduler)이 같이 지난다.
+#   · 머리글 = 「🌅 하루의 시작 — 9/18(금)」 한 줄(방 이름 없음 — 그 방에서 읽는 통이다)
+#   · 절 제목의 「🌅 하루의 시작 — 」·「🌙 하루의 마무리 — 」 앞머리는 「📌 」로 바꾼다(제목 본문은 그대로)
+#   · 서명(RELAY_SIGNOFF)은 본문 안에서 전부 걷고 맨 끝 한 번만
+#   · 첫 줄은 반드시 머리글 — kakao_report_sender 의 정기 통 판별(_ROUTINE_DIGEST_HEADS)이 첫 줄을 본다
+_BOOKEND_TITLE_RE = re.compile(r"^(🌅 하루의 시작|🌙 하루의 마무리)\s*[—-]\s*")
+
+
+def bookend_header(kind: str, when=None) -> str:
+    """kind='morning'|'evening' → 「🌅 하루의 시작 — 9/18(금)」."""
+    d = when or datetime.now()
+    wd = "월화수목금토일"[d.weekday()]
+    return ("🌅 하루의 시작" if kind == "morning" else "🌙 하루의 마무리") + f" — {d.month}/{d.day}({wd})"
+
+
+def tidy_bookend(header: str, parts: list, signoff: str = RELAY_SIGNOFF) -> str:
+    """머리글 1줄 + 절들 → 제목 중복·본문 속 서명을 걷은 합본 문자열. parts 가 비면 빈 문자열."""
+    parts = [p for p in parts if p and str(p).strip()]
+    if not parts:
+        return ""
+    out = []
+    for p in parts:
+        lines = []
+        for ln in str(p).splitlines():
+            if ln.strip() == signoff:
+                continue
+            lines.append(_BOOKEND_TITLE_RE.sub("📌 ", ln, count=1))
+        # 절 끝 빈 줄 정리
+        while lines and not lines[-1].strip():
+            lines.pop()
+        if lines:
+            out.append("\n".join(lines))
+    return "\n\n".join([header] + out + [signoff])
+
+
+def _selfcheck_tidy_bookend() -> None:
+    hdr = bookend_header("morning", datetime(2026, 9, 18))
+    assert hdr == "🌅 하루의 시작 — 9/18(금)", hdr
+    parts = ["🌅 하루의 시작 — 아직 안 끝난 접수 2건, 마무리 부탁드립니다\n🔴 8/27 건",
+             "🌅 하루의 시작 — 중간관리자 어제 · 9/17(목)\n\n👤 이경연 실장님\n • 줄",
+             "🧾 확인 부탁드릴 것 1건\n▪ #1\n" + RELAY_SIGNOFF,
+             "", "📅 다가오는 일정 — 1건"]
+    txt = tidy_bookend(hdr, parts)
+    assert txt.count("하루의 시작") == 1, txt
+    assert txt.count(RELAY_SIGNOFF) == 1 and txt.rstrip().endswith(RELAY_SIGNOFF), txt
+    assert txt.startswith(hdr + "\n\n📌 아직 안 끝난 접수 2건"), txt
+    assert "📌 중간관리자 어제 · 9/17(목)" in txt, txt
+    assert tidy_bookend(hdr, ["", None]) == ""
+    print("[selfcheck] tidy_bookend OK")
+
+
+
 # ★중간관리자 「🌅 하루의 시작」 1통 병합 (배12678 · GM 지시 2026-09-16 "방마다 하루 두 통")
 # 옛 세 함수(_send_ovd_room·send_mgr_brief·send_schedule_pings)가 07:40~07:58 사이 이 방에
 # 따로 보내던 미해결 접수·결정거리·오늘 일정을 카톡 한 통으로 합친다. 각 함수의 데이터
@@ -3912,8 +3973,7 @@ def send_mgr_morning_one(ovd_ready: bool) -> bool:
 
     kakao_ok = True
     if parts:
-        header = f"🌅 하루의 시작 — {WEEKLY_ROOM} {datetime.now().strftime('%m/%d')}"
-        combined = "\n\n".join([header] + parts)
+        combined = tidy_bookend(bookend_header("morning"), parts)
         cmd = [sys.executable, str(SENDER), "--message", combined, "--only-room", WEEKLY_ROOM,
                "--sender", "아침정리다이제스트"]
         log(f"[mgr1] 하루의 시작 통합 발송({len(parts)}절) → {WEEKLY_ROOM}")
@@ -3972,8 +4032,7 @@ def preview_mgr_morning_one() -> int:
     sched_text = _build_mgr_schedule_text()
 
     parts = [p for p in (ovd_text, mgr_msg, sched_text, notice_once_section()) if p]
-    header = f"🌅 하루의 시작 — {WEEKLY_ROOM} {datetime.now().strftime('%m/%d')}"
-    combined = "\n\n".join([header] + parts) if parts else "(보낼 내용 0건 — 발송 안 함)"
+    combined = tidy_bookend(bookend_header("morning"), parts) or "(보낼 내용 0건 — 발송 안 함)"
     print(f"\n===== {WEEKLY_ROOM} 하루의 시작 통합 미리보기 (mgr 대상 {target_date}) =====")
     print(combined)
     if reply_hits:
@@ -4851,6 +4910,7 @@ def main() -> int:
     if args.selfcheck:
         _selfcheck_parse_ymd()
         _selfcheck_done_filter()
+        _selfcheck_tidy_bookend()
         _selfcheck_gm_work_section()
         _selfcheck_today_candidates()
         _selfcheck_inquiry_contact_section()

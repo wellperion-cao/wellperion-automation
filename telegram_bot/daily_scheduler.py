@@ -3247,9 +3247,9 @@ def run_mgmt_notice_digest() -> None:
         #   하나뿐(약속 L01), 새 원장 없음.
         carryover_text = _od3.build_mgr_evening_carryover()
         _, _mm, _dd = today.split("-")
-        header = f"🌙 하루의 마무리 — {_od3.RELAY_ROOM} {int(_mm)}/{int(_dd)}"
+        # 머리글·절 제목·서명 중복은 send_ops_digest.tidy_bookend 한 관문에서 걷는다(GM 지시 2026-09-18)
         body_parts = [p for p in (notice_text, carryover_text) if p]
-        combined_text = "\n\n".join([header] + body_parts) if body_parts else ""
+        combined_text = _od3.tidy_bookend(_od3.bookend_header("evening"), body_parts)
         if combined_text:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             # --sender 중간관리자알림합본 — 사람 방 발신 가드(배 11070 ⑤) 통과용.
