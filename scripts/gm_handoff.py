@@ -17,7 +17,9 @@
   등록:  python scripts/gm_handoff.py --title "…" --content "…" [--date 2026-09-09 --time 14:00]
              [--approval "GM,대표님"] [--category "[7] IT·시스템·자동화"] [--due 2026-09-11]
              [--plan 2026-08-24 --check "□ 로 추가할 체크 한 줄"] [--assignee "김남욱 GM"] [--dry-run]
-             [--source 회장님|대표님]  ← 회장님·대표님 지시면 제목 앞에 「[회장님 지시] 」를 붙이고 카드 첫 줄에 남긴다(GM업무 배지 👑/🤵 · GM 지시 2026-09-15)
+             [--source 회장님|대표님|GM]  ← 생략하면 GM 지시로 간주(경고 1줄) · 제목 앞에 「[회장님 지시]」/「[대표님 지시]」/「[GM 지시]」를
+             붙이고 카드 진행 메모 첫 줄(□ [<출처> 지시 …] 태그)에도 남긴다(GM업무 배지 👑/🤵 · GM 지시 2026-09-15·09-18 배2761)
+  자체점검:  python scripts/gm_handoff.py --selfcheck  ← --source 태그·idempotence 만 확인(네트워크 없음)
              [--todo-id TODO-…]  ← 실무진이 이미 올린 업무 SSOT 행이 있으면 같이 준다. --todo-id·--plan 은
              전사일정 item 의 todo_id·plan_id 칸이 되어, 전사일정 카드에 「업무」·「GM업무」 링크로 뜬다.
   완료:  python scripts/gm_handoff.py --done --todo-id TODO-… [--event-id evt-…] [--plan 2026-08-24 --check "☑ 로 바꿀 체크 원문"] [--dry-run]
@@ -167,6 +169,17 @@ GM_KEY = "1531"  # GM 행(결재 SSOT)은 gmkey 없이는 조회에 안 나온�
 
 
 GM_TAG = "(GM 직접)"   # _gm_direct_tasks.js GM_TAG 와 같은 값 — GM업무 화면 편입 판정
+
+
+def apply_source_tag(title: str, source: str | None) -> tuple[str, str, bool]:
+    """--source 처리(배2761) — 업무명 앞에 「[<출처> 지시]」를 붙인다(이미 붙어 있으면 그대로 · idempotent).
+    source 생략(None/빈값) 이면 GM 으로 간주하고 세 번째 값(warned)을 True 로 돌려준다 — 경고 줄은 호출부가 찍는다."""
+    warned = not source
+    resolved = source or "GM"
+    tag = f"[{resolved} 지시]"
+    if not str(title or "").startswith(tag):
+        title = f"{tag} {title}"
+    return title, resolved, warned
 
 
 def _title_head(title: str) -> str:
@@ -324,13 +337,16 @@ def new_card(title: str, content: str, due: str, dry: bool, category: str = "", 
     #   태그 없이 만들면 카드는 있는데 GM업무엔 안 보인다(2026-09-15 실측 · 09-32). 화면은 태그를 떼고 그린다.
     if GM_TAG not in title:
         title = f"{title} {GM_TAG}"
-    src_line = f"▶[{source} 지시 · GM 전달 {today}]\n" if source else ""
+    # 배2761 — □ 첫 줄 태그가 source 를 안 타고 「GM 지시」로 박혀 있던 버그(회장님·대표님 지시 카드도 GM 지시로 찍힘).
+    # source 는 이제 항상 회장님/대표님/GM 중 하나(gm_handoff.apply_source_tag 가 기본값을 채운다).
+    tag_src = source or "GM"
+    src_line = f"▶[{tag_src} 지시 · GM 전달 {today}]\n" if tag_src != "GM" else ""
     # 업무 SSOT 행과 짝(GM 2026-09-17 「GM업무랑 연동」) — 완료는 --done --todo-id … --plan … 이 두 면을 같이 닫는다.
     link_line = f"\n🔗 업무 SSOT {todo_id}" if todo_id else ""
     card = {
         "id": cid, "initiative_id": "", "owner": GM_OWNER, "dept": "경영지원부", "title": title,
         "target": content[:300], "metric": "", "status": "진행", "progress": 0, "northstar": "",
-        "progress_note": f"{src_line}■ 할 일\n□ [GM 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}{link_line}",
+        "progress_note": f"{src_line}■ 할 일\n□ [{tag_src} 지시 {today}] {content[:200]} — 담당: {GM_CREATOR} · 기한: {due or '(미정)'}{link_line}",
         "honesty": {"level": "manual", "label": "📝 사람값", "basis": "GM 지시 · gm_handoff 생성", "at": today},
         "due": due or "",
     }
@@ -549,6 +565,25 @@ def _print_migrate_table(rows: list[dict]) -> None:
         print(f"| {r['원천']} | {r['id']} | {name} | {r['담당자']} | {r['종료']} | {r['판정']} |")
 
 
+def _selfcheck_source_tag() -> int:
+    """--selfcheck — apply_source_tag 3태그(회장님·대표님·GM) + idempotence 만 확인. 네트워크·저장 없음(배2761)."""
+    cases = [
+        ("장비 점검", "회장님", "[회장님 지시] 장비 점검"),
+        ("장비 점검", "대표님", "[대표님 지시] 장비 점검"),
+        ("장비 점검", None, "[GM 지시] 장비 점검"),          # 생략 → GM 기본값
+        ("[GM 지시] 장비 점검", None, "[GM 지시] 장비 점검"),      # idempotence — 이미 붙은 태그 중복 안 됨
+        ("[회장님 지시] 장비 점검", "회장님", "[회장님 지시] 장비 점검"),  # idempotence
+    ]
+    ok = True
+    for title, source, want in cases:
+        got, _resolved, _warned = apply_source_tag(title, source)
+        if got != want:
+            print(f"✖ apply_source_tag({title!r}, {source!r}) = {got!r} — 기대 {want!r}")
+            ok = False
+    print(f"{'✔' if ok else '✖'} selfcheck — {len(cases)}건(3태그 + idempotence 2건)")
+    return 0 if ok else 1
+
+
 def _mark(res: dict) -> str:
     if not res:
         return "—"
@@ -575,8 +610,11 @@ def main() -> int:
     ap.add_argument("--creator", default=GM_CREATOR,
                     help="업무 SSOT 생성자 칸 — CLI 로 직접 올리는 사람 이름(GM 2026-09-17 「CLI 로 업무 추가」). 기본 김남욱GM")
     ap.add_argument("--force", action="store_true", help="닮은 열린 행이 있어도 새로 등록(정말 다른 건일 때만)")
-    ap.add_argument("--source", choices=["회장님", "대표님"],
-                    help="지시 출처 — 제목 앞에 「[회장님 지시] 」/「[대표님 지시] 」를 붙이고 GM업무 카드 첫 줄에 남긴다(👑/🤵 배지)")
+    ap.add_argument("--source", choices=["회장님", "대표님", "GM"],
+                    help="지시 출처 — 생략하면 GM 으로 간주(경고 1줄). 제목 앞에 「[회장님 지시]」/「[대표님 지시]」/「[GM 지시]」를"
+                         " 붙이고 GM업무 카드 진행 메모 첫 줄에도 남긴다(👑/🤵 배지)")
+    ap.add_argument("--selfcheck", action="store_true",
+                    help="--source 태그(3종)·idempotence 자체점검만 하고 끝(네트워크·저장 없음)")
     ap.add_argument("--close-card", metavar="카드ID", help="월간운영계획 카드를 status=완료 로 닫는다 — 증거를 --why 로 반드시 준다. 나우열M 담당 카드는 거부(exit 2)")
     ap.add_argument("--why", default="", help="--close-card 근거")
     ap.add_argument("--migrate-cards", action="store_true", help="GM 카드(열림) → 업무 SSOT 행 이관(§2). --dry-run 이면 표만 찍는다")
@@ -584,6 +622,9 @@ def main() -> int:
     ap.add_argument("--only", default="", help="--migrate-* 대상 제한 — 콤마로 카드id/#no 나열")
     a = ap.parse_args()
     dry = a.dry_run
+
+    if a.selfcheck:
+        return _selfcheck_source_tag()
 
     if a.migrate_cards or a.migrate_ledger:
         only = {x.strip() for x in a.only.split(",") if x.strip()} or None
@@ -617,8 +658,9 @@ def main() -> int:
 
     if not a.title:
         ap.error("--title 필요")
-    if a.source and not a.title.startswith(f"[{a.source} 지시]"):
-        a.title = f"[{a.source} 지시] {a.title}"
+    a.title, a.source, warned = apply_source_tag(a.title, a.source)
+    if warned:
+        print("⚠ --source 생략 — GM 지시로 간주합니다(회장님·대표님 지시면 --source 로 명시하세요)")
     if not a.force:
         dup = find_open_duplicate(a.title)
         if dup:
