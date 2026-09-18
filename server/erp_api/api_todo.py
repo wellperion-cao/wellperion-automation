@@ -13,7 +13,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 저장소 server/ = 서버 /srv/erp/
 from common import db  # noqa: E402
@@ -23,6 +23,24 @@ SOURCE = "sheet-mirror"
 KST = timezone(timedelta(hours=9))
 router = APIRouter(prefix="/api/todo")
 
+# 대외비 카드 (배 12835 · [나우열M 요청 2026-09-18]) — '내용' 첫 줄이 이 표식이면 비관리자에게 내용·첨부를 감춘다.
+CONFIDENTIAL_MARK = "===CONFIDENTIAL==="
+
+
+def _is_confidential(d: dict) -> bool:
+    return str(d.get("내용") or "").lstrip().startswith(CONFIDENTIAL_MARK)
+
+
+def _is_admin_email(email: str) -> bool:
+    """관리자 판정 = api_assistant.py _admins() 와 완전히 같은 허용목록 하나(개인 예외 없음).
+    env ERP_PLATFORM_ADMINS(기본 cao@wellperion.com)에 있는 이메일만 관리자다."""
+    admins = frozenset(e.strip().lower() for e in os.environ.get("ERP_PLATFORM_ADMINS", "cao@wellperion.com").split(",") if e.strip())
+    return (email or "").strip().lower() in admins
+
+
+def _is_admin(request: Request) -> bool:
+    return _is_admin_email(request.headers.get("x-erp-user", ""))
+
 
 def _open():
     try:
@@ -31,8 +49,15 @@ def _open():
         raise HTTPException(503, "DB 열기 실패: %s" % e)
 
 
-def _row(r, appr=None):
+def _row(r, appr=None, admin=False):
     d = json.loads(r["data"])
+    conf = _is_confidential(d)
+    masked = conf and not admin
+    if masked:
+        d["내용"] = ""
+        d["파일URL"] = ""
+    d["confidential"] = conf
+    d["masked"] = masked
     d["_id"] = r["id"]
     d["_dept"] = r["dept"]
     d["_status"] = r["status"]
@@ -111,6 +136,7 @@ def _gm_ok(include_gm, gmkey, key_env=None):
 
 @router.get("")
 def todo_list(
+    request: Request,
     status: Optional[str] = None,     # 진행중 · 완료 · 보류 (시트 상태값 그대로)
     dept: Optional[str] = None,       # 운영부 · 시설부 · 파트너팀
     owner: Optional[str] = None,      # 담당자 부분일치
@@ -137,18 +163,21 @@ def todo_list(
     if owner:
         where.append("owner LIKE %s"); args.append("%" + owner.strip() + "%")
     w = " AND ".join(where)
+    admin = _is_admin(request)
     conn = _open()
     with conn:
         total = conn.execute("SELECT COUNT(*) FROM todo_items WHERE " + w, args).fetchone()[0]
         rows = conn.execute("SELECT * FROM todo_items WHERE " + w + " ORDER BY created DESC, id LIMIT %s OFFSET %s",
                             args + [limit, offset]).fetchall()
-    data = [_row(r) for r in rows]
+    data = [_row(r, admin=admin) for r in rows]
     return {"ok": True, "data": data,       # GAS 봉투 그대로 — 화면 어댑터 제거용
-            "total": total, "count": len(rows), "limit": limit, "offset": offset, "rows": data, "_source": SOURCE}
+            "total": total, "count": len(rows), "limit": limit, "offset": offset, "rows": data, "_source": SOURCE,
+            "canViewConfidential": admin}
 
 
 @router.get("/{item_id}")
 def todo_item(
+    request: Request,
     item_id: str,
     include_gm: int = Query(0, ge=0, le=1),   # 목록(todo_list)과 같은 GM 행 게이트(검수 H5 — 단건 조회는 안 걸렸었다)
     gmkey: str = Query(""),
@@ -162,7 +191,10 @@ def todo_item(
         if r is None:
             raise HTTPException(404, "없는 업무 id")
         a = conn.execute("SELECT * FROM approvals WHERE tenant_id=%s AND id=%s", (db.TENANT, item_id)).fetchone()
-    return _row(r, a)
+    admin = _is_admin(request)
+    row = _row(r, a, admin=admin)
+    row["canViewConfidential"] = admin
+    return row
 
 
 if __name__ == "__main__" and "--selftest" in sys.argv:
@@ -174,4 +206,25 @@ if __name__ == "__main__" and "--selftest" in sys.argv:
     assert not _gm_ok(0, "abc", "abc"), "include_gm 없으면 항상 false"
     assert not _gm_ok(1, "abc", ""), "서버 열쇠 비어 있으면 항상 false(안전 기본)"
     assert _gm_ok(1, " abc ", "abc"), "양쪽 trim 뒤 비교(GAS _gmKeyOk_ 와 동치)"
+    # 대외비 카드 (배 12835) — 표식·관리자 판정·마스킹
+    assert _is_confidential({"내용": "===CONFIDENTIAL===\n비밀"})
+    assert _is_confidential({"내용": "  ===CONFIDENTIAL===\n비밀"}), "앞 공백 허용"
+    assert not _is_confidential({"내용": "그냥 내용"})
+    assert not _is_confidential({})
+    assert _is_admin_email("cao@wellperion.com") and not _is_admin_email("support@wellperion.com")
+    assert not _is_admin_email(""), "빈 이메일은 관리자 아님"
+    conf_r = {"id": "TODO-C1", "dept": "운영부", "status": "진행중", "synced_at": "t0",
+              "data": json.dumps({"업무명": "대외비 건", "담당자": "이경연 실장",
+                                  "내용": "===CONFIDENTIAL===\n인사 조치 내용", "파일URL": "https://x/y.pdf"},
+                                 ensure_ascii=False)}
+    masked_row = _row(conf_r, admin=False)
+    assert masked_row["confidential"] and masked_row["masked"]
+    assert masked_row["내용"] == "" and masked_row["파일URL"] == ""
+    assert masked_row["업무명"] == "대외비 건" and masked_row["담당자"] == "이경연 실장", "메타는 유지"
+    admin_row = _row(conf_r, admin=True)
+    assert admin_row["confidential"] and not admin_row["masked"]
+    assert "인사 조치 내용" in admin_row["내용"] and admin_row["파일URL"] == "https://x/y.pdf"
+    plain_r = dict(conf_r, data=json.dumps({"업무명": "일반 건", "내용": "그냥 내용"}, ensure_ascii=False))
+    plain_row = _row(plain_r, admin=False)
+    assert not plain_row["confidential"] and not plain_row["masked"] and plain_row["내용"] == "그냥 내용"
     print("selftest ok")
