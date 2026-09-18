@@ -2758,11 +2758,8 @@ table.op-t td b{font-size:15px}
       <option value="환불">환불 — 재등록분류=환불(LOSS 유지)</option>
     </select>
 
-    <div id="rvEndDateRow" style="margin-top:12px">
-      <div class="consult-field-label">새 유효기간(종료일자)</div>
-      <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-      <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
-    </div>
+    <!-- 입력 순서 = 등록일 → 시작일 → 종료일(실무진 피드백 FB260918-165859 ① · 이경연 실장 · 배 12810 · 2026-09-18 시포).
+         칸 id·값·저장 로직은 그대로 — 순서(탭 이동 포함)만 바꿨다. -->
     <div id="rvRegDateRow" style="margin-top:10px">
       <div class="consult-field-label">등록일자 (계약일)</div>
       <input type="date" id="rvRegDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
@@ -2770,6 +2767,11 @@ table.op-t td b{font-size:15px}
     <div id="rvStartDateRow" style="margin-top:10px">
       <div class="consult-field-label">시작일자 (이용 시작)</div>
       <input type="date" id="rvStartDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div id="rvEndDateRow" style="margin-top:12px">
+      <div class="consult-field-label">새 유효기간(종료일자)</div>
+      <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
     </div>
     <div id="rvSeqInfo" style="margin-top:10px;font-size:11.5px;color:var(--dim)"></div>
 
