@@ -175,11 +175,27 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     }).join('');
     return '<details class="faildetails"><summary>최근 7일 실패 '+recentFails.length+'건</summary><table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>사유</th></tr></thead><tbody>'+rows+'</tbody></table></details>';
   }
-  function gridCellHtml(items){
+  // 제목 끝 " — 네이버 블로그"·"— 당근 비즈프로필(발행완료)" 같은 채널명 꼬리 — 표시할 때만 뗀다(원본 x.title 은 안 건드림).
+  // "그 칸 채널명 계열일 때만" 지운다 — 전역 키워드로 아무 데나 지우면 "공식 #F2 — 편의시설(…카페…)" 처럼 부제 속 "카페"까지 잘못 잘렸다(실측으로 발견) → 그 칸의 채널(colName)에 해당하는 낱말이 있을 때만.
+  function channelAnchorWord(colName){
+    if(/블로그/.test(colName)) return '블로그';
+    if(/카페/.test(colName)) return '카페';
+    if(/카카오/.test(colName)) return '카카오';
+    if(/당근/.test(colName)) return '당근';
+    if(/인스타그램/.test(colName)) return '인스타그램';
+    return null;
+  }
+  function stripChannelTail(title, colName){
+    var word=channelAnchorWord(colName);
+    if(!word) return title;
+    var re=new RegExp('\\s+—\\s+[^—]*'+word+'[^—]*$');
+    return String(title||'').replace(re,'');
+  }
+  function gridCellHtml(items, colName){
     if(!items.length) return '<td>—</td>';
     var html=items.map(function(x){
       var badge=x.edits?'<span class="editbadge">수정 '+x.edits+'</span>':'';
-      var t=x.title||'(제목 없음)';
+      var t=stripChannelTail(x.title,colName)||x.title||'(제목 없음)';
       var titleCell=x.url?'<a href="'+x.url+'" target="_blank" rel="noopener">'+t+'</a>':t;
       return '<div><span class="pf-st on"><i></i>'+x.label+'</span> '+titleCell+badge+'</div>';
     }).join('');
@@ -201,7 +217,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     if(dates.length){
       var head='<tr><th>날짜</th>'+chData.map(function(c){return '<th>'+c.name+'</th>';}).join('')+'</tr>';
       var body=dates.map(function(d){
-        var cells=chData.map(function(c){ return gridCellHtml(c.data.display.filter(function(x){return fmtDate(x.date)===d;})); }).join('');
+        var cells=chData.map(function(c){ return gridCellHtml(c.data.display.filter(function(x){return fmtDate(x.date)===d;}), c.name); }).join('');
         return '<tr><td>'+d+'</td>'+cells+'</tr>';
       }).join('');
       gridHtml='<div style="overflow-x:auto"><table class="pf-table"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
@@ -213,16 +229,24 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     rows.forEach(function(r){ if(!by[r.channel]){ by[r.channel]=[]; order.push(r.channel); } by[r.channel].push(r); });
     return order.map(function(name){ return {name:name, rows:by[name]}; });
   }
+  // 채널 열 이름 정규화 — 같은 계정을 표기만 다르게 적은 것을 한 열로 합친다(GM 09-18 지적: 인스타그램 열이 두 개로 쪼개져 있었다).
+  // 인스타그램·당근만 합침(네이버 블로그/카페는 서로 다른 실제 채널이라 안 건드림) · 모든 소스가 이 함수 하나를 공유한다.
+  function normalizeChannel(raw){
+    raw=String(raw||'').trim();
+    if(/^인스타그램/.test(raw)) return '인스타그램';
+    if(/^당근/.test(raw)) return '당근';
+    return raw||'(채널 없음)';
+  }
   // 소스별 정규화 — {date,title,url,ok,pending,reason,channel,label}. label = 칸에 찍히는 짧은 상태 글자.
   function normReview(items){
-    return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:x.channel||'(채널 없음)', label:'발행'}; });
+    return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:normalizeChannel(x.channel), label:'발행'}; });
   }
   function normBlog(runs){
-    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:'블로그', label:'발행'}; });
+    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:normalizeChannel('블로그'), label:'발행'}; });
   }
   function normIg(runs){
     // sent:false·없음 = 아직 발행기 검토 전 "대기" 상태(실패 아님) — partner_instagram/*.json 에는 실패 개념 자체가 없다
-    return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:'인스타그램', label:'임시저장'}; });
+    return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:normalizeChannel('인스타그램'), label:'임시저장'}; });
   }
   function renderSeries(){
     var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
