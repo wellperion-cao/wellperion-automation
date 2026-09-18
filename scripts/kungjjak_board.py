@@ -253,6 +253,12 @@ _URL_RE = re.compile(r'https?://')
 _NUM_UNIT_RE = re.compile(r'\d+\s*(?:건|%|분|개|명|일|원|줄|회|시간|시|명|행|가지)')
 
 
+def _is_auto_closed(did) -> bool:
+    """close_gm_refs 자동종결 표식 — did 가 '⚠️' 로 시작하면 증거 없이 닫힌 것이라
+    완료로 세지 않는다(마크다운 표·JSON 발행 두 경로가 같은 판정을 쓴다 · GM 09-18)."""
+    return str(did or '').strip().startswith('⚠️')
+
+
 def evidence_state(got: str, did: str, up: str) -> str:
     """증거 칸 (GM 지시 2026-08-13 "쿵짝표로 다 끝난 줄 알았는데 계속 빈틈이 생기네").
 
@@ -522,9 +528,15 @@ def emit(day: str) -> int:
             en = _ts(oks[-1]['ts']) if oks else None
             mins = int((en - st).total_seconds() // 60) if st and en else None
             did = str(oks[-1].get('detail') or '').strip() if oks else ''
-            got = str(ev[0].get('event') or '').strip()
-            up = upload_state(did, bool(oks), role=role, start=st, end=en)
-            ev_state = evidence_state(got, did, up) if oks else None
+            # 접수 줄(warn)이 있으면 그것이 '접수한 것' — 마크다운 표와 같은 규칙(위 _render_table 주석).
+            got = str((warns[0] if warns else ev[0]).get('event') or '').strip()
+            # ⚠️자동종결(증거 없이 닫힘)은 완료로 세지 않는다 — 마크다운 표(_render_table)와
+            # 같은 판정(_is_auto_closed). 여기 없던 것이 GM 09-18 「31번 2분만에 해결?」의 원인.
+            auto_closed = bool(oks) and _is_auto_closed(did)
+            if auto_closed:
+                did, en, mins = '아직', None, None
+            up = upload_state(did, bool(oks) and not auto_closed, role=role, start=st, end=en)
+            ev_state = evidence_state(got, did, up) if (oks and not auto_closed) else None
             items.append({
                 'ref': ref,
                 'no': ref_no(ref, day),
@@ -534,7 +546,7 @@ def emit(day: str) -> int:
                 'end': en.strftime('%H:%M') if en else None,
                 'minutes': mins,
                 'upload': up,
-                'open': not oks,
+                'open': (not oks) or auto_closed,
                 'evidence': ev_state,
                 'ev': ev_state or '—',       # _dedup_rows 가 보는 랭킹용 키
                 'sortkey': ref_sort_key(ref),
@@ -700,7 +712,7 @@ def _render_table(by: dict, day: str) -> None:
         # 말이 아니다(배684 · GM 지시 2026-08-18). '⚠️' 로 시작하는 detail 은 스스로 증거
         # 없다고 밝힌 것이니(evidence_state 와 같은 판정 기준) 완료로 세지 않고 진행중으로
         # 되돌린다 — GM 화면·자율현황 모두 여기 한 곳만 고치면 같이 정직해진다.
-        auto_closed = did.startswith('⚠️')
+        auto_closed = _is_auto_closed(did)
         if auto_closed:
             did = '아직'
 
