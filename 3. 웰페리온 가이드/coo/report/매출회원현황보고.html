@@ -168,13 +168,14 @@
 
   /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 오른쪽 칸에 78px 밖에 안 남아
      한 타일을 두 줄(이름 / 금액)로 눌러 담는다 — 잘리면 사진에서 값이 사라진다. */
-  /* 남는 높이가 빠듯해 한 줄로 깐다(실측 2026-09-17) — 칸 수를 늘려도(4→7, 배 2823) 높이는 그대로,
-     너비만 좁아진다(칸 이름은 ellipsis 로 자른다). */
-  .etcgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-  .etile{border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:#fff;min-width:0;line-height:1.25;display:block;text-decoration:none;color:inherit;}
-  .etile .et{font-size:10.2px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .etile .ev{font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;}
-  .etile .ev small{font-size:9.5px;font-weight:600;color:var(--muted);margin-left:4px;}
+  /* 남는 높이가 빠듯해 한 줄로 깐다(실측 2026-09-17) — 칸 수를 늘려도(4→7, 배 2823) 값 칸은 이제 두 줄
+     (오늘/이달, 배 2823 5차 · 말줄임 금지 · 시우 지적)이라 글자 크기를 줄여 높이를 맞춘다. 값 있는 4칸은
+     넓게(1.4fr) · 빈 자리 예약 3칸은 좁게(0.5fr) — 폭을 값 칸에 몰아준다. */
+  .etcgrid{display:grid;grid-template-columns:repeat(4,1.4fr) repeat(3,0.5fr);gap:4px;}
+  .etile{border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:#fff;min-width:0;line-height:1.15;display:block;text-decoration:none;color:inherit;}
+  .etile .et{font-size:10px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .etile .ev{display:flex;flex-direction:column;margin-top:1px;}
+  .etile .ev .evl{font-size:9.8px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;}
   /* 일 단위 — 최근 7일 하루 매출. 막대 하나가 하루다. */
   .dayrows{display:flex;flex-direction:column;gap:2px;}
   /* 7줄이 칸보다 10px 길어 마지막 날이 잘렸다(실측 2026-09-17) — 줄 간격·글자를 한 단계 줄인다. */
@@ -532,10 +533,15 @@
     </div>
     </div>
 
-    <!-- 우하 — 로스자 + 어제 다녀가신 분. 금일 예상 컨택 현황은 3면 위쪽으로 옮겼다(배 2823 · GM 19:3x 지적 —
-         브로제이 실시간 원천이라 운영 현황(3면)에 더 어울린다). -->
+    <!-- 우하 — 금일 예상 컨택 현황(위) · 로스자(아래). 3면으로 옮겼다가 되돌렸다(배 2823 5차 · GM 정정 —
+         "칸을 조금 더 위로"는 3면이 아니라 1면 안에서였다). 로스자는 대개 비어 큰 빈 자리라 높이를
+         줄이고(flex:0 0 auto), 컨택이 남는 높이를 다 쓴다(flex:1). -->
     <div class="col">
       <div class="sec" style="flex:1;min-height:0;">
+        <h2 id="t-contact">금일 예상 컨택 현황<span class="src">시트 → 서버</span></h2>
+        <div class="bd"><pre class="txt" id="contact">—</pre></div>
+      </div>
+      <div class="sec" style="flex:0 0 auto;min-height:0;">
         <h2>로스자<span class="src ">시트 → 서버</span></h2>
         <div class="bd"><pre class="txt" id="loss">—</pre></div>
       </div>
@@ -699,14 +705,6 @@
   </div>
 
   <div id="err3"></div>
-
-  <!-- 금일 예상 컨택 현황 — 1면에서 옮겨왔다(배 2823 · GM 19:3x 지적 — 브로제이 실시간 원천(오늘 서버 전환,
-       배 12523)이라 운영 현황(3면) 맨 위가 더 어울린다). 로스자는 1면에 그대로 남는다 — 값(I16)은 그대로
-       renderReportCells 가 채운다(같은 id="contact", 페이지만 옮겼다). -->
-  <div class="sec" style="flex:0 0 auto;margin-bottom:11px;">
-    <h2 id="t-contact">금일 예상 컨택 현황<span class="src">시트 → 서버</span></h2>
-    <div class="bd"><pre class="txt" id="contact">—</pre></div>
-  </div>
 
   <div class="body">
     <div class="col">
@@ -3207,9 +3205,11 @@ function renderEtcRev(){
     { t: '—', d: '—', m: '—', note: '자리 예약 — 새 수익원이 생기면 채웁니다' },
     { t: '—', d: '—', m: '—', note: '자리 예약 — 새 수익원이 생기면 채웁니다' }
   ];
+  /* 값을 오늘/이달 두 줄로 나눈다(배 2823 5차 · 시우 지적 — 한 줄에 우겨넣어 말줄임표로 잘렸다).
+     자리 예약 칸(빈 「—」)은 짧으니 폭을 좁혀, 그 폭을 값 있는 4칸에 몰아준다(.etcgrid 열비 참조). */
   box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
     var body = '<div class="et">' + esc(x.t) + '</div>' +
-      '<div class="ev">' + esc(x.d) + '<small>달 ' + esc(x.m) + '</small></div>';
+      '<div class="ev"><span class="evl">오늘 ' + esc(x.d) + '</span><span class="evl">이달 ' + esc(x.m) + '</span></div>';
     return x.h
       ? '<a class="etile" href="' + esc(x.h) + '" target="_blank" rel="noopener" title="' + esc(x.note) + '">' + body + '</a>'
       : '<div class="etile" title="' + esc(x.note) + '">' + body + '</div>';
