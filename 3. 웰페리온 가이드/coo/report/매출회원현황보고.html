@@ -168,9 +168,10 @@
 
   /* 그 밖의 매출 — 2×2 타일(GM 2026-09-17 「좌우 2개씩 4개까지」). 오른쪽 칸에 78px 밖에 안 남아
      한 타일을 두 줄(이름 / 금액)로 눌러 담는다 — 잘리면 사진에서 값이 사라진다. */
-  /* 오른쪽 칸에 남는 높이가 47px 뿐이라 한 줄 네 칸으로 깐다 — 2×2 는 91px 이 필요해 잘렸다(실측 2026-09-17). */
-  .etcgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
-  .etile{border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:#fff;min-width:0;line-height:1.25;}
+  /* 남는 높이가 빠듯해 한 줄로 깐다(실측 2026-09-17) — 칸 수를 늘려도(4→7, 배 2823) 높이는 그대로,
+     너비만 좁아진다(칸 이름은 ellipsis 로 자른다). */
+  .etcgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .etile{border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:#fff;min-width:0;line-height:1.25;display:block;text-decoration:none;color:inherit;}
   .etile .et{font-size:10.2px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .etile .ev{font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;}
   .etile .ev small{font-size:9.5px;font-weight:600;color:var(--muted);margin-left:4px;}
@@ -527,17 +528,12 @@
     </div>
     </div>
 
-    <!-- 우하 — 컨택·로스자 + 어제 다녀가신 분 -->
+    <!-- 우하 — 로스자 + 어제 다녀가신 분. 금일 예상 컨택 현황은 3면 위쪽으로 옮겼다(배 2823 · GM 19:3x 지적 —
+         브로제이 실시간 원천이라 운영 현황(3면)에 더 어울린다). -->
     <div class="col">
-      <div class="two" style="flex:1;min-height:0;">
-        <div class="sec" style="min-height:0;">
-          <h2 id="t-contact">금일 예상 컨택 현황<span class="src">시트 → 서버</span></h2>
-          <div class="bd"><pre class="txt" id="contact">—</pre></div>
-        </div>
-        <div class="sec">
-          <h2>로스자<span class="src ">시트 → 서버</span></h2>
-          <div class="bd"><pre class="txt" id="loss">—</pre></div>
-        </div>
+      <div class="sec" style="flex:1;min-height:0;">
+        <h2>로스자<span class="src ">시트 → 서버</span></h2>
+        <div class="bd"><pre class="txt" id="loss">—</pre></div>
       </div>
 
       <!-- 오른쪽 칸 — 어제 다녀가신 분(세 갈래 가로 세 칸이라 높이가 짧다) 아래에 「그 밖의 매출」을
@@ -699,6 +695,14 @@
   </div>
 
   <div id="err3"></div>
+
+  <!-- 금일 예상 컨택 현황 — 1면에서 옮겨왔다(배 2823 · GM 19:3x 지적 — 브로제이 실시간 원천(오늘 서버 전환,
+       배 12523)이라 운영 현황(3면) 맨 위가 더 어울린다). 로스자는 1면에 그대로 남는다 — 값(I16)은 그대로
+       renderReportCells 가 채운다(같은 id="contact", 페이지만 옮겼다). -->
+  <div class="sec" style="flex:0 0 auto;margin-bottom:11px;">
+    <h2 id="t-contact">금일 예상 컨택 현황<span class="src">시트 → 서버</span></h2>
+    <div class="bd"><pre class="txt" id="contact">—</pre></div>
+  </div>
 
   <div class="body">
     <div class="col">
@@ -3167,8 +3171,13 @@ function loadEtcRev(){
 function renderEtcRev(){
   var box = document.getElementById('etcRev'); if (!box) return;
   var pk = ETC_REV.parking, bf = ETC_REV.bodyfriend, ref = etcRefDate();
-  /* 타일 넷 — 주차(서버 실측) · 바디프렌드(라운지 수집) · 굿즈(오넛티 팝업) · 그 밖 제휴.
-     값이 없는 줄은 0 원이 아니라 「연동 전」이라 적는다(없는 것과 0 은 다르다). */
+  /* 타일 일곱 — 주차(서버 실측) · 바디프렌드(라운지 수집) · 굿즈(오넛티 팝업) · 그 밖 제휴 + 자리 셋(배 2823 GM
+     19:3x 지적 「오른쪽 끝까지 늘려 3~4칸 자리 추가」 — 새 수익원이 생기면 채운다). 값이 없는 줄은 0 원이
+     아니라 「연동 전」이라 적는다(없는 것과 0 은 다르다).
+     굿즈(오넛티) — GM 이 준 판매 페이지(script.google.com .../exec)를 재봤다(2026-09-18): ?action= 을 뭘 붙여도
+     Content-Type 이 항상 text/html 로 같은 결제 화면만 돌아온다 — doGet() 이 고객용 HtmlService 페이지만 주는
+     것이지 데이터 API 가 아니다. 그래서 판매액을 못 읽고, 타일은 그 페이지로 가는 링크만 건다. */
+  var GOODS_URL = 'https://script.google.com/a/macros/wellperion.com/s/AKfycbxbF9Q6FGpBLSCYTEVin8Oz6dFV4FltFxraXU_4GzF1XNBwu5nHv66vcx1c2DPJ1o8/exec';
   var tiles = [
     { t: '주차', d: pk && pk.day != null ? _won(pk.day) : '못 읽음',
       m: pk && pk.month ? _won(pk.month) : '못 읽음',
@@ -3176,12 +3185,19 @@ function renderEtcRev(){
     { t: '바디프렌드', d: bf ? (bf.days && bf.days[ref] != null ? _won(bf.days[ref]) : '0') : '못 읽음',
       m: bf ? _won(bf.total_krw) : '못 읽음',
       note: bf ? '라운지 매출 그대로 · ' + String(bf.fetched_at || '') + ' 수집' : '라운지 수집 전' },
-    { t: '굿즈 (오넛티)', d: '연동 전', m: '연동 전', note: '팝업 9/18 시작 · 판매 집계는 회사 구글 계정 화면(GAS)' },
-    { t: '팝업 (이엘리)', d: '연동 전', m: '연동 전', note: '이엘리 회원님 팝업 · 집계 자리 확인 중' }
+    { t: '굿즈 (오넛티)', d: '연동 전', m: '연동 전',
+      note: '판매 페이지는 고객 결제 화면(HTML)이라 판매액 API 없음 — 집계는 회사 구글 계정 GAS 화면에서', h: GOODS_URL },
+    { t: '팝업 (이엘리)', d: '연동 전', m: '연동 전', note: '이엘리 회원님 팝업 · 집계 자리 확인 중' },
+    { t: '—', d: '—', m: '—', note: '자리 예약 — 새 수익원이 생기면 채웁니다' },
+    { t: '—', d: '—', m: '—', note: '자리 예약 — 새 수익원이 생기면 채웁니다' },
+    { t: '—', d: '—', m: '—', note: '자리 예약 — 새 수익원이 생기면 채웁니다' }
   ];
   box.innerHTML = '<div class="etcgrid">' + tiles.map(function(x){
-    return '<div class="etile" title="' + esc(x.note) + '"><div class="et">' + esc(x.t) + '</div>' +
-      '<div class="ev">' + esc(x.d) + '<small>달 ' + esc(x.m) + '</small></div></div>';
+    var body = '<div class="et">' + esc(x.t) + '</div>' +
+      '<div class="ev">' + esc(x.d) + '<small>달 ' + esc(x.m) + '</small></div>';
+    return x.h
+      ? '<a class="etile" href="' + esc(x.h) + '" target="_blank" rel="noopener" title="' + esc(x.note) + '">' + body + '</a>'
+      : '<div class="etile" title="' + esc(x.note) + '">' + body + '</div>';
   }).join('') + '</div>';
 }
 
