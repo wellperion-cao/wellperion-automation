@@ -1,4 +1,5 @@
 # scripts/wp_geo_apply.py — 배1000 실행: JSON-LD 헤더 삽입 + robots.txt 교체 + 홈 메타설명 교체 (단일 세션, 최소 실행).
+import argparse
 import asyncio
 import json
 import re
@@ -165,8 +166,22 @@ async def step2_robots(page) -> str:
     return "BLOCKED(저장버튼 못 찾음)"
 
 
-async def step3_home_meta(page) -> str:
-    await page.goto(WP_ADMIN_URL + "post.php?post=6&action=edit&lang=ko", wait_until="domcontentloaded", timeout=45000)
+async def _fill_yoast_field(page, selector: str, text: str) -> bool:
+    """id 로 지정한 Yoast 입력칸에 값을 세팅한다 — 칸이 없으면 False(선택 칸이라 실패로 안 친다)."""
+    field = page.locator(selector)
+    if await field.count() == 0:
+        return False
+    await field.evaluate(
+        "(el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); }",
+        text,
+    )
+    await page.wait_for_timeout(300)
+    return True
+
+
+async def set_meta_desc(page, post_id: str, lang: str, text: str) -> str:
+    """post_id·lang 글의 Yoast 메타설명(+소셜 탭 og/twitter 설명칸이 따로 채워져 있으면 그것도)을 text 로 교체."""
+    await page.goto(WP_ADMIN_URL + f"post.php?post={post_id}&action=edit&lang={lang}", wait_until="domcontentloaded", timeout=45000)
     await page.wait_for_timeout(1500)
     box = page.locator("#wpseo_meta")
     if await box.count():
@@ -178,18 +193,25 @@ async def step3_home_meta(page) -> str:
     # 값이 JS(React 스니펫 미리보기)로 동기화되는 hidden input 일 수 있어 값 세팅 + input 이벤트 강제 발화
     await field.evaluate(
         "(el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); }",
-        HOME_META_DESC,
+        text,
     )
     await page.wait_for_timeout(500)
     check_val = await field.input_value()
-    if HOME_META_DESC not in check_val:
+    if text not in check_val:
         return f"BLOCKED(값 반영 확인 실패: {check_val[:80]!r})"
+    # 소셜 탭(페이스북/트위터) 설명칸 — 있으면(따로 채워둔 값이 있으면) 같은 문장으로 덮는다. 없으면 건너뛴다.
+    for sel in ("#yoast_wpseo_opengraph-description", "#yoast_wpseo_twitter-description"):
+        await _fill_yoast_field(page, sel, text)
     update_btn = page.locator("#publish")
     if await update_btn.count():
         await update_btn.click()
         await page.wait_for_timeout(3000)
         return "DONE(Update 클릭함, 라이브 curl 재확인 필요)"
     return "BLOCKED(Update 버튼 못 찾음)"
+
+
+async def step3_home_meta(page) -> str:
+    return await set_meta_desc(page, "6", "ko", HOME_META_DESC)
 
 
 async def main():
@@ -219,5 +241,35 @@ async def main():
     await ctx.close()
 
 
+def _extract_meta_desc(html: str) -> str:
+    m = re.search(r'<meta name="description" content="([^"]*)"', html)
+    if not m:
+        raise RuntimeError("파일에서 <meta name=\"description\"> 을 못 찾았다")
+    return m.group(1)
+
+
+async def run_meta_desc_only(post_id: str, lang: str, text: str) -> None:
+    async_playwright = _import_playwright()
+    p, ctx = await _launch(async_playwright)
+    page = await ctx.new_page()
+    try:
+        result = await set_meta_desc(page, post_id, lang, text)
+    except Exception as e:
+        result = f"ERROR: {e}"
+    print(f"meta_desc(post={post_id},lang={lang}): {result}")
+    await ctx.close()
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--meta-desc", action="store_true", help="메타설명 교체 단계만 단독 실행")
+    ap.add_argument("--post-id", default="6")
+    ap.add_argument("--lang", default="ko")
+    ap.add_argument("--from-file", help="이 파일의 <meta name=\"description\"> 값을 읽어 그대로 쓴다")
+    args = ap.parse_args()
+
+    if args.meta_desc:
+        html = open(args.from_file, encoding="utf-8").read()
+        asyncio.run(run_meta_desc_only(args.post_id, args.lang, _extract_meta_desc(html)))
+    else:
+        asyncio.run(main())
