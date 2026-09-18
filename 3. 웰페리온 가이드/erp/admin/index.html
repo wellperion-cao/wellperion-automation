@@ -1625,7 +1625,9 @@
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     var kpi = fetch('/auth/admin/api/eval_kpi',{credentials:'same-origin',cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .catch(function(){ return get('status/eval_kpi.json'); });
-    Promise.all([get('data/partner_onboarding.json').catch(function(){ return null; }), kpi]).then(function(r){
+    // 발행본은 이 화면 옆(erp/admin/data/) — 파트너 카드와 같은 상대 경로로 읽는다(루트 /data/ 아님)
+    var onb = fetch('data/partner_onboarding.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    Promise.all([onb, kpi]).then(function(r){
       var ob=r[0]||{}, k=r[1]||{}, t=ob.tenants||{}, P=window.labsPartners||[];
       var tb=document.querySelector('#peval-tbl tbody');
       var list=P.filter(function(p){ return p.key!=='ax'; });
