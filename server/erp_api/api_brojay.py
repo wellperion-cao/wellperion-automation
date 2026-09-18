@@ -7,6 +7,7 @@
   GET /api/brojay/sessions?date= | ?from=&to= | ?month=YYYY-MM   강습 일정·출석 차감(브로제이 schedules 응답 그대로 · 배 2663)
   GET /api/brojay/members                          회원 명단 최신 스냅샷(member_id·name·phone_number… · 배 2664) · ?date= 로 특정 날
   GET /api/brojay/trainers                         강사 명단 최신 스냅샷(trainer_id→name · sessions 의 trainer_ids 해석용)
+  GET /api/brojay/member_tickets?phones=010...,010...  전화별 회원권·수강권 기간(읽기 전용 · 배 12761) — 이름·주소는 안 준다
   GET /api/brojay/health                           kind 별 일수·최근 날짜·마지막 성공/실패
 
 정본은 브로제이 — 응답마다 _source=brojay. 칸 이름은 브로제이가 준 그대로 두고 가공하지 않는다
@@ -105,6 +106,44 @@ def sessions(date: Optional[str] = None, frm: Optional[str] = Query(None, alias=
     if month and not date:
         frm, to = _month_range(month)
     return _serve("sessions", date, frm, to)
+
+
+_TICKET_FIELDS = {  # 화면에 주는 이름 → 브로제이 원본 칸 이름
+    "member_start": "total_member_ticket_start_at", "member_end": "total_member_ticket_end_at",
+    "lesson_start": "total_lesson_ticket_start_at", "lesson_end": "total_lesson_ticket_end_at",
+    "status": "customer_status", "trainer": "trainer_name",
+}
+_ticket_index_cache = [None, None]   # [snapshot key, {정규화전화: {...}}] — members 스냅샷이 안 바뀌면 재사용(9,841건 매 요청 파싱 방지)
+
+
+def _norm_phone(p):
+    return "".join(c for c in str(p or "") if c.isdigit())
+
+
+def _ticket_index():
+    """members 최신 스냅샷을 전화→회원권 기간 dict 로 한 번만 만들어 캐시한다. 스냅샷 키(날짜)가 바뀌면 다시 만든다."""
+    snap = _latest("members", None)
+    key = snap["date"]
+    if _ticket_index_cache[0] == key:
+        return key, _ticket_index_cache[1]
+    idx = {}
+    for m in (snap["data"] or {}).get("data") or []:
+        phone = _norm_phone(m.get("phone_number"))
+        if not phone:
+            continue
+        rec = {out: m.get(src) for out, src in _TICKET_FIELDS.items()}
+        last_visit = m.get("last_attendance_date")
+        rec["last_visit"] = str(last_visit)[:10] if last_visit else None
+        idx[phone] = rec
+    _ticket_index_cache[0], _ticket_index_cache[1] = key, idx
+    return key, idx
+
+
+@router.get("/member_tickets")
+def member_tickets(phones: str = ""):
+    wanted = [_norm_phone(p) for p in phones.split(",") if _norm_phone(p)][:500]
+    key, idx = _ticket_index()
+    return {"snapshot": key, "items": {p: idx[p] for p in wanted if p in idx}, "_source": SOURCE}
 
 
 @router.get("/members")
