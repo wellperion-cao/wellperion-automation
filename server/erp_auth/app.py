@@ -481,6 +481,7 @@ def init() -> None:
     """표는 common/schema.sql(deploy_db.sh) 이 만든다 — 여기선 첫 관리자만 심는다."""
     with db() as c:
         c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TEXT")   # 사용 현황(ERP관리 층 · 2026-09-14)
+        c.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS session_ver INTEGER NOT NULL DEFAULT 0")   # 세션 세대(배 12752 P1 #10)
         admin_email = os.environ.get("ERP_ADMIN_EMAIL")
         if admin_email and not c.execute("SELECT 1 FROM users WHERE tenant_id=%s AND email=%s", (T, admin_email)).fetchone():
             salt, h = hash_pw(os.environ["ERP_ADMIN_PW"])
@@ -526,9 +527,23 @@ def touch_login(uid: int) -> None:
         pass                                       # 기록 실패가 로그인을 막지 않는다
 
 
+def session_ver(user) -> int:
+    """세션 세대(배 12752 P1 #10) — 비밀번호 변경·전체 기기 로그아웃·차단 때 +1 하면 그 전에 발급된 토큰은 current() 가 거부한다.
+    세션은 90일 무상태라 종전엔 비밀번호를 바꿔도 분실 폰·공용 PC 세션이 그대로 살았다. 열이 없는 옛 행·자가점검 가짜 user = 0세대."""
+    try:
+        return int(user["session_ver"] or 0)
+    except (KeyError, IndexError, TypeError, ValueError):
+        return 0
+
+
+def _bump_session_ver(uid: int) -> None:
+    with db() as c:
+        c.execute("UPDATE users SET session_ver=session_ver+1 WHERE tenant_id=%s AND id=%s", (T, uid))
+
+
 def issue(user, auto: bool = False) -> str:
     exp = int(time.time()) + SESSION_DAYS * 86400
-    claims = {"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp}
+    claims = {"uid": user["id"], "email": user["email"], "role": user["role"], "exp": exp, "ver": session_ver(user)}
     if auto:
         claims["auto"] = True    # 사무실 자동 로그인 세션 표시(배1134) — check() 가 이 claim 으로 쓰기·인사 폴더를 막는다
     return jwt.encode(claims, SECRET, algorithm="HS256")
@@ -553,6 +568,8 @@ def current(token: Optional[str]):
         return None
     with db() as c:
         u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s AND status='active'", (T, claims["uid"])).fetchone()
+    if u is not None and int(claims.get("ver") or 0) != session_ver(u):
+        return None                                # 세대가 다르다 = 비밀번호 변경·전체 로그아웃·차단 뒤 남은 옛 토큰(ver 없는 옛 토큰은 0세대)
     return u
 
 
@@ -1198,7 +1215,11 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
 
 @app.post("/auth/logout")
 @app.get("/auth/logout")
-def logout(next: str = "/"):
+def logout(next: str = "/", everywhere: str = "", erp_session: Optional[str] = Cookie(default=None)):
+    if everywhere:                                 # 모든 기기에서 로그아웃(배 12752 P1 #10) — 세대 +1 로 다른 기기 토큰까지 죽인다
+        u = current(erp_session)
+        if u:
+            _bump_session_ver(u["id"])
     dest = safe_next(next)
     r = RedirectResponse("/auth/login" + (("?next=" + urllib.parse.quote(dest, safe="/?=&")) if dest != "/" else ""), status_code=303)
     r.delete_cookie(COOKIE, path="/")
@@ -1291,7 +1312,7 @@ def account_page(erp_session: Optional[str] = Cookie(default=None), msg: str = "
 {info}
 <h2>비밀번호 변경</h2>{pw_form}
 <p class=hint>부서·직급·권한이 다르면 GM 께 한 줄로 알려 주세요 — 관리자 화면에서 고칩니다.</p>
-<p class=nav><a href=/home>← 직원 홈</a> · <a href=/auth/logout>로그아웃</a></p></div>""")
+<p class=nav><a href=/home>← 직원 홈</a> · <a href=/auth/logout>로그아웃</a> · <a href="/auth/logout?everywhere=1">모든 기기에서 로그아웃</a></p></div>""")
 
 
 @app.get("/auth/forbidden")
@@ -1313,7 +1334,7 @@ def password_page(erp_session: Optional[str] = Cookie(default=None), msg: str = 
 
 
 @app.post("/auth/password")
-def password_change(current_password: str = Form(...), new_password: str = Form(...),
+def password_change(request: Request, current_password: str = Form(...), new_password: str = Form(...),
                      erp_session: Optional[str] = Cookie(default=None)):
     u = current(erp_session)
     if not u:
@@ -1324,8 +1345,13 @@ def password_change(current_password: str = Form(...), new_password: str = Form(
         return RedirectResponse("/auth/account?err=새 비밀번호는 8자 이상이어야 합니다", status_code=303)
     salt, h = hash_pw(new_password)
     with db() as c:
-        c.execute("UPDATE users SET salt=%s, pw=%s WHERE tenant_id=%s AND id=%s", (salt, h, T, u["id"]))
-    return RedirectResponse("/auth/account?msg=비밀번호가 바뀌었습니다", status_code=303)
+        # 세대 +1 = 다른 기기·분실 폰의 옛 토큰이 전부 죽는다(배 12752 P1 #10). 이 브라우저는 새 세대 토큰을 다시 받는다.
+        c.execute("UPDATE users SET salt=%s, pw=%s, session_ver=session_ver+1 WHERE tenant_id=%s AND id=%s", (salt, h, T, u["id"]))
+        u = c.execute("SELECT * FROM users WHERE tenant_id=%s AND id=%s", (T, u["id"])).fetchone()
+    r = RedirectResponse("/auth/account?msg=비밀번호가 바뀌었습니다 · 다른 기기는 모두 로그아웃됐습니다", status_code=303)
+    https = request.headers.get("x-forwarded-proto") == "https"
+    r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
+    return r
 
 
 # ── 소셜 로그인 공용 — state(jwt+브라우저 nonce 쿠키) 구글·네이버·카카오가 같이 쓴다 ──────────
@@ -2117,6 +2143,8 @@ async def admin_action(uid: int, action: str, request: Request, erp_session: Opt
     with db() as c:
         c.execute("UPDATE users SET status=%s, approved_at=%s WHERE tenant_id=%s AND id=%s AND role!='admin'",
                   ("active" if action == "approve" else "blocked", now() if action == "approve" else None, T, uid))
+        if action == "block":                      # 차단 해제 뒤에도 옛 토큰이 되살아나지 않게 세대 +1(배 12752 P1 #10)
+            c.execute("UPDATE users SET session_ver=session_ver+1 WHERE tenant_id=%s AND id=%s AND role!='admin'", (T, uid))
     return RedirectResponse("/auth/admin", status_code=303)
 
 
@@ -2340,4 +2368,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert is_auto_token(issue(fake_user, auto=True))
     assert not is_auto_token(None)
     assert not is_auto_token("깨진토큰")
+    # 세션 세대(배 12752 P1 #10) — 토큰의 ver 는 발급 때 user 행의 session_ver · 열이 없는 옛 행·ver 없는 옛 토큰은 0세대로 읽는다.
+    assert session_ver(fake_user) == 0 and session_ver({**fake_user, "session_ver": 3}) == 3 and session_ver({**fake_user, "session_ver": None}) == 0
+    assert jwt.decode(issue(fake_user), SECRET, algorithms=["HS256"])["ver"] == 0
+    assert jwt.decode(issue({**fake_user, "session_ver": 2}), SECRET, algorithms=["HS256"])["ver"] == 2
+    _old_tok = jwt.encode({"uid": 1, "email": "x", "role": "staff", "exp": int(time.time()) + 60}, SECRET, algorithm="HS256")
+    assert "ver" not in jwt.decode(_old_tok, SECRET, algorithms=["HS256"])           # 배포 전 토큰 = ver 없음 → current() 가 0세대와 같다고 본다
     print("self-check ok")
