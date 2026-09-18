@@ -1656,30 +1656,43 @@ function renderLesson(d){
    sales_monthly 는 '26년 매출 분석' 시트 AV열(나우열M 관리)을 읽는데 보고 파일과 매달 갈린다(실측 2026-09-15:
    6월 +1,942만 · 7월 +1,127만 · 8월 +2,688만 — 8월 보고 파일 6.25억 vs 매출 분석 5.99억). 이 화면의 매출 정의는
    09:30 보고와 같은 보고 파일이다. 파일이 없는 달(1·2월)은 종전 값을 둔다. 값은 다시 계산하지 않고 J4 를 그대로 옮긴다. */
+/* 지난달 값 원천 전환(배 12523 6) — 월간 운영 보고 원장(status/monthly_report_ledger.json ·
+   months[YYYY-MM].sales.month)이 있으면 그 값을 쓰고 그 달은 GAS 를 안 부른다. 원장이 아직 없는
+   달(9월 이전 일부)만 종전대로 보고파일(GAS 31탭 J4)을 부른다. */
 function fixPastMonths(d){
   var months = (d && d.months) || [];
   var now = new Date(), y = now.getFullYear(), cur = now.getMonth() + 1;
-  var jobs = [];
-  for (var m = 1; m < cur; m++) (function(m){
-    jobs.push(fetch(ERP + '?action=daily_report_sheet&year=' + y + '&month=' + m + '&cb=' + Date.now())
-      .then(function(r){ return r.json(); })
-      .then(function(f){
-        if (!f || !f.ok || !f.fileId) return null;
-        return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=31&range=J4:J4&file=' + encodeURIComponent(f.fileId) + '&cb=' + Date.now())
-          .then(function(r){ return r.json(); });
-      })
-      .then(function(r){
-        var v = r && r.ok && r.cells ? num(r.cells.J4) : 0;
-        if (v > 0 && months[m - 1]) { months[m - 1].value = v; months[m - 1].src = '보고파일'; }
-      })
-      .catch(function(){ /* 그 달만 종전 값 */ }));
-  })(m);
-  if (!jobs.length) return;
-  Promise.all(jobs).then(function(){
-    renderChart(d);
-    if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel());
-    if (document.getElementById('sales') && /[?&]m=1/.test(location.search)) renderMonthSales(d, RAW.cells);
-  });
+  if (cur < 2) return;   // 1월 — 지난달이 없다
+  var base = ERP_API_ON ? '/repo/' : '../../../';
+  fetch(base + 'status/monthly_report_ledger.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ return r.json(); }).catch(function(){ return null; })
+    .then(function(ledger){
+      var lm = (ledger && ledger.months) || {};
+      var jobs = [];
+      for (var m = 1; m < cur; m++) (function(m){
+        var v = lm[y + '-' + ('0' + m).slice(-2)];
+        v = v && v.sales && v.sales.month;
+        if (v > 0) { if (months[m - 1]) { months[m - 1].value = v; months[m - 1].src = '월간 운영 보고 원장'; } return; }
+        jobs.push(fetch(ERP + '?action=daily_report_sheet&year=' + y + '&month=' + m + '&cb=' + Date.now())
+          .then(function(r){ return r.json(); })
+          .then(function(f){
+            if (!f || !f.ok || !f.fileId) return null;
+            return fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&dump=1&sheet=31&range=J4:J4&file=' + encodeURIComponent(f.fileId) + '&cb=' + Date.now())
+              .then(function(r){ return r.json(); });
+          })
+          .then(function(r){
+            var v2 = r && r.ok && r.cells ? num(r.cells.J4) : 0;
+            if (v2 > 0 && months[m - 1]) { months[m - 1].value = v2; months[m - 1].src = '보고파일'; }
+          })
+          .catch(function(){ /* 그 달만 종전 값 */ }));
+      })(m);
+      return Promise.all(jobs);
+    })
+    .then(function(){
+      renderChart(d);
+      if (RAW.cells) syncChartPartial(RAW.cells.J4, _yestLabel());
+      if (document.getElementById('sales') && /[?&]m=1/.test(location.search)) renderMonthSales(d, RAW.cells);
+    });
 }
 
 /* 월별 매출 막대 — 막대 하나가 한 달. 외부 라이브러리 없이 SVG 로 그린다. */
@@ -1819,7 +1832,8 @@ function load(){
     .catch(function(){ // 강습 칸이 조용히 빈 채 남지 않게 밝힌다 — 자체 점검도 실패로 잡는다
       document.getElementById('lesson').innerHTML =
         '<div class="fnote" style="color:var(--bad)">강습 신규·재등록을 못 읽었습니다 — [↻ 새로고침]을 눌러 주세요.</div>';
-    });
+    })
+    .then(function(){ applyBrojayLesson(); });   // 서버판 있으면 이달 누적으로 덮는다(없으면 위 시트 값 그대로)
 
   var p3 = miscFetch('todo', 'sales_monthly')
     // 그래프가 보고시트보다 늦게 도착하면 위에서 부른 syncChartPartial 이 아직 RAW.chart 를 못 본다 —
@@ -1916,45 +1930,54 @@ var APPROVAL_DONE_KO = { '결재완료': 1, '완료': 1 };
 /* 지연·결재 대기 — 09:30 통이 글로 보내던 두 덩어리. 판정 규칙은 그 통(report_stream_3_impl.py)과
    같은 두 줄이다: 지연 = 종료일 < 오늘 그리고 상태가 완료 계열이 아님 · 결재 대기 = 결재요청이
    있는데 결재상태가 미완. 규칙을 여기서 새로 만들지 않는다. */
+/* 지연·결재대기 그리기 — GAS todo_list 든 서버 /api/todo 든 같은 열 이름(업무명·상태·종료일·
+   결재요청·결재상태·담당자)이라 원장을 어디서 받았는지 가리지 않는다. */
+function renderP3Late(el, rows){
+  if (!el) return;
+  var now = new Date();
+  var t10 = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
+  var items = (rows || []).filter(function(x){ return String(x['업무명'] || '').indexOf('�') < 0; });
+  var late = items.filter(function(x){
+    if (TODO_DONE_KO[String(x['상태'] || '').trim()]) return false;
+    var due = String(x['종료일'] || '').substring(0, 10);
+    return due && due < t10;
+  }).sort(function(a, b){ return String(a['종료일'] || '').localeCompare(String(b['종료일'] || '')); });
+  var appr = items.filter(function(x){
+    var req = String(x['결재요청'] || '').trim();
+    return req && !APPROVAL_DONE_KO[String(x['결재상태'] || '').trim()];
+  });
+  var h = document.getElementById('p3lateh');
+  if (h) h.textContent = '지연 ' + late.length + '건 · 결재 대기 ' + appr.length + '건';
+  function row(x, over){
+    var due = String(x['종료일'] || '').substring(5, 10).replace('-', '/');
+    var nm = String(x['업무명'] || '');
+    return '<div class="wrow' + (over ? ' over' : '') + '">' +
+      '<span class="wt" title="' + esc(nm) + '">' + esc(nm) + '</span>' +
+      '<span class="wd">' + esc(due || '기한 없음') + '</span>' +
+      '<span class="wo">' + esc(String(x['담당자'] || '').split(',')[0].trim()) + '</span></div>';
+  }
+  var out = '<div class="lstitle" style="border-top:0;margin-top:0;padding-top:0;">지연 (일정 초과) ' + late.length + '건</div>';
+  out += late.length
+    ? late.slice(0, 12).map(function(x){ return row(x, true); }).join('') +
+      (late.length > 12 ? '<div class="wmore">외 ' + (late.length - 12) + '건</div>' : '')
+    : '<div class="mrow"><span class="lb">지연 건 없음</span></div>';
+  out += '<div class="lstitle">결재 대기 ' + appr.length + '건</div>';
+  out += appr.length
+    ? appr.slice(0, 8).map(function(x){ return row(x, false); }).join('') +
+      (appr.length > 8 ? '<div class="wmore">외 ' + (appr.length - 8) + '건</div>' : '')
+    : '<div class="mrow"><span class="lb">결재 대기 없음</span></div>';
+  el.innerHTML = out;
+}
 function loadP3Work(){
   var el = document.getElementById('p3late'); if (!el) return;
+  /* ERP_API_ON 이면 loadP3Todo 가 이미 부른 /api/todo 원장으로 renderP3Late 를 같이 채운다 —
+     같은 자리를 두 번(GAS 도) 부르던 경합을 없앤다(배 12523 5). Pages 는 종전대로 GAS 직접. */
+  if (ERP_API_ON) return;
   fetch(ERP + '?action=todo_list&cb=' + Date.now())
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok || !d.data) throw new Error('업무 SSOT 응답 없음');
-      var now = new Date();
-      var t10 = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
-      var items = d.data.filter(function(x){ return String(x['업무명'] || '').indexOf('�') < 0; });
-      var late = items.filter(function(x){
-        if (TODO_DONE_KO[String(x['상태'] || '').trim()]) return false;
-        var due = String(x['종료일'] || '').substring(0, 10);
-        return due && due < t10;
-      }).sort(function(a, b){ return String(a['종료일'] || '').localeCompare(String(b['종료일'] || '')); });
-      var appr = items.filter(function(x){
-        var req = String(x['결재요청'] || '').trim();
-        return req && !APPROVAL_DONE_KO[String(x['결재상태'] || '').trim()];
-      });
-      var h = document.getElementById('p3lateh');
-      if (h) h.textContent = '지연 ' + late.length + '건 · 결재 대기 ' + appr.length + '건';
-      function row(x, over){
-        var due = String(x['종료일'] || '').substring(5, 10).replace('-', '/');
-        var nm = String(x['업무명'] || '');
-        return '<div class="wrow' + (over ? ' over' : '') + '">' +
-          '<span class="wt" title="' + esc(nm) + '">' + esc(nm) + '</span>' +
-          '<span class="wd">' + esc(due || '기한 없음') + '</span>' +
-          '<span class="wo">' + esc(String(x['담당자'] || '').split(',')[0].trim()) + '</span></div>';
-      }
-      var out = '<div class="lstitle" style="border-top:0;margin-top:0;padding-top:0;">지연 (일정 초과) ' + late.length + '건</div>';
-      out += late.length
-        ? late.slice(0, 12).map(function(x){ return row(x, true); }).join('') +
-          (late.length > 12 ? '<div class="wmore">외 ' + (late.length - 12) + '건</div>' : '')
-        : '<div class="mrow"><span class="lb">지연 건 없음</span></div>';
-      out += '<div class="lstitle">결재 대기 ' + appr.length + '건</div>';
-      out += appr.length
-        ? appr.slice(0, 8).map(function(x){ return row(x, false); }).join('') +
-          (appr.length > 8 ? '<div class="wmore">외 ' + (appr.length - 8) + '건</div>' : '')
-        : '<div class="mrow"><span class="lb">결재 대기 없음</span></div>';
-      el.innerHTML = out;
+      renderP3Late(el, d.data);
     })
     .catch(function(e){
       el.innerHTML = '<div class="err">업무 SSOT 를 못 읽었습니다 — ' + esc(e && e.message ? e.message : '조회 실패') + '</div>';
@@ -2016,6 +2039,7 @@ function loadP3Todo(){
       renderP3Todo('p3hr', p3TodoRows(rows, 'hr', now), now);
       renderP3Todo('p3work', p3TodoRows(rows, 'work', now), now);
       renderClosingWork(rows, now);   // 결산 3장 아래칸(부서 리더별 업무)
+      renderP3Late(document.getElementById('p3late'), rows);   // 지연·결재대기도 이 원장으로(GAS 재조회 없음)
     })
     .catch(function(){ /* 못 읽으면 시트 칸 그대로 둔다 */ });
 }
@@ -2495,6 +2519,7 @@ function renderP4Top(teams){
    이 브라우저(localStorage)에 두며, 지난달은 안 바뀌므로 다시 읽지 않는다. 못 읽은 달은 0 이 아니라 「—」로 남긴다.
    달성 가능 % = (분기 누적 + 이달 영업일 하루 평균 × 남은 영업일) ÷ 분기 목표. 영업일 = 휴관일 정본(isClosedDay) 제외. */
 var P4_TEAM_ROW = { '수영팀': 8, 'P.T팀': 9, '골프팀': 10, '스쿼시팀': 11, '체조팀': 12, 'P.L팀': 13, '뮤지컬팀': 14, 'GXE팀': 15 };
+// 말일 팀 성적 = 다음 걸음 · 원장 teams 로(배 12523 6 — 이번 턴엔 원천이 없어 손대지 않는다)
 function p4MonthEndTeams(year, month){
   var key = 'p4_monthend_' + year + '-' + ('0' + month).slice(-2);
   try { var hit = localStorage.getItem(key); if (hit) return Promise.resolve(JSON.parse(hit)); } catch (e) {}
@@ -2659,26 +2684,66 @@ function loadPage4(){
 /* 1순위 = 서버 렌더러 그대로(GET /api/report/sales_report_cells · build_report 재사용 · 기준일=어제 · 시토 배1071 레인) — 발송본과 같은
    값. 라우트가 없거나 실패하면 2순위 = 지금 스냅샷(member_active_summary) 계산으로 폴백(기준일 차이로 1~2칸 어긋날 수 있어 표기). */
 var _serverCellsP = null;
-/* 입장 3칸(N13~N15) — 출입은 기기가 직접 찍어 손 이관을 안 거치므로 매출 11칸보다 먼저 서버로 옮긴다.
-   원천 = GET /api/visitors(server/erp_api/api_visitors.py · 운영부 시트 수식을 그대로 이식 · 2026-09-09
-   이경연 실장 공유). 실측 2026-09-08 정회원 549·준회원 37·유소년 44 = 시트와 0 차이. */
-var _visitorsP = null;
-function applyServerPanel(){
-  if (!ERP_API_ON || !RAW.cells) return;
-  if (VIEW_MODE !== 'default' && !(VIEW_MODE === 'date' && document.getElementById('dpick').value === ymd(new Date(Date.now() - 86400000)))) return;
+/* 서버판 원장 하나 — /api/report/sales_report_cells 를 한 번만 부르고 여러 자리(회원 5칸·강습
+   띠·등록 명단·로스자/컨택)가 같이 쓴다(배 12523 · 2026-09-18). overrides.N2 가 숫자가 아니면
+   서버판이 아직 준비 안 된 것으로 보고 null — 이 규칙은 종전 그대로다. */
+function serverCellsP(){
   if (!_serverCellsP) {
     _serverCellsP = fetch('/api/report/sales_report_cells?cb=' + Date.now())
       .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
       .then(function(d){ return (d && d.overrides && typeof d.overrides.N2 === 'number') ? d : null; })
       .catch(function(){ return null; });
   }
+  return _serverCellsP;
+}
+/* 입장 3칸(N13~N15) — 출입은 기기가 직접 찍어 손 이관을 안 거치므로 매출 11칸보다 먼저 서버로 옮긴다.
+   원천 = GET /api/visitors(server/erp_api/api_visitors.py · 운영부 시트 수식을 그대로 이식 · 2026-09-09
+   이경연 실장 공유). 실측 2026-09-08 정회원 549·준회원 37·유소년 44 = 시트와 0 차이. */
+var _visitorsP = null;
+/* 강습 신규·재등록 띠(1면 #lesson) — brojay.lists.lesson.month(팀별 신규/재등록 건수·금액 누적)가
+   있으면 그 값으로 다시 그린다. 없으면(레인 배포 전 등) 위 시트 값(drGet('lesson'))이 그대로 남는다. */
+function applyBrojayLesson(){
+  if (!ERP_API_ON) return;
+  serverCellsP().then(function(srv){
+    var month = srv && srv.brojay && srv.brojay.lists && srv.brojay.lists.lesson && srv.brojay.lists.lesson.month;
+    if (!month) return;
+    var teams = {}, tot = { '신규': {count:0, amount:0}, '재등록': {count:0, amount:0} };
+    Object.keys(month).forEach(function(team){
+      var m = month[team] || {}, n = m.new || 0, r = m.re || 0;
+      teams[team] = { '신규': {count:n}, '재등록': {count:r} };
+      tot['신규'].count += n; tot['신규'].amount += (m.new_amt || 0);
+      tot['재등록'].count += r; tot['재등록'].amount += (m.re_amt || 0);
+    });
+    renderLesson({ total: tot, teams: teams });
+    var el = document.getElementById('lesson');
+    if (el) el.innerHTML += '<div class="fnote">이번 달 누적 · 브로제이+ERP 강습명단</div>';
+  });
+}
+/* 로스자(I18)·금일 예상 컨택(I16) — brojay.lists.loss/contact 가 있으면 그 건수·이름(마스킹 전화)으로
+   덮는다(배 12523 4). 레인 배포 전이라 lists 가 없으면 아무것도 안 하고 시트 칸이 그대로 남는다.
+   textContent 로만 쓰이는 자리라 esc() 는 안 한다(setTxt 가 문자열 그대로 옮긴다). */
+function applyBrojayContactLoss(c, srv){
+  var lst = srv && srv.brojay && srv.brojay.lists; if (!lst) return false;
+  function fmt(arr){
+    if (!arr || !arr.length) return '';
+    var names = arr.slice(0, 5).map(function(x){ return x.name + (x.phone_masked ? '(' + x.phone_masked + ')' : ''); }).join(', ');
+    return arr.length + '명 · ' + names + (arr.length > 5 ? ' 외' : '');
+  }
+  var hit = false;
+  if (lst.contact) { c.I16 = fmt(lst.contact); hit = true; }
+  if (lst.loss) { c.I18 = fmt(lst.loss); hit = true; }
+  return hit;
+}
+function applyServerPanel(){
+  if (!ERP_API_ON || !RAW.cells) return;
+  if (VIEW_MODE !== 'default' && !(VIEW_MODE === 'date' && document.getElementById('dpick').value === ymd(new Date(Date.now() - 86400000)))) return;
   if (!_visitorsP) {
     _visitorsP = fetch('/api/visitors?cb=' + Date.now())
       .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
       .then(function(d){ return (d && d.ok && d.visitors && typeof d.visitors['정회원'] === 'number') ? d : null; })
       .catch(function(){ return null; });
   }
-  Promise.all([_serverCellsP, _visitorsP]).then(function(both){
+  Promise.all([serverCellsP(), _visitorsP]).then(function(both){
     var srv = both[0], vis = both[1];
     if (!RAW.cells) return;
     var sf = srv && srv.server_final;
@@ -2710,8 +2775,9 @@ function applyServerPanel(){
       });
       if (visitOn) VIS_MAP.forEach(function(m){ ov[m[0]] = vis.visitors[m[1]]; });
     }
-    if (!memberOn && !visitOn) return;
     var c = {}; Object.keys(RAW.cells).forEach(function(k){ c[k] = RAW.cells[k]; });
+    var bjOn = applyBrojayContactLoss(c, srv);
+    if (!memberOn && !visitOn && !bjOn) return;
     var diff = [];
     Object.keys(ov).forEach(function(k){
       var label = String(c['M' + k.substring(1)] || k).replace(/\n/g, ' ');
@@ -2752,10 +2818,11 @@ function applyServerFinal(srv, sf){
     var j = num(c['J' + r]), kk = num(c['K' + r]);
     if (('J' + r) in sf.cells && kk > 0) c['L' + r] = (Math.round(j / kk * 1000) / 10).toFixed(1) + '%';
   });
+  applyBrojayContactLoss(c, srv);
   SF_CELLS = c;
   renderReportCells(c);
   if (VIEW_MODE === 'date' && _lastDay) {
-    renderDaySales(_lastDay.c, _lastDay.label);
+    renderDaySales(_lastDay.c, _lastDay.label, _lastDay.date);
     var hl = document.getElementById('headline').children;
     hl[0].querySelector('.v').textContent = _won(num(c.I4));
     hl[1].querySelector('.v').textContent = _won(num(c.J4));
@@ -3005,7 +3072,7 @@ function renderEtcRev(){
   }).join('') + '</div>';
 }
 
-function renderDaySales(c, dayLabel){
+function renderDaySales(c, dayLabel, dateObj){
   setSalesHead(['보고 항목', dayLabel + ' 매출', '이번 달 누적', '이번 달 목표', '달성률']);
   var s = daySplit(c);
   /* 줄 수를 「보고」탭 표(11줄)와 같게 맞춘다 — 소계 줄을 넣었더니 표가 칸을 넘어
@@ -3061,12 +3128,12 @@ function renderDaySales(c, dayLabel){
   // 두면 등록 상세와 같은 내용이 두 장에 겹쳐 보인다). 여기서는 그리지 않고 넘기기만 한다.
   // 강습 신규·재등록 줄도 같은 규칙으로 다시 그린다 — 시트 GAS 집계와 팀 이름이 갈리지 않게.
   renderLesson({ total: s.lesTotal, teams: s.lesTeams });
-  renderP2Contract(c, dayLabel);
+  renderP2Contract(c, dayLabel, dateObj);
 }
 
 /* 등록 내역 — 왼쪽 멤버십 · 오른쪽 강습(성인·유소년). 원천은 그 날짜의 일자탭이다.
    성인·유소년은 강습 블록의 '등록경로' 칸으로 가른다(정회원·비회원=성인 / 유소년=유소년). */
-function renderP2Contract(c, dayLabel){
+function renderP2Contract(c, dayLabel, dateObj){
   var mem = document.getElementById('p2mem'), les = document.getElementById('p2les'), lesy = document.getElementById('p2lesy');
   var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh'), h3 = document.getElementById('p2lesyh');
   setSecTitle(h1, dayLabel + ' 등록 — 멤버십');
@@ -3086,6 +3153,42 @@ function renderP2Contract(c, dayLabel){
     if (lesy) lesy.innerHTML = lessonTeamHTML(youth);
     ['p2mem', 'p2les', 'p2lesy'].forEach(fitPanel);
   }
+  // 서버판(브로제이 결제 명단) — 보는 날짜가 서버 기준일과 같을 때만 위 시트 명단을 덮는다.
+  // 다른 날짜(과거·미래)는 시트 일자탭이 유일한 원천이라 그대로 둔다(배 12523 3).
+  if (ERP_API_ON && dateObj) applyBrojayRegistered(dateObj, dayLabel);
+}
+/* brojay.lists.registered({name, phone_masked, reg_class, kind, team, product, amount, paid_at}) 를
+   readContracts 가 만드는 행 모양({staff, member, sport, amount, amountRaw, type})으로 바꾼다.
+   담당자(staff) 정보는 브로제이 결제에 없어 '–'로 둔다. 유소년 여부는 팀·상품명에 '유소년' 낱말이
+   있는지로 가른다(시트 쪽 '등록경로' 칸과 같은 발상 — 지어내지 않고, 모르면 성인 쪽에 둔다). */
+function brojayRegRows(list){
+  var mem = [], adult = [], youth = [];
+  (list || []).forEach(function(x){
+    var row = { staff: '–', member: x.name || '–', sport: x.team || x.product || '–',
+                amount: x.amount || 0, amountRaw: (x.amount || 0).toLocaleString('ko-KR'),
+                type: x.reg_class || '미상', route: '' };
+    if (x.kind === '강습') {
+      if (/유소년/.test(String(x.team || '') + String(x.product || ''))) youth.push(row); else adult.push(row);
+    } else {
+      row.sport = x.product || x.kind || '–';
+      mem.push(row);
+    }
+  });
+  return { mem: mem, adult: adult, youth: youth };
+}
+function applyBrojayRegistered(dateObj, dayLabel){
+  serverCellsP().then(function(srv){
+    var lst = srv && srv.brojay && srv.brojay.lists;
+    if (!lst || String(lst.ref_date || srv.ref_date || '') !== ymd(dateObj)) return;   // 다른 날짜는 종전(시트) 그대로
+    var mem = document.getElementById('p2mem'), les = document.getElementById('p2les'), lesy = document.getElementById('p2lesy');
+    var h1 = document.getElementById('p2memh'), h2 = document.getElementById('p2lesh'), h3 = document.getElementById('p2lesyh');
+    var rows = brojayRegRows(lst.registered);
+    if (mem) mem.innerHTML = contractListHTML('회원권 · 옵션', rows.mem, 1);
+    if (les) les.innerHTML = lessonTeamHTML(rows.adult);
+    if (lesy) lesy.innerHTML = lessonTeamHTML(rows.youth);
+    ['p2mem', 'p2les', 'p2lesy'].forEach(fitPanel);
+    [h1, h2, h3].forEach(function(h){ var s = h && h.querySelector('.src'); if (s) { s.textContent = '브로제이 결제 명단'; s.className = 'src bro'; } });
+  });
 }
 
 /* 등록 명단이 칸보다 길면 글자만 한 단계씩 줄여 다 보이게 한다(2026-09-17 · 유소년 30건 날 아래가 잘렸다).
@@ -3112,7 +3215,7 @@ function loadTodayContracts(){
     if (!parts[0]) return;
     var c = {};
     parts.forEach(function(p){ if (p) { for (var k in p) c[k] = p[k]; } });
-    renderP2Contract(c, (t.getMonth()+1) + '월 ' + day + '일');
+    renderP2Contract(c, (t.getMonth()+1) + '월 ' + day + '일', t);
   });
 }
 
@@ -3210,8 +3313,8 @@ function onDatePick(silent){
       var dayLabel = (picked.getMonth()+1) + '월 ' + day + '일';
       document.getElementById('asof').textContent = dayLabel + (isToday ? ' (집계 중 · 오늘)' : '') +
         (mdiff === 1 && !tabHasCur ? ' (지난달 탭 기록)' : '') + (ok ? '' : ' — 표시 주의');
-      _lastDay = { c: c, label: dayLabel };
-      renderDaySales(c, dayLabel);
+      _lastDay = { c: c, label: dayLabel, date: picked };
+      renderDaySales(c, dayLabel, picked);
       var hl = document.getElementById('headline').children;
       hl[0].querySelector('.v').textContent = sfOn() ? _won(num(SF_CELLS.I4)) : cellMoney(c.J3);
       hl[1].querySelector('.v').textContent = sfOn() ? _won(num(SF_CELLS.J4)) : (c.J4 || '—');
@@ -3315,6 +3418,30 @@ function p2fetch(action, qs){
   return fetchCap('/api/report/' + action + '?cb=' + Date.now() + (qs || ''))
     .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
     .catch(function(e){ console.warn('[2페이지] ' + action + ' API 실패 → GAS 폴백:', e && e.message); return gas(); });
+}
+/* 강습 통계(byChannel·bySport) — GAS lesson_stats 는 type 없이 성인+유소년을 합쳐 낸다. 미러
+   /api/lesson/stats 는 type 별로만 있어(강습 회원관리 ERP 배 922) 두 타입을 따로 받아 합친다
+   (배 12523 1 · 2026-09-18). 미러 응답 모양(byChannel·bySport)이 GAS 와 같다는 전제 — 실패·모양이
+   다르면 catch 가 GAS 로 돌아간다(네트워크 실패만 잡는다 · JSON 모양이 달라 렌더가 비어도 자체
+   점검이 잡는다). */
+function mergeLessonArr(a, b){
+  var sum = {}, order = [];
+  (a || []).concat(b || []).forEach(function(x){
+    if (!(x.k in sum)) { sum[x.k] = 0; order.push(x.k); }
+    sum[x.k] += (x.v || 0);
+  });
+  return order.map(function(k){ return { k: k, v: sum[k] }; }).sort(function(p, q){ return q.v - p.v; });
+}
+function lessonStats(){
+  var gas = function(){ return p2fetch('lesson_stats'); };
+  if (!ERP_API_ON) return gas();
+  return Promise.all(['성인강습', '유소년강습'].map(function(type){
+    return fetchCap('/api/lesson/stats?type=' + encodeURIComponent(type) + '&scope=year', 25000)
+      .then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); });
+  })).then(function(both){
+    return { ok: true, byChannel: mergeLessonArr(both[0].byChannel, both[1].byChannel),
+             bySport: mergeLessonArr(both[0].bySport, both[1].bySport) };
+  }).catch(function(e){ console.warn('[2면] lesson_stats 미러 실패 → GAS:', e && e.message); return gas(); });
 }
 
 /* 오늘 챙길 것 — 문의 쪽 세 숫자는 회원관리 ERP 가 아니라 매일 아침 도는 시포 집계에 있다.
@@ -3572,7 +3699,7 @@ function load2(){
     .then(function(){ return inqList('유소년강습', 'lesson_inquiry_list', '&type=유소년강습')
       .then(function(d){ RAW2.__lesY = d; })
       .catch(function(){ RAW2.__lesY = null; }); })
-    .then(function(){ return p2fetch('lesson_stats')
+    .then(function(){ return lessonStats()
       .then(function(d){ RAW2.lesson_stats = d; })
       .catch(function(){ RAW2.lesson_stats = null; }); })
     .then(function(){
