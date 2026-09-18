@@ -453,7 +453,7 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         if heartbeat:
             try:
                 from module_heartbeat import record_heartbeat  # noqa: PLC0415
-                record_heartbeat(mid, detail=str(payload.get("summary_line", ""))[:120])
+                record_heartbeat(mid, detail=str(payload.get("summary_line", ""))[:400])   # 120→400 (2026-09-18 시우 · 점검 현황 3부서 줄이 120자에서 잘려 주차 줄이 안 보였다)
             except Exception:
                 pass  # 하트비트 실패가 리포터 본 작업을 막지 않는다(fail-soft)
 
