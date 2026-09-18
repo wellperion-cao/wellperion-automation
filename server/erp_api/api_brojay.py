@@ -8,6 +8,7 @@
   GET /api/brojay/members                          회원 명단 최신 스냅샷(member_id·name·phone_number… · 배 2664) · ?date= 로 특정 날
   GET /api/brojay/trainers                         강사 명단 최신 스냅샷(trainer_id→name · sessions 의 trainer_ids 해석용)
   GET /api/brojay/member_tickets?phones=010...,010...  전화별 회원권·수강권 기간(읽기 전용 · 배 12761) — 이름·주소는 안 준다
+  GET /api/brojay/unlisted_lesson_payments?days=7  강습 8팀 결제는 있는데 ERP 명단·강습 roster 어디에도 없는 회원(배 12761) — 이름 없음, phone_tail 4자리만
   GET /api/brojay/health                           kind 별 일수·최근 날짜·마지막 성공/실패
 
 정본은 브로제이 — 응답마다 _source=brojay. 칸 이름은 브로제이가 준 그대로 두고 가공하지 않는다
@@ -157,6 +158,81 @@ def member_tickets(phones: str = ""):
     return {"snapshot": key, "items": {p: idx[p] for p in wanted if p in idx}, "_source": SOURCE}
 
 
+def _is_unlisted(phone, erp_phones, roster_phones):
+    """전화가 있는데 ERP members·강습 roster 어느 쪽에도 없으면 True(전화 없으면 판정 불가 — False)."""
+    return bool(phone) and phone not in erp_phones and phone not in roster_phones
+
+
+def _selfcheck_unlisted():
+    erp, roster = {"01011112222"}, {"01033334444"}
+    assert _is_unlisted("01099998888", erp, roster) is True
+    assert _is_unlisted("01011112222", erp, roster) is False
+    assert _is_unlisted("01033334444", erp, roster) is False
+    assert _is_unlisted("", erp, roster) is False
+    print("selfcheck unlisted ok")
+
+
+@router.get("/unlisted_lesson_payments")
+def unlisted_lesson_payments(days: int = 7):
+    """강습 8팀(sales_targets.json brojay_tag) 결제는 있는데 ERP members·강습 roster 어느 쪽 명단에도 없는 회원
+    (9/16 실측 17건 · 강사·파트너팀이 명단에 올리도록). 이름·전화 전체는 주지 않는다(phone_tail 4자리만)."""
+    import brojay_cells  # noqa: PLC0415 — 전화 정규화·roster·태그→행 매핑을 그대로 재사용(중복 구현 금지)
+
+    days = max(1, min(int(days), 60))
+    today = datetime.now(KST).strftime("%Y-%m-%d")
+    frm = (datetime.now(KST) - timedelta(days=days - 1)).strftime("%Y-%m-%d")
+    tags = brojay_cells.tag_rows()
+
+    # 결제 — 지정 구간(kind='sales', 하루 1건 적재) 그대로 펼친다.
+    payments = []
+    for day in _range("sales", frm, today):
+        raw = day["data"]
+        lst = raw.get("data") if isinstance(raw, dict) else raw
+        if isinstance(lst, dict):
+            lst = lst.get("data")
+        payments.extend(p for p in (lst or []) if isinstance(p, dict))
+
+    # member_id → 전화(브로제이 members 스냅샷, 배 12761 라우트가 이미 쓰는 최신 스냅샷 재사용).
+    snap = _latest("members", None)
+    phone_of_member = {}
+    for m in (snap["data"] or {}).get("data") or []:
+        mid = m.get("member_id")
+        if mid:
+            phone_of_member[str(mid)] = _norm_phone(m.get("phone_number"))
+
+    conn = _conn()
+    try:
+        erp_phones = {_norm_phone(r["phone"]) for r in conn.execute(
+            "SELECT phone FROM members WHERE tenant_id=%s AND scope IN ('valid','ended')", (db.TENANT,)).fetchall()}
+        roster_phones, _owners = brojay_cells._lesson_roster_class(conn, db.TENANT)  # noqa: SLF001
+    finally:
+        conn.close()
+    erp_phones.discard("")
+    roster_phones.discard("")
+
+    items = []
+    for p in payments:
+        if str(p.get("history_type") or "") == "REFUND":
+            continue
+        cell = brojay_cells._cell_of(str(p.get("sales_tag_name") or ""), str(p.get("product_type") or ""),  # noqa: SLF001
+                                      p.get("product_name"), tags)
+        if not cell or cell < 8:
+            continue
+        phone = phone_of_member.get(str(p.get("member_id") or ""), "")
+        if not _is_unlisted(phone, erp_phones, roster_phones):
+            continue
+        items.append({
+            "paid_at": brojay_cells._kst_day(p.get("paid_at")) or str(p.get("paid_at") or "")[:10],  # noqa: SLF001
+            "team": p.get("sales_tag_name") or "",
+            "product": p.get("product_name") or "",
+            "amount": p.get("total_payment_price"),
+            "phone_tail": phone[-4:] if len(phone) >= 4 else phone,
+            "member_id": p.get("member_id"),
+        })
+    items.sort(key=lambda r: r["paid_at"], reverse=True)
+    return {"days": days, "items": items, "count": len(items), "_source": SOURCE}
+
+
 @router.get("/members")
 def members(date: Optional[str] = None):
     return _latest("members", date)
@@ -217,3 +293,4 @@ def health():
 if __name__ == "__main__":
     _selfcheck_month()
     _selfcheck_kst_date()
+    _selfcheck_unlisted()
