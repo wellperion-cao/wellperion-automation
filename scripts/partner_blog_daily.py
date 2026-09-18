@@ -13,7 +13,8 @@ GM 지시 2026-09-10(고척골프) · 2026-09-15(다이어트캠프 합류): 「
 프롬프트도 blog_style.json 의 prompt_template 키가 정본이다 — 이 코드는 값만 끼운다
 (2026-09-10~11 네 번 실패 끝에 겨우 도는 프롬프트라 구조에서 재조립하지 않는다).
 
-흐름: 주제 선택(상태 파일로 중복 방지) → run_claude 로 본문(인사~마지막 TIP)만 생성
+흐름: 주제 = 오늘 인스타 런(status/partner_instagram/{client}.json · 06:30 먼저 게시 · 캡션·사진 3장이 씨앗 · GM 2026-09-18)
+→ 인스타가 없는 날은 topic_bank(상태 파일로 중복 방지) → run_claude 로 본문(인사~마지막 TIP)만 생성
 → 푸터·해시태그는 footer_canon·tags.core_25 그대로 코드로 붙임(정확성 보장) →
 검사 통과해야 → naver_blog_upload_playwright.py --mode draft (WP_TENANT={client}) 로 임시저장.
 
@@ -274,7 +275,9 @@ def run_checks(body: str, style: dict) -> list[str]:
     return errs
 
 
-def run_upload(title: str, body: str, style: dict, mode: str) -> tuple[int, str]:
+def run_upload(title: str, body: str, style: dict, mode: str,
+               images: tuple[Path, str] | None = None) -> tuple[int, str]:
+    """images = (폴더, 글롭) 를 주면 그 사진(오늘 인스타 3장)을, 없으면 style.photo_dir 를 붙인다."""
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", encoding="utf-8", delete=False)
     try:
         tmp.write(body)
@@ -288,7 +291,9 @@ def run_upload(title: str, body: str, style: dict, mode: str) -> tuple[int, str]
             "--body-file", tmp.name,
         ]
         photo_dir = style.get("photo_dir")
-        if photo_dir:
+        if images:
+            argv += ["--image-dir", str(images[0]), "--image-glob", images[1]]
+        elif photo_dir:
             # --blog-id 는 넘기지 않는다 — 업로더가 로그인 세션(WP_TENANT)에서
             # 실제 블로그 아이디를 자동 확인한다(_resolve_blog_id). 화면 프로필 표시명은
             # 실제 blogId 슬러그가 아니어서 고정 지정하면 "유효하지 않은 요청" 에러로
@@ -305,28 +310,30 @@ def run_upload(title: str, body: str, style: dict, mode: str) -> tuple[int, str]
             pass
 
 
-def tell_owner(style: dict, topic: str) -> None:
-    """글이 올라가면 그 자리에서 담당자 방에 한 줄 알린다(GM 지시 2026-09-11 「부장님 방에도 항상 보내줘」).
+def ig_seed(client: str, path: Path | None = None) -> dict | None:
+    """오늘 인스타 런(status/partner_instagram/{client}.json · 06:30 partner_instagram_daily) — 주제·캡션·사진 3장.
 
-    아침 통이 대신 알리게 두지 않는다 — 글은 올라간 그때 바로 아시는 편이 낫다.
-    발신 관문은 종전대로 kakao_report_sender 하나다(새 발신기 만들지 않는다).
+    GM 2026-09-18: 인스타를 먼저 올리고 그 내용으로 블로그를 만든다(주제 원천 = 인스타). 인스타가 안 나온 날은
+    None → 종전대로 블로그 자체 주제(topic_bank). 게시 여부는 보지 않는다 — 임시안만 있어도 같은 주제로 간다(다캠 세션 없는 날).
     """
-    owner = style["owner"]
-    text = owner["message"].format(topic=topic)
-    if owner.get("telegram"):
-        # 카톡 방이 없는 client(ax) — GM 텔레그램(업무보고방)으로만 알린다. 새 발신기 안 만든다.
-        notify(text)
-        log(style, "GM 텔레그램 알림 보냄(owner.telegram)")
-        return
+    p = path or (ROOT / "status" / "partner_instagram" / f"{client}.json")
     try:
-        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_report_sender.py"),
-                            "--message", text, "--only-room", owner["room"], "--sender", "웰리"],
-                           cwd=str(ROOT), capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=900)
-        ok = r.returncode == 0 and "DONE" in (r.stdout or "")
-        log(style, "%s 방 알림 %s" % (owner["room"], "보냄" if ok else "실패 — " + (r.stdout or r.stderr or "")[-200:]))
-    except Exception as exc:                    # noqa: BLE001
-        log(style, "%s 방 알림 실패(무시): %s" % (owner["room"], exc))
+        runs = json.loads(p.read_text(encoding="utf-8")).get("runs", [])
+    except Exception:                            # noqa: BLE001
+        return None
+    today = datetime.now().strftime("%Y-%m-%d")
+    r = next((r for r in reversed(runs)
+              if str(r.get("at", "")).startswith(today) and r.get("topic") and r.get("caption") and r.get("folder")), None)
+    return r if r and (Path(r["folder"]) / "output").exists() else None
+
+
+def seed_block(seed: dict) -> str:
+    """프롬프트 정본(prompt_template)은 그대로 두고 뒤에 씨앗 한 절만 붙인다 — 구조를 재조립하지 않는다.
+    캡션 끝의 상담 주소 줄은 씨앗에서 뺀다 — 2026-09-18 실측: 「옮기지 말라」고 써도 모델이 본문에 베껴 넣어
+    banned_ours(wellperion) 검사에 걸렸다. 푸터 정본 줄은 코드가 따로 붙인다."""
+    body = "\n".join(ln for ln in seed["caption"].splitlines() if "erp.wellperion.com" not in ln).strip()
+    return ("\n\n★오늘 인스타그램에 먼저 올린 같은 주제의 캡션(이 글의 씨앗 — 흐름과 핵심 문장은 이어받되 "
+            "문장을 그대로 복사하지 않고 블로그 길이로 풀어 쓴다 · 주소·링크는 쓰지 않는다):\n" + body)
 
 
 def main() -> int:
@@ -335,8 +342,6 @@ def main() -> int:
                      help="jo=고척골프 조재오 지점장님 · dc=다이어트캠프 이승기대표님 · ax=AX 랩스 「피트니스 AX」")
     ap.add_argument("--dry-run", action="store_true", help="본문만 만들고 브라우저를 열지 않는다")
     ap.add_argument("--self-test", action="store_true", help="검사 함수 자가점검")
-    ap.add_argument("--no-owner-notice", action="store_true",
-                    help="임시저장은 하되 업체 방 카톡 알림은 보내지 않는다(첫 가동 확인용)")
     args = ap.parse_args()
 
     if args.self_test:
@@ -346,6 +351,10 @@ def main() -> int:
 
     style = load_style(args.client)
     fail_name = style["fail_notify_name"]
+    # 시험 실행(--dry-run)이 GM 방에 실패 알림을 보내고 상태 파일에 fail 을 남기면 안 된다(2026-09-18 실측 — 시험 한 번에 GM DM 1통).
+    # 함수 안에서 이름을 덮으므로 main 의 모든 호출이 이 판을 쓴다 — 첫 사용보다 앞에 둔다.
+    notify = globals()["notify"] if not args.dry_run else (lambda m: print(f"[dry-run] 알림 생략: {m[:80]}"))  # noqa: E731
+    _record_run = globals()["_record_run"] if not args.dry_run else (lambda *a, **k: None)                    # noqa: E731
     # 같은 업체 실행이 겹치면 글이 두 번 올라간다 — 2026-09-15 14:49·14:50 다캠 「무릎…」 2건(두 프로세스가
     # 동시에 돌아 둘 다 「오늘 성공 없음」으로 보고 각자 올렸다). 잠금 파일 하나로 한 번에 하나만 돈다.
     lock = ROOT / "status" / f".{args.client}_blog_daily.lock"
@@ -366,15 +375,17 @@ def main() -> int:
     if _already_ok_today(state) and not args.dry_run:   # dry-run 은 생성·검사만 시험하는 길이라 당일 성공 여부와 무관(2026-09-17 감사)
         log(style, "오늘 이미 임시저장 성공 — 건너뜀")
         return 0
-    topic = pick_topic(style, state)
+    seed = ig_seed(args.client)
+    topic = seed["topic"] if seed else pick_topic(style, state)
     if topic is None:
         msg = f"{fail_name} 블로그 — topic_bank {len(style['topic_bank'])}개 전부 사용함. 주제 추가 필요."
         log(style, msg)
         notify(msg)
         return 0
+    log(style, f"주제 원천 = {'오늘 인스타 ' + Path(seed['folder']).name if seed else '블로그 자체(topic_bank)'} · 「{topic}」")
 
     from model_router import run_claude
-    prompt = build_prompt(topic, style, state=state)
+    prompt = build_prompt(topic, style, state=state) + (seed_block(seed) if seed else "")
     # 저장소 밖에서 부른다 — 이 프로젝트의 CLAUDE.md·훅(「[형식 고정] 8요소 표」)이 붙으면
     # 블로그 본문 자리에 업무 보고 표가 나온다(2026-09-11 실측, 4회 연속). 프롬프트로는 못 이긴다.
     llm_body, used_model = run_claude(prompt, label=f"partner-blog-daily-{args.client}",
@@ -404,31 +415,30 @@ def main() -> int:
         return 1
 
     title = topic
+    images = (Path(seed["folder"]) / "output", "ig_*.jpg") if seed else None   # 인스타에 올린 사진 3장 그대로
     if args.dry_run:
-        rc, out = run_upload(title, body, style, mode="dryrun")
+        rc, out = run_upload(title, body, style, mode="dryrun", images=images)
         log(style, f"[dry-run] rc={rc}\n{out}")
         print(f"[dry-run] 본문 {len(body)}자 · 검사 통과 · 업로더 dryrun rc={rc}")
         return 0 if rc == 0 else 1
 
     tenant = style["tenant"]
-    rc, out = run_upload(title, body, style, mode="draft")
+    rc, out = run_upload(title, body, style, mode="draft", images=images)
     relogin_tag: str | None = None
     if rc != 0 and ("로그인이 풀렸다" in out or "로그인된 블로그가 웰페리온" in out):
         relogin_tag = _try_relogin(style, tenant)
         if relogin_tag == "auto-ok":
-            rc, out = run_upload(title, body, style, mode="draft")
+            rc, out = run_upload(title, body, style, mode="draft", images=images)
 
     if rc == 0:
         msg = f"{fail_name} 블로그 임시저장 성공 — 「{topic}」 {len(body)}자 (모델 {used_model})"
         log(style, msg + "\n" + out)
         notify(msg)
         state.setdefault("used_topics", []).append(topic)
-        _record_run(style, state, topic, "ok", "", len(body), used_model, relogin_tag)
+        _record_run(style, state, topic, "ok", "", len(body), used_model, relogin_tag, seed=bool(seed))
         save_state(style, state)
-        if args.no_owner_notice:
-            log(style, "업체 방 알림 생략(--no-owner-notice)")
-        else:
-            tell_owner(style, topic)
+        # 파트너 방 아침 안내는 안 보낸다 — 그 시각에 대신 나가는 것은 없다(GM 2026-09-18 「오전 통은 다 삭제」 · 저녁 통이 한 번에 정리)
+        log(style, "아침 안내 skip(GM 2026-09-18)")
         return 0
 
     # 실패 사유는 지어내지 않는다 — 업로더가 찍은 [ERROR] 줄을 그대로 실어 보낸다.
@@ -472,7 +482,7 @@ def _fail_streak(state: dict) -> int:
 
 
 def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, chars: int,
-                 model: str | None, relogin: str | None = None) -> None:
+                 model: str | None, relogin: str | None = None, seed: bool = False) -> None:
     rec = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "topic": topic,
@@ -483,6 +493,8 @@ def _record_run(style: dict, state: dict, topic: str, result: str, reason: str, 
     }
     if relogin is not None:
         rec["relogin"] = relogin
+    if seed:
+        rec["seed"] = "instagram"           # 인스타 → 블로그 순서가 실제로 돌았다는 표식
     state.setdefault("runs", []).append(rec)
     save_state(style, state)
 
@@ -553,6 +565,22 @@ def _self_test() -> None:
     assert not _already_ok_today({"runs": [{"date": f"{yesterday} 09:00:00", "result": "ok"}]}), "어제 ok 를 오늘로 침"
     assert not _already_ok_today({"runs": [{"date": f"{today} 09:00:00", "result": "fail"}]}), "fail 인데 skip 함"
     assert not _already_ok_today({"runs": []})
+
+    # ── 인스타 씨앗: 오늘 런(주제·캡션·폴더 output/)만 · 어제 것·캡션 없는 것은 None ──
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as td:
+        (Path(td) / "output").mkdir()
+        p = Path(td) / "ig.json"
+        now = datetime.now().strftime("%Y-%m-%dT06:30:00")
+        p.write_text(json.dumps({"runs": [{"at": now, "topic": "주제A", "caption": "첫 문장.\n\nerp.wellperion.com/x/counsel/ 에서 24시간 상담", "folder": td}]}), encoding="utf-8")
+        s = ig_seed("jo", p)
+        assert s and s["topic"] == "주제A" and "첫 문장." in seed_block(s), s
+        assert "24시간 상담" not in seed_block(s) and "wellperion" not in seed_block(s), "상담 주소 줄이 씨앗에 남음"
+        p.write_text(json.dumps({"runs": [{"at": now.replace("2026", "2025"), "topic": "주제A", "caption": "x", "folder": td}]}), encoding="utf-8")
+        assert ig_seed("jo", p) is None, "어제 인스타를 오늘 씨앗으로 삼음"
+        p.write_text(json.dumps({"runs": [{"at": now, "topic": "주제A", "folder": td}]}), encoding="utf-8")
+        assert ig_seed("jo", p) is None, "캡션 없는 런을 씨앗으로 삼음"
+    assert ig_seed("jo", Path("없는/파일.json")) is None
 
     # ── 비밀 파일 파서: 공백·CRLF 허용, 키 없으면 None ──
     assert _secret_from_response(200, {"ok": True, "id": "abc", "pw": "Xample1234!"}) == {"NAVER_ID": "abc", "NAVER_PW": "Xample1234!"}

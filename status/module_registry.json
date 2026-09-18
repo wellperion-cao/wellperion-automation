@@ -1176,11 +1176,11 @@
       "enabled": true,
       "owner_role": "cbo",
       "owner_nick": "시보",
-      "feature": "파트너 센터 아침 1통 — 매일 07:00 에 그 센터 방(다이어트캠프 이승기 대표님·★조재오 지점장님)으로 카톡 한 통. 새 말씀이 있으면 답장, 없거나 답장이 필요 없는 말씀이면 아직 못 받은 값 하나를 여쭙는다. 물어볼 것 = 그 센터 빈칸 목록(_받을것.md) + FAQ 통합층이 재 준 빈 유형(cbo-faq-hub) + 상담봇 미답. 회로 = scripts/diet_camp_agent.py(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-DietCamp-Agent 06:50 저장→07:00 발신). 실행체는 시토가 만든 것을 그대로 쓰고 내용(무엇을 여쭙나)만 시보가 갖는다.",
+      "feature": "파트너 센터 저녁 1통 — 매일 21:00 그 센터 방(다이어트캠프 이승기 대표님·★조재오 지점장님)으로 카톡 한 통, 필요한 것만: 오늘 인스타 게시 1편(링크) · 블로그 임시저장 1편(제목 · 발행만) · 답 온 번호 Before/After 링크(있을 때) · 설문 남은 번호 N개 한 줄. 한 일이 없는 날은 0통. 아침 통(07:00 인사·응원·질문)은 GM 2026-09-18 「오전 통은 다 삭제」로 0통. 회로 = scripts/diet_camp_agent.py --evening(방 목록 status/kakao_agent/rooms.json · 예약작업 Wellperion-Partner-Evening-2100 · 모델 0 — 원천 값만 조립). 인스타 06:30 자동 게시(partner_instagram_daily) → 블로그 06:45/07:00 이 그 주제·캡션·사진을 씨앗으로(partner_blog_daily).",
       "data_source": {
         "kind": "log",
-        "ref": "logs/diet_camp_agent.log + logs/partner_evening_wrap.log",
-        "note": "2026-09-14 시토(INC-021 3차) — 종전 ref(status/kakao_agent/rooms.json)는 방 목록(설정) 파일이라 모듈이 죽어도 안 바뀐다. 실제 실행 로그(06:50 저장·07:00 발신 = diet_camp_agent.log · 21:00 저녁 wrap = partner_evening_wrap.log)로 바꿨다 — 매 실행 끝에 exit=0 줄이 append 되므로 mtime이 진짜 가동 증거."
+        "ref": "logs/partner_evening_wrap.log",
+        "note": "2026-09-18 시보 — 아침 통이 0통이 되어 diet_camp_agent.log 는 매일 「skip」만 남는다. 가동 증거 = 21:00 저녁 wrap 로그(매 실행 끝 exit=0 줄 append) 하나로 좁혔다."
       },
       "notify_spec": {
         "daily": true,

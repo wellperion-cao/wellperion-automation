@@ -66,14 +66,19 @@ def instagram_items(now: datetime) -> list[dict]:
         if not runs:
             continue
         r = runs[-1]
-        if not r.get("sent"):
-            out.append({"who": who, "what": "인스타 임시안(미발송 · 발행 세션 없음)", "since": r.get("at", ""), "via": "—",
-                        "state": "세션 로그인 1회 뒤 발송", "detail": "", "then": "07:20 매일 자동", "done": False})
-            continue
+        # 2026-09-18 부터 파트너 승낙 없이 06:30 바로 게시(GM) — 기다리는 것은 「올려요」가 아니라 발행 세션(사람 손 1회)뿐
         done = bool(r.get("published_at"))
-        out.append({"who": who, "what": "인스타 임시안 「올려요」 답", "since": r.get("at", ""), "via": "카톡 사진+캡션",
-                    "state": ("게시함 " + r["published_at"][:16]) if done else f"답 대기 {_days(r.get('at', ''), now)}일째 · 답 오면 07:20 자동 게시",
-                    "detail": Path(r["folder"]).name, "then": "게시 → 다음 날 임시안", "done": done})
+        if done:
+            out.append({"who": who, "what": "인스타 자동 게시", "since": r.get("at", ""), "via": "—",
+                        "state": "게시함 " + r["published_at"][:16], "detail": r.get("post_url") or Path(r["folder"]).name,
+                        "then": "다음 날 06:30 자동", "done": True})
+        elif not (ROOT / "profiles" / "instagram" / key).exists():
+            out.append({"who": who, "what": "인스타 발행 세션(로그인 1회 · 사람 손)", "since": r.get("at", ""), "via": "—",
+                        "state": "세션 없음 — 임시안만 쌓임", "detail": Path(r["folder"]).name, "then": "세션 뒤 06:30 자동 게시", "done": False})
+        elif r.get("publish_rc") is not None:
+            out.append({"who": who, "what": "인스타 자동 게시 실패(재시도 없음)", "since": r.get("at", ""), "via": "—",
+                        "state": f"rc={r['publish_rc']} · 세션 만료면 재로그인 1회 뒤 --retry", "detail": Path(r["folder"]).name,
+                        "then": "logs/partner_instagram_daily.log", "done": False})
     return out
 
 

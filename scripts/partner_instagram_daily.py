@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""partner_instagram_daily.py — 파트너 인스타 임시안 하루 한 장 (시보 · 배 12718 · GM 지시 2026-09-17 「마케팅 자동화 활성화」).
+"""partner_instagram_daily.py — 파트너 인스타 하루 한 편 자동 게시 (시보 · 배 12718 · GM 2026-09-18 「인스타그램 발행 가능 · 그 내용으로 블로그 등 자동화」).
 
-무엇을 하나(1단계 = 임시안 · 2단계 = 게시):
-  ① 오늘 블로그 임시저장 글의 주제(status/{client}_blog_daily.json 마지막 ok 런)를 받아
-  ② 캡션 300자 안(담담 · 금액 0 · 금지어 0) + 인스타 해시태그 15개를 만들고
+무엇을 하나(매일 06:30 · 파트너 승낙 없이 바로 게시):
+  ① 주제 하나를 고른다(blog_style.json topic_bank 에서 블로그·인스타가 아직 안 쓴 것 — 인스타가 그날 주제의 원천이다)
+  ② 캡션 300자 안(담담 · 금액 0 · 금지어 0) + 해시태그 15개 · 마지막 줄은 상담 페이지 주소를 코드가 붙인다
   ③ 파트너 화면 사진(erp/admin/{tenant}/img · 로고 제외)에서 3장을 돌려 뽑아 1080×1080 으로 잘라
-  ④ instagram_upload_playwright.py 가 읽는 폴더 규격(output/ig_NN.jpg + 큐레이션_추천.md)으로 저장하고
-  ⑤ 파트너 카톡 방에 사진 1장 + 캡션을 보내 「올려요」 한 마디를 받는다(게시는 그 뒤 --publish · 계정 세션은 profiles/instagram/{account}).
+  ④ instagram_upload_playwright.py 폴더 규격(output/ig_NN.jpg + 큐레이션_추천.md)으로 저장하고
+  ⑤ 세션(profiles/instagram/{account})이 있으면 그 자리에서 게시 → 게시물 페이지를 다시 열어 캡션이 붙었는지 실측한다.
+     세션이 없으면 임시안만 두고 로그 한 줄(다캠 = gm_asks #56). 실패는 재시도 없이 로그 + 자동화현황방 한 줄.
+  블로그(partner_blog_daily)가 이 상태 파일의 오늘 주제·캡션·사진 3장을 씨앗으로 본문을 만든다(인스타 → 블로그 순).
 
-정본 = 파트너 blog_style.json(말투·금지어·태그) · client.json(사실). 계정 값은 어디에도 두지 않는다(서버 1531 규칙 · 세션 프로필만).
-상태 = status/partner_instagram/{client}.json (마지막 날짜 · 폴더 · 사진 회전 index · 확인 대기).
+정본 = 파트너 blog_style.json(말투·금지어·태그·상담 주소) · client.json(사실). 계정 값은 어디에도 두지 않는다(서버 1531 규칙 · 세션 프로필만).
+상태 = status/partner_instagram/{client}.json (runs: 날짜·주제·캡션·사진·게시 URL·실측 · photo_idx).
+가드 = 실행 잠금(status/.{client}_instagram_daily.lock) + 같은 날 게시가 있으면 skip.
 
-  C:/Python314/python.exe scripts/partner_instagram_daily.py jo            # 임시안 만들고 카톡으로 보냄
-  C:/Python314/python.exe scripts/partner_instagram_daily.py jo --no-send  # 폴더만 만든다
-  C:/Python314/python.exe scripts/partner_instagram_daily.py jo --publish  # 파트너 「올려요」 뒤 — 오늘 폴더를 그 계정으로 게시
+  C:/Python314/python.exe scripts/partner_instagram_daily.py jo              # 오늘 임시안 → 게시 → 실측
+  C:/Python314/python.exe scripts/partner_instagram_daily.py jo --no-publish # 임시안만 만든다
   C:/Python314/python.exe scripts/partner_instagram_daily.py --self-test
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -30,6 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 PY = sys.executable
+PROFILES = ROOT / "profiles" / "instagram"
 
 CLIENTS = {
     "jo": {"dir": ROOT / "2. 브랜드_자료" / "11_고척골프_조재오부장님", "tenant": "gocheokgolf", "account": "jo",
@@ -68,32 +72,17 @@ def save_state(key: str, st: dict) -> None:
     (STATE_DIR / f"{key}.json").write_text(json.dumps(st, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def room_name(c: dict) -> str:
-    names: list[str] = []
-
-    def walk(x):  # 파일 모양(중첩 dict·list)에 기대지 않고 name 값만 모은다
-        if isinstance(x, dict):
-            if isinstance(x.get("name"), str):
-                names.append(x["name"])
-            for v in x.values():
-                walk(v)
-        elif isinstance(x, list):
-            for v in x:
-                walk(v)
-    walk(json.loads((ROOT / "scripts" / "kakao_rooms.json").read_text(encoding="utf-8")))
-    for n in names:
-        if c["room_key"] in n:
-            return n
-    raise SystemExit(f"카톡 방 이름을 못 찾음 — kakao_rooms.json 에 「{c['room_key']}」 없음")
-
-
-def today_topic(style: dict) -> str | None:
-    """오늘(또는 마지막) 블로그 임시저장 성공 런의 주제 — 글과 같은 주제로 인스타를 만든다."""
+def pick_topic(style: dict, st: dict) -> str | None:
+    """topic_bank 에서 블로그(used_topics)도 인스타(runs)도 아직 안 쓴 첫 주제 — 인스타가 그날 주제를 정하고 블로그가 따른다."""
     p = ROOT / style["state_file"]
-    if not p.exists():
-        return None
-    runs = [r for r in json.loads(p.read_text(encoding="utf-8")).get("runs", []) if r.get("result") == "ok"]
-    return runs[-1].get("topic") if runs else None
+    used = set(json.loads(p.read_text(encoding="utf-8")).get("used_topics", [])) if p.exists() else set()
+    used |= {r.get("topic") for r in st.get("runs", [])}
+    return next((t for t in style["topic_bank"] if t not in used), None)
+
+
+def today_run(st: dict, today: str) -> dict | None:
+    """오늘 만든 런(있으면) — 블로그 씨앗·하루 한 번 가드가 같이 본다."""
+    return next((r for r in reversed(st.get("runs", [])) if str(r.get("at", "")).startswith(today)), None)
 
 
 def hashtags(style: dict) -> list[str]:
@@ -119,18 +108,32 @@ def build_prompt(topic: str, style: dict, cj: dict, c: dict) -> str:
         f"쓰는 법: {json.dumps(ph.get('how_to_write', ''), ensure_ascii=False)}\n"
         f"금지: {json.dumps(forbidden_words(style), ensure_ascii=False)} · 금액·가격 숫자 · 마감·임박 재촉 · 링크 · 이모지 3개 넘게\n"
         f"확인된 사실만: {json.dumps({k: fc.get(k) for k in ('hours', 'parking', 'scale', 'address') if fc.get(k)}, ensure_ascii=False)}\n"
-        f"길이 {CAPTION_MAX}자 안 · 첫 줄은 손님 마음에 걸리는 한 문장 · 마지막 줄은 「프로필 링크에서 24시간 상담」 한 줄 · 차분히 설명하는 말투 · 존댓말\n"
+        f"길이 {CAPTION_MAX - len(tail_of(style)) - 2}자 안 · 첫 줄은 손님 마음에 걸리는 한 문장 · 상담 안내 줄은 쓰지 않는다(코드가 붙인다) · 차분히 설명하는 말투 · 존댓말\n"
     )
 
 
-def fallback_caption(topic: str, c: dict) -> str:
-    return f"{topic}\n\n오늘 블로그에 정리해 두었습니다. {c['name']}에서 편하게 물어보셔도 됩니다.\n프로필 링크에서 24시간 상담"
+def tail_of(style: dict) -> str:
+    """캡션 마지막 줄 — 인스타 프로필 링크는 파트너가 안 걸어 둔 계정이 있어 「프로필 링크에서」라 쓰면 거짓이 된다.
+    블로그 푸터 정본(footer_canon.counsel)의 상담 주소를 그대로 적는다."""
+    m = re.search(r"https?://\S+", (style.get("footer_canon") or {}).get("counsel") or "")
+    if not m:
+        raise SystemExit("blog_style.json footer_canon.counsel 에 상담 주소가 없다 — 캡션 마지막 줄을 못 만든다")
+    return m.group(0).replace("https://", "") + " 에서 24시간 상담"
+
+
+def with_tail(body: str, tail: str) -> str:
+    return body.strip() + "\n\n" + tail
+
+
+def fallback_caption(topic: str, c: dict, tail: str) -> str:
+    return with_tail(f"{topic}\n\n{c['name']}에서 편하게 물어보셔도 됩니다.", tail)
 
 
 def run_checks(caption: str, style: dict) -> list[str]:
     errs = []
+    low = caption.replace(tail_of(style), "").lower()   # 상담 주소(erp.wellperion.com)는 정본 줄이라 혼입 검사에서 뺀다(블로그와 같은 규칙)
     for w in forbidden_words(style):
-        if w and w.lower() in caption.lower():
+        if w and w.lower() in low:
             errs.append(f"금지어 「{w}」")
     if re.search(r"[0-9][0-9,]*\s*원", caption):
         errs.append("금액 숫자")
@@ -141,18 +144,15 @@ def run_checks(caption: str, style: dict) -> list[str]:
     return errs
 
 
-TAIL = "프로필 링크에서 24시간 상담"
-
-
-def trim_to_sentence(caption: str, limit: int) -> str:
+def trim_to_sentence(caption: str, limit: int, tail: str) -> str:
     """문장 경계에서 잘라 limit 안으로 — 마지막 줄(상담 안내)은 남긴다."""
-    body = caption.replace(TAIL, "").strip()
+    body = caption.replace(tail, "").strip()
     out = ""
     for sent in re.split(r"(?<=[.!?다요])\s+", body):
-        if len(out) + len(sent) + len(TAIL) + 2 > limit:
+        if len(out) + len(sent) + len(tail) + 2 > limit:
             break
         out = (out + " " + sent).strip()
-    return (out or body[: limit - len(TAIL) - 2]).strip() + "\n\n" + TAIL
+    return with_tail(out or body[: limit - len(tail) - 2], tail)
 
 
 def pick_photos(c: dict, st: dict, n: int = 3) -> list[Path]:
@@ -183,87 +183,102 @@ def write_folder(folder: Path, caption: str, tags: list[str], photos: list[Path]
     (folder / "큐레이션_추천.md").write_text(md, encoding="utf-8")
 
 
-def send_kakao(c: dict, folder: Path, caption: str, tags: list[str]) -> int:
-    body = (f"{c['owner']}, 웰페리온 AI입니다.\n"
-            f"오늘 블로그 글로 인스타그램 게시물 초안을 만들었습니다(사진 3장 중 1장 첨부).\n"
-            f"▪ 캡션\n{caption.strip()}\n"
-            f"▪ 해시태그 {len(tags)}개는 캡션 아래에 붙습니다\n"
-            f"👉 「올려요」 한 마디면 그 계정으로 올리고, 고칠 문장은 그 줄만 주시면 바꾸겠습니다.")
-    p = subprocess.run([PY, str(ROOT / "scripts" / "kakao_report_sender.py"), "--image", str(folder / "output" / "ig_01.jpg"),
-                        "--caption", body, "--only-room", room_name(c), "--sender", "웰리"],
-                       cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
-    tail = (p.stdout or "").strip().splitlines()[-1:] or [""]
-    print("[kakao]", p.returncode, tail[0][:120])
-    return p.returncode
+def make_caption(topic: str, style: dict, cj: dict, c: dict, key: str) -> tuple[str, str]:
+    """모델 캡션(검사 통과) 또는 규칙 캡션 — (캡션, 모델 이름)."""
+    from model_router import run_claude  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+    tail = tail_of(style)
+    body, used = run_claude(build_prompt(topic, style, cj, c), label=f"partner-ig-{key}", cwd=tempfile.gettempdir())
+    caption = with_tail(body, tail) if (body or "").strip() else fallback_caption(topic, c, tail)
+    errs = run_checks(caption, style)
+    if errs and all(e.startswith("캡션 ") for e in errs):   # 길이만 넘친 것은 한 번 줄여 본다(규칙 캡션은 마지막 수단)
+        shorter, _ = run_claude(f"아래 인스타 캡션을 {CAPTION_MAX - len(tail) - 20}자 안으로 줄여라. 말투·문장 순서는 그대로, 결과는 캡션만.\n\n{body}",
+                                label=f"partner-ig-{key}-short", cwd=tempfile.gettempdir())
+        if shorter and not run_checks(with_tail(shorter, tail), style):
+            caption, errs = with_tail(shorter, tail), []
+        else:                                                  # 모델이 길이를 안 지키면 문장 경계에서 자른다(내용은 앞부분 그대로)
+            cut = trim_to_sentence(caption, CAPTION_MAX - 30, tail)
+            if not run_checks(cut, style):
+                caption, errs = cut, []
+    if errs:
+        print("[check] 캡션 탈락 —", " · ".join(errs), "→ 규칙 캡션으로 대체")
+        caption, used = fallback_caption(topic, c, tail), None
+    return caption, used or "규칙"
 
 
-ARCHIVE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
-OK_WORDS = ("올려", "올리", "게시", "발행", "좋습니다", "좋아요", "진행")
-DATE_RE = re.compile(r"^(\d{4})년 (\d{1,2})월 (\d{1,2})일")
-LINE_RE = re.compile(r"^\[(.+?)\] \[(오전|오후) (\d{1,2}):(\d{2})\] (.*)$")
+POST_URL_RE = re.compile(r"https?://(?:www\.)?instagram\.com/(?:p|reel)/[A-Za-z0-9_-]+/?")
 
 
-def partner_ok_since(c: dict, since: datetime, text: str | None = None) -> str | None:
-    """카톡 저장본(06:30 하루 한 번)에서 since 뒤 파트너가 「올려요」류로 답했는지 — 답 문장을 돌려준다(없으면 None).
-    text 를 주면 파일 대신 그 문자열을 읽는다(자가점검용)."""
-    room = room_name(c)
-    sender = room.lstrip("★")
-    if text is None:
-        folder = ARCHIVE / room.replace(" ", "")
-        files = sorted(folder.glob("*/*_auto_*.txt"))[-2:]
-        text = "\n".join(f.read_text(encoding="utf-8", errors="replace") for f in files)
-    day = None
-    for line in text.splitlines():
-        m = DATE_RE.match(line)
-        if m:
-            day = datetime(int(m[1]), int(m[2]), int(m[3]))
-            continue
-        m = LINE_RE.match(line)
-        if not m or day is None or m[1] != sender:
-            continue
-        h = int(m[3]) % 12 + (12 if m[2] == "오후" else 0)
-        when = day.replace(hour=h, minute=int(m[4]))
-        body = m[5].strip()
-        if when <= since:
-            continue
-        short_ack = len(body) <= 12 and ("올려" in body or "올리" in body)          # 「올려요」 「네 올려주세요」
-        about_ig = "인스타" in body and any(w in body for w in OK_WORDS)          # 「인스타 그대로 올리세요」
-        if short_ack or about_ig:
-            return body
-    return None
-
-
-def auto_publish(c: dict, key: str, st: dict) -> int:
-    """어제 보낸 임시안에 파트너 「올려요」가 왔으면 그 폴더를 게시한다(아침 07:20 예약이 부른다)."""
-    runs = [r for r in st.get("runs", []) if r.get("await_ok") and not r.get("published_at") and r.get("folder")]
-    if not runs:
-        print("[auto-publish] 답 기다리는 임시안 없음"); return 0
-    r = runs[-1]
-    since = datetime.fromisoformat(r["at"])
-    ok = partner_ok_since(c, since)
-    if not ok:
-        print(f"[auto-publish] {r['folder']} — 아직 답 없음(since {r['at'][:16]})"); return 0
-    print(f"[auto-publish] 파트너 답 「{ok[:40]}」 → 게시")
-    rc = publish(c, Path(r["folder"]))
-    r["published_at"] = datetime.now().isoformat(timespec="seconds"); r["publish_rc"] = rc; r["ok_text"] = ok[:80]
-    save_state(key, st)
-    return rc
-
-
-def publish(c: dict, folder: Path) -> int:
+def publish(c: dict, folder: Path) -> tuple[int, str | None]:
+    """업로더로 게시 — (rc, 게시 URL). 업로더의 자체 텔레그램 보고는 끈다(GM 봇방에 안 보낸다 · 실패 알림은 여기서 자동화현황방으로)."""
     cmd = [PY, str(ROOT / "scripts" / "instagram_upload_playwright.py"), "--mode", "publish",
            "--account", c["account"], "--content-folder", str(folder), "--tenant", "wellperion"]
     print("[publish]", " ".join(cmd[2:]))
-    return subprocess.run(cmd, cwd=str(ROOT)).returncode
+    p = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=dict(os.environ, IG_SUPPRESS_TELEGRAM="1", PYTHONIOENCODING="utf-8", PYTHONUTF8="1"))
+    out = (p.stdout or "") + (p.stderr or "")
+    for line in out.splitlines():
+        if line.startswith(("[INFO] post", "[ERROR]", "[WARN]")):
+            print("  ", line[:200])
+    m = POST_URL_RE.search(next((ln for ln in out.splitlines() if ln.strip().startswith("post A:")), ""))
+    return p.returncode, (m.group(0) if m else None)
+
+
+def verify(c: dict, url: str, caption: str) -> bool:
+    """게시물 페이지를 그 계정 세션으로 다시 열어 캡션 첫 문장이 실제로 붙었는지 본다(읽기만 · ig_publish_verify 헬퍼 재사용)."""
+    import asyncio  # noqa: PLC0415
+    import ig_publish_verify as v  # noqa: PLC0415
+
+    async def _go() -> bool:
+        p, ctx = await v._launch(c["account"])
+        try:
+            page = await ctx.new_page()
+            await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            await page.wait_for_timeout(2500)
+            live, _ = await v._read_post(page)
+            return v._squash(caption.splitlines()[0])[:20] in v._squash(live)
+        finally:
+            await ctx.close()
+            await p.stop()
+    try:
+        return asyncio.run(_go())
+    except Exception as exc:  # noqa: BLE001
+        print(f"[verify] 실측 실패(게시는 됐을 수 있음): {type(exc).__name__}: {exc}")
+        return False
+
+
+def alert(msg: str) -> None:
+    """AI 살림 경보 = 자동화현황방 한 줄(GM 봇방·파트너 방 아님)."""
+    try:
+        import alert_router  # noqa: PLC0415
+        from notify.telegram_send import send  # noqa: PLC0415
+        send(alert_router.route(alert_router.TECH_CHECK), msg)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[alert] 자동화현황방 알림 실패(무시): {exc}")
+
+
+def acquire_lock(key: str) -> bool:
+    """같은 업체 실행이 겹치면 두 번 올라간다(2026-09-15 다캠 블로그 임시저장 2건) — 잠금 파일 하나로 한 번에 하나만."""
+    lock = ROOT / "status" / f".{key}_instagram_daily.lock"
+    try:
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        if datetime.now().timestamp() - lock.stat().st_mtime < 40 * 60:
+            return False
+        lock.unlink(missing_ok=True)   # 40분 넘은 잠금은 죽은 프로세스가 남긴 것
+        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    os.write(fd, str(os.getpid()).encode()); os.close(fd)
+    import atexit  # noqa: PLC0415
+    atexit.register(lambda: lock.unlink(missing_ok=True))
+    return True
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("client", nargs="?", choices=sorted(CLIENTS))
-    ap.add_argument("--no-send", action="store_true")
-    ap.add_argument("--publish", action="store_true", help="파트너 「올려요」 뒤 — 오늘 폴더를 게시")
-    ap.add_argument("--auto-publish", action="store_true", help="답 기다리는 임시안에 파트너 「올려요」가 왔으면 게시(아침 예약)")
-    ap.add_argument("--topic", default="", help="주제를 직접 줄 때(기본 = 오늘 블로그 주제)")
+    ap.add_argument("--no-publish", action="store_true", help="임시안만 만든다(게시 안 함)")
+    ap.add_argument("--topic", default="", help="주제를 직접 줄 때(기본 = topic_bank 에서 안 쓴 첫 주제)")
+    ap.add_argument("--retry", action="store_true", help="오늘 실패 기록이 있어도 다시 게시(세션 재로그인 뒤 사람이 부를 때만)")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
     if a.self_test:
@@ -271,52 +286,53 @@ def main() -> int:
     if not a.client:
         ap.error("client")
     c = CLIENTS[a.client]
-    style, cj, st = style_of(c), client_json(c), load_state(a.client)
-    day = datetime.now().strftime("%y%m%d")
-    folder = c["dir"] / "05_콘텐츠_초안" / "instagram" / day
-    if a.auto_publish:
-        return auto_publish(c, a.client, st)
-    if a.publish:
-        if not (folder / "큐레이션_추천.md").exists():
-            raise SystemExit(f"오늘 임시안 폴더 없음 — {folder}")
-        rc = publish(c, folder)
-        st["runs"].append({"at": datetime.now().isoformat(timespec="seconds"), "folder": str(folder), "publish_rc": rc})
-        save_state(a.client, st)
-        return rc
-    today = datetime.now().strftime("%Y-%m-%d")
-    if not a.no_send and any(r.get("sent") and str(r.get("at", "")).startswith(today) for r in st.get("runs", [])):
-        print(f"[skip] 오늘({today}) 임시안 이미 보냄 — 하루 한 통(예약 재실행·손 실행 중복 방지)")
+    if not acquire_lock(a.client):
+        print(f"[skip] 이미 도는 중 — 잠금 status/.{a.client}_instagram_daily.lock")
         return 0
-    topic = a.topic or today_topic(style)
-    if not topic:
-        raise SystemExit("오늘 블로그 주제가 없다 — partner_blog_daily 가 먼저 돌아야 한다(--topic 으로 직접 줄 수 있음)")
-    from model_router import run_claude  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
-    caption, used = run_claude(build_prompt(topic, style, cj, c), label=f"partner-ig-{a.client}", cwd=tempfile.gettempdir())
-    caption = (caption or "").strip() or fallback_caption(topic, c)
-    errs = run_checks(caption, style)
-    if errs and all(e.startswith("캡션 ") for e in errs):   # 길이만 넘친 것은 한 번 줄여 본다(규칙 캡션은 마지막 수단)
-        shorter, _ = run_claude(f"아래 인스타 캡션을 {CAPTION_MAX - 20}자 안으로 줄여라. 말투·문장 순서·마지막 줄은 그대로, 결과는 캡션만.\n\n{caption}",
-                                label=f"partner-ig-{a.client}-short", cwd=tempfile.gettempdir())
-        if shorter and not run_checks(shorter.strip(), style):
-            caption, errs = shorter.strip(), []
-        else:                                                  # 모델이 길이를 안 지키면 문장 경계에서 자른다(내용은 앞부분 그대로)
-            cut = trim_to_sentence(caption, CAPTION_MAX - 30)
-            if not run_checks(cut, style):
-                caption, errs = cut, []
-    if errs:
-        print("[check] 캡션 탈락 —", " · ".join(errs), "→ 규칙 캡션으로 대체")
-        caption = fallback_caption(topic, c)
-    tags = hashtags(style)
-    photos = pick_photos(c, st)
-    write_folder(folder, caption, tags, photos, c)
-    print(f"[ok] {folder} · 사진 {[p.name for p in photos]} · 캡션 {len(caption)}자 · 모델 {used or '규칙'}")
-    rc = 0 if a.no_send else send_kakao(c, folder, caption, tags)
-    st["runs"].append({"at": datetime.now().isoformat(timespec="seconds"), "topic": topic, "folder": str(folder),
-                       "photos": [p.name for p in photos], "sent": (rc == 0 and not a.no_send), "await_ok": not a.no_send})
-    st["last_folder"] = str(folder)
+    style, cj, st = style_of(c), client_json(c), load_state(a.client)
+    today = datetime.now().strftime("%Y-%m-%d")
+    run = today_run(st, today)
+    if run and run.get("published_at"):
+        print(f"[skip] 오늘({today}) 이미 게시 — {run.get('post_url') or run['published_at']}")
+        return 0
+    if run and run.get("publish_rc") is not None and not a.retry:
+        print(f"[skip] 오늘({today}) 게시 실패 기록 있음(rc={run['publish_rc']}) — 재시도하지 않는다(로그·자동화현황방에 이미 남김 · 사람이 --retry)")
+        return 0
+    if run and run.get("caption"):                      # 오늘 임시안은 있고 게시만 안 된 날(세션 없음 등) — 다시 만들지 않는다
+        folder, caption = Path(run["folder"]), run["caption"]
+        print(f"[reuse] 오늘 임시안 그대로 — {folder.name} · 캡션 {len(caption)}자")
+    else:
+        topic = a.topic or pick_topic(style, st)
+        if not topic:
+            alert(f"⚠️ {c['name']} 인스타 — topic_bank 를 다 썼다(주제 추가 필요)")
+            return 1
+        caption, used = make_caption(topic, style, cj, c, a.client)
+        tags, photos = hashtags(style), pick_photos(c, st)
+        folder = c["dir"] / "05_콘텐츠_초안" / "instagram" / datetime.now().strftime("%y%m%d")
+        write_folder(folder, caption, tags, photos, c)
+        print(f"[ok] {folder} · 사진 {[p.name for p in photos]} · 캡션 {len(caption)}자 · 모델 {used}")
+        run = {"at": datetime.now().isoformat(timespec="seconds"), "topic": topic, "folder": str(folder),
+               "photos": [p.name for p in photos], "caption": caption, "model": used}
+        st["runs"].append(run); st["last_folder"] = str(folder)
+        save_state(a.client, st)
+    if a.no_publish:
+        return 0
+    if not (PROFILES / c["account"]).exists():
+        print(f"[skip] {c['name']} 인스타 세션 없음(profiles/instagram/{c['account']} · gm_asks #56) — 임시안만 두고 게시 안 함")
+        return 0
+    rc, url = publish(c, folder)
+    run["publish_rc"] = rc
+    if rc == 0 and url:
+        run["published_at"] = datetime.now().isoformat(timespec="seconds")
+        run["post_url"] = url
+        run["verified"] = verify(c, url, caption)
+        print(f"[published] {url} · 실측 {'일치' if run['verified'] else '미확인'}")
+    else:
+        # rc 9 = 성공 토스트는 떴는데 URL 미확정(업로더 규칙: 재시도 금지 · 중복 게시 방지) — 실패와 같이 사람 확인으로 넘긴다
+        print(f"[fail] {c['name']} 인스타 게시 실패 rc={rc} — 재시도하지 않는다")
+        alert(f"⚠️ {c['name']} 인스타 자동 게시 실패 rc={rc} · {folder.name} · 재시도 없음(logs/partner_instagram_daily.log)")
     save_state(a.client, st)
-    return rc
+    return 0 if run.get("published_at") else 1
 
 
 def self_test() -> int:
@@ -328,16 +344,21 @@ def self_test() -> int:
     st = {"photo_idx": 0}
     p1 = pick_photos(c, st); p2 = pick_photos(c, st)
     assert len(p1) == 3 and p1 != p2 and not any(SKIP_IMG.search(p.name) for p in p1)
-    assert room_name(c) == "★조재오 지점장님"
-    sample = ("2026년 9월 17일 목요일 ---------------\n[김남욱] [오후 5:26] 조재오 지점장님, 웰페리온 AI입니다. 인스타 초안\n"
-              "[조재오 지점장님] [오후 2:11] 예약 발행 진행중입니다\n[조재오 지점장님] [오후 6:40] 올려요\n")
-    since = datetime(2026, 9, 17, 17, 26)
-    assert partner_ok_since(c, since, text=sample) == "올려요"
-    assert partner_ok_since(c, datetime(2026, 9, 17, 19, 0), text=sample) is None
-    assert partner_ok_since(c, datetime(2026, 9, 17, 12, 0), text=sample.replace("올려요", "인스타는 그대로 올리세요")) == "인스타는 그대로 올리세요"
-    long = ("첫 문장입니다. " * 30) + TAIL
-    cut = trim_to_sentence(long, CAPTION_MAX - 30)
-    assert len(cut) <= CAPTION_MAX - 30 and cut.endswith(TAIL) and cut.startswith("첫 문장입니다.")
+    tail = tail_of(style)
+    assert tail == "erp.wellperion.com/gocheokgolf/counsel/ 에서 24시간 상담", tail
+    assert tail_of(style_of(CLIENTS["dc"])).startswith("erp.wellperion.com/dietcamp/counsel/")
+    long = with_tail("첫 문장입니다. " * 30, tail)
+    cut = trim_to_sentence(long, CAPTION_MAX - 30, tail)
+    assert len(cut) <= CAPTION_MAX - 30 and cut.endswith(tail) and cut.startswith("첫 문장입니다.")
+    assert fallback_caption("주제", c, tail).endswith(tail)
+    # 주제 = 블로그가 쓴 것도 인스타가 쓴 것도 뺀 첫 주제
+    bank = style["topic_bank"]
+    assert pick_topic(style, {"runs": [{"topic": t} for t in bank]}) is None
+    assert pick_topic(style, {"runs": []}) not in json.loads((ROOT / style["state_file"]).read_text(encoding="utf-8")).get("used_topics", [])
+    # 오늘 런·가드
+    assert today_run({"runs": [{"at": "2026-09-18T06:30:00"}]}, "2026-09-18")["at"].startswith("2026-09-18")
+    assert today_run({"runs": [{"at": "2026-09-17T06:30:00"}]}, "2026-09-18") is None
+    assert POST_URL_RE.search("  post A: https://www.instagram.com/p/AbC_12-x/").group(0) == "https://www.instagram.com/p/AbC_12-x/"
     print("partner_instagram_daily 자가점검 통과")
     return 0
 

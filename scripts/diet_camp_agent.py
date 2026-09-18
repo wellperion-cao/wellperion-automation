@@ -456,6 +456,50 @@ def build_prompt(lines: list[dict], fresh: list[dict], brief: str = SYSTEM_BRIEF
             f"위 말에 대한 답장 한 통을 써라. 본문만 출력한다.")
 
 
+def evening_facts(conf: dict, today: str) -> dict:
+    """저녁 한 통에 실을 사실만 원천에서 읽는다(지어내지 않는다 · 모델 0).
+    인스타 = status/partner_instagram/{key}.json 오늘 런 post_url · 블로그 = 그 업체 state_file 오늘 ok 런 ·
+    설문 = server/counselbot/tenants/{tenant}_qa.json(번호·asked_on·answer·answered_on)."""
+    key = conf.get("blog_tenant") or ""
+    out = {"ig_url": "", "blog_title": "", "answered": [], "open_n": 0, "slug": ""}
+    if not key:
+        return out
+    import labs_waiting                      # 번호 설문 시작 번호(floor)는 그 표와 같은 값 하나만 쓴다
+    import partner_blog_daily
+    import partner_instagram_daily
+    out["slug"] = partner_instagram_daily.CLIENTS[key]["tenant"]
+    ig = partner_instagram_daily.load_state(key)
+    r = partner_instagram_daily.today_run(ig, today) or {}
+    out["ig_url"] = r.get("post_url") or ""
+    style = partner_blog_daily.load_style(key)
+    runs = partner_blog_daily.load_state(style).get("runs", [])
+    out["blog_title"] = next((x["topic"] for x in reversed(runs)
+                              if x.get("result") == "ok" and str(x.get("date", "")).startswith(today)), "")
+    tenant, _, floor = labs_waiting.TENANTS[key]
+    qa = labs_waiting._load(REPO_ROOT / "server" / "counselbot" / "tenants" / f"{tenant}_qa.json", [])
+    rows = [x for x in qa if (x.get("partner_no") or 0) >= floor and x.get("asked_on")]
+    out["answered"] = sorted(x["partner_no"] for x in rows if x.get("answered_on") == today)
+    out["open_n"] = sum(1 for x in rows if not (x.get("answer") or "").strip())
+    return out
+
+
+def evening_body(conf: dict, f: dict) -> str | None:
+    """「필요한 것만」 저녁 한 통(GM 2026-09-18) — 인사 · ▪한 일(있는 것만) · ▪설문 남은 번호 N개 · 끝인사.
+    한 일이 하나도 없으면 None(그날은 0통 — 남은 번호만으로 매일 상기하지 않는다). 평문 · 빈 줄 없음 · 10줄 안쪽."""
+    did = []
+    if f["ig_url"]:
+        did.append(f"▪ 오늘 인스타그램 게시 1편 — {f['ig_url']}")
+    if f["blog_title"]:
+        did.append(f"▪ 블로그 임시저장 1편 — 「{f['blog_title']}」 발행만 눌러 주세요")
+    if f["answered"]:
+        did.append(f"▪ 답 주신 {'·'.join(str(n) for n in f['answered'])}번 반영 — https://erp.wellperion.com/{f['slug']}/intro.html")
+    if not did:
+        return None
+    if f["open_n"]:
+        did.append(f"▪ 설문 남은 번호 {f['open_n']}개 — 편하실 때 번호로 답 주시면 됩니다")
+    return "\n".join([f"{conf['owner']}, 웰페리온 AI입니다.", *did, "오늘도 수고 많으셨습니다. 편히 쉬세요."])
+
+
 def guard(draft: str) -> str | None:
     """보내면 안 되는 초안이면 그 이유를, 보내도 되면 None 을 돌려준다."""
     body = draft.strip()
@@ -547,9 +591,47 @@ def run(conf: dict | None = None, dry_run: bool = False, reply_only: bool = Fals
     if st.get("sent_date") != today:
         st["sent_date"], st["sent_today"] = today, 0
 
-    # 저녁 통은 대화를 새로 뽑는다. 아침 06:50 저장분을 다시 읽으면 낮에 온 말씀이 안 보인다
-    # (2026-09-13 실측: 대표님이 12:20~12:31 에 8건을 주셨는데 21:00 통이 06:50 파일을 읽어
-    #  "답 주시는 대로 반영하겠습니다"로 나갔다 — 이미 다 주신 뒤였다).
+    if not evening:
+        # 아침 통(07:00 인사·응원·질문)은 두 방 모두 0통이 기본이다 — 그 시각에 대신 나가는 것은 없다.
+        # GM 2026-09-18 「오전에 톡 드리는 거 이제 삭제하고, 정말 필요한 부분만 전달」 → 파트너 통은 저녁 21:00 한 통뿐.
+        print(f"[agent] {room} — 아침 통 skip(GM 2026-09-18) · 파트너 통은 저녁 한 통뿐")
+        return 0
+
+    if st.get("evening_date") == today:
+        print(f"[agent] {room} — 오늘 하루의 마무리는 이미 나갔다")
+        return 0
+    if not conf.get("owner"):
+        print(f"[agent] {room} — rooms.json 에 owner(호칭)가 없어 저녁 통을 못 만든다", file=sys.stderr)
+        return 1
+    facts = evening_facts(conf, today)
+    draft = evening_body(conf, facts)
+    if draft is None:
+        print(f"[agent] {room} — 오늘 전할 것 없음(인스타·블로그·답 반영 0) → 0통")
+        return 0
+    if dry_run:
+        print(f"── 보낼 초안 (dry-run · 발신 안 함 · 하루의 마무리) ──")
+        print(draft)
+        return 0
+    if send_at:
+        _wait_until(send_at)
+    if _send(draft, room):
+        st["sent_today"] += 1
+        st["evening_date"] = today          # 하루의 마무리는 하루 한 통
+        st.setdefault("history", []).append({"at": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": None,
+                                             "partner": "(하루의 마무리)", "reply": draft})
+        st["history"] = st["history"][-30:]
+        _save_state(st, conf["state"])
+        _tell_gm(f"🤖 카톡 에이전트({room}) 하루의 마무리 1통\n보낸 말: {draft.splitlines()[1][:60]}")
+        return 0
+    _tell_gm(f"🤖 카톡 에이전트({room}) — 저녁 통 발신에 실패했습니다. 카톡 창을 확인해 주세요.")
+    return 1
+
+
+def run_reply(conf: dict, st: dict, room: str, brief: str, dry_run: bool, reply_only: bool,
+              send_at: str, evening: bool = False) -> int:
+    """종전 답장·아침 질문 회로(2026-09-03~09-17). run() 이 아침 경로를 0통으로 막아 지금은 호출되지 않는다 —
+    GM 이 아침 통을 되살리면 run() 의 skip 을 걷고 이 함수를 잇는다. 로직은 그대로 둔다(회귀 0)."""
+    today = datetime.now().strftime("%Y-%m-%d")
     text = _export_chat(room, force=evening)
     if text is None:
         return 0                                   # 못 읽은 날은 조용히 — 지어내지 않는다
@@ -702,6 +784,16 @@ def _selfcheck() -> None:
     # 브리프 없는 새 방은 건너뛴다 — 남의 방 브리프로 대신 보내지 않는다
     assert brief_of({"room": "다른 클럽", "brief": None}) is None
     assert _slug("★중간관리자 방") == "중간관리자_방", _slug("★중간관리자 방")
+    # 저녁 한 통 = 필요한 것만(GM 2026-09-18) — 한 일이 없으면 None · 남은 번호는 나열하지 않고 개수만 · 빈 줄 0 · 10줄 안쪽
+    conf = {"owner": "조재오 지점장님"}
+    f = {"ig_url": "https://www.instagram.com/p/x/", "blog_title": "제목", "answered": [21, 23], "open_n": 5, "slug": "gocheokgolf"}
+    b = evening_body(conf, f)
+    assert b.splitlines()[0] == "조재오 지점장님, 웰페리온 AI입니다." and len(b.splitlines()) <= MAX_LINES and "" not in b.splitlines(), b
+    assert "설문 남은 번호 5개" in b and "21·23번" in b and "/gocheokgolf/intro.html" in b, b
+    assert evening_body(conf, {**f, "ig_url": "", "blog_title": "", "answered": []}) is None, "한 일 없는 날은 0통"
+    assert "설문" not in evening_body(conf, {**f, "open_n": 0})
+    for c in rs:
+        assert c.get("owner") and c.get("blog_tenant"), f"rooms.json 에 owner·blog_tenant 없음: {c['room']}"
     print("[selfcheck] diet_camp_agent OK")
 
 
