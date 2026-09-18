@@ -53,8 +53,11 @@ SPLIT_MARK = "<<<JSON>>>"
 
 def _is_trigger(title: str) -> bool:
     """모델이 준 JSON "trigger" 불리언은 안 믿는다(실측 2026-09-18: 23/24건 뒤집혀 나옴).
-    제목에 붙은 {TRIGGER_TAG} 가 정본 — 코드가 결정적으로 다시 판정한다."""
-    return TRIGGER_TAG in (title or "")
+    제목의 ⛔ 태그가 정본 — 코드가 결정적으로 다시 판정한다. 모델이 {TRIGGER_TAG} 를 통째로 안 쓰고
+    해당 아이콘만 남겨 「⛔GM 재확인(💰)」식으로 줄이는 경우가 있어(실측: CCTV 결제 건이 그렇게 나와
+    리터럴 전체 일치에서 새고 자동배포됨) 부분 일치로 잡는다."""
+    t = title or ""
+    return "⛔" in t or "GM 재확인" in t
 
 FEWSHOT = """26.9.18(금) 에이전트 지시사항 정리
 ■ 웰리
@@ -84,7 +87,8 @@ def _prompt(memo: str, source: str, date: str) -> str:
 - 모든 항목 끝에 「완료 기준: …」 한 줄
 - 모든 항목 앞에 [{source} 지시] 태그(원문에 회장님/대표님이 나오면 그쪽 태그로 바꾼다)
 - 💰결제·🔒보안·🚫금지 관련 항목만 항목 끝(과 JSON title 끝)에 {TRIGGER_TAG} 를 붙이고 미결 사항에도 나열 —
-  그 외 모든 항목은 이 태그를 절대 붙이지 않는다(일반 실행 항목이지 GM 재확인 대상이 아니다)
+  그 외 모든 항목은 이 태그를 절대 붙이지 않는다(일반 실행 항목이지 GM 재확인 대상이 아니다).
+  해당하는 아이콘(💰/🔒/🚫)만 남겨 줄여 써도 된다 — 단 ⛔ 는 반드시 남긴다
 - 사람 관리자(이경연 실장/이정헌 소장/나우열M) 앞 지시는 「사람 관리자」 절에 담고 기한을 명시
 
 [견본]
@@ -291,7 +295,8 @@ def _canned_response(_prompt: str) -> str:
         {"id": 2, "role": "시토", "title": "텔레그램 GM지시방 신설 + SSOT 게시 자동화 배선",
          "dod": "방 개설·봇 수신·게시 자동화 확인", "source": "GM", "trigger": True,
          "collab": "웰리", "status": "new"},
-        {"id": 3, "role": "시토", "title": f"이번 달 카드값 승인 {TRIGGER_TAG}",
+        # 실측 그대로: 모델이 태그를 통째로 안 쓰고 해당 아이콘만 남겨 줄인 변형
+        {"id": 3, "role": "시토", "title": "이번 달 카드값 승인 ⛔GM 재확인(💰)",
          "dod": "GM 승인 확인", "source": "GM", "trigger": False, "collab": "", "status": "new"},
         {"id": 4, "role": "이경연 실장", "title": "CCTV 점검 결과 취합",
          "dod": "금요일까지 결과 수신", "source": "GM", "trigger": True, "collab": "", "status": "new"},
@@ -317,10 +322,11 @@ def selfcheck() -> int:
         items = json.loads(scratch.with_suffix(".json").read_text(encoding="utf-8"))
         assert any(i["trigger"] for i in items), "결제 트리거 항목 미표시"
         assert any(i["role"] == "시토" and "배선" in i["title"] for i in items), "중복 병합 실패"
-        # 모델이 준 trigger 는 일부러 뒤집어 넣었다(_canned_response) — organize() 가 title 의
-        # ⛔태그로 되잡는지 검증. 태그 없는 항목은 반드시 false, 태그 있는 항목만 true.
+        # 모델이 준 trigger 는 일부러 뒤집어 넣었다(_canned_response, #3 은 축약 태그 「⛔GM 재확인(💰)」
+        # 변형) — organize() 가 title 의 ⛔로 되잡는지 검증. 태그 없는 항목은 반드시 false.
         for i in items:
-            assert i["trigger"] == (TRIGGER_TAG in i["title"]), f"trigger 판정 오류: {i['title']}"
+            assert i["trigger"] == _is_trigger(i["title"]), f"trigger 판정 오류: {i['title']}"
+        assert next(i for i in items if i["id"] == 3)["trigger"] is True, "축약 태그(⛔GM 재확인(💰)) 못 잡음"
 
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
