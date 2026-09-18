@@ -69,6 +69,8 @@
     .lasttr{flex:1; display:flex; align-items:center; justify-content:center; text-align:center;
             font-size:30px; font-weight:700; color:var(--text); overflow-y:auto; padding:10px; line-height:1.4;}
     .split-btn{min-height:76px; font-size:18px;}
+    /* 글 입력 대체 — 미지원 브라우저는 이것만 남고, 지원 브라우저는 말하기 버튼 아래 작게(GM 09-18) */
+    .side .typerow{margin:0;}
   }
 </style>
 </head>
@@ -103,12 +105,20 @@
       <div class="sidelabel">우리</div>
       <div class="lasttr" id="lastKo">번역이 여기 크게 표시됩니다.</div>
       <button type="button" class="pressbtn split-btn" id="btnKoSplit">🇰🇷 한국어로 말하기</button>
+      <div class="typerow">
+        <input type="text" id="typeKoSplit" placeholder="또는 한국어로 입력">
+        <button type="button" class="btn p" id="btnTypeKoSplit">번역</button>
+      </div>
     </div>
     <div class="divider"></div>
     <div class="side">
       <div class="sidelabel" id="otherSideLabel">손님</div>
       <div class="lasttr" id="lastOther">Translation will appear here.</div>
       <button type="button" class="pressbtn split-btn" id="btnOtherSplit">언어로 말하기</button>
+      <div class="typerow">
+        <input type="text" id="typeOtherSplit" placeholder="또는 입력">
+        <button type="button" class="btn p" id="btnTypeOtherSplit">번역</button>
+      </div>
     </div>
   </div>
 </div>
@@ -130,16 +140,21 @@ var lastKoEl = document.getElementById('lastKo');
 var lastOtherEl = document.getElementById('lastOther');
 var typeText = document.getElementById('typeText');
 var btnType = document.getElementById('btnType');
+var typeKoSplit = document.getElementById('typeKoSplit');
+var btnTypeKoSplit = document.getElementById('btnTypeKoSplit');
+var typeOtherSplit = document.getElementById('typeOtherSplit');
+var btnTypeOtherSplit = document.getElementById('btnTypeOtherSplit');
 var statusMsg = document.getElementById('statusMsg');
 var chat = document.getElementById('chat');
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
 
 function updateOtherBtnLabel(){
-  var label = '🌐 ' + LANG_NAME[otherSel.value] + '로 말하기';
+  var label = LANG_NAME[otherSel.value] + '로 말하기';
   btnOther.textContent = label;
   btnOtherSplit.textContent = label;
   otherSideLabel.textContent = '손님 (' + LANG_NAME[otherSel.value] + ')';
+  typeOtherSplit.placeholder = '또는 ' + LANG_NAME[otherSel.value] + '로 입력';
 }
 otherSel.addEventListener('change', updateOtherBtnLabel);
 
@@ -178,8 +193,9 @@ if (!SR) {
   btnKoSplit.classList.add('hide'); btnOtherSplit.classList.add('hide');
   statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬·사파리를 쓰거나 아래에 글로 입력해 주세요.';
   statusMsg.className = 'msg bad';
-} else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-  /* iOS 사파리·안드로이드 크롬 모두 https 아니면 마이크 권한 자체가 안 뜬다 */
+} else if (!window.isSecureContext) {
+  /* iOS 사파리·안드로이드 크롬 모두 secure context 아니면 마이크 권한 자체가 안 뜬다.
+     isSecureContext 는 localhost·127.0.0.1·https 를 브라우저가 직접 판정 — 문자열 비교보다 정확(배 12833) */
   btnKo.classList.add('hide'); btnOther.classList.add('hide');
   btnKoSplit.classList.add('hide'); btnOtherSplit.classList.add('hide');
   statusMsg.textContent = 'https 주소가 아니라 마이크를 쓸 수 없습니다 — 아래에 글로 입력해 주세요.';
@@ -246,15 +262,24 @@ btnOtherSplit.addEventListener('pointerdown', pressOther);
   btnOtherSplit.addEventListener(evt, endPress);
 });
 
-/* ── 글 입력(GM 「글 입력도 남긴다」) — 한국어 → 상대 언어(기본 방향) ── */
-function sendTyped(){
-  var text = typeText.value.trim();
+/* ── 글 입력(GM 「글 입력도 남긴다」) — 미지원 브라우저는 이것이 유일한 입력 수단,
+   지원 브라우저에선 말하기 버튼의 보조 수단(배 12833) ── */
+function sendTypedFrom(inputEl, source, target, mine){
+  var text = inputEl.value.trim();
   if (!text) return;
-  typeText.value = '';
-  handleUtterance(text, 'ko', otherSel.value, true);
+  inputEl.value = '';
+  handleUtterance(text, source, target, mine);
 }
+function sendTyped(){ sendTypedFrom(typeText, 'ko', otherSel.value, true); }
 btnType.addEventListener('click', sendTyped);
 typeText.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTyped(); });
+
+function sendTypedKoSplit(){ sendTypedFrom(typeKoSplit, 'ko', otherSel.value, true); }
+function sendTypedOtherSplit(){ sendTypedFrom(typeOtherSplit, otherSel.value, 'ko', false); }
+btnTypeKoSplit.addEventListener('click', sendTypedKoSplit);
+typeKoSplit.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTypedKoSplit(); });
+btnTypeOtherSplit.addEventListener('click', sendTypedOtherSplit);
+typeOtherSplit.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendTypedOtherSplit(); });
 
 /* ── 번역 요청 → 말풍선(크게) → 읽어주기 ── */
 function handleUtterance(text, source, target, mine){
