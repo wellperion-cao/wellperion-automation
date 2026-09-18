@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 비서 쓰임 내역 — 웰페리온 ERP 관리자</title>
+<!-- AI 비서 쓰임 내역 — 배 12815 · GM 지시 2026-09-18. 회의 요약·번역 성공을 usage.jsonl 에 남기는
+     서버(server/erp_api, 배 12816 · 시토)의 소비 화면. 원문은 저장하지 않는다 — 여기 보이는 것도
+     제목·요약 줄·번역문 앞부분뿐이다. 관리자는 업체 탭으로 전체를 보고, 파트너는 서버가 자기
+     센터로 거른 것만 받는다(같은 응답을 그대로 그린다 — 이 화면은 거르지 않는다). -->
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+  :root{
+    --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
+    --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12));
+  }
+  html{color-scheme:light;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
+  .wrap{width:100%; max-width:1000px; margin:0; padding:24px 20px 60px;}
+  h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
+  .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:16px;}
+  h2{font-size:var(--fs-4); font-weight:700; margin:22px 0 8px; color:var(--accent-hover);}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;}
+  .tabs a{font-size:var(--fs-2); font-weight:600; padding:6px 14px; border-radius:999px;
+          border:1px solid var(--border); color:var(--text); text-decoration:none; background:var(--paper);}
+  .tabs a.on{background:var(--accent-bg); color:var(--accent-hover); border-color:var(--accent);}
+  .kpi{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px;}
+  .kpi div{background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .kpi b{display:block; font-family:var(--pf-head,inherit); font-size:var(--fs-6,22px); font-weight:700; color:var(--accent-hover);}
+  .kpi span{font-size:var(--fs-2); color:var(--text-soft);}
+  .msg{font-size:var(--fs-2); color:var(--text-soft); padding:14px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
+  .tbl-wrap{overflow-x:auto; margin-bottom:20px; background:var(--paper); border:1px solid var(--border); border-radius:10px;}
+  table.reg{width:100%; border-collapse:separate; border-spacing:0; font-size:var(--fs-2);}
+  table.reg th{text-align:left; font-weight:600; color:var(--text-soft); height:32px; padding:0 10px;
+               background:var(--pf-panel-2,var(--bg)); border-bottom:1px solid var(--border); white-space:nowrap;}
+  table.reg td{padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word;}
+  table.reg tr:last-child td{border-bottom:0;}
+  .empty{padding:14px; color:var(--text-soft);}
+  .kind{font-size:var(--fs-1); font-weight:600; padding:1px 8px; border-radius:999px;}
+  .kind.summary{background:var(--accent-bg); color:var(--accent-hover);}
+  .kind.translate{background:var(--pf-acc-tint,#E0E7FF); color:var(--pf-acc-dk,#3730A3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 비서 <span style="font-weight:500;color:var(--text-soft)">— 쓰임 내역</span></h1>
+  <div class="sub" id="subline">회의 요약·번역이 언제·누가 썼는지 — 원문은 저장하지 않습니다.</div>
+
+  <div class="tabs" id="tabs" hidden></div>
+
+  <div class="kpi" id="kpi">
+    <div><b id="kToday">—</b><span>오늘 요약</span></div>
+    <div><b id="kTodayTr">—</b><span>오늘 번역</span></div>
+    <div><b id="kMonth">—</b><span>이번 달 합계</span></div>
+  </div>
+
+  <div id="tblArea">
+    <div class="tbl-wrap"><table class="reg" id="utbl">
+      <thead><tr><th style="width:100px">날짜</th><th style="width:160px">사람</th><th style="width:70px">종류</th><th>내용</th></tr></thead>
+      <tbody><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <h2>번역 가능 언어</h2>
+  <div class="tbl-wrap"><table class="reg" id="langtbl">
+    <thead><tr><th style="width:140px">언어</th><th>음성 인식(대화 모드)</th></tr></thead>
+    <tbody><tr><td colspan="2" class="empty">불러오는 중…</td></tr></tbody>
+  </table></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+var TENANTS = [ { id:'wellperion', name:'웰페리온' }, { id:'dc', name:'다이어트캠프' }, { id:'jo', name:'고척' } ];
+var tabsEl = document.getElementById('tabs');
+var utblBody = document.getElementById('utbl').tBodies[0];
+
+function renderTabs(list, curId){
+  if (list.length < 2) { tabsEl.hidden = true; return; }
+  tabsEl.hidden = false;
+  tabsEl.innerHTML = list.map(function(t){
+    return '<a href="?t=' + encodeURIComponent(t.id) + '"' + (t.id === curId ? ' class="on"' : '') + '>' + esc(t.name) + '</a>';
+  }).join('');
+}
+
+function todayStr(){ var d = new Date(); return d.toISOString().slice(0,10); }
+function monthStr(){ return todayStr().slice(0,7); }
+
+function rowContent(it){
+  if (it.kind === 'summary') {
+    var first = (it.out && it.out.summary && it.out.summary[0]) || '';
+    return esc(it.title || '(제목 없음)') + (first ? ' · ' + esc(first) : '');
+  }
+  var text = typeof it.out === 'string' ? it.out : '';
+  return esc(it.source || '') + '→' + esc(it.target || '') + ' · ' + esc(text.slice(0, 40)) + (text.length > 40 ? '…' : '');
+}
+
+function renderRows(items){
+  if (!items.length) { utblBody.innerHTML = '<tr><td colspan="4" class="empty">아직 쓰임 기록이 없습니다.</td></tr>'; return; }
+  utblBody.innerHTML = items.map(function(it){
+    return '<tr><td>' + esc((it.ts || '').replace('T',' ').slice(0,16)) + '</td><td>' + esc(it.email) + '</td>' +
+      '<td><span class="kind ' + (it.kind === 'translate' ? 'translate' : 'summary') + '">' + (it.kind === 'translate' ? '번역' : '요약') + '</span></td>' +
+      '<td>' + rowContent(it) + '</td></tr>';
+  }).join('');
+}
+
+function renderKpi(items){
+  var today = todayStr(), month = monthStr();
+  var sumToday = 0, trToday = 0, monthTotal = 0;
+  items.forEach(function(it){
+    var d = (it.ts || '').slice(0,10);
+    if (d === today && it.kind === 'summary') sumToday++;
+    if (d === today && it.kind === 'translate') trToday++;
+    if (d.slice(0,7) === month) monthTotal++;
+  });
+  document.getElementById('kToday').textContent = sumToday;
+  document.getElementById('kTodayTr').textContent = trToday;
+  document.getElementById('kMonth').textContent = monthTotal;
+}
+
+function load(tenantId){
+  fetch('/api/assistant/usage?tenant=' + encodeURIComponent(tenantId) + '&limit=100', {cache:'no-store'}).then(function(r){
+    if (r.status === 404) { throw new Error('no-server'); }
+    if (!r.ok) throw new Error('http-' + r.status);
+    return r.json();
+  }).then(function(d){
+    var items = d.items || [];
+    renderKpi(items);
+    renderRows(items);
+  }).catch(function(e){
+    document.getElementById('kToday').textContent = '—';
+    document.getElementById('kTodayTr').textContent = '—';
+    document.getElementById('kMonth').textContent = '—';
+    utblBody.innerHTML = '<tr><td colspan="4" class="msg" style="border:0">내역 서버 준비 중</td></tr>';
+  });
+}
+
+fetch('/auth/me', {credentials:'same-origin'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }).then(function(me){
+  var list = TENANTS;
+  if (me && me.tenant) list = TENANTS.filter(function(t){ return t.id === me.tenant; });
+  if (!list.length) list = TENANTS;
+  var want = new URLSearchParams(location.search).get('t');
+  var cur = list.filter(function(t){ return t.id === want; })[0] || list[0];
+  renderTabs(list, cur.id);
+  load(cur.id);
+});
+
+/* ── 번역 가능 언어 표 — 같은 정본(assistant_langs.json)을 읽어 그린다 ── */
+fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+  var body = document.getElementById('langtbl').tBodies[0];
+  var list = (d && d.langs) || [];
+  if (!list.length) { body.innerHTML = '<tr><td colspan="2" class="empty">언어 목록을 불러오지 못했습니다.</td></tr>'; return; }
+  body.innerHTML = list.map(function(l){
+    return '<tr><td>' + esc(l.name_ko) + '</td><td>' + (l.speech ? esc(l.speech) : '음성 인식 미지원 · 입력은 글자로') + '</td></tr>';
+  }).join('');
+}).catch(function(){
+  document.getElementById('langtbl').tBodies[0].innerHTML = '<tr><td colspan="2" class="empty">언어 목록을 불러오지 못했습니다.</td></tr>';
+});
+})();
+</script>
+</body>
+</html>

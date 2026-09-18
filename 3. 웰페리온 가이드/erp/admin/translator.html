@@ -50,11 +50,7 @@
   <div class="sub">[대화 시작] 한 번 누르면 계속 듣습니다. 말이 끝나면 자동으로 번역해 읽어 줍니다.</div>
 
   <div class="bar">
-    <select class="lang" id="otherLang">
-      <option value="en">영어</option>
-      <option value="ja">일본어</option>
-      <option value="zh">중국어</option>
-    </select>
+    <select class="lang" id="otherLang"><option value="en">영어</option></select>
     <button type="button" class="btn" id="btnDir">내가 말함(한국어)</button>
     <button type="button" class="btn rec" id="btnRec">대화 시작</button>
   </div>
@@ -69,8 +65,8 @@
 (function(){
 'use strict';
 
-var LANG_NAME = { ko:'한국어', en:'영어', ja:'일본어', zh:'중국어' };
-var SPEECH_LOCALE = { ko:'ko-KR', en:'en-US', ja:'ja-JP', zh:'zh-CN' };
+var LANG_NAME = { ko:'한국어' };
+var SPEECH_LOCALE = { ko:'ko-KR' };
 
 var otherSel = document.getElementById('otherLang');
 var dirBtn = document.getElementById('btnDir');
@@ -101,6 +97,27 @@ otherSel.addEventListener('change', function(){
   if (recognizing) restartRecognition();
 });
 updateDirLabel();
+
+/* ── 언어 목록 — 정본 assistant_langs.json(배 12815). 못 읽으면 ko/en 두 개로 폴백. ── */
+function applyLangs(list, defTarget){
+  list.forEach(function(l){
+    if (l.code === 'ko') return;
+    LANG_NAME[l.code] = l.name_ko;
+    if (l.speech) SPEECH_LOCALE[l.code] = l.speech;
+  });
+  otherSel.innerHTML = list.filter(function(l){ return l.code !== 'ko'; }).map(function(l){
+    return '<option value="' + esc(l.code) + '">' + esc(l.name_ko) + (l.speech ? '' : ' (음성 인식 미지원 · 입력은 글자로)') + '</option>';
+  }).join('');
+  otherSel.value = defTarget || 'en';
+  updateDirLabel();
+}
+fetch('assistant_langs.json', {cache:'no-store'}).then(function(r){
+  if (!r.ok) throw 0; return r.json();
+}).then(function(d){
+  applyLangs(d.langs || [], d.default && d.default.target);
+}).catch(function(){
+  applyLangs([{code:'en', name_ko:'영어', speech:'en-US'}], 'en');
+});
 
 /* ── 인식(Web Speech API) — meeting_note.html 과 같은 continuous 패턴 ── */
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
