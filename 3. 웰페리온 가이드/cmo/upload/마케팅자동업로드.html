@@ -44,6 +44,13 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 .pf-tabs{flex-wrap:nowrap;overflow-x:auto}
 .pf-tabs [role=tab]{white-space:nowrap;flex:none}
 .empty{padding:22px 12px;text-align:center;color:var(--pf-soft);font-size:13.5px}
+.stat4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.stat4 .box{border:1px solid var(--pf-line);border-radius:var(--pf-radius-sm);background:var(--pf-bg);padding:10px 12px;text-align:center}
+.stat4 .box b{display:block;font-size:20px;font-weight:700;color:var(--pf-pri-dk)}
+.stat4 .box span{font-size:11.5px;color:var(--pf-soft)}
+@media (max-width:760px){.stat4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.subtbl{margin-top:10px;font-size:12px}
+.srcname{font-size:11px;font-weight:400;color:var(--pf-soft);margin-left:6px}
 </style>
 </head>
 <body class="pf-body">
@@ -92,6 +99,11 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   </section>
 </div>
 
+<section class="pf-card" style="margin-top:16px">
+  <div class="pf-lb">업로드 시리즈 현황<span class="srcname" id="srcName"></span></div>
+  <div id="seriesBody"><div class="empty">불러오는 중…</div></div>
+</section>
+
 <script>
 (function(){
   // 채널 목록 = 파트너 계정 정본(플랫폼관리 파트너사 표)과 같은 7개 · 순서 고정
@@ -111,8 +123,80 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
       host.appendChild(l);
     });
   }
+  // 업로드 시리즈 현황 — 파트너사별(GM 2026-09-18 12:4x · 배 2788)
+  var REPO='/repo/';
+  function fetchFirst(paths){
+    var p=Promise.reject();
+    paths.forEach(function(u){ p=p.catch(function(){ return fetch(encodeURI(u)).then(function(r){ if(!r.ok) throw 0; return r.json(); }); }); });
+    return p;
+  }
+  function fmtDate(s){ return s?String(s).slice(0,10):'—'; }
+  function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n)+'…':s; }
+  function emptyRow(n){ return '<tr><td colspan="'+n+'" class="empty">아직 기록 없음</td></tr>'; }
+  function renderBlogTable(runs){
+    if(!runs||!runs.length) return '<table class="pf-table"><tbody>'+emptyRow(3)+'</tbody></table>';
+    var rows=runs.slice(-10).reverse().map(function(r){
+      var ok=r.result==='ok';
+      return '<tr><td>'+fmtDate(r.date)+'</td><td>'+(r.topic||'')+'</td><td><span class="pf-st '+(ok?'on':'bad')+'"><i></i>'+(ok?'성공':'실패')+'</span>'+(ok?'':' '+trunc(r.reason,40))+'</td></tr>';
+    }).join('');
+    return '<table class="pf-table"><thead><tr><th>날짜</th><th>주제</th><th>결과</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  function renderIgTable(runs){
+    if(!runs||!runs.length) return '<table class="pf-table"><tbody>'+emptyRow(3)+'</tbody></table>';
+    var rows=runs.slice(-10).reverse().map(function(r){
+      return '<tr><td>'+fmtDate(r.at)+'</td><td>'+(r.topic||'')+'</td><td><span class="pf-st '+(r.sent?'on':'off')+'"><i></i>'+(r.sent?'발송':'미발송')+'</span></td></tr>';
+    }).join('');
+    return '<table class="pf-table"><thead><tr><th>일시</th><th>주제</th><th>발송</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  function renderSeries(){
+    var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
+    body.innerHTML='<div class="empty">불러오는 중…</div>';
+    if(tenant==='wellperion'){
+      src.textContent='review_queue.json · series_data.json';
+      Promise.allSettled([
+        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/review/review_queue.json','../review/review_queue.json']),
+        fetchFirst([REPO+'3. 웰페리온 가이드/cmo/series/series_data.json','../series/series_data.json'])
+      ]).then(function(res){
+        if(curTenant!==tenant) return;
+        var review=res[0].status==='fulfilled'?res[0].value:null;
+        var series=res[1].status==='fulfilled'?res[1].value:null;
+        if(!review && !series){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
+        var items=Array.isArray(review)?review:((review&&review.items)||[]);
+        var eps=(series&&series.episodes)||[];
+        var done=eps.filter(function(e){return /발행완료/.test(e.roadmap_status||'');}).length;
+        var wait=eps.filter(function(e){return /검수대기|검수요청/.test(e.roadmap_status||'');}).length;
+        var pubs=items.filter(function(x){return x.status==='발행완료'&&x.published_at;}).map(function(x){return x.published_at;}).sort();
+        var last=pubs.length?fmtDate(pubs[pubs.length-1]):'—';
+        var sum='<div class="stat4"><div class="box"><b>'+(eps.length||'—')+'</b><span>전체 회차</span></div><div class="box"><b>'+done+'</b><span>발행완료</span></div><div class="box"><b>'+wait+'</b><span>검수대기</span></div><div class="box"><b>'+last+'</b><span>마지막 발행일</span></div></div>';
+        var recent=items.slice().sort(function(a,b){return String(b.published_at||b.card_sent_at||'').localeCompare(String(a.published_at||a.card_sent_at||''));}).slice(0,12);
+        var rows=recent.map(function(x){
+          return '<tr><td>'+fmtDate(x.published_at||x.card_sent_at)+'</td><td>'+(x.title||'')+'</td><td>'+(x.channel||'')+'</td><td>'+(x.status||'')+'</td><td>'+(x.post_url?'<a href="'+x.post_url+'" target="_blank" rel="noopener">보기</a>':'—')+'</td></tr>';
+        }).join('')||emptyRow(5);
+        body.innerHTML=sum+'<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>채널</th><th>상태</th><th>링크</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      });
+    } else if(tenant==='dc'||tenant==='jo'){
+      var blogFile=tenant==='dc'?'dietcamp_blog_daily.json':'gocheok_blog_daily.json';
+      src.textContent=blogFile+' · partner_instagram/'+tenant+'.json';
+      Promise.allSettled([
+        fetchFirst([REPO+'status/'+blogFile,'../../../status/'+blogFile]),
+        fetchFirst([REPO+'status/partner_instagram/'+tenant+'.json','../../../status/partner_instagram/'+tenant+'.json'])
+      ]).then(function(res){
+        if(curTenant!==tenant) return;
+        var blog=res[0].status==='fulfilled'?res[0].value:null;
+        var ig=res[1].status==='fulfilled'?res[1].value:null;
+        if(!blog && !ig){ body.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
+        body.innerHTML='<div class="pf-lb subtbl">블로그</div>'+renderBlogTable(blog&&blog.runs)+'<div class="pf-lb subtbl">인스타그램</div>'+renderIgTable(ig&&ig.runs);
+      });
+    } else {
+      src.textContent='ax_blog_daily.json';
+      fetchFirst([REPO+'status/ax_blog_daily.json','../../../status/ax_blog_daily.json']).then(function(blog){
+        if(curTenant!==tenant) return;
+        body.innerHTML='<div class="pf-lb subtbl">블로그</div>'+renderBlogTable(blog&&blog.runs)+'<div class="pf-lb subtbl">인스타그램</div><div class="empty">아직 없음</div>';
+      }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
+    }
+  }
   function load(){
-    $('tName').textContent=NAMES[tenant]; active={}; renderChannels();
+    $('tName').textContent=NAMES[tenant]; active={}; renderChannels(); renderSeries();
     fetch('/api/partner_secrets/status?tenant='+encodeURIComponent(tenant),{credentials:'same-origin'})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){ (j.channels||[]).forEach(function(c){ if(c.active) active[c.channel]=1; }); $('srv').className='pf-st on'; $('srv').innerHTML='<i></i>서버 연결됨'; renderChannels(); })
