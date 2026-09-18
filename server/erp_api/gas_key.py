@@ -12,8 +12,12 @@ TOKEN_ENFORCE=1 이 켜지면 그 액션들은 `key` 파라미터(=ACCESS_TOKEN)
 
 회원 GAS(FUNNEL_EXEC_URL) 키 배선(배 12818 · 2026-09-18) — member_active_list 등 5종이 GAS 쪽
 ACCESS_TOKEN 자체가 없어 키 유무와 무관하게 무인증 공개돼 있던 것의 1단계 수리. api.env 의
-FUNNEL_ACCESS_TOKEN 을 GET 질의(sign_params)에만 붙인다 — 값 없으면 무동작(회귀 0). POST 쓰기
-(sign_body·BODY_KEYS)는 이번 건과 무관 — 그대로 둔다.
+FUNNEL_ACCESS_TOKEN 을 GET 질의(sign_params)에 붙인다 — 값 없으면 무동작(회귀 0).
+
+2단계(2026-09-18 곁 · 게이트 영향표) — POST 조회(sync_misc.py 의 staff_feedback_list 등)는 이미
+자기 앱단 토큰(t=INTAKE_SUBMIT_TOKEN)을 싣지만 그건 마스터 게이트(`_checkSurveyAccess_`)가 보는
+`key` 칸이 아니다. FUNNEL_EXEC_URL 을 BODY_KEYS 에도 넣어 sign_body 가 같은 FUNNEL_ACCESS_TOKEN 을
+`key` 칸으로 얹는다 — 기존 t/code 칸은 그대로 두고 옆에 더한다. 값 없으면 여기도 무동작(회귀 0).
 """
 import json
 import os
@@ -24,7 +28,8 @@ RECEPTION_URL_KEY = "RECEPTION_EXEC_URL"
 #   업무 GAS = srvkey(TODO_WRITE_SECRET · 배 960 M4). GAS 쪽 Script Property SERVER_WRITE_SECRET 이 켜지면
 #     todo_*·approval_rep_* 쓰기는 이 값이 있어야 통과한다. 서버 api.env 에 값을 넣기 전까지는 본문 무변경.
 BODY_KEYS = {RECEPTION_URL_KEY: ("RECEPTION_TOKEN", "key"),
-             "TODO_GAS_URL": ("TODO_WRITE_SECRET", "srvkey")}
+             "TODO_GAS_URL": ("TODO_WRITE_SECRET", "srvkey"),
+             "FUNNEL_EXEC_URL": ("FUNNEL_ACCESS_TOKEN", "key")}
 
 # 배 12781(2026-09-18 GM 지시) — 리셉션 업무·라커관리 쓰기 비밀번호(adminPassword)는 위 BODY_KEYS 와 달리
 # env 가 아니라 partner_secrets(tenant=wellperion) 에 있다(화면 입력 대신 서버가 채운다). 모양이 달라
@@ -101,16 +106,21 @@ if __name__ == "__main__":
     assert json.loads(sign_body(RECEPTION_URL_KEY, body).decode("utf-8"))["key"] == "s3cret"
 
     # 회원 GAS(FUNNEL_EXEC_URL) GET 키 배선(배 12818) — 비었을 때 무동작 · 있을 때 부착 ·
-    # RECEPTION 값과 안 섞임(바이트 단위로 그대로) · POST 서명(BODY_KEYS)은 이번 건과 무관.
+    # RECEPTION 값과 안 섞임(바이트 단위로 그대로).
     assert sign_params("FUNNEL_EXEC_URL", {"action": "member_active_list"}) == {"action": "member_active_list"}
+    funnel_body = json.dumps({"action": "staff_feedback_list", "t": "wlp_intake_x"}, ensure_ascii=False).encode("utf-8")
+    assert sign_body("FUNNEL_EXEC_URL", funnel_body) == funnel_body   # 토큰 없으면 t 칸만 그대로
     os.environ["FUNNEL_ACCESS_TOKEN"] = "f-s3cret"
     assert key_for("FUNNEL_EXEC_URL") == "f-s3cret"
     assert sign_params("FUNNEL_EXEC_URL", {"action": "member_active_list"})["key"] == "f-s3cret"
     assert sign_params(RECEPTION_URL_KEY, {"action": "lf_list"})["key"] == "s3cret"   # 서로 안 샌다
-    assert sign_body("FUNNEL_EXEC_URL", body) == body   # POST 서명은 무변경(BODY_KEYS 에 없음)
+    # 2단계(게이트 영향표) — FUNNEL_EXEC_URL 도 BODY_KEYS 에 있어 POST 본문에 key 가 옆에 더해진다(t 칸은 그대로).
+    signed_funnel = json.loads(sign_body("FUNNEL_EXEC_URL", funnel_body).decode("utf-8"))
+    assert signed_funnel["key"] == "f-s3cret" and signed_funnel["t"] == "wlp_intake_x"
     os.environ.pop("FUNNEL_ACCESS_TOKEN", None)
     assert key_for("FUNNEL_EXEC_URL") == ""
     assert sign_body("FUNNEL_EXEC_URL", body) == body
+    assert sign_body("FUNNEL_EXEC_URL", funnel_body) == funnel_body   # 토큰 빠지면 다시 무동작
     assert sign_body(RECEPTION_URL_KEY, b"not json") == b"not json"
 
     # 업무 GAS 무인증 쓰기 게이트(배 960 M4) — 서버가 srvkey 를 넣어야 게이트를 켠 날 13종이 안 막힌다.

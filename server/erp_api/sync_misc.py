@@ -20,6 +20,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_inquiries import db, load_env  # noqa: E402  — 같은 env·같은 DB
+import gas_key  # noqa: E402  — 회원 GAS POST 본문에 key 부착(배 12818 곁 · 게이트 영향표)
 
 GAS_ENV = {"renewal": "RENEWAL_GAS_URL", "ops": "CHECK_GAS_URL", "schedule": "SCHEDULE_GAS_URL", "todo": "TODO_GAS_URL",
            "funnel": "FUNNEL_EXEC_URL"}
@@ -67,6 +68,7 @@ def gas_call(gas, action, timeout=60):
             print("[warn] %s/%s 건너뜀 — api.env 에 %s 없음" % (gas, action, env_key))
             return None
         payload = json.dumps({"action": action, field: secret}, ensure_ascii=False).encode("utf-8")
+        payload = gas_key.sign_body(GAS_ENV[gas], payload)   # 마스터 게이트 key 칸(기존 t/code 칸은 그대로 둔다)
         preq = urllib.request.Request(url, data=payload,
                                       headers={"Content-Type": "text/plain;charset=utf-8",
                                                "User-Agent": "wellperion-erp-api"})
