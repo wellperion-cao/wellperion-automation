@@ -54,6 +54,7 @@ from queue_lock import mutate_queue, load_queue  # noqa: E402
 from module_heartbeat import record_heartbeat, last_heartbeat  # noqa: E402
 from assign_short_no import next_short_no  # noqa: E402
 from clevel_colors import nickname as clevel_nickname  # noqa: E402
+from collectors.ops_shared import funnel_key  # noqa: E402  — 마스터 게이트 key 부착(배 12818 곁)
 
 KST = timezone(timedelta(hours=9))
 
@@ -65,6 +66,15 @@ ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
 FB_GAS_URL = ("https://script.google.com/macros/s/"
               "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec")
 FB_TOKEN = "wlp_intake_9f4c1b7e2a63"
+
+
+def _fb_body(**fields) -> bytes:
+    """FB_GAS_URL POST 본문 — 마스터 게이트 key 칸(배 12818)을 값 있을 때만 옆에 얹는다(t 칸은 그대로 · 회귀 0)."""
+    d = dict(fields)
+    k = funnel_key()
+    if k:
+        d["key"] = k
+    return json.dumps(d, ensure_ascii=False).encode("utf-8")
 
 OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 # 급한정도 → 배 무게. 값이 없거나 모르는 값이면 보통으로 본다.
@@ -524,7 +534,7 @@ def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
 def push_feedback_updates(updates: list, timeout=60):
     """staff_feedback_update 호출 — 대조키=접수ID(행번호 아님). 실패 시 (None, 사유)."""
     payload = [{"id": u["id"], "status": u["status"], "memo": u["memo"]} for u in updates]
-    body = json.dumps({"action": "staff_feedback_update", "t": FB_TOKEN, "updates": payload}).encode("utf-8")
+    body = _fb_body(action="staff_feedback_update", t=FB_TOKEN, updates=payload)
     req = urllib.request.Request(
         FB_GAS_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"}
     )
@@ -545,7 +555,7 @@ def sync_brojay_feedback(timeout=60):
     두 벌이 된다(약속 L01). 대조키 = 접수ID라 여러 번 돌아도 같은 줄이 두 번 생기지 않는다.
     반환: (새로 옮긴 건수, None) / 실패 시 (None, 사유).
     """
-    body = json.dumps({"action": "brojay_feedback_sync", "t": FB_TOKEN}).encode("utf-8")
+    body = _fb_body(action="brojay_feedback_sync", t=FB_TOKEN)
     req = urllib.request.Request(
         FB_GAS_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"}
     )
@@ -560,7 +570,7 @@ def sync_brojay_feedback(timeout=60):
 
 def fetch_feedback(timeout=60):
     """접수된 피드백 전체(최신순). 실패 시 (None, 사유) — 조용히 성공으로 위장하지 않는다."""
-    body = json.dumps({"action": "staff_feedback_list", "t": FB_TOKEN}).encode("utf-8")
+    body = _fb_body(action="staff_feedback_list", t=FB_TOKEN)
     req = urllib.request.Request(
         FB_GAS_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"}
     )

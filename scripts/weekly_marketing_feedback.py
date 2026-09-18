@@ -389,7 +389,12 @@ def fetch_lesson_collection_health() -> str:
     수집 실패 시엔 빈 문자열(꼬리표 없음) — 진단이 안 됐다고 없는 문제를 지어내지 않는다.
     """
     try:
-        data = _http_get(f"{GAS_URL}?action=diag_team_sheet_headers", timeout=60)
+        from collectors.ops_shared import funnel_key  # noqa: E402 — 회원 GAS 게이트 key(배 12818 곁·영향표③)
+        url = f"{GAS_URL}?action=diag_team_sheet_headers"
+        k = funnel_key()
+        if k:
+            url += f"&key={k}"
+        data = _http_get(url, timeout=60)
         if not data.get("ok"):
             return ""
         bad, total_blank = [], 0

@@ -127,7 +127,7 @@ def gas_get(
     if url == FUNNEL_EXEC_URL and not (params or {}).get("key"):
         # 회원 GAS 무인증 PII 노출 수리 1단계(배 12818 · member_active_list 등 5종) — 키 배선만, 게이트는
         # GAS 쪽에서 아직 안 켰다. 값이 비어 있으면 아무것도 안 붙는다(회귀 0).
-        _k = _env_line("FUNNEL_ACCESS_TOKEN")
+        _k = funnel_key()
         if _k:
             params = dict(params or {})
             params["key"] = _k
@@ -162,6 +162,12 @@ def _env_line(key: str) -> str:
     except Exception:
         pass
     return ""
+
+
+def funnel_key() -> str:
+    """회원 GAS(FUNNEL_EXEC_URL) 마스터 게이트 열쇠(배 12818) — 있으면 문자열, 없으면 빈 문자열.
+    gas_get() 의 GET 부착과 같은 값 — POST 본문에 붙이는 호출부(cpo_staff_feedback_watch 등)가 공용으로 쓴다."""
+    return _env_line("FUNNEL_ACCESS_TOKEN")
 
 
 def server_reception_rows(*, timeout: int = 20, log_fn=None) -> list | None:

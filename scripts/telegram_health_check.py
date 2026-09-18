@@ -145,7 +145,14 @@ def _check_gas_diag() -> list[str]:
     ]
     for name, url, action, bool_fields in probes:
         try:
-            resp = requests.get(url, params={"action": action}, timeout=15)
+            params = {"action": action}
+            if action == "diag_notify_config":            # 회원 GAS 마스터 게이트 key 칸(배 12818 곁·영향표③)
+                sys.path.insert(0, _SCRIPT_DIR)
+                from collectors.ops_shared import funnel_key
+                k = funnel_key()
+                if k:
+                    params["key"] = k
+            resp = requests.get(url, params=params, timeout=15)
             if resp.status_code != 200:
                 print(f"[WARN] {name} diag HTTP {resp.status_code} — 네트워크 이상(경보 제외)", flush=True)
                 continue
