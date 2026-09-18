@@ -613,6 +613,11 @@ def main() -> None:
     env = _load_env(_ENV_PATH)
     token = env.get('TELEGRAM_BOT_TOKEN', '')
     if args.only == 'reception':
+        # 2026-09-18: 15분 예약 실행이 20:46~21:46, 21:57 에 멈춰 다음 회차가 전부 건너뛰어졌다.
+        # requests 타임아웃은 읽기 한 번 기준이라 DNS·느린 응답이면 총 시간이 끝없이 늘 수 있다.
+        # 8분이 넘으면 멈춘 자리의 스택을 로그(stderr)에 남기고 끝낸다(예약작업 한도 12분 안).
+        import faulthandler
+        faulthandler.dump_traceback_later(480, exit=True)
         run_reception_only(token, args.dry_run)
         return
     owner_id_str = env.get('OWNER_ID') or env.get('TELEGRAM_CHAT_ID', '')
