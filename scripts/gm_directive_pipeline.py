@@ -237,7 +237,8 @@ def publish(args) -> int:
         n_cmd += 1
         status = "published"
         if apply:
-            r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
+            r = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
             print(r.stdout.strip())
             if r.returncode != 0:
                 print(r.stderr.strip(), file=sys.stderr)
