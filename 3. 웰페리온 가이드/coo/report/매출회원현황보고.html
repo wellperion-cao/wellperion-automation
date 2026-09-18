@@ -2702,8 +2702,12 @@ function serverCellsP(){
 var _visitorsP = null;
 /* 강습 신규·재등록 띠(1면 #lesson) — brojay.lists.lesson.month(팀별 신규/재등록 건수·금액 누적)가
    있으면 그 값으로 다시 그린다. 없으면(레인 배포 전 등) 위 시트 값(drGet('lesson'))이 그대로 남는다. */
+/* ★10/1 전까지 꺼 둔다(시포 2026-09-18 실측) — 브로제이 강습 결제는 운영부가 며칠치를 몰아 옮겨 적어 일별이 비고,
+   ERP 강습 명단(전화 771명)이 결제 회원을 다 못 덮어 「신규」가 부풀었다(9월 수영 130/133 vs 시트 대부분 재등록).
+   실결제(10/1)와 명단 보강 뒤 true 로. 그때까지 1면 띠는 시트 값(운영부 손입력) 그대로. */
+var LESSON_BAND_SERVER = false;
 function applyBrojayLesson(){
-  if (!ERP_API_ON) return;
+  if (!ERP_API_ON || !LESSON_BAND_SERVER) return;
   serverCellsP().then(function(srv){
     var month = srv && srv.brojay && srv.brojay.lists && srv.brojay.lists.lesson && srv.brojay.lists.lesson.month;
     if (!month) return;
@@ -2725,7 +2729,7 @@ function applyBrojayLesson(){
 function applyBrojayContactLoss(c, srv){
   var lst = srv && srv.brojay && srv.brojay.lists; if (!lst) return false;
   function fmt(arr){
-    if (!arr || !arr.length) return '';
+    if (!arr || !arr.length) return '0명';
     var names = arr.slice(0, 5).map(function(x){ return x.name + (x.phone_masked ? '(' + x.phone_masked + ')' : ''); }).join(', ');
     return arr.length + '명 · ' + names + (arr.length > 5 ? ' 외' : '');
   }
