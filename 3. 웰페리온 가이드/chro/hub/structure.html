@@ -480,7 +480,7 @@
         activeCount++;
       } else if(last){
         card.classList.remove("on");
-        if(stt) stt.textContent = "유휴 · " + fmtLast(last).slice(0, 10);
+        if(stt) stt.textContent = "유휴 · " + String(last).slice(0, 10);
       } else {
         card.classList.remove("on");
         if(stt) stt.textContent = "기록없음";
