@@ -108,16 +108,26 @@ def sessions(date: Optional[str] = None, frm: Optional[str] = Query(None, alias=
     return _serve("sessions", date, frm, to)
 
 
-_TICKET_FIELDS = {  # 화면에 주는 이름 → 브로제이 원본 칸 이름
+_TICKET_DATE_FIELDS = {  # 화면에 주는 이름 → 브로제이 원본 칸 이름(전부 KST epoch-ms int — 실측 2026-09-18)
     "member_start": "total_member_ticket_start_at", "member_end": "total_member_ticket_end_at",
     "lesson_start": "total_lesson_ticket_start_at", "lesson_end": "total_lesson_ticket_end_at",
-    "status": "customer_status", "trainer": "trainer_name",
 }
 _ticket_index_cache = [None, None]   # [snapshot key, {정규화전화: {...}}] — members 스냅샷이 안 바뀌면 재사용(9,841건 매 요청 파싱 방지)
 
 
 def _norm_phone(p):
     return "".join(c for c in str(p or "") if c.isdigit())
+
+
+def _kst_date(ms):
+    """브로제이 날짜 칸은 epoch-ms(KST 자정 기준 · 실측)다 — YYYY-MM-DD 로 바꿔 화면 시트값과 비교 가능하게 한다."""
+    if ms is None:
+        return None
+    try:
+        ms = float(ms)
+    except (TypeError, ValueError):
+        return None
+    return datetime.fromtimestamp(ms / 1000, tz=KST).strftime("%Y-%m-%d")
 
 
 def _ticket_index():
@@ -131,9 +141,10 @@ def _ticket_index():
         phone = _norm_phone(m.get("phone_number"))
         if not phone:
             continue
-        rec = {out: m.get(src) for out, src in _TICKET_FIELDS.items()}
-        last_visit = m.get("last_attendance_date")
-        rec["last_visit"] = str(last_visit)[:10] if last_visit else None
+        rec = {out: _kst_date(m.get(src)) for out, src in _TICKET_DATE_FIELDS.items()}
+        rec["status"] = m.get("customer_status")
+        rec["trainer"] = m.get("trainer_name")
+        rec["last_visit"] = _kst_date(m.get("last_attendance_date"))
         idx[phone] = rec
     _ticket_index_cache[0], _ticket_index_cache[1] = key, idx
     return key, idx
@@ -170,6 +181,13 @@ def _selfcheck_month():
     print("selfcheck month ok")
 
 
+def _selfcheck_kst_date():
+    assert _kst_date(None) is None
+    assert _kst_date(1789743600000) == "2026-09-19"   # KST 자정 — 실측(2026-09-18)
+    assert _kst_date(1790002799999) == "2026-09-21"   # KST 23:59:59.999 — 실측
+    print("selfcheck kst_date ok")
+
+
 @router.get("/health")
 def health():
     try:
@@ -198,3 +216,4 @@ def health():
 
 if __name__ == "__main__":
     _selfcheck_month()
+    _selfcheck_kst_date()
