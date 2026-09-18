@@ -241,18 +241,17 @@ function repaint(){const a=document.querySelector('.tab.active');if(a)select(a.t
 // 그대로 미러링한 것 — 둘 중 하나를 고치면 반드시 다른 쪽도 맞춰야 한다.
 // ══════════════════════════════════════════════════════════════════════════
 const RENEWAL_FUNNEL_URL='https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-// ★ERP 도메인에선 서버 미러(/api/members)를 먼저 읽는다(2026-09-03 시포 · 배942 와 같은 규칙). 실패하면 GAS 폴백.
+// 회원 목록 읽기 = 서버 /api/members 전용(2026-09-18 GM 지시 · 배 12817·12818②). GAS 폴백 제거 —
+//   GAS member_active_list 는 키 없이도 전화번호 원문을 그대로 내주는 공개 엔드포인트라 브라우저가 직접 부르지 않는다.
 //   응답 모양은 member_active_list(객체형)와 같게 맞춘다 — 아래 판정 코드는 그대로.
 const ERP_API_ON=/^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 function rtMemberList(scope){
-  const gas=()=>fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope='+scope).then(r=>r.json());
-  if(!ERP_API_ON)return gas();
   let rows=[];
   const page=cursor=>fetch('/api/members?scope='+scope+'&limit=1000'+(cursor?'&cursor='+encodeURIComponent(cursor):''))
     .then(r=>{if(!r.ok)throw new Error('api '+r.status);return r.json();})
     .then(d=>{rows=rows.concat(d.rows||[]);return d.next_cursor?page(d.next_cursor):rows;});
   return page(null).then(all=>({ok:true,scope,data:all,count:all.length,_source:'sheet-mirror'}))
-    .catch(e=>{console.warn('[재등록] API 실패 → GAS 폴백:',e&&e.message);return gas();});
+    .catch(e=>{console.warn('[재등록] API 실패:',e&&e.message);throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');});
 }
 const RENEWAL_SUMMARY_URL='/repo/status/member_expiry_summary.json';
 const RT_END_KEY='종료\n일자',RT_OWNER_KEY='담당자',RT_NAME_KEY='회원명',RT_CDATE_KEY='재등록상담 날짜',RT_CNOTE_KEY='재등록상담 내용';

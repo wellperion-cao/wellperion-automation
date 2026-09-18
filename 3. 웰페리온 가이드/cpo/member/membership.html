@@ -3356,10 +3356,11 @@ table.op-t td b{font-size:15px}
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 /* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
 var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
-/* ★회원 목록·사람 찾기 읽기 원천 전환(배 942 · 2026-09-03 시토). ERP 도메인(erp.wellperion.com)에서만 서버 미러
-   /api/members 를 먼저 부르고, 실패하면 종전 GAS 로 조용히 돌아간다(console 한 줄). GitHub Pages 에선 ERP_API_ON 이
-   false 라 아래 경로가 전부 종전 그대로다 — 한 파일이 두 곳에서 산다. 쓰기(등록·상태변경·LOSS)는 계속 GAS.
-   미러 = sync_members.py 가 5분마다 member_active_list 를 떠온 것이라 행 모양(칸 이름·rowIndex·rowKey)이 GAS 와 같다. */
+/* ★회원 목록·사람 찾기 읽기 원천 전환(배 942 · 2026-09-03 시토 · 2026-09-18 GAS 폴백 제거·GM 지시·배 12817·12818②).
+   회원 목록 읽기(member_active_list)는 서버 /api/members 전용 — GAS 는 키 없이도 전화번호 원문을 그대로 내주는
+   공개 엔드포인트라 브라우저가 직접 부르지 않는다. 실패하면 "서버 응답 없음" 오류만 보여준다(빈 화면 유지).
+   쓰기(등록·상태변경·LOSS)는 계속 GAS. 미러 = sync_members.py 가 5분마다 member_active_list 를 떠온 것이라
+   행 모양(칸 이름·rowIndex·rowKey)이 GAS 와 같다. */
 var ERP_API_ON = /^(erp\.wellperion\.com|15\.164\.151\.105)$/.test(location.hostname);
 function _apiJson(url) {
   return fetch(url).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); });
@@ -3395,23 +3396,23 @@ function _apiInquiryList(type) {
 // 이 브라우저에서 6분 안에 시트에 쓴 게 있으면 미러(5분 동기화)가 그 한 건을 아직 모른다 — 그동안만 GAS.
 function _wroteRecently() { try { return Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000; } catch (e) { return false; } }
 function _inquiryListFetch() {
-  var gas = function(){ return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  if (!ERP_API_ON) return gas();
   // ★2026-09-15 시토 — 쓰기 뒤 6분 GAS 우회를 뺐다. write_member 가 server 로 바뀐 뒤(09-11) 이 우회는 느리고(GAS 왕복)
   //   시트가 되밀리기 전이라 옛값까지 보여 줬다(임정은M 피드백 FB260915-162312 「수정이 너무 느려졌어요 · 새로고침도 잘 안 돼요」).
   //   지금은 서버가 쓰기를 받는 순간 문의 거울을 직접 고친다(server/erp_api/mirror_inquiry.py) — 거울이 곧 새 값이다.
-  return _apiInquiryList('멤버십').catch(function(e){ console.warn('[문의DB] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  // ★2026-09-18 GM 지시(배 12817·12818②) — 서버 /api 전용, GAS 폴백 완전 제거.
+  return _apiInquiryList('멤버십').catch(function(e){
+    console.warn('[문의DB] API 실패:', e && e.message);
+    throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
+  });
 }
 function _memberListFetch(scope) {
-  // 회원 목록 읽기 관문 하나 — API 실패(미로그인·서버 다운)면 GAS 폴백. GAS 응답은 format=rows 라 디코더를 태운다.
-  var gas = function(){
-    return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
-      .then(function(r){ return r.json(); }).then(_maDecodeRowsFormat);
-  };
-  if (!ERP_API_ON) return gas();
-  // 이 브라우저에서 회원 시트에 쓴 지 6분 안이면 미러(5분 동기화)가 그 한 명을 아직 모른다 — 그동안만 GAS(apiPost 가 도장).
-  try { if (Date.now() - Number(localStorage.getItem('cpo_ma_wrote_at') || 0) < 6 * 60 * 1000) return gas(); } catch (e) {}
-  return _apiMemberList(scope).catch(function(e){ console.warn('[회원목록] API 실패 → GAS 폴백:', e && e.message); return gas(); });
+  // 회원 목록 읽기 = 서버 /api 전용(2026-09-18 GM 지시 · 배 12817·12818②). GAS 폴백 제거 —
+  // GAS member_active_list 는 키 없이도 전화번호 원문 999행을 그대로 내주는 공개 엔드포인트라
+  // 브라우저가 직접 부르면 서버 인증을 우회한다. 실패하면 호출부가 "서버 응답 없음" 오류로 보여준다.
+  return _apiMemberList(scope).catch(function(e){
+    console.warn('[회원목록] API 실패:', e && e.message);
+    throw new Error('서버 응답 없음 — 잠시 뒤 새로고침');
+  });
 }
 function _apiPersonView(q) {
   // 사람 찾기 — /api/members?q= 로 사람을 찾고 /api/members/{번호} 로 문의를 붙여 GAS member_person_view 와 같은 모양으로 만든다.
@@ -3461,9 +3462,8 @@ function _apiLessonRegistry(type, from, to) {
 (function _gasPrewarm(){
   try {
     if (GAS_URL === GAS_PLACEHOLDER) return;
-    // 서버 기동 (corp = 가장 가벼운 조회, 응답 폐기)
-    fetch(GAS_URL + '?action=member_active_list&scope=corp&format=rows&_warm=' + Date.now(),
-          { cache: 'no-store' }).catch(function(){});
+    // ★2026-09-18 GM 지시(배 12817·12818②) — GAS 회원 목록 직접 워밍(action=member_active_list)은
+    // 삭제. 서버 /api 전용으로 바뀐 _memberListFetch 가 아래에서 이미 그 역할을 한다.
     // scope=valid 선입수 — 인증된 경우만
     var kp = _wpKeyParam();
     if (!kp && !ERP_API_ON) return;
@@ -4180,13 +4180,9 @@ function renderMemberLog(){
   if (!box) return;
   var scope = (_curFamily === 'lesson') ? '강습' : '멤버십';
   box.textContent = '불러오는 중…';
-  // ★2026-09-09 배1050 — ERP 도메인은 퍼널 미러(/api/funnel/member_log_list) 먼저, 실패하면 종전 GAS.
-  //   미러 주소엔 캐시버스터(_)·접속토큰(key)을 안 붙인다 — 붙이면 캐시 열쇠가 매번 달라진다.
-  var _mlGas = function(){
-    return fetch(GAS_URL + '?action=member_log_list&scope=' + encodeURIComponent(scope) + '&_=' + Date.now(),
-                 { redirect:'follow' }).then(function(r){ return r.json(); });
-  };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/funnel/member_log_list?scope=' + encodeURIComponent(scope)).catch(function(e){ console.warn('[변경이력] API 실패 → GAS 폴백:', e && e.message); return _mlGas(); }) : _mlGas())
+  // 2026-09-18 GM 지시(배 12817·12818②) — 서버 퍼널 미러(/api/funnel/member_log_list) 전용, GAS 폴백 제거.
+  _apiJson('/api/funnel/member_log_list?scope=' + encodeURIComponent(scope))
+    .catch(function(e){ console.warn('[변경이력] API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); })
     .then(function(d){
       var rows = (d && d.data) || [];
       var head = '<div style="color:var(--dim);font-size:12px;margin-bottom:10px;">'
@@ -4249,9 +4245,9 @@ function _fetchChurnStats(cb, force){
   if (_churnStatsCache && !force) { cb(_churnStatsCache); return; }
   if (_churnStatsPending) { _churnStatsPending.push(cb); return; }   // 이미 요청 중이면 큐에만 추가(중복 fetch 방지)
   _churnStatsPending = [cb];
-  // ★2026-09-05 배934 — ERP 도메인은 서버 집계(/api/report/cpo_churn_stats) 먼저, 실패·6분 내 쓰기면 GAS
-  var _csGas = function(){ return fetch(GAS_URL + '?action=cpo_churn_stats' + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/cpo_churn_stats').catch(function(){ return _csGas(); }) : _csGas())
+  // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계(/api/report/cpo_churn_stats) 전용, GAS 폴백 제거.
+  _apiJson('/api/report/cpo_churn_stats')
+    .catch(function(e){ console.warn('[이탈현황] API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); })
     .then(function(d){
       var ok = d && d.ok;
       if (ok) _churnStatsCache = d;
@@ -4540,9 +4536,8 @@ function _mdashMetric(label, now, prev, ytd, isRate, prevMeasurable){
 // 배361(GM 재지시) — 재등록이 이 화면들에 섞이면 안 된다고 두 번 말씀하셔서, 프론트 분류(구 _mregClassify)는
 // 폐기하고 서버 판정 하나로 통일(약속 L01 — 판정 로직 두 벌 금지).
 function _mdashFetchRegistered(from, to, cb){
-  if (GAS_URL === GAS_PLACEHOLDER) { cb(null); return; }
-  var _rlGas = function(){ return fetch(GAS_URL + '?action=member_registered_list&from=' + from + '&to=' + to + '&newOnly=1' + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  ((ERP_API_ON && !_wroteRecently()) ? _apiJson('/api/report/member_registered_list?from=' + from + '&to=' + to + '&newOnly=1').catch(function(){ return _rlGas(); }) : _rlGas())   // 배934 서버 우선
+  // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계(/api/report/member_registered_list) 전용, GAS 폴백 제거.
+  _apiJson('/api/report/member_registered_list?from=' + from + '&to=' + to + '&newOnly=1')
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
@@ -7398,15 +7393,13 @@ function loadRegistered() {
   // newOnly=1(2026-08-05 시토, GM 지적 "신규등록자가 아니라 재등록자는 왜 나오는거야?") — 서버는 이미
   // 배361(2026-08-04)에서 이 필터를 만들었고 옆 pane(_mregLoad)은 쓰고 있었는데 이 화면(카드3·pane-registered)만
   // 빠져 있었다. 새 판정 만들지 않고 기존 서버 필터를 그대로 재사용.
-  var url = GAS_URL + '?action=member_registered_list&newOnly=1';
-  if (from) url += '&from=' + encodeURIComponent(from);
-  if (to)   url += '&to='   + encodeURIComponent(to);
-  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');   // 배934 서버 우선
+  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');
 
   _regSetLoading(true);
 
-  var _rpGas = function(){ return fetch(url).then(function(r){ return r.json(); }); };
-  return ((ERP_API_ON && !_wroteRecently()) ? _apiJson(_apiUrl).catch(function(){ return _rpGas(); }) : _rpGas())   // 배934 서버 우선
+  // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계 전용, GAS 폴백 제거.
+  return _apiJson(_apiUrl)
+    .catch(function(e){ console.warn('[등록현황] API 실패:', e && e.message); throw new Error('서버 응답 없음 — 잠시 뒤 새로고침'); })
     .then(function(data){
       _regSetLoading(false);
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
@@ -8076,7 +8069,7 @@ function loadActiveMembers() {
     });
   }
   var _seq = ++_activeReqSeq;
-  return _memberListFetch(scope)   // 읽기 관문 하나(배 942) — ERP 도메인=미러 API, 그 외=GAS(format=rows 디코드 포함)
+  return _memberListFetch(scope)   // 읽기 관문 하나(배 942) — 서버 /api 전용(2026-09-18 GAS 폴백 제거)
     .then(function(data){
       // ★잠금 해제는 어떤 갈래로 빠져나가도 반드시 지난다(2026-08-13). 아래 경쟁 가드나 오류로 먼저
       //   빠져나가면 잠금이 영영 안 풀려 화면 전체가 수정 불가가 된다 — 실무진에겐 원인 없는 먹통이다.
@@ -8218,7 +8211,7 @@ function _oaFetch(){
   // 이미 그려둔 명단(스냅샷)이 있으면 스피너로 덮지 않는다 — 보고 있던 표가 사라졌다 다시 나타나면 안 된다.
   if (body && !(_ownerAssignRows && _ownerAssignRows.length)) body.innerHTML = '<tr><td><div class="empty-state"><div class="loading-spinner"></div><div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
   if (GAS_URL === GAS_PLACEHOLDER){ _oaFetching = false; _oaRenderState('GAS 미연동 — URL 교체 후 사용 가능'); return; }
-  _memberListFetch('valid')   // 읽기 관문 하나(배 942) — ERP 도메인=미러 API, 그 외=GAS(format=rows 디코드 포함)
+  _memberListFetch('valid')   // 읽기 관문 하나(배 942) — 서버 /api 전용(2026-09-18 GAS 폴백 제거)
     .then(function(data){
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _ownerAssignRows = data.data || [];   // 서버 계약 {ok, data:[...]} — data.data가 회원 배열
@@ -8657,18 +8650,15 @@ function _mregLoad(){
   var to   = (document.getElementById('mregTo')   || {}).value || '';
   _mregSetLoading();
   _oaPreload();   // 조인 소스(유효회원) 준비 착수
-  var url = GAS_URL + '?action=member_registered_list&newOnly=1';   // 신규만(서버 필터, 배361 — GM 재지시)
-  if (from) url += '&from=' + encodeURIComponent(from);
-  if (to)   url += '&to='   + encodeURIComponent(to);
-  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');
-  var _mrGas = function(){ return fetch(url + _wpKeyParam()).then(function(r){ return r.json(); }); };
-  return ((ERP_API_ON && !_wroteRecently()) ? _apiJson(_apiUrl).catch(function(){ return _mrGas(); }) : _mrGas())   // 배934 서버 우선
+  var _apiUrl = '/api/report/member_registered_list?newOnly=1' + (from ? '&from=' + encodeURIComponent(from) : '') + (to ? '&to=' + encodeURIComponent(to) : '');   // 신규만(서버 필터, 배361 — GM 재지시)
+  // 2026-09-18 GM 지시(배 12817·12818②) — 서버 집계 전용, GAS 폴백 제거.
+  return _apiJson(_apiUrl)
     .then(function(data){
-      if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
+      if (!data.ok) throw new Error(data.error || 'API 응답 오류');
       _mregRows = data.data || [];
       _mregRender();
     })
-    .catch(function(err){ _mregRenderEmpty('데이터 로드 실패', err.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
+    .catch(function(err){ _mregRenderEmpty('데이터 로드 실패', err.message || '서버 응답 없음 — 잠시 뒤 새로고침'); });
 }
 // 유효회원(_ownerAssignRows) 준비될 때까지 대기 후 콜백 — _oaPreload가 백그라운드 fetch 중일 수 있어 폴링(최대 ~20s).
 function _mregEnsureMembersThen(cb){
@@ -8917,7 +8907,7 @@ var _activeCrossLoading = {};   // 같은 스코프를 두 번 부르지 않게
 function _activeLoadOtherScope(scope, query) {
   if (_activeCrossLoading[scope] || GAS_URL === GAS_PLACEHOLDER) return;
   _activeCrossLoading[scope] = true;
-  // ★2026-09-09 배1050 — 읽기 관문 하나(_memberListFetch)로 통일: ERP 도메인은 서버 미러, 실패·6분 내 쓰기면 GAS.
+  // ★2026-09-09 배1050 — 읽기 관문 하나(_memberListFetch)로 통일: 서버 /api 전용(2026-09-18 GAS 폴백 제거).
   _memberListFetch(scope)
     .then(function(data){
       if (!data.ok) return;
