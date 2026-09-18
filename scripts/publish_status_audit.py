@@ -38,7 +38,7 @@ except Exception:
     def _tg_send(*a, **k):
         return False
 
-ROOT = Path.home() / "welperion-automation"
+ROOT = Path(__file__).resolve().parent.parent  # 서버(/srv/erp/repo)에서도 같은 저장소를 가리키게 — 2026-09-18 홈 경로 고정값이 서버에서 '큐 파싱 실패'
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 # 감사 결과 보관소 — 09:45 수집기 편승 실행이 여기 남기고, worklog_gaps 스캔(07:30)이 읽어
 # '빠진 것' 화면에 표면화한다(새 통보 채널 없음). 큐·콘텐츠는 절대 건드리지 않는다.
