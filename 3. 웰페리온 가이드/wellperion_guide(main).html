@@ -806,6 +806,17 @@
      예외 스트립 제거 때 함께 사라져 죽은 배선이었다. 특히 loadErpInquiry 는 표시할 곳 없이 매 로드
      inquiry_list(9천행+)·period_breakdown fetch 를 낭비했다. 업무·결재 실집계는 아래 loadHomeKpiOps 가 전담. */
 
+  /* 관리 메뉴 1~5 설명 화면 간략 대시보드(배 12821·2026-09-18 GM 지시) — O1 허브 4박스와 같은 원칙:
+     새 fetch 없이 홈이 이미 불러온 값을 각 소스 콜백에서 이 함수로 미러링만 한다. */
+  function mirrorKpi(srcId, dstId, timeId) {
+    var s = document.getElementById(srcId), d = document.getElementById(dstId);
+    if (s && d) d.textContent = s.textContent;
+    if (timeId) {
+      var t = document.getElementById(timeId);
+      if (t) { var now = new Date(); t.textContent = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2); }
+    }
+  }
+
   /* 📊 핵심 현황 재설계 — 운영부(업무/결재/문의) KPI (2026-06-08 GM)
      데이터: todo_list GAS 1회 호출로 총/일일 업무·결재 집계.
      문의 총/일일: SURVEY GAS inquiry_list 호출 — 등록전환은 미구현(플래그 표시).
@@ -1007,7 +1018,7 @@
       _miInqMirror()
         .then(function(d){
           // 실패는 0으로 세지 않는다 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
-          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); return; }
+          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); mirrorKpi('kpiMiInqMonth', 'dashM1MiInq', 'dashM1Time'); return; }
           var total = 0, month = 0;
           d.data.forEach(function(row){
             var ts = String(row.timestamp || '').slice(0, 10);
@@ -1017,8 +1028,9 @@
           });
           set('kpiMiInqTotal', total.toLocaleString());
           set('kpiMiInqMonth', month);
+          mirrorKpi('kpiMiInqMonth', 'dashM1MiInq', 'dashM1Time');
         })
-        .catch(function(){ set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); });
+        .catch(function(){ set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); mirrorKpi('kpiMiInqMonth', 'dashM1MiInq', 'dashM1Time'); });
     })();
 
     // 강습 문의 관리 — 성인+유소년 GAS lesson_stats 합산, 올해 기준 (2026-07-16 gviz 숨김행 감사 후 GAS 전환)
@@ -1052,9 +1064,11 @@
         set('kpiLessonInqYouthMonth', youth.month);
         var totalEl = document.getElementById('kpiLessonInqTotal');
         if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 누적)';
+        mirrorKpi('kpiLessonInqMonth', 'dashM1LessonInq', 'dashM1Time');
       }).catch(function(){   // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
         set('kpiLessonInqTotal', '⚠'); set('kpiLessonInqMonth', '⚠');
         set('kpiLessonInqAdultMonth', '⚠'); set('kpiLessonInqYouthMonth', '⚠');
+        mirrorKpi('kpiLessonInqMonth', 'dashM1LessonInq', 'dashM1Time');
       });
     })();
 
@@ -1078,13 +1092,14 @@
       fetch('/api/report/member_registered_list?newOnly=1&from=' + yearStart() + '&to=' + todayStr()).then(function(r){ if (!r.ok) throw new Error('api ' + r.status); return r.json(); })
         .then(function(d){
           // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
-          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); return; }
+          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); mirrorKpi('kpiMiRegMonth', 'dashP1MiReg', 'dashP1Time'); return; }
           var total = (typeof d.count === 'number') ? d.count : d.data.length;
           var month = d.data.filter(function(row){ return String(row.regDate || '').slice(0, 7) === ym; }).length;
           set('kpiMiRegTotal', total.toLocaleString());
           set('kpiMiRegMonth', month);
+          mirrorKpi('kpiMiRegMonth', 'dashP1MiReg', 'dashP1Time');
         })
-        .catch(function(){ set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); });
+        .catch(function(){ set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); mirrorKpi('kpiMiRegMonth', 'dashP1MiReg', 'dashP1Time'); });
     })();
 
     // 강습 등록 — 성인+유소년, 소스를 문의 시트 등록성공(SUC) 건으로 교체(배767 · 2026-08-25).
@@ -1116,12 +1131,14 @@
         if (!adult.ok || !youth.ok) {
           set('kpiLessonRegTotal', '⚠'); set('kpiLessonRegMonth', '⚠');
           set('kpiLessonRegAdultMonth', '⚠'); set('kpiLessonRegYouthMonth', '⚠');
+          mirrorKpi('kpiLessonRegMonth', 'dashP1LessonReg', 'dashP1Time');
           return;
         }
         set('kpiLessonRegTotal', (adult.total + youth.total).toLocaleString());
         set('kpiLessonRegMonth', adult.month + youth.month);
         set('kpiLessonRegAdultMonth', adult.month);
         set('kpiLessonRegYouthMonth', youth.month);
+        mirrorKpi('kpiLessonRegMonth', 'dashP1LessonReg', 'dashP1Time');
         var totalEl = document.getElementById('kpiLessonRegTotal');
         if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 문의 접수분 중 등록성공(SUC) 누적)';
         var monthLbl = document.getElementById('kpiLessonRegMonthLabel');
@@ -1273,6 +1290,14 @@
             var heroEl = document.getElementById('heroSalesMonth');
             if(hubEl && heroEl && heroEl.textContent && heroEl.textContent !== '—') hubEl.textContent = heroEl.textContent;
           })();
+          // F0 간략 대시보드(배 12821) — 같은 히어로 값 미러(새 fetch 없음).
+          (function(){
+            var f0El = document.getElementById('dashF0Sales');
+            var heroEl = document.getElementById('heroSalesMonth');
+            if(f0El && heroEl && heroEl.textContent && heroEl.textContent !== '—') f0El.textContent = heroEl.textContent;
+            var t = document.getElementById('dashF0Time');
+            if (t) { var now = new Date(); t.textContent = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2); }
+          })();
 
           /* 어제(최신 확정) 일일 매출 — 2026-07-10 GM 지시: '오늘'(AV열엔 일 단위 데이터가 없어
              항상 미집계 대시)이 아니라 어제 확정치를 표기. s.yesterday = GAS _kpiSalesYesterday()
@@ -1335,6 +1360,7 @@
           var emVal = krAmt(e.month);
           set('heroExpMonth', emVal);
           setTitle('heroExpMonth', krExact(e.month));
+          mirrorKpi('heroExpMonth', 'dashF0Exp', 'dashF0Time');
           /* 어제 지출 — 매출과 동일 원칙(2026-07-10 GM 지시). e.yesterday = GAS _kpiExpenseYesterday()
              신규 필드. 인건비는 일 단위 데이터가 없어 구매성(지출품의)만 반영된 부분치 — 과장 없이 그대로 정직 표기.
              GAS 미배포 상태(필드 없음)에선 자동으로 구 동작(오늘·대시)로 안전 폴백. */
@@ -1961,6 +1987,22 @@
         <div>📝 <strong style="color:var(--text);">문의 폼</strong> — 손님이 실제로 보는 회원·강습·시설 문의 화면.</div>
       </div>
     </div>
+
+    <!-- 간략 대시보드(배 12821 · 2026-09-18 GM 지시 · O1 허브 4박스와 같은 모양) — 새 fetch 없이
+         홈이 이미 부르는 값을 mirrorKpi() 로 미러링만 한다(위 loadMiInqKpi·loadLessonInqKpi). -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="cpo/member/membership.html?manage=membership" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">📝 멤버십 문의</div>
+        <div id="dashM1MiInq" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번달 신규 유입</div>
+      </a>
+      <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">📝 강습 문의</div>
+        <div id="dashM1LessonInq" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번달 신규 유입</div>
+      </a>
+    </div>
+    <div style="font-size:var(--fs-1);color:var(--dim);margin:0 0 16px;">기준 <span id="dashM1Time">—</span> · 원천: 문의&등록 현황 카드(문의 폼 유입)와 동일 값</div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 24px;">
       <a href="cmo/upload/마케팅자동업로드.html?tenant=wellperion" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:var(--fs-3);font-weight:700;border-radius:9px;text-decoration:none;background:#F7EBE9;color:#201F1D;box-shadow:0 2px 10px rgba(237,91,63,0.34);">🎬 마케팅 자동업로드<span style="font-size:var(--fs-1);font-weight:600;color:#221F20;">센터 공식 계정으로 글·사진을 예약 발행</span></a>
@@ -5079,6 +5121,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </div>
 
+    <!-- 간략 대시보드(배 12821 · 2026-09-18 GM 지시 · O1 허브 4박스와 같은 모양) — 새 fetch 없이
+         홈 히어로(매출·지출)가 이미 불러온 값을 mirrorKpi() 로 미러링만 한다. 구매요청 대기는
+         이 화면이 부르는 원천이 없어 뺐다(억지로 채우지 않음). -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="cfo/finance/매출지출현황.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">💰 매출</div>
+        <div id="dashF0Sales" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번 달 매출 누계</div>
+      </a>
+      <a href="cfo/finance/매출지출현황.html" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">💸 지출</div>
+        <div id="dashF0Exp" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번 달 지출 누계</div>
+      </a>
+    </div>
+    <div style="font-size:var(--fs-1);color:var(--dim);margin:0 0 16px;">기준 <span id="dashF0Time">—</span> · 원천: 홈 매출·지출 히어로와 동일 값</div>
+
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 8px;">
       <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=F1]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
         <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🏛️ 재무 허브</span>
@@ -5172,6 +5231,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <div>📊 <strong style="color:var(--text);">파트너팀 체계</strong> — 강습 6개팀 매출·업무 통합.</div>
       </div>
     </div>
+
+    <!-- 간략 대시보드(배 12821 · 2026-09-18 GM 지시 · O1 허브 4박스와 같은 모양) — 새 fetch 없이
+         인사 운영 허브(H2)가 이미 불러오는 재직 인원만 mirrorKpi() 로 미러링(읽기 전용 · 원장은 H2). -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H2]').click();" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">👥 재직 인원</div>
+        <div id="dashH0Headcount" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">전 직원(읽기 전용)</div>
+      </a>
+    </div>
+    <div style="font-size:var(--fs-1);color:var(--dim);margin:0 0 16px;">기준 <span id="dashH0Time">—</span> · 원천: 인사 운영 허브(H2) 재직 인원과 동일 값</div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 8px;">
       <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
@@ -5563,7 +5633,7 @@ function crTab(btn, panelId) {
       function psRender(d){
         if(!d||d.ok!==true)return;
         // 핵심 지표 6타일
-        if(d.headcount!=null)psSet('ps-headcount',psInt(d.headcount));
+        if(d.headcount!=null){psSet('ps-headcount',psInt(d.headcount));mirrorKpi('ps-headcount','dashH0Headcount','dashH0Time');}
         if(d.avgTenure!=null)psSet('ps-tenure',String(d.avgTenure));
         if(d.openings!=null)psSet('ps-openings',psInt(d.openings));
         if(d.applicantPool!=null)psSet('ps-pool',psInt(d.applicantPool));
@@ -5743,6 +5813,22 @@ function crTab(btn, panelId) {
         <div>🚪 <strong style="color:var(--text);">브로제이 CRM</strong> — 출입·락커·결제 정본(외부 시스템).</div>
       </div>
     </div>
+
+    <!-- 간략 대시보드(배 12821 · 2026-09-18 GM 지시 · O1 허브 4박스와 같은 모양) — 새 fetch 없이
+         홈이 이미 부르는 값을 mirrorKpi() 로 미러링만 한다(위 loadMiRegKpi·loadLessonRegKpi). -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 8px;">
+      <a href="cpo/member/membership.html?manage=membership" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">📋 멤버십 등록</div>
+        <div id="dashP1MiReg" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번달 신규 등록</div>
+      </a>
+      <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="display:block;text-decoration:none;color:var(--text);background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:92px;">
+        <div style="font-size:var(--fs-1);font-weight:700;color:var(--dim);">🏃 강습 등록</div>
+        <div id="dashP1LessonReg" style="font-size:1.3rem;font-weight:800;color:var(--text);margin-top:4px;">—</div>
+        <div style="font-size:var(--fs-1);color:var(--dim);margin-top:4px;">이번달 신규 등록</div>
+      </a>
+    </div>
+    <div style="font-size:var(--fs-1);color:var(--dim);margin:0 0 16px;">기준 <span id="dashP1Time">—</span> · 원천: 문의&등록 현황 카드(등록)와 동일 값</div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:0 0 22px;">
       <a href="cpo/product/상품기획.html" target="_blank" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
