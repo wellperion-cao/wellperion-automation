@@ -15,8 +15,9 @@ import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+import api_assistant
 import api_chat
 
 router = APIRouter(prefix="/api/meeting")
@@ -95,7 +96,7 @@ def _parse_summary_json(text: str, today: date = None) -> dict:
 
 
 @router.post("/summarize")
-def summarize(body: dict):
+def summarize(request: Request, body: dict):
     title = str((body or {}).get("title") or "").strip()
     transcript = str((body or {}).get("transcript") or "").strip()
     if not transcript:
@@ -119,7 +120,9 @@ def summarize(body: dict):
     except Exception as e:
         return {"error": "요약 실패: %s" % type(e).__name__}
 
-    return _parse_summary_json(text, today)
+    result = _parse_summary_json(text, today)
+    api_assistant.log_usage(request, "summary", len(transcript), title=title, out=result)
+    return result
 
 
 def _selftest():

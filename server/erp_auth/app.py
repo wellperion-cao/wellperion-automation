@@ -806,6 +806,10 @@ API_MODULES = {
 COUNSEL_TENANT_SCREENS = frozenset({"/cbo/counsel_faq.html", "/cbo/counsel_log.html",
                                     "/cbo/counsel.js", "/cbo/counsel_tenants.json"})
 _CHAT_TENANT_RE = re.compile(r"^/api/chat/([^/]+)/")
+# AI 비서(회의 요약·번역·쓰임 내역, 배 12816 · 시보 설계) — /erp/admin/ 은 관리자 전용(ADMIN_ONLY_PREFIXES)이지만
+# 이 세 화면만 로그인한 모든 테넌트 직원·파트너에게 연다. 정확 일치만(접두 아님) — .bak·index.html 등은 안 열린다.
+ASSISTANT_TENANT_SCREENS = frozenset({"/erp/admin/meeting_note.html", "/erp/admin/translator.html",
+                                      "/erp/admin/assistant_usage.html"})
 
 
 def _api_need(path: str) -> Optional[set]:
@@ -859,6 +863,8 @@ def path_allowed(user, path: str) -> bool:
         if inner.startswith(REPO_OPEN_PREFIXES):
             return path_allowed(user, inner)                     # 회원 자료(MEMBER_DATA_RE) 규칙이 그대로 걸린다
         return False
+    if path in ASSISTANT_TENANT_SCREENS:
+        return True                                            # AI 비서 화면 3장 — 관리자 전용 접두보다 먼저(배 12816)
     # uri_path 의 normpath 가 끝 슬래시를 떼므로('/erp/admin/'→'/erp/admin') 폴더 자체 요청도 접두에 걸리게 한 번 더 붙여 본다
     if path.startswith(ADMIN_ONLY_PREFIXES) or (path + "/").startswith(ADMIN_ONLY_PREFIXES):
         return False
@@ -2387,6 +2393,10 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert not path_allowed(_no_tenant, "/api/chat/2_dietcamp/stats") and path_allowed(_adm, "/api/chat/3_gocheokgolf/stats")
     assert path_allowed(_partner, "/cbo/counsel_faq.html") and path_allowed(_partner, "/cbo/counsel_log.html")
     assert not path_allowed(_no_tenant, "/cbo/counsel_faq.html") and not path_allowed(_partner, "/cbo/counsel_admin.html")
+    # AI 비서 화면 3장(배 12816) — 직원·파트너 전부 정확 일치만 통과, 접두·다른 관리자 화면은 그대로 막힌다.
+    for _p in ("/erp/admin/meeting_note.html", "/erp/admin/translator.html", "/erp/admin/assistant_usage.html"):
+        assert path_allowed(_stf, _p) and path_allowed(_partner, _p) and path_allowed(_no_tenant, _p)
+    assert not path_allowed(_stf, "/erp/admin/index.html") and not path_allowed(_stf, "/erp/admin/meeting_note.html.bak")
     assert allowed_header(_adm) == "*" and "cpo-member-lesson" in allowed_header(_stf)
     # 모듈 배치(2026-09-14) — 끈 모듈은 직원에게 안 열리고 관리자는 그대로 · 영역 이름 표
     import tempfile

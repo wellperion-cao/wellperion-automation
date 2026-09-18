@@ -11,8 +11,9 @@ erp/admin/translator.html 이 문장 하나(원문+방향)를 보내면 번역�
 """
 import sys
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+import api_assistant
 import api_chat
 
 router = APIRouter(prefix="/api/translate")
@@ -44,7 +45,7 @@ def _system_prompt(source: str, target: str) -> str:
 
 
 @router.post("")
-def translate(body: dict):
+def translate(request: Request, body: dict):
     text, source, target, err = _validate(body)
     if err:
         return {"error": err}
@@ -64,6 +65,7 @@ def translate(body: dict):
     except Exception as e:
         return {"error": "번역 실패: %s" % type(e).__name__}
 
+    api_assistant.log_usage(request, "translate", len(text), source=source, target=target, out=translation)
     return {"translation": translation}
 
 
