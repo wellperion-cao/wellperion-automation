@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<title>현장 3부서 체계</title>
+<style>
+:root{--bg:#F4F0EB;--paper:#FFFFFF;--text:#221F20;--dim:#6E655C;--accent:#B79F8A;--accent-bg:rgba(183,159,138,0.12);--border:#E3DCD3}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+.head{background:var(--paper);border-bottom:1px solid var(--border);padding:12px 20px 0;flex:0 0 auto}
+.head h1{font-size:17px;font-weight:700}
+.head .sub{font-size:12px;color:var(--dim);margin-top:2px;margin-bottom:10px}
+.tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 16px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.tab.active{background:var(--accent-bg);color:var(--accent)}
+.frame-wrap{position:relative;flex:1 1 auto;min-height:0}
+.frame-wrap iframe{width:100%;height:100%;border:none;display:block;background:var(--bg)}
+.openlink{position:absolute;top:8px;right:14px;font-size:11px;font-weight:600;color:var(--accent);background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:4px 10px;text-decoration:none;z-index:5}
+@media(max-width:480px){.head{padding:10px 16px 0}.tab{padding:8px 12px;font-size:13px}}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>현장 3부서 체계</h1>
+  <div class="sub">시설부·지원부·주차관리부 규정·매뉴얼·점검을 한 화면에서 — 탭으로 선택</div>
+  <div class="tabs" id="tabs">
+    <button class="tab" data-key="facility" data-file="시설부 체계.html">🔧 시설부</button>
+    <button class="tab" data-key="support" data-file="지원부 체계.html">🧹 지원부(남/여)</button>
+    <button class="tab" data-key="parking" data-file="주차관리부 체계.html">🅿 주차관리부</button>
+  </div>
+</div>
+<div class="frame-wrap">
+  <a class="openlink" id="openLink" target="_blank" rel="noopener">새 창으로 열기 ↗</a>
+  <iframe id="deptFrame" title="부서 체계"></iframe>
+</div>
+<script>
+var TABS=document.querySelectorAll('.tab');
+var FRAME=document.getElementById('deptFrame');
+var OPEN=document.getElementById('openLink');
+var KEYS=['facility','support','parking'];
+var DEFAULT='support';
+
+function fileFor(key){
+  for(var i=0;i<TABS.length;i++){ if(TABS[i].dataset.key===key) return TABS[i].dataset.file; }
+  return null;
+}
+function select(key,push){
+  if(KEYS.indexOf(key)===-1) key=DEFAULT;
+  var file=fileFor(key);
+  TABS.forEach(function(t){ t.classList.toggle('active', t.dataset.key===key); });
+  if(FRAME.dataset.key!==key){ FRAME.src=file; FRAME.dataset.key=key; }
+  OPEN.href=file;
+  try{ localStorage.setItem('dept3_last_tab', key); }catch(e){}
+  if(push!==false) location.hash=key;
+}
+TABS.forEach(function(t){ t.addEventListener('click', function(){ select(t.dataset.key); }); });
+window.addEventListener('hashchange', function(){ select(location.hash.slice(1)); });
+
+var initial=location.hash.slice(1);
+if(!initial){
+  try{ initial=localStorage.getItem('dept3_last_tab')||''; }catch(e){ initial=''; }
+}
+select(initial||DEFAULT, false);
+</script>
+<script defer src="../../_assets/page_ping.js"></script>
+<script src="../../_assets/ai_owner_badge.js" defer></script>
+</body>
+</html>
