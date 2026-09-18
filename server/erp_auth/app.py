@@ -860,17 +860,60 @@ def allowed_header(user) -> str:
     return ",".join(urllib.parse.quote(i, safe="") for i in allowed_ids(user))
 
 
-def tell_gm(text: str) -> None:
+def tell_gm(text: str) -> bool:
+    """GM 텔레그램 한 줄. 실패해도 가입은 막지 않지만 무음이 아니다(배 12752 P1 #14) — 서버 로그 [WARN] + 호출부가 False 를 받아 화면에 안내한다."""
     token, chat = os.environ.get("TG_BOT_TOKEN"), os.environ.get("TG_CHAT_ID")
     if not token or not chat:
-        return
+        print("[WARN] tell_gm: TG_BOT_TOKEN/TG_CHAT_ID 없음 — GM 알림 못 보냄", file=sys.stderr, flush=True)
+        return False
     try:
         req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
                                      data=json.dumps({"chat_id": chat, "text": text}).encode(),
                                      headers={"Content-Type": "application/json"})
         urllib.request.urlopen(req, timeout=8)
-    except Exception:
-        pass                                   # 알림 실패가 가입을 막지 않는다
+        return True
+    except Exception as e:
+        print(f"[WARN] tell_gm 실패: {e!r}", file=sys.stderr, flush=True)
+        return False
+
+
+GM_ALERT_FAILED = " · GM 알림 전송에 실패했습니다 — GM 께 직접 알려 주세요"
+ERP_API_URL = os.environ.get("ERP_API_URL", "http://127.0.0.1:8001")       # 같은 서버의 ERP API(문자 관문 /api/sms/send)
+
+
+def _notify_approved(uid: int, by: str) -> str:
+    """승인 알림(배 12752 P1 #14) — 신청 때 적은 휴대폰이 있으면 ERP API 의 문자 관문(/api/sms/send · dlive_sms 정본 · SMS_ENABLED·야간 보류·
+    발효 문구만 그대로 존중)으로 erp_approved 문구를 보낸다. 이메일 발송 체계는 없다. 못 보내면 첫 로그인 배너(_login_dest)가 최소 안내.
+    돌려주는 문자열 = 관리자 화면 msg."""
+    with db() as c:
+        u = c.execute("SELECT name, perms FROM users WHERE tenant_id=%s AND id=%s", (T, uid)).fetchone()
+    try:
+        phone = _digits((json.loads(u["perms"]) if u and u["perms"] else {}).get("phone"))
+    except (ValueError, AttributeError):
+        phone = ""
+    if not phone:
+        return "승인됨 · 휴대폰 없는 신청(소셜 가입) — 첫 로그인 때 화면 배너로 안내됩니다"
+    body = {"template_id": "erp_approved", "rcpt": phone, "vars": {"이름": u["name"] or ""}, "origin_key": f"user{uid}"}
+    try:
+        req = urllib.request.Request(ERP_API_URL + "/api/sms/send", data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                                     headers={"Content-Type": "application/json", "X-Erp-User": by}, method="POST")
+        with urllib.request.urlopen(req, timeout=20) as r:
+            st = str((json.loads(r.read().decode("utf-8")) or {}).get("status") or "")
+    except Exception as e:
+        print(f"[WARN] 승인 문자 실패(uid={uid}): {e!r}", file=sys.stderr, flush=True)
+        return "승인됨 · 문자 알림 실패 — 신청자에게 직접 알려 주세요"
+    return {"sent": "승인됨 · 신청자에게 문자로 알렸습니다", "hold": "승인됨 · 야간이라 문자는 아침에 나갑니다",
+            "dry": "승인됨 · 문자 발송 스위치(SMS_ENABLED)가 꺼져 있어 기록만 남겼습니다",
+            "no_template": "승인됨 · 문자 문구 erp_approved 가 없어 못 보냈습니다(문자 관리에서 추가)",
+            "not_active": "승인됨 · 문자 문구 erp_approved 가 발효 전이라 못 보냈습니다(문자 관리에서 발효)",
+            "skip_duplicate": "승인됨 · 오늘 이미 같은 문자를 보냈습니다"}.get(st, f"승인됨 · 문자 결과 {st or '알 수 없음'}")
+
+
+def _login_dest(u, nxt: str) -> str:
+    """첫 로그인(last_login 없음)이면 내 계정 화면의 「승인됨」 배너로(배 12752 P1 #14 최소 안내), 그 뒤엔 요청한 곳. touch_login() 전에 부른다."""
+    if "last_login" in u.keys() and not u["last_login"]:
+        return "/auth/account?msg=" + urllib.parse.quote("승인되었습니다 · 환영합니다. 아래 「직원 홈」으로 가세요")
+    return nxt
 
 
 # ── 화면 ────────────────────────────────────────────────────────────────
@@ -1111,8 +1154,9 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
     FAILS.pop(email, None)
     if u["status"] != "active":
         return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+    dest = _login_dest(u, safe_next(next))
     touch_login(u["id"])
-    r = RedirectResponse(safe_next(next), status_code=303)
+    r = RedirectResponse(dest, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"     # nginx 만 보냄 · http(IP접속)는 종전대로 secure 없음
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(keep), httponly=True, samesite="lax", path="/", secure=https)
     return r
@@ -1206,11 +1250,11 @@ def signup(name: str = Form(...), username: str = Form(...), password: str = For
                       (T, uid, name, salt, h, "staff", status, now(), approved_at, json.dumps(perms, ensure_ascii=False)))
     except _db.IntegrityError:
         return RedirectResponse("/auth/signup?msg=이미 있는 아이디입니다", status_code=303)
-    tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid})\n"
-            f"{dept} · {rank.strip() or '직급 미기재'} ({'리더급' if tier == 'leader' else '팀원급'})\n"
-            f"연락처 {phone.strip()}\n"
-            "승인하시면 그때부터 로그인됩니다: https://erp.wellperion.com/auth/admin")
-    return RedirectResponse("/auth/signup?msg=접수됐습니다 · GM 승인 뒤 로그인하실 수 있습니다", status_code=303)
+    sent = tell_gm(f"🔐 ERP 가입 신청 — {name} ({uid})\n"
+                   f"{dept} · {rank.strip() or '직급 미기재'} ({'리더급' if tier == 'leader' else '팀원급'})\n"
+                   f"연락처 {phone.strip()}\n"
+                   "승인하시면 그때부터 로그인됩니다: https://erp.wellperion.com/auth/admin")
+    return RedirectResponse("/auth/signup?msg=접수됐습니다 · GM 승인 뒤 로그인하실 수 있습니다" + ("" if sent else GM_ALERT_FAILED), status_code=303)
 
 
 @app.post("/auth/logout")
@@ -1471,8 +1515,9 @@ def google_callback(request: Request, code: str = "", state: str = "", error: st
         # 개인 구글 계정, 첫 로그인 — 이름·부서 확인 후 승인 대기로 넘긴다(GM 2026-09-05).
         reg = jwt.encode({"e": email, "n": name, "exp": int(time.time()) + 600}, SECRET, algorithm="HS256")
         return RedirectResponse(f"/auth/google/finish?t={reg}&next={urllib.parse.quote(nxt, safe='')}", status_code=303)
+    dest = _login_dest(u, nxt)
     touch_login(u["id"])
-    r = RedirectResponse(nxt, status_code=303)
+    r = RedirectResponse(dest, status_code=303)
     https = request.headers.get("x-forwarded-proto") == "https"
     r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
     return r
@@ -1529,8 +1574,8 @@ def _finish_submit(name: str, dept: str, t: str, next: str, action: str, rank: s
     suffix = f" · {SOCIAL[provider]['label']} 계정" if provider else ""
     if claims.get("m"):                          # 소셜 키(kakao_123@kakao.login)만으론 GM 이 누군지 모른다 — 이메일을 덧붙인다
         suffix += f" · 이메일 {claims['m']}"
-    tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept}{suffix})\n승인: https://erp.wellperion.com/auth/admin")
-    return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다", status_code=303)
+    sent = tell_gm(f"🔐 ERP 가입 신청 — {name.strip()} ({email} · {dept}{suffix})\n승인: https://erp.wellperion.com/auth/admin")
+    return RedirectResponse("/auth/login?msg=신청됐습니다. GM 승인 후 로그인할 수 있습니다" + ("" if sent else GM_ALERT_FAILED), status_code=303)
 
 
 @app.get("/auth/google/finish")
@@ -1639,8 +1684,9 @@ def _social_callback(request: Request, provider: str, code: str, state: str, err
             return RedirectResponse("/auth/login?err=차단된 계정입니다. GM 에게 문의하세요", status_code=303)
         if u["status"] != "active":
             return RedirectResponse("/auth/login?err=아직 승인 전입니다. GM 승인 후 로그인됩니다", status_code=303)
+        dest = _login_dest(u, nxt)
         touch_login(u["id"])
-        r = RedirectResponse(nxt, status_code=303)
+        r = RedirectResponse(dest, status_code=303)
         https = request.headers.get("x-forwarded-proto") == "https"
         r.set_cookie(COOKIE, issue(u), max_age=_keep_max_age(request.cookies.get("erp_keep", "1")), httponly=True, samesite="lax", path="/", secure=https)
         return r
@@ -2145,6 +2191,8 @@ async def admin_action(uid: int, action: str, request: Request, erp_session: Opt
                   ("active" if action == "approve" else "blocked", now() if action == "approve" else None, T, uid))
         if action == "block":                      # 차단 해제 뒤에도 옛 토큰이 되살아나지 않게 세대 +1(배 12752 P1 #10)
             c.execute("UPDATE users SET session_ver=session_ver+1 WHERE tenant_id=%s AND id=%s AND role!='admin'", (T, uid))
+    if action == "approve":
+        return RedirectResponse("/auth/admin?msg=" + urllib.parse.quote(_notify_approved(uid, me["email"])), status_code=303)
     return RedirectResponse("/auth/admin", status_code=303)
 
 
@@ -2393,4 +2441,12 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert jwt.decode(issue({**fake_user, "session_ver": 2}), SECRET, algorithms=["HS256"])["ver"] == 2
     _old_tok = jwt.encode({"uid": 1, "email": "x", "role": "staff", "exp": int(time.time()) + 60}, SECRET, algorithm="HS256")
     assert "ver" not in jwt.decode(_old_tok, SECRET, algorithms=["HS256"])           # 배포 전 토큰 = ver 없음 → current() 가 0세대와 같다고 본다
+    # 가입 알림 무음 금지(배 12752 P1 #14) — 토큰 없는 환경에서 tell_gm 은 False(서버 로그 [WARN]) · 첫 로그인은 승인 배너, 둘째부턴 요청한 곳
+    _tg = os.environ.pop("TG_BOT_TOKEN", None)
+    assert tell_gm("자가점검") is False
+    if _tg is not None:
+        os.environ["TG_BOT_TOKEN"] = _tg
+    assert _login_dest({"last_login": None}, "/erp/").startswith("/auth/account?msg=")
+    assert _login_dest({"last_login": "2026-09-18 09:00"}, "/erp/") == "/erp/"
+    assert _login_dest({"id": 1}, "/erp/") == "/erp/"                                    # last_login 열이 없는 행(옛 DB)은 배너 없이
     print("self-check ok")
