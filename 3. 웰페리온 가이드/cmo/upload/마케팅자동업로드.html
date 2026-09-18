@@ -51,10 +51,6 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 @media (max-width:760px){.stat4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .subtbl{margin-top:10px;font-size:12px}
 .srcname{font-size:11px;font-weight:400;color:var(--pf-soft);margin-left:6px}
-.pf-subtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.pf-subtabs button{font-family:var(--pf-head);font-size:12.5px;font-weight:600;min-height:36px;padding:0 12px;border-radius:var(--pf-radius-sm);border:1px solid var(--pf-line);background:var(--pf-bg);color:var(--pf-ink);cursor:pointer}
-.pf-subtabs button.on{background:var(--pf-tint);color:var(--pf-pri-dk);border-color:var(--pf-pri)}
-.pf-subtabs .fail{color:#b3261e;font-weight:700}
 .editbadge{font-size:11px;color:var(--pf-soft);margin-left:6px;white-space:nowrap}
 .faildetails{margin-top:8px}
 .faildetails summary{cursor:pointer;font-size:12.5px;color:var(--pf-soft)}
@@ -149,10 +145,11 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   }
   function fmtDate(s){ return s?String(s).slice(0,10):'—'; }
   function trunc(s,n){ s=String(s||''); return s.length>n?s.slice(0,n)+'…':s; }
-  // 발행 표 공통 가공(배 2792 추가 · GM 09-18 15:0x~15:1x) —
+  // 발행 표 공통 가공(배 2792·2794 · GM 09-18 15:0x~15:1x 원 설계 → 15:2x 「날짜×켜진 채널」 표로 변경) —
   // ① 같은 제목(주제)으로 성공(ok) 기록이 여럿이면 마지막 한 줄만 보여주고, 그 앞의 성공은 "수정 N" 배지로 접는다(첫 성공은 원글 · 그 뒤 성공은 재발행/수정).
-  // ② 실패(ok=false)는 표 줄로 안 올린다 — 최근 7일치 건수만 채널 탭 배지로, 펼치면(details) 목록.
-  // ③ 제목 글자 자체가 글 주소 링크(url 없으면 글자만).
+  // ② 실패(ok=false)는 표 줄로 안 올린다 — 계정 탭 전체 최근 7일치 건수만 배지로, 펼치면(details) 목록.
+  // ③ 제목 글자 자체가 글 주소 링크(url 없으면 글자만) — 별도 링크 열 없음.
+  // ④ 표 = 날짜 한 줄, 열 = 그 계정에 데이터가 있는 채널만(꺼진 채널은 열 자체를 안 그림). 칸 = 상태 배지 + 링크 제목, 같은 날 같은 채널에 여럿이면 칸 안에서 줄바꿈.
   function buildChannelData(rows){
     var groups={}, cutoff=Date.now()-7*86400000, recentFails=[];
     rows.forEach(function(r){
@@ -166,20 +163,10 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
       if(!ok.length) return;   // 전부 실패인 주제 — 표 줄에 안 올림(실패 건수에는 이미 반영됨)
       ok.sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
       var last=ok[ok.length-1];
-      display.push({date:last.date,title:last.title,url:last.url,edits:ok.length-1});
+      display.push({date:last.date,title:last.title,url:last.url,label:last.label,edits:ok.length-1});
     });
     display.sort(function(a,b){return String(b.date).localeCompare(String(a.date));});
-    return {display:display.slice(0,12), recentFails:recentFails};
-  }
-  function channelTableHtml(display){
-    if(!display.length) return '<div class="empty">아직 기록 없음</div>';
-    var rows=display.map(function(x){
-      var badge=x.edits?'<span class="editbadge">수정 '+x.edits+'</span>':'';
-      var t=x.title||'(제목 없음)';
-      var titleCell=x.url?'<a href="'+x.url+'" target="_blank" rel="noopener">'+t+'</a>':t;
-      return '<tr><td>'+fmtDate(x.date)+'</td><td>'+titleCell+badge+'</td></tr>';
-    }).join('');
-    return '<table class="pf-table"><thead><tr><th>날짜</th><th>제목</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    return {display:display, recentFails:recentFails};
   }
   function failDetailsHtml(recentFails){
     if(!recentFails.length) return '';
@@ -188,39 +175,54 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     }).join('');
     return '<details class="faildetails"><summary>최근 7일 실패 '+recentFails.length+'건</summary><table class="pf-table"><thead><tr><th>날짜</th><th>제목</th><th>사유</th></tr></thead><tbody>'+rows+'</tbody></table></details>';
   }
-  function renderChannelTabs(host, channels){
-    // channels: [{name, rows:[{date,title,url,ok,reason}]}] — 호출부가 데이터 있는 채널만 넘긴다
+  function gridCellHtml(items){
+    if(!items.length) return '<td>—</td>';
+    var html=items.map(function(x){
+      var badge=x.edits?'<span class="editbadge">수정 '+x.edits+'</span>':'';
+      var t=x.title||'(제목 없음)';
+      var titleCell=x.url?'<a href="'+x.url+'" target="_blank" rel="noopener">'+t+'</a>':t;
+      return '<div><span class="pf-st on"><i></i>'+x.label+'</span> '+titleCell+badge+'</div>';
+    }).join('');
+    return '<td>'+html+'</td>';
+  }
+  function renderGrid(host, rows){
+    // rows: [{date,title,url,ok,pending,reason,channel,label}] — 소스 무관 공통 모양
+    var channels=groupByChannel(rows);   // 데이터가 있는(=켜진) 채널만 — 없는 채널은 groupByChannel 이 애초에 안 만든다
     if(!channels.length){ host.innerHTML='<div class="empty">아직 기록 없음</div>'; return; }
-    var built=channels.map(function(c){ return {name:c.name, data:buildChannelData(c.rows)}; });
-    var active=0;
-    function draw(){
-      var tabs=built.map(function(c,i){
-        var fail=c.data.recentFails.length?' <span class="fail">· 실패 '+c.data.recentFails.length+'</span>':'';
-        return '<button type="button" class="'+(i===active?'on':'')+'" data-i="'+i+'">'+c.name+fail+'</button>';
+    var chData=channels.map(function(c){ return {name:c.name, data:buildChannelData(c.rows)}; });
+    var recentFails=[].concat.apply([], chData.map(function(c){return c.data.recentFails;}));
+    var dateSet={};
+    chData.forEach(function(c){ c.data.display.forEach(function(x){ dateSet[fmtDate(x.date)]=1; }); });
+    var dates=Object.keys(dateSet).sort(function(a,b){
+      if(a==='—') return 1; if(b==='—') return -1;   // 날짜 미상은 맨 뒤(문자열로 정렬하면 — 가 숫자보다 커서 맨 위로 뜨는 버그 있었음)
+      return a<b?1:(a>b?-1:0);   // 최신이 위
+    }).slice(0,12);
+    var gridHtml='<div class="empty">아직 기록 없음</div>';
+    if(dates.length){
+      var head='<tr><th>날짜</th>'+chData.map(function(c){return '<th>'+c.name+'</th>';}).join('')+'</tr>';
+      var body=dates.map(function(d){
+        var cells=chData.map(function(c){ return gridCellHtml(c.data.display.filter(function(x){return fmtDate(x.date)===d;})); }).join('');
+        return '<tr><td>'+d+'</td>'+cells+'</tr>';
       }).join('');
-      var cur=built[active];
-      host.innerHTML=(built.length>1?'<div class="pf-subtabs">'+tabs+'</div>':'')+channelTableHtml(cur.data.display)+failDetailsHtml(cur.data.recentFails);
-      host.querySelectorAll('.pf-subtabs button').forEach(function(b){
-        b.addEventListener('click',function(){ active=parseInt(b.dataset.i,10); draw(); });
-      });
+      gridHtml='<div style="overflow-x:auto"><table class="pf-table"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
     }
-    draw();
+    host.innerHTML=gridHtml+failDetailsHtml(recentFails);
   }
   function groupByChannel(rows){
     var by={}, order=[];
     rows.forEach(function(r){ if(!by[r.channel]){ by[r.channel]=[]; order.push(r.channel); } by[r.channel].push(r); });
     return order.map(function(name){ return {name:name, rows:by[name]}; });
   }
-  // 소스별 정규화 — {date,title,url,ok,reason,channel}
+  // 소스별 정규화 — {date,title,url,ok,pending,reason,channel,label}. label = 칸에 찍히는 짧은 상태 글자.
   function normReview(items){
-    return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:x.channel||'(채널 없음)'}; });
+    return items.map(function(x){ return {date:x.published_at||x.card_sent_at||'', title:x.title||'', url:x.post_url||'', ok:x.status==='발행완료', reason:x.status||'', channel:x.channel||'(채널 없음)', label:'발행'}; });
   }
   function normBlog(runs){
-    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:'블로그'}; });
+    return (runs||[]).map(function(r){ return {date:r.date||'', title:r.topic||'', url:r.url||'', ok:r.result==='ok', reason:r.reason||'', channel:'블로그', label:'발행'}; });
   }
   function normIg(runs){
     // sent:false·없음 = 아직 발행기 검토 전 "대기" 상태(실패 아님) — partner_instagram/*.json 에는 실패 개념 자체가 없다
-    return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:'인스타그램'}; });
+    return (runs||[]).map(function(r){ return {date:r.at||'', title:r.topic||'', url:r.post_url||'', ok:!!r.sent, pending:!r.sent, reason:'대기', channel:'인스타그램', label:'임시저장'}; });
   }
   function renderSeries(){
     var body=$('seriesBody'), src=$('srcName'), curTenant=tenant;
@@ -237,7 +239,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         var other=items.length-official.length-personalCnt;
         body.innerHTML='';
         var chWrap=document.createElement('div'); body.appendChild(chWrap);
-        renderChannelTabs(chWrap, groupByChannel(normReview(official)));
+        renderGrid(chWrap, normReview(official));
         if(other){ var n=document.createElement('div'); n.className='srcname'; n.style.cssText='display:block;margin-top:6px'; n.textContent='미분류 '+other+'건(계정 칸 없음·기타 표기) — 개인계정(namuk.wellperion)엔 안 들어가 공식 쪽에 표시'; body.appendChild(n); }
       }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
     } else if(tenant==='gm'){
@@ -260,7 +262,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         var last=pubs.length?fmtDate(pubs[pubs.length-1]):'—';
         body.innerHTML='<div class="stat4"><div class="box"><b>'+(eps.length||'—')+'</b><span>전체 회차</span></div><div class="box"><b>'+done+'</b><span>발행완료</span></div><div class="box"><b>'+wait+'</b><span>검수대기</span></div><div class="box"><b>'+last+'</b><span>마지막 발행일</span></div></div>';
         var chWrap=document.createElement('div'); body.appendChild(chWrap);
-        renderChannelTabs(chWrap, groupByChannel(normReview(personal)));
+        renderGrid(chWrap, normReview(personal));
       });
     } else if(tenant==='dc'||tenant==='jo'){
       var blogFile=tenant==='dc'?'dietcamp_blog_daily.json':'gocheok_blog_daily.json';
@@ -275,7 +277,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         var rows=normBlog(blog&&blog.runs).concat(normIg(ig&&ig.runs));
         body.innerHTML='';
         var chWrap=document.createElement('div'); body.appendChild(chWrap);
-        renderChannelTabs(chWrap, groupByChannel(rows));
+        renderGrid(chWrap, rows);
       });
     } else {
       src.textContent='ax_blog_daily.json';
@@ -283,7 +285,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
         if(curTenant!==tenant) return;
         body.innerHTML='';
         var chWrap=document.createElement('div'); body.appendChild(chWrap);
-        renderChannelTabs(chWrap, groupByChannel(normBlog(blog&&blog.runs)));
+        renderGrid(chWrap, normBlog(blog&&blog.runs));
       }).catch(function(){ if(curTenant===tenant) body.innerHTML='<div class="empty">아직 기록 없음</div>'; });
     }
   }
