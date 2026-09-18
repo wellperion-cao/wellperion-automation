@@ -42,6 +42,7 @@
   .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer;
        border:1px solid var(--border); background:var(--paper); color:var(--text);}
   .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}   /* 명암 5.6:1 (design_audit 4.5 기준) */
+  .btn:disabled{opacity:.5; cursor:not-allowed;}   /* 잠긴 채 읽은 씨앗은 저장 못 함(배 12752 P1 #18) */
   .btn.s{padding:3px 9px; font-size:var(--fs-1);}
   .msg{font-size:var(--fs-2); color:var(--text-soft);}
   .msg.ok{color:var(--accent-hover); font-weight:600;}
@@ -217,7 +218,8 @@
     $('k-pt').querySelector('tbody').innerHTML=KPI.partner.map(function(k){
       return '<tr><td>'+inp('name',k.name,'항목')+'<div class="dim">'+esc(k.key||'')+'</div></td><td>'+inp('target',k.target,'목표')+'</td><td><button type="button" class="btn s" data-del="1">삭제</button></td></tr>';
     }).join('') || '<tr><td colspan="3" class="dim">항목 없음</td></tr>';
-    $('kpi-msg').className='msg'; $('kpi-msg').textContent = locked ? '읽기: 씨앗 파일 · 저장하려면 「계정·권한」에서 관리자 비밀번호를 먼저 푸세요' : ('원장 '+(KPI.updated_at||'')+(KPI.updated_by?' · '+KPI.updated_by:''));
+    $('kpi-save').disabled = locked;   /* 잠긴 채 읽은 값은 씨앗 — 저장하면 서버 원장을 씨앗으로 덮으므로 버튼을 막는다 */
+    $('kpi-msg').className='msg'; $('kpi-msg').textContent = locked ? '(씨앗 · 서버 원장 아님) 「계정·권한」에서 관리자 잠금을 푼 뒤 이 화면을 새로고침하면 저장할 수 있습니다' : ('원장 '+(KPI.updated_at||'')+(KPI.updated_by?' · '+KPI.updated_by:''));
   }
   function slug(name){ return String(name||'').trim().toLowerCase().replace(/[^0-9a-z가-힣]+/g,'_').replace(/^_+|_+$/g,'')||('k'+Date.now()); }
   function collect(){
@@ -240,7 +242,7 @@
       var name=tr.querySelector('input[name=name]').value.trim(); if(!name) return;
       pt.push({key:(keysPt[i]||{}).key||slug(name), name:name, target:tr.querySelector('input[name=target]').value.trim()});
     });
-    return {company:co, manager:mg, partner:pt};
+    return {company:co, manager:mg, partner:pt, updated_at:KPI.updated_at||''};   /* 서버가 낡은 판(409) 대조에 쓴다 */
   }
   document.addEventListener('click',function(ev){
     var d=ev.target.closest('[data-del]'); if(d){ var tr=d.closest('tr'), tb=tr.parentNode, idx=Array.prototype.indexOf.call(tb.children,tr); var arr=tb.closest('table').id==='k-co'?KPI.company:KPI.partner; arr.splice(idx,1); tr.remove(); return; }
@@ -252,7 +254,7 @@
     fetch('/auth/admin/api/eval_kpi',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){ if(r.status===401||r.status===403){ throw new Error('lock'); } if(!r.ok) throw new Error(r.status); return r.json(); })
       .then(function(j){ KPI=j.kpi||KPI; locked=false; m.className='msg ok'; m.textContent='저장됨 '+(KPI.updated_at||''); drawKpiEditor(LEDGER); get('status/home_kpi_snapshot.json').then(drawCompany); })
-      .catch(function(e){ m.className='msg bad'; m.textContent = e.message==='lock' ? '저장 안 됨 — 「계정·권한」에서 관리자 비밀번호를 먼저 푸세요' : ('저장 안 됨('+e.message+')'); });
+      .catch(function(e){ m.className='msg bad'; m.textContent = e.message==='lock' ? '저장 안 됨 — 「계정·권한」에서 관리자 비밀번호를 먼저 푸세요' : e.message==='409' ? '저장 안 됨 — 다른 창에서 먼저 저장된 낡은 판입니다 · 새로고침 뒤 다시 고쳐 주세요' : ('저장 안 됨('+e.message+')'); });
   });
 
   loadKpi().then(function(){

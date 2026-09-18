@@ -332,6 +332,12 @@ def eval_kpi_clean(body: dict) -> dict:
     return out
 
 
+def eval_kpi_stale(body: dict, ledger: dict) -> bool:
+    """낡은 판 대조(배 12752 P1 #18) — 화면이 읽은 updated_at 과 지금 원장이 다르면 True(409). 잠긴 채 씨앗을 읽은 화면·다른 창에서 먼저 저장한
+    화면이 GM 이 며칠 고친 원장을 덮던 것을 막는다. 둘 다 빈 값(첫 저장)이면 통과."""
+    return str(body.get("updated_at") or "") != str(ledger.get("updated_at") or "")
+
+
 def eval_kpi_save(body: dict, by: str) -> dict:
     d = eval_kpi_clean(body)
     d["updated_at"] = now()
@@ -1956,6 +1962,8 @@ async def admin_api_eval_kpi_save(request: Request, erp_session: Optional[str] =
         raise HTTPException(400, "JSON 본문이 아닙니다")
     if not isinstance(body, dict):
         raise HTTPException(400, "본문은 객체여야 합니다")
+    if eval_kpi_stale(body, eval_kpi_load()):
+        raise HTTPException(409, "낡은 판 — 화면을 새로고침한 뒤 다시 저장하세요")
     return JSONResponse({"ok": True, "kpi": eval_kpi_save(body, me["email"])})
 
 
@@ -2449,4 +2457,9 @@ if __name__ == "__main__":                     # 회사 계정 판별 자가점�
     assert _login_dest({"last_login": None}, "/erp/").startswith("/auth/account?msg=")
     assert _login_dest({"last_login": "2026-09-18 09:00"}, "/erp/") == "/erp/"
     assert _login_dest({"id": 1}, "/erp/") == "/erp/"                                    # last_login 열이 없는 행(옛 DB)은 배너 없이
+    # KPI 원장 낡은 판 대조(배 12752 P1 #18) — 화면이 읽은 updated_at ≠ 원장이면 409 · 같으면(첫 저장 빈 값 포함) 통과
+    assert eval_kpi_stale({"updated_at": "2026-09-18"}, {"updated_at": "2026-09-18 10:00"})     # 씨앗을 읽은 화면이 저장한 원장을 덮으려 함
+    assert eval_kpi_stale({}, {"updated_at": "2026-09-18 10:00"})                              # updated_at 을 안 실은 옛 화면
+    assert not eval_kpi_stale({"updated_at": "2026-09-18 10:00"}, {"updated_at": "2026-09-18 10:00"})
+    assert not eval_kpi_stale({}, {})
     print("self-check ok")
