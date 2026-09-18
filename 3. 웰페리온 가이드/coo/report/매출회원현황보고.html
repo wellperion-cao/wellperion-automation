@@ -985,7 +985,7 @@
         <div class="bd" id="c7new"><div class="mrow"><span class="lb">집계 중…</span></div></div>
       </div>
       <div class="sec" style="flex:1;min-height:0;">
-        <h2>강습 담당별 매출<span class="src">일자탭 O~U(손입력) → 서버</span></h2>
+        <h2 id="c7whoh">강습 담당별 매출<span class="src">일자탭 O~U(손입력) → 서버</span></h2>
         <div class="bd" id="c7who"><div class="mrow"><span class="lb">집계 중…</span></div></div>
       </div>
     </div>
@@ -2430,33 +2430,36 @@ function p4TeamTable(heads, teams){
   return '<table class="ptab">' + th + body + '</table>';
 }
 
-function renderPage4(c, dayLabel){
-  var les = p4Rows(c, 16, 66);   // 63행 루프 메소드까지(2026-09-15 실측 · 종전 62행에서 잘렸다)
+/* 4면 왼쪽 표 공통 그리기 — 시트 경로(renderPage4)·서버 경로(renderPage4Server) 둘 다 여기로 모인다.
+   teams 모양은 둘 다 같다: [{name, rows:[{name, cols:[4개 문자열], acc, hide}]}]. */
+function p4Paint(teams, lesHead, dayLabel, auditExtra, serverUsed){
   var h2 = document.getElementById('p4lesh');
   if (h2) setSecTitle(h2, (dayLabel || '') + ' 강습 — 팀 · 담당별');   // 원천 꼬리표(.src)는 남긴다
-  var e2 = document.getElementById('p4les'), e3 = document.getElementById('p4les2');
-  /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
-  var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
-  /* 팀 전부 왼쪽 한 단(GM 지시 2026-09-15). 오른쪽 칸은 세션 흐름 자리로 비워 둔다. */
-  var teams = p4Teams(les);
-  /* 팀 순서 = 분기 목표(보고탭 K×3)가 큰 팀부터, 같으면 이달 누적 큰 팀(GM 지시 2026-09-16 「수영팀 맨 위 ·
-     가장 높은 팀이 바뀌면 그 팀이 맨 위」). 보고탭이 아직 안 왔으면 이달 누적으로 먼저 세우고, 분기 표가
-     그려질 때 같은 순서로 다시 세운다(세션 칸 값은 옮겨 담는다). */
+  if (serverUsed) p4SetSrcBadge();
   P4_STATE.lesHead = lesHead; P4_STATE.teams = teams;
-  teams = p4OrderTeams(teams, null);
-  if (e2) e2.innerHTML = p4TeamTable(lesHead, teams);
-  renderP4Top(teams);
-  renderP4Quarter(teams);
+  var ordered = p4OrderTeams(teams, null);
+  var e2 = document.getElementById('p4les');
+  if (e2) e2.innerHTML = p4TeamTable(lesHead, ordered);
+  renderP4Top(ordered);
+  renderP4Quarter(ordered);
   var at = new Date().toTimeString().substring(0, 5);
   var r4 = document.getElementById('readat4'); if (r4) r4.textContent = at;
   var a4 = document.getElementById('audit4'); if (!a4) return;
-  if (!les.length) {
+  var rowCount = teams.reduce(function(a, t){ return a + t.rows.length; }, 0);
+  if (!rowCount) {
     a4.className = 'audit bad';
     a4.innerHTML = '<b>강습 담당 줄을 못 읽었습니다</b>';
   } else {
     a4.className = 'audit ok';
-    a4.innerHTML = '<b>자체 점검 통과</b> — 강습 담당 ' + les.length + '줄 · ' + teams.length + '팀을 ' + at + ' 에 확인했습니다';
+    a4.innerHTML = '<b>자체 점검 통과</b> — 강습 담당 ' + rowCount + '줄 · ' + teams.length + '팀을 ' + at + ' 에 확인했습니다' + (auditExtra || '');
   }
+}
+function renderPage4(c, dayLabel){
+  var les = p4Rows(c, 16, 66);   // 63행 루프 메소드까지(2026-09-15 실측 · 종전 62행에서 잘렸다)
+  /* 갈래 이름은 시트가 쓰는 것을 그대로 읽는다(P15~S15). 없으면 빈 칸으로 둔다. */
+  var lesHead = ['P15', 'Q15', 'R15', 'S15'].map(function(k){ return String(c[k] || '').trim(); });
+  var teams = p4Teams(les);
+  p4Paint(teams, lesHead, dayLabel, '', false);
 }
 
 /* ══ 4면 오른쪽 ② 담당 편중 (GM 선택 2026-09-16 · 4번) ══
@@ -2675,22 +2678,86 @@ function loadPage4Sessions(d){
   }).catch(function(){ /* 세션 칸만 — 로 남는다 */ });
 }
 
-/* 4면 조회 — 기준일 일자탭의 O6:U34 한 번. 다른 칸은 안 읽는다. */
+/* 서버판 담당별 매출(배 12523(d)) — brojay.lists.by_owner(그날)·by_owner_month(그 달 1일~기준일 누적)를
+   시트 없이 그대로 쓴다. 서버 team 문자열은 sales_targets.json 표기 그대로라(예 'GXE(파트너팀)') 시트 표기
+   ('GXE팀' · P4_TEAM_STARTS·P4_HIDE·P4_TEAM_ROW 가 쓰는 이름)와 다를 수 있어 row 번호로 다시 이름을 붙인다.
+   환불(refund)은 서버가 이미 음수로 준다(브로제이 환불 결제 amt 그대로) — 순매출 = amount + refund. */
+function p4TeamNameOfRow(row){
+  var out = null;
+  Object.keys(P4_TEAM_ROW).forEach(function(nm){ if (P4_TEAM_ROW[nm] === row) out = nm; });
+  return out;
+}
+function p4TeamsFromServer(dayList, monthList){
+  var dayByRow = {}, monthByRow = {};
+  (dayList.teams || []).forEach(function(t){ dayByRow[t.row] = t; });
+  (monthList.teams || []).forEach(function(t){ monthByRow[t.row] = t; });
+  var teams = [];
+  [8, 9, 10, 11, 12, 13, 14, 15].forEach(function(row){
+    var name = p4TeamNameOfRow(row); if (!name) return;
+    var dOwners = {}, mOwners = {};
+    ((dayByRow[row] || {}).owners || []).forEach(function(o){ dOwners[o.owner] = o; });
+    ((monthByRow[row] || {}).owners || []).forEach(function(o){ mOwners[o.owner] = o; });
+    var names = Object.keys(dOwners).concat(Object.keys(mOwners)).filter(function(n, i, a){ return a.indexOf(n) === i; });
+    var sorted = names.filter(function(n){ return n !== '담당 미등록'; }).sort(function(a, b){
+      var ma = mOwners[a] ? (mOwners[a].amount + mOwners[a].refund) : 0;
+      var mb = mOwners[b] ? (mOwners[b].amount + mOwners[b].refund) : 0;
+      return mb - ma;
+    });
+    if (names.indexOf('담당 미등록') >= 0) sorted.push('담당 미등록');   // 미등록은 순위와 무관하게 맨 아래
+    var rows = sorted.map(function(n){
+      var d = dOwners[n] || { count: 0, amount: 0, refund: 0 };
+      var m = mOwners[n] || { count: 0, amount: 0, refund: 0 };
+      var x = { name: n, cols: [String(d.count || 0), String(d.amount || 0), String(d.refund || 0), String((d.amount || 0) + (d.refund || 0))],
+                acc: String((m.amount || 0) + (m.refund || 0)) };
+      if (P4_HIDE[n]) x.hide = true;
+      return x;
+    });
+    teams.push({ name: name, rows: rows });
+  });
+  return teams;
+}
+function p4SetSrcBadge(){
+  ['p4lesh', 'c7whoh'].forEach(function(id){
+    var h = document.getElementById(id), tag = h && h.querySelector('.src'); if (!tag) return;
+    tag.textContent = '브로제이 결제 × ERP 담당 칸 → 서버 · 미등록 = 강습 명단에 없는 회원';
+    tag.className = 'src bro';
+  });
+}
+function renderPage4Server(srv, dayLabel){
+  var bo = srv.brojay.lists.by_owner, boM = srv.brojay.lists.by_owner_month || { teams: [] };
+  var teams = p4TeamsFromServer(bo, boM);
+  var extra = ' · 담당 연결 ' + (bo.linked || 0) + ' · 미등록 ' + (bo.unlinked || 0);
+  p4Paint(teams, ['건수', '매출', '환불', '순매출'], dayLabel, extra, true);
+}
+/* 4면 조회 — 서버판(brojay.lists.by_owner)이 있으면 그것만 쓰고 시트 GAS 는 안 부른다(배 12523(d)).
+   GitHub Pages(ERP_API_ON=false)·서버판이 아직 없는 날은 종전대로 일자탭 O6:U34 를 GAS 로 읽는다(10/1 전환 전까지 유지). */
 function loadPage4(){
   var d = new Date(Date.now() - 86400000);
   var label = (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
-  drGet('dump', '&sheet=' + d.getDate() + '&range=O15:U66')   // GAS dump 는 400칸 근처가 상한(O6:U66 은 'range too large') — 머리 P15~S15 부터
-    .then(function(r){
-      if (!r || !r.ok || !r.cells) throw new Error('일자탭 조회 실패');
-      renderPage4(r.cells, label);
+  var sheetFallback = function(){
+    drGet('dump', '&sheet=' + d.getDate() + '&range=O15:U66')   // GAS dump 는 400칸 근처가 상한(O6:U66 은 'range too large') — 머리 P15~S15 부터
+      .then(function(r){
+        if (!r || !r.ok || !r.cells) throw new Error('일자탭 조회 실패');
+        renderPage4(r.cells, label);
+        loadPage4Sessions(d);
+      })
+      .catch(function(e){
+        var el = document.getElementById('err4');
+        if (el) el.innerHTML = '<div class="err">4면 그리기 실패 — ' + esc(e && e.message ? e.message : '조회 실패') + '</div>';
+        var a4 = document.getElementById('audit4');
+        if (a4) { a4.className = 'audit bad'; a4.innerHTML = '<b>일자탭을 못 읽었습니다</b>'; }
+      });
+  };
+  if (!ERP_API_ON) return sheetFallback();
+  serverCellsP().then(function(srv){
+    var bo = srv && srv.brojay && srv.brojay.lists && srv.brojay.lists.by_owner;
+    if (bo && bo.teams && bo.teams.length) {
+      renderPage4Server(srv, label);
       loadPage4Sessions(d);
-    })
-    .catch(function(e){
-      var el = document.getElementById('err4');
-      if (el) el.innerHTML = '<div class="err">4면 그리기 실패 — ' + esc(e && e.message ? e.message : '조회 실패') + '</div>';
-      var a4 = document.getElementById('audit4');
-      if (a4) { a4.className = 'audit bad'; a4.innerHTML = '<b>일자탭을 못 읽었습니다</b>'; }
-    });
+    } else {
+      sheetFallback();
+    }
+  });
 }
 
 /* ★서버 판 반영(GM 지시 2026-09-05 · 배1063 시포) — 업무보고방 09:20 「서버 판(병행)」과 같은 계산을 이 화면에도 얹는다.
