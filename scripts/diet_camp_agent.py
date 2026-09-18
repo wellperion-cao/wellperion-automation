@@ -530,9 +530,23 @@ def guard(draft: str) -> str | None:
 
 
 def _send(body: str, room: str = ROOM) -> bool:
-    p = subprocess.run(
-        [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
-        cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # timeout=900: 사람 사용 대기 최대 5분 + 카톡 잠금 대기 최대 3분 + 발신 자체 여유 → 15분.
+    try:
+        p = subprocess.run(
+            [sys.executable, str(SENDER), "--message", body, "--only-room", room, "--sender", "웰리"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=900)
+    except subprocess.TimeoutExpired as exc:
+        out = (exc.stdout or b"") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+        if isinstance(out, bytes):
+            out = out.decode("utf-8", errors="replace")
+        out = out.strip()
+        for line in out.splitlines():
+            print(f"[sender] {line}")
+        print("[agent] 발신 시간 초과(900초) — 미발신으로 처리")
+        # timeout 뒤 .kakao_gui.lock 이 남을 수 있으나 kakao_report_sender 가 10분 지난
+        # 잠금을 스스로 걷으므로(자가복구) 여기서 따로 지우지 않는다.
+        return False
     out = (p.stdout or "").strip()
     # 발신기 출력을 통째로 남긴다 — 마지막 한 줄만 남기면 '왜 안 나갔나'가 사라진다.
     # 2026-09-11(배 2522): 07:00 통이 안 나갔는데 남은 기록이 'DONE …' 한 줄뿐이라 원인을 못 쟀다.
