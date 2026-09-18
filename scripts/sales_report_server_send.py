@@ -123,7 +123,10 @@ def server_check_note():
 
 
 def _capture_pages(n):
-    """n면 캡처 — 실패는 (None, 사유). 요약표 폴백은 없다(GM 지시 2026-09-14)."""
+    """n면 캡처 — 실패는 (None, 사유). 요약표 폴백은 없다(GM 지시 2026-09-14).
+
+    보내기 전에 실제 파일이 있는지 여기서 한 번 더 확인한다 — capture() 가 돌려준 문자열이
+    깨져도(2026-09-18 사고처럼) 없는 경로를 그대로 sendPhoto 로 들고 가지 않는다."""
     try:
         import report_page_capture as cap
         code, msg = cap.capture(pages=cap.PAGES3 if n == 3 else ("sheet",))
@@ -133,7 +136,11 @@ def _capture_pages(n):
         return None, "%s: %s" % (type(e).__name__, str(e)[:160])
     if code:
         return None, msg
-    return msg.split("|"), ""
+    paths = msg.split("|")
+    missing = [p for p in paths if not Path(p).is_file()]
+    if missing:
+        return None, "캡처 결과 파일이 없음: " + ", ".join(missing)
+    return paths, ""
 
 
 def _switch_mode():

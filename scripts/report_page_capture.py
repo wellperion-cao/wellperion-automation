@@ -78,17 +78,28 @@ def capture(check_only: bool = False, pages: "tuple[str, ...]" = ("sheet",)) -> 
     """pages 의 요소(id)마다 PNG 한 장. 성공 msg = 경로들을 '|' 로 이은 문자열(1면만이면 경로 하나).
 
     ERP 판이 실패하면(권한·로그인 벽·서버) 공개 사본으로 한 번 더 찍는다 — 원천은 낮아져도 발송은 나간다.
-    어느 판을 찍었는지 msg 끝에 「· 원천 ERP/공개 사본」으로 붙는다(09:00 캡션·로그가 그대로 싣는다)."""
+    어느 판을 찍었는지는 check_only 때만 msg 끝에 「· 원천 ERP/공개 사본」으로 붙는다(사람이 읽는 점검 줄이라
+    괜찮다). 실제 캡처(check_only=False)에서는 msg 가 항상 순수 경로(들)여야 한다 — 호출부가 그대로
+    Path(msg) 로 열거나 '|' 로 쪼개 각각을 파일 경로로 쓰기 때문에, 여기 문구를 덧붙이면 마지막 경로가
+    깨진다(2026-09-18 실측: 3면 msg 끝에 붙은 「· 원천 공개 사본(ERP 판 실패: …)」가 3면 파일 경로에
+    섞여 OSError). 원천 정보는 stderr 로그로만 낸다."""
     global URL
     code, msg = _capture_once(check_only, pages)
     if code == 0:
-        return code, msg + (" · 원천 ERP" if "erp.wellperion.com" in URL else " · 원천 공개 사본")
+        src = "ERP" if "erp.wellperion.com" in URL else "공개 사본"
+        if check_only:
+            return code, msg + " · 원천 " + src
+        print("[report_page_capture] 원천 %s" % src, file=sys.stderr)
+        return code, msg
     if "erp.wellperion.com" in URL and not os.environ.get("REPORT_CAPTURE_URL"):
         first = msg
         URL = _PAGES_URL
         code, msg = _capture_once(check_only, pages)
         if code == 0:
-            return code, msg + " · 원천 공개 사본(ERP 판 실패: " + first[:80] + ")"
+            if check_only:
+                return code, msg + " · 원천 공개 사본(ERP 판 실패: " + first[:80] + ")"
+            print("[report_page_capture] 원천 공개 사본(ERP 판 실패: %s)" % first[:80], file=sys.stderr)
+            return code, msg
         return code, "ERP 판 실패(" + first[:80] + ") · 공개 사본도 실패(" + msg[:80] + ")"
     return code, msg
 
@@ -117,6 +128,12 @@ def _capture_once(check_only: bool, pages: "tuple[str, ...]") -> "tuple[int, str
             # (2026-09-15 실측: 화면은 새 판인데 캡처만 옛 판이 나왔다).
             _u = URL + ("&" if "?" in URL else "?") + "cb=" + str(int(time.time()))
             page.goto(_u, wait_until="domcontentloaded", timeout=60_000)
+            # 로그인 벽으로 튕기면 window.__REPORT_READY 는 그 페이지에 영영 없다 — 180초를 다 기다리지
+            # 않고 바로 실패시켜 공개 사본 폴백으로 넘어가게 한다(2026-09-18 실측: erp_session 이 만료돼
+            # /auth/login 으로 302 되는데도 READY_TIMEOUT_MS 를 통째로 태웠다).
+            if "erp.wellperion.com" in URL and "/auth/login" in page.url:
+                browser.close()
+                return 1, "로그인 벽 — 세션 만료(리다이렉트: " + page.url[:120] + ")"
             page.wait_for_function("() => window.__REPORT_READY != null", timeout=READY_TIMEOUT_MS)
             ready = page.evaluate("() => window.__REPORT_READY")
         except Exception as exc:
