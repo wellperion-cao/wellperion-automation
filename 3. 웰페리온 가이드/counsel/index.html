@@ -66,7 +66,11 @@ footer a{color:var(--accent-text)}
 // 이 파일 자체(웰페리온이 쓰는 원본)는 표시가 그대로 남아 있고, 사본은 렌더러가 업체 값으로 갈아 끼운다.
 // 표시만 걷어내면 원본은 1_wellperion, 사본은 그 업체 값이 된다 — 두 경우 다 아래 대조가 성립한다.
 var BAKED_TENANT = "<!--TENANT-->1_wellperion<!--/TENANT-->".replace(/<!--\/?TENANT-->/g, "");
-var TENANT_BY_PATH = {"/counsel/":"1_wellperion","/dietcamp/counsel/":"2_dietcamp","/gocheokgolf/counsel/":"3_gocheokgolf"};
+var TENANT_BY_PATH = {
+  "/counsel/":"1_wellperion", "/counsel/index.html":"1_wellperion",
+  "/dietcamp/counsel/":"2_dietcamp", "/dietcamp/counsel/index.html":"2_dietcamp",
+  "/gocheokgolf/counsel/":"3_gocheokgolf", "/gocheokgolf/counsel/index.html":"3_gocheokgolf"
+};
 var pathTenant = TENANT_BY_PATH[location.pathname] || null;
 var tenant = (pathTenant && pathTenant === BAKED_TENANT) ? pathTenant : null;
 if (!tenant) {
