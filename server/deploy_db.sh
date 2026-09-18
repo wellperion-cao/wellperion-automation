@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 
 $S 'mkdir -p /srv/erp/common'
 $SCP server/common/db.py server/common/schema.sql server/common/migrate_sqlite_to_pg.py \
-     server/common/setup_postgres.sh server/common/erp-pg-backup.sh $HOST:/srv/erp/common/
+     server/common/setup_postgres.sh server/erp_pg/erp-pg-backup.sh $HOST:/srv/erp/common/
 $S 'bash /srv/erp/common/setup_postgres.sh \
     && python3 /srv/erp/common/migrate_sqlite_to_pg.py \
     && sudo install -m 755 /srv/erp/common/erp-pg-backup.sh /usr/local/bin/erp-pg-backup.sh \
