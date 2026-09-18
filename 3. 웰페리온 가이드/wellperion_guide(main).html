@@ -468,8 +468,8 @@
     </div>
   </nav>
 
-  <!-- [GM 지시 2026-09-18 18:1x 정정] 「웰페리온 비서」 3줄 묶음(회의요약·번역·쓰임내역 개별 노출)은 삭제.
-       직원 메뉴 = 「AI」 묶음 두 줄만: AI 회의비서(회의 녹음·요약 → 업무 SSOT 업로드) · 상담봇(손님 상담 + 번역 탑재).
+  <!-- [GM 지시 2026-09-18 19:5x 정정] 「상담봇은 상담만, 번역기는 번역기만」 — 본질 분리.
+       직원 메뉴 = 「AI」 묶음 세 줄: AI 회의비서(회의 녹음·요약 → 업무 SSOT 업로드) · 상담봇(손님 상담) · AI 번역기(양방향 번역).
        ★상담봇 href는 반드시 "counsel/"(디렉터리) — "counsel/index.html"을 쓰면 상담 센터 판정이 실패해
        GM 화면에 오류가 뜬다. 묶음 머리를 누르면 O1 규격 설명 화면(AS1)이 뜬다. -->
   <div class="nav-label">AI</div>
@@ -478,6 +478,7 @@
     <div class="sub-nav" data-parent="ai-nav2">
       <a href="/erp/admin/meeting_note.html" target="_blank" rel="noopener">🎙 AI 회의비서</a>
       <a href="counsel/" target="_blank" rel="noopener">🤖 상담봇</a>
+      <a href="/erp/admin/translator.html" target="_blank" rel="noopener">🌐 AI 번역기</a>
     </div>
   </nav>
 
@@ -2011,17 +2012,18 @@
   </article>
   <!-- ── /M1 마케팅 관리 ── -->
 
-  <!-- AI 비서 모듈 설명 (2026-09-18 GM 지시·18:1x 정정 · O1 규격 박스 재사용 · 두 기능만) -->
+  <!-- AI 비서 모듈 설명 (2026-09-18 GM 지시·19:5x 정정 · O1 규격 박스 재사용 · 상담봇은 상담만·번역기는 번역기만) -->
   <article class="doc" id="AS1">
-    <div class="doc-header"><h2>AI 비서</h2><div class="meta">AI 회의비서 · 상담봇 · 화면은 웰페리온 AX 랩스(erp/admin/)</div></div>
+    <div class="doc-header"><h2>AI 비서</h2><div class="meta">AI 회의비서 · 상담봇 · AI 번역기 · 화면은 웰페리온 AX 랩스(erp/admin/)</div></div>
 
     <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
       <div style="font-size:var(--fs-1);font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:9px;">이 모듈은 · 웰페리온 AI 비서</div>
-      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">회의와 상담을 돕는 AI 비서 <span style="color:var(--text);">두 가지</span>를 모아둡니다.</div>
+      <div style="font-size:var(--fs-3);color:var(--text);line-height:1.7;font-weight:700;">회의·상담·번역을 돕는 AI 비서 <span style="color:var(--text);">세 가지</span>를 모아둡니다.</div>
       <div style="font-size:var(--fs-2);color:var(--dim);line-height:1.65;margin-top:6px;">화면은 <strong>웰페리온 AX 랩스</strong>(erp/admin/) 안에 있고, 여기는 파트너 ERP 홈에서 들어가는 문입니다.</div>
       <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:var(--fs-2);color:var(--dim);line-height:1.55;">
         <div>🎙 <strong style="color:var(--text);">AI 회의비서</strong> — 회의 녹음·요약 → 업무 SSOT 업로드.</div>
-        <div>🤖 <strong style="color:var(--text);">상담봇</strong> — 손님 상담, 번역 기능 탑재.</div>
+        <div>🤖 <strong style="color:var(--text);">상담봇</strong> — 손님 상담.</div>
+        <div>🌐 <strong style="color:var(--text);">AI 번역기</strong> — 양방향 번역.</div>
       </div>
     </div>
 
@@ -2031,7 +2033,10 @@
         <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">회의 녹음을 올리면 요약하고, 업무 SSOT 행 초안까지 만들어 줍니다.</span></a>
       <a href="counsel/" target="_blank" rel="noopener" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
         <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🤖 상담봇</span>
-        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">손님 상담 — 문의·질문에 바로 답, 번역 기능이 탑재돼 외국어 손님도 응대합니다.</span></a>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">손님 상담 — 문의·질문에 바로 답합니다.</span></a>
+      <a href="/erp/admin/translator.html" target="_blank" rel="noopener" style="display:block;padding:16px 18px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:var(--fs-4);font-weight:800;color:var(--text);">🌐 AI 번역기</span>
+        <span style="display:block;font-size:var(--fs-2);color:var(--dim);margin-top:6px;line-height:1.6;">외국어 손님과 양방향으로 번역해 대화합니다.</span></a>
     </div>
   </article>
   <!-- ── /AS1 AI 비서 ── -->
