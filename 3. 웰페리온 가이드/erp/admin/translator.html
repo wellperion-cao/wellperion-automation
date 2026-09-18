@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 번역가 — 웰페리온 ERP 관리자</title>
+<!-- AI 번역가 — 배 12804 · 2026-09-18 시보. GM 지시 2026-09-18 「상담 질문과 답을 받고 가공하여
+     사람이 상담하듯이 · 다음 단계는 목소리를 입히고 싶어」 의 다음 단계 실험. meeting_note.html 틀을
+     그대로 본뜬다(녹음=Web Speech API · 서버 업로드 없음 · 크롬 전용). 대화 기록·SSOT 반영 없음 —
+     그 순간 통역만. 번역 = 서버 POST /api/translate(server/erp_api/api_translate.py).
+     이 화면 자체는 회사 관리자 로그인 뒤(/erp/admin/)에만 뜬다 — 별도 비밀번호 커튼 없음. -->
+<link rel="stylesheet" href="../../assets/wp-ui.css">
+<link rel="stylesheet" href="platform_brand.css">
+<style>
+  :root{
+    --bg:var(--pf-panel,#EDF3F3); --paper:var(--pf-bg,#fff); --text:var(--pf-ink,#0F1E1E); --text-soft:var(--pf-soft,#3A4A4A);
+    --accent:var(--pf-pri,#0E9488); --accent-hover:var(--pf-pri-dk,#0A6E66);
+    --accent-bg:var(--pf-tint,rgba(14,148,136,.10)); --border:var(--pf-line,rgba(12,40,40,.12));
+  }
+  html{color-scheme:light;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--pf-sans,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif);
+       color:var(--text); background:var(--bg); line-height:1.55; font-size:var(--fs-3,14px);}
+  .wrap{width:100%; max-width:640px; margin:0; padding:24px 20px 60px;}
+  h1{font-family:var(--pf-head); font-size:var(--fs-5); font-weight:700; margin-bottom:4px;}
+  .sub{font-size:var(--fs-2); color:var(--text-soft); margin-bottom:16px;}
+  .bar{display:flex; gap:8px; align-items:center; margin:0 0 14px; flex-wrap:wrap;}
+  select.lang{font:inherit; font-size:var(--fs-2); padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--paper); color:var(--text);}
+  .btn{font:inherit; font-size:var(--fs-2); font-weight:600; padding:8px 16px; border-radius:8px; cursor:pointer;
+       border:1px solid var(--border); background:var(--paper); color:var(--text);}
+  .btn.p{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff;}
+  .btn.rec{background:#B3261E; border-color:#B3261E; color:#fff;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .msg{font-size:var(--fs-2); color:var(--text-soft); margin:0 0 12px;}
+  .msg.ok{color:var(--accent-hover); font-weight:600;}
+  .msg.bad{color:var(--pf-bad,#B3261E); font-weight:600;}
+  .chat{display:flex; flex-direction:column; gap:10px; min-height:220px;}
+  .bubble{max-width:78%; border-radius:12px; padding:10px 14px;}
+  .bubble.mine{align-self:flex-end; background:var(--accent-bg); border:1px solid var(--accent);}
+  .bubble.other{align-self:flex-start; background:var(--paper); border:1px solid var(--border);}
+  .bubble .orig{font-size:var(--fs-3); margin-bottom:3px;}
+  .bubble .tr{font-size:var(--fs-2); color:var(--text-soft);}
+  .empty{color:var(--text-soft); font-size:var(--fs-2); text-align:center; padding:40px 0;}
+  .note{font-size:var(--fs-1); color:var(--text-soft); margin-top:16px; line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 번역가 <span style="font-weight:500;color:var(--text-soft)">— 실시간 통역</span></h1>
+  <div class="sub">[대화 시작] 한 번 누르면 계속 듣습니다. 말이 끝나면 자동으로 번역해 읽어 줍니다.</div>
+
+  <div class="bar">
+    <select class="lang" id="otherLang">
+      <option value="en">영어</option>
+      <option value="ja">일본어</option>
+      <option value="zh">중국어</option>
+    </select>
+    <button type="button" class="btn" id="btnDir">내가 말함(한국어)</button>
+    <button type="button" class="btn rec" id="btnRec">대화 시작</button>
+  </div>
+  <div class="msg" id="statusMsg"></div>
+
+  <div class="chat" id="chat"><div class="empty">대화가 여기 쌓입니다.</div></div>
+
+  <div class="note">크롬에서만 지원됩니다(Web Speech API) — 마이크 소리는 서버로 전송되지 않고 브라우저 안에서만 글자로 바뀝니다. 텍스트만 번역 서버로 보냅니다.</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var LANG_NAME = { ko:'한국어', en:'영어', ja:'일본어', zh:'중국어' };
+var SPEECH_LOCALE = { ko:'ko-KR', en:'en-US', ja:'ja-JP', zh:'zh-CN' };
+
+var otherSel = document.getElementById('otherLang');
+var dirBtn = document.getElementById('btnDir');
+var recBtn = document.getElementById('btnRec');
+var statusMsg = document.getElementById('statusMsg');
+var chat = document.getElementById('chat');
+
+var mySide = true;   // true = 내가 말함(한국어 인식) · false = 상대가 말함(고른 언어 인식)
+var recognizing = false;
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+function currentSource(){ return mySide ? 'ko' : otherSel.value; }
+function currentTarget(){ return mySide ? otherSel.value : 'ko'; }
+
+function updateDirLabel(){
+  dirBtn.textContent = mySide
+    ? '내가 말함(' + LANG_NAME.ko + ')'
+    : '상대가 말함(' + LANG_NAME[otherSel.value] + ')';
+}
+dirBtn.addEventListener('click', function(){
+  mySide = !mySide;
+  updateDirLabel();
+  if (recognizing) restartRecognition();   // 방향이 바뀌면 인식 언어도 바꿔 다시 듣는다
+});
+otherSel.addEventListener('change', function(){
+  updateDirLabel();
+  if (recognizing) restartRecognition();
+});
+updateDirLabel();
+
+/* ── 인식(Web Speech API) — meeting_note.html 과 같은 continuous 패턴 ── */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var recognition = null;
+var restarting = false;   // 방향 전환·번역 중 stop() 뒤 onend 가 자동재시작하지 않게
+
+if (!SR) {
+  recBtn.disabled = true;
+  dirBtn.disabled = true;
+  otherSel.disabled = true;
+  statusMsg.textContent = '이 브라우저는 듣기를 지원하지 않습니다 — 크롬을 써 주세요.';
+  statusMsg.className = 'msg bad';
+} else {
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onresult = function(e){
+    var i = e.resultIndex;
+    var text = (e.results[i] && e.results[i][0] && e.results[i][0].transcript || '').trim();
+    if (text) handleUtterance(text);
+  };
+  recognition.onerror = function(e){
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      statusMsg.textContent = '마이크 권한이 없습니다 — 주소창 옆 자물쇠에서 마이크를 허용해 주세요.';
+      statusMsg.className = 'msg bad';
+      recognizing = false;
+      setRecUI();
+    }
+    // no-speech 등은 onend 가 이어서 자동 재시작
+  };
+  recognition.onend = function(){
+    if (recognizing && !restarting) {
+      try { recognition.start(); } catch (e) { /* 이미 돌고 있으면 무시 */ }
+    }
+  };
+}
+
+function setRecUI(){
+  recBtn.textContent = recognizing ? '대화 끝' : '대화 시작';
+  recBtn.className = recognizing ? 'btn' : 'btn rec';
+  if (recognizing) { statusMsg.textContent = '듣는 중… (' + (mySide ? LANG_NAME.ko : LANG_NAME[otherSel.value]) + ')'; statusMsg.className = 'msg ok'; }
+}
+
+function startRecognition(){
+  recognition.lang = SPEECH_LOCALE[currentSource()];
+  try { recognition.start(); } catch (e) { /* 이미 돌고 있으면 무시 */ }
+}
+
+function restartRecognition(){
+  restarting = true;
+  try { recognition.stop(); } catch (e) {}
+  setTimeout(function(){ restarting = false; if (recognizing) startRecognition(); setRecUI(); }, 200);
+}
+
+if (recognition) {
+  recBtn.addEventListener('click', function(){
+    if (!recognizing) {
+      recognizing = true;
+      startRecognition();
+      setRecUI();
+    } else {
+      recognizing = false;
+      restarting = true;
+      try { recognition.stop(); } catch (e) {}
+      setRecUI();
+      statusMsg.textContent = '대화 끝.';
+      statusMsg.className = 'msg';
+    }
+  });
+}
+
+/* ── 말 한 마디 처리 — 번역 요청 → 말풍선 → 읊기 ──────────────────────
+   ponytail: 번역·TTS 중엔 인식을 잠깐 멈춘다 — 안 그러면 스피커로 나가는 번역 음성을
+   마이크가 다시 주워 무한 루프가 될 수 있다(듣는 상대가 없는 시험 환경에서 실측). */
+function handleUtterance(text){
+  var mine = mySide;
+  var source = currentSource(), target = currentTarget();
+  restarting = true;
+  try { recognition.stop(); } catch (e) {}
+
+  var bubble = addBubble(mine, text, '번역 중…');
+  fetch('/api/translate', {
+    method: 'POST', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, source: source, target: target })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    var tr = d.translation || d.error || '(번역 실패)';
+    bubble.querySelector('.tr').textContent = tr;
+    speak(tr, target, function(){
+      restarting = false;
+      if (recognizing) { startRecognition(); setRecUI(); }
+    });
+  }).catch(function(){
+    bubble.querySelector('.tr').textContent = '(번역 요청 실패)';
+    restarting = false;
+    if (recognizing) { startRecognition(); setRecUI(); }
+  });
+}
+
+function addBubble(mine, orig, tr){
+  var empty = chat.querySelector('.empty'); if (empty) empty.remove();
+  var div = document.createElement('div');
+  div.className = 'bubble ' + (mine ? 'mine' : 'other');
+  div.innerHTML = '<div class="orig">' + esc(orig) + '</div><div class="tr">' + esc(tr) + '</div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function speak(text, lang, done){
+  if (!('speechSynthesis' in window) || !text) { done(); return; }
+  try {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = SPEECH_LOCALE[lang] || lang;
+    u.onend = done; u.onerror = done;
+    speechSynthesis.speak(u);
+  } catch (e) { done(); }
+}
+})();
+</script>
+</body>
+</html>
