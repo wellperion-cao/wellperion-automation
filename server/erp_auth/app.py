@@ -761,7 +761,10 @@ PLATFORM_ADMINS = frozenset(e.strip().lower() for e in os.environ.get("ERP_PLATF
 PLATFORM_PREFIX = "/erp/admin/"
 # 회사 관리자 도구 — 파일은 랩스 폴더에 있지만 웰페리온 ERP 관리 메뉴(/erp/ 「관리」) 안에서 여는 회사 것.
 # 플랫폼 판정(회사 계정만)에서 빼고 관리자 전용(ADMIN_ONLY_PREFIXES)만 건다 — 개인 아이디 관리자도 연다(GM 2026-09-18 「평가는 ERP 관리자로」).
-COMPANY_ADMIN_SCREENS = ("/erp/admin/screens.html", "/erp/admin/eval.html")
+COMPANY_ADMIN_SCREENS = ("/erp/admin/screens.html", "/erp/admin/eval.html",
+                         "/erp/admin/meeting_note.html", "/erp/admin/translator.html", "/erp/admin/assistant_usage.html")
+# AI 비서 화면 3장(배 12816) — is_platform_path 가 위에서 걸러 줘서(회사 계정만 뚫리는 규칙 예외) 여기까지 오면
+# 관리자 전용(ADMIN_ONLY_PREFIXES)만 남는다 — path_allowed 의 ASSISTANT_TENANT_SCREENS 가 그 관리자 전용도 예외로 연다.
 # 플랫폼(파는 쪽) 화면인데 아직 파트너사 경로에 남아 있는 것 — 회사 계정 관리자만 연다(배 2633 · 웰리 실측 2026-09-15).
 # 파일을 먼저 옮기면 기존 즐겨찾기가 깨지므로(2026-09-07 파트너팀 404) 자리 이동 전에 권한으로 먼저 막는다.
 # 회사 관리자 콘솔(/erp/admin/)이 이 경로들을 그대로 가리키므로 회사 계정에서는 링크가 그대로 산다.
