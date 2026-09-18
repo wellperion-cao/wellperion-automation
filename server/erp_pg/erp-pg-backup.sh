@@ -28,6 +28,27 @@ if ls /srv/erp/chat_log.jsonl* /srv/erp/chat_feedback.jsonl* >/dev/null 2>&1; th
   rm -f "$C"
 fi
 
+# 서버 파일 원장도 같이 올린다 (2026-09-18 · 배 12752 P1 #9 — 백업이 DB dump+chat_log 뿐이라 파트너 FAQ·권한·KPI 가 인스턴스와 함께 사라졌다).
+# 대상: /srv/erp/counselbot/** (FAQ·프로필·테넌트) · /srv/erp/auth/*.json (account_perms·dept_presets·eval_kpi·modules 등 데이터 · app.py 코드 제외)
+#       · /srv/erp/partner_secrets.json (api_partner_secrets.py 정본 · 600 — tar 가 모드를 보존하므로 root 로 풀면 600 그대로).
+# billing_subscriptions·billing_secrets·billing_charges 는 DB 표(common/schema.sql) — 위 pg_dump 가 -t/-n 없이 DB 전체를 뜨므로 이미 들어간다.
+# 보존 = chat/ 과 같은 버킷 수명주기(30일). 실패해도 DB 백업은 끝났으므로 멈추지 않는다.
+# 복원: aws s3 cp s3://wellperion-erp-backup/files/<날짜>.tar.gz /tmp/f.tgz  (S3 읽기는 관리자 자격으로 · 백업 역할은 쓰기 전용)
+#   sudo tar -xzpf /tmp/f.tgz -C /   → /srv/erp/counselbot/ · /srv/erp/auth/*.json · /srv/erp/partner_secrets.json 이 원래 자리에 놓인다
+#   그 뒤 systemctl restart erp-auth erp-api (auth 는 json 을 기동 때 읽는다 · 상담봇은 파일 직독이라 재기동 불필요)
+#   DB 는 gunzip -c erp-<날짜>.sql.gz | psql "$ERP_DB_URL" (billing 표 포함) · 순서 = DB 먼저, 파일 다음.
+#   확인: ls -l /srv/erp/partner_secrets.json 이 -rw------- 인지 · /api/auth/check 200 · 상담봇 FAQ 1건 조회.
+B=/tmp/files-$(TZ=Asia/Seoul date +%Y%m%d-%H%M).tar.gz
+FILES=$(ls -d /srv/erp/counselbot /srv/erp/auth/*.json /srv/erp/partner_secrets.json 2>/dev/null || true)
+if [ -n "$FILES" ]; then
+  if tar -czf "$B" -C / $(echo "$FILES" | sed 's#^/##')      && aws s3 cp --only-show-errors "$B" "s3://wellperion-erp-backup/files/$(basename "$B")" --region ap-northeast-2; then
+    echo "$(date '+%F %T') 파일 원장 백업 완료 files/$(basename "$B") $(stat -c %s "$B")B"
+  else
+    echo "$(date '+%F %T') 파일 원장 백업 실패 — 다음 회차 재시도"
+  fi
+  rm -f "$B"
+fi
+
 if [ "$(TZ=Asia/Seoul date +%u)" = "7" ]; then
   T0=$(date +%s)
   TABLES="members reception_items hold_items todo_items inquiries member_change_log write_log sync_meta"
