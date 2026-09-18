@@ -620,7 +620,7 @@ input.dvin-err{border-color:#b3261e!important;background:rgba(179,38,30,.07)}
   </div></div>
   <div class="note-row" id="noteRow">
     <span class="badge b-gold">상시 편집</span>
-    <span id="editHint" class="muted">칸·락커를 눌러 바로 수정합니다 · 첫 저장 시 쓰기 비밀번호를 한 번 입력합니다 · 자동계산(수식) 칸은 잠겨 있습니다.</span>
+    <span id="editHint" class="muted">칸·락커를 눌러 바로 수정합니다 · 자동계산(수식) 칸은 잠겨 있습니다.</span>
   </div>
   <div id="kpiHost" style="max-width:var(--pagew,1280px);margin:0 auto;padding:0 20px"></div>
   <div id="gridHost"></div>
@@ -845,6 +845,13 @@ async function call(payload){
     /* 수정 로그(2026-07-25) — 모든 쓰기가 이 함수를 지나므로 여기서 일괄 기록(메뉴얼 제외) */
     if(json && json.ok && (payload.action==='update'||payload.action==='append') && payload.tab!=='업무 및 기초 메뉴얼')
       editLogSend(payload, json);
+    /* 서버 비밀 저장소 자동 첨부 실패(배 12781·2026-09-18) — adminPassword 를 안 보냈는데(서버 저장소에도
+       없어) unauthorized 면 그때만 모달로 실제 비밀번호를 받아 같은 요청을 한 번 다시 보낸다.
+       위 "쓰기는 1회만"과는 다른 자리 — 이건 인증 실패라 GAS 가 애초에 쓰지 않았다는 게 확실하다. */
+    if(json && json.error==='unauthorized' && 'adminPassword' in payload && !payload.adminPassword){
+      const pw=await askAdminPw();
+      if(pw) return call(Object.assign({}, payload, {adminPassword:pw}));
+    }
     return json;
   }
 }
@@ -3528,13 +3535,17 @@ async function addRow(){
   });
 }
 
-/* ── 관리자 비번 확보 ── */
-function ensureAdmin(run, onCancel){
-  if(state.adminPw){ run(); return; }
-  state.pendingAdmin={run,onCancel};
-  document.getElementById('adminInput').value='';
-  document.getElementById('adminModal').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('adminInput').focus(),50);
+/* ── 관리자 비번 확보 ──
+   배 12781(2026-09-18) — 서버가 비밀 저장소에서 자동 첨부를 먼저 시도하므로 여기서 미리 묻지 않는다.
+   ensureAdmin 은 그대로 실행하고, 실패(unauthorized)는 call() 이 감지해 askAdminPw() 로 모달을 띄운다. */
+function ensureAdmin(run){ run(); }
+function askAdminPw(){
+  return new Promise(resolve=>{
+    state.pendingAdmin={resolve};
+    document.getElementById('adminInput').value='';
+    document.getElementById('adminModal').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('adminInput').focus(),50);
+  });
 }
 function confirmAdmin(){
   const v=document.getElementById('adminInput').value.trim();
@@ -3542,11 +3553,11 @@ function confirmAdmin(){
   state.adminPw=v; sessionStorage.setItem('rc_adminpw',v);
   document.getElementById('adminModal').classList.add('hidden');
   syncRolePill();
-  const p=state.pendingAdmin; state.pendingAdmin=null; if(p&&p.run) p.run();
+  const p=state.pendingAdmin; state.pendingAdmin=null; if(p&&p.resolve) p.resolve(v);
 }
 function closeAdmin(){
   document.getElementById('adminModal').classList.add('hidden');
-  const p=state.pendingAdmin; state.pendingAdmin=null; if(p&&p.onCancel) p.onCancel();
+  const p=state.pendingAdmin; state.pendingAdmin=null; if(p&&p.resolve) p.resolve('');
 }
 function logout(){
   state.pw=''; sessionStorage.removeItem('rc_pw');
@@ -3559,15 +3570,25 @@ function logout(){
 }
 
 /* ── 시작 ── */
+function showGate(){
+  buildNav(); syncNav();
+  setTimeout(()=>document.getElementById('pwInput').focus(),100);
+}
 (function init(){
   rlogFlush();   /* 서버 미가동 등으로 파일에 못 쓴 로그 재전송 */
   if(state.pw){
     document.getElementById('loginModal').classList.add('hidden');
     if(!state.url){ document.getElementById('setupModal').classList.remove('hidden'); }
     else buildHome();
+  } else if(state.url){
+    /* 서버 비밀 저장소 자동 첨부 시도(배 12781·2026-09-18) — 빈 비밀번호로 먼저 넣어 보고 되면 모달 없이 진행,
+       실패(unauthorized)면 그때만 직원 비밀번호를 묻는다. */
+    call({action:'read', tab:GATE_PROBE_TAB, password:''}).then(r=>{
+      if(r && r.error==='unauthorized') showGate();
+      else{ document.getElementById('loginModal').classList.add('hidden'); buildHome(); }
+    }).catch(showGate);
   } else {
-    buildNav(); syncNav();
-    setTimeout(()=>document.getElementById('pwInput').focus(),100);
+    showGate();
   }
 })();
 </script>

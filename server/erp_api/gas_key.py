@@ -21,6 +21,11 @@ RECEPTION_URL_KEY = "RECEPTION_EXEC_URL"
 BODY_KEYS = {RECEPTION_URL_KEY: ("RECEPTION_TOKEN", "key"),
              "TODO_GAS_URL": ("TODO_WRITE_SECRET", "srvkey")}
 
+# 배 12781(2026-09-18 GM 지시) — 리셉션 업무·라커관리 쓰기 비밀번호(adminPassword)는 위 BODY_KEYS 와 달리
+# env 가 아니라 partner_secrets(tenant=wellperion) 에 있다(화면 입력 대신 서버가 채운다). 모양이 달라
+# 별도 표로 두고 sign_body() 안에서 따로 처리한다.
+ADMIN_SECRET_CHANNELS = {"RCOPS_GAS_URL": "reception-admin", "LOCKER_GAS_URL": "locker-admin"}
+
 
 def key_for(url_key):
     """접수 GAS 로 갈 때만 열쇠를 준다. 다른 GAS(회원·업무·점검…)에는 절대 붙이지 않는다."""
@@ -40,22 +45,34 @@ def sign_params(url_key, params):
 
 
 def sign_body(url_key, body):
-    """POST 본문(bytes JSON)에 그 GAS 의 열쇠 칸을 얹는다(BODY_KEYS). 열쇠 없음·JSON 아님·이미 있음 = 원본 그대로.
+    """POST 본문(bytes JSON)에 그 GAS 의 열쇠 칸을 얹는다(BODY_KEYS) + 리셉션·라커 쓰기 비밀번호를 채운다
+    (ADMIN_SECRET_CHANNELS · 배 12781). 열쇠·비밀번호 없음·JSON 아님·이미 있음 = 그 칸은 원본 그대로.
 
     ★열쇠는 GAS 로 나가는 본문에만 붙는다 — 원장(write_log·intake_log)은 이 함수를 거치기 전 본문을 적으므로
       비밀값이 DB 에 남지 않는다. 값이 비어 있으면 아무것도 하지 않으니 스위치를 켜기 전 배포해도 회귀 0."""
     env, field = BODY_KEYS.get(url_key, ("", ""))
     k = os.environ.get(env, "").strip() if env else ""
-    if not k:
-        return body
-    try:
-        d = json.loads(body.decode("utf-8"))
-    except Exception:
-        return body
-    if not isinstance(d, dict) or d.get(field):
-        return body
-    d[field] = k
-    return json.dumps(d, ensure_ascii=False).encode("utf-8")
+    if k:
+        try:
+            d = json.loads(body.decode("utf-8"))
+        except Exception:
+            d = None
+        if isinstance(d, dict) and not d.get(field):
+            d[field] = k
+            body = json.dumps(d, ensure_ascii=False).encode("utf-8")
+    admin_channel = ADMIN_SECRET_CHANNELS.get(url_key)
+    if admin_channel:
+        try:
+            d = json.loads(body.decode("utf-8"))
+        except Exception:
+            return body
+        if isinstance(d, dict) and not d.get("adminPassword"):
+            import api_partner_secrets   # 이 자리에서만 쓰므로 최상단 대신 여기서
+            pw = api_partner_secrets.secret_pw("wellperion", admin_channel)
+            if pw:
+                d["adminPassword"] = pw
+                body = json.dumps(d, ensure_ascii=False).encode("utf-8")
+    return body
 
 
 if __name__ == "__main__":
@@ -82,4 +99,18 @@ if __name__ == "__main__":
     assert json.loads(sign_body("TODO_GAS_URL", todo).decode("utf-8"))["srvkey"] == "t0d0"
     assert "srvkey" not in json.loads(sign_body(RECEPTION_URL_KEY, body).decode("utf-8"))   # 남의 GAS 로 새면 안 된다
     assert sign_body("CHECK_GAS_URL", todo) == todo               # 표에 없는 GAS 는 그대로
+
+    # 배 12781 — 리셉션·라커 쓰기 비밀번호는 partner_secrets 에서(가짜값 Xample1234! · 실값 금지)
+    import api_partner_secrets
+    _orig = api_partner_secrets.secret_pw
+    api_partner_secrets.secret_pw = lambda tenant, channel: "Xample1234!" if (tenant, channel) == ("wellperion", "reception-admin") else ""
+    try:
+        rc = json.dumps({"action": "update", "tab": "키관리"}, ensure_ascii=False).encode("utf-8")
+        assert json.loads(sign_body("RCOPS_GAS_URL", rc).decode("utf-8"))["adminPassword"] == "Xample1234!"
+        rc2 = json.dumps({"action": "update", "tab": "키관리", "adminPassword": "화면이보낸값"}, ensure_ascii=False).encode("utf-8")
+        assert sign_body("RCOPS_GAS_URL", rc2) == rc2                                    # 이미 있으면 안 건드림
+        lk = json.dumps({"action": "update", "db": "men"}, ensure_ascii=False).encode("utf-8")
+        assert "adminPassword" not in json.loads(sign_body("LOCKER_GAS_URL", lk).decode("utf-8"))  # 저장소에 없으면 무변경
+    finally:
+        api_partner_secrets.secret_pw = _orig
     print("gas_key 자체점검 OK")

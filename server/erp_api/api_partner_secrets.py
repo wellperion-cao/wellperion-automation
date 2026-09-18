@@ -23,7 +23,11 @@ router = APIRouter()
 
 SECRETS_FILE = os.environ.get("PARTNER_SECRETS_FILE", "/srv/erp/partner_secrets.json")
 CHANNELS = ("naver-blog", "naver-cafe", "danggn", "instagram", "threads", "google", "kakao-channel", "parking",
-            "bodyfriend")   # GM 2026-09-15 스레드·구글 추가 · parking = 주차 관리 서비스(ppark-wall · 배 2668) · 화면은 이 순서로 자리를 만든다
+            "bodyfriend",
+            "reception-ops", "reception-admin", "locker-ops", "locker-admin")
+            # GM 2026-09-15 스레드·구글 추가 · parking = 주차 관리 서비스(ppark-wall · 배 2668) · 화면은 이 순서로 자리를 만든다
+            # 마지막 4개 = 배 12781(2026-09-18 GM 지시) — 리셉션 업무·라커관리 화면의 GAS 비밀번호(읽기·쓰기)를
+            # 화면 입력 대신 서버가 여기서 자동 첨부한다(tenant="wellperion" 고정 · parking·bodyfriend 와 같은 1호 전용 선례).
 
 
 def _user(request):
@@ -49,6 +53,12 @@ def _save(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
     os.chmod(tmp, 0o600)
     os.replace(tmp, SECRETS_FILE)
+
+
+def secret_pw(tenant, channel):
+    """서버 자동 첨부용 — 비밀번호 한 값만, 없으면 빈 문자열(배 12781). id·note 는 안 준다 —
+    코드 검사(_code_ok)를 안 거치는 서버 내부 호출 전용이라, GM 승인 화면 경로(reveal)와 달리 값을 그대로 돌려준다."""
+    return _load().get(tenant + "/" + channel, {}).get("pw", "")
 
 
 def _code_ok(code):
@@ -183,6 +193,8 @@ def selftest():
         assert stat.S_IMODE(os.stat(SECRETS_FILE).st_mode) == 0o600 or os.name == "nt"
         row = listing(_load())[0]
         assert row["id_masked"] == "go**********" and row["has_pw"] and "Xample" not in json.dumps(row)
+        assert secret_pw("jo", "naver-blog") == "Xample1234!"           # 배 12781 — 있으면 그 값
+        assert secret_pw("wellperion", "reception-ops") == ""           # 없으면 빈 문자열(가짜값 금지)
     assert _key({"tenant": "jo", "channel": "instagram"}) == "jo/instagram"
     assert _key({"tenant": "jo", "channel": "tiktok"}) is None and _key({"tenant": "a/b", "channel": "instagram"}) is None
     assert mask_id("ab") == "ab***"

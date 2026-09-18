@@ -13,7 +13,9 @@
                                    그것마저 막히면 _stale 을 쓴다(_assets/erp_write.js erpRcPost).
   GET  /api/reception-ops/health   쥐고 있는 시트·시각·환경변수 유무
 
-비밀번호는 서버가 쥐지 않는다. 화면이 실은 그대로 GAS 에 넘기고 판정도 GAS 가 한다(읽기 비번·쓰기 비번 모두).
+비밀번호 판정은 여전히 GAS 가 한다 — 서버는 검사하지 않는다. 다만 화면이 안 보내면(빈 값 · 배 12781 ·
+GM 2026-09-18) partner_secrets(tenant=wellperion · _READ_CHANNEL) 에서 채워 GAS 로 넘긴다. 화면이 값을
+보내면(과도기·직접 입력) 그대로 둔다 — 서버 값을 덮어쓰지 않는다.
 마지막 정상본은 그 응답을 만들어 낸 비밀번호의 sha256 과 함께 쥐고 같은 비밀번호로 물어볼 때만 돌려준다.
 개인정보(성함·전화)가 들어 있으므로 DB 에 남기지 않는다 — 프로세스 메모리뿐이고 재시작하면 사라진다.
 쓰기가 통하면 그 시트의 정상본은 버린다(api_write 가 forget 호출) — 낡은 값을 실패 대비로 내주지 않는다.
@@ -42,6 +44,8 @@ FORWARD_TIMEOUT = 20          # 화면 폴링 주기(30초)보다 짧게 — 55�
 _LAST = {}                    # (환경변수 열쇠, 시트) -> {"pw": sha256, "data": {...}, "at": KST}
 _LAST_MAX = 32                # 리셉션 9시트 + 라커 3탭 — ponytail: 상한만 두고 가장 먼저 들어온 것부터 버린다
 _WRITE_ACTIONS = ("update", "append")
+_READ_CHANNEL = {"RCOPS_GAS_URL": "reception-ops", "LOCKER_GAS_URL": "locker-ops"}   # 배 12781 — 화면 비밀번호 대신
+# 서버가 partner_secrets(tenant=wellperion)에서 채워 준다. 화면이 값을 보내면(과도기) 그대로 둔다.
 
 router = APIRouter()
 
@@ -82,6 +86,16 @@ def remember(t, payload, data):
     _LAST[t] = {"pw": _pw(payload), "data": data, "at": _kst()}
 
 
+def _fill_password(payload, t):
+    """password 가 비어 있고 t 가 읽기 비번 채널이 있는 목적지면 partner_secrets 값으로 채운 새 dict.
+    이미 값이 있으면(과도기·직접 입력) 원본과 같은 객체를 그대로 돌려준다(호출부는 `is not` 로 변경 여부를 안다).
+    배 12781(2026-09-18 GM 지시) — 화면 비밀번호 입력 대신 서버가 채운다."""
+    if payload.get("password") or not _READ_CHANNEL.get(t[0]):
+        return payload
+    import api_partner_secrets   # 이 자리에서만 쓰므로 최상단 대신 여기서
+    return dict(payload, password=api_partner_secrets.secret_pw("wellperion", _READ_CHANNEL[t[0]]))
+
+
 def forget(payload):
     """쓰기가 통한 시트의 마지막 정상본을 버린다 — 낡은 값을 실패 대비로 내주지 않는다. 해당 없으면 아무 일 없음."""
     t = target(payload)
@@ -118,6 +132,9 @@ def reception_ops(request: Request, body: bytes = Body(b"")):
     if write_gas_key(payload.get("action", ""), payload):
         # 쓰기가 이리 오면 write_log 이중기록이 빠진다. 화면이 관문을 잘못 고른 것 — 조용히 흘려보내지 않는다.
         return {"ok": False, "error": "bad-payload", "detail": "쓰기는 /api/write 로", "noRetry": True}
+    filled = _fill_password(payload, t)
+    if filled is not payload:
+        payload, body = filled, json.dumps(filled, ensure_ascii=False).encode("utf-8")
     url = os.environ.get(t[0], "")
     if not url:
         return _failed("%s 없음 — /srv/erp/api.env" % t[0], t, payload)
@@ -162,6 +179,21 @@ def selftest():
     assert write_gas_key("read", {"tab": "키관리"}) is None                  # 읽기는 /api/write 로 안 간다
     assert write_gas_key("save", {"tab": "키관리"}) is None                  # 점검 GAS 액션이 새면 안 된다
     assert write_gas_key("update", {"no": "M1"}) is None
+
+    # 배 12781 — password 비었으면 저장소 값으로 채움 · 있으면 안 건드림(가짜값 Xample1234! · 실값 금지)
+    import api_partner_secrets
+    _orig = api_partner_secrets.secret_pw
+    api_partner_secrets.secret_pw = lambda tenant, channel: "Xample1234!" if (tenant, channel) == ("wellperion", "reception-ops") else ""
+    try:
+        p1 = {"action": "read", "tab": "키관리"}
+        f1 = _fill_password(p1, ("RCOPS_GAS_URL", "키관리"))
+        assert f1 is not p1 and f1["password"] == "Xample1234!"
+        p2 = {"action": "read", "tab": "키관리", "password": "화면이보낸값"}
+        assert _fill_password(p2, ("RCOPS_GAS_URL", "키관리")) is p2               # 이미 있으면 그대로
+        p3 = {"action": "read", "db": "men"}
+        assert _fill_password(p3, ("LOCKER_GAS_URL", "men"))["password"] == ""    # 저장소에 없으면 빈 값(가짜 채우지 않음)
+    finally:
+        api_partner_secrets.secret_pw = _orig
 
     _LAST.clear()
     t = ("RCOPS_GAS_URL", "키관리")

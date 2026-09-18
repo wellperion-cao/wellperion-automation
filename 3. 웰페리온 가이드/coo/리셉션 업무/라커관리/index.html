@@ -207,8 +207,10 @@ function lkSetFilter(f){ kpiFilter = (kpiFilter===f)?null:f; render(); updateKpi
 
 /* ===== 로그인 ===== */
 const loginEl=document.getElementById('login');
-async function tryLogin(pw){
-  document.getElementById('pwErr').textContent='확인 중…';
+/* silent=true — 서버 비밀 저장소 자동 첨부 시도(배 12781·2026-09-18). 빈 비밀번호로 먼저 넣어 보고,
+   되면 로그인 화면 없이 바로 들어간다 · 실패해도 화면에 오류를 안 띄우고 조용히 평소 로그인칸으로 둔다. */
+async function tryLogin(pw, silent){
+  if(!silent) document.getElementById('pwErr').textContent='확인 중…';
   PW = pw;
   const res = await readDb('men').catch(e=>({ok:false,error:String(e)}));
   if(res && res.ok){
@@ -218,10 +220,10 @@ async function tryLogin(pw){
     document.getElementById('app').style.display='';
     startApp();
   } else {
-    document.getElementById('pwErr').textContent =
+    PW='';
+    if(!silent) document.getElementById('pwErr').textContent =
       (res && res.error==='unauthorized') ? '비밀번호가 맞지 않습니다.' :
       ('연결 오류: ' + ((res&&res.error)||'알 수 없음'));
-    PW='';
   }
 }
 document.getElementById('pwBtn').onclick=()=>tryLogin(document.getElementById('pwIn').value);
@@ -357,8 +359,8 @@ function nowStr(){ const d=new Date(); return d.getHours().toString().padStart(2
 let toastT;
 function toast(msg,bad){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(bad?' bad':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2600); }
 
-/* 세션에 비번 있으면 자동 로그인 시도 */
-if(PW){ tryLogin(PW); }
+/* 세션에 비번 있으면 자동 로그인, 없으면 서버 자동 첨부를 조용히 한 번 시도(배 12781) */
+if(PW){ tryLogin(PW); } else { tryLogin('', true); }
 </script>
 <script defer src="../../../_assets/page_ping.js"></script>
 <script src="../../../_assets/ai_owner_badge.js" defer></script>
