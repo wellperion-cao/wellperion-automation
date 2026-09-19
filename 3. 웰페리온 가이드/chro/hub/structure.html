@@ -556,7 +556,10 @@
     try{
       // 읽기 서버 우선(/api/hr/autolog) · 안 되면 종전 구글(GAS) 그대로 — 기존 F섹션 정직 배지와 동일 방식.
       var j = await window.erpReadFirst('/api/hr/autolog?limit=600&offset=0', async function(){
-        var res = await fetch(EXEC_URL, { method: "POST", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
+        // cache:'no-store' 필수 — GAS /exec POST가 302로 content.googleusercontent.com GET에 리다이렉트되는데,
+        // 그 최종 GET이 장기 세션(초단위 반복 폴링)에서 브라우저 HTTP 캐시에 잡히면 3초 폴링을 해도 몇십초째
+        // 옛 응답만 돌아온다(2026-09-19 실측 — curl은 매번 새 프로세스라 재현 안 되고, 장시간 열린 탭에서만 재현).
+        var res = await fetch(EXEC_URL, { method: "POST", cache: "no-store", body: JSON.stringify({ action: "autolog-list", limit: 600, offset: 0 }) });
         return await res.json();
       }, {needRows:true});
       if(mySeq !== pollSeq) return; // 더 최신 폴링이 이미 시작됨 — 느리게 도착한 이 응답으로 화면을 되돌리지 않는다
