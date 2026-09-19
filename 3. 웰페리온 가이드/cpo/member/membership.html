@@ -12309,7 +12309,7 @@ function _lmcLoadBrojay(digits) {
       var it = (d && d.items && d.items[digits]) || null;
       var rows = [];
       // 상태는 브로제이 영문 코드(고객 단위 1개) 대신 기간별로 날짜에서 계산 — 실무진 화면에 영문 금지 (직접실행: 두 줄 교체)
-      var today = new Date().toISOString().slice(0, 10);
+      var today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);  // 한국 날짜 (직접실행: 한 줄)
       var st = function(s, e){ return (e && e < today) ? '만료' : (s && s > today) ? '시작 전' : '이용 중'; };
       if (it) {
         if (it.member_start || it.member_end) rows.push(['회원권', it.member_start || '—', it.member_end || '—', st(it.member_start, it.member_end)]);
