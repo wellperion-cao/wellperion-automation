@@ -39,14 +39,14 @@
   .serif{font-family:'Nanum Myeongjo','Batang','바탕',Georgia,serif}
   .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 
-  /* ── 헤더 ─────────────────────────── */
+  /* ── 헤더(사이트 식별 — 2026-09-19 매니저 지시로 히어로는 관제판 아래 .hero2로 이동, 여기는 슬림 밴드만) ── */
   header{
     background:var(--ink); color:#EDEBE2;
-    padding:52px 0 44px; border-bottom:4px solid var(--brass);
+    padding:20px 0 18px; border-bottom:4px solid var(--brass);
   }
   .eyebrow{
     font-size:11px; letter-spacing:.42em; text-transform:uppercase;
-    color:var(--brass); margin-bottom:16px; font-weight:700;
+    color:var(--brass); font-weight:700;
   }
   h1{
     font-family:'Nanum Myeongjo','Batang','바탕',Georgia,serif;
@@ -63,6 +63,13 @@
     padding:4px 12px;letter-spacing:.06em;
   }
   .header-meta .pill b{color:var(--brass);font-weight:700}
+
+  /* ── 히어로(관제판 바로 아래, 라이트 지면) — 2026-09-19 매니저 지시로 이동 ── */
+  .hero2{padding:48px 0 8px}
+  .hero2 .header-sub{color:var(--muted)}
+  .hero2 .header-meta{color:var(--muted)}
+  .hero2 .header-meta .pill{border-color:var(--line);background:var(--card)}
+  .hero2 .header-meta .pill b{color:#6B5620} /* 라이트 지면용 다크골드 — .tag.act와 동일 값(AA 6.29:1) */
 
   /* ── 섹션 공통 ─────────────────────── */
   section{padding:44px 0 8px}
@@ -259,49 +266,67 @@
     .cpv1{display:none}
   }
 
-  /* ── 실시간 관제판 v1 (읽기 전용 · 자동화로그 실측, 2026-09-18 신설) ── */
-  .cpv1{background:var(--ink);color:#EDEBE2;padding:26px 0 30px;border-bottom:3px solid var(--brass)}
+  /* ── 실시간 관제판 v1 (읽기 전용 · 자동화로그 실측, 2026-09-18 신설 · 2026-09-19 청색 전환) ──
+     토큰은 .cpv1 범위로만 스코프(전역 --ink는 다른 섹션이 공유하므로 무변경). 라이트=기본,
+     다크=OS prefers-color-scheme, 전 쌍 AA 4.5:1↑ 확보(카드 오버레이 합성 기준까지 검증). */
+  .cpv1{
+    --cpv1-bg:#16223D; --cpv1-surface:rgba(255,255,255,.045); --cpv1-surface-alt:rgba(255,255,255,.025);
+    --cpv1-border:rgba(199,209,232,.18); --cpv1-border-soft:rgba(199,209,232,.12);
+    --cpv1-text:#E9EEF8; --cpv1-text-2:#CBD6EA; --cpv1-text-3:#9FADC9; --cpv1-text-4:#8A97AC;
+    --cpv1-th-bg:#0F1830;
+    background:var(--cpv1-bg);color:var(--cpv1-text);padding:26px 0 30px;border-bottom:3px solid var(--brass);
+  }
+  @media (prefers-color-scheme:dark){
+    .cpv1{
+      --cpv1-bg:#0B1220; --cpv1-surface:rgba(255,255,255,.055); --cpv1-surface-alt:rgba(255,255,255,.03);
+      --cpv1-border:rgba(199,209,232,.22); --cpv1-border-soft:rgba(199,209,232,.14);
+      --cpv1-text:#EEF2FA; --cpv1-text-2:#D3DCEE; --cpv1-text-3:#AAB8D2; --cpv1-text-4:#828FA4;
+      --cpv1-th-bg:#080D1A;
+    }
+  }
   .cpv1 .wrap{max-width:2400px} /* 2026-09-19 매니저 지시 — 관제판만 폭 확장(다른 섹션 .wrap은 1120px 그대로) */
   .cpv1-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
   .cpv1-title{font-family:'Nanum Myeongjo','Batang',Georgia,serif;font-size:19px;font-weight:800;letter-spacing:.01em}
   .cpv1-badge-v{background:var(--brass);color:var(--ink);font-size:10px;font-weight:800;padding:1px 7px;border-radius:2px;margin-left:6px;vertical-align:middle}
-  .cpv1-note{margin-left:auto;font-size:11px;color:#B9C0B6}
+  .cpv1-note{margin-left:auto;font-size:11px;color:var(--cpv1-text-3)}
   .cpv1-counters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-  .cpv1-ct{background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.16);border-radius:4px;padding:13px 14px;text-align:center}
+  .cpv1-ct{background:var(--cpv1-surface);border:1px solid var(--cpv1-border);border-radius:4px;padding:13px 14px;text-align:center}
   .cpv1-ct .n{font-size:30px;font-weight:800;color:var(--brass);font-family:'Nanum Myeongjo','Batang',Georgia,serif;line-height:1.1}
-  .cpv1-ct .l{font-size:12px;color:#B9C0B6;margin-top:4px;letter-spacing:.03em}
-  .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:#8B9389;margin:20px 0 9px;font-weight:700}
+  .cpv1-ct .l{font-size:12px;color:var(--cpv1-text-3);margin-top:4px;letter-spacing:.03em}
+  .cpv1-sub{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--cpv1-text-4);margin:20px 0 9px;font-weight:700}
   .cpv1-agents{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
   .cpv1-agents>*{min-width:0}
-  .cpv1-ac{min-width:0;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:4px;padding:8px 9px 7px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
+  .cpv1-ac{min-width:0;overflow:hidden;background:var(--cpv1-surface);border:1px solid var(--cpv1-border);border-radius:4px;padding:8px 9px 7px;text-align:left;display:flex;flex-direction:column;transition:border-color .3s}
   .cpv1-ac.on{border-color:rgba(78,158,122,.45)}
-  .cpv1-ac.ip{border-color:#B88A44;box-shadow:0 0 0 1px rgba(184,138,68,.3)}
+  .cpv1-ac.ip{border-color:#B88A44;box-shadow:0 0 0 1px rgba(184,138,68,.3);animation:cpv1ippulse 1.8s ease-in-out infinite}
+  @keyframes cpv1ippulse{0%,100%{box-shadow:0 0 0 1px rgba(184,138,68,.3)}50%{box-shadow:0 0 0 1px rgba(184,138,68,.65)}}
+  @media (prefers-reduced-motion:reduce){ .cpv1-ac.ip{animation:none;box-shadow:0 0 0 1px rgba(184,138,68,.45)} }
   .cpv1-ac-hd{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
   .cpv1-ac .seal{display:inline-block;color:#fff;font-weight:800;font-size:10.5px;padding:2px 6px;border-radius:2px;letter-spacing:.04em}
-  .cpv1-ac .nm{font-size:11.5px;font-weight:700;color:#EDEBE2;line-height:1.25}
-  .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap}
+  .cpv1-ac .nm{font-size:11.5px;font-weight:700;color:var(--cpv1-text);line-height:1.25}
+  .cpv1-ac .ip-badge{font-size:8px;font-weight:800;color:#F0C572;margin-left:auto;letter-spacing:.02em;animation:cpv1pulse 1.4s ease-in-out infinite;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72%}
   @keyframes cpv1pulse{0%,100%{opacity:1}50%{opacity:.32}}
-  .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:10px;color:#8B9389;margin-top:5px}
-  .cpv1-ac-meta .cnt{font-weight:700;color:#B9C0B6}
-  .cpv1-ac-feed{min-width:0;margin-top:5px;border-top:1px solid rgba(233,226,204,.1);padding-top:4px;min-height:108px;max-height:108px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
-  .cpv1-ac-feed .row{min-width:0;max-width:100%;font-size:10.5px;line-height:1.4;color:#D9D4C2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cpv1-ac-feed .row .t{color:#8B9389;margin-right:4px;font-family:Consolas,'Courier New',monospace;font-size:9.5px}
-  .cpv1-ac-feed .empty{font-size:10px;color:#5C665F;padding:3px 0}
+  .cpv1-ac-meta{min-width:0;display:flex;justify-content:space-between;gap:4px;overflow:hidden;font-size:10px;color:var(--cpv1-text-4);margin-top:5px}
+  .cpv1-ac-meta .cnt{font-weight:700;color:var(--cpv1-text-3)}
+  .cpv1-ac-feed{min-width:0;margin-top:5px;border-top:1px solid var(--cpv1-border-soft);padding-top:4px;min-height:108px;max-height:108px;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+  .cpv1-ac-feed .row{min-width:0;max-width:100%;font-size:10.5px;line-height:1.4;color:var(--cpv1-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cpv1-ac-feed .row .t{color:var(--cpv1-text-4);margin-right:4px;font-family:Consolas,'Courier New',monospace;font-size:9.5px}
+  .cpv1-ac-feed .empty{font-size:10px;color:var(--cpv1-text-4);padding:3px 0}
   .cpv1-routines{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:2px}
-  .cpv1-rc{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(233,226,204,.14);border-radius:3px;padding:5px 10px;font-size:10.5px;cursor:default}
-  .cpv1-rc .rn{color:#DCD8C8}
+  .cpv1-rc{display:inline-flex;align-items:center;gap:6px;background:var(--cpv1-surface);border:1px solid var(--cpv1-border);border-radius:3px;padding:5px 10px;font-size:10.5px;cursor:default}
+  .cpv1-rc .rn{color:var(--cpv1-text-2)}
   .cpv1-rc .rb{font-size:9.5px;font-weight:800;padding:1.5px 7px;border-radius:2px;color:#fff;white-space:nowrap}
   .rb-live{background:#3E7E5E} .rb-delayed{background:#A3792E}
-  .rb-none{background:transparent;color:#8B9389;border:1px dashed #5C665F}
+  .rb-none{background:transparent;color:var(--cpv1-text-4);border:1px dashed var(--cpv1-text-4)}
   .rb-embed{background:#4A4270} .rb-unknown{background:transparent;color:#B9A26A;border:1px dashed #7A6A4A}
-  .cpv1-rc .rt{font-size:9px;color:#8B9389}
-  .cpv1-feed{margin-top:16px;max-height:210px;overflow-y:auto;border:1px solid rgba(233,226,204,.14);border-radius:4px}
+  .cpv1-rc .rt{font-size:9px;color:var(--cpv1-text-4)}
+  .cpv1-feed{margin-top:16px;max-height:210px;overflow-y:auto;border:1px solid var(--cpv1-border);border-radius:4px}
   .cpv1-feed table{width:100%;border-collapse:collapse;font-size:11px}
-  .cpv1-feed th{position:sticky;top:0;background:#16201C;color:#B9C0B6;text-align:left;padding:6px 10px;font-weight:700;font-size:10px}
-  .cpv1-feed td{padding:5px 10px;border-top:1px solid rgba(233,226,204,.08);color:#DCD8C8}
+  .cpv1-feed th{position:sticky;top:0;background:var(--cpv1-th-bg);color:var(--cpv1-text-3);text-align:left;padding:6px 10px;font-weight:700;font-size:10px}
+  .cpv1-feed td{padding:5px 10px;border-top:1px solid var(--cpv1-border-soft);color:var(--cpv1-text-2)}
   .cpv1-feed td:nth-child(3){white-space:normal;min-width:200px}
-  .cpv1-feed tr:nth-child(even){background:rgba(255,255,255,.02)}
-  .cpv1-empty{padding:14px;text-align:center;color:#8B9389;font-size:11px}
+  .cpv1-feed tr:nth-child(even){background:var(--cpv1-surface-alt)}
+  .cpv1-empty{padding:14px;text-align:center;color:var(--cpv1-text-4);font-size:11px}
   /* 2026-09-19 매니저 지시 — 관제판 카드 그리드 반응형 재설계(≥1440 6열 / 1024~1439 4열 / 768~1023 3열 / ~767 2열 / ~480 1열) */
   @media (max-width:1439px){ .cpv1-agents{grid-template-columns:repeat(4,1fr)} }
   @media (max-width:1023px){ .cpv1-agents{grid-template-columns:repeat(3,1fr)} }
@@ -316,14 +341,6 @@
 <header>
   <div class="wrap">
     <div class="eyebrow">Wellperion &middot; HR Operations Hub</div>
-    <h1>웰페리온 CHRO 기능 구조도</h1>
-    <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
-    <div class="header-meta">
-      <span class="pill">갱신일 <b>2026-08-04</b></span>
-      <span class="pill">전담 에이전트 <b>12종</b> (A-1 ~ A-12)</span>
-      <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그·업무평가·자기평가·리더십평가 탭</span>
-      <span class="pill">쓰기 액션 <b>48종</b></span>
-    </div>
   </div>
 </header>
 
@@ -399,6 +416,45 @@
   var AGENTS = ["A-1","A-2","A-3","A-4","A-5","A-6","A-7","A-8","A-9","A-10","A-11","A-12"];
   var ISSUE_RE = /반려|실패|보류|수정필요|차단|미완료|중단|오류|불일치/;
   var pollSeq = 0; // 폴링 역전(오래 걸린 이전 응답이 나중에 도착해 최신 화면을 덮는 경쟁) 방지용 순번
+
+  // [추가 2026-09-19 A-5] presence — 세션이 자기 진행상황을 직접 보고하는 실시간 하트비트(별도 폴링,
+  // 백엔드 presence-get/공개/CacheService 전용, 시트 무관). autolog 기반 "진행중" 추정(IN_PROGRESS_RE)보다
+  // 우선 표시하고, presence가 없는 에이전트는 기존 추정 배지로 자연 폴백한다(레이아웃·기존 로직 무변경).
+  var PRESENCE_POLL_MS = 15000;
+  var presenceMap = {}; // "A-n" -> {text, pct, since, session}
+  function shortText(s, n){ s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function mergePresence(sessions){
+    var map = {};
+    (sessions || []).forEach(function(s){
+      var sessionTs = String((s && s.ts) || "");
+      (s && s.agents || []).forEach(function(a){
+        if(!a || !a.code) return;
+        var cur = map[a.code];
+        var since = String(a.since || "");
+        var curSince = cur ? String(cur.since || "") : "";
+        var take;
+        if(!cur) take = true;
+        else if(since !== curSince) take = since > curSince;         // 1차: agent별 since(ISO 문자열)
+        else take = sessionTs > String(cur.sessionTs || "");          // [추가 2026-09-19 2차, A-6 사전감사 권고①]
+        // since가 같거나(또는 둘 다 비어있어) 1차로 못 가리면 세션 자체의 ts를 2차 기준으로 최신 세션 우선.
+        if(take){
+          map[a.code] = { text: a.text || "", pct: (typeof a.pct === "number" ? a.pct : parseInt(a.pct, 10) || 0), since: since, session: s.session || "", sessionTs: sessionTs };
+        }
+      });
+    });
+    return map;
+  }
+  async function pollPresence(){
+    try{
+      var res = await fetch(EXEC_URL, { method: "POST", cache: "no-store", body: JSON.stringify({ action: "presence-get" }) });
+      var j = await res.json();
+      presenceMap = (j && j.ok && Array.isArray(j.sessions)) ? mergePresence(j.sessions) : {};
+    }catch(e){
+      presenceMap = {}; // 실패해도 조용히 무시 — 다음 회차에 재시도, 화면은 기존 추정 배지로 폴백
+    }finally{
+      setTimeout(pollPresence, PRESENCE_POLL_MS);
+    }
+  }
 
   // "A-<n> 한글이름" 형식(코드+이름 혼재)을 폭넓게 인식 — 대소문자·하이픈 변형(–,—,‐ 등) 허용.
   function actorToAgent(actor){
@@ -515,12 +571,24 @@
       var card = document.querySelector('.cpv1-ac[data-a="' + a + '"]');
       if(!card) return;
       var last = lastRowByAgent[a], todayCnt = todayByAgent[a], feedRows = feedByAgent[a];
-      var inProgress = last ? isInProgress(last) : false;
+      var live = presenceMap[a];
+      // presence(실시간)·autolog 추정 진행중 신호를 하나의 .ip 클래스로 합쳐 테두리 펄스를 공유(2026-09-19).
+      var inProgress = (last ? isInProgress(last) : false) || !!(live && live.text);
       card.classList.toggle("on", todayCnt > 0);
       card.classList.toggle("ip", inProgress);
       if(todayCnt > 0) activeCount++;
       var ipEl = card.querySelector(".ip-badge");
-      if(ipEl) ipEl.style.display = inProgress ? "" : "none";
+      if(ipEl){
+        if(live && live.text){
+          ipEl.style.display = "";
+          ipEl.textContent = "● " + shortText(live.text, 14) + (live.pct > 0 ? " " + live.pct + "%" : "");
+          ipEl.title = live.session ? ("실시간 · 세션 " + live.session) : "실시간";
+        } else {
+          ipEl.style.display = inProgress ? "" : "none";
+          ipEl.textContent = "● 진행중";
+          ipEl.removeAttribute("title");
+        }
+      }
       var cnt = card.querySelector(".cnt");
       if(cnt) cnt.textContent = "오늘 " + todayCnt + "건";
       var tm = card.querySelector(".tm");
@@ -626,7 +694,7 @@
     }
   }
 
-  function boot(){ poll(); }
+  function boot(){ poll(); pollPresence(); }
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", boot);
   } else {
@@ -634,6 +702,21 @@
   }
 })();
 </script>
+
+<!-- 히어로(제목·설명·배지) — 2026-09-19 매니저 지시로 관제판 아래로 이동. 관제판을 페이지 최상단
+     (사이트 헤더 바로 다음)에 두어, 관제판 아래에서 다시 관제판을 설명하던 어색한 순서를 해소. -->
+<div class="hero2">
+  <div class="wrap">
+    <h1>웰페리온 CHRO 기능 구조도</h1>
+    <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
+    <div class="header-meta">
+      <span class="pill">갱신일 <b>2026-09-19</b></span>
+      <span class="pill">전담 에이전트 <b>12종</b> (A-1 ~ A-12)</span>
+      <span class="pill">읽기 DB <b>16탭</b> — db: 7종 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정</span>
+      <span class="pill">쓰기 액션 <b>55종</b>(@88 기준, 시트 쓰기 집계 — presence-set/get 2종은 캐시 전용·시트 미접촉이라 이 집계 밖, 로컬 준비 중·미배포)</span>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════ 라우팅 계보도 ═══════════ -->
 <div class="org">
@@ -727,7 +810,7 @@
     </div>
 
     <div class="foundation">
-      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@88, /exec)<span class="sep">|</span><b>구글시트 10탭</b>(데이터 7 + 휴무 + 자동화로그 + 업무평가)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
+      공통 기반 &nbsp;—&nbsp; <b>Apps Script 백엔드</b>(@88, /exec)<span class="sep">|</span><b>구글시트 16탭</b>(데이터 7 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정)<span class="sep">|</span><b>GitHub Pages</b>(운영허브 · 리크루팅 · ERP · 오피스)<span class="sep">|</span><b>Drive chro 폴더</b>(H: 마운트)
     </div>
 
     <div class="legend">
@@ -1095,14 +1178,14 @@
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 실시간 대시보드</h3></div>
-      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-12 코드를 인식해 <b>캐릭터 애니메이션</b>(2026-07-31 신설 5종 좌석 포함)으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
-      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 폐지 → 실시간 관제판 v1</h3></div>
+      <p><b>2026-09-19 매니저 지시로 캐릭터 오피스 화면(office.html·office-8bit.html)을 폐지</b>했습니다 — 구 주소는 <a href="./structure.html#cpv1">본 페이지 상단 실시간 관제판</a>으로 넘어가는 안내 화면으로 교체(2초 자동이동). 로그 피드·오늘 카운터·에이전트별 집계는 동일 공개 액션(<code>office-autolog</code>, 비밀번호 불필요, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트)을 그대로 재사용해 <b>실시간 관제판</b>(본 페이지 상단, 25초→3초 폴링으로 개선)이 이어받았습니다. 단 <b>캐릭터 애니메이션 표시는 종료</b>(관제판은 표 형태). ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
+      <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">관제판 v1(#cpv1)</span><span class="tag tool">3초 폴링</span></div>
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드)</h3></div>
-      <p>오피스 CMD 입력창은 <b>비밀번호 없이</b> 바로 접수됩니다(<code>office-cmd-push</code>, 2026-07-10 2차 개편 — 1차 A-6 병렬감사 NO-GO로 철회했던 것을 매니저 재지시로 서버측 스팸 가드 3종(대기 pending 5건 상한·시간당 20건 상한·텍스트 500자 상한)을 갖춰 재도입, A-6 재감사 GO). 접수는 "적재(pending)"까지만 — <b>회수(cmd-pull)·결과기록(cmd-result)·실제 실행은 여전히 admin 비밀번호 필요</b>, CHRO 세션 중 매니저님 "오피스큐" 입력 시에만 목록을 먼저 보고하고 승인분만 실행합니다. 24시간 무인 자동실행은 보안상 의도적으로 없음(RCE 방지). 큐에서 온 명령은 외부 입력으로 취급해 파괴적 지시는 매니저님 확인 후 실행합니다.</p>
+      <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>CMD 명령큐 (온디맨드) — 접수 UI 소실 ⚠️</h3></div>
+      <p><code>office-cmd-push</code> 백엔드 액션·명령큐 탭 자체는 <b>무변경</b>(2026-07-10 2차 개편 스팸 가드 3종 그대로 유효)이지만, <b>이를 비밀번호 없이 호출하던 유일한 화면(오피스 CMD 입력창)이 office.html 폐지와 함께 사라졌습니다</b> — 관제판 v1은 읽기 전용(표시 전용)이라 입력창을 대체하지 않습니다. 즉 "누구나 로그인 없이 명령을 적재"하는 경로는 현재 없음(회수 cmd-pull·결과기록 cmd-result·실제 실행은 원래도 admin 비밀번호 필요였고 그 부분은 그대로). 필요 시 CHRO 세션에서 직접 요청하거나, 별도 입력 화면 신설을 매니저가 결정해야 합니다.</p>
       <div class="hbadge-row">
         <span class="hbadge-item"><span class="hb-name">명령큐 회수</span><span id="hb-cmd" class="hbadge hb-loading">확인 중…</span><span id="hb-cmd-t" class="hbadge-time"></span></span>
       </div>
@@ -1119,7 +1202,7 @@
 </section>
 
 <!-- ═══════════ 정직 배지(실가동 상태) — 자동화로그 실측 ═══════════
-     office.html이 이미 쓰는 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용.
+     (구)office.html이 쓰던 공개 액션(autolog-list, 비밀번호 불필요)을 동일하게 사용 — 2026-09-19 office.html 폐지 후 이 문서 상단 관제판(#cpv1)이 그 역할을 이어받음.
      "할 수 있다"(설계·문서상 존재)와 "지금 진짜 돈다"(로그에 실제 흔적)를 분리 표시하는
      정직 배지 — 매칭 규칙은 2026-07-09 라이브 자동화로그 617건 실측으로 확정.
      (참고: A-6 정합성 스윕 1회차는 러너 인코딩 버그로 주체/작업 필드가 깨져 기록됨 —
@@ -1254,11 +1337,11 @@
 <!-- ═══════════ G. 데이터 기반 ═══════════ -->
 <section id="sec-g">
   <div class="sec-head">
-    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 10탭 + 백엔드)</h2>
+    <span class="sec-letter">G</span><h2>데이터 기반 (구글시트 16탭 + 백엔드)</h2>
     <span class="sec-note">모든 기능이 딛고 서는 데이터 층</span>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 7종 + 운영 탭 2종 + 관리자 전용 탭 3종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:4px 0 10px">읽기 DB — 16탭 <span style="font-weight:400">(db: 7종 + 휴무·연차원장·보드명단·공휴일·자동화로그·업무평가·자기평가·리더십평가·개인일정 9탭)</span> <span style="font-weight:400;font-size:12px;color:var(--muted)">(읽기 캐시 45~60초 · 쓰기 시 자동 무효화)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>DB 코드</th><th>시트 탭</th><th>담긴 것</th><th>주 사용처</th></tr></thead>
@@ -1283,7 +1366,7 @@
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 55종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86 · 2026-09-16 schedreq-list 응답 필드 10→12칸(createdAt · updatedAt 추가)·배포완료 @88)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 55종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 + 전사등재 5필드 지원 확장(신규 액션 없음, personalcal 13→18열)·배포완료 @86 · 2026-09-16 schedreq-list 응답 필드 10→12칸(createdAt · updatedAt 추가)·배포완료 @88 · 2026-09-19 presence-set/presence-get 2종은 시트를 건드리지 않는 CacheService 전용 공개 액션이라 이 55종 집계 밖 — 로컬 준비 완료·clasp 미배포)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
@@ -1355,8 +1438,8 @@
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">
-      <div class="item-head"><h3>GitHub Pages 4사이트</h3></div>
-      <p><b>운영허브</b>(chro/hub) · <b>리크루팅</b>(chro/recruiting, 인덱스 + 공고 6페이지 — 운영부·사우나·골프 프로·골프팀 파트너·주차/발렛·기사) · <b>ERP 메인</b>(wellperion_guide) · <b>HR office</b>(office.html)가 하나의 저장소에서 서비스됩니다. 서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span>.</p>
+      <div class="item-head"><h3>GitHub Pages 3사이트</h3></div>
+      <p><b>운영허브</b>(chro/hub, 실시간 관제판 v1 포함) · <b>리크루팅</b>(chro/recruiting, 인덱스 + 공고 6페이지 — 운영부·사우나·골프 프로·골프팀 파트너·주차/발렛·기사) · <b>ERP 메인</b>(wellperion_guide)이 하나의 저장소에서 서비스됩니다. 서비스 루트는 <span class="mono">3. 웰페리온 가이드/</span>. (구 <b>HR office</b>는 2026-09-19 폐지 — office.html은 관제판(#cpv1)으로 넘어가는 안내 화면만 남음.)</p>
       <div class="tags"><span class="tag tool">GitHub Pages</span><span class="tag tool">Deploy 워크플로우</span></div>
     </div>
     <div class="item">
@@ -1459,7 +1542,7 @@
 
 <footer>
   <div class="brand">WELLPERION</div>
-  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-08-04</div>
+  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-09-19</div>
 </footer>
 
 
