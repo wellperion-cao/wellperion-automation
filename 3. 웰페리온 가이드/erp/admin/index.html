@@ -2,8 +2,7 @@
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<!-- 끝 슬래시 없는 주소(/erp/admin#…)로 열리면 아래 상대경로 CSS 가 한 단계 위로 풀려 404 → 디자인이 달라 보였다(GM 2026-09-19). 스타일을 읽기 전에 슬래시 주소로 옮긴다. -->
-<script>if (/\/erp\/admin$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);</script>
+<!-- 끝 슬래시 없는 /erp/admin 302 → /erp/admin/ 리다이렉트는 이제 서버(nginx)가 한다(시토 554813b85 · GM 지시 2026-09-19) — 이 화면이 뜰 때는 이미 슬래시가 붙어 있어 클라이언트 쪽 되돌리기는 필요 없다. -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>웰페리온 AX 랩스 — 인공지능 전환(AX) · 관리</title>
 <link rel="icon" type="image/png" href="axlabs_favicon.png">  <!-- AX 랩스 전용(웰페리온 W 와 갈린다) · GM 2026-09-17 -->
