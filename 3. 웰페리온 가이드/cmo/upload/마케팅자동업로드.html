@@ -55,6 +55,7 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 .faildetails{margin-top:8px}
 .faildetails summary{cursor:pointer;font-size:12.5px;color:var(--pf-soft)}
 .faildetails table{margin-top:6px}
+.ch label .autobadge{font-size:10px;color:var(--pf-soft);border:1px solid var(--pf-line);border-radius:8px;padding:0 5px;white-space:nowrap}
 </style>
 </head>
 <body class="pf-body">
@@ -70,12 +71,13 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
 
 <div class="pf-tabs" role="tablist" aria-label="계정" id="tenants">
   <button role="tab" aria-selected="true" class="on" data-tenant="wellperion">1호 웰페리온</button>
-  <button role="tab" aria-selected="false" data-tenant="dc">2호 다이어트캠프</button>
-  <button role="tab" aria-selected="false" data-tenant="jo">3호 고척골프</button>
-  <button role="tab" aria-selected="false" data-tenant="ax">웰페리온 AX 랩스</button>
+  <button role="tab" aria-selected="false" data-tenant="ax">2호 웰페리온 AX 랩스</button>
+  <button role="tab" aria-selected="false" data-tenant="dc">3호 다이어트캠프</button>
+  <button role="tab" aria-selected="false" data-tenant="jo">4호 고척GDR QA 골프존</button>
   <button role="tab" aria-selected="false" data-tenant="gm">GM 개인 · AI 하루</button>
 </div>
-<!-- 탭 5개(GM 2026-09-18 「개인계정이랑 공식계정 다 구분 · AX랩스도」 · 배 2792) — 공식/개인 계정 구분은 review_queue.json 의 account 칸(wellperion=공식 · namuk.wellperion=개인)으로 가른다 -->
+<!-- 탭 5개(GM 2026-09-18 「개인계정이랑 공식계정 다 구분 · AX랩스도」 · 배 2792) — 공식/개인 계정 구분은 review_queue.json 의 account 칸(wellperion=공식 · namuk.wellperion=개인)으로 가른다
+     호점 번호 순서 = GM 지시 2026-09-19: 1호 웰페리온·2호 웰페리온 AX 랩스·3호 다이어트캠프·4호 고척GDR QA 골프존(GM 개인 탭은 번호 없이 그대로). 이름 뒤 (N) = 그 탭에 실제로 그려지는 채널 수 — CH_BY_TENANT 길이에서 계산(하드코딩 아님, 아래 스크립트). -->
 
 
 <div class="grid" style="margin-top:14px">
@@ -121,7 +123,21 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
   // GM 개인계정 채널 — review_queue.json 실측(account=namuk.wellperion 67건이 전부 이 채널 하나)
   var CH_GM=[['ig-personal','인스타그램 (namuk.wellperion)']];
   var CH_BY_TENANT={wellperion:CH_STD,dc:CH_STD,jo:CH_STD,ax:CH_AX,gm:CH_GM};
-  var NAMES={wellperion:'1호 웰페리온',gm:'GM 개인 · AI 하루',dc:'2호 다이어트캠프',jo:'3호 고척골프',ax:'웰페리온 AX 랩스'};   // ax = 랩스 자체 메시지 채널(GM 2026-09-16 · 시보)
+  var NAMES={wellperion:'1호 웰페리온',ax:'2호 웰페리온 AX 랩스',dc:'3호 다이어트캠프',jo:'4호 고척GDR QA 골프존',gm:'GM 개인 · AI 하루'};   // ax = 랩스 자체 메시지 채널(GM 2026-09-16 · 시보)
+  // 채널별 자동화 방식 배지(GM 09-19 실측 · 자동=사람 손 없이 발행까지 · 임시저장=발행기가 임시저장까지만 자동, 사람이 발행 버튼 · 수동=스크립트는 있으나 사람이 명령을 직접 실행해야 함 · 없음=발행 코드 자체 없음)
+  // 근거: scripts/publish_4channel_dispatcher.py(임시저장 전용 진입점) · 예약작업 Wellperion-DietCamp-Blog-0645·Gocheok-Blog-0700·Partner-Instagram-0630(Ready) · Wellperion-CMO-Daily-Marketing-2100(Disabled·배선 어긋남) · threads_upload_playwright.py·profiles/threads/wellperion,axlabs(세션은 있으나 어떤 파이프라인도 안 부름) · server/erp_api/api_partner_secrets.py CHANNELS 에 google 발행기 없음
+  var BADGE={
+    wellperion:{'naver-blog':'임시저장','naver-cafe':'임시저장','danggn':'임시저장','kakao-channel':'임시저장','instagram':'수동','threads':'수동','google':'없음'},
+    dc:{'naver-blog':'자동','instagram':'자동','naver-cafe':'없음','danggn':'없음','kakao-channel':'없음','threads':'없음','google':'없음'},
+    jo:{'naver-blog':'자동','instagram':'자동','naver-cafe':'없음','danggn':'없음','kakao-channel':'없음','threads':'없음','google':'없음'},
+    ax:{'gmail':'없음','naver-blog':'수동','instagram':'수동','threads':'수동'},
+    gm:{'ig-personal':'수동'}
+  };
+  document.querySelectorAll('#tenants [role=tab]').forEach(function(b){   // 탭 이름 뒤 (채널 수) — CH_BY_TENANT 길이에서 계산(하드코딩 금지, GM 09-19)
+    var key=b.dataset.tenant, n=(CH_BY_TENANT[key]||[]).length;
+    b.textContent+='('+n+')';
+    if(NAMES[key]) NAMES[key]+='('+n+')';
+  });
   var LOCK=(new URLSearchParams(location.search).get('tenant')||'').trim();   // ERP 홈 마케팅 관리에서 열면 ?tenant=wellperion — 그 센터만(GM 2026-09-18 「다른 파트너사 것까지 다 보이네」)
   var tenant=(LOCK && document.querySelector('#tenants [data-tenant="'+LOCK+'"]'))?LOCK:'wellperion', active={};
   if(LOCK && tenant===LOCK){ var _tb=document.getElementById('tenants'); if(_tb){ _tb.hidden=true; _tb.style.display='none'; } }   // platform_brand.css .pf-tabs{display:flex} 가 hidden 속성보다 캐스케이드에서 이겨 인라인으로 덮는다(배 2792 발견)
@@ -132,8 +148,10 @@ body{padding:18px 20px 60px;max-width:1040px;margin:0 auto}
     var offLabel=tenant==='ax'?'비활성 · 개설 대기':'비활성';
     (CH_BY_TENANT[tenant]||CH_STD).forEach(function(c){
       var on=!!active[c[0]];
+      var badge=(BADGE[tenant]||{})[c[0]];
+      var badgeHtml=badge?'<span class="autobadge">'+badge+'</span>':'';
       var l=document.createElement('label'); l.className=on?'':'off';
-      l.innerHTML='<input type="checkbox" name="channels" value="'+c[0]+'"'+(on?'':' disabled')+'> '+c[1]+'<span class="pf-st '+(on?'on':'off')+'"><i></i>'+(on?'활성':offLabel)+'</span>';
+      l.innerHTML='<input type="checkbox" name="channels" value="'+c[0]+'"'+(on?'':' disabled')+'> '+c[1]+badgeHtml+'<span class="pf-st '+(on?'on':'off')+'"><i></i>'+(on?'활성':offLabel)+'</span>';
       host.appendChild(l);
     });
   }
