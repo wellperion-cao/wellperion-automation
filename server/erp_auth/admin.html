@@ -495,8 +495,7 @@ function renderPeople(){
     const excSt=!excIds.length?'none':(excIds.every(id=>d.modules.has(id))?'full':(excIds.some(id=>d.modules.has(id))?'partial':'none'));
     const dirty=!ro&&personDirty(u);
     const cell=(st,attrs)=>`<td class="cell"><input type="checkbox" ${attrs} ${st==='full'?'checked':''} data-partial="${st==='partial'?'1':''}" ${ro?'disabled':''}></td>`;
-    return `<tr><td class="who"><span data-open-drawer="${u.id}" title="눌러서 화면별 상세" style="cursor:pointer"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></span>
-      ${ro?(u.title?`<small style="margin-left:4px">${esc(u.title)}</small>`:''):`<input type="text" class="rank-sel" style="width:74px" maxlength="20" placeholder="직함(선택)" value="${esc(u.title||'')}" data-title-for="${u.id}" title="이름 옆 표시 직함 — 권한(직급)과 무관">`}</td>
+    return `<tr><td class="who"><span data-open-drawer="${u.id}" title="눌러서 화면별 상세" style="cursor:pointer"><b>${esc(u.name)}${u.role==='admin'?' <span class="tag acc">관리자</span>':''}${u.fixed_perms?' <span class="tag" title="account_perms.json 이 정본">파일 정본</span>':''}${locked(u)?' <span class="tag lock">잠금</span>':''}</b><small>${esc(u.email)}</small></span></td>
     <td>${dept(u)?`<span class="tag">${esc(deptLabel(u))}</span>`:'<span class="tag" style="opacity:.6">미분류</span>'}
       ${(!ro&&dept(u)===TEAM_DEPT)?teamSelect(u):''}
       ${ro?'':`<select class="rank-sel" data-dept-apply-for="${u.id}" title="부서 기본 화면 더하기"><option value="">+ 부서 기본 추가</option>${Object.keys(S.dept_modules||{}).map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>`}</td>
@@ -692,7 +691,6 @@ document.addEventListener('change',e=>{
   const dsel=e.target.closest('select[data-dept-apply-for]'); if(dsel&&dsel.value){ personApplyDept(+dsel.dataset.deptApplyFor, dsel.value); dsel.value=''; return; }
   const tsel=e.target.closest('select[data-team-for]'); if(tsel){ post(`/auth/admin/${tsel.dataset.teamFor}/team`,{team:tsel.value}).then(ok=>{ if(ok){ toast('팀을 저장했습니다'); load(); } }); return; }
   const rcsel=e.target.closest('select[data-rank-change-for]'); if(rcsel){ post(`/auth/admin/${rcsel.dataset.rankChangeFor}/rank`,{rank:rcsel.value}).then(ok=>{ if(ok){ toast('직함을 저장했습니다 · 권한을 직함 층에 맞춰 다시 계산했습니다'); load(); } }); return; }
-  const tin=e.target.closest('input[data-title-for]'); if(tin){ post(`/auth/admin/${tin.dataset.titleFor}/title`,{title:tin.value}).then(ok=>{ if(ok){ toast('표시 직함을 저장했습니다'); load(); } }); return; }
   const psc=e.target.closest('input[data-screen-for]'); if(psc){ personToggleScreen(+psc.dataset.screenFor, psc.dataset.screen); return; }
 });
 document.addEventListener('input',e=>{

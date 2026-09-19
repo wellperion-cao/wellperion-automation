@@ -329,7 +329,7 @@ fetch('/auth/me', {credentials:'same-origin'}).then(function(r){
 }).then(function(me){
   if (!me) return;
   var roleKr = me.role_label || ({admin:'관리자', staff:'직원', partner:'파트너'})[me.role] || me.role || '';
-  var whoName = (me.name || me.email || '') + (me.title ? ' ' + me.title : '');
+  var whoName = (me.name || me.email || '') + (me.rank ? ' ' + me.rank : '');
   document.getElementById('who').innerHTML =
     '<a href="/auth/account" title="내 계정 · 정보 확인 · 비밀번호 변경" style="color:inherit;text-decoration:none">' + esc(whoName) + '</a>'
     + '<span class="role">' + esc(roleKr) + '</span>';
@@ -778,9 +778,8 @@ function loadUsage(){
   adminGet('/auth/admin/api/usage').then(function(d){
     var users = (d.users || []).map(function(x){
       var areas = (x.areas || []).map(function(a){ return a.area + ' ' + a.n; }).join(' · ');
-      var nameTitle = (x.name || x.email || '') + (x.title ? ' ' + x.title : '');
       return '<tr' + (x.writes_30d ? '' : ' class="off"') + '>'
-           + '<td class="k">' + esc(nameTitle) + '</td>'
+           + '<td class="k">' + esc(x.name || x.email || '') + '</td>'
            + '<td class="d">' + esc(x.email || '') + '</td>'
            + '<td class="o">' + esc(x.role || '')
            + (x.status && x.status !== 'active' ? ' · ' + esc(x.status) : '') + '</td>'

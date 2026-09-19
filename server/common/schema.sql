@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
   tenant_id   TEXT NOT NULL DEFAULT 'wellperion',
   email       TEXT NOT NULL,
   name        TEXT NOT NULL,
-  title       TEXT,                        -- 직함(이름과 분리 · GM 2026-09-19 「이름에는 이름만」· 배 12848)
   salt        TEXT NOT NULL,
   pw          TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'staff',
