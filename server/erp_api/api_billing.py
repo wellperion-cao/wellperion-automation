@@ -55,9 +55,10 @@ router = APIRouter(prefix="/api/billing")
 KST = dt.timezone(dt.timedelta(hours=9))
 TOSS_BASE = "https://api.tosspayments.com"
 
-# GM 확정 2026-09-16 요금표(로드맵 v0.5 §9 · 시보 전달) — 월 구독 · 부가세 별도 · 셋업 0 · 최소 6개월.
+# GM 확정 2026-09-19 요금표(15:0x 시모 전달) — 월 구독 · 부가세 별도 · 최소 6개월. 셋업비 300,000(유료 전환 1회)은
+#   이 파일 과금 흐름 밖(별도 결정 대기) — 여기서는 월 구독액만 다룬다.
 #   운영(ops)은 "준비 중"이라 아직 안 판다 — 빌링키 등록(plan 선택)에서 막는다(SELLABLE).
-PLAN_AMOUNTS = {"start": 99000, "growth": 199000, "ops": 390000}
+PLAN_AMOUNTS = {"start": 149000, "growth": 249000, "ops": 449000}
 SELLABLE = ("start", "growth")
 
 # 파트너(과금 대상) tenant — api_chat.py TENANTS 에서 웰페리온 자신(1_wellperion)을 뺀 값. (api_faq_intake.py 는 2026-09-17 폐기 — FAQ 답받기는 tenants/{t}_qa.json + 설문으로 대체)
@@ -464,7 +465,7 @@ def selftest():
     assert _order_id("2_dietcamp", "2026-09", True) == "BILL-2_dietcamp-202609-R"
     assert issubclass(TossUnknown, TossError)
     assert next_month_first(dt.datetime(2026, 12, 20, tzinfo=KST)) == "2027-01-01"
-    assert PLAN_AMOUNTS["start"] == 99000 and PLAN_AMOUNTS["growth"] == 199000 and PLAN_AMOUNTS["ops"] == 390000
+    assert PLAN_AMOUNTS["start"] == 149000 and PLAN_AMOUNTS["growth"] == 249000 and PLAN_AMOUNTS["ops"] == 449000
     assert "ops" not in SELLABLE and set(SELLABLE) <= set(PLAN_AMOUNTS)
 
     calls = []
@@ -498,7 +499,7 @@ def selftest():
         conn.close()
         try:
             r = _billing_key_sync(tenant, "authkey-abc", _default_customer_key(tenant), "start")
-            assert r["ok"] and r["amount"] == 99000
+            assert r["ok"] and r["amount"] == 149000
 
             charge_billing_key = fake_charge_ok
             r1 = charge_one(tenant)
