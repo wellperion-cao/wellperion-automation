@@ -106,12 +106,14 @@ def _today_reception_issues(today: str) -> list[str]:
 
 
 def _issue_block(section_text: str, today: str | None = None) -> str:
-    """이슈사항 — 컴플레인·반복 이슈만 맨 위로 (GM 지시 2026-09-09 · 기준 강화 2026-09-18 배 12760 ①).
+    """이슈사항 — 컴플레인·반복 이슈만 맨 위로 (GM 지시 2026-09-09 · 기준 강화 2026-09-18 배 12760 ①
+    · 09-19 배 12760 후속 — 단순 현황 두 줄 제거).
 
-    싣는 것 셋 — ① 오늘 새로 들어온 컴플레인·청결·시설물고장 접수(종합접수 원장) ② 🔁 반복 이슈
-    (원인·조치·누가 · support_check_summary 가 만든 줄 그대로) ③ 제출 자체가 없는 조·주차부.
-    완료율 나열(「❗ 짚을 점: 오전(남) 26/27 …」)은 이슈가 아니라 현황이라 여기서 뺐다 — 지원부
-    현황 절 안에는 그대로 남는다. 뽑을 줄이 없으면 빈 문자열 — 없음을 지어내지 않는다.
+    싣는 것 둘 — ① 오늘 새로 들어온 컴플레인·청결·시설물고장 접수(종합접수 원장) ② 🔁 반복 이슈
+    (원인·조치·누가 · support_check_summary 가 만든 줄 그대로). 「아직 제출 안 된 조」·완료율 나열
+    (「❗ 짚을 점: 오전(남) 26/27 …」)·「주차부 제출 없음」은 이슈가 아니라 현황이라 여기서 뺐다 —
+    🛠 지원부 현황 절·맨 아래 🅿 주차부 줄에 이미 그대로 있다(같은 줄 두 번 금지). 뽑을 줄이 없으면
+    빈 문자열 — 없음을 지어내지 않는다.
     """
     picks: list[str] = _today_reception_issues(today or datetime.now().strftime("%Y-%m-%d"))
     in_recur = False
@@ -128,9 +130,7 @@ def _issue_block(section_text: str, today: str | None = None) -> str:
             picks.append("     " + t)      # 제목 줄(「  · 」) 아래 3칸 더
             continue
         in_recur = False
-        if t.startswith("⛔"):
-            picks.append("▪ " + t.lstrip("⛔ ").strip())
-        elif t.startswith("🅿") and ("제출 없음" in t or "이슈" in t) and "이슈사항: 없음" not in t:
+        if t.startswith("🅿") and "이슈" in t and "이슈사항: 없음" not in t and "제출 없음" not in t:
             picks.append("▪ " + t.lstrip("🅿 ").strip())
     if not picks:
         return ""
@@ -167,7 +167,10 @@ def build_digest(today: str | None = None) -> str:
         section = _strip_recur_block(section)   # 이슈사항으로 옮겼으니 본문에선 뺀다(같은 6줄 두 번 금지)
     top = "\n\n".join(x.strip() for x in (header, praise, issues) if x) + "\n\n"
     # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 본문에서 빼고 run()에서 별도 메시지로 발송
-    return f"{top}{section}"
+    # ★09-19 배 12760 ② — 지원부 구역 줄(조가 「·」로 한 줄에 이어짐)을 조별 줄로 편다. 텔레그램·
+    #   카카오가 이 build_digest() 결과를 그대로 재사용해(daily_scheduler.py) 여기 한 곳에서만
+    #   고치면 둘 다 반영된다(_split_zone_lines 정의는 아래 카카오 절 옆에 있다).
+    return _split_zone_lines(f"{top}{section}")
 
 
 # ── 실시일이 비어 있는 법정·정기점검 (2026-07-31 GM 결정) ──
@@ -340,15 +343,18 @@ def _praise_block(section_text: str, filled: dict | None = None) -> str:
 # 제목 세 줄만 떼어 낸다(보내는 쪽이 제 제목·서명을 따로 붙인다).
 # 되돌리기 = 이 함수를 옛 압축본으로 되돌린다(git 이력 · 배670 판).
 _ZONE_LINE_RE = re.compile(r"^(\s*)(남성구역|여성구역) (\d+/\d+\(\d+%\)) — (.+)$")
-_GROUP_RE = re.compile(r"(오전조|오후조|마감조|야간조) (\d+/\d+)(?: (✅제출|⛔미제출)(?:\(([^)]*)\))?)?")
+_GROUP_RE = re.compile(r"(오전조|오후조|마감조|야간조) (\d+/\d+)(?: (✅제출|⛔미제출)(\([^)]*\))?)?")
 
 
 def _split_zone_lines(body: str) -> str:
-    """지원부 구역 한 줄을 조별 줄로 편다 (GM 지시 2026-09-18 배 12760 ②).
+    """지원부 구역 한 줄을 조별 줄로 편다 (GM 지시 2026-09-18 배 12760 ② · 09-19 포맷 수리 —
+    괄호(제출자·시각) 보존 + 「· 」머리 붙임).
       「  남성구역 54/57(95%) — 오전조 26/27 ✅제출(박호균 10:50) · 오후조 …」
-    → 「  남성구역 54/57(95%)」 + 「    오전조(남) 26/27 ✅제출 박호균 10:50」 ×조.
+    →「  남성구역 54/57(95%)」+「     · 오전조(남) 26/27 ✅제출(박호균 10:50)」×조.
     원문(support_check_summary)은 안 고친다 — 그 한 줄을 정규식으로 읽는 곳이 셋(칭찬 블록·
-    kakao_summary_card·아침 통 _groups)이라 여기 카톡 본문 마지막 자리에서만 편다."""
+    kakao_summary_card·아침 통 _groups)이라 여기 본문 조립 마지막 자리(build_digest)에서만 편다.
+    build_digest() 가 이미 적용해 반환하므로 여기서 한 번 더 걸어도(build_kakao_digest) 이미
+    바뀐 줄엔 원래 패턴(「 — 」)이 없어 그대로 통과한다(멱등)."""
     out = []
     for ln in body.split("\n"):
         m = _ZONE_LINE_RE.match(ln)
@@ -358,16 +364,16 @@ def _split_zone_lines(body: str) -> str:
         ind, zone, tot, rest = m.groups()
         out.append(f"{ind}{zone} {tot}")
         for shift, cnt, mark, who in _GROUP_RE.findall(rest):
-            tail = f" {mark} {who.strip()}" if mark and who else (f" {mark}" if mark else "")
-            out.append(f"{ind}  {shift}({zone[0]}) {cnt}{tail}")
+            tail = f" {mark}{who}" if mark else ""
+            out.append(f"{ind}   · {shift}({zone[0]}) {cnt}{tail}")
     return "\n".join(out)
 
 
 def build_kakao_digest(today: str | None = None) -> str:
-    """텔레그램 전문과 같은 본문 — 제목 세 줄만 빼고, 지원부 구역 줄은 조별로 편다."""
+    """텔레그램 전문과 같은 본문 — 제목 세 줄만 뺀다(지원부 구역 줄은 build_digest 가 이미 조별로 편다)."""
     full = build_digest(today)
     _head, sep, body = full.partition("\n\n")
-    return _split_zone_lines(body if sep else full)
+    return body if sep else full
 
 
 def _groups(lines: list[str], zone: str) -> list[tuple[str, int, int]]:
@@ -580,6 +586,30 @@ def _recent_voice_counts() -> tuple[int, int]:
     return dirty, complaint
 
 
+def _selfcheck() -> None:
+    """09-19 배 12760 후속 ① 이슈사항 중복 제거 ② 지원부 조별 줄바꿈(네트워크 없음)."""
+    _orig_reception = globals()["_today_reception_issues"]
+    globals()["_today_reception_issues"] = lambda *_a, **_k: []
+    try:
+        section = (
+            "🛠 지원부 현황 76/106(72%)\n"
+            "  ⛔ 아직 제출 안 된 조 1개 — 남성구역 오전조 0/26\n"
+            "🅿 주차부: 오늘 일일점검 제출 없음 (마지막 제출 09/16) — https://example"
+        )
+        issues = _issue_block(section, "2026-09-18")
+        assert "아직 제출 안 된 조" not in issues, issues
+        assert "제출 없음" not in issues, issues
+    finally:
+        globals()["_today_reception_issues"] = _orig_reception
+
+    body = "  남성구역 28/55(51%) — 오전조 0/26 ⛔미제출 · 오후조 14/14 ✅제출(박남일 16:46)"
+    out = _split_zone_lines(body).split("\n")
+    assert "  남성구역 28/55(51%)" == out[0], out
+    assert "     · 오전조(남) 0/26 ⛔미제출" in out, out
+    assert "     · 오후조(남) 14/14 ✅제출(박남일 16:46)" in out, out
+    print("[selfcheck] report_stream_2_check OK — 이슈사항 중복 제거·지원부 조별 줄바꿈")
+
+
 def _send_telegram(text: str) -> bool:
     token = _load_env_val("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -639,7 +669,11 @@ if __name__ == "__main__":
     p.add_argument("--live", action="store_true", help="실발송")
     p.add_argument("--kakao-go", action="store_true", help="카카오 실발송 (GM go 게이트)")
     p.add_argument("--today", default=None, help="날짜 YYYY-MM-DD (기본=오늘)")
+    p.add_argument("--selfcheck", action="store_true", help="네트워크 없이 배 12760(09-19) 로직만 점검")
     a = p.parse_args()
+    if a.selfcheck:
+        _selfcheck()
+        raise SystemExit(0)
     result = run(today=a.today, dry_run=not a.live, kakao_go=a.kakao_go)
     print("\n=== 렌더 ===")
     print(result)

@@ -170,7 +170,11 @@ def support_nudge_lines(d: dict) -> list[str]:
     합쳐 「남 26/27 · 여 7/26 — 미체크: G-2, A-1, …」 로 적어 남 1건(G-2)과 여 19건이
     한 목록으로 섞였고, 받는 사람은 어느 구역 것인지 알 수 없었다(2026-09-17 저녁 통 실측).
     분모(26·27)는 GAS handleTodayLive 가 요일 일정(_tlPassesSched)으로 거른 오늘 항목이라
-    그대로 믿는다 · 원천에 「필수 항목」 표식은 없다(rows·항목 마스터 11칸 어디에도)."""
+    그대로 믿는다 · 원천에 「필수 항목」 표식은 없다(rows·항목 마스터 11칸 어디에도).
+
+    ★2026-09-19 GM 지시(배 12760 후속) — 아예 손도 안 댄 조(0/N)는 항목명을 늘어놓지 않고
+    「조 미제출(N항목 전부)」 한 줄만 적는다. 항목 나열은 제출은 했는데 일부만 빠진 조에만
+    (0<dn<tt). 다 끝낸 구역(dn>=tt)은 독려 대상이 아니라 그 조는 아예 적지 않는다."""
     g = d.get("byGender", {}) or {}
     m = g.get("m", {}) or {}
     f = g.get("f", {}) or {}
@@ -184,13 +188,20 @@ def support_nudge_lines(d: dict) -> list[str]:
             continue
         parts = []
         for gk, glabel, dn, tt in (("m", "남", mD, mT), ("f", "여", fD, fT)):
+            if tt <= 0 or dn >= tt:
+                continue                                    # 다 끝난 조는 독려 대상이 아니다
+            if dn == 0:
+                parts.append(f"{glabel} — 조 미제출({tt}항목 전부)")
+                continue
             seg = f"{glabel} {dn}/{tt}"
             names = [str(n).strip() for n in ((ub.get(key) or {}).get(gk) or []) if str(n or "").strip()]
-            if names and dn < tt:
+            if names:
                 shown = names[:_MAX_UNCHECKED_NAMES]
                 extra = len(names) - len(shown)
                 seg += " 미체크: " + ", ".join(shown) + (f" 외 {extra}" if extra > 0 else "")
             parts.append(seg)
+        if not parts:
+            continue
         out.append(f"    · {label} " + " · ".join(parts))
     if not out:
         return []
@@ -749,6 +760,20 @@ def facility_worklog(subs: list, oor_fields: set[str] | None = None) -> tuple[li
         return ([], [])
 
     ordered = sorted(subs, key=lambda s: s.get("seq") if isinstance(s.get("seq"), (int, float)) else 0)
+    # ★2026-09-19 GM 지시(배 12760 후속) — 시작·끝 시각과 담당자가 완전히 같은 회차는 중복 기록
+    # (예: 7·8회차 둘 다 19:10~19:35 박호균). 회차 번호를 다시 매기지 않고 뒷것만 뺀다 —
+    # 그러면 남은 회차가 자연히 1부터 다시 세어진다. 시작·끝이 비어 있는 행은 대조하지 않는다
+    # (같은 '?' 값끼리 서로 다른 회차를 중복으로 오판하지 않도록).
+    deduped, seen_slots = [], set()
+    for s in ordered:
+        start, end = s.get("startHHMM"), s.get("endHHMM")
+        slot = (start, end, s.get("inspector"))
+        if start and end and slot in seen_slots:
+            continue
+        seen_slots.add(slot)
+        deduped.append(s)
+    ordered = deduped
+
     work_items: list[str] = []
     seen_work: set[str] = set()   # 앞 회차에 이미 나온 작업 — 반복 출력 차단
     for i, s in enumerate(ordered, start=1):
@@ -937,6 +962,13 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
         return (lines, filled)
 
     filled["facility_status"] = True
+    # 회차별 일지(전 회차 개별 라인) — 실데이터(work). 없으면 정직히 시간만(지어내기 금지).
+    # 헤더보다 먼저 만든다 — 시작·끝·담당자가 같은 중복 회차를 걸러낸 뒤 그 수로 헤더를 적어야
+    # 「9회차」와 아래 회차별 일지 줄 수가 어긋나지 않는다(GM 지적 2026-09-19 배 12760 후속).
+    today_oor_fields = {str(x.get("field")) for x in today_oor if x.get("field")}
+    work_items, notes = facility_worklog(subs, today_oor_fields)
+    sessions = len(work_items) if work_items else sessions
+
     # 회차수 표기 — FACILITY_SESSIONS_TRUSTED=False(기본)면 GAS 재배포 전이라 '(확인중)' 꼬리표
     # 유지(거짓 확정 금지). GM이 라이브 배포 검증 후 플래그를 True로 바꾸면 정확 회차수로 전환.
     if FACILITY_SESSIONS_TRUSTED:
@@ -946,9 +978,6 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
     head += f" · 이상 {len(today_oor)}건" if today_oor else " · 이상 없음"
     lines.append(head)
 
-    # 회차별 일지(전 회차 개별 라인) — 실데이터(work). 없으면 정직히 시간만(지어내기 금지).
-    today_oor_fields = {str(x.get("field")) for x in today_oor if x.get("field")}
-    work_items, notes = facility_worklog(subs, today_oor_fields)
     if work_items:
         filled["facility_worklog"] = True
         lines.append("  📋 회차별 일지 (새로 추가된 작업만 · 앞 회차 반복 생략)")
@@ -1126,7 +1155,8 @@ def facility_gap(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
 
 
 def _selfcheck() -> None:
-    """배 12760 — ① _hhmm 두 도장 모양 ② 독려 줄 남/여 분리 ③ 반복 원인 세 갈래(임시 원장 · 네트워크 없음)."""
+    """배 12760 — ① _hhmm 두 도장 모양 ② 독려 줄 남/여 분리 ③ 반복 원인 세 갈래(임시 원장 · 네트워크 없음)
+    · 09-19 후속 ④ 미제출 조는 항목 나열 없이 한 줄 ⑤ 회차별 일지 중복(시작·끝·담당자 동일) 제외."""
     global CHECK_INCOMPLETE_LEDGER
     import tempfile
     assert _hhmm("2026-09-17 20:31:40") == "20:31"
@@ -1138,6 +1168,23 @@ def _selfcheck() -> None:
             "uncheckedByShift": {"am": {"m": ["G-2 접점 소독"], "f": ["A-1 사우나 탕", "A-2 건/습식 사우나"]}}}
     ln = support_nudge_lines(live)
     assert ln[1] == "    · 오전조 남 26/28 미체크: G-2 접점 소독 · 여 7/24 미체크: A-1 사우나 탕, A-2 건/습식 사우나", ln
+    # ④ 09-19 — 아예 손 안 댄 조(0/26)는 항목 나열 없이 「조 미제출(N항목 전부)」 한 줄, 다 끝낸
+    # 조(여 22/22)는 독려 대상이 아니므로 적지 않는다.
+    live_zero = {"byGender": {"m": {"am": 0, "amTotal": 26}, "f": {"am": 22, "amTotal": 22}},
+                 "uncheckedByShift": {"am": {"m": [f"OP-{i}" for i in range(1, 8)], "f": []}}}
+    ln2 = support_nudge_lines(live_zero)
+    assert ln2[1] == "    · 오전조 남 — 조 미제출(26항목 전부)", ln2
+    # ⑤ 09-19 — 시작·끝·담당자가 같은 회차(7·8회차 19:10~19:35 박호균)는 뒷것만 빼고, 회차
+    # 번호는 다시 매기지 않는다(남은 순서대로 자연히 재정렬) — 헤더 회차수도 이 개수를 따른다.
+    subs_dup = [
+        {"seq": 1, "startHHMM": "04:33", "endHHMM": "05:00", "inspector": "이정헌", "work": "급탕시작"},
+        {"seq": 2, "startHHMM": "19:10", "endHHMM": "19:35", "inspector": "박호균", "work": "역세 작업"},
+        {"seq": 3, "startHHMM": "19:10", "endHHMM": "19:35", "inspector": "박호균", "work": "역세 작업"},
+        {"seq": 4, "startHHMM": "21:42", "endHHMM": "22:11", "inspector": "박호균", "work": "배터리 교체"},
+    ]
+    dup_items, _dup_notes = facility_worklog(subs_dup)
+    assert len(dup_items) == 3, dup_items
+    assert dup_items[2][0].startswith("3회차 21:42~22:11"), dup_items[2]
     orig = CHECK_INCOMPLETE_LEDGER
     with tempfile.TemporaryDirectory() as td:
         CHECK_INCOMPLETE_LEDGER = Path(td) / "ledger.json"
@@ -1181,7 +1228,7 @@ def _selfcheck() -> None:
             assert all(len(ln) <= 90 for ln in issue_lines[1:]), "두 줄 규칙"
         finally:
             CHECK_INCOMPLETE_LEDGER = orig
-    print("[selfcheck] support_check_summary OK — hhmm·독려 남/여 분리·반복 원인 3갈래")
+    print("[selfcheck] support_check_summary OK — hhmm·독려 남/여 분리·반복 원인 3갈래·미제출 조 한 줄·회차 중복 제외")
 
 
 def _weekday_kor(date: str) -> str:
