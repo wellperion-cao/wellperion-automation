@@ -8,12 +8,14 @@
   {
     "id": "lesson_inquiry_list",
     "what": "회원 GAS 공개 액션(전화 원시행) — membership.html·문의현황.html·wellperion_guide(main).html·매출회원현황보고.html 이 무열쇠로 직접/폴백 호출해 공개목록에서 못 뺀다. 미러 있음(/api/inquiries) — ERP 도메인 우선, 실패·6분내 쓰기·Pages 도메인은 GAS 직행",
-    "open": true
+    "open": false,
+    "closed": "2026-09-19 @338 — 공개목록에서 뺐다(lesson_registry_list 포함). 열쇠 없이 부르면 unauthorized, 열쇠 있으면 정상(722행). 화면 직행은 시포가 걷었다(79d7141c61·4be1104c18) · 전체기간은 서버 scope=all 거울 · 키 없던 PC 스크립트 weekly_marketing_feedback 수리(84df0acb4a)"
   },
   {
     "id": "lesson_registered_roster",
     "what": "회원 GAS 공개 액션(전화 포함 강습 등록 명단) — membership.html 무열쇠 직접호출 유지. 미러 있음(/api/lesson/roster), 실패 시 GAS 직행이라 공개목록 유지 필요",
-    "open": true
+    "open": false,
+    "closed": "2026-09-19 @338 — 공개목록에서 뺐다. 열쇠 없이 unauthorized · 열쇠 있으면 정상. 화면 새로고침은 서버 POST /api/lesson/refresh(30초 제한) 뒤 서버 읽기"
   },
   {
     "id": "rentbiz_inquiry_list",
