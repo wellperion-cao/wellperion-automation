@@ -355,6 +355,7 @@
   <a href="#brand" data-go="brand"><span class="t">파트너사 브랜드자료</span><span class="b">3</span></a>
   <a href="#products" data-go="products"><span class="t">파트너사 산출물</span><span class="b">3</span></a>
   <a href="#vault" data-go="vault"><span class="t">파트너사 채널 계정 금고</span></a>
+  <a href="#business" data-go="business"><span class="t">비즈니스 모델(요금체계)</span></a>
   <div class="sep"></div>
   <div class="cap">플랫폼 운영</div>
   <a href="#envs" data-go="envs"><span class="t">환경</span><span class="b">3</span></a>
@@ -630,8 +631,61 @@
     </tbody>
   </table></div>
 
-  <!-- 파트너 채널 계정 표 = 「파트너사 채널 계정 금고」 칸으로 옮김(배 12843 · 금고 연결 · GM 지시 2026-09-19). 여기는 링크 한 줄만(터치 44px 확보 · design_audit). -->
-  <a href="#vault" data-go="vault" style="display:block;margin:22px 0 6px;padding:9px 12px;border:1px solid var(--border);border-radius:4px;text-decoration:none;color:inherit;background:var(--paper);"><b style="display:block;font-size:13px;font-weight:700;">→ 파트너사 채널 계정 금고</b><span style="font-size:11.5px;color:var(--dim);">채널 계정 보기·GM 개인 금고</span></a>
+  <!-- 온보딩 질문·답 서랍 (GM 지시 2026-09-19 「길게 늘어놓지 말고 카드에서 그 파트너 것만 서랍으로」).
+       정본 = server/counselbot/question_bank.json(공통 질문은행) + tenants/{t}_qa.json(업체별 답).
+       이 화면은 발행본 data/partner_onboarding.json 만 읽는다 — scripts/partner_onboarding_publish.py 가 만든다.
+       옛 상시 노출 표(선택칸 + 긴 표)는 없앴다 — 파트너 카드 「온보딩 답 보기」가 같은 데이터를 서랍으로 연다. -->
+  <div class="po-backdrop" id="po-backdrop"></div>
+  <aside class="po-drawer" id="po-drawer" role="dialog" aria-modal="true" aria-labelledby="po-drawer-title">
+    <div class="hd"><b id="po-drawer-title">온보딩 질문·답</b><button type="button" id="po-close" class="pf-btn s">닫기</button></div>
+    <div class="meta" id="po-line" style="padding:10px 16px 0">불러오는 중…</div>
+    <label style="font-size:12.5px;padding:6px 16px 0;display:block"><input type="checkbox" id="po-pending"> 답 없는 것만</label>
+    <div class="bd" id="po-table"><div class="note">불러오는 중…</div></div>
+  </aside>
+  <script>
+  (function(){
+    var drawer=document.getElementById('po-drawer'), backdrop=document.getElementById('po-backdrop'), closeBtn=document.getElementById('po-close');
+    var line=document.getElementById('po-line'), box=document.getElementById('po-table'), only=document.getElementById('po-pending'), title=document.getElementById('po-drawer-title');
+    var data=null, current=null;
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function draw(){
+      if(!data||!current){return;}
+      var t=data.tenants[current];
+      if(!t){box.innerHTML='<div class="note">이 파트너사는 아직 물은 것이 없습니다</div>';line.textContent='질문은행 '+data.bank_count+'문 · '+data.built_at;return;}
+      title.textContent=t.name+' 온보딩';
+      line.textContent='물은 것 '+t.asked+' · 답 '+t.answered+' · 남음 '+t.pending+' · 질문은행 '+data.bank_count+'문 · 발행 '+data.built_at;
+      var rows=t.rows.filter(function(r){return !only.checked||!r.answer;});
+      var h='<table class="reg" style="table-layout:fixed;width:100%"><colgroup><col style="width:40px"><col style="width:48px"><col style="width:80px"><col><col><col style="width:70px"></colgroup>'+
+        '<thead><tr><th>번호</th><th>은행</th><th>영역</th><th>질문</th><th>답</th><th>받은 날</th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var a=r.answer?esc(r.answer):'<span class="note">'+(r.known?'저희가 아는 것: '+esc(r.known):'—')+'</span>';
+        h+='<tr><td>'+esc(r.partner_no||'')+'</td><td>'+esc(r.q_id)+'</td><td>'+esc(r.area)+'</td><td>'+esc(r.q)+'</td><td>'+a+'</td><td>'+esc(r.answered_on||'')+'</td></tr>';
+      });
+      box.innerHTML=h+'</tbody></table>';
+    }
+    function open(t){
+      current=t||current;
+      if(!current) return;
+      drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow='hidden';
+      if(data){ draw(); } else {
+        box.innerHTML='<div class="note">불러오는 중…</div>';
+        fetch('data/partner_onboarding.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){data=d;draw();}).catch(function(){line.textContent='발행본을 못 읽었습니다(data/partner_onboarding.json)';box.innerHTML='';});
+      }
+    }
+    function close(){ drawer.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow=''; }
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && drawer.classList.contains('open')) close(); });
+    only.addEventListener('change', draw);
+    window.openOnboardingDrawer=open;   // 파트너 카드 「온보딩 답 보기」 버튼이 부른다
+  })();
+  </script>
+
+</section>
+<!-- 비즈니스 모델(요금체계) — #partners 「구독(자동결제)」 블록 이관(GM 지시 2026-09-19 14:3x 웰리 전달). 사이드 메뉴 신설 · 해시 #business. 요금 표는 BLOCKED — canon_values.json 에 요금 값 없음 · company_roadmap.html 값(v1 99,000/199,000 = 폐기됨 · v2 149,000/249,000/449,000+셋업비300,000 = GM 확정 대기)이 이 화면 실값(스타트 99,000·그로스 199,000)과 다르다 · GM 확정 뒤 채운다(새 값 짓지 않음). -->
+<section class="panel" data-panel="business" hidden>
+<h2>비즈니스 모델(요금체계)</h2>
+<div class="note">요금 표 보류 — canon_values.json 에 요금 값 없음 · company_roadmap.html 값(v1 99,000/199,000 폐기됨 · v2 149,000/249,000/449,000+셋업비300,000 GM 확정 대기)이 아래 실제 구독 화면 값(스타트 99,000·그로스 199,000)과 달라 멈췄다. GM 확정 뒤 표로 채운다.</div>
 
   <!-- 구독(자동결제) — 토스페이먼츠 빌링 시안 1장 (배 12680 · 2026-09-16 시토 2단계).
        1단계 서버(api_billing.py)는 이미 있다 — 여기는 그 위에 얹는 화면뿐. 플랜 금액·문구(data-plan 자리)는
@@ -753,57 +807,8 @@
   })();
   </script>
 
-  <!-- 온보딩 질문·답 서랍 (GM 지시 2026-09-19 「길게 늘어놓지 말고 카드에서 그 파트너 것만 서랍으로」).
-       정본 = server/counselbot/question_bank.json(공통 질문은행) + tenants/{t}_qa.json(업체별 답).
-       이 화면은 발행본 data/partner_onboarding.json 만 읽는다 — scripts/partner_onboarding_publish.py 가 만든다.
-       옛 상시 노출 표(선택칸 + 긴 표)는 없앴다 — 파트너 카드 「온보딩 답 보기」가 같은 데이터를 서랍으로 연다. -->
-  <div class="po-backdrop" id="po-backdrop"></div>
-  <aside class="po-drawer" id="po-drawer" role="dialog" aria-modal="true" aria-labelledby="po-drawer-title">
-    <div class="hd"><b id="po-drawer-title">온보딩 질문·답</b><button type="button" id="po-close" class="pf-btn s">닫기</button></div>
-    <div class="meta" id="po-line" style="padding:10px 16px 0">불러오는 중…</div>
-    <label style="font-size:12.5px;padding:6px 16px 0;display:block"><input type="checkbox" id="po-pending"> 답 없는 것만</label>
-    <div class="bd" id="po-table"><div class="note">불러오는 중…</div></div>
-  </aside>
-  <script>
-  (function(){
-    var drawer=document.getElementById('po-drawer'), backdrop=document.getElementById('po-backdrop'), closeBtn=document.getElementById('po-close');
-    var line=document.getElementById('po-line'), box=document.getElementById('po-table'), only=document.getElementById('po-pending'), title=document.getElementById('po-drawer-title');
-    var data=null, current=null;
-    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-    function draw(){
-      if(!data||!current){return;}
-      var t=data.tenants[current];
-      if(!t){box.innerHTML='<div class="note">이 파트너사는 아직 물은 것이 없습니다</div>';line.textContent='질문은행 '+data.bank_count+'문 · '+data.built_at;return;}
-      title.textContent=t.name+' 온보딩';
-      line.textContent='물은 것 '+t.asked+' · 답 '+t.answered+' · 남음 '+t.pending+' · 질문은행 '+data.bank_count+'문 · 발행 '+data.built_at;
-      var rows=t.rows.filter(function(r){return !only.checked||!r.answer;});
-      var h='<table class="reg" style="table-layout:fixed;width:100%"><colgroup><col style="width:40px"><col style="width:48px"><col style="width:80px"><col><col><col style="width:70px"></colgroup>'+
-        '<thead><tr><th>번호</th><th>은행</th><th>영역</th><th>질문</th><th>답</th><th>받은 날</th></tr></thead><tbody>';
-      rows.forEach(function(r){
-        var a=r.answer?esc(r.answer):'<span class="note">'+(r.known?'저희가 아는 것: '+esc(r.known):'—')+'</span>';
-        h+='<tr><td>'+esc(r.partner_no||'')+'</td><td>'+esc(r.q_id)+'</td><td>'+esc(r.area)+'</td><td>'+esc(r.q)+'</td><td>'+a+'</td><td>'+esc(r.answered_on||'')+'</td></tr>';
-      });
-      box.innerHTML=h+'</tbody></table>';
-    }
-    function open(t){
-      current=t||current;
-      if(!current) return;
-      drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow='hidden';
-      if(data){ draw(); } else {
-        box.innerHTML='<div class="note">불러오는 중…</div>';
-        fetch('data/partner_onboarding.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){data=d;draw();}).catch(function(){line.textContent='발행본을 못 읽었습니다(data/partner_onboarding.json)';box.innerHTML='';});
-      }
-    }
-    function close(){ drawer.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow=''; }
-    closeBtn.addEventListener('click', close);
-    backdrop.addEventListener('click', close);
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && drawer.classList.contains('open')) close(); });
-    only.addEventListener('change', draw);
-    window.openOnboardingDrawer=open;   // 파트너 카드 「온보딩 답 보기」 버튼이 부른다
-  })();
-  </script>
-
 </section>
+
 
 <!-- 파트너사 채널 계정 금고 — 파트너 채널 계정(코드→패스키) + GM 개인 금고 한 칸(배 12843 · 금고 연결 · GM 지시 2026-09-19).
      메뉴 늘리는 걸 GM 이 싫어해 새 칸 하나만 두고, 2841 메뉴 정리에서 한 칸을 줄인다. -->
