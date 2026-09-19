@@ -266,7 +266,7 @@ def apply_gm_time_fill(items: list, gm_blanks: list) -> int:
 # ④ 휴관일 충돌 — coo_registry._closed_day 재사용. 시설부가 휴관일에 하는 정비 일은
 #   충돌이 아니라 원래 그날 하는 일이다 — 사무 일이 실수로 휴관일에 걸린 것만 남긴다.
 # ═══════════════════════════════════════════
-_CLOSED_EXCLUDE_NAME_WORDS = ("휴관일", "대청소", "순찰", "공사", "클리닝", "보수", "양생", "대회", "웰림픽", "송년회")
+_CLOSED_EXCLUDE_NAME_WORDS = ("휴관일", "대청소", "순찰", "공사", "클리닝", "보수", "양생", "대회", "웰림픽", "송년회", "실측")
 _CLOSED_EXCLUDE_ASSIGNEE_WORDS = ("시설부", "지원부", "소장")
 
 
