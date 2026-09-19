@@ -952,9 +952,19 @@ def nudge_review() -> int:
     return 0
 
 
+CARRYOVER_STALE_DAYS = 14  # 기한(due) 없이 이 날짜를 넘긴 항목은 이월 절에서 자동 제외
+# (GM 지시 2026-09-19 「#156·#183·#199 이건 너무하네 · 채팅에서 나온 걸 체크만 해둔건가」
+# — 채팅에서 뽑힌 확인용 체크가 기한·다음 걸음 없이 몇 주씩 매일 다시 실렸다. 원장 자체는
+# 안 건드린다(open 유지 · nudge_review 로는 여전히 보인다) — 매일 밤 통에 영원히 다시
+# 싣지만 않는다. 배12842.)
+
+
 def _format_carryover_lines(rows: list, n: int) -> str:
     """「🔁 안 닫힌 이월 항목」 절 조립 — #번호·N일째(있는 만큼) 오래된 순. build_mgr_evening_
-    carryover·build_ops_carryover_section 공용(약속 L01, 같은 표기를 두 곳에 안 둔다)."""
+    carryover·build_ops_carryover_section 공용(약속 L01, 같은 표기를 두 곳에 안 둔다).
+    기한(due) 없이 CARRYOVER_STALE_DAYS 를 넘긴 항목은 절에서 뺀다(원장은 그대로 open)."""
+    rows = [r for r in rows
+            if r["issue"].get("due") or r["age"] <= CARRYOVER_STALE_DAYS]
     rows = rows[:n]
     if not rows:
         return ""
