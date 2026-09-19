@@ -119,6 +119,26 @@ pre{white-space:pre-wrap;background:var(--pf-panel);border:1px solid var(--pf-li
 </table>
 
 </details>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-4. AI 비서 — 회의비서 · 상담봇 · 번역기 한 제품 · 3층 · 3루프 (GM 09-19 · 배 12838)</summary>
+<p class="note">GM 09-19 「직원이 쓰고, 파트너 관리자는 자기 회사 내역을 보고, 랩스는 전체를 보며 데이터화·가공해 분석 자료가 계속 나와야 한다 · 3루프로 하나의 완벽한 AI 비서 · 최종 목표는 비즈니스 확장으로 수익 · 제품 목표는 목소리 다양화·고도화 + 캐릭터가 움직이는 모습」. 세 화면을 따로 팔지 않고 <b>「AI 비서」 한 제품</b>으로 묶는다.</p>
+<table><colgroup><col style="width:18%"><col style="width:30%"><col></colgroup>
+<tr><th>층</th><th>누가</th><th>무엇을 보나 · 하나</th></tr>
+<tr><td>① 사용</td><td>ERP 직원(파트너 현장)</td><td>회의비서(meeting_note) · 상담봇(counsel_admin) · 번역기(translator) 를 쓴다 — 사용 기록은 자동으로 남는다(원문 저장 없음 · 길이·언어·종류만)</td></tr>
+<tr><td>② 자기 회사 내역</td><td>파트너 ERP 관리자</td><td>자기 회사 사용 내역만 — 누가·언제·몇 번·무엇을(assistant_usage · tenant 로 거름). 남의 회사 내역은 안 보인다</td></tr>
+<tr><td>③ 전체 · 분석</td><td>웰페리온 AX 랩스</td><td>전 파트너 내역을 합쳐 주기적으로 분석 자료를 낸다 — 모듈별 사용량·반복 질문·답 못 한 질문·언어 분포 → 다음 고도화 후보</td></tr>
+</table>
+<table><colgroup><col style="width:18%"><col></colgroup>
+<tr><th>3루프</th><td>§2-3 원장 그대로(새 원장 없음) — 모듈 이름 「AI 비서」로 <code>labs_loop.py --log --module "AI 비서"</code>. ③ 파트너 피드백 = 각 파트너의 사용 내역(②층 기록)</td></tr>
+<tr><th>원천(실측 09-19)</th><td>사용 기록 /srv/erp/assistant/{tenant}/usage.jsonl · 상담 기록 /srv/erp/chat_log.jsonl(tenant 칸) · 화면 assistant_usage.html(GET /api/assistant/usage) · 목소리 13언어 assistant_langs.json · 캐릭터 프리셋 server/counselbot/shared/concept_presets.json</td></tr>
+<tr><th>제품 궁극 목표</th><td>목소리 다양화·고도화 + 콘셉트 캐릭터가 움직이며 답하는 모습</td></tr>
+<tr><th>다음 단계</th><td>① 번역기 — 말한 언어 자동 판별 통역(한↔영 · 배 12831) ② 회의비서 — 화상회의(GM 09-19) ③ 목소리 → 캐릭터 순</td></tr>
+<tr><th>최종 목표</th><td>비즈니스 확장으로 수익 — 가격·파트너 대외 문안은 이 절에서 다루지 않는다(GM 승인 범위 09-19)</td></tr>
+<tr><th>재는 숫자</th><td>파트너별 주간 사용 횟수(모듈별) · 답 못 한 질문 비율 · 분석 자료 발행 주기(주 1회)</td></tr>
+</table>
+</details>
+<details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">2-5. 메뉴·모듈이 내려가는 순서 — 전 메뉴·모듈 공통 정본 (GM 09-19)</summary>
+<p class="note"><b>랩스 승인 → 승인된 파트너 ERP 관리자 → ERP 직원.</b> 어떤 메뉴·모듈도 이 순서를 건너뛰지 않는다. 랩스가 승인하지 않은 것은 파트너 관리자 화면에 안 보이고, 파트너 관리자가 켜지 않은 것은 직원 화면에 안 보인다. 이 규칙 문장은 여기 한 곳에만 둔다 — 다른 문서·화면은 이 절을 가리킨다. 배선(모듈 목록 erp/modules.json 승인 칸 · ERP 홈이 승인된 것만 그림) = 시토 배.</p>
+</details>
 <details><summary style="cursor:pointer;font-family:var(--pf-head);font-size:16px;font-weight:700;margin:18px 0 6px;color:var(--pf-pri-dk)">3. 누구에게 파나</summary>
 <table><colgroup><col style="width:22%"><col style="width:40%"><col></colgroup>
 <tr><th>세그먼트</th><th>왜 맞나</th><th>들어가는 길</th></tr>
