@@ -21,6 +21,7 @@ import json
 import argparse
 import fnmatch
 import re
+import subprocess
 from pathlib import Path
 
 # stdout을 UTF-8로 강제 (Windows PYTHONIOENCODING 무관)
@@ -145,10 +146,36 @@ def scan_file(file_path: Path, value: str) -> list[int]:
     return hits
 
 
+def _tracked_paths(repo_root: Path) -> list[Path] | None:
+    """git 추적 파일만 나열(빠름). 실패 시 None → rglob 전체순회 폴백.
+    2026-09-19 실측: repo_root.rglob("*") 이 미추적 대용량 폴더(repo/ 10만개·
+    profiles/ 4만개)까지 순회해 400초 넘게 안 끝나 커밋마다 .git/index.lock 이
+    잡혀 있었다 — 이 스캐너의 목적(살아있는 코드·설정)은 추적 파일이면 충분하다.
+    # ponytail: 워크트리에 있지만 아직 git add 안 한 새 파일은 못 본다(다음 커밋에서 잡힘)."""
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "-z"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            cwd=str(repo_root),
+            timeout=30,
+        )
+        if proc.returncode != 0:
+            return None
+        raw = proc.stdout.decode("utf-8", "replace")
+        return [repo_root / p for p in raw.split("\x00") if p]
+    except Exception:
+        return None
+
+
 def collect_files(repo_root: Path) -> list[Path]:
-    """스캔 대상 파일 목록 수집"""
+    """스캔 대상 파일 목록 수집 — git 추적 파일만(빠름), 실패 시 rglob 폴백."""
+    candidates = _tracked_paths(repo_root)
+    if candidates is None:
+        candidates = list(repo_root.rglob("*"))
     result = []
-    for p in repo_root.rglob("*"):
+    for p in candidates:
         if not p.is_file():
             continue
         if is_excluded_path(p, repo_root):

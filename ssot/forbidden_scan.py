@@ -14,6 +14,7 @@ import io
 import json
 import argparse
 import fnmatch
+import subprocess
 from pathlib import Path
 
 # stdout을 UTF-8로 강제 (Windows PYTHONIOENCODING 무관)
@@ -69,10 +70,35 @@ def is_excluded(path: Path, repo_root: Path, exclude_globs: list, exclude_dir_na
     return matches_glob_list(rel_str, exclude_globs)
 
 
+def _tracked_paths(repo_root: Path) -> list | None:
+    """git 추적 파일만 나열(빠름). 실패 시 None → rglob 전체순회 폴백.
+    divergence_scan.py 와 동일 근거(2026-09-19) — 미추적 대용량 폴더 순회로
+    커밋 훅이 400초+ 멈추는 것을 막는다.
+    # ponytail: 아직 git add 안 한 새 파일은 못 본다(다음 커밋에서 잡힘)."""
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "-z"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            cwd=str(repo_root),
+            timeout=30,
+        )
+        if proc.returncode != 0:
+            return None
+        raw = proc.stdout.decode("utf-8", "replace")
+        return [repo_root / p for p in raw.split("\x00") if p]
+    except Exception:
+        return None
+
+
 def collect_files(repo_root: Path, scan_globs: list, exclude_globs: list, exclude_dir_names: list) -> list:
-    """스캔 대상 파일 목록 수집"""
+    """스캔 대상 파일 목록 수집 — git 추적 파일만(빠름), 실패 시 rglob 폴백."""
+    candidates = _tracked_paths(repo_root)
+    if candidates is None:
+        candidates = list(repo_root.rglob("*"))
     result = []
-    for p in repo_root.rglob("*"):
+    for p in candidates:
         if not p.is_file():
             continue
         if p.suffix.lower() in BINARY_EXTENSIONS:
