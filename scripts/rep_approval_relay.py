@@ -776,13 +776,25 @@ def notify_approval_done(send: bool = False, dry_run: bool = False) -> int:
 
 
 def send_via_gate(text: str, dry_run: bool, sender: str = SENDER, room: str = ROOM) -> bool:
-    """kakao_report_sender.py 관문 호출. 실제 전송이 로그로 확인될 때만 True."""
+    """kakao_report_sender.py 관문 호출. 실제 전송이 로그로 확인될 때만 True.
+
+    ★2026-09-19 실사고(배 12841): 카톡이 막 재시작된 직후라 방 열기가 오래 걸려
+    subprocess timeout=180 이 카톡 관문(pid)을 강제 종료했는데, 그 TimeoutExpired 를
+    여기서 안 받아 notify_approval_done()/run() 이 통째로 죽었다(그 회차 다른 방·다음
+    회차 재시도 로직까지 전부 못 돎 — ★운영부 결재완료 4통이 소급 수작업으로 나갔다).
+    타임아웃도 실패의 한 종류로 받아 False 로 돌려주면, 호출부의 기존
+    "다음 회차 재후보" 로직이 그대로 재시도한다."""
     cmd = [sys.executable, str(SCRIPTS_DIR / "kakao_report_sender.py"),
            "--message", text, "--only-room", room, "--sender", sender]
     if dry_run:
         cmd.append("--dry-run")
-    proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=180)
+    try:
+        proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=180)
+    except subprocess.TimeoutExpired:
+        print(f"  [gate] {room} — 180초 넘게 응답 없어 카톡 관문을 강제 종료(카톡 재시작 직후 등 UI 지연 추정) "
+              f"— 실패로 처리, 다음 회차 재시도")
+        return False
     out = (proc.stdout or "") + (proc.stderr or "")
     tail = [ln for ln in out.strip().splitlines() if "[gate]" in ln or "전송 완료" in ln or "DRY-RUN" in ln or "스킵" in ln]
     for ln in tail[-3:]:
@@ -982,6 +994,16 @@ def _selfcheck() -> None:
         room, _ = route_direct(who)
         assert room == NOTIFY_TELEGRAM, (who, room)
     assert build_direct_message([]) == ""
+    # 배 12841 — 카톡 관문이 180초 넘게 멈춰도 send_via_gate 가 예외를 던지지 않고 False 로 돌아와야
+    # notify_approval_done()/run() 이 죽지 않고 "다음 회차 재후보" 로 넘어간다.
+    _orig_run = subprocess.run
+    def _boom(*_a, **_k):
+        raise subprocess.TimeoutExpired(cmd="kakao_report_sender.py", timeout=180)
+    subprocess.run = _boom
+    try:
+        assert send_via_gate("테스트", False, SENDER, room=ROOM_OPS) is False
+    finally:
+        subprocess.run = _orig_run
     print("[selfcheck] rep_approval_relay OK")
 
 
